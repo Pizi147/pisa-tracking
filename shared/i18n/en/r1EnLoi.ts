@@ -189,7 +189,7 @@ export const EN_R1_EN_LOI = {
   'Kỳ không hợp lệ — tải lại trang rồi giao lại.': 'Invalid period — reload the page and assign again.',
   'Loại PA này không có Số buổi.': 'This PA type has no session count.',
   'Lên FT cần Target.': 'Moving to FT needs a Target.',
-  'Lên lớp chỉ dùng cho em đang học lại mà Final từ 60 %.': 'Move up is only for re-enrolled students with a Final of 60 % or more.',
+  'Lên lớp chỉ dùng cho em đang học lại mà Final đạt mức "Lên từ".': 'Move up is only for re-enrolled students whose Final reaches the "Move up from" level.',
   'Lớp Pre FOU chưa mở — sẽ mở cùng đợt cập nhật hệ môn học.': 'Pre FOU classes are not open yet — they open with the subject system update.',
   'Lớp chuyển đến đã kết thúc.': 'The target class has ended.',
   'Lớp chưa kết thúc.': 'The class has not ended.',

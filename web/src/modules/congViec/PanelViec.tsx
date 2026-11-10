@@ -39,6 +39,7 @@ import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
 import { PanelXemViPham } from '../yThuc/PanelXemViPham.tsx';
 import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
+import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -163,8 +164,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       return <PanelSauThi key={it.key} cycleId={soCuaKhoa(it.key)!} em={{ id: it.studentId!, ten: it.studentName }} lop={lop} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
     case 'bao_ph_yt':
       return <PanelBaoPhTvv key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} tenTiep={tenTiep} />;
-    case 'phoi_hop_sos':
-      return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
+    case 'phoi_hop_sos': case 'phoi_hop_tvv':
+      return <PanelPhoiHop key={it.key} it={it} onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'phoi_hop':
       return <PanelBaoPh key={it.key} it={it} onDong={onDong} onDaLam={doi} />;
     case 'missing_data':
@@ -428,17 +429,28 @@ function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
 }
 
 /** OV-12h: Phối hợp SOS của lớp (lượt chưa xong) tại chỗ — cùng thẻ lượt / form Xác nhận của hồ sơ lớp; meeting CX có hạn 5 ngày. */
-function PanelPhoiHop({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
-  const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos`, [it.classId]);
+/**
+ * PHOI-HOP-V2 (mockup #1368 K1–K3): panel một dòng (lớp × việc) — bảng ① Học viên cần làm → ② Đã làm → ③ Kết quả, xác nhận tại dòng.
+ * `phoi_hop_tvv`: việc TVV sau Meeting CX của lớp (cả việc đã báo — `includeDone`). MỘT request khi mở panel.
+ */
+function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
+  const tvv = it.group === 'phoi_hop_tvv';
+  /* `includeDone`: em vừa xong việc cuối của lượt vẫn ở lại (nhóm "Đã làm", Hoàn tác tại dòng) — một lớp, một request. */
+  const { data, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId]);
+  const ten = tvv ? t('Báo PH · Meeting CX/GĐCN') : dich(it.tieuDe.split(' · ')[0]);
+  const n = it.con?.length ?? it.count ?? 1;
   const dau = dauViec({
     han: it.due ? <ChipHan loai="phoi-hop" han={it.due} /> : null,
-    ngCanh: <Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>,
+    ngCanh: <><Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>{` · ${tvv ? t('{n} em cần báo', { n }) : t('{n} em cần làm', { n })}`}</>,
   });
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dau} onDong={onDong}>
-      <div className="pt-3">
+    <KhungPanel tieuDe={ten} dau={dau} onDong={onDong}
+      chan={onTiep ? { huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
+      <div className="pt-2">
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
-          : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="hocVien" onChanged={() => { reload(); onDaLam(); }} />}
+          : !data ? <Skeleton rows={4} />
+          : <BangPhoiHop turns={data.rows} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId}
+              onChanged={() => { reload(); onDaLam(); }} />}
       </div>
     </KhungPanel>
   );

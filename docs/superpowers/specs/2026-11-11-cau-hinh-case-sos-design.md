@@ -109,7 +109,7 @@ type MocSos = { viec: Viec[];
 | Bảng | Cột mới | Ghi lúc | Đọc |
 |---|---|---|---|
 | `case_issues` | (dùng `taxonomy_version` sẵn có = id phiên bản) | chọn nhóm (tạo / sửa Case, nhận xét → mô tả) | nhãn = mục trong đúng phiên bản đó |
-| `case_interventions` | `pb_loai INTEGER` (NULL = bản 2) | tạo PA | nhãn + cờ (người dạy, số buổi, cần duyệt) theo bản đó |
+| `case_interventions` | `pb_loai INTEGER` (NULL = bản gốc) | tạo PA; đổi loại (PA quy chế chờ đồng bộ mức SOS) | dấu vết — chưa đọc (xem dưới) |
 | `sos_coordination_actions` | `pb_moc INTEGER` (NULL = bản 3) | máy / GVCN tạo việc | tên, ai làm, hạn, ghi chú tối thiểu theo bản đó |
 
 - **Vì sao con trỏ phiên bản, không tra theo `tao_luc`** (QUAN-TRI-V2 tra theo giờ cho hạn mặc định): `sos_coordination_actions.created_at` ghi theo **ngày nghiệp vụ**
@@ -117,6 +117,9 @@ type MocSos = { viec: Viec[];
 - **Phiên bản bất biến** ⇒ nhớ theo tiến trình **mãi mãi** theo `id` (không cần làm mới): một trang 50 Case thường chạm 1–3 phiên bản → 1–3 câu lần đầu mỗi tiến trình, sau đó 0.
 - **SOS đang chạy không đổi theo**: `syncSosCoordination` / `presetFor` / `resyncUnconfirmedPresets` dùng **bản của lượt** = `pb_moc` của dòng việc preset đầu tiên của lượt
   (có từ lần sinh đầu, kể cả dòng đã bỏ); lượt chưa có dòng nào → bản hiện tại. Điểm sửa qua lại vẫn theo đúng bản lúc SOS sinh.
+- **PA: khoá cách chạy thay cho đọc theo bản** (PTA rà #1390, 12/11): một mục PA đã có PA dùng thì **khoá** nhóm (GV tự làm / Cần QL duyệt), "Có người dạy",
+  "Đếm số buổi" — chỉ còn đổi tên, thứ tự, ẩn (lưu thẳng → 400; Hoàn tác / Khôi phục giữ cờ đang dùng). Vì thế PA cũ đọc cờ của bản đang dùng vẫn đúng;
+  **đổi tên áp cho mọi PA** (coi như sửa chữ). PA quy chế ở ô Mốc SOS của bản đang dùng = **đã dùng**: không xoá (chỉ ẩn khi đã bỏ khỏi ô); Hoàn tác / Khôi phục giữ nó hiện.
 - Lớp thường: bản chụp nằm ở PA (`pb_loai` + `so_buoi` đã ghi) và dòng việc (`pb_moc`) lúc tạo — đổi số buổi không đụng PA đã tạo.
 
 ### 3.4. Đọc ít dòng (Turso)
@@ -126,8 +129,9 @@ type MocSos = { viec: Viec[];
 - Web: hôm nay danh sách nằm trong JS (0 request). Mới: phiên đăng nhập trả thêm `cauHinhPb: [id nguyên nhân, id PA, id mốc]` (đọc kèm câu phiên — 0 câu thêm);
   web gọi `GET /ref/cau-hinh-case-sos?pb=…` **một lần mỗi lần tải app**, trả `Cache-Control: immutable` (đổi `pb` mới tải lại) — mở trang **không thêm request**.
   Gói ~15 KB gzip ~4 KB. Phiên bản cũ cho Case cũ: máy chủ trả nhãn sẵn trong dữ liệu Case như nay (không bắt web tra).
-- Màn Quản trị (hiếm mở, chỉ Quản trị / QL): 1 câu bản hiện tại + 1 câu 30 phiên bản gần nhất + 1 câu đếm "đang dùng" (`GROUP BY` trên `case_issues` / `case_interventions` /
-  `sos_coordination_actions` theo mã — ước ~10–25 nghìn dòng quét mỗi lần mở tab, vài lần / tuần ⇒ < 0,1 triệu dòng / tháng). Không đường nào khác tăng đọc.
+- Màn Quản trị (hiếm mở, chỉ Quản trị / QL): 1 câu bản hiện tại + 1 câu 30 phiên bản gần nhất + 1 câu đếm "đang dùng" **chỉ cho mã Quản trị thêm** (`….m<n>`;
+  mã gốc luôn coi là đang dùng, chỉ ẩn được) qua chỉ mục theo mã (`idx_case_issue_ma`, `idx_iv_kind`, `idx_sca_kind`) — đọc đúng số dòng đang gắn các mã thêm
+  (chưa thêm mã nào → 0 câu). Xoá một nhóm nguyên nhân Quản trị thêm mà chưa Case nào gắn: quét `assessment_scores.nhom_nguyen_nhan` một lần (hiếm). Không đường nào khác tăng đọc.
 - Trần ở `server/src/tests/tocDoDuong.ts`: `GET /admin/cau-hinh-case-sos` ≤ 4 câu; `/ref/cau-hinh-case-sos` ≤ 1 câu.
 
 ## 4. Quyền, lưu, Hoàn tác, nhật ký

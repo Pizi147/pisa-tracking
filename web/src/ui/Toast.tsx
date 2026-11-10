@@ -13,7 +13,7 @@ type PushOpts = { hanhDong?: HanhDong; ms?: number; key?: string; demLui?: boole
 type Ctx = {
   push: (kind: Toast['kind'], text: string, opts?: PushOpts) => void;
   /** PR-N1 C1: toast chung cho mọi thao tác hoàn tác được — 5 giây, nút "Hoàn tác (n)" đếm lùi. */
-  hoanTac: (text: string, onHoanTac: () => void, opts?: { key?: string }) => void;
+  hoanTac: (text: string, onHoanTac: () => void, opts?: { key?: string; ms?: number }) => void;
 };
 
 const ToastCtx = createContext<Ctx>({ push: () => {}, hoanTac: () => {} });
@@ -39,8 +39,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
     setItems((s) => [...(opts?.key ? s.filter((t) => t.key !== opts.key) : s), { id, kind, text, hanhDong: opts?.hanhDong, key: opts?.key, het }]);
     setTimeout(() => setItems((s) => s.filter((t) => t.id !== id)), ms);
   }, []);
-  const hoanTac = useCallback((text: string, onHoanTac: () => void, opts?: { key?: string }) => {
-    push('ok', text, { ms: HOAN_TAC_MS, key: opts?.key, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: onHoanTac } });
+  const hoanTac = useCallback((text: string, onHoanTac: () => void, opts?: { key?: string; ms?: number }) => {
+    push('ok', text, { ms: opts?.ms ?? HOAN_TAC_MS, key: opts?.key, demLui: true, hanhDong: { nhan: t('Hoàn tác'), onBam: onHoanTac } });
   }, [push]);
   const value = useMemo(() => ({ push, hoanTac }), [push, hoanTac]);
 

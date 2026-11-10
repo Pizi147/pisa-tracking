@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
+import { mocThuong, NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -195,7 +195,9 @@ export function emDaSangFt(ds: readonly (DongKyVong & { fromClassId: number; ftC
   return ds.flatMap((d) => (cyc.has(d.sid) ? [{ ...d, ftCycleId: cyc.get(d.sid)!, ngay }] : []));
 }
 
-const MO_TA_TUTOR = 'Tutor 10 buổi/kỹ năng · tính vào buổi Free, có lương GV';
+/* CAU-HINH-CASE-SOS: số buổi Tutor Quản trị đặt (bản gốc 10); PA đã tạo giữ số. */
+const soBuoiTutor = () => mocThuong().khongDatKyVong.tutor;
+const moTaTutor = () => `Tutor ${soBuoiTutor()} buổi/kỹ năng · tính vào buổi Free, có lương GV`;
 
 /**
  * Case "Kỳ vọng đầu ra chưa đạt…" ở lộ trình FT (T49, §3) — THEO LÔ, trong tx nơi gọi. Trung tâm: mỗi kỹ năng một Case + PA Tutor 10 buổi
@@ -255,7 +257,7 @@ export function taoCaseKyVong(p: Principal, tatCa: readonly DongCaseKyVong[]): {
   for (const y of moi) {
     const caseId = caseCua.get(y.khoa)!;
     pa.push({
-      caseId, kind: 'tutor', description: MO_TA_TUTOR, soBuoi: 10, performerUserId: gvCu.get(y.d.ngay)?.get(`${y.d.fromClassId}|${y.mon}`)?.userId ?? null,
+      caseId, kind: 'tutor', description: moTaTutor(), soBuoi: soBuoiTutor(), performerUserId: gvCu.get(y.d.ngay)?.get(`${y.d.fromClassId}|${y.mon}`)?.userId ?? null,
       recordedBy: p.userId, status: 'started', startedDate: y.d.ngay, confirmedBy: p.userId, confirmedAt: nowIso(),
       cycleStartedOn: y.d.ngay, actionDue: hanKyGhiKetQua(y.d.ngay),
     });

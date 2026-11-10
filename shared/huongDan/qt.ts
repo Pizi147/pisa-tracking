@@ -1,6 +1,6 @@
 /**
  * Hướng dẫn QUẢN TRỊ HỆ THỐNG — HD-V2 (b). QT = QL + phần hệ thống (chủ SP: Quản trị chỉ hơn phần hệ thống): dùng lại `HD_QL` (việc, màn, luật, thuật ngữ),
- * thêm việc Quản trị và thay màn "Đã xoá" của QL bằng màn "Quản trị hệ thống" đủ ba tab. Trang Quản trị phần lớn chưa dịch: bản Anh giữ nhãn Việt trong <b>.
+ * thêm việc Quản trị và thay màn "Đã xoá" của QL bằng màn "Quản trị hệ thống" đủ các tab (QTV2 11/11). Trang Quản trị phần lớn chưa dịch: bản Anh giữ nhãn Việt trong <b>.
  */
 import { HD_QL } from './ql.ts';
 import type { HuongDan, MucHd, ViecHd } from './kieu.ts';
@@ -9,7 +9,7 @@ import type { HuongDan, MucHd, ViecHd } from './kieu.ts';
 const KHONG_CHI = ['tq-duyet', 'ql-tq-so-lieu'];
 const KHONG_CHI_VIEC = ['nhap-ho'];
 const boChi = <T extends { chi?: unknown }>({ chi: _, ...m }: T) => m as Omit<T, 'chi'>;
-const QT_TAB = { hd: 'qt-tab', duong: '/quan-tri', chu: 'Ba tab: <b>Tài khoản</b> · <b>Chương trình</b> · <b>Quyền & nhật ký</b>.' } as const;
+const QT_TAB = { hd: 'qt-tab', duong: '/quan-tri', chu: 'Các tab: <b>Tài khoản</b> · <b>Chương trình</b> · <b>Chi nhánh</b> · <b>Band & ngưỡng</b> · <b>Hạn mặc định</b> · <b>Case & SOS</b> · <b>Quyền & nhật ký</b> · <b>Đã xoá</b>.' } as const;
 
 const VIEC_QT: ViecHd[] = [
   {
@@ -22,14 +22,14 @@ const VIEC_QT: ViecHd[] = [
   {
     id: 'tai-khoan', ten: 'Tạo, sửa, xoá tài khoản', nhom: 'khac',
     loiChinh: { man: 'quan-tri', chu: 'Tài khoản › Quản trị hệ thống › Tài khoản', duong: '/quan-tri', chi: QT_TAB },
-    buoc: ['<b>+ Tạo tài khoản</b>: Họ và tên, Email đăng nhập (đuôi .pisa@gmail.com), Mật khẩu ban đầu.', '<b>Vai trò và chi nhánh</b>: mỗi vai gắn một chi nhánh; Quản trị và CX là toàn hệ thống. GV: chọn <b>Kỹ năng phụ trách được</b>.',
+    buoc: ['<b>+ Tạo tài khoản</b>: Họ và tên, Email đăng nhập (đuôi .pisa@gmail.com), Mật khẩu ban đầu.', 'Đổi vai: bấm ô <b>Vai trò · chi nhánh</b> ở dòng tài khoản — mỗi vai gắn một chi nhánh; Quản trị và CX là toàn hệ thống. GV: bấm ô <b>Kỹ năng</b>.',
       'Sửa: <b>Sửa</b> ở dòng tài khoản. Người nghỉ: <b>⋯ › Xoá tài khoản</b> (có thể khôi phục ở <b>Đã xoá</b>).'],
     tuKhac: ['tài khoản', 'account', 'người mới', 'nghỉ việc', 'xoá tài khoản', 'phân công kỹ năng', 'create account'],
   },
   {
     id: 'quyen', ten: 'Đổi quyền, xem nhật ký', nhom: 'khac',
     loiChinh: { man: 'quan-tri', chu: 'Tài khoản › Quản trị hệ thống › Quyền & nhật ký', duong: '/quan-tri', chi: QT_TAB },
-    buoc: ['Tab <b>Quyền & nhật ký</b> › <b>Sửa quyền</b>: bật / tắt quyền theo vai, <b>Lưu</b> (có hộp xác nhận).', 'Một người cần thêm quyền: <b>Sửa</b> tài khoản › <b>Quyền cấp riêng</b> + <b>Lý do đổi quyền</b>.', '<b>Nhật ký thay đổi gần nhất</b>: ai đổi gì, lúc nào.'],
+    buoc: ['Tab <b>Quyền & nhật ký</b> › <b>Theo từng vai</b>: chọn vai, bật / tắt quyền, <b>Lưu</b> (có hộp xác nhận). <b>So sánh mọi vai</b>: xem cả bảng.', 'Một người cần thêm quyền: <b>Sửa</b> tài khoản › <b>Quyền cấp riêng</b> + <b>Lý do đổi quyền</b>.', '<b>Nhật ký chung</b>: ai đổi gì, lúc nào — lọc theo <b>Mục</b>, <b>Người</b>.'],
     tuKhac: ['quyền', 'phân quyền', 'nhật ký', 'permission', 'audit'],
   },
   {
@@ -37,6 +37,14 @@ const VIEC_QT: ViecHd[] = [
     loiChinh: { man: 'quan-tri', chu: 'Tài khoản › Quản trị hệ thống › Chương trình', duong: '/quan-tri', chi: QT_TAB },
     buoc: ['Tab <b>Chương trình</b>: Cách chấm, Độ dài, Mốc Test, số lớp đang chạy.', '<b>+ Chương trình</b> hoặc <b>Sửa</b>.'],
     tuKhac: ['programme', 'mốc test', 'độ dài', 'program'],
+  },
+  {
+    id: 'cau-hinh', ten: 'Sửa hạn mặc định, kỳ vọng, ngưỡng', nhom: 'khac',
+    loiChinh: { man: 'quan-tri', chu: 'Tài khoản › Quản trị hệ thống › Hạn mặc định · Band & ngưỡng', duong: '/quan-tri', chi: QT_TAB },
+    buoc: ['Tab <b>Hạn mặc định</b> hoặc <b>Band & ngưỡng</b>: bấm ô giá trị, sửa, Enter lưu (Esc để thôi).',
+      'Chỉ áp cho cái sinh sau: hạn cho việc sinh từ ngày lưu; kỳ vọng MT cho lộ trình mở từ nay; ngưỡng lớp thường cho lớp mở từ nay.',
+      'Sai thì <b>Hoàn tác</b> trên thông báo hoặc <b>Về gốc</b> ở dòng; mọi lần đổi có ở cột <b>Nhật ký</b>.'],
+    tuKhac: ['hạn mặc định', 'kỳ vọng', 'ngưỡng', 'band', 'deadline', 'threshold', 'expectation'],
   },
   {
     id: 'xoa-lop', ten: 'Xoá lớp', nhom: 'hv',
@@ -55,13 +63,13 @@ const VIEC_QT: ViecHd[] = [
 export const HD_QT: HuongDan = {
   viec: [],
   lam: [...HD_QL.lam!.map((v) => (KHONG_CHI_VIEC.includes(v.id) ? { ...v, loiChinh: boChi(v.loiChinh) } : v)), ...VIEC_QT],
-  tuan: HD_QL.tuan!.map((n) => (n.nhip === 'Mỗi sáng' ? { ...n, viec: [...n.viec, 'dang-ky'] } : n.nhip === 'Khi có' ? { ...n, viec: [...n.viec, 'tai-khoan', 'quyen', 'chuong-trinh', 'xoa-lop', 'xoa-hv'] } : n)),
+  tuan: HD_QL.tuan!.map((n) => (n.nhip === 'Mỗi sáng' ? { ...n, viec: [...n.viec, 'dang-ky'] } : n.nhip === 'Khi có' ? { ...n, viec: [...n.viec, 'tai-khoan', 'quyen', 'chuong-trinh', 'cau-hinh', 'xoa-lop', 'xoa-hv'] } : n)),
   vaiKhac: HD_QL.vaiKhac!.filter((v) => v.cua !== 'việc của Quản trị'),
   man: [
     ...HD_QL.man.filter((m) => m.id !== 'quan-tri').map((m) => (m.id === 'tong-quan' ? { ...m, muc: m.muc.map((x) => (KHONG_CHI.includes(x.id) ? boChi(x) as MucHd : x)) } : m)),
     {
       id: 'quan-tri', ten: 'Quản trị hệ thống', duong: ['/quan-tri'],
-      dangO: { cau: 'Tài khoản, chương trình, quyền; thùng rác đã xoá.', truoc: { chu: 'Tổng quan', duong: '/' } },
+      dangO: { cau: 'Tài khoản, quyền; cấu hình hệ thống (chương trình, chi nhánh, band, hạn, Case & SOS); thùng rác đã xoá.', truoc: { chu: 'Tổng quan', duong: '/' } },
       khongLam: [{ ten: 'Duyệt đề xuất PA, chuyển lớp', den: { chu: 'Công việc › Chờ bạn duyệt', duong: '/cong-viec' } }],
       muc: [
         { id: 'qt-qt-loc', ten: 'Tìm tài khoản', buoc: ['Ô tìm theo tên, mã, email; lọc <b>Chi nhánh</b>, <b>Vai trò</b>, <b>Kỹ năng</b>.', 'Chip <b>Chưa có vai trò</b> · <b>Chưa có email</b> · <b>Chưa có kỹ năng</b>: tài khoản cần bổ sung.'] },

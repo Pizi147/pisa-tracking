@@ -1,4 +1,4 @@
-import { issuesForTopic } from './cases.ts';
+import { issuesForTopic, maNhomHopLe } from './cases.ts';
 import { t } from '../i18n/index.ts';
 
 /** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S; MT nên có — `thieuNhanXetMt`, chỉ nhắc) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
@@ -75,10 +75,11 @@ export function docNhomNguyenNhan(s: string | null | undefined): string[] {
 }
 
 /** Kiểm nhóm gửi lên cho một ô (W1 / W2 dùng bộ Writing): mảng mã khác nhau của đúng kỹ năng, theo thứ tự chọn. */
-export function kiemNhomNguyenNhan(v: unknown, skill: string): { gt: string[] } | { loi: string } {
+export function kiemNhomNguyenNhan(v: unknown, skill: string, ct?: string | null, giu: readonly string[] = []): { gt: string[] } | { loi: string } {
   if (v === null) return { gt: [] };
   if (!Array.isArray(v) || !v.every((x) => typeof x === 'string')) return { loi: t('Nhóm nguyên nhân không hợp lệ.') };
-  const hopLe = new Set(issuesForTopic(skill).map((i) => i.code));
+  /* CAU-HINH-CASE-SOS: nhóm chưa ẩn (cả hai bên) + nhóm ô đang có (đã ẩn vẫn giữ được). */
+  const hopLe = maNhomHopLe(skill, ct, giu);
   if (new Set(v).size !== v.length || v.some((x) => !hopLe.has(x))) return { loi: t('Nhóm nguyên nhân không thuộc kỹ năng này.') };
   return { gt: v as string[] };
 }

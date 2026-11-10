@@ -147,7 +147,7 @@ const KY_HIEU_O = { listening: 'L', reading: 'R', writing1: 'W1', writing2: 'W2'
 type ONhap = keyof typeof KY_HIEU_O;
 /** Ô Excel "Nhóm nguyên nhân": `R: Kỹ năng làm bài, Quản lý thời gian · W1: Đáp ứng yêu cầu đề` (thứ tự chọn); không ô nào có nhóm → `null`. */
 export function chuNhomNguyenNhan(nhom: Partial<Record<ONhap, readonly string[]>>): string | null {
-  const phan = (Object.keys(KY_HIEU_O) as ONhap[]).filter((k) => nhom[k]?.length).map((k) => `${KY_HIEU_O[k]}: ${nhom[k]!.map(issueLabel).join(', ')}`);
+  const phan = (Object.keys(KY_HIEU_O) as ONhap[]).filter((k) => nhom[k]?.length).map((k) => `${KY_HIEU_O[k]}: ${nhom[k]!.map((c) => issueLabel(c)).join(', ')}`);
   return phan.length ? phan.join(' · ') : null;
 }
 

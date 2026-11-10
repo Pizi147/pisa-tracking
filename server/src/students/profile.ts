@@ -1,4 +1,5 @@
 import { db, theoLo } from '../db.ts';
+import { tachMaNhom } from '../cases/cases.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
 import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
@@ -85,13 +86,13 @@ export function typedResult(attempt: any, pre?: { scores: any[]; skips: Assessed
   if (attempt.kind !== 'mt0' && prog?.scoringMode === 'ratio') {   // PR-MT0: MT0 ở lớp thường vẫn band
     const rows = pre?.scores ?? db().prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
       .all(attempt.id) as any[];
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id, prog.code));   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(kyNang ?? lichGopCua([attempt.id]).get(attempt.id), rows)), rows, prog.code, nguongDatLop(attempt.class_id, prog.code), attempt.created_at);   // P13: bộ môn theo lượt
     return { mode: 'ratio' as const, ratio: r, ft: null };
   }
   const scores = pre?.scores ?? scoresOf(attempt.id);
   const r = evaluateAttempt(attempt.kind === 'mt0' ? null : attempt.target_at_attempt, attempt.attempt_no,   // PR-MT0: không kỳ vọng
     entryBandsOf(scores), pre?.skips ?? skipsOf(attempt.id), routeCuaLuot(attempt),
-    kyNangXongThieu(kyNang ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores), kckCuaLuot(attempt));
+    kyNangXongThieu(kyNang ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores), kckCuaLuot(attempt), attempt.created_at);
   return { mode: 'ielts' as const, ratio: null, ft: r };
 }
 
@@ -452,7 +453,7 @@ function boOVaCau(i: {
         next: i.mt0Ke ? { dau: 'MT0', attemptNo: 0, tuan: i.mt0Ke.tuan, soPhan: i.mt0Ke.soPhan, final: false, kyVong: null }
           : nextA ? {
           dau: dauDot(nextA), attemptNo: nextA.attemptNo, tuan: nextA.weekStart ?? null, soPhan: nextA.required, final: nextA.kind === 'final',
-          kyVong: nextA.mode === 'ratio' ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null),
+          kyVong: nextA.mode === 'ratio' ? null : expectationFor(selected?.target_score ?? null, nextA.attemptNo, selected?.route ?? null, i.nextRow?.created_at ?? null),   // QTV2-BAND: bản lúc tạo lượt
         } : null,
         ratio: i.mt0Ke ? false : !!nextA ? nextA.mode === 'ratio' : i.cuoiKhoaDang, kck: i.mt0Ke ? false : kck,
         bacKe: !i.lenFt && pc && pc !== 'FT' && laChuongTrinhGoc(pc) ? tenBacKe(pc as ProgrammeCode) : null, homNay: today,
@@ -731,7 +732,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   // --------------------------------------------------------- vấn đề đang theo dõi
   const caseRows = conn
     .prepare(
-      `SELECT sc.*, cy.seq AS cycle_seq, cy.route, u.full_name AS reporter_name,
+      `SELECT sc.*, cy.seq AS cycle_seq, cy.route, cy.programme_code AS cy_ct, u.full_name AS reporter_name,
               (SELECT COUNT(*) FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') AS iv_count,
               (SELECT MIN(followup_due) FROM case_interventions ci
                 WHERE ci.case_id = sc.id AND ci.status != 'cancelled' AND ci.followup_due IS NOT NULL
@@ -739,8 +740,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
                   AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.intervention_id = ci.id)) AS next_due,
               (SELECT ci.description FROM case_interventions ci WHERE ci.case_id = sc.id
                 ORDER BY COALESCE(ci.completed_date, ci.started_date, ci.created_at) DESC LIMIT 1) AS last_iv,
-              (SELECT ip.taxonomy_code FROM case_issues ip
-                WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_code,
+              (SELECT ip.taxonomy_code || '|' || ip.taxonomy_version FROM case_issues ip
+                WHERE ip.case_id = sc.id AND ip.role = 'primary' LIMIT 1) AS primary_ref,
               a.attempt_no AS attempt_no, a.kind AS attempt_kind
          FROM sos_cases sc
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -763,7 +764,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     // Vấn đề của lộ trình TRƯỚC vẫn hiện, nhưng dán nhãn rõ — không dời sang lộ trình mới
     // cho tiện hiển thị, vì như thế là viết lại lịch sử.
     carriedOver: !!(selected && c.cycle_id && c.cycle_id !== selected.id),
-    primaryCode: c.primary_code, primaryLabel: c.primary_code ? issueLabel(c.primary_code) : null,
+    primaryCode: tachMaNhom(c.primary_ref).ma, primaryLabel: tachMaNhom(c.primary_ref).ma ? issueLabel(tachMaNhom(c.primary_ref).ma, tachMaNhom(c.primary_ref).pb, c.goc_programme_code ?? c.cy_ct ?? null) : null,   // CAU-HINH-CASE-SOS: tên theo bên của Case
     interventionCount: c.iv_count, lastIntervention: c.last_iv,
     nextDue: c.next_due, dueOverdue: !!(c.next_due && c.next_due < today && c.status !== 'done'),
   }));

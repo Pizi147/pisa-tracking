@@ -6,7 +6,7 @@ import { dsLoi, type LoiTruong } from './loiForm.ts';
 import { nguoiThanhPayload, nguoiThieu, type NguoiChon } from './nguoiThucHien.ts';
 import { KHAC_TOI_THIEU } from './khac.ts';
 import { TRAN_CHU } from './nhanXet.ts';
-import { CHU_TOI_THIEU_CASE, INTERVENTION_KIND_LABEL } from './cases.ts';
+import { CHU_TOI_THIEU_CASE, INTERVENTION_KIND_LABEL, mucPaCua } from './cases.ts';
 import { kyGhiKetQua, ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { addDaysIso } from './sos.ts';
@@ -16,9 +16,10 @@ export const LOAI_CO_SO_BUOI = ['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_ph
 const LOAI_NGUOI_DAY = new Set(['tutor', 'bo_tro', 'bo_tro_mien_phi']);
 export const SO_BUOI_TOI_DA = 60;
 
-export const coSoBuoi = (kind: string): boolean => (LOAI_CO_SO_BUOI as readonly string[]).includes(kind);
+/* CAU-HINH-CASE-SOS: PA Quản trị thêm mang cờ "Đếm số buổi" / "Có người dạy" của cấu hình (mã gốc giữ luật cũ). */
+export const coSoBuoi = (kind: string): boolean => (LOAI_CO_SO_BUOI as readonly string[]).includes(kind) || mucPaCua(kind)?.soBuoi === true;
 export const coNguoiDay = (kind: string): boolean => kind !== 'self_study';
-export const nhanNguoiDay = (kind: string): 'Người dạy' | 'Người thực hiện' => (LOAI_NGUOI_DAY.has(kind) ? 'Người dạy' : 'Người thực hiện');
+export const nhanNguoiDay = (kind: string): 'Người dạy' | 'Người thực hiện' => (LOAI_NGUOI_DAY.has(kind) || mucPaCua(kind)?.nguoiDay === true ? 'Người dạy' : 'Người thực hiện');
 
 /** Ô trống (null, '', khoảng trắng) → null; còn lại → số (có thể NaN / không nguyên — hàm kiểm quyết). */
 export function soBuoiTu(v: unknown): number | null {

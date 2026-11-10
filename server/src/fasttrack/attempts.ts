@@ -71,7 +71,7 @@ export type ScoreRow = {
 };
 
 /** OV-12b: kỳ vọng của lượt cho chip nhóm nguyên nhân (MT0 không kỳ vọng) — cùng `expectationFor` với `resultOf`. */
-export const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a)));
+export const kyVongCuaLuot = (a: any): number | null => (laMt0(a) ? null : expectationFor(a.target_at_attempt ?? null, a.attempt_no, routeCuaLuot(a), a.created_at));
 
 /** LUAT-34 (T20b): ô có điểm đã huỷ còn cất (`ket_qua_huy` loại `huy_diem`) — cột trong CÂU ĐỌC ĐIỂM sẵn có (không thêm câu SQL). */
 const DIEM_HUY_SQL = `EXISTS (SELECT 1 FROM ket_qua_huy k WHERE k.attempt_id = s.attempt_id AND k.loai = 'huy_diem' AND k.khoi_phuc_luc IS NULL
@@ -277,6 +277,7 @@ export function resultOf(attempt: any, rows?: ScoreRow[], skips?: AssessedSkill[
     routeCuaLuot(attempt),
     kyNangXongThieu(skillRows ?? loadSkillRows([attempt.id]).get(attempt.id) ?? [], scores),
     kckCuaLuot(attempt),
+    attempt.created_at,   // QTV2-BAND: kỳ vọng theo bản lúc tạo lượt
   );
 }
 
@@ -859,7 +860,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores))];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
 
     if (regularSkills) {
-      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma));
+      const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma), a.created_at);
       /* Việc của CHÍNH người này = kỹ năng được phân công, không tính quyền sửa hộ (mục 3.3). */
       const mineSkills = a.class_id ? mySkills(p, a.class_id, regularSkills) : [];
       /*
@@ -1123,7 +1124,7 @@ export function scoreHistoryOf(attemptId: number, chiTiet = false) {
       /* OV-12b: chỉ đổi nhóm nguyên nhân (chip) → dòng ghi nhóm trước → sau. OV-13k: nhận xét GV phụ trách cùng dạng (khoá `nhanXetPhuTrach`). */
       const khoa = l.action === 'score.nhan_xet' ? 'comment' : 'nhanXetPhuTrach';
       const doiNx = (before?.[khoa] ?? null) !== (after?.[khoa] ?? null);
-      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map(issueLabel).join(', ') || 'Trống';
+      const nhom = (x: any) => docNhomNguyenNhan(x?.nhom).map((c) => issueLabel(c)).join(', ') || 'Trống';
       /* OV-13o: một lần lưu đổi CẢ nhận xét lẫn nhóm → hai dòng (dòng nhóm mang `phan: 'nhom'` — khoá riêng ở web). */
       const dong = (phan: 'nx' | 'nhom' | 'gv') => ({
         id: l.id, kind: 'nhan_xet' as const, skill: l.entity_label as string,
@@ -1803,6 +1804,9 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
     if (phoiHopIds.length) conn.prepare(
       `UPDATE sos_coordination_actions SET status = 'removed', remove_reason_code = 'system_luot_huy', removed_by = NULL,
               removed_at = ?, updated_at = ? WHERE attempt_id = ? AND status = 'pending'`).run(nowIso(), nowIso(), attemptId);
+    /* PHOI-HOP-V2 (rà PTA 9): việc TVV sau Meeting CX đã xác nhận của lượt này — lượt huỷ thì việc còn mở đóng, lý do hệ thống. */
+    conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = 'system_luot_huy', bo_luc = ?
+                   WHERE trang_thai = 'mo' AND phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE attempt_id = ?)`).run(nowIso(), attemptId);
     const caseIds = caseSinhRieng(attemptId);   // lớp thường: đọc lại SAU khi xoá điểm — Case sinh từ điểm vừa xoá cũng đóng
     const chup = caseIds.length
       ? closeCasesBySystem({ actorUserId: p.userId, studentId: a.student_id, reason: 'luot_da_huy', on: demoToday(), caseIds }).chup
@@ -2179,7 +2183,8 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   const nx = coNx ? kiemNhanXet(body.nhanXetPhuTrach, TRAN_CHU.nhanXetMt,
     () => (conn.prepare(`SELECT nhan_xet_phu_trach AS c FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(attemptId) as any)?.c) : null;
   if (nx && 'loi' in nx) throw badRequest(nx.loi);
-  const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking') : null;
+  /* CAU-HINH-CASE-SOS: nhóm ô đang có (Quản trị đã ẩn) vẫn giữ được. */
+  const nhomKiem = coNhom ? kiemNhomNguyenNhan(body.nhomNguyenNhan, 'speaking', null, nhomCuaO(attemptId, 'speaking')) : null;
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   return tx(() => {
     /* RKC (N8 ③ không đòi điểm trước): GV phụ trách ghi nhận xét trước khi người chấm nhập điểm — chưa có dòng ô thì tạo dòng trống. */
@@ -2310,7 +2315,7 @@ export function saveScore(
   }
   const gv = coGvCham ? (patch.gvCham ? gvChamHopLe(p, patch.gvCham, laChamCheo(a.kind, skill)) : null) : undefined;
   const coNhom = patch.nhomNguyenNhan !== undefined;
-  const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill) : null;
+  const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill, null, nhomCuaO(attemptId, skill)) : null;   // CAU-HINH-CASE-SOS: giữ nhóm đã ẩn
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
   /* RKC: chưa tới tuần thi → người dời được lịch hỏi "Dời về tuần này" (dời trong giao dịch lưu, dưới); người khác: câu chỉ đường. */
@@ -2828,4 +2833,9 @@ function pendingView(attemptId: number, skill: string) {
   const r = pendingMove(attemptId, skill);
   if (!r) return null;
   return { id: r.id, decideBy: r.decide_by, toWeek: r.to_code ?? null, moveNo: r.move_no };
+}
+
+/** CAU-HINH-CASE-SOS: mã nhóm nguyên nhân ô đang có (một câu, chỉ khi người gửi đổi nhóm). */
+function nhomCuaO(attemptId: number, skill: string): string[] {
+  return docNhomNguyenNhan((db().prepare('SELECT nhom_nguyen_nhan AS n FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any)?.n);
 }

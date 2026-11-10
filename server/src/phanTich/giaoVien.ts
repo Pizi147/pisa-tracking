@@ -813,7 +813,7 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
       const m = theoMuc.get(x.id);
       if (m) return [diem(x), m.ovr !== null ? `Overall ${m.ovr.toFixed(1)}` : null, m.kv !== null ? `kỳ vọng ${m.kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
       const a = nap.attempts.get(x.attemptId);
-      const kv = a && a.scoring_mode !== 'ratio' ? expectationFor(a.target_score ?? null, a.attempt_no, a.route) : null;
+      const kv = a && a.scoring_mode !== 'ratio' ? expectationFor(a.target_score ?? null, a.attempt_no, a.route, a.created_at) : null;
       return [diem(x), kv !== null ? `kỳ vọng ${kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
     };
     const o = new Map(nap.o.map((x) => [x.id, x]));

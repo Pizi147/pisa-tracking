@@ -14,7 +14,7 @@ import { addDaysIso } from './sos.ts';
 /** Tên loại việc — CÙNG chữ `GROUP_META.label` của máy chủ (`mywork.ts`; phép kiểm CHUONG-V2-1 so hai bảng). */
 export const NHAN_LOAI_VIEC: Record<string, string> = {
   cause: t('Xác nhận Case'), ghi_nhan_xet: t('Mô tả Case'), xac_nhan_pa: t('Xác nhận PA'), xem_nx_s: t('Xác nhận Case Speaking'),
-  phoi_hop: t('Báo phụ huynh qua TVV'), phoi_hop_sos: t('Phối hợp SOS'), khai_bac: t('Xác nhận cấp bậc vi phạm HV cũ'), ky_vong_dau_ra: t('Kỳ vọng'),
+  phoi_hop: t('Báo phụ huynh qua TVV'), phoi_hop_sos: t('Phối hợp SOS'), phoi_hop_tvv: t('Báo PH · Meeting CX/GĐCN'), khai_bac: t('Xác nhận cấp bậc vi phạm HV cũ'), ky_vong_dau_ra: t('Kỳ vọng'),
   thi_that: t('Cập nhật kết quả thi thật'), buoc_tiep: t('Chọn bước tiếp'), bo_sung_ho_so: t('Bổ sung hồ sơ thiếu'), mini_test: t('Ghi Mini Test'),
   score: t('Nhập điểm'), no_plan: t('Thiếu PA học thuật'), ghi_ket_qua_pa: t('Kết quả PA'), no_owner: t('Chưa có người phụ trách'),
   chot_len_ft: t('Chốt lộ trình'), xet_lai_lo_trinh: t('Xét lại lộ trình'), missing_data: t('Thiếu dữ liệu đánh giá'), yt_xu_ly: t('Xử lý vi phạm'),

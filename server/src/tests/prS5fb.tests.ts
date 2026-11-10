@@ -94,7 +94,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
     const act = get(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`, hv);
     assert(act, 'Progress Test trượt phải có việc Báo phụ huynh qua TVV');
     let loi: any = null;
-    try { phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY }); } catch (e) { loi = e; }
+    try { phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY, note: 'Đã làm' }); } catch (e) { loi = e; }
     assert(loi?.status === 403 && !/SOS/.test(loi.message), `403 không nói SOS: ${loi?.status} ${loi?.message}`);
     const web = doc('yThuc/PhoiHopSosSection.tsx');
     assert(/luot\.canAct && !adding && !luot\.nhanDot/.test(web), 'ẩn "+ Thêm việc" ở lượt có nhanDot (lớp thường)');
