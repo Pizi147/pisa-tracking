@@ -149,7 +149,9 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
  * (`thi_that_ngay` NULL) → ngày thi dự kiến (`exam_date`). Hai vế OR, mỗi vế một chỉ mục một phần (`idx_cycle_thi_that_ngay`, `idx_cycle_khong_thi`).
  */
 export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
-            c.thi_that_khong_thi, c.thi_that_lay_lai, substr(c.started_at, 1, 10) AS bat_dau, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon
+            c.thi_that_khong_thi, c.thi_that_lay_lai, substr(c.started_at, 1, 10) AS bat_dau, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon,
+            EXISTS (SELECT 1 FROM discipline_measures dm WHERE dm.cycle_id = c.id AND dm.kind = 'wl_2' AND dm.status = 'done'
+                     AND substr(COALESCE(dm.performed_on, dm.created_at), 1, 10) <= COALESCE(c.thi_that_ngay, c.exam_date, '9999-12-31')) AS wl2
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
       WHERE c.route IS NOT NULL
         AND ((c.thi_that_ngay BETWEEN ? AND ? AND c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
@@ -193,10 +195,11 @@ export function thiThatTrongKhoang(p: Principal | null, f: LocKetQuaThi, o: { bo
       batDau: c.bat_dau ?? null,
       kq: {
         studentId: c.student_id, cycleId: c.id, classIdCuoi: l, ngay: c.ngay_thi ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
-        ovr: c.outcome_score ?? null, target: target === null || Number.isNaN(target) ? null : target, kck: !!c.khong_cam_ket, khongThi: !!c.thi_that_khong_thi, thiLai,
+        ovr: c.outcome_score ?? null, target: target === null || Number.isNaN(target) ? null : target, kck: !!c.khong_cam_ket, wl2: !!c.wl2, khongThi: !!c.thi_that_khong_thi, thiLai,
       },
       dong: {
         cycleId: c.id, studentId: c.student_id, ten: c.ten, classId: l, lop: lop.get(l)!.code, ngayThi: c.ngay_thi ?? null, khongThi: !!c.thi_that_khong_thi,
+        kck: !!c.khong_cam_ket, wl2: !!c.wl2,
         ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
         thiLai: thiLai ? thiLai.map((k) => k.toUpperCase()) : null,
         target: chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"

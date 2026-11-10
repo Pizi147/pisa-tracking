@@ -3,7 +3,10 @@
  *   Exceed / Đạt / Fail = điểm > · = · < Target overall (OVR cho Tổng; band kỹ năng cho Từng kỹ năng). Theo GV (chủ SP 05/11): OVR quyết Đạt / Fail, Exceed khi OVR đạt và kỹ năng > Target; "KN dưới Target" riêng.
  *   KCK và em không có Target: đếm ở "HV thi", không vào Exceed / Đạt / Fail. "Không thi" đếm riêng.
  *   Thi lại một kỹ năng (#969): chỉ kỹ năng thi lần này vào Từng kỹ năng / Theo GV; OVR vẫn vào Tổng.
- *   Theo GV: mọi GV từng dạy kỹ năng cho em; trọng số = tuần GV dạy ÷ tổng tuần em học kỹ năng đó (cộng mọi GV). W thi thật → W1 và W2 (mỗi task một dòng).
+ *   Theo GV: mọi GV từng dạy kỹ năng cho em (tuần dạy > 0); Phân tích V2 (chủ SP 12/11, đặc tả 11): BỎ trọng số tuần dạy — mỗi em một mục, % = số em / em của dòng.
+ *   W thi thật → W1 và W2 (mỗi task một dòng).
+ *   KCK của báo cáo (đặc tả 5.2) = em không cam kết Target HOẶC em đã nhận WL 2 trước ngày thi (`wl2`) — chỉ gom trong báo cáo, không đổi KCK của em.
+ *   "Tổng thể" = cùng cách đếm nhưng GỒM KCK (em có Target).
  * Hàm thuần, không SQL — máy chủ nạp `KqThi` + `DoanDay` (`server/src/phanTich/thiThatThongKe.ts`).
  */
 export type MucThi = 'exceed' | 'dat' | 'fail';
@@ -17,6 +20,7 @@ export type KqThi = {
   studentId: number; cycleId: number; classIdCuoi: number | null; ngay: string | null;
   l: number | null; r: number | null; w: number | null; s: number | null; ovr: number | null; target: number | null;
   kck: boolean; khongThi: boolean;
+  /** Phân tích V2: em đã nhận WL 2 (bậc `wl_2` đã thực hiện, cùng lộ trình, trước ngày thi) — vào nhóm KCK của báo cáo. */ wl2?: boolean;
   /** Kỹ năng thi lần này khi em thi lại (còn lại lấy lần trước); null = thi đủ. */
   thiLai: KnThiThat[] | null;
 };
@@ -31,10 +35,11 @@ export type MucGv = { cycleId: number; muc: MucThi; duoi: boolean; band: number;
 /** Mức của em ở dòng GV (chủ SP 05/11): OVR quyết Đạt / Fail; Exceed khi OVR đạt và band kỹ năng GV dạy > Target. */
 export const mucThiGv = (ovr: number, band: number, target: number): MucThi => (ovr < target ? 'fail' : band > target ? 'exceed' : 'dat');
 export type DemMuc = { exceed: number; dat: number; fail: number };
-/** `exceed` · `dat` · `fail` · `duoi` (KN dưới Target) = % theo trọng số; `so` = số HV từng nhóm (= số dòng panel). */
+/** `exceed` · `dat` · `fail` · `duoi` (KN dưới Target) = % trên số em của dòng (V2: không trọng số); `so` = số em từng nhóm (= số dòng panel). */
 export type DongGvThi = { userId: number; kn: KnDay; hv: number; tuan: number; tb: number | null; ds: MucGv[]; so: DemMuc & { duoi: number }; duoi: number } & DemMuc;
 export type ThongKeThiThat = {
-  tong: { thi: number; khongThi: number; kck: number } & DemMuc;
+  /** `kck` gồm WL 2. `tongThe`: Vượt · Đạt · Chưa đạt GỒM KCK (em có Target) — ô "Tổng thể". */
+  tong: { thi: number; khongThi: number; kck: number; tongThe: DemMuc } & DemMuc;
   kyNang: Record<KnThiThat, { hv: number; tb: number | null } & DemMuc>;
   /** `exceed` · `dat` · `fail` = % theo trọng số (làm tròn). */
   gv: DongGvThi[];
@@ -43,7 +48,9 @@ export type ThongKeThiThat = {
 const mot = (x: number) => Math.round(x * 10) / 10;
 const pt = (a: number, b: number) => (b > 0 ? Math.round((100 * a) / b) : 0);
 /** Em vào Exceed / Đạt / Fail: thi, có Target, không KCK. */
-export const coMucThi = (k: KqThi): boolean => !k.khongThi && !k.kck && k.target !== null;
+export const coMucThi = (k: KqThi): boolean => !k.khongThi && !k.kck && !k.wl2 && k.target !== null;
+/** KCK của báo cáo (gồm WL 2). */
+export const laKckBaoCao = (k: KqThi): boolean => k.kck || !!k.wl2;
 /** Kỹ năng thi lần này (thi lại → chỉ kỹ năng đó). */
 export const kyNangThiLanNay = (k: KqThi, kn: KnThiThat): boolean => !k.thiLai || k.thiLai.includes(kn);
 const knThi = (kn: KnDay): KnThiThat => (kn === 'w1' || kn === 'w2' ? 'w' : kn);
@@ -53,8 +60,9 @@ export function thongKeThiThat(kq: readonly KqThi[], day: ReadonlyMap<number, re
   const coMuc = thi.filter(coMucThi);
   const dem = (ds: MucThi[]): DemMuc => ({ exceed: ds.filter((m) => m === 'exceed').length, dat: ds.filter((m) => m === 'dat').length, fail: ds.filter((m) => m === 'fail').length });
   const tong = {
-    thi: thi.length, khongThi: kq.length - thi.length, kck: thi.filter((k) => k.kck).length,
+    thi: thi.length, khongThi: kq.length - thi.length, kck: thi.filter(laKckBaoCao).length,
     ...dem(coMuc.filter((k) => k.ovr !== null).map((k) => mucThi(k.ovr!, k.target!))),
+    tongThe: dem(thi.filter((k) => k.target !== null && k.ovr !== null).map((k) => mucThi(k.ovr!, k.target!))),
   };
   const kyNang = Object.fromEntries((['l', 'r', 'w', 's'] as const).map((kn) => {
     const ds = coMuc.filter((k) => k[kn] !== null && kyNangThiLanNay(k, kn));
@@ -75,7 +83,7 @@ export function thongKeThiThat(kq: readonly KqThi[], day: ReadonlyMap<number, re
       for (const [userId, tuan] of gop) {
         const khoa = `${userId}:${kn}`;
         (theoGv.get(khoa) ?? theoGv.set(khoa, { userId, kn, ds: [] }).get(khoa)!).ds
-          .push({ cycleId: k.cycleId, muc: mucThiGv(k.ovr!, band, k.target!), duoi: band < k.target!, band, tuan, tongTuan, w: tuan / tongTuan });
+          .push({ cycleId: k.cycleId, muc: mucThiGv(k.ovr!, band, k.target!), duoi: band < k.target!, band, tuan, tongTuan, w: 1 });   // V2: không trọng số
       }
     }
   }

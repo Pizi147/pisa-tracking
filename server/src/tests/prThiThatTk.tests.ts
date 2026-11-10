@@ -34,7 +34,7 @@ export async function runPrThiThatTkTests(t: any) {
     assert(r.kyNang.w.hv === 2 && r.kyNang.w.fail === 1 && r.kyNang.w.exceed === 1 && r.kyNang.w.tb === 5.8, `W 2 em, TB 5.75 → 5.8: ${JSON.stringify(r.kyNang.w)}`);
   });
 
-  check('THI-THAT · Theo GV: 8/12 tuần → trọng số 0.67; % theo trọng số; tổng tuần 0 không lỗi', () => {
+  check('THI-THAT · Theo GV (V2 12/11: bỏ trọng số): mỗi em một mục, % = số em / em của dòng; tổng tuần 0 không vào', () => {
     const a = kq({ l: 5.5, target: 6 }), b = kq({ l: 6.5, target: 6 }), c = kq({ l: 6, target: 6 });
     const day = new Map<number, unknown[]>([
       [a.cycleId, [{ userId: 10, kn: 'l', tuan: 8 }, { userId: 11, kn: 'l', tuan: 4 }]],
@@ -45,10 +45,19 @@ export async function runPrThiThatTkTests(t: any) {
     const g = r.gv.find((x: any) => x.userId === 10 && x.kn === 'l');
     assert(g && g.hv === 2 && g.tuan === 12, `GV 10 · L: 2 em (em tổng 0 không vào), 12 tuần: ${JSON.stringify(g)}`);
     const m = g.ds.find((x: any) => x.cycleId === a.cycleId);
-    assert(Math.abs(m.w - 0.67) < 0.01 && m.tuan === 8 && m.tongTuan === 12, `trọng số 8/12: ${JSON.stringify(m)}`);
-    /* Chủ SP 05/11: OVR 6 = Target → không Fail; a (L 5.5) Đạt + dưới Target 0.67 · b (L 6.5) Exceed 1 → Đạt 40 %, Exceed 60 %, KN dưới Target 40 %. */
-    assert(g.fail === 0 && g.exceed === 60 && g.dat === 40 && g.duoi === 40 && g.so.duoi === 1, `% trọng số: ${JSON.stringify(g)}`);
+    assert(m.w === 1 && m.tuan === 8 && m.tongTuan === 12, `không trọng số: ${JSON.stringify(m)}`);
+    /* OVR 6 = Target → không Chưa đạt; a (L 5.5) Đạt + dưới Target · b (L 6.5) Vượt → Đạt 50 %, Vượt 50 %, KN dưới Target 50 % (số em). */
+    assert(g.fail === 0 && g.exceed === 50 && g.dat === 50 && g.duoi === 50 && g.so.duoi === 1 && g.so.exceed === 1, `% theo số em: ${JSON.stringify(g)}`);
     assert(!r.gv.some((x: any) => x.ds.some((m: any) => m.cycleId === c.cycleId)), 'em tổng tuần 0 không vào gv');
+  });
+
+  check('THI-THAT V2 · KCK báo cáo gồm WL 2: trừ khỏi số chính, vào "Tổng thể" (em có Target); em không Target không vào % nào', () => {
+    const v = kq({ ovr: 7, target: 6 }), dd = kq({ ovr: 6, target: 6 }), x = kq({ ovr: 5, target: 6 });
+    const k1 = kq({ ovr: 5, target: 6, kck: true }), w2 = kq({ ovr: 7, target: 6, wl2: true }), kt = kq({ ovr: 5, target: null, kck: true });
+    const r = d.thongKeThiThat([v, dd, x, k1, w2, kt], new Map());
+    assert(r.tong.exceed === 1 && r.tong.dat === 1 && r.tong.fail === 1, `trừ KCK: ${JSON.stringify(r.tong)}`);
+    assert(r.tong.tongThe.exceed === 2 && r.tong.tongThe.dat === 1 && r.tong.tongThe.fail === 2, `tổng thể: ${JSON.stringify(r.tong.tongThe)}`);
+    assert(r.tong.kck === 3 && !d.coMucThi(w2) && d.laKckBaoCao(w2), 'WL 2 vào nhóm KCK của báo cáo');
   });
 
   check('THI-THAT · W thi thật vào W1 và W2; thi lại W → GV L không có mục; KCK không vào gv', () => {
@@ -116,7 +125,8 @@ export async function runPrThiThatTkTests(t: any) {
     assert(cu && cu.tuan === 4, `GV cũ 4 tuần: ${JSON.stringify(cu)}`);
     const o = tk.oThiThat(P.mbManager, { ...f, o: `gv:${P.w1Teacher.userId}:w1:duoi` });
     const r0 = o.rows[0]?.thiThat;
-    assert(o.n === 1 && r0.cycleId === cy && r0.tuan.day === 8 && r0.tuan.tong === 12 && r0.kn.w.kq === 'duoi' && r0.ovr.kq === 'bang', `panel P-GV 8/12: ${JSON.stringify(o.rows)}`);
+    /* V2 (12/11): panel GV không còn cột Tuần dạy (bỏ trọng số) — tuần dạy chỉ còn để biết GV "từng dạy" em. */
+    assert(o.n === 1 && r0.cycleId === cy && !r0.tuan && r0.kn.w.kq === 'duoi' && r0.ovr.kq === 'bang', `panel P-GV: ${JSON.stringify(o.rows)}`);
     assert(o.kieu === 'thi-that' && o.knNhan === 'W1', 'kiểu thi-that, cột W1 tô nền');
   }));
 
