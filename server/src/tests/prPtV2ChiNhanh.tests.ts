@@ -127,6 +127,20 @@ export async function runPrPtV2ChiNhanhTests(t: any) {
       if (bai.length) assert(h.chamDiem.k === 'so' && h.chamDiem.tong === bai.reduce((a: number, o: any) => a + o.tong, 0), `${h.ten}: Chấm Test tổng ≠ Σ chi nhánh`);
     }
     assert(coDat > 0, 'seed phải có GV có Đạt kỳ vọng');
+    /* PTA rà #1414: bảng tổng tính một lần — số từng chi nhánh = CHÍNH bảng một chi nhánh (Chấm Test · Việc · Đạt kỳ vọng · Chưa phân công). */
+    const cnIds = [...new Set(r.hang.flatMap((h: any) => (h.chiNhanh ?? []).map((x: any) => x.id)))] as number[];
+    const motCn = new Map(cnIds.map((b) => [b, gv.phanTichGiaoVien(P.admin, { cn: b, ct: 'ft', ...kGv, v2: true })]));   // trước: bảng một chi nhánh ghi lại sổ việc
+    const r2 = gv.phanTichGiaoVien(P.admin, { ct: 'ft', ...kGv, v2: true });
+    for (const b of cnIds) {
+      const mot = motCn.get(b);
+      for (const h of mot.hang) {
+        const x = r2.hang.find((y: any) => y.id === h.id)?.chiNhanh?.find((z: any) => z.id === b);
+        assert(x, `chi nhánh ${b}: thiếu ${h.ten} ở bảng tổng`);
+        for (const k of ['chamDiem', 'viecDungHan', 'datMt']) assert(JSON.stringify(x[k]) === JSON.stringify(h[k]), `chi nhánh ${b} · ${h.ten} · ${k}: ${JSON.stringify(x[k])} ≠ ${JSON.stringify(h[k])}`);
+      }
+      const cpc = r2.chuaPhanCong?.chiNhanh?.find((z: any) => z.id === b);
+      assert(JSON.stringify(cpc ? { chamDiem: cpc.chamDiem, viecDungHan: cpc.viecDungHan } : null) === JSON.stringify(mot.chuaPhanCong ?? null), `chi nhánh ${b}: Chưa phân công`);
+    }
     const cp = r.chuaPhanCong;
     if (cp) {
       const n = (o: any) => (o.k === 'so' ? o.tong : 0);
