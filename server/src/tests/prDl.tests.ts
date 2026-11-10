@@ -670,7 +670,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     const ua = doc('web/src/lib/useApi.ts');
     assert(/export function useGopTaiLai\(reload: \(\) => void\)/.test(ua) && ua.includes('GOP_TAI_LAI_MS = 1500'), 'useGopTaiLai ở useApi.ts');
     const lt = doc('web/src/modules/test/LichTestTab.tsx');
-    assert(lt.includes('const baoDaLuu = useGopTaiLai(reload);') && !lt.includes('GOP_TAI_LAI_MS'), 'Lịch Test dùng chung useGopTaiLai');
+    /* GIAM-COMPUTE (11/11): cùng nhịp gộp tải lại thêm ô "bài quá hạn" (`oQuaHan.reload()`). */
+    assert(/const baoDaLuu = useGopTaiLai\(\(\) => \{ reload\(\);/.test(lt) && !lt.includes('GOP_TAI_LAI_MS'), 'Lịch Test dùng chung useGopTaiLai');
     const dt = doc('web/src/modules/cham/DiemTheoLop.tsx');
     assert(dt.includes('const daLuuO = () => { bang.reload(); onDaLuu?.(); };') && /<LuoiChamLop[^>]*onReload=\{daLuuO\}/.test(dt), 'lưu ô báo onDaLuu');
   });
