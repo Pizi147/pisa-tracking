@@ -191,7 +191,7 @@ export function diemGoc(c: Lop, d: DotBc, phanKhoa: string, emIds: readonly numb
   const them = d.loai === 'them';
   const trongHan = '(pr.week_start IS NULL OR pr.week_start <= ?)';
   const rows = db().prepare(
-    `SELECT a.student_id, a.kind, a.attempt_no, a.target_at_attempt, COALESCE(a.route_at_attempt, cy.route) AS route, pr.week_start, sc.band, sc.raw_score, sc.raw_total
+    `SELECT a.student_id, a.kind, a.attempt_no, a.target_at_attempt, a.created_at, COALESCE(a.route_at_attempt, cy.route) AS route, pr.week_start, sc.band, sc.raw_score, sc.raw_total
        FROM assessment_attempts a JOIN assessment_scores sc ON sc.attempt_id = a.id AND sc.skill = ?
        LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
       WHERE a.student_id IN (${DS_JSON}) AND a.status != 'cancelled'

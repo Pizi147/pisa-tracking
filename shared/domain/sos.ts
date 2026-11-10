@@ -12,7 +12,9 @@
 import { hanTai } from './hanMacDinh.ts';
 import type { InterventionKind } from './cases.ts';
 import { ngayTheoGioVN } from './display.ts';
-import { t } from '../i18n/index.ts';
+import { dich, t } from '../i18n/index.ts';
+import { cauHinhPb, tenHien, type MocSos, type Viec } from './cauHinhCaseSos.ts';
+import { tenLoaiPa } from './cases.ts';
 
 export function addDaysIso(date: string, n: number): string {
   const d = new Date(`${date.slice(0, 10)}T00:00:00Z`);
@@ -64,17 +66,25 @@ export const DEFAULT_ACADEMIC_SUPPORT: Record<1 | 2 | 3 | 4 | 5, Record<SosLevel
 
 export type AcademicSupportPreset = AcademicSupportRule & { description: string };
 
-/** Ô của bảng §4 cho một lượt. `null` khi mức SOS không phải 1–3 (không có gì để điền). MT < 1 là lỗi gọi hàm.
- *  RF (T4): mọi MT dùng hàng "MT3 trở đi" — `route` là lộ trình CỦA LƯỢT (K5-49). */
-export function academicSupportFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): AcademicSupportPreset | null {
+/** CAU-HINH-CASE-SOS: ô mốc FT của một lượt — hàng `rf` cho lộ trình RF (mã cũ: PA hàng MT3+, việc hàng MT4 — bản gốc chép đúng), còn lại MT1…MT5+. */
+export function oMocFt(attemptNo: number, sosLevel: 1 | 2 | 3, route?: string | null, pb?: number | null) {
+  const hang = route === 'RF' ? 'rf' : (`mt${Math.min(attemptNo, 5)}` as 'mt1');
+  return cauHinhPb('moc_sos', pb).du_lieu.ft[hang][String(sosLevel) as '1'];
+}
+
+/** Ô của bảng §4 cho một lượt. `null` khi mức SOS không phải 1–3 (không có gì để điền) hoặc ô không có PA quy chế. MT < 1 là lỗi gọi hàm.
+ *  RF (T4): hàng RF — `route` là lộ trình CỦA LƯỢT (K5-49). CAU-HINH-CASE-SOS: đọc ô của bản `pb` (bản của lượt; null → đang dùng). */
+export function academicSupportFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null, pb?: number | null): AcademicSupportPreset | null {
   if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(t('Số MT không hợp lệ: {attemptNo}', { attemptNo }));
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return null;
-  const hang = route === 'RF' ? Math.max(3, attemptNo) : attemptNo;
-  const rule = DEFAULT_ACADEMIC_SUPPORT[Math.min(hang, 5) as 1 | 2 | 3 | 4 | 5][sosLevel];
+  const pa = oMocFt(attemptNo, sosLevel, route, pb).pa;
+  if (!pa) return null;
+  const rule = { kind: pa.loai as InterventionKind, span: pa.den };
   const description =
-    rule.span === 'one_month' ? t('Tự học · 1 tháng')
-    : rule.span === 'until_next_mt' ? t('Tutor · đến MT{x}', { x: attemptNo + 1 })
-    : t('Tutor · đến lúc thi');
+    rule.kind === 'self_study' && rule.span === 'one_month' ? t('Tự học · 1 tháng')
+    : rule.kind === 'tutor' && rule.span === 'until_next_mt' ? t('Tutor · đến MT{x}', { x: attemptNo + 1 })
+    : rule.kind === 'tutor' && rule.span === 'until_exam' ? t('Tutor · đến lúc thi')
+    : `${tenLoaiPa(rule.kind)} · ${rule.span === 'one_month' ? dich('1 tháng') : rule.span === 'until_next_mt' ? dich('đến MT{x}', { x: attemptNo + 1 }) : dich('đến lúc thi')}`;
   return { ...rule, description };
 }
 
@@ -105,7 +115,8 @@ export const COORDINATION_KINDS = [
   'bao_ph_tvv',
 ] as const;
 export type CoordinationKind = (typeof COORDINATION_KINDS)[number];
-export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
+/** Nhãn GỐC — bản gốc của danh mục việc (cấu hình); nơi hiển thị đọc `COORDINATION_KIND_LABEL` / `tenViec`. */
+export const NHAN_VIEC_GOC: Record<CoordinationKind, string> = {
   talk_student: t('Trao đổi ngắn với HV'),
   talk_family: t('Trao đổi với gia đình'),
   gvcn_meeting: t('GVCN meeting với HV'),
@@ -116,6 +127,39 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = {
   bao_ph_tvv: t('Báo phụ huynh qua TVV'),
 };
 
+/** CAU-HINH-CASE-SOS: việc trong danh mục của bản `pb` (dòng việc chụp lúc sinh; null → đang dùng). */
+export const viecCua = (kind: string, pb?: number | null): Viec | null => cauHinhPb('moc_sos', pb).du_lieu.viec.find((v) => v.ma === kind) ?? null;
+export function tenViec(kind: string, pb?: number | null): string {
+  const v = viecCua(kind, pb);
+  return v ? tenHien(v) : NHAN_VIEC_GOC[kind as CoordinationKind] ?? kind;
+}
+/** ponytail: Proxy để ~10 chỗ đọc `COORDINATION_KIND_LABEL[kind]` giữ nguyên mà ra tên cấu hình đang dùng; tên theo bản dòng → `tenViec(kind, pb)`. */
+export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = new Proxy(NHAN_VIEC_GOC, {
+  get: (goc, k) => (typeof k === 'string' ? tenViec(k) : Reflect.get(goc, k)),
+});
+/**
+ * NGƯỜI LÀM của một dòng việc phối hợp (CAU-HINH-CASE-SOS + PHOI-HOP-SOS-V2) — theo bản chụp của dòng (`pb_moc`). Bản gốc: mọi việc GVCN; QL luôn làm thẳng.
+ * `buocTvv` ≠ null: GVCN xác nhận xong thì sinh việc TVV (báo gia đình, sắp xếp họp, ghi kết quả).
+ */
+export function aiLamViec(dong: { kind: string; pb_moc?: number | null }): { aiLam: Viec['aiLam']; buocTvv: NonNullable<Viec['buocTvv']> | null } {
+  const v = viecCua(dong.kind, dong.pb_moc);
+  return { aiLam: v?.aiLam ?? 'gvcn', buocTvv: v?.buocTvv ?? null };
+}
+/** Mã việc CÓ HẠN ở bản gốc hoặc bản đang dùng — lọc SQL trước (`kind IN (…)`), `hanPhoiHop(…, pb)` của từng dòng quyết sau.
+ *  ponytail: bản giữa (có hạn rồi bỏ) không vào lọc — thêm hợp mọi phiên bản nếu Quản trị hay đổi qua lại. */
+export function maViecCoHan(): string[] {
+  const r = new Set<string>(['cx_meeting_student', 'cx_meeting_family']);
+  for (const v of cauHinhPb('moc_sos', undefined).du_lieu.viec) if (v.hanNgay != null) r.add(v.ma);
+  return [...r];
+}
+/** Hạn dài nhất (ngày) trong danh mục việc đang dùng — cửa sổ đọc của số liệu "việc đúng hạn". */
+export const hanViecLonNhat = (): number => Math.max(HAN_MEETING_CX_NGAY, ...cauHinhPb('moc_sos', undefined).du_lieu.viec.map((v) => v.hanNgay ?? 0));
+/** Ghi chú tối thiểu khi xác nhận việc (0 = không bắt buộc) — theo bản chụp của dòng. */
+export const toiThieuGhiChu = (kind: string, pb?: number | null): number => {
+  const v = viecCua(kind, pb);
+  return v ? (v.ghiChu === 'bat_buoc' ? v.toiThieu ?? 1 : 0) : laMeetingCx(kind) ? GHI_CHU_MEETING_TOI_THIEU : 0;
+};
+
 /**
  * OV-12h (chủ SP 14/10): "CX / GĐCN meeting với HV" và "… với HV / PH" phải XÁC NHẬN trong 5 ngày kể từ lúc tạo việc — hạn = ngày tạo (giờ VN) + 5,
  * quá hạn khi hôm nay > hạn. Xác nhận cần Ghi chú ≥ 10 ký tự. Việc phối hợp khác giữ không hạn (P10).
@@ -124,10 +168,14 @@ export const HAN_MEETING_CX_NGAY = 5;
 export const GHI_CHU_MEETING_TOI_THIEU = 10;
 export const laMeetingCx = (kind: string): boolean => kind === 'cx_meeting_student' || kind === 'cx_meeting_family';
 /** HAN-BAO-PH (chủ SP 03/11, 17.2): `hanChon` (cột `han_chon`) thắng hạn mặc định — chỉ việc meeting CX (việc khác không hạn, P10). */
-export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanChon?: string | null): string | null => {
-  if (laMeetingCx(kind) && hanChon) return hanChon;
-  const ngay = laMeetingCx(kind) ? ngayTheoGioVN(taoLuc) : null;
-  return ngay ? addDaysIso(ngay, HAN_MEETING_CX_NGAY) : null;
+export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanChon?: string | null, pb?: number | null): string | null => {
+  /* CAU-HINH-CASE-SOS: hạn n ngày của việc theo bản chụp của dòng; mã không có trong cấu hình → luật cũ (chỉ Meeting CX, 5 ngày). */
+  const v = viecCua(kind, pb);
+  const so = v ? v.hanNgay : laMeetingCx(kind) ? HAN_MEETING_CX_NGAY : null;
+  if (so == null) return null;
+  if (hanChon) return hanChon;
+  const ngay = ngayTheoGioVN(taoLuc);
+  return ngay ? addDaysIso(ngay, so) : null;
 };
 
 export const COORDINATION_STATUSES = ['pending', 'done', 'removed'] as const;
@@ -185,13 +233,21 @@ export const DEFAULT_SOS_COORDINATION: Record<1 | 2 | 3 | 4, Record<SosLevelKey,
   4: { 1: HS_GD, 2: GD_GVCN, 3: [...GD_GVCN, 'cx_meeting_student'] },
 };
 
-/** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng MT4 cho mọi MT. */
-export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null): readonly CoordinationKind[] {
+/**
+ * PHOI-HOP-V2 (rà PTA 1–2): toast Hoàn tác sau "Lưu" ở ô ② chỉ khi lần lưu đó chuyển việc Cần xử lý → Xong (Hoàn tác = Đưa lại Cần xử lý).
+ * "Sửa" việc đã xong và lần TVV ghi kết quả không có Hoàn tác kiểu này — đưa lại sẽ xoá ngày / người làm hoặc trả Meeting về Cần xử lý.
+ */
+export const hoanTacXacNhanDuoc = (truoc: string, laGhiTvv: boolean): boolean => !laGhiTvv && truoc === 'pending';
+
+/** Các việc điền sẵn cho một lượt Mock có SOS. Mức 0 (hoặc không xác định) thì không có việc nào. RF (T4): hàng RF.
+ *  CAU-HINH-CASE-SOS: ô của bản `pb` (bản của lượt). */
+export function sosCoordinationFor(attemptNo: number, sosLevel: number | null | undefined, route?: string | null, pb?: number | null): readonly CoordinationKind[] {
   if (!Number.isInteger(attemptNo) || attemptNo < 1) throw new Error(t('Số MT không hợp lệ: {attemptNo}', { attemptNo }));
   if (sosLevel !== 1 && sosLevel !== 2 && sosLevel !== 3) return [];
-  const hang = route === 'RF' ? Math.max(4, attemptNo) : attemptNo;
-  return DEFAULT_SOS_COORDINATION[Math.min(hang, 4) as 1 | 2 | 3 | 4][sosLevel];
+  return oMocFt(attemptNo, sosLevel, route, pb).viec as CoordinationKind[];
 }
+/** Mốc lớp thường của bản `pb` (số buổi Bổ trợ, Tutor, việc phối hợp). */
+export const mocThuong = (pb?: number | null): MocSos['thuong'] => cauHinhPb('moc_sos', pb).du_lieu.thuong;
 
 /**
  * TÓM TẮT MỘT LƯỢT PHỐI HỢP — SUY RA, không lưu (§5.1). Hiện `{số done}/{số việc chưa bị bỏ}`.

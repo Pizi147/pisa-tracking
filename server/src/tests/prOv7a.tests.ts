@@ -246,18 +246,18 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   await checkAsync('OV7a-3b · Phối hợp: số liệu đếm lại từ trạng thái hiện tại (không cộng dồn) — xong hết → Hoàn thành; Đưa lại một việc → Đang xử lý', () => thu(() => {
     const { r, gv } = viecPhoiHop('talk_student');
     const viec = all(`SELECT id, status FROM sos_coordination_actions WHERE attempt_id = ?`, r.attempt_id);
-    for (const v of viec) if (v.status === 'pending') phoiHop.confirmCoordination(gv, v.id, { performedOn: TODAY });
+    for (const v of viec) if (v.status === 'pending') phoiHop.confirmCoordination(gv, v.id, { performedOn: TODAY, note: 'Đã làm' });
     const tap = (id: string) => phoiHop.phoiHopMetric(P.admin, id, {}).ids as number[];
     assert(tap('phoi-hop-hoan-thanh').includes(r.attempt_id) && !tap('phoi-hop-dang-xu-ly').includes(r.attempt_id), 'xong hết → Hoàn thành');
     phoiHop.moLaiCoordination(gv, r.id);
     assert(!tap('phoi-hop-hoan-thanh').includes(r.attempt_id) && tap('phoi-hop-dang-xu-ly').includes(r.attempt_id), 'Đưa lại → Đang xử lý');
-    phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY });
+    phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã làm' });
     assert(tap('phoi-hop-hoan-thanh').filter((x) => x === r.attempt_id).length === 1, 'không cộng dồn');
   }));
 
   await checkAsync('OV7a-3c · Báo PH qua TVV: lưu lại thì chụp lại nội dung đã báo (`noi_dung_luc_bao`)', () => thu(() => {
     const { r, gv } = viecPhoiHop('bao_ph_tvv');
-    phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY });
+    phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã làm' });
     conn.prepare(`UPDATE sos_coordination_actions SET noi_dung_luc_bao = '["cũ","cũ","cũ","cũ"]' WHERE id = ?`).run(r.id);
     phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã nhờ TVV gọi lại' });
     const chup = JSON.parse(get('SELECT noi_dung_luc_bao FROM sos_coordination_actions WHERE id = ?', r.id).noi_dung_luc_bao);

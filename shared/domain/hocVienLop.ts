@@ -234,6 +234,8 @@ export type KetQuaVao = {
   tyLeTong?: number | null;
   /** OV-6b1: ngưỡng đạt của lớp (lớp thường) — gợi ý Cuối khoá đọc cùng ngưỡng. */
   nguong?: number;
+  /** QTV2-BAND: ngày nhập điểm Final đầu — gợi ý Cuối khoá theo bản ngưỡng lúc đó. */
+  mocNguong?: string | null;
   /** OV-9: em KCK dưới kỳ vọng — không SOS (`sosLevel` null). */
   kckDuoi?: boolean;
   /** Lớp thường: % từng môn của lượt (`v` 0–100; `under` chưa đạt ngưỡng; `evaluable` false = chưa chấm) — dải mở Lịch thi. */
@@ -283,7 +285,7 @@ export function ketQuaGanNhat(k: KetQuaVao | null): KetQuaHien {
     const dat = k.khongChiaMon ? k.sosLevel === 0 : k.sosLevel === 0 && !k.provisional && !thieuDiem;
     /* PR-UXF-a K2-01 (Q3): Cuối khoá đủ điểm → hậu tố hướng ở dòng 1 ("Cuối khoá → học lại"), cùng luật `goiYCuoiKhoa`; không dính vào số %. */
     const huong = k.attemptKind === 'final' && !thieuDiem && k.tyLeTong != null
-      ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill), nguong: k.nguong })?.nhanNgan ?? null : null;
+      ? goiYCuoiKhoa({ ct, tyLe: k.tyLeTong, monTruot: k.failedSkills.map((f) => f.skill), nguong: k.nguong, moc: k.mocNguong })?.nhanNgan ?? null : null;
     return {
       chinh, lech: null, dat, sos: k.attemptKind === 'progress' && !k.khongChiaMon && (k.sosLevel ?? 0) > 0 ? `SOS ${k.sosLevel}` : null,
       dong1: huong ? `${k.attemptLabel} ${dichChuoi(huong)}` : k.khongChiaMon || !thieuDiem ? k.attemptLabel : t('{lan} · {a}/{b} môn có điểm', { lan: k.attemptLabel, a: k.scored, b: k.required }),

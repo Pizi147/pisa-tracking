@@ -22,7 +22,7 @@ export function lamTaiCho(it: WorkItem): boolean {
     case 'yt_xu_ly': return it.studentId !== null || laLo(it);
     case 'yt_xem': return laLo(it) || it.studentId !== null;   // OV-13d lô · OV-13b (11.1e): Ghi nhận một em — tại chỗ
     case 'khai_bac': return it.studentId !== null || it.classId !== null;   // OV-13d: nhiều em → Xác nhận cấp bậc theo lô
-    case 'phoi_hop_sos': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
+    case 'phoi_hop_sos': case 'phoi_hop_tvv': return it.classId !== null;   // OV-12h: xác nhận meeting CX tại chỗ
     case 'yt_thuc_hien': case 'mgmt': case 'buoc_tiep': case 'thi_that': return soCuaKhoa(it.key) !== null;   // OV-13q: Kết quả thi thật tại chỗ
     /* OV-13b (đặc tả OV-13 §1): Ghi nhận vi phạm · Báo phụ huynh qua TVV · Điền Target (Thiếu thông tin) · Chọn người phụ trách — tại chỗ.
        Thiếu thông tin khác (Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */

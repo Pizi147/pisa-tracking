@@ -1,4 +1,3 @@
-import type { TheSosEm } from '@shared/domain/index.ts';
 
 export type WorkItem = {
   key: string; group: string; urgency: 'overdue' | 'today' | 'normal';
@@ -28,8 +27,9 @@ export type WorkItem = {
   kns?: string[];
   /** OV-13b: Kết quả PA ghi nhanh được (máy chủ `ghiNhanhDuoc`) — CV-LOI: form gọn trong khung phải. */
   ghiNhanh?: boolean;
-  /** PHOI-HOP-SOS-INFO: dòng Phối hợp SOS — thẻ kết quả (em · lượt · Overall so kỳ vọng · kỹ năng trượt) của tối đa 3 lượt chưa xong; `count` = số lượt. */
-  theSos?: TheSosEm[];
+  /** PHOI-HOP-V2 (mockup #1368): dòng Phối hợp SOS (lớp × việc) — loại + khoá việc (panel lọc đúng việc); `emTen` = tên ≤ 3 em đầu (chip ở ô việc). */
+  phoiHop?: { kind: string; khoa: string };
+  emTen?: string[];
   /** CV-LOI (A13): Case chưa có người phụ trách vì lớp thiếu GV môn (`mon`) / GVCN (`mon` null) — panel Phân công đúng ô đó. */
   thieuNguoi?: { mon: string | null };
   /** OV-11c: id em của việc cả lớp (Nhập điểm theo bài…) — panel Nhập điểm đưa em của việc lên đầu. */

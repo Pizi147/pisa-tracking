@@ -14,7 +14,7 @@ import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import {
-  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
+  CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, nguongThuongHienTai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
   mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
 
@@ -541,7 +541,7 @@ function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarg
   const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${e.studentId}`, [e.studentId, lopMoi]);
   const dsLop = lopDich.data?.lop ?? [];
   const khoa = busy || xong || !chon;
-  const final = e.tyLe === null ? null : <b className={`tabular-nums ${e.tyLe < 0.5 ? 'text-bad' : 'text-slate-100'}`}>{chuTyLeXetLai(e.tyLe)}</b>;
+  const final = e.tyLe === null ? null : <b className={`tabular-nums ${e.tyLe * 100 < nguongThuongHienTai().hocLai ? 'text-bad' : 'text-slate-100'}`}>{chuTyLeXetLai(e.tyLe)}</b>;
   const oLop = xong ? <span className="text-sm text-ok">{t('Đã quyết định chuyển lớp')}</span>
     : lopDich.error ? <span className="text-xs text-late">{lopDich.error.message} <button type="button" className="link border-0 bg-transparent p-0" onClick={lopDich.reload}>{t('Thử lại')}</button></span>
       : lopDich.loading ? <span className="text-xs text-slate-500">{t('Đang tải lớp…')}</span>
