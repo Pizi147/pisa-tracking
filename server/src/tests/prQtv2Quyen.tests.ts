@@ -40,7 +40,7 @@ export async function runPrQtv2QuyenTests(t: { check: any; assert: any; assertTh
     const t1 = nk.nhatKyQuanTri(P.admin, { muc: 'chi-nhanh', nguoi: P.admin.userId, tu: '2031-01-01', den: '2031-01-02' });
     assert(t1.dong.length === 50 && t1.tiep, `trang 1: ${t1.dong.length} · tiep ${t1.tiep}`);
     const t2 = nk.nhatKyQuanTri(P.admin, { muc: 'chi-nhanh', nguoi: P.admin.userId, tu: '2031-01-01', den: '2031-01-02', tiep: t1.tiep });
-    assert(t2.dong.length === 1 && t2.tiep === null, `trang 2: ${t2.dong.length}`);
+    assert(t2.dong.length === 1 && t2.tiep === null && t2.nguoi.length === 0, `trang 2: ${t2.dong.length} · người ${t2.nguoi.length} (chỉ trang đầu đọc danh sách người)`);
     assert(nk.nhatKyQuanTri(P.admin, { muc: 'chi-nhanh', tu: '2031-01-03' }).dong.length === 0, 'ngoài khoảng ngày vẫn có');
     assert(t1.nguoi.some((x: any) => x.id === P.admin.userId), 'ô lọc người thiếu');
   }));

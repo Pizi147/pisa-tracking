@@ -5,6 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Card, ChonDangNut, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import { nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -31,20 +32,22 @@ export function NhatKyChung() {
   const [den, setDen] = useState<string | null>(null);
   const qs = new URLSearchParams({ ...(muc && { muc }), ...(nguoi && { nguoi }), ...(tu && { tu }), ...(den && { den }) }).toString();
   const r = useApi<Trang>(`/admin/nhat-ky${qs ? `?${qs}` : ''}`, [qs]);
-  const [them, setThem] = useState<Dong[]>([]);
+  /* Trang thêm gắn với bộ lọc lúc tải (`qs`) — đổi lọc thì bỏ, không lẫn vào kết quả lọc mới trong cùng lượt vẽ. */
+  const [them, setThem] = useState<{ qs: string; dong: Dong[] }>({ qs: '', dong: [] });
+  const toast = useToast();
   const [tiep, setTiep] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
-  useEffect(() => { setThem([]); setTiep(r.data?.tiep ?? null); }, [r.data]);
+  useEffect(() => { setThem({ qs, dong: [] }); setTiep(r.data?.tiep ?? null); }, [r.data]); // eslint-disable-line react-hooks/exhaustive-deps
   const xemThem = async () => {
     if (!tiep || busy) return;
     setBusy(true);
     try {
       const x = await api.get<Trang>(`/admin/nhat-ky?${new URLSearchParams({ ...(qs ? Object.fromEntries(new URLSearchParams(qs)) : {}), tiep: String(tiep) })}`);
-      setThem((d) => [...d, ...x.dong]); setTiep(x.tiep);
-    } finally { setBusy(false); }
+      setThem((d) => ({ qs, dong: d.qs === qs ? [...d.dong, ...x.dong] : x.dong })); setTiep(x.tiep);
+    } catch (e: any) { toast.push('error', e?.message ?? t('Không tải thêm được')); } finally { setBusy(false); }
   };
   const datMuc = (m: string) => { const n = new URLSearchParams(params); if (m) n.set('muc', m); else n.delete('muc'); setParams(n, { replace: true }); };
-  const dong = [...(r.data?.dong ?? []), ...them];
+  const dong = [...(r.data?.dong ?? []), ...(them.qs === qs ? them.dong : [])];
 
   return (
     <Card title={t('Nhật ký chung')} bodyClass="p-0">

@@ -60,8 +60,8 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
       .map((k) => ({ ten: TEN_TRUONG[k] ?? k, cu: chu(truoc[k]), moi: chu(sau[k]) }));
     return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong: r.entity_label ?? null, truong };
   });
-  /* Ô lọc "Người": ai đã từng đổi trong các mục này (không theo trang). */
-  const nguoi = db().prepare(
+  /* Ô lọc "Người": ai đã từng đổi trong các mục này — chỉ trang đầu (web dùng danh sách của trang đầu). */
+  const nguoi = q.tiep ? [] : db().prepare(
     `SELECT DISTINCT u.id, u.full_name AS ten FROM audit_logs a JOIN users u ON u.id = a.actor_user_id
       WHERE a.entity_type IN (${loai.map(() => '?').join(',')}) ORDER BY u.full_name`,
   ).all(...loai) as { id: number; ten: string }[];

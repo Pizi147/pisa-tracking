@@ -12,6 +12,7 @@ export const EN_QUAN_TRI_V2 = {
   'Đã đổi kỹ năng {ten}': (b) => `Changed skills of ${b.ten}`,
   'Đã hoàn tác kỹ năng {ten}': (b) => `Skills of ${b.ten} restored`,
   'Nhật ký chung': 'Change log',
+  'Không tải thêm được': 'Could not load more',
   'Mục: Tất cả': 'Section: All',
   'Người: Tất cả': 'Person: All',
   'Đến': 'To',
