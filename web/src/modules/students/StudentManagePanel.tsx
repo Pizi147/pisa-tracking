@@ -512,13 +512,11 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             ? t('Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.')
             : t('Lịch MT sửa ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do.')}>
           {coLt ? (
-            <Truong as="div" nhan={t('Lộ trình')}>
-              <div role="radiogroup" aria-label={t('Lộ trình')} className="flex flex-wrap gap-1.5">
-                {ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC).map((k) => (
-                  <NutChon key={k} chon={lt === k} className="max-sm:flex-1" onClick={() => sua(setLt)(k)}>{k}</NutChon>
-                ))}
-              </div>
-            </Truong>
+            <div role="radiogroup" aria-label={t('Lộ trình đang học')} className="flex flex-wrap gap-1.5">
+              {ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC).map((k) => (
+                <NutChon key={k} chon={lt === k} className="max-sm:flex-1" onClick={() => sua(setLt)(k)}>{k}</NutChon>
+              ))}
+            </div>
           ) : (
             <p className="m-0 text-sm text-slate-200">
               {cycle.ratio ? (cycle.programmeName ?? dichChu(cycle.label)) : dichChu(cycle.label)}
@@ -563,7 +561,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>{t('Đề xuất sửa lộ trình / thông tin khác…')}</button>
           )}
           {coMon && (
-            <Truong as="div" nhan={`${t('Môn học')} · FT ${cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
+            <Truong as="div" nhan={`${t('Môn học')} · FT ${doiLt ? lt : cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
               <NutMon ariaLabel={t('Môn học')} value={mon} onChange={sua(setMon)} />
             </Truong>
           )}
