@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { isInitialised } from '../db.ts';
+import { isInitialised, laLoiMatKetNoiTurso, moLaiKetNoi } from '../db.ts';
 
 /**
  * /api/health (AN-4, PR-AN). Công khai vì màn đăng nhập bản chính cần biết máy chủ còn sống (AN-7). Hai thứ phải đúng:
@@ -19,7 +19,18 @@ export function taoSuKhoe(hoi: () => boolean = isInitialised, bayGio: () => numb
     if (!daKhoiTao && bayGio() - lanHoi >= HOI_LAI_SAU_MS) {
       lanHoi = bayGio();
       try {
-        daKhoiTao = hoi();
+        try {
+          daKhoiTao = hoi();
+        } catch (e) {
+          /*
+           * HOTFIX-CHAM-1011: luồng Turso hết hạn sau lúc rảnh ("stream not found", "connection closed") — như bộ thử lại của đường API
+           * (app.ts `thuLaiKhiMatKetNoi`): bỏ kết nối chết, hỏi lại MỘT lần. Trước đây trả 503 + nhớ 30 s (màn đăng nhập báo "chưa vào được")
+           * và giữ kết nối chết cho request kế trên cùng bản hàm (log 10/11 12:58: cùng mã luồng hỏng hai lần).
+           */
+          if (!laLoiMatKetNoiTurso(e)) throw e;
+          moLaiKetNoi();
+          daKhoiTao = hoi();
+        }
         loi = false;
       } catch (e) {
         loi = true;
