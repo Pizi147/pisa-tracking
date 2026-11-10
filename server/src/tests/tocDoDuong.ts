@@ -422,6 +422,10 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Quản trị', vai: ['QT'], url: '/admin/mo-sua-lich-test' },
   /* CAU-HINH-CASE-SOS: tab Case & SOS — bản đang dùng (1 câu) + 30 dòng nhật ký + đếm "đang dùng" (1 câu UNION). QL chỉ xem. */
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh-case-sos' },
+  /* QTV2-QUYEN: tab Quyền & nhật ký — nhật ký chung (thay /admin/overview) + đơn vị báo cáo ở tab Chi nhánh. */
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=chi-nhanh' },
+  { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/don-vi' },
 ];
 
 /**
@@ -466,6 +470,8 @@ export const TRAN: Record<string, number> = {
   'QL /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 28, 'GVCN /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 26, 'GVBM /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 14, 'GVCN_THUONG /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 26, 'QT /giao-vien/7/chi-so/o?cot=tien-bo&tu=2026-06-22&den=2026-09-14': 27,   // PT-PANEL: đo 21 · 19 · 4 (403) · 19 · 20
   /* SUA-NHO-QUYEN: Quản trị › Tài khoản — đo 30/10 trước 138 câu (4 câu × tài khoản) → sau 11; trần = max(đo+10, ⌈đo×1,3⌉). */
   'QT /admin/accounts': 21,
+  /* QTV2-QUYEN: nhật ký chung + đơn vị báo cáo (thay /admin/overview: đọc mọi tài khoản + 6 COUNT(*)) — đo 11/11: 4 · 3 câu; trần = max(đo+10, ⌈đo×1,3⌉). */
+  'QT /admin/nhat-ky': 14, 'QL /admin/nhat-ky': 14, 'QT /admin/nhat-ky?muc=chi-nhanh': 14, 'QL /admin/nhat-ky?muc=chi-nhanh': 14, 'QT /admin/don-vi': 13, 'QL /admin/don-vi': 13,
   /* PR-B: phiếu bàn giao đổi GV (MB FT 101, 33 em, tự điền sống) — trần = max(đo + 10, ⌈đo × 1,3⌉), đo 30/10: QL 21 · QT 20 · GVCN 21 · GVBM 20. */
   'QL /ban-giao-gv/1': 31, 'QT /ban-giao-gv/1': 30, 'GVCN /ban-giao-gv/1': 31, 'GVBM /ban-giao-gv/1': 30,
   'QL /lenh-chuyen/{lenhBg}/ban-giao': 23, 'QT /lenh-chuyen/{lenhBg}/ban-giao': 23,   // BAN-GIAO-NHAN 05/11: đo 13 → max(n+10, ⌈n×1,3⌉)

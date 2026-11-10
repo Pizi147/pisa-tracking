@@ -100,9 +100,10 @@ export async function runPrDonBTests(t: YThucTestKit) {
     const route = fs.readFileSync(path.join(ROOT, 'server/src/routes/index.ts'), 'utf8');
     assert(/role-permissions[\s\S]{0,300}thayDoi/.test(route), 'route chưa đọc thayDoi');
   });
-  check('Dọn-b (13b) · bảng quyền: nút "Sửa quyền" mở chế độ sửa; chân "n thay đổi · Huỷ thay đổi · Lưu"; ô không bấm được khi chưa sửa', () => {
-    const s = doc('web/src/modules/platform/AdminPage.tsx');
-    assert(s.includes('Sửa quyền') && s.includes('thay đổi') && /'Lưu'|>Lưu</.test(s) && s.includes("'Huỷ thay đổi'") && s.includes('disabled={!dangSua'), 'AdminPage');
+  /* QTV2-QUYEN (chủ SP 11/11, Quản trị V2): bỏ chế độ "Sửa quyền" — Quản trị bấm thẳng công tắc của vai đang chọn; chân "n thay đổi · Huỷ thay đổi · Lưu" + hộp xác nhận giữ. */
+  check('Dọn-b (13b) → QTV2 · bảng quyền: công tắc từng quyền; chân "n thay đổi · Huỷ thay đổi · Lưu"; lưu qua hộp xác nhận', () => {
+    const s = doc('web/src/modules/platform/QuyenTheoVai.tsx');
+    assert(!s.includes("t('Sửa quyền')") && s.includes('thay đổi') && /'Lưu'|>Lưu</.test(s) && s.includes("'Huỷ thay đổi'") && s.includes('role="switch"') && s.includes('ConfirmDialog'), 'QuyenTheoVai');
     assert(s.includes('thayDoi'), 'Lưu gửi thayDoi');
   });
   check('Dọn-b (13c/13e) → P7 · Lưu trữ: Quay lại học có Hoàn tác (về Lưu trữ); dòng không mờ opacity-70', () => {

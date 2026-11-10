@@ -112,6 +112,7 @@ import * as gioiHan from '../platform/gioiHanThu.ts';
 import * as sysconfigSvc from '../platform/sysconfig.ts';
 import * as bangQuyDoiSvc from '../platform/bangQuyDoi.ts';
 import * as cauHinhCaseSosSvc from '../platform/cauHinhCaseSos.ts';
+import * as nhatKyQuanTriSvc from '../platform/nhatKyQuanTri.ts';
 import * as moSuaLichTestSvc from '../platform/moSuaLichTest.ts';
 import * as mgmtSvc from '../worklist/mgmttasks.ts';
 import * as highlightSvc from '../worklist/highlights.ts';
@@ -3053,52 +3054,13 @@ api.get('/admin/permissions/matrix', requireAuth, wrap((req) => sysconfigSvc.maT
 api.get('/admin/roles/:key/permissions/:perm/impact', requireAuth, wrap((req) =>
   sysconfigSvc.anhHuongOVai(principalOf(req), String(req.params.key), String(req.params.perm))));
 
-api.get('/admin/overview', requireAuth, wrap((req) => {
-  const p = principalOf(req);
-  if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true })) {
-    throw new HttpError(403, 'Chỉ Quản trị hệ thống mới xem được phần này.');
-  }
-  const conn = db();
-  const roles = conn.prepare('SELECT id, key, name_vi AS name FROM roles ORDER BY id').all() as any[];
-  const permissions = conn.prepare('SELECT id, key, name_vi AS name FROM permissions ORDER BY id').all() as any[];
-  const matrix = conn
-    .prepare(
-      `SELECT r.key AS role_key, p.key AS perm_key FROM role_permissions rp
-         JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id`,
-    )
-    .all() as any[];
-  const users = (conn.prepare("SELECT * FROM users WHERE status='active' ORDER BY id").all() as any[]).map((u) => {
-    const up = loadPrincipal(u.id);
-    return {
-      id: u.id, code: u.code, fullName: u.full_name, title: u.title,
-      grants: up.grants.map((g) => ({ role: g.roleKey, roleName: g.roleName, scope: g.branchName ?? 'Toàn hệ thống' })),
-      assignments: up.assignments.length,
-    };
-  });
-  return {
-    roles,
-    permissions,
-    matrix: Object.fromEntries(roles.map((r) => [r.key, matrix.filter((m) => m.role_key === r.key).map((m) => m.perm_key)])),
-    users,
-    branches: conn.prepare('SELECT id, code, name FROM branches ORDER BY id').all(),
-    units: conn.prepare('SELECT id, code, name, kind, branch_id AS branchId FROM reporting_units ORDER BY seq').all(),
-    counts: {
-      students: (conn.prepare('SELECT COUNT(*) AS n FROM students').get() as any).n,
-      classes: (conn.prepare('SELECT COUNT(*) AS n FROM classes').get() as any).n,
-      attempts: (conn.prepare('SELECT COUNT(*) AS n FROM assessment_attempts').get() as any).n,
-      cycles: (conn.prepare('SELECT COUNT(*) AS n FROM learning_cycles').get() as any).n,
-      milestones: (conn.prepare('SELECT COUNT(*) AS n FROM case_milestones').get() as any).n,
-      cases: (conn.prepare('SELECT COUNT(*) AS n FROM sos_cases').get() as any).n,
-    },
-    audit: conn
-      .prepare(
-        `SELECT a.id, a.action, a.entity_type AS entityType, a.entity_label AS entityLabel,
-                a.created_at AS createdAt, u.full_name AS actorName
-           FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id ORDER BY a.id DESC LIMIT 40`,
-      )
-      .all(),
-  };
-}));
+/* QTV2-QUYEN: Nhật ký chung của Quản trị (thay `/admin/overview` — 6 câu COUNT(*), đọc mọi tài khoản, 40 dòng nhật ký). */
+api.get('/admin/don-vi', requireAuth, wrap((req) => nhatKyQuanTriSvc.donViBaoCao(principalOf(req))));
+api.get('/admin/nhat-ky', requireAuth, wrap((req) => nhatKyQuanTriSvc.nhatKyQuanTri(principalOf(req), {
+  muc: typeof req.query.muc === 'string' ? req.query.muc : null, nguoi: toInt(req.query.nguoi) ?? null,
+  tu: typeof req.query.tu === 'string' ? req.query.tu : null, den: typeof req.query.den === 'string' ? req.query.den : null,
+  tiep: toInt(req.query.tiep) ?? null,
+})));
 
 // ==================================================================== tài khoản (vòng 4 phase 4)
 

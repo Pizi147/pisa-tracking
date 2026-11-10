@@ -9946,6 +9946,9 @@ await runPrGiamDocHsgvTests({ check, assert, conn, P } as any);
 // ==================================================================== SOS-TAM-PA (chủ SP 11/11: SOS tạm ghi mô tả + PA · PA GV ↔ PA quy chế lúc chốt · Chọn PA · thẻ QL 3 ngày)
 const { runPrSosTamPaTests } = bocTep('prSosTamPa', await import('./prSosTamPa.tests.ts'));
 await runPrSosTamPaTests({ check, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
+// ==================================================================== QTV2-QUYEN (chủ SP 11/11, Quản trị V2 PR-2: nhật ký chung, quyền theo vai)
+const { runPrQtv2QuyenTests } = bocTep('prQtv2Quyen', await import('./prQtv2Quyen.tests.ts'));
+await runPrQtv2QuyenTests({ check, assert, assertThrows, conn, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

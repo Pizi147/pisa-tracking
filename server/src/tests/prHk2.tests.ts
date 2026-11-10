@@ -130,7 +130,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
       ['web/src/modules/classes/TabTongKetLop.tsx', 1],
       ['web/src/modules/test/lichTest/HangLop.tsx', 1], ['web/src/modules/test/lichTest/KhoiNo.tsx', 1],
       ['web/src/ui/Bang.tsx', 1],   // BANG-1: lưới FT / lớp thường dính đầu qua `Bang dinh` (kiểm riêng bên dưới)
-      ['web/src/modules/platform/AdminPage.tsx', 1], ['web/src/modules/platform/AccountsAdmin.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 1],   // OV-6b1: một bảng Chương trình (gộp Lộ trình)
+      ['web/src/modules/platform/QuyenTheoVai.tsx', 1], ['web/src/modules/platform/AccountsAdmin.tsx', 1], ['web/src/modules/platform/CatalogAdmin.tsx', 1],   // OV-6b1: một bảng Chương trình (gộp Lộ trình)
       ['web/src/modules/worklist/MgmtTasksPage.tsx', 1], ['web/src/modules/worklist/MeetingPage.tsx', 1],
     ];
     assert(/dinh=\{gon \? '1440' : false\}/.test(doc('web/src/modules/cham/LuoiFT.tsx')) && /\sdinh\s/.test(doc('web/src/modules/cham/LuoiThuong.tsx')), 'lưới FT / lớp thường phải dính đầu cột (Bang dinh)');
@@ -373,8 +373,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   check('C26 · "Khác" (T12): nhóm quyền "Chưa xếp nhóm", ô Đề xuất sửa "Thông tin khác"; Lưu trữ rỗng khi tìm: "Không có … khớp"', () => {
-    const ad = doc('web/src/modules/platform/AdminPage.tsx');
-    assert(!/ten: (?:t\()?'Khác'/.test(ad) && /ten: t\('Chưa xếp nhóm'\)/.test(ad), 'AdminPage');   // EN-SOT: chữ qua t()
+    const ad = doc('web/src/modules/platform/QuyenTheoVai.tsx');   // QTV2-QUYEN: nhóm quyền chuyển từ AdminPage
+    assert(!/ten: (?:t\()?'Khác'/.test(ad) && /ten: t\('Chưa xếp nhóm'\)/.test(ad), 'QuyenTheoVai');   // EN-SOT: chữ qua t()
     const dx = doc('web/src/modules/duyet/DeXuatSuaPanel.tsx');
     assert(/nhan: t\('Thông tin khác'\)/.test(dx) && !/nhan: (?:t\()?'Khác'/.test(dx), 'DeXuatSuaPanel');
     const lt = doc('web/src/modules/students/LuuTruPage.tsx');
