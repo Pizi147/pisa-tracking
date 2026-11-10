@@ -946,7 +946,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
               {!cs.length ? <span className="text-slate-500 max-md:hidden">—</span> : (
                 <span className="flex min-w-0 flex-col">
                   <b className="text-slate-100">Case {skillShort(k)}{cs.length > 1 && <span className="font-normal text-slate-400"> +{cs.length - 1}</span>}</b>
-                  <span className="text-xs text-slate-400 max-md:hidden">{cs[0].pas.some((p) => !p.xong) ? t('PA đang làm') : t('Chưa có PA')}</span>
+                  <span className="text-xs text-slate-400 max-md:hidden">{cs[0].pas.some((p) => !p.xong) ? t('PA đang làm') : cs[0].pas.length ? t('{n} PA xong · chờ Hoàn thành', { n: cs[0].pas.length }) : t('Chưa có PA')}</span>
                 </span>
               )}
             </div>
