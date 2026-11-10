@@ -1,6 +1,6 @@
 import { db, theoLo, tx } from '../db.ts';
 import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
-import {
+import { maNhomHopLe,
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
   type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
@@ -11,7 +11,7 @@ import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { suggestCaseOwner } from './owner.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
-import { addIssues, caseAccess, caseDetail, caseTitleOf, coTheXacNhanCase, suaPa } from './cases.ts';
+import { addIssues, caseAccess, caseDetail, caseTitleOf, coTheXacNhanCase, maNhomCuaCase, suaPa } from './cases.ts';
 import { chenPa } from './taoPa.ts';
 import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -191,10 +191,11 @@ export function tenGiuaCua(c: { title?: string | null; topic?: string | null; ca
  */
 export function kiemNoiDungCase(topic: string | null, ct: string | null, input: {
   primaryCode?: string | null; observation?: string | null; urgency?: string | null; moTa?: string | null; tenGiua?: string | null;
-}, o: { /** N35: mô tả đang lưu — gửi lại nguyên văn chữ cũ dài thì giữ. */ moTaCu?: string | null; khongDoiMoTa?: boolean; /** SV-NX-CASE: Case MT chưa mô tả, người sửa không gửi mô tả / nhóm (chỉ đổi tên, mức độ) — không đòi nhóm. */ boNguyenNhan?: boolean } = {}) {
+}, o: { /** N35: mô tả đang lưu — gửi lại nguyên văn chữ cũ dài thì giữ. */ moTaCu?: string | null; khongDoiMoTa?: boolean; /** SV-NX-CASE: Case MT chưa mô tả, người sửa không gửi mô tả / nhóm (chỉ đổi tên, mức độ) — không đòi nhóm. */ boNguyenNhan?: boolean;
+  /** CAU-HINH-CASE-SOS: mã nhóm đang gắn trên Case (đã ẩn vẫn giữ được). */ giu?: readonly string[] } = {}) {
   const primaryCode = String(input.primaryCode ?? '').trim();
   if (!primaryCode && !o.boNguyenNhan) throw badRequest('Chọn nhóm nguyên nhân.');
-  if (primaryCode && (!issueBranchOf(primaryCode) || !issuesForTopic(topic as string, ct).some((i) => i.code === primaryCode))) {
+  if (primaryCode && (!issueBranchOf(primaryCode) || !maNhomHopLe(topic as string, ct, o.giu ?? []).has(primaryCode))) {
     throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic ?? '', ct) });
   }
   const observation = String(input.observation ?? '').trim() || null;
@@ -250,7 +251,8 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
   const nhom = input.nhom === undefined || input.nhom === null ? (input.primaryCode ? [String(input.primaryCode)] : []) : input.nhom;
   if (!Array.isArray(nhom) || !nhom.every((x) => typeof x === 'string')) throw badRequest('Nhóm nguyên nhân không hợp lệ.');
   if (new Set(nhom).size !== nhom.length) throw badRequest('Nhóm nguyên nhân bị trùng.');
-  const boNhom = new Set(issuesForTopic(c.topic as string, ct).map((i) => i.code));
+  const giuNhom = maNhomCuaCase(c.id);
+  const boNhom = maNhomHopLe(c.topic as string, ct, giuNhom);
   if (nhom.slice(1).some((x) => !boNhom.has(x))) throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(c.topic ?? '', ct) });
   const moTaGui = String(input.moTa ?? '').trim();
   const { primaryCode, observation, urgency, moTa, tenGiua } = kiemNoiDungCase(c.topic, ct, {
@@ -259,7 +261,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
     observation: input.observation ?? (nhom[0] && laKhac(nhom[0]) ? moTaGui : null),
     urgency: input.urgency ?? c.urgency ?? ((c.sos_level ?? 0) >= 3 ? 'urgent' : 'attention'),
     tenGiua: input.tenGiua === undefined || input.tenGiua === null ? tenGiuaCua(c) : input.tenGiua,
-  }, { moTaCu: c.summary });
+  }, { moTaCu: c.summary, giu: giuNhom });
   const today = demoToday();
   return tx(() => {
     if (rutKtd) rutKhongTheoDoiTrongTx(conn, p, caseId);

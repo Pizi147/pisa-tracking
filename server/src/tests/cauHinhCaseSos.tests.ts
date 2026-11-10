@@ -149,4 +149,63 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     const goc = sao(dm.cauHinhGoc().phuong_an); goc.muc = goc.muc.filter((x: any) => x.ma !== 'teaching_adjust');
     assert(loi(() => svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: goc, tuPhienBan: 0 }))?.status === 400, 'mục gốc không bỏ được');
   }));
+
+  /* ---- Task 4: Case / PA đọc cấu hình ---- */
+  const cases: any = await import('../cases/cases.ts');
+  const mot = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
+  const LOP = t.classId('MB FT 101');
+  const mb = mot(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
+  let so = 0;
+  const moiEm = (): number => {
+    const tag = `CHCS-${++so}-${Math.random().toString(36).slice(2, 6)}`;
+    const now = new Date().toISOString();
+    const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
+      .run(`PISA-${tag}`, `Học viên ${tag}`, `hoc vien ${tag.toLowerCase()}`, mb, now).lastInsertRowid);
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(sid, LOP, now);
+    conn.prepare(`INSERT INTO learning_cycles (student_id, seq, route, started_at, status, created_at) VALUES (?, 1, 'LT1', '2026-07-27', 'active', ?)`).run(sid, now);
+    return sid;
+  };
+  const taoCase = (sid: number, code: string) => cases.reportIssue(P.lrTeacher, {
+    studentId: sid, topic: 'listening', title: `Nghe sót số liệu ${so}`, summary: 'Section 1–2 sai 6/20 câu điền số, nhầm 15 và 50.',
+    primaryCode: code, idempotencyKey: `chcs-case-${so}`,
+  }).id as number;
+  const anMuc = (ma: string) => {
+    const d = sao(dm.cauHinh('nguyen_nhan').du_lieu);
+    for (const b of ['ft', 'thuong']) for (const ds of Object.values(d[b]) as any[]) for (const m of ds) if (m.ma === ma) m.an = true;
+    return svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: d, tuPhienBan: dm.cauHinh('nguyen_nhan').id });
+  };
+
+  check('CHCS-AN · nhóm ẩn: không ở ô chọn, tạo Case với nhóm đó 400; Case cũ đang gắn → sửa Case giữ nhóm 200; Case ghi phiên bản nhóm lúc chọn', () => thu(() => {
+    const ma = 'student.listening.focus';
+    const cu = taoCase(moiEm(), ma);
+    assert(mot('SELECT taxonomy_version v FROM case_issues WHERE case_id = ?', cu).v === 1, 'bản gốc: taxonomy_version = 1 như dữ liệu cũ');
+    const r = anMuc(ma);
+    assert(!dm.issuesForTopic('listening', 'FT').some((i: any) => i.code === ma), 'ô chọn không còn');
+    const e = loi(() => taoCase(moiEm(), ma));
+    assert(e?.status === 400, `tạo Case với nhóm ẩn → 400, có ${e?.status} ${e?.message}`);
+    cases.suaCase(P.lrTeacher, cu, { primaryCode: ma, summary: 'Section 1–2 sai 7/20 câu điền số, nhầm 15 và 50 — thêm 1 câu.' });
+    assert(mot(`SELECT taxonomy_code c FROM case_issues WHERE case_id = ? AND role = 'primary'`, cu).c === ma, 'Case cũ giữ nhóm đã ẩn');
+    const moi = taoCase(moiEm(), 'student.listening.language');
+    assert(mot('SELECT taxonomy_version v FROM case_issues WHERE case_id = ?', moi).v === r.nguyen_nhan.id, 'Case mới ghi phiên bản đang dùng');
+  }));
+
+  check('CHCS-PA · PA mới "cần QL duyệt" → chờ QL như Đề xuất; cờ "Đếm số buổi" → có Số buổi; PA ẩn không thêm được; đổi tên Tutor đổi nhãn; PA ghi phiên bản', () => thu(() => {
+    const d = sao(dm.cauHinh('phuong_an').du_lieu);
+    const k = d.muc.findIndex((m: any) => m.ma === 'other_proposal');
+    d.muc.splice(k, 0, { ma: '', ten: 'Học kèm 1–1', nhom: 'can_ql_duyet', nguoiDay: true, soBuoi: true });
+    d.muc.find((m: any) => m.ma === 'tutor').ten = 'Học Tutor 1 kèm 1';
+    d.muc.find((m: any) => m.ma === 'extra_homework').an = true;
+    const r = svc.luuCauHinh(P.admin, 'phuong_an', { duLieu: d, tuPhienBan: 0 });
+    assert(dm.isProposalKind('pa.m1') && dm.coSoBuoi('pa.m1') && dm.nhanNguoiDay('pa.m1') === 'Người dạy', 'cờ PA mới');
+    assert(dm.INTERVENTION_KIND_LABEL.tutor === 'Học Tutor 1 kèm 1' && dm.tenLoaiPa('tutor', null) === 'Học Tutor', 'đổi tên: hiện tên mới, bản gốc giữ tên cũ');
+    const kinds = dm.interventionKindsFor();
+    assert(kinds.proposals.includes('pa.m1') && !kinds.selfServe.includes('extra_homework'), `danh sách chọn: ${JSON.stringify(kinds)}`);
+    const c = taoCase(moiEm(), 'student.listening.language');
+    const iv = cases.recordIntervention(P.lrTeacher, c, { kind: 'pa.m1', description: 'Học kèm 1–1 với GV Listening 2 buổi/tuần', status: 'planned', soBuoi: 4 });
+    const pa = iv.interventions.find((x: any) => x.kind === 'pa.m1');
+    const dong = mot('SELECT needs_approval, so_buoi, pb_loai FROM case_interventions WHERE id = ?', pa.id);
+    assert(dong.needs_approval === 1 && dong.so_buoi === 4 && dong.pb_loai === r.phuong_an.id, `PA mới: ${JSON.stringify(dong)}`);
+    const e = loi(() => cases.recordIntervention(P.lrTeacher, c, { kind: 'extra_homework', description: 'Thêm 2 đề Listening mỗi tuần', status: 'started', startedDate: t.TODAY, performerSelf: true }));
+    assert(e?.status === 400, `PA ẩn → 400, có ${e?.status}`);
+  }));
 }

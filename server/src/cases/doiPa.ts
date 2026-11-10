@@ -5,7 +5,7 @@ import type { Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { caseAccess, caseDetail, kiemQuyenPa, loadCase, recordIntervention } from './cases.ts';
 import { choDoiPa, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
-import { DOI_PA_TOI_THIEU, INTERVENTION_KIND_LABEL, LOAI_PA_DOI, laPaMacDinh, type InterventionKind } from '../../../shared/domain/index.ts';
+import { DOI_PA_TOI_THIEU, INTERVENTION_KIND_LABEL, loaiPaDoi, laPaMacDinh, type InterventionKind } from '../../../shared/domain/index.ts';
 
 /**
  * ĐỀ XUẤT PA KHÁC (OV-13b, mockup OV-13 §8–§9) — PA mặc định (quy chế chưa / đã xác nhận · Bổ trợ) đổi sang loại khác qua Quản lý duyệt. Dùng lại
@@ -38,7 +38,7 @@ function kiemDoiPa(p: Principal, goc: any, v: VaoDoiPa) {
   if (choDoiPa(goc)) throw badRequest('PA này đang chờ Quản lý duyệt đổi PA — Rút đề xuất cũ rồi gửi lại.');
   if (chuaChay && !sosCaseState(goc.case_id).hasCause) throw badRequest('Ghi Mô tả Case (nguyên nhân) trước, rồi mới đề xuất PA khác.');
   const kind = String(v.kind ?? '');
-  if (!(LOAI_PA_DOI as readonly string[]).includes(kind)) throw badRequest('Chọn loại PA mới.');
+  if (!loaiPaDoi().includes(kind)) throw badRequest('Chọn loại PA mới.');
   if (kind === goc.kind) throw badRequest('PA mới phải khác loại PA hiện tại.');
   const lyDo = typeof v.lyDo === 'string' ? v.lyDo.trim() : '';
   if (lyDo.length < DOI_PA_TOI_THIEU) throw loi(400, 'Lý do đổi PA cần ít nhất {n} ký tự.', { n: DOI_PA_TOI_THIEU });

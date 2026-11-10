@@ -1,6 +1,7 @@
 import { db, theoLo, THAM_SO_TOI_DA } from '../db.ts';
 import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
-import { docNhomNguyenNhan, issuesForTopic, laKhac } from '../../../shared/domain/index.ts';
+import { docNhomNguyenNhan, issuesForTopic, laKhac, maNhomHopLe } from '../../../shared/domain/index.ts';
+import { pbNguyenNhan } from './cases.ts';
 import { LA_CASE_MT, dongBoTrangThaiCaseLo } from './sosState.ts';
 
 /**
@@ -49,8 +50,10 @@ export function dongBoNguyenNhanMt(theo: { caseIds?: readonly number[]; attemptI
 /** Ghi mô tả + nhóm của Case từ nhận xét + nhóm của ô (`created_by` NULL = đi theo nhận xét), nguồn = lượt của ô. Trả true khi có đổi. */
 export function ganMoTaTuO(conn: any, caseId: number, topic: string | null, nguon: number, nx: string, nhomJson: string | null): boolean {
   const boNhom = issuesForTopic(topic ?? '');
-  const hopLe = new Set(boNhom.map((i) => i.code));
-  const nhom = docNhomNguyenNhan(nhomJson).filter((c) => hopLe.has(c));
+  const nhomO = docNhomNguyenNhan(nhomJson);
+  /* CAU-HINH-CASE-SOS: nhóm của ô đã kiểm lúc lưu điểm (kể cả nhóm Quản trị ẩn sau đó) — giữ đúng nhánh, bỏ mã lạ. */
+  const hopLe = maNhomHopLe(topic ?? '', null, nhomO);
+  const nhom = nhomO.filter((c) => hopLe.has(c));
   const khac = boNhom.find((i) => laKhac(i.code))?.code ?? null;
   const muon = nhom.length ? nhom : khac ? [khac] : [];
   const co = conn.prepare(`SELECT role, taxonomy_code, observation, created_by FROM case_issues WHERE case_id = ? ORDER BY CASE role WHEN 'primary' THEN 0 ELSE 1 END, id`).all(caseId) as any[];
@@ -61,7 +64,7 @@ export function ganMoTaTuO(conn: any, caseId: number, topic: string | null, nguo
   const luc = new Date().toISOString();
   conn.prepare('DELETE FROM case_issues WHERE case_id = ?').run(caseId);
   muon.forEach((code, i) => conn.prepare(`INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at)
-      VALUES (?,?,?,1,?,?,NULL,?)`).run(caseId, i ? 'secondary' : 'primary', code, topic ?? null, i ? null : nx, luc));
+      VALUES (?,?,?,?,?,?,NULL,?)`).run(caseId, i ? 'secondary' : 'primary', code, pbNguyenNhan(), topic ?? null, i ? null : nx, luc));
   conn.prepare('UPDATE sos_cases SET mo_ta_attempt_id = ?, updated_at = ? WHERE id = ?').run(nguon, luc, caseId);
   capNhatMoTaLuc(conn, caseId);   // XM-VIEC-DUNG-HAN b: ngày xong Mô tả Case
   return true;

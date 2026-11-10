@@ -3,7 +3,7 @@ import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { anhEmNhom, boTroCuaCase, chepKetQuaNhom, quyenBoTro, type BoTroDto } from './boTro.ts';
 import { ghiMiniTestTrongTx, kiemMiniTest, laNguoiGiuMiniTestCuaPa } from '../normal/cuoiKhoa.ts';
 import { TIN_HIEU_CASE_DA_XOA } from './signals.ts';
-import {
+import { mucPaCua, maNhomHopLe, cauHinh,
   DISPOSITIONS, INTERVENTION_KINDS, SYSTEM_KINDS, INTERVENTION_KIND_LABEL, INTERVENTION_STATUSES, tenPaViecTiep,
   INTERVENTION_STATUS_LABEL, shortDate,
   FOLLOWUP_OUTCOMES, CASE_DECISIONS, CASE_OUTCOMES, ENTRY_SKILLS,
@@ -931,9 +931,9 @@ export function addIssues(caseId: number, actor: number | null, input: {
     conn
       .prepare(
         `INSERT INTO case_issues (case_id, role, taxonomy_code, taxonomy_version, skill, observation, created_by, created_at)
-         VALUES (?,?,?,1,?,?,?,?)`,
+         VALUES (?,?,?,?,?,?,?,?)`,
       )
-      .run(caseId, role, code, input.topic ?? null, obs ?? null, actor, nowIso());
+      .run(caseId, role, code, pbNguyenNhan(), input.topic ?? null, obs ?? null, actor, nowIso());
   };
   if (input.primaryCode) add(input.primaryCode, 'primary', input.observation);
   for (const c of input.secondaryCodes ?? []) add(c, 'secondary', null);
@@ -999,7 +999,9 @@ export function recordIntervention(p: Principal, caseId: number, input: {
   /* RKC-2b (PR-S3F #2 mở): chờ QL duyệt "Không cần theo dõi" → hỏi; đồng ý = rút đề nghị đó cùng giao dịch thêm PA (duyệt sau không huỷ oan PA mới). */
   const rutKtd = !!sosCaseState(caseId).choDuyetKhongTheoDoi;
   if (rutKtd) canXacNhan(CAU_RUT_KTD, undefined, NUT_RUT_KTD);
-  if (!(INTERVENTION_KINDS as readonly string[]).includes(input.kind) || (SYSTEM_KINDS as readonly string[]).includes(input.kind)) throw badRequest('Loại hỗ trợ không hợp lệ.');   // PR-LT2a: PA Bổ trợ chỉ máy tạo
+  /* CAU-HINH-CASE-SOS: loại PA = mã cũ chỉ đọc hoặc mục CHƯA ẨN của cấu hình; PA Bổ trợ chỉ máy tạo (PR-LT2a). */
+  const mucLoai = mucPaCua(input.kind);
+  if ((SYSTEM_KINDS as readonly string[]).includes(input.kind) || (mucLoai ? mucLoai.an : !(INTERVENTION_KINDS as readonly string[]).includes(input.kind))) throw badRequest('Loại hỗ trợ không hợp lệ.');
   const status = input.status && (INTERVENTION_STATUSES as readonly string[]).includes(input.status)
     ? input.status : 'completed';
   for (const [d, label] of [[input.plannedDate, 'Ngày dự kiến'], [input.startedDate, 'Ngày bắt đầu'],
@@ -1443,8 +1445,8 @@ export function suaCase(p: Principal, caseId: number, input: {
     observation: input.observation !== undefined ? input.observation : chinh?.observation ?? null,
     urgency: input.urgency ?? c.urgency ?? DEFAULT_URGENCY,
     moTa: input.summary ?? c.summary, tenGiua: input.title ?? c.title ?? tenGiuaCua(c),
-  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: (st.laMt || daXong) && !chinh && !guiMoTa });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài; RKC-2b: Case đã xong chưa từng có nguyên nhân — đổi tên / mức không đòi nhóm
-  if (nhom?.slice(1).some((x) => !issuesForTopic(topic, ct).some((i) => i.code === x))) {
+  }, { moTaCu: c.summary, khongDoiMoTa: st.laMt, boNguyenNhan: (st.laMt || daXong) && !chinh && !guiMoTa, giu: maNhomCuaCase(caseId) });   // OV-13a (Q1): Case MT không có ô Mô tả — mô tả là nhận xét của bài; RKC-2b: Case đã xong chưa từng có nguyên nhân — đổi tên / mức không đòi nhóm
+  if (nhom?.slice(1).some((x) => !maNhomHopLe(topic, ct, maNhomCuaCase(caseId)).has(x))) {
     throw loi(400, 'Phân loại đã chọn không thuộc bộ phân loại của {chuDe}.', { chuDe: caseTopicLabel(topic, ct) });
   }
   const phuCu = (conn.prepare(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'secondary' ORDER BY id`).all(caseId) as any[]).map((x) => x.taxonomy_code as string);
@@ -4864,3 +4866,9 @@ export function mtKeTheoPa(caseId: number): (iv: { created_at: string }) => numb
     return m ? m.attempt_no + 1 : null;
   };
 }
+
+/** CAU-HINH-CASE-SOS: phiên bản nhóm nguyên nhân ghi vào `case_issues.taxonomy_version` (bản gốc = 1 như dữ liệu cũ). */
+export const pbNguyenNhan = (): number => cauHinh('nguyen_nhan').id || 1;
+/** Mã nhóm đang gắn trên Case — sửa / xác nhận Case giữ được nhóm Quản trị đã ẩn. */
+export const maNhomCuaCase = (caseId: number): string[] =>
+  (db().prepare('SELECT taxonomy_code FROM case_issues WHERE case_id = ?').all(caseId) as any[]).map((x) => x.taxonomy_code as string);

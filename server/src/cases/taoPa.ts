@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, theoLo } from '../db.ts';
 import { badRequest, nowIso, loi as loiHttp } from '../util.ts';
-import { coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
+import { cauHinh, coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
 
 /**
  * PR-PA (§8): MỘT hàm tạo PA cho mọi đường (tay, quy chế SOS, bổ trợ Giữa khoá, bổ trợ miễn phí, Tutor kỳ vọng) — một bộ cột cố định,
@@ -22,7 +22,7 @@ export type DongPa = {
 const COT = ['case_id', 'kind', 'description', 'so_buoi', 'performer_user_id', 'performer_name', 'recorded_by', 'status',
   'planned_date', 'started_date', 'completed_date', 'followup_due', 'action_due', 'cycle_no', 'cycle_started_on',
   'needs_approval', 'approval_state', 'approval_due', 'reschedule_target', 'preset', 'confirmed_by', 'confirmed_at',
-  'moc_quy_che', 'nhom_bo_tro', 'idempotency_key', 'created_at'];
+  'moc_quy_che', 'nhom_bo_tro', 'idempotency_key', 'created_at', 'pb_loai'];
 
 function giaTri(x: DongPa, luc: string): unknown[] {
   const ten = (x.performerName ?? '').trim() || null;
@@ -35,7 +35,9 @@ function giaTri(x: DongPa, luc: string): unknown[] {
     x.plannedDate ?? null, x.startedDate ?? null, x.completedDate ?? null, x.followupDue ?? null, x.actionDue ?? null, 1, x.cycleStartedOn ?? null,
     x.needsApproval ? 1 : 0, x.approvalState ?? null, x.approvalDue ?? null, x.rescheduleTarget ?? null,
     x.preset ? 1 : 0, x.confirmedBy ?? null, x.confirmedAt ?? null,
-    x.mocQuyChe ?? null, x.nhomBoTro ?? null, x.idempotencyKey ?? null, x.createdAt ?? luc];
+    x.mocQuyChe ?? null, x.nhomBoTro ?? null, x.idempotencyKey ?? null, x.createdAt ?? luc,
+    /* CAU-HINH-CASE-SOS: phiên bản danh sách PA lúc tạo (bản gốc = NULL) — đổi tên / cờ về sau không đổi PA này. */
+    cauHinh('phuong_an').id || null];
 }
 
 /** Chèn THEO LÔ (≤ 900 tham số mỗi câu). Kiểm MỌI dòng trước khi ghi — một dòng sai thì không dòng nào được ghi. Trả id theo thứ tự `dong`. */
