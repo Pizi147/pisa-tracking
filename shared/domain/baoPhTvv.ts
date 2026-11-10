@@ -6,10 +6,9 @@ import { cacBanHan, hanTai } from './hanMacDinh.ts';
 import { addDaysIso } from './sos.ts';
 import { ngayTheoGioVN } from './display.ts';
 
-export const HAN_BAO_PH_NGAY = 4;
 
 /** Hạn từ lúc lưu (ngày `YYYY-MM-DD` hoặc ISO có giờ — đổi về ngày giờ VN trước, 23:30 VN không lệch sang ngày UTC). */
-/** QTV2-HAN: số ngày cộng thêm = hạn (tính cả ngày lưu) − 1, theo bản tại `moc` (gốc 5 − 1 = 4 = `HAN_BAO_PH_NGAY`). */
+/** QTV2-HAN: số ngày cộng thêm = hạn (tính cả ngày lưu) − 1, theo bản tại `moc` (gốc 5 − 1 = 4). */
 export const ngayCongBaoPh = (moc?: string | null) => hanTai('bao_ph_vi_pham', moc).ngay - 1;
 /** Cửa sổ SQL "quay lại": N lớn nhất qua mọi bản (giảm hạn không làm sót việc cũ); `hanBaoPhHieuLuc` lọc lại đúng bản. */
 export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.han.bao_ph_vi_pham.ngay)) - 1;

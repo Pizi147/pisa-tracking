@@ -54,11 +54,14 @@ export function datNguonHan(f: (() => readonly BanHan[]) | null): void { nguon =
 /** Mọi bản (cũ → mới) — câu SQL cần cửa sổ rộng nhất qua mọi bản rồi lọc lại bằng hàm theo bản của từng việc. */
 export const cacBanHan = (): readonly BanHan[] => nguon();
 
+/** Ngày giờ VN của một mốc: ISO có múi giờ (`Z`, `+07:00`) → cộng về +7; chỉ ngày / không múi giờ → giữ (không import display.ts: vòng import). */
+const ngayVN = (s: string) => (/T.*([zZ]|[+-]\d{2}:?\d{2})$/.test(s) && Number.isFinite(Date.parse(s)) ? new Date(Date.parse(s) + 7 * 3_600_000).toISOString().slice(0, 10) : s.slice(0, 10));
+
 /** Bản có hiệu lực tại `moc` (ngày / lúc của việc; thiếu = bây giờ = bản mới nhất). Khoá thiếu trong bản (bản cũ hơn mã) → giá trị gốc. */
 export function hanTai<K extends MaHan>(ma: K, moc?: string | null): HanMacDinh[K] {
   const ds = nguon();
   let chon: BanHan | undefined;
-  const ngay = moc ? moc.slice(0, 10) : null;   // so theo NGÀY: việc sinh cùng ngày lưu theo bản mới
+  const ngay = moc ? ngayVN(moc) : null;   // so theo NGÀY giờ VN: việc sinh cùng ngày lưu theo bản mới
   for (const b of ds) if (!ngay || b.tu.slice(0, 10) <= ngay) chon = b;
   return ((chon ?? GOC).han[ma] ?? HAN_MAC_DINH_GOC[ma]) as HanMacDinh[K];
 }

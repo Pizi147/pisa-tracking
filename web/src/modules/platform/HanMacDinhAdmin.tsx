@@ -1,4 +1,4 @@
-import { useState, type KeyboardEvent } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -47,23 +47,29 @@ export function HanMacDinhAdmin() {
   const quanTri = !!phien.session?.nav?.admin;
   const toast = useToast();
   const [sua, setSua] = useState<MaHan | null>(null);
+  /* Bản vừa lưu (id + hạn) — lưu / Hoàn tác liền nhau không đợi GET tải lại (khỏi 409 giả với chính mình). */
+  const vuaLuu = useRef<{ id: number; han: HanMacDinh } | null>(null);
   if (r.error) return <Card title={t('Hạn mặc định')}><ErrorState message={r.error.message} hint={r.error.hint} status={r.error.status} onRetry={r.reload} /></Card>;
   if (!r.data) return <Card title={t('Hạn mặc định')}><Skeleton rows={8} /></Card>;
   const d = r.data;
   const suaDuoc = d.suaDuoc;
 
-  const gui = async (han: HanMacDinh, tuPhienBan: number, khoiPhucTu?: number) => {
-    const x = await api.put<{ id: number; truocId: number; truocHan: HanMacDinh; doi: unknown[] }>('/admin/cau-hinh/han', { han, tuPhienBan, khoiPhucTu });
+  const hienTai = () => (vuaLuu.current && vuaLuu.current.id >= d.id ? vuaLuu.current : { id: d.id, han: d.han });
+  /* Ghép MỘT hạn lên bản mới nhất rồi lưu — lưu, Về gốc và Hoàn tác đều chỉ đổi đúng hạn đó (không đè hạn khác vừa sửa). */
+  const gui = async (ma: MaHan, v: GiaTri, khoiPhucTu?: number) => {
+    const cur = hienTai();
+    const han = { ...cur.han, [ma]: v } as HanMacDinh;
+    const x = await api.put<{ id: number; truocId: number; truocHan: HanMacDinh; doi: unknown[] }>('/admin/cau-hinh/han', { han, tuPhienBan: cur.id, khoiPhucTu });
+    vuaLuu.current = { id: x.id, han };
     r.reload(); invalidate('/admin/nhat-ky'); void phien.reload();   // phiên mang bản hạn — các màn khác tính theo bản mới ngay
     return x;
   };
   const luu = async (ma: MaHan, v: GiaTri) => {
-    const han = { ...d.han, [ma]: v } as HanMacDinh;
-    const x = await gui(han, d.id);
+    const x = await gui(ma, v);
     if (!x.doi.length) return;
     const ten = DONG.find((q) => q.ma === ma)!.viec;
     toast.hoanTac(t('Đã lưu hạn {viec}', { viec: ten }), () => {
-      gui(x.truocHan, x.id, x.truocId).then(() => toast.push('ok', t('Đã hoàn tác'))).catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
+      gui(ma, x.truocHan[ma] as unknown as GiaTri, x.truocId).then(() => toast.push('ok', t('Đã hoàn tác'))).catch((e: any) => toast.push('error', e?.message ?? t('Không hoàn tác được')));
     }, { key: `han-${ma}` });
   };
 
@@ -140,7 +146,8 @@ function SuaHan({ v, onThoi, onLuu }: { v: GiaTri; onThoi: () => void; onLuu: (v
     try { await onLuu(x); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
   const phim = (e: KeyboardEvent) => {
-    if (e.key === 'Enter') { e.preventDefault(); void luu(); }
+    const o = (e.target as HTMLElement).tagName;
+    if (e.key === 'Enter' && (o === 'INPUT' || o === 'SELECT')) { e.preventDefault(); void luu(); }   // Enter ở nút = bấm nút đó
     if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); ngoai(); }
   };
   return (

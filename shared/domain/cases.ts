@@ -766,7 +766,6 @@ export const SIGNAL_STATUS_LABEL: Record<SignalStatus, string> = {
  * Tín hiệu ghi nhận thứ Hai thì hết thứ Tư, không phải hết thứ Năm. Đây là chỗ rất dễ lệch
  * một ngày, nên con số cộng thêm là 2 chứ không phải 3.
  */
-export const SIGNAL_VERIFY_DAYS = 3;
 
 /**
  * Hạn xác minh, tính từ NGÀY TÍN HIỆU ĐƯỢC GHI NHẬN — không phải từ thứ Hai của tuần thi.

@@ -77,8 +77,6 @@ export function demPhanCong(lop: readonly { ft: boolean; slots: readonly SlotPha
 }
 
 /** Hạn việc bàn giao: 5 ngày tính cả ngày tạo (hàm chung). GV cũ xem lớp cũ tối thiểu 7 ngày từ hiệu lực. */
-export const HAN_BAN_GIAO_GV_NGAY = 5;
-export const XEM_TAM_NGAY = 7;
 export const hanBanGiaoGv = (ngayTao: string) => hanTheoNgay(ngayTao, hanTai('ban_giao_doi_gv', ngayTao).ngay);   // QTV2-HAN
 export const xemDen = (hieuLuc: string) => addDaysIso(hieuLuc, hanTai('ban_giao_doi_gv', hieuLuc).xemNgay);
 

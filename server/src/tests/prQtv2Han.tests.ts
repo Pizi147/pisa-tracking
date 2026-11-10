@@ -71,5 +71,6 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     assert(ds.length === 2 && ds[1].tu === '2026-11-11', `tu ${ds.at(-1)?.tu} · ${ds.length} bản`);
     assert(d.hanTai('xac_nhan_case', '2026-11-10').ngay === 5 && d.hanTai('xac_nhan_case', '2026-11-11').ngay === 6, 'áp ngược cho hôm trước');
     assert(d.hanTai('xac_nhan_case', '2026-11-11').ngayGap === 3, 'thiếu trường không lấy gốc');
+    assert(d.hanTai('xac_nhan_case', '2026-11-10T20:00:00.000Z').ngay === 6 && d.hanTai('xac_nhan_case', '2026-11-10T16:00:00.000Z').ngay === 5, 'mốc ISO UTC không đổi về ngày VN');
   }));
 }
