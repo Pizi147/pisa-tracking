@@ -218,12 +218,12 @@ export async function runPrS3fTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ 9–10 · giao diện (đọc mã nguồn — đúng chỗ đã sửa)
   const web = (f: string) => fs.readFileSync(path.join(REPO, 'web/src/modules', f), 'utf8');
-  check('S3F (9) · (OV-13b) Panel Xác nhận PA luôn là form — Nội dung / hướng dẫn * bắt đầu trống (người xác nhận ghi), ≥ 15 ký tự, gửi kèm Bắt đầu; (10) đầu hồ sơ tách "chờ xác nhận" khỏi "đang theo dõi"', () => {
+  check('S3F (9) · (OV-13b) Panel Xác nhận PA luôn là form — Nội dung / hướng dẫn * bắt đầu trống (người xác nhận ghi), ≥ CHU_TOI_THIEU_CASE (8, #4) ký tự, gửi kèm Bắt đầu; (10) đầu hồ sơ tách "chờ xác nhận" khỏi "đang theo dõi"', () => {
     const c = web('yThuc/CaseSosControls.tsx');
     /* OV-13b (chủ SP 15/10, mockup OV-13 §9): thay "bấm thẳng" của OV-12c — ô Nội dung trống (`paMoi`), không gửi mô tả máy gán. */
     const xn = c.slice(c.indexOf('export function XacNhanPaPanel'), c.indexOf('export function MoTaCasePanel'));
     assert(/\.\.\.paMoi\(pa\.kind\)/.test(xn) && !/description: pa\.description/.test(xn) && /startedDate: batDau/.test(xn), 'Xác nhận PA phải bắt đầu ô Nội dung trống và gửi Bắt đầu');
-    assert(/toiThieu: 15/.test(xn) && /<FormPa/.test(xn) && /placeholder=\{GOI_Y_MO_TA_PA\}/.test(web('cases/FormPa.tsx')), 'mất ràng buộc 15 ký tự / gợi ý');
+    assert(/toiThieu: CHU_TOI_THIEU_CASE/.test(xn) && /<FormPa/.test(xn) && /placeholder=\{GOI_Y_MO_TA_PA\}/.test(web('cases/FormPa.tsx')), 'mất ràng buộc ngưỡng chữ / gợi ý');
     /* PR-VAI-b (Task 3): ô "Case đang mở" cũ → ô Học thuật, mỗi Case một dòng — Case có PA chờ xác nhận nói "xác nhận PA", tách khỏi Case đang theo dõi. */
     const o = d.oHocThuat([{ short: 'L', label: 'Listening', category: 'listening', missed: true, cases: [
       { status: 'open', trangThaiV4: { t: 'can-lam' }, viecTiep: { chu: 'Xác nhận PA Tutor' } },

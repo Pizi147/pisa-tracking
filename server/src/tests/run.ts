@@ -7234,8 +7234,8 @@ check('Nhập bù · Ghi chú kết luận bắt buộc ngay ở máy chủ, kh�
     title: `${authSubjectSkill}: kiểm ghi chú bắt buộc`, summary: 'Case nhập bù để kiểm ghi chú kết luận bắt buộc ở tầng máy chủ.',
     fromDate: '2025-07-01', toDate: '2025-07-05',
     actions: [{ ketQua: 'improved', description: 'Trao đổi với em', performerName: 'GVCN', fromDate: '2025-07-01', toDate: '2025-07-05' }],
-    outcome: 'improved', note: 'quá ngắn',
-  }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 10 ký tự)');
+    outcome: 'improved', note: 'ngắn',   // #4: ngưỡng chung CHU_TOI_THIEU_CASE = 8
+  }), /ghi chú/, 'Gọi thẳng API nhập bù với ghi chú quá ngắn (dưới 8 ký tự)');
   assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Ghi chú quá ngắn bị từ chối mà vẫn để lại một case');
 });
 
@@ -9912,6 +9912,9 @@ await runPrLoTrinhGiuLichTests({ check, assert, conn, P, TODAY, addDays } as any
 // ==================================================================== LO-TRINH-THEO-HV (chủ SP 11/11: lộ trình theo học viên — đổi LT1 / LT2 / RF ở Sửa thông tin)
 const { runPrLoTrinhHvTests } = bocTep('prLoTrinhHv', await import('./prLoTrinhHv.tests.ts'));
 await runPrLoTrinhHvTests({ check, assert, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== #4 bản rà 11/11: + Case gọn (mức mặc định, tên tự sinh, một ngưỡng chữ)
+const { runPrCaseGonTests } = bocTep('prCaseGon', await import('./prCaseGon.tests.ts'));
+await runPrCaseGonTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== KHONG-LOP-GHI (chủ SP 10/11 B' mục 8: lượt không lớp — đường ghi theo chương trình lộ trình)
 const { runPrKhongLopGhiTests } = bocTep('prKhongLopGhi', await import('./prKhongLopGhi.tests.ts'));
 await runPrKhongLopGhiTests({ check, assert, conn, P, TODAY } as any);

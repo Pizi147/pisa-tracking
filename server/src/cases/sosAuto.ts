@@ -3,7 +3,7 @@ import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import {
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL } from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL, CHU_TOI_THIEU_CASE } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, canXacNhan, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -206,7 +206,7 @@ export function kiemNoiDungCase(topic: string | null, ct: string | null, input: 
   if (!(URGENCY_LEVELS as readonly string[]).includes(urgency)) throw badRequest('Chọn mức độ gấp.');
   const moTa = String(input.moTa ?? '').trim();
   /* Hotfix 15/10 (L2): Case MT nguyên nhân từ ô — nhận xét của bài thay Mô tả, không đòi. */
-  if (moTa.length < 15 && !(o.khongDoiMoTa && !moTa)) throw badRequest('Mô tả cần ít nhất 15 ký tự — sai ở đâu, bài hay buổi nào.');
+  if (moTa.length < CHU_TOI_THIEU_CASE && !(o.khongDoiMoTa && !moTa)) throw loi(400, 'Mô tả cần ít nhất {n} ký tự — sai ở đâu, bài hay buổi nào.', { n: CHU_TOI_THIEU_CASE });
   if (vuotTran(moTa, TRAN_CHU.moTaCase, o.moTaCu)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: moTa.length });   // N35
   const tenGiua = String(input.tenGiua ?? '').trim();
   if (tenGiua.length < 3 || tenGiua.length > 80) throw badRequest('Tên Case (phần giữa) cần từ 3 đến 80 ký tự.');
@@ -517,7 +517,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
     throw badRequest('Thiếu mô tả PA — ghi hướng dẫn, trọng tâm và ai thực hiện rồi mới xác nhận.');
   }
   const description = input.description.trim();
-  if (description.length < 15) throw badRequest('Mô tả PA cần ít nhất 15 ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.');
+  if (description.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Mô tả PA cần ít nhất {n} ký tự — nêu hướng dẫn, trọng tâm và ai thực hiện.', { n: CHU_TOI_THIEU_CASE });
   if (vuotTran(description, TRAN_CHU.noiDungPa, iv.description)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả ngắn', toiDa: TRAN_CHU.noiDungPa, n: description.length });   // N35
   /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);

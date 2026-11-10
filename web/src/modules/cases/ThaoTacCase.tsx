@@ -8,7 +8,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { BoiCanh, CanLam, DongTiep, NutVaTiep, TrangThaiLuu, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import {
+import { CHU_TOI_THIEU_CASE,
   CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, HAN_DUYET_NGAY,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
   dsLoi, moiKhoaGui, loiFormPa, paMoi, paPayload, type GiaTriPa, } from '@shared/domain/index.ts';
@@ -182,7 +182,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
   const counts = componentsAreCounts(category);
   const loi = dsLoi([
     { khoa: 'muc', nhan: t('Em tiến bộ đến đâu'), chon: true },
-    { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: 10 },
+    { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: CHU_TOI_THIEU_CASE },   // #4 ngưỡng chung
   ], { muc: outcome, 'vi-sao': note });
   const thieu = loi.map((l) => l.nhan);
 
@@ -223,7 +223,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
           </div>
         </Truong>
         <Truong nhan={t('Vì sao kết luận vậy')} batBuoc
-          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: 10 }}>
+          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: CHU_TOI_THIEU_CASE }}>
           {/* AUDIT-UI C6: câu hướng dẫn chuyển vào `title` của ô (ví dụ vẫn ở placeholder). */}
           <textarea className="field w-full" title={t('Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây')} {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder={t('Ví dụ: MT3 Listening lên 6.0')} />

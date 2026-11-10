@@ -16,7 +16,7 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ChonNhom } from '../fasttrack/NhanXet.tsx';
 import { skillShort } from '../../lib/format.ts';
-import {
+import { CHU_TOI_THIEU_CASE,
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, HOAN_TAC_PA_MS, INTERVENTION_KIND_LABEL, TRAN_CHU,
   dsLoi, duongHoSoHocVien, kiemGhiRoKhac, tenMonNgan, tuanLich, reasonNeedsText,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
@@ -100,7 +100,7 @@ export function ketQuaGanNhat(data: CaseDetail): ReactNode {
 
 /**
  * XÁC NHẬN CASE — Progress Test lớp thường (OV-12c, mockup panel v3 §4). MỘT bước, MỘT nút: Nhóm nguyên nhân * (chip, thứ tự chọn — 1 = chính) ·
- * Mô tả ngắn * (≥ 15) · Phương án = PA Bổ trợ điền sẵn (FOU chung 2 buổi/tuần GVCN dạy; BE / ELE 1 buổi/tuần/môn GVBM môn), "Sửa" mở ô ngay
+ * Mô tả ngắn * (≥ CHU_TOI_THIEU_CASE) · Phương án = PA Bổ trợ điền sẵn (FOU chung 2 buổi/tuần GVCN dạy; BE / ELE 1 buổi/tuần/môn GVBM môn), "Sửa" mở ô ngay
  * trong khối (Nội dung · Số buổi · Người dạy — cùng `FormPa`). Lưu: `POST /cases/:id/xac-nhan` → PA Bổ trợ chạy ngay. Case MT không có bước này.
  */
 export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void; tiep?: TiepViec }) {
@@ -121,7 +121,7 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
   const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
   const lf = useLoiForm();
   const loi = [
-    ...dsLoi([{ khoa: 'nguyen-nhan', nhan: t('Nhóm nguyên nhân'), chon: true }, { khoa: 'mo-ta', nhan: t('Mô tả ngắn'), toiThieu: 15, toiDa: TRAN_CHU.moTaCase }],   // N35
+    ...dsLoi([{ khoa: 'nguyen-nhan', nhan: t('Nhóm nguyên nhân'), chon: true }, { khoa: 'mo-ta', nhan: t('Mô tả ngắn'), toiThieu: CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.moTaCase }],   // N35 · #4 ngưỡng chung
       { 'nguyen-nhan': nhom[0] ?? '', 'mo-ta': moTa }),
     ...(sua && v && goc ? loiFormPa(v, { goc }) : []),
   ];
@@ -167,7 +167,7 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
             <div id={lf.oId('nguyen-nhan')} tabIndex={-1}><ChonNhom skill={topic} ct={ct} value={nhom} onChange={setNhom} disabled={busy} nhanId={`nn-${caseId}`} /></div>
             {lf.loiCua(loi, 'nguyen-nhan') && <p className="m-0 mt-1 text-xs text-bad" role="alert">{lf.loiCua(loi, 'nguyen-nhan')}</p>}
           </div>
-          <Truong nhan={t('Mô tả ngắn')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: 15, toiDa: TRAN_CHU.moTaCase }}>
+          <Truong nhan={t('Mô tả ngắn')} batBuoc loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.moTaCase }}>
             <textarea className="field w-full" rows={2} {...lf.o(loi, 'mo-ta')} value={moTa} disabled={busy} onChange={(e) => setMoTa(e.target.value)}
               placeholder={t('Ví dụ: Đọc chậm, đoán nghĩa từ mới yếu; bỏ trống 5 câu cuối phần Reading')} />
           </Truong>
@@ -197,7 +197,7 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
 
 /**
  * XÁC NHẬN PA — luôn mở panel (OV-13b, mockup OV-13 §9; chủ SP 15/10): PA quy chế điền sẵn loại + mốc; Cần làm = Nội dung / hướng dẫn * (gợi ý
- * `GOI_Y_MO_TA_PA`, ≥ 15) · Người dạy (loại có người) · Số buổi (Tutor / Tự học) · Bắt đầu *; nút chính "Xác nhận PA" + "Đề xuất PA khác…" (PA mới +
+ * `GOI_Y_MO_TA_PA`, ≥ CHU_TOI_THIEU_CASE) · Người dạy (loại có người) · Số buổi (Tutor / Tự học) · Bắt đầu *; nút chính "Xác nhận PA" + "Đề xuất PA khác…" (PA mới +
  * lý do → Quản lý duyệt; PA gốc chờ, chưa chạy) + "Không cần theo dõi…". QL từ chối PA khác → dòng lý do ở đầu, việc quay lại.
  */
 export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }: ChungPanel & { pa: PaQuyChe; data: CaseDetail; onXong: (x?: DaLuuPanel) => void; tiep?: TiepViec;
@@ -216,7 +216,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
   const lf = useLoiForm();
   const loi = cheDo === 'doi' ? doi.loi : [
-    ...loiFormPa(v, { toiThieu: 15, batBuoc: true }),
+    ...loiFormPa(v, { toiThieu: CHU_TOI_THIEU_CASE, batBuoc: true }),
     ...(batDau ? [] : [{ khoa: 'bat-dau', nhan: t('Bắt đầu'), lyDo: t('Chọn ngày bắt đầu') }]),
   ];
   const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? t('PA theo quy chế'));
@@ -321,7 +321,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
             <>
               {/* Mockup A1: "Phương án · Học Tutor" + thẻ "theo quy chế" · mốc — KHÔNG hộp lồng vạch trái. */}
               {!trongThe && <MucH>{t('Phương án · {loai}', { loai: tenLoai })}<TheMuc>{t('theo quy chế')}</TheMuc>{pa.mocChu && <TheMuc>{dich(pa.mocChu)}</TheMuc>}</MucH>}
-              <FormPa phang batBuoc v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} toiThieu={15} studentId={data.student?.id}
+              <FormPa phang batBuoc v={v} dat={(p) => setV((x) => ({ ...x, ...p }))} lf={lf} loi={loi} toiThieu={CHU_TOI_THIEU_CASE} studentId={data.student?.id}
                 ngay={(
                   <Truong nhan={t('Bắt đầu')} batBuoc loi={lf.loiCua(loi, 'bat-dau')}>
                     <ONgay kieu="ngay" value={batDau} onChange={setBatDau} toiThieu={homNay} ariaLabel={t('Bắt đầu')} id={lf.oId('bat-dau')} />

@@ -37,7 +37,7 @@ import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
 import { CASE_THAT, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, sosCaseStateMany, xuLyCaseMany, type SosCaseState } from './sosState.ts';
-import { PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU_CASE, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiDay, coSoBuoiKy, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiTuan, soBuoiTu, tuanLich, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { chenPa } from './taoPa.ts';
 import { ganMoTaTuO } from './nguyenNhanO.ts';
 import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
@@ -201,8 +201,8 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * mà đó chính là câu người đọc hồ sơ ba tháng sau cần.
    */
   const closeNote = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
-  if (closeNote.length < 10) {
-    throw badRequest('Hoàn thành Case thì phải ghi kết luận — ít nhất 10 ký tự.');
+  if (closeNote.length < CHU_TOI_THIEU_CASE) {
+    throw loi(400, 'Hoàn thành Case thì phải ghi kết luận — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   const closedOn = input.closedOn ?? demoToday();
   if (!isIsoDate(closedOn)) throw badRequest('Ngày hoàn thành không hợp lệ.');
@@ -607,7 +607,7 @@ export function reportIssue(p: Principal, input: {
       + '"Reading: chưa xử lý được dạng True/False/Not Given".');
   }
   const summary = chuTuDo(input.summary, 'Mô tả', TRAN_CHU.moTaCase) ?? '';   // N35
-  if (summary.length < 15) {
+  if (summary.length < CHU_TOI_THIEU_CASE) {   // #4: ngưỡng chung (trước 15)
     throw badRequest('Cần mô tả vấn đề cụ thể hơn: em sai ở đâu, sai như thế nào.');
   }
 
@@ -1014,8 +1014,8 @@ export function recordIntervention(p: Principal, caseId: number, input: {
    * cần để so.
    */
   const moTa = chuTuDo(input.description, 'Mô tả ngắn', TRAN_CHU.noiDungPa) ?? '';   // N35: cùng trần với Sửa PA, Điều chỉnh, Xác nhận PA và ô nhập
-  if (moTa.length < 8) {
-    throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
+  if (moTa.length < CHU_TOI_THIEU_CASE) {
+    throw loi(400, 'Mô tả ngắn phải nói rõ làm gì cho em — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   /* T13: PA đề xuất "Khác" cần ô Ghi rõ ≥ 3 ký tự; không có cột riêng nên ghép `{ghi rõ} — {mô tả}` (Q9). */
   if (input.kind === 'other_proposal') {
@@ -2010,8 +2010,8 @@ export function backfillCase(p: Principal, input: {
    * Giao diện đã chặn dưới 10 ký tự, nhưng chặn TAY ở đây nữa: đây là API thật, gọi thẳng
    * (không qua form) mà thiếu ghi chú thì lỗ đúng thứ tính năng này sinh ra để chặn.
    */
-  if (note.length < 10) {
-    throw badRequest('Nhập bù phải có ghi chú kết luận — ít nhất 10 ký tự.');
+  if (note.length < CHU_TOI_THIEU_CASE) {
+    throw loi(400, 'Nhập bù phải có ghi chú kết luận — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   /*
    * CASE-03: nhập bù không có lối thoát "Chưa đủ dữ liệu" — bộ `CASE_OUTCOMES` dùng lại ở
@@ -3976,7 +3976,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * đâu, còn kẹt chỗ nào, tuần tới làm gì. Đó mới là thứ để so giữa hai chu kỳ.
    */
   const note = (input.note ?? '').trim();
-  if (note.length < 8) throw badRequest('Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.');
+  if (note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   /* N35: nhận xét kết quả PA ≤ 200 — trừ PA Tutor (ghi chú ghép từ nhận xét từng buổi; Tutor đang hoãn). */
   if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });
 
@@ -4575,7 +4575,7 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   const { chinh, iv } = x;
   kiemQuyenPa(p, iv, x.c);   // cùng quyền như lúc ghi (đường đảo kiểm qua `updateResult`)
   const note = (vao.note ?? '').trim();
-  if (note.length < 8) throw badRequest('Ghi chú phải nói rõ quan sát được gì — ít nhất 8 ký tự.');
+  if (note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa, chinh.note)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });   // N35
   const decisionNote = String(vao.decisionNote ?? '').trim() || null;
   if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');
@@ -4771,7 +4771,7 @@ export function suaPa(p: Principal, interventionId: number, input: {
   let description = oldDesc;
   if (typeof input.description === 'string' && input.description.trim() !== (oldDesc ?? '').trim()) {
     description = chuTuDo(input.description, 'Mô tả ngắn', TRAN_CHU.noiDungPa) ?? '';   // N35 (chỉ khi chữ đổi)
-    if (description.length < 8) throw badRequest('Mô tả ngắn phải nói rõ làm gì cho em — ít nhất 8 ký tự.');
+    if (description.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Mô tả ngắn phải nói rõ làm gì cho em — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   const soBuoi = soBuoiMoi(iv, input.soBuoi, daDayCua(interventionId));
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
