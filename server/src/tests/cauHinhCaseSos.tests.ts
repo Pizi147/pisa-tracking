@@ -10,6 +10,7 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
   const dm: any = await import('../../../shared/domain/index.ts');
   const svc: any = await import('../platform/cauHinhCaseSos.ts');
   const mig: any = await import('../migrate/prCauHinhCaseSos.ts');
+  const nkSvc: any = await import('../platform/nhatKyQuanTri.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
@@ -115,7 +116,7 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(!all('SELECT 1 FROM cau_hinh_phien_ban').length, 'lưu bị chặn không ghi');
   }));
 
-  check('CHCS-LUU · thêm nhóm: cấp mã m1, chỉ bên FT, id ≥ 2, nhật ký + audit; giống hệt không thêm bản; 409; Hoàn tác về bản gốc; mã không dùng lại', () => thu(() => {
+  check('CHCS-LUU · thêm nhóm: cấp mã m1, chỉ bên FT, id ≥ 2, nhật ký + audit + nhật ký chung; giống hệt không thêm bản; 409; Hoàn tác về bản gốc; mã không dùng lại', () => thu(() => {
     const r = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: 0 });
     const id = r.nguyen_nhan.id;
     assert(r.truoc === 0 && id >= 2, `phiên bản mới ${id}`);
@@ -123,6 +124,11 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(!dm.issuesForTopic('listening', 'BE').some((i: any) => i.code === 'student.listening.m1'), 'lớp thường không có');
     assert(r.nhatKy[0].id === id && r.nhatKy[0].thayDoi[0].viec === 'them' && r.nhatKy[0].nguoi, `nhật ký: ${JSON.stringify(r.nhatKy[0])}`);
     assert(one(`SELECT action FROM audit_logs WHERE entity_type = 'cau_hinh_phien_ban' AND entity_id = ?`, id)?.action === 'cau_hinh_case_sos.sua', 'audit');
+    /* QTV2-QUYEN: nhật ký chung có mục Case & SOS (QT, QL cùng xem — link "Xem tất cả ›"). */
+    for (const ai of [P.admin, P.mbManager]) {
+      const nk = nkSvc.nhatKyQuanTri(ai, { muc: 'case-sos' });
+      assert(nk.dong[0]?.muc === 'case-sos' && nk.dong[0].viec === 'cau_hinh_case_sos.sua', `nhật ký chung: ${JSON.stringify(nk.dong[0])}`);
+    }
     const lai = svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: r.nguyen_nhan.du_lieu, tuPhienBan: id });
     assert(lai.nguyen_nhan.id === id && all('SELECT 1 FROM cau_hinh_phien_ban').length === 1, 'giống hệt → không thêm bản');
     assert(loi(() => svc.luuCauHinh(P.admin, 'nguyen_nhan', { duLieu: themNghe(), tuPhienBan: 0 }))?.status === 409, 'sửa từ bản cũ → 409');
