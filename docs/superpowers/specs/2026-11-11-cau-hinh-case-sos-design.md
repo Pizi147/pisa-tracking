@@ -190,8 +190,9 @@ Thay hằng số bằng hàm đọc cấu hình, **giữ tên hàm cũ làm vỏ
   bước TVV · Đang dùng = n ô mốc ›, lọc bảng mốc · Ẩn).
 - **Mốc SOS · Lớp thường** = bảng 6 mốc (Progress Test · Final 60–69 % · lên · Final 50–59 % · QL cho lên · Final 50–59 % · học lại · Final < 50 % · học lại · Lên FT không đạt
   kỳ vọng): Case · PA quy chế (ô số buổi / tuần, số tuần, buổi Tutor sửa tại ô, Enter lưu) · Việc phối hợp (bấm → khung phải như FT). Nhãn % đọc từ "Band & ngưỡng".
-- **Nhật ký** cột phải 320 px (1440) / cuối trang (375): 8 lần đổi gần nhất của danh sách đang xem, "Xem tất cả ›" mở panel; mỗi dòng có "Khôi phục về đây".
-- **QL**: cùng màn, không nút sửa (bảng chỉ đọc + dòng nhỏ "Quản trị hệ thống sửa").
+- **Nhật ký** cột phải 320 px (1440) / dòng "Nhật ký ›" (375): 8 lần đổi gần nhất của danh sách đang xem, mỗi dòng "Khôi phục về đây"; **"Xem tất cả ›" = trang Vận hành ›
+  Nhật ký chung `/quan-tri/nhat-ky?muc=case-sos`** (QUAN-TRI-V2, không panel).
+- **QL**: cột trái "Cấu hình hệ thống" (cả nhóm, chỉ xem) + Đã xoá; cùng màn, không nút sửa, nhãn "Chỉ xem" (rê: "Quản trị hệ thống sửa").
 - 375: từ mục lục Quản trị vào mục, "‹ Quản trị" đầu trang; mỗi mục hai dòng (tên · đang dùng), chạm dòng → hộp sửa toàn màn (có ↑ ↓ thay kéo); bảng mốc thành thẻ theo hàng MT.
 
 ## 8. Kế hoạch PR (sau khi chủ SP duyệt mockup)

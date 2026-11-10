@@ -434,6 +434,9 @@ tr.dai td { box-shadow:inset 3px 0 0 var(--line-strong); }
 tr.vua td:first-child { box-shadow:none; }
 .o-bam.co-mui { position:relative; padding-right:28px; }
 .o-bam.co-mui::after { content:"›"; position:absolute; right:12px; top:10px; color:var(--text-faint); font-size:16px; }
+
+.cot-qt-dau { font:700 22px/1.3 var(--phong); padding:0 12px 6px; }
+.khung-qt { grid-template-columns:248px minmax(0,1fr) !important; }
 </style>
 </head>
 <body>
@@ -454,14 +457,14 @@ tr.vua td:first-child { box-shadow:none; }
   Đổi chỉ áp cho Case / SOS sinh sau; Case cũ giữ nguyên. Thiết kế: <code>docs/superpowers/specs/2026-11-11-cau-hinh-case-sos-design.md</code>. 1440 tối · 375 sáng (+ 1 khung 375 tối). Dữ liệu: bản gốc đúng mã hiện tại, số "đang dùng" là số mẫu.</p>
   <nav class="muc-mk">
     <a href="#k1">K1 Nguyên nhân FT</a><a href="#k2">K2 Sửa tại dòng · thêm</a><a href="#k3">K3 Lớp thường · ẩn</a><a href="#k4">K4 Phương án</a>
-    <a href="#k5">K5 Mốc SOS FT</a><a href="#k6">K6 Việc phối hợp</a><a href="#k7">K7 Mốc lớp thường</a><a href="#k8">K8 Nhật ký · khôi phục</a>
+    <a href="#k5">K5 Mốc SOS FT</a><a href="#k6">K6 Việc phối hợp</a><a href="#k7">K7 Mốc lớp thường</a><a href="#k8">K8 Khôi phục</a>
     <a href="#k9">K9 QL chỉ xem</a><a href="#k10">K10 Rỗng · lỗi · 409</a><a href="#k11">K11–K14 375</a><a href="#thao-tac">Bảng thao tác</a><a href="#ra">Tự rà ý chủ SP</a>
   </nav>
 </header>
 
 <section class="khu" id="k1">
   <h2>K1 · Nguyên nhân · Fast Track — một bảng, nhóm theo kỹ năng</h2>
-  <p class="ghi">Khung trái = mẫu Quản trị chung (QUAN-TRI-V2 vẽ; ở đây vẽ tạm). Mỗi kỹ năng một dải nhóm; mỗi dòng: <b>⠿</b> kéo đổi thứ tự · <b>tên bấm thẳng = sửa tại dòng</b> · giải thích (dòng nhỏ dưới tên, chỉ khi có; GV thấy ở ⓘ) ·
+  <p class="ghi">Cột trái = khung Quản trị chung QUAN-TRI-V2 đã chốt (Tài khoản &amp; quyền · Cấu hình hệ thống · Vận hành); QL thấy nhóm Cấu hình (chỉ xem) + Đã xoá. Mỗi kỹ năng một dải nhóm; mỗi dòng: <b>⠿</b> kéo đổi thứ tự · <b>tên bấm thẳng = sửa tại dòng</b> · giải thích (dòng nhỏ dưới tên, chỉ khi có; GV thấy ở ⓘ) ·
   <b>Đang dùng</b> = số Case đang gắn nhóm · <b>Ẩn</b> một bấm + Hoàn tác. "Khác" luôn cuối, không ẩn được (GV không bị ép chọn bừa). Writing dùng chung W1 + W2 như hiện nay. Cột phải: nhật ký của danh sách đang xem.
   <b>Một luật lưu:</b> ô chữ / số lưu khi Enter hoặc Lưu; nút một bấm (Ẩn, Xoá, Hiện lại, ↑ ↓) lưu ngay + toast Hoàn tác 10 s.</p>
   <div class="toi man" id="m-k1"></div>
@@ -510,14 +513,15 @@ tr.vua td:first-child { box-shadow:none; }
 </section>
 
 <section class="khu" id="k8">
-  <h2>K8 · Nhật ký đầy đủ (panel) + Khôi phục về một bản</h2>
-  <p class="ghi">"Xem tất cả ›" mở panel phải: mọi lần đổi của danh sách, ai · lúc · trước → sau. <b>Khôi phục về đây</b> → hộp nêu đúng các thay đổi sẽ đảo (hậu quả lớn → mới hỏi); khôi phục cũng là một bản mới, Hoàn tác được.</p>
+  <h2>K8 · Khôi phục về một bản (từ cột Nhật ký)</h2>
+  <p class="ghi"><b>Khôi phục về đây</b> → hộp nêu đúng các thay đổi sẽ đảo (hậu quả lớn → mới hỏi); khôi phục cũng là một bản mới, Hoàn tác được.
+  "Xem tất cả ›" mở trang <b>Vận hành › Nhật ký chung</b> lọc sẵn mục Case &amp; SOS (<code>/quan-tri/nhat-ky?muc=case-sos</code> — QUAN-TRI-V2 vẽ), không panel.</p>
   <div class="toi man" id="m-k8"></div>
 </section>
 
 <section class="khu" id="k9">
   <h2>K9 · Quản lý — cùng màn, chỉ xem</h2>
-  <p class="ghi">QL thấy tab "Case &amp; SOS" (như Bảng quy đổi): không ⠿, tên không bấm, không nút; một dòng nhỏ "Quản trị hệ thống sửa". Máy chủ chặn ghi (403).</p>
+  <p class="ghi">QL thấy nhóm "Cấu hình hệ thống" (chỉ xem) + Đã xoá: không ⠿, tên không bấm, không nút; nhãn "Chỉ xem" (rê: "Quản trị hệ thống sửa"). Máy chủ chặn ghi (403).</p>
   <div class="toi man" id="m-k9"></div>
 </section>
 
@@ -552,7 +556,7 @@ tr.vua td:first-child { box-shadow:none; }
     <tr><td>Đổi PA quy chế / việc phối hợp theo mốc SOS FT</td><td>Sửa mã (`sos.ts`)</td><td>Bấm ô bảng mốc → khung phải → Lưu ô</td></tr>
     <tr><td>Đổi ai làm / hạn / ghi chú bắt buộc của một việc</td><td>Sửa mã (chỉ Meeting CX có hạn 5 ngày)</td><td>Danh mục việc phối hợp: sửa tại dòng</td></tr>
     <tr><td>Đổi số buổi Bổ trợ / Tutor lớp thường</td><td>Sửa mã</td><td>Mốc SOS · Lớp thường: bấm ô số, gõ, Enter</td></tr>
-    <tr><td>Xem ai đổi gì</td><td>—</td><td>Nhật ký cột phải + panel "Xem tất cả"; Khôi phục về một bản</td></tr>
+    <tr><td>Xem ai đổi gì</td><td>—</td><td>Nhật ký cột phải + "Xem tất cả ›" (trang Nhật ký chung lọc sẵn mục); Khôi phục về một bản</td></tr>
     <tr><td>Mọi thao tác GV / QL đang có (chọn nhóm, thêm PA, ghi việc phối hợp…)</td><td>—</td><td><b>GIỮ nguyên</b> — chỉ danh sách đổi nguồn (mã → cấu hình). Không mất thao tác nào.</td></tr>
   </table>
 </section>
@@ -568,7 +572,7 @@ tr.vua td:first-child { box-shadow:none; }
     <tr><td>Thêm / sửa tên / đổi thứ tự / tạm ẩn</td><td>K2 (sửa, thêm, ↑ ↓), K1 (⠿), K3 (ẩn)</td><td class="dat">Đạt</td></tr>
     <tr><td>Chỉ áp cho Case / SOS sinh sau; Case cũ giữ nguyên</td><td>"Áp cho Case / SOS sinh sau ⓘ" đầu mục; spec 3.3</td><td class="dat">Đạt</td></tr>
     <tr><td>Mục đã có Case dùng không xoá hẳn, chỉ ẩn</td><td>K3 (Ẩn), K2 (Xoá chỉ mục mới chưa dùng)</td><td class="dat">Đạt</td></tr>
-    <tr><td>Nhật ký ai đổi gì lúc nào</td><td>Cột phải mọi khung + K8</td><td class="dat">Đạt</td></tr>
+    <tr><td>Nhật ký ai đổi gì lúc nào</td><td>Cột phải mọi khung + trang Nhật ký chung (QUAN-TRI-V2) + K8</td><td class="dat">Đạt</td></tr>
     <tr><td>Chỉ Quản trị sửa, QL xem</td><td>K9</td><td class="dat">Đạt</td></tr>
     <tr><td>Mục độc lập, dễ lắp vào khung Quản trị mới</td><td>Một khối "Case &amp; SOS" (đầu mục + bảng + nhật ký), không dựa trang mẹ</td><td class="dat">Đạt</td></tr>
     <tr><td>Không khoá cứng: Hoàn tác + khôi phục</td><td>Toast K2 / K3, Khôi phục K8</td><td class="dat">Đạt</td></tr>
@@ -589,10 +593,10 @@ function thanhTren(dt, vai = 'QT') {
   return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${MENU.map((m) => `<span class="m${m === 'Quản trị' ? ' dang' : ''}">${m}</span>`).join('')}
     <span class="phai"><span>${vai === 'QL' ? 'Mai · Quản lý CN Cầu Giấy' : 'Hà Hoàng · Quản trị hệ thống'}</span></span></div>`;
 }
-const NAV_QT = [['Tài khoản & quyền', ['Tài khoản', 'Quyền theo vai']], ['Cấu hình hệ thống', ['Chương trình & lộ trình', 'Band & ngưỡng', 'Hạn mặc định', 'Case &amp; SOS']], ['Vận hành', ['Chi nhánh', 'Nhật ký chung', 'Đã xoá']]];
-const NAV_QL = [['Cấu hình hệ thống', ['Band & ngưỡng', 'Case &amp; SOS']], ['Vận hành', ['Đã xoá']]];
+const NAV_QT = [['Tài khoản & quyền', ['Tài khoản', 'Quyền theo vai']], ['Cấu hình hệ thống', ['Chương trình & lộ trình', 'Band & ngưỡng', 'Hạn mặc định', 'Case &amp; SOS', 'Chi nhánh']], ['Vận hành', ['Mở sửa lịch Test', 'Nhật ký chung', 'Đã xoá']]];
+const NAV_QL = [['', ['Chương trình & lộ trình', 'Band & ngưỡng', 'Hạn mặc định', 'Case &amp; SOS', 'Chi nhánh']], ['Vận hành', ['Đã xoá']]];
 function cotTrai(vai = 'QT') {
-  return `<nav class="cot-qt" aria-label="Quản trị"><div class="cot-qt-dau">${vai === 'QL' ? 'Quản trị' : 'Quản trị hệ thống'}</div>${(vai === 'QL' ? NAV_QL : NAV_QT).map(([n, ds]) => `<div class="cot-qt-nhom">${n}</div>${ds.map((x) => `<a href="#" class="${x.startsWith('Case') ? 'dang' : ''}">${x}</a>`).join('')}`).join('')}</nav>`;
+  return `<nav class="cot-qt" aria-label="Quản trị"><div class="cot-qt-dau">${vai === 'QL' ? 'Cấu hình hệ thống' : 'Quản trị hệ thống'}</div>${(vai === 'QL' ? NAV_QL : NAV_QT).map(([n, ds]) => `${n ? `<div class="cot-qt-nhom">${n}</div>` : ''}${ds.map((x) => `<a href="#" class="${x.startsWith('Case') ? 'dang' : ''}">${x}</a>`).join('')}`).join('')}</nav>`;
 }
 function dauQT() { return ''; }
 function dauMuc({ ds = 'nn', ben = 'ft', vai = 'QT', dt = false } = {}) {
@@ -601,8 +605,7 @@ function dauMuc({ ds = 'nn', ben = 'ft', vai = 'QT', dt = false } = {}) {
   return `${dt ? '<a class="ve-qt" href="#">‹ Quản trị</a>' : ''}<div class="muc-dau"><h1 class="h-muc">Case &amp; SOS</h1>
     ${doan([['nn', 'Nguyên nhân'], ['pa', 'Phương án'], ['moc', 'Mốc SOS']], ds)}
     ${coBen ? doan([['ft', 'Fast Track'], ['thuong', 'Lớp thường']], ben) : ''}
-    ${vai === 'QL' ? `<span class="chi-xem">${ic('i-khoa')} <span>Quản trị hệ thống sửa · bạn <b>xem</b></span></span>` : ''}
-    <span class="ap-sau">Áp cho Case / SOS sinh sau${iBtn('Lưu là áp ngay cho Case, PA, SOS sinh SAU lúc lưu. Case, PA, việc đã sinh giữ đúng bản lúc sinh (tên, hạn, người làm). Đổi tên = cùng nghĩa (Phân tích gộp theo nhóm); muốn đổi nghĩa thì Ẩn nhóm cũ, Thêm nhóm mới.')}</span></div>`;
+    <span class="ap-sau">Áp cho Case / SOS sinh sau${iBtn('Lưu là áp ngay cho Case, PA, SOS sinh SAU lúc lưu. Case, PA, việc đã sinh giữ đúng bản lúc sinh (tên, hạn, người làm). Đổi tên = cùng nghĩa (Phân tích gộp theo nhóm); muốn đổi nghĩa thì Ẩn nhóm cũ, Thêm nhóm mới.')}</span>${vai === 'QL' ? `<span class="chi-xem" title="Quản trị hệ thống sửa">${ic('i-khoa')} <b>Chỉ xem</b></span>` : ''}</div>`;
 }
 
 /* ---------- dữ liệu (bản gốc = đúng mã hiện tại) ---------- */
@@ -684,7 +687,7 @@ const NK_NN = [
   ['Ẩn · Lớp thường · Listening', 'Tâm lý và độ tập trung', '22:12 11/11'],
 ];
 function nhatKy(ds, { chiXem = false, goc = true } = {}) {
-  return `<aside class="the nk"><div class="nk-dau"><h3>Nhật ký</h3><a class="link-nho" href="#k8">Xem tất cả ›</a></div><ul class="nk-ds">
+  return `<aside class="the nk"><div class="nk-dau"><h3>Nhật ký</h3><a class="link-nho" href="#k8" title="/quan-tri/nhat-ky?muc=case-sos">Xem tất cả ›</a></div><ul class="nk-ds">
     ${ds.map(([v, noi, luc, ai = 'Hà Hoàng']) => `<li><span class="nk-viec">${v}</span><span class="nk-noi">${noi}</span><span class="nk-ai">${ai} · ${luc}${chiXem ? '' : '<button class="link-nho" type="button">Khôi phục về đây</button>'}</span></li>`).join('')}
     ${goc ? `<li class="goc"><span class="nk-viec">Bản gốc</span><span class="nk-noi">Đúng danh sách trước khi có màn này</span><span class="nk-ai">Hệ thống · 08:00 11/11${chiXem ? '' : '<button class="link-nho" type="button">Khôi phục về đây</button>'}</span></li>` : ''}
   </ul></aside>`;
@@ -822,7 +825,7 @@ const hopKp = `<div class="phu-hop"><div class="hop" role="dialog" aria-label="K
   <div class="hop-than"><span>Bốn thay đổi sau lần đó sẽ đảo lại:</span><ul><li>Reading: "Chiến thuật làm bài" về tên cũ "Kỹ năng làm bài"</li><li>Listening: bỏ nhóm "Nghe từ khoá" (0 Case)</li><li>Speaking: "Phát âm" về thứ 4</li><li>Reading: "Tư duy logic" <b>ẩn lại</b> (12 Case giữ nhóm)</li></ul>
   <span>Case đã gắn các nhóm này giữ nguyên. Khôi phục là một lần đổi mới — Hoàn tác được.</span></div>
   <div class="hop-chan"><button class="nut nut-ma">Thôi</button><button class="nut nut-chinh">Khôi phục</button></div></div></div>`;
-ve('m-k8', man({ ds: 'nn', ben: 'ft' }, bangNhom(k2.slice(0, 2).map(([t, d]) => [t, d.map((x) => (Array.isArray(x) ? x : { ...x, trang: undefined }))])), panelNk) + hopKp);
+ve('m-k8', man({ ds: 'nn', ben: 'ft' }, bangNhom(k2.slice(0, 2).map(([t, d]) => [t, d.map((x) => (Array.isArray(x) ? x : { ...x, trang: undefined }))])), nhatKy(nkDay)) + hopKp);
 
 /* K9 — QL */
 ve('m-k9', man({ ds: 'nn', ben: 'ft', vai: 'QL' }, bangNhom(NN_FT, { chiXem: true }), nhatKy([['Hoàn tác · Reading', 'Bỏ lần ẩn "Tư duy logic"', '22:21 11/11'], ['Ẩn · Reading', 'Tư duy logic', '22:20 11/11']], { chiXem: true })));
