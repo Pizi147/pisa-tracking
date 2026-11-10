@@ -874,7 +874,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         phu: d.soViPham ? `${d.soViPham} vi phạm` : null,
         dong: [`${nguoiXin(yc, ngu)} xin ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
           ...(x?.performed_on ? [`Đã thực hiện ${ngay(x.performed_on, ngu)}`] : []), ...(tvv ? [tvv] : [])],
-        neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.${x?.bao_tt === 'xong' ? ' TVV đã báo PH — mặc định nhờ TVV báo lại PH.' : ''}`,
+        neuDuyet: `Lần xử lý thành "Đã thu hồi" — bậc về ${bacVe}, ${d.soViPham ?? 0} vi phạm về chưa xử lý.${x?.bao_tt === 'xong' ? ' TVV đã báo PH.' : ''}`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
         duLieu: { bacVe: d.bacVe ?? 0, soViPham: d.soViPham ?? 0, daBaoPh: x?.bao_tt === 'xong' },   // YT-BAO-PH: web hiện ô "Nhờ TVV báo lại PH"
       };
