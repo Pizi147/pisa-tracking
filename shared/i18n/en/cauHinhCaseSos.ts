@@ -1,6 +1,5 @@
 /** CAU-HINH-CASE-SOS (chủ SP duyệt 11/11 — `thiet-ke/2026-11-11-cau-hinh-case-sos/`): Quản trị › Case & SOS. */
 export const EN_CAU_HINH_CASE_SOS = {
-  'Ai làm': 'Done by',
   'Bản gốc': 'Original',
   'Bắt buộc': 'Required',
   'Bổ trợ BE, ELE, buổi / tuần': 'BE, ELE support, sessions / week',
