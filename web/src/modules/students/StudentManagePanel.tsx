@@ -10,7 +10,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, coTheTamDungKetThuc, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop,
-  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi, ROUTE_KHAC, ROUTE_LO_TRINH_MOI,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -315,6 +315,10 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [mon, setMon] = useState<string[] | null>(monCu);
   const doiMon = coMon && JSON.stringify(mon) !== JSON.stringify(monCu);
   const [monTom, setMonTom] = useState<{ dong: string[] } | null>(null);
+  /* LO-TRINH-THEO-HV (chủ SP 11/11): lộ trình theo EM — LT1 · LT2 · RF đổi tại đây (QL, Quản trị, GVCN, TVV — máy chủ `duocDoiMon`); lưu CUỐI (sau Target, môn). */
+  const coLt = !!cycle?.coTheDoiLoTrinh && !!cycle?.route;
+  const [lt, setLt] = useState<string>(cycle?.route ?? '');
+  const doiLt = coLt && lt !== cycle.route;
   useEffect(() => {
     setMonTom(null);
     if (!doiMon || mon?.length === 0) return;
@@ -401,6 +405,12 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         await api.post(`/cycles/${cycle.id}/mon-dang-ky`, { monDangKy: mon });
         xong.push(t('môn học'));
       }
+      let daLt: { dao: number; cau: string; cu: string; moi: string } | null = null;
+      if (doiLt) {
+        phan = t('Lộ trình');
+        daLt = await api.post<{ dao: number; cau: string; cu: string; moi: string }>(`/cycles/${cycle.id}/lo-trinh`, { route: lt });
+        xong.push(t('lộ trình'));
+      }
       for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop', '/tong-quan']) invalidate(k);
       const cau = targetDeXuat && doiTarget ? t('Đã lưu · Target gửi Quản lý duyệt') : t('Đã lưu');
       if (khoaDoi.length) {
@@ -408,7 +418,16 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           api.patch(`/students/${student.id}`, Object.fromEntries(khoaDoi.map((k) => [k, cuTt[k]])))
             .then(() => { for (const k of ['/students', '/hoc-vien-lop']) invalidate(k); toast.push('ok', t('Đã hoàn tác')); }, (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
         }, { key: `sua-hv:${student.id}` });
-      } else toast.push('ok', cau);
+      } else if (!daLt) toast.push('ok', cau);
+      if (daLt) {
+        const r = daLt;
+        /* Không ô thông tin nào đổi → toast chung không hiện; giữ câu "Target gửi Quản lý duyệt" ở đây. */
+        toast.hoanTac([!khoaDoi.length && targetDeXuat && doiTarget ? cau : null, t('Đã đổi lộ trình {cu} → {moi}', { cu: r.cu, moi: r.moi }), r.cau].filter(Boolean).join(' · '), () => {
+          api.post(`/cycles/${cycle.id}/lo-trinh/hoan-tac`, { dao: r.dao })
+            .then(() => { for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop']) invalidate(k); toast.push('ok', t('Đã hoàn tác')); },
+              (e: any) => toast.push('error', e?.message ?? t('Không lưu được')));
+        }, { key: `doi-lt:${cycle.id}` });
+      }
       onDone();
     } catch (e: any) {
       if (xong.length) for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop']) invalidate(k);
@@ -421,7 +440,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 
   const daSua = fullName !== student.name || dob !== (student.dob ?? '') || email !== (student.email ?? '') || tvv?.kieu === 'tai_khoan' && tvv.id !== student.tvv?.id
     || (!tvv && !!student.tvv) || note !== (student.note ?? '') || tuan !== tuanCu || thi !== thiCu || target !== targetCu || kck !== kckCu || doiDauVao
-    || lhDoi.length > 0 || doiMon;
+    || lhDoi.length > 0 || doiMon || doiLt;
 
   if (suaDx && dx) {
     return (
@@ -493,10 +512,19 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             : cycle.ratio
             ? t('Lớp thường: Target và Dự kiến thi chỉ để theo dõi — không tính kỳ vọng hay SOS theo Target. Ghi dự định sau lớp này ở mục Lộ trình tiếp theo.')
             : t('Lịch MT sửa ở mục Lộ trình. Đổi Target ở đâu cũng bắt ghi lý do.')}>
-          <p className="m-0 text-sm text-slate-200">
-            {cycle.ratio ? (cycle.programmeName ?? dichChu(cycle.label)) : dichChu(cycle.label)}
-            {cycle.endWeek && <span className="text-slate-500"> · {t('kết thúc {tuan}', { tuan: tuanLich(cycle.endWeek.weekStart, homNay) })}</span>}
-          </p>
+          {coLt ? (
+            <div role="radiogroup" aria-label={t('Lộ trình đang học')} className="flex flex-wrap gap-1.5">
+              {ROUTE_LO_TRINH_MOI.filter((k) => k !== ROUTE_KHAC).map((k) => (
+                <NutChon key={k} chon={lt === k} className="max-sm:flex-1" onClick={() => sua(setLt)(k)}>{k}</NutChon>
+              ))}
+            </div>
+          ) : (
+            <p className="m-0 text-sm text-slate-200">
+              {cycle.ratio ? (cycle.programmeName ?? dichChu(cycle.label)) : dichChu(cycle.label)}
+              {cycle.endWeek && <span className="text-slate-500"> · {t('kết thúc {tuan}', { tuan: tuanLich(cycle.endWeek.weekStart, homNay) })}</span>}
+            </p>
+          )}
+          {doiLt && <KhoiKhiLuu vang dong={[t('MT đã có điểm giữ nguyên lịch và kỳ vọng'), t('MT chưa thi xếp lại theo lịch {lt}, không về tuần đã qua', { lt })]} />}
           {quanLy && (
             <Truong nhan={t('Tuần bắt đầu')} batBuoc={!!tuanCu} loi={lf.loiCua(loi, 'tuan')} phu={cauDoi && dichChu(cauDoi)}>
               <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')} value={tuan} onChange={setTuan} />
@@ -534,7 +562,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             <button type="button" className="btn btn-sm btn-ghost self-start min-h-[44px] sm:min-h-0" onClick={onDeXuatSua}>{t('Đề xuất sửa lộ trình / thông tin khác…')}</button>
           )}
           {coMon && (
-            <Truong as="div" nhan={`${t('Môn học')} · FT ${cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
+            <Truong as="div" nhan={`${t('Môn học')} · FT ${doiLt ? lt : cycle.label}`} loi={lf.loiCua(loi, 'mon')}>
               <NutMon ariaLabel={t('Môn học')} value={mon} onChange={sua(setMon)} />
             </Truong>
           )}

@@ -304,12 +304,11 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(m.baseline_attempt_id === a.mt1 && /MT1/.test(m.baseline_note ?? '') && m.baseline_listening === null, `đầu vào MT: ${JSON.stringify(m)}`);
   }));
 
-  check('SV-8 · lớp sai loại → 400 nói rõ (RF khi giữ lớp LT; LT2 vào lớp RF); Giữ lớp đã kết thúc → máy chủ tự mở lại lớp (E2)', () => thu(() => {
+  check('SV-8 · lộ trình theo em (LO-TRINH-THEO-HV): RF giữ lớp LT hợp lệ, LT2 vào lớp RF hợp lệ; Giữ lớp đã kết thúc → máy chủ tự mở lại lớp (E2)', () => thu(() => {
     const L = lop(); const RF = lop('RF'); const a = emThiXong(L);
-    const loiRf = bt.xemTruocLoTrinhMoi(QL, a.cy, { route: 'RF' }).loi as string;
-    assert(/là lớp LT — lộ trình RF cần lớp RF/.test(loiRf), loiRf);
-    assert(loi(() => bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'RF' }))?.message === loiRf, 'chọn → 400 cùng câu');
-    assert(/là lớp RF — lộ trình LT2 cần lớp LT/.test(loi(() => bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT2', lopMoiId: RF }))?.message ?? ''), 'LT2 vào lớp RF → 400');
+    assert(!bt.xemTruocLoTrinhMoi(QL, a.cy, { route: 'RF' }).loi, 'RF giữ lớp LT: không lỗi');
+    assert(!bt.xemTruocLoTrinhMoi(QL, a.cy, { route: 'LT2', lopMoiId: RF }).loi, 'LT2 vào lớp RF: không lỗi');
+    void loi;
     /* E2: tạm dừng sau thi → lớp kết thúc → Lộ trình mới "Giữ lớp" */
     bt.chonBuocTiep(QL, a.cy, { chon: 'tam_dung' });
     conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(TODAY, L);

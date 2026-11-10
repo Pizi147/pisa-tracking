@@ -1218,6 +1218,10 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** LO-TRINH-THEO-HV: POST /cycles/:id/lo-trinh (LT1 → RF, 3 MT: 1 có điểm giữ, 1 dời, 1 huỷ) — quyền, ghi_dao các bảng của MỘT lộ trình, lõi lịch MT, mốc Case, Hành trình, nhật ký. */
+  doiLoTrinh: 93,   // đo 71 câu, 148 dòng (thao tác ghi hiếm: ghi_dao 6 bảng + lõi lịch MT từng lượt) → max(71 + 10, ⌈71 × 1,3⌉)
+  /** LO-TRINH-THEO-HV: POST /cycles/:id/lo-trinh/hoan-tac — daoLai một bản ghi + nhật ký. */
+  hoanTacDoiLoTrinh: 31,   // đo 21 câu, 14 dòng → max(21 + 10, ⌈21 × 1,3⌉)
   /** PC-GV-A: POST /phan-cong/luu 8 lớp (trần một lần lưu) mỗi lớp một ô + 1 Case + 1 PA chuyển, hôm nay — lõi chung (kiểm + ghi_dao + áp + chuyển + nhật ký); đo trong prPhanCongGv. */
   luuPhanCong8Lop: 166,   // LUU-PC-LO: đo 127 câu (trước gom theo lô: 241, ~30 / lớp; nay ~16 / lớp, phần còn lại chủ yếu là câu GHI mỗi lớp) → max(127 + 10, ⌈127 × 1,3⌉)
   /** PC-GV-A: POST /phan-cong/hoan-tac cả lô 8 lớp trên (daoLai đọc / xoá theo lô, bỏ dòng không đổi). */

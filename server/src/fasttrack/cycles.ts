@@ -15,6 +15,8 @@ import { apLichMacDinh } from '../classes/schedule.ts';
 import { taoMtMacDinh } from './mtMacDinh.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
+import { apDoiLoTrinh } from './doiLoTrinh.ts';
+import { duocDoiMon } from './monDangKy.ts';
 import { programmeByCode } from '../normal/regular.ts';
 
 /**
@@ -278,8 +280,10 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     doiTarget = t.target !== (c.target_score ?? null) || t.kck !== !!c.khong_cam_ket;
   }
   patch = { ...patch, targetScore: undefined, khongCamKetGhi: undefined };
+  /* LO-TRINH-THEO-HV: đổi lộ trình đi lõi `apDoiLoTrinh` (lịch MT theo lộ trình mới, lượt có điểm giữ) — quyền như ô ở Sửa thông tin (`duocDoiMon`). */
   const doiLoTrinh = patch.route !== undefined && (patch.route ?? null) !== (c.route ?? null);
-  if (doiTarget || doiLoTrinh) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  if (doiTarget) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId: c.student_id }, CHI_QL_SUA);
+  if (doiLoTrinh && !duocDoiMon(p, { studentId: c.student_id })) throw forbidden(CHI_QL_SUA);
   if (doiTarget && !(typeof patch.lyDo === 'string' && patch.lyDo.trim())) throw badRequest('Ghi lý do đổi Target.');
   if (patch.status !== undefined && !(CYCLE_STATUSES as readonly string[]).includes(String(patch.status))) {
     throw badRequest('Trạng thái lộ trình không hợp lệ.');
@@ -292,7 +296,7 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const closeOnEnd = patch.dongCaseKhiKetThuc === true
     && c.status === 'active' && patch.status !== undefined && patch.status !== 'active';
   const map: Record<string, string> = {
-    route: 'route', note: 'note', status: 'status',
+    note: 'note', status: 'status',
     /*
      * Hai trường của vòng 4. Quyền sửa: Admin CN · Quản lý · GVCN của lớp (mục 7.5) —
      * `student.edit` đã bao đúng ba vai đó, nên không thêm quyền mới.
@@ -322,10 +326,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
     }
     sets.push(`${map[k]} = ?`); params.push(v);
   }
-  if (!sets.length && !doiTarget) return c;
+  if (!sets.length && !doiTarget && !doiLoTrinh) return c;
   params.push(cycleId);
   tx(() => {
     if (sets.length) db().prepare(`UPDATE learning_cycles SET ${sets.join(', ')} WHERE id = ?`).run(...params);
+    if (doiLoTrinh) apDoiLoTrinh(p.userId, cycleId, patch.route, { lyDo: typeof patch.lyDo === 'string' ? patch.lyDo : null, nhatKy: false });
     if (doiTarget) reviseTarget(p, cycleId, { newTarget: targetGui, reason: patch.lyDo });
     if (patch.status !== undefined && patch.status !== 'active' && c.status === 'active') {
       db().prepare('UPDATE learning_cycles SET ended_at = COALESCE(ended_at, ?) WHERE id = ?').run(demoToday(), cycleId);

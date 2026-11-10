@@ -522,14 +522,14 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(c.status === 'open' && c.owner_user_id === gvW.userId, `Case: ${JSON.stringify(c)}`);
     assert(get(`SELECT status FROM classes WHERE id = ?`, ftA).status === 'active', 'lớp FT rút hết em vẫn không tự kết thúc (Q21)');
   });
-  check('CT (4i) · FT LT → RF (OV-13l, chủ SP 15/10): GIỮ lộ trình đang chạy — cùng id, đổi mã RF, lượt MT giữ, sang lớp mới', () => {
+  check('CT (4i) · FT LT → lớp RF: GIỮ lộ trình của em — cùng id, vẫn LT1 (LO-TRINH-THEO-HV 11/11 thay OV-13l đổi mã), sang lớp mới', () => {
     const ftLt = lopMoi({ kind: 'FT', ft: true, route: 'LT1', tuanHienTai: 5 });
     const ftRf = lopMoi({ kind: 'FT', ft: true, route: 'RF', tuanHienTai: 1 });
     const g = hocVien(ftLt, 'FT', true, 6.5);
     ra(P.mbManager, ftLt, 'giua-khoa', [dongCua(g.sid, 'chuyen_lop', ftRf, { lyDo: 'đổi lộ trình' })]);
     assert(chay(THU_HAI).daChuyen === 1, 'chuyển');
     const moi = chuKyHienTai(g.sid);
-    assert(moi.id === g.cyc && moi.route === 'RF' && moi.target_score === 6.5, JSON.stringify(moi));
+    assert(moi.id === g.cyc && moi.route === 'LT1' && moi.target_score === 6.5, JSON.stringify(moi));
   });
   await checkAsync('CT (4j) · chotVangDinhKy trả daChuyen; lỗi chuyển lớp không làm hỏng lượt quét (OV-1b: không còn chốt "-")', async () => {
     const chot: any = await import('../ops/chotVangDinhKy.ts');

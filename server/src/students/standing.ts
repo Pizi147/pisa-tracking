@@ -317,7 +317,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
        * trình — đúng như `resultOf` ở `attempts.ts:155` đã làm, để SOS/kỳ vọng không đổi ngược khi hồ sơ sửa
        * Target sau này. */
       a.target_at_attempt ?? cycle.target_score ?? null, a.attempt_no,
-      entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route ?? cycle.route,
+      entryBandsOf(scores as any), skips.map((x: any) => x.skill ?? x), a.route_at_attempt ?? a.route ?? cycle.route,   // LO-TRINH-THEO-HV: lộ trình lúc thi
       kyNangXongThieu(bundle.skillRows.get(a.id) ?? [], scores as any), kckCuaLuot({ ...a, khong_cam_ket: cycle.khong_cam_ket }),   // OV-11e (Q8)
     );
     /* PR-S4F #11: lượt chưa có kỹ năng nào ĐỦ điểm (chỉ W1 lẻ, chỉ dòng nhận xét) không nói được gì — xuống lượt cũ hơn. */

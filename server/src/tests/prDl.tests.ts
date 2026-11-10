@@ -148,7 +148,8 @@ export async function runPrDlTests(t: YThucTestKit) {
      5 ô `canEdit` false → true, không trường nào khác (trước: tuan cc83e6fa32c0aa95 · moi 2bde7d28eb00cb47). */
   /* RKC-1b: Quản lý (dời được lịch) nhập được ô chưa tới tuần — máy hỏi "Dời về tuần này". So JSON trước / sau: chỉ 1 ô `canEdit` false → true ở bảng
      QL (`tuan`), bảng GVBM (`moi`) y nguyên (trước: tuan 6e3a3cc57097f59d). */
-  const ANH_CHUP = { tuan: '84a618be9795c451', moi: '1948335ce82a6b6d' };
+  /* LO-TRINH-THEO-HV: `moi` đổi vì em seed chuyển FT → FT sang lớp khác lộ trình nay GIỮ lộ trình em (kỳ vọng / lịch theo lộ trình em) — trả lại luật cũ thì về băm cũ 1948335ce82a6b6d. */
+  const ANH_CHUP = { tuan: '84a618be9795c451', moi: '6dfe12384db98d90' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

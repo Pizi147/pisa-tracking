@@ -91,6 +91,7 @@ import * as thongTinLopSvc from '../classes/thongTinLop.ts';
 import * as xoaKetThucLopSvc from '../classes/xoaKetThucLop.ts';
 import * as suaCaLopSvc from '../classes/suaCaLop.ts';
 import * as monDangKySvc from '../fasttrack/monDangKy.ts';
+import * as doiLoTrinhSvc from '../fasttrack/doiLoTrinh.ts';
 import * as xoaHocVienSvc from '../students/xoaHocVien.ts';
 import * as xoaTaiKhoanSvc from '../platform/xoaTaiKhoan.ts';
 import * as studentSvc from '../students/students.ts';
@@ -1846,6 +1847,13 @@ api.post('/cycles/:id/mon-dang-ky', requireAuth, wrap((req) => {
   if (!b.xemTruoc) maybeSimulateSaveFailure();
   return monDangKySvc.apMonDangKy(principalOf(req), pInt(req, 'id'), b.monDangKy, { xemTruoc: b.xemTruoc === true });
 }));
+
+/** LO-TRINH-THEO-HV (chủ SP 11/11): đổi lộ trình của em { route, lyDo? } — lịch MT theo lộ trình mới, lượt có điểm giữ; trả tóm tắt + `dao` (Hoàn tác). */
+api.post('/cycles/:id/lo-trinh', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return doiLoTrinhSvc.doiLoTrinh(principalOf(req), pInt(req, 'id'), (req.body ?? {}) as Record<string, unknown>);
+}));
+api.post('/cycles/:id/lo-trinh/hoan-tac', requireAuth, wrap((req) => doiLoTrinhSvc.hoanTacDoiLoTrinh(principalOf(req), pInt(req, 'id'), (req.body ?? {}).dao)));
 
 /** Điểm xuất phát của lộ trình — phải ghi rõ NGUỒN, không lấy MT1 làm điểm đầu vào. */
 api.put('/cycles/:id/baseline', requireAuth, wrap((req) => {

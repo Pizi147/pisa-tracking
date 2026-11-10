@@ -465,10 +465,8 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
       dong.push(`Giữ điểm đã có (${[...theoBai].map(([bai, ky]) => `${bai} ${ky.join(', ')}`).join('; ')})`);
     }
   } else if (x.khoa === 'giu') {
-    /* OV-13l: FT → FT khác lộ trình vẫn giữ lộ trình đang chạy (chỉ đổi mã lộ trình). */
-    const doiLt = x.nguonFt && !!x.routeNguon && !!x.routeDich && x.routeNguon !== x.routeDich;
-    dong.push(doiLt ? `Giữ lộ trình FT, đổi ${x.routeNguon} → ${x.routeDich}, tuần học tính như cũ`
-      : x.nguonFt ? `Giữ lộ trình FT ${x.routeNguon ?? ''}`.trim() : `Giữ khoá ${ct}`);
+    /* LO-TRINH-THEO-HV (chủ SP 11/11): FT → FT giữ lộ trình của EM, kể cả lớp đích khác lộ trình. */
+    dong.push(x.nguonFt ? `Giữ lộ trình FT ${x.routeNguon ?? ''}`.trim() : `Giữ khoá ${ct}`);
     dong.push(x.nguonFt ? 'MT chưa làm bài chuyển sang lớp mới' : 'Bài chưa làm chuyển sang lớp mới');
   } else {
     dong.push('Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ');

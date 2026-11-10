@@ -11,7 +11,7 @@ import { badRequest, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { addJourney, notify, writeAudit, writeAuditLo } from '../platform/audit.ts';
-import { chuyenCaseSangLoTrinh, closeCasesBySystem, closeCasesOnProgrammeSwitch, dongPhoiHopLoTrinh, programmeOfCase } from '../cases/systemClose.ts';
+import { closeCasesBySystem, closeCasesOnProgrammeSwitch, dongPhoiHopLoTrinh, programmeOfCase } from '../cases/systemClose.ts';
 import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
@@ -467,11 +467,8 @@ export function apDungMotDong(p: Principal, d: DongApDung): { luat: LuatDoiLop |
     conn.prepare(`UPDATE assessment_attempts SET class_id = ? WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).run(d.toClassId, curCycle.id);
     /* TD7b: lớp đích có thể chấm theo cách khác (bộ môn, band ↔ số câu đúng) → cờ "còn ô chờ" của các lượt vừa đổi lớp. */
     capNhatConOCho((conn.prepare(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND status = 'planned' AND kind != 'mt0'`).all(curCycle.id) as any[]).map((r) => r.id));
-    /* OV-13l: FT → FT khác lộ trình giữ lộ trình đang chạy — chỉ đổi mã theo lớp chuyển đến (lịch MT, tuần học giữ). */
-    if (denLop.ft && denLop.lt && curCycle.route && curCycle.route !== denLop.lt) {
-      conn.prepare('UPDATE learning_cycles SET route = ? WHERE id = ?').run(denLop.lt, curCycle.id);
-      chuyenCaseSangLoTrinh(p.userId, d.sid, curCycle.id, curCycle.id, denLop.lt, d.ngay);   // Case giữ lộ trình, thêm mốc "Sang lộ trình …" (K5-60)
-    }
+    /* LO-TRINH-THEO-HV (chủ SP 11/11, thay OV-13l "đổi mã theo lớp"): lộ trình theo EM — FT → FT sang lớp khác lộ trình vẫn giữ LT1 / LT2 / RF của em;
+       đổi lộ trình ở Sửa thông tin (`apDoiLoTrinh`). */
     if (!tuLop.ft) noiMt0VaoFt(p.userId, [{ sid: d.sid, cuCycleId: curCycle.id, ftCycleId: null, ngay: d.ngay }], 'Chuyển lớp');
   }
 
@@ -604,7 +601,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
     for (const c of openCases) if (ctDong && programmeOfCase({ ...c, cycle_id: c.eff_cycle_id ?? null }) === ctDong) seDong.add(c.id);
     const nhan = openCases.map((c) => goiY.get(c.id)).find(Boolean);
     khoi = dongKhiChuyen({
-      nguonFt: ft, dichFt: denLop.ft, khoa: luat.khoa, routeNguon: enr.route ?? null, routeDich: denLop.ft ? (toClass.route ?? enr.route ?? 'LT1') : null,
+      nguonFt: ft, dichFt: denLop.ft, khoa: luat.khoa, routeNguon: cyc?.route ?? enr.route ?? null, routeDich: denLop.ft ? (ft && luat.khoa === 'giu' ? cyc?.route ?? enr.route : toClass.route ?? enr.route ?? 'LT1') : null,
       maNguon: tuLop.ma, mt0, target: targetSan === null || !nguonTarget ? null : { giaTri: targetSan, nguon: nguonTarget }, veThuong,
       soCase: ctDong ? seDong.size : openCases.length, dongCase: luat.dongCase, goiYNhan: nhan?.ten ?? null, doiChiNhanh,
     });

@@ -232,7 +232,7 @@ export function entryBandsOf(rows: ScoreRow[]) {
 }
 
 /**
- * LỘ TRÌNH CỦA LƯỢT (K5-49) — `learning_cycles.route` theo `cycle_id`, không phải lộ trình hiện tại của em. Hàng đã JOIN `cy.route` thì
+ * LỘ TRÌNH CỦA LƯỢT (K5-49) — `route_at_attempt` (ghi khi em đổi lộ trình mà lượt đã có điểm) rồi `learning_cycles.route` theo `cycle_id`. Hàng đã JOIN `cy.route` thì
  * dùng luôn; không thì một câu, nhớ theo `cycle_id` trong request. Danh sách phải JOIN sẵn — không hỏi theo từng dòng.
  */
 /** Quyền theo lượt (MT lịch sử): cờ + các ô đã có điểm của CHÍNH lượt — đọc từ điểm đã nạp sẵn, không hỏi lại. */
@@ -241,6 +241,7 @@ function luotQuyen(a: any, today?: string): LuotQuyen {
 }
 
 export function routeCuaLuot(attempt: any): string | null {
+  if (attempt.route_at_attempt) return attempt.route_at_attempt;   // LO-TRINH-THEO-HV: lượt đã có điểm lúc em đổi lộ trình giữ lộ trình lúc thi
   if ('route' in attempt) return attempt.route ?? null;
   if (!attempt.cycle_id) return null;
   return nho(`lo-trinh:${attempt.cycle_id}`, () =>

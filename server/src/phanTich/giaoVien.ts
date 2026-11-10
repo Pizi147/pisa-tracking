@@ -165,7 +165,7 @@ export function napBaiNhieu(p: Principal, cs: readonly NguCanhPtGv[], gv?: numbe
 const sqlLuot = (loc: string, nguon = 'assessment_attempts a', cte = '', kemKy = true) =>
       `${cte}SELECT a.*, pg.scoring_mode, cl.programme_code, rp.week_start AS period_start, rp.week_end AS period_end, rp.code AS period_code,
               -- P12 (E6): Target + KCK LÚC LƯỢT (như resultOf) — đổi Target / KCK lộ trình sau đó không viết lại kỳ đã qua
-              a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, cy.route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
+              a.target_at_attempt AS target_score, COALESCE(a.kck_at_attempt, cy.khong_cam_ket) AS khong_cam_ket, COALESCE(a.route_at_attempt, cy.route) AS route, s.full_name AS hv_ten, s.status AS hv_status, s.finished_at AS hv_finished, s.archived_at AS hv_archived
          FROM ${nguon}
          JOIN classes cl ON cl.id = a.class_id
          JOIN students s ON s.id = a.student_id

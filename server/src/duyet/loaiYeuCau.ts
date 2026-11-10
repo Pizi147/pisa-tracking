@@ -26,6 +26,7 @@ import { chotHanXuLy } from '../yThuc/trangThai.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict } from '../util.ts';
 import { reviseTarget, updateCycle } from '../fasttrack/cycles.ts';
+import { dongDaoDoiLoTrinh } from '../fasttrack/doiLoTrinh.ts';
 import { NHAN_TRUONG_DE_XUAT, TRUONG_TU_AP, hienTaiCua, kiemGiaTriDeXuat, lyDoDeXuat } from './deXuatSua.ts';
 import { CO_THE_KHONG_THEO_DOI, awaitingCauseCaseIds } from '../cases/sosState.ts';
 import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
@@ -323,6 +324,9 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat };
         if (!TRUONG_TU_AP.includes(d.truong) || yc.hoc_vien_id == null) return [];
         const sid = yc.hoc_vien_id;
+        /* LO-TRINH-THEO-HV: Duyệt lộ trình = `apDoiLoTrinh` (lịch MT theo lộ trình mới) — chụp đúng bảng nó chạm, Huỷ quyết định trả về y như trước. */
+        const cyLt = d.truong === 'lo-trinh' ? hienTaiCua(db(), sid).cycle : null;
+        if (cyLt) return [...dongDaoDoiLoTrinh(cyLt.id, sid), { bang: 'learning_cycles', dk: `student_id = ? AND status = 'active'`, args: [sid], k: 'sua' }];
         return [
           { bang: 'learning_cycles', dk: `student_id = ? AND status = 'active'`, args: [sid], k: 'sua' },
           { bang: 'assessment_attempts', dk: `kind = 'mock' AND cycle_id IN (SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active')
@@ -335,7 +339,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       /* Lượt Mock (chưa có điểm lúc duyệt, đã nhận Target mới) nay có điểm: lượt có điểm giữ Target lúc làm bài, tín hiệu / Case đã tính theo Target mới
          → không đảo (chủ ý chặn cả lô, không đảo từng phần). */
       chan: (conn, yc, g) => {
-        if (yc.trang_thai !== 'duyet') return null;
+        if (yc.trang_thai !== 'duyet' || yc.doi_tuong_loai === 'student:lo-trinh') return null;   // lộ trình: lượt có điểm vốn giữ lộ trình lúc thi
         const ids = (JSON.parse(g.du_lieu) as { bang: string; truoc: { id: number }[] }[]).filter((m) => m.bang === 'assessment_attempts').flatMap((m) => m.truoc.map((x) => x.id));
         if (!ids.length) return null;
         return conn.prepare(`SELECT 1 FROM assessment_attempts a WHERE a.id IN (${ids.map(() => '?').join(',')}) AND ${CO_DIEM_SQL('a')} LIMIT 1`).get(...ids)

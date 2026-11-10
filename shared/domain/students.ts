@@ -51,27 +51,24 @@ export const ROUTE_KHAC = 'KHAC';
 export const ROUTE_LO_TRINH_MOI = ['LT1', 'LT2', 'RF', 'KHAC'] as const;
 /** Lộ trình gợi ý ở panel Lộ trình mới: LT1 xong → LT2; còn lại giữ lộ trình cũ (không có → LT1). */
 export const routeGoiYLoTrinhMoi = (cu: string | null | undefined): string => (cu === 'LT1' ? 'LT2' : cu && (ROUTE_LO_TRINH_MOI as readonly string[]).includes(cu) ? cu : 'LT1');
-/** P7 (N12): lớp đích hợp loại lộ trình — LT1 / LT2 → lớp FT lộ trình LT; RF → lớp RF; Khác → lớp FT bất kỳ. Sai → câu lỗi (web báo sớm + làm mờ, máy chủ 400 cùng câu). */
+/**
+ * P7 (N12): lớp đích của Lộ trình mới phải là lớp FT. LO-TRINH-THEO-HV (chủ SP 11/11): lộ trình theo EM — LT1 / LT2 / RF / Khác học được ở
+ * lớp FT bất kỳ (em RF trong lớp LT và ngược lại). Sai → câu lỗi (web báo sớm + làm mờ, máy chủ 400 cùng câu).
+ */
 export function kiemLopLoTrinhMoi(route: string, lop: { code: string; ft: boolean; route?: string | null }): string | null {
-  const loai = !lop.ft ? 'thường' : lop.route === 'RF' ? 'RF' : 'LT';
-  if (route === ROUTE_KHAC) return lop.ft ? null : `${lop.code} là lớp thường — lộ trình Khác cần lớp FT. Chọn "Lớp khác".`;
-  const can = route === 'RF' ? 'RF' : 'LT';
-  return loai === can ? null : `${lop.code} là lớp ${loai} — lộ trình ${route} cần lớp ${can}. Chọn "Lớp khác".`;
+  return lop.ft ? null : `${lop.code} là lớp thường — lộ trình ${route === ROUTE_KHAC ? 'Khác' : route} cần lớp FT. Chọn "Lớp khác".`;
 }
 /** Lớp đích của ô "Lớp khác" (Lộ trình mới) — cùng dạng `/students/:id/hoc-lai/lop-dich`. */
 export type LopLoTrinhMoi = { id: number; code: string; ft: boolean; route: string | null; branchCode: string; siSo?: number | null };
 /**
- * SUA-NHO-UI U4 (XM-3, mockup v6 lo-trinh-moi khung 1–2): danh sách ô "Lớp khác" — lớp thường không bao giờ hiện; lớp đúng loại trước
- * (giữ thứ tự vào), lớp FT sai loại sau, mờ + lý do ngắn ("lớp RF") để người dùng thấy vì sao không chọn được. Luật loại = `kiemLopLoTrinhMoi`.
+ * SUA-NHO-UI U4 (mockup v6 lo-trinh-moi khung 1–2): danh sách ô "Lớp khác" — lớp thường không bao giờ hiện. LO-TRINH-THEO-HV: mọi lớp FT chọn được;
+ * lớp cùng loại lộ trình (RF ↔ lớp RF, LT ↔ lớp LT) lên trước, giữ thứ tự vào.
  */
 export function lopChonLoTrinhMoi(route: string, lop: readonly LopLoTrinhMoi[]): { id: number; ma: string; phu: string; tat?: string }[] {
   const ft = lop.filter((l) => l.ft);
-  const dung = ft.filter((l) => !kiemLopLoTrinhMoi(route, l));
-  const sai = ft.filter((l) => kiemLopLoTrinhMoi(route, l));
-  return [
-    ...dung.map((l) => ({ id: l.id, ma: l.code, phu: [`FT ${l.route ?? ''}`.trim(), l.branchCode, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') })),
-    ...sai.map((l) => ({ id: l.id, ma: l.code, phu: `FT ${l.route ?? ''}`.trim(), tat: t('lớp {loai}', { loai: l.route === 'RF' ? 'RF' : 'LT' }) })),
-  ];
+  const cungLoai = (l: LopLoTrinhMoi) => (l.route === 'RF') === (route === 'RF');
+  return [...ft.filter(cungLoai), ...ft.filter((l) => !cungLoai(l))]
+    .map((l) => ({ id: l.id, ma: l.code, phu: [`FT ${l.route ?? ''}`.trim(), l.branchCode, l.siSo != null ? t('{n} em', { n: l.siSo }) : null].filter(Boolean).join(' · ') }));
 }
 /** Tên hiển thị của mã lộ trình: "Khác" → tên đã ghi (không có thì "Khác"); mã khác giữ nguyên ("LT2"). */
 export const tenRoute = (c: { route?: string | null; route_ten?: string | null; routeTen?: string | null }): string | null =>
