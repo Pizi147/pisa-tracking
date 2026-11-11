@@ -52,7 +52,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
-      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'nút + Case ở đầu trang.',
+      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Case ở đầu trang.',
       buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Case</b> đầu trang).', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },
@@ -85,7 +85,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'vi-pham', ten: 'Ghi vi phạm', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ dòng em › + Ghi vi phạm' },
-      loiTat: ['ho-so-hv', 'p-vi-pham'], cung: 'nút + Ghi vi phạm ở tab Ý thức & Phối hợp.',
+      loiTat: ['ho-so-hv', 'p-vi-pham'], cung: 'mở cùng panel ghi vi phạm.',
       buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Ghi vi phạm</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Ghi vi phạm</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn.', '<b>Lưu</b>. Ghi không có hạn; xử lý là việc của GVCN.'],
       tuKhac: ['ý thức', 'kỷ luật', 'vi phạm', 'violation'],
     },
@@ -99,7 +99,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'phoi-hop-sos', ten: 'Phối hợp SOS', nhom: 'hv', chiGvcn: true,
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Phối hợp SOS', duong: CV },
-      loiTat: ['ho-so-lop', 'ho-so-hv', 'p-phoi-hop'], cung: 'tab Ý thức & Phối hợp, cùng bảng.',
+      loiTat: ['ho-so-lop', 'ho-so-hv', 'p-phoi-hop'], cung: 'mở cùng bảng phối hợp.',
       buoc: ['Mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, mục <b>Phối hợp SOS</b>; bấm <b>Xác nhận</b> ở dòng lớp.', 'Bảng mỗi em một dòng: <b>Xác nhận</b> việc đã làm, ghi nội dung, <b>Lưu</b>; sai thì <b>Sửa</b>.', 'Meeting CX / GĐCN: TVV của em báo gia đình, sắp họp, ghi kết quả — bạn đọc ở cột <b>Kết quả</b>.'],
       tuKhac: ['phối hợp', 'sos', 'meeting', 'họp phụ huynh', 'coordination'],
     },
@@ -127,7 +127,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'them-hv', ten: 'Thêm học viên, dán Excel', nhom: 'hv', chiGvcn: true,
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ › + Học viên' },
-      loiTat: ['hoc-vien'], cung: 'nút + Thêm học viên.',
+      loiTat: ['hoc-vien'], cung: 'có nút + Thêm học viên.',
       buoc: ['Hồ sơ lớp, bấm <b>⋯ › + Học viên</b>.', 'Gõ từng em, hoặc dán danh sách từ Excel (dán Excel chỉ dùng để thêm học viên).', 'Xem lại các dòng, rồi lưu.'],
       tuKhac: ['thêm em', 'excel', 'dán', 'nhập danh sách', 'add student'],
     },
@@ -173,7 +173,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'xuat-excel', ten: 'Xuất Excel điểm Test', nhom: 'lich', chiGvcn: true,
       loiChinh: { man: 'lich-test', chu: 'Test › Xuất Excel…', duong: '/test/lich' },
-      loiTat: ['ke-hoach', 'ho-so-lop', 'p-xuat'], tatThem: ['Hồ sơ lớp › ⋯ › Xuất Excel'], cung: 'cùng nút Xuất Excel….',
+      loiTat: ['ke-hoach', 'ho-so-lop', 'p-xuat'], tatThem: ['Hồ sơ lớp › ⋯ › Xuất Excel'], cung: 'mở cùng panel xuất.',
       buoc: ['Bấm <b>Xuất Excel…</b> cạnh tiêu đề Test (lớp bạn chủ nhiệm).', 'Chọn lớp, lượt, kiểu bảng, rồi xuất.'],
       tuKhac: ['excel', 'xuất', 'export', 'bảng điểm'],
     },
@@ -199,7 +199,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'so-cua-toi', ten: 'Xem số của bạn', nhom: 'khac',
       loiChinh: { man: 'ho-so-gv', chu: 'Tài khoản › Hồ sơ giáo viên' },
-      loiTat: ['tong-quan'], cung: 'link Hồ sơ GV của tôi.',
+      loiTat: ['tong-quan'], cung: 'có link Hồ sơ GV của tôi.',
       buoc: ['Bấm tên bạn › <b>Hồ sơ giáo viên</b> (hoặc <b>Hồ sơ GV của tôi</b> ở Tổng quan).', 'Chọn <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.'],
       tuKhac: ['chỉ số', 'thống kê', 'kpi'],
     },
