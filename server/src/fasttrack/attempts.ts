@@ -1954,6 +1954,10 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     } else {
       conn.prepare(`UPDATE assessment_attempts SET status='planned', cancel_reason=NULL, cancelled_at=NULL, updated_at=? WHERE id=?`).run(nowIso(), attemptId);
     }
+    /* SUA-RA-1311: việc TVV Báo PH sau Meeting CX mà lần huỷ đã đóng (`huyLuot` — mọi nhánh, có / không bản cất) mở lại, hạn giữ. Việc người bỏ giữ nguyên. */
+    const soViec = conn.prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL
+        WHERE trang_thai = 'bo' AND bo_ly_do = 'system_luot_huy'
+          AND phoi_hop_id IN (SELECT id FROM sos_coordination_actions WHERE attempt_id = ? AND status = 'done')`).run(attemptId).changes;
     const doiVuot = traBanDoiVuot(p, attemptId, lyDo);
     soDiem += doiVuot;
     if (banId === null && !doiVuot && a.kind === 'mock') cau.push('Lượt huỷ trước 10/2026: không còn điểm để khôi phục.');
@@ -1981,7 +1985,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
     else lamMoiDiemBanChup(conn, [attemptId]);
     capNhatConOCho([attemptId]);   // TD7b: điểm + lịch trả về từ bản cất
     writeAudit({ actorUserId: p.userId, action: 'attempt.khoi_phuc', entityType: 'assessment_attempt', entityId: attemptId, entityLabel: lyDo,
-      before: { status: 'cancelled' }, after: { banId, soDiem, soCase, soPa, soPhoiHop, chuaXep: sai } });
+      before: { status: 'cancelled' }, after: { banId, soDiem, soCase, soPa, soPhoiHop, ...(soViec ? { soViecBaoPh: soViec } : {}), chuaXep: sai } });
     return { ok: true as const, soDiem, soCase, soPa, soPhoiHop, chuaXep: sai, cau };
   });
 }

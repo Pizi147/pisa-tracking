@@ -517,6 +517,24 @@ export async function runPrMtTests(t: YThucTestKit) {
     const c = conn.prepare('SELECT status, system_close_reason FROM sos_cases WHERE id = ?').get(cid) as any;
     assert(c.status === 'done' && c.system_close_reason === 'luot_da_huy' && d.SYSTEM_CLOSE_REASON_LABEL.luot_da_huy === 'Lượt đã huỷ', JSON.stringify(c));
   });
+  /* SUA-RA-1311 (PTA mục 1): huỷ lượt đóng việc TVV Báo PH sau Meeting CX (`system_luot_huy`) — Khôi phục lượt phải mở lại đúng việc đó; việc người bỏ giữ. */
+  check('PR-MT (7) · SUA-RA-1311 · Huỷ lượt → việc TVV Báo PH của Phối hợp đã xong đóng; Khôi phục → mở lại; việc người dùng đã bỏ giữ nguyên', () => {
+    const sid = them('MB FT 101', 'PRMT Em Khôi Phục Báo PH', tuanNay);
+    const mt3 = luotCua(sid)[2];
+    const ph = (kind: string) => Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, ?, 1, 'done', ?)`)
+      .run(mt3.id, sid, kind, TODAY).lastInsertRowid);
+    const viec = (phId: number, tt: string, lyDo: string | null) => Number(conn.prepare(
+      `INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, bo_ly_do, tao_luc) VALUES (NULL, ?, ?, 'Báo PH sau Meeting', ?, ?, ?, ?)`)
+      .run(phId, sid, TODAY, tt, lyDo, TODAY).lastInsertRowid);
+    const vMo = viec(ph('cx_meeting_family'), 'mo', null);
+    const vBo = viec(ph('talk_student'), 'bo', 'khong_can');
+    attemptsSvc.huyLuot(QL, mt3.id, { lyDo: 'Thử khôi phục Báo PH' });
+    const tt = (id: number) => conn.prepare('SELECT trang_thai, bo_ly_do, bo_luc FROM viec_bao_ph WHERE id = ?').get(id) as any;
+    assert(tt(vMo).trang_thai === 'bo' && tt(vMo).bo_ly_do === 'system_luot_huy', `huỷ chưa đóng việc: ${JSON.stringify(tt(vMo))}`);
+    attemptsSvc.reopenAttempt(QL, mt3.id);
+    assert(tt(vMo).trang_thai === 'mo' && tt(vMo).bo_ly_do === null && tt(vMo).bo_luc === null, `khôi phục chưa mở lại việc: ${JSON.stringify(tt(vMo))}`);
+    assert(tt(vBo).trang_thai === 'bo' && tt(vBo).bo_ly_do === 'khong_can', `việc người bỏ bị mở: ${JSON.stringify(tt(vBo))}`);
+  });
 
   // ---------------------------------------------------------------- khối 8: dời do vắng — đi từ dấu "-" (K4-04)
   const absence: any = await import('../fasttrack/absence.ts');
