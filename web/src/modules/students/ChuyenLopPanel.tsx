@@ -8,6 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ErrorState, NutChon, OKck, Skeleton } from '../../ui/ui.tsx';
 import { ChonLop, type LopChon } from '../../ui/ChonLop.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KHOI_VANG, NutHomNay, OTuan } from '../classes/chuyenLopChung.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -317,10 +318,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
             {chonTheoCk && (
               <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
                 <input type="checkbox" className="mt-0.5 h-4 w-4" checked={theoCk} disabled={busy} onChange={(e) => { setTheoCk(e.target.checked); setToClassId(null); }} />
-                <span>{t('Theo luồng chuyển tiếp lộ trình')}<span className="block text-xs text-slate-500">{t('Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: chuyển ngay, không Test đi kèm.')}</span></span>
+                {/* G4-22: câu giải thích vào ⓘ (luật bỏ chú thích tĩnh 07/11); bỏ chữ "chuyển ngay" — tuần chuyển vẫn là tuần đang chọn. */}
+                <span>{t('Theo luồng chuyển tiếp lộ trình')} <NutLuat>{t('Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: không có Test đi kèm.')}</NutLuat></span>
               </label>
             )}
-            <Truong nhan={t('Lớp chuyển đến')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
+            {/* G4-21: khối đã tên "Lớp chuyển đến" — ô chỉ ghi "Lớp" (không lặp chữ ngay dưới). */}
+            <Truong nhan={dx ? t('Lớp chuyển đến') : t('Lớp')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'lop')}>
               <ChonLop ds={ds} value={toClassId} onChange={setToClassId} ariaLabel={t('Lớp chuyển đến')}
                 id={lf.oId('lop')} onBlur={lf.roi('lop')} invalid={!!lf.loiCua(loi, 'lop')} tat={busy} />
               {dich && (

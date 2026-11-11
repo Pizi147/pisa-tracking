@@ -94,7 +94,7 @@ export const VIEC_TVV: ViecHd[] = [
   {
     id: 'phan-tich', ten: 'Xem thống kê theo kỳ', nhom: 'khac',
     loiChinh: { man: 'phan-tich', chu: 'Tổng quan › Phân tích', duong: '/phan-tich', chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
-    buoc: ['Mở <b>Phân tích</b>; chọn <b>Từ tuần → Đến tuần</b> cho mọi tab (mặc định 2 tuần vừa qua).', 'Tab <b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>; bấm số mở danh sách tại trang.'],
+    buoc: ['Mở <b>Phân tích</b>; chọn <b>Từ tuần → Đến tuần</b> (Chi nhánh mặc định một tháng, tab khác 2 tuần).', 'Tab <b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b>; bấm số mở danh sách tại trang.'],
     tuKhac: ['thống kê', 'báo cáo', 'analytics', 'report'],
   },
 ];
@@ -213,16 +213,16 @@ export const HD_TVV: HuongDan = {
     },
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      dangO: { cau: 'Ba số của HV bạn phụ trách và thi thật.', sau: { chu: 'Công việc', duong: CV } },
+      dangO: { cau: 'Việc của tôi và bốn số của HV bạn phụ trách.', sau: { chu: 'Công việc', duong: CV } },
       khongLam: [KHONG_GV, KHONG_QL],
-      muc: [{ id: 'tvv-tq-o', ten: 'Ba số của TVV', buoc: ['Chỉ HV của bạn: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ · Lộ trình tiếp</b>.', '<b>Điều hướng</b>: n việc của tôi (Công việc) · HV của tôi (Học viên & Lớp đúng nhóm em).'],
+      muc: [{ id: 'tvv-tq-o', ten: 'Bốn số của TVV', buoc: ['Chỉ HV của bạn: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ thi thật</b> · <b>Chưa chốt lộ trình tiếp</b>.', 'Ô <b>Việc của tôi ›</b> mở Công việc; số HV mở Học viên & Lớp đúng nhóm em.'],
         chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } }],
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
       dangO: { cau: 'Thống kê theo kỳ: học viên, Test, PA, Ý thức.', truoc: { chu: 'Tổng quan', duong: '/' } },
       khongLam: [KHONG_GV],
-      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Báo cáo HV</b> · <b>Test + SOS</b> · <b>Kết quả Test / Thi</b> · <b>Hiệu quả PA</b> · <b>Ý thức</b>.', 'Bấm số mở danh sách ngay tại trang.'],
+      muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2).', 'Bấm số mở danh sách ngay tại trang.'],
         chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }],
     },
     {

@@ -107,4 +107,15 @@ export const EN_HD_V2C = {
   'Ngôn ngữ: menu Tài khoản › <b>VI | EN</b>. Giao diện: <b>Theo máy · Sáng · Tối</b> ở cùng menu.': 'Language: Account menu › <b>VI | EN</b>. Theme: <b>System · Light · Dark</b> in the same menu.',
   'Nhập điểm, xử lý Case': 'Enter scores, handle Cases',
   'Trang đầu tạm dùng góc nhìn GV: Case đang xử lý của bạn.': 'The home page uses the teacher view for now: the Cases you are handling.',
+  /* Rà 11/11 G5-14: Hướng dẫn theo màn hiện tại */
+  'Việc của tôi và bốn số của HV bạn phụ trách.': 'Your tasks and four numbers for your students.',
+  'Bốn số của TVV': 'Four consultant figures',
+  'Chỉ HV của bạn: <b>Báo PH đúng hạn</b> · <b>Thi tháng này</b> · <b>Chờ KQ thi thật</b> · <b>Chưa chốt lộ trình tiếp</b>.': 'Your students only: <b>Parent call on time</b> · <b>Exam this month</b> · <b>Awaiting real exam result</b> · <b>Next path not set</b>.',
+  'Ô <b>Việc của tôi ›</b> mở Công việc; số HV mở Học viên & Lớp đúng nhóm em.': 'The <b>My tasks ›</b> tile opens Tasks; student numbers open Students & Classes on the right group.',
+  'Mở <b>Test › Kế hoạch Test</b>; chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.': 'Open <b>Test › Test plan</b>; the <b>Not enough MTs</b> chip shows only classes with students to schedule next.',
+  'Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.': 'Open <b>Test › Test plan</b>: <b>Schedule several MTs…</b> (FT) · <b>Schedule tests…</b> (normal class); the <b>Not enough MTs</b> chip shows only classes with students to schedule next.',
+  'Mở <b>Phân tích</b>; chọn <b>Từ tuần → Đến tuần</b> (Chi nhánh mặc định một tháng, tab khác 2 tuần).': 'Open <b>Analysis</b>; choose <b>From week → To week</b> (Branch defaults to one month, other tabs to 2 weeks).',
+  'Tab <b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b>; bấm số mở danh sách tại trang.': 'Tabs <b>Branch</b> · <b>Real exams</b> · <b>SOS</b>; click a number to open the list on the page.',
+  '<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2).': '<b>Branch</b> · <b>Real exams</b> · <b>SOS</b> (Analysis V2).',
+  'Có Test đi kèm (Lên FT có MT0 tuần Final). Bỏ chọn: không có Test đi kèm.': 'Comes with a test (moving up to FT takes MT0 in Final week). Untick: no test with it.',
 } as const;

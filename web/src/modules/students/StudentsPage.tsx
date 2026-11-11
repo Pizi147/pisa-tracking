@@ -133,7 +133,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const locThem = docLocThem((k) => params.get(k));
   const moLocThem = params.get('lt') === '1';
   const kieuKhoang = (KIEU_KHOANG as readonly string[]).includes(params.get('lkieu') ?? '') ? params.get('lkieu') as KieuKhoang : 'tuy-chon';
-  const mucSos = (['3', '2', '1', 'pa'] as const).find((x) => x === params.get('muc')) ?? null;
+  /* G5-08: `muc=23` = SOS 2–3 (ô "HV SOS 2–3" của Tổng quan mở ra đúng số đó); chip SOS 3 + SOS 2 cùng sáng. */
+  const mucSos = (['3', '2', '1', '23', 'pa'] as const).find((x) => x === params.get('muc')) ?? null;
   const q = params.get('q') ?? '';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const branchId = cnUrl ? Number(cnUrl) : null;
@@ -284,7 +285,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
   const trongLoc = (classId: number, ft: boolean) => (!chiLop || classId === chiLop) && (khung === 'tat-ca' || (ft ? 'ft' : 'thuong') === khung);
   const sosTat = (sos.data?.rows ?? []).filter((r) => trongLoc(r.classId, r.ft));
-  const sosRows = sosTat.filter((r) => (mucSos === 'pa' ? coPaQuaHan(r) : mucSos ? r.sosLevel === Number(mucSos) : true));
+  const sosRows = sosTat.filter((r) => (mucSos === 'pa' ? coPaQuaHan(r) : mucSos === '23' ? (r.sosLevel ?? 0) >= 2 : mucSos ? r.sosLevel === Number(mucSos) : true));
   const hangTheoEm = useMemo(() => new Map((data?.hocVien ?? []).map((h) => [h.id, h.hang])), [data]);
 
   /* Số trên tab Lịch thi = "Tất cả" của chính chế độ đó (luật cùng số liệu cùng nguồn; mockup v16: tab 11 = Tất cả 11): em có tháng thi trong khoảng đang xem + em Fast Track chưa có tháng thi (luôn ở danh sách Lịch thi). */
@@ -568,7 +569,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               {locChung}
               <button type="button" className="nut-loc" aria-pressed={!mucSos} onClick={() => setParam({ muc: null })}>{t('Tất cả')} <span className="tabular-nums">{soEm(sosTat.map((r) => ({ id: r.studentId })))}</span></button>
               {(['3', '2', '1'] as const).map((m) => (
-                <button key={m} type="button" className="nut-loc" aria-pressed={mucSos === m} onClick={() => setParam({ muc: mucSos === m ? null : m })}>
+                <button key={m} type="button" className="nut-loc" aria-pressed={mucSos === m || (mucSos === '23' && m !== '1')} onClick={() => setParam({ muc: mucSos === m ? null : m })}>
                   SOS {m} · <span className="tabular-nums">{sosTat.filter((r) => r.sosLevel === Number(m)).length}</span>
                 </button>
               ))}

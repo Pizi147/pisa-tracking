@@ -149,7 +149,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'xep-lich', ten: 'Xếp, dời lịch Test nhiều lớp', nhom: 'lich',
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Chọn chương trình, lọc lớp, xếp nhiều MT ở hàng này.' } },
-      buoc: ['Mở <b>Test › Kế hoạch Test</b>; chip <b>Cần xếp lại</b> chỉ lớp có em cần xếp.', 'Fast Track: <b>Xếp nhiều MT…</b>; lớp thường: <b>Xếp lịch Test…</b>.',
+      buoc: ['Mở <b>Test › Kế hoạch Test</b>; chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.', 'Fast Track: <b>Xếp nhiều MT…</b>; lớp thường: <b>Xếp lịch Test…</b>.',
         'Một kỹ năng: bấm ô MT, mỗi môn <b>Dời</b> · <b>Vắng</b> · <b>Bỏ khỏi đợt</b>, rồi <b>Lưu</b>.', '<b>⋯</b> có <b>Dời hạn chấm</b>, <b>Huỷ điểm</b>, <b>Nhật ký</b>, <b>Xóa lịch</b>.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'dời hạn chấm', 'schedule', 'reschedule'],
     },

@@ -55,7 +55,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
   const quyen: QuyenDong = {
     coTheSuaHocVien: !!lop.viewer.coTheSuaHocVien, coTheBaoCase: lop.viewer.canReportCase,
-    coTheGhiViPham: lop.viewer.canRecordViolation, coTheNhapDiem: lop.viewer.canEnterScores, coTheChuyenTiep: lop.viewer.coTheChuyenTiep,
+    coTheGhiViPham: lop.viewer.canRecordViolation, coTheXuLyYThuc: !!lop.viewer.canManageDiscipline, coTheNhapDiem: lop.viewer.canEnterScores, coTheChuyenTiep: lop.viewer.coTheChuyenTiep,
     theoVai: !!vai, coTheSuaThongTin: !!lop.viewer.coTheSuaThongTin, coTheSuaThem: !!lop.viewer.coTheSuaThem,
   };
   const chon = useChonNhieu();

@@ -135,7 +135,10 @@ const NHAN_LUOT: Record<string, string> = ATTEMPT_KIND_LABEL;
 function gomLuot(rows: any[], maCt: string | null, laFt: boolean, homNay: string): DongLuotTongKet[] {
   const theo = new Map<number, any[]>();
   for (const r of rows) { const k = r.attempt_id ?? -r.id; theo.set(k, [...(theo.get(k) ?? []), r]); }
-  return [...theo.values()].map((ds) => {
+  /* Rà 11/11 G4-19: lộ trình đã đóng — lượt CHƯA THI ở tương lai (còn `planned`, chưa điểm nào; vd mở Lộ trình mới) không phải kết quả của lộ trình → không liệt kê. */
+  const chuaThiTuongLai = (ds: any[]) => ds[0].trang_thai === 'planned' && ds[0].overall == null && ds.every((r) => r.diem == null)
+    && (!ds[0].tuan_bat_dau || ds[0].tuan_bat_dau > homNay);
+  return [...theo.values()].filter((ds) => !chuaThiTuongLai(ds)).map((ds) => {
     const a = ds[0];
     const kn = ds.filter((r) => (laFt ? (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang) : true));
     return {

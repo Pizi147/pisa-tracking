@@ -438,7 +438,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
           mau={ft ? mauDatMt(d.datMt) : t('chỉ Fast Track')} />
         <ChiSo ten={t('Đạt Target thi thật')} ky={t('trong kỳ')} giaTri={ft ? <PhanTram x={d.thiThat} nguon={qBc(d, '&o=dat-target-thi')} tieuDe={t('Đạt Target thi thật')} className="so-chinh" /> : <span className="text-slate-500">—</span>}
           mau={ft ? tuMau(d.thiThat, t('HV')) : t('chỉ Fast Track')} />
-        <ChiSo ten={tenDen(t('HV SOS 2–3'), sos23)} ky={t('hiện tại')} giaTri={<SoDen n={sos23} to={`/hoc-vien?view=sos${cn}`} className="so-chinh" />} mau={t('HV')} />
+        <ChiSo ten={tenDen(t('HV SOS 2–3'), sos23)} ky={t('hiện tại')} giaTri={<SoDen n={sos23} to={`/hoc-vien?view=sos&muc=23${cn}`} className="so-chinh" />} mau={t('HV')} />
         {/* AUDIT-UI B2 đồng bộ (PTA 08/11): tách ô hai số "Chờ KQ · Lộ trình tiếp" thành hai ô như TVV — mỗi ô một số, cùng đích đổi trang cũ. */}
         <ChiSo ten={tenDen(t('Chờ KQ thi thật'), hv.data?.dem['da-thi'] ?? 0)} ky={t('hiện tại')} giaTri={hv.data ? <SoDen n={hv.data.dem['da-thi']} to={den('da-thi')} className="so-chinh" /> : '…'} mau={t('HV')} />
         <ChiSo ten={tenDen(t('Chưa chốt lộ trình tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} tenNgan={tenDen(t('Chưa chốt LT tiếp'), hv.data?.dem['cho-buoc-tiep'] ?? 0)} ky={t('hiện tại')}
