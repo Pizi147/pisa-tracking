@@ -405,15 +405,14 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(profileSvc.studentProfile(P.coreTeacher, S.sid).viewer.coTheXoa === false, 'GVCN không được có coTheXoa');
   });
 
-  check('PR-XOA X9 · Quyền: QL, GVCN → 403 cả xem và xoá; mã sai → 400, không dòng nào mất; id lạ → 404', () => {
+  check('PR-XOA X9 · Quyền: QL chi nhánh khác, GVCN → 403 cả xem và xoá, không dòng nào mất; id lạ → 404 (rà 11/11 G5-12: xoá một em không gõ mã)', () => {
     for (const [ten, p] of [['QL chi nhánh khác', P.cpManager], ['GVCN', P.coreTeacher]] as const) {   // OV-12a: QL của em xoá được
       assert(maLoi(() => xoaHV.xemXoaHocVien(p, S.sid)) === 403, `${ten} xem phải 403`);
       assert(maLoi(() => xoaHV.xoaHocVien(p, S.sid, { maXacNhan: S.ma })) === 403, `${ten} xoá phải 403`);
     }
     const truoc = demBang();
-    assert(maLoi(() => xoaHV.xoaHocVien(P.admin, S.sid, { maXacNhan: 'PISA-000000' })) === 400, 'mã sai phải 400');
-    assert(maLoi(() => xoaHV.xoaHocVien(P.admin, S.sid, {})) === 400, 'không gõ mã phải 400');
-    assert(JSON.stringify(demBang()) === JSON.stringify(truoc), 'mã sai mà vẫn mất dòng');
+    maLoi(() => xoaHV.xoaHocVien(P.coreTeacher, S.sid, {}));
+    assert(JSON.stringify(demBang()) === JSON.stringify(truoc), '403 mà vẫn mất dòng');
     assert(maLoi(() => xoaHV.xemXoaHocVien(P.admin, 99_999_999)) === 404, 'id lạ xem phải 404');
     assert(maLoi(() => xoaHV.xoaHocVien(P.admin, 99_999_999, { maXacNhan: 'x' })) === 404, 'id lạ xoá phải 404');
   });
@@ -578,9 +577,10 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(chiXem.join() === 'info,lich-su-sua,xoa-hoc-vien', chiXem.join());   // OV-13j: Lịch sử sửa cả khi chỉ xem; P7: không còn Bỏ lưu trữ
   });
 
-  check('PR-XOA (3) · XoaHocVienPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng mã, dòng sao lưu nguyên văn; không SectionNote/fmtDate/Modal', () => {
+  check('PR-XOA (3) · XoaHocVienPanel theo khuôn: KhungPanel, nút đỏ (rà 11/11 G5-12: không ô gõ XOÁ), xoá xong về hồ sơ lớp; không SectionNote/fmtDate/Modal', () => {
     const pn = docNguon('web/src/modules/students/XoaHocVienPanel.tsx');
-    assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop\}/.test(pn), 'thiếu khuôn / nút đỏ theo mã');
+    assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !d\}/.test(pn) && !/CHU_XAC_NHAN_XOA/.test(pn), 'thiếu khuôn / nút đỏ, hoặc còn ô gõ XOÁ');
+    assert(pn.includes('navigate(d.lopId ? `/hoc-vien/lop/${d.lopId}`'), 'xoá xong phải về hồ sơ lớp của em');
     /* PR-N1 A7: không lộ lệnh npm trên màn hình — câu nhắc sao lưu nói với người dùng, không nói lệnh. */
     assert(pn.includes('Khôi phục được trong 30 ngày (Quản trị › Đã xoá hoặc Lưu trữ).'), 'thiếu dòng nhắc khôi phục (Q-RL2b)');
     assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá HV dùng thứ bị cấm');
@@ -632,14 +632,17 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());
   });
 
-  check('PR-XOA T2 · Tài khoản mới, chưa làm gì → cach "han"; xoá xong: dòng users mất, không dòng nào ở 70 cột trỏ id đó', () => {
+  /* Rà 11/11 G5-10: không còn xoá hẳn — tài khoản chưa làm gì cũng xoá mềm (khôi phục được), và không phải gõ lại email. */
+  check('PR-XOA T2 · Tài khoản mới, chưa làm gì → cach "mem", không gõ lại (goLai null); xoá xong: deleted, phiên mất; Khôi phục được', () => {
     const a = taoTK('han');
     auth.createSession(a.id);
     const x = xoaTK.xemXoaTaiKhoan(P.admin, a.id);
-    assert(x.cach === 'han' && x.soDauVet === 0 && x.chan === null && x.email === a.email, JSON.stringify(x));
-    const r = xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: a.email.toUpperCase() });
-    assert(r.cach === 'han', JSON.stringify(r));
-    assert(!user(a.id) && demTro(a.id) === 0, `còn dòng trỏ tài khoản đã xoá hẳn: ${demTro(a.id)}`);
+    assert(x.cach === 'mem' && x.soDauVet === 0 && x.chan === null && x.email === a.email && x.goLai === null, JSON.stringify(x));
+    const r = xoaTK.xoaTaiKhoan(P.admin, a.id, {});
+    assert(r.cach === 'mem' && user(a.id)?.status === 'deleted', JSON.stringify([r, user(a.id)?.status]));
+    assert(!(conn.prepare('SELECT 1 FROM demo_sessions WHERE user_id = ?').get(a.id)), 'còn phiên');
+    xoaTK.khoiPhucTaiKhoan(P.admin, a.id);
+    assert(user(a.id)?.status === 'active' && user(a.id)?.email === a.email, `khôi phục: ${JSON.stringify(user(a.id))}`);
   });
 
   /* GVBM thử: có điểm đã nhập + Case báo và đang phụ trách + dạy Reading MB FT 101; có phiên đang mở. */
@@ -665,7 +668,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(r.cach === 'mem', JSON.stringify(r));
     const u = user(gv.id);
     assert(u.status === 'deleted' && !!u.deleted_at && u.full_name === `${gv.ten} (đã xoá)` && u.email === `da-xoa-${gv.id}@invalid`
-      && u.password_hash === null && u.password_salt === null, JSON.stringify(u));
+      && u.password_hash !== null, JSON.stringify(u));   // #1418: mật khẩu GIỮ (đăng nhập chặn theo status) — Hoàn tác đăng nhập lại được
     const dem = (sql: string) => (conn.prepare(sql).get(gv.id) as any).n;
     assert(dem('SELECT COUNT(*) AS n FROM demo_sessions WHERE user_id = ?') === 0, 'còn phiên');
     assert(dem(`SELECT COUNT(*) AS n FROM user_roles WHERE user_id = ? AND status = 'active'`) === 0, 'còn vai active');
@@ -736,6 +739,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
       email: `thu.xoa.ko.email${Date.now() % 100000}.pisa@gmail.com`, password: 'matkhau-ko-email', fullName: 'Thu Xoa Khong Email', roles: [{ role: 'teacher', branches: ['MB'] }],
     }) as { userId: number };
     conn.prepare('UPDATE users SET email = NULL WHERE id = ?').run(k.userId);
+    conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(k.userId, new Date().toISOString());   // G5-10: có dấu vết mới phải gõ lại
     const x = xoaTK.xemXoaTaiKhoan(P.admin, k.userId);
     assert(x.chan === null && x.goLai === 'ho-ten', JSON.stringify(x));
     assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, k.userId, { emailXacNhan: '' })) === 400, 'gõ sai phải 400');
@@ -764,6 +768,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
 
   check('PR-XOA T9 · Quyền: QL → 403 cả xem và xoá; email sai → 400; xoá lần hai → 400 "Tài khoản đã xoá."', () => {
     const a = taoTK('quyen');
+    conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(a.id, new Date().toISOString());   // G5-10: có dấu vết mới phải gõ lại
     assert(maLoi(() => xoaTK.xemXoaTaiKhoan(P.mbManager, a.id)) === 403, 'QL xem phải 403');
     assert(maLoi(() => xoaTK.xoaTaiKhoan(P.mbManager, a.id, { emailXacNhan: a.email })) === 403, 'QL xoá phải 403');
     assert(maLoi(() => xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: 'sai.pisa@gmail.com' })) === 400, 'email sai phải 400');
@@ -789,17 +794,48 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); }
   });
 
-  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm ≤ 15, xoá hẳn ≤ 15', () => {
+  /* #1418 (PTA): Hoàn tác xoá phải trả ĐỦ — phân công, quyền riêng, email phụ, đăng nhập bằng mật khẩu cũ. */
+  check('PR-XOA T13 · xoá → Khôi phục (Hoàn tác): phân công lớp, quyền riêng, email phụ trả lại; đăng nhập mật khẩu cũ được; lớp đã có GVCN khác → cảnh báo, không chen', () => {
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      const a = taoTK('hoantac');
+      const nay = new Date().toISOString();
+      const pcMon = Number(conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, 'listening', 0, '2026-01-01', 'active', ?)`)
+        .run(a.id, FT, nay).lastInsertRowid);
+      conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND skill = 'listening' AND status = 'active' AND user_id != ?`).run(FT, a.id);
+      const quyen = (conn.prepare('SELECT id FROM permissions ORDER BY id LIMIT 1').get() as any).id;
+      conn.prepare(`INSERT INTO user_permissions (user_id, permission_id, branch_id, note, granted_by, created_at) VALUES (?, ?, NULL, 'thử', ?, ?)`).run(a.id, quyen, P.admin.userId, nay);
+      conn.prepare(`INSERT INTO user_emails (user_id, email, created_at) VALUES (?, ?, ?)`).run(a.id, `phu.${a.id}.pisa@gmail.com`, nay);
+      conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(a.id, nay);   // có dấu vết
+      xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: a.email });
+      assert(user(a.id).status === 'deleted', 'tiền đề: đã xoá');
+      const kp = xoaTK.khoiPhucTaiKhoan(P.admin, a.id);
+      const pc = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE id = ?').get(pcMon) as any;
+      assert(pc.status === 'active' && pc.effective_to === null, `phân công: ${JSON.stringify(pc)}`);
+      assert(!!conn.prepare('SELECT 1 FROM user_permissions WHERE user_id = ? AND permission_id = ?').get(a.id, quyen), 'quyền riêng');
+      assert(!!conn.prepare('SELECT 1 FROM user_emails WHERE user_id = ?').get(a.id), 'email phụ');
+      assert(accounts.login(a.email, 'matkhau-cu').userId === a.id, 'đăng nhập mật khẩu cũ');
+      assert(!kp.canhBao.some((c: string) => /Đặt lại mật khẩu/.test(c)), `không cần đặt lại mật khẩu: ${kp.canhBao}`);
+      /* Lớp đã có người khác giữ môn đó lúc khôi phục → không chen, cảnh báo. */
+      xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: a.email });
+      const b = taoTK('cho-cu');
+      conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, 'listening', 0, '2026-01-01', 'active', ?)`).run(b.id, FT, nay);
+      const kp2 = xoaTK.khoiPhucTaiKhoan(P.admin, a.id);
+      assert((conn.prepare('SELECT status FROM teacher_assignments WHERE id = ?').get(pcMon) as any).status === 'ended' && kp2.canhBao.some((c: string) => /đã có người khác/.test(c)), JSON.stringify(kp2));
+    } finally { conn.exec('ROLLBACK'); }
+  });
+
+  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 18 (#1418: +3 câu chụp email phụ / quyền / phân công)', () => {
     const han = taoTK('demhan');
     const mem = taoTK('demmem');
     conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(mem.id, new Date().toISOString());
     const nXem = demTruyVan(() => { xoaTK.xemXoaTaiKhoan(P.admin, mem.id); });
     const nMem = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, mem.id, { emailXacNhan: mem.email }); });
-    const nHan = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, han.id, { emailXacNhan: han.email }); });
-    assert(user(mem.id)?.status === 'deleted' && !user(han.id), 'tiền đề: một mềm một hẳn');
+    const nHan = demTruyVan(() => { xoaTK.xoaTaiKhoan(P.admin, han.id, {}); });
+    assert(user(mem.id)?.status === 'deleted' && user(han.id)?.status === 'deleted', 'tiền đề: cả hai xoá mềm (G5-10)');
     /* XOA-b: câu đếm dấu vết chia nhóm ≤ 20 vế cho Turso — mỗi nhóm thêm là một câu (xem/xoá đều đếm dấu vết một lần). */
     const them = xoaTK.CAU_DAU_VET.length - 1;
-    assert(nXem <= 8 + them && nMem <= 15 + them && nHan <= 15 + them, `xem ${nXem}, mềm ${nMem}, hẳn ${nHan} (thêm ${them} câu vì chia nhóm)`);
+    assert(nXem <= 8 + them && nMem <= 18 + them && nHan <= 18 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
   });
 
   check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {
@@ -830,11 +866,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
 
   console.log('\nPR-XOA (5) · Giao diện: Quản trị hệ thống › Tài khoản › ⋯ › Xoá tài khoản, nút lọc Đang dùng / Đã xoá');
 
-  check('PR-XOA (5) · XoaTaiKhoanPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng email / khi bị chặn, dòng sao lưu; không SectionNote/fmtDate/Modal', () => {
+  check('PR-XOA (5) · XoaTaiKhoanPanel theo khuôn: KhungPanel, nút đỏ tắt tới khi gõ đúng email (có dấu vết) / khi bị chặn, Hoàn tác = Khôi phục; không SectionNote/fmtDate/Modal', () => {
     const pn = docNguon('web/src/modules/platform/XoaTaiKhoanPanel.tsx');
     assert(/<KhungPanel\b/.test(pn) && /btn btn-danger/.test(pn) && /disabled=\{busy \|\| !khop \|\| !!d\?\.chan\}/.test(pn), 'thiếu khuôn / nút đỏ');
     assert(/toLowerCase\(\)/.test(pn), 'so email phải không phân biệt hoa thường');
-    assert(pn.includes('Nên sao lưu dữ liệu trước lần xoá đầu.') && pn.includes('Chưa có dấu vết → xoá hẳn')
+    assert(/toast\.hoanTac\(/.test(pn) && pn.includes('/khoi-phuc`'), 'G5-10: Hoàn tác sau xoá phải gọi Khôi phục');
+    assert(pn.includes('Nên sao lưu dữ liệu trước lần xoá đầu.') && pn.includes('Chưa có dấu vết → tài khoản bị khoá và ẩn, khôi phục được ở Đã xoá')
       && pn.includes('→ tài khoản bị khoá và ẩn, lịch sử giữ tên kèm (đã xoá)'), 'thiếu câu của đặc tả');
     assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá tài khoản dùng thứ bị cấm');
   });

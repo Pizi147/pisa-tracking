@@ -253,7 +253,7 @@ export const EN_SOT_QUAN_TRI = {
   'chưa có email': 'no email',
   'Cách xoá': 'How it is deleted',
   'Có dấu vết ({n} dòng) → tài khoản bị khoá và ẩn, lịch sử giữ tên kèm (đã xoá)': 'Has records ({n} rows) → the account is locked and hidden; history keeps the name marked (deleted)',
-  'Chưa có dấu vết → xoá hẳn': 'No records → deleted permanently',
+  'Chưa có dấu vết → tài khoản bị khoá và ẩn, khôi phục được ở Đã xoá': 'No records → account locked and hidden, restorable under Deleted',
   'Nên sao lưu dữ liệu trước lần xoá đầu.': 'Back up the data before the first deletion.',
 
   /* CapQuyenRieng */

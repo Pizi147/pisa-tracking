@@ -13,7 +13,7 @@
  * lớp của em không tự kết thúc (Q9).
  */
 import { db, tx } from '../db.ts';
-import { CHU_XAC_NHAN_XOA, PERMISSIONS, khopXacNhanXoa } from '../../../shared/domain/index.ts';
+import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { HttpError, notFound, loi } from '../util.ts';
 import { require_, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -188,6 +188,7 @@ export function matNhieuEm(ids: number[]): { nhan: string; so: number }[] {
 
 export type XemXoaHocVien = {
   id: number; ma: string; ten: string; lop: string | null; email: string | null; dangHoc: boolean;
+  /** Lớp gần nhất của em — xoá xong web về hồ sơ lớp này (G5-12: "Quay lại về đúng nguồn"). */ lopId: number | null;
   /** Chỉ loại > 0, thứ tự như `LOAI_MAT`. */
   mat: { khoa: string; nhan: string; so: number }[];
   congViecGoLienKet: number;
@@ -222,7 +223,7 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
   const { soDong, congViec } = demMat(studentId);
   return {
-    id: s.id, ma: s.student_code, ten: s.full_name, lop: s.lop ?? null, email: s.email || null,   // VN-1: phân biệt em trùng tên
+    id: s.id, ma: s.student_code, ten: s.full_name, lop: s.lop ?? null, lopId: s.lop_id ?? null, email: s.email || null,   // VN-1: phân biệt em trùng tên
     dangHoc: s.status === 'active' && !!s.lop_dang_hoc,
     mat: LOAI_MAT.filter((l) => soDong[l.khoa] > 0).map((l) => ({ khoa: l.khoa, nhan: l.nhan, so: soDong[l.khoa] })),
     congViecGoLienKet: congViec,
@@ -230,14 +231,13 @@ export function xemXoaHocVien(p: Principal, studentId: number): XemXoaHocVien {
 }
 
 /**
- * POST /students/:id/xoa { maXacNhan } — xoá. Gõ XOÁ (OV-13f: mã HV không hiện trên màn — như Xoá nhiều em) hoặc đúng mã học viên.
+ * POST /students/:id/xoa — xoá MỘT em. Rà 11/11 G5-12: không còn gõ "XOÁ" (đã có Thùng rác 30 ngày + Hoàn tác — xác nhận chỉ khi hậu quả lớn);
+ * Xoá nhiều em (`hangLoat`) vẫn gõ XOÁ. `maXacNhan` cũ vẫn nhận (bỏ qua).
  * Q-RL2b (N24 ②): mọi dòng sắp mất / bị NULL chụp vào thùng rác cùng giao dịch → Hoàn tác / Khôi phục 30 ngày; tệp trong kho giữ tới khi dọn.
  */
-export function xoaHocVien(p: Principal, studentId: number, input: { maXacNhan?: unknown }): { ok: true; ma: string; soDong: Record<string, number>; thungRacId: number } {
+export function xoaHocVien(p: Principal, studentId: number, _input: { maXacNhan?: unknown } = {}): { ok: true; ma: string; soDong: Record<string, number>; thungRacId: number } {
   const s = docEm(studentId);   // OV-12a: em đã bị xoá → 404 trước
   require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, CHI_QL);
-  const go = String(input.maXacNhan ?? '').trim();
-  if (go !== s.student_code && !khopXacNhanXoa(go)) throw loi(400, 'Gõ {CHU_XAC_NHAN_XOA} để xác nhận xoá.', { CHU_XAC_NHAN_XOA });
   const chup = new BoChup(db());
   return tx(() => {
     const con = conLaiMs();

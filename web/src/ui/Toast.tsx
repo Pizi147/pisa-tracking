@@ -12,7 +12,7 @@ type Toast = { id: number; kind: 'ok' | 'error' | 'info'; text: string; hanhDong
 type PushOpts = { hanhDong?: HanhDong; ms?: number; key?: string; demLui?: boolean };
 type Ctx = {
   push: (kind: Toast['kind'], text: string, opts?: PushOpts) => void;
-  /** PR-N1 C1: toast chung cho mọi thao tác hoàn tác được — 5 giây, nút "Hoàn tác (n)" đếm lùi. */
+  /** PR-N1 C1: toast chung cho mọi thao tác hoàn tác được — 10 giây (`HOAN_TAC_MS`), nút "Hoàn tác (n)" đếm lùi. */
   hoanTac: (text: string, onHoanTac: () => void, opts?: { key?: string; ms?: number }) => void;
 };
 

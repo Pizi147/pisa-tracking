@@ -189,11 +189,12 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
     (await gui(skill, p.lyDo ? { score: p.score, total: p.total, lyDo: p.lyDo } : { score: p.score, total: p.total }, opts)) !== null;
 
   /* Dấu "-" gửi RIÊNG (máy chủ không nhận kèm điểm/tổng): ghi dấu là dời môn sang tuần sau, gỡ dấu là trả về tuần cũ. */
-  const dau = async (skill: string, bat: boolean) => {
+  const dau = async (skill: string, bat: boolean, hoanTac?: () => void) => {
     const r = await gui(skill, { noShow: bat });
     if (r && bat) {
+      /* Rà 11/11 G1-03: lớp thường cũng có Hoàn tác 10 s (= gỡ "-"), như FT. */
       thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv,   // K4: gõ "-" và nút Vắng cùng một thông báo
-        r.khongDuThi ? { kq: 'khong-du-thi' } : r.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null);
+        r.khongDuThi ? { kq: 'khong-du-thi' } : r.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null, hoanTac ?? (() => void dau(skill, false)));
     } else if (r && r.moved) {
       toast.push('ok', t('Đã bỏ vắng {tenMonNgan}{x} · về {x2}', { tenMonNgan: tenMonNgan(ct, skill), x: tenHv ? ` · ${tenHv}` : '', x2: r.tuanMoi ?? t('tuần cũ') }));
     } else if (r && r.giuLich) {
@@ -459,7 +460,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
               tenMon={tenMon(sheet.programme.code, k)}
               tenHv={row.studentName}
               onSave={(p, o) => luu(k, p, o)}
-              onDau={(bat) => dau(k, bat)}
+              onDau={(bat, ht) => dau(k, bat, ht)}
               onLoiNhap={(c) => loiNhap(k, c)}
               inputRef={(el) => register(ci, el)}
               onKeyDown={(e) => {

@@ -519,7 +519,8 @@ export function ODiemThuong({
   tongCot: number | null;
   canEdit: boolean;
   onSave: (patch: { score: number | null; total: number | null; lyDo?: string }, opts?: SaveOpts) => Promise<boolean>;
-  onDau: (bat: boolean) => Promise<boolean>;
+  /** `hoanTac`: lệnh gỡ "-" ĐI QUA Ô (để ô bỏ "-" ngay khi lưới chưa tải lại) — nơi gọi dùng cho nút Hoàn tác của toast (#1418). */
+  onDau: (bat: boolean, hoanTac?: () => void) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   dienTong?: { gt: number; lan: number } | null;
@@ -534,7 +535,15 @@ export function ODiemThuong({
 }) {
   const toast = useToast();
   const idLoi = useId();
-  const dau = cell.dau ?? cell.tuanDoiTu !== null;
+  /* Rà 11/11 G1-03: "-" vừa ghi / gỡ thành công — ô theo ngay, không chờ lưới tải lại (xoá "-" nhanh sau khi ghi trước đây không gửi gì). */
+  const [dauTam, setDauTam] = useState<boolean | null>(null);
+  useEffect(() => { setDauTam(null); }, [cell.dau, cell.tuanDoiTu]);
+  const dau = dauTam ?? (cell.dau ?? cell.tuanDoiTu !== null);
+  const doiDau = async (bat: boolean): Promise<boolean> => {
+    const ok = await onDau(bat, bat ? () => void doiDau(false) : undefined);
+    if (ok) setDauTam(bat);
+    return ok;
+  };
   const coDiem = cell.diem !== null;
   const diemDaLuu = () => (coDiem ? String(cell.diem) : dau ? '-' : '');
   const tongDaLuu = () => (cell.tong !== null ? String(cell.tong)
@@ -616,9 +625,9 @@ export function ODiemThuong({
         return;
       }
       setCanhBao(null);
-      return gui(() => onDau(true), true);
+      return gui(() => doiDau(true), true);
     }
-    if (d === '' && dau) { setCanhBao(null); return gui(() => onDau(false), true); }
+    if (d === '' && dau) { setCanhBao(null); return gui(() => doiDau(false), true); }
     const loi = loiNhap(d, tt);
     if (loi) { setCanhBao(loi); return; }
     /*
@@ -647,7 +656,7 @@ export function ODiemThuong({
   const ghiDau = () => {
     if (!nhanDau || dangGui.current) return;
     setCanhBao(null);
-    void gui(() => onDau(true), true);
+    void gui(() => doiDau(true), true);
   };
   /*
    * GÕ "-" LÊN Ô ĐANG HIỆN "-": giá trị không đổi (đè lên "-" đang chọn) hoặc thành "--" (con trỏ sau "-") — cả hai
@@ -659,7 +668,7 @@ export function ODiemThuong({
   const bamVang = () => {
     if (!nhanDau || dangGui.current) return;
     setCanhBao(null);
-    void gui(() => onDau(true), true);
+    void gui(() => doiDau(true), true);
   };
   const goLai = useGoLaiDau(diem, goLaiDau, inputRef);
 
@@ -704,7 +713,7 @@ export function ODiemThuong({
     /* Máy chủ từ chối (quá khung, mạng…) → ô về "-": không để một ô trống trông như đã gỡ. */
     const goNgay = () => {
       if (conDau || dangGui.current) return;
-      void gui(async () => { const ok = await onDau(false); if (!ok) setConDau(true); return ok; }, true);
+      void gui(async () => { const ok = await doiDau(false); if (!ok) setConDau(true); return ok; }, true);
     };
     return (
       <span className="inline-flex flex-col items-end gap-0.5">
