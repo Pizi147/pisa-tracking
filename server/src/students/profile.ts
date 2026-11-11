@@ -122,11 +122,12 @@ function currentBands(attempts: any[]) {
  * VỊ TRÍ SO VỚI CHECKPOINT — dựa trên kỳ vọng ĐÃ CHỐT của chính lượt đó, không nội suy
  * theo tuần. "Tuần này lẽ ra phải được 6.0" là một con số bịa; kỳ vọng chỉ tồn tại ở
  * đúng các mốc MT.
+ * TURSO-LOG-1311: `daTinh` = kết quả lượt hồ sơ vừa tính (`studentProfile`, cùng lượt) — trước tính lại, mỗi lượt một câu lịch kỹ năng.
  */
-function checkpointView(attempts: any[]) {
+function checkpointView(attempts: any[], daTinh?: ReadonlyMap<number, ReturnType<typeof typedResult>>) {
   for (const a of attempts) {
     if (a.status === 'cancelled') continue;
-    const t = typedResult(a);
+    const t = daTinh?.get(a.id) ?? typedResult(a);
     if (t.mode === 'ratio') {
       const r = t.ratio!;
       if (r.failedCount === null) continue;
@@ -619,8 +620,10 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const [id, kn] = k.split(':');
     vangCu.set(Number(id), { ...(vangCu.get(Number(id)) ?? {}), [kn]: v });
   }
+  const typedCua = new Map<number, ReturnType<typeof typedResult>>();
   const attempts = attemptRows.map((a) => {
     const t = typedResult(a, undefined, lichCua.get(a.id) ?? []);
+    typedCua.set(a.id, t);
     const c = caseByAttempt.get(a.id) ?? null;
     const base = {
       id: a.id, attemptNo: a.attempt_no, kind: a.kind, status: a.status, lichSu: !!a.lich_su, planSource: a.plan_source ?? null,
@@ -1006,7 +1009,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       overall: attempts.find((a) => a.mode === 'ielts' && a.overall !== null)?.overall ?? null,
       overallFrom: attempts.find((a) => a.mode === 'ielts' && a.overall !== null)?.attemptNo ?? null,
     },
-    checkpoint: checkpointView(attemptRows),
+    checkpoint: checkpointView(attemptRows, typedCua),
     nextCheckpoint: nextRow
       ? {
         id: nextRow.id, attemptNo: nextRow.attempt_no, kind: nextRow.kind,

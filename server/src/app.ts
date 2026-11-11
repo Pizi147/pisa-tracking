@@ -97,9 +97,11 @@ const DA_THU_LAI = Symbol('daThuLaiMatKetNoi');
  * `connection closed`, `Hrana(Http…)`, `fetch failed`, `ECONNRESET`) nghĩa là kết nối Turso giữ ở cấp module đã chết. Chỉ chạy lại khi
  * an toàn — chưa thử lại lần nào, chưa gửi gì về, lỗi KHÔNG ném ra từ trong tx() (giao dịch có thể đã ghi dở), và:
  *   · request GET, hoặc
- *   · lỗi ở bước kiểm phiên (chưa có cờ DA_VAO_API, auth.ts) — đường API chưa chạy nên POST/PUT/DELETE chạy lại không ghi hai lần.
+ *   · lỗi ở bước kiểm phiên (chưa có cờ DA_VAO_API, auth.ts) — đường API chưa chạy nên POST/PUT/DELETE chạy lại không ghi hai lần, hoặc
+ *   · TURSO-LOG-1311 (log 10–11/11: 4 lần POST /auth/login "stream not found" ở câu đọc đầu `phutConKhoa`): đường API đã chạy nhưng CHƯA ghi
+ *     DB lần nào (`Dem.ghi` còn bằng lúc vào API — mọi `run` / `exec` đều đếm) và không phải tải tệp (multipart: thân đã đọc, tệp có thể đã lên kho).
  *     Bản chính 07/10: mọi lần lỗi đều ở câu đầu tiên của request (kết nối cũ bị Turso đóng sau lúc rảnh), kể cả lệnh ghi.
- * Lỗi trong đường API của lệnh ghi: không chạy lại (có thể đã ghi — chạy lại là ghi hai lần).
+ * Lỗi trong đường API của lệnh ghi SAU một lần ghi: không chạy lại (có thể đã ghi — chạy lại là ghi hai lần).
  * Khi chạy lại: bỏ kết nối cũ, ghi log một dòng (kèm thông điệp lỗi), chạy lại kiểm phiên + đường API trong một ngữ cảnh request mới
  * (bộ nhớ tra cứu trống). Lần hai vẫn lỗi → lỗi đi thẳng tới traLoiLoi như cũ (người dùng thấy "Có lỗi · mã …"). Lỗi khác không bị đụng.
  * Không thử lại vẫn BỎ kết nối chết (Z2c-c, A2): giữ nó thì mọi lời gọi sau trên cùng bản hàm cũng hỏng theo.
@@ -108,9 +110,11 @@ export function thuLaiKhiMatKetNoi(luong: (req: Request, res: Response, next: Ne
   return (err: unknown, req: Request, res: Response, next: NextFunction): void => {
     if (!laLoiMatKetNoiTurso(err)) { next(err); return; }
     moLaiKetNoi();
-    const r = req as Request & { [DA_THU_LAI]?: true; [DA_VAO_API]?: true };
+    const r = req as Request & { [DA_THU_LAI]?: true; [DA_VAO_API]?: number };
     const kieu = (err as Error).message.slice(0, 120);
-    const chuaGhi = req.method === 'GET' || !r[DA_VAO_API];
+    const vaoApi = r[DA_VAO_API];
+    const chuaGhi = req.method === 'GET' || vaoApi === undefined
+      || (!req.is?.('multipart/form-data') && (res.locals?.dem as Dem | undefined)?.ghi === vaoApi);
     if (!chuaGhi || r[DA_THU_LAI] || res.headersSent || loiTrongGiaoDich(err)) {
       console.warn(`[turso] mất kết nối (${kieu}) — đã mở lại kết nối, KHÔNG thử lại ${req.method} ${req.path}`);
       next(err);

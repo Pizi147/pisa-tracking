@@ -4,7 +4,7 @@ import { db } from './db.ts';
 import { COT_PRINCIPAL, principalTuDong, type Principal } from './permissions.ts';
 import { coTheDoiGocNhin } from '../../shared/domain/index.ts';
 import { HttpError, nowIso } from './util.ts';
-import { datMoc } from './platform/nguCanhRequest.ts';
+import { datMoc, demHienTai } from './platform/nguCanhRequest.ts';
 import { COT_MOC, docMoc } from './platform/mocHeThong.ts';
 
 /**
@@ -99,6 +99,7 @@ export function datGocNhin(token: string, gocNhin: string | null) {
 /**
  * Cờ trên req: đã qua bước kiểm phiên, sắp vào đường API. Lỗi mất kết nối Turso TRƯỚC cờ này (trong resolveSession) thì chạy lại được
  * với mọi method — đường API chưa chạy; resolveSession chỉ có thể đã xoá phiên hết hạn / ghi mốc dùng, chạy lại vô hại (app.ts).
+ * Giá trị = số lần ghi DB của request lúc vào đường API (`Dem.ghi`) — TURSO-LOG-1311: còn bằng lúc lỗi thì đường API chưa ghi gì.
  */
 export const DA_VAO_API = Symbol('daVaoDuongApi');
 
@@ -120,7 +121,7 @@ export function attachPrincipal(req: Request, _res: Response, next: NextFunction
     next(e);
     return;
   }
-  (req as Request & { [DA_VAO_API]?: true })[DA_VAO_API] = true;
+  (req as Request & { [DA_VAO_API]?: number })[DA_VAO_API] = demHienTai()?.ghi ?? 0;
   next();
 }
 

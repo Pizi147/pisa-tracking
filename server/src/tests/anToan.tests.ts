@@ -664,9 +664,10 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(lai.stmt === ngoai1.stmt && (lai.get() as any).tx_khoa_thu === 7, 'Ra khỏi giao dịch phải về câu nhớ ngoài giao dịch');
   });
 
-  await checkAsync('Mất kết nối Turso ở POST → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, vẫn bỏ kết nối chết', async () => {
+  await checkAsync('Mất kết nối Turso ở POST SAU một lần ghi → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, vẫn bỏ kết nối chết', async () => {
     const tk = taoTaiKhoan('anz2b.ketnoi');
-    const { kq: r, log, moLai } = await giaLoi(/auth_attempts/, LOI_MANG[0], () => dangNhap(tk, '203.0.113.63'));
+    /* TURSO-LOG-1311: lỗi ở câu đọc đầu (chưa ghi) nay được thử lại — gài vào câu chèn lần thử sai, sau câu xoá dòng cũ (đã ghi). */
+    const { kq: r, log, moLai } = await giaLoi(/INSERT INTO auth_attempts/, LOI_MANG[0], () => dangNhap(tk, '203.0.113.63', true));
     assert(r.status === 500 && /Có lỗi · mã/.test(r.json?.error ?? '') && !r.setCookie, `${r.status} ${JSON.stringify(r.json)}`);
     assert(moLai && /KHÔNG thử lại POST/.test(log), `moLai=${moLai} log: ${log}`);
   });
@@ -700,15 +701,15 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(/thử lại PATCH \/api\/me\/profile/.test(log) && !/KHÔNG thử lại/.test(log), `Log: ${log}`);
   });
 
-  check('Mất kết nối SAU khi đã vào đường API: PUT không thử lại (có thể đã ghi), GET vẫn thử lại; trước đường API thì PUT thử lại', () => {
-    const chay = (method: string, daVaoApi: boolean) => {
+  check('Mất kết nối SAU khi đường API đã ghi: PUT không thử lại (có thể đã ghi), GET vẫn thử lại; trước đường API, hoặc đường API chưa ghi lần nào (TURSO-LOG-1311, trừ tải tệp) thì PUT thử lại', () => {
+    const chay = (method: string, daVaoApi: boolean, daGhi = true, tep = false) => {
       let goiLai = 0;
       let chuyenTiep: unknown = null;
       const loi = new Error(LOI_MANG[0]);
-      const req: any = { method, path: '/x' };
-      if (daVaoApi) req[authMod.DA_VAO_API] = true;
+      const req: any = { method, path: '/x', is: (t: string) => (tep && t === 'multipart/form-data' ? t : false) };
+      if (daVaoApi) req[authMod.DA_VAO_API] = 2;   // 2 lần ghi lúc vào API (mốc dùng phiên…)
       const cu = dbMod.db();
-      appMod.thuLaiKhiMatKetNoi(() => { goiLai++; })(loi, req, { headersSent: false }, (e: unknown) => { chuyenTiep = e; });
+      appMod.thuLaiKhiMatKetNoi(() => { goiLai++; })(loi, req, { headersSent: false, locals: { dem: { ghi: daGhi ? 3 : 2 } } }, (e: unknown) => { chuyenTiep = e; });
       const moi = dbMod.db();
       if (moi !== cu) { try { moi.close(); } catch { /* đã đóng */ } dbMod.datKetNoiChoPhepKiem(cu); }
       return { goiLai, chuyenTiep: chuyenTiep === loi, moLai: moi !== cu };
@@ -716,9 +717,13 @@ export async function runAnToanTests(t: AnToanTestKit) {
     const putSau = chay('PUT', true);
     const getSau = chay('GET', true);
     const putTruoc = chay('PUT', false);
+    const putChuaGhi = chay('PUT', true, false);
+    const tepChuaGhi = chay('POST', true, false, true);
     assert(putSau.goiLai === 0 && putSau.chuyenTiep && putSau.moLai, `PUT sau: ${JSON.stringify(putSau)}`);
     assert(getSau.goiLai === 1 && getSau.moLai, `GET sau: ${JSON.stringify(getSau)}`);
     assert(putTruoc.goiLai === 1 && putTruoc.moLai, `PUT trước: ${JSON.stringify(putTruoc)}`);
+    assert(putChuaGhi.goiLai === 1 && putChuaGhi.moLai, `PUT chưa ghi: ${JSON.stringify(putChuaGhi)}`);
+    assert(tepChuaGhi.goiLai === 0 && tepChuaGhi.chuyenTiep && tepChuaGhi.moLai, `POST tải tệp: ${JSON.stringify(tepChuaGhi)}`);
   });
 
   await checkAsync('PR-PH · lỗi ở bước kiểm phiên không qua được (lỗi khác, hoặc mất kết nối cả lần thử lại) → 500 có mã, KHÔNG phải 401 "đăng nhập lại", KHÔNG phải authenticated:false', async () => {
@@ -742,18 +747,30 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(/no-store/.test(String(r.cacheControl ?? '')), `cache-control: ${r.cacheControl}`);
   });
 
-  await checkAsync('Z2c-b/c · POST mất luồng → KHÔNG thử lại (tránh ghi hai lần): 500 có mã, không ghi dòng nào — nhưng VẪN bỏ kết nối chết (A2), log một dòng [turso] "KHÔNG thử lại"', async () => {
+  const demDangNhap = () => JSON.stringify([
+    (conn.prepare('SELECT COUNT(*) n FROM auth_attempts').get() as any).n,
+    (conn.prepare('SELECT COUNT(*) n FROM demo_sessions').get() as any).n,
+  ]);
+  await checkAsync('TURSO-LOG-1311 · POST đăng nhập mất luồng ở câu ĐỌC đầu (chưa ghi gì) → mở lại kết nối, thử lại MỘT lần, vào được, ghi đúng một phiên', async () => {
     const tk = taoTaiKhoan('anz2b.post');
-    const dem = () => JSON.stringify([
-      (conn.prepare('SELECT COUNT(*) n FROM auth_attempts').get() as any).n,
-      (conn.prepare('SELECT COUNT(*) n FROM demo_sessions').get() as any).n,
-    ]);
-    const truoc = dem();
-    const { kq: r, log, moLai } = await giaLoi(/auth_attempts/, LOI_LUONG, () => dangNhap(tk, '203.0.113.62'));
+    const phien = () => (conn.prepare('SELECT COUNT(*) n FROM demo_sessions').get() as any).n as number;
+    const truoc = phien();
+    const { kq: r, log, moLai } = await giaLoi(/SELECT COUNT\(\*\) AS n, MIN\(at\) AS dau FROM auth_attempts/, LOI_LUONG, () => dangNhap(tk, '203.0.113.62'));
+    assert(r.status === 200 && r.setCookie, `${r.status} ${JSON.stringify(r.json)}`);
+    assert(moLai, 'POST mất luồng phải bỏ kết nối chết — giữ lại thì lời gọi sau cũng hỏng');
+    assert((log.match(/\[turso\]/g) ?? []).length === 1 && /thử lại POST \/api\/auth\/login một lần/.test(log), `Log: ${log}`);
+    assert(phien() === truoc + 1, `Phiên: ${truoc} → ${phien()}`);
+  });
+
+  await checkAsync('Z2c-b/c · POST mất luồng SAU một lần ghi → KHÔNG thử lại (tránh ghi hai lần): 500 có mã — nhưng VẪN bỏ kết nối chết (A2), log một dòng [turso] "KHÔNG thử lại"', async () => {
+    const tk = taoTaiKhoan('anz2b.post2');
+    const truoc = demDangNhap();
+    /* Sai mật khẩu: `ghiLanThu` xoá dòng cũ (ghi) rồi mới chèn lần thử — lỗi ở câu chèn là sau một lần ghi. */
+    const { kq: r, log, moLai } = await giaLoi(/INSERT INTO auth_attempts/, LOI_LUONG, () => dangNhap(tk, '203.0.113.66', true));
     assert(r.status === 500 && /Có lỗi · mã/.test(r.json?.error ?? '') && !r.setCookie, `${r.status} ${JSON.stringify(r.json)}`);
     assert(moLai, 'POST mất luồng phải bỏ kết nối chết — giữ lại thì lời gọi sau cũng hỏng');
     assert((log.match(/\[turso\]/g) ?? []).length === 1 && /KHÔNG thử lại POST \/api\/auth\/login/.test(log), `Log: ${log}`);
-    assert(dem() === truoc, `Đã ghi: ${truoc} → ${dem()}`);
+    assert(demDangNhap() === truoc, `Đã ghi: ${truoc} → ${demDangNhap()}`);
   });
 
   check('Z2c-b/c · Lỗi mất luồng xảy ra TRONG giao dịch (tx) được đánh dấu → bộ thử lại bỏ qua kể cả với GET, nhưng vẫn bỏ kết nối chết (A2); lỗi thường không bị nhận nhầm', () => {

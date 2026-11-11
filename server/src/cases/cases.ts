@@ -44,7 +44,7 @@ import { quyenPhuTrachS } from '../fasttrack/attempts.ts';
 import { nguoiGiuKetQua, type DongGiuKetQua } from './giuKetQua.ts';
 import { NAP_DIEU_CHINH, apDungDieuChinh, chuanHoaDieuChinh, daDayCua, ghiBanDieuChinh, lichSuDieuChinhCuaCase, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chuanHoaNguoiThucHien } from './nguoiThucHien.ts';
-import { CAU_RUT_KTD, NUT_RUT_KTD, chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, rutKhongTheoDoiTrongTx, tenGiuaCua, traXacNhanNgam, xacNhanCase, xacNhanPaQuyChe } from './sosAuto.ts';
+import { CAU_RUT_KTD, NUT_RUT_KTD, chanPaSauXacNhan, dienMocQuyChe, kiemNoiDungCase, mtCuoiNho, nhatKyXacNhan, rutKhongTheoDoiTrongTx, napTenGiua, tenGiuaCua, traXacNhanNgam, xacNhanCase, xacNhanPaQuyChe } from './sosAuto.ts';
 import { xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { GhiDao, daoDuoc, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
@@ -3342,6 +3342,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
   const lopCase = (c: any) => (lopDangHoc ?? c.attempt_class_id ?? null) as number | null;
   /* GIAM-COMPUTE: mọi PA của mọi Case trên bảng — MỘT câu dùng cho người giữ việc ở đây và PA của Case đại diện mỗi hàng (`dongKyNang`). */
   const idCase = caseRows.map((c) => c.id as number);
+  napTenGiua(caseRows.filter((c) => c.origin_kind === 'mock'));   // TURSO-LOG-1311: `tenSos` của thẻ — một câu cho cả bảng (trước 2 câu mỗi Case)
   const paChinh = docNhoTheoId('case-pa-chinh:', idCase, `SELECT iv.*, u.full_name AS performer_name_user FROM case_interventions iv
              LEFT JOIN users u ON u.id = iv.performer_user_id
             WHERE iv.case_id IN (${DS_JSON}) ORDER BY iv.id DESC`);

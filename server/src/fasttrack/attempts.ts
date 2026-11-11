@@ -710,6 +710,11 @@ export type AttemptFilters = {
   /** PR-LT3 (rà #218 I2): CHỈ ĐỌC cho Lịch Test — phạm vi `scopeXemLuotCham` (thêm lớp FT cùng chi nhánh của GV Speaking chấm chéo),
    *  cùng phạm vi khối 2/3. Đường ghi vẫn kiểm quyền riêng (`scoreEditPath`). */
   phamViCham?: boolean;
+  /**
+   * TURSO-LOG-1311: kèm `phamViCham` — lớp CHỈ vào nhờ chấm S chéo (ngoài `scopeFor`) chỉ đọc lượt Mock / MT0 mà ô Speaking chưa có band (tập cha của ô S
+   * chéo còn chờ). Nơi gọi chỉ dùng ô S chéo ở các lớp đó (Công việc `vaoChamS`); log 10–11/11: GV Speaking đọc mọi lượt còn ô chờ của cả chi nhánh.
+   */
+  chiSCheoNgoai?: boolean;
   /** TD3-a: chỉ lượt CÓ THỂ còn ô cần chấm (`CON_O_SQL`) — tập cha của `conBaiCanCham`; nơi gọi vẫn lọc JS như cũ. */
   chiConO?: boolean;
   /** TD4: cùng `chiConO`, giữ thêm lượt chưa xếp tuần (`planned`, không tuần) — việc "Chốt tuần MT" của Công việc. */
@@ -789,6 +794,16 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   /* Danh sách `?,?,…` như `classScopeSql` (S5: json_each đổi kế hoạch câu). */
   const where: string[] = [lopMt0.length ? `(${cs.sql} OR (c.id IN (${lopMt0.map(() => '?').join(',')}) AND a.kind = 'mt0'))` : cs.sql];
   const params: unknown[] = [...cs.params, ...lopMt0];
+  if (f.phamViCham && f.chiSCheoNgoai && !scope.all) {
+    const goc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    const ngoai = goc.all ? [] : [...scope.classIds, ...lopMt0]
+      .filter((id) => !goc.classIds.includes(id) && !goc.branchIds.includes(bangLop().get(id)?.branchId ?? -1));
+    if (ngoai.length) {
+      where.push(`(c.id NOT IN (${ngoai.map(() => '?').join(',')}) OR (a.kind IN ('mock', 'mt0')
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores sx WHERE sx.attempt_id = a.id AND sx.skill = 'speaking' AND sx.band IS NOT NULL)))`);
+      params.push(...ngoai);
+    }
+  }
 
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
   if (f.classId) { where.push('a.class_id = ?'); params.push(f.classId); }

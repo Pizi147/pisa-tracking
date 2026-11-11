@@ -602,8 +602,8 @@ export const TRAN: Record<string, number> = {
   'CX /hoc-vien-lop/theo-vai': 30,   // TL-NEN: đo 75 (trước 84); TL-HVL: đo 64 (trước 70); RA-DOC-0611: đo 62; GIAM-DOC-0611: đo 20 (trước 62) — cờ Thiếu thông tin không dựng cả danh sách
   'CX /hoc-vien-lop/theo-vai?branchId=1': 30,   // TL-NEN: đo 67 (trước 79); TL-HVL: đo 58 (trước 62); RA-DOC-0611: đo 56; GIAM-DOC-0611: đo 20 (trước 56) — cờ Thiếu thông tin không dựng cả danh sách
   'ADMIN /hoc-vien-lop': 63,   // TL-NEN: đo 55 (trước 69); TL-HVL: đo 48 (trước 51)
-  'CX /students/1': 88,   // TL-NEN: đo 76 (trước 82); GIAM-COMPUTE: đo 67 (trước 79)
-  'ADMIN /students/1': 88,   // GIAM-COMPUTE: đo 67 (trước 79)
+  'CX /students/1': 85,   // TL-NEN: đo 76 (trước 82); GIAM-COMPUTE: đo 67 (trước 79); TURSO-LOG-1311: đo 65 (checkpoint dùng lại kết quả lượt, tên Case theo lô)
+  'ADMIN /students/1': 85,   // GIAM-COMPUTE: đo 67 (trước 79); TURSO-LOG-1311: đo 65
   'ADMIN /tong-quan/mock-test': 38,   // TL-NEN: đo 28 (trước 42)
   'ADMIN /highlights': 20,
   /* OV-15h1: trần = đo + 6 (đo demo 20/10: QL 56 · 54 · 21 · 15; QT 52 · 50 · 19 · 14). */
@@ -859,10 +859,10 @@ export const TRAN: Record<string, number> = {
   // và lấy tên người làm qua JOIN; giữ trần cứng 100 (luật +10/+30 % cho 107–109, vượt trần cứng).
   /* PR-Dọn (Task 9): gom câu hồ sơ HV 93–98 → 81–86 (JSON 4 vai × 3 em giống hệt) — trần hạ xuống đo + 10. */
   /* GIAM-COMPUTE: phần thẻ Case của mọi Case trên bảng kỹ năng nạp một câu mỗi loại (trước ~11 câu × số Case) — đo 67 · 67 · 69 · 67 (trước 79 · 79 · 81 · 79), trần max(đo + 10, ⌈đo × 1,3⌉). */
-  'QL /students/1': 88,
-  'QT /students/1': 88,
-  'GVCN /students/1': 90,
-  'GVBM /students/1': 88,
+  'QL /students/1': 85,   // TURSO-LOG-1311: đo 65 → max(đo + 10, ⌈đo × 1,3⌉)
+  'QT /students/1': 85,
+  'GVCN /students/1': 88,   // TURSO-LOG-1311: đo 67
+  'GVBM /students/1': 85,
   /* PR-Dọn (Task 1, Q2): ô chọn người theo một em — đo + 10. */
   'QL /ref/nguoi?nhom=giao_vien&studentId=1': 19,
   'QT /ref/nguoi?nhom=giao_vien&studentId=1': 17,

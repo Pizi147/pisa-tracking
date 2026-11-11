@@ -1,4 +1,4 @@
-import { db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, docNhoTheoId, theoLo, tx } from '../db.ts';
 import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { maNhomHopLe, cauHinh, DANH_MUC_DOI,
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
@@ -328,13 +328,27 @@ export function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: st
 }
 
 /** Phần giữa của tên Case SOS — người sửa được (lưu `title`), mặc định `{kỹ năng} không đạt`. */
-export function tenGiuaCua(c: { title?: string | null; topic?: string | null; category?: string | null; cycle_id?: number | null; attempt_id?: number | null }): string {
+type CaseTen = { title?: string | null; topic?: string | null; category?: string | null; cycle_id?: number | null; attempt_id?: number | null };
+/* TURSO-LOG-1311: lượt / lộ trình của tên Case — đọc theo id, nhớ trong request GET (`docNhoTheoId`); danh sách nạp trước MỘT câu mỗi loại (`napTenGiua`). */
+const LUOT_CT_SQL = `SELECT a.id, a.kind, cl.programme_code ct FROM assessment_attempts a LEFT JOIN classes cl ON cl.id = a.class_id WHERE a.id IN (${DS_JSON})`;
+const LO_TRINH_CT_SQL = `SELECT id, programme_code ct FROM learning_cycles WHERE id IN (${DS_JSON})`;
+const luotCt = (ids: number[]) => docNhoTheoId('ten-giua-luot:', ids, LUOT_CT_SQL, 'id');
+const loTrinhCt = (ids: number[]) => docNhoTheoId('ten-giua-cy:', ids, LO_TRINH_CT_SQL, 'id');
+
+/** Nạp trước (GET) cho mọi Case chưa đặt tên của một danh sách — sau đó `tenGiuaCua` từng Case không hỏi DB. */
+export function napTenGiua(cs: readonly CaseTen[]): void {
+  const can = cs.filter((c) => !(c.title ?? '').trim());
+  luotCt([...new Set(can.map((c) => c.attempt_id).filter((x): x is number => !!x))]);
+  loTrinhCt([...new Set(can.map((c) => c.cycle_id).filter((x): x is number => !!x))]);
+}
+
+export function tenGiuaCua(c: CaseTen): string {
   const own = (c.title ?? '').trim();
   if (own) return own;
   /* PR-LT2a: Case Giữa/Cuối khoá lớp thường — tên môn NGẮN (`G+V không đạt`), khớp `caseTitleOf`. */
-  const luot = c.attempt_id ? (db().prepare('SELECT a.kind, cl.programme_code ct FROM assessment_attempts a LEFT JOIN classes cl ON cl.id = a.class_id WHERE a.id = ?').get(c.attempt_id) as any) : null;
+  const luot = c.attempt_id ? luotCt([c.attempt_id]).get(c.attempt_id)?.[0] ?? null : null;
   if (luot && (luot.kind === 'progress' || luot.kind === 'final')) return `${tenMonNgan(luot.ct ?? null, c.topic ?? c.category ?? '')} không đạt`;
-  const ct = c.cycle_id ? (db().prepare('SELECT programme_code ct FROM learning_cycles WHERE id = ?').get(c.cycle_id) as any)?.ct ?? null : null;
+  const ct = c.cycle_id ? loTrinhCt([c.cycle_id]).get(c.cycle_id)?.[0]?.ct ?? null : null;
   return `${caseTopicLabel(c.topic ?? c.category ?? '', ct)} không đạt`;
 }
 
