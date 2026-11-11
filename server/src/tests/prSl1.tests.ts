@@ -88,6 +88,32 @@ export async function runPrSl1Tests(t: YThucTestKit) {
       assert(d.khoaSoLieu({ id: 'x', extra: { a: '1' } }) === 'x|a=1', 'extra như cũ');
     });
 
+    check('SL1-4b · PT-SO-LOI: nhiều ô số CÙNG khoá → chỉ MỘT ô vẽ panel (ô vừa bấm; không thì ô gắn trước; ô chủ gỡ → ô kế)', () => {
+      /* Gốc lỗi 12/11: Phân tích › Giáo viên — Đúng hạn · Làm muộn · Chưa làm (+ S chéo chung) của một hàng cùng nguồn → bấm một số mở 2–4 panel,
+         kho một panel đóng panel cũ → `?so-lieu=` bị gỡ (lùi lịch sử) → số "nháy", không panel nào. */
+      const c = d.taoChuSoLieu();
+      let bao = 0;
+      const bo = c.nghe(() => { bao++; });
+      const K = 'nguon:/phan-tich/giao-vien/o?gv=7&cot=cham-diem';
+      c.gan(K, 'muon', true);   // bấm ô Làm muộn
+      c.gan(K, 'dung'); c.gan(K, 'muon'); c.gan(K, 'chua');   // URL mở → mọi ô cùng khoá gắn
+      assert(c.chu(K) === 'muon', `ô vừa bấm vẽ panel, được ${c.chu(K)}`);
+      assert(['dung', 'chua'].every((o) => c.chu(K) !== o), 'ô khác cùng khoá không vẽ panel');
+      c.go(K, 'muon');
+      assert(c.chu(K) === 'dung', 'ô chủ gỡ → ô gắn kế vẽ');
+      c.go(K, 'dung'); c.go(K, 'chua');
+      assert(c.chu(K) === null, 'đóng hết → không ai');
+      const L = 'so-lieu-khac';
+      c.gan(L, 'a'); c.gan(L, 'b');
+      assert(c.chu(L) === 'a', 'link dán / F5 (không bấm): ô gắn trước vẽ');
+      const truoc = bao;
+      c.gan(L, 'a');
+      assert(bao === truoc && c.chu(L) === 'a', 'gắn lại không đổi chủ, không báo thừa');
+      bo();
+      c.go(L, 'a');
+      assert(bao === truoc, 'bỏ nghe thì không báo');
+    });
+
     check('SL1-5 · đầu nhóm đếm trên toàn bộ trước khi chia trang: 10 / trang hay 50 / trang cùng số; nhóm nối trang ghi "tiếp"', () => {
       const dong = [...Array.from({ length: 15 }, (_, i) => ({ lop: 'A', i })), ...Array.from({ length: 8 }, (_, i) => ({ lop: 'B', i }))];
       const trang = (so: number, co: number) => { const c = d.catTrang(dong.length, so, co); return dong.slice(c.dau, c.cuoi); };

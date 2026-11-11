@@ -28,6 +28,34 @@ export function taoKhoPanel(): KhoPanel {
 }
 
 /**
+ * MỘT Ô VẼ PANEL CHO MỖI KHOÁ `?so-lieu=` (PT-SO-LOI 12/11) — thuần, kiểm ở `prSl1` SL1-4b. Nhiều ô số cùng khoá (Phân tích › Giáo viên: Đúng hạn ·
+ * Làm muộn · Chưa làm · "+ S chéo chung" cùng nguồn) mà ô nào cũng vẽ panel → hai `KhungPanel`, kho một panel đóng cái cũ → `?so-lieu=` bị gỡ
+ * (lùi lịch sử) → số "nháy", không panel nào. Chủ = ô vừa bấm (`gan(…, true)`), không thì ô gắn trước (link dán, F5); ô chủ gỡ → ô kế.
+ */
+export function taoChuSoLieu() {
+  const ds = new Map<string, string[]>();
+  const nghe = new Set<() => void>();
+  const bao = () => nghe.forEach((f) => f());
+  return {
+    nghe(f: () => void) { nghe.add(f); return () => { nghe.delete(f); }; },
+    chu: (khoa: string): string | null => ds.get(khoa)?.[0] ?? null,
+    gan(khoa: string, o: string, truoc = false) {
+      const cu = ds.get(khoa) ?? [];
+      if (cu.includes(o) && (!truoc || cu[0] === o)) return;
+      ds.set(khoa, truoc ? [o, ...cu.filter((x) => x !== o)] : [...cu, o]);
+      bao();
+    },
+    go(khoa: string, o: string) {
+      const cu = ds.get(khoa);
+      if (!cu?.includes(o)) return;
+      const con = cu.filter((x) => x !== o);
+      if (con.length) ds.set(khoa, con); else ds.delete(khoa);
+      bao();
+    },
+  };
+}
+
+/**
  * KHOÁ `?so-lieu=` CỦA MỘT SỐ BẤM ĐƯỢC (OV-13b; SL1 A1-01). Hai nơi cùng trang vẽ cùng một số (dải "HV cần chú ý" và hàng tổng bảng) phải khác
  * `vung` — trùng khoá thì bấm một số mở HAI panel, kho một panel đóng cả hai (số "nháy"). Không `vung` = khoá cũ (link đã lưu vẫn mở).
  */

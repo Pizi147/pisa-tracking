@@ -82,9 +82,9 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm }: {
   return (
     <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Kết quả')}>
       <div role="row" className={`${HANG} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
-        <span role="columnheader" className="pr-2.5">{'① '}{t('Học viên')}</span>
-        <span role="columnheader" className="px-2.5">{'② '}{tvv || laMeetingCx(che.loai === 'gvcn' ? che.khoa : '') ? t('GVCN xác nhận') : t('Đã làm')}</span>
-        <span role="columnheader" className="px-2.5">{'③ '}{tvv ? t('Báo PH · kết quả') : t('Kết quả')}</span>
+        <span role="columnheader" className="pr-2.5">{t('Học viên')}</span>
+        <span role="columnheader" className="px-2.5">{tvv || laMeetingCx(che.loai === 'gvcn' ? che.khoa : '') ? t('GVCN xác nhận') : t('Đã làm')}</span>
+        <span role="columnheader" className="px-2.5">{tvv ? t('Báo PH · kết quả') : t('Kết quả')}</span>
         <span role="columnheader"><span className="sr-only">{t('Thao tác khác')}</span></span>
       </div>
       {can.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} noi={d.luot.studentId === chiEm} vua={vuaLuu.has(d.a.id)} onChanged={onChanged}
@@ -411,9 +411,9 @@ export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic }: {
       <div role="row" className="grid grid-cols-[22%_minmax(0,1fr)] border-b text-[13px] font-semibold text-dim max-sm:hidden" style={{ borderColor: 'var(--line)' }}>
         <span role="columnheader" className="flex h-10 items-center px-4">{cot1 === 'luot' ? t('Lượt') : t('Học viên')}</span>
         <span className={`${HANG} h-10 items-center`}>
-          <span role="columnheader" className="px-2.5">{'① '}{t('Việc')}</span>
-          <span role="columnheader" className="px-2.5">{'② '}{t('Đã làm')}</span>
-          <span role="columnheader" className="px-2.5">{'③ '}{t('Kết quả')}</span>
+          <span role="columnheader" className="px-2.5">{t('Việc')}</span>
+          <span role="columnheader" className="px-2.5">{t('Đã làm')}</span>
+          <span role="columnheader" className="px-2.5">{t('Kết quả')}</span>
           <span role="columnheader"><span className="sr-only">{t('Thao tác khác')}</span></span>
         </span>
       </div>

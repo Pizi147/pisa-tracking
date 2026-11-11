@@ -143,7 +143,7 @@ export const EN_HD_V3A = {
   'Phối hợp SOS đang mở': 'SOS coordination open',
   'Việc phối hợp theo mức SOS của các em một lớp.': 'Coordination steps for the SOS level of a class’s students.',
   'Báo gia đình, ghi kết quả Meeting': 'Tell the family, record the meeting result',
-  'Cột ① Học viên · ② Đã làm · ③ Kết quả.': 'Columns ① Student · ② Done · ③ Result.',
+  'Cột Học viên · Đã làm · Kết quả.': 'Columns Student · Done · Result.',
   'Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b>; cần đổi: <b>Sửa</b>.': 'Tap <b>Confirm</b> on the student row, write the content, <b>Save</b>; to change: <b>Edit</b>.',
   'Không cần làm: <b>Bỏ việc…</b> (ghi lý do).': 'Not needed: <b>Drop task…</b> (give a reason).',
   'Ghi vi phạm đang mở': 'Log incident open',

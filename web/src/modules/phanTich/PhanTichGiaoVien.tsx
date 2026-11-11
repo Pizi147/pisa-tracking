@@ -19,7 +19,7 @@ import type { OXlsx } from '../../lib/xlsxDep.ts';
  * Sổ nghĩa vụ: Chấm Test (bài) và Việc — mỗi nhóm Đúng hạn · Làm muộn · Chưa làm (+ "S chéo chung"); Đạt kỳ vọng Test của học trò GV (lượt; lớp thường "Đạt Test").
  * Xếp theo tên, không xếp hạng, không màu ngưỡng (C08) — Chưa làm đỏ là trạng thái quá hạn (PTA chốt XM-8). Hàng "Chưa phân công" cuối bảng (ô gộp).
  * Tất cả chi nhánh: mỗi người một dòng, ▸ tách từng chi nhánh. GET `/phan-tich/giao-vien?v2=1` — chỉ phần cần (bỏ Tiến bộ / HV cần chú ý / Case / PA / Thi thật).
- * Bấm số → panel sổ nghĩa vụ 3 tab (Chưa làm · Làm muộn · Đúng hạn), cùng đường cũ. Bỏ Gọn / Đầy đủ (`?cot=day` cũ vẫn vào màn).
+ * Bấm số → panel sổ nghĩa vụ 3 tab (Chưa làm · Làm muộn · Đúng hạn), cùng đường cũ, mở sẵn tab của ô (`tt`). Bỏ Gọn / Đầy đủ (`?cot=day` cũ vẫn vào màn).
  * Xuất Excel (PR-5): sheet Giáo viên (mọi người, kèm dòng từng chi nhánh ở Tất cả) + Danh sách (mọi bài / việc, `/phan-tich/giao-vien/danh-sach`).
  */
 const ID_CHUA_PC = 0;
@@ -87,7 +87,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
       /* Chưa phân công: một ô gộp ở cột Chưa làm của Chấm Test (bài chưa có GV) — không cộng vào cột của người. */
       if (h.id === ID_CHUA_PC && (nhom !== 'chamDiem' || k !== 'chua')) return <span className="text-slate-500">—</span>;
       if (!x) return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
-      const nguon = nguonO(h, nhom === 'chamDiem' ? 'cham-diem' : 'viec-dung-han', d.cn?.id);
+      /* PT-SO-LOI: `tt` = tab mở sẵn (Chưa làm · Làm muộn · Đúng hạn) — mỗi ô một khoá panel. */
+      const nguon = `${nguonO(h, nhom === 'chamDiem' ? 'cham-diem' : 'viec-dung-han', d.cn?.id)}&tt=${k}`;
       const tieuDe = `${nhom === 'chamDiem' ? t('Chấm Test') : t('Việc')} · ${c.nhan} · ${d.cn ? `${h.ten} · ${d.cn.ten}` : h.ten}`;
       return (
         <span className="inline-flex flex-col items-center leading-tight">

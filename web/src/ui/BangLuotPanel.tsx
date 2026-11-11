@@ -151,8 +151,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   /* PTA rà #1292: luôn đủ 3 tab (tab 0 mờ, cùng vị trí mọi GV); mặc định tab đầu có dòng. */
   const tabsViec: readonly TrangThaiViec[] = vk && goc.length ? TT_VIEC : [];
   const [tabViecChon, setTabViec] = useState<TrangThaiViec | null>(null);
+  /* PT-SO-LOI: ô số của một trạng thái (`tt=` trong nguồn — Phân tích › Giáo viên) mở thẳng tab đó; không có thì tab đầu có dòng. */
+  const ttNguon = new URLSearchParams(nguon?.split('?')[1] ?? '').get('tt') as TrangThaiViec | null;
+  const tabDau = ttNguon && tabsViec.includes(ttNguon) ? ttNguon : null;
   const tabViec = tabViecChon && tabsViec.includes(tabViecChon) ? tabViecChon
-    : tabsViec.find((k) => goc.some((r) => r.dongViec && ttViec(r.dongViec) === k)) ?? tabsViec[0] ?? null;
+    : tabDau ?? tabsViec.find((k) => goc.some((r) => r.dongViec && ttViec(r.dongViec) === k)) ?? tabsViec[0] ?? null;
   const loc = vk ? goc.filter((r) => r.dongViec && ttViec(r.dongViec) === tabViec)
     : coTab ? goc.filter((r) => r.ketQua === tab) : goc;
   /* B13 (audit-ui 08/11, thay phân trang 10 / 20 / 50): 20 dòng đầu + "Xem thêm" cuối bảng — cắt trên dữ liệu đã nạp, không gọi thêm máy chủ.
