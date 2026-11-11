@@ -105,19 +105,20 @@ tỉ lệ với dòng đi qua) trên bản chép, cùng tham số đã ghi ở l
 | câu (Top Queries) | lần · dòng / ngày | sửa | bước VM / lần trước → sau | ước sau / ngày |
 |---|---|---|---|---|
 | `lenh_chuyen_lop … boi_canh = 'cuoi-khoa'` (Xét lại `tinhTapXetLai`, 3 biến thể) | 894 · ~7,0 M (8 K / lần) | chỉ mục `ix_lenh_hv (student_id)`: câu con "lệnh sau của cùng em" trước quét mọi lệnh có id lớn hơn (theo rowid) cho từng lệnh | 28 956 → 7 319 (−75 %); 317 câu `lenh_chuyen_lop` khác: kết quả + thứ tự y hệt, 2 câu khác cũng nhẹ hơn (441 → 67, 59 → 26) | **~1,8 M (−5,2 M)** |
-| `case_interventions iv JOIN sos_cases … EXISTS case_milestones … attempt_id` (`paGanLuot`, hệ quả huỷ lượt) | 40 · 1,5 M (38,6 K / lần) | `EXISTS (mốc của Case = lượt)` → `sc.id IN (mốc của lượt)`: đi từ `idx_milestone_attempt`, trước SCAN mọi PA | 15 411 → 106 (360 lượt có mốc: kết quả y hệt) | **~0 (−1,5 M)** |
+| `case_interventions iv JOIN sos_cases … EXISTS case_milestones … attempt_id` (`paGanLuot`, hệ quả huỷ lượt — cùng mẫu câu 5, không có trong ảnh) | (không có trong ảnh) | `EXISTS (mốc của Case = lượt)` → `sc.id IN (mốc của lượt)`: đi từ `idx_milestone_attempt`, trước SCAN mọi PA | 15 411 → 106 (360 lượt có mốc: kết quả y hệt) | — |
 | cùng đường: `caseSinhRieng` (`sos_cases … EXISTS case_milestones`) | (cùng 40 lần) | như trên; kết quả xếp theo id (trước: thứ tự chỉ mục `idx_case_owner`, tình cờ — 72 / 360 lượt khác thứ tự; web không đọc `caseIds`) | 21 921 → 109 | nhỏ |
 | `WITH ids(id) AS (VALUES …)` (`loadSkillRows`) | 774 · 4,78 M (6,2 K / lần, dòng trả ~2 K) | `json_each` (mục 3): bỏ bảng tạm `MATERIALIZE ids` + hai lượt quét nó; cùng kế hoạch trên bảng thật | máy chủ −28 % thời gian | chưa đo được phần bảng tạm Turso tính — xem Top Queries sau deploy |
 | `SELECT a.*, (… NOT EXISTS …) AS la_mt_moi` (`listAttempts` còn ô chờ: Công việc, Lịch Test) | 970 · 4,39 M (4,5 K / lần) | chỉ phần GV Speaking (mục 3, −13 % dòng của họ). Còn lại: [XM] dưới | 172 257 (QL) | ~4,2 M |
-| `SELECT sc.*, … FROM sos_cases` (`napCaseMo`, Công việc / việc theo em) | 641 · 2,94 M (4,6 K / lần) | không sửa: đã đọc đúng phạm vi (GV theo lớp, QL theo chi nhánh); dòng là 6 JOIN + 7 câu con theo từng Case | — | 2,94 M |
-| **Cộng** | **~20,6 M** | | | **~13,7 M (−6,9 M)** |
+| `SELECT sc.*, … FROM sos_cases` (`napCaseMo`, Công việc / việc theo em) | 641 · 2,94 M (4,6 K / lần) | PR (b): `current_class_id` lấy từ JOIN `cur` sẵn có thay câu con đọc lại `enrollments` mỗi dòng (PTA duyệt). Đã đọc đúng phạm vi (GV theo lớp, QL theo chi nhánh); phần còn lại là 6 JOIN + câu con cần thật (`iv_count`, `LA_CASE_SOS`…) — gộp lô không bớt dòng (cùng chỉ mục, cùng dòng) | 35 679 → 33 164 (−7 %) | ~2,74 M (−0,2 M) |
+| `SELECT iv.id, … iv.preset = 1 AND iv.confirmed_by IS NULL … EXISTS case_milestones m.kind IN ('opened','repeat') AND m.attempt_id = ?` (`resyncUnconfirmedPresets`, đường ghi điểm) | 40 · 1,5 M (38,6 K / lần) | PR (b): `sc.id IN (mốc opened / repeat của lượt)` — trước quét mọi PA chờ xác nhận (main sau TURSO-1211 đi `idx_iv_cho_xac_nhan`, vẫn mọi PA chờ); xếp theo id như cũ | 8 660 → 109 (360 lượt: kết quả + thứ tự y hệt) | **~0 (−1,5 M)** |
+| **Cộng** (ảnh có câu 5 là `resyncUnconfirmedPresets`; `paGanLuot` cùng mẫu không có trong ảnh — sửa cùng #1443) | **~20,6 M** | | | **~13,5 M (−7,1 M)** |
 
 [XM] cho PTA (chưa làm — đổi luật cờ / cách tính, cần quyết):
 1. **`la_mt_moi`**: 646 / 1 206 lượt mang cờ "còn ô chờ" (`o_cho_tu`) trên bản chép là **MT lịch sử FT** — `CON_O_SQL` luôn loại chúng nhưng câu vẫn đi qua
    chỉ mục cờ rồi mới loại. Bỏ chúng khỏi cờ (`O_CHO_TU_SQL` = NULL khi `lich_su = 1` ở chương trình band) đo được −18 % bước VM câu này (~−0,8 M / ngày), nhưng
    cờ đang được `LUOT_HIEN_TAI_SQL` / `LOP_CON_VIEC_SQL` / Nợ điểm đọc → đổi nghĩa cờ, phải rà cả ba + tính lại cờ khi migrate. Phần lớn còn lại là câu con
    "MT mới nhất có band" theo TỪNG lượt — tính một lần mỗi em (gom theo em) ước −40 %.
-2. **`napCaseMo`**: `iv_count` + `LA_CASE_SOS` đọc PA hai lần mỗi Case; `current_class_id` lặp JOIN `cur` — gộp được ~−20 % (~−0,6 M).
+2. **`napCaseMo`**: đã làm phần `current_class_id` (PR b, −7 %). `iv_count` + `LA_CASE_SOS` đọc PA theo `idx_intervention_case` — đổi sang lô vẫn đọc đúng các dòng đó, không bớt.
 
 ## 4. Khởi động lạnh (mục e) — đo, không sửa
 

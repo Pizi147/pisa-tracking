@@ -107,15 +107,17 @@ export function resyncUnconfirmedPresets(
   const p = presetFor(attempt, sosLevel);   // một lần cho cả lượt (đọc pb_moc của lượt một câu)
   if (!p) return;
   /* PR-SOS: chỉ PA CHỜ XÁC NHẬN (PA đã xác nhận là việc thật — không đụng); `followup_due` luôn NULL tới lúc xác nhận. */
-  const rows = db()
+  const rows = (db()
     .prepare(
       `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.moc_quy_che, iv.performer_user_id, iv.performer_name, sc.category
          FROM case_interventions iv
          JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE ${PA_QUY_CHE_CHUA_GHI('iv')} AND ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done'
-          AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.kind IN ('opened', 'repeat') AND m.attempt_id = ?)`,
+          AND sc.id IN (SELECT m.case_id FROM case_milestones m WHERE m.attempt_id = ? AND m.kind IN ('opened', 'repeat'))`,
     )
-    .all(attempt.id) as any[];
+    /* TURSO-LOG-1311 (Turso Top Queries 12/11: 40 lần × 38,6 K dòng): đi từ mốc của lượt (`idx_milestone_attempt`) — trước quét mọi PA chờ xác nhận;
+       xếp theo id như thứ tự cũ (đọc PA theo `idx_iv_cho_xac_nhan` = id). */
+    .all(attempt.id) as any[]).sort((x, y) => x.id - y.id);
   const lop = rows.length ? (db().prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.class_id ?? null : null;
   for (const iv of rows) {
     /* PR-PA (§8): đổi loại thì người theo loại mới — Tự học không người; Tutor chưa có người → GVBM đúng kỹ năng (như lúc dựng). */
