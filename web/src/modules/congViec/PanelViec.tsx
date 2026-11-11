@@ -253,7 +253,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : (
             <LuoiTrongPanel className="luoi-trong-panel -mx-4 px-2">
-              <LuoiChamLop data={data} kind={null} kn={kn} onReload={daLuu} gon anNutTao chiCot={kns} datConTro={!tuMo}
+              <LuoiChamLop data={data} kind={null} kn={kn} onReload={daLuu} gon luoiGon anNutTao chiCot={kns} datConTro={!tuMo}
                 nutCaLop={!chiEmViec} anKetQua={chiEmViec}
                 chiAttempt={chiAttempt?.size ? chiAttempt : null} onHet={hetViec(onTiep)} />
             </LuoiTrongPanel>
@@ -320,7 +320,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
                 <LuoiTrongPanel className="luoi-trong-panel px-2 pb-2">
                   <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
                     hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
-                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'}
+                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
                     /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
                     datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
                 </LuoiTrongPanel>
