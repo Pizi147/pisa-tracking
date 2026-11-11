@@ -83,8 +83,8 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
 
   const tieuDe = viec === 'xu-ly' ? t('Xác nhận xử lý chung') : viec === 'ghi-nhan' ? t('Ghi nhận') : t('Xác nhận cấp bậc');
   const dau = (n: number) => ({ loai: t('Việc'), han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined, dong2: [<b key="n" className="text-slate-100">{t('{n} em', { n })}</b>, lop ?? data?.classCode ?? null, t('Ý thức')] });
-  if (error) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-bad">{dich(error.message)}</p></KhungPanel>;
-  if (!ds || !data) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
+  if (error) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-bad">{dich(error.message)}</p></KhungPanel>;
+  if (!ds || !data) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
   const moiNhat = (e: EmLo) => data.em.find((x) => x.studentId === e.studentId) ?? e;
   const daXong = (sid: number) => !!kq.get(sid)?.ok;
@@ -231,7 +231,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onClose} dau={dau(viec === 'cap-bac' ? ds.length : duoc.length)} rong={viec === 'cap-bac' ? 'rong' : 'hep'}
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose} dau={dau(viec === 'cap-bac' ? ds.length : duoc.length)} rong={viec === 'cap-bac' ? 'rong' : 'hep'}
       chan={{ v3: true, chinh: nutChinh, daSua: (!soOk || soLoi > 0) && (!!moTa.trim() || Object.values(rieng).some((x) => x.trim()) || guiCapBac.length > 0), dongTren }}>
       <div className="flex flex-col gap-5 pt-4">
         <CanLam>

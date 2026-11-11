@@ -57,7 +57,7 @@ export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe 
   const bang = kq?.sheets[0]?.aoa ?? [];
   const thongTin = kq?.sheets[1]?.aoa ?? [];
   return (
-    <KhungPanel tieuDe={tieuDe} tabs={tabs} vungTab={vungTab} onDong={onDong}
+    <KhungPanel hd="xuat-excel" tieuDe={tieuDe} tabs={tabs} vungTab={vungTab} onDong={onDong}
       chan={{
         huy: { onClick: onDong },
         trai: kq ? <span className="min-w-0 truncate text-xs text-slate-400" title={kq.tenTep}>{kq.tenTep}</span> : undefined,

@@ -15,9 +15,13 @@ import type { PanelHd } from '@shared/huongDan/kieu.ts';
 export const khoPanelChung = taoKhoPanel();
 /** Panel đang mở, mở sau ở cuối — Esc chỉ đóng panel cuối (panel vẽ qua portal nên không còn lồng nhau trong DOM). */
 const nganPanel: string[] = [];
-/** HD-V2 (đặc tả 8 + 9.2): panel làm việc đang mở có mục Hướng dẫn riêng (`hd`) — mở sau ở cuối; "?" đọc panel trên cùng lúc bấm. */
-const panelHd: { hd: PanelHd }[] = [];
-export const panelHdTren = (): PanelHd | null => panelHd[panelHd.length - 1]?.hd ?? null;
+/**
+ * HD-V2 (đặc tả 8 + 9.2): panel làm việc đang mở có mục Hướng dẫn riêng (`hd`); "?" đọc panel trên cùng lúc bấm. HD-V3: "trên cùng" = DỰNG SAU
+ * (`thu` lấy lúc render — cha trước con): form trong panel (Ghi kết quả PA trong Case) mở cùng lần với panel thì effect của con chạy trước cha.
+ */
+let demHd = 0;
+const panelHd: { hd: PanelHd; thu: number }[] = [];
+export const panelHdTren = (): PanelHd | null => panelHd.reduce<{ hd: PanelHd; thu: number } | null>((a, x) => (!a || x.thu > a.thu ? x : a), null)?.hd ?? null;
 /**
  * PR-EN: panel đang sửa dở (`chan.daSua` hoặc còn nháp) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ.
  * NEN-PANEL (T16): mỗi panel ghi kèm cách HỎI của nó (hộp "Bỏ chữ đang gõ?" vẽ trong panel) — `boChuRoi` dùng khi đổi việc.
@@ -245,12 +249,13 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const daTra = useRef<typeof hoi>(null);
   const boChu = () => { const h = hoi; if (!h || daTra.current === h) return; daTra.current = h; setHoi(null); daBo.current = true; nhap?.xoa(); h.tiep(); };
 
+  const [thuHd] = useState(() => ++demHd);
   useEffect(() => {
     if (!hd) return undefined;
-    const o = { hd };
+    const o = { hd, thu: thuHd };
     panelHd.push(o);
     return () => { panelHd.splice(panelHd.indexOf(o), 1); };
-  }, [hd]);
+  }, [hd, thuHd]);
 
   useEffect(() => {
     if (longTrong || taiCho) return undefined;

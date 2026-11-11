@@ -23,12 +23,12 @@ export function BanGiaoGvPanel({ id, onClose, onDone, quayLai }: {
   const { data, loading, error, reload } = useApi<PhieuBanGiaoGvDto>(`/ban-giao-gv/${id}`, [id]);
   if (error) {
     return (
-      <KhungPanel quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
+      <KhungPanel hd="ban-giao" quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
         <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
       </KhungPanel>
     );
   }
-  if (loading || !data) return <KhungPanel quayLai={quayLai} rong="toan" tieuDe={t('Bàn giao')} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
+  if (loading || !data) return <KhungPanel hd="ban-giao" quayLai={quayLai} rong="toan" tieuDe={t('Bàn giao')} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
   return <Phieu dto={data} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
 }
 
@@ -96,7 +96,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
   };
 
   return (
-    <KhungPanel quayLai={quayLai} rong="toan" loai={viet ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={tieuDe} onDong={dong}
+    <KhungPanel hd="ban-giao" quayLai={quayLai} rong="toan" loai={viet ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={tieuDe} onDong={dong}
       ngCanh={(
         <span className="flex flex-wrap gap-x-3 gap-y-1 tabular-nums">
           <span><b className="text-slate-100">{ds.length}</b> {t('em')}</span>

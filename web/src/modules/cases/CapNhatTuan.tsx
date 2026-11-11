@@ -474,7 +474,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const tieuDe = sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : lanCuoi ? t('Kết quả cuối') : tuanGhi.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
 
   return (
-    <KhungPanel tieuDe={tieuDe} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+    <KhungPanel hd="ket-qua-pa" tieuDe={tieuDe} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
       /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không chip hạn. */
       dau={dauViec({ han: sua ? null : pa.miniTestHan ? <ChipHan loai="mini-test" han={pa.miniTestHan} /> : pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
       chan={{
@@ -641,7 +641,7 @@ export function SuaKetQuaPanel({ followupId, ...rest }: { followupId: number } &
   const { data, error, reload } = useApi<SuaKetQua>(`/followups/${followupId}/sua`);
   if (!data) {
     return (
-      <KhungPanel tieuDe={t('Sửa kết quả')} hocVien={rest.hocVien} lop={rest.lop} quayLai={rest.quayLai} onDong={rest.onClose}>
+      <KhungPanel hd="ket-qua-pa" tieuDe={t('Sửa kết quả')} hocVien={rest.hocVien} lop={rest.lop} quayLai={rest.quayLai} onDong={rest.onClose}>
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : <div className="pt-3"><Skeleton rows={6} /></div>}
       </KhungPanel>
     );

@@ -124,7 +124,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const tat = !!(xem.data?.loi && !loiTen && !lopKhac) || !!loiMon || (bamLuu && !!lyDoTat);
   const nut = <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={tt === 'dang' || tat}>{nutChinh}</button>;
   return (
-    <KhungPanel tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose}
+    <KhungPanel hd="lo-trinh" tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose}
       chan={{
         daSua: true, chinh: nut, conThieu: lf.conThieu(loiO),
         trai: tat && lyDoTat ? <span className="text-[13px] text-slate-400">{lyDoTat}</span> : <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={() => void luu()} />,

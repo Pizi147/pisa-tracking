@@ -28,7 +28,11 @@ export type ManHd = {
   khongLam?: { ten: Khoa; den?: DichHd; cua?: Khoa }[];
   panel?: PanelHd;
 };
-export type PanelHd = 'ngan-case' | 'nhap-diem';
+/** HD-V3: panel LÀM VIỆC có mục riêng (`KhungPanel hd=…`); mảng để phép HD-PANEL duyệt. Panel không có ở đây: "?" mở Màn nền. */
+export const PANEL_HD = [
+  'ngan-case', 'nhap-diem', 'ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh',
+] as const;
+export type PanelHd = (typeof PANEL_HD)[number];
 export type TuHd = { ten: Khoa; nghia: Khoa };
 
 /** Nhóm cố định của Tôi muốn… (đặc tả 3.4) — nhóm trống ẩn. */

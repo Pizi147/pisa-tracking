@@ -296,6 +296,150 @@ export async function runPrHdTests(t: any) {
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) assert(hd.manCuaDuong(h, '/huong-dan')?.id === 'huong-dan', `${vai}: thiếu màn Hướng dẫn`);
   });
 
+  /* ---------------------------------------------------------------- HD-V3 (đề bài 2026-11-13-huong-dan-v3 mục "Cách làm") */
+  /*
+   * Màn / panel còn chờ session B (QL + Admin; QT = QL + Quản trị nên theo QL) và C (TVV + CX + Head tutor). Mỗi dòng "vai đường" hoặc
+   * "vai panel:x" là một chỗ CHƯA có mục — B / C viết mục thì XOÁ dòng (dòng thừa cũng đỏ: không để phép kiểm xanh giả). GV không có dòng chờ.
+   */
+  const CHO_B: string[] = [
+    'ql /giao-vien/1', 'qt /giao-vien/1', 'admin /hoc-vien/luu-tru', 'admin /giao-vien/1',
+    ...['ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh'].flatMap((x) => [`ql panel:${x}`, `qt panel:${x}`]),
+    'admin panel:xuat-excel',
+  ];
+  const CHO_C: string[] = [
+    ...['tvv', 'cx'].flatMap((v) => ['/hoc-vien/luu-tru', '/mock-test/1', '/luot-test/1', '/giao-vien/1', 'panel:ngan-case'].map((x) => `${v} ${x}`)),
+    'tvv panel:phoi-hop-sos', 'tvv panel:lo-trinh',
+  ];
+  const CHO = new Set([...CHO_B, ...CHO_C]);
+  const soCho = (loi: string[], ten: string) => {
+    const thieu = loi.filter((x) => !CHO.has(x));
+    const thua = [...CHO].filter((x) => x.includes(ten) && !loi.includes(x));
+    assert(!thieu.length, `chưa có mục: ${thieu.join(' · ')}`);
+    assert(!thua.length, `đã có mục — xoá khỏi CHO_B / CHO_C: ${thua.join(' · ')}`);
+  };
+
+  /*
+   * HD-ROUTE: mỗi <Route> của App.tsx (trừ /quan-tri, /dev, /tutor) mà vai vào được khớp một màn CỦA ĐÚNG ĐƯỜNG đó — không tính khớp nhờ tiền tố
+   * của màn khác (`/hoc-vien/` không che `/hoc-vien/luu-tru`; `/cong-viec` không che `/cong-viec/van-hanh`). Tab Test / Công việc lấy từ thanh
+   * điều hướng thật (`tabTestHienThi`, `tabCongViecHienThi`). Đường có điều kiện `nav.x ?` đọc thẳng từ App.tsx; đường không điều kiện khai ở VAO.
+   */
+  const APP = fs.readFileSync(path.join(ROOT, 'web/src/App.tsx'), 'utf8');
+  const ROUTE_V3 = [...APP.matchAll(/<Route path="([^"]+)"\s+element=\{([^\n]*)/g)]
+    .map((m) => ({ path: m[1], gate: /^(nav\.\w+(?: \|\| nav\.\w+)*) \?/.exec(m[2])?.[1].split(' || ').map((x) => x.slice(4)) ?? null }))
+    .filter((r) => r.path !== '*' && !['/quan-tri', '/dev', '/tutor'].some((x) => r.path === x || r.path.startsWith(`${x}/`)));
+  const VAO: Record<string, (n: any, p: any) => boolean> = {
+    '/': () => true, '/ho-so-ca-nhan': () => true, '/huong-dan': () => true,
+    '/hoc-vien': (n) => n.students, '/hoc-vien/lop/:classId': (n) => n.students, '/hoc-vien/:id': (n) => n.students,
+    '/hoc-vien/luu-tru': (n) => n.students,                 // ô tìm thanh trên: "Tìm trong HV lưu trữ ›" (Header.tsx) — mọi vai xem HV
+    /* Link Case trong thông báo / Công việc: không phải màn — chuyển sang hồ sơ HV (màn ho-so-hv) hoặc mở riêng panel Case (mục panel, HD-PANEL). */
+    '/hoc-thuat/case/:id': () => false,
+    '/mock-test/:id': (n) => n.test || n.students, '/luot-test/:id': (n) => n.test || n.students,   // ô điểm hồ sơ HV mở hồ sơ lượt
+    '/giao-vien/:id': (n, p) => p.roleKeys.includes('teacher') || n.analysis,   // menu Tài khoản (GV) · ô tìm GV (`timGv` = analysis)
+  };
+  const duongCua = (r: { path: string }, nav: any): string[] => {
+    if (r.path === '/test/:tab?') return ['/test', ...dh.tabTestHienThi(nav).map((k: string) => dh.DUONG_TAB_TEST[k])];
+    if (r.path === '/cong-viec/:tab?') return [...new Set(['/cong-viec', ...dh.tabCongViecHienThi(nav).map((k: string) => dh.DUONG_TAB_CONG_VIEC[k].split('?')[0])])];
+    return [r.path.replace(/\/:\w+\?/g, '').replace(/:\w+/g, '1')];
+  };
+  const coManDung = (h: any, r: { path: string }, d: string) => {
+    const man = hd.manCuaDuong(h, d);
+    if (!man) return false;
+    if (man.duong.includes(d)) return true;
+    const tinh = r.path.split('/:')[0];
+    if (r.path.includes('/:') && !r.path.endsWith('?') && man.duong.some((x: string) => x.replace(/\/$/, '') === tinh))
+      return !(ROUTE_V3.some((y) => y.path === tinh) && hd.manCuaDuong(h, tinh) === man);   // trang con có tham số không mượn màn của trang cha
+    return false;
+  };
+
+  check('HD-ROUTE · mỗi đường App.tsx vai vào được (trừ /quan-tri, /dev, /tutor) và mỗi tab Test / Công việc của vai có màn riêng; đường mới phải khai ở VAO', () => {
+    assert(ROUTE_V3.length >= 15, `đọc được ${ROUTE_V3.length} đường từ App.tsx`);
+    const chuaKhai = ROUTE_V3.filter((r) => !r.gate && !VAO[r.path]).map((r) => r.path);
+    assert(!chuaKhai.length, `đường mới không điều kiện nav — khai vai vào được ở VAO: ${chuaKhai.join(', ')}`);
+    const loi: string[] = [];
+    for (const vai of Object.keys(hd.HUONG_DAN)) for (const p of MAU[vai]) {
+      const nav: any = navOf(p);
+      for (const r of ROUTE_V3) {
+        if (!(r.gate ? r.gate.some((k) => nav[k]) : VAO[r.path](nav, p))) continue;
+        for (const d of duongCua(r, nav)) if (!coManDung(hd.HUONG_DAN[vai], r, d)) loi.push(`${vai} ${d}`);
+      }
+    }
+    soCho([...new Set(loi)], ' /');
+  });
+
+  /*
+   * HD-PANEL: panel LÀM VIỆC có mục riêng (`KhungPanel hd=…`, `PANEL_HD`). VAI_PANEL = vai mở được panel đó (quyền máy chủ + nút web — lý do mỗi
+   * dòng); mọi vai đó phải có mục (hoặc nằm ở CHO_B / CHO_C). Mỗi giá trị phải có `hd="…"` thật trong web/src và ngược lại.
+   */
+  const VAI_PANEL: Record<string, string[]> = {
+    'ngan-case': ['gv', 'ql', 'qt', 'tvv', 'cx'],                 // Case trong hồ sơ HV: TVV / CX xem (`laTvvCx`, NganCase)
+    'nhap-diem': ['gv', 'ql', 'qt', 'admin'],                     // `score.edit` theo phân công · QL nhập hộ · Admin nhóm Chấm điểm
+    'ket-qua-pa': ['gv', 'ql', 'qt'],                             // `kiemQuyenPa`: người giữ kết quả hoặc `sos.edit` (cases.ts)
+    'phoi-hop-sos': ['gv', 'ql', 'qt', 'tvv'],                    // GVCN xác nhận (`requireManageDiscipline`), QL làm thẳng; TVV ghi KQ Meeting (`phoi_hop_tvv`)
+    'vi-pham': ['gv', 'ql', 'qt'],                                // VIOLATION_RECORD: mọi GV có phân công lớp · anyScope
+    'xu-ly-vi-pham': ['gv', 'ql', 'qt'],                          // DISCIPLINE_MANAGE: GVCN lớp đang học · anyScope
+    'ban-giao': ['gv', 'ql', 'qt'],                               // GVBM môn mình, GVCN gom + xác nhận; QL xác nhận thay
+    'bao-cao-ph': ['gv', 'ql', 'qt'],                             // `quyenBc`: viết = GV đúng phần (GVCN phần Chung) · QL viết hộ (panel đọc không có hd)
+    'chuyen-lop': ['gv', 'ql', 'qt'],                             // GVCN Đề xuất chuyển lớp; QL / Quản trị chuyển (một em, nhiều em, xét lại)
+    'xuat-excel': ['gv', 'ql', 'qt', 'admin'],                    // `xuatMt` (phamViXuatMt): GVCN lớp mình · QL chi nhánh · Quản trị · Admin
+    'lo-trinh': ['ql', 'qt', 'tvv'],                              // Lộ trình mới sau thi: TVV của em, QL (PanelBuocTiep: GVCN chỉ đọc)
+  };
+  check('HD-PANEL · mỗi PANEL_HD có hd="…" trong web/src, có vai mở; mọi vai mở được panel có mục riêng của panel đó', () => {
+    const dung = new Set<string>();
+    const quet = (thuMuc: string) => {
+      for (const f of fs.readdirSync(thuMuc, { withFileTypes: true })) {
+        const p = path.join(thuMuc, f.name);
+        if (f.isDirectory()) { quet(p); continue; }
+        if (!/\.tsx$/.test(f.name)) continue;
+        const src = fs.readFileSync(p, 'utf8');
+        if (src.includes('<KhungPanel')) for (const m of src.matchAll(/(?<![\w-])hd="([\w-]+)"/g)) dung.add(m[1]);
+      }
+    };
+    quet(path.join(ROOT, 'web/src'));
+    const ds: string[] = [...hd.PANEL_HD];
+    assert(ds.length >= 2 && new Set(ds).size === ds.length, `PANEL_HD: ${ds}`);
+    for (const x of dung) assert(ds.includes(x), `KhungPanel hd="${x}" không có trong PANEL_HD`);
+    const loi: string[] = [];
+    for (const p of ds) {
+      assert(dung.has(p), `PANEL_HD "${p}" không có KhungPanel hd="${p}" nào trong web/src`);
+      assert(VAI_PANEL[p]?.length, `"${p}" chưa khai vai mở được ở VAI_PANEL`);
+      for (const vai of VAI_PANEL[p]) if (!hd.manCuaPanel(hd.HUONG_DAN[vai], p)) loi.push(`${vai} panel:${p}`);
+    }
+    soCho(loi, ' panel:');
+    for (const x of CHO) assert(CHO_B.includes(x) ? /^(ql|qt|admin) / .test(x) : /^(tvv|cx|ht) /.test(x), `"${x}" sai danh sách (B: ql qt admin · C: tvv cx ht)`);
+  });
+
+  /*
+   * HD-NHAN: chữ đậm `<b>…</b>` trong bước / Chỉ cho tôi là NHÃN NÚT — phải có trong chuỗi của web/src + shared + server/src (trừ huongDan, tests), bỏ "…", " ›" cuối.
+   * Vai đã đối chiếu: B / C thêm vai của mình vào NHAN_VAI. MAU_CHU = chữ mẫu không phải nhãn (mã tuần, phím, số hạn).
+   */
+  const NHAN_VAI = ['gv'];
+  const MAU_CHU = new Set(['-', '?', '/', 'Ctrl K', 'Enter', 'Esc', '‹ W3 SEP ›', 'W2 OCT', '2 tuần', '5 ngày', '3 ngày', '10', '8', 'Thứ Ba', 'Thứ Tư', '⋯']);
+  check('HD-NHAN · chữ đậm trong hướng dẫn (vai đã đối chiếu) là nhãn có thật trong nguồn web', () => {
+    let nguon = '';
+    const doc = (thuMuc: string) => {
+      for (const f of fs.readdirSync(thuMuc, { withFileTypes: true })) {
+        const p = path.join(thuMuc, f.name);
+        if (f.isDirectory()) { if (f.name !== 'huongDan' && f.name !== 'tests') doc(p); continue; }
+        /* Chỉ chuỗi + chữ JSX (không chú thích): nhãn nằm trong t('…') hoặc giữa thẻ. */
+        if (/\.tsx?$/.test(f.name)) for (const m of fs.readFileSync(p, 'utf8').matchAll(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`[^`]*`|>([^<>{}]+)</g)) nguon += `${m[0]}\n`;
+      }
+    };
+    doc(path.join(ROOT, 'web/src')); doc(path.join(ROOT, 'shared')); doc(path.join(ROOT, 'server/src'));   // tên dòng việc do máy chủ dựng (mywork.ts)
+    const loi: string[] = [];
+    for (const vai of NHAN_VAI) {
+      const h = hd.HUONG_DAN[vai];
+      const chu = [...hd.moiMuc(h).flatMap((m: any) => [...m.buoc, m.chi?.chu]), ...(h.lam ?? []).map((v: any) => v.loiChinh.chi?.chu)].filter(Boolean).join('\n');
+      for (const m of chu.matchAll(/<b>([^<]+)<\/b>/g)) {
+        const x = m[1].trim();
+        if (MAU_CHU.has(x)) continue;
+        const goc = x.replace(/…$/, '').replace(/ ›$/, '').replace(/^⋯ › /, '').trim();
+        const phan = goc.split(/ · | › /).map((s) => s.trim()).filter((s) => s && !MAU_CHU.has(s) && !/^n \S+$/.test(s));   // "· n bài" = số
+        for (const s of phan) if (!nguon.includes(s)) loi.push(`${vai}: "${s}"`);
+      }
+    }
+    assert(!loi.length, `nhãn không có trong web: ${[...new Set(loi)].join(' · ')}`);
+  });
+
   await checkAsync('HD-CO · /demo/session có laGvcn / coS theo phân công còn hiệu lực (0 câu thêm — cùng principal)', async () => {
     const may = createApp().listen(0);
     const cong = (may.address() as any).port as number;

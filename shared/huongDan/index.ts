@@ -10,8 +10,9 @@ import { HD_TVV } from './tvv.ts';
 import { HD_CX } from './cx.ts';
 import { HD_ADMIN } from './admin.ts';
 import { HD_HT } from './headTutor.ts';
-import { boDau, type HuongDan, type ManHd, type MucHd, type TuHd, type VaiHd, type ViecHd, type ViecVaiKhac } from './kieu.ts';
+import { boDau, PANEL_HD, type HuongDan, type ManHd, type MucHd, type TuHd, type VaiHd, type ViecHd, type ViecVaiKhac } from './kieu.ts';
 
+export { PANEL_HD };
 export type { ChiChoToi, DichHd, HuongDan, ManHd, MucHd, NhomHd, PanelHd, PhanHd, TuHd, VaiHd, ViecHd, ViecVaiKhac } from './kieu.ts';
 
 export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV, ql: HD_QL, qt: HD_QT, tvv: HD_TVV, cx: HD_CX, admin: HD_ADMIN, ht: HD_HT };
