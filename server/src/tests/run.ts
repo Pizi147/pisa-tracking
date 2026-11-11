@@ -9957,6 +9957,9 @@ await runPrQtv2HanTests({ check, assert, assertThrows, conn, P } as any);
 // ==================================================================== QTV2-BAND (chủ SP 11/11, Quản trị V2 PR-5: Kỳ vọng MT FT + Ngưỡng lớp thường có phiên bản)
 const { runPrQtv2BandTests } = bocTep('prQtv2Band', await import('./prQtv2Band.tests.ts'));
 await runPrQtv2BandTests({ check, assert, assertThrows, conn, P } as any);
+// ==================================================================== NHAP-KQ-PA (chủ SP 13/11: GV lưu nháp kết quả PA trên máy chủ)
+const { runPrNhapKqTests } = bocTep('prNhapKq', await import('./prNhapKq.tests.ts'));
+await runPrNhapKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

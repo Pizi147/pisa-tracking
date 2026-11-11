@@ -2452,6 +2452,8 @@ export function caseDetail(p: Principal, caseId: number) {
       supersededBy: iv.superseded_by ?? null,
       /* HẠN của chu kỳ đang chạy — hai tuần với Case học thuật, một tuần với Ý thức/Khác. */
       actionDue: iv.action_due ?? null,
+      /** NHAP-KQ-PA: nháp Ghi kết quả của kỳ đang chạy (người xem đã có quyền xem Case). */
+      nhapKetQua: docNhapKetQua(iv.nhap_ket_qua),
       /* CV-LOI (CV-14): PA bổ trợ miễn phí còn chờ Mini Test — hạn của việc là hạn Mini Test (cùng `mini_test.han` của dòng Công việc). */
       miniTestHan: iv.kind === 'bo_tro_mien_phi' && iv.nhom_bo_tro != null
         ? ((conn.prepare('SELECT MIN(han) AS han FROM mini_test WHERE nhom_bo_tro = ? AND ty_le IS NULL').get(iv.nhom_bo_tro) as any)?.han ?? null) as string | null
@@ -4250,8 +4252,41 @@ export function updateResult(p: Principal, interventionId: number, input: {
       entityLabel: iv.description ?? iv.kind,
       after: { outcome: input.outcome, mode, nextStep, late: !!late, cycleNo, remainingIssue, decisionNote, adjust: adjustPatch },
     });
+    /* NHAP-KQ-PA: chốt kết quả kỳ này → bỏ nháp (Sửa lần ghi cũ — `khongTraCase` — không đụng nháp của kỳ đang chạy). */
+    if (!opts.khongTraCase) conn.prepare('UPDATE case_interventions SET nhap_ket_qua = NULL WHERE id = ? AND nhap_ket_qua IS NOT NULL').run(interventionId);
     return opts.khongTraCase ? null : caseDetail(p, iv.case_id);
   });
+}
+
+/** NHAP-KQ-PA: nháp Ghi kết quả PA lưu trên máy chủ — KHÔNG phải kết quả: việc, hạn, sổ nghĩa vụ không đổi. */
+export type NhapKetQuaPa = { outcome: string; note: string; luc: string; boiId: number; boi: string };
+export const docNhapKetQua = (v: unknown): NhapKetQuaPa | null => {
+  if (typeof v !== 'string' || !v) return null;
+  try { return JSON.parse(v) as NhapKetQuaPa; } catch { return null; }
+};
+
+/**
+ * NHAP-KQ-PA (chủ SP 13/11): GV lưu tạm nhận xét + mức của kỳ đang chạy (vd sau mỗi buổi), chốt sau bằng "Lưu". Không bắt đủ ô; mỗi lần đè bản cũ
+ * + một dòng nhật ký. Quyền = quyền ghi kết quả PA (`kiemQuyenPa`). Cả hai ô trống = bỏ nháp. Trả `{ nhap }` (không trả cả Case — đọc ít).
+ */
+export function luuNhapKetQua(p: Principal, interventionId: number, input: { outcome?: unknown; note?: unknown }): { nhap: NhapKetQuaPa | null } {
+  const conn = db();
+  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (!iv) throw notFound('Không tìm thấy phương án.');
+  kiemQuyenPa(p, iv, loadCase(iv.case_id));
+  if (iv.status === 'completed' || iv.status === 'cancelled') throw badRequest('Phương án này đã khép — không lưu nháp được.');
+  const outcome = typeof input.outcome === 'string' ? input.outcome : '';
+  if (outcome && !(FOLLOWUP_OUTCOMES as readonly string[]).includes(outcome)) throw badRequest('Kết quả không hợp lệ với loại Case này.');
+  const note = typeof input.note === 'string' ? input.note.trim() : '';
+  if (vuotTran(note, TRAN_CHU.ketQuaPa)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Nhận xét', toiDa: TRAN_CHU.ketQuaPa, n: note.length });
+  const nhap: NhapKetQuaPa | null = outcome || note ? { outcome, note, luc: nowIso(), boiId: p.userId, boi: p.fullName } : null;
+  conn.prepare('UPDATE case_interventions SET nhap_ket_qua = ? WHERE id = ?').run(nhap ? JSON.stringify(nhap) : null, interventionId);
+  writeAudit({
+    actorUserId: p.userId, action: nhap ? 'case.result.draft' : 'case.result.draft_clear',
+    entityType: 'case_intervention', entityId: interventionId, entityLabel: iv.description ?? iv.kind,
+    before: docNhapKetQua(iv.nhap_ket_qua), after: nhap,
+  });
+  return { nhap };
 }
 
 /** Phần chữ của một lần ghi Kết quả — Vấn đề còn tồn, Số buổi / Người dạy tuần này, điểm tự chấm, bằng chứng. Ghi lần đầu và Sửa chữ (OV-7b) dùng chung. */

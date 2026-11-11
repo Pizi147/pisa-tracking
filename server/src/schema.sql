@@ -1258,7 +1258,8 @@ CREATE TABLE case_interventions (
   so_buoi INTEGER,                    -- PR-PA (§8): Số buổi (1–60) — chỉ Tutor, Tự học, Bổ trợ, Bổ trợ miễn phí; NULL = không đếm
   /* BO-QUA-XEP-MT: QL bỏ qua việc "Xếp lịch MTn" / "Nhập dự kiến thi" của PA này — mốc đã bỏ qua (`mt{n}` | `thi`), người, lúc. Chỉ ẩn việc. */
   bo_qua_moc TEXT, bo_qua_boi INTEGER, bo_qua_luc TEXT,
-  pb_loai INTEGER                        -- CAU-HINH-CASE-SOS: phiên bản danh sách PA lúc tạo (NULL = bản gốc)
+  pb_loai INTEGER,                       -- CAU-HINH-CASE-SOS: phiên bản danh sách PA lúc tạo (NULL = bản gốc)
+  nhap_ket_qua TEXT                      -- NHAP-KQ-PA: nháp Ghi kết quả PA kỳ đang chạy (JSON outcome · note · luc · boiId · boi); chốt thì NULL
 );
 CREATE UNIQUE INDEX ux_case_interventions_khoa_gui ON case_interventions(recorded_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 -- Việc đang chờ duyệt là thứ Quản lý phải tìm nhanh, nên có chỉ số riêng.

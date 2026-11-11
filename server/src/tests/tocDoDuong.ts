@@ -1305,6 +1305,8 @@ export const TRAN_GHI_LO = {
   suaCaseXacNhan: 132,   // đo 101 câu → max(101 + 10, ⌈101 × 1,3⌉)
   /** BO-QUA-XEP-MT: POST /my-work/bo-qua — đọc lại MỘT PA (câu `moc:` + id), kiểm quyền, ghi 3 cột + nhật ký trong một giao dịch. */
   boQuaViec: 20,   // trần đặt trước khi đo — sửa theo số đo
+  /** NHAP-KQ-PA: PUT /interventions/:id/nhap — đọc PA + Case (quyền), một UPDATE, một nhật ký; không trả Case. */
+  luuNhapKetQua: 20,   // trần đặt trước khi đo — sửa theo số đo
   /** HAN-BAO-PH (UI-1): POST /y-thuc/bao-ph/:id/han — đọc việc + quyền + Tạm dừng, so-và-đổi `han_chon`, lịch sử, nhật ký, trả `xemViecBaoPh`. */
   suaHanBaoPh: 22,   // đo 12 câu → max(12 + 10, ⌈12 × 1,3⌉)
   /** HAN-BAO-PH (UI-1): POST /phoi-hop-sos/:id/han — meeting CX, như trên (trả một việc phối hợp). */

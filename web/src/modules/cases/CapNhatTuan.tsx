@@ -52,7 +52,12 @@ export type PaCanCapNhat = {
   laMacDinh?: boolean; doiPaCho?: boolean;
   /** RKC-2b ③: PA quy chế còn chờ xác nhận — lưu lần ghi đầu = Xác nhận PA (máy chủ); dải "Đã lưu kết quả · đã xác nhận PA". */
   choXacNhan?: boolean;
+  /** NHAP-KQ-PA (chủ SP 13/11): nháp kỳ đang chạy lưu trên máy chủ (`PUT /interventions/:id/nhap`) — mở form thì điền sẵn; chốt "Lưu" thì máy chủ xoá. */
+  nhap?: NhapMayChu | null;
 };
+export type NhapMayChu = { outcome: string; note: string; luc: string; boi: string };
+/** "13/11" theo giờ máy (mốc lưu là ISO UTC). */
+const ngayNhap = (luc: string) => new Date(luc).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
 
 /**
  * OV-7b: điền sẵn của `GET /followups/:id/sua` — PA như NGAY TRƯỚC lần ghi (`pa`), giá trị đã ghi (`giaTri`), `chan` = vì sao không đổi được lựa chọn
@@ -120,9 +125,17 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const [dau] = useState(() => giaTriDau(pa, sua, homNay));
   /* OV-13b: chữ đã gõ ở dòng ghi nhanh mang sang ("Điều chỉnh / Kết thúc…"). */
   const [nhap] = useState(() => { const x = sua ? undefined : nhapKetQua.get(pa.id); nhapKetQua.delete(pa.id); return x; });
-  const [outcome, setOutcome] = useState(g?.outcome ?? nhap?.outcome ?? '');
-  const [progress, setProgress] = useNhap(`ket-qua-nx:${pa.id}`, g?.note ?? nhap?.note ?? '');
+  /* NHAP-KQ-PA: nháp máy chủ (Sửa lần ghi cũ không dùng). Chữ đang gõ chưa lưu vẫn nhớ trên trình duyệt (`useNhap`) như cũ. */
+  const nhapMc = sua ? null : pa.nhap ?? null;
+  const [outcome, setOutcome] = useState(g?.outcome ?? nhap?.outcome ?? nhapMc?.outcome ?? '');
+  const [progress, setProgress] = useNhap(`ket-qua-nx:${pa.id}`, g?.note ?? nhap?.note ?? nhapMc?.note ?? '');
   const xoaNhap = useXoaNhap();
+  const [banNhap, setBanNhap] = useState<NhapMayChu | null>(nhapMc);
+  const [ttNhap, setTtNhap] = useState<'dang' | 'loi' | null>(null);
+  const [loiNhap, setLoiNhap] = useState<string | null>(null);
+  const chupNhap = (o: string, n: string) => JSON.stringify([o, n.trim()]);
+  /* Chữ + mức đúng bằng bản nháp vừa lưu → chân báo "Đã lưu nháp", không "Chưa lưu". */
+  const trungNhap = !!banNhap && chupNhap(outcome, progress) === chupNhap(banNhap.outcome, banNhap.note);
   /* OV-13b: Hoàn tác ở panel trả về ĐỦ nháp (quyết định, lý do, Điều chỉnh, buổi Tutor, đề xuất PA khác…). */
   const k = nhap?.khac;
   /* OV-13b (mockup §8): PA mặc định — Điều chỉnh › "Đề xuất PA khác": kết quả kỳ lưu như Giữ nguyên + đề xuất gửi QL, MỘT nút. */
@@ -412,6 +425,19 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     setDecision(d); setChanQd(null);
   };
 
+  /* NHAP-KQ-PA: lưu tạm — không kiểm đủ ô, không chốt; việc / hạn không đổi. Lỗi: chữ giữ nguyên, chân báo + Thử lại. */
+  const luuNhap = async () => {
+    setTtNhap('dang'); setLoiNhap(null);
+    try {
+      const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${pa.id}/nhap`, { outcome, note: progress });
+      setBanNhap(r.nhap); setTtNhap(null);
+      xoaNhap();   // nháp máy chủ thay nháp trình duyệt — máy khác mở vẫn thấy bản này
+      invalidate('/my-work'); invalidate('/cases');
+    } catch (e: any) { setTtNhap('loi'); setLoiNhap(e?.message ?? t('Không lưu được')); }
+  };
+  const nutNhap = !sua && !nhanXetTheoBuoi && (
+    <NutChu onClick={() => void luuNhap()} disabled={busy || ttNhap === 'dang'}>{ttNhap === 'dang' ? t('Đang lưu…') : t('Lưu nháp')}</NutChu>
+  );
   const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi QL duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
   const nut = tiep && !sua
     ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tiep={tiep} bam={bam} luu={(x) => void luu(x)} />
@@ -424,8 +450,11 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không chip hạn. */
       dau={dauViec({ han: sua ? null : pa.miniTestHan ? <ChipHan loai="mini-test" han={pa.miniTestHan} /> : pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
       chan={{
-        v3: true, chinh: nut, daSua, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu || daSua ? <TrangThaiLuu tt={busy ? 'dang' : loiLuu ? 'loi' : 'nhap'} loi={loiLuu} onThuLai={() => void luu()} /> : undefined,
+        v3: true, chinh: <>{nut}{nutNhap}</>, daSua: daSua && !trungNhap, conThieu: lf.conThieu(loi),
+        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} />
+          : ttNhap ? <TrangThaiLuu tt={ttNhap} loi={loiNhap} onThuLai={() => void luuNhap()} />
+          : trungNhap ? <span className="font-semibold text-done">✓ {t('Đã lưu nháp · chưa chốt')}</span>
+          : daSua ? <TrangThaiLuu tt="nhap" /> : undefined,
       }}>
       <div className="flex flex-col gap-5 pt-4">
         {sua?.chan && (
@@ -434,6 +463,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           </p>
         )}
         <CanLam>
+          {banNhap && <p className="m-0 text-xs text-slate-400">{t('Nháp lưu {ngay} · {ten}', { ngay: ngayNhap(banNhap.luc), ten: banNhap.boi })}</p>}
           {lanCuoi && !sua && (
             <p className="m-0 text-[13px] text-slate-300">{t('Kỳ này chạm mốc quy chế{moc} — lưu là PA kết thúc.', { moc: pa.mocChu ? ` (${dich(pa.mocChu)})` : '' })}</p>
           )}
@@ -549,7 +579,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             </div>
           )}
           <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
+          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}{nutNhap}</div>
         </CanLam>
         <BoiCanh dong={boiCanh ?? [[t('Phương án'), [tenPa, pa.performer, pa.mocChu && dich(pa.mocChu)].filter(Boolean).join(' · ')]]} />
       </div>

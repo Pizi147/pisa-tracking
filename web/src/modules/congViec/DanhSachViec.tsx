@@ -378,8 +378,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const ten = tenViec(boDongTu(it.group, tenBoEmGoc(it)));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). */
-  const phu = thePhu([it.classCode, sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
-    .filter((x) => !ten.includes(x));
+  const phu = [...thePhu([it.classCode, sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
+    .filter((x) => !ten.includes(x)), ...(it.coNhap ? [t('Có nháp')] : [])];
   const muc = chipMuc(it, true);
   const bam = () => dong.onOpen(it);
   return (
@@ -554,7 +554,7 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
       <span className="grid min-w-0 gap-0.5">
         <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-current={dangChon ? 'true' : undefined}
           className={`${TEN} font-medium ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{daXong && <span aria-hidden className="text-ok">✓ </span>}{dich(it.conTen)}</button>
-        <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={it.conPhu ? [dich(it.conPhu)] : []} />
+        <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={[...(it.conPhu ? [dich(it.conPhu)] : []), ...(it.coNhap ? [t('Có nháp')] : [])]} />
       </span>
       <CotHan it={it} daXong={daXong} />
       <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />

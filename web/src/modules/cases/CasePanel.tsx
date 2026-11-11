@@ -814,6 +814,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
               actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
               batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
               laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho', choXacNhan: !!iv.awaitingConfirmation,
+              nhap: iv.nhapKetQua ?? null,
             }} />
         ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
         : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}

@@ -2450,6 +2450,12 @@ api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-CT2: Người dạy tuần này không bắt buộc; dịch vụ chỉ kiểm định dạng khi có
 }));
 
+/** NHAP-KQ-PA (chủ SP 13/11): lưu nháp kết quả PA của kỳ đang chạy — không chốt; cùng quyền Ghi kết quả. */
+api.put('/interventions/:id/nhap', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return caseSvc.luuNhapKetQua(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+
 /**
  * OV-7b: SỬA LẦN GHI KẾT QUẢ PA GẦN NHẤT — GET điền sẵn form (PA như trước lần ghi, giá trị cũ, câu chặn); POST cùng thân `/interventions/:id/result`:
  * giữ lựa chọn = sửa chữ, đổi lựa chọn = đảo hệ quả cũ + ghi lại (một giao dịch). Người đã ghi + Quản lý.
