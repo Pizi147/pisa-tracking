@@ -69,7 +69,8 @@ export const VIEC_TVV: ViecHd[] = [
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Bổ sung hồ sơ', duong: CV },
     loiTat: ['hoc-vien', 'p-sua-thong-tin'], cung: 'mở cùng chỗ.',
     buoc: ['Mở <b>Công việc</b>, nhóm <b>Bổ sung hồ sơ</b>, bấm dòng (nút <b>Bổ sung</b>): panel mở lần lượt từng em thiếu.',
-      'Điền ngày sinh, email, Target; <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b> sang em khác. <b>Tuần bắt đầu</b> do QL hoặc GVCN nhập.',
+      'Điền ngày sinh, email, Tuần bắt đầu, Target; <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b> sang em khác.',
+      'Đổi <b>Tuần bắt đầu</b>: MT chưa thi dời theo, MT đã có điểm giữ nguyên.',
       'Xem cả nhóm: <b>Học viên & Lớp</b> › <b>Bộ lọc thêm</b> › <b>Theo vai</b> › <b>Thiếu thông tin</b>.'],
     tuKhac: ['thiếu', 'hồ sơ', 'missing', 'profile'],
   },
@@ -334,7 +335,7 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
     khongLam: [KHONG_GV],
     muc: [{ id: 'pst-sua', viec: 'sua-hv', ten: 'Sửa thông tin, đổi Target', buoc: ['Sửa ô cần đổi; đổi Target thì ghi <b>Lý do đổi Target</b>.', '<b>Lưu</b>; hộp ghi <b>Lịch sử</b>.'] },
       ...chiTvvMuc(cx, [{ id: 'pst-lt', viec: 'doi-lo-trinh', ten: 'Đổi lộ trình, môn học', buoc: ['Khối <b>Lộ trình đang học</b>: chọn LT1, LT2 hoặc RF; ô <b>Môn học</b> chọn môn em học.', 'MT đã có điểm giữ nguyên; MT chưa thi xếp lại; <b>Lưu</b>.'] },
-        { id: 'pst-bs', viec: 'bo-sung', ten: 'Bổ sung hồ sơ thiếu', buoc: ['Điền phần còn thiếu, <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b>.', '<b>Tuần bắt đầu</b> do QL hoặc GVCN nhập.'] }])],
+        { id: 'pst-bs', viec: 'bo-sung', ten: 'Bổ sung hồ sơ thiếu', buoc: ['Điền phần còn thiếu, <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b>.', 'Đổi <b>Tuần bắt đầu</b>: MT chưa thi dời theo, MT đã có điểm giữ nguyên.'] }])],
   },
   {
     id: 'p-sua-ca-lop', ten: 'Sửa thông tin cả lớp đang mở', duong: [], panel: 'sua-ca-lop',

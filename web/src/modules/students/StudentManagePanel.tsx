@@ -111,7 +111,9 @@ export type QuyenSua = { canEdit: boolean; coTheSuaThongTin?: boolean; canEditCy
   /** QUYEN-CN: ô tích KCK — máy chủ tính theo vai ở chi nhánh em (`duocDoiKck`). */
   doiKck?: boolean;
   /** OV-10b: ô Liên hệ — QL, Quản trị, TVV, CX, Admin; GV không thấy (chủ SP 13/10). */
-  nhapLienHe?: boolean };
+  nhapLienHe?: boolean;
+  /** [XM-C1] ô Tuần bắt đầu — máy chủ `duocDoiMon`: QL, Quản trị, GVCN, TVV chi nhánh em. */
+  doiTuanBatDau?: boolean };
 
 /**
  * SỬA THÔNG TIN MỘT EM TỪ DÒNG BẢNG (PR-OV2b — ⋯ dòng ở hồ sơ lớp / Học viên & Lớp): nạp hồ sơ em rồi mở đúng panel của ⋯ hồ sơ HV.
@@ -257,7 +259,8 @@ export function HocLaiPanel({ studentId, studentName, lop, onClose, onDone }: Ch
 
 /**
  * SỬA THÔNG TIN (PR-OV2b, mockup overhaul-2 §6): Họ tên · Ngày sinh * · Email · TVV (chọn người) · Dự kiến thi · Target · Điểm đầu vào (FT);
- * QL / GVCN thêm Tuần bắt đầu + Ghi chú. Admin (`student.edit_info`): Target chỉ đọc, không Tuần bắt đầu / Ghi chú. OV-8b TVV / CX: thêm Ghi chú + Target.
+ * QL / GVCN thêm Tuần bắt đầu + Ghi chú. Admin (`student.edit_info`): Target chỉ đọc, không Tuần bắt đầu / Ghi chú. OV-8b TVV / CX: thêm Ghi chú + Target;
+ * [XM-C1] TVV chi nhánh em thêm Tuần bắt đầu (CX không).
  * Target: `cycle.edit` / `student.edit_more` sửa thẳng kèm lý do (`target-revision`); GVCN cùng ô → Đề xuất sửa gửi QL duyệt (`de-xuat-sua`).
  * Lưu một lần, ba phần theo thứ tự (hồ sơ + TVV + điểm đầu vào · lộ trình · Target): phần lỗi báo đúng phần, phần đã lưu nói rõ, panel còn mở.
  */
@@ -267,7 +270,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   /* RKC (chủ SP 07/11, mở Q-B1 — thay SUA-LUU-TRU): em đã lưu trữ sửa được mọi ô như em đang học (lộ trình, Target, điểm đầu vào…), có lịch sử. */
-  const quanLy = quyen.canEdit;                        // QL, GVCN: thêm Tuần bắt đầu
+  const quanLy = quyen.canEdit;                        // QL, GVCN
+  const doiTuan = !!quyen.doiTuanBatDau;               // Tuần bắt đầu: QL, Quản trị, GVCN · [XM-C1] TVV chi nhánh em (máy chủ `duocDoiMon`)
   const ghiChu = quyen.canEdit || !!quyen.coTheSuaThem;           // QL, GVCN · OV-8b: TVV / CX sửa Ghi chú
   const targetThang = !!quyen.canEditCycle || !!quyen.coTheSuaThem;   // QL / Quản trị · OV-8b: TVV / CX
   const targetDeXuat = quanLy && !targetThang;                    // GVCN
@@ -333,7 +337,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   /* Bổ sung hồ sơ thiếu: con trỏ vào ô còn thiếu đầu tiên (thứ tự `missingForStudent`: ngày sinh · email · tuần bắt đầu · Target). */
   useEffect(() => {
     if (!tiep) return;
-    const khoa = !student.dob ? 'ngay-sinh' : !student.email?.trim() ? 'email' : quanLy && cycle && !tuanCu ? 'tuan' : cycle && !cycle.ratio && !targetCu ? 'target' : null;   // Target thiếu kể cả khi tích KCK (OV-9)
+    const khoa = !student.dob ? 'ngay-sinh' : !student.email?.trim() ? 'email' : doiTuan && cycle && !tuanCu ? 'tuan' : cycle && !cycle.ratio && !targetCu ? 'target' : null;   // Target thiếu kể cả khi tích KCK (OV-9)
     if (khoa) document.getElementById(lf.oId(khoa))?.focus();
   }, [student.id]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [busy, setBusy] = useState(false);
@@ -350,7 +354,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
     if (e) loi.push({ khoa: k, nhan: dichChu(NHAN_LIEN_HE[k]), lyDo: dichChu(`${e[0].toUpperCase()}${e.slice(1)}`) });
   }
   /* Chỉ báo khi xoá tuần đang có — lộ trình chưa có tuần bắt đầu vẫn lưu được các ô khác. */
-  if (quanLy && cycle && !tuan && tuanCu) loi.push({ khoa: 'tuan', nhan: t('Tuần bắt đầu'), lyDo: t('Chưa chọn') });
+  if (doiTuan && cycle && !tuan && tuanCu) loi.push({ khoa: 'tuan', nhan: t('Tuần bắt đầu'), lyDo: t('Chưa chọn') });
   if (doiTarget && kt) { const d = docTargetKyThi(kt, target); if ('loi' in d) loi.push({ khoa: 'target', nhan: 'Target', lyDo: t('Số nguyên {min}–{max}', { min: kt.min, max: kt.max }) }); }
   else if (doiTarget && (target !== '' || !kck) && !laBand(target)) loi.push({ khoa: 'target', nhan: 'Target', lyDo: target ? t('Band từ 0 đến 9, bước 0.5') : t('Chưa điền — hoặc tích KCK') });
   if (doiTarget) loi.push(...dsLoi([{ khoa: 'ly-do-target', nhan: t('Lý do đổi Target'), toiThieu: 1 }], { 'ly-do-target': lyDo }));
@@ -388,7 +392,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
       const khoaDoi = Object.keys(moiTt).filter((k) => JSON.stringify(moiTt[k]) !== JSON.stringify(cuTt[k]));
       xong.push(t('thông tin'));
       /* Lộ trình — chỉ trường đã đổi (máy chủ kiểm lại). */
-      const doi = { ...(quanLy && cycle && tuan !== tuanCu ? { startWeek: tuan } : {}), ...(cycle && thi !== thiCu ? { examDate: thi } : {}) };
+      const doi = { ...(doiTuan && cycle && tuan !== tuanCu ? { startWeek: tuan } : {}), ...(cycle && thi !== thiCu ? { examDate: thi } : {}) };
       if (cycle && Object.keys(doi).length) {
         phan = t('Lộ trình');
         await api.patch(`/cycles/${cycle.id}`, doi);
@@ -525,7 +529,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             </p>
           )}
           {doiLt && <KhoiKhiLuu vang dong={[t('MT đã có điểm giữ nguyên lịch và kỳ vọng'), t('MT chưa thi xếp lại theo lịch {lt}, không về tuần đã qua', { lt })]} />}
-          {quanLy && (
+          {doiTuan && (
             <Truong nhan={t('Tuần bắt đầu')} batBuoc={!!tuanCu} loi={lf.loiCua(loi, 'tuan')} phu={cauDoi && dichChu(cauDoi)}>
               <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')} value={tuan} onChange={setTuan} />
             </Truong>

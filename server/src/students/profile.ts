@@ -1075,6 +1075,8 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         doiKck: duocDoiKck(vaiVoiEm(p, studentId), can(p, PERMISSIONS.CYCLE_EDIT, { studentId })),
         /* OV-8b: TVV / CX — Target sửa thẳng (có lý do), Ghi chú, Kết quả thi thật (`student.edit_more`). */
         coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }),
+        /** [XM-C1] (chủ SP 13/11): ô Tuần bắt đầu ở Sửa thông tin — cùng luật máy chủ `updateCycle`: QL, Quản trị, GVCN, TVV chi nhánh em (CX, Admin không). */
+        doiTuanBatDau: duocDoiMon(p, { studentId }),
         /* OV-11d (HV-2): cùng hàm máy chủ `guiDeXuatSua` — GV có phân công ở lớp em đang học; Admin / TVV / CX / QL không có nút. */
         coTheDeXuatSua: !can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) && !can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }) && laGvLopDangHoc(p, studentId),
         canPlanWeek: can(p, PERMISSIONS.PLAN_WEEK, { studentId }),
