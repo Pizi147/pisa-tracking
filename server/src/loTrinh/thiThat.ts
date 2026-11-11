@@ -243,7 +243,8 @@ export const SQL_CHO_KET_QUA_THI = `SELECT c.id, c.student_id, s.full_name AS te
 /** TD7: nhớ trong request GET — Công việc, Học viên & Lớp, Tổng quan gọi 2–5 lần mỗi request (cả hệ thống, kết quả như nhau). Người gọi không sửa kết quả. */
 export function loTrinhChoKetQuaThi(today: string): { c: any; s: TrangThaiSauThi }[] {
   return nho(`cho-kq-thi:${today}`, () => {
-    const ds = db().prepare(SQL_CHO_KET_QUA_THI).all(today) as any[];
+    /* TURSO-1211: câu đi chỉ mục ngày thi (`idx_cycle_cho_kq_ngay`) — xếp lại theo (em, lộ trình) như thứ tự cũ (`idx_cycle_cho_kq`), JSON không đổi. */
+    const ds = (db().prepare(SQL_CHO_KET_QUA_THI).all(today) as any[]).sort((a, b) => a.student_id - b.student_id || a.id - b.id);
     return ds.map((c) => ({ c, s: trangThaiSauThi(c, today) })).filter((x) => x.s.giaiDoan === 'da_thi_cho_kq');
   });
 }

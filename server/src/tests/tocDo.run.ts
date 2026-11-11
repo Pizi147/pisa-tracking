@@ -1545,6 +1545,39 @@ await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca
   assert(!loi.length, loi.join(' · '));
 });
 
+/* TURSO-1211 (đo bản chép bản chính, docs/superpowers/specs/2026-11-12-turso-toc-do/ra.md mục A): 7 câu trước quét cả bảng nay đi chỉ mục mới. */
+await checkAsync('TURSO-1211 (×3) · 7 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
+  const { migratePrTurso1211 } = await import('../migrate/prTurso1211.ts');
+  const lan: string[][] = [[], []];
+  migratePrTurso1211(conn, lan[0]); migratePrTurso1211(conn, lan[1]);
+  assert(!lan[0].length && !lan[1].length, `migrate trên DB đã có chỉ mục vẫn báo đổi: ${lan.flat().join(' | ')}`);
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  try {
+    for (const [vai, url] of [['GVCN', '/my-work'], ['QL', '/my-work'], ['GVCN', '/tong-quan/lop-toi-day/hai-khoi'], ['QL', `/students/${HV}`], ['TVV', '/tong-quan/hoc-vien']] as [Vai, string][]) {
+      assert((await doSql(vai, 'GET', url)).status === 200, `${vai} ${url} không 200`);
+    }
+  } finally { doQuet.ghi = null; }
+  const loi: string[] = [];
+  for (const [ten, re, chiMuc, scan] of [
+    ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?/, 'idx_iv_ghi_kq', /^SCAN iv$/],
+    ['Xác nhận PA', /AS chon_pa/, 'idx_iv_cho_xac_nhan', /^SCAN iv$/],
+    ['Mốc PA quy chế', /iv\.moc_quy_che IN \('until_next_mt', 'until_exam'\)/, 'idx_iv_moc_cho', /^SCAN iv$/],
+    ['Chờ kết quả thi', /COALESCE\(c\.thi_that_ngay, c\.exam_date, c\.ended_at\) < \?/, 'idx_cycle_cho_kq_ngay', /^SCAN c\b/],
+    ['WL2 thi thật', /FROM discipline_measures dm WHERE dm\.cycle_id = c\.id/, 'idx_dm_cycle', /^SCAN dm$/],
+    ['Kết quả PA cuối', /FROM case_followups fu\s+WHERE fu\.intervention_id = iv\.id/, 'idx_followup_iv', /^SCAN fu$/],
+    ['Vi phạm 7 ngày', /FROM violations WHERE occurred_on >= \?/, 'idx_violation_ngay', /^SCAN violations$/],
+  ] as const) {
+    const cau = [...new Map(ghi.filter((g) => re.test(g.sql)).map((g) => [g.sql, g])).values()];
+    if (!cau.length) { loi.push(`không bắt được câu "${ten}"`); continue; }
+    for (const { sql, args } of cau) {
+      const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+      if (!plan.some((d) => d.includes(chiMuc)) || plan.some((d) => scan.test(d))) loi.push(`${ten}: ${plan.join(' | ')}`);
+    }
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');
