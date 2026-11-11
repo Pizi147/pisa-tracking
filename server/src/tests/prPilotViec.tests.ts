@@ -77,14 +77,16 @@ export async function runPrPilotViecTests(t: YThucTestKit) {
     assert(/useContext\(ViecVuaLuu\)/.test(ng) && /cv\?\.bao\(/.test(ng), 'Ngăn Case không báo việc vừa lưu cho dải');
   });
 
-  check('6b-3 · Ghi kết quả gọn: "Lưu · việc tiếp ›" báo dải (có Hoàn tác — đường đảo /followups/:id/hoan-tac), PA qua ChuDich', () => {
+  check('6b-3 · Ghi kết quả gọn: "Lưu · việc tiếp ›" báo dải (chủ SP 13/11: không Hoàn tác — sai thì Sửa), PA qua ChuDich', () => {
     const pv = docSach('web/src/modules/congViec/PanelViec.tsx');
     /* CASE-PA-UI b (v16 e1): việc Kết quả PA mở CÙNG panel Case (form trong thẻ, Hoàn tác `/followups/:id/hoan-tac` của form); "Việc tiếp ›" báo dải việc vừa lưu. */
     assert(!/PanelKetQuaNhanh/.test(pv) && /case 'ghi_ket_qua_pa': case 'mini_test':[\s\S]{0,400}<NganCase[^\n]*viec="ghi-ket-qua"/.test(pv), 'Kết quả PA chưa mở cùng panel Case');
     const ngB = docSach('web/src/modules/students/NganCase.tsx'), cpB = docSach('web/src/modules/cases/CasePanel.tsx');
     assert(/cv\?\.bao\(daLuu\)/.test(ngB) && /bao\?\.daLuu\(x\)/.test(cpB), 'Việc tiếp › mất Hoàn tác của việc vừa lưu');
     assert(/<ChuDich chu=\{iv\.description\}/.test(cpB), 'nội dung PA (chữ GV) in chuỗi trần');
-    assert(/\/followups\/\$\{f\.id\}\/hoan-tac/.test(docSach('web/src/modules/cases/CapNhatTuan.tsx')), 'Hoàn tác lần ghi không dùng đường đảo');
+    /* Chủ SP 13/11: "bấm lưu là lưu" — form Ghi kết quả không Hoàn tác; dải "✓ Đã lưu" có "Sửa" mở form Sửa kết quả. */
+    assert(!/hoan-tac|hoanTac:/.test(docSach('web/src/modules/cases/CapNhatTuan.tsx')), 'form Ghi kết quả còn Hoàn tác');
+    assert(/onSua=\{fSua \? \(\) => \{ setMo\(true\); setForm\(\{ suaKq: fSua\.id \}\)/.test(cpB), 'dải Đã lưu thiếu Sửa');
   });
 
   check('6b-3 · Công việc: dải việc vừa lưu ở đầu thân việc kế + thẻ Hết việc; Hoàn tác mở lại việc đó', () => {

@@ -42,11 +42,11 @@ export async function runPrHoanThanhCaseTests(t: YThucTestKit) {
     assert(sau.cs !== 'done' && (sau.ps === 'started' || sau.ps === 'planned'), JSON.stringify(sau));
   }));
 
-  check('HTC-2 · web: ô tick "Hoàn thành Case" (không dấu "?") chỉ khi kết thúc PA (Kết thúc PA / Kết quả cuối) + PA cuối + người xem hoàn thành được; lưu kết quả rồi /cases/:id/outcome; Hoàn tác mở lại Case trước', () => {
+  check('HTC-2 · web: ô tick "Hoàn thành Case" (không dấu "?") chỉ khi kết thúc PA (Kết thúc PA / Kết quả cuối) + PA cuối + người xem hoàn thành được; lưu kết quả rồi /cases/:id/outcome (chủ SP 13/11: không Hoàn tác)', () => {
     const c = web('cases/CapNhatTuan.tsx');
     assert(/\{t\('Hoàn thành Case'\)\}/.test(c) && !/Hoàn thành Case luôn\?|'Hoàn thành Case\?'/.test(c), 'nhãn ô tick');
     assert(/const ketThucPa = !sua && \(lanCuoi \|\| decision === 'end'\)/.test(c) && /hoanThanhCase && ketThucPa/.test(c), 'điều kiện hiện ô');
-    assert(/api\.post\(`\/cases\/\$\{hoanThanhCase\.caseId\}\/outcome`/.test(c) && /\/cases\/\$\{hoanThanhCase\.caseId\}\/mo-lai/.test(c), 'gọi Hoàn thành + Mở lại khi Hoàn tác');
+    assert(/api\.post\(`\/cases\/\$\{hoanThanhCase\.caseId\}\/outcome`/.test(c) && !/\/mo-lai/.test(c), 'gọi Hoàn thành; không Hoàn tác (Mở lại) ở form');
     assert(/const noteHt = htNote \?\? \(nhanXetTheoBuoi \? ghepBuoi : progress\)/.test(c), 'kết luận điền sẵn Nhận xét');
     const p = web('cases/CasePanel.tsx');
     assert(/function paCuoiHoanThanh\(/.test(p) && /hoanThanhCase=\{paCuoiHoanThanh\(data, iv\.id\)/.test(p) && /ketLuanSan=/.test(p), 'CasePanel truyền PA cuối + kết luận sẵn');

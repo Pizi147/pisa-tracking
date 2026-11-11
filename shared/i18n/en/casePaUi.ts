@@ -66,7 +66,7 @@ export const EN_CASE_PA_UI = {
   'vào Thùng rác': 'moved to the Bin',
   'vượt {x}': '{x} over',
   '{da}/{tong} buổi': '{da}/{tong} sessions',
-  '{form} chưa lưu · nháp giữ trên máy': '{form} not saved · draft kept on this device',
+  '{form} chưa chốt': '{form} not final',
   '{kn} · chọn một hoặc nhiều (chọn trước = chính)': '{kn} · pick one or more (first pick = main)',
   '{n} PA chưa có kết quả cuối': (b) => `${soNhieu(b.n, 'plan', 'plans')} without a final result`,
   '{n} PA chờ QL duyệt': (b) => `${soNhieu(b.n, 'plan', 'plans')} awaiting manager approval`,

@@ -126,7 +126,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
 
   /* ─── chân (v16 `.pn-chan`): trạng thái lưu · "Tiếp: …" · Đóng · Việc tiếp › (form trong thẻ đang mở → Việc tiếp thành nút phụ, chân nói "● … chưa lưu"). */
   const tiepCase = chuoi?.caseTiep?.xong ? chuoi.caseTiep : null;
-  const trai = formMo ? <span className="tt-luu nhap">● {t('{form} chưa lưu · nháp giữ trên máy', { form: formMo })}</span>
+  const trai = formMo ? <span className="tt-luu nhap">● {t('{form} chưa chốt', { form: formMo })}</span>
     : luu?.tt === 'dang' ? <span className="tt-luu dang">{t('Đang lưu…')}</span>
     : luu?.tt === 'loi' ? <span className="tt-luu loi">⚠ {t('Không lưu được')}</span>
     : luu?.tt === 'da' ? <span className="tt-luu da">✓ {t('Đã lưu')} {luu.luc}</span>
