@@ -54,7 +54,7 @@ Học viên Quản trị 250 ms. Trên Turso thời gian ≈ số câu × vòng 
 |---|---|---|---|---|
 | A | **7 chỉ mục** cho các câu quét cả bảng (bảng dưới) — không đổi câu, JSON y hệt (1 019 / 1 019 lượt gọi, bản chép thật) | **−1,6 triệu** (quét 2,50 → 0,89 triệu); 9 958 câu khác nhau chạy lại: 0 câu tăng | Thấp: chỉ `CREATE INDEX IF NOT EXISTS`; ba chỉ mục PA khoá `id` và `loTrinhChoKetQuaThi` xếp lại theo (em, lộ trình) để GIỮ thứ tự dòng cũ | `server/src/migrate/prTurso1211.ts` (mới), `migrate.ts`, `schema.sql`, `loTrinh/thiThat.ts` |
 | B | **Tổng quan QL · thẻ Giáo viên** đọc đủ `/phan-tich/giao-vien` (41–85 câu, 4,5 k trả + 2–10 k quét) dù thẻ chỉ dùng Việc · Chấm · Đạt kỳ vọng (+ Tiến bộ ở tab Học thuật FT) → gọi `v2=1` (15 câu, ~1,4 k trả) trừ tab Học thuật FT | **−0,2 triệu** (đo: Tổng quan QL 1,07 → 0,91, Quản trị 0,70 → 0,64 sau A); Tổng quan QL TB 145 → 120 câu, CP 88 → 15 câu cho thẻ | Thấp: cùng hàm, cùng số; chỉ bỏ phần thẻ không đọc | `web/src/modules/worklist/TongQuanV5.tsx` |
-| C | **Học viên & Lớp** mở trang gọi 2–3 request cùng phạm vi: danh sách + "Đang SOS" (chỉ để hiện SỐ trên tab) + (TVV / CX) `theo-vai` — mỗi request tính lại lượt / điểm | đo cùng một request (nhớ dùng chung): SOS thêm ~50 % thay 100 %; TVV 15,3 k → 10,8 k, CX 43,8 k → 29,4 k dòng / lần → **~−0,45 triệu** | Vừa: đổi API trang, cần phép kiểm số = danh sách | `server/src/classes/hocVienLop.ts`, `hocVienSos.ts`, `StudentsPage.tsx` |
+| C | **Học viên & Lớp** mở trang gọi 2–3 request cùng phạm vi: danh sách + "Đang SOS" (chỉ để hiện SỐ trên tab) + (TVV / CX) `theo-vai` — mỗi request tính lại lượt / điểm | **PR mục C** (SOS cùng request, `kem=sos`): Học viên mọi vai 1,06 → 0,84 triệu (**−0,22 triệu**), bớt 1 request / lần mở; JSON 76 / 76 tài khoản y hệt. Gộp thêm `theo-vai` (TVV / CX, ~−0,2 triệu) chưa làm: `theo-vai` không theo ô tìm, gộp thì mỗi lần gõ tìm tính lại | Vừa: đổi API trang, cần phép kiểm số = danh sách | `server/src/classes/hocVienLop.ts`, `hocVienSos.ts`, `StudentsPage.tsx` |
 | D | **Câu phiên** (mỗi request 1 câu: quyền + phân công + mốc) — ~700 bước máy ảo / lần, GV nhiều phân công đọc ~100–500 dòng chỉ mục | ~0,5–1 triệu (×15–20 k request) — chưa đo được dòng chỉ mục | Cao (quyền) → **chỉ ghi, không làm**: nhớ principal theo tiến trình cần khoá phiên bản quyền | `server/src/auth.ts` |
 | E | `hvCuaToi` (Tổng quan TVV / CX, Học viên TVV / CX): `sos_cases` SCAN (`substr(created_at,1,10) >= ?`), `students` SCAN rồi lọc chi nhánh trong JS | ~−0,15 triệu | Vừa: chỉ mục `!= 'done'` làm câu khác đổi kế hoạch xấu đi (đã thử, bỏ) — cần viết lại câu | `server/src/worklist/hvCuaToi.ts` |
 | F | Tổng quan GV `hai-khoi` (2 k dòng trả / lần × 368) — đã rà GIAM-DOC-0711: mọi câu đi chỉ mục, giảm nữa phải đổi thiết kế | 0 (giữ) | — | — |
@@ -96,7 +96,7 @@ Học viên Quản trị 250 ms. Trên Turso thời gian ≈ số câu × vòng 
 
 1. **PR-A** chỉ mục (mục A) + `scripts/do-ban-chep.mjs` + tài liệu này.
 2. **PR-B** Tổng quan QL thẻ Giáo viên `v2=1`.
-3. **PR-C** số "Đang SOS" trong cùng request (đo trước, làm nếu lợi ≥ 0,2 triệu / ngày).
+3. **PR-C** "Đang SOS" trong cùng request `/hoc-vien-lop?kem=sos` (−0,22 triệu / ngày).
 4. Mục D, E, G: ghi [XM] cho PTA, không làm trong đợt này.
 
 ## Cách chạy lại

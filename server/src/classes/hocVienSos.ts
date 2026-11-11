@@ -98,10 +98,12 @@ export const sosCuaLuot = (a: AttemptEval) => ({
   sosLevel: Math.min(3, a.sosLevel ?? 1), kyNang: Object.entries(a.skills).filter(([, s]) => s.evaluable && s.under).map(([k]) => k),
 });
 
+/* Admin chỉ hai góc Tất cả · Cần làm (mockup 3 v2 §9 — Admin không làm Case): máy chủ chặn cùng giao diện. */
+export const xemDuocSos = (p: Principal): boolean => vaiXemHocVien(p.roleKeys) !== 'admin' && can(p, PERMISSIONS.CASE_VIEW, { anyScope: true });
+
 export function dangSos(p: Principal, f: { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null } = {}): TrangSos {
   const vai = vaiXemHocVien(p.roleKeys);
-  /* Admin chỉ hai góc Tất cả · Cần làm (mockup 3 v2 §9 — Admin không làm Case): máy chủ chặn cùng giao diện. */
-  if (vai === 'admin' || !can(p, PERMISSIONS.CASE_VIEW, { anyScope: true })) throw forbidden('Đang SOS dành cho người theo dõi Case.');
+  if (!xemDuocSos(p)) throw forbidden('Đang SOS dành cho người theo dõi Case.');
   const homNay = demoToday();
   /* TVV mặc định "HV của tôi", CX mọi chi nhánh — như trang TVV / CX (OV-10b). */
   const muon = f.phamVi ?? (vai === 'tvv' ? 'cua-toi' : vai === 'cx' && !f.branchId ? 'tat-ca' : null);

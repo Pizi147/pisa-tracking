@@ -176,16 +176,12 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const canNhan = moLocThem || locThemBat(locThem);
   const qs = useMemo(() => duongHocVienLop(params, { tuLienKet, daNho }), [q, phamViUrl, branchId, daNho, tuLienKet, canNhan]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* giuCu (HV-LOC): gõ tìm / bật lọc đổi `qs` — giữ trang cũ tới khi bản mới về, không gỡ ô tìm đang gõ. */
-  const trang = useApi<TrangHocVienLop>('chuyenDen' in doc ? null : qs, [], { giuCu: true });
+  /* Đang SOS: cùng phạm vi trang (`qs`), số trên tab cần nguồn này nên tải luôn (Admin không có chế độ này). TURSO-1211: đi CÙNG request trang (`kem=sos`) —
+     máy chủ dùng lại lượt / điểm vừa nạp cho trang; `sos: null` = không xem được Case. */
+  const trang = useApi<TrangHocVienLop & { sos?: TrangSos | null }>('chuyenDen' in doc ? null : admin ? qs : `${qs}&kem=sos`, [], { giuCu: true });
   const branches = useApi<Branch[]>('/ref/branches');
   const data = trang.data;
-  /* Đang SOS: cùng phạm vi trang (`qs`). Số trên tab cần nguồn này nên tải luôn (Admin không có chế độ này). */
-  const duongSos = useMemo(() => {
-    const s = new URLSearchParams(qs.slice(qs.indexOf('?') + 1));
-    s.set('goc', 'sos');
-    return `/hoc-vien-lop?${s.toString()}`;
-  }, [qs]);
-  const sos = useApi<TrangSos>(admin || 'chuyenDen' in doc ? null : duongSos, [], { giuCu: true });
+  const sos = { data: trang.data?.sos ?? null, cu: trang.cu, khongXem: trang.data?.sos === null };   // lỗi tải: báo một lần ở đầu trang (`trang.error`)
   /* Cột "Việc của tôi" + chip "Có việc quá hạn" (U04-5, chủ SP 03/11 khuya): CHỈ việc của người đang xem — cùng nguồn badge Công việc (`/my-work`). Chờ trang tải xong mới gọi. */
   const duongViec = '/my-work';
   const coViec = vai !== 'cx';   // CX không có Công việc (Tổng quan CX: "không có việc trên trang này")
@@ -202,7 +198,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     else if (lamTaiCho(it)) setViecMo(it);
     else navigate(it.href);
   };
-  const lamMoi = () => { invalidate('/my-work'); invalidate('/hoc-vien-lop'); trang.reload(); sos.reload(); work.reload(); theoVai.reload(); };
+  const lamMoi = () => { invalidate('/my-work'); invalidate('/hoc-vien-lop'); trang.reload(); work.reload(); theoVai.reload(); };
   const [xuat, setXuat] = useState(false);
   const [idsLichThi, setIdsLichThi] = useState<number[]>([]);
 
@@ -578,7 +574,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
               </button>
             </div>
             <div className={sos.cu ? 'dang-tai-lai' : undefined} aria-busy={sos.cu || undefined}>
-            {sos.error ? <div className="p-3"><ErrorState message={sos.error.message} hint={sos.error.hint} status={sos.error.status} onRetry={sos.reload} /></div>
+            {sos.khongXem ? <Empty title={t('Đang SOS dành cho người theo dõi Case.')} />
               : !sos.data ? <div className="p-3"><Skeleton rows={6} /></div>
               : sosRows.length === 0 ? <Empty title={t('Không có học viên SOS')} />
               : (

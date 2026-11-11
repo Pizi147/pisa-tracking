@@ -141,6 +141,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp · Đang SOS', vai: [...MOI_VAI, 'TVV', 'CX'], url: '/hoc-vien-lop?goc=sos' },
   { trang: 'Học viên & Lớp · Đang SOS', vai: ['QL', 'QT', 'CX'], url: '/hoc-vien-lop?goc=sos&tuan=tat-ca' },
   { trang: 'Học viên & Lớp · Đang SOS', vai: ['ADMIN'], url: '/hoc-vien-lop?goc=sos', maChuDich: { ADMIN: 403 } },
+  /* TURSO-1211: trang Học viên & Lớp mở = danh sách + Đang SOS CÙNG request (`kem=sos`); Admin: `sos: null`. */
+  { trang: 'Học viên & Lớp', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/hoc-vien-lop?kem=sos' },
   { trang: 'Học viên & Lớp · panel một em', vai: MOI_VAI, url: '/hoc-vien-lop/em/{hv}' },
   { trang: 'Hồ sơ HV CX / Admin', vai: ['CX', 'ADMIN'], url: '/students/{hv}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru' },
@@ -704,6 +706,9 @@ export const TRAN: Record<string, number> = {
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
   /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
+  /* TURSO-1211: danh sách + Đang SOS CÙNG request — đo QL 68 · GVCN / GVBM / GVCN_THUONG 70 · QT 69 · TVV 49 · CX 73 · Admin 52 (riêng: QL 52 + 22) → max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /hoc-vien-lop?kem=sos': 89, 'GVCN /hoc-vien-lop?kem=sos': 91, 'GVBM /hoc-vien-lop?kem=sos': 91, 'GVCN_THUONG /hoc-vien-lop?kem=sos': 91,
+  'QT /hoc-vien-lop?kem=sos': 90, 'TVV /hoc-vien-lop?kem=sos': 64, 'CX /hoc-vien-lop?kem=sos': 95, 'ADMIN /hoc-vien-lop?kem=sos': 68,
   'QL /hoc-vien-lop': 63,   // SV-SO3: +2 câu (hàng HV khu d: tuần thi + lượt trước có Overall, một lần / trang): đo 73, trần đo+10; TL-NEN: đo 55 (trước 69); TL-HVL: đo 48 (trước 51)
   'GVCN /hoc-vien-lop': 65,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71); TL-HVL: đo 50 (trước 53)
   'GVBM /hoc-vien-lop': 65,   // PR-UXF-a VN29: +4 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 76, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 57 (trước 71); TL-HVL: đo 50 (trước 53)
@@ -1234,6 +1239,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 1827,   // đo 2079 · DOC-IT-3: đo 1405
   'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
   'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
+  'QL /hoc-vien-lop?kem=sos': 4604,   // TURSO-1211: đo 3541 (riêng: 2636 + 1864 = 4500) → max(đo + 50, ⌈đo × 1,3⌉)
   'QL /hoc-vien-lop': 3374,   // TD3-b: đo 2627 (68 câu); TL-HVL: đo 2595 (trước 2648)
   /* DOC-IT-4: lọc phạm vi trong SQL — đo 23 · 11 · 18 · 11 · 33 (trước 33 mọi vai) → ⌈đo × 1,3⌉. */
   'QL /ref/classes': 30, 'GVCN /ref/classes': 15, 'GVBM /ref/classes': 24, 'GVCN_THUONG /ref/classes': 15, 'QT /ref/classes': 43, 'QL /ref/classes?branchId={cn}': 30,
