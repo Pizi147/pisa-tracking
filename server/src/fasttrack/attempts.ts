@@ -1755,7 +1755,7 @@ function paGanLuot(attemptId: number, boCase: number[]): { dong: { id: number; t
             (SELECT f.outcome FROM case_followups f WHERE f.intervention_id = iv.id AND f.outcome IS NOT NULL ORDER BY f.observed_on DESC, f.id DESC LIMIT 1) AS kq
        FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
       WHERE iv.status IN ('planned', 'started') AND sc.status != 'done'
-        AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
+        AND sc.id IN (SELECT m.case_id FROM case_milestones m WHERE m.attempt_id = ?)   -- TURSO-LOG-1311: đi từ mốc của lượt (trước SCAN mọi PA, ~38 K dòng / lần)
       ORDER BY iv.id`).all(attemptId) as any[]).filter((r) => !boCase.includes(r.case_id) && r.kq);
   const ten = (r: any) => `PA ${(r.description ?? '').trim() || INTERVENTION_KIND_LABEL[r.kind as InterventionKind] || r.kind} ${
     CASE_CATEGORY_LABEL[(r.category ?? categoryOf(r.topic)) as CaseCategory] ?? ''}`.trim();
@@ -1770,12 +1770,13 @@ function paGanLuot(attemptId: number, boCase: number[]): { dong: { id: number; t
  * Huỷ cả lượt và huỷ kết quả do dời vượt (`huyKetQuaLuot`).
  */
 export function caseSinhRieng(attemptId: number): number[] {
+  /* TURSO-LOG-1311: đi từ mốc của lượt (`idx_milestone_attempt`) — trước SCAN mọi Case; xếp theo id (trước: thứ tự chỉ mục `idx_case_owner`, tình cờ). */
   return (db().prepare(
     `SELECT sc.id FROM sos_cases sc
-      WHERE sc.status != 'done' AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
+      WHERE sc.status != 'done' AND sc.id IN (SELECT m.case_id FROM case_milestones m WHERE m.attempt_id = ?)
         AND NOT EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id IS NOT NULL AND m.attempt_id != ?)
         AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.case_id = sc.id AND f.outcome IS NOT NULL)`,
-  ).all(attemptId, attemptId) as any[]).map((r) => r.id as number);
+  ).all(attemptId, attemptId) as any[]).map((r) => r.id as number).sort((x, y) => x - y);
 }
 
 /**

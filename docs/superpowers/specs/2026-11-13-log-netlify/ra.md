@@ -75,6 +75,10 @@ Cộng theo tần suất giả định của TURSO-1211 (400 lượt tài khoả
 
 ## 3. Sửa trong PR này (đo trên bản chép, 1 028 lượt tài khoản × trang + 369 lượt đường thêm; **JSON 1 397 / 1 397 y hệt**)
 
+Mốc "trước" cuối cùng = `origin/main` `b54ba2c47` (git archive, cùng bản chép đã migrate, cùng danh sách lượt) so với nhánh này (gồm chỉ mục + hai câu huỷ lượt):
+JSON khác 0 / 1 028 và 0 / 369; câu 23 383 → 23 187; dòng trả 1 740 326 → 1 734 193; thời gian máy chủ cộng dồn 95,8 s → 86,2 s (máy dev, lượt đầu nóng ổ đĩa
+khác nhau nên ms chỉ để tham khảo — so `json_each` riêng: 110,7 s → 80,1 s cùng điều kiện).
+
 | # | việc | trước → sau | tệp |
 |---|---|---|---|
 | a | `loadSkillRows`: `WITH ids(id) AS (VALUES (?),(?)…)` → `WITH ids(id) AS (SELECT value FROM json_each(?))`, lô `LO_JSON` (10 000) thay 900. Cùng kế hoạch (SEARCH `attempt_skills` theo `attempt_id`, cả hai vế), cùng dòng. Trước: mỗi cỡ lô một văn bản câu mới (prepare mới trên Turso, rò ~4,9 KB / lần prepare — `db.ts` PR-BN), tới 900 tham số mỗi câu. | thời gian máy chủ cộng dồn 1 028 lượt **110,7 s → 80,1 s (−28 %)**; GV Công việc 193 → 127 ms, GV hai khối 299 → 190 ms, Admin Học viên 390 → 232 ms (máy dev); dòng không đổi | `fasttrack/skillSchedule.ts` |
@@ -93,6 +97,28 @@ Trần `tocDoDuong.ts`: `/students/1` 88 → 85 (GVCN 90 → 88), seed đo 65 / 
 `idx_score_attempt`), mỗi lượt đọc đúng các ô của nó; dòng tỉ lệ với số lượt trang đọc (như `loadSkillRows`). Bớt được chỉ khi trang đọc ít lượt hơn (mục a
 GV Speaking). Không đổi.
 
+## 3b. Turso Top Queries 12/11 (chủ SP 13/11, `plan.md`) — DÒNG ĐỌC THẬT của Turso, ~20,6 triệu / ngày
+
+Turso tính mọi dòng đi qua (chỉ mục, bảng tạm), nên số thật cao hơn "dòng trả" ở trên. Đo trước → sau bằng bước máy ảo SQLite (`sqlite3_stmt_status` VM_STEP,
+tỉ lệ với dòng đi qua) trên bản chép, cùng tham số đã ghi ở lượt đo.
+
+| câu (Top Queries) | lần · dòng / ngày | sửa | bước VM / lần trước → sau | ước sau / ngày |
+|---|---|---|---|---|
+| `lenh_chuyen_lop … boi_canh = 'cuoi-khoa'` (Xét lại `tinhTapXetLai`, 3 biến thể) | 894 · ~7,0 M (8 K / lần) | chỉ mục `ix_lenh_hv (student_id)`: câu con "lệnh sau của cùng em" trước quét mọi lệnh có id lớn hơn (theo rowid) cho từng lệnh | 28 956 → 7 319 (−75 %); 317 câu `lenh_chuyen_lop` khác: kết quả + thứ tự y hệt, 2 câu khác cũng nhẹ hơn (441 → 67, 59 → 26) | **~1,8 M (−5,2 M)** |
+| `case_interventions iv JOIN sos_cases … EXISTS case_milestones … attempt_id` (`paGanLuot`, hệ quả huỷ lượt) | 40 · 1,5 M (38,6 K / lần) | `EXISTS (mốc của Case = lượt)` → `sc.id IN (mốc của lượt)`: đi từ `idx_milestone_attempt`, trước SCAN mọi PA | 15 411 → 106 (360 lượt có mốc: kết quả y hệt) | **~0 (−1,5 M)** |
+| cùng đường: `caseSinhRieng` (`sos_cases … EXISTS case_milestones`) | (cùng 40 lần) | như trên; kết quả xếp theo id (trước: thứ tự chỉ mục `idx_case_owner`, tình cờ — 72 / 360 lượt khác thứ tự; web không đọc `caseIds`) | 21 921 → 109 | nhỏ |
+| `WITH ids(id) AS (VALUES …)` (`loadSkillRows`) | 774 · 4,78 M (6,2 K / lần, dòng trả ~2 K) | `json_each` (mục 3): bỏ bảng tạm `MATERIALIZE ids` + hai lượt quét nó; cùng kế hoạch trên bảng thật | máy chủ −28 % thời gian | chưa đo được phần bảng tạm Turso tính — xem Top Queries sau deploy |
+| `SELECT a.*, (… NOT EXISTS …) AS la_mt_moi` (`listAttempts` còn ô chờ: Công việc, Lịch Test) | 970 · 4,39 M (4,5 K / lần) | chỉ phần GV Speaking (mục 3, −13 % dòng của họ). Còn lại: [XM] dưới | 172 257 (QL) | ~4,2 M |
+| `SELECT sc.*, … FROM sos_cases` (`napCaseMo`, Công việc / việc theo em) | 641 · 2,94 M (4,6 K / lần) | không sửa: đã đọc đúng phạm vi (GV theo lớp, QL theo chi nhánh); dòng là 6 JOIN + 7 câu con theo từng Case | — | 2,94 M |
+| **Cộng** | **~20,6 M** | | | **~13,7 M (−6,9 M)** |
+
+[XM] cho PTA (chưa làm — đổi luật cờ / cách tính, cần quyết):
+1. **`la_mt_moi`**: 646 / 1 206 lượt mang cờ "còn ô chờ" (`o_cho_tu`) trên bản chép là **MT lịch sử FT** — `CON_O_SQL` luôn loại chúng nhưng câu vẫn đi qua
+   chỉ mục cờ rồi mới loại. Bỏ chúng khỏi cờ (`O_CHO_TU_SQL` = NULL khi `lich_su = 1` ở chương trình band) đo được −18 % bước VM câu này (~−0,8 M / ngày), nhưng
+   cờ đang được `LUOT_HIEN_TAI_SQL` / `LOP_CON_VIEC_SQL` / Nợ điểm đọc → đổi nghĩa cờ, phải rà cả ba + tính lại cờ khi migrate. Phần lớn còn lại là câu con
+   "MT mới nhất có band" theo TỪNG lượt — tính một lần mỗi em (gom theo em) ước −40 %.
+2. **`napCaseMo`**: `iv_count` + `LA_CASE_SOS` đọc PA hai lần mỗi Case; `current_class_id` lặp JOIN `cur` — gộp được ~−20 % (~−0,6 M).
+
 ## 4. Khởi động lạnh (mục e) — đo, không sửa
 
 - Không có migrate / kiểm bảng / nạp cấu hình lúc khởi tạo: `createApp` chỉ dựng route; kết nối Turso mở lười ở câu đầu (`db()` + `PRAGMA foreign_keys`).
@@ -105,7 +131,7 @@ GV Speaking). Không đổi.
 - Mất luồng (284 / ngày, 3 %): mỗi lần tốn một vòng hỏng + mở lại kết nối. Có thể mở lại kết nối chủ động khi nghỉ > ~10 s, nhưng ngưỡng hết hạn luồng
   Hrana không chắc → mở lại thừa mất kết nối HTTP còn tốt (bắt tay TLS mới). Không làm.
 
-## 5. Còn lại (ước dòng / ngày, cận dưới, main + PR này: 6,42 triệu dòng trả / ngày)
+## 5. Còn lại (dòng trả, cận dưới, main + PR này: 6,42 triệu / ngày — Turso thật xem 3b)
 
 | việc | ước | ghi chú |
 |---|---|---|

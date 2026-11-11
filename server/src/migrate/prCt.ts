@@ -39,6 +39,9 @@ export function migratePrCt(conn: any, applied: string[]) {
     ['ix_lenh_den_han', 'CREATE INDEX ix_lenh_den_han ON lenh_chuyen_lop (trang_thai, tuan_bat_dau)'],
     ['ix_lenh_nguon', 'CREATE INDEX ix_lenh_nguon ON lenh_chuyen_lop (lop_nguon_id, trang_thai)'],
     ['ix_lenh_dich', 'CREATE INDEX ix_lenh_dich ON lenh_chuyen_lop (lop_dich_id, trang_thai)'],
+    /* TURSO-LOG-1311 (Turso Top Queries 12/11: ~7 triệu dòng / ngày, 8 K / lần): Xét lại (`normal/xetLai.ts`) câu con "lệnh sau của cùng em"
+       (`k.student_id = l.student_id AND k.id > l.id`) trước quét mọi lệnh có id lớn hơn. 317 câu `lenh_chuyen_lop` trên bản chép: kết quả + thứ tự y hệt. */
+    ['ix_lenh_hv', 'CREATE INDEX ix_lenh_hv ON lenh_chuyen_lop (student_id)'],
   ];
   const thieu = CHI_MUC.filter(([ten]) => !chiMuc.has(ten));
   for (const [, sql] of thieu) conn.exec(sql);
