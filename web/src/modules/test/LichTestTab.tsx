@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { createPortal } from 'react-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useMoSoLieu, useTenTrang } from '../../lib/quayLai.ts';
@@ -19,7 +20,7 @@ import { KhoiNo } from './lichTest/KhoiNo.tsx';
 import { HangLop } from './lichTest/HangLop.tsx';
 import { NhomDau } from './lichTest/NhomDau.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
-import { NganXuatMt } from './NganXuatMt.tsx';
+import { NganXuatTest } from './NganXuatTest.tsx';
 import { DanhSachNguon } from '../../ui/OSo.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -30,7 +31,7 @@ const loaiCua = (l: { mode: LopLichTest['mode']; kind?: string | null }): Loai =
 /**
  * TEST › LỊCH TUẦN (UI-LICH-TUAN, `thiet-ke/v5/dieu-chinh-cuoi.html` khu a; C13 một tuần + ‹ ›; gốc PR-UX1 / PR-LT3) — MỘT thẻ:
  *
- *   thanh tuần   ‹ W3 SEP 14/09 – 20/09 › · chip Tất cả · Fast Track · n · Lớp thường · n · (Lớp tôi dạy | Tất cả · chi nhánh) · Xuất Excel · Lịch thi thật ›
+ *   thanh tuần   ‹ W3 SEP 14/09 – 20/09 › · chip Tất cả · Fast Track · n · Lớp thường · n · (Lớp tôi dạy | Tất cả · chi nhánh) · Lịch thi thật › (G1-08: Xuất Excel… ở hàng tiêu đề)
  *   dải số       n/m bài đã chấm · n bài quá hạn (B8) — tuần đang xem (quá hạn theo hôm nay); bấm mở đúng tập
  *   ▸ Quá hạn chấm   theo hôm nay, không đổi khi đổi tuần; thu sẵn; mở dòng → lưới tại chỗ chỉ các em còn nợ
  *   ▸ Test tuần này  hàng lớp gọn một dòng (lớp · HV theo lượt · kỹ năng · tiến độ · hạn dd/mm · trạng thái; mã lớp = link hồ sơ lớp); mở lớp → bảng
@@ -90,6 +91,9 @@ export function LichTestTab() {
   const [conTro, setConTro] = useState<Set<string>>(new Set());
   const [moKhoi, setMoKhoi] = useState({ k1: false, k3: true });
   const [moXuat, setMoXuat] = useState(false);
+  /* G1-08: "Xuất Excel…" ở hàng tiêu đề "Test" (cùng chỗ với Kế hoạch Test) — TestPage chừa chỗ `#test-nut-trang`. */
+  const [choNut, setChoNut] = useState<HTMLElement | null>(null);
+  useEffect(() => { setChoNut(document.getElementById('test-nut-trang')); }, []);
   /* RA-UI-3: hỏi bỏ ô chưa lưu bằng hộp chung (`ConfirmDialog`), không dùng hộp gốc `window.confirm` của trình duyệt. */
   const [hoiBo, setHoiBo] = useState<{ title: string; body: string; nut: string; tiep: () => void } | null>(null);
   const [dongMo, setDongMo] = useState<{ d: DongNoLop; viTri: number; conTro: boolean } | null>(null);
@@ -270,7 +274,7 @@ export function LichTestTab() {
     </span>
   );
   const nutXuat = session?.nav?.xuatMt && (
-    <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px]" onClick={() => setMoXuat(true)}>{t('Xuất Excel')}</button>
+    <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px]" aria-haspopup="dialog" onClick={() => setMoXuat(true)}>{t('Xuất Excel…')}</button>
   );
   /* OV-15f: lối vào Học viên & Lớp › Lịch thi (rà soát thi thật), tháng kế tiếp; mang theo chi nhánh đang lọc. */
   const nutLichThi = session?.nav?.students && (
@@ -280,7 +284,7 @@ export function LichTestTab() {
   const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
   const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0) + (loaiParam ? 1 : 0);
-  const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong || !!session?.nav?.xuatMt;
+  const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong;
 
   /* PR-MT (K2-32): nhắc — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. U06 (mockup V11): dòng cuối TRONG thẻ nhóm, chữ nhấn. */
   const nhacMtCu = data && data.nhacLichSu.length > 0 && (
@@ -312,7 +316,6 @@ export function LichTestTab() {
           {!dienThoai && locChiNhanh}
           <span className="ml-auto inline-flex items-center gap-3">
             {nutMoHet}
-            {!dienThoai && nutXuat}
             {nutLichThi}
             {dienThoai && (coGiTrongLoc || !!congTacKhung) && (
               <button ref={nutLoc} type="button" className="btn btn-sm min-h-[44px] shrink-0" aria-expanded={moLoc}
@@ -321,13 +324,12 @@ export function LichTestTab() {
               </button>
             )}
           </span>
-          {/* Mockup 375: chip khung, phạm vi, chi nhánh, Xuất Excel gom vào "Lọc". */}
+          {/* Mockup 375: chip khung, phạm vi, chi nhánh gom vào "Lọc" (G1-08: Xuất Excel… lên hàng tiêu đề). */}
           {dienThoai && moLoc && (
             <div className="grid w-full gap-3 pt-1">
               {congTacKhung}
               {locChiNhanh}
               {nhomPhamVi}
-              {nutXuat}
             </div>
           )}
           {urlClassId && (
@@ -377,9 +379,11 @@ export function LichTestTab() {
         )}
       <ConfirmDialog open={!!hoiBo} onClose={() => setHoiBo(null)} title={hoiBo?.title ?? ''} body={hoiBo?.body} danger
         confirmLabel={hoiBo?.nut} closeLabel={t('Ở lại')} onConfirm={() => { hoiBo?.tiep(); setHoiBo(null); }} />
+      {choNut && nutXuat && createPortal(nutXuat, choNut)}
       {moXuat && data.tuan && (
-        <NganXuatMt khung={loai ?? 'ft'} chiNhanh={branchId} lop={urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null}
-          thoiGianMacDinh={{ kieu: 'tuan', tu: data.tuan.weekStart, den: data.tuan.weekStart }}   /* SL1 (V3B-07 #6): đúng tuần đang xem, không từ đầu tháng */ onDong={() => setMoXuat(false)} />
+        <NganXuatTest dau="diem" lich={{ branchId, classIds: [] }} onDong={() => setMoXuat(false)}
+          diem={{ khung: loai ?? 'ft', chiNhanh: branchId, lop: urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null,
+            thoiGianMacDinh: { kieu: 'tuan', tu: data.tuan.weekStart, den: data.tuan.weekStart } }}   /* SL1 (V3B-07 #6): đúng tuần đang xem, không từ đầu tháng */ />
       )}
     </div>
   );

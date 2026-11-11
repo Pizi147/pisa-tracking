@@ -16,7 +16,7 @@ import { BanGiaoGvPanel } from './BanGiaoGvPanel.tsx';
 import { PanelXetLai, XetLaiCtx, duongXetLai, type EmXetLai } from './PanelXetLai.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
-import { NganXuatMt } from '../test/NganXuatMt.tsx';
+import { NganXuatTest } from '../test/NganXuatTest.tsx';
 import { TabHocVienLop, type CheDoHocVien } from './TabHocVienLop.tsx';
 import { DiemTheoLop } from '../cham/DiemTheoLop.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
@@ -217,8 +217,9 @@ export default function ClassOverviewPage() {
           onChuyenTiep={thuong && data.viewer.coTheChuyenTiep ? () => moViec('chuyen-tiep') : undefined} />
       )}
       {viec === 'xuat-mt' && (
-        <NganXuatMt khung={thuong ? 'thuong' : 'ft'} lop={{ id: data.id, ma: data.code }} chiNhanh={data.branchId}
-          thoiGianMacDinh={{ kieu: 'dot', dot: [...(thuong ? DOT_XUAT_THUONG : DOT_XUAT_FT)] }} onDong={dong} />
+        <NganXuatTest onDong={dong} lich={thuong ? null : { branchId: data.branchId, classIds: [data.id] }}
+          diem={{ khung: thuong ? 'thuong' : 'ft', lop: { id: data.id, ma: data.code }, chiNhanh: data.branchId,
+            thoiGianMacDinh: { kieu: 'dot', dot: [...(thuong ? DOT_XUAT_THUONG : DOT_XUAT_FT)] } }} />
       )}
       {viec === 'xoa-lop' && <XoaLopPanel classId={data.id} classCode={data.code} onClose={dong} />}
       {viec === 'ket-thuc-lop' && (

@@ -10,7 +10,7 @@
  */
 import { DA_THI_THAT_SQL, HV_DANG_HOC_SQL, LUOT_CON_KE_HOACH_SQL, LUOT_HIEN_TAI_SQL, LUOT_LO_TRINH_CUOI_SQL, LUOT_XUAT_SQL } from '../students/tamDung.ts';
 import { db, theoLo, tx } from '../db.ts';
-import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, bangXuatDiem, chuTep, chuanHoaMaLop, gioVn, soTenVi, tuanNam, type DongDiem, type HvKeHoach, type KnLich, type NoiDungXuatDiem } from '../../../shared/domain/index.ts';
+import { CONG_TAC_CP, CO_DIEM_SQL, KY_NANG_KE_HOACH, LUOT_HUY_HET_SQL, khoaCuoiTuan, oXepMt, soCotMt, LUOT_MT_DA_CO_SQL, thieuMt, khoaBai, nhanBai, nhanBaiThuong, kiemTuanMt0, O_KE_HOACH, dotMtMoi, PERMISSIONS, boMonLich, kiemTuanXep, laLichSu, viecXepMt, laVaoMuon, luotBiVuot, soMtKeTiep, soSanhLop, tenMon, tenMonNgan, tieuDeKeHoach, tomTatLopFT, trangThaiKyNang, tuanKhoa as tuanKhoaCua, type BaiXemTruoc, type DongHangLoat, type KetQuaHuy, type KyNangKH, type LuotSo, type LuotXep, type OKyNang, ATTEMPT_KIND_SHORT, bangKeHoachXuat, bangThongTinXuat, chuTep, chuanHoaMaLop, gioVn, soTenVi, type HvKeHoach, type KnLich } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, normalizeName, notFound, nowIso } from '../util.ts';
 import { donKhoaGuiCu } from '../classes/intake.ts';
 import { can, classScopeSql, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -1481,10 +1481,11 @@ export function timKeHoach(p: Principal, i: { q: string; branchId: number | null
 type SheetXuat = { ten: string; aoa: (string | number | null)[][] };
 
 /** Lớp FT trong phạm vi để xuất: chi nhánh + lớp đang lọc (trống = mọi lớp FT); lớp ngoài phạm vi → 403. */
+/** Lớp FT xếp lịch được trong chi nhánh (`tat`) và phần đã chọn (`lop`; không chọn = tất cả). */
 function lopFtXuat(p: Principal, branchId: number | null, classIds: readonly number[]) {
-  const lop = lopTrongPhamVi(p, branchId).filter((l) => l.mode !== 'ratio');
-  if (classIds.some((id) => !lop.some((l) => l.id === id))) throw forbidden('Có lớp nằm ngoài phạm vi bạn được xuất.');
-  return classIds.length ? lop.filter((l) => classIds.includes(l.id)) : lop;
+  const tat = lopTrongPhamVi(p, branchId).filter((l) => l.mode !== 'ratio');
+  if (classIds.some((id) => !tat.some((l) => l.id === id))) throw forbidden('Có lớp nằm ngoài phạm vi bạn được xuất.');
+  return { tat, lop: classIds.length ? tat.filter((l) => classIds.includes(l.id)) : tat };
 }
 const tenChiNhanh = (lop: readonly any[]) => [...new Set(lop.map((l) => l.chi_nhanh).filter(Boolean))].join(', ') || 'Mọi chi nhánh';
 const ngayTep = (iso: string) => `${iso.slice(8, 10)}-${iso.slice(5, 7)}-${iso.slice(0, 4)}`;
@@ -1527,7 +1528,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
 /** POST /ke-hoach-test/xuat — tệp Kế hoạch Test 13 cột theo bộ lọc đang xem (chỉ Fast Track). `xemTruoc` không ghi nhật ký. */
 export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds: number[]; xemTruoc: boolean;
   /** SL1 (V3B-07 #4): chip "Chỉ cần xếp lại" đang bật — tệp chỉ em cần xếp lại (trước: mọi em của lớp). */ chiXepLai?: boolean }, luc = nowIso()) {
-  const lop = lopFtXuat(p, i.branchId, i.classIds);
+  const { tat, lop } = lopFtXuat(p, i.branchId, i.classIds);
   const conn = db();
   const em: any[] = [];
   theoLo(lop.map((l) => l.id as number), (lo, ph) => {
@@ -1578,68 +1579,10 @@ export function xuatKeHoach(p: Principal, i: { branchId: number | null; classIds
   if (!i.xemTruoc) {
     writeAudit({ actorUserId: p.userId, action: 'ke_hoach.xuat_excel', entityType: 'xuat_ke_hoach', entityLabel: `${hv.length} học viên · ${boLoc}`, after: { branchId: i.branchId, classIds: i.classIds, chiXepLai: !!i.chiXepLai } });
   }
-  return { sheets, tenTep: `Ke-hoach-Test_${chuTep(chiNhanh)}_${ngayTep(demoToday())}.xlsx`, dem: { hocVien: hv.length, lop: lop.length }, boLoc };
-}
-
-/** Bộ lọc Xuất điểm Test (mockup 6 khung 9): Theo tuần (mọi lớp) · Theo lớp (nhiều MT) · Lớp + khoảng tuần. */
-export type BoLocXuatDiem = {
-  branchId: number | null; classIds: number[]; noiDung: NoiDungXuatDiem; xemTruoc: boolean;
-  mt: [number, number] | null; tuan: [string, string] | null;
-};
-
-/** POST /ke-hoach-test/xuat-diem — MỘT hàng MỘT lượt Mock (đã có tuần, chưa huỷ). Tuần của lượt = tuần SỚM NHẤT của kỹ năng phải thi (như Xuất kết quả Test). */
-export function xuatDiemTest(p: Principal, f: BoLocXuatDiem, luc = nowIso()) {
-  if (!f.mt && !f.tuan) throw badRequest('Chọn MT hoặc khoảng tuần.');
-  if (f.mt && !f.classIds.length) throw badRequest('Theo MT thì chọn lớp.');
-  const lop = lopFtXuat(p, f.branchId, f.classIds);
-  const conn = db();
-  const maLop = new Map(lop.map((l) => [l.id as number, l.code as string]));
-  const ung: any[] = [];
-  /* Theo tuần: lượt có kỹ năng trong khoảng (một câu không tương quan qua chỉ mục `planned_period_id`); theo MT: lượt của lớp đã chọn. */
-  theoLo([...maLop.keys()], (lo, ph) => {
-    ung.push(...conn.prepare(
-      /* OV-15i2: chỉ cột `resultOf` + bảng cần (không `a.*`). */
-      `SELECT a.id, a.kind, a.class_id, a.student_id, a.cycle_id, a.attempt_no, a.target_at_attempt, a.kck_at_attempt, a.created_at,
-              st.full_name, st.email, COALESCE(a.route_at_attempt, cy.route) AS route, cy.khong_cam_ket AS cy_kck FROM assessment_attempts a
-         JOIN students st ON st.id = a.student_id JOIN learning_cycles cy ON cy.id = a.cycle_id
-        WHERE a.class_id IN (${ph}) AND a.kind = 'mock' AND a.status != 'cancelled' AND ${LUOT_XUAT_SQL('a', 'st')}
-          ${f.mt ? 'AND a.attempt_no BETWEEN ? AND ?' : ''}
-          ${f.tuan ? `AND a.id IN (SELECT ask.attempt_id FROM attempt_skills ask JOIN report_periods r ON r.id = ask.planned_period_id
-                                    WHERE ask.required = 1 AND r.week_start BETWEEN ? AND ?)` : ''}`).all(...lo, ...(f.mt ?? []), ...(f.tuan ?? [])) as any[]);
-  });
-  const bundle = loadBundle(ung.map((a) => a.id));
-  const tuanDau = (a: any) => (bundle.skillRows.get(a.id) ?? []).filter((r: any) => r.required && r.week_start).map((r: any) => String(r.week_start).slice(0, 10)).sort()[0] ?? null;
-  const chon = ung.map((a) => ({ a, tuan: tuanDau(a) })).filter((x) => x.tuan && (!f.tuan || (x.tuan >= f.tuan[0] && x.tuan <= f.tuan[1])));
-  const chuoi = lopTheoLoTrinh(chon.map((x) => x.a.cycle_id), p);
-  chon.sort((x, y) => soSanhLop({ code: maLop.get(x.a.class_id)! }, { code: maLop.get(y.a.class_id)! }) || soTenVi(x.a.full_name, y.a.full_name)
-    || x.a.student_id - y.a.student_id || x.a.attempt_no - y.a.attempt_no);
-  const dong: DongDiem[] = chon.map(({ a, tuan }) => {
-    const sc = bundle.scores.get(a.id) ?? [];
-    const r = resultOf(a, sc, bundle.skips.get(a.id) ?? [], bundle.skillRows.get(a.id) ?? []);
-    const o = (k: string) => sc.find((s: any) => s.skill === k);
-    return {
-      ten: a.full_name, email: a.email ?? null, lop: chuoi.get(a.cycle_id) ?? [maLop.get(a.class_id)!], mt: a.attempt_no, tuan,
-      l: r.bands.listening, r: r.bands.reading, w1: o('writing1')?.band ?? null, w2: o('writing2')?.band ?? null, w: r.bands.writing, s: r.bands.speaking,
-      ovr: r.overall, kyVong: r.expectation, danhGiaDuoc: r.evaluable,
-      nhanXet: Object.fromEntries(['listening', 'reading', 'writing1', 'writing2', 'speaking'].map((k) => [k, o(k)?.comment ?? null])),
-    };
-  });
-  const chiNhanh = tenChiNhanh(lop);
-  const phamVi = `${f.classIds.length ? (lop.length === 1 ? lop[0].code : `${lop.length} lớp`) : 'Mọi lớp'}`
-    + `${f.mt ? ` · MT${f.mt[0]}${f.mt[1] !== f.mt[0] ? `–MT${f.mt[1]}` : ''}` : ''}`
-    + `${f.tuan ? ` · ${tuanNam(f.tuan[0])}${f.tuan[1] !== f.tuan[0] ? ` → ${tuanNam(f.tuan[1])}` : ''}` : ''}`;
-  const boLoc = `${phamVi} · ${f.noiDung === 'chi-diem' ? 'Chỉ điểm' : 'Điểm + nhận xét'} · ${dong.length} lượt`;
-  if (!f.xemTruoc) {
-    writeAudit({ actorUserId: p.userId, action: 'ke_hoach.xuat_diem', entityType: 'xuat_ke_hoach', entityLabel: boLoc, after: { ...f, xemTruoc: undefined } });
-  }
-  const tenLop = f.classIds.length ? lop.map((l) => chuTep(l.code, '')).join('-') : chuTep(chiNhanh);
-  const doan = f.mt ? `MT${f.mt[0]}-MT${f.mt[1]}` : `${chuTep(tuanNam(f.tuan![0]), '')}-${chuTep(tuanNam(f.tuan![1]), '')}`;
   return {
-    sheets: [
-      { ten: 'Điểm Test', aoa: bangXuatDiem(dong, f.noiDung) },
-      { ten: 'Thông tin xuất', aoa: bangThongTinXuat({ chiNhanh, boLoc, luc: gioVn(luc), nguoi: p.fullName }) },
-    ] as SheetXuat[],
-    tenTep: `PISA_DiemTest_${tenLop}_${doan}_${demoToday()}.xlsx`,
-    dem: { luot: dong.length, hocVien: new Set(chon.map((x) => x.a.student_id)).size }, boLoc,
+    sheets, tenTep: `Ke-hoach-Test_${chuTep(chiNhanh)}_${ngayTep(demoToday())}.xlsx`, dem: { hocVien: hv.length, lop: lop.length }, boLoc,
+    /* G1-08: ngăn Xuất Excel › Lịch Test thu hẹp lớp ngay trong ngăn — danh sách lấy từ CÙNG câu phạm vi trên (không thêm câu). */
+    ...(i.xemTruoc ? { chiNhanh, lopCo: tat.map((l) => ({ id: l.id as number, ma: l.code as string, chiNhanh: (l.chi_nhanh ?? '') as string, soHv: l.so_hv as number })) } : {}),
   };
 }
+
