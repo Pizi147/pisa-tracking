@@ -140,7 +140,6 @@ import * as ownerSvc from '../cases/owner.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
 import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
-import { luuDiemLo } from '../cham/luuLo.ts';
 
 export const api = Router();
 
@@ -432,7 +431,6 @@ api.get('/ref/periods', requireAuth, wrap(() => {
   }));
 }));
 
-api.get('/ref/current-period', requireAuth, wrap(() => ensurePeriod(demoToday())));
 
 /**
  * Cửa sổ tuần cho ô chọn tuần: hai tháng lịch sử quanh tuần đang xem, một tuần tương lai.
@@ -1024,10 +1022,6 @@ api.post('/attempts/:id/deadline', requireAuth, wrap((req) => {
     req.body?.deadline ?? null, req.body?.reason);
 }));
 
-api.post('/attempts/:id/cancel', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return attemptSvc.huyLuot(principalOf(req), pInt(req, 'id'), { lyDo: typeof req.body?.reason === 'string' ? req.body.reason : null, quaWeb: true });
-}));
 
 api.post('/attempts/:id/reopen', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1060,18 +1054,6 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
     /* OV-12b: nhóm nguyên nhân (ô MT dưới kỳ vọng) — `saveScore` kiểm mã (thiếu chỉ nhắc — LUAT-NX-MT). */
     nhomNguyenNhan: b.nhomNguyenNhan,
   });
-}));
-
-/** OV-15b: Dán từ Excel — nhiều ô nhiều em một lần; mỗi dòng một giao dịch qua `saveScore` (quyền, nhận xét MT, band) — `cham/luuLo.ts`. */
-api.post('/attempts/scores/lo', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return luuDiemLo(principalOf(req), req.body);
-}));
-
-/** OV-15h2 (ý 10): Dán từ Excel lớp thường — cùng `luuDiemLo`, mỗi ô qua `saveRegularScore`; một lần dán = một mục lịch sử. */
-api.post('/regular/scores/lo', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return luuDiemLo(principalOf(req), req.body, 'thuong');
 }));
 
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */
@@ -1125,11 +1107,6 @@ api.put('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
   return baoCaoPhSvc.luuBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
 }));
 
-/** PR-DL — trang Test › Điểm theo lớp: lớp người xem được xem, kèm số ô trống. */
-api.get('/diem-theo-lop/lop', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return diemTheoLuotSvc.lopCuaToi(principalOf(req));
-}));
 
 /**
  * Lịch Test (PR-UX1) — MỘT lời gọi đủ cho màn: dải số, Nợ tuần trước, mỗi lớp một hàng. Không truyền tuần thì lấy tuần
@@ -2212,24 +2189,12 @@ api.get('/tong-quan/quan-ly', requireAuth, wrap((req) => {
   return tongQuanSvc.tongQuanQuanLy(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ct: ctTuyChon(qStr(req, 'ct')) });
 }));
 
-/** Điểm đáng chú ý (tầng 3) theo khung `ct=ft|thuong` — tách route để đổi công tắc không tải lại Cần xử lý. */
-api.get('/tong-quan/diem-chu-y', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return tongQuanSvc.diemChuY(principalOf(req), {
-    branchId: qInt(req, 'branchId') ?? null, ct: chuongTrinhTuThamSo(qStr(req, 'ct')),
-  });
-}));
 
 /** Khối giáo viên (PR-VAI-a Q12): Lớp tôi dạy theo khung `ct=ft|thuong` — thay "Học viên cần hỗ trợ". */
 /* OV-10c: Tổng quan TVV ("Học viên của tôi") / CX ("Số liệu") — ô đếm học viên, cùng nguồn chip Học viên & Lớp. */
 api.get('/tong-quan/hoc-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return soHocVien(principalOf(req), { branchId: qInt(req, 'branchId') ?? null });
-}));
-/* SV-YT-TVV + SV-TVV-VIEC (Q-A1 ①): "Việc của bạn" ở trang đầu TVV — TVV không có khu Công việc (`/my-work` chặn), nên việc TVV giữ đọc ở đây (cùng `myWork`, chỉ nhóm của TVV). */
-api.get('/tong-quan/viec-cua-toi', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return nheMyWork(myWork(principalOf(req), { branchId: qInt(req, 'branchId'), chiNhom: NHOM_VIEC_TVV }));
 }));
 /* OV-10c: Tổng quan Admin — tab "Mock Test" (4 ô + GV chấm quá hạn); mỗi số từ hàm của màn ô đó mở. */
 api.get('/tong-quan/mock-test', requireAuth, wrap((req) => {
@@ -2782,25 +2747,9 @@ api.get('/students/:id/chuyen-lop', requireAuth, wrap((req) => {
   return luatLoTrinhSvc.xemChuyenLop(principalOf(req), pInt(req, 'id'), toClassId ?? null, coTheoCuoiKhoa(qStr(req, 'theoCuoiKhoa')));
 }));
 
-/** Lộ trình tiếp theo (PR-LT, Q1) — dự định sau lớp đang học, ghi trước khi thật sự chuyển. */
-api.get('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
-  return loTrinhTiepSvc.layLoTrinhTiep(principalOf(req), pInt(req, 'id'));
-}));
 
-api.put('/students/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return loTrinhTiepSvc.ghiLoTrinhTiep(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
 
-/** PR-K26: Ghi lộ trình tiếp theo cả lớp (hồ sơ lớp ⋮) — một bảng, lưu một giao dịch. */
-api.get('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
-  return loTrinhTiepSvc.layLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'));
-}));
 
-api.put('/classes/:id/lo-trinh-tiep', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return loTrinhTiepSvc.ghiLoTrinhTiepCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
 
 /** OV-3b: nháp Lộ trình tiếp theo — chỉ Quản lý (`coTheRaLenh`); lô lỗi một phần (`failed`). Đọc nháp qua `GET /classes/:id/transition`. */
 api.put('/classes/:id/lo-trinh-nhap', requireAuth, wrap((req) => {
@@ -2884,15 +2833,6 @@ api.post('/students/:id/hoan-tac-tam-dung', requireAuth, wrap((req) => {
   return tx(() => { const s = studentSvc.hoanTacTamDung(p, id) as any; const canhBao = trangThaiHvSvc.traLaiLenhDaHuy(p, id); return canhBao ? { ...s, canhBao } : s; });
 }));
 
-/** RB-9: lưu trữ / bỏ lưu trữ — chỉ Quản lý, chỉ em đã kết thúc học. Không có tác vụ ngầm. */
-api.post('/students/:id/archive', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return studentSvc.archiveStudent(principalOf(req), pInt(req, 'id'));
-}));
-api.post('/students/:id/unarchive', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return studentSvc.unarchiveStudent(principalOf(req), pInt(req, 'id'));
-}));
 
 /** PR-LUI-b: Học lại — đường lui của Kết thúc học (về lớp cũ, hoặc sang lớp mới + lộ trình mới). Chỉ Quản lý / Quản trị (máy chủ kiểm `plan.week` của học viên). */
 api.post('/students/:id/hoc-lai', requireAuth, wrap((req) => {
@@ -3047,8 +2987,6 @@ api.put('/admin/role-permissions', requireAuth, wrap((req) => {
 
 /** PR-QU (D): ma trận vai × quyền (+ quyền suy ra cho cột GVCN, + lý do ô khoá) và tầm ảnh hưởng của một ô trước khi bật/tắt. */
 api.get('/admin/permissions/matrix', requireAuth, wrap((req) => sysconfigSvc.maTranQuyen(principalOf(req))));
-api.get('/admin/roles/:key/permissions/:perm/impact', requireAuth, wrap((req) =>
-  sysconfigSvc.anhHuongOVai(principalOf(req), String(req.params.key), String(req.params.perm))));
 
 /* QTV2-QUYEN: Nhật ký chung của Quản trị (thay `/admin/overview` — 6 câu COUNT(*), đọc mọi tài khoản, 40 dòng nhật ký). */
 /* QTV2-HAN: Hạn mặc định — Quản trị sửa, Quản lý xem; mỗi lần lưu một phiên bản (chỉ áp cho việc sinh sau). */

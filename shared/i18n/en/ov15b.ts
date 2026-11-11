@@ -30,14 +30,8 @@ export const EN_OV15B = {
   'Trong panel: chọn lượt (MT1, MT2…) và môn (<b>Tất cả · L · R · W1 · W2 · S</b>); <b>Chỉ ô còn trống</b> để nhập nốt.': 'In the panel: pick the test (MT1, MT2…) and skill (<b>All · L · R · W1 · W2 · S</b>); <b>Empty cells only</b> to finish entering.',
   'Mở lưới điểm (bấm dòng lớp ở Lịch Test, hoặc <b>⋯</b> hàng lớp › <b>Nhập điểm</b>).': 'Open the score grid (click a class row in Schedule / Marking, or <b>⋯</b> on the class row › <b>Enter scores</b>).',
   'Mở lưới điểm của lớp (Test › Lịch Test, hoặc ⋯ hàng lớp › Nhập điểm).': 'Open the class score grid (Tests › Test schedule, or ⋯ on the class row › Enter scores).',
-  /* Máy chủ — POST /attempts/scores/lo */
-  'Không có dòng nào để lưu.': 'No rows to save.',
-  'Mỗi lần lưu tối đa {n} dòng.': 'At most {n} rows per save.',
-  'Lượt Test không hợp lệ.': 'Invalid test attempt.',
-  'Ô điểm của dòng không hợp lệ.': 'Invalid score cells in this row.',
-  'Lỗi máy chủ — dòng này chưa lưu.': 'Server error — this row was not saved.',
+  /* Máy chủ */
   'Lớp không hợp lệ.': 'Invalid class.',
-  'Có dòng không thuộc lớp / lượt đang mở — tải lại bảng rồi dán lại.': 'Some rows are not in the open class / test — reload the table and paste again.',
   '‹ Việc': '‹ Task',
   'Hoàn tác dán điểm từ Excel': 'Undid scores pasted from Excel',
 } satisfies Record<string, Dich>;

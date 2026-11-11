@@ -151,7 +151,7 @@ export async function runPrOv13pTests(t: YThucTestKit) {
       for (const [ten, ck] of [['TVV', tv], ['CX', cx]] as const) {
         for (const [viec, m, url, body] of [
           ['Chuyển lớp', 'POST', `/students/${em.id}/transfer`, { toClassId: lopCpKhac, lyDo: 'thử' }],
-          ['Lưu trữ', 'POST', `/students/${em.id}/archive`, undefined],
+          ['Lưu trữ', 'POST', '/hang-loat-hoc-vien', { viec: 'luu-tru', studentIds: [em.id] }],
           ['Phân công GV', 'PUT', `/classes/${lopTvv}/teachers`, { slots: [] }],
         ] as const) {
           const r = await goi(m, url, ck, body);

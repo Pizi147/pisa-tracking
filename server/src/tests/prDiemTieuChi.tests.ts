@@ -11,7 +11,6 @@ export async function runPrDiemTieuChiTests(t: YThucTestKit) {
   const attemptsSvc: any = await import('../fasttrack/attempts.ts');
   const intake: any = await import('../classes/intake.ts');
   const weekSvc: any = await import('../platform/week.ts');
-  const { luuDiemLo } = await import('../cham/luuLo.ts');
   const { boLichTuTao, luotThu } = await import('./luotThu.ts');
   const { demTieuChiLe } = await import('../ops/kiemTieuChiLe.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -54,16 +53,6 @@ export async function runPrDiemTieuChiTests(t: YThucTestKit) {
     assert(!o(aid, 'writing1') || o(aid, 'writing1').c1 === null, 'ô không được ghi');
     attemptsSvc.saveScore(P.admin, aid, 'writing1', { criteria: [6, 7, 6, 7] }, t.TODAY);
     assert(o(aid, 'writing1').band === 6.5, `band ${o(aid, 'writing1').band}`);
-  });
-
-  check('DTC-5 · lô (Dán Excel): dòng có W1 lẻ báo lỗi, dòng khác lưu', () => {
-    const a1 = emFt('Lo 1'), a2 = emFt('Lo 2');
-    const kq: any = luuDiemLo(P.admin, { classId: FT, dong: [
-      { attemptId: a1, o: [{ skill: 'writing1', criteria: [6, 6.5, 6, 6] }] },
-      { attemptId: a2, o: [{ skill: 'writing1', criteria: [6, 7, 6, 7] }] },
-    ] });
-    assert(!kq.dong[0].ok && kq.dong[0].loi === L, JSON.stringify(kq.dong[0]));
-    assert(kq.dong[1].ok && o(a2, 'writing1').band === 6.5, JSON.stringify(kq.dong[1]));
   });
 
   check('DTC-6 · ô cũ c2 = 6.5: lệnh không có criteria giữ nguyên; gửi lại y nguyên không lỗi; đổi một tiêu chí mà còn 6.5 → lỗi', () => {

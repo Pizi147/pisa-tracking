@@ -134,14 +134,19 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     });
   });
 
-  await checkAsync('C15-3 · Bỏ "Huỷ MT" trên web: /attempts/:id/cancel với Mock → 400 (QL), Admin vẫn 403; hồ sơ MT không còn huyLuot', async () => {
+  await checkAsync('C15-3 · Bỏ "Huỷ MT": BD-3 — /attempts/:id/cancel đã bỏ (404 mọi vai, lượt không đổi); hồ sơ MT không còn huyLuot', async () => {
     const l = lop();
     const a = em(l, 'Bùi Minh Châu', null);
     await voiMayChu(async (goi) => {
       const id = await xep(goi, a.sid, 1, addDays(T2, 7));
-      const e = await loi(await goi(QL, `/attempts/${id}/cancel`, post({ reason: 'thử' })));
-      assert(e.status === 400 && /Xóa/.test(e.error), JSON.stringify(e));
-      assert((await goi(ADMIN, `/attempts/${id}/cancel`, post({ reason: 'thử' }))).status === 403, 'Admin 403');
+      for (const ai of [QL, ADMIN]) assert((await goi(ai, `/attempts/${id}/cancel`, post({ reason: 'thử' }))).status === 404, 'đường đã bỏ');
+      /* BD-3: các đường web không gọi đã bỏ — 404 (không còn bề mặt quyền). */
+      for (const [m, url] of [['POST', `/students/${a.sid}/archive`], ['POST', `/students/${a.sid}/unarchive`], ['GET', `/students/${a.sid}/lo-trinh-tiep`],
+        ['PUT', `/students/${a.sid}/lo-trinh-tiep`], ['GET', `/classes/${l}/lo-trinh-tiep`], ['PUT', `/classes/${l}/lo-trinh-tiep`], ['GET', '/tong-quan/diem-chu-y?ct=ft'],
+        ['GET', '/tong-quan/viec-cua-toi'], ['GET', '/ref/current-period'], ['GET', '/diem-theo-lop/lop'], ['GET', '/admin/roles/manager/permissions/plan.week/impact']] as const) {
+        const r = await goi(ADMIN, url, m === 'GET' ? {} : { method: m, body: '{}' });
+        assert(r.status === 404, `${m} ${url}: ${r.status}`);
+      }
       assert(one(`SELECT status FROM assessment_attempts WHERE id = ?`, id).status === 'planned', 'không huỷ');
       const ct = await json(await goi(QL, `/attempts/${id}`));
       assert(!('huyLuot' in ct.viewer), `huyLuot: ${JSON.stringify(ct.viewer.huyLuot)}`);   // OV-15i2: trường đã bỏ

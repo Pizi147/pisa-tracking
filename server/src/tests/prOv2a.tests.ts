@@ -186,11 +186,9 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     await checkAsync('OV2a-7 · gọi thẳng API ngoài quyền → 403 (Admin huỷ/khôi phục, TVV/CX vào Test/Công việc, CX phần GV, TVV Target)', async () => {
       const a = await vao(idAdmin); const tv = await vao(idTvv); const cx = await vao(idCx);
       const mong: [string, string, string, string, unknown?][] = [
-        ['Admin huỷ lượt', a, 'POST', `/attempts/${luot}/cancel`, { reason: 'thử' }],
         ['Admin khôi phục lượt', a, 'POST', `/attempts/${luot}/reopen`],
         ['Admin khôi phục kết quả', a, 'POST', `/attempts/${luot}/khoi-phuc-ket-qua`, { lyDo: 'thử' }],
         ['TVV Lịch Test', tv, 'GET', '/cham/lich-test'],
-        ['TVV Điểm theo lớp', tv, 'GET', '/diem-theo-lop/lop'],
         ['TVV Kế hoạch Test', tv, 'GET', `/ke-hoach-test/lop?branchId=${cn}`],
         /* UI-CV-TVV: TVV đọc `/my-work` (chỉ việc TVV của mình — prUiCvTvv); việc người khác / khu khác của Công việc vẫn 403. */
         ['TVV Công việc người khác', tv, 'GET', '/my-work?nguoi=tat-ca'], ['TVV Vận hành', tv, 'GET', '/mgmt-tasks'],
@@ -232,7 +230,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       s = (await goi('GET', '/demo/session', ck)).json;
       assert(s.gocNhin.dangChon === 'teacher' && s.roles.join(',') === 'teacher' && !s.nav.testPlan && !s.nav.analysis, `góc GV: ${JSON.stringify({ g: s.gocNhin, r: s.roles, n: s.nav })}`);
       assert(s.gocNhin.vaiGoc === 'manager', `vai gốc: ${s.gocNhin.vaiGoc}`);
-      for (const [m, url, body] of [['GET', `/tong-quan/quan-ly?branchId=${cn}`], ['POST', '/classes', { code: 'CP FT 999' }], ['POST', `/attempts/${luot}/cancel`, { reason: 'x' }]] as const) {
+      for (const [m, url, body] of [['GET', `/tong-quan/quan-ly?branchId=${cn}`], ['POST', '/classes', { code: 'CP FT 999' }], ['POST', `/attempts/${luot}/bo-tuan`, {}]] as const) {
         const r = await goi(m, url, ck, body);
         assert(r.status === 403, `góc GV ${m} ${url}: ${r.status} ${r.json?.error}`);
       }

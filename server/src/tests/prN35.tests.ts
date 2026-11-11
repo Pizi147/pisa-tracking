@@ -11,7 +11,6 @@ export async function runPrN35Tests(t: any) {
   const cases: any = await import('../cases/cases.ts');
   const intake: any = await import('../classes/intake.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
-  const { luuDiemLo }: any = await import('../cham/luuLo.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nN35 · trần chữ GV nhập (mô tả Case 300 · PA 200 · kết quả PA 200 · nhận xét MT 300)');
 
@@ -98,16 +97,4 @@ export async function runPrN35Tests(t: any) {
     assert(get(`SELECT comment FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a).comment.length === 400, 'chữ cũ giữ nguyên');
   }));
 
-  check('N35-5 · dán Excel (lô): dòng có nhận xét 301 báo lỗi ĐÚNG dòng đó, dòng khác vẫn lưu', () => thu(() => {
-    const [a1, a2] = luotMt();
-    assert(a1 && a2, 'cần hai lượt MT ở MB FT 101');
-    for (const a of [a1, a2]) conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).run(a);
-    const kq: any = luuDiemLo(P.lrTeacher, { classId: LOP, dong: [
-      { attemptId: a1, o: [{ skill: 'listening', rawScore: 30, nhanXet: chu(301) }] },
-      { attemptId: a2, o: [{ skill: 'listening', rawScore: 31, nhanXet: chu(300) }] },
-    ] });
-    assert(!kq.dong[0].ok && kq.dong[0].status === 400 && /tối đa 300 ký tự/i.test(kq.dong[0].loi), `dòng 1: ${JSON.stringify(kq.dong[0])}`);
-    assert(kq.dong[1].ok, `dòng 2 phải lưu: ${JSON.stringify(kq.dong[1])}`);
-    assert(!get(`SELECT 1 AS x FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a1), 'dòng lỗi không được ghi nửa chừng');
-  }));
 }
