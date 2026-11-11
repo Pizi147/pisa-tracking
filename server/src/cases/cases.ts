@@ -32,7 +32,7 @@ import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
-import { isRatioCycle, nguongDatLop, programmeCodeOfCycle } from '../normal/regular.ts';
+import { isRatioCycle, nguongDatLop, programmeByCode, programmeCodeOfCycle } from '../normal/regular.ts';
 import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
@@ -656,7 +656,7 @@ export function reportIssue(p: Principal, input: {
   const ctCuaCase: string | null = cycle ? cycle.programme_code ?? programmeCodeOfCycle(cycle.id) : null;
   const allowedTopics: readonly string[] = !ratioForTopics ? ENTRY_SKILLS
     : programmeOf(ctCuaCase) === 'PREFOU' ? caseTopicsFor(true, ctCuaCase)          // Pre FOU chỉ "Tổng hợp" (PF6)
-    : [...new Set([...caseTopicsFor(true, ctCuaCase), ...ENTRY_SKILLS])];
+    : [...new Set([...caseTopicsFor(true, ctCuaCase, programmeByCode(ctCuaCase)?.skills), ...ENTRY_SKILLS])];
   if (!allowedTopics.includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
 
   /*
@@ -908,7 +908,7 @@ export function caseTopicsOf(p: Principal, studentId: number, cycleId?: number |
   const cho = new Set(awaitingCauseCaseIds(mo.map((c) => c.id as number)));
   const choNguyenNhan: Record<string, { caseId: number; mt: number | null; sos: number | null; dot: string | null }> = {};
   for (const c of mo) if (cho.has(c.id)) choNguyenNhan[c.topic ?? c.category] = { caseId: c.id, mt: c.attempt_no ?? null, sos: c.sos_level ?? null, dot: c.attempt_kind ? nhanDot(c.attempt_kind, c.attempt_no ?? null) : null };   // lớp thường: `Progress Test` thay `MT2` (T58)
-  const topics = caseTopicsFor(ratio, chuongTrinh);
+  const topics = caseTopicsFor(ratio, chuongTrinh, programmeByCode(chuongTrinh)?.skills);
   /* OV-11d (HV-19): kỹ năng người xem ghi bù được ("Đã xong từ trước") — CÙNG quyền `recordIntervention` (`SOS_EDIT` theo kỹ năng, C02 giữ). */
   const ghiBuDuoc = topics.filter((t) => can(p, PERMISSIONS.SOS_EDIT, { classId: enr?.class_id ?? null, studentId, skill: t === 'tong_hop' ? undefined : t }));
   /*
@@ -1468,7 +1468,7 @@ export function suaCase(p: Principal, caseId: number, input: {
     if (c.origin_kind === 'mock') throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
     if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(caseId)) throw badRequest('Case đã có PA — không đổi kỹ năng.');
     const cycle = c.eff_cycle_id ? conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(c.eff_cycle_id) as any : null;
-    if (!(caseTopicsFor(!!cycle && isRatioCycle(cycle), ct) as readonly string[]).includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
+    if (!(caseTopicsFor(!!cycle && isRatioCycle(cycle), ct, programmeByCode(ct)?.skills) as readonly string[]).includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
     khoaMoi = c.parallel ? null : caseDedupKey({ category: categoryOf(topic), studentId: c.eff_student_id, cycleId: c.eff_cycle_id });
     const giu = khoaMoi ? conn.prepare(`SELECT id, status FROM sos_cases WHERE dedup_key = ? AND id != ?`).get(khoaMoi, caseId) as any : null;
     if (giu && giu.status !== 'done' && !daXong) throw loi(400, 'Đã có Case {chuDe} đang mở.', { chuDe: caseTopicLabel(topic, ct) });
@@ -2620,7 +2620,7 @@ export function caseDetail(p: Principal, caseId: number) {
      */
     ratio: isRatioCycle(cycle ?? {}),
     /** Các hạng mục hợp lệ của lớp này — năm ô với FT, bốn ô với Normal. */
-    categories: caseCategoriesFor(isRatioCycle(cycle ?? {}) ? 'ratio' : 'ielts_band', ctCase)
+    categories: caseCategoriesFor(isRatioCycle(cycle ?? {}) ? 'ratio' : 'ielts_band', ctCase, programmeByCode(ctCase)?.skills)
       .map((k) => ({ code: k, label: tenMon(ctCase, k) })),
     /** Số kỹ năng dưới kỳ vọng của CẢ LƯỢT. NULL với vấn đề giáo viên báo — không phải SOS 0. */
     sosLevel: c.sos_level,
@@ -3403,7 +3403,7 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
    * PR-S5F-a: Case có hạng mục NGOÀI ô chuẩn của chương trình đang học (vd. Case "Cuối khoá Pre FOU · Tổng hợp không đạt" đi theo em lên FOU) vẫn
    * phải có dòng — không thì bảng và thẻ tóm tắt nói "không có Case" trong khi Case còn mở. Dòng thêm xếp sau các ô chuẩn.
    */
-  const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang);
+  const oChuan: readonly string[] = caseCategoriesFor(isRatioCycle(cycle) ? 'ratio' : 'ielts_band', ctBang, programmeByCode(ctBang)?.skills);
   /*
    * PR-UXF-b (R5-5): Case ĐANG MỞ mà lớp GỐC lúc mở nó (`ct_attempt` = `sos_cases.goc_programme_code`, PR-DEPLOY 0b-3 — không còn đọc theo lượt: lượt đổi theo thời gian, Case tay không có lượt) có TÊN MÔN khác chương trình đang xem (FOU "G+V" / "P" → BE "Writing" / "Speaking") không nằm ở hàng cùng khoá
    * dữ liệu — hàng Writing của BE đọc thành "em yếu Writing" (khi chuyển lớp, Case bàn giao sang lộ trình mới nên không dựa vào `carried_over`). Chúng thành nhóm "Case bàn giao" cuối

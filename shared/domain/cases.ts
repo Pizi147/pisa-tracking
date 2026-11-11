@@ -15,8 +15,9 @@ import { benCua, cauHinh, cauHinhPb, tenHien, type MucNguyenNhan, type NhanhNN }
  * `ratio` = lớp thường (chấm theo tỷ lệ đạt/tổng): bốn môn L · R · W · S, đúng thứ tự này.
  * Không phải lớp thường (Fast Track): năm ô L · R · W1 · W2 · S. Pre FOU: một chủ đề "Tổng hợp" (PF6).
  */
-export function caseTopicsFor(ratio: boolean, ct?: string | null): readonly string[] {
+export function caseTopicsFor(ratio: boolean, ct?: string | null, /** MON-CT-1311: bộ môn chương trình (`programme_skills`) — Quản trị sửa được. */ boCt?: readonly string[] | null): readonly string[] {
   if (programmeOf(ct) === 'PREFOU') return ['tong_hop'];
+  if (ratio && boCt?.length) return boCt;
   const lienTuc = CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x) => x.code === programmeOf(ct));
   if (lienTuc) return lienTuc.skills;   // OV-11h (HV-5): PET / KET — cùng bộ với bảng kỹ năng (`caseCategoriesFor`)
   return ratio ? REGULAR_SKILLS : ENTRY_SKILLS;
@@ -121,8 +122,9 @@ export const NORMAL_CASE_CATEGORIES = [
 ] as const;
 
 /** `ratio` = lớp thường. Không rõ chương trình thì lấy bộ của Fast Track. Pre FOU: một hạng mục "Tổng hợp". OV-11h (HV-5): PET / KET hai môn L+S, R+W. */
-export function caseCategoriesFor(scoringMode: string | null | undefined, ct?: string | null): readonly CaseCategory[] {
+export function caseCategoriesFor(scoringMode: string | null | undefined, ct?: string | null, /** MON-CT-1311: như `caseTopicsFor`. */ boCt?: readonly string[] | null): readonly CaseCategory[] {
   if (programmeOf(ct) === 'PREFOU') return ['tong_hop'];
+  if (scoringMode === 'ratio' && boCt?.length) return boCt as readonly CaseCategory[];
   const lienTuc = CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x) => x.code === programmeOf(ct));
   if (lienTuc) return lienTuc.skills as readonly CaseCategory[];
   return scoringMode === 'ratio' ? NORMAL_CASE_CATEGORIES : FT_CASE_CATEGORIES;

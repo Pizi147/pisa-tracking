@@ -6,7 +6,7 @@
  */
 import { db, tx } from '../db.ts';
 import {
-  ENTRY_SKILLS, MON_GOP, PERMISSIONS, apDoi, doiTheoO, laCapBanGiao, moRongPhanCong, nguoiVietBanGiao, tenMonNgan, xemDen,
+  ENTRY_SKILLS, PERMISSIONS, apDoi, doiTheoO, laCapBanGiao, moRongPhanCong, nguoiVietBanGiao, tenMonNgan, xemDen,
   type DoiChoPc, type DoiO, type GvPc, type HieuLucVao, type LopPc, type SlotPhanCong, type TrangPhanCongGv, type XemTruocLuu,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -139,8 +139,9 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const cu = truoc.active.get(classId)!.map(slotCua);
     const doi = doiTheoO(ct, kyNang, cu, slots);
     if (!full && doi.some((d) => d.khoa === 'gvcn')) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.', { classId });
-    /* Kiểm NGUYÊN bức tranh gửi lên (như cũ: hai người một môn, môn lạ → 400, không lặng lẽ bỏ). P13: môn gộp cũ đang có dòng là môn hợp lệ. */
-    const monGopCo = [...new Set(cu.map((x) => x.skill).filter((k): k is string => !!k && Object.hasOwn(MON_GOP, k) && !kyNang.includes(k)))];
+    /* Kiểm NGUYÊN bức tranh gửi lên (như cũ: hai người một môn, môn lạ → 400, không lặng lẽ bỏ). Môn cũ đang có dòng (P13 môn gộp, MON-CT-1311 Quản trị
+       đổi môn chương trình — dòng giữ cho lượt cũ) là môn hợp lệ. */
+    const monGopCo = [...new Set(cu.map((x) => x.skill).filter((k): k is string => !!k && !kyNang.includes(k)))];
     try {
       kiemTruocPhanCong(classId, c.branch_id, ct, [...kyNang, ...monGopCo], slots, duocXepCua(xepNho, c.branch_id, slots.map((s) => s.userId)));
       /* Từ tuần: bức tranh LÚC HIỆU LỰC = hiện tại + lịch chờ khác tới hạn trước / cùng tuần + lần đổi này — hai lịch hợp lệ riêng mà sai khi gộp

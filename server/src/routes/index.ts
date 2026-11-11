@@ -127,6 +127,7 @@ import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import * as thiThatTkSvc from '../phanTich/thiThatThongKe.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
+import { O_KE_HOACH } from '../../../shared/domain/index.ts';   // MON-CT-1311: ô xếp lịch (cả L+S, R+W)
 import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
 import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../worklist/mywork.ts';
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
@@ -633,7 +634,7 @@ api.get('/ke-hoach-test/ft/:classId', requireAuth, wrap((req) =>
 function tuanTheoKyNang(v: any): Record<string, number> {
   const out: Record<string, number> = {};
   if (!v || typeof v !== 'object') return out;
-  for (const k of ['listening', 'reading', 'writing', 'speaking', 'tong_hop']) {   // tong_hop: Pre FOU (PF6)
+  for (const k of O_KE_HOACH) {   // tong_hop: Pre FOU (PF6); L+S, R+W: KET / PET (MON-CT-1311)
     const n = toInt(v[k]);
     if (n) out[k] = n;
   }

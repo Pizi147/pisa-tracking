@@ -21,7 +21,7 @@ import { ChipXetLaiDong, XetLaiCtx } from './PanelXetLai.tsx';
 import { OResetBac } from '../students/ChuyenLopPanel.tsx';
 import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import {
-  CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, canLopDich, chuDaiKetQua,
+  CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, boMonLich, canLopDich, chuDaiKetQua,
   daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, conTrongCuoiKhoa, tenMonNgan,
   thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
@@ -353,7 +353,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const p = e.progress;
     /* Chưa Final (chủ SP 11/11): hộp điểm dùng lượt Progress — % tổng + câu đúng / tổng từng môn; em chưa có lượt nào giữ "—". */
     const theoProgress = !coFinal && !(c && c.scored > 0) && !!p && p.scored > 0;
-    const monTrong = REGULAR_SKILLS.map((skill) => ({ skill, ratio: null, dung: null, tong: null }));
+    const monTrong = boMonLich(ma).map((skill) => ({ skill, ratio: null, dung: null, tong: null }));   // MON-CT-1311: bộ môn chương trình, không cố định 4 môn
     const dsMon = theoProgress ? (p!.mon?.length ? p!.mon : monTrong) : c?.mon.length ? c.mon : monTrong;
     /* Chủ SP 11/11: chỉ ghi lượt đang có — "Final Test: ✓ 82 %" / "Progress Test: ✓ 80 %"; không "Chờ Final", không "n/4 môn", không ngày. */
     const coFinalDiem = coFinal || !!(c && c.scored > 0);

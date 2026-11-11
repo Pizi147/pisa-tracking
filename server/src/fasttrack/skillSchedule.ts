@@ -2,7 +2,7 @@ import { capNhatConOCho } from './conOCho.ts';
 import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
-  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
+  ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, docBoMonLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
   gvcnDoiMtCu, khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
   type AssessedSkill, type SitStatus, type SkillProgress, nhanBaiThuong, soThuTuLuot } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
@@ -189,10 +189,12 @@ export function scoringModeOf(
  */
 /** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
 export function boMonCuaLuot(conn: any, attemptId: number, dongLich?: readonly { skill: string }[]): readonly string[] {
-  const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind, a.bo_mon FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
   if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
   const prog = programmeByCode(r?.ct);
   const bo = boMonLich(r?.ct ?? null, prog?.skills);
+  const chup = docBoMonLuot(r?.bo_mon);   // MON-CT-1311: lượt đã ghi giữ bộ cũ khi Quản trị đổi môn
+  if (chup) return chup;
   if (!prog?.lapMoiTuan) return bo;
   /* P13: MỘT luật — dòng lịch ∪ dòng điểm của lượt (`daGhiLuot`): còn dòng lịch / điểm môn gộp → bộ gộp (không chèn thêm 4 môn cạnh nó). */
   const lich = dongLich ?? lichGopCua([attemptId]).get(attemptId);

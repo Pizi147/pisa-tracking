@@ -90,7 +90,7 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
     const skillRows = bundle.skillRows.get(a.id);
     const o: { skill: string; weekStart: string | null; deadline: string | null; progress: string; noShow: boolean }[] = [];
     if (scoringModeOf(a) === 'ratio') {
-      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(skillRows, scores));
+      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(skillRows, scores), a.bo_mon);
       const views = regularSkillViews(a, skillRows, scores, today, bo);
       for (const skill of bo) { const v = views.get(skill); if (v?.required) o.push({ skill, weekStart: v.weekStart, deadline: v.deadline, progress: v.progress, noShow: false }); }
     } else {

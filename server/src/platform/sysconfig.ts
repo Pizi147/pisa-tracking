@@ -3,11 +3,13 @@ import {
   MA_CHUONG_TRINH_MOI, MON_CHON, MON_GOP, MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt,
   laChuongTrinhGoc, lichMtGoc, lyDoCamVai, nhanBaiThuong, programmeOf,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, canXacNhan, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
 import { xemDuocBangQuyDoi } from './bangQuyDoi.ts';
+import { apDoiMon, keHoachDoiMon } from './doiMonCt.ts';
+import { demoToday } from '../demoConfig.ts';
 
 /** QTV2-CAU-HINH (chủ SP 11/11: "chỉ vai Quản trị sửa, QL xem") — Quản lý XEM cấu hình (chương trình, lộ trình, chi nhánh); mọi đường sửa giữ `ADMIN_CONFIG`. */
 const xemCauHinh = (p: Principal, cau: string) => { if (!xemDuocBangQuyDoi(p)) throw forbidden(cau); };
@@ -103,6 +105,8 @@ export function listProgrammes(p: Principal) {
     nguongDat: r.scoring_mode === 'ratio' ? Math.round((r.nguong_dat ?? RATIO_PASS_THRESHOLD) * 1000) / 10 : null,   // 0.725 → 72.5
     /* OV-6b2: liên tục — Checkpoint mỗi n tuần; `goc` = chương trình có sẵn trong mã (môn, cách chấm khoá); `coLop` = đã có lớp (môn khoá, mã không đổi). */
     lapMoiTuan: r.lap_moi_tuan ?? null, goc: laChuongTrinhGoc(r.code),
+    /* MON-CT-1311: Môn khoá (FT, Pre FOU) → lý do hiện tại ô; null = Quản trị sửa được. */
+    khoaMon: lyDoKhoaMon(r.code, r.scoring_mode),
     ...(laQt ? {
       coLop: !!conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(r.code),
       /* Chỉ lớp ĐANG CHẠY — lớp đã kết thúc không còn chịu ảnh hưởng gì của cấu hình. */
@@ -114,10 +118,9 @@ export function listProgrammes(p: Principal) {
 /**
  * SỬA CHƯƠNG TRÌNH — không thêm mã mới (K1-48).
  *
- * Hai thứ CỐ Ý KHOÁ với các chương trình gốc (FT, Pre FOU, FOU, BE, ELE):
- *
- *   cách chấm (`scoring_mode`) — đổi nó là đổi ý nghĩa của MỌI điểm đã nhập từ trước;
- *   bộ kỹ năng               — bỏ một kỹ năng là bỏ chỗ tựa của những ô điểm đã có.
+ * Cách chấm (`scoring_mode`) CỐ Ý KHOÁ — đổi nó là đổi ý nghĩa của MỌI điểm đã nhập từ trước.
+ * MON-CT-1311 (chủ SP 13/11): Môn sửa được ở MỌI chương trình lớp thường, kể cả gốc và đang có lớp (`apDoiMon`: lớp mở sau + bài Test chưa ghi đổi,
+ * bài đã ghi giữ bộ cũ). FT (band) giữ L · R · W1 · W2 · S; Pre FOU một ô Tổng hợp (PF6 — GVCN dạy luôn, Case / phân công một ô) khoá.
  *
  * Tên, số tuần, hai mốc kiểm tra và "Đạt từ" (OV-6b1) thì sửa được: chỉ áp cho lớp tạo sau khi lưu — lớp đang học giữ bản chụp lúc tạo
  * (PF1: số tuần + mốc; OV-6b1: ngưỡng đạt). Lỗi gắn đúng ô (`details.o`), kiểm hết TRƯỚC khi ghi.
@@ -130,7 +133,7 @@ export function saveProgramme(p: Principal, input: {
   status?: string;
   /** OV-6b2: "+ Chương trình" — tạo mã mới (mã đã có → 400). Không có = sửa mã đã có. */
   taoMoi?: boolean;
-  /** OV-6b2: môn (chọn từ `MON_CHON`) — chỉ chương trình mới, khi chưa có lớp nào. */
+  /** OV-6b2 + MON-CT-1311: môn (chọn từ `MON_CHON`, theo thứ tự) — mọi chương trình lớp thường trừ Pre FOU. Không gửi = giữ. */
   skills?: unknown;
   /** OV-6b2: liên tục (`weeks` trống) — Checkpoint mỗi n tuần (1–52). */
   lapMoiTuan?: number | null;
@@ -152,10 +155,17 @@ export function saveProgramme(p: Principal, input: {
   if (!had) throw badRequest('Không có chương trình này — thêm mới bằng "+ Chương trình".');
   /* OV-11b (QT-7, "Sửa sau khi lưu" 13/10): chương trình Quản trị tạo, chưa có lớp nào → sửa như lúc tạo (thêm / bỏ Progress, Số tuần ↔ Liên tục). */
   if (!laChuongTrinhGoc(code) && !conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(code)) return taoChuongTrinh(p, code, input, had);
-  /* Cách chấm không đổi sau khi tạo (đổi là đổi ý nghĩa mọi điểm đã nhập). Môn: chương trình gốc khoá; chương trình mới đổi được khi chưa có lớp. */
+  /* Cách chấm không đổi sau khi tạo (đổi là đổi ý nghĩa mọi điểm đã nhập). Môn: MON-CT-1311 — `monSuaDuoc`. */
   const scoring = had.scoring_mode;
-  const doiMon = !laChuongTrinhGoc(code) && input.skills !== undefined
-    && !conn.prepare('SELECT 1 FROM classes WHERE programme_code = ? LIMIT 1').get(code) ? kiemMon(input.skills) : null;
+  const doiMon = input.skills === undefined ? null : kiemMonSua(conn, code, scoring, input.skills);
+  /* Có lớp đang học → HỎI trước (RKC: hộp xác nhận chung), nêu đúng hậu quả. Chỉ đổi thứ tự thì không hỏi. */
+  if (doiMon) {
+    const kh = keHoachDoiMon(conn, code, doiMon);
+    if (kh.lopDangChay && [...kh.cu].sort().join() !== [...doiMon].sort().join()) {
+      if (kh.lopChonLaiGv) canXacNhan(CAU_DOI_MON_PC, { n: kh.lopDangChay, m: kh.luotDoi, k: kh.lopChonLaiGv }, NUT_DOI_MON);
+      else canXacNhan(CAU_DOI_MON, { n: kh.lopDangChay, m: kh.luotDoi }, NUT_DOI_MON);
+    }
+  }
   /* OV-6b2: liên tục giữ liên tục (không số tuần) — chỉ đổi "mỗi n tuần", áp lớp mở sau. */
   const lap = had.lap_moi_tuan == null ? null : input.lapMoiTuan === undefined ? had.lap_moi_tuan : kiemLap(input.lapMoiTuan);
   if (lap !== null) input = { ...input, weeks: null, progressWeek: null, finalWeek: null };
@@ -195,7 +205,8 @@ export function saveProgramme(p: Principal, input: {
     clearScoringModeCache();
     conn.prepare('UPDATE programmes SET name=?, weeks=?, scoring_mode=?, status=?, nguong_dat=?, lap_moi_tuan=? WHERE code=?')
       .run(name, weeks, scoring, status, nguong, lap, code);
-    if (doiMon) ghiMon(conn, code, doiMon);
+    const monCu = doiMon ? boMonHien(conn, code) : null;
+    const kqMon = doiMon ? apDoiMon(conn, p, code, doiMon, demoToday()) : null;
 
     if (weeks !== null && finalWeek) {
       conn.prepare('DELETE FROM programme_checkpoints WHERE programme_code = ?').run(code);
@@ -209,7 +220,10 @@ export function saveProgramme(p: Principal, input: {
 
     writeAudit({
       actorUserId: p.userId, action: 'programme_updated',
-      entityType: 'programmes', entityLabel: code, before: { nguongDat: had.nguong_dat, lapMoiTuan: had.lap_moi_tuan }, after: { name, weeks, scoring, status, nguongDat: nguong, lapMoiTuan: lap },
+      entityType: 'programmes', entityLabel: code,
+      before: { nguongDat: had.nguong_dat, lapMoiTuan: had.lap_moi_tuan, ...(kqMon ? { mon: monCu } : {}) },
+      after: { name, weeks, scoring, status, nguongDat: nguong, lapMoiTuan: lap,
+        ...(kqMon ? { mon: doiMon, lopDangChay: kqMon.lopDangChay, luotDoi: kqMon.luotDoi, luotGiu: kqMon.luotGiu, lopChonLaiGv: kqMon.lopChonLaiGv } : {}) },
     });
     return { ok: true };
   });
@@ -225,6 +239,29 @@ function kiemMon(v: unknown): string[] {
   if (gop) throw loiO('mon', `${gop === 'listening_speaking' ? 'L+S' : 'R+W'} đã gồm ${gop === 'listening_speaking' ? 'L và S' : 'R và W'} — bỏ môn lẻ.`);
   return ds;
 }
+const CAU_DOI_MON = '{n} lớp đang học · {m} bài Test chưa có điểm sẽ đổi môn. Bài đã ghi giữ môn cũ. Lưu môn mới?';
+const CAU_DOI_MON_PC = '{n} lớp đang học · {m} bài Test chưa có điểm sẽ đổi môn · phân công cần chọn lại ở {k} lớp. Bài đã ghi giữ môn cũ. Lưu môn mới?';
+const NUT_DOI_MON = 'Lưu môn mới';
+const boMonHien = (conn: any, code: string): string[] =>
+  (conn.prepare('SELECT skill FROM programme_skills WHERE programme_code = ? ORDER BY seq, skill').all(code) as any[]).map((x) => x.skill as string);
+/** MON-CT-1311: lý do Môn của chương trình này KHOÁ (null = sửa được). Một chỗ cho máy chủ + `listProgrammes` (web ghi lý do tại ô). */
+export function lyDoKhoaMon(code: string, scoring: string): string | null {
+  if (scoring !== 'ratio') return 'Fast Track giữ L · R · W1 · W2 · S.';
+  if (programmeOf(code) === 'PREFOU') return 'Pre FOU một ô Tổng hợp, GVCN dạy luôn — không đổi môn.';
+  return null;
+}
+/** Môn gửi lên khi sửa: chương trình khoá môn thì chỉ nhận đúng bộ đang có (web gửi lại nguyên bức tranh); còn lại kiểm như lúc tạo. */
+function kiemMonSua(conn: any, code: string, scoring: string, v: unknown): string[] | null {
+  const hien = boMonHien(conn, code);
+  const lyDo = lyDoKhoaMon(code, scoring);
+  if (lyDo) {
+    if (Array.isArray(v) && v.map(String).join() === hien.join()) return null;
+    throw loiO('mon', lyDo);
+  }
+  const mon = kiemMon(v);
+  return mon.join() === hien.join() ? null : mon;
+}
+
 function kiemLap(v: unknown): number {
   const n = Number(v);
   if (v === null || v === undefined || v === '' || !Number.isInteger(n) || n < 1 || n > 52) throw loiO('moc', 'Lặp mỗi 1–52 tuần.');

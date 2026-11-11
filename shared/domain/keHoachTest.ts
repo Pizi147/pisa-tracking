@@ -98,10 +98,12 @@ export function laVaoMuon(vaoLop: string | null, khaiGiang: string | null): bool
 
 /** Bốn kỹ năng của Kế hoạch Test. W = chấm cả W1 và W2 — một lịch W đặt cho cả hai (G-7). */
 export const KY_NANG_KE_HOACH = ['listening', 'reading', 'writing', 'speaking'] as const;
-/** Mọi ô xếp lịch được: 4 kỹ năng (FT, FOU/BE/ELE) + ô `tong_hop` của Pre FOU (PF6). Lớp thường dùng đúng bộ môn chương trình. */
-export const O_KE_HOACH = [...KY_NANG_KE_HOACH, 'tong_hop'] as const;
+/** Mọi ô xếp lịch được: 4 kỹ năng (FT, FOU/BE/ELE) + ô `tong_hop` của Pre FOU (PF6) + môn gộp L+S, R+W (KET / PET — MON-CT-1311). Lớp thường dùng đúng bộ môn chương trình. */
+export const O_KE_HOACH = [...KY_NANG_KE_HOACH, 'tong_hop', 'listening_speaking', 'reading_writing'] as const;
 export type KyNangKH = (typeof O_KE_HOACH)[number];
-export const CHU_KY_NANG: Record<KyNangKH, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S', tong_hop: 'Tổng hợp' };
+export const CHU_KY_NANG: Record<KyNangKH, string> = {
+  listening: 'L', reading: 'R', writing: 'W', speaking: 'S', tong_hop: 'Tổng hợp', listening_speaking: 'L+S', reading_writing: 'R+W',
+};
 
 /**
  * Một kỹ năng của một đợt: `khoa` != null → dòng chỉ đọc (đã có điểm / đã thi / đã huỷ phần thi). `periodId` là tuần hiện có

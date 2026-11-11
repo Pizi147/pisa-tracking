@@ -5,18 +5,20 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, ErrorState, Field, Forbidden, Info, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { MON_CHON, MON_GOP, MT_TOI_DA, dsLoi, kyHieuLop, oPhanCong, skillShort, thuTuKyHieu, type LoiTruong } from '@shared/domain/index.ts';
+import { MON_CHON, MON_GOP, MT_TOI_DA, dsLoi, kyHieuLop, oPhanCong, skillShort, tenMonNgan, thuTuKyHieu, type LoiTruong } from '@shared/domain/index.ts';
 import { PhanDoan } from '../classes/ClassCreatePanel.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NhatKyMuc } from './NhatKyChung.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 
 type RouteRow = { code: string; name: string; note: string | null; seq: number; status: string; inUse: number; lichMt: number[]; lopDangChay: number };
 type Programme = {
   code: string; name: string; weeks: number | null; scoringMode: string; status: string;
   skills: string[]; checkpoints: { kind: string; studyWeek: number }[]; nguongDat: number | null; lopDangChay: number;
-  /** OV-6b2: liên tục — Checkpoint mỗi n tuần · `goc` = chương trình có sẵn (môn, cách chấm khoá) · `coLop` = đã có lớp (môn khoá). */
+  /** OV-6b2: liên tục — Checkpoint mỗi n tuần · `goc` = chương trình có sẵn (cách chấm khoá) · `coLop` = đã có lớp (độ dài khoá). */
   lapMoiTuan: number | null; goc: boolean; coLop: boolean;
+  /** MON-CT-1311: lý do Môn khoá (FT, Pre FOU); null = Quản trị sửa được (kể cả chương trình gốc, đang có lớp). */
+  khoaMon: string | null;
 };
 /** Một dòng của bảng: chương trình lớp thường, hoặc FT theo từng lộ trình (mockup §6); `moi` = panel "+ Chương trình" (OV-6b2). */
 type Dong = { loai: 'ct'; ct: Programme } | { loai: 'ft'; lt: RouteRow } | { loai: 'moi' };
@@ -53,7 +55,8 @@ function chuMoc(d: DongCo, ngan = false): string {
  *
  * Một bảng: chương trình lớp thường + Fast Track theo từng lộ trình (LT1, LT2, RF). Sửa trong panel: tên, "Đạt từ" (đúng/tổng),
  * số tuần và mốc Test (lớp thường: Progress / Final; FT: tuần học của từng MT; liên tục: Checkpoint mỗi n tuần). Lưu xong chỉ áp cho LỚP MỞ SAU —
- * lớp đang chạy giữ bản chụp lúc tạo, nên lịch của lớp đó không đổi. Cách chấm chỉ đọc; môn chỉ đọc khi chương trình gốc hoặc đã có lớp.
+ * lớp đang chạy giữ bản chụp lúc tạo, nên lịch của lớp đó không đổi. Cách chấm chỉ đọc. MON-CT-1311: Môn sửa được ở mọi chương trình lớp thường
+ * (trừ Pre FOU) — áp cả bài Test chưa có điểm của lớp đang chạy; có lớp đang học thì máy chủ hỏi trước (hộp xác nhận chung).
  *
  * OV-6b2: "+ Chương trình" tạo mã mới (đúng/tổng; số tuần hoặc liên tục). Không xoá — mã đang có lớp dùng thì NGỪNG DÙNG (biến khỏi ô chọn, lớp cũ vẫn đọc được).
  */
@@ -178,7 +181,7 @@ const monConChon = (da: readonly string[]) => (MON_CHON as readonly string[]).fi
 /**
  * PANEL SỬA một dòng (mockup §6): Tên · Môn · Cách chấm · Đạt từ (chỉ đúng/tổng) · Độ dài · Mốc Test · Còn dùng.
  * OV-6b2: `moi` = "+ Chương trình" — thêm Mã; Môn chọn từ danh sách; Cách chấm chỉ Đúng / tổng ("Band IELTS" chỉ FT); Độ dài "Số tuần | Liên tục"
- * đi cùng Mốc Test "Tuần cố định | Lặp mỗi n tuần" (liên tục ⇔ lặp). Chương trình mới đã có: sửa "mỗi n tuần"; Môn sửa được khi chưa có lớp.
+ * đi cùng Mốc Test "Tuần cố định | Lặp mỗi n tuần" (liên tục ⇔ lặp). Chương trình mới đã có: sửa "mỗi n tuần". Môn: chọn, bỏ, đổi thứ tự (MON-CT-1311).
  * Lỗi ở đúng ô — kiểm trước dưới ô, máy chủ kiểm lại và trả `details.o` (ô bị lỗi); chữ đã gõ giữ nguyên.
  */
 function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () => void; onDone: () => void }) {
@@ -188,9 +191,10 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
   const ct = d.loai === 'ct' ? d.ct : null;
   const thuong = moi || ct?.scoringMode === 'ratio';
   const coGiuaKhoa = !!ct && moc(ct, 'progress') !== null;
-  /* Môn sửa được: chương trình mới (chưa lưu) hoặc chương trình Quản trị tạo chưa có lớp nào.
-     OV-11b (QT-7): chương trình đó sửa như lúc tạo — thêm / bỏ Progress, Số tuần ↔ Liên tục; có lớp thì khoá như cũ. */
-  const suaMon = moi || (!!ct && !ct.goc && !ct.coLop);
+  /* OV-11b (QT-7): chương trình mới (chưa lưu) hoặc Quản trị tạo chưa có lớp → sửa như lúc tạo — thêm / bỏ Progress, Số tuần ↔ Liên tục. */
+  const suaCauTruc = moi || (!!ct && !ct.goc && !ct.coLop);
+  /* MON-CT-1311: Môn sửa được ở mọi chương trình lớp thường, trừ chương trình máy chủ khoá (FT, Pre FOU — lý do ghi tại ô). */
+  const suaMon = suaCauTruc || (!!ct && !ct.khoaMon);
   const [f, setF] = useState(() => ({
     ma: '',
     ten: d.loai === 'moi' ? '' : d.loai === 'ft' ? d.lt.name : d.ct.name,
@@ -198,9 +202,9 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
     nguong: ct?.nguongDat != null ? String(ct.nguongDat) : moi ? '70' : '',
     lienTuc: moi || !!ct?.lapMoiTuan,
     lap: ct?.lapMoiTuan ? String(ct.lapMoiTuan) : '6',
-    soTuan: ct?.weeks ? String(ct.weeks) : suaMon ? '10' : '',
+    soTuan: ct?.weeks ? String(ct.weeks) : suaCauTruc ? '10' : '',
     progress: ct ? String(moc(ct, 'progress') ?? '') : '',
-    final: ct && moc(ct, 'final') !== null ? String(moc(ct, 'final')) : suaMon ? '10' : '',
+    final: ct && moc(ct, 'final') !== null ? String(moc(ct, 'final')) : suaCauTruc ? '10' : '',
     mt: d.loai === 'ft' ? d.lt.lichMt.map(String) : [],
     conDung: d.loai === 'moi' || conDung(d),
   }));
@@ -210,8 +214,8 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
   const lf = useLoiForm();
   const doi = (patch: Partial<typeof f>) => { setLoiMay(null); setF({ ...f, ...patch }); };
   /* Có số tuần: chương trình có mốc cố định (gốc, hoặc mới chọn "Số tuần"). */
-  const coSoTuan = suaMon ? !f.lienTuc : !!ct?.weeks;
-  const lapDuoc = suaMon ? f.lienTuc : !!ct?.lapMoiTuan;
+  const coSoTuan = suaCauTruc ? !f.lienTuc : !!ct?.weeks;
+  const lapDuoc = suaCauTruc ? f.lienTuc : !!ct?.lapMoiTuan;
 
   /* Kiểm sớm dưới ô — cùng luật máy chủ (`sysconfig.ts`). */
   const loi: LoiTruong[] = [...dsLoi([{ khoa: 'ten', nhan: t('Tên'), toiThieu: 1 }], { ten: f.ten })];
@@ -231,7 +235,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
     if (!Number.isInteger(n) || n < 1 || n > 52) loi.push({ khoa: 'moc', nhan: t('Mốc Test'), lyDo: t('Lặp mỗi 1–52 tuần') });
   } else if (coSoTuan) {
     const p = f.progress.trim() ? soNguyen(f.progress) : null; const fi = soNguyen(f.final);
-    const canGiua = suaMon ? p !== null : coGiuaKhoa;
+    const canGiua = suaCauTruc ? p !== null : coGiuaKhoa;
     if (!Number.isInteger(soTuan) || soTuan < 1 || soTuan > 104) loi.push({ khoa: 'so-tuan', nhan: t('Độ dài'), lyDo: t('Từ 1 đến 104 tuần') });
     else if ((canGiua && !(p !== null && p >= 1 && p <= soTuan)) || !(fi >= 1 && fi <= soTuan)) loi.push({ khoa: 'moc', nhan: t('Mốc Test'), lyDo: t('Tuần từ 1 đến {n}', { n: soTuan }) });
     else if (canGiua && p !== null && p >= fi) loi.push({ khoa: 'moc', nhan: t('Mốc Test'), lyDo: t('Progress phải trước Final') });
@@ -254,7 +258,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
           ...(f.lienTuc ? { weeks: null, lapMoiTuan: Number(f.lap) }
             : { weeks: soTuan, progressWeek: f.progress.trim() ? Number(f.progress) : null, finalWeek: Number(f.final) }),
         });
-      } else if (suaMon) {
+      } else if (suaCauTruc) {
         await api.put('/admin/programmes', {
           code: d.ct.code, name: f.ten, skills: f.mon, nguongDat, status: f.conDung ? 'active' : 'inactive',
           ...(f.lienTuc ? { weeks: null, lapMoiTuan: Number(f.lap) }
@@ -281,6 +285,8 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
   const n = soLop(d);
   const oSo = 'field w-20 tabular-nums';
   const conChon = monConChon(f.mon);
+  /* Tên ngắn theo chương trình (FOU: W → G+V, S → P). */
+  const tenMon = (k: string) => tenMonNgan(moi ? f.ma || null : ct?.code ?? null, k);
   return (
     <KhungPanel tieuDe={moi ? (f.ma ? t('{ma} · chương trình mới', { ma: f.ma }) : t('Chương trình mới')) : tenDong(d)} onDong={onClose}
       ngCanh={<span className="text-xs text-slate-400">{moi ? t('Tạo lớp được ngay sau khi lưu')
@@ -303,22 +309,31 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
         {suaMon ? (
           <Field as="div" label={t('Môn')} required loi={lf.loiCua(loi, 'mon')}>
             <span className="flex flex-wrap items-center gap-1.5" {...lf.o(loi, 'mon')}>
-              {f.mon.map((k) => (
-                <button key={k} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={t('Bỏ môn {mon}', { mon: skillShort(k) })}
-                  onClick={() => doi({ mon: f.mon.filter((x) => x !== k) })}>{skillShort(k)} <span aria-hidden className="text-slate-400">×</span></button>
+              {f.mon.map((k, i) => (
+                <span key={k} className="inline-flex items-center">
+                  {/* MON-CT-1311: đổi thứ tự — đưa môn lên trước một bậc (thứ tự cột Nhập điểm, báo cáo). */}
+                  {i > 0 && (
+                    <button type="button" className="btn btn-sm btn-ghost min-h-[44px] px-2 sm:min-h-0" aria-label={t('Đưa {mon} lên trước', { mon: tenMon(k) })}
+                      onClick={() => doi({ mon: f.mon.map((x, j) => (j === i - 1 ? k : j === i ? f.mon[i - 1] : x)) })}>‹</button>
+                  )}
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={t('Bỏ môn {mon}', { mon: tenMon(k) })}
+                    onClick={() => doi({ mon: f.mon.filter((x) => x !== k) })}>{tenMon(k)} <span aria-hidden className="text-slate-400">×</span></button>
+                </span>
               ))}
               {conChon.length > 0 && (
                 <select className="field w-auto min-h-[44px] sm:min-h-0" aria-label={t('Thêm môn')} value=""
                   onChange={(e) => e.target.value && doi({ mon: [...f.mon, e.target.value] })}>
                   <option value="">{t('+ Môn')}</option>
-                  {conChon.map((k) => <option key={k} value={k}>{skillShort(k)}</option>)}
+                  {conChon.map((k) => <option key={k} value={k}>{tenMon(k)}</option>)}
                 </select>
               )}
             </span>
           </Field>
         ) : (
           <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-sm">
-            <dt className="text-slate-400">{t('Môn')}</dt><dd className="m-0 text-slate-200">{ct ? boMon(ct) : 'L · R · W · S'}</dd>
+            <dt className="text-slate-400">{t('Môn')}</dt>
+            <dd className="m-0 text-slate-200">{ct ? boMon(ct) : 'L · R · W · S'}
+              {ct?.khoaMon && <span className="block text-xs text-slate-400">{dich(ct.khoaMon)}</span>}</dd>
           </dl>
         )}
         {moi ? (
@@ -341,7 +356,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
           </Field>
         )}
 
-        {suaMon && (
+        {suaCauTruc && (
           <Field as="div" label={t('Độ dài')} loi={lf.loiCua(loi, 'so-tuan')}>
             <span className="flex flex-wrap items-center gap-2">
               <PhanDoan nhan={t('Độ dài')} giaTri={f.lienTuc ? 'lien-tuc' : 'so-tuan'} onChon={(v) => doi({ lienTuc: v === 'lien-tuc' })}
@@ -356,7 +371,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
             </span>
           </Field>
         )}
-        {!suaMon && ct?.weeks ? (
+        {!suaCauTruc && ct?.weeks ? (
           <Field label={t('Độ dài')} loi={lf.loiCua(loi, 'so-tuan')}>
             <span className="flex items-center gap-2">
               <input inputMode="numeric" className={oSo} {...lf.o(loi, 'so-tuan')} value={f.soTuan}
@@ -365,7 +380,7 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
               <span className="text-slate-400">{t('tuần')}</span>
             </span>
           </Field>
-        ) : !suaMon && ct?.lapMoiTuan ? (
+        ) : !suaCauTruc && ct?.lapMoiTuan ? (
           <dl className="m-0 grid grid-cols-[max-content_minmax(0,1fr)] gap-x-4 text-sm">
             <dt className="text-slate-400">{t('Độ dài')}</dt><dd className="m-0 text-slate-200">{t('Liên tục')}</dd>
           </dl>
@@ -373,9 +388,9 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
           <p className="m-0 text-sm text-slate-400">{t('Độ dài')} <span className="tabular-nums text-slate-200">{t('{n} tuần', { n: f.mt.at(-1) || '—' })}</span> {t('· tới MT cuối')}</p>
         )}
 
-        {(ft || ct?.weeks || lapDuoc || suaMon) && (
+        {(ft || ct?.weeks || lapDuoc || suaCauTruc) && (
           <Field as="div" label={t('Mốc Test')} loi={lf.loiCua(loi, 'moc')}>
-            {suaMon && (
+            {suaCauTruc && (
               <span className="mb-2 block">
                 <PhanDoan nhan={t('Mốc Test')} giaTri={f.lienTuc ? 'lap' : 'co-dinh'} onChon={(v) => doi({ lienTuc: v === 'lap' })}
                   muc={[{ v: 'co-dinh', nhan: t('Tuần cố định') }, { v: 'lap', nhan: t('Lặp mỗi n tuần') }]} />
@@ -410,16 +425,16 @@ function SuaChuongTrinh({ dong: d, onClose, onDone }: { dong: Dong; onClose: () 
               </span>
             ) : (
               <span className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                {(coGiuaKhoa || suaMon) && (
+                {(coGiuaKhoa || suaCauTruc) && (
                   <span className="flex items-center gap-1.5">
                     <span className="text-slate-400">{t('Progress tuần')}</span>
                     <input inputMode="numeric" aria-label={t('Tuần Progress Test')} className="field w-16 tabular-nums" {...lf.o(loi, 'moc')}
-                      placeholder={suaMon ? '—' : undefined} value={f.progress} onChange={(e) => doi({ progress: e.target.value })} />
+                      placeholder={suaCauTruc ? '—' : undefined} value={f.progress} onChange={(e) => doi({ progress: e.target.value })} />
                   </span>
                 )}
                 <span className="flex items-center gap-1.5">
                   <span className="text-slate-400">{t('Final tuần')}</span>
-                  <input inputMode="numeric" aria-label={t('Tuần Final Test')} className="field w-16 tabular-nums" {...(coGiuaKhoa || suaMon ? {} : lf.o(loi, 'moc'))}
+                  <input inputMode="numeric" aria-label={t('Tuần Final Test')} className="field w-16 tabular-nums" {...(coGiuaKhoa || suaCauTruc ? {} : lf.o(loi, 'moc'))}
                     aria-invalid={!!lf.loiCua(loi, 'moc')} value={f.final} onChange={(e) => doi({ final: e.target.value })} />
                 </span>
               </span>
