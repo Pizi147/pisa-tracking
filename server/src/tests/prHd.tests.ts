@@ -298,17 +298,19 @@ export async function runPrHdTests(t: any) {
 
   /* ---------------------------------------------------------------- HD-V3 (đề bài 2026-11-13-huong-dan-v3 mục "Cách làm") */
   /*
-   * Màn / panel còn chờ session B (QL + Admin; QT = QL + Quản trị nên theo QL) và C (TVV + CX + Head tutor). Mỗi dòng "vai đường" hoặc
+   * Màn / panel còn chờ session B (QL + Admin; QT = QL + Quản trị nên theo QL) và C (TVV + CX + Head tutor). Không tính `qt` (chủ SP 13/11). Mỗi dòng "vai đường" hoặc
    * "vai panel:x" là một chỗ CHƯA có mục — B / C viết mục thì XOÁ dòng (dòng thừa cũng đỏ: không để phép kiểm xanh giả). GV không có dòng chờ.
    */
   const CHO_B: string[] = [
-    'ql /giao-vien/1', 'qt /giao-vien/1', 'admin /hoc-vien/luu-tru', 'admin /giao-vien/1',
-    ...['ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh'].flatMap((x) => [`ql panel:${x}`, `qt panel:${x}`]),
-    'admin panel:xuat-excel',
+    'ql /giao-vien/1', 'admin /hoc-vien/luu-tru', 'admin /giao-vien/1',
+    ...['ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh', 'duyet', 'sua-thong-tin',
+      'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'xep-lich-mt', 'them-hv', 'xuat-ds', 'bao-ph', 'xet-lai'].map((x) => `ql panel:${x}`),
+    ...['xuat-excel', 'sua-thong-tin', 'xep-lich-mt', 'xuat-ds'].map((x) => `admin panel:${x}`),
   ];
   const CHO_C: string[] = [
-    ...['tvv', 'cx'].flatMap((v) => ['/hoc-vien/luu-tru', '/mock-test/1', '/luot-test/1', '/giao-vien/1', 'panel:ngan-case'].map((x) => `${v} ${x}`)),
-    'tvv panel:phoi-hop-sos', 'tvv panel:lo-trinh',
+    ...['tvv', 'cx'].flatMap((v) => ['/hoc-vien/luu-tru', '/mock-test/1', '/luot-test/1', '/giao-vien/1'].map((x) => `${v} ${x}`)),
+    ...['ngan-case', 'phoi-hop-sos', 'lo-trinh', 'sua-thong-tin', 'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'them-hv', 'xuat-ds', 'bao-ph'].map((x) => `tvv panel:${x}`),
+    ...['ngan-case', 'sua-thong-tin', 'sua-ca-lop', 'sau-thi', 'them-hv', 'xuat-ds'].map((x) => `cx panel:${x}`),
   ];
   const CHO = new Set([...CHO_B, ...CHO_C]);
   const soCho = (loi: string[], ten: string) => {
@@ -356,7 +358,8 @@ export async function runPrHdTests(t: any) {
     const chuaKhai = ROUTE_V3.filter((r) => !r.gate && !VAO[r.path]).map((r) => r.path);
     assert(!chuaKhai.length, `đường mới không điều kiện nav — khai vai vào được ở VAO: ${chuaKhai.join(', ')}`);
     const loi: string[] = [];
-    for (const vai of Object.keys(hd.HUONG_DAN)) for (const p of MAU[vai]) {
+    /* Chủ SP 13/11 (PTA): vai Quản trị hệ thống giữ nội dung hiện có, không viết thêm → bỏ qua `qt` ở phép phủ mới (phép HD cũ của QT vẫn chạy). */
+    for (const vai of Object.keys(hd.HUONG_DAN).filter((v) => v !== 'qt')) for (const p of MAU[vai]) {
       const nav: any = navOf(p);
       for (const r of ROUTE_V3) {
         if (!(r.gate ? r.gate.some((k) => nav[k]) : VAO[r.path](nav, p))) continue;
@@ -371,17 +374,27 @@ export async function runPrHdTests(t: any) {
    * dòng); mọi vai đó phải có mục (hoặc nằm ở CHO_B / CHO_C). Mỗi giá trị phải có `hd="…"` thật trong web/src và ngược lại.
    */
   const VAI_PANEL: Record<string, string[]> = {
-    'ngan-case': ['gv', 'ql', 'qt', 'tvv', 'cx'],                 // Case trong hồ sơ HV: TVV / CX xem (`laTvvCx`, NganCase)
-    'nhap-diem': ['gv', 'ql', 'qt', 'admin'],                     // `score.edit` theo phân công · QL nhập hộ · Admin nhóm Chấm điểm
-    'ket-qua-pa': ['gv', 'ql', 'qt'],                             // `kiemQuyenPa`: người giữ kết quả hoặc `sos.edit` (cases.ts)
-    'phoi-hop-sos': ['gv', 'ql', 'qt', 'tvv'],                    // GVCN xác nhận (`requireManageDiscipline`), QL làm thẳng; TVV ghi KQ Meeting (`phoi_hop_tvv`)
-    'vi-pham': ['gv', 'ql', 'qt'],                                // VIOLATION_RECORD: mọi GV có phân công lớp · anyScope
-    'xu-ly-vi-pham': ['gv', 'ql', 'qt'],                          // DISCIPLINE_MANAGE: GVCN lớp đang học · anyScope
-    'ban-giao': ['gv', 'ql', 'qt'],                               // GVBM môn mình, GVCN gom + xác nhận; QL xác nhận thay
-    'bao-cao-ph': ['gv', 'ql', 'qt'],                             // `quyenBc`: viết = GV đúng phần (GVCN phần Chung) · QL viết hộ (panel đọc không có hd)
-    'chuyen-lop': ['gv', 'ql', 'qt'],                             // GVCN Đề xuất chuyển lớp; QL / Quản trị chuyển (một em, nhiều em, xét lại)
-    'xuat-excel': ['gv', 'ql', 'qt', 'admin'],                    // `xuatMt` (phamViXuatMt): GVCN lớp mình · QL chi nhánh · Quản trị · Admin
-    'lo-trinh': ['ql', 'qt', 'tvv'],                              // Lộ trình mới sau thi: TVV của em, QL (PanelBuocTiep: GVCN chỉ đọc)
+    'ngan-case': ['gv', 'ql', 'tvv', 'cx'],                       // Case trong hồ sơ HV: TVV / CX xem (`laTvvCx`, NganCase)
+    'nhap-diem': ['gv', 'ql', 'admin'],                           // `score.edit` theo phân công · QL nhập hộ · Admin nhóm Chấm điểm
+    'ket-qua-pa': ['gv', 'ql'],                                   // `kiemQuyenPa`: người giữ kết quả hoặc `sos.edit` (cases.ts)
+    'phoi-hop-sos': ['gv', 'ql', 'tvv'],                          // GVCN xác nhận (`requireManageDiscipline`), QL làm thẳng; TVV ghi KQ Meeting (`phoi_hop_tvv`)
+    'vi-pham': ['gv', 'ql'],                                      // VIOLATION_RECORD: mọi GV có phân công lớp · anyScope
+    'xu-ly-vi-pham': ['gv', 'ql'],                                // DISCIPLINE_MANAGE: GVCN lớp đang học · anyScope
+    'ban-giao': ['gv', 'ql'],                                     // GVBM môn mình, GVCN gom + xác nhận; QL xác nhận thay
+    'bao-cao-ph': ['gv', 'ql'],                                   // `quyenBc`: viết = GV đúng phần (GVCN phần Chung) · QL viết hộ (panel đọc không có hd)
+    'chuyen-lop': ['gv', 'ql'],                                   // GVCN Đề xuất chuyển lớp; QL chuyển (một em, nhiều em)
+    'xuat-excel': ['gv', 'ql', 'admin'],                          // `xuatMt` (phamViXuatMt): GVCN lớp mình · QL chi nhánh · Admin
+    'lo-trinh': ['ql', 'tvv'],                                    // Lộ trình mới sau thi: TVV của em, QL (PanelBuocTiep: GVCN chỉ đọc)
+    'duyet': ['ql'],                                              // REQUEST_APPROVE: hộp Chờ bạn duyệt, ô Tổng quan
+    'sua-thong-tin': ['gv', 'ql', 'admin', 'tvv', 'cx'],          // ⋯ › Sửa thông tin (GVCN, TVV, CX, Admin, QL) · GVBM Đề xuất sửa thông tin…
+    'sua-ca-lop': ['gv', 'ql', 'tvv', 'cx'],                      // Hồ sơ lớp ⋯ › Sửa thông tin học viên (`coTheSuaCaLop` = student.edit)
+    'sau-thi': ['gv', 'ql', 'tvv', 'cx'],                         // Kết quả thi thật (GVCN, CX ghi), Sau thi / Bước tiếp (TVV, QL)
+    'chot-ngay-thi': ['ql', 'tvv'],                               // việc TVV Chốt ngày thi; em không TVV → QL
+    'xep-lich-mt': ['ql', 'admin'],                               // Xếp lịch Mock Test / Xếp lịch Test (testPlan)
+    'them-hv': ['gv', 'ql', 'tvv', 'cx'],                         // + Học viên (student.add: GVCN lớp mình) — chỗ duy nhất còn Dán Excel
+    'xuat-ds': ['gv', 'ql', 'admin', 'tvv', 'cx'],                // Học viên & Lớp › Xuất Excel (mọi vai xem HV)
+    'bao-ph': ['ql', 'tvv'],                                      // việc TVV Báo PH vi phạm; QL làm thay
+    'xet-lai': ['ql'],                                            // Xét lại lộ trình (QL chi nhánh lớp em đang học)
   };
   check('HD-PANEL · mỗi PANEL_HD có hd="…" trong web/src, có vai mở; mọi vai mở được panel có mục riêng của panel đó', () => {
     const dung = new Set<string>();
@@ -405,7 +418,7 @@ export async function runPrHdTests(t: any) {
       for (const vai of VAI_PANEL[p]) if (!hd.manCuaPanel(hd.HUONG_DAN[vai], p)) loi.push(`${vai} panel:${p}`);
     }
     soCho(loi, ' panel:');
-    for (const x of CHO) assert(CHO_B.includes(x) ? /^(ql|qt|admin) / .test(x) : /^(tvv|cx|ht) /.test(x), `"${x}" sai danh sách (B: ql qt admin · C: tvv cx ht)`);
+    for (const x of CHO) assert(CHO_B.includes(x) ? /^(ql|admin) / .test(x) : /^(tvv|cx|ht) /.test(x), `"${x}" sai danh sách (B: ql admin · C: tvv cx ht)`);
   });
 
   /*

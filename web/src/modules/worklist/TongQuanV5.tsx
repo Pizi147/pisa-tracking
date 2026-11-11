@@ -214,7 +214,7 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
       {mo && (
         /* N37: thẻ về PA / Case có "Mở ›" sang hồ sơ em (Case mở sẵn) — như hộp Chờ duyệt. */
         /* TQ-GON: dòng chỉ còn tên em → đầu panel ghi em · lớp (lớp không còn ở dòng). */
-        <KhungPanel loai={t('Duyệt')} tieuDe={mo.tieuDe} hocVien={mo.hocVien} lop={mo.lop} onDong={() => setMo(null)}
+        <KhungPanel hd="duyet" loai={t('Duyệt')} tieuDe={mo.tieuDe} hocVien={mo.hocVien} lop={mo.lop} onDong={() => setMo(null)}
           chan={mo.mo ? { phu: <Link to={mo.mo} className="btn min-h-[44px] sm:min-h-[36px]">{t('Mở ›')}</Link> } : undefined}>
           <TheYeuCau yc={mo} gon onXong={() => { setMo(null); onXong(); }} />
         </KhungPanel>

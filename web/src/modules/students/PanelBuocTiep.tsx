@@ -82,8 +82,8 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   if (lichSu) {
     return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em?.ten || null, lop ?? bt?.lopNay?.code ?? null]} quayLai={{ nhan: tieuDe, onClick: () => setLichSu(false) }} onClose={onClose} khoiPhuc={khoiPhuc} />;
   }
-  if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (!bt) return <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
+  if (error) return <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!bt) return <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}><div className="pt-3"><Skeleton rows={4} /></div></KhungPanel>;
 
   const hn = homNay ?? '';
   const gui = async (fn: () => Promise<unknown>, x: DaLuuPanel) => {
@@ -127,7 +127,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
 
   if (daLuu) {
     return (
-      <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}>
+      <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}>
         <KhoiDaLuu x={daLuu.x} luc={daLuu.luc} nutChinh={viecTiep} onHoanTac={() => setDaLuu(null)} />
       </KhungPanel>
     );
@@ -139,7 +139,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       : bt.hen ? t('Hẹn bắt đầu {tuan} · {lop}', { tuan: tuanLich(bt.hen, hn), lop: bt.henLop ?? '—' })
         : t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[bt.chon] });
     return (
-      <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}
+      <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}
         chan={{ v3: true, dongTren: tt ? <TrangThaiLuu tt={tt} loi={loi} /> : undefined }}>
         {dongKetQua}
         <div className="mt-3 rounded-[10px] px-3 py-2.5 text-sm" style={{ background: 'var(--surface-2)' }}>
@@ -176,7 +176,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuDung} disabled={tt === 'dang'}>{dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc}</button>
     : undefined;
   return (
-    <KhungPanel tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}
+    <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}
       chan={{ v3: true, daSua: chon === 'dung', chinh: nut, dongTren: chon ? <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={luuDung} /> : undefined }}>
       {dongKetQua}
       <div className="pt-3">

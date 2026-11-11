@@ -71,7 +71,7 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
   };
 
   return (
-    <KhungPanel tieuDe={sua ? t('Sửa đề xuất') : t('Đề xuất sửa thông tin')} hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel hd="sua-thong-tin" tieuDe={sua ? t('Sửa đề xuất') : t('Đề xuất sửa thông tin')} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>
