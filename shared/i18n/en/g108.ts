@@ -15,7 +15,7 @@ export const EN_G108 = {
   'Thu hẹp: tìm lớp FT…': 'Narrow down: find FT class…',
   'Mọi lớp Fast Track': 'All Fast Track classes',
   'Các lớp Fast Track đang hiện': 'Fast Track classes shown',
-  'Ô MT1…MT10 là tuần thi (lịch), không phải điểm.': 'MT1…MT10 cells are test weeks (schedule), not scores.',
+  'Ô MT1…MT10 là tuần Test (lịch), không phải điểm.': 'MT1…MT10 cells are test weeks (schedule), not scores.',
   'Mọi lượt: lấy cả lượt còn thiếu điểm — ô thiếu để trống. Chỉ lượt đủ điểm: lượt đã có điểm mọi kỹ năng phải làm.':
     'All attempts: includes attempts still missing scores — missing cells stay empty. Complete attempts only: every required skill has a score.',
   'Gọn: điểm từng kỹ năng + kết quả lượt. Gọn + nhận xét: thêm 2 cột nhận xét (L · R, W · S). Đầy đủ: thêm tiêu chí W, S, tuần từng môn, người nhập, nhận xét từng bài.':

@@ -231,7 +231,7 @@ export const EN_HD_V2B = {
   'Mở hồ sơ em, bấm <b>⋯</b> đầu trang › <b>Xoá học viên</b>.': 'Open the student profile, press <b>⋯</b> at the top › <b>Delete student</b>.',
   'Gõ <b>XOÁ</b> để xác nhận, bấm <b>Xoá</b>. Em đã học xong: nên <b>Lưu trữ</b>.': 'Type the confirmation word, press <b>Delete</b>. A student who finished studying: better <b>Archive</b>.',
   'Duyệt đề xuất PA, chuyển lớp': 'Approve PA proposals, class transfers',
-  'Chọn tab <b>Đã xoá</b> (hoặc menu Tài khoản › <b>Đã xoá</b>).': 'Choose the <b>Deleted</b> tab (or Account menu › <b>Deleted</b>).',
+  'Chọn tab <b>Đã xoá</b>.': 'Choose the <b>Deleted</b> tab.',
   'Quản trị nhận báo gì': 'What System admin is notified about',
   'Thẻ duyệt quá hạn của mọi chi nhánh.': 'Overdue approval cards of every branch.',
   'QL tự duyệt thẻ của mình: có nhật ký, báo Quản trị.': 'When a manager approves their own card: there is a log and System admin is notified.',

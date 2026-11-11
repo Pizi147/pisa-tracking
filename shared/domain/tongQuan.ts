@@ -123,7 +123,7 @@ export const TAB_CV = ['cham-diem', 'cham-cheo', 'case-hoc-thuat', 'y-thuc', 'va
 export const tabCuaViec = (it: { group: string; key: string }, tvv = false): string =>
   (tvv ? nhomViecTvvCua(it.group) : laViecChamCheo(it) ? 'cham-cheo' : nhomViecCua(it.group));
 export const nhanTabCv = (k: string, tvv = false): string =>
-  (k === 'cham-cheo' ? t('Bài thi Speaking') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
+  (k === 'cham-cheo' ? t('Speaking chấm chéo') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
 
 /**
  * MỤC trong tab (chủ SP 06/11 "mô tả case, phương án, kết quả…"): mục theo LOẠI VIỆC, thứ tự `MUC_CV`; mục rỗng ẩn.
