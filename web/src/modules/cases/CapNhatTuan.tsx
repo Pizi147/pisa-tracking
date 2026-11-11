@@ -57,7 +57,7 @@ export type PaCanCapNhat = {
 };
 export type NhapMayChu = { outcome: string; note: string; luc: string; boi: string };
 /** "13/11" theo giờ máy (mốc lưu là ISO UTC). */
-const ngayNhap = (luc: string) => new Date(luc).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+const ngayNhap = (luc: string) => { const d = new Date(luc); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`; };
 
 /**
  * OV-7b: điền sẵn của `GET /followups/:id/sua` — PA như NGAY TRƯỚC lần ghi (`pa`), giá trị đã ghi (`giaTri`), `chan` = vì sao không đổi được lựa chọn
