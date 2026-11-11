@@ -54,7 +54,7 @@ Panel không gắn (giữ "?" mở Màn nền): Kết quả thi thật, Sửa th
 |---|---|---|---|
 | Nhập điểm MT · Progress · Final | CŨ | "nhóm Chấm điểm" → tab Chấm điểm, mục Mock Test / Progress / Final Test / Checkpoint; nút "Nhập điểm" (`mywork.ts:748-749`); "Lớp tiếp: {lớp} ›" (`PanelViec.tsx:291`), "Việc tiếp ›" | sửa bước |
 | Nhập điểm MT cũ (GVCN) | CŨ | nhóm "Thiếu dữ liệu đánh giá" → tab Vận hành, mục Thiếu dữ liệu (`tongQuan.ts:48`, `mywork.ts:307,1420`) | sửa |
-| Chấm Speaking chéo (S) | CŨ | nhóm → tab **Bài thi Speaking** (`tongQuan.ts:125`), dòng "Chấm Speaking · n bài", nút "Chấm" (`mywork.ts:810`, `DanhSachViec.tsx:204`) | sửa |
+| Chấm Speaking chéo (S) | CŨ | nhóm → tab "Bài thi Speaking" (`tongQuan.ts:125`), dòng "Chấm Speaking · n bài", nút "Chấm" (`mywork.ts:810`, `DanhSachViec.tsx:204`) | sửa — hướng dẫn gọi "tab **Speaking**", không chép chữ "Bài thi" / nút "Chấm" (xem [XM-1]) |
 | Xác nhận Case, PA | CŨ | thiếu "Chọn PA" (`mywork.ts:1216-1220`), "Xác nhận PA cùng lúc" (`congViec/XacNhanPaLo.tsx:144-154`); mục Mô tả Case / Phương án | sửa |
 | Ghi kết quả PA | **SAI** | thiếu **Lưu nháp** (CapNhatTuan.tsx:460; chip "Có nháp" `DanhSachViec.tsx:382`); Lưu là lưu, không Hoàn tác (chủ SP 13/11, CapNhatTuan.tsx:337); Sửa kết quả ở thẻ PA | viết lại |
 | Tạo Case tay | CŨ | thiếu nút "+ Case" đầu Hồ sơ lớp / Hồ sơ HV (`DauTrangLop.tsx:248-251`, `StudentDetailPage.tsx:275`) | thêm lối tắt |
@@ -95,6 +95,13 @@ Panel không gắn (giữ "?" mở Màn nền): Kết quả thi thật, Sửa th
 | Nhận xét MT | CÓ (≥ 10 ký tự nhắc — `shared/domain/nhanXet.ts:30`); thêm trần 300 ký tự (N35) | thêm |
 | Thuật ngữ | THIẾU "Lớp thường: tuần 5/8", "Có nháp" | thêm |
 | Việc vai khác | THIẾU "Chọn bước tiếp sau thi" (TVV), "Chốt hướng Cuối khoá" (QL), "Xuất báo cáo PH" (Admin) | thêm |
+
+## [XM] cho PTA Plan
+
+- **[XM-1]** Nhãn tab Công việc **"Bài thi Speaking"** (`shared/domain/tongQuan.ts:126`) và nút dòng **"Chấm"** (`congViec/DanhSachViec.tsx:204`) trái luật
+  "Thi = thi thật, Test = MT / Progress / Final" (CLAUDE.md, phép `prChuThi` CT-1) và luật nút "Nhập điểm" (`prS3Chu` S3 (4)); hai phép kiểm này không quét
+  được chữ trong biểu thức `t()` lồng ternary nên nhãn web lọt. Hướng dẫn không chép lại hai chữ đó (ghi "tab **Speaking** (bài chấm chéo)"). Đề xuất: đổi nhãn
+  tab thành "Speaking chấm chéo" (trùng tên mục sẵn có) ở PR khác — không tự đổi ở PR này.
 
 ## 5. Tóm tắt số
 

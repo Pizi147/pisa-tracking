@@ -409,11 +409,11 @@ export async function runPrHdTests(t: any) {
   });
 
   /*
-   * HD-NHAN: chữ đậm `<b>…</b>` trong bước / Chỉ cho tôi là NHÃN NÚT — phải có trong nguồn web/src + shared (trừ shared/huongDan), bỏ "…", " ›" cuối.
+   * HD-NHAN: chữ đậm `<b>…</b>` trong bước / Chỉ cho tôi là NHÃN NÚT — phải có trong chuỗi của web/src + shared + server/src (trừ huongDan, tests), bỏ "…", " ›" cuối.
    * Vai đã đối chiếu: B / C thêm vai của mình vào NHAN_VAI. MAU_CHU = chữ mẫu không phải nhãn (mã tuần, phím, số hạn).
    */
   const NHAN_VAI = ['gv'];
-  const MAU_CHU = new Set(['-', '?', '/', 'Ctrl K', 'Enter', 'Esc', '‹ W3 SEP ›', 'W2 OCT', '2 tuần', '5 ngày', '3 ngày', '10', '8', 'Thứ Ba', 'Thứ Tư', 'VI | EN', 'Theo máy · Sáng · Tối', '⋯']);
+  const MAU_CHU = new Set(['-', '?', '/', 'Ctrl K', 'Enter', 'Esc', '‹ W3 SEP ›', 'W2 OCT', '2 tuần', '5 ngày', '3 ngày', '10', '8', 'Thứ Ba', 'Thứ Tư', '⋯']);
   check('HD-NHAN · chữ đậm trong hướng dẫn (vai đã đối chiếu) là nhãn có thật trong nguồn web', () => {
     let nguon = '';
     const doc = (thuMuc: string) => {
