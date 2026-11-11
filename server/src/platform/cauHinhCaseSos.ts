@@ -31,9 +31,16 @@ type Ban = BanCauHinh;
 const LOAI_SQL = LOAI_CAU_HINH.map((l) => `'${l}'`).join(',');
 
 function docDangDung(): Map<LoaiCauHinh, Ban> {
-  const rows = db().prepare(
-    `SELECT id, loai, du_lieu FROM cau_hinh_phien_ban WHERE id IN (SELECT MAX(id) FROM cau_hinh_phien_ban WHERE loai IN (${LOAI_SQL}) GROUP BY loai)`,
-  ).all() as { id: number; loai: LoaiCauHinh; du_lieu: string }[];
+  let rows: { id: number; loai: LoaiCauHinh; du_lieu: string }[];
+  try {
+    rows = db().prepare(
+      `SELECT id, loai, du_lieu FROM cau_hinh_phien_ban WHERE id IN (SELECT MAX(id) FROM cau_hinh_phien_ban WHERE loai IN (${LOAI_SQL}) GROUP BY loai)`,
+    ).all() as typeof rows;
+  } catch (e) {
+    /* Migrate DB cũ: bước giữa (vd taoCaseTuDong) đọc cấu hình TRƯỚC prCauHinhPhienBan tạo bảng → bản gốc (= bảng rỗng), như `cauHinh.ts`. */
+    if (!/no such table: cau_hinh_phien_ban/i.test(String((e as Error)?.message))) throw e;
+    rows = [];
+  }
   const m = new Map<LoaiCauHinh, Ban>();
   for (const l of LOAI_CAU_HINH) m.set(l, { id: 0, du_lieu: cauHinhGoc()[l] });
   for (const r of rows) m.set(r.loai, { id: r.id, du_lieu: JSON.parse(r.du_lieu) });
