@@ -22,7 +22,7 @@
 4. Không còn chữ cũ / sai luật (đối chiếu `plan.md` 1.6 + các lời chủ SP 06–13/11 ở mục 4).
 
 ## Không làm (anti-goal)
-- Vai Quản trị hệ thống + màn `/quan-tri` (chủ SP "không cần quản trị"; #1411 vừa sửa). Tutor / Head tutor chỉ sửa chỗ sai (Tutor hoãn).
+- Viết thêm hướng dẫn cho vai Quản trị hệ thống. **GIỮ NGUYÊN vai** (không bỏ vai, không xoá / sửa `qt.ts`, Quản trị vẫn có nút "?" + nội dung hiện có — chủ SP 13/11: "KHÔNG PHẢI LÀ BỎ VAI QUẢN TRỊ HỆ THỐNG, ĐỪNG BỎ HẲN VAI, CHỈ CẦN KHÔNG HƯỚNG DẪN CHO VAI ĐẤY THÔI"). Phép kiểm phủ route mới bỏ qua vai `qt`; phép HD cũ của QT vẫn xanh. Mục QL ở `/quan-tri` giữ, chỉ sửa nếu sai. Tutor / Head tutor chỉ sửa chỗ sai (Tutor hoãn).
 - KHÔNG đổi bố cục panel "?" / trang `/huong-dan` (khung v14 đã duyệt). Thêm mục / dòng theo mẫu sẵn có → không cần mockup (CLAUDE.md, plan.md 1.3b).
 - Không thêm đoạn chú thích tĩnh trên màn làm việc (bộ nhớ "Bỏ chú thích" 07/11) — giải thích nằm trong panel "?".
 - Không thêm request / đọc Turso (nội dung là dữ liệu tĩnh). Không kéo nội dung Hướng dẫn vào gói JS chính.

@@ -316,6 +316,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
 
+**13/11 (chủ SP, sửa HD-V3):** "KHÔNG PHẢI LÀ BỎ VAI QUẢN TRỊ HỆ THỐNG, ĐỪNG BỎ HẲN VAI, CHỈ CẦN KHÔNG HƯỚNG DẪN CHO VAI ĐẤY THÔI" → giữ nguyên vai Quản trị hệ thống + `qt.ts` + nút "?" của vai đó; HD-V3 chỉ không viết thêm hướng dẫn cho vai này. Đã nhắn 3 session.
+
 **13/11 (chủ SP, đi vắng — HD-V3):** "chủ động nâng cấp và sửa lại các tác vụ liên quan đến hướng dẫn và nút '?', để phủ tất cả các đầu việc, hỗ trợ mọi nơi và trang cần thiết (không cần quản trị) tôi đi vắng, tự duyệt, rà, merge, archive những thứ đã xong, giao việc cho session thì chọn sẵn model + effort hợp lý. Cần gì thì hỏi luôn" → đề bài `docs/superpowers/specs/2026-11-13-huong-dan-v3/de-bai.md`: mọi vai trừ Quản trị hệ thống, mọi màn / tab / panel làm việc; giữ khung v14 (không đổi bố cục → không mockup); 0 đọc Turso. 3 session: HD-V3-A khung + GV (Opus 5.5 · high) → HD-V3-B QL + Admin, HD-V3-C TVV + CX (Sonnet 5.5 · high; đối chiếu ngay, code sau khi A merge). PTA tự rà / merge / archive.
 
 **13/11 (chủ SP, U03 audit #1454):** "Ẩn, không mockup" → điện thoại (< 768) khi bàn phím mở: ẩn thanh tab dưới (Tổng quan · Học viên · Test · Công việc) ở MỌI trang, đóng bàn phím thì hiện lại; chân lưu panel không bị che; 1440 không đổi; không cần mockup. → làm trong #1458 (NHAP-PA-V2).
