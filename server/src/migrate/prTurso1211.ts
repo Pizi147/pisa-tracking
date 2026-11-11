@@ -19,6 +19,8 @@ export const CHI_MUC_TURSO_1211: [string, string][] = [
   ['idx_dm_cycle', 'CREATE INDEX IF NOT EXISTS idx_dm_cycle ON discipline_measures(cycle_id)'],
   /* `chipHocVien` vi phạm 7 ngày (`occurred_on >= ?`): trước SCAN violations. */
   ['idx_violation_ngay', 'CREATE INDEX IF NOT EXISTS idx_violation_ngay ON violations(occurred_on)'],
+  /* `chipHocVien` Case mới 7 ngày (`sc.created_at >= ?`, hvCuaToi.ts): trước SCAN sos_cases. */
+  ['idx_case_tao', 'CREATE INDEX IF NOT EXISTS idx_case_tao ON sos_cases(created_at)'],
 ];
 
 export function migratePrTurso1211(conn: any, applied: string[]) {

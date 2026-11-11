@@ -1546,7 +1546,7 @@ await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca
 });
 
 /* TURSO-1211 (đo bản chép bản chính, docs/superpowers/specs/2026-11-12-turso-toc-do/ra.md mục A): 7 câu trước quét cả bảng nay đi chỉ mục mới. */
-await checkAsync('TURSO-1211 (×3) · 7 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
+await checkAsync('TURSO-1211 (×3) · 8 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
   const { migratePrTurso1211 } = await import('../migrate/prTurso1211.ts');
   const lan: string[][] = [[], []];
   migratePrTurso1211(conn, lan[0]); migratePrTurso1211(conn, lan[1]);
@@ -1567,6 +1567,7 @@ await checkAsync('TURSO-1211 (×3) · 7 câu Công việc / Tổng quan / hồ s
     ['WL2 thi thật', /FROM discipline_measures dm WHERE dm\.cycle_id = c\.id/, 'idx_dm_cycle', /^SCAN dm$/],
     ['Kết quả PA cuối', /FROM case_followups fu\s+WHERE fu\.intervention_id = iv\.id/, 'idx_followup_iv', /^SCAN fu$/],
     ['Vi phạm 7 ngày', /FROM violations WHERE occurred_on >= \?/, 'idx_violation_ngay', /^SCAN violations$/],
+    ['Case mới 7 ngày', /sc\.category FROM sos_cases sc[\s\S]*sc\.created_at >= \?/, 'idx_case_tao', /^SCAN sc$/],
   ] as const) {
     const cau = [...new Map(ghi.filter((g) => re.test(g.sql)).map((g) => [g.sql, g])).values()];
     if (!cau.length) { loi.push(`không bắt được câu "${ten}"`); continue; }

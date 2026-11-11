@@ -108,3 +108,14 @@ python -I scripts/do-ban-chep-ds.py <tạm>/a.sqlite <tạm>/ds.json    # mọi 
 node scripts/do-ban-chep.mjs <tạm>/a.sqlite <tạm>/ds.json <tạm>/ra
 python -I scripts/do-it.py <tạm>/ra
 ```
+
+## Đợt 2 (PTA quyết 12/11)
+
+| Mục | Kết quả |
+|---|---|
+| **OV-12a** (#1427) | Bước dữ liệu PR-OV12a chạy ở MỌI lần migrate, kéo hạn PA app đặt hợp lệ về lịch kỳ (bản chép: 10 PA 24/11 → 01/12). Bỏ khỏi migrate (seed vẫn gọi). Migrate 2 lần trên bản chép: 0 dòng đổi. Các bước dữ liệu khác: chỉ PR-OV13a (b) đổi `followup_due` — CHÍNH luật đường đọc `dienMocQuyChe`, đúng thiết kế. |
+| **E · hvCuaToi** | Case mới 7 ngày: `substr(created_at, 1, 10) >= ?` → `created_at >= ?` + chỉ mục `idx_case_tao` (xếp theo id trong JS — `ORDER BY` làm SQLite quay về SCAN). TVV / CX / Quản trị Tổng quan + Học viên: quét 0,30 → 0,20 triệu / ngày; JSON 127 / 127 y hệt. `students` SCAN còn lại là CX / Quản trị xem MỌI chi nhánh (cần mọi em; chi nhánh = `COALESCE(lớp, em)` nên không đi chỉ mục được) — giữ. |
+| **D · câu phiên** | Đã là MỘT câu / request (TD2-d). Phần lặp duy nhất: quyền của vai đọc theo từng dòng grant (TB 2,1 grant, 1,2 vai / người → ~18 dòng thừa / request). Lợi nhỏ, đụng mã quyền → không làm. |
+| **F · Tổng quan GV** (chờ chủ SP) | Đo cùng một request: `/my-work` + `/hai-khoi` gộp bớt 18 % dòng (8 GV: 43,1 k → 35,3 k), ~−0,25 triệu / ngày. Nhưng `/my-work` còn là nguồn badge Công việc (App) → gộp phải đổi cách badge nhận dữ liệu; cùng lúc bỏ một kiểu lịch `valid` / `due` trong `loadSkillRows` (GIAM-DOC-0711). Đổi thiết kế → PTA đưa chủ SP. |
+| G · CTE VALUES | Chờ Turso Top Queries sau deploy. |
+| Gộp `theo-vai` TVV / CX | Bỏ (PTA). |
