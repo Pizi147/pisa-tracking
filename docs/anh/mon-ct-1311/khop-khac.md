@@ -24,6 +24,7 @@ Không đổi bố cục: chỉ thêm thao tác vào ô Môn sẵn có của pan
 
 ## Lệch / để sau
 
-- [XM] Bàn giao chuyển lớp + Góp ý tuần đọc bộ môn chương trình GỐC (FOU / BE / ELE) theo mẫu, không theo bảng (`boMonCt`, đọc bảng = một câu mỗi em ở phiếu bàn giao — phép kiểm CT 5h). Quản trị đổi môn FOU / BE / ELE thì hai chỗ này vẫn theo mẫu cũ — làm khi chủ SP thật sự đổi môn chương trình gốc.
-- Web chỉ dùng mẫu (không bảng) ở: chữ môn của dòng lớp trong Highlights Tổng quan, chữ luật ở tab Kế hoạch Test, danh sách Môn ở form Ghi vi phạm (`monViPham`). KET / PET mặc định (L+S · R+W) đúng; chương trình gốc Quản trị đổi môn thì ba chỗ này còn theo mẫu.
+- ~~[XM] Bàn giao chuyển lớp + Góp ý tuần theo mẫu chương trình gốc~~ — xong PR 2 (MON-CT-1311 PR 2): `boMonCt` đọc `programme_skills` (nhớ theo tiến trình trong request; hàm bàn giao gọi theo từng em bọc `trongBoNho` — một câu cả lượt gọi).
+- ~~Web theo mẫu ở Highlights Tổng quan, chữ luật Kế hoạch Test, Môn ở Ghi vi phạm~~ — xong PR 2: phiên mang `boMonCt` (bộ môn thật từng chương trình), `boMonLich(ct)` ở web đọc nguồn đó (cả ô trống Cuối khoá); Quản trị lưu chương trình → tải lại phiên.
+- Lượt huỷ chưa ghi gì đổi theo bộ mới (P13 giữ mọi lượt huỷ) — PTA chấp nhận.
 - "Chưa phân công" của môn mới hiện như ô trống thường ở Phân công GV (không thêm chữ / chuông riêng).

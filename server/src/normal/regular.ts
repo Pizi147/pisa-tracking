@@ -4,7 +4,7 @@ import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter, taoCaseTuDong } from '../cases/sos.ts';
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
-import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, laChuongTrinhGoc, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -104,11 +104,11 @@ export function programmeByCode(code: string | null | undefined): ProgrammeInfo 
 }
 
 /**
- * Bộ môn xếp lịch của chương trình (`boMonLich`): chương trình gốc theo mẫu (không đọc DB — gọi theo từng em ở phiếu bàn giao); mã Quản trị tạo (OV-6b2: PET L+S R+W) đọc bảng.
- * ponytail: MON-CT-1311 — Quản trị đổi môn FOU / BE / ELE thì bàn giao + Góp ý tuần vẫn theo mẫu; đổi sang đọc bảng khi chủ SP thật sự đổi môn chương trình gốc.
+ * Bộ môn xếp lịch của chương trình (`boMonLich`) theo bảng `programme_skills` — MON-CT-1311 PR 2: Quản trị sửa được môn cả chương trình gốc.
+ * `programmeByCode` nhớ theo tiến trình trong request (0 câu khi không ai sửa); hàm gọi theo từng em NGOÀI request bọc `trongBoNho` (một câu cả lượt gọi).
  */
 export const boMonCt = (ct: string | null | undefined): readonly string[] =>
-  boMonLich(ct, laChuongTrinhGoc(ct) ? null : programmeByCode(ct)?.skills);
+  boMonLich(ct, programmeByCode(ct)?.skills);
 /** Bộ môn bàn giao chuyển lớp (`monBanGiao`): FT tách W1 · W2, bỏ môn em không đăng ký (`mon_dang_ky` của lộ trình FT). */
 export const boMonBanGiaoCt = (ct: string | null | undefined, monDangKy?: string | null): string[] => monBanGiao(ct, boMonCt(ct), monDangKy);
 

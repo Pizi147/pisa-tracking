@@ -285,6 +285,8 @@ api.get('/demo/session', wrap((req) => {
     khungPhamVi: khungPhamVi(p),
     /* CAU-HINH-CASE-SOS: bản cấu hình đang dùng cho ô chọn trên web (nhớ theo tiến trình — 0 câu khi không ai sửa). */
     cauHinh: { nguyen_nhan: cauHinhCaseSosSvc.cauHinhDangDung('nguyen_nhan'), phuong_an: cauHinhCaseSosSvc.cauHinhDangDung('phuong_an'), moc_sos: cauHinhCaseSosSvc.cauHinhDangDung('moc_sos') },
+    /* MON-CT-1311 PR 2: bộ môn THẬT từng chương trình lớp thường (Quản trị sửa được) cho `boMonLich` ở web — nhớ theo tiến trình, 0 câu khi không ai sửa. */
+    boMonCt: Object.fromEntries([...regularSvc.allProgrammes().values()].filter((x) => x.scoringMode === 'ratio').map((x) => [x.code, x.skills])),
   };
 }));
 

@@ -1,3 +1,4 @@
+import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt, boMonCt } from '../normal/regular.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
@@ -201,7 +202,9 @@ export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id:
  * Màn F/G và "Đọc bàn giao": mọi lệnh có phiếu của MỘT lớp nguồn (hoặc một lệnh). Số câu SQL KHÔNG tăng theo số em.
  * Người đọc: GV/QL lớp nguồn; GV/QL lớp chuyển đến chỉ khi phiếu đã xác nhận hoặc lệnh đã chuyển (Q15). Còn lại 403.
  */
-export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto {
+/** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
+export function phieuBanGiao(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto { return trongBoNho(() => phieuBanGiaoGoc(p, f)); }
+function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number; mon?: string }): PhieuBanGiaoDto {
   const conn = db();
   let lopId = f.lopNguonId ?? 0;
   if (f.lenhId) {
@@ -497,7 +500,9 @@ export type ViecBanGiao =
  * môn) còn em chưa ghi. Ba câu đọc cho mọi lớp của người xem (phân công · lệnh · dòng môn), không hỏi lại theo em.
  * OV-11c (CV-8): `userId` null = việc của MỌI người được phân công (Công việc › Của GV) — vẫn ba câu, không hỏi lại theo người.
  */
-export function viecBanGiao(userId: number | null, branchId?: number | null): ViecBanGiao[] {
+/** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
+export function viecBanGiao(userId: number | null, branchId?: number | null): ViecBanGiao[] { return trongBoNho(() => viecBanGiaoGoc(userId, branchId)); }
+function viecBanGiaoGoc(userId: number | null, branchId?: number | null): ViecBanGiao[] {
   const conn = db();
   const dk = [`ta.status = 'active'`, ...(userId !== null ? ['ta.user_id = ?'] : []), ...(branchId ? ['c.branch_id = ?'] : [])];
   const da = phanCongDaNap();   // TL-VIEC: Công việc đã nạp mọi phân công một câu — lọc đúng WHERE dưới

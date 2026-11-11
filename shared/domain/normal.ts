@@ -192,10 +192,17 @@ export function tenMonNgan(ct: string | null | undefined, o: string): string {
   const k = oChuan(o);
   return TEN_MON_RIENG[programmeOf(ct) ?? '']?.[k]?.ngan ?? SKILL_SHORT[k] ?? o;
 }
-/** Bộ môn xếp lịch của một lượt: FT (hoặc không rõ) → 4 kỹ năng đánh giá; lớp thường → bảng `programme_skills` (hằng số dự phòng). */
+/**
+ * MON-CT-1311 PR 2: bộ môn THẬT của mọi chương trình (`programme_skills`) cho nơi chỉ có mã chương trình — web: phiên mang xuống (`boMonCt`,
+ * máy chủ nhớ theo tiến trình, 0 câu thêm), cấp một lần ở `session.tsx`. Máy chủ không đặt (đọc bảng qua `programmeByCode`). null = mẫu.
+ */
+let nguonBoMon: Readonly<Record<string, readonly string[]>> | null = null;
+export function datNguonBoMon(m: Readonly<Record<string, readonly string[]>> | null | undefined): void { nguonBoMon = m ?? null; }
+/** Bộ môn xếp lịch của một lượt: FT (hoặc không rõ) → 4 kỹ năng đánh giá; lớp thường → bảng `programme_skills` (truyền vào, hoặc nguồn phiên; hằng số dự phòng). */
 export function boMonLich(ct: string | null | undefined, skillsBang?: readonly string[] | null): readonly string[] {
   const c = programmeOf(ct);
   if (!c || c === 'FT') return ASSESSED_SKILLS;                       // FT: lịch theo 4 kỹ năng đánh giá (W = W1 + W2)
+  if (!skillsBang?.length && nguonBoMon?.[c]?.length) return nguonBoMon[c];
   return skillsBang?.length ? skillsBang : PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills
     ?? CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x) => x.code === c)?.skills ?? REGULAR_SKILLS;   // MON-CT-1311: KET / PET mặc định L+S, R+W
 }
