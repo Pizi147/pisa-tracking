@@ -3,7 +3,7 @@ import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { maNhomHopLe, cauHinh, DANH_MUC_DOI,
   CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
-  type AcademicSupportPreset, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL, CHU_TOI_THIEU_CASE } from '../../../shared/domain/index.ts';
+  type AcademicSupportPreset, type AcademicSupportSpan, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL, CHU_TOI_THIEU_CASE } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, canXacNhan, conflict, diffDays, isIsoDate, loi, forbidden, notFound, nowIso } from '../util.ts';
 import type { Principal } from '../permissions.ts';
@@ -13,7 +13,6 @@ import { examPlanOf } from '../fasttrack/cycles.ts';
 import { routeCuaLuot } from '../fasttrack/attempts.ts';
 import { addIssues, caseAccess, caseDetail, caseTitleOf, coTheXacNhanCase, maNhomCuaCase, suaPa } from './cases.ts';
 import { chenPa } from './taoPa.ts';
-import { followUntilAfter } from './sos.ts';
 import { mondayOf } from '../platform/week.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
@@ -132,7 +131,7 @@ export function resyncUnconfirmedPresets(
     if (iv.kind !== p.kind) {
       const g = paGvMo(iv.case_id).find((x) => x.kind === p.kind);
       if (g) {
-        ganDauQuyChe(g, p, attempt, null);
+        ganDauQuyChe(g, p, null);
         db().prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ? WHERE id = ?`).run(nowIso(), iv.id);
         /* Cùng nhật ký migrate prSosTamPa — `khoiPhucSosTamPa` trả lại được (PA quy chế về chờ, PA GV bỏ dấu). */
         db().prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_quy_che_trung_gv', ?, 'cancelled', NULL, ?)`)
@@ -151,13 +150,13 @@ export function paGvMo(caseId: number): any[] {
 }
 
 /**
- * PA GV TRÙNG LOẠI PA quy chế → mang dấu quy chế: `preset`, loại mốc + mốc tính từ hôm nay (như Xác nhận PA), người xác nhận = người ghi PA. Nội dung, người dạy,
- * ngày bắt đầu, kết quả giữ nguyên — không việc mới. Lịch sử `pa_gv_quy_che` giữ bản cũ (`khoiPhucSosTamPa` trả lại).
+ * PA GV TRÙNG LOẠI PA quy chế → mang dấu quy chế: `preset`, loại mốc + mốc tính từ NGÀY BẮT ĐẦU của PA GV (`mocPaQuyChe` — SUA-RA-1311: cùng luật đường đọc,
+ * migrate chạy lại không đổi), người xác nhận = người ghi PA. Nội dung, người dạy, ngày bắt đầu, kết quả giữ nguyên — không việc mới. Lịch sử `pa_gv_quy_che`
+ * giữ bản cũ (`khoiPhucSosTamPa` trả lại).
  */
-export function ganDauQuyChe(g: any, p: AcademicSupportPreset, luot: any | null, actor: number | null): void {
+export function ganDauQuyChe(g: any, p: AcademicSupportPreset, actor: number | null): void {
   const conn = db();
-  const today = demoToday();
-  const moc = mocQuyChe(p.span, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(luot?.cycle_id ?? null, today) });
+  const moc = mocPaQuyChe(g.id, p.span, g.started_date ?? g.cycle_started_on ?? demoToday());
   conn.prepare(`UPDATE case_interventions SET preset = 1, moc_quy_che = ?, followup_due = ?, confirmed_by = COALESCE(confirmed_by, recorded_by, performer_user_id, ?),
       confirmed_at = COALESCE(confirmed_at, ?), updated_at = ? WHERE id = ?`).run(p.span, moc, actor, nowIso(), nowIso(), g.id);
   conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, 'pa_gv_quy_che', ?, ?, ?, ?)`)
@@ -173,7 +172,7 @@ export function paQuyCheTheoGv(input: Parameters<typeof createPresetPlan>[0] & {
   const p = presetFor(input.attempt, input.sosLevel);
   if (!p) return null;
   const g = paGvMo(input.caseId).find((x) => x.kind === p.kind);
-  if (g) { ganDauQuyChe(g, p, input.attempt, actor); return 'trung'; }
+  if (g) { ganDauQuyChe(g, p, actor); return 'trung'; }
   return createPresetPlan(input);
 }
 
@@ -258,9 +257,7 @@ export function apDungGiuPaGv(yc: { doi_tuong_id: number; du_lieu: string | null
     const gs = ids.length ? conn.prepare(`SELECT g.* FROM case_interventions g WHERE g.id IN (${ids.map(() => '?').join(',')}) AND ${PA_GV_MO('g')}`).all(...ids) as any[] : [];
     thayPaGvBangQuyChe(gs, q.id);
     /* Q4: chạy ngay — Tutor máy gán chưa có Số buổi vẫn chạy (Số buổi trống = không đếm buổi); GV điền ở Sửa PA. */
-    const luot = luotSinhPa(q);
-    const c = conn.prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(q.case_id) as any;
-    const moc = q.moc_quy_che ? mocQuyChe(q.moc_quy_che, { ngayXacNhan: today, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(c?.cycle_id ?? null, today) }) : null;
+    const moc = q.moc_quy_che ? mocPaQuyChe(q.id, q.moc_quy_che, today) : null;
     conn.prepare(`UPDATE case_interventions SET superseded_by = NULL, status = 'started', started_date = ?, cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?,
         confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`).run(today, today, hanKyGhiKetQua(today, today), moc, actor, nowIso(), nowIso(), q.id);
   }
@@ -475,7 +472,7 @@ export function xacNhanCase(p: Principal, caseId: number, input: {
 
 /**
  * OV-13a (B): MT CUỐI của mỗi lộ trình — lượt Mock chưa huỷ có số MT lớn nhất mà đã xếp tuần; `chuNhat` = hết Chủ nhật tuần đó. Một câu mỗi lô.
- * "Đến lúc thi" chưa có ngày thi lấy mốc này (có ngày thi thì theo ngày thi — `mocThi`).
+ * "Đến lúc thi" chưa có ngày thi lấy mốc này (có ngày thi thì theo ngày thi — `mocPaQuyChe`).
  */
 export function mtCuoiCuaLoTrinh(cycleIds: readonly (number | null | undefined)[]): Map<number, { so: number; chuNhat: string }> {
   const out = new Map<number, { so: number; chuNhat: string }>();
@@ -499,10 +496,6 @@ export const mocTheoMtCuoi = (chuNhatMtCuoi: string | null | undefined, ngayXacN
   const sauNhat = addDays(ngayXacNhan, MOC_MT_CUOI_TOI_THIEU_NGAY);
   return chuNhatMtCuoi > sauNhat ? chuNhatMtCuoi : sauNhat;
 };
-/** Mốc "đến lúc thi" của một lộ trình: ngày thi (`examDateOf`), chưa có thì MT cuối (OV-13a B, ≥ xác nhận + 4 tuần), không có cả hai thì trống. */
-export function mocThi(cycleId: number | null | undefined, ngayXacNhan: string): string | null {
-  return examDateOf(cycleId) ?? (cycleId ? mocTheoMtCuoi(mtCuoiCuaLoTrinh([cycleId]).get(cycleId)?.chuNhat, ngayXacNhan) : null);
-}
 
 /**
  * ĐIỀN MỐC QUY CHẾ (K3-14, Q2): PA quy chế đang chạy `đến MT{n+1}` mà lúc xác nhận chưa có lịch thì `followup_due` NULL — PA vẫn chạy; có lịch
@@ -513,42 +506,61 @@ export function mocThi(cycleId: number | null | undefined, ngayXacNhan: string):
 export function keHoachMocQuyChe(theo: { caseIds?: readonly number[]; studentId?: number; tatCa?: boolean }): { id: number; moc: string; span: string }[] {
   const conn = db();
   const dk = `iv.preset = 1 AND iv.status = 'started' AND ((iv.followup_due IS NULL AND iv.moc_quy_che = 'until_next_mt') OR iv.moc_quy_che = 'until_exam')`;
-  /*
-   * PR-S3F #4: ngày thi (JOIN lộ trình + tuần thi) và tuần của MT kế tiếp lấy NGAY trong câu chọn chính — trước đây mỗi dòng thêm 3 câu
-   * (`luotSinhPa`, `followUntilAfter`, `examDateOf`) nên Công việc QL với 30 PA "đến lúc thi" chưa có ngày thi tốn 63 → 147 câu. `src` = lượt
-   * sinh PA (cùng luật `luotSinhPa`); `tuan_mt_ke` = tuần của lượt kế tiếp chưa huỷ THEO attempt_no (chỉ PA quy chế FT;
-   * `followUntilAfter` xếp theo `soThuTuLuot` cho lớp thường — ở FT hai luật trùng nhau). OV-13a: `tuan_mt_cuoi` cùng luật `mtCuoiCuaLoTrinh`.
-   */
-  const chon = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
-         ep.code AS exam_week_code, ep.week_start AS exam_week_start,
-         (SELECT p.week_start FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
-           WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled' AND NOT ${LUOT_DA_XOA_SQL('nx')}   -- chủ SP 07/11: MT đã xoá = chưa xếp
-           ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke,
-         (SELECT p.week_start FROM assessment_attempts l JOIN report_periods p ON p.id = l.planned_period_id
-           WHERE l.cycle_id = sc.cycle_id AND l.kind = 'mock' AND l.status != 'cancelled'
-           ORDER BY l.attempt_no DESC LIMIT 1) AS tuan_mt_cuoi
-       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
-       LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
-       LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
-       LEFT JOIN assessment_attempts src ON src.id = (SELECT m.attempt_id FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
-           WHERE m.case_id = iv.case_id AND m.kind IN ('opened', 'repeat') AND m.created_at <= iv.created_at
-           ORDER BY m.created_at DESC, m.id DESC LIMIT 1)`;
   const rows: any[] = [];
-  if (theo.tatCa) rows.push(...conn.prepare(`${chon} WHERE sc.status != 'done' AND ${dk}`).all() as any[]);
+  if (theo.tatCa) rows.push(...conn.prepare(`${CHON_MOC} WHERE sc.status != 'done' AND ${dk}`).all() as any[]);
   if (theo.studentId != null) {
-    rows.push(...conn.prepare(`${chon} WHERE sc.student_id = ? AND sc.status != 'done' AND ${dk}`).all(theo.studentId) as any[]);
+    rows.push(...conn.prepare(`${CHON_MOC} WHERE sc.student_id = ? AND sc.status != 'done' AND ${dk}`).all(theo.studentId) as any[]);
   }
-  theoLo([...(theo.caseIds ?? [])], (lo, ph) => { rows.push(...conn.prepare(`${chon} WHERE iv.case_id IN (${ph}) AND ${dk}`).all(...lo) as any[]); });
+  theoLo([...(theo.caseIds ?? [])], (lo, ph) => { rows.push(...conn.prepare(`${CHON_MOC} WHERE iv.case_id IN (${ph}) AND ${dk}`).all(...lo) as any[]); });
   const ra: { id: number; moc: string; span: string }[] = [];
   for (const iv of rows) {
-    const moc = mocQuyChe(iv.moc_quy_che, {
-      ngayXacNhan: iv.cycle_started_on ?? iv.started_date ?? demoToday(),
-      nextMtSunday: iv.moc_quy_che === 'until_next_mt' && iv.tuan_mt_ke ? addDays(mondayOf(iv.tuan_mt_ke), 6) : null,
-      examDate: examDateTu(iv) ?? mocTheoMtCuoi(iv.tuan_mt_cuoi ? addDays(mondayOf(iv.tuan_mt_cuoi), 6) : null, iv.started_date ?? iv.cycle_started_on ?? demoToday()),
-    });
+    const moc = mocTuDong(iv, iv.moc_quy_che, iv.started_date ?? iv.cycle_started_on ?? demoToday());
     if (moc && moc !== iv.followup_due && !ra.some((r) => r.id === iv.id)) ra.push({ id: iv.id, moc, span: iv.moc_quy_che });
   }
   return ra;
+}
+
+/**
+ * SUA-RA-1311 — MỐC PA QUY CHẾ, MỘT LUẬT cho mọi đường (gắn dấu PA GV `ganDauQuyChe`, chọn PA `apDungGiuPaGv`, Xác nhận PA, đường đọc + migrate
+ * `keHoachMocQuyChe`): gốc là NGÀY BẮT ĐẦU PA (trước: gắn dấu / chọn PA tính từ hôm nay, đường đọc tính lại từ ngày bắt đầu → hai mốc, migrate chạy lại vẫn đổi).
+ *  · "đến MT kế tiếp" = MT ngay sau lượt sinh PA, hết CN tuần đó, phải SAU ngày bắt đầu — PA không có mốc trước / đúng ngày bắt đầu; MT kế
+ *    chưa xếp tuần → trống (điền sau); · "đến lúc thi" = ngày thi, chưa có thì MT cuối ≥ bắt đầu + 4 tuần (OV-13a B); · "1 tháng" từ ngày bắt đầu.
+ * Lượt sinh PA: mốc opened / repeat mới nhất không muộn hơn PA, không có thì mốc cũ nhất (PA GV có trước Case — cùng luật `mtKeTheoPa` của chữ "đến MT{n}").
+ * PR-S3F #4: ngày thi + tuần MT kế tiếp + MT cuối lấy NGAY trong câu chọn — không câu thêm mỗi dòng.
+ */
+const SRC_PA = (thuTu: string, dk: string) => `(SELECT m.attempt_id FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
+    WHERE m.case_id = iv.case_id AND m.kind IN ('opened', 'repeat')${dk} ORDER BY m.created_at ${thuTu}, m.id ${thuTu} LIMIT 1)`;
+const CHON_MOC = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
+       ep.code AS exam_week_code, ep.week_start AS exam_week_start,
+       (SELECT p.week_start FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
+         WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled' AND NOT ${LUOT_DA_XOA_SQL('nx')}   -- chủ SP 07/11: MT đã xoá = chưa xếp
+         ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke,
+       (SELECT p.week_start FROM assessment_attempts l JOIN report_periods p ON p.id = l.planned_period_id
+         WHERE l.cycle_id = sc.cycle_id AND l.kind = 'mock' AND l.status != 'cancelled'
+         ORDER BY l.attempt_no DESC LIMIT 1) AS tuan_mt_cuoi
+     FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+     LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
+     LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
+     LEFT JOIN assessment_attempts src ON src.id = COALESCE(${SRC_PA('DESC', ' AND m.created_at <= iv.created_at')}, ${SRC_PA('ASC', '')})`;
+
+/** Mốc từ một dòng `CHON_MOC` (thuần) — `span` / `batDau` truyền vào vì Xác nhận PA tính trước khi ghi. */
+function mocTuDong(r: any, span: string, batDau: string): string | null {
+  let chuNhatMt: string | null = null;
+  if (span === 'until_next_mt') {
+    /* Chỉ MT kế tiếp NGAY sau lượt sinh PA (cùng số với chữ "đến MT{n}"): chưa xếp tuần, hoặc tuần đã hết trước / đúng ngày bắt đầu → chưa có mốc (điền khi xếp lại). */
+    const cn = r.tuan_mt_ke ? addDays(mondayOf(r.tuan_mt_ke), 6) : null;
+    if (cn && cn > batDau) chuNhatMt = cn;
+  }
+  return mocQuyChe(span as AcademicSupportSpan, {
+    ngayXacNhan: batDau, nextMtSunday: chuNhatMt,
+    examDate: examDateTu(r) ?? mocTheoMtCuoi(r.tuan_mt_cuoi ? addDays(mondayOf(r.tuan_mt_cuoi), 6) : null, batDau),
+  });
+}
+
+/** Mốc quy chế của MỘT PA (`span`, bắt đầu `batDau`) — một câu. NULL = chưa có lịch / ngày thi (điền sau). */
+export function mocPaQuyChe(ivId: number, span: string, batDau: string): string | null {
+  const r = db().prepare(`${CHON_MOC} WHERE iv.id = ?`).get(ivId) as any;
+  return r ? mocTuDong(r, span, batDau) : null;
 }
 
 export function dienMocQuyChe(theo: { caseIds?: readonly number[]; studentId?: number; tatCa?: boolean }): number[] {
@@ -609,12 +621,6 @@ export function datLaiHanCase(studentId: number, homNay: string) {
   conn.prepare(`UPDATE case_interventions SET action_due = ?, updated_at = ? WHERE status = 'started' AND action_due IS NOT NULL
       AND COALESCE(approval_state, '') != 'pending' AND case_id IN (SELECT id FROM sos_cases WHERE student_id = ? AND status != 'done')`)
     .run(hanKyGhiKetQua(homNay), nowIso(), studentId);
-}
-/** Lượt MT đã sinh PA quy chế này: mốc `opened`/`repeat` mới nhất của Case tạo không muộn hơn PA. */
-function luotSinhPa(iv: any): any | null {
-  return db().prepare(`SELECT a.* FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
-     WHERE m.case_id = ? AND m.kind IN ('opened', 'repeat') AND m.created_at <= ? ORDER BY m.created_at DESC, m.id DESC LIMIT 1`)
-    .get(iv.case_id, iv.created_at) as any ?? null;
 }
 
 /**
@@ -697,10 +703,7 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   const batDau = batDauHopLe(input.batDau, today);
   /* OV-13b: Tutor cần Số buổi / 2 tuần. Người dạy để trống được (chủ SP 19/10) — tên tutor bắt buộc ở Kết quả, mỗi buổi một dòng. */
   if (iv.kind === 'tutor' && soBuoi == null) throw badRequest('PA Tutor cần Số buổi / 2 tuần.');
-  const luot = luotSinhPa(iv);
-  const moc = iv.moc_quy_che
-    ? mocQuyChe(iv.moc_quy_che, { ngayXacNhan: batDau, nextMtSunday: luot ? followUntilAfter(luot) : null, examDate: mocThi(iv.case_cycle_id, batDau) })   // OV-13a (B) + OV-13c: mốc tính từ ngày bắt đầu
-    : null;
+  const moc = iv.moc_quy_che ? mocPaQuyChe(iv.id, iv.moc_quy_che, batDau) : null;   // OV-13a (B) + OV-13c: mốc tính từ ngày bắt đầu
   return tx(() => {
     if (rutKtd) rutKhongTheoDoiTrongTx(conn, p, iv.case_id);
     conn.prepare(`UPDATE case_interventions SET description = ?, performer_user_id = ?, performer_name = ?, so_buoi = ?, status = 'started', started_date = ?,

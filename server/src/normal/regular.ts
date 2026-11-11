@@ -981,11 +981,18 @@ export function reportRegularNoShow(
     const ve = tuanCua(existing.no_show_period_id);
     /* OV-11a: gỡ "Không dự thi" (dấu ở chính tuần đang xếp) không dời gì — `moved` false, web không ghi "về W…". */
     const doi = !coDiem && existing.no_show_period_id !== row.planned_period_id;
+    /* Lần vắng còn lại (kể cả lần vừa gỡ, trước khi ghi nhật ký gỡ) — đọc một lần cho nguồn lịch + chuông. */
+    const lanGo = (conn.prepare(
+      `SELECT COUNT(CASE WHEN action = 'regular.no_show' THEN 1 END) - COUNT(CASE WHEN action = 'regular.no_show_cleared' THEN 1 END) n
+         FROM audit_logs WHERE action IN ('regular.no_show', 'regular.no_show_cleared') AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`,
+    ).get(attemptId, skill) as any).n as number;
+    /* SUA-RA-1311: còn lần vắng trước (chuỗi "-" chưa hết) → lịch đang đứng do lần đó: giữ `manual` + bản nhớ. */
+    const hetChuoi = lanGo <= 1;
     if (doi) {
       setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
         reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true, today, ghiBuDau: true,
       });
-      conn.prepare(`UPDATE attempt_skills SET plan_source = COALESCE(plan_source_truoc_vang, plan_source) WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
+      if (hetChuoi) conn.prepare(`UPDATE attempt_skills SET plan_source = COALESCE(plan_source_truoc_vang, plan_source) WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
       /* #1418 (PTA): Final về lại trong tuần Final của lớp → thẻ Báo QL "dời quá tuần Final" (lúc ghi "-") hết lý do — tự đóng. */
       if (a.kind === 'final' && a.class_id && ve) {
         const cuoi = classProgress(a.class_id).finalWeekStart;
@@ -994,13 +1001,9 @@ export function reportRegularNoShow(
         }
       }
     }
-    /* Mọi nhánh gỡ (dời về / giữ lịch vì có điểm / gỡ Không dự thi): bỏ bản nhớ nguồn lịch — chuỗi "-" đã hết. */
-    conn.prepare('UPDATE attempt_skills SET plan_source_truoc_vang = NULL WHERE attempt_id = ? AND skill = ?').run(attemptId, skill);
+    /* Mọi nhánh gỡ (dời về / giữ lịch vì có điểm / gỡ Không dự thi): chuỗi "-" đã hết thì bỏ bản nhớ nguồn lịch. */
+    if (hetChuoi) conn.prepare('UPDATE attempt_skills SET plan_source_truoc_vang = NULL WHERE attempt_id = ? AND skill = ?').run(attemptId, skill);
     /* #1418: chuông "vắng lần n" của chính lần "-" vừa gỡ (GVCN) — vắng đó không còn, gỡ tin. */
-    const lanGo = (conn.prepare(
-      `SELECT COUNT(CASE WHEN action = 'regular.no_show' THEN 1 END) - COUNT(CASE WHEN action = 'regular.no_show_cleared' THEN 1 END) n
-         FROM audit_logs WHERE action IN ('regular.no_show', 'regular.no_show_cleared') AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`,
-    ).get(attemptId, skill) as any).n as number;
     if (lanGo >= 2) conn.prepare('DELETE FROM notifications WHERE dedup_key = ?').run(`vang-thuong:${attemptId}:${skill}:${lanGo}`);
     conn.prepare(
       `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL,
