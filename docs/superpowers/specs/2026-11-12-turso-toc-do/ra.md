@@ -14,28 +14,36 @@ Chủ SP 12/11: rà lại toàn bộ chuyện giảm dòng đọc Turso và tố
 - **Tần suất / ngày (giả định, chưa có log thật)**: GV mở Tổng quan 8, Công việc 6, hồ sơ lớp 4, hồ sơ HV 4, Test 3, Học viên 2 · QL Tổng quan 6, Công việc 4, Học viên 3,
   Test 2, Phân tích 2 · Quản trị một nửa QL · Admin Tổng quan 5, Test 4, Công việc 3, Học viên 3 · TVV Tổng quan 5, Học viên 4 · CX Tổng quan 3, Học viên 2, Phân tích 1.
 
-## Bảng trang × vai (bản chép thật, TB một lần mở trên các tài khoản của vai)
+## Bảng trang × vai (bản chép thật, TB một lần mở trên các tài khoản của vai; trước → sau PR-A + PR-B)
 
-| vai · trang | TK × lần/ngày | câu | dòng trả | quét cả bảng (trước → sau PR-A) | triệu dòng / ngày (trước → sau PR-A) |
+| vai · trang | TK × lần/ngày | câu | dòng trả | quét cả bảng | triệu dòng / ngày |
 |---|---|---|---|---|---|
-| GV · Tổng quan | 46 × 8 = 368 | 68 | 3 329 | 2 081 → 1 108 | 1,99 → 1,63 |
-| QL · Tổng quan | 9 × 6 = 54 | 145 | 15 597 | 9 078 → 4 637 | 1,33 → 1,09 |
-| Quản trị · Tổng quan | 5 × 3 = 15 | 147 | 33 388 | 18 971 → 13 370 | 0,79 → 0,70 |
-| TVV · Học viên | 12 × 4 = 48 | 93 | 11 563 | 4 388 → 2 909 | 0,77 → 0,69 |
-| GV · Công việc | 46 × 6 = 276 | 25 | 1 107 | 1 375 → 728 | 0,69 → 0,51 |
-| GV · hồ sơ lớp | 36 × 4 = 144 | 101 | 1 838 | 1 782 → 1 057 | 0,52 → 0,42 |
-| Admin · Tổng quan | 9 × 5 = 45 | 51 | 9 025 | 1 517 | 0,47 |
-| Admin · Học viên | 9 × 3 = 27 | 60 | 11 717 | 1 822 → 1 264 | 0,37 → 0,35 |
-| GV · Test | 46 × 3 = 138 | 23 | 2 026 | 476 | 0,35 |
-| CX · Tổng quan | 4 × 3 = 12 | 58 | 21 125 | 5 152 → 4 260 | 0,32 → 0,30 |
-| TVV · Tổng quan | 12 × 5 = 60 | 30 | 1 914 | 2 832 → 1 259 | 0,28 → 0,19 |
-| CX · Học viên | 4 × 2 = 8 | 111 | 29 076 | 6 280 → 4 801 | 0,28 → 0,27 |
-| QL · Công việc | 9 × 4 = 36 | 46 | 3 620 | 3 914 → 1 925 | 0,27 → 0,20 |
-| GV · Học viên | 46 × 2 = 92 | 57 | 2 049 | 801 → 267 | 0,26 → 0,21 |
-| QL · Học viên | 9 × 3 = 27 | 72 | 7 829 | 1 575 → 893 | 0,25 → 0,24 |
-| Admin · Test | 9 × 4 = 36 | 27 | 5 838 | 1 160 | 0,25 |
-| (9 dòng còn lại) | | | | | 0,68 → 0,64 |
-| **Tổng (cận dưới)** | | | | | **9,87 → 8,52** |
+| GV · Tổng quan | 46 × 8 = 368 | 68 → 68 | 3 329 → 3 329 | 2 081 → 841 | 1,99 → 1,53 |
+| QL · Tổng quan | 9 × 6 = 54 | 145 → 120 | 15 597 → 12 990 | 9 078 → 3 949 | 1,33 → 0,91 |
+| Quản trị · Tổng quan | 5 × 3 = 15 | 147 → 122 | 33 388 → 30 133 | 18 971 → 12 689 | 0,79 → 0,64 |
+| TVV · Học viên | 12 × 4 = 48 | 94 → 93 | 11 609 → 11 563 | 4 482 → 2 909 | 0,77 → 0,69 |
+| GV · Công việc | 46 × 6 = 276 | 25 → 25 | 1 107 → 1 107 | 1 375 → 461 | 0,69 → 0,43 |
+| GV · hồ sơ lớp | 36 × 4 = 144 | 101 → 101 | 1 838 → 1 838 | 1 782 → 757 | 0,52 → 0,37 |
+| Admin · Tổng quan | 9 × 5 = 45 | 51 → 51 | 9 025 → 9 025 | 1 517 → 1 517 | 0,47 → 0,47 |
+| Admin · Học viên | 9 × 3 = 27 | 60 → 60 | 11 717 → 11 717 | 1 822 → 1 140 | 0,37 → 0,35 |
+| GV · Test | 46 × 3 = 138 | 23 → 23 | 2 026 → 2 026 | 476 → 476 | 0,35 → 0,35 |
+| CX · Tổng quan | 4 × 3 = 12 | 58 → 58 | 21 125 → 21 125 | 5 152 → 4 260 | 0,32 → 0,30 |
+| CX · Học viên | 4 × 2 = 8 | 111 → 111 | 29 076 → 29 076 | 6 280 → 4 801 | 0,28 → 0,27 |
+| TVV · Tổng quan | 12 × 5 = 60 | 29 → 30 | 1 868 → 1 914 | 2 738 → 1 352 | 0,28 → 0,20 |
+| QL · Công việc | 9 × 4 = 36 | 46 → 46 | 3 620 → 3 620 | 3 914 → 1 625 | 0,27 → 0,19 |
+| GV · Học viên | 46 × 2 = 92 | 57 → 57 | 2 049 → 2 049 | 801 → 267 | 0,26 → 0,21 |
+| QL · Học viên | 9 × 3 = 27 | 72 → 72 | 7 829 → 7 829 | 1 575 → 893 | 0,25 → 0,24 |
+| Admin · Test | 9 × 4 = 36 | 27 → 27 | 5 838 → 5 838 | 1 160 → 1 160 | 0,25 → 0,25 |
+| Quản trị · Công việc | 5 × 2 = 10 | 47 → 47 | 8 019 → 8 019 | 5 441 → 3 152 | 0,13 → 0,11 |
+| Admin · Công việc | 9 × 3 = 27 | 15 → 15 | 3 271 → 3 271 | 754 → 754 | 0,11 → 0,11 |
+| GV · hồ sơ HV | 36 × 4 = 144 | 98 → 98 | 137 → 137 | 509 → 353 | 0,09 → 0,07 |
+| QL · Phân tích | 9 × 2 = 18 | 41 → 41 | 3 745 → 3 745 | 1 378 → 1 378 | 0,09 → 0,09 |
+| QL · Test | 9 × 2 = 18 | 26 → 26 | 3 205 → 3 205 | 640 → 640 | 0,07 → 0,07 |
+| Quản trị · Test | 5 × 1 = 5 | 28 → 28 | 8 504 → 8 504 | 4 497 → 4 497 | 0,07 → 0,07 |
+| Quản trị · Học viên | 5 × 1 = 5 | 71 → 71 | 8 954 → 8 954 | 1 917 → 1 235 | 0,05 → 0,05 |
+| CX · Phân tích | 4 × 1 = 4 | 44 → 44 | 7 195 → 7 195 | 1 744 → 1 744 | 0,04 → 0,04 |
+| Quản trị · Phân tích | 5 × 1 = 5 | 41 → 41 | 4 902 → 4 902 | 1 668 → 1 668 | 0,03 → 0,03 |
+| **Tổng (cận dưới)** | | | | | **9,87 → 8,06** |
 
 Tốc độ máy chủ (máy dev, file cục bộ — Turso cộng thêm ~1 vòng mạng mỗi câu): TB 14–250 ms một đường; chậm nhất Công việc "Tất cả" QL / Quản trị 186–201 ms,
 Học viên Quản trị 250 ms. Trên Turso thời gian ≈ số câu × vòng mạng → **bớt câu = nhanh hơn + bớt compute Netlify**.
@@ -44,9 +52,9 @@ Học viên Quản trị 250 ms. Trên Turso thời gian ≈ số câu × vòng 
 
 | # | Việc | Tiết kiệm ước / ngày | Rủi ro | Tệp |
 |---|---|---|---|---|
-| A | **7 chỉ mục** cho các câu quét cả bảng (bảng dưới) — không đổi câu, JSON y hệt (1 019 / 1 019 lượt gọi, bản chép thật) | **−1,35 triệu** (quét 2,50 → 1,15 triệu); 9 958 câu khác nhau chạy lại: 0 câu tăng | Thấp: chỉ `CREATE INDEX IF NOT EXISTS`; ba chỉ mục PA khoá `id` và `loTrinhChoKetQuaThi` xếp lại theo (em, lộ trình) để GIỮ thứ tự dòng cũ | `server/src/migrate/prTurso1211.ts` (mới), `migrate.ts`, `schema.sql`, `loTrinh/thiThat.ts` |
-| B | **Tổng quan QL · thẻ Giáo viên** đọc đủ `/phan-tich/giao-vien` (41–85 câu, 4,5 k trả + 2–10 k quét) dù thẻ chỉ dùng Việc · Chấm · Đạt kỳ vọng (+ Tiến bộ ở tab Học thuật FT) → gọi `v2=1` (15 câu, ~1,4 k trả) trừ tab Học thuật FT | ~−0,4–0,5 triệu; Tổng quan QL −26–70 câu (nhanh hơn rõ) | Thấp: cùng hàm, cùng số; chỉ bỏ phần thẻ không đọc | `web/src/modules/worklist/TongQuanV5.tsx` |
-| C | **Học viên & Lớp · tab "Đang SOS"** tải cả danh sách SOS (17–35 câu, 0,8–14 k dòng) chỉ để hiện SỐ trên tab, ở mọi lần mở trang (trừ Admin) | ~−0,3–0,5 triệu nếu tính số trong cùng request `/hoc-vien-lop` (dùng lại phần nạp lượt đã nhớ) | Vừa: đổi API trang, cần phép kiểm số = danh sách | `server/src/classes/hocVienLop.ts`, `hocVienSos.ts`, `StudentsPage.tsx` |
+| A | **7 chỉ mục** cho các câu quét cả bảng (bảng dưới) — không đổi câu, JSON y hệt (1 019 / 1 019 lượt gọi, bản chép thật) | **−1,6 triệu** (quét 2,50 → 0,89 triệu); 9 958 câu khác nhau chạy lại: 0 câu tăng | Thấp: chỉ `CREATE INDEX IF NOT EXISTS`; ba chỉ mục PA khoá `id` và `loTrinhChoKetQuaThi` xếp lại theo (em, lộ trình) để GIỮ thứ tự dòng cũ | `server/src/migrate/prTurso1211.ts` (mới), `migrate.ts`, `schema.sql`, `loTrinh/thiThat.ts` |
+| B | **Tổng quan QL · thẻ Giáo viên** đọc đủ `/phan-tich/giao-vien` (41–85 câu, 4,5 k trả + 2–10 k quét) dù thẻ chỉ dùng Việc · Chấm · Đạt kỳ vọng (+ Tiến bộ ở tab Học thuật FT) → gọi `v2=1` (15 câu, ~1,4 k trả) trừ tab Học thuật FT | **−0,2 triệu** (đo: Tổng quan QL 1,07 → 0,91, Quản trị 0,70 → 0,64 sau A); Tổng quan QL TB 145 → 120 câu, CP 88 → 15 câu cho thẻ | Thấp: cùng hàm, cùng số; chỉ bỏ phần thẻ không đọc | `web/src/modules/worklist/TongQuanV5.tsx` |
+| C | **Học viên & Lớp** mở trang gọi 2–3 request cùng phạm vi: danh sách + "Đang SOS" (chỉ để hiện SỐ trên tab) + (TVV / CX) `theo-vai` — mỗi request tính lại lượt / điểm | đo cùng một request (nhớ dùng chung): SOS thêm ~50 % thay 100 %; TVV 15,3 k → 10,8 k, CX 43,8 k → 29,4 k dòng / lần → **~−0,45 triệu** | Vừa: đổi API trang, cần phép kiểm số = danh sách | `server/src/classes/hocVienLop.ts`, `hocVienSos.ts`, `StudentsPage.tsx` |
 | D | **Câu phiên** (mỗi request 1 câu: quyền + phân công + mốc) — ~700 bước máy ảo / lần, GV nhiều phân công đọc ~100–500 dòng chỉ mục | ~0,5–1 triệu (×15–20 k request) — chưa đo được dòng chỉ mục | Cao (quyền) → **chỉ ghi, không làm**: nhớ principal theo tiến trình cần khoá phiên bản quyền | `server/src/auth.ts` |
 | E | `hvCuaToi` (Tổng quan TVV / CX, Học viên TVV / CX): `sos_cases` SCAN (`substr(created_at,1,10) >= ?`), `students` SCAN rồi lọc chi nhánh trong JS | ~−0,15 triệu | Vừa: chỉ mục `!= 'done'` làm câu khác đổi kế hoạch xấu đi (đã thử, bỏ) — cần viết lại câu | `server/src/worklist/hvCuaToi.ts` |
 | F | Tổng quan GV `hai-khoi` (2 k dòng trả / lần × 368) — đã rà GIAM-DOC-0711: mọi câu đi chỉ mục, giảm nữa phải đổi thiết kế | 0 (giữ) | — | — |
