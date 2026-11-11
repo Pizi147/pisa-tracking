@@ -33,4 +33,6 @@ export const EN_QTV2_BAND = {
   'Bài Final Test đủ điểm, % tổng dưới mức "Học lại dưới" — gợi ý học lại.': 'Final Test fully scored, total below "Repeat below" — suggest repeating.',
   'Bài Final Test đủ điểm, % tổng từ "Học lại dưới" tới dưới "Lên từ" — Quản lý cân nhắc.': 'Final Test fully scored, total from "Repeat below" up to "Move up from" — manager decides.',
   'Bài Final Test đủ điểm, % tổng từ "Lên từ" tới dưới "Đạt từ" — lên lớp kèm bổ trợ.': 'Final Test fully scored, total from "Move up from" up to "Pass from" — move up with extra support.',
+  /* QTV2 (PTA): lỗi máy chủ có biến */
+  '"Lên từ" phải dưới "Đạt từ" nhỏ nhất của các chương trình ({dat} %).': '"Move up from" must be below the lowest "Pass from" of the programmes ({dat} %).',
 } satisfies Record<string, Dich>;

@@ -10,6 +10,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
   const d: any = await import('../../../shared/domain/index.ts');
   const wk: any = await import('../platform/week.ts');
   const dm: any = await import('../demoConfig.ts');
+  const fs: any = await import('node:fs');
   console.log('\nQTV2-HAN — Hạn mặc định có phiên bản, chỉ áp cho việc sinh sau');
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { ch.xoaNhoHan(); return fn(); } finally { conn.exec('ROLLBACK'); ch.xoaNhoHan(); } };
   const goc = () => JSON.parse(JSON.stringify(d.HAN_MAC_DINH_GOC));
@@ -74,4 +75,22 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     assert(d.hanTai('xac_nhan_case', '2026-11-11').ngayGap === 3, 'thiếu trường không lấy gốc');
     assert(d.hanTai('xac_nhan_case', '2026-11-10T20:00:00.000Z').ngay === 6 && d.hanTai('xac_nhan_case', '2026-11-10T16:00:00.000Z').ngay === 5, 'mốc ISO UTC không đổi về ngày VN');
   }));
+  /* QTV2 việc để lại (PTA): Báo PH sinh TRƯỚC ngày đổi hạn mà hạn rơi SAU ngày đổi → vẫn theo bản lúc sinh (Tạm dừng / Quay lại tính đúng ngày sinh). */
+  check('QTV2-H-5 · hanBaoPhHieuLuc chọn bản LÚC SINH việc: việc sinh trước ngày đổi hạn (hạn sau ngày đổi) giữ N cũ khi tính Quay lại học', () => thu(() => {
+    conn.exec('DELETE FROM cau_hinh_phien_ban'); ch.xoaNhoHan();
+    const homNay = dm.nowNghiepVu().slice(0, 10);
+    const sinh = d.addDaysIso(homNay, -2);
+    const han = d.hanBaoPh(sinh);   // bản gốc: sinh + 4 → sau ngày đổi
+    const moi = goc(); moi.bao_ph_vi_pham.ngay = 9;
+    ch.luuHanMacDinh(P.admin, { han: moi, tuPhienBan: 0 });
+    assert(han === d.addDaysIso(sinh, 4) && d.hanBaoPh(sinh) === han, 'tiền đề: việc cũ giữ hạn cũ');
+    /* Tạm dừng từ ngày sinh tới hôm nay → hạn mới = ngày quay lại + N lúc sinh (4), không + 8 của bản mới. */
+    const kq = d.hanBaoPhHieuLuc(han, [{ tu: sinh, den: homNay }]);
+    assert(kq === [han, d.addDaysIso(homNay, 4)].sort()[1], `Quay lại học theo N lúc sinh: ${kq}`);
+  }));
+
+  check('QTV2-H-6 · lỗi máy chủ "Lên từ" phải dưới "Đạt từ"… có khoá dịch + biến (web tiếng Anh dịch được)', () => {
+    const src = fs.readFileSync('server/src/platform/cauHinh.ts', 'utf8') as string;
+    assert(/loiDich\(400, loi\.khoa, loi\.bien/.test(src) && /khoa, bien: \{ dat \}/.test(src), 'câu có biến chưa gửi khoá dịch');
+  });
 }
