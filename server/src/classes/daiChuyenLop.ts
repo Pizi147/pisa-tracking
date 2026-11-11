@@ -1,3 +1,4 @@
+import { trongBoNho } from '../platform/nguCanhRequest.ts';
 import { boMonBanGiaoCt } from '../normal/regular.ts';
 import { db } from '../db.ts';
 import { kyNangPhuTrach, mocLoTrinh, nhanCotBg, tenMonNgan } from '../../../shared/domain/index.ts';
@@ -21,7 +22,9 @@ import { EM_KQDR_FT_SQL, KQDR_HIEN_NGAY, laChiAdmin } from '../normal/kyVong.ts'
  * Hồ sơ lớp: tối đa 3 câu (phân công · lệnh nguồn/đích/dòng môn/GVCN/số đợt KQĐR gộp một UNION · đếm chưa lệnh khi tới Cuối khoá).
  * PR-B: cùng UNION thêm phân công lớp nguồn + lớp đích (môn cùng GV — chủ SP 30/10), việc bàn giao đổi GV của lớp, GV cũ chỉ xem — không thêm lượt.
  */
-export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
+/** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
+export function daiLop(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop { return trongBoNho(() => daiLopGoc(p, classId, o)); }
+function daiLopGoc(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolean; ct: string | null }): DaiLop {
   const conn = db();
   const homNay = demoToday();
   const ra = coTheRaLenh(p, classId);
@@ -157,7 +160,9 @@ function daiBanGiaoGv(p: Principal, classId: number, ct: string | null, rows: an
 }
 
 /** Hồ sơ HV (E): lệnh đang chờ hoặc đã chuyển ≤ 14 ngày (Q17) — 2 câu. */
-export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null {
+/** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
+export function daiHocVien(p: Principal, studentId: number): DaiHocVien | null { return trongBoNho(() => daiHocVienGoc(p, studentId)); }
+function daiHocVienGoc(p: Principal, studentId: number): DaiHocVien | null {
   const conn = db();
   const homNay = demoToday();
   const l = conn.prepare(

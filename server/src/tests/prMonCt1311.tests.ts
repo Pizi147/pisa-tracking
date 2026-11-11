@@ -9,6 +9,8 @@ export async function runPrMonCt1311Tests(t: any) {
   const regular: any = await import('../normal/regular.ts');
   const schedSvc: any = await import('../fasttrack/skillSchedule.ts');
   const classSvc: any = await import('../classes/classes.ts');
+  const gopY: any = await import('../classes/gopYTuan.ts');
+  const shared: any = await import('../../../shared/domain/index.ts');
   const { voiXacNhan, xoaNho } = await import('../platform/nguCanhRequest.ts');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
@@ -147,6 +149,23 @@ export async function runPrMonCt1311Tests(t: any) {
     voiXacNhan(() => luu('PET', ['listening', 'reading', 'writing', 'speaking'])); xoaNho();
     assert(one('SELECT bo_mon FROM assessment_attempts WHERE id = ?', id).bo_mon === JSON.stringify(['listening_speaking', 'reading_writing']), 'chụp sai bộ');
     assert(JSON.stringify(regular.regularResultOf(id)) === kq, 'kết quả đổi sau khi tách');
+  }));
+
+  check('MC-7 · PR 2: đổi môn BE gốc → bàn giao chuyển lớp, Góp ý tuần, nguồn web (Tổng quan, Kế hoạch Test, Ghi vi phạm, Cuối khoá) ra đúng môn mới; không còn theo mẫu', () => thu(() => {
+    const d: any = shared;
+    const lop = one(`SELECT id FROM classes WHERE programme_code = 'BE' AND status = 'active' ORDER BY id LIMIT 1`).id as number;
+    voiXacNhan(() => luu('BE', MOI)); xoaNho();
+    assert(regular.boMonCt('BE').join() === MOI.join() && regular.boMonBanGiaoCt('BE').join() === MOI.join(), `bàn giao: ${regular.boMonBanGiaoCt('BE')}`);
+    const cot = gopY.cotCua(P.admin, gopY.docLop(lop), TODAY).map((c: any) => c.skill);
+    assert(cot.join() === MOI.join(), `Góp ý tuần: ${cot}`);
+    /* Web: phiên mang `boMonCt` (cùng `allProgrammes`) → `boMonLich(ct)` / `monViPham(ct)` không cần truyền bộ môn. */
+    const map = Object.fromEntries([...regular.allProgrammes().values()].filter((x: any) => x.scoringMode === 'ratio').map((x: any) => [x.code, x.skills]));
+    try {
+      d.datNguonBoMon(map);
+      assert(d.boMonLich('BE').join() === MOI.join() && d.monViPham('BE').join() === MOI.join(), `nguồn web: ${d.boMonLich('BE')} · ${d.monViPham('BE')}`);
+      assert(d.boMonLich('FT').length === 4 && d.boMonLich('PREFOU').join() === 'tong_hop', 'FT / Pre FOU đổi');
+    } finally { d.datNguonBoMon(null); }
+    assert(d.boMonLich('BE').join() === 'listening,reading,writing,speaking', 'máy chủ không có nguồn phiên → mẫu (nơi máy chủ luôn truyền bộ bảng)');
   }));
   void TODAY;
 }

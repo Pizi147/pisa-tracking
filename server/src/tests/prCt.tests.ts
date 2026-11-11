@@ -1078,13 +1078,15 @@ export async function runPrCtTests(t: YThucTestKit) {
     const chuaCo = hocVien(lopMoi({ kind: 'FOU', tuanHienTai: 2 }), 'FOU', false).sid;
     assert(profileSvc.studentProfile(P.admin, chuaCo).dai === null, 'em chưa có lệnh');
   });
-  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 4, daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới mốc nhắc Final − 2)', () => {
+  /* MON-CT-1311 PR 2: daiHocVien ≤ 5 khi gọi THẲNG (ngoài request) — +1 câu bảng chương trình (bộ môn bàn giao theo `programme_skills`, nhớ cả lượt gọi);
+     trong request GET câu đó nhớ theo tiến trình (khoá phiên bản, `nhoThamChieu`) → vẫn 4 như trước. */
+  check('CT (7g) · số câu SQL của dải: daiHocVien ≤ 5 (ngoài request), daiLop ≤ 4 (gồm 1–2 câu tra chi nhánh của `can()`; chưa tới mốc nhắc Final − 2)', () => {
     const e = hocVien(n7, 'FOU', false).sid;
     ra(P.mbManager, n7, 'cuoi-khoa', [dongCua(e, 'len_lop', d7)]);
     const a = demTruyVan(() => { dai.daiHocVien(P.mbManager, e); });
     const giua = lopMoi({ kind: 'FOU', tuanHienTai: 3 });
     const b = demTruyVan(() => { dai.daiLop(P.mbManager, giua, { pr: { phase: 'running', finalWeekStart: t.addDays(TODAY, 21), startWeekStart: TODAY, totalWeeks: 8 }, ft: false, ct: 'FOU' }); });
-    assert(a <= 4 && b <= 4, `daiHocVien ${a} câu, daiLop ${b} câu`);
+    assert(a <= 5 && b <= 4, `daiHocVien ${a} câu, daiLop ${b} câu`);
   });
 
   // ------------------------------------------------------------------ khối 8 · bộ demo `ctSeed.ts` (Task 12) — soi CHÍNH dữ liệu seed (các khối trên dựng lớp riêng nên không lẫn)

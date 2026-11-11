@@ -92,12 +92,14 @@ export function KeHoachTestTab() {
     }
   };
 
-  /* Luật khung Lớp thường nói theo môn của chương trình các lớp đang có (MH2) — không viết cứng L R W S, không W1/W2. */
+  /* Luật khung Lớp thường nói theo môn của chương trình các lớp đang có (MH2) — không viết cứng L R W S, không W1/W2.
+     MON-CT-1311 PR 2: `boMonLich` đọc bộ môn phiên mang xuống — tính lại khi phiên đổi bộ môn. */
+  const boMonPhien = session?.boMonCt;
   const monTheoCt = useMemo(() => [...new Set(lopThuong.map((l) => l.chuongTrinh).filter((c): c is string => !!c))].sort()
     .map((ct) => [kyHieuLop(ct, null) ?? ct, boMonLich(ct).map((k) => {
       const ngan = tenMonNgan(ct, k), dai = tenMon(ct, k);
       return ngan === dai ? ngan : `${ngan} (${dai})`;
-    }).join(', ')] as const), [lopThuong]);
+    }).join(', ')] as const), [lopThuong, boMonPhien]);   // eslint-disable-line react-hooks/exhaustive-deps
   const tuanXem = tuan ? hl.data?.weeks.find((w) => w.weekStart === tuan) ?? null : null;
   const lopTrongTuan = tuanXem ? new Set<number | null>(loai === 'ft'
     ? tuanXem.ft.mockClasses.map((m) => m.id)

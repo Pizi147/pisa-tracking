@@ -65,7 +65,8 @@ export function CatalogAdmin() {
   const programmes = useApi<Programme[]>('/admin/programmes');
   const [sua, setSua] = useState<Dong | null>(null);
   /* QTV2-CAU-HINH: Quản lý xem (chỉ đọc) — không Sửa, không + Chương trình, dòng không bấm. */
-  const quanTri = !!useSession().session?.nav?.admin;
+  const phien = useSession();
+  const quanTri = !!phien.session?.nav?.admin;
   const moSua = (d: Dong) => { if (quanTri) setSua(d); };
 
   /* Không có quyền thì nói thẳng, đừng để một khối trống — xem chú thích ở `AccountsAdmin`. */
@@ -164,7 +165,8 @@ export function CatalogAdmin() {
         <SuaChuongTrinh key={khoaDong(sua)} dong={sua} onClose={() => setSua(null)}
           onDone={() => {
             setSua(null);
-            if (sua.loai === 'ft') { routes.reload(); invalidate('/ref/routes'); } else { programmes.reload(); invalidate('/ref/programmes'); }
+            /* MON-CT-1311 PR 2: phiên mang bộ môn chương trình (`boMonLich` ở web) — tải lại để các trang theo môn mới ngay. */
+            if (sua.loai === 'ft') { routes.reload(); invalidate('/ref/routes'); } else { programmes.reload(); invalidate('/ref/programmes'); void phien.reload(); }
           }} />
       )}
     </>
