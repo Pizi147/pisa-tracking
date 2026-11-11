@@ -26,7 +26,7 @@ import { dongNghiaVu, dongPa, paCoKetQua } from './hieuQuaPa.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { dangHocLuc, lopLucThi, nguoiPcLuc } from './luatBai.ts';
 import { caseCoPaTheoGv } from '../giaoVien/hoSo.ts';
-import { chuaPhanCong, demTheoNguoi, demTheoNguoiHaiLoai, dongCuaNguoi, type DongNvXem, type So3 } from './demNghiaVu.ts';
+import { chuaPhanCong, demTheoCnNguoi, demTheoNguoi, demTheoNguoiHaiLoai, dongCuaNguoi, type DongNvXem, type So3 } from './demNghiaVu.ts';
 import { lamMoiViec } from './soNghiaVu.ts';
 import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.ts';
 import { t } from '../../../shared/i18n/index.ts';
@@ -41,7 +41,8 @@ const theoLo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length
 /** Thứ tự môn ở dòng phụ "R · W1 · W2 · GVCN …". */
 const THU_TU = ['tong_hop', 'listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking'];
 
-export type LocPtGv = { cn?: number | null; ct?: KhungPtGv; tu?: string | null; den?: string | null; thang?: string | null };
+/** `v2` (Phân tích V2 · Giáo viên, đặc tả 6): chỉ phần báo cáo cần — sổ nghĩa vụ + Đạt kỳ vọng Test; bỏ Tiến bộ / HV cần chú ý / Case có PA / PA / Thi thật / Ghi KQ PA. */
+export type LocPtGv = { cn?: number | null; ct?: KhungPtGv; tu?: string | null; den?: string | null; thang?: string | null; v2?: boolean };
 type Tap = Map<number, { dung: number[]; tong: number[] }>;
 const them = (t: Tap, gv: number, id: number, dung: boolean) => {
   const x = t.get(gv) ?? { dung: [], tong: [] };
@@ -86,6 +87,20 @@ function nguCanhCn(cn: number, f: LocPtGv): NguCanhPtGv {
   const rows = conn.prepare(
     `SELECT ${COT_LOP_PC} ${TU_LOP_PC} WHERE c.branch_id = ? AND c.is_fast_track = ?`).all(cn, khung === 'ft' ? 1 : 0) as any[];
   return dungNguCanh(cn, cb.name, khung, k, f.thang ?? null, homNay, rows);
+}
+
+/** PTA rà #1414: ngữ cảnh của NHIỀU chi nhánh (`null` = mọi chi nhánh) — 1 câu tên + 1 câu lớp + phân công, chia theo chi nhánh trong bộ nhớ. Không kiểm quyền (nơi gọi đã kiểm). */
+function nguCanhNhieuCn(cns: readonly number[] | null, f: LocPtGv): NguCanhPtGv[] {
+  const homNay = demoToday();
+  const k = khoangPtGv(f, homNay);
+  if ('loi' in k) throw badRequest(k.loi);
+  const conn = db();
+  const khung = f.ct ?? 'ft';
+  const cn = (conn.prepare(`SELECT id, name FROM branches${cns ? ` WHERE id IN (${DS_JSON})` : ''} ORDER BY id`).all(...(cns ? [JSON.stringify(cns)] : [])) as any[]);
+  const theoCn = new Map<number, any[]>();
+  for (const r of conn.prepare(`SELECT c.branch_id AS cn_, ${COT_LOP_PC} ${TU_LOP_PC} WHERE c.branch_id IN (${DS_JSON}) AND c.is_fast_track = ?`)
+    .all(JSON.stringify(cn.map((b) => b.id)), khung === 'ft' ? 1 : 0) as any[]) (theoCn.get(r.cn_) ?? theoCn.set(r.cn_, []).get(r.cn_)!).push(r);
+  return cn.map((b) => dungNguCanh(b.id, b.name, khung, k, f.thang ?? null, homNay, theoCn.get(b.id) ?? []));
 }
 
 /** Cột + nguồn của câu "lớp chi nhánh + khung kèm mọi dòng phân công" — `nguCanhCn` (một ngữ cảnh) và `nguCanhCuaGv` (mọi ngữ cảnh của GV, một câu) dùng chung. */
@@ -145,7 +160,7 @@ export function napBai(p: Principal, c: NguCanhPtGv, gv?: number): NapBai {
  */
 export function napBaiNhieu(p: Principal, cs: readonly NguCanhPtGv[], gv?: number): NapBai[] {
   if (tachNguCanhKhiKiem.bat && cs.length > 1) return cs.map((c) => napBaiNhieu(p, [c], gv)[0]);
-  const luot = gv != null && !napDayDuKhiKiem.bat ? luotGv(cs, gv) : cs.map((c) => luotCua(c, gv));
+  const luot = gv != null && !napDayDuKhiKiem.bat ? luotGv(cs, gv) : cs.length > 1 && cs.every(theoKyMotCau) ? luotTheoKyNhieuCn(cs) : cs.map((c) => luotCua(c, gv));
   const tatCa = luot.flat();
   const bundle = loadBundle(tatCa.map((r) => r.id));
   const programmes = allProgrammes();
@@ -176,6 +191,24 @@ const sqlLuot = (loc: string, nguon = 'assessment_attempts a', cte = '', kemKy =
           AND (EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id
                         WHERE k.attempt_id = a.id AND r2.week_start BETWEEN ? AND ?)
                OR (NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a.id) AND rp.week_start BETWEEN ? AND ?))` : ''}`;
+
+/** Ngữ cảnh đi đường "cả chi nhánh theo kỳ" của `luotCua` (FT, khoảng ≤ NAP_THEO_KY_TUAN tuần). */
+const theoKyMotCau = (c: NguCanhPtGv) => !napDayDuKhiKiem.bat && c.khung === 'ft' && (Date.parse(c.den) - Date.parse(c.tu)) / (7 * 864e5) + 1 <= NAP_THEO_KY_TUAN;
+/**
+ * PTA rà #1414: đường "cả chi nhánh theo kỳ" cho NHIỀU chi nhánh cùng khoảng (bảng GV tổng V2) — MỘT câu (cùng CTE, `branch_id IN` / `class_id IN` mọi chi nhánh)
+ * rồi chia lượt theo lớp của từng ngữ cảnh. Các ngữ cảnh khác chi nhánh nên tập lớp rời nhau: mỗi lượt về đúng một ngữ cảnh như đi riêng.
+ */
+function luotTheoKyNhieuCn(cs: readonly NguCanhPtGv[]): any[][] {
+  const lop = JSON.stringify(cs.flatMap((c) => [...c.lop.keys()]));
+  const cte = `WITH ky(id) AS (SELECT id FROM report_periods WHERE week_start BETWEEN ? AND ?),
+     luot(id) AS (SELECT DISTINCT k.attempt_id FROM attempt_skills k WHERE k.branch_id IN (${DS_JSON}) AND k.planned_period_id IN (SELECT id FROM ky)
+                  UNION ALL SELECT a2.id FROM assessment_attempts a2 WHERE a2.class_id IN (${DS_JSON}) AND a2.planned_period_id IN (SELECT id FROM ky)
+                    AND NOT EXISTS (SELECT 1 FROM attempt_skills k2 WHERE k2.attempt_id = a2.id))
+`;
+  const rows = db().prepare(sqlLuot(`a.class_id IN (${DS_JSON})`, 'luot x CROSS JOIN assessment_attempts a ON a.id = x.id', cte, false))
+    .all(cs[0].tu, cs[0].den, JSON.stringify(cs.map((c) => c.cn)), lop, lop) as any[];
+  return cs.map((c) => rows.filter((r) => c.lop.has(r.class_id)).sort((x, y) => x.class_id - y.class_id || x.id - y.id));
+}
 
 /** Lượt của một ngữ cảnh (ba đường: đủ theo lớp · cả chi nhánh theo kỳ · một GV) — xem chú thích từng nhánh. */
 function luotCua(c: NguCanhPtGv, gv?: number): any[] {
@@ -501,6 +534,14 @@ function soCuaKy(v: PhamViSo, nguoi?: number): { bai: Map<number, So3 & { sChung
   if (tachNguCanhKhiKiem.bat) return { bai: demTheoNguoi(qSo(v, 'bai', nguoi)), viec: demTheoNguoi(qSo(v, 'viec', nguoi)) };
   return demTheoNguoiHaiLoai({ chiNhanh: v.cn, tu: v.tu, den: v.cuoi, homNay: v.homNay, khung: v.khung ?? null, ...(nguoi != null ? { nguoi } : {}) });   // GIAM-DOC-HSGV: một câu sổ cho cả hai số
 }
+/** Cộng các ô cùng loại (bảng tổng V2): có ô số → cộng; chỉ ô rỗng → rỗng; còn lại không áp dụng. */
+const congO = (ds: readonly OPtGv[]): OPtGv => {
+  const so = ds.filter((o): o is Extract<OPtGv, { k: 'so' }> => o.k === 'so');
+  const sChung = ds.reduce((n, o) => n + (o.k !== 'na' ? o.sChung ?? 0 : 0), 0);
+  if (so.length) return { k: 'so', dung: so.reduce((n, o) => n + o.dung, 0), tong: so.reduce((n, o) => n + o.tong, 0),
+    muon: so.reduce((n, o) => n + (o.muon ?? 0), 0), chua: so.reduce((n, o) => n + (o.chua ?? 0), 0), ...(sChung ? { sChung } : {}) };
+  return ds.some((o) => o.k === 'rong') ? { k: 'rong', ...(sChung ? { sChung } : {}) } : { k: 'na' };
+};
 const so3Tu = (ds: readonly DongNvXem[]) => ({ dung: ds.filter((d) => d.trangThai === 'dung').length, muon: ds.filter((d) => d.trangThai === 'muon').length,
   chua: ds.filter((d) => d.trangThai === 'chua').length });
 
@@ -590,8 +631,30 @@ const hvCuaGv = (d: ReturnType<typeof dangDay>, gv: number) => new Set([...(d.lo
  */
 const sosHienTai = (p: Principal, c: NguCanhPtGv, hv: ReadonlySet<number>) => hvSosHienTaiTrong(p, c.cn, c.khung, hv);
 
+/**
+ * Người có phân công trong khoảng ở MỘT ngữ cảnh + Đạt kỳ vọng Test (FT) / ô Kết quả (lớp thường) — CÙNG luật các dòng đó của bảng một chi nhánh (`ptGvMotCn`) (người = phân công
+ * trong khoảng, lớp đã kết thúc chỉ khi còn bài; `coMon` = có kỹ năng). Bảng tổng V2 dùng, không gọi lại cả bảng từng chi nhánh.
+ */
+function datCuaNguCanh(c: NguCanhPtGv, nap: NapBai): Map<number, { coMon: boolean; datMt?: OPtGv; ketQua: HangPtGv['ketQua'] }> {
+  const lopCoBai = new Set(nap.o.map((x) => x.classId));
+  const trongKhoang = c.pc.filter((a) => a.tu <= c.cuoi && (!a.den || a.den >= c.tu) && (!c.lop.get(a.lop)!.xong || lopCoBai.has(a.lop)));
+  const kq = tapKetQua(c, mucKetQua(c, nap));
+  const out = new Map<number, { coMon: boolean; datMt?: OPtGv; ketQua: HangPtGv['ketQua'] }>();
+  for (const id of new Set(trongKhoang.map((a) => a.gv))) {
+    const mon = [...new Set(trongKhoang.filter((a) => a.gv === id && !a.core && a.skill).map((a) => a.skill!))];
+    const ketQua: HangPtGv['ketQua'] = {};
+    for (const k of COT_KET_QUA_GV[c.khung]) ketQua[k] = oTuTap(mon.includes(k), kq.get(k)?.get(id));
+    out.set(id, { coMon: mon.length > 0, ketQua, ...(c.khung === 'ft' ? { datMt: oTuTap(mon.length > 0, gopTap(...[...kq.values()].map((x) => x.get(id)))) } : {}) });
+  }
+  return out;
+}
+
 export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
-  if (f.cn == null) { const tong = phamViTong(p); if (tong) return phanTichGiaoVienTong(f, tong.cns); }
+  if (f.cn == null) { const tong = phamViTong(p); if (tong) return phanTichGiaoVienTong(p, f, tong.cns); }
+  return ptGvMotCn(p, f);
+}
+/** Bảng một chi nhánh. */
+function ptGvMotCn(p: Principal, f: LocPtGv): PhanTichGvKq {
   const c = nguCanhPtGv(p, f);
   /* Sổ nghĩa vụ (PR-2): Chấm Test · Việc = 3 số của sổ. Ghi lại sổ việc (nếu có lần ghi mới) TRƯỚC mọi câu đọc khác. */
   const v: PhamViSo = { cn: c.cn, khung: c.khung, tu: c.tu, cuoi: c.cuoi, homNay: c.homNay };
@@ -603,20 +666,21 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
   const trongKhoang = c.pc.filter((a) => a.tu <= c.cuoi && (!a.den || a.den >= c.tu) && (!c.lop.get(a.lop)!.xong || lopCoBai.has(a.lop)));
   const nguoi = new Map<number, string>();
   for (const a of trongKhoang) nguoi.set(a.gv, a.ten);
-  const ghi = tapGhiKetQuaPa(p, c).tap;
+  const v2 = !!f.v2;
+  const ghi = v2 ? new Map() : tapGhiKetQuaPa(p, c).tap;
   const ft = c.khung === 'ft';
   const muc = mucKetQua(c, nap);
   const kq = tapKetQua(c, muc);
   /* UI-PHAN-TICH: "Đạt MT" = CHÍNH tập Kết quả (chỉ Test). Thi thật (2F): `mucThiTheoGv` — cùng hàm tab Thi thật + hồ sơ GV. */
   const kqMt = ft ? kq : null;
-  const thiGv = ft ? mucThiTheoGv(c.cn, c.tu, c.cuoi) : null;
+  const thiGv = ft && !v2 ? mucThiTheoGv(c.cn, c.tu, c.cuoi) : null;
   const gopKn = (m: Map<string, TapKq>, gv: number) => gopTap(...[...m.values()].map((t) => t.get(gv)));
-  const tb = ft ? tapTienBo(c, nap) : null;
-  const pa = ft ? tapPaHieuQua(c) : null;
+  const tb = ft && !v2 ? tapTienBo(c, nap) : null;
+  const pa = ft && !v2 ? tapPaHieuQua(c) : null;
   /* Case có PA = CHÍNH `caseCoPaTheoGv` của Tổng quan. */
-  const casePa = caseCoPaTheoGv(p, c.cn, c.khung);
+  const casePa = v2 ? new Map<number, { coPa: number; mo: number }>() : caseCoPaTheoGv(p, c.cn, c.khung);
   const day = dangDay(c);
-  const sos = sosHienTai(p, c, new Set([...day.hvLop.values()].flatMap((s) => [...s])));
+  const sos = v2 ? new Set<number>() : sosHienTai(p, c, new Set([...day.hvLop.values()].flatMap((s) => [...s])));
 
   const hang: HangPtGv[] = [];
   for (const [id, ten] of nguoi) {
@@ -650,12 +714,14 @@ export function phanTichGiaoVien(p: Principal, f: LocPtGv): PhanTichGvKq {
       ketQua,
     };
     if (ft) {
-      h.paHieuQua = oTuTap(true, pa!.get(id));
       h.datMt = oTuTap(coMon, gopKn(kqMt!, id));
-      /* 2F (05/11): mục thi thật của GV (em × kỹ năng GV từng dạy, trọng số tuần) — CHÍNH `oThiGv` của hồ sơ GV. */
-      h.thiThat = coMon ? oThiGv(thiGv!.get(id) ?? []) : { k: 'na' };
-      const t = oTuTap(coMon, tb!.get(id));
-      h.tienBo = t.k === 'so' ? { ...t, lop: [...(tb!.lop?.get(id) ?? [])] } : t;
+      if (!v2) {
+        h.paHieuQua = oTuTap(true, pa!.get(id));
+        /* 2F (05/11): mục thi thật của GV (em × kỹ năng GV từng dạy) — CHÍNH `oThiGv` của hồ sơ GV. */
+        h.thiThat = coMon ? oThiGv(thiGv!.get(id) ?? []) : { k: 'na' };
+        const t = oTuTap(coMon, tb!.get(id));
+        h.tienBo = t.k === 'so' ? { ...t, lop: [...(tb!.lop?.get(id) ?? [])] } : t;
+      }
     }
     hang.push(h);
   }
@@ -683,17 +749,47 @@ function phamViSoTong(f: LocPtGv, cns: number[] | null): PhamViSo & { khung: Khu
  * Tổng mọi chi nhánh (sổ nghĩa vụ, spec 1.7): mỗi người MỘT dòng, chỉ Việc · Chấm Test (3 số cộng các chi nhánh); bấm số → panel ghi chi nhánh từng dòng.
  * Người: có phân công ở lớp khung trong khoảng (phạm vi) + mọi người có số (TVV, QL giữ việc). Cột khác `na` (học thuật đọc theo chi nhánh).
  */
-function phanTichGiaoVienTong(f: LocPtGv, cns: number[] | null): PhanTichGvKq {
+function phanTichGiaoVienTong(p: Principal, f: LocPtGv, cns: number[] | null): PhanTichGvKq {
   const v = phamViSoTong(f, cns);
   /*
    * KHÔNG ghi lại sổ việc ở đây (đo seed: ghi lại 5 chi nhánh = 136 câu, trần cứng 100): đọc sổ đang có — bài luôn mới (ghi sổ ở đường ghi), việc mới theo lần mở
    * bảng / hồ sơ GV của chi nhánh (`lamMoiViec`) + đối chiếu đêm. [XM] chờ PTA nếu cần số việc tổng "không trễ".
    */
-  const so = soCuaKy(v);
+  /*
+   * V2 (đặc tả 6, mockup D2; PTA rà #1414): Đạt kỳ vọng Test + Chưa phân công + số từng chi nhánh tính MỘT lần cho mọi chi nhánh — ngữ cảnh 2 câu,
+   * lượt qua `napBaiNhieu` (phần nạp theo lượt / em dùng chung), sổ một câu chia theo chi nhánh; 3 số của người = Σ chi nhánh (cùng sổ, không đọc lại).
+   */
+  const theoCn = new Map<number, NonNullable<HangPtGv['chiNhanh']>>();
+  const cpcCn: NonNullable<NonNullable<PhanTichGvKq['chuaPhanCong']>['chiNhanh']> = [];
+  let so: ReturnType<typeof soCuaKy>;
+  let pcV2: PhanCong[] | null = null;
+  if (f.v2) {
+    const cs = nguCanhNhieuCn(cns, f);
+    pcV2 = cs.flatMap((c) => c.pc);
+    const naps = napBaiNhieu(p, cs);
+    const s = demTheoCnNguoi({ chiNhanh: cs.map((c) => c.cn), tu: v.tu, den: v.cuoi, homNay: v.homNay, khung: v.khung });
+    cs.forEach((c, i) => {
+      const sc = s.dem.get(c.cn);
+      for (const [id, x] of datCuaNguCanh(c, naps[i])) {
+        (theoCn.get(id) ?? theoCn.set(id, []).get(id)!).push({ id: c.cn, ten: c.tenChiNhanh, chamDiem: oTuSo3(x.coMon || !!sc?.bai.has(id), sc?.bai.get(id)),
+          viecDungHan: oTuSo3(true, sc?.viec.get(id)), ...(x.datMt ? { datMt: x.datMt } : {}), ...(c.khung === 'thuong' ? { ketQua: x.ketQua } : {}) });
+      }
+      const dong = s.chuaPc.get(c.cn) ?? [];
+      if (dong.length) cpcCn.push({ id: c.cn, ten: c.tenChiNhanh, chamDiem: oTuSo3(true, so3Tu(dong.filter((d) => d.loai === 'bai'))), viecDungHan: oTuSo3(true, so3Tu(dong.filter((d) => d.loai === 'viec'))) });
+    });
+    const cong = (k: 'bai' | 'viec') => {
+      const m = new Map<number, So3 & { sChung: number }>();
+      for (const x of s.dem.values()) for (const [id, y] of x[k]) { const z = m.get(id) ?? m.set(id, { dung: 0, muon: 0, chua: 0, sChung: 0 }).get(id)!; z.dung += y.dung; z.muon += y.muon; z.chua += y.chua; z.sChung += y.sChung; }
+      return m;
+    };
+    so = { bai: cong('bai'), viec: cong('viec') };
+  } else so = soCuaKy(v);
   const conn = db();
   const ten = new Map<number, string>();
   const mon = new Map<number, Set<string>>();
-  for (const r of conn.prepare(`SELECT ta.user_id AS id, u.full_name AS ten, ta.skill FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN users u ON u.id = ta.user_id
+  /* V2: người + môn lấy từ phân công đã nạp ở ngữ cảnh (cùng điều kiện câu dưới: lớp khung, phân công giao khoảng) — không đọc lại. */
+  if (pcV2) for (const a of pcV2) if (a.tu <= v.cuoi && (!a.den || a.den >= v.tu)) { ten.set(a.gv, a.ten); if (a.skill) (mon.get(a.gv) ?? mon.set(a.gv, new Set()).get(a.gv)!).add(a.skill); }
+  if (!pcV2) for (const r of conn.prepare(`SELECT ta.user_id AS id, u.full_name AS ten, ta.skill FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id JOIN users u ON u.id = ta.user_id
       WHERE ta.status IN ('active', 'ended') AND c.is_fast_track = ? AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
         ${cns ? `AND c.branch_id IN (${DS_JSON})` : ''}`).all(v.khung === 'ft' ? 1 : 0, v.cuoi, v.tu, ...(cns ? [JSON.stringify(cns)] : [])) as any[]) {
     ten.set(r.id, r.ten);
@@ -701,12 +797,20 @@ function phanTichGiaoVienTong(f: LocPtGv, cns: number[] | null): PhanTichGvKq {
   }
   const them = [...new Set([...so.bai.keys(), ...so.viec.keys()])].filter((id) => !ten.has(id));
   if (them.length) for (const r of conn.prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(JSON.stringify(them)) as any[]) ten.set(r.id, r.full_name);
+  /* Đạt kỳ vọng Test (FT) / Đạt Test (lớp thường, gộp các ô Kết quả) của người = Σ các chi nhánh. */
+  const cnGv = (id: number): Partial<HangPtGv> => {
+    const ds = theoCn.get(id);
+    if (!ds?.length) return {};
+    return { chiNhanh: ds, ...(v.khung === 'ft' ? { datMt: congO(ds.map((x) => x.datMt ?? { k: 'na' })) } : { ketQua: { tong: congO(ds.flatMap((x) => Object.values(x.ketQua ?? {}))) } }) };
+  };
   const hang: HangPtGv[] = [...ten].map(([id, tenGv]) => {
     const nhanMon = [...new Set([...(mon.get(id) ?? [])].sort((x, y) => THU_TU.indexOf(x) - THU_TU.indexOf(y)).map((k) => tenMonNgan(null, k)))].join(' · ');
     return { id, ten: tenGv, phu: nhanMon, mon: nhanMon, lopCn: [], dangDay: { lop: 0, hv: 0 }, hvChuY: 0, casePa: { k: 'na' } as OPtGv,
-      chamDiem: oTuSo3(true, so.bai.get(id)), ghiKetQuaPa: { k: 'na' } as OPtGv, viecDungHan: oTuSo3(true, so.viec.get(id)), ketQua: {} };
+      chamDiem: oTuSo3(true, so.bai.get(id)), ghiKetQuaPa: { k: 'na' } as OPtGv, viecDungHan: oTuSo3(true, so.viec.get(id)), ketQua: {},
+      ...(cnGv(id)) };
   }).sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
-  return { cn: null, tenChiNhanh: t('Tất cả chi nhánh'), khung: v.khung, tu: v.tu, den: v.den, thang: f.thang ?? null, homNay: v.homNay, hang, chuaPhanCong: null };
+  const chuaPc = cpcCn.length ? { chamDiem: congO(cpcCn.map((x) => x.chamDiem)), viecDungHan: congO(cpcCn.map((x) => x.viecDungHan)), chiNhanh: cpcCn } : null;
+  return { cn: null, tenChiNhanh: t('Tất cả chi nhánh'), khung: v.khung, tu: v.tu, den: v.den, thang: f.thang ?? null, homNay: v.homNay, hang, chuaPhanCong: chuaPc };
 }
 
 /** Tiêu đề panel "{nhãn} · {ai / kỳ} · {đúng}/{tổng} {đơn vị}" — qua `t()` để web tiếng Anh dịch theo mẫu (K5: đơn vị ghi đúng chữ). */
@@ -753,6 +857,13 @@ export function oChiSoGv(p: Principal, f: LocPtGv & { gv: number; cot: string })
   const tong = f.cn == null && so ? phamViTong(p) : null;
   if (tong && so) {
     const v = phamViSoTong(f, tong.cns);   // như bảng tổng: đọc sổ đang có, không ghi lại sổ việc
+    /* `gv = 0` (V2): Chưa phân công của mọi chi nhánh trong phạm vi — cùng tập với hàng tổng, mỗi dòng ghi chi nhánh. */
+    if (f.gv === 0) {
+      const ds = [...demTheoCnNguoi({ chiNhanh: tong.cns, tu: v.tu, den: v.cuoi, homNay: v.homNay, khung: v.khung }).chuaPc.values()].flat().filter((d) => d.loai === (so === 'cham-diem' ? 'bai' : 'viec'));   // cùng tập với hàng tổng, một câu sổ
+      const rows = dongPanelSo(ds, true).map((d) => d.row);
+      return { n: rows.length, tieuDe: tieuDeChiSo(so === 'cham-diem' ? t('Chấm Test đúng hạn') : t('Việc đúng hạn'), t('Chưa phân công'), so3Tu(ds).dung, ds.length, so === 'cham-diem' ? 'bài' : 'việc'),
+        rows, ...kieuBang(rows, CACH_TINH_GV[so]), chiNhanh: t('Tất cả chi nhánh') };
+    }
     const r = oSoCua(v, f.gv, so, true);
     /* Chỉ người có dòng sổ trong phạm vi (hoặc phân công ở lớp khung trong khoảng) — không trả tên tài khoản bất kỳ qua `gv=`. */
     const ten = (db().prepare(`SELECT u.full_name FROM users u WHERE u.id = ? AND (? OR EXISTS (SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id

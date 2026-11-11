@@ -30,6 +30,8 @@ export type HangPtGv = {
   paHieuQua?: OPtGv;
   /** UI-PHAN-TICH (FT): `datMt` = Đạt kỳ vọng Test (chỉ lượt Test, đơn vị lượt Test, panel `cot=dat-mt`) · `thiThat` = Pass Target thi thật (2F: mục em × kỹ năng GV từng dạy, `pt` % theo tuần dạy — cùng hồ sơ GV `mucThiTheoGv`, panel hồ sơ GV `cot=thi-that`). */
   datMt?: OPtGv; thiThat?: OPtGv;
+  /** V2 · Tất cả chi nhánh: số sổ nghĩa vụ của người theo từng chi nhánh (bấm ▸ tách dòng). */
+  chiNhanh?: { id: number; ten: string; chamDiem: OPtGv; viecDungHan: OPtGv; datMt?: OPtGv; ketQua?: Record<string, OPtGv> }[];
   /** HV đang SOS (hiện tại) ở lớp GV đang dạy; panel `cot=hv-chu-y`. */
   hvChuY: number;
   /** Case có PA theo người phụ trách (hiện tại) — cùng `caseCoPaTheoGv` của Tổng quan; panel hồ sơ GV `cot=case-mo`. */
@@ -71,7 +73,7 @@ export type ChiSoHoSoGv = {
  * `chuaPhanCong` (QL, chi nhánh): bài / việc không có người chịu (lớp + kỹ năng chưa phân công; S chéo khi chi nhánh không còn ai có S) — đếm riêng.
  */
 export type PhanTichGvKq = { cn: number | null; tenChiNhanh: string; khung: KhungPtGv; tu: string; den: string; thang: string | null; homNay: string; hang: HangPtGv[];
-  chuaPhanCong?: { chamDiem: OPtGv; viecDungHan: OPtGv } | null };
+  chuaPhanCong?: { chamDiem: OPtGv; viecDungHan: OPtGv; chiNhanh?: { id: number; ten: string; chamDiem: OPtGv; viecDungHan: OPtGv }[] } | null };
 
 /** Khoá cột kết quả theo khung (Q31-6: lớp thường bốn cột cố định L · R · W (G+V) · S (P); OV-11h: + L+S · R+W của PET / KET). */
 export const COT_KET_QUA_GV: Record<KhungPtGv, readonly string[]> = {

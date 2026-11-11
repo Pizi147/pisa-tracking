@@ -844,7 +844,7 @@ api.get('/phan-tich/y-thuc/o', requireAuth, wrap((req) => {
 }));
 /* PR-Pb2-b: bảng Phân tích giáo viên (Q30-5, Q31-9) + panel Chấm điểm của một GV. `cn`, `gv` số nguyên dương; khoảng `tu`/`den` (Thứ Hai) hoặc `thang`. */
 const filterPtGvOf = (req: Request) => ({
-  cn: soDuong(req.query.cn, 'cn'), ct: khungPtGvTuThamSo(qStr(req, 'ct')),
+  cn: soDuong(req.query.cn, 'cn'), ct: khungPtGvTuThamSo(qStr(req, 'ct')), v2: qStr(req, 'v2') === '1',
   ...(qStr(req, 'kieu') ? { ...tuanKhoangOf(req, {}), thang: null } : { tu: qStr(req, 'tu') ?? null, den: qStr(req, 'den') ?? null, thang: qStr(req, 'thang') ?? null }),
 });
 api.get('/phan-tich/giao-vien', requireAuth, wrap((req) => {
