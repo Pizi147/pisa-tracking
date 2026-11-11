@@ -233,7 +233,7 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
     <ol aria-label={t('Tiến trình xử lý')} className="m-0 grid list-none overflow-hidden rounded-[10px] border p-0 sm:grid-cols-3" style={{ borderColor: 'var(--line)' }}>
       {buoc.map(([gt, ph], i) => (
         <li key={i} aria-current={nay === i ? 'step' : undefined}
-          className={`grid content-start gap-1 border-t px-3 py-2.5 first:border-t-0 max-sm:grid-cols-[92px_minmax(0,1fr)] sm:border-l sm:border-t-0 sm:first:border-l-0 ${nay === i ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_2px_0_var(--accent)]' : ''}`}
+          className={`grid min-w-0 content-start gap-1 border-t px-3 py-2.5 first:border-t-0 max-sm:grid-cols-[92px_minmax(0,1fr)] sm:border-l sm:border-t-0 sm:first:border-l-0 ${nay === i ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_2px_0_var(--accent)]' : ''}`}
           style={{ borderColor: 'var(--line)' }}>
           <span className={`flex items-center gap-1.5 text-xs font-semibold max-sm:row-span-2 ${nay === i ? 'text-[color:var(--accent)]' : 'text-slate-500'}`}>
             <span aria-hidden className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{i + 1}</span>

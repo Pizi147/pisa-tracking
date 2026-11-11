@@ -2589,11 +2589,7 @@ api.post('/interventions/:id/hoan-tac-them', requireAuth, wrap((req) => {
   return caseSvc.hoanTacThemPa(principalOf(req), pInt(req, 'id'));
 }));
 
-/** Đổi hạn BÁO KẾT QUẢ của case. Mặc định hết tuần MT kế tiếp, nhưng sửa được. */
-api.patch('/cases/:id/follow-until', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.setFollowUntil(principalOf(req), pInt(req, 'id'), req.body?.date ?? null);
-}));
+/* Rà 11/11 BD-3: bỏ PATCH /cases/:id/follow-until — không màn nào gọi (hạn theo luật hạn mặc định); `setFollowUntil` giữ cho phép kiểm. */
 
 /**
  * BẢNG THEO DÕI HỖ TRỢ THEO KỸ NĂNG của một học viên — sáu hạng mục, luôn đủ sáu dòng.
@@ -2664,11 +2660,7 @@ api.get('/students/:id/hanh-trinh', requireAuth, wrap((req) => {
   return hanhTrinhHocVien(principalOf(req), pInt(req, 'id'), gd === 'thuong' || gd === 'ft' ? gd : null);
 }));
 
-/** Ghi một lần xem lại sau hỗ trợ. Một tác động có thể xem lại nhiều lần. */
-api.post('/cases/:id/followups', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return caseSvc.recordFollowUp(principalOf(req), pInt(req, 'id'), req.body ?? {});
-}));
+/* Rà 11/11 BD-3: bỏ POST /cases/:id/followups — Kết quả PA ghi qua /interventions/:id/result; `recordFollowUp` giữ cho phép kiểm. */
 
 /*
  * ĐƯỜNG "HƯỚNG XỬ LÝ" ĐÃ BỎ (mục 9.3).

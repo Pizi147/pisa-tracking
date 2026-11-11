@@ -66,6 +66,9 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
   /* OV-10a: Admin có `plan.week` nhưng hàng loạt (Lưu trữ / Kết thúc / Huỷ chuyển lớp) máy chủ đòi `cycle.edit`. */
   const coTheChon = lop.viewer.canPlanWeek && can(PERMISSIONS.CYCLE_EDIT) && cheDo === 'diem';
+  /* G4-17: cùng URL với bảng (BangHoSoLop / BangDiemLopThuong) — useApi gộp lần gọi đang bay + bản vừa xem, không thêm request. */
+  const roster = useApi<{ id: number; coLenhChuyen?: boolean }[]>(coTheChon ? `/classes/${lop.id}/roster` : null, [lop.id, coTheChon]);
+  const coLenh = new Set((roster.data ?? []).filter((r) => r.coLenhChuyen).map((r) => r.id));
   /* `?viec=chuyen-tiep` (lớp FT): bật sẵn chọn nhiều — một lần. */
   useEffect(() => { if (moChon && coTheChon && !chon.bat) chon.batTat(); }, [moChon]); // eslint-disable-line react-hooks/exhaustive-deps
   const doiCheDo = (m: CheDoHocVien) => { if (m !== 'diem') chon.bo(); onCheDo(m); };
@@ -107,7 +110,9 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
           viec={[...(!thuong && lop.viewer.coTheChuyenTiep ? [{ key: 'chuyen-lop', nhan: t('Chuyển lớp…') }] : []),
-            { key: 'tam-dung-ket-thuc', nhan: t('Tạm dừng/ Kết thúc học') }, { key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }, { key: 'xoa', nhan: t('Xoá') }]}
+            { key: 'tam-dung-ket-thuc', nhan: t('Tạm dừng/ Kết thúc học') },
+            /* G4-17: chỉ khi trong các em đã chọn có em đang có quyết định chuyển lớp chờ (cờ của /roster — cùng URL bảng đã tải, không gọi thêm). */
+            ...([...chon.chon].some((id) => coLenh.has(id)) ? [{ key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }] : []), { key: 'xoa', nhan: t('Xoá') }]}
           onViec={(k) => (k === 'chuyen-lop' ? setChuyenNhieu([...chon.chon]) : k === 'tam-dung-ket-thuc' ? setHopTd([...chon.chon]) : setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] }))} />
       )}
       {/* P7 (N11, k3): một mục "Tạm dừng/ Kết thúc học" thay Lưu trữ + Kết thúc học — cùng hộp một em, thêm số em; lỗi một phần giữ em lỗi trong hộp. */}

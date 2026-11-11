@@ -281,8 +281,10 @@
     .bang-dinh.bang-dinh-1440 { overflow-x: auto; overflow-y: hidden; }
   }
 
-  /* VN17: có panel / hộp thoại mở thì toast lên trên (dưới đầu panel), không che nút ở chân panel. */
-  body:has([aria-modal="true"]) .vung-toast { top: 3.75rem; bottom: auto; }
+  /* VN17: có panel / hộp thoại mở thì toast không che nút ở chân panel. Rà 11/11 G2-16: cũng không đè ĐẦU panel (tên em · lớp) — màn hẹp: ngay trên chân
+     panel (chân ~4.5rem); từ 1280 (panel ≤ 760 px bên phải): góc trái dưới, ngoài panel. */
+  body:has([aria-modal="true"]) .vung-toast { top: auto; bottom: 5.25rem; }
+  @media (min-width: 1280px) { body:has([aria-modal="true"]) .vung-toast { bottom: 1rem; right: auto; left: 1rem; } }
 
   .btn {
     display: inline-flex; align-items: center; gap: 0.4rem;

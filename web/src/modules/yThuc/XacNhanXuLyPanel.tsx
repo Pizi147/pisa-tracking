@@ -242,7 +242,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           [t('{n} vi phạm', { n: tick.length + cuHon.length }), ngayVp.length ? `${ngay(ngayVp[0], homNay)} – ${ngay(ngayVp[ngayVp.length - 1], homNay)}` : null],
           /* #6 (mockup #1346 K1): đề xuất — ô ② nói việc đang làm (Gửi QL duyệt) + ai trả lời khi nào. */
           cheDo === 'de-xuat' ? [t('Gửi Quản lý duyệt'), t('QL trả lời trong 5 ngày')]
-            : [d.nhom ? <CanLamEm x={d} homNay={homNay} /> : t('Xác nhận xử lý'), bacKe ? <>{t('Lần này')} <b className="text-slate-100">{dich(bacKe.nhan)}</b></> : null],
+            : [d.nhom ? <CanLamEm x={d} homNay={homNay} hanDuoi /> : t('Xác nhận xử lý'),   /* G3-15: hạn xuống dưới chip — chip không tràn sang ô ③ */ bacKe ? <>{t('Lần này')} <b className="text-slate-100">{dich(bacKe.nhan)}</b></> : null],
           [<span className="font-medium text-slate-400">{cheDo === 'xu-ly' ? t('Sau khi lưu') : t('Sau khi gửi')}</span>, t('việc cho TVV của em, hạn 5 ngày')],
         ]} />
         <CanLam>
