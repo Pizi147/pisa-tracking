@@ -5,6 +5,8 @@ export const EN_CHI_NHANH = {
   'Địa chỉ': 'Address',
   'Chưa có địa chỉ': 'No address yet',
   'Đã lưu chi nhánh {ma}': 'Saved branch {ma}',
+  '{ten} {ma} vừa được {ai} sửa thành “{hien}” — chưa lưu chữ của bạn. Bấm Lưu lần nữa để thay bằng chữ của bạn.': '{ten} {ma} was just changed by {ai} to “{hien}” — your text is not saved. Press Save again to replace it with yours.',
+  'Chưa hoàn tác: {ma} đã được sửa thành “{hien}” sau lần lưu của bạn — giữ bản đó.': 'Not undone: {ma} was changed to “{hien}” after your save — that version is kept.',
   'In ở đầu tệp Báo cáo PH của lớp thuộc chi nhánh này': 'Printed at the top of parent reports for classes in this branch',
   'Tên chi nhánh': 'Branch name',
   'Đặt tên cho chi nhánh.': 'Name the branch.',
