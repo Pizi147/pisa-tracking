@@ -1,6 +1,6 @@
 /**
  * U02 (SUA-RA-1311, đề bài 13/11): "Quay lại học · n em" ở Lưu trữ — chạy từng em, ghi KẾT QUẢ TỪNG EM để vùng kết quả nằm lại sau khi toast tắt
- * ("Đã xong n/m · Cần chọn lớp · Chưa lưu được"); "Thử lại" gửi lại ĐÚNG các em lỗi (`ids` = phần lỗi, `truoc` = kết quả lần trước, giữ các em khác).
+ * ("Xong n/m · Cần chọn lớp · Không lưu được"); "Thử lại" gửi lại ĐÚNG các em lỗi (`ids` = phần lỗi, `truoc` = kết quả lần trước, giữ các em khác).
  * Thuần (không React) để phép kiểm máy chủ chạy được; `goi` = `api` của web.
  */
 export type KetQuaEm = { id: number; ten: string; tt: 'xong' | 'chon-lop' | 'loi'; loi?: string };

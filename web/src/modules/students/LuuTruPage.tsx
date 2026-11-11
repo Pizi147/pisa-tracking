@@ -87,7 +87,7 @@ export default function LuuTruPage() {
 
   /*
    * U02 (SUA-RA-1311, đề bài 13/11): kết quả "Quay lại học · n em" TỪNG EM nằm lại ở thanh chọn (khe `dongTren`, mẫu OV-13d) sau khi toast tắt:
-   * "Đã xong n/m · Cần chọn lớp: … · Xử lý tiếp · Chưa lưu được: … · Thử lại". Xử lý tiếp mở đúng panel của em đầu (cùng `useQuayLaiHoc` một em); Thử lại
+   * "Xong n/m · Cần chọn lớp: … · Xử lý tiếp · Không lưu được: … · Thử lại". Xử lý tiếp mở đúng panel của em đầu (cùng `useQuayLaiHoc` một em); Thử lại
    * chỉ gửi các em lỗi. Bỏ chọn / tắt chọn nhiều = bỏ kết quả.
    */
   const [ketQua, setKetQua] = useState<KetQuaEm[] | null>(null);
@@ -139,7 +139,7 @@ export default function LuuTruPage() {
     const dau = chonLop[0];
     return (
       <>
-        <b className="tabular-nums text-slate-100">{t('Đã xong {n}/{m}', { n: ketQua.filter((x) => x.tt === 'xong').length, m: ketQua.length })}</b>
+        <b className="tabular-nums text-slate-100">{t('Xong {n}/{m}', { n: ketQua.filter((x) => x.tt === 'xong').length, m: ketQua.length })}</b>
         {dau && (
           <span className="inline-flex flex-wrap items-center gap-1.5">
             <span className="text-slate-300">· {t('Cần chọn lớp')}: {chonLop.map((x) => x.ten).join(', ')}</span>
@@ -151,7 +151,7 @@ export default function LuuTruPage() {
         )}
         {loi.length > 0 && (
           <span className="inline-flex flex-wrap items-center gap-1.5">
-            <span className="text-late">· {t('Chưa lưu được')}: {loi.map((x) => (x.loi ? `${x.ten} (${x.loi})` : x.ten)).join(', ')}</span>
+            <span className="text-late">· {t('Không lưu được')}: {loi.map((x) => (x.loi ? `${x.ten} (${x.loi})` : x.ten)).join(', ')}</span>
             <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangChay} onClick={() => void quayLaiNhieu(loi.map((x) => x.id), true)}>{t('Thử lại')}</button>
           </span>
         )}
