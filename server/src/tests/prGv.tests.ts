@@ -174,10 +174,10 @@ export async function runPrGvTests(t: YThucTestKit) {
         for (const [cot, o] of [['ket-qua-lop', h2.ketQua], ['tien-bo-lop', h2.tienBo]] as const) {
           if (o.k !== 'so') continue;
           const r = oChiSoHoSoGv(nguoiXem, gv, { ...ky, cot: `${cot}:${h2.classId}` });
-          /* Panel gộp các mục cùng một lượt thành một dòng (chủ SP 23/10) — tiêu đề giữ đúng tử / mẫu của ô; Đạt + Chưa đạt = mọi dòng. */
-          assert(r.tieuDe.includes(`${o.dung}/${o.tong}`) && r.n >= 1 && r.n <= o.tong, `${h2.ma} ${cot}: ${r.tieuDe} · ${r.n} dòng ≠ ${o.dung}/${o.tong}`);
+          /* G5-06: một dòng một lượt × kỹ năng — số dòng = mẫu ô, Đạt = tử ô. */
+          assert(r.tieuDe.includes(`${o.dung}/${o.tong}`) && r.n === o.tong, `${h2.ma} ${cot}: ${r.tieuDe} · ${r.n} dòng ≠ ${o.dung}/${o.tong}`);
           const dat = oChiSoHoSoGv(nguoiXem, gv, { ...ky, cot: `${cot}:${h2.classId}`, loc: 'dat' }).n, chua = oChiSoHoSoGv(nguoiXem, gv, { ...ky, cot: `${cot}:${h2.classId}`, loc: 'chua' }).n;
-          assert(dat + chua === r.n, `${h2.ma} ${cot}: lọc Đạt ${dat} + Chưa đạt ${chua} ≠ ${r.n}`);
+          assert(dat + chua === r.n && dat === o.dung, `${h2.ma} ${cot}: lọc Đạt ${dat} + Chưa đạt ${chua} ≠ ${o.dung}/${r.n}`);
           coKetQua += 1;
         }
       }

@@ -59,11 +59,23 @@ export async function runPrSvTqGvTests(t: any) {
       for (const d of r.day) {
         const h: any = ht.get(d.classId);
         assert(JSON.stringify(d.ketQua) === JSON.stringify(h?.ketQua ?? null), `${d.code}: Đạt ${JSON.stringify(d.ketQua)} ≠ hồ sơ`);
-        if (d.ketQua?.k === 'so') assert(pt.oChiSoHoSoGv(p, p.userId, { cot: `ket-qua-lop:${d.classId}` }).rows.length <= d.ketQua.tong, `${d.code}: panel Đạt vượt ô`);
+        if (d.ketQua?.k === 'so') assert(pt.oChiSoHoSoGv(p, p.userId, { cot: `ket-qua-lop:${d.classId}` }).rows.length === d.ketQua.tong, `${d.code}: panel Đạt ≠ ô`);
         if (d.tienBo?.k === 'so') assert(pt.oChiSoHoSoGv(p, p.userId, { cot: `tien-bo-lop:${d.classId}` }).n === d.tienBo.tong, `${d.code}: panel Tiến bộ ≠ ô`);
         if (d.khung === 'thuong') assert(d.tienBo === null, 'lớp thường không Tiến bộ');
       }
     }
+  });
+
+  check('G5-06 · Tổng quan GV ô "Đạt kỳ vọng Test" = số dòng panel `ket-qua` (một dòng một lượt × kỹ năng), tab Đạt / Chưa đạt = tử / phần còn lại', () => {
+    let co = 0;
+    for (const p of [P.coreTeacher, P.subjectTeacher, P.normalSubjectTeacher]) {
+      const o: any = tq.lopToiDayHaiKhoi(p).chiSo.ketQua;
+      if (o?.k !== 'so') continue;
+      co += 1;
+      const n = (loc?: string) => pt.oChiSoHoSoGv(p, p.userId, { cot: 'ket-qua', loc }).n;
+      assert(n() === o.tong && n('dat') === o.dung && n('chua') === o.tong - o.dung, `${p.code}: ô ${o.dung}/${o.tong} ≠ panel ${n('dat')}/${n()}`);
+    }
+    assert(co > 0, 'phép kiểm không rỗng');
   });
 
   check('SV-TQ-GV · Thi tháng này theo lớp chủ nhiệm = `tapThiThangNayLop` (QL cùng chi nhánh) = số dòng panel', () => {
