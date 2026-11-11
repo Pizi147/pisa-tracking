@@ -1,6 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
-import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, tx } from '../db.ts';
+import { DS_JSON, THAM_SO_TOI_DA, db, theoLo, theoLoJson, tx } from '../db.ts';
 import {
   ASSESSED_SKILLS, CHU_KY_NANG, MON_GOP, boMonTheoLuot, daGhiLuot, CO_DIEM_SQL, DAU_KHONG_HOC, LY_DO_KHONG_HOC, dauBoMon, KY_NANG_KE_HOACH, PERMISSIONS, SIT_STATUSES, boMonLich, duongBangDiemThuong, duongDotTest,
   gvcnDoiMtCu, khoaCuoiTuan, kiemTuanMt0, kiemTuanXep, laMtCu, nhanDot, tenMon, tuanLich, tuanMuonNhatMt0,
@@ -269,13 +269,13 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
   return nhoTheoId('lich-kn:', attemptIds, (ids) => {
     const out = new Map<number, SkillRow[]>();
     const conn = db();
-    for (let i = 0; i < ids.length; i += 900) {   // cùng cỡ lô với loadBundle (PR-MT)
-      const chunk = ids.slice(i, i + 900);
+    theoLoJson(ids, (json) => {
       const mon = new Map<number, string>();
       const rows: SkillRow[] = [];
-      /* Danh sách id buộc MỘT lần (CTE `ids`) cho cả hai nhánh. */
-      for (const r of conn.prepare(`WITH ids(id) AS (VALUES ${chunk.map(() => '(?)').join(',')})
-          ${SELECT_SKILLS('NULL', false)} WHERE ask.attempt_id IN ids ${MON_THEO_LO}`).all(...chunk) as SkillRow[]) {
+      /* Danh sách id buộc MỘT lần (CTE `ids`) cho cả hai nhánh. TURSO-LOG-1311 (log 10–11/11: câu #1 theo dòng): `json_each` thay `VALUES (?),(?)…` —
+         MỘT văn bản câu cho mọi cỡ lô (trước mỗi số id một câu prepare mới), một tham số, lô `LO_JSON`; cùng kế hoạch (SEARCH ask theo attempt_id), cùng dòng. */
+      for (const r of conn.prepare(`WITH ids(id) AS (${DS_JSON})
+          ${SELECT_SKILLS('NULL', false)} WHERE ask.attempt_id IN ids ${MON_THEO_LO}`).all(json) as SkillRow[]) {
         if (r.id === null) mon.set(r.attempt_id, r.mon_luot!);
         else rows.push(r);
       }
@@ -291,7 +291,7 @@ export function loadSkillRows(attemptIds: number[]): Map<number, SkillRow[]> {
         if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
         out.get(r.attempt_id)!.push(r);
       }
-    }
+    });
     for (const [k, v] of out) out.set(k, sortRows(v));
     return out;
   });

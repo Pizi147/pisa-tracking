@@ -32,8 +32,9 @@ type Kho = {
  * TD3-0: `top` gộp theo câu (`sql` = 80 ký tự đầu, gộp khoảng trắng; không lưu tham số) — câu chạy nhiều lần (theo lô, theo em) cộng dồn,
  * vì câu đọc nhiều dòng thường là câu lặp. `theoCau` chỉ giữ số dòng theo câu của MỘT request.
  */
-export type Dem = { n: number; dong: number; top: Array<{ sql: string; dong: number }>; theoCau: Map<string, number> };
-const demMoi = (): Dem => ({ n: 0, dong: 0, top: [], theoCau: new Map() });
+/** `ghi`: số lần `run` / `exec` (TURSO-LOG-1311: bộ thử lại mất kết nối biết request đã ghi chưa — app.ts `thuLaiKhiMatKetNoi`). */
+export type Dem = { n: number; dong: number; ghi: number; top: Array<{ sql: string; dong: number }>; theoCau: Map<string, number> };
+const demMoi = (): Dem => ({ n: 0, dong: 0, ghi: 0, top: [], theoCau: new Map() });
 
 const kho = new AsyncLocalStorage<Kho>();
 
@@ -72,7 +73,13 @@ export function voiXacNhan<T>(fn: () => T): T {
 /** db.ts gọi ở mỗi `run` / `exec`: request đang chạy đã ghi DB (TL-NEN — bảng tham chiếu có thể vừa đổi, xem `nhoThamChieu`). */
 export function daGhiDb(): void {
   const s = kho.getStore();
-  if (s) s.coGhi = true;
+  if (s) { s.coGhi = true; s.dem.ghi++; }
+}
+
+/** TURSO-LOG-1311: câu GHI chạy qua `all()` / `get()` (`… RETURNING`) — chỉ đếm cho bộ thử lại; KHÔNG đặt `coGhi` (mocHeThong cố ý giữ nhớ bảng tham chiếu). */
+export function demGhi(): void {
+  const s = kho.getStore();
+  if (s) s.dem.ghi++;
 }
 
 /** Đặt mốc chung của request (`resolveSession`, SAU ghi mốc dùng phiên — ghi đó không chạm bảng tham chiếu). Không có kho → bỏ qua. */

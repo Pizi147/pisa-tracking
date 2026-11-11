@@ -710,6 +710,11 @@ export type AttemptFilters = {
   /** PR-LT3 (rà #218 I2): CHỈ ĐỌC cho Lịch Test — phạm vi `scopeXemLuotCham` (thêm lớp FT cùng chi nhánh của GV Speaking chấm chéo),
    *  cùng phạm vi khối 2/3. Đường ghi vẫn kiểm quyền riêng (`scoreEditPath`). */
   phamViCham?: boolean;
+  /**
+   * TURSO-LOG-1311: kèm `phamViCham` — lớp CHỈ vào nhờ chấm S chéo (ngoài `scopeFor`) chỉ đọc lượt Mock / MT0 mà ô Speaking chưa có band (tập cha của ô S
+   * chéo còn chờ). Nơi gọi chỉ dùng ô S chéo ở các lớp đó (Công việc `vaoChamS`); log 10–11/11: GV Speaking đọc mọi lượt còn ô chờ của cả chi nhánh.
+   */
+  chiSCheoNgoai?: boolean;
   /** TD3-a: chỉ lượt CÓ THỂ còn ô cần chấm (`CON_O_SQL`) — tập cha của `conBaiCanCham`; nơi gọi vẫn lọc JS như cũ. */
   chiConO?: boolean;
   /** TD4: cùng `chiConO`, giữ thêm lượt chưa xếp tuần (`planned`, không tuần) — việc "Chốt tuần MT" của Công việc. */
@@ -789,6 +794,16 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   /* Danh sách `?,?,…` như `classScopeSql` (S5: json_each đổi kế hoạch câu). */
   const where: string[] = [lopMt0.length ? `(${cs.sql} OR (c.id IN (${lopMt0.map(() => '?').join(',')}) AND a.kind = 'mt0'))` : cs.sql];
   const params: unknown[] = [...cs.params, ...lopMt0];
+  if (f.phamViCham && f.chiSCheoNgoai && !scope.all) {
+    const goc = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
+    const ngoai = goc.all ? [] : [...scope.classIds, ...lopMt0]
+      .filter((id) => !goc.classIds.includes(id) && !goc.branchIds.includes(bangLop().get(id)?.branchId ?? -1));
+    if (ngoai.length) {
+      where.push(`(c.id NOT IN (${ngoai.map(() => '?').join(',')}) OR (a.kind IN ('mock', 'mt0')
+        AND NOT EXISTS (SELECT 1 FROM assessment_scores sx WHERE sx.attempt_id = a.id AND sx.skill = 'speaking' AND sx.band IS NOT NULL)))`);
+      params.push(...ngoai);
+    }
+  }
 
   if (f.branchId) { where.push('c.branch_id = ?'); params.push(f.branchId); }
   if (f.classId) { where.push('a.class_id = ?'); params.push(f.classId); }
@@ -1740,7 +1755,7 @@ function paGanLuot(attemptId: number, boCase: number[]): { dong: { id: number; t
             (SELECT f.outcome FROM case_followups f WHERE f.intervention_id = iv.id AND f.outcome IS NOT NULL ORDER BY f.observed_on DESC, f.id DESC LIMIT 1) AS kq
        FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
       WHERE iv.status IN ('planned', 'started') AND sc.status != 'done'
-        AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
+        AND sc.id IN (SELECT m.case_id FROM case_milestones m WHERE m.attempt_id = ?)   -- TURSO-LOG-1311: đi từ mốc của lượt (trước SCAN mọi PA, ~38 K dòng / lần)
       ORDER BY iv.id`).all(attemptId) as any[]).filter((r) => !boCase.includes(r.case_id) && r.kq);
   const ten = (r: any) => `PA ${(r.description ?? '').trim() || INTERVENTION_KIND_LABEL[r.kind as InterventionKind] || r.kind} ${
     CASE_CATEGORY_LABEL[(r.category ?? categoryOf(r.topic)) as CaseCategory] ?? ''}`.trim();
@@ -1755,12 +1770,13 @@ function paGanLuot(attemptId: number, boCase: number[]): { dong: { id: number; t
  * Huỷ cả lượt và huỷ kết quả do dời vượt (`huyKetQuaLuot`).
  */
 export function caseSinhRieng(attemptId: number): number[] {
+  /* TURSO-LOG-1311: đi từ mốc của lượt (`idx_milestone_attempt`) — trước SCAN mọi Case; xếp theo id (trước: thứ tự chỉ mục `idx_case_owner`, tình cờ). */
   return (db().prepare(
     `SELECT sc.id FROM sos_cases sc
-      WHERE sc.status != 'done' AND EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id = ?)
+      WHERE sc.status != 'done' AND sc.id IN (SELECT m.case_id FROM case_milestones m WHERE m.attempt_id = ?)
         AND NOT EXISTS (SELECT 1 FROM case_milestones m WHERE m.case_id = sc.id AND m.attempt_id IS NOT NULL AND m.attempt_id != ?)
         AND NOT EXISTS (SELECT 1 FROM case_followups f WHERE f.case_id = sc.id AND f.outcome IS NOT NULL)`,
-  ).all(attemptId, attemptId) as any[]).map((r) => r.id as number);
+  ).all(attemptId, attemptId) as any[]).map((r) => r.id as number).sort((x, y) => x - y);
 }
 
 /**

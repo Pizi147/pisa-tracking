@@ -608,7 +608,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const vaoChamS = (a: any, c: any) => lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay);
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
     branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true,
-    ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true } : {}),
+    ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true, chiSCheoNgoai: true } : {}),
     ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo])] } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
   /*

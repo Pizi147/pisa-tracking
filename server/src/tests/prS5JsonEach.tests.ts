@@ -165,7 +165,9 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
         if (jsonTai.has(p)) {
           const ds = JSON.parse(args[k] as string) as unknown[];
           const dau = sql.lastIndexOf('(SELECT value FROM json_each(', p);
-          cuSql += sql.slice(tu, dau) + `(${ds.map(() => '?').join(',')})`;
+          /* TURSO-LOG-1311: CTE `WITH ids(id) AS (json_each)` (loadSkillRows) — câu cũ là `AS (VALUES (?),(?)…)`. */
+          const cte = /\bAS\s*$/i.test(sql.slice(0, dau));
+          cuSql += sql.slice(tu, dau) + (cte ? `(VALUES ${ds.map(() => '(?)').join(',')})` : `(${ds.map(() => '?').join(',')})`);
           tu = p + '?))'.length;
           cuArgs.push(...ds);
         } else {
