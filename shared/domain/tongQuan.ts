@@ -179,8 +179,10 @@ export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | nu
  * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
 export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number };
-export function badgeTab(dong: readonly { urgency: string }[]): BadgeTab {
-  const quaHan = dong.filter((x) => x.urgency === 'overdue').length, homNay = dong.filter((x) => x.urgency === 'today').length;
+export function badgeTab(dong: readonly { urgency: string; key?: string }[]): BadgeTab {
+  /* Rà 11/11 #2 (G5-02): S chấm chéo ghi "quá hạn" ở dòng nhưng KHÔNG đếm (T18 06/11) — tab không đỏ khi số đầu trang không có (cùng `demDongViec`). */
+  const tinh = dong.filter((x) => !(x.key && laViecChamCheo({ key: x.key })));
+  const quaHan = tinh.filter((x) => x.urgency === 'overdue').length, homNay = tinh.filter((x) => x.urgency === 'today').length;
   return { so: quaHan + homNay, n: dong.length, quaHan, homNay };
 }
 /** Mở trang (chưa chọn tab): tab đầu tiên có việc quá hạn, không có thì tab đầu. */

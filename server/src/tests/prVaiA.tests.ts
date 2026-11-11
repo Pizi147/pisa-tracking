@@ -617,7 +617,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const ten = new Set<string>(); let chua = false; let cc = false;
       for (const a of rows.filter((x) => d0.attemptIds.includes(x.id))) {
         for (const x of (a.pendingDetail ?? []) as any[]) {
-          if (!x.weekStart || d.khoiCham({ tuanThi: x.weekStart, tuanHomNay: tuanNay, quaHan: x.overdue }) !== 'qua-han' || d.laChamCheo(a.kind, x.skill)   // T18 06/11: S chéo không vào khối 1
+          if (!x.weekStart || d.khoiCham({ tuanThi: x.weekStart, tuanHomNay: tuanNay, quaHan: x.overdue }) !== 'qua-han'   // rà 11/11 #2: S chéo vào khối 1
             || (x.periodId ?? 0) !== (d0.periodId ?? 0)) continue;
           const g = (a.pendingOwners ?? {})[x.skill] ?? null;
           if (g === d.CHAM_CHEO) cc = true; else if (g) ten.add(g); else chua = true;

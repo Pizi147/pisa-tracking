@@ -15,7 +15,7 @@ import { demoToday } from '../demoConfig.ts';
 import {
   activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
-import { ASSESSED_SKILLS, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
@@ -313,8 +313,7 @@ export function noQuaHan(
         }
         continue;
       }
-      /* T18 (chủ SP 06/11): S Mock chấm chéo quá hạn CHỈ ghi ở Công việc + Chấm Test — không vào khối 1 Lịch Test (mọi vai). */
-      if (laChamCheo(a.kind, x.skill)) continue;
+      /* Rà 11/11 #2 (G1-01): S chấm chéo quá hạn VÀO khối "Quá hạn chấm" — cùng tập với dải số (`oQuaHanCham`); T18 06/11 cho hiện ở Chấm Test. */
       const key = `${a.classId}:${a.kind}:${a.attemptNo ?? 0}:${x.periodId ?? 0}`;
       let cu = gom.get(key);
       if (!cu) {
@@ -373,7 +372,7 @@ export function noQuaHan(
       kyNang,
       kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
-      gvNo: [...[..._gv].sort((x, y) => x.localeCompare(y, 'vi')), ...(_chuaPc ? ['chưa phân công'] : [])],
+      gvNo: [...[..._gv].filter((x) => x !== CHAM_CHEO).sort((x, y) => x.localeCompare(y, 'vi')), ...(_gv.has(CHAM_CHEO) ? [CHAM_CHEO] : []), ...(_chuaPc ? ['chưa phân công'] : [])],
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
       cuaToi: mySkills(p, d.classId, kyNang.filter((k) => !laChamCheo(d.kind, k))).length > 0,

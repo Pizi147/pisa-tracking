@@ -145,34 +145,37 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     });
   });
 
-  check('PBC-6 · Q12: Tổng quan Admin — S chấm chéo chưa ai nhận không quá hạn; Σ dòng quá hạn = ô; dòng "Chưa có GV" chờ chấm', () => {
+  /* Rà 11/11 #2 (chủ SP 09/11 thay Q12 25/10): S chấm chéo quá hạn là "quá hạn" ở MỌI vai, cả Admin; chưa ai nhận = nhóm "Speaking chấm chéo" (không "Chưa có GV"). */
+  check('PBC-6 · rà 11/11 #2: Tổng quan Admin — S chấm chéo chưa ai nhận quá hạn là quá hạn, dòng "Speaking chấm chéo"; Σ dòng quá hạn = ô', () => {
     const id = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
       WHERE r.key = 'office_admin' AND b.code = 'MB' ORDER BY ur.user_id LIMIT 1`)?.id;
     const ad = loadPrincipal(id);
     xoaNho();
     const w = myWork(ad, { nguoi: 'tat-ca' }) as any;
-    /* seed: 12 bài S chấm chéo quá hạn nhập (MB FT 101 / 105) đều chưa ghi GV chấm → không còn quá hạn ở Công việc lẫn nợ điểm. */
-    const cc = w.items.filter((it: any) => it.group === 'score' && d.laChamCheo(it.kind, it.kn) && it.ownerId === null);
-    assert(cc.length > 0 && cc.every((it: any) => it.urgency !== 'overdue'), `S chấm chéo còn quá hạn: ${cc.filter((it: any) => it.urgency === 'overdue').map((it: any) => it.key)}`);
+    /* seed: 12 bài S chấm chéo quá hạn nhập (MB FT 101 / 105), chưa ghi GV chấm → quá hạn như bài khác. */
+    const cc = w.items.filter((it: any) => it.group === 'score' && d.laChamCheo(it.kind, it.kn) && it.ownerId === null && it.urgency === 'overdue');
+    assert(cc.length > 0, 'seed: Admin phải thấy S chấm chéo quá hạn');
     const r = tq.tongQuanMt(ad);
     const quaHan = r.gvQuaHan.filter((g: any) => !g.choCham);
     assert(quaHan.reduce((n: number, g: any) => n + g.soBai, 0) === r.oChuaNhap.quaHan, `Σ ${JSON.stringify(quaHan)} ≠ ${r.oChuaNhap.quaHan}`);
-    const cho = r.gvQuaHan.filter((g: any) => g.choCham);
-    assert(cho.length === 1 && cho[0].ownerId === 0 && cho[0].soBai === cc.reduce((n: number, it: any) => n + it.soBai, 0) && cho[0].han === null && cho[0] === r.gvQuaHan.at(-1),
-      `dòng chờ chấm: ${JSON.stringify(cho)}`);
+    const sc = r.gvQuaHan.find((g: any) => g.key === 'cham-cheo-qua-han');
+    assert(sc && sc.gv === 'Speaking chấm chéo' && sc.soBai === cc.reduce((n: number, it: any) => n + it.soBai, 0), `dòng S chéo: ${JSON.stringify(sc)}`);
+    assert(!r.gvQuaHan.some((g: any) => g.key === 'chua-co-gv' && /speaking/i.test(g.kyNang)), 'S chéo không được ghi "Chưa có GV"');
   });
 
-  check('PBC-7 · Q12 chỉ Admin: QL vẫn thấy S chấm chéo quá hạn (LT3); Admin — ô S đã ghi GV chấm (đã có người nhận) mà quá hạn → quá hạn', () => thu(() => {
+  check('PBC-7 · rà 11/11 #2: QL và Admin cùng thấy S chấm chéo quá hạn; bài đã có người nhận (tài khoản) nằm dưới tên người đó', () => thu(() => {
     const id = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
       WHERE r.key = 'office_admin' AND b.code = 'MB' ORDER BY ur.user_id LIMIT 1`)?.id;
     const ad = loadPrincipal(id);
-    const ccQuaHan = (p: any) => { xoaNho(); return ((myWork(p, { nguoi: 'tat-ca' }) as any).items as any[])
-      .filter((it) => it.group === 'score' && it.ownerId === null && d.laChamCheo(it.kind, it.kn) && it.urgency === 'overdue'); };
-    assert(ccQuaHan(QL).length > 0, 'QL: S chấm chéo quá hạn vẫn quá hạn (LT3)');
-    assert(ccQuaHan(ad).length === 0, 'Admin: S chấm chéo chưa ai nhận không quá hạn');
+    const cc = (p: any) => { xoaNho(); return ((myWork(p, { nguoi: 'tat-ca' }) as any).items as any[])
+      .filter((it) => it.group === 'score' && d.laChamCheo(it.kind, it.kn) && it.urgency === 'overdue'); };
+    assert(cc(QL).filter((it) => it.ownerId === null).length > 0, 'QL: S chấm chéo quá hạn');
+    assert(cc(ad).filter((it) => it.ownerId === null).length > 0, 'Admin: S chấm chéo quá hạn (cùng luật QL)');
     const x = sd.scoreDebtCells(P.admin, TODAY, [MB]).find((c: any) => c.chamCheo && c.overdue);
     assert(x, 'seed có S chấm chéo quá hạn');
-    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, examiner_name) VALUES (?, 'speaking', 'GV ngoài')`).run(x.attemptId);
-    assert(ccQuaHan(ad).length > 0, `Admin: đã có người nhận phải quá hạn`);
+    const gv = get(`SELECT id FROM users WHERE status = 'active' AND id != ? ORDER BY id LIMIT 1`, id).id;
+    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, examiner_user_id) VALUES (?, 'speaking', ?)`).run(x.attemptId, gv);
+    const cua = cc(ad).filter((it) => (it.con?.length ? it.con : [it]).some((c: any) => c.attemptId === x.attemptId) || it.attemptId === x.attemptId);
+    assert(cua.length > 0 && cua.every((it) => it.ownerId === gv), `bài đã nhận phải dưới tên người nhận: ${JSON.stringify(cua.map((it) => it.ownerId))}`);
   }));
 }

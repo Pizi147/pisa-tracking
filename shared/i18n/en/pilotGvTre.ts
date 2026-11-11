@@ -11,7 +11,7 @@ export const EN_PILOT_GV_TRE = {
   'Nhập hộ {mon}': 'Enter {mon} on their behalf',
   '+ {n} bài chưa có GV': '+ {n} papers with no teacher',
   '{n} dòng vừa đủ': '{n} rows just completed',
-  'Speaking chấm chéo chưa ai nhận: {n} bài — chờ chấm, không tính quá hạn.': 'Unclaimed cross-marked Speaking: {n} papers — awaiting marking, not counted as overdue.',
+  'Speaking chấm chéo chưa tới hạn: {n} bài — chờ chấm.': 'Cross-marked Speaking not yet due: {n} papers — awaiting marking.',
   'lớp chưa phân công GV môn': 'class has no subject teacher assigned',
   'thi {tuan}': 'test {tuan}',
   'Đã đủ': 'Complete',

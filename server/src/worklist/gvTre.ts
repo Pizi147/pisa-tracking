@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, docMaLuot, emCuaViec, nhanMaLuot, tachBaiId, tenMonNgan, vietMaLuot, type ChuongTrinh, type MaLuot } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, docMaLuot, laChamCheo, emCuaViec, nhanMaLuot, tachBaiId, tenMonNgan, vietMaLuot, type ChuongTrinh, type MaLuot } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { forbidden } from '../util.ts';
 import { assessedSkillOf } from '../fasttrack/scoring.ts';
@@ -20,7 +20,7 @@ export type DongGvTre = {
 };
 /** `gvId`: id GV · 0 = chưa có GV (lớp chưa phân công) · -1 = Speaking chấm chéo (chỉ panel QL, như `treCham`). */
 export type NhomGvTre = { gvId: number; ten: string; soBai: number; dong: DongGvTre[] };
-export type PanelGvTre = { /** Phạm vi ở đầu panel (V11): tên chi nhánh; null = mọi chi nhánh trong quyền. */ chiNhanh: string | null; soGv: number; soBai: number; soBaiChuaCoGv: number; /** Admin (Q12): S chấm chéo chưa ai nhận — chờ chấm, không quá hạn. */ choCham: number; nhom: NhomGvTre[] };
+export type PanelGvTre = { /** Phạm vi ở đầu panel (V11): tên chi nhánh; null = mọi chi nhánh trong quyền. */ chiNhanh: string | null; soGv: number; soBai: number; soBaiChuaCoGv: number; /** S chấm chéo chưa ai nhận, chưa quá hạn — chờ chấm. */ choCham: number; nhom: NhomGvTre[] };
 
 const nhapHoDuoc = (p: Principal, classId: number | null, kns: readonly string[]) => !!classId && kns.some((k) => scoreEditPath(p, classId, k) !== null);
 const ctCuaLop = (ids: number[]) => {
@@ -37,7 +37,7 @@ const xepMon = (kns: string[]) => kns.sort((a, b) => (MON.includes(a) ? MON.inde
 /** Nhóm GV nhiều bài trước, rồi tên; "Chưa có GV" cuối. Trong nhóm: quá hạn lâu nhất (hạn sớm nhất) lên đầu. */
 const xep = (nhom: NhomGvTre[]) => {
   for (const g of nhom) g.dong.sort((a, b) => (a.han ?? '').localeCompare(b.han ?? '') || (a.lop ?? '').localeCompare(b.lop ?? ''));
-  return nhom.sort((a, b) => Number(a.gvId === 0) - Number(b.gvId === 0) || b.soBai - a.soBai || a.ten.localeCompare(b.ten, 'vi'));
+  return nhom.sort((a, b) => Number(a.gvId <= 0) - Number(b.gvId <= 0) || b.soBai - a.soBai || a.ten.localeCompare(b.ten, 'vi'));
 };
 
 /**
@@ -63,8 +63,9 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
     const ct = ctCuaLop(quaHan.map((it) => it.classId).filter(Boolean));
     const nhom = new Map<number, NhomGvTre>();
     for (const it of quaHan) {
-      const gvId = it.ownerId ?? 0;
-      const g = nhom.get(gvId) ?? nhom.set(gvId, { gvId, ten: gvId ? it.owner ?? '' : t('Chưa có GV'), soBai: 0, dong: [] }).get(gvId)!;
+      /* Rà 11/11 #2 (G5-03): S chấm chéo chưa ai nhận → nhóm -1 "Speaking chấm chéo" (không "Chưa có GV" + link Phân công vô ích). */
+      const gvId = it.ownerId ?? (laChamCheo(it.kind, it.kn) ? -1 : 0);
+      const g = nhom.get(gvId) ?? nhom.set(gvId, { gvId, ten: gvId > 0 ? it.owner ?? '' : gvId < 0 ? t('Speaking chấm chéo') : t('Chưa có GV'), soBai: 0, dong: [] }).get(gvId)!;
       const kns = xepMon([...(it.kns ?? (it.kn ? [it.kn] : []))]);
       const tuan = it.tuanThi ?? null;
       g.soBai += it.soBai ?? 0;
@@ -79,7 +80,8 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
     const ds = xep([...nhom.values()]);
     const co = ds.filter((g) => g.gvId > 0);
     return {
-      chiNhanh, soGv: co.length, soBai: co.reduce((n, g) => n + g.soBai, 0), soBaiChuaCoGv: ds.filter((g) => g.gvId === 0).reduce((n, g) => n + g.soBai, 0),
+      /* Bài S chéo (nhóm -1) vào số bài đầu panel — không phải "chưa có GV". */
+      chiNhanh, soGv: co.length, soBai: ds.filter((g) => g.gvId !== 0).reduce((n, g) => n + g.soBai, 0), soBaiChuaCoGv: ds.filter((g) => g.gvId === 0).reduce((n, g) => n + g.soBai, 0),
       choCham: choCham.reduce((n, it) => n + (it.soBai ?? 0), 0), nhom: ds,
     };
   }

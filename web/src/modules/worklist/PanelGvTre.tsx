@@ -103,7 +103,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
           : nhom.map((g) => <NhomGv key={g.gvId} g={g} mo={moKhoa} onMo={moDong} dai={!motGv} />)}
         {data && data.choCham > 0 && (
           <p className="m-0 mt-3 border-t pt-3 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
-            {t('Speaking chấm chéo chưa ai nhận: {n} bài — chờ chấm, không tính quá hạn.', { n: data.choCham })}
+            {t('Speaking chấm chéo chưa tới hạn: {n} bài — chờ chấm.', { n: data.choCham })}
           </p>
         )}
       </KhungPanel>

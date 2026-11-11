@@ -59,17 +59,20 @@ export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): 
       key: it.key, ownerId: it.ownerId, gv: it.owner ?? '', kyNang: it.reason, lop: it.classCode ?? null, luot: it.contextLabel ?? null,
       soBai: it.soBai ?? 0, han: it.due ?? null,
     }));
-  const chuaCoGv = (ds: any[], key: string, choCham: boolean) => {
+  const chuaCoGv = (ds: any[], key: string, choCham: boolean, gv = t('Chưa có GV')) => {
     if (!ds.length) return;
     const deu = (k: string) => [...new Set(ds.map((it) => it[k]).filter(Boolean))].join(', ') || null;
     gvQuaHan.push({
-      key, ownerId: 0, gv: t('Chưa có GV'), kyNang: deu('reason') ?? '', lop: deu('classCode'), luot: null,
+      key, ownerId: 0, gv, kyNang: deu('reason') ?? '', lop: deu('classCode'), luot: null,
       soBai: ds.reduce((n, it) => n + (it.soBai ?? 0), 0), han: choCham ? null : ds.map((it) => it.due).filter(Boolean).sort()[0] ?? null,
       ...(choCham ? { choCham: true as const } : {}),
     });
   };
-  chuaCoGv(quaHan.filter((it) => it.ownerId === null), 'chua-co-gv', false);
-  chuaCoGv(choCham, 'cham-cheo-chua-nhan', true);
+  /* Rà 11/11 #2 (G5-03): S chấm chéo chưa ai nhận là nhóm riêng, không "Chưa có GV" (lớp đã có phân công) — cùng chữ "quá hạn" như GV / QL. */
+  const cheo = (it: any) => laChamCheo(it.kind, it.kn);
+  chuaCoGv(quaHan.filter((it) => it.ownerId === null && !cheo(it)), 'chua-co-gv', false);
+  chuaCoGv(quaHan.filter((it) => it.ownerId === null && cheo(it)), 'cham-cheo-qua-han', false, t('Speaking chấm chéo'));
+  chuaCoGv(choCham, 'cham-cheo-chua-nhan', true, t('Speaking chấm chéo'));
 
   return {
     tuan: tuanDau?.weekStart ?? mondayOf(today),
