@@ -301,12 +301,8 @@ export async function runPrHdTests(t: any) {
    * Màn / panel còn chờ session B (QL + Admin; QT = QL + Quản trị nên theo QL) và C (TVV + CX + Head tutor). Không tính `qt` (chủ SP 13/11). Mỗi dòng "vai đường" hoặc
    * "vai panel:x" là một chỗ CHƯA có mục — B / C viết mục thì XOÁ dòng (dòng thừa cũng đỏ: không để phép kiểm xanh giả). GV không có dòng chờ.
    */
-  const CHO_B: string[] = [
-    'ql /giao-vien/1', 'admin /hoc-vien/luu-tru', 'admin /giao-vien/1',
-    ...['ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh', 'duyet', 'sua-thong-tin',
-      'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'xep-lich-mt', 'them-hv', 'xuat-ds', 'bao-ph', 'xet-lai'].map((x) => `ql panel:${x}`),
-    ...['xuat-excel', 'sua-thong-tin', 'xep-lich-mt', 'xuat-ds'].map((x) => `admin panel:${x}`),
-  ];
+  /* HD-V3-B (QL + Admin) xong: không còn dòng chờ. QT dùng lại `man` của QL (qt.ts) nên đủ theo QL. */
+  const CHO_B: string[] = [];
   const CHO_C: string[] = [
     ...['tvv', 'cx'].flatMap((v) => ['/hoc-vien/luu-tru', '/mock-test/1', '/luot-test/1', '/giao-vien/1'].map((x) => `${v} ${x}`)),
     ...['ngan-case', 'phoi-hop-sos', 'lo-trinh', 'sua-thong-tin', 'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'them-hv', 'xuat-ds', 'bao-ph'].map((x) => `tvv panel:${x}`),
@@ -425,7 +421,7 @@ export async function runPrHdTests(t: any) {
    * HD-NHAN: chữ đậm `<b>…</b>` trong bước / Chỉ cho tôi là NHÃN NÚT — phải có trong chuỗi của web/src + shared + server/src (trừ huongDan, tests), bỏ "…", " ›" cuối.
    * Vai đã đối chiếu: B / C thêm vai của mình vào NHAN_VAI. MAU_CHU = chữ mẫu không phải nhãn (mã tuần, phím, số hạn).
    */
-  const NHAN_VAI = ['gv'];
+  const NHAN_VAI = ['gv', 'ql', 'admin'];
   const MAU_CHU = new Set(['-', '?', '/', 'Ctrl K', 'Enter', 'Esc', '‹ W3 SEP ›', 'W2 OCT', '2 tuần', '5 ngày', '3 ngày', '10', '8', 'Thứ Ba', 'Thứ Tư', '⋯']);
   check('HD-NHAN · chữ đậm trong hướng dẫn (vai đã đối chiếu) là nhãn có thật trong nguồn web', () => {
     let nguon = '';
