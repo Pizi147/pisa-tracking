@@ -124,6 +124,8 @@ export type WorkItem = {
   paId?: number | null;
   /** OV-13b: Kết quả PA ghi nhanh được ngay dưới dòng (`ghiNhanhDuoc`). */
   ghiNhanh?: boolean;
+  /** NHAP-KQ-PA: Kết quả PA có nháp lưu trên máy chủ (chưa chốt). */
+  coNhap?: boolean;
   /** OV-5a: Nhập điểm mở panel một lớp · một lượt (`mt:2`, `thuong:progress`) · kỹ năng đầu tiên của dòng. */
   luot?: string;
   kn?: string;
@@ -865,7 +867,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const reviewedCases = new Set<number>();
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi,
+      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi, iv.nhap_ket_qua IS NOT NULL AS co_nhap,
               iv.performer_user_id, iv.performer_name, sc.owner_user_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -1005,6 +1007,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       mine, due: iv.action_due, statusLabel: 'Chờ kết quả',
       /* OV-13b: Công việc mở ghi nhanh ngay dưới dòng (cùng luật với Case / panel một em). */
       ghiNhanh: ghiNhanhDuoc({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, lanCuoi: tuanCuoi }),
+      /* NHAP-KQ-PA: GV đã lưu nháp kỳ này — chip "Có nháp"; việc vẫn chờ, hạn không đổi. */
+      ...(iv.co_nhap ? { coNhap: true } : {}),
     });
   }
 

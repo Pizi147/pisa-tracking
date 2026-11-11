@@ -27,6 +27,8 @@ export type WorkItem = {
   kns?: string[];
   /** OV-13b: Kết quả PA ghi nhanh được (máy chủ `ghiNhanhDuoc`) — CV-LOI: form gọn trong khung phải. */
   ghiNhanh?: boolean;
+  /** NHAP-KQ-PA: Kết quả PA có nháp lưu trên máy chủ (chưa chốt) — chip "Có nháp". */
+  coNhap?: boolean;
   /** PHOI-HOP-V2 (mockup #1368): dòng Phối hợp SOS (lớp × việc) — loại + khoá việc (panel lọc đúng việc); `emTen` = tên ≤ 3 em đầu (chip ở ô việc). */
   phoiHop?: { kind: string; khoa: string };
   emTen?: string[];

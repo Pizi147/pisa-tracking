@@ -814,6 +814,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
               actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
               batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
               laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho', choXacNhan: !!iv.awaitingConfirmation,
+              nhap: iv.nhapKetQua ?? null,
             }} />
         ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
         : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}
@@ -902,7 +903,8 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         <button type="button" className="mui-pa" aria-expanded={mo} aria-label={mo ? t('Gập PA {ten}', { ten: tenLoai }) : t('Mở PA {ten}', { ten: tenLoai })}
           onClick={() => { setMo(!mo); if (mo) setForm(null); }}>{IC_PA}</button>
       </div>
-      {vua && !mo && <div className="px-3.5 pb-2"><DaiVuaDoi x={vua} onHoanTac={onHoanTac} /></div>}
+      {/* Chủ SP 13/11: lưu kết quả xong không Hoàn tác — "Sửa" mở ngay form Sửa kết quả (lần ghi gần nhất sửa được). */}
+      {vua && !mo && <div className="px-3.5 pb-2"><DaiVuaDoi x={vua} onHoanTac={onHoanTac} onSua={fSua ? () => { setMo(true); setForm({ suaKq: fSua.id }); } : undefined} /></div>}
       {!mo && <DongDoiPaGon iv={iv} data={data} ngan={ngan} onDoi={lamMoi} />}
       {mo && (
         <div className="pa-than">
@@ -1037,7 +1039,7 @@ function KetThucSom({ iv, hoanThanhCase, onThoi, onXong }: { iv: any; hoanThanhC
 const LOP_KET: Record<string, string> = { ok: 'tb', warn: 'mp', danger: 'ko', muted: 'cd' };
 
 /** "✓ Đã thêm PA · Hoàn tác" ngay trong thẻ PA vừa đổi (Q1) — Hoàn tác 10 giây, gọi đường đảo của form (máy chủ kiểm lại quyền + thời gian). */
-function DaiVuaDoi({ x, onHoanTac }: { x: VuaDoiPa; onHoanTac?: () => void }) {
+function DaiVuaDoi({ x, onHoanTac, onSua }: { x: VuaDoiPa; onHoanTac?: () => void; onSua?: () => void }) {
   const [con, setCon] = useState(!!x.hoanTac);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
@@ -1054,6 +1056,7 @@ function DaiVuaDoi({ x, onHoanTac }: { x: VuaDoiPa; onHoanTac?: () => void }) {
     <p role="status" className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-t pt-2 text-[13px]" style={{ borderColor: 'var(--line)' }}>
       <b className="font-semibold text-ok">✓ {x.chu}</b>
       {con && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void bam()}>{busy ? t('Đang lưu…') : t('Hoàn tác')}</button>}
+      {!con && onSua && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSua}>{t('Sửa')}</button>}
       {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
     </p>
   );
