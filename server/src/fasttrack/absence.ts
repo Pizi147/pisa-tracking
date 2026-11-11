@@ -715,16 +715,20 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
           AND entered_at > ?`,
     ).get(attemptId, ...entry, dau.no_show_settled_at) !== undefined);
     const lan = Math.max(0, row.absence_move_count - (daCong ? 1 : 0));
+    /* SUA-RA-1311: còn lần vắng trước (`lan` > 0) → chuỗi "-" chưa hết: lịch đang đứng do lần đó (`manual`) — giữ nguồn lịch + bản nhớ. */
+    const hetChuoi = lan === 0;
     if (giuLich) {
-      /* #1418: giữ lịch (có quyết định của người / điểm tuần mới) — nguồn lịch hiện tại đúng; bỏ bản nhớ. */
-      conn.prepare('UPDATE attempt_skills SET absence_move_count = ?, absent_from_no_show = 0, plan_source_truoc_vang = NULL, updated_at = ? WHERE id = ?').run(lan, nowIso(), row.id);
+      /* #1418: giữ lịch (có quyết định của người / điểm tuần mới) — nguồn lịch hiện tại đúng; hết chuỗi thì bỏ bản nhớ. */
+      conn.prepare(`UPDATE attempt_skills SET absence_move_count = ?, absent_from_no_show = 0, plan_source_truoc_vang = CASE WHEN ? THEN NULL ELSE plan_source_truoc_vang END,
+              updated_at = ? WHERE id = ?`).run(lan, hetChuoi ? 1 : 0, nowIso(), row.id);
     } else {
       conn.prepare(
-        /* G1-02: trả cả nguồn lịch như trước lần "-" (`plan_source_truoc_vang`, NULL = giữ) — đổi mốc lớp dời được lại kỹ năng `auto`. */
+        /* G1-02: hết chuỗi → trả cả nguồn lịch như trước lần "-" đầu (`plan_source_truoc_vang`, NULL = giữ) — đổi mốc lớp dời được lại kỹ năng `auto`. */
         `UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'scheduled', sit_note = NULL, absent_from_no_show = 0, huy_vang = 0,
-                plan_source = COALESCE(plan_source_truoc_vang, plan_source), plan_source_truoc_vang = NULL,
+                plan_source = CASE WHEN ? THEN COALESCE(plan_source_truoc_vang, plan_source) ELSE plan_source END,
+                plan_source_truoc_vang = CASE WHEN ? THEN NULL ELSE plan_source_truoc_vang END,
                 absence_move_count = ?, updated_at = ? WHERE id = ?`,
-      ).run(dau.no_show_period_id, lan, nowIso(), row.id);
+      ).run(dau.no_show_period_id, hetChuoi ? 1 : 0, hetChuoi ? 1 : 0, lan, nowIso(), row.id);
     }
     conn.prepare(
       `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL

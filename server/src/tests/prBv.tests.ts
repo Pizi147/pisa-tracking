@@ -356,6 +356,27 @@ export async function runPrBvTests(t: YThucTestKit) {
     assert(kt.planned_period_id === tuan(0).id && kt.plan_source === 'auto' && kt.plan_source_truoc_vang === null, `lớp thường: ${JSON.stringify(kt)}`);
   });
 
+  /* SUA-RA-1311 (PTA mục 3): chuỗi hai lần "-" — gỡ lần SAU còn lần vắng trước → giữ `manual` + bản nhớ; chỉ hết chuỗi mới trả `auto`. */
+  check('BV V1c (SUA-RA-1311) · auto → "-" lần 1 (tự dời) → "-" lần 2 (huỷ vắng / lớp thường dời tiếp) → gỡ lần 2: còn vắng lần 1 → plan_source manual, bản nhớ giữ (FT + lớp thường)', () => {
+    const a = emMoi([-1, 4, 8]);
+    conn.prepare(`UPDATE attempt_skills SET plan_source = 'auto' WHERE attempt_id = ? AND skill = 'listening'`).run(a.m1);
+    goVao(QL, a.m1, 'listening', thu4(-1));
+    goVao(QL, a.m1, 'listening', thu4(0));
+    assert(kyNang(a.m1, 'listening').huy_vang === 1 && kyNang(a.m1, 'listening').absence_move_count === 1, `chưa huỷ vắng 2 lần: ${JSON.stringify(kyNang(a.m1, 'listening'))}`);
+    go(QL, a.m1, 'listening', thu4(0));
+    const k = kyNang(a.m1, 'listening');
+    assert(k.planned_period_id === tuan(0).id && k.absence_move_count === 1, `FT chưa về tuần lần 1: ${JSON.stringify(k)}`);
+    assert(k.plan_source === 'manual' && k.plan_source_truoc_vang === 'auto', `FT: còn vắng lần 1 mà đã trả nguồn lịch: ${JSON.stringify(k)}`);
+    const b = baiThuong(0);
+    conn.prepare(`UPDATE attempt_skills SET plan_source = 'auto' WHERE attempt_id = ? AND skill = 'listening'`).run(b.aid);
+    regular.reportRegularNoShow(P.admin, b.aid, 'listening', true, thu4(0));
+    regular.reportRegularNoShow(P.admin, b.aid, 'listening', true, thu4(1));
+    assert(kyNang(b.aid, 'listening').planned_period_id === tuan(2).id, `lớp thường chưa dời 2 lần: ${JSON.stringify(kyNang(b.aid, 'listening'))}`);
+    regular.reportRegularNoShow(P.admin, b.aid, 'listening', false, thu4(1));
+    const kt = kyNang(b.aid, 'listening');
+    assert(kt.planned_period_id === tuan(1).id && kt.plan_source === 'manual' && kt.plan_source_truoc_vang === 'auto', `lớp thường: ${JSON.stringify(kt)}`);
+  });
+
   check('BV V2 · sau V1 gõ "-" lại → vẫn vắng lần 1 (tự dời), không "huỷ vắng 2 lần"', () => {
     const a = vangL(-1);
     go(QL, a.m1, 'listening');
