@@ -43,6 +43,7 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'xep-lich', ten: 'Xếp, dời lịch MT', nhom: 'lich',
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
+      loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.',
         'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Nhật ký</b> · <b>Xóa lịch</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'schedule', 'reschedule'],
@@ -80,12 +81,14 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'sua-hv', ten: 'Sửa thông tin học viên, đổi lộ trình', nhom: 'hv',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Sửa thông tin' },
+      loiTat: ['p-sua-thong-tin'],
       buoc: ['Ở hồ sơ em, bấm <b>⋯ › Sửa thông tin</b>: họ tên, ngày sinh, liên hệ.', '<b>Lộ trình đang học</b> là của em, không theo lớp: Admin đổi được (LT1 · LT2 · RF). Target, môn học: nhờ Quản lý / TVV.'],
       tuKhac: ['họ tên', 'ngày sinh', 'liên hệ', 'lộ trình', 'edit student'],
     },
     {
       id: 'lich-thi', ten: 'Xem lịch thi, xuất Excel', nhom: 'hv',
       loiChinh: { man: 'hoc-vien', chu: 'Học viên & Lớp › Lịch thi', duong: HV, chi: { hd: 'hvl-goc', duong: HV, chu: 'Bấm tab <b>Lịch thi</b> ở hàng này.' } },
+      loiTat: ['p-xuat-ds'],
       buoc: ['Mở <b>Học viên & Lớp</b>, tab <b>Lịch thi</b>.', '<b>Xuất Excel</b>: mẫu <b>Danh sách</b> hoặc <b>Báo cáo PH</b> (chọn tháng), theo bộ lọc đang xem; bấm nút xuất ở chân panel.'],
       tuKhac: ['excel', 'xuất', 'export', 'ngày thi'],
     },
@@ -227,6 +230,24 @@ export const HD_ADMIN: HuongDan = {
       dangO: { cau: 'Gõ điểm từng em cho một lượt Test.' },
       khongLam: [KHONG_QL],
       muc: [{ id: 'pn-go', viec: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', buoc: ['Gõ điểm em còn trống; Enter sang ô kế (lớp thường: ô môn hai tầng, kết quả dưới tên).', 'Em vắng: gõ <b>-</b>.', 'Xong: <b>Lớp tiếp</b> / <b>Việc tiếp</b>.'] }],
+    },
+    {
+      id: 'p-xep-lich-mt', ten: 'Xếp lịch Test đang mở', duong: [], panel: 'xep-lich-mt',
+      dangO: { cau: 'Xếp lịch MT cho một hay nhiều lớp.' },
+      khongLam: [KHONG_QL],
+      muc: [{ id: 'pxl-xep', viec: 'xep-lich', ten: 'Xếp, dời lịch MT', buoc: ['Chọn lớp, tuần từng MT; hai đợt trùng tuần thì máy chặn, cách đúng một tuần thì hỏi lại.', 'Lưu: đợt về lịch mới; khoá cuối tuần T6–CN theo công tắc <b>Mở sửa lịch Test</b>.'] }],
+    },
+    {
+      id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin',
+      dangO: { cau: 'Sửa thông tin và lộ trình của một em.' },
+      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của QL' }],
+      muc: [{ id: 'pst-sua', viec: 'sua-hv', ten: 'Sửa thông tin học viên, đổi lộ trình', buoc: ['Sửa họ tên, ngày sinh, liên hệ; <b>Lộ trình đang học</b> đổi được (LT1 · LT2 · RF).', 'Target, môn học: nhờ Quản lý / TVV; <b>Lưu</b>.'] }],
+    },
+    {
+      id: 'p-xuat-ds', ten: 'Xuất Excel học viên đang mở', duong: [], panel: 'xuat-ds',
+      dangO: { cau: 'Xuất danh sách hoặc báo cáo PH của học viên theo bộ lọc.' },
+      khongLam: [{ ten: 'Xuất điểm Test', den: { chu: 'Test › Kế hoạch Test › Xuất Excel…', duong: KH } }],
+      muc: [{ id: 'pxd-xuat', viec: 'lich-thi', ten: 'Xem lịch thi, xuất Excel', buoc: ['Chọn <b>Mẫu</b>: <b>Danh sách</b> hoặc <b>Báo cáo PH</b> (chọn <b>Tháng</b>); <b>Phạm vi</b> theo bộ lọc hay cả chi nhánh.', 'Bấm nút xuất ở chân panel: tệp tải về máy, nhật ký ghi lại.'] }],
     },
     {
       id: 'p-xuat', ten: 'Xuất Excel đang mở', duong: [], panel: 'xuat-excel',
