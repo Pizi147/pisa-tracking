@@ -13,10 +13,12 @@ export async function runPrOv8bTests(t: YThucTestKit) {
   const cycles: any = await import('../fasttrack/cycles.ts');
   const thiThat: any = await import('../loTrinh/thiThat.ts');
   const profile: any = await import('../students/profile.ts');
+  const mywork: any = await import('../worklist/mywork.ts');
   const { lopHocCua } = await import('../classes/loTrinhTiep.ts');
   const { demoToday } = await import('../demoConfig.ts');
   const { ROLE_PERMISSIONS } = await import('../seed/data.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, soCauSql, soDongSql } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   console.log('\nPR-OV8b · quyền TVV: Target, Tạm dừng / Quay lại / Thôi học, kết quả thi thật, ô TVV theo chi nhánh');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -79,8 +81,56 @@ export async function runPrOv8bTests(t: YThucTestKit) {
       assert(j?.created_by === idTvv && j.detail === 'Gia đình đổi kế hoạch' && /→/.test(j.title), `Hành trình: ${JSON.stringify(j)}`);
       cycles.reviseTarget(v.CX, em.cycleId, { newTarget: c0.target_score, reason: 'CX trả lại' });
       assert(cycles.cycleById(em.cycleId).target_score === c0.target_score, 'CX đổi Target không ăn');
-      /* PATCH /cycles (đường chung của QL: tuần bắt đầu, ghi chú lộ trình…) vẫn chặn — Target của TVV chỉ đi `target-revision`. */
-      assert(loi(() => cycles.updateCycle(v.TVV, em.cycleId, { startWeek: '2026-01-05' }))?.status === 403, 'TVV sửa tuần bắt đầu phải 403');
+      /* PATCH /cycles (đường chung của QL: ghi chú lộ trình, trạng thái…) vẫn chặn Target — Target của TVV chỉ đi `target-revision`. Tuần bắt đầu: OV8b-TUAN. */
+      assert(loi(() => cycles.updateCycle(v.TVV, em.cycleId, { targetScore: moi, lyDo: 'x' }))?.status === 403, 'TVV đổi Target qua PATCH /cycles phải 403');
+    });
+  });
+
+  check('OV8b-TUAN · [XM-C1] Tuần bắt đầu: TVV chi nhánh em đổi được (MT chưa thi dời như QL, MT có điểm giữ, nhật ký) · TVV chi nhánh khác / CX / Admin 403 · ô hiện đúng vai · Bổ sung hồ sơ xong', () => {
+    thu(() => {
+      const v = V();
+      const c0 = cycles.cycleById(em.cycleId);
+      const tuan0 = one('SELECT week_start FROM report_periods WHERE id = ?', c0.start_period_id)?.week_start as string;
+      const moi = t.addDays(tuan0, 7);
+      for (const [ten, p] of [['TVV khác', v.TVVKhac], ['CX', v.CX], ['Admin', v.Admin]] as const) {
+        assert(loi(() => cycles.updateCycle(p, em.cycleId, { startWeek: moi }))?.status === 403, `${ten} sửa tuần bắt đầu phải 403`);
+        assert(loi(() => cycles.updateCycle(p, em.cycleId, { startPeriodId: 1 }))?.status === 403, `${ten} gửi startPeriodId phải 403`);
+      }
+      /* Ô ở Sửa thông tin theo cùng luật máy chủ. */
+      const ve = (p: any) => (xoaNho(), profile.studentProfile(p, em.id)?.viewer?.doiTuanBatDau);
+      assert(ve(v.TVV) === true && ve(v.CX) === false && ve(v.Admin) === false && ve(P.cpManager) === true, `cờ doiTuanBatDau: TVV ${ve(v.TVV)} CX ${ve(v.CX)} Admin ${ve(v.Admin)} QL ${ve(P.cpManager)}`);
+      /* Kiểm dữ liệu nhập như QL (cùng `docTuanBatDau`). */
+      assert(loi(() => cycles.updateCycle(v.TVV, em.cycleId, { startWeek: 'abc' }))?.status === 400, 'tuần sai dạng phải 400');
+      /* Lịch: lượt MT tự xếp chưa có điểm dời theo, lượt có điểm giữ (cùng `apLichMacDinh` của QL). */
+      const lich = () => new Map(all(`SELECT a.id, a.planned_period_id w, EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id) co_diem, a.plan_source
+          FROM assessment_attempts a WHERE a.cycle_id = ? AND a.kind = 'mock' AND a.status != 'cancelled'`, em.cycleId).map((r) => [r.id, r]));
+      const truoc = lich();
+      /* Turso: TVV đổi tuần = đúng đường QL (+ kiểm quyền `duocDoiMon`), không câu lặp. */
+      const doQl = (() => { conn.exec('SAVEPOINT ql'); try { xoaNho(); const c0 = soCauSql(), d0 = soDongSql(); cycles.updateCycle(P.cpManager, em.cycleId, { startWeek: moi }); return [soCauSql() - c0, soDongSql() - d0]; } finally { conn.exec('ROLLBACK TO ql'); conn.exec('RELEASE ql'); xoaNho(); } })();
+      const c1 = soCauSql(), d1 = soDongSql();
+      cycles.updateCycle(v.TVV, em.cycleId, { startWeek: moi });
+      const doTvv = [soCauSql() - c1, soDongSql() - d1];
+      console.log(`    PATCH /cycles tuần bắt đầu: QL ${doQl[0]} câu / ${doQl[1]} dòng · TVV ${doTvv[0]} câu / ${doTvv[1]} dòng`);
+      assert(doTvv[0] <= TRAN_GHI_LO.doiTuanBatDau, `TVV đổi tuần ${doTvv[0]} câu > ${TRAN_GHI_LO.doiTuanBatDau}`);
+      assert(one('SELECT week_start FROM report_periods WHERE id = ?', cycles.cycleById(em.cycleId).start_period_id)?.week_start === moi, 'TVV đổi tuần bắt đầu không ăn');
+      const sau = lich();
+      for (const [id, r] of truoc) if (r.co_diem) assert(sau.get(id)?.w === r.w, `MT có điểm ${id} không được dời`);
+      const tuXep = [...truoc.values()].filter((r) => !r.co_diem && r.plan_source !== 'manual');
+      assert(!tuXep.length || tuXep.some((r) => sau.get(r.id)?.w !== r.w), `MT chưa thi không dời: ${JSON.stringify(tuXep)}`);
+      const nk = one(`SELECT actor_user_id FROM audit_logs WHERE entity_type = 'learning_cycle' AND entity_id = ? AND action = 'cycle.update' ORDER BY id DESC LIMIT 1`, em.cycleId);
+      assert(nk?.actor_user_id === idTvv, `nhật ký: ${JSON.stringify(nk)}`);
+    });
+  });
+
+  check('OV8b-TUAN-2 · [XM-C1] việc "Bổ sung hồ sơ thiếu" của TVV (Công việc · chuông · sổ cùng `myWork`): thiếu Tuần bắt đầu → có em; TVV điền → hết', () => {
+    thu(() => {
+      const v = V();
+      conn.prepare("UPDATE students SET consultant_user_id = ?, dob = COALESCE(dob, '2010-01-01'), email = COALESCE(email, 'ov8b.tuan@example.com') WHERE id = ?").run(idTvv, em.id);
+      conn.prepare('UPDATE learning_cycles SET start_period_id = NULL, target_score = COALESCE(target_score, 6.5) WHERE id = ?').run(em.cycleId);
+      const coEm = () => { xoaNho(); return (mywork.myWork(loadPrincipal(idTvv), {}).items ?? []).some((it: any) => it.group === 'bo_sung_ho_so' && (it.emIds ?? []).includes(em.id)); };
+      assert(coEm(), 'thiếu Tuần bắt đầu mà việc Bổ sung hồ sơ không có em');
+      cycles.updateCycle(v.TVV, em.cycleId, { startWeek: demoToday() });
+      assert(!coEm(), 'TVV điền Tuần bắt đầu xong mà việc vẫn còn em');
     });
   });
 
@@ -241,6 +291,7 @@ export async function runPrOv8bTests(t: YThucTestKit) {
       for (const [ten, ck] of [['TVV', tv], ['CX', cx]] as const) {
         for (const [viec, m, url, body] of duong) {
           if (ten === 'TVV' && url.endsWith('/buoc-tiep')) continue;
+          if (ten === 'TVV' && m === 'PATCH' && url === `/cycles/${em.cycleId}`) continue;   // [XM-C1]: TVV đổi được Tuần bắt đầu (OV8b-TUAN)
           const r = await goi(m, url, ck, body);
           if (r.status !== 403) sai.push(`${ten} ${viec}: ${r.status} ${r.json?.error ?? ''}`);
         }

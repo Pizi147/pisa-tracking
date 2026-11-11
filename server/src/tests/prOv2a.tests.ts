@@ -138,7 +138,9 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         const e2 = loi(() => cycles.updateCycle(p, chuKy, { targetScore: 7, lyDo: 'thử' }));
         assert(e2?.status === 403, `${id} sửa Target: ${e2?.status} ${e2?.message}`);
         const e3 = loi(() => cycles.updateCycle(p, chuKy, { startWeek: '2026-09-07' }));
-        assert(e3?.status === 403, `${id} sửa tuần bắt đầu: ${e3?.status}`);
+        /* [XM-C1] (chủ SP 13/11): TVV chi nhánh em sửa được Tuần bắt đầu (prOv8b OV8b-TUAN); CX, Admin vẫn 403. */
+        if (id === idTvv) assert(!e3, `TVV sửa tuần bắt đầu: ${e3?.status} ${e3?.message}`);
+        else assert(e3?.status === 403, `${id} sửa tuần bắt đầu: ${e3?.status}`);
         const e4 = loi(() => cycles.updateCycle(p, chuKy, { examDate: '2027-03' }));
         assert(!e4, `${id} sửa dự kiến thi: ${e4?.status} ${e4?.message}`);
       }

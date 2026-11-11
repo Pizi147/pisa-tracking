@@ -50,6 +50,5 @@ export const EN_OV12E = {
   'PA theo quy chế — không thay, không kết thúc sớm. GVCN / Quản lý: "Kết thúc sớm…" ở thẻ PA, kèm lý do.': 'Rule-based PA — cannot be replaced or ended early. Homeroom teacher / manager: "End early…" on the PA card, with a reason.',
   /* OV-13i: Sửa thông tin cả lớp — TVV / CX đổi Target, không sửa Tuần bắt đầu. */
   'Chỉ Quản lý, TVV hoặc CX đổi Target': 'Only a Manager, Counsellor or CX can change the Target',
-  'Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu': 'Only a Manager or Core teacher can change the start week',
   'Chỉ Quản lý, TVV hoặc CX đổi được Target.': 'Only a Manager, Counsellor or CX can change the Target.',
 } satisfies Record<string, Dich>;

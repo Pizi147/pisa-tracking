@@ -16,7 +16,7 @@ import { taoMtMacDinh } from './mtMacDinh.ts';
 import { activeRouteCodes } from '../platform/sysconfig.ts';
 import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { apDoiLoTrinh } from './doiLoTrinh.ts';
-import { duocDoiLoTrinh } from './monDangKy.ts';
+import { duocDoiLoTrinh, duocDoiMon } from './monDangKy.ts';
 import { programmeByCode } from '../normal/regular.ts';
 
 /**
@@ -229,9 +229,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   if (!coQuyen(p, PERMISSIONS.STUDENT_EDIT, { studentId: c.student_id })) {
-    /* PR-OV2a: Admin, TVV, CX chỉ sửa dự kiến thi ở lộ trình (Target, tuần bắt đầu, ghi chú, trạng thái: 403). */
+    /* PR-OV2a: Admin, TVV, CX chỉ sửa dự kiến thi ở lộ trình (Target, ghi chú, trạng thái: 403).
+       [XM-C1] (chủ SP 13/11): TVV chi nhánh em sửa thêm Tuần bắt đầu — cùng phạm vi đổi Môn học (`duocDoiMon`); CX, Admin không. */
     require_(p, PERMISSIONS.STUDENT_EDIT_INFO, { studentId: c.student_id });
-    if (Object.keys(patch ?? {}).some((k) => !['examDate', 'examMonth', 'examPeriodId'].includes(k))) throw forbidden(CHI_SUA_THONG_TIN);
+    const duoc = ['examDate', 'examMonth', 'examPeriodId', ...(duocDoiMon(p, { studentId: c.student_id }) ? ['startWeek', 'startPeriodId'] : [])];
+    if (Object.keys(patch ?? {}).some((k) => !duoc.includes(k))) throw forbidden(CHI_SUA_THONG_TIN);
   }
   kiemKieuO(patch, ['startWeek', 'examDate', 'note'], [], (k) => ({ startWeek: 'Tuần bắt đầu', examDate: 'Dự kiến thi', note: 'Ghi chú' })[k] ?? k);
   /* PR-TOC: cận năm (năm nay −3 … +3) chỉ áp khi giá trị ĐỔI — lộ trình cũ gửi lại đúng giá trị đang lưu không bị chặn. */
