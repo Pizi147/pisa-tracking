@@ -851,6 +851,11 @@ api.get('/phan-tich/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return giaoVienPtSvc.phanTichGiaoVien(principalOf(req), filterPtGvOf(req));
 }));
+/* Phân tích V2 · PR-5: sheet "Danh sách" của Excel Giáo viên — mọi bài / việc trong kỳ của mọi người (chỉ gọi lúc bấm Xuất). */
+api.get('/phan-tich/giao-vien/danh-sach', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return giaoVienPtSvc.danhSachSoGv(principalOf(req), filterPtGvOf(req));
+}));
 /* OV-15e (C30): panel một chỉ số khác Chấm điểm của một GV — `cot` = ket-qua:<kỹ năng> · tien-bo · ghi-pa · vi-pham · pa-hieu-qua. */
 api.get('/phan-tich/giao-vien/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();

@@ -97,7 +97,8 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     // PR-U12: bỏ link riêng "Bảng điểm đợt ›" — ô Bài là liên kết; tên trang vẫn là "bảng điểm đợt" (gợi ý cột Bài)
     assert(!sd.includes('Bảng điểm đợt ›') && /mở bảng điểm đợt/.test(sd), 'link lớp thường');
     assert(/'ho-tro': t\('Hỗ trợ học viên'\)/.test(docNguon('shared/domain/dieuHuong.ts')), 'TAB_CONG_VIEC_LABEL');
-    assert(/'Tổng hợp'/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
+    /* A-054 → PT-V2 PR-5: sheet bảng chính của Excel SOS tên "Test + SOS" (lớp thường "Test"), không còn "Tổng hợp". */
+    assert(/sheetTuBangCu\(ct === 'thuong' \? t\('Test'\) : t\('Test \+ SOS'\)/.test(docNguon('web/src/modules/phanTich/TongHopTestSos.tsx')), 'Excel A-054');
   });
 
   // ------------------------------------------------------------------ Task 2 · khái niệm nghiệp vụ (nhóm B)

@@ -12,6 +12,8 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { DaiChiSo, DauThe, NutXemToanBo, RongDau, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { ngayX, ptX, soX, xuatBaoCao } from './xuatV2.ts';
+import type { MauXlsx, OXlsx } from '../../lib/xlsxDep.ts';
 import {
   mucThi, ngay, nhanKhoang, soSanhDiem,
   type DongGvThiWeb, type DongThiThat, type KetQuaThiThatKq, type KnThiThat, type MucThi, type ThongKeThiThatWeb,
@@ -65,6 +67,7 @@ export function KetQuaThi(pv: PhamViPhanTich) {
   const dienThoai = useDienThoai();
   const query = thamSoLoc({ ...pv, ct: null });
   const { data, loading, error, reload } = useApi<TabThiThat>(`/phan-tich/thi-that?${query}`, [query]);
+  const dsCn = useApi<{ id: number; name: string }[]>('/ref/branches');   // tên chi nhánh cho đầu tệp Excel (đường tĩnh, có bản nhớ)
   const rows = data?.rows ?? [];
   const pt_ = usePhanTrang(rows.length, query, t('HV'));
   const nguon = (o: string) => `/phan-tich/thi-that/o?${query}&o=${o}`;
@@ -75,21 +78,38 @@ export function KetQuaThi(pv: PhamViPhanTich) {
 
   /* V2 (đặc tả 5.2): hai ô là CÔNG TẮC — "Đạt Target · trừ KCK" (mặc định) / "Tổng thể · gồm KCK"; thanh đổi theo ô. Không gọi lại máy chủ. */
   const [tongThe, setTongThe] = useState(false);
+  /*
+   * PR-5 Excel (đặc tả 7): Tổng (Đạt Target trừ KCK · Tổng thể gồm KCK · Không thi · KCK · Chưa có KQ) · Theo kỹ năng · Theo GV (QL, QT) ·
+   * Danh sách = ĐỦ cột Excel Thi thật cũ (Học viên … Ngày chọn), Kết quả tô màu Vượt / Đạt / Chưa đạt. Không gọi thêm máy chủ.
+   */
+  const MAU_X: Record<MucThi, MauXlsx> = { exceed: 'vuot', dat: 'dat', fail: 'chua-dat' };
   async function xuatExcel() {
     if (!data) return;
-    const XLSX = await import('xlsx');
-    const aoa: (string | number)[][] = [
-      [[t('Thi thật'), nhanKhoang(pv.khoang).chinh, t('dữ liệu đến {ngay}', { ngay: ngay(homNay) })].join(' · ')], [],
-      [t('Học viên'), t('Lớp'), t('Ngày thi'), 'L', 'R', 'W', 'S', 'OVR', 'Target', t('Kết quả'), t('Bước tiếp'), t('Người chọn'), t('Ngày chọn')],
-      ...rows.map((r) => {
-        const m = mucDong(r);
-        return [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : `${ngay(r.ngayThi, homNay)}${r.thiLai ? ` · ${thiLai(r.thiLai)}` : ''}`, fmtBand(r.l), fmtBand(r.r), fmtBand(r.w), fmtBand(r.s), fmtBand(r.ovr), r.target,
-          r.khongThi ? t('Không thi') : m ? NHAN_MUC[m] : '', r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn'), r.nguoiChon ?? '', r.ngayChon ? ngay(r.ngayChon, homNay) : ''];
-      }),
-    ];
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), t('Thi thật'));
-    XLSX.writeFile(wb, `ket-qua-thi-that-${ngay(homNay).split('/').join('-')}.xlsx`);
+    const tk = data.thongKe;
+    const ba = (x: { exceed: number; dat: number; fail: number }, mau: number): OXlsx[] => MUC.flatMap((m) => [soX(x[m], MAU_X[m]), ptX(x[m], mau)]);
+    const n3 = (x: { exceed: number; dat: number; fail: number }) => x.exceed + x.dat + x.fail;
+    const tong: OXlsx[][] = tk ? [
+      [t('Đạt Target · trừ KCK'), n3(tk.tong), ...ba(tk.tong, n3(tk.tong))],
+      [t('Tổng thể · gồm KCK'), n3(tk.tong.tongThe), ...ba(tk.tong.tongThe, n3(tk.tong.tongThe))],
+    ] : [];
+    const khac: OXlsx[][] = tk ? [[t('Em thi'), tk.tong.thi], [t('Không thi'), tk.tong.khongThi], [t('KCK (gồm WL 2)'), tk.tong.kck], [`${t('Chưa có KQ')} · ${t('hiện tại')}`, data.chuaCoKq ?? 0]] : [];
+    const dau3 = (dau: string): (string | null)[][] => [[dau, t('Em'), ...MUC.flatMap((m) => [NHAN_MUC[m], null])], [null, null, ...MUC.flatMap(() => [t('Số'), '%'])]];
+    const danhSach: OXlsx[][] = rows.map((r) => {
+      const m = mucDong(r);
+      return [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : ngayX(r.ngayThi), r.thiLai ? thiLai(r.thiLai) : '', ...[r.l, r.r, r.w, r.s, r.ovr].map((b) => (b == null ? '' : b)), r.target ?? '',
+        r.khongThi ? t('Không thi') : m ? { v: NHAN_MUC[m], mau: MAU_X[m] } : r.wl2 ? 'WL 2' : r.kck ? 'KCK' : '', r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn'), r.nguoiChon ?? '', ngayX(r.ngayChon)];
+    });
+    xuatBaoCao({ bao: t('Thi thật'), cn: pv.branchId ? dsCn.data?.find((b) => b.id === pv.branchId)?.name ?? null : null, ct: 'ft', khoang: pv.khoang, homNay }, [
+      ...(tk ? [
+        { ten: t('Tổng'), coDinhCot: false, dau: dau3(t('Nhóm')), hang: tong },
+        { ten: t('Không vào %'), coDinhCot: false, dau: [[t('Nhóm'), t('Em')]], hang: khac },
+        { ten: t('Theo kỹ năng'), coDinhCot: false, dau: [[t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null]), t('Điểm TB')], [null, null, ...MUC.flatMap(() => [t('Số'), '%']), null]],
+          hang: KN4.map((k): OXlsx[] => { const x = tk.kyNang[k]; return [NHAN_KN[k], x.hv, ...ba(x, x.hv), x.tb ?? '—']; }) },
+        ...(tk.gv ? [{ ten: t('Theo GV'), dau: [[t('Giáo viên'), t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null]), t('KN dưới Target'), null], [null, null, null, ...MUC.flatMap(() => [t('Số'), '%']), t('Số'), '%']],
+          hang: tk.gv.map((g): OXlsx[] => [g.ten, NHAN_KN[g.kn] ?? g.kn, g.hv, ...ba(g.so, g.hv), soX(g.so.duoi, 'chua-dat'), ptX(g.so.duoi, g.hv)]) }] : []),
+      ] : []),
+      { ten: t('Danh sách'), dau: [[t('Học viên'), t('Lớp'), t('Ngày thi'), t('Thi lại'), 'L', 'R', 'W', 'S', 'OVR', 'Target', t('Kết quả'), t('Bước tiếp'), t('Người chọn'), t('Ngày chọn')]], hang: danhSach },
+    ]);
   }
 
   const tk = data?.thongKe;

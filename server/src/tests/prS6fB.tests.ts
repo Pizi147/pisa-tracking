@@ -25,7 +25,8 @@ export async function runPrS6fBTests(t: YThucTestKit) {
     assert(!dau('thuong').includes('SOS') && dau('thuong').startsWith('Test · '), dau('thuong'));
     assert(dau('ft').startsWith('SOS · '), dau('ft'));
     const tsx = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
-    assert(/ct === 'thuong' \? 'tong-hop-test' : 'tong-hop-test-sos'/.test(tsx), 'tên file Excel theo khung');
+    /* PT-V2 PR-5: tên tệp "{Báo cáo} {chi nhánh} {tuần}" — lớp thường "Test …", FT "SOS …"; sheet đầu cùng luật. */
+    assert(/bao: ct === 'thuong' \? t\('Test'\) : 'SOS'/.test(tsx) && /sheetTuBangCu\(ct === 'thuong' \? t\('Test'\) : t\('Test \+ SOS'\)/.test(tsx), 'tên file / sheet Excel theo khung');
   });
 
   check('S6F-b (5) · OV-15e: tu/den là khoảng chung — rời góc "Giáo viên" GIỮ tu/den; vào Hiệu quả PA từ góc khác vẫn giữ tu/den', () => {

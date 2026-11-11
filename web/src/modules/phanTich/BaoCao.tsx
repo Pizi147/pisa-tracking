@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -7,7 +7,10 @@ import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { DauThe, NutXemToanBo, RongDau, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DauThe, NutXemToanBo, NutXuat, RongDau, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { napDanhSach, ptX, sheetDanhSachHoacLoi, soX, xuatBaoCao } from './xuatV2.ts';
+import type { OXlsx, SheetDep } from '../../lib/xlsxDep.ts';
 import { t } from '@shared/i18n/index.ts';
 import { tenMonNgan, type ChiNhanhV2Kq, type DongChiNhanhV2, type TyLeCn } from '@shared/domain/index.ts';
 
@@ -43,6 +46,8 @@ export function BaoCao(pv: PhamViPhanTich) {
   const q = thamSoLoc({ ...pv, ct, classId: null });
   const api = useApi<ChiNhanhV2Kq>(`/tong-quan/v5?${q}&baoCao=chi-nhanh`, [q]);
   const pt6 = usePhanTrang(Math.max(0, (api.data?.hang.length ?? 0)), q, t('lớp'), 6);
+  const { homNay } = useNgayNghiepVu();
+  const [dangXuat, setDangXuat] = useState(false);
 
   if (api.error) return <ErrorState message={api.error.message} hint={api.error.hint} status={api.error.status} onRetry={api.reload} />;
   if (!api.data) return <Skeleton rows={8} />;
@@ -156,6 +161,46 @@ export function BaoCao(pv: PhamViPhanTich) {
       }
     }
   };
+  /* PR-5 Excel: Tổng quan (các số cột trái) · Theo lớp / Theo chi nhánh (mọi hàng + tổng) · Tiến bộ theo kỹ năng (FT) · Danh sách (em Đạt MT / bài Đạt Test). */
+  async function xuatExcel() {
+    setDangXuat(true);
+    try {
+      const tyLe = (x: TyLeCn | null): OXlsx[] => (x && x.mau ? [x.dat, x.mau, ptX(x.dat, x.mau)] : ['—', '—', '—']);
+      const tq: OXlsx[][] = [
+        [t('Học viên đang học'), t('hiện tại'), d.hv.dangHoc, '', ''], [t('Vào học'), t('trong kỳ'), d.hv.vao, '', ''], [t('Kết thúc học'), t('trong kỳ'), d.hv.ketThuc, '', ''],
+        ...(ft ? [
+          [t('Đạt MT'), t('trong kỳ · HV'), ...tyLe(d.datMt)], [t('Chưa đủ điểm MT'), t('trong kỳ · HV'), d.datMt?.chuaDu ?? '—', '', ''],
+          [t('Tiến bộ'), t('trong kỳ · lượt kỹ năng'), ...tyLe(d.tienBo)],
+          ...(d.thiThat ? [
+            [`${t('Thi thật')} · ${t('Vượt')}`, t('trong kỳ · trừ KCK'), soX(d.thiThat.vuot, 'vuot'), d.thiThat.vuot + d.thiThat.dat + d.thiThat.chuaDat, ptX(d.thiThat.vuot, d.thiThat.vuot + d.thiThat.dat + d.thiThat.chuaDat)],
+            [`${t('Thi thật')} · ${t('Đạt')}`, t('trong kỳ · trừ KCK'), soX(d.thiThat.dat, 'dat'), d.thiThat.vuot + d.thiThat.dat + d.thiThat.chuaDat, ptX(d.thiThat.dat, d.thiThat.vuot + d.thiThat.dat + d.thiThat.chuaDat)],
+            [`${t('Thi thật')} · ${t('Chưa đạt')}`, t('trong kỳ · trừ KCK'), soX(d.thiThat.chuaDat, 'chua-dat'), d.thiThat.vuot + d.thiThat.dat + d.thiThat.chuaDat, ptX(d.thiThat.chuaDat, d.thiThat.vuot + d.thiThat.dat + d.thiThat.chuaDat)],
+            [`${t('Thi thật')} · ${t('Em thi')}`, t('trong kỳ'), d.thiThat.emThi, '', ''], [`${t('Thi thật')} · ${t('Chưa có KQ')}`, t('hiện tại'), d.thiThat.chuaCoKq, '', ''],
+          ] : []),
+        ] : [
+          [t('Đạt Test'), t('trong kỳ · bài'), ...tyLe(d.datTest)],
+          ...CK.map(([nhan], i): OXlsx[] => [`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`, t('trong kỳ · HV'), d.cuoiKhoa ? soX(d.cuoiKhoa[i], i ? 'chua-dat' : 'vuot') : '—',
+            d.cuoiKhoa ? d.cuoiKhoa.reduce((a, b) => a + b, 0) : '', d.cuoiKhoa ? ptX(d.cuoiKhoa[i], d.cuoiKhoa.reduce((a, b) => a + b, 0)) : '']),
+        ]),
+      ];
+      const tenHang = (h: DongChiNhanhV2) => h.ten || d.tenChiNhanh || t('Tổng');
+      const bangHang = [...d.hang, tong].map((h): OXlsx[] => [tenHang(h), h.hv, ...(ft
+        ? [...tyLe(h.datMt), ...tyLe(h.tienBo), ...(h.thi ? [soX(h.thi.vuot, 'vuot'), soX(h.thi.dat, 'dat'), soX(h.thi.chuaDat, 'chua-dat')] : ['—', '—', '—'])]
+        : [...tyLe(h.datTest), ...(h.cuoiKhoa ? h.cuoiKhoa.map((n, i) => soX(n, i ? 'chua-dat' : 'vuot')) : ['—', '—', '—', '—'])])]);
+      const sheets: SheetDep[] = [
+        { ten: t('Tổng quan'), coDinhCot: false, dau: [[t('Chỉ số'), t('Kỳ'), t('Số'), t('Trên'), '%']], hang: tq },
+        { ten: lop ? t('Theo lớp') : t('Theo chi nhánh'), tong: [bangHang.length - 1], hang: bangHang,
+          dau: ft ? [[lop ? t('Lớp') : t('Chi nhánh'), t('HV đang học'), t('Đạt MT'), null, null, t('Tiến bộ'), null, null, t('Thi thật'), null, null],
+            [null, null, t('Đạt'), t('HV'), '%', t('Tăng'), t('Lượt'), '%', t('Vượt'), t('Đạt'), t('Chưa đạt')]]
+            : [[lop ? t('Lớp') : t('Chi nhánh'), t('HV đang học'), t('Đạt Test'), null, null, `${t('Cuối khoá')} · ${t('HV')}`, null, null, null],
+              [null, null, t('Đạt'), t('Bài'), '%', t('Đạt'), '60–69 %', '50–59 %', '< 50 %']] },
+        ...(ft && d.tienBoKn ? [{ ten: t('Tiến bộ theo kỹ năng'), coDinhCot: false, dau: [[t('Kỹ năng'), t('Tăng'), t('Giữ nguyên'), t('Giảm'), t('Lượt'), `% ${t('Tăng')}`]],
+          hang: d.tienBoKn.map((x): OXlsx[] => [tenMonNgan(null, x.skill), soX(x.tang, 'vuot'), x.tong - x.tang - x.giam, soX(x.giam, 'chua-dat'), x.tong, ptX(x.tang, x.tong)]) }] : []),
+        sheetDanhSachHoacLoi(await napDanhSach(ft ? nBc(tong, 'dat-mt') : nTest(tong, 'dat-test'))),
+      ];
+      xuatBaoCao({ bao: t('Chi nhánh'), cn: d.tenChiNhanh, ct, khoang: pv.khoang, homNay }, sheets);
+    } finally { setDangXuat(false); }
+  }
   const trang = lop ? pt6.cat(d.hang) : d.hang;
   const bang = !d.hang.length ? <RongDau chu={lop ? t('Chi nhánh chưa có lớp đang học ở khung này') : t('Chưa có chi nhánh nào trong phạm vi')} nut={<NutXemToanBo />} /> : (
     <>
@@ -167,6 +212,7 @@ export function BaoCao(pv: PhamViPhanTich) {
 
   return (
     <div className="bao-cao chi-nhanh">
+      <VaoHangLoc o="phai"><NutXuat nhan={t('Xuất Excel')} tat={dangXuat} onClick={xuatExcel} /></VaoHangLoc>
       <style>{'@media print { @page { size: A4 landscape; margin: 10mm; } .bao-cao .card { box-shadow: none; } } .chi-nhanh tr.tong > td { font-weight: 700; border-top: 1px solid var(--line-strong); } @media (max-height: 760px) and (min-width: 1024px) { .chi-nhanh .so-to { padding-top: 6px; padding-bottom: 8px; gap: 0; } .chi-nhanh .so-to > span:first-child { font-size: 15px; } .chi-nhanh .so-to-gt { font-size: 40px; line-height: 1.05; } .chi-nhanh .so-thi { font-size: 28px; line-height: 1.1; } .chi-nhanh .cot-so { gap: 8px; } }'}</style>
       <div className="grid items-start gap-3.5 lg:grid-cols-[360px_minmax(0,1fr)] xl:grid-cols-[400px_minmax(0,1fr)] print:grid-cols-[360px_minmax(0,1fr)]">
         <div className="cot-so grid gap-3 max-lg:grid-cols-2 max-lg:[&>*:first-child]:col-span-2 max-lg:[&>*:nth-child(4)]:col-span-2 max-sm:gap-2">{cotTrai}</div>

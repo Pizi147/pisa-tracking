@@ -24,12 +24,15 @@ type DongQc = { d: DongHieuQuaPa; cha: DongHieuQuaPa | null };
 /** FT: mỗi (mức SOS, loại PA) một dòng; lớp thường: mỗi loại bổ trợ một dòng. */
 const phangQuyChe = (hang: DongHieuQuaPa[]): DongQc[] => hang.flatMap((h): DongQc[] => (h.con?.length ? h.con.map((d) => ({ d, cha: h })) : [{ d: h, cha: null }]));
 
-export function HieuQuaPa(props: PhamViPhanTich) {
+/** `onData` (PR-5 Excel): báo dữ liệu đã nạp lên khối SOS để Xuất Excel có bảng PA mà không gọi lại máy chủ. */
+export function HieuQuaPa(props: PhamViPhanTich & { onData?: (d: HieuQuaPaKetQua | null) => void }) {
   const [params, setParams] = useSearchParams();
   const them: Record<string, string> = {};
   if (params.get('gv')) them.gv = params.get('gv')!;
   const query = thamSoLoc(props, them);
   const { data, loading, error, reload } = useApi<HieuQuaPaKetQua>(`/phan-tich/hieu-qua-pa?${query}`, [query]);
+  const { onData } = props;
+  useEffect(() => { onData?.(data ?? null); }, [data, onData]);
   const dongQc = data ? phangQuyChe(data.quyChe.hang) : [];
   const ptGv = usePhanTrang(data?.gvThem.hang.length ?? 0, query, t('vấn đề'));
   const ptQc = usePhanTrang(dongQc.length, query, t('dòng'));

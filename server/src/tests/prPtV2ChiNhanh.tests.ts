@@ -4,7 +4,7 @@
  * ô mới (vào · kết thúc · Chưa có KQ) = số dòng panel; khoảng mặc định = các tuần của tháng; tab mới + link `?goc=` cũ.
  */
 export async function runPrPtV2ChiNhanhTests(t: any) {
-  const { check, assert, P } = t;
+  const { check, checkAsync, assert, P } = t;
   const cn: any = await import('../phanTich/chiNhanh.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
   const tt: any = await import('../phanTich/thiThatThongKe.ts');
@@ -148,5 +148,44 @@ export async function runPrPtV2ChiNhanhTests(t: any) {
       const o = gv.oChiSoGv(P.admin, { ct: 'ft', ...kGv, gv: 0, cot: 'cham-diem' });
       assert(o.n === n(cp.chamDiem), `panel gv=0 ${o.n} ≠ ${n(cp.chamDiem)}`);
     }
+  });
+  /* PR-5 Excel (đặc tả 7): bộ ghi định dạng sẵn + sheet Danh sách Giáo viên. */
+  const xd: any = await import('../../../shared/xlsxDep.ts');
+  await checkAsync('PT-V2 · Excel: tệp đọc lại được — số là số, % là định dạng %, ngày là ngày, chữ "=…" không thành công thức, ô nhóm gộp, cố định hàng, tiêu đề đậm nền nhạt', async () => {
+    const XLSX: any = await import('xlsx');
+    const { unzipSync, strFromU8 } = await import('fflate');
+    const b = xd.dungXlsx('Giáo viên', 'Monbay · Fast Track', [{ ten: 'Giáo viên', dau: [['Giáo viên', 'Chấm Test', null], [null, 'Đúng hạn', '%']],
+      hang: [['=1+1', 8, { v: 0.62, dang: 'pt' }], ['Ngày', { v: '2026-09-09', dang: 'ngay' }, { v: 5, mau: 'chua-dat' }]], tong: [1] }]);
+    const wb = XLSX.read(b, { type: 'array', cellNF: true });
+    const ws = wb.Sheets['Giáo viên'];
+    assert(ws.A1.v === 'Giáo viên' && ws.A2.v === 'Monbay · Fast Track', 'đầu tệp');
+    assert(ws.A6.t === 's' && ws.A6.v === '=1+1' && !ws.A6.f, `chữ "=…" phải là chữ: ${JSON.stringify(ws.A6)}`);
+    assert(ws.B6.t === 'n' && ws.B6.v === 8, 'số là số');
+    assert(ws.C6.t === 'n' && ws.C6.v === 0.62 && /%/.test(ws.C6.z ?? ''), `% là định dạng %: ${JSON.stringify(ws.C6)}`);
+    assert(ws.B7.t === 'n' && /dd\/mm\/yyyy/.test(ws.B7.z ?? ''), `ngày là ngày: ${JSON.stringify(ws.B7)}`);
+    assert((ws['!merges'] ?? []).some((m: any) => m.s.r === 3 && m.s.c === 1 && m.e.c === 2), 'nhóm "Chấm Test" gộp 2 cột');
+    assert((ws['!merges'] ?? []).some((m: any) => m.s.r === 3 && m.e.r === 4 && m.s.c === 0), '"Giáo viên" gộp dọc 2 hàng tiêu đề');
+    const z = unzipSync(b);
+    const sh = strFromU8(z['xl/worksheets/sheet1.xml']), st = strFromU8(z['xl/styles.xml']);
+    assert(/<pane [^>]*ySplit="5"[^>]*state="frozen"/.test(sh) && /<autoFilter /.test(sh), 'cố định tới hết tiêu đề + lọc');
+    assert(/<b\/>/.test(st) && /patternType="solid"/.test(st) && /FFA63A2D/.test(st), 'đậm · nền tiêu đề · màu Chưa đạt');
+    assert(xd.dungXlsx('X', '', [{ ten: 'a:b/c?*[d]' + 'x'.repeat(40), dau: [['A']], hang: [] }]).length > 0, 'tên sheet lạ / dài không làm hỏng tệp');
+  });
+  check('PT-V2 · Excel Giáo viên · Danh sách: dòng mỗi GV = Chấm Test + Việc của GV ở bảng (không S chéo chung); S chéo chung một dòng, không lặp theo người', () => {
+    for (const p of [P.mbManager, P.admin]) {
+      const bang = gv.phanTichGiaoVien(p, { ct: 'ft', ...kGv, v2: true });
+      const ds = gv.danhSachSoGv(p, { ct: 'ft', ...kGv });
+      for (const h of bang.hang) {
+        const cua = ds.rows.filter((r: any) => r.gv === h.ten && !r.dongViec.sChung);
+        const n = (o: any) => (o.k === 'so' ? o.tong : 0);
+        assert(cua.filter((r: any) => r.dongViec.tab === 'cham').length === n(h.chamDiem), `${h.ten}: bài ${cua.filter((r: any) => r.dongViec.tab === 'cham').length} ≠ ${n(h.chamDiem)}`);
+        assert(cua.filter((r: any) => r.dongViec.tab !== 'cham').length === n(h.viecDungHan), `${h.ten}: việc`);
+      }
+      const chung = ds.rows.filter((r: any) => r.dongViec.sChung);
+      assert(chung.every((r: any) => r.gv == null) && new Set(chung.map((r: any) => r.id)).size === chung.length, 'S chéo chung lặp');
+    }
+    let loi = 0;
+    try { gv.danhSachSoGv(P.subjectTeacher, { ct: 'ft', ...kGv }); } catch (e: any) { loi = e.status ?? 403; }
+    assert(loi === 403, `GV bộ môn phải bị chặn: ${loi}`);
   });
 }
