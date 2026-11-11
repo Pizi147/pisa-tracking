@@ -190,10 +190,8 @@ export function defaultSkillFor(p: Principal, classId: number | null, today: str
   const ds = monDayTai(p, classId, today);
   return ds.length === 1 ? ds[0] : null;
 }
-/** G3-19 (chủ SP 13/11): người ghi dạy TỪ 2 MÔN trở lên ở lớp em → BẮT BUỘC chọn môn. GVCN của lớp, người không dạy môn nào, hoặc dạy 1 môn (tự điền) thì không. */
-export const batBuocChonMon = (p: Principal, classId: number | null, today: string = demoToday()): boolean =>
-  monDayTai(p, classId, today).length >= 2
-  && !p.assignments.some((a) => a.isCore && a.classId === classId && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));   // GVCN của lớp: để trống được
+/** G3-19 (chủ SP 13/11): người ghi dạy TỪ 2 MÔN trở lên ở lớp em → BẮT BUỘC chọn môn. GVCN dạy từ 2 môn cũng phải chọn; người không dạy môn nào của lớp (GVCN không dạy, Quản lý, Admin) hoặc dạy 1 môn (tự điền) thì không. */
+export const batBuocChonMon = (p: Principal, classId: number | null, today: string = demoToday()): boolean => monDayTai(p, classId, today).length >= 2;
 const THIEU_MON = 'Chọn môn — bạn dạy từ 2 môn ở lớp này.';
 
 // ---------------------------------------------------------------- ghi (V01–V08)

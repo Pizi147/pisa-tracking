@@ -7,7 +7,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import * as require_fs from 'node:fs';
 
 export async function runKhungTests(t: YThucTestKit) {
-  const { check, assert } = t;
+  const { check, checkAsync, assert } = t;
   const d = await import('../../../shared/domain/index.ts');
   console.log('\nPR-O · Khung 4 khu vực');
 
@@ -51,6 +51,22 @@ export async function runKhungTests(t: YThucTestKit) {
     for (const f of ['server/src/worklist/mywork.ts', 'server/src/yThuc/phoiHop.ts', 'server/src/students/viecHocVien.ts', 'shared/domain/chuong.ts', 'shared/domain/hocVienLop.ts']) {
       assert(!/qua TVV/.test(fs.readFileSync(f, 'utf8')), `${f} còn "qua TVV"`);
     }
+  });
+
+  checkAsync('G3-17 · migrate prG317 đổi chữ chuông cũ MỘT lần: chạy lần 2 không đổi gì thêm', async () => {
+    const { conn } = t;
+    const { migratePrG317 } = await import('../migrate/prG317.ts');
+    const uid = (conn.prepare('SELECT id FROM users LIMIT 1').get() as any).id;
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      conn.prepare("INSERT INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'x', 'Báo phụ huynh qua TVV · An · Progress Test', 'g317-a', '2026-11-01T00:00:00Z')").run(uid);
+      conn.prepare("INSERT INTO notifications (user_id, kind, title, dedup_key, created_at) VALUES (?, 'x', 'Tin khác', 'g317-b', '2026-11-01T00:00:00Z')").run(uid);
+      const lan1: string[] = []; migratePrG317(conn, lan1);
+      const tieuDe = (k: string) => (conn.prepare('SELECT title FROM notifications WHERE dedup_key = ?').get(k) as any).title;
+      assert(lan1.length === 1 && tieuDe('g317-a') === 'Báo PH kết quả Test · An · Progress Test' && tieuDe('g317-b') === 'Tin khác', `lần 1: ${lan1} · ${tieuDe('g317-a')}`);
+      const lan2: string[] = []; migratePrG317(conn, lan2);
+      assert(lan2.length === 0 && tieuDe('g317-a') === 'Báo PH kết quả Test · An · Progress Test', 'lần 2 không được đổi gì thêm');
+    } finally { conn.exec('ROLLBACK'); }
   });
 
   check('PR-O · G-6 tuần học trong khoá: "tuần 8/8"', () => {

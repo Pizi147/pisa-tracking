@@ -192,7 +192,7 @@ export function buildUxDemo(conn: any, adminId: number): { tvv: number; soHvTvv:
   /** Vi phạm + lần xử lý do `gvId` lưu ngày `phanHoi` (lúc `luc` giờ UTC) — việc Báo PH (SV-YT-TVV) hạn = ngày lưu + 4. Trả id việc Báo PH. */
   const viPham = (sid: number, ngay: string[], phanHoi: string, gvId = gvLinh, luc = '09:00:00') => {
     const p = loadPrincipal(gvId);   // nạp mỗi lần: phân công lớp thêm sau lần nạp trước
-    const ids = ngay.map((d) => (recordViolation(p, { studentId: sid, category: 'homework', description: 'Không làm bài tập về nhà', occurredOn: d }) as any).violation.id as number);
+    const ids = ngay.map((d) => (recordViolation(p, { studentId: sid, category: 'homework', description: 'Không làm bài tập về nhà', skill: 'speaking', occurredOn: d }) as any).violation.id as number);
     xacNhanXuLy(p, sid, { violationIds: ids, performedOn: phanHoi, note: 'Đã trao đổi với em' } as any);
     const moc = `${phanHoi}T${luc}.000Z`;
     conn.prepare(`UPDATE violations SET reported_on = occurred_on, created_at = occurred_on || 'T09:00:00.000Z', ghi_nhan_luc = occurred_on, phan_hoi_ngay = ?

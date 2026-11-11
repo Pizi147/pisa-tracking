@@ -1050,7 +1050,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   const thongKeSvc: any = await import('../yThuc/thongKe.ts');
   const auditRows = (action: string, id?: number) => all('SELECT * FROM audit_logs WHERE action = ?' + (id ? ' AND entity_id = ?' : ''), ...(id ? [action, id] : [action]));
   const recordV = (who: any, sid: number, extra: Record<string, unknown> = {}) => (violSvc.recordViolation(who, {
-    studentId: sid, category: 'homework', description: 'Không nộp bài Writing Task 2 buổi này', ...extra }) as any).violation.id as number;
+    studentId: sid, category: 'homework', skill: 'writing1', description: 'Không nộp bài Writing Task 2 buổi này', ...extra }) as any).violation.id as number;
   /** Ghi `n` vi phạm khác ngày cho một học viên, trả về danh sách id. */
   const recordMany = (sid: number, n: number) => Array.from({ length: n }, (_, i) => recordV(gvcn, sid, { occurredOn: addDays(TODAY, -(i + 1)), description: `Vi phạm thứ ${i + 1} dùng cho phép kiểm xoá` }));
   /* PR-YT4: một lần Xác nhận xử lý (bậc tự điền). `kind` của v3 bỏ — máy chủ quyết bậc. */
