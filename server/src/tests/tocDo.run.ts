@@ -1345,9 +1345,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        15eb3872996a260a, QT toi 6627fb30cb9de2f7, GVCN toi 6f6d75efb833e0e7, GVCN_THUONG toi 6f6d75efb833e0e7, QL tat-ca f35cfb2ed97a60cc, QT tat-ca 650abfb450588c2e,
        QT tat-ca cn 46b64ddbd555658b, QL gvcn f6ba5ccba208842e, GVS toi 85067c7b764cb801 */
     /* G3-17 (13/11): chụp lại 8 băm — đổi CÓ CHỦ Ý chỉ chữ việc "Báo phụ huynh qua TVV" → "Báo PH kết quả Test" (tiêu đề / nhãn). */
-    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': '940b335430de8caf', 'GVBM toi': '619ada104fec5944',
-    'GVCN_THUONG toi': '940b335430de8caf', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '7d767d49828b74e7', 'QT tat-ca': '82c3472f2a05bcdf',
-    'QT tat-ca cn': 'b3eff2d5295fb05c', 'QL gvcn': '52d159aa5665aa06', 'GVS toi': '3c702438ea810b91',
+    /* MON-CT-1311 (13/11): chụp lại 7 băm (QL / QT toi, ADMIN, GVS giữ) — đổi CÓ CHỦ Ý: seed MB PET 01 về L+S · R+W (KET / PET mặc định hai môn). Đã kiểm: trả
+       seed PET + hằng `CHUONG_TRINH_LIEN_TUC_CO_SAN` về 4 môn trên nhánh → TD4-a đạt với băm cũ (mọi mã khác của nhánh giữ). Trước: GVCN toi 940b335430de8caf,
+       GVBM toi 619ada104fec5944, GVCN_THUONG toi 940b335430de8caf, QL tat-ca 7d767d49828b74e7, QT tat-ca 82c3472f2a05bcdf, QT tat-ca cn b3eff2d5295fb05c, QL gvcn 52d159aa5665aa06 */
+    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': '31ebd923a221e835', 'GVBM toi': '0ebf563606c50ead',
+    'GVCN_THUONG toi': '31ebd923a221e835', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '7ed19aebd00614bd', 'QT tat-ca': 'b656f012db13e5bd',
+    'QT tat-ca cn': 'cab3fd0e23981a6d', 'QL gvcn': 'ac54489ae58e3bcf', 'GVS toi': '3c702438ea810b91',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

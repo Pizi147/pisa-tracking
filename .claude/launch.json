@@ -13,25 +13,8 @@
     {
       "name": "thiet-ke",
       "runtimeExecutable": "python",
-      "runtimeArgs": [
-        "-m",
-        "http.server",
-        "5480",
-        "--bind",
-        "127.0.0.1",
-        "--directory",
-        "thiet-ke"
-      ],
+      "runtimeArgs": ["-m", "http.server", "5480", "--bind", "127.0.0.1", "--directory", "thiet-ke"],
       "port": 5480
-    },
-    {
-      "name": "dev-mc",
-      "runtimeExecutable": "node",
-      "runtimeArgs": [
-        "-e",
-        "process.env.PORT='4013'; process.env.WEB_PORT='5193'; require('child_process').spawn('npx', ['concurrently','-k','-n','API,WEB','npm:dev:api','npm:dev:web'], { stdio: 'inherit', shell: true }).on('exit', (c) => process.exit(c ?? 0))"
-      ],
-      "port": 5193
     }
   ]
 }
