@@ -9,7 +9,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, addDaysIso, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
-import { PhoiHopSosSection, type CoordTurn } from './PhoiHopSosSection.tsx';
+import type { CoordTurn } from './PhoiHopSosSection.tsx';
+import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
 import { BaoPhDu, DauCot, KhoiLan, NhomLan, OBaoPh, OBuoc, type VpDong } from './BangLan.tsx';
@@ -245,9 +246,11 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
       </div>
 
       {phan === 'phoi-hop' ? (
-        <div className="px-4 pb-4 pt-3 max-sm:px-3">
-          {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-0 py-1" />
-            : <PhoiHopSosSection turns={coord.data?.rows ?? null} loading={coord.loading} cot1="luot" xanh onGoAcademic={onGoAcademic}
+        <div className="pb-1">
+          {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
+            : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
+            /* PHOI-HOP-V2 PR-2 (mockup #1368 K7): cùng bảng với hồ sơ lớp, cột đầu là Lượt. */
+            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="luot" onGoAcademic={onGoAcademic}
                 onChanged={() => { coord.reload(); }} />}
         </div>
       ) : doan === 'can-lam' ? (

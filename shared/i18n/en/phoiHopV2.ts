@@ -23,4 +23,8 @@ export const EN_PHOI_HOP_V2 = {
   'Nội dung ít nhất {n} ký tự.': 'Content: at least {n} characters.',
   'Đã báo PH gì, hẹn họp ngày nào, kết quả buổi họp': 'What the parent was told, meeting date, meeting result',
   'Meeting CX/GĐCN (sau Mock)': 'CX/Head meeting (after Mock)',
+  'Sửa hạn…': 'Change due date…',
+  'Không còn việc phối hợp nào': 'No coordination tasks left',
+  'Xem việc ▸': 'Show tasks ▸',
+  'Chờ bạn báo PH': 'Waiting for your parent call',
 } satisfies Record<string, Dich>;
