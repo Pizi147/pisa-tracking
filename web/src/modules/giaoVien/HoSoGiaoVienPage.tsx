@@ -210,12 +210,14 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
   const id = data.gv.id;
   const d = cs.data;
   const nguonCs = (cot: string, loc = '') => `/giao-vien/${id}/chi-so/o?cot=${cot}${loc ? `&loc=${loc}` : ''}&${ky}`;
-  const o = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram x={tyLeGv(x)} nguon={nguonCs(cot)} tieuDe={ten} /> : <span className="text-slate-500">…</span>);
+  /* PT-SO-LOI (PTA 12/11): % đúng hạn (Chấm Test, Việc) → panel sổ nghĩa vụ mở thẳng tab Đúng hạn (`tt`). */
+  const nguonO = (cot: string) => `${nguonCs(cot)}${cot === 'cham-diem' || cot === 'viec-dung-han' ? '&tt=dung' : ''}`;
+  const o = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram x={tyLeGv(x)} nguon={nguonO(cot)} tieuDe={ten} /> : <span className="text-slate-500">…</span>);
   const pa: TyLeV5 = { dat: data.caseMo.filter((c) => c.coPa).length, mau: data.caseMo.length };
   const paCt = d && d.paHieuQua.k === 'so' ? d.paHieuQua : null;
   const o1 = (ten: string, giaTri: ReactNode, mau: ReactNode, luat?: string) => ({ ten, giaTri, mau, luat });
   /* Số phụ trong ô (dòng nhỏ): % gạch chân bấm → panel; mẫu 0 → "—". */
-  const nho = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram gon x={tyLeGv(x)} nguon={nguonCs(cot)} tieuDe={ten} /> : '…');
+  const nho = (x: OPtGv | undefined, cot: string, ten: string) => (d ? <PhanTram gon x={tyLeGv(x)} nguon={nguonO(cot)} tieuDe={ten} /> : '…');
   const thi = d && d.thiThat.k === 'so' ? d.thiThat : null;
   const ds = [
     o1(t('Đúng hạn'), o(d?.diemDungHan, 'cham-diem', t('Điểm đúng hạn')),

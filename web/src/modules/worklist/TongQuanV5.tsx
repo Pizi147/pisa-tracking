@@ -306,7 +306,9 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
       return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={`/tong-quan/gv-tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} gvTre={GV_TRE_QL} /></span>
         : <span className="tabular-nums text-faint">0</span>;
     }
-    const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}` : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}`;
+    /* PT-SO-LOI (PTA 12/11): % đúng hạn → panel sổ nghĩa vụ mở thẳng tab Đúng hạn (`tt`). */
+    const nguon = c.key === 'pa' ? `/giao-vien/${h.id}/o?cot=case-mo&cn=${d.branchId}&ct=${d.ct}`
+      : `/phan-tich/giao-vien/o?gv=${h.id}&cot=${COT[c.key]}&${q}${c.key === 'viec' || c.key === 'diem' ? '&tt=dung' : ''}`;
     return <PhanTram gon x={giaTri(h, c)} nguon={nguon} tieuDe={c.key === 'pa' ? `${t('Case đang mở')} · ${h.ten}` : `${c.nhan} · ${h.ten}`} />;
   };
   /* TQ-GON (M3): cột "Bài chấm quá hạn" tiêu đề đã có đơn vị → không lặp "bài" dưới mỗi số. */
