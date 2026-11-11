@@ -96,8 +96,8 @@ export const HD_QL: HuongDan = {
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Phối hợp SOS', duong: CV },
       loiTat: ['ho-so-lop', 'ho-so-hv', 'p-phoi-hop'], cung: 'mở cùng danh sách phối hợp.',
       buoc: ['Mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, mục <b>Phối hợp SOS</b>: mỗi dòng một lớp; chọn <b>Tất cả</b> để thấy mọi GVCN.',
-        'Bấm dòng: ① Học viên · ② Đã làm · ③ Kết quả. Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b> — QL làm thay GVCN không cần nút riêng.',
-        'Meeting CX / GĐCN: TVV báo gia đình rồi ghi kết quả; bạn đọc ở cột ③.'],
+        'Bấm dòng: Học viên · Đã làm · Kết quả. Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b> — QL làm thay GVCN không cần nút riêng.',
+        'Meeting CX / GĐCN: TVV báo gia đình rồi ghi kết quả; bạn đọc ở cột Kết quả.'],
       tuKhac: ['phối hợp', 'sos', 'meeting', 'gvcn', 'coordination'],
     },
     /* ---------------------------------------------------------------- Học viên và lớp */
@@ -495,7 +495,7 @@ export const HD_QL: HuongDan = {
       id: 'p-phoi-hop', ten: 'Phối hợp SOS đang mở', duong: [], panel: 'phoi-hop-sos',
       dangO: { cau: 'Việc phối hợp theo mức SOS của các em một lớp.' },
       khongLam: [{ ten: 'Báo gia đình, ghi kết quả Meeting', cua: 'việc của TVV' }],
-      muc: [{ id: 'pp-xn', viec: 'phoi-hop-sos', ten: 'Phối hợp SOS', buoc: ['Cột ① Học viên · ② Đã làm · ③ Kết quả.', 'Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b>; cần đổi: <b>Sửa</b>.', 'Không cần làm: <b>Bỏ việc…</b> (ghi lý do).'] }],
+      muc: [{ id: 'pp-xn', viec: 'phoi-hop-sos', ten: 'Phối hợp SOS', buoc: ['Cột Học viên · Đã làm · Kết quả.', 'Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b>; cần đổi: <b>Sửa</b>.', 'Không cần làm: <b>Bỏ việc…</b> (ghi lý do).'] }],
     },
     {
       id: 'p-vi-pham', ten: 'Ghi vi phạm đang mở', duong: [], panel: 'vi-pham',

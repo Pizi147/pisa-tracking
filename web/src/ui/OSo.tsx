@@ -1,6 +1,6 @@
-import { Suspense } from 'react';
+import { Suspense, useId, useLayoutEffect, useSyncExternalStore } from 'react';
 import type { DuLieuBangLuot } from './BangLuotPanel.tsx';
-import { METRIC_UNIT_LABEL, khoaSoLieu, metricById, tenMonNgan, type ChiSo } from '@shared/domain/index.ts';
+import { METRIC_UNIT_LABEL, khoaSoLieu, metricById, taoChuSoLieu, tenMonNgan, type ChiSo } from '@shared/domain/index.ts';
 import { useMoSoLieu } from '../lib/quayLai.ts';
 import { useApi } from '../lib/useApi.ts';
 import { DanhSachSoLieu, mauOSo, NganDanhSach, VUNG_BAM_SO, type DongSoLieu, type PhamViSoLieu } from './SoLieu.tsx';
@@ -33,8 +33,19 @@ type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút t
       gvTre?: CauHinhGvTre }
 );
 
+/* PT-SO-LOI: nhiều ô cùng khoá `?so-lieu=` → chỉ một ô vẽ panel (`taoChuSoLieu`). */
+const chuSoLieu = taoChuSoLieu();
+
 export function OSo(props: Props) {
-  const [open, setOpen] = useMoSoLieu(khoaSoLieu(props));
+  const khoa = khoaSoLieu(props);
+  const [mo, setOpen] = useMoSoLieu(khoa);
+  const o = useId();
+  const laChu = useSyncExternalStore(chuSoLieu.nghe, () => chuSoLieu.chu(khoa) === o);
+  /* Ô 0 / mã lạ không vẽ panel → không nhận làm chủ (F5 trên "0 · + 108 S chéo chung": ô 108 vẽ). */
+  const veDuoc = props.giaTri > 0 && (props.id === undefined || !!metricById(props.id));
+  useLayoutEffect(() => { if (!mo || !veDuoc) return undefined; chuSoLieu.gan(khoa, o); return () => chuSoLieu.go(khoa, o); }, [khoa, o, mo, veDuoc]);
+  useLayoutEffect(() => () => chuSoLieu.go(khoa, o), [khoa, o]);   // gỡ ô (đã bấm mà URL chưa kịp mở) — không giữ chỗ chủ
+  const open = mo && laChu;
   const { giaTri, className = '' } = props;
   // Mã không có trong sổ thì KHÔNG vẽ số (cùng luật với <SoLieu>).
   if (props.id !== undefined && !metricById(props.id)) return <span className="text-xs text-bad">{t('Chỉ số không có trong sổ: {id}', { id: props.id })}</span>;
@@ -44,7 +55,7 @@ export function OSo(props: Props) {
      theo cây React) không lên hàng: hàng không đổi chi nhánh thay vì mở panel, ô gõ trong panel gõ được dấu cách. Esc không chặn (khung nghe ở document). */
   return (
     <span className="contents" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}>
-      <button type="button" onClick={() => setOpen(true)}
+      <button type="button" onClick={() => { chuSoLieu.gan(khoa, o, true); setOpen(true); }}
         className={`${VUNG_BAM_SO} ${mauOSo(className)}`}
         aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: props.nhan ?? giaTri, ten })}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined

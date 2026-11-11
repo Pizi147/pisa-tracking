@@ -383,7 +383,7 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Báo gia đình, ghi kết quả Meeting', cua: 'việc của TVV' }],
       muc: [
         { id: 'pp-xn', viec: 'phoi-hop-sos', ten: 'Phối hợp SOS',
-          buoc: ['Cột ① Học viên · ② Đã làm · ③ Kết quả.', 'Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b>; cần đổi: <b>Sửa</b>.', 'Không cần làm: <b>Bỏ việc…</b> (ghi lý do).'] },
+          buoc: ['Cột Học viên · Đã làm · Kết quả.', 'Bấm <b>Xác nhận</b> ở dòng em, ghi nội dung, <b>Lưu</b>; cần đổi: <b>Sửa</b>.', 'Không cần làm: <b>Bỏ việc…</b> (ghi lý do).'] },
       ],
     },
     {
