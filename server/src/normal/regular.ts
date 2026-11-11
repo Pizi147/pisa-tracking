@@ -21,6 +21,7 @@ import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
 import { classProgress, classProgressMany, lichMtCua } from '../classes/schedule.ts';
 import { baoLenCuoiKhoaDoiQuaHan, capNhatCuoiKhoaSauChuyen, dongBoCheTaiFinal } from './cuoiKhoa.ts';
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
+import { chotYeuCau } from '../duyet/yeuCau.ts';
 
 /**
  * LỚP THƯỜNG (Foundation / Beginner / Elementary).
@@ -937,8 +938,8 @@ export function reportRegularNoShow(
            VALUES (?,?,?,?,?,0)`,
         ).run(attemptId, skill, cu.id, p.userId, nowIso());
       }
-      /* G1-02: nhớ nguồn lịch ngay trước lần dời này — gỡ "-" trả lại đúng (setSkillWeek đặt `manual`; lần "-" thứ hai nhớ `manual` của lần dời đầu). */
-      conn.prepare('UPDATE attempt_skills SET plan_source_truoc_vang = plan_source WHERE id = ?').run(row.id);
+      /* G1-02: nhớ nguồn lịch TRƯỚC chuỗi "-" (lần đầu; gỡ "-" xoá bản nhớ) — gỡ trả lại đúng (setSkillWeek đặt `manual`). */
+      conn.prepare('UPDATE attempt_skills SET plan_source_truoc_vang = COALESCE(plan_source_truoc_vang, plan_source) WHERE id = ?').run(row.id);
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
         reason: lyDo !== undefined ? (lyDo.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng') : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
@@ -984,9 +985,23 @@ export function reportRegularNoShow(
       setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
         reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true, today, ghiBuDau: true,
       });
-      conn.prepare(`UPDATE attempt_skills SET plan_source = COALESCE(plan_source_truoc_vang, plan_source), plan_source_truoc_vang = NULL
-        WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
+      conn.prepare(`UPDATE attempt_skills SET plan_source = COALESCE(plan_source_truoc_vang, plan_source) WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
+      /* #1418 (PTA): Final về lại trong tuần Final của lớp → thẻ Báo QL "dời quá tuần Final" (lúc ghi "-") hết lý do — tự đóng. */
+      if (a.kind === 'final' && a.class_id && ve) {
+        const cuoi = classProgress(a.class_id).finalWeekStart;
+        if (cuoi && ve.week_start <= cuoi) {
+          chotYeuCau(conn, { loai: 'bao_len_cuoi_khoa', doiTuongLoai: 'attempt', doiTuongId: attemptId }, 'tu_dong', { lyDo: 'Đã gỡ "-" — bài về trong tuần Final Test của lớp' });
+        }
+      }
     }
+    /* Mọi nhánh gỡ (dời về / giữ lịch vì có điểm / gỡ Không dự thi): bỏ bản nhớ nguồn lịch — chuỗi "-" đã hết. */
+    conn.prepare('UPDATE attempt_skills SET plan_source_truoc_vang = NULL WHERE attempt_id = ? AND skill = ?').run(attemptId, skill);
+    /* #1418: chuông "vắng lần n" của chính lần "-" vừa gỡ (GVCN) — vắng đó không còn, gỡ tin. */
+    const lanGo = (conn.prepare(
+      `SELECT COUNT(CASE WHEN action = 'regular.no_show' THEN 1 END) - COUNT(CASE WHEN action = 'regular.no_show_cleared' THEN 1 END) n
+         FROM audit_logs WHERE action IN ('regular.no_show', 'regular.no_show_cleared') AND entity_type = 'assessment_attempt' AND entity_id = ? AND entity_label = ?`,
+    ).get(attemptId, skill) as any).n as number;
+    if (lanGo >= 2) conn.prepare('DELETE FROM notifications WHERE dedup_key = ?').run(`vang-thuong:${attemptId}:${skill}:${lanGo}`);
     conn.prepare(
       `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL,
               no_show_cu = 0 WHERE id = ?`,

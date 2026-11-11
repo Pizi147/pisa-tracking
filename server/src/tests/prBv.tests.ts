@@ -353,7 +353,7 @@ export async function runPrBvTests(t: YThucTestKit) {
     regular.reportRegularNoShow(P.admin, b.aid, 'listening', true);
     regular.reportRegularNoShow(P.admin, b.aid, 'listening', false);
     const kt = kyNang(b.aid, 'listening');
-    assert(kt.planned_period_id === tuan(0).id && kt.plan_source === 'auto', `lớp thường: ${JSON.stringify(kt)}`);
+    assert(kt.planned_period_id === tuan(0).id && kt.plan_source === 'auto' && kt.plan_source_truoc_vang === null, `lớp thường: ${JSON.stringify(kt)}`);
   });
 
   check('BV V2 · sau V1 gõ "-" lại → vẫn vắng lần 1 (tự dời), không "huỷ vắng 2 lần"', () => {

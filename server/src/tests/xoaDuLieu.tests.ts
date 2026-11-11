@@ -668,7 +668,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(r.cach === 'mem', JSON.stringify(r));
     const u = user(gv.id);
     assert(u.status === 'deleted' && !!u.deleted_at && u.full_name === `${gv.ten} (đã xoá)` && u.email === `da-xoa-${gv.id}@invalid`
-      && u.password_hash === null && u.password_salt === null, JSON.stringify(u));
+      && u.password_hash !== null, JSON.stringify(u));   // #1418: mật khẩu GIỮ (đăng nhập chặn theo status) — Hoàn tác đăng nhập lại được
     const dem = (sql: string) => (conn.prepare(sql).get(gv.id) as any).n;
     assert(dem('SELECT COUNT(*) AS n FROM demo_sessions WHERE user_id = ?') === 0, 'còn phiên');
     assert(dem(`SELECT COUNT(*) AS n FROM user_roles WHERE user_id = ? AND status = 'active'`) === 0, 'còn vai active');
@@ -794,7 +794,38 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     } finally { conn.exec('ROLLBACK'); }
   });
 
-  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 15', () => {
+  /* #1418 (PTA): Hoàn tác xoá phải trả ĐỦ — phân công, quyền riêng, email phụ, đăng nhập bằng mật khẩu cũ. */
+  check('PR-XOA T13 · xoá → Khôi phục (Hoàn tác): phân công lớp, quyền riêng, email phụ trả lại; đăng nhập mật khẩu cũ được; lớp đã có GVCN khác → cảnh báo, không chen', () => {
+    conn.exec('BEGIN IMMEDIATE');
+    try {
+      const a = taoTK('hoantac');
+      const nay = new Date().toISOString();
+      const pcMon = Number(conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, 'listening', 0, '2026-01-01', 'active', ?)`)
+        .run(a.id, FT, nay).lastInsertRowid);
+      conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE class_id = ? AND skill = 'listening' AND status = 'active' AND user_id != ?`).run(FT, a.id);
+      const quyen = (conn.prepare('SELECT id FROM permissions ORDER BY id LIMIT 1').get() as any).id;
+      conn.prepare(`INSERT INTO user_permissions (user_id, permission_id, branch_id, note, granted_by, created_at) VALUES (?, ?, NULL, 'thử', ?, ?)`).run(a.id, quyen, P.admin.userId, nay);
+      conn.prepare(`INSERT INTO user_emails (user_id, email, created_at) VALUES (?, ?, ?)`).run(a.id, `phu.${a.id}.pisa@gmail.com`, nay);
+      conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(a.id, nay);   // có dấu vết
+      xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: a.email });
+      assert(user(a.id).status === 'deleted', 'tiền đề: đã xoá');
+      const kp = xoaTK.khoiPhucTaiKhoan(P.admin, a.id);
+      const pc = conn.prepare('SELECT status, effective_to FROM teacher_assignments WHERE id = ?').get(pcMon) as any;
+      assert(pc.status === 'active' && pc.effective_to === null, `phân công: ${JSON.stringify(pc)}`);
+      assert(!!conn.prepare('SELECT 1 FROM user_permissions WHERE user_id = ? AND permission_id = ?').get(a.id, quyen), 'quyền riêng');
+      assert(!!conn.prepare('SELECT 1 FROM user_emails WHERE user_id = ?').get(a.id), 'email phụ');
+      assert(accounts.login(a.email, 'matkhau-cu').userId === a.id, 'đăng nhập mật khẩu cũ');
+      assert(!kp.canhBao.some((c: string) => /Đặt lại mật khẩu/.test(c)), `không cần đặt lại mật khẩu: ${kp.canhBao}`);
+      /* Lớp đã có người khác giữ môn đó lúc khôi phục → không chen, cảnh báo. */
+      xoaTK.xoaTaiKhoan(P.admin, a.id, { emailXacNhan: a.email });
+      const b = taoTK('cho-cu');
+      conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?, ?, 'listening', 0, '2026-01-01', 'active', ?)`).run(b.id, FT, nay);
+      const kp2 = xoaTK.khoiPhucTaiKhoan(P.admin, a.id);
+      assert((conn.prepare('SELECT status FROM teacher_assignments WHERE id = ?').get(pcMon) as any).status === 'ended' && kp2.canhBao.some((c: string) => /đã có người khác/.test(c)), JSON.stringify(kp2));
+    } finally { conn.exec('ROLLBACK'); }
+  });
+
+  check('PR-XOA T11 · Số câu SQL: xem trước ≤ 8, xoá mềm (có / chưa có dấu vết) ≤ 18 (#1418: +3 câu chụp email phụ / quyền / phân công)', () => {
     const han = taoTK('demhan');
     const mem = taoTK('demmem');
     conn.prepare(`INSERT INTO audit_logs (actor_user_id, action, entity_type, created_at) VALUES (?, 'thu', 'thu', ?)`).run(mem.id, new Date().toISOString());
@@ -804,7 +835,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(user(mem.id)?.status === 'deleted' && user(han.id)?.status === 'deleted', 'tiền đề: cả hai xoá mềm (G5-10)');
     /* XOA-b: câu đếm dấu vết chia nhóm ≤ 20 vế cho Turso — mỗi nhóm thêm là một câu (xem/xoá đều đếm dấu vết một lần). */
     const them = xoaTK.CAU_DAU_VET.length - 1;
-    assert(nXem <= 8 + them && nMem <= 15 + them && nHan <= 15 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
+    assert(nXem <= 8 + them && nMem <= 18 + them && nHan <= 18 + them, `xem ${nXem}, mềm ${nMem}, chưa dấu vết ${nHan} (thêm ${them} câu vì chia nhóm)`);
   });
 
   check('PR-XOA T12 · audit user.delete đúng một dòng mỗi lần xoá (tên cũ, cách xoá, số dấu vết)', () => {

@@ -371,7 +371,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
           </span>
         ) : (
           <ODiemThuong lon tongLaySan cell={{ ...cell, oTuanCu: !!tuanDangXem && s?.movedFromStart === tuanDangXem }} tongCot={tongCot} canEdit={canEdit} tenMon={tenMonO} tenHv={row.studentName}
-            onSave={(p, o) => luu(k, p, o)} onDau={(bat) => dau(k, bat)} onLoiNhap={(x) => loiNhap(k, x)}
+            onSave={(p, o) => luu(k, p, o)} onDau={(bat, ht) => dau(k, bat, ht)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
         )}
         {s && (s.nhanXetDuoc ?? canEdit) && !dung && (

@@ -254,7 +254,6 @@ export const EN_SOT_QUAN_TRI = {
   'Cách xoá': 'How it is deleted',
   'Có dấu vết ({n} dòng) → tài khoản bị khoá và ẩn, lịch sử giữ tên kèm (đã xoá)': 'Has records ({n} rows) → the account is locked and hidden; history keeps the name marked (deleted)',
   'Chưa có dấu vết → tài khoản bị khoá và ẩn, khôi phục được ở Đã xoá': 'No records → account locked and hidden, restorable under Deleted',
-  'Đã khôi phục tài khoản {ten} — đặt lại mật khẩu để đăng nhập': 'Restored account {ten} — reset the password to sign in',
   'Nên sao lưu dữ liệu trước lần xoá đầu.': 'Back up the data before the first deletion.',
 
   /* CapQuyenRieng */

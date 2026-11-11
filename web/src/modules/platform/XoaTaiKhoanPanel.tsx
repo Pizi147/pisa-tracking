@@ -44,11 +44,17 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
       lamMoi();
       /* G5-10: Hoàn tác = Khôi phục (Đã xoá) — mật khẩu đặt lại như mọi lần khôi phục. */
       toast.hoanTac(t('Đã xoá tài khoản {ten}', { ten: d.ten }), async () => {
-        try { await api.post(`/admin/accounts/${userId}/khoi-phuc`); } catch (e: any) { toast.push('error', e.message); return; }
-        lamMoi(); toast.push('ok', t('Đã khôi phục tài khoản {ten} — đặt lại mật khẩu để đăng nhập', { ten: d.ten }));
+        let canhBao: string[] = [];
+        try { canhBao = (await api.post<{ canhBao: string[] }>(`/admin/accounts/${userId}/khoi-phuc`))?.canhBao ?? []; } catch (e: any) { toast.push('error', e.message); return; }
+        lamMoi(); toast.push('ok', t('Đã khôi phục tài khoản {ten}', { ten: d.ten }));
+        for (const c of canhBao) toast.push('info', dich(c));   // #1418: chỗ không trả lại được (lớp đã có người khác, email đã dùng…)
       }, { key: `xoa-tk:${userId}` });
       onDone();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+    } catch (e: any) {
+      toast.push('error', e.message);
+      /* #1418: tài khoản vừa có dấu vết (máy chủ đòi gõ lại) → tải lại xem trước để ô gõ hiện ra. */
+      if (e?.status === 400 && d.goLai === null) xem.reload();
+    } finally { setBusy(false); }
   };
 
   return (

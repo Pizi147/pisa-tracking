@@ -519,7 +519,8 @@ export function ODiemThuong({
   tongCot: number | null;
   canEdit: boolean;
   onSave: (patch: { score: number | null; total: number | null; lyDo?: string }, opts?: SaveOpts) => Promise<boolean>;
-  onDau: (bat: boolean) => Promise<boolean>;
+  /** `hoanTac`: lệnh gỡ "-" ĐI QUA Ô (để ô bỏ "-" ngay khi lưới chưa tải lại) — nơi gọi dùng cho nút Hoàn tác của toast (#1418). */
+  onDau: (bat: boolean, hoanTac?: () => void) => Promise<boolean>;
   inputRef?: (el: HTMLInputElement | null) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLInputElement>) => void;
   dienTong?: { gt: number; lan: number } | null;
@@ -538,7 +539,11 @@ export function ODiemThuong({
   const [dauTam, setDauTam] = useState<boolean | null>(null);
   useEffect(() => { setDauTam(null); }, [cell.dau, cell.tuanDoiTu]);
   const dau = dauTam ?? (cell.dau ?? cell.tuanDoiTu !== null);
-  const doiDau = async (bat: boolean) => { const ok = await onDau(bat); if (ok) setDauTam(bat); return ok; };
+  const doiDau = async (bat: boolean): Promise<boolean> => {
+    const ok = await onDau(bat, bat ? () => void doiDau(false) : undefined);
+    if (ok) setDauTam(bat);
+    return ok;
+  };
   const coDiem = cell.diem !== null;
   const diemDaLuu = () => (coDiem ? String(cell.diem) : dau ? '-' : '');
   const tongDaLuu = () => (cell.tong !== null ? String(cell.tong)

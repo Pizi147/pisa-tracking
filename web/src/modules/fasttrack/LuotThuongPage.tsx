@@ -397,7 +397,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               <DauO lon={hep} tt={luu.o[k]} loi={luu.loi[k]} onLuuLai={() => luu.luuLai(k)} />
               {dung ? <span className="text-xs text-slate-500">—</span> : (
                 <ODiemThuong lon={hep} tongLaySan cell={cell} tongCot={null} canEdit={canEdit && !chiDoc} tenMon={ten} tenHv={r.studentName}
-                  onSave={(p, o) => luu.luu(k, p, o)} onDau={(bat) => luu.dau(k, bat)} onLoiNhap={(x) => luu.loiNhap(k, x)} />
+                  onSave={(p, o) => luu.luu(k, p, o)} onDau={(bat, ht) => luu.dau(k, bat, ht)} onLoiNhap={(x) => luu.loiNhap(k, x)} />
               )}
             </span>
             {/* Kết quả bằng chữ, không chỉ màu (G12): "✗ Chưa đạt · 25%" — ô cỡ lớn (375) tự có "Chưa đạt · 25%" dưới hai số. */}

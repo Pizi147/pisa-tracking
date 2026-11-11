@@ -232,12 +232,18 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
       throw badRequest(u.email ? 'Gõ lại đúng email để xác nhận xoá.' : 'Gõ lại đúng họ tên để xác nhận xoá.');
     }
     const cach = 'mem' as const;   // G5-10: luôn xoá mềm (khôi phục được)
+    /*
+     * G5-10 (rà PTA #1418): Hoàn tác / Khôi phục phải trả ĐỦ — chụp vào nhật ký (`before`) các dòng sắp bỏ: email phụ, quyền riêng, phân công đang chạy.
+     * Mật khẩu GIỮ (đăng nhập + phiên đã chặn status khác 'active' — `auth.ts`); tuỳ chọn + theo dõi việc giữ (vô hại khi tài khoản khoá).
+     */
+    const emailPhu = (conn.prepare('SELECT email, created_at FROM user_emails WHERE user_id = ?1').all(userId) as any[]);
+    const quyenRieng = (conn.prepare('SELECT permission_id, branch_id, note, granted_by, created_at FROM user_permissions WHERE user_id = ?1').all(userId) as any[]);
+    const phanCong = (conn.prepare(`SELECT id, effective_to AS den FROM teacher_assignments WHERE user_id = ?1 AND status = 'active'`).all(userId) as any[]);
     conn.prepare(
-      `UPDATE users SET status = 'deleted', deleted_at = ?2, full_name = full_name || ' (đã xoá)',
-                        email = 'da-xoa-' || id || '@invalid', password_hash = NULL, password_salt = NULL
+      `UPDATE users SET status = 'deleted', deleted_at = ?2, full_name = full_name || ' (đã xoá)', email = 'da-xoa-' || id || '@invalid'
         WHERE id = ?1`,
     ).run(userId, nowIso());
-    for (const bang of ['demo_sessions', 'user_emails', 'user_permissions', 'user_prefs', 'task_followers', 'notifications']) {
+    for (const bang of ['demo_sessions', 'user_emails', 'user_permissions', 'notifications']) {
       conn.prepare(`DELETE FROM ${bang} WHERE user_id = ?1`).run(userId);
     }
     /* `user_roles` không có effective_to — đóng như setRoles (Q11). RKC-6: nhớ đúng các dòng vai vừa đóng (nhật ký) để Khôi phục trả lại. */
@@ -247,7 +253,7 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
       .run(userId, homNay);
     writeAudit({
       actorUserId: p.userId, action: 'user.delete', entityType: 'users', entityId: userId, entityLabel: u.full_name,
-      before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds }, after: { cach, soDauVet },
+      before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds, emailPhu, quyenRieng, phanCong }, after: { cach, soDauVet },
     });
     return { ok: true as const, cach };
   });
@@ -255,8 +261,9 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
 
 /**
  * KHÔI PHỤC TÀI KHOẢN ĐÃ XOÁ MỀM (RKC-6, PTA quyết 8) — CHỈ Quản trị hệ thống. Trả: trạng thái dùng được, tên bỏ " (đã xoá)", email cũ (nhật ký lúc xoá)
- * nếu chưa ai dùng, các dòng vai đã đóng lúc xoá (nhật ký `roleIds`; nhật ký cũ không có → vai cùng tên, dòng đóng gần nhất). KHÔNG trả: mật khẩu (Đặt lại
- * mật khẩu), phân công lớp (phân công lại — lớp có thể đã có người khác). Nhật ký `user.restore`; lỡ tay thì Xoá lại.
+ * nếu chưa ai dùng, các dòng vai đã đóng lúc xoá (nhật ký `roleIds`; nhật ký cũ không có → vai cùng tên, dòng đóng gần nhất). G5-10 (từ #1418, nhật ký mới):
+ * email phụ, quyền riêng, phân công lớp đã đóng lúc xoá (chỗ đã có người khác → bỏ qua + cảnh báo); mật khẩu không bị xoá nên đăng nhập lại được ngay.
+ * Nhật ký cũ (trước #1418): mật khẩu đã mất → cảnh báo Đặt lại mật khẩu, phân công làm lại. Nhật ký `user.restore`; lỡ tay thì Xoá lại.
  */
 export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canhBao: string[] } {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống mới khôi phục được tài khoản.');
@@ -265,7 +272,8 @@ export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canh
   if (!u) throw notFound('Không tìm thấy tài khoản.');
   if (u.status !== 'deleted') throw badRequest('Tài khoản này chưa bị xoá.');
   const nk = conn.prepare(`SELECT before_json FROM audit_logs WHERE action = 'user.delete' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(userId) as any;
-  let truoc: { email?: string | null; vai?: string[]; roleIds?: number[] } = {};
+  let truoc: { email?: string | null; vai?: string[]; roleIds?: number[]; emailPhu?: { email: string; created_at: string }[];
+    quyenRieng?: { permission_id: number; branch_id: number | null; note: string | null; granted_by: number | null; created_at: string }[]; phanCong?: { id: number; den: string | null }[] } = {};
   try { truoc = JSON.parse(nk?.before_json ?? '{}'); } catch { truoc = {}; }
   const canhBao: string[] = [];
   return tx(() => {
@@ -289,9 +297,31 @@ export function khoiPhucTaiKhoan(p: Principal, userId: number): { ok: true; canh
       }
     }
     if (!soVai) canhBao.push('Chưa có vai trò — cấp vai ở nút Sửa.');
-    canhBao.push('Đặt lại mật khẩu để người này đăng nhập; phân công lớp làm lại ở hồ sơ lớp.');
+    for (const e of truoc.emailPhu ?? []) {
+      const trung = conn.prepare(`SELECT 1 FROM users WHERE lower(email) = lower(?) AND id != ? UNION ALL SELECT 1 FROM user_emails WHERE lower(email) = lower(?) AND user_id != ? LIMIT 1`)
+        .get(e.email, userId, e.email, userId);
+      if (trung) canhBao.push(`Email phụ ${e.email} đã thuộc tài khoản khác — không trả lại.`);
+      else conn.prepare('INSERT OR IGNORE INTO user_emails (user_id, email, created_at) VALUES (?, ?, ?)').run(userId, e.email, e.created_at);
+    }
+    for (const q of truoc.quyenRieng ?? []) {
+      conn.prepare('INSERT OR IGNORE INTO user_permissions (user_id, permission_id, branch_id, note, granted_by, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+        .run(userId, q.permission_id, q.branch_id, q.note, q.granted_by, q.created_at);
+    }
+    let soPc = 0;
+    for (const pc of truoc.phanCong ?? []) {
+      const a = conn.prepare(`SELECT ta.id, ta.class_id, ta.skill, ta.is_core, c.code FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+        WHERE ta.id = ? AND ta.user_id = ? AND ta.status = 'ended'`).get(pc.id, userId) as any;
+      if (!a) continue;
+      /* Chỗ đó đã có người khác đang giữ (GVCN của lớp / GV cùng môn) → không chen vào, báo để QL quyết. */
+      const coNguoi = conn.prepare(`SELECT 1 FROM teacher_assignments WHERE class_id = ? AND status = 'active' AND user_id != ?
+        AND ${a.is_core ? 'is_core = 1' : 'skill = ?'} LIMIT 1`).get(...(a.is_core ? [a.class_id, userId] : [a.class_id, userId, a.skill]));
+      if (coNguoi) { canhBao.push(`Lớp ${a.code}: ${a.is_core ? 'GVCN' : a.skill} đã có người khác — phân công lại ở hồ sơ lớp nếu cần.`); continue; }
+      soPc += conn.prepare(`UPDATE teacher_assignments SET status = 'active', effective_to = ? WHERE id = ?`).run(pc.den ?? null, a.id).changes;
+    }
+    const coMatKhau = !!(conn.prepare('SELECT password_hash FROM users WHERE id = ?').get(userId) as any)?.password_hash;
+    if (!coMatKhau) canhBao.push(truoc.phanCong ? 'Đặt lại mật khẩu để người này đăng nhập.' : 'Đặt lại mật khẩu để người này đăng nhập; phân công lớp làm lại ở hồ sơ lớp.');
     writeAudit({ actorUserId: p.userId, action: 'user.restore', entityType: 'users', entityId: userId, entityLabel: ten,
-      before: { status: 'deleted' }, after: { status: 'active', email, soVai } });
+      before: { status: 'deleted' }, after: { status: 'active', email, soVai, soPc } });
     return { ok: true as const, canhBao };
   });
 }
