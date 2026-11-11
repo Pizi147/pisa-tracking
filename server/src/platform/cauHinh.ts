@@ -12,7 +12,8 @@ import {
   HAN_MAC_DINH_GOC, KY_VONG_FT_GOC, MA_HAN, NGUONG_THUONG_GOC, PERMISSIONS, RATIO_PASS_THRESHOLD, TEN_KY_VONG_FT, TEN_NGUONG_THUONG, datNguonBand, datNguonHan, kiemHanMacDinh,
   kiemKyVongFt, kiemNguongThuong, ngayTheoGioVN, nhanTruongHan, type BanPhienBan, type HanMacDinh, type KyVongFt, type MaHan, type NguongThuong,
 } from '../../../shared/domain/index.ts';
-import { badRequest, conflict, forbidden, nowIso } from '../util.ts';
+import { badRequest, conflict, forbidden, loi as loiDich, nowIso } from '../util.ts';
+import type { Bien, Khoa } from '../../../shared/i18n/index.ts';
 import { nowNghiepVu } from '../demoConfig.ts';
 import { writeAudit } from './audit.ts';
 import { layMoc } from './nguCanhRequest.ts';
@@ -39,7 +40,7 @@ type Doi = { ma: string; truong: string; truoc: number; sau: number };
 
 /** Một loại cấu hình: gốc trong mã, ghép bản lưu lên gốc (bản cũ thiếu khoá mới lấy gốc), kiểm, so khác, tên trường cho nhật ký. */
 type DinhNghia<T> = {
-  loai: string; ten: string; goc: T; ghep: (goc: T, du: any) => T; kiem: (v: unknown) => { ma: string | null; loi: string } | null;
+  loai: string; ten: string; goc: T; ghep: (goc: T, du: any) => T; kiem: (v: unknown) => { ma: string | null; loi: string; khoa?: Khoa; bien?: Bien } | null;
   khac: (cu: T, moi: T) => Doi[]; nhan: (d: Doi) => string;
   /** Đồng hồ đóng dấu bản: Hạn = đồng hồ nghiệp vụ (cùng mốc ngày của việc); Band = giờ thật (cùng đồng hồ `created_at` / `ghi_luc` của lượt). */
   dongHo?: () => string;
@@ -94,7 +95,8 @@ function taoLoai<T>(d: DinhNghia<T>) {
   const luu = (p: Principal, input: { giaTri?: unknown; tuPhienBan?: unknown; khoiPhucTu?: unknown }) => {
     require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, `Chỉ Quản trị hệ thống sửa được ${d.ten}.`);
     const loi = d.kiem(input.giaTri);
-    if (loi) throw badRequest(loi.loi, { o: loi.ma });
+    /* QTV2 (PTA): câu có biến đi kèm khoá từ điển — web tiếng Anh dịch được (`loi` của util). */
+    if (loi) throw loi.khoa ? loiDich(400, loi.khoa, loi.bien, { o: loi.ma }) : badRequest(loi.loi, { o: loi.ma });
     const hien = moiNhat();
     if (Number(input.tuPhienBan) !== hien.id) throw conflict(`Vừa có người sửa ${d.ten} — tải lại rồi sửa tiếp.`);
     const moi = input.giaTri as T;
@@ -142,7 +144,8 @@ function kiemNguongVoiChuongTrinh(v: unknown) {
   if (loi) return loi;
   const r = db().prepare(`SELECT MIN(COALESCE(nguong_dat, ?)) AS n FROM programmes WHERE scoring_mode = 'ratio' AND status = 'active'`).get(RATIO_PASS_THRESHOLD) as { n: number | null } | undefined;
   const dat = Math.round((r?.n ?? RATIO_PASS_THRESHOLD) * 100);
-  return (v as NguongThuong).len >= dat ? { ma: 'len', loi: `"Lên từ" phải dưới "Đạt từ" nhỏ nhất của các chương trình (${dat} %).` } : null;
+  const khoa = '"Lên từ" phải dưới "Đạt từ" nhỏ nhất của các chương trình ({dat} %).' as const;
+  return (v as NguongThuong).len >= dat ? { ma: 'len', loi: khoa.replace('{dat}', String(dat)), khoa, bien: { dat } } : null;
 }
 const NGUONG = taoLoai<NguongThuong>({
   loai: 'nguong_thuong', ten: 'ngưỡng lớp thường', goc: { ...NGUONG_THUONG_GOC }, kiem: kiemNguongVoiChuongTrinh, dongHo: nowIso,

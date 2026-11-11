@@ -15,6 +15,16 @@ export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.v
 export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) ?? luu.slice(0, 10); return addDaysIso(d, ngayCongBaoPh(d)); };
 
 /**
+ * QTV2 (PTA): số ngày cộng của BẢN LÚC SINH việc (không phải bản tại ngày hạn). `han` = ngày sinh + N(bản tại ngày sinh) → thử từng N của các bản:
+ * N đúng khi bản tại (han − N) cho đúng N. Không cột thêm (ngày sinh suy từ hạn gốc). Không N nào khớp (dữ liệu trước phiên bản) → bản tại ngày hạn như cũ.
+ * Nhiều N cùng khớp (đổi hạn hai lần sát nhau) → N lớn nhất (ngày sinh sớm nhất — Tạm dừng không bị bỏ sót).
+ */
+function ngayCongLucSinh(han: string): number {
+  const khop = [...new Set(cacBanHan().map((b) => b.v.bao_ph_vi_pham.ngay - 1))].filter((n) => ngayCongBaoPh(addDaysIso(han, -n)) === n);
+  return khop.length ? Math.max(...khop) : ngayCongBaoPh(han);
+}
+
+/**
  * HAN-BAO-PH (chủ SP 03/11, 17.1–17.3): `hanChon` (cột `han_chon`, NULL = mặc định) thắng mọi tính toán; mọi nơi (Công việc, hồ sơ, tab lớp, chuông,
  * Tổng quan TVV "đúng hạn") gọi hàm này với cùng ba tham số.
  * K7 (v4b L2): em Tạm dừng thì việc ẩn, không quá hạn; Quay lại học → hạn mới = ngày quay lại + 4 (không sớm hơn hạn gốc).
@@ -22,7 +32,7 @@ export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) 
  */
 export function hanBaoPhHieuLuc(han: string, khoang: readonly { tu: string; den: string | null }[] = [], hanChon?: string | null): string {
   if (hanChon) return hanChon;   // HAN-BAO-PH (chủ SP 03/11): hạn người dùng chọn dùng ĐÚNG ngày đó — không trượt theo Tạm dừng
-  const n = ngayCongBaoPh(han);   // ponytail: bản tại ngày hạn ≈ bản lúc sinh (sửa hạn giữa chừng lệch ≤ chênh số ngày); thêm cột ngày sinh nếu cần đúng tuyệt đối
+  const n = ngayCongLucSinh(han);
   const taoNgay = addDaysIso(han, -n);
   let h = han;
   for (const k of khoang) if (k.den && k.tu <= h && k.den >= taoNgay) h = [h, addDaysIso(k.den, n)].sort()[1];
