@@ -13,6 +13,7 @@ import { DaXoaAdmin } from '../platform/DaXoaAdmin.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { useQuayLaiHoc } from './QuayLaiHoc.tsx';
 import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
+import { danhDauXong, quayLaiLo, type KetQuaEm } from './quayLaiLo.ts';
 import { NHAN_VIEC_QUAN_LY, duongHoSoHocVien, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -84,41 +85,81 @@ export default function LuuTruPage() {
   })();
   const { data, loading, error, reload, cu } = useApi<DuLieuLuuTru>(qs, [], { giuCu: true });
 
-  const quayLai = useQuayLaiHoc(reload);
-  /* Chọn nhiều: em quay lại được một bấm (lớp cũ còn chạy) làm ngay; em cần chọn lớp / lộ trình báo "làm từng em" — không đoán thay người dùng. */
+  /*
+   * U02 (SUA-RA-1311, đề bài 13/11): kết quả "Quay lại học · n em" TỪNG EM nằm lại ở thanh chọn (khe `dongTren`, mẫu OV-13d) sau khi toast tắt:
+   * "Đã xong n/m · Cần chọn lớp: … · Xử lý tiếp · Chưa lưu được: … · Thử lại". Xử lý tiếp mở đúng panel của em đầu (cùng `useQuayLaiHoc` một em); Thử lại
+   * chỉ gửi các em lỗi. Bỏ chọn / tắt chọn nhiều = bỏ kết quả.
+   */
+  const [ketQua, setKetQua] = useState<KetQuaEm[] | null>(null);
+  const dangXuLy = useRef<number | null>(null);   // em mở panel từ "Xử lý tiếp" — panel xong thì đánh dấu xong
+  const quayLai = useQuayLaiHoc(() => {
+    const id = dangXuLy.current;
+    if (id != null) {
+      dangXuLy.current = null;
+      setKetQua((k) => (k ? danhDauXong(k, id) : k));
+      if (chon.chon.has(id)) chon.doi(id);
+    }
+    reload();
+  });
+  useEffect(() => { if (!chon.bat) setKetQua(null); }, [chon.bat]);
+  /* Chọn nhiều: em quay lại được một bấm (lớp cũ còn chạy) làm ngay; em cần chọn lớp / lộ trình làm tiếp từng em — không đoán thay người dùng. */
   const [dangChay, setDangChay] = useState(false);
   const dangChayRef = useRef(false);   // chặn bấm lặp trước khi state kịp vẽ lại
-  const quayLaiNhieu = async (ids: number[]) => {
+  /** `thuLai`: chỉ gửi lại các em lỗi, giữ kết quả các em khác của lần trước. */
+  const quayLaiNhieu = async (ids: number[], thuLai = false) => {
     if (dangChayRef.current) return;
     dangChayRef.current = true; setDangChay(true);
     try {
-      const xong: number[] = []; const chonLop: string[] = []; const loi: string[] = []; const chuaXong: number[] = [];
-      for (const id of ids) {
-        const ten = data?.hocVien.find((x) => x.id === id)?.fullName ?? `#${id}`;
-        try {
-          const tt = await api.get<{ huong: string }>(`/students/${id}/quay-lai`);
-          if (tt.huong !== 'lop-cu') { chonLop.push(ten); chuaXong.push(id); continue; }
-          await api.post(`/students/${id}/quay-lai`, {}); xong.push(id);
-        } catch (e: any) { chuaXong.push(id); if (!e?.huy) loi.push(`${ten} (${e.message})`); }   // Đóng hộp xác nhận = không làm em này, không phải lỗi
-      }
+      const kq = await quayLaiLo(ids, (id) => data?.hocVien.find((x) => x.id === id)?.fullName ?? `#${id}`, api, thuLai ? ketQua ?? [] : []);
+      const xong = kq.filter((x) => x.tt === 'xong' && ids.includes(x.id)).map((x) => x.id);
       for (const k of ['/students', '/hoc-vien-lop', '/classes', '/my-work']) invalidate(k);
-      /* Em đã xong rời danh sách chọn; em chưa xong (cần chọn lớp, lỗi, không xác nhận) vẫn được chọn để làm tiếp. */
+      /* Em đã xong rời danh sách chọn; em chưa xong (cần chọn lớp, lỗi, đóng hộp xác nhận) vẫn được chọn để làm tiếp. */
+      const chuaXong = [...new Set([...kq.filter((x) => x.tt !== 'xong').map((x) => x.id), ...ids.filter((id) => !kq.some((x) => x.id === id))])];
       if (chuaXong.length) chon.tatCa(chuaXong, true); else chon.bo();
+      setKetQua(kq.some((x) => x.tt !== 'xong') ? kq : null);
       reload();
       if (xong.length) {
         toast.hoanTac(t('Đã cho {n} em quay lại học', { n: xong.length }), async () => {
           let ok = 0; let loiDau = '';
           for (const id of xong) { try { await api.post(`/students/${id}/hoan-tac-quay-lai`, {}); ok++; } catch (e: any) { loiDau ||= e.message; } }
           for (const k of ['/students', '/hoc-vien-lop', '/classes']) invalidate(k);
+          setKetQua(null);
           reload();
           if (ok) toast.push('ok', ok === xong.length ? t('Đã hoàn tác') : t('Đã hoàn tác {ok}/{n}', { ok, n: xong.length }));
           if (loiDau) toast.push('error', loiDau);
         }, { key: `quay-lai-nhieu:${xong.join(',')}` });
       }
-      if (chonLop.length) toast.push('error', t('Làm từng em (cần chọn lớp / lộ trình): {ds}', { ds: chonLop.join(', ') }));
-      if (loi.length) toast.push('error', t('Chưa làm được, thử lại: {ds}', { ds: loi.join(', ') }));
     } finally { dangChayRef.current = false; setDangChay(false); }
   };
+
+  const dongKetQua = (() => {
+    if (!ketQua) return null;
+    const chonLop = ketQua.filter((x) => x.tt === 'chon-lop');
+    const loi = ketQua.filter((x) => x.tt === 'loi');
+    const dau = chonLop[0];
+    return (
+      <>
+        <b className="tabular-nums text-slate-100">{t('Đã xong {n}/{m}', { n: ketQua.filter((x) => x.tt === 'xong').length, m: ketQua.length })}</b>
+        {dau && (
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span className="text-slate-300">· {t('Cần chọn lớp')}: {chonLop.map((x) => x.ten).join(', ')}</span>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangChay || quayLai.dangMo === dau.id}
+              onClick={() => { dangXuLy.current = dau.id; void quayLai.mo({ id: dau.id, ten: dau.ten, lop: data?.hocVien.find((x) => x.id === dau.id)?.lopCuoi ?? null }); }}>
+              {t('Xử lý tiếp · {ten}', { ten: dau.ten })}
+            </button>
+          </span>
+        )}
+        {loi.length > 0 && (
+          <span className="inline-flex flex-wrap items-center gap-1.5">
+            <span className="text-late">· {t('Chưa lưu được')}: {loi.map((x) => (x.loi ? `${x.ten} (${x.loi})` : x.ten)).join(', ')}</span>
+            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={dangChay} onClick={() => void quayLaiNhieu(loi.map((x) => x.id), true)}>{t('Thử lại')}</button>
+          </span>
+        )}
+        <span className="flex-1" />
+        <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" aria-label={t('Đóng kết quả')} onClick={() => setKetQua(null)}>✕</button>
+      </>
+    );
+  })();
 
   return (
     <div className="page space-y-3">
@@ -199,7 +240,7 @@ export default function LuuTruPage() {
                     )}
                     {!chon.bat && s.coTheQuayLai && (
                       <button type="button" className={dung ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={quayLai.dangMo === s.id}
-                        onClick={() => void quayLai.mo({ id: s.id, ten: s.fullName, lop: s.lopCuoi })}>{t('Quay lại học')}</button>
+                        onClick={() => { dangXuLy.current = null; void quayLai.mo({ id: s.id, ten: s.fullName, lop: s.lopCuoi }); }}>{t('Quay lại học')}</button>
                     )}
                   </div>
                 );
@@ -209,7 +250,7 @@ export default function LuuTruPage() {
       {/* Q-RL2b: học viên đã xoá 30 ngày (thùng rác) — Khôi phục tại dòng; rỗng thì không vẽ. */}
       {tab === 'hv' && <DaXoaAdmin loai="hoc_vien" loc={loc} />}
       {data && tab === 'hv' && (
-        <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} dangChay={dangChay} onViec={() => void quayLaiNhieu([...chon.chon])} />
+        <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} dangChay={dangChay} dongTren={dongKetQua} onViec={() => void quayLaiNhieu([...chon.chon])} />
       )}
       </div>
       {quayLai.panels}
