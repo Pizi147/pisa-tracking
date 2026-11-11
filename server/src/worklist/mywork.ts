@@ -770,7 +770,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const ccDongs: BaiChuaCham[] = [];
     /*
      * T18 (chủ SP 06/11): bài S quá hạn (cờ ô, như Lịch Test khối 1) → việc ghi "quá hạn", hạn = hạn sớm nhất — cho GV Speaking (GV phụ trách S của lớp là GV Speaking).
-     * CHỈ GHI, không tính: `demDongViec` / `demSo` / chuông bỏ chấm chéo. Admin (`cham-diem`, P12 Q12): bài chưa ai nhận không quá hạn.
+     * CHỈ GHI, không tính: `demDongViec` / `demSo` / chuông / badge tab (`badgeTab`, rà 11/11 #2) bỏ chấm chéo. Chữ "quá hạn" cùng ở GV S, QL, Admin (rà 11/11 #2).
      */
     const hanQua: (string | null)[] = [];
     for (const a of attempts as any[]) {
@@ -794,7 +794,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         studentId: null, studentName: '', emIds: undefined, classId: null, classCode: null,
         /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
         attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,
-        tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: soBai, soBai, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
+        /* G1-04: ô "n HV" đọc `count` — số em khác nhau (một em có thể nhiều bài S). */
+        tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: new Set(ccDongs.map((x) => x.studentId)).size, soBai, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
       });
     }
   }
@@ -806,16 +807,16 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
     const khacDongs: BaiChuaCham[] = [];
     /*
-     * P12 Q12 (chủ SP 25/10, PTA): CHỈ góc nhìn Admin (`cham-diem`) — S chấm chéo CHƯA AI NHẬN (ô chưa ghi GV chấm) không quá hạn, vẫn là bài chờ chấm;
-     * Tổng quan Admin đọc cùng tập. QL / GV giữ luật LT3 (S Mock quá hạn vẫn quá hạn, có chuông). Một câu theo lô: lượt có ô S đã ghi GV chấm.
+     * Rà 11/11 #2 (G5-02 / G5-03; thay P12 Q12 25/10 bằng luật chủ SP 09/11): S chấm chéo quá hạn là "quá hạn" ở mọi vai (cả Admin). Bài ĐÃ CÓ người nhận
+     * (ô ghi GV chấm có tài khoản) nằm dưới tên người đó — như sổ nghĩa vụ 1.2c; chưa ai nhận thì không chủ (nhóm "Speaking chấm chéo", không "Chưa có GV").
+     * Một câu theo lô, chỉ lượt có ô S chéo còn chờ.
      */
-    const daNhanCheo = new Set<number>();
-    if (xemViec === 'cham-diem') {
-      theoLo([...new Set((attempts as any[]).filter((a) => laChamCheo(a.kind, 'speaking')).map((a) => a.id as number))], (lo, ph) => {
-        for (const r of conn.prepare(`SELECT attempt_id FROM assessment_scores WHERE skill = 'speaking' AND attempt_id IN (${ph})
-            AND (examiner_user_id IS NOT NULL OR examiner_name IS NOT NULL)`).all(...lo) as any[]) daNhanCheo.add(r.attempt_id);
-      });
-    }
+    const nguoiNhanCheo = new Map<number, number>();
+    theoLo([...new Set((attempts as any[]).filter((a) => laChamCheo(a.kind, 'speaking')
+        && (a.pendingDetail ?? []).some((c: any) => c.skill === 'speaking')).map((a) => a.id as number))], (lo, ph) => {
+      for (const r of conn.prepare(`SELECT attempt_id, examiner_user_id FROM assessment_scores WHERE skill = 'speaking' AND attempt_id IN (${ph})
+          AND examiner_user_id IS NOT NULL`).all(...lo) as any[]) nguoiNhanCheo.set(r.attempt_id, r.examiner_user_id);
+    });
     for (const a of attempts as any[]) {
       /* SUA-LOI-CV: lớp chỉ vào nhờ chấm S chéo (`phamViCham`, ngoài phạm vi quản lý) — không thành việc của GV khác. */
       if (!scope.all && !scope.classIds.includes(a.classId) && !scope.branchIds.includes(a.branchId)) continue;
@@ -824,12 +825,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         if (vaoChamS(a, c)) continue;
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
         const cheo = laChamCheo(a.kind, c.skill);
-        const ownerId = a.classId && !cheo ? (ownerOf.get(`${a.classId}|${c.skill}`) ?? null) : null;
+        const ownerId = !a.classId ? null : cheo ? (nguoiNhanCheo.get(a.id) ?? null) : (ownerOf.get(`${a.classId}|${c.skill}`) ?? null);
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,
           kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId, studentName: a.studentName,
-          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue && !(xemViec === 'cham-diem' && cheo && !daNhanCheo.has(a.id)), periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
+          skill: c.skill, deadline: c.deadline, ownerId, overdue: !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null,
         });
       }
     }

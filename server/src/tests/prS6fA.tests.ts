@@ -115,7 +115,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const oCho = (svc.skillCells(P.admin, aRow, svc.scoresOf(aX.id), [], TODAY,
       svc.loadBundle([aX.id]).skillRows.get(aX.id)) as any[]).filter((c) => c.required && c.band === null);
     const soO = oCho.length;
-    const soKhoi1 = oCho.filter((c) => !d.laChamCheo(aRow.kind, c.skill)).length;   // T18 06/11: S chéo quá hạn không vào khối 1
+    const soKhoi1 = oCho.length;   // rà 11/11 #2: S chéo quá hạn vào khối 1
     assert(soO >= 4, `em X chỉ có ${soO} ô chưa nhập`);
     const b0 = badge(); const l0 = lt();
     studentsSvc.setStudentStatus(P.mbManager, eX.sid, 'inactive', TODAY, 'Tạm nghỉ');

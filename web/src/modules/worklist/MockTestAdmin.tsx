@@ -68,7 +68,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
             <ul className="list-none m-0 p-0">
               {data.gvQuaHan.map((g) => {
                 const n = soNgay(g.han);
-                /* Q12: S chấm chéo chưa ai nhận — chờ chấm, không quá hạn (T18). */
+                /* S chấm chéo chưa ai nhận, chưa tới hạn — chờ chấm; quá hạn thì "quá hạn" như bài khác (rà 11/11 #2). */
                 const nhan = g.choCham ? <span className="text-slate-400">{t('chờ chấm')}</span> : <span className="font-semibold text-late">⚠ {n !== null ? nhanQuaHan(n) : t('quá hạn')}</span>;
                 return (
                   <li key={khoa(g)}
