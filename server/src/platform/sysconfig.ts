@@ -158,14 +158,6 @@ export function saveProgramme(p: Principal, input: {
   /* Cách chấm không đổi sau khi tạo (đổi là đổi ý nghĩa mọi điểm đã nhập). Môn: MON-CT-1311 — `monSuaDuoc`. */
   const scoring = had.scoring_mode;
   const doiMon = input.skills === undefined ? null : kiemMonSua(conn, code, scoring, input.skills);
-  /* Có lớp đang học → HỎI trước (RKC: hộp xác nhận chung), nêu đúng hậu quả. Chỉ đổi thứ tự thì không hỏi. */
-  if (doiMon) {
-    const kh = keHoachDoiMon(conn, code, doiMon);
-    if (kh.lopDangChay && [...kh.cu].sort().join() !== [...doiMon].sort().join()) {
-      if (kh.lopChonLaiGv) canXacNhan(CAU_DOI_MON_PC, { n: kh.lopDangChay, m: kh.luotDoi, k: kh.lopChonLaiGv }, NUT_DOI_MON);
-      else canXacNhan(CAU_DOI_MON, { n: kh.lopDangChay, m: kh.luotDoi }, NUT_DOI_MON);
-    }
-  }
   /* OV-6b2: liên tục giữ liên tục (không số tuần) — chỉ đổi "mỗi n tuần", áp lớp mở sau. */
   const lap = had.lap_moi_tuan == null ? null : input.lapMoiTuan === undefined ? had.lap_moi_tuan : kiemLap(input.lapMoiTuan);
   if (lap !== null) input = { ...input, weeks: null, progressWeek: null, finalWeek: null };
@@ -195,6 +187,14 @@ export function saveProgramme(p: Principal, input: {
     const pt = Number(input.nguongDat);
     if (!Number.isFinite(pt) || pt < 1 || pt > 100) throw loiO('nguong', 'Đạt từ là phần trăm từ 1 đến 100.');
     nguong = Math.round(pt * 100) / 10000;   // 72.5 % → 0.725, không lệch số lẻ dấu phẩy động
+  }
+  /* Có lớp đang học → HỎI trước (RKC: hộp xác nhận chung), nêu đúng hậu quả — sau khi mọi ô đã kiểm. Chỉ đổi thứ tự thì không hỏi. */
+  if (doiMon) {
+    const kh = keHoachDoiMon(conn, code, doiMon);
+    if (kh.lopDangChay && [...kh.cu].sort().join() !== [...doiMon].sort().join()) {
+      if (kh.lopChonLaiGv) canXacNhan(CAU_DOI_MON_PC, { n: kh.lopDangChay, m: kh.luotDoi, k: kh.lopChonLaiGv }, NUT_DOI_MON);
+      else canXacNhan(CAU_DOI_MON, { n: kh.lopDangChay, m: kh.luotDoi }, NUT_DOI_MON);
+    }
   }
 
   return tx(() => {

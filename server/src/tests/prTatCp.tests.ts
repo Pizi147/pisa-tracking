@@ -71,7 +71,7 @@ export async function runPrTatCpTests(t: any) {
       const cp = cpCua(sid);
       assert(cp.length === 1 && cp[0].so === 1 && cp[0].status === 'planned', `xếp tay phải tạo Checkpoint 1, có ${JSON.stringify(cp)}`);
       const lich = all(`SELECT skill, planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND required = 1`, cp[0].id);
-      assert(lich.length === 4 && lich.every((r) => r.p === pid), `lịch 4 môn đúng tuần: ${JSON.stringify(lich)}`);
+      assert(lich.length === 2 && lich.every((r) => r.p === pid), `lịch 2 môn (L+S · R+W) đúng tuần: ${JSON.stringify(lich)}`);
       let loi: any = null;
       try { keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: sid, kind: 'cp1', tuan, force: true }); } catch (e) { loi = e; }
       assert(loi && /đã có/.test(loi.message), `xếp lại Checkpoint đã có phải chặn, có ${loi?.message}`);

@@ -129,5 +129,24 @@ export async function runPrMonCt1311Tests(t: any) {
     const e = loi(() => classSvc.setClassTeachers(P.admin, A, { slots: dang.map((x) => ({ userId: x.user_id, skill: x.skill, isCore: x.is_core === 1 })) }));
     assert(e === null, `gửi lại bức tranh có môn cũ: ${e?.status} ${e?.message}`);
   }));
+
+  check('MC-6 · dữ liệu P13 cũ: PET 4 môn, lượt đã ghi L+S / R+W (không bản chụp) → đổi PET về L+S · R+W: lượt theo bộ mới, không chụp 4 môn; đổi lại 4 môn → chụp đúng bộ gộp', () => thu(() => {
+    const dat = (mon: string[]) => {
+      conn.prepare("DELETE FROM programme_skills WHERE programme_code = 'PET'").run();
+      mon.forEach((k, i) => conn.prepare("INSERT INTO programme_skills (programme_code, skill, seq) VALUES ('PET', ?, ?)").run(k, i));
+      xoaNho();
+    };
+    const id = one(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE c.code = 'MB PET 01' AND a.status != 'cancelled'
+      AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = 'reading_writing' AND s.raw_score IS NOT NULL) ORDER BY a.id LIMIT 1`)?.id;
+    assert(id, 'cần lượt PET có điểm R+W');
+    const kq = JSON.stringify(regular.regularResultOf(id));
+    dat(['listening', 'reading', 'writing', 'speaking']);   // như bản chính sau P13 (lượt gộp cũ, không bản chụp)
+    assert(JSON.stringify(regular.regularResultOf(id)) === kq, 'P13: lượt gộp cũ đọc sai');
+    voiXacNhan(() => luu('PET', ['listening_speaking', 'reading_writing'])); xoaNho();
+    assert(one('SELECT bo_mon FROM assessment_attempts WHERE id = ?', id).bo_mon === null && JSON.stringify(regular.regularResultOf(id)) === kq, 'lượt gộp cũ bị chụp 4 môn');
+    voiXacNhan(() => luu('PET', ['listening', 'reading', 'writing', 'speaking'])); xoaNho();
+    assert(one('SELECT bo_mon FROM assessment_attempts WHERE id = ?', id).bo_mon === JSON.stringify(['listening_speaking', 'reading_writing']), 'chụp sai bộ');
+    assert(JSON.stringify(regular.regularResultOf(id)) === kq, 'kết quả đổi sau khi tách');
+  }));
   void TODAY;
 }

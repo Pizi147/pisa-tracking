@@ -1209,7 +1209,7 @@ export function monGopConCanMany(classIds: readonly number[]): Map<number, Set<s
   for (const r of db().prepare(
     `SELECT DISTINCT a.class_id AS c, k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
        JOIN classes cl ON cl.id = a.class_id JOIN programmes p ON p.code = cl.programme_code AND p.scoring_mode = 'ratio'
-      WHERE a.class_id IN (${lop}) AND a.status != 'cancelled' AND ${ngoaiBo('k.skill')}
+      WHERE a.class_id IN (${lop}) AND a.status != 'cancelled' AND a.kind != 'mt0' AND ${ngoaiBo('k.skill')}   -- MT0 luôn 4 kỹ năng IELTS, không phải môn lớp
         AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = k.skill AND (s.raw_score IS NOT NULL OR s.no_show_period_id IS NOT NULL))
      UNION SELECT DISTINCT a.class_id, COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
        JOIN classes cl ON cl.id = a.class_id JOIN programmes p ON p.code = cl.programme_code AND p.scoring_mode = 'ratio'
