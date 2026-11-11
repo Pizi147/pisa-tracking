@@ -26,8 +26,8 @@ type DongGoc = {
   nhapLienHe: boolean;
 };
 /** `nhapLienHe` (OV-10b): cột Liên hệ — QL / Quản trị; GVCN không thấy (chủ SP 13/10). QUYEN-CN: hiện khi có em sửa được; em không sửa được → ô chỉ đọc. */
-/** `chiThongTin` (OV-13i): TVV / CX — cột Tuần bắt đầu khoá (ngoài `CHI_SUA_THONG_TIN`). */
-type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: KyThi | null; coTheSuaTarget: boolean; chiThongTin: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean; coTheDoiMon?: boolean };
+/** `coTheDoiTuan` ([XM-C1]): cột Tuần bắt đầu — QL, Quản trị, GVCN, TVV chi nhánh lớp; CX khoá. */
+type DuLieu = { lop: { id: number; code: string }; lopThuong: boolean; kyThi?: KyThi | null; coTheSuaTarget: boolean; coTheDoiTuan: boolean; nhapLienHe: boolean; rows: DongGoc[]; tvv: NguoiTrongDs[]; coMonHoc?: boolean; coTheDoiMon?: boolean };
 type XemTruoc = { rows: { studentId: number; issues: VanDeNhap[] }[]; canhBaoMt: { studentId: number; cau: string }[]; monHoc?: { studentId: number; dong: string[] }[] };
 
 const COT: { key: Cot; nhan: string; rong: number; so?: boolean }[] = [
@@ -96,7 +96,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
   /** Cả cột khoá theo vai — máy chủ kiểm lại (`duocDoiTarget`, `CHI_SUA_THONG_TIN`). */
   const khoaCot = (k: Cot) => (k === 'target' && !d?.coTheSuaTarget ? t('Chỉ Quản lý, TVV hoặc CX đổi Target')
-    : k === 'startWeek' && d?.chiThongTin ? t('Chỉ Quản lý hoặc GVCN sửa Tuần bắt đầu')
+    : k === 'startWeek' && !d?.coTheDoiTuan ? t('Chỉ Quản lý, GVCN hoặc TVV sửa Tuần bắt đầu')
     : k === 'monDangKy' && !d?.coTheDoiMon ? t('Chỉ Quản lý, GVCN hoặc TVV đổi Môn học') : null);
 
   /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */

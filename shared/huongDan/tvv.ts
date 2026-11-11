@@ -339,9 +339,9 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
   },
   {
     id: 'p-sua-ca-lop', ten: 'Sửa thông tin cả lớp đang mở', duong: [], panel: 'sua-ca-lop',
-    dangO: { cau: cx ? 'Bảng cả lớp: sửa nhiều em một lần (Target).' : 'Bảng cả lớp: sửa nhiều em một lần (Target, môn học).' },
+    dangO: { cau: cx ? 'Bảng cả lớp: sửa nhiều em một lần (Target).' : 'Bảng cả lớp: sửa nhiều em một lần (Target, môn học, Tuần bắt đầu).' },
     khongLam: [KHONG_GV],
-    muc: [{ id: 'pcl-sua', viec: 'sua-hv', ten: 'Sửa nhiều em một lần', buoc: ['Sửa ô trong bảng; cột <b>Tuần bắt đầu</b> khoá.', 'Đổi Target nhiều em: một <b>Lý do đổi Target</b> chung; <b>Lưu</b>.'] }],
+    muc: [{ id: 'pcl-sua', viec: 'sua-hv', ten: 'Sửa nhiều em một lần', buoc: ['Sửa ô trong bảng; đổi <b>Tuần bắt đầu</b> thì MT chưa thi dời theo.', 'Đổi Target nhiều em: một <b>Lý do đổi Target</b> chung; <b>Lưu</b>.'] }],
   },
   {
     id: 'p-them-hv', ten: 'Thêm học viên đang mở', duong: [], panel: 'them-hv',

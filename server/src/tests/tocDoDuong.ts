@@ -1264,6 +1264,8 @@ export const TRAN_GHI_LO = {
   doiLoTrinh: 93,   // đo 71 câu, 148 dòng (thao tác ghi hiếm: ghi_dao 6 bảng + lõi lịch MT từng lượt) → max(71 + 10, ⌈71 × 1,3⌉)
   /** [XM-C1] TVV-TUAN-BD: PATCH /cycles/:id { startWeek } của TVV chi nhánh em — cùng đường QL (kiểm tuần, ghi, lõi lịch MT, Hành trình, nhật ký) + kiểm quyền `duocDoiMon`; đo trong prOv8b OV8b-TUAN. */
   doiTuanBatDau: 35,   // đo 25 câu, 31 dòng (QL cùng đường 23 câu, 29 dòng) → max(25 + 10, ⌈25 × 1,3⌉)
+  /** [XM-C1]: POST /classes/:id/sua-ca-lop { rows: [1 em, startWeek] } của TVV — kiểm lô + `updateCycle` + nhật ký lô; đo trong prOv13i OV13i-4. */
+  doiTuanCaLop1Em: 58,   // đo 44 câu, 57 dòng (QL cùng lô 40 câu, 53 dòng) → max(44 + 10, ⌈44 × 1,3⌉)
   /** LO-TRINH-THEO-HV: POST /cycles/:id/lo-trinh/hoan-tac — daoLai một bản ghi + nhật ký. */
   hoanTacDoiLoTrinh: 31,   // đo 21 câu, 14 dòng → max(21 + 10, ⌈21 × 1,3⌉)
   /** PC-GV-A: POST /phan-cong/luu 8 lớp (trần một lần lưu) mỗi lớp một ô + 1 Case + 1 PA chuyển, hôm nay — lõi chung (kiểm + ghi_dao + áp + chuyển + nhật ký); đo trong prPhanCongGv. */

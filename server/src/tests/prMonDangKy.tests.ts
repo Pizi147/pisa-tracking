@@ -439,10 +439,10 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
         assert(ma === 403, `${ai}: ${ma}`);
       }
       const du = suaCaLop.duLieuSuaCaLop(tvv, lopMb);
-      assert(du.coTheDoiMon && du.chiThongTin, 'TVV: mở cột Môn học, các cột ngoài thông tin vẫn khoá');
+      assert(du.coTheDoiMon && du.coTheDoiTuan, 'TVV: mở cột Môn học + Tuần bắt đầu ([XM-C1])');
       assert(suaCaLop.xemTruocSuaCaLop(tvv, lopMb, { rows: [{ studentId: x.sid, monDangKy: CHI_W2 }] }).rows[0].issues.length === 0, 'TVV sửa cột Môn học');
-      let ma: any = null; try { suaCaLop.xemTruocSuaCaLop(tvv, lopMb, { rows: [{ studentId: x.sid, startWeek: T2 }] }); } catch (e: any) { ma = e.status; }
-      assert(ma === 403, `TVV Tuần bắt đầu vẫn 403: ${ma}`);
+      let ma: any = null; try { suaCaLop.xemTruocSuaCaLop(cx, lopMb, { rows: [{ studentId: x.sid, startWeek: T2 }] }); } catch (e: any) { ma = e.status; }
+      assert(ma === 403, `CX Tuần bắt đầu vẫn 403: ${ma}`);
     });
   });
 

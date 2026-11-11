@@ -14,6 +14,7 @@ export const EN_P8_MON_DANG_KY = {
   'Chú giải ô điểm': 'Score cell legend',
   'em không học môn này': 'student does not study this subject',
   'Chỉ Quản lý, GVCN hoặc TVV đổi Môn học': 'Only Managers, homeroom teachers or consultants change Subjects',
+  'Chỉ Quản lý, GVCN hoặc TVV sửa Tuần bắt đầu': 'Only Managers, homeroom teachers or consultants change the start week',
   'môn học': 'subjects',
   'Em không học {o} — ô này không nhập điểm (Writing = task em học).': 'The student does not study {o} — this cell takes no score (Writing = the task studied).',
   'Bạn không có quyền đổi môn học của học viên này.': 'You do not have permission to change this student\'s subjects.',

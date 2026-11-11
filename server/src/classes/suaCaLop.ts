@@ -37,7 +37,8 @@ export const TOI_DA_DONG_SUA_CA_LOP = 60;
 export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý, TVV hoặc CX đổi được Target.';
 /**
  * OV-13i (chủ SP 15/10): ai mở được panel — GVCN / QL (`student.edit`) hoặc TVV / CX (`student.edit_more`) đúng phạm vi. Một luật cho cờ nút
- * ở hồ sơ lớp (`coTheSuaCaLop`) và máy chủ. TVV / CX chỉ sửa trường của `CHI_SUA_THONG_TIN` + Target (`duocDoiTarget`); Tuần bắt đầu → 403.
+ * ở hồ sơ lớp (`coTheSuaCaLop`) và máy chủ. TVV / CX chỉ sửa trường của `CHI_SUA_THONG_TIN` + Target (`duocDoiTarget`); Tuần bắt đầu: [XM-C1] TVV chi nhánh em
+ * (`duocDoiMon`, như Sửa thông tin một em), CX → 403.
  */
 export const duocSuaCaLop = (p: Principal, ctx: Ctx) => can(p, PERMISSIONS.STUDENT_EDIT, ctx) || can(p, PERMISSIONS.STUDENT_EDIT_MORE, ctx);
 const HO_SO = ['fullName', 'dob', 'email', 'consultantUserId', 'phone', 'parentName', 'parentRelation', 'parentPhone'] as const;
@@ -112,8 +113,8 @@ export function duLieuSuaCaLop(p: Principal, classId: number) {
     coMonHoc: !laLopThuong(cls.programme_code ?? null),
     /** P8: người xem đổi được Môn học (cột + thanh "Áp cho n em") — QL, Quản trị, GVCN, TVV. */
     coTheDoiMon: duocDoiMon(p, { classId: cls.id }),
-    /** OV-13i: TVV / CX (không `student.edit`) — panel khoá cột Tuần bắt đầu (ngoài `CHI_SUA_THONG_TIN`). */
-    chiThongTin: !can(p, PERMISSIONS.STUDENT_EDIT, { classId: cls.id }),
+    /** OV-13i → [XM-C1] (chủ SP 13/11): cột Tuần bắt đầu — QL, Quản trị, GVCN, TVV chi nhánh lớp (`duocDoiMon`, cùng luật `updateCycle`); CX khoá. */
+    coTheDoiTuan: duocDoiMon(p, { classId: cls.id }),
     /** OV-10b: cột Liên hệ — QL / Quản trị; GVCN không thấy ô nhập (chủ SP 13/10). */
     nhapLienHe: rows.some((r) => r.nhapLienHe),   // QUYEN-CN: cột hiện khi có em sửa được; ô từng em theo `rows[].nhapLienHe`
     /** PR-OV2b: ô chọn TVV — TVV cùng chi nhánh lớp lên trước. */
@@ -159,7 +160,7 @@ function kiemLo(p: Principal, classId: number, input: DauVao) {
     const coSua = [...HO_SO, ...LO_TRINH].some((k) => k !== 'target' && k !== 'monDangKy' && r[k] !== undefined);
     if (coSua && !can(p, PERMISSIONS.STUDENT_EDIT, { studentId: s.id })) {
       if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId: s.id })) throw loiHttp(403, 'Bạn không có quyền sửa học viên {full_name}.', { full_name: s.full_name });
-      if (r.startWeek !== undefined) throw forbidden(CHI_SUA_THONG_TIN);
+      if (r.startWeek !== undefined && !duocDoiMon(p, { studentId: s.id })) throw forbidden(CHI_SUA_THONG_TIN);   // [XM-C1]: TVV chi nhánh em được
     }
     /* QUYEN-LIEN-HE: cột Liên hệ — GV đổi giá trị → 403 ngay ở xem trước (cả lô), như ô web ẩn với GV. */
     chanDoiLienHe(p, r as Record<string, unknown>, s);

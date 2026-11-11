@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM OV-13i (chủ SP 15/10) — TVV / CX dùng "Sửa thông tin cả lớp" ở hồ sơ lớp, gồm cả Target. Qua HTTP thật:
- * đúng phạm vi → 200 + nhật ký; đổi Target thiếu lý do → 400; trường ngoài CHI_SUA_THONG_TIN → 403; lớp ngoài phạm vi → 403; cờ nút đúng vai.
+ * đúng phạm vi → 200 + nhật ký; đổi Target thiếu lý do → 400; trường ngoài CHI_SUA_THONG_TIN → 403 (Tuần bắt đầu: TVV chi nhánh được, [XM-C1]); lớp ngoài phạm vi → 403; cờ nút đúng vai.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
@@ -9,6 +9,10 @@ export async function runPrOv13iTests(t: YThucTestKit) {
   const d = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
   const accounts: any = await import('../platform/accounts.ts');
+  const suaCaLop: any = await import('../classes/suaCaLop.ts');
+  const { loadPrincipal } = await import('../permissions.ts');
+  const { xoaNho, soCauSql, soDongSql } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   console.log('\nOV-13i · TVV / CX sửa thông tin cả lớp (kể cả Target)');
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
@@ -57,9 +61,11 @@ export async function runPrOv13iTests(t: YThucTestKit) {
         assert(co ? pn.status === 200 && pn.json.coTheSuaTarget === true : pn.status === 403, `${vai}: panel ${pn.status} ${JSON.stringify(pn.json)?.slice(0, 160)}`);
       }
       const gv = await goi(P.coreTeacher.userId, `/classes/${ft}/sua-ca-lop`);
-      assert(gv.status === 200 && gv.json.coTheSuaTarget === false && gv.json.chiThongTin === false, 'GVCN như cũ: sửa được, Target khoá');
+      assert(gv.status === 200 && gv.json.coTheSuaTarget === false && gv.json.coTheDoiTuan === true, 'GVCN như cũ: sửa được, Target khoá');
       const tv = await goi(TVV, `/classes/${ft}/sua-ca-lop`);
-      assert(tv.json.chiThongTin === true, 'TVV: cột Tuần bắt đầu khoá (chiThongTin)');
+      assert(tv.json.coTheDoiTuan === true, 'TVV MB: cột Tuần bắt đầu mở ([XM-C1])');
+      const cx = await goi(CX, `/classes/${ft}/sua-ca-lop`);
+      assert(cx.json.coTheDoiTuan === false, 'CX: cột Tuần bắt đầu khoá');
     });
 
     await checkAsync('OV13i-2 · TVV MB sửa họ tên + dự kiến thi + Target (có lý do) → 200, audit student.update, dòng cycle_target_revisions', async () => {
@@ -85,14 +91,39 @@ export async function runPrOv13iTests(t: YThucTestKit) {
       assert(r1.status === 200 && r1.json.daSua === 1 && soRev(c.cid) === rv + 1, `${r1.status} ${JSON.stringify(r1.json)}`);
     });
 
-    await checkAsync('OV13i-4 · TVV gửi Tuần bắt đầu (ngoài CHI_SUA_THONG_TIN) → 403 ở xem trước và lưu, không ghi gì', async () => {
+    await checkAsync('OV13i-4 · [XM-C1] Tuần bắt đầu cả lớp: CX → 403 ở xem trước và lưu, không ghi; TVV MB xem trước + lưu được (MT dời như QL, nhật ký nguồn lô); TVV CP → 403', async () => {
       const a = em[3];
-      const truoc = ten(a.sid);
+      const tuanCua = (cid: number) => get('SELECT rp.week_start w FROM learning_cycles c JOIN report_periods rp ON rp.id = c.start_period_id WHERE c.id = ?', cid)?.w as string;
+      const tuan0 = tuanCua(a.cid);
+      const moi = t.addDays(tuan0, 7);
       for (const url of [`/classes/${ft}/sua-ca-lop/xem-truoc`, `/classes/${ft}/sua-ca-lop`]) {
-        const r = await goi(TVV, url, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, fullName: 'OV13i Không Ghi', startWeek: '2026-10-05' }] });
-        assert(r.status === 403 && r.json.error === d.CHI_SUA_THONG_TIN, `${url}: ${r.status} ${JSON.stringify(r.json)}`);
+        const r = await goi(CX, url, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, fullName: 'OV13i Không Ghi', startWeek: moi }] });
+        assert(r.status === 403 && r.json.error === d.CHI_SUA_THONG_TIN, `CX ${url}: ${r.status} ${JSON.stringify(r.json)}`);
+        const c = await goi(TVV_CP, url, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, startWeek: moi }] });
+        assert(c.status === 403, `TVV CP ${url}: ${c.status}`);
       }
-      assert(ten(a.sid) === truoc, 'không ghi');
+      assert(ten(a.sid) !== 'OV13i Không Ghi' && tuanCua(a.cid) === tuan0, 'không ghi');
+      const pv = await goi(TVV, `/classes/${ft}/sua-ca-lop/xem-truoc`, { rows: [{ studentId: a.sid, startWeek: moi }] });
+      assert(pv.status === 200 && pv.json.rows.every((x: any) => !x.issues.length), `TVV xem trước: ${pv.status} ${JSON.stringify(pv.json)?.slice(0, 200)}`);
+      /* Lưu thật trong giao dịch cuộn lại — không dời lịch MT của em demo cho các bộ kiểm sau. Đo Turso cùng lúc (QL cùng lô để so). */
+      const coDiem = () => new Map(all(`SELECT a.id, a.planned_period_id w FROM assessment_attempts a WHERE a.cycle_id = ? AND a.kind = 'mock'
+          AND EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id)`, a.cid).map((r) => [r.id, r.w]));
+      const lo = (p: any) => {
+        conn.exec('BEGIN IMMEDIATE');
+        try {
+          xoaNho(); const c0 = soCauSql(), d0 = soDongSql(), truoc = coDiem();
+          suaCaLop.luuSuaCaLop(p, ft, { rows: [{ studentId: a.sid, startWeek: moi }] });
+          const n = [soCauSql() - c0, soDongSql() - d0];
+          assert(tuanCua(a.cid) === moi, `${p.fullName}: tuần không đổi`);
+          for (const [id, w] of truoc) assert(coDiem().get(id) === w, `MT có điểm ${id} bị dời`);
+          const nk = get(`SELECT actor_user_id u FROM audit_logs WHERE action = 'cycle.update' AND entity_id = ? ORDER BY id DESC LIMIT 1`, a.cid);
+          assert(nk?.u === p.userId, `nhật ký: ${JSON.stringify(nk)}`);
+          return n;
+        } finally { conn.exec('ROLLBACK'); xoaNho(); }
+      };
+      const ql = lo(P.mbManager), tv = lo(loadPrincipal(TVV));
+      console.log(`    Sửa cả lớp · Tuần bắt đầu 1 em: QL ${ql[0]} câu / ${ql[1]} dòng · TVV ${tv[0]} câu / ${tv[1]} dòng`);
+      assert(tv[0] <= TRAN_GHI_LO.doiTuanCaLop1Em, `TVV ${tv[0]} câu > ${TRAN_GHI_LO.doiTuanCaLop1Em}`);
     });
 
     await checkAsync('OV13i-5 · TVV chi nhánh khác (CP) lưu ở lớp MB → 403, không ghi', async () => {
