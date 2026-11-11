@@ -32,7 +32,7 @@ export function doiSosTamPa(conn: any): { trung: number[]; khac: number[] } {
     const luot = conn.prepare(`SELECT a.* FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id WHERE m.case_id = ? AND m.kind IN ('opened', 'repeat')
         ORDER BY m.created_at DESC, m.id DESC LIMIT 1`).get(r.caseId) as any;
     const p = luot ? presetFor(luot, conn.prepare('SELECT sos_level FROM sos_cases WHERE id = ?').get(r.caseId)?.sos_level) : null;
-    ganDauQuyChe(g, p && p.kind === q.kind ? p : { kind: q.kind, span: q.moc_quy_che, description: q.description }, luot ?? null, null);
+    ganDauQuyChe(g, p && p.kind === q.kind ? p : { kind: q.kind, span: q.moc_quy_che, description: q.description }, null);
     conn.prepare(`UPDATE case_interventions SET status = 'cancelled', closed_reason = 'dismissed', updated_at = ? WHERE id = ?`).run(nowIso(), q.id);
     conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?, '${TRUONG}', ?, ?, NULL, ?)`)
       .run(r.caseId, JSON.stringify({ q: q.id, g: g.id, status: q.status, closed_reason: q.closed_reason ?? null }), 'cancelled', nowIso());
