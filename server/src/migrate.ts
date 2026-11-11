@@ -45,7 +45,6 @@ import { migratePrOv6b1 } from './migrate/prOv6b1.ts';
 import { migratePrOv6b2 } from './migrate/prOv6b2.ts';
 import { migratePrOv8a } from './migrate/prOv8a.ts';
 import { migratePrOv11e, themCotPrOv11e } from './migrate/prOv11e.ts';
-import { migratePrOv12a } from './migrate/prOv12a.ts';
 import { migratePrOv13l } from './migrate/prOv13l.ts';
 import { migratePrOv13n } from './migrate/prOv13n.ts';
 import { migratePrOv13m } from './migrate/prOv13m.ts';
@@ -418,7 +417,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-8a: Bước tiếp sau thi thật — bốn cột ở learning_cycles (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv8a(conn, applied));
     /* OV-10b: liên hệ học viên — SĐT em, phụ huynh (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv10b(conn, applied));
     /* PR-OV11e (SAU prOv1b / prOv1c): lượt MT đã chốt chụp dấu KCK hiện tại — kết luận giữ như màn đang hiện (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv11e(conn, applied));
-    /* PR-OV12a: hạn ghi kết quả PA → lịch kỳ hai tuần, hết Thứ Ba, không sớm hơn hạn cũ (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv12a(conn, applied));
+    /* PR-OV12a (đổi hạn PA sang lịch kỳ hai tuần) KHÔNG chạy nữa (OV12A-LAP, 12/11): mọi DB đã qua bước này từ 14/10; chạy lại mỗi lần migrate kéo hạn app đặt hợp lệ
+       sau đó (quét tạm dừng / reset / cấu hình hạn) về lịch kỳ — bản chép 12/11: 10 PA 24/11 → 01/12. Seed vẫn gọi thẳng hàm của prOv12a.ts. */
     /* PR-EN: ngôn ngữ theo tài khoản — users.ngon_ngu (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrEn(conn, applied));
     /* PR-OV12b: assessment_scores.nhom_nguyen_nhan — nhóm nguyên nhân của ô MT dưới kỳ vọng (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrOv12b(conn, applied));
     /* PR-OV12c (SAU PR-OV12b — cần cột nhom_nguyen_nhan): Case MT chờ nguyên nhân → nguyên nhân từ nhận xét / việc Ghi nhận xét, thẻ Báo lên nguyên nhân đóng, nhãn SOS Progress (đổi dữ liệu, chạy lặp được). */ buoc(() => migratePrOv12c(conn, applied));

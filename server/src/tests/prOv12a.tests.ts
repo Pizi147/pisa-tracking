@@ -12,6 +12,7 @@ export async function runPrOv12aTests(t: any) {
   const myWork: any = await import('../worklist/mywork.ts');
   const metrics: any = await import('../worklist/metrics.ts');
   const { migratePrOv12a } = await import('../migrate/prOv12a.ts');
+  const migrateMod: any = await import('../migrate.ts');
   const xoaKetThuc: any = await import('../classes/xoaKetThucLop.ts');
   const intake: any = await import('../classes/intake.ts');
   const hangLoat: any = await import('../students/hangLoat.ts');
@@ -138,6 +139,19 @@ export async function runPrOv12aTests(t: any) {
     migratePrOv12a(conn, lan2);
     assert(lan2.length === 0 && JSON.stringify(all('SELECT id, action_due FROM case_interventions ORDER BY id')) === truoc, 'chạy lại vẫn đổi');
   }));
+
+  /* OV12A-LAP (12/11, bản chép bản chính): `migrate()` KHÔNG kéo hạn app đặt (lệch lịch kỳ) về lịch kỳ — trước: mỗi lần deploy 10 PA 24/11 → 01/12. */
+  check('OV12a-3b · migrate() chạy hai lần không đổi hạn PA đang chạy lệch lịch kỳ (bước OV-12a không còn trong migrate)', () => {
+    const pa = get(`SELECT id, action_due FROM case_interventions WHERE status IN ('planned', 'started') AND action_due IS NOT NULL
+                     AND COALESCE(started_date, cycle_started_on) IS NOT NULL ORDER BY id LIMIT 1`);
+    assert(pa, 'seed thiếu PA đang chạy có hạn');
+    const lech = d.addDaysIso(pa.action_due, 3);   // lệch lịch kỳ (kỳ hai tuần, hết Thứ Ba)
+    conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(lech, pa.id);
+    try {
+      migrateMod.migrate(); migrateMod.migrate();
+      assert(get('SELECT action_due FROM case_interventions WHERE id = ?', pa.id).action_due === lech, 'migrate đổi hạn PA');
+    } finally { conn.prepare('UPDATE case_interventions SET action_due = ? WHERE id = ?').run(pa.action_due, pa.id); }
+  });
 
   // ------------------------------------------------------------------ (4) QL xoá lớp trống
   check('OV12a-4 · QL xoá lớp trống 200; lớp có dữ liệu 400; GV / TVV / CX / QL chi nhánh khác 403', () => thu(() => {
