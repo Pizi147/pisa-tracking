@@ -56,7 +56,7 @@ Học viên Quản trị 250 ms. Trên Turso thời gian ≈ số câu × vòng 
 
 | chỉ mục | câu được lợi | quét / ngày trước |
 |---|---|---|
-| `idx_iv_ghi_kq` `case_interventions(id) WHERE status IN ('planned','started') AND action_due IS NOT NULL` | Công việc · Ghi kết quả PA (`mywork.ts`) — SCAN 583 PA mỗi lần | 0,50 triệu |
+| `idx_iv_ghi_kq` `case_interventions(action_due) WHERE status IN ('planned','started') AND action_due IS NOT NULL` (xếp lại theo id trong JS) | Công việc · Ghi kết quả PA (`mywork.ts`) — SCAN 583 PA mỗi lần | 0,50 triệu |
 | `idx_iv_cho_xac_nhan` `case_interventions(id) WHERE preset = 1 AND confirmed_at IS NULL AND status = 'planned'` | Công việc · Xác nhận PA — SCAN 583 PA mỗi lần | 0,38 triệu |
 | `idx_iv_moc_cho` `case_interventions(id) WHERE preset = 1 AND status = 'started' AND followup_due IS NULL` | Công việc · Mốc PA quy chế (`SQL_MOC`) | 0,07 triệu |
 | `idx_cycle_cho_kq_ngay` `learning_cycles(COALESCE(thi_that_ngay, exam_date, ended_at)) WHERE <như idx_cycle_cho_kq>` | `SQL_CHO_KET_QUA_THI` (Công việc, Học viên, Tổng quan TVV / CX): đọc 683 lộ trình chờ kết quả, 591 chưa có ngày → chỉ đọc 67 đã qua ngày thi | 0,34 triệu |
@@ -66,8 +66,8 @@ Học viên Quản trị 250 ms. Trên Turso thời gian ≈ số câu × vòng 
 
 ### Không làm / đã thử
 
-- Khoá chỉ mục PA theo `action_due` / `case_id` bớt thêm ~0,25 triệu nhưng ĐỔI THỨ TỰ dòng (câu Công việc không ORDER BY → gộp "Xác nhận PA" khác thứ tự,
-  TD4-a đỏ) → khoá `id`. `ORDER BY` trong câu làm SQLite quay về chỉ mục cũ → `SQL_CHO_KET_QUA_THI` xếp lại trong JS.
+- Chỉ mục PA khoá `case_id` ĐỔI THỨ TỰ dòng (câu Công việc không ORDER BY → gộp "Xác nhận PA" khác thứ tự, TD4-a đỏ) → hai chỉ mục không lọc khoảng khoá `id`;
+  câu lọc khoảng (Ghi kết quả PA, `SQL_CHO_KET_QUA_THI`) xếp lại theo id trong JS — thêm `ORDER BY` vào câu làm SQLite quay về chỉ mục cũ.
 - Phát hiện phụ: chạy lại `npm run migrate` trên bản chép (đã migrate + đã chạy app một lượt) → bước OV-12a vẫn đổi hạn 10 PA đang chạy (24/11 → 01/12), tức
   migrate không "chạy lặp không đổi" ở bước này — có sẵn trên main, ngoài phạm vi, báo PTA.
 

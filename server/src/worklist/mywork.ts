@@ -878,6 +878,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
     )
     .all(hanGhiKetQuaToi(today)) as any[];
+  /* TURSO-1211: câu đi chỉ mục hạn (`idx_iv_ghi_kq`) — xếp lại theo PA (sort ổn định) như thứ tự cũ (SCAN theo rowid), JSON không đổi. */
+  ghiKetQua.sort((a, b) => a.id - b.id);
   /*
    * TL-VIEC · PHA ĐỌC: mọi nguồn dòng việc đọc TRƯỚC (đoạn này không có ghi; đọc lại Mốc PA quy chế ở mục riêng sau `dienMocQuyChe`), rồi MỘT lần nạp phạm vi em / chủ Case /
    * tỷ lệ cho cả tập; pha DỰNG phía dưới giữ nguyên thứ tự `items.push`.

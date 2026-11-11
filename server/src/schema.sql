@@ -1264,8 +1264,8 @@ CREATE UNIQUE INDEX ux_case_interventions_khoa_gui ON case_interventions(recorde
 CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)
   WHERE approval_state = 'pending';
 CREATE INDEX idx_intervention_case ON case_interventions(case_id);
-/* TURSO-1211: Công việc · Ghi kết quả PA / Xác nhận PA / Mốc PA quy chế — điều kiện = điều kiện câu, khoá `id` giữ thứ tự cũ (migrate/prTurso1211.ts). */
-CREATE INDEX idx_iv_ghi_kq ON case_interventions(id) WHERE status IN ('planned', 'started') AND action_due IS NOT NULL;
+/* TURSO-1211: Công việc · Ghi kết quả PA / Xác nhận PA / Mốc PA quy chế — điều kiện = điều kiện câu; khoá `id` / xếp lại theo `id` giữ thứ tự cũ (migrate/prTurso1211.ts). */
+CREATE INDEX idx_iv_ghi_kq ON case_interventions(action_due) WHERE status IN ('planned', 'started') AND action_due IS NOT NULL;
 CREATE INDEX idx_iv_cho_xac_nhan ON case_interventions(id) WHERE preset = 1 AND confirmed_at IS NULL AND status = 'planned';
 CREATE INDEX idx_iv_moc_cho ON case_interventions(id) WHERE preset = 1 AND status = 'started' AND followup_due IS NULL;
 CREATE INDEX idx_intervention_due ON case_interventions(followup_due) WHERE followup_due IS NOT NULL;

@@ -1,11 +1,12 @@
 /**
  * TURSO-1211 (chủ SP 12/11, đo trên bản chép bản chính — docs/superpowers/specs/2026-11-12-turso-toc-do/ra.md mục A): chỉ thêm chỉ mục (cùng trong schema.sql);
  * chạy lại không làm gì. Câu không đổi — điều kiện chỉ mục một phần chép NGUYÊN điều kiện của câu (SQLite chỉ dùng chỉ mục một phần khi câu có đúng các vế đó).
- * Ba chỉ mục PA khoá theo `id`: câu Công việc không ORDER BY, đọc theo `id` giữ NGUYÊN thứ tự dòng cũ (SCAN theo rowid) → JSON Công việc y hệt.
+ * Câu Công việc không ORDER BY: hai chỉ mục PA không lọc khoảng khoá theo `id` (đọc theo `id` = thứ tự cũ, SCAN theo rowid); Ghi kết quả PA lọc khoảng hạn
+ * (`action_due`) rồi xếp lại theo `id` ở mywork.ts → JSON Công việc y hệt.
  */
 export const CHI_MUC_TURSO_1211: [string, string][] = [
-  /* Công việc · Ghi kết quả PA (`mywork.ts` 2b): trước SCAN mọi PA. */
-  ['idx_iv_ghi_kq', "CREATE INDEX IF NOT EXISTS idx_iv_ghi_kq ON case_interventions(id) WHERE status IN ('planned', 'started') AND action_due IS NOT NULL"],
+  /* Công việc · Ghi kết quả PA (`mywork.ts` 2b, `action_due <= ?`): trước SCAN mọi PA, nay chỉ PA tới hạn. */
+  ['idx_iv_ghi_kq', "CREATE INDEX IF NOT EXISTS idx_iv_ghi_kq ON case_interventions(action_due) WHERE status IN ('planned', 'started') AND action_due IS NOT NULL"],
   /* Công việc · Xác nhận PA (`UNCONFIRMED_PRESET` + `status = 'planned'`): trước SCAN mọi PA. */
   ['idx_iv_cho_xac_nhan', "CREATE INDEX IF NOT EXISTS idx_iv_cho_xac_nhan ON case_interventions(id) WHERE preset = 1 AND confirmed_at IS NULL AND status = 'planned'"],
   /* Công việc · Mốc PA quy chế (`SQL_MOC`): trước SCAN mọi PA. */
