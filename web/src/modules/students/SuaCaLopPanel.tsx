@@ -191,7 +191,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   };
 
   return (
-    <KhungPanel tieuDe={t('Sửa thông tin học viên')} lop={d ? t('Lớp {code}', { code: d.lop.code }) : null} rong="toan" onDong={dong}
+    <KhungPanel hd="sua-ca-lop" tieuDe={t('Sửa thông tin học viên')} lop={d ? t('Lớp {code}', { code: d.lop.code }) : null} rong="toan" onDong={dong}
       ngCanh={soEm ? t('Đã sửa {n} em', { n: soEm }) : undefined}
       chan={{
         daSua: soEm > 0, tuHoi: true, huy: { onClick: dong, disabled: busy },

@@ -196,7 +196,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
   const chuChonCa = ky.length === 1 ? t('Chọn {ten}', { ten: dich(tenMon(ct, ky[0])) }) : t('Chọn cả {n} môn', { n: ky.length });
 
   return (
-    <KhungPanel tieuDe={t('Xếp lịch Test')} rong="rong" onDong={onClose}
+    <KhungPanel hd="xep-lich-mt" tieuDe={t('Xếp lịch Test')} rong="rong" onDong={onClose}
       tabs={<KhungXepLich value="thuong" onChange={onDoiKhung} coFt={coFt} coThuong />}
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, chinh, conThieu: lf.conThieu(loi), daSua: daChinh }}>
       <Khoi tieuDe={t('Lớp')}>

@@ -174,7 +174,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
     return <LichSuThayDoi loai="nhap-hv" id={classId} dong2={[t('Thêm học viên'), cls?.code]} quayLai={{ nhan: t('Thêm học viên'), onClick: () => setLichSu(false) }} onClose={onClose} />;
   }
   return (
-    <KhungPanel tieuDe={t('Thêm học viên')} lop={cls?.code} rong="toan" onDong={onClose}
+    <KhungPanel hd="them-hv" tieuDe={t('Thêm học viên')} lop={cls?.code} rong="toan" onDong={onClose}
       chan={{
         /* Luật S3 (I1): có dòng đã gõ hoặc chữ trong ô dán → "Huỷ thay đổi". */
         daSua: !!pasteText.trim() || rows.some((r) => !dongTrong(r)), huy: { onClick: onClose, disabled: busy },

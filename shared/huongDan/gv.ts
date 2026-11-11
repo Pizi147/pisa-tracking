@@ -120,14 +120,14 @@ export const HD_GV: HuongDan = {
     {
       id: 'sua-thong-tin', ten: 'Sửa thông tin, lộ trình đang học', nhom: 'hv',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Sửa thông tin' },
-      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'mở cùng panel.',
+      loiTat: ['ho-so-lop', 'p-sua-thong-tin', 'p-sua-ca-lop'], tatThem: ['⋯ dòng em'], cung: 'mở cùng panel.',
       buoc: ['GVCN: <b>⋯ › Sửa thông tin</b> — liên hệ, Target, môn học, <b>Lộ trình đang học</b> (LT1 · LT2 · RF, lộ trình theo em, không theo lớp).', 'Cả lớp: Hồ sơ lớp › <b>⋯ › Sửa thông tin học viên</b>.', 'GV bộ môn: <b>⋯ › Đề xuất sửa thông tin…</b> — QL duyệt rồi mới đổi.', 'Mọi lần sửa có <b>⋯ › Lịch sử</b>.'],
       tuKhac: ['sửa', 'thông tin', 'lộ trình', 'target', 'môn học', 'edit'],
     },
     {
       id: 'them-hv', ten: 'Thêm học viên, dán Excel', nhom: 'hv', chiGvcn: true,
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ › + Học viên' },
-      loiTat: ['hoc-vien'], cung: 'có nút + Thêm học viên.',
+      loiTat: ['hoc-vien', 'p-them-hv'], cung: 'có nút + Thêm học viên.',
       buoc: ['Hồ sơ lớp, bấm <b>⋯ › + Học viên</b>.', 'Gõ từng em, hoặc dán danh sách từ Excel (dán Excel chỉ dùng để thêm học viên).', 'Xem lại các dòng, rồi lưu.'],
       tuKhac: ['thêm em', 'excel', 'dán', 'nhập danh sách', 'add student'],
     },
@@ -153,13 +153,14 @@ export const HD_GV: HuongDan = {
     {
       id: 'thi-that', ten: 'Ghi kết quả thi thật', nhom: 'hv', chiGvcn: true,
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Kết quả thi thật' },
-      loiTat: ['hoc-vien'], cung: 'mở cùng panel.',
+      loiTat: ['hoc-vien', 'p-sau-thi'], cung: 'mở cùng panel.',
       buoc: ['Việc của TVV của em; bạn ghi được khi có kết quả trước: <b>⋯ › Kết quả thi thật</b>.', 'Gõ điểm từng kỹ năng, lưu.'],
       tuKhac: ['ielts', 'điểm thi', 'exam result'],
     },
     {
       id: 'lich-thi', ten: 'Xem lịch thi, xuất danh sách', nhom: 'hv',
       loiChinh: { man: 'hoc-vien', chu: 'Học viên & Lớp › Lịch thi', duong: '/hoc-vien', chi: { hd: 'hvl-goc', duong: '/hoc-vien', chu: 'Bấm <b>Lịch thi</b> ở hàng này.' } },
+      loiTat: ['p-xuat-ds'],
       buoc: ['Mở <b>Học viên & Lớp</b>, góc <b>Lịch thi</b>.', '<b>Xuất Excel</b> ở đầu trang: xuất đúng danh sách đang lọc.'],
       tuKhac: ['excel', 'xuất', 'export', 'ngày thi'],
     },
@@ -438,6 +439,35 @@ export const HD_GV: HuongDan = {
         { id: 'px-xuat', viec: 'xuat-excel', ten: 'Xuất Excel điểm Test',
           buoc: ['Chọn lớp, lượt và kiểu bảng.', 'Bấm xuất: tệp Excel tải về máy.'] },
       ],
+    },
+    {
+      id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin',
+      dangO: { cau: 'Thông tin, Target, môn học, lộ trình đang học của một em.' },
+      khongLam: [{ ten: 'Sửa Target không cần duyệt', cua: 'việc của QL' }],
+      muc: [{ id: 'pst-sua', viec: 'sua-thong-tin', ten: 'Sửa thông tin, lộ trình đang học', buoc: ['GVCN sửa thẳng; đổi Target cần ghi lý do.', '<b>Lộ trình đang học</b>: lượt MT đã có điểm giữ nguyên, lượt chưa thi xếp lại theo lộ trình mới.', 'GV bộ môn: panel <b>Đề xuất sửa thông tin</b> — QL duyệt trong 5 ngày.'] }],
+    },
+    {
+      id: 'p-sua-ca-lop', ten: 'Sửa thông tin cả lớp đang mở', duong: [], panel: 'sua-ca-lop',
+      dangO: { cau: 'Sửa một cột cho nhiều em của lớp cùng lúc.' },
+      khongLam: [{ ten: 'Chuyển lớp', cua: 'việc của QL' }],
+      muc: [{ id: 'psc-sua', viec: 'sua-thong-tin', ten: 'Sửa thông tin, lộ trình đang học', buoc: ['Mỗi em một dòng; sửa ô cần đổi, ô không đổi để nguyên.', 'Đổi Target nhiều em: một lý do chung cho các em đó.', 'Lưu một lần cho cả lớp.'] }],
+    },
+    {
+      id: 'p-sau-thi', ten: 'Kết quả thi thật đang mở', duong: [], panel: 'sau-thi',
+      dangO: { cau: 'Điểm thi thật của một em và bước tiếp sau thi.' },
+      khongLam: [{ ten: 'Chọn bước tiếp sau thi', cua: 'việc của TVV' }],
+      muc: [{ id: 'pkt-ghi', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Gõ điểm từng kỹ năng (KET / PET: điểm Cambridge), lưu.', 'Bước tiếp (Tạm dừng/ Kết thúc học, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.'] }],
+    },
+    {
+      id: 'p-them-hv', ten: 'Thêm học viên đang mở', duong: [], panel: 'them-hv',
+      dangO: { cau: 'Thêm em mới vào lớp.' },
+      khongLam: [{ ten: 'Xoá học viên', cua: 'việc của QL' }],
+      muc: [{ id: 'pth-them', viec: 'them-hv', ten: 'Thêm học viên, dán Excel', buoc: ['Gõ từng em, hoặc dán danh sách từ Excel (chỉ ở đây).', 'Dòng lỗi báo tại ô; dòng trùng em có sẵn được gợi ý, không tự gộp.', 'Lưu: các dòng đúng được thêm, dòng lỗi giữ lại để sửa.'] }],
+    },
+    {
+      id: 'p-xuat-ds', ten: 'Xuất danh sách đang mở', duong: [], panel: 'xuat-ds',
+      dangO: { cau: 'Xuất Excel đúng danh sách học viên đang lọc.' },
+      muc: [{ id: 'pxd-xuat', viec: 'lich-thi', ten: 'Xem lịch thi, xuất danh sách', buoc: ['Chọn mẫu bảng, rồi xuất: tệp Excel tải về máy.', 'Muốn ít em hơn: đóng panel, lọc lại danh sách.'] }],
     },
   ],
   luat: [

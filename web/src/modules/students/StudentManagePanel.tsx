@@ -122,8 +122,8 @@ export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, o
 }) {
   const { data, error, reload } = useApi<any>(`/students/${studentId}`, [studentId]);
   const [deXuat, setDeXuat] = useState(false);
-  if (error) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (!data) return <KhungPanel tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
+  if (error) return <KhungPanel hd="sua-thong-tin" tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!data) return <KhungPanel hd="sua-thong-tin" tieuDe={NHAN_VIEC[viec]} hocVien={studentName} lop={lop} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
   return (
     <StudentManagePanel viec={deXuat ? 'de-xuat-sua' : viec} onClose={onClose} lop={lop} cycle={data.cycle} attempts={data.attempts ?? []} onDone={onDone}
       student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null} soViPhamMo={data.dauHoSo?.soViPhamMo ?? 0}
@@ -451,7 +451,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   }
 
   return (
-    <KhungPanel tieuDe={tiep && tiep.tong > 1 ? `${NHAN_VIEC.info} · ${t('em {stt}/{tong}', { stt: tiep.stt, tong: tiep.tong })}` : NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
+    <KhungPanel hd="sua-thong-tin" tieuDe={tiep && tiep.tong > 1 ? `${NHAN_VIEC.info} · ${t('em {stt}/{tong}', { stt: tiep.stt, tong: tiep.tong })}` : NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
       chan={{
         daSua,
         conThieu: lf.conThieu(loi),

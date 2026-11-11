@@ -175,8 +175,8 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
 
   const tieuDe = data ? t('Xét lại lộ trình · {lop} · {n} em', { lop: data.lop.code, n: em.length }) : t('Xét lại lộ trình');
   const dong = () => { if (!busy) onClose(); };
-  if (error) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (!data || ds === null) return <KhungPanel tieuDe={tieuDe} rong="rong" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
+  if (error) return <KhungPanel hd="xet-lai" tieuDe={tieuDe} rong="rong" onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!data || ds === null) return <KhungPanel hd="xet-lai" tieuDe={tieuDe} rong="rong" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
   const tomTat = tomTatLuu(soan.map((e) => ({ e, c: chon[e.studentId] })), data, homNay);
   const conThieu = daBam ? soan.filter((e) => loiChon(e, chon[e.studentId])).map((e) => ({ nhan: e.ten, lyDo: loiChon(e, chon[e.studentId])! })) : [];
@@ -184,7 +184,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
   const nguCanh = [data.nguon && t('Từ {lop}', { lop: data.nguon.code }),
     e0 && (e0.daThiHanh ? t('vào lớp {tuan}', { tuan: tuanLich(e0.tuanBatDau, homNay) }) : t('chuyển lớp {tuan}', { tuan: tuanLich(e0.tuanBatDau, homNay) }))].filter(Boolean) as string[];
   return (
-    <KhungPanel rong="rong" tieuDe={tieuDe} loai={t('Việc · Xét lại lộ trình')} onDong={dong}
+    <KhungPanel hd="xet-lai" rong="rong" tieuDe={tieuDe} loai={t('Việc · Xét lại lộ trình')} onDong={dong}
       dau={{ han: data.han && !data.chiXem ? <ChipHan loai="viec-van-hanh" han={data.han} /> : null, dong2: nguCanh }}
       chan={data.chiXem ? { huy: { onClick: dong } } : {
         daSua: soan.length > 0, huy: { onClick: dong, disabled: busy },
