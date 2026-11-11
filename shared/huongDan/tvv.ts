@@ -356,17 +356,8 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
   },
 ];
 
-export const MAN_HO_SO_TVV: ManHd[] = [
-  manHoSoLop(),
-  manHoSoHv(),
-  MAN_LUU_TRU,
-  MAN_LUOT_TEST,
-  MAN_HO_SO_GV,
-  MAN_HO_SO_CA_NHAN,
-  MAN_HUONG_DAN,
-];
-/** CX: cùng bộ màn, riêng Hồ sơ lớp / Hồ sơ HV. */
-export const MAN_HO_SO_CX: ManHd[] = [manHoSoLop(true), manHoSoHv(true), MAN_LUU_TRU, MAN_LUOT_TEST, MAN_HO_SO_GV, MAN_HO_SO_CA_NHAN, MAN_HUONG_DAN];
+/** TVV và CX cùng bộ màn, riêng Hồ sơ lớp / Hồ sơ HV theo vai. */
+export const manHoSoVai = (cx: boolean): ManHd[] => [manHoSoLop(cx), manHoSoHv(cx), MAN_LUU_TRU, MAN_LUOT_TEST, MAN_HO_SO_GV, MAN_HO_SO_CA_NHAN, MAN_HUONG_DAN];
 
 export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã làm bài giữ nguyên.'] },
@@ -441,7 +432,7 @@ export const HD_TVV: HuongDan = {
         { id: 'tvv-hvl-cot', ten: 'Bảng và thao tác dòng', buoc: ['Cột <b>Việc của tôi</b>: việc của bạn với em đó; bấm <b>tên</b> em mở hồ sơ.', '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
       ],
     },
-    ...MAN_HO_SO_TVV,
+    ...manHoSoVai(false),
     ...manPanelTvvCx(false),
   ],
   luat: LUAT_TVV,

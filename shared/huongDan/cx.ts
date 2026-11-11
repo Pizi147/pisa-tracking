@@ -4,7 +4,7 @@
  * thi thật ở Hồ sơ HV (nút trên đầu hồ sơ). CX giữ quyền sửa thông tin, Target, Tạm dừng, thi thật; chỉ XEM Case, điểm, Ý thức, Phối hợp SOS. Việc, màn, luật
  * dùng lại của `tvv.ts` (`lam` là MỘT nguồn — xem `ql.ts`).
  */
-import { HD_TVV, LUAT_TVV, MAN_HO_SO_CX, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manPanelTvvCx } from './tvv.ts';
+import { HD_TVV, LUAT_TVV, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
 import type { HuongDan, ViecHd } from './kieu.ts';
 
 const HV = '/hoc-vien';
@@ -97,7 +97,7 @@ export const HD_CX: HuongDan = {
           '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> (FT hoặc KET / PET) · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
       ],
     },
-    ...MAN_HO_SO_CX,
+    ...manHoSoVai(true),
     ...manPanelTvvCx(true),
   ],
   luat: [
