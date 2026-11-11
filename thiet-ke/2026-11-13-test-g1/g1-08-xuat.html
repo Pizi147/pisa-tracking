@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Xuất Excel Test · mockup G1-08</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="chung.css">
+<link rel="stylesheet" href="rieng.css">
+</head>
+<body>
+<div class="trang">
+<header class="dau-mk">
+  <h1>G1-08 · Một nút "Xuất Excel…" cho khu Test (mockup chờ duyệt, 13/11)</h1>
+  <p>Bản rà 11/11: Lịch Test tuần có "Xuất Excel" (kết quả MT), Kế hoạch Test có "Xuất Excel" (lịch) và "Xuất điểm Test" — hai nút cùng tên ra hai thứ, hai đường cùng xuất điểm.
+    Sau: <b>một nút "Xuất Excel…" ở hàng tiêu đề trang Test</b> (cùng chỗ trên cả hai tab), mở <b>một ngăn</b>: chọn <b>Điểm Test</b> hoặc <b>Lịch Test</b>, rồi phạm vi chung.
+    Điểm Test gộp hai ngăn điểm cũ (mọi bộ lọc của "Xuất kết quả Test" + nội dung "Điểm + nhận xét" của "Xuất điểm Test"). Lịch Test chỉ QL / Quản trị (chủ SP 05/11).
+    Khung 1440 tối, 375 sáng. Nền vàng viền đứt = chú thích mockup.</p>
+  <nav class="muc-mk"><a href="#k1">K1 Lịch Test · QL</a><a href="#k2">K2 ngăn Điểm · QL</a><a href="#k3">K3 ngăn Lịch · QL</a><a href="#k4">K4 GV</a><a href="#k5">K5 Quản trị · lớp thường</a><a href="#k8">K8 từ hồ sơ lớp</a><a href="#k6">K6 lỗi · rỗng</a><a href="#k7">K7–K9 375</a></nav>
+</header>
+
+<!-- ============ K1 ============ -->
+<section class="khu" id="k1">
+  <h2>K1 · QL · Lịch Test tuần — nút "Xuất Excel…" lên hàng tiêu đề</h2>
+  <p class="ghi"><span class="so-mk">1</span>Nút cũ "Xuất Excel" ở hàng lọc (giữa "Mở tất cả lớp" và "Lịch thi thật ›") <b>bỏ</b>. Hàng tiêu đề "Test" có <b>"Xuất Excel…"</b> — dấu "…" = mở ngăn chọn, không tải ngay.
+    Kế hoạch Test dùng đúng chỗ này (K3). Ai không có quyền xuất (TVV, CX) không thấy nút.</p>
+  <div class="man toi cao" data-man="QL|Test">
+    <div class="noi-dung">
+      <div class="dau-trang"><h1>Test</h1><span class="nut-dau"><button class="nut danh-dau" type="button">Xuất Excel…</button></span></div>
+      <div class="tab-trang" role="tablist"><button role="tab" aria-selected="true">Lịch Test tuần</button><button role="tab" aria-selected="false">Kế hoạch Test</button></div>
+      <div class="hang-loc">
+        <button class="nut nut-vuong" type="button" aria-label="Tuần trước">‹</button><span class="o-tuan">W3 SEP <span>14/09 – 20/09</span></span><button class="nut nut-vuong" type="button" aria-label="Tuần sau">›</button>
+        <button class="nut" type="button" disabled>Tuần này</button>
+        <span class="doan"><button aria-pressed="true">Tất cả</button><button aria-pressed="false">Fast Track <span class="so">2</span></button><button aria-pressed="false">Lớp thường <span class="so">6</span></button></span>
+        <span class="phai"><a href="#">Mở tất cả lớp</a><a href="#">Lịch thi thật ›</a></span>
+      </div>
+      <div class="dai-so"><div><span>Cả chi nhánh:</span></div><div><b>49/98</b> bài đã chấm</div><div class="qh"><b>45</b> bài quá hạn</div></div>
+      <div class="khoi-lop">
+        <div class="h qh"><span class="tam-giac">▸</span>⚠ Quá hạn chấm <span class="mo2">3 lớp · 33 bài</span></div>
+        <div class="h"><span class="tam-giac">▾</span>Test tuần này <span class="mo2">7 lớp · 8 lượt</span></div>
+        <div class="h dang"><span class="tam-giac">▾</span>MB FT 101<span class="r">2/27 bài</span></div>
+        <table class="bang">
+          <colgroup><col style="width:260px"><col><col><col><col><col><col><col style="width:110px"><col style="width:110px"><col style="width:150px"></colgroup>
+          <thead><tr><th>Học viên</th><th class="c">L</th><th class="c">R</th><th class="c">W1</th><th class="c">W2</th><th class="c">W</th><th class="c">S</th><th class="c">Kỳ vọng</th><th class="c">Overall</th><th>Kết quả</th></tr></thead>
+          <tbody>
+            <tr><td><b>Hồ Ngọc Diệp</b> <a href="#">MT1 ›</a><br><span class="kq-chu">vắng W2 SEP</span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"></td><td class="c"><span class="o-trong"></span></td><td class="c so"><b>5.5</b></td><td class="c mo2">—</td><td class="mo2">—</td></tr>
+            <tr><td><b>Lê Quang Huy</b> <a href="#">MT3 ›</a></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"></td><td class="c"><span class="o-trong"></span></td><td class="c so"><b>6.5</b></td><td class="c mo2">—</td><td class="mo2">—</td></tr>
+            <tr><td><b>Phạm Bảo Ngọc</b> <a href="#">MT3 ›</a></td><td class="c"><span class="diem-duoi">6.5</span></td><td class="c so"><b>✓ 7.0</b></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"></td><td class="c tuan-o">W4 SEP</td><td class="c so"><b>7.0</b></td><td class="c mo2">—</td><td><span class="sos m1">SOS 1 tạm · L</span></td></tr>
+            <tr><td><b>Trần Thu Hà</b> <a href="#">MT3 ›</a></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"><span class="o-trong"></span></td><td class="c"></td><td class="c"><span class="o-trong"></span></td><td class="c so"><b>6.0</b></td><td class="c mo2">—</td><td class="mo2">—</td></tr>
+          </tbody>
+        </table>
+        <div class="h"><span class="tam-giac">▸</span>MB FT 102<span class="r">5/6 bài</span></div>
+        <div class="h"><span class="tam-giac">▸</span>MB Pre FOU 03<span class="r">3/4 bài</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ K2 ============ -->
+<section class="khu" id="k2">
+  <h2>K2 · QL · bấm "Xuất Excel…" ở Lịch Test tuần → ngăn mở sẵn <b>Điểm Test</b>, tuần đang xem</h2>
+  <p class="ghi"><span class="so-mk">2</span>Mặc định lấy từ nơi mở: Lịch Test tuần → Điểm Test · khung đang lọc · đúng tuần đang xem (như "Xuất kết quả Test" cũ). Mọi bộ lọc cũ giữ: khung, chi nhánh, lớp, tuần / tháng / đợt, mọi lượt / chỉ lượt đủ điểm.
+    <span class="so-mk">3</span>Hai ngăn điểm cũ thành một: <b>"Gọn"</b> thêm W1 · W2 · Kết quả và lớp "A → B" của "Chỉ điểm" cũ (19 cột); <b>"Gọn + nhận xét"</b> = "Điểm + nhận xét" cũ (21 cột). Theo lớp nhiều MT = chọn lớp + "Theo đợt" MT1…MT10 (K8). Cách chọn giải thích ở ⓘ, không câu tĩnh.
+    Ngăn nhớ kiểu thời gian, lượt, cột lần trước của từng người (QL xuất theo tháng không phải chọn lại); ngày luôn là tuần / tháng đang xem.
+    Số trên nút chính = số dòng tệp (xem trước và xuất gọi cùng bộ lọc).</p>
+  <div class="man toi cao" data-man="QL|Test">
+    <div class="noi-dung">
+      <div class="dau-trang"><h1>Test</h1><span class="nut-dau"><button class="nut" type="button" aria-expanded="true">Xuất Excel…</button></span></div>
+      <div class="tab-trang" role="tablist"><button role="tab" aria-selected="true">Lịch Test tuần</button><button role="tab" aria-selected="false">Kế hoạch Test</button></div>
+      <div class="hang-loc">
+        <button class="nut nut-vuong" type="button">‹</button><span class="o-tuan">W3 SEP <span>14/09 – 20/09</span></span><button class="nut nut-vuong" type="button">›</button>
+        <span class="doan"><button aria-pressed="false">Tất cả</button><button aria-pressed="true">Fast Track <span class="so">2</span></button><button aria-pressed="false">Lớp thường <span class="so">6</span></button></span>
+      </div>
+      <div class="dai-so"><div><span>Cả chi nhánh:</span></div><div><b>12/33</b> bài đã chấm</div><div class="qh"><b>8</b> bài quá hạn</div></div>
+      <div class="khoi-lop"><div class="h dang"><span class="tam-giac">▾</span>MB FT 101<span class="r">2/27 bài</span></div><div class="h"><span class="tam-giac">▸</span>MB FT 105<span class="r">0/6 bài</span></div></div>
+    </div>
+    <div class="phu-ngan"></div>
+    <aside class="ngan pn" aria-label="Xuất Excel · Test" data-ngan="diem-ql"></aside>
+  </div>
+</section>
+
+<!-- ============ K3 ============ -->
+<section class="khu" id="k3">
+  <h2>K3 · QL · Kế hoạch Test — cùng nút, mở sẵn <b>Lịch Test</b> theo bộ lọc đang xem</h2>
+  <p class="ghi"><span class="so-mk">4</span>Hàng tiêu đề Kế hoạch: <b>"Xuất Excel…" · "Xếp nhiều MT…"</b> (bỏ hai nút "Xuất Excel" và "Xuất điểm Test"). Mở từ đây → Lịch Test, phạm vi = bộ lọc đang xem (chi nhánh + lớp FT đang hiện, như ngăn "Xuất Excel · Kế hoạch Test" cũ).
+    Lịch chỉ có cho Fast Track. Bấm "Điểm Test" ở đầu ngăn → thành K2, phạm vi giữ.</p>
+  <div class="man toi cao" data-man="QL|Test">
+    <div class="noi-dung">
+      <div class="dau-trang"><h1>Test</h1><span class="nut-dau"><button class="nut danh-dau" type="button" aria-expanded="true">Xuất Excel…</button><button class="nut nut-chinh" type="button">Xếp nhiều MT…</button></span></div>
+      <div class="tab-trang" role="tablist"><button role="tab" aria-selected="false">Lịch Test tuần</button><button role="tab" aria-selected="true">Kế hoạch Test</button></div>
+      <div class="hang-loc">
+        <span class="doan"><button aria-pressed="true">Fast Track <span class="so">6</span></button><button aria-pressed="false">Lớp thường <span class="so">16</span></button></span>
+        <button class="nut-loc chip-c" type="button">Chưa đủ MT <b class="so">10</b></button>
+        <span class="o-tim" style="width:280px"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg> Tìm lớp, học viên hoặc email</span>
+        <span class="phai"><span><b class="so">51</b> HV</span><a href="#">Mở tất cả lớp</a></span>
+      </div>
+      <div class="ds-kh">
+        <div class="h"><span class="tam-giac">▸</span><b>MB FT 101</b><span><b class="so">33</b> HV</span><span>GVCN Trần Ngọc Hà</span><span>MT1 đang làm bài</span><span class="ke">Chưa đủ MT · 1 em</span></div>
+        <div class="h"><span class="tam-giac">▸</span><b>MB FT 102</b><span><b class="so">5</b> HV</span><span>GVCN Cao Khánh Linh</span><span>MT1 đang làm bài</span><span class="ke">Chưa đủ MT · 2 em</span></div>
+        <div class="h"><span class="tam-giac">▸</span><b>MB FT 103</b><span><b class="so">3</b> HV</span><span>GVCN Cao Khánh Linh</span><span>MT1 đang làm bài</span><span></span></div>
+        <div class="h"><span class="tam-giac">▸</span><b>MB FT 104</b><span><b class="so">0</b> HV</span><span>GVCN Cao Khánh Linh</span><span></span><span></span></div>
+        <div class="h"><span class="tam-giac">▸</span><b>MB FT 105</b><span><b class="so">7</b> HV</span><span>GVCN Lâm Quang Vinh</span><span>MT1 đang làm bài</span><span class="ke">Chưa đủ MT · 7 em</span></div>
+        <div class="h"><span class="tam-giac">▸</span><b>MB FT RF 12</b><span><b class="so">3</b> HV</span><span>GVCN Lê Minh Khoa</span><span>MT1 đang làm bài</span><span></span></div>
+      </div>
+    </div>
+    <div class="phu-ngan"></div>
+    <aside class="ngan pn" aria-label="Xuất Excel · Test" data-ngan="lich-ql"></aside>
+  </div>
+</section>
+
+<!-- ============ K4 ============ -->
+<section class="khu" id="k4">
+  <h2>K4 · GV (GVCN) · chỉ Điểm Test, chỉ lớp mình chủ nhiệm</h2>
+  <p class="ghi"><span class="so-mk">5</span>GV không có Lịch Test (chủ SP 05/11) → ngăn <b>không có tab Điểm / Lịch</b>, tiêu đề "Xuất Excel · Điểm Test". Không có Kế hoạch Test nên không có tab. Lớp = lớp GVCN (máy chủ kiểm, như cũ).
+    GV có thêm "Gọn + nhận xét" — chỉ là nhận xét của lớp mình, GV vốn xem được.</p>
+  <div class="man toi cao" data-man="GV|Test">
+    <div class="noi-dung">
+      <div class="dau-trang"><h1>Test</h1><span class="nut-dau"><button class="nut" type="button" aria-expanded="true">Xuất Excel…</button></span></div>
+      <div class="hang-loc">
+        <button class="nut nut-vuong" type="button">‹</button><span class="o-tuan">W3 SEP <span>14/09 – 20/09</span></span><button class="nut nut-vuong" type="button">›</button>
+      </div>
+      <div class="dai-so"><div><span>Lớp của tôi:</span></div><div><b>2/27</b> bài đã chấm</div><div class="qh"><b>4</b> bài quá hạn</div></div>
+      <div class="khoi-lop"><div class="h dang"><span class="tam-giac">▾</span>MB FT 101<span class="r">2/27 bài</span></div></div>
+    </div>
+    <div class="phu-ngan"></div>
+    <aside class="ngan pn" aria-label="Xuất điểm Test" data-ngan="diem-gv"></aside>
+  </div>
+</section>
+
+<!-- ============ K5 ============ -->
+<section class="khu" id="k5">
+  <h2>K5 · Quản trị · nhiều chi nhánh · Lớp thường · theo đợt · cột đầy đủ</h2>
+  <p class="ghi"><span class="so-mk">6</span>Quản trị chọn nhiều chi nhánh (để trống = mọi chi nhánh). Lớp thường: đợt Progress · Checkpoint · Final; cột Gọn / Đầy đủ (như cũ — "Gọn + nhận xét" chỉ FT, xem [XM-2] README).
+    Đổi khung thì lớp đã chọn của khung kia tự bỏ (như cũ). Lịch Test: <b>một</b> chi nhánh mỗi lần (máy chủ cũ nhận một `branchId`) — không thêm việc máy chủ, không thêm dòng đọc.</p>
+  <div class="hang-khung">
+    <figure><figcaption>K5 · ngăn (1440, phủ bên phải trang Test)</figcaption><aside class="ngan pn rieng toi" aria-label="Xuất Excel · Test" data-ngan="diem-qt"></aside></figure>
+    <figure><figcaption>K5b · Quản trị · Lịch Test · một chi nhánh mỗi lần (như cũ)</figcaption><aside class="ngan pn rieng toi" aria-label="Xuất Excel · Test" data-ngan="lich-qt"></aside></figure>
+  </div>
+</section>
+
+<!-- ============ K8 ============ -->
+<section class="khu" id="k8">
+  <h2>K8 · Mở từ hồ sơ lớp ⋮ "Xuất kết quả Test" (và Phân tích › Tổng hợp Test) — cùng ngăn, lớp đặt sẵn</h2>
+  <p class="ghi"><span class="so-mk">9</span>Hai lối vào cũ của "Xuất kết quả Test" giữ chỗ, mở <b>cùng ngăn</b>: lớp đặt sẵn (một lớp → chữ, không ô tìm). "Theo đợt" FT có đủ <b>MT1…MT10</b> (cũ: ngăn kết quả MT1–MT8, ngăn điểm MT1–MT10) — chọn MT1–MT4 = "Theo lớp (nhiều MT)" cũ.
+    Tab Lịch Test vẫn có (QL / Quản trị, lớp FT) → lịch đúng lớp này.</p>
+  <div class="hang-khung">
+    <figure><figcaption>K8 · QL · từ hồ sơ lớp MB FT 101</figcaption><aside class="ngan pn rieng toi" data-ngan="ho-so"></aside></figure>
+  </div>
+</section>
+
+<!-- ============ K6 ============ -->
+<section class="khu" id="k6">
+  <h2>K6 · Lỗi và rỗng</h2>
+  <p class="ghi"><span class="so-mk">7</span>Lỗi nằm ngay tại ô sai và nói cách sửa; nút chính tắt kèm lý do. Lỗi máy chủ khi xem trước có "Thử lại" (mới — cũ phải đổi lọc mới gọi lại). Không có lượt khớp → nút tắt, nói cách mở rộng.</p>
+  <div class="hang-khung">
+    <figure><figcaption>K6a · khoảng tuần ngược</figcaption><aside class="ngan pn rieng toi" data-ngan="loi-tuan"></aside></figure>
+    <figure><figcaption>K6b · không có lượt khớp · lỗi xem trước</figcaption><aside class="ngan pn rieng toi" data-ngan="rong"></aside></figure>
+  </div>
+</section>
+
+<!-- ============ K7–K9 375 ============ -->
+<section class="khu" id="k7">
+  <h2>K7–K9 · 375 (sáng)</h2>
+  <p class="ghi"><span class="so-mk">8</span>Điện thoại: cùng chỗ — "Xuất Excel…" ở hàng tiêu đề (cả hai tab). Kế hoạch: menu ⋯ "Thao tác trang" (Xếp · Xuất Excel · Xuất điểm Test) còn MỘT mục nên bỏ ⋯, "Xếp nhiều MT…" thành nút thẳng (luật không ⋯ một mục).
+    Ngăn phủ toàn màn, nút cao 44, chân dính.</p>
+  <div class="hang-khung">
+    <figure><figcaption>K7 · Kế hoạch Test 375</figcaption>
+      <div class="dt sang cao" data-man="QL|Test">
+        <div class="noi-dung">
+          <div class="dau-trang"><h1>Test</h1><span class="nut-dau"><button class="nut danh-dau" type="button">Xuất Excel…</button><button class="nut nut-chinh" type="button">Xếp nhiều MT…</button></span></div>
+          <div class="tab-trang" role="tablist"><button role="tab" aria-selected="false">Lịch Test tuần</button><button role="tab" aria-selected="true">Kế hoạch Test</button></div>
+          <div class="hang-loc"><span class="o-tim" style="flex:1"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg> Tìm lớp, học viên…</span><button class="nut" type="button">Lọc</button></div>
+          <div class="ds-kh">
+            <div class="h"><span class="tam-giac">▸</span><b>MB FT 101</b><span><b class="so">33</b> HV</span></div>
+            <div class="h"><span class="tam-giac">▸</span><b>MB FT 102</b><span><b class="so">5</b> HV</span></div>
+            <div class="h"><span class="tam-giac">▸</span><b>MB FT 103</b><span><b class="so">3</b> HV</span></div>
+            <div class="h"><span class="tam-giac">▸</span><b>MB FT 104</b><span><b class="so">0</b> HV</span></div>
+            <div class="h"><span class="tam-giac">▸</span><b>MB FT 105</b><span><b class="so">7</b> HV</span></div>
+            <div class="h"><span class="tam-giac">▸</span><b>MB FT RF 12</b><span><b class="so">3</b> HV</span></div>
+          </div>
+        </div>
+      </div>
+    </figure>
+    <figure><figcaption>K8 · ngăn Điểm Test 375</figcaption>
+      <div class="dt sang cao"><aside class="ngan pn" data-ngan="diem-375" style="top:0"></aside></div>
+    </figure>
+    <figure><figcaption>K9 · ngăn Lịch Test 375</figcaption>
+      <div class="dt sang cao"><aside class="ngan pn" data-ngan="lich-375" style="top:0"></aside></div>
+    </figure>
+  </div>
+</section>
+</div>
+
+<script>
+/* Dựng thanh trên + thân ngăn (chỉ để mockup gọn — không phải mã web). */
+const TIM = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg>';
+const LICH = '<svg class="ic" viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="11" rx="2"/><path d="M2 6.5h12M5.5 1.5v3M10.5 1.5v3"/></svg>';
+document.querySelectorAll('[data-man]').forEach((m) => {
+  const [vai] = m.dataset.man.split('|');
+  const ten = vai === 'GV' ? 'Trần Ngọc Hà' : vai === 'QT' ? 'Quản trị' : 'Nguyễn Khánh Vy';
+  const dt = m.classList.contains('dt');
+  const menu = dt ? ['Test'] : ['Tổng quan', 'Học viên & Lớp', 'Test', 'Công việc', 'Phân tích'];
+  m.insertAdjacentHTML('afterbegin', `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${menu.map((x) => `<span class="m${x === 'Test' ? ' dang' : ''}">${x}</span>`).join('')}<span class="phai">${dt ? '☰' : `<span>Tìm học viên, lớp…</span><span>${ten}</span>`}</span></div>`);
+});
+const I = (t) => `<button class="nut-i" type="button" aria-label="Giải thích" title="${t}">ⓘ</button>`;
+const dauNgan = (tieu, tab) => `<div class="pn-dau"><div class="pn-h1"><div class="pn-tieu"><h2>${tieu}</h2></div><button class="x" aria-label="Đóng">✕</button></div>${
+  tab ? `<div class="tab-trang tab-ngan" role="tablist" aria-label="Xuất gì"><button role="tab" aria-selected="${tab === 'diem'}">Điểm Test</button><button role="tab" aria-selected="${tab === 'lich'}">Lịch Test</button></div>` : ''}</div>`;
+const chonLoai = (diem) => `<div class="k"><div class="doan chon-loai" role="group" aria-label="Xuất gì"><button aria-pressed="${diem}">Điểm Test</button><button aria-pressed="${!diem}">Lịch Test</button></div></div>`;
+const khung = (ft) => `<div class="tr"><span class="nh">Khung lớp</span><div class="doan day"><button aria-pressed="${ft}">Fast Track</button><button aria-pressed="${!ft}">Lớp thường</button></div></div>`;
+const cn1 = `<div class="tr"><span class="nh">Chi nhánh</span><span class="tinh">Monbay</span></div>`;
+const cnNhieu = (chon) => `<div class="tr"><span class="nh">Chi nhánh</span><div class="chips">${['Monbay', 'Hoàn Kiếm', 'Cầu Giấy', 'Long Biên', 'Hà Đông'].map((c) => `<button class="chip-c" aria-pressed="${chon.includes(c)}">${c}</button>`).join('')}</div></div>`;
+const cnMot = (chon) => `<div class="tr"><span class="nh">Chi nhánh</span><div class="chips" role="radiogroup">${['Monbay', 'Hoàn Kiếm', 'Cầu Giấy', 'Long Biên', 'Hà Đông'].map((c) => `<button class="chip-c" role="radio" aria-pressed="${c === chon}">${c}</button>`).join('')}</div></div>`;
+const lop = (chips = [], goiY = '', tim = 'Tìm lớp · để trống = mọi lớp') => `<div class="tr"><span class="nh">Lớp</span>${chips.length ? `<div class="chips">${chips.map((c) => `<button class="chip-c bo" aria-label="Bỏ lớp ${c}">${c}</button>`).join('')}</div>` : ''}<div class="o-tim"><svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5 14 14"/></svg> ${tim}</div>${goiY ? `<span class="ghi-t">${goiY}</span>` : ''}</div>`;
+const thoiGian = (kieu, a, b, loi) => `<div class="k"><h3>Thời gian</h3><div class="doan day" role="group"><button aria-pressed="${kieu === 'tuan'}">Theo tuần</button><button aria-pressed="${kieu === 'thang'}">Theo tháng</button><button aria-pressed="${kieu === 'dot'}">Theo đợt</button></div>${
+  kieu === 'dot' ? `<div class="chips">${a.map(([n, c]) => `<button class="chip-c" aria-pressed="${c}">${n}</button>`).join('')}</div>`
+  : `<div class="hai"><label class="tr"><span class="nh">Từ tuần</span><span class="o-ngay${loi ? ' loi' : ''}">${a}<span class="lich">${LICH}</span></span></label><label class="tr"><span class="nh">Đến tuần</span><span class="o-ngay${loi ? ' loi' : ''}">${b}<span class="lich">${LICH}</span></span></label></div>`}${
+  loi ? `<p class="loi-t" role="alert">${loi}</p>` : ''}</div>`;
+const COT_GON = 'Tên · Email · Chi nhánh · Lớp (A → B khi đổi lớp) · Lộ trình · MT · Tuần · L · R · <b>W1 · W2</b> · W · S · Overall · Target · Kỳ vọng · <b>Kết quả</b> · SOS · Trạng thái lượt';
+const luotCot = (du, cot, ft = true) => `<div class="k"><h3>Lượt và cột ${I('Gọn: điểm từng kỹ năng + kết quả lượt. Gọn + nhận xét: thêm 2 cột nhận xét (L · R, W · S). Đầy đủ: thêm tiêu chí W, S, tuần từng môn, người nhập, nhận xét từng bài.')}</h3><div class="doan day" role="group" aria-label="Lượt"><button aria-pressed="${!du}">Mọi lượt</button><button aria-pressed="${du}">Chỉ lượt đủ điểm</button></div>
+  <div class="doan day" role="group" aria-label="Cột"><button aria-pressed="${cot === 'gon'}">Gọn</button>${ft ? `<button aria-pressed="${cot === 'nx'}">Gọn + nhận xét</button>` : ''}<button aria-pressed="${cot === 'du'}">Đầy đủ</button></div>
+  <p class="cot-tep">${ft ? (cot === 'nx' ? `<b>21 cột:</b> ${COT_GON} · <b>Nhận xét L · R · Nhận xét W · S</b>` : cot === 'du' ? `<b>46 cột:</b> gọn + W1 · W2 · tiêu chí W, S · tuần từng môn · Người nhập · nhận xét từng bài · Nhóm nguyên nhân · GV chấm S` : `<b>19 cột:</b> ${COT_GON}`)
+    : (cot === 'du' ? '<b>Cột:</b> Tên · Email · Chi nhánh · Lớp · Bài · Tuần · % từng môn · % tổng · Trạng thái lượt · điểm, tổng và tuần từng môn · Người nhập' : '<b>Cột:</b> Tên · Email · Chi nhánh · Lớp · Bài · Tuần · % từng môn · % tổng · Trạng thái lượt')}</p></div>`;
+const xemTruoc = (dem, dong) => `<div class="k"><h3>Xem trước</h3><div class="xem" aria-live="polite"><span class="dem-x">${dem}</span><ul>${dong.map((d) => `<li>${d}</li>`).join('')}</ul></div></div>`;
+const chan = (tep, nut, tat = false, lyDo = '') => `<div class="pn-chan"><span class="ten-tep" title="${tep}">${lyDo ? `<span style="color:var(--bad)">${lyDo}</span>` : tep}</span><button class="nut" type="button">Huỷ</button><button class="nut nut-chinh" type="button"${tat ? ' disabled' : ''}>${nut}</button></div>`;
+const lopLich = () => `<div class="tr"><span class="nh">Lớp</span><span class="tinh">Mọi lớp Fast Track đang hiện · 6 lớp · 51 HV</span><div class="o-tim">${TIM} Thu hẹp: tìm lớp FT</div></div>`;
+const bangLich = (tong) => `<div class="k"><h3>Xem trước · sheet “Kế hoạch Test” (4 / ${tong} hàng) ${I('Ô MT1…MT10 là tuần thi (lịch), không phải điểm.')}</h3><div class="bang-x"><table><thead><tr><th>Gmail</th><th>Tên học sinh</th><th>Lớp</th><th>MT1</th><th>MT2</th><th>MT3</th><th>MT4</th><th>MT5</th><th>…MT10</th></tr></thead><tbody>
+  <tr><td>diep.ho@…</td><td>Hồ Ngọc Diệp</td><td>MB FT 101</td><td>W2 SEP</td><td>W1 OCT</td><td></td><td></td><td></td><td></td></tr>
+  <tr><td>huy.le@…</td><td>Lê Quang Huy</td><td>MB FT 101</td><td>W3 AUG</td><td>W1 SEP</td><td>W3 SEP</td><td>W1 OCT</td><td></td><td></td></tr>
+  <tr><td>ngoc.pham@…</td><td>Phạm Bảo Ngọc</td><td>MB FT 101</td><td>W3 AUG</td><td>W1 SEP</td><td>W3 SEP</td><td></td><td></td><td></td></tr>
+  <tr><td>ha.tran@…</td><td>Trần Thu Hà</td><td>MB FT 101</td><td>W3 AUG</td><td>W1 SEP</td><td>W3 SEP</td><td>W1 OCT</td><td></td><td></td></tr></tbody></table></div></div>`;
+const thongTin = (cn, lopChu) => `<div class="k"><h3>Sheet “Thông tin xuất”</h3><dl class="dl-tt"><dt>Chi nhánh</dt><dd>${cn}</dd><dt>Lớp</dt><dd>${lopChu}</dd><dt>Người xuất</dt><dd>Nguyễn Khánh Vy</dd><dt>Thời điểm</dt><dd>14/09/2026 10:24</dd></dl></div>`;
+const DONG_FT = ['Hồ Ngọc Diệp · MB FT 101 · MT1 · W3 SEP · chưa có điểm', 'Lê Quang Huy · MB FT 101 · MT3 · W3 SEP · chưa có điểm', 'Phạm Bảo Ngọc · MB FT 101 · MT3 · L 6.5 · R 7.0 · SOS 1 tạm', 'Trần Thu Hà · MB FT 101 · MT3 · W3 SEP · chưa có điểm', 'Vũ Hải Đăng · MB FT 101 · MT3 · W3 SEP · chưa có điểm'];
+
+const NGAN = {
+  'diem-ql': () => dauNgan('Xuất Excel', 'diem') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3>${khung(true)}${cn1}${lop()}</div>${thoiGian('tuan', 'W3 SEP · 14/09', 'W3 SEP · 14/09')}${luotCot(false, 'nx')}${xemTruoc('6 lượt · 6 học viên · 1 lớp', DONG_FT)}</div>`
+    + chan('Ket-qua-Test_Monbay_FT_W3-SEP.xlsx', 'Xuất Excel · 6 lượt'),
+  'lich-ql': () => dauNgan('Xuất Excel', 'lich') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3><div class="tr"><span class="nh">Khung lớp</span><span class="tinh">Fast Track</span></div>${cn1}${lopLich()}</div>${bangLich(51)}${thongTin('Monbay', '6 lớp Fast Track đang hiện')}</div>`
+    + chan('Ke-hoach-Test_Monbay_FT_14-09-2026.xlsx', 'Xuất Excel · 51 HV'),
+  'diem-gv': () => dauNgan('Xuất Excel · Điểm Test') + `<div class="pn-than"><div class="k" style="padding-top:12px"><h3>Phạm vi</h3>${lop(['MB FT 101'], '', 'Thêm lớp chủ nhiệm (MB FT 105)')}</div>${thoiGian('tuan', 'W3 SEP · 14/09', 'W3 SEP · 14/09')}${luotCot(false, 'nx')}${xemTruoc('6 lượt · 6 học viên · 1 lớp', DONG_FT.slice(0, 4))}</div>`
+    + chan('Ket-qua-Test_MB-FT-101_W3-SEP.xlsx', 'Xuất Excel · 6 lượt'),
+  'diem-qt': () => dauNgan('Xuất Excel', 'diem') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3>${khung(false)}${cnNhieu(['Monbay', 'Hoàn Kiếm'])}${lop([], '', 'Tìm lớp thường · để trống = mọi lớp')}</div>${thoiGian('dot', [['Progress', true], ['Checkpoint', false], ['Final', true]])}${luotCot(true, 'du', false)}${xemTruoc('142 lượt · 118 học viên · 14 lớp', ['Âu Nhật Nam · MB FOU 12 · Progress · W3 AUG · 3/4 môn đạt', 'Hồ Thu Trang · MB BE 03 · Progress · W2 SEP · 2/2 môn đạt', 'Kiều Minh Anh · HK ELE 07 · Final · W4 AUG · 82%', 'Lương Gia Bảo · HK FOU 04 · Final · W1 SEP · 64%'])}</div>`
+    + chan('Ket-qua-Test_2-chi-nhanh_Lop-thuong_Progress-Final.xlsx', 'Xuất Excel · 142 lượt'),
+  'lich-qt': () => dauNgan('Xuất Excel', 'lich') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3><div class="tr"><span class="nh">Khung lớp</span><span class="tinh">Fast Track</span></div>${cnMot('Hoàn Kiếm')}${lop(['HK FT 03', 'HK FT 05'], '', 'Tìm lớp FT')}</div>${bangLich(18)}${thongTin('Hoàn Kiếm', 'HK FT 03, HK FT 05')}</div>`
+    + chan('Ke-hoach-Test_Hoan-Kiem_FT_14-09-2026.xlsx', 'Xuất Excel · 18 HV'),
+  'ho-so': () => dauNgan('Xuất Excel', 'diem') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3><div class="tr"><span class="nh">Lớp</span><span class="tinh">MB FT 101 · Monbay · Fast Track</span></div></div>${thoiGian('dot', [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((n) => [`MT${n}`, n <= 4]))}${luotCot(false, 'nx')}${xemTruoc('112 lượt · 33 học viên · 1 lớp', ['Bùi Gia Linh · MB FT 101 · MT1 · W3 AUG · 5.5 · Đạt', 'Bùi Gia Linh · MB FT 101 · MT2 · W1 SEP · 5.5 · SOS 1 · W', 'Chu Minh Hiếu · MB FT 102 → MB FT 101 · MT1 · W3 AUG · 6.0 · Đạt'])}</div>`
+    + chan('Ket-qua-Test_MB-FT-101_MT1-MT4.xlsx', 'Xuất Excel · 112 lượt'),
+  'loi-tuan': () => dauNgan('Xuất Excel', 'diem') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3>${khung(true)}${cn1}${lop(['MB FT 102'])}</div>${thoiGian('tuan', 'W4 SEP · 21/09', 'W2 SEP · 07/09', 'Từ tuần phải trước hoặc bằng Đến tuần. Đổi một trong hai ô.')}${luotCot(false, 'gon')}<div class="k"><h3>Xem trước</h3><span class="ghi-t">Sửa thời gian để xem trước.</span></div></div>`
+    + chan('', 'Xuất Excel', true, 'Thời gian chưa hợp lệ'),
+  'rong': () => dauNgan('Xuất Excel', 'diem') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3>${cn1}${lop(['MB FT 104'], '')}</div>${thoiGian('tuan', 'W3 SEP · 14/09', 'W3 SEP · 14/09')}<div class="k"><span class="ghi-t">… Lượt và cột (như K2) …</span></div>
+    <div class="k"><h3>Xem trước</h3><div class="xem"><span class="dem-x">0 lượt</span><span class="ghi-t" style="font-size:13px">Không có lượt nào khớp — mở rộng thời gian hoặc bỏ bớt lớp.</span></div>
+    <p class="loi-t" role="alert" style="margin-top:6px">Không xem trước được: mất kết nối máy chủ. <button class="link-nho" type="button">Thử lại</button></p><span class="ghi-t">↑ trạng thái lỗi máy chủ (thay khối trên khi xem trước hỏng).</span></div></div>`
+    + chan('', 'Xuất Excel · 0 lượt', true),
+  'diem-375': () => dauNgan('Xuất Excel', 'diem') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3>${khung(true)}${cn1}${lop()}</div>${thoiGian('tuan', 'W3 SEP', 'W3 SEP')}${luotCot(false, 'nx')}${xemTruoc('6 lượt · 6 học viên · 1 lớp', DONG_FT.slice(0, 3))}</div>`
+    + chan('Ket-qua-Test_Monbay_FT_W3-SEP.xlsx', 'Xuất Excel · 6 lượt'),
+  'lich-375': () => dauNgan('Xuất Excel', 'lich') + `<div class="pn-than"><div class="k"><h3>Phạm vi</h3><div class="tr"><span class="nh">Khung lớp</span><span class="tinh">Fast Track</span></div>${cn1}${lopLich()}</div>${bangLich(51)}</div>`
+    + chan('Ke-hoach-Test_Monbay_FT_14-09-2026.xlsx', 'Xuất Excel · 51 HV'),
+};
+document.querySelectorAll('[data-ngan]').forEach((n) => { n.innerHTML = NGAN[n.dataset.ngan](); });
+</script>
+</body>
+</html>
