@@ -1620,16 +1620,17 @@ api.post('/classes/bulk', requireAuth, wrap((req) => {
 api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   /* OV-12f + SL2: góc "Đang SOS" = SOS hiện tại (`hv-sos-hien-tai`) trong phạm vi trang — không lọc tuần (link cũ `tuan=` bỏ qua). */
-  if (qStr(req, 'goc') === 'sos') {
-    return hocVienSosSvc.dangSos(principalOf(req), {
-      phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null,
-    });
-  }
-  return hocVienLopSvc.danhSachHocVienLop(principalOf(req), {
+  const p = principalOf(req);
+  const fSos = { phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null, q: qStr(req, 'q') ?? null };
+  if (qStr(req, 'goc') === 'sos') return hocVienSosSvc.dangSos(p, fSos);
+  const trang = hocVienLopSvc.danhSachHocVienLop(p, {
     branchId: qInt(req, 'branchId') ?? null, q: qStr(req, 'q') ?? null, phamVi: qStr(req, 'phamVi') ?? null,
     cnNho: qInt(req, 'cnNho') ?? null, them: qStr(req, 'them') === '1',   // OV-15h2: nhãn Bộ lọc thêm
     chuaTvv: qStr(req, 'tvv') === 'chua',   // SV-TVV-VIEC: em chưa có TVV — tập việc "Bổ sung hồ sơ thiếu" của QL
   });
+  /* TURSO-1211: `kem=sos` — "Đang SOS" (số trên tab + góc) trong CÙNG request: lượt / điểm / Case đã nạp cho trang dùng lại (bản chép thật: SOS thêm ~50 %
+     thay 100 % của request riêng). Không xem được Case → `sos: null` (trước: request riêng 403). */
+  return qStr(req, 'kem') === 'sos' ? { ...trang, sos: hocVienSosSvc.xemDuocSos(p) ? hocVienSosSvc.dangSos(p, fSos) : null } : trang;
 }));
 
 /** PC-GV-A: góc Phân công GV — cả chi nhánh một lần (QL / Quản trị sửa, CX xem; GV / TVV 403). */

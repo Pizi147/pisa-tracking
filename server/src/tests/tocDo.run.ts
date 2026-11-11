@@ -1578,6 +1578,21 @@ await checkAsync('TURSO-1211 (×3) · 7 câu Công việc / Tổng quan / hồ s
   assert(!loi.length, loi.join(' · '));
 });
 
+/* TURSO-1211 (mục C): `/hoc-vien-lop?kem=sos` = danh sách + Đang SOS trong một request — JSON từng phần y hệt hai request riêng; Admin / không xem Case: `sos: null`.
+   `doSql` giữ mốc quét còn hạn — lượt quét nền không chen giữa ba lần gọi. */
+await checkAsync('TURSO-1211 (×3) · Học viên & Lớp kem=sos: trang + Đang SOS y hệt hai request riêng (mọi vai), Admin sos null', async () => {
+  const loi: string[] = [];
+  for (const vai of [...MOI_VAI, 'TVV', 'CX', 'ADMIN'] as Vai[]) {
+    const gop = await doSql(vai, 'GET', '/hoc-vien-lop?kem=sos');
+    const trang = await doSql(vai, 'GET', '/hoc-vien-lop');
+    const sos = await doSql(vai, 'GET', '/hoc-vien-lop?goc=sos');
+    const { sos: phanSos, ...phanTrang } = gop.json as any;
+    if (gop.status !== 200 || JSON.stringify(phanTrang) !== JSON.stringify(trang.json)) loi.push(`${vai}: phần trang khác`);
+    if (vai === 'ADMIN' ? phanSos !== null : JSON.stringify(phanSos) !== JSON.stringify(sos.json)) loi.push(`${vai}: phần SOS khác`);
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');
