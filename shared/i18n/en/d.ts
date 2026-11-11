@@ -480,7 +480,7 @@ const EN_D_WEB = {
   'Cũ hơn · Đã ghi nhận ({length})': 'Older · Noted ({length})',
   'Chọn ít nhất một vi phạm.': 'Pick at least one incident.',
   'Lý do đề xuất': 'Reason for proposal',
-  'Ví dụ: Đã gửi Report cho PH qua Zalo': 'E.g. Sent the report to parents on Zalo',
+  'Ví dụ: Đã đưa Report 1, nhắc em trước lớp': 'E.g. Gave Report 1, reminded the student in class',
   'Ví dụ: Vi phạm lần 4 sau WL 2, đã báo PH': 'E.g. 4th incident after WL 2, parents informed',
   'Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.': 'Files or links (optional) can be attached after saving.',
   'Chọn ngày thực hiện': 'Pick the date done',

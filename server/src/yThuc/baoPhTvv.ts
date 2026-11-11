@@ -121,7 +121,7 @@ export function moLaiBaoPhMeeting(measureId: number): void {
 function loadViec(id: number): any {
   const v = db().prepare(
     `SELECT v.*, s.full_name, s.student_code, s.consultant_user_id, s.parent_name, s.parent_relation, s.parent_phone, m.status AS xu_ly_status,
-            m.kind AS m_kind, m.custom_name AS m_custom, m.note AS m_note, m.created_at AS m_luc, mu.full_name AS m_nguoi, mc.code AS m_lop,
+            m.kind AS m_kind, m.custom_name AS m_custom, m.note AS m_note, m.created_at AS m_luc, m.performed_on AS m_ngay, mu.full_name AS m_nguoi, mc.code AS m_lop,
             ph.note AS ph_note, ph.performed_on AS ph_ngay, COALESCE(ph.performer_name, pu.full_name) AS ph_nguoi, ph.kind AS ph_kind, ph.pb_moc AS ph_pb
        FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN users mu ON mu.id = m.created_by LEFT JOIN classes mc ON mc.id = m.class_id
@@ -165,7 +165,8 @@ export type ViecBaoPhView = {
   /** Q-RL2c: việc NGƯỜI DÙNG đã bỏ, người xem có quyền bỏ, lần xử lý còn, chưa ai đổi tiếp → nút "Khôi phục". */
   khoiPhucDuoc: boolean;
   /** UI-CV-TVV (mockup `tvv.html` khối bối cảnh): lần xử lý GVCN đã lưu — người lưu · giờ lưu · lớp · nội dung (vi phạm + ghi chú GVCN). */
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null;
+  /** G3-13: `ngayLam` = ngày THỰC HIỆN xử lý (ngày nghiệp vụ) — ô ② ghi ngày này, không giờ máy lưu. */
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null;
     /** UI-1 (mockup U10 K5): vi phạm của lần xử lý, mỗi dòng một (ngày · tên) + ghi chú GVCN riêng — panel tách trường. */
     viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
@@ -228,7 +229,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     boiCanh: v.phoi_hop_id != null
       /* PHOI-HOP-V2: bối cảnh = GVCN xác nhận Meeting (ngày, người, nội dung gửi TVV). */
       ? { nguoiLuu: v.ph_nguoi ?? null, luuLuc: v.ph_ngay ?? null, lop: null, noiDung: v.ph_note?.trim() || null, viPham: [], ghiChu: v.ph_note?.trim() || null }
-      : { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null },
+      : { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, ngayLam: v.m_ngay ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
     choQlDuyet: choQl,
   };

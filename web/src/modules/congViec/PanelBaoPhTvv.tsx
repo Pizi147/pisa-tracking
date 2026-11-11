@@ -27,7 +27,7 @@ type ViecBaoPh = {
   coTheGhi: boolean; nhanXuLy: string | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
   khoiPhucDuoc: boolean;
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
   thuHoiCho: { lyDo: string | null } | null;
   /** P1 G3-2: lần xử lý còn chờ QL duyệt → ô ② "Chờ QL duyệt" (không "✓" như đã chốt). */
   choQlDuyet: { han: string | null } | null;
@@ -167,7 +167,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
             ? [<BadgeViec xuong tong="cho">{v.nhan}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
-            : [<BadgeViec xuong tong="xong">{v.nhan}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
+            : [<BadgeViec xuong tong="xong">{v.nhan}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{v.nhanTrangThai}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />
         <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
