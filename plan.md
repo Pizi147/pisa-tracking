@@ -320,6 +320,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **13/11 (chủ SP):** "Duyệt, code đi" — duyệt mockup #1434 (G1-08 một nút "Xuất Excel…" hai tab Điểm Test / Lịch Test; G1-11 panel Nhập điểm lớp thường Kết quả dưới tên, ô môn hai tầng). PTA chốt 5 XM theo đề xuất session (Gọn +W1 W2 Kết quả; "Gọn + nhận xét" chỉ FT; thêm MT9–MT10; tên "Xuất Excel…"; GV xuất điểm gom về /xuat-mt, giữ quyền). → session MOCKUP-TEST-G1 code 2 PR.
 
+**13/11 (chủ SP, G3-19):** "không làm gì có chuyện người không dạy môn nào được báo cáo? chỉ có quản lý thôi. Còn bình thường người dạy 1 môn thì mặc định báo cáo sẽ là của môn đó chứ" → Ghi vi phạm: GV dạy 1 môn của em → mặc định môn đó; dạy ≥ 2 môn (kể cả GVCN) → bắt chọn; chỉ Quản lý (và Quản trị) không dạy môn nào mới được để trống.
+
 **13/11 (chủ SP):** "3 câu theo đề xuất nhé, câu cuối bắt chọn môn" → G1-10: lớp thường ghi "tuần 5/8" mọi nơi, "W" chỉ cho mã tuần · G3-17: việc lớp thường "Báo phụ huynh qua TVV" giữ GVCN làm, đổi tên "Báo PH kết quả Test" · G3-19: Ghi vi phạm — GV dạy ≥ 2 môn BẮT BUỘC chọn môn (máy chủ chặn khi thiếu). → session SUA-NHO-1311.
 
 **13/11 (chủ SP):** "Theo đề xuất" — 3 thẻ duyệt: Không cần theo dõi + Đề xuất chuyển lớp theo hạn chung "QL trả lời Chờ duyệt" (Hạn mặc định); PA khác quy chế (giu_pa_gv) giữ 3 ngày riêng (quá hạn máy chốt theo GV), hiện thành dòng riêng sửa được ở Hạn mặc định. → session SUA-NHO-1311.
