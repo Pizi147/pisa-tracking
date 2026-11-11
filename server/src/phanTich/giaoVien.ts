@@ -963,14 +963,14 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
             luot: x.bai, tuan: x.tuan, tam: false, overall: null, soVoi: { nhan: 'ngưỡng', v: nguong }, donVi: '%',
             /* Đạt xét trên tỷ lệ CHÍNH XÁC (`ratioResult`), không trên % đã làm tròn để hiện. */
             kn: sc.map((r: any) => ({ k: tenMonNgan(ct, r.skill), v: Math.round((1000 * r.raw_score) / r.raw_total) / 10,
-              dat: ratioResult(r.raw_score, r.raw_total, nguongDatLop(x.classId)).outcome === 'pass', cua: c.nguoiLuc(x.classId, r.skill, x.tuan) === gv })),
+              dat: ratioResult(r.raw_score, r.raw_total, nguongDatLop(x.classId)).outcome === 'pass', cua: r.skill === x.skill })),
           },
           soVoi: { nhan: t('Đạt từ'), v: nguong },
         };
       }
       const band = new Map((nap.bundle.scores.get(x.attemptId) ?? []).map((r: any) => [r.skill as string, (r.band ?? null) as number | null]));
       if (![...band.values()].some((v) => v !== null)) return {};
-      const ds = COT_KET_QUA_GV[c.khung].filter((k) => band.has(k)).map((k) => ({ sk: k, k: tenMonNgan(ct, k), v: band.get(k) ?? null, cua: c.nguoiLuc(x.classId, k, x.tuan) === gv }));
+      const ds = COT_KET_QUA_GV[c.khung].filter((k) => band.has(k)).map((k) => ({ sk: k, k: tenMonNgan(ct, k), v: band.get(k) ?? null, cua: k === x.skill }));
       const m = theoMuc.get(x.id);
       const kv = m?.kv ?? null;
       /* PANEL-MC (T3): ✓ / ✗ từng kỹ năng so kỳ vọng của lượt; `cua` (viền nhấn kỹ năng của GV — XM-2) giữ trên từng kỹ năng. */
@@ -1161,19 +1161,11 @@ export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null
   if (q.loc != null && q.loc !== 'dat' && q.loc !== 'chua' && q.loc !== 'vuot') throw badRequest('Lọc phải là "dat", "chua" hoặc "vuot".');
   const r = oChiSoHoSoGvDu(p, gvId, q);
   /*
-   * Chủ SP 23/10: panel kết quả không lặp một em nhiều dòng — các mục của CÙNG một lượt (một em, một bài, cùng điểm) gộp một dòng: kỹ năng GV phụ trách
-   * đã nổi bật trong dòng; dòng "Chưa đạt" khi có mục chưa đạt. Tiêu đề giữ số lượt kỹ năng của tập (= số ở ô).
+   * G5-06 (chủ SP 13/11, thay luật gộp 23/10): panel liệt kê ĐÚNG tập của ô — một dòng một lượt × kỹ năng GV dạy (`cua` chỉ nhấn kỹ năng của dòng), số dòng = mẫu ô,
+   * tab Đạt / Chưa đạt = tử / (mẫu − tử).
    */
-  const gop = new Map<string, MetricRow>();
-  for (const x of r.rows) {
-    if (!x.diemHv) { gop.set(`#${x.id}:${gop.size}`, x); continue; }
-    const khoa = `${x.href}|${x.lop}|${x.ngCanh}`;
-    const cu = gop.get(khoa);
-    if (!cu) gop.set(khoa, { ...x });
-    else if (x.ketQua === 'chua') cu.ketQua = 'chua';
-  }
   /* UI-HO-SO-GV: bấm "Đạt" / "Chưa đạt" → chỉ dòng có kết luận đó (cùng tập). */
-  const rows = [...gop.values()].filter((x) => !q.loc || (q.loc === 'vuot' ? x.vuot : x.ketQua === q.loc));
+  const rows = r.rows.filter((x) => !q.loc || (q.loc === 'vuot' ? x.vuot : x.ketQua === q.loc));
   /* PT-PANEL (PR-1): Tổng quan "HV tiến bộ" + ô Tiến bộ Lớp tôi dạy → panel Trước → Sau (giữ tab Chưa đạt · Đạt). */
   const tienBo = q.cot === 'tien-bo' || q.cot.startsWith('tien-bo-lop:');
   /* DEM-QUA-HAN b: Việc đúng hạn / Điểm đúng hạn — cùng panel dòng việc (`viec`) như Phân tích GV. */
