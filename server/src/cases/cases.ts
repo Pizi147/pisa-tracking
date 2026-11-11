@@ -137,6 +137,18 @@ export function caseTitleOf(c: {
   });
 }
 
+/**
+ * Rà 11/11 G2-12: tên ngắn của Case như Ngăn Case (`tenNganCase` web + "· MTn" của Case SOS FT) — "Case Reading · MT2". Dùng cho thẻ duyệt Xoá Case
+ * (một khái niệm một tên; tên dài `[MT2] Reading không đạt [SOS 3]` vẫn ở mô tả Case). Đọc qua bộ nhớ `NAP_CASE` như `caseTitleOf`.
+ */
+export function tenNganCaseSv(c: { id: number; category?: string | null; topic?: string | null; origin_kind?: string | null }): string {
+  const latest = (docNhoTheoId(NAP_CASE.ten[0], [c.id], NAP_CASE.ten[1]).get(c.id) ?? []).sort(moiNhatTruoc as any)[0] as any;
+  const cat = c.category ?? categoryOf(c.topic);
+  const kn = cat ? tenMon(latest?.ct_goc ?? latest?.ct ?? null, cat) : null;
+  const mt = c.origin_kind === 'mock' && (latest?.kind ?? 'mock') === 'mock' ? latest?.attempt_no ?? null : null;
+  return [kn ? `Case ${kn}` : 'Case', mt ? `MT${mt}` : null].filter(Boolean).join(' · ');
+}
+
 /** Các mốc của một Case, cũ trước mới sau — màn Case đọc từ trên xuống là ra câu chuyện. */
 export function milestonesOf(caseId: number) {
   return (db()
@@ -1654,7 +1666,7 @@ export function xoaCase(p: Principal, caseId: number): { ok: true; thungRacId: n
   if (!cach) throw forbidden('Bạn không có quyền xoá Case này.');
   if (cach === 'xin') {
     return xinXoa(p, { doiTuongLoai: 'sos_case', doiTuongId: caseId }, c, {
-      ten: caseTitleOf(c), soPa: pa.length,
+      ten: tenNganCaseSv(c), soPa: pa.length,
       soKetQua: (db().prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ? AND intervention_id IS NOT NULL').get(caseId) as any).n,
     });
   }
@@ -1815,7 +1827,7 @@ export function xoaPa(p: Principal, interventionId: number): { ok: true; caseId:
   if (!cach) throw forbidden('Bạn không có quyền xoá PA này.');
   if (cach === 'xin') {
     return xinXoa(p, { doiTuongLoai: 'intervention', doiTuongId: interventionId }, c, {
-      ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), caseId: c.id, tenCase: caseTitleOf(c),
+      ten: (iv.description ?? '').trim() || (INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] ?? iv.kind), caseId: c.id, tenCase: tenNganCaseSv(c),
       soKetQua: (conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE intervention_id = ?').get(interventionId) as any).n,
     });
   }
@@ -1849,7 +1861,7 @@ export function xoaKetQuaPa(p: Principal, followupId: number): { ok: true; caseI
   const cach = quyenXoaPa(p, iv, c);
   if (!cach) throw forbidden('Bạn không có quyền xoá kết quả PA này.');
   if (cach === 'xin') {
-    return xinXoa(p, { doiTuongLoai: 'case_followup', doiTuongId: f.id }, c, { ten: `${tenPaCua(iv)} · ${shortDate(f.observed_on, demoToday())}`, caseId: c.id, paId: iv.id, tenCase: caseTitleOf(c) });
+    return xinXoa(p, { doiTuongLoai: 'case_followup', doiTuongId: f.id }, c, { ten: `${tenPaCua(iv)} · ${shortDate(f.observed_on, demoToday())}`, caseId: c.id, paId: iv.id, tenCase: tenNganCaseSv(c) });
   }
   return tx(() => xoaKetQuaTrongTx(p, f.id));
 }
@@ -2712,6 +2724,11 @@ export function caseDetail(p: Principal, caseId: number) {
       choXoa: theCase.some((y) => y.trangThai === 'cho' && y.loai === 'xin_xoa'),
       /** CASE-PA-UI (XM1): thẻ xin xoá Case đang chờ — "Chờ QL duyệt xoá Case · Rút lại" (người gửi) / duyệt tại chỗ (QL). */
       theXoa: theCase.find((y) => y.trangThai === 'cho' && y.loai === 'xin_xoa') ?? null,
+      /** Rà 11/11 G2-14: lần xin xoá mới nhất bị QL từ chối (không có lần chờ) — lý do đặt tại nút "Đề nghị QL xoá Case". Cùng câu `theCase`, 0 câu thêm. */
+      tuChoiXoa: (() => {
+        const y = theCase.find((x) => x.loai === 'xin_xoa');
+        return y && y.trangThai === 'tu_choi' ? { lyDo: y.lyDoTuChoi ?? null, luc: y.xuLyLuc ?? null } : null;
+      })(),
       khoaKyNang: c.origin_kind === 'mock' || interventions.length > 0,
     },
   };

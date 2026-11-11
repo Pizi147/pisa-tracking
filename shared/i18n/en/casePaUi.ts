@@ -99,4 +99,13 @@ export const EN_CASE_PA_UI = {
   'Đã lưu kết quả · đã hoàn thành Case': 'Result saved · case completed',
   'Đã lưu kết quả · chưa hoàn thành Case: {loi}': 'Result saved · case not completed: {loi}',
   '{n} PA xong · chờ Hoàn thành': '{n} PA done · awaiting completion',
+  /* Rà 11/11: Hoàn thành Case ở Kết thúc sớm PA quy chế */
+  'Đã kết thúc PA · đã hoàn thành Case': 'Support plan ended · case completed',
+  'Đã kết thúc PA · chưa hoàn thành Case: {loi}': 'Support plan ended · case not completed: {loi}',
+  'Chọn mức': 'Choose a level',
+  /* G2-14, G2-15 */
+  'QL từ chối xoá · {lyDo}': 'Manager declined deletion · {lyDo}',
+  'QL từ chối xoá': 'Manager declined deletion',
+  'Không có Case.': 'No cases.',
+  'Không có Case đang mở.': 'No open cases.',
 } satisfies Record<string, Dich>;
