@@ -232,7 +232,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   };
   const ph = (sid: number, b: BaoPhLan | null | undefined) => (
     <OBaoPh b={b} homNay={homNay} tvv={b?.trangThai === 'mo' ? null : tra.em.get(sid)?.tvv ?? null} moDu={!!b && moDu === b.id}
-      onXemDu={b ? () => setMoDu((c) => (c === b.id ? null : b.id)) : undefined} />
+      onXemDu={b ? () => setMoDu((c) => (c === b.id ? null : b.id)) : undefined} onSuaHan={b ? () => ghiBaoPh(sid, b) : undefined} />
   );
   const choAi = (vai: string, ten: string | null) => <span className="text-[13px] text-slate-500">{t('Chờ {vai}', { vai })}{ten && <> <b className="whitespace-nowrap font-semibold text-slate-300">{ten}</b></>}</span>;
   const nutChinh = (chu: string, ten: string, onClick: () => void, vien = false) => (

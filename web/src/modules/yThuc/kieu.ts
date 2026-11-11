@@ -41,7 +41,7 @@ export type DongThoiGianYt =
 
 /** Y-THUC-V2 — việc Báo PH của ĐÚNG lần xử lý (khớp `BaoPhLan` ở `server/src/yThuc/board.ts`). `lan` = lần ghi mới nhất của TVV. */
 export type BaoPhLan = {
-  id: number; trangThai: 'mo' | 'xong' | 'bo'; ngay: string | null; han: string; quaHan: boolean; daChinh: boolean; coTheGhi: boolean;
+  id: number; trangThai: 'mo' | 'xong' | 'bo'; ngay: string | null; han: string; quaHan: boolean; daChinh: boolean; coTheGhi: boolean; coTheSuaHan?: boolean;
   soLan: number; lan: { ketQua: string; ngay: string; noiDung: string | null } | null;
 };
 

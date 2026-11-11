@@ -9,7 +9,7 @@ import { notFound } from '../util.ts';
 import { requireViewClass } from './access.ts';
 import { emCuaLop, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { violationsOfStudents } from './violations.ts';
-import { coTheGhi, nhanTrangThaiBaoPh } from './baoPhTvv.ts';
+import { coTheGhi, coTheSuaHan, nhanTrangThaiBaoPh } from './baoPhTvv.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 
 /**
@@ -76,6 +76,7 @@ export type DongThoiGianYt =
  */
 export type BaoPhLan = {
   id: number; trangThai: 'mo' | 'xong' | 'bo'; ngay: string | null; han: string; quaHan: boolean; daChinh: boolean; coTheGhi: boolean;
+  /** G3-20: người xem sửa hạn được (TVV · GVCN lớp em · QL — `coTheSuaHan`) — nút "Sửa hạn" cạnh hạn, không giấu sau "Xem đủ". */ coTheSuaHan: boolean;
   soLan: number; lan: { ketQua: string; ngay: string; noiDung: string | null } | null;
 };
 
@@ -196,6 +197,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     phu.get(r.id)![r.laBaoLai ? 'baoLai' : 'baoPh'] = {
       id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && han < homNay, daChinh: r.bp_han_chon != null,
       coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
+      coTheSuaHan: r.bp_tt === 'mo' && !!o.p && coTheSuaHan(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
       soLan: r.bp_so, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
     };
   }

@@ -128,7 +128,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     );
   };
   const ph = (b: BaoPhLan | null | undefined) => (
-    <OBaoPh b={b} homNay={homNay} moDu={!!b && moDu === b.id} onXemDu={b ? () => setMoDu((c) => (c === b.id ? null : b.id)) : undefined} />
+    <OBaoPh b={b} homNay={homNay} moDu={!!b && moDu === b.id} onXemDu={b ? () => setMoDu((c) => (c === b.id ? null : b.id)) : undefined}
+      onSuaHan={b ? () => setBaoPh({ viecId: b.id, han: b.han }) : undefined} />
   );
   const choAi = (vai: string, ten: string | null) => <span className="text-[13px] text-slate-500">{t('Chờ {vai}', { vai })}{ten && <> <b className="whitespace-nowrap font-semibold text-slate-300">{ten}</b></>}</span>;
   const nutChinh = (chu: string, onClick: () => void, vien = false) => <button type="button" className={`btn w-full justify-center max-sm:h-11 ${vien ? '' : 'btn-primary'}`} onClick={onClick}>{chu}</button>;

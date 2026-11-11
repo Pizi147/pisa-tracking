@@ -154,7 +154,10 @@ export function OBuoc({ badge, phu }: { badge: ReactNode; phu?: (ReactNode | nul
  * Ô ③ TVV báo PH của ĐÚNG lần (Y-THUC-V2). GV đọc trạng thái + Nội dung; "Xem đủ ▾" mở mọi lần ghi tại chỗ (`onXemDu`).
  * `null` = lần chưa có việc (chưa lưu xử lý / dữ liệu cũ).
  */
-export function OBaoPh({ b, homNay, tvv, moDu, onXemDu }: { b: BaoPhLan | null | undefined; homNay: string; tvv?: string | null; moDu?: boolean; onXemDu?: () => void }) {
+export function OBaoPh({ b, homNay, tvv, moDu, onXemDu, onSuaHan }: {
+  b: BaoPhLan | null | undefined; homNay: string; tvv?: string | null; moDu?: boolean; onXemDu?: () => void;
+  /** G3-20: "Sửa hạn" cạnh hạn cho mọi vai có quyền (`b.coTheSuaHan`) — cùng chỗ với TVV, không sau "Xem đủ". */ onSuaHan?: () => void;
+}) {
   if (!b) return <span className="text-slate-500">—</span>;
   const chuaLh = b.lan?.ketQua === 'chua_lien_he';
   const badge = b.trangThai === 'xong' ? <BadgeViec tong="xong">{b.ngay ? t('Đã báo {ngay}', { ngay: ngay(b.ngay, homNay) }) : t('Đã báo PH')}</BadgeViec>
@@ -164,7 +167,12 @@ export function OBaoPh({ b, homNay, tvv, moDu, onXemDu }: { b: BaoPhLan | null |
     <span className="flex flex-col items-start gap-[5px]">
       {badge}
       {b.trangThai === 'mo' && b.lan && <span className="text-xs tabular-nums text-slate-400">{t('ghi {ngay}', { ngay: ngay(b.lan.ngay, homNay) })}</span>}
-      {b.trangThai === 'mo' && <span className="text-xs tabular-nums text-slate-400">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}{b.daChinh ? ` · ${t('đã chỉnh')}` : ''}{tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}</span>}
+      {b.trangThai === 'mo' && (
+        <span className="text-xs tabular-nums text-slate-400">{t('hạn {ngay}', { ngay: ngay(b.han, homNay) })}{b.daChinh ? ` · ${t('đã chỉnh')}` : ''}{tvv ? ` · ${t('TVV {ten}', { ten: tvv })}` : ''}
+          {b.coTheSuaHan && onSuaHan && <>{' · '}<button type="button" onClick={onSuaHan}
+            className="link min-h-[28px] appearance-none border-0 bg-transparent p-0 text-xs font-semibold max-sm:min-h-[44px]">{t('Sửa hạn')}</button></>}
+        </span>
+      )}
       {b.trangThai === 'xong' && tvv && <span className="text-xs text-slate-400">{t('TVV {ten}', { ten: tvv })}</span>}
       {/* Trích Nội dung (2 dòng) — chủ SP 11/11: một ô Nội dung cho mọi kết quả. */}
       {b.lan?.noiDung && (
