@@ -30,8 +30,17 @@ const TUAN_O = (mon: string, o?: string) => `COALESCE(
 const MA_CT_LUOT = `(CASE WHEN a.class_id IS NOT NULL THEN (SELECT c.programme_code FROM classes c WHERE c.id = a.class_id)
   ELSE (SELECT cy.programme_code FROM learning_cycles cy WHERE cy.id = a.cycle_id) END)`;
 
+/**
+ * TURSO-LOG-1311 (chủ SP 13/11 "Không tính nữa"): MT LỊCH SỬ (nhập bù) ở chương trình chấm band — cùng vế loại của `CON_O_SQL` (chỉ lịch sử ở chương trình tỷ lệ
+ * khác FT còn tính) — KHÔNG còn ô chờ: ô của chúng là `lich_su`, không bao giờ chờ chấm. Trước cờ vẫn ghi ô trống → câu đọc đi qua chỉ mục cờ rồi mới loại
+ * (bản chép 07/11: 646 / 1 206 lượt mang cờ). Chương trình không rõ (NULL) loại như `CON_O_SQL`. Cờ nay phụ thuộc `lich_su`: mọi chỗ đổi `lich_su` tính lại cờ;
+ * DB cũ: bước TD7b của migrate (`prTd7b.ts`) thấy cờ lệch → tính lại mọi lượt (bản chép 07/11: 648 lượt).
+ */
+const LICH_SU_KHONG_CHO = `a.lich_su = 1 AND COALESCE(${MA_CT_LUOT} IN (SELECT pg.code FROM programmes pg WHERE pg.scoring_mode = 'ratio' AND pg.code != 'FT'), 0) = 0`;
+
 /** Biểu thức tính cờ cho dòng `a` của `assessment_attempts` (dùng trong UPDATE … AS a / SELECT … AS a). */
 export const O_CHO_TU_SQL = `(CASE
+  WHEN ${LICH_SU_KHONG_CHO} THEN NULL
   WHEN a.kind != 'mt0' AND (SELECT pg.scoring_mode FROM programmes pg WHERE pg.code = ${MA_CT_LUOT}) = 'ratio'
   THEN (SELECT MIN(${TUAN_O('ps.skill')}) FROM programme_skills ps
          WHERE ps.programme_code = ${MA_CT_LUOT}
