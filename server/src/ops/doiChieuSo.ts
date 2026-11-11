@@ -8,6 +8,8 @@ import { demoToday } from '../demoConfig.ts';
 import { addDays } from '../util.ts';
 import { ghiSoLuot, ghiSoViecChiNhanh } from '../phanTich/soNghiaVu.ts';
 import { xoaNhoHan } from '../platform/cauHinh.ts';
+/* SUA-RA-1311: nạp nguồn cấu hình Case & SOS (`datNguonCauHinh` khi nạp module) — thiếu thì gói hàm đêm luôn đọc bản gốc. */
+import { quenNhoCauHinh } from '../platform/cauHinhCaseSos.ts';
 
 const COT = 'khoa, loai, kieu, chi_nhanh, lop, hoc_vien, nguoi, s_cheo, pc_nhap_sau, han_goc, han, tuan, xong_luc, nguoi_lam, khong_tinh';
 const BAI_CUA = `SELECT ${COT} FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 'bai:' || j.value || ':' AND n.khoa < 'bai:' || j.value || ';'`;
@@ -19,6 +21,7 @@ const BAI_CUA = `SELECT ${COT} FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 
 export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { cn: number; bai: number; lechBai: number; doiViec: number } {
   const conn = db();
   xoaNhoHan();   // QTV2-HAN: hạn mặc định đọc lại một lần mỗi lượt (lambda ấm giữ bản cũ)
+  quenNhoCauHinh();   // SUA-RA-1311: cấu hình Case & SOS cũng vậy
   const tu = addDays(homNay, -56);
   let bai = 0, lechBai = 0, doiViec = 0, cn = 0;
   for (const b of conn.prepare(`SELECT id FROM branches ORDER BY id`).all() as any[]) {

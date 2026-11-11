@@ -109,8 +109,10 @@ export function dauViec({ han, em, lop, ngCanh }: {
  * `KhungPanel chan.conThieu` vẽ. `SaveIndicator` (ô điểm, lưới) dùng cùng hàm vẽ.
  */
 export type TtLuu = 'nhap' | 'dang' | 'da' | 'loi';
-export function TrangThaiLuu({ tt, loi, luc, onHuy, onThuLai }: {
+export function TrangThaiLuu({ tt, loi, luc, onHuy, onThuLai, chuDang }: {
   tt: TtLuu | null; loi?: string | null; onHuy?: () => void; onThuLai?: () => void;
+  /** Chữ thay "Đang lưu…" (vd "Đang lưu nháp…" — form có hai kiểu lưu). */
+  chuDang?: string;
   /** Giờ đã lưu `HH:MM` (tt = 'da'). */
   luc?: string | null;
 }) {
@@ -120,7 +122,7 @@ export function TrangThaiLuu({ tt, loi, luc, onHuy, onThuLai }: {
   );
   return (
     <>
-      <ChuLuu tt={tt} loi={loi} luc={luc} />
+      <ChuLuu tt={tt} loi={loi} luc={luc} chuDang={chuDang} />
       <span className="flex-1" />
       {tt === 'nhap' && onHuy && nut(t('Huỷ sửa'), onHuy)}
       {tt === 'loi' && onThuLai && nut(t('Thử lại'), onThuLai)}
@@ -129,13 +131,13 @@ export function TrangThaiLuu({ tt, loi, luc, onHuy, onThuLai }: {
 }
 
 /** Chữ trạng thái lưu (không nút) — dùng chung cho chân panel và `SaveIndicator`. */
-export function ChuLuu({ tt, loi, luc, gon }: { tt: TtLuu; loi?: string | null; luc?: string | null; /** Hàng lưới chật: lý do vào tooltip, không câu "vẫn giữ". */ gon?: boolean }) {
+export function ChuLuu({ tt, loi, luc, gon, chuDang }: { tt: TtLuu; loi?: string | null; luc?: string | null; /** Hàng lưới chật: lý do vào tooltip, không câu "vẫn giữ". */ gon?: boolean; chuDang?: string }) {
   if (tt === 'loi' && gon) return <span role="alert" title={loi ?? undefined} className="font-semibold text-bad">⚠ {t('Không lưu được')}</span>;
-  if (tt === 'loi') return <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi}` : ''}. {t('Chữ đang gõ vẫn giữ.')}</span>;
+  if (tt === 'loi') return <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi.replace(/\.\s*$/, '')}` : ''}. {t('Chữ đang gõ vẫn giữ.')}</span>;   // câu lỗi có dấu chấm cuối: không ra ".."
   if (tt === 'dang') {
     return (
       <span role="status" className="inline-flex items-center gap-1.5 font-semibold text-doing">
-        <span aria-hidden className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />{t('Đang lưu…')}
+        <span aria-hidden className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-r-transparent motion-reduce:animate-none" />{chuDang ?? t('Đang lưu…')}
       </span>
     );
   }
@@ -174,12 +176,14 @@ export const ViecVuaLuu = createContext<{ ten: string | null; bao: (x: DaLuuPane
  */
 export type TiepViec = { ten: string | null; lam: (x: DaLuuPanel) => void };
 /** Nút thường + "{việc} · việc tiếp ›" (nút chính khi có việc kế); "Đang lưu…" chỉ ở nút đã bấm (V12 ⑨). */
-export function NutVaTiep({ chu, chuTiep, busy, tiep, bam, luu }: {
+export function NutVaTiep({ chu, chuTiep, busy, tat, tiep, bam, luu }: {
   chu: string; chuTiep: string; busy: boolean; tiep?: TiepViec; bam: 'luu' | 'tiep' | null; luu: (diTiep: boolean) => void;
+  /** Tắt cả hai nút mà không đổi chữ (form đang lưu việc khác, vd Lưu nháp). */
+  tat?: boolean;
 }) {
   return <>
-    <button type="button" className={`btn ${tiep ? '' : 'btn-primary'} min-h-[40px] px-4 font-bold`} disabled={busy} onClick={() => luu(false)}>{busy && bam !== 'tiep' ? t('Đang lưu…') : chu}</button>
-    {tiep && <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => luu(true)}>{busy && bam === 'tiep' ? t('Đang lưu…') : chuTiep}</button>}
+    <button type="button" className={`btn ${tiep ? '' : 'btn-primary'} min-h-[40px] px-4 font-bold`} disabled={busy || tat} onClick={() => luu(false)}>{busy && bam !== 'tiep' ? t('Đang lưu…') : chu}</button>
+    {tiep && <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy || tat} onClick={() => luu(true)}>{busy && bam === 'tiep' ? t('Đang lưu…') : chuTiep}</button>}
   </>;
 }
 /** "Tiếp: {việc} · {em}" — dưới hàng nút trong khối Cần làm (≥ 640); `chan`: bản ở chân dính 375, trên nút (không bị chân che). */

@@ -1,10 +1,10 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { KetQuaTutorChon } from '../../ui/PeoplePicker.tsx';
 import { BuoiTutorO } from './BuoiTutorO.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { Hang2, KhungPanel, Truong, useBaoDangSua, useNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam, NutChu, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
@@ -52,8 +52,11 @@ export type PaCanCapNhat = {
   nhap?: NhapMayChu | null;
 };
 export type NhapMayChu = { outcome: string; note: string; luc: string; boi: string };
-/** "13/11" theo giờ máy (mốc lưu là ISO UTC). */
-const ngayNhap = (luc: string) => { const d = new Date(luc); return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`; };
+/** "13/11 14:05" theo giờ máy (mốc lưu là ISO UTC) — giờ để phân biệt nhiều lần lưu trong một ngày (U01). */
+const lucNhap = (luc: string) => { const d = new Date(luc); const h = (x: number) => String(x).padStart(2, '0'); return `${h(d.getDate())}/${h(d.getMonth() + 1)} ${h(d.getHours())}:${h(d.getMinutes())}`; };
+/** AUDIT-1454: 409 của máy chủ — `nhapMoi` (phiên khác vừa lưu nháp khác; null = đã xoá) · `daChot` (kỳ này đã chốt: chỉ báo, không Thử lại). */
+const xungDotCua = (e: any): { moi: NhapMayChu | null } | null => (e?.status === 409 && e.details && 'nhapMoi' in e.details ? { moi: e.details.nhapMoi ?? null } : null);
+const daChotCua = (e: any) => e?.status === 409 && !!e.details?.daChot;
 
 /**
  * OV-7b: điền sẵn của `GET /followups/:id/sua` — PA như NGAY TRƯỚC lần ghi (`pa`), giá trị đã ghi (`giaTri`), `chan` = vì sao không đổi được lựa chọn
@@ -122,14 +125,27 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* NHAP-KQ-PA: nháp máy chủ (Sửa lần ghi cũ không dùng). Chữ đang gõ chưa lưu vẫn nhớ trên trình duyệt (`useNhap`) như cũ. */
   const nhapMc = sua ? null : pa.nhap ?? null;
   const [outcome, setOutcome] = useState(g?.outcome ?? nhapMc?.outcome ?? '');
-  const [progress, setProgress] = useNhap(`ket-qua-nx:${pa.id}`, g?.note ?? nhapMc?.note ?? '');
-  const xoaNhap = useXoaNhap();
+  /* N03: nháp / chốt ràng vào kỳ LÚC MỞ form (chụp một lần — Case tải lại sau khi phiên khác chốt không được đẩy form cũ sang kỳ mới). Sửa lần ghi cũ không gửi. */
+  const [ky] = useState(pa.cycleNo ?? 1);
+  /* U04: Sửa lần ghi cũ có khoá nháp trình duyệt riêng — không đọc, không xoá chữ đang gõ của kỳ đang chạy.
+     PTA 11/11: nháp trình duyệt khoá theo PA + KỲ (như máy chủ) — chữ chưa lưu của kỳ trước không hiện lại ở kỳ sau; khoá cũ theo PA chuyển một lần. */
+  const [progress, setProgress, daLuuO] = useNhap(sua ? `ket-qua-nx:sua-${sua.followupId}` : `ket-qua-nx:${pa.id}:k${ky}`, g?.note ?? nhapMc?.note ?? '',
+    sua ? undefined : `ket-qua-nx:${pa.id}`);
+  /* `banNhap` = bản máy chủ đã xác nhận: so "Đã lưu nháp", `luc` của nó là bản gốc gửi kèm (N01). */
   const [banNhap, setBanNhap] = useState<NhapMayChu | null>(nhapMc);
-  const [ttNhap, setTtNhap] = useState<'dang' | 'loi' | null>(null);
-  const [loiNhap, setLoiNhap] = useState<string | null>(null);
+  const [loiNhap, setLoiNhap] = useState<{ chu: string; thuLai: boolean } | null>(null);
+  const [xungDot, setXungDot] = useState<{ moi: NhapMayChu | null; tu: 'nhap' | 'chot' } | null>(null);
   const chupNhap = (o: string, n: string) => JSON.stringify([o, n.trim()]);
-  /* Chữ + mức đúng bằng bản nháp vừa lưu → chân báo "Đã lưu nháp", không "Chưa lưu". */
+  /* Chữ + mức đúng bằng bản máy chủ đã xác nhận → "Đã lưu nháp" (N02: gõ tiếp lúc đang gửi thì không). */
   const trungNhap = !!banNhap && chupNhap(outcome, progress) === chupNhap(banNhap.outcome, banNhap.note);
+  /* N03: MỘT trạng thái gửi cho cả form — đang lưu nháp thì không chốt, đang chốt thì không lưu nháp (ref chặn bấm đúp trước khi vẽ lại). */
+  const [gui, setGui] = useState<'nhap' | 'chot' | null>(null);
+  const dangGui = useRef<'nhap' | 'chot' | null>(null);
+  const batDauGui = (x: 'nhap' | 'chot') => { if (dangGui.current) return false; dangGui.current = x; setGui(x); return true; };
+  const xongGui = () => { dangGui.current = null; setGui(null); };
+  const busy = gui === 'chot';
+  /* Form đã bằng bản máy chủ (vừa lưu nháp, Dùng bản mới…) → bỏ nháp trình duyệt của ô Nhận xét (N02: gõ tiếp lúc đang gửi thì không bằng → giữ). */
+  useEffect(() => { if (trungNhap) daLuuO(progress); }, [trungNhap]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* OV-13b (mockup §8): PA mặc định — Điều chỉnh › "Đề xuất PA khác": kết quả kỳ lưu như Giữ nguyên + đề xuất gửi QL, MỘT nút. */
   const [deXuat, setDeXuat] = useState(false);
   const doi = useDoiPa(pa.kind);
@@ -139,7 +155,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* Mockup v3 §5: Giữ nguyên là mặc định (lần cuối PA quy chế không có Quyết định). */
   const [decision, setDecision] = useState<PlanDecision | ''>(g?.decision ?? (pa.lanCuoi ? '' : 'keep'));
   const [chanQd, setChanQd] = useState<string | null>(null);
-  const [loiLuu, setLoiLuu] = useState<string | null>(null);
+  const [loiLuu, setLoiLuu] = useState<{ chu: string; thuLai: boolean } | null>(null);
   const [reason, setReason] = useState<string>(g?.decisionNote ?? '');
   const [on, setOn] = useState<string>(g?.observedOn ?? homNay);
   const [endOn, setEndOn] = useState<string>(g?.completedOn ?? homNay);
@@ -205,7 +221,6 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* OV-7b: PA thay thế đã chạy / Quản lý đã trả lời → chỉ sửa chữ: khoá kết quả, quyết định, ngày. */
   const khoaLuaChon = !!sua?.chan;
   const lf = useLoiForm();
-  const [busy, setBusy] = useState(false);
 
   const pickOutcome = (o: string) => {
     if (khoaLuaChon) return;
@@ -282,12 +297,13 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const o = (khoa: string) => lf.o(loi, khoa);
 
   const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
-  const luu = async (diTiep = false) => {
+  const luu = async (diTiep = false, coSo = banNhap?.luc ?? null) => {
     lf.bam();
     setBam(diTiep ? 'tiep' : 'luu');
     if (thieu.length > 0 || (!decision && !lanCuoi)) return;
-    setBusy(true);
-    setLoiLuu(null);
+    if (!batDauGui('chot')) return;
+    setLoiLuu(null); setXungDot(null);
+    const noteGui = progress;
     try {
       const body: Record<string, unknown> = {
         decision: lanCuoi ? undefined : decision, outcome, note: nhanXetTheoBuoi ? ghepBuoi : progress, observedOn: on || undefined,
@@ -306,6 +322,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       if (decision === 'adjust' && !giuLuaChon) body.adjust = thanDc;
       if (decision === 'replace' && !giuLuaChon) body.newPlan = paPayload(paThay);
       if (deXuat) { body.decision = 'keep'; body.deXuatPa = doi.payload(); }
+      if (!sua) { body.ky = ky; body.nhapCoSo = coSo; }
       const ct = await api.post<any>(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
       const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
       /* #3: kết quả đã lưu → hoàn thành Case cùng lần bấm. Lỗi ở bước này không mất kết quả: nói rõ "chưa hoàn thành Case", nút Hoàn thành Case vẫn ở Case. */
@@ -316,7 +333,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
         catch (e: any) { loiHt = e?.message ?? t('Không lưu được'); }
       }
       lamMoi();
-      xoaNhap();
+      daLuuO(noteGui);
       /* OV-13b: ở lại panel — "✓ Đã lưu · {quyết định}" + kết quả · hạn kế. Chủ SP 13/11: không Hoàn tác — sai thì "Sửa kết quả" ở thẻ PA. */
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
       (diTiep && tiep ? tiep.lam : onSaved)({
@@ -324,9 +341,11 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
         phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
       });
     } catch (e: any) {
-      /* Chân v3: lỗi một dòng + Thử lại; chữ đã gõ giữ nguyên. */
-      setLoiLuu(e?.message ?? t('Không lưu được'));
-    } finally { setBusy(false); }
+      /* Chân v3: lỗi một dòng + Thử lại; chữ đã gõ giữ nguyên. N03: phiên khác vừa lưu nháp khác → cho xem bản đó trước khi chốt (chưa ghi gì).
+         Kỳ đã chốt (gửi lại, tab cũ): chỉ báo, không Thử lại. */
+      const xd = xungDotCua(e);
+      if (xd) setXungDot({ ...xd, tu: 'chot' }); else setLoiLuu({ chu: e?.message ?? t('Không lưu được'), thuLai: !daChotCua(e) });
+    } finally { xongGui(); }
   };
 
   /* K3-17 → OV-12a: kỳ đang ghi ("Kết quả PA · W3–W4 SEP"); trễ nhiều kỳ thì khoảng + "(ghi bù n kỳ)". Tên việc ở đầu panel: "Kết quả PA · W3–W4 SEP". */
@@ -410,24 +429,48 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     setDecision(d); setChanQd(null);
   };
 
-  /* NHAP-KQ-PA: lưu tạm — không kiểm đủ ô, không chốt; việc / hạn không đổi. Lỗi: chữ giữ nguyên, chân báo + Thử lại. */
-  const luuNhap = async () => {
-    setTtNhap('dang'); setLoiNhap(null);
+  /*
+   * NHAP-KQ-PA: lưu tạm — không kiểm đủ ô, không chốt; việc / hạn không đổi. Lỗi: chữ giữ nguyên, chân báo + Thử lại.
+   * AUDIT-1454: gửi bản chụp + bản gốc + kỳ. Xong: bỏ nháp trình duyệt CHỈ khi ô vẫn đúng chữ đã gửi (N02); xung đột → giữ chữ, cho xem bản mới (N01).
+   */
+  const luuNhap = async (coSo = banNhap?.luc ?? null) => {
+    if (!batDauGui('nhap')) return;
+    setLoiNhap(null); setXungDot(null);
+    const chup = { outcome, note: progress };
     try {
-      const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${pa.id}/nhap`, { outcome, note: progress });
-      setBanNhap(r.nhap); setTtNhap(null);
-      xoaNhap();   // nháp máy chủ thay nháp trình duyệt — máy khác mở vẫn thấy bản này
+      const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${pa.id}/nhap`, { ...chup, ky, coSo });
+      setBanNhap(r.nhap);   // trùng chữ đang có → effect trên bỏ nháp trình duyệt
       invalidate('/my-work'); invalidate('/cases');
-    } catch (e: any) { setTtNhap('loi'); setLoiNhap(e?.message ?? t('Không lưu được')); }
+    } catch (e: any) {
+      const xd = xungDotCua(e);
+      if (xd) setXungDot({ ...xd, tu: 'nhap' }); else setLoiNhap({ chu: e?.message ?? t('Không lưu được'), thuLai: !daChotCua(e) });
+    } finally { xongGui(); }
+  };
+  /* Xung đột: "Dùng bản mới" thay chữ đang gõ bằng bản máy chủ; "Lưu bản của tôi" gửi lại với bản gốc = bản mới (đè có chủ ý). Không tự gộp. */
+  const dungBanMoi = () => {
+    if (!xungDot?.moi) return;
+    setOutcome(xungDot.moi.outcome); setProgress(xungDot.moi.note); setBanNhap(xungDot.moi); setXungDot(null);
+  };
+  const giuBanToi = () => {
+    if (!xungDot) return;
+    const goc = xungDot.moi?.luc ?? null;
+    setBanNhap(xungDot.moi);
+    if (xungDot.tu === 'nhap') void luuNhap(goc); else void luu(bam === 'tiep', goc);
   };
   const nutNhap = !sua && !nhanXetTheoBuoi && (
-    <NutChu onClick={() => void luuNhap()} disabled={busy || ttNhap === 'dang'}>{ttNhap === 'dang' ? t('Đang lưu…') : t('Lưu nháp')}</NutChu>
+    <NutChu onClick={() => void luuNhap()} disabled={!!gui}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</NutChu>
   );
   const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi QL duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
   const nut = tiep && !sua
-    ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tiep={tiep} bam={bam} luu={(x) => void luu(x)} />
-    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void luu()}>{nhanNut}</button>;
-  const daSua = !!(outcome || progress.trim() || buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua);
+    ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tat={!!gui} tiep={tiep} bam={bam} luu={(x) => void luu(x)} />
+    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui} onClick={() => void luu()}>{nhanNut}</button>;
+  /* PTA rà 1454: nháp chỉ giữ Tiến triển + Nhận xét — ô khác (Quyết định, Lý do, Điều chỉnh, buổi, Hoàn thành Case) đổi thì vẫn "đang sửa" dù hai ô trùng nháp. */
+  const ngoaiNhap = !!(buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua || reason.trim() || htCase
+    || on !== homNay || tuan !== dau.tuan || mtTyLe !== dau.mtTyLe || mtNgay !== dau.mtNgay || JSON.stringify(nguoiDay) !== JSON.stringify(dau.nguoiDay));
+  const daSua = (!trungNhap && !!(outcome || progress.trim())) || ngoaiNhap;
+  /* Form nằm trong panel việc / Ngăn Case: ✕ · Đóng · "‹ Công việc" là của panel ngoài — báo lên để panel hỏi trước khi bỏ Quyết định / Lý do (chỉ ở state).
+     ponytail: Sửa lần ghi cũ chưa báo (daSua của Sửa luôn bật vì điền sẵn) — cần so từng ô với giá trị cũ nếu muốn hỏi ở đó. */
+  useBaoDangSua(!sua && daSua);
   const tieuDe = sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : lanCuoi ? t('Kết quả cuối') : tuanGhi.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
 
   return (
@@ -435,10 +478,13 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       /* Sửa: hạn của lần đã ghi không còn là việc phải làm — không chip hạn. */
       dau={dauViec({ han: sua ? null : pa.miniTestHan ? <ChipHan loai="mini-test" han={pa.miniTestHan} /> : pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
       chan={{
-        v3: true, chinh: <>{nut}{nutNhap}</>, daSua: daSua && !trungNhap, conThieu: lf.conThieu(loi),
-        dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void luu()} />
-          : ttNhap ? <TrangThaiLuu tt={ttNhap} loi={loiNhap} onThuLai={() => void luuNhap()} />
-          : trungNhap ? <span className="font-semibold text-done">✓ {t('Đã lưu nháp · chưa chốt')}</span>
+        /* U01 — một bộ chữ: ● Chưa lưu → ⟳ Đang lưu nháp… → ✓ Đã lưu nháp · chưa chốt → (Lưu) ✓ Đã lưu kết quả · Sửa (dải sau lưu). */
+        v3: true, chinh: <>{nut}{nutNhap}</>, daSua, conThieu: lf.conThieu(loi),
+        dongTren: gui ? <TrangThaiLuu tt="dang" chuDang={gui === 'nhap' ? t('Đang lưu nháp…') : undefined} />
+          : xungDot ? <span role="alert" className="font-semibold text-bad">⚠ {t('Chưa lưu · có bản nháp mới hơn')}</span>
+          : loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu.chu} onThuLai={loiLuu.thuLai ? () => void luu(bam === 'tiep') : undefined} />
+          : loiNhap ? <TrangThaiLuu tt="loi" loi={loiNhap.chu} onThuLai={loiNhap.thuLai ? () => void luuNhap() : undefined} />
+          : trungNhap && !ngoaiNhap ? <span role="status" className="font-semibold text-done">✓ {t('Đã lưu nháp · chưa chốt')}</span>
           : daSua ? <TrangThaiLuu tt="nhap" /> : undefined,
       }}>
       <div className="flex flex-col gap-5 pt-4">
@@ -448,7 +494,25 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           </p>
         )}
         <CanLam>
-          {banNhap && <p className="m-0 text-xs text-slate-400">{t('Nháp lưu {ngay} · {ten}', { ngay: ngayNhap(banNhap.luc), ten: banNhap.boi })}</p>}
+          {banNhap && !xungDot && <p className="m-0 text-xs text-slate-400">{t('Nháp lưu {luc} · {ten}', { luc: lucNhap(banNhap.luc), ten: banNhap.boi })}</p>}
+          {xungDot && (
+            /* N01 / N03: phiên khác vừa lưu nháp khác (hoặc xoá) — chữ của mình ở nguyên các ô dưới; xem bản mới rồi chọn, không tự gộp. */
+            <div role="alert" className="flex flex-col gap-1.5 rounded-lg border px-3 py-2.5 text-[13px]" style={{ borderColor: 'var(--line-strong)' }}>
+              <b className="font-semibold text-slate-100">
+                {xungDot.moi ? t('Bản nháp mới hơn · {luc} · {ten}', { luc: lucNhap(xungDot.moi.luc), ten: xungDot.moi.boi }) : t('Nháp vừa bị xoá ở phiên khác')}
+              </b>
+              {xungDot.moi && (
+                <p className="m-0 whitespace-pre-wrap break-words text-slate-300">
+                  {xungDot.moi.outcome && <b className="font-semibold">{dich(outcomeLabelFor(xungDot.moi.outcome))}{xungDot.moi.note ? ' — ' : ''}</b>}{xungDot.moi.note}
+                </p>
+              )}
+              <span className="text-xs text-slate-400">{t('Bản của bạn chưa lưu, vẫn ở các ô dưới.')}</span>
+              <div className="flex flex-wrap items-center gap-x-4">
+                {xungDot.moi && <NutChu onClick={dungBanMoi} disabled={!!gui}>{t('Dùng bản mới')}</NutChu>}
+                <NutChu onClick={giuBanToi} disabled={!!gui}>{xungDot.tu === 'chot' ? t('Vẫn lưu bản của tôi') : t('Lưu bản của tôi')}</NutChu>
+              </div>
+            </div>
+          )}
           {lanCuoi && !sua && (
             <p className="m-0 text-[13px] text-slate-300">{t('Kỳ này chạm mốc quy chế{moc} — lưu là PA kết thúc.', { moc: pa.mocChu ? ` (${dich(pa.mocChu)})` : '' })}</p>
           )}
