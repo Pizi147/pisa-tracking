@@ -67,7 +67,7 @@ const { handler: chotVang } = require(outCv);
 for (const lan of [1, 2]) {
   const r = await chotVang({}, {});
   const kq = JSON.parse(r.body ?? '{}');
-  const ok = r.statusCode === 200 && typeof kq.daChot === 'number' && kq.boQua === null && (lan === 1 || kq.daChot === 0);
+  const ok = r.statusCode === 200 && typeof kq.daChuyen === 'number' && kq.boQua === null && (lan === 1 || kq.daChuyen === 0);
   if (!ok) hong++;
   console.log(`${ok ? 'ĐẠT' : 'HỎNG'}  chot-vang lần ${lan}  → ${r.statusCode}  ${String(r.body).slice(0, 120)}`);
 }

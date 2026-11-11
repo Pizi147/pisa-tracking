@@ -304,11 +304,11 @@ async function mayChu(t: YThucTestKit) {
   });
 
   /* R1-EN-2 Task 6 (spec 4.3): tệp theo ngôn ngữ người bấm — tiêu đề, tên sheet, chữ trạng thái EN; dữ liệu (tên em) giữ nguyên. */
-  check('R1-EN-2 · xuất ngonNgu=en: hàng tiêu đề, tên sheet, Trạng thái lượt, sheet Bộ lọc tiếng Anh; tên em giữ nguyên', () => {
+  check('R1-EN-2 · xuất tiếng Anh (dichSheetXuat ở web): hàng tiêu đề, tên sheet, Trạng thái lượt, sheet Bộ lọc tiếng Anh; tên em giữ nguyên', () => {
     const VIET = /[àáảãạăằắẳẵặâầấẩẫậèéẻẽẹêềếểễệìíỉĩịòóỏõọôồốổỗộơờớởỡợùúủũụưừứửữựỳýỷỹỵđ]/i;
     for (const [p, f] of [[P.mbManager, loc({ chiNhanh: String(mb.id), cot: 'day-du' })], [P.normalCoreTeacher, locThuong({ cot: 'day-du' })]] as const) {
       const vi = xm.xuatExcel(p, f);
-      const en = xm.xuatExcel(p, f, undefined, 'en');
+      const en = { ...vi, sheets: d.dichSheetXuat(vi.sheets, 'en') };   // KHOI-DONG-LANH: web dịch bảng máy chủ trả
       assert(en.sheets.length === vi.sheets.length && en.tenTep === vi.tenTep, 'cùng số sheet, cùng tên tệp');
       for (const [i, s] of en.sheets.entries()) {
         const [dau, ...than] = s.aoa;

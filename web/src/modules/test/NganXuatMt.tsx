@@ -7,7 +7,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { BoLocDoan, NutChon } from '../../ui/ui.tsx';
 import {
-  COT_FT_GON, COT_FT_NX, COT_FT_THEM, DOT_XUAT_FT, DOT_XUAT_THUONG, bodyXuatMt, docBoLocXuatMt, mondayOfDate, nhanKhoaDot, queryXuatMt,
+  COT_FT_GON, COT_FT_NX, COT_FT_THEM, DOT_XUAT_FT, DOT_XUAT_THUONG, bodyXuatMt, dichSheetXuat, docBoLocXuatMt, mondayOfDate, nhanKhoaDot, queryXuatMt,
   type Cell, type CotXuat, type KhungXuat, type ThoiGianXuat,
 } from '@shared/domain/index.ts';
 import type { LopKH } from './keHoach/kieu.ts';
@@ -130,7 +130,8 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
     if (typeof f === 'string' || dangXuat) return;
     setDangXuat(true);
     try {
-      const r = await api.post<{ sheets: { ten: string; aoa: Cell[][] }[]; tenTep: string; dem: { luot: number } }>('/xuat-mt', { ...bodyXuatMt(f), ngonNgu: NGON_NGU });
+      const r = await api.post<{ sheets: { ten: string; aoa: Cell[][] }[]; tenTep: string; dem: { luot: number } }>('/xuat-mt', bodyXuatMt(f));
+      r.sheets = dichSheetXuat(r.sheets, NGON_NGU);   // R1-EN-2: tệp theo tiếng người bấm — dịch ở web (KHOI-DONG-LANH)
       const XLSX = await import('xlsx');
       const wb = XLSX.utils.book_new();
       r.sheets.forEach((s, i) => {

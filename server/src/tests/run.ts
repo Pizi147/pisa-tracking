@@ -178,6 +178,8 @@ for (const suffix of ['', '-wal', '-shm']) {
   if (fs.existsSync(p)) fs.rmSync(p);
 }
 
+/* KHOI-DONG-LANH: máy chủ không nạp từ điển Anh lúc khởi động — phép kiểm chữ Anh (dichMau('en'), dichSheetXuat…) cần nạp trước. */
+await (await import('../../../shared/i18n/tuDien.ts')).napTuDienEn();
 const { db } = await import('../db.ts');
 const { runSeed } = await import('../seed/seed.ts');
 const { loadPrincipal, can } = await import('../permissions.ts');

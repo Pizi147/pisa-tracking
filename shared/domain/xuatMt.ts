@@ -4,6 +4,7 @@ import { tieuChiNganCua } from './skills.ts';
 import { kyHieuLop } from './tenLop.ts';
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
 import { issueLabel } from './cases.ts';
+import { dichMau, type NgonNgu } from '../i18n/index.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). LUẬT THUẦN: đọc + kiểm bộ lọc, bộ cột, dựng mảng hai chiều, tên tệp.
@@ -313,4 +314,36 @@ export function dongXemTruoc(d: DongFT, homNay?: string): string {
 }
 export function dongXemTruocThuong(d: DongThuong, homNay?: string): string {
   return `${d.ten} · ${d.lop} · ${d.bai} · ${tuanLich(d.tuanBd, homNay)} · ${d.mon.map((m) => `${m.ten} ${m.pct === null ? '—' : `${m.pct}%`}`).join(' · ')}`;
+}
+
+/**
+ * R1-EN-2 (spec 4.3): tệp theo tiếng người bấm Xuất — tiêu đề cột, tên sheet, chữ trạng thái / hướng gợi ý và sheet Bộ lọc dịch bằng `dichMau`;
+ * dữ liệu (tên em, chữ GV nhập, mã lớp) giữ nguyên. Tiếng Việt → trả nguyên. KHOI-DONG-LANH: chạy ở WEB (từ điển Anh chỉ tải khi trang tiếng Anh).
+ */
+export function dichSheetXuat(sheets: { ten: string; aoa: Cell[][] }[], nn: NgonNgu): { ten: string; aoa: Cell[][] }[] {
+  if (nn !== 'en') return sheets;
+  const d = (c: Cell): Cell => (typeof c === 'string' ? dichMau('en', c) : c);
+  /* Tiêu đề ghép tên môn (lớp thường): "Tổng hợp %", "Listening điểm", "Tuần R" — dịch tên môn + phần đuôi riêng. */
+  const DUOI: Record<string, string> = { '%': '%', 'điểm': 'score', 'tổng': 'total' };
+  const dau1 = (c: Cell): Cell => {
+    if (typeof c !== 'string') return c;
+    const m = /^(.+) (%|điểm|tổng)$/.exec(c) ?? null;
+    if (m && m[1] !== '%') return `${dichMau('en', m[1])} ${DUOI[m[2]]}`;
+    const w = /^Tuần (.+)$/.exec(c);
+    return w ? `${dichMau('en', w[1])} week` : d(c);
+  };
+  return sheets.map((s) => {
+    const [dau = [], ...than] = s.aoa;
+    const boLoc = s.ten === 'Bộ lọc đã dùng';
+    const cot = new Set(['Trạng thái lượt', 'Hướng gợi ý', 'Kết quả'].map((k) => dau.indexOf(k)).filter((i) => i >= 0));
+    const iNhom = dau.indexOf('Nhóm nguyên nhân');
+    /* "R: Kỹ năng làm bài, Quản lý thời gian · W1: …" (chuNhomNguyenNhan) — giữ mã ô, dịch từng nhãn nhóm. */
+    const nhom = (c: Cell): Cell => (typeof c !== 'string' ? c : c.split(' · ').map((p) => {
+      const i = p.indexOf(': ');
+      return i < 0 ? dichMau('en', p) : `${p.slice(0, i)}: ${p.slice(i + 2).split(', ').map((x) => dichMau('en', x)).join(', ')}`;
+    }).join(' · '));
+    /* Bộ lọc: cột Mục + giá trị chữ máy dựng; riêng tên người xuất giữ. */
+    const o = (h: Cell[]) => h.map((c, i) => (boLoc ? (i === 0 || h[0] !== 'Người xuất' ? d(c) : c) : i === iNhom ? nhom(c) : cot.has(i) ? d(c) : c));
+    return { ten: dichMau('en', s.ten), aoa: [dau.map(boLoc ? d : dau1), ...than.map(o)] };
+  });
 }
