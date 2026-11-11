@@ -85,7 +85,14 @@ Tìm GV và Xuất Excel chung một hàng.
 | Ý thức · hai bảng | Cạnh nhau | Chồng nhau | 7 cột không đủ chỗ ở nửa bề rộng |
 | Xuất Excel, In, ⋯, Theo tuần ▾, Mọi lớp ▾, Tìm GV, Toàn bộ / Chọn khoảng tuần, tuần → tuần, FT / Lớp thường, Mock Test / Thi thật, Thi thật theo GV ›, Hồ sơ GV ›, ⓘ, ▸ mở dòng, chuyển trang, "Xem 3 GV còn lại" | — | **Giữ nguyên chỗ, nguyên chữ** | — |
 
-Không mất thao tác nào. Mockup không vẽ lại Lớp thường, Tất cả chi nhánh (QT) — dùng cùng luật ô số và cùng độ rộng nhóm (V2 A2, A3, B2, B4, C3, D2 giữ bố cục).
+Không mất thao tác nào.
+
+**Khung trang và chữ = web thật (PTA rà #1481):** thanh trên "PISA TRACKING" · Tổng quan · Học viên & Lớp · Test · Công việc · Phân tích, góc phải chuông · ? · avatar;
+375 thanh dưới Tổng quan · Học viên · Test · Công việc · Thêm (Phân tích trong Thêm). Mọi nhãn thẻ / cột / tiêu đề lấy đúng chữ web
+(`PhanTichGiaoVien`, `BaoCao`, `TongHopTestSos`, `KetQuaThi`, `YThucPhoiHop`): bỏ nhóm "Học trò" (cột "Đạt kỳ vọng Test · lượt" như web), "Tiến bộ · lượt",
+"Thi thật", "Kết quả" (không "· lượt"), "Chưa chốt PA · hôm nay" + "⚠ n quá hạn", "gồm SOS tạm", "Lớp / nhóm vi phạm", "Kết quả thi thật · trong kỳ" (hai ô công tắc
+"✓ đang xem / Xem" + thanh Vượt · Đạt · Chưa đạt), Từng kỹ năng có HV + Điểm TB, Theo GV có Kỹ năng · HV · Điểm TB · KN dưới Target. Thi thật không có đoạn
+Mock Test | Thi thật (web V2 bỏ). Chữ còn khác web chỉ là các dòng có lý do trong bảng trên và [XM]. Mockup không vẽ lại Lớp thường, Tất cả chi nhánh (QT) — dùng cùng luật ô số và cùng độ rộng nhóm (V2 A2, A3, B2, B4, C3, D2 giữ bố cục).
 
 ## 5. Turso
 
