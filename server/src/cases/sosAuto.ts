@@ -523,18 +523,18 @@ export function keHoachMocQuyChe(theo: { caseIds?: readonly number[]; studentId?
 /**
  * SUA-RA-1311 — MỐC PA QUY CHẾ, MỘT LUẬT cho mọi đường (gắn dấu PA GV `ganDauQuyChe`, chọn PA `apDungGiuPaGv`, Xác nhận PA, đường đọc + migrate
  * `keHoachMocQuyChe`): gốc là NGÀY BẮT ĐẦU PA (trước: gắn dấu / chọn PA tính từ hôm nay, đường đọc tính lại từ ngày bắt đầu → hai mốc, migrate chạy lại vẫn đổi).
- *  · "đến MT kế tiếp" = MT đầu tiên sau lượt sinh PA mà tuần thi chưa hết trước ngày bắt đầu (hết CN tuần đó) — PA không có mốc trước khi bắt đầu; MT kế
+ *  · "đến MT kế tiếp" = MT ngay sau lượt sinh PA, hết CN tuần đó, phải SAU ngày bắt đầu — PA không có mốc trước / đúng ngày bắt đầu; MT kế
  *    chưa xếp tuần → trống (điền sau); · "đến lúc thi" = ngày thi, chưa có thì MT cuối ≥ bắt đầu + 4 tuần (OV-13a B); · "1 tháng" từ ngày bắt đầu.
  * Lượt sinh PA: mốc opened / repeat mới nhất không muộn hơn PA, không có thì mốc cũ nhất (PA GV có trước Case — cùng luật `mtKeTheoPa` của chữ "đến MT{n}").
- * PR-S3F #4: ngày thi + tuần các MT sau + MT cuối lấy NGAY trong câu chọn — không câu thêm mỗi dòng.
+ * PR-S3F #4: ngày thi + tuần MT kế tiếp + MT cuối lấy NGAY trong câu chọn — không câu thêm mỗi dòng.
  */
 const SRC_PA = (thuTu: string, dk: string) => `(SELECT m.attempt_id FROM case_milestones m JOIN assessment_attempts a ON a.id = m.attempt_id
     WHERE m.case_id = iv.case_id AND m.kind IN ('opened', 'repeat')${dk} ORDER BY m.created_at ${thuTu}, m.id ${thuTu} LIMIT 1)`;
 const CHON_MOC = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, cy.exam_month, cy.exam_date,
        ep.code AS exam_week_code, ep.week_start AS exam_week_start,
-       (SELECT json_group_array(w) FROM (SELECT p.week_start AS w FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
+       (SELECT p.week_start FROM assessment_attempts nx LEFT JOIN report_periods p ON p.id = nx.planned_period_id
          WHERE nx.cycle_id = src.cycle_id AND nx.attempt_no > src.attempt_no AND nx.status != 'cancelled' AND NOT ${LUOT_DA_XOA_SQL('nx')}   -- chủ SP 07/11: MT đã xoá = chưa xếp
-         ORDER BY nx.attempt_no)) AS tuan_mt_sau,
+         ORDER BY nx.attempt_no LIMIT 1) AS tuan_mt_ke,
        (SELECT p.week_start FROM assessment_attempts l JOIN report_periods p ON p.id = l.planned_period_id
          WHERE l.cycle_id = sc.cycle_id AND l.kind = 'mock' AND l.status != 'cancelled'
          ORDER BY l.attempt_no DESC LIMIT 1) AS tuan_mt_cuoi
@@ -547,11 +547,9 @@ const CHON_MOC = `SELECT iv.*, sc.cycle_id AS case_cycle_id, cy.exam_period_id, 
 function mocTuDong(r: any, span: string, batDau: string): string | null {
   let chuNhatMt: string | null = null;
   if (span === 'until_next_mt') {
-    for (const w of JSON.parse(r.tuan_mt_sau ?? '[]') as (string | null)[]) {
-      if (!w) break;   // MT kế tiếp chưa xếp tuần → chưa có mốc
-      const cn = addDays(mondayOf(w), 6);
-      if (cn >= batDau) { chuNhatMt = cn; break; }
-    }
+    /* Chỉ MT kế tiếp NGAY sau lượt sinh PA (cùng số với chữ "đến MT{n}"): chưa xếp tuần, hoặc tuần đã hết trước / đúng ngày bắt đầu → chưa có mốc (điền khi xếp lại). */
+    const cn = r.tuan_mt_ke ? addDays(mondayOf(r.tuan_mt_ke), 6) : null;
+    if (cn && cn > batDau) chuNhatMt = cn;
   }
   return mocQuyChe(span as AcademicSupportSpan, {
     ngayXacNhan: batDau, nextMtSunday: chuNhatMt,
