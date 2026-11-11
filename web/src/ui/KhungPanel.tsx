@@ -112,32 +112,6 @@ export function useXoaNhap(): () => () => void {
   return useCallback(() => n?.xoa() ?? (() => {}), [n]);
 }
 
-/**
- * T21 (375 + bàn phím): bàn phím ảo che phần dưới vùng nhìn — đo bằng `visualViewport`, đặt `--ban-phim` (px bị che) + `data-ban-phim` lên <html>:
- * panel phủ co lên trên bàn phím, chân lưu dính ngay trên bàn phím, thanh điều hướng dưới ẩn (`index.css`).
- */
-function useBanPhim(bat: boolean) {
-  useEffect(() => {
-    const vv = window.visualViewport;
-    if (!bat || !vv) return undefined;
-    const goc = document.documentElement;
-    const bo = () => { delete goc.dataset.banPhim; goc.style.removeProperty('--ban-phim'); };
-    const doi = () => {
-      const che = Math.round(window.innerHeight - vv.height - vv.offsetTop);
-      if (che > 80) {
-        const moi = goc.dataset.banPhim === undefined;
-        goc.dataset.banPhim = ''; goc.style.setProperty('--ban-phim', `${che}px`);
-        /* UI-CON-LAI k8: bàn phím vừa mở → ô đang gõ cuộn vào giữa phần màn còn thấy (không bị chân Lưu / bàn phím che). */
-        const o = document.activeElement as HTMLElement | null;
-        if (moi && o?.matches('input, textarea, select')) requestAnimationFrame(() => o.scrollIntoView({ block: 'center' }));
-      } else bo();   // < 80 px: thanh công cụ trình duyệt, không phải bàn phím
-    };
-    doi();
-    vv.addEventListener('resize', doi); vv.addEventListener('scroll', doi);
-    return () => { vv.removeEventListener('resize', doi); vv.removeEventListener('scroll', doi); bo(); };
-  }, [bat]);
-}
-
 /** CV-LOI (CV-05): panel đang hiện "✓ Đã lưu · Hoàn tác" còn bấm được — hàng đợi Công việc không tự sang việc kế (Hoàn tác không bị thay). */
 const choHoanTac = new Set<symbol>();
 export function useChoHoanTac(con: boolean) {
@@ -318,7 +292,6 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
     khoRoiNhap.dat(id, { moTa: tieuDe, conTrong: (a, b, kieu) => daBo.current || !mat || (kieu !== 'POP' && a.pathname === b.pathname), hoi: hoiBo(t('Bỏ chữ, rời đi')) });
     return () => { panelDangSua.delete(id); khoRoiNhap.dat(id, null); };
   }, [id, daSua, mat, tieuDe]);
-  useBanPhim(!trongKhung);   // rà #530: một nơi đo — panel con đóng không gỡ `--ban-phim` khi panel ngoài còn mở
 
   /* M6 6b-1 (luật Quay lại): ‹ lùi một view KHÔNG hỏi khi chữ đã ở nháp (`useNhap` — mở lại view là còn); form chỉ giữ chữ trong state (`chan.daSua`)
      thì vẫn hỏi (cùng hộp), không mất chữ âm thầm — kể cả khi nơi gọi `tuHoi` (nơi gọi chỉ tự hỏi ở ✕ / Esc / nền). */
@@ -465,7 +438,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
     );
   }
   return createPortal(
-    /* T21: `bottom` = phần bàn phím ảo che (`useBanPhim`) — panel co lên, chân lưu nằm ngay trên bàn phím. */
+    /* T21: `bottom` = phần bàn phím ảo che (`useBanPhim` — đo một nơi ở `App`, `ui/banPhim.ts`) — panel co lên, chân lưu nằm ngay trên bàn phím. */
     <div className={`fixed inset-0 !mt-0 ${z} flex justify-end`} style={{ bottom: 'var(--ban-phim, 0px)' }} role="dialog" aria-modal="true" aria-label={tieuDe}>
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
       <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'vua' ? 'max-w-[1180px]' : rong === 'rong' ? 'sm:w-[720px]' : rong === 'bang' ? 'sm:w-[1040px] sm:max-w-full' : 'sm:w-[480px]'}`}

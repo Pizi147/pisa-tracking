@@ -7,6 +7,7 @@ import { henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './li
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
+import { useBanPhim } from './ui/banPhim.ts';
 import { LA_BAN_CHINH } from './lib/banChinh.ts';
 import { useGhiNguon, useTieuDeTab } from './lib/quayLai.ts';
 import { Header } from './modules/platform/Header.tsx';
@@ -215,6 +216,7 @@ export default function App() {
   useEffect(() => { henViec.doiTrang(); }, [location.pathname, henViec]);
   useGhiNguon();   // PR-OV5b: nguồn của nút "‹ Quay lại" ở mọi hồ sơ
   useTieuDeTab(!!session?.authenticated);   // OV-11i (P1-3): tiêu đề tab theo màn
+  useBanPhim();   // T21 · U03 (chủ SP 13/11): điện thoại + bàn phím mở → ẩn thanh tab dưới, panel / chân lưu lên trên bàn phím — mọi trang
   /* HOTFIX-3: đã có dữ liệu mà tải lại nền lỗi → giữ bảng, báo nhỏ (một toast cho mọi khối). */
   useEffect(() => onLoiTaiLai(() => toast.push('error', t('Chưa tải lại được'), {
     key: 'tai-lai-loi', ms: 10_000, hanhDong: { nhan: t('Thử lại'), onBam: thuLaiNen },
