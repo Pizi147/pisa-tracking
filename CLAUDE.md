@@ -19,7 +19,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
   thang làm tại chỗ 0–5 · ô số = mở tại chỗ, chữ "›" = đổi trang, ⓘ = giải thích · báo cáo thuần · cấm điều khiển trong tiêu đề bảng · "Toàn bộ" chỉ ở Phân tích.
 
 ## PR giao diện V5 = NÂNG CẤP, không chép mockup (chủ SP 22/10 — `docs/superpowers/specs/2026-10-22-overhaul-v5/10-pta-ap-phan-hoi-cuoi.md` mục 8)
-- Mockup là tham chiếu. GIỮ mọi tính năng / thao tác đã có (V4 đã duyệt: Nhập điểm, + Case, ⋯, Xuất, Dán Excel…) và sửa đồng bộ CẢ phần mockup không vẽ
+- Mockup là tham chiếu. GIỮ mọi tính năng / thao tác đã có (V4 đã duyệt: Nhập điểm, + Case, ⋯, Xuất, Dán Excel thêm HV…; Dán Excel điểm đã bỏ — chủ SP 13/11) và sửa đồng bộ CẢ phần mockup không vẽ
   (panel Công việc, hộp thông tin, popover, chân lưu, rỗng / lỗi) theo luật đã chốt; xung đột mockup / luật / tính năng cũ → ghi [XM], hỏi PTA Plan, không tự bỏ.
 - khop-khac.md của PR có bảng thao tác TRƯỚC → SAU PR (mất thao tác nào phải có lý do). Chỉnh nhỏ cho hợp lý / đẹp hơn được.
 - **Hài hoà hai phía (chủ SP 28/10, mới nhất):** HÌNH ẢNH (màu, nền, viền, độ đậm, cỡ chữ, khoảng cách, cân đối, phân cấp) theo mockup SÁT;
