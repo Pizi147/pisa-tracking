@@ -316,6 +316,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
 
+**13/11 (chủ SP):** "Thêm nữa là cho các GV được phép lưu tạm nháp kết quả PA và cái này sẽ được ghi lại nhưng chưa phải chốt hẳn vì có nhiều GV sẽ ghi lại luôn feedback của một buổi học sau khi kết thúc vào tuần đó, còn để đến 2 tuần thì sợ quên mất nhé" → PTA: hiện form Ghi kết quả PA chỉ nhớ nháp TRÊN TRÌNH DUYỆT (useNhap, localStorage). Làm: nút "Lưu nháp" cạnh "Lưu" ở form Ghi kết quả PA (CapNhatTuan) — lưu MÁY CHỦ một nháp cho kỳ đó (nhận xét + mức nếu có, không bắt buộc đủ ô), sửa / ghi thêm nhiều lần, mở lại tự điền + "Nháp lưu dd/mm"; nháp KHÔNG tính xong (Công việc, sổ nghĩa vụ, hạn giữ nguyên); việc có chip "Có nháp"; "Lưu" như cũ = chốt. → session NHAP-KQ-PA.
+
 **13/11 (chủ SP):** "Chỉ để dán excel cho thêm HV thôi" → Dán Excel CHỈ giữ ở thêm học viên; bỏ hẳn Dán Excel điểm (đường scores/lo + mã còn sót, sửa N9 / N35 cho khớp). Chủ SP cũng giao "Ngoài những thứ đang hoãn, làm hết đi" → session DON-NOT-1311 (G5-06, BD-2, BD-3, khởi động lạnh).
 
 **13/11 (chủ SP):** "Không tính nữa" — MT lịch sử FT (nhập bù) KHÔNG còn tính là "đang chờ điểm" (cờ o_cho_tu: LUOT_HIEN_TAI / LOP_CON_VIEC / Nợ điểm…) → bỏ khỏi cờ, ~−0,8 M dòng/ngày. → TURSO-LOG-1311.
