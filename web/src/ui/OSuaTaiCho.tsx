@@ -10,10 +10,12 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
   giaTri: string | null; nhan: string; rong?: string; toiDa?: number; chiXem?: boolean;
   /** Chữ khi ô trống (vd "+ SĐT"). */
   trong?: string;
-  onLuu: (v: string) => Promise<void>;
+  /** `gocMo` = giá trị lúc bấm sửa — máy chủ so để không đè lần sửa của người khác trong lúc đang gõ (N04). */
+  onLuu: (v: string, gocMo: string) => Promise<void>;
 }) {
   const [sua, setSua] = useState(false);
   const [v, setV] = useState('');
+  const [gocMo, setGocMo] = useState('');
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   /* Esc / Đóng khi đã gõ khác → hỏi MỘT lần "Bỏ thay đổi · Ở lại" (cùng phản hồi với `SuaTaiDong`), không mất chữ đang gõ. */
@@ -28,11 +30,11 @@ export function OSuaTaiCho({ giaTri, nhan, rong = 'w-full', toiDa = 300, chiXem 
     if (busy) return;
     if (v.trim() === goc.trim()) { thoi(); return; }
     setBusy(true); setLoi(null);
-    try { await onLuu(v.trim()); thoi(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); o.current?.focus(); } finally { setBusy(false); }
+    try { await onLuu(v.trim(), gocMo); thoi(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); o.current?.focus(); } finally { setBusy(false); }
   };
   if (!sua) {
     return (
-      <button type="button" aria-label={`${t('Sửa')} ${nhan}`} title={t('Sửa')} onClick={() => { setV(goc); setSua(true); }}
+      <button type="button" aria-label={`${t('Sửa')} ${nhan}`} title={t('Sửa')} onClick={() => { setV(goc); setGocMo(goc); setSua(true); }}
         className={`group -ml-1 inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-left text-sm hover:border-[color:var(--accent)] max-sm:min-h-[44px] ${goc ? 'text-slate-100' : 'border-dashed text-accent'}`}
         style={{ borderColor: 'var(--line-strong)' }}>
         <span className="min-w-0 break-words">{goc || trong || t('Chưa có')}</span>

@@ -3,7 +3,7 @@ import {
   MA_CHUONG_TRINH_MOI, MON_CHON, MON_GOP, MT_TOI_DA, PERMISSIONS, QUYEN_SUY_RA_GV, RATIO_PASS_THRESHOLD, ROUTES as BUILTIN_ROUTES, ROUTE_NAME, docLichMt,
   laChuongTrinhGoc, lichMtGoc, lyDoCamVai, nhanBaiThuong, programmeOf,
 } from '../../../shared/domain/index.ts';
-import { badRequest, chuTuDo, forbidden, notFound, nowIso } from '../util.ts';
+import { badRequest, chuTuDo, forbidden, loi, notFound, nowIso } from '../util.ts';
 import { clearScoringModeCache } from '../fasttrack/skillSchedule.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { writeAudit } from './audit.ts';
@@ -463,18 +463,50 @@ export function listChiNhanh(p: Principal) {
 }
 
 /**
- * PUT /admin/chi-nhanh/:id { name, diaChi, soDienThoai } — sửa tên hiển thị, địa chỉ, SĐT. Mã chi nhánh không đổi (tên lớp, quyền dựa vào mã).
- * Ô trống = xoá. Trả `truoc` để web Hoàn tác (gửi lại giá trị cũ); nhật ký ghi trước / sau.
+ * PUT /admin/chi-nhanh/:id { name?, diaChi?, soDienThoai?, cu?: { …cùng khoá } } — sửa tên hiển thị, địa chỉ, SĐT. Mã chi nhánh không đổi (tên lớp, quyền dựa vào mã).
+ * Ô trống = xoá. Trả `truoc` (giá trị cũ của ĐÚNG các ô vừa đổi) để web Hoàn tác; nhật ký ghi trước / sau của các ô đó.
+ * N04 (SUA-RA-1311, đề bài 13/11 — F09): hai Quản trị sửa cùng lúc / Hoàn tác sau lần sửa mới hơn KHÔNG đè nhau:
+ *  · chỉ ghi ô gửi lên VÀ khác giá trị đang lưu (ô khác người khác vừa sửa giữ nguyên);
+ *  · `cu` = giá trị người sửa đã thấy (phiên bản của từng ô): máy chủ so trong CÙNG giao dịch với lần ghi + nhật ký — khác → 409, không ghi gì, nói ai
+ *    sửa thành gì; web giữ chữ đang gõ, bấm Lưu lần nữa là ghi đè có chủ ý (gửi `cu` = bản mới);
+ *  · gửi lại y hệt (mất phản hồi, bấm lặp): giá trị đã đúng → không ghi, không nhật ký đôi.
+ * Không gửi `cu` (web cũ trong lúc deploy): ghi các ô thật sự đổi, không so.
  */
-export function luuChiNhanh(p: Principal, id: number, input: { name?: unknown; diaChi?: unknown; soDienThoai?: unknown }) {
+const O_CN = [
+  { k: 'name', cot: 'name', ten: 'Tên chi nhánh', toiDa: 80 },
+  { k: 'diaChi', cot: 'dia_chi', ten: 'Địa chỉ', toiDa: 300 },
+  { k: 'soDienThoai', cot: 'so_dien_thoai', ten: 'Số điện thoại', toiDa: 60 },
+] as const;
+type KhoaCn = (typeof O_CN)[number]['k'];
+const giongCn = (a: string | null | undefined, b: string | null | undefined) => (a ?? '').trim() === (b ?? '').trim();
+
+export function luuChiNhanh(p: Principal, id: number, input: Partial<Record<KhoaCn, unknown>> & { cu?: unknown }) {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, 'Chỉ Quản trị hệ thống sửa được thông tin chi nhánh.');
-  const r = db().prepare('SELECT id, code, name, dia_chi, so_dien_thoai FROM branches WHERE id = ?').get(id) as any;
-  if (!r) throw notFound('Không tìm thấy chi nhánh');
-  const name = chuTuDo(input.name ?? '', 'Tên chi nhánh', 80);
-  if (!name) throw loiO('ten', 'Đặt tên cho chi nhánh.');
-  const sau: LienHeCn = { name, diaChi: chuTuDo(input.diaChi ?? '', 'Địa chỉ', 300), soDienThoai: chuTuDo(input.soDienThoai ?? '', 'Số điện thoại', 60) };
-  const truoc = lienHe(r);
-  db().prepare('UPDATE branches SET name = ?, dia_chi = ?, so_dien_thoai = ? WHERE id = ?').run(sau.name, sau.diaChi, sau.soDienThoai, id);
-  writeAudit({ actorUserId: p.userId, action: 'chi_nhanh.sua', entityType: 'branch', entityId: id, entityLabel: r.code, before: truoc, after: sau });
-  return { id, code: r.code, ...sau, truoc };
+  const cu = input.cu && typeof input.cu === 'object' ? input.cu as Partial<Record<KhoaCn, unknown>> : null;
+  const gui = O_CN.filter((o) => input[o.k] !== undefined);
+  return tx(() => {
+    const r = db().prepare('SELECT id, code, name, dia_chi, so_dien_thoai FROM branches WHERE id = ?').get(id) as any;
+    if (!r) throw notFound('Không tìm thấy chi nhánh');
+    const hien = lienHe(r);
+    const doi: { o: (typeof O_CN)[number]; moi: string | null }[] = [];
+    for (const o of gui) {
+      const moi = chuTuDo(input[o.k] ?? '', o.ten, o.toiDa, hien[o.k]);
+      if (o.k === 'name' && !moi) throw loiO('ten', 'Đặt tên cho chi nhánh.');
+      if (giongCn(moi, hien[o.k])) continue;   // đã đúng (gửi lại / không đổi)
+      if (cu && cu[o.k] !== undefined && !giongCn(typeof cu[o.k] === 'string' ? cu[o.k] as string : null, hien[o.k])) {
+        const ai = db().prepare(`SELECT u.full_name AS ten FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
+            WHERE a.entity_type = 'branch' AND a.entity_id = ? AND a.action = 'chi_nhanh.sua' ORDER BY a.id DESC LIMIT 1`).get(id) as any;
+        throw loi(409, '{ten} {ma} vừa được {ai} sửa thành “{hien}” — chưa lưu chữ của bạn. Bấm Lưu lần nữa để thay bằng chữ của bạn.',
+          { ten: o.ten, ma: r.code, ai: ai?.ten ?? 'người khác', hien: hien[o.k] ?? 'trống' },
+          { truong: o.k, hien: hien[o.k] });
+      }
+      doi.push({ o, moi });
+    }
+    if (!doi.length) return { id, code: r.code, ...hien, truoc: {} as Partial<LienHeCn>, doi: [] as KhoaCn[] };
+    db().prepare(`UPDATE branches SET ${doi.map((d) => `${d.o.cot} = ?`).join(', ')} WHERE id = ?`).run(...doi.map((d) => d.moi), id);
+    const truoc = Object.fromEntries(doi.map((d) => [d.o.k, hien[d.o.k]])) as Partial<LienHeCn>;
+    const sau = Object.fromEntries(doi.map((d) => [d.o.k, d.moi])) as Partial<LienHeCn>;
+    writeAudit({ actorUserId: p.userId, action: 'chi_nhanh.sua', entityType: 'branch', entityId: id, entityLabel: r.code, before: truoc, after: sau });
+    return { id, code: r.code, ...hien, ...sau, truoc, doi: doi.map((d) => d.o.k) };
+  });
 }
