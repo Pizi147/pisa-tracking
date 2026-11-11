@@ -44,7 +44,7 @@ export async function runPrOv15e2Tests(t: YThucTestKit) {
   check('OV15e2-2 · link cũ chỉ có ?tg=… mở Test + SOS (không mở Báo cáo)', () => {
     const g = (s: string) => d.gocNhinTuThamSo(new URLSearchParams(s));
     assert(g('tg=8').goc === 'tong-hop', `tg=8 → ${g('tg=8').goc}`);
-    assert(g('goc=hieu-qua-pa&tg=26').goc === 'hieu-qua-pa', 'có goc thì theo goc');
+    assert(g('goc=giao-vien&tg=26').goc === 'giao-vien' && g('goc=hieu-qua-pa&tg=26').goc === 'tong-hop', 'có goc thì theo goc (V2: Hiệu quả PA → SOS)');
     assert(g('').goc === 'bao-cao', 'không tham số → Báo cáo');
   });
 

@@ -14,6 +14,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, RongDau, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
 import { NganXuatMt } from '../test/NganXuatMt.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
+import { HieuQuaPa } from './HieuQuaPa.tsx';
 import { NGON_NGU, dich, t } from '@shared/i18n/index.ts';
 import {
   CHUONG_TRINH_LABEL, GOI_Y_XU_LY, THEO_DONG, THEO_DONG_COT_DAU, THEO_DONG_DANH_TU,
@@ -114,7 +115,10 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     if (dau?.con?.length) setOpen(new Set([dau.khoa]));
   }, [data, theo]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const allCols = cotTheoDuLieu(cotTongHopFor(ct), data?.tongCoDot);   // OV-11h: nhóm Checkpoint chỉ khi bảng có PET / KET
+  /* Phân tích V2 (đặc tả 4, 11; mockup #1400 B1–B2): SOS không có "Đạt" (Đạt kỳ vọng ở Chi nhánh) — FT bỏ cột Đạt; lớp thường giữ phần chưa đạt + Thiếu điểm
+     (bỏ Progress "Đạt hết" và nhóm Final Test → Đạt Test / Cuối khoá ở Chi nhánh). Excel Test + SOS giữ cột cũ tới PR Excel (XM-4). */
+  const BO_SOS = new Set(['dat', 'gk-dat', 'ck-dat', 'ck-60', 'ck-50', 'ck-duoi50']);
+  const allCols = cotTheoDuLieu(cotTongHopFor(ct), data?.tongCoDot).filter((c) => !BO_SOS.has(c.khoa));   // OV-11h: nhóm Checkpoint chỉ khi bảng có PET / KET
   const cols = allCols.filter((c) => cotHien.has(c.nhom));
   /*
    * Tầng đầu đề trên: FT theo nhóm cột (Kết quả · Dưới kỳ vọng · HV · Xử lý). Lớp thường (PR-Pb2-a, P4) theo nhóm con — Giữa khoá (theo môn) ·
@@ -136,7 +140,8 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const dauNhom = new Set(nhomChay.map((g) => g.cols[0].khoa));
   const KE_TRAI = 'border-l border-[color:var(--line-strong)]';
   /** Bề rộng cột (px, bảng cố định bề ngang). FT theo mockup V8: Kết quả 84 · kỹ năng 62 · Xử lý 117. Lớp thường giữ 68 / 96 (22 cột ≤ 1398 px). */
-  const rongCot = (c: CotTongHop) => (laThuong ? (c.nhom === 'xu-ly' ? 96 : 68) : c.nhom === 'xu-ly' ? 117 : c.nhom === 'ket-qua' ? 84 : 62);
+  /* V2 ("cân đối cột hàng"): cột cùng nhóm cùng rộng — Kết quả 84 · Dưới kỳ vọng 72 · Xử lý 116; lớp thường mọi cột số 120. */
+  const rongCot = (c: CotTongHop) => (laThuong ? 120 : c.nhom === 'xu-ly' ? 116 : c.nhom === 'ket-qua' ? 84 : 72);
 
   /* Thẻ 375: một khối mỗi nhóm (lớp thường: theo nhóm con; Bài + Thiếu điểm chung khối Kết quả). */
   const nhomThe: { nhan: string; cols: CotTongHop[] }[] = [];
@@ -256,7 +261,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     );
   };
   const dongCon = (row: DongTongHop) => (
-    <HangCon key={row.khoa} className={`${DINH_TRAI} [&>td]:h-[38px]`}>
+    <HangCon key={row.khoa} className={`${DINH_TRAI} [&>td]:h-11`}>
       <td><span className="block truncate">{row.nhan}</span></td>
       {oSo(row)}
     </HangCon>
@@ -319,17 +324,17 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   ));
   const chiSo: ChiSo[] = !data ? [] : [
     { ten: laThuong ? t('Bài kiểm tra') : t('Lượt MT'), ky: t('trong kỳ'), gt: soTong('luot'), mau: t('{n} HV', { n: data.soHv }) },   // PT-GON (M3): số tuần / lớp đã ở chip đầu bảng
-    ...(laThuong ? [] : [
-      { ten: t('Đạt'), gt: soTong('dat'), nho: luot ? `${Math.round(((tong.dat ?? 0) * 100) / luot)} %` : undefined },   // PT-GON (M3): "trên n lượt" = ô Lượt MT ngay cạnh
-      { ten: 'SOS', rong2: true, gt: chipSos.length ? <span className="flex flex-wrap items-center gap-1.5 py-1">{chipSos}</span> : 0,
-        mau: t('{n} lượt', { n: (tong.sos1 ?? 0) + (tong.sos2 ?? 0) + (tong.sos3 ?? 0) }) },
-    ]),
+    /* V2 (đặc tả 9.7): mỗi mức SOS một ô — "n · x %" trên Lượt MT; tên ô là chip SOS (dáng V5), số bấm → panel đúng mức. Lớp thường: phần chưa đạt của Progress. */
+    ...(laThuong ? (['gk-1', 'gk-2'] as const).map((k): ChiSo => ({ ten: `Progress · ${dich(cotSo(k)?.nhan(ct) ?? k)}`, gt: soTong(k), nho: luot ? `${Math.round(((tong[k] ?? 0) * 100) / luot)} %` : undefined }))
+      : (['sos1', 'sos2', 'sos3'] as const).map((k, i): ChiSo => ({
+        ten: <span className={`${CHIP_VUONG} px-1.5 ${MAU_O[k]}`}>SOS {i + 1}</span>, gt: soTong(k), nho: luot ? `${Math.round(((tong[k] ?? 0) * 100) / luot)} %` : undefined, mau: t('trên lượt MT'),
+      }))),
     { ten: t('Thiếu điểm'), gt: soTong('chuaDu'), mau: laThuong ? undefined : t('gồm SOS tạm') },
     /* PT-LOP-THUONG (mockup v13 B): lớp thường bỏ thẻ "Chưa chốt PA" — PA xem ở tab Hiệu quả PA. */
     ...(laThuong ? [] : [{ ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet'),
       nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) }]),
   ];
-  const SKEL_SO = Array.from({ length: laThuong ? 2 : 5 }, (): ChiSo => ({
+  const SKEL_SO = Array.from({ length: laThuong ? 4 : 6 }, (): ChiSo => ({
     ten: <span className="skel inline-block h-3 w-1/2 align-middle" />, gt: <span className="skel mt-1.5 inline-block h-6 w-2/5" />,
   }));
 
@@ -369,14 +374,14 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     {error ? <Card bodyClass="p-0"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
       : loading || !data ? (
         <div className="space-y-3">
-          <DaiChiSo ds={SKEL_SO} cot={5} />
+          <DaiChiSo ds={SKEL_SO} cot={laThuong ? 4 : 6} />
           <Card bodyClass="p-4"><Skeleton rows={dienThoai ? 4 : 8} /></Card>
         </div>
       )
       : !coBang ? <Card bodyClass="p-0">{rong}</Card>
       : (
         <div className="space-y-3">
-          <DaiChiSo ds={chiSo} cot={5} />
+          <DaiChiSo ds={chiSo} cot={laThuong ? 4 : 6} />
           {dienThoai ? (
             <div className="space-y-3">
               <div ref={pt.thanh.dauBang} />
@@ -440,7 +445,9 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
           )}
         </div>
       )}
-    {moXuat && demoDate && (
+    {/* V2 (đặc tả 4, 9.6): khối "PA nào hiệu quả" (= tab Hiệu quả PA cũ) cùng trang, dưới bảng; link cũ `goc=hieu-qua-pa` cuộn tới `#khoi-pa`. */}
+    <div className="mt-3"><HieuQuaPa branchId={branchId} ct={ct} khoang={khoang} classId={classId} /></div>
+        {moXuat && demoDate && (
       <NganXuatMt khung={ct === 'thuong' ? 'thuong' : 'ft'} chiNhanh={branchId} lop={classId ? { id: classId, ma: className ?? `#${classId}` } : null}
         thoiGianMacDinh={{ kieu: 'tuan', tu: mondayOfDate(khoang.tu), den: mondayOfDate(khoang.den) }} onDong={() => setMoXuat(false)} />
     )}

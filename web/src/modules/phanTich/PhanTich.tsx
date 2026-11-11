@@ -10,7 +10,6 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
 import { BaoCao } from './BaoCao.tsx';
 import { BoChonThoiGian } from './BoChonThoiGian.tsx';
-import { HieuQuaPa } from './HieuQuaPa.tsx';
 import { KetQuaThi } from './KetQuaThi.tsx';
 import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
@@ -64,6 +63,8 @@ export function PhanTich() {
     for (const k of boThamSo) next.delete(k);
     if (ctTuLoaiLop) next.set('ct', ctTuLoaiLop);
     if (gocMoi) next.set('goc', gocMoi);
+    /* V2 (PR-3): link cũ Hiệu quả PA → SOS và cuộn tới khối PA (`HieuQuaPa` đọc `cuon=pa` khi đã có dữ liệu). */
+    if (gocMoi === 'tong-hop' && (params.get('goc') === 'hieu-qua-pa' || params.get('goc') === 'ket-qua')) next.set('cuon', 'pa');
     if (cu) { for (const k of ['tg', 'thang', 'kieu', 'tu', 'den']) next.delete(k); for (const [k, v] of Object.entries(thamSoKhoang(khoang, homNay, mdPt))) next.set(k, v); }
     setParams(next, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -100,7 +101,7 @@ export function PhanTich() {
   const setKhoang = (k: KhoangNgay) => dat({ kieu: null, tu: null, den: null, ...thamSoKhoang(k, homNay, mdPt) });
 
   /* Ô Lớp (Q6): lớp của khung đang chọn (Ý thức gộp hai khung) + lớp đã kết thúc có lượt trong khoảng (OV-11h PT-10). */
-  const coLop = goc === 'tong-hop' || goc === 'hieu-qua-pa' || goc === 'y-thuc' || goc === 'ket-qua-thi';
+  const coLop = goc === 'tong-hop' || goc === 'y-thuc' || goc === 'ket-qua-thi';
   const laYThuc = goc === 'y-thuc';
   const coCt = goc !== 'y-thuc' && goc !== 'ket-qua-thi';   // Kết quả thi chỉ Fast Track (Mock / Thi thật)
   const qLop = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den, ...(branchId ? { branchId: String(branchId) } : {}) });
@@ -156,7 +157,6 @@ export function PhanTich() {
           {goc === 'bao-cao' && <BaoCao {...pv} />}
           {goc === 'tong-hop' && <TongHopTestSos {...pv} ct={ct} />}
           {goc === 'ket-qua-thi' && <KetQuaThi {...pv} />}
-          {goc === 'hieu-qua-pa' && <HieuQuaPa {...pv} ct={ct} />}
           {goc === 'y-thuc' && <YThucPhoiHop {...pv} ct={null} />}
           {goc === 'giao-vien' && <PhanTichGiaoVien branchId={branchId} ct={ct} khoang={khoang} />}
         </KheHangLoc.Provider>}
