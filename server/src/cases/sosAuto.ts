@@ -273,7 +273,7 @@ export function quetGiuPaGv(conn: any, homNay: string): number {
     for (const y of ds) {
       apDungGiuPaGv(y, 'duyet', null);
       chotYeuCau(conn, { loai: 'giu_pa_gv', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong',
-        { lyDo: 'Quá 3 ngày Quản lý chưa trả lời — chốt theo PA của GV' });
+        { lyDo: 'Quá hạn Quản lý chưa trả lời — chốt theo PA của GV' });
     }
   });
   return ds.length;

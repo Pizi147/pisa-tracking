@@ -773,6 +773,8 @@ export function hanTheoNgay(batDau: string, n: number): string {
 export const HAN_DUYET_NGAY = 5;
 /** QTV2-HAN: hạn QL duyệt đề xuất PA (ngày) — bản tại `moc` (thiếu = bây giờ). `HAN_DUYET_NGAY` = bản gốc. */
 export const hanDuyetNgay = (moc?: string | null) => hanTai('ql_duyet_pa', moc).ngay;
+/** Hạn thẻ `giu_pa_gv`: số ngày SAU ngày gửi (hết ngày gửi + n) — bản tại `moc`. Quét máy chốt đọc `han_duyet` đã lưu từ số này. */
+export const hanGiuPaGvNgay = (moc?: string | null) => hanTai('giu_pa_gv', moc).ngay;
 
 /**
  * Hạn của một chu kỳ xử lý, tính từ ngày chu kỳ BẮT ĐẦU. Phương án cần duyệt thì ngày bắt đầu là NGÀY ĐƯỢC DUYỆT, không phải
