@@ -747,6 +747,22 @@ export async function runAnToanTests(t: AnToanTestKit) {
     assert(/no-store/.test(String(r.cacheControl ?? '')), `cache-control: ${r.cacheControl}`);
   });
 
+  await checkAsync('TURSO-LOG-1311 · câu GHI qua all() / get() (… RETURNING) tính là đã ghi (Dem.ghi) — bộ thử lại không chạy lại request đó; câu đọc thì không tính', async () => {
+    const ngu: any = await import('../platform/nguCanhRequest.ts');
+    conn.exec('CREATE TABLE IF NOT EXISTS _thu_ghi_tra (v TEXT)');
+    const ghi = ngu.chayTrongRequest('POST', () => {
+      const d = ngu.demHienTai();
+      conn.prepare('SELECT COUNT(*) n FROM _thu_ghi_tra').get();
+      conn.prepare('SELECT v FROM _thu_ghi_tra').all();
+      const doc = d.ghi;
+      conn.prepare('INSERT INTO _thu_ghi_tra (v) VALUES (?) RETURNING v').all('a');
+      conn.prepare('INSERT INTO _thu_ghi_tra (v) VALUES (?) RETURNING rowid').get('b');
+      return [doc, d.ghi];
+    });
+    conn.exec('DROP TABLE _thu_ghi_tra');
+    assert(ghi[0] === 0 && ghi[1] === 2, `Dem.ghi sau đọc / sau 2 câu RETURNING: ${JSON.stringify(ghi)}`);
+  });
+
   const demDangNhap = () => JSON.stringify([
     (conn.prepare('SELECT COUNT(*) n FROM auth_attempts').get() as any).n,
     (conn.prepare('SELECT COUNT(*) n FROM demo_sessions').get() as any).n,

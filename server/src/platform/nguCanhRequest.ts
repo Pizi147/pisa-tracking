@@ -76,6 +76,12 @@ export function daGhiDb(): void {
   if (s) { s.coGhi = true; s.dem.ghi++; }
 }
 
+/** TURSO-LOG-1311: câu GHI chạy qua `all()` / `get()` (`… RETURNING`) — chỉ đếm cho bộ thử lại; KHÔNG đặt `coGhi` (mocHeThong cố ý giữ nhớ bảng tham chiếu). */
+export function demGhi(): void {
+  const s = kho.getStore();
+  if (s) s.dem.ghi++;
+}
+
 /** Đặt mốc chung của request (`resolveSession`, SAU ghi mốc dùng phiên — ghi đó không chạm bảng tham chiếu). Không có kho → bỏ qua. */
 export function datMoc(m: unknown): void {
   const s = kho.getStore();

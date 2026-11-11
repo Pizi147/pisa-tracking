@@ -81,7 +81,11 @@ Cộng theo tần suất giả định của TURSO-1211 (400 lượt tài khoả
 | a | Công việc · GV Speaking: lớp CHỈ vào nhờ chấm S chéo (ngoài phạm vi phân công) chỉ đọc lượt Mock / MT0 mà ô S chưa có band (`listAttempts` `chiSCheoNgoai`) — trước đọc mọi lượt còn ô chờ của cả chi nhánh (lịch + điểm mọi môn) dù chỉ dùng ô S | GV Speaking không lớp (vd GV 10): 2 049 → 1 774 dòng; `/my-work` mọi GV TB 1 107 → 1 061 dòng | `fasttrack/attempts.ts`, `worklist/mywork.ts` |
 | c | Hồ sơ HV `checkpointView` tính lại kết quả từng lượt (một câu lịch kỹ năng mỗi lượt) → dùng lại kết quả vừa tính cho danh sách lượt | `/students/:id` TB 58,4 → 54,0 câu (nặng nhất 82 → 68), 94 → 84 dòng | `students/profile.ts` |
 | c | Tên Case SOS (`tenGiuaCua`) hai câu mỗi thẻ → một câu mỗi loại cho cả bảng (`napTenGiua`, nhớ trong request GET) | (gộp vào dòng trên) | `cases/sosAuto.ts`, `cases/cases.ts` |
-| d | Mất luồng Turso ở POST / PUT / PATCH: trước chỉ thử lại khi lỗi ở bước kiểm phiên; nay **thử lại một lần cả khi đường API chưa ghi DB lần nào** (`Dem.ghi` — mọi `run` / `exec` đều đếm — còn bằng lúc vào API) và không phải tải tệp (multipart). Đã ghi → giữ như cũ: không thử lại, 500 có mã. | 4 lần POST /auth/login lỗi / ngày → 0 (lỗi ở câu đọc đầu `phutConKhoa`) | `app.ts`, `auth.ts`, `platform/nguCanhRequest.ts` |
+| d | Mất luồng Turso ở POST / PUT / PATCH: trước chỉ thử lại khi lỗi ở bước kiểm phiên; nay **thử lại một lần cả khi đường API chưa ghi DB lần nào** (`Dem.ghi` — mọi `run` / `exec` và câu `… RETURNING` chạy qua `all()` / `get()` đều đếm — còn bằng lúc vào API) và không phải tải tệp (multipart). Đã ghi → giữ như cũ: không thử lại, 500 có mã. | 4 lần POST /auth/login lỗi / ngày → 0 (lỗi ở câu đọc đầu `phutConKhoa`) | `app.ts`, `auth.ts`, `platform/nguCanhRequest.ts` |
+
+Rà `/code-review high`: câu ghi `… RETURNING` qua `all()` (taoPa, kyVong, cuoiKhoa, thungRac, mocHeThong, soNghiaVu) trước không được đếm là ghi → đã đếm (`demGhi`,
+không đặt `coGhi` để giữ nhớ bảng tham chiếu như cũ) + phép kiểm. Còn biết: POST gọi dịch vụ ngoài trước lần ghi DB đầu (OpenAI `/dich`) mà câu sau mất luồng thì
+chạy lại gọi ngoài lần hai — tốn một lần gọi, không ghi đôi dữ liệu.
 
 Trần `tocDoDuong.ts`: `/students/1` 88 → 85 (GVCN 90 → 88), seed đo 65 / 67 câu.
 

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
-import { daGhiDb, demCau, demDong, nhoTheoId, xoaNho } from './platform/nguCanhRequest.ts';
+import { daGhiDb, demCau, demDong, demGhi, nhoTheoId, xoaNho } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
 /** Câu SQL vừa prepare gần nhất — chỉ để ghi log khi giao dịch hỏng (gán trong khối vá `prepare` bên dưới). */
@@ -46,6 +46,8 @@ let sqlGanNhat = '';
    * làm mọi Hoàn tác trạng thái báo 409 "Không còn hoàn tác được". Thêm khoá chữ thường một lần ở đây cho mọi nơi đọc; GIỮ khoá viết hoa — sao lưu / khôi phục
    * (`saoLuu.docBang`) đọc dòng theo tên cột của PRAGMA table_info (vẫn viết hoa).
    */
+  /* TURSO-LOG-1311: `RETURNING` chỉ có ở câu INSERT / UPDATE / DELETE — đếm là ghi cho `thuLaiKhiMatKetNoi` (app.ts). */
+  const CO_RETURNING = /\bRETURNING\b/i;
   const thuong = (row: unknown) => {
     if (row && typeof row === 'object' && !Array.isArray(row)) {
       const r = row as Record<string, unknown>;
@@ -59,6 +61,7 @@ let sqlGanNhat = '';
     if (ten === 'all') {
       /* TD2-0: đếm dòng ở `all` (mọi `get` của câu dùng lại cũng đi qua đây) — chỉ cộng length. */
       proto[ten] = function (this: { sql?: string }, ...args: unknown[]) {
+        if (CO_RETURNING.test(this.sql ?? '')) demGhi();   // ghi qua `all()` (trước khi chạy: lỗi giữa chừng vẫn coi như có thể đã ghi)
         const out = goc.apply(this, motNull(args));
         if (Array.isArray(out)) { demDong(out.length, this.sql ?? ''); for (const r of out) thuong(r); }
         return out;
@@ -78,6 +81,7 @@ let sqlGanNhat = '';
   const getGoc = proto.get;
   proto.get = function (this: { daLuu?: boolean; sql?: string; all(...a: unknown[]): unknown[] }, ...args: unknown[]) {
     /* PR-BN: `get()` của libsql trên statement DÙNG LẠI trả dòng của lần gọi TRƯỚC (tham số mới bị bỏ qua) — `all()` thì đúng. */
+    if (!this.daLuu && CO_RETURNING.test(this.sql ?? '')) demGhi();   // đường `daLuu` đã đếm ở `all`
     const row = this.daLuu ? this.all(...args)[0] : getGoc.apply(this, motNull(args));
     if (!this.daLuu) { demCau(); demDong(row ? 1 : 0, this.sql ?? ''); }   // đường `all` đã đếm qua `iterate` / `all`
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
