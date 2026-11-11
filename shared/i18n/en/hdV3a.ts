@@ -201,7 +201,6 @@ export const EN_HD_V3A = {
   'GV bộ môn: panel <b>Đề xuất sửa thông tin</b> — QL duyệt trong 5 ngày.': 'Subject teacher: the <b>Request a change</b> panel — the manager answers within 5 days.',
   'Sửa thông tin cả lớp đang mở': 'Whole-class edit open',
   'Sửa một cột cho nhiều em của lớp cùng lúc.': 'Edit one column for many students of the class at once.',
-  'Chuyển lớp': 'Move class',
   'Mỗi em một dòng; sửa ô cần đổi, ô không đổi để nguyên.': 'One row per student; edit the cells to change, leave the rest.',
   'Đổi Target nhiều em: một lý do chung cho các em đó.': 'Target change for several students: one shared reason.',
   'Lưu một lần cho cả lớp.': 'Save once for the whole class.',
