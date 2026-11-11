@@ -2,7 +2,6 @@
 import type { Dich } from '../en.ts';
 
 export const EN_CV_TAB = {
-  'Bài thi Speaking': 'Speaking tests',
   'Progress / Final Test': 'Progress / final tests',
   'Checkpoint': 'Checkpoints',
   'Xem vi phạm': 'Review incidents',

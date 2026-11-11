@@ -177,7 +177,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     ['Huỷ (thoát hộp)', />Huỷ<|'Huỷ'|nhan: 'Huỷ'/],
     ['Thêm thao tác / Thao tác với lớp', /Thêm thao tác|Thao tác với lớp/],
     ['Đọc hết', /Đọc hết/],
-    ['Nhập điểm Test', /Nhập điểm Test|→ Nhập\b|>Chấm<|\? 'Chấm'/],
+    ['Nhập điểm Test', /Nhập điểm Test|→ Nhập\b|>Chấm<|\? (t\()?'Chấm'\)?/],   /* 13/11: bắt cả t('Chấm') lồng ternary (nút ghi điểm = "Nhập điểm") */
     ['Đề ra PA', /Đề ra PA/],
     ['Báo lên', /[Bb]áo lên/],
     ['Duyệt dời / Xử lý việc vắng', /Duyệt dời|Xử lý việc vắng/],

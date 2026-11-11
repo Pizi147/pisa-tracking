@@ -73,7 +73,7 @@ export const HD_QT: HuongDan = {
       khongLam: [{ ten: 'Duyệt đề xuất PA, chuyển lớp', den: { chu: 'Công việc › Chờ bạn duyệt', duong: '/cong-viec' } }],
       muc: [
         { id: 'qt-qt-loc', ten: 'Tìm tài khoản', buoc: ['Ô tìm theo tên, mã, email; lọc <b>Chi nhánh</b>, <b>Vai trò</b>, <b>Kỹ năng</b>.', 'Chip <b>Chưa có vai trò</b> · <b>Chưa có email</b> · <b>Chưa có kỹ năng</b>: tài khoản cần bổ sung.'] },
-        { id: 'qt-qt-da-xoa', viec: 'khoi-phuc', ten: 'Khôi phục thứ đã xoá', buoc: ['Chọn tab <b>Đã xoá</b> (hoặc menu Tài khoản › <b>Đã xoá</b>).', 'Chọn mục, bấm <b>Khôi phục</b>.'] },
+        { id: 'qt-qt-da-xoa', viec: 'khoi-phuc', ten: 'Khôi phục thứ đã xoá', buoc: ['Chọn tab <b>Đã xoá</b>.', 'Chọn mục, bấm <b>Khôi phục</b>.'] },
         { id: 'qt-qt-chi', ten: 'Đơn vị báo cáo', buoc: ['Danh sách <b>Đơn vị báo cáo</b> chỉ xem.'] },
       ],
     },

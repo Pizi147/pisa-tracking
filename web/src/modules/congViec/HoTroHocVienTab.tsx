@@ -216,7 +216,7 @@ export function HoTroHocVienTab() {
   const tenTab = (k: string) => (k === 'duyet' ? t('Chờ bạn duyệt') : k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : nhanTabCv(k, laTvv));
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
-    /* AUDIT-UI B5 (mockup 375): "Bài thi Speaking" → "Speaking" ở 375 (tên kỹ năng, không dịch). */
+    /* AUDIT-UI B5 (mockup 375): "Speaking chấm chéo" → "Speaking" ở 375 (tên kỹ năng, không dịch). */
     const ds = thuTuTab.map((k) => ({ key: k, nhan: tenTab(k), ngan: k === 'cham-cheo' ? 'Speaking' : undefined, badge: badgeTab(dongCuaTab(items, k)) as BadgeTab | null }))
       .filter((x) => x.badge!.n > 0 || conGiu.has(x.key) || (x.key === 'van-hanh' && (coVanHanh || !!data?.daBoQua?.length)))
       .map((x) => (x.badge!.n > 0 ? x : { ...x, badge: null }));
@@ -417,7 +417,7 @@ export function HoTroHocVienTab() {
   const moThang = theoDoiChon && chon.group === 'score';
   const khoaPanel = theoDoiChon && !moThang && lamThay !== chon?.key;
   const dangLamThay = theoDoiChon && (moThang ? !!(chon as { lamThay?: boolean }).lamThay : lamThay === chon?.key);
-  const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Bài thi Speaking')
+  const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Speaking chấm chéo')
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
     loai: `${dangLamThay ? t('Làm thay') : theoDoiChon ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,

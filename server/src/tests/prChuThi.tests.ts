@@ -14,6 +14,9 @@ const THU_MUC = ['web/src/modules/test', 'web/src/modules/cham', 'web/src/module
 const MIEN = new Set(['shared/domain/tongKetLoTrinh.ts', 'shared/domain/lichThiOv15f.ts', 'shared/huongDan/tvv.ts', 'shared/huongDan/cx.ts']);
 const CU = /(tuần|phần|dời lịch|đổi lịch|ghi chú lịch|dự|đợt|lượt|bài) thi(?!\p{L})/iu;
 
+/** Chữ chủ SP đã chốt giữ trong `t()`: "Không dự thi" (MT cũ "-", N38 L3 05/11) · "Dời lịch thi" (SOS: dời thi thật hoặc MT — `i18n/en/chuThi.ts`). Chỉ được bớt. */
+const GIU = /không dự thi|dời lịch thi/i;
+
 export async function runPrChuThiTests(t: any) {
   const { checkAsync, assert } = t;
   console.log('\nCHU-THI · Thi = thi thật, Test = làm bài');
@@ -31,6 +34,12 @@ export async function runPrChuThiTests(t: any) {
   await checkAsync('CT-1 · tệp Test không còn chữ "thi" cũ cho Test (Rulebook §21.4)', async () => {
     const ra: any[] = [];
     for (const f of tep) quetFile(path.join(GOC, f), f, 'ct', ra);
+    /* 13/11: `quetFile` bỏ khoá `t('…')` (đã có từ điển) nên chữ trong t() — kể cả lồng ternary `a ? t('x') : t('y')` — lọt phép này: quét thêm tại đây. */
+    const reT = /\bt\(\s*(['"`])((?:\\.|(?!\1)[^\\])*)\1/gu;
+    for (const f of tep) {
+      const src = fs.readFileSync(path.join(GOC, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+      for (const m of src.matchAll(reT)) if (CU.test(m[2]) && !GIU.test(m[2])) ra.push({ file: f, line: src.slice(0, m.index).split('\n').length, text: m[2] });
+    }
     const sot = ra.filter((r) => CU.test(r.text));
     assert(sot.length === 0, `${sot.length} chỗ: ` + sot.slice(0, 8).map((r) => `${r.file}:${r.line} "${r.text.slice(0, 60)}"`).join(' · '));
   });

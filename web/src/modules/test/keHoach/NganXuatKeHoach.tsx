@@ -91,7 +91,7 @@ export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe 
       {loi ? <p role="alert" className="m-0 py-3 text-sm text-bad">{loi}</p> : !kq ? <div className="py-3"><Skeleton rows={4} /></div> : (
         <>
           <Khoi tieuDe={t('Xem trước · sheet “Kế hoạch Test” ({n} / {tong} hàng)', { n: Math.min(4, bang.length - 1), tong: bang.length - 1 })}
-            luat={t('Ô MT1…MT10 là tuần thi (lịch), không phải điểm.')}>
+            luat={t('Ô MT1…MT10 là tuần Test (lịch), không phải điểm.')}>
             {bang.length <= 1 ? <p className="m-0 text-xs text-slate-400">{t('Không có học viên nào — đổi bộ lọc.')}</p> : (
               <div className="overflow-x-auto rounded border" style={{ borderColor: 'var(--line)' }}>
                 <table className="text-xs">
