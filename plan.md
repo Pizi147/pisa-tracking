@@ -316,6 +316,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
 
+**13/11 (chủ SP):** "Chỉ để dán excel cho thêm HV thôi" → Dán Excel CHỈ giữ ở thêm học viên; bỏ hẳn Dán Excel điểm (đường scores/lo + mã còn sót, sửa N9 / N35 cho khớp). Chủ SP cũng giao "Ngoài những thứ đang hoãn, làm hết đi" → session DON-NOT-1311 (G5-06, BD-2, BD-3, khởi động lạnh).
+
 **13/11 (chủ SP):** "Không tính nữa" — MT lịch sử FT (nhập bù) KHÔNG còn tính là "đang chờ điểm" (cờ o_cho_tu: LUOT_HIEN_TAI / LOP_CON_VIEC / Nợ điểm…) → bỏ khỏi cờ, ~−0,8 M dòng/ngày. → TURSO-LOG-1311.
 
 **13/11 (chủ SP gửi ảnh Turso Top Queries "Yesterday", DB pisatracking-261107):** tổng dòng / ngày theo câu: WITH ids(id) AS (VALUES …) 774 lần · 4,78 M · SELECT a.*, (a.kind='mock' … NOT EXISTS …) AS la_mt_moi 970 lần · 4,39 M · lenh_chuyen_lop JOIN classes … boi_canh='cuoi-khoa' (3 biến thể) 371 + 194 + 329 lần · 2,99 + ~1,56 + 2,49 M (8 K dòng / lần) · SELECT sc.*, … FROM sos_cases 641 lần · 2,94 M · case_interventions iv JOIN sos_cases … EXISTS case_milestones attempt_id 40 lần × 38,6 K = 1,5 M. → giao TURSO-LOG-1311 làm theo đúng danh sách này.
