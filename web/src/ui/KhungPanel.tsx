@@ -79,11 +79,19 @@ export const traLaiO = (o: string, v: unknown): void => { traLaiNgoai.set(o, v);
  * Ô GIỮ NHÁP (K12, T15, T16): như `useState`, thêm — trong panel có khoá việc — chữ ghi vào `sessionStorage` theo khoá việc + `o`, mở lại
  * đúng việc thì chữ còn; panel biết còn chữ → ✕ / đổi việc hỏi trước. Lưu thành công thì nơi gọi gọi `useXoaNhap()`. Ngoài panel việc = `useState`.
  */
-export function useNhap<T>(o: string, dau: T): [T, Dispatch<SetStateAction<T>>] {
+export function useNhap<T>(o: string, dau: T): [T, Dispatch<SetStateAction<T>>, (daGui: T) => void] {
   const n = useContext(NhapCuaPanel);
   const [v, setV] = useState<T>(() => (n ? docNhap<T>(khoNhap(), n.viec, o) : undefined) ?? (traLaiNgoai.get(o) as T | undefined) ?? dau);
   const [goc] = useState(() => JSON.stringify(dau));
   const lanDau = useRef(true);
+  /* AUDIT-1454 (N02): máy chủ vừa nhận `daGui` → bỏ nháp trình duyệt của RIÊNG ô này, chỉ khi ô vẫn đúng chữ đã gửi (gõ tiếp trong lúc gửi thì giữ). */
+  const moi = useRef(v);
+  moi.current = v;
+  const daLuu = useCallback((daGui: T) => {
+    if (!n || JSON.stringify(moi.current) !== JSON.stringify(daGui)) return;
+    ghiNhap(khoNhap(), n.viec, o, daGui, true);
+    n.bao(o, false);
+  }, [n, o]);
   useEffect(() => {
     if (!n) return;
     const trong = JSON.stringify(v) === goc;
@@ -92,7 +100,7 @@ export function useNhap<T>(o: string, dau: T): [T, Dispatch<SetStateAction<T>>] 
     n.bao(o, !trong);
   }, [v]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { traLaiNgoai.delete(o); return () => n?.bao(o, false); }, []);   // eslint-disable-line react-hooks/exhaustive-deps -- trả lại dùng một lần · ô gỡ: không còn chữ để hỏi; nháp vẫn trong kho
-  return [v, setV];
+  return [v, setV, daLuu];
 }
 /**
  * Lưu xong: bỏ nháp của việc (mọi ô) — panel thôi coi là "đang sửa" tới khi gõ tiếp. Trả hàm ghi lại nháp đó (HOAN-TAC-XN: Hoàn tác lần lưu → mở lại

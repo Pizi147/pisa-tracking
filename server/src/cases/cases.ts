@@ -4271,7 +4271,7 @@ export const docNhapKetQua = (v: unknown): NhapKetQuaPa | null => {
   try { return JSON.parse(v) as NhapKetQuaPa; } catch { return null; }
 };
 
-const CAU_DA_CHOT = 'Kết quả kỳ này đã được lưu — bản đang mở chưa lưu. Tải lại để xem; cần đổi thì bấm Sửa.';
+const CAU_DA_CHOT = 'Kết quả kỳ này đã được lưu — tải lại để xem, cần đổi thì bấm Sửa';   // không dấu chấm: chân nối ". Chữ đang gõ vẫn giữ."
 const CAU_NHAP_MOI = 'Có bản nháp mới hơn — bản của bạn chưa lưu.';
 const kiemKy = (v: unknown) => { if (v !== undefined && !Number.isInteger(v)) throw badRequest('Kỳ không hợp lệ.'); };
 const kiemCoSo = (v: unknown) => { if (v !== undefined && v !== null && typeof v !== 'string') throw badRequest('Bản gốc của nháp không hợp lệ.'); };
