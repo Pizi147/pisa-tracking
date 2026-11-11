@@ -69,6 +69,7 @@ import { themCotPrOv15f } from './migrate/prOv15f.ts';
 import { themCotPrBoQuaMoc } from './migrate/prBoQuaMoc.ts';
 import { themCotPrHanBaoPh } from './migrate/prHanBaoPh.ts';
 import { themCotPrBaoLaiPh } from './migrate/prBaoLaiPh.ts';
+import { themCotPrPlanSourceVang } from './migrate/prPlanSourceVang.ts';
 import { themCotPrPhoiHopTvv } from './migrate/prPhoiHopTvv.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
@@ -191,6 +192,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* HAN-BAO-PH: han_chon (Báo PH, Meeting CX) + viec_han_lan + viec_bao_ph_lan.khoa — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrHanBaoPh(conn, applied));
     /* CAU-HINH-CASE-SOS (chủ SP 11/11): bảng phiên bản cấu hình + con trỏ pb_loai / pb_moc + trigger tham chiếu — ĐẦU migrate, chỉ thêm (bước sau đọc cột); bảng rỗng = bản gốc. */ buoc(() => migratePrCauHinhCaseSos(conn, applied));
     /* YT-BAO-PH: viec_bao_ph.bao_lai_cua — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
+    /* RÀ 11/11 G1-02: attempt_skills.plan_source_truoc_vang — ĐẦU migrate, chỉ thêm (đường "-" đọc / ghi). */ buoc(() => themCotPrPlanSourceVang(conn, applied));
     /* PHOI-HOP-V2: viec_bao_ph.phoi_hop_id — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
     /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
     /* XM-VIEC-DUNG-HAN b: cột sos_cases.mo_ta_luc (ngày xong Xác nhận / Mô tả Case) — đầu migrate, chỉ thêm, chạy lặp được. */ buoc(() => migratePrNgayXong0711(conn, applied));

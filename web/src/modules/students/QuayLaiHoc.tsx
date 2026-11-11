@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
@@ -31,8 +31,15 @@ export function useQuayLaiHoc(onDone: () => void): { mo: (em: Em) => Promise<voi
   const [mo, setMo] = useState<{ em: Em; tt: ThongTin } | null>(null);
   const xong = () => { setMo(null); lamMoi(); onDone(); };
 
-  const batDau = async (em: Em) => {
-    if (dangMo) return;
+  /* Rà 11/11 G4-20: chặn bằng ref (state `dangMo` cũ trong lần gọi thứ hai cùng lúc — StrictMode / re-mount gọi effect hai lần → POST hai lần, toast đỏ). */
+  const dangGoi = useRef<Promise<void> | null>(null);
+  const batDau = (em: Em): Promise<void> => {
+    if (dangGoi.current) return dangGoi.current;   // lần gọi thứ hai chờ đúng lần đầu (nơi gọi `.then` vẫn đúng lúc)
+    if (dangMo) return Promise.resolve();
+    dangGoi.current = goi(em).finally(() => { dangGoi.current = null; });
+    return dangGoi.current;
+  };
+  const goi = async (em: Em) => {
     setDangMo(em.id);
     try {
       const tt = await api.get<ThongTin>(`/students/${em.id}/quay-lai`);

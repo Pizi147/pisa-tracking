@@ -222,7 +222,7 @@ function applyMove(
   conn
     .prepare(
       `UPDATE attempt_skills
-          SET planned_period_id = ?, plan_source = 'manual', sit_status = 'scheduled',
+          SET planned_period_id = ?, plan_source_truoc_vang = plan_source, plan_source = 'manual', sit_status = 'scheduled',
               sit_note = NULL, absent_from_no_show = 0, huy_vang = 0, absence_move_count = ?, updated_at = ?
         WHERE id = ?`,
     )
@@ -719,7 +719,9 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
       conn.prepare('UPDATE attempt_skills SET absence_move_count = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?').run(lan, nowIso(), row.id);
     } else {
       conn.prepare(
+        /* G1-02: trả cả nguồn lịch như trước lần "-" (`plan_source_truoc_vang`, NULL = giữ) — đổi mốc lớp dời được lại kỹ năng `auto`. */
         `UPDATE attempt_skills SET planned_period_id = ?, sit_status = 'scheduled', sit_note = NULL, absent_from_no_show = 0, huy_vang = 0,
+                plan_source = COALESCE(plan_source_truoc_vang, plan_source), plan_source_truoc_vang = NULL,
                 absence_move_count = ?, updated_at = ? WHERE id = ?`,
       ).run(dau.no_show_period_id, lan, nowIso(), row.id);
     }

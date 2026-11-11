@@ -339,6 +339,23 @@ export async function runPrBvTests(t: YThucTestKit) {
     assert(dau(a.m1, 'listening').band === 6.5, 'nhập điểm');
   });
 
+  /* Rà 11/11 G1-02: lần "-" dời kỹ năng đặt `manual`; Bỏ vắng / Hoàn tác phải trả lại nguồn cũ (`auto`) — không thì đổi mốc lớp bỏ sót kỹ năng. */
+  check('BV V1b (G1-02) · kỹ năng auto → "-" (tự dời, manual) → xoá "-" → về tuần gốc VÀ plan_source auto; lớp thường cũng vậy', () => {
+    const a = emMoi([-1, 4, 8]);
+    conn.prepare(`UPDATE attempt_skills SET plan_source = 'auto' WHERE attempt_id = ? AND skill = 'listening'`).run(a.m1);
+    goVao(QL, a.m1, 'listening', thu4(-1));
+    assert(kyNang(a.m1, 'listening').plan_source === 'manual', 'tự dời phải là manual');
+    go(QL, a.m1, 'listening');
+    const k = kyNang(a.m1, 'listening');
+    assert(k.planned_period_id === tuan(-1).id && k.plan_source === 'auto' && k.plan_source_truoc_vang === null, JSON.stringify(k));
+    const b = baiThuong(0);
+    conn.prepare(`UPDATE attempt_skills SET plan_source = 'auto' WHERE attempt_id = ? AND skill = 'listening'`).run(b.aid);
+    regular.reportRegularNoShow(P.admin, b.aid, 'listening', true);
+    regular.reportRegularNoShow(P.admin, b.aid, 'listening', false);
+    const kt = kyNang(b.aid, 'listening');
+    assert(kt.planned_period_id === tuan(0).id && kt.plan_source === 'auto', `lớp thường: ${JSON.stringify(kt)}`);
+  });
+
   check('BV V2 · sau V1 gõ "-" lại → vẫn vắng lần 1 (tự dời), không "huỷ vắng 2 lần"', () => {
     const a = vangL(-1);
     go(QL, a.m1, 'listening');

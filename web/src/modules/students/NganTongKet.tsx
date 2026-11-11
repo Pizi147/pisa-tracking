@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -174,6 +174,8 @@ function MucBuocTiep({ bt, onMo }: { bt: NonNullable<TongKet['buocTiep']>; onMo:
 export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onClose: () => void; onDoi?: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const { data, loading, error, reload } = useApi<TongKet>(`/lo-trinh/${cycleId}/tong-ket`, [cycleId]);
+  /* Rà 11/11 G4-11: Hoàn tác Bước tiếp / Lộ trình mới mở lại lộ trình → không còn Tổng kết (404 "Lộ trình chưa kết thúc") — đóng ngăn (bỏ `tong-ket=` ở nơi gọi), như HL-17. */
+  useEffect(() => { if (error?.status === 404) onClose(); }, [error?.status]);   // eslint-disable-line react-hooks/exhaustive-deps -- chỉ theo mã lỗi
   /* OV-11d (HV-9): Nhập kết quả / Học tiếp / Học lại THAY nội dung ngăn (dòng "← Tổng kết", như `NganCase`) — không panel chồng. */
   const [view, setView] = useState<{ loai: 'nhap' } | { loai: 'buoc-tiep' } | null>(null);
   const chuongTrinh = data ? (data.loai === 'ft' ? 'Fast Track' : dich(data.ten)) : null;

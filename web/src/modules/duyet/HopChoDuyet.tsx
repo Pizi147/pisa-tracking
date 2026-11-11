@@ -166,7 +166,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
       toast.push('error', e instanceof ApiError ? e.message : t('Mất kết nối, chưa huỷ được. Kiểm tra mạng rồi bấm lại.'));
     }
   };
-  /* Nút "Duyệt" trơn của dòng: quyết ngay tại dòng như thẻ cũ (Hoàn tác 5 s ở loại cho huỷ). */
+  /* Nút "Duyệt" trơn của dòng: quyết ngay tại dòng như thẻ cũ (Hoàn tác ở dải tại chỗ thẻ, loại cho huỷ). */
   const duyetNgay = async (y: TheYeuCauDto) => {
     if (dangGui) return;
     setDangGui(y.id);
@@ -174,8 +174,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
       const kq = await api.post<{ coTheHuy?: boolean }>(`/yeu-cau/${y.id}/duyet`, {});
       lamMoi();
       const chu = t('Đã duyệt: {tieuDe}', { tieuDe: y.tieuDe });
-      if (kq?.coTheHuy) toast.hoanTac(chu, () => { void huyQd(y.id); }, { key: `yc-${y.id}` });
-      else toast.push('ok', chu);
+      /* Rà 11/11 G2-13: MỘT Hoàn tác — dải "✓ Đã duyệt … Hoàn tác" tại chỗ thẻ (`giuCho`, theo cờ `kq?.coTheHuy`), không thêm toast trùng. */
       giuCho(y, chu, !!kq?.coTheHuy);
     } catch (e: any) {
       /* Chủ SP 07/11 (mục 7): thẻ đã xử lý / chết — báo trung tính, danh sách làm mới (`xong`). */

@@ -697,6 +697,8 @@ CREATE TABLE attempt_skills (
   absent_from_no_show INTEGER NOT NULL DEFAULT 0,
   -- PR-MTa (T3): 1 = phần thi huỷ vì VẮNG LẦN 2 (sit_status = 'cancelled'). GVCN "Xin dời" / Quản lý "Không mock lại".
   huy_vang INTEGER NOT NULL DEFAULT 0,
+  -- Rà 11/11 G1-02: `plan_source` ngay trước lần "-" dời kỹ năng — Bỏ vắng / Hoàn tác trả lại đúng nguồn. NULL = chưa nhớ (giữ nguồn hiện tại).
+  plan_source_truoc_vang TEXT,
   -- P8 (N13): Writing chỉ học một task → task bỏ ('writing1' | 'writing2'); Writing = task đã học. NULL = đủ hai task.
   bo_task TEXT,
 

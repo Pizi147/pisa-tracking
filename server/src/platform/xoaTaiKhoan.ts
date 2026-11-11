@@ -1,9 +1,9 @@
 /**
  * QUẢN TRỊ HỆ THỐNG › TÀI KHOẢN › ⋯ › XOÁ TÀI KHOẢN (PR-XOA, đặc tả 2026-09-24 §3) — CHỈ Quản trị hệ thống, kiểm ở MÁY CHỦ.
  *
- *   Chưa có DẤU VẾT  → xoá HẲN: dòng `users` cùng 9 bảng thiết lập (vai, quyền riêng, email phụ, kỹ năng, tuỳ chọn, phiên, phân công,
- *                      thông báo tới người đó, theo dõi công việc).
- *   Có dấu vết       → xoá MỀM (Q11): khoá và ẩn — `status='deleted'`, `deleted_at`, tên thêm " (đã xoá)" (lịch sử mọi nơi tự ghi kèm),
+ *   Rà 11/11 G5-10 (luật "không khoá cứng, luôn khôi phục được"): MỌI lần xoá là xoá MỀM — khôi phục ở Tài khoản › Đã xoá, web có Hoàn tác.
+ *   Chưa có DẤU VẾT không cần gõ lại email / họ tên (không hậu quả lớn); có dấu vết vẫn gõ lại. (Trước: chưa có dấu vết → xoá HẲN.)
+ *   Xoá MỀM (Q11): khoá và ẩn — `status='deleted'`, `deleted_at`, tên thêm " (đã xoá)" (lịch sử mọi nơi tự ghi kèm),
  *                      email giải phóng `da-xoa-{id}@invalid` (tạo lại được tài khoản cùng email), bỏ mật khẩu + mọi phiên, kết thúc vai và
  *                      phân công. Các ô chọn người đã lọc `status='active'` nên người đã xoá tự ẩn (Q13).
  *
@@ -100,7 +100,6 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
 ];
 
 const COT_DAU_VET = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'dau_vet');
-const COT_THIET_LAP = COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap');
 /**
  * Câu đếm mọi cột dấu vết (tham số ?1), CHIA NHÓM ≤ 20 vế UNION ALL (PR-XOA-b): Turso từ chối câu gộp quá ~50 vế ("too many terms
  * in compound SELECT", đo trên DB thử 24/09: 50 được, 64 hỏng) — file cục bộ cho tới 500 nên phép kiểm không thấy.
@@ -118,7 +117,7 @@ export type XemXoaTaiKhoan = {
   soDauVet: number;
   /** Gộp theo nhãn, chỉ nhãn > 0, giảm dần. */
   chiTiet: { nhan: string; so: number }[];
-  cach: 'han' | 'mem'; chan: string | null; canhBao: string[]; goLai: 'email' | 'ho-ten';
+  cach: 'mem'; chan: string | null; canhBao: string[]; goLai: 'email' | 'ho-ten' | null;
 };
 
 type Nguoi = {
@@ -209,21 +208,18 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
     vai: u.vai ? u.vai.split(',') : [], chiNhanh: u.chi_nhanh ? u.chi_nhanh.split(',') : [],
     soDauVet: dv.tong,
     chiTiet: [...gop].map(([nhan, so]) => ({ nhan, so })).sort((a, b) => b.so - a.so),
-    cach: dv.tong > 0 ? 'mem' : 'han', chan: lyDoChan(p, u), canhBao,
-    /** RKC-6: chữ gõ lại để xác nhận — `email` hoặc `ho-ten` (chưa có email). */
-    goLai: u.email ? 'email' : 'ho-ten',
+    cach: 'mem' as const, chan: lyDoChan(p, u), canhBao,
+    /** RKC-6: chữ gõ lại để xác nhận — `email` hoặc `ho-ten` (chưa có email); G5-10: chưa có dấu vết → không gõ (`null`). */
+    goLai: dv.tong === 0 ? null : u.email ? 'email' : 'ho-ten',
   };
 }
 
-/** POST /admin/accounts/:id/xoa { emailXacNhan } — xoá hẳn hoặc xoá mềm, trong MỘT giao dịch. */
-export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?: unknown }): { ok: true; cach: 'han' | 'mem' } {
+/** POST /admin/accounts/:id/xoa { emailXacNhan } — xoá mềm (G5-10), trong MỘT giao dịch; có dấu vết thì phải gõ lại email / họ tên. */
+export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?: unknown }): { ok: true; cach: 'mem' } {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
   const homNay = demoToday();
   const u = docNguoi(userId, homNay);
   if (u.status === 'deleted') throw badRequest(DA_XOA);
-  if (String(input.emailXacNhan ?? '').trim().toLowerCase() !== chuXacNhan(u).trim().toLowerCase()) {
-    throw badRequest(u.email ? 'Gõ lại đúng email để xác nhận xoá.' : 'Gõ lại đúng họ tên để xác nhận xoá.');
-  }
   const chan = lyDoChan(p, u);
   if (chan) throw badRequest(chan);
   if (lopGvcnCua(u)) canXacNhan('Người này đang là GVCN lớp {ds} — vẫn xoá? Lớp sẽ thiếu GVCN.', { ds: lopGvcnCua(u)! }, 'Vẫn xoá');
@@ -231,26 +227,24 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
     const conn = db();
     /* Tính lại TRONG giao dịch: hai Quản trị bấm cùng lúc, hoặc người này vừa ghi gì đó. */
     const soDauVet = demDauVet(userId).tong;
-    const cach: 'han' | 'mem' = soDauVet > 0 ? 'mem' : 'han';
-    let roleIds: number[] = [];
-    if (cach === 'han') {
-      for (const x of COT_THIET_LAP) conn.prepare(`DELETE FROM ${x.bang} WHERE ${x.cot} = ?1`).run(userId);
-      conn.prepare('DELETE FROM users WHERE id = ?1').run(userId);
-    } else {
-      conn.prepare(
-        `UPDATE users SET status = 'deleted', deleted_at = ?2, full_name = full_name || ' (đã xoá)',
-                          email = 'da-xoa-' || id || '@invalid', password_hash = NULL, password_salt = NULL
-          WHERE id = ?1`,
-      ).run(userId, nowIso());
-      for (const bang of ['demo_sessions', 'user_emails', 'user_permissions', 'user_prefs', 'task_followers', 'notifications']) {
-        conn.prepare(`DELETE FROM ${bang} WHERE user_id = ?1`).run(userId);
-      }
-      /* `user_roles` không có effective_to — đóng như setRoles (Q11). RKC-6: nhớ đúng các dòng vai vừa đóng (nhật ký) để Khôi phục trả lại. */
-      roleIds = (conn.prepare(`SELECT id FROM user_roles WHERE user_id = ?1 AND status = 'active'`).all(userId) as any[]).map((r) => r.id as number);
-      conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?1 AND status = 'active'`).run(userId);
-      conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ?2 WHERE user_id = ?1 AND status = 'active'`)
-        .run(userId, homNay);
+    /* G5-10: có dấu vết mới phải gõ lại — kiểm trong giao dịch (một lần đếm dấu vết), trước mọi lệnh ghi. */
+    if (soDauVet > 0 && String(input.emailXacNhan ?? '').trim().toLowerCase() !== chuXacNhan(u).trim().toLowerCase()) {
+      throw badRequest(u.email ? 'Gõ lại đúng email để xác nhận xoá.' : 'Gõ lại đúng họ tên để xác nhận xoá.');
     }
+    const cach = 'mem' as const;   // G5-10: luôn xoá mềm (khôi phục được)
+    conn.prepare(
+      `UPDATE users SET status = 'deleted', deleted_at = ?2, full_name = full_name || ' (đã xoá)',
+                        email = 'da-xoa-' || id || '@invalid', password_hash = NULL, password_salt = NULL
+        WHERE id = ?1`,
+    ).run(userId, nowIso());
+    for (const bang of ['demo_sessions', 'user_emails', 'user_permissions', 'user_prefs', 'task_followers', 'notifications']) {
+      conn.prepare(`DELETE FROM ${bang} WHERE user_id = ?1`).run(userId);
+    }
+    /* `user_roles` không có effective_to — đóng như setRoles (Q11). RKC-6: nhớ đúng các dòng vai vừa đóng (nhật ký) để Khôi phục trả lại. */
+    const roleIds = (conn.prepare(`SELECT id FROM user_roles WHERE user_id = ?1 AND status = 'active'`).all(userId) as any[]).map((r) => r.id as number);
+    conn.prepare(`UPDATE user_roles SET status = 'ended' WHERE user_id = ?1 AND status = 'active'`).run(userId);
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ?2 WHERE user_id = ?1 AND status = 'active'`)
+      .run(userId, homNay);
     writeAudit({
       actorUserId: p.userId, action: 'user.delete', entityType: 'users', entityId: userId, entityLabel: u.full_name,
       before: { email: u.email, vai: u.vai ? u.vai.split(',') : [], roleIds }, after: { cach, soDauVet },

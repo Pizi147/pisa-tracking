@@ -937,6 +937,8 @@ export function reportRegularNoShow(
            VALUES (?,?,?,?,?,0)`,
         ).run(attemptId, skill, cu.id, p.userId, nowIso());
       }
+      /* G1-02: nhớ nguồn lịch ngay trước lần dời này — gỡ "-" trả lại đúng (setSkillWeek đặt `manual`; lần "-" thứ hai nhớ `manual` của lần dời đầu). */
+      conn.prepare('UPDATE attempt_skills SET plan_source_truoc_vang = plan_source WHERE id = ?').run(row.id);
       /* Dời bằng ĐÚNG hàm dời lịch chung — `force` chỉ vượt được cảnh báo, không bao giờ vượt được chặn. */
       setSkillWeek(p, attemptId, skill, moi.id, {
         reason: lyDo !== undefined ? (lyDo.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng') : `Báo "-": em không làm bài tuần ${tuanLich(cu.weekStart, today)} — môn này dời sang tuần sau (C08).`,
@@ -982,6 +984,8 @@ export function reportRegularNoShow(
       setSkillWeek(p, attemptId, skill, existing.no_show_period_id, {
         reason: 'Gỡ dấu "-": trả lịch về tuần cũ.', force: true, today, ghiBuDau: true,
       });
+      conn.prepare(`UPDATE attempt_skills SET plan_source = COALESCE(plan_source_truoc_vang, plan_source), plan_source_truoc_vang = NULL
+        WHERE attempt_id = ? AND skill = ?`).run(attemptId, skill);
     }
     conn.prepare(
       `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL,

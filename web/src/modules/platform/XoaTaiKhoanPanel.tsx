@@ -11,15 +11,15 @@ import { dich, t } from '@shared/i18n/index.ts';
 export type XemXoaTaiKhoan = {
   id: number; ten: string; email: string | null; vai: string[]; chiNhanh: string[];
   soDauVet: number; chiTiet: { nhan: string; so: number }[];
-  cach: 'han' | 'mem'; chan: string | null; canhBao: string[];
-  /** RKC-6: chưa có email → gõ lại họ tên để xác nhận. */
-  goLai?: 'email' | 'ho-ten';
+  cach: 'mem'; chan: string | null; canhBao: string[];
+  /** RKC-6: chưa có email → gõ lại họ tên để xác nhận. G5-10: chưa có dấu vết → `null`, không gõ. */
+  goLai?: 'email' | 'ho-ten' | null;
 };
 
 /**
- * QUẢN TRỊ HỆ THỐNG › TÀI KHOẢN › ⋯ › XOÁ TÀI KHOẢN (PR-XOA, đặc tả §3). Panel nói trước cách xoá: CÓ DẤU VẾT → khoá và ẩn, lịch sử giữ tên
- * kèm "(đã xoá)"; CHƯA CÓ → xoá hẳn. Bị chặn (tự xoá, QT cuối, đang là GVCN, chưa có email) thì nói lý do + bước tiếp và tắt nút. Gõ lại đúng email (không phân biệt
- * hoa thường) mới bật nút đỏ; máy chủ kiểm lại tất cả.
+ * QUẢN TRỊ HỆ THỐNG › TÀI KHOẢN › ⋯ › XOÁ TÀI KHOẢN (PR-XOA, đặc tả §3). Rà 11/11 G5-10: luôn khoá và ẩn (xoá mềm), khôi phục ở Đã xoá + Hoàn tác
+ * ngay sau xoá. Bị chặn (tự xoá, QT cuối, đang là GVCN) thì nói lý do + bước tiếp và tắt nút. Có dấu vết: gõ lại đúng email (không phân biệt hoa thường)
+ * mới bật nút đỏ; chưa có dấu vết: bấm thẳng. Máy chủ kiểm lại tất cả.
  */
 export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; onClose: () => void; onDone: () => void }) {
   const toast = useToast();
@@ -29,7 +29,8 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
   const d = xem.data;
   const chuGoLai = d ? (d.goLai === 'ho-ten' || !d.email ? d.ten : d.email) : '';   // RKC-6: chưa có email → họ tên
   const nhanGoLai = d && (d.goLai === 'ho-ten' || !d.email) ? t('Gõ lại họ tên') : t('Gõ lại email');
-  const khop = !!chuGoLai && go.trim().toLowerCase() === chuGoLai.trim().toLowerCase();
+  const canGo = !!d && d.goLai !== null;
+  const khop = !canGo || (!!chuGoLai && go.trim().toLowerCase() === chuGoLai.trim().toLowerCase());
   /* Nút Xoá chỉ sáng khi gõ khớp; rời ô mà còn lệch thì nói ngay dưới ô (YC-12.5.2). */
   const lf = useLoiForm();
   const loi = go.trim() && !khop ? [{ khoa: 'go-lai', nhan: nhanGoLai, lyDo: d?.email ? t('Chưa khớp email') : t('Chưa khớp họ tên') }] : [];
@@ -39,8 +40,13 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
     setBusy(true);
     try {
       await api.post(`/admin/accounts/${userId}/xoa`, { emailXacNhan: go.trim() });
-      invalidate('/admin/accounts'); invalidate('/demo/accounts');
-      toast.push('ok', t('Đã xoá tài khoản {ten}', { ten: d.ten }));
+      const lamMoi = () => { invalidate('/admin/accounts'); invalidate('/demo/accounts'); };
+      lamMoi();
+      /* G5-10: Hoàn tác = Khôi phục (Đã xoá) — mật khẩu đặt lại như mọi lần khôi phục. */
+      toast.hoanTac(t('Đã xoá tài khoản {ten}', { ten: d.ten }), async () => {
+        try { await api.post(`/admin/accounts/${userId}/khoi-phuc`); } catch (e: any) { toast.push('error', e.message); return; }
+        lamMoi(); toast.push('ok', t('Đã khôi phục tài khoản {ten} — đặt lại mật khẩu để đăng nhập', { ten: d.ten }));
+      }, { key: `xoa-tk:${userId}` });
       onDone();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -63,7 +69,7 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
             <Khoi tieuDe={t('Cách xoá')}>
               {d.chan ? (
                 <p className="m-0 text-sm text-late">{d.chan}</p>
-              ) : d.cach === 'mem' ? (
+              ) : d.soDauVet > 0 ? (
                 <>
                   <p className="m-0 text-sm text-slate-200">
                     {t('Có dấu vết ({n} dòng) → tài khoản bị khoá và ẩn, lịch sử giữ tên kèm (đã xoá)', { n: d.soDauVet })}
@@ -80,11 +86,11 @@ export function XoaTaiKhoanPanel({ userId, onClose, onDone }: { userId: number; 
                   </table>
                 </>
               ) : (
-                <p className="m-0 text-sm text-slate-200">{t('Chưa có dấu vết → xoá hẳn')}</p>
+                <p className="m-0 text-sm text-slate-200">{t('Chưa có dấu vết → tài khoản bị khoá và ẩn, khôi phục được ở Đã xoá')}</p>
               )}
               {d.canhBao.map((c) => <p key={c} className="m-0 text-xs text-soon">{c}</p>)}
             </Khoi>
-            {!d.chan && (
+            {!d.chan && canGo && (
               <Khoi tieuDe={t('Xác nhận')}>
                 <p className="m-0 text-xs text-slate-400">{t('Nên sao lưu dữ liệu trước lần xoá đầu.')}</p>
                 <Truong nhan={nhanGoLai} batBuoc phu={d.email ? `Email: ${d.email}` : `${t('Họ tên')}: ${d.ten}`} loi={lf.loiCua(loi, 'go-lai')}>
