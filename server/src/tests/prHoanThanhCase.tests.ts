@@ -56,4 +56,11 @@ export async function runPrHoanThanhCaseTests(t: YThucTestKit) {
   check('HTC-3 · dòng Case (G2-04): mọi PA đã khép, Case chưa xong → "n PA xong · chờ Hoàn thành" ở hồ sơ HV + hồ sơ lượt Mock (không "Chưa có PA")', () => {
     assert(/\{n\} PA xong · chờ Hoàn thành/.test(web('students/CotCaseHv.tsx')) && /\{n\} PA xong · chờ Hoàn thành/.test(web('fasttrack/MockDetailPage.tsx')), 'chữ mới');
   });
+  check('HTC-4 · rà 11/11 (việc để sau #3): "Kết thúc sớm…" PA quy chế có ô "Hoàn thành Case" khi là PA cuối; mức chọn, kết luận điền sẵn lý do; Hoàn tác mở lại Case rồi mở lại PA', () => {
+    const p = web('cases/CasePanel.tsx');
+    assert(/<KetThucSom iv=\{iv\} hoanThanhCase=\{paCuoiHoanThanh\(data, iv\.id\)/.test(p), 'CasePanel truyền PA cuối cho Kết thúc sớm');
+    const k = p.slice(p.indexOf('function KetThucSom('), p.indexOf('/** Mockup `.ket`'));
+    assert(/\{t\('Hoàn thành Case'\)\}/.test(k) && /const noteHt = htNote \?\? lyDo/.test(k), 'ô tick + kết luận = lý do');
+    assert(k.indexOf('/ket-thuc`') < k.indexOf('/outcome`') && k.indexOf('/mo-lai`') < k.indexOf('/hoan-tac-ket-thuc`'), 'thứ tự gọi: kết thúc PA → hoàn thành; Hoàn tác: mở lại Case → mở lại PA');
+  });
 }

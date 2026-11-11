@@ -7,7 +7,7 @@ import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Outcome } from '../../ui/ui.tsx';
+import { NutChon, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -17,7 +17,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
-  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, CHU_TOI_THIEU_CASE, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, CHU_TOI_THIEU_CASE, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
   chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
   tenMon, thanSuaPa, toiKyGhi, tuanLich,
   type GiaTriPa, type TrangThai,
@@ -124,7 +124,7 @@ export type CaseDetail = {
     /** OV-13a (C): ⋯ "Kết thúc PA" cho PA theo quy chế đang chạy — GVCN lớp đang học · Quản lý. */
     coTheKetThucPa?: boolean;
     /** CASE-PA-UI (XM1): thẻ xin xoá Case đang chờ — người gửi Rút lại, QL duyệt tại chỗ. */
-    theXoa?: TheYeuCauDto | null };
+    theXoa?: TheYeuCauDto | null; tuChoiXoa?: { lyDo: string | null; luc: string | null } | null };
 };
 
 /** Nội dung của ngăn Case: một `KhungPanel` đổi nội dung theo view, không chồng panel. */
@@ -219,6 +219,9 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   const [hoanThanh, setHoanThanh] = useState(dichMo?.loai === 'hoan-thanh');
   const [ktd, setKtd] = useState(false);   // RKC-2c ④: "Không cần theo dõi…" khi Case SOS đã có PA chạy (máy chủ hỏi nêu PA sẽ dừng)
   const dichPa = dichMo && 'paId' in dichMo ? dichMo.paId : null;
+  /* Thẻ PA tự mở form Xác nhận khi `mo` + PA chờ xác nhận (ThePa `formHien`) — cùng điều kiện, đọc dữ liệu đã nạp. */
+  const formXacNhanMo = Object.values(form).includes('xac-nhan') || (!!data.viewer.canEdit && !!data.sos?.hasCause && data.status !== 'done'
+    && (data.interventions ?? []).some((iv: any) => iv.awaitingConfirmation && mo[iv.id] && !form[iv.id]));
   const tenFormMo = themPa ? t('PA mới') : hoanThanh ? t('Hoàn thành Case')
     : (() => { const k = Object.entries(form).find(([, f]) => f); return k ? tenForm(k[1]!) : null; })();
   useEffect(() => { bao?.formMo(tenFormMo); }, [tenFormMo]);   // eslint-disable-line react-hooks/exhaustive-deps
@@ -375,7 +378,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
             {paBatBuoc && <button type="button" className="link-nho mt-1.5" onClick={() => toiPa(paBatBuoc.id)}>{t('Tới PA {ten} ↑', { ten: dich(INTERVENTION_KIND_LABEL[paBatBuoc.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? paBatBuoc.kind) })}</button>}
           </>} />
         ) : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setHoanThanh(true)}>{t('Hoàn thành Case')}</button>}
-        {data.sos?.fromSos && !data.sos?.choDuyetKhongTheoDoi && !ktd && (
+        {/* G2-10: form Xác nhận PA đang mở đã có "Không cần theo dõi…" — không hiện nút thứ hai cùng việc. */}
+        {data.sos?.fromSos && !data.sos?.choDuyetKhongTheoDoi && !ktd && !formXacNhanMo && (
           <button type="button" className="link-nho min-h-[44px] sm:min-h-0" onClick={() => setKtd(true)}>{t('Không cần theo dõi…')}</button>
         )}
       </div>
@@ -639,6 +643,10 @@ function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number
   return (
     <div className="cuoi-case">
       {!hoi && <NutXoa busy={busy} onClick={() => (vw.xoa === 'ngay' && pas.length > 0 ? setHoi(true) : void gui())}>{vw.xoa === 'xin' ? t('Đề nghị QL xoá Case') : t('Xoá Case')}</NutXoa>}
+      {/* G2-14: lý do chặn đặt tại nút — QL đã từ chối lần xin trước. */}
+      {!hoi && vw.xoa === 'xin' && vw.tuChoiXoa && (
+        <span className="text-[13px] text-slate-400">{vw.tuChoiXoa.lyDo ? t('QL từ chối xoá · {lyDo}', { lyDo: vw.tuChoiXoa.lyDo }) : t('QL từ chối xoá')}</span>
+      )}
       {hoi && (
         <div className="hoi-xoa" role="alertdialog" aria-label={t('Xoá Case')}>
           <span>{t('Xoá Case')} <b>{tenCase}</b> {t('và')} <b>{t('{n} PA', { n: pas.length })}</b> ({pas.map((x: any) => dichDu(x.description) || dich(INTERVENTION_KIND_LABEL[x.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? x.kind)).join(', ')})? {t('Vào Thùng rác, khôi phục được.')}</span>
@@ -807,7 +815,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
               batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
               laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho', choXacNhan: !!iv.awaitingConfirmation,
             }} />
-        ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
+        ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
         : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}
     </KhungTrongThe.Provider>
   );
@@ -943,26 +951,47 @@ function paCuoiHoanThanh(data: CaseDetail, paId: number): boolean {
   return !(data.interventions ?? []).some((x: any) => x.id !== paId && (x.status === 'planned' || x.status === 'started'));
 }
 
-/** "Kết thúc sớm…" (v16 j3, OV-13a C): lý do ≥ 10 ngay trong thẻ → Kết thúc PA · toast Hoàn tác 5 giây (như cũ) + "Mở lại PA" về sau. */
-function KetThucSom({ iv, onThoi, onXong }: { iv: any; onThoi: () => void; onXong: () => void }) {
+/**
+ * "Kết thúc sớm…" (v16 j3, OV-13a C): lý do ≥ 10 ngay trong thẻ → Kết thúc PA · toast Hoàn tác (như cũ) + "Mở lại PA" về sau.
+ * Rà 11/11 (việc để sau của #3): PA quy chế là PA cuối còn chạy và người xem hoàn thành được Case → ô "Hoàn thành Case" như form Kết thúc PA
+ * (mức chọn — kết thúc sớm không có Tiến triển để gợi; kết luận điền sẵn lý do, sửa được). Hoàn tác đảo cả hai bước.
+ */
+function KetThucSom({ iv, hoanThanhCase, onThoi, onXong }: { iv: any; hoanThanhCase?: { caseId: number } | null; onThoi: () => void; onXong: () => void }) {
   const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
   const [lyDo, setLyDo] = useState('');
   const [thu, setThu] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [htCase, setHtCase] = useState(false);
+  const [htMuc, setHtMuc] = useState<string>('');
+  const [htNote, setHtNote] = useState<string | null>(null);
   const ngan = lyDo.trim().length < LY_DO_KET_THUC_PA_TOI_THIEU;
+  const coHt = !!hoanThanhCase && htCase;
+  const noteHt = htNote ?? lyDo;
+  const loiMuc = coHt && !htMuc ? t('Chọn mức') : null;
+  const loiKetLuan = coHt && noteHt.trim().length < CHU_TOI_THIEU_CASE ? t('Ít nhất {n} ký tự', { n: CHU_TOI_THIEU_CASE }) : null;
   useBaoDangSua(!!lyDo.trim());
   const key = `ket-thuc-pa-${iv.id}`;
   const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan'); };
   const ketThuc = async () => {
     setThu(true);
-    if (ngan) return;
+    if (ngan || loiMuc || loiKetLuan) return;
     setBusy(true);
     try {
       await api.post(`/interventions/${iv.id}/ket-thuc`, { lyDo: lyDo.trim() });
+      /* PA đã kết thúc → hoàn thành Case cùng lần bấm. Lỗi bước này không mất bước trước: nói rõ "chưa hoàn thành Case" (nút Hoàn thành Case vẫn ở Case). */
+      let daHt = false;
+      if (coHt && hoanThanhCase) {
+        try { await api.post(`/cases/${hoanThanhCase.caseId}/outcome`, { outcome: htMuc, note: noteHt.trim(), closedOn: homNay || undefined }); daHt = true; }
+        catch (e: any) { toast.push('error', t('Đã kết thúc PA · chưa hoàn thành Case: {loi}', { loi: e?.message ?? t('Không lưu được') })); }
+      }
       lamMoi();
-      toast.hoanTac(t('Đã kết thúc PA'), () => {
-        api.post(`/interventions/${iv.id}/hoan-tac-ket-thuc`).then(() => { lamMoi(); toast.push('ok', t('Đã mở lại PA'), { key }); },
-          (e: any) => toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }));
+      toast.hoanTac(daHt ? t('Đã kết thúc PA · đã hoàn thành Case') : t('Đã kết thúc PA'), async () => {
+        try {
+          if (daHt && hoanThanhCase) await api.post(`/cases/${hoanThanhCase.caseId}/mo-lai`);
+          await api.post(`/interventions/${iv.id}/hoan-tac-ket-thuc`);
+          lamMoi(); toast.push('ok', t('Đã mở lại PA'), { key });
+        } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.'), { key }); }
       }, { key });
       onXong();
     } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); } finally { setBusy(false); }   // lỗi: giữ chữ đang gõ
@@ -973,6 +1002,28 @@ function KetThucSom({ iv, onThoi, onXong }: { iv: any; onThoi: () => void; onXon
       <Truong nhan={t('Lý do')} batBuoc loi={thu && ngan ? t('Ít nhất {n} ký tự', { n: LY_DO_KET_THUC_PA_TOI_THIEU }) : null}>
         <textarea className="field w-full" rows={2} maxLength={500} value={lyDo} onChange={(e) => setLyDo(e.target.value)} autoFocus />
       </Truong>
+      {hoanThanhCase && (
+        <div className="flex flex-col gap-2.5">
+          <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-200 sm:min-h-0">
+            <input type="checkbox" className="h-4 w-4" checked={htCase} disabled={busy} onChange={(e) => setHtCase(e.target.checked)} />
+            {t('Hoàn thành Case')}
+          </label>
+          {htCase && (
+            <div className="ml-1 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
+              <Truong nhan={t('Sau cả đợt hỗ trợ, em tiến bộ đến đâu?')} batBuoc as="div" loi={thu ? loiMuc : null}>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4" role="group">
+                  {CASE_OUTCOMES.map((x) => (
+                    <NutChon key={x} nho chon={htMuc === x} className="justify-center" onClick={() => setHtMuc(x)}>{CASE_OUTCOME_LABEL[x]}</NutChon>
+                  ))}
+                </div>
+              </Truong>
+              <Truong nhan={t('Kết luận')} batBuoc loi={thu ? loiKetLuan : null} dem={{ co: noteHt.trim().length, can: CHU_TOI_THIEU_CASE }}>
+                <textarea className="field w-full" rows={2} maxLength={500} value={noteHt} readOnly={busy} onChange={(e) => setHtNote(e.target.value)} />
+              </Truong>
+            </div>
+          )}
+        </div>
+      )}
       <div className="flex flex-wrap justify-end gap-2">
         <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={onThoi}>{t('Đóng')}</button>
         <button type="button" className="btn nut-do min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void ketThuc()}>{busy ? t('Đang lưu…') : t('Kết thúc PA')}</button>

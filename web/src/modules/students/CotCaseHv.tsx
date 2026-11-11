@@ -121,14 +121,14 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
       {!dangMo.length && vuaXoa.length > 0 && <div>{vuaXoa.map(daiXoa)}</div>}
       {!dangMo.length && !daDongDs.length ? (
         <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 text-[14px] text-slate-400">
-          {t('Không có Case {kn}.', { kn: tenKn })}
+          {mot ? t('Không có Case {kn}.', { kn: tenKn }) : t('Không có Case.')}
           {mot && onReport && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onReport(mot.category)}>{t('+ Case cho {label}', { label: dich(mot.label) })}</button>}
         </p>
       ) : (
         <>
           {dangMo.length > 0 ? <div>{hangMo}</div> : (
             <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 text-[14px] text-slate-400">
-              {t('Không có Case {kn} đang mở.', { kn: tenKn })}
+              {mot ? t('Không có Case {kn} đang mở.', { kn: tenKn }) : t('Không có Case đang mở.')}
               {mot && onReport && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => onReport(mot.category)}>{t('+ Case cho {label}', { label: dich(mot.label) })}</button>}
             </p>
           )}
