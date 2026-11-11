@@ -46,7 +46,13 @@ permissions.ts:506, :519-522); GV Speaking = có kỹ năng S (`lopFtChoGvSpeaki
 | Xuất Excel · Điểm Test (`test/NganXuatMt.tsx:160`, `keHoach/NganXuatKeHoach.tsx:60`) | GVCN lớp mình (`server/src/phanTich/xuatMt.ts:33-43`) | THIẾU | `xuat-excel` |
 | Lộ trình mới (`students/PanelLoTrinhMoi.tsx:127`) | KHÔNG (PanelBuocTiep: GVCN chỉ đọc — `students/PanelBuocTiep.tsx:52`) | — | `lo-trinh` (nội dung: B QL, C TVV) |
 
-Panel không gắn (giữ "?" mở Màn nền): Kết quả thi thật, Sửa thông tin, Tạm dừng/ Kết thúc học, + Học viên, Lịch sử, Tổng kết — việc ngắn, bước nằm đủ ở "Tôi muốn…".
+| Sửa thông tin / Đề xuất sửa thông tin (`students/StudentManagePanel.tsx`, `duyet/DeXuatSuaPanel.tsx`) | GVCN sửa; GVBM đề xuất | THIẾU | `sua-thong-tin` (gộp đề xuất B `sua-hv`, C `sua-thong-tin`) |
+| Sửa thông tin học viên cả lớp (`students/SuaCaLopPanel.tsx`) | GVCN | THIẾU | `sua-ca-lop` |
+| Kết quả thi thật / Bước tiếp (`students/KetQuaThiThatPanel.tsx`, `PanelBuocTiep.tsx`, `congViec/PanelSauThi.tsx`) | GVCN ghi KQ, Bước tiếp chỉ xem | THIẾU | `sau-thi` |
+| Thêm học viên (`students/IntakePanel.tsx`) | GVCN | THIẾU | `them-hv` |
+| Xuất Excel danh sách (`students/NganXuatDs.tsx`) | mọi GV | THIẾU | `xuat-ds` |
+
+Panel không gắn (giữ "?" mở Màn nền): Quay lại học, Lịch sử, Tổng kết, Một em (chỉ đọc). Bảng tên chốt cho mọi vai: mô tả PR #1468 mục 2.
 
 ## 3. Việc (Tôi muốn…) — một việc một lối chính
 
@@ -107,6 +113,6 @@ Panel không gắn (giữ "?" mở Màn nền): Kết quả thi thật, Sửa th
 
 - Việc (Tôi muốn…): 18 → **29** — **thêm 11** (Báo PH kết quả Test, Xử lý vi phạm, Phối hợp SOS, Bàn giao, Sửa thông tin / lộ trình, Thêm học viên · dán Excel,
   Tạm dừng / kết thúc / quay lại học, Cuối khoá lớp thường, Xuất Excel điểm Test, Xem chuông, Viết Báo cáo PH) · **sửa 15** · **bỏ 0**.
-- Màn: thêm 1 (Lưu trữ) + 8 mục panel mới (`p-ket-qua-pa`, `p-phoi-hop`, `p-vi-pham`, `p-xu-ly`, `p-ban-giao`, `p-bao-cao-ph`, `p-chuyen-lop`, `p-xuat`); sửa 12.
+- Màn: thêm 1 (Lưu trữ) + 13 mục panel mới (`p-ket-qua-pa`, `p-phoi-hop`, `p-vi-pham`, `p-xu-ly`, `p-ban-giao`, `p-bao-cao-ph`, `p-chuyen-lop`, `p-xuat`, `p-sua-thong-tin`, `p-sua-ca-lop`, `p-sau-thi`, `p-them-hv`, `p-xuat-ds`); sửa 12.
 - Luật: sửa 6 (Hạn Ghi kết quả PA, Hạn Xử lý vi phạm, SOS và Case, Kết thúc PA sớm, Bàn giao, Nhận xét MT). Thuật ngữ: sửa 2, thêm 1 (Nháp kết quả PA). Việc vai khác: thêm 3.
 - Không đụng luật nghiệp vụ; không đổi bố cục panel "?" / trang `/huong-dan`; 0 câu Turso (dữ liệu tĩnh).

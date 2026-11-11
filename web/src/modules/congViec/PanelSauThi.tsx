@@ -74,9 +74,9 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   });
   if (lichSu) return <LichSuThayDoi loai="thi-that" id={cycleId} dong2={[em.ten, lop]} quayLai={{ nhan: t('Sau thi'), onClick: () => setLichSu(false) }} onClose={onDong} />;
   const loiTai = cy.error ?? bt.error;
-  if (loiTai) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={() => { cy.reload(); bt.reload(); }} /></KhungPanel>;
+  if (loiTai) return <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={() => { cy.reload(); bt.reload(); }} /></KhungPanel>;
   /* `buoc-tiep` trả null khi chưa có kết quả thi thật — bước 2 khoá. */
-  if (!c || !diem || (bt.loading && !bt.data)) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
+  if (!c || !diem || (bt.loading && !bt.data)) return <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
   const b = bt.data ?? { chon: null, han: null, coTheChon: false, hen: null, hoanTacDuoc: false, lopNay: null } as unknown as TrangThaiBuocTiep;
 
   /* ① Kết quả thi thật */
@@ -144,7 +144,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   }
 
   return (
-    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
+    <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
       <div className="flex flex-col gap-4 pt-4">
         <Buoc so={coKq && !moDiem ? '✓' : '1'} xong={coKq && !moDiem} tieuDe={t('Kết quả thi thật')}
           phu={coKq && c.thi_that_nhap_luc ? t('lưu {ngay}', { ngay: shortDate(c.thi_that_nhap_luc, hn) }) : t('không hạn')}>
@@ -249,7 +249,7 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
   return (
-    <KhungPanel tieuDe={t('Chốt ngày thi · {ten}', { ten: em.ten })} onDong={onDong}
+    <KhungPanel hd="chot-ngay-thi" tieuDe={t('Chốt ngày thi · {ten}', { ten: em.ten })} onDong={onDong}
       dau={dauViec({ em, lop, ngCanh: duKien ? <span className="inline-flex items-center gap-1.5">{t('hiện')} <NhanLich loai="du-kien">{duKien}</NhanLich></span> : null })}
       chan={xong ? { huy: null, trai: <span role="status" className="font-semibold text-done">✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
         chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> }

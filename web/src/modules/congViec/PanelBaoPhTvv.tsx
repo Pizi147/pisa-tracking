@@ -85,8 +85,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     han: v?.coTheGhi && !bo ? <MenuDong nhan={t('Thao tác phụ')} muc={[{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }]} /> : null,
     em, lop: it.classCode,
   });
-  if (error) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (!v) return <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
+  if (error) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!v) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
 
   const sua = !daLuu && v.coTheGhi;
   const daGo = sua && (!!kq || !!ghiChu.trim() || ngay !== hn);
@@ -154,7 +154,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       tieu: h.macDinh ? t('Về hạn mặc định {ngay}', { ngay: shortDate(h.moi, hn) }) : t('Đổi hạn {cu} → {moi}', { cu: h.cu ? shortDate(h.cu, hn) : '—', moi: shortDate(h.moi, hn) }) })),
   ].sort((a, b) => b.luc.localeCompare(a.luc));
   return (
-    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
+    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
       <div className="flex flex-col gap-4 pt-4">
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">

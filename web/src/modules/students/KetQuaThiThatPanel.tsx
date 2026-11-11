@@ -72,8 +72,8 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
     return <PanelBuocTiep cycleId={cycleId} hocVien={c ? { id: c.student_id, ten: studentName } : null} lop={lop} quayLai={quayLai}
       onSuaKetQua={() => { setBuocTiep(false); reload(); }} onClose={() => { onDone(); onClose(); }} />;
   }
-  if (error) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (!c || !form) return <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
+  if (error) return <KhungPanel hd="sau-thi" tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (!c || !form) return <KhungPanel hd="sau-thi" tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}><Skeleton rows={5} /></KhungPanel>;
 
   const st = sauThi.data;
   const target: number | null = c.target_score ?? null;   // OV-9: KCK giữ Target — so như máy chủ (`ketQuaThiThat`)
@@ -115,7 +115,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
   };
 
   return (
-    <KhungPanel tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}
+    <KhungPanel hd="sau-thi" tieuDe={t('Kết quả thi thật')} hocVien={studentName} lop={lop} quayLai={quayLai} rong={quayLai ? 'rong' : undefined} onDong={onClose}
       chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{t('Lưu')}</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-400">

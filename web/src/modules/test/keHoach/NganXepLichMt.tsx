@@ -234,7 +234,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   const lopConLai = lopTheoChiNhanh.filter((l) => !lopChon.includes(l.id));
 
   return (
-    <KhungPanel tieuDe={t('Xếp lịch Mock Test')} rong="toan" onDong={onClose}
+    <KhungPanel tieuDe={t('Xếp lịch Mock Test')} rong="toan" hd="xep-lich-mt" onDong={onClose}
       tabs={tabs}
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, chinh: nutChinh,
         /* 6c (lỗi 5): lựa chọn đã chỉnh tay (tuần riêng, đợt / thi lại từng em) chưa lưu → ✕ hỏi. Tuần chung, tick là mặc định tự điền. */
