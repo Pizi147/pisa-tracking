@@ -309,7 +309,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     assert(/yc\.dong\.map\(\(d, i\) => <p key=\{i\} className="m-0 whitespace-pre-line">/.test(doc('web/src/modules/duyet/TheYeuCau.tsx')), 'TheYeuCau');
   });
 
-  // ------------------------------------------------------------------ Task 9 · Báo phụ huynh qua TVV theo CASE, không theo môn trượt (R5-4, Câu 2 = A)
+  // ------------------------------------------------------------------ Task 9 · Báo PH kết quả Test theo CASE, không theo môn trượt (R5-4, Câu 2 = A)
   const phoiHopSvc: any = await import('../yThuc/phoiHop.ts');
   const sosAutoSvc: any = await import('../cases/sosAuto.ts');
   check('UXF-b (9) · R5-4: bài Progress Test 2 môn trượt + 2 Case → MỘT việc Báo PH; Case G+V "Không cần theo dõi" → việc còn, "môn khó khăn" chỉ còn môn kia; cả hai → việc chưa làm tự rút; mở lại → hồi; việc đã làm không đụng; chạy lặp không nhân đôi', () => {

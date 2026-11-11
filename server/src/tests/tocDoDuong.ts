@@ -105,7 +105,7 @@ export const DUONG_DO: MucDo[] = [
     maChuDich: { GVCN: 403 },
   },
   { trang: 'Công việc', vai: ['QL'], url: '/my-work?nguoi={gv}' },
-  /* DOC-THUA (05/11): Công việc lọc một chi nhánh — việc "Báo PH qua TVV" lọc chi nhánh trong SQL (trước đọc mọi chi nhánh rồi lọc ở JS). */
+  /* DOC-THUA (05/11): Công việc lọc một chi nhánh — việc "Báo PH kết quả Test" lọc chi nhánh trong SQL (trước đọc mọi chi nhánh rồi lọc ở JS). */
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* OV-14c: hàng đợi Chấm Speaking (panel của việc) — GV Speaking: mọi lớp FT chi nhánh; GV khác: rỗng. */
   { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking' },
@@ -705,7 +705,7 @@ export const TRAN: Record<string, number> = {
   'QT /classes?branchId=1': 31,
   /* PR-HVL (3): mốc 51 (QT 49) + việc tiếp theo/Ý thức/thẻ chờ duyệt theo lô đo 59 (QT 57) — trần kế hoạch = mốc + 12. */
   /* PR-S4F #5: +3 câu — `quetYeuCau` trước khi đếm thẻ chờ duyệt (badge = hộp); nhớ theo request nên chỉ một lần. */
-  /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo phụ huynh qua TVV của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
+  /* PR-LT2a (Task 7): +1 câu `emCoBaoPhChuaLam` (việc Báo PH kết quả Test của GVCN, MỘT câu theo lô) — đo 67; trần 66 → 72 (+9%, < 30%). */
   /* TURSO-1211: danh sách + Đang SOS CÙNG request — đo QL 68 · GVCN / GVBM / GVCN_THUONG 70 · QT 69 · TVV 49 · CX 73 · Admin 52 (riêng: QL 52 + 22) → max(đo + 10, ⌈đo × 1,3⌉). */
   'QL /hoc-vien-lop?kem=sos': 89, 'GVCN /hoc-vien-lop?kem=sos': 91, 'GVBM /hoc-vien-lop?kem=sos': 91, 'GVCN_THUONG /hoc-vien-lop?kem=sos': 91,
   'QT /hoc-vien-lop?kem=sos': 90, 'TVV /hoc-vien-lop?kem=sos': 64, 'CX /hoc-vien-lop?kem=sos': 95, 'ADMIN /hoc-vien-lop?kem=sos': 68,

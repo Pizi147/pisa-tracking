@@ -34,7 +34,7 @@ export type CoordAction = {
   hanMacDinh?: string | null; hanChon?: string | null;
   /** CAU-HINH-CASE-SOS: ghi chú tối thiểu theo bản chụp của việc (máy chủ tính). */
   toiThieuGhiChu?: number;
-  /** Báo phụ huynh qua TVV (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
+  /** Báo PH kết quả Test (PR-LT2a): bốn nội dung GVCN chuyển cho TVV — null với việc khác. */
   noiDung?: string[] | null;
   /** PR-PHH: việc đã xong mà chưa lưu bản chụp (xác nhận trước PR-PHH) — `noiDung` là nội dung hiện tại. */
   noiDungLaHienTai?: boolean;

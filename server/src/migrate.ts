@@ -125,6 +125,7 @@ import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
 import { migratePrTurso1211 } from './migrate/prTurso1211.ts';
+import { migratePrG317 } from './migrate/prG317.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -482,7 +483,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* BC-DOT-QL (chủ SP 06/11): bảng bao_cao_ph_dot — QL / Admin bỏ / thêm đợt Báo cáo PH theo lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrBaoCaoPhDot(conn, applied));
     /* CHI-NHANH-LIEN-HE (chủ SP 07/11): branches.dia_chi + so_dien_thoai — đầu tệp Báo cáo PH, điền mặc định theo mã (chỉ thêm cột, chạy lặp được). */ buoc(() => migratePrChiNhanhLienHe(conn, applied));
     /* MT0-THEO-EM (chủ SP 06/11): chỉ mục một phần idx_attempt_mt0 — lớp FT hiện MT0 của em (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrMt0Em(conn, applied));
-    /* GIAM-DOC-0611: chỉ mục một phần idx_sca_cho — việc Báo PH qua TVV đang chờ thôi quét cả sos_coordination_actions (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611(conn, applied));
+    /* GIAM-DOC-0611: chỉ mục một phần idx_sca_cho — việc Báo PH kết quả Test đang chờ thôi quét cả sos_coordination_actions (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611(conn, applied));
     /* GIAM-DOC-0611h: chỉ mục idx_student_branch — Case theo chi nhánh của em (listCases quyền chi nhánh) thôi quét cả students (chỉ thêm chỉ mục, chạy lặp được). */ buoc(() => migratePrGiamDoc0611h(conn, applied));
     /* TAT-CHECKPOINT (chủ SP 06/11): công tắc Checkpoint tự sinh tắt → huỷ mềm Checkpoint chưa có điểm; bật → khôi phục (chạy MỖI lần, chạy lặp không đổi). */ buoc(() => migratePrTatCp(conn, applied));
     /* RESET-HAN-CASE (chủ SP 06/11): cột sos_cases.han_them_pa (mỗi lần) + việc tuyến Case quá hạn → hạn hôm nay + 7, nhật ký viec_han_lan (đổi dữ liệu MỘT lần, khoá demo_config). */ buoc(() => migratePrResetHanCase(conn, applied));
@@ -505,6 +506,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrCauHinhCaseSos(conn, applied));
   /* TURSO-1211 (chủ SP 12/11): 7 chỉ mục cho câu quét cả bảng ở Công việc, Tổng quan, Học viên (chỉ thêm chỉ mục, chạy lặp được). */
   buoc(() => migratePrTurso1211(conn, applied));
+  /* G3-17 (chủ SP 13/11): chuông cũ "Báo phụ huynh qua TVV" → "Báo PH kết quả Test" (đổi chữ MỘT lần). */
+  buoc(() => migratePrG317(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

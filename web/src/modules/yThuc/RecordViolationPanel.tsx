@@ -85,13 +85,15 @@ export function RecordViolationPanel({
 
   /* Môn tự điền (V04) + danh sách môn theo chương trình lớp (K5-47): hỏi theo em ĐẦU TIÊN (cả lớp cùng chương trình). */
   const sid0 = hocVien[0] ?? 0;
-  const similar = useApi<{ defaultSkill: string | null; chuongTrinh: string | null }>(
+  const similar = useApi<{ defaultSkill: string | null; chuongTrinh: string | null; batBuocMon?: boolean }>(
     open && sid0 ? `/violations/similar?studentId=${sid0}&category=${dong[0]?.nhom || 'attendance'}` : null, [sid0, dong[0]?.nhom, open]);
   const defaultSkill = editing ? null : (similar.data?.defaultSkill ?? null);
   const ct = similar.data?.chuongTrinh ?? null;
+  /* G3-19: dạy từ 2 môn → Môn bắt buộc (chỉ khi ghi mới, lớp có chia môn). Ô trống = chưa chọn và không có môn tự điền. */
+  const batBuocMon = !editing && !!similar.data?.batBuocMon && monViPham(ct).length > 0;
 
   const loi: LoiTruong[] = [
-    ...dsLoiGhiViPham({ hocVien, dong }),
+    ...dsLoiGhiViPham({ hocVien, dong: dong.map((d) => ({ ...d, mon: d.daChonMon ? d.mon : (defaultSkill ?? d.mon) })), batBuocMon }),
     ...(tep.some((m) => m.loi && !m.daGui) ? [{ khoa: 'tep', nhan: t('Tệp'), lyDo: t('Bỏ tệp lỗi') }] : []),
   ];
 
@@ -237,7 +239,7 @@ export function RecordViolationPanel({
 
         <Khoi tieuDe={t('Vi phạm')}>
           {dong.map((d, k) => (
-            <DongViPham key={d.key} d={d} k={k} nhieu={nDong > 1} today={today} ct={ct} defaultSkill={defaultSkill} editing={editing}
+            <DongViPham key={d.key} d={d} k={k} nhieu={nDong > 1} today={today} ct={ct} defaultSkill={defaultSkill} editing={editing} batBuocMon={batBuocMon}
               sid={hocVien.length === 1 ? hocVien[0] : 0} loi={loi} lf={lf} onSua={(v) => suaDong(d.key, v)}
               onXoa={() => setDong((ds) => ds.filter((x) => x.key !== d.key))} />
           ))}
@@ -259,8 +261,8 @@ export function RecordViolationPanel({
 }
 
 /** Một dòng vi phạm: Ngày · Môn · Nhóm · Vi phạm (đếm n/60) · Mô tả (mở sẵn). Nhiều dòng: tiêu đề `Vi phạm n` + `Xoá dòng`. */
-function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, lf, onSua, onXoa }: {
-  d: Dong; k: number; nhieu: boolean; today: string; ct: string | null; defaultSkill: string | null; editing: boolean;
+function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon, sid, loi, lf, onSua, onXoa }: {
+  d: Dong; k: number; nhieu: boolean; today: string; ct: string | null; defaultSkill: string | null; editing: boolean; batBuocMon: boolean;
   /** Một học viên (không sửa): hỏi cảnh báo trùng theo nhóm + ngày của DÒNG này. 0 = nhiều học viên, không hỏi. */
   sid: number; loi: readonly LoiTruong[]; lf: ReturnType<typeof useLoiForm>;
   onSua: (v: Partial<Dong>) => void; onXoa: () => void;
@@ -291,8 +293,8 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, sid, loi, l
         </Truong>
         {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
         {dsMon.length > 0 && (
-          <Truong nhan={t('Môn')} phu={!d.daChonMon && defaultSkill ? t('Tự điền môn bạn dạy lớp này') : undefined}>
-            <select className="field w-full" value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
+          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)} phu={!d.daChonMon && defaultSkill ? t('Tự điền môn bạn dạy lớp này') : undefined}>
+            <select className="field w-full" {...lf.o(loi, `mon-${n}`)} value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
               <option value="">{t('Chưa chọn')}</option>
               {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
             </select>

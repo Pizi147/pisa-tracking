@@ -1,6 +1,6 @@
 /**
  * GIAM-DOC-0611 (06/11): giảm dòng đọc Turso — chỉ thêm chỉ mục một phần (cùng trong schema.sql), không đổi dữ liệu; chạy lại không làm gì.
- * Việc "Báo PH qua TVV" (Công việc mọi vai, chuông, Học viên & Lớp) `WHERE x.kind = ? AND x.status = 'pending'` trước SCAN cả `sos_coordination_actions`
+ * Việc "Báo PH kết quả Test" (Công việc mọi vai, chuông, Học viên & Lớp) `WHERE x.kind = ? AND x.status = 'pending'` trước SCAN cả `sos_coordination_actions`
  * (bản chính 29/10: 436 dòng, 117 đang chờ, 21 Báo PH) — bảng chỉ tăng (việc xong / gỡ vẫn giữ).
  */
 export function migratePrGiamDoc0611(conn: any, applied: string[]) {

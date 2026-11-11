@@ -1,5 +1,5 @@
 /**
- * PHÉP KIỂM PR-LT2a — lớp thường · Giữa khoá: Case tự tạo, PA Bổ trợ, Báo PH qua TVV.
+ * PHÉP KIỂM PR-LT2a — lớp thường · Giữa khoá: Case tự tạo, PA Bổ trợ, Báo PH kết quả Test.
  * PR-CT2 (§8): bỏ nộp / duyệt kế hoạch bài giảng — PA Bổ trợ chạy ngay khi Xác nhận Case; các khối 4, 5, 7, 10, 11 sửa theo luật mới.
  * Kế hoạch: docs/superpowers/plans/2026-09-30-pr-lt2a-giua-khoa.md (khối 1–11 theo Task).
  */
@@ -136,7 +136,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(cs.length === 2 && cs.flatMap((c) => paCua(c.id)).length === 2, 'chạy lặp không thêm Case/PA');
     assert(all(`SELECT 1 FROM sos_coordination_actions WHERE attempt_id = ? AND kind = 'bao_ph_tvv' AND status = 'pending'`, em.pt).length === 1, 'một dòng Báo PH');
     const tb = all(`SELECT user_id, title, body, dedup_key FROM notifications WHERE dedup_key IN (?, ?, ?)`, `sos-case:${cs[0].id}`, `sos-case:${cs[1].id}`, `bao-ph:${em.pt}`);
-    assert(tb.filter((x) => x.dedup_key === `bao-ph:${em.pt}`).length === 1 && tb.some((x) => x.user_id === gvcnFou && /Báo phụ huynh qua TVV/.test(x.title)), 'GVCN nhận một thông báo Báo PH');
+    assert(tb.filter((x) => x.dedup_key === `bao-ph:${em.pt}`).length === 1 && tb.some((x) => x.user_id === gvcnFou && /Báo PH kết quả Test/.test(x.title)), 'GVCN nhận một thông báo Báo PH');
     assert(tb.filter((x) => /^sos-case:/.test(x.dedup_key)).length === 2, 'mỗi Case một thông báo cho GVBM');
     /* OV-12c: tên Case mang nhãn SOS theo số môn trượt — thông báo GVBM nói đúng tên Case; Báo PH không nói SOS. */
     /* Điểm nhập dần: lúc G+V trượt mới 1 môn (SOS 1), P trượt thì 2 môn (SOS 2) — thông báo nói tên Case lúc Case ra đời. */
@@ -323,7 +323,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ khối 7 · Việc cần làm + Phối hợp + thông báo (Task 7)
   const dongViec = (who: any, tienTo: string, hv?: number) => ((mywork.myWork(who) as any).items as any[]).filter((x) => x.key.startsWith(tienTo) && (hv === undefined || x.studentId === hv));
 
-  check('LT2a (7) · GVCN FOU /my-work: "Báo phụ huynh qua TVV" (không hạn); KHÔNG còn "Nộp kế hoạch bổ trợ" (PR-CT2); không có "Xác nhận PA" cho PA bổ trợ', () => {
+  check('LT2a (7) · GVCN FOU /my-work: "Báo PH kết quả Test" (không hạn); KHÔNG còn "Nộp kế hoạch bổ trợ" (PR-CT2); không có "Xác nhận PA" cho PA bổ trợ', () => {
     const em = taoEm('LT2a VIEC', 'MB FOU 12');
     nhap(em.pt!, { listening: 18, reading: 18, writing: 11, speaking: 12 });
     const cGv = caseTheoMon(em.id, 'writing');
@@ -332,7 +332,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!dongViec(ha, 'kehoach:', em.id).length && !dongViec(P.mbManager, 'kehoach:', em.id).length, 'không còn dòng Nộp kế hoạch');
     assert(d.LOAI_HAN_CUA_VIEC.ke_hoach_bo_tro === undefined && d.nhomViecCua('phoi_hop') === 'case-hoc-thuat', 'nhóm + loại hạn');
     const bp = dongViec(ha, 'baoph:', em.id);
-    assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo phụ huynh qua TVV · LT2a VIEC · Progress Test', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
+    assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo PH kết quả Test · LT2a VIEC · Progress Test', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
     assert(!dongViec(khoa, 'baoph:', em.id).length, 'GVBM G+V không phải GVCN — không thấy Báo PH');
     assert(!dongViec(khoa, 'xnpa:', em.id).length && !dongViec(ha, 'xnpa:', em.id).length, 'không có dòng "Xác nhận PA" cho PA bổ trợ');
   });
@@ -355,7 +355,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const luot = (phoiHop.coordinationOfStudent(ha, em.id) as any).rows.find((r: any) => r.attemptId === em.pt);
     assert(luot && luot.nhanDot === 'Progress Test' && luot.sosLevel === null && luot.ketQua.chinh === '2/4 môn đạt' && luot.ketQua.phu === 'Không đạt: G+V P', JSON.stringify(luot && { n: luot.nhanDot, s: luot.sosLevel, k: luot.ketQua }));
     const act = luot.actions.find((x: any) => x.kind === 'bao_ph_tvv');
-    assert(act && act.kindLabel === 'Báo phụ huynh qua TVV' && act.noiDung?.length === 4, JSON.stringify(act && act.noiDung));
+    assert(act && act.kindLabel === 'Báo PH kết quả Test' && act.noiDung?.length === 4, JSON.stringify(act && act.noiDung));
     assert(act.noiDung[0].includes('2/4 môn đạt') && act.noiDung[1].includes('G+V, P') && act.noiDung[2].includes('Em mất điểm ở phần này') && act.noiDung[3].includes('học lại'), act.noiDung.join(' | '));
     assert(maLoi(() => phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY, note: 'Đã làm' })) === 403, 'GVBM không phải GVCN đánh dấu → 403');
     phoiHop.confirmCoordination(ha, act.id, { performedOn: TODAY, note: 'Đã gửi task cho TVV trên Base.' });

@@ -84,7 +84,7 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const s = doc('web/src/modules/platform/HopChuong.tsx');   // CHUONG-V2: hộp chuông tách khỏi Header
     assert(/thoiGianThongBao\(/.test(s) && !/function gioThongBao/.test(s), 'HopChuong chưa dùng thoiGianThongBao');
   });
-  check('G3c · việc "Báo phụ huynh qua TVV": không còn "Tạo task cho TVV trên Base"; câu mới nhờ TVV báo + đánh dấu đã làm (thông báo, hint Việc cần làm, lý do)', () => {
+  check('G3c · việc "Báo PH kết quả Test": không còn "Tạo task cho TVV trên Base"; câu mới nhờ TVV báo + đánh dấu đã làm (thông báo, hint Việc cần làm, lý do)', () => {
     const CAU = 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm';
     for (const f of ['server/src/yThuc/phoiHop.ts', 'server/src/worklist/mywork.ts']) {
       const s = doc(f);

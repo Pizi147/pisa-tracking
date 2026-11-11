@@ -177,17 +177,24 @@ function checkOccurredOn(value: unknown, today: string = demoToday()): string {
  * V04: môn TỰ ĐIỀN theo phân công của giáo viên ở lớp đó. Dạy đúng một môn thì điền môn đó; dạy nhiều môn, hoặc không dạy
  * môn nào (GVCN thuần, Quản lý), thì để trống cho người ghi chọn — hệ thống không đoán.
  */
-export function defaultSkillFor(p: Principal, classId: number | null, today: string = demoToday()): string | null {
-  if (!classId) return null;
-  const skills = new Set(
+function monDayTai(p: Principal, classId: number | null, today: string): string[] {
+  if (!classId) return [];
+  /* Pre FOU: GVCN giữ ô `tong_hop` — không phải môn vi phạm (K5-47), nên không đếm. */
+  return [...new Set(
     p.assignments
       .filter((a) => a.classId === classId && a.skill && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today))
       .map((a) => a.skill as string),
-  );
-  /* Pre FOU: GVCN giữ ô `tong_hop` — không phải môn vi phạm (K5-47), nên không tự điền. */
-  const mot = skills.size === 1 ? [...skills][0] : null;
-  return mot && (VIOLATION_SKILLS as readonly string[]).includes(mot) ? mot : null;
+  )].filter((m) => (VIOLATION_SKILLS as readonly string[]).includes(m));
 }
+export function defaultSkillFor(p: Principal, classId: number | null, today: string = demoToday()): string | null {
+  const ds = monDayTai(p, classId, today);
+  return ds.length === 1 ? ds[0] : null;
+}
+/** G3-19 (chủ SP 13/11): người ghi dạy TỪ 2 MÔN trở lên ở lớp em → BẮT BUỘC chọn môn. GVCN của lớp, người không dạy môn nào, hoặc dạy 1 môn (tự điền) thì không. */
+export const batBuocChonMon = (p: Principal, classId: number | null, today: string = demoToday()): boolean =>
+  monDayTai(p, classId, today).length >= 2
+  && !p.assignments.some((a) => a.isCore && a.classId === classId && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today));   // GVCN của lớp: để trống được
+const THIEU_MON = 'Chọn môn — bạn dạy từ 2 môn ở lớp này.';
 
 // ---------------------------------------------------------------- ghi (V01–V08)
 
@@ -268,6 +275,7 @@ export function recordViolation(p: Principal, input: {
   const { ten, moTa } = checkTenMoTa(input);
   const occurredOn = checkOccurredOn(input.occurredOn);
   const skill = input.skill === undefined ? defaultSkillFor(p, classId) : checkSkill(input.skill);
+  if (!skill && batBuocChonMon(p, classId)) throw badRequest(THIEU_MON);
 
   /* Tính bản trùng TRƯỚC khi ghi để không tự thấy chính mình. */
   const similar = similarViolations(p, { studentId: input.studentId, category, occurredOn });
@@ -342,9 +350,11 @@ export function recordViolations(p: Principal, input: {
       const emT = truoc.get(sid)!;
       const laGvcn = laGvcnDangHoc(p, sid, emT);
       const cycleId = currentCycle(sid)?.id ?? null;
+      const monCua = (dg: { skill?: string | null }) => (dg.skill === undefined ? defaultSkillFor(p, classId, today) : dg.skill);
+      if (dong.some((dg, i) => cu[i] === null && !monCua(dg)) && batBuocChonMon(p, classId, today)) throw badRequest(THIEU_MON);
       const moi = tx(() => dong.map((dg, i) => cu[i] ?? ghiMotViPham(p, student, classId, cycleId, today, {
         category: dg.category, occurredOn: dg.occurredOn, ten: dg.ten, moTa: moTaRieng.get(sid) ?? dg.moTa,
-        skill: dg.skill === undefined ? defaultSkillFor(p, classId, today) : dg.skill,
+        skill: monCua(dg),
       }, khoa(sid, i), laGvcn)));
       ok.push({ studentId: sid, ids: moi });
       const dongMoi = cu.map((x, i) => (x === null ? i : -1)).filter((i) => i >= 0);

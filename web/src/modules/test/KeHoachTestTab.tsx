@@ -221,7 +221,7 @@ export function KeHoachTestTab() {
               {monTheoCt.length ? '.' : ''} {t('Môn khác tuần trong cùng đợt ghi riêng.')}
             </span>
           )}
-          {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
+          {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>{t('tuần {n}/{tong}', { n: 5, tong: 10 })}</b>).</span>}
           <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
         </NutLuat>
         <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:order-2 max-sm:basis-full max-sm:justify-end">

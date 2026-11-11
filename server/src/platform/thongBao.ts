@@ -55,7 +55,7 @@ export function thongBaoCua(userId: number) {
                     WHEN n.kind = 'case_giao' THEN CASE WHEN sc.status != 'done' AND sc.owner_user_id = n.user_id
                       AND NOT EXISTS (SELECT 1 FROM case_interventions ci WHERE ci.case_id = sc.id AND ci.status != 'cancelled') THEN 1 ELSE 0 END
                     /* OV-11f (TQ-7): tín hiệu đã vào Case / đã rút → việc xong (Case có chuông riêng). P1 rà 11/11 G5-05: tín hiệu pending cũng KHÔNG còn việc —
-                       hàng chờ "Xác minh" đã bỏ (cases/signals.ts), Công việc không đọc tín hiệu chờ → luôn Để biết. Báo PH qua TVV: còn khi việc phối hợp của lượt chưa làm. */
+                       hàng chờ "Xác minh" đã bỏ (cases/signals.ts), Công việc không đọc tín hiệu chờ → luôn Để biết. Báo PH kết quả Test: còn khi việc phối hợp của lượt chưa làm. */
                     WHEN n.entity_type = 'case_signal' THEN 0
                     WHEN n.entity_type = 'assessment_attempt' AND n.kind = 'phoi_hop' THEN
                       CASE WHEN EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = aa.id AND x.kind = 'bao_ph_tvv' AND x.status = 'pending') THEN 1 ELSE 0 END

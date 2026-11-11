@@ -1384,6 +1384,8 @@ api.get('/violations/similar', requireAuth, wrap((req) => {
       studentId, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
     }),
     defaultSkill: violationSvc.defaultSkillFor(p, lop),
+    /* G3-19: dạy từ 2 môn ở lớp này → ô Môn bắt buộc (máy chủ trả 400 khi thiếu). */
+    batBuocMon: violationSvc.batBuocChonMon(p, lop),
     /* K5-47: form chọn môn theo chương trình lớp em đang học (`monViPham`). */
     chuongTrinh: lop ? regularSvc.programmeOfClass(lop)?.code ?? null : null,
   };

@@ -394,7 +394,7 @@ export async function runPrS6fATests(t: YThucTestKit) {
       VALUES (?, 'duyet', ?, ?, ?, ?, ?, ?, ?, ?)`).run(o.loai, o.doiTuongLoai, o.doiTuongId, o.hv, o.lop, MB, o.nguoiXin, o.trangThai, now()).lastInsertRowid);
   const coLop = (p: any, lop: number) => (phoiHop.myCoordinationLines(loadPrincipal(p.userId)) as any[]).some((l) => l.classId === lop);
 
-  check('S6F-a (10a) · GVCN lớp thường có "Báo PH qua TVV" chờ của bài Progress Test → KHÔNG có Phối hợp SOS; lượt Mock FT chưa xong → vẫn có', () => {
+  check('S6F-a (10a) · GVCN lớp thường có "Báo PH kết quả Test" chờ của bài Progress Test → KHÔNG có Phối hợp SOS; lượt Mock FT chưa xong → vẫn có', () => {
     const FOU = classId('MB FOU 12');
     const em = get(`SELECT e.student_id AS sid, a.id AS aid FROM enrollments e JOIN assessment_attempts a ON a.student_id = e.student_id AND a.class_id = e.class_id
                      WHERE e.class_id = ? AND e.status = 'active' AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') != 'mock' ORDER BY a.id LIMIT 1`, FOU);

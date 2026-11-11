@@ -23,7 +23,7 @@ export async function runPrDonTests(t: YThucTestKit) {
       key: 'k', group: 'no_plan', urgency: 'normal', due: null, studentId: 1, studentName: 'An', classId: 10, classCode: 'MB FOU 15', khung: 'thuong', ownerId: 7,
       tieuDe: 'Thêm PA học thuật Speaking', phu: 'Speaking', contextLabel: null, count: null, href: '/hoc-vien/1', actionLabel: 'Thêm PA', ...o,
     });
-    const nhan = (g: string) => ({ no_plan: 'Thiếu PA học thuật', baoph: 'Báo phụ huynh qua TVV' } as any)[g] ?? g;
+    const nhan = (g: string) => ({ no_plan: 'Thiếu PA học thuật', baoph: 'Báo PH kết quả Test' } as any)[g] ?? g;
     const [g] = d.gopViecTheoLop([v({ key: 'support:1' }), v({ key: 'support:2', studentId: 2, studentName: 'Bình', tieuDe: 'Thêm PA học thuật Reading', phu: 'Reading' })], nhan) as any[];
     assert(g.con?.length === 2, 'phải gộp');
     const phu = Object.fromEntries(g.con.map((c: any) => [c.conTen, c.conPhu]));

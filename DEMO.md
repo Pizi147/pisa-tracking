@@ -506,7 +506,7 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2aSeed.ts`), sau ngày demo
 
 | Kịch bản | Học viên | Bạn sẽ thấy |
 |---|---|---|
-| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Progress Test] G+V không đạt` (Đang làm — PA bổ trợ chạy ngay sau Xác nhận Case) và `[Progress Test] P không đạt` (Cần làm · Xác nhận nguyên nhân; PA P `Chưa bắt đầu`); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Phối hợp: `Báo phụ huynh qua TVV` chưa làm |
+| G1 (D9) · trượt G+V, P | **Lê Hoàng Anh** (MB FOU 15) | Hồ sơ › Học thuật: hai hàng `[Progress Test] G+V không đạt` (Đang làm — PA bổ trợ chạy ngay sau Xác nhận Case) và `[Progress Test] P không đạt` (Cần làm · Xác nhận nguyên nhân; PA P `Chưa bắt đầu`); PA thụt vào `Bổ trợ 2 buổi/tuần · chung các môn trượt…` + `PA chung · G+V, P`. Phối hợp: `Báo PH kết quả Test` chưa làm |
 | G2 · trượt R | **Bùi Minh Châu** (MB FOU 15) | Case Đang làm, PA bổ trợ chạy, một lần ghi kết quả; Báo PH `Đã làm` |
 | G3 (D10) · trượt W | **Hoàng Quốc Bình** (MB BE 03) | PA `Bổ trợ 1 buổi/tuần · W` đang chạy ngay sau Xác nhận Case |
 | G4 · trượt S | **Mai Hải Long** (MB BE 03) | Case S chờ nguyên nhân; Việc cần làm của Trang: `Xác nhận nguyên nhân` |
@@ -523,7 +523,7 @@ Dựng bằng hàm nghiệp vụ (`server/src/seed/lt2bSeed.ts`), sau bộ LT2a,
 
 | Kịch bản | Học viên | Bạn sẽ thấy |
 |---|---|---|
-| D10 · 45% Học lại | **Hồ Thu Trang** (đã sang MB BE 03) | Vy có việc **Báo phụ huynh qua TVV · Hồ Thu Trang · Final Test 45%** (Công việc › Phối hợp); GVCN không có |
+| D10 · 45% Học lại | **Hồ Thu Trang** (đã sang MB BE 03) | Vy có việc **Báo PH kết quả Test · Hồ Thu Trang · Final Test 45%** (Công việc › Phối hợp); GVCN không có |
 | D10 · 55% | **Đặng Minh Khôi** (MB BE 04) | Hồ sơ › Học thuật: hộp Kết luận khoá `Final Test 55%` + `Quản lý cân nhắc…`; đầu hồ sơ lớp BE 04: `1 em Quản lý cân nhắc` |
 | D10 · 64% đã lên ELE | **Vương Bảo Ngọc** (MB ELE 02) | Hai Case `Final Test BE · W không đạt` / `S` **Đang làm** (không chờ nguyên nhân), PA `Bổ trợ miễn phí` chạy; ô **Mini Test · — · hạn 15/09** + nút `Ghi Mini Test`; việc của Hà `Ghi Mini Test` |
 | D10 · 78% Pass | **Tạ Đức Huy** (MB BE 04) | Hộp Kết luận khoá `Pass`; không Case |

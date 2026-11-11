@@ -75,7 +75,7 @@ export function nhanKetQuaThuong(r: {
 }
 
 /**
- * 4 nội dung Báo phụ huynh qua TVV (quy định mục II.1): kết quả · môn khó khăn · nguyên nhân (Mô tả Xác nhận Case;
+ * 4 nội dung Báo PH kết quả Test (quy định mục II.1): kết quả · môn khó khăn · nguyên nhân (Mô tả Xác nhận Case;
  * chưa có → "GVBM chưa xác nhận") · phương án hỗ trợ + khả năng phải học lại.
  */
 export function noiDungBaoPh(x: { ketQua: string; monTruot: string[]; nguyenNhan: string[]; boTro: string }): [string, string, string, string] {

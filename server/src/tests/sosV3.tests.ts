@@ -445,7 +445,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assert(get('SELECT attempt_id FROM sos_cases WHERE id = ?', old.id).attempt_id === a3.id, 'Case trỏ tới lượt mới nhất');
   });
 
-  check('PR-T · Q-V3-1 (§10#8) → PR-LT2a (N1, N4) Lớp NORMAL trượt hai môn ở Progress Test: TỰ TẠO hai Case + PA Bổ trợ (không PA quy chế điền sẵn), KHÔNG Phối hợp SOS (chỉ việc Báo phụ huynh qua TVV), tín hiệu chỉ là dây nối', () => {
+  check('PR-T · Q-V3-1 (§10#8) → PR-LT2a (N1, N4) Lớp NORMAL trượt hai môn ở Progress Test: TỰ TẠO hai Case + PA Bổ trợ (không PA quy chế điền sẵn), KHÔNG Phối hợp SOS (chỉ việc Báo PH kết quả Test), tín hiệu chỉ là dây nối', () => {
     const regular: any = regularSvc;
     const fou = get("SELECT id FROM classes WHERE code = 'MB FOU 12'");
     intake.commitIntake(P.admin, { classId: fou.id, rows: [{ fullName: 'PT Normal', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: 'pt-normal' });
@@ -459,7 +459,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const pas = all('SELECT iv.* FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE sc.student_id = ?', stu.id);
     assert(pas.length === 2 && pas.every((x) => x.kind === 'bo_tro' && x.preset === 1 && x.status === 'planned'), `Mỗi Case một PA Bổ trợ chờ: ${JSON.stringify(pas.map((x) => [x.kind, x.status]))}`);
     const phoiHop = all('SELECT kind FROM sos_coordination_actions WHERE attempt_id = ?', attempt.id).map((x) => x.kind);
-    assert(phoiHop.length === 1 && phoiHop[0] === 'bao_ph_tvv', `Lớp Normal không có Phối hợp SOS, chỉ Báo PH qua TVV: ${phoiHop.join()}`);
+    assert(phoiHop.length === 1 && phoiHop[0] === 'bao_ph_tvv', `Lớp Normal không có Phối hợp SOS, chỉ Báo PH kết quả Test: ${phoiHop.join()}`);
     const sg = all('SELECT * FROM case_signals WHERE attempt_id = ?', attempt.id);
     assert(sg.length === 2 && sg.every((s) => s.status === 'linked' && s.case_id !== null), `Tín hiệu là dây nối tới Case: ${JSON.stringify(sg.map((s) => [s.skill, s.status]))}`);
   });
@@ -957,7 +957,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, 1), note: 'Đã làm' }), /tương lai/, 'Ngày tương lai');
     assertThrows(() => phoiHop.confirmCoordination(gvcn, id, { performedOn: 'hôm qua', note: 'Đã làm' }), /không hợp lệ/, 'Ngày sai định dạng');
     assert(rowOf(f.a.id, 'talk_family').status === 'pending', 'Lỗi thì chưa xong');
-    /* PHOI-HOP-V2 (PTA chốt 11/11): Nội dung bắt buộc khi xác nhận (trừ Meeting CX, Báo PH qua TVV lớp thường). */
+    /* PHOI-HOP-V2 (PTA chốt 11/11): Nội dung bắt buộc khi xác nhận (trừ Meeting CX, Báo PH kết quả Test lớp thường). */
     assertThrows(() => phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, -2) }), /Nội dung/, 'Thiếu Nội dung');
     phoiHop.confirmCoordination(gvcn, id, { performedOn: addDays(TODAY, -2), note: 'Đã làm' });               // không tệp
     const r = get('SELECT * FROM sos_coordination_actions WHERE id = ?', id);

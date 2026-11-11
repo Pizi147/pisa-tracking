@@ -4,6 +4,8 @@
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
 
+import * as require_fs from 'node:fs';
+
 export async function runKhungTests(t: YThucTestKit) {
   const { check, assert } = t;
   const d = await import('../../../shared/domain/index.ts');
@@ -34,9 +36,26 @@ export async function runKhungTests(t: YThucTestKit) {
     assert(!/Tuần|T\d/.test(d.tuanLich('2026-09-16', '2026-09-22')), 'Không dùng "Tuần 36" hay "T5"');
   });
 
-  check('PR-O · G-6 tuần học trong khoá: "W8/8"', () => {
-    assert(d.tuanKhoa(8, 8) === 'W8/8', d.tuanKhoa(8, 8));
-    assert(d.tuanKhoa(3, 10) === 'W3/10', d.tuanKhoa(3, 10));
+  check('G1-10 · tuần học lớp thường "tuần n/N" mọi nơi (chữ W chỉ cho mã tuần): hàm chung + nhãn Kế hoạch Test + cột Khoá + đường chuyển lớp', () => {
+    const fs: any = require_fs;
+    assert(d.tuanKhoa(5, 8) === 'tuần 5/8' && !/W/.test(d.tuanKhoa(5, 8)), d.tuanKhoa(5, 8));
+    assert(d.khoaLopThuong({ tuanHienTai: 5, tongTuan: 8 } as any).chinh.includes('tuần 5/8'), 'cột Khoá');
+    for (const f of ['server/src/classes/luatLoTrinh.ts', 'server/src/keHoach/keHoachTest.ts', 'web/src/modules/test/KeHoachTestTab.tsx']) {
+      assert(!/W\$\{[^}]*\}\/\$\{|đang W\d|<b>W\d+\/\d+<\/b>/.test(fs.readFileSync(f, 'utf8')), `${f} còn W{n}/{tổng}`);
+    }
+  });
+
+  check('G3-17 · việc lớp thường GVCN làm tên "Báo PH kết quả Test" (không còn "qua TVV") — nhãn việc, bản Anh', () => {
+    const fs: any = require_fs;
+    assert(fs.readFileSync('shared/domain/sos.ts', 'utf8').includes("bao_ph_tvv: t('Báo PH kết quả Test')"), 'nhãn bao_ph_tvv');
+    for (const f of ['server/src/worklist/mywork.ts', 'server/src/yThuc/phoiHop.ts', 'server/src/students/viecHocVien.ts', 'shared/domain/chuong.ts', 'shared/domain/hocVienLop.ts']) {
+      assert(!/qua TVV/.test(fs.readFileSync(f, 'utf8')), `${f} còn "qua TVV"`);
+    }
+  });
+
+  check('PR-O · G-6 tuần học trong khoá: "tuần 8/8"', () => {
+    assert(d.tuanKhoa(8, 8) === 'tuần 8/8', d.tuanKhoa(8, 8));
+    assert(d.tuanKhoa(3, 10) === 'tuần 3/10', d.tuanKhoa(3, 10));
     assert(d.tuanKhoa(0, 8) === '—' && d.tuanKhoa(3, 0) === '—' && d.tuanKhoa(2.5, 8) === '—', 'Số không hợp lệ phải ra "—"');
   });
 

@@ -362,7 +362,19 @@ export async function runYThucTests(t: YThucTestKit) {
        VALUES (?, ?, 'speaking', 0, 'active', '2026-01-01', ?)`).run(CLASS, gvbm.userId, new Date().toISOString()).lastInsertRowid);
     try {
       const two = loadPrincipal(gvbm.userId);
-      assert(record(two, st.id).violation.skill === null, 'GV dạy hai môn ở lớp này → để trống cho GV chọn');
+      /* G3-19 (chủ SP 13/11): dạy từ 2 môn → BẮT BUỘC chọn môn — thiếu / để trống rõ ràng → 400; chọn rồi thì ghi được; dạy 1 môn / GVCN thuần vẫn trống được. */
+      assertThrows(() => record(two, st.id), /Chọn môn/, 'GV dạy hai môn không chọn môn lọt');
+      assertThrows(() => record(two, st.id, { skill: null }), /Chọn môn/, 'GV dạy hai môn bỏ trống lọt');
+      assertThrows(() => record(two, st.id, { skill: '' }), /Chọn môn/, 'GV dạy hai môn gửi rỗng lọt');
+      assert(record(two, st.id, { skill: 'speaking' }).violation.skill === 'speaking', 'GV dạy hai môn chọn môn thì ghi được');
+      assert(viol.batBuocChonMon(two, CLASS) === true && viol.batBuocChonMon(gvbm, CLASS) === false && viol.batBuocChonMon(P.mbManager, CLASS) === false, 'batBuocChonMon: 2 môn / 1 môn / không môn');
+      const lo = viol.recordViolations(two, { studentIds: [st.id], lines: [{ category: 'homework', ten: 'Quên vở' }], idempotencyKey: 'g319-lo-thieu-mon' }) as any;
+      assert(lo.ok.length === 0 && lo.loi.length === 1 && lo.loi[0].ma === 400 && /Chọn môn/.test(lo.loi[0].loi), 'ghi nhiều: thiếu môn phải 400 cho em đó');
+      const lo2 = viol.recordViolations(two, { studentIds: [st.id], lines: [{ category: 'homework', ten: 'Quên vở', skill: 'speaking' }], idempotencyKey: 'g319-lo-co-mon' }) as any;
+      assert(lo2.ok.length === 1 && lo2.loi.length === 0, 'ghi nhiều: có môn thì ghi được');
+      const web = domain.dsLoiGhiViPham({ hocVien: [st.id], dong: [{ nhom: 'homework', ten: 'Quên vở', mon: '' }], batBuocMon: true });
+      assert(web.length === 1 && web[0].khoa === 'mon-1' && domain.dsLoiGhiViPham({ hocVien: [st.id], dong: [{ nhom: 'homework', ten: 'Quên vở', mon: 'speaking' }], batBuocMon: true }).length === 0
+        && domain.dsLoiGhiViPham({ hocVien: [st.id], dong: [{ nhom: 'homework', ten: 'Quên vở' }] }).length === 0, 'web: lỗi tại ô Môn khi bắt buộc và trống');
     } finally { conn.prepare('DELETE FROM teacher_assignments WHERE id = ?').run(extra); }
   });
 
