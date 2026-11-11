@@ -428,6 +428,8 @@ function HangEm({ h, homNay, cot, dot, d, chon, dangXem, rieng, thiLai, onTick, 
               <span aria-hidden className={`inline-block w-4 text-center font-bold ${MAU_DAU[nhan.tone]}`}>{DAU[nhan.tone]}</span>
               <span className={nhan.tone === 'bad' ? 'text-bad' : 'text-slate-100'}>{dichMay(nhan.chu)}</span>
               {nhan.phu && <span className={`ml-1 ${nhan.phu.startsWith('· bỏ lịch') ? 'text-soon' : 'text-slate-400'}`}>{dichMay(nhan.phu)}</span>}
+              {/* G1-14: bị chặn thì nói lý do tại chỗ (không chỉ `title` — 375 không rê chuột được). */}
+              {nhan.tone === 'bad' && nhan.title && <span className="block whitespace-normal text-xs text-slate-400">{dichMay(nhan.title)}</span>}
             </>
           ) : <span className="text-slate-500">—</span>}
         </td>

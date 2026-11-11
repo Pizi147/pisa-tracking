@@ -173,8 +173,10 @@ export function useSaveScore(attemptId: number, onSaved?: () => void, tenHv?: st
       const ds = ['/attempts', '/tong-quan', '/classes', '/students', '/my-work'];
       if (patch.noShow !== undefined || patch.khoiPhuc || r?.goVang) ds.forEach(invalidate); else invalidateGop(...ds);
       /* K4: gõ "-" và nút "Vắng" (điện thoại) cùng đi qua đây — một thông báo ngắn; LUAT-34: kèm "Hoàn tác" 10 giây (= gỡ "-"). */
+      /* G1-06: "-" ở một task Writing là vắng cả buổi (W1 + W2 cùng dời) — toast nói đúng điều đã xảy ra. */
+      const caBuoi = skill === 'writing1' || skill === 'writing2';
       if (patch.noShow === true) {
-        thongBaoVang(toast, `${attemptId}:${skill}`, ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang, () => void save(skill, { noShow: false }));
+        thongBaoVang(toast, `${attemptId}:${skill}`, caBuoi ? `${ENTRY_SKILL_SHORT.writing1} · ${ENTRY_SKILL_SHORT.writing2}` : ENTRY_SKILL_SHORT[skill as EntrySkill], tenHv, r?.vang, () => void save(skill, { noShow: false }));
       }
       if (r?.score && patch.noShow === undefined) setVuaLuu((v) => ({ ...v, [skill]: r.score }));
       tt.thanhCong(skill);

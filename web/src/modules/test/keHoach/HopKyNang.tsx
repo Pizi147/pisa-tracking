@@ -376,7 +376,11 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
             : <span className="block truncate">{tieuDe}</span>}
         </div>
         {maLop && <span className="shrink-0 text-[13px] text-dim">{maLop}</span>}
-        {mucDau.length > 0 && <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tieuDe })} muc={mucDau} />}
+        {/* G1-12: một mục thì nút thẳng ở đầu hộp (vẫn xa nút Lưu — U3 30/10), không ⋯ một mục. */}
+        {mucDau.length === 1 ? (
+          <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] shrink-0 sm:min-h-[28px] ${'nguyHiem' in mucDau[0] && mucDau[0].nguyHiem ? 'text-late' : ''}`} disabled={mucDau[0].tat} title={mucDau[0].title}
+            onClick={mucDau[0].onChon}>{mucDau[0].nhan}</button>
+        ) : mucDau.length > 0 && <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: tieuDe })} muc={mucDau} />}
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[28px] sm:min-w-[28px]" onClick={() => dongHop.current()} aria-label={t('Đóng')}>✕</button>
       </div>
       <div className="max-h-[70vh] space-y-2 overflow-y-auto px-3 py-2.5">
