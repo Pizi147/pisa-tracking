@@ -133,7 +133,7 @@ export function TrangThaiLuu({ tt, loi, luc, onHuy, onThuLai, chuDang }: {
 /** Chữ trạng thái lưu (không nút) — dùng chung cho chân panel và `SaveIndicator`. */
 export function ChuLuu({ tt, loi, luc, gon, chuDang }: { tt: TtLuu; loi?: string | null; luc?: string | null; /** Hàng lưới chật: lý do vào tooltip, không câu "vẫn giữ". */ gon?: boolean; chuDang?: string }) {
   if (tt === 'loi' && gon) return <span role="alert" title={loi ?? undefined} className="font-semibold text-bad">⚠ {t('Không lưu được')}</span>;
-  if (tt === 'loi') return <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi}` : ''}. {t('Chữ đang gõ vẫn giữ.')}</span>;
+  if (tt === 'loi') return <span role="alert" className="font-semibold text-bad">⚠ {t('Không lưu được')}{loi ? ` — ${loi.replace(/\.\s*$/, '')}` : ''}. {t('Chữ đang gõ vẫn giữ.')}</span>;   // câu lỗi có dấu chấm cuối: không ra ".."
   if (tt === 'dang') {
     return (
       <span role="status" className="inline-flex items-center gap-1.5 font-semibold text-doing">
