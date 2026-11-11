@@ -865,7 +865,8 @@ export function tinhLaiMtCu(attemptId: number, homNay: string): void {
               WHERE ask.attempt_id = a.id AND ask.required = 1 AND ask.sit_status != 'cancelled') AS kt
        FROM assessment_attempts a WHERE a.id = ? AND a.kind = 'mock'`).get(attemptId) as any;
   if (!r?.kt) return;
-  conn.prepare('UPDATE assessment_attempts SET lich_su = ? WHERE id = ?').run(laMtCu(r.kt, homNay) ? 1 : 0, attemptId);
+  const ls = laMtCu(r.kt, homNay) ? 1 : 0;
+  if (conn.prepare('UPDATE assessment_attempts SET lich_su = ? WHERE id = ? AND lich_su IS NOT ?').run(ls, attemptId, ls).changes) capNhatConOCho([attemptId]);   // TURSO-LOG-1311: cờ "còn ô chờ" phụ thuộc `lich_su` (MT lịch sử FT không chờ điểm)
 }
 
 function daysBetween(a: string, b: string): number {

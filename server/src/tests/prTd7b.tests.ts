@@ -104,10 +104,15 @@ export async function runPrTd7bTests(t: YThucTestKit) {
 
   });
 
-  check('TD7b-3 · cờ ≡ cách tính cũ: với nhiều ngày, tập lượt (status ≠ cancelled AND o_cho_tu ≤ ngày) = tập CON_O_SQL cũ', () => {
+  check('TD7b-3 · cờ ≡ cách tính cũ: với nhiều ngày, tập lượt (status ≠ cancelled AND o_cho_tu ≤ ngày) = tập CON_O_SQL cũ trừ MT lịch sử chấm band (TURSO-LOG-1311)', () => {
+    /* TURSO-LOG-1311 (chủ SP 13/11): MT lịch sử ở chương trình band không còn ô chờ — cùng vế loại của `CON_O_SQL`. */
+    const lichSuBand = new Set(all(`SELECT a.id FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id WHERE a.lich_su = 1
+        AND COALESCE((CASE WHEN a.class_id IS NOT NULL THEN c.programme_code ELSE (SELECT y.programme_code FROM learning_cycles y WHERE y.id = a.cycle_id) END)
+          IN (SELECT pg.code FROM programmes pg WHERE pg.scoring_mode = 'ratio' AND pg.code != 'FT'), 0) = 0`).map((r) => r.id));
+    assert(lichSuBand.size > 0, 'demo phải có MT lịch sử FT');
     for (const ngay of [addDays(TODAY, -60), addDays(TODAY, -14), addDays(TODAY, -1), TODAY, addDays(TODAY, 7), addDays(TODAY, 30), addDays(TODAY, 200)]) {
       const cu = all(`SELECT a.id FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-          WHERE ${cc.CON_O_SQL_TRUOC_TD7B} ORDER BY a.id`, ngay, ngay, ngay, ngay).map((r) => r.id);
+          WHERE ${cc.CON_O_SQL_TRUOC_TD7B} ORDER BY a.id`, ngay, ngay, ngay, ngay).map((r) => r.id).filter((id) => !lichSuBand.has(id));
       const moi = all(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND a.o_cho_tu <= ? ORDER BY a.id`, ngay).map((r) => r.id);
       assert(JSON.stringify(cu) === JSON.stringify(moi), `${ngay}: cũ ${cu.length} lượt, mới ${moi.length} lượt — khác: ${cu.filter((x) => !moi.includes(x)).slice(0, 5)} / ${moi.filter((x) => !cu.includes(x)).slice(0, 5)}`);
     }
@@ -394,7 +399,12 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     const band = mau(false), tyLe = mau(true);
     assert(band && tyLe, `thiếu lượt mẫu: band ${band?.id}, tỷ lệ ${tyLe?.id}`);
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id IN (?, ?)').run(band!.id, tyLe!.id);
-    assert(cc.demLuotLechCo() === 0, 'cờ phải không đổi khi đổi lich_su (cờ không xét lich_su)');
+    /* TURSO-LOG-1311 (chủ SP 13/11): cờ xét `lich_su` — MT lịch sử band hết ô chờ (cờ NULL), lượt lịch sử lớp tỷ lệ giữ cờ. Đổi `lich_su` bằng SQL thẳng → lệch đúng một lượt tới khi tính lại. */
+    assert(cc.demLuotLechCo() === 1, `đổi lich_su: phải lệch đúng lượt band (lệch ${cc.demLuotLechCo()})`);
+    cc.capNhatConOCho([band!.id, tyLe!.id]);
+    const coCua = (id: number) => get('SELECT o_cho_tu FROM assessment_attempts WHERE id = ?', id).o_cho_tu;
+    assert(coCua(band!.id) === null && coCua(tyLe!.id) !== null && cc.demLuotLechCo() === 0, `sau tính lại: band ${coCua(band!.id)}, tỷ lệ ${coCua(tyLe!.id)}`);
+
     for (const [ten, p] of Object.entries(P)) {
       const b = dong(p, band!.id, band!.sid);
       if (b) assert(!b.pendingSkills.length && !b.pendingDetail.length && !b.myPendingDetail.length, `${ten}: lượt lịch sử band ${band!.id} vẫn có ô chờ chấm`);

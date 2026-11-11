@@ -32,6 +32,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
   const att: any = await import('../fasttrack/attempts.ts');
   const { luotThu } = await import('./luotThu.ts');
   const cls: any = await import('../classes/classes.ts');
+  const { capNhatConOCho } = await import('../fasttrack/conOCho.ts');
   const NAY = d.mondayOfDate(TODAY), TRUOC = t.addDays(NAY, -7), HAI = t.addDays(NAY, -14);
   const LOP = classId('MB FT 101');
   const pid = (ws: string) => week.ensurePeriod(ws).id as number;
@@ -58,6 +59,7 @@ export async function runPrLt3Tests(t: YThucTestKit) {
     /* Lượt tạo sau khi tuần thi đã hết tự thành MT cũ (T34) — ở đây là lượt thật của tuần đó (tạo đúng tuần, chưa chấm). */
     conn.prepare('UPDATE assessment_attempts SET lich_su = 0 WHERE id = ?').run(a.id);
     if (chiS) conn.prepare(`UPDATE attempt_skills SET required = 0 WHERE attempt_id = ? AND skill != 'speaking'`).run(a.id);
+    capNhatConOCho([a.id]);   // TURSO-LOG-1311: cờ "còn ô chờ" xét `lich_su` (MT lịch sử FT không chờ) — ghi SQL thẳng thì tính lại như đường thật
     return a.id as number;
   };
   const xem = (ws: string, p: any = P.mbManager) => cham.lichTest(p, pid(ws), null, TODAY, { classId: LOP, phamVi: 'tat-ca' });
