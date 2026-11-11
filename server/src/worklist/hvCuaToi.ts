@@ -94,10 +94,12 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
     const st = standing.get(id);
     if (st?.sosLevel && st.mode === 'ielts_band') ghi(id, (l) => { l.sos = st.sosLevel!; });
   }
-  for (const c of conn.prepare(
-    `SELECT COALESCE(sc.student_id, a.student_id) AS sid, sc.category FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE sc.status != 'done' AND ${CASE_THAT('sc')} AND substr(sc.created_at, 1, 10) >= ? ORDER BY sc.id`,
-  ).all(tuNgay) as any[]) {
+  /* TURSO-1211: `created_at >= ngày` (= `substr(created_at, 1, 10) >= ngày` với chuỗi ISO) đi chỉ mục `idx_case_tao`; `ORDER BY sc.id` làm SQLite quay về SCAN
+     cả bảng → xếp theo id trong JS (thứ tự nhãn `caseMoi` như cũ). */
+  for (const c of (conn.prepare(
+    `SELECT sc.id, COALESCE(sc.student_id, a.student_id) AS sid, sc.category FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+      WHERE sc.status != 'done' AND ${CASE_THAT('sc')} AND sc.created_at >= ?`,
+  ).all(tuNgay) as any[]).sort((x, y) => x.id - y.id)) {
     if (laDangHoc.has(c.sid)) ghi(c.sid, (l) => { l.caseMoi = [...new Set([...(l.caseMoi ?? []), c.category ?? 'tong_hop'])]; });
   }
   for (const v of conn.prepare('SELECT student_id AS sid, ten, category FROM violations WHERE occurred_on >= ? ORDER BY occurred_on DESC, id DESC').all(tuNgay) as any[]) {

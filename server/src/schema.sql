@@ -1110,6 +1110,7 @@ CREATE INDEX idx_case_attempt ON sos_cases(attempt_id, status, sos_level);
 CREATE INDEX idx_case_mo_ta_attempt ON sos_cases(mo_ta_attempt_id) WHERE mo_ta_attempt_id IS NOT NULL;
 /* OV-15d: Case theo người phụ trách — thông báo tự động "Case chưa chốt PA quá hạn" đọc Case đang mở của MỘT người khi mở chuông. */
 CREATE INDEX idx_case_owner ON sos_cases(owner_user_id, status);
+CREATE INDEX idx_case_tao ON sos_cases(created_at);   -- TURSO-1211: Case mới 7 ngày (chipHocVien)
 
 /*
  * VẤN ĐỀ của một case, theo bộ phân loại ba nhóm Học sinh / Giáo viên / Giáo trình.
