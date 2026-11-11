@@ -261,6 +261,9 @@
   .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface-2); }
   .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong), 6px 0 8px -4px var(--line-strong); }
   .luoi-trong-panel .table-scroll[data-con-phai] { mask-image: linear-gradient(to right, var(--surface) calc(100% - 48px), transparent); }   /* mask chỉ dùng độ đục — màu nào đặc cũng được */
+  /* G1-11 (mockup L4): lưới lớp thường gọn ở màn hẹp ("Xem dạng bảng") — cột Học viên · Kết quả 128 px (đứng yên), môn cuộn ngang, thấy 2 môn mỗi khung. */
+  @media (max-width: 767px) { .luoi-thuong-gon table > colgroup > col:first-child { width: 128px !important; } }
+  .luoi-thuong-gon .ten-ho-so { white-space: normal; overflow: visible; }   /* G1-11: tên dài xuống dòng trong cột 200 px, không cắt "…" */
   /*
    * ĐẦU CỘT DÍNH (PR-HK2, T15) — chỉ từ 1280 px (xl), chỉ bảng VỪA khung ở 1440 (không cần cuộn ngang). Đo: ở 768–1100 px nhiều bảng rộng hơn khung → bỏ khung cuộn thì <main> trượt ngang; từ 1200 px không trang nào tràn. Đặt `bang-dinh` cạnh `table-scroll`
    * trên khối bọc (hoặc thẳng trên <table> khi bảng không có khối bọc): từ xl khối bọc bỏ khung cuộn nên đầu cột bám <main>, top = -1.25rem

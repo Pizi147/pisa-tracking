@@ -16,12 +16,14 @@ import { t } from '@shared/i18n/index.ts';
  * Lưu một ô → tải lại lưới NÀY và báo `onDaLuu` (Lịch Test gộp 1,5 s rồi mới tải lại dải số — Q14).
  * "Mở lưới đầy đủ ›" (G6: "›" = đổi trang; → Lịch tuần lọc lớp): chỉ khi lưới nằm ngoài Lịch tuần (panel việc); trong Lịch (`coLinkRieng`) không lặp.
  */
-export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet, emCoBaiTuan = false, luotDuoiTen = false }: {
+export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: chiAttemptVao = null, chiHv = null, kn = null, hrefDayDu, datConTro, onDaLuu, coLinkRieng, onSoOChuaLuu, chiCot = null, sEx, onHet, emCoBaiTuan = false, luotDuoiTen = false, luoiGon = false }: {
   classId: number; periodId: number | null; kind: string | null; tuanDangXem: string | null;
   chiAttempt?: ReadonlySet<number> | null; kn?: string | null; hrefDayDu: string; datConTro: boolean;
   onDaLuu: () => void; coLinkRieng?: boolean; onSoOChuaLuu?: (n: number) => void;
   /** OV-15b: panel việc — chỉ cột của việc (+ nút "Cả lớp"). */
   chiCot?: readonly string[] | null;
+  /** G1-11: panel việc ~720 px — lưới lớp thường gọn (Kết quả dưới tên, ô hai tầng). */
+  luoiGon?: boolean;
   /** SL1 (CV-01): panel việc — chỉ hàng em của việc (`emCuaViec`); "Cả lớp" trong lưới vẫn mở hết. */
   chiHv?: readonly number[] | null;
   /** UI-LICH-TUAN: lượt S Ex của tuần (Lịch tuần) — cột S Ex của lưới FT. */
@@ -55,7 +57,7 @@ export function LuoiNhung({ classId, periodId, kind, tuanDangXem, chiAttempt: ch
           <DongThiContext.Provider value={luotDuoiTen}>
             <LuoiChamLop data={data} kind={kind} kn={kn} onReload={() => { reload(); onDaLuu(); }}
               gon tuanDangXem={tuanDangXem} chiAttempt={chiAttempt} datConTro={datConTro} thanhTren={link}
-              onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} sEx={sEx} onHet={onHet} />
+              onSoOChuaLuu={onSoOChuaLuu} chiCot={chiCot} sEx={sEx} onHet={onHet} luoiGon={luoiGon} />
           </DongThiContext.Provider>
         )}
     </div>
