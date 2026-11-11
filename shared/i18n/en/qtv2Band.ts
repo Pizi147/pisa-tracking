@@ -20,7 +20,7 @@ export const EN_QTV2_BAND = {
   'Cân nhắc': 'Manager decides',
   'Lên + bổ trợ': 'Move up + support',
   'theo chương trình': 'per programme',
-  'Final lớp thường, % tổng chưa làm tròn. Dưới mức này: gợi ý học lại, Báo PH qua TVV.': 'Regular-class Final, unrounded total %. Below this: suggest repeating, tell parents via the consultant.',
+  'Final lớp thường, % tổng chưa làm tròn. Dưới mức này: gợi ý học lại, Báo PH kết quả Test.': 'Regular-class Final, unrounded total %. Below this: suggest repeating, report the Test result to parents.',
   'Từ mức này tới dưới "Đạt từ": lên lớp kèm bổ trợ miễn phí. Giữa "Học lại dưới" và mức này: Quản lý cân nhắc.':
     'From this level up to "Pass from": move up with free extra support. Between "Repeat below" and this level: the manager decides.',
   'Mini Test sau bổ trợ Final: đạt thì Case tự Hoàn thành; chưa đạt thì Xét lại lộ trình.': 'Mini Test after Final support: passing completes the Case; otherwise the route is reviewed.',

@@ -8,8 +8,8 @@ import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
  * Ô TÌM LỚP (mockup 14 (1), Q8): gõ → gợi ý tối đa 8 dòng `{mã} · {chi nhánh} · {n} HV` (↑↓ Enter chọn, Esc đóng), ✕ xoá.
  * Lọc PHÍA WEB trên danh sách lớp đã theo chi nhánh và quyền — không có route riêng. Chọn một lớp → chữ = mã lớp, mở lớp đó.
  */
-export function TimLop({ lop, value, onChange, onChon, className = '' }: {
-  lop: LopKH[]; value: string; onChange: (v: string) => void; onChon: (l: LopKH) => void; className?: string;
+export function TimLop({ lop, value, onChange, onChon, className = '', placeholder }: {
+  lop: LopKH[]; value: string; onChange: (v: string) => void; onChon: (l: LopKH) => void; className?: string; placeholder?: string;
 }) {
   const [mo, setMo] = useState(false);
   const [dong, setDong] = useState(0);
@@ -32,7 +32,7 @@ export function TimLop({ lop, value, onChange, onChon, className = '' }: {
     <div ref={goc} className={`relative ${className}`}>
       <span className="label">{t('Lớp')}</span>
       <div className="relative">
-        <input className="field w-full pr-8" value={value} placeholder={t('Tìm lớp…')} aria-label={t('Tìm lớp')} role="combobox" aria-expanded={mo && goiY.length > 0}
+        <input className="field w-full pr-8" value={value} placeholder={placeholder ?? t('Tìm lớp…')} aria-label={t('Tìm lớp')} role="combobox" aria-expanded={mo && goiY.length > 0}
           aria-controls="tim-lop-goi-y" aria-autocomplete="list"
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />
         {value && (

@@ -3,7 +3,7 @@
  * Kết luận lên FT → Chuyển tiếp lớp → Case + PA Bổ trợ miễn phí + Mini Test → ghi Mini Test); không dựng bằng SQL trừ tên lớp.
  * Hai lớp MỚI cuối mảng `CLASSES`: MB BE 04 (khai giảng 29/06 — Cuối khoá tuần 10 = W1 SEP) và MB ELE 02 (07/09 — lớp đích, tuần 2/10).
  *
- *  D10  BE 04  · bốn em Cuối khoá ở bốn dải: Hồ Thu Trang 45% → Học lại (đã chuyển sang MB BE 03: việc Báo PH qua TVV cho Quản lý);
+ *  D10  BE 04  · bốn em Cuối khoá ở bốn dải: Hồ Thu Trang 45% → Học lại (đã chuyển sang MB BE 03: việc Báo PH kết quả Test cho Quản lý);
  *                Đặng Minh Khôi 55% → Quản lý cân nhắc (chưa chuyển); Vương Bảo Ngọc 64% → đã lên ELE 02: Case + PA Bổ trợ miễn phí, Mini Test CHƯA ghi;
  *                Tạ Đức Huy 78% → Pass (chưa chuyển).
  *  D11  BE 04  · Lâm Khánh Vy 64% đã lên ELE 02, Mini Test 58% → Case còn mở + thẻ Báo lên cho Quản lý.

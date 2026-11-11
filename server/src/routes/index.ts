@@ -740,21 +740,6 @@ api.post('/ke-hoach-test/xuat', requireAuth, wrap((req) =>
   keHoachSvc.xuatKeHoach(principalOf(req), { branchId: toInt(req.body?.branchId), classIds: dsLop(req.body?.classIds), xemTruoc: !!req.body?.xemTruoc,
     chiXepLai: req.body?.chiXepLai === true })));
 
-api.post('/ke-hoach-test/xuat-diem', requireAuth, wrap((req) => {
-  const b = req.body ?? {};
-  const noiDung = b.noiDung === 'chi-diem' || b.noiDung === 'diem-nhan-xet' ? b.noiDung : null;
-  if (!noiDung) throw badRequest('Chọn Điểm + nhận xét hoặc Chỉ điểm.');
-  const mtTu = toInt(b.mtTu), mtDen = toInt(b.mtDen);
-  const coMt = b.mtTu != null || b.mtDen != null;
-  if (coMt && (!mtTu || !mtDen || mtTu < 0 || mtDen > 20 || mtTu > mtDen)) throw badRequest('Khoảng MT không hợp lệ.');
-  const coTuan = b.tuanTu != null || b.tuanDen != null;
-  if (coTuan && (!isIsoDate(b.tuanTu) || !isIsoDate(b.tuanDen) || b.tuanTu > b.tuanDen)) throw badRequest('Khoảng tuần không hợp lệ.');
-  return keHoachSvc.xuatDiemTest(principalOf(req), {
-    branchId: toInt(b.branchId), classIds: dsLop(b.classIds), noiDung, xemTruoc: !!b.xemTruoc,
-    mt: coMt ? [mtTu!, mtDen!] : null, tuan: coTuan ? [b.tuanTu, b.tuanDen] : null,
-  });
-}));
-
 api.get('/ke-hoach-test/thuong/:classId', requireAuth, wrap((req) => {
   regularSvc.quetCheckpoint(pInt(req, 'classId'));   // OV-6b2: lớp liên tục — Checkpoint kế tiếp cho em đã qua tuần thi
   return keHoachSvc.luoiThuong(principalOf(req), pInt(req, 'classId'));
@@ -1384,6 +1369,8 @@ api.get('/violations/similar', requireAuth, wrap((req) => {
       studentId, category: qStr(req, 'category') ?? '', occurredOn: qStr(req, 'occurredOn') ?? null,
     }),
     defaultSkill: violationSvc.defaultSkillFor(p, lop),
+    /* G3-19: dạy từ 2 môn ở lớp này → ô Môn bắt buộc (máy chủ trả 400 khi thiếu). */
+    batBuocMon: violationSvc.batBuocChonMon(p, lop),
     /* K5-47: form chọn môn theo chương trình lớp em đang học (`monViPham`). */
     chuongTrinh: lop ? regularSvc.programmeOfClass(lop)?.code ?? null : null,
   };

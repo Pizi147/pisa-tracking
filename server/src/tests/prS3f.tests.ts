@@ -164,7 +164,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   };
   const gvcn = P.coreTeacher, gvbm = P.w1Teacher;
   const ghiVp = (who: any, sid: number, ngay: string, category = 'homework') =>
-    (viol.recordViolation(who, { studentId: sid, category, description: 'Vi phạm ghi qua máy chủ cho PR-S3F', occurredOn: ngay }) as any).violation.id as number;
+    (viol.recordViolation(who, { studentId: sid, category, description: 'Vi phạm ghi qua máy chủ cho PR-S3F', skill: 'writing1', occurredOn: ngay }) as any).violation.id as number;
   const emYt = (sid: number) => tt.trangThaiYThuc([sid], TODAY).get(sid);
 
   check('S3F (6) · GVCN ghi vi phạm thứ 3 (Cần xử lý): vẫn được đặt "Đã ghi nhận"; xoá bớt một vi phạm của GVBM → vi phạm của GVCN không thành "Mới"', () => {

@@ -255,7 +255,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(tap('phoi-hop-hoan-thanh').filter((x) => x === r.attempt_id).length === 1, 'không cộng dồn');
   }));
 
-  await checkAsync('OV7a-3c · Báo PH qua TVV: lưu lại thì chụp lại nội dung đã báo (`noi_dung_luc_bao`)', () => thu(() => {
+  await checkAsync('OV7a-3c · Báo PH kết quả Test: lưu lại thì chụp lại nội dung đã báo (`noi_dung_luc_bao`)', () => thu(() => {
     const { r, gv } = viecPhoiHop('bao_ph_tvv');
     phoiHop.confirmCoordination(gv, r.id, { performedOn: TODAY, note: 'Đã làm' });
     conn.prepare(`UPDATE sos_coordination_actions SET noi_dung_luc_bao = '["cũ","cũ","cũ","cũ"]' WHERE id = ?`).run(r.id);

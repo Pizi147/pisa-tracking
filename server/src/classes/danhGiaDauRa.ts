@@ -1,5 +1,5 @@
 /**
- * NHẬN XÉT CUỐI KHOÁ của GVCN, lớp thường (UI-HO-SO-LOP C17 · T12 → P9b: cột Nhận xét ở trang Cuối khoá; QL đọc dưới cột Gợi ý, dùng cho Báo PH qua TVV).
+ * NHẬN XÉT CUỐI KHOÁ của GVCN, lớp thường (UI-HO-SO-LOP C17 · T12 → P9b: cột Nhận xét ở trang Cuối khoá; QL đọc dưới cột Gợi ý, dùng cho Báo PH kết quả Test).
  * N22 ①: GVCN không đề xuất hướng nữa (`de_xuat` cũ chỉ đọc) — không lệnh, không việc, không Case; Quản lý chốt ở trang Cuối khoá.
  * Kết quả Đạt / Chưa đạt KHÔNG lưu ở đây: máy tính từ bài Final (`danhGiaDauRa`, R3a "Chờ Final"). Mỗi lần lưu ghi `audit_logs` (`dau_ra.ghi`) = lịch sử.
  */

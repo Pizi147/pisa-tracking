@@ -30,7 +30,7 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
   const moTuThanh = (it: WorkItem) => { anhChup.current = ds; setMo(it); };
   const conKhoa = new Set(ds.map((x) => x.key));
   const keTiep = mo ? viecKeTiep((anhChup.current.length ? anhChup.current : ds).map((x) => ({ ...x, nhom: '' })), mo.key, (x) => conKhoa.has(x.key)) : null;
-  /* P1 G2-03: một ô = một DÒNG như Công việc (`dongToi`, "Báo PH qua TVV · 4 em" = 1) — số + "+n" đếm dòng. Bấm ô dòng gộp mở việc đầu của dòng (như trước),
+  /* P1 G2-03: một ô = một DÒNG như Công việc (`dongToi`, "Báo PH kết quả Test · 4 em" = 1) — số + "+n" đếm dòng. Bấm ô dòng gộp mở việc đầu của dòng (như trước),
      "Việc tiếp ›" đi qua từng việc. */
   const hang = data?.dongToi ?? ds;
   const viecCua = (h: WorkItem) => ds.find((x) => x.key === h.key) ?? ds.find((x) => khoaGopCua(x) === h.key) ?? h;

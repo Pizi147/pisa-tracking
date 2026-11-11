@@ -15,7 +15,7 @@ const SELECT_LOP = /<select(?:(?!<\/select>)[\s\S])*?\.code\b(?:(?!<\/select>)[\
 const CHO_CHON_LOP = [
   'students/StudentManagePanel.tsx', 'students/XemTruocHangLoatPanel.tsx', 'students/PanelLoTrinhMoi.tsx',   /* P7: Bước tiếp / Sau thi › Lộ trình mới — ô Lớp khác ở panel chung */
   'students/IntakePanel.tsx', 'test/keHoach/NganXepHangLoat.tsx', 'test/keHoach/NganXepLichMt.tsx', 'test/keHoach/XepTheoHocVien.tsx',
-  'test/keHoach/NganXuatDiem.tsx', 'students/ChuyenLopPanel.tsx', 'worklist/MgmtTasksPage.tsx',
+  'students/ChuyenLopPanel.tsx', 'worklist/MgmtTasksPage.tsx',
 ];
 
 export async function runPrChonLopTests(t: any) {

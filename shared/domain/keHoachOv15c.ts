@@ -88,39 +88,12 @@ export function bangThongTinXuat(o: { chiNhanh: string; boLoc: string; luc: stri
   ];
 }
 
-// ------------------------------------------------------------------ Xuất điểm Test (mockup 6 khung 9)
-
-export type NoiDungXuatDiem = 'diem-nhan-xet' | 'chi-diem';
-export const COT_XUAT_DIEM: readonly string[] = ['Tên học sinh', 'Gmail', 'Lớp', 'MT', 'Tuần Test', 'L', 'R', 'W1', 'W2', 'W', 'S', 'OVR', 'Kỳ vọng', 'Kết quả'];
-export const COT_NHAN_XET: readonly string[] = ['Nhận xét L · R', 'Nhận xét W · S'];
-
-export type DongDiem = {
-  ten: string; email: string | null; lop: string[]; mt: number; tuan: string | null;
-  l: number | null; r: number | null; w1: number | null; w2: number | null; w: number | null; s: number | null; ovr: number | null;
-  kyVong: number | null; danhGiaDuoc: boolean;
-  nhanXet: Partial<Record<'listening' | 'reading' | 'writing1' | 'writing2' | 'speaking', string | null>>;
-};
+// ------------------------------------------------------------------ Kết quả một lượt Mock (cột "Kết quả" của Xuất Excel › Điểm Test — G1-08)
 
 /** Kết quả một lượt Mock (C27): đủ điểm + biết kỳ vọng → Overall ≥ kỳ vọng "Đạt", dưới "Chưa đạt"; còn lại "Chưa đủ điểm". */
-export function ketQuaLuot(d: Pick<DongDiem, 'ovr' | 'kyVong' | 'danhGiaDuoc'>): string {
+export function ketQuaLuot(d: { ovr: number | null; kyVong: number | null; danhGiaDuoc: boolean }): string {
   if (!d.danhGiaDuoc || d.ovr === null || d.kyVong === null) return 'Chưa đủ điểm';
   return d.ovr >= d.kyVong ? 'Đạt' : 'Chưa đạt';
-}
-
-const ghepNhanXet = (o: DongDiem['nhanXet'], cap: [string, keyof DongDiem['nhanXet']][]) => {
-  const ds = cap.filter(([, k]) => o[k]?.trim()).map(([nhan, k]) => `${nhan}: ${o[k]!.trim()}`);
-  return ds.length ? ds.join(' · ') : null;
-};
-
-/** Một hàng một lượt; "Chỉ điểm" bỏ 2 cột nhận xét. */
-export function bangXuatDiem(dong: readonly DongDiem[], noiDung: NoiDungXuatDiem): (string | number | null)[][] {
-  const nx = noiDung === 'diem-nhan-xet';
-  const out: (string | number | null)[][] = [[...COT_XUAT_DIEM, ...(nx ? COT_NHAN_XET : [])]];
-  for (const d of dong) {
-    out.push([d.ten, d.email, chuoiLop(d.lop), `MT${d.mt}`, d.tuan ? tuanNam(d.tuan) : null, d.l, d.r, d.w1, d.w2, d.w, d.s, d.ovr, d.kyVong, ketQuaLuot(d),
-      ...(nx ? [ghepNhanXet(d.nhanXet, [['L', 'listening'], ['R', 'reading']]), ghepNhanXet(d.nhanXet, [['W1', 'writing1'], ['W2', 'writing2'], ['S', 'speaking']])] : [])]);
-  }
-  return out;
 }
 
 /** Chữ trong tên tệp: bỏ dấu, chỉ chữ số + gạch (`Hai-Duong`, `HDFT03`). */

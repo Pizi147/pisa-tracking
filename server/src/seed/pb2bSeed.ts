@@ -159,7 +159,7 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
   /* Vi phạm (GVCN Vinh): em 1 — 3 vi phạm hạn 07/09, xử lý 05/09 (đúng hạn); em 2 — 3 vi phạm hạn 09/09, xử lý 11/09 (trễ). */
   const pVinh = loadPrincipal(vinh);
   const viPham = (sid: number, ngay: string[], han: string, phanHoi: string) => {
-    const ids = ngay.map((d) => (recordViolation(pVinh, { studentId: sid, category: 'homework', description: 'Không làm bài tập về nhà Writing', occurredOn: d }) as any).violation.id as number);
+    const ids = ngay.map((d) => (recordViolation(pVinh, { studentId: sid, category: 'homework', description: 'Không làm bài tập về nhà Writing', skill: 'writing1', occurredOn: d }) as any).violation.id as number);
     xacNhanXuLy(pVinh, sid, { violationIds: ids, performedOn: phanHoi, note: 'Đã trao đổi với em và phụ huynh' });
     conn.prepare(`UPDATE violations SET reported_on = occurred_on, created_at = occurred_on || 'T09:00:00.000Z', ghi_nhan_luc = occurred_on,
                     han_xu_ly = ?, phan_hoi_ngay = ? WHERE id IN (${ids.join(',')})`).run(han, phanHoi);

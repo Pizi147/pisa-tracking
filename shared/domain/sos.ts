@@ -124,7 +124,7 @@ export const NHAN_VIEC_GOC: Record<CoordinationKind, string> = {
   cx_meeting_student: t('Meeting CX/GĐCN (sau Mock) · {x}', { x: 'HV' }),
   cx_meeting_family: t('Meeting CX/GĐCN (sau Mock) · {x}', { x: 'HV / PH' }),
   other: t('Khác'),
-  bao_ph_tvv: t('Báo phụ huynh qua TVV'),
+  bao_ph_tvv: t('Báo PH kết quả Test'),
 };
 
 /** CAU-HINH-CASE-SOS: việc trong danh mục của bản `pb` (dòng việc chụp lúc sinh; null → đang dùng). */

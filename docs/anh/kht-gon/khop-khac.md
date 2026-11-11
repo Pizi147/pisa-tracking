@@ -28,8 +28,8 @@ Dữ liệu mockup là dữ liệu giả (Cầu Giấy, MT1–MT7); web là seed
 | Đã huỷ: "đã huỷ" | `OHuy` | KHÁC nhỏ: mockup gạch tuần cũ — lượt huỷ không gửi tuần về lưới, nên chỉ chữ "đã huỷ" |
 | S Ex một dòng khung đứt hồng | nút S Ex một dòng | KHỚP |
 | Thẻ lớp nền `surface`, hàng lớn, chip "Chỉ xem" | `LopKeHoach` | KHỚP |
-| Cột: tên 190 (375: 120, tên hai dòng) · MT 180 · lớp thường 250; cấu trúc ô cố định (PTA 28/10): dòng 1 tuần (54 px, 13 px) + đủ ô môn (chữ 11, khe 2, ✓ 9 px — 4 ô vừa một dòng, không rơi lẻ) · dòng 2 điểm tổng / trạng thái · dòng cuối vắng / không thi — không cuộn ngang ở 1440 (mockup sửa theo: 150 làm "W2 SEP W4/8 chờ chấm" tràn cột) · S Ex 136; tiêu đề cột trái; dòng 1 chặn tràn (chữ trạng thái cắt gọn + tooltip) | `LuoiKeHoach` · `ODotGon` | KHỚP |
-| Lớp thường: tuần + `W4/8` + chữ; chưa có bài "Xếp W2 NOV" (đề xuất ở tooltip); tiêu đề "đề xuất W4/8" dòng 2 | `ODotGon khoa` · `NutXepO` | KHỚP |
+| Cột: tên 190 (375: 120, tên hai dòng) · MT 180 · lớp thường 250; cấu trúc ô cố định (PTA 28/10): dòng 1 tuần (54 px, 13 px) + đủ ô môn (chữ 11, khe 2, ✓ 9 px — 4 ô vừa một dòng, không rơi lẻ) · dòng 2 điểm tổng / trạng thái · dòng cuối vắng / không thi — không cuộn ngang ở 1440 (mockup sửa theo: 150 làm "W2 SEP tuần 4/8 chờ chấm" tràn cột) · S Ex 136; tiêu đề cột trái; dòng 1 chặn tràn (chữ trạng thái cắt gọn + tooltip) | `LuoiKeHoach` · `ODotGon` | KHỚP |
+| Lớp thường: tuần + `tuần 4/8` + chữ; chưa có bài "Xếp W2 NOV" (đề xuất ở tooltip); tiêu đề "đề xuất tuần 4/8" dòng 2 | `ODotGon khoa` · `NutXepO` | KHỚP |
 | ⓘ chú giải 6 dòng | `ChuGiaiGon` (mẫu dựng bằng chính ô) | KHỚP |
 | 375: Xuất ▾ | `Menu` "Xuất" (sm:hidden) | KHỚP; ⓘ nằm cùng hàng ô tìm thay vì cạnh công tắc (hàng công cụ sẵn có tự xuống dòng) |
 | Hộp một đợt, ngăn Xếp nhiều MT, Xuất | giữ `HopKyNang`, `NganXepLichMt`, `NganXuat*` | GIỮ (mockup ghi "giữ HopKyNang hiện có") |
@@ -53,7 +53,7 @@ GIỮ: mọi thao tác (bảng dưới), chú giải luật, ghi chú lịch / g
 | Xếp MT kế tiếp (QL) | bấm chip "MTn · chưa xếp" | bấm "Xếp MTn" | 1 = 1 |
 | Xếp MT vượt số cột · S Ex | "+ MT" cuối hàng | như cũ | = |
 | Khôi phục MT đã huỷ (QL) | bấm ô "Đã huỷ" | bấm ô "đã huỷ" | = |
-| Lớp thường chưa có bài | bấm ô "đề xuất W4/8" | bấm "Xếp W2 NOV" (đề xuất ở tooltip) | = |
+| Lớp thường chưa có bài | bấm ô "đề xuất tuần 4/8" | bấm "Xếp W2 NOV" (đề xuất ở tooltip) | = |
 | Xếp nhiều MT / Xếp lịch Test · Xếp cả lớp theo đề xuất | nút | như cũ | = |
 | Xuất Excel · Xuất điểm Test | hai nút | 1440 hai nút; 375 "Xuất ▾" | 1 → 2 ở 375 (gọn hàng) |
 | Tìm lớp / học viên · lọc chi nhánh · Cần xếp lại · FT / Lớp thường · lọc tuần từ Tổng quan | hàng công cụ | như cũ | = |

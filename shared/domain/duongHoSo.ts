@@ -23,7 +23,7 @@ export type ThamSoHoSo = {
   loTrinh?: number;
   /** Việc mở sẵn trong ngăn Case: `ghi-ket-qua` (cần `caseId` + `paId`). PR-CT2: bỏ `ke-hoach` (Nộp kế hoạch bổ trợ) — liên kết cũ bỏ qua tham số. */
   viec?: 'ghi-ket-qua' | 'thi-that' | 'them-pa';   // OV-11c (TQ-5): Thêm PA mở thẳng Case
-  /** Tab con của Ý thức & Phối hợp (PR-LT2a): `phoi-hop` — Việc Báo phụ huynh qua TVV mở thẳng thẻ Phối hợp. */
+  /** Tab con của Ý thức & Phối hợp (PR-LT2a): `phoi-hop` — Việc Báo PH kết quả Test mở thẳng thẻ Phối hợp. */
   sub?: 'phoi-hop';
   /** PR-UXF-b (Q10): hồ sơ cuộn tới một khối — `ket-luan-khoa` (hộp Kết luận khoá, `id="ket-luan-khoa"`). */
   muc?: 'ket-luan-khoa';
@@ -278,7 +278,7 @@ export function duongThongBao(n: ThongBaoRow): string | null {
         return n.student_id != null ? duongHoSoHocVien(n.student_id, { dot: n.attempt_id ?? n.entity_id }) : null;
       }
       if (n.kind === 'schedule_move' || n.kind === 'tu_doi_lich' || n.kind === 'huy_vang') return duongDotTest({ id: n.attempt_id ?? n.entity_id });
-      /* OV-11f (TQ-6): Báo phụ huynh qua TVV — chỗ làm là thẻ Phối hợp trong hồ sơ em. */
+      /* OV-11f (TQ-6): Báo PH kết quả Test — chỗ làm là thẻ Phối hợp trong hồ sơ em. */
       if (n.kind === 'phoi_hop') return n.student_id != null ? duongHoSoHocVien(n.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }) : null;
       return null;
     case 'skill_move_requests':

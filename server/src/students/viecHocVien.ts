@@ -48,7 +48,7 @@ type Nguon = {
 /**
  * VIỆC CỦA MỘT EM THEO NGƯỜI (PR-VAI-b Task 2, K3-01) — mọi việc đang mở của em, MỖI VIỆC CÓ NGƯỜI LÀM, cùng luật người làm với Công việc (Q2):
  *   Xác nhận nguyên nhân / Thêm PA / Xác nhận PA → người phụ trách Case · Ghi kết quả PA → người giữ việc (`nguoiGiuKetQua`, đọc từ `plan.nguoiId` của bảng)
- *   · Báo PH qua TVV, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người giữ việc (`nguoiGiuMiniTest`, PR-CT2), không có thì GVCN · Bàn giao → người xem
+ *   · Báo PH kết quả Test, Xử lý vi phạm, Ghi nhận vi phạm mới, Ghi "Đã thực hiện" → GVCN (Báo PH Cuối khoá → Quản lý) · Mini Test → người giữ việc (`nguoiGiuMiniTest`, PR-CT2), không có thì GVCN · Bàn giao → người xem
  *   theo `dai.nut` · "Chờ Quản lý duyệt…" → "Quản lý" (không ai trong số giáo viên, không vào thanh việc).
  * KHÔNG chạy `myWork` (quét cả phạm vi): Case/PA đọc từ `board` đã dựng, Ý thức / Mini Test / dải chuyển lớp do hồ sơ nạp sẵn.
  * Thêm hai câu: Báo PH của em · tên + vai người làm. Em Tạm dừng / đã kết thúc → rỗng (mọi hạn dừng, T65) — trừ "Chọn bước tiếp sau thi" (OV-12a).
@@ -132,14 +132,14 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     }
   }
 
-  /* Báo phụ huynh qua TVV — Giữa khoá: GVCN lớp em đang học · Cuối khoá < 50%: Quản lý (`mywork.ts` 3c). Không hạn (M-05). */
+  /* Báo PH kết quả Test — Giữa khoá: GVCN lớp em đang học · Cuối khoá < 50%: Quản lý (`mywork.ts` 3c). Không hạn (M-05). */
   const baoPh = conn.prepare(
     `SELECT x.id, a.kind FROM sos_coordination_actions x JOIN assessment_attempts a ON a.id = x.attempt_id
       WHERE x.kind = 'bao_ph_tvv' AND x.status = 'pending' AND x.student_id = ? ORDER BY x.id`,
   ).all(sid) as any[];
   for (const x of baoPh) {
     const cuoi = x.kind === 'final';
-    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', ...kem('Báo phụ huynh qua TVV · kết quả {bai}', { bai: nhanBaiThuong(cuoi ? 'final' : 'progress') }), kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', ...kem('Báo PH kết quả Test · kết quả {bai}', { bai: nhanBaiThuong(cuoi ? 'final' : 'progress') }), kyNang: null, caseId: null, paId: null,
       han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Quản lý' : undefined,
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });

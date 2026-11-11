@@ -151,12 +151,13 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
       const m1 = (await xep(1, addDays(T2, 7))).id as number;
       await xep(2, addDays(T2, 14));
       conn.prepare('UPDATE assessment_attempts SET class_id = ? WHERE id = ?').run(kh, m1);   // MT1 thi ở lớp chi nhánh khác
-      const xuat = (u: number, b: number, l: number) => goi(u, '/ke-hoach-test/xuat-diem', post({ branchId: b, classIds: [l], noiDung: 'chi-diem', xemTruoc: true, mtTu: 1, mtDen: 2 }));
-      const lopCua = (r: any) => r.sheets[0].aoa.filter((h: any[]) => h[0] === ten).map((h: any[]) => h[2]);
+      /* G1-08: Xuất điểm Test gộp vào /xuat-mt — cột Lớp (index 3) = lớp của lượt, chỉ lượt trong phạm vi người xuất (không lộ lớp chi nhánh khác). */
+      const xuat = (u: number, b: number, l: number) => goi(u, '/xuat-mt', post({ chiNhanh: [b], lop: [l], tg: 'dot', dot: ['mt:1', 'mt:2'], cot: 'gon' }));
+      const lopCua = (r: any) => r.sheets[0].aoa.filter((h: any[]) => h[0] === ten).map((h: any[]) => h[3]);
       const r = await json(await xuat(QL.userId, MB, mb));
       assert(lopCua(r).join('|') === 'MB I2 XD 01', `QL MB: cột Lớp = ${JSON.stringify(lopCua(r))}`);
       const ra = await json(await xuat(P.admin.userId, KHAC, kh));
-      assert(lopCua(ra).join('|') === `${MA_KHAC} I2 XD 01 → MB I2 XD 01`, `Admin: cột Lớp đủ = ${JSON.stringify(lopCua(ra))}`);
+      assert(lopCua(ra).join('|') === `${MA_KHAC} I2 XD 01`, `Admin: cột Lớp = lớp của lượt = ${JSON.stringify(lopCua(ra))}`);
     });
   });
 }

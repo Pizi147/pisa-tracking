@@ -46,7 +46,7 @@ export async function runPrOv11fTests(t: YThucTestKit) {
     if (pa) assert(/loai=ghi_ket_qua_pa/.test(pa.den ?? ''), pa.den);
   }));
 
-  check('OV11f-3 · chuông Cần làm chỉ việc còn mở: tín hiệu đã vào Case → Để biết, mở đúng Case; Báo PH qua TVV có đường tới tab Phối hợp', () => thu(() => {
+  check('OV11f-3 · chuông Cần làm chỉ việc còn mở: tín hiệu đã vào Case → Để biết, mở đúng Case; Báo PH kết quả Test có đường tới tab Phối hợp', () => thu(() => {
     const gv = P.coreTeacher;
     const ds = thongBao.thongBaoCua(gv.userId) as any[];
     const tin = ds.filter((n) => n.entity_type === 'case_signal');
@@ -57,7 +57,7 @@ export async function runPrOv11fTests(t: YThucTestKit) {
       if (st.case_id) assert(new RegExp(`case=${st.case_id}`).test(d.duongThongBao(n) ?? ''), `tín hiệu ${n.entity_id} không mở Case ${st.case_id}: ${d.duongThongBao(n)}`);
     }
     const ph = ds.filter((n) => n.kind === 'phoi_hop');
-    assert(ph.length, 'demo phải có chuông Báo phụ huynh qua TVV');
+    assert(ph.length, 'demo phải có chuông Báo PH kết quả Test');
     for (const n of ph) assert(/tab=y-thuc/.test(d.duongThongBao(n) ?? '') && /sub=phoi-hop/.test(d.duongThongBao(n) ?? ''), `phoi_hop không có đường: ${d.duongThongBao(n)}`);
     /* Đánh dấu xong việc phối hợp → chuông rời Cần làm. */
     conn.prepare(`UPDATE sos_coordination_actions SET status = 'done' WHERE attempt_id = ? AND kind = 'bao_ph_tvv'`).run(ph[0].entity_id);

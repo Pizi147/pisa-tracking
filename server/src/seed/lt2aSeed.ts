@@ -1,6 +1,6 @@
 /**
  * BỘ DEMO PR-LT2a (K5 §6 D9, D10 phần Giữa khoá; K1-55) — lớp thường · Giữa khoá. Đi qua CHÍNH các hàm dịch vụ (thêm HV → xếp bài Giữa khoá → nhập điểm
- * → Case tự tạo + PA Bổ trợ → Xác nhận Case (PA chạy ngay — PR-CT2 bỏ nộp / duyệt kế hoạch) → ghi kết quả → Báo phụ huynh qua TVV); chỉ lùi ngày bằng SQL ở G5.
+ * → Case tự tạo + PA Bổ trợ → Xác nhận Case (PA chạy ngay — PR-CT2 bỏ nộp / duyệt kế hoạch) → ghi kết quả → Báo PH kết quả Test); chỉ lùi ngày bằng SQL ở G5.
  * Hai lớp MỚI cuối mảng `CLASSES`: MB FOU 15 (khai giảng 17/08 — Giữa khoá tuần 4 = W2 SEP) và MB BE 03 (10/08 — Giữa khoá tuần 5 = W2 SEP).
  * Bài Giữa khoá đã QUA tuần nên `commitIntake` (M1b) không dựng — Quản lý xếp tay bằng `planRegularTests` (được phép với tuần đã qua).
  *

@@ -199,7 +199,7 @@ const CHU_BO_TRO = (n: number, tuan: number, ten: string | null) =>
  * CHẠY TRONG tx của nơi chuyển, SAU khi mở lộ trình mới (và sau `closeCasesOnProgrammeSwitch` nếu sang FT).
  * Thứ tự (Hướng dẫn 1b): (1) lớp thường → lớp thường: Case đang mở (kể cả Case bổ trợ Final đã sinh sớm — PR-CT2) + Mini Test chưa ghi đi theo em sang
  * lộ trình mới TRƯỚC khi tạo Case Cuối khoá, để khoá chống trùng gắn PA vào Case Giữa khoá cùng môn (M-01); (2) lên: Case Cuối khoá + PA Bổ trợ miễn phí
- * + một Mini Test (đã sinh sớm thì thôi — `taoBoTroFinal`); (3) học lại: Báo PH qua TVV cho Quản lý; (4) sang FT có kết luận "Trung tâm": Case Tutor.
+ * + một Mini Test (đã sinh sớm thì thôi — `taoBoTroFinal`); (3) học lại: Báo PH kết quả Test cho Quản lý; (4) sang FT có kết luận "Trung tâm": Case Tutor.
  * Em CHƯA đủ điểm Cuối khoá vẫn chuyển (Q30-4) — phần (2)(3) chờ điểm (`capNhatCuoiKhoaSauChuyen`).
  */
 export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[]): void {
@@ -284,8 +284,8 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
         cycleId: toCycle, ownerClassId: d.toClassId, ngay: d.ngay,
       });
     }
-    /* (3) Quản lý báo PH qua TVV: < 50 % luôn (kể cả cho lên — PTA Plan 25/10), 50–59 % Quản lý quyết học lại (Q6). Cùng luật tóm tắt chân (`tacDongChot`). */
-    /* CAU-HINH-CASE-SOS: mọi việc phối hợp của dải (bản gốc chỉ Báo PH qua TVV). */
+    /* (3) Quản lý báo PH kết quả Test: < 50 % luôn (kể cả cho lên — PTA Plan 25/10), 50–59 % Quản lý quyết học lại (Q6). Cùng luật tóm tắt chân (`tacDongChot`). */
+    /* CAU-HINH-CASE-SOS: mọi việc phối hợp của dải (bản gốc chỉ Báo PH kết quả Test). */
     const viec = viecKhiChot(d.huong, goiY);
     if (viec.length) baoPh.set(luot.id, { sid: d.sid, viec });
   }

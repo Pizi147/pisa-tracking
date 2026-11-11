@@ -606,6 +606,8 @@ const EN_D_SHARED = {
   'Chọn nhiều học viên thì ghi một vi phạm.': 'With several students, log one incident.',
   'Nhóm{so}': 'Group{so}',
   'Chọn Nhóm': 'Pick a group',
+  'Môn{so}': 'Subject{so}',
+  'Chọn Môn': 'Pick a subject',
   'Vi phạm{so}': 'Incident{so}',
   'Report 4 + Meeting CX/GĐCN': 'Report 4 + Meeting CX/BD',
   'Report {BAC_REPORT_TIEP} trở lên': 'Report {BAC_REPORT_TIEP}+',

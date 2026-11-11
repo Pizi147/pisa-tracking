@@ -246,7 +246,7 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     });
   });
 
-  await checkAsync('C15-8 · Xuất điểm Test: theo lớp + MT1–MT2 / theo tuần; "Chỉ điểm" bỏ 2 cột nhận xét; Kết quả Đạt / Chưa đủ điểm; GV 403', async () => {
+  await checkAsync('C15-8 · G1-08 Xuất điểm Test gộp vào /xuat-mt: theo lớp + MT1–MT2 / theo tuần; "Gọn" 19 cột (W1 · W2 · Kết quả), "Gọn + nhận xét" +2 cột; GV ngoài lớp 403', async () => {
     const l = lop('MB C15 DIEM 01');
     const a = em(l, 'Lê Bảo Trâm', 'tram@gmail.com');
     await voiMayChu(async (goi) => {
@@ -255,17 +255,19 @@ export async function runPrOv15cTests(t: YThucTestKit) {
         conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, band, comment, entered_at) VALUES (?,?,?,?,?)`).run(id, k, band, k === 'listening' ? 'Nghe tốt' : null, NOW);
       }
       await xep(goi, a.sid, 2, '2026-09-21');
-      const r = await json(await goi(QL, '/ke-hoach-test/xuat-diem', post({ branchId: MB, classIds: [l], mtTu: 1, mtDen: 2, noiDung: 'diem-nhan-xet', xemTruoc: true })));
+      const r = await json(await goi(QL, '/xuat-mt', post({ chiNhanh: [MB], lop: [l], tg: 'dot', dot: ['mt:1', 'mt:2'], cot: 'nx' })));
       const s = r.sheets[0].aoa;
-      assert(s[0].length === 16 && s[0][14] === 'Nhận xét L · R', JSON.stringify(s[0]));
-      assert(s.length === 3 && s[1][3] === 'MT1' && s[1][4] === 'W4 AUG/2026' && s[1][11] === 6 && s[1][13] === 'Đạt' && s[1][14] === 'L: Nghe tốt', JSON.stringify(s[1]));
-      assert(s[2][13] === 'Chưa đủ điểm', JSON.stringify(s[2]));
-      const r2 = await json(await goi(QL, '/ke-hoach-test/xuat-diem', post({ branchId: MB, classIds: [l], mtTu: 1, mtDen: 2, noiDung: 'chi-diem', xemTruoc: true })));
-      assert(r2.sheets[0].aoa[0].length === 14, 'chỉ điểm 14 cột');
-      const r3 = await json(await goi(QL, '/ke-hoach-test/xuat-diem', post({ branchId: MB, classIds: [], tuanTu: '2026-09-21', tuanDen: '2026-09-21', noiDung: 'chi-diem', xemTruoc: true })));
-      assert(r3.sheets[0].aoa.some((x: any[]) => x[0] === 'Lê Bảo Trâm' && x[3] === 'MT2') && !r3.sheets[0].aoa.some((x: any[]) => x[0] === 'Lê Bảo Trâm' && x[3] === 'MT1'), 'theo tuần');
-      assert((await goi(GV, '/ke-hoach-test/xuat-diem', post({ branchId: MB, classIds: [l], mtTu: 1, mtDen: 2, noiDung: 'chi-diem' }))).status === 403, 'GV 403');
-      assert((await goi(QL, '/ke-hoach-test/xuat-diem', post({ branchId: MB, classIds: [l], noiDung: 'chi-diem' }))).status === 400, 'thiếu phạm vi');
+      const c = (ten: string) => s[0].indexOf(ten);
+      assert(s[0].length === 21 && c('Kết quả') === 18 && c('Nhận xét L · R') === 19 && c('W1') === 16, JSON.stringify(s[0]));
+      assert(s.length === 3 && s[1][5] === 'MT1' && s[1][c('Overall')] === 6 && s[1][c('W1')] === 6 && s[1][c('Kết quả')] === 'Đạt' && s[1][c('Nhận xét L · R')] === 'L: Nghe tốt', JSON.stringify(s[1]));
+      assert(s[2][c('Kết quả')] === 'Chưa đủ điểm', JSON.stringify(s[2]));
+      const r2 = await json(await goi(QL, '/xuat-mt', post({ chiNhanh: [MB], lop: [l], tg: 'dot', dot: ['mt:1', 'mt:2'], cot: 'gon' })));
+      assert(r2.sheets[0].aoa[0].length === 19, 'gọn 19 cột');
+      const r3 = await json(await goi(QL, '/xuat-mt', post({ chiNhanh: [MB], tg: 'tuan', tu: '2026-09-21', den: '2026-09-21', cot: 'gon' })));
+      assert(r3.sheets[0].aoa.some((x: any[]) => x[0] === 'Lê Bảo Trâm' && x[5] === 'MT2') && !r3.sheets[0].aoa.some((x: any[]) => x[0] === 'Lê Bảo Trâm' && x[5] === 'MT1'), 'theo tuần');
+      assert((await goi(GV, '/xuat-mt', post({ lop: [l], tg: 'dot', dot: ['mt:1'], cot: 'gon' }))).status === 403, 'GV ngoài lớp 403');
+      assert((await goi(QL, '/xuat-mt', post({ lop: [l], cot: 'gon' }))).status === 400, 'thiếu thời gian');
+      assert((await goi(QL, '/xuat-mt', post({ khung: 'thuong', tg: 'dot', dot: ['giua'], cot: 'nx' }))).status === 400, 'gọn + nhận xét chỉ FT');
     });
   });
 

@@ -418,7 +418,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const yc: any = await import('../duyet/yeuCau.ts');
   const gvcn = P.coreTeacher;
   const ghiVp = (who: any, sid: number, ngay = TODAY, category = 'homework') =>
-    (viol.recordViolation(who, { studentId: sid, category, description: 'Vi phạm ghi qua máy chủ cho khối 4', occurredOn: ngay }) as any).violation.id as number;
+    (viol.recordViolation(who, { studentId: sid, category, description: 'Vi phạm ghi qua máy chủ cho khối 4', skill: 'writing1', occurredOn: ngay }) as any).violation.id as number;
   const xl = (who: any, sid: number, ids: number[], extra: Record<string, unknown> = {}) =>
     xuLy.xacNhanXuLy(who, sid, { violationIds: ids, performedOn: TODAY, note: 'Đã trao đổi với em và gia đình', ...extra });
   const loiCua = (fn: () => unknown): { status: number; msg: string } => {

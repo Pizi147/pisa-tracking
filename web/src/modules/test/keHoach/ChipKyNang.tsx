@@ -23,7 +23,7 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
   nhan: string;
   /** FT đợt xong: Overall + kỳ vọng (null: không có kỳ vọng). */
   ketQua?: { ovr: number; dat: boolean | null; kyVong?: number | null } | null;
-  /** Lớp thường: tuần trong khoá (`W4/8`) của tuần chính. */
+  /** Lớp thường: tuần trong khoá (`tuần 4/8`) của tuần chính. */
   khoa?: { khaiGiang: string | null; tongTuan: number | null; tuan: string | null } | null;
   chon?: boolean;
   onMo: (el: HTMLElement) => void;

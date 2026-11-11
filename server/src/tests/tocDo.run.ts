@@ -1293,7 +1293,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        GV 8: Reading + Writing → Reading, Writing; mỗi việc 1 → 2 bài, `kns` / `kn` / đường mở theo môn tách). Trước: GVCN toi 48d4fd7f1dc1645a,
        GVBM toi bbfbcccdcf9d71b4, GVCN_THUONG toi 48d4fd7f1dc1645a, QL tat-ca dd8a7166b581b998, QT tat-ca 364be4cb77b9f362, QT tat-ca cn 7166c9b66b3098c4, QL gvcn 5afa68eea7a17883 */
     /* P9a XET-LAI (sau gộp P9b / P7): so JSON origin/main 87a3bc3 ↔ nhánh (GVCN / GVBM MB FT 101, QL, QL tất cả, QT): lệch CHỈ do bộ demo Xét lại (4 em
-       MB FOU 25 → MB BE 05): "Bàn giao 4 em · MB FOU 25" (GVCN, QL tất cả), "Xét lại lộ trình · MB BE 05 / MB FOU 25" (QL / QT), "Báo phụ huynh qua TVV ·
+       MB FOU 25 → MB BE 05): "Bàn giao 4 em · MB FOU 25" (GVCN, QL tất cả), "Xét lại lộ trình · MB BE 05 / MB FOU 25" (QL / QT), "Báo PH kết quả Test ·
        Hứa Đức Anh 46%", "Ghi Mini Test" 2 em bổ trợ (55 / 57 %). ADMIN giữ. Trước (P9b): QL toi 53d8168836891e39, QT toi 3111c55ff8027ff3, GVCN toi 48d4fd7f1dc1645a,
        GVBM toi bbfbcccdcf9d71b4, QL tat-ca dd8a7166b581b998, QT tat-ca 364be4cb77b9f362, QT tat-ca cn 7166c9b66b3098c4, QL gvcn 5afa68eea7a17883, GVS toi 8b6b85a70a44d3dd */
     /* P13 gộp P9a (26/10): chụp lại 7 băm trên bản gộp (QL / QT toi, ADMIN, GVS giữ) — so JSON ×3 origin/main (P9a, 65357d4^2) ↔ nhánh, 11 góc: lệch CHỈ việc
@@ -1344,9 +1344,10 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        Học lại…") để không lệch khi Quản trị đổi ngưỡng. Đã kiểm: trả mywork.ts về origin/main (sau #1384) trên nhánh → TD4-a đạt với băm cũ. Trước: QL toi
        15eb3872996a260a, QT toi 6627fb30cb9de2f7, GVCN toi 6f6d75efb833e0e7, GVCN_THUONG toi 6f6d75efb833e0e7, QL tat-ca f35cfb2ed97a60cc, QT tat-ca 650abfb450588c2e,
        QT tat-ca cn 46b64ddbd555658b, QL gvcn f6ba5ccba208842e, GVS toi 85067c7b764cb801 */
-    'QL toi': '6335bcebd923e71b', 'QT toi': '83c44c6822338633', 'GVCN toi': 'a1ddc620fbe9804b', 'GVBM toi': '619ada104fec5944',
-    'GVCN_THUONG toi': 'a1ddc620fbe9804b', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '5c5af8972637a00a', 'QT tat-ca': '7dc7d873f49c2b9c',
-    'QT tat-ca cn': 'e96ba2d7deeea372', 'QL gvcn': 'b52f38f51cd37797', 'GVS toi': '3c702438ea810b91',
+    /* G3-17 (13/11): chụp lại 8 băm — đổi CÓ CHỦ Ý chỉ chữ việc "Báo phụ huynh qua TVV" → "Báo PH kết quả Test" (tiêu đề / nhãn). */
+    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': '940b335430de8caf', 'GVBM toi': '619ada104fec5944',
+    'GVCN_THUONG toi': '940b335430de8caf', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '7d767d49828b74e7', 'QT tat-ca': '82c3472f2a05bcdf',
+    'QT tat-ca cn': 'b3eff2d5295fb05c', 'QL gvcn': '52d159aa5665aa06', 'GVS toi': '3c702438ea810b91',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1523,7 +1524,7 @@ await checkAsync('DOC-IT-5 (×3) · Lưu trữ HV đi chỉ mục một phần, 
   assert(!loi.length, loi.join(' · '));
 });
 
-/* GIAM-DOC-0611c: việc "Báo PH qua TVV" đang chờ (`mywork.ts` 3c, `emCoBaoPhChuaLam`) `x.kind = ? AND x.status = 'pending'` trước SCAN cả `sos_coordination_actions`
+/* GIAM-DOC-0611c: việc "Báo PH kết quả Test" đang chờ (`mywork.ts` 3c, `emCoBaoPhChuaLam`) `x.kind = ? AND x.status = 'pending'` trước SCAN cả `sos_coordination_actions`
    (bản chính 29/10: 436 dòng, 117 đang chờ) — nay đi chỉ mục một phần idx_sca_cho. */
 await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca_cho, không SCAN sos_coordination_actions; migrate chạy lặp được', async () => {
   const { migratePrGiamDoc0611 } = await import('../migrate/prGiamDoc0611.ts');
@@ -1536,7 +1537,7 @@ await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca
     assert((await doSql('GVCN', 'GET', '/my-work')).status === 200, 'GVCN /my-work không 200');
   } finally { doQuet.ghi = null; }
   const cau = [...new Map(ghi.filter((g) => /FROM sos_coordination_actions x JOIN students s[\s\S]*x\.kind = 'bao_ph_tvv' AND x\.status = 'pending'/.test(g.sql)).map((g) => [g.sql, g])).values()];
-  assert(cau.length, 'không bắt được câu Báo PH qua TVV');
+  assert(cau.length, 'không bắt được câu Báo PH kết quả Test');
   const loi: string[] = [];
   for (const { sql, args } of cau) {
     const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);

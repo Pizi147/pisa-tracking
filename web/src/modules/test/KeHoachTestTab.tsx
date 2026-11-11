@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { MenuDong, NUT_BA_CHAM_DAU } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -12,11 +11,11 @@ import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { NganXepHangLoat } from './keHoach/NganXepHangLoat.tsx';
 import { NganXepLichMt } from './keHoach/NganXepLichMt.tsx';
 import { LopKeHoach } from './keHoach/LopKeHoach.tsx';
-import { boMonLich, chuanHoaMaLop, kyHieuLop, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
+import { boMonLich, chuanHoaMaLop, kyHieuLop, mondayOfDate, tenMon, tenMonNgan, tuanLich } from '@shared/domain/index.ts';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { Data as LichSapToiData } from '../worklist/Highlights.tsx';
 import { TimKeHoach, type KetQuaTim } from './keHoach/TimKeHoach.tsx';
-import { NganXuatKeHoach } from './keHoach/NganXuatKeHoach.tsx';
-import { NganXuatDiem } from './keHoach/NganXuatDiem.tsx';
+import { NganXuatTest } from './NganXuatTest.tsx';
 import type { DanhSachLop } from './keHoach/kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -36,7 +35,7 @@ export function KeHoachTestTab() {
   const classIdParam = params.get('classId') ? Number(params.get('classId')) : null;
   /* OV-15c (C18): em vừa chọn ở ô tìm — lưới lớp đó cuộn tới hàng em và đánh dấu hàng. */
   const hvParam = params.get('hv') ? Number(params.get('hv')) : null;
-  const [xuat, setXuat] = useState<'ke-hoach' | 'diem' | null>(null);
+  const [xuat, setXuat] = useState(false);
 
   const { data, loading, error, reload } = useApi<DanhSachLop>(`/ke-hoach-test/lop${branchId ? `?branchId=${branchId}` : ''}`);
   const [chu, setChu] = useState('');
@@ -51,7 +50,9 @@ export function KeHoachTestTab() {
   const [chiChuaCoKe, setChiChuaCoKe] = useState(false);
   const [lopLoc, setLopLoc] = useState<number | null>(null);
   const dienThoai = useDienThoai();
-  /* Đầu trang (mockup U05): Xuất Excel · Xuất điểm Test · Xếp nhiều MT… cạnh tiêu đề "Test" — TestPage chừa chỗ `#test-nut-trang`. */
+  const { homNay } = useNgayNghiepVu();
+  /* Đầu trang (mockup U05; G1-08): Xuất Excel… · Xếp nhiều MT… cạnh tiêu đề "Test" — TestPage chừa chỗ `#test-nut-trang`. Điện thoại cùng chỗ
+     (bỏ ⋯ "Thao tác trang": chỉ còn một mục — luật không ⋯ một mục). */
   const [choNut, setChoNut] = useState<HTMLElement | null>(null);
   useEffect(() => { setChoNut(document.getElementById('test-nut-trang')); }, []);
 
@@ -167,22 +168,12 @@ export function KeHoachTestTab() {
             next.delete('classId'); setLopLoc(null);
             setParams(next, { replace: true });
           };
-          const nutTrang = coXep ? (
-            <MenuDong nhan={t('Thao tác trang')} lopNut={`${NUT_BA_CHAM_DAU} h-11 w-11`} muc={[
-              { key: 'xep', nhan: loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…'), tat: !!lyDoTat, onChon: () => setXep(loai) },
-              ...(loai === 'ft' ? [
-                { key: 'xuat', nhan: t('Xuất Excel'), tat: !!lyDoTat || !danhSach.length, onChon: () => setXuat('ke-hoach') },
-                { key: 'diem', nhan: t('Xuất điểm Test'), tat: !!lyDoTat, onChon: () => setXuat('diem') },
-              ] : []),
-            ]} />
-          ) : null;
           return dienThoai ? (
             <>
               <TimKeHoach branchId={branchId} value={chu} onChange={setChu} onChonLop={chonLop} onChonHv={chonHv} className="min-w-0 flex-1" />
               {/* KIEM-TAY-1011 (6): nút + khối là con trực tiếp của hàng flex — khối "Lọc" xuống dòng riêng (`basis-full`), không chen ô tìm
                   (`<details className="contents">` làm khối thành một ô co lại: "Tìm l…", "Lớp thườ…"). */}
               <button type="button" className="btn min-h-[44px]" aria-expanded={moLoc} aria-controls="kht-loc-them" onClick={() => setMoLoc((v) => !v)}>{t('Lọc')}</button>
-              {nutTrang}
               {moLoc && (
                 <div id="kht-loc-them" className="order-1 flex basis-full flex-wrap items-center gap-2">
                   <CongTacKhung v8 trang="ke-hoach-test" value={loai} dem={{ ft: lopFT.length, thuong: lopThuong.length }}
@@ -221,7 +212,7 @@ export function KeHoachTestTab() {
               {monTheoCt.length ? '.' : ''} {t('Môn khác tuần trong cùng đợt ghi riêng.')}
             </span>
           )}
-          {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>W5/10</b>).</span>}
+          {loai !== 'ft' && <span className="block">{t('Lớp thường ghi thêm tuần trong khoá')} (<b>{t('tuần {n}/{tong}', { n: 5, tong: 10 })}</b>).</span>}
           <span className="block">{t('Hai đợt trùng tuần thì máy chặn; cách đúng một tuần thì hỏi lại để xác nhận.')}</span>
         </NutLuat>
         <span className="ml-auto inline-flex items-center gap-3.5 text-[13px] text-dim max-sm:order-2 max-sm:basis-full max-sm:justify-end">
@@ -229,15 +220,15 @@ export function KeHoachTestTab() {
           {nutMoHet}
         </span>
       </div>
-      {choNut && !dienThoai && coXep && createPortal(
-        <span className="flex flex-wrap items-center gap-2">
-          {loai === 'ft' && <>
-            <button type="button" className="btn h-9 text-sm font-semibold" disabled={!!lyDoTat || !danhSach.length} title={lyDoTat} onClick={() => setXuat('ke-hoach')}>{t('Xuất Excel')}</button>
-            <button type="button" className="btn h-9 text-sm font-semibold" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXuat('diem')}>{t('Xuất điểm Test')}</button>
-          </>}
-          <button type="button" className="btn btn-primary h-9 text-sm" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXep(loai)}>
+      {choNut && (coXep || session?.nav?.xuatMt) && createPortal(
+        <span className="flex flex-nowrap items-center gap-2">
+          {session?.nav?.xuatMt && (
+            <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px] max-sm:px-2.5" aria-haspopup="dialog" disabled={!!lyDoTat} title={lyDoTat}
+              onClick={() => setXuat(true)}>{t('Xuất Excel…')}</button>
+          )}
+          {coXep && <button type="button" className="btn btn-primary h-9 text-sm max-sm:min-h-[44px] max-sm:px-2.5" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXep(loai)}>
             {loai === 'ft' ? t('Xếp nhiều MT…') : t('Xếp lịch Test…')}
-          </button>
+          </button>}
         </span>, choNut)}
 
       {danhSach.length === 0 ? (
@@ -257,11 +248,13 @@ export function KeHoachTestTab() {
         <NganXepLichMt chiNhanhDau={branchId} lopDs={data.lop} lopMoSan={lopChon?.loai === 'ft' ? lopChon.id : null} coThuong={lopThuong.length > 0}
           onDoiKhung={setXep} onClose={() => setXep(null)} onDone={reload} />
       )}
-      {xuat === 'ke-hoach' && (
-        <NganXuatKeHoach branchId={branchId} classIds={danhSach.length === lopFT.length ? [] : danhSach.map((l) => l.id)} chiXepLai={false} onDong={() => setXuat(null)} />
-      )}
-      {xuat === 'diem' && (
-        <NganXuatDiem branchId={branchId} lopFt={lopFT} lopDau={lopChon?.loai === 'ft' ? lopChon.id : null} onDong={() => setXuat(null)} />
+      {xuat && (
+        /* G1-08: một ngăn — mở sẵn Lịch Test theo bộ lọc đang xem (như ngăn Kế hoạch cũ); tab Điểm: lớp đang mở → MT1–MT4 của lớp ("Theo lớp (nhiều MT)" cũ), không → tuần này. */
+        <NganXuatTest dau={loai === 'ft' ? 'lich' : 'diem'} onDong={() => setXuat(false)}
+          lich={{ branchId, classIds: loai === 'ft' && danhSach.length !== lopFT.length ? danhSach.map((l) => l.id) : [] }}
+          diem={{ khung: loai, chiNhanh: branchId, lop: lopChon ? { id: lopChon.id, ma: lopChon.code } : null,
+            thoiGianMacDinh: lopChon && loai === 'ft' ? { kieu: 'dot', dot: ['mt:1', 'mt:2', 'mt:3', 'mt:4'] }
+              : { kieu: 'tuan', tu: mondayOfDate(homNay), den: mondayOfDate(homNay) } }} />
       )}
       {xep === 'thuong' && (
         <NganXepHangLoat lopThuong={lopThuong} classIdBanDau={lopChon?.loai === 'thuong' ? lopChon.id : null} coFt={lopFT.length > 0}

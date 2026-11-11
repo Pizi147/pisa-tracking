@@ -473,7 +473,7 @@ export async function runFormTests(t: YThucTestKit) {
     check('PR-Form · K2-6d (PR-YT4): Xác nhận xử lý không người → performed_by = người xác nhận; người thực hiện là tài khoản khoá → 400', () => {
       const fou = taoHocVien('MB FOU 12');
       const ghi = (k: string) => (violSvc.recordViolation(P.normalCoreTeacher, {
-        studentId: fou.sid, category: 'homework', description: 'Không nộp bài tập về nhà buổi này',
+        studentId: fou.sid, category: 'homework', skill: 'writing1', description: 'Không nộp bài tập về nhà buổi này',
         idempotencyKey: `pr-form-t4-viol-${k}-${soThuTu}`,
       }) as any).violation.id as number;
       const done = xuLySvc.xacNhanXuLy(P.normalCoreTeacher, fou.sid, {

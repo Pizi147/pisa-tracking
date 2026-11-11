@@ -17,14 +17,17 @@ export type ThoiGianXuat =
   | { kieu: 'thang'; tu: string; den: string }         // YYYY-MM
   | { kieu: 'dot'; dot: string[] };                    // 'mt:1'…'mt:8' | 'giua' | 'checkpoint' | 'cuoi'
 export type BoLocXuatMt = {
-  khung: KhungXuat; chiNhanh: number[]; lop: number[]; thoiGian: ThoiGianXuat; chiDuDiem: boolean; cot: 'gon' | 'day-du';
+  khung: KhungXuat; chiNhanh: number[]; lop: number[]; thoiGian: ThoiGianXuat; chiDuDiem: boolean; cot: CotXuat;
 };
 export type Cell = string | number | null;
+/** G1-08: `nx` = Gọn + 2 cột nhận xét (L · R, W · S — nội dung "Điểm + nhận xét" của ngăn Xuất điểm Test cũ); chỉ Fast Track. */
+export type CotXuat = 'gon' | 'nx' | 'day-du';
 
 export const XUAT_TOI_DA_LUOT = 10_000;
 const XUAT_TOI_DA_TUAN = 104;
 const XUAT_TOI_DA_THANG = 24;
-export const DOT_XUAT_FT = ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8'] as const;
+/** G1-08: MT1–MT10 (ngăn Xuất điểm Test cũ chọn tới MT10). */
+export const DOT_XUAT_FT = ['mt:1', 'mt:2', 'mt:3', 'mt:4', 'mt:5', 'mt:6', 'mt:7', 'mt:8', 'mt:9', 'mt:10'] as const;
 /** DON-LUONG A8: lớp thường đủ đợt — Progress · Checkpoint (PET / KET liên tục) · Final; `kindCuaDot` ra loại lượt. */
 export const DOT_XUAT_THUONG = ['giua', 'checkpoint', 'cuoi'] as const;
 export const kindCuaDot = (k: string) => (k === 'giua' ? 'progress' : k === 'cuoi' ? 'final' : k);
@@ -57,7 +60,8 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
   const lop = danhSachId(o.lop, 'Lớp', 200);
   if (typeof lop === 'string') return lop;
   const cot = chuoi(o.cot) || 'gon';
-  if (cot !== 'gon' && cot !== 'day-du') return 'Cột phải là gọn hoặc đầy đủ.';
+  if (cot !== 'gon' && cot !== 'nx' && cot !== 'day-du') return 'Cột phải là gọn, gọn + nhận xét hoặc đầy đủ.';
+  if (cot === 'nx' && khung !== 'ft') return 'Cột gọn + nhận xét chỉ có ở Fast Track.';
   const du = o.du === true || chuoi(o.du) === '1' || chuoi(o.du) === 'true';
 
   const tg = chuoi(o.tg);
@@ -80,7 +84,7 @@ export function docBoLocXuatMt(o: Record<string, unknown>): BoLocXuatMt | string
     if (!ds || !ds.length) return 'Chọn ít nhất một đợt.';
     const hopLe: readonly string[] = khung === 'ft' ? DOT_XUAT_FT : DOT_XUAT_THUONG;
     const sai = ds.find((x) => !hopLe.includes(x));
-    if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT8.' : 'Lớp thường chỉ có đợt Progress Test, Checkpoint và Final Test.';
+    if (sai) return khung === 'ft' ? 'Khung Fast Track chỉ có đợt MT1 đến MT10.' : 'Lớp thường chỉ có đợt Progress Test, Checkpoint và Final Test.';
     thoiGian = { kieu: 'dot', dot: [...new Set(ds)] };
   } else return 'Chọn cách lọc thời gian: theo tuần, theo tháng hoặc theo đợt.';
   return { khung, chiNhanh, lop, thoiGian, chiDuDiem: du, cot };
@@ -127,17 +131,20 @@ export function moTaBoLoc(f: BoLocXuatMt, ten: { chiNhanh: string[]; lop: string
     ['Thời gian', t.kieu === 'tuan' ? `Theo tuần: ${maTuanCoNam(t.tu)} – ${maTuanCoNam(t.den)}`
       : t.kieu === 'thang' ? `Theo tháng: ${nhanThang(t.tu)} – ${nhanThang(t.den)}` : `Theo đợt: ${t.dot.map(nhanKhoaDot).join(', ')}`],
     ['Lượt', f.chiDuDiem ? 'Chỉ lượt đủ điểm' : 'Mọi lượt'],
-    ['Cột', f.cot === 'gon' ? 'Cột gọn' : 'Cột đầy đủ'],
+    ['Cột', f.cot === 'gon' ? 'Cột gọn' : f.cot === 'nx' ? 'Cột gọn + nhận xét' : 'Cột đầy đủ'],
   ];
 }
 
 // ------------------------------------------------------------------ bộ cột Fast Track (T40)
 
-/** OV-13f (Q8): bỏ cột Mã — Email ngay sau Tên làm định danh. */
+/** OV-13f (Q8): bỏ cột Mã — Email ngay sau Tên làm định danh. G1-08: thêm W1 · W2 · Kết quả ở CUỐI (gộp "Chỉ điểm" của ngăn Xuất điểm Test cũ;
+ *  16 cột đầu giữ vị trí cho tệp / công thức đang dùng). Lớp = lớp của LƯỢT (em đổi lớp: mỗi hàng ghi lớp mình thi — không ghép "A → B", không thêm câu SQL). */
 export const COT_FT_GON = ['Tên', 'Email', 'Chi nhánh', 'Lớp', 'Lộ trình', 'MT', 'Tuần', 'L', 'R', 'W', 'S', 'Overall', 'Target',
-  'Kỳ vọng', 'SOS', 'Trạng thái lượt'] as const;                                   // 16 cột — K4-35(c)
+  'Kỳ vọng', 'SOS', 'Trạng thái lượt', 'W1', 'W2', 'Kết quả'] as const;                // 19 cột — K4-35(c) + G1-08
+/** G1-08 — cột "Gọn + nhận xét": hai cột ghép nhận xét như ngăn Xuất điểm Test cũ (`COT_NHAN_XET`). */
+export const COT_FT_NX = ['Nhận xét L · R', 'Nhận xét W · S'] as const;
 /** T39/K4-25: W1 `TA CC LR GRA`, W2 `TR CC LR GRA` — một nguồn với lưới và hồ sơ Mock (`tieuChiNganCua`, PR-HSM). */
-export const COT_FT_THEM = ['W1', 'W2', ...tieuChiNganCua('writing1')!.map((t) => `W1 ${t}`), ...tieuChiNganCua('writing2')!.map((t) => `W2 ${t}`),
+export const COT_FT_THEM = [...tieuChiNganCua('writing1')!.map((t) => `W1 ${t}`), ...tieuChiNganCua('writing2')!.map((t) => `W2 ${t}`),
   ...tieuChiNganCua('speaking')!.map((t) => `S ${t}`), 'Tuần L', 'Tuần R', 'Tuần W', 'Tuần S', 'Người nhập',
   /* OV-12b: nhận xét từng bài (L, R, W1, W2, S) + nhóm nguyên nhân của ô dưới kỳ vọng (`chuNhomNguyenNhan`). */
   /* OV-13k: "Nhận xét GV phụ trách S" — nhận xét riêng của GV phụ trách Speaking lớp (bài chấm chéo), ngay sau nhận xét người chấm. */
@@ -165,17 +172,25 @@ export type DongFT = {
   nhanXet: Record<ONhap, string | null>; nhom: string | null; gvChamS: string | null;
   /** OV-13k: nhận xét GV phụ trách Speaking (`null` khi không có). */
   nhanXetPhuTrachS: string | null;
+  /** G1-08: Đạt / Chưa đạt / Chưa đủ điểm (`ketQuaLuot`). */
+  ketQua: string;
+};
+
+const ghepNx = (d: DongFT, cap: [string, ONhap][]) => {
+  const ds = cap.filter(([, k]) => d.nhanXet[k]?.trim()).map(([nhan, k]) => `${nhan}: ${d.nhanXet[k]!.trim()}`);
+  return ds.length ? ds.join(' · ') : null;
 };
 
 /** Hàng 1 = tiêu đề; mọi điểm là số hoặc `null`. */
-export function bangFT(dong: DongFT[], cot: 'gon' | 'day-du'): Cell[][] {
-  const day = cot === 'day-du';
-  const out: Cell[][] = [day ? [...COT_FT_GON, ...COT_FT_THEM] : [...COT_FT_GON]];
+export function bangFT(dong: DongFT[], cot: CotXuat): Cell[][] {
+  const day = cot === 'day-du', nx = cot === 'nx';
+  const out: Cell[][] = [[...COT_FT_GON, ...(nx ? COT_FT_NX : []), ...(day ? COT_FT_THEM : [])]];
   for (const d of dong) {
     const hang: Cell[] = [d.ten, d.email, d.chiNhanh, d.lop, d.loTrinh, `MT${d.mt}`, d.tuan, d.l, d.r, d.w, d.s, d.overall, d.target,
-      d.kyVong, d.sos, d.trangThai];
+      d.kyVong, d.sos, d.trangThai, d.w1, d.w2, d.ketQua];
+    if (nx) hang.push(ghepNx(d, [['L', 'listening'], ['R', 'reading']]), ghepNx(d, [['W1', 'writing1'], ['W2', 'writing2'], ['S', 'speaking']]));
     if (day) {
-      hang.push(d.w1, d.w2, ...d.tieuChi.writing1, ...d.tieuChi.writing2, ...d.tieuChi.speaking,
+      hang.push(...d.tieuChi.writing1, ...d.tieuChi.writing2, ...d.tieuChi.speaking,
         d.tuanKn.listening, d.tuanKn.reading, d.tuanKn.writing, d.tuanKn.speaking, d.nguoiNhap,
         d.nhanXet.listening, d.nhanXet.reading, d.nhanXet.writing1, d.nhanXet.writing2, d.nhanXet.speaking, d.nhanXetPhuTrachS, d.nhom, d.gvChamS);
     }
@@ -199,7 +214,7 @@ export type DongThuong = {
  * Một chương trình một sheet. P13: cột môn = HỢP môn mọi dòng (môn chương trình `monCt` trước, theo thứ tự chương trình; môn khác — L+S / R+W của lượt cũ —
  * sau, theo lần gặp); mỗi dòng điền theo mã môn, môn dòng không có để trống.
  */
-export function bangThuong(dong: DongThuong[], cot: 'gon' | 'day-du', monCt: readonly string[] = []): Cell[][] {
+export function bangThuong(dong: DongThuong[], cot: CotXuat, monCt: readonly string[] = []): Cell[][] {
   const day = cot === 'day-du';
   const khoa = (m: DongThuong['mon'][number]) => m.k ?? m.ten;
   const ten = new Map<string, string>();

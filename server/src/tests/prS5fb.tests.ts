@@ -92,7 +92,7 @@ export async function runPrS5fbTests(t: YThucTestKit) {
   check('S5F-b (5) · Phối hợp Progress Test: GVBM đánh dấu Báo PH → 403 với câu KHÔNG nói "SOS"; thẻ Progress Test không có "+ Thêm việc"; màn rỗng không nói SOS', () => {
     const { hv, khoa } = emFou('S5F-b FOU PH');
     const act = get(`SELECT id FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`, hv);
-    assert(act, 'Progress Test trượt phải có việc Báo phụ huynh qua TVV');
+    assert(act, 'Progress Test trượt phải có việc Báo PH kết quả Test');
     let loi: any = null;
     try { phoiHop.confirmCoordination(khoa, act.id, { performedOn: TODAY, note: 'Đã làm' }); } catch (e) { loi = e; }
     assert(loi?.status === 403 && !/SOS/.test(loi.message), `403 không nói SOS: ${loi?.status} ${loi?.message}`);

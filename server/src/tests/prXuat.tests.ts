@@ -19,8 +19,8 @@ export async function runPrXuatTests(t: YThucTestKit) {
     sai({ tg: 'thang', tu: '2026-13', den: '2026-12' }, /YYYY-MM/);
     sai({ tg: 'tuan', tu: '2026-01-05', den: '2028-01-10' }, /104 tuần/);           // 105 tuần
     sai({ tg: 'thang', tu: '2026-01', den: '2028-01' }, /24 tháng/);
-    sai({ tg: 'dot', dot: 'mt:9' }, /MT1 đến MT8/);
-    sai({ tg: 'dot', dot: 'giua' }, /MT1 đến MT8/);                                // Progress Test ở khung FT
+    sai({ tg: 'dot', dot: 'mt:11' }, /MT1 đến MT10/);
+    sai({ tg: 'dot', dot: 'giua' }, /MT1 đến MT10/);                                // Progress Test ở khung FT
     sai({ tg: 'dot', dot: 'mt:1', khung: 'thuong' }, /Progress Test, Checkpoint và Final Test/);
     sai({ tg: 'dot', dot: '' }, /ít nhất một đợt/);
     sai({ ...tuan, chiNhanh: 'abc' }, /Chi nhánh không hợp lệ/);
@@ -50,16 +50,18 @@ export async function runPrXuatTests(t: YThucTestKit) {
     l: 6, r: 6.5, w: null, s: null, overall: null, target: 7, kyVong: 6.5, sos: 2, trangThai: 'Thiếu điểm 2/4 · SOS tạm thời',
     w1: null, w2: null, tieuChi: { writing1: [null, null, null, null], writing2: [null, null, null, null], speaking: [null, null, null, null] },
     tuanKn: { listening: 'W3 SEP 2026', reading: 'W3 SEP 2026', writing: null, speaking: null }, nguoiNhap: 'Trần Ngọc Hà',
-    nhanXet: { listening: null, reading: null, writing1: null, writing2: null, speaking: null }, nhom: null, gvChamS: null, nhanXetPhuTrachS: null, ...o,
+    nhanXet: { listening: null, reading: null, writing1: null, writing2: null, speaking: null }, nhom: null, gvChamS: null, nhanXetPhuTrachS: null, ketQua: 'Chưa đủ điểm', ...o,
   });
 
-  check('PR-XUAT (1) · bangFT: 16 cột gọn đúng thứ tự T40; đầy đủ = 16 + COT_FT_THEM, 16 cột đầu không đổi', () => {
+  check('PR-XUAT (1) · bangFT: gọn 16 cột T40 + W1 · W2 · Kết quả (G1-08) = 19; gọn + nhận xét +2; đầy đủ = 19 + COT_FT_THEM, cột đầu không đổi', () => {
     const gon = d.bangFT([dong()], 'gon');
-    assert(gon[0].join('|') === 'Tên|Email|Chi nhánh|Lớp|Lộ trình|MT|Tuần|L|R|W|S|Overall|Target|Kỳ vọng|SOS|Trạng thái lượt', gon[0].join('|'));
-    assert(gon[0].length === 16 && gon[1].length === 16 && gon[1][5] === 'MT3', 'gọn 16 cột, MT là chữ MT3');
+    assert(gon[0].join('|') === 'Tên|Email|Chi nhánh|Lớp|Lộ trình|MT|Tuần|L|R|W|S|Overall|Target|Kỳ vọng|SOS|Trạng thái lượt|W1|W2|Kết quả', gon[0].join('|'));
+    assert(gon[0].length === 19 && gon[1].length === 19 && gon[1][5] === 'MT3' && gon[1][18] === 'Chưa đủ điểm', 'gọn 19 cột, MT là chữ MT3, Kết quả cuối');
+    const nx = d.bangFT([dong({ nhanXet: { listening: 'Nghe tốt', reading: null, writing1: ' ', writing2: 'Ý rõ', speaking: 'Trôi' } })], 'nx');
+    assert(nx[0].slice(19).join('|') === 'Nhận xét L · R|Nhận xét W · S' && nx[1][19] === 'L: Nghe tốt' && nx[1][20] === 'W2: Ý rõ · S: Trôi', JSON.stringify(nx[1].slice(19)));
     const day = d.bangFT([dong()], 'day-du');
-    assert(day[0].length === 16 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
-    assert(day[0].slice(0, 16).join() === gon[0].join() && day[1].slice(0, 16).join() === gon[1].join(), '16 cột đầu giữ vị trí');
+    assert(day[0].length === 19 + d.COT_FT_THEM.length && day[1].length === day[0].length, `đầy đủ ${day[0].length} cột`);
+    assert(day[0].slice(0, 19).join() === gon[0].join() && day[1].slice(0, 19).join() === gon[1].join(), '19 cột đầu giữ vị trí');
     assert(day[0].includes('W2 TR') && day[0].includes('W1 TA') && day[0].includes('S FC') && day[0].at(-9) === 'Người nhập' && day[0].at(-1) === 'GV chấm S', 'tiêu chí T39, cột nhận xét ở cuối (OV-12b: 5 nhận xét + OV-13k Nhận xét GV phụ trách S + Nhóm + GV chấm S)');
   });
 
@@ -71,7 +73,7 @@ export async function runPrXuatTests(t: YThucTestKit) {
     const kck = d.bangFT([dong({ target: 'KCK', kyVong: null, sos: null })], 'gon')[1];
     assert(kck[12] === 'KCK' && kck[13] === null && kck[14] === null, JSON.stringify(kck.slice(12, 15)));
     const day = d.bangFT([dong()], 'day-du')[1];
-    assert(day.slice(16).every((x) => x === null || typeof x === 'string' || typeof x === 'number'), 'đầy đủ chỉ chữ/số/null');
+    assert(day.slice(19).every((x) => x === null || typeof x === 'string' || typeof x === 'number'), 'đầy đủ chỉ chữ/số/null');
   });
 
   check('PR-XUAT (1) · trangThaiLuotXuat: đủ · thiếu · chưa có · lịch sử + thiếu · huỷ phần + tạm thời (KCK bỏ "SOS tạm thời")', () => {
@@ -407,15 +409,19 @@ async function mayChu(t: YThucTestKit) {
     assert(!/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(ngan), 'không mã màu cứng (chỉ token)');
   });
 
-  check('PR-XUAT (4) · ba chỗ mở ngăn: Lịch Test (nav.xuatMt), hồ sơ lớp ⋮ (xuat-mt), Phân tích › Tổng hợp Test (hai nút khác chữ)', () => {
+  check('PR-XUAT (4) · ba chỗ mở ngăn: Lịch Test (nav.xuatMt), hồ sơ lớp ⋮ (xuat-mt), Phân tích › Tổng hợp Test (hai nút khác chữ); G1-08: mọi chỗ qua NganXuatTest (tab Điểm · Lịch)', () => {
     const lich = web('modules/test/LichTestTab.tsx');
-    assert(lich.includes('nav?.xuatMt') && lich.includes('<NganXuatMt'), 'Lịch Test');
+    assert(lich.includes('nav?.xuatMt') && lich.includes('<NganXuatTest') && lich.includes("t('Xuất Excel…')"), 'Lịch Test');
+    const kh = web('modules/test/KeHoachTestTab.tsx');
+    assert(kh.includes('<NganXuatTest') && !kh.includes('NganXuatDiem') && !kh.includes("t('Xuất điểm Test')") && !kh.includes('MenuDong'), 'Kế hoạch Test: một nút, bỏ ⋯ một mục');
+    const vo = web('modules/test/NganXuatTest.tsx');
+    assert(vo.includes('nav?.testPlan') && vo.includes('<NganXuatKeHoach') && vo.includes('<NganXuatMt'), 'tab Lịch chỉ người xếp lịch (GV không — chủ SP 05/11)');
     const dau = web('modules/classes/DauTrangLop.tsx');
     assert(dau.includes('coTheXuatExcel') && dau.includes('nav?.xuatMt'), 'hồ sơ lớp ⋯');
     /* PR-OV3a: thứ tự ⋯ ở `menuHoSoLop` — Xuất Excel (nhóm Công cụ) sau Thông tin lớp, trước đường kẻ Xoá. */
     const mn = fs.readFileSync(pathMod.join(REPO, 'shared/domain/hocVienLop.ts'), 'utf8');
     assert(mn.indexOf("m('thong-tin'") < mn.indexOf("m('xuat-mt'") && mn.indexOf("m('xuat-mt'") < mn.indexOf("m('xoa-lop'"), 'mục ⋯ sau "Thông tin lớp", trước đường kẻ Xoá');
-    assert(web('modules/classes/ClassOverviewPage.tsx').includes("viec === 'xuat-mt'"), 'trang hồ sơ lớp mở ngăn');
+    assert(web('modules/classes/ClassOverviewPage.tsx').includes("viec === 'xuat-mt'") && web('modules/classes/ClassOverviewPage.tsx').includes('<NganXuatTest'), 'trang hồ sơ lớp mở ngăn');
     const th = web('modules/phanTich/TongHopTestSos.tsx');
     assert(th.includes('⤓ Xuất bảng này') && th.includes('Xuất kết quả từng lượt') && th.includes('nav?.xuatMt') && !th.includes('⤓ Xuất Excel'), 'Tổng hợp Test (Q9)');
   });

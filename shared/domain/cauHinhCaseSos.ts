@@ -82,7 +82,7 @@ export function cauHinhGoc(): DuLieuCauHinh {
     phuong_an: { muc: [...SELF_SERVE_KINDS.map((k) => mucPa(k, 'gv_tu_lam')), ...ACADEMIC_PROPOSAL_KINDS.map((k) => mucPa(k, 'can_ql_duyet'))] },
     moc_sos: {
       /* PHOI-HOP-V2 XM-1 (chủ SP 11/11 qua PTA): mọi việc GVCN làm (QL làm thẳng); Nội dung BẮT BUỘC khi xác nhận (≥ 1 ký tự) — trừ Meeting CX/GĐCN
-         (nội dung gửi TVV tuỳ chọn) và Báo PH qua TVV lớp thường (4 nội dung máy dựng). Meeting CX/GĐCN: GVCN xác nhận → bước TVV báo gia đình,
+         (nội dung gửi TVV tuỳ chọn) và Báo PH kết quả Test lớp thường (4 nội dung máy dựng). Meeting CX/GĐCN: GVCN xác nhận → bước TVV báo gia đình,
          sắp họp, ghi kết quả — hạn 5 ngày lịch, Nội dung ≥ 10 ký tự (luật OV-12h chuyển sang bước TVV). */
       viec: COORDINATION_KINDS.map((k) => {
         const meeting = k === 'cx_meeting_student' || k === 'cx_meeting_family';

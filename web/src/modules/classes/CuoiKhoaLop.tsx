@@ -603,7 +603,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const dong2 = [
       ...(choFinal ? [t('Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final')] : []),
       ...(td.caseBoTro ? [t('Tạo {n} Case bổ trợ Final', { n: td.caseBoTro })] : []),
-      ...(td.baoPh ? [`${t('{n} việc Báo PH qua TVV', { n: td.baoPh })}${baoPh.length ? ` (${baoPh.join(', ')})` : ''}`] : []),
+      ...(td.baoPh ? [`${t('{n} việc Báo PH kết quả Test', { n: td.baoPh })}${baoPh.length ? ` (${baoPh.join(', ')})` : ''}`] : []),
       ...(td.caseTutor ? [t('{n} Case Tutor FT', { n: td.caseTutor })] : []),
       ...(choLop ? [t('{n} em chờ chọn lớp', { n: choLop })] : []),
       ...(canSua.size ? [t('{n} em cần sửa', { n: canSua.size })] : []),
@@ -636,7 +636,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     )
   ) : laGvcn ? (
     <>
-      <span className="min-w-0 flex-1 text-[13px] text-slate-300"><b className="text-slate-100">{t('{n} nhận xét đã sửa', { n: nxDoi })}</b> · {t('QL thấy dưới Kết quả; nhận xét đi kèm việc Báo PH qua TVV')}</span>
+      <span className="min-w-0 flex-1 text-[13px] text-slate-300"><b className="text-slate-100">{t('{n} nhận xét đã sửa', { n: nxDoi })}</b> · {t('QL thấy dưới Kết quả; nhận xét đi kèm việc Báo PH kết quả Test')}</span>
       <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !nxDoi} onClick={luuNhanXet}>{t('Lưu nhận xét · {n} em', { n: nxDoi })}</button>
     </>
   ) : null;
@@ -705,7 +705,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
               <span className="mt-0.5 flex items-center gap-2 whitespace-nowrap text-xs">
                 {mot && nhomCua(e) !== 'cho' && <span className="inline-flex h-5 items-center gap-1.5 rounded px-1.5 font-semibold text-dim" style={{ background: 'var(--surface-2)' }}>
                   <span aria-hidden className="h-3 w-[3px] rounded-sm" style={{ background: nhomCua(e) === 'lai' ? 'rgb(var(--bad-rgb))' : nhomCua(e) === 'cn' ? 'rgb(var(--soon-rgb))' : 'var(--text-faint)' }} />{TEN_NHOM[nhomCua(e)]}</span>}
-                {e.cuoiKhoa?.goiY?.baoPhTvv && !e.lenh && <span className="text-faint">{t('Báo PH qua TVV')}</span>}
+                {e.cuoiKhoa?.goiY?.baoPhTvv && !e.lenh && <span className="text-faint">{t('Báo PH kết quả Test')}</span>}
               </span>
             )}
           </span>

@@ -12,7 +12,7 @@ import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { HangCon, HangNhom } from '../../ui/HangNhom.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiChiSo, DauThe, DINH_TRAI, NutXemToanBo, NutXuat, OChon, RongDau, SO_TRONG_CHIP, SoO as OSo, VaoHangLoc, type ChiSo } from './dungChung.tsx';
-import { NganXuatMt } from '../test/NganXuatMt.tsx';
+import { NganXuatTest } from '../test/NganXuatTest.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { HieuQuaPa } from './HieuQuaPa.tsx';
 import { napDanhSach, ptX, sheetDanhSachHoacLoi, sheetTuBangCu, soX, xuatBaoCao } from './xuatV2.ts';
@@ -462,8 +462,9 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     {/* V2 (đặc tả 4, 9.6): khối "PA nào hiệu quả" (= tab Hiệu quả PA cũ) cùng trang, dưới bảng; link cũ `goc=hieu-qua-pa` cuộn tới `#khoi-pa`. */}
     <div className="mt-3"><HieuQuaPa branchId={branchId} ct={ct} khoang={khoang} classId={classId} onData={nhanPa} /></div>
         {moXuat && demoDate && (
-      <NganXuatMt khung={ct === 'thuong' ? 'thuong' : 'ft'} chiNhanh={branchId} lop={classId ? { id: classId, ma: className ?? `#${classId}` } : null}
-        thoiGianMacDinh={{ kieu: 'tuan', tu: mondayOfDate(khoang.tu), den: mondayOfDate(khoang.den) }} onDong={() => setMoXuat(false)} />
+      <NganXuatTest onDong={() => setMoXuat(false)} lich={ct === 'thuong' ? null : { branchId, classIds: classId ? [classId] : [] }}
+        diem={{ khung: ct === 'thuong' ? 'thuong' : 'ft', chiNhanh: branchId, lop: classId ? { id: classId, ma: className ?? `#${classId}` } : null,
+          thoiGianMacDinh: { kieu: 'tuan', tu: mondayOfDate(khoang.tu), den: mondayOfDate(khoang.den) } }} />
     )}
     </>
   );

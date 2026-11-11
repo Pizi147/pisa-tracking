@@ -16,23 +16,23 @@ export async function runPrGopTests(t: YThucTestKit) {
 
   const v = (o: Record<string, unknown>) => ({
     key: 'k', group: 'phoi_hop', urgency: 'normal', due: null, studentId: 1, studentName: 'An', classId: 10, classCode: 'MB FOU 15',
-    khung: 'thuong', ownerId: 7, owner: null, mine: true, tieuDe: 'Báo phụ huynh qua TVV · An · Progress Test', contextLabel: 'Progress Test',
+    khung: 'thuong', ownerId: 7, owner: null, mine: true, tieuDe: 'Báo PH kết quả Test · An · Progress Test', contextLabel: 'Progress Test',
     count: null, href: '/hoc-vien/1', actionLabel: 'Mở Phối hợp SOS', statusLabel: 'Chưa làm', reason: 'r', level: null,
     attemptId: 5, attemptNo: null, caseId: null, ...o,
   });
-  const nhan = (g: string) => ({ phoi_hop: 'Báo phụ huynh qua TVV', ghi_ket_qua_pa: 'Kết quả PA', score: 'Nhập điểm', cause: 'Xác nhận Case' } as any)[g] ?? g;
+  const nhan = (g: string) => ({ phoi_hop: 'Báo PH kết quả Test', ghi_ket_qua_pa: 'Kết quả PA', score: 'Nhập điểm', cause: 'Xác nhận Case' } as any)[g] ?? g;
 
   check('GOP-1a · hai em cùng lớp × loại × người → MỘT dòng "Loại · lớp · n em", con giữ nguyên khoá; một em → dòng như cũ', () => {
     const ds = [
-      v({ key: 'baoph:1', studentId: 1, studentName: 'An', tieuDe: 'Báo phụ huynh qua TVV · An · Progress Test' }),
-      v({ key: 'baoph:2', studentId: 2, studentName: 'Bình', tieuDe: 'Báo phụ huynh qua TVV · Bình · Progress Test' }),
-      v({ key: 'baoph:3', studentId: 3, studentName: 'Chi', classId: 11, classCode: 'MB BE 03', tieuDe: 'Báo phụ huynh qua TVV · Chi · Progress Test' }),
+      v({ key: 'baoph:1', studentId: 1, studentName: 'An', tieuDe: 'Báo PH kết quả Test · An · Progress Test' }),
+      v({ key: 'baoph:2', studentId: 2, studentName: 'Bình', tieuDe: 'Báo PH kết quả Test · Bình · Progress Test' }),
+      v({ key: 'baoph:3', studentId: 3, studentName: 'Chi', classId: 11, classCode: 'MB BE 03', tieuDe: 'Báo PH kết quả Test · Chi · Progress Test' }),
     ];
     const r = d.gopViecTheoLop(ds, nhan);
     assert(r.length === 2, `số dòng: ${r.length}`);
     const g = r.find((x: any) => x.con);
     assert(g && g.key === 'gop:phoi_hop:10:u7', `khoá dòng gộp: ${g?.key}`);
-    assert(g.tieuDe === 'Báo phụ huynh qua TVV · MB FOU 15 · 2 em', `tiêu đề: ${g.tieuDe}`);
+    assert(g.tieuDe === 'Báo PH kết quả Test · MB FOU 15 · 2 em', `tiêu đề: ${g.tieuDe}`);
     assert(g.con.map((x: any) => x.key).join() === 'baoph:1,baoph:2', 'con giữ khoá từng em');
     assert(g.studentId === null && g.classId === 10 && g.ownerId === 7 && g.count === 2 && g.actionLabel === '2 em', 'đầu dòng = lớp, đếm em');
     assert(g.contextLabel === 'Progress Test', `dòng phụ chung: ${g.contextLabel}`);

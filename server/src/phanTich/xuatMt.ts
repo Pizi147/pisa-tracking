@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import {
   PERMISSIONS, ROUTE_NAME, chuTargetKck, kindCuaDot, XUAT_TOI_DA_BYTE, XUAT_TOI_DA_LUOT, soTenVi, chuNhomNguyenNhan, docNhomNguyenNhan, tenGvCham, bangBoLoc, bangFT, bangThuong, goiYCuoiKhoa, dongXemTruoc, dongXemTruocThuong, moTaBoLoc, nhanDot, phanTram,
-  soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat,
+  soSanhLop, tenMon, tenSheetThuong, tenTepXuatMt, trangThaiLuotXuat, ketQuaLuot,
   type BoLocXuatMt, type Cell, type DongFT, type DongThuong, boMonTheoLuot, daGhiLuot,
 } from '../../../shared/domain/index.ts';
 import { dichMau, type NgonNgu } from '../../../shared/i18n/index.ts';
@@ -14,6 +14,7 @@ import { loadBundle, resultOf, type AttemptBundle, type ScoreRow } from '../fast
 import { allProgrammes, evaluateRegular, nguongDatLop } from '../normal/regular.ts';
 import { luotKck } from '../worklist/danhGia.ts';
 import { LUOT_XUAT_SQL } from '../students/tamDung.ts';
+
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). Lọc + quyền + tính dòng ở ĐÂY; bộ cột và dựng mảng hai chiều ở
@@ -127,6 +128,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
     nhom: chuNhomNguyenNhan(Object.fromEntries(scores.map((x) => [x.skill, docNhomNguyenNhan(x.nhom_nguyen_nhan)]))),
     gvChamS: tenGvCham({ examinerUserName: gvS?.examiner_user_name, examinerName: gvS?.examiner_name }),
     nhanXetPhuTrachS: gvS?.nhan_xet_phu_trach ?? null,
+    ketQua: ketQuaLuot({ ovr: r.overall, kyVong: r.expectation, danhGiaDuoc: r.evaluable }),
   };
   return { d, du: r.complete };
 }
@@ -277,7 +279,7 @@ export function dichSheetXuat(sheets: { ten: string; aoa: Cell[][] }[], nn: Ngon
   return sheets.map((s) => {
     const [dau = [], ...than] = s.aoa;
     const boLoc = s.ten === 'Bộ lọc đã dùng';
-    const cot = new Set(['Trạng thái lượt', 'Hướng gợi ý'].map((k) => dau.indexOf(k)).filter((i) => i >= 0));
+    const cot = new Set(['Trạng thái lượt', 'Hướng gợi ý', 'Kết quả'].map((k) => dau.indexOf(k)).filter((i) => i >= 0));
     const iNhom = dau.indexOf('Nhóm nguyên nhân');
     /* "R: Kỹ năng làm bài, Quản lý thời gian · W1: …" (chuNhomNguyenNhan) — giữ mã ô, dịch từng nhãn nhóm. */
     const nhom = (c: Cell): Cell => (typeof c !== 'string' ? c : c.split(' · ').map((p) => {
