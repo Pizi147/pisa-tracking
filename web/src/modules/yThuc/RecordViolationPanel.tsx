@@ -189,7 +189,7 @@ export function RecordViolationPanel({
 
   if (daGhi) {
     return (
-      <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
+      <KhungPanel hd="vi-pham" tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
         chan={{ huy: { nhan: t('Xong'), onClick: dongPanel } }}>
         <Khoi tieuDe={t('Đã ghi')}><p className="m-0 text-sm text-slate-200">✓ {daGhi.cau}</p></Khoi>
         <Khoi tieuDe={t('Bằng chứng')}><TepCho value={tep} onChange={setTep} khoa={busy} onThuLai={() => void thuLaiTep()} /></Khoi>
@@ -203,7 +203,7 @@ export function RecordViolationPanel({
 
   return (
     /* I6 (PR-SL): một dòng chú thích dấu `*` thay cho "(bắt buộc)" lặp ở từng ô. */
-    <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
+    <KhungPanel hd="vi-pham" tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
       ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */

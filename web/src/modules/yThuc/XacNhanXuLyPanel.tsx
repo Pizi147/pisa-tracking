@@ -85,8 +85,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
 
   if (!studentId) return null;
   const tieuDe = cheDo === 'de-xuat' ? t('Đề xuất QL duyệt') : t('Xác nhận xử lý');
-  if (loiTai) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
-  if (!d) return <KhungPanel tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
+  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
+  if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
   const dau = (han: boolean) => dauViec({ han: han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null, em: { id: d.studentId, ten: d.ten }, lop, ngCanh: t('Ý thức') });
 
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
@@ -189,7 +189,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     const thuLai = async () => { setBusy(true); try { await xongTep(daLuu.id, daLuu.nhan, tep); } finally { setBusy(false); } };
     const xong = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void thuLai()}>{t('Thử lại')}</button>;
     return (
-      <KhungPanel tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={() => { toast.push('ok', cauXong(daLuu.nhan)); onClose(); }} dau={dau(false)}
+      <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={() => { toast.push('ok', cauXong(daLuu.nhan)); onClose(); }} dau={dau(false)}
         chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-done">✓ {t('Đã lưu')}</span> }}>
         <div className="flex flex-col gap-5 pt-4">
           <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
@@ -230,7 +230,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void guiDeXuat()}>{busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}</button>;
   const nhanO = (chu: string, batBuoc = false) => <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{chu}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>;
   return (
-    <KhungPanel tieuDe={tieuDe} hocVien={d.ten} onDong={() => void dong()} dau={dau(cheDo === 'xu-ly')}
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={() => void dong()} dau={dau(cheDo === 'xu-ly')}
       chan={{
         v3: true, chinh: nutChinh, daSua: !!moTa.trim(),
         conThieu: lf.conThieu(loi) ?? (lf.daBam && loiNguoi ? [{ nhan: t('Người thực hiện'), lyDo: loiNguoi }] : undefined),

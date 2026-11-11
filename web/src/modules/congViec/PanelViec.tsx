@@ -247,7 +247,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
     return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('Việc'), onClick: () => setCaLop(false) }} />;
   }
   return (
-    <KhungPanel tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
+    <KhungPanel hd="nhap-diem" tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
       chan={chanViecTiep(onTiep, !!data && !!homNay && conBaiLuoi(data, chiAttempt, kns, homNay) === 0)}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
@@ -302,7 +302,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     ),
   });
   return (
-    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)}>
+    <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)}>
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {
           const dangMo = mo.has(x.key);
@@ -444,7 +444,7 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
     ngCanh: <><Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>{` · ${tvv ? t('{n} em cần báo', { n }) : t('{n} em cần làm', { n })}`}</>,
   });
   return (
-    <KhungPanel tieuDe={ten} dau={dau} onDong={onDong}
+    <KhungPanel hd="phoi-hop-sos" tieuDe={ten} dau={dau} onDong={onDong}
       chan={onTiep ? { huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       <div className="pt-2">
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />

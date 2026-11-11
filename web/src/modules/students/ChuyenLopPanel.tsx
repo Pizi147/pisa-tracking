@@ -277,7 +277,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       } catch (e: any) { toast.push('error', loiMayChu(e)); } finally { setBusy(false); }
     };
     return (
-      <KhungPanel tieuDe={t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={dong}
+      <KhungPanel hd="chuyen-lop" tieuDe={t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={dong}
         chan={{ huy: { onClick: dong }, chinh: <Link className="btn min-h-[44px] max-sm:flex-1 sm:min-h-0" to={`/hoc-vien/lop/${daChuyen.lop.id}`} onClick={dong}>{t('Hồ sơ {lop}', { lop: daChuyen.lop.code })} ›</Link> }}>
         <p role="status" className="mb-0 mt-3 text-sm text-ok">
           ✓ {t('Đã chuyển sang {lop} từ hôm nay {ngay} · bàn giao hạn {han}', { lop: daChuyen.lop.code, ngay: thuNgay(homNayMay ?? '', homNayMay ?? ''), han: ngay(daChuyen.han, homNayMay ?? '') })}
@@ -290,7 +290,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const loiNap = lopDich.error ?? (dx || nen ? null : xem.error);
 
   return (
-    <KhungPanel tieuDe={dx ? (duyet ? t('Sửa đề xuất chuyển lớp') : t('Đề xuất chuyển lớp')) : t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
+    <KhungPanel hd="chuyen-lop" tieuDe={dx ? (duyet ? t('Sửa đề xuất chuyển lớp') : t('Đề xuất chuyển lớp')) : t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },
         ...(!dx && lenh && !duyet ? { xoa: { nhan: dichChu(CHU_CHUYEN_LOP.huy), onClick: () => { if (!busy) void huyLenh(); } } } : {}),
@@ -457,10 +457,10 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
 
   const tieuDe = data ? `${t('Chuyển lớp')} · ${data.lop.code} · ${t('{n} em', { n: ds.length })}` : t('Chuyển lớp');
   const dong = () => { if (!busy) onClose(); };
-  if (error) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
-  if (loading || !data) return <KhungPanel tieuDe={tieuDe} rong="toan" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
+  if (error) return <KhungPanel hd="chuyen-lop" tieuDe={tieuDe} rong="toan" onDong={onClose}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
+  if (loading || !data) return <KhungPanel hd="chuyen-lop" tieuDe={tieuDe} rong="toan" onDong={onClose}><div className="mt-3"><Skeleton rows={6} /></div></KhungPanel>;
   if (!ds.length) {
-    return <KhungPanel tieuDe={tieuDe} onDong={onClose} chan={{}}><p className="mt-3 text-sm text-slate-400">{t('Không còn em cần xét lại.')}</p></KhungPanel>;
+    return <KhungPanel hd="chuyen-lop" tieuDe={tieuDe} onDong={onClose} chan={{}}><p className="mt-3 text-sm text-slate-400">{t('Không còn em cần xét lại.')}</p></KhungPanel>;
   }
 
   const tomTat = canGui.map((r) => {
@@ -472,7 +472,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
   const vang = tomTat.some((x) => x.vang);
 
   return (
-    <KhungPanel rong="toan" tieuDe={tieuDe} onDong={dong}
+    <KhungPanel hd="chuyen-lop" rong="toan" tieuDe={tieuDe} onDong={dong}
       chan={{
         daSua, huy: { onClick: dong, disabled: busy },
         conThieu: conThieuChu(lf.daBam, loi),

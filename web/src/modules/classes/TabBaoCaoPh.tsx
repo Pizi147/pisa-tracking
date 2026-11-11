@@ -402,7 +402,7 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
+    <KhungPanel hd="bao-cao-ph" tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
       dau={{ dong2: ngCanh ?? [] }} chan={chan}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />

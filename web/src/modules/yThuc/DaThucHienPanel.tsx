@@ -33,12 +33,12 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   useEffect(() => { setNgayTh(homNay); setNguoi({ kieu: 'toi' }); setGhiChu(''); setPhDu(true); lf.datLai(); }, [measureId, homNay]);
 
   if (!measureId) return null;
-  if (loiTai) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
-  if (!m) return <KhungPanel tieuDe={t('Đã thực hiện')} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
+  if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
+  if (!m) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
   if (daLuu) {
     return (
-      <KhungPanel tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
+      <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
         chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
         <Khoi tieuDe={t('Đã lưu')}><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
       </KhungPanel>
@@ -62,7 +62,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   };
 
   return (
-    <KhungPanel tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
       ngCanh={<span className="truncate">{dich(m.nhan)}{m.quyetLuc ? t(' · QL duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),

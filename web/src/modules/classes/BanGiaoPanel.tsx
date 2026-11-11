@@ -34,13 +34,13 @@ export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, q
     docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [docLenh, classId, mon]);
   if (error) {
     return (
-      <KhungPanel quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
+      <KhungPanel hd="ban-giao" quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose} chan={{ huy: { nhan: t('Đóng'), onClick: onClose } }}>
         <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
       </KhungPanel>
     );
   }
   if (loading || !data) {
-    return <KhungPanel quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
+    return <KhungPanel hd="ban-giao" quayLai={quayLai} tieuDe={t('Bàn giao')} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
   }
   const monToi = data.nguoiXem.monGhi;
   /* G: chỉ GVBM (không GVCN, không Quản lý thay) mở kèm môn của mình. */
@@ -164,7 +164,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
   const quaHanSom = quaHan({ hanGvcn: dto.hanGvcn, xacNhan: null });
 
   return (
-    <KhungPanel quayLai={quayLai} rong="vua" loai={ghi ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
+    <KhungPanel hd="ban-giao" quayLai={quayLai} rong="vua" loai={ghi ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
       ngCanh={chiDoc ? undefined : <span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · {t('hạn sớm nhất {ngay}', { ngay: shortDate(dto.hanGvcn, homNay) })}{quaHanSom != null && <> · {dto.hanGvcnEm} <QuaHan ngay={quaHanSom} /></>}</>}</span>}
       chan={{
         daSua: daSuaNx,
@@ -371,7 +371,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
   const nhanTt: Record<TtO, string> = { idle: '', go: t('● Đang gõ · lưu khi rời ô'), dang: t('Đang lưu…'), xong: t('✓ Đã lưu'), loi: '' };
 
   return (
-    <KhungPanel quayLai={quayLai} rong={hai ? 'vua' : 'rong'} loai={t('Việc · Bàn giao')} onDong={dong}
+    <KhungPanel hd="ban-giao" quayLai={quayLai} rong={hai ? 'vua' : 'rong'} loai={t('Việc · Bàn giao')} onDong={dong}
       tieuDe={hai ? t('Bàn giao môn {mon} · {lop}', { mon: mDs.map((x) => x.ngan).join(' · '), lop: dto.lop.code }) : t('Bàn giao môn {mon} ({ten})', { mon: mDs[0].ngan, ten: mDs[0].ten })}
       ngCanh={<span className="tabular-nums">{!hai && <>{dto.lop.code} · </>}{t('{n} em', { n: dto.tong })}{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · {hai ? t('mỗi em một câu mỗi task') : t('mỗi em một câu')}</span>}
       chan={{

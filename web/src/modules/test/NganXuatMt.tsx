@@ -157,7 +157,7 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
     : `${t('Tên · Email · Chi nhánh · Lớp · Bài · Tuần · điểm % từng môn · % tổng · Trạng thái lượt')}${cot === 'day-du' ? ` · ${t('điểm, tổng và tuần từng môn · Người nhập')}` : ''}`;
 
   return (
-    <KhungPanel tieuDe={tieuDe} tabs={tabs} vungTab={vungTab} onDong={onDong}
+    <KhungPanel hd="xuat-excel" tieuDe={tieuDe} tabs={tabs} vungTab={vungTab} onDong={onDong}
       chan={{
         huy: { onClick: onDong },
         trai: xtHienTai ? <span className="min-w-0 truncate text-xs text-slate-400" title={xtHienTai.tenTep}>{xtHienTai.tenTep}</span> : undefined,
