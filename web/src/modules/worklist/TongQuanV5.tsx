@@ -289,9 +289,11 @@ export const phuGv = (h: Pick<HangGv, 'mon'>) => h.mon || null;
 function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const [loai, setLoai] = useThamSoUrl('gv', 'hc');
   const q = `cn=${d.branchId}${thamSoCt(d.ct)}${kyQ(d)}`;
-  const pt = useApi<PhanTichGvKq>(d.branchId ? `/phan-tich/giao-vien?${q}` : null, [q]);
-  const tre = new Map(d.tre.map((x) => [x.khoa, x.bai]));
   const ht = loai === 'ht';
+  /* TURSO-1211: thẻ chỉ đọc Việc · Chấm · Đạt kỳ vọng (Case có PA lấy `d.caseGv`) → `v2=1` (cùng hàm, bỏ phần thẻ không đọc: 41–85 câu → ~15);
+     Tiến bộ chỉ có ở bản đủ — tab Học thuật FT mới gọi bản đủ. */
+  const pt = useApi<PhanTichGvKq>(d.branchId ? `/phan-tich/giao-vien?${q}${ht && d.ct === 'ft' ? '' : '&v2=1'}` : null, [q, ht]);
+  const tre = new Map(d.tre.map((x) => [x.khoa, x.bai]));
   const COT: Record<string, string> = { viec: 'viec-dung-han', diem: 'cham-diem', kq: d.ct === 'ft' ? 'dat-mt' : 'ket-qua', tb: 'tien-bo' };
   /* XM-2: Case có PA theo người phụ trách — mẫu = Case đang mở của GV, panel = cùng danh sách ở hồ sơ GV (`case-mo`). */
   const casePa = (h: HangGv): TyLeV5 => { const x = d.caseGv[h.id]; return x ? { dat: x.coPa, mau: x.mo } : { dat: 0, mau: 0 }; };

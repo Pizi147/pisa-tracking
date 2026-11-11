@@ -125,6 +125,7 @@ import { migratePrK316 } from './migrate/prK316.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
+import { migratePrTurso1211 } from './migrate/prTurso1211.ts';
 
 /**
  * Nâng cấp database ĐANG CÓ lên schema mới, không xoá dữ liệu. PR-SO (DEP-gỡ): nhánh nâng cấp từ mô hình `mock_attempts` (trước overhaul)
@@ -502,6 +503,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrSosTamPa(conn, applied));
   /* CAU-HINH-CASE-SOS: lần 2 — DB cũ vừa có bảng Case / phối hợp ở bước trên (lần đầu bỏ qua bảng chưa có). */
   buoc(() => migratePrCauHinhCaseSos(conn, applied));
+  /* TURSO-1211 (chủ SP 12/11): 7 chỉ mục cho câu quét cả bảng ở Công việc, Tổng quan, Học viên (chỉ thêm chỉ mục, chạy lặp được). */
+  buoc(() => migratePrTurso1211(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

@@ -421,6 +421,8 @@ CREATE INDEX idx_target_rev_cycle ON cycle_target_revisions(cycle_id);
 CREATE INDEX idx_cycle_student ON learning_cycles(student_id);
 /* TD7: lộ trình FT chưa có kết quả thi thật (một phần) — trước SCAN cả learning_cycles. */
 CREATE INDEX idx_cycle_cho_kq ON learning_cycles(student_id) WHERE route IS NOT NULL AND thi_that_khong_thi = 0 AND outcome_score IS NULL;
+/* TURSO-1211: `SQL_CHO_KET_QUA_THI` — khoảng ngày thi `< hôm nay` thay đọc mọi lộ trình chờ kết quả. */
+CREATE INDEX idx_cycle_cho_kq_ngay ON learning_cycles(COALESCE(thi_that_ngay, exam_date, ended_at)) WHERE route IS NOT NULL AND thi_that_khong_thi = 0 AND outcome_score IS NULL;
 /* TD7: lộ trình FT có kết quả, chưa chọn bước tiếp (một phần, điều kiện = CO_KET_QUA của buocTiep.ts). */
 CREATE INDEX idx_cycle_cho_buoc_tiep ON learning_cycles(student_id) WHERE route IS NOT NULL AND buoc_tiep IS NULL AND (thi_that_khong_thi = 1 OR (thi_that_l IS NOT NULL AND thi_that_r IS NOT NULL AND thi_that_w IS NOT NULL AND thi_that_s IS NOT NULL) OR outcome_score IS NOT NULL OR COALESCE(outcome, 'unknown') != 'unknown');
 -- OV-15e: Kết quả thi › Thi thật lọc theo ngày thi thật trong khoảng.
@@ -1262,6 +1264,10 @@ CREATE UNIQUE INDEX ux_case_interventions_khoa_gui ON case_interventions(recorde
 CREATE INDEX idx_intervention_approval ON case_interventions(approval_state)
   WHERE approval_state = 'pending';
 CREATE INDEX idx_intervention_case ON case_interventions(case_id);
+/* TURSO-1211: Công việc · Ghi kết quả PA / Xác nhận PA / Mốc PA quy chế — điều kiện = điều kiện câu; khoá `id` / xếp lại theo `id` giữ thứ tự cũ (migrate/prTurso1211.ts). */
+CREATE INDEX idx_iv_ghi_kq ON case_interventions(action_due) WHERE status IN ('planned', 'started') AND action_due IS NOT NULL;
+CREATE INDEX idx_iv_cho_xac_nhan ON case_interventions(id) WHERE preset = 1 AND confirmed_at IS NULL AND status = 'planned';
+CREATE INDEX idx_iv_moc_cho ON case_interventions(id) WHERE preset = 1 AND status = 'started' AND followup_due IS NULL;
 CREATE INDEX idx_intervention_due ON case_interventions(followup_due) WHERE followup_due IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_ci_nhom_bo_tro ON case_interventions(nhom_bo_tro);
 
@@ -1326,6 +1332,7 @@ CREATE TABLE case_followups (
 );
 CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_followup_case ON case_followups(case_id);
+CREATE INDEX idx_followup_iv ON case_followups(intervention_id);   -- TURSO-1211: kết quả PA cuối (câu con theo PA)
 
 /*
  * OV-12h (chủ SP 14/10): KẾT QUẢ PA TUTOR THEO BUỔI — lần ghi Kết quả PA Tutor có "Số buổi kỳ này" n thì có đúng n dòng (buổi 1…n): tên tutor (gõ tự do,
@@ -1890,6 +1897,7 @@ CREATE TABLE violations (
 );
 CREATE INDEX idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX idx_violation_class ON violations(class_id, occurred_on);
+CREATE INDEX idx_violation_ngay ON violations(occurred_on);   -- TURSO-1211: vi phạm 7 ngày (chipHocVien)
 CREATE INDEX idx_violation_valid ON violations(valid) WHERE valid = 1;
 
 CREATE TABLE discipline_measures (
@@ -1936,6 +1944,7 @@ CREATE TABLE discipline_measures (
   quyet_luc TEXT
 );
 CREATE INDEX idx_measure_student ON discipline_measures(student_id, status);
+CREATE INDEX idx_dm_cycle ON discipline_measures(cycle_id);   -- TURSO-1211: cột WL2 của SQL_THI_THAT
 CREATE INDEX idx_measure_class ON discipline_measures(class_id, status);
 CREATE INDEX idx_measure_preparing ON discipline_measures(status) WHERE status = 'preparing';
 

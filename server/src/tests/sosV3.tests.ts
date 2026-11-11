@@ -198,6 +198,8 @@ export async function runSosV3Tests(t: YThucTestKit) {
     m.exec(SCHEMA);
     m.exec(`
       DROP TABLE sos_coordination_actions;
+      DROP INDEX idx_iv_cho_xac_nhan;   -- TURSO-1211: chỉ mục sau PR-T, điều kiện có cột preset / confirmed_at
+      DROP INDEX idx_iv_moc_cho;
       ALTER TABLE case_interventions DROP COLUMN preset;
       ALTER TABLE case_interventions DROP COLUMN confirmed_by;
       ALTER TABLE case_interventions DROP COLUMN confirmed_at;

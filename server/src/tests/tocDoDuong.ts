@@ -1388,12 +1388,12 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/tong-quan/hoc-vien', '/tong-quan/tvv', '/my-work'],   // UI-TONG-QUAN: 3 nhóm TVV
   },
   'QL trang Tổng quan': {
-    vai: 'QL', tran: 141,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 108 → max(108 + 10, ⌈108 × 1,3⌉) ·   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
+    vai: 'QL', tran: 107,   // TURSO-1211: thẻ Giáo viên `v2=1` — đo 82 (trước 108) → max(82 + 10, ⌈82 × 1,3⌉) · CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 108 → max(108 + 10, ⌈108 × 1,3⌉) ·   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới). OV-15d (Tổng quan QL A): bỏ sáu ô số + Điểm đáng chú ý;
        thêm bảng GV (Trễ chấm). Thẻ "Chờ duyệt" (`/yeu-cau?hop=cho-duyet`) chỉ tải khi có thẻ. */
     /* OV-15h1: GET dữ liệu 4 → 2 — Lớp cần chú ý + Tuần này + Trễ chấm thành một `/tong-quan/ql`; Cần bạn quyết giữ `/tong-quan/quan-ly` (gộp khung). */
     /* UI-TONG-QUAN: Tổng quan V5 — một `/tong-quan/v5` (chỉ số + Lớp cần chú ý + Trễ chấm) · Chờ bạn duyệt dòng gọn · GV cần chú ý (bảng Phân tích GV). */
-    urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft', '/yeu-cau?hop=cho-duyet&branchId={cn}', '/phan-tich/giao-vien?cn={cn}&ct=ft'],
+    urls: ['/demo/session', '/ref/branches', '/yeu-cau/dem', '/tong-quan/v5?ct=ft', '/yeu-cau?hop=cho-duyet&branchId={cn}', '/phan-tich/giao-vien?cn={cn}&ct=ft&v2=1'],   // TURSO-1211: thẻ Giáo viên đọc v2
   },
   'CX trang Tổng quan': {
     vai: 'CX', tran: 80,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 61 → max(61 + 10, ⌈61 × 1,3⌉) ·   // RA-DOC-0611: đo 109 (trước 111) → max(109 + 10, ⌈109 × 1,3⌉)
