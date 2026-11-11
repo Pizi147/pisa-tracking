@@ -11,7 +11,6 @@ export async function runPrNghiHocLuuTruTests(t: { check: any; assert: any; conn
   const thv: any = await import('../students/trangThaiHv.ts');
   const thiThat: any = await import('../loTrinh/thiThat.ts');
   const thongBao: any = await import('../platform/thongBao.ts');
-  const kh: any = await import('../keHoach/keHoachTest.ts');
   const xuatMt: any = await import('../phanTich/xuatMt.ts');
   const tq: any = await import('../worklist/tongQuanV5.ts');
   const mg: any = await import('../migrate/prNghiHocLuuTru.ts');
@@ -81,24 +80,23 @@ export async function runPrNghiHocLuuTruTests(t: { check: any; assert: any; conn
     assert(ids.includes(nb), 'chuông mất thông báo về em đang học');
   }));
 
-  check('NH-4 · Excel: lượt chưa thi của em nghỉ học bỏ; lượt đã thi giữ (Xuất điểm Test + Xuất kết quả Test)', () => thu(() => {
+  check('NH-4 · Excel: lượt chưa thi của em nghỉ học bỏ; lượt đã thi giữ (Xuất kết quả Test — gồm Xuất điểm Test cũ, G1-08)', () => thu(() => {
     const a = emFt();
     const mb = get(`SELECT id FROM branches WHERE code = 'MB'`).id;
     const cua = (sql: string) => get(`SELECT COUNT(*) n FROM assessment_attempts a WHERE a.student_id = ? AND a.class_id = ? AND a.kind = 'mock' AND a.status != 'cancelled' AND ${sql}`, a.sid, a.class_id).n as number;
     const coDiem = `EXISTS (SELECT 1 FROM assessment_scores sx WHERE sx.attempt_id = a.id AND (sx.band IS NOT NULL OR sx.raw_score IS NOT NULL))`;
     const chuaThi = cua(`a.status = 'planned' AND NOT ${coDiem}`);
     assert(chuaThi > 0 && cua(coDiem) > 0, 'tiền đề');
-    const diem = () => kh.xuatDiemTest(QL, { branchId: mb, classIds: [a.class_id], noiDung: 'chi-diem', xemTruoc: true, mt: [0, 20], tuan: null }).dem.luot as number;
     const ketQua = () => xuatMt.duLieuXuatMt(QL, { khung: 'ft', chiNhanh: [mb], lop: [a.class_id], thoiGian: { kieu: 'tuan', tu: '2020-01-05', den: '2030-12-29' }, chiDuDiem: false, cot: 'gon' }).dem.luot as number;
-    const truoc = { diem: diem(), ketQua: ketQua() };
+    const truoc = { ketQua: ketQua() };
     students.setStudentStatus(QL, a.sid, 'finished', TODAY, 'Thôi');
     xoaNho();
-    const sau = { diem: diem(), ketQua: ketQua() };
-    assert(sau.diem > 0 && sau.diem < truoc.diem && sau.ketQua > 0 && sau.ketQua < truoc.ketQua, `trước ${JSON.stringify(truoc)} · sau ${JSON.stringify(sau)} · chưa thi ${chuaThi}`);
+    const sau = { ketQua: ketQua() };
+    assert(sau.ketQua > 0 && sau.ketQua < truoc.ketQua, `trước ${JSON.stringify(truoc)} · sau ${JSON.stringify(sau)} · chưa thi ${chuaThi}`);
     /* Em nghỉ học còn lượt đã thi trong tệp (lịch sử thật): đếm lại sau khi bỏ hết lượt có điểm của em → giảm tiếp. */
     conn.prepare(`UPDATE assessment_attempts SET status = 'cancelled' WHERE student_id = ? AND kind = 'mock' AND ${coDiem.replace(/a\.id/g, 'assessment_attempts.id')}`).run(a.sid);
     xoaNho();
-    assert(diem() < sau.diem && ketQua() < sau.ketQua, 'lượt đã thi của em nghỉ học không còn trong tệp');
+    assert(ketQua() < sau.ketQua, 'lượt đã thi của em nghỉ học không còn trong tệp');
   }));
 
   check('NH-5 · ô tìm thanh trên: em Lưu trữ xếp cuối, có cờ `archived` (vẫn ra để mở hồ sơ)', () => thu(() => {
