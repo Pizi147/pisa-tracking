@@ -4488,15 +4488,16 @@ check('Lộ trình và loại lớp là DỮ LIỆU, và không xoá được th
   assertThrows(() => sysconfig.saveRoute(gv, { code: 'LT8', name: 'Thử' }), /Quản trị hệ thống/,
     'Giáo viên sửa được lộ trình');
 
-  /* Loại lớp GỐC khoá cách chấm và bộ kỹ năng — đổi là đổi ý nghĩa của điểm đã nhập. */
-  /* Thân yêu cầu gửi kèm cách chấm / bộ kỹ năng (khoá lạ) vẫn bị bỏ qua — PR-Dọn Q22: hàm không còn nhận hai khoá này. */
-  sysconfig.saveProgramme(P.admin, {
-    code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ielts_band',
-    skills: ['listening'], progressWeek: 4, finalWeek: 8,
-  } as any);
+  /* Loại lớp GỐC khoá cách chấm — đổi là đổi ý nghĩa của điểm đã nhập (khoá lạ bị bỏ qua — PR-Dọn Q22). */
+  sysconfig.saveProgramme(P.admin, { code: 'FOU', name: 'Foundation', weeks: 8, scoringMode: 'ielts_band', progressWeek: 4, finalWeek: 8 } as any);
   const fou = sysconfig.listProgrammes(P.admin).find((x: any) => x.code === 'FOU')!;
   assert(fou.scoringMode === 'ratio', 'Đổi được cách chấm của loại lớp gốc');
-  assert(fou.skills.length === 4, `Đổi được bộ kỹ năng của loại lớp gốc: còn ${fou.skills.length}`);
+  assert(fou.skills.length === 4 && fou.khoaMon === null, `bộ kỹ năng: ${fou.skills.length} · khoá ${fou.khoaMon}`);
+  /* MON-CT-1311: Môn chương trình gốc sửa được — đang có lớp học thì HỎI trước (409 canXacNhan), chưa ghi gì. */
+  let hoi: any = null;
+  try { sysconfig.saveProgramme(P.admin, { code: 'FOU', name: 'Foundation', weeks: 8, skills: ['listening'], progressWeek: 4, finalWeek: 8 }); } catch (e) { hoi = e; }
+  assert(hoi?.status === 409 && hoi.details?.canXacNhan, `phải hỏi trước: ${hoi?.message}`);
+  assert(sysconfig.listProgrammes(P.admin).find((x: any) => x.code === 'FOU')!.skills.length === 4, 'hỏi mà đã ghi');
 });
 
 
@@ -9664,6 +9665,9 @@ await runPrCuoiKhoaTests({ check, assert, conn, P } as any);
 // ==================================================================== P13 KET-PET (thang Cambridge, Target + thi thật KET / PET, Checkpoint 4 môn)
 const { runPrKetPetTests } = bocTep('prKetPet', await import('./prKetPet.tests.ts'));
 await runPrKetPetTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
+// ==================================================================== MON-CT-1311 (Quản trị sửa Môn mọi chương trình lớp thường; KET / PET L+S · R+W)
+const { runPrMonCt1311Tests } = bocTep('prMonCt1311', await import('./prMonCt1311.tests.ts'));
+await runPrMonCt1311Tests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== THI-LAI-1-KN (chủ SP 05/11: thi lại một kỹ năng — điểm lần trước thay vào)
 const { runPrThiLaiTests } = bocTep('prThiLai', await import('./prThiLai.tests.ts'));
 await runPrThiLaiTests({ check, assert, conn, P, TODAY, addDays } as any);

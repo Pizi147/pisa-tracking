@@ -64,14 +64,14 @@ export async function runPrTatCpTests(t: any) {
       assert(luoi.cpTay === true, 'tắt: cpTay phải bật');
       assert(luoi.cot.map((c: any) => c.kind).join() === 'cp1', `tắt: cột phải là cp1 (Checkpoint kế tiếp), có ${luoi.cot.map((c: any) => c.kind)}`);
       const pid = week.ensurePeriod(week.mondayOf(TODAY)).id;
-      const tuan = { listening: pid, reading: pid, writing: pid, speaking: pid };
+      const tuan = { listening_speaking: pid, reading_writing: pid };
       const xem = keHoach.xepHangLoat(P.mbManager, { classId: lop, kind: 'cp1', studentIds: [sid], tuan, xemTruoc: true });
       assert(xem.dong[0].hanhDong === 'tao', `xem trước hàng loạt phải "tao", có ${JSON.stringify(xem.dong[0])}`);
       keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: sid, kind: 'cp1', tuan, force: true });
       const cp = cpCua(sid);
       assert(cp.length === 1 && cp[0].so === 1 && cp[0].status === 'planned', `xếp tay phải tạo Checkpoint 1, có ${JSON.stringify(cp)}`);
       const lich = all(`SELECT skill, planned_period_id AS p FROM attempt_skills WHERE attempt_id = ? AND required = 1`, cp[0].id);
-      assert(lich.length === 4 && lich.every((r) => r.p === pid), `lịch 4 môn đúng tuần: ${JSON.stringify(lich)}`);
+      assert(lich.length === 2 && lich.every((r) => r.p === pid), `lịch 2 môn (L+S · R+W) đúng tuần: ${JSON.stringify(lich)}`);
       let loi: any = null;
       try { keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: sid, kind: 'cp1', tuan, force: true }); } catch (e) { loi = e; }
       assert(loi && /đã có/.test(loi.message), `xếp lại Checkpoint đã có phải chặn, có ${loi?.message}`);
@@ -84,7 +84,7 @@ export async function runPrTatCpTests(t: any) {
       assert(keHoach.luoiThuong(P.mbManager, lop).cpTay === false, 'bật: cpTay tắt');
       let loi: any = null;
       const pid = week.ensurePeriod(addDays(week.mondayOf(TODAY), 42)).id;
-      try { keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: sid, kind: 'cp2', tuan: { listening: pid, reading: pid, writing: pid, speaking: pid } }); } catch (e) { loi = e; }
+      try { keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: sid, kind: 'cp2', tuan: { listening_speaking: pid, reading_writing: pid } }); } catch (e) { loi = e; }
       assert(loi && /tự xếp/.test(loi.message), `bật: xếp tay Checkpoint phải chặn, có ${loi?.message}`);
     }, true);
   });
@@ -95,7 +95,7 @@ export async function runPrTatCpTests(t: any) {
       const { lop, sid: a } = taoLopKet();
       const r = intake.commitIntake(P.admin, { classId: lop, rows: [{ fullName: 'Em Thử Tắt CP B', startWeek: khaiGiang, email: emailThu(), dob: '2012-01-01' }] });
       const b = r.studentIds[0] as number;
-      for (const mon of ['listening', 'reading', 'writing', 'speaking']) regular.saveRegularScore(P.admin, cpCua(a)[0].id, mon, { score: 25, total: 30 }, TODAY);
+      for (const mon of ['listening_speaking', 'reading_writing']) regular.saveRegularScore(P.admin, cpCua(a)[0].id, mon, { score: 25, total: 30 }, TODAY);   // MON-CT-1311: KET L+S · R+W
       xoaNho();
       const [a1, a2] = cpCua(a), [b1] = cpCua(b);
       assert(a2?.so === 2 && b1?.so === 1, `bật: A có Checkpoint 2, B có Checkpoint 1: ${JSON.stringify([cpCua(a), cpCua(b)])}`);
@@ -111,7 +111,7 @@ export async function runPrTatCpTests(t: any) {
       assert(viec.length === 0, `việc Nhập điểm của bài đã ẩn phải hết: ${viec.map((i: any) => i.key)}`);
       /* QL xếp tay Checkpoint 1 của B → mở lại ĐÚNG lượt đã ẩn; migrate lần nữa không ẩn lại lượt QL đã xếp. */
       const pid = week.ensurePeriod(week.mondayOf(TODAY)).id;
-      keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: b, kind: 'cp1', tuan: { listening: pid, reading: pid, writing: pid, speaking: pid }, force: true });
+      keHoach.xepMoiThuong(P.mbManager, { classId: lop, studentId: b, kind: 'cp1', tuan: { listening_speaking: pid, reading_writing: pid }, force: true });
       assert(st(b1.id).status === 'planned' && st(b1.id).cancel_reason === null, `xếp tay phải mở lại lượt ${b1.id}: ${JSON.stringify(st(b1.id))}`);
       const ap2: string[] = [];
       mig.migratePrTatCp(conn, ap2);

@@ -162,14 +162,22 @@ export const MON_CHON = ['listening', 'reading', 'writing', 'speaking', 'listeni
 /** Môn gộp → hai môn nó đã gồm (không chọn cùng lúc). */
 export const MON_GOP: Record<string, readonly string[]> = { listening_speaking: ['listening', 'speaking'], reading_writing: ['reading', 'writing'] };
 /**
- * P13 KET-PET: MỘT luật bộ môn chấm của một lượt lớp thường — chương trình đã tách môn (không còn L+S, R+W) mà lượt đã GHI ở môn gộp cũ (điểm, dấu "-",
- * nhận xét: có dòng `assessment_scores`) hoặc còn dòng LỊCH môn gộp (lượt huỷ được khôi phục, lượt không tách lúc migrate) → bộ gộp của lượt đó;
- * còn lại → bộ môn chương trình. `daGhi` = các môn có dòng lịch ∪ dòng điểm của lượt (`daGhiLuot`).
+ * MỘT luật bộ môn chấm của một lượt lớp thường.
+ * MON-CT-1311: Quản trị đổi môn chương trình → lượt ĐÃ GHI (điểm / lịch tay) giữ bộ cũ chụp ở `assessment_attempts.bo_mon` (JSON, `boLuot`) — mọi kiểu đổi.
+ * P13 (dữ liệu cũ, không có bản chụp): chương trình đã tách môn mà lượt còn dòng lịch / điểm môn gộp → bộ gộp. Còn lại → bộ môn chương trình.
+ * `daGhi` = các môn có dòng lịch ∪ dòng điểm của lượt (`daGhiLuot`).
  */
-export function boMonTheoLuot(boCt: readonly string[], daGhi: Iterable<string>): readonly string[] {
+export function boMonTheoLuot(boCt: readonly string[], daGhi: Iterable<string>, boLuot?: string | null): readonly string[] {
+  const chup = docBoMonLuot(boLuot);
+  if (chup) return chup;
   if (boCt.some((k) => Object.hasOwn(MON_GOP, k))) return boCt;
   for (const k of daGhi) if (Object.hasOwn(MON_GOP, k)) return Object.keys(MON_GOP);
   return boCt;
+}
+/** MON-CT-1311: bản chụp bộ môn của lượt (`assessment_attempts.bo_mon`, mảng JSON) — hỏng / rỗng → null (theo chương trình). */
+export function docBoMonLuot(v: string | null | undefined): string[] | null {
+  if (!v) return null;
+  try { const ds = JSON.parse(v); return Array.isArray(ds) && ds.length && ds.every((k) => typeof k === 'string') ? ds : null; } catch { return null; }
 }
 /** P13: đầu vào `daGhi` của `boMonTheoLuot` — môn của dòng lịch (`attempt_skills`) ∪ dòng điểm của MỘT lượt. */
 export const daGhiLuot = (lich: readonly { skill: string }[] | null | undefined, diem: readonly { skill: string }[] | null | undefined): string[] =>
@@ -188,7 +196,8 @@ export function tenMonNgan(ct: string | null | undefined, o: string): string {
 export function boMonLich(ct: string | null | undefined, skillsBang?: readonly string[] | null): readonly string[] {
   const c = programmeOf(ct);
   if (!c || c === 'FT') return ASSESSED_SKILLS;                       // FT: lịch theo 4 kỹ năng đánh giá (W = W1 + W2)
-  return skillsBang?.length ? skillsBang : PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills ?? REGULAR_SKILLS;
+  return skillsBang?.length ? skillsBang : PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills
+    ?? CHUONG_TRINH_LIEN_TUC_CO_SAN.find((x) => x.code === c)?.skills ?? REGULAR_SKILLS;   // MON-CT-1311: KET / PET mặc định L+S, R+W
 }
 /** MH6, T55: ô môn của lớp → kỹ năng GV đã khai hợp để dạy ô đó (gợi ý phân công). */
 export function kyNangGoiY(_ct: string | null | undefined, o: string): readonly string[] {
@@ -265,12 +274,11 @@ export const PROGRAMME_TEMPLATES: Record<ProgrammeCode, ProgrammeTemplate> = {
 
 /**
  * OV-6b2: PET, KET — chủ SP 11/10: đúng/tổng · đạt từ 70 % · liên tục · Checkpoint mỗi 6 tuần. Migrate `prOv6b2` + seed chèn
- * P13 KET-PET (N18): môn L · R · W · S như thi thật (bỏ L+S, R+W — lượt cũ đã chấm gộp giữ bộ gộp: `boMonCuaLuot`, migrate `prKetPet`).
- * khi chưa có; sau đó là DỮ LIỆU (Quản trị sửa ở Quản trị › Chương trình), không phải mẫu cố định như `PROGRAMME_TEMPLATES`.
+ * khi chưa có; MON-CT-1311 (chủ SP 13/11, thay N18 phần tách môn): mặc định HAI môn L+S, R+W (migrate `prMonCt1311` gộp lại bộ 4 môn của P13); sau đó là DỮ LIỆU (Quản trị sửa ở Quản trị › Chương trình), không phải mẫu cố định như `PROGRAMME_TEMPLATES`.
  */
 export const CHUONG_TRINH_LIEN_TUC_CO_SAN: readonly { code: string; name: string; skills: readonly string[]; nguongDat: number; lapMoiTuan: number }[] = [
-  { code: 'PET', name: 'Preliminary English Test', skills: ['listening', 'reading', 'writing', 'speaking'], nguongDat: 0.7, lapMoiTuan: 6 },
-  { code: 'KET', name: 'Key English Test', skills: ['listening', 'reading', 'writing', 'speaking'], nguongDat: 0.7, lapMoiTuan: 6 },
+  { code: 'PET', name: 'Preliminary English Test', skills: ['listening_speaking', 'reading_writing'], nguongDat: 0.7, lapMoiTuan: 6 },
+  { code: 'KET', name: 'Key English Test', skills: ['listening_speaking', 'reading_writing'], nguongDat: 0.7, lapMoiTuan: 6 },
 ];
 
 /**

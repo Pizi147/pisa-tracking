@@ -313,7 +313,7 @@ function MoRongThuong({ s, chot, ct, ds, homNay, the, chiDoc, coTheBaoCase, onTh
   chiDoc: boolean; coTheBaoCase: boolean; onThemCase: () => void; onMo: (n: Omit<MoNgan, 'em'>) => void;
 }) {
   const e = chot.data?.em.find((x) => x.id === s.id);
-  const hang = e ? locCanHoTro({ ct, em: [e] }).em[0]?.hang ?? [] : [];
+  const hang = e ? locCanHoTro({ ct, em: [e], boCt: chot.data?.boMon }).em[0]?.hang ?? [] : [];
   const NUT = 'btn h-[30px] justify-center px-2.5 text-[13px] max-sm:h-11 max-sm:flex-1';
   return (
     <div className={`${KHOI} !gap-2 !px-4 !pb-1.5 max-sm:!px-3`} style={{ borderColor: 'var(--line)' }}>

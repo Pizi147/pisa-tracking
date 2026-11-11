@@ -294,7 +294,7 @@ function dungNapBai(p: Principal, c: NguCanhPtGv, rows: readonly any[], bundle: 
       });
     };
     if (a.scoring_mode === 'ratio') {
-      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(bundle.skillRows.get(a.id), scores));   // P13: bộ môn theo lượt
+      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(bundle.skillRows.get(a.id), scores), a.bo_mon);   // P13: bộ môn theo lượt
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), scores, c.homNay, bo);
       for (const skill of bo) {
         const v = views.get(skill);

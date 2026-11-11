@@ -64,18 +64,18 @@ export function tyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot>
 function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   const out = new Map<number, TyLeLuot>();
   const conn = db();
-  const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null; tao: string | null }>();
+  const luot = new Map<number, { kind: string; ct: string | null; nguong: number | null; tao: string | null; boMon: string | null }>();
   const diem = new Map<number, any[]>();
   const lichGop = new Map<number, any[]>();
   theoLoJson([...new Set(attemptIds)], (json) => {   // S5: một tham số JSON
     const ph = DS_JSON;
     for (const r of conn.prepare(
-      `SELECT a.id, a.kind, a.class_id, a.created_at, c.programme_code, c.nguong_dat, cy.programme_code AS ct_lo_trinh FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
+      `SELECT a.id, a.kind, a.class_id, a.created_at, a.bo_mon, c.programme_code, c.nguong_dat, cy.programme_code AS ct_lo_trinh FROM assessment_attempts a LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN learning_cycles cy ON cy.id = a.cycle_id AND a.class_id IS NULL   -- LECH-KHONG-LOP (maCtCuaLuot): chỉ lượt không lớp đọc lộ trình
         WHERE a.id IN (${ph})`,
     ).all(json) as any[]) {
       const ct = maCtCuaLuot(r.class_id, r.programme_code, r.ct_lo_trinh);
-      luot.set(r.id, { kind: r.kind, ct, nguong: r.class_id ? r.nguong_dat ?? null : nguongDatLop(null, ct), tao: r.created_at ?? null });
+      luot.set(r.id, { kind: r.kind, ct, nguong: r.class_id ? r.nguong_dat ?? null : nguongDatLop(null, ct), tao: r.created_at ?? null, boMon: r.bo_mon ?? null });
     }
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
     for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
@@ -89,7 +89,7 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
-    const kq = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(lichGop.get(id), diem.get(id))), diem.get(id) ?? [], prog.code, l.nguong ?? undefined, l.tao);   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
+    const kq = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(lichGop.get(id), diem.get(id)), l.boMon), diem.get(id) ?? [], prog.code, l.nguong ?? undefined, l.tao);   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, mocNguong: kq.mocNguong, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),

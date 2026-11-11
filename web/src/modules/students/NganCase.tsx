@@ -187,7 +187,7 @@ function SuaTenCase({ data, onDoi, onDong }: { data: CaseDetail; onDoi: (d: Case
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const caseTay = !data.sos?.fromSos;
-  const topics = caseTopicsFor(!!data.ratio, ct);
+  const topics = caseTopicsFor(!!data.ratio, ct, data.categories?.map((c) => c.code));   // MON-CT-1311: bộ môn chương trình từ máy chủ
   const xong = async () => {
     const body: Record<string, unknown> = { luc: data.capNhatLuc };
     if (title.trim() !== (data.viewer.tenSua ?? data.title ?? '').trim()) body.title = title.trim();

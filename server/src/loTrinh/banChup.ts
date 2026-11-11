@@ -43,12 +43,12 @@ const ketQuaTu = (huy: boolean, sos: number | null): LuotTinh['ketQua'] => (huy 
  * `target` là `target_at_attempt` của lượt (hoặc giá trị đóng băng ở bản chụp).
  */
 export function tinhLuot(
-  nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null; route_at_attempt?: string | null; created_at?: string | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
+  nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null; route_at_attempt?: string | null; created_at?: string | null; bo_mon?: string | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
   /** P13: dòng lịch của lượt (`daGhiLuot`). */ lich?: readonly { skill: string }[],
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
-    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows)), diemRows, nc.maCt, nc.nguong, a.created_at ?? null);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows), a.bo_mon), diemRows, nc.maCt, nc.nguong, a.created_at ?? null);   // P13: bộ môn theo lượt
     const dong = r.skills.map((s) => ({
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,
@@ -201,7 +201,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id))), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong, luotCuoiKhoa.created_at) : null;
+    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id)), luotCuoiKhoa.bo_mon), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong, luotCuoiKhoa.created_at) : null;
     const tyLe = kqCk ? kqCk.tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;
@@ -255,7 +255,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
   if (!attemptIds.length) return;
   const dong: any[] = [];
   theoLo(attemptIds, (lo, ph) => {
-    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind, a.kck_at_attempt, a.route_at_attempt, a.created_at FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
+    dong.push(...conn.prepare(`SELECT a.id, a.attempt_no, a.status, a.cycle_id, a.kind, a.kck_at_attempt, a.route_at_attempt, a.created_at, a.bo_mon FROM assessment_attempts a JOIN learning_cycles c ON c.id = a.cycle_id
       WHERE a.id IN (${ph}) AND c.status <> 'active'`).all(...lo));
   }, LO);
   const ngay = nowIso();

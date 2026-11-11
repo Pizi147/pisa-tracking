@@ -103,7 +103,10 @@ export function programmeByCode(code: string | null | undefined): ProgrammeInfo 
   return allProgrammes().get(code) ?? null;
 }
 
-/** Bộ môn xếp lịch của chương trình (`boMonLich`): chương trình gốc theo mẫu (không đọc DB); mã Quản trị tạo (OV-6b2: PET L+S R+W) đọc bảng. */
+/**
+ * Bộ môn xếp lịch của chương trình (`boMonLich`): chương trình gốc theo mẫu (không đọc DB — gọi theo từng em ở phiếu bàn giao); mã Quản trị tạo (OV-6b2: PET L+S R+W) đọc bảng.
+ * ponytail: MON-CT-1311 — Quản trị đổi môn FOU / BE / ELE thì bàn giao + Góp ý tuần vẫn theo mẫu; đổi sang đọc bảng khi chủ SP thật sự đổi môn chương trình gốc.
+ */
 export const boMonCt = (ct: string | null | undefined): readonly string[] =>
   boMonLich(ct, laChuongTrinhGoc(ct) ? null : programmeByCode(ct)?.skills);
 /** Bộ môn bàn giao chuyển lớp (`monBanGiao`): FT tách W1 · W2, bỏ môn em không đăng ký (`mon_dang_ky` của lộ trình FT). */
@@ -302,11 +305,11 @@ export function regularDeadline(attempt: { planned_period_id?: number | null; de
 
 export function regularResultOf(attemptId: number): RegularResult {
   const conn = db();
-  const a = conn.prepare('SELECT class_id, cycle_id, created_at FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
+  const a = conn.prepare('SELECT class_id, cycle_id, created_at, bo_mon FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   const prog = a ? chuongTrinhCuaLuot(a) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows)) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code), a?.created_at ?? null);
+  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows), a?.bo_mon) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code), a?.created_at ?? null);
 }
 
 /** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
@@ -1210,7 +1213,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   }
   /* P13 KET-PET: bộ môn theo lượt (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ giữ L+S / R+W; cột bảng = các môn của những dòng đang xem. */
   const lichGop = lichGopCua(attempts.map((a) => a.id));
-  const monDong = (id: number): readonly string[] => boMonTheoLuot(progLop.skills, daGhiLuot(lichGop.get(id), byAttempt.get(id)));
+  const boMonOf = new Map<number, string | null>(attempts.map((a) => [a.id as number, a.bo_mon ?? null]));
+  const monDong = (id: number): readonly string[] => boMonTheoLuot(progLop.skills, daGhiLuot(lichGop.get(id), byAttempt.get(id)), boMonOf.get(id));
   const prog = { ...progLop, skills: attempts.length ? [...new Set(attempts.flatMap((a) => monDong(a.id)))] : progLop.skills };
 
   /*

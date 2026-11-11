@@ -5,7 +5,7 @@ import {
   mondayOfDate, hienTargetKck, nhanMt0, type AssessedSkill, type DiemMoc, type DotRef, nhanBaiThuong, trangThaiCaseV4, trangThaiHop } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { require_, type Principal } from '../permissions.ts';
-import { allProgrammes, maCtCuaLuot } from '../normal/regular.ts';
+import { allProgrammes, maCtCuaLuot, programmeByCode } from '../normal/regular.ts';
 import { typedResult } from './profile.ts';
 import { khoangTamDung } from './tamDung.ts';
 import { addDays } from '../util.ts';
@@ -252,7 +252,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     return c.detected_at >= kh.tu && (!kh.den || c.detected_at <= kh.den);
   });
   const attemptGiaiDoan = attemptRows.filter((a) => cycleIds.includes(a.cycle_id));
-  const boHop = giaiDoan ? caseCategoriesFor(ratio ? 'ratio' : 'ielts_band', ct) : [];
+  const boHop = giaiDoan ? caseCategoriesFor(ratio ? 'ratio' : 'ielts_band', ct, programmeByCode(ct)?.skills) : [];
   /* LUAT-NX-MT (chủ SP 22/10, `10` mục 7.1): S Ex đã chấm hiện CẠNH điểm S của hộp Speaking — chỉ hiện, không vào chuỗi điểm / badge / Case. */
   const sEx = (boHop as readonly string[]).includes('speaking')
     ? (sExCuaHv(p, [studentId], homNay).get(studentId) ?? []).filter((x) => x.diem !== null).reverse().map((x) => ({ diem: x.diem!, tuan: x.tuanMa }))

@@ -114,7 +114,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
     const scores = bundle.scores.get(a.id) ?? [];
     const skillRows = bundle.skillRows.get(a.id);
     if (scoringModeOf(a) === 'ratio') {
-      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(skillRows, scores));   // P13: bộ môn theo lượt
+      const bo = boMonTheoLuot(boMonLich(a.programme_code, programmes.get(a.programme_code)?.skills), daGhiLuot(skillRows, scores), a.bo_mon);   // P13: bộ môn theo lượt
       const views = regularSkillViews(a, skillRows, scores, today, bo);
       for (const skill of bo) {
         const v = views.get(skill);

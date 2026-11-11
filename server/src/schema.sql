@@ -583,6 +583,7 @@ CREATE TABLE assessment_attempts (
   updated_at TEXT,
   lich_su INTEGER NOT NULL DEFAULT 0, -- MT lịch sử: tuần thi đã qua trước ngày tạo lượt, lưu lúc tạo (T34)
   o_cho_tu TEXT DEFAULT '',           -- TD7b: week_start sớm nhất của ô đang chờ điểm; NULL = hết ô chờ; '' = chưa tính (luôn được đọc). Tính ở fasttrack/conOCho.ts
+  bo_mon TEXT,                        -- MON-CT-1311: bộ môn lượt đã ghi giữ khi Quản trị đổi môn chương trình (mảng JSON); NULL = theo chương trình
   UNIQUE (cycle_id, attempt_no)
 );
 CREATE INDEX idx_attempt_student ON assessment_attempts(student_id);

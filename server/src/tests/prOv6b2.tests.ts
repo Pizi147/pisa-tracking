@@ -108,9 +108,11 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     sysconfig.saveProgramme(P.admin, { ...PX, scoringMode: 'ielts_band' });
     assert(sysconfig.listProgrammes(P.admin).find((r: any) => r.code === 'PX6').scoringMode === 'ratio', 'chương trình mới nhận band');
     assert(loi(() => sysconfig.saveProgramme(P.mbManager, { ...PX, code: 'PX7' }))?.status === 403, 'QL tạo được');
-    /* Mã đã có (PX6) → lưu là SỬA: đổi n tuần được, áp lớp mở sau; môn khoá khi đã có lớp. */
+    /* Mã đã có (PX6) → lưu là SỬA: đổi n tuần được, áp lớp mở sau. MON-CT-1311: đổi môn khi có lớp đang học → hỏi trước (409), chưa ghi. */
     const lop = taoLop('PX6', '02');
-    sysconfig.saveProgramme(P.admin, { ...PX, taoMoi: false, lapMoiTuan: 4, skills: ['listening'] });
+    const hoi = loi(() => sysconfig.saveProgramme(P.admin, { ...PX, taoMoi: false, lapMoiTuan: 4, skills: ['listening'] }));
+    assert(hoi?.status === 409 && hoi.details?.canXacNhan, `đổi môn có lớp phải hỏi: ${hoi?.status} ${hoi?.message}`);
+    sysconfig.saveProgramme(P.admin, { ...PX, taoMoi: false, lapMoiTuan: 4, skills: undefined });
     const sau = sysconfig.listProgrammes(P.admin).find((r: any) => r.code === 'PX6');
     assert(sau.lapMoiTuan === 4 && sau.skills.join() === 'listening_speaking,reading_writing', `sửa: ${JSON.stringify(sau)}`);
     assert(one('SELECT moc_lap FROM classes WHERE id = ?', lop.id).moc_lap === 6, 'lớp đang chạy đổi n tuần');
@@ -120,20 +122,20 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     assert(loi(() => taoLop('PX6', '03'))?.status === 400, 'tạo lớp mã đã ngừng không 400');
   }));
 
-  check('OV6b2-3 · PET (P13: 4 môn): đủ 70 % mỗi môn → "Đạt"; L 16/30 + S 19/30 → chip "SOS · L S", 0 Case / tín hiệu / PA / việc', () => thu(() => {
+  check('OV6b2-3 · PET (MON-CT-1311: L+S · R+W): đủ 70 % mỗi môn → "Đạt"; L+S 35/60 → chip "SOS · L+S", 0 Case / tín hiệu / PA / việc', () => thu(() => {
     const lop = taoLop('PET', '05');
     assert(lop.code === 'MB PET 05', lop.code);
     const a = them(lop.id, 'OV6B2 PET Đạt');
     const b = them(lop.id, 'OV6B2 PET SOS');
-    nhap(cps(a)[0].id, { listening: [24, 30], reading: [30, 40], writing: [31, 40], speaking: [24, 30] });
-    nhap(cps(b)[0].id, { listening: [16, 30], reading: [30, 40], writing: [28, 40], speaking: [19, 30] });
+    nhap(cps(a)[0].id, { listening_speaking: [48, 60], reading_writing: [61, 80] });
+    nhap(cps(b)[0].id, { listening_speaking: [35, 60], reading_writing: [58, 80] });
     const bang = regular.regularSheet(P.admin, lop.id, 'checkpoint', TODAY, 1);
     const hang = (sid: number) => bang.rows.find((r: any) => r.studentId === sid);
     assert(bang.rows.length === 2, `số dòng ${bang.rows.length}`);
     assert(hang(a).chip?.chu === 'Đạt' && hang(a).chip.dat === true, `em đạt: ${JSON.stringify(hang(a).chip)}`);
-    assert(hang(b).chip?.chu === 'SOS · L S' && hang(b).chip.dat === false, `em SOS: ${JSON.stringify(hang(b).chip)}`);
+    assert(hang(b).chip?.chu === 'SOS · L+S' && hang(b).chip.dat === false, `em SOS: ${JSON.stringify(hang(b).chip)}`);
     assert(Math.round(hang(b).result.tyLeTong * 100) === 66, `% tổng ${hang(b).result.tyLeTong}`);
-    assert(bang.monNgan.listening === 'L' && bang.monNgan.speaking === 'S' && !('listening_speaking' in bang.monNgan), JSON.stringify(bang.monNgan));
+    assert(bang.monNgan.listening_speaking === 'L+S' && bang.monNgan.reading_writing === 'R+W' && !('listening' in bang.monNgan), JSON.stringify(bang.monNgan));
     const dem = (sql: string) => one(sql.replace('?', `${a},${b}`)).n as number;
     assert(dem('SELECT COUNT(*) n FROM sos_cases WHERE student_id IN (?)') === 0, 'có Case');
     assert(dem('SELECT COUNT(*) n FROM case_signals WHERE student_id IN (?)') === 0, 'có tín hiệu');
@@ -166,16 +168,16 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     assert(schedule.missingForClass(lop.id).items.some((m: any) => m.key === 'class_start_week'), 'thôi nhắc tuần bắt đầu');
   }));
 
-  check('OV6b2-5 · mã lạ không còn là FT: kỹ năng lớp KET = L · R · W · S (P13); Điểm theo lớp + Kế hoạch Test có "Checkpoint 1"', () => thu(() => {
+  check('OV6b2-5 · mã lạ không còn là FT: kỹ năng lớp KET = L+S · R+W (MON-CT-1311); Điểm theo lớp + Kế hoạch Test có "Checkpoint 1"', () => thu(() => {
     assert(d.programmeOf('PET') === 'PET' && d.programmeOf('pet') === 'PET' && d.programmeOf('FOUND') === 'FOU', 'programmeOf');
     assert(d.boMonLich('PET', ['listening_speaking', 'reading_writing']).join() === 'listening_speaking,reading_writing', 'boMonLich');
     assert(d.kyNangPhuTrach('PET', 'reading_writing').join() === 'reading_writing', 'kyNangPhuTrach');
     assert(d.tenMonNgan('PET', 'listening_speaking') === 'L+S' && d.tenMon('KET', 'reading_writing') === 'Reading + Writing', 'tên môn');
     const lop = taoLop('KET', '01');
     assert(lop.code === 'MB KET 01', lop.code);
-    assert(all('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill', lop.id).map((r) => r.skill).join() === 'listening,reading,speaking,writing', 'class_skills');
+    assert(all('SELECT skill FROM class_skills WHERE class_id = ? ORDER BY skill', lop.id).map((r) => r.skill).join() === 'listening_speaking,reading_writing', 'class_skills');
     const sid = them(lop.id, 'OV6B2 KET');
-    assert(all(`SELECT skill FROM attempt_skills WHERE attempt_id = ? ORDER BY skill`, cps(sid)[0].id).map((r) => r.skill).join() === 'listening,reading,speaking,writing', 'attempt_skills');
+    assert(all(`SELECT skill FROM attempt_skills WHERE attempt_id = ? ORDER BY skill`, cps(sid)[0].id).map((r) => r.skill).join() === 'listening_speaking,reading_writing', 'attempt_skills');
     const luot = diemTheoLuot.danhSachLuot(P.mbManager, lop.id, TODAY);
     assert(luot.mode === 'ratio' && luot.luot.length === 1 && luot.luot[0].ma === 'cp:1' && luot.luot[0].nhan === 'Checkpoint 1' && luot.macDinh === 'cp:1',
       `lượt: ${JSON.stringify(luot)}`);
@@ -190,10 +192,10 @@ export async function runPrOv6b2Tests(t: YThucTestKit) {
     assert(keHoach.luoiThuong(P.mbManager, classId('MB BE 08')).cot.map((c: any) => c.kind).join() === 'progress,final', 'lớp BE đổi cột');
   }));
 
-  check('OV6b2-6 · PET, KET có sẵn (P13: L · R · W · S · đúng/tổng · 70 % · liên tục · mỗi 6 tuần); migrate chạy hai lần không đổi gì', () => thu(() => {
+  check('OV6b2-6 · PET, KET có sẵn (MON-CT-1311: L+S · R+W · đúng/tổng · 70 % · liên tục · mỗi 6 tuần); migrate chạy hai lần không đổi gì', () => thu(() => {
     for (const ma of ['PET', 'KET']) {
       const r = sysconfig.listProgrammes(P.admin).find((x: any) => x.code === ma);
-      assert(r && r.skills.join() === 'listening,reading,writing,speaking' && r.scoringMode === 'ratio' && r.nguongDat === 70
+      assert(r && r.skills.join() === 'listening_speaking,reading_writing' && r.scoringMode === 'ratio' && r.nguongDat === 70
         && r.weeks === null && r.lapMoiTuan === 6 && r.status === 'active', `${ma}: ${JSON.stringify(r)}`);
     }
     const chup = () => JSON.stringify([all('SELECT * FROM programmes ORDER BY code'), all('SELECT * FROM programme_skills ORDER BY programme_code, skill')]);

@@ -12,6 +12,7 @@ import { nhapRowToView, tiepTheoTheoHocVien } from './loTrinhTiep.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 import { standingFor } from '../students/standing.ts';
 import { cuoiKhoaTheoHocVien, tyLeTongLo } from '../normal/cuoiKhoa.ts';
+import { boMonCt } from '../normal/regular.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL, khoangTamDung } from '../students/tamDung.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
@@ -284,7 +285,7 @@ export function transitionPlan(p: Principal, classId: number) {
       nhanXetLuc: nhanXet.get(s.id)?.luc ?? null,
     })),
     /** OV-3b: môn của phiếu bàn giao lớp nguồn (cột Bàn giao: CN + từng môn). */
-    monBanGiao: ft ? [] : boMonLich(cls.programme_code ?? null).map((ma) => ({ ma, ngan: tenMonNgan(cls.programme_code ?? null, ma) })),
+    monBanGiao: ft ? [] : boMonCt(cls.programme_code ?? null).map((ma) => ({ ma, ngan: tenMonNgan(cls.programme_code ?? null, ma) })),
     /** Lớp này đã từng chuyển tiếp sang đâu chưa — để không mở hai lớp kế tiếp cho một lớp. */
     alreadyLinked: (conn
       .prepare('SELECT id, code FROM classes WHERE previous_class_id = ? ORDER BY id')

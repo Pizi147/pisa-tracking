@@ -872,7 +872,7 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
     /* LECH-KHONG-LOP: cùng luật `evaluateAttemptRow` — lớp của lượt, lượt không lớp theo lộ trình. */
     const ma = maCtCuaLuot(a.class_id, a.programme_code, a.cy_programme_code);
     const boLop = a.kind === 'mt0' ? null : chuongTrinhTyLeCuaLuot(ma, () => programmes)?.skills;
-    const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores))];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
+    const regularSkills = boLop && [...boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), scores), a.bo_mon)];   // P13: lượt đã ghi môn gộp cũ giữ L+S / R+W
 
     if (regularSkills) {
       const r = evaluateRegular(regularSkills, scores, null, nguongDatLop(a.class_id, ma), a.created_at);

@@ -615,11 +615,11 @@ export type HangRong = { kind: 'rong'; nhan: string; khoa: readonly string[] };
 export const SO_CASE_HIEN_MOI_HANG = 2;
 
 /** Hàng theo CHƯƠNG TRÌNH (không cứng 4): FT L·R·W(W1,W2)·S · BE/ELE L·R·W·S · FOU L·R·G+V·P · Pre FOU một hàng "Tổng hợp". */
-function khuonHang(ct: string | null): { khoa: string; kyNang: readonly string[] }[] {
+function khuonHang(ct: string | null, boCt?: readonly string[] | null): { khoa: string; kyNang: readonly string[] }[] {
   const c = programmeOf(ct);
   if (c === 'PREFOU') return [{ khoa: 'tong_hop', kyNang: ['tong_hop'] }];
-  /* OV-6b2: chương trình Quản trị tạo (PET…) không có mẫu — mọi Case vào hàng "Chung" (Checkpoint không sinh Case theo môn). */
-  if (c && c !== 'FT') return (PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills ?? []).map((k) => ({ khoa: k, kyNang: [k] }));
+  /* MON-CT-1311: lớp thường — bộ môn chương trình (`programme_skills`, máy chủ gửi `boMon`); không có thì mẫu, chương trình lạ → hàng "Chung". */
+  if (c && c !== 'FT') return (boCt?.length ? boCt : PROGRAMME_TEMPLATES[c as ProgrammeCode]?.skills ?? []).map((k) => ({ khoa: k, kyNang: [k] }));
   return [
     { khoa: 'listening', kyNang: ['listening'] }, { khoa: 'reading', kyNang: ['reading'] },
     { khoa: 'writing', kyNang: ['writing', 'writing1', 'writing2'] }, { khoa: 'speaking', kyNang: ['speaking'] },
@@ -630,9 +630,11 @@ export function hangCanHoTro<T extends CaseCuaHang>(i: {
   ct: string | null; cases: readonly T[];
   /** Công tắc "Chỉ kỹ năng tôi dạy": null = đủ hàng. W1/W2 giữ hàng W; hàng "Chung" luôn giữ. */
   chiKyNang?: readonly string[] | null;
+  /** MON-CT-1311: bộ môn chương trình (lớp thường). */
+  boCt?: readonly string[] | null;
 }): (HangKyNang<T> | HangRong)[] {
   const c = programmeOf(i.ct);
-  const khuon = khuonHang(i.ct);
+  const khuon = khuonHang(i.ct, i.boCt);
   const thuocHang = (t: string | null, h: { kyNang: readonly string[] }) => t !== null && (c === 'PREFOU' || h.kyNang.includes(t));
   const xep = (a: T, b: T) => Number(b.quaHan) - Number(a.quaHan) || (b.sosLevel ?? 0) - (a.sosLevel ?? 0) || a.id - b.id;
   const dungHang = (khoa: string, nhan: string, tenDu: string, kyNang: readonly string[], ds: T[]): HangKyNang<T> => {
@@ -663,9 +665,9 @@ export function hangCanHoTro<T extends CaseCuaHang>(i: {
  * cả khối; `cases` của em = Case đang hiện (cột trái "n Case · k việc quá hạn"); `tong` cùng công thức `tong` của máy chủ (canHoTro.ts).
  */
 type CaseCanHoTro = CaseCuaHang & { trangThai?: { k: string }; pas?: readonly { choDuyet: boolean; xong: boolean }[] };
-export function locCanHoTro<E extends { ten: string; cases: readonly CaseCanHoTro[] }>(i: { ct: string | null; em: readonly E[]; chiKyNang?: readonly string[] | null }) {
+export function locCanHoTro<E extends { ten: string; cases: readonly CaseCanHoTro[] }>(i: { ct: string | null; em: readonly E[]; chiKyNang?: readonly string[] | null; boCt?: readonly string[] | null }) {
   const em = sapEmCanHoTro(i.em.map((e) => {
-    const hang = hangCanHoTro<E['cases'][number]>({ ct: i.ct, cases: e.cases, chiKyNang: i.chiKyNang ?? null });
+    const hang = hangCanHoTro<E['cases'][number]>({ ct: i.ct, cases: e.cases, chiKyNang: i.chiKyNang ?? null, boCt: i.boCt ?? null });
     return { ...e, hang, cases: hang.flatMap((h) => (h.kind === 'hang' ? h.cases : [])) };
   }).filter((e) => e.cases.length > 0));
   const cs = em.flatMap((e) => e.cases);

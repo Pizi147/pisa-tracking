@@ -135,7 +135,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
 function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: string[] }): { d: DongThuong; du: boolean } {
   const scores = b.scores.get(a.id) ?? [];
   const skillRows = b.skillRows.get(a.id) ?? [];
-  const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(skillRows, scores)), scores, prog.code, nguongDatLop(a.class_id, prog.code), a.created_at);   // P13: bộ môn theo lượt
+  const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(skillRows, scores), a.bo_mon), scores, prog.code, nguongDatLop(a.class_id, prog.code), a.created_at);   // P13: bộ môn theo lượt
   const d: DongThuong = {
     ten: a.full_name, email: a.email ?? null, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({
@@ -188,7 +188,7 @@ export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_L
   if (f.lop.length) dk.push([`c.id IN (${dauHoi(f.lop.length)})`, f.lop]);
   const where = dk.map(([sql]) => sql), params = dk.flatMap(([, ps]) => ps);
   const luot = db().prepare(
-    `SELECT a.id, a.kind, a.attempt_no, a.lich_su, a.class_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.cycle_id, a.created_at,
+    `SELECT a.id, a.kind, a.attempt_no, a.lich_su, a.class_id, a.target_at_attempt, a.kck_at_attempt, a.student_id, a.cycle_id, a.created_at, a.bo_mon,
             COALESCE(a.route_at_attempt, cy.route) AS route, cy.khong_cam_ket AS kck, cy.khong_cam_ket AS cy_kck, st.email, st.full_name,
             c.code AS class_code, c.branch_id, c.programme_code, b.name AS branch_name,
             t.week_start, t.code AS tuan_code

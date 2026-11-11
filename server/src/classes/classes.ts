@@ -1,7 +1,7 @@
 import { DS_JSON, db } from '../db.ts';
 import { ghiSoTheoLop } from '../phanTich/soNghiaVu.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
-import { ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, nhanKetThucVi, nhanTiepTheo, oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa, type AssessedSkill, type DoiChoPc, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope, coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot, MON_GOP } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, ENTRY_SKILLS, PERMISSIONS, awaitingScore, chuanHoaMaLop, soSanhLop, kiemPhanCong, nhanKetThucVi, nhanTiepTheo, oPhanCong, pendingSkillsOf, laLienTuc, tenMonNgan, danhGiaDauRa, type AssessedSkill, type DoiChoPc, type SlotPhanCong, type AttemptKind, type PendingCell, type ProgrammeCode, type WorkScope, coMocTiepTheo, coMocTiepTheoThuong, mocKeTiep, NORMAL_LADDER, chuMonTruot, coBoTroFinal, nhanHuongNgan, trangThaiLichThi, type Huong, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
@@ -199,7 +199,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
   ).all(json) as any[]) openCases.set(r.class_id, r.n);
   const attempts = conn
     .prepare(
-      `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
+      `SELECT a.id, a.class_id, a.status, a.planned_period_id, a.kind, a.bo_mon,   -- PR-LT3 T18: \`skillCells\` đọc loại lượt (Speaking Mock chấm chéo)
               a.deadline_override, a.target_at_attempt, a.kck_at_attempt, a.attempt_no, a.lich_su, a.created_at,
               COALESCE(a.route_at_attempt, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id)) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
               pr.week_start AS period_start, pr.week_end AS period_end
@@ -244,7 +244,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
       const rows = bundle.scores.get(a.id) ?? [];
       /* P13: bộ môn theo lượt — lượt đã ghi môn gộp cũ giữ L+S / R+W (`boMonTheoLuot`). */
       const boLop = skillsByClass.get(a.class_id) ?? [];
-      const editableOrAll = boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), rows));
+      const editableOrAll = boMonTheoLuot(boLop, daGhiLuot(bundle.skillRows.get(a.id), rows), a.bo_mon);
       const mineSkills = editableOrAll === boLop ? mineByClass.get(a.class_id) ?? [] : mySkills(p, a.class_id, editableOrAll);
       /* Hỏi theo TỪNG MÔN: bốn môn của một bài có thể ở ba tuần khác nhau (mục 10.1). */
       const views = regularSkillViews(a, bundle.skillRows.get(a.id), rows, today, editableOrAll);
@@ -493,7 +493,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
          * target. Chỉ có đạt/trượt theo tỷ lệ điểm đạt/tổng điểm, và số môn trượt ra mức SOS.
          */
         /* P13: bộ môn theo lượt (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ giữ L+S / R+W. */
-        const mon = boMonTheoLuot(prog!.skills, daGhiLuot(bundle.skillRows.get(a.id), scores));
+        const mon = boMonTheoLuot(prog!.skills, daGhiLuot(bundle.skillRows.get(a.id), scores), a.bo_mon);
         const myLuot = mon === prog!.skills ? myRegularSkills : editableSkills(p, classId, mon, undefined, true);
         const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id), a.created_at);
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
@@ -1194,24 +1194,27 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
 }
 
 /**
- * P13 KET-PET: môn gộp cũ (L+S, R+W) lớp CÒN cần người phụ trách — lượt chưa huỷ còn ô môn gộp chưa có điểm / dấu "-", hoặc Case đang mở theo môn gộp
- * của lượt thuộc lớp. Phân công giữ dòng môn gộp của các môn này (không ai mất việc nhập điểm / xử lý Case cũ).
+ * Môn CŨ (không còn trong bộ môn chương trình — P13 L+S / R+W, MON-CT-1311 Quản trị đổi môn) lớp CÒN cần người phụ trách: lượt chưa huỷ còn ô môn đó
+ * chưa có điểm / dấu "-", hoặc Case đang mở theo môn đó của lượt thuộc lớp. Phân công giữ dòng của các môn này (không ai mất việc nhập điểm / xử lý Case cũ).
+ * Chỉ lớp chấm đúng / tổng (FT dùng bộ khác ở lịch và phân công).
  */
 export function monGopConCan(classId: number): Set<string> {
   return monGopConCanMany([classId]).get(classId)!;
 }
 /** Như `monGopConCan` cho nhiều lớp — MỘT câu (lưu phân công nhiều lớp). */
 export function monGopConCanMany(classIds: readonly number[]): Map<number, Set<string>> {
-  const gop = Object.keys(MON_GOP);
-  const ph = gop.map(() => '?').join(','), lop = classIds.map(() => '?').join(',');
+  const lop = classIds.map(() => '?').join(',');
   const kq = new Map<number, Set<string>>(classIds.map((id) => [id, new Set<string>()]));
+  const ngoaiBo = (cot: string) => `NOT EXISTS (SELECT 1 FROM programme_skills ps WHERE ps.programme_code = cl.programme_code AND ps.skill = ${cot})`;
   for (const r of db().prepare(
     `SELECT DISTINCT a.class_id AS c, k.skill AS m FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id
-      WHERE a.class_id IN (${lop}) AND a.status != 'cancelled' AND k.skill IN (${ph})
+       JOIN classes cl ON cl.id = a.class_id JOIN programmes p ON p.code = cl.programme_code AND p.scoring_mode = 'ratio'
+      WHERE a.class_id IN (${lop}) AND a.status != 'cancelled' AND a.kind != 'mt0' AND ${ngoaiBo('k.skill')}   -- MT0 luôn 4 kỹ năng IELTS, không phải môn lớp
         AND NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id AND s.skill = k.skill AND (s.raw_score IS NOT NULL OR s.no_show_period_id IS NOT NULL))
      UNION SELECT DISTINCT a.class_id, COALESCE(sc.topic, sc.category) FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-      WHERE a.class_id IN (${lop}) AND sc.status != 'done' AND COALESCE(sc.topic, sc.category) IN (${ph})`,
-  ).all(...classIds, ...gop, ...classIds, ...gop) as any[]) kq.get(r.c)?.add(r.m as string);
+       JOIN classes cl ON cl.id = a.class_id JOIN programmes p ON p.code = cl.programme_code AND p.scoring_mode = 'ratio'
+      WHERE a.class_id IN (${lop}) AND sc.status != 'done' AND ${ngoaiBo('COALESCE(sc.topic, sc.category)')}`,
+  ).all(...classIds, ...classIds) as any[]) kq.get(r.c)?.add(r.m as string);
   return kq;
 }
 
