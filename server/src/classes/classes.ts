@@ -908,6 +908,8 @@ function classOverviewThat(p: Principal, classId: number) {
       isCoreTeacher: isCoreTeacherOf(p, classId),
       canReportCase: can(p, PERMISSIONS.SOS_REPORT, { classId }),
       canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
+      /** Rà 11/11 BD-1: ⋯ dòng HV "Xác nhận xử lý" theo đúng quyền máy chủ đòi (`discipline.manage` — GVCN / QL), không theo quyền ghi vi phạm. */
+      canManageDiscipline: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
       coTheSuaThongTin: can(p, PERMISSIONS.STUDENT_EDIT_INFO, { classId }),
       coTheSuaThem: can(p, PERMISSIONS.STUDENT_EDIT_MORE, { classId }),
@@ -929,6 +931,8 @@ function classOverviewThat(p: Principal, classId: number) {
       /** Nút đầu trang và menu ⋯ dòng học viên chỉ hiện khi làm được (Q9) — máy chủ vẫn chặn lại. */
       canReportCase: can(p, PERMISSIONS.SOS_REPORT, { classId }),
       canRecordViolation: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
+      /** Rà 11/11 BD-1: ⋯ dòng HV "Xác nhận xử lý" theo đúng quyền máy chủ đòi (`discipline.manage` — GVCN / QL), không theo quyền ghi vi phạm. */
+      canManageDiscipline: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
       canEnterScores: editableSkills(p, classId, classSkills).length > 0,
       /** Cùng luật với `canEditProgress` (Q2) — tên riêng để nút Chuyển tiếp lớp/badge/việc đỏ dùng chung một cờ. */
       coTheChuyenTiep: can(p, PERMISSIONS.CLASS_EDIT, { classId }),

@@ -61,7 +61,7 @@ export type HoSoLop = {
     /** OV-13p: `student.edit` ở lớp — `canAddStudents` chỉ là thêm học viên (`student.add`). */
     coTheSuaHocVien?: boolean;
     editableSkills: string[]; isCoreTeacher: boolean;
-    canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean;
+    canReportCase: boolean; canRecordViolation: boolean; canEnterScores: boolean; canManageDiscipline?: boolean;
     /** OV-10b: ⋯ dòng của Admin / TVV / CX (`student.edit_info` · `student.edit_more`). */
     coTheSuaThongTin?: boolean; coTheSuaThem?: boolean;
     /** OV-13i: Sửa thông tin cả lớp — GVCN / QL / TVV / CX đúng phạm vi (máy chủ `duocSuaCaLop`). */

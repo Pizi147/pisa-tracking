@@ -20,6 +20,7 @@ import { dich, t } from '@shared/i18n/index.ts';
  */
 export type QuyenDong = {
   coTheSuaHocVien: boolean; coTheBaoCase: boolean; coTheGhiViPham: boolean; coTheNhapDiem: boolean; coTheChuyenTiep?: boolean;
+  /** BD-1: quyền "Xác nhận xử lý" (`discipline.manage`); không truyền = theo cờ dòng (`xuLyYThuc` đã theo người xem). */ coTheXuLyYThuc?: boolean;
   theoVai?: boolean; coTheSuaThongTin?: boolean; coTheSuaThem?: boolean;
 };
 /** `status` / `ft` chỉ cần cho ⋯ theo vai (Tạm dừng / Quay lại, Kết quả thi thật chỉ FT); `ft` không gửi = theo lớp của bảng. */
@@ -81,7 +82,7 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     { key: 'ho-so', nhan: t('Mở hồ sơ'), keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
   ] : mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
-    coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase, coTheXuLyYThuc: quyen.coTheGhiViPham && !!d.xuLyYThuc,
+    coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase, coTheXuLyYThuc: (quyen.coTheXuLyYThuc ?? quyen.coTheGhiViPham) && !!d.xuLyYThuc,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
     coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: !!quyen.coTheChuyenTiep, coTheDeXuatChuyenLop: quyen.coTheSuaHocVien && !quyen.coTheChuyenTiep,
   }).filter((k) => k !== 'lo-trinh-tiep' || !!classId).map((k, i, ds) => ({
