@@ -61,7 +61,28 @@ const ProfilePage = lazyTai(() => import('./modules/platform/ProfilePage.tsx'));
 const HoSoGiaoVienPage = lazyTai(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
 const HuongDanPage = lazyTai(() => import('./modules/huongDan/HuongDanPage.tsx'));
 const PhanTichPage = lazyTai(() => import('./modules/phanTich/PhanTichPage.tsx'));
-const NAP_SAN = [() => import('./modules/worklist/OverviewPage.tsx'), () => import('./modules/fasttrack/MockDetailPage.tsx'), () => import('./modules/students/StudentsPage.tsx'), () => import('./modules/classes/ClassOverviewPage.tsx'), () => import('./modules/students/StudentDetailPage.tsx'), () => import('./modules/students/LuuTruPage.tsx'), () => import('./modules/cases/CaseBoardPage.tsx'), () => import('./modules/test/TestPage.tsx'), () => import('./modules/congViec/CongViecPage.tsx'), () => import('./modules/platform/AdminPage.tsx'), () => import('./modules/platform/ProfilePage.tsx'), () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), () => import('./modules/huongDan/HuongDanPage.tsx'), () => import('./modules/phanTich/PhanTichPage.tsx'), () => import('./modules/congViec/PanelViec.tsx')];
+/*
+ * U05 (SUA-RA-1311, đo 13/11 — `vite build` + manifest, gzip, chưa có cache): nạp sẵn mọi khu = 78 tệp / 702 KB. Trang có route chặn theo `nav` (Phân tích,
+ * Test, Công việc, Quản trị — cùng điều kiện các `<Route>` dưới) chỉ nạp khi vai mở được: GV 619 KB, TVV 620, CX 602, Admin VP 655; QL / QT không đổi.
+ * Đã có cache (tệp `/assets` immutable 1 năm) thì 0 byte cả trước lẫn sau. PDF / Excel vẫn nạp lười, không vào đây.
+ */
+const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean)?][] = [
+  [() => import('./modules/worklist/OverviewPage.tsx')],
+  [() => import('./modules/fasttrack/MockDetailPage.tsx')],
+  [() => import('./modules/students/StudentsPage.tsx')],
+  [() => import('./modules/classes/ClassOverviewPage.tsx')],
+  [() => import('./modules/students/StudentDetailPage.tsx')],
+  [() => import('./modules/students/LuuTruPage.tsx')],
+  [() => import('./modules/cases/CaseBoardPage.tsx')],
+  [() => import('./modules/test/TestPage.tsx'), (n) => n.test],
+  [() => import('./modules/congViec/CongViecPage.tsx'), (n) => n.work],
+  [() => import('./modules/platform/AdminPage.tsx'), (n) => n.admin || !!n.bangQuyDoi],
+  [() => import('./modules/platform/ProfilePage.tsx')],
+  [() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')],
+  [() => import('./modules/huongDan/HuongDanPage.tsx')],
+  [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis],
+  [() => import('./modules/congViec/PanelViec.tsx')],
+];
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -274,11 +295,13 @@ export default function App() {
   const so: SoBadge = gv?.n ? { n: gv.n, quaHan: gv.quaHan > 0, sr: t('{n} việc cần làm ngay', { n: gv.n }) + (gv.quaHan ? t(', {n} quá hạn', { n: gv.quaHan }) : '') } : null;
 
   const daDangNhap = !!session?.authenticated;
+  const navNap = session?.nav ?? NAV_RONG;
   useEffect(() => {
     if (!daDangNhap) return;
-    const t = setTimeout(() => NAP_SAN.forEach((nap) => { nap().catch(() => {}); }), 1500);
+    const t = setTimeout(() => NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }), 1500);
     return () => clearTimeout(t);
-  }, [daDangNhap]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ 4 cờ quyết định trang được nạp
+  }, [daDangNhap, navNap.analysis, navNap.test, navNap.work, navNap.admin, navNap.bangQuyDoi]);
 
   if (loading) return <div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>;
   if (!session?.authenticated) return <WelcomePage />;

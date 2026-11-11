@@ -1,6 +1,7 @@
 /**
  * PHÉP KIỂM SUA-RA-1311 (PTA rà trước deploy 13/11 + đề bài `docs/superpowers/specs/2026-11-13-audit-1454/de-bai.md`) — phần máy chủ:
  *  2 · Hai hàm đêm (`doi-chieu-so`, `chot-vang`) nạp `platform/cauHinhCaseSos.ts` (nguồn cấu hình Case & SOS) và quên nhớ mỗi lượt
+ *  U02 · Lưu trữ "Quay lại học · n em": kết quả từng em (vùng nằm lại), Thử lại chỉ gửi em lỗi (`web/.../quayLaiLo.ts`)
  * Mục 1 (Khôi phục lượt mở lại việc Báo PH) ở `prMt.tests.ts`; mục 3 (nguồn lịch chuỗi "-") ở `prBv.tests.ts`.
  */
 import pathMod from 'node:path';
@@ -100,4 +101,31 @@ export async function runSuaRa1311Tests(t: any) {
       assert(lai.length === 0, `đường đọc / migrate OV-13a tính mốc khác: ${JSON.stringify(lai)} (gắn dấu ghi ${g.followup_due})`);
     }));
   }
+  // ---------------------------------------------------------------- U02 · Lưu trữ: kết quả lô nằm lại, Thử lại chỉ gửi phần lỗi
+  console.log('\nSUA-RA-1311 · U02 kết quả "Quay lại học · n em" từng em');
+  const lo: any = await import('../../../web/src/modules/students/quayLaiLo.ts');
+  await checkAsync('SUA-RA-1311 U02 · 4 em: 1 xong, 1 cần chọn lớp, 1 lỗi, 1 đóng hộp → kết quả từng em; Thử lại chỉ POST em lỗi, giữ kết quả em khác', async () => {
+    const goiCua = (loiPost: Set<number>) => {
+      const daGui: number[] = [];
+      return {
+        daGui,
+        get: async (u: string) => {
+          const id = Number(u.split('/')[2]);
+          if (id === 4) throw Object.assign(new Error('Đã đóng'), { huy: true });
+          return { huong: id === 2 ? 'chon-lop' : 'lop-cu' } as any;
+        },
+        post: async (u: string) => { const id = Number(u.split('/')[2]); daGui.push(id); if (loiPost.has(id)) throw new Error('Mất mạng'); return {}; },
+      };
+    };
+    const ten = (id: number) => `Em ${id}`;
+    const g1 = goiCua(new Set([3]));
+    const kq = await lo.quayLaiLo([1, 2, 3, 4], ten, g1);
+    const tt = (k: any[]) => Object.fromEntries(k.map((x) => [x.id, x.tt + (x.loi ? `:${x.loi}` : '')]));
+    assert(JSON.stringify(tt(kq)) === JSON.stringify({ 1: 'xong', 2: 'chon-lop', 3: 'loi:Mất mạng' }), `lần 1: ${JSON.stringify(tt(kq))}`);
+    const g2 = goiCua(new Set());
+    const lai = await lo.quayLaiLo(kq.filter((x: any) => x.tt === 'loi').map((x: any) => x.id), ten, g2, kq);
+    assert(JSON.stringify(g2.daGui) === '[3]', `Thử lại gửi: ${JSON.stringify(g2.daGui)}`);
+    assert(JSON.stringify(tt(lai)) === JSON.stringify({ 1: 'xong', 2: 'chon-lop', 3: 'xong' }), `sau Thử lại: ${JSON.stringify(tt(lai))}`);
+    assert(JSON.stringify(tt(lo.danhDauXong(lai, 2))) === JSON.stringify({ 1: 'xong', 2: 'xong', 3: 'xong' }), 'Xử lý tiếp xong không đánh dấu');
+  });
 }
