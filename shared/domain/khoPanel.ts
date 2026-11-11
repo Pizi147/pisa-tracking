@@ -52,6 +52,27 @@ export function docNhap<T>(kho: KhoNhap | null, viec: string, o: string): T | un
   } catch { return undefined; }
 }
 
+/**
+ * U03 (chủ SP 13/11 "Ẩn, không mockup") · T21: phần bàn phím ảo che (px) — 0 = coi như không mở. Chỉ điện thoại (< 768), có ô nhập đang focus và
+ * `visualViewport` thấp hơn cửa sổ > 80 px (thanh công cụ trình duyệt / phóng to trên máy tính không tính).
+ */
+export function banPhimChe(o: { cao: number; vvCao: number; vvTren: number; rong: number; dangGo: boolean }): number {
+  const che = Math.round(o.cao - o.vvCao - o.vvTren);
+  return o.rong < 768 && o.dangGo && che > 80 ? che : 0;
+}
+
+/**
+ * AUDIT-1454 (PTA 11/11): ô đổi khoá (vd Kết quả PA: theo PA → theo PA + kỳ). Đọc khoá mới; chưa có thì lấy chữ dưới khoá `cu` MỘT lần — ghi sang
+ * khoá mới rồi xoá khoá cũ (lần sau, kỳ sau không còn thấy).
+ */
+export function docNhapChuyen<T>(kho: KhoNhap | null, viec: string, o: string, cu: string): T | undefined {
+  const moi = docNhap<T>(kho, viec, o);
+  if (moi !== undefined) return moi;
+  const gt = docNhap<T>(kho, viec, cu);
+  if (gt !== undefined) { ghiNhap(kho, viec, o, gt, false); ghiNhap(kho, viec, cu, null, true); }
+  return gt;
+}
+
 /** `trong` = ô đã về giá trị ban đầu → xoá khoá (không để nháp rỗng làm panel tưởng còn chữ). */
 export function ghiNhap(kho: KhoNhap | null, viec: string, o: string, gt: unknown, trong: boolean): void {
   try {

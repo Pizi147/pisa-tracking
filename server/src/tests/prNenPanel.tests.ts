@@ -55,6 +55,30 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     assert(d.docNhap(k, 'v', 'o') === undefined, 'JSON hỏng phải bỏ qua');
   });
 
+  check('U03 (chủ SP 13/11 "Ẩn") · bàn phím ảo: chỉ điện thoại < 768 + ô nhập đang focus + che > 80 px mới tính — ẩn thanh tab dưới', () => {
+    const m = { cao: 812, vvCao: 476, vvTren: 0, rong: 375, dangGo: true };
+    assert(d.banPhimChe(m) === 336, 'điện thoại, đang gõ, bàn phím 336 px');
+    assert(d.banPhimChe({ ...m, dangGo: false }) === 0, 'không ô nào focus (vd phóng to bằng hai ngón) → không ẩn');
+    assert(d.banPhimChe({ ...m, rong: 1440 }) === 0 && d.banPhimChe({ ...m, rong: 768 }) === 0, '≥ 768 (1440) không đổi gì');
+    assert(d.banPhimChe({ ...m, vvCao: 740 }) === 0, 'thanh công cụ trình duyệt (≤ 80 px) không phải bàn phím');
+    assert(d.banPhimChe({ ...m, vvCao: 400, vvTren: 30 }) === 382, 'trừ phần cuộn của visualViewport');
+  });
+
+  check('AUDIT-1454 (PTA) · nháp Kết quả PA khoá theo PA + kỳ: chữ dưới khoá cũ (theo PA) chuyển sang kỳ đang mở MỘT lần, kỳ sau không thấy', () => {
+    const k = khoGia();
+    const V = 'action:5';
+    d.ghiNhap(k, V, 'ket-qua-nx:5', 'chữ gõ trước khi đổi khoá', false);   // web cũ: khoá theo PA
+    assert(d.docNhapChuyen(k, V, 'ket-qua-nx:5:k3', 'ket-qua-nx:5') === 'chữ gõ trước khi đổi khoá', 'lần đầu: lấy chữ dưới khoá cũ');
+    assert(d.docNhap(k, V, 'ket-qua-nx:5:k3') === 'chữ gõ trước khi đổi khoá' && d.docNhap(k, V, 'ket-qua-nx:5') === undefined, 'đã chuyển sang khoá kỳ 3, khoá cũ xoá');
+    assert(d.docNhapChuyen(k, V, 'ket-qua-nx:5:k4', 'ket-qua-nx:5') === undefined, 'kỳ 4 (sau khi kỳ 3 chốt ở phiên khác) không thấy chữ kỳ 3');
+    d.ghiNhap(k, V, 'ket-qua-nx:5:k3', 'kỳ 3 sửa tiếp', false);
+    d.ghiNhap(k, V, 'ket-qua-nx:5', 'khoá cũ còn sót', false);
+    assert(d.docNhapChuyen(k, V, 'ket-qua-nx:5:k3', 'ket-qua-nx:5') === 'kỳ 3 sửa tiếp', 'khoá mới có chữ thì khoá mới thắng');
+    assert(d.docNhapChuyen(null, V, 'a', 'b') === undefined && d.docNhapChuyen(khoGia(true), V, 'a', 'b') === undefined, 'kho hỏng: không ném');
+    const s = docSach('web/src/modules/cases/CapNhatTuan.tsx');
+    assert(/`ket-qua-nx:\$\{pa\.id\}:k\$\{ky\}`/.test(s) && /sua \? undefined : `ket-qua-nx:\$\{pa\.id\}`/.test(s), 'form Kết quả PA dùng khoá PA + kỳ, chuyển từ khoá theo PA');
+  });
+
   check('NEN-PANEL rà #530 · chủ nháp đổi (đăng xuất / đổi tài khoản / đổi góc nhìn / người khác đăng nhập) → xoá MỌI nháp; cùng chủ → giữ', () => {
     const k = khoGia();
     d.datChuNhap(k, '7|');
@@ -83,7 +107,8 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
       assert(re.test(docSach(f)), `${f}: ô nháp chưa khoá khi đang lưu`);
     }
     const kp = docSach('web/src/ui/KhungPanel.tsx');
-    assert(/useBanPhim\(!trongKhung\)/.test(kp) && /if \(!bat \|\| !vv\) return undefined;/.test(kp), 'useBanPhim phải chỉ chạy ở panel ngoài cùng');
+    /* U03 (chủ SP 13/11): một nơi đo cho mọi trang (App) — panel con / panel đóng không gỡ `--ban-phim` của nơi khác. */
+    assert(!/useBanPhim\(/.test(kp) && (docSach('web/src/App.tsx').match(/useBanPhim\(\)/g) ?? []).length === 1, 'useBanPhim phải đo đúng một nơi (App)');
     assert(/max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0/.test(kp), 'panel tại chỗ ở 375 chưa toàn màn');
   });
 
@@ -113,7 +138,8 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     for (const f of ['web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/XacNhanXuLyPanel.tsx',
       'web/src/modules/yThuc/LoYThucPanel.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx']) {
       const s = docSach(f);
-      assert(/useNhap\(/.test(s) && /xoaNhap\(\)/.test(s), `${f}: thiếu useNhap / xoaNhap()`);
+      /* AUDIT-1454: Kết quả PA bỏ nháp của đúng ô đã gửi (`daLuuO`), không xoá cả việc. */
+      assert(/useNhap\(/.test(s) && /xoaNhap\(\)|daLuuO\(/.test(s), `${f}: thiếu useNhap / xoaNhap()`);
     }
   });
 
@@ -126,7 +152,9 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
 
   check('NEN-PANEL T21 · 375 + bàn phím: visualViewport → --ban-phim; panel phủ co lên; chân dính trên bàn phím; thanh dưới ẩn', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
-    assert(/window\.visualViewport/.test(kp) && /setProperty\('--ban-phim'/.test(kp) && /bottom: 'var\(--ban-phim, 0px\)'/.test(kp), 'panel phủ chưa co theo bàn phím');
+    const bp = docSach('web/src/ui/banPhim.ts');   // U03: đo một nơi (App) cho mọi trang, không chỉ khi panel mở
+    assert(/window\.visualViewport/.test(bp) && /setProperty\('--ban-phim'/.test(bp) && /bottom: 'var\(--ban-phim, 0px\)'/.test(kp), 'panel phủ chưa co theo bàn phím');
+    assert(/^\s*useBanPhim\(\);/m.test(docSach('web/src/App.tsx')) && !/useBanPhim\(/.test(kp), 'bàn phím phải đo một nơi ở App (mọi trang), không trong KhungPanel');
     const css = docSach('web/src/index.css');
     assert(/html\[data-ban-phim\] \.chan-dinh-375 \{ bottom: calc\(var\(--ban-phim\) - 80px\); \}/.test(css), 'chân tại chỗ chưa dính trên bàn phím');
     assert(/html\[data-ban-phim\] \[data-thanh-duoi\] \{ display: none; \}/.test(css) && /<nav data-thanh-duoi/.test(docSach('web/src/App.tsx')), 'thanh dưới chưa ẩn khi bàn phím mở');
