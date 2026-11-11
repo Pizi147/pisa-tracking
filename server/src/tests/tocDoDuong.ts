@@ -43,10 +43,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan CX', vai: ['CX'], url: '/tong-quan/hoc-vien?branchId={cn}' },
   { trang: 'Tổng quan Admin', vai: ['ADMIN'], url: '/tong-quan/mock-test' },
   { trang: 'Tổng quan Admin', vai: ['ADMIN'], url: '/highlights' },
-  {
-    trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/tong-quan/diem-chu-y?ct=ft',   // PR-VAI-a: tách khỏi /tong-quan/quan-ly
-    maChuDich: { GVCN: 403 },
-  },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong' },
   /* OV-15h1: Tổng quan QL phần theo khung MỘT GET (Lớp cần chú ý + Tuần này + Trễ chấm) · Chờ bạn duyệt theo chi nhánh. */
@@ -99,7 +95,6 @@ export const DUONG_DO: MucDo[] = [
   /* RA-DOC-0611: Admin — `/my-work` gọi ở mỗi lần mở app (badge `App.tsx`), kèm việc "Xuất báo cáo PH" (`viecXuatBaoCaoPh`, BAO-CAO-PH b). */
   { trang: 'Công việc Admin', vai: ['ADMIN'], url: '/my-work' },
   /* SV-YT-TVV + SV-TVV-VIEC: việc của TVV (Báo PH, Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật) ở Tổng quan TVV (TVV không có khu Công việc). */
-  { trang: 'Việc TVV', vai: ['TVV'], url: '/tong-quan/viec-cua-toi' },
   {
     trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
     maChuDich: { GVCN: 403 },
@@ -195,7 +190,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT'], url: '/classes/{lopPet}/diem-theo-luot' },
   { trang: 'Điểm theo lớp', vai: ['QL', 'QT'], url: '/classes/{lopPet}/diem-theo-luot/cp:1' },
   { trang: 'Kế hoạch Test', vai: ['QL', 'QT'], url: '/ke-hoach-test/thuong/{lopPet}' },
-  { trang: 'Điểm theo lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/diem-theo-lop/lop' },
   /* PR-UX3: ⋮ Xoá lớp / Kết thúc lớp. PR-LUI-b (06/10): Quản lý của lớp cũng xem + Kết thúc được; GV nhận 403 (máy chủ kiểm quyền, không chỉ ẩn nút). */
   {
     trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/xoa-ket-thuc',
@@ -217,7 +211,6 @@ export const DUONG_DO: MucDo[] = [
   /* PR-LT, Task 5: GVCN_THUONG đọc được kế hoạch Chuyển tiếp lớp (canEdit=false ở đó), không sửa được (chỉ QL/QT gọi POST). */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/transition' },
   /* PR-K26: bảng Ghi lộ trình tiếp theo cả lớp (⋮ hồ sơ lớp) — đọc theo lô, không tăng theo số em. */
-  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/lo-trinh-tiep' },
   /* PR-KV: panel Kỳ vọng đầu ra (lớp BE `{lopBe}`) — chỉ Quản lý. */
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopBe}/ky-vong', maChuDich: { GVCN_THUONG: 403 } },
   /* PR-CT (Q30-2): phiếu bàn giao cả lớp nguồn — số câu KHÔNG đổi theo số em (phép kiểm CT 5h). */
@@ -286,7 +279,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/trang-thai/xem-truoc?ketThuc=1' },
   /* Panel Lộ trình mới + Quay lại học cần em đã thi / tạm dừng — bộ demo đo không có; trần đo ở phép kiểm SV-9b (`prSvLoTrinh.tests.ts`). */
   /* PR-LT: {hv} là em lớp FT nên `lop.laLopThuong=false`, nhưng đường vẫn 200 với mọi vai xem được hồ sơ. */
-  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/lo-trinh-tiep' },
   /* PR-LT, Q3 → PR-CT (Q30-1): quyền chuyển lớp kiểm Ở LỚP NGUỒN và chỉ Quản lý có (`class.edit`); GVCN, GVBM bị 403. */
   {
     trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/chuyen-lop/lop-dich?studentId={hv}',
@@ -569,9 +561,6 @@ export const TRAN: Record<string, number> = {
   'GVCN_THUONG /ref/branches': 15,
   'QT /ref/branches': 14,
   /* PR-VAI-a: trần đường mới = max(đo+10, ⌈đo×1,3⌉) — đo 01/10. */
-  'QL /tong-quan/diem-chu-y?ct=ft': 46,
-  'QT /tong-quan/diem-chu-y?ct=ft': 42,
-  'GVCN /tong-quan/diem-chu-y?ct=ft': 14,
   'QL /metrics/lop-thieu-gv-mon': 20,
   'QT /metrics/lop-thieu-gv-mon': 20,
   'GVCN /tong-quan/lop-toi-day?ct=ft': 47,
@@ -824,11 +813,6 @@ export const TRAN: Record<string, number> = {
   'QL /classes/30/diem-theo-luot': 24, 'QT /classes/30/diem-theo-luot': 23,
   'QL /classes/30/diem-theo-luot/cp:1': 30, 'QT /classes/30/diem-theo-luot/cp:1': 31,   // TL-NEN: đo 20 (trước 25)
   'QL /ke-hoach-test/thuong/30': 31, 'QT /ke-hoach-test/thuong/30': 30,
-  'QL /diem-theo-lop/lop': 21,
-  'GVCN /diem-theo-lop/lop': 21,
-  'GVBM /diem-theo-lop/lop': 21,
-  'GVCN_THUONG /diem-theo-lop/lop': 21,
-  'QT /diem-theo-lop/lop': 21,
   'QL /cases?classId=3': 22,
   'GVCN /cases?classId=3': 22,
   'GVBM /cases?classId=3': 22,
@@ -954,9 +938,6 @@ export const TRAN: Record<string, number> = {
   'QL /classes/6/transition': 45,   // PR-CT gộp LT2b: 39 → 42; PR-MT0: + một câu MT0 cả lớp, đo 43; trần max(n+10, ⌈n×1,3⌉) = 56 (planning 07/10); TL-NEN: đo 34 (trước 42)
   'QT /classes/6/transition': 45,   // PR-CT gộp LT2b: 38 → 41; PR-MT0 → 42; TL-NEN: đo 34 (trước 41)
   'GVCN_THUONG /classes/6/transition': 38,   // PR-CT gộp LT2b: 39 → 42; PR-MT0 → 43; TL-NEN: đo 28 (trước 36)
-  'QL /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 19
-  'QT /classes/6/lo-trinh-tiep': 27,   // PR-K26 mới: đo 18
-  'GVCN_THUONG /classes/6/lo-trinh-tiep': 28,   // PR-K26 mới: đo 20
   /* PR-CT (Task 6): phiếu bàn giao cả lớp nguồn — đo 14 / 13 / 13 câu (chưa có lệnh) → trần max(sau+10, ⌈sau×1.3⌉). Task 12 đo lại với bộ demo có lệnh. */
   'QL /lenh-chuyen/ban-giao?lop=6': 19,
   'QT /lenh-chuyen/ban-giao?lop=6': 18,
@@ -970,10 +951,6 @@ export const TRAN: Record<string, number> = {
   'QT /students/1/y-thuc?pham-vi=tat-ca': 24,
   'GVCN /students/1/y-thuc?pham-vi=tat-ca': 27,
   'GVBM /students/1/y-thuc?pham-vi=tat-ca': 27,
-  'QL /students/1/lo-trinh-tiep': 23,
-  'QT /students/1/lo-trinh-tiep': 21,
-  'GVCN /students/1/lo-trinh-tiep': 25,
-  'GVBM /students/1/lo-trinh-tiep': 25,
   /* PR-CL (B2): + câu sĩ số (QL/QT), branchCode cùng câu lớp — đo 08/10 QL 14 / QT 13 / GVCN 13; min(trần cũ, max(đo+10, ⌈đo×1,3⌉)) = trần cũ. */
   'QL /chuyen-lop/lop-dich?studentId=1': 23,
   'QT /chuyen-lop/lop-dich?studentId=1': 22,
@@ -1232,8 +1209,6 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /tong-quan/ql?ct=ft': 2489, 'QL /tong-quan/ql?ct=thuong': 2421, 'QT /tong-quan/ql?ct=ft': 4402, 'QT /tong-quan/ql?ct=thuong': 4073,   // V5 SV-SO1 sau gộp main: đo 3386 (trần cũ 3111) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ   // V5 SV-SO1 sau gộp main: đo 3133 (trần cũ 3019) — ô có band thiếu nhận xét bắt buộc (seed 385 ô) là việc / bài chờ thật → đọc thêm lượt còn ô chờ
   'QL /tong-quan/chi-nhanh': 3336,   // đo 2566
   'QT /tong-quan/chi-nhanh': 4397,   // đo 3382
-  'QL /tong-quan/diem-chu-y?ct=ft': 3260,   // đo 2507
-  'QT /tong-quan/diem-chu-y?ct=ft': 4235,   // đo 3257
   'GVCN /tong-quan/lop-toi-day?ct=ft': 1827,   // đo 2079 · DOC-IT-3: đo 1405 (Case của GV lọc theo lớp trong SQL) → ⌈đo × 1,3⌉
   'GVBM /tong-quan/lop-toi-day?ct=ft': 2073,   // đo 2353 · DOC-IT-3: đo 1594
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 1827,   // đo 2079 · DOC-IT-3: đo 1405
@@ -1366,10 +1341,6 @@ export const TRAN_GHI_LO = {
   themHocVien30Thuong: 72,   // đo 55 câu → trần max(sau+10, ⌈sau×1,3⌉) = 72
   /** PR-SL: Sửa cả lớp — 30 em MB FT 101 đổi họ tên. Xem trước đọc theo lô (không tăng theo số em); lưu gọi `updateStudent` từng em trong một giao dịch. */
   xemTruocSuaCaLop30: 97,   // đo 74 câu (quyền theo em đọc DB) → max(74+10, ⌈74×1,3⌉) = 97
-  /** OV-15b: POST /attempts/scores/lo — Dán từ Excel, MỘT dòng 5 ô (L R W1 W2 S, nhận xét) = một request của web (`LO_DAN` = 1); mỗi ô một `saveScore`. */
-  danExcelMotDong: 314,   // đo 241 câu (×3, QL, 5 ô có nhận xét; ~48 câu / ô = `saveScore` như PUT một ô) → max(241 + 10, ⌈241 × 1,3⌉)
-  /** OV-15h2: POST /regular/scores/lo — Dán từ Excel lớp thường, MỘT dòng 4 môn × (điểm + nhận xét); mỗi lệnh một `saveRegularScore`. */
-  danExcelThuongMotDong: 383,   // đo 294 câu (QL, FOU 12, 4 môn × điểm + nhận xét = 8 lệnh; ~37 câu / lệnh như PUT một ô) → max(294 + 10, ⌈294 × 1,3⌉)
   /** PHEP-DO-LO: huỷ `LO_HANG_LOAT_EM` (8) quyết định chuyển lớp một lần (`huyNhieuLenh`, lô web gửi), cuộn lại sau đo. */
   huyNhieuLenh8: 127,   // đo 97 câu, 58 dòng (1 lệnh 14 câu — ~12 / lệnh, mỗi lệnh một giao dịch) → max(97 + 10, ⌈97 × 1,3⌉)
   /** PHEP-DO-LO: `ganChuCaseThieu` cho mọi em có Case mở (tối đa 500) nhiều lớp, mọi Case mở chưa chủ (`suggestCaseOwner`), cuộn lại sau đo. */

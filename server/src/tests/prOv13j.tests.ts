@@ -152,13 +152,13 @@ export async function runPrOv13jTests(t: YThucTestKit) {
 
     await checkAsync('OV13j-8b · Kết thúc học + Lưu trữ / Bỏ lưu trữ → mỗi việc một khối (Trạng thái, Lưu trữ cũ → mới)', async () => {
       const truoc = await soKhoi(c);
-      /* NGHI-HOC-LUU-TRU: Kết thúc học tự vào Lưu trữ — Bỏ lưu trữ (API cũ) rồi Lưu trữ lại, mỗi việc một khối. */
+      /* NGHI-HOC-LUU-TRU: Kết thúc học tự vào Lưu trữ — Bỏ lưu trữ rồi Lưu trữ lại (BD-3: qua /hang-loat-hoc-vien), mỗi việc một khối. */
       assert((await goi(QL, `/students/${c}/status`, 'POST', { status: 'finished', reason: 'Nghỉ' })).status === 200, 'kết thúc');
       assert((await ls(c, '?loai=trang-thai')).dong.some((x) => truong(x, 'Trạng thái')?.moi === 'Đã kết thúc'), 'khối Trạng thái');
-      assert((await goi(QL, `/students/${c}/unarchive`, 'POST', {})).status === 200, 'bỏ lưu trữ');
+      assert((await goi(QL, '/hang-loat-hoc-vien', 'POST', { viec: 'bo-luu-tru', studentIds: [c] })).json?.ok?.length === 1, 'bỏ lưu trữ');
       assert(truong(await moiNhat(c), 'Lưu trữ')?.moi === null, 'bỏ lưu trữ một khối');
-      const r = await goi(QL, `/students/${c}/archive`, 'POST', {});
-      assert(r.status === 200, `lưu trữ ${r.status} ${JSON.stringify(r.json)}`);
+      const r = await goi(QL, '/hang-loat-hoc-vien', 'POST', { viec: 'luu-tru', studentIds: [c] });
+      assert(r.status === 200 && r.json?.ok?.length === 1, `lưu trữ ${r.status} ${JSON.stringify(r.json)}`);
       const ds = (await ls(c, '?loai=trang-thai')).dong;
       assert(truong(ds[0], 'Lưu trữ')?.cu === null && truong(ds[0], 'Lưu trữ')?.moi && await soKhoi(c) >= truoc + 3, JSON.stringify(ds[0]));
     });

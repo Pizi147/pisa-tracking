@@ -18,7 +18,6 @@ export async function runPrOv4cTests(t: YThucTestKit) {
   const attempts: any = await import('../fasttrack/attempts.ts');
   const skillSchedule: any = await import('../fasttrack/skillSchedule.ts');
   const week: any = await import('../platform/week.ts');
-  const { luuDiemLo } = await import('../cham/luuLo.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nBAND-THANG · W / S: hoặc 4 tiêu chí hoặc Band, không cả hai (mọi lượt)');
 
@@ -132,22 +131,6 @@ export async function runPrOv4cTests(t: YThucTestKit) {
     assert(diem('reading').raw_score === 30, JSON.stringify(diem('reading')));
     const e = loi(() => attempts.saveScore(QL, aid, 'reading', { band: 6, rawScore: 30 }));
     assert(e?.status === 400, 'L / R: band cùng số câu vẫn 400');
-  }));
-
-  check('BT-6 · Dán Excel (lô): dòng có cả Band lẫn tiêu chí → lỗi dòng đó đúng câu, dòng khác vẫn lưu', () => thu(() => {
-    if (ids.length < 2) return;
-    dung(false, ids[0]); dung(false, ids[1]);
-    const r = luuDiemLo(QL, {
-      classId: lop,
-      dong: [
-        { attemptId: ids[0], o: [{ skill: 'writing1', band: 6.5 }, { skill: 'speaking', criteria: [6, 6, 6, 6] }] },
-        { attemptId: ids[1], o: [{ skill: 'writing1', band: 6, criteria: [6, 6, 6, 6] }] },
-      ],
-    });
-    assert(r.dong[0].ok === true, JSON.stringify(r.dong[0]));
-    assert(r.dong[1].ok === false && r.dong[1].loi === CAU && r.dong[1].status === 400, JSON.stringify(r.dong[1]));
-    assert(diem('writing1', ids[0]).band === 6.5 && diem('speaking', ids[0]).band === 6, 'dòng đạt đã lưu');
-    assert(!diem('writing1', ids[1]), 'dòng lỗi cuộn lại');
   }));
 
   check('BT-7 · ô trong lưới không còn cờ bandThang (máy chủ + web một luật)', () => thu(() => {

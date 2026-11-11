@@ -146,49 +146,6 @@ export async function runPrOv15h2Tests(t: YThucTestKit) {
   const o = (attemptId: number, skill: string) => one(`SELECT raw_score, raw_total, comment FROM assessment_scores WHERE attempt_id = ? AND skill = ?`, attemptId, skill) ?? null;
   const soMucDan = (l: number) => one(`SELECT COUNT(*) AS n FROM audit_logs WHERE entity_type = 'class' AND entity_id = ? AND action = 'score.dan_excel'`, l).n as number;
 
-  await checkAsync('H2-10b · POST /regular/scores/lo: FOU (điểm + nhận xét, "-" dời môn), BE, Pre FOU qua saveRegularScore; GVBM sai môn → dòng lỗi; sai lớp / bài → 400 cả lô; nhiều request cùng loId = MỘT mục; Hoàn tác trả đúng', async () => {
-    const fou = lopThuong('FOU', 3), be = lopThuong('BE', 7, 1), pre = lopThuong('PREFOU', 6, 1);
-    seq += 1;
-    const gv = accounts.createAccount(P.admin, { email: `ov15h2.${seq}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-ov15h2', fullName: `Thử OV15h2 ${seq}`, roles: [{ role: 'teacher', branches: ['MB'] }] }).userId as number;
-    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,?,0,'2026-01-01','active',?)`).run(gv, fou.l, 'listening', NOW);
-    const a0 = fou.bai(fou.sids[0], 'progress'), a1 = fou.bai(fou.sids[1], 'progress');
-    const lichR = () => one(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id = ? AND skill = 'reading'`, a0)?.planned_period_id;
-    const rTruoc = lichR();
-    await voiMayChu(async (goi) => {
-      const gui = (u: number, body: any) => goi(u, '/regular/scores/lo', post({ classId: fou.l, luot: 'thuong:progress', ...body }));
-      /* Lần dán 2 request cùng loId: request 1 (không cuoi), request 2 cuoi + truoc → một mục. */
-      const r1 = await json(await gui(QL, { loId: 'h2-a', dong: [{ attemptId: a0, o: [{ skill: 'listening', score: 24, total: 40 }, { skill: 'listening', nhanXet: 'Nghe tốt' }, { skill: 'reading', noShow: true }] }] }));
-      assert(r1.dong[0].ok && r1.soO === 3, JSON.stringify(r1));
-      const r2 = await json(await gui(QL, { loId: 'h2-a', cuoi: true, truoc: { soDong: 1, soDaLuu: 1, soO: 3 }, dong: [{ attemptId: a1, o: [{ skill: 'writing', score: 0, total: 30 }] }] }));
-      assert(r2.dong[0].ok, JSON.stringify(r2));
-      assert(o(a0, 'listening')?.raw_score === 24 && o(a0, 'listening')?.raw_total === 40 && o(a0, 'listening')?.comment === 'Nghe tốt', JSON.stringify(o(a0, 'listening')));
-      assert(o(a1, 'writing')?.raw_score === 0, '0 là điểm, không phải trống');
-      assert(lichR() !== rTruoc, '"-" lớp thường dời môn sang tuần sau');
-      assert(soMucDan(fou.l) === 1, `một lần dán = MỘT mục (được ${soMucDan(fou.l)})`);
-      const muc = JSON.parse(one(`SELECT after_json FROM audit_logs WHERE entity_type = 'class' AND entity_id = ? AND action = 'score.dan_excel'`, fou.l).after_json);
-      assert(muc.soDong === 2 && muc.soDaLuu === 2 && muc.soO === 4 && muc.loId === 'h2-a', JSON.stringify(muc));
-      /* GVBM Listening: dòng có Reading → cả dòng cuộn lại (Listening cũng không lưu). */
-      const r3 = await json(await gui(gv, { loId: 'h2-b', cuoi: true, dong: [{ attemptId: a1, o: [{ skill: 'listening', score: 20, total: 40 }, { skill: 'reading', score: 20, total: 40 }] }] }));
-      assert(!r3.dong[0].ok && r3.dong[0].status === 403 && o(a1, 'listening')?.raw_score == null, JSON.stringify(r3));
-      const r4 = await json(await gui(gv, { loId: 'h2-c', cuoi: true, dong: [{ attemptId: a1, o: [{ skill: 'listening', score: 20, total: 40 }] }] }));
-      assert(r4.dong[0].ok && o(a1, 'listening')?.raw_score === 20, 'GVBM đúng môn lưu được');
-      /* Sai lớp / sai bài → 400 cả lô. */
-      assert((await gui(QL, { loId: 'h2-d', dong: [{ attemptId: be.bai(be.sids[0], 'progress'), o: [{ skill: 'listening', score: 1, total: 40 }] }] })).status === 400, 'em lớp khác → 400');
-      assert((await gui(QL, { luot: 'thuong:final', loId: 'h2-e', dong: [{ attemptId: a0, o: [{ skill: 'listening', score: 1, total: 40 }] }] })).status === 400, 'sai bài → 400');
-      assert((await gui(QL, { loId: 'h2-f', dong: [{ attemptId: a0, o: [{ skill: 'listening', band: 6 }] }] })).status === 400, 'trường FT ở lớp thường → 400');
-      /* Hoàn tác: trả đúng giá trị trước (ô trống → xoá, "-" → gỡ, nhận xét cũ). */
-      const ht = await json(await gui(QL, { loId: 'h2-g', cuoi: true, hoanTac: true, dong: [{ attemptId: a0, o: [{ skill: 'listening', score: null, total: null }, { skill: 'listening', nhanXet: null }, { skill: 'reading', noShow: false }] }] }));
-      assert(ht.dong[0].ok && o(a0, 'listening')?.raw_score == null && !o(a0, 'listening')?.comment && lichR() === rTruoc, `Hoàn tác: ${JSON.stringify({ ht, o: o(a0, 'listening'), r: lichR(), rTruoc })}`);
-      /* BE (L R W S) và Pre FOU (một ô Tổng hợp). */
-      const ab = be.bai(be.sids[0], 'progress');
-      const rb = await json(await goi(QL, '/regular/scores/lo', post({ classId: be.l, luot: 'thuong:progress', loId: 'h2-h', cuoi: true, dong: [{ attemptId: ab, o: ['listening', 'reading', 'writing', 'speaking'].map((skill) => ({ skill, score: 30, total: 40 })) }] })));
-      assert(rb.dong[0].ok && ['listening', 'reading', 'writing', 'speaking'].every((k) => o(ab, k)?.raw_score === 30), JSON.stringify(rb));
-      const ap = pre.bai(pre.sids[0], 'final');
-      const rp = await json(await goi(QL, '/regular/scores/lo', post({ classId: pre.l, luot: 'thuong:final', loId: 'h2-i', cuoi: true, dong: [{ attemptId: ap, o: [{ skill: 'tong_hop', score: 45, total: 50 }] }] })));
-      assert(rp.dong[0].ok && o(ap, 'tong_hop')?.raw_score === 45, JSON.stringify(rp));
-    });
-  });
-
   // ------------------------------------------------------------------ ý 3 · Bộ lọc thêm (Case / PA, kỹ năng, kết quả, thời gian)
   await checkAsync('H2-3 · Bộ lọc thêm: hàm thuần (hoặc trong nhóm, và giữa nhóm; Case / PA theo trạng thái V4; kết quả theo khung); /hoc-vien-lop?them=1 gắn nhãn từng em, không them thì không', async () => {
     assert(d.nhomCaseEm([]).join() === 'khong-case', 'không Case');

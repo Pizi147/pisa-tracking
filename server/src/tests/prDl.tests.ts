@@ -262,6 +262,7 @@ export async function runPrDlTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ DL-4: dịch vụ + ba đường đọc điểm theo lượt
   const dl: any = await import('../cham/diemTheoLuot.ts');
+  const lopCua = (uid: number) => ({ status: 200, body: dl.lopCuaToi(loadPrincipal(uid)) });
   const { createApp } = await import('../app.ts');
   const { can } = await import('../permissions.ts');
   /* Em ở MB FT 101 KHÔNG có MT2: bỏ lịch tự tạo, chỉ MT1 lịch sử. */
@@ -470,18 +471,18 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert((await goi(QL.userId, `/attempts/${anh.aid}/scores/listening`, 'PUT', { rawScore: 30, nhanXet: 'Nghe Part 3 còn chậm; điền bảng tốt.', nhomNguyenNhan: ['student.listening.focus'] })).status === 200, 'nhập lại');
     });
 
-    await t.checkAsync('DL-4 /diem-theo-lop/lop: GV thấy lớp mình dạy; GVCN thấy lớp chủ nhiệm; QL thấy lớp chi nhánh; oTrong = tổng các lượt', async () => {
+    await t.checkAsync('DL-4 lopCuaToi (BD-3: bỏ GET /diem-theo-lop/lop — web không gọi): GV thấy lớp mình dạy; GVCN thấy lớp chủ nhiệm; QL thấy lớp chi nhánh; oTrong = tổng các lượt', async () => {
       const ma = (b: any[]) => b.map((l) => l.classId).sort((x: number, y: number) => x - y);
-      const gv = await goi(P.lrTeacher.userId, '/diem-theo-lop/lop');
+      const gv = lopCua(P.lrTeacher.userId);
       const day = (conn.prepare(`SELECT DISTINCT ta.class_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
         WHERE ta.user_id = ? AND ta.status = 'active' AND c.status = 'active' ORDER BY ta.class_id`).all(P.lrTeacher.userId) as any[]).map((r) => r.id);
       assert(gv.status === 200 && JSON.stringify(ma(gv.body)) === JSON.stringify(day), `GV: ${JSON.stringify(ma(gv.body))} ≠ ${JSON.stringify(day)}`);
-      const cn = await goi(gvcn.userId, '/diem-theo-lop/lop');
+      const cn = lopCua(gvcn.userId);
       assert(ma(cn.body).includes(lopT), 'GVCN thấy lớp chủ nhiệm');
-      const ql = await goi(QL.userId, '/diem-theo-lop/lop');
+      const ql = lopCua(QL.userId);
       const mb = (conn.prepare(`SELECT c.id FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND c.status = 'active' ORDER BY c.id`).all() as any[]).map((r) => r.id);
       assert(JSON.stringify(ma(ql.body)) === JSON.stringify(mb), 'QL = lớp chi nhánh MB');
-      assert(!ma((await goi(gvNgoai.userId, '/diem-theo-lop/lop')).body).includes(LOP), 'GV ngoài không thấy LOP');
+      assert(!ma((lopCua(gvNgoai.userId)).body).includes(LOP), 'GV ngoài không thấy LOP');
       for (const id of [LOP, lopT]) {
         const tong = dl.danhSachLuot(QL, id, TODAY).luot.reduce((n: number, l: any) => n + l.oTrong, 0);
         const dong = ql.body.find((l: any) => l.classId === id);
@@ -489,14 +490,14 @@ export async function runPrDlTests(t: YThucTestKit) {
       }
     });
 
-    await t.checkAsync('DL-4 GV Speaking lớp FT khác cùng chi nhánh (chấm S chéo) thấy lớp ở /diem-theo-lop/lop và đọc được diem-theo-luot', async () => {
+    await t.checkAsync('DL-4 GV Speaking lớp FT khác cùng chi nhánh (chấm S chéo) thấy lớp ở lopCuaToi và đọc được diem-theo-luot', async () => {
       const r = get(`SELECT ta.user_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
         WHERE ta.status = 'active' AND ta.skill = 'speaking' AND c.is_fast_track = 1 AND c.branch_id = (SELECT branch_id FROM classes WHERE id = ?)
           AND ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ?) LIMIT 1`, LOP, LOP);
       assert(r, 'seed thiếu GV Speaking ở lớp FT khác cùng chi nhánh');
       const gvS = loadPrincipal(r.id);
       assert(!can(gvS, d.PERMISSIONS.ATTEMPT_VIEW, { classId: LOP }), 'tiền đề: không có ATTEMPT_VIEW ở lớp');
-      const ds = await goi(gvS.userId, '/diem-theo-lop/lop');
+      const ds = lopCua(gvS.userId);
       assert(ds.status === 200 && ds.body.some((l: any) => l.classId === LOP), `không thấy lớp chấm S chéo: ${JSON.stringify(ds.body?.map?.((l: any) => l.classCode))}`);
       assert((await goi(gvS.userId, `/classes/${LOP}/diem-theo-luot`)).status === 200, 'đọc danh sách lượt');
       assert((await goi(gvS.userId, `/classes/${LOP}/diem-theo-luot/mt:2`)).status === 200, 'đọc bảng MT2');

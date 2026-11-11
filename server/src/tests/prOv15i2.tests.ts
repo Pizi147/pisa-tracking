@@ -7,7 +7,6 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrOv15i2Tests(t: YThucTestKit) {
   const { check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays } = t as any;
-  const { luuDiemLo } = await import('../cham/luuLo.ts');
   const svc: any = await import('../fasttrack/attempts.ts');
   const regular: any = await import('../normal/regular.ts');
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
@@ -36,48 +35,8 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
     for (const r of ds) conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`).run(r.id);
     return ds.map((r) => r.id as number);
   };
-  const lo = (p: any, dong: unknown, them: object = {}) => luuDiemLo(p, { dong, classId: LOP, ...them });
 
-  check('I2-1 · Dán Excel: request cuối gửi lại (mất mạng sau khi máy chủ đã lưu) cùng loId → KHÔNG thêm mục tổng; loId khác vẫn ghi', () => thu(() => {
-    const [a1] = luotL(1);
-    const muc = (loId: string) => one(`SELECT COUNT(*) AS n FROM audit_logs WHERE entity_type = 'class' AND entity_id = ? AND action = 'score.dan_excel'
-      AND json_extract(after_json, '$.loId') = ?`, LOP, loId).n as number;
-    const dong = [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 30, nhanXet: NX }] }];
-    assert(lo(QL, dong, { loId: 'i2-1', cuoi: true }).soDaLuu === 1 && muc('i2-1') === 1, 'lần đầu: một mục');
-    const lai = lo(QL, dong, { loId: 'i2-1', cuoi: true });
-    assert(lai.soDaLuu === 1 && lai.dong[0].ok, `thử lại vẫn lưu dòng: ${JSON.stringify(lai)}`);
-    assert(muc('i2-1') === 1, `thử lại cùng loId: vẫn MỘT mục (được ${muc('i2-1')})`);
-    lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 31 }] }], { loId: 'i2-1b', cuoi: true });
-    assert(muc('i2-1b') === 1, 'lần dán mới (loId khác) vẫn ghi mục');
-    lo(P.admin, [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 32 }] }], { loId: 'i2-1', cuoi: true });
-    assert(muc('i2-1') === 2, `người khác dùng lại loId của QL vẫn ghi mục của mình (được ${muc('i2-1')})`);
-  }));
-
-  check('I2-2 · Dán Excel: tối đa HAI lệnh mỗi môn (trần dòng = 2 × số môn của chương trình) — ba lệnh cùng môn → 400 cả lô', () => thu(() => {
-    const [a1] = luotL(1);
-    assertThrows(() => lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 30, nhanXet: NX }, { skill: 'listening', rawScore: null }, { skill: 'listening', noShow: true }] }]),
-      /Ô điểm/, 'ba lệnh cùng môn');
-    const ok = lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', rawScore: 30, nhanXet: NX }, { skill: 'listening', rawScore: null, nhanXet: null }] }]);
-    assert(ok.dong[0].ok, `hai lệnh cùng môn vẫn nhận: ${JSON.stringify(ok.dong[0])}`);
-  }));
-
-  check('I2-5 · Dán Excel FT: Hoàn tác "- → x" (xoá điểm rồi đặt lại "-", hai lệnh cùng ô) trả ô về "-"', () => thu(() => {
-    const [a1] = luotL(1);
-    /* LUAT-34: "-" ở MT hiện tại nay chốt vắng (dời / thẻ QL); phép kiểm này soi Hoàn tác "- → x" của Dán Excel → dùng MT cũ, nơi "-" là dấu ô. */
-    conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(a1);
-    xoaNho();
-    const o = () => one(`SELECT raw_score, no_show_period_id AS dau FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a1) ?? {};
-    assert(lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', noShow: true }] }], { cuoi: true }).dong[0].ok && o().dau != null, 'dán "-"');
-    const patch = { rawScore: 30, nhanXet: NX };
-    /* R1-BO-DAN-EXCEL: web (patchTruoc) đã bỏ — hai lệnh Hoàn tác "- → x" viết tay: xoá điểm rồi đặt lại "-". */
-    const tra: object[] = [{ rawScore: null, nhanXet: null }, { noShow: true }];
-    assert(lo(QL, [{ attemptId: a1, o: [{ skill: 'listening', ...patch }] }], { cuoi: true }).dong[0].ok && o().raw_score === 30, 'dán điểm đè "-"');
-    const h = lo(QL, [{ attemptId: a1, o: tra.map((p) => ({ skill: 'listening', ...p })) }], { cuoi: true, hoanTac: true });
-    assert(h.dong[0].ok, `Hoàn tác: ${JSON.stringify(h.dong[0])}`);
-    assert(o().raw_score == null && o().dau != null, `sau Hoàn tác ô phải về "-": ${JSON.stringify(o())}`);
-  }));
-
-  check('I2-3 · Lưới lớp thường gửi email em (Dán Excel khớp email như FT)', () => thu(() => {
+  check('I2-3 · Lưới lớp thường gửi email em', () => thu(() => {
     const lop = one(`SELECT c.id FROM classes c JOIN programmes pg ON pg.code = c.programme_code
       WHERE pg.scoring_mode = 'ratio' AND EXISTS (SELECT 1 FROM assessment_attempts a WHERE a.class_id = c.id AND a.status <> 'cancelled') ORDER BY c.id LIMIT 1`);
     assert(lop, 'dữ liệu demo: cần lớp thường có bài');

@@ -194,15 +194,6 @@ export async function runPrOv15i1Tests(t: YThucTestKit) {
       assert(d && nhom.size === 2, JSON.stringify(d));
     });
 
-    await checkAsync('OV15i1-8b · Dán Excel (điểm) = MỘT mục ở lịch sử lớp (số dòng · ô)', async () => {
-      const luot = one(`SELECT id, attempt_no n FROM assessment_attempts WHERE student_id = ? AND kind = 'mock' AND status != 'cancelled' ORDER BY attempt_no LIMIT 1`, b);
-      await ghi(QL, '/attempts/scores/lo', 'POST', { classId: lop, luot: `mt:${luot.n}`, loId: `ov15i1-${Date.now()}`, cuoi: true,
-        dong: [{ attemptId: luot.id, o: [{ skill: 'listening', band: 6 }] }] });
-      const d = (await ls('lop', lop)).dong[0];
-      assert(d?.nguon === 'Dán từ Excel' && d.truong.length === 1 && /1 dòng · 1 ô/.test(d.truong[0].moi ?? ''), JSON.stringify(d));
-      assert(dichMau('en', d.truong[0].moi!) !== d.truong[0].moi, `EN: ${d.truong[0].moi}`);
-    });
-
     await checkAsync('OV15i1-6 · Chữ máy chủ ghép động có bản EN: "Góp ý · {tuần} · {môn}", "Lịch · {môn}", "{môn} · Nhận xét"', async () => {
       gopYCu(a, 'Listening', null, 'OV15i1 góp ý');
       const g = (await ls('gop-y', lop)).dong[0].truong[0].ten;

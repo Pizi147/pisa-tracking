@@ -119,7 +119,7 @@ components:
 
 | # | Luật | Nguồn |
 |---|---|---|
-| V1 | **Nâng cấp, không chép mockup:** giữ mọi thao tác V4 (Nhập điểm, + Case, ⋯, Xuất, Dán Excel…), sửa đồng bộ cả phần mockup không vẽ (panel, hộp, popover, chân lưu, rỗng / lỗi); xung đột → [XM] | `10` mục 8; CLAUDE.md |
+| V1 | **Nâng cấp, không chép mockup:** giữ mọi thao tác V4 (Nhập điểm, + Case, ⋯, Xuất, Dán Excel ở thêm HV — 13/11 bỏ dán điểm…), sửa đồng bộ cả phần mockup không vẽ (panel, hộp, popover, chân lưu, rỗng / lỗi); xung đột → [XM] | `10` mục 8; CLAUDE.md |
 | V2 | **Màu PISA từ logo:** xanh `#273C8F` (cấu trúc: thanh điều hướng `--dieu-huong-*`, nút chính sáng) · hồng `--hong` chỉ để **nhận diện** (logo, chữ khớp khi tìm) — hồng KHÔNG mang nghĩa lỗi / SOS. Tối: xanh bớt ngả tím, nền `#050a16` (P3) | `04` M19; `10` P3 |
 | V3 | **Logo:** chữ "PISA" hồng đậm + "TRACKING" mảnh giãn chữ, không ảnh logo trung tâm; "TRACKING" trắng cả ở chế độ sáng vì thanh vẫn nền xanh (chữ đen 2,1 : 1 — [XM] #545) | `10` mục 8; #545 |
 | V4 | **Bốn nhóm badge, một cỡ** (cao 22, chữ 12 / 600, `ui/Nhan.tsx`): ① kết quả học tập `NhanKq` — góc 4 px, viền 1 px màu nghĩa, ✓ ✗ – đứng đầu · ② lịch thi `NhanLich` — nền xanh lơ đặc, góc 2 px ("Đã thi · chờ KQ" không nhầm Đạt) · ③ tiến độ xử lý `Nhan` — viên tròn nền xám + chấm màu; sắp hạn / quá hạn nền nhạt + ⚠ · ④ mức SOS `ChipSos` / `lopSos` | `04` M12 (C23); #528 NEN-V5 |
