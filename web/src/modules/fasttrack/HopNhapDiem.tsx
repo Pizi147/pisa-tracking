@@ -774,8 +774,10 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
  * NÚT "NHẬN XÉT" CỦA LỚP THƯỜNG (OV-4b, chốt HD2): ô điểm lớp thường giữ gõ thẳng đúng/tổng; nút nhỏ cạnh ô mở hộp chỉ có ô Nhận xét,
  * lưu riêng (`PUT /regular/attempts/:id/scores/:skill { nhanXet }`, cùng quyền nhập điểm môn đó). Đã có nhận xét → chữ màu nhấn.
  */
-export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu, nguon = null }: {
+export function NutNhanXet({ tenMon, phu, giaTri, lon = false, dau = false, onLuu, nguon = null }: {
   tenMon: string; phu: string; giaTri: string | null; lon?: boolean;
+  /** G1-11 (lưới gọn trong panel): đã có nhận xét → "● Nhận xét" đậm — khác chưa có không chỉ bằng màu. */
+  dau?: boolean;
   /** P14 DICH: ô của nhận xét (lượt × môn) — hộp có nút "Dịch" cho nhận xét đã lưu. */
   nguon?: NguonDich | null;
   /** Ném lỗi khi máy chủ từ chối — hộp hiện câu lỗi, giữ chữ đã gõ. */
@@ -787,8 +789,8 @@ export function NutNhanXet({ tenMon, phu, giaTri, lon = false, onLuu, nguon = nu
     <>
       <button ref={setNeo} type="button" aria-haspopup="dialog" aria-expanded={mo} title={giaTri ?? undefined}
         aria-label={t('Nhận xét · {tenMon} · {phu}', { tenMon, phu })}
-        className={`btn btn-sm btn-ghost shrink-0 text-xs ${lon ? 'min-h-[44px] px-1.5' : 'px-1'} ${giaTri ? 'text-[color:var(--accent-strong)]' : 'text-slate-400'}`}
-        onClick={() => setMo((m) => !m)}>{t('Nhận xét')}</button>
+        className={`btn btn-sm btn-ghost shrink-0 text-xs ${lon ? 'min-h-[44px] px-1.5' : 'px-1'} ${giaTri ? `text-[color:var(--accent-strong)]${dau ? ' font-bold' : ''}` : 'text-slate-400'}`}
+        onClick={() => setMo((m) => !m)}>{dau && giaTri && <span aria-hidden className="mr-0.5">•</span>}{t('Nhận xét')}</button>
       {mo && neo && <HopNhanXetThuong anchor={neo} tenMon={tenMon} phu={phu} giaTri={giaTri} nguon={nguon} onLuu={onLuu} onDong={() => setMo(false)} />}
     </>
   );
