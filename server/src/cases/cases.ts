@@ -3975,6 +3975,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
   buoi?: unknown;
   /** OV-13b: "Lưu kết quả · gửi QL duyệt" — kết quả kỳ lưu như Giữ nguyên + Đề xuất PA khác cho PA mặc định đang chạy (`doiPa.ts`). */
   deXuatPa?: VaoDoiPa | null;
+  /**
+   * AUDIT-1454 (N03): kỳ (`cycle_no`) + `luc` của nháp máy chủ mà form đang mở đã đọc (null = không có nháp). Có thì kiểm TRONG giao dịch: kỳ đã chốt (gửi lại,
+   * tab cũ) → 409 `daChot`; phiên khác vừa lưu nháp khác → 409 `nhapMoi` (chưa ghi gì). Không gửi = không kiểm (nơi gọi khác, Sửa).
+   */
+  ky?: unknown; nhapCoSo?: unknown;
 }, opts: {
   /** OV-7b (`suaKetQua`): nơi gọi tự trả Case — bỏ `caseDetail` trong giao dịch. */
   khongTraCase?: boolean;
@@ -4115,6 +4120,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   }
 
   return tx(() => {
+    if (!opts.khongTraCase) kiemKyVaNhap(interventionId, input.ky, input.nhapCoSo, { outcome: input.outcome, note });
     const cycleNo = iv.cycle_no ?? 1;
     const cycleDue = iv.action_due ?? iv.followup_due ?? null;
     /* Cập nhật SAU hạn vẫn ghi đúng là trễ — không reset để che. */
@@ -4265,28 +4271,62 @@ export const docNhapKetQua = (v: unknown): NhapKetQuaPa | null => {
   try { return JSON.parse(v) as NhapKetQuaPa; } catch { return null; }
 };
 
+const CAU_DA_CHOT = 'Kết quả kỳ này đã được lưu — bản đang mở chưa lưu. Tải lại để xem; cần đổi thì bấm Sửa.';
+const CAU_NHAP_MOI = 'Có bản nháp mới hơn — bản của bạn chưa lưu.';
+const kiemKy = (v: unknown) => { if (v !== undefined && !Number.isInteger(v)) throw badRequest('Kỳ không hợp lệ.'); };
+const kiemCoSo = (v: unknown) => { if (v !== undefined && v !== null && typeof v !== 'string') throw badRequest('Bản gốc của nháp không hợp lệ.'); };
+const khep = (iv: any) => iv.status === 'completed' || iv.status === 'cancelled';
+
+/**
+ * AUDIT-1454 (N03): chốt kết quả — gọi TRONG giao dịch của `updateResult`, đọc lại PA (phiên khác có thể vừa ghi). Kỳ khác / PA đã khép = kết quả kỳ này đã lưu
+ * (gửi lại, tab cũ) → 409, không ghi lần hai. Nháp máy chủ khác bản form đã đọc mà khác chữ đang chốt → 409 kèm bản mới (không xoá chữ phiên khác im lặng).
+ */
+function kiemKyVaNhap(interventionId: number, ky: unknown, coSo: unknown, dang: { outcome: string; note: string }): void {
+  if (ky === undefined && coSo === undefined) return;
+  kiemKy(ky); kiemCoSo(coSo);
+  const hien = db().prepare('SELECT cycle_no, status, nhap_ket_qua FROM case_interventions WHERE id = ?').get(interventionId) as any;
+  if (ky !== undefined && (khep(hien) || (hien.cycle_no ?? 1) !== ky)) throw conflict(CAU_DA_CHOT, { daChot: true });
+  const cu = docNhapKetQua(hien.nhap_ket_qua);
+  if (coSo === undefined || !cu || cu.luc === coSo) return;
+  if (cu.outcome === dang.outcome && cu.note === dang.note) return;   // nháp mới đúng bằng chữ đang chốt: không mất gì
+  throw conflict(CAU_NHAP_MOI, { nhapMoi: cu });
+}
+
 /**
  * NHAP-KQ-PA (chủ SP 13/11): GV lưu tạm nhận xét + mức của kỳ đang chạy (vd sau mỗi buổi), chốt sau bằng "Lưu". Không bắt đủ ô; mỗi lần đè bản cũ
  * + một dòng nhật ký. Quyền = quyền ghi kết quả PA (`kiemQuyenPa`). Cả hai ô trống = bỏ nháp. Trả `{ nhap }` (không trả cả Case — đọc ít).
+ *
+ * AUDIT-1454 (N01, N03): đọc, so, ghi + nhật ký trong MỘT giao dịch. `ky` = kỳ form đang mở (kỳ đã chốt → 409 `daChot`, nháp không sống lại sang kỳ sau);
+ * `coSo` = `luc` nháp form đã đọc (null = không có) — khác bản đang có → 409 `nhapMoi` (bản mới, hoặc null nếu đã bị xoá), không đè. Gửi lại đúng chữ
+ * đang có (mất phản hồi, hai tab) = đã lưu, không ghi thêm. `luc` tăng ngặt nên dùng được làm bản gốc.
  */
-export function luuNhapKetQua(p: Principal, interventionId: number, input: { outcome?: unknown; note?: unknown }): { nhap: NhapKetQuaPa | null } {
+export function luuNhapKetQua(p: Principal, interventionId: number, input: { outcome?: unknown; note?: unknown; ky?: unknown; coSo?: unknown }): { nhap: NhapKetQuaPa | null } {
   const conn = db();
-  const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
-  if (!iv) throw notFound('Không tìm thấy phương án.');
-  kiemQuyenPa(p, iv, loadCase(iv.case_id));
-  if (iv.status === 'completed' || iv.status === 'cancelled') throw badRequest('Phương án này đã khép — không lưu nháp được.');
   const outcome = typeof input.outcome === 'string' ? input.outcome : '';
   if (outcome && !(FOLLOWUP_OUTCOMES as readonly string[]).includes(outcome)) throw badRequest('Kết quả không hợp lệ với loại Case này.');
   const note = typeof input.note === 'string' ? input.note.trim() : '';
   if (vuotTran(note, TRAN_CHU.ketQuaPa)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Nhận xét', toiDa: TRAN_CHU.ketQuaPa, n: note.length });
-  const nhap: NhapKetQuaPa | null = outcome || note ? { outcome, note, luc: nowIso(), boiId: p.userId, boi: p.fullName } : null;
-  conn.prepare('UPDATE case_interventions SET nhap_ket_qua = ? WHERE id = ?').run(nhap ? JSON.stringify(nhap) : null, interventionId);
-  writeAudit({
-    actorUserId: p.userId, action: nhap ? 'case.result.draft' : 'case.result.draft_clear',
-    entityType: 'case_intervention', entityId: interventionId, entityLabel: iv.description ?? iv.kind,
-    before: docNhapKetQua(iv.nhap_ket_qua), after: nhap,
+  kiemKy(input.ky); kiemCoSo(input.coSo);
+  return tx(() => {
+    const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
+    if (!iv) throw notFound('Không tìm thấy phương án.');
+    kiemQuyenPa(p, iv, loadCase(iv.case_id));
+    if (khep(iv)) throw badRequest('Phương án này đã khép — không lưu nháp được.');
+    if (input.ky !== undefined && (iv.cycle_no ?? 1) !== input.ky) throw conflict(CAU_DA_CHOT, { daChot: true });
+    const cu = docNhapKetQua(iv.nhap_ket_qua);
+    if (cu ? cu.outcome === outcome && cu.note === note : !outcome && !note) return { nhap: cu };
+    if (input.coSo !== undefined && (cu?.luc ?? null) !== input.coSo) throw conflict(CAU_NHAP_MOI, { nhapMoi: cu });
+    let luc = nowIso();
+    if (cu && luc <= cu.luc) luc = new Date(Date.parse(cu.luc) + 1).toISOString();   // cùng mili-giây / đồng hồ lệch: bản gốc vẫn khác nhau
+    const nhap: NhapKetQuaPa | null = outcome || note ? { outcome, note, luc, boiId: p.userId, boi: p.fullName } : null;
+    conn.prepare('UPDATE case_interventions SET nhap_ket_qua = ? WHERE id = ?').run(nhap ? JSON.stringify(nhap) : null, interventionId);
+    writeAudit({
+      actorUserId: p.userId, action: nhap ? 'case.result.draft' : 'case.result.draft_clear',
+      entityType: 'case_intervention', entityId: interventionId, entityLabel: iv.description ?? iv.kind,
+      before: cu, after: nhap,
+    });
+    return { nhap };
   });
-  return { nhap };
 }
 
 /** Phần chữ của một lần ghi Kết quả — Vấn đề còn tồn, Số buổi / Người dạy tuần này, điểm tự chấm, bằng chứng. Ghi lần đầu và Sửa chữ (OV-7b) dùng chung. */
