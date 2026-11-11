@@ -37,7 +37,7 @@ const HANG_GON = 10;
 
 /**
  * LƯỚI DÙNG CHUNG CHO CẢ LỚP FT VÀ LỚP THƯỜNG (mockup 14 (1), (4)): hàng = học viên, cột = đợt (FT `MT1…MT5[+]`, lớp
- * thường `Giữa khoá` · `Cuối khoá` kèm `đề xuất W4/8`). Bảng `table-layout: fixed` + `colgroup` (G-2), cuộn ngang TRONG
+ * thường `Giữa khoá` · `Cuối khoá` kèm `đề xuất tuần 4/8`). Bảng `table-layout: fixed` + `colgroup` (G-2), cuộn ngang TRONG
  * thẻ, cột tên dính trái (G-11); trên điện thoại tự cuộn tới đợt đang tới (đợt nhỏ nhất còn em chưa xong). Ô FT: chưa có đợt = `OMt` (`MT3 · chưa xếp`),
  * đã có đợt = `ChipDotFT` (chip theo nhóm kỹ năng, PR-OMT C6); ô lớp thường = `ChipKyNang`; bấm ô mở `HopKyNang` neo cạnh ô.
  */
@@ -79,7 +79,7 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
     }));
   }, [loai, data]);
 
-  const rongDot = loai === 'ft' ? 190 : 220;   // mockup V11: ô MT 190; lớp thường thêm W4/8 ở dòng trạng thái   // lớp thường: tuần + W4/8 + chữ trạng thái một dòng
+  const rongDot = loai === 'ft' ? 190 : 220;   // mockup V11: ô MT 190; lớp thường thêm tuần 4/8 ở dòng trạng thái   // lớp thường: tuần + tuần 4/8 + chữ trạng thái một dòng
   const dotDenLuot = useMemo(() => cots.findIndex((c) => (data.hang as Array<HangFT | HangThuong>).some((h) => (
     !emXongDot(dotCuaEm(loai === 'ft' ? { loai: 'ft', luoi: data as LuoiFTData, hang: h as HangFT } : { loai: 'thuong', luoi: data as LuoiThuongData, hang: h as HangThuong }, c.dot))
   ))), [cots, data, loai]);

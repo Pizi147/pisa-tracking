@@ -133,10 +133,10 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     assert(!/kỳ vọng|MT\d|Overall|Normal|SOS|…/.test(JSON.stringify(k)), `Chữ FT / SOS / "…" lọt vào lớp thường: ${JSON.stringify(k)}`);
   });
 
-  check('PR-Qa · §3.6 cột Khoá lớp thường "FOU · W8/8" + "kết thúc W4 SEP"; "tiếp theo: …" chỉ khi đã ghi', () => {
+  check('PR-Qa · §3.6 cột Khoá lớp thường "FOU · tuần 8/8" + "kết thúc W4 SEP"; "tiếp theo: …" chỉ khi đã ghi', () => {
     const k = { maChuongTrinh: 'FOU', tuanHienTai: 8, tongTuan: 8, tuanKetThuc: '2026-09-21', tiepTheo: null, homNay: '2026-09-14' };
-    eq(d.khoaLopThuong(k), { chinh: 'FOU · W8/8', phu: 'kết thúc W4 SEP' }, 'Tuần cuối');
-    eq(d.khoaLopThuong({ ...k, tuanHienTai: 10 }).chinh, 'FOU · W8/8', 'Quá số tuần vẫn ghi W8/8');
+    eq(d.khoaLopThuong(k), { chinh: 'FOU · tuần 8/8', phu: 'kết thúc W4 SEP' }, 'Tuần cuối');
+    eq(d.khoaLopThuong({ ...k, tuanHienTai: 10 }).chinh, 'FOU · tuần 8/8', 'Quá số tuần vẫn ghi tuần 8/8');
     eq(d.khoaLopThuong({ ...k, tuanHienTai: 0 }).chinh, 'FOU · chưa khai giảng', 'Chưa khai giảng');
     eq(d.khoaLopThuong({ ...k, tiepTheo: 'Fast Track' }).phu, 'tiếp theo: Fast Track', 'Đã ghi lộ trình tiếp theo (PR-LT)');
   });

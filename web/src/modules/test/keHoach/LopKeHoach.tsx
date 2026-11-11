@@ -12,7 +12,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * MỘT LỚP TRONG KẾ HOẠCH TEST — hàng lớp TÁCH TRƯỜNG (U05, mockup V11 `.hl-kh`, 10.2 #9): ▸ · mã (→ hồ sơ lớp) · n HV · GVCN · đợt đang chạy
- * ("MT3 đang làm bài" / lớp thường "đang W8/8") · ô số "Chưa đủ MT · n em" (bấm = lọc lớp đó) hoặc "Chỉ xem"; rồi lưới HV × đợt khi mở
+ * ("MT3 đang làm bài" / lớp thường "đang tuần 8/8") · ô số "Chưa đủ MT · n em" (bấm = lọc lớp đó) hoặc "Chỉ xem"; rồi lưới HV × đợt khi mở
  * (tải khi mở). Lớp thường còn em chưa có bài → nút nhỏ `Xếp cả lớp theo đề xuất`.
  */
 export function LopKeHoach({ lop, mo, onToggle, onHienDien, chiChuaCoKe = false, hvChon = null, onLocLop }: {

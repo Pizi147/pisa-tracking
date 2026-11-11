@@ -59,7 +59,7 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(dm.isProposalKind('extra_support') && dm.isProposalKind('other_proposal') && dm.isProposalKind('reschedule_mt') && !dm.isProposalKind('tutor'), 'isProposalKind');
     assert(dm.hanPhoiHop('cx_meeting_student', '2026-11-02T03:00:00Z') === '2026-11-07' && dm.hanPhoiHop('talk_family', '2026-11-02T03:00:00Z') === null
       && dm.hanPhoiHop('cx_meeting_family', '2026-11-02T03:00:00Z', '2026-11-20') === '2026-11-20', 'hạn Meeting CX 5 ngày, việc khác không hạn, hạn chọn thắng');
-    /* PHOI-HOP-V2 XM-1: Nội dung bắt buộc (≥ 1) khi GVCN xác nhận; Meeting CX: gửi TVV tuỳ chọn + bước TVV 5 ngày, ≥ 10 ký tự; lớp thường Báo PH qua TVV: không. */
+    /* PHOI-HOP-V2 XM-1: Nội dung bắt buộc (≥ 1) khi GVCN xác nhận; Meeting CX: gửi TVV tuỳ chọn + bước TVV 5 ngày, ≥ 10 ký tự; lớp thường Báo PH kết quả Test: không. */
     assert(dm.toiThieuGhiChu('cx_meeting_family') === 0 && dm.toiThieuGhiChu('talk_student') === 1 && dm.toiThieuGhiChu('bao_ph_tvv') === 0, 'ghi chú tối thiểu');
     const goc = dm.aiLamViec({ kind: 'cx_meeting_student', pb_moc: null });
     assert(goc.aiLam === 'gvcn' && goc.buocTvv?.hanNgay === 5 && goc.buocTvv?.toiThieu === 10 && dm.aiLamViec({ kind: 'talk_family', pb_moc: null }).buocTvv === null

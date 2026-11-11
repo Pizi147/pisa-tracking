@@ -40,7 +40,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(b.soBuoi === 2 && b.soTuan === 1 && !b.theoMon, 'Pre FOU 64%');
     assert(d.goiYCuoiKhoa({ ct: 'PREFOU', tyLe: 0.64, monTruot: [] })!.nhan.includes('Lên FOU'), 'nhãn lớp kế');
   });
-  check('LT2b (1) · dưới 50% → học lại + Báo PH qua TVV; từ 70% → Pass, không bổ trợ', () => {
+  check('LT2b (1) · dưới 50% → học lại + Báo PH kết quả Test; từ 70% → Pass, không bổ trợ', () => {
     const a = d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.45, monTruot: ['reading'] })!;
     assert(a.huong === 'hoc_lai' && a.baoPhTvv && !a.boTroNeuLen && a.nhan === 'Học lại BE' && a.nhanNgan === '→ học lại', 'dưới 50');
     const p = d.goiYCuoiKhoa({ ct: 'ELE', tyLe: 0.72, monTruot: [] })!;
@@ -312,7 +312,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(!(sosState.awaitingCauseCaseIds([cc.id]) as number[]).includes(cc.id), 'Case Final Test không được chờ nguyên nhân');
     /* 78% Pass: không Case, không PA. */
     assert(caseCuaEm(s2, cycleMoi(s2)).length === 0, '78% không có Case');
-    /* 45% học lại: đúng một việc Báo PH qua TVV làm bởi Quản lý (không phải GVCN). */
+    /* 45% học lại: đúng một việc Báo PH kết quả Test làm bởi Quản lý (không phải GVCN). */
     const baoPh = conn.prepare(`SELECT * FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv'`).all(s1) as any[];
     assert(baoPh.length === 1 && baoPh[0].attempt_id === l.luot.get(s1) && baoPh[0].preset === 1 && baoPh[0].status === 'pending', JSON.stringify(baoPh));
     const viec = (who: any) => (myWorkMod.myWork(who, { nguoi: 'tat-ca' }) as any).items.filter((x: any) => x.key === `baoph:${baoPh[0].id}`);
@@ -551,7 +551,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     assert(/^QL đã quyết: Lên ELE \+ bổ trợ · /.test(qd.nhan!), qd.nhan!);
     assert(/^QL đã quyết: Học lại BE · /.test(dung('BE', 0.55, [50, 60, 55, 55], [], { huong: 'hoc_lai', luc: `${NGAY_CHUYEN}T08:00:00Z` }).nhan!), 'đã quyết học lại');
     const hl = dung('FOU', 0.45, [40, 45, 50, 45], ['listening']);
-    assert(hl.nhan === 'Học lại FOU · Quản lý báo phụ huynh qua TVV' && hl.tone === 'bad', JSON.stringify(hl));
+    assert(hl.nhan === 'Học lại FOU · Quản lý báo PH kết quả Test' && hl.tone === 'bad', JSON.stringify(hl));
     const kv = dung('BE', 0.78, [80, 75, 78, 79], [], null, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
     assert(kv.kyVong!.nhan === 'Kỳ vọng BE IELTS 4.0' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
     assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong?.nhan === 'Kỳ vọng FOU IELTS > 3.5', 'chưa đánh dấu · P9b: FOU có Kỳ vọng');

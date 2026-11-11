@@ -75,7 +75,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     setParams(p, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.get('mo'), studentId]);
-  /* PR-LT2a: việc "Báo phụ huynh qua TVV" mở `&sub=phoi-hop` — mở phân đoạn Phối hợp và cuộn tới. */
+  /* PR-LT2a: việc "Báo PH kết quả Test" mở `&sub=phoi-hop` — mở phân đoạn Phối hợp và cuộn tới. */
   const coSub = params.get('sub') === 'phoi-hop';
   useEffect(() => {
     if (!coSub || !d) return;

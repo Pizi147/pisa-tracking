@@ -199,7 +199,7 @@ export function danhSachLop(p: Principal, i: { branchId?: number | null } = {}) 
       )
       .all(...thuongIds) as any[]) hvChuaCoLich.set(r.class_id, r.n);
   }
-  /** Lớp thường: `đang W8/8` (chương trình đi riêng ở `chuongTrinh`, hiện cạnh chi nhánh). */
+  /** Lớp thường: `đang tuần 8/8` (chương trình đi riêng ở `chuongTrinh`, hiện cạnh chi nhánh). */
   const tomTatThuong = (classId: number): string => {
     const pr = progressAll.get(classId);
     if (pr?.mocLap && pr.currentWeek) return pr.currentWeek < 1 ? 'chưa khai giảng' : `đang tuần ${pr.currentWeek}`;   // OV-6b2: lớp liên tục

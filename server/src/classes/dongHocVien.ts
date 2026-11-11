@@ -149,7 +149,7 @@ export function viecHocVienTheoLop(p: Principal, o: {
     if (lop !== undefined && o.emTheoLop.has(lop) && can(p, PERMISSIONS.REQUEST_APPROVE, { classId: lop })) soChoDuyet.set(lop, (soChoDuyet.get(lop) ?? 0) + 1);
   }
   const miniTestEm = emConMiniTest(emIds);   // PR-LT2b: Mini Test chưa ghi — MỘT câu
-  const baoPhEm = emCoBaoPhChuaLam(emIds);   // PR-LT2a: việc Báo phụ huynh qua TVV (GVCN) — MỘT câu
+  const baoPhEm = emCoBaoPhChuaLam(emIds);   // PR-LT2a: việc Báo PH kết quả Test (GVCN) — MỘT câu
   const theoEm = new Map<number, ViecEm>();
   const soEmQuaHan = new Map<number, number>();
   for (const [id, lops] of lopCua) {

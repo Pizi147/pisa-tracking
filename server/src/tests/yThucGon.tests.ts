@@ -106,7 +106,7 @@ export async function runYThucGonTests(t: YThucTestKit) {
     return { sid, cid };
   }
   const ghi = (studentId: number, description: string, occurredOn?: string, category = 'homework') =>
-    (violSvc.recordViolation(gvcn, { studentId, category, description, occurredOn: occurredOn ?? null }) as any).violation.id as number;
+    (violSvc.recordViolation(gvcn, { studentId, category, description, skill: 'writing1', occurredOn: occurredOn ?? null }) as any).violation.id as number;
   const countAudit = (action: string, entityId: number) =>
     (conn.prepare('SELECT COUNT(*) n FROM audit_logs WHERE action = ? AND entity_id = ?').get(action, entityId) as any).n as number;
 

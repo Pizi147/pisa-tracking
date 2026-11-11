@@ -83,7 +83,7 @@ export type TabViecHan = (typeof TAB_VIEC_HAN)[number];
 export const TAB_VIEC_HAN_LABEL: Record<TabViecHan, string> = {
   case: t('Case – PA – Kết quả'), 'ban-giao': t('Bàn giao'), 'y-thuc': t('Ý thức & Phối hợp'), 'bao-ph': t('Báo PH'), khac: t('Khác'), cham: t('Chấm Test'),
 };
-/** Loại việc Công việc (`WorkGroupKey`) → tab: Bàn giao · Xử lý vi phạm · Báo PH riêng (Báo PH sau vi phạm + Báo PH qua TVV — như mục "Báo PH" của
+/** Loại việc Công việc (`WorkGroupKey`) → tab: Bàn giao · Xử lý vi phạm · Báo PH riêng (Báo PH sau vi phạm + Báo PH kết quả Test — như mục "Báo PH" của
  *  Công việc, RA-LOI-0711i); nhóm Case học thuật (Case, PA, Phối hợp SOS) chung một tab; còn lại Khác. Nhãn tab theo chữ chủ SP chốt 06/11. */
 export const tabViecHanCua = (group: string): TabViecHan =>
   group === 'ban_giao' ? 'ban-giao' : group.startsWith('yt_') ? 'y-thuc' : group === 'bao_ph_yt' || group === 'phoi_hop' || group === 'phoi_hop_tvv' ? 'bao-ph'

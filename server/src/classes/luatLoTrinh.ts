@@ -3,7 +3,7 @@ import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, xepLopDich, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, xepLopDich, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanKhoa, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -145,7 +145,7 @@ export function danhSachLopDich(boQuaLopId: number, demHocVien = false) {
         id: r.id, code: r.code, chiNhanhId: r.branch_id, branchCode: r.branch_code as string, ma: (r.programme_code ?? null) as ProgrammeCode | null,
         ft: !!r.is_fast_track, route: (r.route ?? null) as string | null,
         tenChuongTrinh: r.programme_code ? (programmeByCode(r.programme_code)?.name ?? null) : null,
-        tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? `W${pr.currentWeek}/${pr.totalWeeks}` : null,
+        tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? tuanKhoa(pr.currentWeek, pr.totalWeeks) : null,
         gvcn: r.gvcn ?? null,
         ...(demHocVien ? { siSo: siSo.get(r.id) ?? 0 } : {}),
       };
@@ -831,7 +831,7 @@ export function apDungCaLop(p: Principal, o: {
     if (coViecMo.has(sid)) closeCasesOnProgrammeSwitch(p.userId, sid, 'ft', o.ngay);
   }
 
-  // 6b) PR-LT2b: Cuối khoá — Case đi theo em (lớp thường → lớp thường) + bổ trợ miễn phí, Báo PH qua TVV, Tutor FT. Sau bước 6 (Case FT đã đóng).
+  // 6b) PR-LT2b: Cuối khoá — Case đi theo em (lớp thường → lớp thường) + bổ trợ miễn phí, Báo PH kết quả Test, Tutor FT. Sau bước 6 (Case FT đã đóng).
   if (isRatioClass(o.fromClass.id)) {
     sauChuyenCuoiKhoa(p, o.dongs.map((d) => ({ sid: d.sid, fromClassId: o.fromClass.id, toClassId: d.toClassId, toFt: d.toClass.ft, huong: d.huong, ngay: o.ngay })));
   }

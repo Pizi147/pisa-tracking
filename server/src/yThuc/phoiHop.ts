@@ -108,7 +108,7 @@ export function syncSosCoordination(attempt: { id: number; student_id: number; a
 export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?: number | null; cycle_id?: number | null }, monTruot: string[]) {
   const conn = db();
   if (kckCuaLuot(attempt)) monTruot = [];   // OV-9: em KCK — Case nhẹ, không Báo PH (việc chưa làm tự rút như hết môn trượt)
-  /* CAU-HINH-CASE-SOS: việc của mốc Progress Test theo bản của bài (bản gốc chỉ Báo PH qua TVV) — việc khác cùng luật sinh / rút / hồi. */
+  /* CAU-HINH-CASE-SOS: việc của mốc Progress Test theo bản của bài (bản gốc chỉ Báo PH kết quả Test) — việc khác cùng luật sinh / rút / hồi. */
   const coSan = conn.prepare('SELECT * FROM sos_coordination_actions WHERE attempt_id = ? AND preset = 1').all(attempt.id) as any[];
   const pb = pbCuaLuot(coSan);
   const viec = mocThuong(pb).progress.viec;
@@ -138,7 +138,7 @@ export function dongBoBaoPh(attempt: { id: number; student_id: number; class_id?
   const mon = monTruot.map((s) => tenMonNgan(ct, s)).join(', ');
   for (const g of conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1 AND status = 'active'`).all(attempt.class_id) as any[]) {
     notify({
-      userId: g.user_id, kind: 'phoi_hop', title: `Báo phụ huynh qua TVV · ${hv?.full_name ?? ''} · Progress Test không đạt ${mon}`,
+      userId: g.user_id, kind: 'phoi_hop', title: `Báo PH kết quả Test · ${hv?.full_name ?? ''} · Progress Test không đạt ${mon}`,
       body: 'Nhờ TVV báo phụ huynh (4 nội dung), xong thì đánh dấu đã làm.',
       entityType: 'assessment_attempt', entityId: attempt.id, dedupKey: `bao-ph:${attempt.id}`,
     });
@@ -187,7 +187,7 @@ export function dongBoBaoPhCuaBai(attemptId: number) {
   dongBoBaoPh(a, monBaoPh(attemptId, mon));
 }
 
-/** Những em (trong `studentIds`) còn việc Báo phụ huynh qua TVV CHƯA làm — MỘT câu (một tham số JSON — S5) (cột Việc tiếp theo của GVCN, PR-LT2a).
+/** Những em (trong `studentIds`) còn việc Báo PH kết quả Test CHƯA làm — MỘT câu (một tham số JSON — S5) (cột Việc tiếp theo của GVCN, PR-LT2a).
  *  TD6: JOIN lượt thay `attempt_id IN (SELECT … FROM assessment_attempts)` — câu cũ quét cả bảng lượt. */
 export function emCoBaoPhChuaLam(studentIds: readonly number[]): Set<number> {
   const out = new Set<number>();
@@ -211,7 +211,7 @@ export type CoordinationAction = {
   han: string | null; quaHan: boolean;
   /** HAN-BAO-PH (chủ SP 03/11, 17.2): meeting CX — hạn mặc định (tạo + 5) · hạn người dùng chọn (null = mặc định). Việc khác: null · null. */
   hanMacDinh: string | null; hanChon: string | null;
-  /** PR-LT2a (N3): 4 nội dung Báo phụ huynh qua TVV (chỉ việc `bao_ph_tvv`) — kết quả · môn khó khăn · nguyên nhân · phương án + khả năng học lại. */
+  /** PR-LT2a (N3): 4 nội dung Báo PH kết quả Test (chỉ việc `bao_ph_tvv`) — kết quả · môn khó khăn · nguyên nhân · phương án + khả năng học lại. */
   noiDung: string[] | null;
   /** PR-PHH: true khi việc `bao_ph_tvv` đã xong mà chưa lưu bản chụp (xác nhận trước PR này) — `noiDung` là nội dung HIỆN TẠI, không phải nội dung đã báo. */
   noiDungLaHienTai: boolean;

@@ -70,7 +70,7 @@ export function kiemTenViPham(text: unknown): string | null {
 }
 
 /** Lỗi ô của panel Ghi vi phạm (web dùng cho `useLoiForm`): khoá `hoc-vien`, `nhom-1`, `ten-1`, `nhom-2`… (số dòng bắt đầu từ 1). */
-export function dsLoiGhiViPham(i: { hocVien: readonly number[]; dong: readonly { nhom: string; ten: string }[] }): LoiTruong[] {
+export function dsLoiGhiViPham(i: { hocVien: readonly number[]; dong: readonly { nhom: string; ten: string; mon?: string }[]; batBuocMon?: boolean }): LoiTruong[] {
   const out: LoiTruong[] = [];
   if (!i.hocVien.length) out.push({ khoa: 'hoc-vien', nhan: t('Học viên'), lyDo: t('Chọn ít nhất một học viên') });
   /* Nhiều học viên = MỘT vi phạm chung (Q1). Báo ngay tại ô, không gửi để máy chủ từ chối cả lô. */
@@ -80,6 +80,8 @@ export function dsLoiGhiViPham(i: { hocVien: readonly number[]; dong: readonly {
     if (!d.nhom) out.push({ khoa: `nhom-${k + 1}`, nhan: t('Nhóm{so}', { so }), lyDo: t('Chọn Nhóm') });
     const loi = kiemTenViPham(d.ten);
     if (loi) out.push({ khoa: `ten-${k + 1}`, nhan: t('Vi phạm{so}', { so }), lyDo: loi });
+    /* G3-19 (chủ SP 13/11): dạy từ 2 môn ở lớp → bắt buộc chọn Môn (`mon` = môn đang hiện ở ô, đã gồm môn tự điền). */
+    if (i.batBuocMon && !d.mon) out.push({ khoa: `mon-${k + 1}`, nhan: t('Môn{so}', { so }), lyDo: t('Chọn Môn') });
   });
   return out;
 }

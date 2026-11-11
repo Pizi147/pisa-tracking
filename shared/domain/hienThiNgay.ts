@@ -58,7 +58,7 @@ export function docTuanLich(text: string, homNay: string): string | null {
 
 export function tuanKhoa(n: number, tong: number): string {
   if (!Number.isInteger(n) || !Number.isInteger(tong) || n < 1 || tong < 1) return '—';
-  return `W${n}/${tong}`;
+  return t('tuần {n}/{tong}', { n, tong });   // G1-10: tuần học = "tuần 5/8"; chữ "W" chỉ cho mã tuần (W2 SEP)
 }
 
 /**

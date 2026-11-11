@@ -785,12 +785,12 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(d.gomChip({}).chip.length === 0 && d.gomChip({}).xong === false, 'Ô không có kỹ năng nào thì không vẽ gì');
   });
 
-  check('UX2 · nhanTuanKhoa — FOU W4/8, W8/8; ELE W5/10, W10/10; sau khoá; trước khai giảng null', () => {
+  check('UX2 · nhanTuanKhoa — FOU tuần 4/8, 8/8; ELE tuần 5/10, 10/10; sau khoá; trước khai giảng null', () => {
     const kg = '2026-09-07';   // Thứ Hai
-    assert(d.nhanTuanKhoa('2026-09-28', kg, 8) === 'W4/8', 'W4/8');
-    assert(d.nhanTuanKhoa('2026-10-26', kg, 8) === 'W8/8', 'W8/8');
-    assert(d.nhanTuanKhoa('2026-10-05', kg, 10) === 'W5/10', 'W5/10');
-    assert(d.nhanTuanKhoa('2026-11-09', kg, 10) === 'W10/10', 'W10/10');
+    assert(d.nhanTuanKhoa('2026-09-28', kg, 8) === 'tuần 4/8', 'tuần 4/8');
+    assert(d.nhanTuanKhoa('2026-10-26', kg, 8) === 'tuần 8/8', 'tuần 8/8');
+    assert(d.nhanTuanKhoa('2026-10-05', kg, 10) === 'tuần 5/10', 'tuần 5/10');
+    assert(d.nhanTuanKhoa('2026-11-09', kg, 10) === 'tuần 10/10', 'tuần 10/10');
     assert(d.nhanTuanKhoa('2026-11-02', kg, 8) === 'sau khoá', 'Tuần sau hết khoá phải là "sau khoá"');
     assert(d.nhanTuanKhoa('2026-08-31', kg, 8) === null, 'Trước khai giảng thì không nhãn');
     assert(d.nhanTuanKhoa('2026-09-28', null, 8) === null && d.nhanTuanKhoa(null, kg, 8) === null && d.nhanTuanKhoa('2026-09-28', kg, null) === null,
@@ -1018,21 +1018,21 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     assert(dem(em2) === 0, 'Bị từ chối mà vẫn tạo bài');
   });
 
-  check('UX2 · nhãn tuần n/N: luoiThuong MB FOU 12 nhanDeXuat W4/8 · W8/8; BC ELE 01 W5/10 · W10/10; nhanTuanKhoa(tuần sau khoá) = "sau khoá"', () => {
+  check('UX2 · nhãn tuần n/N: luoiThuong MB FOU 12 nhanDeXuat tuần 4/8 · tuần 8/8; BC ELE 01 tuần 5/10 · tuần 10/10; nhanTuanKhoa(tuần sau khoá) = "sau khoá"', () => {
     const fou = keHoachMod.luoiThuong(P.mbManager, classId('MB FOU 12'));
-    assert(fou.cot[0].nhanDeXuat === 'W4/8' && fou.cot[1].nhanDeXuat === 'W8/8', `FOU phải W4/8 · W8/8, ra ${fou.cot.map((c: any) => c.nhanDeXuat)}`);
+    assert(fou.cot[0].nhanDeXuat === 'tuần 4/8' && fou.cot[1].nhanDeXuat === 'tuần 8/8', `FOU phải tuần 4/8 · tuần 8/8, ra ${fou.cot.map((c: any) => c.nhanDeXuat)}`);
     const ele = keHoachMod.luoiThuong(P.bcManager, classId('BC ELE 01'));
-    assert(ele.cot[0].nhanDeXuat === 'W5/10' && ele.cot[1].nhanDeXuat === 'W10/10', `ELE phải W5/10 · W10/10, ra ${ele.cot.map((c: any) => c.nhanDeXuat)}`);
+    assert(ele.cot[0].nhanDeXuat === 'tuần 5/10' && ele.cot[1].nhanDeXuat === 'tuần 10/10', `ELE phải tuần 5/10 · tuần 10/10, ra ${ele.cot.map((c: any) => c.nhanDeXuat)}`);
     assert(d.nhanTuanKhoa(addDays(fou.cot[1].deXuat, 7), fou.khaiGiang, fou.tongTuan) === 'sau khoá', 'Tuần sau hết khoá phải là "sau khoá"');
-    assert(d.nhanTuanKhoa(fou.cot[0].deXuat, fou.khaiGiang, fou.tongTuan) === 'W4/8', 'nhanTuanKhoa khớp nhanDeXuat');
+    assert(d.nhanTuanKhoa(fou.cot[0].deXuat, fou.khaiGiang, fou.tongTuan) === 'tuần 4/8', 'nhanTuanKhoa khớp nhanDeXuat');
   });
 
-  check('UX2 · danhSachLop: lớp FT có tomTat dạng "MT{n} đang thi…", có chiNhanh; lớp thường tomTat có "đang W"', () => {
+  check('UX2 · danhSachLop: lớp FT có tomTat dạng "MT{n} đang thi…", có chiNhanh; lớp thường tomTat có "đang tuần"', () => {
     const ds = keHoachMod.danhSachLop(P.mbManager, {});
     const ft = ds.lop.find((l: any) => l.code === 'MB FT 101');
     assert(ft && /^MT\d+ đang làm bài/.test(ft.tomTat) && ft.chiNhanh, `MB FT 101 phải có tomTat "MT… đang làm bài" và chiNhanh, ra ${JSON.stringify(ft)}`);
     const thuong = ds.lop.find((l: any) => l.code === 'MB FOU 12');
-    assert(thuong && /đang W\d+\/8/.test(thuong.tomTat), `MB FOU 12 phải có tomTat "đang W…/8", ra ${JSON.stringify(thuong)}`);
+    assert(thuong && /đang tuần \d+\/8/.test(thuong.tomTat), `MB FOU 12 phải có tomTat "đang tuần …/8", ra ${JSON.stringify(thuong)}`);
     assert(typeof thuong.hvChuaCoLich === 'number', 'Lớp thường phải có hvChuaCoLich');
   });
 

@@ -25,7 +25,7 @@ Mockup là HTML tĩnh nền tối. Chúng quy định **bố cục, thứ tự, 
 | G-3 | Không dồn chữ: tối đa **một** dòng phụ dưới dòng chính, dòng phụ ≤ ~60 ký tự. Thông tin thêm đưa vào ⓘ hoặc panel. |
 | G-4 | ⚠ chỉ nghĩa là **quá hạn**. Các trạng thái khác dùng badge chữ. |
 | G-5 | Bỏ mọi khối chữ giải thích cho dev (`SectionNote` giải thích mô hình). Luật cần thiết đưa vào popover ⓘ cạnh tiêu đề. |
-| G-6 | Ngày không bao giờ hiện dạng ISO. Ngày: `dd/mm` (cùng năm) hoặc `dd/mm/yyyy`. **Tuần lịch: `W{n} {THÁNG}`** (vd `W3 SEP`, `W1 OCT`, tháng viết tắt tiếng Anh in hoa). **Tuần học trong khoá: `W{n}/{tổng}`** (vd `W8/8`). Không dùng "T5", "tuần 5", "Tuần 36". Dùng một hàm chung (tạo ở PR-O, §7). |
+| G-6 | Ngày không bao giờ hiện dạng ISO. Ngày: `dd/mm` (cùng năm) hoặc `dd/mm/yyyy`. **Tuần lịch: `W{n} {THÁNG}`** (vd `W3 SEP`, `W1 OCT`, tháng viết tắt tiếng Anh in hoa). **Tuần học trong khoá: `tuần {n}/{tổng}`** (vd `tuần 8/8`; chủ SP 13/11 G1-10: chữ "W" chỉ cho mã tuần lịch). Không dùng "T5", "Tuần 36", "W8/8". Dùng một hàm chung (tạo ở PR-O, §7). |
 | G-7 | Viết tắt được giữ (GVCN, GVBM, PA, SOS, FT, KV, OVR, L R W1 W2 S) luôn có tooltip bản đầy đủ. Icon ⋮ ⋯ ⓘ ▸ ✓ luôn có tooltip. |
 | G-8 | Panel không chồng panel. Mở việc khác từ một panel thì đóng panel cũ rồi mở panel mới. |
 | G-9 | Mọi ô dán bằng chứng nhận: **Ctrl+V dán ảnh chụp màn hình**, kéo thả, chọn tệp, dán liên kết. |
@@ -89,7 +89,7 @@ Một hàng chọn góc nhìn + bộ lọc chung. Bỏ "Việc đã giao" và `/
 - Cột: **Học viên** (mã 6 số, chữ mờ) · **Kết quả gần nhất** · **Mục tiêu** (FT) / **Khoá** (lớp thường) · **Case** · **Việc tiếp theo** (mỗi việc một badge, mỗi badge một dòng, xếp chồng không đè) · ⋯.
 - Kết quả gần nhất FT: Overall to + "thiếu x" đỏ + chip SOS; dòng phụ "MT2 · kỳ vọng 6.5 · Thiếu L 5.5" (kỹ năng viết tắt). "Thiếu" tính theo kỳ vọng của chính đợt đó.
 - Kết quả gần nhất lớp thường: "Đạt 3/4 môn" + chip SOS; dòng phụ "Giữa khoá · chưa đạt W 12/20".
-- Cột Khoá (lớp thường): "FOU · W8/8" + dòng phụ ngày kết thúc, hoặc "tiếp theo: …" **chỉ khi đã ghi Lộ trình tiếp theo** (§3.9).
+- Cột Khoá (lớp thường): "FOU · tuần 8/8" + dòng phụ ngày kết thúc, hoặc "tiếp theo: …" **chỉ khi đã ghi Lộ trình tiếp theo** (§3.9).
 
 ### 3.7. Hồ sơ lớp — `06-ho-so-lop.html` (menu dòng A), `06c-dau-trang-va-ho-so-gv.html` §1, `10b`
 - **3 tab:** Học viên · Ý thức & Phối hợp · Phân tích lớp. Bỏ tab Giáo viên.

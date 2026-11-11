@@ -50,7 +50,7 @@ export function programmeOfCase(c: { cycle_id?: number | null; category?: string
 }
 
 /**
- * Q-RL3 (chủ SP 29/10): "Lộ trình mới" — việc Phối hợp SOS còn chờ (Báo PH qua TVV, gặp CX, GVCN meeting…) của lượt Test thuộc lộ trình cũ đóng cùng
+ * Q-RL3 (chủ SP 29/10): "Lộ trình mới" — việc Phối hợp SOS còn chờ (Báo PH kết quả Test, gặp CX, GVCN meeting…) của lượt Test thuộc lộ trình cũ đóng cùng
  * Case / PA (`removed`, lý do hệ thống "Kết thúc lộ trình" — giữ dòng + lịch sử). Trả id để Hoàn tác Lộ trình mới mở lại đúng chúng.
  */
 export function dongPhoiHopLoTrinh(cycleIds: readonly number[], on: string): number[] {

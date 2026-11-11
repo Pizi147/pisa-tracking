@@ -509,7 +509,7 @@ export function viecTiepCuaEm(i: {
   yThuc: NhanYThucEm | null;
   homNay: string;
   chuongTrinh?: string | null;
-  /** PR-LT2a (#133): người xem là GVCN của em và còn việc Báo phụ huynh qua TVV chưa làm — xếp SAU các việc có hạn. */
+  /** PR-LT2a (#133): người xem là GVCN của em và còn việc Báo PH kết quả Test chưa làm — xếp SAU các việc có hạn. */
   baoPh?: boolean;
   /** PR-LT2b (M-05): em còn Mini Test chưa ghi và người xem là người làm — hạn = ngày buổi cuối + 2. */
   miniTest?: { han: string; caseId: number | null; paId: number | null } | null;
@@ -577,8 +577,8 @@ export function viecTiepCuaEm(i: {
     }
   }
   const xep = out.map((v, idx) => ({ v, idx })).sort((a, b) => HANG_TONE[a.v.tone] - HANG_TONE[b.v.tone] || a.idx - b.idx).map((x) => x.v);
-  /* Báo phụ huynh qua TVV: không hạn → luôn SAU việc có hạn (mở tab Ý thức & Phối hợp). */
-  if (i.baoPh) xep.push({ viec: t('Báo phụ huynh qua TVV'), han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: t('Báo phụ huynh qua TVV · Progress Test') });
+  /* Báo PH kết quả Test: không hạn → luôn SAU việc có hạn (mở tab Ý thức & Phối hợp). */
+  if (i.baoPh) xep.push({ viec: t('Báo PH kết quả Test'), han: null, quaHanNgay: null, tone: 'info', dich: { loai: 'y-thuc' }, title: t('Báo PH kết quả Test · Progress Test') });
   return xep;
 }
 

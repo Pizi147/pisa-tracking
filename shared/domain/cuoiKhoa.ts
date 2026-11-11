@@ -164,11 +164,11 @@ export const coBoTroFinal = (ct: string | null, toFt: boolean): boolean => !(toF
 /** Lúc thi hành lệnh Cuối khoá: lên (lớp kế / FT) + bổ trợ (60–69 %, hoặc 50–59 % QL cho lên) → mỗi môn trượt một Case bổ trợ; BE/ELE → FT không (PR-CT2). */
 export const coBoTroKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null, ct: string | null, toFt: boolean): boolean =>
   (huong === 'len_lop' || huong === 'fast_track') && !!goiY?.boTroNeuLen && coBoTroFinal(ct, toFt);
-/** Báo PH qua TVV: Final < 50 % LUÔN (kể cả QL cho lên — PTA Plan 25/10), 50–59 % mà QL chọn học lại (Q6). Tạm dừng / Dừng học không qua đây. */
+/** Báo PH kết quả Test: Final < 50 % LUÔN (kể cả QL cho lên — PTA Plan 25/10), 50–59 % mà QL chọn học lại (Q6). Tạm dừng / Dừng học không qua đây. */
 export const coBaoPhKhiChot = (huong: string | null, goiY: GoiYCuoiKhoa | null): boolean => viecKhiChot(huong, goiY).includes('bao_ph_tvv');
 /**
  * CAU-HINH-CASE-SOS: việc phối hợp sinh khi thi hành Cuối khoá, theo dải Final + hướng (Quản trị đặt ở Mốc SOS › Lớp thường). Bản gốc = luật cũ:
- * < 50 % → Báo PH qua TVV (kể cả cho lên), 50–59 % học lại → Báo PH qua TVV, còn lại không việc. Tạm dừng / Dừng học không qua đây.
+ * < 50 % → Báo PH kết quả Test (kể cả cho lên), 50–59 % học lại → Báo PH kết quả Test, còn lại không việc. Tạm dừng / Dừng học không qua đây.
  */
 export function viecKhiChot(huong: string | null, goiY: GoiYCuoiKhoa | null): readonly string[] {
   if (!goiY || !(huong === 'len_lop' || huong === 'fast_track' || huong === 'hoc_lai')) return [];
@@ -225,12 +225,12 @@ export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<
 export const KY_VONG_DAU_RA: Readonly<Record<string, string>> = { FOU: 'FOU IELTS > 3.5', BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };
 
 /**
- * P9b (N17): chữ cột "Kết quả đầu ra" máy ghi ở trang Cuối khoá — Pass · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU · Quản lý báo phụ huynh qua TVV.
+ * P9b (N17): chữ cột "Kết quả đầu ra" máy ghi ở trang Cuối khoá — Pass · Lên BE + bổ trợ · Quản lý cân nhắc · Học lại FOU · Quản lý báo PH kết quả Test.
  * Không nút, không nguyên nhân; cùng dải `goiYCuoiKhoa`.
  */
 export function chuDaiKetQua(g: GoiYCuoiKhoa): string {
   if (g.dai === 'dat') return 'Pass';
-  if (g.dai === 'duoi_50') return t('{nhan} · Quản lý báo phụ huynh qua TVV', { nhan: dichChuoi(g.nhanHuong) });
+  if (g.dai === 'duoi_50') return t('{nhan} · Quản lý báo PH kết quả Test', { nhan: dichChuoi(g.nhanHuong) });
   return dichChuoi(g.nhanHuong);
 }
 
@@ -277,7 +277,7 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   const chinh = `Final Test ${Math.round(x.tyLe * 100)}%`;
   if (g.dai === 'dat') return { chinh, phu, nhan: 'Pass', tone: 'ok', kyVong };
   if (g.dai === '60_69') return { chinh, phu, nhan: nhanGoiY(g), tone: 'warn', kyVong };
-  if (g.dai === 'duoi_50') return { chinh, phu, nhan: t('{nhan} · Quản lý báo phụ huynh qua TVV', { nhan: nhanGoiY(g) }), tone: 'bad', kyVong };
+  if (g.dai === 'duoi_50') return { chinh, phu, nhan: t('{nhan} · Quản lý báo PH kết quả Test', { nhan: nhanGoiY(g) }), tone: 'bad', kyVong };
   /* 50–59%: chưa quyết → Quản lý cân nhắc; đã chuyển thì hiện điều Quản lý đã quyết (Q30-3, không còn thẻ). */
   if (!x.quyetDinh) return { chinh, phu, nhan: t('Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)'), tone: 'warn', kyVong };
   const dich = x.quyetDinh.huong === 'hoc_lai' ? t('Học lại {bac}', { bac: tenBac(ct) })

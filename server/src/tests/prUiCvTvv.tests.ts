@@ -43,7 +43,7 @@ export async function runPrUiCvTvvTests(t: any) {
   };
   /** GVCN lưu xử lý 3 vi phạm "Đi học muộn" → một việc Báo PH (id). */
   const xuLy = (sid: number): { viecId: number; measureId: number } => {
-    const ids = [1, 2, 3].map((i) => viol.recordViolation(gvcn, { studentId: sid, category: 'attendance', ten: 'Đi học muộn', occurredOn: `2026-09-0${i + 6}` }).violation.id as number);
+    const ids = [1, 2, 3].map((i) => viol.recordViolation(gvcn, { studentId: sid, category: 'attendance', skill: 'writing1', ten: 'Đi học muộn', occurredOn: `2026-09-0${i + 6}` }).violation.id as number);
     xu.xacNhanXuLy(gvcn, sid, { violationIds: ids, performedOn: TODAY, performerName: 'Cô Thu', note: 'Nhắc nhở lần 1' });
     const v = conn.prepare('SELECT id, measure_id FROM viec_bao_ph WHERE student_id = ? ORDER BY id DESC').get(sid) as any;
     return { viecId: v.id, measureId: v.measure_id };
