@@ -4311,8 +4311,9 @@ export function luuNhapKetQua(p: Principal, interventionId: number, input: { out
     const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
     if (!iv) throw notFound('Không tìm thấy phương án.');
     kiemQuyenPa(p, iv, loadCase(iv.case_id));
+    /* Form có kỳ (web mới): PA khép / kỳ khác = kết quả đã lưu ở phiên khác → 409 daChot (web không mời Thử lại). Không kỳ: câu cũ. */
+    if (input.ky !== undefined && (khep(iv) || (iv.cycle_no ?? 1) !== input.ky)) throw conflict(CAU_DA_CHOT, { daChot: true });
     if (khep(iv)) throw badRequest('Phương án này đã khép — không lưu nháp được.');
-    if (input.ky !== undefined && (iv.cycle_no ?? 1) !== input.ky) throw conflict(CAU_DA_CHOT, { daChot: true });
     const cu = docNhapKetQua(iv.nhap_ket_qua);
     if (cu ? cu.outcome === outcome && cu.note === note : !outcome && !note) return { nhap: cu };
     if (input.coSo !== undefined && (cu?.luc ?? null) !== input.coSo) throw conflict(CAU_NHAP_MOI, { nhapMoi: cu });

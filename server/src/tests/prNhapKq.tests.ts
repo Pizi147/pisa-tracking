@@ -165,7 +165,9 @@ export async function runPrNhapKqTests(t: YThucTestKit) {
     const v = cases.luuNhapKetQua(P.lrTeacher, ivId, { outcome: 'improved', note: 'sắp kết thúc', ky: ky(), coSo: null }).nhap;
     const kyCu = ky();
     cases.updateResult(P.lrTeacher, ivId, { decision: 'end', outcome: 'improved', note: 'Em đã nghe số ổn định', ky: kyCu, nhapCoSo: v.luc });
-    assertThrows(() => cases.luuNhapKetQua(P.lrTeacher, ivId, { outcome: 'improved', note: 'PUT chậm', ky: kyCu, coSo: v.luc }), /khép|chốt/i, 'nháp sau khi khép');
+    const e = loiCua(() => cases.luuNhapKetQua(P.lrTeacher, ivId, { outcome: 'improved', note: 'PUT chậm', ky: kyCu, coSo: v.luc }));
+    assert(e?.status === 409 && e.details?.daChot === true, `nháp sau khi khép: 409 daChot (có ${e?.status ?? 'không lỗi'})`);
+    assertThrows(() => cases.luuNhapKetQua(P.lrTeacher, ivId, { note: 'web cũ không gửi kỳ' }), /khép/i, 'không kỳ: câu cũ');
     assert(cot() === null, 'không có nháp trên PA đã khép');
   });
 
@@ -195,7 +197,7 @@ export async function runPrNhapKqTests(t: YThucTestKit) {
       decision: 'replace', outcome: 'unchanged', note: 'Nghe chép theo đoạn không hiệu quả', decisionNote: 'Đổi cách', ky: kyCu, nhapCoSo: v.luc,
       newPlan: { kind: 'self_study', description: 'Tự học lại — nghe số theo chủ đề', performerSelf: true },
     });
-    assertThrows(() => cases.luuNhapKetQua(P.lrTeacher, iv2, { outcome: 'improved', note: 'PUT chậm', ky: kyCu, coSo: v.luc }), /khép/i, 'nháp sau khi thay');
+    assert(loiCua(() => cases.luuNhapKetQua(P.lrTeacher, iv2, { outcome: 'improved', note: 'PUT chậm', ky: kyCu, coSo: v.luc }))?.details?.daChot === true, 'nháp sau khi thay');
     const moi = (conn.prepare('SELECT superseded_by FROM case_interventions WHERE id = ?').get(iv2) as any).superseded_by;
     assert(moi && (conn.prepare('SELECT nhap_ket_qua FROM case_interventions WHERE id = ?').get(moi) as any).nhap_ket_qua == null, 'PA mới không có nháp');
   });

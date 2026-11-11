@@ -140,8 +140,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const batDauGui = (x: 'nhap' | 'chot') => { if (dangGui.current) return false; dangGui.current = x; setGui(x); return true; };
   const xongGui = () => { dangGui.current = null; setGui(null); };
   const busy = gui === 'chot';
-  /* N03: nháp / chốt ràng vào kỳ đang mở — máy chủ từ chối khi kỳ đã chốt. Sửa lần ghi cũ không gửi. */
-  const ky = pa.cycleNo ?? 1;
+  /* N03: nháp / chốt ràng vào kỳ LÚC MỞ form (chụp một lần — Case tải lại sau khi phiên khác chốt không được đẩy form cũ sang kỳ mới). Sửa lần ghi cũ không gửi. */
+  const [ky] = useState(pa.cycleNo ?? 1);
+  /* Form đã bằng bản máy chủ (vừa lưu nháp, Dùng bản mới…) → bỏ nháp trình duyệt của ô Nhận xét (N02: gõ tiếp lúc đang gửi thì không bằng → giữ). */
+  useEffect(() => { if (trungNhap) daLuuO(progress); }, [trungNhap]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* OV-13b (mockup §8): PA mặc định — Điều chỉnh › "Đề xuất PA khác": kết quả kỳ lưu như Giữ nguyên + đề xuất gửi QL, MỘT nút. */
   const [deXuat, setDeXuat] = useState(false);
   const doi = useDoiPa(pa.kind);
@@ -435,8 +437,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     const chup = { outcome, note: progress };
     try {
       const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${pa.id}/nhap`, { ...chup, ky, coSo });
-      setBanNhap(r.nhap);
-      daLuuO(chup.note);
+      setBanNhap(r.nhap);   // trùng chữ đang có → effect trên bỏ nháp trình duyệt
       invalidate('/my-work'); invalidate('/cases');
     } catch (e: any) {
       const xd = xungDotCua(e);
@@ -462,7 +463,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tat={!!gui} tiep={tiep} bam={bam} luu={(x) => void luu(x)} />
     : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui} onClick={() => void luu()}>{nhanNut}</button>;
   /* PTA rà 1454: nháp chỉ giữ Tiến triển + Nhận xét — ô khác (Quyết định, Lý do, Điều chỉnh, buổi, Hoàn thành Case) đổi thì vẫn "đang sửa" dù hai ô trùng nháp. */
-  const ngoaiNhap = !!(buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua || reason.trim() || htCase);
+  const ngoaiNhap = !!(buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua || reason.trim() || htCase
+    || on !== homNay || tuan !== dau.tuan || mtTyLe !== dau.mtTyLe || mtNgay !== dau.mtNgay || JSON.stringify(nguoiDay) !== JSON.stringify(dau.nguoiDay));
   const daSua = (!trungNhap && !!(outcome || progress.trim())) || ngoaiNhap;
   /* Form nằm trong panel việc / Ngăn Case: ✕ · Đóng · "‹ Công việc" là của panel ngoài — báo lên để panel hỏi trước khi bỏ Quyết định / Lý do (chỉ ở state).
      ponytail: Sửa lần ghi cũ chưa báo (daSua của Sửa luôn bật vì điền sẵn) — cần so từng ô với giá trị cũ nếu muốn hỏi ở đó. */
