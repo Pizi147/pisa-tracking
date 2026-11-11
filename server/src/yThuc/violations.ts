@@ -1,7 +1,7 @@
 import { db, tx } from '../db.ts';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, kiemTenViPham, tachTenMoTa, LO_GHI_VI_PHAM, VI_PHAM_TOI_DA_DONG,
-  VIOLATION_SKILLS, XU_LY_STATUS_LABEL, nhanLoaiXuLy, tenMon,
+  VIOLATION_SKILLS, XU_LY_STATUS_LABEL, monViPham, nhanLoaiXuLy, tenMon,
   type ViolationCategory, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
@@ -10,6 +10,7 @@ import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
 import { badRequest, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
+import { programmeOfClass } from '../normal/regular.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { currentCycle } from '../fasttrack/cycles.ts';
 import { purgeAttachmentsOf } from '../platform/attachments.ts';
@@ -190,9 +191,16 @@ export function defaultSkillFor(p: Principal, classId: number | null, today: str
   const ds = monDayTai(p, classId, today);
   return ds.length === 1 ? ds[0] : null;
 }
-/** G3-19 (chủ SP 13/11): người ghi dạy TỪ 2 MÔN trở lên ở lớp em → BẮT BUỘC chọn môn. GVCN dạy từ 2 môn cũng phải chọn; người không dạy môn nào của lớp (GVCN không dạy, Quản lý, Admin) hoặc dạy 1 môn (tự điền) thì không. */
-export const batBuocChonMon = (p: Principal, classId: number | null, today: string = demoToday()): boolean => monDayTai(p, classId, today).length >= 2;
-const THIEU_MON = 'Chọn môn — bạn dạy từ 2 môn ở lớp này.';
+/**
+ * G3-19 (chủ SP 13/11): Môn của vi phạm BẮT BUỘC chọn khi lớp có chia môn VÀ người ghi (a) dạy từ 2 môn của lớp — kể cả GVCN — hoặc (b) không dạy môn nào
+ * mà không phải Quản lý / Quản trị (GVCN không dạy môn, vai khác có quyền ghi). Dạy đúng 1 môn → tự điền (đổi được). Quản lý / Quản trị không dạy môn nào → để trống được.
+ */
+export function batBuocChonMon(p: Principal, classId: number | null, today: string = demoToday()): boolean {
+  if (!classId || !monViPham(programmeOfClass(classId)?.code ?? null).length) return false;   // Pre FOU… không chia môn: ô Môn ẩn
+  const n = monDayTai(p, classId, today).length;
+  return n >= 2 || (n === 0 && !p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
+}
+const THIEU_MON = 'Chọn môn của vi phạm.';
 
 // ---------------------------------------------------------------- ghi (V01–V08)
 

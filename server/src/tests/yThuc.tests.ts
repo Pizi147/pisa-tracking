@@ -370,7 +370,9 @@ export async function runYThucTests(t: YThucTestKit) {
       assertThrows(() => record(two, st.id, { skill: null }), /Chọn môn/, 'GV dạy hai môn bỏ trống lọt');
       assertThrows(() => record(two, st.id, { skill: '' }), /Chọn môn/, 'GV dạy hai môn gửi rỗng lọt');
       assert(record(two, st.id, { skill: 'speaking' }).violation.skill === 'speaking', 'GV dạy hai môn chọn môn thì ghi được');
-      assert(viol.batBuocChonMon(two, CLASS) === true && viol.batBuocChonMon(gvbm, CLASS) === false && viol.batBuocChonMon(P.mbManager, CLASS) === false && viol.batBuocChonMon(gvcn, CLASS) === true, 'batBuocChonMon: 2 môn (kể cả GVCN dạy 2 môn) / 1 môn / không môn');
+      assert(viol.batBuocChonMon(two, CLASS) === true && viol.batBuocChonMon(gvbm, CLASS) === false && viol.batBuocChonMon(P.mbManager, CLASS) === false && viol.batBuocChonMon(gvcn, CLASS) === true, 'batBuocChonMon: 2 môn (kể cả GVCN dạy 2 môn) / 1 môn / QL không môn');
+      const khongMon = (vai: string) => ({ ...gvbm, assignments: [], roleKeys: [vai] }) as any;
+      assert(viol.batBuocChonMon(khongMon('teacher'), CLASS) === true && viol.batBuocChonMon(khongMon('manager'), CLASS) === false && viol.batBuocChonMon(khongMon('system_admin'), CLASS) === false, 'không dạy môn nào: GV / vai khác phải chọn, QL / Quản trị để trống');
       const lo = viol.recordViolations(two, { studentIds: [st.id], lines: [{ category: 'homework', ten: 'Quên vở' }], idempotencyKey: 'g319-lo-thieu-mon' }) as any;
       assert(lo.ok.length === 0 && lo.loi.length === 1 && lo.loi[0].ma === 400 && /Chọn môn/.test(lo.loi[0].loi), 'ghi nhiều: thiếu môn phải 400 cho em đó');
       const lo2 = viol.recordViolations(two, { studentIds: [st.id], lines: [{ category: 'homework', ten: 'Quên vở', skill: 'speaking' }], idempotencyKey: 'g319-lo-co-mon' }) as any;
