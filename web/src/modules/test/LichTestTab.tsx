@@ -274,7 +274,7 @@ export function LichTestTab() {
     </span>
   );
   const nutXuat = session?.nav?.xuatMt && (
-    <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px]" aria-haspopup="dialog" onClick={() => setMoXuat(true)}>{t('Xuất Excel…')}</button>
+    <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px]" aria-haspopup="dialog" data-hd="test-xuat" onClick={() => setMoXuat(true)}>{t('Xuất Excel…')}</button>
   );
   /* OV-15f: lối vào Học viên & Lớp › Lịch thi (rà soát thi thật), tháng kế tiếp; mang theo chi nhánh đang lọc. */
   const nutLichThi = session?.nav?.students && (

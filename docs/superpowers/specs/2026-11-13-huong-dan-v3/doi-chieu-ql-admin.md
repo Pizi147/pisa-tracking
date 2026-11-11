@@ -236,3 +236,9 @@ QL vào bằng menu Tài khoản › **Cấu hình hệ thống** (`Header.tsx:3
 - **[XM-4]** Admin sửa Target? (`student.edit_info` chỉ thông tin; chưa kiểm hàm Target) — B kiểm ở GĐ2, ghi kết quả.
 - **[XM-5]** `qt.ts` dùng lại `ql.ts`: mọi sửa `ql.ts` đi theo QT; việc Quản trị hệ thống (Tài khoản, Quyền, Chương trình sửa) **không** đụng (anti-goal đề bài). Đồng ý.
 - **Chưa xác minh (ghi để không coi là đạt):** chỗ chọn môn ở "Ghi vi phạm" (QL để trống được); Admin có Lưu trữ / Tạm dừng / sửa Target không; nhãn nút lệnh Chuyển lớp "tuần khác"; bản Anh (`t()`) của chữ mới sẽ kiểm ở GĐ2 bằng `tsc`.
+
+## 13. Đính chính + kết quả giai đoạn 2 (PR HD-V3-B)
+
+- Đính chính mục 1: Admin **vào được** `/hoc-vien/luu-tru` (ô tìm "Tìm trong HV lưu trữ ›"; phép HD-ROUTE xác nhận) — đã thêm màn `luu-tru` và `ho-so-gv` cho Admin.
+- Đã làm: sửa `ql.ts`, `admin.ts` theo mục 3–10; màn mới `ho-so-gv` (QL, Admin), `luu-tru` (Admin); panel `ket-qua-pa · phoi-hop-sos · vi-pham · xu-ly-vi-pham · ban-giao · bao-cao-ph · chuyen-lop · xuat-excel · lo-trinh` (QL), `xuat-excel` (Admin); `data-hd="test-xuat"`; bản Anh `shared/i18n/en/hdV3b.ts`; phép kiểm: bỏ `CHO_B`, `NHAN_VAI` thêm `ql`, `admin`.
+- Không làm (đã chốt): `/hoc-thuat/case/:id` không cần màn (phép HD-ROUTE: link Case chuyển sang hồ sơ HV hoặc panel Case); `qt.ts` giữ nguyên (chủ SP 13/11).

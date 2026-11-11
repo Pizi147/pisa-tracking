@@ -225,7 +225,7 @@ export function KeHoachTestTab() {
       {choNut && (coXep || session?.nav?.xuatMt) && createPortal(
         <span className="flex flex-nowrap items-center gap-2">
           {session?.nav?.xuatMt && (
-            <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px] max-sm:px-2.5" aria-haspopup="dialog" disabled={!!lyDoTat} title={lyDoTat}
+            <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px] max-sm:px-2.5" aria-haspopup="dialog" data-hd="test-xuat" disabled={!!lyDoTat} title={lyDoTat}
               onClick={() => setXuat(true)}>{t('Xuất Excel…')}</button>
           )}
           {coXep && <button type="button" className="btn btn-primary h-9 text-sm max-sm:min-h-[44px] max-sm:px-2.5" disabled={!!lyDoTat} title={lyDoTat} onClick={() => setXep(loai)}>
