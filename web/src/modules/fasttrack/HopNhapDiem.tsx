@@ -92,7 +92,8 @@ type HopProps = {
    * R1-LUU-TIEP (V12 bản 26/10): có bài kế → nút "Lưu · bài tiếp ›" + Enter; nơi gọi chọn bài còn thiếu kế (`baiKeTiep`) hoặc báo hết (`ketThuc`).
    * `daLuu` = hộp này vừa ghi (nơi gọi đếm "đã lưu n bài"). Không có → chỉ "Lưu".
    */
-  onTiep?: (daLuu: boolean) => void;
+  /** `vang`: hộp vừa ghi "Vắng" — W1 / W2 vắng cả buổi, nơi gọi bỏ qua ô task kia khi tìm bài kế (rà 11/11 G1-06). */
+  onTiep?: (daLuu: boolean, vang?: boolean) => void;
   /** Đích tiếp ("Reading · Minh Anh"; cùng kỹ năng chỉ tên) — dòng "Tiếp: …" ở chân hộp. */
   nhanTiep?: string | null;
   /** Đích tiếp là em khác (trang một em hết bài của lượt) → "Lưu · em tiếp ›" / "Em tiếp ›". */
@@ -576,7 +577,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       )}
       {nhanVang && !daLuu && (
         /* LUAT-34: một chữ "Vắng" — hậu quả (dời / thẻ QL / huỷ) nói ở thông báo sau khi ghi, kèm Hoàn tác 10 giây. Vắng kết thúc ô → sang bài tiếp. */
-        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true) : onDong, 'khac')}>
+        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac')}>
           {dangLuu === 'khac' ? dangLuuChu : t('Vắng')}
         </button>
       )}

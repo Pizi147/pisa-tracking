@@ -14,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
-import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL,
+import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
@@ -345,12 +345,12 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   );
   /* PR-CT2: không bắt buộc ở mọi trường hợp (cùng `loiKetQuaTuan` và máy chủ). OV-12e: bỏ chữ "tuần" (kết quả ghi theo kỳ hai tuần). */
   const oNguoi = coNguoiDay(pa.kind) && (
-    <Truong nhan={t('Người dạy')} as="div" loi={loiCua('nguoi-day')}>
+    <Truong nhan={dich(nhanNguoiDay(pa.kind))} as="div" loi={loiCua('nguoi-day')}>
       {/* TU-a (mục 6): PA Tutor — nhóm "Tutor" đầu danh sách, chọn tutor lưu như người ngoài; buổi 1 chưa có tutor thì điền theo. */}
       <ChonNguoi nhom="nhan_vien" value={nguoiDay} choTrong={t('Để trống')} placeholder={t('Chưa chọn · gõ tên để tìm')}
         tutor={pa.kind === 'tutor' ? { paId: pa.id } : undefined}
         onChange={(v, tu) => { setNguoiDay(v); if (tu && !buoi[0]?.tutor.trim()) datTutorBuoi(0, { tutorId: tu.id, tutor: tu.ten, hinhThuc: tu.hinhThuc }); }}
-        ariaLabel={t('Người dạy')} id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
+        ariaLabel={dich(nhanNguoiDay(pa.kind))} id={lf.oId('nguoi-day')} onBlur={lf.roi('nguoi-day')} invalid={!!loiCua('nguoi-day')} />
     </Truong>
   );
 

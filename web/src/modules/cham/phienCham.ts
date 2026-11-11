@@ -24,8 +24,8 @@ export function usePhienCham() {
     dong: () => { thuTu.current = null; daLuu.current.clear(); setHet(false); },
     ke,
     /** "Lưu · bài tiếp": ghi bài vừa lưu, trả ô kế; hết → trạng thái hết (hộp ở lại trên ô hiện tại). */
-    tiep: (hienTai: ViTriO, daLuuO: boolean, conThieu: (v: ViTriO) => boolean, kyNangToi: readonly string[], ds: () => number[]) => {
-      if (daLuuO) daLuu.current.add(khoa(hienTai));
+    tiep: (hienTai: ViTriO, daLuuO: boolean, conThieu: (v: ViTriO) => boolean, kyNangToi: readonly string[], ds: () => number[], cungLuu: readonly ViTriO[] = []) => {
+      if (daLuuO) { daLuu.current.add(khoa(hienTai)); for (const v of cungLuu) daLuu.current.add(khoa(v)); }
       const k = ke(hienTai, conThieu, kyNangToi, ds);
       if (!k) setHet(true);
       return k;

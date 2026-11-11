@@ -347,7 +347,9 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
                     cy.id AS cycle_id, cy.seq AS cycle_seq, cy.route, cy.target_score, cy.khong_cam_ket,
                     cy.baseline_attempt_id, cy.baseline_score, cy.baseline_listening, cy.baseline_reading, cy.baseline_writing, cy.baseline_speaking,
                     cy.start_period_id, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.thi_that_ngay, sp.week_start AS start_week,
-                    ep.code AS exam_week_code, ep.week_start AS exam_week_start, tv.full_name AS tvv_ten
+                    ep.code AS exam_week_code, ep.week_start AS exam_week_start, tv.full_name AS tvv_ten,
+                    /* Rà 11/11 G4-17: có quyết định chuyển lớp CHỜ từ lớp này — cùng câu (không thêm câu đọc). */
+                    EXISTS (SELECT 1 FROM lenh_chuyen_lop l WHERE l.student_id = s.id AND l.lop_nguon_id = e.class_id AND l.trang_thai = 'cho') AS co_lenh_chuyen
                FROM enrollments e
                JOIN students s ON s.id = e.student_id
                LEFT JOIN users tv ON tv.id = s.consultant_user_id   -- PANEL-MC (D): TVV dưới tên HV — cùng câu, thêm một cột
@@ -721,6 +723,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       tiepTheo: isRatio ? nhanTiepTheo(tiepTheoLop.get(s.id) ?? null, maChuongTrinhHienTai) : null,
       chuaLoTrinh: isRatio && chuaCoLenh.has(s.id),
       choDuyetChuyen: choDuyetChuyen.has(s.id),
+      coLenhChuyen: !!s.co_lenh_chuyen,   // G4-17: thanh Chọn nhiều chỉ hiện "Huỷ chuyển lớp" khi có em như vậy
       /* PR-OV3a: chỉ % tổng — hướng gợi ý tự tính không còn ở bảng Tổng hợp (Excel, hồ sơ HV, panel Lộ trình tiếp theo vẫn đọc `cuoiKhoaTheoHocVien`). */
       cuoiKhoa: (() => { const e = cuoiKhoaLop?.get(s.id); return e ? { tyLe: e.tyLe } : null; })(),
       /* SV-LOP (R3a): Đánh giá đầu ra lớp thường — chỉ khi Final đủ điểm, trước đó "cho-final"; lớp FT null (Kết quả đầu ra theo luật hiện có). */

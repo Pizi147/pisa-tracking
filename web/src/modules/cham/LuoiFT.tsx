@@ -193,8 +193,10 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const moO = (aid: number, s: string | null) => {
     if (s) { phien.mo(dsAid); setMo({ aid, s }); } else { phien.dong(); setMo(null); }
   };
-  const tiep = (aid: number, s: string, daLuu: boolean) => {
-    const k = phien.tiep({ khoa: aid, kyNang: s }, daLuu, conThieu, kyNangToi, dsAid);
+  const tiep = (aid: number, s: string, daLuu: boolean, vang = false) => {
+    /* G1-06: "-" ở một task Writing = vắng cả buổi — task kia cùng em coi như đã xong trong phiên (dữ liệu lưới chưa kịp tải lại). */
+    const cungBuoi = vang && (s === 'writing1' || s === 'writing2') ? [{ khoa: aid, kyNang: s === 'writing1' ? 'writing2' : 'writing1' }] : [];
+    const k = phien.tiep({ khoa: aid, kyNang: s }, daLuu, conThieu, kyNangToi, dsAid, cungBuoi);
     if (!k) return;
     if (rows.findIndex((r) => r.attemptId === k.khoa) >= 10) setHetHv(true);
     setMo({ aid: k.khoa, s: k.kyNang });
@@ -218,7 +220,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
         {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             onReload={onReload} gvMacDinh={gvCot} moS={mo?.aid === r.attemptId ? mo.s : null} hop={mo?.aid === r.attemptId ? hop : null} dsLuot={dsLuot}
-            onMo={(s2) => moO(r.attemptId, s2)} onTiep={(s2, d) => tiep(r.attemptId, s2, d)}
+            onMo={(s2) => moO(r.attemptId, s2)} onTiep={(s2, d, v) => tiep(r.attemptId, s2, d, v)}
             sEx={sEx?.filter((x) => x.studentId === r.studentId)} />
         ))}
         {chiSEx.map((d) => (
@@ -254,7 +256,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
           sEx={sEx?.filter((x) => x.studentId === r.studentId)} cotDs={cotDs} lich={lich}
           moS={mo?.aid === r.attemptId ? mo.s : null} hop={mo?.aid === r.attemptId ? hop : null} dsLuot={dsLuot}
           onMo={(s) => moO(r.attemptId, s)}
-          onTiep={(s, d) => tiep(r.attemptId, s, d)}
+          onTiep={(s, d, v) => tiep(r.attemptId, s, d, v)}
         />
       )}
       cuoi={<>{dongHetHv && <tr><td className="td py-2" colSpan={cotDs.length}>{dongHetHv}</td></tr>}{chiSEx.map((d) => <DongSExHv key={`sex-${d.id}`} d={d} ten={d.ten} studentId={d.studentId} cotDs={cotDs} cc={cc} rieng />)}{hangMo.map((h) => (
@@ -339,7 +341,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
-  moS: string | null; hop: PhienO | null; dsLuot: NguCanhDs; onMo: (s: string | null) => void; onTiep: (s: string, daLuu: boolean) => void;
+  moS: string | null; hop: PhienO | null; dsLuot: NguCanhDs; onMo: (s: string | null) => void; onTiep: (s: string, daLuu: boolean, vang?: boolean) => void;
   sEx?: SExTuan; cotDs: DinhNghiaCot[]; lich?: boolean;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
@@ -356,7 +358,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   const { homNay } = useNgayNghiepVu();
   const vangHang = gopVangHang(row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay)));
   const oDiem = (s: string, cell: Cell) => (
-    <ODiemMt cell={cell} anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d) => onTiep(s, d)} tuanXem={tuanXem}
+    <ODiemMt cell={cell} anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d, v) => onTiep(s, d, v)} tuanXem={tuanXem}
       {...(moS === s ? hop : null)} dauKq={soKyVong(cell.band, kyVong)}
       onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
@@ -519,7 +521,7 @@ function ChipSEx({ d, ten, studentId }: { d: SExTuan[number]; ten: string; stude
  */
 function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean; tuanDangXem: string | null; tuanXem: string | null;
-  onReload: () => void; gvMacDinh: NguoiChon | null; moS: string | null; hop: PhienO | null; dsLuot: NguCanhDs; onMo: (s: string | null) => void; onTiep: (s: string, daLuu: boolean) => void;
+  onReload: () => void; gvMacDinh: NguoiChon | null; moS: string | null; hop: PhienO | null; dsLuot: NguCanhDs; onMo: (s: string | null) => void; onTiep: (s: string, daLuu: boolean, vang?: boolean) => void;
   sEx?: SExTuan;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
@@ -554,7 +556,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
                 : khacTuanFt(cell, tuanDangXem) && !nutTuanGoc(cell) ? <span className="text-xs text-slate-500">{cell.daChot?.doiSang ?? tuanLich(cell.weekStart)}</span>
                 : (
                   <>
-                    <ODiemMt cell={cell} lon anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d) => onTiep(s, d)} tuanXem={tuanXem} {...(moS === s ? hop : null)}
+                    <ODiemMt cell={cell} lon anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d, v) => onTiep(s, d, v)} tuanXem={tuanXem} {...(moS === s ? hop : null)}
                       dauKq={soKyVong(cell.band, kyVong)} onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
                       ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong, mt0: !!row.mt0Sos,
                         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />

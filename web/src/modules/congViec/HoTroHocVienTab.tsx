@@ -400,6 +400,8 @@ export function HoTroHocVienTab() {
   const tenCnXem = cnXem ? dsCnXem?.find((b) => b.id === cnXem)?.name ?? null : null;
   /* CV-TAB (mockup v17 `.tom`): đầu trang "n việc · m quá hạn" — đếm dòng (`demDongViec`), cùng phạm vi lọc người / khung với badge tab. */
   const tong = useMemo(() => demDongViec(items), [items]);
+  /* Rà 11/11 G5-09: tab Chấm điểm ghi thêm số BÀI (đơn vị của ô "Bài chưa nhập điểm" ở Tổng quan) — người bấm ô thấy lại đúng số vừa bấm. Dữ liệu đã nạp. */
+  const soBaiCham = useMemo(() => items.filter((it) => it.group === 'score').reduce((n, it) => n + (it.soBai ?? 0), 0), [items]);
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
   const chiCc = !conViec && tatCaViec.some(laViecChamCheo);
   /* brief 7: việc của người khác (QL xem GV / Tất cả) = theo dõi; `chiXem` = đang xem đúng một GV. Việc chưa có người (Phân công…) không phải của ai — làm được. */
@@ -454,6 +456,7 @@ export function HoTroHocVienTab() {
               {[tenGvChon, tenCn].filter(Boolean).map((x) => <span key={x}>{x} · </span>)}
               <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {xemMotGv && tenCnXem ? t('việc ở {cn}', { cn: tenCnXem }) : t('việc')}
               {tong.quaHan > 0 && <> · <b className="font-bold tabular-nums text-late">{tong.quaHan}</b> {t('quá hạn')}</>}
+              {tab === 'cham-diem' && soBaiCham > 0 && <> · <b className="font-bold tabular-nums text-[color:var(--text)]">{soBaiCham}</b> {t('bài')}</>}
             </span>
           )}
           {/* U01 #7: việc vừa xong trong phiên → chip bấm được, lọc "Đã xong hôm nay" (tìm lại không dò từ đầu). */}

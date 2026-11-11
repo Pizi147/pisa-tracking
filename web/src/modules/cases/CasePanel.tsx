@@ -842,12 +842,13 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
       {coNguoiDay(iv.kind) && <>
         <dt>{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Người dạy') : t('Thực hiện')}</dt>
         <dd>
-          <GiaTriSua kieu="chon" nhan={t('Đổi người dạy')} sua={nut.sua} mo={tt('nguoi')} onClick={() => setSua(tt('nguoi') ? null : 'nguoi')}>
+          {/* G2-09: PA không dạy (Tăng cường bài tập, Xếp tự học…) — "người thực hiện", không "người dạy". */}
+          <GiaTriSua kieu="chon" nhan={nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Đổi người dạy') : t('Đổi người thực hiện')} sua={nut.sua} mo={tt('nguoi')} onClick={() => setSua(tt('nguoi') ? null : 'nguoi')}>
             {iv.performer ? <>{iv.performer}{iv.byProxy && iv.recordedBy ? <span className="ban"> {t('({recordedBy} nhập hộ)', { recordedBy: iv.recordedBy })}</span> : null}</> : <span className="font-semibold text-soon">{t('Chưa chọn')}</span>}
           </GiaTriSua>
           {tt('nguoi') && (
             <div className="w-full basis-full"><div className="sm:max-w-[340px]">
-              <ChonNguoi nhom="giao_vien" studentId={data.student?.id} value={null} tuMo ariaLabel={t('Người dạy')} placeholder={t('Gõ tên để tìm')}
+              <ChonNguoi nhom="giao_vien" studentId={data.student?.id} value={null} tuMo ariaLabel={dich(nhanNguoiDay(iv.kind))} placeholder={t('Gõ tên để tìm')}
                 onChange={(x) => void luuNgay(async () => { const d = await api.patch<CaseDetail>(`/interventions/${iv.id}`, datLaiNguoi(x)); onDoi(d); })} />
             </div></div>
           )}

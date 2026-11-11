@@ -108,4 +108,5 @@ export const EN_CASE_PA_UI = {
   'QL từ chối xoá': 'Manager declined deletion',
   'Không có Case.': 'No cases.',
   'Không có Case đang mở.': 'No open cases.',
+  'Đổi người thực hiện': 'Change who carries it out',
 } satisfies Record<string, Dich>;
