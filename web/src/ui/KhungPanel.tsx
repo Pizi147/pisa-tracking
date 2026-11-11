@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
-import { docNhap, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
+import { docNhap, docNhapChuyen, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { HopBoChu } from './Drawer.tsx';
 import { khoRoiNhap } from './chanRoiNhap.tsx';
@@ -79,9 +79,10 @@ export const traLaiO = (o: string, v: unknown): void => { traLaiNgoai.set(o, v);
  * Ô GIỮ NHÁP (K12, T15, T16): như `useState`, thêm — trong panel có khoá việc — chữ ghi vào `sessionStorage` theo khoá việc + `o`, mở lại
  * đúng việc thì chữ còn; panel biết còn chữ → ✕ / đổi việc hỏi trước. Lưu thành công thì nơi gọi gọi `useXoaNhap()`. Ngoài panel việc = `useState`.
  */
-export function useNhap<T>(o: string, dau: T): [T, Dispatch<SetStateAction<T>>, (daGui: T) => void] {
+export function useNhap<T>(o: string, dau: T, oCu?: string): [T, Dispatch<SetStateAction<T>>, (daGui: T) => void] {
   const n = useContext(NhapCuaPanel);
-  const [v, setV] = useState<T>(() => (n ? docNhap<T>(khoNhap(), n.viec, o) : undefined) ?? (traLaiNgoai.get(o) as T | undefined) ?? dau);
+  /* `oCu`: khoá cũ của chính ô này (đổi khoá) — chữ còn dưới khoá cũ chuyển sang khoá mới một lần (`docNhapChuyen`). */
+  const [v, setV] = useState<T>(() => (n ? (oCu ? docNhapChuyen<T>(khoNhap(), n.viec, o, oCu) : docNhap<T>(khoNhap(), n.viec, o)) : undefined) ?? (traLaiNgoai.get(o) as T | undefined) ?? dau);
   const [goc] = useState(() => JSON.stringify(dau));
   const lanDau = useRef(true);
   /* AUDIT-1454 (N02): máy chủ vừa nhận `daGui` → bỏ nháp trình duyệt của RIÊNG ô này, chỉ khi ô vẫn đúng chữ đã gửi (gõ tiếp trong lúc gửi thì giữ). */

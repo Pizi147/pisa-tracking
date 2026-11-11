@@ -52,6 +52,18 @@ export function docNhap<T>(kho: KhoNhap | null, viec: string, o: string): T | un
   } catch { return undefined; }
 }
 
+/**
+ * AUDIT-1454 (PTA 11/11): ô đổi khoá (vd Kết quả PA: theo PA → theo PA + kỳ). Đọc khoá mới; chưa có thì lấy chữ dưới khoá `cu` MỘT lần — ghi sang
+ * khoá mới rồi xoá khoá cũ (lần sau, kỳ sau không còn thấy).
+ */
+export function docNhapChuyen<T>(kho: KhoNhap | null, viec: string, o: string, cu: string): T | undefined {
+  const moi = docNhap<T>(kho, viec, o);
+  if (moi !== undefined) return moi;
+  const gt = docNhap<T>(kho, viec, cu);
+  if (gt !== undefined) { ghiNhap(kho, viec, o, gt, false); ghiNhap(kho, viec, cu, null, true); }
+  return gt;
+}
+
 /** `trong` = ô đã về giá trị ban đầu → xoá khoá (không để nháp rỗng làm panel tưởng còn chữ). */
 export function ghiNhap(kho: KhoNhap | null, viec: string, o: string, gt: unknown, trong: boolean): void {
   try {

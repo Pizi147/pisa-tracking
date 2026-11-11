@@ -55,6 +55,21 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     assert(d.docNhap(k, 'v', 'o') === undefined, 'JSON hỏng phải bỏ qua');
   });
 
+  check('AUDIT-1454 (PTA) · nháp Kết quả PA khoá theo PA + kỳ: chữ dưới khoá cũ (theo PA) chuyển sang kỳ đang mở MỘT lần, kỳ sau không thấy', () => {
+    const k = khoGia();
+    const V = 'action:5';
+    d.ghiNhap(k, V, 'ket-qua-nx:5', 'chữ gõ trước khi đổi khoá', false);   // web cũ: khoá theo PA
+    assert(d.docNhapChuyen(k, V, 'ket-qua-nx:5:k3', 'ket-qua-nx:5') === 'chữ gõ trước khi đổi khoá', 'lần đầu: lấy chữ dưới khoá cũ');
+    assert(d.docNhap(k, V, 'ket-qua-nx:5:k3') === 'chữ gõ trước khi đổi khoá' && d.docNhap(k, V, 'ket-qua-nx:5') === undefined, 'đã chuyển sang khoá kỳ 3, khoá cũ xoá');
+    assert(d.docNhapChuyen(k, V, 'ket-qua-nx:5:k4', 'ket-qua-nx:5') === undefined, 'kỳ 4 (sau khi kỳ 3 chốt ở phiên khác) không thấy chữ kỳ 3');
+    d.ghiNhap(k, V, 'ket-qua-nx:5:k3', 'kỳ 3 sửa tiếp', false);
+    d.ghiNhap(k, V, 'ket-qua-nx:5', 'khoá cũ còn sót', false);
+    assert(d.docNhapChuyen(k, V, 'ket-qua-nx:5:k3', 'ket-qua-nx:5') === 'kỳ 3 sửa tiếp', 'khoá mới có chữ thì khoá mới thắng');
+    assert(d.docNhapChuyen(null, V, 'a', 'b') === undefined && d.docNhapChuyen(khoGia(true), V, 'a', 'b') === undefined, 'kho hỏng: không ném');
+    const s = docSach('web/src/modules/cases/CapNhatTuan.tsx');
+    assert(/`ket-qua-nx:\$\{pa\.id\}:k\$\{ky\}`/.test(s) && /sua \? undefined : `ket-qua-nx:\$\{pa\.id\}`/.test(s), 'form Kết quả PA dùng khoá PA + kỳ, chuyển từ khoá theo PA');
+  });
+
   check('NEN-PANEL rà #530 · chủ nháp đổi (đăng xuất / đổi tài khoản / đổi góc nhìn / người khác đăng nhập) → xoá MỌI nháp; cùng chủ → giữ', () => {
     const k = khoGia();
     d.datChuNhap(k, '7|');

@@ -125,8 +125,12 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* NHAP-KQ-PA: nháp máy chủ (Sửa lần ghi cũ không dùng). Chữ đang gõ chưa lưu vẫn nhớ trên trình duyệt (`useNhap`) như cũ. */
   const nhapMc = sua ? null : pa.nhap ?? null;
   const [outcome, setOutcome] = useState(g?.outcome ?? nhapMc?.outcome ?? '');
-  /* U04: Sửa lần ghi cũ có khoá nháp trình duyệt riêng — không đọc, không xoá chữ đang gõ của kỳ đang chạy. */
-  const [progress, setProgress, daLuuO] = useNhap(sua ? `ket-qua-nx:sua-${sua.followupId}` : `ket-qua-nx:${pa.id}`, g?.note ?? nhapMc?.note ?? '');
+  /* N03: nháp / chốt ràng vào kỳ LÚC MỞ form (chụp một lần — Case tải lại sau khi phiên khác chốt không được đẩy form cũ sang kỳ mới). Sửa lần ghi cũ không gửi. */
+  const [ky] = useState(pa.cycleNo ?? 1);
+  /* U04: Sửa lần ghi cũ có khoá nháp trình duyệt riêng — không đọc, không xoá chữ đang gõ của kỳ đang chạy.
+     PTA 11/11: nháp trình duyệt khoá theo PA + KỲ (như máy chủ) — chữ chưa lưu của kỳ trước không hiện lại ở kỳ sau; khoá cũ theo PA chuyển một lần. */
+  const [progress, setProgress, daLuuO] = useNhap(sua ? `ket-qua-nx:sua-${sua.followupId}` : `ket-qua-nx:${pa.id}:k${ky}`, g?.note ?? nhapMc?.note ?? '',
+    sua ? undefined : `ket-qua-nx:${pa.id}`);
   /* `banNhap` = bản máy chủ đã xác nhận: so "Đã lưu nháp", `luc` của nó là bản gốc gửi kèm (N01). */
   const [banNhap, setBanNhap] = useState<NhapMayChu | null>(nhapMc);
   const [loiNhap, setLoiNhap] = useState<{ chu: string; thuLai: boolean } | null>(null);
@@ -140,8 +144,6 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const batDauGui = (x: 'nhap' | 'chot') => { if (dangGui.current) return false; dangGui.current = x; setGui(x); return true; };
   const xongGui = () => { dangGui.current = null; setGui(null); };
   const busy = gui === 'chot';
-  /* N03: nháp / chốt ràng vào kỳ LÚC MỞ form (chụp một lần — Case tải lại sau khi phiên khác chốt không được đẩy form cũ sang kỳ mới). Sửa lần ghi cũ không gửi. */
-  const [ky] = useState(pa.cycleNo ?? 1);
   /* Form đã bằng bản máy chủ (vừa lưu nháp, Dùng bản mới…) → bỏ nháp trình duyệt của ô Nhận xét (N02: gõ tiếp lúc đang gửi thì không bằng → giữ). */
   useEffect(() => { if (trungNhap) daLuuO(progress); }, [trungNhap]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* OV-13b (mockup §8): PA mặc định — Điều chỉnh › "Đề xuất PA khác": kết quả kỳ lưu như Giữ nguyên + đề xuất gửi QL, MỘT nút. */
