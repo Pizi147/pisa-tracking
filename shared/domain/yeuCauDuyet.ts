@@ -4,7 +4,7 @@
  * Mọi thứ "ai đó xin Quản lý quyết" là MỘT thẻ trong bảng `yeu_cau_duyet`, hiện ở MỘT hộp (Công việc › Chờ duyệt).
  * Loại thẻ là một mảng: PR sau (SOS, YT4, LT2…) chỉ thêm khoá vào CUỐI `LOAI_YEU_CAU` + một dòng `LOAI_YC_META`.
  */
-import { hanDuyetNgay, hanTheoNgay, HAN_DUYET_NGAY } from './cases.ts';
+import { hanDuyetNgay, hanGiuPaGvNgay, hanTheoNgay, HAN_DUYET_NGAY } from './cases.ts';
 import type { TrangThai } from './trangThai.ts';
 import { t } from '../i18n/index.ts';
 import type { DiemHv } from './diemDong.ts';
@@ -55,13 +55,13 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   sua_thong_tin: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất sửa'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   bao_len_nguyen_nhan: { phanLoai: 'bao-len', nhan: t('Case quá hạn xác nhận'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-SOS (S4-5, T23): GVBM xin không theo dõi Case SOS chờ nguyên nhân — Quản lý duyệt trong 5 ngày. */
-  khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: t('Không cần theo dõi'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
+  khong_theo_doi: { phanLoai: 'hoc-thuat', nhan: t('Không cần theo dõi'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* PR-YT4 (V4-9, V4-10): Meeting CX/GĐCN · WL 3 · Đình chỉ · Khác — QL duyệt trong 5 ngày. */
   y_thuc: { phanLoai: 'y-thuc', nhan: t('Xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* PR-YT4 (V4-4, V4-5, K3-37, Q9): một thẻ mỗi em — không duyệt, QL biết và nhắc. */
   bao_len_y_thuc: { phanLoai: 'bao-len', nhan: t('Ý thức quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-CT (Q30-1, Q30-2, Q30-4): GVCN đề xuất chuyển lớp (5 ngày) · Báo QL bàn giao quá hạn 3 ngày (một thẻ mỗi lớp nguồn) · Báo QL lớp hết khoá còn em chưa có lệnh. */
-  de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất chuyển lớp'), kieuNut: 'duyet-tu-choi', hanNgay: 5, hangLoat: false },
+  de_xuat_chuyen_lop: { phanLoai: 'thong-tin-hv', nhan: t('Đề xuất chuyển lớp'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   bao_len_ban_giao: { phanLoai: 'bao-len', nhan: t('Bàn giao quá hạn'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   bao_len_chua_lenh: { phanLoai: 'bao-len', nhan: t('Lớp hết khoá · chưa có quyết định chuyển lớp'), kieuNut: 'nhac', hanNgay: null, hangLoat: false },
   /* PR-LT2a (T54, M-05): kế hoạch bài giảng PA bổ trợ Giữa khoá. PR-CT2: CHỈ ĐỌC LỊCH SỬ — không còn đường tạo; duyệt / từ chối → 409. */
@@ -73,7 +73,7 @@ export const LOAI_YC_META: Record<LoaiYeuCau, LoaiYcMeta> = {
   thu_hoi_y_thuc: { phanLoai: 'y-thuc', nhan: t('Thu hồi xử lý Ý thức'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
   /* N37 (chủ SP 05/11): GV xin xoá Case SOS / PA theo quy chế (MỘT loại, đối tượng Case hoặc PA) — QL duyệt thì vào Thùng rác. */
   xin_xoa: { phanLoai: 'hoc-thuat', nhan: t('Xin xoá'), kieuNut: 'duyet-tu-choi', hanNgay: HAN_DUYET_NGAY, theoCauHinh: true, hangLoat: false },
-  /* SOS-TAM-PA (chủ SP 11/11): GV giữ PA của mình khác PA quy chế lúc SOS chốt — QL duyệt trong 3 ngày (hạn = ngày gửi + 3), quá hạn máy chốt theo GV. */
+  /* SOS-TAM-PA (chủ SP 11/11): GV giữ PA của mình khác PA quy chế lúc SOS chốt — QL duyệt trong hết ngày gửi + `giu_pa_gv.ngay` (Hạn mặc định, gốc 3; `hanDuyetMacDinh` tính riêng), quá hạn máy chốt theo GV. */
   giu_pa_gv: { phanLoai: 'hoc-thuat', nhan: t('PA khác quy chế'), kieuNut: 'duyet-tu-choi', hanNgay: 4, hangLoat: false },
 };
 
@@ -84,7 +84,7 @@ export function laPhanLoai(x: unknown): x is PhanLoai {
 /** Hạn duyệt mặc định của một loại, tính từ ngày gửi (cả ngày gửi). `null` khi loại không có hạn mặc định. */
 export function hanDuyetMacDinh(loai: LoaiYeuCau, ngayXin: string): string | null {
   const m = LOAI_YC_META[loai];
-  const n = m.theoCauHinh ? hanDuyetNgay(ngayXin.slice(0, 10)) : m.hanNgay;
+  const n = loai === 'giu_pa_gv' ? hanGiuPaGvNgay(ngayXin.slice(0, 10)) + 1 : m.theoCauHinh ? hanDuyetNgay(ngayXin.slice(0, 10)) : m.hanNgay;
   return n ? hanTheoNgay(ngayXin.slice(0, 10), n) : null;
 }
 

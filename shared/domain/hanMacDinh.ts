@@ -15,6 +15,8 @@ export const HAN_MAC_DINH_GOC = {
   xac_nhan_case: { ngay: 5, ngayGap: 3 },
   xac_minh_tin_hieu: { ngay: 3 },
   ql_duyet_pa: { ngay: 5 },
+  /** PA khác quy chế (`giu_pa_gv`, SOS-TAM-PA): hạn = hết ngày gửi + `ngay`; quá hạn QL chưa trả lời máy chốt theo GV (luật 11/11). */
+  giu_pa_gv: { ngay: 3 },
   /** Ghi kết quả PA: mỗi `kyTuan` tuần một lần, hết thứ Ba (OV-12a). */
   ghi_kq_pa: { kyTuan: 2 },
   /** PA quy chế "1 tháng": ngày tạo + `ngay`, tới Chủ nhật kế. */
@@ -37,6 +39,7 @@ export type MaHan = keyof typeof HAN_MAC_DINH_GOC;
 /** Tên việc của từng hạn (màn Hạn mặc định + nhật ký "trước → sau"). Trường phụ: `ngayGap` "(gấp)", `xemNgay` "(còn xem)". */
 export const TEN_HAN: Record<MaHan, string> = {
   cham_test: 'Chấm Mock / Test lớp thường', xac_nhan_case: 'Xác nhận Case · thêm PA', xac_minh_tin_hieu: 'Xác nhận nguyên nhân Case', ql_duyet_pa: 'QL trả lời Chờ duyệt',
+  giu_pa_gv: 'QL trả lời PA khác quy chế',
   ghi_kq_pa: 'Ghi kết quả PA', ket_thuc_pa: 'PA quy chế "1 tháng"', xu_ly_vi_pham: 'Xử lý vi phạm', bao_ph_vi_pham: 'Báo PH sau xử lý vi phạm',
   chot_lo_trinh: 'Chốt lộ trình lớp thường', ban_giao_chuyen_lop: 'Bàn giao chuyển lớp', ban_giao_doi_gv: 'Bàn giao đổi GV', buoc_tiep_sau_thi: 'Bước tiếp sau thi thật', xet_lai: 'Xét lại lộ trình',
 };

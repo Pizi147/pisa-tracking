@@ -24,7 +24,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     assert(d.hanDuyetNgay() === 5 && d.hanBanGiao('2026-09-14').gvcn === d.hanTheoNgay('2026-09-14', 7), 'duyệt 5, bàn giao 7');
     assert(d.hanKyGhiKetQua('2026-09-17') === '2026-09-29', 'ghi KQ PA kỳ 1 hạn 29/09');
     assert(d.hanXetLai({ ma: 'a', tuanBatDau: '2026-09-14', moc: '2026-09-14' }) === '2026-09-27', 'xét lại CN tuần 2');
-    assert(!('meeting_cx' in d.HAN_MAC_DINH_GOC) && d.MA_HAN.length === 13, 'Meeting CX / GĐCN phải ở Case & SOS (một hạn một chỗ sửa)');
+    assert(!('meeting_cx' in d.HAN_MAC_DINH_GOC) && d.MA_HAN.length === 14, 'Meeting CX / GĐCN phải ở Case & SOS (một hạn một chỗ sửa)');
   }));
 
   check('QTV2-H-2 · lưu: chỉ Quản trị; sai → 400 nêu hạn; tuPhienBan cũ → 409; giống hệt → không thêm bản', () => thu(() => {
@@ -87,6 +87,22 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     /* Tạm dừng từ ngày sinh tới hôm nay → hạn mới = ngày quay lại + N lúc sinh (4), không + 8 của bản mới. */
     const kq = d.hanBaoPhHieuLuc(han, [{ tu: sinh, den: homNay }]);
     assert(kq === [han, d.addDaysIso(homNay, 4)].sort()[1], `Quay lại học theo N lúc sinh: ${kq}`);
+  }));
+
+  check('QTV2-H-7 · đổi hạn chung: Không cần theo dõi + Đề xuất chuyển lớp sinh sau theo hạn mới; PA khác quy chế theo dòng riêng; thẻ cũ giữ hạn', () => thu(() => {
+    conn.exec('DELETE FROM cau_hinh_phien_ban'); ch.xoaNhoHan();
+    const homNay = dm.nowNghiepVu().slice(0, 10);
+    const cu = d.addDaysIso(homNay, -3);
+    assert(d.hanDuyetMacDinh('khong_theo_doi', homNay) === d.addDaysIso(homNay, 4) && d.hanDuyetMacDinh('de_xuat_chuyen_lop', homNay) === d.addDaysIso(homNay, 4)
+      && d.hanDuyetMacDinh('giu_pa_gv', homNay) === d.addDaysIso(homNay, 3), 'gốc: 5 / 5 / gửi + 3');
+    const moi = goc(); moi.ql_duyet_pa.ngay = 8;
+    ch.luuHanMacDinh(P.admin, { han: moi, tuPhienBan: 0 });
+    assert(d.hanDuyetMacDinh('khong_theo_doi', homNay) === d.addDaysIso(homNay, 7) && d.hanDuyetMacDinh('de_xuat_chuyen_lop', homNay) === d.addDaysIso(homNay, 7), 'hai thẻ không theo hạn chung mới');
+    assert(d.hanDuyetMacDinh('khong_theo_doi', cu) === d.addDaysIso(cu, 4), 'thẻ cũ đổi hạn');
+    assert(d.hanDuyetMacDinh('giu_pa_gv', homNay) === d.addDaysIso(homNay, 3), 'giu_pa_gv đổi theo hạn chung');
+    const r2 = goc(); r2.ql_duyet_pa.ngay = 8; r2.giu_pa_gv.ngay = 6;
+    ch.luuHanMacDinh(P.admin, { han: r2, tuPhienBan: (ch.xemHanMacDinh(P.admin) as any).id });
+    assert(d.hanDuyetMacDinh('giu_pa_gv', homNay) === d.addDaysIso(homNay, 6) && d.hanDuyetMacDinh('giu_pa_gv', cu) === d.addDaysIso(cu, 3), 'giu_pa_gv theo dòng riêng / thẻ cũ giữ hạn');
   }));
 
   check('QTV2-H-6 · lỗi máy chủ "Lên từ" phải dưới "Đạt từ"… có khoá dịch + biến (web tiếng Anh dịch được)', () => {
