@@ -316,6 +316,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
 
+**13/11 (chủ SP):** "3 câu theo đề xuất nhé, câu cuối bắt chọn môn" → G1-10: lớp thường ghi "tuần 5/8" mọi nơi, "W" chỉ cho mã tuần · G3-17: việc lớp thường "Báo phụ huynh qua TVV" giữ GVCN làm, đổi tên "Báo PH kết quả Test" · G3-19: Ghi vi phạm — GV dạy ≥ 2 môn BẮT BUỘC chọn môn (máy chủ chặn khi thiếu). → session SUA-NHO-1311.
+
 **13/11 (chủ SP):** "Theo đề xuất" — 3 thẻ duyệt: Không cần theo dõi + Đề xuất chuyển lớp theo hạn chung "QL trả lời Chờ duyệt" (Hạn mặc định); PA khác quy chế (giu_pa_gv) giữ 3 ngày riêng (quá hạn máy chốt theo GV), hiện thành dòng riêng sửa được ở Hạn mặc định. → session SUA-NHO-1311.
 
 **13/11 (chủ SP, sau báo cáo đêm):** "Không cần đổi tổng quan nữa · 3 loại thẻ duyệt ahnj khác là thế nào? đề xuẩt ra sao · 2 mục cần vẽ mockup cứ vẽ, đụng luật thì hỏi luôn" → bỏ hẳn gộp Tổng quan GV (F); PTA giải thích + đề xuất 3 thẻ duyệt; mở session mockup G1-08 (một nút Xuất… ở Test) + G1-11 (panel Nhập điểm lớp thường bị cắt cột Kết quả); hỏi chủ SP G1-10 · G3-17 · G3-19.
