@@ -534,7 +534,7 @@
   .o-kh-mon { display: inline-flex; flex: none; gap: 1px; }
   .knb { display: inline-grid; place-items: center; min-width: 16px; height: 16px; padding: 0 2px; border: 1px solid transparent; border-radius: 3px;
     background: var(--accent-soft); color: var(--text); font-size: 12px; font-weight: 700; line-height: 1; }
-  .knb-tat { background: transparent; color: var(--text-faint); opacity: 0.45; }
+  .knb-tat { background: transparent; color: var(--text-faint); opacity: 0.45; text-decoration: line-through; }   /* G1-16: không chỉ bằng màu */
   .knb-cho { border-color: rgb(var(--soon-rgb)); background: rgb(var(--soon-bg-rgb)); color: rgb(var(--soon-rgb)); }
   .knb-qua { background: rgb(var(--bad-rgb)); color: var(--bg); }
   .o-kh-tt { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0 6px; font-size: 13px; font-weight: 600; white-space: nowrap; }

@@ -7,4 +7,5 @@ export const EN_UI_CV_V12 = {
   '{n} việc cần làm ngay': (b) => `${so(b.n, 'task', 'tasks')} to do now`,
   'Chấm': 'Mark',
   'Chọn một việc ở danh sách.': 'Pick a task from the list.',
+  'Việc này đã xong hoặc đã đổi — chọn việc khác ở danh sách.': 'This task is done or has changed — pick another from the list.',
 } satisfies Record<string, Dich>;

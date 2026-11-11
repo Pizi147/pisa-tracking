@@ -620,7 +620,8 @@ export function HoTroHocVienTab() {
             /* V8-CV (P2): panel trống, khung viền đứt. v12 S7: chữ ở ĐẦU khung (không rơi giữa trang dài), một câu — bỏ câu "Làm tại đây…" (S4). */
             <div className="flex min-h-[320px] flex-col items-center justify-start rounded-xl border border-dashed px-6 pb-10 pt-14 text-center"
               style={{ borderColor: 'var(--line-strong)' }}>
-              <p className="m-0 text-[15px] text-dim">{tab === 'duyet' ? t('Chọn một yêu cầu ở danh sách.') : t('Chọn một việc ở danh sách.')}</p>
+              {/* G1-15: mở từ link `?viec=` của việc đã xong / đã đổi — nói rõ, không để panel trống im lặng. */}
+              <p className="m-0 text-[15px] text-dim">{tab === 'duyet' ? t('Chọn một yêu cầu ở danh sách.') : viec ? t('Việc này đã xong hoặc đã đổi — chọn việc khác ở danh sách.') : t('Chọn một việc ở danh sách.')}</p>
             </div>
           ) : null}
         </div>

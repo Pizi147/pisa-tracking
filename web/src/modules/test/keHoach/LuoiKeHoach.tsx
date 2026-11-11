@@ -290,7 +290,9 @@ export function LuoiKeHoach({ loai, data, onReload, onHienDien, chiChuaCoKe = fa
               {loai === 'ft' && !chiXem && (
                 <td className="kh-td">
                   <div className="flex flex-col items-start gap-1">
-                    <NutThemLuot hang={h as HangFT} onMt={(n, el) => setHop({ anchor: el, hang: h, cot: cotMt(n), kyNangDau: null })}
+                    {/* G1-09: hàng đã có ô "Xếp MT{n}" (MT kế tiếp còn trống) → "+ MT" không lặp mục MT{n}, chỉ còn S Ex. */}
+                    <NutThemLuot hang={h as HangFT} coXep={cots.some((c) => c.dot.loai === 'ft' && c.dot.attemptNo === (h as HangFT).soKeTiep && o(h, c).attemptId === null && !o(h, c).huy)}
+                      onMt={(n, el) => setHop({ anchor: el, hang: h, cot: cotMt(n), kyNangDau: null })}
                       onSEx={() => setSEx({ hang: h as HangFT, dong: null })} />
                   </div>
                 </td>
@@ -372,8 +374,10 @@ const cotMt = (n: number): Cot => ({ key: `mt${n}`, dot: { loai: 'ft', attemptNo
  * "+ MT" cuối hàng HV (chủ SP 22/10, 10 mục 6): chọn loại — MT kế tiếp (hộp xếp đợt sẵn có `HopKyNang`, đường "Tạo MT" của Kế hoạch Test) · S Ex
  * (`HopSEx`, `/s-expert`). Không trần số MT (N14). Neo hộp xếp đợt vào chính nút.
  */
-function NutThemLuot({ hang, onMt, onSEx }: { hang: HangFT; onMt: (n: number, el: HTMLElement) => void; onSEx: () => void }) {
+function NutThemLuot({ hang, coXep, onMt, onSEx }: { hang: HangFT; coXep: boolean; onMt: (n: number, el: HTMLElement) => void; onSEx: () => void }) {
   const neo = useRef<HTMLSpanElement>(null);
+  /* Không ⋯ / menu một mục: còn mỗi S Ex thì là nút thẳng. */
+  if (coXep) return <button type="button" className="nut-them self-start" onClick={onSEx}>{t('+ S Ex')}</button>;
   return (
     <span ref={neo} className="self-start">
       <Menu label={t('+ MT')} align="right" className="nut-them" items={[

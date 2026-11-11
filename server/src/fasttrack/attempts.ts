@@ -2786,8 +2786,10 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
         WHERE a.class_id IN (${ph}) AND a.kind IN ('mock', 'mt0') AND a.status != 'cancelled' AND a.lich_su = 0
           AND ${LUOT_HIEN_TAI_SQL('a', 's')} AND ${LOP_CON_VIEC_SQL('a', 'c')} AND ${TUAN_S_SQL} <= ?
           AND (NOT EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id AND sc.skill = 'speaking' AND ${O_FT_XONG_SQL('sc', 'a')})
-            OR ${TUAN_S_SQL} >= ?)`,
-    ).all(...lo, today, tuanTruoc) as any[]);
+            OR ${TUAN_S_SQL} >= ?
+            /* Rà 11/11 G1-07: bài CHÍNH người này vừa chấm (≤ 7 ngày) ở lại nhóm "Đã có điểm" — sửa tại chỗ, không phải đi tìm hồ sơ Mock. */
+            OR EXISTS (SELECT 1 FROM assessment_scores sv WHERE sv.attempt_id = a.id AND sv.skill = 'speaking' AND sv.entered_by = ? AND sv.entered_at >= ?))`,
+    ).all(...lo, today, tuanTruoc, ai.userId, `${addDaysIso(today, -7)}T00:00:00.000Z`) as any[]);
   });
   const bundle = loadBundle(attempts.map((a) => a.id));
   const hoanTatOf = dotHoanTatMany(attempts.map((a) => a.id), today);
