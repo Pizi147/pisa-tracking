@@ -423,11 +423,11 @@ function napCaseMo(loc: LocCaseMo = null): any[] {
   if ((lop && !lop.length) || (cn && !cn.length)) return [];
   const ph = (lop ?? []).map(() => '?').join(',');
   const thamSo = lop ? [...lop, ...lop] : cn ? [...cn, ...cn, ...cn, ...lopGv] : [];
-  const kq = nho(lop ? `case-mo:${lop.join(',')}` : cn ? `case-mo:cn:${cn.join(',')}:${lopGv.join(',')}` : 'case-mo', () => db().prepare(
+  const kq = nho(lop ? `case-mo:${lop.join(',')}` : cn ? `case-mo:cn:${cn.join(',')}:${lopGv.join(',')}` : 'case-mo', () => lopHienTai(db().prepare(
     `SELECT sc.*, ${COT_CASE}, a.class_id AS attempt_class_id,
             COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS cn_du,
             (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count,
-            (SELECT e.class_id FROM enrollments e WHERE e.student_id = COALESCE(sc.student_id, a.student_id) AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS current_class_id,
+            NULL AS current_class_id, cur.id AS cur_eid,
             (COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt */
               AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active') AS la_no_plan,   /* K3-41: em Tạm dừng dừng hạn */
             (${HV_DANG_HOC_SQL('s')} AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
@@ -444,12 +444,22 @@ function napCaseMo(loc: LocCaseMo = null): any[] {
                  OR EXISTS (SELECT 1 FROM enrollments e2 JOIN classes c2 ON c2.id = e2.class_id
                              WHERE e2.student_id = s.id AND e2.status = 'active' AND c2.branch_id IN (${dsCho(cn.length)}))))${!lopGv.length ? '' : `
              OR EXISTS (SELECT 1 FROM enrollments e3 WHERE e3.student_id = s.id AND e3.status = 'active' AND e3.class_id IN (${dsCho(lopGv.length)}))`})`} ORDER BY sc.id`,
-  ).all(...thamSo) as any[]);
+  ).all(...thamSo) as any[]));
   /* GIAM-DOC-0711a: `lamThayCua` dùng lại dòng đã nạp ở request (bất kỳ tập cha nào — id thiếu `ctxSuaCaseNhieu` tự đọc). */
   if (!coKhoa(CASE_MO_DA_NAP)) nho(CASE_MO_DA_NAP, () => kq);
   return kq;
 }
 const CASE_MO_DA_NAP = 'case-mo:da-nap';
+/*
+ * TURSO-LOG-1311 (Turso Top Queries 12/11: câu này 641 lần · 2,94 M dòng / ngày): `current_class_id` = lớp của ghi danh `active` mới nhất của em — trước một câu con
+ * MỖI dòng đọc lại `enrollments`; nay lấy từ chính các dòng `cur` (LEFT JOIN mọi ghi danh `active` của em, WHERE không phụ thuộc `cur` → đủ mọi ghi danh của Case).
+ * Giữ vị trí cột (`NULL AS current_class_id` trong câu), bỏ cột phụ `cur_eid`.
+ */
+function lopHienTai(ds: any[]): any[] {
+  const moiNhat = new Map<number, { eid: number; lop: number }>();
+  for (const x of ds) if (x.cur_eid != null && (moiNhat.get(x.id)?.eid ?? -1) < x.cur_eid) moiNhat.set(x.id, { eid: x.cur_eid, lop: x.lop_dang_hoc });
+  return ds.map(({ cur_eid: _, ...r }) => ({ ...r, current_class_id: moiNhat.get(r.id)?.lop ?? null }));
+}
 
 /**
  * RA-DOC-0611b: lớp có phân công (mọi ngày — tập cha của `activeAt`) khi các dòng Case mở của người xem CHỈ có thể đến qua quyền theo lớp: không grant nào
