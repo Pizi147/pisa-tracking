@@ -166,7 +166,7 @@ export async function runPrNhapKqTests(t: YThucTestKit) {
     const kyCu = ky();
     cases.updateResult(P.lrTeacher, ivId, { decision: 'end', outcome: 'improved', note: 'Em đã nghe số ổn định', ky: kyCu, nhapCoSo: v.luc });
     const e = loiCua(() => cases.luuNhapKetQua(P.lrTeacher, ivId, { outcome: 'improved', note: 'PUT chậm', ky: kyCu, coSo: v.luc }));
-    assert(e?.status === 409 && e.details?.daChot === true, `nháp sau khi khép: 409 daChot (có ${e?.status ?? 'không lỗi'})`);
+    assert(e?.status === 409 && e.details?.daChot === true, `nháp sau khi khép: 409 daChot (có ${e?.status ?? "không lỗi"} ${e?.message ?? ""})`);
     assertThrows(() => cases.luuNhapKetQua(P.lrTeacher, ivId, { note: 'web cũ không gửi kỳ' }), /khép/i, 'không kỳ: câu cũ');
     assert(cot() === null, 'không có nháp trên PA đã khép');
   });

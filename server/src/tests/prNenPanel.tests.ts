@@ -113,7 +113,8 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     for (const f of ['web/src/modules/cases/CapNhatTuan.tsx', 'web/src/modules/yThuc/XacNhanXuLyPanel.tsx',
       'web/src/modules/yThuc/LoYThucPanel.tsx', 'web/src/modules/yThuc/CaseSosControls.tsx']) {
       const s = docSach(f);
-      assert(/useNhap\(/.test(s) && /xoaNhap\(\)/.test(s), `${f}: thiếu useNhap / xoaNhap()`);
+      /* AUDIT-1454: Kết quả PA bỏ nháp của đúng ô đã gửi (`daLuuO`), không xoá cả việc. */
+      assert(/useNhap\(/.test(s) && /xoaNhap\(\)|daLuuO\(/.test(s), `${f}: thiếu useNhap / xoaNhap()`);
     }
   });
 
