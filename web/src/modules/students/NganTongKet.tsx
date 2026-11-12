@@ -83,10 +83,10 @@ const diem5 = (l: Luot) => {
   return { l: d('listening'), r: d('reading'), ...diemW12(d), s: d('speaking'), w: d('writing') };
 };
 /** "+0.5" · "−0.5" · "±0.0" — dấu đi cùng màu (không chỉ màu). */
-function Chenh({ moi, cu }: { moi: number | null; cu: number | null }) {
+function Chenh({ moi, cu, duoi }: { moi: number | null; cu: number | null; /** dòng riêng dưới số (bảng 1440 — cột không nở) */ duoi?: boolean }) {
   if (moi === null || cu === null) return null;
   const d = Math.round((moi - cu) * 10) / 10;
-  return <span className={`ml-1 text-[12px] font-semibold tabular-nums ${d > 0 ? 'text-kq-bang' : d < 0 ? 'text-kq-duoi' : 'text-slate-500'}`}>{d > 0 ? '+' : d < 0 ? '−' : '±'}{Math.abs(d).toFixed(1)}</span>;
+  return <span className={`${duoi ? 'block leading-tight' : 'ml-1'} text-[12px] font-semibold tabular-nums ${d > 0 ? 'text-kq-bang' : d < 0 ? 'text-kq-duoi' : 'text-slate-500'}`}>{d > 0 ? '+' : d < 0 ? '−' : '±'}{Math.abs(d).toFixed(1)}</span>;
 }
 
 function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: DauVao | null }) {
@@ -95,16 +95,16 @@ function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: Dau
   const cuoi = ft ? luotDaiDien(luot.map((l) => ({ ...l, huy: l.trangThai === 'cancelled' }))) : null;
   const dc = cuoi && !cuoi.huy ? diem5(cuoi) : null;
   const coDauVao = !!dauVao && Object.values(dauVao).some((v) => v !== null);
-  const tdSo = 'px-3 text-right tabular-nums';
+  const tdSo = 'whitespace-nowrap px-2 text-right tabular-nums';
   return (
     <>
       {/* ≥ sm: bảng, cuộn ngang trong khung (không cuộn trang) */}
       <div className="hidden overflow-x-auto rounded-[10px] border sm:block" style={{ borderColor: 'var(--line)' }}>
-        <table className="w-full min-w-[560px] text-[13px]">
+        <table className="w-full min-w-[560px] text-[13px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
           <thead>
             <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
               <th className="px-3 py-2 font-semibold">{ft ? 'MT' : t('Bài')}</th><th className="px-3 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tuần')}</th>
-              {ft ? ['L', 'R', 'W1', 'W2', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-3 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
+              {ft ? ['L', 'R', 'W1', 'W2', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-2 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
               <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th>
             </tr>
           </thead>
@@ -142,13 +142,13 @@ function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: Dau
               );
             })}
             {dc && cuoi && (
-              <tr className="h-11 border-t-2" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+              <tr className="border-t-2" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
                 <td className="whitespace-nowrap px-3 font-bold text-slate-100" colSpan={3}>{t('Tổng kết')} · {dich(cuoi.nhan)}{coDauVao && <span className="ml-1 font-normal text-slate-400">{t('so đầu vào')}</span>}</td>
-                <td className={tdSo}>{b1(dc.l)}<Chenh moi={dc.l} cu={dauVao?.l ?? null} /></td>
-                <td className={tdSo}>{b1(dc.r)}<Chenh moi={dc.r} cu={dauVao?.r ?? null} /></td>
-                <td className={`${tdSo} !text-center`} colSpan={2}>W {b1(dc.w)}<Chenh moi={dc.w} cu={dauVao?.w ?? null} /></td>
-                <td className={tdSo}>{b1(dc.s)}<Chenh moi={dc.s} cu={dauVao?.s ?? null} /></td>
-                <td className={`${tdSo} font-semibold text-slate-100`}>{b1(cuoi.overall)}<Chenh moi={cuoi.overall} cu={dauVao?.ovr ?? null} /></td><td /><td />
+                <td className={`${tdSo} py-1.5`}>{b1(dc.l)}<Chenh moi={dc.l} cu={dauVao?.l ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5`}>{b1(dc.r)}<Chenh moi={dc.r} cu={dauVao?.r ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5 !text-center`} colSpan={2}>W {b1(dc.w)}<Chenh moi={dc.w} cu={dauVao?.w ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5`}>{b1(dc.s)}<Chenh moi={dc.s} cu={dauVao?.s ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5 font-semibold text-slate-100`}>{b1(cuoi.overall)}<Chenh moi={cuoi.overall} cu={dauVao?.ovr ?? null} duoi /></td><td /><td />
               </tr>
             )}
           </tbody>
