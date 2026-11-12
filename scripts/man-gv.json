@@ -178,6 +178,7 @@
  "web/src/modules/yThuc/RecordViolationPanel.tsx",
  "web/src/modules/yThuc/StudentYThucSection.tsx",
  "web/src/modules/yThuc/ThangYThuc.tsx",
+ "web/src/modules/yThuc/TinhHinh.tsx",
  "web/src/modules/yThuc/XacNhanXuLyPanel.tsx",
  "web/src/modules/yThuc/XemXuLyPanel.tsx",
  "web/src/modules/yThuc/khoiYThuc.tsx",

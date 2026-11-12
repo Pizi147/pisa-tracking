@@ -5,6 +5,7 @@ import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { nhanMocViPham, ngay } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
+import { phimHangTab } from '../../ui/HangTab.tsx';
 import { lucVn } from '../congViec/PanelBaoPhTvv.tsx';
 import type { BaoPhLan } from './kieu.ts';
 
@@ -395,11 +396,11 @@ export function TheLoai({ loai, so }: { loai: 'vp' | 'nn' | 'th' | 'hoi'; so?: n
 /** TINH-HINH (mockup v20 A1): hai tab nhỏ trong tab "Ý thức & Phối hợp" — "Tình hình học tập / Ý thức" · "Phối hợp SOS" (số việc chờ). */
 export function TabNho<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: { key: K; nhan: string; ngan?: string; so?: number | null }[] }) {
   return (
-    <div role="tablist" className="flex gap-1 border-b px-4 pt-3 max-sm:px-2 max-sm:pt-2" style={{ borderColor: 'var(--line)' }}>
+    <div role="tablist" aria-label={t('Ý thức & Phối hợp')} onKeyDown={phimHangTab} className="flex gap-1 border-b px-4 pt-3 max-sm:px-2 max-sm:pt-2" style={{ borderColor: 'var(--line)' }}>
       {muc.map((m) => {
         const on = m.key === value;
         return (
-          <button key={m.key} type="button" role="tab" aria-selected={on} onClick={() => onChange(m.key)}
+          <button key={m.key} type="button" role="tab" aria-selected={on} tabIndex={on ? 0 : -1} onClick={() => onChange(m.key)}
             className={`inline-flex h-10 appearance-none items-center gap-2 rounded-t-lg border-0 px-3.5 text-sm max-sm:h-11 max-sm:flex-1 max-sm:justify-center max-sm:px-2 ${on ? 'font-semibold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)] surface-2' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
             {m.ngan ? <><span className="max-sm:hidden">{m.nhan}</span><span className="sm:hidden">{m.ngan}</span></> : m.nhan}
             {m.so != null && m.so > 0 && <span className={`rounded-[5px] px-1.5 text-xs font-semibold tabular-nums ${on ? 'text-[color:var(--accent)]' : 'text-slate-500 surface-2'}`} style={on ? { background: 'var(--surface)' } : undefined}>{m.so}</span>}

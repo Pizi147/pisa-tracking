@@ -207,12 +207,12 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
         </dl>
       )}
       <label className="grid gap-1.5">
-        <span className="text-sm font-bold text-slate-100">{nhanO} <span className="text-[color:var(--bad)]">*</span></span>
-        <textarea className={`field min-h-[96px] py-2 text-[15px] ${dai ? 'border-[color:var(--bad)]' : ''}`} value={chu} maxLength={TOI_DA + 50}
+        <span className="text-sm font-bold text-slate-100">{nhanO} <span className="text-bad">*</span></span>
+        <textarea className={`field min-h-[96px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} maxLength={TOI_DA + 50}
           aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
-        <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-[color:var(--bad)]' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
+        <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-bad' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
       </label>
-      {loi && <p role="alert" className="m-0 rounded-lg border px-3 py-2 text-[13px] text-[color:var(--bad)]" style={{ borderColor: 'var(--bad-line, var(--line-strong))' }}>⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
+      {loi && <p role="alert" className="m-0 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-[13px] text-late" >⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
       <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={ngoai}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}>
