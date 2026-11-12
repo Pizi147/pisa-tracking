@@ -5,7 +5,7 @@
  */
 import { THAM_SO_TOI_DA, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, MON_GOP, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, type KetQuaKyThi, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
+  ASSESSED_SKILLS, MON_GOP, diemW12, HUONG_TIEP_TK_NHAN, LY_DO_DONG_NHAN, PERMISSIONS, chuKetQuaKyThi, ketQuaKyThi, ketQuaThiThat, type KetQuaKyThi, kyThiCuaChuongTrinh, khoangTuan, luotDaiDien, tenMonNgan, tuanLich,
   type HuongTiepTk, type LyDoDong, ATTEMPT_KIND_LABEL, tenRoute } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
@@ -131,6 +131,7 @@ export type DongLuotTongKet = {
 };
 
 const NHAN_LUOT: Record<string, string> = ATTEMPT_KIND_LABEL;
+const KN_FT_BANG = [...ASSESSED_SKILLS, 'writing1', 'writing2'] as const;
 
 function gomLuot(rows: any[], maCt: string | null, laFt: boolean, homNay: string): DongLuotTongKet[] {
   const theo = new Map<number, any[]>();
@@ -140,11 +141,12 @@ function gomLuot(rows: any[], maCt: string | null, laFt: boolean, homNay: string
     && (!ds[0].tuan_bat_dau || ds[0].tuan_bat_dau > homNay);
   return [...theo.values()].filter((ds) => !chuaThiTuongLai(ds)).map((ds) => {
     const a = ds[0];
-    const kn = ds.filter((r) => (laFt ? (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang) : true));
+    /* Chủ SP 12/11: FT giữ cả dòng thô W1 · W2 của bản chụp (bảng MT tách W1 · W2); W gộp vẫn có cho kết luận / Tổng kết lớp. */
+    const kn = ds.filter((r) => (laFt ? (KN_FT_BANG as readonly string[]).includes(r.ky_nang) : true));
     return {
       attemptNo: a.attempt_no, kind: a.kind, nhan: laFt ? `MT${a.attempt_no}` : NHAN_LUOT[a.kind] ?? a.kind, lop: a.class_code, tuan: a.tuan_bat_dau ? tuanLich(a.tuan_bat_dau, homNay) : null,
       trangThai: a.trang_thai, huyLyDo: a.huy_ly_do, huyPhan: a.trang_thai !== 'cancelled' && kn.some((r) => r.bo_qua === 1),
-      kyNang: kn.map((r) => ({ k: r.ky_nang, nhan: laFt ? r.ky_nang[0].toUpperCase() : tenMonNgan(maCt ?? '', r.ky_nang), diem: r.diem, tong: r.diem_tong, dat: r.dat === null ? null : !!r.dat })),
+      kyNang: kn.map((r) => ({ k: r.ky_nang, nhan: laFt ? (r.ky_nang === 'writing1' ? 'W1' : r.ky_nang === 'writing2' ? 'W2' : r.ky_nang[0].toUpperCase()) : tenMonNgan(maCt ?? '', r.ky_nang), diem: r.diem, tong: r.diem_tong, dat: r.dat === null ? null : !!r.dat })),
       overall: a.overall, kyVong: a.ky_vong, sos: a.sos, tyLe: a.ty_le_tong, ketQua: a.ket_qua,
     };
   }).sort((x, y) => x.attemptNo - y.attemptNo);
@@ -177,6 +179,8 @@ export function tongKetLoTrinh(p: Principal, cycleId: number) {
     hocVien: { id: hv.id as number, ten: hv.full_name as string },
     loTrinhId: cycleId, ten: tenLoTrinh(b, c.route_ten), loai: laFt ? 'ft' as const : 'thuong' as const, programmeCode: b.programme_code as string | null,
     lop: b.class_code as string | null, gvcn: b.gvcn_ten as string | null, dauVao: b.dau_vao as number | null,
+    /** Chủ SP 12/11: đầu vào từng kỹ năng (bản chụp) — hàng "Đầu vào" của bảng MT. */
+    dauVaoKn: { l: b.dau_vao_l as number | null, r: b.dau_vao_r as number | null, w: b.dau_vao_w as number | null, s: b.dau_vao_s as number | null },
     target: b.target as number | null, khongCamKet: !!b.khong_cam_ket,
     thoiGian: khoangTuan(b.bat_dau_ngay, b.dong_ngay, homNay), lyDo: b.ly_do as LyDoDong, lyDoNhan: LY_DO_DONG_NHAN[b.ly_do as LyDoDong] ?? null,
     dich: { target: b.target as number | null, thiDuKien: b.thi_du_kien_nhan as string | null },
@@ -232,7 +236,7 @@ export function tongKetLop(p: Principal, classId: number) {
       const k = (n: string) => dd?.kyNang.find((x) => x.k === n)?.diem ?? null;
       const cuoi = luot.at(-1);
       return { ...goc, soLuot: luot.filter((x) => x.trangThai !== 'cancelled').length, luotCuoiHuy: cuoi?.trangThai === 'cancelled' ? cuoi.nhan : null,
-        luotCuoi: dd ? { nhan: dd.nhan, overall: dd.overall, l: k('listening'), r: k('reading'), w: k('writing'), s: k('speaking') } : null,
+        luotCuoi: dd ? { nhan: dd.nhan, overall: dd.overall, l: k('listening'), r: k('reading'), w: k('writing'), ...diemW12(k), s: k('speaking') } : null,
         thiThat: b.ly_do === 'chuyen_lop' ? null : { ovr: b.thi_that_ovr as number | null, ngay: b.thi_that_ngay as string | null, khongThi: !!b.thi_that_khong_thi },
         ketLuan: (b.ly_do === 'chuyen_lop' ? null : b.ket_luan) as string | null,
         huongTiep: nhanHuong(b.huong_tiep), huongKhoa: b.huong_tiep as string, giuaKhoa: null, cuoiKhoa: null };

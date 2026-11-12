@@ -18,7 +18,7 @@ import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan, NhanLich } from '../../ui/Nhan.tsx';
-import { CHU_DA_XONG } from '@shared/domain/index.ts';
+import { CHU_DA_XONG, diemW12 } from '@shared/domain/index.ts';
 import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCaseLuoi.tsx';
@@ -608,7 +608,9 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null }: {
   const chuaToi = (a: any) => !a.scored && !!a.weekStart && !!homNay && a.weekStart > homNay;
   /* G12: số điểm tô ✓ / ✗ theo kỳ vọng của lượt (như lưới lớp), không màu link. G5: điểm một kỹ năng mở hồ sơ Mock cuộn tới đúng kỹ năng (Tab vào được; hàng bảng vẫn bấm mở đợt). */
   const diemKyNang = (a: any, k: typeof KN_MOCK[number]) => {
-    const w = k === 'writing1' || k === 'writing2', b = w ? a.diemKn?.[k] ?? null : a.bands?.[k] ?? null, kd = w ? 'writing' : k;
+    /* PTA 12/11: W1 · W2 qua `diemW12` như Tổng kết lộ trình — lượt cũ chỉ có W gộp → W ở cả hai ô. */
+    const w = k === 'writing1' || k === 'writing2', kd = w ? 'writing' : k;
+    const b = w ? diemW12((x) => (x === 'writing' ? a.bands?.writing : a.diemKn?.[x]))[k === 'writing1' ? 'w1' : 'w2'] : a.bands?.[k] ?? null;
     return b != null
       ? <Link to={duongDotTest(a, kd)} className={`no-underline hover:underline ${dienThoai ? '-mx-1.5 -my-3.5 inline-block px-1.5 py-3.5' : ''}`} title={`${t('Mở Hồ sơ Mock Test')} · MT${a.attemptNo} · ${w ? CHU_KY_NANG[k] : skillLabel(kd)}`} onClick={(e) => e.stopPropagation()}><DiemKq diem={b} kyVong={a.expectation} /></Link>
       : fmtBand(b);

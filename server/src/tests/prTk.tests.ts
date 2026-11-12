@@ -426,7 +426,7 @@ export async function runPrTkTests(t: YThucTestKit) {
     studentsSvc.setStudentStatus(P.admin, a.sid, 'finished', NGAY, 'Nghỉ học');
     const r = tongKetSvc.tongKetLoTrinh(P.admin, a.cy);
     assert(r.loai === 'ft' && r.dich.target === 6.5 && r.ketQua.choNhap === true && r.ketQua.coTheNhap === true && r.huongTiep.nhan === 'Kết thúc' && r.lyDo === 'ket_thuc', JSON.stringify(r.ketQua));
-    assert(r.luot.length === 2 && r.luot[0].nhan === 'MT1' && r.luot[0].kyNang.map((k: any) => k.nhan).join('') === 'LRWS' && r.luot[1].trangThai === 'cancelled', JSON.stringify(r.luot));
+    assert(r.luot.length === 2 && r.luot[0].nhan === 'MT1' && r.luot[0].kyNang.map((k: any) => k.nhan).join(' ') === 'L R W S W1 W2' && r.luot[1].trangThai === 'cancelled', JSON.stringify(r.luot));
     assert(maLoi(() => tongKetSvc.tongKetLoTrinh(P.normalSubjectTeacher, a.cy)) === 403, 'GVBM 403');
     assert(maLoi(() => tongKetSvc.tongKetLoTrinh(P.cpManager, a.cy)) === 403, 'QL chi nhánh khác 403');
     const gvcn = ganGvcn(ft, P.normalCoreTeacher.userId);

@@ -173,6 +173,16 @@ export function luotDaiDien<T extends { attemptNo: number; huy: boolean; overall
   return theoSo.find((l) => !l.huy && l.overall !== null) ?? theoSo[0] ?? null;
 }
 
+/**
+ * Bảng MT tách W1 · W2 (chủ SP 12/11 — Tổng kết lộ trình, Tổng kết lớp). Lượt CŨ chỉ có điểm W gộp (chưa tách task) → W ở cả hai ô, không mất điểm.
+ * `diemCua(k)`: điểm của kỹ năng `writing1` · `writing2` · `writing` (null = không có).
+ */
+export function diemW12(diemCua: (k: string) => number | null | undefined): { w1: number | null; w2: number | null } {
+  const w1 = diemCua('writing1') ?? null; const w2 = diemCua('writing2') ?? null;
+  if (w1 === null && w2 === null) { const w = diemCua('writing') ?? null; return { w1: w, w2: w }; }
+  return { w1, w2 };
+}
+
 /** 'W2 MAY – W3 SEP' · 'W1 JUN – nay'. */
 export function khoangTuan(batDau: string | null, ketThuc: string | null, homNay: string): string {
   if (!batDau) return '—';

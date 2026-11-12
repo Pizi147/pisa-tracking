@@ -4,7 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { NHAN_SAU_THI, chuGradeKyThi, duongHoSoHocVien, hienTargetKck, ngay, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
+import { NHAN_SAU_THI, chuGradeKyThi, diemW12, duongHoSoHocVien, hienTargetKck, luotDaiDien, ngay, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
@@ -18,6 +18,8 @@ type Luot = {
 };
 type TongKet = {
   hocVien: { id: number; ten: string }; ten: string; loai: 'ft' | 'thuong'; lop: string | null; gvcn: string | null; dauVao: number | null; target: number | null;
+  /** Chủ SP 12/11: đầu vào từng kỹ năng (bản chụp). */
+  dauVaoKn?: { l: number | null; r: number | null; w: number | null; s: number | null };
   khongCamKet: boolean; thoiGian: string; dich: { target: number | null; thiDuKien: string | null };
   /** P13: khoá KET / PET — thang + kết quả thi thật Cambridge (null = không kỳ thi / chưa đủ điểm). */
   kyThi?: { ten: string; min: number; max: number } | null; thiThatKyThi?: KetQuaKyThi | null; ngayThiKyThi?: string | null;
@@ -74,22 +76,47 @@ function nhanLuot(l: Luot, ft: boolean): { tone: ToneNhan; chu: string; phu?: st
   return { tone: hong.length ? 'soon' : 'ok', chu: t('{a}/{b} môn đạt', { a: dat, b: l.kyNang.length }), phu: hong.length ? t('Không đạt: {ds}', { ds: hong.join(', ') }) : undefined };
 }
 
-function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
+type DauVao = { ovr: number | null; l: number | null; r: number | null; w: number | null; s: number | null };
+/** Năm ô điểm FT của một lượt: L · R · W1 · W2 · S (lượt cũ chỉ có W gộp → W ở cả hai ô, `diemW12`); `w` = W gộp. */
+const diem5 = (l: Luot) => {
+  const d = (k: string) => l.kyNang.find((x) => x.k === k)?.diem ?? null;
+  return { l: d('listening'), r: d('reading'), ...diemW12(d), s: d('speaking'), w: d('writing') };
+};
+/** "+0.5" · "−0.5" · "±0.0" — dấu đi cùng màu (không chỉ màu). */
+function Chenh({ moi, cu, duoi }: { moi: number | null; cu: number | null; /** dòng riêng dưới số (bảng 1440 — cột không nở) */ duoi?: boolean }) {
+  if (moi === null || cu === null) return null;
+  const d = Math.round((moi - cu) * 10) / 10;
+  return <span className={`${duoi ? 'block leading-tight' : 'ml-1'} text-[12px] font-semibold tabular-nums ${d > 0 ? 'text-kq-bang' : d < 0 ? 'text-kq-duoi' : 'text-slate-500'}`}>{d > 0 ? '+' : d < 0 ? '−' : '±'}{Math.abs(d).toFixed(1)}</span>;
+}
+
+function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: DauVao | null }) {
   const tag = (l: Luot) => (l.trangThai === 'cancelled' ? t('đã huỷ') : l.huyPhan ? t('huỷ phần') : null);
-  const diemFt = (l: Luot, k: string) => l.kyNang.find((x) => x.k === k)?.diem ?? null;
+  /* Chủ SP 12/11: hàng cuối = MT cuối (cùng `luotDaiDien` với Tổng kết lớp) + tăng / giảm so đầu vào từng kỹ năng. Đầu vào W chỉ một số → so với W gộp của MT. */
+  const cuoi = ft ? luotDaiDien(luot.map((l) => ({ ...l, huy: l.trangThai === 'cancelled' }))) : null;
+  const dc = cuoi && !cuoi.huy ? diem5(cuoi) : null;
+  const coDauVao = !!dauVao && Object.values(dauVao).some((v) => v !== null);
+  const tdSo = 'whitespace-nowrap px-2 text-right tabular-nums';
   return (
     <>
       {/* ≥ sm: bảng, cuộn ngang trong khung (không cuộn trang) */}
       <div className="hidden overflow-x-auto rounded-[10px] border sm:block" style={{ borderColor: 'var(--line)' }}>
-        <table className="w-full min-w-[560px] text-[13px]">
+        <table className="w-full min-w-[560px] text-[13px] [&_td]:whitespace-nowrap [&_th]:whitespace-nowrap">
           <thead>
             <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
               <th className="px-3 py-2 font-semibold">{ft ? 'MT' : t('Bài')}</th><th className="px-3 py-2 font-semibold">{t('Lớp')}</th><th className="px-3 py-2 font-semibold">{t('Tuần')}</th>
-              {ft ? ['L', 'R', 'W', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-3 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
+              {ft ? ['L', 'R', 'W1', 'W2', 'S', 'OVR', t('Kỳ vọng')].map((h) => <th key={h} className="px-2 py-2 text-right font-semibold">{h}</th>) : <th className="px-3 py-2 font-semibold">{t('Điểm từng phần')}</th>}
               <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th>
             </tr>
           </thead>
           <tbody>
+            {ft && coDauVao && (
+              <tr className="h-11 border-t" style={{ borderColor: 'var(--line)' }}>
+                <td className="whitespace-nowrap px-3 font-bold text-slate-100" colSpan={3}>{t('Đầu vào')}</td>
+                <td className={tdSo}>{b1(dauVao!.l)}</td><td className={tdSo}>{b1(dauVao!.r)}</td>
+                <td className={`${tdSo} !text-center`} colSpan={2}>W {b1(dauVao!.w)}</td><td className={tdSo}>{b1(dauVao!.s)}</td>
+                <td className={`${tdSo} font-semibold text-slate-100`}>{b1(dauVao!.ovr)}</td><td /><td />
+              </tr>
+            )}
             {luot.map((l) => {
               const huy = l.trangThai === 'cancelled'; const nl = nhanLuot(l, ft);
               return (
@@ -99,7 +126,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                   <td className="whitespace-nowrap px-3 tabular-nums text-slate-300">{l.tuan ?? '—'}</td>
                   {ft ? (
                     <>
-                      {['listening', 'reading', 'writing', 'speaking'].map((k) => <td key={k} className="px-3 text-right tabular-nums">{b1(diemFt(l, k))}</td>)}
+                      {(['l', 'r', 'w1', 'w2', 's'] as const).map((k) => <td key={k} className={tdSo}>{b1(diem5(l)[k])}</td>)}
                       <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{b1(l.overall)}</td>
                       <td className="px-3 text-right tabular-nums">{b1(l.kyVong)}</td>
                     </>
@@ -114,11 +141,27 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
                 </tr>
               );
             })}
+            {dc && cuoi && (
+              <tr className="border-t-2" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+                <td className="whitespace-nowrap px-3 font-bold text-slate-100" colSpan={3}>{t('Tổng kết')} · {dich(cuoi.nhan)}{coDauVao && <span className="ml-1 font-normal text-slate-400">{t('so đầu vào')}</span>}</td>
+                <td className={`${tdSo} py-1.5`}>{b1(dc.l)}<Chenh moi={dc.l} cu={dauVao?.l ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5`}>{b1(dc.r)}<Chenh moi={dc.r} cu={dauVao?.r ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5 !text-center`} colSpan={2}>W {b1(dc.w)}<Chenh moi={dc.w} cu={dauVao?.w ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5`}>{b1(dc.s)}<Chenh moi={dc.s} cu={dauVao?.s ?? null} duoi /></td>
+                <td className={`${tdSo} py-1.5 font-semibold text-slate-100`}>{b1(cuoi.overall)}<Chenh moi={cuoi.overall} cu={dauVao?.ovr ?? null} duoi /></td><td /><td />
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
       {/* < sm: mỗi lượt một thẻ */}
       <ul className="m-0 list-none rounded-[10px] border p-0 sm:hidden" style={{ borderColor: 'var(--line)' }}>
+        {ft && coDauVao && (
+          <li className="px-3 py-2.5">
+            <b className="text-slate-100">{t('Đầu vào')}</b>
+            <div className="mt-1 text-[13px] tabular-nums">L {b1(dauVao!.l)} · R {b1(dauVao!.r)} · W {b1(dauVao!.w)} · S {b1(dauVao!.s)} · OVR {b1(dauVao!.ovr)}</div>
+          </li>
+        )}
         {luot.map((l) => {
           const huy = l.trangThai === 'cancelled'; const nl = nhanLuot(l, ft);
           return (
@@ -132,7 +175,7 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
               </div>
               {!huy && (ft
                 ? <dl className="m-0 mt-1.5 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-[13px]">
-                    <dt className="text-slate-500">{t('Điểm')}</dt><dd className="m-0 tabular-nums">L {b1(diemFt(l, 'listening'))} · R {b1(diemFt(l, 'reading'))} · W {b1(diemFt(l, 'writing'))} · S {b1(diemFt(l, 'speaking'))}</dd>
+                    <dt className="text-slate-500">{t('Điểm')}</dt><dd className="m-0 tabular-nums">{(() => { const d = diem5(l); return `L ${b1(d.l)} · R ${b1(d.r)} · W1 ${b1(d.w1)} · W2 ${b1(d.w2)} · S ${b1(d.s)}`; })()}</dd>
                     <dt className="text-slate-500">Overall</dt><dd className="m-0 tabular-nums">{b1(l.overall)}</dd>
                     <dt className="text-slate-500">{t('Kỳ vọng')}</dt><dd className="m-0 tabular-nums">{b1(l.kyVong)}</dd>
                   </dl>
@@ -143,6 +186,16 @@ function BangLuot({ luot, ft }: { luot: Luot[]; ft: boolean }) {
             </li>
           );
         })}
+        {dc && cuoi && (
+          <li className="border-t-2 px-3 py-2.5" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+            <b className="text-slate-100">{t('Tổng kết')} · {dich(cuoi.nhan)}</b>{coDauVao && <span className="ml-1 text-xs text-slate-400">{t('so đầu vào')}</span>}
+            <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] tabular-nums">
+              <span>L {b1(dc.l)}<Chenh moi={dc.l} cu={dauVao?.l ?? null} /></span><span>R {b1(dc.r)}<Chenh moi={dc.r} cu={dauVao?.r ?? null} /></span>
+              <span>W {b1(dc.w)}<Chenh moi={dc.w} cu={dauVao?.w ?? null} /></span><span>S {b1(dc.s)}<Chenh moi={dc.s} cu={dauVao?.s ?? null} /></span>
+              <span>OVR {b1(cuoi.overall)}<Chenh moi={cuoi.overall} cu={dauVao?.ovr ?? null} /></span>
+            </div>
+          </li>
+        )}
       </ul>
     </>
   );
@@ -255,7 +308,8 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             {data.buocTiep && <MucBuocTiep bt={data.buocTiep} onMo={() => setView({ loai: 'buoc-tiep' })} />}
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-slate-400">
-              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.kyThi ? (data.target !== null ? String(data.target) : null) : data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
+              {/* Chủ SP 12/11: FT có hàng "Đầu vào" đủ kỹ năng trong bảng MT — dòng này giữ Đầu vào cho lớp thường. */}
+              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), !ft && data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.kyThi ? (data.target !== null ? String(data.target) : null) : data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
                 ...(kq.loai === 'thuong' && kq.kqdr ? [[t('Kết quả đầu ra'), chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}
             </div>
@@ -263,7 +317,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
             <p className="m-0 text-xs font-bold text-slate-400">{ft ? 'Mock Test' : t('Kết quả Test')}{data.luot.length > 0 && <span className="ml-1 font-normal tabular-nums text-slate-500">{data.luot.length}</span>}</p>
             {data.luot.length === 0
               ? <div className="rounded-[10px] border py-8 text-center font-semibold text-slate-300" style={{ borderColor: 'var(--line)' }}>{t('Chưa có lượt Test nào')}</div>
-              : <BangLuot luot={data.luot} ft={!!ft} />}
+              : <BangLuot luot={data.luot} ft={!!ft} dauVao={ft ? { ovr: data.dauVao, l: data.dauVaoKn?.l ?? null, r: data.dauVaoKn?.r ?? null, w: data.dauVaoKn?.w ?? null, s: data.dauVaoKn?.s ?? null } : null} />}
           </div>
         )}
       </KhungPanel>

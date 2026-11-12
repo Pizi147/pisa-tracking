@@ -9125,6 +9125,9 @@ await runPrBvTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, ad
 // ==================================================================== PR-TK (Tổng kết lộ trình) — LUÔN Ở CUỐI: phép kiểm bất biến soi mọi dữ liệu các phép kiểm trước để lại
 const { runPrTkTests } = bocTep('prTk', await import('./prTk.tests.ts'));
 await runPrTkTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX });
+// ==================================================================== TK-DU-KY-NANG (chủ SP 12/11: Tổng kết lộ trình đầu vào đủ kỹ năng, MT tách W1 · W2)
+const { runPrTkDuKyNangTests } = bocTep('prTkDuKyNang', await import('./prTkDuKyNang.tests.ts'));
+await runPrTkDuKyNangTests({ check, assert, conn, P, TODAY } as any);
 
 // ==================================================================== PR-LUI-a1 (Ý thức: ghi nhiều, Vi phạm + Mô tả, tệp dùng chung)
 const { runPrLuiA1Tests } = bocTep('prLuiA1', await import('./prLuiA1.tests.ts'));
