@@ -7,7 +7,7 @@ import { XemXuLyPanel } from './XemXuLyPanel.tsx';
 import { DeleteViolationConfirm } from './DeleteViolationConfirm.tsx';
 import type { ViolationDetail } from './ChiTietViPham.tsx';
 
-export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'category' | 'skill' | 'occurredOn' | 'ten' | 'moTa'>;
+export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'category' | 'skill' | 'occurredOn' | 'ten' | 'moTa' | 'chiNhac'>;
 
 /** Một state duy nhất cho MỌI panel Ý thức — mở mới thay cũ, không bao giờ chồng hai panel cùng lúc (G-8, YT-13). */
 export type PanelYThuc =

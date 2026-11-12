@@ -569,7 +569,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
         <ThePhu vien={em && y.nhanPhanLoai ? [dich(y.nhanPhanLoai)] : []} ds={phu} />
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
-        {y.trangThai === 'cho' ? y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />
+        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
           : <span className="flex items-center gap-1.5"><NhanTrangThai t={tt.t} />{y.xuLyLuc && <span className="text-[12px] text-dim">{ngan(y.xuLyLuc)}</span>}</span>}
         {/* audit CV7: người gửi là chính người xem → "Bạn", không vai. */}
         {y.nguoiXin && (y.nguoiXinId != null && y.nguoiXinId === toi ? <NguoiGiu ten={t('Bạn')} /> : <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />)}
@@ -590,5 +590,23 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
         </span>
       </span>
     </div>
+  );
+}
+
+/**
+ * TINH-HINH (mockup v20 E, chủ SP 12/11): thẻ Xử lý Ý thức khác mặc định — QL có 5 ngày, hết hạn TỰ CHỐT theo GVCN. Đếm ngược "Còn n ngày" + 5 vạch
+ * (vạch đã qua tô) + "hết hạn: giữ quyết định GVCN"; ≤ 1 ngày: nền vàng ⚠ (không chỉ màu).
+ */
+function DemNguocYThuc({ han }: { han: string }) {
+  const { homNay } = useNgayNghiepVu();
+  const con = Math.max(0, Math.round((Date.parse(`${han.slice(0, 10)}T00:00:00Z`) - Date.parse(`${homNay}T00:00:00Z`)) / 86_400_000));
+  const gap = con <= 1;
+  return (
+    <span className={`grid w-full gap-1 rounded-lg border px-2 py-1.5 ${gap ? 'border-soon-line bg-soon-bg' : ''}`} style={gap ? undefined : { borderColor: 'var(--line-strong)' }}
+      title={t('Hết hạn: tự chốt theo GVCN')}>
+      <span className={`text-[13px] font-bold tabular-nums ${gap ? 'text-soon' : 'text-[color:var(--text)]'}`}>{gap ? '⚠ ' : ''}{con ? t('Còn {n} ngày', { n: con }) : t('Hết hôm nay')}</span>
+      <span aria-hidden className="grid grid-cols-5 gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-[4px] rounded-sm ${i < 5 - Math.min(5, con) ? (gap ? 'bg-soon' : 'bg-[color:var(--accent)]') : 'bg-[color:var(--line-strong)]'}`} />)}</span>
+      <span className="text-[11px] leading-tight text-dim">{t('Hết hạn: giữ quyết định GVCN')}</span>
+    </span>
   );
 }

@@ -21,6 +21,7 @@ import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
 import { BanGiaoGvPanel } from '../classes/BanGiaoGvPanel.tsx';
 import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
+import { PanelHoiTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
@@ -152,6 +153,10 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
         );
       }
       return <XacNhanXuLyPanel key={it.key} studentId={it.studentId} lop={lop} onClose={onDong} onDone={doi} />;
+    case 'yt_hoi_tinh_hinh':
+      /* TINH-HINH (mockup v20 F2): TVV hỏi tình hình — GVCN ghi kết quả tại chỗ. */
+      return <PanelHoiTinhHinh key={it.key} id={soCuaKhoa(it.key)!} ten={it.studentName} lop={lop} cauHoi={it.reason} han={it.due}
+        onDong={onDong} onDaLam={doi} onTiep={onTiep} />;
     case 'yt_thuc_hien':
       return <DaThucHienPanel key={it.key} measureId={soCuaKhoa(it.key)} onClose={onDong} onDone={doi} />;
     case 'khai_bac':

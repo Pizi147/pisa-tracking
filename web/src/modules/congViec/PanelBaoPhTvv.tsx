@@ -8,7 +8,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
-import { ChipMon, TienTrinh } from '../yThuc/BangLan.tsx';
+import { ChipMon, TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
 import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -25,6 +25,8 @@ type ViecBaoPh = {
   lan: { ketQua: KetQuaBaoPh; nhan: string; ngay: string; ghiChu: string | null; nguoi: string | null; luc: string }[];
   lienHe: { ten: string | null; quanHe: string | null; sdt: string | null };
   coTheGhi: boolean; nhanXuLy: string | null;
+  /** TINH-HINH: việc "Báo PH · Tình hình học tập" (GV báo) — bối cảnh = người gửi + nội dung, không có vi phạm. */
+  tinhHinhId?: number | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
   khoiPhucDuoc: boolean;
   boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
@@ -162,14 +164,22 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             <span className="text-slate-300">{t('Lần báo PH của bạn vẫn giữ trong lịch sử. Bạn không cần làm gì.')}</span>
           </div>
         )}
+        {/* TINH-HINH (mockup v20 C2): GV báo tình hình — đọc nội dung GV gửi trước khi báo PH. */}
+        {v.tinhHinhId != null && (
+          <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+            <span className="flex flex-wrap items-center gap-2 text-[13px] text-slate-400"><TheLoai loai="th" />
+              {v.boiCanh.nguoiLuu && <b className="font-semibold text-slate-200">{v.boiCanh.nguoiLuu}</b>}{v.boiCanh.luuLuc && <span className="tabular-nums">{lucVn(v.boiCanh.luuLuc)}</span>}</span>
+            <span className="whitespace-pre-line break-words text-sm leading-relaxed text-slate-100">{v.boiCanh.noiDung}</span>
+          </div>
+        )}
         {/* Mockup K5b / K8d: dải ①②③ cùng thứ tự tab Ý thức — bước TVV là việc của người ghi. */}
-        <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
+        {v.tinhHinhId == null && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
             ? [<BadgeViec xuong tong="cho">{v.nhan}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
             : [<BadgeViec xuong tong="xong">{v.nhan}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{v.nhanTrangThai}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
-        ]} />
+        ]} />}
         <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
         <BoiCanh dong={[
@@ -178,7 +188,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
               {v.boiCanh.viPham.map((x, i) => <li key={i} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2"><span className="tabular-nums text-slate-400">{shortDate(x.ngay, hn)}</span><span className="flex items-start"><ChipMon skill={x.skill} />{x.ten}</span></li>)}
             </ul>
           )],
-          [t('Ghi chú GVCN'), v.boiCanh.ghiChu && <span className="font-normal">{v.boiCanh.ghiChu}</span>],
+          [t('Ghi chú GVCN'), v.tinhHinhId == null && v.boiCanh.ghiChu && <span className="font-normal">{v.boiCanh.ghiChu}</span>],
           [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
           [t('Điện thoại'), ph.sdt && (
             <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>

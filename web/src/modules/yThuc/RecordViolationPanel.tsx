@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
-import { NutChon } from '../../ui/ui.tsx';
+import { NutChon, BoLocDoan } from '../../ui/ui.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
@@ -45,7 +45,7 @@ export function RecordViolationPanel({
   students?: NguoiChon[];
   /** Có giá trị = đang SỬA vi phạm này, không phải ghi mới. */
   violation?: {
-    id: number; category: string; skill: string | null; occurredOn: string; ten: string; moTa: string;
+    id: number; category: string; skill: string | null; occurredOn: string; ten: string; moTa: string; chiNhac?: boolean;
   } | null;
   /** Xoá vi phạm đang SỬA (PR-HV, spec §4.3: xoá nằm trong form sửa) — nơi gọi mở hộp xác nhận một dòng. Chỉ hiện khi đang sửa. */
   onDelete?: (violationId: number) => void;
@@ -64,6 +64,9 @@ export function RecordViolationPanel({
   const [luu, setLuu] = useState<Luu | null>(null);
   /** Vi phạm đã lưu xong nhưng tệp lỗi: panel ở lại, chỉ còn khối `Đã ghi` + tệp. */
   const [daGhi, setDaGhi] = useState<{ ids: number[]; cau: string } | null>(null);
+  /** TINH-HINH (mockup v20 B): "Chỉ nhắc nhở" — một lựa chọn cho cả lần lưu; ngoài luật 3 vi phạm / 2 tuần, bậc, việc. Sửa đổi được hai chiều. */
+  const [chiNhac, setChiNhac] = useState(false);
+  useEffect(() => { if (open) setChiNhac(!!violation?.chiNhac); }, [open, violation?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const idempotencyKey = useMemo(() => `violation:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`, [open]);
 
@@ -128,7 +131,7 @@ export function RecordViolationPanel({
     const con = hocVien.filter((s) => !daXong.includes(s));
     if (hocVien.length === 1 && lines.length === 1) {
       const { moTa, ...l } = lines[0];
-      const res = await api.post<{ violation: { id: number } }>('/violations', { studentId: con[0], ...l, description: moTa, idempotencyKey });
+      const res = await api.post<{ violation: { id: number } }>('/violations', { studentId: con[0], ...l, description: moTa, idempotencyKey, chiNhac });
       return { daXong: [con[0]], ids: [res.violation.id], loi: {} };
     }
     let loiChung: string | null = null;
@@ -136,7 +139,7 @@ export function RecordViolationPanel({
       setLuu({ daXong, ids, loi: {}, tien: [daXong.length, hocVien.length] });
       try {
         const r = await api.post<{ ok: { studentId: number; ids: number[] }[]; loi: { studentId: number; loi: string }[] }>('/violations/nhieu', {
-          studentIds: lo, lines, idempotencyKey,
+          studentIds: lo, lines, idempotencyKey, chiNhac,
           moTaRieng: Object.fromEntries(lo.filter((s) => moTaRieng[s]?.trim()).map((s) => [s, moTaRieng[s].trim()])),
         });
         for (const o of r.ok) { daXong.push(o.studentId); ids.push(...o.ids); }
@@ -158,7 +161,7 @@ export function RecordViolationPanel({
     try {
       if (editing && violation) {
         const d = dong[0];
-        await api.patch(`/violations/${violation.id}`, { category: d.nhom, skill: d.mon || null, occurredOn: d.ngay || undefined, ten: d.ten.trim(), description: d.moTa.trim() });
+        await api.patch(`/violations/${violation.id}`, { category: d.nhom, skill: d.mon || null, occurredOn: d.ngay || undefined, ten: d.ten.trim(), description: d.moTa.trim(), chiNhac });
         lamMoiCache();
         toast.push('ok', t('Đã lưu vi phạm'));
         onDone?.(); onClose();
@@ -185,7 +188,7 @@ export function RecordViolationPanel({
 
   if (!open) return null;
 
-  const tieuDe = editing ? t('Sửa vi phạm') : t('Ghi vi phạm');
+  const tieuDe = chiNhac ? (editing ? t('Sửa nhắc nhở') : t('Ghi nhắc nhở')) : editing ? t('Sửa vi phạm') : t('Ghi vi phạm');
 
   if (daGhi) {
     return (
@@ -199,7 +202,7 @@ export function RecordViolationPanel({
 
   const chuaLuu = luu ? hocVien.filter((s) => !luu.daXong.includes(s)) : [];
   const khoa = busy || !!luu;
-  const nhan = busy ? (luu?.tien ? t('Đang lưu {x}/{x2}…', { x: luu.tien[0], x2: luu.tien[1] }) : t('Đang lưu…')) : t('Lưu');
+  const nhan = busy ? (luu?.tien ? t('Đang lưu {x}/{x2}…', { x: luu.tien[0], x2: luu.tien[1] }) : t('Đang lưu…')) : chiNhac ? t('Lưu nhắc nhở') : t('Lưu');
 
   return (
     /* I6 (PR-SL): một dòng chú thích dấu `*` thay cho "(bắt buộc)" lặp ở từng ô. */
@@ -209,7 +212,7 @@ export function RecordViolationPanel({
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: t('Xoá vi phạm'), onClick: () => onDelete(violation.id) } : undefined,
         daSua: editing && violation
-          ? !luu && (dong[0].ten !== violation.ten || dong[0].moTa !== violation.moTa || dong[0].nhom !== violation.category || dong[0].ngay !== violation.occurredOn || (dong[0].mon || null) !== (violation.skill ?? null))
+          ? !luu && (chiNhac !== !!violation.chiNhac || dong[0].ten !== violation.ten || dong[0].moTa !== violation.moTa || dong[0].nhom !== violation.category || dong[0].ngay !== violation.occurredOn || (dong[0].mon || null) !== (violation.skill ?? null))
           : dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0,
         huy: luu ? { nhan: t('Đóng'), onClick: dongPanel, disabled: busy } : undefined,
         conThieu: lf.conThieu(loi),
@@ -230,6 +233,11 @@ export function RecordViolationPanel({
       )}
 
       <fieldset disabled={khoa} className="m-0 min-w-0 space-y-3.5 border-0 p-0">
+        <div className="grid gap-1.5 pt-3">
+          <BoLocDoan v8 ariaLabel={t('Loại ghi')} value={chiNhac ? 'nn' : 'vp'} onChange={(k) => setChiNhac(k === 'nn')}
+            muc={[{ key: 'vp', nhan: t('Vi phạm') }, { key: 'nn', nhan: t('Chỉ nhắc nhở') }]} />
+          {chiNhac && <p className="m-0 text-[13px] text-slate-400">{t('Không tính 3 vi phạm / 2 tuần · không lên bậc · không tạo việc')}</p>}
+        </div>
         {chonNhieu && !luu && (
           <Khoi tieuDe={t('Học viên')}>
             <ChonHocVien ds={students!} chon={hocVien} onChange={setHocVien} loi={lf.loiCua(loi, 'hoc-vien')} lf={lf} loiList={loi}

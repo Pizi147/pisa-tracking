@@ -2,6 +2,8 @@ import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { api } from '../../lib/api.ts';
 import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { addDaysIso, hanBaoPh, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -231,4 +233,56 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
         <div role="dialog" aria-label={tieuDe} className="grid gap-3 rounded-t-[14px] border-t p-4 pb-5" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>{than}</div>
       </div>, document.body)
     : <HopNeo neo={neo} nhan={tieuDe} rong={460} onNgoai={ngoai}>{than}</HopNeo>;
+}
+
+/**
+ * PANEL CÔNG VIỆC "Tình hình học tập" của GVCN (mockup v20 F2 / F4): câu TVV hỏi + ô Kết quả (10–500) → Lưu · gửi TVV. GVCN hỏi GVBM ngoài web rồi ghi.
+ * Lưu xong: dòng ở lại, "✓ Đã trả lời · Bạn" + Hoàn tác (≤ 2 phút) · Việc tiếp ›.
+ */
+export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, onTiep }: {
+  id: number; ten: string; lop: string | null; cauHoi: string; han: string | null; onDong: () => void; onDaLam: () => void; onTiep?: (() => void) | null;
+}) {
+  const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
+  const [chu, setChu] = useState('');
+  const [luu, setLuu] = useState(false);
+  const [xong, setXong] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const ngan = chu.trim().length < TOI_THIEU, dai = chu.length > TOI_DA;
+  const gui = async () => {
+    if (ngan || dai) return;
+    setLuu(true); setLoi(null);
+    try { await api.post(`/tinh-hinh/${id}/tra-loi`, { traLoi: chu.trim() }); setXong(true); lamMoi(); onDaLam(); }
+    catch (e: any) { setLoi(e.message); } finally { setLuu(false); }
+  };
+  const hoanTac = async () => {
+    try { await api.post(`/tinh-hinh/${id}/tra-loi/hoan-tac`, {}); setXong(false); lamMoi(); onDaLam(); } catch (e: any) { toast.push('error', e.message); }
+  };
+  const nutTiep = onTiep && <button type="button" className={`btn ${xong ? 'btn-primary' : ''} max-sm:h-11`} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
+  return (
+    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={onDong} daSua={!xong && !!chu.trim()}
+      chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || ngan || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>,
+        phu: !xong ? nutTiep ?? undefined : undefined }}>
+      <div className="flex flex-col gap-4 pt-4">
+        <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+          <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>
+          <NoiDungTinhHinh chu={cauHoi} />
+        </div>
+        {xong ? (
+          <div className="grid gap-1.5 rounded-[10px] border border-ok-line bg-ok-bg px-4 py-3">
+            <b role="status" className="text-sm font-semibold text-ok">✓ {t('Đã trả lời · Bạn')}</b>
+            <span className="whitespace-pre-line text-[13px] text-slate-200">{chu.trim()}</span>
+            <button type="button" className={`${LINK} justify-self-start`} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
+          </div>
+        ) : (
+          <label className="grid gap-1.5">
+            <span className="text-sm font-bold text-slate-100">{t('Kết quả')} <span className="text-bad">*</span></span>
+            <textarea className={`field min-h-[110px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
+            <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-late' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
+          </label>
+        )}
+        {loi && <p role="alert" className="m-0 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-[13px] text-late">⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
+      </div>
+    </KhungPanel>
+  );
 }
