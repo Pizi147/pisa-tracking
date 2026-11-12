@@ -744,6 +744,8 @@ export function setClassProgress(p: Principal, classId: number, input: {
 
   const sets: string[] = []; const params: unknown[] = [];
   if ('startPeriodId' in input) { sets.push('start_period_id = ?'); params.push(input.startPeriodId ?? null); }
+  /* BC-PH-MOC: khai giảng một nguồn — `start_date` (tuần mặc định thêm HV, vào muộn, Báo cáo PH khi chưa chọn tuần) theo tuần vừa chọn. */
+  if (input.startPeriodId) { sets.push('start_date = ?'); params.push(periodById(input.startPeriodId)!.weekStart); }
   if (progress !== undefined) { sets.push('progress_week_override = ?'); params.push(progress); }
   if (final !== undefined) { sets.push('final_week_override = ?'); params.push(final); }
   if (!sets.length) return classProgress(classId);

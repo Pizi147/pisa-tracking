@@ -76,8 +76,10 @@ export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { p
   const bo = boPhanBc(c.programme_code ?? c.kind);
   if (!bo) return null;
   const ft = lopFt(c);
-  const pr = ft ? null : (tienDo ?? classProgressMany([c.id])).get(c.id) ?? null;
-  return { bo, ...dsDotLop({ ft, batDau: ft ? (c.start_date ?? pr?.startWeekStart ?? c.created_at).slice(0, 10) : null,
+  /* BC-PH-MOC: FT tính từ TUẦN KHAI GIẢNG (`start_period_id`, cùng nguồn "tuần n" đầu trang — Sửa lịch lớp đổi cái này); `start_date` chỉ khi chưa chọn tuần.
+     Tiến độ nhớ theo request: hồ sơ lớp đã nạp → không thêm câu. */
+  const pr = (tienDo ?? classProgressMany([c.id])).get(c.id) ?? null;
+  return { bo, ...dsDotLop({ ft, batDau: ft ? (pr?.startWeekStart ?? c.start_date ?? c.created_at).slice(0, 10) : null,
     progress: pr?.progressWeekStart ?? null, final: pr?.finalWeekStart ?? null }, homNay, (tuyChinh ?? docTuyChinhDot([c.id])).get(c.id)) };
 }
 
