@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tỉ lệ GV theo tuần · thi thật</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* v20 (12/11) — nền CSS chép từ v19/phan-tich.html (token = web), phần mới ở cuối "MỚI v20". */
+/* v19 (12/11 đêm) — Phân tích: ô số nổi rõ, cân cột mọi tab, panel mở từ số. Nền token = web (index.css) + mockup V2 #1400; phần mới đánh dấu "MỚI v19". */
+.man, .dt, .mau-o, .pn.tinh {
+  --bg:#050a16; --surface:#111c33; --surface-2:#172440; --line:#22324f; --line-strong:#33496f;
+  --accent:#9cbde7; --accent-strong:#bdd3ef; --accent-soft:#192b46; --accent-line:#436394;
+  --hong:#f57aae; --dh-nen:#0a1a3a; --dh-chu:#c3d2ec;
+  --text:#e7edf7; --text-dim:rgb(186 198 222); --text-faint:rgb(158 172 200);
+  --ok:rgb(148 209 174); --bad:rgb(232 154 140); --bad-nen:rgb(52 28 29); --soon:rgb(228 199 132); --soon-nen:rgb(48 42 26);
+  --o-nen:#0b1427; --o-vien:#66789f;
+  --sos1:rgb(204 185 109); --sos1-chu:rgb(217 201 129); --sos2:rgb(154 102 51); --sos2-chu:rgb(243 199 156); --sos2-nen:#5a320f; --sos3-nen:#a33d2d; --sos3-vien:#c45a47;
+  --hang-lon-bg:#172440; --hang-lon-vach:#66789f; --hang-con-bg:#0a1325; --hang-con-chu:#b8c4dc; --nhom-nen:#142039;
+  /* MỚI v19 — Ô SỐ. Hộp = bấm được; màu = cần làm. Viền ≥ 3 : 1 với nền thẻ (WCAG 1.4.11), chữ ≥ 7 : 1 trên nền hộp. */
+  --so0:#7a87a2; --os-nen:#1a2b4c; --os-vien:#4b6b9f; --os-chu:#d3e3f8; --os-re:#223a63;
+  --os-do-nen:#3d2020; --os-do-vien:#b0655a; --os-do-chu:#f2b0a4;
+  --os-vang-nen:#33301c; --os-vang-vien:#9a8550; --os-vang-chu:#ecd59a;
+  --phong:'Be Vietnam Pro', system-ui, 'Segoe UI', Roboto, sans-serif; --phong-so:'Inter','Be Vietnam Pro',system-ui,sans-serif;
+  color-scheme:dark; color:var(--text); font:15px/1.45 var(--phong);
+}
+[data-theme="light"] :is(.man, .dt, .mau-o, .pn.tinh), :is(.man, .dt, .mau-o, .pn.tinh)[data-theme="light"] {
+  --bg:#f3f5f9; --surface:#fff; --surface-2:#f2f4f9; --line:#d9deea; --line-strong:#b0b8cd;
+  --accent:#273c8f; --accent-strong:#1f3077; --accent-soft:#eef1fa; --accent-line:#8c9cd6;
+  --hong:#f25a98; --dh-nen:#273c8f; --dh-chu:#dce2f4;
+  --text:#141a2b; --text-dim:rgb(74 83 108); --text-faint:rgb(95 105 132);
+  --ok:rgb(56 103 76); --bad:rgb(166 58 45); --bad-nen:rgb(251 237 235); --soon:rgb(126 95 54); --soon-nen:rgb(251 244 225);
+  --o-nen:#fff; --o-vien:#7f8aa6;
+  --sos1:rgb(155 126 71); --sos1-chu:rgb(113 92 50); --sos2:rgb(185 119 63); --sos2-chu:rgb(124 67 22); --sos2-nen:#f6d8b8; --sos3-nen:#862e27; --sos3-vien:#862e27;
+  --hang-lon-bg:#f2f4f9; --hang-lon-vach:#8690ab; --hang-con-bg:#fbfcfe; --hang-con-chu:#353d54; --nhom-nen:#f6f7fb;
+  --so0:rgb(95 105 132); --os-nen:#edf1fb; --os-vien:#7385c4; --os-chu:#1f3077; --os-re:#dfe6f8;
+  --os-do-nen:#fbecea; --os-do-vien:#c9776b; --os-do-chu:#9a3427;
+  --os-vang-nen:#fbf3dc; --os-vang-vien:#9c7f3e; --os-vang-chu:#6e521f;
+  color-scheme:light;
+}
+
+/* ---- phần đọc mockup (giấy) ---- */
+body { margin:0; background:#e4e8ef; color:#141a2b; font:15px/1.5 'Be Vietnam Pro', system-ui, sans-serif; }
+::selection { background:#9cbde7; color:#060c1a; }
+.trang { padding:20px 24px 64px; display:grid; gap:36px; }
+.dau-mk h1 { font-size:22px; margin:0 0 6px; }
+.dau-mk p { margin:0 0 6px; color:#4a536c; max-width:130ch; }
+.muc-mk { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
+.muc-mk a, .muc-mk button { font:600 13px 'Be Vietnam Pro',sans-serif; padding:5px 10px; border-radius:6px; border:1px solid #b0b8cd; background:#fff; color:#141a2b; text-decoration:none; cursor:pointer; }
+.khu > h2 { font-size:18px; margin:0 0 8px; }
+.ghi { background:#fffbea; color:#4a3a06; border:1px dashed #d9a93a; border-radius:8px; padding:8px 12px; font-size:13px; margin:0 0 12px; max-width:150ch; }
+.ghi ul { margin:0; padding-left:18px; display:grid; gap:2px; }
+.hang-khung { display:flex; flex-wrap:wrap; gap:20px; align-items:flex-start; }
+.hang-khung > figure { margin:0; display:grid; gap:6px; }
+figcaption { font:700 13px 'Be Vietnam Pro',sans-serif; color:#4a3a06; background:#fffbea; border:1px dashed #d9a93a; border-radius:6px; padding:3px 8px; justify-self:start; }
+
+/* ================= GIAO DIỆN WEB ================= */
+.man, .dt { position:relative; overflow:hidden; background:var(--bg); border-radius:6px; display:flex; flex-direction:column; }
+.man { width:1440px; min-height:860px; }
+.dt { width:375px; min-height:780px; }
+:where(.man, .dt, .mau-o, .pn) a { color:var(--accent); text-decoration:none; }
+:where(.man, .dt, .mau-o) button { font:inherit; color:inherit; }
+:where(.man, .dt, .pn) :is(h1, h2, h3) { margin:0; line-height:1.3; }
+:where(.man, .dt, .pn) p { margin:0; }
+.tt { flex:none; height:56px; background:var(--dh-nen); display:flex; align-items:center; gap:2px; padding:0 16px; color:var(--dh-chu); font-size:14px; }
+.tt .logo { display:inline-flex; align-items:baseline; gap:6px; margin-right:18px; }
+.tt .logo b { color:var(--hong); font-size:22px; font-weight:800; letter-spacing:.02em; }
+.tt .logo span { color:#fff; font-size:15px; font-weight:300; letter-spacing:.14em; }
+.tt .m { padding:0 12px; height:56px; display:inline-flex; align-items:center; border-bottom:3px solid transparent; white-space:nowrap; }
+.tt .m.dang { color:#fff; font-weight:700; border-bottom-color:var(--hong); }
+.tt .phai { margin-left:auto; display:flex; align-items:center; gap:4px; }
+.tt .nut-tt { width:40px; height:40px; border-radius:8px; display:inline-flex; align-items:center; justify-content:center; color:var(--dh-chu); font:600 16px var(--phong); }
+.tt .nut-tt .ic { width:20px; height:20px; }
+.tt .av { width:32px; height:32px; border-radius:50%; background:#2b4673; color:#fff; font:700 14px var(--phong); display:inline-flex; align-items:center; justify-content:center; margin-left:4px; }
+.dt .tt { height:52px; padding:0 6px 0 16px; } .dt .tt .logo { margin-right:4px; } .dt .tt .nut-tt { width:44px; height:44px; }
+.day { margin-top:auto; display:flex; border-top:1px solid var(--line); background:var(--surface); }
+.day span { flex:1; min-height:56px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; font:500 11px var(--phong); color:var(--text-dim); }
+.day span .ic { width:20px; height:20px; }
+.day span.dang { color:var(--accent); font-weight:700; }
+.ic { width:16px; height:16px; flex:none; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+
+.noi-dung { flex:1; padding:16px 24px 24px; display:flex; flex-direction:column; gap:14px; }
+.dt .noi-dung { padding:12px 16px 20px; gap:12px; }
+.dau-trang { display:flex; align-items:baseline; gap:8px 14px; flex-wrap:wrap; }
+.dau-trang h1 { font-size:22px; font-weight:700; }
+.dau-trang .ngay { font-size:13px; color:var(--text-faint); }
+.dau-trang .phai { margin-left:auto; }
+.tab-hang { display:flex; gap:4px; border-bottom:1px solid var(--line); }
+.tab-hang button { appearance:none; border:0; background:none; padding:0 12px; height:42px; font:500 15px var(--phong); color:var(--text-dim); border-bottom:2px solid transparent; margin-bottom:-1px; white-space:nowrap; }
+.tab-hang button[aria-selected="true"] { color:var(--text); font-weight:700; border-bottom-color:var(--accent); }
+.dt .tab-hang { overflow:hidden; gap:0; margin:0 -16px; padding:0 16px; -webkit-mask-image:linear-gradient(90deg,#000 86%,transparent); mask-image:linear-gradient(90deg,#000 86%,transparent); }
+.dt .tab-hang button { padding:0 10px; height:44px; font-size:14px; }
+.hang-loc { display:flex; align-items:center; gap:8px; }
+.hang-loc .phai { margin-left:auto; display:flex; gap:8px; }
+.hang-loc .mui-ten { color:var(--text-faint); }
+.dt .hang-loc { display:grid; grid-template-columns:1fr 1fr; }
+.dt .hang-loc .het { grid-column:1 / -1; }
+.dt .hang-loc .phai { margin:0; justify-self:end; }
+.dt .hang-loc .o-tim { width:100%; }
+.doan { display:inline-flex; height:36px; border:1px solid var(--o-vien); border-radius:8px; overflow:hidden; flex:none; }
+.doan button { appearance:none; border:0; background:var(--o-nen); padding:0 12px; font:500 14px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.doan button + button { border-left:1px solid var(--o-vien); }
+.doan button[aria-pressed="true"] { background:var(--accent-soft); color:var(--text); font-weight:700; box-shadow:inset 0 -2px 0 var(--accent); }
+.dt .doan { height:44px; width:100%; } .dt .doan button { flex:1; font-size:15px; padding:0 6px; }
+.o-chon, .o-tuan, .o-tim { height:36px; display:inline-flex; align-items:center; gap:10px; padding:0 12px; border:1px solid var(--o-vien); border-radius:8px; background:var(--o-nen); color:var(--text); font:500 14px var(--phong); white-space:nowrap; flex:none; }
+.o-chon::after { content:''; width:10px; height:6px; margin-left:auto; background:var(--text-faint); clip-path:polygon(0 0,100% 0,50% 100%); }
+.o-tuan { font-family:var(--phong-so); }
+.o-tim { width:200px; color:var(--text-faint); font-weight:400; }
+.dt :is(.o-chon, .o-tuan, .o-tim) { height:44px; font-size:15px; width:auto; }
+.cap-tuan { display:flex; align-items:center; gap:6px; }
+.dt .cap-tuan { grid-column:1 / -1; } .dt .cap-tuan .o-tuan { flex:1; }
+.nut { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:36px; padding:0 14px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text); font:600 14px var(--phong); white-space:nowrap; flex:none; }
+.nut-vuong { width:36px; padding:0; }
+.dt .nut { height:44px; } .dt .nut-vuong { width:44px; }
+.nut-i { appearance:none; border:0; background:none; color:var(--text-dim); font:400 17px/1 var(--phong); width:28px; height:28px; border-radius:6px; flex:none; cursor:help; }
+.lk-doi { font:600 14px var(--phong); color:var(--accent); white-space:nowrap; }
+
+/* ---------- MỚI v19: Ô SỐ (một dáng cho mọi tab) ---------- */
+.os { appearance:none; display:inline-flex; align-items:center; justify-content:center; gap:4px; min-width:40px; height:30px; padding:0 9px; border-radius:7px;
+  border:1px solid var(--os-vien); background:var(--os-nen); color:var(--os-chu); font:600 15px/1 var(--phong-so); font-variant-numeric:tabular-nums; cursor:pointer;
+  text-decoration:none; transition:background-color .12s ease-out, border-color .12s ease-out; }
+.os:hover, .os.re { background:var(--os-re); border-color:var(--accent); text-decoration:underline; text-underline-offset:3px; text-decoration-thickness:1px; }
+.os:focus-visible, .os.fo { outline:2px solid var(--accent); outline-offset:2px; }
+.os.mo { border:2px solid var(--accent); background:var(--accent-soft); padding:0 8px; }
+.os.do { background:var(--os-do-nen); border-color:var(--os-do-vien); color:var(--os-do-chu); font-weight:700; }
+.os.do .canh { font:700 12px var(--phong); }
+.os.vang { background:var(--os-vang-nen); border-color:var(--os-vang-vien); color:var(--os-vang-chu); }
+.os.v { color:var(--ok); } .os.x { color:var(--bad); }
+.os.to { height:auto; min-width:0; padding:2px 10px 3px; border-radius:9px; font:700 34px/1.15 var(--phong-so); }
+.os.vua { height:auto; padding:1px 8px 2px; font:700 22px/1.2 var(--phong-so); }
+.so0 { display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:30px; font:400 15px var(--phong-so); color:var(--so0); }
+.gach { color:var(--text-faint); font-family:var(--phong-so); }
+.cap { display:inline-grid; grid-template-columns:1fr 1fr; align-items:center; gap:6px; width:100%; }
+.cap > :first-child { justify-self:end; } .cap > .ps { justify-self:start; margin:0; }
+.ps { font:500 13px var(--phong-so); color:var(--text-faint); font-variant-numeric:tabular-nums; margin-left:6px; white-space:nowrap; }
+.tl { font:600 15px var(--phong-so); color:var(--text); font-variant-numeric:tabular-nums; }
+.chip-so { display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:30px; padding:0 9px; border-radius:7px; font:600 15px var(--phong-so); border:1px solid; cursor:pointer; }
+.chip-so.m1 { color:var(--sos1-chu); border-color:var(--sos1); background:transparent; }
+.chip-so.m2 { color:var(--sos2-chu); background:var(--sos2-nen); border-color:var(--sos2); }
+.chip-so.m3 { color:#fff; background:var(--sos3-nen); border-color:var(--sos3-vien); font-weight:700; }
+.chip-sos { display:inline-flex; align-items:center; height:22px; padding:0 7px; border-radius:4px; font:600 12px var(--phong); border:1px solid; }
+.chip-sos.m1 { color:var(--sos1-chu); border-color:var(--sos1); } .chip-sos.m2 { color:var(--sos2-chu); background:var(--sos2-nen); border-color:var(--sos2); } .chip-sos.m3 { color:#fff; background:var(--sos3-nen); border-color:var(--sos3-vien); }
+
+/* thẻ chỉ số */
+.dai { display:grid; grid-template-columns:repeat(var(--cot,4), minmax(0,1fr)); gap:12px; }
+.dt .dai { grid-template-columns:1fr 1fr; gap:8px; }
+.chi-so { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px 16px 14px; display:flex; flex-direction:column; gap:4px; min-width:0; }
+.dt .chi-so { padding:10px 12px 12px; }
+.chi-so.rong2 { grid-column:span 2; }
+.chi-so .ten { font:500 13px var(--phong); color:var(--text-dim); }
+.chi-so .ten i { font-style:normal; color:var(--text-faint); font-weight:400; }
+.dt .chi-so .ten i { display:block; }
+.chi-so .gt { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; font:700 30px/1.2 var(--phong-so); }
+.dt .chi-so .gt { font-size:24px; }
+.dt .os.to { font-size:26px; }
+.chi-so .gt small { font:500 13px var(--phong); color:var(--text-dim); }
+.chi-so .mau { font-size:12px; color:var(--text-faint); }
+.chi-so .mau b { color:var(--text-dim); font-family:var(--phong-so); }
+.chi-so .tron { font:700 30px/1.2 var(--phong-so); color:var(--text); }
+.chi-so .tron.do { color:var(--bad); }
+
+/* thẻ bảng */
+.the { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden; }
+.the-dau { display:flex; align-items:center; gap:8px 10px; flex-wrap:wrap; padding:12px 16px; border-bottom:1px solid var(--line); }
+.the-dau h2 { font:700 15px var(--phong); }
+.the-dau .phu { font-size:13px; color:var(--text-dim); }
+.the-dau .phai { margin-left:auto; display:flex; align-items:center; gap:10px; }
+.dem { display:inline-flex; align-items:center; height:22px; padding:0 7px; border-radius:4px; border:1px solid var(--line-strong); font:600 12px var(--phong); color:var(--text); white-space:nowrap; }
+
+/* ---------- MỚI v19: BẢNG CÂN ---------- */
+.bang { width:100%; border-collapse:separate; border-spacing:0; table-layout:fixed; font-size:15px; }
+.bang th { font:600 13px var(--phong); color:var(--text-dim); text-align:left; background:var(--surface-2); padding:0 12px; height:36px; border-bottom:1px solid var(--line); vertical-align:middle; }
+.bang thead tr:last-child th, .bang thead th[rowspan] { height:44px; line-height:1.2; }
+.bang th.nhom { text-align:center; color:var(--text); font-weight:700; height:32px; background:var(--nhom-nen); border-bottom:1px solid var(--line-strong); }
+.bang th.nhom small { font-weight:500; color:var(--text-faint); font-size:12px; }
+.bang [data-k="so"] { text-align:center; }
+.bang th[data-k="tl"], .bang td[data-k="tl"] { text-align:center; }
+.bang td { height:52px; padding:6px 12px; border-bottom:1px solid var(--line); vertical-align:middle; line-height:1.3; white-space:nowrap; }
+.bang.vua td { height:48px; }
+.bang .ke { border-left:1px solid var(--line-strong); }
+.bang td[data-k="tl"] { background:color-mix(in srgb, var(--surface-2) 45%, transparent); }
+.bang tbody tr:hover td { background-color:color-mix(in srgb, var(--accent) 5%, transparent); }
+.bang tbody tr.re td { background-color:color-mix(in srgb, var(--accent) 7%, transparent); }
+.bang td.ten { font-family:var(--phong); }
+.bang .ten-c { display:block; font:600 15px var(--phong); color:var(--text); overflow:hidden; text-overflow:ellipsis; }
+.bang .phu-o { display:block; font:400 12px var(--phong); color:var(--text-faint); margin-top:2px; overflow:hidden; text-overflow:ellipsis; }
+.bang tr.hang-lon td { background:var(--hang-lon-bg); font-weight:700; }
+.bang tr.hang-lon td:first-child { box-shadow:inset 3px 0 0 var(--hang-lon-vach); }
+.bang tr.hang-con td { background:var(--hang-con-bg); color:var(--hang-con-chu); height:46px; }
+.bang tr.hang-con td:first-child { padding-left:38px; }
+.bang tfoot td { background:var(--surface-2); border-bottom:0; border-top:1px solid var(--line-strong); height:52px; }
+.bang tfoot tr + tr td { border-top:1px solid var(--line); }
+.bang tfoot .ten-c { font-style:italic; }
+.mui-mo { display:inline-block; width:18px; color:var(--text-dim); font-weight:400; }
+.lk-t { color:var(--text) !important; }
+.lk-t:hover { color:var(--accent) !important; text-decoration:underline; text-underline-offset:3px; }
+.phan-trang { display:flex; align-items:center; gap:12px; padding:10px 16px; font-size:13px; color:var(--text-dim); border-top:1px solid var(--line); }
+.phan-trang .phai { margin-left:auto; display:flex; gap:6px; }
+.phan-trang .tr-so { min-width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; border-radius:6px; border:1px solid var(--line-strong); font:600 13px var(--phong-so); }
+.phan-trang .tr-so.dang { background:var(--accent-soft); border-color:var(--accent); color:var(--text); }
+.hai-cot { display:grid; grid-template-columns:1fr 1fr; gap:14px; align-items:start; }
+.luoi-cn { display:grid; grid-template-columns:330px minmax(0,1fr); gap:14px; align-items:start; }
+.cot-doc { display:grid; gap:12px; }
+.diem { font:600 15px var(--phong-so); }
+.diem.v { color:var(--ok); } .diem.x { color:var(--bad); } .diem.b { color:var(--text); }
+.nhan-kq { display:inline-flex; align-items:center; gap:4px; font:600 13px var(--phong); }
+.nhan-kq.v { color:var(--ok); } .nhan-kq.x { color:var(--bad); } .nhan-kq.b { color:var(--text-dim); }
+.bac { font-size:14px; color:var(--text-dim); }
+
+/* thẻ 375 */
+.the-dong { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:12px; display:grid; gap:10px; }
+.the-dong .dau { display:flex; align-items:baseline; gap:8px; flex-wrap:wrap; }
+.the-dong .dau b { font:600 16px var(--phong); }
+.the-dong .dau span { font-size:13px; color:var(--text-faint); }
+.the-dong .nhom-the { border-top:1px solid var(--line); padding-top:8px; display:grid; gap:6px; }
+.the-dong .nhom-the h4 { margin:0; font:600 13px var(--phong); color:var(--text); display:flex; gap:6px; align-items:baseline; }
+.the-dong .nhom-the h4 span { font:500 13px var(--phong-so); color:var(--text-faint); margin-left:auto; }
+.the-dong .ba { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; align-items:end; }
+.the-dong .ba > div { display:grid; gap:4px; justify-items:start; }
+.the-dong .ba i { font-style:normal; font-size:12px; color:var(--text-dim); }
+.the-dong .os, .the-dong .so0 { min-width:44px; height:36px; }
+.the-dong .so0 { justify-content:flex-start; padding-left:2px; }
+
+/* ---------- MỚI v19: PANEL MỞ TỪ SỐ ---------- */
+.phu-hop { position:absolute; inset:56px 0 0 0; background:rgb(0 0 0 / .5); z-index:5; }
+[data-theme="light"] .phu-hop, .man[data-theme="light"] .phu-hop { background:rgb(17 26 66 / .35); }
+.pn { position:absolute; top:64px; right:16px; bottom:16px; width:640px; z-index:6; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; display:flex; flex-direction:column; overflow:hidden; box-shadow:0 12px 32px rgb(0 0 0 / .45), 0 2px 6px rgb(0 0 0 / .3); }
+.pn.tinh { position:relative; inset:auto; width:600px; height:auto; min-height:330px; }
+.dt .pn { inset:0; width:auto; border-radius:0; border:0; top:0; right:0; bottom:0; }
+.pn-dau { padding:14px 20px 0; border-bottom:1px solid var(--line); display:grid; gap:4px; }
+.dt .pn-dau { padding:10px 16px 0; }
+.pn-h1 { display:flex; align-items:flex-start; gap:12px; }
+.pn-h1 h2 { font:700 19px/1.3 var(--phong); }
+.pn-h1 h2 b { font-family:var(--phong-so); }
+.pn-h1 .x { margin-left:auto; appearance:none; width:36px; height:36px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text-dim); display:inline-flex; align-items:center; justify-content:center; flex:none; }
+.dt .pn-h1 .x { width:44px; height:44px; }
+.pn-ngu { font-size:14px; color:var(--text-dim); display:flex; gap:2px 6px; flex-wrap:wrap; align-items:center; }
+.pn-ngu .ma { font-family:var(--phong-so); }
+.pn-tab { display:flex; gap:2px; margin-top:8px; }
+.pn-tab button { appearance:none; border:0; background:none; height:42px; padding:0 12px; font:500 14px var(--phong); color:var(--text-dim); border-bottom:2px solid transparent; margin-bottom:-1px; display:inline-flex; align-items:center; gap:7px; white-space:nowrap; }
+.pn-tab button b { font:600 13px var(--phong-so); min-width:24px; height:22px; padding:0 6px; border-radius:11px; background:var(--surface-2); border:1px solid var(--line-strong); display:inline-flex; align-items:center; justify-content:center; color:var(--text); }
+.pn-tab button.do b { background:var(--os-do-nen); border-color:var(--os-do-vien); color:var(--os-do-chu); }
+.pn-tab button[aria-selected="true"] { color:var(--text); font-weight:700; border-bottom-color:var(--accent); }
+.dt .pn-tab { margin:8px -16px 0; padding:0 8px; }
+.dt .pn-tab button { flex:1; justify-content:center; padding:0 4px; height:46px; font-size:14px; }
+.pn-than { flex:1; min-height:0; overflow:hidden; display:flex; flex-direction:column; }
+.pn-nhom { display:flex; align-items:center; gap:8px; padding:0 20px; height:36px; background:var(--hang-lon-bg); border-bottom:1px solid var(--line); font:700 13px var(--phong); color:var(--text); position:relative; }
+.pn-nhom::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--hang-lon-vach); }
+.pn-nhom span { font-weight:500; color:var(--text-faint); font-family:var(--phong-so); }
+.dt .pn-nhom { padding:0 16px; }
+.pn-dong { display:grid; grid-template-columns:minmax(0,1.35fr) 112px 76px 110px; align-items:center; gap:12px; padding:0 20px; height:50px; border-bottom:1px solid var(--line); font-size:15px; }
+.pn-dong .hv { font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pn-dong .bai { font:500 14px var(--phong); color:var(--text-dim); }
+.pn-dong .bai b { font:600 14px var(--phong); color:var(--text); }
+.pn-dong .han { font:500 14px var(--phong-so); color:var(--text-dim); }
+.pn-dong .tre { font:600 13px var(--phong); color:var(--bad); white-space:nowrap; justify-self:end; }
+.pn-dong .tre.muon { color:var(--soon); }
+.pn-dong .tre.dung { color:var(--ok); }
+.pn-dau-cot { display:grid; grid-template-columns:minmax(0,1.35fr) 112px 76px 110px; gap:12px; padding:0 20px; height:32px; align-items:center; background:var(--surface-2); border-bottom:1px solid var(--line); font:600 12px var(--phong); color:var(--text-dim); }
+.pn-dau-cot span:last-child { justify-self:end; }
+.dt .pn-dong { grid-template-columns:minmax(0,1fr) auto; grid-template-rows:auto auto; height:auto; padding:10px 16px; gap:2px 10px; }
+.dt .pn-dong .hv { grid-column:1; } .dt .pn-dong .tre { grid-column:2; grid-row:1; }
+.dt .pn-dong .bai { grid-column:1; } .dt .pn-dong .han { grid-column:2; justify-self:end; font-size:13px; }
+.pn-chan { display:flex; align-items:center; gap:10px; padding:12px 20px; border-top:1px solid var(--line); font-size:13px; color:var(--text-dim); }
+.pn-chan .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.dt .pn-chan { padding:10px 16px; }
+.skel { height:14px; border-radius:6px; background:linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); }
+.skel-dong { display:grid; grid-template-columns:1.35fr 112px 76px 110px; gap:12px; padding:18px 20px; border-bottom:1px solid var(--line); }
+.trong { padding:28px 20px; display:grid; gap:10px; justify-items:start; }
+.trong h3 { font:600 16px var(--phong); }
+.trong p { font-size:14px; color:var(--text-dim); max-width:52ch; }
+.loi-hop { margin:20px; padding:14px 16px; border-radius:10px; border:1px solid var(--os-do-vien); background:var(--os-do-nen); display:grid; gap:8px; justify-items:start; }
+.loi-hop h3 { font:600 15px var(--phong); color:var(--os-do-chu); }
+.loi-hop p { font-size:14px; color:var(--text); }
+
+/* bảng mẫu ô số */
+.mau-o { background:var(--surface); border-radius:10px; padding:16px 18px; display:grid; gap:10px; min-width:640px; border:1px solid var(--line); }
+.mau-o h3 { margin:0 0 4px; font:700 15px var(--phong); color:var(--text); }
+.mau-o .dong { display:grid; grid-template-columns:150px 200px minmax(0,1fr); gap:14px; align-items:center; font-size:14px; color:var(--text-dim); }
+.mau-o .dong > :first-child { color:var(--text); font-weight:600; }
+.mau-o .vd { display:flex; gap:8px; align-items:center; }
+.mau-o .dong.vach { border-top:1px solid var(--line); padding-top:10px; }
+
+/* ================= MỚI v20 · TỈ LỆ GV THEO TUẦN ================= */
+.trang { gap:40px; }
+.dt .phu-hop { inset:0; }
+/* ô điểm thi thật bấm được: dáng ô số v19, màu chữ giữ nghĩa so Target (✓ / ✗ ở cột Kết quả) */
+.os.d { min-width:44px; font-weight:600; }
+.os.d.v { color:var(--ok); } .os.d.x { color:var(--bad); }
+.os.d .lai { font:500 12px var(--phong); color:var(--text-faint); }
+.os.d.lon { height:auto; min-width:64px; padding:4px 10px 5px; border-radius:9px; font:700 26px/1.15 var(--phong-so); }
+
+/* hộp nhỏ (popover) */
+.tg { position:absolute; z-index:7; width:404px; background:var(--surface); border:1px solid var(--line-strong); border-radius:12px; color:var(--text);
+  box-shadow:0 14px 32px rgb(0 0 0 / .45), 0 2px 6px rgb(0 0 0 / .3); font:15px/1.4 var(--phong); }
+[data-theme="light"] .tg, .tg[data-theme="light"] { box-shadow:0 14px 32px rgb(17 26 66 / .16), 0 2px 6px rgb(17 26 66 / .1); }
+.tg.tinh { position:relative; }
+.tg .mui { position:absolute; top:-7px; width:12px; height:12px; background:var(--surface); border-left:1px solid var(--line-strong); border-top:1px solid var(--line-strong); transform:rotate(45deg); }
+.tg-dau { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:2px 10px; padding:12px 12px 10px 16px; border-bottom:1px solid var(--line); }
+.tg-dau h3 { margin:0; font:700 16px/1.3 var(--phong); display:flex; align-items:baseline; gap:8px; }
+.tg-dau h3 .kn { font:700 16px var(--phong-so); }
+.tg-dau h3 .dm { font:700 16px var(--phong-so); }
+.tg-dau h3 .dm.v { color:var(--ok); } .tg-dau h3 .dm.x { color:var(--bad); }
+.tg-dau .phu { grid-column:1; font-size:13px; color:var(--text-dim); }
+.tg-chuyen { grid-column:1 / -1; display:flex; gap:4px; margin-top:8px; }
+.tg-chuyen button { appearance:none; min-width:40px; height:30px; padding:0 10px; border-radius:15px; border:1px solid var(--line-strong); background:transparent; font:600 13px var(--phong-so); color:var(--text-dim); cursor:pointer; }
+.tg-chuyen button[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--text); }
+.tg.sheet .tg-chuyen button { height:40px; min-width:52px; }
+.tg-dau .dong-x { grid-row:1 / span 2; grid-column:2; appearance:none; width:32px; height:32px; border-radius:8px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text-dim); display:inline-flex; align-items:center; justify-content:center; cursor:pointer; }
+.tg-khoang { display:flex; align-items:center; gap:6px; padding:8px 12px 6px 16px; font-size:13px; color:var(--text-dim); }
+.tg-khoang b { font:600 13px var(--phong-so); color:var(--text); white-space:nowrap; }
+.tg-khoang .nut-i { margin-left:auto; width:28px; height:28px; font-size:16px; }
+.tg-lop { margin:0 16px 4px; display:grid; gap:0; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+.tg-lop div { display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:10px; align-items:center; padding:5px 10px; font-size:13px; color:var(--text-dim); }
+.tg-lop div + div { border-top:1px solid var(--line); }
+.tg-lop a { font-weight:600; color:var(--text) !important; }
+.tg-lop .ma { font:500 13px var(--phong-so); white-space:nowrap; }
+.tg-lop .n { font:600 13px var(--phong-so); color:var(--text); white-space:nowrap; min-width:52px; text-align:right; }
+.tg-nhom { padding:8px 16px 2px; font:700 12px var(--phong); color:var(--text-dim); letter-spacing:.02em; }
+.tg-ds { padding:4px 8px 8px; display:grid; gap:2px; }
+.tg-dong { display:grid; grid-template-columns:minmax(0,1fr) 60px 82px 50px; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; min-height:44px; }
+.tg-dong .ten { min-width:0; }
+.tg-dong .ten b { display:block; font:500 15px var(--phong); color:var(--text); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tg-dong .ten span { display:block; font-size:12px; color:var(--text-faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tg-dong .thanh { height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
+.tg-dong .thanh i { display:block; height:100%; border-radius:3px; background:var(--text-faint); }
+.tg-dong .tu { font:500 14px var(--phong-so); color:var(--text-dim); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.tg-dong .pt { font:600 15px var(--phong-so); color:var(--text-dim); text-align:right; white-space:nowrap; font-variant-numeric:tabular-nums; }
+.tg-dong.cao { background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent-line); }
+.tg-dong.cao .ten b { font-weight:700; }
+.tg-dong.cao .thanh i { background:var(--accent); }
+.tg-dong.cao .tu { color:var(--text); }
+.tg-dong.cao .pt { color:var(--text); font-weight:700; }
+.tg-dong.trong { outline:1px dashed var(--line-strong); outline-offset:-1px; }
+.tg-dong.trong .ten b { color:var(--text-dim); }
+.tg-dong.trong .thanh i { background:repeating-linear-gradient(135deg, var(--text-dim) 0 2px, transparent 2px 4px); }
+.tg-chan { display:flex; align-items:center; gap:8px; padding:9px 16px; border-top:1px solid var(--line); font-size:13px; color:var(--text-dim); }
+.tg-chan .phai { margin-left:auto; }
+.tg-rong { padding:14px 16px 16px; display:grid; gap:6px; }
+.tg-rong h4 { margin:0; font:600 15px var(--phong); }
+.tg-rong p { font-size:14px; color:var(--text-dim); }
+.tg-loi { margin:12px 16px 14px; padding:10px 12px; border-radius:8px; border:1px solid var(--os-do-vien); background:var(--os-do-nen); display:grid; gap:8px; justify-items:start; }
+.tg-loi p { font-size:14px; color:var(--text); }
+.tg-loi .nut { height:32px; font-size:13px; }
+.tg .skel-d { display:grid; grid-template-columns:minmax(0,1fr) 60px 82px 50px; gap:10px; align-items:center; padding:14px 16px; }
+/* tóm tắt 5 kỹ năng (bấm OVR / nút Tuần dạy) */
+.tg-kn { display:grid; grid-template-columns:72px minmax(0,1fr) 50px 16px; align-items:center; gap:10px; padding:6px 8px; border-radius:8px; min-height:44px; cursor:pointer; }
+.tg-kn:hover { background:color-mix(in srgb, var(--accent) 7%, transparent); } .tg-kn:hover .ten b { text-decoration:underline; text-underline-offset:3px; }
+.tg-lop1 { margin:0 16px 6px; font-size:13px; color:var(--text-dim); display:flex; flex-wrap:wrap; gap:2px 6px; align-items:baseline; }
+.tg-lop1 a { font-weight:600; color:var(--text) !important; }
+.tg-lop1 b { font:600 13px var(--phong-so); color:var(--text); }
+.tg-giai { margin:0 16px 8px; padding:8px 10px; border-radius:8px; background:var(--surface-2); border:1px solid var(--line); font-size:13px; color:var(--text-dim); }
+.tg .tai { padding:2px 16px 0; font-size:13px; color:var(--text-faint); }
+.tg-kn .k { font:700 14px var(--phong-so); color:var(--text); white-space:nowrap; }
+.tg-kn .ten b { display:block; font:600 15px var(--phong); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.tg-kn .ten span { display:block; font-size:12px; color:var(--text-faint); }
+.tg-kn .pt { font:700 15px var(--phong-so); text-align:right; }
+.tg-kn .mt { color:var(--text-faint); }
+/* sheet 375 */
+.tg.sheet { left:0; right:0; bottom:0; width:auto; border-radius:16px 16px 0 0; border-bottom:0; padding-bottom:8px; }
+.tg.sheet .keo { width:40px; height:4px; border-radius:2px; background:var(--line-strong); margin:8px auto 0; }
+.tg.sheet .tg-dau .dong-x { width:44px; height:44px; }
+.tg.sheet .tg-dong { grid-template-columns:minmax(0,1fr) 44px 80px 46px; gap:8px; min-height:52px; }
+/* [XM] tên GV dưới điểm ở Danh sách */
+.duoi-gv { display:block; margin-top:3px; font:500 12px var(--phong); color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.duoi-gv b { font:600 12px var(--phong-so); color:var(--text-dim); }
+
+/* khung hồ sơ HV */
+.hs-dau { display:flex; align-items:center; gap:14px; }
+.hs-dau .av2 { width:44px; height:44px; border-radius:50%; background:#2b4673; color:#fff; display:inline-flex; align-items:center; justify-content:center; font:700 17px var(--phong); flex:none; }
+.hs-dau h1 { font-size:22px; font-weight:700; }
+.hs-dau .phu { font-size:14px; color:var(--text-dim); }
+.hs-dau .phu a { font-weight:600; }
+.chon-kn { display:flex; gap:4px; }
+.chon-kn button { appearance:none; height:32px; padding:0 12px; border-radius:16px; border:1px solid var(--line-strong); background:transparent; font:600 13px var(--phong-so); color:var(--text-dim); }
+.chon-kn button[aria-pressed="true"] { background:var(--accent-soft); border-color:var(--accent); color:var(--text); }
+.bang tr.hang-thi td { background:var(--hang-lon-bg); height:60px; }
+.bang tr.hang-thi td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
+.lon-o { display:grid; grid-template-columns:repeat(5, auto); gap:14px; justify-content:start; }
+.lon-o > div { display:grid; gap:4px; justify-items:start; }
+.lon-o i { font-style:normal; font:600 12px var(--phong); color:var(--text-dim); }
+.lon-o .ovr { font:700 26px/1.15 var(--phong-so); padding:4px 0 5px; }
+.o-nhap { display:grid; gap:4px; }
+.o-nhap i { font-style:normal; font-size:12px; color:var(--text-dim); }
+.o-nhap span { height:36px; width:72px; border:1px solid var(--o-vien); background:var(--o-nen); border-radius:8px; display:inline-flex; align-items:center; padding:0 10px; font:500 15px var(--phong-so); }
+</style>
+</head>
+<body>
+<div class="trang" id="goc">
+  <header class="dau-mk">
+    <h1>v20 · Tỉ lệ GV theo tuần cho điểm thi thật (chờ chủ SP duyệt)</h1>
+    <p>Đề bài: <code>docs/superpowers/specs/2026-11-12-tinh-hinh-hoc-tap/de-bai.md</code> mục 4. Nền: v19 (ô số hộp, màu, panel). Ghi chú, thao tác TRƯỚC → SAU, Turso, [XM] (PTA đã chốt 12/11): <code>ti-le-gv-ghi-chu.md</code>. Dữ liệu giả, không tên thật.</p>
+    <p><b>Một luật:</b> điểm kỹ năng thi thật thành <b>ô số hộp</b> (G6: hộp = bấm được, mở tại chỗ) → <b>hộp nhỏ</b> GV · số tuần · %. GV tỉ lệ cao nhất: nền nhạt + viền + chữ đậm + thanh màu nhấn — <b>không</b> chữ "phụ trách chính". 375: sheet dưới. Chỉ đọc máy chủ khi bấm.</p>
+    <div class="muc-mk">
+      <button type="button" id="doi-nen">Đổi sáng / tối (mọi khung)</button>
+      <a href="#mau">0 · Ô điểm</a><a href="#tt">1 · Trạng thái hộp</a><a href="#hs">2 · Hồ sơ HV</a><a href="#pt">3 · Phân tích › Thi thật</a><a href="#khac">4 · Nơi khác</a><a href="#dt">5 · 375</a><a href="#sang">6 · Sáng</a>
+    </div>
+  </header>
+
+  <section class="khu" id="mau">
+    <h2>0 · Ô điểm thi thật — TRƯỚC → SAU (tối | sáng)</h2>
+    <div class="ghi"><ul>
+      <li>v19 ghi "điểm thi là chữ thường (không bấm)". v20 đổi riêng <b>điểm kỹ năng thi thật</b> (L / R / W / S) thành hộp vì nay bấm được — cùng dáng ô số v19, chữ giữ màu so Target (xanh trên · thường bằng · đỏ dưới), không thêm màu mới. [XM-1]</li>
+      <li>OVR thi thật: hộp ở nơi chỉ có OVR (hồ sơ lớp Tổng kết) → hộp tóm tắt 5 kỹ năng. Nơi có đủ L R W S, OVR là chữ thường (không cần hai đường mở cùng dữ liệu). [XM-3]</li>
+      <li>"—" (chưa có điểm) và Mock Test giữ chữ thường. Kỹ năng lấy KQ lần trước (thi lại một kỹ năng, "↺") vẫn bấm được, tính theo lần thi có điểm đó. [XM-5]</li>
+    </ul></div>
+    <div class="hang-khung" id="k-mau"></div>
+  </section>
+
+  <section class="khu" id="tt">
+    <h2>1 · Hộp tỉ lệ GV — mọi trạng thái (tối, rồi sáng)</h2>
+    <div class="ghi"><ul>
+      <li>Thứ tự trong hộp: <b>kỹ năng · điểm</b> (cái đang bấm) → khoảng tính <b>tuần bắt đầu lộ trình → tuần thi · tổng tuần</b> → dòng lớp (chỉ khi em chuyển lớp) → GV xếp theo số tuần giảm dần → "Chưa phân công" cuối.</li>
+      <li>Mỗi dòng GV: tên · lớp đã dạy em · thanh nhỏ (tỉ lệ) · <b>6/10 tuần</b> · <b>60 %</b> (cùng dáng cột "Tuần dạy" ở panel ô Theo GV: <code>6/10 · 60 %</code>). Bằng nhau ở mức cao nhất → cả hai làm nổi. Làm nổi không chỉ bằng màu: viền khung + tên đậm + % đậm (đọc được ở thang xám).</li>
+      <li>Vị trí: mở dưới ô, mũi chỉ vào ô; thiếu chỗ phía dưới thì lật lên trên. Hộp che tạm các hàng dưới — đóng là thấy lại, không đổi trang, không mất vị trí cuộn.</li>
+      <li>W: điểm thi một ô W, phân công tách W1 / W2 → hộp có hai nhóm. Esc / bấm ngoài / ✕ đóng; ô đang mở viền đậm (<code>.os.mo</code>, aria-expanded).</li>
+      <li>ⓘ: "Đếm theo tuần (Thứ Hai), từ tuần bắt đầu lộ trình đến tuần thi. Tuần GV được phân công kỹ năng này ở lớp em đang học thì tính cho GV đó. Không ai phân công: Chưa phân công. Tuần hai GV cùng dạy: chia đôi (0,5 mỗi người), tổng luôn 100 %. Chỉ tính lớp Fast Track."</li>
+    </ul></div>
+    <div class="hang-khung" id="k-tt"></div>
+    <div class="hang-khung" id="k-tt-s" style="margin-top:20px"></div>
+  </section>
+
+  <section class="khu" id="hs">
+    <h2>2 · Hồ sơ HV › Học thuật · hàng Thi thật — 1440 tối</h2>
+    <div class="ghi"><ul>
+      <li>Khung = web thật: thanh Trước · Sau, đầu hai dòng (+ Case · ⋯), ô điểm to, ba tab <b>Học thuật · Ý thức &amp; Phối hợp · Lộ trình &amp; lớp</b>, bảng MT cột <b>L · R · W1 · W2 · S</b> (không gộp W).</li>
+      <li>Hàng Thi thật cuối bảng (giữ): bài thi thật chỉ có MỘT điểm W → ô W trải hai cột W1 + W2 (như web hiện tại, colSpan 2). Ô L / R / W / S thành hộp; hàng MT giữ chữ. Hộp của W liệt kê GV theo hai nhóm W1 · W2, mỗi nhóm % riêng.</li>
+      <li>Bấm R → hộp mở ngay dưới ô. Em chuyển lớp MB FT 101 → MB FT 205, đổi GV R; tuần bàn giao W4 SEP hai GV cùng dạy → chia đôi 0,5.</li>
+      <li>[XM-9] Ô điểm to đầu hồ sơ (Thi thật IELTS · L · R · W · S) đang bấm = chọn kỹ năng cho Hành trình → GIỮ, không mở hộp (một ô một việc); xem tuần dạy ở hàng Thi thật.</li>
+    </ul></div>
+    <div class="hang-khung" id="k-hs"></div>
+  </section>
+
+  <section class="khu" id="pt">
+    <h2>3 · Phân tích › Thi thật › Danh sách kết quả — 1440 tối</h2>
+    <div class="ghi"><ul>
+      <li>3a: ô L R W S của danh sách thành hộp, bấm W → hộp W1 + W2. Panel ô (bấm số Vượt / Đạt…, bảng lượt <code>BangLuotPanel</code> kiểu thi thật) dùng CÙNG ô và CÙNG hộp — không vẽ lại.</li>
+      <li>[XM-2] Tên GV dưới mỗi điểm: PTA chốt <b>không làm</b> (khung đã bỏ).</li>
+    </ul></div>
+    <div class="hang-khung" id="k-pt"></div>
+  </section>
+
+  <section class="khu" id="khac">
+    <h2>4 · Nơi khác hiện điểm thi thật — 1440 tối</h2>
+    <div class="ghi"><ul>
+      <li>4a Tổng kết lộ trình (ngăn <code>NganTongKet</code>): ô điểm lớn L R W S thành hộp lớn; bấm → cùng hộp.</li>
+      <li>4b Panel KQ thi thật (nhập điểm): ô là ô nhập, không bấm mở được → nút chữ <b>Tuần dạy</b> cạnh OVR (chỉ khi đã lưu điểm) mở hộp tóm tắt 5 kỹ năng; bấm một dòng → chi tiết kỹ năng ngay trong hộp, "‹ Kỹ năng" quay lại. [XM-4]</li>
+      <li>4c Hồ sơ lớp › Tổng kết: bảng chỉ có OVR thi thật → OVR thành hộp, mở hộp tóm tắt. [XM-3]</li>
+    </ul></div>
+    <div class="hang-khung" id="k-khac"></div>
+  </section>
+
+  <section class="khu" id="dt">
+    <h2>5 · 375 tối — sheet dưới</h2>
+    <div class="ghi"><ul>
+      <li>Bấm ô điểm → sheet trượt lên từ dưới, nền mờ; vuốt xuống / ✕ / chạm nền để đóng. Dòng GV cao ≥ 52 px.</li>
+    </ul></div>
+    <div class="hang-khung" id="k-dt"></div>
+  </section>
+
+  <section class="khu" id="sang">
+    <h2>6 · Sáng — 1440 + 375</h2>
+    <div class="hang-khung" id="k-sang"></div>
+  </section>
+</div>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const I = (t) => `<button type="button" class="nut-i" aria-label="Giải thích" title="${t}">ⓘ</button>`;
+  const X = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 4l8 8M12 4l-8 8"/></svg>';
+  const os = (n, k = '') => `<button type="button" class="os ${k}"${k.includes('mo') ? ' aria-expanded="true"' : ''}>${n}</button>`;
+  const d = (v, k = '', x = '') => (v === '—' ? '<span class="gach">—</span>' : os(v, `d ${k} ${x}`));
+  const CACH = 'Đếm theo tuần, từ tuần bắt đầu lộ trình đến tuần thi; tuần GV được phân công kỹ năng này ở lớp em học thì tính cho GV đó. Tuần hai GV cùng dạy: chia đôi (0,5 mỗi người), tổng luôn 100 %. Chỉ tính lớp Fast Track.';
+  const so = (x) => String(x).replace('.', ',');
+
+  /* ---------- dữ liệu giả ---------- */
+  const LOP2 = [['MB FT 101', 'W1 SEP – W3 OCT', 7], ['MB FT 205', 'W4 OCT – W1 NOV', 3]];
+  const HOP = {
+    L: { kn: 'L', diem: '7.0', k: 'v', hv: 'Trần Minh Khoa', thi: '08/11', tu: 'W1 SEP', den: 'W1 NOV', tong: 10, lop: LOP2,
+      nhom: [{ ds: [['Bùi Thanh Tâm', 'MB FT 101 · MB FT 205', 10]] }] },
+    R: { kn: 'R', diem: '6.5', k: 'v', hv: 'Trần Minh Khoa', thi: '08/11', tu: 'W1 SEP', den: 'W1 NOV', tong: 10, lop: LOP2,
+      nhom: [{ ds: [['Phạm Thu Trang', 'MB FT 101 · MB FT 205', 5.5], ['Lê Minh An', 'MB FT 101 · chung W4 SEP', 3.5]], trong: 1 }] },
+    W: { kn: 'W', diem: '5.5', k: 'x', hv: 'Trần Minh Khoa', thi: '08/11', tu: 'W1 SEP', den: 'W1 NOV', tong: 10, lop: LOP2,
+      nhom: [{ ten: 'W1 · Writing Task 1', ds: [['Hoàng Gia Khánh', 'MB FT 101', 7], ['Vũ Quang Huy', 'MB FT 205', 3]] }, { ten: 'W2 · Writing Task 2', ds: [['Hoàng Gia Khánh', 'MB FT 101 · MB FT 205', 10]] }] },
+    S: { kn: 'S', diem: '6.0', k: '', hv: 'Trần Minh Khoa', thi: '08/11', tu: 'W1 SEP', den: 'W1 NOV', tong: 10, lop: LOP2,
+      nhom: [{ ds: [['Nguyễn Hải Đăng', 'MB FT 101 · MB FT 205', 10]] }] },
+    /* một lớp, không chuyển lớp */
+    L1: { kn: 'L', diem: '6.5', k: 'v', hv: 'Đỗ Bảo Châu', thi: '01/11', tu: 'W2 SEP', den: 'W5 OCT', tong: 8, lop: null,
+      nhom: [{ ds: [['Bùi Thanh Tâm', 'MB FT 108', 8]] }] },
+    BANG: { kn: 'R', diem: '6.0', k: '', hv: 'Đỗ Bảo Châu', thi: '01/11', tu: 'W2 SEP', den: 'W5 OCT', tong: 8, lop: null,
+      nhom: [{ ds: [['Lê Minh An', 'MB FT 108', 4], ['Phạm Thu Trang', 'MB FT 108', 4]] }] },
+    TRONG: { kn: 'S', diem: '6.0', k: '', hv: 'Đỗ Bảo Châu', thi: '01/11', tu: 'W2 SEP', den: 'W5 OCT', tong: 8, lop: null, rong: 'MB FT 108' },
+  };
+
+  function dongGv(r, tong, cao) {
+    const pt = Math.round((100 * r[2]) / tong);
+    return `<div class="tg-dong${cao ? ' cao' : ''}"><span class="ten"><b>${r[0]}</b><span>${r[1]}</span></span><span class="thanh" aria-hidden="true"><i style="width:${Math.min(pt, 100)}%"></i></span><span class="tu">${so(r[2])}/${tong} tuần</span><span class="pt">${pt} %</span></div>`;
+  }
+  function dsNhom(n, tong) {
+    const max = Math.max(...n.ds.map((r) => r[2]));
+    return (n.ten ? `<div class="tg-nhom">${n.ten}</div>` : '') + `<div class="tg-ds" role="list">${[...n.ds].sort((a, b) => b[2] - a[2]).map((r) => dongGv(r, tong, r[2] === max)).join('')}`
+      + (n.trong ? `<div class="tg-dong trong"><span class="ten"><b>Chưa phân công</b><span>MB FT 205 · W4 OCT</span></span><span class="thanh" aria-hidden="true"><i style="width:${Math.round(100 * n.trong / tong)}%"></i></span><span class="tu">${n.trong}/${tong} tuần</span><span class="pt">${Math.round(100 * n.trong / tong)} %</span></div>` : '') + '</div>';
+  }
+  const dau = (h, o = {}) => `<div class="tg-dau"><h3>${o.lui ? '<a href="#khac" style="font:600 13px var(--phong);margin-right:4px">‹ Kỹ năng</a>' : ''}<span class="kn">${h.kn}</span><span class="dm ${h.k}">${h.diem}</span><span style="font:500 13px var(--phong);color:var(--text-dim)">· thi thật ${h.thi}</span></h3><span class="phu">${h.hv}</span><span class="tg-chuyen" role="group" aria-label="Kỹ năng">${["L", "R", "W", "S"].map((k) => `<button type="button" aria-pressed="${k === h.kn}">${k}</button>`).join("")}</span><button type="button" class="dong-x" aria-label="Đóng">${X}</button></div>`;
+  const khoang = (h) => `<div class="tg-khoang"><span>Tuần dạy</span><b>${h.tu} → ${h.den}</b><span>·</span><b>${h.tong} tuần</b>${I(CACH)}</div>`;
+  const lop = (h) => (h.lop ? `<div class="tg-lop1" aria-label="Lớp trong khoảng"><span>Lớp</span>${h.lop.map((l) => `<a href="#lop" title="${l[1]}">${l[0]}</a><span>·</span><b>${l[2]} tuần</b>`).join('<span aria-label="rồi chuyển sang">→</span>')}</div>` : '');
+
+  /** Hộp tỉ lệ GV. o: tinh (đứng riêng), sheet (375), x / y (vị trí), mui (vị trí mũi), trang: 'tai' | 'loi', ql (có link phân công). */
+  function hop(h, o = {}) {
+    const vt = o.tinh ? '' : o.sheet ? '' : ` style="left:${o.x}px;top:${o.y}px"`;
+    const cls = `tg${o.tinh ? ' tinh' : ''}${o.sheet ? ' sheet' : ''}`;
+    const mui = o.tinh || o.sheet ? '' : `<span class="mui" style="left:${o.mui ?? 24}px"></span>`;
+    const keo = o.sheet ? '<div class="keo" aria-hidden="true"></div>' : '';
+    let than;
+    if (o.trang === 'tai') than = khoang(h) + '<div class="tai" role="status">Đang tải tuần dạy…</div>' + [0, 1, 2].map((i) => `<div class="skel-d"><span class="skel" style="width:${[70, 55, 62][i]}%"></span><span class="skel"></span><span class="skel"></span><span class="skel"></span></div>`).join('');
+    else if (o.trang === 'loi') than = `<div class="tg-loi" role="alert"><p>Chưa tải được tuần dạy. Điểm và bảng không đổi.</p><button type="button" class="nut">Thử lại</button></div>`;
+    else if (h.rong) than = khoang(h) + `<div class="tg-rong"><h4>Chưa có phân công GV ${h.kn === 'S' ? 'Speaking' : h.kn}</h4><p>${h.tong} tuần · ${h.rong}</p></div>`
+      + (o.ql ? `<div class="tg-chan">Sửa ở hồ sơ lớp<span class="phai"><a class="lk-doi" href="#lop">Phân công ${h.rong} ›</a></span></div>` : '');
+    else than = khoang(h) + (o.giai ? `<div class="tg-giai" role="note">${CACH}</div>` : '') + lop(h) + h.nhom.map((n) => dsNhom(n, h.tong)).join('');
+    return `<div class="${cls}" role="dialog" aria-label="Tuần dạy ${h.kn} · ${h.hv}"${vt}${o.theme ? ` data-theme="${o.theme}"` : ''}>${mui}${keo}${dau(h)}${than}</div>`;
+  }
+  /** Hộp tóm tắt 5 kỹ năng (bấm OVR ở nơi chỉ có OVR; nút "Tuần dạy" ở panel nhập KQ). */
+  function hopTom(o = {}) {
+    const R = [['L', '7.0', 'v', 'Bùi Thanh Tâm', '', 100], ['R', '6.5', 'v', 'Phạm Thu Trang', '+ 1 GV · 1 tuần trống', 55], ['W1', '5.5', 'x', 'Hoàng Gia Khánh', '+ 1 GV', 70], ['W2', '5.5', 'x', 'Hoàng Gia Khánh', '', 100], ['S', '6.0', '', 'Nguyễn Hải Đăng', '', 100]];
+    const vt = o.tinh ? '' : ` style="left:${o.x}px;top:${o.y}px"`;
+    return `<div class="tg${o.tinh ? ' tinh' : ''}" role="dialog" aria-label="Tuần dạy theo kỹ năng"${vt}>${o.tinh ? '' : `<span class="mui" style="left:${o.mui ?? 24}px"></span>`}<div class="tg-dau"><h3>Tuần dạy theo kỹ năng <span class="dm" style="font-weight:500;font-size:13px;color:var(--text-dim)">· OVR <b style="color:var(--text)">6.0</b></span></h3><span class="phu">Trần Minh Khoa · thi thật 08/11</span><button type="button" class="dong-x" aria-label="Đóng">${X}</button></div>`
+      + `<div class="tg-khoang"><b>W1 SEP → W1 NOV</b><span>·</span><b>10 tuần</b><span>· GV nhiều tuần nhất</span>${I(CACH)}</div><div class="tg-ds">`
+      + R.map((r) => `<div class="tg-kn" role="button" tabindex="0"><span class="k">${r[0]} <span class="diem ${r[2]}" style="font-size:13px">${r[1]}</span></span><span class="ten"><b>${r[3]}</b>${r[4] ? `<span>${r[4]}</span>` : ''}</span><span class="pt">${r[5]} %</span><span class="mt"></span></div>`).join('') + '</div></div>';
+  }
+
+  /* ---------- 0 · ô điểm ---------- */
+  const mauO = (theme) => `<div class="mau-o"${theme ? ` data-theme="${theme}"` : ''}><h3>Ô điểm thi thật · ${theme ? 'sáng' : 'tối'}</h3>
+    <div class="dong"><span>TRƯỚC (v19)</span><span class="vd"><span class="diem v">7.0</span><span class="diem v">6.5</span><span class="diem x">5.5</span><span class="diem b">6.0</span></span><span>chữ thường, không bấm</span></div>
+    <div class="dong vach"><span>SAU · thường</span><span class="vd">${d('7.0', 'v')}${d('6.5', 'v')}${d('5.5', 'x')}${d('6.0')}</span><span>hộp = bấm được; màu chữ = so Target</span></div>
+    <div class="dong"><span>SAU · rê / focus</span><span class="vd">${d('6.5', 'v', 're')}${d('6.5', 'v', 'fo')}</span><span>gạch chân khi rê; vòng focus 2 px</span></div>
+    <div class="dong"><span>SAU · đang mở</span><span class="vd">${d('6.5', 'v', 'mo')}</span><span>viền đậm, aria-expanded</span></div>
+    <div class="dong"><span>SAU · lấy KQ trước</span><span class="vd">${os('<span class="lai">↺</span>6.0', 'd')}</span><span>thi lại một kỹ năng; vẫn bấm được</span></div>
+    <div class="dong"><span>Không bấm</span><span class="vd"><span class="gach">—</span><span class="diem b">6.0</span></span><span>chưa có điểm · Mock Test / OVR có đủ L R W S</span></div></div>`;
+  $('k-mau').innerHTML = mauO() + mauO('light');
+
+  /* ---------- 1 · trạng thái ---------- */
+  const fig = (html, cap) => `<figure>${html}<figcaption>${cap}</figcaption></figure>`;
+  const wrap = (html, theme) => `<div class="mau-o" style="min-width:0;padding:14px;background:var(--bg)"${theme ? ` data-theme="${theme}"` : ''}>${html}</div>`;
+  const ds1 = (theme) => [
+    fig(wrap(hop(HOP.L1, { tinh: 1 }), theme), '1a · một GV · 100 %'),
+    fig(wrap(hop(HOP.R, { tinh: 1 }), theme), '1b · chuyển lớp + đổi GV (tuần bàn giao chia đôi 0,5) + 1 tuần trống'),
+    fig(wrap(hop(HOP.W, { tinh: 1 }), theme), '1c · W → W1 + W2'),
+    fig(wrap(hop(HOP.BANG, { tinh: 1 }), theme), '1d · bằng nhau → cả hai nổi'),
+    fig(wrap(hop(HOP.TRONG, { tinh: 1, ql: 1 }), theme), '1e · chưa có phân công (QL thấy link)'),
+    fig(wrap(hop(HOP.R, { tinh: 1, trang: 'tai' }), theme), '1f · đang tải'),
+    fig(wrap(hop(HOP.R, { tinh: 1, trang: 'loi' }), theme), '1g · lỗi'),
+    fig(wrap(hopTom({ tinh: 1 }), theme), '1h · tóm tắt 5 kỹ năng [XM-3/4] · bấm dòng → chi tiết trong hộp'),
+    fig(wrap(hop(HOP.R, { tinh: 1, giai: 1 }), theme), '1i · bấm ⓘ → cách tính hiện trong hộp'),
+  ];
+  $('k-tt').innerHTML = ds1().join('');
+  $('k-tt-s').innerHTML = ds1('light').slice(0, 5).map((f) => f.replace(/<figcaption>/, '<figcaption>sáng · ')).join('');
+
+  /* ---------- khung chung ---------- */
+  function khung(menu, than, o = {}) {
+    const dt = !!o.dt;
+    const IC_CHUONG = '<svg class="ic" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3L4 11zM6.5 14h3"/></svg>';
+    const tt = `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${dt ? '' : ['Tổng quan', 'Học viên & Lớp', 'Test', 'Công việc', 'Phân tích'].map((m) => `<span class="m${m === menu ? ' dang' : ''}">${m}</span>`).join('')}<span class="phai"><span class="nut-tt" aria-label="Thông báo">${IC_CHUONG}</span><span class="nut-tt" aria-label="Hướng dẫn">?</span><span class="av" aria-label="Tài khoản">H</span></span></div>`;
+    const IC_D = (p) => `<svg class="ic" viewBox="0 0 20 20" aria-hidden="true"><path d="${p}"/></svg>`;
+    const day = dt ? `<nav class="day" aria-label="Điều hướng chính">${[['Tổng quan', 'M3 9l7-6 7 6v8H3z'], ['Học viên', 'M10 10a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM4 17a6 6 0 0 1 12 0'], ['Test', 'M5 3h10v14H5zM8 7h4M8 10h4M8 13h2'], ['Công việc', 'M4 5h12M4 10h12M4 15h8'], ['Thêm', 'M4.5 10h.01M10 10h.01M15.5 10h.01']].map(([n, p]) => `<span${n === (menu === 'Phân tích' ? 'Thêm' : 'Học viên') ? ' class="dang"' : ''}>${IC_D(p)}${n}</span>`).join('')}</nav>` : '';
+    return `<div class="${dt ? 'dt' : 'man'}"${o.theme ? ` data-theme="${o.theme}"` : ''}${o.cao ? ` style="min-height:${o.cao}px"` : ''}>${tt}<div class="noi-dung">${than}</div>${day}${o.phu ? '<div class="phu-hop" style="background:rgb(0 0 0 / .5)"></div>' : ''}${o.hop || ''}</div>`;
+  }
+  const the = (ten, dem, phu, phai, ruot) => `<section class="the"><div class="the-dau"><h2>${ten}</h2>${dem ? `<span class="dem">${dem}</span>` : ''}${phu ? `<span class="phu">${phu}</span>` : ''}${phai ? `<span class="phai">${phai}</span>` : ''}</div>${ruot}</section>`;
+
+  /* ---------- 2 · hồ sơ HV (khung = web thật: thanh Trước · Sau, đầu hai dòng, ô điểm to, ba tab, bảng MT L · R · W1 · W2 · S) ---------- */
+  const MT = [['MT1', 'MB FT 101', 'W2 SEP', ['5.5', 'x'], ['5.0', 'x'], ['5.0', 'x'], ['5.0', 'x'], ['5.5', 'x'], ['5.5', 'x'], '5.5'], ['MT2', 'MB FT 101', 'W4 SEP', ['6.0', 'b'], ['5.5', 'b'], ['5.0', 'x'], ['5.5', 'b'], ['5.5', 'b'], ['5.5', 'b'], '5.5'], ['MT3', 'MB FT 101', 'W2 OCT', ['6.5', 'v'], ['6.0', 'b'], ['5.5', 'b'], ['5.5', 'b'], ['6.0', 'b'], ['6.0', 'b'], '6.0'], ['MT4', 'MB FT 205', 'W4 OCT', ['6.5', 'b'], ['6.5', 'b'], ['5.5', 'x'], ['5.5', 'x'], ['6.0', 'b'], ['6.0', 'b'], '6.0']];
+  const thanhTs = (dt) => `<div style="display:flex;align-items:center;gap:10px;font-size:14px;color:var(--text-dim)"><a href="#hv">‹ Học viên</a><span style="margin-left:auto;display:flex;gap:10px;align-items:center"><a href="#hv">‹ Trước</a><span style="font-family:var(--phong-so)">3/12${dt ? '' : ' · Lớp MB FT 205'}</span><a href="#hv">Sau ›</a></span></div>`;
+  const nhanGt = (ds) => `<div style="display:flex;flex-wrap:wrap;gap:4px 18px;font-size:14px">${ds.map(([n, v]) => `<span style="white-space:nowrap"><span style="font-size:12px;color:var(--text-faint)">${n}</span> <b style="font-weight:600">${v}</b></span>`).join('')}</div>`;
+  const TAB_HS = (dt) => `<div class="tab-hang" role="tablist">${['Học thuật', 'Ý thức & Phối hợp', 'Lộ trình & lớp'].map((t) => `<button role="tab" aria-selected="${t === 'Học thuật'}">${t}</button>`).join('')}</div>`;
+  /* ô điểm to (DiemDau): đã thi → ô Thi thật thay Overall, L · R · W · S góc "thi thật"; bấm = chọn kỹ năng cho Hành trình (GIỮ — XM-9) */
+  const oTo = (n, v, k, goc, chon) => `<div style="flex:1;min-width:0;display:grid;gap:2px;padding:8px 12px;border-radius:10px;border:${chon ? '2px solid var(--accent)' : '1px solid var(--line-strong)'};background:${n === 'Thi thật IELTS' ? 'var(--soon-nen)' : 'var(--surface)'}"><span style="display:flex;font-size:12px;color:var(--text-dim)">${n}<span style="margin-left:auto;color:var(--text-faint)">${goc}</span></span><span class="diem ${k}" style="font:700 24px/1.2 var(--phong-so)">${v}</span></div>`;
+  const diemDau = `<div style="display:flex;gap:8px">${oTo('Thi thật IELTS', '6.0', 'b', '08/11', 1)}${['L', 'R', 'W', 'S'].map((k) => oTo(k, HOP[k].diem, HOP[k].k, 'thi thật')).join('')}</div>`;
+  function hoSo(o = {}) {
+    const mo = o.mo ?? 'R';
+    const dauHs = thanhTs() + `<header style="display:grid;gap:8px"><div style="display:flex;align-items:center;gap:10px"><h1 style="font-size:22px;font-weight:700">Trần Minh Khoa</h1><span class="chip-sos" style="color:var(--ok);border-color:var(--ok)">Đã xong</span><span style="margin-left:auto;display:flex;gap:8px"><button type="button" class="nut">+ Case</button><button type="button" class="nut nut-vuong" aria-label="Thao tác khác">⋯</button></span></div>`
+      + nhanGt([['Lớp', '<a href="#lop">MB FT 205</a>'], ['Lộ trình', 'FT 6.0'], ['Target', '6.0'], ['Tuần học', '10'], ['Ngày thi', '08/11'], ['GVCN', 'Phạm Thu Trang'], ['TVV', 'Lê Thu Hà']])
+      + '<div style="font-size:13px;color:var(--text-faint)">09xx xxx 123 · sinh 14/03/2009</div></header>';
+    const dc = (x) => `<span class="diem ${x[1]}">${x[0]}</span>`;
+    const thi = ['L', 'R', 'W', 'S'].map((k) => `<td data-k="so"${k === 'L' ? ' class="ke"' : ''}${k === 'W' ? ' colspan="2"' : ''}>${d(HOP[k].diem, HOP[k].k, k === mo ? 'mo' : '')}</td>`).join('');
+    const bang = the('Mock Test', '4 lượt', null, null,
+      `<table class="bang vua"><colgroup><col style="width:8%"><col style="width:12%"><col style="width:9%">${'<col style="width:7%">'.repeat(6)}<col style="width:9%"><col></colgroup><thead><tr><th>MT</th><th>Lớp lúc đánh giá</th><th>Tuần</th><th data-k="so" class="ke">L</th><th data-k="so">R</th><th data-k="so">W1</th><th data-k="so">W2</th><th data-k="so">S</th><th data-k="so" class="ke">OVR</th><th data-k="so">Kỳ vọng</th><th class="ke">Kết quả</th></tr></thead><tbody>`
+      + MT.map((r) => `<tr><td><a href="#mt" style="font:600 15px var(--phong-so)">${r[0]} ›</a></td><td style="color:var(--text-dim)">${r[1]}</td><td style="font-family:var(--phong-so);color:var(--text-dim)">${r[2]}</td>${[r[3], r[4], r[5], r[6], r[7]].map((x, i) => `<td data-k="so"${i ? '' : ' class="ke"'}>${dc(x)}</td>`).join('')}<td data-k="so" class="ke">${dc(r[8])}</td><td data-k="so"><span class="tl" style="color:var(--text-dim)">${r[9]}</span></td><td class="ke"><span class="nhan-kq ${r[8][1]}">${r[8][1] === 'x' ? '✗ 4 KN dưới · SOS 3' : '✓ Đạt kỳ vọng'}</span></td></tr>`).join('')
+      + `<tr class="hang-thi"><td><b>Thi thật</b></td><td style="color:var(--text-dim)">IELTS</td><td style="font-family:var(--phong-so);color:var(--text-dim)">08/11</td>${thi}<td data-k="so" class="ke"><span class="diem b" style="font-weight:700">6.0</span></td><td data-k="so"><span class="tl" style="color:var(--text-dim)">Target 6.0</span></td><td class="ke"><span class="nhan-kq b">✓ Đạt Target</span></td></tr></tbody></table>`);
+    return dauHs + diemDau + TAB_HS() + '<div style="height:44px;border:1px dashed var(--line-strong);border-radius:10px;display:flex;align-items:center;padding:0 14px;font-size:13px;color:var(--text-faint)">(bảng kỹ năng + Case & PA — giữ như web)</div>' + bang;
+  }
+  /* toạ độ ô: hàng thi thật ở y ≈ 548, cột R ở x ≈ 560 */
+  $('k-hs').innerHTML = fig(khung('Học viên & Lớp', hoSo(), { cao: 1330, hop: hop(HOP.R, { x: 470, y: 600, mui: 120 }) }), '2a · Hồ sơ HV 1440 tối · bấm R');
+
+  /* ---------- 3 · Phân tích ---------- */
+  const DS = [
+    ['Trần Minh Khoa', 'MB FT 205', '08/11', [['7.0', 'v', 'Tâm', 100], ['6.5', 'v', 'Trang', 50], ['5.5', 'x', 'Khánh', 85], ['6.0', 'b', 'Đăng', 100]], ['6.0', 'b'], '6.0', 'b', 'Kết thúc khoá'],
+    ['Đỗ Bảo Châu', 'MB FT 108', '01/11', [['6.5', 'v', 'Tâm', 100], ['6.0', 'b', '2 GV', 50], ['5.5', 'x', 'Huy', 75], ['6.0', 'b', null, 0]], ['6.0', 'b'], '6.0', 'b', 'Kết thúc khoá'],
+    ['Hồ Gia Bảo', 'MB FT 101', '08/11', [['5.5', 'x', 'Tâm', 90], ['5.5', 'x', 'An', 60], ['5.0', 'x', 'Khánh', 100], ['6.0', 'b', 'Đăng', 100]], ['5.5', 'x'], '6.0', 'x', 'Thi lại · W4 DEC'],
+    ['Phan Khánh Linh', 'MB FT 101', '08/11', [['6.5', 'b', 'Tâm', 90], ['↺6.0', 'b', 'An', 60], ['6.0', 'b', 'Khánh', 100], ['6.5', 'v', 'Đăng', 100]], ['6.5', 'v'], '6.0', 'v', 'Kết thúc khoá'],
+  ];
+  function phanTich(o = {}) {
+    const dauT = `<div class="dau-trang"><h1>Phân tích</h1><span class="ngay">Dữ liệu đến 12/11/2026</span><span class="phai"><span class="o-chon">Monbay</span></span></div>`;
+    const tabs = `<div class="tab-hang" role="tablist">${['Chi nhánh', 'Thi thật', 'SOS', 'Giáo viên', 'Ý thức'].map((t) => `<button role="tab" aria-selected="${t === 'Thi thật'}">${t}</button>`).join('')}</div>`;
+    const loc = `<div class="hang-loc"><span class="o-chon" style="width:150px">Chọn khoảng tuần</span><span class="cap-tuan"><span class="o-tuan">W1 OCT</span><span class="mui-ten">→</span><span class="o-tuan">W2 NOV</span></span><span class="o-chon">Mọi lớp</span><span class="phai"><button type="button" class="nut">Xuất Excel</button></span></div>`;
+    const tom = `<div style="display:flex;gap:12px;font-size:14px;color:var(--text-dim)">(Kết quả thi thật · Từng kỹ năng · Theo GV — giữ như v19, không đổi)</div>`;
+    const o4 = (x, i, r) => {
+      const v = x[0].startsWith('↺') ? os(`<span class="lai">↺</span>${x[0].slice(1)}`, `d ${x[1]}`) : d(x[0], x[1], o.mo && r === 0 && i === 2 ? 'mo' : '');
+      const duoi = o.ten ? (x[2] ? `<span class="duoi-gv">${x[2]} <b>${x[3]} %</b></span>` : '<span class="duoi-gv" style="font-style:italic">trống</span>') : '';
+      return `<td data-k="so"${i ? '' : ' class="ke"'}${o.ten ? ' style="height:66px"' : ''}>${v}${duoi}</td>`;
+    };
+    const ds = the('Danh sách kết quả', '35 HV', 'theo lớp → ngày thi', I('Bấm điểm một kỹ năng: GV dạy em kỹ năng đó theo tuần.'),
+      `<table class="bang vua"><colgroup><col style="width:19%"><col style="width:8%">${'<col style="width:8%">'.repeat(4)}<col style="width:7%"><col style="width:7%"><col style="width:13%"><col></colgroup><thead><tr><th>Học viên</th><th>Ngày thi</th><th data-k="so" class="ke">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so" class="ke">OVR</th><th data-k="so">Target</th><th class="ke">Kết quả</th><th>Bước tiếp</th></tr></thead><tbody>`
+      + DS.map((r, ri) => `<tr><td class="ten"><a class="lk-t ten-c" href="#hv">${r[0]}</a><span class="phu-o">${r[1]}</span></td><td style="font-family:var(--phong-so)">${r[2]}</td>${r[3].map((x, i) => o4(x, i, ri)).join('')}<td data-k="so" class="ke"><span class="diem ${r[4][1]}">${r[4][0]}</span></td><td data-k="so"><span class="tl" style="color:var(--text-dim)">${r[5]}</span></td><td class="ke"><span class="nhan-kq ${r[6]}">${r[6] === 'v' ? '✓ Vượt' : r[6] === 'b' ? '✓ Đạt' : '✗ Chưa đạt'}</span></td><td class="bac">${r[7]}</td></tr>`).join('') + '</tbody></table>');
+    return dauT + tabs + loc + tom + ds;
+  }
+  $('k-pt').innerHTML = fig(khung('Phân tích', phanTich({ mo: 1 }), { cao: 940, hop: hop(HOP.W, { x: 590, y: 424, mui: 76 }) }), '3a · Danh sách · bấm W → W1 + W2');
+
+  /* ---------- 4 · nơi khác ---------- */
+  const ngan = `<div class="pn tinh" style="width:560px;min-height:420px;overflow:visible">
+    <div class="pn-dau" style="padding-bottom:12px"><div class="pn-h1"><h2>Tổng kết lộ trình · Trần Minh Khoa</h2><button type="button" class="x" aria-label="Đóng">${X}</button></div><div class="pn-ngu">MB FT 205 · FT 6.0 · W1 SEP → W1 NOV</div></div>
+    <div style="padding:16px 20px;display:grid;gap:10px"><h3 style="font:700 15px var(--phong)">Thi thật · 08/11</h3>
+    <div class="lon-o">${['L', 'R', 'W', 'S'].map((k) => `<div><i>${k}</i>${os(HOP[k].diem, `d lon ${HOP[k].k}${k === 'L' ? ' mo' : ''}`)}</div>`).join('')}<div><i>OVR</i><span class="ovr">6.0</span></div></div>
+    <span style="font-size:13px;color:var(--text-dim)">Target 6.0 · ✓ Đạt Target</span></div>
+    ${hop(HOP.L, { x: 20, y: 192, mui: 22 })}</div>`;
+  const nhap = `<div class="pn tinh" style="width:600px;min-height:600px;overflow:visible">
+    <div class="pn-dau" style="padding-bottom:12px"><div class="pn-h1"><h2>Kết quả thi thật · Trần Minh Khoa</h2><button type="button" class="x" aria-label="Đóng">${X}</button></div><div class="pn-ngu">MB FT 205 · đã lưu 09/11</div></div>
+    <div style="padding:16px 20px;display:grid;gap:12px"><div style="display:flex;gap:12px;align-items:end">${['L', 'R', 'W', 'S'].map((k) => `<label class="o-nhap"><i>${k}</i><span>${HOP[k].diem}</span></label>`).join('')}<div class="o-nhap"><i>OVR</i><b style="font:700 15px var(--phong-so);height:36px;display:inline-flex;align-items:center">6.0</b></div><button type="button" class="lk-doi" style="all:unset;font:600 14px var(--phong);color:var(--accent);height:36px;display:inline-flex;align-items:center;cursor:pointer;white-space:nowrap;text-decoration:underline;text-underline-offset:3px;margin-left:4px" aria-expanded="true">Tuần dạy</button></div></div>
+    ${hopTom({ x: 176, y: 176, mui: 330 })}</div>`;
+  const tk = khung('Học viên & Lớp', `<div class="dau-trang"><h1>MB FT 205</h1><span class="ngay">FT 6.0 · GVCN Phạm Thu Trang</span></div><div class="tab-hang">${['Tổng quan', 'Học viên', 'Lịch', 'Tổng kết'].map((t) => `<button aria-selected="${t === 'Tổng kết'}">${t}</button>`).join('')}</div>`
+    + the('Tổng kết lớp', '12 HV', null, null, `<table class="bang vua"><colgroup><col style="width:22%">${'<col style="width:8%">'.repeat(5)}<col style="width:10%"><col style="width:12%"><col></colgroup><thead><tr><th rowspan="2">Học viên</th><th colspan="5" class="nhom ke">Mock Test cuối</th><th colspan="2" class="nhom ke">Thi thật</th><th rowspan="2" class="ke">Hướng tiếp</th></tr><tr><th data-k="so" class="ke">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so">OVR</th><th data-k="so" class="ke">OVR</th><th>Kết quả</th></tr></thead><tbody>`
+      + [['Trần Minh Khoa', ['6.5', '6.5', '5.5', '6.0', '6.0'], '6.0', 'b', 'Kết thúc khoá', 1], ['Ngô Thảo Nhi', ['6.0', '6.0', '5.5', '6.0', '6.0'], '6.5', 'v', 'Kết thúc khoá'], ['Lý Đức Anh', ['5.5', '5.5', '5.0', '5.5', '5.5'], '—', '', 'Chờ kết quả thi thật']]
+        .map((r) => `<tr><td class="ten"><a class="lk-t ten-c" href="#hv">${r[0]}</a></td>${r[1].map((x, i) => `<td data-k="so"${i ? '' : ' class="ke"'}><span class="diem b">${x}</span></td>`).join('')}<td data-k="so" class="ke">${r[2] === '—' ? '<span class="gach">—</span>' : os(r[2], `d ${r[3]}${r[5] ? ' mo' : ''}`)}</td><td>${r[2] === '—' ? '<span class="nhan-kq b">—</span>' : `<span class="nhan-kq ${r[3]}">${r[3] === 'v' ? '✓ Vượt' : '✓ Đạt'}</span>`}</td><td class="ke bac">${r[4]}</td></tr>`).join('') + '</tbody></table>'),
+    { cao: 830, hop: hopTom({ x: 760, y: 366, mui: 190 }) });
+  $('k-khac').innerHTML = fig(`<div class="man" style="width:auto;min-height:0;padding:20px;background:var(--bg)">${ngan}</div>`, '4a · Tổng kết lộ trình · bấm L (một GV 100 %)')
+    + fig(`<div class="man" style="width:auto;min-height:0;padding:20px;background:var(--bg)">${nhap}</div>`, '4b · Panel KQ thi thật · nút Tuần dạy [XM-4]')
+    + fig(tk, '4c · Hồ sơ lớp › Tổng kết · bấm OVR thi thật [XM-3]');
+
+  /* ---------- 5 · 375 ---------- */
+  function hoSo375(mo) {
+    const diem = ['L', 'R', 'W', 'S'].map((k) => `<span style="display:inline-flex;align-items:center;gap:4px"><span style="font-size:13px;color:var(--text-faint)">${k}</span>${d(HOP[k].diem, HOP[k].k, `${k === mo ? 'mo' : ''}`).replace('class="os ', 'style="min-width:48px;height:44px" class="os ')}</span>`).join('');
+    return thanhTs(1) + `<header style="display:grid;gap:6px"><div style="display:flex;align-items:center;gap:8px"><h1 style="font-size:19px;font-weight:700">Trần Minh Khoa</h1><span style="margin-left:auto;display:flex;gap:6px"><button type="button" class="nut">+ Case</button><button type="button" class="nut nut-vuong" aria-label="Thao tác khác">⋯</button></span></div>`
+      + nhanGt([['Lớp', '<a href="#lop">MB FT 205</a>'], ['Target', '6.0'], ['Ngày thi', '08/11']]) + '</header>'
+      + TAB_HS(1)
+      + `<div class="the-dong"><div class="dau"><b>Thi thật</b><span>08/11</span><span style="margin-left:auto" class="nhan-kq b">✓ Đạt Target</span></div><div style="display:grid;grid-template-columns:72px 1fr;gap:6px 10px;align-items:center;font-size:14px"><span style="grid-column:1 / -1;display:flex;gap:8px;justify-content:space-between">${diem}</span><span style="color:var(--text-dim)">Overall</span><b style="font-family:var(--phong-so)">6.0</b><span style="color:var(--text-dim)">Target</span><span style="font-family:var(--phong-so)">6.0</span></div></div>`
+      + ['MT4 › · W4 OCT · OVR 6.0', 'MT3 › · W2 OCT · OVR 6.0'].map((t) => `<div class="the-dong"><div class="dau"><b style="font-size:15px">${t}</b><span style="margin-left:auto" class="nhan-kq b">✓ Đạt kỳ vọng</span></div></div>`).join('');
+  }
+  const pt375 = (mo) => `<div class="dau-trang"><h1>Phân tích</h1></div><div class="tab-hang">${['Chi nhánh', 'Thi thật', 'SOS', 'Giáo viên'].map((t) => `<button aria-selected="${t === 'Thi thật'}">${t}</button>`).join('')}</div>`
+    + DS.slice(0, 3).map((r, ri) => `<div class="the-dong"><div class="dau"><a class="lk-t" href="#hv"><b>${r[0]}</b></a><span>${r[1]} · ${r[2]}</span><span style="margin-left:auto" class="nhan-kq ${r[6]}">${r[6] === 'v' ? '✓ Vượt' : r[6] === 'b' ? '✓ Đạt' : '✗ Chưa đạt'}</span></div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;align-items:end">${r[3].map((x, i) => `<div style="display:grid;gap:4px;justify-items:start"><i style="font-style:normal;font-size:12px;color:var(--text-dim)">${'LRWS'[i]}</i>${d(x[0], x[1], mo && !ri && i === 2 ? 'mo' : '')}</div>`).join('')}<div style="display:grid;gap:4px"><i style="font-style:normal;font-size:12px;color:var(--text-dim)">OVR</i><span class="diem ${r[4][1]}" style="height:36px;display:inline-flex;align-items:center">${r[4][0]}</span></div></div></div>`).join('');
+  $('k-dt').innerHTML = fig(khung('Học viên & Lớp', hoSo375(), { dt: 1 }), '5a · Hồ sơ HV 375 · ô bấm được')
+    + fig(khung('Học viên & Lớp', hoSo375('R'), { dt: 1, phu: 1, hop: hop(HOP.R, { sheet: 1 }) }), '5b · bấm R → sheet')
+    + fig(khung('Phân tích', pt375(1), { dt: 1, phu: 1, hop: hop(HOP.W, { sheet: 1 }) }), '5c · Phân tích › Thi thật · bấm W')
+    + fig(khung('Học viên & Lớp', hoSo375('S'), { dt: 1, phu: 1, hop: hop(HOP.R, { sheet: 1, trang: 'tai' }) }), '5d · đang tải');
+
+  /* ---------- 6 · sáng ---------- */
+  $('k-sang').innerHTML = fig(khung('Học viên & Lớp', hoSo(), { cao: 1330, theme: 'light', hop: hop(HOP.R, { x: 470, y: 600, mui: 120 }) }), '6a · Hồ sơ HV 1440 sáng')
+    + fig(khung('Học viên & Lớp', hoSo375('R'), { dt: 1, phu: 1, theme: 'light', hop: hop(HOP.R, { sheet: 1 }) }), '6b · 375 sáng · sheet');
+
+
+  /* đặt hộp ngay dưới ô đang mở (aria-expanded) của khung chứa nó; mũi chỉ vào giữa ô */
+  requestAnimationFrame(() => document.querySelectorAll('.tg:not(.tinh):not(.sheet)').forEach((tg) => {
+    const par = tg.offsetParent; const neo = par && par.querySelector('[aria-expanded="true"]'); if (!neo) return;
+    const pr = par.getBoundingClientRect(), nr = neo.getBoundingClientRect();
+    const left = Math.max(12, Math.min(nr.left - pr.left + nr.width / 2 - 70, pr.width - tg.offsetWidth - 12));
+    tg.style.left = `${left}px`; tg.style.top = `${nr.bottom - pr.top + 10}px`;
+    tg.querySelector('.mui').style.left = `${nr.left - pr.left + nr.width / 2 - left - 6}px`;
+  }));
+  $('doi-nen').addEventListener('click', () => {
+    document.querySelectorAll('.man, .dt, .mau-o').forEach((el) => { el.dataset.theme = el.dataset.theme === 'light' ? 'dark' : 'light'; });
+  });
+})();
+</script>
+</body>
+</html>
