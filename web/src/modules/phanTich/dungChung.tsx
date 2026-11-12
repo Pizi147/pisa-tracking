@@ -116,7 +116,7 @@ export function DaiChiSo({ ds, cot }: { ds: ChiSo[]; /** Số cột 1440 khi kh�
           <span className="text-[13px] font-medium text-[color:var(--text-dim)] sm:whitespace-nowrap">
             {c.ten}{c.ky && <i className="font-normal not-italic text-[color:var(--text-faint)] max-sm:block"><span className="max-sm:hidden"> · </span>{c.ky}</i>}
           </span>
-          <span className="flex flex-wrap items-baseline gap-x-2 text-[28px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
+          <span className="chi-so-gt flex flex-wrap items-baseline gap-x-2 text-[28px] font-bold leading-tight tabular-nums text-[color:var(--text)] [font-family:var(--phong-so,inherit)]">
             {c.gt}{c.nho && <small className="text-[13px] font-medium text-[color:var(--text-dim)]">{c.nho}</small>}
           </span>
           {c.mau && <span className="text-xs text-[color:var(--text-faint)]">{c.mau}</span>}

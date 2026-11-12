@@ -128,7 +128,7 @@ export function PhanTich() {
         <HangTab panelId="pt-vung" ariaLabel={t('Phân tích')} value={goc} onChange={setGoc} tabs={gocCo.map((k) => ({ key: k, label: dichGoc(nhanGocNhin(k, ct)) }))} />
       </div>
       {/* DON-NHO-3 (TAB-A11Y): hàng lọc + nội dung đổi theo tab = vùng tab; cùng space-y-3 → khoảng cách không đổi. */}
-      <div id="pt-vung" role="tabpanel" aria-label={dichGoc(nhanGocNhin(goc, ct))} className="space-y-3">
+      <div id="pt-vung" role="tabpanel" aria-label={dichGoc(nhanGocNhin(goc, ct))} className="o-so-hop space-y-3">
         {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
             ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
         <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">

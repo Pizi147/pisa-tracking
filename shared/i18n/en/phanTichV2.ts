@@ -73,4 +73,7 @@ export const EN_PHAN_TICH_V2 = {
   'Đếm BÀI: mỗi bài Progress Test / Final Test của một em (đủ điểm mọi môn) tính một lần. Đạt = Progress đạt hết các môn, Final từ 70 % tổng — cùng ô của bảng Test lớp thường.': 'Counts TESTS: each Progress Test / Final Test of one student (every subject scored) counts once. Passed = Progress with every subject passed, Final from 70 % overall — the same cells as the standard-class Test table.',
   'Đếm HỌC VIÊN có bài Final Test đủ môn trong kỳ (thi lại: bài mới nhất), xếp theo % tổng = Σ điểm / Σ câu các môn: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.': 'Counts STUDENTS with a fully scored Final Test in the period (retake: latest test), by overall % = total marks / total questions: Pass from 70 % · 60–69 % · 50–59 % · under 50 %.',
   'Số · Chi nhánh': 'Number · branch',
+  /* PT-a (mockup v19): hàng chân S chéo chung, cột % đúng hạn. */
+  'chưa ai nhận · GV có kỹ năng S cùng thấy': 'unclaimed · every S teacher sees them',
+  'đã qua hạn · + {n} bài S chéo chung': 'past due · + {n} shared S cross-marking tests',
 } satisfies Record<string, Dich>;

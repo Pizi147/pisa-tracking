@@ -75,7 +75,7 @@ export function BaoCao(pv: PhamViPhanTich) {
       <OSo giaTri={n} nguon={nThi(h, `tong:${k}`)} tieuDe={`${t('Thi thật')} · ${nhan} · ${h.ten || d.tenChiNhanh || ''}`} className={n ? lopKq(kq) : ''} vung="bang" />;
     return <span className="inline-flex items-baseline gap-2 whitespace-nowrap tabular-nums">{o(h.thi.vuot, 'exceed', 'vuot', t('Vượt'))}<span className={MO}>·</span>{o(h.thi.dat, 'dat', 'dat', t('Đạt'))}<span className={MO}>·</span>{o(h.thi.chuaDat, 'fail', 'duoi', t('Chưa đạt'))}</span>;
   };
-  const CK = [['Đạt', 'ck-dat', 'text-kq-vuot'], ['60–69 %', 'ck-60', 'text-soon'], ['50–59 %', 'ck-50', 'text-kq-thieu10'], ['< 50 %', 'ck-duoi50', 'text-bad']] as const;
+  const CK = [['Đạt', 'ck-dat', 'text-kq-vuot'], ['60–69 %', 'ck-60', 'text-soon'], ['50–59 %', 'ck-50', 'text-kq-thieu10'], ['< 50 %', 'ck-duoi50', 'text-kq-duoi']] as const;
 
   /* ---- cột trái ---- */
   const soHv = (
@@ -242,7 +242,7 @@ function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; 
     if (c.key === 'kn') return <span className="whitespace-nowrap"><b className="text-slate-100">{tenMonNgan(null, h.skill)}</b> <span className={`text-[13px] font-normal ${MO}`}>{t('{n} lượt', { n: h.tong })}</span></span>;
     const n = so(h, c.key);
     return <span className="whitespace-nowrap"><OSo giaTri={n} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
-      className={!n ? '' : c.key === 'tang' ? 'text-ok' : c.key === 'giam' ? 'text-bad' : ''} />{h.tong ? <span className={`ml-1.5 text-xs tabular-nums ${MO}`}>{Math.round((100 * n) / h.tong)} %</span> : null}</span>;
+      className={!n ? '' : c.key === 'tang' ? 'text-kq-vuot' : c.key === 'giam' ? 'text-kq-duoi' : ''} />{h.tong ? <span className={`ml-1.5 text-xs tabular-nums ${MO}`}>{Math.round((100 * n) / h.tong)} %</span> : null}</span>;
   };
   return (
     <section className="card overflow-clip">
