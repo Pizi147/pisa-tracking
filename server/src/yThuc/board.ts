@@ -11,6 +11,7 @@ import { emCuaLop, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
 import { violationsOfStudents } from './violations.ts';
 import { coTheGhi, coTheSuaHan, nhanTrangThaiBaoPh } from './baoPhTvv.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
+import { tinhHinhCuaEm, type TinhHinhView } from './tinhHinh.ts';
 
 /**
  * TAB Ý THỨC CỦA LỚP — HAI KHUNG (mockup M6, K2-38, PR-YT4).
@@ -59,7 +60,9 @@ export type DongThoiGianYt =
       /** UI-2 (mockup K6 "Ai · lúc nào" của dòng Đã xem). */
       xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
       /** Y-THUC-V2 (mockup 11/11): mã môn (chip) + mô tả cắt ngắn cho hộp rê — từ chính câu đã đọc, không thêm câu. */
-      skill: string | null; moTa: string }
+      skill: string | null; moTa: string;
+      /** TINH-HINH: "Chỉ nhắc nhở" — ngoài luật, không việc (dòng "Nhắc nhở"). */
+      chiNhac?: boolean }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       tenViPham: string[]; baoPh: BaoPhLan | null;
@@ -101,8 +104,13 @@ export type BangYThucLop = {
    */
   emLop: EmLop[];
   catLs: boolean;
+  /** TINH-HINH: tình hình học tập hai chiều GV ↔ TVV của các em đang học (mới nhất trước) — một câu. */
+  tinhHinh: TinhHinhView[];
+  /** TINH-HINH: nút "Báo tình hình" (GV dạy lớp / QL — quyền ghi vi phạm) · "Hỏi tình hình" (TVV / QL). Máy chủ kiểm lại từng em. */
+  coTheBao: boolean; coTheHoi: boolean;
 };
-export type EmLop = { studentId: number; ten: string; bacNhan: string | null; tvv: string | null; soLs: number };
+/** `bac` / `bacNhan` cùng `trangThaiYThuc` với thang (`/students/:id/y-thuc`) — mốc dưới tên em = `nhanMocViPham(bac)` (chủ SP 12/11). */
+export type EmLop = { studentId: number; ten: string; bac: number; bacNhan: string | null; tvv: string | null; soLs: number };
 
 const DONG_THOI_GIAN_TOI_DA = 150;
 const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
@@ -161,7 +169,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
       xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
-      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240),
+      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
@@ -274,8 +282,10 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     }
   }
   const dong = dongThoiGian(ids, trang, { danhDauChuoi: true, p, homNay });
+  const tinhHinh = tinhHinhCuaEm(p, ids, homNay);
   const soLs = new Map<number, number>();
   for (const x of dong) if (laDongLs(x)) soLs.set(x.studentId, (soLs.get(x.studentId) ?? 0) + 1);
+  for (const x of tinhHinh) if (x.trangThai !== 'mo') soLs.set(x.studentId, (soLs.get(x.studentId) ?? 0) + 1);
   const theoHan = (a: DongEm, b: DongEm) => (a.han ?? a.hanXem ?? a.deXuat?.han ?? '9').localeCompare(b.han ?? b.hanXem ?? b.deXuat?.han ?? '9')
     || a.ten.localeCompare(b.ten, 'vi');
   for (const k of NHOM_EM) nhom[k].sort(k === 'da_xu_ly' ? (a, b) => (b.xuLyGanNhat?.ngay ?? '').localeCompare(a.xuLyGanNhat?.ngay ?? '') : theoHan);
@@ -291,9 +301,12 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     gvcn,
     /* G3-14: việc GVCN (xử lý / xem / ghi Đã thực hiện) là việc CỦA người xem khi người xem là GVCN lớp — như Công việc "Của tôi". */
     laGvcn: gvcnId === p.userId,
-    emLop: tatCa.map((x) => ({ studentId: x.studentId, ten: x.ten, bacNhan: x.bacNhan, tvv: x.tvv, soLs: soLs.get(x.studentId) ?? 0 }))
+    emLop: tatCa.map((x) => ({ studentId: x.studentId, ten: x.ten, bac: x.bac, bacNhan: x.bacNhan, tvv: x.tvv, soLs: soLs.get(x.studentId) ?? 0 }))
       .sort((a, b) => soTenVi(a.ten, b.ten) || a.studentId - b.studentId),
     catLs: dong.length > DONG_THOI_GIAN_TOI_DA,
+    tinhHinh,
+    coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
+    coTheHoi: p.roleKeys.includes('consultant') || coTheDuyet,
   };
 }
 
@@ -327,7 +340,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
               (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
               (SELECT l.ngay FROM viec_bao_ph_lan l WHERE l.viec_id = v.id AND l.ket_qua = 'da_bao' ORDER BY l.id DESC LIMIT 1) AS ngay_xong
          FROM viec_bao_ph v JOIN students s ON s.id = v.student_id LEFT JOIN discipline_measures m ON m.id = v.measure_id
-        WHERE v.id IN (SELECT MAX(id) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
+        WHERE v.id IN (SELECT MAX(id) FROM viec_bao_ph WHERE student_id IN (${ph}) AND phoi_hop_id IS NULL AND tinh_hinh_id IS NULL GROUP BY student_id)`   /* PHOI-HOP-V2: việc TVV sau Meeting CX không phải Báo PH ý thức */,
     ).all(...lo) as any[]) {
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
       out.set(r.student_id, {

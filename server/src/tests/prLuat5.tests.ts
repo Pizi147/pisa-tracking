@@ -155,7 +155,7 @@ export async function runPrLuat5Tests(t: YThucTestKit) {
     const m = xu.guiDeXuat(gvcn, nhap.id);
     assert(m.status === 'cho_duyet', 'gửi được không cần tệp');
     const the = yc.theCuaDoiTuong('discipline_measure', [nhap.id]).find((c: any) => c.loai === 'y_thuc');
-    assert(/Không tăng bậc/.test(the.tieuDe) && the.dong.some((d: string) => /WL 1/.test(d)), JSON.stringify({ t: the.tieuDe, d: the.dong }));
+    assert(/^Không nâng · /.test(the.tieuDe) && the.dong.some((d: string) => /WL 1/.test(d)), JSON.stringify({ t: the.tieuDe, d: the.dong }));
     yc.duyetYeuCau(ql, the.id);
     xu.daThucHien(gvcn, nhap.id, { performedOn: TODAY, performerName: 'Cô Thu' });
     const hv = xu.yThucHocVien(ql, sid);

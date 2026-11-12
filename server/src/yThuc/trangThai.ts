@@ -94,7 +94,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     /* VIEC-NHO 2: MỌI cột vế đầu có AS (cả cột trần `id`) — Turso đặt tên cột khác libsql file (như `scoreHistoryOf` #256; DTL1). */
     `SELECT 0 AS loai, id AS id, student_id AS student_id, cycle_id AS cycle_id,
             category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e, NULL AS f, NULL AS g, NULL AS h
-       FROM violations WHERE student_id IN (${ph})
+       FROM violations WHERE student_id IN (${ph}) AND chi_nhac = 0   /* TINH-HINH: nhắc nhở ngoài luật, bậc, việc */
      UNION ALL
      SELECT 1, m.id, m.student_id, m.cycle_id, m.kind, m.status, m.performed_on, m.quyet_luc, mv.violation_id, m.custom_name, m.created_at,
             (SELECT y.han_duyet FROM yeu_cau_duyet y WHERE y.loai = 'y_thuc' AND y.doi_tuong_loai = 'discipline_measure'
@@ -287,7 +287,7 @@ export function ungVienVaThe(f: { branchId?: number | null; classId?: number | n
        FROM students s
       WHERE (s.archived_at IS NULL${loc.map((x) => ` AND ${x}`).join('')}
         AND s.id IN (SELECT v.student_id FROM violations v
-                      WHERE NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
+                      WHERE v.chi_nhac = 0 AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                                          WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet'))
           UNION SELECT m.student_id FROM discipline_measures m WHERE m.status IN ('cho_duyet', 'da_duyet')))
         ${f.kemThe ? `OR s.id IN (SELECT y.doi_tuong_id FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_y_thuc' AND y.trang_thai = 'cho')` : ''}

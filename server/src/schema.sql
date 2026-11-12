@@ -1896,7 +1896,9 @@ CREATE TABLE violations (
   -- PR-Pb2-b (Q14): hạn lúc vi phạm thành "Cần xử lý" lần đầu (chotHanXuLy); không ghi đè, trừ Quay lại học khi chưa phản hồi.
   han_xu_ly TEXT,
   -- PR-Pb2-b (Q14): ngày nghiệp vụ lần đầu GVCN xác nhận xử lý hoặc gửi đề xuất có vi phạm này. Đúng hạn ⇔ phan_hoi_ngay ≤ han_xu_ly.
-  phan_hoi_ngay TEXT
+  phan_hoi_ngay TEXT,
+  -- TINH-HINH (chủ SP 12/11): 1 = "Chỉ nhắc nhở" — không vào luật 3 vi phạm / 2 tuần, bậc, việc GVCN / TVV, số vi phạm Phân tích / Excel.
+  chi_nhac INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX idx_violation_class ON violations(class_id, occurred_on);
@@ -2290,11 +2292,31 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   tao_luc TEXT NOT NULL,
   han_chon TEXT,                         -- HAN-BAO-PH: hạn người dùng chọn (YYYY-MM-DD), NULL = mặc định; thắng Tạm dừng
   bao_lai_cua INTEGER REFERENCES discipline_measures(id),  -- YT-BAO-PH: lần xử lý đã thu hồi cần báo lại PH (measure_id NULL); NULL = việc thường
-  phoi_hop_id INTEGER                    -- PHOI-HOP-V2: việc Meeting CX/GĐCN (sos_coordination_actions.id) TVV báo gia đình; NULL = Báo PH ý thức
+  phoi_hop_id INTEGER,                   -- PHOI-HOP-V2: việc Meeting CX/GĐCN (sos_coordination_actions.id) TVV báo gia đình; NULL = Báo PH ý thức
+  tinh_hinh_id INTEGER                   -- TINH-HINH: việc "Báo PH · Tình hình học tập" (tinh_hinh_hoc_tap.id, chiều gv_tvv)
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_bao_lai ON viec_bao_ph(bao_lai_cua);   -- YT-BAO-PH / G3-14
+CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_tinh_hinh ON viec_bao_ph(tinh_hinh_id) WHERE tinh_hinh_id IS NOT NULL;
+-- TINH-HINH (chủ SP 12/11): GV báo tình hình học tập cho TVV (`gv_tvv` — việc TVV ở viec_bao_ph.tinh_hinh_id) · TVV hỏi GVCN (`tvv_gvcn`, hạn 3 ngày tính cả ngày hỏi).
+-- trang_thai: mo | xong (gv_tvv: TVV đã báo PH — đọc từ viec_bao_ph; tvv_gvcn: GVCN đã trả lời) | rut (người gửi rút khi chưa có kết quả).
+CREATE TABLE IF NOT EXISTS tinh_hinh_hoc_tap (
+  id INTEGER PRIMARY KEY,
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER REFERENCES classes(id),
+  chieu TEXT NOT NULL,
+  noi_dung TEXT NOT NULL,
+  nguoi_gui INTEGER NOT NULL REFERENCES users(id),
+  tao_luc TEXT NOT NULL,
+  sua_luc TEXT,
+  han TEXT,
+  tra_loi TEXT, tra_loi_boi INTEGER REFERENCES users(id), tra_loi_luc TEXT,
+  trang_thai TEXT NOT NULL DEFAULT 'mo',
+  rut_boi INTEGER REFERENCES users(id), rut_luc TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_tinh_hinh_hv ON tinh_hinh_hoc_tap(student_id, trang_thai);
+CREATE INDEX IF NOT EXISTS idx_tinh_hinh_cho ON tinh_hinh_hoc_tap(chieu, trang_thai);
 -- Mỗi lần TVV ghi (kể cả "Chưa liên hệ được" — việc vẫn mở, hạn giữ) là MỘT dòng; không sửa, không xoá.
 CREATE TABLE IF NOT EXISTS viec_bao_ph_lan (
   id INTEGER PRIMARY KEY,

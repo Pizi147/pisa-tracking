@@ -59,7 +59,8 @@ export async function runPrP1YThucTests(t: any) {
     const cho = all(`SELECT v.id, s.consultant_user_id AS tvv, y.han_duyet FROM viec_bao_ph v JOIN discipline_measures m ON m.id = v.measure_id JOIN students s ON s.id = v.student_id
       LEFT JOIN yeu_cau_duyet y ON y.loai = 'y_thuc' AND y.doi_tuong_loai = 'discipline_measure' AND y.doi_tuong_id = m.id AND y.trang_thai = 'cho'
       WHERE m.status = 'cho_duyet' AND s.consultant_user_id IS NOT NULL`);
-    assert(cho.length > 0, 'seed: có việc Báo PH của lần chờ QL duyệt (vd WL 3 Lương Gia Bảo)');
+    /* TINH-HINH (N1 sửa 12/11): lần chờ QL KHÔNG sinh việc TVV — seed không còn việc như vậy; `choQlDuyet` chỉ còn cho việc cũ (trước deploy). */
+    assert(cho.length === 0 && all(`SELECT 1 FROM discipline_measures WHERE status = 'cho_duyet'`).length > 0, 'seed: lần chờ QL duyệt có, nhưng không có việc Báo PH');
     for (const r of cho) {
       xoaNho();
       const v: any = xemViecBaoPh(loadPrincipal(r.tvv), r.id);

@@ -70,6 +70,7 @@ import { themCotPrHanBaoPh } from './migrate/prHanBaoPh.ts';
 import { themCotPrBaoLaiPh } from './migrate/prBaoLaiPh.ts';
 import { themCotPrPlanSourceVang } from './migrate/prPlanSourceVang.ts';
 import { themCotPrPhoiHopTvv } from './migrate/prPhoiHopTvv.ts';
+import { migratePrTinhHinh } from './migrate/prTinhHinh.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrDocIt2 } from './migrate/prDocIt2.ts';
@@ -199,6 +200,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* YT-BAO-PH: viec_bao_ph.bao_lai_cua — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
     /* RÀ 11/11 G1-02: attempt_skills.plan_source_truoc_vang — ĐẦU migrate, chỉ thêm (đường "-" đọc / ghi). */ buoc(() => themCotPrPlanSourceVang(conn, applied));
     /* PHOI-HOP-V2: viec_bao_ph.phoi_hop_id — ĐẦU migrate, chỉ thêm (myWork đọc). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
+    /* TINH-HINH: violations.chi_nhac + bảng tinh_hinh_hoc_tap + viec_bao_ph.tinh_hinh_id — ĐẦU migrate, chỉ thêm (trạng thái Ý thức, myWork đọc). */ buoc(() => migratePrTinhHinh(conn, applied));
     /* RESET-HAN-CASE: cột sos_cases.han_them_pa — ĐẦU migrate, chỉ thêm (`hanThemPa` / `XU_LY_COT_SQL` đọc). */ buoc(() => themCotHanThemPa(conn, applied));
     /* XM-VIEC-DUNG-HAN b: cột sos_cases.mo_ta_luc (ngày xong Xác nhận / Mô tả Case) — đầu migrate, chỉ thêm, chạy lặp được. */ buoc(() => migratePrNgayXong0711(conn, applied));
     buoc(() => {
@@ -456,6 +458,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* HAN-BAO-PH: lần 2 — DB cũ vừa có bảng Báo PH ở bước trên (lần ĐẦU migrate bỏ qua bảng chưa có). */ buoc(() => themCotPrHanBaoPh(conn, applied));
     /* YT-BAO-PH: lần 2 (như HAN-BAO-PH). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
     /* PHOI-HOP-V2: lần 2 (như YT-BAO-PH). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
+    /* TINH-HINH: lần 2 (DB cũ vừa có bảng violations / viec_bao_ph). */ buoc(() => migratePrTinhHinh(conn, applied));
     /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
     /* SV-S-EXPERT: bảng s_expert — lượt S Expert (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvSExpert(conn, applied));
     /* UI-HO-SO-LOP: bảng danh_gia_dau_ra — nhận xét + đề xuất của GVCN khi đánh giá đầu ra (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrUiHoSoLop(conn, applied));

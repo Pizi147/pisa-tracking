@@ -369,6 +369,16 @@ export function macDinhTick(ds: readonly { id: number; t: TrangThaiVp; occurredO
 }
 
 /**
+ * MỐC VI PHẠM dưới tên em (chủ SP 12/11): bỏ "Đã tới", ghi mốc VIẾT HOA tên đầy đủ — "REPORT 1", "WARNING LETTER 1", "REPORT 4 + MEETING CX/GĐCN";
+ * chưa có bậc → "Chưa có vi phạm". MỘT hàm cho mọi nơi (hồ sơ lớp, hồ sơ HV, panel) — cùng `bac` của `trangThaiYThuc` như thang.
+ * Bản Anh: web dịch `nhanLoaiXuLy` rồi viết hoa (chữ "Chưa có vi phạm" qua `t`).
+ */
+export function nhanMocViPham(bac: number, dichChu: (s: string) => string = (s) => s): string | null {
+  if (bac <= 0) return null;
+  return dichChu(nhanLoaiXuLy(kindCuaBac(bac))).replace(/\bWL (\d+)/g, 'Warning Letter $1').toUpperCase();
+}
+
+/**
  * MỘT DÒNG THANG: sáu bậc của mạch chính + Report 7 (luôn hiện, để thấy thang còn đi tiếp) và thêm một ô cho mỗi bậc em đã vượt
  * qua WL 2. Mỗi bậc một trạng thái — `qua` (đã xử lý trên web) · `khai` (khai trước khi dùng web, H5) · `lan-nay` (bậc kế tiếp) · `sau`.
  */

@@ -35,7 +35,7 @@ import { chotYeuCau, taoYeuCau } from './yeuCau.ts';
 import type { BanGhiDao } from '../platform/ghiDao.ts';
 import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.ts';
 import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
-import { baoSauDuyetDeXuat, duyetThuHoiYThuc, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
+import { chotDeXuatYThuc, duyetThuHoiYThuc, quetYThucHetHan, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
 
 /**
@@ -125,6 +125,9 @@ export type DinhNghiaLoai = {
     duLieu?: Record<string, unknown>;
   };
 };
+
+/** TINH-HINH: tên cách xử lý khác mặc định (thẻ `y_thuc`). */
+const CACH_NHAN = { khong_nang: 'Không nâng', vuot: 'Vượt bậc', ngoai: 'Ngoài thang' } as const;
 
 export type DongDao = { bang: string; dk: string; args: unknown[]; k: 'sua' | 'them' | 'ca' };
 /** Q-RL2c: Hành trình của em (thêm) — mọi loại đụng hồ sơ em dùng chung. */
@@ -511,11 +514,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
   /* ------------------------------------------------------------ PR-YT4 · Xử lý Ý thức cần duyệt (V4-9, V4-10, M-11, T29, T30) */
   {
     loai: 'y_thuc',
-    khiDuyet: (p, yc) => {
-      const doi = db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
-        .run(demoToday(), new Date().toISOString(), yc.doi_tuong_id).changes;
-      if (doi) baoSauDuyetDeXuat(p, yc.doi_tuong_id, demoToday());   // #6 (G3-7, G3-8): GVCN "Cần làm" + CX khi Meeting
-    },
+    /* TINH-HINH: chốt = da_duyet + việc Báo PH TVV (N1 sửa 12/11) + tin GVCN "Cần làm" (#6 G3-7) + CX khi Meeting (G3-8). */
+    khiDuyet: (p, yc) => { chotDeXuatYThuc(yc.doi_tuong_id, demoToday(), p.userId); },
+    /* TINH-HINH: QL có 5 ngày — hết hạn tự chốt theo GVCN. */
+    quet: (conn, homNay) => quetYThucHetHan(conn, homNay),
     /* Từ chối → vi phạm về Cần xử lý từ ngày quyết (batBuocTu), bậc giữ; lý do nằm ở thẻ (Q13). */
     khiTuChoi: (p, yc, lyDo) => {
       const doi = db().prepare(`UPDATE discipline_measures SET status = 'tu_choi', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
@@ -526,7 +528,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     /* Q-RL2c: lần xử lý (cả hai) · Từ chối thêm việc Báo PH của lần đó + hạn chốt các vi phạm của em. */
     dao: {
-      duyet: (yc) => [{ bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' }],
+      /* TINH-HINH: duyệt sinh việc Báo PH TVV — Hoàn tác bỏ cả việc đó. */
+      duyet: (yc) => [{ bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' }, { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'them' }],
       tuChoi: (yc) => [
         { bang: 'discipline_measures', dk: 'id = ?', args: [yc.doi_tuong_id], k: 'sua' },
         { bang: 'viec_bao_ph', dk: 'measure_id = ?', args: [yc.doi_tuong_id], k: 'sua' },
@@ -534,7 +537,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       ],
       /* Sau Từ chối, GVCN xác nhận / gửi lần xử lý MỚI cho chính các vi phạm đó (dòng violations không đổi) → đảo sẽ để hai lần xử lý sống, thang bậc
          tính hai lần → chặn khi vi phạm của lần này đã nằm trong lần xử lý khác tạo sau (id lớn hơn), còn hiệu lực. */
-      chan: (conn, yc) => (yc.trang_thai === 'tu_choi' && conn.prepare(
+      chan: (conn, yc) => (yc.trang_thai === 'duyet' && conn.prepare(
+        `SELECT 1 FROM viec_bao_ph_lan l JOIN viec_bao_ph v ON v.id = l.viec_id WHERE v.measure_id = ? LIMIT 1`).get(yc.doi_tuong_id)
+        ? 'TVV đã ghi kết quả báo PH của lần xử lý này — không huỷ quyết định được. Muốn đổi: Thu hồi ở tab Ý thức của em.'
+        : yc.trang_thai === 'tu_choi' && conn.prepare(
         `SELECT 1 FROM measure_violations mv JOIN measure_violations k ON k.violation_id = mv.violation_id AND k.measure_id > mv.measure_id
            JOIN discipline_measures m ON m.id = k.measure_id WHERE mv.measure_id = ? AND m.status NOT IN ('tu_choi', 'thu_hoi') LIMIT 1`).get(yc.doi_tuong_id)
         ? 'Vi phạm của đề xuất này đã nằm trong lần xử lý khác — không huỷ quyết định được. Sửa ở tab Ý thức của em.' : null),
@@ -557,21 +563,23 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       `SELECT m.id, (SELECT COUNT(*) FROM attachments a WHERE a.owner_type = 'discipline_measure' AND a.owner_id = m.id) AS so_tep FROM discipline_measures m WHERE m.id IN (?)`),
     moTa: (yc, ngu) => {
       const d = (() => { try { return JSON.parse(yc.du_lieu ?? '{}'); } catch { return {}; } })() as
-        { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number; soTep?: number };
+        { kind?: string; customName?: string | null; bacKe?: string | null; soViPham?: number; soTep?: number; cach?: 'ngoai' | 'khong_nang' | 'vuot' };
       d.soTep = ngu.them.get(yc.id)?.so_tep ?? d.soTep;
       const nhan = nhanLoaiXuLy(d.kind ?? '', d.customName ?? null);
-      /* LUAT-5: loại trên thang = xử lý không tăng bậc (đề xuất chỉ nhận bậc ≤ bậc hiện tại). */
-      const khongTang = (THANG as readonly string[]).includes(d.kind ?? '');
+      /* TINH-HINH: cách lưu lúc gửi (`cachDeXuat`); thẻ cũ không có → LUAT-5: loại trên thang = không tăng bậc. */
+      const cach = d.cach ?? ((THANG as readonly string[]).includes(d.kind ?? '') ? 'khong_nang' : 'ngoai');
       return {
-        tieuDe: khongTang ? `Không tăng bậc · ${nhan}` : `Đề xuất ${nhan}`,
+        tieuDe: `${CACH_NHAN[cach]} · ${nhan}`,
         /* #6 (G3-5): vi phạm + bằng chứng xem NGAY trong panel duyệt (web đọc khi mở panel) — dòng thẻ chỉ còn số. */
         phu: [d.soViPham ? `${d.soViPham} vi phạm` : null, d.soTep ? `${d.soTep} bằng chứng` : null].filter(Boolean).join(' · ') || null,
         dong: [
           `${nguoiXin(yc, ngu)} đề xuất ${ngay(yc.tao_luc, ngu)}: “${yc.ly_do ?? ''}”`,
-          ...(d.bacKe ? [`Bậc thang kế tiếp đang là ${d.bacKe} — duyệt đề xuất này không đổi bậc`] : []),
+          ...(d.bacKe ? [`Bậc thang kế tiếp: ${d.bacKe}`] : []),
+          ...(yc.trang_thai === 'cho' && yc.han_duyet ? [`Quá ${ngay(yc.han_duyet, ngu)} chưa duyệt: giữ quyết định GVCN`] : []),
         ],
-        neuDuyet: d.kind === 'meeting_cx' ? 'GVCN ghi "Đã thực hiện" trong 5 ngày · CX chi nhánh được báo có họp.' : 'GVCN ghi "Đã thực hiện" trong 5 ngày.',
+        neuDuyet: `GVCN ghi "Đã thực hiện" trong 5 ngày · TVV nhận việc báo PH${d.kind === 'meeting_cx' ? ' · CX chi nhánh được báo có họp' : ''}.`,
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, { tab: 'y-thuc' }) : undefined,
+        duLieu: { cach },
       };
     },
   },
