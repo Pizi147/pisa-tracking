@@ -116,7 +116,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
 
   /* ---------------- Một dòng (cùng `DongLan` tab lớp, không cột Học viên) ---------------- */
   const khoi = (o: { key: string; vp: VpDong[]; gv: ReactNode | null; ph: ReactNode | null; tiep: ReactNode; nen?: 'vua'; b?: BaoPhLan | null; moiIds?: number[]; ls?: boolean;
-    the?: ReactNode; vanDe?: ReactNode; dx?: ReactNode }) => {
+    the?: ReactNode; vanDe?: ReactNode; dx?: ReactNode; moc?: string | null }) => {
     const moId = moVp?.startsWith(`${o.key}:`) ? Number(moVp.slice(o.key.length + 1)) : null;
     const chiTietVp = (v: VpDong) => (
       <div className="space-y-2">
@@ -131,7 +131,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     const phCho = !o.ls && o.b?.trangThai === 'mo' && o.ph != null;
     const dx = o.dx !== undefined ? o.dx : o.gv || (o.ph && !phCho) ? <ODaXuLy gv={o.gv} tvv={phCho ? null : o.ph} /> : null;
     return (
-      <DongLan key={o.key} vp={o.vp} dx={dx} tiep={phCho ? <span className="flex flex-col items-stretch gap-2">{o.ph}{o.tiep}</span> : o.tiep} nen={o.nen} ls={o.ls} homNay={homNay}
+      <DongLan key={o.key} moc={o.moc ?? o.vp.map((v) => v.ngay).sort().pop() ?? null} vp={o.vp} dx={dx} tiep={phCho ? <span className="flex flex-col items-stretch gap-2">{o.ph}{o.tiep}</span> : o.tiep} nen={o.nen} ls={o.ls} homNay={homNay}
         the={o.the ?? (o.vanDe ? undefined : <TheLoai loai="vp" so={o.vp.length} />)} vanDe={o.vanDe}
         moVp={moId} onMoVp={(id) => setMoVp((c) => (c === `${o.key}:${id}` ? null : `${o.key}:${id}`))} chiTietVp={chiTietVp}
         duoi={o.b && moDu === o.b.id ? <BaoPhDu id={o.b.id} homNay={homNay} onSuaHan={() => setBaoPh({ viecId: o.b!.id, han: o.b!.han })} /> : undefined} />
@@ -210,7 +210,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   };
   const dongTh = (x: TinhHinhView, ls = false) => {
     const dx = daXuLyTinhHinh(x, homNay);
-    return khoi({ key: `th-${x.id}`, vp: [], gv: null, ph: null, ls, the: <TheTinhHinh x={x} homNay={homNay} />, vanDe: <NoiDungTinhHinh chu={x.noiDung} />,
+    return khoi({ key: `th-${x.id}`, vp: [], gv: null, ph: null, ls, moc: x.taoLuc.slice(0, 10), the: <TheTinhHinh x={x} homNay={homNay} />, vanDe: <NoiDungTinhHinh chu={x.noiDung} />,
       dx: dx.gv || dx.tvv ? <ODaXuLy gv={dx.gv} tvv={dx.tvv} /> : null, tiep: <BuocTinhHinh x={x} homNay={homNay} tvv={null} gvcn={d.gvcn} f={fTh} /> });
   };
   const kThMo = d.tinhHinh.filter((x) => x.trangThai === 'mo').map((x) => dongTh(x));
@@ -240,7 +240,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           ) : <span className="text-slate-500">—</span>,
         }) };
       }
-      return { ngay: x.ngay, node: khoi({ key: `ls-x${x.id}`, vp: vpCua(x.viPhamIds), gv: oXl(x), ph: ph(x.baoPh), b: x.baoPh, ls: true,
+      return { ngay: x.ngay, node: khoi({ key: `ls-x${x.id}`, moc: x.ngay, vp: vpCua(x.viPhamIds), gv: oXl(x), ph: ph(x.baoPh), b: x.baoPh, ls: true,
         tiep: x.status === 'done' ? <span className="text-sm font-semibold text-ok">✓ {t('Xong')}</span> : <span className="text-slate-500">—</span> }) };
     }),
     ...(loc === 'tat-ca' || loc === 'tinh-hinh' ? thLs.map((x) => ({ ngay: x.taoLuc.slice(0, 10), node: dongTh(x, true) })) : []),
@@ -269,7 +269,9 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           <div className="border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="flex flex-wrap items-baseline gap-x-2.5 text-sm text-slate-400">
-                <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac)}</b>
+                <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac, d.dongThoiGian.some((x) => x.loai === 'vi-pham' && !x.chiNhac))}</b>
+                {/* Mockup v20 A4: thang mini sáu vạch (vạch đã qua tô) — chỉ để nhìn, đủ tên ở "Thang ▾". */}
+                <span aria-hidden className="inline-flex items-center gap-[3px] self-center">{[1, 2, 3, 4, 5, 6].map((b) => <i key={b} className={`h-1.5 w-[26px] rounded-full ${b <= d.bac ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]'}`} />)}</span>
                 {xuLyCuoi && <span className="tabular-nums">{ngay(xuLyCuoi.ngay, homNay)}</span>}
                 <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{dich(d.keTiep.nhan)}</b></span>
                 <button type="button" aria-expanded={thang} className={LINK} onClick={() => setThang((x) => !x)}>{thang ? `${t('Thang')} ▴` : `${t('Thang')} ▾`}</button>

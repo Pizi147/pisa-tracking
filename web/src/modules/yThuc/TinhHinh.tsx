@@ -1,5 +1,6 @@
 import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { api } from '../../lib/api.ts';
+import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { addDaysIso, hanBaoPh, ngay } from '@shared/domain/index.ts';
@@ -168,8 +169,11 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
     } catch (e: any) { setLoi(e.message); } finally { setLuu(false); }
   };
   const ngoai = () => { if (!daDoi || window.confirm(t('Bỏ chữ đang gõ?'))) onDong(); };
-  return (
-    <HopNeo neo={neo} nhan={tieuDe} rong={460} onNgoai={ngoai}>
+  /* Mockup v20 C3 / F3: 375 → tấm dưới rộng hết màn (nền mờ), máy rộng → hộp neo nút. */
+  const hep = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
+  /* Không khai component trong lúc vẽ (vẽ lại là mất focus ô chữ) — dựng thân rồi bọc. */
+  const than = (
+    <>
       <div className="grid gap-0.5 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
         <b className="text-base font-bold text-slate-100">{tieuDe}</b>
         {(che.loai === 'tra-loi' || che.loai === 'sua') && <span className="text-[13px] text-slate-400">{che.x.chieu === 'tvv_gvcn' && che.loai === 'tra-loi' ? `“${che.x.noiDung}”` : null}</span>}
@@ -219,6 +223,12 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           {luu ? t('Đang gửi…') : che.loai === 'bao' ? t('Gửi TVV') : che.loai === 'hoi' ? t('Gửi GVCN') : che.loai === 'tra-loi' ? t('Lưu · gửi TVV') : t('Lưu')}
         </button>
       </div>
-    </HopNeo>
+    </>
   );
+  return hep
+    ? createPortal(
+      <div className="fixed inset-0 z-[60] flex flex-col justify-end" style={{ background: 'var(--phu-hop, rgb(0 0 0 / .55))' }} onClick={(e) => { if (e.target === e.currentTarget) ngoai(); }} onKeyDown={(e) => { if (e.key === 'Escape') ngoai(); }}>
+        <div role="dialog" aria-label={tieuDe} className="grid max-h-[90vh] gap-3 overflow-y-auto rounded-t-[14px] border-t p-4 pb-5" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>{than}</div>
+      </div>, document.body)
+    : <HopNeo neo={neo} nhan={tieuDe} rong={460} onNgoai={ngoai}>{than}</HopNeo>;
 }

@@ -248,7 +248,7 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
 }
 
 /** Mốc vi phạm dưới tên em (chủ SP 12/11): "REPORT 1", "WARNING LETTER 1"… viết hoa, không "Đã tới"; chưa có → "Chưa có vi phạm". Cùng `bac` với thang. */
-export const chuMoc = (bac: number): string => nhanMocViPham(bac, dich) ?? t('Chưa có vi phạm');
+export const chuMoc = (bac: number, coViPham = true): string => nhanMocViPham(bac, dich) ?? (coViPham ? t('Chưa có mốc') : t('Chưa có vi phạm'));   // PTA 12/11: có vi phạm mà chưa tới mốc → "Chưa có mốc"
 
 /** Chip mốc cạnh tên em → hộp nhỏ tại chỗ (thang, Khai bậc, Lịch sử của em). */
 export function ChipBac({ bac, ten, children }: { bac: number; ten: string; children: (dong: () => void) => ReactNode }) {
@@ -284,12 +284,14 @@ export function ChipBac({ bac, ten, children }: { bac: number; ten: string; chil
  * ===================================================================================================================== */
 const LUOI_KHOI = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)]`;
 const LUOI_DONG = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[minmax(0,1fr)_340px_236px]`;
+/** Hồ sơ HV (mockup v20 A4): thêm cột Ngày đầu dòng. */
+const LUOI_DONG_NGAY = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[96px_minmax(0,1fr)_320px_236px]`;
 
 /** Đầu cột (khung rộng): không số (chủ SP 12/11). */
-export function DauCotEm({ ph, khongHv = false }: { ph?: ReactNode; /** Hồ sơ HV: không cột Học viên (cùng lưới `DongLan`). */ khongHv?: boolean }) {
+export function DauCotEm({ ph, khongHv = false }: { ph?: ReactNode; /** Hồ sơ HV: cột Ngày thay cột Học viên (cùng lưới `DongLan` có `moc`). */ khongHv?: boolean }) {
   return (
-    <div className={`hidden min-h-[40px] items-center border-b text-[13px] font-semibold text-slate-400 [@container(min-width:1220px)]:grid ${khongHv ? '[@container(min-width:1220px)]:grid-cols-[minmax(0,1fr)_340px_236px]' : 'px-3 [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)_340px_236px]'}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
-      {!khongHv && <span aria-hidden className="px-4">{t('Học viên')}</span>}
+    <div className={`hidden min-h-[40px] items-center border-b text-[13px] font-semibold text-slate-400 [@container(min-width:1220px)]:grid ${khongHv ? '[@container(min-width:1220px)]:grid-cols-[96px_minmax(0,1fr)_320px_236px]' : 'px-3 [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)_340px_236px]'}`} style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+      <span aria-hidden className="px-4">{khongHv ? t('Ngày') : t('Học viên')}</span>
       <span aria-hidden className="px-4">{t('Vấn đề')}</span>
       <span className="flex items-center gap-1 px-4"><span aria-hidden>{t('Đã xử lý')}</span>{ph}</span>
       <span aria-hidden className="px-4">{t('Bước đang làm')}</span>
@@ -324,17 +326,20 @@ export function ODaXuLy({ gv, tvv }: { gv?: ReactNode; tvv?: ReactNode }) {
  * Một lần trong khối em (hoặc trong lịch sử, `ls`). Khung rộng: 3 cột; hẹp: vi phạm → "Đã xử lý" → hộp "Bước đang làm" (lịch sử: không hộp).
  * `dx` null → "—" (khung hẹp: ẩn). `nen="vua"`: vừa lưu / vừa xem (nền xanh nhạt).
  */
-export function DongLan({ vp, dx, tiep, nen, duoi, ls = false, homNay, moVp, onMoVp, chiTietVp, the, vanDe }: {
+export function DongLan({ vp, dx, tiep, nen, duoi, ls = false, homNay, moVp, onMoVp, chiTietVp, the, vanDe, moc }: {
   vp: VpDong[]; dx: ReactNode | null; tiep: ReactNode; nen?: 'vua'; duoi?: ReactNode; ls?: boolean;
   homNay: string; moVp: number | null; onMoVp: (id: number) => void; chiTietVp: (v: VpDong) => ReactNode;
   /** TINH-HINH (mockup v20): dòng đầu ô Vấn đề — nhãn loại (`TheLoai`) + người / ngày. `vanDe` thay danh sách vi phạm (dòng tình hình). */
   the?: ReactNode; vanDe?: ReactNode;
+  /** Hồ sơ HV (mockup v20 A4): ngày của dòng ở cột đầu (khung rộng); hẹp: dòng nhỏ trên Vấn đề. */
+  moc?: string | null;
 }) {
   const nhan = (chu: string) => <span className={`mb-1 block text-xs font-medium text-slate-500 [@container(min-width:1220px)]:sr-only`}>{chu}</span>;
   const o = 'min-w-0 px-4 py-3 max-sm:px-3';
   return (
     <div className={`border-t border-dashed first:border-t-0 ${nen === 'vua' ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
-      <div className={LUOI_DONG}>
+      <div className={moc !== undefined ? LUOI_DONG_NGAY : LUOI_DONG}>
+        {moc !== undefined && <div className={`${o} pb-0 text-[13px] font-semibold tabular-nums leading-[22px] text-slate-400 [@container(min-width:1220px)]:pb-3`}>{moc ? ngay(moc, homNay) : ''}</div>}
         <div className={o}>{the && <div className="mb-2 flex flex-wrap items-center gap-x-2 gap-y-1">{the}</div>}{vanDe ?? <DsVp ds={vp} homNay={homNay} moId={moVp} onMo={onMoVp} chiTiet={chiTietVp} />}</div>
         <div className={`${o} ${dx == null ? `hidden [@container(min-width:1220px)]:block` : ''} max-sm:pt-0`}>{nhan(t('Đã xử lý'))}{dx ?? <ODaXuLy />}</div>
         {ls
