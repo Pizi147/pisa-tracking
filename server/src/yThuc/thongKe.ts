@@ -107,14 +107,14 @@ export function yThucMetric(
       const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on'), cl = classSql('v.class_id', f.classId);
       return { none: false, ids: all(
         `SELECT v.id FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-          WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.id`, ...b.args, ...t.args, ...cl.args) };
+          WHERE v.chi_nhac = 0 AND ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.id`, ...b.args, ...t.args, ...cl.args) };
     }
     case 'vi-pham-chua-xu-ly': {
       /* PR-YT4 (K1-26): Mới + Cần xử lý + Quá hạn — "Đã ghi nhận" KHÔNG tính (GVCN đã xem, không cần biện pháp). Nhãn do cửa trạng thái. */
       const b = branchSql(NOW_BRANCH, scope.branchIds), ac = activeInClassSql(f.classId);
       const rows = db().prepare(
         `SELECT v.id, v.student_id FROM violations v
-          WHERE ${b.sql} AND ${ac.sql}
+          WHERE v.chi_nhac = 0 AND ${b.sql} AND ${ac.sql}
             AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                              WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet')) ORDER BY v.id`,
       ).all(...b.args, ...ac.args) as any[];
@@ -126,7 +126,7 @@ export function yThucMetric(
       const b = branchSql('c.branch_id', scope.branchIds), t = period('v.occurred_on'), cl = classSql('v.class_id', f.classId);
       return { none: false, ids: all(
         `SELECT DISTINCT v.student_id AS id FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-          WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.student_id`, ...b.args, ...t.args, ...cl.args) };
+          WHERE v.chi_nhac = 0 AND ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.student_id`, ...b.args, ...t.args, ...cl.args) };
     }
     case 'hv-can-xu-ly': {
       /* PR-YT4: em thuộc nhóm Quá hạn hoặc Bắt buộc xử lý (K1-26). SQL chỉ lọc ứng viên (em đang học trong phạm vi có vi phạm chưa
@@ -134,7 +134,7 @@ export function yThucMetric(
       const b = branchSql(NOW_BRANCH, scope.branchIds), ac = activeInClassSql(f.classId);
       const candidates = all(
         `SELECT DISTINCT v.student_id AS id FROM violations v
-          WHERE ${b.sql} AND ${ac.sql}
+          WHERE v.chi_nhac = 0 AND ${b.sql} AND ${ac.sql}
             AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
                              WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet'))
          UNION SELECT DISTINCT v.student_id FROM discipline_measures v WHERE v.status = 'da_duyet' AND ${b.sql} AND ${ac.sql}
@@ -188,7 +188,7 @@ export function yThucMetric(
         .prepare(
           `SELECT v.id, v.category, v.student_id
              FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-            WHERE ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.id`,
+            WHERE v.chi_nhac = 0 AND ${b.sql}${t.sql} AND ${cl.sql} ORDER BY v.id`,
         )
         .all(...b.args, ...t.args, ...cl.args) as any[];
       const byKind = Object.fromEntries(NHOM_TRANG_THAI_KHOA.map((k) => [k, [] as number[]])) as Record<string, number[]>;

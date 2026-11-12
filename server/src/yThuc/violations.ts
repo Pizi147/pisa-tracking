@@ -51,6 +51,8 @@ export type ViolationView = {
   lyDoQuaHan: 'xu-ly' | 'xem' | null;
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
   createdAt: string; updatedAt: string | null;
+  /** TINH-HINH: "Chỉ nhắc nhở" — ngoài luật 3 vi phạm / 2 tuần, bậc, việc; nhãn "Nhắc nhở", trạng thái trung tính `da_ghi_nhan` (không hạn). */
+  chiNhac: boolean;
 };
 
 const SELECT = `
@@ -77,7 +79,10 @@ function lopGhiViPham(studentId: number): number {
 
 export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
   const tm = tachTenMoTa(r.ten, r.description, r.category);
-  const tt = (em ?? trangThaiYThuc([r.student_id]).get(r.student_id)!).viPham.get(r.id);
+  const chiNhac = !!r.chi_nhac;
+  /* Nhắc nhở không nằm trong cửa trạng thái (nạp `chi_nhac = 0`) — khỏi hỏi. */
+  const tt = chiNhac ? { t: 'da_ghi_nhan' as const, nhan: 'Nhắc nhở', han: null, quaHanNgay: null, lyDoQuaHan: null }
+    : (em ?? trangThaiYThuc([r.student_id]).get(r.student_id)!).viPham.get(r.id);
   return {
     id: r.id,
     studentId: r.student_id, studentName: r.student_name, studentCode: r.student_code,
@@ -91,6 +96,7 @@ export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
     trangThai: tt?.t ?? 'moi', nhanTrangThai: tt?.nhan ?? 'Mới', han: tt?.han ?? null, quaHanNgay: tt?.quaHanNgay ?? null, lyDoQuaHan: tt?.lyDoQuaHan ?? null,
     ghiNhanLuc: r.ghi_nhan_luc ?? null, ghiNhanBoiName: r.ghi_nhan_boi_name ?? null,
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
+    chiNhac,
   };
 }
 
@@ -218,7 +224,7 @@ export function similarViolations(
 }
 
 /** Một dòng vi phạm đã kiểm (dùng cho cả ghi một em và ghi nhiều em). */
-type DongDaKiem = { category: ViolationCategory; skill: string | null; occurredOn: string; ten: string; moTa: string };
+type DongDaKiem = { category: ViolationCategory; skill: string | null; occurredOn: string; ten: string; moTa: string; chiNhac?: boolean };
 
 /**
  * Phần ghi của MỘT vi phạm — gọi TRONG `tx` của nơi gọi. KHÔNG báo GVCN / chốt hạn: nơi gọi làm MỘT lần cho cả em (sau mọi dòng) vì hai việc đó
@@ -228,10 +234,10 @@ function ghiMotViPham(p: Principal, student: any, classId: number, cycleId: numb
   const info = db()
     .prepare(
       `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by,
-                               ten, description, idempotency_key, created_at)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`,
+                               ten, description, idempotency_key, created_at, chi_nhac)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
-    .run(student.id, cycleId, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso());
+    .run(student.id, cycleId, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso(), dong.chiNhac ? 1 : 0);
   const newId = Number(info.lastInsertRowid);
   /*
    * Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3). PR-S3F #6: LUÔN đặt dấu, kể cả khi chính lần ghi này là
@@ -243,7 +249,7 @@ function ghiMotViPham(p: Principal, student: any, classId: number, cycleId: numb
   writeAudit({
     actorUserId: p.userId, action: 'violation.record', entityType: 'violation', entityId: newId,
     entityLabel: `${student.student_code} · ${VIOLATION_CATEGORY_LABEL[dong.category]}`,
-    after: { category: dong.category, skill: dong.skill, occurredOn: dong.occurredOn, ten: dong.ten, description: dong.moTa },
+    after: { category: dong.category, skill: dong.skill, occurredOn: dong.occurredOn, ten: dong.ten, description: dong.moTa, ...(dong.chiNhac ? { chiNhac: true } : {}) },
   });
   return newId;
 }
@@ -265,6 +271,8 @@ export function recordViolation(p: Principal, input: {
   /** `undefined` = tự điền theo phân công (V04); `null` hoặc rỗng = người ghi chủ động để trống. */
   skill?: string | null;
   idempotencyKey?: string | null;
+  /** TINH-HINH: "Chỉ nhắc nhở". */
+  chiNhac?: boolean;
 }): { violation: ViolationView; similar: ViolationView[] } {
   const student = loadStudent(input.studentId);
   requireRecordViolation(p, input.studentId);
@@ -289,8 +297,8 @@ export function recordViolation(p: Principal, input: {
   const laGvcn = laGvcnDangHoc(p, input.studentId);
 
   const id = tx(() => {
-    const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(), { category, skill, occurredOn, ten, moTa }, key, laGvcn);
-    baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);
+    const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(), { category, skill, occurredOn, ten, moTa, chiNhac: !!input.chiNhac }, key, laGvcn);
+    if (!input.chiNhac) baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);   // nhắc nhở: không việc, không chuông
     chotHanXuLy([input.studentId]);
     return newId;
   });
@@ -307,6 +315,8 @@ export type DongViPhamVao = { category?: string; skill?: string | null; occurred
  */
 export function recordViolations(p: Principal, input: {
   studentIds: number[]; lines: DongViPhamVao[]; moTaRieng?: Record<string, string> | null; idempotencyKey: string;
+  /** TINH-HINH: "Chỉ nhắc nhở" — một lựa chọn cho cả lần lưu (mọi dòng, mọi em). */
+  chiNhac?: boolean;
 }): { ok: { studentId: number; ids: number[] }[]; loi: { studentId: number; loi: string; ma: number }[] } {
   const ids = Array.isArray(input.studentIds) ? input.studentIds : [];
   if (!ids.length || ids.length > LO_GHI_VI_PHAM || new Set(ids).size !== ids.length || !ids.every((x) => Number.isInteger(x) && x > 0)) {
@@ -360,7 +370,7 @@ export function recordViolations(p: Principal, input: {
       if (dong.some((dg, i) => cu[i] === null && !monCua(dg)) && batBuocChonMon(p, classId, today)) throw badRequest(THIEU_MON);
       const moi = tx(() => dong.map((dg, i) => cu[i] ?? ghiMotViPham(p, student, classId, cycleId, today, {
         category: dg.category, occurredOn: dg.occurredOn, ten: dg.ten, moTa: moTaRieng.get(sid) ?? dg.moTa,
-        skill: monCua(dg),
+        skill: monCua(dg), chiNhac: !!input.chiNhac,
       }, khoa(sid, i), laGvcn)));
       ok.push({ studentId: sid, ids: moi });
       const dongMoi = cu.map((x, i) => (x === null ? i : -1)).filter((i) => i >= 0);
@@ -373,7 +383,7 @@ export function recordViolations(p: Principal, input: {
   if (viec.length) {
     xoaNho();
     const sau = trangThaiYThuc(viec.map((v) => v.sid));
-    for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
+    if (!input.chiNhac) for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
     chotHanXuLy(viec.map((v) => v.sid), { trang: sau });
   }
   return { ok, loi: hong };
@@ -405,6 +415,8 @@ export function noteMeasureChange(violationId: number, oldMeasureId: number | nu
  */
 export function editViolation(p: Principal, id: number, patch: {
   ten?: string | null; description?: string; category?: string; skill?: string | null; occurredOn?: string | null;
+  /** TINH-HINH: đổi Vi phạm ↔ Nhắc nhở (ngày ghi giữ — luật tự tính lại). */
+  chiNhac?: boolean;
 }): ViolationView {
   const row = loadRow(id);
   requireViewStudent(p, row.student_id);
@@ -422,6 +434,10 @@ export function editViolation(p: Principal, id: number, patch: {
   }
   const skill = patch.skill === undefined ? row.skill : checkSkill(patch.skill);
   const occurredOn = patch.occurredOn === undefined ? row.occurred_on : checkOccurredOn(patch.occurredOn);
+  const chiNhac = patch.chiNhac === undefined ? !!row.chi_nhac : !!patch.chiNhac;
+  if (chiNhac && !row.chi_nhac && db().prepare(
+    `SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id WHERE mv.violation_id = ? AND m.status IN ('done', 'cho_duyet', 'da_duyet', 'nhap')`,
+  ).get(id)) throw badRequest('Vi phạm đã nằm trong một lần xử lý — không đổi thành nhắc nhở được.');
 
   const changes: Array<[string, string | null, string | null]> = [];
   if (ten !== (row.ten ?? null)) changes.push(['ten', row.ten ?? cur.ten, ten]);
@@ -429,12 +445,13 @@ export function editViolation(p: Principal, id: number, patch: {
   if (category !== row.category) changes.push(['category', row.category, category]);
   if ((skill ?? null) !== (row.skill ?? null)) changes.push(['skill', row.skill ?? null, skill ?? null]);
   if (occurredOn !== row.occurred_on) changes.push(['occurred_on', row.occurred_on, occurredOn]);
+  if (chiNhac !== !!row.chi_nhac) changes.push(['chi_nhac', row.chi_nhac ? '1' : '0', chiNhac ? '1' : '0']);
   if (!changes.length) return shapeViolation(row);
 
   tx(() => {
     db()
-      .prepare('UPDATE violations SET ten = ?, description = ?, category = ?, skill = ?, occurred_on = ?, updated_at = ? WHERE id = ?')
-      .run(ten, moTa, category, skill ?? null, occurredOn, nowIso(), id);
+      .prepare('UPDATE violations SET ten = ?, description = ?, category = ?, skill = ?, occurred_on = ?, chi_nhac = ?, updated_at = ? WHERE id = ?')
+      .run(ten, moTa, category, skill ?? null, occurredOn, chiNhac ? 1 : 0, nowIso(), id);
     for (const [field, from, to] of changes) addHistory(id, field, from, to, p.userId);
     chotHanXuLy([row.student_id]);
     writeAudit({

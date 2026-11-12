@@ -1348,9 +1348,11 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* MON-CT-1311 (13/11): chụp lại 7 băm (QL / QT toi, ADMIN, GVS giữ) — đổi CÓ CHỦ Ý: seed MB PET 01 về L+S · R+W (KET / PET mặc định hai môn). Đã kiểm: trả
        seed PET + hằng `CHUONG_TRINH_LIEN_TUC_CO_SAN` về 4 môn trên nhánh → TD4-a đạt với băm cũ (mọi mã khác của nhánh giữ). Trước: GVCN toi 940b335430de8caf,
        GVBM toi 619ada104fec5944, GVCN_THUONG toi 940b335430de8caf, QL tat-ca 7d767d49828b74e7, QT tat-ca 82c3472f2a05bcdf, QT tat-ca cn b3eff2d5295fb05c, QL gvcn 52d159aa5665aa06 */
+    /* TINH-HINH (chủ SP 12/11, N1 sửa): chụp lại 3 băm "Tất cả" — đổi CÓ CHỦ Ý: lần xử lý CHỜ QL không còn sinh việc Báo PH của TVV (seed có đề xuất chờ) — việc
+       sinh khi duyệt / tự chốt. "Của tôi" mọi vai không đổi. Trước: QL tat-ca 7ed19aebd00614bd, QT tat-ca b656f012db13e5bd, QT tat-ca cn cab3fd0e23981a6d */
     'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': '31ebd923a221e835', 'GVBM toi': '0ebf563606c50ead',
-    'GVCN_THUONG toi': '31ebd923a221e835', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '7ed19aebd00614bd', 'QT tat-ca': 'b656f012db13e5bd',
-    'QT tat-ca cn': 'cab3fd0e23981a6d', 'QL gvcn': 'ac54489ae58e3bcf', 'GVS toi': '3c702438ea810b91',
+    'GVCN_THUONG toi': '31ebd923a221e835', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': 'c0b740c6097c651b', 'QT tat-ca': '931741b7e9d11882',
+    'QT tat-ca cn': '19b4c0743b6f7b36', 'QL gvcn': 'ac54489ae58e3bcf', 'GVS toi': '3c702438ea810b91',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

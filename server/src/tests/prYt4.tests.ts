@@ -155,12 +155,15 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const { default: SqliteDb } = await import('libsql');
   const { migratePrYt4 } = await import('../migrate/prYt4.ts');
   const { migratePrPb2b } = await import('../migrate/prPb2b.ts');
+  const { migratePrTinhHinh } = await import('../migrate/prTinhHinh.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
   /* DB thời trước YT4: cắt phần YT4 khỏi CHỮ schema.sql (libsql lỗi "incomplete input" khi DROP COLUMN trên bảng có chú thích). */
   const truocYt4 = () => {
     const cat = SCHEMA.replace(/\r\n/g, '\n')
+      /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; so cột chạy lại migratePrTinhHinh sau. */
+      .replace(/,\n  -- TINH-HINH \(chủ SP 12\/11\)[^\n]*\n  chi_nhac INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')
       /* PR-Pb2-b thêm hai cột SAU ghi_nhan_boi → cắt trước; (2b) chạy lại migratePrPb2b theo đúng thứ tự migrate.ts. */
       .replace(/,\n  -- PR-Pb2-b \(Q14\)[\s\S]*?phan_hoi_ngay TEXT\n\);/, '\n);')
       .replace(/,\n  -- PR-YT4 \(§5\.4[\s\S]*?ghi_nhan_boi INTEGER REFERENCES users\(id\)\n\);/, '\n);')
@@ -184,6 +187,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const m = truocYt4();
     migratePrYt4(m, []);
     migratePrPb2b(m, []);
+    migratePrTinhHinh(m, []);
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['violations', 'discipline_measures', 'y_thuc_khai_bac']) {
@@ -626,10 +630,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   };
   const attachments: any = await import('../platform/attachments.ts');
 
-  check('YT4 (5) · Đề xuất: WL 3 đề xuất được bất kỳ lúc nào (không cần là bậc kế); loại trong thang → 400; "Khác" thiếu tên → 400', () => {
+  check('YT4 (5) · Đề xuất: WL 3 đề xuất được bất kỳ lúc nào (không cần là bậc kế); bậc kế (mặc định) → 400 — TINH-HINH: vượt bậc nay đề xuất được; "Khác" thiếu tên → 400', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);
     assert(xuLy.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: [v], note: 'Đề xuất WL 3 sớm' }).kind === 'wl_3', 'WL 3 bất kỳ lúc nào');
-    assert(/Chọn loại cần QL duyệt/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'report_2', violationIds: [v], note: 'Loại trong thang' })).msg), 'loại lạ');
+    assert(/Chọn cách cần QL duyệt/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'report_1', violationIds: [v], note: 'Bậc kế là mặc định' })).msg), 'bậc kế');
+    assert(xuLy.deXuat(gvcn, sid, { kind: 'report_2', violationIds: [v], note: 'Vượt bậc lên Report 2' }).kind === 'report_2', 'vượt bậc');
     assert(/Khác/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'other', customName: 'x', violationIds: [v], note: 'Loại khác thiếu tên' })).msg), 'Khác');
   });
   check('YT4 (5) · Gửi thiếu bằng chứng → 400; nháp chưa gửi không đổi trạng thái vi phạm; xoá được nháp, không xoá được đề xuất đã gửi', () => {
@@ -659,11 +664,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
     assert(loiCua(() => yc.duyetYeuCau(gvcn, theCho('y_thuc', m.id).id)).status === 403, 'GVCN duyệt');
   });
-  check('YT4 (5) · QL duyệt Đình chỉ → Đã duyệt · chờ thực hiện; thẻ nói "Bậc thang kế tiếp đang là Report 1"; Đã thực hiện → "Đã xử lý · Đình chỉ học tạm thời", bậc GIỮ (M-11)', () => {
+  check('YT4 (5) · QL duyệt Đình chỉ → Đã duyệt · chờ thực hiện; thẻ nói "Bậc thang kế tiếp: Report 1"; Đã thực hiện → "Đã xử lý · Đình chỉ học tạm thời", bậc GIỮ (M-11)', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);
     const m = deXuatGui(gvcn, sid, 'suspension', [v]);
     const the = yc.hopChoDuyet(P.mbManager, { studentId: sid }).the.find((x: any) => x.loai === 'y_thuc');
-    assert(the.tieuDe === 'Đề xuất Đình chỉ học tạm thời' && the.dong.some((d: string) => d === 'Bậc thang kế tiếp đang là Report 1 — duyệt đề xuất này không đổi bậc'), JSON.stringify(the.dong));
+    assert(the.tieuDe === 'Ngoài thang · Đình chỉ học tạm thời' && the.dong.some((d: string) => d === 'Bậc thang kế tiếp: Report 1'), JSON.stringify(the.dong));
     yc.duyetYeuCau(P.mbManager, the.id);
     const r = conn.prepare('SELECT status, quyet_luc FROM discipline_measures WHERE id = ?').get(m.id) as any;
     assert(r.status === 'da_duyet' && r.quyet_luc === TODAY && em(sid).viPham.get(v).nhan === 'Đã duyệt · chờ thực hiện', JSON.stringify(r));

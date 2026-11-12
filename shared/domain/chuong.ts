@@ -18,7 +18,7 @@ export const NHAN_LOAI_VIEC: Record<string, string> = {
   thi_that: t('Cập nhật kết quả thi thật'), buoc_tiep: t('Chọn bước tiếp'), bo_sung_ho_so: t('Bổ sung hồ sơ thiếu'), mini_test: t('Ghi Mini Test'),
   score: t('Nhập điểm'), no_plan: t('Thiếu PA học thuật'), ghi_ket_qua_pa: t('Kết quả PA'), no_owner: t('Chưa có người phụ trách'),
   chot_len_ft: t('Chốt lộ trình'), xet_lai_lo_trinh: t('Xét lại lộ trình'), missing_data: t('Thiếu dữ liệu đánh giá'), yt_xu_ly: t('Xử lý vi phạm'),
-  yt_xem: t('Xem vi phạm mới'), bao_ph_yt: t('Báo PH vi phạm'), yt_thuc_hien: t('Ghi "Đã thực hiện"'), ban_giao: t('Bàn giao'),
+  yt_xem: t('Xem vi phạm mới'), bao_ph_yt: t('Báo PH vi phạm'), yt_hoi_tinh_hinh: t('Tình hình học tập'), yt_thuc_hien: t('Ghi "Đã thực hiện"'), ban_giao: t('Bàn giao'),
   xuat_bc_ph: t('Xuất báo cáo PH'), mgmt: t('Việc được giao'),
 };
 

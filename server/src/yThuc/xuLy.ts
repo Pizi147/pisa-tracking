@@ -8,6 +8,8 @@
  *
  * Bậc kế cần QL (WL 3) hoặc hết thang → phải đi đường Đề xuất (thẻ `y_thuc`, `deXuat*` ở cuối file). Bậc không lùi (V4-12): bậc đọc từ
  * `kind` của lần xử lý, xoá vi phạm không xoá lần xử lý. Trạng thái mọi vi phạm đọc qua `trangThaiYThuc()` (một cửa).
+ * TINH-HINH (chủ SP 12/11): GVCN chọn tại chỗ Nâng 1 bậc (mặc định, `luuXuLy`) · Không nâng · Vượt bậc · Ngoài thang (ba cách sau = Đề xuất, QL có
+ * 5 ngày — hết hạn TỰ CHỐT theo GVCN, `quetYThucHetHan`). N1 sửa 12/11: lần chờ QL KHÔNG sinh việc TVV — việc Báo PH sinh lúc chốt (`chotDeXuatYThuc`).
  * LUAT-5 (luật 5, 21/10): lần xử lý đã lưu KHÔNG xoá — "Thu hồi…" kèm lý do (GVCN gửi QL duyệt, QL làm thẳng) → `thu_hoi` giữ dòng; xử lý không
  * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. [XM 5] (PTA 11/11, thay B15): Hoàn tác 10 s ở toast (`hoanTacXuLy`); quá hạn thì Thu hồi.
  */
@@ -28,15 +30,16 @@ import { noteMeasureChange, violationsByIds, type ViolationView } from './violat
 import { dongThoiGian, hangCuaEm, type DongEm, type DongThoiGianYt } from './board.ts';
 import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
-import { dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
+import { tinhHinhCuaEm, type TinhHinhView } from './tinhHinh.ts';
+import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
-function hocVien(studentId: number): { id: number; full_name: string; student_code: string; branch_id: number | null } {
-  const s = db().prepare('SELECT id, full_name, student_code, branch_id FROM students WHERE id = ?').get(studentId) as any;
+function hocVien(studentId: number): { id: number; full_name: string; student_code: string; branch_id: number | null; consultant_user_id: number | null } {
+  const s = db().prepare('SELECT id, full_name, student_code, branch_id, consultant_user_id FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   return s;
 }
@@ -442,6 +445,10 @@ export type YThucHocVien = {
   demCuoi: { tong: number; theoNhom: { nhom: string; so: number }[] };
   /** UI-Y-THUC-HV: dòng trạng thái "Duyệt · thu hồi | Báo PH (TVV)" — cùng hàng em của bảng lớp (`hangCuaEm`). */
   hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
+  /** TINH-HINH: tình hình học tập hai chiều GV ↔ TVV của em (mới nhất trước). */
+  tinhHinh: TinhHinhView[];
+  /** TINH-HINH: "Báo tình hình" (quyền ghi vi phạm) · "Hỏi tình hình" (TVV của em / cùng chi nhánh / QL — `coTheGhi`). */
+  coTheBao: boolean; coTheHoi: boolean;
 };
 
 export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chuoi' | 'tat-ca' } = {}): YThucHocVien {
@@ -487,6 +494,9 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     macDinh: macDinhTick(viPham.map((v) => ({ id: v.id, t: v.trangThai, occurredOn: v.occurredOn })), homNay),
     dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi', p, homNay }),
     hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),
+    tinhHinh: tinhHinhCuaEm(p, [studentId], homNay),
+    coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
+    coTheHoi: coTheGhi(p, { consultant_user_id: hv.consultant_user_id ?? null, student_id: studentId }),
     demCuoi: {
       tong: viPham.length,
       theoNhom: [...demNhom.entries()].sort((a, b) => b[1] - a[1]).map(([k, so]) => ({ nhom: VIOLATION_CATEGORY_LABEL[k as ViolationCategory] ?? k, so })),
@@ -542,8 +552,8 @@ export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; cus
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   const kind = String(v.kind ?? '') as MeasureKind;
   const em = emCua(studentId);
-  if (!(NGOAI_THANG as readonly string[]).includes(kind) && !khongTangBac(kind, em.bac)) {
-    throw badRequest('Chọn loại cần QL duyệt: WL 3 · Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác · hoặc không tăng bậc (bậc hiện tại hoặc thấp hơn).');
+  if (!deXuatHopLe(kind, em.bac)) {
+    throw badRequest('Chọn cách cần QL duyệt: Không nâng (bậc hiện tại hoặc thấp hơn) · Vượt bậc (cao hơn bậc kế) · Ngoài thang (WL 3 · Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác).');
   }
   let customName: string | null = null;
   if (kind === 'other') {
@@ -579,6 +589,13 @@ export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; cus
 
 /** LUAT-5: loại thang ở bậc hiện tại hoặc thấp hơn = "xử lý không tăng bậc" (em chưa có bậc thì không có). */
 const khongTangBac = (kind: string, bac: number): boolean => (THANG as readonly string[]).includes(kind) && bacCuaLoai(kind) <= bac;
+/** TINH-HINH: "Vượt bậc" — bậc thang cao hơn bậc kế (bậc + 1). */
+const vuotBac = (kind: string, bac: number): boolean => (THANG as readonly string[]).includes(kind) && bacCuaLoai(kind) > bac + 1;
+/** Cách khác mặc định cần QL: Không nâng · Vượt bậc · Ngoài thang. */
+const deXuatHopLe = (kind: string, bac: number): boolean => (NGOAI_THANG as readonly string[]).includes(kind) || khongTangBac(kind, bac) || vuotBac(kind, bac);
+/** Cách của đề xuất (thẻ QL, web) — tính lúc gửi. */
+export const cachDeXuat = (kind: string, bac: number): 'ngoai' | 'khong_nang' | 'vuot' =>
+  ((NGOAI_THANG as readonly string[]).includes(kind) ? 'ngoai' : khongTangBac(kind, bac) ? 'khong_nang' : 'vuot');
 /** Bằng chứng tệp bắt buộc chỉ với loại ngoài thang (V4-10); không tăng bậc chỉ cần lý do (luật 5 — tệp tuỳ chọn). */
 const canTep = (kind: string): boolean => (NGOAI_THANG as readonly string[]).includes(kind);
 
@@ -601,14 +618,13 @@ export function guiDeXuat(p: Principal, measureId: number) {
     const doi = db().prepare(`UPDATE discipline_measures SET status = 'cho_duyet', updated_at = ? WHERE id = ? AND status = 'nhap'`).run(nowIso(), measureId).changes;
     if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
     ghiPhanHoi(vIds);
-    if (!canTep(m.kind) && !khongTangBac(m.kind, em.bac)) throw badRequest('Bậc đã đổi — mở lại panel.');
+    if (!deXuatHopLe(m.kind, em.bac)) throw badRequest('Bậc đã đổi — mở lại panel.');
     taoYeuCau(db(), {
       loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: measureId, hocVienId: m.student_id, lopId: em.lopId,
       nguoiXin: p.userId, lyDo: m.note, bangChung: tep,
-      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length },
+      duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacKe: nhanLoaiXuLy(em.keTiep.kind), soViPham: vIds.length, soTep: tep.length, cach: cachDeXuat(m.kind, em.bac) },
     });
-    /* SV-YT-TVV (luật 1): lần chờ QL duyệt cũng sinh việc Báo PH ngay. */
-    sinhViecBaoPh({ id: measureId, studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null }, demoToday());
+    /* N1 (sửa 12/11): lần chờ QL KHÔNG sinh việc TVV — sinh khi QL duyệt hoặc tự chốt (`chotDeXuatYThuc`). */
     writeAudit({ actorUserId: p.userId, action: 'discipline.propose', entityType: 'discipline_measure', entityId: measureId,
       entityLabel: `${hv.student_code} · gửi QL ${nhanLoaiXuLy(m.kind, m.custom_name)}`, after: { bangChung: tep } });
   });
@@ -943,14 +959,14 @@ function cxCuaChiNhanh(branchId: number | null): number[] {
  * TRONG tx của Duyệt thẻ `y_thuc`: GVCN lớp em (+ người gửi) có tin "Cần làm" kèm hạn, mở thẳng việc "Đánh dấu đã thực hiện" (rời nhóm khi lần xử lý
  * hết "đã duyệt"); Meeting CX/GĐCN → CX chi nhánh "Để biết" (người dự họp). Thay tin chung "Yêu cầu … · Đã duyệt" (Để biết) của hộp duyệt.
  */
-export function baoSauDuyetDeXuat(p: Principal, measureId: number, homNay: string): void {
+export function baoSauDuyetDeXuat(boi: number | null, measureId: number, homNay: string, tuChot = false): void {
   const m = db().prepare('SELECT id, student_id, kind, custom_name, created_by FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) return;
   const em = emCua(m.student_id); const hv = hocVien(m.student_id);
   const nhan = nhanLoaiXuLy(m.kind, m.custom_name);
   const lop = em.lopId ? db().prepare('SELECT code, branch_id FROM classes WHERE id = ?').get(em.lopId) as { code: string; branch_id: number | null } | undefined : undefined;
-  for (const uid of new Set([em.gvcnId, m.created_by].filter((x): x is number => !!x && x !== p.userId))) {
-    notify({ userId: uid, kind: 'yt_da_duyet', title: `QL đã duyệt ${nhan} · ${hv.full_name} · ghi "Đã thực hiện"`,
+  for (const uid of new Set([em.gvcnId, m.created_by].filter((x): x is number => !!x && x !== boi))) {
+    notify({ userId: uid, kind: 'yt_da_duyet', title: `${tuChot ? 'Tự chốt' : 'QL đã duyệt'} ${nhan} · ${hv.full_name} · ghi "Đã thực hiện"`,
       entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-da-duyet:${measureId}`,
       duong: `/cong-viec?viec=${encodeURIComponent(`yt_thuc_hien:${measureId}`)}`, han: hanTheoNgay(homNay, hanTai('xu_ly_vi_pham', homNay).ngay) });
   }
@@ -958,9 +974,43 @@ export function baoSauDuyetDeXuat(p: Principal, measureId: number, homNay: strin
   const maLop = lop?.code ?? '—';
   const gvcn = em.gvcnId ? (db().prepare('SELECT full_name FROM users WHERE id = ?').get(em.gvcnId) as { full_name: string } | undefined)?.full_name : undefined;
   for (const uid of cxCuaChiNhanh(lop?.branch_id ?? hv.branch_id)) {
-    if (uid === p.userId) continue;
+    if (uid === boi) continue;
     notify({ userId: uid, kind: 'discipline_de_biet', title: `Có Meeting CX/GĐCN · ${hv.full_name} · ${maLop}`,
       body: gvcn ? `GVCN ${gvcn}` : null, entityType: 'discipline_measure', entityId: measureId, dedupKey: `yt-meeting-cx:${measureId}`,
       duong: duongHoSoHocVien(m.student_id, { tab: 'y-thuc' }) });
   }
+}
+
+/**
+ * TINH-HINH — CHỐT một đề xuất Ý thức (QL Duyệt, hoặc quá hạn tự chốt theo GVCN): `cho_duyet` → `da_duyet` + việc Báo PH của TVV (N1 sửa 12/11) +
+ * tin "ghi Đã thực hiện" cho GVCN (+ CX khi Meeting). Gọi TRONG giao dịch của nơi gọi. Không còn chờ (đã rút / đã chốt) → false, không làm gì.
+ */
+export function chotDeXuatYThuc(measureId: number, homNay: string, boi: number | null, tuChot = false): boolean {
+  const doi = db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
+    .run(homNay, nowIso(), measureId).changes;
+  if (!doi) return false;
+  const m = db().prepare('SELECT id, student_id, kind, custom_name FROM discipline_measures WHERE id = ?').get(measureId) as any;
+  sinhViecBaoPh({ id: m.id, studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null }, homNay);
+  baoSauDuyetDeXuat(boi, measureId, homNay, tuChot);
+  return true;
+}
+
+/** Lý do đóng thẻ khi tự chốt (hiện ở "Đã quyết"). */
+export const LY_DO_TU_CHOT_Y_THUC = 'Quá 5 ngày QL chưa duyệt — giữ quyết định GVCN';
+
+/**
+ * TINH-HINH (chủ SP 12/11 "hết 5 ngày thì quyết định của GVCN là quyết định cuối") — quét trong `quetYeuCau` (khi đọc + quét đêm): thẻ `y_thuc` còn chờ có
+ * `han_duyet` < hôm nay → chốt theo GVCN (`tu_dong`). Mẫu `quetGiuPaGv`. Trả số thẻ đã chốt.
+ */
+export function quetYThucHetHan(conn: any, homNay: string): number {
+  const ds = conn.prepare(`SELECT id, doi_tuong_id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
+    .all(homNay) as { id: number; doi_tuong_id: number }[];
+  if (!ds.length) return 0;
+  tx(() => {
+    for (const y of ds) {
+      chotDeXuatYThuc(y.doi_tuong_id, homNay, null, true);
+      chotYeuCau(conn, { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: y.doi_tuong_id }, 'tu_dong', { lyDo: LY_DO_TU_CHOT_Y_THUC });
+    }
+  });
+  return ds.length;
 }

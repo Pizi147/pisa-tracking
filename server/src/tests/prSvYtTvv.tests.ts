@@ -123,20 +123,20 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(viecCua(sid).length === 0, 'không sinh việc');
   }));
 
-  await checkAsync('SVYT-K5 · Đề xuất: nháp chưa gửi → 0 việc; gửi (chờ QL duyệt) → việc ngay; QL duyệt không sinh thêm', () => thu(() => {
+  await checkAsync('SVYT-K5 · Đề xuất: nháp chưa gửi → 0 việc; gửi (chờ QL duyệt) → 0 việc (N1 sửa 12/11); QL duyệt → việc', () => thu(() => {
     const tvv = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     const n = xu.deXuat(gvcn, sid, { kind: 'meeting_cx', violationIds: [v1], note: 'Mời gia đình lên trao đổi về việc học' });
     assert(viecCua(sid).length === 0, 'nháp: 0 việc');
     conn.prepare("INSERT INTO attachments (owner_type, owner_id, kind, display_name, url, uploaded_by, created_at) VALUES ('discipline_measure', ?, 'link', 'bb', 'https://vd.vn/bb', ?, ?)").run(n.id, gvcn.userId, new Date().toISOString());
     xu.guiDeXuat(gvcn, n.id);
-    const ds = viecCua(sid);
-    assert(ds.length === 1 && ds[0].measure_id === n.id && ds[0].han === addDays(TODAY, 4) && /Meeting/.test(ds[0].nhan), JSON.stringify(ds));
+    assert(viecCua(sid).length === 0, 'chờ QL: 0 việc');
     const the = hang("SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'", n.id)[0];
     yc.duyetYeuCau(ql, the.id);
-    assert(viecCua(sid).length === 1 && viecCua(sid)[0].trang_thai === 'mo', 'duyệt không sinh thêm');
+    const ds = viecCua(sid);
+    assert(ds.length === 1 && ds[0].measure_id === n.id && ds[0].han === addDays(TODAY, 4) && /Meeting/.test(ds[0].nhan) && ds[0].trang_thai === 'mo', JSON.stringify(ds));
   }));
 
-  await checkAsync('SVYT-K6 · QL từ chối → việc chưa xong "Đã bỏ · QL từ chối"; GVCN rút → "Đã bỏ · Đề xuất đã rút" (lịch sử giữ)', () => thu(() => {
+  await checkAsync('SVYT-K6 · QL từ chối / GVCN rút đề xuất chờ → không có việc TVV (N1 sửa 12/11: việc chỉ sinh khi chốt)', () => thu(() => {
     const tvv = tvvMoi();
     const de = (sid: number, v: number) => {
       const n = xu.deXuat(gvcn, sid, { kind: 'meeting_cx', violationIds: [v], note: 'Mời gia đình lên trao đổi về việc học' });
@@ -146,16 +146,10 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     };
     const s1 = moiEm(tvv); const a = de(s1, nVp(s1, 1)[0]);
     yc.tuChoiYeuCau(ql, a.the, 'Chưa đủ căn cứ');
-    const v1 = viecCua(s1)[0];
-    assert(v1.trang_thai === 'bo' && v1.bo_ly_do === 'system_tu_choi' && v1.bo_ly_do_chu === 'Chưa đủ căn cứ', JSON.stringify(v1));
-    assert(viecToi(tvv, s1).length === 0, 'hết khỏi việc của tôi');
+    assert(viecCua(s1).length === 0 && viecToi(tvv, s1).length === 0, 'từ chối: không việc');
     const s2 = moiEm(tvv); const b = de(s2, nVp(s2, 1)[0]);
-    ghi(tvv, [viecCua(s2)[0].id], 'chua_lien_he', { ghiChu: 'Gọi không nghe máy' });
     yc.rutYeuCau(gvcn, b.the);
-    const v2 = viecCua(s2)[0];
-    assert(v2.trang_thai === 'bo' && v2.bo_ly_do === 'system_rut' && v2.measure_id === null, JSON.stringify(v2));
-    const x = bp.xemViecBaoPh(tvv, v2.id);
-    assert(x.lan.length === 1 && x.xuLy === 'rut' && x.bo?.nhan === 'Đề xuất đã rút' && x.coTheGhi === false, JSON.stringify(x));
+    assert(viecCua(s2).length === 0, 'rút: không việc');
   }));
 
   await checkAsync('SVYT-K6b · thu hồi được duyệt: chưa xong → "Đã bỏ · Xử lý đã thu hồi" + lý do; đã báo → giữ + nhãn + chuông để biết; huỷ thu hồi → mở lại', () => thu(() => {
@@ -283,7 +277,7 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     xu.guiDeXuat(gvcn, n.id);
     const the = hang("SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'", n.id)[0].id;
     const ld = loaiYc.DINH_NGHIA_LOAI.find((x: any) => x.loai === 'y_thuc');
-    conn.prepare("UPDATE discipline_measures SET status = 'da_duyet' WHERE id = ?").run(n.id);   // đã được duyệt ở đường khác
+    xu.chotDeXuatYThuc(n.id, TODAY, ql.userId);   // đã được duyệt ở đường khác (sinh việc TVV — N1 sửa 12/11)
     ld.khiTuChoi(ql, { id: the, doi_tuong_id: n.id, hoc_vien_id: sid }, 'Muộn');
     assert(viecCua(sid)[0].trang_thai === 'mo', 'lần xử lý không còn chờ → việc giữ');
     conn.prepare("UPDATE discipline_measures SET kind = 'suspension' WHERE id = ?").run(n.id);
