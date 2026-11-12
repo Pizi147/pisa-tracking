@@ -936,8 +936,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   /* UI-Y-THUC-LOP (mockup V5): hai khung M6 thay bằng bảng theo HV — nhóm em (NhomHang), bốn khối nghĩa, chi tiết mở dưới hàng. */
   check('YT4 (9) · Tab lớp V5: bảng theo HV theo nhóm, chi tiết mở dưới hàng; không còn bốn chip, hai chế độ, ô tick, khoảng ngày', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
-    /* Y-THUC-V2 (mockup 11/11): một lần = một khối (KhoiLan), nhóm NhomLan, thang ở chip bậc (ThangEm). */
-    assert(/<NhomLan/.test(s) && /<KhoiLan/.test(s) && /function ThangEm/.test(s) && /t\('Chờ TVV báo PH'\)/.test(s), 'bảng theo lần');
+    /* YT-a (mockup v19, chủ SP duyệt #1482): một em một khối (KhoiEm), mỗi lần một dòng (DongLan), lịch sử tại chỗ (KhungLs), thang ở chip bậc (ThangEm). */
+    assert(/<KhoiEm/.test(s) && /<DongLan|dongLan\(/.test(s) && /<KhungLs/.test(s) && /function ThangEm/.test(s) && /<DongEmGon/.test(s), 'bảng theo em');
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
     assert(/params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), '?mo, khối Phối hợp');
   });

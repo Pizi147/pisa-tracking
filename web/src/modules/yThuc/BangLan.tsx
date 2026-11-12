@@ -34,15 +34,14 @@ export function ChipMon({ skill }: { skill: string | null }) {
 const LUOI_HV = '[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[200px_minmax(0,1fr)_232px_330px_180px]';
 const LUOI_EM = '[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[minmax(0,1fr)_250px_380px_190px]';
 
-/** Đầu cột (chỉ khung rộng): số bước là thứ tự xử lý. */
+/** Đầu cột (chỉ khung rộng) — tab HV. Không số (chủ SP 12/11). */
 export function DauCot({ coHv, ph, cuoi = t('Bước tiếp') }: { coHv: boolean; ph?: ReactNode; cuoi?: string }) {
-  const so = (n: number) => <span aria-hidden className="mr-1.5 inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{n}</span>;
   return (
     <div className={`hidden min-h-[40px] items-center gap-x-0 border-b text-[13px] font-semibold text-slate-400 ${coHv ? LUOI_HV : LUOI_EM}`} style={{ borderColor: 'var(--line)' }}>
       {coHv && <span aria-hidden className="px-3 pl-4">{t('Học viên')}</span>}
-      <span aria-hidden className={`px-3 ${coHv ? '' : 'pl-4'}`}>{so(1)}{t('Vi phạm')}</span>
-      <span aria-hidden className="px-3">{so(2)}{t('GVCN xử lý')}</span>
-      <span className="flex items-center gap-1 px-3"><span aria-hidden>{so(3)}{t('TVV báo PH')}</span>{ph}</span>
+      <span aria-hidden className={`px-3 ${coHv ? '' : 'pl-4'}`}>{t('Vi phạm')}</span>
+      <span aria-hidden className="px-3">{t('GVCN xử lý')}</span>
+      <span className="flex items-center gap-1 px-3"><span aria-hidden>{t('TVV báo PH')}</span>{ph}</span>
       <span aria-hidden className="px-3 pr-4">{cuoi}</span>
     </div>
   );
@@ -222,7 +221,7 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
 }
 
 /**
- * DẢI TIẾN TRÌNH ① Vi phạm → ② GVCN xử lý → ③ TVV báo PH (mockup K8, chủ SP 11/11: panel Công việc cùng thứ tự với tab Ý thức).
+ * DẢI TIẾN TRÌNH Vi phạm → GVCN xử lý → TVV báo PH (mockup K8; YT-b mockup v19 B5: ba ô tên bước, không số).
  * `nay` = bước người xem đang làm: nền nhấn + chữ "Bạn" (không chỉ màu). Khung hẹp: mỗi bước một hàng.
  */
 export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay: number | null }) {
@@ -236,7 +235,6 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
           className={`grid min-w-0 content-start gap-1 border-t px-3 py-2.5 first:border-t-0 max-sm:grid-cols-[92px_minmax(0,1fr)] sm:border-l sm:border-t-0 sm:first:border-l-0 ${nay === i ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_2px_0_var(--accent)]' : ''}`}
           style={{ borderColor: 'var(--line)' }}>
           <span className={`flex items-center gap-1.5 text-xs font-semibold max-sm:row-span-2 ${nay === i ? 'text-[color:var(--accent)]' : 'text-slate-500'}`}>
-            <span aria-hidden className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{i + 1}</span>
             <span className="max-sm:hidden">{ten[i]}</span><span className="sm:hidden">{ngan[i]}</span>
             {nay === i && <span className="ml-auto rounded border border-[color:var(--accent)] px-1.5 text-xs font-bold leading-4 text-[color:var(--accent)] max-sm:ml-0">{t('Bạn')}</span>}
           </span>
@@ -272,5 +270,108 @@ export function ChipBac({ nhan, ten, children }: { nhan: string | null; ten: str
         </span>
       )}
     </span>
+  );
+}
+
+/* =====================================================================================================================
+ * YT-a — TAB Ý THỨC HỒ SƠ LỚP THEO EM (mockup `thiet-ke/v19/y-thuc.html`, chủ SP duyệt #1482): MỌI em, MỘT em = MỘT khối;
+ * trong khối mỗi lần một dòng `Vi phạm · Đã xử lý (GVCN / TVV) · Bước đang làm`; thanh "Xem lịch sử" mở tại chỗ. Tab HV giữ `KhoiLan`.
+ * ===================================================================================================================== */
+const LUOI_KHOI = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)]`;
+const LUOI_DONG = `[@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[minmax(0,1fr)_340px_236px]`;
+
+/** Đầu cột (khung rộng): không số (chủ SP 12/11). */
+export function DauCotEm({ ph }: { ph?: ReactNode }) {
+  return (
+    <div className={`hidden min-h-[40px] items-center border-b px-3 text-[13px] font-semibold text-slate-400 [@container(min-width:1220px)]:grid [@container(min-width:1220px)]:grid-cols-[248px_minmax(0,1fr)_340px_236px]`} style={{ borderColor: 'var(--line)' }}>
+      <span aria-hidden className="px-4">{t('Học viên')}</span>
+      <span aria-hidden className="px-4">{t('Vi phạm')}</span>
+      <span className="flex items-center gap-1 px-4"><span aria-hidden>{t('Đã xử lý')}</span>{ph}</span>
+      <span aria-hidden className="px-4">{t('Bước đang làm')}</span>
+    </div>
+  );
+}
+
+/** Khối một em (em còn bước chưa xong): ô Học viên đứng cả khối, các lần xếp dọc, `cuoi` = thanh lịch sử + lịch sử mở. `mo` = mở từ việc / thông báo. */
+export function KhoiEm({ id, ten, hv, mo, children, cuoi }: { id: string; ten: string; hv: ReactNode; mo?: boolean; children: ReactNode; cuoi?: ReactNode }) {
+  return (
+    <article id={id} aria-label={ten}
+      className={`scroll-mt-24 overflow-hidden rounded-[10px] border surface-2 ${LUOI_KHOI} ${mo ? 'border-[color:var(--accent)] shadow-[0_0_0_1px_var(--accent)]' : ''}`}
+      style={mo ? undefined : { borderColor: 'var(--line-strong)' }}>
+      <div className={`min-w-0 px-4 py-3.5 max-sm:px-3 [@container(min-width:1220px)]:border-r`} style={{ borderColor: 'var(--line)' }}>{hv}</div>
+      <div className="min-w-0">{children}{cuoi}</div>
+    </article>
+  );
+}
+
+/** Ô "Đã xử lý": GVCN rồi TVV, mỗi dòng có nhãn (gộp ② ③ của V2 — chủ SP duyệt XM-3). Chưa ai làm → "—". */
+export function ODaXuLy({ gv, tvv }: { gv?: ReactNode; tvv?: ReactNode }) {
+  if (!gv && !tvv) return <span className="text-slate-500" aria-label={t('Chưa xử lý')}>—</span>;
+  return (
+    <span className="grid grid-cols-[44px_minmax(0,1fr)] items-start gap-x-2.5 gap-y-2">
+      {gv && <><span className="text-xs font-semibold leading-[22px] text-slate-500">GVCN</span><span className="min-w-0">{gv}</span></>}
+      {tvv && <><span className="text-xs font-semibold leading-[22px] text-slate-500">TVV</span><span className="min-w-0">{tvv}</span></>}
+    </span>
+  );
+}
+
+/**
+ * Một lần trong khối em (hoặc trong lịch sử, `ls`). Khung rộng: 3 cột; hẹp: vi phạm → "Đã xử lý" → hộp "Bước đang làm" (lịch sử: không hộp).
+ * `dx` null → "—" (khung hẹp: ẩn). `nen="vua"`: vừa lưu / vừa xem (nền xanh nhạt).
+ */
+export function DongLan({ vp, dx, tiep, nen, duoi, ls = false, homNay, moVp, onMoVp, chiTietVp }: {
+  vp: VpDong[]; dx: ReactNode | null; tiep: ReactNode; nen?: 'vua'; duoi?: ReactNode; ls?: boolean;
+  homNay: string; moVp: number | null; onMoVp: (id: number) => void; chiTietVp: (v: VpDong) => ReactNode;
+}) {
+  const nhan = (chu: string) => <span className={`mb-1 block text-xs font-medium text-slate-500 [@container(min-width:1220px)]:sr-only`}>{chu}</span>;
+  const o = 'min-w-0 px-4 py-3 max-sm:px-3';
+  return (
+    <div className={`border-t border-dashed first:border-t-0 ${nen === 'vua' ? 'bg-ok-bg' : ''}`} style={{ borderColor: 'var(--line-strong)' }}>
+      <div className={LUOI_DONG}>
+        <div className={o}><DsVp ds={vp} homNay={homNay} moId={moVp} onMo={onMoVp} chiTiet={chiTietVp} /></div>
+        <div className={`${o} ${dx == null ? `hidden [@container(min-width:1220px)]:block` : ''} max-sm:pt-0`}>{nhan(t('Đã xử lý'))}{dx ?? <ODaXuLy />}</div>
+        {ls
+          ? <div className={`${o} max-sm:pt-0 [@container(min-width:1220px)]:border-l`} style={{ borderColor: 'var(--line)' }}>{tiep}</div>
+          : (
+            <div className={`mx-3 mb-3 grid content-start gap-2 rounded-lg border p-2.5 [@container(min-width:1220px)]:m-0 [@container(min-width:1220px)]:rounded-none [@container(min-width:1220px)]:border-y-0 [@container(min-width:1220px)]:border-r-0 [@container(min-width:1220px)]:px-4 [@container(min-width:1220px)]:py-3 ${nen === 'vua' ? `[@container(min-width:1220px)]:bg-transparent` : ''}`}
+              style={{ borderColor: 'var(--line)', background: nen === 'vua' ? undefined : 'var(--surface)' }}>
+              {nhan(t('Bước đang làm'))}{tiep}
+            </div>
+          )}
+      </div>
+      {duoi && <div className="px-4 pb-4 max-sm:px-3">{duoi}</div>}
+    </div>
+  );
+}
+
+/** Thanh "Xem lịch sử · n" — một dáng ở mọi chỗ (khối em, dòng em gọn); 375 cao 44. */
+export function ThanhLs({ so, mo, ten, onClick }: { so: number | null; mo: boolean; ten: string; onClick: () => void }) {
+  return (
+    <button type="button" aria-expanded={mo} aria-label={`${mo ? t('Thu gọn lịch sử') : t('Xem lịch sử')} · ${ten}`} onClick={onClick}
+      className={`inline-flex h-8 min-w-[200px] shrink-0 appearance-none items-center gap-2 rounded-[7px] border px-2.5 text-left text-[13px] font-semibold text-[color:var(--accent)] hover:border-[color:var(--accent)] max-sm:h-11 max-sm:w-full ${mo ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border-[color:var(--line-strong)] bg-[color:var(--surface)]'}`}>
+      <span aria-hidden className={`text-xs transition-transform motion-reduce:transition-none ${mo ? 'rotate-90' : ''}`}>▶</span>
+      {mo ? t('Thu gọn lịch sử') : t('Xem lịch sử')}
+      {so != null && <span className="ml-auto rounded-[5px] px-1.5 text-xs font-semibold tabular-nums text-slate-400 surface-2">{so}</span>}
+    </button>
+  );
+}
+
+/** Phần lịch sử mở tại chỗ (dưới khối / dòng em): đầu = phạm vi + ⓘ; thân = các dòng `DongLan ls`. */
+export function KhungLs({ dau, children }: { dau: ReactNode; children: ReactNode }) {
+  return (
+    <section aria-label={t('Lịch sử')} className="border-t" style={{ borderColor: 'var(--line-strong)', background: 'var(--bg)' }}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 text-[13px] text-slate-400 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>{dau}</div>
+      {children}
+    </section>
+  );
+}
+
+/** Dòng em gọn (không còn bước chờ): tên | "✓ Chưa có vi phạm" hoặc thanh lịch sử + "Không có vi phạm chờ"; lịch sử mở nằm dưới, cùng cột Vi phạm. */
+export function DongEmGon({ id, hv, mo, children }: { id: string; hv: ReactNode; mo?: boolean; children: ReactNode }) {
+  return (
+    <div id={id} className={`scroll-mt-24 border-t first:border-t-0 ${LUOI_KHOI} ${mo ? 'surface-2' : ''}`} style={{ borderColor: 'var(--line)' }}>
+      <div className="min-w-0 px-4 py-2.5 max-sm:px-3 max-sm:pb-1">{hv}</div>
+      <div className="min-w-0">{children}</div>
+    </div>
   );
 }

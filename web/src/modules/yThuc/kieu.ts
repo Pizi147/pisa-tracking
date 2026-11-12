@@ -110,6 +110,9 @@ export type BangYThucLop = {
   gvcn: string | null;
   /** G3-14: người xem là GVCN của lớp. */
   laGvcn?: boolean;
+  /** YT-a: mọi em của lớp theo tên (`soLs` = số dòng lịch sử mọi lộ trình) · `catLs`: `dongThoiGian` bị cắt 150 dòng. */
+  emLop: { studentId: number; ten: string; bacNhan: string | null; tvv: string | null; soLs: number }[];
+  catLs: boolean;
 };
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */

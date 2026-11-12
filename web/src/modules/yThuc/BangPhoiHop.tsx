@@ -60,48 +60,55 @@ export function DiemMotDong({ th, anLuot = false }: { th: CoordTurn['the']; anLu
   );
 }
 
-export function BangPhoiHop({ turns, che, onChanged, chiEm }: {
+export function BangPhoiHop({ turns, che, onChanged, chiEm, lop }: {
   turns: CoordTurn[]; che: { loai: 'gvcn'; khoa: string } | { loai: 'tvv' };
   onChanged: () => void;
+  /** Mã lớp — câu "Xong việc này ở {lớp}" khi hết em cần làm. */
+  lop?: string;
   /** Bấm chip tên em ở Công việc: dòng em đó lên đầu, viền nhấn. */
   chiEm?: number | null;
 }) {
-  /* Dòng vừa lưu đứng nguyên chỗ (nền xanh nhạt, Hoàn tác) tới khi đóng panel — không nhảy xuống "Đã làm" (mockup K2 ②). */
+  /* Dòng vừa lưu đứng nguyên chỗ (nền xanh nhạt, Hoàn tác) tới khi đóng panel. YT-b (mockup v19 B1–B2, chủ SP duyệt XM-1): panel Công việc CHỈ còn em
+     cần làm — bỏ nhóm "Đã làm / Đã báo"; việc đã làm xem / sửa ở hồ sơ lớp › Phối hợp SOS (link chân panel). */
   const [vuaLuu, setVuaLuu] = useState<ReadonlySet<number>>(new Set());
   const khop = (a: CoordAction) => (a.kind === 'other' ? `other:${encodeURIComponent(a.customName ?? '')}` : a.kind);
-  const { can, da } = useMemo(() => {
+  const can = useMemo(() => {
     const ds: Dong[] = turns.flatMap((luot) => luot.actions.map((a) => ({ luot, a })))
       .filter(({ a }) => (che.loai === 'tvv' ? !!a.tvv && a.tvv.trangThai !== 'bo' : khop(a) === che.khoa && a.status !== 'removed'));
     const cho = (d: Dong) => vuaLuu.has(d.a.id) || (che.loai === 'tvv' ? d.a.tvv!.trangThai === 'mo' : d.a.status === 'pending');
     const hanCua = (d: Dong) => (che.loai === 'tvv' ? d.a.tvv!.han : d.a.han) ?? '9999';
     const sap = (x: Dong, y: Dong) => Number(y.luot.studentId === chiEm) - Number(x.luot.studentId === chiEm) || hanCua(x).localeCompare(hanCua(y))
       || x.luot.studentName.localeCompare(y.luot.studentName, 'vi');
-    return { can: ds.filter(cho).sort(sap), da: ds.filter((d) => !cho(d)).sort(sap) };
+    return ds.filter(cho).sort(sap);
   }, [turns, che.loai, che.loai === 'gvcn' ? che.khoa : '', chiEm, vuaLuu]);   // eslint-disable-line react-hooks/exhaustive-deps
   const tvv = che.loai === 'tvv';
+  if (!can.length) {
+    return (
+      <div role="status" className="grid justify-items-center gap-2.5 px-4 pb-6 pt-12 text-center">
+        <span aria-hidden className="grid h-11 w-11 place-items-center rounded-full border text-xl font-bold text-ok bg-ok-bg border-ok-line">✓</span>
+        <b className="text-[17px] font-bold text-[color:var(--text)]">{lop ? t('Xong việc này ở {lop}', { lop }) : t('Không còn em nào cần làm')}</b>
+      </div>
+    );
+  }
+  /* GVCN: hai cột Học viên · Cần làm (Nội dung ghi ngay trong form Xác nhận — mockup B1). TVV: Học viên · GVCN gửi · Báo PH (B2). */
   return (
-    <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Kết quả')}>
-      <div role="row" className={`${HANG} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
+    <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Cần làm')}>
+      <div role="row" className={`${tvv ? HANG : HANG_GOP} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
         <span role="columnheader" className="pr-2.5">{t('Học viên')}</span>
-        <span role="columnheader" className="px-2.5">{tvv || laMeetingCx(che.loai === 'gvcn' ? che.khoa : '') ? t('GVCN xác nhận') : t('Đã làm')}</span>
-        <span role="columnheader" className="px-2.5">{tvv ? t('Báo PH · kết quả') : t('Kết quả')}</span>
+        <span role="columnheader" className="px-2.5">{tvv ? t('GVCN gửi') : t('Cần làm')}</span>
+        {tvv && <span role="columnheader" className="px-2.5">{t('Báo PH')}</span>}
         <span role="columnheader"><span className="sr-only">{t('Thao tác khác')}</span></span>
       </div>
-      {can.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} noi={d.luot.studentId === chiEm} vua={vuaLuu.has(d.a.id)} onChanged={onChanged}
+      {can.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} gop={!tvv} noi={d.luot.studentId === chiEm} vua={vuaLuu.has(d.a.id)} onChanged={onChanged}
         onVua={(co) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(d.a.id); else n.delete(d.a.id); return n; })} />)}
-      {da.length > 0 && (
-        <>
-          <div role="row" className="pb-1.5 pt-3.5 text-[13px] font-bold text-dim"><span role="cell">{tvv ? t('Đã báo') : t('Đã làm')}<span className="ml-1.5 text-xs font-semibold tabular-nums text-faint">{da.length}</span></span></div>
-          {da.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} noi={false} vua={false} onChanged={onChanged}
-            onVua={(co) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(d.a.id); else n.delete(d.a.id); return n; })} />)}
-        </>
-      )}
     </div>
   );
 }
 
 /* Lưới 4 cột ① ② ③ ⋯ (mockup `.pht`) — div lưới (danh sách việc có form tại dòng, không phải bảng số liệu). 375: xếp dọc. */
 const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_40px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
+/** YT-b: panel Công việc vai GVCN — Học viên · Cần làm (Kết quả gộp vào ô Cần làm) · ⋯. */
+const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_40px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
 const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
 
 /** Hạn dưới tên em: quá hạn đỏ ⚠ + ngày; còn ≤ 3 ngày vàng; xa mờ. */
@@ -118,8 +125,10 @@ function HanEm({ han }: { han: string }) {
   );
 }
 
-function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false }: {
+function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop = false }: {
   d: Dong; tvv: boolean; noi: boolean; vua: boolean; onVua: (co: boolean) => void; onChanged: () => void;
+  /** YT-b: ô Kết quả nằm trong ô Cần làm (panel Công việc vai GVCN). */
+  gop?: boolean;
   /** PR-2 hồ sơ lớp / HV: ô đầu là ① Việc (tên + hạn) — em / lượt đã ở ô gộp bên trái. */
   cotViec?: boolean;
 }) {
@@ -143,7 +152,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false }: {
   const nen = vua ? 'bg-[rgb(var(--ok-bg-rgb)/0.7)]' : mo === 'xac-nhan' || mo === 'ghi' ? 'bg-[color:var(--accent-soft)]' : noi ? 'shadow-[inset_3px_0_0_var(--accent)]' : '';
   const ngoiLam = a.performerName ?? null;
   return (
-    <div role="row" className={`${HANG} border-b ${nen}`} style={{ borderColor: 'var(--line)' }}>
+    <div role="row" className={`${gop ? HANG_GOP : HANG} border-b ${nen}`} style={{ borderColor: 'var(--line)' }}>
       {cotViec ? (
         <span role="cell" className={`min-w-0 py-2.5 pr-2.5 max-sm:pb-1 ${a.status === 'removed' ? 'text-dim' : ''}`}>
           <span className={`block text-sm font-semibold ${a.status === 'removed' ? 'line-through' : 'text-[color:var(--text)]'}`}>{a.name}</span>
@@ -166,7 +175,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false }: {
       </span>
       )}
       {mo === 'xac-nhan' ? (
-        <span role="cell" className={`${O} col-span-3 max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} /></span>
+        <span role="cell" className={`${O} ${gop ? 'col-span-2' : 'col-span-3'} max-sm:col-span-2`}><FormXacNhan a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, false)} /></span>
       ) : (
         <>
           <span role="cell" className={`${O} max-sm:order-3`}>
@@ -180,14 +189,15 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false }: {
                 {!tvv && luot.canAct && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
               </span>
             ) : luot.canAct ? (
-              <button type="button" className="btn btn-primary btn-sm min-h-[44px] max-sm:w-full sm:min-h-[30px]" onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>
+              <button type="button" className={`btn btn-primary btn-sm min-h-[44px] max-sm:w-full sm:min-h-[30px] ${gop ? 'w-full justify-center' : ''}`} onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>
             ) : <span className="text-[13px] text-dim">{t('Chờ GVCN')}</span>}
+            {gop && <span className="mt-1.5 block empty:hidden"><OKetQua a={a} tvv={false} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
           </span>
           {mo === 'ghi' ? (
             <span role="cell" className={`${O} col-span-2 max-sm:order-4`}><FormTvv a={a} onDong={() => setMo(null)} onLuu={() => daLuu(a.status, true)} /></span>
           ) : (
             <>
-              <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>
+              {!gop && <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
               <span role="cell" className="relative py-2.5 text-right max-sm:col-start-2 max-sm:row-start-1 max-sm:pb-1">
                 <Menu3 a={a} tvv={tvv} canAct={luot.canAct} mo={mo === 'menu'} onMo={(v) => setMo(v ? 'menu' : null)} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
                   onHan={a.status === 'pending' && a.hanMacDinh && luot.canAct ? () => setMo('han') : undefined} />

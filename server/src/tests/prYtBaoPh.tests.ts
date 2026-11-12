@@ -3,6 +3,9 @@
  *  · Meeting CX/GĐCN có PH dự → GVCN ghi Đã thực hiện thì việc Báo PH của TVV tự xong (một dòng lịch sử ghi rõ); "Chưa thực hiện" → mở lại.
  *  · Thu hồi lần xử lý TVV đã báo PH → việc "Báo lại PH" cho TVV (mặc định bật, QL tắt được); Huỷ quyết định → việc báo lại gỡ.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
@@ -151,4 +154,15 @@ export async function runPrYtBaoPhTests(t: YThucTestKit) {
     const s = (x: Set<any>) => JSON.stringify([...x].sort((a, b) => a - b));
     assert(tab.has(sid) && tab.has(sid2) && s(tab) === s(cv) && s(cv) === s(dai), JSON.stringify({ tab: s(tab), cv: s(cv), dai: s(dai) }));
   }));
+
+  /* YT-b — kiểm nguồn web (đọc tệp mã). */
+  const nguon = (f: string) => fs.readFileSync(path.join(path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..'), f), 'utf8');
+  await checkAsync('YT-b · panel Phối hợp ở Công việc chỉ còn em cần làm (bỏ nhóm Đã làm / Đã báo), link "Đã làm · hồ sơ lớp ›", hết em → câu xong; dải bước không số', async () => {
+    const b = nguon('web/src/modules/yThuc/BangPhoiHop.tsx');
+    const fn = b.slice(b.indexOf('export function BangPhoiHop('), b.indexOf('const HANG ='));
+    assert(!/da\.map|t\('Đã làm'\)|t\('Đã báo'\)/.test(fn) && /Xong việc này ở \{lop\}/.test(fn) && /HANG_GOP/.test(fn), 'BangPhoiHop chỉ em cần làm');
+    assert(/Đã làm · hồ sơ lớp ›/.test(nguon('web/src/modules/congViec/PanelViec.tsx')), 'link chân panel');
+    const tt = nguon('web/src/modules/yThuc/BangLan.tsx');
+    assert(!/\{i \+ 1\}/.test(tt.slice(tt.indexOf('export function TienTrinh'))), 'TienTrinh không số');
+  });
 }
