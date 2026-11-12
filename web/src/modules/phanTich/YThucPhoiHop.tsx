@@ -81,7 +81,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   const oLop = (x: DongLopViPham, con: boolean) => (
     <>
       <td className="text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.nhan })} /></td>
-      <td className="text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.nhan })} /></td>
+      <td className="text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.nhan })} className={mauCx(x)} /></td>
       <td className="text-center tabular-nums">
         <OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={t('{ten} · học viên có vi phạm', { ten: x.nhan })} />
         {!con && x.siSo !== null && <span className="font-normal text-slate-400">/{x.siSo}</span>}
@@ -96,16 +96,24 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     </span>
   );
 
+  /* PT-b (mockup v19 khung 6a): Chưa xử lý = đang chờ → hộp vàng; có phần quá hạn → đỏ ⚠. Bậc hiện tại › kế gộp một ô (XM-4). */
+  const mauCx = (x: { chuaXuLy: number; quaHan?: number }) => (!x.chuaXuLy ? '' : x.quaHan ? 'text-bad' : 'text-soon');
+  const bac = (x: DongHvCanChuY) => (
+    <span className="text-[color:var(--text-dim)]">
+      {x.bac != null ? <b className="font-semibold text-slate-200">{dich(x.bac)}</b> : <span className="text-faint">{t('Chưa xử lý lần nào')}</span>}
+      {x.bacKe && <> › <span className="whitespace-nowrap">{dich(x.bacKe)}</span></>}
+    </span>
+  );
+
   /* ---------------- 375: một thẻ mỗi dòng, cùng thứ tự cột với bảng (`TheDong`). */
   const theHv = (x: DongHvCanChuY) => (
     <TheDong key={x.studentId}
       dau={<Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so min-w-0 truncate">{x.ten}</Link>}
       dong={[
         { nhan: t('Lớp'), noiDung: x.lop ?? '—' },
-        { nhan: t('Bậc hiện tại'), noiDung: x.bac != null ? dich(x.bac) : <span className="text-faint">{t('Chưa xử lý lần nào')}</span> },
-        { nhan: t('Bậc kế'), noiDung: x.bacKe && dich(x.bacKe) },
         { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /> },
-        { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} /> },
+        { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} className={mauCx(x)} /> },
+        { nhan: t('Bậc'), noiDung: bac(x) },
         { nhan: t('Lần gần nhất'), noiDung: <>{x.bienPhapGanNhat ? `${dich(x.bienPhapGanNhat)}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
           {x.lanXuLyMoi && <div className="text-muted">{dich(x.lanXuLyMoi.ten)} · {dich(x.lanXuLyMoi.nhan)}</div>}</> },
       ]} />
@@ -122,7 +130,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         )}
         dong={[
           { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(x.khoa, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.nhan })} /> },
-          { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.nhan })} /> },
+          { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(x.khoa, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.nhan })} className={mauCx(x)} /> },
           { nhan: t('HV có vi phạm'), noiDung: <><OSo giaTri={x.hvCoViPham} nguon={nguon(x.khoa, 'hv-co-vi-pham')} tieuDe={t('{ten} · học viên có vi phạm', { ten: x.nhan })} />{x.siSo !== null && <span className="text-slate-400">/{x.siSo}</span>}</> },
           { nhan: t('± kỳ trước'), noiDung: soVoi(x) },
           ...(x.gvcn ? [{ nhan: 'GVCN', noiDung: x.gvcn }] : []),
@@ -134,25 +142,23 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   const bang1 = (rows: DongHvCanChuY[]) => (
     <div className="table-scroll bang-dinh">   {/* P3 UI-CHUNG: danh sách HV cần chú ý cả chi nhánh — đầu cột dính */}
       <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 930 }}>
-        <colgroup><col style={{ width: 200 }} /><col style={{ width: 120 }} /><col /><col /><col style={{ width: 100 }} /><col style={{ width: 110 }} /><col /></colgroup>
+        <colgroup><col style={{ width: '20%' }} /><col style={{ width: '12%' }} /><col style={{ width: '9%' }} /><col style={{ width: '9%' }} /><col style={{ width: '26%' }} /><col /></colgroup>
         <thead>
           <tr>
             <Th className="sticky-col">{t('Học viên')}</Th><Th>{t('Lớp')}</Th>
-            <Th hint={t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web)')}>{t('Bậc hiện tại')}</Th>
-            <Th hint={t('Lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')}>{t('Bậc kế')}</Th>
             <Th align="center" hint={t('Trong khoảng đang lọc')}>{t('Vi phạm')}</Th><Th align="center" hint={t('Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)')}>{t('Chưa xử lý')}</Th>
+            <Th hint={t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')}>{t('Bậc · hiện tại › kế')}</Th>
             <Th hint={t('Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái')}>{t('Lần xử lý gần nhất')}</Th>
           </tr>
         </thead>
         <tbody>
           {rows.map((x) => (
-            <tr key={x.studentId} className="row-hover [&>td]:h-11">
+            <tr key={x.studentId} className="row-hover [&>td]:h-12">
               <td className="td sticky-col"><Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so">{x.ten}</Link></td>
               <td className="td text-slate-300">{x.lop ?? ''}</td>
-              <td className="td text-slate-200">{x.bac != null ? dich(x.bac) : <span className="text-faint">{t('Chưa xử lý lần nào')}</span>}</td>
-              <td className="td text-slate-300">{x.bacKe && dich(x.bacKe)}</td>
               <td className="td text-center tabular-nums"><OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /></td>
-              <td className="td text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} /></td>
+              <td className="td text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} className={mauCx(x)} /></td>
+              <td className="td">{bac(x)}</td>
               <td className="td whitespace-normal text-slate-300">
                 {x.bienPhapGanNhat ? `${dich(x.bienPhapGanNhat)}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
                 {x.lanXuLyMoi && <div className={x.bienPhapGanNhat ? 'text-xs text-muted' : ''}>{dich(x.lanXuLyMoi.ten)} · {dich(x.lanXuLyMoi.nhan)}</div>}

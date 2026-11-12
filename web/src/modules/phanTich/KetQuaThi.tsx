@@ -128,7 +128,7 @@ export function KetQuaThi(pv: PhamViPhanTich) {
                 <KhoiKetQua tk={tk} tongThe={tongThe} onTongThe={setTongThe} so={so} />
                 <DaiChiSo cot={1} ds={[
                   { ten: t('Không thi'), ky: t('trong kỳ'), gt: so(tk.tong.khongThi, 'tong:khong-thi', t('Không thi')), mau: t('không vào %') },
-                  { ten: t('Chưa có KQ'), ky: t('hiện tại'), gt: data.chuaCoKq ? <OSo giaTri={data.chuaCoKq} nguon={`/tong-quan/chi-nhanh-v2/o?${query}&ct=ft&o=chua-co-kq`} tieuDe={t('Chưa có KQ')} vung="chi-so" /> : <span className="font-medium text-faint">0</span>, mau: t('đã qua ngày thi') },
+                  { ten: t('Chưa có KQ'), ky: t('hiện tại'), gt: data.chuaCoKq ? <OSo giaTri={data.chuaCoKq} nguon={`/tong-quan/chi-nhanh-v2/o?${query}&ct=ft&o=chua-co-kq`} tieuDe={t('Chưa có KQ')} vung="chi-so" className="text-soon" /> : <span className="font-medium text-faint">0</span>, mau: t('đã qua ngày thi') },
                 ]} />
               </div>
               {tk.gv && !dienThoai
@@ -170,8 +170,9 @@ function BangKyNang({ tk, so }: { tk: ThongKeThiThatWeb; so: So }) {
                 <td className="td text-center">{so(x.hv, `kn:${k}:hv`, `HV · ${NHAN_KN[k]}`)}</td>
                 {MUC.map((m) => (
                   <td key={m} className="td text-center leading-tight">
-                    {so(x[m], `kn:${k}:${m}`, `${NHAN_MUC[m]} · ${NHAN_KN[k]}`, MAU_MUC[m])}
-                    {x[m] > 0 && <span className="block text-xs font-medium tabular-nums text-dim">{pt(x[m], x.hv)} %</span>}
+                    {/* PT-b (mockup v19 khung 4a): hộp số em + % mờ cùng dòng, thẳng cột. */}
+                    {x[m] > 0 ? <span className="cap-so">{so(x[m], `kn:${k}:${m}`, `${NHAN_MUC[m]} · ${NHAN_KN[k]}`, MAU_MUC[m])}<span>{pt(x[m], x.hv)} %</span></span>
+                      : so(x[m], `kn:${k}:${m}`, `${NHAN_MUC[m]} · ${NHAN_KN[k]}`, MAU_MUC[m])}
                   </td>
                 ))}
                 <td className="td text-center tabular-nums">{x.tb === null ? <span className="text-faint">—</span> : fmtBand(x.tb)}</td>
@@ -191,13 +192,11 @@ const cachTinhGv = (
     <p className="m-0 mt-1">{t('W1 / W2: cùng band W thi thật. GV có Chưa đạt cao trước.')}</p>
   </>
 );
-/** V2 (đặc tả 11): một nhóm của dòng GV — SỐ EM là chữ chính, % nhỏ bên dưới; bấm → em của nhóm (số = số dòng). */
-const oPct = (g: DongGvThiWeb, m: MucThi | 'duoi', so: So) => (
-  <span className="inline-flex flex-col items-center leading-tight">
-    {so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${m === 'duoi' ? t('KN dưới Target') : NHAN_MUC[m]}`, MAU_MUC[m === 'duoi' ? 'fail' : m])}
-    {g.so[m] > 0 && <span className="text-xs font-medium tabular-nums text-dim">{g[m]} %</span>}
-  </span>
-);
+/** V2 (đặc tả 11): một nhóm của dòng GV — SỐ EM là chữ chính; PT-b (mockup v19 khung 4a): % mờ cùng dòng (`.cap-so`); bấm → em của nhóm (số = số dòng). */
+const oPct = (g: DongGvThiWeb, m: MucThi | 'duoi', so: So) => {
+  const o = so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${m === 'duoi' ? t('KN dưới Target') : NHAN_MUC[m]}`, MAU_MUC[m === 'duoi' ? 'fail' : m]);
+  return g.so[m] > 0 ? <span className="cap-so">{o}<span>{g[m]} %</span></span> : o;
+};
 const nhomGv = (gv: DongGvThiWeb[]) => {
   const ds: { userId: number; ten: string; hang: DongGvThiWeb[] }[] = [];
   for (const g of gv) { const cu = ds.find((x) => x.userId === g.userId); if (cu) cu.hang.push(g); else ds.push({ userId: g.userId, ten: g.ten, hang: [g] }); }

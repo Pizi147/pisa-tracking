@@ -75,5 +75,7 @@ export const EN_PHAN_TICH_V2 = {
   'Số · Chi nhánh': 'Number · branch',
   /* PT-a (mockup v19): hàng chân S chéo chung, cột % đúng hạn. */
   'chưa ai nhận · GV có kỹ năng S cùng thấy': 'unclaimed · every S teacher sees them',
+  'Bậc · hiện tại › kế': 'Level · current › next',
+  'Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt': 'Highest level handled on the ladder (including levels confirmed before the web) › next required action; WL 3 needs manager approval',
   'đã qua hạn · + {n} bài S chéo chung': 'past due · + {n} shared S cross-marking tests',
 } satisfies Record<string, Dich>;

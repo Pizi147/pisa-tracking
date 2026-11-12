@@ -483,6 +483,8 @@ export const COT_XUAT_HV_CAN_CHU_Y = ['Học viên', 'Email', 'Lớp', 'Bậc hi
 /** Ý thức (PR-YT4): "Học viên cần chú ý" + "Lớp nhiều vi phạm". */
 export type DongHvCanChuY = {
   studentId: number; ten: string; email: string | null; lop: string | null; viPham: number; chuaXuLy: number;
+  /** PT-b (mockup v19): phần Chưa xử lý đã quá hạn — ô đỏ ⚠ (không thì vàng). */
+  quaHan?: number;
   bienPhapGanNhat: string | null; ngay: string | null;
   /** G-058: lần xử lý MỚI HƠN lần đã xong gần nhất, còn đang chờ duyệt / bị từ chối — kèm nhãn trạng thái. */
   lanXuLyMoi: { ten: string; nhan: string } | null;
@@ -490,7 +492,7 @@ export type DongHvCanChuY = {
   nhom: 'qua_han' | 'bat_buoc' | 'cho_duyet'; bac: string | null; bacKe: string | null;
 };
 export type DongLopViPham = {
-  khoa: string; classId: number | null; nhan: string; viPham: number; chuaXuLy: number;
+  khoa: string; classId: number | null; nhan: string; viPham: number; chuaXuLy: number; quaHan?: number;
   hvCoViPham: number; siSo: number | null; soVoiTruoc: number; gvcn: string | null;
   con?: DongLopViPham[];
 };

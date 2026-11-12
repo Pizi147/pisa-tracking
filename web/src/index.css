@@ -1234,7 +1234,7 @@
    màu chỉ cho ô cần làm: đỏ + ⚠ = quá hạn (`text-bad` / `text-late`), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
    Số 0 / "—" không phải nút (OSo) → mờ, không hộp. Số trong chip (SOS, `SO_TRONG_CHIP` → `!text-inherit`) giữ dáng chip. Panel (portal) nằm ngoài vùng → giữ dáng cũ. Tổng quan / hồ sơ lớp: PR riêng (XM-6). */
 .o-so-hop .so-bam:not([class~="!text-inherit"]) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 40px; height: 30px; padding: 0 9px; border-radius: 7px;
-  border: 1px solid var(--os-vien); background: var(--os-nen); color: var(--os-chu); font-weight: 600; line-height: 1; vertical-align: middle;
+  border: 1px solid var(--os-vien); background: var(--os-nen); color: var(--os-chu); font-weight: 600; line-height: 1; vertical-align: middle; white-space: nowrap;
   transition: background-color .12s ease-out, border-color .12s ease-out; }
 .o-so-hop .so-bam:not(:hover, :focus-visible) { text-decoration-line: none; }
 .o-so-hop .so-bam:is(:hover, :focus-visible) { background: var(--os-re); border-color: var(--accent); }
@@ -1254,8 +1254,9 @@
 .bang tr.hang-nhom-lop > td:first-child { overflow: visible; box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
 article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 0 var(--hang-lon-vach); padding-top: 6px; padding-bottom: 6px; }
 .cap-so { display: inline-grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 6px; width: 100%; }
-.cap-so > :first-child { justify-self: end; }
+.cap-so > :first-child, .cap-so > .contents > .so-bam { justify-self: end; }
 .cap-so > :last-child { justify-self: start; font-size: 13px; font-weight: 500; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+@media (max-width: 639px) { .cap-so { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px 6px; width: auto; } }
 
 /* O-TQ-BAM (chủ SP 07/11): CẢ Ô chỉ số bấm được (`ChiSo` → `.ca-o`) — số chính mang `.so-chinh` (nút `OSo` mở panel / link `SoDen` đổi trang) và
    vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.
