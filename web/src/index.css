@@ -1514,7 +1514,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
 .hop-tuan-day .tg-tai { padding: 2px 16px 0; font-size: 13px; color: var(--text-faint); }
 .hop-tuan-day .tg-skel { display: grid; grid-template-columns: minmax(0, 1fr) 60px 82px 50px; gap: 10px; align-items: center; padding: 14px 16px; }
 .hop-tuan-day .tg-skel span { height: 14px; border-radius: 6px; background: linear-gradient(90deg, var(--surface-2), var(--line), var(--surface-2)); }
-.hop-tuan-day .tg-kn { appearance: none; border: 0; background: none; width: 100%; text-align: left; color: inherit; display: grid; grid-template-columns: 72px minmax(0, 1fr) 50px; align-items: center; gap: 10px;
+.hop-tuan-day .tg-kn { appearance: none; border: 0; background: none; width: 100%; text-align: left; color: inherit; display: grid; grid-template-columns: 84px minmax(0, 1fr) 50px; align-items: center; gap: 10px;
   padding: 6px 8px; border-radius: 8px; min-height: 44px; cursor: pointer; }
 .hop-tuan-day .tg-kn:is(:hover, :focus-visible) { background: color-mix(in srgb, var(--accent) 7%, transparent); }
 .hop-tuan-day .tg-kn:is(:hover, :focus-visible) .ten b { text-decoration: underline; text-underline-offset: 3px; }
