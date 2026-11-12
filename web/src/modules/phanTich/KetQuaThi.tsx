@@ -1,4 +1,5 @@
 import { Fragment, useState, type ReactNode } from 'react';
+import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -272,13 +273,20 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
   const dienThoai = useDienThoai();
   const hien = phan.cat(rows);
   const nhom = [...new Set(hien.map((r) => r.lop ?? ''))];
-  const diem = (r: DongThiThat, k: KnThiThat | 'ovr') => {
+  const diem0 = (r: DongThiThat, k: KnThiThat | 'ovr') => {
     const v = k === 'ovr' ? r.ovr : r[k];
     if (v === null) return <span className="text-faint">—</span>;
     if (k !== 'ovr' && r.thiLai && !r.thiLai.includes(k.toUpperCase())) return <span className="tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span><span className="sr-only">{t('lấy từ lần thi trước')} </span>{fmtBand(v)}</span>;
     const tg = targetCua(r);
     return <ODiem so={fmtBand(v)} kq={tg.kck || Number.isNaN(tg.v) ? null : soSanhDiem(v, tg.v)} nhan={k === 'ovr' ? 'OVR' : NHAN_KN[k]} />;
+  };  /* TL-GV (v20): điểm kỹ năng = ô hộp → hộp Tuần dạy (GV · số tuần · %); OVR có đủ L R W S cạnh → chữ thường. */
+  const diem = (r: DongThiThat, k: KnThiThat | 'ovr') => {
+    if (k === 'ovr' || r[k] === null) return diem0(r, k);
+    const tg = targetCua(r);
+    return <OTuanDay kn={k} cycleId={r.cycleId} ten={r.ten} target={tg.kck || Number.isNaN(tg.v) ? null : tg.v} nhan={`${NHAN_KN[k]} ${fmtBand(r[k])}`}
+      diem={{ l: r.l, r: r.r, w: r.w, s: r.s, ovr: r.ovr }}>{diem0(r, k)}</OTuanDay>;
   };
+
   const buocTiep = (r: DongThiThat) => (
     <span className={r.buocTiep ? '' : 'text-faint'}>
       {r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn')}

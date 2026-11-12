@@ -5,6 +5,7 @@ import { KhungPanel } from './KhungPanel.tsx';
 import { NutLuat } from './NutLuat.tsx';
 import { Bang } from './Bang.tsx';
 import { ODiem } from './ODiem.tsx';
+import { OTuanDay } from './TuanDayGv.tsx';
 import { phimHangTab } from './HangTab.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
@@ -258,11 +259,15 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     { key: 'ovr', nhan: 'OVR', kieu: 'diem', rong: 62, tach: true }, { key: 'tg', nhan: 'Target', kieu: 'so', rong: 66 },
     ...(coTuan ? [{ key: 'tuan', nhan: t('Tuần dạy'), kieu: 'so', rong: 116 } as DinhNghiaCot] : []),
   ];
-  const oDiemH = (h: HH, k: KnThiBang | 'ovr') => {
+  const oDiemH0 = (h: HH, k: KnThiBang | 'ovr') => {
     const o = k === 'ovr' ? h.ovr : h.kn[k];
     if (k !== 'ovr' && h.layLai.includes(k) && o) return <span className="whitespace-nowrap tabular-nums text-faint" title={t('lấy từ lần thi trước')}><span aria-hidden>↺ </span><span className="sr-only">{t('lấy từ lần thi trước')} </span>{fmtBand(o.v)}</span>;
     return <ODiem so={o ? fmtBand(o.v) : null} kq={o?.kq ?? null} nhan={k === 'ovr' ? 'OVR' : k.toUpperCase()} />;
-  };
+  };  /* TL-GV (v20): điểm kỹ năng thi thật = ô hộp → hộp Tuần dạy (GV · số tuần · %), cả ô "↺" (tính tới lần thi có điểm đó). */
+  const oDiemH = (h: HH, k: KnThiBang | 'ovr') => (k === 'ovr' || !h.kn[k] ? oDiemH0(h, k)
+    : <OTuanDay kn={k} cycleId={h.cycleId} ten={h.ten} target={h.target} nhan={`${k.toUpperCase()} ${fmtBand(h.kn[k]!.v)}`}
+      diem={{ l: h.kn.l?.v ?? null, r: h.kn.r?.v ?? null, w: h.kn.w?.v ?? null, s: h.kn.s?.v ?? null, ovr: h.ovr?.v ?? null }}>{oDiemH0(h, k)}</OTuanDay>);
+
   /* Phân tích V2 (đặc tả 5.2): panel ô "Tổng thể" có chip KCK / WL 2 ở từng em. */
   const chipKckH = (h: HH) => (h.wl2 ? <span className="inline-flex h-[22px] items-center rounded border border-soon-line bg-soon-bg px-[7px] text-xs font-semibold text-soon">WL 2</span>
     : h.kck ? <span className="inline-flex h-[22px] items-center rounded border px-[7px] text-xs font-semibold text-dim" style={{ borderColor: 'var(--line-strong)' }}>KCK</span> : null);

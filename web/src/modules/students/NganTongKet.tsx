@@ -7,6 +7,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NHAN_SAU_THI, chuGradeKyThi, diemW12, duongHoSoHocVien, hienTargetKck, luotDaiDien, ngay, tuanLich, type KetQuaKyThi } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
+import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep, type TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -265,9 +266,13 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
                   {kq.ovr !== null ? (
                     <O nho={`${t('Thi thật')}${kq.ngay ? ` · ${ngay(kq.ngay, homNay)}` : ''}`}>
                       <Lon em="OVR">{b1(kq.ovr)}</Lon>
-                      <div className="mt-0.5 text-xs tabular-nums text-slate-400">L {b1(kq.l)} · R {b1(kq.r)} · W {b1(kq.w)} · S {b1(kq.s)}
+                      {/* TL-GV (v20): điểm kỹ năng = ô hộp → hộp Tuần dạy (GV · số tuần · %). */}
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs tabular-nums text-slate-400">{(['l', 'r', 'w', 's'] as const).map((k) => (
+                        <span key={k} className="inline-flex items-center gap-1">{k.toUpperCase()}{kq[k] != null
+                          ? <OTuanDay kn={k} cycleId={cycleId} ten={data.hocVien.ten} diem={kq} target={data.dich.target} nhan={`${k.toUpperCase()} ${b1(kq[k])}`}><span className="text-[14px] font-semibold text-slate-100">{b1(kq[k])}</span></OTuanDay>
+                          : b1(kq[k])}</span>))}
                         {/* SUA-LUU-TRU (việc 1): sửa kết quả đã nhập — cả em đã lưu trữ (cùng quyền nhập). */}
-                        {kq.coTheNhap && <>{' · '}<button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>{t('Sửa')}</button></>}</div>
+                        {kq.coTheNhap && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setView({ loai: 'nhap' })}>{t('Sửa')}</button>}</div>
                       {kq.nhan && <div className="mt-1.5"><Nhan tone={kq.ketLuan === 'reached' ? 'doing' : kq.ketLuan === 'not_reached' ? 'bad' : 'muted'}>{dich(kq.nhan)}</Nhan></div>}
                     </O>
                   ) : kq.khongCoThi ? (

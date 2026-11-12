@@ -1,4 +1,5 @@
 import { Fragment, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
+import { OTuanDay, type KnHop } from './TuanDayGv.tsx';
 import { Link } from 'react-router-dom';
 import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, mucDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
@@ -77,7 +78,7 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
   const mau = (dat: boolean | null, v: number | null) => (dat === false && kck ? '' : lopKq(mucDiem(dat, v, d.soVoi?.v)));
   const ovDat = d.overall != null && d.soVoi ? d.overall >= d.soVoi.v : null;
   return (
-    <span className={`dd mt-1${pt ? ' pt' : ''}`} style={{ ...(d.kn.length !== 4 ? { '--so-kn': d.kn.length } : {}), ...(rongLuot ? { '--rong-lu': `${rongLuot}px` } : {}) } as CSSProperties}>
+    <span className={`dd mt-1${pt ? ' pt' : ''}`} style={{ ...(d.kn.length !== 4 ? { '--so-kn': d.kn.length } : {}), ...(rongLuot ? { '--rong-lu': `${rongLuot}px` } : {}), ...(d.thiThat ? { '--rong-kn': '80px' } : {}) } as CSSProperties}>
       <span className="lu">
         <span>{[d.luot, d.tuan && tuanLich(d.tuan)].filter(Boolean).join(' · ')}</span>
         {d.tam && <span className="tam-chu" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}
@@ -85,7 +86,11 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
       {d.kn.map((k) => (
         <span key={k.k} role="img" aria-label={nhanDocDiem(k, d.soVoi)} title={k.dat === false ? nhanDocDiem(k, d.soVoi) : undefined}
           className={`k${k.v === null ? ' thieu' : k.dat === false && !kck ? ' h' : ''}${k.cua ? ' cua' : knNhan === k.k ? ' nhan' : ''}`}>
-          <i aria-hidden>{k.k}</i><b aria-hidden className={mau(k.dat, k.v)}>{k.v === null ? '—' : `${dauDiem(k.dat) ? `${dauDiem(k.dat)} ` : ''}${so(k.v)}`}</b>
+          <i aria-hidden>{k.k}</i>{d.thiThat && k.v !== null && /^[LRWS]$/.test(k.k)
+            /* TL-GV (v20): dòng thi thật — ô điểm hộp → hộp Tuần dạy. */
+            ? <OTuanDay kn={k.k.toLowerCase() as KnHop} cycleId={d.thiThat.cycleId} ten={d.thiThat.ten} target={d.soVoi?.v ?? null} nhan={`${k.k} ${so(k.v)}`}>
+              <b aria-hidden className={mau(k.dat, k.v)}>{`${dauDiem(k.dat) ? `${dauDiem(k.dat)} ` : ''}${so(k.v)}`}</b></OTuanDay>
+            : <b aria-hidden className={mau(k.dat, k.v)}>{k.v === null ? '—' : `${dauDiem(k.dat) ? `${dauDiem(k.dat)} ` : ''}${so(k.v)}`}</b>}
         </span>
       ))}
       <span className="ov">
