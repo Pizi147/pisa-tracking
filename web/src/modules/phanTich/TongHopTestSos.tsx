@@ -233,6 +233,8 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     if (v <= 0) return soBam(row, col);
     /* OV-12d: Chờ duyệt kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
     const quaHan = col.khoa === 'choDuyet' ? row.o.choDuyetQuaHan ?? 0 : 0;
+    /* Chủ SP rà #1490 (bỏ XM-7): FT ô SOS 1 · 2 · 3 là hộp tô màu theo mức (CSS `.so-m1…3`), cùng cỡ hộp số khác; lớp thường giữ chip. */
+    if (mau && !laThuong && (col.khoa === 'sos1' || col.khoa === 'sos2' || col.khoa === 'sos3')) return soBam(row, col, undefined, `so-m${col.khoa.slice(3)}`);
     if (!mau || !laThuong) return <span>{soBam(row, col, undefined, MAU_COT[col.khoa])}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={t('{quaHan} quá hạn', { quaHan })}>⚠{quaHan}<span className="sr-only"> {t('quá hạn')}</span></span>}</span>;
     return <span className={`${CHIP_SO} ${MAU_O[mau]}`}>{soBam(row, col, undefined, SO_TRONG_CHIP)}</span>;
   };

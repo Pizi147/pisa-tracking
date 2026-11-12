@@ -105,7 +105,7 @@ export function BaoCao(pv: PhamViPhanTich) {
               <span className="grid min-w-0">
                 <i className="not-italic text-sm font-medium text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Em thi')}</i>
                 <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[28px]"><OSo giaTri={x.emThi} nguon={nThi(tong, 'tong:thi')} tieuDe={t('Em thi')} className="so-chinh" /></b>
-                <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} className="text-soon" /> · {t('hiện tại')}</span>
+                <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} {x.chuaCoKq ? <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} className="text-soon" /> : <span className="o-so-tinh">0</span>} · {t('hiện tại')}</span>
               </span>
             </span>
           </SoTo>
