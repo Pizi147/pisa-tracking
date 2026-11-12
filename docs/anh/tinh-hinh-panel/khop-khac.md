@@ -5,18 +5,19 @@ Mockup `thiet-ke/v20/tinh-hinh.html` (chủ SP duyệt #1497). Ảnh cặp (trá
 
 | Khung | Thành phần web | Kết quả |
 |---|---|---|
-| D 4 ô cách xử lý (Nâng 1 bậc = Mặc định · Không nâng · Vượt bậc · Ngoài thang) | `XacNhanXuLyPanel` — `role="radiogroup"`, ô chọn viền nhấn + chấm tròn | KHỚP (panel chuẩn hẹp → 2×2; ≥ 600 px khung → 4 ngang) |
+| D 4 ô cách xử lý (Nâng 1 bậc = Mặc định · Không nâng · Vượt bậc · Ngoài thang) | `XacNhanXuLyPanel` — panel rộng 720 (`rong="rong"`), 4 ô một hàng; 375: 2×2 như mockup D4 | KHỚP |
+| D dòng mốc · bậc kế dưới tiêu đề | `chuMoc` · Bậc kế | KHỚP |
 | D chip bậc / loại + dải vàng "Khác mặc định → sẽ gửi QL duyệt. QL có 5 ngày (tới …); hết hạn giữ quyết định của bạn: …" + ⓘ TVV sau chốt | cùng panel | KHỚP |
 | D nút chính "Xác nhận · {bậc}" / "Gửi QL duyệt"; Ngày + Người chỉ khi mặc định | cùng panel | KHỚP |
 | D bỏ "Đề xuất QL duyệt" (nút chữ trong panel + link ở cột Bước tab lớp / HV) + "← Quay lại Xác nhận xử lý" | gỡ | BỎ (đề bài) |
-| D dải tiến trình ①②③ | giữ `TienTrinh` (ô ③ "Sau khi chốt") | KHÁC nhỏ — mockup v20 không vẽ dải (giữ thao tác cũ, chủ SP 22/10) |
+| D không dải bước (PTA 12/11: bỏ mọi ① ② ③) | gỡ `TienTrinh` khỏi panel | KHỚP |
 | B lựa chọn Vi phạm \| Chỉ nhắc nhở + câu hậu quả + tiêu đề "Ghi nhắc nhở" + "Lưu nhắc nhở"; Sửa đổi được hai chiều | `RecordViolationPanel` | KHỚP |
-| B nhãn ô "Nhắc nhở *" thay "Vi phạm *" | giữ "Vi phạm *" | KHÁC nhỏ |
+| B nhãn khối + ô "Nhắc nhở *" khi Chỉ nhắc nhở | `DongViPham chiNhac` | KHỚP |
 | C2 TVV "Báo PH · Tình hình học tập" — nội dung GV gửi + form Đã báo PH / Chưa liên hệ được | `PanelBaoPhTvv` (khối tình hình thay dải vi phạm) | KHỚP |
 | F2 / F4 GVCN "Tình hình học tập · TVV hỏi" — câu hỏi + Kết quả (bộ đếm) + Lưu · gửi TVV + Hoàn tác + Việc tiếp › | `PanelHoiTinhHinh` (Công việc `yt_hoi_tinh_hinh`) | KHỚP (một em một panel — Công việc mở theo dòng việc) |
 | E thẻ duyệt: nhãn cách + bậc, "Còn n ngày · 5 vạch · Hết hạn: giữ quyết định GVCN", ≤ 1 ngày nền vàng ⚠ | `HopChoDuyet` `DemNguocYThuc` (thẻ `y_thuc`) | KHỚP phần đếm ngược; **KHÁC**: hộp duyệt giữ dáng danh sách dòng chung mọi loại thẻ (mockup vẽ thẻ lớn riêng) — đổi cả hộp là màn khác |
 
-Ước KHỚP 7 / 10 (3 KHÁC nhỏ có lý do). Chờ chủ SP chấm.
+**KHỚP 10 / 11** (1 KHÁC có lý do: hộp duyệt giữ dáng dòng chung mọi loại thẻ — PTA chấp nhận 12/11). Ảnh thêm: `khong-nang-375.png` (D4).
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | |

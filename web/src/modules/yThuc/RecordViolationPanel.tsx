@@ -245,10 +245,10 @@ export function RecordViolationPanel({
           </Khoi>
         )}
 
-        <Khoi tieuDe={t('Vi phạm')}>
+        <Khoi tieuDe={chiNhac ? t('Nhắc nhở') : t('Vi phạm')}>
           {dong.map((d, k) => (
             <DongViPham key={d.key} d={d} k={k} nhieu={nDong > 1} today={today} ct={ct} defaultSkill={defaultSkill} editing={editing} batBuocMon={batBuocMon}
-              sid={hocVien.length === 1 ? hocVien[0] : 0} loi={loi} lf={lf} onSua={(v) => suaDong(d.key, v)}
+              sid={hocVien.length === 1 ? hocVien[0] : 0} loi={loi} lf={lf} chiNhac={chiNhac} onSua={(v) => suaDong(d.key, v)}
               onXoa={() => setDong((ds) => ds.filter((x) => x.key !== d.key))} />
           ))}
           {!editing && hocVien.length <= 1 && nDong < VI_PHAM_TOI_DA_DONG && (
@@ -269,8 +269,9 @@ export function RecordViolationPanel({
 }
 
 /** Một dòng vi phạm: Ngày · Môn · Nhóm · Vi phạm (đếm n/60) · Mô tả (mở sẵn). Nhiều dòng: tiêu đề `Vi phạm n` + `Xoá dòng`. */
-function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon, sid, loi, lf, onSua, onXoa }: {
+function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon, sid, loi, lf, onSua, onXoa, chiNhac = false }: {
   d: Dong; k: number; nhieu: boolean; today: string; ct: string | null; defaultSkill: string | null; editing: boolean; batBuocMon: boolean;
+  /** TINH-HINH (mockup v20 B1): nhãn ô "Nhắc nhở" khi chọn Chỉ nhắc nhở. */ chiNhac?: boolean;
   /** Một học viên (không sửa): hỏi cảnh báo trùng theo nhóm + ngày của DÒNG này. 0 = nhiều học viên, không hỏi. */
   sid: number; loi: readonly LoiTruong[]; lf: ReturnType<typeof useLoiForm>;
   onSua: (v: Partial<Dong>) => void; onXoa: () => void;
@@ -321,7 +322,7 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon,
         </div>
       </Truong>
 
-      <Truong nhan={t('Vi phạm')} batBuoc loi={lf.loiCua(loi, `ten-${n}`)} dem={{ co: d.ten.trim().length, can: VI_PHAM_TEN_TOI_DA }}>
+      <Truong nhan={chiNhac ? t('Nhắc nhở') : t('Vi phạm')} batBuoc loi={lf.loiCua(loi, `ten-${n}`)} dem={{ co: d.ten.trim().length, can: VI_PHAM_TEN_TOI_DA }}>
         <input className="field w-full" {...lf.o(loi, `ten-${n}`)} maxLength={VI_PHAM_TEN_TOI_DA} value={d.ten} onChange={(e) => onSua({ ten: e.target.value })}
           placeholder={t('Ví dụ: Không nộp BTVN Reading')} />
       </Truong>

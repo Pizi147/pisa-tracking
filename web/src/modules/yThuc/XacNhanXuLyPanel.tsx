@@ -18,8 +18,7 @@ import {
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
-import { ChipMon, TienTrinh } from './BangLan.tsx';
-import { CanLamEm } from './khoiYThuc.tsx';
+import { ChipMon, chuMoc } from './BangLan.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 const MO_TA_MIN = 10;
@@ -97,7 +96,6 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
   const tick = d.macDinh.tick.map((id) => theoId.get(id)).filter((v): v is ViPhamV4 => !!v);
   const cuHon = d.macDinh.cuHon.map((id) => theoId.get(id)).filter((v): v is ViPhamV4 => !!v);
-  const ngayVp = [...tick, ...cuHon].map((v) => v.occurredOn).sort();
   const doi = (id: number) => setChon((s) => { const n = new Set(s); if (n.has(id)) n.delete(id); else n.add(id); return n; });
 
   const loi = dsLoi([
@@ -248,21 +246,18 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   ];
   const nhanO = (chu: string, batBuoc = false) => <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{chu}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>;
   return (
-    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={() => void dong()} dau={dau(cheDo === 'xu-ly')}
+    <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={tieuDe} hocVien={d.ten} onDong={() => void dong()} dau={dau(cheDo === 'xu-ly')}
       chan={{
         v3: true, chinh: nutChinh, daSua: !!moTa.trim(),
         conThieu: lf.conThieu(loi) ?? (lf.daBam && loiNguoi ? [{ nhan: t('Người thực hiện'), lyDo: loiNguoi }] : undefined),
         dongTren: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void (cheDo === 'xu-ly' ? luuXuLy() : guiDeXuat())} /> : undefined,
       }}>
       <div className="flex flex-col gap-5 pt-4">
-        {/* Y-THUC-V2 (mockup K8a / K8c): dải ①②③ cùng thứ tự tab Ý thức — bước GVCN là việc của người xem. */}
-        <TienTrinh nay={1} buoc={[
-          [t('{n} vi phạm', { n: tick.length + cuHon.length }), ngayVp.length ? `${ngay(ngayVp[0], homNay)} – ${ngay(ngayVp[ngayVp.length - 1], homNay)}` : null],
-          /* #6 (mockup #1346 K1): đề xuất — ô ② nói việc đang làm (Gửi QL duyệt) + ai trả lời khi nào. */
-          cheDo === 'de-xuat' ? [t('Gửi Quản lý duyệt'), t('QL có 5 ngày')]
-            : [d.nhom ? <CanLamEm x={d} homNay={homNay} hanDuoi /> : t('Xác nhận xử lý'),   /* G3-15: hạn xuống dưới chip — chip không tràn sang ô ③ */ bacKe ? <>{t('Lần này')} <b className="text-slate-100">{dich(bacKe.nhan)}</b></> : null],
-          [<span className="font-medium text-slate-400">{cheDo === 'xu-ly' ? t('Sau khi lưu') : t('Sau khi chốt')}</span>, t('việc cho TVV của em, hạn 5 ngày')],
-        ]} />
+        {/* TINH-HINH (mockup v20 D, PTA 12/11): bỏ dải bước — hạn ở đầu panel; một dòng mốc · bậc kế, cách xử lý ngay trong form. */}
+        <p className="m-0 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px] text-slate-400">
+          <span><b className="font-semibold text-slate-100">{chuMoc(d.bac, d.viPham.length > 0)}</b>{truoc ? ` · ${ngay(truoc.ngay, homNay)}` : ''}</span>
+          {bacKe && <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{dich(bacKe.nhan)}</b></span>}
+        </p>
         <CanLam>
           <div>
             {nhanO(t('Vi phạm đưa vào · {n}', { n: chon.size }))}
@@ -288,7 +283,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           {/* Mockup v20 D: cách xử lý chọn tại chỗ — 4 ô, "Nâng 1 bậc" mặc định. */}
           <div className="flex flex-col gap-2">
             {nhanO(t('Cách xử lý'))}
-            <div role="radiogroup" aria-label={t('Cách xử lý')} className="grid grid-cols-2 gap-2 [@container(min-width:600px)]:grid-cols-4">
+            <div role="radiogroup" aria-label={t('Cách xử lý')} className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {CACH.map((c) => (
                 <button key={c.k} type="button" role="radio" aria-checked={cach === c.k} disabled={c.tat || busy} onClick={() => chonCach(c.k)}
                   className={`grid min-h-[68px] content-start gap-0.5 rounded-[10px] border px-3 pb-2.5 pt-2.5 text-left appearance-none disabled:cursor-not-allowed disabled:opacity-50 ${cach === c.k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[0_0_0_1px_var(--accent)]' : 'border-[color:var(--line-strong)] surface-2 hover:border-[color:var(--accent)]'}`}>
