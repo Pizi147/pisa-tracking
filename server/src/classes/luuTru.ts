@@ -82,7 +82,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     .prepare(`SELECT s.id, s.student_code, s.full_name, s.archived_at, s.status,
        (SELECT cy.route FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route,
        (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route_ten
-       FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.id`)
+       FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.archived_at DESC`)
     .all(...paramsHv) as any[];
 
   let hocVien: HocVienLuuTru[] = [];
