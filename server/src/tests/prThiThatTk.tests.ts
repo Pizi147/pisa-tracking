@@ -188,15 +188,16 @@ export async function runPrThiThatTkTests(t: any) {
     const go = Number(them.run(P.w2Teacher.userId, LOP, d.addDaysIso(kg, -70), d.addDaysIso(kg, -64), 'removed', kg).lastInsertRowid);
     const dau = Number(them.run(P.lrTeacher.userId, LOP, d.addDaysIso(kg, 14), d.addDaysIso(kg, 41), 'ended', kg).lastInsertRowid);
     const sau = Number(them.run(P.w1Teacher.userId, LOP, d.addDaysIso(kg, 42), null, 'active', kg).lastInsertRowid);
+    const cung = Number(them.run(P.sTeacher.userId, LOP, d.addDaysIso(kg, 14), null, 'active', kg).lastInsertRowid);   // dạy chung từ đầu — cùng ngày sớm nhất
     conn.prepare('UPDATE teacher_assignments SET effective_from = ? WHERE class_id = ? AND is_core = 1').run(kg, LOP);
     const tu = (id: number) => one('SELECT substr(effective_from, 1, 10) AS t FROM teacher_assignments WHERE id = ?', id).t;
     const ds = tl.phanCongTinhLui(conn);
-    assert(ds.some((x: any) => x.id === dau && x.moi === kg) && !ds.some((x: any) => [go, sau].includes(x.id)), `chỉ dòng đầu: ${JSON.stringify(ds.filter((x: any) => x.classId === LOP))}`);
+    assert(ds.some((x: any) => x.id === dau && x.moi === kg) && ds.some((x: any) => x.id === cung && x.moi === kg) && !ds.some((x: any) => [go, sau].includes(x.id)), `hai dòng cùng ngày đầu, không dòng sau: ${JSON.stringify(ds.filter((x: any) => x.classId === LOP))}`);
     assert(!ds.some((x: any) => x.classId === LOP && one('SELECT is_core FROM teacher_assignments WHERE id = ?', x.id).is_core === 1), 'GVCN đã đúng khai giảng — không đụng');
     conn.prepare('DELETE FROM demo_config WHERE key = ?').run(tl.KHOA_TINH_LUI_PC);
     const ap: string[] = [];
     tl.migratePrTinhLuiPc(conn, ap);
-    assert(tu(dau) === kg && tu(sau) === d.addDaysIso(kg, 42) && tu(go) === d.addDaysIso(kg, -70), `sau migrate: ${tu(dau)} · ${tu(sau)} · ${tu(go)}`);
+    assert(tu(dau) === kg && tu(cung) === kg && tu(sau) === d.addDaysIso(kg, 42) && tu(go) === d.addDaysIso(kg, -70), `sau migrate: ${tu(dau)} · ${tu(sau)} · ${tu(go)}`);
     assert(ap.length === 1 && one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'phan_cong.tinh_lui' AND entity_id = ?`, dau).n === 1, `nhật ký: ${ap}`);
     const ap2: string[] = []; tl.migratePrTinhLuiPc(conn, ap2);
     assert(!ap2.length && one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'phan_cong.tinh_lui' AND entity_id = ?`, dau).n === 1, 'khoá: chạy lại không làm gì');

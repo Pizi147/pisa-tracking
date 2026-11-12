@@ -1,7 +1,7 @@
 /**
  * TINH-LUI-PC (chủ SP 12/11 "Duyệt, tính lùi" — sau #1505 hộp Tuần dạy) — ĐỔI DỮ LIỆU MỘT LẦN lúc deploy: phân công trên bản chính chỉ khai từ 05/10
  * (ngày bắt đầu dùng hệ thống), lớp khai giảng sớm hơn → hộp Tuần dạy / Theo GV hiện phần lớn "Chưa phân công".
- * Mỗi lớp × kỹ năng (GVCN: `is_core = 1`, cùng bảng): dòng `active` / `ended` có `effective_from` SỚM NHẤT mà muộn hơn ngày khai giảng → đặt bằng ngày
+ * Mỗi lớp × kỹ năng (GVCN: `is_core = 1`, cùng bảng): (các) dòng `active` / `ended` có `effective_from` SỚM NHẤT mà muộn hơn ngày khai giảng → đặt bằng ngày
  * khai giảng. Không đụng dòng sau, không đụng dòng đã gỡ (`removed`…). Khai giảng = tuần khai giảng (`start_period_id`, cùng nguồn đầu trang lớp / Báo cáo
  * PH FT — #1502), chưa chọn tuần → `start_date`; không có cả hai → bỏ qua lớp.
  * Nhật ký `audit_logs` (action `phan_cong.tinh_lui`, người ghi NULL = migrate) giữ `effective_from` cũ → `khoiPhucTinhLuiPc` trả lại. Khoá `demo_config`.
@@ -18,14 +18,14 @@ type Doi = { id: number; classId: number; cu: string; moi: string };
 
 /** Dòng cần đổi — CHỈ ĐỌC. */
 export function phanCongTinhLui(conn: any): Doi[] {
+  /* Mọi dòng mang ngày SỚM NHẤT của nhóm (hai GV cùng nhận từ đầu → cả hai lùi). Một câu: MIN theo nhóm rồi nối lại. */
   const dau = conn.prepare(
     `SELECT ta.id, ta.class_id, substr(ta.effective_from, 1, 10) AS tu
        FROM teacher_assignments ta
-      WHERE ta.status IN ('active', 'ended')
-        AND ta.id = (SELECT t2.id FROM teacher_assignments t2
-                      WHERE t2.class_id = ta.class_id AND t2.is_core = ta.is_core AND COALESCE(t2.skill, '') = COALESCE(ta.skill, '')
-                        AND t2.status IN ('active', 'ended')
-                      ORDER BY t2.effective_from, t2.id LIMIT 1)`,
+       JOIN (SELECT class_id, is_core, COALESCE(skill, '') AS kn, MIN(substr(effective_from, 1, 10)) AS tu FROM teacher_assignments
+              WHERE status IN ('active', 'ended') GROUP BY class_id, is_core, COALESCE(skill, '')) m
+         ON m.class_id = ta.class_id AND m.is_core = ta.is_core AND m.kn = COALESCE(ta.skill, '') AND m.tu = substr(ta.effective_from, 1, 10)
+      WHERE ta.status IN ('active', 'ended')`,
   ).all() as { id: number; class_id: number; tu: string }[];
   if (!dau.length) return [];
   const lops = [...new Set(dau.map((r) => r.class_id))];
