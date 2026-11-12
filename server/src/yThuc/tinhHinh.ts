@@ -14,7 +14,7 @@ import { can, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { activeClassOf, canManageDiscipline, requireRecordViolation, requireViewStudent } from './access.ts';
+import { activeClassOf, canManageDiscipline, requireRecordViolation } from './access.ts';
 import { coTheGhi } from './baoPhTvv.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
@@ -86,8 +86,15 @@ export function guiTinhHinh(p: Principal, v: { chieu?: unknown; studentIds?: unk
   const em = ids.map(studentRow);
   for (const s of em) quyenGui(p, chieu, s);
   const out: number[] = [];
+  /* Gửi lại (bấm hai lần / thử lại sau mất mạng): cùng người, cùng em, cùng nội dung trong 2 phút → trả bản đã có, không sinh việc thứ hai. */
+  const tu = new Date(Date.now() - HOAN_TAC_MS).toISOString();
+  const daCo = (sid: number) => (db().prepare(
+    `SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ? AND nguoi_gui = ? AND chieu = ? AND noi_dung = ? AND tao_luc >= ? ORDER BY id DESC LIMIT 1`,
+  ).get(sid, p.userId, chieu, noiDung, tu) as { id: number } | undefined)?.id;
   tx(() => {
     for (const s of em) {
+      const cu = daCo(s.id);
+      if (cu) { out.push(cu); continue; }
       if (chieu === 'tvv_gvcn' && db().prepare(`SELECT 1 FROM tinh_hinh_hoc_tap WHERE student_id = ? AND nguoi_gui = ? AND chieu = 'tvv_gvcn' AND trang_thai = 'mo'`).get(s.id, p.userId)) {
         throw conflict('Bạn đang hỏi tình hình em này — sửa câu đang chờ hoặc Rút.');
       }
@@ -246,13 +253,18 @@ export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: b
   const lopCn = [...new Set(p.assignments.filter((a) => a.isCore && a.effectiveFrom <= o.today && (!a.effectiveTo || a.effectiveTo >= o.today)).map((a) => a.classId))];
   const ql = p.roleKeys.some((k) => k === 'manager' || k === 'system_admin');
   if (!lopCn.length && !ql) return [];
+  /* Lớp = lớp em ĐANG học (không phải lớp lúc hỏi) — cùng quyền trả lời (`discipline.manage`): em chuyển lớp thì GVCN mới giữ. GVCN không phải QL:
+     chỉ đọc câu của lớp mình chủ nhiệm (đọc đúng phạm vi). */
+  const LOP = `COALESCE((SELECT e.class_id FROM enrollments e WHERE e.student_id = t.student_id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1), t.class_id)`;
   const rows = db().prepare(
-    `SELECT t.id, t.student_id, t.class_id, t.noi_dung, t.han, s.full_name, c.code AS class_code, c.branch_id, gu.full_name AS nguoi_gui_ten,
-            (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = t.class_id AND ta.is_core = 1 AND ta.status = 'active'
+    `SELECT x.*, c.code AS class_code, c.branch_id,
+            (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = x.lop AND ta.is_core = 1 AND ta.status = 'active'
                 AND ta.effective_from <= ?1 AND (ta.effective_to IS NULL OR ta.effective_to >= ?1) ORDER BY ta.id LIMIT 1) AS gvcn
-       FROM tinh_hinh_hoc_tap t JOIN students s ON s.id = t.student_id LEFT JOIN classes c ON c.id = t.class_id LEFT JOIN users gu ON gu.id = t.nguoi_gui
-      WHERE t.chieu = 'tvv_gvcn' AND t.trang_thai = 'mo' ORDER BY t.han, t.id`,
-  ).all(o.today) as any[];
+       FROM (SELECT t.id, t.student_id, ${LOP} AS lop, t.noi_dung, t.han, s.full_name, gu.full_name AS nguoi_gui_ten
+               FROM tinh_hinh_hoc_tap t JOIN students s ON s.id = t.student_id LEFT JOIN users gu ON gu.id = t.nguoi_gui
+              WHERE t.chieu = 'tvv_gvcn' AND t.trang_thai = 'mo') x LEFT JOIN classes c ON c.id = x.lop
+      ${ql ? '' : `WHERE x.lop IN (${DS_JSON})`} ORDER BY x.han, x.id`,
+  ).all(o.today, ...(ql ? [] : [JSON.stringify(lopCn)])) as any[];
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
@@ -266,18 +278,13 @@ export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: b
     const urgency = r.han < o.today ? 'overdue' : r.han === o.today ? 'today' : 'normal';
     items.push({
       key: `yt_hoi_tinh_hinh:${r.id}`, group: 'yt_hoi_tinh_hinh', urgency,
-      studentId: r.student_id, studentName: r.full_name, classId: r.class_id ?? null, classCode: r.class_code ?? null,
+      studentId: r.student_id, studentName: r.full_name, classId: r.lop ?? null, classCode: r.class_code ?? null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: NHAN_VIEC_TINH_HINH, count: null,
       reason: r.noi_dung, tieuDe: `Tình hình học tập · ${r.full_name}`, phu: NHAN_VIEC_TINH_HINH, actionLabel: 'Ghi kết quả',
-      href: r.class_id ? `/hoc-vien/lop/${r.class_id}?tab=y-thuc&hv=${r.student_id}` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }),
+      href: r.lop ? `/hoc-vien/lop/${r.lop}?tab=y-thuc&hv=${r.student_id}` : duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }),
       ownerId, owner: null, mine: ownerId === p.userId, due: r.han, statusLabel: 'Chờ trả lời', viecId: r.id,
     } as WorkItem);
   }
   return items;
 }
 
-/** Quyền xem một em (đường đọc riêng một em). */
-export function tinhHinhMotEm(p: Principal, sid: number): TinhHinhView[] {
-  requireViewStudent(p, sid);
-  return tinhHinhCuaEm(p, [sid]);
-}

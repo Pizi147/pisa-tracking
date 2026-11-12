@@ -14,6 +14,7 @@
  * tăng bậc = Đề xuất với bậc ≤ bậc hiện tại. [XM 5] (PTA 11/11, thay B15): Hoàn tác 10 s ở toast (`hoanTacXuLy`); quá hạn thì Thu hồi.
  */
 import { DS_JSON, db, tx } from '../db.ts';
+import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
@@ -989,6 +990,7 @@ export function chotDeXuatYThuc(measureId: number, homNay: string, boi: number |
   const doi = db().prepare(`UPDATE discipline_measures SET status = 'da_duyet', quyet_luc = ?, updated_at = ? WHERE id = ? AND status = 'cho_duyet'`)
     .run(homNay, nowIso(), measureId).changes;
   if (!doi) return false;
+  xoaNho();   // trạng thái Ý thức nhớ theo request đã cũ (cho_duyet → da_duyet)
   const m = db().prepare('SELECT id, student_id, kind, custom_name FROM discipline_measures WHERE id = ?').get(measureId) as any;
   sinhViecBaoPh({ id: m.id, studentId: m.student_id, kind: m.kind, customName: m.custom_name ?? null }, homNay);
   baoSauDuyetDeXuat(boi, measureId, homNay, tuChot);

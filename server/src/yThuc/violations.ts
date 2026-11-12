@@ -450,8 +450,10 @@ export function editViolation(p: Principal, id: number, patch: {
 
   tx(() => {
     db()
-      .prepare('UPDATE violations SET ten = ?, description = ?, category = ?, skill = ?, occurred_on = ?, chi_nhac = ?, updated_at = ? WHERE id = ?')
-      .run(ten, moTa, category, skill ?? null, occurredOn, chiNhac ? 1 : 0, nowIso(), id);
+      /* Thành nhắc nhở: gỡ hạn xử lý đã chốt (chưa phản hồi) — nhắc nhở ngoài cửa trạng thái nên `chotHanXuLy` không tự gỡ. */
+      .prepare(`UPDATE violations SET ten = ?, description = ?, category = ?, skill = ?, occurred_on = ?, chi_nhac = ?, updated_at = ?,
+                  han_xu_ly = CASE WHEN ? = 1 AND phan_hoi_ngay IS NULL THEN NULL ELSE han_xu_ly END WHERE id = ?`)
+      .run(ten, moTa, category, skill ?? null, occurredOn, chiNhac ? 1 : 0, nowIso(), chiNhac ? 1 : 0, id);
     for (const [field, from, to] of changes) addHistory(id, field, from, to, p.userId);
     chotHanXuLy([row.student_id]);
     writeAudit({

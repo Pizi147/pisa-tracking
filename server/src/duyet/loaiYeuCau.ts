@@ -537,7 +537,10 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       ],
       /* Sau Từ chối, GVCN xác nhận / gửi lần xử lý MỚI cho chính các vi phạm đó (dòng violations không đổi) → đảo sẽ để hai lần xử lý sống, thang bậc
          tính hai lần → chặn khi vi phạm của lần này đã nằm trong lần xử lý khác tạo sau (id lớn hơn), còn hiệu lực. */
-      chan: (conn, yc) => (yc.trang_thai === 'tu_choi' && conn.prepare(
+      chan: (conn, yc) => (yc.trang_thai === 'duyet' && conn.prepare(
+        `SELECT 1 FROM viec_bao_ph_lan l JOIN viec_bao_ph v ON v.id = l.viec_id WHERE v.measure_id = ? LIMIT 1`).get(yc.doi_tuong_id)
+        ? 'TVV đã ghi kết quả báo PH của lần xử lý này — không huỷ quyết định được. Muốn đổi: Thu hồi ở tab Ý thức của em.'
+        : yc.trang_thai === 'tu_choi' && conn.prepare(
         `SELECT 1 FROM measure_violations mv JOIN measure_violations k ON k.violation_id = mv.violation_id AND k.measure_id > mv.measure_id
            JOIN discipline_measures m ON m.id = k.measure_id WHERE mv.measure_id = ? AND m.status NOT IN ('tu_choi', 'thu_hoi') LIMIT 1`).get(yc.doi_tuong_id)
         ? 'Vi phạm của đề xuất này đã nằm trong lần xử lý khác — không huỷ quyết định được. Sửa ở tab Ý thức của em.' : null),
