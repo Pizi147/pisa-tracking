@@ -16,14 +16,14 @@ Mockup: `thiet-ke/v20/tinh-hinh.html` (chủ SP duyệt #1497). Ảnh cặp (tr�
 | A1 em sạch | "✓ Chưa có vấn đề nào", không chip | KHỚP |
 | A4 dải mốc | MỐC VIẾT HOA · ngày · Bậc kế · Thang ▾ · Khai / Hỏi / Báo tình hình · + Ghi vi phạm | KHỚP (mốc viết hoa như trên) |
 | A4 Đang chờ / Cả quá trình | `StudentYThucSection` — lọc Tất cả · Vi phạm · Nhắc nhở · Tình hình + Lộ trình | Cả lịch sử + Mọi nhóm | KHỚP |
-| A4 cột Ngày | ngày nằm ở từng vi phạm / dòng nhãn (DsVp, TheTinhHinh) — không cột riêng | KHÁC (cùng lưới 3 cột với tab lớp, không lặp ngày) |
+| A4 cột Ngày + thang mini 6 vạch cạnh mốc | `DongLan moc` (lưới 96 · Vấn đề · 320 · 236) · vạch tô theo bậc | KHỚP |
 | C1 hộp Báo tình hình | `HopTinhHinh` (HopNeo) — Học viên · Gửi tới · Hạn TVV · Nội dung (bộ đếm 500) · Đóng / Gửi TVV | KHỚP |
-| C1 "+ Tệp · + Liên kết" | chưa làm | KHÁC (đặc tả: tệp tuỳ chọn) — [XM] cần thì thêm PR sau |
-| C3 / F3 tấm dưới 375 | HopNeo rộng hết màn (không tấm dưới) | KHÁC nhỏ |
+| C1 "+ Tệp · + Liên kết" | không làm — PTA quyết 12/11 (không thêm lúc này) | KHÁC có quyết định |
+| C3 / F3 tấm dưới 375 | `HopTinhHinh` ≤ 639 px: tấm dưới (nền mờ, Esc / bấm nền đóng) | KHỚP |
 | BỎ | phân đoạn "Vi phạm \| Phối hợp SOS", "Cần làm \| Lịch sử" (hồ sơ HV), nhóm "Xong · 7 ngày" (vào Cả quá trình) | BỎ theo mockup |
 | GIỮ | "Đề xuất QL duyệt" — bỏ ở PR 3 cùng panel 4 lựa chọn (bỏ ở đây thì GVCN mất đường gửi QL) | GIỮ tạm |
 
-Ước KHỚP: 12 / 14 dòng thành phần (86 %; tính cả 2 KHÁC có chủ ý theo lời chủ SP mới hơn: 14 / 14). Chờ chủ SP chấm.
+**KHỚP 13 / 14** (93 %). KHÁC duy nhất: + Tệp / + Liên kết ở hộp Báo tình hình — PTA quyết không thêm. Chip mốc viết hoa theo lời chủ SP mới hơn mockup (tính KHỚP). Ảnh thêm: `hop-bao-375.png` (C3).
 
 ## Thao tác TRƯỚC → SAU
 | Thao tác | Trước | Sau | |
@@ -35,7 +35,7 @@ Mockup: `thiet-ke/v20/tinh-hinh.html` (chủ SP duyệt #1497). Ảnh cặp (tr�
 | Hồ sơ HV: Cần làm \| Lịch sử · lọc Đã xem / Đã xử lý / Đã thu hồi | phân đoạn + chip | Đang chờ + Cả quá trình · lọc Vi phạm / Nhắc nhở / Tình hình | ĐỔI (mockup A4) |
 | Mọi thao tác cũ trên dòng (Xác nhận xử lý, Đã xem, Bỏ xem, Duyệt, Thu hồi, Báo PH, Sửa hạn, Xem lịch sử, Thang, Khai bậc…) | có | như cũ | GIỮ |
 
-## [XM]
-- Mốc khi em **có vi phạm nhưng chưa xử lý lần nào**: chủ SP dặn "chưa có → Chưa có vi phạm" — chip ghi đúng chữ đó, dễ đọc nhầm khi em đang có 3 vi phạm. Đề xuất "Chưa có mốc". Chủ SP chọn.
+## [XM] đã quyết (PTA 12/11)
+- Em có vi phạm nhưng chưa tới mốc → **"Chưa có mốc"**; em chưa có vi phạm → "Chưa có vi phạm" (em sạch ở tab lớp không chip — dòng đã ghi "✓ Chưa có vấn đề nào").
 
 Turso: +0 câu so PR 1 (dữ liệu tình hình / nhắc nhở đã có trong `/classes/:id/y-thuc`, `/students/:id/y-thuc`).
