@@ -13,7 +13,7 @@ Mockup: `thiet-ke/v20/tinh-hinh.html` (chủ SP duyệt #1497). Ảnh cặp (tr�
 | A1 dòng tình hình | `TinhHinh.tsx` `TheTinhHinh` · `NoiDungTinhHinh` · `daXuLyTinhHinh` · `BuocTinhHinh` | KHỚP |
 | A1 nhắc nhở trong khối (7 ngày) + "n nhắc nhở · không việc chờ" | ClassYThucCard `nhacGan` | KHỚP |
 | A1 chip mốc | `ChipBac` + `chuMoc` — **REPORT 1 / WARNING LETTER 1** viết hoa, bỏ "Đã tới" (chủ SP 12/11, sau duyệt mockup) | KHÁC có chủ ý (lời mới hơn mockup) |
-| A1 em sạch | "✓ Chưa có vấn đề nào", không chip | KHỚP |
+| A1 em sạch | "✓ Chưa có vi phạm" (chữ chủ SP 12/11, mockup ghi "Chưa có vấn đề nào"), không chip | KHÁC có chủ ý (lời mới hơn mockup) |
 | A4 dải mốc | MỐC VIẾT HOA · ngày · Bậc kế · Thang ▾ · Khai / Hỏi / Báo tình hình · + Ghi vi phạm | KHỚP (mốc viết hoa như trên) |
 | A4 Đang chờ / Cả quá trình | `StudentYThucSection` — lọc Tất cả · Vi phạm · Nhắc nhở · Tình hình + Lộ trình | Cả lịch sử + Mọi nhóm | KHỚP |
 | A4 cột Ngày + thang mini 6 vạch cạnh mốc | `DongLan moc` (lưới 96 · Vấn đề · 320 · 236) · vạch tô theo bậc | KHỚP |
@@ -36,6 +36,6 @@ Mockup: `thiet-ke/v20/tinh-hinh.html` (chủ SP duyệt #1497). Ảnh cặp (tr�
 | Mọi thao tác cũ trên dòng (Xác nhận xử lý, Đã xem, Bỏ xem, Duyệt, Thu hồi, Báo PH, Sửa hạn, Xem lịch sử, Thang, Khai bậc…) | có | như cũ | GIỮ |
 
 ## [XM] đã quyết (PTA 12/11)
-- Em có vi phạm nhưng chưa tới mốc → **"Chưa có mốc"**; em chưa có vi phạm → "Chưa có vi phạm" (em sạch ở tab lớp không chip — dòng đã ghi "✓ Chưa có vấn đề nào").
+- Em có vi phạm nhưng chưa tới mốc → **"Chưa có mốc"**; em chưa có vi phạm → "Chưa có vi phạm" (em sạch ở tab lớp không chip — dòng ghi "✓ Chưa có vi phạm" — PTA 12/11).
 
 Turso: +0 câu so PR 1 (dữ liệu tình hình / nhắc nhở đã có trong `/classes/:id/y-thuc`, `/students/:id/y-thuc`).

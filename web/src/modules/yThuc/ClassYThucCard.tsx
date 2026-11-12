@@ -197,7 +197,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const ghiBaoPh = (sid: number, b: BaoPhLan) => setBaoPh({ viecId: b.id, studentId: sid, ten: emLop.get(sid)?.ten ?? '', han: b.han });
 
   /* ---------------- Ô Học viên (khối em + dòng gọn) ---------------- */
-  /* Em chưa có vấn đề gì (không khối, không lịch sử, chưa bậc): dòng đã ghi "✓ Chưa có vấn đề nào" — không thêm chip trùng ý (mockup v20 A1). */
+  /* Em chưa có vấn đề gì (không khối, không lịch sử, chưa bậc): dòng đã ghi "✓ Chưa có vi phạm" (chủ SP 12/11) — không thêm chip trùng ý (mockup v20 A1). */
   const theoEmCo = (sid: number) => d.tinhHinh.some((x) => x.studentId === sid) || d.dongThoiGian.some((x) => x.studentId === sid);
   const hvEm = (sid: number) => {
     const e = emLop.get(sid);
@@ -554,7 +554,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                       {e.soLs > 0
                         ? <>{thanhLs(e.studentId)}<span>{nhacGan.some((x) => x.studentId === e.studentId)
                           ? t('{n} nhắc nhở · không việc chờ', { n: nhacGan.filter((x) => x.studentId === e.studentId).length }) : t('Không có vi phạm chờ')}</span></>
-                        : <span><span aria-hidden className="text-ok">✓ </span>{t('Chưa có vấn đề nào')}</span>}
+                        : <span><span aria-hidden className="text-ok">✓ </span>{t('Chưa có vi phạm')}</span>}
                     </div>
                     {moLs.has(e.studentId) && khungLs(e.studentId)}
                   </DongEmGon>
