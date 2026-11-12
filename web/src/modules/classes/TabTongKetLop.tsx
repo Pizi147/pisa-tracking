@@ -4,6 +4,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NganTongKet } from '../students/NganTongKet.tsx';
+import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { toneHuong } from '../students/CacLoTrinh.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -116,7 +117,9 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                           </td>
                           {/* Chủ SP 12/11: tách W1 · W2 như Tổng kết lộ trình (`diemW12` ở máy chủ). */}
                           {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w1, d.luotCuoi?.w2, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-right tabular-nums">{b1(v)}</td>)}
-                          <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{b1(d.thiThat?.ovr)}</td>
+                          <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{d.thiThat?.ovr != null && d.loTrinhId
+                            /* TL-GV (v20, XM-3): bảng chỉ có OVR thi thật → OVR là ô hộp mở hộp tóm tắt 5 kỹ năng (GV nhiều tuần nhất · %). */
+                            ? <OTuanDay kn="ovr" cycleId={d.loTrinhId} ten={d.ten} nhan={`OVR ${b1(d.thiThat.ovr)}`}>{b1(d.thiThat.ovr)}</OTuanDay> : b1(d.thiThat?.ovr)}</td>
                           <td className="px-3">{k ? <Nhan tone={k.tone}>{k.chu}</Nhan> : Gach}</td>
                           <td className="px-3">{d.roiSom ? Gach : <Huong d={d} />}</td>
                         </tr>
@@ -160,7 +163,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                         <>
                           <dt className="text-slate-500">{d.luotCuoi?.nhan ? dich(d.luotCuoi.nhan) : t('MT cuối')}</dt>
                           <dd className="m-0 tabular-nums">{d.luotCuoi ? `L ${b1(d.luotCuoi.l)} · R ${b1(d.luotCuoi.r)} · W1 ${b1(d.luotCuoi.w1)} · W2 ${b1(d.luotCuoi.w2)} · S ${b1(d.luotCuoi.s)} · OVR ${b1(d.luotCuoi.overall)}` : '—'}</dd>
-                          <dt className="text-slate-500">{t('Thi thật')}</dt><dd className="m-0 tabular-nums">{d.thiThat?.ovr != null ? `OVR ${b1(d.thiThat.ovr)}` : '—'}</dd>
+                          <dt className="text-slate-500">{t('Thi thật')}</dt><dd className="m-0 tabular-nums">{d.thiThat?.ovr != null ? <>OVR {d.loTrinhId ? <OTuanDay kn="ovr" cycleId={d.loTrinhId} ten={d.ten} nhan={`OVR ${b1(d.thiThat.ovr)}`}>{b1(d.thiThat.ovr)}</OTuanDay> : b1(d.thiThat.ovr)}</> : '—'}</dd>
                           <dt className="text-slate-500">{t('Hướng tiếp')}</dt><dd className="m-0">{d.roiSom ? '—' : <Huong d={d} />}</dd>
                         </>
                       ) : (

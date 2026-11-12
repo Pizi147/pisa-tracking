@@ -179,6 +179,11 @@ const LUOT_THUONG = (conn.prepare(`SELECT id FROM assessment_attempts WHERE clas
 /** PR-TK: lớp ĐÃ KẾT THÚC có bản chụp (lớp cũ của em có lộ trình đóng) — đường `/classes/{lopKetThuc}/tong-ket`. Bộ demo chưa có lớp kết thúc → đặt lớp cũ đó `finished`. */
 const LOP_KET_THUC = (conn.prepare('SELECT class_id AS id FROM ban_chup_lo_trinh WHERE cycle_id = ? AND class_id IS NOT NULL').get(LO_TRINH_DONG) as any)?.id as number;
 assert(LOP_KET_THUC, 'Bản chụp mẫu thiếu lớp');
+/** TL-GV: hộp Tuần dạy `/cycles/{loTrinhThi}/tuan-day` — bộ demo chưa có KQ thi thật: gắn ngày thi cho lộ trình ĐÃ ĐÓNG mẫu (không vào Công việc). */
+const LO_TRINH_THI = (conn.prepare(`SELECT c.id FROM learning_cycles c JOIN students s ON s.id = c.student_id
+   WHERE s.branch_id = ? AND c.route IS NOT NULL AND c.status != 'active' ORDER BY c.id LIMIT 1`).get(CN) as any)?.id as number;
+assert(LO_TRINH_THI, 'Seed thiếu lộ trình FT đã đóng ở chi nhánh MB');
+conn.prepare(`UPDATE learning_cycles SET exam_date = COALESCE(exam_date, date(started_at, '+70 days')) WHERE id = ?`).run(LO_TRINH_THI);
 /** BAN-GIAO-NHAN: phiếu chuyển lớp ĐÃ XÁC NHẬN của chi nhánh mẫu — `/lenh-chuyen/{lenhBg}/ban-giao`. */
 const LENH_BG = (conn.prepare(`SELECT l.id FROM lenh_chuyen_lop l JOIN classes c ON c.id = l.lop_nguon_id
    WHERE c.branch_id = ? AND l.xac_nhan_luc IS NOT NULL AND l.trang_thai != 'huy' AND l.huong != 'dung_hoc' ORDER BY l.id LIMIT 1`).get(CN) as any)?.id as number;
@@ -244,6 +249,7 @@ function urlFor(mau: string): string {
     .replace('{hv}', String(HV))
     .replace('{loTrinhDong}', String(LO_TRINH_DONG))
     .replace('{loTrinhHv}', String(LO_TRINH_HV))
+    .replace('{loTrinhThi}', String(LO_TRINH_THI))
     .replace('{luotHv}', String(LUOT_HV))
     .replace('{luotThuong}', String(LUOT_THUONG))
     .replace('{lopKetThuc}', String(LOP_KET_THUC))

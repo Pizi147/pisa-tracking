@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
+import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -157,6 +158,11 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
                 <strong className="mt-1.5 block text-sm tabular-nums text-slate-100" aria-label={t('OVR tự tính')}>
                   {kt ? (kqKt && !kqKt.khongThi ? kqKt.tong : '—') : kq?.ovr != null ? kq.ovr.toFixed(1) : '—'}
                 </strong>
+                {/* TL-GV (v20, XM-4): ô là ô nhập, không bấm mở được → nút chữ "Tuần dạy" (chỉ khi đã lưu đủ 4 kỹ năng) mở hộp tóm tắt 5 kỹ năng. */}
+                {!kt && !c.thi_that_khong_thi && [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((v) => v != null) && (
+                  <OTuanDay chu kn="ovr" cycleId={cycleId} ten={studentName} target={c.thi_that_target ?? c.target_score ?? null}
+                    diem={{ l: c.thi_that_l, r: c.thi_that_r, w: c.thi_that_w, s: c.thi_that_s, ovr: c.outcome_score ?? null }}>{t('Tuần dạy')}</OTuanDay>
+                )}
               </div>
             </div>
             {!kt && <DongLanTruoc truoc={c.thiTruoc} layLai={form.layLai} trong={trong} onLay={layTrong} />}

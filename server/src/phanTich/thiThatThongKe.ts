@@ -5,12 +5,10 @@
  */
 import { PERMISSIONS, coMucThi, soSanhDiem, type DongThiThatBang, type MucGv, type OPtGv, kyNangThiLanNay, mucThi, thongKeThiThat, type DoanDay, type KetQuaThiThatKq, type ThongKeThiThatWeb, type KnDay, type KnThiThat } from '../../../shared/domain/index.ts';
 import { t } from '../../../shared/i18n/index.ts';
-import { db, theoLo } from '../db.ts';
 import { scopeFor, type Principal } from '../permissions.ts';
-import { addDays, badRequest, forbidden } from '../util.ts';
-import { mondayOf } from '../platform/week.ts';
+import { badRequest, forbidden } from '../util.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { ghiDanhCuaEm } from './lopLucThi.ts';
+import { tuanDayChung } from './tuanDay.ts';
 import { tenChiNhanh } from './tongHop.ts';
 import { thiThatTrongKhoang, tongThiThat, type LocKetQuaThi, type ThiThatTho } from './ketQuaThi.ts';
 import { tapChuaCoKq } from './chiNhanh.ts';
@@ -18,52 +16,8 @@ import { tapChuaCoKq } from './chiNhanh.ts';
 /** 2E: khối Theo GV — QL, Quản trị (`analysis.view_teacher`), CX. TVV / GV không. */
 export const coTheoGv = (p: Principal): boolean => !scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER).none || p.roleKeys.includes('cx');
 
-/** Kỹ năng phân công (FT) → kỹ năng dạy; "writing" chung (dữ liệu cũ) → cả W1 và W2. */
-const KN_PC: Record<string, KnDay[]> = { listening: ['l'], reading: ['r'], writing1: ['w1'], writing2: ['w2'], writing: ['w1', 'w2'], speaking: ['s'] };
-
-/**
- * Tuần dạy (2C-7): với mỗi lộ trình có mức thi, mỗi GV × kỹ năng = số Thứ Hai phân biệt trong giao của ghi danh em (đến `ended_at`, trống → ngày thi) ×
- * phân công kỹ năng ở lớp đó (đến `effective_to`, trống → ngày thi) × lộ trình (`started_at` → ngày thi). Chỉ lớp FT. 1 câu ghi danh (nhớ chung với
- * lớp lúc thi) + 1 câu phân công theo lớp (kèm tên GV).
- */
-export function tuanDay(ds: readonly ThiThatTho[]): { day: Map<number, DoanDay[]>; ten: Map<number, string> } {
-  const co = ds.filter((x) => coMucThi(x.kq) && x.kq.ngay);
-  const gd = ghiDanhCuaEm([...new Set(co.map((x) => x.kq.studentId))]);
-  const doan = co.map((x) => {
-    const ngay = x.kq.ngay!.slice(0, 10);
-    const tu = x.batDau ?? '0000-00-00';
-    return { x, ngay, ghi: (gd.get(x.kq.studentId) ?? []).filter((e) => e.tu <= ngay && (e.den ?? ngay) >= tu).map((e) => ({ ...e, tu: e.tu > tu ? e.tu : tu, den: e.den && e.den < ngay ? e.den : ngay })) };
-  });
-  const pc = new Map<number, { user: number; kn: KnDay[]; tu: string; den: string | null }[]>();
-  const ten = new Map<number, string>();
-  theoLo([...new Set(doan.flatMap((d) => d.ghi.map((e) => e.lop)))], (lo, ph) => {
-    for (const a of db().prepare(
-      `SELECT ta.user_id, ta.class_id, ta.skill, substr(ta.effective_from, 1, 10) AS tu, substr(ta.effective_to, 1, 10) AS den, u.full_name
-         FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id LEFT JOIN users u ON u.id = ta.user_id
-        WHERE ta.class_id IN (${ph}) AND c.is_fast_track = 1 AND ta.status IN ('active', 'ended') AND ta.is_core = 0 AND ta.skill IS NOT NULL`,
-    ).all(...lo) as any[]) {
-      const kn = KN_PC[a.skill];
-      if (!kn) continue;
-      (pc.get(a.class_id) ?? pc.set(a.class_id, []).get(a.class_id)!).push({ user: a.user_id, kn, tu: a.tu, den: a.den ?? null });
-      ten.set(a.user_id, a.full_name ?? '');
-    }
-  });
-  const day = new Map<number, DoanDay[]>();
-  for (const { x, ngay, ghi } of doan) {
-    const tuan = new Map<string, Set<string>>();
-    for (const e of ghi) for (const a of pc.get(e.lop) ?? []) {
-      const s = [e.tu, a.tu].reduce((m, v) => (v > m ? v : m));
-      const k = [e.den, a.den ?? ngay].reduce((m, v) => (v < m ? v : m));
-      if (s > k) continue;
-      for (const kn of a.kn) {
-        const set = tuan.get(`${a.user}:${kn}`) ?? tuan.set(`${a.user}:${kn}`, new Set()).get(`${a.user}:${kn}`)!;
-        for (let m = mondayOf(s), cuoi = mondayOf(k); m <= cuoi; m = addDays(m, 7)) set.add(m);
-      }
-    }
-    day.set(x.kq.cycleId, [...tuan].map(([khoa, set]) => ({ userId: Number(khoa.split(':')[0]), kn: khoa.split(':')[1] as KnDay, tuan: set.size })));
-  }
-  return { day, ten };
-}
+/** Tuần dạy (2C-7) của các lộ trình có mức thi — lõi chung với hộp Tuần dạy của một em (`tuanDay.ts`: chia đều tuần dạy chung, XM-7). */
+export const tuanDay = (ds: readonly ThiThatTho[]): { day: Map<number, DoanDay[]>; ten: Map<number, string> } => tuanDayChung(ds.filter((x) => coMucThi(x.kq)));
 
 export type ThiThatTabKq = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb; /** V2 (đặc tả 9.9): Chưa có KQ — HIỆN TẠI, không lọc kỳ. */ chuaCoKq: number };
 

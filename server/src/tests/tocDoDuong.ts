@@ -266,6 +266,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cycles/{loTrinhDong}/buoc-tiep' },
   /* THI-LAI-1-KN: panel Kết quả thi thật / Sau thi đọc lộ trình + KQ thi thật lần trước (+1 câu). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cycles/{loTrinhDong}' },
+  /* TL-GV (v20): hộp Tuần dạy khi bấm điểm thi thật — chỉ đọc khi bấm, một request cả 5 kỹ năng. */
+  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cycles/{loTrinhThi}/tuan-day' },
   { trang: 'Hồ sơ lớp', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'GVCN_THUONG'], url: '/classes/{lopKetThuc}/tong-ket' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hanh-trinh?giai-doan=thuong' },
   /* PR-YT4: tab Ý thức của HV (thang, thanh việc, dòng thời gian trộn) — cũng là khung phải của tab lớp khi chọn em. */
@@ -462,6 +464,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* TL-GV (v20): hộp Tuần dạy — lộ trình · ghi danh · lớp FT · phân công (+ lần thi trước khi thi lại) trên nền phiên; đo 9 · 6 · 10 · 10 câu → max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /cycles/{loTrinhThi}/tuan-day': 19, 'QT /cycles/{loTrinhThi}/tuan-day': 16, 'GVCN /cycles/{loTrinhThi}/tuan-day': 20, 'GVBM /cycles/{loTrinhThi}/tuan-day': 20,
   /* CAU-HINH-CASE-SOS (11/11): 3 câu riêng của tab (bản đang dùng · nhật ký · đếm đang dùng) trên nền phiên như /admin/mo-sua-lich-test (12). */
   'QT /admin/cau-hinh-case-sos': 15, 'QL /admin/cau-hinh-case-sos': 15,
   /* SỔ NGHĨA VỤ (PR-2): tổng mọi chi nhánh (đọc sổ, không ghi lại sổ việc) · panel một người mọi chi nhánh · panel Chưa phân công — đo 7 · 8 · 6 câu, trần max(đo + 10, ⌈đo × 1,3⌉). */
@@ -1081,6 +1085,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* TL-GV: hộp Tuần dạy một em — đo 11 dòng (lộ trình · ghi danh · lớp · phân công) → đo + 50. */
+  'QL /cycles/{loTrinhThi}/tuan-day': 61,
   /* CAU-HINH-CASE-SOS (11/11): bản đang dùng (≤ 3 dòng) + ≤ 30 dòng nhật ký + nhóm đếm theo mã (≈ 40 mã) trên nền phiên (≈ 51 như mo-sua-lich-test). */
   'QT /admin/cau-hinh-case-sos': 160, 'QL /admin/cau-hinh-case-sos': 160,
   /* Y-THUC-V2 (11/11): tab Ý thức lớp / HV — Báo PH theo LẦN + Nội dung trong câu phụ sẵn có; đo trước = sau (340 · 336 · 53 dòng ×1) → max(đo + 50, ⌈đo × 1,3⌉). */
