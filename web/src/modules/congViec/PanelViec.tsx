@@ -430,12 +430,13 @@ function PanelChonPhuTrach({ it, onDong, onDaLam }: { it: WorkItem; onDong: () =
 
 /** OV-12h: Phối hợp SOS của lớp (lượt chưa xong) tại chỗ — cùng thẻ lượt / form Xác nhận của hồ sơ lớp; meeting CX có hạn 5 ngày. */
 /**
- * PHOI-HOP-V2 (mockup #1368 K1–K3): panel một dòng (lớp × việc) — bảng ① Học viên cần làm → ② Đã làm → ③ Kết quả, xác nhận tại dòng.
+ * PHOI-HOP-V2 (mockup #1368 K1–K3) + YT-b (mockup v19 B1–B2): panel một dòng (lớp × việc) — CHỈ em cần làm: GVCN `Học viên · Cần làm`, TVV `Học viên · GVCN gửi · Báo PH`, xác nhận tại dòng.
  * `phoi_hop_tvv`: việc TVV sau Meeting CX của lớp (cả việc đã báo — `includeDone`). MỘT request khi mở panel.
  */
 function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null }) {
   const tvv = it.group === 'phoi_hop_tvv';
-  /* `includeDone`: em vừa xong việc cuối của lượt vẫn ở lại (nhóm "Đã làm", Hoàn tác tại dòng) — một lớp, một request. */
+  /* `includeDone`: em vừa xong việc cuối của lượt vẫn ở lại tại dòng (nền xanh, Hoàn tác) tới khi đóng panel — một lớp, một request.
+     ponytail: giữ includeDone (đọc cả lượt đã xong) chỉ để dòng vừa lưu không mất; bỏ được nếu giữ ảnh dòng ở trình duyệt. */
   const { data, error, reload } = useApi<{ rows: CoordTurn[] }>(`/classes/${it.classId}/phoi-hop-sos?includeDone=1`, [it.classId]);
   const ten = tvv ? t('Báo PH · Meeting CX/GĐCN') : dich(it.tieuDe.split(' · ')[0]);
   const n = it.con?.length ?? it.count ?? 1;
@@ -445,11 +446,16 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
   });
   return (
     <KhungPanel hd="phoi-hop-sos" tieuDe={ten} dau={dau} onDong={onDong}
-      chan={onTiep ? { huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
+      chan={{
+        huy: null,
+        /* YT-b (mockup v19 B1–B2, XM-1 duyệt): panel chỉ còn em cần làm — việc đã làm xem / sửa ở hồ sơ lớp › Phối hợp SOS. */
+        trai: <Link className="link text-sm font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{tvv ? t('Đã báo · hồ sơ lớp ›') : t('Đã làm · hồ sơ lớp ›')}</Link>,
+        chinh: onTiep ? <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
+      }}>
       <div className="pt-2">
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : !data ? <Skeleton rows={4} />
-          : <BangPhoiHop turns={data.rows} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId}
+          : <BangPhoiHop turns={data.rows} che={tvv ? { loai: 'tvv' } : { loai: 'gvcn', khoa: it.phoiHop?.khoa ?? '' }} chiEm={it.studentId} lop={it.classCode ?? undefined}
               onChanged={() => { reload(); onDaLam(); }} />}
       </div>
     </KhungPanel>

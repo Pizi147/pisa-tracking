@@ -222,7 +222,7 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
 }
 
 /**
- * DẢI TIẾN TRÌNH ① Vi phạm → ② GVCN xử lý → ③ TVV báo PH (mockup K8, chủ SP 11/11: panel Công việc cùng thứ tự với tab Ý thức).
+ * DẢI TIẾN TRÌNH Vi phạm → GVCN xử lý → TVV báo PH (mockup K8; YT-b mockup v19 B5: ba ô tên bước, không số).
  * `nay` = bước người xem đang làm: nền nhấn + chữ "Bạn" (không chỉ màu). Khung hẹp: mỗi bước một hàng.
  */
 export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay: number | null }) {
@@ -236,7 +236,6 @@ export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay:
           className={`grid min-w-0 content-start gap-1 border-t px-3 py-2.5 first:border-t-0 max-sm:grid-cols-[92px_minmax(0,1fr)] sm:border-l sm:border-t-0 sm:first:border-l-0 ${nay === i ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_2px_0_var(--accent)]' : ''}`}
           style={{ borderColor: 'var(--line)' }}>
           <span className={`flex items-center gap-1.5 text-xs font-semibold max-sm:row-span-2 ${nay === i ? 'text-[color:var(--accent)]' : 'text-slate-500'}`}>
-            <span aria-hidden className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-full border text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{i + 1}</span>
             <span className="max-sm:hidden">{ten[i]}</span><span className="sm:hidden">{ngan[i]}</span>
             {nay === i && <span className="ml-auto rounded border border-[color:var(--accent)] px-1.5 text-xs font-bold leading-4 text-[color:var(--accent)] max-sm:ml-0">{t('Bạn')}</span>}
           </span>
