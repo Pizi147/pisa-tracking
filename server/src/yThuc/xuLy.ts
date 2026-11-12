@@ -36,6 +36,7 @@ import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhV
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
+export const MO_TA_TOI_DA = 300;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
@@ -85,10 +86,11 @@ export function ngayThucHien(v: unknown): string {
   return v;
 }
 
-export function moTa(v: unknown): string {
+export function moTa(v: unknown, cu?: string | null): string {
   const s = String(v ?? '').trim();
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
-  return s.slice(0, 2000);
+  /* TINH-HINH (mockup v20 D1 "/ 300", N35): trần 300 — quá thì không lưu, chữ giữ ở ô (trước: cắt lặng ở 2000); chữ cũ dài gửi lại nguyên văn thì giữ. */
+  return chuTuDo(s, 'Mô tả', MO_TA_TOI_DA, cu) ?? s;
 }
 
 // ---------------------------------------------------------------- Ghi nhận (V4-1, V4-2, V4-6)
@@ -349,7 +351,7 @@ export function suaXuLy(p: Principal, measureId: number, v: { note?: unknown; pe
   const hv = hocVien(m.student_id);
   requireSuaXuLy(p, m);
   if (m.status !== 'done') throw badRequest('Chỉ sửa ngày / người / mô tả của lần xử lý đã thực hiện — đề xuất đang chờ thì sửa ở thẻ Chờ duyệt.');
-  const note = v.note !== undefined ? moTa(v.note) : m.note;
+  const note = v.note !== undefined ? moTa(v.note, m.note) : m.note;
   const performedOn = v.performedOn !== undefined ? ngayThucHien(v.performedOn) : m.performed_on;
   hoiNgayTruocDuyet(m, performedOn);
   const nguoi = v.performerSelf || v.performerUserId !== undefined || v.performerName !== undefined ? nguoiThucHien(p, v) : { by: m.performed_by ?? null, ten: m.performer_name ?? null };
@@ -860,7 +862,7 @@ export function rutDeXuatYThuc(p: Principal, measureId: number, khoaTep: string[
 export function suaDeXuatYThuc(measureId: number, note: unknown): { lyDo: string; bangChung: number[]; soTep: number } {
   const m = loadXuLy(measureId);
   if (m.status !== 'cho_duyet') throw badRequest('Đề xuất này không còn chờ QL duyệt.');
-  const ghi = moTa(note);
+  const ghi = moTa(note, m.note);
   const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
   if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
   db().prepare('UPDATE discipline_measures SET note = ?, updated_at = ? WHERE id = ?').run(ghi, nowIso(), measureId);

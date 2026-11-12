@@ -45,6 +45,7 @@ export const EN_TINH_HINH_UI = {
   'Đã rút': 'Withdrawn',
   'Đã trả lời · {ngay}': 'Replied · {ngay}',
   'Đang chờ': 'Waiting',
+  'Việc · Ý thức & Phối hợp': 'Task · Conduct & SOS',
   'Hết hạn: tự chốt theo GVCN': 'When due: finalised as the homeroom teacher decided',
   'Còn {n} ngày': ((b) => `${b.n} day${Number(b.n) === 1 ? '' : 's'} left`) as Dich,
   'Hết hôm nay': 'Due today',

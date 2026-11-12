@@ -169,4 +169,14 @@ export async function runPrTinhHinhTests(t: YThucTestKit) {
     try { th.guiTinhHinh(tvv, { chieu: 'gv_tvv', studentIds: [sid], noiDung: 'TVV gửi chiều GV thử' }); } catch { camTvv = true; }
     assert(camTvv, 'TVV không có quyền chiều gv_tvv');
   }));
+
+  await checkAsync('TH-10 · Mô tả xử lý ≤ 300 (mockup v20 D1, N35): 301 → 400 không lưu; 300 lưu được', () => thu(() => {
+    const sid = moiEm();
+    const v1 = ghi(sid, 1);
+    let ma = 0;
+    try { xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, note: 'x'.repeat(301) }); } catch (e: any) { ma = e.status; }
+    assert(ma === 400 && !hang('SELECT id FROM discipline_measures WHERE student_id = ?', sid).length, `ma=${ma}`);
+    xu.xacNhanXuLy(gvcn, sid, { violationIds: [v1], performedOn: TODAY, note: 'x'.repeat(300) });
+    assert(hang('SELECT id FROM discipline_measures WHERE student_id = ?', sid).length === 1, 'lưu 300');
+  }));
 }
