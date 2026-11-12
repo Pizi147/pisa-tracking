@@ -324,7 +324,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const huy = !huyGoc ? huyGoc
     : huyGoc.onClick === onDong ? { ...huyGoc, onClick: dong }
     : lui && huyGoc.onClick === lui.onClick ? { ...huyGoc, onClick: veLai } : huyGoc;
-  const nutHuy = (h: NonNullable<typeof huy>) => <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={h.onClick} disabled={h.disabled}>{h.nhan ?? (chan?.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>;
+  const nutHuy = (huy: { nhan?: string; onClick: () => void; disabled?: boolean }, chan: { daSua?: boolean }) =>
+    <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>;
   useGiuFocus(khung, !taiCho);
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
@@ -423,10 +424,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             {chan.dongTren}
             {/* RA-UI-1 (mockup `v7/khai-bac-lo.html` #w375): 375 — dòng trạng thái / đếm lên đầu chân, mọi nút chia đều MỘT hàng (Huỷ | Lưu, Lưu không còn nhỏ lệch trái). */}
             <div className="flex flex-wrap items-center gap-2 px-4 py-2.5 max-sm:[&>.btn]:flex-1 max-sm:[&>.btn]:justify-center">
-              {huy && !chan.huyPhai && nutHuy(huy)}
+              {huy && !chan.huyPhai && nutHuy(huy, chan)}
               {chan.xoa && <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" onClick={chan.xoa.onClick}>{chan.xoa.nhan ?? t('Xoá')}</button>}
               {chan.trai ? <span className="flex min-w-0 flex-1 items-center gap-2 text-[13px] max-sm:order-first max-sm:basis-full has-[[role=alert]]:order-first has-[[role=alert]]:basis-full">{chan.trai}</span> : <span className="flex-1 max-sm:hidden" />}
-              {huy && chan.huyPhai && nutHuy(huy)}
+              {huy && chan.huyPhai && nutHuy(huy, chan)}
               {chan.phu}
               {chan.chinh}
             </div>
