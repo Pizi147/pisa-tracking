@@ -41,7 +41,7 @@ export function OTuanDay({ kn, lon, chu, nhan, children, ...p }: Props & { kn: K
 
 function HopTuanDay({ neo, onDong, ...p }: Props & { kn: KnHop | null; neo: React.RefObject<HTMLButtonElement | null>; onDong: () => void }) {
   const dt = useDienThoai();
-  const noiDung = <NoiDung {...p} onDong={onDong} sheet={dt} />;
+  const noiDung = <NoiDung {...p} onDong={onDong} />;
   if (dt) return <Sheet onDong={onDong} neo={neo}>{noiDung}</Sheet>;
   return <HopNeo neo={neo} nhan={t('Tuần dạy')} rong={404} onNgoai={onDong} lop="hop-tuan-day" mui>{noiDung}</HopNeo>;
 }
@@ -68,7 +68,7 @@ function Sheet({ onDong, neo, children }: { onDong: () => void; neo: React.RefOb
   );
 }
 
-function NoiDung({ cycleId, ten, kn: knDau, onDong, sheet, ...p }: Props & { kn: KnHop | null; onDong: () => void; sheet: boolean }) {
+function NoiDung({ cycleId, ten, kn: knDau, onDong, ...p }: Props & { kn: KnHop | null; onDong: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const { data, error, loading, reload } = useApi<TuanDayKq>(`/cycles/${cycleId}/tuan-day`);
   const diem: DiemThi4 = data?.diem ?? p.diem ?? { l: null, r: null, w: null, s: null };
@@ -171,6 +171,5 @@ function NoiDung({ cycleId, ten, kn: knDau, onDong, sheet, ...p }: Props & { kn:
       );
     })}
     {phanCong(nhom.map(([x]) => kh.kn[x]).find((k) => k.trong) ?? kh.kn[nhom[0][0]])}
-    {sheet && <div className="h-2" />}
   </>;
 }
