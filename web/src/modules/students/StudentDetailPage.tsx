@@ -704,7 +704,7 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
               <td className="td whitespace-nowrap">{t('Thi thật')}</td>
               <td className="td">IELTS</td>
               <td className="td whitespace-nowrap">{ngayThi}</td>
- {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} colSpan={k === 'w' ? 2 : undefined} className={k === 'w' ? `${so} !text-center` : so}>{k === 'ovr' ? diemThi(k) : oThi(k)}</td>)
+ {thiKq ? (['l', 'r', 'w', 's', 'ovr'] as const).map((k) => <td key={k} colSpan={k === 'w' ? 2 : undefined} className={so}>{k === 'ovr' ? diemThi(k) : k === 'w' ? <span className="flex justify-center">{oThi(k)}</span> : oThi(k)}</td>)
                 : <td colSpan={6} className="td" />}
               <td className={so}>{thi !== 'khong' && thi.target != null ? `Target ${fmtBand(thi.target)}` : '—'}</td>
               <td className="td"><KetQuaThi th={thi} /></td>

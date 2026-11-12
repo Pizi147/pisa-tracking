@@ -58,7 +58,7 @@ function Sheet({ onDong, neo, children }: { onDong: () => void; neo: React.RefOb
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   return createPortal(
     <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true" aria-label={t('Tuần dạy')}>
-      <div className="absolute inset-0 bg-black/50" onClick={onDong} />
+      <div className="absolute inset-0 bg-black/60" onClick={onDong} />
       <div ref={khung} tabIndex={-1} className="hop-tuan-day sheet absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto">
         <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full" style={{ background: 'var(--line-strong)' }} />
         {children}
