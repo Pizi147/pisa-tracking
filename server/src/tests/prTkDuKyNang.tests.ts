@@ -2,6 +2,12 @@
  * PHÉP KIỂM TK-DU-KY-NANG (chủ SP 12/11, đề bài `2026-11-12-tinh-hinh-hoc-tap/de-bai.md` mục 2): Tổng kết lộ trình cũ có đầu vào đủ L · R · W · S,
  * bảng MT tách W1 · W2 (lượt cũ chỉ W gộp → W ở cả hai ô, `diemW12`); Tổng kết lớp cùng tách W1 · W2.
  */
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
+
 export async function runPrTkDuKyNangTests(t: { check: any; assert: any; conn: any; P: any; TODAY: string }) {
   const { check, assert, conn, P, TODAY } = t;
   const d: any = await import('../../../shared/domain/index.ts');
@@ -26,6 +32,12 @@ export async function runPrTkDuKyNangTests(t: { check: any; assert: any; conn: a
     assert(c.w1 === 6 && c.w2 === null, `chỉ W1 → không lấy W gộp cho W2: ${JSON.stringify(c)}`);
     const e = d.diemW12(m({}));
     assert(e.w1 === null && e.w2 === null, JSON.stringify(e));
+  });
+
+  check('TKK-3 · một số liệu một cách hiện (PTA 12/11): bảng MT hồ sơ HV, Tổng kết lộ trình, Tổng kết lớp đều lấy W1 · W2 qua diemW12', () => {
+    for (const tep of ['web/src/modules/students/StudentDetailPage.tsx', 'web/src/modules/students/NganTongKet.tsx', 'server/src/loTrinh/tongKet.ts']) {
+      assert(/diemW12\(/.test(fs.readFileSync(path.join(REPO, tep), 'utf8')), `${tep} chưa dùng diemW12`);
+    }
   });
 
   check('TKK-2 · tongKetLoTrinh FT đã đóng: dauVaoKn từ bản chụp; mỗi MT có dòng W1 · W2; Tổng kết lớp luotCuoi có w1 · w2', () => thu(() => {
