@@ -316,6 +316,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
 
+**12/11 (chủ SP):** "Duyệt, merge" — #1490 PT-b (Chi nhánh · Thi thật · SOS · Ý thức; số to không hộp, Chưa có KQ hộp vàng, SOS số theo màu) → PTA check chung + merge. Phân tích + Ý thức đợt 12/11 XONG (#1483 #1486 #1487 #1488 #1490), chưa deploy.
+
 **12/11 (chủ SP, rà ảnh #1490):** "Ngoài ra, trong bảo tổng hợp SOS, vẫn để dữ liệu số theo màu nhé" → BỎ XM-7 #1481: bảng SOS (tab SOS) số ở cột SOS 1 · 2 · 3 giữ màu theo mức như V2 (hộp tô màu mức, không trung tính); chip ở tiêu đề cột giữ. Sửa trong #1490.
 
 **12/11 (chủ SP, rà ảnh #1490):** "Bảng tổng quan chi nhánh: 1. Những số to không cần để vào trong box 2. Phần chưa có kết quả số vàng thì để trong box như mockup nhé" → THAY XM-5 #1481: số lớn ở thẻ đầu trang KHÔNG vào hộp (PTA áp mọi tab Phân tích cho nhất quán, kể cả thẻ "Chưa phân công" tab GV từ #1486); ô "Chưa có KQ" vàng ở tab Chi nhánh vào hộp như mockup. Sửa trong #1490.
