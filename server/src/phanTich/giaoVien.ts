@@ -1203,7 +1203,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
         diemHv: { luot: t('Thi thật'), tuan: x.ngayThi ?? '', tam: false, overall: kq.ovr, soVoi,
           kn: (['l', 'r', 'w', 's'] as const).map((k) => ({ k: k.toUpperCase(), v: kq[k], dat: kq[k] === null || kq.target === null ? null : kq[k]! >= kq.target, cua: k === m.kn[0] })) },
         /* một em có thể có nhiều mục (nhiều kỹ năng, hai lần thi) — id theo dòng */ id: i + 1, title: x.ten, href: `/hoc-vien/${x.studentId}`, lop: x.lop,
-        sub: [x.lop, `${t('Thi thật')} ${ngay}`, `${kn} ${m.band.toFixed(1)}${m.duoi ? ` (${t('dưới Target')})` : ''}`, soVoi ? `Target ${soVoi.v.toFixed(1)}` : null,
+        sub: [x.lop, `${t('Thi thật')} ${ngay}`, `${kn} ${m.band.toFixed(1)}`, soVoi ? `Target ${soVoi.v.toFixed(1)}` : null,
           NHAN_MUC_THI[m.muc]].filter(Boolean).join(' · '),   // V2: bỏ trọng số tuần dạy
       };
     });

@@ -38,7 +38,5 @@ export const EN_THI_THAT = {
   'Số · Thi thật · theo GV': 'Number · real exam · by teacher',
   '{kn} tính nửa W': '{kn} counts as half of W',
   'dưới Target': 'below Target',
-  'KN dưới Target': 'Skill below Target',
   'OVR dưới Target → Fail; OVR đạt: kỹ năng GV dạy trên Target → Exceed, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả HV OVR đạt (cột riêng, không cộng vào Exceed · Đạt · Fail).': 'OVR below Target → Fail; OVR met: skill this teacher taught above Target → Exceed, otherwise → Pass. Skill below Target: skill band below Target, even when OVR is met (separate column, not part of Exceed · Pass · Fail).',
-  'KN dưới': 'Skill below',
 } satisfies Record<string, Dich>;

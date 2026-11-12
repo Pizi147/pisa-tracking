@@ -105,8 +105,8 @@ export function KetQuaThi(pv: PhamViPhanTich) {
         { ten: t('Không vào %'), coDinhCot: false, dau: [[t('Nhóm'), t('Em')]], hang: khac },
         { ten: t('Theo kỹ năng'), coDinhCot: false, dau: [[t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null]), t('Điểm TB')], [null, null, ...MUC.flatMap(() => [t('Số'), '%']), null]],
           hang: KN4.map((k): OXlsx[] => { const x = tk.kyNang[k]; return [NHAN_KN[k], x.hv, ...ba(x, x.hv), x.tb ?? '—']; }) },
-        ...(tk.gv ? [{ ten: t('Theo GV'), dau: [[t('Giáo viên'), t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null]), t('KN dưới Target'), null], [null, null, null, ...MUC.flatMap(() => [t('Số'), '%']), t('Số'), '%']],
-          hang: tk.gv.map((g): OXlsx[] => [g.ten, NHAN_KN[g.kn] ?? g.kn, g.hv, ...ba(g.so, g.hv), soX(g.so.duoi, 'chua-dat'), ptX(g.so.duoi, g.hv)]) }] : []),
+        ...(tk.gv ? [{ ten: t('Theo GV'), dau: [[t('Giáo viên'), t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null])], [null, null, null, ...MUC.flatMap(() => [t('Số'), '%'])]],
+          hang: tk.gv.map((g): OXlsx[] => [g.ten, NHAN_KN[g.kn] ?? g.kn, g.hv, ...ba(g.so, g.hv)]) }] : []),
       ] : []),
       { ten: t('Danh sách'), dau: [[t('Học viên'), t('Lớp'), t('Ngày thi'), t('Thi lại'), 'L', 'R', 'W', 'S', 'OVR', 'Target', t('Kết quả'), t('Bước tiếp'), t('Người chọn'), t('Ngày chọn')]], hang: danhSach },
     ]);
@@ -188,13 +188,13 @@ function BangKyNang({ tk, so }: { tk: ThongKeThiThatWeb; so: So }) {
 const cachTinhGv = (
   <>
     <p className="m-0">{t('Mỗi GV đếm em mình từng dạy kỹ năng đó có KQ trong kỳ, trừ KCK. Một em có thể tính cho nhiều GV.')}</p>
-    <p className="m-0 mt-1">{t('OVR dưới Target → Chưa đạt; OVR đạt: kỹ năng GV dạy trên Target → Vượt, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả HV OVR đạt.')}</p>
+    <p className="m-0 mt-1">{t('Điểm kỹ năng GV dạy so Target: trên = Vượt · bằng = Đạt · dưới = Chưa đạt.')}</p>
     <p className="m-0 mt-1">{t('W1 / W2: cùng band W thi thật. GV có Chưa đạt cao trước.')}</p>
   </>
 );
 /** V2 (đặc tả 11): một nhóm của dòng GV — SỐ EM là chữ chính; PT-b (mockup v19 khung 4a): % mờ cùng dòng (`.cap-so`); bấm → em của nhóm (số = số dòng). */
-const oPct = (g: DongGvThiWeb, m: MucThi | 'duoi', so: So) => {
-  const o = so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${m === 'duoi' ? t('KN dưới Target') : NHAN_MUC[m]}`, MAU_MUC[m === 'duoi' ? 'fail' : m]);
+const oPct = (g: DongGvThiWeb, m: MucThi, so: So) => {
+  const o = so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${NHAN_MUC[m]}`, MAU_MUC[m]);
   return g.so[m] > 0 ? <span className="cap-so">{o}<span>{g[m]} %</span></span> : o;
 };
 const nhomGv = (gv: DongGvThiWeb[]) => {
@@ -212,11 +212,10 @@ function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
       {!nhom.length ? <p className="m-0 p-4 text-sm text-dim">{t('Chưa có phân công kỹ năng cho HV thi trong khoảng này.')}</p> : (
         <div className="table-scroll">
           <table className="w-full" style={{ tableLayout: 'fixed', minWidth: 600 }}>
-            <colgroup><col style={{ width: 170 }} /><col style={{ width: 64 }} /><col style={{ width: 52 }} /><col style={{ width: 76 }} /><col /><col /><col /><col style={{ width: 124 }} /></colgroup>
+            <colgroup><col style={{ width: 170 }} /><col style={{ width: 64 }} /><col style={{ width: 52 }} /><col style={{ width: 76 }} /><col /><col /><col /></colgroup>
             <thead><tr>
               <th className="th">{t('Giáo viên')}</th><th className="th">{t('Kỹ năng')}</th><th className="th text-center">HV</th>
               <th className="th text-center">{t('Điểm TB')}</th>{MUC.map((m) => <th key={m} className="th text-center">{NHAN_MUC[m]}</th>)}
-              <th className="th border-l text-center" style={{ borderColor: 'var(--line)' }}>{t('KN dưới Target')}</th>
             </tr></thead>
             <tbody>
               {nhom.map((n, i) => n.hang.map((g, j) => (
@@ -226,7 +225,6 @@ function BangGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
                   <td className="td text-center">{so(g.hv, `gv:${g.userId}:${g.kn}:hv`, `HV · ${g.ten} · ${NHAN_KN[g.kn]}`)}</td>
                   <td className="td text-center tabular-nums">{g.tb === null ? '—' : fmtBand(g.tb)}</td>
                   {MUC.map((m) => <td key={m} className="td text-center">{oPct(g, m, so)}</td>)}
-                  <td className="td border-l text-center" style={{ borderColor: 'var(--line)' }}>{oPct(g, 'duoi', so)}</td>
                 </tr>
               )))}
             </tbody>
@@ -252,9 +250,9 @@ function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
           {n.hang.map((g) => (
             <div key={g.kn} className="grid grid-cols-[28px_1fr] items-center gap-2 border-t pt-1.5" style={{ borderColor: 'var(--line)' }}>
               <b className="text-sm">{NHAN_KN[g.kn]}</b>
-              <div className="grid grid-cols-4 gap-x-1 gap-y-1.5">
+              <div className="grid grid-cols-5 gap-x-1 gap-y-1.5">
                 {o('HV', so(g.hv, `gv:${g.userId}:${g.kn}:hv`, `HV · ${g.ten} · ${NHAN_KN[g.kn]}`))}
-                {o('TB', g.tb === null ? '—' : fmtBand(g.tb))}{MUC.map((m) => <Fragment key={m}>{o(NHAN_MUC[m], oPct(g, m, so))}</Fragment>)}{o(t('KN dưới'), oPct(g, 'duoi', so))}
+                {o('TB', g.tb === null ? '—' : fmtBand(g.tb))}{MUC.map((m) => <Fragment key={m}>{o(NHAN_MUC[m], oPct(g, m, so))}</Fragment>)}
               </div>
             </div>
           ))}

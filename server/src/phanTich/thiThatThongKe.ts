@@ -79,17 +79,17 @@ export function thiThatTab(p: Principal, f: LocKetQuaThi): ThiThatTabKq {
   };
 }
 
-const NHAN_MUC = { hv: 'HV', exceed: 'Vượt', dat: 'Đạt', fail: 'Chưa đạt', duoi: 'KN dưới Target' } as const;   // V2 (XM-1): Vượt · Đạt · Chưa đạt
+const NHAN_MUC = { hv: 'HV', exceed: 'Vượt', dat: 'Đạt', fail: 'Chưa đạt' } as const;   // V2 (XM-1): Vượt · Đạt · Chưa đạt
 const NHAN_KN: Record<KnDay | KnThiThat, string> = { l: 'L', r: 'R', w: 'W', w1: 'W1', w2: 'W2', s: 'S' };
 
 /**
  * GET /phan-tich/thi-that/o — panel một ô. `o`: `tong:<thi|exceed|dat|fail|khong-thi>` · `kn:<l|r|w|s>:<hv|exceed|dat|fail>` ·
- * `gv:<userId>:<l|r|w1|w2|s>:<hv|exceed|dat|fail|duoi>` (chỉ vai Theo GV — 403). Lọc CHÍNH tập sinh ra số.
+ * `gv:<userId>:<l|r|w1|w2|s>:<hv|exceed|dat|fail>` (chỉ vai Theo GV — 403). Lọc CHÍNH tập sinh ra số.
  */
 export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): {
   n: number; tieuDe: string; rows: { id: number; thiThat: DongThiThatBang }[]; bangLuot: true; kieu: 'thi-that'; knNhan: string | null; cachTinh: string; chiNhanh: string | null; dem: string | null;
 } {
-  const m = /^(?:tong:(thi|co-target|exceed|dat|fail|khong-thi|tt-exceed|tt-dat|tt-fail)|kn:([lrws]):(hv|exceed|dat|fail)|gv:(\d+):(l|r|w1|w2|s):(hv|exceed|dat|fail|duoi))$/.exec(f.o);
+  const m = /^(?:tong:(thi|co-target|exceed|dat|fail|khong-thi|tt-exceed|tt-dat|tt-fail)|kn:([lrws]):(hv|exceed|dat|fail)|gv:(\d+):(l|r|w1|w2|s):(hv|exceed|dat|fail))$/.exec(f.o);
   if (!m) throw badRequest('Số này không có trong Thi thật — có thể bộ lọc vừa đổi.');
   if (m[4] && !coTheoGv(p)) throw forbidden('Theo GV dành cho Quản lý, Quản trị và CX.');
   const ds = thiThatTrongKhoang(p, f, { boQuyen: true });
@@ -124,13 +124,13 @@ export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): {
     const user = Number(m[4]), kn = m[5] as KnDay;
     const g = thongKeThiThat(ds.map((x) => x.kq), tuanDay(ds).day).gv.find((x) => x.userId === user && x.kn === kn);
     const theoId = new Map(ds.map((x) => [x.kq.cycleId, x]));
-    rows = (g?.ds ?? []).filter((x) => m[6] === 'hv' || (m[6] === 'duoi' ? x.duoi : x.muc === m[6])).map((x) => dong(theoId.get(x.cycleId)!));
+    rows = (g?.ds ?? []).filter((x) => m[6] === 'hv' || x.muc === m[6]).map((x) => dong(theoId.get(x.cycleId)!));
     /* V2: "6 / 11 HV Chưa đạt" — số em của nhóm / em của dòng GV (không trọng số). */
     if (g && m[6] !== 'hv') dem = t('{a} / {b} HV {nhan}', { a: rows.length, b: g.hv, nhan: NHAN_MUC[m[6] as 'fail'] });
     nhan = `${NHAN_MUC[m[6] as 'hv']} · ${NHAN_KN[kn]}`;
     knNhan = NHAN_KN[kn];
   }
-  const cachTinh = m[4] ? 'Mỗi em GV từng dạy kỹ năng này tính một lần. OVR dưới Target → Chưa đạt; OVR đạt: kỹ năng trên Target → Vượt, còn lại → Đạt. KN dưới Target: điểm kỹ năng dưới Target, kể cả em OVR đạt. Trừ KCK.'
+  const cachTinh = m[4] ? 'Mỗi em GV từng dạy kỹ năng này tính một lần. Điểm kỹ năng GV dạy so Target: trên = Vượt · bằng = Đạt · dưới = Chưa đạt. Trừ KCK.'
     : m[2] ? 'Điểm kỹ năng so Target overall. Thi lại một kỹ năng: chỉ kỹ năng thi lần này. Không tính HV KCK.'
       : m[1]?.startsWith('tt-') ? 'OVR so Target: trên = Vượt · bằng = Đạt · dưới = Chưa đạt. Gồm em KCK và em đã nhận WL 2 có Target.' : 'OVR so Target: trên = Vượt · bằng = Đạt · dưới = Chưa đạt. KCK (gồm WL 2) không vào %.';
   return { n: rows.length, tieuDe: t('{nhan} · {n} HV', { nhan, n: rows.length }), rows: rows.map((r, i) => ({ id: i + 1, thiThat: r })), bangLuot: true, kieu: 'thi-that', knNhan, cachTinh, chiNhanh: tenChiNhanh(f.branchId), dem };

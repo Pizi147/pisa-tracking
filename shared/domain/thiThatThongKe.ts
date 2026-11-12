@@ -1,6 +1,6 @@
 /**
  * THỐNG KÊ THI THẬT (PR-4 THI-THAT, chủ SP 05/11 — đặc tả 2C · 2E · 2F, thay luật C10) — MỘT hàm cho tab Thi thật, Phân tích GV, hồ sơ GV.
- *   Exceed / Đạt / Fail = điểm > · = · < Target overall (OVR cho Tổng; band kỹ năng cho Từng kỹ năng). Theo GV (chủ SP 05/11): OVR quyết Đạt / Fail, Exceed khi OVR đạt và kỹ năng > Target; "KN dưới Target" riêng.
+ *   Exceed / Đạt / Fail = điểm > · = · < Target overall (OVR cho Tổng; band kỹ năng cho Từng kỹ năng). Theo GV (chủ SP 12/11): band kỹ năng GV dạy so Target — > Vượt · = Đạt · < Chưa đạt (bỏ cột "KN dưới Target").
  *   KCK và em không có Target: đếm ở "HV thi", không vào Exceed / Đạt / Fail. "Không thi" đếm riêng.
  *   Thi lại một kỹ năng (#969): chỉ kỹ năng thi lần này vào Từng kỹ năng / Theo GV; OVR vẫn vào Tổng.
  *   Theo GV: mọi GV từng dạy kỹ năng cho em (tuần dạy > 0); Phân tích V2 (chủ SP 12/11, đặc tả 11): BỎ trọng số tuần dạy — mỗi em một mục, % = số em / em của dòng.
@@ -28,15 +28,14 @@ export type KqThi = {
 export type DoanDay = { userId: number; kn: KnDay; tuan: number };
 /**
  * Một mục của dòng GV: em (lộ trình) · mức · band · tuần GV dạy / tổng tuần em học kỹ năng · trọng số.
- * Chủ SP 05/11 (sau #978): `muc` theo OVR — OVR < Target → Fail; OVR ≥ Target: band kỹ năng GV dạy > Target → Exceed, còn lại → Đạt.
- * `duoi`: band kỹ năng < Target (kể cả em OVR đạt) — cột "KN dưới Target" riêng.
+ * Chủ SP 12/11: `muc` = band kỹ năng GV dạy so Target (`mucThiGv`) — "Chưa đạt" đơn thuần là kỹ năng dưới Target (thay luật OVR 05/11).
  */
-export type MucGv = { cycleId: number; muc: MucThi; duoi: boolean; band: number; tuan: number; tongTuan: number; w: number };
-/** Mức của em ở dòng GV (chủ SP 05/11): OVR quyết Đạt / Fail; Exceed khi OVR đạt và band kỹ năng GV dạy > Target. */
-export const mucThiGv = (ovr: number, band: number, target: number): MucThi => (ovr < target ? 'fail' : band > target ? 'exceed' : 'dat');
+export type MucGv = { cycleId: number; muc: MucThi; band: number; tuan: number; tongTuan: number; w: number };
+/** Mức của em ở dòng GV (chủ SP 12/11): band kỹ năng GV dạy > · = · < Target → Vượt · Đạt · Chưa đạt. */
+export const mucThiGv = (band: number, target: number): MucThi => mucThi(band, target);
 export type DemMuc = { exceed: number; dat: number; fail: number };
-/** `exceed` · `dat` · `fail` · `duoi` (KN dưới Target) = % trên số em của dòng (V2: không trọng số); `so` = số em từng nhóm (= số dòng panel). */
-export type DongGvThi = { userId: number; kn: KnDay; hv: number; tuan: number; tb: number | null; ds: MucGv[]; so: DemMuc & { duoi: number }; duoi: number } & DemMuc;
+/** `exceed` · `dat` · `fail` = % trên số em của dòng (V2: không trọng số); `so` = số em từng nhóm (= số dòng panel). */
+export type DongGvThi = { userId: number; kn: KnDay; hv: number; tuan: number; tb: number | null; ds: MucGv[]; so: DemMuc } & DemMuc;
 export type ThongKeThiThat = {
   /** `kck` gồm WL 2. `tongThe`: Vượt · Đạt · Chưa đạt GỒM KCK (em có Target) — ô "Tổng thể". */
   tong: { thi: number; khongThi: number; kck: number; tongThe: DemMuc } & DemMuc;
@@ -83,16 +82,15 @@ export function thongKeThiThat(kq: readonly KqThi[], day: ReadonlyMap<number, re
       for (const [userId, tuan] of gop) {
         const khoa = `${userId}:${kn}`;
         (theoGv.get(khoa) ?? theoGv.set(khoa, { userId, kn, ds: [] }).get(khoa)!).ds
-          .push({ cycleId: k.cycleId, muc: mucThiGv(k.ovr!, band, k.target!), duoi: band < k.target!, band, tuan, tongTuan, w: 1 });   // V2: không trọng số
+          .push({ cycleId: k.cycleId, muc: mucThiGv(band, k.target!), band, tuan, tongTuan, w: 1 });   // V2: không trọng số
       }
     }
   }
   const tl = (ds: MucGv[], m: MucThi) => ds.filter((x) => x.muc === m).reduce((a, x) => a + x.w, 0);
   const sw = (ds: MucGv[]) => ds.reduce((a, x) => a + x.w, 0);
   const gv: DongGvThi[] = [...theoGv.values()].map(({ userId, kn, ds }) => ({
-    userId, kn, hv: ds.length, tuan: ds.reduce((a, x) => a + x.tuan, 0), tb: mot(ds.reduce((a, x) => a + x.w * x.band, 0) / sw(ds)), ds, so: { ...dem(ds.map((x) => x.muc)), duoi: ds.filter((x) => x.duoi).length },
+    userId, kn, hv: ds.length, tuan: ds.reduce((a, x) => a + x.tuan, 0), tb: mot(ds.reduce((a, x) => a + x.w * x.band, 0) / sw(ds)), ds, so: dem(ds.map((x) => x.muc)),
     exceed: pt(tl(ds, 'exceed'), sw(ds)), dat: pt(tl(ds, 'dat'), sw(ds)), fail: pt(tl(ds, 'fail'), sw(ds)),
-    duoi: pt(ds.filter((x) => x.duoi).reduce((a, x) => a + x.w, 0), sw(ds)),
   }));
   /* GV có Fail (trọng số, mọi kỹ năng) cao nhất trước; trong một GV: L R W1 W2 S. */
   const failGv = new Map<number, number>();
