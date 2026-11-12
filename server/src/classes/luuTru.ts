@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, chuanHoaMaLop, khungCua, soSanhLopLuuTru, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, chuanHoaMaLop, soSanhLopLuuTru, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
 /**
@@ -12,7 +12,7 @@ export type LopLuuTru = {
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
   /** PR-LUI-b: nút "Mở lại" cuối dòng (Quản lý của lớp / Quản trị — `class.edit`). */
   coTheMoLai: boolean;
-  /** Chủ SP 12/11: nhóm Fast Track (true) · Lớp thường (false) — theo `khungCua(scoring_mode)`. */
+  /** Chủ SP 12/11: nhóm Fast Track (true) · Lớp thường (false) — `classes.is_fast_track`. */
   ft: boolean;
 };
 export type HocVienLuuTru = {
@@ -46,7 +46,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
 
   const lopRows = scope.none ? [] : conn
     .prepare(
-      `SELECT c.id, c.code, c.branch_id, c.scoring_mode, c.programme_code, pg.name AS programme_name, b.name AS branch_name, c.finished_at,
+      `SELECT c.id, c.code, c.branch_id, c.is_fast_track, c.programme_code, pg.name AS programme_name, b.name AS branch_name, c.finished_at,
               (SELECT COUNT(DISTINCT student_id) FROM enrollments WHERE class_id = c.id) AS so_hv_tung_hoc,
               (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
                 WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn
@@ -63,7 +63,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     id: r.id, code: r.code, ma: (r.programme_code ?? null) as ProgrammeCode | null, tenChuongTrinh: r.programme_name ?? null,
     chiNhanh: r.branch_name, gvcn: r.gvcn ?? null, soHvTungHoc: r.so_hv_tung_hoc, finishedAt: r.finished_at ?? null,
     coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id }),
-    ft: khungCua(r.scoring_mode) === 'ft',
+    ft: !!r.is_fast_track,
   }));
 
   // ---------------------------------------------------------------- học viên đã lưu trữ
@@ -92,13 +92,13 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     const enrRows: any[] = [];
     theoLo(ids, (lo, ph) => {
       enrRows.push(...conn.prepare(
-        `SELECT e.student_id, c.code AS class_code, c.branch_id, c.scoring_mode, b.name AS branch_name, e.started_at, e.id
+        `SELECT e.student_id, c.code AS class_code, c.branch_id, c.is_fast_track, b.name AS branch_name, e.started_at, e.id
            FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
           WHERE e.student_id IN (${ph}) ORDER BY e.student_id, e.started_at DESC, e.id DESC`,
       ).all(...lo) as any[]);
     });
-    const lopCuoiCua = new Map<number, { code: string; branchName: string; branch_id: number; scoring_mode: string | null }>();
-    for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { code: r.class_code, branchName: r.branch_name, branch_id: r.branch_id, scoring_mode: r.scoring_mode });
+    const lopCuoiCua = new Map<number, { code: string; branchName: string; branch_id: number; is_fast_track: number }>();
+    for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { code: r.class_code, branchName: r.branch_name, branch_id: r.branch_id, is_fast_track: r.is_fast_track });
 
     /*
      * PHẠM VI ĐÚNG LUẬT `can(STUDENT_VIEW, {studentId})` (không viết lại `grantCovers` — nạp trước
@@ -111,7 +111,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     });
     napTruocPhamVi(ids);
     /* Chủ SP 12/11: theo lớp học cuối (cùng thứ tự bảng lớp), trong lớp theo tên; em chưa từng học lớp nào cuối cùng. Khoá id để thứ tự ổn định. */
-    const lopA = (s: any) => { const l = lopCuoiCua.get(s.id); return l ? sapLop({ code: l.code, branch_id: l.branch_id, scoring_mode: l.scoring_mode }) : null; };
+    const lopA = (s: any) => { const l = lopCuoiCua.get(s.id); return l ? sapLop(l) : null; };
     hocVien = archived
       .filter((s) => can(p, PERMISSIONS.STUDENT_VIEW, { studentId: s.id }))
       .sort((a, b) => {
@@ -136,4 +136,4 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
   return { lop, hocVien, phamVi: { chiNhanh: f.branchId ?? null } };
 }
 
-const sapLop = (r: { code: string; branch_id: number; scoring_mode: string | null }) => ({ code: r.code, branchId: r.branch_id, ft: khungCua(r.scoring_mode) === 'ft' });
+const sapLop = (r: { code: string; branch_id: number; is_fast_track: number }) => ({ code: r.code, branchId: r.branch_id, ft: !!r.is_fast_track });

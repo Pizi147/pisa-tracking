@@ -24,9 +24,9 @@ export async function runPrLuuTruThuTuTests(t: { check: any; assert: any; conn: 
   });
 
   check('LTT-2 · danhSachLuuTru: bảng lớp + học viên theo đúng thứ tự (kết thúc khác ngày không làm lệch)', () => thu(() => {
-    const lop = conn.prepare(`SELECT c.id, c.code, c.branch_id, c.scoring_mode FROM classes c JOIN branches b ON b.id = c.branch_id
+    const lop = conn.prepare(`SELECT c.id, c.code, c.branch_id, c.is_fast_track FROM classes c JOIN branches b ON b.id = c.branch_id
       WHERE b.code = 'MB' AND c.status = 'active' ORDER BY c.id`).all() as any[];
-    assert(lop.some((c) => c.scoring_mode === 'ratio') && lop.some((c) => c.scoring_mode !== 'ratio'), 'seed cần lớp FT + lớp thường ở MB');
+    assert(lop.some((c) => c.is_fast_track) && lop.some((c) => !c.is_fast_track), 'seed cần lớp FT + lớp thường ở MB');
     /* Ngày kết thúc ngược thứ tự id — cách cũ (finished_at DESC) cho thứ tự khác. */
     lop.forEach((c, i) => conn.prepare(`UPDATE classes SET status = 'finished', finished_at = ? WHERE id = ?`).run(`2026-0${1 + (i % 9)}-15`, c.id));
     const em = conn.prepare(`SELECT DISTINCT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
