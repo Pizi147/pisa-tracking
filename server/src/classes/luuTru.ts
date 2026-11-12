@@ -1,5 +1,5 @@
 import { db, theoLo } from '../db.ts';
-import { PERMISSIONS, chuanHoaMaLop, soSanhLop, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, chuanHoaMaLop, khungCua, soSanhLopLuuTru, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
 /**
@@ -12,6 +12,8 @@ export type LopLuuTru = {
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
   /** PR-LUI-b: nút "Mở lại" cuối dòng (Quản lý của lớp / Quản trị — `class.edit`). */
   coTheMoLai: boolean;
+  /** Chủ SP 12/11: nhóm Fast Track (true) · Lớp thường (false) — theo `khungCua(scoring_mode)`. */
+  ft: boolean;
 };
 export type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null; archivedAt: string;
@@ -44,23 +46,24 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
 
   const lopRows = scope.none ? [] : conn
     .prepare(
-      `SELECT c.id, c.code, c.branch_id, c.programme_code, pg.name AS programme_name, b.name AS branch_name, c.finished_at,
+      `SELECT c.id, c.code, c.branch_id, c.scoring_mode, c.programme_code, pg.name AS programme_name, b.name AS branch_name, c.finished_at,
               (SELECT COUNT(DISTINCT student_id) FROM enrollments WHERE class_id = c.id) AS so_hv_tung_hoc,
               (SELECT u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
                 WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn
          FROM classes c JOIN branches b ON b.id = c.branch_id LEFT JOIN programmes pg ON pg.code = c.programme_code
-        WHERE ${whereLop.join(' AND ')} ORDER BY c.finished_at DESC, c.code`,
+        WHERE ${whereLop.join(' AND ')} ORDER BY c.id`,
     )
     .all(...paramsLop) as any[];
-  /* T2: tìm theo mã chuẩn hoá (nhận `MB-FT 101`, `ft101`); cùng ngày kết thúc thì xếp lớp theo số tự nhiên (K2-08). */
+  /* T2: tìm theo mã chuẩn hoá (nhận `MB-FT 101`, `ft101`). Chủ SP 12/11: Fast Track → Lớp thường, trong nhóm số lớp lớn nhất đứng đầu (`soSanhLopLuuTru`). */
   const qMa = chuanHoaMaLop(q);
   const lop: LopLuuTru[] = lopRows
     .filter((r) => !q || (!!qMa && chuanHoaMaLop(r.code).includes(qMa)))
-    .sort((a, b) => String(b.finished_at ?? '').slice(0, 10).localeCompare(String(a.finished_at ?? '').slice(0, 10)) || soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }))
+    .sort((a, b) => soSanhLopLuuTru(sapLop(a), sapLop(b)) || a.id - b.id)
     .map((r) => ({
     id: r.id, code: r.code, ma: (r.programme_code ?? null) as ProgrammeCode | null, tenChuongTrinh: r.programme_name ?? null,
     chiNhanh: r.branch_name, gvcn: r.gvcn ?? null, soHvTungHoc: r.so_hv_tung_hoc, finishedAt: r.finished_at ?? null,
     coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id }),
+    ft: khungCua(r.scoring_mode) === 'ft',
   }));
 
   // ---------------------------------------------------------------- học viên đã lưu trữ
@@ -79,7 +82,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     .prepare(`SELECT s.id, s.student_code, s.full_name, s.archived_at, s.status,
        (SELECT cy.route FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route,
        (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route_ten
-       FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.archived_at DESC`)
+       FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.id`)
     .all(...paramsHv) as any[];
 
   let hocVien: HocVienLuuTru[] = [];
@@ -89,13 +92,13 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     const enrRows: any[] = [];
     theoLo(ids, (lo, ph) => {
       enrRows.push(...conn.prepare(
-        `SELECT e.student_id, c.code AS class_code, b.name AS branch_name, e.started_at, e.id
+        `SELECT e.student_id, c.code AS class_code, c.branch_id, c.scoring_mode, b.name AS branch_name, e.started_at, e.id
            FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
           WHERE e.student_id IN (${ph}) ORDER BY e.student_id, e.started_at DESC, e.id DESC`,
       ).all(...lo) as any[]);
     });
-    const lopCuoiCua = new Map<number, { code: string; branchName: string }>();
-    for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { code: r.class_code, branchName: r.branch_name });
+    const lopCuoiCua = new Map<number, { code: string; branchName: string; branch_id: number; scoring_mode: string | null }>();
+    for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { code: r.class_code, branchName: r.branch_name, branch_id: r.branch_id, scoring_mode: r.scoring_mode });
 
     /*
      * PHẠM VI ĐÚNG LUẬT `can(STUDENT_VIEW, {studentId})` (không viết lại `grantCovers` — nạp trước
@@ -107,8 +110,14 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
       for (const r of conn.prepare(`SELECT student_id, cycle_id FROM ban_chup_lo_trinh WHERE student_id IN (${ph2}) ORDER BY id`).all(...lo) as any[]) cycleCuoi.set(r.student_id, r.cycle_id);
     });
     napTruocPhamVi(ids);
+    /* Chủ SP 12/11: theo lớp học cuối (cùng thứ tự bảng lớp), trong lớp theo tên; em chưa từng học lớp nào cuối cùng. Khoá id để thứ tự ổn định. */
+    const lopA = (s: any) => { const l = lopCuoiCua.get(s.id); return l ? sapLop({ code: l.code, branch_id: l.branch_id, scoring_mode: l.scoring_mode }) : null; };
     hocVien = archived
       .filter((s) => can(p, PERMISSIONS.STUDENT_VIEW, { studentId: s.id }))
+      .sort((a, b) => {
+        const x = lopA(a); const y = lopA(b);
+        return (x && y ? soSanhLopLuuTru(x, y) : Number(!x) - Number(!y)) || String(a.full_name).localeCompare(String(b.full_name), 'vi') || a.id - b.id;
+      })
       .map((s) => ({
         id: s.id, studentCode: s.student_code, fullName: s.full_name,
         lopCuoi: lopCuoiCua.get(s.id)?.code ?? null, chiNhanh: lopCuoiCua.get(s.id)?.branchName ?? null,
@@ -126,3 +135,5 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
 
   return { lop, hocVien, phamVi: { chiNhanh: f.branchId ?? null } };
 }
+
+const sapLop = (r: { code: string; branch_id: number; scoring_mode: string | null }) => ({ code: r.code, branchId: r.branch_id, ft: khungCua(r.scoring_mode) === 'ft' });

@@ -56,7 +56,8 @@ export function tachSoLop(code: string, maCn: string): string | null {
 }
 export type LopSapXep = { code: string; branchId?: number | null };
 /** Chỉ để SẮP XẾP hiển thị — đọc ký hiệu từ tên là được ở đây (không dùng kết quả này cho luật, K2-24). */
-export function soSanhLop(a: LopSapXep, b: LopSapXep): number {
+/** `soGiam`: số lớp lớn trước (Lưu trữ — chủ SP 12/11); chi nhánh, ký hiệu vẫn theo thứ tự thường. */
+export function soSanhLop(a: LopSapXep, b: LopSapXep, soGiam = false): number {
   if ((a.branchId ?? 0) !== (b.branchId ?? 0)) return (a.branchId ?? 0) - (b.branchId ?? 0);
   const khoa = (x: LopSapXep) => {
     const cn = x.code.trim().split(/[\s-]+/)[0] ?? '';
@@ -66,8 +67,12 @@ export function soSanhLop(a: LopSapXep, b: LopSapXep): number {
       : { cn, bac: thuTuKyHieu(r.kh), so: parseInt(r.so, 10), chu: r.so.replace(/^\d+/, ''), kh: r.kh as string };
   };
   const x = khoa(a); const y = khoa(b);
-  return x.cn.localeCompare(y.cn) || x.bac - y.bac || (x.kh ?? '').localeCompare(y.kh ?? '') || x.so - y.so || x.chu.localeCompare(y.chu) || a.code.localeCompare(b.code);
+  const so = soGiam ? y.so - x.so || y.chu.localeCompare(x.chu) : x.so - y.so || x.chu.localeCompare(y.chu);
+  return x.cn.localeCompare(y.cn) || x.bac - y.bac || (x.kh ?? '').localeCompare(y.kh ?? '') || so || a.code.localeCompare(b.code);
 }
+/** LƯU TRỮ (chủ SP 12/11): nhóm Fast Track trước Lớp thường; trong nhóm số lớp lớn nhất đứng đầu. Cùng thứ tự cho bảng lớp + học viên (theo lớp cuối). */
+export const soSanhLopLuuTru = (a: LopSapXep & { ft: boolean }, b: LopSapXep & { ft: boolean }): number =>
+  Number(b.ft) - Number(a.ft) || soSanhLop(a, b, true);
 export type DoiTenCu = { moi: string } | { loi: 'khong-tien-to' | 'khong-theo-mau' | 'lech-chuong-trinh' };
 /** T2: ký hiệu trên tên phải KHỚP cột chương trình/lộ trình — lệch thì không đoán, đưa vào danh sách hỏi chủ sản phẩm. */
 export function tenMoiChoLopCu(l: { code: string; branchCode: string; programmeCode: string | null; route: string | null }): DoiTenCu {

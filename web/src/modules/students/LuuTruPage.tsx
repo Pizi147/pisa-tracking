@@ -22,6 +22,8 @@ type LopLuuTru = {
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
   /** PR-LUI-b: nút "Mở lại" (Quản lý của lớp / Quản trị). */
   coTheMoLai: boolean;
+  /** Chủ SP 12/11: nhóm Fast Track · Lớp thường. */
+  ft: boolean;
 };
 type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null;
@@ -186,7 +188,14 @@ export default function LuuTruPage() {
       {data && tab === 'lop' && (
         data.lop.length === 0
           ? <Card><Empty title={loc ? t('Không có lớp khớp "{loc}"', { loc }) : t('Chưa có lớp nào kết thúc')} /></Card>
-          : <Bang ten={t('Lớp đã kết thúc')} khoa={(l) => l.id} hang={data.lop}
+          /* Chủ SP 12/11: hai nhóm Fast Track → Lớp thường (dải tên nhóm + số lớp, mẫu Cấu hình › Chương trình); máy chủ đã xếp số lớp lớn trước. */
+          : [{ key: 'ft', ten: 'Fast Track', ds: data.lop.filter((l) => l.ft) }, { key: 'thuong', ten: t('Lớp thường'), ds: data.lop.filter((l) => !l.ft) }]
+            .filter((g) => g.ds.length > 0).map((g) => (
+            <section key={g.key} aria-labelledby={`luu-tru-nhom-${g.key}`} className="space-y-1.5">
+              <h2 id={`luu-tru-nhom-${g.key}`} className="m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100">
+                {g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{t('{n} lớp', { n: g.ds.length })}</span>
+              </h2>
+            <Bang ten={`${t('Lớp đã kết thúc')} · ${g.ten}`} khoa={(l) => l.id} hang={g.ds}
               cot={[
                 { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 180 },
                 { key: 'trinhDo', nhan: t('Trình độ'), kieu: 'chu', rong: 180 },
@@ -211,6 +220,8 @@ export default function LuuTruPage() {
                   </span>
                 );
               }} />
+            </section>
+          ))
       )}
       {data && tab === 'hv' && (
         data.hocVien.length === 0

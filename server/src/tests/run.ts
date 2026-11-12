@@ -9907,6 +9907,9 @@ await runPrCvTabTests({ check, assert, P, TODAY } as any);
 // ==================================================================== SUA-LUU-TRU c (chủ SP 07/11: nút Đổi bước tiếp tại chỗ · Hoàn tác về lựa chọn cũ)
 const { runPrSuaLuuTruCTests } = bocTep('prSuaLuuTruC', await import('./prSuaLuuTruC.tests.ts'));
 await runPrSuaLuuTruCTests({ check, assert, assertThrows, conn, P, TODAY } as any);
+// ==================================================================== LUU-TRU-THU-TU (chủ SP 12/11: Lưu trữ FT → Lớp thường, số lớp lớn trước; HV theo lớp cuối)
+const { runPrLuuTruThuTuTests } = bocTep('prLuuTruThuTu', await import('./prLuuTruThuTu.tests.ts'));
+await runPrLuuTruThuTuTests({ check, assert, conn, P } as any);
 // ==================================================================== HOTFIX-MO-KHOA (chủ SP 07/11: mở mọi chặn cứng — Đổi bước tiếp, Hoàn tác, thi thật; lược đồ bản chính ACTION / KEY)
 const { runPrHotfixMoKhoaTests } = bocTep('prHotfixMoKhoa', await import('./prHotfixMoKhoa.tests.ts'));
 await runPrHotfixMoKhoaTests({ check, assert, assertThrows, conn, P, TODAY } as any);
