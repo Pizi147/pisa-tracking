@@ -30,8 +30,9 @@ function chunks<T>(list: T[]): T[][] {
 }
 const marks = (n: number) => Array.from({ length: n }, () => '?').join(',');
 
-type Muc = { vp: Set<number>; chua: Set<number>; hv: Set<number>; truoc: number };
-const mucMoi = (): Muc => ({ vp: new Set(), chua: new Set(), hv: new Set(), truoc: 0 });
+/* PT-b (mockup v19 khung 6a): `qua` = phần Chưa xử lý đã quá hạn — ô Chưa xử lý đỏ ⚠ thay vàng. Cùng lần đọc cửa trạng thái, không câu thêm. */
+type Muc = { vp: Set<number>; chua: Set<number>; qua: Set<number>; hv: Set<number>; truoc: number };
+const mucMoi = (): Muc => ({ vp: new Set(), chua: new Set(), qua: new Set(), hv: new Set(), truoc: 0 });
 
 function tinh(p: Principal, f: FilterYThuc) {
   const scope = statScope(p, f.branchId ?? null);
@@ -86,8 +87,9 @@ function tinh(p: Principal, f: FilterYThuc) {
     const l = lopMuc.get(k) ?? mucMoi(); lopMuc.set(k, l);
     const c = conMuc.get(keCon) ?? mucMoi(); conMuc.set(keCon, c);
     if (r.occurred_on < f.from) { l.truoc += 1; c.truoc += 1; continue; }
-    const chua = MO.has(trangVp.get(r.student_id)?.viPham.get(r.id)?.t ?? '');
-    for (const m of [l, c]) { m.vp.add(r.id); m.hv.add(r.student_id); if (chua) m.chua.add(r.id); }
+    const tt = trangVp.get(r.student_id)?.viPham.get(r.id)?.t ?? '';
+    const chua = MO.has(tt);
+    for (const m of [l, c]) { m.vp.add(r.id); m.hv.add(r.student_id); if (chua) m.chua.add(r.id); if (tt === 'qua_han') m.qua.add(r.id); }
   }
 
 
@@ -129,7 +131,7 @@ function tinh(p: Principal, f: FilterYThuc) {
     const lanXuLyMoi = moiHon ? { ten: nhanLoaiXuLy(moiHon.kind, moiHon.customName), nhan: XU_LY_STATUS_LABEL[moiHon.status] } : null;
     hvRows.push({
       studentId: sid, ten: tenHv.get(sid) ?? `#${sid}`, email: emailHv.get(sid) ?? null, lop: lopCuaHv.get(sid) ?? null,
-      viPham: trongKy.length, chuaXuLy: chua.length,
+      viPham: trongKy.length, chuaXuLy: chua.length, quaHan: chua.filter((v) => em.viPham.get(v.id)?.t === 'qua_han').length,
       bienPhapGanNhat: gan ? nhanLoaiXuLy(gan.kind, gan.customName) : null, ngay: gan?.performedOn ?? null,
       nhom: em.nhom, bac: bacHoacNgoaiThang(em.bac, em.xuLy), lanXuLyMoi,
       bacKe: nhanLoaiXuLy(em.keTiep.kind),
@@ -150,12 +152,12 @@ function dongLop(r: Tinh, k: number): DongLopViPham {
     .filter((x) => x.m && x.m.vp.size > 0)
     .map((x): DongLopViPham => ({
       khoa: `lop:${k}|${x.cat}`, classId: k || null, nhan: VIOLATION_CATEGORY_LABEL[x.cat as ViolationCategory],
-      viPham: x.m!.vp.size, chuaXuLy: x.m!.chua.size, hvCoViPham: x.m!.hv.size, siSo: null,
+      viPham: x.m!.vp.size, chuaXuLy: x.m!.chua.size, quaHan: x.m!.qua.size, hvCoViPham: x.m!.hv.size, siSo: null,
       soVoiTruoc: x.m!.vp.size - x.m!.truoc, gvcn: null,
     }));
   return {
     khoa: `lop:${k}`, classId: k || null, nhan: r.maLop.get(k) ?? 'Không rõ lớp',
-    viPham: m.vp.size, chuaXuLy: m.chua.size, hvCoViPham: m.hv.size, siSo: k ? (r.siSo.get(k) ?? null) : null,
+    viPham: m.vp.size, chuaXuLy: m.chua.size, quaHan: m.qua.size, hvCoViPham: m.hv.size, siSo: k ? (r.siSo.get(k) ?? null) : null,
     soVoiTruoc: m.vp.size - m.truoc, gvcn: r.gvcn.get(k) ?? null, con,
   };
 }

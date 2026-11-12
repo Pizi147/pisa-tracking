@@ -68,6 +68,8 @@ export function BaoCao(pv: PhamViPhanTich) {
     if (v == null) return <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span>;
     return <OSo giaTri={x!.mau} nhan={`${v} %`} nguon={nguon} tieuDe={tieuDe} className={nho ? '' : 'so-chinh'} vung={nho ? 'bang' : undefined} />;
   };
+  /* PT-b (mockup v19 khung 3a): hộp % + phân số mờ cùng dòng, thẳng cột (`.cap-so`). */
+  const capTl = (x: TyLeCn | null, o: ReactNode) => (x && x.mau ? <span className="cap-so">{o}<span>{x.dat}/{x.mau}</span></span> : o);
   const mauSo = (x: TyLeCn | null, dv: string) => (x && x.mau ? <span className={`ml-1.5 text-xs font-normal tabular-nums ${MO}`}>{x.dat}/{x.mau}{dv && ` ${dv}`}</span> : null);
   const thi = (h: DongChiNhanhV2) => {
     if (!h.thi) return <span className="text-slate-500" title={t('Không em nào thi trong kỳ')}>—</span>;
@@ -103,7 +105,7 @@ export function BaoCao(pv: PhamViPhanTich) {
               <span className="grid min-w-0">
                 <i className="not-italic text-sm font-medium text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Em thi')}</i>
                 <b className="so-thi text-[40px] font-bold leading-[1.15] tabular-nums max-sm:text-[28px]"><OSo giaTri={x.emThi} nguon={nThi(tong, 'tong:thi')} tieuDe={t('Em thi')} className="so-chinh" /></b>
-                <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} /> · {t('hiện tại')}</span>
+                <span className="text-sm text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Chưa có KQ')} {x.chuaCoKq ? <OSo giaTri={x.chuaCoKq} nguon={nMoi('chua-co-kq')} tieuDe={t('Chưa có KQ')} className="text-soon" /> : <span className="o-so-tinh">0</span>} · {t('hiện tại')}</span>
               </span>
             </span>
           </SoTo>
@@ -131,14 +133,15 @@ export function BaoCao(pv: PhamViPhanTich) {
 
   /* ---- bảng Theo lớp / Theo chi nhánh ---- */
   const cot: CotBang[] = [
-    { key: 'ten', nhan: lop ? t('Lớp') : t('Chi nhánh'), kieu: 'ten', rong: 180 },
-    { key: 'hv', nhan: t('HV đang học'), kieu: 'so' },
+    /* PT-b (mockup v19 khung 3a): Lớp 22 %, cột số bằng nhau đủ chỗ hộp % + phân số một dòng. */
+    { key: 'ten', nhan: lop ? t('Lớp') : t('Chi nhánh'), kieu: 'ten', rong: 160 },
+    { key: 'hv', nhan: t('HV đang học'), kieu: 'so', rong: 120 },
     ...(ft ? [
-      { key: 'datMt', nhan: t('Đạt MT'), dv: t('HV'), kieu: 'so' as const },
-      { key: 'tienBo', nhan: t('Tiến bộ'), dv: t('lượt'), kieu: 'so' as const },
+      { key: 'datMt', nhan: t('Đạt MT'), dv: t('HV'), kieu: 'so' as const, rong: 150 },
+      { key: 'tienBo', nhan: t('Tiến bộ'), dv: t('lượt'), kieu: 'so' as const, rong: 150 },
       { key: 'thi', nhan: t('Thi thật'), goiY: t('Vượt · Đạt · Chưa đạt Target, trừ KCK'), kieu: 'so' as const, rong: 150 },
     ] : [
-      { key: 'datTest', nhan: t('Đạt Test'), dv: t('bài'), kieu: 'so' as const },
+      { key: 'datTest', nhan: t('Đạt Test'), dv: t('bài'), kieu: 'so' as const, rong: 150 },
       ...CK.map(([nhan, cot]): CotBang => ({ key: cot, nhan: nhan === 'Đạt' ? t('Đạt') : nhan, nhom: t('Cuối khoá'), kieu: 'so' })),
     ]),
   ];
@@ -148,10 +151,10 @@ export function BaoCao(pv: PhamViPhanTich) {
       case 'ten': return laTong ? <b>{h.ten || d.tenChiNhanh}</b> : lop ? <Link className="lk-t ten-ho-so" to={`/hoc-vien/lop/${h.id}`}>{h.ten}</Link>
         : <button type="button" className="lk-t ten-ho-so border-0 bg-transparent p-0 text-left" onClick={() => chonCn(h.id)}>{h.ten}</button>;
       case 'hv': return <OSo giaTri={h.hv} nguon={nHv(h.khoa)} tieuDe={`${t('Học viên đang học')} · ${h.ten || d.tenChiNhanh || ''}`} vung="bang" />;
-      case 'datMt': return <span className="whitespace-nowrap">{phanTram(h.datMt, nBc(h, 'dat-mt'), `${t('Đạt MT')} · ${h.ten || d.tenChiNhanh || ''}`, true)}{mauSo(h.datMt, '')}</span>;
-      case 'tienBo': return <span className="whitespace-nowrap">{phanTram(h.tienBo, nBc(h, 'tien-bo:tat-ca'), `${t('Tiến bộ')} · ${h.ten || d.tenChiNhanh || ''}`, true)}{mauSo(h.tienBo, '')}</span>;
+      case 'datMt': return capTl(h.datMt, phanTram(h.datMt, nBc(h, 'dat-mt'), `${t('Đạt MT')} · ${h.ten || d.tenChiNhanh || ''}`, true));
+      case 'tienBo': return capTl(h.tienBo, phanTram(h.tienBo, nBc(h, 'tien-bo:tat-ca'), `${t('Tiến bộ')} · ${h.ten || d.tenChiNhanh || ''}`, true));
       case 'thi': return thi(h);
-      case 'datTest': return <span className="whitespace-nowrap">{phanTram(h.datTest, nTest(h, 'dat-test'), `${t('Đạt Test')} · ${h.ten || d.tenChiNhanh || ''}`, true)}{mauSo(h.datTest, '')}</span>;
+      case 'datTest': return capTl(h.datTest, phanTram(h.datTest, nTest(h, 'dat-test'), `${t('Đạt Test')} · ${h.ten || d.tenChiNhanh || ''}`, true));
       default: {
         const i = CK.findIndex(([, k]) => k === c.key);
         if (i < 0) return null;
@@ -204,7 +207,7 @@ export function BaoCao(pv: PhamViPhanTich) {
   const trang = lop ? pt6.cat(d.hang) : d.hang;
   const bang = !d.hang.length ? <RongDau chu={lop ? t('Chi nhánh chưa có lớp đang học ở khung này') : t('Chưa có chi nhánh nào trong phạm vi')} nut={<NutXemToanBo />} /> : (
     <>
-      <Bang ten={lop ? t('Theo lớp') : t('Theo chi nhánh')} cot={cot} hang={[...trang, tong]} khoa={(h) => h.khoa} oCua={oCua} khung={false} chat deu theLuoi
+      <Bang ten={lop ? t('Theo lớp') : t('Theo chi nhánh')} cot={cot} hang={[...trang, tong]} khoa={(h) => h.khoa} oCua={oCua} khung={false} deu theLuoi
         lopHang={(h) => (h.khoa === 'tong' ? 'tong' : '')} />
       {lop && <div className="border-t px-3" style={{ borderColor: 'var(--line)' }}><PhanTrang {...pt6.thanh} /></div>}
     </>
@@ -241,14 +244,14 @@ function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; 
   const oCua = (h: H, c: CotBang): ReactNode => {
     if (c.key === 'kn') return <span className="whitespace-nowrap"><b className="text-slate-100">{tenMonNgan(null, h.skill)}</b> <span className={`text-[13px] font-normal ${MO}`}>{t('{n} lượt', { n: h.tong })}</span></span>;
     const n = so(h, c.key);
-    return <span className="whitespace-nowrap"><OSo giaTri={n} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
-      className={!n ? '' : c.key === 'tang' ? 'text-kq-vuot' : c.key === 'giam' ? 'text-kq-duoi' : ''} />{h.tong ? <span className={`ml-1.5 text-xs tabular-nums ${MO}`}>{Math.round((100 * n) / h.tong)} %</span> : null}</span>;
+    return <span className={h.tong ? 'cap-so' : 'whitespace-nowrap'}><OSo giaTri={n} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
+      className={!n ? '' : c.key === 'tang' ? 'text-kq-vuot' : c.key === 'giam' ? 'text-kq-duoi' : ''} />{h.tong ? <span>{Math.round((100 * n) / h.tong)} %</span> : null}</span>;
   };
   return (
     <section className="card overflow-clip">
       <DauThe ten={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')} />
       {!hang.length ? <RongDau chu={t('Chưa có lượt nào có mốc MT trước trong kỳ')} nut={<NutXemToanBo />} />
-        : <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu chat khung={false} />}
+        : <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu khung={false} />}
     </section>
   );
 }

@@ -40,7 +40,8 @@ function luuCotHien(s: Set<NhomCot>) {
 }
 
 /** Cột cần chú ý — chỉ đổi màu chữ (G-4: không badge). Thiếu điểm xám đậm (PR-HK2: thay cột Tạm thời cũ). */
-const MAU_COT: Partial<Record<string, string>> = { chuaDu: 'text-muted' };
+/* PT-b (mockup v19 khung 5a): Thiếu điểm, Chưa chốt PA = "đang chờ" → hộp vàng (`text-soon`, CSS `.o-so-hop`). */
+const MAU_COT: Partial<Record<string, string>> = { chuaDu: 'text-soon', choDuyet: 'text-soon' };
 
 /**
  * MÀU Ô KẾT QUẢ TEST (N-1b, Q23; PR-HK2 Q1): số Đạt / SOS 1–3 là BADGE VUÔNG (`CHIP_VUONG`, dáng chip SOS: chữ + nền nhạt + viền) khi có số —
@@ -123,7 +124,9 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   /* Phân tích V2 (đặc tả 4, 11; mockup #1400 B1–B2): SOS không có "Đạt" (Đạt kỳ vọng ở Chi nhánh) — FT bỏ cột Đạt; lớp thường giữ phần chưa đạt + Thiếu điểm
      (bỏ Progress "Đạt hết" và nhóm Final Test → Đạt Test / Cuối khoá ở Chi nhánh). Excel Test + SOS giữ cột cũ tới PR Excel (XM-4). */
   const BO_SOS = new Set(['dat', 'gk-dat', 'ck-dat', 'ck-60', 'ck-50', 'ck-duoi50']);
-  const allCols = cotTheoDuLieu(cotTongHopFor(ct), data?.tongCoDot).filter((c) => !BO_SOS.has(c.khoa));   // OV-11h: nhóm Checkpoint chỉ khi bảng có PET / KET
+  /* PT-b (mockup v19 khung 5a): cột ghép "HV - Case" tách thành hai cột có sẵn HV có Case · Case (mỗi ô một số). Excel giữ cột cũ (`bangXuatTongHop`). */
+  const allCols = cotTheoDuLieu(cotTongHopFor(ct), data?.tongCoDot).filter((c) => !BO_SOS.has(c.khoa))
+    .flatMap((c) => (c.gop ? cotSoLieu(ct).filter((x) => c.gop!.includes(x.khoa)) : [c]));   // OV-11h: nhóm Checkpoint chỉ khi bảng có PET / KET
   const cols = allCols.filter((c) => cotHien.has(c.nhom));
   /*
    * Tầng đầu đề trên: FT theo nhóm cột (Kết quả · Dưới kỳ vọng · HV · Xử lý). Lớp thường (PR-Pb2-a, P4) theo nhóm con — Giữa khoá (theo môn) ·
@@ -146,7 +149,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
   const KE_TRAI = 'border-l border-[color:var(--line-strong)]';
   /** Bề rộng cột (px, bảng cố định bề ngang). FT theo mockup V8: Kết quả 84 · kỹ năng 62 · Xử lý 117. Lớp thường giữ 68 / 96 (22 cột ≤ 1398 px). */
   /* V2 ("cân đối cột hàng"): cột cùng nhóm cùng rộng — Kết quả 84 · Dưới kỳ vọng 72 · Xử lý 116; lớp thường mọi cột số 120. */
-  const rongCot = (c: CotTongHop) => (laThuong ? 120 : c.nhom === 'xu-ly' ? 116 : c.nhom === 'ket-qua' ? 84 : 72);
+  /* PT-b (mockup v19): Xử lý 4 cột × 96 (HV có Case · Case tách). */
+  const rongCot = (c: CotTongHop) => (laThuong ? 120 : c.nhom === 'xu-ly' ? 96 : c.nhom === 'ket-qua' ? 84 : 72);
+  /* PT-b (XM-7): chip SOS ở tiêu đề cột (ô dưới là hộp số trung tính). */
+  const nhanCot = (c: CotTongHop) => (!laThuong && (c.khoa === 'sos1' || c.khoa === 'sos2' || c.khoa === 'sos3')
+    ? <span className={`${CHIP_VUONG} px-1.5 ${MAU_O[c.khoa]}`}>{dich(c.nhan(ct))}</span> : dich(c.nhan(ct)));
 
   /* Thẻ 375: một khối mỗi nhóm (lớp thường: theo nhóm con; Bài + Thiếu điểm chung khối Kết quả). */
   const nhomThe: { nhan: string; cols: CotTongHop[] }[] = [];
@@ -226,7 +233,9 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     if (v <= 0) return soBam(row, col);
     /* OV-12d: Chờ duyệt kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
     const quaHan = col.khoa === 'choDuyet' ? row.o.choDuyetQuaHan ?? 0 : 0;
-    if (!mau) return <span className={MAU_COT[col.khoa] ?? ''}>{soBam(row, col)}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={t('{quaHan} quá hạn', { quaHan })}>⚠{quaHan}<span className="sr-only"> {t('quá hạn')}</span></span>}</span>;
+    /* Chủ SP rà #1490 (bỏ XM-7): FT ô SOS 1 · 2 · 3 là hộp tô màu theo mức (CSS `.so-m1…3`), cùng cỡ hộp số khác; lớp thường giữ chip. */
+    if (mau && !laThuong && (col.khoa === 'sos1' || col.khoa === 'sos2' || col.khoa === 'sos3')) return soBam(row, col, undefined, `so-m${col.khoa.slice(3)}`);
+    if (!mau || !laThuong) return <span>{soBam(row, col, undefined, MAU_COT[col.khoa])}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={t('{quaHan} quá hạn', { quaHan })}>⚠{quaHan}<span className="sr-only"> {t('quá hạn')}</span></span>}</span>;
     return <span className={`${CHIP_SO} ${MAU_O[mau]}`}>{soBam(row, col, undefined, SO_TRONG_CHIP)}</span>;
   };
 
@@ -262,20 +271,20 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     if (row.con?.length) {
       return (
         <HangNhom key={row.khoa} mo={open.has(row.khoa)} onMo={() => toggleOpen(row.khoa)} nhan={`${row.nhan} — ${NHAN_MO_CON[theo]}`}
-          tieuDe={tenDong(row)} className={`${DINH_TRAI} [&>td]:h-11`}>
+          tieuDe={tenDong(row)} className={`${DINH_TRAI} [&>td]:h-[52px]`}>
           {oSo(row)}
         </HangNhom>
       );
     }
     return (
-      <tr key={row.khoa} className={`hang-lon dong ${DINH_TRAI} [&>td]:h-11`}>
+      <tr key={row.khoa} className={`hang-lon dong ${DINH_TRAI} [&>td]:h-[52px]`}>
         <td className="px-3"><span className="flex min-w-0 items-center gap-2"><span className="inline-block h-4 w-4 shrink-0" aria-hidden />{tenDong(row)}</span></td>
         {oSo(row)}
       </tr>
     );
   };
   const dongCon = (row: DongTongHop) => (
-    <HangCon key={row.khoa} className={`${DINH_TRAI} [&>td]:h-11`}>
+    <HangCon key={row.khoa} className={`${DINH_TRAI} [&>td]:h-[46px]`}>
       <td><span className="block truncate">{row.nhan}</span></td>
       {oSo(row)}
     </HangCon>
@@ -288,7 +297,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       <div className="grid gap-x-2 gap-y-1.5" style={{ gridTemplateColumns: `repeat(${g.cols.length <= 5 ? g.cols.length : 3}, minmax(0, 1fr))` }}>
         {g.cols.map((c) => (
           <span key={c.khoa} className="grid min-w-0 gap-px">
-            <span className="truncate text-xs font-medium text-[color:var(--text-dim)]">{dich(c.nhan(ct))}</span>
+            <span className="truncate text-xs font-medium text-[color:var(--text-dim)]">{nhanCot(c)}</span>
             <span className="text-[15px] font-bold tabular-nums">{oCell(row, c)}</span>
           </span>
         ))}
@@ -343,9 +352,9 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
       : (['sos1', 'sos2', 'sos3'] as const).map((k, i): ChiSo => ({
         ten: <span className={`${CHIP_VUONG} px-1.5 ${MAU_O[k]}`}>SOS {i + 1}</span>, gt: soTong(k), nho: luot ? `${Math.round(((tong[k] ?? 0) * 100) / luot)} %` : undefined, mau: t('trên lượt MT'),
       }))),
-    { ten: t('Thiếu điểm'), gt: soTong('chuaDu'), mau: laThuong ? undefined : t('gồm SOS tạm') },
+    { ten: t('Thiếu điểm'), gt: soTong('chuaDu', 'text-soon'), mau: laThuong ? undefined : t('gồm SOS tạm') },
     /* PT-LOP-THUONG (mockup v13 B): lớp thường bỏ thẻ "Chưa chốt PA" — PA xem ở tab Hiệu quả PA. */
-    ...(laThuong ? [] : [{ ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet'),
+    ...(laThuong ? [] : [{ ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet', 'text-soon'),
       nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) }]),
   ];
   const SKEL_SO = Array.from({ length: laThuong ? 4 : 6 }, (): ChiSo => ({
@@ -433,7 +442,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
                     <tr>
                       {cols.filter((c) => !donCot(khoaNhom(c))).map((c) => (
                         <Th key={c.khoa} align="center" hint={c.goiY && dich(c.goiY)} className={`h-9 px-2.5 py-0 ${laThuong ? 'whitespace-normal align-bottom leading-tight' : 'whitespace-nowrap'} ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>
-                          {dich(c.nhan(ct))}
+                          {nhanCot(c)}
                         </Th>
                       ))}
                     </tr>
@@ -445,7 +454,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
                         {open.has(r.khoa) && r.con?.map((c) => dongCon(c))}
                       </Fragment>
                     ))}
-                    <tr className="border-t [&>td]:h-11" style={{ borderColor: 'var(--line-strong)' }}>
+                    <tr className="border-t [&>td]:h-[52px]" style={{ borderColor: 'var(--line-strong)' }}>
                       <td className="td sticky-col font-bold text-[color:var(--text)] sm:whitespace-nowrap">{tongNhan}</td>
                       {cols.map((c) => (
                         <td key={c.khoa} className={`td whitespace-nowrap text-center tabular-nums font-bold ${dauNhom.has(c.khoa) ? KE_TRAI : ''}`}>{tongDong && oCell(tongDong, c)}</td>
