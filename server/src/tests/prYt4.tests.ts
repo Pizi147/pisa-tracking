@@ -950,7 +950,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
     assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage && ids\.length/.test(s)
-      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\{d\.canManage && \(\s*<>/.test(s), 'ẩn theo quyền');
+      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ label: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {
@@ -965,11 +965,10 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     /* Y-THUC-V2 (mockup K8b): việc yt_xem mở panel gọn PanelXemViPham (dải ①②③ + vi phạm mới), không nhét cả tab HV. */
     assert(/<PanelXemViPham key=\{it\.key\} studentId=\{it\.studentId!\}/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc yt_xem');
   });
-  check('YT4 (10) · Tab HV (UI-3, mockup U10 K3): phân đoạn Vi phạm | Phối hợp + Cần làm | Lịch sử, khối dùng chung, Lịch sử lọc Đã xem / Đã xử lý / Đã thu hồi + phạm vi, không ô tick', () => {
+  check('YT4 (10) · Tab HV (TINH-HINH, mockup v20 A4): hai tab nhỏ, Đang chờ + Cả quá trình, cùng dòng DongLan với tab lớp, lọc loại + phạm vi, không ô tick', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
-    /* Y-THUC-V2 (mockup 11/11 K3): cùng khối lần với tab lớp (KhoiLan, hv=null), dải bậc + Thang ▾, Lịch sử cùng kiểu dòng. */
-    assert(/<KhoiLan/.test(s) && /hv=\{null\}/.test(s) && /<DauCot coHv=\{false\}/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s), 'bố cục');
-    assert(/key: 'vi-pham'/.test(s) && /key: 'phoi-hop'/.test(s) && /key: 'can-lam'/.test(s) && /key: 'lich-su'/.test(s) && /'Đã thu hồi'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'phân đoạn + lọc, không tick');
+    assert(/<TabNho/.test(s) && /<DongLan/.test(s) && /<DauCotEm[^>]*khongHv/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s) && /t\('Đang chờ'\)/.test(s) && /t\('Cả quá trình'\)/.test(s), 'bố cục');
+    assert(/key: 'vi-pham'/.test(s) && /key: 'phoi-hop'/.test(s) && /key: 'nhac-nho'/.test(s) && /key: 'tinh-hinh'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'tab nhỏ + lọc, không tick');
     assert(!/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ không gọi violation-warning');
   });
   check('YT4 (10) · Luật v3 đã gỡ khỏi miền chung: không còn chín loại/chuỗi thư/cảnh báo mềm/bốn chip/patch PA', () => {
