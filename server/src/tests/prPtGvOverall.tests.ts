@@ -74,7 +74,7 @@ export async function runPrPtGvOverallTests(t: YThucTestKit) {
     assert(ketQuaEm(e.sid, 'reading') === null && ketQuaEm(e.sid, 'listening') === null, 'không vào mẫu');
   }));
   /* 2F (chủ SP 05/11) thay C10: thi thật KHÔNG còn ở cột Kết quả Test; mỗi kỹ năng so Target overall (OVR đạt không kéo kỹ năng thành Đạt), mọi GV từng dạy. */
-  check('THI-THAT 2F (chủ SP 05/11) · OVR 6.5 = Target, R 5.5 → GV R vẫn Đạt + ghi dưới Target; L 7.0 → Exceed; W → cả GV W2; không vào cột Kết quả Test', () => thu(() => {
+  check('THI-THAT 2F (chủ SP 12/11: mức theo band kỹ năng) · OVR 6.5 = Target, R 5.5 → GV R Chưa đạt; L 7.0 → Exceed; W → cả GV W2; không vào cột Kết quả Test', () => thu(() => {
     const e = emMoi();
     boLichTuTao(conn, e.cy);
     conn.prepare(`UPDATE learning_cycles SET thi_that_ngay = ?, thi_that_l = 7.0, thi_that_r = 5.5, thi_that_w = 6.5, thi_that_s = 7.0, outcome_score = 6.5, outcome = 'reached' WHERE id = ?`).run(D, e.cy);
@@ -85,7 +85,7 @@ export async function runPrPtGvOverallTests(t: YThucTestKit) {
       return pt.oChiSoHoSoGv(P.admin, gv, { tu: tuanNay, den: tuanNay, cot: `thi-that-ky:${skill}` }).rows.find((x: any) => x.href === `/hoc-vien/${e.sid}`);
     };
     const r = dong('reading');
-    assert(r?.ketQua === 'dat' && /dưới Target/.test(r.sub), `OVR đạt → Đạt, R 5.5 ghi dưới Target: ${JSON.stringify(r)}`);
+    assert(r?.ketQua === 'chua' && r.sub.endsWith('Chưa đạt') && !/dưới Target/.test(r.sub), `R 5.5 < Target → Chưa đạt dù OVR đạt: ${JSON.stringify(r)}`);
     const l = dong('listening');
     assert(l?.ketQua === 'dat' && l.vuot === true, `L 7.0 > 6.5 → Exceed: ${JSON.stringify(l)}`);
     assert(dong('writing2')?.ketQua === 'dat', 'W thi thật tính cho GV W2');
