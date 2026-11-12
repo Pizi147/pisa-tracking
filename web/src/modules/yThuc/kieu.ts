@@ -29,7 +29,9 @@ export type DongThoiGianYt =
       /** UI-2 (mockup K6): ai / lúc "Đã xem". */
       xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
       /** Y-THUC-V2: mã môn (chip) + mô tả cắt ngắn (hộp rê). */
-      skill: string | null; moTa: string }
+      skill: string | null; moTa: string;
+      /** TINH-HINH: "Chỉ nhắc nhở" (ngoài luật, không việc). */
+      chiNhac?: boolean }
   | { loai: 'xu-ly'; id: number; studentId: number; ten: string; ngay: string; nhan: string; kind: string; status: string;
       statusLabel: string; soViPham: number; nguoi: string | null; soTep: number;
       /** UI-3 (mockup K6): tên vi phạm của lần · Báo PH của lần (null = không có việc). */
@@ -63,6 +65,18 @@ export type YThucHocVien = {
   dongThoiGian: DongThoiGianYt[];
   demCuoi: { tong: number; theoNhom: { nhom: string; so: number }[] };
   hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
+  /** TINH-HINH: tình hình học tập GV ↔ TVV của em · nút Báo / Hỏi tình hình (máy chủ kiểm lại). */
+  tinhHinh: TinhHinhView[]; coTheBao: boolean; coTheHoi: boolean;
+};
+
+/** TINH-HINH — khớp `server/src/yThuc/tinhHinh.ts` `TinhHinhView`. `gv_tvv` = GV báo TVV · `tvv_gvcn` = TVV hỏi GVCN. */
+export type TinhHinhView = {
+  id: number; studentId: number; chieu: 'gv_tvv' | 'tvv_gvcn'; noiDung: string;
+  nguoiGuiId: number; nguoiGui: string | null; taoLuc: string; suaLuc: string | null;
+  han: string | null; quaHan: boolean; trangThai: 'mo' | 'xong' | 'rut';
+  traLoi: string | null; traLoiBoi: string | null; traLoiLuc: string | null;
+  baoPh: { id: number; trangThai: 'mo' | 'xong' | 'bo'; tvv: string | null; lan: { ketQua: string; ngay: string; noiDung: string | null } | null; coTheGhi: boolean } | null;
+  coTheSua: boolean; coTheTraLoi: boolean; hoanTacDuoc: boolean;
 };
 
 export type XuLyView = {
@@ -111,8 +125,10 @@ export type BangYThucLop = {
   /** G3-14: người xem là GVCN của lớp. */
   laGvcn?: boolean;
   /** YT-a: mọi em của lớp theo tên (`soLs` = số dòng lịch sử mọi lộ trình) · `catLs`: `dongThoiGian` bị cắt 150 dòng. */
-  emLop: { studentId: number; ten: string; bacNhan: string | null; tvv: string | null; soLs: number }[];
+  emLop: { studentId: number; ten: string; bac: number; bacNhan: string | null; tvv: string | null; soLs: number }[];
   catLs: boolean;
+  /** TINH-HINH: tình hình học tập các em (mới nhất trước) · nút Báo tình hình (GV / QL) · Hỏi tình hình (TVV / QL). */
+  tinhHinh: TinhHinhView[]; coTheBao: boolean; coTheHoi: boolean;
 };
 
 /** Làm mới mọi dữ liệu Ý thức sau một thao tác ghi (tab lớp, tab HV, việc, hộp, số liệu). */

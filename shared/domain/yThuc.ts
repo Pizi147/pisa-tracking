@@ -374,9 +374,10 @@ export function macDinhTick(ds: readonly { id: number; t: TrangThaiVp; occurredO
  * Bản Anh: web dịch `nhanLoaiXuLy` rồi viết hoa (chữ "Chưa có vi phạm" qua `t`).
  */
 export function nhanMocViPham(bac: number, dichChu: (s: string) => string = (s) => s): string | null {
-  if (bac <= 0) return null;
-  return dichChu(nhanLoaiXuLy(kindCuaBac(bac))).replace(/\bWL (\d+)/g, 'Warning Letter $1').toUpperCase();
+  return bac > 0 ? mocTuNhan(dichChu(nhanLoaiXuLy(kindCuaBac(bac)))) : null;
 }
+/** Nhãn bậc đã có (đã dịch) → mốc: "WL 1" → "WARNING LETTER 1", viết hoa. */
+export const mocTuNhan = (nhan: string): string => nhan.replace(/\bWL (\d+)/g, 'Warning Letter $1').toUpperCase();
 
 /**
  * MỘT DÒNG THANG: sáu bậc của mạch chính + Report 7 (luôn hiện, để thấy thang còn đi tiếp) và thêm một ô cho mỗi bậc em đã vượt
