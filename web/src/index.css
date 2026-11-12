@@ -1248,6 +1248,11 @@
 /* Số lớn thẻ chỉ số (`DaiChiSo` `.chi-so-gt`): cùng hộp, ôm cỡ số. */
 .o-so-hop :is(.chi-so-gt .so-bam, .so-bam.so-chinh) { height: auto; padding: 2px 10px 3px; border-radius: 9px; font-weight: 700; line-height: 1.2; }
 /* Cặp hộp % + phân số mờ (`CapSo`): lưới hai cột — hộp căn phải, phân số căn trái, mọi dòng thẳng nhau. */
+/* PT-a (mockup v19 khung 2a): dòng nhóm lớp trong panel bài chấm (`BangLuotPanel`) — nền hàng lớn, vạch trái, chữ tràn qua ô trống bên phải, không bấm. */
+.bang tr.hang-nhom-lop { background: var(--hang-lon-bg); cursor: default; }
+.bang tr.hang-nhom-lop > td { height: 34px; padding-top: 0; padding-bottom: 0; background: transparent !important; background-image: none !important; }
+.bang tr.hang-nhom-lop > td:first-child { overflow: visible; box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
+article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 0 var(--hang-lon-vach); padding-top: 6px; padding-bottom: 6px; }
 .cap-so { display: inline-grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 6px; width: 100%; }
 .cap-so > :first-child { justify-self: end; }
 .cap-so > :last-child { justify-self: start; font-size: 13px; font-weight: 500; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }

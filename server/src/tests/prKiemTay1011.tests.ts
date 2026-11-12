@@ -64,7 +64,8 @@ export async function runPrKiemTay1011Tests(t: YThucTestKit) {
     const hop = docSach('web/src/modules/fasttrack/HopNhapDiem.tsx');
     assert(/cell\.noShow\?\.state === 'khong-du-thi'/.test(hop) && /boKhongDuThi && !daLuu/.test(hop), 'hộp thiếu Bỏ vắng cho ô Không dự thi');
     assert(/r\?\.boKhongDuThi[\s\S]{0,400}Hoàn tác/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'thiếu toast Đã bỏ vắng · Hoàn tác');
-    assert(/onHang=\{\(h\) => navigate\(h\.href\)\}/.test(docSach('web/src/ui/BangLuotPanel.tsx')), 'hàng sổ nghĩa vụ không bấm được');
+    /* PT-a (mockup v19 khung 2a): dòng nhóm lớp không bấm — hàng bài / việc vẫn mở `href`. */
+    assert(/onHang=\{\(h\) => \{ if \(!laNhom\(h\)\) navigate\(h\.href\); \}\}/.test(docSach('web/src/ui/BangLuotPanel.tsx')), 'hàng sổ nghĩa vụ không bấm được');
     assert(/tuConTuongTac/.test(docSach('web/src/ui/Bang.tsx')), 'Bang: bấm link trong hàng sẽ mở hàng lần nữa');
     assert(!/<details className="contents">/.test(docSach('web/src/modules/test/KeHoachTestTab.tsx')), 'Lọc 375 còn details.contents');
   });

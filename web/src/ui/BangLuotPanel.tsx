@@ -461,11 +461,27 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec'
     ? ([!laBai && nhieuLoai ? dich(TAB_VIEC_HAN_LABEL[h.tab]) : null, h.phu ? dich(h.phu) : null, h.chiNhanh ?? null, h.pcNhapSau ? t('phân công nhập sau') : null].filter(Boolean).join(' · ') || null)
     : c.key === 'han' ? (h.hanGoc ? t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) }) : null) : c.key === 'tt' ? ngayLam(h) : null);
+  const COT_VIEC = cotVc.find((c) => c.key === 'viec')!;
+  /*
+   * PT-a (mockup v19 khung 2a, PTA rà #1486): panel BÀI chấm chia theo lớp ("MB FT 101 · 5 bài") — bỏ cột Lớp. Nhóm theo thứ tự xuất hiện: máy chủ đã xếp quá hạn
+   * lâu nhất trước → nhóm đầu là nhóm có bài quá hạn lâu nhất; trong nhóm giữ thứ tự đó. Dòng nhóm là dòng giả của `Bang` (`hang-nhom-lop`, không bấm).
+   */
+  type NhomLop = { nhomLop: string; n: number; id: string };
+  type DongVc = HVc | NhomLop;
+  const laNhom = (h: DongVc): h is NhomLop => 'nhomLop' in h;
+  const theoLop = (ds: HVc[]): DongVc[] => {
+    if (!laBai) return ds;
+    const m = new Map<string, HVc[]>();
+    for (const h of ds) { const k = h.lop?.ma ?? '—'; (m.get(k) ?? m.set(k, []).get(k)!).push(h); }
+    return [...m].flatMap(([lop, xs]): DongVc[] => [{ nhomLop: lop, n: xs.length, id: `nhom:${lop}` }, ...xs]);
+  };
+  const cotVcHien = laBai ? cotVc.filter((c) => c.key !== 'lop') : cotVc;
+  const nhanNhom = (h: NhomLop) => <span className="whitespace-nowrap text-[13px] font-bold text-[color:var(--text)]">{h.nhomLop} <span className="font-medium text-faint">· {t('{n} bài', { n: h.n })}</span></span>;
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, cotVc[0])}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
+      <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, COT_VIEC)}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
       {(h.em || h.lop) && <div className="text-[14px]">{h.em && lkHv(h.em.id, h.em.ten)}{h.em && h.lop && ' · '}{h.lop && lkLop(h.lop.id, h.lop.ma)}</div>}
-      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.hanGoc && <> ({t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) })})</>}{h.ngayXong && <> · {ngayLam(h)}</>}{phuVc(h, cotVc[0]) && <> · {phuVc(h, cotVc[0])}</>}</div>
+      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.hanGoc && <> ({t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) })})</>}{h.ngayXong && <> · {ngayLam(h)}</>}{phuVc(h, COT_VIEC) && <> · {phuVc(h, COT_VIEC)}</>}</div>
     </div>
   );
 
@@ -481,7 +497,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     bt && data?.nguong != null ? t('đạt từ {n} % mỗi môn', { n: data.nguong }) : null, vpk && tatV.length ? t('mới nhất trước') : null,
     tg ? t('so mốc MT trước') : t('dữ liệu đến {ngay}', { ngay: ngay(homNay).slice(0, 5) }), tt && /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ');
   return (
-    <KhungPanel tieuDe={tieuDe} rong={vk ? 'rong' : 'bang'} onDong={onDong} loai={loai} dau={{ dong2: [dong2],
+    <KhungPanel tieuDe={tieuDe} rong={vk && laBai ? 'so' : vk ? 'rong' : 'bang'} onDong={onDong} loai={loai} dau={{ dong2: [dong2],
       /* BO-CHU-THICH (chủ SP 07/11): "Cách tính" là ⓘ cuối dòng tiêu đề như `NganDanhSach` — không còn khối chữ cuối panel. */
       tieu: data?.cachTinh ? <><span className="min-w-0">{tieuDe}</span><NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat></> : undefined }} chan={{ huy: { nhan: t('Đóng'), onClick: onDong },
         /* PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ của một GV → "Hồ sơ GV ›" (đổi trang) ở chân. */
@@ -531,9 +547,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                   return (
                     <section key={String(chung)} className="grid gap-1.5" aria-label={nhom ?? tieuDe}>
                       {nhom && <h3 className="m-0 text-[14px] font-semibold text-dim">{nhom} <span className="tabular-nums">{tatVc.filter((h) => !!h.sChung === chung).length}</span></h3>}
-                      {hang.length || !nhom ? <Bang deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVc} hang={hang} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc}
+                      {hang.length || !nhom ? <Bang<DongVc> deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVcHien} hang={theoLop(hang)} khoa={(h) => h.id}
+                          oCua={(h, c) => (laNhom(h) ? (c.key === 'ten' ? nhanNhom(h) : null) : oVc(h, c))} phuCua={(h, c) => (laNhom(h) ? null : phuVc(h, c))}
+                          lopHang={(h) => (laNhom(h) ? 'hang-nhom-lop' : '')} khung={false} theRieng={(h) => (laNhom(h) ? nhanNhom(h) : theVc(h))}
                           /* KIEM-TAY-1011 (4): bấm cả dòng = bấm tên việc / bài (cùng `href`, mở đúng chỗ chấm / làm việc); link em, lớp giữ đích riêng. */
-                          onHang={(h) => navigate(h.href)} />
+                          onHang={(h) => { if (!laNhom(h)) navigate(h.href); }} />
                         : <p className="m-0 text-[14px] text-dim">{t('Không có bài chưa làm.')}</p>}
                     </section>
                   );
