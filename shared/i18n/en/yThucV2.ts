@@ -26,4 +26,10 @@ export const EN_Y_THUC_V2 = {
   'Sau khi lưu': 'After saving',
   'việc cho TVV của em, hạn 5 ngày': 'a task for the student\'s consultant, due in 5 days',
   'Hồ sơ Ý thức của em ›': 'Student\'s conduct profile ›',
+  /* YT-b (mockup v19 B1–B5, chủ SP duyệt #1482): panel Phối hợp ở Công việc chỉ còn em cần làm. */
+  'GVCN gửi': 'Homeroom sent',
+  'Không còn em nào cần làm': 'No students left to do',
+  'Xong việc này ở {lop}': (b) => `This task is done for ${b.lop}`,
+  'Đã báo · hồ sơ lớp ›': 'Reported · class profile ›',
+  'Đã làm · hồ sơ lớp ›': 'Done · class profile ›',
 } satisfies Record<string, Dich>;
