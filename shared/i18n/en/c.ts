@@ -319,6 +319,7 @@ export const EN_C = {
   'Sửa tay': 'Manual edit',
   'Tổng kết': 'Summary',
   'Tổng kết lộ trình': 'Pathway summary',
+  'so đầu vào': 'vs. entry',
   'Đã chọn Kết thúc — {ten} vào Lưu trữ': 'Chose Finish — {ten} archived',
   'Đã hoàn tác': 'Undone',
   'Bước tiếp': 'Next step',

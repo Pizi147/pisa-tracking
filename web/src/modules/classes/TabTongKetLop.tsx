@@ -9,7 +9,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 type Dong = {
   studentId: number; ten: string; loTrinhId: number | null; roiSom: boolean; dauVao: number | null; target: number | null; soLuot: number;
-  luotCuoi: { nhan: string; overall: number | null; l: number | null; r: number | null; w: number | null; s: number | null } | null; luotCuoiHuy?: string | null;
+  luotCuoi: { nhan: string; overall: number | null; l: number | null; r: number | null; w: number | null; w1?: number | null; w2?: number | null; s: number | null } | null; luotCuoiHuy?: string | null;
   thiThat: { ovr: number | null; ngay: string | null; khongThi: boolean } | null; ketLuan: string | null; huongTiep: string | null; huongKhoa?: string;
   giuaKhoa: { dat: number; tong: number; tyLe: number | null; huy: boolean } | null;
   cuoiKhoa: { dat: number; tong: number; tyLe: number | null; huy: boolean; dai?: string | null } | null;
@@ -93,13 +93,13 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                 <table className="w-full min-w-[1000px] text-[13px]">
                   <thead>
                     <tr className="text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
-                      <th colSpan={3} /><th colSpan={6} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('MT cuối')}</th>
+                      <th colSpan={3} /><th colSpan={7} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('MT cuối')}</th>
                       <th colSpan={2} className="border-b px-3 py-1.5 text-center font-semibold" style={{ borderColor: 'var(--line)' }}>{t('Thi thật')}</th><th />
                     </tr>
                     <tr className="text-left text-[12px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
                       <th className="px-3 py-2 font-semibold">{t('Học viên')}</th><th className="px-3 py-2 text-right font-semibold">{t('Đầu vào')}</th><th className="px-3 py-2 text-right font-semibold">Target</th>
                       <th className="px-3 py-2 font-semibold">MT</th>
-                      {['L', 'R', 'W', 'S', 'OVR', 'OVR'].map((h, i) => <th key={i} className="px-3 py-2 text-right font-semibold">{h}</th>)}
+                      {['L', 'R', 'W1', 'W2', 'S', 'OVR', 'OVR'].map((h, i) => <th key={i} className="px-3 py-2 text-right font-semibold">{h}</th>)}
                       <th className="px-3 py-2 font-semibold">{t('Kết quả')}</th><th className="px-3 py-2 font-semibold">{t('Hướng tiếp')}</th>
                     </tr>
                   </thead>
@@ -114,7 +114,8 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                             {d.luotCuoi ? <>{dich(d.luotCuoi.nhan)} <span className="text-slate-500">· {t('{n} lượt', { n: d.soLuot })}</span></> : Gach}
                             {d.luotCuoiHuy && <span className="ml-1.5 text-xs text-late">{t('đã huỷ')}</span>}
                           </td>
-                          {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-right tabular-nums">{b1(v)}</td>)}
+                          {/* Chủ SP 12/11: tách W1 · W2 như Tổng kết lộ trình (`diemW12` ở máy chủ). */}
+                          {[d.luotCuoi?.l, d.luotCuoi?.r, d.luotCuoi?.w1, d.luotCuoi?.w2, d.luotCuoi?.s, d.luotCuoi?.overall].map((v, i) => <td key={i} className="px-3 text-right tabular-nums">{b1(v)}</td>)}
                           <td className="px-3 text-right font-semibold tabular-nums text-slate-100">{b1(d.thiThat?.ovr)}</td>
                           <td className="px-3">{k ? <Nhan tone={k.tone}>{k.chu}</Nhan> : Gach}</td>
                           <td className="px-3">{d.roiSom ? Gach : <Huong d={d} />}</td>
@@ -158,7 +159,7 @@ export function TabTongKetLop({ classId }: { classId: number }) {
                       {ft ? (
                         <>
                           <dt className="text-slate-500">{d.luotCuoi?.nhan ? dich(d.luotCuoi.nhan) : t('MT cuối')}</dt>
-                          <dd className="m-0 tabular-nums">{d.luotCuoi ? `L ${b1(d.luotCuoi.l)} · R ${b1(d.luotCuoi.r)} · W ${b1(d.luotCuoi.w)} · S ${b1(d.luotCuoi.s)} · OVR ${b1(d.luotCuoi.overall)}` : '—'}</dd>
+                          <dd className="m-0 tabular-nums">{d.luotCuoi ? `L ${b1(d.luotCuoi.l)} · R ${b1(d.luotCuoi.r)} · W1 ${b1(d.luotCuoi.w1)} · W2 ${b1(d.luotCuoi.w2)} · S ${b1(d.luotCuoi.s)} · OVR ${b1(d.luotCuoi.overall)}` : '—'}</dd>
                           <dt className="text-slate-500">{t('Thi thật')}</dt><dd className="m-0 tabular-nums">{d.thiThat?.ovr != null ? `OVR ${b1(d.thiThat.ovr)}` : '—'}</dd>
                           <dt className="text-slate-500">{t('Hướng tiếp')}</dt><dd className="m-0">{d.roiSom ? '—' : <Huong d={d} />}</dd>
                         </>
