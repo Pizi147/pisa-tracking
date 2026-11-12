@@ -606,7 +606,7 @@ function DemNguocYThuc({ han }: { han: string }) {
       title={t('Hết hạn: tự chốt theo GVCN')}>
       <span className={`text-[13px] font-bold tabular-nums ${gap ? 'text-soon' : 'text-[color:var(--text)]'}`}>{gap ? '⚠ ' : ''}{con ? t('Còn {n} ngày', { n: con }) : t('Hết hôm nay')}</span>
       <span aria-hidden className="grid grid-cols-5 gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-[4px] rounded-sm ${i < 5 - Math.min(5, con) ? (gap ? 'bg-soon' : 'bg-[color:var(--accent)]') : 'bg-[color:var(--line-strong)]'}`} />)}</span>
-      <span className="text-[11px] leading-tight text-dim">{t('Hết hạn: giữ quyết định GVCN')}</span>
+      <span className="text-xs leading-tight text-dim">{t('Hết hạn: giữ quyết định GVCN')}</span>
     </span>
   );
 }

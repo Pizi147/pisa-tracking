@@ -232,7 +232,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const bacSau = iNay >= 0 ? d.dongThang[iNay + 1]?.nhan ?? null : null;
   const nutChinh = cheDo === 'xu-ly'
     ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luuXuLy}>{busy ? t('Đang lưu…') : bacKe ? t('Xác nhận · {nhan}', { nhan: dich(bacKe.nhan) }) : t('Xác nhận xử lý')}</button>
-    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void guiDeXuat()}>{busy ? t('Đang gửi…') : t('Gửi QL duyệt')}</button>;
+    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void guiDeXuat()}>{busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}</button>;
   /* Lựa chọn bậc của từng cách (máy chủ kiểm lại `deXuatHopLe`). */
   const bacGiu = THANG.slice(0, Math.min(d.bac, THANG.length)).reverse() as string[];
   const bacVuot = THANG.slice(Math.min(d.bac + 1, THANG.length)) as string[];
@@ -259,7 +259,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
         <TienTrinh nay={1} buoc={[
           [t('{n} vi phạm', { n: tick.length + cuHon.length }), ngayVp.length ? `${ngay(ngayVp[0], homNay)} – ${ngay(ngayVp[ngayVp.length - 1], homNay)}` : null],
           /* #6 (mockup #1346 K1): đề xuất — ô ② nói việc đang làm (Gửi QL duyệt) + ai trả lời khi nào. */
-          cheDo === 'de-xuat' ? [t('Gửi QL duyệt'), t('QL có 5 ngày')]
+          cheDo === 'de-xuat' ? [t('Gửi Quản lý duyệt'), t('QL có 5 ngày')]
             : [d.nhom ? <CanLamEm x={d} homNay={homNay} hanDuoi /> : t('Xác nhận xử lý'),   /* G3-15: hạn xuống dưới chip — chip không tràn sang ô ③ */ bacKe ? <>{t('Lần này')} <b className="text-slate-100">{dich(bacKe.nhan)}</b></> : null],
           [<span className="font-medium text-slate-400">{cheDo === 'xu-ly' ? t('Sau khi lưu') : t('Sau khi chốt')}</span>, t('việc cho TVV của em, hạn 5 ngày')],
         ]} />
@@ -296,7 +296,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
                     <span aria-hidden className={`h-3.5 w-3.5 shrink-0 rounded-full border-[1.5px] ${cach === c.k ? 'border-[4px] border-[color:var(--accent)]' : 'border-[color:var(--o-vien,var(--line-strong))]'}`} />{c.ten}
                   </span>
                   <span className="pl-[22px] text-[13px] leading-snug text-slate-400">{c.phu}</span>
-                  {c.k === 'nang' && <span className="ml-[22px] mt-1 justify-self-start rounded border px-[5px] text-[11px] font-semibold leading-4 text-slate-500" style={{ borderColor: 'var(--line-strong)' }}>{t('Mặc định')}</span>}
+                  {c.k === 'nang' && <span className="ml-[22px] mt-1 justify-self-start rounded border px-[5px] text-xs font-semibold leading-4 text-slate-500" style={{ borderColor: 'var(--line-strong)' }}>{t('Mặc định')}</span>}
                 </button>
               ))}
             </div>

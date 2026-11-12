@@ -237,7 +237,9 @@ export async function runPrDonBTests(t: YThucTestKit) {
     /* UI-3 (mockup U10 K3): tab HV — Xác nhận xử lý ở hàng nút dưới dải tóm tắt (cả khi mới 1 vi phạm), Thang mở bằng "Thang ›" chỉ để xem. */
     assert(/mo\(\{ loai: 'xu-ly', studentId \}\)/.test(doc('web/src/modules/yThuc/StudentYThucSection.tsx')), 'StudentYThucSection');
     /* OV-12e (mockup panel v3 §8, chủ SP 14/10): trong panel "Đề xuất QL duyệt" là nút chữ ngay sau nút chính Xác nhận xử lý (khối Cần làm). */
-    assert(/cheDo === 'xu-ly' && d\.canManage[\s\S]{0,300}Đề xuất QL duyệt('\)\})?<\/NutChu>/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'panel: Đề xuất là nút chữ sau nút chính');
+    /* TINH-HINH (chủ SP 12/11, mockup v20 D): bỏ nút "Đề xuất QL duyệt" — Không nâng · Vượt bậc · Ngoài thang chọn ngay trong panel. */
+    const pn = doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx');
+    assert(!/<NutChu[^>]*>\{t\('Đề xuất QL duyệt'\)\}/.test(pn) && /k: 'vuot'/.test(pn) && /k: 'ngoai'/.test(pn), 'panel: bốn cách, không nút Đề xuất');
   });
 
   // ------------------------------------------------------------------ khối A · mã cũ Dọn-a / S3 để lại

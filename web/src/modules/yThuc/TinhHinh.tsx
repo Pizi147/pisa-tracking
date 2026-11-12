@@ -4,8 +4,9 @@ import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { addDaysIso, hanBaoPh, ngay } from '@shared/domain/index.ts';
+import { addDaysIso, dsLoi, hanBaoPh, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { TheLoai } from './BangLan.tsx';
@@ -249,7 +250,10 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   const [xong, setXong] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const ngan = chu.trim().length < TOI_THIEU, dai = chu.length > TOI_DA;
+  const lf = useLoiForm();
+  const loiO = dsLoi([{ khoa: 'kq', nhan: t('Kết quả'), toiThieu: TOI_THIEU }], { kq: chu });
   const gui = async () => {
+    lf.bam();
     if (ngan || dai) return;
     setLuu(true); setLoi(null);
     try { await api.post(`/tinh-hinh/${id}/tra-loi`, { traLoi: chu.trim() }); setXong(true); lamMoi(); onDaLam(); }
@@ -258,10 +262,10 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   const hoanTac = async () => {
     try { await api.post(`/tinh-hinh/${id}/tra-loi/hoan-tac`, {}); setXong(false); lamMoi(); onDaLam(); } catch (e: any) { toast.push('error', e.message); }
   };
-  const nutTiep = onTiep && <button type="button" className={`btn ${xong ? 'btn-primary' : ''} max-sm:h-11`} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
+  const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
     <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={onDong} daSua={!xong && !!chu.trim()}
-      chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || ngan || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>,
+      chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>, conThieu: lf.conThieu(loiO),
         phu: !xong ? nutTiep ?? undefined : undefined }}>
       <div className="flex flex-col gap-4 pt-4">
         <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
