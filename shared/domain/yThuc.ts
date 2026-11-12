@@ -389,6 +389,9 @@ export function dongThang(bac: number, khai: { bac: number } | null): {
  * `nhom`: các nhóm việc theo thứ tự hiện (mỗi dòng: em · là việc của người xem không) · `xong`: dòng "Xong · 7 ngày".
  * Dòng KHÔNG phải việc của người xem bị bỏ khi em đã có dòng là việc của người xem; dòng Xong bị bỏ khi em còn dòng ở nhóm khác.
  */
+/** YT-a — dòng thuộc Lịch sử Ý thức: vi phạm đã xem · lần xử lý xong / đã thu hồi (máy chủ đếm `soLs`, web vẽ — một cửa). */
+export const laDongLs = (x: { loai: string; status?: string; trangThai?: string }) => (x.loai === 'xu-ly' ? x.status === 'done' || x.status === 'thu_hoi' : x.trangThai === 'da_ghi_nhan');
+
 export function locCanLam<T extends { sid: number; cuaToi: boolean }, X extends { sid: number }>(nhom: T[][], xong: X[]): { nhom: T[][]; xong: X[]; soEm: number } {
   const cuaToi = new Set(nhom.flat().filter((x) => x.cuaToi).map((x) => x.sid));
   const giu = nhom.map((ds) => ds.filter((x) => x.cuaToi || !cuaToi.has(x.sid)));

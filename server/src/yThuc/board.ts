@@ -1,6 +1,6 @@
 import { db, theoLo } from '../db.ts';
 import {
-  NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy,
+  NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy, laDongLs, soTenVi,
   type NhomEm, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -95,7 +95,14 @@ export type BangYThucLop = {
   gvcn: string | null;
   /** G3-14: người xem là GVCN của lớp. */
   laGvcn: boolean;
+  /**
+   * YT-a (mockup `thiet-ke/v19/y-thuc.html`): MỌI em của lớp (theo tên) — `soLs` = số dòng lịch sử (Đã xem / Đã xử lý / Đã thu hồi, mọi lộ trình).
+   * Lấy từ dữ liệu đã đọc (không thêm câu). `catLs`: `dongThoiGian` bị cắt ở 150 dòng → em thiếu dòng thì web đọc `/students/:id/y-thuc` khi bấm.
+   */
+  emLop: EmLop[];
+  catLs: boolean;
 };
+export type EmLop = { studentId: number; ten: string; bacNhan: string | null; tvv: string | null; soLs: number };
 
 const DONG_THOI_GIAN_TOI_DA = 150;
 const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
@@ -131,7 +138,7 @@ export function dongEm(em: EmYThuc, ten: string, maHv: string, homNay: string): 
  * `chiTrongChuoi`: chỉ vi phạm / lần xử lý thuộc chuỗi thang hiện tại của em (phạm vi mặc định của tab HV).
  * `danhDauChuoi` (UI-2, tab lớp): không lọc — ghi `trongChuoi` từng dòng để trình duyệt đổi phạm vi không cần request mới.
  */
-export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { gioiHan?: number; chiTrongChuoi?: boolean; danhDauChuoi?: boolean; p?: Principal; homNay?: string } = {}): DongThoiGianYt[] {
+export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThuc>, o: { chiTrongChuoi?: boolean; danhDauChuoi?: boolean; p?: Principal; homNay?: string } = {}): DongThoiGianYt[] {
   if (!emIds.length) return [];
   const conn = db();
   const ten = new Map<number, string>();
@@ -211,7 +218,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     });
   }
   out.sort((a, b) => b.ngay.localeCompare(a.ngay) || (a.loai === b.loai ? b.id - a.id : a.loai === 'xu-ly' ? -1 : 1));
-  return o.gioiHan ? out.slice(0, o.gioiHan) : out;
+  return out;
 }
 
 export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()): BangYThucLop {
@@ -266,6 +273,9 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
       dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai });
     }
   }
+  const dong = dongThoiGian(ids, trang, { danhDauChuoi: true, p, homNay });
+  const soLs = new Map<number, number>();
+  for (const x of dong) if (laDongLs(x)) soLs.set(x.studentId, (soLs.get(x.studentId) ?? 0) + 1);
   const theoHan = (a: DongEm, b: DongEm) => (a.han ?? a.hanXem ?? a.deXuat?.han ?? '9').localeCompare(b.han ?? b.hanXem ?? b.deXuat?.han ?? '9')
     || a.ten.localeCompare(b.ten, 'vi');
   for (const k of NHOM_EM) nhom[k].sort(k === 'da_xu_ly' ? (a, b) => (b.xuLyGanNhat?.ngay ?? '').localeCompare(a.xuLyGanNhat?.ngay ?? '') : theoHan);
@@ -274,13 +284,16 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     canManage: can(p, PERMISSIONS.DISCIPLINE_MANAGE, { classId }),
     canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
     nhom,
-    dongThoiGian: dongThoiGian(ids, trang, { gioiHan: DONG_THOI_GIAN_TOI_DA, danhDauChuoi: true, p, homNay }),
+    dongThoiGian: dong.slice(0, DONG_THOI_GIAN_TOI_DA),
     choBaoPh: choBaoPh.sort((a, b) => (a.baoPh?.han ?? '').localeCompare(b.baoPh?.han ?? '') || a.ten.localeCompare(b.ten, 'vi')),
     choThuHoi: choThuHoi.sort((a, b) => a.ten.localeCompare(b.ten, 'vi')),
     coTheDuyet,
     gvcn,
     /* G3-14: việc GVCN (xử lý / xem / ghi Đã thực hiện) là việc CỦA người xem khi người xem là GVCN lớp — như Công việc "Của tôi". */
     laGvcn: gvcnId === p.userId,
+    emLop: tatCa.map((x) => ({ studentId: x.studentId, ten: x.ten, bacNhan: x.bacNhan, tvv: x.tvv, soLs: soLs.get(x.studentId) ?? 0 }))
+      .sort((a, b) => soTenVi(a.ten, b.ten) || a.studentId - b.studentId),
+    catLs: dong.length > DONG_THOI_GIAN_TOI_DA,
   };
 }
 

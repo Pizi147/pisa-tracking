@@ -13,6 +13,7 @@ export async function runPrP1YThucTests(t: any) {
   const d: any = await import('../../../shared/domain/index.ts');
   const { trangThaiYThuc } = await import('../yThuc/trangThai.ts');
   const { bangYThucLop } = await import('../yThuc/board.ts');
+  const await_emCuaLop = await import('../yThuc/trangThai.ts');
   const { ghiNhan } = await import('../yThuc/xuLy.ts');
   const { xemViecBaoPh } = await import('../yThuc/baoPhTvv.ts');
   const { myWork } = await import('../worklist/mywork.ts');
@@ -69,5 +70,25 @@ export async function runPrP1YThucTests(t: any) {
     assert(xong.length > 0, 'seed: có việc Báo PH của lần đã xử lý');
     for (const r of xong) { xoaNho(); assert((xemViecBaoPh(loadPrincipal(r.tvv), r.id) as any).choQlDuyet === null, `việc ${r.id}: đã xử lý → null`); }
     assert(/choQlDuyet/.test(nguon('web/src/modules/congViec/PanelBaoPhTvv.tsx')), 'PanelBaoPhTvv đọc choQlDuyet');
+  });
+
+  check('YT-a · bảng lớp trả MỌI em (emLop, theo tên), soLs = số dòng lịch sử, catLs; không thêm câu đọc', () => {
+    const { emCuaLop } = await_emCuaLop;
+    const lop = all(`SELECT ta.class_id AS id, MIN(ta.user_id) AS gvcn FROM teacher_assignments ta WHERE ta.is_core = 1 AND ta.status = 'active' GROUP BY ta.class_id ORDER BY ta.class_id LIMIT 3`);
+    assert(lop.length > 0, 'seed: có lớp có GVCN');
+    for (const l of lop) {
+      xoaNho();
+      const b: any = bangYThucLop(loadPrincipal(l.gvcn), l.id);
+      const ids = emCuaLop(l.id);
+      assert(b.emLop.length === ids.length && b.emLop.every((e: any) => ids.includes(e.studentId)), `lớp ${l.id}: emLop đủ ${ids.length} em`);
+      for (let i = 1; i < b.emLop.length; i++) assert(d.soTenVi(b.emLop[i - 1].ten, b.emLop[i].ten) <= 0, `lớp ${l.id}: emLop theo tên`);
+      const laLs = (x: any) => (x.loai === 'xu-ly' ? x.status === 'done' || x.status === 'thu_hoi' : x.trangThai === 'da_ghi_nhan');
+      if (!b.catLs) for (const e of b.emLop) {
+        const n = b.dongThoiGian.filter((x: any) => x.studentId === e.studentId && laLs(x)).length;
+        assert(e.soLs === n, `lớp ${l.id} em ${e.studentId}: soLs ${e.soLs} = ${n} dòng lịch sử đã nạp`);
+      }
+      assert(b.dongThoiGian.length <= 150, 'dongThoiGian vẫn trần 150');
+    }
+    assert(/emLop/.test(nguon('web/src/modules/yThuc/ClassYThucCard.tsx')) && /LsTai/.test(nguon('web/src/modules/yThuc/ClassYThucCard.tsx')), 'web dùng emLop + đọc lịch sử em khi bị cắt');
   });
 }
