@@ -161,7 +161,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
       <span className="flex flex-col items-start gap-1.5"><CanLamEm x={{ ...d, nhom: nhomCho, deXuat: null }} homNay={homNay} hanDuoi />
         {batBuoc && <span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{dich(d.keTiep.nhan)}</b></span>}</span>
       {!d.canManage || d.deXuat ? choAi('GVCN', d.gvcn)
-      : batBuoc ? <>{nutChinh(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }))}{nutPhu(t('Đề xuất QL duyệt'), () => mo({ loai: 'xu-ly', studentId, cheDo: 'de-xuat' }))}</>
+      : batBuoc ? <>{nutChinh(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }))}</>
       : <>
           {xemIds.length > 0 && (
             <button type="button" className="btn w-full justify-center max-sm:h-11" style={{ borderColor: 'var(--accent)', color: 'var(--accent)', background: 'transparent' }} disabled={dangGhi}

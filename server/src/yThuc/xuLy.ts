@@ -36,11 +36,13 @@ import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhV
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
 export const MO_TA_MIN = 10;
+export const MO_TA_TOI_DA = 300;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
-function hocVien(studentId: number): { id: number; full_name: string; student_code: string; branch_id: number | null; consultant_user_id: number | null } {
-  const s = db().prepare('SELECT id, full_name, student_code, branch_id, consultant_user_id FROM students WHERE id = ?').get(studentId) as any;
+function hocVien(studentId: number): { id: number; full_name: string; student_code: string; branch_id: number | null; consultant_user_id: number | null; tvv: string | null } {
+  const s = db().prepare(`SELECT s.id, s.full_name, s.student_code, s.branch_id, s.consultant_user_id, u.full_name AS tvv
+    FROM students s LEFT JOIN users u ON u.id = s.consultant_user_id WHERE s.id = ?`).get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   return s;
 }
@@ -85,10 +87,11 @@ export function ngayThucHien(v: unknown): string {
   return v;
 }
 
-export function moTa(v: unknown): string {
+export function moTa(v: unknown, cu?: string | null): string {
   const s = String(v ?? '').trim();
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
-  return s.slice(0, 2000);
+  /* TINH-HINH (mockup v20 D1 "/ 300", N35): trần 300 — quá thì không lưu, chữ giữ ở ô (trước: cắt lặng ở 2000); chữ cũ dài gửi lại nguyên văn thì giữ. */
+  return chuTuDo(s, 'Mô tả', MO_TA_TOI_DA, cu) ?? s;
 }
 
 // ---------------------------------------------------------------- Ghi nhận (V4-1, V4-2, V4-6)
@@ -349,7 +352,7 @@ export function suaXuLy(p: Principal, measureId: number, v: { note?: unknown; pe
   const hv = hocVien(m.student_id);
   requireSuaXuLy(p, m);
   if (m.status !== 'done') throw badRequest('Chỉ sửa ngày / người / mô tả của lần xử lý đã thực hiện — đề xuất đang chờ thì sửa ở thẻ Chờ duyệt.');
-  const note = v.note !== undefined ? moTa(v.note) : m.note;
+  const note = v.note !== undefined ? moTa(v.note, m.note) : m.note;
   const performedOn = v.performedOn !== undefined ? ngayThucHien(v.performedOn) : m.performed_on;
   hoiNgayTruocDuyet(m, performedOn);
   const nguoi = v.performerSelf || v.performerUserId !== undefined || v.performerName !== undefined ? nguoiThucHien(p, v) : { by: m.performed_by ?? null, ten: m.performer_name ?? null };
@@ -447,7 +450,7 @@ export type YThucHocVien = {
   /** UI-Y-THUC-HV: dòng trạng thái "Duyệt · thu hồi | Báo PH (TVV)" — cùng hàng em của bảng lớp (`hangCuaEm`). */
   hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
   /** TINH-HINH: tình hình học tập hai chiều GV ↔ TVV của em (mới nhất trước). */
-  tinhHinh: TinhHinhView[];
+  tinhHinh: TinhHinhView[]; tvv: string | null;
   /** TINH-HINH: "Báo tình hình" (quyền ghi vi phạm) · "Hỏi tình hình" (TVV của em / cùng chi nhánh / QL — `coTheGhi`). */
   coTheBao: boolean; coTheHoi: boolean;
 };
@@ -496,6 +499,8 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi', p, homNay }),
     hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),
     tinhHinh: tinhHinhCuaEm(p, [studentId], homNay),
+    /** Mockup v20 D1 "Lưu xong: TVV … nhận việc báo PH": TVV phụ trách em (cùng câu đọc học viên, không thêm câu). */
+    tvv: hv.tvv ?? null,
     coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
     coTheHoi: coTheGhi(p, { consultant_user_id: hv.consultant_user_id ?? null, student_id: studentId }),
     demCuoi: {
@@ -860,7 +865,7 @@ export function rutDeXuatYThuc(p: Principal, measureId: number, khoaTep: string[
 export function suaDeXuatYThuc(measureId: number, note: unknown): { lyDo: string; bangChung: number[]; soTep: number } {
   const m = loadXuLy(measureId);
   if (m.status !== 'cho_duyet') throw badRequest('Đề xuất này không còn chờ QL duyệt.');
-  const ghi = moTa(note);
+  const ghi = moTa(note, m.note);
   const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
   if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
   db().prepare('UPDATE discipline_measures SET note = ?, updated_at = ? WHERE id = ?').run(ghi, nowIso(), measureId);

@@ -12,6 +12,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 export type ViolationDetail = {
   id: number; studentId: number;
   category: string; skill: string | null; occurredOn: string; ten: string; moTa: string; description: string;
+  /** TINH-HINH: "Chỉ nhắc nhở". */ chiNhac?: boolean;
   canEdit: boolean; attachmentCount: number;
   measures: { id: number; kindLabel: string; status: string; statusLabel: string }[];
   history: { id: number; field: string; oldValue: string | null; newValue: string | null; actorUserId: number | null; actorName: string | null; createdAt: string }[];

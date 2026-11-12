@@ -300,7 +300,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     const tiep = <>
       {hanBuoc(<><CanLamEm x={{ ...x, nhom: k, deXuat: null }} homNay={homNay} hanDuoi /><span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{dich(x.keTiep.nhan)}</b></span></>)}
       {d.canManage && !x.deXuat
-        ? <>{nutChinh(t('Xác nhận xử lý'), x.ten, () => mo({ loai: 'xu-ly', studentId: x.studentId }))}{nutPhu([[t('Đề xuất QL duyệt'), () => mo({ loai: 'xu-ly', studentId: x.studentId, cheDo: 'de-xuat' })]], x.ten)}</>
+        ? <>{nutChinh(t('Xác nhận xử lý'), x.ten, () => mo({ loai: 'xu-ly', studentId: x.studentId }))}</>
         : choAi('GVCN', d.gvcn)}
     </>;
     return dongLan({ key: `bb${x.studentId}`, sid: x.studentId, ten: x.ten, vp: vpCua(vp.map((v) => v.id), vp), gv, ph: null, tiep });
