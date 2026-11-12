@@ -92,6 +92,8 @@ export async function runPrThiThatTkTests(t: any) {
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const tk: any = await import('../phanTich/thiThatThongKe.ts');
+  const tl: any = await import('../migrate/prTinhLuiPhanCong.ts');
+  const { classProgressMany } = await import('../classes/schedule.ts');
   const giaoVien: any = await import('../phanTich/giaoVien.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const vai = (k: string) => loadPrincipal(one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? AND ur.status = 'active' ORDER BY ur.user_id LIMIT 1`, k).id);
@@ -177,5 +179,32 @@ export async function runPrThiThatTkTests(t: any) {
     assert(w1 && g && w1.o.tong === g.hv && w1.o.pt === 100 - g.fail, `W1: hồ sơ ${JSON.stringify(w1)} · tab ${JSON.stringify(g)}`);
     /* GV cũ (dạy 4 tuần đầu, phân công đã kết thúc) vẫn có mục ở tab — "mọi GV từng dạy". */
     assert(tk.thiThatTab(P.admin, { branchId: MB, tu: ky.tu, den: d.addDaysIso(ky.den, 6) }).thongKe.gv.some((x: any) => x.userId === P.lrTeacher.userId && x.kn === 'w1'), 'GV cũ có mục');
+  }));
+
+  check('TINH-LUI-PC · migrate: phân công đầu tiên lớp × kỹ năng muộn hơn khai giảng → lùi về khai giảng; dòng sau / dòng đã gỡ / GVCN đúng ngày không đụng; nhật ký; khoá; khôi phục (giữ sửa của người dùng)', () => thu(() => {
+    const kg = (classProgressMany([LOP]).get(LOP)?.startWeekStart ?? one('SELECT start_date FROM classes WHERE id = ?', LOP).start_date).slice(0, 10);
+    conn.prepare(`UPDATE teacher_assignments SET status = 'removed' WHERE class_id = ? AND skill = 'reading'`).run(LOP);
+    const them = conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, effective_to, status, created_at) VALUES (?, ?, 'reading', 0, ?, ?, ?, ?)`);
+    const go = Number(them.run(P.w2Teacher.userId, LOP, d.addDaysIso(kg, -70), d.addDaysIso(kg, -64), 'removed', kg).lastInsertRowid);
+    const dau = Number(them.run(P.lrTeacher.userId, LOP, d.addDaysIso(kg, 14), d.addDaysIso(kg, 41), 'ended', kg).lastInsertRowid);
+    const sau = Number(them.run(P.w1Teacher.userId, LOP, d.addDaysIso(kg, 42), null, 'active', kg).lastInsertRowid);
+    conn.prepare('UPDATE teacher_assignments SET effective_from = ? WHERE class_id = ? AND is_core = 1').run(kg, LOP);
+    const tu = (id: number) => one('SELECT substr(effective_from, 1, 10) AS t FROM teacher_assignments WHERE id = ?', id).t;
+    const ds = tl.phanCongTinhLui(conn);
+    assert(ds.some((x: any) => x.id === dau && x.moi === kg) && !ds.some((x: any) => [go, sau].includes(x.id)), `chỉ dòng đầu: ${JSON.stringify(ds.filter((x: any) => x.classId === LOP))}`);
+    assert(!ds.some((x: any) => x.classId === LOP && one('SELECT is_core FROM teacher_assignments WHERE id = ?', x.id).is_core === 1), 'GVCN đã đúng khai giảng — không đụng');
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(tl.KHOA_TINH_LUI_PC);
+    const ap: string[] = [];
+    tl.migratePrTinhLuiPc(conn, ap);
+    assert(tu(dau) === kg && tu(sau) === d.addDaysIso(kg, 42) && tu(go) === d.addDaysIso(kg, -70), `sau migrate: ${tu(dau)} · ${tu(sau)} · ${tu(go)}`);
+    assert(ap.length === 1 && one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'phan_cong.tinh_lui' AND entity_id = ?`, dau).n === 1, `nhật ký: ${ap}`);
+    const ap2: string[] = []; tl.migratePrTinhLuiPc(conn, ap2);
+    assert(!ap2.length && one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'phan_cong.tinh_lui' AND entity_id = ?`, dau).n === 1, 'khoá: chạy lại không làm gì');
+    const khac = ds.find((x: any) => x.id !== dau);
+    if (khac) conn.prepare('UPDATE teacher_assignments SET effective_from = ? WHERE id = ?').run(d.addDaysIso(kg, 3), khac.id);   // người dùng sửa sau migrate
+    const tra = tl.khoiPhucTinhLuiPc(conn);
+    assert(tra.includes(dau) && tu(dau) === d.addDaysIso(kg, 14), `khôi phục: ${tu(dau)}`);
+    if (khac) assert(!tra.includes(khac.id) && tu(khac.id) === d.addDaysIso(kg, 3), 'giữ sửa của người dùng');
+    assert(!one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'phan_cong.tinh_lui'`).n && !tl.khoiPhucTinhLuiPc(conn).length, 'khôi phục một lần');
   }));
 }

@@ -122,6 +122,7 @@ import { migratePrNghiaVu } from './migrate/prNghiaVu.ts';
 import { migratePrPaTrung0711 } from './migrate/prPaTrung0711.ts';
 import { migratePrWLech } from './migrate/prWLech.ts';
 import { migratePrK316 } from './migrate/prK316.ts';
+import { migratePrTinhLuiPc } from './migrate/prTinhLuiPhanCong.ts';
 import { migratePrSosTamPa } from './migrate/prSosTamPa.ts';
 import { migratePrCauHinhCaseSos } from './migrate/prCauHinhCaseSos.ts';
 import { migratePrLoTrinhHv } from './migrate/prLoTrinhHv.ts';
@@ -514,6 +515,9 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrG317(conn, applied));
   /* MON-CT-1311 (chủ SP 13/11): KET / PET còn bộ 4 môn P13 → L+S, R+W qua đường Quản trị đổi môn (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrMonCt1311(conn, applied));
+  /* TINH-LUI-PC (chủ SP 12/11): phân công đầu tiên của lớp × kỹ năng khai muộn hơn khai giảng → tính lùi về ngày khai giảng (hộp Tuần dạy #1505); nhật ký
+     audit giữ ngày cũ, khôi phục `khoiPhucTinhLuiPc` (đổi dữ liệu MỘT lần, khoá demo_config). */
+  buoc(() => migratePrTinhLuiPc(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };
