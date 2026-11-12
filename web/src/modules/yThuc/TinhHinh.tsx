@@ -227,8 +227,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
   );
   return hep
     ? createPortal(
-      <div className="fixed inset-0 z-[60] flex flex-col justify-end" style={{ background: 'var(--phu-hop, rgb(0 0 0 / .55))' }} onClick={(e) => { if (e.target === e.currentTarget) ngoai(); }} onKeyDown={(e) => { if (e.key === 'Escape') ngoai(); }}>
-        <div role="dialog" aria-label={tieuDe} className="grid max-h-[90vh] gap-3 overflow-y-auto rounded-t-[14px] border-t p-4 pb-5" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>{than}</div>
+      <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60" onClick={(e) => { if (e.target === e.currentTarget) ngoai(); }} onKeyDown={(e) => { if (e.key === 'Escape') ngoai(); }}>
+        <div role="dialog" aria-label={tieuDe} className="grid gap-3 rounded-t-[14px] border-t p-4 pb-5" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>{than}</div>
       </div>, document.body)
     : <HopNeo neo={neo} nhan={tieuDe} rong={460} onNgoai={ngoai}>{than}</HopNeo>;
 }

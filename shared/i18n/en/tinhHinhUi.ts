@@ -45,7 +45,6 @@ export const EN_TINH_HINH_UI = {
   'Đã rút': 'Withdrawn',
   'Đã trả lời · {ngay}': 'Replied · {ngay}',
   'Đang chờ': 'Waiting',
-  'Chưa có mốc': 'No level yet',
   'Chưa có vấn đề nào': 'Nothing on record',
   'Không có việc nào đang chờ': 'Nothing waiting',
   'Cả quá trình': 'Full history',
