@@ -66,7 +66,7 @@ export type YThucHocVien = {
   demCuoi: { tong: number; theoNhom: { nhom: string; so: number }[] };
   hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
   /** TINH-HINH: tình hình học tập GV ↔ TVV của em · nút Báo / Hỏi tình hình (máy chủ kiểm lại). */
-  tinhHinh: TinhHinhView[]; coTheBao: boolean; coTheHoi: boolean;
+  tinhHinh: TinhHinhView[]; coTheBao: boolean; coTheHoi: boolean; tvv: string | null;
 };
 
 /** TINH-HINH — khớp `server/src/yThuc/tinhHinh.ts` `TinhHinhView`. `gv_tvv` = GV báo TVV · `tvv_gvcn` = TVV hỏi GVCN. */

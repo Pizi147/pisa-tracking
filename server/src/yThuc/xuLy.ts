@@ -40,8 +40,9 @@ export const MO_TA_TOI_DA = 300;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
 
-function hocVien(studentId: number): { id: number; full_name: string; student_code: string; branch_id: number | null; consultant_user_id: number | null } {
-  const s = db().prepare('SELECT id, full_name, student_code, branch_id, consultant_user_id FROM students WHERE id = ?').get(studentId) as any;
+function hocVien(studentId: number): { id: number; full_name: string; student_code: string; branch_id: number | null; consultant_user_id: number | null; tvv: string | null } {
+  const s = db().prepare(`SELECT s.id, s.full_name, s.student_code, s.branch_id, s.consultant_user_id, u.full_name AS tvv
+    FROM students s LEFT JOIN users u ON u.id = s.consultant_user_id WHERE s.id = ?`).get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
   return s;
 }
@@ -449,7 +450,7 @@ export type YThucHocVien = {
   /** UI-Y-THUC-HV: dòng trạng thái "Duyệt · thu hồi | Báo PH (TVV)" — cùng hàng em của bảng lớp (`hangCuaEm`). */
   hang: Pick<DongEm, 'xuLyGanNhat' | 'tuChoi' | 'thuHoi' | 'baoPh'>;
   /** TINH-HINH: tình hình học tập hai chiều GV ↔ TVV của em (mới nhất trước). */
-  tinhHinh: TinhHinhView[];
+  tinhHinh: TinhHinhView[]; tvv: string | null;
   /** TINH-HINH: "Báo tình hình" (quyền ghi vi phạm) · "Hỏi tình hình" (TVV của em / cùng chi nhánh / QL — `coTheGhi`). */
   coTheBao: boolean; coTheHoi: boolean;
 };
@@ -498,6 +499,8 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     dongThoiGian: dongThoiGian([studentId], trang, { chiTrongChuoi: phamVi === 'chuoi', p, homNay }),
     hang: (({ xuLyGanNhat, tuChoi, thuHoi, baoPh }) => ({ xuLyGanNhat, tuChoi, thuHoi, baoPh }))(hangCuaEm(p, em, hv.full_name, hv.student_code, homNay)),
     tinhHinh: tinhHinhCuaEm(p, [studentId], homNay),
+    /** Mockup v20 D1 "Lưu xong: TVV … nhận việc báo PH": TVV phụ trách em (cùng câu đọc học viên, không thêm câu). */
+    tvv: hv.tvv ?? null,
     coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
     coTheHoi: coTheGhi(p, { consultant_user_id: hv.consultant_user_id ?? null, student_id: studentId }),
     demCuoi: {

@@ -14,7 +14,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
+  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, hanBaoPh, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
@@ -96,7 +96,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   /* Mockup v20 D1: dòng loại "Việc · Ý thức & Phối hợp"; dòng 2 tên em · lớp · chip hạn (chỉ khi Xác nhận — việc có hạn). */
   const dau = (han: boolean) => {
     const x = dauViec({ em: { id: d.studentId, ten: d.ten }, lop });
-    return { ...x, loai: t('Việc · Ý thức & Phối hợp'), dong2: [...x.dong2, han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null] };
+    return { ...x, loai: t('Việc · Ý thức & Phối hợp'), dong2: [...x.dong2, han && d.han ? <ChipHan loai="xu-ly-vi-pham" han={d.han} /> : null] };
   };
 
   const theoId = new Map(d.viPham.map((v) => [v.id, v]));
@@ -254,7 +254,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={tieuDe} hocVien={d.ten} onDong={onDong} dau={dau(cheDo === 'xu-ly')}
       chan={{
         /* Mockup v20 D1: chân lưu chung — trái trạng thái lưu, phải Đóng + nút chính. */
-        huy: { nhan: t('Đóng'), onClick: onDong }, chinh: nutChinh, daSua: !!moTa.trim(),
+        huy: { nhan: t('Đóng'), onClick: onDong }, huyPhai: true, chinh: nutChinh, daSua: !!moTa.trim(),
         conThieu: lf.conThieu(loi) ?? (lf.daBam && loiNguoi ? [{ nhan: t('Người thực hiện'), lyDo: loiNguoi }] : undefined),
         trai: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void (cheDo === 'xu-ly' ? luuXuLy() : guiDeXuat())} />
           : <span className="text-slate-400">{t('Chưa lưu')}</span>,
@@ -349,6 +349,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           <Truong nhan={t('Bằng chứng')} batBuoc={cheDo === 'de-xuat' && canTep(loai)} tuyChon={!(cheDo === 'de-xuat' && canTep(loai))} as="div" loi={lf.loiCua(loi, 'tep')}>
             <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} khoa={busy} /></div>
           </Truong>
+          {/* Mockup v20 D1: bước kế sau khi lưu — ai nhận việc, hạn (cùng hàm hạn với việc máy chủ sinh). */}
+          {cheDo === 'xu-ly' && d.tvv && <p className="m-0 text-[13px] text-slate-400">{t('Lưu xong: TVV {ten} nhận việc báo PH · hạn {ngay}.', { ten: d.tvv, ngay: ngay(hanBaoPh(homNay), homNay) })}</p>}
       </div>
     </KhungPanel>
   );
