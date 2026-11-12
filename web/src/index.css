@@ -79,6 +79,10 @@
     /* KẾT QUẢ ĐIỂM — chỉ tô chính con số + ✓ / ✗ đứng trước, không nền. Vượt kỳ vọng · bằng (vẫn Đạt) · dưới. */
     --kq-vuot-rgb: 148 209 174;  --kq-bang-rgb: 156 189 231;  --kq-duoi-rgb: 232 154 140;
     --kq-thieu10-rgb: 240 160 75;   /* U08-1: "Thiếu 1.0" cam (mockup V11 `.m-10`) — giữa vàng 0.5 và đỏ ≥ 1.5 */
+    /* PT-a (mockup v19, chủ SP duyệt 12/11): Ô SỐ Phân tích — hộp = bấm được, màu = cần làm. Viền ≥ 3 : 1 với nền thẻ, chữ ≥ 6 : 1 trên nền hộp. */
+    --os-nen: #1a2b4c;  --os-vien: #4b6b9f;  --os-chu: #d3e3f8;  --os-re: #223a63;
+    --os-do-nen: #3d2020;  --os-do-vien: #b0655a;  --os-do-chu: #f2b0a4;
+    --os-vang-nen: #33301c;  --os-vang-vien: #9a8550;  --os-vang-chu: #ecd59a;
 
     /* Tên cũ giữ làm bí danh để chỗ đang dùng không vỡ. */
     --ok: rgb(var(--ok-rgb));
@@ -141,6 +145,9 @@
     --da-thi-bg-rgb: 240 245 248;
     --kq-vuot-rgb: 56 103 76;    --kq-bang-rgb: 39 60 143;    --kq-duoi-rgb: 166 58 45;
     --kq-thieu10-rgb: 181 84 31;
+    --os-nen: #edf1fb;  --os-vien: #7385c4;  --os-chu: #1f3077;  --os-re: #dfe6f8;
+    --os-do-nen: #fbecea;  --os-do-vien: #c9776b;  --os-do-chu: #9a3427;
+    --os-vang-nen: #fbf3dc;  --os-vang-vien: #9c7f3e;  --os-vang-chu: #6e521f;
 
     --hang-lon-bg: #f2f4f9;       --hang-lon-vach: #8690ab;
     --hang-lon-dong-bg: #f8f9fc;  --hang-lon-dong-vach: #b0b8cd;
@@ -1222,7 +1229,33 @@
 .hang-mo, .hang-mo * { color: var(--text-faint); }
 /* A3 C16: gợi ý "Ctrl K" nằm trên ô tìm nền trang, không trên nền thanh xanh — dùng token gốc (sáng: chữ thanh #dce2f4 trên ô trắng chỉ 1,25 : 1). */
 .thanh-xanh input + kbd { color: var(--goc-text-faint); }
-:is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted), .o-so.so-bam { font-weight: 500; }
+:is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted, .o-so-hop *), .o-so.so-bam { font-weight: 500; }
+/* PT-a (mockup v19 `.os`, chủ SP duyệt 12/11): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx). Số bấm được = hộp nhỏ (nhìn ra là nút, không gạch chân);
+   màu chỉ cho ô cần làm: đỏ + ⚠ = quá hạn (`text-bad` / `text-late`), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
+   Số 0 / "—" không phải nút (OSo) → mờ, không hộp. Số trong chip (SOS, `SO_TRONG_CHIP` → `!text-inherit`) giữ dáng chip. Panel (portal) nằm ngoài vùng → giữ dáng cũ. Tổng quan / hồ sơ lớp: PR riêng (XM-6). */
+.o-so-hop .so-bam:not([class~="!text-inherit"]) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 40px; height: 30px; padding: 0 9px; border-radius: 7px;
+  border: 1px solid var(--os-vien); background: var(--os-nen); color: var(--os-chu); font-weight: 600; line-height: 1; vertical-align: middle;
+  transition: background-color .12s ease-out, border-color .12s ease-out; }
+.o-so-hop .so-bam:not(:hover, :focus-visible) { text-decoration-line: none; }
+.o-so-hop .so-bam:is(:hover, :focus-visible) { background: var(--os-re); border-color: var(--accent); }
+.o-so-hop .so-bam[aria-expanded="true"] { border: 2px solid var(--accent); padding: 0 8px; background: var(--accent-soft); }
+.o-so-hop .so-bam:is(.text-bad, .text-late) { background: var(--os-do-nen); border-color: var(--os-do-vien); color: var(--os-do-chu); font-weight: 700; }
+.o-so-hop .so-bam:is(.text-bad, .text-late)::before { content: '⚠'; font-size: 12px; }
+.o-so-hop .so-bam.text-soon { background: var(--os-vang-nen); border-color: var(--os-vang-vien); color: var(--os-vang-chu); }
+.o-so-hop .so-bam.text-kq-vuot { color: rgb(var(--kq-vuot-rgb)); }
+.o-so-hop .so-bam.text-kq-duoi { color: rgb(var(--kq-duoi-rgb)); }
+.o-so-hop .text-xs .so-bam { min-width: 26px; height: 22px; padding: 0 6px; border-radius: 5px; }
+/* Số lớn thẻ chỉ số (`DaiChiSo` `.chi-so-gt`): cùng hộp, ôm cỡ số. */
+.o-so-hop :is(.chi-so-gt .so-bam, .so-bam.so-chinh) { height: auto; padding: 2px 10px 3px; border-radius: 9px; font-weight: 700; line-height: 1.2; }
+/* Cặp hộp % + phân số mờ (`CapSo`): lưới hai cột — hộp căn phải, phân số căn trái, mọi dòng thẳng nhau. */
+/* PT-a (mockup v19 khung 2a): dòng nhóm lớp trong panel bài chấm (`BangLuotPanel`) — nền hàng lớn, vạch trái, chữ tràn qua ô trống bên phải, không bấm. */
+.bang tr.hang-nhom-lop { background: var(--hang-lon-bg); cursor: default; }
+.bang tr.hang-nhom-lop > td { height: 34px; padding-top: 0; padding-bottom: 0; background: transparent !important; background-image: none !important; }
+.bang tr.hang-nhom-lop > td:first-child { overflow: visible; box-shadow: inset 3px 0 0 var(--hang-lon-vach); }
+article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 0 var(--hang-lon-vach); padding-top: 6px; padding-bottom: 6px; }
+.cap-so { display: inline-grid; grid-template-columns: 1fr 1fr; align-items: center; gap: 6px; width: 100%; }
+.cap-so > :first-child { justify-self: end; }
+.cap-so > :last-child { justify-self: start; font-size: 13px; font-weight: 500; color: var(--text-faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
 
 /* O-TQ-BAM (chủ SP 07/11): CẢ Ô chỉ số bấm được (`ChiSo` → `.ca-o`) — số chính mang `.so-chinh` (nút `OSo` mở panel / link `SoDen` đổi trang) và
    vùng bấm của nó phủ cả ô (stretched link: không lồng phần tử bấm, Tab + Enter vào đúng số). Số phụ ("52 chưa PA") và ⓘ nổi trên lớp phủ, bấm riêng.

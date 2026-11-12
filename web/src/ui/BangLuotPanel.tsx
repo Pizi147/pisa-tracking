@@ -133,7 +133,9 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const bt = data?.kieu === 'bai-thuong';
   const vpk = data?.kieu === 'vi-pham', pak = data?.kieu === 'pa';
   const knNhan = data?.knNhan ?? null;
-  const goc = data?.rows ?? [];
+  /* PT-a (XM-1): `sc=1` = hàng chân "S chéo chung" của Phân tích › Giáo viên — chỉ dòng S chéo chung của nguồn (cùng tập với số ở ô). */
+  const chiSc = new URLSearchParams(nguon?.split('?')[1] ?? '').get('sc') === '1';
+  const goc = (data?.rows ?? []).filter((r) => !chiSc || r.dongViec?.sChung);
   const soChua = goc.filter((r) => r.ketQua === 'chua').length, soDat = goc.filter((r) => r.ketQua === 'dat').length;
   const coTab = soChua > 0 && soDat > 0;
   const [tabChon, setTab] = useState<'chua' | 'dat' | null>(null);
@@ -428,12 +430,12 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const tatVc = loc.flatMap((r) => (r.dongViec ? [{ ...r.dongViec, id: r.id, studentId: r.dongViec.em?.id }] : []));
   type HVc = (typeof tatVc)[number];
   const laBai = vk && goc.every((r) => r.dongViec?.tab === 'cham');
-  const nhomChung = tabViec === 'chua' && tatVc.some((h) => h.sChung);
+  const nhomChung = !chiSc && tabViec === 'chua' && tatVc.some((h) => h.sChung);
   const nhanTabViec = (k: TrangThaiViec) => (k === 'chua' ? t('Chưa làm') : k === 'muon' ? t('Làm muộn') : t('Đúng hạn'));
   const cotVc: DinhNghiaCot[] = [
-    { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
-    /* RA-GD-0711: Lớp 100 → 120 — "MB FT RF 12", "MB Pre FOU 03" không còn "MB FT RF…" (cột Việc / Bài linh hoạt nhường chỗ). */
-    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 120 },
+    /* PT-a (mockup v19 khung 2a): Học viên đầu dòng, rồi Bài / Việc. RA-GD-0711: Lớp 120 — "MB FT RF 12", "MB Pre FOU 03" không cắt. */
+    { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 140 }, { key: 'viec', nhan: laBai ? t('Bài') : t('Việc'), kieu: 'chu', linhHoat: true },
+    { key: 'lop', nhan: t('Lớp'), kieu: 'chu', rong: 120 },
     { key: 'han', nhan: t('Hạn'), kieu: 'chu', rong: 92 }, { key: 'tt', nhan: t('Trạng thái'), kieu: 'chu', rong: 176 },
   ];
   /* Chủ SP 06/11: MỘT chữ "Quá hạn" (bỏ "Trễ") — việc mở và việc làm sau hạn cùng nhãn; dòng phụ "đã làm / nhập dd/mm" phân biệt. */
@@ -459,11 +461,27 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
   const phuVc = (h: HVc, c: DinhNghiaCot) => (c.key === 'viec'
     ? ([!laBai && nhieuLoai ? dich(TAB_VIEC_HAN_LABEL[h.tab]) : null, h.phu ? dich(h.phu) : null, h.chiNhanh ?? null, h.pcNhapSau ? t('phân công nhập sau') : null].filter(Boolean).join(' · ') || null)
     : c.key === 'han' ? (h.hanGoc ? t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) }) : null) : c.key === 'tt' ? ngayLam(h) : null);
+  const COT_VIEC = cotVc.find((c) => c.key === 'viec')!;
+  /*
+   * PT-a (mockup v19 khung 2a, PTA rà #1486): panel BÀI chấm chia theo lớp ("MB FT 101 · 5 bài") — bỏ cột Lớp. Nhóm theo thứ tự xuất hiện: máy chủ đã xếp quá hạn
+   * lâu nhất trước → nhóm đầu là nhóm có bài quá hạn lâu nhất; trong nhóm giữ thứ tự đó. Dòng nhóm là dòng giả của `Bang` (`hang-nhom-lop`, không bấm).
+   */
+  type NhomLop = { nhomLop: string; n: number; id: string };
+  type DongVc = HVc | NhomLop;
+  const laNhom = (h: DongVc): h is NhomLop => 'nhomLop' in h;
+  const theoLop = (ds: HVc[]): DongVc[] => {
+    if (!laBai) return ds;
+    const m = new Map<string, HVc[]>();
+    for (const h of ds) { const k = h.lop?.ma ?? '—'; (m.get(k) ?? m.set(k, []).get(k)!).push(h); }
+    return [...m].flatMap(([lop, xs]): DongVc[] => [{ nhomLop: lop, n: xs.length, id: `nhom:${lop}` }, ...xs]);
+  };
+  const cotVcHien = laBai ? cotVc.filter((c) => c.key !== 'lop') : cotVc;
+  const nhanNhom = (h: NhomLop) => <span className="whitespace-nowrap text-[13px] font-bold text-[color:var(--text)]">{h.nhomLop} <span className="font-medium text-faint">· {t('{n} bài', { n: h.n })}</span></span>;
   const theVc = (h: HVc) => (
     <div className="grid gap-1">
-      <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, cotVc[0])}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
+      <div className="flex items-baseline gap-2 text-[15px]">{oVc(h, COT_VIEC)}<span className="ml-auto whitespace-nowrap text-[14px]">{ttVc(h)}</span></div>
       {(h.em || h.lop) && <div className="text-[14px]">{h.em && lkHv(h.em.id, h.em.ten)}{h.em && h.lop && ' · '}{h.lop && lkLop(h.lop.id, h.lop.ma)}</div>}
-      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.hanGoc && <> ({t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) })})</>}{h.ngayXong && <> · {ngayLam(h)}</>}{phuVc(h, cotVc[0]) && <> · {phuVc(h, cotVc[0])}</>}</div>
+      <div className="text-[13px] text-dim">{t('Hạn')} {ddmm(h.han)}{h.hanGoc && <> ({t('hạn gốc {ngay}', { ngay: ddmm(h.hanGoc) })})</>}{h.ngayXong && <> · {ngayLam(h)}</>}{phuVc(h, COT_VIEC) && <> · {phuVc(h, COT_VIEC)}</>}</div>
     </div>
   );
 
@@ -479,9 +497,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     bt && data?.nguong != null ? t('đạt từ {n} % mỗi môn', { n: data.nguong }) : null, vpk && tatV.length ? t('mới nhất trước') : null,
     tg ? t('so mốc MT trước') : t('dữ liệu đến {ngay}', { ngay: ngay(homNay).slice(0, 5) }), tt && /^W[12]$/.test(knNhan ?? '') ? t('{kn} tính nửa W', { kn: knNhan! }) : null].filter(Boolean).join(' · ');
   return (
-    <KhungPanel tieuDe={tieuDe} rong="bang" onDong={onDong} loai={loai} dau={{ dong2: [dong2],
+    <KhungPanel tieuDe={tieuDe} rong={vk && laBai ? 'so' : vk ? 'rong' : 'bang'} onDong={onDong} loai={loai} dau={{ dong2: [dong2],
       /* BO-CHU-THICH (chủ SP 07/11): "Cách tính" là ⓘ cuối dòng tiêu đề như `NganDanhSach` — không còn khối chữ cuối panel. */
-      tieu: data?.cachTinh ? <><span className="min-w-0">{tieuDe}</span><NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat></> : undefined }} chan={{ huy: { nhan: t('Đóng'), onClick: onDong } }}>
+      tieu: data?.cachTinh ? <><span className="min-w-0">{tieuDe}</span><NutLuat label={t('Cách tính')}>{dich(data.cachTinh)}</NutLuat></> : undefined }} chan={{ huy: { nhan: t('Đóng'), onClick: onDong },
+        /* PT-a (mockup v19 khung 2a): panel sổ nghĩa vụ của một GV → "Hồ sơ GV ›" (đổi trang) ở chân. */
+        phu: vk && !chiSc && gvPanel > 0 && !nguon?.startsWith('/giao-vien/') ? <Link to={`/giao-vien/${gvPanel}`} className="whitespace-nowrap text-sm font-semibold text-[color:var(--accent)] no-underline hover:underline">{t('Hồ sơ GV')} ›</Link> : undefined }}>
       {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
         : loading || !data ? <div className="pt-3"><Skeleton rows={4} /></div>
           : (
@@ -491,12 +511,14 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                 <div role="tablist" aria-label={t('Trạng thái')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
                   {tabsViec.map((k) => {
                     /* Sổ nghĩa vụ: số tab = 3 số riêng (như ô bảng); bài S chéo chung ghi "+n" mờ riêng. */
-                    const n = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && !r.dongViec.sChung).length;
-                    const chung = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && r.dongViec.sChung).length;
+                    const n = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && (chiSc || !r.dongViec.sChung)).length;
+                    const chung = chiSc ? 0 : goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && r.dongViec.sChung).length;
                     return (
                       <button key={k} type="button" role="tab" aria-selected={tabViec === k} tabIndex={tabViec === k ? 0 : -1} onClick={() => setTabViec(k)}
                         className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tabViec === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-                        {nhanTabViec(k)} <span className={`tabular-nums ${k === 'chua' && n ? 'text-bad' : !n ? 'font-normal text-faint' : ''}`}>{n}</span>
+                        {nhanTabViec(k)} <span className={`ml-1 inline-flex h-[22px] min-w-6 items-center justify-center rounded-md border px-1.5 text-[13px] tabular-nums ${k === 'chua' && n
+                          ? 'border-[color:var(--os-do-vien)] bg-[color:var(--os-do-nen)] font-semibold text-[color:var(--os-do-chu)]'
+                          : `border-[color:var(--line-strong)] bg-[color:var(--surface-2)] ${n ? 'font-semibold text-[color:var(--text)]' : 'font-normal text-faint'}`}`}>{n}</span>
                         {chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}> +{chung}<span className="sr-only"> {t('S chéo chung')}</span></span>}
                       </button>
                     );
@@ -525,9 +547,11 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                   return (
                     <section key={String(chung)} className="grid gap-1.5" aria-label={nhom ?? tieuDe}>
                       {nhom && <h3 className="m-0 text-[14px] font-semibold text-dim">{nhom} <span className="tabular-nums">{tatVc.filter((h) => !!h.sChung === chung).length}</span></h3>}
-                      {hang.length || !nhom ? <Bang deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVc} hang={hang} khoa={(h) => h.id} oCua={oVc} phuCua={phuVc} khung={false} theRieng={theVc}
+                      {hang.length || !nhom ? <Bang<DongVc> deu day ten={nhom ? `${tieuDe} · ${nhom}` : tieuDe} cot={cotVcHien} hang={theoLop(hang)} khoa={(h) => h.id}
+                          oCua={(h, c) => (laNhom(h) ? (c.key === 'ten' ? nhanNhom(h) : null) : oVc(h, c))} phuCua={(h, c) => (laNhom(h) ? null : phuVc(h, c))}
+                          lopHang={(h) => (laNhom(h) ? 'hang-nhom-lop' : '')} khung={false} theRieng={(h) => (laNhom(h) ? nhanNhom(h) : theVc(h))}
                           /* KIEM-TAY-1011 (4): bấm cả dòng = bấm tên việc / bài (cùng `href`, mở đúng chỗ chấm / làm việc); link em, lớp giữ đích riêng. */
-                          onHang={(h) => navigate(h.href)} />
+                          onHang={(h) => { if (!laNhom(h)) navigate(h.href); }} />
                         : <p className="m-0 text-[14px] text-dim">{t('Không có bài chưa làm.')}</p>}
                     </section>
                   );

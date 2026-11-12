@@ -55,7 +55,7 @@ export function OSo(props: Props) {
      theo cây React) không lên hàng: hàng không đổi chi nhánh thay vì mở panel, ô gõ trong panel gõ được dấu cách. Esc không chặn (khung nghe ở document). */
   return (
     <span className="contents" onClick={(e) => e.stopPropagation()} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.stopPropagation(); }}>
-      <button type="button" onClick={() => { chuSoLieu.gan(khoa, o, true); setOpen(true); }}
+      <button type="button" aria-expanded={open} onClick={() => { chuSoLieu.gan(khoa, o, true); setOpen(true); }}
         className={`${VUNG_BAM_SO} ${mauOSo(className)}`}
         aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: props.nhan ?? giaTri, ten })}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
