@@ -8,6 +8,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   const bc: any = await import('../classes/baoCaoPh.ts');
   const xbc: any = await import('../classes/xuatBaoCaoPh.ts');
   const mw: any = await import('../worklist/mywork.ts');
+  const sch: any = await import('../classes/schedule.ts');
   const { loadPrincipal }: any = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nBAO-CAO-PH — báo cáo gửi phụ huynh: đợt, quyền, em đủ, điểm sửa tay');
@@ -321,6 +322,23 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     xoaNho();
     chip = bc.chipBaoCaoPh(P.mbManager, lop);
     assert(chip?.dot === moi && chip.quaHan === 0, `đợt đang mở thắng: ${JSON.stringify(chip)}`);
+  }));
+
+  check('BC-18 · BC-PH-MOC: đợt FT theo tuần khai giảng (như đầu trang), không theo start_date lệch; sửa khai giảng → start_date theo', () => thu(() => {
+    const ky = (ws: string) => (conn.prepare('SELECT id FROM report_periods WHERE week_start = ?').get(ws) as any)?.id as number;
+    const qua = ky(d.addDaysIso(TODAY, -42 - ((new Date(TODAY).getUTCDay() + 6) % 7)));
+    assert(qua, 'seed thiếu kỳ 6 tuần trước');
+    /* Như CP FT 130 bản chính: start_date nhập nhầm năm sau, tuần khai giảng đã qua. */
+    conn.prepare('UPDATE classes SET start_date = ?, start_period_id = ? WHERE id = ?').run('2027-03-08', qua, lop);
+    xoaNho();
+    const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(lop);
+    const r = bc.dotCuaLop(c, TODAY);
+    assert(r.ds.length > 0 && !r.dau, `khai giảng 6 tuần trước → có đợt tháng, không "Đợt đầu": ${JSON.stringify({ ds: r.ds.map((x: any) => x.ma), dau: r.dau })}`);
+    conn.prepare('UPDATE classes SET start_date = ? WHERE id = ?').run('2027-03-08', lop);
+    sch.setClassProgress(P.mbManager, lop, { startPeriodId: qua });
+    const ws = (conn.prepare('SELECT week_start FROM report_periods WHERE id = ?').get(qua) as any).week_start;
+    const sd = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(lop) as any).start_date;
+    assert(sd === ws, `sửa tuần khai giảng → start_date = ${ws}, đang ${sd}`);
   }));
 
   const fs = await import('node:fs');

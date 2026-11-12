@@ -14,7 +14,7 @@ import { type Principal } from '../permissions.ts';
 import { writeAuditLo } from '../platform/audit.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, loi, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
-import { docLop, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
+import { docLop, docTuyChinhDot, dotCuaLop, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { boPhanBc, nhanDotBc } from '../../../shared/domain/index.ts';
 
 const TOI_DA_LOP = 50;
@@ -61,7 +61,7 @@ export function doiDotBaoCaoPh(p: Principal, body: any) {
     return { lopDoi: co, boQua: lop.length - co.length };
   }
 
-  const tienDo = classProgressMany(lop.filter((c) => !lopFt(c)).map((c) => c.id));
+  const tienDo = classProgressMany(lop.map((c) => c.id));   // FT cũng cần: tuần khai giảng (BC-PH-MOC)
   if (viec === 'bo') {
     const ma = String(body?.ma ?? '');
     if (!MA_DOT_TINH.test(ma)) throw badRequest('Đợt không hợp lệ');

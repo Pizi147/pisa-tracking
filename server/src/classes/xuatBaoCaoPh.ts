@@ -214,8 +214,9 @@ function viecTheoThang(p: Principal, ids: readonly number[], thang: string) {
   const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
   const khongDot: string[] = [];
   const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt QL / Admin bỏ hoặc thêm — một câu cho cả lô lớp
+  const tienDo = classProgressMany(lop.map((c) => c.id));   // BC-PH-MOC: tuần khai giảng / mốc thi — một lô, không đọc từng lớp
   for (const c of lop) {
-    const dl = dotCuaLop(c, homNay, undefined, tuyChinh);
+    const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
     if (!dl) { khongDot.push(c.code); continue; }
     const ds = dl.ds.filter((d) => (d.loai === 'thang' ? d.mo.slice(0, 7) === thang : d.han.slice(0, 7) === thang));
     if (!ds.length) khongDot.push(c.code);
@@ -275,7 +276,7 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
   const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
   const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
     && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
-  const tienDo = classProgressMany(lop.filter((c) => !lopFt(c)).map((c) => c.id));   // một lô cho mọi lớp thường
+  const tienDo = classProgressMany(lop.map((c) => c.id));   // một lô cho mọi lớp (FT: tuần khai giảng — BC-PH-MOC)
   const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt bỏ không thành việc, không tính "thiếu n em"; đợt thêm như đợt thường
   for (const c of lop) {
     const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
