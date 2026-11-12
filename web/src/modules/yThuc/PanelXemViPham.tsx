@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ngay } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
-import { ChipMon, TienTrinh } from './BangLan.tsx';
+import { ChipMon, TienTrinh, chuMoc } from './BangLan.tsx';
 import { CanLamEm } from './khoiYThuc.tsx';
 import { XacNhanXuLyPanel } from './XacNhanXuLyPanel.tsx';
 import { usePanelYThuc } from './panelYThuc.tsx';
@@ -79,7 +79,7 @@ export function PanelXemViPham({ studentId, dau, onDong, onDaLam }: { studentId:
           </ul>
         )}
         <dl className="m-0 grid grid-cols-[6.5rem_minmax(0,1fr)] gap-y-1 text-sm">
-          <dt className="text-slate-500">{t('Đã tới')}</dt><dd className="m-0 text-slate-100">{d.bacNhan ? dich(d.bacNhan) : t('chưa có')} · {t('Bậc kế')} <b>{dich(d.keTiep.nhan)}</b></dd>
+          <dt className="text-slate-500">{t('Mốc')}</dt><dd className="m-0 text-slate-100">{chuMoc(d.bac)} · {t('Bậc kế')} <b>{dich(d.keTiep.nhan)}</b></dd>
         </dl>
         <Link className="link self-start text-[13px] font-semibold" to={`/hoc-vien/${studentId}?tab=y-thuc`}>{t('Hồ sơ Ý thức của em ›')}</Link>
       </div>

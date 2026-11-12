@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -7,15 +7,16 @@ import { Menu } from '../../ui/Menu.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { laDongLs, ngay, quaHanChiXem, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
+import { addDaysIso, laDongLs, ngay, quaHanChiXem, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
 import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
 import { ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
-import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, ThanhLs, type VpDong } from './BangLan.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type XuLyView, type YThucHocVien } from './kieu.ts';
+import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, ThanhLs, type VpDong } from './BangLan.tsx';
+import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
+import { DUONG_LAM_MOI_Y_THUC, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { CO_LO, LoYThucPanel, guiTheoLo, type ViecLo } from './LoYThucPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
 import { PanelBaoPhTvv, gioVnNay, lucVn } from '../congViec/PanelBaoPhTvv.tsx';
@@ -71,6 +72,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const [busyLo, setBusyLo] = useState(false);
   const [baoPh, setBaoPh] = useState<{ viecId: number; studentId: number; ten: string; han: string } | null>(null);
   const [duyet, setDuyet] = useState<{ id: number; thuHoi: boolean; moSan: 'duyet' | 'tu-choi' } | null>(null);
+  /* TINH-HINH: hộp nhỏ Báo / Hỏi tình hình · Sửa · Ghi kết quả — neo nút vừa bấm. */
+  const [hop, setHop] = useState<{ che: CheDoHop; neo: RefObject<HTMLElement | null> } | null>(null);
+  const neoBao = useRef<HTMLButtonElement>(null);
+  const neoHoi = useRef<HTMLButtonElement>(null);
   const [dangGhi, setDangGhi] = useState<number | null>(null);
   /* F03: em vừa "Đã xem" — hàng ở lại nhóm Mới (Hoàn tác · Xem lại), không chỉ toast. */
   const [vuaXem, setVuaXem] = useState<Record<number, { x: DongEm; ids: number[]; luc: string }>>({});
@@ -192,6 +197,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const ghiBaoPh = (sid: number, b: BaoPhLan) => setBaoPh({ viecId: b.id, studentId: sid, ten: emLop.get(sid)?.ten ?? '', han: b.han });
 
   /* ---------------- Ô Học viên (khối em + dòng gọn) ---------------- */
+  /* Em chưa có vấn đề gì (không khối, không lịch sử, chưa bậc): dòng đã ghi "✓ Chưa có vấn đề nào" — không thêm chip trùng ý (mockup v20 A1). */
+  const theoEmCo = (sid: number) => d.tinhHinh.some((x) => x.studentId === sid) || d.dongThoiGian.some((x) => x.studentId === sid);
   const hvEm = (sid: number) => {
     const e = emLop.get(sid);
     const ten = e?.ten ?? tra.em.get(sid)?.ten ?? '';
@@ -202,8 +209,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
         <span className="flex min-w-0 flex-col items-start gap-2">
           <Link className="block text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${sid}?tab=y-thuc`}>{ten}</Link>
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
-            {/* Mockup v19: em chưa có bậc không chip (Khai bậc cho mọi em: nút "Khai / sửa cấp bậc" đầu tab). */}
-            {e?.bacNhan && <ChipBac nhan={e.bacNhan} ten={ten}>{(dong) => <ThangEm sid={sid} ten={ten} homNay={homNay} onKhai={() => { dong(); mo({ loai: 'khai', studentId: sid }); }} onLichSu={() => { dong(); moLichSu(sid); }} />}</ChipBac>}
+            {/* Chủ SP 12/11: mốc viết hoa, không "Đã tới"; chưa có → "Chưa có vi phạm" — cùng `bac` với thang (TH-9). */}
+            {e && (e.bac > 0 || e.soLs > 0 || theoEmCo(sid)) && <ChipBac bac={e.bac} ten={ten}>{(dong) => <ThangEm sid={sid} ten={ten} homNay={homNay} onKhai={() => { dong(); mo({ loai: 'khai', studentId: sid }); }} onLichSu={() => { dong(); moLichSu(sid); }} />}</ChipBac>}
             {tvv && <span>{t('TVV {ten}', { ten: tvv })}</span>}
           </span>
         </span>
@@ -213,7 +220,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
 
   /* ---------------- Một dòng lần (gom theo em ở dưới) ---------------- */
   type Dong = { key: string; sid: number; node: ReactNode };
-  const dongLan = (o: { key: string; sid: number; ten: string; vp: VpDong[]; gv: ReactNode | null; ph: ReactNode | null; tiep: ReactNode; nen?: 'vua'; b?: BaoPhLan | null; moiIds?: number[]; ls?: boolean }): Dong => {
+  const dongLan = (o: { key: string; sid: number; ten: string; vp: VpDong[]; gv: ReactNode | null; ph: ReactNode | null; tiep: ReactNode; nen?: 'vua'; b?: BaoPhLan | null; moiIds?: number[]; ls?: boolean;
+    the?: ReactNode; vanDe?: ReactNode; dx?: ReactNode }): Dong => {
     const em = tra.em.get(o.sid);
     const moId = moVp?.startsWith(`${o.key}:`) ? Number(moVp.slice(o.key.length + 1)) : null;
     const chiTietVp = (v: VpDong) => (
@@ -227,11 +235,12 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     );
     /* Báo PH đang mở = bước còn chờ → cột "Bước đang làm"; đã báo / đã bỏ → "Đã xử lý" dòng TVV. Lịch sử: luôn ở "Đã xử lý". */
     const phCho = !o.ls && o.b?.trangThai === 'mo' && o.ph != null;
-    const dx = o.gv || (o.ph && !phCho) ? <ODaXuLy gv={o.gv} tvv={phCho ? null : o.ph} /> : null;
+    const dx = o.dx !== undefined ? o.dx : o.gv || (o.ph && !phCho) ? <ODaXuLy gv={o.gv} tvv={phCho ? null : o.ph} /> : null;
     const tiep = phCho ? <span className="flex flex-col items-stretch gap-2">{o.ph}{o.tiep}</span> : o.tiep;
     return {
       key: o.key, sid: o.sid,
       node: <DongLan key={o.key} vp={o.vp} dx={dx} tiep={tiep} nen={o.nen} ls={o.ls} homNay={homNay}
+        the={o.the ?? (o.vanDe ? undefined : <TheLoai loai="vp" so={o.vp.length} />)} vanDe={o.vanDe}
         moVp={moId} onMoVp={(id) => setMoVp((c) => (c === `${o.key}:${id}` ? null : `${o.key}:${id}`))} chiTietVp={chiTietVp}
         duoi={o.b && moDu === o.b.id ? <BaoPhDu id={o.b.id} homNay={homNay} onSuaHan={() => ghiBaoPh(o.sid, o.b!)} /> : undefined} />,
     };
@@ -282,6 +291,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     ...nhomBb.filter((o) => laGvcn && !o.x.deXuat).map((o) => o.x.studentId), ...(laGvcn ? moiDs.map((x) => x.studentId) : []),
     ...choDuyetDx.filter(viecDx).map((x) => x.studentId), ...emThuHoi.filter((x) => d.coTheDuyet || giuPh(x.studentId, x.thuHoi?.id)).map((x) => x.studentId),
     ...choTvv.filter((x) => giuPh(x.studentId, x.id)).map((x) => x.studentId),
+    ...d.tinhHinh.filter((x) => x.trangThai === 'mo' && (x.chieu === 'tvv_gvcn' ? x.coTheTraLoi && laGvcn : !!x.baoPh?.coTheGhi && !!tra.em.get(x.studentId)?.giuBaoPh)).map((x) => x.studentId),
   ]);
 
   const kBb = nhomBb.map(({ x, k }) => {
@@ -354,9 +364,34 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
       /* G3-14: việc báo lại sau thu hồi — nhãn nói rõ vì sao TVV gọi lại PH. */
       ph: x.status === 'thu_hoi' ? <span className="flex flex-col items-start gap-1"><span className="text-xs font-semibold text-slate-400">{t('Báo lại · đã thu hồi')}</span>{ph(x.studentId, b)}</span> : ph(x.studentId, b) });
   });
+  /* TINH-HINH (mockup v20 A1): tình hình còn chờ = một dòng trong khối em (cả hai chiều GV ↔ TVV); xong / rút vào lịch sử của em. */
+  const thTheoEm = new Map<number, TinhHinhView[]>();
+  for (const x of d.tinhHinh) (thTheoEm.get(x.studentId) ?? thTheoEm.set(x.studentId, []).get(x.studentId)!).push(x);
+  const fTh: ThaoTacTh = {
+    onGhiBaoPh: (x) => x.baoPh && setBaoPh({ viecId: x.baoPh.id, studentId: x.studentId, ten: emLop.get(x.studentId)?.ten ?? '', han: x.han ?? homNay }),
+    onSua: (x, neo) => setHop({ che: { loai: 'sua', x }, neo }),
+    onRut: (x) => { if (!window.confirm(t('Rút tình hình này? Việc của người nhận sẽ đóng.'))) return; void api.post(`/tinh-hinh/${x.id}/rut`, {}).then(() => { toast.push('ok', t('Đã rút')); DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); }, (e) => toast.push('error', e.message)); },
+    onTraLoi: (x, neo) => setHop({ che: { loai: 'tra-loi', x }, neo }),
+    onHoanTacTraLoi: (x) => void api.post(`/tinh-hinh/${x.id}/tra-loi/hoan-tac`, {}).then(() => { DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); }, (e) => toast.push('error', e.message)),
+  };
+  const dongTh = (x: TinhHinhView, ls = false): Dong => {
+    const dx = daXuLyTinhHinh(x, homNay);
+    return dongLan({ key: `th${x.id}`, sid: x.studentId, ten: emLop.get(x.studentId)?.ten ?? '', vp: [], gv: null, ph: null, ls,
+      the: <TheTinhHinh x={x} homNay={homNay} />, vanDe: <NoiDungTinhHinh chu={x.noiDung} />, dx: dx.gv || dx.tvv ? <ODaXuLy gv={dx.gv} tvv={dx.tvv} /> : null,
+      tiep: <BuocTinhHinh x={x} homNay={homNay} tvv={emLop.get(x.studentId)?.tvv ?? null} gvcn={d.gvcn} f={fTh} /> });
+  };
+  const kTh = d.tinhHinh.filter((x) => x.trangThai === 'mo').map((x) => dongTh(x));
+  /* Nhắc nhở 7 ngày gần nhất: một dòng trong khối em (em đã có khối) — không việc, không hạn. */
+  const tuNgay = addDaysIso(homNay, -6);
+  const nhacGan = d.dongThoiGian.filter((x): x is Extract<DongThoiGianYt, { loai: 'vi-pham' }> => x.loai === 'vi-pham' && !!x.chiNhac && x.ngay >= tuNgay);
   const theoEm = new Map<number, Dong[]>();
-  for (const r of [...kBb, ...kMoi, ...kChoQl, ...kTvv]) { const ds = theoEm.get(r.sid); if (ds) ds.push(r); else theoEm.set(r.sid, [r]); }
-  const iBaoPh = <NutLuat label={t('Đã xử lý là gì')}>{t('GVCN: lần xử lý (bậc, ngày) hoặc Đã xem. TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý (kể cả đề xuất chờ QL), hạn 5 ngày.')}</NutLuat>;
+  for (const r of [...kBb, ...kMoi, ...kChoQl, ...kTvv, ...kTh]) { const ds = theoEm.get(r.sid); if (ds) ds.push(r); else theoEm.set(r.sid, [r]); }
+  for (const x of nhacGan) {
+    const ds = theoEm.get(x.studentId);
+    if (ds) ds.push(dongLan({ key: `nn${x.id}`, sid: x.studentId, ten: x.ten, vp: vpCua([x.id]), gv: null, ph: null, the: <TheLoai loai="nn" />,
+      tiep: <span className="text-xs text-slate-500">{t('Không cần làm gì')}</span> }));
+  }
+  const iBaoPh = <NutLuat label={t('Đã xử lý là gì')}>{t('GVCN: lần xử lý (bậc, ngày) hoặc Đã xem. TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn 5 ngày.')}</NutLuat>;
 
   /* ---------------- Lịch sử của em — mở tại chỗ (K6 cũ, cùng kiểu dòng) ---------------- */
   const hopPhamVi = (x: DongThoiGianYt) => phamVi === 'tat-ca' || x.trongChuoi !== false;
@@ -364,6 +399,9 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   /* `dongThoiGian` cắt 150 dòng mới nhất: em thiếu dòng → đọc `/students/:id/y-thuc` có sẵn CHỈ khi bấm. */
   const thieuLs = (sid: number) => d.catLs && lsDaNap(sid).length < (emLop.get(sid)?.soLs ?? 0);
   const dongLs = (x: DongThoiGianYt, vpm: Map<number, VpDong>): Dong => {
+    if (x.loai === 'vi-pham' && x.chiNhac) {
+      return dongLan({ key: `ls-n${x.id}`, sid: x.studentId, ten: x.ten, vp: [vpm.get(x.id)!], ls: true, ph: null, gv: null, the: <TheLoai loai="nn" />, tiep: <span className="text-slate-500">—</span> });
+    }
     if (x.loai === 'vi-pham') {
       const v = vpm.get(x.id)!;
       return dongLan({
@@ -385,9 +423,12 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     return dongLan({ key: `ls-x${x.id}`, sid: x.studentId, ten: x.ten, vp: vpCua(x.viPhamIds, undefined, vpm), gv: oXl(x), ph: x.baoPh ? ph(x.studentId, x.baoPh) : null, b: x.baoPh, ls: true,
       tiep: x.status === 'done' ? <span className="text-sm font-semibold text-ok">✓ {t('Xong')}</span> : <span className="text-slate-500">—</span> });
   };
-  const veLs = (rows: DongThoiGianYt[], vpm: Map<number, VpDong>) => {
-    const ds = rows.filter(hopPhamVi);
-    return ds.length ? ds.map((x) => dongLs(x, vpm).node)
+  const thLs = (sid: number) => (thTheoEm.get(sid) ?? []).filter((x) => x.trangThai !== 'mo');
+  const veLs = (rows: DongThoiGianYt[], vpm: Map<number, VpDong>, sid: number) => {
+    /* Dòng thời gian + tình hình đã xong / rút của em, mới nhất trước. */
+    const ds = [...rows.filter(hopPhamVi).map((x) => ({ ngay: x.ngay, node: dongLs(x, vpm).node })),
+      ...thLs(sid).map((x) => ({ ngay: x.taoLuc.slice(0, 10), node: dongTh(x, true).node }))].sort((a, b) => b.ngay.localeCompare(a.ngay));
+    return ds.length ? ds.map((x) => x.node)
       : <p className="m-0 px-4 py-3 text-sm text-slate-400">{phamVi === 'chuoi' ? t('Lộ trình này chưa có gì — xem Cả lịch sử.') : t('Chưa có gì trong lịch sử')}</p>;
   };
   const khungLs = (sid: number) => (
@@ -399,12 +440,12 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
         <NutLuat label={t('Phạm vi lịch sử')}>{t('Lộ trình: vi phạm tính vào thang của lộ trình đang học. Cả lịch sử: mọi lộ trình.')}</NutLuat>
       </span>
     </>}>
-      {thieuLs(sid) ? <LsTai sid={sid} phamVi={phamVi} ve={(rows) => veLs(rows, vpTu(rows))} /> : veLs(lsDaNap(sid), tra.vp)}
+      {thieuLs(sid) ? <LsTai sid={sid} phamVi={phamVi} ve={(rows) => veLs(rows, vpTu(rows), sid)} /> : veLs(lsDaNap(sid), tra.vp, sid)}
     </KhungLs>
   );
   const thanhLs = (sid: number) => {
     const ten = emLop.get(sid)?.ten ?? '';
-    return <ThanhLs so={thieuLs(sid) ? null : lsDaNap(sid).filter(hopPhamVi).length} mo={moLs.has(sid)} ten={ten} onClick={() => batLs(sid)} />;
+    return <ThanhLs so={thieuLs(sid) ? null : lsDaNap(sid).filter(hopPhamVi).length + thLs(sid).length} mo={moLs.has(sid)} ten={ten} onClick={() => batLs(sid)} />;
   };
 
   /* ---------------- Danh sách: em còn bước (khối) rồi các em khác theo tên (dòng gọn) ---------------- */
@@ -419,16 +460,17 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   );
 
   const tenPhoiHop = thuong ? t('Phối hợp') : t('Phối hợp SOS');
-  const nutGhi = d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>;
+  const nutGhi = d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:order-first max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>;
   const batChon = () => { chonN.batTat(); setGhiNhanKq(null); };
 
   return (
     <Card bodyClass="p-0 [container-type:inline-size]">
       <h2 className="sr-only">{t('Ý thức & Phối hợp')}</h2>
       {/* Mockup v19 A1: phân đoạn + lọc em + tìm em trái · thao tác phải; 375 (A2): + Ghi vi phạm rộng + ⋯. */}
+      {/* Mockup v20 A1: MỘT tab lớn, hai tab nhỏ (chủ SP 12/11). */}
+      <TabNho value={phan} onChange={setPhan}
+        muc={[{ key: 'vi-pham', nhan: t('Tình hình học tập / Ý thức'), ngan: t('Tình hình / Ý thức') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />
       <div className="flex flex-wrap items-center gap-2.5 border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
-        <BoLocDoan v8 giuSo ariaLabel={t('Phần')} value={phan} onChange={setPhan}
-          muc={[{ key: 'vi-pham', nhan: t('Vi phạm') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />
         {phan === 'vi-pham' && (
           <>
             <ChipLoc ariaLabel={t('Lọc học viên')} value={locEm} onChange={setLocEm}
@@ -448,25 +490,20 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           ) : (
             <>
               {onDiemMt && <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:hidden" onClick={onDiemMt}>{thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›')}</button>}
-              {d.canManage && (
-                <>
-                  {/* KHAI-BAC-LO: một panel mọi em của lớp — không cần Chọn nhiều trước. */}
-                  <button type="button" className="btn h-9 max-sm:hidden" onClick={() => setLoMo({ viec: 'cap-bac', ids: null })}>{t('Khai / sửa cấp bậc')}</button>
-                  <button type="button" aria-pressed={chonN.bat} onClick={batChon}
-                    className={`btn h-9 max-sm:hidden ${chonN.bat ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>
-                    {chonN.bat ? '✓ ' : ''}{t('Chọn nhiều')}
-                  </button>
-                </>
-              )}
+              {chonN.bat && <span className="text-[13px] font-semibold text-[color:var(--accent)]">✓ {t('Chọn nhiều')}</span>}
+              {/* TINH-HINH: GV / QL báo tình hình cho TVV; TVV hỏi GVCN. */}
+              {d.coTheBao && <button ref={neoBao} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
+                onClick={() => setHop({ neo: neoBao, che: { loai: 'bao', em: [], chonThem: d.emLop.map((e) => ({ id: e.studentId, ten: e.ten, tvv: e.tvv })) } })}>{t('Báo tình hình')}</button>}
+              {d.coTheHoi && !d.coTheBao && <button ref={neoHoi} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
+                onClick={() => setHop({ neo: neoHoi, che: { loai: 'hoi', em: null, ds: d.emLop.map((e) => ({ id: e.studentId, ten: e.ten })), gvcn: d.gvcn } })}>{t('Hỏi tình hình')}</button>}
               {nutGhi}
-              {d.canManage && (
-                <span className="sm:hidden">
-                  <Menu label="⋯" ariaLabel={t('Thao tác khác')} className="btn h-11 min-w-[44px]" items={[
-                    ...(onDiemMt ? [{ label: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onClick: onDiemMt }] : []),
-                    { label: t('Khai / sửa cấp bậc'), onClick: () => setLoMo({ viec: 'cap-bac', ids: null }) },
-                    { label: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onClick: batChon },
-                  ]} />
-                </span>
+              {/* Mockup v20: Khai / sửa cấp bậc · Chọn nhiều vào ⋯ (thao tác giữ nguyên). */}
+              {(d.canManage || onDiemMt) && (
+                <Menu label="⋯" ariaLabel={t('Thao tác khác')} className="btn h-9 min-w-[36px] max-sm:h-11 max-sm:min-w-[44px]" items={[
+                  ...(onDiemMt ? [{ label: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onClick: onDiemMt }] : []),
+                  ...(d.canManage ? [{ label: t('Khai / sửa cấp bậc'), onClick: () => setLoMo({ viec: 'cap-bac', ids: null }) },
+                    { label: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onClick: batChon }] : []),
+                ]} />
               )}
             </>
           )}
@@ -492,8 +529,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           <DauCotEm ph={iBaoPh} />
           {emCho.length > 0 && (
             <>
-              {dauNhom(t('Chưa xử lý xong'), t('{n} HV', { n: emCho.length }),
-                <NutLuat label={t('Thứ tự')}>{t('Em còn bước chưa xong (GVCN, QL hoặc TVV). Thứ tự: bắt buộc / quá hạn, mới, chờ QL, chờ TVV. Các em khác xếp theo tên.')}</NutLuat>)}
+              {dauNhom(t('Chưa xong'), t('{n} HV', { n: emCho.length }),
+                <NutLuat label={t('Thứ tự')}>{t('Em còn bước chưa xong (GVCN, QL hoặc TVV), kể cả tình hình học tập đang chờ. Thứ tự: bắt buộc / quá hạn, mới, chờ QL, chờ TVV, tình hình. Các em khác xếp theo tên.')}</NutLuat>)}
               <div className="grid gap-2.5 px-3 max-sm:px-2">
                 {emCho.map(([sid, ds]) => (
                   <KhoiEm key={sid} id={`yt-em-${sid}`} ten={emLop.get(sid)?.ten ?? ''} hv={hvEm(sid)} mo={moHv === sid}
@@ -515,8 +552,9 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                   <DongEmGon key={e.studentId} id={`yt-em-${e.studentId}`} hv={hvEm(e.studentId)} mo={moLs.has(e.studentId) || moHv === e.studentId}>
                     <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5 px-4 py-2.5 text-sm text-slate-400 max-sm:px-3 max-sm:pt-0">
                       {e.soLs > 0
-                        ? <>{thanhLs(e.studentId)}<span>{t('Không có vi phạm chờ')}</span></>
-                        : <span><span aria-hidden className="text-ok">✓ </span>{t('Chưa có vi phạm')}</span>}
+                        ? <>{thanhLs(e.studentId)}<span>{nhacGan.some((x) => x.studentId === e.studentId)
+                          ? t('{n} nhắc nhở · không việc chờ', { n: nhacGan.filter((x) => x.studentId === e.studentId).length }) : t('Không có vi phạm chờ')}</span></>
+                        : <span><span aria-hidden className="text-ok">✓ </span>{t('Chưa có vấn đề nào')}</span>}
                     </div>
                     {moLs.has(e.studentId) && khungLs(e.studentId)}
                   </DongEmGon>
@@ -551,6 +589,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           it={{ viecId: baoPh.viecId, studentId: baoPh.studentId, studentName: baoPh.ten, due: baoPh.han, classCode: d.classCode } as WorkItem}
           onDong={() => setBaoPh(null)} onDaLam={lamMoi} onTiep={null} />
       )}
+      {hop && <HopTinhHinh neo={hop.neo} che={hop.che} homNay={homNay} onDong={() => setHop(null)} onXong={lamMoi} />}
       {duyet && <PanelDuyetXuLy {...duyet} onDong={() => setDuyet(null)} onXong={(chu) => { if (chu) toast.push('ok', dich(chu)); setDuyet(null); DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x)); lamMoi(); }} />}
       {panels}
     </Card>
