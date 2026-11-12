@@ -37,6 +37,7 @@ import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
+import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -190,6 +191,8 @@ export type WorkGroupKey =
   | 'bo_sung_ho_so'
   /* SV-YT-TVV (luật 1–2): TVV của em (không có → QL chi nhánh) báo PH sau mỗi lần lưu xử lý vi phạm — hạn ngày lưu + 4. */
   | 'bao_ph_yt'
+  /* TINH-HINH (chủ SP 12/11): TVV hỏi tình hình học tập — GVCN lớp em ghi kết quả, hạn 3 ngày. */
+  | 'yt_hoi_tinh_hinh'
   /* BAO-CAO-PH b: Admin xuất báo cáo PH của lớp đã đủ (7 ngày) / đợt quá hạn chưa đủ (7 ngày từ hạn). QL không nhận. */
   | 'xuat_bc_ph';
 
@@ -319,6 +322,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   bao_ph_yt: {
     label: 'Báo PH vi phạm',
     hint: 'Em vừa được lưu xử lý vi phạm — báo phụ huynh rồi ghi kết quả (Đã báo PH / Chưa liên hệ được). Hạn 5 ngày, tính cả ngày lưu.',
+  },
+  yt_hoi_tinh_hinh: {
+    label: 'Tình hình học tập',
+    hint: 'TVV hỏi tình hình học tập của em — hỏi GV bộ môn rồi ghi kết quả cho TVV. Hạn 3 ngày, tính cả ngày hỏi.',
   },
   yt_thuc_hien: {
     label: 'Ghi "Đã thực hiện"',
@@ -1585,6 +1592,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (co('buoc_tiep')) items.push(...viecBuocTiep(p, { today, tatCa, branchId: f.branchId ?? null }));
   // ------------------------------------------------- 5f. Báo PH sau lưu xử lý vi phạm (SV-YT-TVV) — TVV của em / QL khi em chưa có TVV
   if (co('bao_ph_yt', 'phoi_hop_tvv')) items.push(...viecBaoPhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
+  // ------------------------------------------------- 5g. TVV hỏi tình hình học tập (TINH-HINH) — GVCN lớp em / QL khi lớp chưa có GVCN
+  if (co('yt_hoi_tinh_hinh')) items.push(...viecHoiTinhHinhCuaToi(p, { today, tatCa, branchId: f.branchId ?? null }));
 
   // ------------------------------------------------- 6. công việc quản lý được giao
   /*

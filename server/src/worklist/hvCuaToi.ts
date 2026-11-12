@@ -102,7 +102,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   ).all(tuNgay) as any[]).sort((x, y) => x.id - y.id)) {
     if (laDangHoc.has(c.sid)) ghi(c.sid, (l) => { l.caseMoi = [...new Set([...(l.caseMoi ?? []), c.category ?? 'tong_hop'])]; });
   }
-  for (const v of conn.prepare('SELECT student_id AS sid, ten, category FROM violations WHERE occurred_on >= ? ORDER BY occurred_on DESC, id DESC').all(tuNgay) as any[]) {
+  for (const v of conn.prepare('SELECT student_id AS sid, ten, category FROM violations WHERE occurred_on >= ? AND chi_nhac = 0 ORDER BY occurred_on DESC, id DESC').all(tuNgay) as any[]) {
     /* Vi phạm gần nhất làm nhãn ("Đi muộn"); không có tên ngắn thì tên nhóm. */
     if (laDangHoc.has(v.sid)) ghi(v.sid, (l) => { l.yThuc ??= v.ten || (VIOLATION_CATEGORY_LABEL as Record<string, string>)[v.category] || 'Ý thức'; });
   }

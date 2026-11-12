@@ -33,6 +33,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'ban_chup_lo_trinh', 'ban_chup_luot', 'case_followup_buoi', 'gop_y_tuan', 'ghi_chu_lich_thi', 'bai_tren_lop', 'viec_bao_ph', 'viec_bao_ph_lan', 's_expert', 'danh_gia_dau_ra', 'xet_lai_lo_trinh',
   'ban_giao_gv_em',   // PR-B: góp ý bàn giao đổi GV của em
   'bao_cao_ph',   // BAO-CAO-PH: báo cáo gửi phụ huynh của em
+  'tinh_hinh_hoc_tap',   // TINH-HINH: tình hình học tập GV ↔ TVV của em
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -113,6 +114,8 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   /* SV-YT-TVV: việc Báo PH của em / của lần xử lý của em (+ lịch sử ghi) trước lần xử lý */
   { bang: 'viec_bao_ph_lan', sql: `DELETE FROM viec_bao_ph_lan WHERE viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M}))` },
   { bang: 'viec_bao_ph', sql: `DELETE FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})` },
+  /* TINH-HINH: sau việc TVV (viec_bao_ph.tinh_hinh_id trỏ vào đây, không khoá ngoại) */
+  { bang: 'tinh_hinh_hoc_tap', sql: `DELETE FROM tinh_hinh_hoc_tap WHERE student_id = ?1` },
   { bang: 'measure_violations', sql: `DELETE FROM measure_violations WHERE violation_id IN (${V}) OR measure_id IN (${M})` },
   { bang: 'violation_history', sql: `DELETE FROM violation_history WHERE violation_id IN (${V})` },
   { bang: 'discipline_measures', sql: `DELETE FROM discipline_measures WHERE id IN (${M})` },

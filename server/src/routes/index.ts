@@ -25,6 +25,7 @@ import * as xuLySvc from '../yThuc/xuLy.ts';
 import * as loYThucSvc from '../yThuc/lo.ts';
 import * as phoiHopSvc from '../yThuc/phoiHop.ts';
 import * as baoPhSvc from '../yThuc/baoPhTvv.ts';
+import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
@@ -1360,7 +1361,7 @@ api.post('/violations', requireAuth, wrap((req) => {
   const b = yThucBody(req);
   return violationSvc.recordViolation(principalOf(req), {
     studentId: toInt(b.studentId) ?? 0, category: b.category, ten: b.ten ?? null, description: b.description, occurredOn: b.occurredOn ?? null,
-    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null,
+    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null, chiNhac: b.chiNhac === true,
   });
 }));
 /** PR-LUI-a1: một vi phạm cho nhiều học viên (≤ 8 mỗi lô) HOẶC nhiều vi phạm cho một học viên. Mỗi em một giao dịch; lỗi từng em trả về `loi`. */
@@ -1369,7 +1370,7 @@ api.post('/violations/nhieu', requireAuth, wrap((req) => {
   const b = yThucBody(req);
   return violationSvc.recordViolations(principalOf(req), {
     studentIds: Array.isArray(b.studentIds) ? b.studentIds.map((x: unknown) => toInt(x) ?? 0) : [],
-    lines: Array.isArray(b.lines) ? b.lines : [], moTaRieng: b.moTaRieng ?? null, idempotencyKey: String(b.idempotencyKey ?? ''),
+    lines: Array.isArray(b.lines) ? b.lines : [], moTaRieng: b.moTaRieng ?? null, idempotencyKey: String(b.idempotencyKey ?? ''), chiNhac: b.chiNhac === true,
   });
 }));
 api.get('/violations/:id', requireAuth, wrap((req) => {
@@ -1381,7 +1382,7 @@ api.patch('/violations/:id', requireAuth, wrap((req) => {
   const b = yThucBody(req);
   return violationSvc.editViolation(principalOf(req), pInt(req, 'id'), {
     ten: 'ten' in b ? (b.ten ?? null) : undefined, description: b.description, category: b.category, skill: 'skill' in b ? (b.skill ?? null) : undefined,
-    occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined,
+    occurredOn: 'occurredOn' in b ? (b.occurredOn ?? null) : undefined, chiNhac: typeof b.chiNhac === 'boolean' ? b.chiNhac : undefined,
   });
 }));
 /** XOÁ THẲNG (rulebook v3, V11′–V14′): không lý do, không "đánh dấu không chính xác". Trả số biện pháp đã bị gỡ vi phạm này. */
@@ -1479,6 +1480,28 @@ api.post('/y-thuc/xu-ly/:id/da-thuc-hien', requireAuth, wrap((req) => {
   });
 }));
 
+/** TINH-HINH (chủ SP 12/11): GV báo tình hình cho TVV · TVV hỏi GVCN — gửi · sửa · rút (`hoanTac` ngay sau gửi = xoá) · GVCN trả lời / hoàn tác trả lời. Quyền kiểm trong `tinhHinh.ts`. */
+api.post('/tinh-hinh', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  const b = yThucBody(req);
+  return tinhHinhSvc.guiTinhHinh(principalOf(req), { chieu: b.chieu, studentIds: b.studentIds, noiDung: b.noiDung });
+}));
+api.patch('/tinh-hinh/:id', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tinhHinhSvc.suaTinhHinh(principalOf(req), pInt(req, 'id'), { noiDung: yThucBody(req).noiDung });
+}));
+api.post('/tinh-hinh/:id/rut', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tinhHinhSvc.rutTinhHinh(principalOf(req), pInt(req, 'id'), { hoanTac: yThucBody(req).hoanTac === true });
+}));
+api.post('/tinh-hinh/:id/tra-loi', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tinhHinhSvc.traLoiTinhHinh(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });
+}));
+api.post('/tinh-hinh/:id/tra-loi/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return tinhHinhSvc.hoanTacTraLoi(principalOf(req), pInt(req, 'id'));
+}));
 /** SV-YT-TVV: việc Báo PH sau lưu xử lý — xem (lịch sử mọi lần ghi) · ghi kết quả (một / nhiều việc) · Kết thúc ngoại lệ (lý do bỏ). Quyền kiểm trong `baoPhTvv.ts`. */
 api.get('/y-thuc/bao-ph/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();

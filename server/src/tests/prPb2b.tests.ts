@@ -17,6 +17,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const { migratePrPb2b } = await import('../migrate/prPb2b.ts');
   const { migratePrOv12b } = await import('../migrate/prOv12b.ts');
   const { migratePrOv13k } = await import('../migrate/prOv13k.ts');
+  const { migratePrTinhHinh } = await import('../migrate/prTinhHinh.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8').replace(/\r\n/g, '\n');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
@@ -30,6 +31,8 @@ export async function runPrPb2bTests(t: YThucTestKit) {
       .replace(/\n  -- OV-13k [^\n]*\n  --[^\n]*\n  nhan_xet_phu_trach TEXT,\n[^\n]*\n[^\n]*\n  cho_phu_trach_xem INTEGER NOT NULL DEFAULT 0,/, '')
       /* TD7a: chỉ mục một phần trên cột OV-13k — cắt cùng (chỉ so cột, không so chỉ mục). */
       .replace(/\n\/\* TD7a: ô S Mock[^\n]*\nCREATE INDEX idx_score_cho_phu_trach [^\n]*/, '')
+      /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; (1b) chạy lại migratePrTinhHinh sau OV-13k. */
+      .replace(/,\n  -- TINH-HINH \(chủ SP 12\/11\)[^\n]*\n  chi_nhac INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')
       .replace(/,\n  -- PR-Pb2-b \(Q14\)[\s\S]*?phan_hoi_ngay TEXT\n\);/, '\n);');
     if (/nhap_dau_ngay|han_xu_ly|phan_hoi_ngay|nhom_nguyen_nhan|nhan_xet_phu_trach|cho_phu_trach_xem/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm Pb2b (1)');
     const m = new SqliteDb(':memory:');
@@ -49,6 +52,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     migratePrPb2b(m, []);
     migratePrOv12b(m, []);
     migratePrOv13k(m, []);
+    migratePrTinhHinh(m, []);
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['assessment_scores', 'violations']) {

@@ -52,7 +52,7 @@ function tinh(p: Principal, f: FilterYThuc) {
   for (const r of conn.prepare(
     `SELECT v.id, v.student_id, v.class_id, v.category, v.occurred_on, c.code AS class_code
        FROM violations v LEFT JOIN classes c ON c.id = v.class_id
-      WHERE ${b.sql} AND v.occurred_on >= ? AND v.occurred_on <= ? AND ${cl.sql}${ctSql}`,
+      WHERE ${b.sql} AND v.chi_nhac = 0 AND v.occurred_on >= ? AND v.occurred_on <= ? AND ${cl.sql}${ctSql}`,   /* TINH-HINH: nhắc nhở không là vi phạm */
   ).all(...b.args, tuTruoc, f.to, ...cl.args) as any[]) vpKy.push(r);
   // 2) Học viên ĐANG HỌC trong phạm vi + sĩ số từng lớp.
   const eWhere = [b.sql, `c.status = 'active'`, `e.status = 'active'`, 's.archived_at IS NULL'];
