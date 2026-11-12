@@ -240,7 +240,7 @@ function TheGv({ gv, so }: { gv: DongGvThiWeb[]; so: So }) {
   const [het, setHet] = useState(false);
   const nhom = nhomGv(gv);
   const hien = het ? nhom : nhom.slice(0, 3);
-  const o = (nhan: string, gt: ReactNode) => <span className="grid gap-0.5"><span className="text-xs text-dim">{nhan}</span><b className="text-[15px] font-semibold tabular-nums">{gt}</b></span>;
+  const o = (nhan: string, gt: ReactNode) => <span className="grid gap-0.5"><span className="whitespace-nowrap text-xs text-dim">{nhan}</span><b className="text-[15px] font-semibold tabular-nums">{gt}</b></span>;
   return (
     <div className="space-y-2">
       <DauThe ten={t('Theo GV')} dem={t('{n} GV', { n: nhom.length })} phu={t('trừ KCK')} cachTinh={cachTinhGv} />
