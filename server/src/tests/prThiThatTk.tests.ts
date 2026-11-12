@@ -87,11 +87,18 @@ export async function runPrThiThatTkTests(t: any) {
     assert(r.gv.map((x: any) => `${x.userId}${x.kn}`).join(',') === '2l,1r,1s', `thứ tự: ${r.gv.map((x: any) => `${x.userId}${x.kn}`)}`);
   });
 
+  check('TL-GV · % phần dư lớn nhất cộng đúng 100; chữ tuần lẻ dấu phẩy', () => {
+    const p = d.phanTramTron([5.5, 3.5, 1]), q = d.phanTramTron([1, 1, 1]);
+    assert(p.join() === '55,35,10' && q.reduce((a: number, x: number) => a + x, 0) === 100 && d.phanTramTron([0, 0]).join() === '0,0', `${p} · ${q}`);
+    assert(d.chuTuan(5.5) === '5,5' && d.chuTuan(7) === '7' && d.chuTuan(1 / 3) === '0,33', 'chuTuan');
+  });
+
   // ------------------------------------------------------------------ máy chủ: tuần dạy, quyền, số = dòng
   const { conn, P, TODAY, classId } = t;
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const tk: any = await import('../phanTich/thiThatThongKe.ts');
+  const tuanDay: any = await import('../phanTich/tuanDay.ts');
   const giaoVien: any = await import('../phanTich/giaoVien.ts');
   const one = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const vai = (k: string) => loadPrincipal(one(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? AND ur.status = 'active' ORDER BY ur.user_id LIMIT 1`, k).id);
@@ -177,5 +184,30 @@ export async function runPrThiThatTkTests(t: any) {
     assert(w1 && g && w1.o.tong === g.hv && w1.o.pt === 100 - g.fail, `W1: hồ sơ ${JSON.stringify(w1)} · tab ${JSON.stringify(g)}`);
     /* GV cũ (dạy 4 tuần đầu, phân công đã kết thúc) vẫn có mục ở tab — "mọi GV từng dạy". */
     assert(tk.thiThatTab(P.admin, { branchId: MB, tu: ky.tu, den: d.addDaysIso(ky.den, 6) }).thongKe.gv.some((x: any) => x.userId === P.lrTeacher.userId && x.kn === 'w1'), 'GV cũ có mục');
+  }));
+
+  check('TL-GV · tuần dạy chung chia đều (XM-7): tuần 5 có 2 GV W1 → mỗi người 0,5; Theo GV và hộp một em cùng số, cộng đúng tổng tuần', () => thu(() => {
+    const { cy, f } = dung();
+    const s = one('SELECT substr(started_at, 1, 10) AS s FROM learning_cycles WHERE id = ?', cy).s as string;
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, effective_to, status, created_at) VALUES (?, ?, 'writing1', 0, ?, ?, 'ended', ?)`)
+      .run(P.w2Teacher.userId, LOP, d.addDaysIso(s, 28), d.addDaysIso(s, 34), s);
+    const w1 = tk.thiThatTab(P.mbManager, f).thongKe.gv.filter((g: any) => g.kn === 'w1');
+    const tuan = (u: number) => w1.find((g: any) => g.userId === u)?.tuan;
+    assert(tuan(P.w1Teacher.userId) === 7.5 && tuan(P.w2Teacher.userId) === 0.5 && tuan(P.lrTeacher.userId) === 4, `Theo GV: ${JSON.stringify(w1)}`);
+    const h = tuanDay.tuanDayLoTrinh(P.mbManager, cy);
+    const k = h.chinh.kn.w1;
+    const tong = k.gv.reduce((a: number, g: any) => a + g.tuan, 0) + (k.trong?.tuan ?? 0);
+    assert(h.chinh.tong === 12 && tong === 12, `hộp: tổng ${h.chinh.tong}, cộng ${tong}: ${JSON.stringify(k)}`);
+    assert(k.gv[0].userId === P.w1Teacher.userId && k.gv[0].tuan === 7.5 && k.gv[0].chung.length === 1, `GV cao nhất trước + tuần chung: ${JSON.stringify(k.gv)}`);
+    assert(h.truoc === null && h.layLai.length === 0 && h.phanCong.includes(LOP), `thi đủ · QL phân công được: ${JSON.stringify({ truoc: h.truoc, layLai: h.layLai, pc: h.phanCong })}`);
+    assert(!tuanDay.tuanDayLoTrinh(P.coreTeacher, cy).phanCong.length, 'GVCN không có link phân công');
+  }));
+
+  check('TL-GV · /cycles/:id/tuan-day: QL chi nhánh khác → 403; lộ trình chưa có ngày thi → 400', () => thu(() => {
+    const { cy } = dung();
+    const ma = (fn: () => void) => { try { fn(); return 200; } catch (e: any) { return e.status ?? e.statusCode ?? 0; } };
+    assert(ma(() => tuanDay.tuanDayLoTrinh(P.cpManager, cy)) === 403, 'QL CP xem em MB → 403');
+    conn.prepare('UPDATE learning_cycles SET thi_that_ngay = NULL, exam_date = NULL WHERE id = ?').run(cy);
+    assert(ma(() => tuanDay.tuanDayLoTrinh(P.mbManager, cy)) === 400, 'chưa thi → 400');
   }));
 }

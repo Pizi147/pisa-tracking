@@ -108,7 +108,7 @@ export const dongThiPanel = (d: DongThiThat): MetricRow => {
     id: d.cycleId, title: d.ten, sub: [d.lop, d.khongThi ? tl('Không thi') : ngayNgan(d.ngayThi), d.buocTiepChu ?? tl('Bước tiếp chưa chọn')].filter(Boolean).join(' · '), href: `/hoc-vien/${d.studentId}`,
     diemHv: {
       luot: tl('Thi thật'), tuan: d.ngayThi, tam: false, overall: d.ovr, soVoi: target === null || Number.isNaN(target) ? null : { nhan: 'Target', v: target },
-      kn: ([['L', d.l], ['R', d.r], ['W', d.w], ['S', d.s]] as const).map(([k, v]) => ({ k, v, dat: null })),
+      kn: ([['L', d.l], ['R', d.r], ['W', d.w], ['S', d.s]] as const).map(([k, v]) => ({ k, v, dat: null })), thiThat: { cycleId: d.cycleId, ten: d.ten },
     },
   };
 };

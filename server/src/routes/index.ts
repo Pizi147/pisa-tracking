@@ -126,6 +126,7 @@ import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
 import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import * as thiThatTkSvc from '../phanTich/thiThatThongKe.ts';
+import * as tuanDaySvc from '../phanTich/tuanDay.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { O_KE_HOACH } from '../../../shared/domain/index.ts';   // MON-CT-1311: ô xếp lịch (cả L+S, R+W)
 import { metricResponse, metricSet, rowsFor, PA_CHUA_CO_KET_QUA } from '../worklist/metrics.ts';
@@ -1814,6 +1815,9 @@ api.get('/cycles/:id', requireAuth, wrap((req) => {
   /* THI-LAI-1-KN: KQ thi thật lần trước (đủ 4 kỹ năng) — form Kết quả thi thật lấy điểm kỹ năng em không thi lại. Một câu, chỉ lộ trình FT. */
   return c.route ? { ...c, thiTruoc: thiThatSvc.thiTruocCua(c) } : c;
 }));
+
+/** TL-GV (v20): hộp Tuần dạy khi bấm điểm thi thật — GV × số tuần × % của cả 5 kỹ năng, chỉ đọc khi bấm. */
+api.get('/cycles/:id/tuan-day', requireAuth, wrap((req) => tuanDaySvc.tuanDayLoTrinh(principalOf(req), pInt(req, 'id'))));
 
 api.patch('/cycles/:id', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

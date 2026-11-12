@@ -22,6 +22,8 @@ export type DiemHv = {
   soVoi: { nhan: 'KV' | 'Target' | 'ngưỡng'; v: number } | null;
   /** `%`: lớp thường (điểm là tỉ lệ). Vắng = band. */
   donVi?: '%';
+  /** TL-GV (v20): dòng thi thật — ô L R W S bấm mở hộp Tuần dạy của lộ trình này. */
+  thiThat?: { cycleId: number; ten: string };
 };
 
 /**
