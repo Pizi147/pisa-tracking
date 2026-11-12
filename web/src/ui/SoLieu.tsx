@@ -78,7 +78,7 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
   const mau = (dat: boolean | null, v: number | null) => (dat === false && kck ? '' : lopKq(mucDiem(dat, v, d.soVoi?.v)));
   const ovDat = d.overall != null && d.soVoi ? d.overall >= d.soVoi.v : null;
   return (
-    <span className={`dd mt-1${pt ? ' pt' : ''}`} style={{ ...(d.kn.length !== 4 ? { '--so-kn': d.kn.length } : {}), ...(rongLuot ? { '--rong-lu': `${rongLuot}px` } : {}) } as CSSProperties}>
+    <span className={`dd mt-1${pt ? ' pt' : ''}`} style={{ ...(d.kn.length !== 4 ? { '--so-kn': d.kn.length } : {}), ...(rongLuot ? { '--rong-lu': `${rongLuot}px` } : {}), ...(d.thiThat ? { '--rong-kn': '80px' } : {}) } as CSSProperties}>
       <span className="lu">
         <span>{[d.luot, d.tuan && tuanLich(d.tuan)].filter(Boolean).join(' · ')}</span>
         {d.tam && <span className="tam-chu" title={t('Lượt chưa chốt điểm')}>{t('tạm')}</span>}

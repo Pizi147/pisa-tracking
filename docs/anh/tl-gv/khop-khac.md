@@ -14,7 +14,7 @@ Dữ liệu demo: phân công lớp bắt đầu 01/06, lộ trình 27/04 → 5 
 | 2 | 1 · hộp: tiêu đề kỹ năng + điểm + "thi thật dd/mm" · tên em · ✕ | `NoiDung` `.tg-dau` | cap-1440-toi-ho-so | KHỚP |
 | 3 | 1 · hàng L R W S chuyển kỹ năng trong hộp | `.tg-chuyen` | cap-1440-toi-ho-so-w | KHỚP |
 | 4 | 1 · "Tuần dạy W… → W… · n tuần" + ⓘ, bấm ⓘ → giải thích trong hộp (1i) | `.tg-khoang`, `.tg-giai` | cap-1440-toi-ho-so-w | KHỚP |
-| 5 | 1b · dòng lớp khi chuyển lớp "Lớp A · n tuần → B · m tuần" | `.tg-lop1` (chỉ khi > 1 lớp) | — (demo không có em chuyển lớp có thi thật) | KHỚP (mã + phép kiểm máy chủ) |
+| 5 | 1b · dòng lớp khi chuyển lớp "Lớp A · n tuần → B · m tuần" | `.tg-lop1` (chỉ khi > 1 lớp) | bản chép thật (mục 5) | KHỚP |
 | 6 | 1 · dòng GV: tên · lớp · thanh · "x/n tuần" · % ; GV nhiều tuần nhất nền nhạt + viền + đậm | `.tg-dong` / `.cao` | cap-1440-toi-ho-so · cap-375-toi | KHỚP |
 | 7 | 1b · tuần dạy chung chia đôi "14,5 / 0,5", phụ "chung W…" ; % cộng 100 | máy chủ `tuanDay.ts` (1/k) + `phanTramTron` | cap-375-toi (73 + 2 + 25) | KHỚP |
 | 8 | 1b · "Chưa phân công" viền đứt, thanh gạch chéo | `.tg-dong.trong` | cap-1440-toi-ho-so | KHỚP |
@@ -27,11 +27,11 @@ Dữ liệu demo: phân công lớp bắt đầu 01/06, lộ trình 27/04 → 5 
 | 15 | 2 · XM-9 ô điểm to đầu hồ sơ giữ bấm = chọn kỹ năng | `DiemDau` không đổi | cap-1440-toi-ho-so | KHỚP |
 | 16 | 3a · Phân tích › Thi thật › Danh sách | `KetQuaThi.tsx` `diem` | cap-1440-toi-phan-tich | KHỚP |
 | 17 | 3 · panel ô (Theo GV, Từng kỹ năng, Tổng…) cùng ô + hộp | `BangLuotPanel` kiểu thi-that `oDiemH` | cap-1440-toi-panel-o | KHỚP |
-| 18 | 3 · panel thi thật dạng dòng điểm (Phân tích GV / hồ sơ GV "Kết quả thi thật", ô Kết quả thi) | `SoLieu` `DongDiem` (`diemHv.thiThat`) | — (chưa bấm thử) | KHỚP (mã) |
+| 18 | 3 · panel thi thật dạng dòng điểm (Phân tích GV / hồ sơ GV "Kết quả thi thật", ô Kết quả thi) | `SoLieu` `DongDiem` (`diemHv.thiThat`, cột 80 px, ô 24 px) | bản chép thật (mục 5) | KHỚP |
 | 19 | 3b · tên GV dưới mỗi điểm | — | — | BỎ (PTA chốt XM-2 không làm) |
 | 20 | 4a · Tổng kết lộ trình: L R W S thành hộp | `NganTongKet` | cap-1440-toi-tong-ket | KHỚP (web giữ dòng nhỏ dưới OVR, không ô lớn — KHÁC-3) |
 | 21 | 4b · panel KQ thi thật: nút chữ "Tuần dạy" cạnh OVR khi đã lưu | `KetQuaThiThatPanel` | cap-1440-toi-nhap-kq | KHỚP |
-| 22 | 4c · hồ sơ lớp › Tổng kết: OVR thi thật = hộp → tóm tắt | `TabTongKetLop` (1440 bảng + 375 thẻ) | — (demo: lớp chưa có hàng thi thật ở tab Tổng kết) | KHỚP (mã) |
+| 22 | 4c · hồ sơ lớp › Tổng kết: OVR thi thật = hộp → tóm tắt | `TabTongKetLop` (1440 bảng + 375 thẻ) | bản chép thật (mục 5) | KHỚP |
 | 23 | 5 · 375 sheet dưới, nền mờ, vùng bấm 44 px, ✕ 44 px | `Sheet` + `.hop-tuan-day.sheet` | cap-375-toi | KHỚP |
 | 24 | 6 · sáng | token sẵn có | cap-1440-sang | KHỚP |
 
@@ -58,3 +58,16 @@ Dữ liệu demo: phân công lớp bắt đầu 01/06, lộ trình 27/04 → 5 
 - Mở trang: +0 câu, +0 dòng. Bấm lần đầu một lần thi: GET `/cycles/:id/tuan-day` — đo 9 câu (QL) · 6 (QT) · 10 (GV) gồm phiên; 11 dòng.
   Trần ở `tocDoDuong.ts`: câu 19 / 16 / 20 / 20, dòng 61. Bấm kỹ năng khác / mở lại trong 10 s: 0 request (`useApi` nhớ).
 - Theo GV: không thêm câu (cùng 2 câu ghi danh + phân công như trước).
+
+## 5. Bấm thử trên bản chép thật (PTA 12/11)
+
+Bản chép `D:\Github\pisa-mig\mig.sqlite` (từ back-up 12/11 01:12, đã migrate) chép ra tạm, chạy dev server `PISA_DB` = bản chép, QL chi nhánh Cẩm Phả.
+Ảnh có tên thật → chỉ giữ trên máy, không đưa lên PR. 0 lỗi console.
+
+| Phần | Cách thử | Kết quả |
+|---|---|---|
+| Dòng lớp khi chuyển lớp | Dữ liệu thật: 37 lộ trình có ≥ 2 lớp FT nhưng đều chuyển SAU ngày thi (sang khoá mới) → đúng là không dòng lớp. Giả lập trên bản chép: dời mốc chuyển lớp CP FT 133 → CP FT RF 01 của một em vào 12/10 (thi 24/10) | Hộp: "Lớp CP FT 133 · 19 tuần → CP FT RF 01 · 2 tuần", 21 tuần; tuần chuyển lớp (em ở cả hai lớp) GV hai lớp chia 0,5 — "1,5/21 tuần · chung W3 OCT" |
+| Hồ sơ lớp › Tổng kết | lớp CP FT 133 (đã kết thúc, 5 em có thi thật) | 10 ô OVR hộp; hộp tóm tắt 5 kỹ năng; bấm dòng R → chi tiết + dòng lớp |
+| Panel `SoLieu` | hồ sơ GV › số "Kết quả thi thật" → panel 9 mục | 24 ô hộp; bấm L → hộp đúng em, đúng lần thi |
+
+**Lưu ý dữ liệu thật (báo chủ SP):** phân công GV kỹ năng trên bản chính ghi từ 05/10 (`effective_from`), lộ trình bắt đầu từ 01/06 → các em thi tháng 10 hiện phần lớn "Chưa phân công" (vd 18/21 tuần · 86 %). Hộp đúng theo dữ liệu; muốn % có nghĩa cho các lần thi tới thì cần khai lùi ngày bắt đầu phân công (Phân công lớp › ngày hiệu lực) — không đổi luật.
