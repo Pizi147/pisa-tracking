@@ -58,3 +58,13 @@ PTA Overhaul hiểu — năm điều overhaul V6 phải chữa, theo đúng th�
 4. **Loạn, khó theo dõi** → một bộ dáng chung cho cùng loại thông tin ở mọi màn; ít tầng, ít kiểu.
 5. **Nhiều cái thừa** → cắt: menu, tab, bộ lọc, ô số, nút cùng nghĩa, chữ.
 Đây là thước đo nghiệm thu của overhaul: một GV mới mở web tự trả lời được "tôi cần làm gì" và "nhập điểm ở đâu" trong vài giây, không cần hướng dẫn.
+
+## 13/11 — lời 5: luật và logic ổn; GV rối vì không biết làm thế nào, quy chế mới chưa rõ → web phải hỗ trợ nhiều hơn
+
+> "nói chung luật và logic thì khá ok, không có nhiều phàn nàn, chỉ là họ bị rối không biết nên làm thế nào, cũng một phần là do quy chế mới nhiều người chưa rõ, nhưng ý là cũng cần hỗ trợ họ nhiều hơn ấy"
+
+PTA Overhaul hiểu:
+- Luật + logic GIỮ. Overhaul V6 là việc **dẫn đường và hỗ trợ**, không phải đổi nghiệp vụ → nhóm "Đụng luật" (lời 3) dự kiến rất ngắn.
+- Gốc rối có hai phần: (a) web không chỉ rõ làm gì, ở đâu, thế nào; (b) GV chưa thuộc quy chế mới.
+- Vì (b): web phải **mang quy chế tới đúng chỗ làm** — GV không cần thuộc quy chế vẫn làm đúng. Mỗi việc cho thấy: vì sao có việc này (theo quy chế) · cần làm gì · lưu xong thì chuyện gì xảy ra (ai nhận, hạn nào). Lựa chọn mặc định = đúng quy chế; chọn khác thì ghi ngay hệ quả ("cần QL duyệt").
+- Không trái lời 07/11 "bỏ chú thích": không thêm đoạn giải thích tĩnh trên màn; chỉ một dòng ngắn gắn với đúng việc / đúng nút (thuộc loại "lưu ý cần thiết: hậu quả, bước kế, ràng buộc" chủ SP cho giữ), chi tiết ở ⓘ / Hướng dẫn.
