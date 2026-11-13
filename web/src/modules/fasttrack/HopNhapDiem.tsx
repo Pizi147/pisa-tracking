@@ -4,8 +4,8 @@
  * dải ô lớn và ô gõ thẳng L/R.
  *
  *   ODiemMt      Ô điểm là NÚT: L/R "4.5" + dòng "14 câu", W/S "5.0", ô trống = khung rỗng (OV-15b), ô vắng "Vắng → W3 OCT". Bấm → hộp neo ngay ô.
- *   HopNhapDiem  Đầu "Reading · MT2" / "{em} · {lớp} · {W2 OCT}"; con trỏ đứng sẵn ở ô điểm; chân Vắng · Lưu · Lưu · bài tiếp ›.
- *                R1-LUU-TIEP (V12 26/10): "Lưu" ở lại ("✓ Đã lưu" · Bài tiếp ›); "Lưu · bài tiếp ›" (Enter) sang bài còn thiếu kế; hết →
+ *   HopNhapDiem  Đầu "Reading · MT2" / "{em} · {lớp} · {W2 OCT}"; con trỏ đứng sẵn ở ô điểm; chân ⋯ · Vắng · Lưu · bài tiếp › (GD-3, mockup v21 K2b:
+ *                ⋯ = Lưu · đóng · Khôi phục điểm · Bỏ vắng). Không có bài kế: "Lưu" ở lại ("✓ Đã lưu" · Đóng); "Lưu · bài tiếp ›" (Enter) sang bài còn thiếu kế; hết →
  *                "Đã xong phần của bạn" + Lớp tiếp / Việc tiếp / Đóng. Esc đóng. < 640 px: tấm trượt từ dưới.
  *
  * Luật dùng lại, không luật thứ hai: `rawPatchFrom` / `criteriaPatchFrom` dựng lệnh ("-" = Vắng; W / S: 4 tiêu chí HOẶC ô Band, không cả hai — BAND-THANG), lưu qua
@@ -33,6 +33,7 @@ import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { DemChu } from '../../ui/KhungPanel.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DauKetQua, MuiTenKyVong, lopKq } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
@@ -372,7 +373,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     sau();
   };
 
-  const luu = (tiep: boolean) => {
+  /** `dong`: "Lưu · đóng" của ⋯ (GD-3) — lưu xong đóng hộp. */
+  const luu = (tiep: boolean, dong = false) => {
     if (haiKieu) { luoiRef.current?.querySelector<HTMLElement>('input')?.focus(); return; }
     if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
@@ -398,12 +400,13 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       if (vang) onDong();
       else if (!coDiemChinhThuc(cell) && !cell.noShow) setLoi({ cau: t('Ô còn trống — nhập điểm hoặc Vắng'), o: 0 });
       else if (tiep && onTiep) onTiep(false);
+      else if (dong) onDong();
       else setLuuAnh(anh);
       return;
     }
     /* Ô vắng ("Lưu điểm · đóng" — tên nói đúng hành vi, V12): đóng sau lưu như cũ. V12: "Lưu" ở lại; "Lưu · bài tiếp ›" chỉ chuyển khi máy chủ đã nhận. */
     if (vang) void gui(lenh, onDong, 'luu');
-    else void gui(lenh, tiep && onTiep ? () => onTiep(true) : () => undefined, tiep ? 'tiep' : 'luu');
+    else void gui(lenh, tiep && onTiep ? () => onTiep(true) : dong ? onDong : () => undefined, tiep ? 'tiep' : 'luu');
   };
 
   /* CA3-8: đã gõ thì `KhungHop` hỏi ngay chân hộp ("Bỏ điểm Listening · {em}?" · Bỏ · Gõ tiếp) — không hộp trình duyệt. */
@@ -573,20 +576,22 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   ) : (
     <>
       {onTiep && nhanTiep && <span className="basis-full truncate text-xs text-slate-400" title={nhanTiep}>{t('Tiếp: {x}', { x: nhanTiep })}</span>}
-      {cell.diemHuy && !daLuu && (
-        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ khoiPhuc: true }], onDong, 'khac')}>{dangLuu === 'khac' ? dangLuuChu : CHU_THAO_TAC['khoi-phuc-diem']}</button>
-      )}
-      {boKhongDuThi && !daLuu && (
-        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong, 'khac')}>
-          {dangLuu === 'khac' ? dangLuuChu : t('Bỏ vắng')}
-        </button>
+      {/* GD-3 HOP-NHAP-GON (mockup v21 K2b): ngoài chỉ ⋯ · Vắng · nút chính; ⋯ = Lưu · đóng (thay "Lưu" ở lại khi có bài kế) · Khôi phục điểm · Bỏ vắng
+          (hai mục sau chỉ khi ô ở trạng thái đó). Không có bài kế: "Lưu" vẫn là nút chính như cũ. */}
+      {!daLuu && (
+        <MenuDong canhTrai muc={[
+          ...(onTiep ? [{ key: 'luu-dong', nhan: t('Lưu · đóng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => luu(false, true) }] : []),
+          ...(cell.diemHuy ? [{ key: 'khoi-phuc', nhan: CHU_THAO_TAC['khoi-phuc-diem'], tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ khoiPhuc: true }], onDong, 'khac') }] : []),
+          ...(boKhongDuThi ? [{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }] : []),
+        ]} />
       )}
       {nhanVang && !daLuu && (
         /* LUAT-34: một chữ "Vắng" — hậu quả (dời / thẻ QL / huỷ) nói ở thông báo sau khi ghi, kèm Hoàn tác 10 giây. Vắng kết thúc ô → sang bài tiếp. */
-        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac')}>
+        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac')}>
           {dangLuu === 'khac' ? dangLuuChu : t('Vắng')}
         </button>
       )}
+      <span className="flex-1" />
       <LyDoThieu thieu={thieu} />
       {daLuu ? (
         <>
@@ -597,7 +602,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         </>
       ) : (
         <>
-          <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{dangLuu === 'luu' ? dangLuuChu : t('Lưu')}</button>
+          {!onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{dangLuu === 'luu' ? dangLuuChu : t('Lưu')}</button>}
           {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(true)}>{dangLuu === 'tiep' ? dangLuuChu : tiepEm ? t('Lưu · em tiếp ›') : t('Lưu · bài tiếp ›')}</button>}
         </>
       )}

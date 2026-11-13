@@ -62,7 +62,7 @@ export async function runPrKiemTay1011Tests(t: YThucTestKit) {
   check('KT1011-3 · web: mã lớp chữ thường khi !xemHoSo · Bỏ vắng ô Không dự thi + toast Hoàn tác · hàng sổ nghĩa vụ bấm được · Lọc 375 không `details.contents`', () => {
     assert(/lop\.xemHoSo === false \? <span/.test(docSach('web/src/modules/test/keHoach/LopKeHoach.tsx')), 'mã lớp vẫn luôn là link');
     const hop = docSach('web/src/modules/fasttrack/HopNhapDiem.tsx');
-    assert(/cell\.noShow\?\.state === 'khong-du-thi'/.test(hop) && /boKhongDuThi && !daLuu/.test(hop), 'hộp thiếu Bỏ vắng cho ô Không dự thi');
+    assert(/cell\.noShow\?\.state === 'khong-du-thi'/.test(hop) && /boKhongDuThi \? \[\{ key: 'bo-vang'/.test(hop), 'hộp thiếu Bỏ vắng cho ô Không dự thi');
     assert(/r\?\.boKhongDuThi[\s\S]{0,400}Hoàn tác/.test(docSach('web/src/modules/fasttrack/ScoreEntry.tsx')), 'thiếu toast Đã bỏ vắng · Hoàn tác');
     /* PT-a (mockup v19 khung 2a): dòng nhóm lớp không bấm — hàng bài / việc vẫn mở `href`. */
     assert(/onHang=\{\(h\) => \{ if \(!laNhom\(h\)\) navigate\(h\.href\); \}\}/.test(docSach('web/src/ui/BangLuotPanel.tsx')), 'hàng sổ nghĩa vụ không bấm được');

@@ -12,6 +12,7 @@ import { NutChon, BoLocDoan } from '../../ui/ui.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
+  quyCheViPham,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -206,7 +207,7 @@ export function RecordViolationPanel({
 
   return (
     /* I6 (PR-SL): một dòng chú thích dấu `*` thay cho "(bắt buộc)" lặp ở từng ô. */
-    <KhungPanel hd="vi-pham" tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel}
+    <KhungPanel hd="vi-pham" tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel} quyChe={quyCheViPham(chiNhac)}
       ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
@@ -236,7 +237,6 @@ export function RecordViolationPanel({
         <div className="grid gap-1.5 pt-3">
           <BoLocDoan v8 ariaLabel={t('Loại ghi')} value={chiNhac ? 'nn' : 'vp'} onChange={(k) => setChiNhac(k === 'nn')}
             muc={[{ key: 'vp', nhan: t('Vi phạm') }, { key: 'nn', nhan: t('Chỉ nhắc nhở') }]} />
-          {chiNhac && <p className="m-0 text-[13px] text-slate-400">{t('Không tính 3 vi phạm / 2 tuần · không lên bậc · không tạo việc')}</p>}
         </div>
         {chonNhieu && !luu && (
           <Khoi tieuDe={t('Học viên')}>

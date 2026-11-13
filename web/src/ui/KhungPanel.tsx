@@ -167,7 +167,7 @@ export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; x
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
+export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
@@ -212,6 +212,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
      *  (trạng thái lưu); 375: dòng trạng thái trên nút chính rộng hết khung, dính đáy. */
     v3?: boolean;
   };
+  /** GD-3 DONG-QUY-CHE (V6 5.3, mockup v21 K2 / K4 / K5): MỘT dòng 13 px màu phụ cố định ngay trên chân — câu từ `shared/domain/quyChe.ts`, đổi theo lựa chọn; chi tiết ở ⓘ. */
+  quyChe?: { chu: string; chiTiet?: string } | null;
   /** 6c (lỗi 5): như `chan.daSua` cho panel KHÔNG có chân (form + nút lưu nằm trong thân). */
   daSua?: boolean;
   /** HD-V2: panel Case (`ngan-case`) / Nhập điểm — bấm "?" khi panel này mở thì tab Màn này đưa mục của panel lên trước (kể cả panel trong cột hồ sơ). */
@@ -408,6 +410,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
         <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 ${trongThe ? 'px-0' : 'px-4'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
+        {quyChe && <DongQuyChe qc={quyChe} px={trongThe ? 'px-0' : 'px-4'} />}
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
@@ -461,6 +464,20 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
 }
 
 /** Một KHỐI trong thân panel: tiêu đề nhỏ (luật dài vào ⓘ), khối sau có vạch trên. */
+/**
+ * DÒNG QUY CHẾ (GD-3, mockup v21 `.quy-che`): "Quy chế" · một câu · ⓘ chi tiết. `KhungPanel` vẽ ngay trên chân (`quyChe`); panel có chân v3 (nút nằm
+ * trong thân) vẽ trực tiếp ngay trên hàng nút với `px="px-0"`.
+ */
+export function DongQuyChe({ qc, px = 'px-4' }: { qc: { chu: string; chiTiet?: string }; px?: string }) {
+  return (
+    <div className={`flex min-h-9 shrink-0 items-center gap-2 border-t ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
+      <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
+      <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
+      {qc.chiTiet && <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>}
+    </div>
+  );
+}
+
 export function Khoi({ tieuDe, luat, so, children }: { tieuDe: string; luat?: ReactNode; /** Số bước trong vòng tròn nhỏ trước tiêu đề (panel nhiều bước, mockup MT phần 1). */ so?: number; children: ReactNode }) {
   return (
     <section className="mt-3.5 border-t pt-3.5 first:mt-0 first:border-t-0 first:pt-3.5" style={{ borderColor: 'var(--line)' }}>
