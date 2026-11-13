@@ -1,0 +1,794 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Trang đầu GV · v21</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v21.css">
+</head>
+<body>
+<!-- biểu tượng dùng chung (16 × 16, nét 1,5 — cùng bộ v12 / v18) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cham" viewBox="0 0 16 16"><path d="M3 13l2-5 6-6 3 3-6 6z"/></symbol>
+  <symbol id="i-case" viewBox="0 0 16 16"><path d="M4 14V2m0 1h8l-2 3 2 3H4"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 16 16"><path d="M8 2a2 2 0 0 1 2 2v4a2 2 0 0 1-4 0V4a2 2 0 0 1 2-2zM4 8a4 4 0 0 0 8 0M8 12v2"/></symbol>
+  <symbol id="i-yt" viewBox="0 0 16 16"><path d="M8 2l5 2v4c0 3-2.5 5-5 6-2.5-1-5-3-5-6V4z"/></symbol>
+  <symbol id="i-vh" viewBox="0 0 16 16"><path d="M3 4h10M3 8h10M3 12h10"/></symbol>
+  <symbol id="i-lop" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="8" rx="1"/><path d="M5 13.5l3-3 3 3M5.5 5.5h5M5.5 7.8h3"/></symbol>
+  <symbol id="i-gop" viewBox="0 0 16 16"><path d="M2 3h12v10H2zM2 7h12M6 3v10"/></symbol>
+  <symbol id="i-yc" viewBox="0 0 16 16"><path d="M14 2L7 9"/><path d="M14 2l-4.5 12-2.5-5-5-2.5z"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></symbol>
+  <symbol id="i-tim" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></symbol>
+  <symbol id="i-chuong" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14a1.5 1.5 0 0 0 3 0"/></symbol>
+  <symbol id="i-bc" viewBox="0 0 16 16"><path d="M4 2h6l3 3v9H4zM10 2v3h3M6 8h5M6 11h5"/></symbol>
+  <symbol id="i-bao" viewBox="0 0 16 16"><path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z"/></symbol>
+  <symbol id="i-cv" viewBox="0 0 16 16"><path d="M3 4l1.5 1.5L7 3M3 9l1.5 1.5L7 8M9 4.5h4M9 9.5h4M3 13h10"/></symbol>
+  <symbol id="i-hv" viewBox="0 0 16 16"><circle cx="6" cy="6" r="2.2"/><circle cx="11.2" cy="6.6" r="1.7"/><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3"/></symbol>
+  <symbol id="i-test" viewBox="0 0 16 16"><rect x="3" y="2" width="10" height="12" rx="1"/><path d="M6 6h4M6 9h4M6 12h2"/></symbol>
+  <symbol id="i-lich" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="1"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></symbol>
+</svg>
+
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v21 · Trang đầu của GV — Công việc + Lớp của tôi (mockup ①)</h1>
+    <p>Đề bài <code>docs/superpowers/specs/2026-11-13-overhaul-v6/03-de-bai-mockup-1.md</code> (R1–R26). Hướng mẫu C bản 2 đã duyệt (lời 6, 11, 12). <b>Nâng cấp</b> trang Công việc v12 / v17 / v18 đã duyệt: giữ tab hạng mục + badge, danh sách trái 640, làm việc ở khung phải; ô trống "Chọn một việc" thay bằng <b>Lớp của tôi</b>; thêm <b>+ Ghi</b>; mẫu <b>dòng quy chế</b> một dòng trên chân mọi panel việc.</p>
+    <p>Dữ liệu bịa: GV <b>Đinh Thu Hằng</b> — chủ nhiệm MB FT 101 + MB FOU 12; dạy Listening, Reading ở 5 lớp, Speaking ở MB FT 108; 8 lớp. Hôm nay <b>thứ Hai 14/09/2026 · W3 SEP</b> (K6: 22/09). Số đếm cùng một nguồn: 14 việc = 5 Chấm điểm + 4 Case + 3 Ý thức + 2 Vận hành; ⚠ 9 quá hạn = badge menu.</p>
+    <p>Bấm thử ở K1: tab hạng mục · "Nhập điểm" (dòng việc hoặc Lớp của tôi) mở panel, ✕ trả lại Lớp của tôi · "+ Ghi" mở menu · dải "Yêu cầu của tôi", ngăn lớp gập / mở. Nền vàng viền đứt = chú thích cho người duyệt, không lên web.</p>
+    <nav class="muc-mk" aria-label="Mục lục khung">
+      <a href="#k1">K1 · Trang đầu, chưa chọn việc</a><a href="#k2">K2 · Nhập điểm FT</a><a href="#k3">K3 · Speaking chấm chéo</a><a href="#k4">K4 · Case: dòng quy chế</a>
+      <a href="#k5">K5 · + Ghi</a><a href="#k6">K6 · Báo cáo PH</a><a href="#k7">K7 · Trạng thái</a><a href="#k8">K8 · 375</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu cả trang"><button type="button" data-che="toi" aria-pressed="true">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <!-- ===================================================== K1 ===================================================== -->
+  <section class="khu" id="k1">
+    <h2>K1 · Trang đầu GV, chưa chọn việc · 1440 (R1–R7)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Thanh trên GV: Công việc (badge 9 = dòng quá hạn + hạn hôm nay) · Học viên &amp; Lớp · Test — không còn Tổng quan, Phân tích · <span class="so-mk">2</span>"14 việc · ⚠ 9 quá hạn" + Mọi hạn + <b>+ Ghi</b> · <span class="so-mk">3</span>tab hạng mục v17 (Báo cáo PH ẩn — chưa tới ngày 20) · <span class="so-mk">4</span>danh sách v12 / v18 giữ nguyên dáng; "Lớp tôi dạy" gập cũ đã lên khung phải; còn "Yêu cầu của tôi" gập cuối · <span class="so-mk">5</span><b>Lớp của tôi</b>: một lớp một dòng, 5 cột thẳng (Lớp · Tôi dạy · Test · Việc khác · nút); nút "Nhập điểm" CHỈ khi có bài của tôi (a, b, e); lớp có việc trên, lớp không có gì dưới cùng, chữ mờ.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K1 · 1440 · bấm thử được</figcaption>
+        <div class="man toi" data-web data-khung="k1">
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav do" title="9 việc quá hạn">9</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+            <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt" title="Hướng dẫn">?</span><span class="nut-tt" title="Thông báo"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 9 quá hạn</span></span>
+              <span class="phai"><span class="o-chon">Mọi hạn</span>
+                <span class="vung-menu"><button type="button" class="nut nut-chinh" data-menu aria-haspopup="menu" aria-expanded="false">+ Ghi</button>
+                  <div class="menu-tha" role="menu" hidden style="right:0;top:42px">
+                    <button type="button" role="menuitem" data-mo="ghi"><svg class="ic"><use href="#i-yt"/></svg>Ghi vi phạm / nhắc nhở</button>
+                    <button type="button" role="menuitem" data-mo="bao"><svg class="ic"><use href="#i-bao"/></svg>Báo tình hình cho TVV</button>
+                    <button type="button" role="menuitem"><svg class="ic"><use href="#i-case"/></svg>+ Case</button>
+                  </div></span></span></div>
+            <div class="tabs" role="tablist" aria-label="Hạng mục việc">
+              <button class="tab" role="tab" aria-selected="true" data-tab="cham">Chấm điểm <span class="bd do" title="2 quá hạn trong 5 việc">2</span></button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="sp">Speaking chấm chéo <span class="bd do" title="6 bài quá hạn của nhóm GV Speaking">6</span></button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="case">Case học thuật <span class="bd do" title="3 quá hạn trong 4 việc">3</span></button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="yt">Ý thức &amp; Phối hợp <span class="bd do" title="2 quá hạn trong 3 việc">2</span></button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="vh">Vận hành <span class="bd do" title="2 quá hạn trong 2 việc">2</span></button>
+            </div>
+            <div class="than">
+              <div class="cot-ds">
+                <!-- pane Chấm điểm -->
+                <div class="cot-ds" data-pane="cham">
+                  <section class="nhom">
+                    <div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Mock Test</span><span class="sau-ten"><span class="dem">4 việc</span><span class="bao-qua">⚠ 2 quá hạn</span></span></div>
+                    <div class="vach-han">Quá hạn</div>
+                    <div class="khoi dau-tien"><div class="viec dt-lop" data-mo="nhap"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 101</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W1 SEP</span><span class="tag nhat">5 bài</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                    <div class="khoi"><div class="dt-khoi"><span class="av">AN</span><span class="dt-ten"><a class="ten-em" href="#">Âu Nhật Nam</a><span class="lop">MB FT 101</span></span></div>
+                      <ul class="ds-viec"><li><div class="viec" data-mo="nhap"><span class="tv"><span class="t1">Nhập điểm Reading</span><span class="the-phu"><span class="tag nhat">W1 SEP</span><span class="tag nhat">1 bài</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></li></ul></div>
+                    <div class="vach-han">Hạn đến 20/09</div>
+                    <div class="khoi"><div class="viec dt-lop" data-mo="nhap"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 112</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W2 SEP</span><span class="tag nhat">3 bài</span></span></span><span class="h"><span class="han-v xa">hạn 16/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                    <div class="vach-han">Hạn sau 20/09</div>
+                    <div class="khoi"><div class="viec dt-lop" data-mo="nhap"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 104</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W3 SEP</span><span class="tag nhat">10 bài</span></span></span><span class="h"><span class="han-v xa">hạn 23/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                  </section>
+                  <section class="nhom">
+                    <div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Progress / Final Test</span><span class="sau-ten"><span class="dem">1 việc</span></span></div>
+                    <div class="khoi dau-tien"><div class="viec dt-lop" data-mo="nhap"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FOU 15</span> · Reading</span></span><span class="the-phu"><span class="tag nhat">Progress</span><span class="tag nhat">W3 SEP</span><span class="tag nhat">12 bài</span></span></span><span class="h"><span class="han-v xa">hạn 23/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                  </section>
+                </div>
+                <!-- pane Speaking chấm chéo -->
+                <div class="cot-ds" data-pane="sp" hidden>
+                  <section class="nhom">
+                    <div class="dai-nhom" style="border-left-color:var(--text-faint)"><svg class="ic"><use href="#i-mic"/></svg><span>Việc chung của nhóm GV Speaking</span><span class="sau-ten"><span class="dem">18 bài</span><span class="bao-qua">⚠ 6 quá hạn</span></span></div>
+                    <div class="khoi dau-tien"><div class="viec dt-lop" data-mo="speaking"><span class="av vuong"><svg class="ic"><use href="#i-mic"/></svg></span><span class="tv"><span class="t1"><span class="lop-gop">Chấm Speaking</span></span><span class="the-phu"><span class="tag nhat">MT · MT0</span><span class="tag nhat">4 tuần</span><span class="tag nhat">6 lớp</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                  </section>
+                </div>
+                <!-- pane Case học thuật -->
+                <div class="cot-ds" data-pane="case" hidden>
+                  <section class="nhom">
+                    <div class="dai-nhom"><svg class="ic"><use href="#i-case"/></svg><span>Case học thuật</span><span class="sau-ten"><span class="dem">4 việc</span><span class="bao-qua">⚠ 3 quá hạn</span></span></div>
+                    <div class="khoi dau-tien"><div class="dt-khoi"><span class="av">NA</span><span class="dt-ten"><a class="ten-em" href="#">Dương Ngọc Ánh</a><span class="lop">MB FOU 15</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Thêm PA học thuật · Reading</span><span class="the-phu"><span class="tag nhat">Progress</span></span></span><span class="h"><span class="han-v qua">quá hạn 4 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Thêm PA</button></span></div></li></ul></div>
+                    <div class="khoi"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 112</span> · Mô tả Case</span></span><span class="the-phu"><span class="tag nhat">W2 SEP</span><span class="tag nhat">3 em</span></span></span><span class="h"><span class="han-v qua">quá hạn 2 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">3 em ▾</button></span></div></div>
+                    <div class="khoi"><div class="dt-khoi"><span class="av">NL</span><span class="dt-ten"><a class="ten-em" href="#">Vũ Ngọc Lan</a><span class="lop">MB FT 101</span><span class="sos m1">SOS 1</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Chọn PA · Reading</span></span><span class="h"><span class="han-v qua">quá hạn 1 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Chọn PA</button></span></div></li></ul></div>
+                    <div class="khoi"><div class="dt-khoi"><span class="av">MC</span><span class="dt-ten"><a class="ten-em" href="#">Lý Minh Châu</a><span class="lop">MB FT 101</span><span class="sos m1">SOS 1</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Ghi kết quả PA · Reading</span><span class="the-phu"><span class="tag nhat">Kỳ 2</span></span></span><span class="h"><span class="han-v xa">hạn 22/09</span></span><span class="n"><button type="button" class="nut nut-nho">Ghi kết quả</button></span></div></li></ul></div>
+                  </section>
+                </div>
+                <!-- pane Ý thức -->
+                <div class="cot-ds" data-pane="yt" hidden>
+                  <section class="nhom">
+                    <div class="dai-nhom"><svg class="ic"><use href="#i-yt"/></svg><span>Ý thức &amp; Phối hợp</span><span class="sau-ten"><span class="dem">3 việc</span><span class="bao-qua">⚠ 2 quá hạn</span></span></div>
+                    <div class="khoi dau-tien"><div class="dt-khoi"><span class="av">AT</span><span class="dt-ten"><a class="ten-em" href="#">Mai Anh Thư</a><span class="lop">MB FOU 12</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Xác nhận xử lý</span><span class="the-phu"><span class="tag nhat">3 vi phạm</span></span></span><span class="h"><span class="han-v qua">quá hạn 3 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Xử lý</button></span></div></li></ul></div>
+                    <div class="khoi"><div class="dt-khoi"><span class="av">GB</span><span class="dt-ten"><a class="ten-em" href="#">Hồ Gia Bảo</a><span class="lop">MB FOU 12</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Xem vi phạm mới</span><span class="the-phu"><span class="tag nhat">2 vi phạm</span></span></span><span class="h"><span class="han-v qua">quá hạn 1 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Xem</button></span></div></li></ul></div>
+                    <div class="khoi"><div class="dt-khoi"><span class="av">MK</span><span class="dt-ten"><a class="ten-em" href="#">Tạ Minh Khoa</a><span class="lop">MB FT 101</span><span class="sos m2">SOS 2</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Phối hợp SOS</span></span><span class="h"><span class="han-v xa">hạn 18/09</span></span><span class="n"><button type="button" class="nut nut-nho">Phối hợp</button></span></div></li></ul></div>
+                  </section>
+                </div>
+                <!-- pane Vận hành -->
+                <div class="cot-ds" data-pane="vh" hidden>
+                  <section class="nhom">
+                    <div class="dai-nhom"><svg class="ic"><use href="#i-vh"/></svg><span>Vận hành</span><span class="sau-ten"><span class="dem">2 việc</span><span class="bao-qua">⚠ 2 quá hạn</span></span></div>
+                    <div class="khoi dau-tien"><div class="dt-khoi"><span class="av">GH</span><span class="dt-ten"><a class="ten-em" href="#">Ninh Gia Hưng</a><span class="lop">MB FT 104</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Bàn giao môn Reading</span><span class="the-phu"><span class="tag nhat">→ MB FT 105</span></span></span><span class="h"><span class="han-v qua">quá hạn 2 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Bàn giao</button></span></div></li></ul></div>
+                    <div class="khoi"><div class="dt-khoi"><span class="av">MT</span><span class="dt-ten"><a class="ten-em" href="#">Lò Minh Tuấn</a><span class="lop">MB FOU 12</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Xác nhận bàn giao</span><span class="the-phu"><span class="tag nhat">→ MB FOU 14</span></span></span><span class="h"><span class="han-v qua">quá hạn 1 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Xác nhận</button></span></div></li></ul></div>
+                  </section>
+                </div>
+                <details class="gap-dai"><summary><svg class="ic"><use href="#i-yc"/></svg><span>Yêu cầu của tôi</span><svg class="chev"><use href="#i-chev"/></svg></summary>
+                  <div style="padding:12px;display:grid;gap:8px">
+                    <div class="the-yc"><span class="h1">Đề xuất chuyển lớp · Lò Minh Tuấn <span class="tag nhat">Chờ QL</span></span><span class="mo3">MB FOU 12 → MB FOU 14 · gửi 10/09</span></div>
+                    <div class="the-yc"><span class="h1">Đề xuất Target · Hồ Gia Bảo <span class="tag" style="color:var(--bad);border-color:var(--bad-vien)">Bị từ chối</span></span><span class="mo3">MB FOU 12 · 12/09 · <a href="#">Mở ›</a></span></div>
+                  </div></details>
+              </div>
+              <div class="cot-pn" data-cot-pn>
+                <!-- LỚP CỦA TÔI -->
+                <section class="nhom lt" id="lt-k1" aria-label="Lớp của tôi">
+                  <div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span><span class="sau-ten"><span class="dem">8 lớp</span></span></div>
+                  <div class="lt-cot"><span>Lớp</span><span>Tôi dạy</span><span>Test</span><span>Việc khác</span><span></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 101</a><span class="day"><span class="ky">L</span><span class="ky">R</span><span class="cn-t">chủ nhiệm</span></span><span class="test"><span class="t">MT · W1 SEP · 6 bài</span><span class="han-v qua">quá hạn 5 ngày</span></span><span class="khac"><a href="#">2 việc Case</a><a href="#">1 việc Ý thức</a></span><span class="n"><button type="button" class="nut nut-nho" data-mo="nhap">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 112</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t">MT · W2 SEP · 3 bài</span><span class="han-v xa">hạn 16/09</span></span><span class="khac"><a href="#">1 việc Case</a></span><span class="n"><button type="button" class="nut nut-nho" data-mo="nhap">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 104</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t">MT · W3 SEP · 10 bài</span><span class="han-v xa">hạn 23/09</span></span><span class="khac"><a href="#">1 việc Vận hành</a></span><span class="n"><button type="button" class="nut nut-nho" data-mo="nhap">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FOU 15</a><span class="day"><span class="ky">R</span></span><span class="test"><span class="t">Progress · W3 SEP · 12 bài</span><span class="han-v xa">hạn 23/09</span></span><span class="khac"><a href="#">1 việc Case</a></span><span class="n"><button type="button" class="nut nut-nho" data-mo="nhap">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 108</a><span class="day"><span class="ky">S</span></span><span class="test"><span class="t">Speaking · W3 SEP · 6 bài</span><span class="t"><span class="han-v xa">hạn 23/09</span><span class="tag loai-v">chấm chéo</span></span></span><span class="khac"></span><span class="n"><button type="button" class="nut nut-nho" data-mo="speaking">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FOU 12</a><span class="day"><span class="cn-t">chủ nhiệm</span></span><span class="test"></span><span class="khac"><a href="#">2 việc Ý thức</a><a href="#">1 việc Vận hành</a></span><span class="n"></span></div>
+                  <div class="lt-dong ranh"><a class="ma" href="#">MB BE 03</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t cho">Final · W3 OCT</span></span><span class="khac"></span><span class="n"></span></div>
+                  <div class="lt-dong nhat ranh"><a class="ma" href="#">MB FT RF 12</a><span class="day"><span class="ky">L</span></span><span class="test"></span><span class="khac"></span><span class="n"></span></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================================================== K2 ===================================================== -->
+  <section class="khu" id="k2">
+    <h2>K2 · Đã chọn việc Nhập điểm (MB FT 104 · MT1 · W3 SEP) · 1440 (R8–R10)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Panel nhập điểm đang có (<code>PanelViecLuoi</code> → lưới FT): chỉ em có bài, cột Listening · Reading · Kết quả; hạn ở đầu panel · ✕ → Lớp của tôi hiện lại (bấm thử ở K1) · <span class="so-mk">2</span><b>dòng quy chế</b>: một dòng 13 px màu phụ, cố định ngay trên chân — mẫu cho MỌI panel việc (K3, K4, K5 cùng chỗ) · <span class="so-mk">3</span>chân panel "Việc tiếp ›" · <span class="so-mk">4</span>hộp một ô (K2b): nút chính "Lưu · bài tiếp ›" + "Vắng"; Lưu · đóng, Khôi phục điểm, Bỏ vắng vào "⋯" (hai mục sau chỉ có khi ô ở trạng thái đó — như web).</p>
+    <div class="hang-khung">
+      <figure><figcaption>K2 · 1440</figcaption>
+        <div class="man toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav do">9</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+            <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 9 quá hạn</span></span><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Ghi</button></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Chấm điểm <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Ý thức &amp; Phối hợp <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Vận hành <span class="bd do">2</span></button></div>
+            <div class="than">
+              <div class="cot-ds">
+                <section class="nhom">
+                  <div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Mock Test</span><span class="sau-ten"><span class="dem">4 việc</span><span class="bao-qua">⚠ 2 quá hạn</span></span></div>
+                  <div class="vach-han">Quá hạn</div>
+                  <div class="khoi dau-tien"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 101</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W1 SEP</span><span class="tag nhat">5 bài</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                  <div class="khoi"><div class="dt-khoi"><span class="av">AN</span><span class="dt-ten"><a class="ten-em" href="#">Âu Nhật Nam</a><span class="lop">MB FT 101</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Nhập điểm Reading</span><span class="the-phu"><span class="tag nhat">W1 SEP</span><span class="tag nhat">1 bài</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></li></ul></div>
+                  <div class="vach-han">Hạn đến 20/09</div>
+                  <div class="khoi"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 112</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W2 SEP</span><span class="tag nhat">3 bài</span></span></span><span class="h"><span class="han-v xa">hạn 16/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                  <div class="vach-han">Hạn sau 20/09</div>
+                  <div class="khoi"><div class="viec dt-lop chon"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 104</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W3 SEP</span><span class="tag nhat">10 bài</span></span></span><span class="h"><span class="han-v xa">hạn 23/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                </section>
+                <section class="nhom">
+                  <div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Progress / Final Test</span><span class="sau-ten"><span class="dem">1 việc</span></span></div>
+                  <div class="khoi dau-tien"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FOU 15</span> · Reading</span></span><span class="the-phu"><span class="tag nhat">Progress</span><span class="tag nhat">W3 SEP</span><span class="tag nhat">12 bài</span></span></span><span class="h"><span class="han-v xa">hạn 23/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                </section>
+                <details class="gap-dai"><summary><svg class="ic"><use href="#i-yc"/></svg><span>Yêu cầu của tôi</span><svg class="chev"><use href="#i-chev"/></svg></summary></details>
+              </div>
+              <div class="cot-pn">
+                <!-- PANEL NHẬP ĐIỂM (nguồn để K1 mở) -->
+                <aside class="pn" id="pn-nhap" aria-label="Nhập điểm Listening, Reading">
+                  <div class="pn-dau">
+                    <div class="pn-h1"><span class="loai">Việc · Chấm điểm</span><button type="button" class="x" data-dong aria-label="Đóng">✕</button></div>
+                    <div class="pn-tieu"><h2>Nhập điểm Listening, Reading</h2><span class="han-v xa">hạn 23/09</span></div>
+                    <div class="pn-ngu"><span><a href="#">MB FT 104</a></span><span>MT1</span><span>W3 SEP</span><span>còn 4 / 10 bài</span></div>
+                  </div>
+                  <div class="pn-than" style="padding-top:4px">
+                    <table class="luoi">
+                      <colgroup><col class="c-hv"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
+                      <thead><tr><th>Học viên</th><th>Listening</th><th>Reading</th><th>Kết quả</th></tr></thead>
+                      <tbody>
+                        <tr><td><span class="hv"><a href="#">Trần Bảo An</a></span></td><td><span class="od"><b>6.5</b><small>27 câu</small></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ R</span></td></tr>
+                        <tr><td><span class="hv"><a href="#">Đỗ Minh Khôi</a></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ L, R</span></td></tr>
+                        <tr><td><span class="hv"><a href="#">Lê Gia Hân</a></span></td><td><span class="od"><b>7.0</b><small>30 câu</small></span></td><td><span class="od"><b>6.5</b><small>29 câu</small></span></td><td><span class="kq dat">✓ Đạt</span></td></tr>
+                        <tr><td><span class="hv"><a href="#">Phạm Ngọc Diệp</a></span></td><td><span class="od vang"><b>Vắng</b><small>→ W4 SEP</small></span></td><td><span class="od"><b>5.0</b><small>18 câu</small></span></td><td><span class="kq cho">Chờ L</span></td></tr>
+                        <tr><td><span class="hv"><a href="#">Vũ Hoàng Long</a></span></td><td><span class="od"><b>5.5</b><small>22 câu</small></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ R</span></td></tr>
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế vắng">ⓘ</button></div>
+                  <div class="pn-chan"><span class="tt-luu da">✓ Đã lưu</span><span class="phai"><button type="button" class="nut">Việc tiếp ›</button></span></div>
+                </aside>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>K2b · hộp một ô đang mở — ô W1 (cùng hộp cho mọi kỹ năng; GV dạy Writing), "⋯" mở</figcaption>
+        <div class="toi" data-web style="background:var(--bg);padding:20px 20px 150px;border-radius:6px;width:480px">
+          <div class="hop" role="dialog" aria-label="Writing Task 1 · MT1">
+            <div class="h-dau"><div><b>Writing Task 1 · MT1</b><span>Trần Bảo An · MB FT 104 · W3 SEP</span></div><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="h-than">
+              <div class="tc4"><span>TA</span><span>CC</span><span>LR</span><span>GRA</span><span>Band</span><i class="go">6</i><i>6</i><i>5</i><i></i><i class="band">—</i></div>
+              <span class="phu12">Kỳ vọng MT1 5.5 · Task 2 chưa có</span>
+              <div><span class="nhan-o"><span>Nhận xét Task 1</span><span class="so">0 / 300</span></span><div class="o lon"><span class="mo3">Ví dụ: thiếu số liệu so sánh ở đoạn 2</span></div></div>
+            </div>
+            <div class="h-chan"><span class="tiep">Tiếp: Đỗ Minh Khôi · Writing Task 1</span>
+              <button type="button" class="nut nut-nho nut-vuong" aria-label="Thao tác khác" aria-expanded="true">⋯</button><button type="button" class="nut nut-nho">Vắng</button>
+              <span class="phai"><button type="button" class="nut nut-nho nut-chinh">Lưu · bài tiếp ›</button></span></div>
+            <div class="menu-tha" role="menu" style="left:16px;top:calc(100% - 4px)">
+              <button type="button" role="menuitem">Lưu · đóng</button>
+              <button type="button" role="menuitem">Khôi phục điểm</button>
+              <button type="button" role="menuitem">Bỏ vắng</button>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================================================== K3 ===================================================== -->
+  <section class="khu" id="k3">
+    <h2>K3 · Tab Speaking chấm chéo · 1440 (R11–R14) [chủ SP chốt lời 11]</h2>
+    <p class="ghi"><span class="so-mk">1</span>Đầu tab ghi thẳng "Việc chung của nhóm GV Speaking · 18 bài · ⚠ 6 quá hạn" (thay "0 việc"); vẫn MỘT dòng "Chấm Speaking" · <span class="so-mk">2</span>panel gom <b>tuần Test → lớp</b>, tuần mới trên; mỗi lớp một ngăn gập / mở với ĐÚNG lưới nhập K2 (cột Speaking + Kết quả); lớp tôi dạy S đứng đầu tuần; "Tuần cũ hơn · 7 bài" gập cuối · <span class="so-mk">3</span>ô "GV chấm" đầu mỗi ngăn (mặc định: tôi); "Đã có điểm" ghi "GV chấm: …" · <span class="so-mk">4</span>em vắng "vắng W2 SEP"; ô tìm em · dòng quy chế + chân giống K2.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K3 · 1440</figcaption>
+        <div class="man toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav do">9</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+            <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 9 quá hạn</span></span><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Ghi</button></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Chấm điểm <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="true">Speaking chấm chéo <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Ý thức &amp; Phối hợp <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Vận hành <span class="bd do">2</span></button></div>
+            <div class="than">
+              <div class="cot-ds">
+                <section class="nhom">
+                  <div class="dai-nhom" style="border-left-color:var(--text-faint)"><svg class="ic"><use href="#i-mic"/></svg><span>Việc chung của nhóm GV Speaking</span><span class="sau-ten"><span class="dem">18 bài</span><span class="bao-qua">⚠ 6 quá hạn</span></span></div>
+                  <div class="khoi dau-tien"><div class="viec dt-lop chon"><span class="av vuong"><svg class="ic"><use href="#i-mic"/></svg></span><span class="tv"><span class="t1"><span class="lop-gop">Chấm Speaking</span></span><span class="the-phu"><span class="tag nhat">MT · MT0</span><span class="tag nhat">4 tuần</span><span class="tag nhat">6 lớp</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>
+                </section>
+                <details class="gap-dai"><summary><svg class="ic"><use href="#i-yc"/></svg><span>Yêu cầu của tôi</span><svg class="chev"><use href="#i-chev"/></svg></summary></details>
+              </div>
+              <div class="cot-pn">
+                <aside class="pn" id="pn-speaking" aria-label="Chấm Speaking">
+                  <div class="pn-dau">
+                    <div class="pn-h1"><span class="loai">Việc chung · Speaking chấm chéo</span><button type="button" class="x" data-dong aria-label="Đóng">✕</button></div>
+                    <div class="pn-tieu"><h2>Chấm Speaking</h2></div>
+                    <div class="pn-ngu"><span>MT · MT0</span><span>18 bài</span><span class="bao-qua">⚠ 6 quá hạn</span></div>
+                  </div>
+                  <div class="pn-than" style="gap:0">
+                    <div class="pn-cc"><span class="tim"><svg class="ic"><use href="#i-tim"/></svg>Tìm em</span></div>
+                    <div class="tuan-h">W3 SEP <span class="phu-d">8 bài</span><span class="han-v xa">hạn 23/09</span></div>
+                    <details class="ngan" open><summary><span class="ma">MB FT 108</span><span class="cn-t">lớp tôi dạy</span><span class="phu-d">6 bài</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary>
+                      <div class="gv-cham"><label>GV chấm</label><span class="o-chon" style="min-width:240px">Đinh Thu Hằng · tôi</span></div>
+                      <table class="luoi"><colgroup><col class="c-hv"><col class="c-o"><col class="c-kq"></colgroup>
+                        <thead><tr><th>Học viên</th><th>Speaking</th><th>Kết quả</th></tr></thead>
+                        <tbody>
+                          <tr><td><span class="hv"><a href="#">Nguyễn Hà My</a></span></td><td><span class="od mo"><b>6.0</b></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                          <tr><td><span class="hv"><a href="#">Trịnh Quốc Bảo</a></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                          <tr><td><span class="hv"><a href="#">Lưu Khánh Vy</a><small>vắng W2 SEP</small></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ W2, S</span></td></tr>
+                          <tr><td><span class="hv"><a href="#">Phan Minh Đức</a></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                          <tr><td><span class="hv"><a href="#">Tô Lan Quyên</a></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                          <tr><td><span class="hv"><a href="#">Hà Trường Sơn</a></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                        </tbody></table>
+                      <details class="da-co" open><summary>Đã có điểm · 2 bài<svg class="chev"><use href="#i-chev"/></svg></summary>
+                        <table class="luoi"><colgroup><col class="c-hv"><col class="c-o"><col class="c-kq"></colgroup><tbody>
+                          <tr><td><span class="hv"><a href="#">Hồ Anh Thư</a><small>GV chấm: Phạm Quốc Huy · 13/09</small></span></td><td><span class="od"><b>6.5</b></span></td><td><span class="kq dat">✓ Đạt</span></td></tr>
+                          <tr><td><span class="hv"><a href="#">Kiều Gia Khang</a><small>GV chấm: Đinh Thu Hằng · 14/09</small></span></td><td><span class="od"><b>5.0</b></span></td><td><span class="sos m1">SOS 1</span></td></tr>
+                        </tbody></table></details>
+                    </details>
+                    <details class="ngan"><summary><span class="ma">MB FT 102</span><span class="phu-d">2 bài</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary></details>
+                    <div class="tuan-h">W2 SEP <span class="phu-d">3 bài</span><span class="han-v xa">hạn 16/09</span></div>
+                    <details class="ngan"><summary><span class="ma">MB FT 105</span><span class="phu-d">3 bài</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary></details>
+                    <div style="height:14px"></div>
+                    <details class="ngan"><summary><span class="ma">Tuần cũ hơn</span><span class="phu-d">7 bài</span><span class="han-v qua">6 quá hạn</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary></details>
+                  </div>
+                  <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế vắng">ⓘ</button></div>
+                  <div class="pn-chan"><span class="tt-luu da">✓ Đã lưu 1 bài</span><span class="phai"><button type="button" class="nut">Việc tiếp ›</button></span></div>
+                </aside>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================================================== K4 ===================================================== -->
+  <section class="khu" id="k4">
+    <h2>K4 · Tab Case học thuật — hai panel mẫu "dòng quy chế" · khung phải 736 (R15–R16)</h2>
+    <p class="ghi">Ba hình = panel ở khung phải (danh sách trái như K1 tab Case, không vẽ lại). <span class="so-mk">1</span>Chọn PA: hai lựa chọn, mặc định "Theo PA quy chế"; dòng quy chế ĐỔI theo lựa chọn (K4a ↔ K4b) · <span class="so-mk">2</span>Ghi kết quả PA: "Lưu nháp" + "Lưu" (lời 13/11), dòng quy chế "Kỳ 2 tuần · hạn thứ Ba 22/09 · Lưu là chốt, đổi bằng Sửa". Cùng chỗ, cùng dáng với K2.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K4a · Chọn PA · mặc định "Theo PA quy chế"</figcaption>
+        <aside class="pn toi" data-web style="width:736px">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Case học thuật</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Chọn PA · Reading</h2><span class="han-v qua">quá hạn 1 ngày</span></div>
+            <div class="pn-ngu"><span><a href="#">Vũ Ngọc Lan</a></span><span><a href="#">MB FT 101</a></span><span><span class="sos m1">SOS 1</span></span><span>MT2</span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <div class="boi-canh"><span>Reading <b class="so">4.5</b> · kỳ vọng <b class="so">5.5</b></span><span>Overall <b class="so">5.0</b> / <span class="so">5.5</span></span></div>
+            <div class="o-truong"><span class="lb">Phương án</span>
+              <div class="cach" role="radiogroup" aria-label="Phương án">
+                <button type="button" role="radio" aria-checked="true" class="on"><span class="t">Theo PA quy chế</span><span class="p">Bổ trợ Reading · 2 buổi / 2 tuần</span><span class="md">Mặc định</span></button>
+                <button type="button" role="radio" aria-checked="false"><span class="t">Giữ PA của tôi</span><span class="p">Luyện đề Reading · từ 01/09</span></button>
+              </div></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>PA của bạn dừng, kết quả giữ</span><button type="button" class="nut-i" aria-label="Chi tiết">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu">Chưa lưu</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Xác nhận PA</button></span></div>
+        </aside>
+      </figure>
+      <figure><figcaption>K4b · Chọn PA · chọn "Giữ PA của tôi"</figcaption>
+        <aside class="pn toi" data-web style="width:736px">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Case học thuật</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Chọn PA · Reading</h2><span class="han-v qua">quá hạn 1 ngày</span></div>
+            <div class="pn-ngu"><span><a href="#">Vũ Ngọc Lan</a></span><span><a href="#">MB FT 101</a></span><span><span class="sos m1">SOS 1</span></span><span>MT2</span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <div class="boi-canh"><span>Reading <b class="so">4.5</b> · kỳ vọng <b class="so">5.5</b></span><span>Overall <b class="so">5.0</b> / <span class="so">5.5</span></span></div>
+            <div class="o-truong"><span class="lb">Phương án</span>
+              <div class="cach" role="radiogroup" aria-label="Phương án">
+                <button type="button" role="radio" aria-checked="false"><span class="t">Theo PA quy chế</span><span class="p">Bổ trợ Reading · 2 buổi / 2 tuần</span><span class="md">Mặc định</span></button>
+                <button type="button" role="radio" aria-checked="true" class="on"><span class="t">Giữ PA của tôi</span><span class="p">Luyện đề Reading · từ 01/09</span></button>
+              </div></div>
+            <div class="o-truong"><span class="lb">Lý do <span class="sao">*</span></span><div class="o lon go">Em đã lên 1.0 band sau 2 tuần luyện đề, cần giữ nhịp tới MT3<span class="con"></span></div></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>QL duyệt trong 3 ngày · quá hạn theo bạn</span><button type="button" class="nut-i" aria-label="Chi tiết">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu">Chưa lưu</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Gửi QL duyệt</button></span></div>
+        </aside>
+      </figure>
+      <figure><figcaption>K4c · Ghi kết quả PA</figcaption>
+        <aside class="pn toi" data-web style="width:736px">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Case học thuật</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Ghi kết quả PA · Reading</h2><span class="han-v xa">hạn 22/09</span></div>
+            <div class="pn-ngu"><span><a href="#">Lý Minh Châu</a></span><span><a href="#">MB FT 101</a></span><span><span class="sos m1">SOS 1</span></span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <div class="boi-canh"><span>PA <b>Bổ trợ Reading · 2 buổi / 2 tuần</b></span><span>Người dạy <b>Đinh Thu Hằng</b></span></div>
+            <div class="o-truong"><span class="lb">Tiến triển (2 tuần) <span class="sao">*</span></span>
+              <div class="chon-hang"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon on" aria-pressed="true">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></div></div>
+            <div class="o-truong"><span class="lb">Nhận xét <span class="sao">*</span></span><div class="o lon">Đúng 24 / 40 câu ở bài luyện, hết bỏ trống câu True / False Not Given</div></div>
+            <div class="o-truong"><span class="lb">Quyết định <span class="sao">*</span></span>
+              <div class="chon-hang"><button type="button" class="nut-chon on" aria-pressed="true">Giữ nguyên</button><button type="button" class="nut-chon">Điều chỉnh</button><button type="button" class="nut-chon">Thay PA</button><button type="button" class="nut-chon">Kết thúc PA</button><button type="button" class="nut-chon">Xin hỗ trợ QL</button></div></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Kỳ 2 tuần · hạn thứ Ba 22/09 · Lưu là chốt, đổi bằng Sửa</span><button type="button" class="nut-i" aria-label="Chi tiết">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu nhap">✓ Đã lưu nháp · chưa chốt</span><span class="phai"><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh">Lưu</button></span></div>
+        </aside>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================================================== K5 ===================================================== -->
+  <section class="khu" id="k5">
+    <h2>K5 · "+ Ghi" — menu · chọn em · form Ghi vi phạm (R17–R18)</h2>
+    <p class="ghi"><span class="so-mk">1</span>"+ Ghi" (đầu trang, cạnh Mọi hạn) mở menu 3 mục · <span class="so-mk">2</span>bước kế: một ô gõ tên em — gợi ý em các lớp của tôi, lớp bên cạnh tên; "Báo tình hình cho TVV" chọn nhiều, tối đa 8 (đếm "2 / 8") rồi ra đúng hộp Báo tình hình đang có (v20 C) · <span class="so-mk">3</span>chọn em xong: panel Ghi vi phạm đang có (v20 B) mở ở khung phải; công tắc "Vi phạm | Chỉ nhắc nhở" đổi dòng quy chế (K5d ↔ K5e).</p>
+    <div class="hang-khung">
+      <figure><figcaption>K5a · menu "+ Ghi" (cắt phần đầu trang 1440)</figcaption>
+        <div class="man toi" data-web style="height:330px">
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav do">9</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+            <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 9 quá hạn</span></span>
+              <span class="phai"><span class="o-chon">Mọi hạn</span><span class="vung-menu"><button type="button" class="nut nut-chinh" aria-expanded="true">+ Ghi</button>
+                <div class="menu-tha" role="menu" style="right:0;top:42px">
+                  <button type="button" role="menuitem" class="re"><svg class="ic"><use href="#i-yt"/></svg>Ghi vi phạm / nhắc nhở</button>
+                  <button type="button" role="menuitem"><svg class="ic"><use href="#i-bao"/></svg>Báo tình hình cho TVV</button>
+                  <button type="button" role="menuitem"><svg class="ic"><use href="#i-case"/></svg>+ Case</button>
+                </div></span></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Chấm điểm <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Ý thức &amp; Phối hợp <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Vận hành <span class="bd do">2</span></button></div>
+            <div class="than"><div class="cot-ds"><section class="nhom"><div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Mock Test</span><span class="sau-ten"><span class="dem">4 việc</span><span class="bao-qua">⚠ 2 quá hạn</span></span></div></section></div>
+              <div class="cot-pn"><section class="nhom lt"><div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span><span class="sau-ten"><span class="dem">8 lớp</span></span></div></section></div></div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>K5b · Ghi vi phạm / nhắc nhở → gõ tên em (một em)</figcaption>
+        <div class="toi" data-web style="background:var(--bg);padding:20px;border-radius:6px;width:480px">
+          <div class="hop" role="dialog" aria-label="Chọn em">
+            <div class="h-dau"><div><b>Ghi vi phạm / nhắc nhở</b><span>Chọn em</span></div><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="h-than">
+              <div class="o go"><svg class="ic" style="color:var(--text-faint)"><use href="#i-tim"/></svg>Hồ G<span class="con"></span></div>
+              <div class="goi-y" role="listbox">
+                <div class="re" role="option" aria-selected="true"><span><mark>Hồ G</mark>ia Bảo</span><small>MB FOU 12</small></div>
+                <div role="option"><span><mark>Hồ G</mark>ia Huy</span><small>MB FT 104</small></div>
+                <div role="option"><span><mark>Hồ G</mark>iang Nam</span><small>MB FT 112</small></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>K5c · Báo tình hình cho TVV → chọn nhiều em (tối đa 8) — hộp đang có</figcaption>
+        <div class="toi" data-web style="background:var(--bg);padding:20px;border-radius:6px;width:520px">
+          <div class="hop" role="dialog" aria-label="Báo tình hình học tập" style="width:480px">
+            <div class="h-dau"><div><b>Báo tình hình cho TVV</b></div><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="h-than">
+              <div class="o-truong"><span class="lb" style="display:flex;justify-content:space-between">Học viên <span class="so" style="font-weight:500;font-size:13px;color:var(--text-dim)">2 / 8</span></span>
+                <div class="chon-hang"><span class="chip-em">Tạ Minh Khoa <small>MB FT 101</small><button type="button" aria-label="Bỏ">✕</button></span><span class="chip-em">Ninh Gia Hưng <small>MB FT 104</small><button type="button" aria-label="Bỏ">✕</button></span></div>
+                <div class="o go">Ngô<span class="con"></span></div>
+                <div class="goi-y" role="listbox"><div class="re" role="option"><span><mark>Ngô</mark> Thanh Mai</span><small>MB FT 112</small></div><div role="option"><span><mark>Ngô</mark> Đức Anh</span><small>MB BE 03</small></div></div>
+              </div>
+              <div class="gui-toi"><span>Gửi tới</span><span><b>TVV Đặng Hải Yến</b> · Tạ Minh Khoa<br><b>TVV Lý Thu Châu</b> · Ninh Gia Hưng</span><span>Hạn TVV</span><span><b>5 ngày</b> · tới 19/09</span></div>
+              <div class="o-truong"><span class="lb">Nội dung <span class="sao">*</span></span><div class="o lon"><span class="mo3">Tình hình cần báo PH</span></div></div>
+            </div>
+            <div class="h-chan"><span class="phai"><button type="button" class="nut nut-nho">Đóng</button><button type="button" class="nut nut-nho nut-chinh">Gửi TVV</button></span></div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>K5d · form Ghi vi phạm (khung phải) · công tắc ở "Vi phạm"</figcaption>
+        <aside class="pn toi" data-web style="width:736px" id="pn-ghi">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Ý thức</span><button type="button" class="x" data-dong aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Ghi vi phạm</h2></div>
+            <div class="pn-ngu"><span><a href="#">MB FOU 12</a></span><span>1 học viên</span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <span class="doan" role="radiogroup" aria-label="Loại ghi" style="justify-self:start"><button type="button" role="radio" aria-checked="true" class="on">Vi phạm</button><button type="button" role="radio" aria-checked="false">Chỉ nhắc nhở</button></span>
+            <div class="o-truong"><span class="lb">Học viên</span><span class="chip-em" style="justify-self:start">Hồ Gia Bảo <small>MB FOU 12</small><button type="button" aria-label="Bỏ">✕</button></span></div>
+            <div class="o-truong"><span class="lb">Nhóm <span class="sao">*</span></span><div class="chon-hang"><button type="button" class="nut-chon">Chuyên cần</button><button type="button" class="nut-chon">BTVN</button><button type="button" class="nut-chon">Thái độ / hành vi</button><button type="button" class="nut-chon on" aria-pressed="true">Kỷ luật lớp học</button><button type="button" class="nut-chon">Khác</button></div></div>
+            <div class="o-truong"><span class="lb">Vi phạm <span class="sao">*</span></span><div class="o">Dùng điện thoại trong giờ</div></div>
+            <div class="hai-o"><div class="o-truong"><span class="lb">Môn</span><span class="o-chon">R · Reading</span></div><div class="o-truong"><span class="lb">Ngày <span class="sao">*</span></span><span class="o-ngay" style="max-width:200px"><span>14/09/2026</span><span class="nut-lich" aria-label="Chọn ngày"><svg class="ic"><use href="#i-lich"/></svg></span></span></div></div>
+            <div class="o-truong"><span class="lb">Mô tả <span class="tc">tuỳ chọn</span></span><div class="o lon"><span class="mo3">Chi tiết nếu cần</span></div></div>
+            <div style="display:flex;gap:14px;align-items:center;font-size:14px"><b>Bằng chứng</b><button type="button" class="link-nho">+ Tệp</button><button type="button" class="link-nho">+ Liên kết</button></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>GVCN nhận việc xem · đủ 3 trong 2 tuần thì phải xử lý</span><button type="button" class="nut-i" aria-label="Chi tiết">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu">Chưa lưu</span><span class="phai"><button type="button" class="nut" data-dong>Đóng</button><button type="button" class="nut nut-chinh">Lưu vi phạm</button></span></div>
+        </aside>
+      </figure>
+      <figure><figcaption>K5e · cùng form · công tắc ở "Chỉ nhắc nhở"</figcaption>
+        <aside class="pn toi" data-web style="width:736px">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Ý thức</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Ghi nhắc nhở</h2></div>
+            <div class="pn-ngu"><span><a href="#">MB FOU 12</a></span><span>1 học viên</span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <span class="doan" role="radiogroup" aria-label="Loại ghi" style="justify-self:start"><button type="button" role="radio" aria-checked="false">Vi phạm</button><button type="button" role="radio" aria-checked="true" class="on">Chỉ nhắc nhở</button></span>
+            <div class="o-truong"><span class="lb">Học viên</span><span class="chip-em" style="justify-self:start">Hồ Gia Bảo <small>MB FOU 12</small><button type="button" aria-label="Bỏ">✕</button></span></div>
+            <div class="o-truong"><span class="lb">Nhóm <span class="sao">*</span></span><div class="chon-hang"><button type="button" class="nut-chon">Chuyên cần</button><button type="button" class="nut-chon">BTVN</button><button type="button" class="nut-chon">Thái độ / hành vi</button><button type="button" class="nut-chon on" aria-pressed="true">Kỷ luật lớp học</button><button type="button" class="nut-chon">Khác</button></div></div>
+            <div class="o-truong"><span class="lb">Nhắc nhở <span class="sao">*</span></span><div class="o">Quên mang tai nghe</div></div>
+            <div class="hai-o"><div class="o-truong"><span class="lb">Môn</span><span class="o-chon">L · Listening</span></div><div class="o-truong"><span class="lb">Ngày <span class="sao">*</span></span><span class="o-ngay" style="max-width:200px"><span>14/09/2026</span><span class="nut-lich" aria-label="Chọn ngày"><svg class="ic"><use href="#i-lich"/></svg></span></span></div></div>
+            <div class="o-truong"><span class="lb">Mô tả <span class="tc">tuỳ chọn</span></span><div class="o lon"><span class="mo3">Chi tiết nếu cần</span></div></div>
+            <div style="display:flex;gap:14px;align-items:center;font-size:14px"><b>Bằng chứng</b><button type="button" class="link-nho">+ Tệp</button><button type="button" class="link-nho">+ Liên kết</button></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Không tính vào bậc, không sinh việc</span><button type="button" class="nut-i" aria-label="Chi tiết">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu">Chưa lưu</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Lưu nhắc nhở</button></span></div>
+        </aside>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================================================== K6 ===================================================== -->
+  <section class="khu" id="k6">
+    <h2>K6 · Việc Báo cáo PH của GV — ngày 22/09 · W4 SEP · 1440 (R19–R20) [chủ SP chốt lời 12]</h2>
+    <p class="ghi"><span class="so-mk">1</span>Tab <b>Báo cáo PH</b> chỉ hiện khi có việc (từ ngày 20); mỗi lớp một dòng "Viết Báo cáo PH · lớp · Tháng 9 · còn x / y em · hạn 30/09" + "Viết ›" (đổi trang → tab Báo cáo PH của hồ sơ lớp) · <span class="so-mk">2</span>Lớp của tôi: lớp đang trong đợt có thêm "Báo cáo PH ›" + "hạn 30/09" ở cột Việc khác · K6b: quá hạn (01/10) và tháng 2 (hạn 28/02).</p>
+    <div class="hang-khung">
+      <figure><figcaption>K6 · 1440 · 22/09</figcaption>
+        <div class="man toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav do">4</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>
+            <span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 4 quá hạn</span></span><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Ghi</button></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="false">Chấm điểm</button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">4</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Ý thức &amp; Phối hợp <span class="bd do">1</span></button><button class="tab" role="tab" aria-selected="true">Báo cáo PH</button><button class="tab" role="tab" aria-selected="false">Vận hành <span class="bd do">1</span></button></div>
+            <div class="than">
+              <div class="cot-ds">
+                <section class="nhom">
+                  <div class="dai-nhom"><svg class="ic"><use href="#i-bc"/></svg><span>Báo cáo PH</span><span class="sau-ten"><span class="dem">6 việc</span></span></div>
+                  <div class="ds-phang">
+                    <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FOU 15</span></span></span><span class="the-phu"><span class="tag nhat">Progress W3 SEP</span><span class="tag nhat">còn 12 / 12 em</span></span></span><span class="h"><span class="han-v xa">hạn 22/09</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+                    <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 101</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 21 / 33 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+                    <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 104</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 18 / 18 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+                    <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 108</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 6 / 20 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+                    <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 112</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 9 / 15 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+                    <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT RF 12</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 3 / 3 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+                  </div>
+                </section>
+                <details class="gap-dai"><summary><svg class="ic"><use href="#i-yc"/></svg><span>Yêu cầu của tôi</span><svg class="chev"><use href="#i-chev"/></svg></summary></details>
+              </div>
+              <div class="cot-pn">
+                <section class="nhom lt" aria-label="Lớp của tôi">
+                  <div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span><span class="sau-ten"><span class="dem">8 lớp</span></span></div>
+                  <div class="lt-cot"><span>Lớp</span><span>Tôi dạy</span><span>Test</span><span>Việc khác</span><span></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 101</a><span class="day"><span class="ky">L</span><span class="ky">R</span><span class="cn-t">chủ nhiệm</span></span><span class="test"><span class="t">MT · W3 SEP · 2 bài</span><span class="han-v nay">còn 1 ngày · 23/09</span></span><span class="khac"><a href="#">Báo cáo PH ›</a><span class="phu3">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 104</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t">MT · W3 SEP · 4 bài</span><span class="han-v nay">còn 1 ngày · 23/09</span></span><span class="khac"><a href="#">Báo cáo PH ›</a><span class="phu3">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 108</a><span class="day"><span class="ky">S</span></span><span class="test"><span class="t">Speaking · W4 SEP · 4 bài</span><span class="t"><span class="han-v xa">hạn 30/09</span><span class="tag loai-v">chấm chéo</span></span></span><span class="khac"><a href="#">Báo cáo PH ›</a><span class="phu3">hạn 30/09</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FOU 15</a><span class="day"><span class="ky">R</span></span><span class="test"><span class="t cho">Final · W2 OCT</span></span><span class="khac"><a href="#">Báo cáo PH ›</a><span class="phu3">hạn 22/09</span></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 112</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t cho">MT · W2 OCT</span></span><span class="khac"><a href="#">Báo cáo PH ›</a><span class="phu3">hạn 30/09</span></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT RF 12</a><span class="day"><span class="ky">L</span></span><span class="test"></span><span class="khac"><a href="#">Báo cáo PH ›</a><span class="phu3">hạn 30/09</span></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FOU 12</a><span class="day"><span class="cn-t">chủ nhiệm</span></span><span class="test"></span><span class="khac"><a href="#">1 việc Ý thức</a></span><span class="n"></span></div>
+                  <div class="lt-dong ranh"><a class="ma" href="#">MB BE 03</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t cho">Final · W3 OCT</span></span><span class="khac"></span><span class="n"></span></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>K6b · hai trạng thái khác của dòng (cột trái 640)</figcaption>
+        <div class="toi" data-web style="background:var(--bg);padding:16px;border-radius:6px;width:672px;display:grid;gap:10px">
+          <span class="phu12" style="font-weight:600">01/10 · sau hạn</span>
+          <section class="nhom"><div class="ds-phang">
+            <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 101</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 4 / 33 em</span></span></span><span class="h"><span class="han-v qua">quá hạn 1 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+          </div></section>
+          <span class="phu12" style="font-weight:600">22/02/2027 · tháng 2</span>
+          <section class="nhom"><div class="ds-phang">
+            <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 101</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 2</span><span class="tag nhat">còn 33 / 33 em</span></span></span><span class="h"><span class="han-v xa">hạn 28/02</span></span><span class="n"><button type="button" class="nut nut-nho">Viết ›</button></span></div>
+          </div></section>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- ===================================================== K7 ===================================================== -->
+  <section class="khu" id="k7">
+    <h2>K7 · Trạng thái · 1440 (R21–R23)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Hết việc ở tab: thẻ V18 "Hết việc Chấm điểm của bạn" + "Còn: Case học thuật · 3 việc" + "Việc tiếp ›"; khung phải vẫn Lớp của tôi (không còn nút Nhập điểm vì hết bài) · <span class="so-mk">2</span>GV mới: hai câu rỗng, không tab, không "+ Ghi" (chưa có em để ghi) · <span class="so-mk">3</span>đang tải: khung xương phẳng (không gradient) cả hai cột · <span class="so-mk">4</span>lỗi tải: "Không tải được · Thử lại" riêng từng cột (cột kia vẫn dùng được).</p>
+    <div class="hang-khung" style="flex-direction:column">
+      <figure><figcaption>K7a · hết việc Chấm điểm</figcaption>
+        <div class="man toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc <span class="so-nav do">3</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">TH</span>Đinh Thu Hằng</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>8</b> việc · <span class="qua">⚠ 3 quá hạn</span></span><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Ghi</button></span></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Chấm điểm</button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Ý thức &amp; Phối hợp <span class="bd do">1</span></button><button class="tab" role="tab" aria-selected="false">Vận hành</button></div>
+            <div class="than">
+              <div class="cot-ds"><section class="nhom"><div class="het"><span class="vong">✓</span><b>Hết việc Chấm điểm của bạn</b><span class="con-lai">Còn: <b>Case học thuật · 3 việc</b></span><button type="button" class="nut nut-chinh">Việc tiếp ›</button></div></section>
+                <details class="gap-dai"><summary><svg class="ic"><use href="#i-yc"/></svg><span>Yêu cầu của tôi</span><svg class="chev"><use href="#i-chev"/></svg></summary></details></div>
+              <div class="cot-pn">
+                <section class="nhom lt" aria-label="Lớp của tôi">
+                  <div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span><span class="sau-ten"><span class="dem">8 lớp</span></span></div>
+                  <div class="lt-cot"><span>Lớp</span><span>Tôi dạy</span><span>Test</span><span>Việc khác</span><span></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 101</a><span class="day"><span class="ky">L</span><span class="ky">R</span><span class="cn-t">chủ nhiệm</span></span><span class="test"><span class="t cho">MT · W4 SEP</span></span><span class="khac"><a href="#">2 việc Case</a><a href="#">1 việc Ý thức</a></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 112</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t cho">MT · W4 SEP</span></span><span class="khac"><a href="#">1 việc Case</a></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FOU 12</a><span class="day"><span class="cn-t">chủ nhiệm</span></span><span class="test"></span><span class="khac"><a href="#">2 việc Ý thức</a></span><span class="n"></span></div>
+                  <div class="lt-dong ranh"><a class="ma" href="#">MB FT 104</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t cho">MT · W1 OCT</span></span><span class="khac"></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FT 108</a><span class="day"><span class="ky">S</span></span><span class="test"><span class="t cho">Speaking · W4 SEP</span></span><span class="khac"></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB FOU 15</a><span class="day"><span class="ky">R</span></span><span class="test"><span class="t cho">Final · W2 OCT</span></span><span class="khac"></span><span class="n"></span></div>
+                  <div class="lt-dong"><a class="ma" href="#">MB BE 03</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t cho">Final · W3 OCT</span></span><span class="khac"></span><span class="n"></span></div>
+                  <div class="lt-dong nhat ranh"><a class="ma" href="#">MB FT RF 12</a><span class="day"><span class="ky">L</span></span><span class="test"></span><span class="khac"></span><span class="n"></span></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>K7b · GV mới, chưa có lớp</figcaption>
+        <div class="man toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="m dang">Công việc</span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="phai"><span class="tim-tt"><svg class="ic"><use href="#i-tim"/></svg>Tìm học viên, lớp</span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="ten-tt"><span class="av-tt">KL</span>Mạc Khánh Linh</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1></div>
+            <div class="than">
+              <div class="cot-ds"><section class="nhom"><div class="rong"><b>Chưa có việc</b></div></section></div>
+              <div class="cot-pn"><section class="nhom lt" aria-label="Lớp của tôi"><div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span></div><div class="rong">Chưa được phân công lớp nào</div></section></div>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <div class="hang-khung">
+        <figure><figcaption>K7c · đang tải (cắt phần thân)</figcaption>
+          <div class="man toi" data-web aria-busy="true">
+            <div class="noi-dung">
+              <div class="dau-trang"><h1>Công việc</h1><span class="xuong" style="width:150px"></span><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Ghi</button></span></div>
+              <div class="tabs"><span class="tab"><span class="xuong" style="width:90px"></span></span><span class="tab"><span class="xuong" style="width:140px"></span></span><span class="tab"><span class="xuong" style="width:110px"></span></span></div>
+              <div class="than">
+                <div class="cot-ds"><section class="nhom"><div class="dai-nhom"><span class="xuong" style="width:140px"></span></div>
+                  <div class="xuong-dong" style="border-top:0"><span class="xuong tron"></span><span class="xuong" style="flex:1"></span><span class="xuong" style="width:110px"></span><span class="xuong" style="width:100px;height:30px"></span></div>
+                  <div class="xuong-dong"><span class="xuong tron"></span><span class="xuong" style="flex:1"></span><span class="xuong" style="width:110px"></span><span class="xuong" style="width:100px;height:30px"></span></div>
+                  <div class="xuong-dong"><span class="xuong tron"></span><span class="xuong" style="flex:1"></span><span class="xuong" style="width:110px"></span><span class="xuong" style="width:100px;height:30px"></span></div></section></div>
+                <div class="cot-pn"><section class="nhom lt"><div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span></div>
+                  <div class="xuong-dong" style="border-top:0"><span class="xuong" style="width:90px"></span><span class="xuong" style="width:70px"></span><span class="xuong" style="flex:1"></span><span class="xuong" style="width:100px;height:30px"></span></div>
+                  <div class="xuong-dong"><span class="xuong" style="width:90px"></span><span class="xuong" style="width:70px"></span><span class="xuong" style="flex:1"></span><span class="xuong" style="width:100px;height:30px"></span></div>
+                  <div class="xuong-dong"><span class="xuong" style="width:90px"></span><span class="xuong" style="width:70px"></span><span class="xuong" style="flex:1"></span><span class="xuong" style="width:100px;height:30px"></span></div></section></div>
+              </div>
+            </div>
+          </div>
+        </figure>
+        <figure><figcaption>K7d · lỗi tải (cắt phần thân)</figcaption>
+          <div class="man toi" data-web>
+            <div class="noi-dung">
+              <div class="dau-trang"><h1>Công việc</h1><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Ghi</button></span></div>
+              <div class="than">
+                <div class="cot-ds"><section class="nhom"><div class="bao-loi" role="alert"><b>⚠ Không tải được việc</b><button type="button" class="nut nut-nho">Thử lại</button></div></section></div>
+                <div class="cot-pn"><section class="nhom lt"><div class="dai-nhom"><svg class="ic"><use href="#i-lop"/></svg><span>Lớp của tôi</span></div><div class="bao-loi" role="alert"><b>⚠ Không tải được lớp</b><button type="button" class="nut nut-nho">Thử lại</button></div></section></div>
+              </div>
+            </div>
+          </div>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================================================== K8 ===================================================== -->
+  <section class="khu" id="k8">
+    <h2>K8 · 375 (R24–R26; thêm K6 + K7a ở 375)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Thanh tab dưới 3 mục (Công việc · Học viên · Test); đầu trang công tắc hai đoạn "Việc · Lớp của tôi" (thay hai cột); dòng việc chạm cả dòng (nút ẩn — như v12 / v18 375) · <span class="so-mk">2</span>"+ Ghi" nút tròn nổi phải dưới, trên thanh tab · <span class="so-mk">3</span>Lớp của tôi: mỗi lớp một thẻ, "Nhập điểm" cao 44 · <span class="so-mk">4</span>Speaking chấm chéo: panel toàn màn, "‹ Quay lại", ngăn lớp gập / mở. Khung 375 vẽ cả trang cuộn (thanh tab + nút nổi đặt ở đáy khung).</p>
+    <div class="hang-khung">
+      <figure><figcaption>K8a · Việc</figcaption>
+        <div class="dt toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="nut-tt" title="Tìm"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="av-tt">TH</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 9</span></span></div>
+            <div class="cong-tac" role="group" aria-label="Xem"><button type="button" aria-pressed="true">Việc</button><button type="button" aria-pressed="false">Lớp của tôi</button></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Chấm điểm <span class="bd do">2</span></button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Case học thuật <span class="bd do">3</span></button><button class="tab" role="tab" aria-selected="false">Ý thức <span class="bd do">2</span></button></div>
+            <div class="cot-ds">
+              <section class="nhom">
+                <div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Mock Test</span><span class="sau-ten"><span class="dem">4</span><span class="bao-qua">⚠ 2</span></span></div>
+                <div class="vach-han">Quá hạn</div>
+                <div class="khoi dau-tien"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 101</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W1 SEP</span><span class="tag nhat">5 bài</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span></div></div>
+                <div class="khoi"><div class="dt-khoi"><span class="av">AN</span><span class="dt-ten"><a class="ten-em" href="#">Âu Nhật Nam</a><span class="lop">MB FT 101</span></span></div><ul class="ds-viec"><li><div class="viec"><span class="tv"><span class="t1">Nhập điểm Reading</span><span class="the-phu"><span class="tag nhat">W1 SEP</span><span class="tag nhat">1 bài</span></span></span><span class="h"><span class="han-v qua">quá hạn 5 ngày</span></span></div></li></ul></div>
+                <div class="vach-han">Hạn đến 20/09</div>
+                <div class="khoi"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 112</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W2 SEP</span><span class="tag nhat">3 bài</span></span></span><span class="h"><span class="han-v xa">hạn 16/09</span></span></div></div>
+                <div class="vach-han">Hạn sau 20/09</div>
+                <div class="khoi"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 104</span> · Listening, Reading</span></span><span class="the-phu"><span class="tag nhat">W3 SEP</span><span class="tag nhat">10 bài</span></span></span><span class="h"><span class="han-v xa">hạn 23/09</span></span></div></div>
+              </section>
+              <section class="nhom">
+                <div class="dai-nhom"><svg class="ic"><use href="#i-cham"/></svg><span>Progress / Final Test</span><span class="sau-ten"><span class="dem">1</span></span></div>
+                <div class="khoi dau-tien"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FOU 15</span> · Reading</span></span><span class="the-phu"><span class="tag nhat">Progress</span><span class="tag nhat">W3 SEP</span><span class="tag nhat">12 bài</span></span></span><span class="h"><span class="han-v xa">hạn 23/09</span></span></div></div>
+              </section>
+              <details class="gap-dai"><summary><svg class="ic"><use href="#i-yc"/></svg><span>Yêu cầu của tôi</span><svg class="chev"><use href="#i-chev"/></svg></summary></details>
+            </div>
+          </div>
+          <button type="button" class="fab" aria-label="Ghi: vi phạm, tình hình, Case">+ Ghi</button>
+          <nav class="thanh-duoi" aria-label="Điều hướng"><a href="#" class="dang"><svg class="ic"><use href="#i-cv"/></svg><span>Công việc</span></a><a href="#"><svg class="ic"><use href="#i-hv"/></svg><span>Học viên</span></a><a href="#"><svg class="ic"><use href="#i-test"/></svg><span>Test</span></a></nav>
+        </div>
+      </figure>
+      <figure><figcaption>K8b · Lớp của tôi (MB FOU 15, MB FT 104 cùng dáng thẻ MB FT 112 — không vẽ)</figcaption>
+        <div class="dt toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="av-tt">TH</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 9</span></span></div>
+            <div class="cong-tac" role="group" aria-label="Xem"><button type="button" aria-pressed="false">Việc</button><button type="button" aria-pressed="true">Lớp của tôi</button></div>
+            <section class="nhom lt" aria-label="Lớp của tôi">
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FT 101</a><span class="ky">L</span><span class="ky">R</span><span class="cn-t">chủ nhiệm</span></span><span class="test"><span>MT · W1 SEP · 6 bài</span><span class="han-v qua">quá hạn 5 ngày</span></span><span class="khac"><a href="#">2 việc Case</a> · <a href="#">1 việc Ý thức</a></span><button type="button" class="nut">Nhập điểm</button></div>
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FT 112</a><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span>MT · W2 SEP · 3 bài</span><span class="han-v xa">hạn 16/09</span></span><span class="khac"><a href="#">1 việc Case</a></span><button type="button" class="nut">Nhập điểm</button></div>
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FT 108</a><span class="ky">S</span></span><span class="test"><span>Speaking · W3 SEP · 6 bài</span><span class="han-v xa">hạn 23/09</span><span class="tag loai-v">chấm chéo</span></span><button type="button" class="nut">Nhập điểm</button></div>
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FOU 12</a><span class="cn-t">chủ nhiệm</span></span><span class="khac"><a href="#">2 việc Ý thức</a> · <a href="#">1 việc Vận hành</a></span></div>
+              <div class="the-lop" style="border-top-color:var(--o-vien)"><span class="h1"><a class="ma" href="#">MB BE 03</a><span class="ky">L</span><span class="ky">R</span></span><span class="test" style="color:var(--text-dim)">Final · W3 OCT</span></div>
+              <div class="the-lop nhat"><span class="h1"><a class="ma" href="#">MB FT RF 12</a><span class="ky">L</span></span></div>
+            </section>
+          </div>
+          <button type="button" class="fab" aria-label="Ghi: vi phạm, tình hình, Case">+ Ghi</button>
+          <nav class="thanh-duoi" aria-label="Điều hướng"><a href="#" class="dang"><svg class="ic"><use href="#i-cv"/></svg><span>Công việc</span></a><a href="#"><svg class="ic"><use href="#i-hv"/></svg><span>Học viên</span></a><a href="#"><svg class="ic"><use href="#i-test"/></svg><span>Test</span></a></nav>
+        </div>
+      </figure>
+      <figure><figcaption>K8c · Speaking chấm chéo · panel toàn màn</figcaption>
+        <div class="dt toi" data-web>
+          <aside class="pn" aria-label="Chấm Speaking">
+            <div class="pn-dau">
+              <div class="pn-h1"><button type="button" class="quay">‹ Quay lại</button></div>
+              <span class="loai">Việc chung · Speaking chấm chéo</span>
+              <div class="pn-tieu"><h2>Chấm Speaking</h2></div>
+              <div class="pn-ngu"><span>18 bài</span><span class="bao-qua">⚠ 6 quá hạn</span></div>
+            </div>
+            <div class="pn-than" style="gap:0">
+              <div class="pn-cc"><span class="tim"><svg class="ic"><use href="#i-tim"/></svg>Tìm em</span></div>
+              <div class="tuan-h">W3 SEP <span class="phu-d">8 bài</span><span class="han-v xa">hạn 23/09</span></div>
+              <details class="ngan" open><summary><span class="ma">MB FT 108</span><span class="cn-t">lớp tôi dạy</span><span class="phu-d">6 bài</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary>
+                <div class="gv-cham"><label>GV chấm</label><span class="o-chon">Đinh Thu Hằng · tôi</span></div>
+                <table class="luoi"><colgroup><col class="c-hv"><col class="c-o"><col class="c-kq"></colgroup>
+                  <thead><tr><th>Học viên</th><th>Speaking</th><th>Kết quả</th></tr></thead>
+                  <tbody>
+                    <tr><td><span class="hv"><a href="#">Nguyễn Hà My</a></span></td><td><span class="od mo"><b>6.0</b></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                    <tr><td><span class="hv"><a href="#">Trịnh Quốc Bảo</a></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                    <tr><td><span class="hv"><a href="#">Lưu Khánh Vy</a><small>vắng W2 SEP</small></span></td><td><span class="od trong" aria-label="Chưa có"></span></td><td><span class="kq cho">Chờ S</span></td></tr>
+                  </tbody></table>
+                <details class="da-co"><summary>Đã có điểm · 2 bài<svg class="chev"><use href="#i-chev"/></svg></summary></details>
+              </details>
+              <details class="ngan"><summary><span class="ma">MB FT 102</span><span class="phu-d">2 bài</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary></details>
+              <div class="tuan-h">W2 SEP <span class="phu-d">3 bài</span><span class="han-v xa">hạn 16/09</span></div>
+              <details class="ngan"><summary><span class="ma">MB FT 105</span><span class="phu-d">3 bài</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary></details>
+              <div style="height:14px"></div>
+              <details class="ngan"><summary><span class="ma">Tuần cũ hơn</span><span class="phu-d">7 bài</span><span class="han-v qua">6 quá hạn</span><span class="phai"><svg class="chev"><use href="#i-chev"/></svg></span></summary></details>
+            </div>
+            <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ</span></div>
+            <div class="pn-chan"><button type="button" class="nut">Việc tiếp ›</button></div>
+          </aside>
+        </div>
+      </figure>
+      <figure><figcaption>K8d · Báo cáo PH (22/09) · còn 2 dòng không vẽ</figcaption>
+        <div class="dt toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="av-tt">TH</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 4</span></span></div>
+            <div class="cong-tac" role="group" aria-label="Xem"><button type="button" aria-pressed="true">Việc</button><button type="button" aria-pressed="false">Lớp của tôi</button></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Báo cáo PH</button><button class="tab" role="tab" aria-selected="false">Chấm điểm</button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">4</span></button></div>
+            <section class="nhom">
+              <div class="dai-nhom"><svg class="ic"><use href="#i-bc"/></svg><span>Báo cáo PH</span><span class="sau-ten"><span class="dem">5</span></span></div>
+              <div class="ds-phang">
+                <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 101</span> <span style="color:var(--accent)">›</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 21 / 33 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span></div>
+                <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 104</span> <span style="color:var(--accent)">›</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 18 / 18 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span></div>
+                <div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-bc"/></svg></span><span class="tv"><span class="t1"><span>Viết Báo cáo PH · <span class="lop-gop">MB FT 108</span> <span style="color:var(--accent)">›</span></span></span><span class="the-phu"><span class="tag nhat">Tháng 9</span><span class="tag nhat">còn 6 / 20 em</span></span></span><span class="h"><span class="han-v xa">hạn 30/09</span></span></div>
+              </div>
+            </section>
+          </div>
+          <button type="button" class="fab" aria-label="Ghi: vi phạm, tình hình, Case">+ Ghi</button>
+          <nav class="thanh-duoi" aria-label="Điều hướng"><a href="#" class="dang"><svg class="ic"><use href="#i-cv"/></svg><span>Công việc</span></a><a href="#"><svg class="ic"><use href="#i-hv"/></svg><span>Học viên</span></a><a href="#"><svg class="ic"><use href="#i-test"/></svg><span>Test</span></a></nav>
+        </div>
+      </figure>
+      <figure><figcaption>K8e · Lớp của tôi trong đợt Báo cáo PH (22/09)</figcaption>
+        <div class="dt toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg><i class="cham"></i></span><span class="av-tt">TH</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">⚠ 4</span></span></div>
+            <div class="cong-tac" role="group" aria-label="Xem"><button type="button" aria-pressed="false">Việc</button><button type="button" aria-pressed="true">Lớp của tôi</button></div>
+            <section class="nhom lt" aria-label="Lớp của tôi">
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FT 101</a><span class="ky">L</span><span class="ky">R</span><span class="cn-t">chủ nhiệm</span></span><span class="test"><span>MT · W3 SEP · 2 bài</span><span class="han-v nay">còn 1 ngày · 23/09</span></span><span class="khac"><a href="#">Báo cáo PH ›</a> <span class="phu12">hạn 30/09</span></span><button type="button" class="nut">Nhập điểm</button></div>
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FT 112</a><span class="ky">L</span><span class="ky">R</span></span><span class="test" style="color:var(--text-dim)">MT · W2 OCT</span><span class="khac"><a href="#">Báo cáo PH ›</a> <span class="phu12">hạn 30/09</span></span></div>
+              <div class="the-lop"><span class="h1"><a class="ma" href="#">MB FT RF 12</a><span class="ky">L</span></span><span class="khac"><a href="#">Báo cáo PH ›</a> <span class="phu12">hạn 30/09</span></span></div>
+            </section>
+          </div>
+          <button type="button" class="fab" aria-label="Ghi: vi phạm, tình hình, Case">+ Ghi</button>
+          <nav class="thanh-duoi" aria-label="Điều hướng"><a href="#" class="dang"><svg class="ic"><use href="#i-cv"/></svg><span>Công việc</span></a><a href="#"><svg class="ic"><use href="#i-hv"/></svg><span>Học viên</span></a><a href="#"><svg class="ic"><use href="#i-test"/></svg><span>Test</span></a></nav>
+        </div>
+      </figure>
+      <figure><figcaption>K8f · hết việc Chấm điểm (K7a ở 375)</figcaption>
+        <div class="dt toi" data-web>
+          <div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span><span class="phai"><span class="nut-tt"><svg class="ic"><use href="#i-tim"/></svg></span><span class="nut-tt">?</span><span class="nut-tt"><svg class="ic"><use href="#i-chuong"/></svg></span><span class="av-tt">TH</span></span></div>
+          <div class="noi-dung">
+            <div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>8</b> việc · <span class="qua">⚠ 3</span></span></div>
+            <div class="cong-tac" role="group" aria-label="Xem"><button type="button" aria-pressed="true">Việc</button><button type="button" aria-pressed="false">Lớp của tôi</button></div>
+            <div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Chấm điểm</button><button class="tab" role="tab" aria-selected="false">Speaking chấm chéo <span class="bd do">6</span></button><button class="tab" role="tab" aria-selected="false">Case <span class="bd do">2</span></button></div>
+            <section class="nhom"><div class="het"><span class="vong">✓</span><b>Hết việc Chấm điểm của bạn</b><span class="con-lai">Còn: <b>Case học thuật · 3 việc</b></span><button type="button" class="nut nut-chinh">Việc tiếp ›</button></div></section>
+          </div>
+          <button type="button" class="fab" aria-label="Ghi: vi phạm, tình hình, Case">+ Ghi</button>
+          <nav class="thanh-duoi" aria-label="Điều hướng"><a href="#" class="dang"><svg class="ic"><use href="#i-cv"/></svg><span>Công việc</span></a><a href="#"><svg class="ic"><use href="#i-hv"/></svg><span>Học viên</span></a><a href="#"><svg class="ic"><use href="#i-test"/></svg><span>Test</span></a></nav>
+        </div>
+      </figure>
+    </div>
+  </section>
+</div>
+
+<script>
+/* JS tối thiểu: công tắc Sáng / Tối · tab · mở / đóng panel ở K1 · menu "+ Ghi". Gập / mở ngăn dùng <details> (không JS). */
+(function () {
+  'use strict';
+  var khung = document.querySelectorAll('[data-web]');
+  document.querySelectorAll('[data-che]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var che = b.dataset.che;
+      khung.forEach(function (k) { k.classList.remove('toi', 'sang'); k.classList.add(che); });
+      document.querySelectorAll('[data-che]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+  var k1 = document.querySelector('[data-khung="k1"]');
+  /* tab */
+  k1.querySelectorAll('[data-tab]').forEach(function (t) {
+    t.addEventListener('click', function () {
+      k1.querySelectorAll('[data-tab]').forEach(function (x) { x.setAttribute('aria-selected', String(x === t)); });
+      k1.querySelectorAll('[data-pane]').forEach(function (p) { p.hidden = p.dataset.pane !== t.dataset.tab; });
+    });
+  });
+  /* panel: mở = chép panel tĩnh của K2 / K3 / K5d vào khung phải; ✕ = Lớp của tôi quay lại */
+  var cot = k1.querySelector('[data-cot-pn]');
+  var lop = cot.innerHTML;
+  var nguon = { nhap: 'pn-nhap', speaking: 'pn-speaking', ghi: 'pn-ghi' };
+  var menu = k1.querySelector('.menu-tha'), nutMenu = k1.querySelector('[data-menu]');
+  function dongMenu() { menu.hidden = true; nutMenu.setAttribute('aria-expanded', 'false'); }
+  k1.addEventListener('click', function (e) {
+    if (e.target.closest('[data-menu]')) { menu.hidden = !menu.hidden; nutMenu.setAttribute('aria-expanded', String(!menu.hidden)); return; }
+    var mo = e.target.closest('[data-mo]');
+    if (mo && e.target.closest('a')) return;
+    if (mo) {
+      dongMenu();
+      var id = nguon[mo.dataset.mo];
+      if (!id) return;
+      var pn = document.getElementById(id).cloneNode(true);
+      pn.removeAttribute('id'); pn.removeAttribute('style'); pn.removeAttribute('data-web'); pn.classList.remove('toi', 'sang');
+      cot.innerHTML = ''; cot.appendChild(pn);
+      k1.querySelectorAll('.viec.chon').forEach(function (v) { v.classList.remove('chon'); });
+      var dong = mo.closest('.viec'); if (dong) dong.classList.add('chon');
+      return;
+    }
+    if (e.target.closest('[data-dong]')) {
+      cot.innerHTML = lop;
+      k1.querySelectorAll('.viec.chon').forEach(function (v) { v.classList.remove('chon'); });
+      return;
+    }
+    if (!e.target.closest('.menu-tha')) dongMenu();
+  });
+})();
+</script>
+</body>
+</html>
