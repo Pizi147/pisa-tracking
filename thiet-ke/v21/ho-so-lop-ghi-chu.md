@@ -87,7 +87,7 @@ Không thao tác nào bị mất.
 | R2.5 đầu tab Báo cáo PH: "Tháng 9 · hạn 30/09 · bạn còn 21 / 33 em" · lớp thường "Progress W3 SEP · hạn 22/09" · "sắp mở {ngày}" | Đạt (XM-6) | #k5 K5a–K5c, #k8 K8c |
 | R2.6 khối gập "Đã chuyển · đang bổ trợ · n em" dưới bảng | Đạt | #k6 |
 | R2.7 lớp thường cùng khung, cột theo môn, dải Cuối khoá giữ | Đạt | #k6, #k3 K3b |
-| R2.8 M1–M10 | Đạt — một chữ đậm mỗi dòng (tên em / mã lớp); chip nền nhạt cho lượt / tuần; hạn là viên tròn theo mức; SOS chip vuông viền; không lặp lớp trong ngăn việc (M3), "TVV …" chỉ khi khác TVV chính; không chú thích tĩnh | #k1, #k2, #k6 |
+| R2.8 M1–M10 | Đạt — một chữ đậm mỗi dòng (tên em / mã lớp); chip nền nhạt cho lượt / tuần; hạn là viên tròn theo mức; SOS chip vuông viền; không lặp điều đã biết (M3), "TVV …" chỉ khi khác TVV chính; không chú thích tĩnh | #k1, #k2, #k6 |
 | R2.9 375 một cột, "+ Task" nút tròn, bảng thẻ | Đạt | #k8 K8a–K8c |
 | R2.10 lớp chưa có em · đã kết thúc (tab Tổng kết) · GV cũ chỉ xem | Đạt (XM-8, XM-9) | #k7 K7a–K7d |
 | Luật chung: chip không biểu tượng, không Chấm Speaking, Báo cáo PH trong "Vận hành", "+ Task", tên bịa, đang tải / lỗi / không có quyền, 1440 + 375, Sáng + Tối | Đạt | #k1, #k5 (chip Vận hành), #k7 K7e–K7g, ảnh `anh/ho-so-lop/` |
