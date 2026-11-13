@@ -824,6 +824,23 @@ const truocNhan = await doMotLuot(dongTruocNhan, docLap);
 if (inJson) fs.writeFileSync(process.env.PISA_IN_JSON!, JSON.stringify(inJson));
 if (process.env.PISA_IN_DO) fs.writeFileSync(process.env.PISA_IN_DO, JSON.stringify(Object.fromEntries([...truocNhan].map(([k, n]) => [k, [n, dongTruocNhan.get(k)]])), null, 1));
 
+/* LG-8: `GET /my-work` thêm `testSapToi` CHỈ cho vai GV (GVCN · GVBM · GVCN_THUONG); QL · QT · Admin · TVV · CX không có khoá này (JSON và số câu như cũ). */
+await checkAsync('LG-8 · /my-work: `testSapToi` chỉ vai GV; vai khác không có khoá; GV: mỗi lớp đang dạy một dòng, mã lớp không trùng', async () => {
+  const COC = '/my-work';
+  for (const vai of ['GVCN', 'GVBM', 'GVCN_THUONG'] as Vai[]) {
+    const r = await doSql(vai, 'GET', COC);
+    const ds = (r.json as any).testSapToi;
+    assert(r.status === 200 && Array.isArray(ds) && ds.length > 0, `${vai}: thiếu testSapToi`);
+    assert(new Set(ds.map((x: any) => x.classId)).size === ds.length, `${vai}: lớp trùng`);
+    assert(ds.every((x: any) => 'testKeTiep' in x && typeof x.testTuanNay === 'boolean'), `${vai}: sai dạng dòng ${JSON.stringify(ds[0])}`);
+    console.log(`      (${vai} /my-work: ${r.n} câu, ${ds.length} lớp)`);
+  }
+  for (const vai of ['QL', 'QT', 'ADMIN', 'TVV', 'CX'] as Vai[]) {
+    const r = await doSql(vai, 'GET', COC);
+    if (r.status === 200) assert(!('testSapToi' in (r.json as any)), `${vai}: không được có testSapToi`);
+  }
+});
+
 /* DOC-IT-1: `isInitialised` hỏi `sqlite_master` (SCAN ~270 dòng trên bản chính) mỗi lần mở app — đã khởi tạo thì nhớ theo kết nối. */
 await checkAsync('DOC-IT-1 · GET /demo/session (mọi vai) không đọc sqlite_master', async () => {
   const ghi: { sql: string; args: unknown[] }[] = [];
