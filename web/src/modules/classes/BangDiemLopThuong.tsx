@@ -37,6 +37,8 @@ type DongThuong = {
   timeline: LuotThuong[];
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC. */
   ketThucVi?: string | null;
+  /** GV-CU-BO-TRO: em đã chuyển, người xem đang dạy PA Bổ trợ miễn phí của em (máy chủ) — chip "Đã chuyển · đang bổ trợ ›" về hồ sơ HV. */
+  dangBoTro?: { lopMoi: string | null } | null;
   /** PR-UXF-a K2-12: % tổng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
   cuoiKhoa?: { tyLe: number | null } | null;
   /** PR-OV3a: hướng Quản lý ĐÃ CHỐT (máy chủ `loTrinhDaChot`) — nháp / đề xuất GVCN / gợi ý tự tính không có ở đây. */
@@ -160,14 +162,20 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   const tvvChinh = tvvChinhCuaLop(dangLuu);
   const dongPhu = (s: DongThuong) => {
     const tvv = !!s.tvv && s.tvv !== tvvChinh;
-    if (!tvv && !s.archived && !s.moiVao && !s.missing.length && !s.canhBaoYThuc && !s.ketThucVi) return null;
+    if (!tvv && !s.archived && !s.moiVao && !s.missing.length && !s.canhBaoYThuc && !s.ketThucVi && !s.dangBoTro) return null;
     return (
       <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         {s.archived && <Nhan tone="muted">{t('Lưu trữ')}</Nhan>}
         {tvv && <span className="tvv">TVV {s.tvv}</span>}
         {s.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}
         <MissingBadge items={s.missing} gon /><CanhBaoYThuc cb={s.canhBaoYThuc} />
-        {s.ketThucVi && <span className="text-xs text-faint">{dich(s.ketThucVi)}</span>}
+        {s.ketThucVi && !s.dangBoTro && <span className="text-xs text-faint">{dich(s.ketThucVi)}</span>}
+        {s.dangBoTro && (
+          <Link to={duongHoSoHocVien(s.id)} className="link whitespace-nowrap text-[12px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center"
+            title={s.dangBoTro.lopMoi ? t('Đang học {lop} — bạn vẫn ghi kết quả bổ trợ và Mini Test', { lop: s.dangBoTro.lopMoi }) : undefined}>
+            {t('Đã chuyển · đang bổ trợ')} ›
+          </Link>
+        )}
       </span>
     );
   };
@@ -178,9 +186,10 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     </span>
   );
   const menu = (s: DongThuong, lopNut?: string) => (
-    <MenuDong lopNut={lopNut} muc={s.archived ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
+    /* GV-CU-BO-TRO: em đã chuyển (dòng "Đã chuyển · đang bổ trợ ›") không còn thao tác ở lớp cũ — chỉ lối vào hồ sơ HV. */
+    <MenuDong lopNut={lopNut} muc={s.archived || s.dangBoTro ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
   );
-  const lopHang = (s: DongThuong) => `${s.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
+  const lopHang = (s: DongThuong) => `${s.status !== 'active' || s.dangBoTro ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
 
   /*
    * 375 (mockup C, như lưới 5 ô của FT): mỗi em một thẻ — tên (+ dòng phụ) · ⋯ 44 px · LƯỚI cột môn × hàng mốc trên nền phụ (điểm không "/tổng";

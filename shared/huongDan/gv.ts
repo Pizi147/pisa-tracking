@@ -138,11 +138,22 @@ export const HD_GV: HuongDan = {
       tuKhac: ['nghỉ học', 'thôi học', 'tạm dừng', 'lưu trữ', 'pause'],
     },
     {
-      id: 'ghi-mini-test', ten: 'Ghi Mini Test', nhom: 'hv', chiGvcn: true,
+      /* GV-CU-BO-TRO (chủ SP 13/11): Người dạy PA Bổ trợ miễn phí (GV cũ) ghi — không còn chỉ GVCN; GVCN lớp mới làm thay được. */
+      id: 'ghi-mini-test', ten: 'Ghi Mini Test', nhom: 'hv',
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Case học thuật › Phương án', duong: CV },
-      loiTat: ['ho-so-hv', 'p-ket-qua-pa'], cung: 'mở cùng ô Mini Test.',
-      buoc: ['Mở <b>Công việc</b>, bấm dòng <b>Ghi Mini Test</b> (hoặc nút <b>Ghi Mini Test</b> ở hồ sơ em).', 'Gõ điểm Mini Test của em, rồi lưu.'],
+      loiTat: ['ho-so-hv', 'ho-so-gv', 'p-ket-qua-pa'], cung: 'mở cùng ô Mini Test.',
+      buoc: ['Mở <b>Công việc</b>, bấm dòng <b>Ghi Mini Test</b> (hoặc nút <b>Ghi Mini Test</b> ở hồ sơ em).', 'Gõ điểm Mini Test của em, rồi lưu.',
+        'Người dạy bổ trợ ghi; GVCN lớp mới thấy dòng của Người dạy, bấm <b>Làm thay</b> khi cần.'],
       tuKhac: ['mini test', 'kết luận khoá'],
+    },
+    {
+      id: 'bo-tro-mien-phi', ten: 'Dạy bổ trợ miễn phí (em đã chuyển lớp)', nhom: 'hv',
+      loiChinh: { man: 'ho-so-gv', chu: 'Hồ sơ giáo viên › Em đang bổ trợ' },
+      loiTat: ['cong-viec', 'ho-so-lop', 'ho-so-hv'], cung: 'có lối vào hồ sơ em.',
+      buoc: ['Em lên lớp có PA Bổ trợ miễn phí: bạn (GV cũ) vẫn là Người dạy tới khi ghi Mini Test — có chuông khi em chuyển lớp.',
+        'Vào hồ sơ em: dòng việc ở <b>Công việc</b>, khối <b>Em đang bổ trợ</b> ở Hồ sơ giáo viên, hoặc <b>Đã chuyển · đang bổ trợ</b> ở hồ sơ lớp cũ.',
+        'Ghi kết quả từng kỳ, buổi cuối ghi Mini Test. Hồ sơ lớp mới của em: chỉ xem.'],
+      tuKhac: ['bổ trợ', 'bổ trợ miễn phí', 'gv cũ', 'chuyển lớp', 'free extra class'],
     },
     {
       id: 'cuoi-khoa', ten: 'Cuối khoá lớp thường', nhom: 'hv', chiGvcn: true,
@@ -252,7 +263,7 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'cv-gop', ten: 'Làm cả lớp một lần', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu mục.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
-        { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.', 'Đầu trang đếm “n việc · m quá hạn” và việc vừa xong (trong lần mở trang này).'],
+        { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.', 'Đầu trang đếm “n việc · m quá hạn” và việc xong hôm nay.'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc việc ở hàng này.' } },
         { id: 'tq-lop', ten: 'Lớp tôi dạy', buoc: ['Cuối Công việc: các lớp bạn dạy, bài quá hạn và bài chờ chấm.', 'Bấm tên lớp mở hồ sơ lớp.'],
           chi: { hd: 'tq-lop-toi-day', duong: CV, chu: 'Bấm tên lớp để mở hồ sơ lớp.' } },
@@ -344,7 +355,8 @@ export const HD_GV: HuongDan = {
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
       dangO: { cau: 'Lớp bạn dạy và số của bạn theo khoảng tuần.', truoc: { chu: 'Tổng quan', duong: '/' } },
-      muc: [{ id: 'hsgv-so', ten: 'Khối của trang', buoc: ['Dải chỉ số theo <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.', 'Khối <b>Lớp đang dạy</b> · <b>Học thuật</b> · <b>Việc đang tồn</b> (<b>Mở Công việc ›</b>).', 'Khối <b>Case đang phụ trách</b> và <b>Yêu cầu đã gửi</b>.'] }],
+      muc: [{ id: 'hsgv-so', ten: 'Khối của trang', buoc: ['Dải chỉ số theo <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.', 'Khối <b>Lớp đang dạy</b> · <b>Học thuật</b> · <b>Việc đang tồn</b> (<b>Mở Công việc ›</b>).', 'Khối <b>Case đang phụ trách</b> và <b>Yêu cầu đã gửi</b>.',
+        'Khối <b>Em đang bổ trợ</b> (khi bạn dạy PA Bổ trợ miễn phí): tên em mở hồ sơ, kể cả em đã chuyển lớp.'] }],
     },
     {
       id: 'huong-dan', ten: 'Hướng dẫn', duong: ['/huong-dan'],

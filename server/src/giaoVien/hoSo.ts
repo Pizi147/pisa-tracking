@@ -10,7 +10,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { bangLop, loadPrincipal, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, can, loadPrincipal, lopDayDu, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
@@ -184,8 +184,30 @@ export type HoSoGv = {
   /** `coPa`: Case đã chốt PA (không nằm ở cột "Chờ duyệt" — CÙNG `xuLyCaseMany` của chỉ số "Case chưa chốt PA", Tổng quan XM-2). */
   caseMo: (CaseGv & { coPa: boolean })[];
   yeuCau: { cho: number; choQuaHan: number; tuChoi: number };
+  /** GV-CU-BO-TRO (chủ SP 13/11, A): em GV này đang dạy PA Bổ trợ miễn phí (đang chạy) — lối vào hồ sơ HV kể cả khi em đã chuyển lớp. Chỉ em người xem xem được. */
+  boTro: { hvId: number; ten: string; lopId: number | null; lopMa: string | null; daDay: number; soBuoi: number | null; hanMiniTest: string | null; caseId: number; paId: number }[];
   homNay: string;
 };
+
+/**
+ * GV-CU-BO-TRO: PA Bổ trợ miễn phí ĐANG CHẠY mà `gvId` là Người dạy (cùng tập với quyền tạm `boTroTamCo`), mỗi em một dòng (PA đầu của em): lớp đang học, buổi đã dạy / số buổi,
+ * hạn Mini Test. MỘT câu (chỉ mục `idx_iv_nguoi_day_bo_tro`); lọc theo quyền xem em của người xem (người xem = GV → quyền tạm cho qua).
+ */
+export function emBoTroCuaGv(p: Principal, gvId: number): HoSoGv['boTro'] {
+  const rows = db().prepare(
+    `SELECT iv.id AS pa_id, iv.case_id, iv.so_buoi, sc.student_id, s.full_name,
+            (SELECT COALESCE(SUM(f.so_buoi), 0) FROM case_followups f WHERE f.intervention_id = iv.id) AS da_day,
+            (SELECT m.han FROM mini_test m WHERE m.nhom_bo_tro = iv.nhom_bo_tro AND m.ty_le IS NULL ORDER BY m.id LIMIT 1) AS han_mt,
+            (SELECT e.class_id FROM enrollments e WHERE e.student_id = sc.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS lop
+       FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id JOIN students s ON s.id = sc.student_id
+      WHERE iv.performer_user_id = ? AND iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND sc.status != 'done'
+      ORDER BY s.full_name, iv.id`).all(gvId) as any[];
+  const daCo = new Set<number>();
+  return rows.filter((r) => !daCo.has(r.student_id) && daCo.add(r.student_id) && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }))
+    .map((r) => ({ hvId: r.student_id, ten: r.full_name, lopId: r.lop ?? null, lopMa: r.lop ? bangLopMa(r.lop) : null, daDay: r.da_day ?? 0, soBuoi: r.so_buoi ?? null,
+      hanMiniTest: r.han_mt ?? null, caseId: r.case_id, paId: r.pa_id }));
+}
+const bangLopMa = (id: number): string | null => lopDayDu().get(id)?.code ?? null;
 
 export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
   const { branchIds, laChinhMinh, ten } = phamViHoSoGv(p, gvId);          // quyền TRƯỚC mọi câu khác (tên GV đọc cùng câu kiểm)
@@ -237,6 +259,7 @@ export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
     tongHocVien: new Set(lop.flatMap((l) => [...l.hvIds])).size,
     caseMo: caseMo.map((c) => ({ ...c, coPa: xl.get(c.id)?.cot !== 'choDuyet' })),
     yeuCau: soYeuCauCuaGv(p, gvId, homNay),
+    boTro: emBoTroCuaGv(p, gvId),
     homNay,
   };
 }
