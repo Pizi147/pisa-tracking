@@ -72,7 +72,7 @@ export function docTuyChinhDot(classIds: readonly number[]): Map<number, TuyChin
 /** Lịch lớp → mọi đợt + bộ phần. Chương trình chưa có mẫu (PET, KET, Pre FOU) → null (không có tab). */
 /** `tienDo`: tiến độ lớp đã đọc theo lô (`classProgressMany`) · `tuyChinh`: quyết định đợt đã đọc theo lô (`docTuyChinhDot`) — nơi đọc nhiều lớp truyền vào, không đọc từng lớp. */
 export function dotCuaLop(c: Lop, homNay = demoToday(), tienDo?: Map<number, { progressWeekStart: string | null; finalWeekStart: string | null; startWeekStart: string | null }>,
-  tuyChinh?: Map<number, TuyChinhDot>): { bo: readonly PhanBc[]; ds: DotBc[]; dau: DotBc | null; daBo: DotBc[] } | null {
+  tuyChinh?: Map<number, TuyChinhDot>): { bo: readonly PhanBc[]; ds: DotBc[]; dau: DotBc | null; daBo: DotBc[]; sapMo: DotBc[] } | null {
   const bo = boPhanBc(c.programme_code ?? c.kind);
   if (!bo) return null;
   const ft = lopFt(c);
@@ -156,17 +156,21 @@ function napChung(p: Principal, classId: number) {
 
 /** GET /classes/:id/bao-cao-ph?dot= — chọn đợt + bảng em × phần (ô: đủ / nháp / chưa viết). */
 export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | null) {
-  const { c, q, homNay, bo, ds, dau, daBo } = napChung(p, classId);
+  const { c, q, homNay, bo, ds, dau, daBo, sapMo } = napChung(p, classId);
   const phanCot = (gv: Map<string, { id: number; ten: string }[]>) => bo.map((x) => ({
     khoa: x.khoa, ngan: x.ngan, ten: x.ten, gv: gv.get(x.khoa) ?? [], cuaToi: q.cuaToi.has(x.khoa),
   }));
-  const dsDot = ds.map((x) => ({ ma: x.ma, nhan: nhanDotBc(x, homNay), mo: x.mo, han: x.han, them: x.loai === 'them' }));
+  const dsDot = ds.map((x) => ({ ma: x.ma, nhan: nhanDotBc(x, homNay), mo: x.mo, han: x.han, them: x.loai === 'them', ten: x.ten ?? null }));
   /* BC-DOT-QL: đợt đã bỏ chỉ QL / Admin thấy (để Khôi phục); chọn đúng một đợt bỏ → không bảng, chỉ thẻ "Không báo cáo". */
   const dsBo = q.quyetDot ? daBo.map((x) => ({ ma: x.ma, nhan: nhanDotBc(x, homNay) })) : [];
-  const chungTrang = { lop: { id: c.id, ma: c.code, cn: c.branch_id, ft: lopFt(c) }, dsDot, dsBo, quyetDot: q.quyetDot, vietHo: q.vietHo, xuat: q.xuat };
+  /* LG-2: đợt thêm chưa tới ngày mở — mọi người xem lớp đều thấy "sắp mở {ngày}"; QL / Admin sửa / xoá. `id` = dòng `bao_cao_ph_dot`. */
+  const dsSapMo = sapMo.map((x) => ({ ma: x.ma, id: Number(x.ma.slice(5)), nhan: nhanDotBc(x, homNay), ten: x.ten ?? null, mo: x.mo, han: x.han }));
+  const chungTrang = { lop: { id: c.id, ma: c.code, cn: c.branch_id, ft: lopFt(c) }, dsDot, dsBo, dsSapMo, quyetDot: q.quyetDot, vietHo: q.vietHo, xuat: q.xuat };
   const daChon = dotMa ? dsBo.find((x) => x.ma === dotMa) ?? null : null;
-  if (!ds.length || daChon) {
-    return { ...chungTrang, dot: null, daBo: daChon, dotDau: dau && !daChon ? nhanDotBc(dau, homNay) : null, phan: phanCot(new Map()), em: [] };
+  const sapChon = dotMa ? dsSapMo.find((x) => x.ma === dotMa) ?? null : !ds.length ? dsSapMo[0] ?? null : null;
+  if (!ds.length || daChon || sapChon) {
+    return { ...chungTrang, dot: null, daBo: daChon, sapMo: daChon ? null : sapChon, dotDau: dau && !daChon && !sapChon ? nhanDotBc(dau, homNay) : null,
+      phan: phanCot(new Map()), em: [] };
   }
   const d = chonDot(ds, dotMa, homNay);
   const em = emCuaDot(classId, d, homNay);
@@ -176,7 +180,7 @@ export function trangBaoCaoPh(p: Principal, classId: number, dotMa?: string | nu
       .all(d.ma, JSON.stringify(em.map((e) => e.id))) as any[]) o.set(`${r.student_id}:${r.phan}`, r.du ? 'du' : 'nhap');
   }
   return {
-    ...chungTrang, dot: d.ma, daBo: null, dotDau: null, phan: phanCot(gvTheoPhan(classId, homNay)),
+    ...chungTrang, dot: d.ma, daBo: null, sapMo: null, dotDau: null, phan: phanCot(gvTheoPhan(classId, homNay)),
     em: em.map((e) => ({ id: e.id, ten: e.ten, o: Object.fromEntries(bo.map((x) => [x.khoa, o.get(`${e.id}:${x.khoa}`) ?? null])) })),
   };
 }
