@@ -223,7 +223,7 @@ Soạn từ mục "Người làm cần thấy gì" + bảng "Việc sinh ra" c�
 | D5 | Bảng câu dòng quy chế (83 câu) | lời 5; luat/1–4 | mỗi panel một kiểu, có panel không có | câu trong `shared/`, đổi theo lựa chọn | THÊM |
 | E1–E8 | Hộp nhập điểm gọn: FT L/R (câu → band) · W/S tiêu chí · lớp thường đúng / tổng · lỗi · vắng + ⋯ · hỏi "-" vào ô có điểm · đang lưu / đã lưu + Hoàn tác · 375 neo đáy | luat/1 T-10, T-11, T-13, T-17, mục 4; ① K2b | `HopNhapDiem` tới 7 nút một hàng | chân "⋯ · Vắng · Lưu · bài tiếp ›" mọi kỹ năng | ĐỔI (① đã duyệt) |
 | F1–F4 | Menu "+ Task" + bước chọn em (ô chọn có tìm) | lời 17 ý 3; luat/3 Y-01, Y-17 | ① K5a–c; nút cũ ở tab Ý thức / hồ sơ | menu chung H2; chọn em = mẫu A; 375 menu neo đáy | GIỮ + ĐỔI ô chọn |
-| G1–G4 | Hộp chuông: đầu khối v2 · thân dòng việc chuẩn (quá hạn + hôm nay) · "Còn n việc" · Cập nhật v2 · bấm việc → panel tại chỗ | 04 mục 5.3; lời 20 ý 3; chuông v2 | v2: một dòng mỗi LOẠI việc → `/cong-viec?loai=` | dòng việc chuẩn → panel tại chỗ [XM-1] | ĐỔI |
+| G1–G4 | Hộp chuông: GIỮ đúng dáng v2 — đầu khối (số = badge) · một dòng mỗi LOẠI việc (tên + "● n mới" · "n việc" · chip quá hạn / hôm nay · ›) · Cập nhật nhẹ ở dưới · bấm một loại → Công việc đúng tab (Báo cáo PH → Vận hành; không có dòng Chấm Speaking) | chuông v2 (chủ SP 11/11); PTA Overhaul sửa R5.8 14/11; lời 20 ý 3, 4 | v2: một dòng mỗi loại → `/cong-viec?loai=…` | giữ dáng; đích bấm = Công việc ĐÚNG tab của loại | GIỮ dáng / ĐỔI đích |
 | H1–H4 | Một tab · một menu · một dải chỉ số · một lịch sử | 04 mục 5.9; lời 4 (4) | nhiều dáng (mục 3) | một dáng mỗi loại | GỘP |
 
 ## 5. Bảng thao tác TRƯỚC → SAU (mức thành phần)
@@ -237,7 +237,7 @@ Soạn từ mục "Người làm cần thấy gì" + bảng "Việc sinh ra" c�
 | Bấm chip Việc cần làm | ① có biểu tượng | không biểu tượng, cùng đích | lời 20 |
 | Lưu panel, Hoàn tác, Lưu nháp, Sửa | mỗi panel một chỗ | một chân chung | |
 | Nhập một ô: Lưu, Lưu · bài tiếp ›, Vắng, Khôi phục, Bỏ vắng, Lưu · đóng | 7 nút | 2 nút + ⋯ (như ① K2b) | [XM-8] "Lưu" ở lại |
-| Bấm việc ở chuông | sang `/cong-viec?loai=` | mở panel việc tại trang | [XM-1] |
+| Bấm một loại việc ở chuông | sang `/cong-viec?loai=…` | sang Công việc, mở đúng tab của loại đó (Nhập điểm → Chấm điểm · Chọn PA, Kết quả PA → Case học thuật · Xử lý vi phạm, Phối hợp SOS → Ý thức & Phối hợp · Viết Báo cáo PH, Bàn giao → Vận hành) | [XM-1] |
 | Đánh dấu đã đọc, Xem tất cả Cập nhật | chuông v2 | giữ | |
 | Mở ⋯ / menu, chọn mục | `Menu`, `MenuDong`, menu tự viết | một menu | |
 | Bấm ô số | `OSo` | giữ, trong dải mỏng | |
@@ -247,7 +247,7 @@ Không thao tác nào bị mất.
 
 ## 6. [XM] — chỗ phải tự đoán hoặc đụng quyết định cũ
 
-1. **[XM-1] Chuông** — chuông v2 (duyệt 11/11) mỗi dòng là một LOẠI việc, bấm sang `/cong-viec?loai=…` (chủ SP lúc đó: chuông không liệt kê từng em). R5.8 + 04 mục 5.3 + lời 20 ý 3 đòi "dòng việc chuẩn, bấm mở thẳng panel". Mockup: chỉ dòng việc **quá hạn + hôm nay** (= số chuông; dòng gộp lớp × tuần như Công việc, nên không thành danh sách từng em), còn lại một dòng "Còn n việc · Công việc ›"; bấm → panel việc mở ngay tại trang đang đứng (G2). Turso: dùng `/my-work` đã nạp, 0 request thêm. PTA / chủ SP xác nhận.
+1. **[XM-1] Chuông — ĐÃ CHỐT (PTA Overhaul 14/11):** giữ đúng dáng chuông v2 chủ SP đã duyệt 11/11 ("Mở chuông tôi chỉ cần thấy công việc cần làm, bao nhiêu việc… gộp số công việc vào cho đỡ bị rối"): khối Việc cần làm một dòng mỗi LOẠI việc + số, khối Cập nhật nhẹ ở dưới. Chỉ đổi hành vi bấm: một loại → trang Công việc đúng tab (G1 → G2). Bản "dòng việc chuẩn + mở panel tại chỗ" của lượt đầu đã BỎ. Không có dòng Chấm Speaking (việc chung không đếm, như v2). Thêm loại mới "Viết Báo cáo PH" (S1) → tab Vận hành. Turso: dùng `/my-work` đã nạp, 0 request thêm.
 2. **[XM-2] Nút-chip "›"** — 04 mục 13 đưa Báo cáo PH vào chip "Vận hành" ở "Lớp của tôi" → ở trang đầu không còn chip đổi trang. Biến thể "›" giữ cho chỗ khác (ví dụ hồ sơ HV: "Báo cáo PH · còn 1 em ›" sang tab Báo cáo PH hồ sơ lớp) — mockup ③ quyết.
 3. **[XM-3] Nhóm "Khác" khi chọn em** — đề bài ví dụ "Lớp này → Lớp của tôi → Khác". GV chỉ ghi / báo cho em lớp mình dạy (luat/3 Y-01, Y-17) → GV không có nhóm "Khác"; QL có "Khác · chi nhánh" (A5).
 4. **[XM-4] Nhóm "Gần đây"** (người nhận việc, A5) — nhớ người vừa chọn bằng `localStorage` (bọc try/catch, 0 dòng đọc). Đề xuất; bỏ được.
@@ -280,7 +280,7 @@ Không thao tác nào bị mất.
 | R5.5 bảng câu GV · GVCN · TVV · QL, ≤ 90 ký tự, có biến thể, ghi nguồn | Đạt — 83 câu, dài nhất 66 | D5, mục 2 |
 | R5.6 hộp nhập gọn FT L/R · W/S tiêu chí · lớp thường đúng / tổng; chân Lưu · bài tiếp › + Vắng + ⋯ | Đạt | E1–E8 |
 | R5.7 menu "+ Task" + bước chọn em | Đạt | F1–F4 |
-| R5.8 chuông dùng dòng việc chuẩn, mở thẳng panel; Cập nhật nhẹ ở dưới | Đạt (XM-1) | G1–G4 |
+| R5.8 chuông: dáng v2 (một dòng mỗi loại việc + số), bấm → Công việc đúng tab; Cập nhật nhẹ ở dưới | Đạt (XM-1 đã chốt) | G1–G4 |
 | R5.9 một tab · một menu · một dải chỉ số · một lịch sử; dáng bỏ ở tệp nào | Đạt | H1–H4, mục 3 |
 | Chung: nút-chip không biểu tượng · không Chấm Speaking ở Lớp của tôi · Báo cáo PH trong Vận hành · "+ Task" · "Chấm Speaking" | Đạt | C2, B1, F1 |
 | Chung: Sáng + Tối · 1440 + 375 · đủ trạng thái · tên bịa · chú thích ngoài khung · không thêm thành phần ngoài đề bài | Đạt | mọi khung; ảnh `anh/bang-mau/` |
