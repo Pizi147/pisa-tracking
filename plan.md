@@ -1399,6 +1399,7 @@ Nhật ký chi tiết tới 04/10 ở `git show 575e898d:plan.md` (mục 14) và
 
 | Ngày | PR / nhánh · model | Kết quả |
 |---|---|---|
+| 14/11 | OV6-DOC-CHON · Opus 5.5 | Ô chọn / ô tìm đọc ít: Ctrl K `/students?q` LIMIT 6 + gon (QL 545 → 15 câu) · Giao việc `/classes?gon=1` (15 → 3 câu) · Chuyển lớp nhiều em 1 GET thay N · bỏ lượt `/ref/users` chết. |
 | 03/11 | EN-SOT a–e · Opus 5.5 (+4 agent Opus) | Dịch EN mọi màn còn sót (thay luật 26/10 "EN chỉ màn GV"), 5 PR: (a) chữ lẻ + chữ máy chủ + DemoBar · (b) Quản trị · (c) Công việc / Họp QL · (d) Kế hoạch Test · (e) Phân tích. Quét bản build EN 8 vai, 375 không tràn. |
 | 03/11 | #818 HINH-HAN-XA-2 · Opus 5.5 | Cột Trạng thái hồ sơ lượt (FT + lớp thường) 237 / 242 → 150 px; chip dài xuống dòng cân, 0 / 1 394 ô tràn |
 | 03/11 | #814 HINH-HAN-XA-1 · Opus 5.5 | Hạn xa = viên xám theo mockup v7 `.td` ở `ChipHan` chung (mọi danh sách); KHỚP 100 % |

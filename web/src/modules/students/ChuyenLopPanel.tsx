@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
-import { useApi } from '../../lib/useApi.ts';
+import { useApi, type ApiState } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -412,6 +412,10 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
 
   const ds = (data?.em ?? []).slice(0, TOI_DA_NHIEU_EM);
   const rows = ds.map((e) => ({ e, chon: !boChon.has(e.studentId), lop: lop[e.studentId] ?? null, xong: daXong.has(e.studentId) }));
+  /* OV6-DOC-CHON: mọi em cùng lớp nguồn (roster của `classId`) → lớp chuyển đến giống nhau: MỘT GET cho cả panel (trước một GET mỗi em, ≤ 50).
+     Hỏi theo em đầu CHƯA chuyển — em đã chuyển thì `lop-dich` tính theo lớp mới của em. */
+  const emMau = ds.find((e) => !daXong.has(e.studentId))?.studentId ?? null;
+  const lopDich = useApi<LopDichData>(emMau ? `/chuyen-lop/lop-dich?studentId=${emMau}` : null, [emMau, lopMoi]);
   const { gui: canGui, boQua } = chonGuiNhieuEm(rows);
   const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }, { khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }];
   /* I1 (§7): em Lên FT từ lớp thường mà chưa có Target nào → ô Target ở hàng em; thiếu thì "Còn thiếu: Target · {tên}". */
@@ -499,11 +503,11 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         )}
         <div role={dt ? undefined : 'rowgroup'} className={dt ? 'space-y-2' : 'divide-y'} style={dt ? undefined : { borderColor: 'var(--line)' }}>
           {rows.map((r) => (
-            <HangNhieuEm key={r.e.studentId} e={r.e} dt={dt} chon={r.chon} xong={r.xong} lop={r.lop} loi={loiEm[r.e.studentId] ?? null} busy={busy}
+            <HangNhieuEm key={r.e.studentId} e={r.e} dt={dt} lopDich={lopDich} chon={r.chon} xong={r.xong} lop={r.lop} loi={loiEm[r.e.studentId] ?? null} busy={busy}
               hoiTarget={hoiTarget(r.e.studentId)} mucTieu={mucTieu[r.e.studentId] ?? ''} onMucTieu={(v) => setMucTieu((m) => ({ ...m, [r.e.studentId]: v }))}
               loiTarget={lf.daBam ? loi.find((l) => l.khoa === `muc-tieu-${r.e.studentId}`)?.lyDo ?? null : null}
               onChon={(v) => setBoChon((s) => { const n = new Set(s); if (v) n.delete(r.e.studentId); else n.add(r.e.studentId); return n; })}
-              onLop={(id, ft) => chonLop(r.e.studentId, id, ft)} lopMoi={lopMoi} moLopMoi={lopNguon ? () => setMoLop(r.e.studentId) : undefined} />
+              onLop={(id, ft) => chonLop(r.e.studentId, id, ft)} moLopMoi={lopNguon ? () => setMoLop(r.e.studentId) : undefined} />
           ))}
         </div>
       </div>
@@ -535,14 +539,13 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
   );
 }
 
-/** Một em ở panel nhiều em — 1440 một hàng bảng, 375 một thẻ. Danh sách lớp của TỪNG em (`lop-dich?studentId=`: lọc hợp lệ theo lớp em đang học). */
-function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarget, mucTieu, onMucTieu, loiTarget, lopMoi = 0, moLopMoi }: {
+/** Một em ở panel nhiều em — 1440 một hàng bảng, 375 một thẻ. Danh sách lớp chuyển đến chung cả panel (`lopDich`, cùng lớp nguồn). */
+function HangNhieuEm({ e, dt, chon, xong, lop, loi, busy, onChon, onLop, hoiTarget, mucTieu, onMucTieu, loiTarget, lopDich, moLopMoi }: {
   e: EmXetLai; dt: boolean; chon: boolean; xong: boolean; lop: number | null; loi: string | null; busy: boolean;
-  /** Tăng khi vừa mở lớp mới — nạp lại danh sách lớp chuyển đến. */ lopMoi?: number; moLopMoi?: () => void;
+  lopDich: ApiState<LopDichData>; moLopMoi?: () => void;
   hoiTarget: boolean; mucTieu: string; onMucTieu: (v: string) => void; loiTarget: string | null;
   onChon: (v: boolean) => void; onLop: (id: number | null, dichFt: boolean) => void;
 }) {
-  const lopDich = useApi<LopDichData>(`/chuyen-lop/lop-dich?studentId=${e.studentId}`, [e.studentId, lopMoi]);
   const dsLop = lopDich.data?.lop ?? [];
   const khoa = busy || xong || !chon;
   const final = e.tyLe === null ? null : <b className={`tabular-nums ${e.tyLe * 100 < nguongThuongHienTai().hocLai ? 'text-bad' : 'text-slate-100'}`}>{chuTyLeXetLai(e.tyLe)}</b>;
