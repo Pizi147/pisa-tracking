@@ -100,3 +100,14 @@ Bối cảnh: PTA Overhaul gửi bản luật core một trang (B4: "Speaking c�
 PTA Overhaul hiểu:
 - Speaking chấm chéo là một **luồng riêng phải thiết kế kỹ** trong overhaul, không coi như một dòng "nhập điểm" thường: việc không thuộc riêng ai, ai chấm cũng được, chấm xong còn bước GV phụ trách Speaking của lớp "Xác nhận Case Speaking".
 - Việc làm ngay: đọc lại mọi lời chủ SP + luật về S chéo (T18, N7, N8 ③, N10 S Ex, các đoạn 08–13/11), xem luồng thật trên bản thử bằng tài khoản GV Speaking, rồi đưa thành một mục riêng trong thiết kế (ai thấy gì, lúc nào, làm ở đâu, xong thì sao).
+
+## 13/11 — lời 9: Speaking chấm chéo không cần mục riêng, đừng khác nhập điểm thường
+
+Bối cảnh: PTA Overhaul viết "Speaking chấm chéo sẽ là một mục riêng trong thiết kế, không gộp vào 'nhập điểm' thường" và nghĩ tới việc gom danh sách theo tuần Test → lớp.
+
+> "speaking chấm chéo ý là không cần phải một mục riêng, nói chung làm thế nào cho hợp lý thôi chứ đừng khác quá so với nhập điểm thông thường"
+
+PTA Overhaul hiểu (sửa cách hiểu lời 8):
+- Speaking chấm chéo **không làm thành một khu / kiểu màn riêng**. Nó phải **giống nhập điểm thường hết mức**: cùng chỗ (nhóm Chấm điểm), cùng dáng dòng (kỹ năng · lớp · tuần Test · số bài · hạn), cùng panel / lưới nhập, cùng "Lưu · bài tiếp".
+- Chỗ khác chỉ giữ đúng phần luật buộc phải khác: là việc chung của nhóm GV Speaking (một nhãn nhỏ "chấm chéo"), ô "GV chấm", cách tính quá hạn theo luật 09/11.
+- Hệ quả: danh sách phẳng xếp theo tên em hiện nay → theo tuần Test + lớp như các kỹ năng khác (đúng N39). Tab riêng "Speaking chấm chéo" (đổi tên 13/11, #1475) → đề xuất gộp vào Chấm điểm; đưa vào nhóm "Nên có" để chủ SP quyết, không tự bỏ.
