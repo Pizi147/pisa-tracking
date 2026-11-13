@@ -33,12 +33,12 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(!c.ds.length && c.dau.ma === 'thang:2026-12', 'lớp chưa khai giảng → Đợt đầu tháng 12: ' + JSON.stringify(c));
   });
 
-  check('BC-2 · đợt lớp thường: mở thứ Hai tuần thi, hạn Chủ nhật; chưa tới tuần thi → "Đợt đầu"', () => {
+  check('BC-2 · đợt lớp thường: mở thứ Hai tuần thi, hạn thứ Ba tuần sau (LG-1); chưa tới tuần thi → "Đợt đầu"', () => {
     const a = d.dsDotLop({ ft: false, batDau: null, progress: '2026-11-16', final: '2026-12-07' }, '2026-11-24');
-    assert(a.ds.length === 1 && a.ds[0].ma === 'progress:2026-11-16' && a.ds[0].han === '2026-11-22', JSON.stringify(a));
+    assert(a.ds.length === 1 && a.ds[0].ma === 'progress:2026-11-16' && a.ds[0].han === '2026-11-24', JSON.stringify(a));
     const b = d.dsDotLop({ ft: false, batDau: null, progress: '2026-11-16', final: '2026-12-07' }, '2026-11-10');
     assert(!b.ds.length && b.dau.ma === 'progress:2026-11-16', JSON.stringify(b));
-    assert(d.soNgayQuaHan(a.ds[0], '2026-11-24') === 2, 'quá hạn 2 ngày');
+    assert(d.soNgayQuaHan(a.ds[0], '2026-11-24') === 0 && d.soNgayQuaHan(a.ds[0], '2026-11-26') === 2, 'hạn thứ Ba 24/11, quá hạn 2 ngày ngày 26');
   });
 
   check('BC-3 · bộ phần theo chương trình: FT 6 phần (W1 W2), FOU L R W P (P không tiêu chí), BE/ELE L R W S; PET chưa có mẫu', () => {
