@@ -336,7 +336,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(ba.length === 3, 'seed cần ≥ 3 GV chi nhánh');
     conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
     conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
-    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE skill = 'speaking'`).run();   // 2.5: người dạy S lớp FT cũng là GV Speaking — ca này chỉ kiểm lịch sử kỹ năng
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = '2000-01-01' WHERE skill = 'speaking'`).run();   // 2.5: người dạy S lớp FT cũng là GV Speaking — ca này chỉ kiểm lịch sử kỹ năng
     for (const g of ba) accounts.ghiLichSuKyNang(conn, g, [], ['speaking'], '2026-08-01');
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
     const m = dem.demTheoNguoi({ chiNhanh: MB, ...KY });
@@ -351,7 +351,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const g = gvMb[0];
     conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
     conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
-    conn.prepare(`UPDATE teacher_assignments SET status = 'ended' WHERE skill = 'speaking'`).run();   // 2.5: người dạy S lớp FT cũng là GV Speaking — ca này chỉ kiểm lịch sử kỹ năng
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = '2000-01-01' WHERE skill = 'speaking'`).run();   // 2.5: người dạy S lớp FT cũng là GV Speaking — ca này chỉ kiểm lịch sử kỹ năng
     accounts.ghiLichSuKyNang(conn, g, [], ['speaking'], '2026-08-01');
     accounts.ghiLichSuKyNang(conn, g, ['speaking'], [], '2026-09-05');
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });

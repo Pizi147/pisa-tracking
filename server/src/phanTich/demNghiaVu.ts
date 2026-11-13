@@ -47,7 +47,7 @@ function nhomS(cns: readonly number[]): (cn: number, ngay: string) => number[] {
      WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))
     UNION ALL SELECT ur.branch_id, ur.user_id, ta.effective_from, ta.effective_to, 0, 1
       FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
-      JOIN teacher_assignments ta ON ta.user_id = ur.user_id AND ta.skill = 'speaking' AND ta.status = 'active'
+      JOIN teacher_assignments ta ON ta.user_id = ur.user_id AND ta.skill = 'speaking' AND ta.status IN ('active', 'ended')
       JOIN classes c ON c.id = ta.class_id AND c.is_fast_track = 1
      WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(cns)]), JSON.stringify([...new Set(cns)])) as any[];
   const co = (r: any, ngay: string) => (r.pc ? r.tu <= ngay && (!r.den || r.den >= ngay) : r.tu != null ? r.tu <= ngay && (!r.den || r.den > ngay) : !!r.hien_co);
