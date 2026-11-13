@@ -42,6 +42,11 @@ export async function runPrTd2dTests(t: YThucTestKit) {
       /* PC-GV-A: lớp GV cũ chỉ xem (lần đổi A → B đã áp, còn `xem_den`). */
       xemTam: (conn.prepare(`SELECT class_id, hieu_luc, xem_den, id FROM doi_phan_cong WHERE nguoi_cu = ? AND trang_thai = 'da_ap' AND xem_den IS NOT NULL ORDER BY id`)
         .all(userId) as any[]).map((r) => ({ classId: r.class_id, tu: r.hieu_luc, den: r.xem_den, doiId: r.id })),
+      /* GV-CU-BO-TRO: em mình là Người dạy PA Bổ trợ miễn phí đang chạy + lớp đang học của em. */
+      boTro: (conn.prepare(`SELECT DISTINCT sc.student_id AS sid FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.performer_user_id = ?
+          AND iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND sc.status != 'done' AND sc.student_id IS NOT NULL`).all(userId) as any[])
+        .map((r) => ({ studentId: r.sid, classId: (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status IN ('active', 'paused')
+          ORDER BY status = 'active' DESC, id DESC LIMIT 1`).get(r.sid) as any)?.class_id ?? null })),
       grants,
       roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))], assignments,
     };

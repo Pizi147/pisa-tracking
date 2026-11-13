@@ -88,6 +88,7 @@ export function apGocNhin(p: Principal, gocNhin: string | null): Principal {
     grants: p.grants.filter((g) => g.roleKey === gocNhin),
     assignments: gocNhin === 'teacher' ? p.assignments : [],
     xemTam: gocNhin === 'teacher' ? p.xemTam : [],
+    boTro: gocNhin === 'teacher' ? p.boTro : [],
   };
 }
 

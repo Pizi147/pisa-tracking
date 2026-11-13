@@ -24,7 +24,7 @@ import { emXetLaiLoTrinh } from '../normal/xetLai.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
 import { lopKyVong } from '../normal/kyVong.ts';
 import { phanCongDangHieuLuc } from './scoreDebt.ts';
-import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
+import { NGUOI_DAY_NHOM, nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { dienMocQuyChe } from '../cases/sosAuto.ts';
 import { ctxSuaCaseNhieu, laGvcnLopDangHoc } from '../cases/cases.ts';
 import { sweepExpiredMoves } from '../fasttrack/absence.ts';
@@ -954,12 +954,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, s.full_name, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT MIN(sc.owner_user_id) FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS owner,
               (SELECT MIN(iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro) AS case_id,
-              (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id
+              (SELECT MIN(iv.id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.status IN ('planned', 'started')) AS pa_id,
+              ${NGUOI_DAY_NHOM('m.nhom_bo_tro')} AS nguoi_day,
+              (SELECT json_array(iv.id, iv.case_id) FROM case_interventions iv WHERE iv.nhom_bo_tro = m.nhom_bo_tro AND iv.kind = 'bo_tro_mien_phi'
+                  AND iv.status IN ('planned', 'started') AND iv.performer_user_id = ? ORDER BY iv.id LIMIT 1) AS pa_toi_day
          FROM mini_test m JOIN students s ON s.id = m.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
         WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
     )
-    .all() as any[];
+    .all(p.userId) as any[];
   const uv = co('khai_bac', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null }) : [];
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
     .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
@@ -977,10 +980,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     /* PR-S5F-b: lọc rẻ trước (việc của mình · lớp mình dạy · QL quá hạn), quyền sau — tính từ cột đã JOIN, không đọc lại từng Case. */
     const mine = iv.owner_id === p.userId;
     if (mine) return true;   // PR-PA (§8): người giữ việc luôn thấy dòng của mình (không mồ côi)
+    if (iv.kind === 'bo_tro_mien_phi' && iv.performer_user_id === p.userId) return true;   // GV-CU-BO-TRO: Người dạy môn kia của nhóm — theo dõi + làm thay
     /* OV-11c (CV-8, Q6): "Của GV" có MỌI việc Kết quả PA của GV (cả chưa quá hạn) — cùng tập với "Của một GV" (`viecCuaNguoi`). */
     const qlCuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: iv.eff_class_id, studentId: iv.eff_student_id });
     if (!teachesClass(p, iv.eff_class_id) && !qlCuaGv) return false;
-    return iv.kind === 'bo_tro'
+    return iv.kind === 'bo_tro' || iv.kind === 'bo_tro_mien_phi'   // GV-CU-BO-TRO: miễn phí cũng theo `quyenBoTro` (GVCN lớp mới theo dõi + làm thay)
       ? quyenBoTro(p, { ...iv, ctx: { classId: iv.eff_class_id ?? null, studentId: iv.eff_student_id ?? null, topic: iv.topic ?? null } })
       : can(p, PERMISSIONS.SOS_EDIT, { classId: iv.eff_class_id, studentId: iv.eff_student_id, skill: iv.topic ?? undefined });
   });
@@ -1016,6 +1020,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ghiNhanh: ghiNhanhDuoc({ kind: iv.kind, soBuoi: iv.so_buoi ?? null, lanCuoi: tuanCuoi }),
       /* NHAP-KQ-PA: GV đã lưu nháp kỳ này — chip "Có nháp"; việc vẫn chờ, hạn không đổi. */
       ...(iv.co_nhap ? { coNhap: true } : {}),
+      /* GV-CU-BO-TRO: PA bổ trợ miễn phí của Người dạy (GV cũ) — người khác thấy dòng (GVCN lớp mới) đã qua `quyenBoTro` → làm thay được. */
+      ...(!mine && iv.kind === 'bo_tro_mien_phi' ? { lamThay: true } : {}),
     });
   }
 
@@ -1339,13 +1345,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * PR-LT2b (K5 §3 #10): Ghi Mini Test — hết khi đã ghi; em Tạm dừng ẩn (T65). PR-CT2 (§8): người làm = người giữ việc của nhóm (`nguoiGiuMiniTest` — GVCN lớp em
    * ĐANG học; không có → chủ Case), không còn là Người dạy (GV cũ ở lớp của bài Final). Không ai giữ → GVCN lớp đang học.
    */
-  const giuMt = nguoiGiuMiniTest(miniTest.map((m) => ({ id: m.id, nhom: m.nhom_bo_tro, lop: m.cur_class_id, owner: m.owner ?? null })));
+  const giuMt = nguoiGiuMiniTest(miniTest.map((m) => ({ id: m.id, nhom: m.nhom_bo_tro, lop: m.cur_class_id, owner: m.owner ?? null, nguoiDay: m.nguoi_day ?? null })));
   for (const m of miniTest) {
     m.gv = giuMt.get(m.id) ?? null;
     if (f.branchId && m.branch_id !== f.branchId) continue;
     const mine = m.gv ? m.gv === p.userId : isCoreTeacherOf(p, m.cur_class_id, today);
     const cuaGv = tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: m.cur_class_id, studentId: m.student_id });
-    if (!mine && !cuaGv) continue;
+    /* GV-CU-BO-TRO: một Người dạy giữ việc cho cả nhóm; GVCN lớp mới và Người dạy môn kia (FOU hai GV cũ) theo dõi + làm thay (`quyenGhiMiniTest`).
+       Người dạy mở PA (và Case) của chính mình — lưu qua `quyenBoTro` của PA đó. */
+    if (m.pa_toi_day) [m.pa_id, m.case_id] = JSON.parse(m.pa_toi_day);
+    const theoDoi = !mine && (!!m.pa_toi_day || isCoreTeacherOf(p, m.cur_class_id, today));
+    if (!mine && !cuaGv && !theoDoi) continue;
     items.push({
       key: `minitest:${m.id}`, group: 'mini_test', urgency: urgencyOf(m.han, today), paId: m.pa_id ?? null,
       studentId: m.student_id, studentName: m.full_name ?? 'Học viên',
@@ -1358,6 +1368,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       href: duongHoSoHocVien(m.student_id, { caseId: m.case_id ?? undefined, paId: m.pa_id ?? undefined, viec: 'ghi-ket-qua' }),
       ownerId: m.gv ?? null, owner: null, mine,
       due: m.han, statusLabel: 'Chờ ghi Mini Test',
+      ...(theoDoi ? { lamThay: true } : {}),
     });
   }
   /* 4. XEP-MT-NHAC (chủ SP 07/11): bỏ việc "Chốt tuần MT" (lượt chưa tuần) — máy đã tự xếp; lộ trình thiếu MT nhắc qua việc
@@ -1665,7 +1676,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   ganKhung(items, lopCua);
   if (tatCa) {
     const lt = lamThayCua(p, items.filter((it) => !it.mine));
-    for (const it of items) if (!it.mine) it.lamThay = lt(it);
+    for (const it of items) if (!it.mine) it.lamThay = it.lamThay || lt(it);
   }
 
   const groups = order

@@ -10,7 +10,7 @@ import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf,
 import { assessedBands, boTaskTrong, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
 import { cycleById, cyclesOf, currentCycle, examPlanOf, targetRevisions } from '../fasttrack/cycles.ts';
-import { parseMetrics, skillSupportBoard } from '../cases/cases.ts';
+import { ghiDuocPaMany, parseMetrics, skillSupportBoard } from '../cases/cases.ts';
 import { standingFor, standingLine } from './standing.ts';
 import { lichMtCua, missingForStudent, suggestedMockWeeks } from '../classes/schedule.ts';
 import { lopHocCua } from '../classes/loTrinhTiep.ts';
@@ -24,7 +24,6 @@ function lopHocP7(p: Principal, studentId: number, current: any, status: string)
 import { daiHocVien } from '../classes/daiChuyenLop.ts';
 import { cuoiKhoaTheoHocVien, emConMiniTest, emLenFtTu, miniTestCuaHocVien, quyenGhiMiniTest, type EmCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { mt0TheoLop } from '../normal/kyVong.ts';
-import { quyenBoTro } from '../cases/boTro.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { boTaskCuaDong, lichGopCua, loadSkillRows, monLuotSql } from '../fasttrack/skillSchedule.ts';
 import { duocDoiLoTrinh, duocDoiMon } from '../fasttrack/monDangKy.ts';
@@ -802,16 +801,19 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const miniTest = (() => {
     const mt = miniTestCuaHocVien([studentId]).get(studentId);
     if (!mt) return null;
-    /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test). */
+    /* PA còn mở + CHÍNH Case của nó (không lấy MIN hai cột riêng — lệch Case thì form mở sai chỗ, không có ô Mini Test).
+       GV-CU-BO-TRO: người xem là Người dạy một PA của nhóm (FOU hai môn hai GV cũ) → mở PA của chính họ (ghi một lần cho cả nhóm). */
     const iv = db().prepare(
       `SELECT case_id, CASE WHEN status IN ('planned', 'started') THEN id END AS pa_id
          FROM case_interventions WHERE nhom_bo_tro = ?
-        ORDER BY status NOT IN ('planned', 'started'), id LIMIT 1`,
-    ).get(mt.nhom) as any;
-    const pa = iv?.pa_id ? db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.pa_id) as any : null;
-    /* PR-CT2 (§8): `gv` = người giữ việc Ghi Mini Test (`nguoiGiuMiniTest` qua `emConMiniTest`, cùng Công việc / bảng lớp) — không còn là Người dạy (GV cũ). */
+        ORDER BY status NOT IN ('planned', 'started'), COALESCE(performer_user_id, 0) != ?, id LIMIT 1`,
+    ).get(mt.nhom, p.userId) as any;
+    const pa = iv?.pa_id ? db().prepare(`SELECT iv.*, sc.topic, sc.owner_user_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?`).get(iv.pa_id) as any : null;
+    /* `gv` = người giữ việc Ghi Mini Test (`nguoiGiuMiniTest` qua `emConMiniTest`, cùng Công việc / bảng lớp): Người dạy (GV-CU-BO-TRO), không có thì GVCN lớp đang học. */
     const gv = mt.tyLe === null ? emConMiniTest([studentId]).get(studentId)?.gv ?? null : null;
-    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv, coTheGhi: mt.tyLe === null && !!pa && (gv === p.userId || quyenBoTro(p, pa)),
+    /* GV-CU-BO-TRO: cờ nút = CÙNG hàm với nút Ghi kết quả ở Ngăn Case (`ghiDuocPaMany` — gồm cổng xem Case) → nút hiện là lưu được, không 403. */
+    const ghiPa = !!pa && ghiDuocPaMany(p, [{ ...pa, class_id: activeClassOf(studentId) ?? null, eff_student_id: studentId }]).get(pa.id) === true;
+    return { ...mt, caseId: iv?.case_id ?? null, paId: iv?.pa_id ?? null, gv, coTheGhi: mt.tyLe === null && ghiPa,
       coTheSua: mt.tyLe !== null && quyenGhiMiniTest(p, { id: mt.id, student_id: studentId, nhom_bo_tro: mt.nhom }) };   // OV-7a
   })();
   const dai = daiHocVien(p, studentId);

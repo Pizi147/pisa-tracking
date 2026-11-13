@@ -1273,6 +1273,8 @@ CREATE INDEX idx_iv_cho_xac_nhan ON case_interventions(id) WHERE preset = 1 AND 
 CREATE INDEX idx_iv_moc_cho ON case_interventions(id) WHERE preset = 1 AND status = 'started' AND followup_due IS NULL;
 CREATE INDEX idx_intervention_due ON case_interventions(followup_due) WHERE followup_due IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_ci_nhom_bo_tro ON case_interventions(nhom_bo_tro);
+-- GV-CU-BO-TRO: câu phiên (quyền tạm Người dạy bổ trợ, MỖI request) — PA Bổ trợ miễn phí đang chạy của một người.
+CREATE INDEX IF NOT EXISTS idx_iv_nguoi_day_bo_tro ON case_interventions(performer_user_id) WHERE kind = 'bo_tro_mien_phi' AND status IN ('planned', 'started');
 
 /*
  * XEM LẠI SAU TÁC ĐỘNG. Một tác động có thể xem lại nhiều lần; cũng có thể xem lại ở mức

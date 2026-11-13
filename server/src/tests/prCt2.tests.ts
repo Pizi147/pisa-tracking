@@ -276,7 +276,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(bp.length === 2 && bp.every((x) => x.so_buoi === 2) && mts(b.sid).length === 1, `BE → ELE: ${chuKy(bp)}`);
   });
 
-  check('CT2-6 · một lần: sửa ô Final không đổi số; xoá rồi nhập lại không nhân đôi; thi hành thứ Hai không thêm PA, Case + Mini Test sang lộ trình mới, chủ Case GV lớp mới, Người dạy giữ GV cũ, Kết quả về GVCN lớp mới', () => {
+  check('CT2-6 · một lần: sửa ô Final không đổi số; xoá rồi nhập lại không nhân đôi; thi hành thứ Hai không thêm PA, Case + Mini Test sang lộ trình mới, chủ Case GV lớp mới, Người dạy giữ GV cũ, Kết quả + Mini Test về Người dạy (GV-CU-BO-TRO)', () => {
     const f = dungFou();
     ra(f.nguon, f.sid, 'len_lop', f.dich);
     nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
@@ -295,9 +295,11 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const m = mts(f.sid);
     assert(m.length === 1 && m[0].cycle_id === moi, `Mini Test: ${JSON.stringify(m)}`);
     const giu = nguoiGiuKetQua(pa.map((x) => ({ id: x.id, topic: x.topic, nhomBoTro: x.nhom_bo_tro, classId: f.dich, ownerUserId: x.owner_user_id })), THU_HAI);
-    assert(pa.every((x) => giu.get(x.id) === GV[3]), `người giữ Kết quả: ${JSON.stringify([...giu])}`);
-    assert(ck.emConMiniTest([f.sid]).get(f.sid)?.gv === GV[3], `người giữ Ghi Mini Test: ${JSON.stringify(ck.emConMiniTest([f.sid]).get(f.sid))}`);
-    assert(profile.studentProfile(P.admin, f.sid).miniTest?.gv === GV[3], `hồ sơ: người giữ Ghi Mini Test ${profile.studentProfile(P.admin, f.sid).miniTest?.gv}`);
+    /* GV-CU-BO-TRO: MỘT người giữ cho cả nhóm `mt:` — Người dạy của PA đầu (id nhỏ); Ghi Mini Test cùng người. */
+    const dau = [...pa].sort((x, y) => x.id - y.id)[0].performer_user_id;
+    assert(pa.every((x) => giu.get(x.id) === dau), `người giữ Kết quả = Người dạy PA đầu ${dau}: ${JSON.stringify([...giu])}`);
+    assert(ck.emConMiniTest([f.sid]).get(f.sid)?.gv === dau, `người giữ Ghi Mini Test: ${JSON.stringify(ck.emConMiniTest([f.sid]).get(f.sid))}`);
+    assert(profile.studentProfile(P.admin, f.sid).miniTest?.gv === dau, `hồ sơ: người giữ Ghi Mini Test ${profile.studentProfile(P.admin, f.sid).miniTest?.gv}`);
     /* Mini Test 58% → P9a (sửa 6): em đang có lệnh Cuối khoá trong cửa sổ Xét lại → dòng (d) ở Xét lại, KHÔNG thẻ Báo QL (XL-10: em ngoài tập vẫn có thẻ). */
     const cu = getConfig('demo_date');
     setConfig('demo_date', m[0].ngay_du_kien);
@@ -465,6 +467,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const dau = pa.reduce((m, x) => (x.id < m.id ? x : m)), kia = pa.find((x) => x.id !== dau.id)!;
     conn.prepare('UPDATE sos_cases SET owner_user_id = NULL WHERE id = ?').run(dau.case_id);
     conn.prepare('UPDATE sos_cases SET owner_user_id = ? WHERE id = ?').run(GV[3], kia.case_id);
+    conn.prepare('UPDATE case_interventions SET performer_user_id = NULL WHERE nhom_bo_tro = ?').run(`mt:${f.a}`);   // GV-CU-BO-TRO: không Người dạy → về chủ Case
     const nguoi = loadPrincipal(GV[3]);
     const mt = profile.studentProfile(nguoi, f.sid).miniTest;
     assert(mt?.gv === GV[3] && mt.paId === dau.id, `hồ sơ: ${JSON.stringify(mt)}`);
@@ -472,6 +475,103 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     try { cases.updateResult(nguoi, mt.paId, {}); } catch (e: any) { loi = e; }
     assert(!mt.coTheGhi || loi?.status !== 403, `nút hiện (coTheGhi ${mt.coTheGhi}) nhưng lưu ${loi?.status}: ${loi?.message}`);
     assert(mt.coTheGhi === true, 'người giữ việc phải có nút');
+  });
+
+  /* ------------------------------------------------------------------ GV-CU-BO-TRO (chủ SP 13/11, A) — dùng chung bộ dựng ở trên */
+  const classesSvc: any = await import('../classes/classes.ts');
+  const mw: any = await import('../worklist/mywork.ts');
+  const perm: any = await import('../permissions.ts');
+  const PM = d.PERMISSIONS;
+  const vao = <T>(ngayDemo: string, fn: () => T): T => {
+    const cu = getConfig('demo_date');
+    setConfig('demo_date', ngayDemo);
+    try { return fn(); } finally { setConfig('demo_date', cu); }
+  };
+  const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e.status ?? 500; } };
+  /** FOU 55% → BE đã thi hành: PA writing GV[1], speaking GV[2] (GV cũ, không phân công lớp BE); GVCN BE = GV[3]. */
+  const daChuyen = () => {
+    const f = dungFou();
+    ra(f.nguon, f.sid, 'len_lop', f.dich);
+    nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
+    chay(f.sid);
+    const pa = paMt(f.a);
+    const w = pa.find((x) => x.topic === 'writing')!, s = pa.find((x) => x.topic === 'speaking')!;
+    assert(w?.performer_user_id === GV[1] && s?.performer_user_id === GV[2], `PA: ${chuKy(pa)}`);
+    return { ...f, w, s, mt: mts(f.sid)[0] };
+  };
+  const kqTuan = (iv: any) => ({ ...KQ, ...d.thanKetQuaTuan({ kind: 'bo_tro_mien_phi', soBuoi: iv.so_buoi }, '1', null) });
+  check('GVCU-1 · GV cũ (Người dạy) sau chuyển lớp: xem hồ sơ HV + Case chứa PA + hồ sơ lớp mới (không nút sửa), ghi Kết quả PA không 403; cờ Mini Test = cùng hàm', () => {
+    const f = daChuyen();
+    const gv = loadPrincipal(GV[1]);
+    assert(gv.boTro?.some((b: any) => b.studentId === f.sid && b.classId === f.dich), `quyền tạm: ${JSON.stringify(gv.boTro)}`);
+    vao(THU_HAI, () => {
+      assert(ma(() => profile.studentProfile(gv, f.sid)) === 200, 'hồ sơ HV');
+      assert(ma(() => cases.caseDetail(gv, f.w.case_id)) === 200, `Case: ${ma(() => cases.caseDetail(gv, f.w.case_id))}`);
+      assert(ma(() => classesSvc.classOverview(gv, f.dich)) === 200, `hồ sơ lớp mới: ${ma(() => classesSvc.classOverview(gv, f.dich))}`);
+      const v = classesSvc.classOverview(gv, f.dich).viewer;
+      assert(!v.canEnterScores && !v.canReportCase && !v.canRecordViolation, `lớp mới chỉ xem: ${JSON.stringify(v)}`);
+      const mt = profile.studentProfile(gv, f.sid).miniTest;
+      assert(mt?.coTheGhi === true && mt.gv === GV[1], `Mini Test ở hồ sơ: ${JSON.stringify(mt)}`);
+      const mt2 = profile.studentProfile(loadPrincipal(GV[2]), f.sid).miniTest;
+      assert(mt2?.coTheGhi === true && mt2.paId === f.s.id, `GV cũ môn kia ghi được, mở PA của mình: ${JSON.stringify(mt2)}`);
+    });
+    vao(THU_HAI, () => {
+      const kq = ma(() => cases.updateResult(gv, f.w.id, kqTuan(f.w)));
+      assert(kq === 200, `ghi Kết quả PA: ${kq}`);
+    });
+  });
+  check('GVCU-2 · Công việc: Người dạy giữ việc Kết quả bổ trợ + Ghi Mini Test; GVCN lớp mới thấy dòng của GV cũ + Làm thay; chuông cho GV cũ', () => {
+    const f = daChuyen();
+    const gv1 = loadPrincipal(GV[1]), gvcn = loadPrincipal(GV[3]);
+    const cua = (p: any, nhom: string[]) => (mw.myWork(p).items as any[]).filter((i) => i.studentId === f.sid && nhom.includes(i.group));
+    vao(f.w.action_due, () => {
+      const a = cua(gv1, ['ghi_ket_qua_pa', 'mini_test']);
+      assert(a.length === 1 && a[0].mine && a[0].ownerId === GV[1], `việc của GV cũ: ${JSON.stringify(a.map((i) => [i.group, i.mine, i.ownerId]))}`);
+      const b = cua(gvcn, ['ghi_ket_qua_pa', 'mini_test']);
+      assert(b.length >= 1 && b.every((i) => !i.mine && i.lamThay === true && [GV[1], GV[2]].includes(i.ownerId)),
+        `GVCN mới theo dõi: ${JSON.stringify(b.map((i) => [i.group, i.mine, i.ownerId, i.lamThay]))}`);
+    });
+    vao(f.mt.ngay_du_kien, () => {
+      const m = cua(gv1, ['mini_test']);
+      assert(m.length === 1 && m[0].mine, `Ghi Mini Test của GV cũ: ${JSON.stringify(m)}`);
+      /* FOU hai môn hai GV cũ: MỘT người giữ cho cả nhóm (PA đầu); GV môn kia theo dõi + làm thay, mở PA của chính mình. */
+      const m2 = cua(loadPrincipal(GV[2]), ['mini_test']);
+      assert(m2.length === 1 && !m2[0].mine && m2[0].ownerId === GV[1] && m2[0].lamThay === true && m2[0].paId === f.s.id, `GV cũ môn kia: ${JSON.stringify(m2)}`);
+      const m3 = cua(gvcn, ['mini_test']);
+      assert(m3.length === 1 && !m3[0].mine && m3[0].lamThay === true, `GVCN mới: ${JSON.stringify(m3)}`);
+    });
+    for (const u of [GV[1], GV[2]]) {
+      const tb = get(`SELECT title, read_at FROM notifications WHERE user_id = ? AND dedup_key = ?`, u, `bo-tro-mien-phi:${f.a}:day:${u}`);
+      assert(tb?.title === 'Em bổ trợ đã chuyển lớp' && tb.read_at === null, `chuông GV ${u}: ${JSON.stringify(tb)}`);
+    }
+  });
+  check('GVCU-3 · GV không phải Người dạy vẫn 403; GV cũ chỉ XEM lớp mới (nhập điểm, báo Case, vi phạm, sửa HV, em khác → không); câu phiên đi chỉ mục', () => {
+    const f = daChuyen();
+    const la = loadPrincipal(get(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.branch_id = ?
+      AND ur.user_id NOT IN (${GV.join(',')}) AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.performer_user_id = ur.user_id AND iv.kind = 'bo_tro_mien_phi')
+      ORDER BY ur.user_id LIMIT 1`, MB).u);
+    vao(THU_HAI, () => {
+      assert(ma(() => cases.caseDetail(la, f.w.case_id)) === 403 && ma(() => classesSvc.classOverview(la, f.dich)) === 403, 'GV lạ xem được');
+    });
+    vao(THU_HAI, () => { assert(ma(() => cases.updateResult(la, f.w.id, kqTuan(f.w))) === 403, 'GV lạ ghi được'); });
+    const gv = loadPrincipal(GV[1]);
+    const khac = hocVien(f.dich, 'BE').sid;
+    for (const [q, ctx] of [[PM.SCORE_EDIT, { classId: f.dich, skill: 'writing' }], [PM.SOS_REPORT, { classId: f.dich }], [PM.SOS_EDIT, { classId: f.dich, skill: 'writing' }],
+      [PM.VIOLATION_RECORD, { classId: f.dich }], [PM.STUDENT_EDIT, { classId: f.dich }], [PM.ATTEMPT_VIEW, { classId: f.dich, studentId: khac }], [PM.STUDENT_VIEW, { studentId: khac }]] as const) {
+      assert(!perm.can(gv, q, ctx), `GV cũ có ${q} ${JSON.stringify(ctx)}`);
+    }
+    assert(!perm.scopeFor(gv, PM.ATTEMPT_VIEW).classIds.includes(f.dich), 'lớp mới không vào phạm vi danh sách');
+    const plan = all(`EXPLAIN QUERY PLAN SELECT ${perm.COT_PRINCIPAL} FROM users u WHERE u.id = ?`, GV[1]).map((r) => r.detail).join(' | ');
+    assert(/idx_iv_nguoi_day_bo_tro/.test(plan), `câu phiên không đi chỉ mục: ${plan}`);
+  });
+  check('GVCU-4 · hết PA (ghi Mini Test) → hết quyền tạm: Case + hồ sơ lớp mới 403', () => {
+    const f = daChuyen();
+    vao(f.mt.ngay_du_kien, () => {
+      assert(ma(() => ck.ghiMiniTest(loadPrincipal(GV[1]), f.mt.id, { tyLe: 80, ngay: f.mt.ngay_du_kien })) === 200, 'GV cũ ghi Mini Test');
+      const gv = loadPrincipal(GV[1]);
+      assert(!gv.boTro?.some((b: any) => b.studentId === f.sid), `còn quyền tạm: ${JSON.stringify(gv.boTro)}`);
+      assert(ma(() => cases.caseDetail(gv, f.w.case_id)) === 403 && ma(() => classesSvc.classOverview(gv, f.dich)) === 403, 'hết PA vẫn xem');
+    });
   });
 
   /* ------------------------------------------------------------------ PR-DON (ghi chú SAU PR-CT2) — dùng chung bộ dựng ở trên */
