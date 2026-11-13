@@ -71,6 +71,7 @@ import { themCotPrBaoLaiPh } from './migrate/prBaoLaiPh.ts';
 import { themCotPrPlanSourceVang } from './migrate/prPlanSourceVang.ts';
 import { themCotPrPhoiHopTvv } from './migrate/prPhoiHopTvv.ts';
 import { migratePrTinhHinh } from './migrate/prTinhHinh.ts';
+import { migratePrGvChamCot } from './migrate/prGvChamCot.ts';
 import { migratePrOv15c } from './migrate/prOv15c.ts';
 import { migratePrTd6 } from './migrate/prTd6.ts';
 import { migratePrDocIt2 } from './migrate/prDocIt2.ts';
@@ -460,6 +461,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* YT-BAO-PH: lần 2 (như HAN-BAO-PH). */ buoc(() => themCotPrBaoLaiPh(conn, applied));
     /* PHOI-HOP-V2: lần 2 (như YT-BAO-PH). */ buoc(() => themCotPrPhoiHopTvv(conn, applied));
     /* TINH-HINH: lần 2 (DB cũ vừa có bảng violations / viec_bao_ph). */ buoc(() => migratePrTinhHinh(conn, applied));
+    /* LG-5c: bảng gv_cham_cot (GV chấm S đầu cột theo người × lớp × đợt) — chỉ thêm. */ buoc(() => migratePrGvChamCot(conn, applied));
     /* SV-BAI-LOP: bảng bai_tren_lop — Bài trên lớp (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvBaiLop(conn, applied));
     /* SV-S-EXPERT: bảng s_expert — lượt S Expert (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrSvSExpert(conn, applied));
     /* UI-HO-SO-LOP: bảng danh_gia_dau_ra — nhận xét + đề xuất của GVCN khi đánh giá đầu ra (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrUiHoSoLop(conn, applied));
