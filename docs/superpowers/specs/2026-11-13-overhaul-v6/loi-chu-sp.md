@@ -137,3 +137,19 @@ Câu hỏi của PTA Overhaul (hộp bước tiếp): "Giữ tab riêng cho Spea
 - Đầu tab ghi thẳng "Việc chung của nhóm GV Speaking · n bài" thay cho "0 việc".
 - Luật không đổi: ai chấm được, hạn, cách tính quá hạn (09/11).
 Đi kèm, còn là đề xuất (duyệt ở mockup): lớp tôi dạy Speaking xếp đầu tab · cột "Lớp của tôi" ghi "Speaking tuần này · n bài · chấm chéo".
+
+## 13/11 — lời 12: duyệt hướng mẫu C bản 2, làm mockup; GV có việc Báo cáo PH
+
+Bối cảnh: PTA Overhaul gửi `02-de-xuat-hai-nhom.md` (mẫu C bản 2, nhóm 1 "Nên có", nhóm 2 "Đụng luật" 2.1–2.7; dòng 2.6 đề xuất KHÔNG tạo việc Báo cáo PH, chỉ một dòng nhắc).
+
+> "Duyệt hướng bản C và làm mockup đi, còn nhóm 2 ý 2.6 cần chú ý là task báo cáo PH không cần tạo cho các vai khác, nhưng GV thì vẫn cần phải làm và có hạn rõ ràng mà, xuất hiện từ ngày 20 hàng tháng và hạn thường là 30 hàng tháng (tháng 2 - ngày 28)"
+
+ĐÃ CHỐT:
+- **Hướng mẫu C bản 2** (trang đầu GV = Công việc + "Lớp của tôi" + "+ Ghi"; gồm 2.1, 2.2). Bước tiếp: làm mockup.
+- **2.6 (sửa đề xuất của PTA):** **GV CÓ việc "Báo cáo PH"** — việc thật, có hạn: **hiện từ ngày 20 hằng tháng, hạn ngày 30 (tháng 2: ngày 28)**. Vai khác KHÔNG tạo việc này. Với GV, lời này thay lời 05/11 "Không cần tạo hẳn task báo cáo PH đâu". Mốc 20 → 30 / 28 khớp đợt tháng FT đang có trong mã (`shared/domain/baoCaoPh.ts` `dotThang`).
+
+PTA Overhaul tự chốt chi tiết (chủ SP duyệt lại ở mockup): một dòng mỗi lớp "Viết Báo cáo PH · {lớp} · Tháng n · còn x / y em · hạn 30/n"; người giữ = GV có phần phải viết ở lớp đó (GV kỹ năng: phần mình; GVCN: phần Chung); xong khi đủ phần của mình cho mọi em; bấm "Viết ›" sang tab Báo cáo PH của hồ sơ lớp; tính như việc thường (vào số việc, quá hạn sau hạn). Việc Admin "Xuất báo cáo PH" giữ như cũ.
+
+CÒN HỎI: (a) lớp thường (đợt Progress / Final: mở thứ Hai tuần Test, hạn Chủ nhật tuần đó) có tạo việc cho GV như FT không — chủ SP mới nói "hàng tháng"; (b) các dòng nhóm 2 chưa trả lời: 2.3 (việc "Điền Target" về TVV), 2.4 (S chấm chéo: người nhập không phải GV Speaking phải chọn "GV chấm"), 2.5 (một định nghĩa "GV Speaking"), 2.7 (tin Cập nhật cho GVCN khi TVV báo PH vi phạm xong).
+
+Mockup: làm ① trang đầu GV trước (đề bài `03-de-bai-mockup-1.md`, 26 dòng R); chủ SP duyệt rồi mới làm ② hồ sơ lớp · ③ hồ sơ HV · ④ trang đầu TVV cùng ngôn ngữ đó.
