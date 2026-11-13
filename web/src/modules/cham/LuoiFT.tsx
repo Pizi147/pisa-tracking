@@ -144,10 +144,11 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const goiYO = (s: string) => (s === 'listening' || s === 'reading'
     ? t('{skillLabel} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.', { skillLabel: skillLabel(s) })
     : t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel(s) }));
-  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: skillShort(s), kieu: 'diem', rong: 96, sang: khopKn(s, kn), goiY: goiYO(s) });
+  /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. */
+  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: chiCot && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
     /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 230, goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: chiCot ? 140 : 230,   /* V6 K8c: lưới vài cột vừa 375 (phần dư 1440 vẫn chia theo `deu`) */ goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
     ...(cot.trangThai ? [{ key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 146, goiY: t('Lượt đã chấm xong, đang chờ, hay đã huỷ.') } as const] : []),
     ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
     ...rawCot.map(oKn), ...wCot.map(oKn),
@@ -155,7 +156,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 88 /* "Expected" (EN) 62 px + đệm 24 — DON-NHO-3 */ : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
     ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
-    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
+    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -493,7 +494,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 /* LT-GON (M3): "Chờ L, R, W, S" lặp đúng các ô trống bên trái → Kết quả chưa có ghi "–", tên môn còn thiếu ở `title`. */
                 /* RA-GD-0711c: chữ thường trong cột chip lùi 8 px (`px-2`) như chữ trong chip — thẳng tiêu đề "Kết quả" (index.css `th[data-kieu=chip]`). */
                 /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột (mở từ việc, Chấm Speaking) — ô trống bên trái không còn đủ để đọc → ghi thẳng "Chờ S". */
-                : cot.chiKq ? <Level tone="muted">{choMon(row)}</Level>
+                : cot.chiKq ? <span className="whitespace-normal px-2 text-[13px] text-dim">{choMon(row)}</span>
                 : <span className="px-2 text-faint" title={choMon(row)}>–</span>
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}

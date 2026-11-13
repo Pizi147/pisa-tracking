@@ -102,14 +102,14 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
       <div className="flex items-center gap-2 px-4 pt-4 pb-2 text-[15px] font-bold" style={{ color: 'var(--text)' }}>
         <span className="tabular-nums">{x.weekStart ? tuanLich(x.weekStart, homNay) : x.code}</span>
         <span className="text-[13px] font-medium text-slate-400">{t('{n} bài', { n: soCho(x.ngan.flatMap((n) => n.rows)) })}</span>
-        <span className="ml-auto"><ChipHan loai="nhap-diem" han={hanSom(x.ngan.flatMap((n) => n.rows))} vien /></span>
+        <span className="ml-1"><ChipHan loai="nhap-diem" han={hanSom(x.ngan.flatMap((n) => n.rows))} vien /></span>
       </div>
       {x.ngan.map(veNgan)}
     </section>
   );
   const cuRows = cu.flatMap((x) => x.ngan.flatMap((n) => n.rows));
   return (
-    <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}
+    <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} loai={dau.loai} onDong={onDong}
       chan={onTiep ? { huy: null, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
@@ -117,19 +117,19 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
             : (
               <div className="-mx-4 pb-3">
                 <div className="px-4 pt-3 pb-1">
-                  <input className="field w-full max-w-[360px] max-sm:min-h-[44px] max-sm:max-w-none max-sm:text-base" type="search" value={q} onChange={(e) => setQ(e.target.value)}
+                  <input className="field w-full max-w-[360px] max-sm:min-h-[44px] max-sm:max-w-none max-sm:text-base" type="search" autoComplete="off" spellCheck={false} value={q} onChange={(e) => setQ(e.target.value)}
                     placeholder={t('Tìm học viên (tên, email)')} aria-label={t('Tìm học viên (tên, email)')} />
                 </div>
                 {!rows.length ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p> : (
                   <>
                     {moi.map(veTuan)}
                     {cu.length > 0 && (
-                      <details className="mx-4 mt-4 rounded-lg border" style={{ borderColor: 'var(--line)' }} open={!!q.trim() || undefined}>
+                      <details className="group/cu mx-4 mt-4 rounded-lg border" style={{ borderColor: 'var(--line)' }} open={!!q.trim() || undefined}>
                         <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold" style={{ color: 'var(--text)' }}>
                           {t('Tuần cũ hơn')}
                           <span className="text-[13px] font-medium text-slate-400">{t('{n} bài', { n: soCho(cuRows) })}</span>
                           {soQua(cuRows) > 0 && <ChipSoQuaHan n={soQua(cuRows)} />}
-                          <span aria-hidden className="ml-auto text-slate-500"><MuiTenGap mo={false} /></span>
+                          <span aria-hidden className="ml-auto text-slate-500 group-open/cu:rotate-90"><MuiTenGap mo={false} /></span>
                         </summary>
                         <div className="-mx-px pb-2">{cu.map(veTuan)}</div>
                       </details>
@@ -165,9 +165,9 @@ function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay }: {
   });
   const so = soCho(n.rows), qua = soQua(n.rows);
   return (
-    <div className="mx-4 mb-2 rounded-lg border" style={{ borderColor: mo ? 'var(--accent)' : 'var(--line)' }}>
+    <div className="mx-4 mb-2 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
       <button type="button" aria-expanded={mo} onClick={() => onMo(!mo)}
-        className="flex min-h-[44px] w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 text-left text-sm hover:bg-[color:var(--nut-hover)]">
+        className="flex min-h-[44px] w-full items-center gap-2 border-0 bg-[color:var(--surface-2)] px-3 text-left text-sm hover:bg-[color:var(--nut-hover)]">
         <span className="font-semibold" style={{ color: 'var(--text)' }}>{n.classCode}</span>
         <span className="text-[13px] font-medium text-slate-400">{so ? t('{n} bài', { n: so }) : t('Đã có điểm · {n} bài', { n: n.rows.length })}</span>
         {qua > 0 && <ChipSoQuaHan n={qua} />}
@@ -175,12 +175,12 @@ function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay }: {
       </button>
       {mo && (
         <div className="border-t pb-1" style={{ borderColor: 'var(--line)' }}>
-          {sua && dot && <div className="pt-2"><NutGvCham hang nhan={t('GV chấm')} value={gv} onChange={setGv} /></div>}
+          {sua && dot && cho.length > 0 && <div className="max-w-[420px] pt-2"><NutGvCham hang nhan={t('GV chấm')} value={gv} onChange={setGv} /></div>}
           {cho.length > 0 && <LuoiFT data={sheet(cho)} onReload={onDaLuu} chiCot={['speaking']} gon gvCham={gv} onHet={onHet} />}
           {daCo.length > 0 && (
-            <details className="mt-1" open={!cho.length || undefined}>
-              <summary className="flex min-h-[40px] cursor-pointer list-none items-center gap-2 px-3 text-[13px] font-semibold text-slate-400">
-                {t('Đã có điểm · {n} bài', { n: daCo.length })}<MuiTenGap mo={false} />
+            <details className="group/da mt-1" open={!cho.length || undefined}>
+              <summary className="flex min-h-[44px] cursor-pointer list-none sm:min-h-[40px] items-center gap-2 px-3 text-[13px] font-semibold text-slate-400">
+                {t('Đã có điểm · {n} bài', { n: daCo.length })}<span aria-hidden className="group-open/da:rotate-90"><MuiTenGap mo={false} /></span>
               </summary>
               <LuoiFT data={sheet(daCo)} onReload={onDaLuu} chiCot={['speaking']} gon gvCham={gv} />
             </details>
