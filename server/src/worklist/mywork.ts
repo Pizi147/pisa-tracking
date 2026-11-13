@@ -16,7 +16,8 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
-import { viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
+import { NGAY_BAT_VIEC_BC_GV, viecBaoCaoPhGv, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
+import { laBanChinh } from '../moiTruong.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, PA_GV_MO, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
@@ -196,7 +197,9 @@ export type WorkGroupKey =
   /* TINH-HINH (chủ SP 12/11): TVV hỏi tình hình học tập — GVCN lớp em ghi kết quả, hạn 3 ngày. */
   | 'yt_hoi_tinh_hinh'
   /* BAO-CAO-PH b: Admin xuất báo cáo PH của lớp đã đủ (7 ngày) / đợt quá hạn chưa đủ (7 ngày từ hạn). QL không nhận. */
-  | 'xuat_bc_ph';
+  | 'xuat_bc_ph'
+  /* LG-3 (chủ SP 13–14/11): GV viết Báo cáo PH — mỗi lớp × đợt một việc, hạn theo đợt (tab Vận hành, mục "Báo cáo PH"). */
+  | 'bao_cao_ph';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -342,6 +345,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   xuat_bc_ph: {
     label: 'Xuất báo cáo PH',
     hint: 'Lớp đã viết đủ báo cáo phụ huynh của đợt — xuất Excel gửi phụ huynh. Đợt quá hạn mà còn thiếu em cũng hiện để biết lớp kẹt. Tự rời sau 7 ngày.',
+  },
+  bao_cao_ph: {
+    label: 'Viết Báo cáo PH',
+    hint: 'Đợt báo cáo phụ huynh đang mở — viết phần của bạn cho mọi em của lớp. Xong khi mọi em đủ phần của bạn. Quá hạn còn hiện 7 ngày.',
   },
   mgmt: {
     label: 'Việc được giao',
@@ -1420,6 +1427,22 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         statusLabel: v.thieu ? `thiếu ${v.thieu} em` : `đủ ${v.duLuc!.slice(8, 10)}/${v.duLuc!.slice(5, 7)}`,
         /* Thẻ phụ (mockup k1): đợt · "thiếu n em" / "n/n em đủ" — web tách mã tuần thành thẻ "tuần W3 SEP" như mọi việc (U01 #3). */
         contextLabel: `${v.nhanDot} · ${v.thieu ? `thiếu ${v.thieu} em` : `${v.soEm}/${v.soEm} em đủ`}`, count: null,   // EN: 'thiếu {n} em' · '{du}/{tong} em đủ' · 'Tháng {m}'
+      });
+    }
+  }
+  /* LG-3: việc GV "Báo cáo PH" — chỉ người có phân công phần phải viết (của mình; QL / Admin / TVV không phân công thì không có). */
+  if (co('bao_cao_ph')) {
+    for (const v of viecBaoCaoPhGv(p, today, laBanChinh() ? NGAY_BAT_VIEC_BC_GV : '')) {
+      const lc = bangLop().get(v.classId);
+      if (f.branchId != null && lc?.branchId !== f.branchId) continue;
+      items.push({
+        key: `bc-ph:${v.classId}:${v.dot}`, group: 'bao_cao_ph', urgency: urgencyOf(v.han, today),
+        studentId: null, studentName: `Lớp ${v.code}`, classId: v.classId, classCode: v.code, attemptId: null, attemptNo: null, caseId: null, level: null,
+        reason: `Còn ${v.thieu}/${v.soEm} em chưa đủ phần của bạn`,
+        actionLabel: 'Viết ›', tieuDe: 'Viết Báo cáo PH',
+        href: `/hoc-vien/lop/${v.classId}?tab=bao-cao-ph&dot=${encodeURIComponent(v.dot)}`,
+        ownerId: p.userId, owner: p.fullName, mine: true, due: v.han,
+        statusLabel: `còn ${v.thieu}/${v.soEm} em`, contextLabel: v.nhanDot, count: v.thieu,
       });
     }
   }

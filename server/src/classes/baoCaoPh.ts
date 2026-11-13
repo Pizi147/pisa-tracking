@@ -9,7 +9,7 @@ import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopDayDu, vaiTaiChiNhanh, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
-import { writeAudit } from '../platform/audit.ts';
+import { notify, nguoiVaiCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
@@ -256,7 +256,8 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   const q = quyenBc(p, c, homNay);
   if (!q.cuaToi.has(ph.khoa) && !q.vietHo) throw forbidden('Bạn không được phân công viết phần này.');
   const sid = toInt(body?.studentId);
-  if (!sid || !emCuaDot(classId, d, homNay).some((e) => e.id === sid)) throw badRequest('Học viên không có trong đợt báo cáo này');
+  const emDot = emCuaDot(classId, d, homNay);
+  if (!sid || !emDot.some((e) => e.id === sid)) throw badRequest('Học viên không có trong đợt báo cáo này');
 
   const khoaTc = new Set(tieuChiPhan(ph).map((x) => x.khoa));
   const muc: Record<string, MucBc> = {};
@@ -289,7 +290,24 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
   ).run(classId, d.ma, sid, ph.khoa, JSON.stringify(muc), JSON.stringify(datSan), chu, diemSua, du, p.userId, luc);
   writeAudit({ actorUserId: p.userId, action: 'bao_cao_ph.luu', entityType: 'student', entityId: sid, entityLabel: c.code,
     after: { dot: d.ma, phan: ph.khoa, du: !!du, vietHo: !q.cuaToi.has(ph.khoa) } });
+  if (du) baoAdminLopDu(c, d, d0.bo, emDot, homNay);
   return { du: !!du, suaLuc: luc };
+}
+
+/**
+ * LG-3 (chủ SP 14/11, lời 16 ý 3): lần lưu làm lớp × đợt ĐỦ (mọi em đủ mọi phần) → MỘT tin "Cập nhật" cho Admin (`office_admin`) chi nhánh lớp, trỏ tab
+ * Báo cáo PH đúng đợt — cùng lúc việc "Xuất báo cáo PH" xuất hiện. `dedup_key` theo lớp × đợt: lưu lại / đủ lại không tạo tin mới.
+ * Turso: chỉ khi lần lưu là "đủ" — một câu đếm (≤ em × phần) + một câu người nhận + một ghi mỗi Admin khi lớp vừa đủ.
+ */
+function baoAdminLopDu(c: Lop, d: DotBc, bo: readonly PhanBc[], em: readonly { id: number }[], homNay: string) {
+  const n = (db().prepare(`SELECT COUNT(*) n FROM bao_cao_ph WHERE dot = ? AND du = 1 AND student_id IN (SELECT value FROM json_each(?))
+      AND phan IN (SELECT value FROM json_each(?))`).get(d.ma, JSON.stringify(em.map((e) => e.id)), JSON.stringify(bo.map((x) => x.khoa))) as any).n;
+  if (n < em.length * bo.length) return;
+  const nhan = nhanDotBc(d, homNay);
+  for (const userId of nguoiVaiCuaChiNhanh(c.branch_id, 'office_admin')) {
+    notify({ userId, kind: 'bc_ph_du', title: `Báo cáo PH đủ · ${c.code} · ${nhan}`, body: `${em.length} em`, entityType: 'class', entityId: c.id,
+      dedupKey: `bc_ph_du:${c.id}:${d.ma}`, duong: `/hoc-vien/lop/${c.id}?tab=bao-cao-ph&dot=${encodeURIComponent(d.ma)}` });
+  }
 }
 
 /** GET /bao-cao-ph/lop?branchId= — lớp cùng chi nhánh người xem quyết được đợt (hộp "Áp thêm lớp" của BC-DOT-QL). Một câu (`lopDayDu`, nhớ theo request). */
