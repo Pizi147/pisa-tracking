@@ -24,7 +24,7 @@ import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } f
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, caHaiKieu, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi, LOI_MOT_KIEU,
-  chuDoiVang, demNguocSuaDau, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
+  chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -53,6 +53,8 @@ export type NguCanhHop = {
   bandTaskKia?: number | null;
   /** UI-LICH-TUAN: lượt của ô — có thì ô đã có điểm hiện "Lịch sử" (ai nhập / sửa, lúc nào) ngay trong hộp. */
   attemptId?: number;
+  /** L4 (13/11): lượt KHÔNG chấm chéo (Progress / Final…) — "Người chấm" S chọn được mọi nhân viên. Mặc định (lưới FT: Mock, MT0) = chấm chéo, chỉ GV có kỹ năng S — cùng nhóm máy chủ (`gvChamHopLe`) và nút "GV chấm S" đầu cột. */
+  khongCheo?: boolean;
 };
 
 /**
@@ -77,7 +79,7 @@ function LichSuO({ attemptId, skill }: { attemptId: number; skill: string }) {
 /** Đầu hộp của trang một lượt (hồ sơ MT, Lộ trình — `GET /attempts/:id`): em · lớp · MT{n}; MT0 một ô Band. */
 export const nguCanhChiTiet = (d: { student: { name: string }; classCode: string | null; kind: string; attemptNo: number; result?: any }) => ({
   tenHv: d.student.name, lop: d.classCode, luot: d.kind === 'mt0' ? 'MT0' : `MT${d.attemptNo}`,
-  kyVong: d.result?.expectation ?? null, mt0: d.kind === 'mt0',
+  kyVong: d.result?.expectation ?? null, mt0: d.kind === 'mt0', khongCheo: !laChamCheo(d.kind, 'speaking'),
 });
 
 /** R1-LUU-TIEP: hết phần của người xem — thân hộp "Đã xong phần của bạn · {phamVi}: đã lưu n bài" + nút của nơi gọi (Lớp tiếp / Việc tiếp / Em tiếp) hoặc Đóng. */
@@ -380,6 +382,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     if (doiNx) them.nhanXet = nx.trim() || null;
     if (doiNhom) them.nhomNguyenNhan = nhom;
     const coDiemMoi = doiDiem && !!diem.patch && ('criteria' in diem.patch || 'band' in diem.patch || 'rawScore' in diem.patch);
+    /* 2.4: S chấm chéo có điểm mới mà chưa có GV chấm hợp lệ — người không phải GV Speaking phải chọn (máy chủ cũng chặn); chữ giữ. */
+    if (laS && !ctx.khongCheo && coDiemMoi && !session?.gvS && (!gv || gv.kieu === 'toi')) {
+      setLoi({ cau: t('Chọn "GV chấm" trước khi lưu — bạn không phải GV Speaking nên không ghi bạn là người chấm.'), o: null }); return;
+    }
     if (laS && (doiGv || (coDiemMoi && !cungGvCham(gv, gvCu, session?.user?.id)))) them.gvCham = gvChamPayload(gv);
     const lenh: SavePatch[] = [];
     if (doiDiem && diem.patch) {
@@ -507,7 +513,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         <div className="flex items-center gap-2" data-chon-nguoi>
           <span className="shrink-0 text-xs font-medium text-slate-300">{t('Người chấm')}</span>
           <div className="min-w-0 flex-1">
-            <ChonNguoi value={gv} onChange={setGv} nhom="nhan_vien" choNgoai macDinhTrong={t('Chưa chọn')} ariaLabel={t('Người chấm Speaking')} disabled={busy} />
+            <ChonNguoi value={gv} onChange={setGv} nhom={ctx.khongCheo ? 'nhan_vien' : 'gv_speaking'} choNgoai macDinhTrong={t('Chưa chọn')} ariaLabel={t('Người chấm Speaking')} disabled={busy} />
           </div>
         </div>
       )}

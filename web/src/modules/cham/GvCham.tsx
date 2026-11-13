@@ -43,7 +43,8 @@ export function useGvChamCot(classId: number | null | undefined, dot: string | n
   const { session } = useSession();
   const khoa = khoaGvChamCot(session?.user?.id, classId, dot);
   const doc = (): NguoiChon | null => {
-    const macDinh: NguoiChon = { kieu: 'toi' };
+    /* 2.4 (chủ SP 13/11): người không phải GV Speaking (QL / Admin nhập hộ) không có mặc định — phải chọn GV chấm. */
+    const macDinh: NguoiChon | null = session?.gvS ? { kieu: 'toi' } : null;
     if (!khoa) return macDinh;
     try {
       const v = JSON.parse(localStorage.getItem(khoa) ?? 'null');

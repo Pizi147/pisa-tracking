@@ -157,7 +157,7 @@ export function ChonNguoi({
      vai hệ thống chọn "Tôi" thì Tạo bị trả "Người phụ trách không hợp lệ". Chưa có phiên thì giữ như cũ. */
   const vaiHopLe = nhom === 'nhan_vien' ? ['teacher', 'manager'] : ['teacher'];
   const toiHopLe = !session?.grants || (session.grants.some((g) => vaiHopLe.includes(g.role) && (!chiNhanh || g.branchId === chiNhanh))
-    && (nhom !== 'gv_speaking' || !!session.coS));
+    && (nhom !== 'gv_speaking' || !!session.gvS));
   const [editing, setEditing] = useState(!value && khongDoi === undefined && macDinhTrong === undefined);
   const [term, setTerm] = useState('');
   const [open, setOpen] = useState(!!tuMo);

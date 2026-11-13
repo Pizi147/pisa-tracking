@@ -366,6 +366,16 @@ export function laGvSpeaking(p: Pick<Principal, 'grants' | 'kyNang' | 'assignmen
   if (p.kyNang?.includes('speaking')) return true;
   return p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, date) && !!bangLop().get(a.classId)?.isFastTrack);
 }
+/**
+ * L4 / 2.5 (chủ SP 13/11): CÙNG định nghĩa `laGvSpeaking` cho câu SQL (ô chọn người chấm, kiểm `performerUserId`) — điều kiện thêm cho tài khoản `u`
+ * đã có vai giáo viên: kỹ năng S ở hồ sơ HOẶC phân công `speaking` đang hiệu lực ngày `ngay` ở một lớp FT. `ngay` do máy sinh (ISO), không phải chữ người dùng.
+ */
+export function sqlGvSpeaking(u: string, ngay = demoToday()): string {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(ngay)) throw new Error(`sqlGvSpeaking: ngày không hợp lệ ${ngay}`);
+  return `(EXISTS (SELECT 1 FROM user_skills us WHERE us.user_id = ${u}.id AND us.skill = 'speaking')
+    OR EXISTS (SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id AND c.is_fast_track = 1
+      WHERE ta.user_id = ${u}.id AND ta.skill = 'speaking' AND ta.status = 'active' AND ta.effective_from <= '${ngay}' AND (ta.effective_to IS NULL OR ta.effective_to >= '${ngay}')))`;
+}
 /** Lớp FT: mọi lượt (chỉ có Mock). Lớp thường: chỉ khi biết lượt là MT0 (`kind`) — không biết thì đóng. */
 const laGvSpeakingLop = (p: Principal, classId: number, date?: string, kind?: string | null) =>
   lopFtChoGvSpeaking(p, date).includes(classId) || (kind === 'mt0' && lopMt0ChoGvSpeaking(p, date).includes(classId));

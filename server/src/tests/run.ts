@@ -173,6 +173,8 @@ fs.mkdirSync(path.dirname(process.env.PISA_DB), { recursive: true });
 for (const k of ['TURSO_DATABASE_URL', 'TURSO_AUTH_TOKEN', 'BAN_CHINH', 'PISA_CHO_PHEP_SEED_TURSO']) delete process.env[k];
 /* SỔ NGHĨA VỤ: seed nằm trước W4 OCT 2026 — tắt mốc bắt đầu tính trễ cho mọi phép kiểm (ca NV-MOC bật riêng). SAU khi đặt PISA_DB và gỡ biến Turso (db.ts đọc biến lúc nạp). */
 (await import('../phanTich/soNghiaVu.ts')).MOC_TINH_TRE.ngay = '';
+/* 2.4: bộ kiểm cũ dựng điểm S chéo bằng Admin không chọn GV chấm — giữ luật cũ; ca NV-SCHEO-CHON-BAT tắt để kiểm luật mới. */
+(await import('../fasttrack/attempts.ts')).GHI_NGAM_NGUOI_CHAM.bat = true;
 for (const suffix of ['', '-wal', '-shm']) {
   const p = process.env.PISA_DB + suffix;
   if (fs.existsSync(p)) fs.rmSync(p);

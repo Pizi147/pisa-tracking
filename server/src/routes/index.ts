@@ -243,6 +243,8 @@ api.get('/demo/session', wrap((req) => {
     /* HD-V2 (đặc tả 9.3): phần "Chỉ GVCN" / "GV Speaking" của Hướng dẫn — tính từ principal đã nạp, 0 câu thêm. */
     laGvcn: p.assignments.some((a) => a.isCore && activeAt(a, demoToday())),
     coS: laGvSpeaking(p) || p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, demoToday())),
+    /* L4 / 2.4: đúng GV Speaking chấm chéo (`laGvSpeaking`, N7) — web mặc định "Tôi" ở ô GV chấm S chéo chỉ khi true; không thì bắt chọn. */
+    gvS: laGvSpeaking(p),
     /* P14 DICH (N19): nút "Dịch" chỉ hiện khi máy chủ có khoá và không tắt — cờ đi theo phiên, không thêm lời gọi. */
     dichBat: cauHinhDich().bat,
     /* Mở sửa lịch Test (chủ SP 06/11): web bỏ chip khoá cuối tuần N15 cho người sửa được lịch — máy chủ vẫn kiểm lại từng lần ghi. */

@@ -1,7 +1,7 @@
 import { phamViXemViec } from './xemViec.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
-import { DS_JSON, db, theoLo, tx } from '../db.ts';
+import { DS_JSON, db, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
@@ -826,16 +826,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const ownerOf = new Map([...phanCongDangHieuLuc(classIds, today)].map(([k, v]) => [k, v.userId]));
     const khacDongs: BaiChuaCham[] = [];
     /*
-     * Rà 11/11 #2 (G5-02 / G5-03; thay P12 Q12 25/10 bằng luật chủ SP 09/11): S chấm chéo quá hạn là "quá hạn" ở mọi vai (cả Admin). Bài ĐÃ CÓ người nhận
-     * (ô ghi GV chấm có tài khoản) nằm dưới tên người đó — như sổ nghĩa vụ 1.2c; chưa ai nhận thì không chủ (nhóm "Speaking chấm chéo", không "Chưa có GV").
-     * Một câu theo lô, chỉ lượt có ô S chéo còn chờ.
+     * Rà 11/11 #2 (G5-02 / G5-03; thay P12 Q12 25/10 bằng luật chủ SP 09/11): S chấm chéo quá hạn là "quá hạn" ở mọi vai (cả Admin), nhóm "Speaking chấm
+     * chéo" (không "Chưa có GV"). L5 (13/11): bài còn chờ = CHƯA AI NHẬP → của cả nhóm GV S (sổ nghĩa vụ 1.2c, chủ SP 09–10/11) — kể cả ô đã chọn
+     * "Người chấm" mà chưa có điểm; chỉ khi nhập điểm mới tính cho người chấm (lúc đó bài không còn chờ).
      */
-    const nguoiNhanCheo = new Map<number, number>();
-    theoLo([...new Set((attempts as any[]).filter((a) => laChamCheo(a.kind, 'speaking')
-        && (a.pendingDetail ?? []).some((c: any) => c.skill === 'speaking')).map((a) => a.id as number))], (lo, ph) => {
-      for (const r of conn.prepare(`SELECT attempt_id, examiner_user_id FROM assessment_scores WHERE skill = 'speaking' AND attempt_id IN (${ph})
-          AND examiner_user_id IS NOT NULL`).all(...lo) as any[]) nguoiNhanCheo.set(r.attempt_id, r.examiner_user_id);
-    });
     for (const a of attempts as any[]) {
       /* SUA-LOI-CV: lớp chỉ vào nhờ chấm S chéo (`phamViCham`, ngoài phạm vi quản lý) — không thành việc của GV khác. */
       if (!scope.all && !scope.classIds.includes(a.classId) && !scope.branchIds.includes(a.branchId)) continue;
@@ -844,7 +838,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         if (vaoChamS(a, c)) continue;
         /* T18: Speaking Mock không có người phụ trách — không bị bỏ vì "đã có ở phần của mình" (GVBM S không có nó ở đó). */
         const cheo = laChamCheo(a.kind, c.skill);
-        const ownerId = !a.classId ? null : cheo ? (nguoiNhanCheo.get(a.id) ?? null) : (ownerOf.get(`${a.classId}|${c.skill}`) ?? null);
+        const ownerId = !a.classId || cheo ? null : (ownerOf.get(`${a.classId}|${c.skill}`) ?? null);
         if (ownerId === p.userId) continue;   // đã có ở phần "của mình"
         khacDongs.push({
           classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null,

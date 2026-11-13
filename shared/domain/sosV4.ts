@@ -178,8 +178,9 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
 }
 
 /**
- * CHẶN HOÀN THÀNH (K3 §4a, K3-09). Chỉ truyền PA chưa huỷ. PA bắt buộc chưa khép → ẩn nút Hoàn thành, hiện `dong`;
- * PA thường chưa khép / chờ duyệt → nút còn, `ly_do` như `closeBlockers` cũ.
+ * LÝ DO CẠNH NÚT HOÀN THÀNH (K3 §4a, K3-09). Chỉ truyền PA chưa huỷ. RKC-2a (chủ SP 07/11 "không chặn cứng"): KHÔNG chặn, nút luôn hiện —
+ * máy chủ (`closeCaseOutcome`) hỏi một câu rồi kết thúc sớm các PA còn mở, kể cả PA quy chế. `an` (tên cũ) = còn PA quy chế chưa khép → lý do là `dong`
+ * (web ghi "chờ PA … · mốc"); không thì `ly_do`.
  */
 export function chanHoanThanh(pas: { batBuoc: boolean; xong: boolean; choDuyet: boolean; followupDue: string | null; mocChu: string }[]): { an: boolean; dong: string | null; ly_do: string[] } {
   const batBuoc = pas.find((p) => p.batBuoc && !p.xong);

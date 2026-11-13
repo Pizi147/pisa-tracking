@@ -38,12 +38,20 @@ const tt = (r: DongDoc, homNay: string) => trangThai({ han: r.han, hanGoc: r.han
  */
 function nhomS(cns: readonly number[]): (cn: number, ngay: string) => number[] {
   if (!cns.length) return () => [];
-  const rows = db().prepare(`SELECT ur.branch_id AS cn, ur.user_id AS gv, l.tu, l.den, (us.user_id IS NOT NULL) AS hien_co
+  /* 2.5 (chủ SP 13/11): MỘT định nghĩa GV Speaking (N7, `laGvSpeaking`) — thêm người đang dạy S một lớp FT ở ngày hạn (`pc` = 1; `den` của phân công
+     tính cả ngày đó), không chỉ kỹ năng hồ sơ. */
+  const rows = db().prepare(`SELECT ur.branch_id AS cn, ur.user_id AS gv, l.tu, l.den, (us.user_id IS NOT NULL) AS hien_co, 0 AS pc
       FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
       LEFT JOIN user_skill_lich_su l ON l.user_id = ur.user_id AND l.skill = 'speaking'
       LEFT JOIN user_skills us ON us.user_id = ur.user_id AND us.skill = 'speaking'
-     WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(cns)])) as any[];
-  return (cn, ngay) => [...new Set(rows.filter((r) => r.cn === cn && (r.tu != null ? r.tu <= ngay && (!r.den || r.den > ngay) : !!r.hien_co)).map((r) => r.gv as number))];
+     WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))
+    UNION ALL SELECT ur.branch_id, ur.user_id, ta.effective_from, ta.effective_to, 0, 1
+      FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
+      JOIN teacher_assignments ta ON ta.user_id = ur.user_id AND ta.skill = 'speaking' AND ta.status = 'active'
+      JOIN classes c ON c.id = ta.class_id AND c.is_fast_track = 1
+     WHERE ur.status = 'active' AND ur.branch_id IN (SELECT value FROM json_each(?))`).all(JSON.stringify([...new Set(cns)]), JSON.stringify([...new Set(cns)])) as any[];
+  const co = (r: any, ngay: string) => (r.pc ? r.tu <= ngay && (!r.den || r.den >= ngay) : r.tu != null ? r.tu <= ngay && (!r.den || r.den > ngay) : !!r.hien_co);
+  return (cn, ngay) => [...new Set(rows.filter((r) => r.cn === cn && co(r, ngay)).map((r) => r.gv as number))];
 }
 
 /**
