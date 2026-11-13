@@ -316,6 +316,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
 
+**13/11 — OVERHAUL V6 (chủ SP: "overhaul lại TOÀN BỘ tất cả các trang, panels, nút, không có giới hạn nào cả"):** session planning riêng **"PTA Overhaul"** (Fable 5.2 · high) lọc đề xuất, brainstorm, lên plan — lời chủ SP, thiết kế, plan PR đều ở `docs/superpowers/specs/2026-11-13-overhaul-v6/` (đọc `loi-chu-sp.md` trước). PTA Plan chỉ nhận danh sách PR khi chủ SP duyệt plan; lỗi F01–F07 của bản audit ChatGPT đã chuyển PTA Plan 13/11.
+
 **13/11 (chủ SP):** "sửa claude.md đi, giờ đã có fable 5.2 bạn nghĩ có nên để model đó lọc và brainstorm ý tưởng không?" → bỏ luật "Không dùng Fable" (CLAUDE.md mục Model, plan.md); PTA gợi ý Fable 5.2 cho planning lớn, code giữ Opus / Sonnet 5.5.
 
 **13/11 (chủ SP):** "Làm A nhé" — GV cũ (người dạy PA Bổ trợ miễn phí) có quyền tạm trong thời gian PA: xem hồ sơ HV + xem/ghi Case bổ trợ + xem hồ sơ lớp mới; giữ việc Ghi kết quả bổ trợ + Ghi Mini Test (GVCN mới theo dõi, làm thay); lối vào hồ sơ lớp cũ "Đã chuyển · đang bổ trợ ›" + hồ sơ GV "Em đang bổ trợ"; sửa 403. Thiết kế `docs/superpowers/specs/2026-11-13-gv-cu-bo-tro-design.md`. → session GV-CU-BO-TRO.
