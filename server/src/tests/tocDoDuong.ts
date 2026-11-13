@@ -32,6 +32,8 @@ export const DUONG_DO: MucDo[] = [
   /* DOC-IT-4: ô chọn lớp (IntakePanel, LuoiTaoLop, bộ lọc Phân tích…) — trước đọc mọi lớp cả hệ thống rồi lọc trong mã. */
   { trang: 'Chung', vai: MOI_VAI, url: '/ref/classes' },
   { trang: 'Chung', vai: ['QL', 'QT'], url: '/ref/classes?branchId={cn}' },
+  /* GD-1 (Overhaul V6): "+ Task" ở trang đầu GV — ô gõ tên em (một câu mỗi lần gõ, ≥ 2 ký tự). */
+  { trang: 'Chung', vai: ['QL', 'GVCN', 'GVBM'], url: '/tim/hoc-vien?q=ng' },
 
   // ---------------------------------------------------------------- Tổng quan · Quản lý
   {
@@ -546,6 +548,8 @@ export const TRAN: Record<string, number> = {
   /* DOC-IT-4: đo 3 câu mọi vai → max(đo+10, ⌈đo×1,3⌉). */
   'QL /ref/classes': 13, 'GVCN /ref/classes': 13, 'GVBM /ref/classes': 13, 'GVCN_THUONG /ref/classes': 13, 'QT /ref/classes': 13,
   'QL /ref/classes?branchId={cn}': 13, 'QT /ref/classes?branchId={cn}': 13,
+  /* GD-1: `/tim/hoc-vien` một câu đọc + phần phiên chung (~13 câu mọi đường). */
+  'QL /tim/hoc-vien?q=ng': 16, 'GVCN /tim/hoc-vien?q=ng': 16, 'GVBM /tim/hoc-vien?q=ng': 16,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */

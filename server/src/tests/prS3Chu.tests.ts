@@ -296,6 +296,6 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     cao('web/src/index.css', /\.luoi-trong-panel \.table-scroll > table > :is\(thead, tbody\) > tr > :first-child \{ position: sticky; left: 0;/);   // cột tên HV đứng yên
     cao('web/src/modules/students/StudentsPage.tsx', /className="nut-loc"/);   // PR-HK2: lớp .nut-loc giữ 44 px ở điện thoại
     cao('web/src/index.css', /\.nut-loc \{[^}]*max-sm:min-h-\[44px\]/);
-    cao('web/src/modules/worklist/LopToiDay.tsx', /max-sm:before:-inset-y-3/);
+    cao('web/src/modules/congViec/LopCuaToi.tsx', /max-sm:h-11 max-sm:px-3/);   // GD-1: nút-chip "Việc cần làm" cao 44 ở 375 (thay ô số "Lớp tôi dạy")
   });
 }

@@ -84,6 +84,8 @@ export async function runKhungTests(t: YThucTestKit) {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
     assert(keys(QL) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên; thứ tự chốt 20/10 (KHUNG-LOI)
     assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
+    /* GD-1 (Overhaul V6): không Tổng quan (GV) → Công việc đứng đầu thanh. */
+    assert(keys({ ...GV, overview: false }) === 'cong-viec,hoc-vien,test', `GV không Tổng quan: ${keys({ ...GV, overview: false })}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
     assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Công việc|Công việc,Phân tích|Phân tích', `Chữ: ${labels}`);
@@ -180,8 +182,8 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6/R1 GV (GVCN, GVBM): 4 khu; Test: Lịch Test + Kế hoạch Test (AUDIT-UI B6 bỏ Chấm Test; OV-15b bỏ Điểm theo lớp); Công việc: Việc học viên + Yêu cầu của tôi (PR-DUYET); không Phân tích', () => {
     for (const [ten, p] of [['GVCN', t.P.coreTeacher], ['GVBM', t.P.subjectTeacher], ['GVCN lớp thường', t.P.normalCoreTeacher]] as const) {
       const n = navOf(p);
-      /* NEN-V5 (08 K10): GV có lại Tổng quan (thay OV-15d). OV-15b: bỏ tab Điểm theo lớp. */
-      assert(tabs(n) === 'tong-quan,hoc-vien,test,cong-viec|lich,ke-hoach|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // OV-15b + NEN-V5 + AUDIT-UI B6 + chủ SP 28/10 (Kế hoạch Test chỉ xem)
+      /* GD-1 (Overhaul V6, thay NEN-V5 K10): GV không còn Tổng quan — Công việc là trang đầu, đứng đầu thanh. OV-15b: bỏ tab Điểm theo lớp. */
+      assert(tabs(n) === 'cong-viec,hoc-vien,test|lich,ke-hoach|ho-tro,yeu-cau|false|false', `${ten}: ${tabs(n)}`);   // OV-15b + NEN-V5 + AUDIT-UI B6 + chủ SP 28/10 (Kế hoạch Test chỉ xem)
       assert(d.tabTestMacDinh(n) === 'lich', `${ten} mở Test vào ${d.tabTestMacDinh(n)}`);
       assert(!n.workOps && !n.workReports, `${ten} không được thấy Vận hành / Báo cáo đơn vị`);
     }

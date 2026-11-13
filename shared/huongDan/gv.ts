@@ -211,8 +211,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'so-cua-toi', ten: 'Xem số của bạn', nhom: 'khac',
       loiChinh: { man: 'ho-so-gv', chu: 'Tài khoản › Hồ sơ giáo viên' },
-      loiTat: ['tong-quan'], cung: 'có link Hồ sơ GV của tôi.',
-      buoc: ['Bấm tên bạn › <b>Hồ sơ giáo viên</b> (hoặc <b>Hồ sơ GV của tôi</b> ở Tổng quan).', 'Chọn <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.'],
+      buoc: ['Bấm tên bạn › <b>Hồ sơ giáo viên</b>.', 'Chọn <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.'],
       tuKhac: ['chỉ số', 'thống kê', 'kpi'],
     },
     {
@@ -245,28 +244,18 @@ export const HD_GV: HuongDan = {
   ],
   man: [
     {
-      /* NEN-V5 K10 + SV-TQ-GV #561: GV có Tổng quan — 4 số + hai khối lớp. */
-      id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      dangO: { cau: 'Số của bạn và các lớp bạn dạy, chủ nhiệm.', sau: { chu: 'Công việc', duong: CV } },
-      khongLam: [KHONG_XEP_MT],
-      muc: [
-        { id: 'tq-viec', ten: 'Bốn số của bạn', buoc: ['<b>Việc của tôi</b> · <b>Case đang xử lý</b> · <b>Đạt kỳ vọng Test</b> · <b>Tiến bộ</b>; bấm số mở danh sách.'],
-          chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
-        { id: 'tq-hai-khoi', ten: 'Kỹ năng tôi dạy · Lớp tôi chủ nhiệm', buoc: ['<b>Kỹ năng tôi dạy</b>: mỗi lớp một dòng — Đạt kỳ vọng Test, Tiến bộ, bài chờ chấm.', '<b>Lớp tôi chủ nhiệm</b>: Dưới kỳ vọng, SOS hiện tại, Case, Thi tháng này; bấm số mở danh sách em.'],
-          chi: { hd: 'tq-lop-toi-day', duong: '/', chu: 'Hai khối lớp của bạn ở đây.' } },
-      ],
-    },
-    {
-      id: 'cong-viec', ten: 'Công việc', duong: [CV],
-      dangO: { cau: 'Mọi việc của bạn theo tab, quá hạn ở đầu.', truoc: { chu: 'Tổng quan', duong: '/' } },
+      /* GD-1 (Overhaul V6): Công việc là trang đầu của GV (thay Tổng quan); hai bảng số sang Hồ sơ giáo viên. */
+      id: 'cong-viec', ten: 'Công việc', duong: [CV, '/'],   // `/` chuyển thẳng sang Công việc (GD-1)
+      dangO: { cau: 'Trang đầu của bạn: việc theo tab bên trái, Lớp của tôi bên phải.' },
       khongLam: [KHONG_XEP_MT, { ten: 'Duyệt yêu cầu', cua: 'việc của QL' }],
       muc: [
         { id: 'cv-gop', ten: 'Làm cả lớp một lần', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu mục.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
         { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.', 'Đầu trang đếm “n việc · m quá hạn” và việc xong hôm nay.'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc việc ở hàng này.' } },
-        { id: 'tq-lop', ten: 'Lớp tôi dạy', buoc: ['Cuối Công việc: các lớp bạn dạy, bài quá hạn và bài chờ chấm.', 'Bấm tên lớp mở hồ sơ lớp.'],
-          chi: { hd: 'tq-lop-toi-day', duong: CV, chu: 'Bấm tên lớp để mở hồ sơ lớp.' } },
+        { id: 'cv-lop', ten: 'Lớp của tôi', buoc: ['Khung phải khi chưa chọn việc (điện thoại: nút <b>Lớp của tôi</b>): mỗi lớp một dòng — bạn dạy gì, Test, <b>Việc cần làm</b>.', 'Bấm một nút việc (Nhập điểm, Case, Ý thức, Vận hành) mở đúng việc đó; bấm tên lớp mở hồ sơ lớp.'],
+          chi: { hd: 'cv-lop-cua-toi', duong: CV, chu: 'Bấm nút việc của một lớp để làm ngay.' } },
+        { id: 'cv-task', ten: '+ Task', buoc: ['Nút <b>+ Task</b> đầu trang: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b>.', 'Gõ tên em (em lớp của bạn lên trước), rồi điền form như ở hồ sơ lớp.'] },
       ],
     },
     {
@@ -354,8 +343,9 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
-      dangO: { cau: 'Lớp bạn dạy và số của bạn theo khoảng tuần.', truoc: { chu: 'Tổng quan', duong: '/' } },
-      muc: [{ id: 'hsgv-so', ten: 'Khối của trang', buoc: ['Dải chỉ số theo <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.', 'Khối <b>Lớp đang dạy</b> · <b>Học thuật</b> · <b>Việc đang tồn</b> (<b>Mở Công việc ›</b>).', 'Khối <b>Case đang phụ trách</b> và <b>Yêu cầu đã gửi</b>.',
+      dangO: { cau: 'Lớp bạn dạy và số của bạn theo khoảng tuần.', truoc: { chu: 'Công việc', duong: CV } },
+      muc: [{ id: 'hsgv-hai-khoi', ten: 'Kỹ năng tôi dạy · Lớp tôi chủ nhiệm', buoc: ['<b>Kỹ năng tôi dạy</b>: mỗi lớp một dòng — Đạt kỳ vọng Test, Tiến bộ, bài chờ chấm.', '<b>Lớp tôi chủ nhiệm</b>: Dưới kỳ vọng, SOS hiện tại, Case, Thi tháng này; bấm số mở danh sách em.'],
+        chi: { hd: 'tq-lop-toi-day', duong: '/giao-vien', chu: 'Hai khối lớp của bạn ở đây.' } }, { id: 'hsgv-so', ten: 'Khối của trang', buoc: ['Dải chỉ số theo <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.', 'Khối <b>Lớp đang dạy</b> · <b>Học thuật</b> · <b>Việc đang tồn</b> (<b>Mở Công việc ›</b>).', 'Khối <b>Case đang phụ trách</b> và <b>Yêu cầu đã gửi</b>.',
         'Khối <b>Em đang bổ trợ</b> (khi bạn dạy PA Bổ trợ miễn phí): tên em mở hồ sơ, kể cả em đã chuyển lớp.'] }],
     },
     {

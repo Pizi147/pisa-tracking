@@ -1233,6 +1233,7 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
  * thêm `tuanThi` / `sos` / `pa` / `periodId` / `kind`. Đã so JSON mã trước (main 0359276) ↔ sau trên bộ demo, 5 vai × Của tôi / Tất cả: việc khác
  * TRÙNG hoàn toàn (trừ trường mới), tổng số bài Nhập điểm không đổi.
+ * 14/11 GD-1 (Overhaul V6): chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ thêm `baiQuaHan` (số bài quá hạn) vào việc Chấm Speaking — đầu tab "Việc chung của nhóm GV Speaking".
  * 12/11 rà 11/11 #2 (G1-04): chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ `count` của việc Chấm Speaking (số bài → số em khác nhau, ô "n HV").
  * 18/10 OV-14c: chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ ở việc chấm chéo: các dòng "Speaking chấm chéo · {tuần}" gộp theo tuần thay bằng MỘT việc (dòng phụ "n lớp")
  *   "Chấm Speaking · n bài" (khoá `KHOA_CHAM_SPEAKING`), cộng bài thi tuần này (từ thứ Hai tuần thi); 10 băm khác trùng.
@@ -1367,7 +1368,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        (Tạm dừng hoặc Thôi học → Tạm dừng / Kết thúc học; 7 ngày đọc Hạn mặc định). Đã kiểm: trả hai hint về chữ cũ trên nhánh → TD4-a đạt với băm cũ. Trước: QT toi 7ebe5b04a14bdd39, GVCN toi ec2e83ad7d3149f8, GVBM toi b8ff6f87720838f4, GVCN_THUONG toi ec2e83ad7d3149f8, QL tat-ca 6db0b9a1a2224b80, QT tat-ca 9c90c2073d99edd3, QT tat-ca cn d1a5972ac6f0863d, QL gvcn d377a756eb1da0cf, GVS toi 5b46fdd308634d6b */
     'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'b1ad0af2e1dd4bd5', 'GVBM toi': '77e235e4611522bc',
     'GVCN_THUONG toi': 'b1ad0af2e1dd4bd5', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'a378c8afa18b77ca', 'QT tat-ca': 'de6263e02466a6c0',
-    'QT tat-ca cn': '7c2866d4ce5cfb1a', 'QL gvcn': '1083304bc01cd683', 'GVS toi': 'dcacfa50220ee88d',
+    'QT tat-ca cn': '7c2866d4ce5cfb1a', 'QL gvcn': '1083304bc01cd683', 'GVS toi': '9b56bb85e86f4071',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

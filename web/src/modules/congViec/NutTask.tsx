@@ -35,7 +35,7 @@ export function NutTask({ noi }: { noi: 'dau' | 'noi' }) {
     <>
       <span ref={neo} className={noi === 'noi' ? 'fixed bottom-[80px] right-4 z-[35] sm:hidden' : 'max-sm:hidden'}>
         <MenuDong nhan={t('Task: Case, vi phạm / nhắc nhở, tình hình học tập')} mat={mat}
-          lopNut={noi === 'dau' ? 'btn btn-primary !p-0' : 'btn btn-primary !rounded-full !p-0 shadow-[0_6px_16px_var(--bong)]'}
+          lopNut={noi === 'dau' ? 'btn btn-primary !p-0' : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
           muc={MUC.map(([k, nhan]) => ({ key: k, nhan, onChon: () => { setEm(null); setLoai(k); } }))} />
       </span>
       {loai && !em && <HopChonEm neo={neo} loai={loai} onDong={dong} onChon={setEm} />}
@@ -60,6 +60,9 @@ function HopChonEm({ neo, loai, onDong, onChon }: {
   const [chon, setChon] = useState<Em[]>([]);
   const [loi, setLoi] = useState<string | null>(null);
   const luot = useRef(0);
+  const o = useRef<HTMLInputElement>(null);
+  /* HopNeo focus phần tử bấm được đầu tiên (nút ✕) sau khi vẽ — đưa focus về ô gõ ở lượt kế (người dùng gõ tên ngay). */
+  useEffect(() => { const h = setTimeout(() => o.current?.focus()); return () => clearTimeout(h); }, []);
   useEffect(() => {
     const q = chu.trim();
     if (q.length < 2) { setKq([]); return undefined; }
@@ -96,7 +99,7 @@ function HopChonEm({ neo, loai, onDong, onChon }: {
           <span className="text-xs tabular-nums text-faint">{chon.length} / {TOI_DA_TINH_HINH}</span>
         </span>
       )}
-      <input className="field h-10 text-[15px] max-sm:h-11" role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
+      <input ref={o} className="field h-10 text-[15px] max-sm:h-11" role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
         aria-label={t('Gõ tên em')} placeholder={t('Gõ tên em…')} value={chu} disabled={nhieu && chon.length >= TOI_DA_TINH_HINH}
         aria-activedescendant={ds[dang] ? `tim-em-${ds[dang].id}` : undefined}
         onChange={(e) => setChu(e.target.value)}

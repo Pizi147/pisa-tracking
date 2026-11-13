@@ -19,9 +19,9 @@ export async function runDonHinhTests(t: any) {
     assert(/--text-dim-rgb: 186 198 222;/.test(css) && /--text-faint-rgb: 158 172 200;/.test(css), 'token chữ phụ tối chưa đổi');
   });
   /* CV-TAB (06/11; 13/11 đổi tên): bài chấm chéo là tab "Speaking chấm chéo", mục "Speaking chấm chéo" (`shared/domain/tongQuan.ts`). */
-  check("DON-HINH · tab cham-cheo = 'Speaking chấm chéo', mục = 'Speaking chấm chéo'", () => {
+  check("DON-HINH → GD-1 (lời 19) · tab cham-cheo = 'Chấm Speaking', mục = 'Việc chung của nhóm GV Speaking'", () => {
     const s = doc('shared/domain/tongQuan.ts');
-    assert(/k === 'cham-cheo' \? t\('Speaking chấm chéo'\)/.test(s) && /\['cham-cheo', t\('Speaking chấm chéo'\)\]/.test(s), 'nhãn nhóm sai');
+    assert(/k === 'cham-cheo' \? t\('Chấm Speaking'\)/.test(s) && /\['cham-cheo', t\('Việc chung của nhóm GV Speaking'\)\]/.test(s), 'nhãn nhóm sai');
   });
   check('DON-HINH · boTenEm bỏ tên em ở mọi vị trí, không để chuỗi rỗng', () => {
     assert(!boTenEm('Nhắc Ánh nộp bài · Ánh', 'Ánh').includes('Ánh'), 'còn tên em');
