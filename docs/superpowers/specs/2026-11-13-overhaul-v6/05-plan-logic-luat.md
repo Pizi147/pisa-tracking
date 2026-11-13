@@ -1,0 +1,36 @@
+# Overhaul V6 — plan phần LOGIC · LUẬT · LỖI (gửi PTA Plan giao)
+
+PTA Overhaul · 14/11. Theo lời chủ SP 14/11 (lời 16 ý 5): việc logic / lỗi / luật (phát hiện hoặc chủ SP đã chốt đổi) → PTA Plan tự giao session; PTA Overhaul chỉ giao việc thiết kế (mockup).
+Nguồn: `loi-chu-sp.md` (lời 12–16) · `04-thiet-ke.md` (mục 5.6, 5.10, 11) · `luat/0`–`4`.
+Mọi PR dưới đây **không đổi bố cục** → không cần mockup, trừ chỗ ghi rõ. Skill mọi PR: `karpathy-guidelines` + `ponytail` (full). Mỗi PR: phép kiểm bắt được hành vi cũ trước khi sửa; đo câu + dòng Turso trước → sau, cập nhật trần ở `server/src/tests/tocDoDuong.ts`.
+
+## A. Đã gửi PTA Plan trước đó (không lặp)
+F01–F07 (13/11) · L1–L8 (13/11) · L6 đã có quyết định (LG-4 dưới) · hạn Báo cáo PH lớp thường (LG-1 dưới).
+
+## B. Danh sách PR
+
+| Mã | Phạm vi | Lời chủ SP | Model · effort (B) | Phép kiểm chính | Turso |
+|---|---|---|---|---|---|
+| **LG-1** BC-PH-HAN-THUONG | Đợt Báo cáo PH lớp thường: hạn = thứ Ba tuần sau tuần Test (`shared/domain/baoCaoPh.ts` `dotTuan` + 6 → + 8). Áp tab Báo cáo PH, việc Admin "Xuất báo cáo PH", chip đợt. | lời 14 | Sonnet 5.5 · medium (B: Opus 5.5 · low) | hạn đợt Progress / Final đúng thứ Ba; đợt đang mở thêm 2 ngày; mã đợt không đổi | 0 |
+| **LG-2** BC-PH-DOT-TRUOC | Đợt Báo cáo PH do QL / Admin thêm: **cho đặt ngày mở ở tương lai** (nay chỉ từ hôm nay về trước). Trước ngày mở: đợt hiện "sắp mở {ngày}", sửa / xoá được, chưa sinh việc; tới ngày thì mở như đợt thường. Hạn ≥ ngày mở. | lời 16 ý 4: "Việc giao Báo cáo PH có thể giao trước ngày, hiện tại đang bị khóa là cần phải giao từ ngày hôm nay trở về quá khứ, hơi bị hạn chế" | Opus 5.5 · medium (B: Sonnet 5.5 · high) | tạo đợt mở tuần sau → không chặn; trước ngày mở không vào việc / chuông; tới ngày tự mở; sửa ngày, xoá | 0 |
+| **LG-3** BC-PH-VIEC-GV | **Việc mới của GV "Báo cáo PH"** trong `/my-work`: mỗi lớp × đợt một dòng cho GV có phần phải viết (GV kỹ năng: phần mình; GVCN: phần Chung; GVCN kiêm kỹ năng: **một dòng**); đợt tháng FT (20 → 30, tháng 2: 28), đợt Progress / Final lớp thường (hạn theo LG-1), **đợt thêm cũng sinh việc** (hạn QL đặt). Xong khi người đó đủ phần của mình cho mọi em (hai GV cùng phần: một người viết đủ thì cùng xong). **Quá hạn hiện thêm 7 ngày rồi tự rời; không sinh việc cho đợt đã qua trước ngày bật.** Tính như việc thường (số việc, badge, chuông: tới ngày hạn chưa xong → vào "hôm nay"; quá hạn → đỏ). **Admin nhận một tin khi lớp × đợt đủ hết báo cáo** (kèm việc "Xuất báo cáo PH" đang có). Vai khác không có việc này. Ghép từ `quyenBc().cuaToi`, `dsDotLop`, `emTheoLo`, mẫu đếm `viecXuatBaoCaoPh`. Giao diện: tab "Báo cáo PH" ở Công việc + dòng việc theo mockup ① (K6) — phần web chờ chủ SP duyệt mockup ①; phần máy chủ làm trước được. | lời 12, 13, 16 ý 1, 3 | Opus 5.5 · high (không khuyên B) · rà sâu `/code-review high` | GV kỹ năng / GVCN / kiêm; đủ → việc rời; quá hạn 7 ngày; không đợt cũ; đợt thêm; em Tạm dừng không tính; đổi GV giữa đợt; tin Admin đúng một lần; Admin / QL / TVV không có việc | + 3–4 câu, + 300–500 dòng mỗi `/my-work` khi có đợt mở (GV 8 lớp); ngoài đợt FT 0 câu → nâng trần dòng GV / GVCN; thử trên bản chép thật |
+| **LG-4** TARGET-VE-TVV | Việc "Điền Target" (`missing_data`, `mywork.ts:1381`) bỏ khỏi GVCN; TVV giữ trong "Bổ sung hồ sơ thiếu" (em không có TVV → QL). GVCN thấy nhắc "Em chưa có Target" kèm "Đề xuất sửa" ở hồ sơ em (không phải việc). | 2.3 (lời 13) | Sonnet 5.5 · medium (B: Opus 5.5 · low) | GVCN hết việc Điền Target; TVV / QL có; số việc các vai trên bản chép trước → sau | ≤ 0 |
+| **LG-5** S-CHEO-NGUOI-CHAM | Speaking chấm chéo: (a) **một hàm "GV Speaking"** theo quyền N7 (kỹ năng S trong hồ sơ HOẶC đang dạy S lớp FT) dùng cho quyền, ô chọn người chấm (hộp + đầu cột), sổ đếm "S chéo chung"; (b) người nhập không phải GV Speaking **phải chọn "GV chấm"** mới lưu được, bỏ ghi ngầm người nhập (`attempts.ts:2564`); (c) lựa chọn "GV chấm" theo lớp × tuần **lưu ở máy chủ** thay localStorage (`web/src/modules/cham/GvCham.tsx`); (d) gộp L4, L5 đã gửi nếu chưa chạy. | 2.4, 2.5 (lời 13); 1.7 | Opus 5.5 · high (B: Sonnet 5.5 · high) | QL nhập hộ không chọn → báo tại ô, không 400 trống; GV S tự nhập mặc định là mình; số "S chéo chung" trên bản chép trước → sau (báo chủ SP nếu số Phân tích GV đổi) | ~0 (một bảng nhỏ lớp × tuần) |
+| **LG-6** TIN-BAO-PH-GVCN | TVV ghi kết quả Báo PH về vi phạm → GVCN nhận một tin "Cập nhật" (không vào số việc), cùng kiểu tin của tình hình học tập (`baoPhTvv.ts:284-290`). | 2.7 (lời 13) | Sonnet 5.5 · medium | tin đúng người, một lần; không tăng badge | 0 |
+| **LG-7** HEAD-TUTOR-NHU-GV | Vai Head tutor: trang đầu, menu, thanh tab, ô tìm **như GV** (nay chỉ có Tổng quan). Đụng `nav.ts`, `dieuHuong.ts`, `OverviewPage.tsx:37`. Nếu phải đổi `ROLE_PERMISSIONS` thì liệt kê quyền thêm, hỏi chủ SP trước khi merge. Làm SAU PR đổi trang đầu GV (mục C). | lời 16 ý 2: "Head tutor vẫn là GV là chính, nên view nên như của GV là chính nha" | Opus 5.5 · medium · rà `/security-review` | Head tutor có phân công thấy việc + lớp như GV; không có phân công: trang rỗng đúng chữ; không lộ dữ liệu ngoài phạm vi | đo `/my-work` vai ht |
+| **LG-8** MY-WORK-TEST-SAP-TOI | `/my-work` thêm trường "Test sắp tới" từng lớp của GV (cho "Lớp của tôi"), chỉ tính cho vai GV / Head tutor, dùng `MOC_KE_TIEP` + `classProgressMany` (`tongQuan.ts:321`). Chạy TRƯỚC PR giao diện trang đầu. | thiết kế 5.2, 11.2 | Sonnet 5.5 · high (B: Opus 5.5 · medium) | lớp FT / lớp thường / chưa có lịch; vai khác không tốn câu | + ~2 câu, vai GV |
+
+## C. Phần GIAO DIỆN (chưa giao — chờ mockup duyệt, PTA Overhaul gửi sau)
+Đổi trang đầu GV / TVV sang Công việc (chỗ đụng mã + 6 tệp phép kiểm: `04-thiet-ke.md` 11.4) · "Lớp của tôi" · "+ Ghi" · panel Speaking chấm chéo theo tuần → lớp · dòng việc + dòng quy chế chuẩn · hộp nhập gọn · hồ sơ lớp · hồ sơ HV · TVV · mật độ các màn còn lại.
+
+## D. Nhờ PTA Plan xem (PTA Overhaul đọc mã thấy, CHƯA tái hiện — cái nào là lỗi thì giao)
+Mục cuối các tệp `luat/1`–`4` ("chỗ tài liệu và mã lệch"). Đáng xem trước:
+- GV lớp thường gõ điểm trước tuần Test: được hỏi "Dời về tuần này" rồi có thể báo lỗi quyền (`skillSchedule.ts:1076` ↔ `:943-945`).
+- MT0 gõ "-": không dời, không huỷ; Rulebook ghi áp luật vắng (`attempts.ts:2395`, `:2452`).
+- Thẻ "Thu hồi xử lý" hết 5 ngày không tự chốt, khác thẻ xử lý.
+- Cấu hình "ai làm" của Phối hợp SOS (TVV / CX) không thấy máy chủ dùng để giao việc (`shared/domain/cauHinhCaseSos.ts:28`).
+- Việc Bước tiếp: N6 "TVV của em", mã cho mọi TVV chi nhánh (`permissions.ts:794`).
+- Xác nhận Case Speaking còn ngưỡng 10 ký tự (chung là 8) (`cases.ts:1540`).
+
+## E. PTA Overhaul tự làm
+Một PR tài liệu: sửa chữ Rulebook + `plan.md` 1.6 theo lời mới (hạn xác nhận 5 ngày, ghi kết quả 2 tuần, luật "-" N38, SOS tạm có Case tạm, bỏ thẻ Dời lịch Test, N5 Hoàn tác, N18 KET/PET, luật Báo cáo PH mới).
