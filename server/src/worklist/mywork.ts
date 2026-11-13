@@ -1372,39 +1372,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* 4. XEP-MT-NHAC (chủ SP 07/11): bỏ việc "Chốt tuần MT" (lượt chưa tuần) — máy đã tự xếp; lộ trình thiếu MT nhắc qua việc
      "Xếp lịch MTn" (`moc:`) và chip "Chưa đủ MT" (`thieuMt`). */
 
-  /*
-   * K5-09: HỌC VIÊN FT CHƯA CÓ TARGET — không có target thì không có kỳ vọng, SOS và Case không bao giờ sinh ra. Việc của GVCN lớp
-   * (người điền hồ sơ), không hạn. Một câu cho mọi lớp người xem chủ nhiệm.
-   */
-  if (co('missing_data')) {
-    const lopCn = tatCa ? [...gvcnLop().keys()] : [...new Set(p.assignments.filter((x) => x.isCore && activeAt(x, today)).map((x) => x.classId))];
-    if (lopCn.length) {
-      /* SV-TVV-VIEC: "Chốt ngày thi" chuyển sang TVV (`viecHoSoTvv`) — câu này chỉ còn "Điền Target" của GVCN. */
-      const ds = conn.prepare(
-        `SELECT s.id, s.full_name, e.class_id, c.code AS class_code, cy.target_score
-           FROM learning_cycles cy
-           JOIN students s ON s.id = cy.student_id AND ${HV_DANG_HOC_SQL('s')}
-           JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
-           JOIN classes c ON c.id = e.class_id
-          WHERE cy.status = 'active' AND cy.route IS NOT NULL
-            AND cy.target_score IS NULL   /* OV-9: em KCK chưa có Target cũng thiếu Target */
-            AND e.class_id IN (${DS_JSON}) AND (? IS NULL OR c.branch_id = ?)`,
-      ).all(JSON.stringify(lopCn), f.branchId ?? null, f.branchId ?? null) as any[];
-      /* PR-VAI-a (từ UXF-a, mywork.ts:927): sắp lớp theo `soSanhLop` (MB FT 9 trước MB FT 10), rồi tên em. */
-      for (const h of ds
-        .sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
-        items.push({
-          key: `target:${h.id}`, group: 'missing_data', urgency: 'normal',
-          studentId: h.id, studentName: h.full_name, classId: h.class_id, classCode: h.class_code,
-          attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: null,
-          reason: 'Chưa có Target nên chưa tính được kỳ vọng từng MT',
-          tieuDe: 'Điền Target', phu: 'Điền Target', actionLabel: 'Điền Target', href: `/hoc-vien/${h.id}`,
-          /* BADGE-CUA-TOI (PTA 04/11): một chủ việc ở mọi góc nhìn — GVCN lớp (không có thì người xem); "Của tôi" = badge = ô "Của tôi" của "Tất cả". */
-          ownerId: gvcnLop().get(h.class_id) ?? p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có Target',
-        });
-      }
-    }
-  }
+  /* L6 / 2.3 (chủ SP 13/11): việc "Điền Target" BỎ khỏi GVCN (GVCN không sửa được Target, chỉ đề xuất) — Target thiếu nằm trong việc TVV "Bổ sung hồ sơ
+     thiếu" (`viecHoSoTvv`, em chưa có TVV → QL); GVCN thấy nhắc "Em chưa có Target" + "Đề xuất sửa" ở hồ sơ em (không vào số việc). */
 
   /* SV-TVV-VIEC: hai việc không hạn của TVV (em chưa có TVV → QL chi nhánh) — Chốt ngày thi · Bổ sung hồ sơ thiếu (một dòng tổng). */
   /* BAO-CAO-PH b: việc Admin "Xuất báo cáo PH" — chỉ vai Admin ở chi nhánh lớp (QL không nhận, đặc tả §12). Đủ: nút Xuất lớp (web); thiếu: link tab. */

@@ -117,3 +117,14 @@ export function measureOwner(measureId: number) {
     },
   };
 }
+
+/** GVCN đang hiệu lực của lớp em đang học (không có → null). */
+export function gvcnCuaEm(sid: number, homNay: string): { lopId: number | null; gvcn: number | null; branchId: number | null } {
+  const lopId = activeClassOf(sid);
+  if (!lopId) return { lopId: null, gvcn: null, branchId: null };
+  const r = db().prepare(
+    `SELECT c.branch_id, (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active'
+        AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1) AS gvcn FROM classes c WHERE c.id = ?`,
+  ).get(homNay, homNay, lopId) as any;
+  return { lopId, gvcn: r?.gvcn ?? null, branchId: r?.branch_id ?? null };
+}

@@ -3,10 +3,11 @@
  *   · `bo`: "Không cần báo cáo đợt này" — đợt mất khỏi tab, việc Admin, "thiếu n em", Excel chi nhánh; bài đã viết GIỮ NGUYÊN (khôi phục là hiện lại);
  *   · `khoi-phuc`: xoá dòng bỏ (Hoàn tác của `bo`);
  *   · `them`: "+ Đợt báo cáo" bất chợt — tên ngắn tuỳ chọn, mở + hạn; bộ phần theo chương trình lớp; điểm tự điền = lượt gần nhất có điểm trước hạn (`diemGoc`);
- *   · `xoa` / `hoan-xoa`: xoá mềm đợt thêm (bài đã viết giữ, khôi phục được; Hoàn tác của `them` là `xoa`).
+ *   · `xoa` / `hoan-xoa`: xoá mềm đợt thêm (bài đã viết giữ, khôi phục được; Hoàn tác của `them` là `xoa`);
+ *   · `sua` (LG-2): đổi tên / ngày mở / hạn MỘT đợt thêm (Hoàn tác = `sua` về giá trị cũ). Mã đợt (`them:{id}`) không đổi → bài đã viết giữ.
  * Áp một lớp hoặc nhiều lớp CÙNG chi nhánh một lần; máy chủ kiểm quyền từng lớp (`quyenBc(...).quyetDot`: QL · Quản trị · Admin, không TVV / GV).
  * Nhật ký mỗi lớp mỗi việc. Turso: ≈ 4 câu cho cả lô lớp (lớp, tuỳ chỉnh, tiến độ, ghi) + 1 nhật ký mỗi lớp (một câu).
- * ponytail: đợt thêm chỉ mở từ hôm nay trở về trước (đợt tương lai không hiện tới ngày mở — thêm khi QL cần hẹn trước).
+ * LG-2 (chủ SP 14/11): ngày mở được ở tương lai — trước ngày đó đợt là "sắp mở" (`dsDotLop().sapMo`): chưa viết, chưa chip / việc; tới ngày tự mở.
  */
 import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -19,7 +20,7 @@ import { boPhanBc, nhanDotBc } from '../../../shared/domain/index.ts';
 
 const TOI_DA_LOP = 50;
 const TEN_TOI_DA = 40;
-export type ViecDotBc = 'bo' | 'khoi-phuc' | 'them' | 'xoa' | 'hoan-xoa';
+export type ViecDotBc = 'bo' | 'khoi-phuc' | 'them' | 'xoa' | 'hoan-xoa' | 'sua';
 const MA_DOT_TINH = /^(thang:\d{4}-\d{2}|(progress|final):\d{4}-\d{2}-\d{2})$/;
 
 const dsSo = (v: unknown, toiDa: number): number[] => {
@@ -37,11 +38,20 @@ function lopQuyen(p: Principal, ids: readonly number[]): LopBc[] {
   return lop;
 }
 
-/** POST /bao-cao-ph/dot { viec, classIds | dotIds, ma?, ten?, mo?, han? }. */
+/** Ngày mở + hạn của đợt thêm (`them`, `sua`): ngày thật, hạn ≥ ngày mở. */
+function ngayDot(body: any): { mo: string; han: string } {
+  const mo = body?.mo, han = body?.han;
+  if (!isIsoDate(mo) || !isIsoDate(han)) throw badRequest('Chọn ngày mở và hạn của đợt');
+  if (han < mo) throw badRequest('Hạn phải sau hoặc cùng ngày mở');
+  return { mo, han };
+}
+
+/** POST /bao-cao-ph/dot { viec, classIds | dotIds | dotId, ma?, ten?, mo?, han? }. */
 export function doiDotBaoCaoPh(p: Principal, body: any) {
   const viec = body?.viec as ViecDotBc;
-  if (!['bo', 'khoi-phuc', 'them', 'xoa', 'hoan-xoa'].includes(viec)) throw badRequest('Việc không hợp lệ');
+  if (!['bo', 'khoi-phuc', 'them', 'xoa', 'hoan-xoa', 'sua'].includes(viec)) throw badRequest('Việc không hợp lệ');
   if (viec === 'xoa' || viec === 'hoan-xoa') return xoaDotThem(p, dsSo(body?.dotIds, 500), viec === 'xoa');
+  if (viec === 'sua') return suaDotThem(p, body);
   const lop = lopQuyen(p, dsSo(body?.classIds, TOI_DA_LOP));
   const homNay = demoToday();
   const luc = nowIso();
@@ -78,10 +88,7 @@ export function doiDotBaoCaoPh(p: Principal, body: any) {
   }
 
   /* them */
-  const mo = body?.mo, han = body?.han;
-  if (!isIsoDate(mo) || !isIsoDate(han)) throw badRequest('Chọn ngày mở và hạn của đợt');
-  if (mo > homNay) throw badRequest('Đợt mở từ hôm nay trở về trước');
-  if (han < mo) throw badRequest('Hạn phải sau hoặc cùng ngày mở');
+  const { mo, han } = ngayDot(body);
   const ten = chuTuDo(body?.ten, 'Tên đợt', TEN_TOI_DA);
   const ap = lop.filter((c) => boPhanBc(c.programme_code ?? c.kind));
   if (!ap.length) throw badRequest('Chương trình của lớp chưa có mẫu báo cáo PH');
@@ -93,6 +100,22 @@ export function doiDotBaoCaoPh(p: Principal, body: any) {
       after: { dot: `them:${dotIds[i]}`, ten, mo, han } })));
   });
   return { lopDoi: ap.map((c) => c.id), dotIds, ma: ap.map((c, i) => ({ classId: c.id, ma: `them:${dotIds[i]}` })), boQua: lop.length - ap.length };
+}
+
+/** LG-2: sửa tên / ngày mở / hạn một đợt thêm chưa xoá (đợt sắp mở hay đã mở). Một câu đọc + một ghi + một nhật ký. */
+function suaDotThem(p: Principal, body: any) {
+  const id = toInt(body?.dotId);
+  const h = id ? db().prepare(`SELECT id, class_id, ten, mo, han FROM bao_cao_ph_dot WHERE id = ? AND loai = 'them' AND xoa_luc IS NULL`).get(id) as any : null;
+  if (!h) throw badRequest('Không tìm thấy đợt');
+  const [c] = lopQuyen(p, [h.class_id]);
+  const { mo, han } = ngayDot(body);
+  const ten = chuTuDo(body?.ten, 'Tên đợt', TEN_TOI_DA);
+  tx(() => {
+    db().prepare(`UPDATE bao_cao_ph_dot SET ten = ?, mo = ?, han = ? WHERE id = ?`).run(ten, mo, han, h.id);
+    writeAuditLo([{ actorUserId: p.userId, action: 'bao_cao_ph.dot_sua', entityType: 'class', entityId: c.id, entityLabel: c.code,
+      before: { dot: `them:${h.id}`, ten: h.ten, mo: h.mo, han: h.han }, after: { dot: `them:${h.id}`, ten, mo, han } }]);
+  });
+  return { lopDoi: [c.id], truoc: { ten: h.ten as string | null, mo: h.mo as string, han: h.han as string } };
 }
 
 /** Xoá mềm / khôi phục đợt thêm: bài đã viết (`bao_cao_ph`) không bị đụng. */
