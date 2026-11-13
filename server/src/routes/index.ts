@@ -1142,6 +1142,7 @@ api.get('/cham/lich-test/qua-han', requireAuth, wrap((req) => {
 
 api.get('/classes', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  if (qStr(req, 'gon') === '1') return classSvc.lopGon(principalOf(req), qInt(req, 'branchId'));   // OV6-DOC-CHON: ô chọn lớp
   return classSvc.listClassSummaries(principalOf(req), {
     branchId: qInt(req, 'branchId'),
     q: qStr(req, 'q'),
@@ -2681,6 +2682,8 @@ api.get('/students', requireAuth, wrap((req) => {
     branchId: qInt(req, 'branchId'),
     classId: qInt(req, 'classId'),
     needAttention: qStr(req, 'need') === 'attention',
+    gioiHan: Math.min(Math.max(qInt(req, 'gioiHan') ?? 0, 0), 50) || undefined,   // OV6-DOC-CHON: ô tìm thanh trên (web 6)
+    gon: qStr(req, 'gon') === '1',
   });
 }));
 
