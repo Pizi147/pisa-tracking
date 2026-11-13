@@ -57,7 +57,6 @@ export const EN_BAO_CAO_PH = {
   'Chọn ngày mở và hạn của đợt': 'Pick the open and due dates',
   /* LG-2 (chủ SP 14/11): đợt hẹn trước ngày mở. */
   'Sắp mở': 'Opening soon',
-  'mở {ngay}': 'opens {ngay}',
   'Sắp mở {ngay}': 'Opens {ngay}',
   'Sửa đợt': 'Edit round',
   'Đã sửa đợt {dot}': 'Round {dot} updated',

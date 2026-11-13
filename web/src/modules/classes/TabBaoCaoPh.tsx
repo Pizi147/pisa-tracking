@@ -120,7 +120,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
       <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot ?? data.daBo?.ma ?? data.sapMo?.ma ?? ''} onChange={(ev) => onDot(ev.target.value || null)}>
         {!data.dot && !data.daBo && !data.sapMo && <option value="">—</option>}
-        {data.dsSapMo.length > 0 && <optgroup label={t('Sắp mở')}>{data.dsSapMo.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)} · {t('mở {ngay}', { ngay: ngay(d.mo, homNay) })}</option>)}</optgroup>}
+        {data.dsSapMo.length > 0 && <optgroup label={t('Sắp mở')}>{data.dsSapMo.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)} · {t('Sắp mở {ngay}', { ngay: ngay(d.mo, homNay) })}</option>)}</optgroup>}
         {data.dsDot.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}
         {data.dsBo.length > 0 && <optgroup label={t('Không báo cáo')}>{data.dsBo.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}</optgroup>}
       </ChonDangNut>
