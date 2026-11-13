@@ -215,7 +215,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(/maxLength=\{NHAN_XET_TOI_DA\}/.test(hop) && /Nhận xét/.test(hop) && /key !== 'Enter'/.test(hop), 'hộp nhập điểm thiếu nhận xét / Enter');
     assert(/progress === 'lich_su'\) return <Info pending>\{t\('Nhập bù, không tính hạn'\)\}<\/Info>/.test(se), 'mất nhánh Nhập bù (PR-MT)');
     const gv = docSach('web/src/modules/cham/GvCham.tsx');
-    assert(gv.includes('pisa:gv-cham:') && /try \{/.test(gv), 'GvCham thiếu khoá nhớ / try');
+    assert(gv.includes("api.put('/cham/gv-cham-cot'"), 'GvCham thiếu nhớ GV chấm (LG-5c: nhớ ở máy chủ)');
   });
 
   // ------------------------------------------------------------------ khối 4: lưới, điện thoại, Lịch Test

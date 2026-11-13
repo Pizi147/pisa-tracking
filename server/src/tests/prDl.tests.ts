@@ -187,7 +187,9 @@ export async function runPrDlTests(t: YThucTestKit) {
   check('DL-2 classScoreSheet theo tuần: cùng kết quả như trước refactor (ảnh chụp); số/null và {theo:"tuan"} như nhau', () => {
     const cu = svc.classScoreSheet(QL, LOP, pid, TODAY);
     const moi = svc.classScoreSheet(P.lrTeacher, LOP, null, TODAY);
-    assert(bam(cu) === ANH_CHUP.tuan && bam(moi) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(cu)} moi=${bam(moi)}`);
+    /* LG-5c: `gvChamCot` (lựa chọn GV chấm đầu cột của người xem) không thuộc ảnh chụp refactor — bỏ khi băm. */
+    const bo = (x: any) => ({ ...x, gvChamCot: undefined });
+    assert(bam(bo(cu)) === ANH_CHUP.tuan && bam(bo(moi)) === ANH_CHUP.moi, `ảnh chụp lệch: tuan=${bam(bo(cu))} moi=${bam(bo(moi))}`);
     assert(idsCua(cu) === idsTuan(pid), `${idsCua(cu)} ≠ ${idsTuan(pid)}`);
     assert(!cu.rows.some((r: any) => r.attemptId === binh.aid), 'lượt tuần NULL không thuộc tuần nào');
     assert(JSON.stringify(svc.classScoreSheet(QL, LOP, { theo: 'tuan', periodId: pid }, TODAY)) === JSON.stringify(cu), 'theo tuần khác số');
