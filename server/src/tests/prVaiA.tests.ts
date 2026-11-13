@@ -627,10 +627,13 @@ export async function runPrVaiATests(t: YThucTestKit) {
     }
   });
 
-  check('VAI-a (11b) · việc "Điền target": sắp lớp soSanhLop (MB FT 9 trước MB FT 10), rồi tên', () => {
+  /* L6 / 2.3 (chủ SP 13/11): việc "Điền target" của GVCN đã bỏ — không còn khối để sắp; giữ phép kiểm soSanhLop. */
+  check('VAI-a (11b) → L6 · không còn việc "Điền target" (key target:) ở Công việc; soSanhLop: MB FT 9 trước MB FT 10', () => {
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/worklist/mywork.ts'), 'utf8');
-    const khoi = src.slice(src.indexOf('K5-09: HỌC VIÊN FT CHƯA CÓ TARGET'), src.indexOf("key: `target:${h.id}`"));
-    assert(!/ORDER BY c\.code/.test(khoi) && /soSanhLop\(\{ code: x\.class_code \}, \{ code: y\.class_code \}\)/.test(khoi), 'sắp bằng soSanhLop');
+    assert(!src.includes("key: `target:"), 'mywork còn việc Điền target');
+    const hs = fs.readFileSync(pathM.join(REPO, 'web/src/modules/students/StudentDetailPage.tsx'), 'utf8');
+    assert(hs.includes("t('Em chưa có Target')") && /coTheDeXuatSua && data\.missing\?\.some\([^)]*\) => m\.key === 'target'\)/.test(hs) && hs.includes("setViecQuanLy('de-xuat-sua')"),
+      'hồ sơ HV: GV lớp thấy nhắc "Em chưa có Target" + Đề xuất sửa');
     eq(['MB FT 10', 'MB FT 9'].sort((a, b) => d.soSanhLop({ code: a }, { code: b })), ['MB FT 9', 'MB FT 10'], 'soSanhLop');
   });
 }
