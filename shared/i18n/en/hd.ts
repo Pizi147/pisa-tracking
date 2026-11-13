@@ -87,7 +87,7 @@ export const EN_HD = {
   '<b>5 ngày</b> từ ngày ghi nhận, tính cả ngày đầu.': '<b>5 days</b> from the day it is logged, counting that day.',
   'Bậc cần QL thì QL duyệt.': 'Levels that need the manager are approved by the manager.',
   'QL trả lời đề xuất': 'Manager replies to proposals',
-  'QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>5 ngày</b>, tính cả ngày gửi.': 'The manager replies to PA proposals / help requests within <b>5 days</b>, counting the day sent.',
+  'QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>hạn duyệt</b> (mặc định 5 ngày, Quản trị đổi được), tính cả ngày gửi.': 'The manager replies to PA proposals / help requests within the <b>approval deadline</b> (default 5 days, set by Admin), counting the day sent.',
   'Dấu "-" (vắng)': 'The "-" mark (absent)',
   'Trong tuần Test: "-" = vắng, chốt ngay.': 'During the test week: "-" = absent, closed at once.',
   'Nhập bù: "-" = Vắng; MT cũ: "-" = Đã huỷ · vắng MT cũ.': 'Late entry: "-" = Absent; old MT: "-" = Cancelled · absent (past MT).',

@@ -1,4 +1,6 @@
 import { phamViXemViec } from './xemViec.ts';
+import { t } from '../../../shared/i18n/index.ts';
+import { hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, theoLo, tx } from '../db.ts';
@@ -266,7 +268,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* OV-8a → SV-TVV-VIEC: TVV của em giữ; hạn = muộn hơn của (ngày thi + 7, ngày có kết quả + 7), đỏ không chặn. */
   buoc_tiep: {
     label: 'Chọn bước tiếp',
-    hint: 'Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới, Tạm dừng hoặc Thôi học. Hạn 7 ngày kể từ ngày có kết quả.',
+    /* L2 (PTA 13/11): web còn HAI hướng (N12). Hạn đọc từ Hạn mặc định (getter: đổi cấu hình → chữ đổi). */
+    get hint() { return t('Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới hoặc Tạm dừng / Kết thúc học. Hạn {ngay} ngày kể từ ngày có kết quả.', { ngay: hanTai('buoc_tiep_sau_thi').ngay }); },
   },
   bo_sung_ho_so: {
     label: 'Bổ sung hồ sơ thiếu',
@@ -333,7 +336,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   ban_giao: {
     label: 'Bàn giao',
-    hint: 'Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình (2 ngày), GVCN gom lại, viết nhận xét chung rồi GVCN xác nhận bàn giao (3 ngày, tính cả ngày ra quyết định). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.',
+    /* L1 (PTA 13/11): GVBM = GVCN, một hạn (hanBanGiao, Hạn mặc định). */
+    get hint() { return t('Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình, GVCN gom lại, viết nhận xét chung rồi xác nhận bàn giao. Hạn tối thiểu {ngay} ngày, tính cả ngày ra quyết định (GVBM và GVCN cùng hạn). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.', { ngay: hanTai('ban_giao_chuyen_lop').ngay }); },
   },
   xuat_bc_ph: {
     label: 'Xuất báo cáo PH',
@@ -1738,6 +1742,8 @@ const chiNhanhCuaViec = (ds: readonly WorkItem[]) => {
 /** SV-YT-TVV + SV-TVV-VIEC: nhóm việc của TVV — đọc ở Tổng quan TVV (`/tong-quan/viec-cua-toi`), TVV không có khu Công việc. `missing_data` của TVV chỉ có Chốt ngày thi. */
 export const NHOM_VIEC_TVV: ReadonlySet<WorkGroupKey> = new Set<WorkGroupKey>(['bao_ph_yt', 'phoi_hop_tvv', 'missing_data', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so']);
 export const nhanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.label ?? g;
+/** Câu giải thích nhóm — ban_giao / buoc_tiep đọc Hạn mặc định lúc gọi (phép kiểm QTV2-H-8). */
+export const huongDanNhomViec = (g: string) => GROUP_META[g as WorkGroupKey]?.hint ?? '';
 
 /** PR-GOP: gộp dòng (hàm chung `gopViecTheoLop`). OV-12h: bỏ Nhắc trên dòng. */
 const dungDong = (items: WorkItem[]): WorkItem[] => gopViecTheoLop(items, nhanNhomViec) as WorkItem[];

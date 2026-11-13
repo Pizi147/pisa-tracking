@@ -21,5 +21,5 @@ export const EN_OV13M = {
   '{tuan} = tuần 1': '{tuan} = week 1',
   'Đã chọn {chon}': 'Chose {chon}',
   'Đã chọn: {chon}': 'Chosen: {chon}',
-  'Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới, Tạm dừng hoặc Thôi học. Hạn 7 ngày kể từ ngày có kết quả.': 'A Fast Track student has a real exam result — choose New route, Pause or Withdraw. Due 7 days after the result.',
+  'Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới hoặc Tạm dừng / Kết thúc học. Hạn {ngay} ngày kể từ ngày có kết quả.': 'A Fast Track student has a real exam result — choose New pathway or Pause / Finish studying. Due {ngay} days after the result.',
 };

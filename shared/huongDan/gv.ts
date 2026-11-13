@@ -114,7 +114,7 @@ export const HD_GV: HuongDan = {
       id: 'de-xuat-chuyen-lop', ten: 'Đề xuất chuyển lớp', nhom: 'hv', chiGvcn: true,
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Đề xuất chuyển lớp…' },
       loiTat: ['ho-so-lop', 'p-chuyen-lop'], tatThem: ['⋯ dòng em'], cung: 'mở cùng chỗ.',
-      buoc: ['Ở hồ sơ em, bấm <b>⋯ › Đề xuất chuyển lớp…</b>', 'Chọn <b>Lớp chuyển đến</b>, <b>Tuần bắt đầu</b>, ghi <b>Lý do</b>.', '<b>Gửi đề xuất</b>: QL duyệt trong 5 ngày; xem ở Yêu cầu của tôi.'],
+      buoc: ['Ở hồ sơ em, bấm <b>⋯ › Đề xuất chuyển lớp…</b>', 'Chọn <b>Lớp chuyển đến</b>, <b>Tuần bắt đầu</b>, ghi <b>Lý do</b>.', '<b>Gửi đề xuất</b>: QL duyệt trong hạn duyệt (mặc định 5 ngày, Quản trị đổi được); xem ở Yêu cầu của tôi.'],
       tuKhac: ['đổi lớp', 'chuyển lớp', 'sang lớp', 'change class', 'transfer'],
     },
     {
@@ -440,7 +440,7 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Duyệt / chuyển lớp', cua: 'việc của QL' }],
       muc: [
         { id: 'pc-dx', viec: 'de-xuat-chuyen-lop', ten: 'Đề xuất chuyển lớp',
-          buoc: ['Chọn <b>Lớp chuyển đến</b> và <b>Tuần bắt đầu</b>, ghi <b>Lý do</b>.', '<b>Gửi đề xuất</b>: QL duyệt trong 5 ngày, kết quả ở chuông và Yêu cầu của tôi.'] },
+          buoc: ['Chọn <b>Lớp chuyển đến</b> và <b>Tuần bắt đầu</b>, ghi <b>Lý do</b>.', '<b>Gửi đề xuất</b>: QL duyệt trong hạn duyệt (mặc định 5 ngày, Quản trị đổi được), kết quả ở chuông và Yêu cầu của tôi.'] },
       ],
     },
     {
@@ -456,7 +456,7 @@ export const HD_GV: HuongDan = {
       id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin',
       dangO: { cau: 'Thông tin, Target, môn học, lộ trình đang học của một em.' },
       khongLam: [{ ten: 'Sửa Target không cần duyệt', cua: 'việc của QL' }],
-      muc: [{ id: 'pst-sua', viec: 'sua-thong-tin', ten: 'Sửa thông tin, lộ trình đang học', buoc: ['GVCN sửa thẳng; đổi Target cần ghi lý do.', '<b>Lộ trình đang học</b>: lượt MT đã có điểm giữ nguyên, lượt chưa thi xếp lại theo lộ trình mới.', 'GV bộ môn: panel <b>Đề xuất sửa thông tin</b> — QL duyệt trong 5 ngày.'] }],
+      muc: [{ id: 'pst-sua', viec: 'sua-thong-tin', ten: 'Sửa thông tin, lộ trình đang học', buoc: ['GVCN sửa thẳng; đổi Target cần ghi lý do.', '<b>Lộ trình đang học</b>: lượt MT đã có điểm giữ nguyên, lượt chưa thi xếp lại theo lộ trình mới.', 'GV bộ môn: panel <b>Đề xuất sửa thông tin</b> — QL duyệt trong hạn duyệt (mặc định 5 ngày, Quản trị đổi được).'] }],
     },
     {
       id: 'p-sua-ca-lop', ten: 'Sửa thông tin cả lớp đang mở', duong: [], panel: 'sua-ca-lop',
@@ -488,12 +488,12 @@ export const HD_GV: HuongDan = {
     { id: 'han-ket-qua', ten: 'Hạn Ghi kết quả PA', buoc: ['Kỳ <b>2 tuần</b>; hạn <b>Thứ Ba</b> sau kỳ. Lưu nháp không đổi hạn.', 'Kỹ năng đạt ở MT sau → <b>Kết quả cuối</b>, rồi Hoàn thành Case.', 'Chưa có ngày thi → mốc là MT cuối lộ trình.'],
       chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Mỗi việc có chip hạn ở cuối dòng.' } },
     { id: 'han-vi-pham', ten: 'Hạn Xử lý vi phạm', buoc: ['Em có từ 3 vi phạm trong tuần này + tuần trước → GVCN xử lý trong <b>5 ngày</b>, tính cả ngày ghi.', 'Bậc cần QL thì QL duyệt; lưu xử lý → TVV báo phụ huynh trong 5 ngày.'] },
-    { id: 'han-ql', ten: 'QL trả lời đề xuất', buoc: ['QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>5 ngày</b>, tính cả ngày gửi.'] },
+    { id: 'han-ql', ten: 'QL trả lời đề xuất', buoc: ['QL trả lời Đề xuất PA / Xin hỗ trợ trong <b>hạn duyệt</b> (mặc định 5 ngày, Quản trị đổi được), tính cả ngày gửi.'] },
     { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Gõ "-" = vắng, chốt ngay: lần 1 dời sang tuần sau tuần Test.', 'MT vắng 2 lần thì huỷ (không thẻ, không nhắc); lớp thường dời tiếp. Tuần Test đã qua 2 tuần: "-" không dời, không tính lần vắng.', 'Chọn tuần cho kỹ năng (Dời) = xếp lại từ đầu. Gỡ vắng: xoá "-", lúc nào cũng được.'] },
     { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm “Chờ chốt SOS” — ghi / sửa mô tả, đặt / sửa PA được; chưa hạn, chưa việc.', 'Lượt chốt: PA của bạn cùng loại PA quy chế thì giữ; khác → việc <b>Chọn PA</b> (Theo quy chế / Giữ PA của tôi — QL duyệt trong 3 ngày, quá hạn tự duyệt).',
       'Bấm chip SOS ở mọi màn: hộp “Vì sao SOS n” — kỹ năng dưới kỳ vọng, điểm từng kỹ năng, lối mở hồ sơ MT.'] },
     { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL bấm <b>Kết thúc sớm…</b> ở thẻ PA.', 'Lý do bắt buộc, từ <b>8</b> ký tự; nhật ký PA ghi lại.'] },
-    { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['GV bộ môn 2 ngày, GVCN 3 ngày, tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.', 'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.'] },
+    { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['GV bộ môn và GVCN cùng một hạn: Cấu hình hệ thống › <b>Hạn mặc định</b> (gốc <b>7 ngày</b>), tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.', 'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.'] },
     { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'nhan-xet', ten: 'Nhận xét MT', buoc: ['Ô có điểm nên có nhận xét từ <b>10</b> ký tự, tối đa 300 — chỉ MT mới nhất của em (chỉ nhắc, không chặn).', 'Ô dưới kỳ vọng thêm nhóm nguyên nhân.', 'Nhận xét + nhóm thành mô tả Case khi Case chưa có mô tả.'] },
   ],

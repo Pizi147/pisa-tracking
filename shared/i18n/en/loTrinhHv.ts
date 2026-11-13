@@ -12,7 +12,7 @@ export const EN_LO_TRINH_HV = {
   /* #9 lộ trình theo HV tới cùng (bản rà 11/11). */
   'Lịch MT': 'MT schedule',
   'Bước tiếp…': 'Next step…',
-  'Target do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.': 'Managers change the target. They reply within 5 days; you are told in notifications and My requests.',
+  'Target do Quản lý sửa. Quản lý duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.': 'Managers change the target. They reply within {n} days; you are told in notifications and My requests.',
   'Lộ trình của em — mặc định theo lớp; đổi riêng từng em. Lịch MT tạo theo lộ trình em.': "The student's pathway — defaults to the class; change it per student. MTs are scheduled by the student's pathway.",
   'Lịch MT sửa ở mục Lịch MT. Đổi Target ở đâu cũng bắt ghi lý do.': 'Edit the MT schedule under MT schedule. Changing the Target anywhere needs a reason.',
   'Đề xuất sửa Target / thông tin khác…': 'Request a target / other change…',

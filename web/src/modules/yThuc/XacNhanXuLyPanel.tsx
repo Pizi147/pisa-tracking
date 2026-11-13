@@ -14,7 +14,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, hanBaoPh, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
+  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
@@ -187,7 +187,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       await api.post(`/y-thuc/xu-ly/${m.id}/gui`);
       nhapDo.current = null;
       xoaNhap(); setMoTa(''); lamMoi(); onDone?.();
-      toast.push('ok', t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong 5 ngày.', { nhan: m.nhan, ten: d.ten }));
+      toast.push('ok', t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.', { nhan: m.nhan, ten: d.ten, n: hanDuyetNgay(homNay) }));
       setTimeout(onClose, 0);
     } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
@@ -241,7 +241,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const chipCua: Record<Exclude<Cach, 'nang'>, string[]> = { giu: bacGiu, vuot: bacVuot, ngoai: [...LOAI_DE_XUAT] };
   const chonCach = (c: Cach) => { setCach(c); setLoai(c === 'nang' ? '' : chipCua[c][0] ?? ''); lf.datLai(); };
   const tenBac = (k: string) => dich(MEASURE_KIND_LABEL[k as keyof typeof MEASURE_KIND_LABEL] ?? k);
-  const hanQl = hanTheoNgay(homNay, 5);
+  const soNgayQl = hanDuyetNgay(homNay);   // Hạn mặc định › QL trả lời Chờ duyệt — cùng số máy chủ dùng (`hanDuyetMacDinh`)
+  const hanQl = hanTheoNgay(homNay, soNgayQl);
   const CACH: { k: Cach; ten: string; phu: string; tat?: boolean }[] = [
     { k: 'nang', ten: t('Nâng 1 bậc'), phu: bacKe ? `${d.bacNhan ? dich(d.bacNhan) : t('Chưa có')} → ${dich(bacKe.nhan)}` : '' },
     { k: 'giu', ten: t('Không nâng'), phu: d.bacNhan ? t('Giữ {nhan}', { nhan: dich(d.bacNhan) }) : t('Chưa có bậc'), tat: !bacGiu.length },
@@ -323,7 +324,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
               {/* Hậu quả đặt ngay dưới lựa chọn (chủ SP 12/11) — không chỉ bằng màu: có ⚠ + chữ. */}
               <p role="note" className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 rounded-lg border border-soon-line bg-soon-bg px-3 py-2.5 text-sm leading-snug text-slate-100">
                 <span aria-hidden className="font-bold text-soon">⚠</span>
-                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi QL duyệt.')}</b> {t('QL có 5 ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}
+                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi QL duyệt.')}</b> {t('QL có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}
                   {' '}<NutLuat label={t('Sau khi chốt')}>{t('TVV nhận việc báo PH sau khi QL duyệt hoặc tự chốt. Bạn ghi "Đã thực hiện" sau khi chốt.')}</NutLuat></span>
               </p>
             </div>

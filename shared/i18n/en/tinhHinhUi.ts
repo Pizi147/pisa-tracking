@@ -77,7 +77,7 @@ export const EN_TINH_HINH_UI = {
   'Lên bậc': 'Raise to',
   'Giữ bậc': 'Keep at',
   'Khác mặc định → sẽ gửi QL duyệt.': 'Not the default → goes to the manager for approval.',
-  'QL có 5 ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.': 'The manager has 5 days (until {ngay}); after that your decision stands: {nhan}.',
+  'QL có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.': 'The manager has {n} days (until {ngay}); after that your decision stands: {nhan}.',
   'TVV nhận việc báo PH sau khi QL duyệt hoặc tự chốt. Bạn ghi "Đã thực hiện" sau khi chốt.': 'The consultant gets the parent-report task once the manager approves or it auto-finalises. You record "Done" after that.',
   'Không có việc nào đang chờ': 'Nothing waiting',
   'Cả quá trình': 'Full history',

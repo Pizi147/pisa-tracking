@@ -11,6 +11,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
   const wk: any = await import('../platform/week.ts');
   const dm: any = await import('../demoConfig.ts');
   const fs: any = await import('node:fs');
+  const { huongDanNhomViec } = await import('../worklist/mywork.ts');
   console.log('\nQTV2-HAN — Hạn mặc định có phiên bản, chỉ áp cho việc sinh sau');
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { ch.xoaNhoHan(); return fn(); } finally { conn.exec('ROLLBACK'); ch.xoaNhoHan(); } };
   const goc = () => JSON.parse(JSON.stringify(d.HAN_MAC_DINH_GOC));
@@ -103,6 +104,17 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     const r2 = goc(); r2.ql_duyet_pa.ngay = 8; r2.giu_pa_gv.ngay = 6;
     ch.luuHanMacDinh(P.admin, { han: r2, tuPhienBan: (ch.xemHanMacDinh(P.admin) as any).id });
     assert(d.hanDuyetMacDinh('giu_pa_gv', homNay) === d.addDaysIso(homNay, 6) && d.hanDuyetMacDinh('giu_pa_gv', cu) === d.addDaysIso(cu, 3), 'giu_pa_gv theo dòng riêng / thẻ cũ giữ hạn');
+  }));
+
+  check('QTV2-H-8 · L1–L3 (PTA 13/11): chữ hạn trên web / máy chủ lấy từ Hạn mặc định — đổi hạn thì chữ đổi, không còn 2/3 ngày', () => thu(() => {
+    conn.exec('DELETE FROM cau_hinh_phien_ban'); ch.xoaNhoHan();
+    const bg = () => huongDanNhomViec('ban_giao'); const bt = () => huongDanNhomViec('buoc_tiep');
+    assert(/Hạn tối thiểu 7 ngày/.test(bg()) && !/2 ngày|3 ngày/.test(bg()), 'bàn giao gốc: ' + bg());
+    assert(/Hạn 7 ngày/.test(bt()) && /Lộ trình mới hoặc Tạm dừng \/ Kết thúc học/.test(bt()) && !/Thôi học/.test(bt()), 'bước tiếp gốc: ' + bt());
+    const moi = goc(); moi.ban_giao_chuyen_lop.ngay = 9; moi.buoc_tiep_sau_thi.ngay = 10; moi.ql_duyet_pa.ngay = 8;
+    ch.luuHanMacDinh(P.admin, { han: moi, tuPhienBan: 0 });
+    assert(/Hạn tối thiểu 9 ngày/.test(bg()) && /Hạn 10 ngày/.test(bt()), 'đổi hạn → chữ đổi: ' + bg() + ' | ' + bt());
+    assert(d.hanDuyetNgay() === 8, 'panel Xác nhận xử lý đọc hanDuyetNgay → 8');   // web: soNgayQl = hanDuyetNgay(homNay)
   }));
 
   check('QTV2-H-6 · lỗi máy chủ "Lên từ" phải dưới "Đạt từ"… có khoá dịch + biến (web tiếng Anh dịch được)', () => {
