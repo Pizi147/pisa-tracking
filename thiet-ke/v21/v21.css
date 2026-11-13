@@ -207,7 +207,7 @@ details.gap-dai[open] > summary { border-bottom:1px solid var(--line); }
 /* ---------- v21: LỚP CỦA TÔI (khung phải khi chưa chọn việc) ----------
    Thẻ = .nhom (bo 12, viền line) · đầu = dải nhóm (v18) · mỗi lớp MỘT dòng lưới 5 cột cố định để thẳng cột:
    Lớp 108 · Tôi dạy 112 · Test 1fr · Việc khác 124 · nút 104 (cột nút = cột nút dòng việc). */
-.lt { --c:108px 112px minmax(0,1fr) 124px 104px; }
+.lt { --c:104px 150px 152px minmax(0,1fr); }
 .lt .dai-nhom { border-left-color:var(--accent); }
 .lt-cot, .lt-dong { display:grid; grid-template-columns:var(--c); column-gap:12px; align-items:center; padding:0 16px; }
 .lt-cot { min-height:34px; border-bottom:1px solid var(--line); }
@@ -421,3 +421,14 @@ details.da-co > summary::-webkit-details-marker { display:none; }
 
 [hidden] { display:none !important; }
 .dai-nhom .xuong, .tabs .xuong { background:var(--line); }
+
+/* v21 (chủ SP 14/11): cột "Việc cần làm" — mỗi LOẠI việc một nút-chip (viền, cao 28, biểu tượng + tên + số); quá hạn: viền + chữ màu quá hạn + ⚠ */
+.viec-lam { display:flex; flex-wrap:wrap; gap:6px; align-items:center; min-width:0; }
+.vc { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:6px; border:1px solid var(--line-strong); background:var(--surface-2); color:var(--text); font:600 13px var(--phong); white-space:nowrap; cursor:pointer; }
+.vc .ic { width:14px; height:14px; color:var(--accent); }
+.vc:hover { border-color:var(--accent); background:var(--accent-soft); }
+.vc.qua { border-color:var(--bad-vien); background:var(--bad-nen); color:var(--bad); }
+.vc.qua .ic { color:var(--bad); }
+.the-lop .viec-lam { gap:8px; }
+.dt .vc { height:44px; padding:0 12px; font-size:14px; }
+.lt-dong .day { flex-wrap:nowrap; }

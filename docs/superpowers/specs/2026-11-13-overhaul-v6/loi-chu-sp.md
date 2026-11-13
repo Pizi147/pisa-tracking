@@ -220,3 +220,15 @@ Bối cảnh: PTA Overhaul gửi mockup ① `thiet-ke/v21/trang-dau-gv.html` (#1
 PTA Overhaul hiểu thêm (chủ SP sửa nếu sai): (a) "Còn lại duyệt" = mockup ①; bản thiết kế `04-thiet-ke.md` là bản gom những điều chủ SP đã chốt từng lời, PTA Overhaul tiếp tục làm theo nó; (b) ô chọn có tìm áp cho chỗ chọn người / lớp / học viên và danh sách dài; danh sách ngắn cố định (vd 5 nhóm vi phạm, "Mọi hạn") giữ dáng chip / ô chọn thường.
 
 Đã làm trong lượt: giao sửa mockup ① theo 3 chỉnh; viết `06-de-bai-mockup-2-5.md` (đề bài mockup ② hồ sơ lớp · ③ hồ sơ HV · ④ trang đầu TVV · ⑤ bảng mẫu thành phần, có ô chọn có tìm).
+
+## 14/11 — lời 18 (câu hỏi): session mockup là session con hay tác vụ nền?
+
+> "có nên cho hẳn nhứng session làm mockup thành session con không hay chạy background tasks như bây giờ?"
+
+PTA Overhaul trả lời (ĐỀ XUẤT, chờ chủ SP chốt): **mockup ②–⑤ nên là session con** (mỗi mockup một session Opus 5.5, worktree + PR riêng) — chủ SP mở ra xem, góp ý thẳng trong session đó, không phải chuyển lời qua PTA Overhaul; nhiều vòng sửa không dồn vào session Fable. **Tác vụ nền chỉ dùng cho việc ngắn** (đọc mã, sửa nhỏ như 3 chỉnh của mockup ①). Session mockup ghi lời chủ SP vào tệp ghi chú của mockup; PTA Overhaul chép vào `loi-chu-sp.md` khi rà.
+
+## 14/11 — lời 19: tên "Chấm Speaking"
+
+> "đổi speaking chấm chéo thành 'Chấm Speaking' là được rồi"
+
+ĐÃ CHỐT: tên tab / nhãn tính năng **"Chấm Speaking"** (thay "Speaking chấm chéo" — tên đặt 13/11 ở #1475). Áp: tab Công việc, đầu panel, nút-chip "Việc cần làm", Hướng dẫn "?". Dải đầu tab vẫn ghi "Việc chung của nhóm GV Speaking · n bài". Luật không đổi. Đã giao sửa vào mockup ①; đổi chữ trên web đi cùng PR giao diện của tab này.
