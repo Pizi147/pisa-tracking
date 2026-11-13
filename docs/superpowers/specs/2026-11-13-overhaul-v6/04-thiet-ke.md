@@ -156,3 +156,11 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 2. GVCN vừa dạy kỹ năng vừa viết phần Chung — đề xuất: **một dòng**.
 3. Đợt QL thêm bất chợt — đề xuất: **có sinh việc**, theo hạn QL đặt.
 
+## 12. Chủ SP duyệt mockup ① 14/11 (lời 17) — các điểm dưới đây THẮNG mục 5 khi khác
+
+- **5.2 "Lớp của tôi":** không có nút "Nhập điểm" riêng. Cột cuối tên **"Việc cần làm"**: chỉ việc của người xem ở lớp đó, mỗi loại việc một nút-chip (loại + số; quá hạn có ⚠), thứ tự cố định Nhập điểm · Speaking chấm chéo · Case · Ý thức · Báo cáo PH · Vận hành. Bấm = mở panel tương ứng ở khung phải, hoặc đổi trang (chỉ chip có "›"). Cột Test chỉ còn tình trạng + hạn.
+- **5.4:** nút tên **"+ Task"** (không phải "+ Ghi"); thứ tự mục: **Case · Vi phạm / Nhắc nhở · Tình hình học tập**.
+- **5.5 Speaking chấm chéo:** trong mỗi tuần, lớp xếp theo **thứ tự lớp mặc định**; không đưa lớp tôi dạy lên đầu.
+- **5.11 (mới) Ô chọn có tìm:** mọi chỗ chọn người / lớp / học viên / người phụ trách dùng MỘT thành phần "gõ để tìm + danh sách thả", **mục liên quan đứng trước** theo ngữ cảnh (cùng lớp → cùng chi nhánh → khác). Thay hết ô chọn thường cho các loại này trên toàn web. Danh sách ngắn cố định giữ dáng cũ. Mẫu + bảng kê chỗ thay: mockup ⑤ (`06-de-bai-mockup-2-5.md` R5.1, R5.2). Dữ liệu gợi ý dùng đường tìm đang có (`timNguoi`, tìm lớp của Chuyển lớp…) — không tải cả danh sách chi nhánh khi mở trang; đo Turso khi làm.
+- Mockup ②–⑤: đề bài `06-de-bai-mockup-2-5.md`; mỗi mockup một session Opus do PTA Overhaul giao.
+
