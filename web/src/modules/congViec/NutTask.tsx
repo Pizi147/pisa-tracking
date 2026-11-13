@@ -99,7 +99,7 @@ function HopChonEm({ neo, loai, onDong, onChon }: {
           <span className="text-xs tabular-nums text-faint">{chon.length} / {TOI_DA_TINH_HINH}</span>
         </span>
       )}
-      <input ref={o} className="field h-10 text-[15px] max-sm:h-11" role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
+      <input ref={o} name="tim-em" autoComplete="off" spellCheck={false} className="field h-10 text-[15px] max-sm:h-11" role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
         aria-label={t('Gõ tên em')} placeholder={t('Gõ tên em…')} value={chu} disabled={nhieu && chon.length >= TOI_DA_TINH_HINH}
         aria-activedescendant={ds[dang] ? `tim-em-${ds[dang].id}` : undefined}
         onChange={(e) => setChu(e.target.value)}
@@ -118,7 +118,7 @@ function HopChonEm({ neo, loai, onDong, onChon }: {
           ))}
         </ul>
       )}
-      {chu.trim().length >= 2 && !ds.length && !loi && <p className="m-0 text-[13px] text-dim">{t('Không thấy em nào khớp.')}</p>}
+      {chu.trim().length >= 2 && !ds.length && !loi && <p role="status" className="m-0 text-[13px] text-dim">{t('Không thấy em nào khớp.')}</p>}
       {loi && <p role="alert" className="m-0 text-[13px] text-late">⚠ {loi}</p>}
       {nhieu && (
         <div className="flex justify-end border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
