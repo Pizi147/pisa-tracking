@@ -1333,6 +1333,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* BAO-CAO-PH b (06/11): chụp lại 'ADMIN toi' — đổi CÓ CHỦ Ý: Admin có việc mới "Xuất báo cáo PH" (nhóm Việc quản lý — đợt quá hạn chưa đủ / lớp đủ 7 ngày);
        10 băm khác giữ (QL không nhận việc này). Trước: ADMIN toi 4ed1fc3fa34653f2; chụp lại lần hai sau khi `reason` của việc bỏ tên đợt
        (EN theo mẫu từ điển) — chỉ chữ đó đổi (ddb1ac7c6032790f → 4c6c4dd6a797d681). */
+    /* LG-1 BC-PH-HAN-THUONG (chủ SP 13/11 lời 14): chụp lại 'ADMIN toi' — đổi CÓ CHỦ Ý: hạn đợt lớp thường Chủ nhật → thứ Ba tuần sau (+ 2 ngày). So JSON ×1
+       origin/main ↔ nhánh: lệch CHỈ việc "Xuất báo cáo PH" — 4 đợt 07/09 (hạn 13/09 → 15/09, chưa quá hạn) rời; 2 đợt Final 31/08 (hạn 06/09 → 08/09, vào cửa sổ 7 ngày)
+       vào. Trước: ADMIN toi 4c6c4dd6a797d681. */
     /* P1 G5-01 (rà 11/11): chụp lại 'QL toi' / 'QT toi' / 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: việc "Chốt lộ trình" (`chot_len_ft`) `mine: false → true`
        (việc của người chốt được) + `summary` đếm thêm các dòng đó. Trước: QL toi f2cc522d889b43ca, QT toi 51fe838d1a390ccb, QL tat-ca 68eb7bf00d5d3794,
        QT tat-ca 5a8f912d0266aeb4, QT tat-ca cn 699c581b1c85ef3a */
@@ -1363,7 +1366,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* SUA-CHU-L1 (PTA 13/11): chụp lại 9 băm (QL toi, ADMIN giữ) — đổi CÓ CHỦ Ý CHỈ chữ hint nhóm `ban_giao` (2 / 3 ngày → hạn tối thiểu đọc Hạn mặc định, gốc 7) và `buoc_tiep`
        (Tạm dừng hoặc Thôi học → Tạm dừng / Kết thúc học; 7 ngày đọc Hạn mặc định). Đã kiểm: trả hai hint về chữ cũ trên nhánh → TD4-a đạt với băm cũ. Trước: QT toi 7ebe5b04a14bdd39, GVCN toi ec2e83ad7d3149f8, GVBM toi b8ff6f87720838f4, GVCN_THUONG toi ec2e83ad7d3149f8, QL tat-ca 6db0b9a1a2224b80, QT tat-ca 9c90c2073d99edd3, QT tat-ca cn d1a5972ac6f0863d, QL gvcn d377a756eb1da0cf, GVS toi 5b46fdd308634d6b */
     'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'b1ad0af2e1dd4bd5', 'GVBM toi': '77e235e4611522bc',
-    'GVCN_THUONG toi': 'b1ad0af2e1dd4bd5', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': 'a378c8afa18b77ca', 'QT tat-ca': 'de6263e02466a6c0',
+    'GVCN_THUONG toi': 'b1ad0af2e1dd4bd5', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'a378c8afa18b77ca', 'QT tat-ca': 'de6263e02466a6c0',
     'QT tat-ca cn': '7c2866d4ce5cfb1a', 'QL gvcn': '1083304bc01cd683', 'GVS toi': 'dcacfa50220ee88d',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
