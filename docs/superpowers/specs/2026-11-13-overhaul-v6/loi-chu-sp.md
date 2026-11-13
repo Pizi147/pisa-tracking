@@ -68,3 +68,15 @@ PTA Overhaul hiểu:
 - Gốc rối có hai phần: (a) web không chỉ rõ làm gì, ở đâu, thế nào; (b) GV chưa thuộc quy chế mới.
 - Vì (b): web phải **mang quy chế tới đúng chỗ làm** — GV không cần thuộc quy chế vẫn làm đúng. Mỗi việc cho thấy: vì sao có việc này (theo quy chế) · cần làm gì · lưu xong thì chuyện gì xảy ra (ai nhận, hạn nào). Lựa chọn mặc định = đúng quy chế; chọn khác thì ghi ngay hệ quả ("cần QL duyệt").
 - Không trái lời 07/11 "bỏ chú thích": không thêm đoạn giải thích tĩnh trên màn; chỉ một dòng ngắn gắn với đúng việc / đúng nút (thuộc loại "lưu ý cần thiết: hậu quả, bước kế, ràng buộc" chủ SP cho giữ), chi tiết ở ⓘ / Hướng dẫn.
+
+## 13/11 — lời 6: chọn mẫu C (có chỉnh); phải xem kỹ luật core rồi mới biết giao diện cần gì
+
+Bối cảnh: PTA Overhaul đưa ba hướng trang đầu GV (A việc dẫn đường · B lớp dẫn đường · C "Hôm nay" = việc bên trái + lớp bên phải, có dòng "Đang chờ người khác · 2" và mỗi lớp một nút "Nhập điểm"), khuyên C.
+
+> "cần phải xem kĩ luật core để biết giao diện có những cái gì hợp lý hay không, mẫu C ổn nhưng đâu cần 'đang chờ người khác' làm gì? và không phải lớp nào cũng cần nhập điểm ok?"
+
+PTA Overhaul hiểu:
+- **Hướng C được chọn** làm khung trang đầu GV (việc + lớp trên một trang).
+- **Bỏ "Đang chờ người khác"** khỏi trang đầu: GV chỉ cần thấy việc CỦA MÌNH.
+- **Nút "Nhập điểm" không gắn cứng vào mọi lớp:** chỉ hiện ở lớp / thời điểm thật sự có bài cần người đó nhập, đúng theo luật (lịch Test theo tuần, theo em, theo kỹ năng được phân công).
+- **Giao diện phải suy ra từ luật core, không vẽ trước rồi ép luật vào:** trước khi thiết kế, PTA Overhaul đọc kỹ luật theo 4 mảng (Test + nhập điểm · SOS / Case / PA · Ý thức / phối hợp / TVV · lớp / lộ trình / quyền) và viết bản "luật core → việc sinh ra → người làm cần thấy gì" ở `luat/`; mọi thành phần giao diện phải chỉ ra được nó phục vụ luật / việc nào, không có thì bỏ.
