@@ -1342,7 +1342,8 @@ function coTheSuaCase(p: Principal, c: any): boolean {
 }
 /** `coTheSuaCase` không xét trạng thái — N37: người xoá được Case (cả Case đã hoàn thành). */
 function nguoiSuaCase(p: Principal, c: any): boolean {
-  const xem = can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id });
+  /* GV-CU-BO-TRO: quyền xem TẠM của người dạy bổ trợ (`boTroTamCo`) không mở lại quyền sửa Case mình từng báo — chỉ xem quyền xem thật. */
+  const xem = can({ ...p, boTro: [] }, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id });
   return can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)) || (xem && c.reported_by === p.userId)
     || can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id });
 }
@@ -2294,7 +2295,7 @@ export function kiemXemCase(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
   /* PR-PA (§8): người giữ việc Kết quả của một PA trong Case xem được Case (vd. chủ Case khi lớp mới chưa phân công môn). */
-  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro, status, closed_reason FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
+  const ivCuaCase = conn.prepare('SELECT id, nhom_bo_tro, status, closed_reason, performer_user_id FROM case_interventions WHERE case_id = ?').all(caseId) as any[];
   const giu = giuCuaCase(c, ivCuaCase);
   /* Chỉ PA đang chạy mở quyền xem — PA đã khép / huỷ thì người giữ việc (vd. chủ Case dự phòng) không còn việc ở đây. */
   if (!ivCuaCase.some((iv) => (iv.status === 'planned' || iv.status === 'started') && giu.get(iv.id) === p.userId)) {
@@ -4841,7 +4842,7 @@ export function ghiDuocPaMany(p: Principal, rows: readonly {
   const caseCua = new Map(rows.map((r) => [r.case_id, r]));
   const dangChay: (DongGiuKetQua & { caseId: number })[] = [];
   theoLo([...caseCua.keys()], (lo, ph) => {
-    for (const iv of db().prepare(`SELECT id, case_id, nhom_bo_tro FROM case_interventions WHERE case_id IN (${ph}) AND status IN ('planned', 'started')`)
+    for (const iv of db().prepare(`SELECT id, case_id, nhom_bo_tro, performer_user_id FROM case_interventions WHERE case_id IN (${ph}) AND status IN ('planned', 'started')`)
       .all(...lo) as any[]) {
       const c = caseCua.get(iv.case_id)!;
       dangChay.push({ id: iv.id, caseId: iv.case_id, topic: c.topic, nhomBoTro: iv.nhom_bo_tro ?? null, classId: c.class_id, ownerUserId: c.owner_user_id });

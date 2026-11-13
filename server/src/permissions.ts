@@ -50,6 +50,8 @@ export type Principal = {
   kyNang?: string[];
   /** PC-GV-A: lớp vừa bị ĐỔI khỏi (A → B; bỏ người không có) — CHỈ XEM (`ATTEMPT_VIEW`, `STUDENT_VIEW`) từ hiệu lực tới `den`. Đọc cùng câu phiên. */
   xemTam?: { classId: number; tu: string; den: string; doiId: number }[];
+  /** GV-CU-BO-TRO (chủ SP 13/11, A): em mình là Người dạy PA Bổ trợ miễn phí ĐANG CHẠY + lớp đang học của em — CHỈ XEM (`boTroTamCo`). Đọc cùng câu phiên. */
+  boTro?: { studentId: number; classId: number | null }[];
 };
 
 export type Ctx = {
@@ -86,7 +88,12 @@ export const COT_PRINCIPAL = `u.id AS u_id, u.code AS u_code, u.full_name AS u_f
   (SELECT json_group_array(us.skill) FROM user_skills us WHERE us.user_id = u.id) AS u_ky_nang,
   (SELECT json_group_array(json_array(d.class_id, d.hieu_luc, d.xem_den, d.id)) FROM (SELECT x.class_id, x.hieu_luc, x.id,
        CASE WHEN EXISTS (SELECT 1 FROM ban_giao_gv b WHERE b.class_id = x.class_id AND b.nguoi_cu = x.nguoi_cu AND b.trang_thai = 'mo') THEN '9999-12-31' ELSE x.xem_den END AS xem_den
-     FROM doi_phan_cong x WHERE x.nguoi_cu = u.id AND x.trang_thai = 'da_ap' AND x.xem_den IS NOT NULL ORDER BY x.id) d) AS u_xem_tam`;   // PR-B: còn việc bàn giao mở → xem tới khi xong (lâu hơn của hai mốc)
+     FROM doi_phan_cong x WHERE x.nguoi_cu = u.id AND x.trang_thai = 'da_ap' AND x.xem_den IS NOT NULL ORDER BY x.id) d) AS u_xem_tam,
+  (SELECT json_group_array(json_array(b.sid, (SELECT e.class_id FROM enrollments e WHERE e.student_id = b.sid AND e.status IN ('active', 'paused')
+                                                ORDER BY e.status = 'active' DESC, e.id DESC LIMIT 1))) FROM (
+     SELECT DISTINCT sc.student_id AS sid FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+      WHERE iv.performer_user_id = u.id AND iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND sc.status != 'done'
+        AND sc.student_id IS NOT NULL) b) AS u_bo_tro`;   // PR-B: còn việc bàn giao mở → xem tới khi xong (lâu hơn của hai mốc) · GV-CU-BO-TRO: chỉ mục idx_iv_nguoi_day_bo_tro
 
 export function loadPrincipal(userId: number): Principal {
   const row = db().prepare(`SELECT ${COT_PRINCIPAL} FROM users u WHERE u.id = ?`).get(userId) as any;
@@ -133,6 +140,7 @@ export function principalTuDong(row: any): Principal {
     daXemHuongDan: row.u_da_xem_hd === 1,
     kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
     xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, den, doiId]) => ({ classId, tu, den, doiId })),
+    boTro: (row.u_bo_tro ? JSON.parse(row.u_bo_tro) as any[][] : []).map(([studentId, classId]) => ({ studentId, classId: classId ?? null })),
     grants,
     /* `granted` không phải một vai trò — nó chỉ là chỗ chứa quyền cấp riêng. */
     roleKeys: [...new Set(grants.map((g) => g.roleKey).filter((k) => k !== 'granted'))],
@@ -439,6 +447,18 @@ export function xemTamCo(p: Principal, ctx: Ctx): boolean {
   return p.xemTam.some((x) => x.tu <= date && date <= x.den && lop.includes(x.classId));
 }
 
+/**
+ * GV-CU-BO-TRO (chủ SP 13/11, A): QUYỀN TẠM của Người dạy PA Bổ trợ miễn phí đang chạy (GV cũ sau khi em chuyển lớp) — CHỈ `ATTEMPT_VIEW` + `STUDENT_VIEW`:
+ * ngữ cảnh có em → đúng em đó (hồ sơ HV, Case chứa PA); chỉ có lớp → lớp em đang học (hồ sơ lớp mới, chỉ xem). Không theo chi nhánh (em đổi chi nhánh vẫn giữ),
+ * hết khi PA khép / huỷ (Mini Test ghi xong khép PA). Ghi Kết quả / Mini Test đi luật riêng (`quyenBoTro`, `quyenGhiMiniTest` — performer); mọi quyền sửa khác không đổi.
+ */
+export function boTroTamCo(p: Principal, permission: string, ctx: Ctx): boolean {
+  if (!p.boTro?.length || (permission !== PERMISSIONS.ATTEMPT_VIEW && permission !== PERMISSIONS.STUDENT_VIEW)) return false;
+  if (!p.grants.some((g) => g.permissions.has(permission))) return false;
+  if (ctx.studentId) return p.boTro.some((b) => b.studentId === ctx.studentId);
+  return !!ctx.classId && p.boTro.some((b) => b.classId === ctx.classId);
+}
+
 /** PC-GV-A: lớp GV cũ CHỈ XEM ở ngày này (còn hạn, không còn phân công nào ở lớp đó) — mỗi lớp một dòng, `den` muộn nhất. */
 export function lopXemTam(p: Principal, date = demoToday()): { classId: number; den: string }[] {
   const dang = new Set(p.assignments.filter((a) => activeAt(a, date)).map((a) => a.classId));
@@ -551,6 +571,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
 export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
   /* `class.assign_subject` là quyền SUY RA: không vai nào được cấp, grant `teacher` mang nó ngầm và `teacherAllows` siết về GVCN lớp đó. */
   const suyRaGv = permission === PERMISSIONS.CLASS_ASSIGN_SUBJECT;
+  if (boTroTamCo(p, permission, ctx)) return true;
   for (const g of p.grants) {
     if (!g.permissions.has(permission) && !(suyRaGv && g.roleKey === 'teacher')) continue;
     if (!grantCovers(g, ctx)) continue;

@@ -539,8 +539,16 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(xem.status === 403, `PA đã khép vẫn mở quyền xem: ${JSON.stringify(xem)}`);
   });
 
-  check('PA13 · PA Bổ trợ nhóm chung (gk:{lượt}), Bổ trợ miễn phí (mt:{lượt}) và Case tong_hop → GVCN lớp hiện tại giữ việc (không phải GVBM môn)', () => {
-    for (const [ten, o] of [['GK', { kind: 'bo_tro', nhom: 'gk:990013' }], ['MT', { kind: 'bo_tro_mien_phi', nhom: 'mt:990013' }], ['TH', { topic: 'tong_hop' }]] as const) {
+  check('PA13 · PA Bổ trợ nhóm chung (gk:{lượt}) và Case tong_hop → GVCN lớp hiện tại giữ việc (không phải GVBM môn); Bổ trợ miễn phí (mt:{lượt}) → Người dạy giữ, GVCN theo dõi + làm thay (GV-CU-BO-TRO)', () => {
+    {
+      const { iv } = emChuyenLop('GVCN-MT', { chu: GV4[0], kind: 'bo_tro_mien_phi', nhom: 'mt:990013', sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); ganGvcn(b, GV4[2]); } });
+      const day = dongKq(GV4[0], iv), cn = dongKq(GV4[2], iv);
+      assert(day?.mine && day.ownerId === GV4[0] && nguoiChiSo(iv) === GV4[0], `MT Người dạy: ${JSON.stringify(day && { mine: day.mine, ownerId: day.ownerId })} · chỉ số ${nguoiChiSo(iv)}`);
+      assert(cn && !cn.mine && cn.lamThay === true && !dongKq(GV4[1], iv), `MT GVCN theo dõi: ${JSON.stringify(cn && { mine: cn.mine, lamThay: cn.lamThay })}`);
+      cases.updateResult(loadPrincipal(GV4[2]), iv, KQ1);
+      assert(fuCua(iv).length === 1, 'MT: GVCN làm thay chưa ghi được');
+    }
+    for (const [ten, o] of [['GK', { kind: 'bo_tro', nhom: 'gk:990013' }], ['TH', { topic: 'tong_hop' }]] as const) {
       const { iv } = emChuyenLop(`GVCN-${ten}`, { chu: GV4[0], ...o, sauChuyen: (b) => { ganGv(b, GV4[1], 'listening'); ganGv(b, GV4[2], 'reading'); ganGvcn(b, GV4[2]); } });
       const dong = dongKq(GV4[2], iv);
       assert(dong && dong.mine && dong.ownerId === GV4[2], `${ten} GVCN: ${JSON.stringify(dong && { mine: dong.mine, ownerId: dong.ownerId })}`);

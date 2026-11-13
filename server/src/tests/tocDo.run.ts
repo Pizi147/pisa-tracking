@@ -1356,9 +1356,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        GVBM toi 619ada104fec5944, GVCN_THUONG toi 940b335430de8caf, QL tat-ca 7d767d49828b74e7, QT tat-ca 82c3472f2a05bcdf, QT tat-ca cn b3eff2d5295fb05c, QL gvcn 52d159aa5665aa06 */
     /* TINH-HINH (chủ SP 12/11, N1 sửa): chụp lại 3 băm "Tất cả" — đổi CÓ CHỦ Ý: lần xử lý CHỜ QL không còn sinh việc Báo PH của TVV (seed có đề xuất chờ) — việc
        sinh khi duyệt / tự chốt. "Của tôi" mọi vai không đổi. Trước: QL tat-ca 7ed19aebd00614bd, QT tat-ca b656f012db13e5bd, QT tat-ca cn cab3fd0e23981a6d */
-    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': '31ebd923a221e835', 'GVBM toi': '0ebf563606c50ead',
-    'GVCN_THUONG toi': '31ebd923a221e835', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': 'c0b740c6097c651b', 'QT tat-ca': '931741b7e9d11882',
-    'QT tat-ca cn': '19b4c0743b6f7b36', 'QL gvcn': 'ac54489ae58e3bcf', 'GVS toi': '3c702438ea810b91',
+    /* GV-CU-BO-TRO (chủ SP 13/11, A): chụp lại 8 băm (QL / QT toi, ADMIN giữ) — đổi CÓ CHỦ Ý: việc "Ghi Mini Test" (nhóm `mt:`) về Người dạy (GV cũ), GVCN theo dõi.
+       So JSON ×3 origin/main ↔ nhánh, 11 góc: lệch CHỈ `minitest:1` / `minitest:4` — người giữ GVCN 7 → Người dạy 8 (tên, `mine`), GV 8 (GVBM, GVS) có thêm hai dòng đó,
+       số đếm theo. Trước: GVCN toi 31ebd923a221e835, GVBM toi 0ebf563606c50ead, GVCN_THUONG toi 31ebd923a221e835, QL tat-ca c0b740c6097c651b, QT tat-ca 931741b7e9d11882,
+       QT tat-ca cn 19b4c0743b6f7b36, QL gvcn ac54489ae58e3bcf, GVS toi 3c702438ea810b91 */
+    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': 'ec2e83ad7d3149f8', 'GVBM toi': 'b8ff6f87720838f4',
+    'GVCN_THUONG toi': 'ec2e83ad7d3149f8', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '6db0b9a1a2224b80', 'QT tat-ca': '9c90c2073d99edd3',
+    'QT tat-ca cn': 'd1a5972ac6f0863d', 'QL gvcn': 'd377a756eb1da0cf', 'GVS toi': '5b46fdd308634d6b',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
