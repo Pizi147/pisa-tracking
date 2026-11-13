@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
-import { canManageDiscipline } from './access.ts';
+import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** Lý do hệ thống đóng việc theo lần xử lý (Q-D1 ①). */
@@ -287,6 +287,14 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
         if (sau === 'xong' && x.th_gui && x.th_gui !== p.userId) {
           notify({ userId: x.th_gui, kind: 'tinh_hinh', title: `TVV đã báo PH tình hình học tập · ${x.full_name}`, body: ghiChu.slice(0, 120),
             entityType: 'student', entityId: x.student_id, dedupKey: `tinh-hinh-bao:${x.tinh_hinh_id}`, duong: duongHoSoHocVien(x.student_id, { tab: 'y-thuc' }) });
+        }
+      }
+      /* 2.7 (chủ SP 13/11): TVV báo PH về VI PHẠM xong → GVCN lớp em đang học nhận MỘT tin Cập nhật (không vào số việc) — cùng kiểu tin tình hình học tập. */
+      if (sau === 'xong' && x.tinh_hinh_id == null && x.phoi_hop_id == null) {
+        const gvcn = gvcnCuaEm(x.student_id, homNay).gvcn;
+        if (gvcn && gvcn !== p.userId) {
+          notify({ userId: gvcn, kind: 'discipline_de_biet', title: `TVV đã báo PH vi phạm · ${x.nhan} · ${x.full_name}`, body: ghiChu.slice(0, 120),
+            entityType: 'student', entityId: x.student_id, dedupKey: `bao-ph-vp:${id}`, duong: duongHoSoHocVien(x.student_id, { tab: 'y-thuc' }) });
         }
       }
       writeAudit({ actorUserId: p.userId, action: 'discipline.bao_ph', entityType: 'discipline_measure', entityId: x.measure_id,

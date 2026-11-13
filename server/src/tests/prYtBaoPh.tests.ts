@@ -25,6 +25,7 @@ export async function runPrYtBaoPhTests(t: YThucTestKit) {
   const att: any = await import('../platform/attachments.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const chuong: any = await import('../../../shared/domain/chuong.ts');
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const gvbm = P.w1Teacher; const gvcn = P.coreTeacher; const ql = P.mbManager;
   let dem = 0;
@@ -165,4 +166,20 @@ export async function runPrYtBaoPhTests(t: YThucTestKit) {
     const tt = nguon('web/src/modules/yThuc/BangLan.tsx');
     assert(!/\{i \+ 1\}/.test(tt.slice(tt.indexOf('export function TienTrinh'))), 'TienTrinh không số');
   });
+  /* 2.7 (chủ SP 13/11): TVV báo PH về vi phạm xong → GVCN nhận MỘT tin Cập nhật (không phải việc); Chưa liên hệ được → không tin. */
+  await checkAsync('BPH-7 · 2.7: TVV ghi Đã báo PH vi phạm → GVCN một tin Cập nhật (không vào việc, không lặp khi ghi lại); Chưa liên hệ được → không tin', () => thu(() => {
+    const d: any = chuong;
+    const sid = moiEm();
+    const m = xu.xacNhanXuLy(gvcn, sid, { violationIds: [vp(sid)], performedOn: TODAY, performerName: 'Cô Hà', note: 'Gặp em sau giờ học, ký Report 1' });
+    const v = viecCuaXl(m.id);
+    const tin = () => hang("SELECT * FROM notifications WHERE user_id = ? AND dedup_key = ?", gvcn.userId, `bao-ph-vp:${v.id}`);
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'chua_lien_he', ghiChu: 'Gọi mẹ em không nghe máy' });
+    assert(tin().length === 0, 'Chưa liên hệ được: không tin');
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Đã báo mẹ em về Report 1' });
+    const r = tin();
+    assert(r.length === 1 && r[0].kind === 'discipline_de_biet' && /TVV đã báo PH vi phạm/.test(r[0].title) && /Đã báo mẹ em/.test(r[0].body ?? ''), JSON.stringify(r));
+    assert(!d.laTinViec({ kind: r[0].kind, entity_type: r[0].entity_type }), 'tin Cập nhật, không phải việc');
+    bp.ghiKetQuaBaoPh(tvv, { viecIds: [v.id], ketQua: 'da_bao', ghiChu: 'Báo lại mẹ em lần hai' });
+    assert(tin().length === 1, 'ghi lại không thêm tin');
+  }));
 }
