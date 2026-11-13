@@ -1,7 +1,8 @@
 # GD-2 PANEL-CHAM-SPEAKING — panel "Chấm Speaking" gom tuần Test → lớp · KHỚP / KHÁC
 
 Mockup đã duyệt `thiet-ke/v21/trang-dau-gv.html` K3 (1440) + K8c (375); `04-thiet-ke.md` 5.5, 12, 13 (thắng hình). Plan `07-plan-giao-dien-dot-1.md` dòng GD-2.
-Ảnh cặp (trái mockup | phải web, bộ demo, GV Speaking): `k3-1440-toi.png` · `k8c-375-sang.png`.
+Ảnh cặp (trái mockup | phải web, bộ demo ngày 14/09/2026, vai 17 Đỗ Thu Hương — GV Speaking): `k3-1440-toi.png` (ngăn đầu mở) · `k3-da-co-diem-1440-toi.png` (thêm ngăn chỉ còn bài đã chấm) · `k8c-375-sang.png`.
+Phần cột trái / tab / đầu trang Công việc trong ảnh là việc của GD-1 (đổi tên tab "Chấm Speaking", dải "Việc chung của nhóm GV Speaking") — không tính vào PR này.
 
 ## Truy vết khung → thành phần → kết quả
 
@@ -15,15 +16,18 @@ Mockup đã duyệt `thiet-ke/v21/trang-dau-gv.html` K3 (1440) + K8c (375); `04-
 | K3 ngăn lớp | mã lớp · n bài, gập / mở, lớp theo mã mặc định | `NganLop` nút `aria-expanded`, `soSanhLop`; mở sẵn ngăn đầu còn bài (hoặc `lopDau`) | KHỚP |
 | K3 ngăn lớp | — | "⚠ n quá hạn" ở đầu ngăn khi có | THÊM nhỏ (đầu tuần chỉ có hạn; ngăn quá hạn phải thấy khi gập) |
 | K3 ô GV chấm | "GV chấm [Đinh Thu Hằng · tôi]" đầu ngăn | `NutGvCham hang` + `useGvChamCot(lớp, tuần)` — cùng ô nhớ với lưới Nhập điểm; lưới không vẽ nút riêng (`LuoiFT gvCham`) | KHỚP (lưu máy chủ đến với LG-5 PR-C — hook dùng chung) |
-| K3 lưới | Học viên · Speaking · Kết quả, cùng lưới K2 | `LuoiFT chiCot=['speaking'] gon` — cùng hộp chấm 4 tiêu chí, "Lưu · bài tiếp ›", Hoàn tác vắng | KHỚP |
+| K3 lưới | Học viên · Speaking · Kết quả, cùng lưới K2 | `LuoiFT chiCot=['speaking'] gon` — cùng hộp chấm 4 tiêu chí, "Lưu · bài tiếp ›", Hoàn tác vắng; lưới vài cột ghi tên kỹ năng đầy đủ ("Speaking") và thu cột để vừa 375 (cũng áp K2) | KHỚP |
 | K3 Kết quả | "Chờ S" / "Chờ W2, S" / "✓ Đạt" / "SOS 1" | máy chủ gửi `cells` + `result` (từ bundle đã nạp); lưới chỉ vài cột ghi thẳng "Chờ …" thay "–" (cũng áp K2) | KHỚP |
-| K3 vắng | "vắng W2 SEP" dưới tên | `gopVangHang` của lưới | KHỚP |
+| K3 vắng | "vắng W2 SEP" dưới tên | lưới một cột: chữ vắng lên dòng phụ dưới tên (ô không lặp — DON-HINH B6) | KHỚP |
 | K3 Đã có điểm | ngăn con "Đã có điểm · 2 bài", dòng phụ "GV chấm: … · 13/09" | `details` + `LuoiFT` thứ hai, `phu` = `gvCham.ten` (không có → người nhập) · `ngay(enteredAt)` | KHỚP |
 | K3 Tuần cũ hơn | gập cuối, "7 bài · 6 quá hạn" | `details` tuần trước tuần trước; trong là cùng đầu tuần + ngăn | KHỚP |
 | K3 dòng quy chế | "Quy chế · "-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ · ⓘ" | — chờ thành phần dòng quy chế của GD-3 (`KhungPanel`) | KHÁC (phụ thuộc GD-3, thêm một dòng khi GD-3 merge) |
-| K3 chân | "✓ Đã lưu 1 bài" + "Việc tiếp ›" | "Việc tiếp ›" (giữ); trạng thái lưu từng dòng ở `DauLuu` cạnh tên | KHÁC nhỏ (đếm phiên ở chân không có nguồn chung nhiều lưới) |
+| K3 chân | "✓ Đã lưu 1 bài" + "Việc tiếp ›" | `chan.phu` "✓ Đã lưu n bài" (đếm lần lưu từ khi mở panel, `role=status`) + "Việc tiếp ›" — chữ **xám** theo luật NEN K-HTT-3 ("Đã lưu" một cách báo, xanh lá dành cho ✓ vượt kỳ vọng); mockup vẽ xanh → [XM-1] PTA chốt | KHỚP |
 | K3 hết bài ngăn | — | "Lớp tiếp: {mã} ›" (ngăn kế còn bài) / "Việc tiếp ›" | GIỮ luật R1-LUU-TIEP |
 | K8c 375 | toàn màn, "‹ Quay lại", cùng thứ tự | `KhungPanel` 375 toàn màn (sẵn có) | KHỚP |
+
+**KHỚP 13 / 14 (93 %)** — tính các dòng so được (bỏ BỎ / THÊM / GIỮ). 1 KHÁC: dòng quy chế chờ thành phần của GD-3.
+Khác hình nhỏ không thành dòng: ô điểm trống dáng viền đứt của lưới chung (mockup vẽ viền liền) — giữ để cùng dáng lưới Nhập điểm; tên + "MTn ›" ở 375 có thể bị cắt một chữ (rê / đọc màn có đủ tên).
 
 ## Thao tác TRƯỚC → SAU
 
@@ -42,4 +46,12 @@ Mockup đã duyệt `thiet-ke/v21/trang-dau-gv.html` K3 (1440) + K8c (375); `04-
 Không mất thao tác nào.
 
 ## Turso
-`GET /my-work/cham-speaking`: thêm `cells`, `result`, `mt0Sos`, `studentCode`, `status` cho mỗi dòng — tính từ `loadBundle` đã nạp (`resultOf(a, scores, skips, skillRows)`), số câu đo trước → sau ở dưới.
+`GET /my-work/cham-speaking` (GV Speaking, bộ demo, `prOv14c` OV14c-9): **18 câu → 18 câu**, 23 dòng → 23 dòng (trần 24 giữ). Thêm `cells`, `result`, `mt0Sos`, `studentCode`, `status` mỗi dòng — tính từ `loadBundle` đã nạp (`resultOf(a, scores, skips, skillRows)`), không câu đọc mới. Trang đầu / Công việc không thêm request (panel chỉ gọi khi bấm việc, như trước).
+
+## Phụ thuộc
+- **GD-3** (dòng quy chế trong `KhungPanel`): khi merge, thêm một dòng "\"-\" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ" cho panel này.
+- **LG-5 PR-C** (GV chấm lưu máy chủ): panel dùng `useGvChamCot(lớp, tuần)` chung với lưới Nhập điểm — đổi kho lưu ở hook là panel theo, không sửa ở đây.
+- **GD-1** đổi tên tab / dải đầu tab; tệp không chồng với PR này.
+
+## Chú thích `ponytail:`
+Không có.

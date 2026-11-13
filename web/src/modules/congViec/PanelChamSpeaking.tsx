@@ -112,7 +112,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   const cuRows = cu.flatMap((x) => x.ngan.flatMap((n) => n.rows));
   return (
     <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} loai={dau.loai} onDong={onDong}
-      chan={onTiep ? { huy: null, phu: soLuu > 0 ? <span role="status" className="text-[13px] font-semibold text-ok">✓ {t('Đã lưu {n} bài', { n: soLuu })}</span> : undefined, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
+      chan={onTiep ? { huy: null, phu: soLuu > 0 ? <span role="status" className="text-[13px] font-semibold text-slate-400">✓ {t('Đã lưu {n} bài', { n: soLuu })}</span> : undefined, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : !tatCa.length ? <div className="pt-3"><Empty title={t('Không có bài Speaking chờ chấm')} /></div>
