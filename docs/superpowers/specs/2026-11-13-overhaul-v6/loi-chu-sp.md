@@ -90,3 +90,13 @@ PTA Overhaul hiểu:
 - Nguồn học: (a) chính web đang chạy — tự bấm thử theo từng vai; (b) mã; (c) các PR + mockup của **3–4 lần deploy gần nhất** (và phần đã merge chưa deploy): mỗi thiết kế thêm đều có ý đồ của chủ SP → phải rút ý đồ rồi mới động vào.
 - Hệ quả cho cách làm: mỗi thay đổi giao diện phải ghi "thao tác / ý đồ cũ là gì → sau overhaul nằm ở đâu" (bảng TRƯỚC → SAU, như luật V5 "nâng cấp, không chép mockup"); thứ gì định BỎ phải nêu ý đồ gốc và vì sao không còn cần — đưa chủ SP quyết, không tự bỏ.
 - Việc làm ngay: thêm một bản đọc "ý đồ thiết kế 3–4 lần deploy gần nhất" (`luat/5-y-do-thiet-ke-gan-day.md`) cạnh 4 bản luật core; PTA Overhaul tự chạy bản thử, đi hết các luồng theo từng vai trước khi vẽ lại mẫu C.
+
+## 13/11 — lời 8: đừng quên Speaking chấm chéo
+
+Bối cảnh: PTA Overhaul gửi bản luật core một trang (B4: "Speaking của Mock / MT0 = chấm chéo: một việc chung cho mọi GV Speaking của chi nhánh").
+
+> "đừng quên speaking chấm chéo, cũng là một cái nhức đầu đấy"
+
+PTA Overhaul hiểu:
+- Speaking chấm chéo là một **luồng riêng phải thiết kế kỹ** trong overhaul, không coi như một dòng "nhập điểm" thường: việc không thuộc riêng ai, ai chấm cũng được, chấm xong còn bước GV phụ trách Speaking của lớp "Xác nhận Case Speaking".
+- Việc làm ngay: đọc lại mọi lời chủ SP + luật về S chéo (T18, N7, N8 ③, N10 S Ex, các đoạn 08–13/11), xem luồng thật trên bản thử bằng tài khoản GV Speaking, rồi đưa thành một mục riêng trong thiết kế (ai thấy gì, lúc nào, làm ở đâu, xong thì sao).
