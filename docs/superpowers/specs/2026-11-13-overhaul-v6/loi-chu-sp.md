@@ -111,3 +111,15 @@ PTA Overhaul hiểu (sửa cách hiểu lời 8):
 - Speaking chấm chéo **không làm thành một khu / kiểu màn riêng**. Nó phải **giống nhập điểm thường hết mức**: cùng chỗ (nhóm Chấm điểm), cùng dáng dòng (kỹ năng · lớp · tuần Test · số bài · hạn), cùng panel / lưới nhập, cùng "Lưu · bài tiếp".
 - Chỗ khác chỉ giữ đúng phần luật buộc phải khác: là việc chung của nhóm GV Speaking (một nhãn nhỏ "chấm chéo"), ô "GV chấm", cách tính quá hạn theo luật 09/11.
 - Hệ quả: danh sách phẳng xếp theo tên em hiện nay → theo tuần Test + lớp như các kỹ năng khác (đúng N39). Tab riêng "Speaking chấm chéo" (đổi tên 13/11, #1475) → đề xuất gộp vào Chấm điểm; đưa vào nhóm "Nên có" để chủ SP quyết, không tự bỏ.
+
+## 13/11 — lời 10 (câu hỏi): S chấm chéo có nên là tab riêng?
+
+Bối cảnh: sau lời 9, PTA Overhaul đề xuất gộp tab "Speaking chấm chéo" vào Chấm điểm.
+
+> "nên tách ra thành một tab riêng không? vì nó cũng hơi khác, ý bạn thế nào?"
+
+PTA Overhaul trả lời (ĐỀ XUẤT, chờ chủ SP chốt): **giữ tab riêng, nhưng bên trong giống hệt nhập điểm thường.**
+- Khác nhau thật nằm ở "việc của ai", không ở "làm thế nào": tab Chấm điểm = bài của riêng tôi (tính vào số việc, hạn của tôi); S chấm chéo = bài chung của nhóm GV Speaking, gồm cả lớp tôi không dạy và MT0, cách tính quá hạn riêng (lời 09/11). Trộn hai loại vào một danh sách thì GV không còn phân biệt được bài nào bắt buộc là của mình, và bài chung (có thể vài chục dòng) đè lên bài riêng.
+- Tab này đã có ý đồ (chia tab hạng mục 06/11, đổi tên 13/11 #1475) → giữ.
+- Cái sửa là BÊN TRONG tab (đúng lời 9): dòng "Speaking · lớp · tuần Test · số bài · hạn" theo tuần + lớp, tuần mới ở trên, tuần cũ gập; mở ra cùng panel / lưới nhập, cùng "Lưu · bài tiếp". Đầu tab ghi thẳng "Việc chung của nhóm GV Speaking · n bài" thay cho "0 việc".
+- Đề xuất thêm (chờ chốt): lớp tôi đang dạy Speaking xếp lên đầu tab; ở cột "Lớp của tôi" của trang đầu, lớp đó ghi "Speaking tuần này · n bài · chấm chéo" và mở đúng panel này.
