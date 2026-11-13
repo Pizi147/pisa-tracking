@@ -1382,9 +1382,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        QT tat-ca cn 19b4c0743b6f7b36, QL gvcn ac54489ae58e3bcf, GVS toi 3c702438ea810b91 */
     /* SUA-CHU-L1 (PTA 13/11): chụp lại 9 băm (QL toi, ADMIN giữ) — đổi CÓ CHỦ Ý CHỈ chữ hint nhóm `ban_giao` (2 / 3 ngày → hạn tối thiểu đọc Hạn mặc định, gốc 7) và `buoc_tiep`
        (Tạm dừng hoặc Thôi học → Tạm dừng / Kết thúc học; 7 ngày đọc Hạn mặc định). Đã kiểm: trả hai hint về chữ cũ trên nhánh → TD4-a đạt với băm cũ. Trước: QT toi 7ebe5b04a14bdd39, GVCN toi ec2e83ad7d3149f8, GVBM toi b8ff6f87720838f4, GVCN_THUONG toi ec2e83ad7d3149f8, QL tat-ca 6db0b9a1a2224b80, QT tat-ca 9c90c2073d99edd3, QT tat-ca cn d1a5972ac6f0863d, QL gvcn d377a756eb1da0cf, GVS toi 5b46fdd308634d6b */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'b1ad0af2e1dd4bd5', 'GVBM toi': '77e235e4611522bc',
-    'GVCN_THUONG toi': 'b1ad0af2e1dd4bd5', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'a378c8afa18b77ca', 'QT tat-ca': 'de6263e02466a6c0',
-    'QT tat-ca cn': '7c2866d4ce5cfb1a', 'QL gvcn': '1083304bc01cd683', 'GVS toi': 'dcacfa50220ee88d',
+    /* LG-3 BC-PH-VIEC-GV (chủ SP 13–14/11): chụp lại 5 băm GV — đổi CÓ CHỦ Ý: GV có việc mới "Viết Báo cáo PH" (nhóm `bao_cao_ph`, mỗi lớp × đợt đang mở / quá hạn ≤ 7 ngày).
+       So JSON ×1 origin/main ↔ nhánh (806 đường): lệch CHỈ /my-work của GV (+ "Của một GV" / hồ sơ GV 7) — chỉ THÊM dòng `bc-ph:*` (GVCN +5, GVBM +8), không mất dòng nào; Admin / QL / QT giữ.
+       Trước: GVCN toi b1ad0af2e1dd4bd5, GVBM toi 77e235e4611522bc, GVCN_THUONG toi b1ad0af2e1dd4bd5, QL gvcn 1083304bc01cd683, GVS toi dcacfa50220ee88d */
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'b99c2408c3cd7354', 'GVBM toi': '4c7cbe34ee9b597d',
+    'GVCN_THUONG toi': 'b99c2408c3cd7354', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'a378c8afa18b77ca', 'QT tat-ca': 'de6263e02466a6c0',
+    'QT tat-ca cn': '7c2866d4ce5cfb1a', 'QL gvcn': 'f36468e75ae31efd', 'GVS toi': 'c0d82c526e757d07',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
