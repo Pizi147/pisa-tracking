@@ -84,7 +84,9 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   }, [data, mo, lopDau, nganPhang]);
   const dangMo = (n: Ngan) => !!q.trim() || !!mo?.has(n.khoa);
   const doi = (n: Ngan, m: boolean) => setMo((s) => { const x = new Set(s ?? []); if (m) x.add(n.khoa); else x.delete(n.khoa); return x; });
-  const daLuu = () => { reload(); onDaLam(); };
+  /* K3 chân: "✓ Đã lưu n bài" — số lần lưu trong lần mở panel này. */
+  const [soLuu, setSoLuu] = useState(0);
+  const daLuu = () => { setSoLuu((n) => n + 1); reload(); onDaLam(); };
   const onHet = (n: Ngan) => () => {
     const ke = nganPhang.slice(nganPhang.indexOf(n) + 1).find((x) => soCho(x.rows)) ?? nganPhang.find((x) => x !== n && soCho(x.rows));
     if (ke) return { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode }), onClick: () => setMo(new Set([ke.khoa])) };
@@ -110,7 +112,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   const cuRows = cu.flatMap((x) => x.ngan.flatMap((n) => n.rows));
   return (
     <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} loai={dau.loai} onDong={onDong}
-      chan={onTiep ? { huy: null, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
+      chan={onTiep ? { huy: null, phu: soLuu > 0 ? <span role="status" className="text-[13px] font-semibold text-ok">✓ {t('Đã lưu {n} bài', { n: soLuu })}</span> : undefined, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
           : !tatCa.length ? <div className="pt-3"><Empty title={t('Không có bài Speaking chờ chấm')} /></div>

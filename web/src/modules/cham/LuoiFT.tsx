@@ -364,7 +364,9 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   /* OV-15b (6b): ✓ / ✗ so kỳ vọng ở ô L · R · S khi lưới có cột Kỳ vọng; W1 / W2 là ô nhập thường (✓ / ✗ ở cột W). */
   const kyVong = cot.kyVong ? row.result.expectation ?? null : null;
   const { homNay } = useNgayNghiepVu();
-  const vangHang = gopVangHang(row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay)));
+  const chuVang = row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay));
+  /* V6 K3: lưới một cột (Chấm Speaking) — "vắng W2 SEP" dưới tên như mockup, ô không lặp. */
+  const vangHang = gopVangHang(chuVang) ?? (cot.chiKq && chuVang.length === 1 ? chuVang[0] : null);
   const oDiem = (s: string, cell: Cell) => (
     <ODiemMt cell={cell} anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d, v) => onTiep(s, d, v)} tuanXem={tuanXem}
       {...(moS === s ? hop : null)} dauKq={soKyVong(cell.band, kyVong)}
