@@ -153,3 +153,18 @@ PTA Overhaul tự chốt chi tiết (chủ SP duyệt lại ở mockup): một d
 CÒN HỎI: (a) lớp thường (đợt Progress / Final: mở thứ Hai tuần Test, hạn Chủ nhật tuần đó) có tạo việc cho GV như FT không — chủ SP mới nói "hàng tháng"; (b) các dòng nhóm 2 chưa trả lời: 2.3 (việc "Điền Target" về TVV), 2.4 (S chấm chéo: người nhập không phải GV Speaking phải chọn "GV chấm"), 2.5 (một định nghĩa "GV Speaking"), 2.7 (tin Cập nhật cho GVCN khi TVV báo PH vi phạm xong).
 
 Mockup: làm ① trang đầu GV trước (đề bài `03-de-bai-mockup-1.md`, 26 dòng R); chủ SP duyệt rồi mới làm ② hồ sơ lớp · ③ hồ sơ HV · ④ trang đầu TVV cùng ngôn ngữ đó.
+
+## 13/11 — lời 13: nhóm 2 theo đề xuất hết; Báo cáo PH lớp thường cũng giao việc; Fable chỉ làm plan
+
+Câu hỏi của PTA Overhaul: "Các dòng 2.3, 2.4, 2.5, 2.7 làm theo đề xuất của tôi chứ?" + "Báo cáo PH lớp thường (đợt Progress / Final) có tạo việc cho GV như FT không?"
+
+> "theo đề xuất hết nhé, báo cáo lớp thường cũng giao việc, nếu có kết hoạch rồi thì giao session khác làm không? vì đâu cầu fable làm mockup đâu, chỉ làm plan thôi có lẽ sẽ tốt hơn? bạn nghĩ sao?"
+
+ĐÃ CHỐT (nhóm 2 của `02-de-xuat-hai-nhom.md`):
+- **2.3** Việc "Điền Target" bỏ khỏi GVCN; TVV giữ (nằm trong "Bổ sung hồ sơ thiếu"); GVCN chỉ thấy nhắc "Em chưa có Target" kèm "Đề xuất sửa".
+- **2.4** Speaking chấm chéo: người nhập KHÔNG phải GV Speaking (QL / Admin nhập hộ) phải chọn "GV chấm" trước khi lưu; không ghi ngầm người nhập là người chấm.
+- **2.5** MỘT định nghĩa "GV Speaking" = theo quyền N7 (có kỹ năng Speaking trong hồ sơ HOẶC đang dạy Speaking một lớp FT), dùng ở quyền, ô chọn người chấm và sổ đếm.
+- **2.7** TVV báo PH về vi phạm xong → GVCN nhận một tin "Cập nhật" (không vào số việc).
+- **2.6 (bổ sung lời 12):** Báo cáo PH **lớp thường cũng giao việc cho GV** — theo đợt Progress / Final đang có trong mã (mở thứ Hai tuần Test, hạn Chủ nhật tuần đó); FT: 20 → 30 (tháng 2: 28).
+
+VỀ CÁCH LÀM (chủ SP hỏi ý, PTA Overhaul đồng ý): session Fable này **chỉ làm phần đọc + quyết**: đề bài, thiết kế, plan PR, rà theo đề bài. **Dựng mockup và code giao session khác** (Opus 5.5 / Sonnet 5.5) qua PTA Plan. Mockup ① đang do một agent Opus dựng → để chạy nốt; từ ② trở đi là session riêng, ghi trong plan.
