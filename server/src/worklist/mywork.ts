@@ -1430,18 +1430,30 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       });
     }
   }
-  /* LG-3: việc GV "Báo cáo PH" — chỉ người có phân công phần phải viết (của mình; QL / Admin / TVV không phân công thì không có). */
+  /*
+   * LG-3: việc GV "Báo cáo PH" — người có phân công phần phải viết (QL / Admin / TVV không phân công thì không có việc). "Tất cả" của QL / QT: việc của mọi GV
+   * ở lớp trong phạm vi (như Bàn giao GVBM) — "Của GV" = "Của một GV" (OV11c-3). Phân công đọc một câu (`phanCongDangHoatDong`, nhớ theo request).
+   */
   if (co('bao_cao_ph')) {
-    for (const v of viecBaoCaoPhGv(p, today, laBanChinh() ? NGAY_BAT_VIEC_BC_GV : '')) {
-      const lc = bangLop().get(v.classId);
-      if (f.branchId != null && lc?.branchId !== f.branchId) continue;
+    const nguoi = new Map<number, { userId: number; ten: string | null; assignments: Principal['assignments'] }>([[p.userId, { userId: p.userId, ten: p.fullName, assignments: p.assignments }]]);
+    if (tatCa) {
+      for (const a of phanCongDangHoatDong()) {
+        if (a.userId === p.userId || (f.branchId != null && a.branchId !== f.branchId) || !can(p, PERMISSIONS.CASE_APPROVE, { classId: a.classId })) continue;
+        const n = nguoi.get(a.userId) ?? { userId: a.userId, ten: a.ten, assignments: [] };
+        n.assignments.push({ id: a.id, classId: a.classId, skill: a.skill, isCore: a.isCore, effectiveFrom: a.effectiveFrom, effectiveTo: a.effectiveTo });
+        nguoi.set(a.userId, n);
+      }
+    }
+    for (const v of viecBaoCaoPhGv([...nguoi.values()], today, laBanChinh() ? NGAY_BAT_VIEC_BC_GV : '')) {
+      if (f.branchId != null && bangLop().get(v.classId)?.branchId !== f.branchId) continue;
       items.push({
-        key: `bc-ph:${v.classId}:${v.dot}`, group: 'bao_cao_ph', urgency: urgencyOf(v.han, today),
+        /* người trong khoá: hai GV cùng lớp × đợt ở "Tất cả" không trùng; cùng khoá ở mọi góc nhìn */
+        key: `bc-ph:${v.userId}:${v.classId}:${v.dot}`, group: 'bao_cao_ph', urgency: urgencyOf(v.han, today),
         studentId: null, studentName: `Lớp ${v.code}`, classId: v.classId, classCode: v.code, attemptId: null, attemptNo: null, caseId: null, level: null,
         reason: `Còn ${v.thieu}/${v.soEm} em chưa đủ phần của bạn`,
         actionLabel: 'Viết ›', tieuDe: 'Viết Báo cáo PH',
         href: `/hoc-vien/lop/${v.classId}?tab=bao-cao-ph&dot=${encodeURIComponent(v.dot)}`,
-        ownerId: p.userId, owner: p.fullName, mine: true, due: v.han,
+        ownerId: v.userId, owner: nguoi.get(v.userId)?.ten ?? null, mine: v.userId === p.userId, due: v.han,
         statusLabel: `còn ${v.thieu}/${v.soEm} em`, contextLabel: v.nhanDot, count: v.thieu,
       });
     }

@@ -112,5 +112,5 @@ export const EN_BAO_CAO_PH = {
   'còn {n}/{tong} em': '{n}/{tong} students left',
   'Đợt báo cáo phụ huynh đang mở — viết phần của bạn cho mọi em của lớp. Xong khi mọi em đủ phần của bạn. Quá hạn còn hiện 7 ngày.':
     'A parent report round is open — write your section for every student in the class. Done when every student has your section. Stays 7 days after the due date.',
-  'Báo cáo PH đủ · {lop} · {dot}': 'Parent report complete · {lop} · {dot}',
+  'Báo cáo PH đủ · {lop}': 'Parent report complete · {lop}',
 } satisfies Record<string, Dich>;

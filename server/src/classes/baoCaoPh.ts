@@ -305,7 +305,7 @@ function baoAdminLopDu(c: Lop, d: DotBc, bo: readonly PhanBc[], em: readonly { i
   if (n < em.length * bo.length) return;
   const nhan = nhanDotBc(d, homNay);
   for (const userId of nguoiVaiCuaChiNhanh(c.branch_id, 'office_admin')) {
-    notify({ userId, kind: 'bc_ph_du', title: `Báo cáo PH đủ · ${c.code} · ${nhan}`, body: `${em.length} em`, entityType: 'class', entityId: c.id,
+    notify({ userId, kind: 'bc_ph_du', title: `Báo cáo PH đủ · ${c.code}`, body: `${nhan} · ${em.length} em`, entityType: 'class', entityId: c.id,
       dedupKey: `bc_ph_du:${c.id}:${d.ma}`, duong: `/hoc-vien/lop/${c.id}?tab=bao-cao-ph&dot=${encodeURIComponent(d.ma)}` });
   }
 }

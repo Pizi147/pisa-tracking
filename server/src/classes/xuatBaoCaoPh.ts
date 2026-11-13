@@ -322,27 +322,31 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
  * ponytail: hằng số — PTA đặt đúng ngày deploy; đợt quá hạn ≤ 7 ngày lúc bật vẫn bị lọc nhờ mốc này.
  */
 export const NGAY_BAT_VIEC_BC_GV = '2026-11-16';
-export type ViecBcGv = { classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; phan: string[] };
-export function viecBaoCaoPhGv(p: Pick<Principal, 'assignments'>, homNay: string, batTu = ''): ViecBcGv[] {
-  const cuaToi = new Map<number, Set<string>>();
-  for (const a of p.assignments) {
+export type ViecBcGv = { userId: number; classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; phan: string[] };
+/** Người giữ phần: GV (chính người xem) hoặc mọi GV trong phạm vi khi QL / QT xem "Tất cả" — cùng câu đọc cho cả nhóm. */
+export type NguoiBc = { userId: number; assignments: readonly Pick<Principal['assignments'][number], 'classId' | 'skill' | 'isCore' | 'effectiveFrom' | 'effectiveTo'>[] };
+export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu = ''): ViecBcGv[] {
+  const cuaToi = new Map<string, Set<string>>();   // "người|lớp" → phần
+  for (const n of nguoi) for (const a of n.assignments) {
     const k = a.isCore ? 'chung' : a.skill;
     if (!k || !activeAt(a, homNay)) continue;
-    const ds = cuaToi.get(a.classId) ?? new Set<string>();
-    cuaToi.set(a.classId, ds.add(k));
+    const khoa = `${n.userId}|${a.classId}`;
+    cuaToi.set(khoa, (cuaToi.get(khoa) ?? new Set<string>()).add(k));
   }
   if (!cuaToi.size) return [];
   const lop = lopDayDu();
-  const can = [...cuaToi].flatMap(([id, k]) => {
+  const can = [...cuaToi].flatMap(([khoa, k]) => {
+    const [userId, id] = khoa.split('|').map(Number);
     const c = lop.get(id) as LopBc | undefined;
     const phan = c?.status === 'active' ? boPhanBc(c.programme_code ?? c.kind)?.filter((x) => k.has(x.khoa)) ?? [] : [];
-    return phan.length ? [{ c: c!, phan }] : [];
+    return phan.length ? [{ userId, c: c!, phan }] : [];
   });
   if (!can.length) return [];
-  const ids = can.map((x) => x.c.id);
+  const ids = [...new Set(can.map((x) => x.c.id))];
   const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
-  const cap = can.flatMap(({ c, phan }) => (dotCuaLop(c, homNay, tienDo, tuyChinh)?.ds ?? [])
-    .filter((d) => soNgayQuaHan(d, homNay) <= 7 && d.han >= batTu).map((d) => ({ c, d, phan })));
+  const dotLop = new Map(ids.map((id) => [id, (dotCuaLop(lop.get(id) as LopBc, homNay, tienDo, tuyChinh)?.ds ?? [])
+    .filter((d) => soNgayQuaHan(d, homNay) <= 7 && d.han >= batTu)]));
+  const cap = can.flatMap((x) => (dotLop.get(x.c.id) ?? []).map((d) => ({ ...x, d })));
   if (!cap.length) return [];
   const emDot = emTheoLo(cap, homNay);
   const sids = [...new Set([...emDot.values()].flatMap((ds) => ds.map((e) => e.id)))];
@@ -353,10 +357,10 @@ export function viecBaoCaoPhGv(p: Pick<Principal, 'assignments'>, homNay: string
         AND dot IN (SELECT value FROM json_each(?)) AND phan IN (SELECT value FROM json_each(?))`).all(json, dots, phans) as any[]) du.add(`${r.dot}|${r.student_id}|${r.phan}`);
   });
   const out: ViecBcGv[] = [];
-  for (const { c, d, phan } of cap) {
+  for (const { userId, c, d, phan } of cap) {
     const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
     const thieu = em.filter((e) => phan.some((ph) => !du.has(`${d.ma}|${e.id}|${ph.khoa}`))).length;
-    if (thieu) out.push({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu, phan: phan.map((ph) => ph.khoa) });
+    if (thieu) out.push({ userId, classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu, phan: phan.map((ph) => ph.khoa) });
   }
   return out;
 }
