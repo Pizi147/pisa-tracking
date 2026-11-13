@@ -40,7 +40,7 @@ function nhomS(cns: readonly number[]): (cn: number, ngay: string) => number[] {
   if (!cns.length) return () => [];
   /* 2.5 (chủ SP 13/11): MỘT định nghĩa GV Speaking (N7, `laGvSpeaking`) — thêm người đang dạy S một lớp FT ở ngày hạn (`pc` = 1; `den` của phân công
      tính cả ngày đó), không chỉ kỹ năng hồ sơ. */
-  const rows = db().prepare(`SELECT ur.branch_id AS cn, ur.user_id AS gv, l.tu, l.den, (us.user_id IS NOT NULL) AS hien_co, 0 AS pc
+  const rows = db().prepare(`SELECT ur.branch_id AS cn, ur.user_id AS gv, l.tu AS tu, l.den AS den, (us.user_id IS NOT NULL) AS hien_co, 0 AS pc
       FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
       LEFT JOIN user_skill_lich_su l ON l.user_id = ur.user_id AND l.skill = 'speaking'
       LEFT JOIN user_skills us ON us.user_id = ur.user_id AND us.skill = 'speaking'

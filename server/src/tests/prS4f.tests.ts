@@ -251,7 +251,11 @@ export async function runPrS4fTests(t: YThucTestKit) {
       assert(maLoi(() => attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: c }, t.TODAY)) === 400, `tiêu chí ${JSON.stringify(c)}`);
     }
     assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid)?.band == null, 'không được lưu band từ tiêu chí hỏng');
-    attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: [6, 7, 6, 7], gvCham: { performerSelf: true } }, t.TODAY);
+    /* 2.4 (13/11): Admin không phải GV Speaking — "Tôi" không thành người chấm S chéo (400); chọn một GV Speaking. */
+    assert(maLoi(() => attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: [6, 7, 6, 7], gvCham: { performerSelf: true } }, t.TODAY)) === 400, 'Admin chọn "Tôi" ở S chéo');
+    const gvS = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
+    attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { criteria: [6, 7, 6, 7], gvCham: { performerUserId: gvS } }, t.TODAY);
     assert(get(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).band === 6.5, 'tiêu chí hợp lệ phải lưu');
     attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: null }, t.TODAY);
     assert(get(`SELECT examiner_user_id u FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).u === null, 'null = xoá GV chấm');
