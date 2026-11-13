@@ -99,7 +99,7 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_k316_da_chay', now, now);   // K3-16: DB mới không có PA cũ chạy cạnh PA mới
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_tinh_lui_phan_cong_da_chay', now, now);   // TINH-LUI-PC: DB mới — phân công khai đúng ngày từ đầu, không tính lùi
   /* LG-3: mốc bật việc GV "Viết Báo cáo PH" = ngày dựng DB (giờ VN); seed ghi đè = ngày demo. */
-  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_MOC_BC_PH_VIEC_GV, ngayTheoGioVN(now), now);
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_MOC_BC_PH_VIEC_GV, ngayTheoGioVN(now) ?? now, now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };
