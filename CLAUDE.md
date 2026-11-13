@@ -65,7 +65,7 @@ Tệp này tự nạp vào mọi session của repo (planning, code, worktree), 
 - `.impeccable/` đã gitignore; không commit gì trong đó.
 
 ## Model
-- **Không dùng Fable** (mọi session, kể cả subagent/agent) — chủ sản phẩm 06/10. Phương án B: Opus 5.5 hoặc Sonnet 5.5.
+- **Fable 5.2 được dùng** (chủ SP 13/11, bỏ luật cấm 06/10). PTA gợi ý: Fable 5.2 cho session planning lớn (lọc / gộp đề xuất, brainstorm, lên plan overhaul); session code vẫn Opus 5.5 / Sonnet 5.5 (phương án B lẫn nhau). Mỗi prompt vẫn ghi model + effort.
 
 ## Code: `ponytail` luôn bật
 - Code logic giữ mức mặc định `full`. PR có sửa giao diện: gõ `/ponytail lite` đầu phiên để không đè impeccable.
