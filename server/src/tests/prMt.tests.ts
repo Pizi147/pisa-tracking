@@ -313,12 +313,14 @@ export async function runPrMtTests(t: YThucTestKit) {
     const r = clsSvc.classRoster(P.mbManager, MB101).find((x: any) => x.id === moi);
     assert(r?.next?.attemptNo === 1 && !r.missing.some((m: any) => m.key === 'next_milestone'), JSON.stringify(r?.next));
   });
-  check('PR-MT (5) · Em FT chưa có target → việc "Điền target" nhóm Thiếu dữ liệu cho GVCN, không hạn (K5-09)', () => {
+  /* L6 / 2.3 (chủ SP 13/11, thay K5-09): việc "Điền Target" bỏ khỏi GVCN; Target thiếu nằm trong việc TVV "Bổ sung hồ sơ thiếu" (em chưa có TVV → QL). */
+  check('PR-MT (5) → L6 · Em FT chưa có target → GVCN KHÔNG có việc "Điền target"; QL (em chưa có TVV) có "Bổ sung hồ sơ thiếu" gồm Target', () => {
     const r = intake.commitIntake(P.admin, { classId: MB101, rows: [{ fullName: 'PRMT Em Thiếu Target', startWeek: tuanNay, email: emailThu(), dob: '2010-01-01' }] });
     const sid = r.studentIds[0];
-    const g = mywork.myWork(P.coreTeacher).groups.find((x: any) => x.key === 'missing_data');
-    const it = g?.items.find((x: any) => x.key === `target:${sid}`);
-    assert(it && it.due === null && it.mine, JSON.stringify(it));
+    const cn = (mywork.myWork(P.coreTeacher).items ?? []) as any[];
+    assert(!cn.some((x) => String(x.key).startsWith('target:')), `GVCN còn việc Điền target: ${JSON.stringify(cn.filter((x) => String(x.key).startsWith('target:')))}`);
+    const bs = ((mywork.myWork(P.mbManager).items ?? []) as any[]).find((x) => String(x.key).startsWith('bo-sung-ho-so:'));
+    assert(bs && /Target/.test(JSON.stringify(bs)), `QL: Bổ sung hồ sơ thiếu có Target: ${JSON.stringify(bs)}`);
   });
   check('PR-MT (5) · "Mới nhất" = số MT lớn nhất của lộ trình, không theo tuần (K5-54)', () => {
     const sid = them('MB FT 101', 'PRMT Em Mới Nhất', tuanNay);

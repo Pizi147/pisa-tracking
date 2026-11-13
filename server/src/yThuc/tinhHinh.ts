@@ -14,7 +14,7 @@ import { can, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
-import { activeClassOf, canManageDiscipline, requireRecordViolation } from './access.ts';
+import { activeClassOf, canManageDiscipline, gvcnCuaEm, requireRecordViolation } from './access.ts';
 import { coTheGhi } from './baoPhTvv.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
@@ -55,17 +55,6 @@ const studentRow = (sid: number) => {
   if (!s) throw notFound('Không tìm thấy học viên');
   return s;
 };
-
-/** GVCN đang hiệu lực của lớp em đang học (không có → null). */
-function gvcnCuaEm(sid: number, homNay: string): { lopId: number | null; gvcn: number | null; branchId: number | null } {
-  const lopId = activeClassOf(sid);
-  if (!lopId) return { lopId: null, gvcn: null, branchId: null };
-  const r = db().prepare(
-    `SELECT c.branch_id, (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = c.id AND ta.is_core = 1 AND ta.status = 'active'
-        AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1) AS gvcn FROM classes c WHERE c.id = ?`,
-  ).get(homNay, homNay, lopId) as any;
-  return { lopId, gvcn: r?.gvcn ?? null, branchId: r?.branch_id ?? null };
-}
 
 const quyenGui = (p: Principal, chieu: ChieuTinhHinh, s: any): void => {
   if (chieu === 'gv_tvv') { requireRecordViolation(p, s.id); return; }

@@ -1073,7 +1073,8 @@ export function doiVeTuanNayNeuChua(p: Principal, a: { id: number; class_id: num
   today: string, viec: 'diem' | 'vang' = 'diem'): (() => void) | null {
   const nay = mondayOf(today);
   if (row.week_start && row.week_start.slice(0, 10) <= nay) return null;
-  if (!a.class_id || !canMoveSkillSchedule(p, { classId: a.class_id, studentId: a.student_id, skill: row.skill })) {
+  /* RA-LECH-D ①: dời về tuần này = dời TAY (`setSkillWeek` không `ghiBuDau`) → chỉ người sửa được lịch Test (R14), không `SCHEDULE_MOVE` của GV lớp thường. */
+  if (!a.class_id || !choSuaLichTest(p, { classId: a.class_id, studentId: a.student_id })) {
     if (!row.week_start) throw badRequest('Chưa xếp tuần Test — nhờ Quản lý xếp tuần rồi nhập.');
     throw loi(400, 'Chưa tới tuần Test {x} — nhờ Quản lý dời về tuần này rồi nhập.', { x: tuanLich(row.week_start, today) });
   }

@@ -29,7 +29,7 @@ export function lamTaiCho(it: WorkItem): boolean {
        Thiếu thông tin khác (Nhập điểm MT cũ, mốc thi) cần cả trang — mở trang như cũ. */
     case 'phoi_hop': return it.studentId !== null;
     case 'bo_sung_ho_so': return !!it.emIds?.length;   // 06/11: sửa thông tin từng em tại chỗ, "Lưu · em tiếp ›"
-    case 'missing_data': return it.studentId !== null && (it.key.startsWith('target:') || it.key.startsWith('chot-ngay-thi:'));   // UI-CV-TVV: Chốt ngày thi
+    case 'missing_data': return it.studentId !== null && (it.key.startsWith('chot-ngay-thi:'));   // UI-CV-TVV: Chốt ngày thi
     case 'bao_ph_yt': return !!it.viecId && it.studentId !== null;   // UI-CV-TVV: Báo PH (TVV / QL khi em chưa có TVV)
     /* CV-LOI: Phân công GV môn / GVCN còn thiếu — tại chỗ · R1-NO-CU: "Chọn người phụ trách" (lớp đủ người) — hộp đổi người tại chỗ.
        Em không có lớp → hồ sơ em như cũ (không có ai để chọn). */

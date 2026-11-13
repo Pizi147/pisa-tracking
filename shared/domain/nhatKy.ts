@@ -28,7 +28,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'class.assign': 'Phân công giáo viên', 'class.assign.hoan_tac': 'Hoàn tác phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.finish_scheduled': 'Hẹn kết thúc lớp', 'class.reopened': 'Mở lại lớp',
   'bao_cao_ph.luu': 'Viết báo cáo PH', 'bao_cao_ph.xuat': 'Xuất báo cáo PH',
   'bao_cao_ph.dot_bo': 'Bỏ đợt báo cáo PH', 'bao_cao_ph.dot_khoi_phuc': 'Khôi phục đợt báo cáo PH', 'bao_cao_ph.dot_them': 'Thêm đợt báo cáo PH',
-  'bao_cao_ph.dot_xoa': 'Xoá đợt báo cáo PH', 'bao_cao_ph.dot_hoan_xoa': 'Khôi phục đợt báo cáo PH đã xoá', 'xet_lai.quyet': 'Xét lại lộ trình', 'xet_lai.hoan_tac': 'Hoàn tác xét lại lộ trình', 'xet_lai.nhan_xet': 'Nhận xét xét lại (GVCN lớp mới)',
+  'bao_cao_ph.dot_xoa': 'Xoá đợt báo cáo PH', 'bao_cao_ph.dot_hoan_xoa': 'Khôi phục đợt báo cáo PH đã xoá', 'bao_cao_ph.dot_sua': 'Sửa đợt báo cáo PH', 'xet_lai.quyet': 'Xét lại lộ trình', 'xet_lai.hoan_tac': 'Hoàn tác xét lại lộ trình', 'xet_lai.nhan_xet': 'Nhận xét xét lại (GVCN lớp mới)',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
   'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận',
   'ban_giao_gv.gop_y': 'Góp ý bàn giao đổi GV', 'ban_giao_gv.nhan_xet': 'Nhận xét chung bàn giao đổi GV', 'ban_giao_gv.xac_nhan': 'Xác nhận bàn giao đổi GV',
