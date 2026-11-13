@@ -467,10 +467,12 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* PTA rà 1454: nháp chỉ giữ Tiến triển + Nhận xét — ô khác (Quyết định, Lý do, Điều chỉnh, buổi, Hoàn thành Case) đổi thì vẫn "đang sửa" dù hai ô trùng nháp. */
   const ngoaiNhap = !!(buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua || reason.trim() || htCase
     || on !== homNay || tuan !== dau.tuan || mtTyLe !== dau.mtTyLe || mtNgay !== dau.mtNgay || JSON.stringify(nguoiDay) !== JSON.stringify(dau.nguoiDay));
-  const daSua = (!trungNhap && !!(outcome || progress.trim())) || ngoaiNhap;
-  /* Form nằm trong panel việc / Ngăn Case: ✕ · Đóng · "‹ Công việc" là của panel ngoài — báo lên để panel hỏi trước khi bỏ Quyết định / Lý do (chỉ ở state).
-     ponytail: Sửa lần ghi cũ chưa báo (daSua của Sửa luôn bật vì điền sẵn) — cần so từng ô với giá trị cũ nếu muốn hỏi ở đó. */
-  useBaoDangSua(!sua && daSua);
+  /* F06 (audit 13/11): Sửa lần ghi cũ — form điền sẵn nên "đang sửa" = khác giá trị LÚC MỞ (chụp lần vẽ đầu, mọi ô gửi đi), không phải "có chữ". */
+  const chupSua = JSON.stringify([outcome, progress.trim(), decision, reason.trim(), on, endOn, buoi, dc, paThay, tuan, mtTyLe, mtNgay, nguoiDay]);
+  const [gocSua] = useState(chupSua);
+  const daSua = sua ? chupSua !== gocSua : (!trungNhap && !!(outcome || progress.trim())) || ngoaiNhap;
+  /* Form nằm trong panel việc / Ngăn Case: ✕ · Đóng · "‹ Công việc" là của panel ngoài — báo lên để panel hỏi trước khi bỏ chữ / Quyết định / Lý do (chỉ ở state). */
+  useBaoDangSua(daSua);
   const tieuDe = sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : lanCuoi ? t('Kết quả cuối') : tuanGhi.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
 
   return (

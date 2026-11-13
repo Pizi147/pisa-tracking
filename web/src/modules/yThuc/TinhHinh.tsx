@@ -12,6 +12,7 @@ import { BadgeViec } from './khoiYThuc.tsx';
 import { TheLoai } from './BangLan.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type TinhHinhView } from './kieu.ts';
 import { invalidate } from '../../lib/api.ts';
+import { hoanTacLo } from './hoanTacLo.ts';
 
 /**
  * TÌNH HÌNH HỌC TẬP (chủ SP 12/11, mockup `thiet-ke/v20/tinh-hinh.html` A1 · C · F) — dòng trong khối em + hộp nhỏ neo nút.
@@ -158,8 +159,13 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
     try {
       if (che.loai === 'bao' || che.loai === 'hoi') {
         const r = await api.post<{ ids: number[] }>('/tinh-hinh', { chieu: che.loai === 'bao' ? 'gv_tvv' : 'tvv_gvcn', studentIds: em.map((e) => e.id), noiDung: chu.trim() });
+        /* F04: Hoàn tác lô đọc kết quả từng em (máy chủ trả `ids` đúng thứ tự em gửi) — một phần lỗi thì nói em nào chưa rút, vì sao. */
         toast.hoanTac(che.loai === 'bao' ? t('Đã gửi TVV · {n} em', { n: r.ids.length }) : t('Đã gửi GVCN'), () => {
-          void Promise.allSettled(r.ids.map((id) => api.post(`/tinh-hinh/${id}/rut`, { hoanTac: true }))).then(() => { lamMoi(); onXong(); });
+          void hoanTacLo(r.ids.map((id, i) => ({ id, ten: em[i]?.ten ?? '' })), (u, b) => api.post(u, b)).then((k) => {
+            if (k.loi.length) toast.push('error', t('Đã rút {n}/{m} · chưa rút: {ds}', { n: k.xong, m: k.tong, ds: k.loi.map((x) => `${x.ten} (${x.loi})`).join(', ') }));
+            else toast.push('ok', t('Đã rút {n}/{m}', { n: k.xong, m: k.tong }));
+            lamMoi(); onXong();
+          });
         }, { key: 'tinh-hinh' });
       } else if (che.loai === 'sua') {
         await api.patch(`/tinh-hinh/${che.x.id}`, { noiDung: chu.trim() });
@@ -171,7 +177,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       lamMoi(); onXong(); onDong();
     } catch (e: any) { setLoi(e.message); } finally { setLuu(false); }
   };
-  const ngoai = () => { if (!daDoi || window.confirm(t('Bỏ chữ đang gõ?'))) onDong(); };
+  /* F03: đang gửi thì chưa đóng (kết quả về sẽ đóng hộp) — không để lần gửi cũ đóng nhầm hộp mới mở. */
+  const ngoai = () => { if (luu) return; if (!daDoi || window.confirm(t('Bỏ chữ đang gõ?'))) onDong(); };
   /* Mockup v20 C3 / F3: 375 → tấm dưới rộng hết màn (nền mờ), máy rộng → hộp neo nút. */
   const hep = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
   /* Không khai component trong lúc vẽ (vẽ lại là mất focus ô chữ) — dựng thân rồi bọc. */
@@ -188,11 +195,11 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
             {em.map((e) => (
               <span key={e.id} className="inline-flex h-7 items-center gap-1 rounded-full border pl-2.5 pr-1 text-[13px] font-medium surface-2" style={{ borderColor: 'var(--line-strong)' }}>
                 {e.ten}
-                {(em.length > 1 || chonThem) && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11" onClick={() => setEm((c) => c.filter((x) => x.id !== e.id))}>✕</button>}
+                {(em.length > 1 || chonThem) && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11" disabled={luu} onClick={() => setEm((c) => c.filter((x) => x.id !== e.id))}>✕</button>}
               </span>
             ))}
             {chonThem && em.length < toiDaEm && (
-              <select className="field h-8 w-auto py-0 text-[13px] max-sm:h-11" aria-label={t('Chọn em')} value=""
+              <select className="field h-8 w-auto py-0 text-[13px] max-sm:h-11" aria-label={t('Chọn em')} value="" disabled={luu}
                 onChange={(ev) => { const x = chonThem.find((c) => c.id === Number(ev.target.value)); if (x) setEm((c) => [...c, x]); }}>
                 <option value="">{t('+ Chọn em')}</option>
                 {chonThem.filter((c) => !em.some((e) => e.id === c.id)).map((c) => <option key={c.id} value={c.id}>{c.ten}</option>)}
@@ -216,7 +223,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       <label className="grid gap-1.5">
         <span className="text-sm font-bold text-slate-100">{nhanO} <span className="text-bad">*</span></span>
         <textarea className={`field min-h-[96px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} maxLength={TOI_DA + 50}
-          aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
+          readOnly={luu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
         <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-bad' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
       </label>
       {loi && <p role="alert" className="m-0 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-[13px] text-late" >⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
@@ -248,6 +255,8 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   const [chu, setChu] = useState('');
   const [luu, setLuu] = useState(false);
   const [xong, setXong] = useState(false);
+  /* F03: chữ máy chủ đã nhận — "Đã trả lời" vẽ bản này, không vẽ ô đang có. */
+  const [daGui, setDaGui] = useState('');
   const [loi, setLoi] = useState<string | null>(null);
   const ngan = chu.trim().length < TOI_THIEU, dai = chu.length > TOI_DA;
   const lf = useLoiForm();
@@ -256,15 +265,17 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
     lf.bam();
     if (ngan || dai) return;
     setLuu(true); setLoi(null);
-    try { await api.post(`/tinh-hinh/${id}/tra-loi`, { traLoi: chu.trim() }); setXong(true); lamMoi(); onDaLam(); }
+    const traLoi = chu.trim();
+    try { await api.post(`/tinh-hinh/${id}/tra-loi`, { traLoi }); setDaGui(traLoi); setXong(true); lamMoi(); onDaLam(); }
     catch (e: any) { setLoi(e.message); } finally { setLuu(false); }
   };
   const hoanTac = async () => {
     try { await api.post(`/tinh-hinh/${id}/tra-loi/hoan-tac`, {}); setXong(false); lamMoi(); onDaLam(); } catch (e: any) { toast.push('error', e.message); }
   };
+  /* F03: đang gửi thì ✕ / Esc chưa đóng — không hỏi "Bỏ chữ" cho câu trả lời máy chủ đang nhận. */
   const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
-    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={onDong} daSua={!xong && !!chu.trim()}
+    <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
       chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>, conThieu: lf.conThieu(loiO),
         phu: !xong ? nutTiep ?? undefined : undefined }}>
       <div className="flex flex-col gap-4 pt-4">
@@ -275,13 +286,13 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
         {xong ? (
           <div className="grid gap-1.5 rounded-[10px] border border-ok-line bg-ok-bg px-4 py-3">
             <b role="status" className="text-sm font-semibold text-ok">✓ {t('Đã trả lời · Bạn')}</b>
-            <span className="whitespace-pre-line text-[13px] text-slate-200">{chu.trim()}</span>
+            <span className="whitespace-pre-line text-[13px] text-slate-200">{daGui}</span>
             <button type="button" className={`${LINK} justify-self-start`} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button>
           </div>
         ) : (
           <label className="grid gap-1.5">
             <span className="text-sm font-bold text-slate-100">{t('Kết quả')} <span className="text-bad">*</span></span>
-            <textarea className={`field min-h-[110px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
+            <textarea className={`field min-h-[110px] py-2 text-[15px] ${dai ? 'border-late-line' : ''}`} value={chu} readOnly={luu} aria-invalid={dai} onChange={(e) => setChu(e.target.value)} />
             <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-late' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
           </label>
         )}

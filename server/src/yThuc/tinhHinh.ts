@@ -86,10 +86,11 @@ export function guiTinhHinh(p: Principal, v: { chieu?: unknown; studentIds?: unk
   const em = ids.map(studentRow);
   for (const s of em) quyenGui(p, chieu, s);
   const out: number[] = [];
-  /* Gửi lại (bấm hai lần / thử lại sau mất mạng): cùng người, cùng em, cùng nội dung trong 2 phút → trả bản đã có, không sinh việc thứ hai. */
+  /* Gửi lại (bấm hai lần / thử lại sau mất mạng): cùng người, cùng em, cùng nội dung trong 2 phút, bản chưa Rút → trả bản đã có, không sinh việc thứ hai.
+     Bản đã Rút không tính (F05 audit 13/11): gửi lại sau Rút là ý định mới → bản mới + việc mới; bản rút giữ lịch sử. */
   const tu = new Date(Date.now() - HOAN_TAC_MS).toISOString();
   const daCo = (sid: number) => (db().prepare(
-    `SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ? AND nguoi_gui = ? AND chieu = ? AND noi_dung = ? AND tao_luc >= ? ORDER BY id DESC LIMIT 1`,
+    `SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ? AND nguoi_gui = ? AND chieu = ? AND noi_dung = ? AND tao_luc >= ? AND trang_thai <> 'rut' ORDER BY id DESC LIMIT 1`,
   ).get(sid, p.userId, chieu, noiDung, tu) as { id: number } | undefined)?.id;
   tx(() => {
     for (const s of em) {
