@@ -114,7 +114,7 @@ Mỗi đợt xong là web vẫn nhất quán và deploy được (không có tr�
 - 5 kịch bản bấm thử trên seed, vai GV mới: (1) mở web → nhập điểm lớp đang có bài; (2) ghi một vi phạm cho em lớp mình; (3) GV Speaking chấm một bài chấm chéo của tuần này; (4) GVCN xử lý vi phạm theo mặc định; (5) viết Báo cáo PH khi đợt mở. Mỗi kịch bản: số lần bấm từ lúc mở web, có phải đoán không — so trước | sau.
 - Bảng thao tác TRƯỚC → SAU của từng màn không mất dòng nào không có lý do.
 - Số đếm: badge = chuông = đầu trang = tổng các tab (một hàm `demDongViec`); tab S chấm chéo ghi rõ "việc chung".
-- Turso: trang đầu GV không thêm request so với `/my-work` hiện tại.
+- Turso: trang đầu GV **không thêm request** so với hiện tại; `/my-work` của GV thêm tối đa ~2 câu cho "Test sắp tới" (mục 11.2) và ~3–4 câu khi có đợt Báo cáo PH đang mở (mục 11.3). Trần mới ghi ở `tocDoDuong.ts`, đo trước → sau trong PR.
 
 ## 9. Để người làm quyết (không cần hỏi chủ SP)
 
@@ -124,3 +124,32 @@ Tên biến, cách tách thành phần, cách ghép dữ liệu "Lớp của tô
 
 - Việc Báo cáo PH: GVCN vừa dạy kỹ năng vừa viết phần Chung → một dòng (đề xuất) hay hai dòng.
 - Đợt Báo cáo PH do QL thêm bất chợt (`them`) có sinh việc cho GV không (đề xuất: có, theo hạn QL đặt).
+
+## 11. Kết quả đọc soát 14/11 (agent đóng vai người làm, đối chiếu mã)
+
+### 11.1 PTA Overhaul tự chốt (việc nhỏ, không đổi cái được dựng)
+- Head tutor giữ Tổng quan cũ (Tutor đang hoãn).
+- "Lớp của tôi" chỉ lấy phân công **còn hiệu lực** hôm nay (session đang gửi mọi phân công, phải lọc).
+- Hai GV cùng một phần Báo cáo PH: bản ghi theo em × phần → một người viết đủ thì việc của cả hai cùng xong.
+- 375 dùng công tắc "Việc · Lớp của tôi" (đề bài `03` R24); câu "khối dưới tab" ở `02` là bản cũ.
+- Số liệu chuyển sang Hồ sơ GV: hai bảng "Kỹ năng tôi dạy", "Lớp tôi chủ nhiệm" chỉ hiện khi GV xem **hồ sơ của chính mình** (đường `/tong-quan/lop-toi-day/hai-khoi` chỉ đọc phân công của người gọi — không sửa API). QL xem GV khác vẫn thấy các khối Hồ sơ GV đang có.
+
+### 11.2 Dữ liệu "Lớp của tôi" — không thêm request
+- Danh sách lớp, kỹ năng tôi dạy, chủ nhiệm: `session.assignments` (`web/src/session.tsx`).
+- Việc của tôi ở lớp, số bài chờ nhập, hạn, quá hạn: các dòng của `/my-work` đã nạp (`WorkItem.classId`, `group`, `due`, `urgency` — `server/src/worklist/mywork.ts:63`).
+- **Thiếu duy nhất "Test sắp tới"** của lớp chưa có việc ("Final · W3 OCT"): thêm MỘT trường vào `/my-work`, chỉ tính cho vai GV, dùng `MOC_KE_TIEP` (`server/src/worklist/tongQuan.ts:321`) + `classProgressMany` → khoảng **+2 câu**. Không dùng lại GET `/tong-quan/lop-toi-day` (47 câu / 1 827 dòng — quá nặng cho trang đầu).
+
+### 11.3 Việc Báo cáo PH — ước lượng đọc
+Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc().cuaToi` (`server/src/classes/baoCaoPh.ts:39`) · `dsDotLop` · `emTheoLo` (`server/src/classes/xuatBaoCaoPh.ts:89`) · đếm bản ghi đủ theo mẫu `viecXuatBaoCaoPh` (`:272`). Mỗi lần `/my-work` khi có đợt đang mở: **+3–4 câu, +300–500 dòng** với GV 8 lớp (hiện GVCN: 33 câu / 789 dòng, trần 43 / 1 026 — `server/src/tests/tocDoDuong.ts:651`, `:1189` → phải nâng trần dòng). Ngoài đợt: FT 0 câu (tính bằng ngày); lớp thường vẫn đọc tiến độ lớp (đã có trong request). Đổi hạn lớp thường: `dotTuan` + 6 → + 8 (`shared/domain/baoCaoPh.ts:147`).
+
+### 11.4 Đổi trang đầu GV / TVV — chỗ đụng trong mã
+- Đường: `web/src/App.tsx:380` (route `/`) và các `<Navigate to="/">` :382–396 · `web/src/modules/worklist/OverviewPage.tsx:35–54` · `server/src/routes/index.ts:277` (`landing`) · `server/src/platform/nav.ts:41` (`overview`) · `shared/domain/dieuHuong.ts:47–65`, `:94` (`KHU_VUC`, `khuVucHienThi`, tô sáng mục) · thanh dưới 375 `chiaThanhDuoi` + `App.tsx:314–316`.
+- Link "Việc của tôi ›": `web/src/modules/worklist/TongQuanV5.tsx:459–472`. Nhóm "Lớp tôi dạy": `web/src/modules/congViec/HoTroHocVienTab.tsx:573–579`.
+- Hướng dẫn "?": `shared/huongDan/gv.ts:214`, `:249` · `tvv.ts:33`, `:411` · mốc `data-hd="tq-lop-toi-day"`.
+- Phép kiểm đang khoá hành vi cũ (phải sửa cùng PR): `server/src/tests/khung.tests.ts:81–94`, `:184` · `prOv15e.tests.ts:97` · `prHd.tests.ts:95`, `:230–290` · `prSvTqGv.tests.ts:183` · `prDonA.tests.ts:781` · `tocDoDuong.ts:92`, `:114–122`, `:1370–1378`.
+
+### 11.5 Chờ chủ SP (ba câu, hỏi 14/11)
+1. Việc Báo cáo PH quá hạn còn hiện bao lâu — đề xuất: **7 ngày sau hạn rồi tự rời**, như chip tab Báo cáo PH và việc Admin đang làm (`baoCaoPh.ts:100`, `xuatBaoCaoPh.ts:306`); không sinh việc cho đợt đã qua trước ngày bật.
+2. GVCN vừa dạy kỹ năng vừa viết phần Chung — đề xuất: **một dòng**.
+3. Đợt QL thêm bất chợt — đề xuất: **có sinh việc**, theo hạn QL đặt.
+
