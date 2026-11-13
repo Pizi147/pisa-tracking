@@ -11,6 +11,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   const sch: any = await import('../classes/schedule.ts');
   const { loadPrincipal }: any = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const require_mg: any = await import('../migrate/prBcPhViecGv.ts');
+  const cfg: any = await import('../demoConfig.ts');
   console.log('\nBAO-CAO-PH — báo cáo gửi phụ huynh: đợt, quyền, em đủ, điểm sửa tay');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
@@ -439,5 +441,28 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(!t1.some((x) => x.user_id === P.mbManager.userId), 'QL không nhận');
     viet(lop, ma, tr.em.slice(0, 1), tr.phan.slice(0, 1));   // lưu lại khi đã đủ
     assert(tin().length === t1.length, 'đúng một lần mỗi người');
+  }));
+
+  check('BC-22 · LG-3: mốc bật việc GV (demo_config, migrate ghi một lần): đợt hạn trước mốc không sinh việc, sau mốc có; migrate chạy lặp không đổi; thiếu mốc = hôm nay', () => thu(() => {
+    const mg: any = require_mg;
+    const { setConfig } = cfg;
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, -3), han: d.addDaysIso(TODAY, -1) });
+    const khoa = `bc-ph:${P.sTeacher.userId}:${lop}:${r.ma[0].ma}`;
+    const co = () => { xoaNho(); return mw.myWork(P.sTeacher).items.some((x: any) => x.key === khoa); };
+    setConfig(mg.KHOA_MOC_BC_PH_VIEC_GV, d.addDaysIso(TODAY, -5));
+    assert(co(), 'đợt mở trước mốc nhưng hạn sau mốc → có việc (đợt chưa qua lúc bật)');
+    setConfig(mg.KHOA_MOC_BC_PH_VIEC_GV, TODAY);
+    assert(!co(), 'đợt có hạn trước mốc (đã qua lúc bật) → không việc');
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mg.KHOA_MOC_BC_PH_VIEC_GV);
+    assert(!co(), 'thiếu mốc = hôm nay: đợt đã qua không sinh việc');
+    const ap: string[] = [];
+    mg.migratePrBcPhViecGv(conn, ap);
+    xoaNho();
+    const v1 = (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(mg.KHOA_MOC_BC_PH_VIEC_GV) as any)?.value;
+    assert(v1 === TODAY && ap.length === 1, `migrate ghi mốc = ngày nghiệp vụ: ${v1}`);
+    setConfig('demo_date', d.addDaysIso(TODAY, 3));
+    mg.migratePrBcPhViecGv(conn, ap);
+    const v2 = (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(mg.KHOA_MOC_BC_PH_VIEC_GV) as any)?.value;
+    assert(v2 === v1 && ap.length === 1, 'chạy lặp không đổi mốc');
   }));
 }

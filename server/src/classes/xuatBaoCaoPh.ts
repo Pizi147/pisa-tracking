@@ -317,11 +317,6 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
  * Turso: 0 câu khi không có phân công lớp có mẫu báo cáo; còn lại tiến độ lớp + tuỳ chỉnh đợt (lớp của GV, nhớ theo request) và — chỉ khi có đợt trong
  * cửa sổ — em (1 câu) + bản ghi đủ của phần mình (1 câu, ≤ em × phần dòng).
  */
-/**
- * Ngày bật việc GV "Báo cáo PH" trên bản chính: đợt có hạn trước ngày này không sinh việc (chủ SP 14/11, lời 16 ý 1). Seed / demo (ngày nghiệp vụ 09/2026) không lọc.
- * ponytail: hằng số — PTA đặt đúng ngày deploy; đợt quá hạn ≤ 7 ngày lúc bật vẫn bị lọc nhờ mốc này.
- */
-export const NGAY_BAT_VIEC_BC_GV = '2026-11-16';
 export type ViecBcGv = { userId: number; classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; phan: string[] };
 /** Người giữ phần: GV (chính người xem) hoặc mọi GV trong phạm vi khi QL / QT xem "Tất cả" — cùng câu đọc cho cả nhóm. */
 export type NguoiBc = { userId: number; assignments: readonly Pick<Principal['assignments'][number], 'classId' | 'skill' | 'isCore' | 'effectiveFrom' | 'effectiveTo'>[] };
