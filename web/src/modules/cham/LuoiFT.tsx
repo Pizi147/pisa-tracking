@@ -38,6 +38,8 @@ export type FtSheet = {
     mt0Sos?: { skill: AssessedSkill; band: number }[];
     /** OV-1d: em đã Kết thúc học / Lưu trữ ("Đã kết thúc học" / "Lưu trữ") — hàng mờ, ô không là việc; Lưu trữ ô chỉ đọc (máy chủ khoá). Em Tạm dừng: không cờ. */
     ngungHoc?: string | null;
+    /** GD-2 (V6 K3): dòng phụ dưới tên — "GV chấm: Phạm Quốc Huy · 13/09" ở ngăn "Đã có điểm" của panel Chấm Speaking. */
+    phu?: string | null;
   }[];
 };
 
@@ -99,7 +101,7 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, gvCham }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
@@ -114,6 +116,8 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   the?: boolean;
   /** R1-LUU-TIEP: hết bài của người xem ở lớp này → "Lớp tiếp: {mã} ›" / "Việc tiếp ›" (nơi gọi chọn); không có → "Đóng". */
   onHet?: OnHet;
+  /** GD-2 (V6 K3): GV chấm do nơi gọi giữ (ô "GV chấm" ở đầu ngăn lớp của panel Chấm Speaking) — lưới không vẽ nút "GV chấm S" của mình. */
+  gvCham?: NguoiChon | null;
 }) {
   /* Hộp đang mở: lượt × kỹ năng. */
   const [mo, setMo] = useState<{ aid: number; s: string } | null>(null);
@@ -129,6 +133,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     w: !chiCot,
     ovr: !chiCot,
     kq: !anKetQua,
+    chiKq: !!chiCot,
   };
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
   /* P8 (mockup k6): chú giải ở hàng công cụ + cột Overall đủ chỗ cho "Không đủ bộ môn" chỉ khi lưới có ô "Không học". */
@@ -157,7 +162,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const suaS = data.editableSkills.includes('speaking');
   /* VIEC-NHO-2: Điểm theo lớp xem theo MT (không tuần) nhớ theo lớp × MT; MT cũ cũng có nút, không bắt buộc chọn. */
   const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
-  const [gvCot, setGvCot] = useGvChamCot(data.classId, dot);
+  const [gvCotRieng, setGvCot] = useGvChamCot(data.classId, gvCham === undefined ? dot : null);
+  const gvCot = gvCham === undefined ? gvCotRieng : gvCham;
+  const nutGv = suaS && !!dot && gvCham === undefined;
 
   if (data.rows.length === 0 && hangMo.length === 0 && !sEx?.length) {
     return (
@@ -216,7 +223,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     return (
       <div>
         {coKhongHoc && <div className="flex justify-end px-3 py-1"><ChuGiaiKhongHoc /></div>}
-        {suaS && dot && <div className="flex justify-end px-3 py-1 max-sm:pt-4"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
+        {nutGv && <div className="flex justify-end px-3 py-1 max-sm:pt-4"><NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} /></div>}
         {rowsHien.map((r) => (
           <TheHv key={r.attemptId} row={r} lop={data.classCode} active={hv !== null && r.studentId === hv} tuanDangXem={tuanDangXem} tuanXem={tuanXem}
             onReload={onReload} gvMacDinh={gvCot} moS={mo?.aid === r.attemptId ? mo.s : null} hop={mo?.aid === r.attemptId ? hop : null} dsLuot={dsLuot}
@@ -237,10 +244,10 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     <>
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
-    {(coKhongHoc || (suaS && dot && hien('speaking'))) && (
+    {(coKhongHoc || (nutGv && hien('speaking'))) && (
       <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 pb-1">
         {coKhongHoc && <ChuGiaiKhongHoc />}
-        {suaS && dot && hien('speaking') && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
+        {nutGv && hien('speaking') && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
       </div>
     )}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}
@@ -337,7 +344,7 @@ export type PhienO = { nhanTiep: string | null; ketThuc: KetThucHop | null };
 
 function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx, cotDs, lich = false }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
-  cot: { trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
+  cot: { trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean; chiKq: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
   tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
@@ -392,6 +399,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
           {vangHang && <span className="whitespace-nowrap">{vangHang}</span>}
+          {row.phu && <span className="min-w-0 truncate" title={row.phu}>{row.phu}</span>}
           <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
             .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
@@ -484,6 +492,8 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 : row.result.required.length === 0 ? <Level tone="muted">{t('Chưa xếp lịch')}</Level>
                 /* LT-GON (M3): "Chờ L, R, W, S" lặp đúng các ô trống bên trái → Kết quả chưa có ghi "–", tên môn còn thiếu ở `title`. */
                 /* RA-GD-0711c: chữ thường trong cột chip lùi 8 px (`px-2`) như chữ trong chip — thẳng tiêu đề "Kết quả" (index.css `th[data-kieu=chip]`). */
+                /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột (mở từ việc, Chấm Speaking) — ô trống bên trái không còn đủ để đọc → ghi thẳng "Chờ S". */
+                : cot.chiKq ? <Level tone="muted">{choMon(row)}</Level>
                 : <span className="px-2 text-faint" title={choMon(row)}>–</span>
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}

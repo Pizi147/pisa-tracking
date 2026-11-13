@@ -1,109 +1,140 @@
-import { Fragment, useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { duongHoSoHocVien, soSanhLop, tuanLich } from '@shared/domain/index.ts';
-import { apDiemVuaLuu, suaDuoc, useSaveScore, type Cell } from '../fasttrack/ScoreEntry.tsx';
-import { ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
-import { DauLuu, DauO, VIEN_LOI, type PhienO } from '../cham/LuoiFT.tsx';
-import { usePhienCham } from '../cham/phienCham.ts';
+import { ChipHan, ChipSoQuaHan } from '../../ui/Nhan.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { addDaysIso, dotGvCham, mondayOfDate, ngay, soSanhLop, tuanLich } from '@shared/domain/index.ts';
+import { suaDuoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
+import { LuoiFT, type FtSheet } from '../cham/LuoiFT.tsx';
+import { NutGvCham, useGvChamCot } from '../cham/GvCham.tsx';
+import { MuiTenGap } from '../yThuc/NhanViPham.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-/** `GET /my-work/cham-speaking` (`baiChamSpeaking`, server/src/fasttrack/attempts.ts). */
-type Dong = {
-  attemptId: number; studentId: number; studentName: string; studentEmail: string | null;
-  classId: number; classCode: string; attemptNo: number; weekStart: string | null; kyVong: number | null;
-  /** Chưa chấm (đếm vào "n bài"); false = đã có điểm, hiện "Nhập bởi …". */
+/** `GET /my-work/cham-speaking` (`baiChamSpeaking`, server/src/fasttrack/attempts.ts) — dòng lưới FT (`cells`, `result`) + ô S của hàng đợi. */
+type Dong = FtSheet['rows'][number] & {
+  classId: number; classCode: string; weekStart: string | null; kyVong: number | null;
+  /** Chưa chấm (đếm vào "n bài"); false = đã có điểm (ngăn "Đã có điểm"). */
   cho: boolean; cell: Cell & { enteredById?: number | null };
 };
+type Ngan = { khoa: string; classId: number; classCode: string; periodId: number | null; rows: Dong[] };
+type Tuan = { khoa: string; weekStart: string | null; periodId: number | null; code: string | null; ngan: Ngan[] };
 
 /** Tìm không dấu, không phân biệt hoa thường. */
 const chuan = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
-const sap = (a: Dong, b: Dong) => soSanhLop({ code: a.classCode }, { code: b.classCode }) || a.studentName.localeCompare(b.studentName, 'vi') || a.attemptNo - b.attemptNo;
+const soCho = (rows: Dong[]) => rows.filter((r) => r.cho).length;
+const soQua = (rows: Dong[]) => rows.filter((r) => r.cho && r.cell.overdue).length;
+/** Hạn sớm nhất của bài còn chờ — đầu tuần ("hạn 23/09"). */
+const hanSom = (rows: Dong[]) => rows.filter((r) => r.cho && r.cell.deadline).map((r) => r.cell.deadline!).sort()[0] ?? null;
+
+/** Gom tuần Test của ô S (mới trên) → lớp theo thứ tự mã lớp mặc định (chủ SP 14/11: chấm chéo chủ yếu cho lớp khác — không đưa lớp tôi dạy lên đầu). */
+function gom(rows: Dong[]): Tuan[] {
+  const tuan = new Map<string, Tuan>();
+  for (const r of rows) {
+    const pid = r.cell.periodId ?? null;
+    const kt = pid !== null ? `p${pid}` : `w${r.weekStart ?? ''}`;
+    const t0 = tuan.get(kt) ?? { khoa: kt, weekStart: r.weekStart, periodId: pid, code: r.cell.periodCode ?? null, ngan: [] };
+    tuan.set(kt, t0);
+    const kn = `${kt}:${r.classId}`;
+    let n = t0.ngan.find((x) => x.khoa === kn);
+    if (!n) { n = { khoa: kn, classId: r.classId, classCode: r.classCode, periodId: pid, rows: [] }; t0.ngan.push(n); }
+    n.rows.push(r);
+  }
+  const ds = [...tuan.values()].sort((a, b) => (b.weekStart ?? '').localeCompare(a.weekStart ?? ''));
+  for (const x of ds) {
+    x.ngan.sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode }));
+    for (const n of x.ngan) n.rows.sort((a, b) => a.studentName.localeCompare(b.studentName, 'vi') || a.attemptNo - b.attemptNo);
+  }
+  return ds;
+}
 
 /**
- * CHẤM SPEAKING (OV-14c, chủ SP 18/10) — panel của việc "Chấm Speaking · n bài" (GV Speaking chấm chéo S Mock lớp FT chi nhánh mình).
- * Tìm học viên (tên / email, có / không dấu) + lọc lớp; mỗi dòng một em: tên · lớp · MT · tuần · "Nhập bởi …" khi đã có điểm. Ô S = hộp chấm
- * sẵn có (`ODiemMt` → `HopNhapDiem`: 4 tiêu chí + nhận xét), Enter / "Lưu · bài tiếp ›" sang em chưa chấm kế tiếp trong danh sách đang lọc (R1-LUU-TIEP:
- * ảnh chụp thứ tự lúc mở hộp, vòng lên; hết → "Đã xong phần của bạn").
- * Dòng vừa lưu đứng nguyên chỗ (bài còn tồn cũ rời hàng đợi máy chủ sau khi chấm — vẫn giữ để thấy đã lưu).
+ * CHẤM SPEAKING (OV-14c; V6 GD-2 — mockup `thiet-ke/v21/trang-dau-gv.html` K3, K8c; `04-thiet-ke.md` 5.5, 12) — panel của MỘT việc chung
+ * "Chấm Speaking" (GV Speaking chấm chéo S Mock / MT0 lớp chi nhánh mình). Gom **tuần Test → lớp**: tuần mới trên, "Tuần cũ hơn" gập cuối;
+ * mỗi lớp một ngăn gập / mở với ĐÚNG lưới FT (`LuoiFT`, cột Speaking + Kết quả — cùng hộp chấm, cùng "Lưu · bài tiếp ›"); ô "GV chấm" đầu ngăn
+ * (lớp × tuần, `useGvChamCot` — cùng ô nhớ với lưới Nhập điểm); bài đã có điểm ở ngăn con "Đã có điểm · n bài" ghi "GV chấm: … · dd/mm".
+ * Hết bài của ngăn → "Lớp tiếp: {mã} ›" (ngăn kế còn bài) hoặc "Việc tiếp ›".
  */
 export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = null, nguoi = null }: { onDong: () => void; onDaLam: () => void;
   /** CV-SUA-1011: QL theo dõi việc GV này ("Của GV") — hàng đợi của GV đó; ô sửa được theo quyền người xem. */
   nguoi?: number | null;
   /** R1-LUU-TIEP: việc kế (Công việc) — "Việc tiếp ›" ở chân panel và khi hết bài. */
   onTiep?: (() => void) | null;
-  /** UI-CHAM-TEST: mở từ một lớp ở Chấm Test — lọc sẵn lớp đó (đổi được). */
+  /** UI-CHAM-TEST: mở từ một lớp ở Chấm Test — mở sẵn ngăn của lớp đó. */
   lopDau?: number | null;
 }) {
   const { data, error, reload } = useApi<{ rows: Dong[]; soBai: number }>(`/my-work/cham-speaking${nguoi ? `?nguoi=${nguoi}` : ''}`, [nguoi]);
+  const { homNay } = useNgayNghiepVu();
   const [q, setQ] = useState('');
-  const [lop, setLop] = useState<number | null>(lopDau);
-  const [mo, setMo] = useState<number | null>(null);
-  const phien = usePhienCham();
-  const [giu, setGiu] = useState<ReadonlyMap<number, Dong>>(new Map());
+  const [mo, setMo] = useState<ReadonlySet<string> | null>(null);
   const rows = useMemo(() => {
-    const co = new Set((data?.rows ?? []).map((r) => r.attemptId));
-    return [...(data?.rows ?? []), ...[...giu.values()].filter((r) => !co.has(r.attemptId))].sort(sap);
-  }, [data, giu]);
-  const dsLop = useMemo(() => [...new Map(rows.map((r) => [r.classId, r.classCode])).entries()], [rows]);
-  /* SUA-CHAM-LAI Đ9: bài chờ chấm trước, bài đã có điểm (xem lại) thành nhóm riêng sau — số đầu panel = nhóm đầu. Dòng vừa lưu ở phiên này (`giu`)
-     đứng nguyên trong nhóm đầu, không nhảy xuống. */
-  const ds = useMemo(() => {
     const k = chuan(q);
-    const loc = rows.filter((r) => (lop === null || r.classId === lop) && (!k || chuan(r.studentName).includes(k) || chuan(r.studentEmail ?? '').includes(k)));
-    const dau = (r: Dong) => r.cho || giu.has(r.attemptId);
-    return [...loc.filter(dau), ...loc.filter((r) => !dau(r))];
-  }, [rows, q, lop, giu]);
-  const soDau = ds.filter((r) => r.cho || giu.has(r.attemptId)).length;
-  /* Lớp đang lọc không còn bài nào (đã chấm hết, rời hàng đợi) → bỏ lọc. */
-  useEffect(() => { if (lop !== null && !dsLop.some(([id]) => id === lop)) setLop(null); }, [dsLop, lop]);
-
-  const dau = { loai: t('Việc'), dong2: [data ? t('{n} bài chờ chấm', { n: data.soBai }) : null] };
-  /* R1-LUU-TIEP: khoá = lượt (một dòng một bài S); còn thiếu = máy chủ còn báo chờ (`cho`) và người xem sửa được. */
-  const dsAid = () => ds.map((r) => r.attemptId);
-  const conThieu = (v: { khoa: number }) => { const x = ds.find((r) => r.attemptId === v.khoa); return !!x && x.cho && suaDuoc(x.cell); };
-  const keMo = mo !== null && !phien.het ? phien.ke({ khoa: mo, kyNang: 'speaking' }, conThieu, [], dsAid) : null;
-  const hop: PhienO = {
-    nhanTiep: keMo ? ds.find((r) => r.attemptId === keMo.khoa)?.studentName ?? null : null,
-    ketThuc: phien.het ? { phamVi: t('Chấm Speaking'), daLuu: phien.soDaLuu(), nut: onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null } : null,
+    return (data?.rows ?? []).filter((r) => !k || chuan(r.studentName).includes(k) || chuan(r.studentEmail ?? '').includes(k));
+  }, [data, q]);
+  const tuan = useMemo(() => gom(rows), [rows]);
+  /* "Tuần cũ hơn": tuần Test trước tuần trước (bài còn tồn — server giữ tới khi chấm). */
+  const moc = homNay ? addDaysIso(mondayOfDate(homNay), -7) : '';
+  const moi = tuan.filter((x) => !x.weekStart || x.weekStart >= moc), cu = tuan.filter((x) => x.weekStart && x.weekStart < moc);
+  const nganPhang = [...moi, ...cu].flatMap((x) => x.ngan);
+  /* Mở sẵn: ngăn của `lopDau`, không thì ngăn đầu còn bài chờ. */
+  useEffect(() => {
+    if (mo !== null || !data) return;
+    const dau = nganPhang.find((n) => lopDau !== null && n.classId === lopDau && soCho(n.rows)) ?? nganPhang.find((n) => soCho(n.rows));
+    setMo(new Set(dau ? [dau.khoa] : []));
+  }, [data, mo, lopDau, nganPhang]);
+  const dangMo = (n: Ngan) => !!q.trim() || !!mo?.has(n.khoa);
+  const doi = (n: Ngan, m: boolean) => setMo((s) => { const x = new Set(s ?? []); if (m) x.add(n.khoa); else x.delete(n.khoa); return x; });
+  const daLuu = () => { reload(); onDaLam(); };
+  const onHet = (n: Ngan) => () => {
+    const ke = nganPhang.slice(nganPhang.indexOf(n) + 1).find((x) => soCho(x.rows)) ?? nganPhang.find((x) => x !== n && soCho(x.rows));
+    if (ke) return { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode }), onClick: () => setMo(new Set([ke.khoa])) };
+    return onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null;
   };
+  const tatCa = data?.rows ?? [];
+  const quaHan = soQua(tatCa);
+  const dau = {
+    loai: t('Việc chung · Chấm Speaking'),
+    dong2: data ? [t('{n} bài', { n: data.soBai }), ...(quaHan ? [<ChipSoQuaHan key="q" n={quaHan} />] : [])] : [],
+  };
+  const veNgan = (n: Ngan) => <NganLop key={n.khoa} n={n} mo={dangMo(n)} onMo={(m) => doi(n, m)} onDaLuu={daLuu} onHet={onHet(n)} homNay={homNay} />;
+  const veTuan = (x: Tuan) => (
+    <section key={x.khoa} aria-label={tuanLich(x.weekStart, homNay)}>
+      <div className="flex items-center gap-2 px-4 pt-4 pb-2 text-[15px] font-bold" style={{ color: 'var(--text)' }}>
+        <span className="tabular-nums">{x.weekStart ? tuanLich(x.weekStart, homNay) : x.code}</span>
+        <span className="text-[13px] font-medium text-slate-400">{t('{n} bài', { n: soCho(x.ngan.flatMap((n) => n.rows)) })}</span>
+        <span className="ml-auto"><ChipHan loai="nhap-diem" han={hanSom(x.ngan.flatMap((n) => n.rows))} vien /></span>
+      </div>
+      {x.ngan.map(veNgan)}
+    </section>
+  );
+  const cuRows = cu.flatMap((x) => x.ngan.flatMap((n) => n.rows));
   return (
     <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} onDong={onDong}
       chan={onTiep ? { huy: null, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
-          : !rows.length ? <div className="pt-3"><Empty title={t('Không có bài Speaking chờ chấm')} /></div>
+          : !tatCa.length ? <div className="pt-3"><Empty title={t('Không có bài Speaking chờ chấm')} /></div>
             : (
-              <div className="-mx-4">
-                <div className="flex flex-wrap items-end gap-2 px-4 pt-3 pb-2">
-                  <input className="field min-w-0 flex-1 max-sm:min-h-[44px] max-sm:text-base" type="search" value={q} onChange={(e) => setQ(e.target.value)}
+              <div className="-mx-4 pb-3">
+                <div className="px-4 pt-3 pb-1">
+                  <input className="field w-full max-w-[360px] max-sm:min-h-[44px] max-sm:max-w-none max-sm:text-base" type="search" value={q} onChange={(e) => setQ(e.target.value)}
                     placeholder={t('Tìm học viên (tên, email)')} aria-label={t('Tìm học viên (tên, email)')} />
-                  {dsLop.length > 1 && (
-                    <select className="field w-auto max-sm:min-h-[44px] max-sm:w-full" aria-label={t('Lọc lớp')} value={lop ?? ''}
-                      onChange={(e) => setLop(e.target.value ? Number(e.target.value) : null)}>
-                      <option value="">{t('Mọi lớp ({n})', { n: dsLop.length })}</option>
-                      {dsLop.map(([id, ma]) => <option key={id} value={id}>{ma}</option>)}
-                    </select>
-                  )}
                 </div>
-                {!ds.length ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p> : (
-                  <ul className="m-0 list-none p-0">
-                    {ds.map((r, i) => (
-                      <Fragment key={r.attemptId}>
-                        {i === soDau && (
-                          <li className="border-t px-4 pt-3 pb-1.5 text-[13px] font-semibold text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
-                            {t('Đã có điểm · {n} bài', { n: ds.length - soDau })}
-                          </li>
-                        )}
-                        <DongSpeaking r={r} mo={mo === r.attemptId} hop={mo === r.attemptId ? hop : null}
-                          onMo={(m) => { if (m) phien.mo(dsAid); else phien.dong(); setMo(m ? r.attemptId : null); }}
-                          onTiep={(d) => { const k = phien.tiep({ khoa: r.attemptId, kyNang: 'speaking' }, d, conThieu, [], dsAid); if (k) setMo(k.khoa); }}
-                          onDaLuu={() => { setGiu((m) => new Map(m).set(r.attemptId, r)); reload(); onDaLam(); }} />
-                      </Fragment>
-                    ))}
-                  </ul>
+                {!rows.length ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Không có học viên khớp')}</p> : (
+                  <>
+                    {moi.map(veTuan)}
+                    {cu.length > 0 && (
+                      <details className="mx-4 mt-4 rounded-lg border" style={{ borderColor: 'var(--line)' }} open={!!q.trim() || undefined}>
+                        <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-3 text-sm font-semibold" style={{ color: 'var(--text)' }}>
+                          {t('Tuần cũ hơn')}
+                          <span className="text-[13px] font-medium text-slate-400">{t('{n} bài', { n: soCho(cuRows) })}</span>
+                          {soQua(cuRows) > 0 && <ChipSoQuaHan n={soQua(cuRows)} />}
+                          <span aria-hidden className="ml-auto text-slate-500"><MuiTenGap mo={false} /></span>
+                        </summary>
+                        <div className="-mx-px pb-2">{cu.map(veTuan)}</div>
+                      </details>
+                    )}
+                  </>
                 )}
               </div>
             )}
@@ -111,26 +142,51 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   );
 }
 
-function DongSpeaking({ r, mo, hop, onMo, onTiep, onDaLuu }: { r: Dong; mo: boolean; hop: PhienO | null; onMo: (mo: boolean) => void; onTiep: (daLuu: boolean) => void; onDaLuu: () => void }) {
-  const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(r.attemptId, onDaLuu, r.studentName);
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- dữ liệu mới của dòng thì bỏ điểm tạm
-  useEffect(() => { xoaVuaLuu(); }, [r]);
-  const c = apDiemVuaLuu(r.cell, vuaLuu.speaking);
-  const nhapBoi = c.band !== null ? (vuaLuu.speaking ? t('vừa lưu') : r.cell.enteredByName ? t('Nhập bởi {ten}', { ten: r.cell.enteredByName }) : null) : null;
+/** Một ngăn lớp × tuần: đầu ngăn (mã · n bài · ⚠ quá hạn) bấm gập / mở; thân = ô "GV chấm" + lưới FT bài chờ + ngăn con "Đã có điểm". */
+function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay }: {
+  n: Ngan; mo: boolean; onMo: (mo: boolean) => void; onDaLuu: () => void; onHet: () => { nhan: string; onClick: () => void } | null; homNay: string | null;
+}) {
+  const dot = dotGvCham(n.periodId, n.rows.map((r) => r.attemptNo));
+  const [gv, setGv] = useGvChamCot(n.classId, dot);
+  /* Ảnh chụp tập bài chờ lúc mở ngăn: bài vừa chấm đứng nguyên trong lưới (không nhảy sang "Đã có điểm" giữa phiên chấm). */
+  const [choLucMo, setChoLucMo] = useState<ReadonlySet<number>>(() => new Set(n.rows.filter((r) => r.cho).map((r) => r.attemptId)));
+  useEffect(() => { if (mo) setChoLucMo(new Set(n.rows.filter((r) => r.cho).map((r) => r.attemptId))); }, [mo]);   // eslint-disable-line react-hooks/exhaustive-deps -- chỉ chụp lúc mở
+  const cho = n.rows.filter((r) => r.cho || choLucMo.has(r.attemptId));
+  const daCo = n.rows.filter((r) => !r.cho && !choLucMo.has(r.attemptId))
+    .map((r) => {
+      const ten = r.cell.gvCham?.ten ?? r.cell.enteredByName;
+      return { ...r, phu: ten ? `${t('GV chấm: {ten}', { ten })}${r.cell.enteredAt ? ` · ${ngay(r.cell.enteredAt, homNay)}` : ''}` : null };
+    });
+  const sua = n.rows.some((r) => suaDuoc(r.cell));
+  const sheet = (rs: Dong[]): FtSheet => ({
+    classId: n.classId, classCode: n.classCode, branchName: '',
+    period: n.periodId !== null && rs[0]?.weekStart ? { id: n.periodId, code: rs[0].cell.periodCode ?? '', weekStart: rs[0].weekStart, weekEnd: '' } : null,
+    editableSkills: sua ? ['speaking'] : [], rows: rs,
+  });
+  const so = soCho(n.rows), qua = soQua(n.rows);
   return (
-    <li className={`flex min-h-[60px] items-center gap-3 border-t px-4 py-2 ${!r.cho && !mo ? 'row-muted' : ''}`} style={{ borderColor: 'var(--line)' }} data-hv={r.studentId}>
-      <div className="min-w-0 flex-1">
-        <Link className="link block break-words max-sm:-my-3 max-sm:py-3" to={duongHoSoHocVien(r.studentId)}>{r.studentName}</Link>
-        <div className="flex min-w-0 items-center gap-1.5 text-xs tabular-nums text-slate-500">
-          <span className="truncate">{[r.classCode, `MT${r.attemptNo}`, r.weekStart ? tuanLich(r.weekStart) : null, nhapBoi].filter(Boolean).join(' · ')}</span>
-          <DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
+    <div className="mx-4 mb-2 rounded-lg border" style={{ borderColor: mo ? 'var(--accent)' : 'var(--line)' }}>
+      <button type="button" aria-expanded={mo} onClick={() => onMo(!mo)}
+        className="flex min-h-[44px] w-full items-center gap-2 rounded-lg border-0 bg-transparent px-3 text-left text-sm hover:bg-[color:var(--nut-hover)]">
+        <span className="font-semibold" style={{ color: 'var(--text)' }}>{n.classCode}</span>
+        <span className="text-[13px] font-medium text-slate-400">{so ? t('{n} bài', { n: so }) : t('Đã có điểm · {n} bài', { n: n.rows.length })}</span>
+        {qua > 0 && <ChipSoQuaHan n={qua} />}
+        <span aria-hidden className="ml-auto text-slate-500"><MuiTenGap mo={mo} /></span>
+      </button>
+      {mo && (
+        <div className="border-t pb-1" style={{ borderColor: 'var(--line)' }}>
+          {sua && dot && <div className="pt-2"><NutGvCham hang nhan={t('GV chấm')} value={gv} onChange={setGv} /></div>}
+          {cho.length > 0 && <LuoiFT data={sheet(cho)} onReload={onDaLuu} chiCot={['speaking']} gon gvCham={gv} onHet={onHet} />}
+          {daCo.length > 0 && (
+            <details className="mt-1" open={!cho.length || undefined}>
+              <summary className="flex min-h-[40px] cursor-pointer list-none items-center gap-2 px-3 text-[13px] font-semibold text-slate-400">
+                {t('Đã có điểm · {n} bài', { n: daCo.length })}<MuiTenGap mo={false} />
+              </summary>
+              <LuoiFT data={sheet(daCo)} onReload={onDaLuu} chiCot={['speaking']} gon gvCham={gv} />
+            </details>
+          )}
         </div>
-      </div>
-      <div className={`flex shrink-0 items-center justify-end gap-1 rounded-md ${o.speaking === 'loi' ? VIEN_LOI : ''}`} data-kn="speaking" data-luu={o.speaking}>
-        <DauO lon tt={o.speaking} loi={loi.speaking} onLuuLai={() => luuLai('speaking')} />
-        <ODiemMt lon cell={c} mo={mo} onMo={onMo} onTiep={onTiep} onSave={(p, x) => save('speaking', p, x)} tuanXem={r.weekStart} {...hop}
-          ctx={{ tenHv: r.studentName, lop: r.classCode, luot: `MT${r.attemptNo}`, kyVong: r.kyVong }} />
-      </div>
-    </li>
+      )}
+    </div>
   );
 }

@@ -2836,10 +2836,17 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
     if (!cell?.required) return [];
     const cho = pendingSkillsOf(pendingInputOf(cells), 'managed').includes('speaking') && canChamCheo(true, cell.weekStart, tuanNay);
     if (!cho && cell.band === null) return [];
+    /* GD-2 (V6 K3): panel gom tuần → lớp, mỗi ngăn là lưới FT (`LuoiFT`) — dòng mang đủ ô + kết quả lượt như `bangFt` (cột Kết quả "Chờ W2, S" / SOS).
+       Tính từ `bundle` đã nạp: không thêm câu đọc. */
+    const skillRows = bundle.skillRows.get(a.id) ?? [];
+    const skips = bundle.skips.get(a.id) ?? [];
+    const result = resultOf(a, scores, skips, skillRows);
     return [{
       attemptId: a.id as number, studentId: a.student_id as number, studentName: a.full_name as string, studentEmail: (a.student_email ?? null) as string | null,
+      studentCode: a.student_code as string, status: a.status as string,
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
-      weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell,
+      weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell, cells, result,
+      ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : {}),
     }];
   }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi') || x.attemptNo - y.attemptNo);
   return { rows, soBai: rows.filter((r) => r.cho).length };
