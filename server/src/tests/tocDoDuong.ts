@@ -548,8 +548,8 @@ export const TRAN: Record<string, number> = {
   /* DOC-IT-4: đo 3 câu mọi vai → max(đo+10, ⌈đo×1,3⌉). */
   'QL /ref/classes': 13, 'GVCN /ref/classes': 13, 'GVBM /ref/classes': 13, 'GVCN_THUONG /ref/classes': 13, 'QT /ref/classes': 13,
   'QL /ref/classes?branchId={cn}': 13, 'QT /ref/classes?branchId={cn}': 13,
-  /* GD-1: `/tim/hoc-vien` một câu đọc + phần phiên chung (~13 câu mọi đường). */
-  'QL /tim/hoc-vien?q=ng': 16, 'GVCN /tim/hoc-vien?q=ng': 16, 'GVBM /tim/hoc-vien?q=ng': 16,
+  /* GD-1: `/tim/hoc-vien` một câu đọc — đo 3 câu (cả phiên) → đo + 10. */
+  'QL /tim/hoc-vien?q=ng': 13, 'GVCN /tim/hoc-vien?q=ng': 13, 'GVBM /tim/hoc-vien?q=ng': 13,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */
@@ -1378,7 +1378,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   /* GD-1 (Overhaul V6): trang đầu GV = Công việc — "Lớp của tôi" dựng từ phiên + `/my-work` đã nạp (0 GET thêm); bỏ `/hai-khoi` + ô Case của Tổng quan GV
      (hai GET đó nay chỉ ở Hồ sơ GV của chính mình). Mục 'GV trang Tổng quan' trên giữ cho Head tutor (vẫn Tổng quan góc nhìn GV tới LG-7). */
   'GV trang đầu Công việc': {
-    vai: 'GVCN', tran: 100,
+    vai: 'GVCN', tran: 56,   // GD-1: đo 43 câu / 3 GET (Tổng quan GV cũ đo 109 câu / 5 GET) → max(43 + 10, ⌈43 × 1,3⌉)
     urls: ['/demo/session', '/my-work', '/yeu-cau/dem'],
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */

@@ -19,7 +19,7 @@ Dữ liệu demo khác dữ liệu mockup (8 lớp mockup ↔ 12 lớp của GV 
 | 8 | Mục 13: nút-chip KHÔNG biểu tượng; chữ loại + số; ⚠ + màu khi quá hạn; thứ tự Nhập điểm · Case · Ý thức · Vận hành | `LOAI_CHIP` | cap-1440-toi | KHỚP (mockup còn vẽ biểu tượng — mục 13 thắng) |
 | 9 | Mục 13: "Lớp của tôi" KHÔNG có chip Chấm Speaking | `dungLopCuaToi` bỏ `laViecChamCheo` | — | KHỚP |
 | 10 | R6 (a)(b) FT có bài: "MT · W1 SEP" + chip hạn; quá hạn đỏ | cột Test = bài gần hạn nhất của tôi (`ChipHan vien`) | cap-1440-toi (MB FT 101) | KHỚP |
-| 11 | R6 (c) lớp chưa tới tuần Test: "Final · W3 OCT" mờ, không chip | `testSapToi` (LG-8 #1550) | — (chờ #1550 merge) | KHỚP (mã) |
+| 11 | R6 (c) lớp chưa tới tuần Test: "Final · W3 OCT" mờ, không chip | `testSapToi` (LG-8 #1550) | cap-1440-toi (sau gộp #1550) | KHỚP |
 | 12 | R6 (d) chỉ chủ nhiệm: không bao giờ chip Nhập điểm | chip Nhập điểm chỉ từ việc `score` của chính tôi | cap-1440-toi (MB ELE 02) | KHỚP |
 | 13 | R6 (f) / R7 lớp không có gì: cuối, chữ mờ | sắp xếp (có việc → hạn sớm; rồi có Test; rồi mã lớp) + `nhat` | cap-1440-toi (MB BE 04, BE 08, FOU 03) | KHỚP |
 | 14 | Bấm chip = mở panel tương ứng / sang trang | `onMo` = `mo()` sẵn có (panel tại chỗ, hoặc `href` khi việc không làm tại chỗ) | bấm thử (BE 03 → panel Nhập điểm W2 SEP) | KHỚP |
@@ -63,14 +63,14 @@ Dữ liệu demo khác dữ liệu mockup (8 lớp mockup ↔ 12 lớp của GV 
 Không thao tác nào bị mất.
 
 ## 4. Turso (đo trước → sau)
-- Mở trang đầu GV (GVCN demo): **trước** Tổng quan 107 câu / 5 GET (`/demo/session`, `/my-work`, `/tong-quan/lop-toi-day/hai-khoi`, `/yeu-cau/dem`, `/giao-vien/7/o?cot=case-mo`)
-  → **sau** Công việc __SAU__ câu / 3 GET (`TAI_TRANG['GV trang đầu Công việc']`). "Lớp của tôi" dựng từ phiên + `/my-work` đã nạp: 0 GET thêm.
+- Mở trang đầu GV (GVCN demo): **trước** Tổng quan 109 câu / 5 GET (`/demo/session`, `/my-work`, `/tong-quan/lop-toi-day/hai-khoi`, `/yeu-cau/dem`, `/giao-vien/7/o?cot=case-mo`)
+  → **sau** Công việc **43 câu / 3 GET** (−60 %) (`TAI_TRANG['GV trang đầu Công việc']`). "Lớp của tôi" dựng từ phiên + `/my-work` đã nạp: 0 GET thêm.
 - `/my-work`: thêm trường `baiQuaHan` cho việc Chấm Speaking (số đã có trong vòng lặp) — 0 câu.
-- `/tim/hoc-vien?q=` (mới, chỉ khi gõ trong "+ Task", ≥ 2 ký tự, chờ 250 ms): MỘT câu đọc (≤ 40 dòng) + phần phiên chung; trần `tocDoDuong.ts` 16 câu. Nhẹ hơn `/students?q=` của ô tìm thanh trên (đọc kết quả / Case từng em).
+- `/tim/hoc-vien?q=` (mới, chỉ khi gõ trong "+ Task", ≥ 2 ký tự, chờ 250 ms): MỘT câu đọc (≤ 40 dòng); đo 3 câu cả request, trần `tocDoDuong.ts` 13. Nhẹ hơn `/students?q=` của ô tìm thanh trên (đọc kết quả / Case từng em).
 - Hồ sơ GV của chính mình thêm `/tong-quan/lop-toi-day/hai-khoi` (trước ở Tổng quan) — chỉ khi mở hồ sơ.
 
 ## 5. Phụ thuộc / chưa làm
-- Cột Test "Final · W3 OCT" cho lớp chưa có bài cần trường `testSapToi` của **LG-8 (#1550)**. Chưa merge thì lớp không bài để trống cột Test; danh sách lớp lấy mọi phân công trong phiên (sau LG-8: chỉ lớp còn hiệu lực).
+- Cột Test lớp chưa có bài + danh sách lớp còn hiệu lực: `testSapToi` của **LG-8 (#1550, đã merge)**.
 - Nhóm "Báo cáo PH" trong tab Vận hành hiện việc của **LG-3** (chưa có) — rỗng thì ẩn.
 - Head tutor giữ Tổng quan góc nhìn GV tới **LG-7**.
 
