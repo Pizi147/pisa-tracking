@@ -7,7 +7,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -2030,12 +2030,19 @@ function nhomSeLuu(a: any, o: { band: number | null; nhomGui: string[] | undefin
 
 /** GV chấm hợp lệ: nhân viên đang làm việc, hoặc tên người ngoài 2–100 ký tự (luật `chuanHoaNguoiThucHien`). */
 /** Chủ SP 10/11 (spec 1.2 c): Speaking CHẤM CHÉO — người chấm có tài khoản phải là GV có kỹ năng S (hoặc tên ngoài → không tính ai). */
+/**
+ * ponytail: 2.4 — công tắc CHỈ cho dữ liệu dựng sẵn (seed demo, bộ kiểm cũ dựng điểm bằng Admin): bật thì giữ luật cũ ghi người nhập là người chấm S chéo.
+ * Máy thật luôn tắt (`runSeed` bật rồi trả lại). Bỏ khi seed / phép kiểm cũ đều gửi GV chấm.
+ */
+export const GHI_NGAM_NGUOI_CHAM = { bat: false };
 function gvChamHopLe(p: Principal, g: NonNullable<ScorePatch['gvCham']>, cheo = false) {
   if (typeof g !== 'object') throw badRequest('GV chấm không hợp lệ.');
+  /* L4: "Tôi" cũng phải qua đúng nhóm (QL / Admin chọn "Tôi" ở ô S chéo không thành người chấm). */
+  const g2 = cheo && g.performerSelf && !g.performerUserId && !(g.performerName ?? '').trim() ? { performerUserId: p.userId } : g;
   try {
-    return chuanHoaNguoiThucHien(p, g, { nhom: cheo ? 'gv_speaking' : 'nhan_vien', batBuoc: false });
+    return chuanHoaNguoiThucHien(p, g2, { nhom: cheo ? 'gv_speaking' : 'nhan_vien', batBuoc: false });
   } catch {
-    throw badRequest(cheo ? 'Người chấm Speaking chéo phải là giáo viên có kỹ năng S, hoặc gõ tên người ngoài (2–100 ký tự).'
+    throw badRequest(cheo ? 'Người chấm Speaking chéo phải là GV Speaking (có kỹ năng S trong hồ sơ hoặc đang dạy Speaking một lớp FT), hoặc gõ tên người ngoài (2–100 ký tự).'
       : 'GV chấm phải là nhân viên đang làm việc, hoặc gõ tên người ngoài (2–100 ký tự).');
   }
 }
@@ -2559,11 +2566,17 @@ export function saveScore(
     const matHet = !hasValue && daCoDiem;
     const boKem = matHet && !!o.thiLai;
     const comment = boKem ? null : nxGt !== undefined ? nxGt : existing?.comment ?? null;
-    /* Q3 (PR-LT3, chủ sản phẩm 06/10): lưu ô S Mock có điểm mà không gửi GV chấm, dòng chưa có ai → GV chấm = người lưu (trễ tính cho
-       người đó). Lưới an toàn — web luôn gửi tên đang hiện. Gửi `gvCham: null` có chủ ý (xoá) giữ như cũ. */
-    const gvMacDinh = gv === undefined && hasValue && laChamCheo(a.kind, skill) && !existing?.examiner_user_id && !existing?.examiner_name;
-    const exUser = boKem ? null : gvMacDinh ? p.userId : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
+    let exUser = boKem ? null : gv !== undefined ? gv?.userId ?? null : existing?.examiner_user_id ?? null;
     const exName = boKem ? null : gv !== undefined ? gv?.name ?? null : existing?.examiner_name ?? null;
+    /*
+     * 2.4 (chủ SP 13/11, thay Q3 PR-LT3): ô S chấm chéo CÓ ĐIỂM mà chưa có người chấm — GV Speaking tự nhập: người chấm = chính họ; người khác
+     * (QL / Admin nhập hộ) phải chọn "GV chấm" — không ghi ngầm người nhập là người chấm (đúng hạn / trễ tính sai người).
+     */
+    if (hasValue && laChamCheo(a.kind, skill) && exUser == null && !exName) {
+      if (!laGvSpeaking(p) && !GHI_NGAM_NGUOI_CHAM.bat) throw badRequest('Chọn "GV chấm" trước khi lưu điểm Speaking chấm chéo — bạn không phải GV Speaking nên máy không ghi bạn là người chấm.');
+      exUser = p.userId;
+    }
+    const gvMacDinh = exUser === p.userId && gv === undefined && existing?.examiner_user_id !== p.userId;   // người chấm vừa đặt mặc định ở lần lưu này
     /*
      * PR-Pb2-b (Q13): ngày NGHIỆP VỤ lần đầu ô có điểm — sửa sau giữ nguyên, ô mất hết điểm về NULL (nhập lại tính lần đầu mới).
      * PR-S6F-a (Q18, P0): "có điểm" = điểm THẬT (điểm thô hoặc band) — ô tiêu chí mới gõ 1/4 (band còn NULL) chưa phải lần nhập đầu.

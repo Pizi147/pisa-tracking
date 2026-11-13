@@ -15,7 +15,7 @@ export type NguoiThucHienKetQua = { userId: number; name: null } | { userId: nul
 const NHOM_MESSAGE: Record<NhomNguoi, string> = {
   giao_vien: 'Người thực hiện phải là giáo viên đang làm việc. Người ngoài thì chọn "Người ngoài" và gõ tên.',
   nhan_vien: 'Người thực hiện phải là nhân viên đang làm việc. Người ngoài thì chọn "Người ngoài" và gõ tên.',
-  gv_speaking: 'Người chấm Speaking chéo phải là giáo viên có kỹ năng S trong hồ sơ. Người ngoài thì chọn "Người ngoài" và gõ tên.',
+  gv_speaking: 'Người chấm Speaking chéo phải là giáo viên Speaking (có kỹ năng S trong hồ sơ hoặc đang dạy Speaking một lớp FT). Người ngoài thì chọn "Người ngoài" và gõ tên.',
 };
 
 /**

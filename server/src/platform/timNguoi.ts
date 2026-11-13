@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { normalizeName } from '../util.ts';
-import { bangLop, require_, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, require_, scopeFor, sqlGvSpeaking, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
 
@@ -18,8 +18,8 @@ const ROLE_KEYS_OF: Record<NhomNguoi, readonly string[]> = {
   nhan_vien: ['teacher', 'manager'],
   gv_speaking: ['teacher'],
 };
-/** `gv_speaking`: thêm điều kiện kỹ năng S trong hồ sơ (`user_skills`). */
-const KY_NANG_S = (nhom: NhomNguoi, u = 'u') => (nhom === 'gv_speaking' ? ` AND EXISTS (SELECT 1 FROM user_skills us WHERE us.user_id = ${u}.id AND us.skill = 'speaking')` : '');
+/** `gv_speaking`: GV Speaking theo N7 — kỹ năng S ở hồ sơ HOẶC đang dạy S một lớp FT (`sqlGvSpeaking`, cùng luật `laGvSpeaking` của quyền chấm). */
+const KY_NANG_S = (nhom: NhomNguoi, u = 'u') => (nhom === 'gv_speaking' ? ` AND ${sqlGvSpeaking(u)}` : '');
 
 /**
  * Người này có thuộc nhóm `nhom` không: tài khoản đang hoạt động, có vai đúng nhóm đang hoạt động.

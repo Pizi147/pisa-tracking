@@ -17,6 +17,7 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
   const tq: any = await import('../worklist/tongQuanMt.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const sd: any = await import('../worklist/scoreDebt.ts');
+  const att: any = await import('../fasttrack/attempts.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nP12 BAO-CAO-LICH-SU — báo cáo quá khứ không đổi theo Target / lớp / trạng thái hiện tại');
@@ -163,7 +164,8 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     assert(!r.gvQuaHan.some((g: any) => g.key === 'chua-co-gv' && /speaking/i.test(g.kyNang)), 'S chéo không được ghi "Chưa có GV"');
   });
 
-  check('PBC-7 · rà 11/11 #2: QL và Admin cùng thấy S chấm chéo quá hạn; bài đã có người nhận (tài khoản) nằm dưới tên người đó', () => thu(() => {
+  /* L5 (13/11, sổ nghĩa vụ 1.2c — chủ SP 09–10/11): S chéo CHƯA AI NHẬP là của cả nhóm GV S, kể cả ô đã chọn "Người chấm" mà chưa có điểm. */
+  check('PBC-7 · rà 11/11 #2 + L5: QL và Admin cùng thấy S chấm chéo quá hạn; chọn người chấm mà chưa nhập điểm → vẫn của nhóm, không dưới tên người đó', () => thu(() => {
     const id = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id
       WHERE r.key = 'office_admin' AND b.code = 'MB' ORDER BY ur.user_id LIMIT 1`)?.id;
     const ad = loadPrincipal(id);
@@ -173,9 +175,17 @@ export async function runPrBaoCaoLichSuTests(t: { check: any; assert: any; conn:
     assert(cc(ad).filter((it) => it.ownerId === null).length > 0, 'Admin: S chấm chéo quá hạn (cùng luật QL)');
     const x = sd.scoreDebtCells(P.admin, TODAY, [MB]).find((c: any) => c.chamCheo && c.overdue);
     assert(x, 'seed có S chấm chéo quá hạn');
-    const gv = get(`SELECT id FROM users WHERE status = 'active' AND id != ? ORDER BY id LIMIT 1`, id).id;
-    conn.prepare(`INSERT INTO assessment_scores (attempt_id, skill, examiner_user_id) VALUES (?, 'speaking', ?)`).run(x.attemptId, gv);
-    const cua = cc(ad).filter((it) => (it.con?.length ? it.con : [it]).some((c: any) => c.attemptId === x.attemptId) || it.attemptId === x.attemptId);
-    assert(cua.length > 0 && cua.every((it) => it.ownerId === gv), `bài đã nhận phải dưới tên người nhận: ${JSON.stringify(cua.map((it) => it.ownerId))}`);
+    const gv = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' AND ur.branch_id = ? WHERE u.status = 'active' ORDER BY u.id LIMIT 1`, MB).id;
+    const baiCua = () => { xoaNho(); return tq.tongQuanMt(ad).gvQuaHan.filter((g: any) => g.ownerId === gv).reduce((n: number, g: any) => n + g.soBai, 0); };
+    const truoc = baiCua();
+    /* Đường thật của hộp nhập điểm: chỉ đổi "Người chấm", chưa có band (luuNhanXet tạo dòng có examiner_user_id). */
+    att.saveScore(P.admin, x.attemptId, 'speaking', { gvCham: { performerUserId: gv } });
+    assert(get(`SELECT examiner_user_id AS e, band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, x.attemptId)?.e === gv, 'đã ghi người chấm');
+    const em = get(`SELECT student_id AS s FROM assessment_attempts WHERE id = ?`, x.attemptId).s;
+    /* Dòng gộp theo lớp · tuần · người phụ trách: tìm theo em (emIds / studentId), không theo attemptId đại diện. */
+    const cua = cc(ad).filter((it) => it.classId === x.classId && (it.studentId === em || (it.emIds ?? []).includes(em)));
+    assert(cua.length > 0 && cua.every((it) => it.ownerId === null), `chưa nhập điểm → của nhóm S chéo: ${JSON.stringify(cua.map((it) => it.ownerId))}`);
+    assert(baiCua() === truoc, `Tổng quan Admin: người được chọn (chưa chấm) không thêm bài quá hạn: ${truoc} → ${baiCua()}`);
   }));
 }

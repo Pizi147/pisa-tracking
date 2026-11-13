@@ -34,6 +34,8 @@ export type Session = {
   daXemHuongDan?: boolean;
   /** HD-V2: GV chủ nhiệm ít nhất một lớp · GV Speaking (phần riêng của Hướng dẫn). */
   laGvcn?: boolean; coS?: boolean;
+  /** L4 / 2.4: GV Speaking chấm chéo đúng luật quyền (`laGvSpeaking`, N7) — "Tôi" là người chấm S chéo được. */
+  gvS?: boolean;
   roles?: string[];
   roleLabels?: string[];
   grants?: Grant[];

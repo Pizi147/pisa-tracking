@@ -1,4 +1,5 @@
 import { capNhatConOChoTatCa } from '../fasttrack/conOCho.ts';
+import { GHI_NGAM_NGUOI_CHAM } from '../fasttrack/attempts.ts';
 import { buildOv2aDemo } from './ov2aSeed.ts';
 import { buildHeadTutor, buildTutorDs } from './tuSeed.ts';
 import { buildPetDemo } from './petSeed.ts';
@@ -46,7 +47,13 @@ import { dienLienHeChiNhanh } from '../migrate/prChiNhanhLienHe.ts';
 
 const NOW = nowIso();
 
+/** 2.4: dữ liệu demo dựng điểm S chéo bằng Admin — bật luật cũ (ghi người nhập là người chấm) CHỈ trong lúc seed (`GHI_NGAM_NGUOI_CHAM`). */
 export function runSeed() {
+  const cu = GHI_NGAM_NGUOI_CHAM.bat;
+  GHI_NGAM_NGUOI_CHAM.bat = true;
+  try { return runSeedTho(); } finally { GHI_NGAM_NGUOI_CHAM.bat = cu; }
+}
+function runSeedTho() {
   recreateSchema();
   const conn = db();
 

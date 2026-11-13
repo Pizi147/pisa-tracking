@@ -9,6 +9,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const { migratePrNghiaVu } = await import('../migrate/prNghiaVu.ts');
   const nv: any = await import('../phanTich/soNghiaVu.ts');
   const week: any = await import('../platform/week.ts');
+  const fs = await import('node:fs'); const path = await import('node:path'); const { fileURLToPath } = await import('node:url');
   /* Seed nằm trước W4 OCT 2026: tắt mốc bắt đầu tính trễ cho mọi ca; ca kiểm mốc bật lại riêng. */
   if (nv.MOC_TINH_TRE) nv.MOC_TINH_TRE.ngay = '';
   console.log('\nSỔ NGHĨA VỤ — bảng, tính dòng, ghi sổ, đếm');
@@ -289,6 +290,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const { loadPrincipal } = await import('../permissions.ts');
   const timNguoi: any = await import('../platform/timNguoi.ts');
+  const permMod: any = await import('../permissions.ts');
   /** Dòng sổ giả (chỉ cột đếm cần) — ca đếm cô lập khỏi luật tính dòng. */
   let soGia = 0;
   const chenSo = (o: { nguoi: number | null; cn?: number; han: string; xong?: string | null; hanGoc?: string; tuan?: string | null; sCheo?: boolean; khongTinh?: string | null; loai?: string }) =>
@@ -334,6 +336,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(ba.length === 3, 'seed cần ≥ 3 GV chi nhánh');
     conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
     conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = '2000-01-01' WHERE skill = 'speaking'`).run();   // 2.5: người dạy S lớp FT cũng là GV Speaking — ca này chỉ kiểm lịch sử kỹ năng
     for (const g of ba) accounts.ghiLichSuKyNang(conn, g, [], ['speaking'], '2026-08-01');
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
     const m = dem.demTheoNguoi({ chiNhanh: MB, ...KY });
@@ -348,6 +351,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const g = gvMb[0];
     conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
     conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
+    conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = '2000-01-01' WHERE skill = 'speaking'`).run();   // 2.5: người dạy S lớp FT cũng là GV Speaking — ca này chỉ kiểm lịch sử kỹ năng
     accounts.ghiLichSuKyNang(conn, g, [], ['speaking'], '2026-08-01');
     accounts.ghiLichSuKyNang(conn, g, ['speaking'], [], '2026-09-05');
     chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
@@ -384,6 +388,73 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     const nguoiS = (conn.prepare(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' WHERE u.status = 'active'`).all() as any[]).map((r) => r.id);
     const tim = timNguoi.timNguoi(P.admin, { nhom: 'gv_speaking' }) as any[];
     assert(tim.length > 0 && tim.every((r) => nguoiS.includes(r.id)), `ô chọn chỉ GV có S: ${tim.map((r) => r.id)}`);
+  }));
+
+  /* L4 (13/11): hộp nhập điểm dùng CÙNG nhóm với máy chủ — ô "Người chấm" S của lượt chấm chéo chỉ liệt kê GV có S (không 400 sau khi chọn QL / GV không có S). */
+  check('NV-SCHEO-CHON-WEB · hộp nhập điểm: ô "Người chấm Speaking" lượt chấm chéo dùng nhóm gv_speaking (như nút "GV chấm S"); lượt không chéo mới là nhan_vien', () => {
+    const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
+    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/fasttrack/HopNhapDiem.tsx'), 'utf8');
+    const dong = src.split(/\r?\n/).find((l) => l.includes("ariaLabel={t('Người chấm Speaking')}")) ?? '';
+    assert(dong.includes("nhom={ctx.khongCheo ? 'nhan_vien' : 'gv_speaking'}"), `ô Người chấm: ${dong.trim()}`);
+    assert(/khongCheo: !laChamCheo\(d\.kind, 'speaking'\)/.test(src), 'nguCanhChiTiet phải đặt khongCheo theo laChamCheo (một luật với máy chủ)');
+    /* 2.4: không phải GV Speaking → chặn lưu khi chưa chọn GV chấm (hoặc chọn "Tôi"); cột GV chấm S không mặc định "Tôi". */
+    assert(src.includes("!session?.gvS && (!gv || gv.kieu === 'toi')"), 'hộp nhập điểm phải chặn lưu S chéo khi chưa chọn GV chấm');
+    const cot = fs.readFileSync(path.join(ROOT, 'web/src/modules/cham/GvCham.tsx'), 'utf8');
+    assert(cot.includes("session?.gvS ? { kieu: 'toi' } : null"), 'GV chấm S đầu cột: chỉ GV Speaking mặc định Tôi');
+  });
+
+  /* 2.5 (chủ SP 13/11): MỘT định nghĩa GV Speaking (N7) — hồ sơ có S HOẶC đang dạy S một lớp FT — ở quyền, ô chọn người chấm, kiểm người chấm, sổ "S chéo chung". */
+  check('NV-SCHEO-N7 · GV không có S ở hồ sơ nhưng đang dạy Speaking lớp FT: laGvSpeaking = ô chọn = kiểm người chấm = nhóm S chéo chung; GV không S không dạy S: không ở đâu', () => thu(() => {
+    const perm: any = permMod;
+    const gvLop = (conn.prepare(`SELECT DISTINCT ta.user_id AS id FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id AND c.is_fast_track = 1 AND c.branch_id = ?
+      WHERE ta.skill = 'speaking' AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)`).all(MB, TODAY, TODAY) as any[]).map((r) => r.id as number);
+    const day = gvLop[0];
+    assert(day, 'seed: cần GV dạy Speaking lớp FT MB');
+    const khong = gvMb.find((g) => !gvLop.includes(g) && !get(`SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id AND c.is_fast_track = 1
+      WHERE ta.user_id = ? AND ta.skill = 'speaking' AND ta.status = 'active'`, g));
+    assert(khong, 'seed: cần GV MB không dạy Speaking FT');
+    conn.prepare(`DELETE FROM user_skills WHERE skill = 'speaking'`).run();
+    conn.prepare(`DELETE FROM user_skill_lich_su WHERE skill = 'speaking'`).run();
+    ng.xoaNho();
+    assert(perm.laGvSpeaking(perm.loadPrincipal(day)) && !perm.laGvSpeaking(perm.loadPrincipal(khong)), 'quyền (laGvSpeaking)');
+    const tim = (timNguoi.timNguoi(P.admin, { nhom: 'gv_speaking', branchId: MB }) as any[]).map((r) => r.id);
+    assert(tim.includes(day) && !tim.includes(khong), `ô chọn người chấm: ${tim}`);
+    assert(timNguoi.laNguoiHopLe(day, 'gv_speaking') && !timNguoi.laNguoiHopLe(khong, 'gv_speaking'), 'kiểm người chấm (laNguoiHopLe)');
+    conn.exec('DELETE FROM nghia_vu');
+    chenSo({ nguoi: null, sCheo: true, han: '2026-09-03' });
+    const m = dem.demTheoNguoi({ chiNhanh: MB, ...KY, homNay: TODAY });
+    const pcLuc = (g: number) => get(`SELECT 1 FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id AND c.is_fast_track = 1 WHERE ta.user_id = ? AND ta.skill = 'speaking'
+      AND ta.status = 'active' AND ta.effective_from <= '2026-09-03' AND (ta.effective_to IS NULL OR ta.effective_to >= '2026-09-03')`, g);
+    const coNgayHan = gvMb.filter((g) => pcLuc(g));
+    assert(coNgayHan.length > 0 && coNgayHan.every((g) => m.get(g)?.sChung === 1), `sổ S chéo chung — người dạy S FT ngày hạn: ${JSON.stringify(coNgayHan.map((g) => [g, m.get(g)]))}`);
+    assert(!m.get(khong)?.sChung, 'GV không S, không dạy S: không tính');
+  }));
+
+  /* 2.4 (chủ SP 13/11): S chéo — người nhập không phải GV Speaking phải chọn GV chấm; không ghi ngầm người nhập. GV Speaking tự nhập: mặc định chính họ. */
+  check('NV-SCHEO-CHON-BAT · QL lưu điểm S chéo không chọn GV chấm → 400, không ghi; chọn "Tôi" → 400; chọn GV Speaking → người đó; GV Speaking tự nhập → chính họ', () => thu(() => {
+    const perm: any = permMod;
+    const a = oL();
+    const han = nv.tinhBai(a.id).find((d: any) => d.kieu === 'speaking').han;
+    const ql = perm.loadPrincipal(get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'manager' WHERE ur.status = 'active' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1`,
+      get('SELECT branch_id FROM classes WHERE id = ?', a.class_id).branch_id).id);
+    assert(!perm.laGvSpeaking(ql), 'seed: QL không là GV Speaking');
+    const cuBat = attempts.GHI_NGAM_NGUOI_CHAM.bat;
+    attempts.GHI_NGAM_NGUOI_CHAM.bat = false;
+    try {
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
+    assertThrows(() => attempts.saveScore(ql, a.id, 'speaking', { band: 6 }, han), /GV chấm/, 'QL không chọn GV chấm phải bị chặn');
+    assert(!get(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking' AND band IS NOT NULL`, a.id), 'không ghi điểm khi bị chặn');
+    assertThrows(() => attempts.saveScore(ql, a.id, 'speaking', { band: 6, gvCham: { performerSelf: true } }, han), /GV Speaking/, 'QL chọn "Tôi" phải bị chặn');
+    const gvS = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
+    attempts.saveScore(ql, a.id, 'speaking', { band: 6, gvCham: { performerUserId: gvS } }, han);
+    assert(get(`SELECT examiner_user_id AS e FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, a.id).e === gvS, 'QL chọn GV Speaking → người đó');
+    conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
+    const tuNhap = perm.loadPrincipal(gvS);
+    assert(perm.laGvSpeaking(tuNhap), 'seed: GV có S là GV Speaking');
+    attempts.saveScore(tuNhap, a.id, 'speaking', { band: 6.5 }, han);
+    assert(get(`SELECT examiner_user_id AS e FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, a.id).e === gvS, 'GV Speaking tự nhập → chính họ');
+    } finally { attempts.GHI_NGAM_NGUOI_CHAM.bat = cuBat; }
   }));
 
   check('NV-TONG · GV có dòng ở hai chi nhánh → chiNhanh = null ra MỘT dòng = tổng hai chi nhánh', () => thu(() => {

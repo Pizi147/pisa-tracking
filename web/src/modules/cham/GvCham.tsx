@@ -43,7 +43,8 @@ export function useGvChamCot(classId: number | null | undefined, dot: string | n
   const { session } = useSession();
   const khoa = khoaGvChamCot(session?.user?.id, classId, dot);
   const doc = (): NguoiChon | null => {
-    const macDinh: NguoiChon = { kieu: 'toi' };
+    /* 2.4 (chủ SP 13/11): người không phải GV Speaking (QL / Admin nhập hộ) không có mặc định — phải chọn GV chấm. */
+    const macDinh: NguoiChon | null = session?.gvS ? { kieu: 'toi' } : null;
     if (!khoa) return macDinh;
     try {
       const v = JSON.parse(localStorage.getItem(khoa) ?? 'null');
@@ -74,7 +75,7 @@ export function tenNgan(v: NguoiChon | null): string | null {
 /**
  * NÚT "GV chấm: {tên} ▾" — gọn, dưới chữ "S (band)" của tiêu đề cột (máy tính) hoặc đầu danh sách (điện thoại, `lon`).
  * Luôn ghi "GV chấm: {tên thật}" (mockup HK2 J9): "Tôi" hiện bằng tên tài khoản. Tên dài xuống dòng (không cắt); tooltip có đủ tên.
- * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="nhan_vien" choNgoai`).
+ * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="gv_speaking" choNgoai` — GV Speaking theo N7, L4).
  */
 export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = GOI_Y_COT, nhan = t('GV chấm') }: {
   /** Chữ trước tên (lưới FT: "GV chấm S" — nút nằm trên bảng, không trong đầu cột S). */
