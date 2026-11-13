@@ -8,6 +8,8 @@ import { PERMISSION_LABEL, PROGRAMME_TEMPLATES } from '../../../shared/domain/in
 import { seedRoutes } from '../platform/sysconfig.ts';
 import { dienCauHinh } from '../migrate/prOv6b1.ts';
 import { chenPetKet } from '../migrate/prOv6b2.ts';
+import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
+import { ngayTheoGioVN } from '../../../shared/domain/index.ts';
 import { RETIRED_ROLES, ROLES, ROLE_PERMISSIONS } from './data.ts';
 
 export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, number>; permId: Map<string, number> } {
@@ -96,6 +98,8 @@ export function napDuLieuNen(conn: any, now: string): { roleId: Map<string, numb
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_w_lech_da_chay', now, now);   // W-LECH: DB mới đã theo luật "-" một W = cả buổi
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_k316_da_chay', now, now);   // K3-16: DB mới không có PA cũ chạy cạnh PA mới
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('pr_tinh_lui_phan_cong_da_chay', now, now);   // TINH-LUI-PC: DB mới — phân công khai đúng ngày từ đầu, không tính lùi
+  /* LG-3: mốc bật việc GV "Viết Báo cáo PH" = ngày dựng DB (giờ VN); seed ghi đè = ngày demo. */
+  conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run(KHOA_MOC_BC_PH_VIEC_GV, ngayTheoGioVN(now), now);
   /* DẤU DB MỚI (DEP-2): database dựng bằng mã hiện hành (init / seed) không có dữ liệu kiểu cũ — các bước CHUYỂN DỮ LIỆU CŨ của migrate bỏ qua. */
   conn.prepare('INSERT INTO demo_config (key, value, updated_at) VALUES (?,?,?)').run('khoi_tao_moi_at', now, now);
   return { roleId, permId };
