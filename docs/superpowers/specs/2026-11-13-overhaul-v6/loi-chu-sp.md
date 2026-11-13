@@ -180,3 +180,22 @@ VỀ CÁCH LÀM (chủ SP hỏi ý, PTA Overhaul đồng ý): session Fable này
 > "Từ sau bạn tự giao session làm mockup luôn không cần phải gửi qua PTA plan nữa, nhiều bước thừa quá"
 
 ĐÃ CHỐT (cách làm, áp từ nay): **session mockup do PTA Overhaul tự mở và giao** (Opus 5.5 / Sonnet 5.5), không qua PTA Plan. Session CODE, rà, check chung, merge PR code, deploy vẫn là việc PTA Plan (chủ SP chưa đổi phần này).
+
+## 14/11 — lời 16: ba câu Báo cáo PH theo đề xuất · Head tutor như GV · thông báo · giao đợt trước ngày · việc logic về PTA Plan
+
+Câu hỏi của PTA Overhaul: ba câu về việc Báo cáo PH (quá hạn hiện 7 ngày rồi rời + không sinh cho đợt cũ · GVCN kiêm kỹ năng một dòng · đợt QL thêm bất chợt có sinh việc) + báo "Head tutor giữ Tổng quan cũ".
+
+> "1. Ba câu trả lời: Theo đề xuất hết
+> 2. Head tutor vẫn là GV là chính, nên view nên như của GV là chính nha
+> 3. Nên có thông báo cho Admin khi GV hoàn thành xong hết báo cáo, và báo cần nhắc GV khi đến ngày hạn mà chưa xong, và quá hạn
+> 4. Việc giao Báo cáo PH có thể giao trước ngày, hiện tại đang bị khóa là cần phải giao từ ngày hôm nay trở về quá khứ, hơi bị hạn chế
+> 5. Ngoài ra: Những cái gì liên quan đến logic, lỗi, luật mà bạn phát hiện ra, hoặc tôi đã chốt thay đổi (đối với luật/ logic là chủ yếu) thì gửi plan qua cho PTA Plan để nó tự giao session khác làm, bạn chỉ giao việc liên quan đến thiết kế (nhưng vẫn cần xử lý rà soát luật lệ, logic, workflow để cố gắng cải thiện)"
+
+ĐÃ CHỐT:
+1. Việc Báo cáo PH của GV: quá hạn hiện thêm **7 ngày rồi tự rời**, không sinh việc cho đợt đã qua trước ngày bật · GVCN vừa dạy kỹ năng vừa viết phần Chung: **một dòng** · đợt QL / Admin thêm bất chợt **có sinh việc** (hạn QL đặt).
+2. **Head tutor xem như GV** (trang đầu, menu như GV) — thay điều PTA Overhaul tự chốt "Head tutor giữ Tổng quan cũ".
+3. **Thông báo Báo cáo PH:** Admin nhận tin khi GV đã xong hết báo cáo (PTA hiểu: theo lớp × đợt, cùng lúc việc "Xuất báo cáo PH" xuất hiện); GV được nhắc khi **tới ngày hạn mà chưa xong** và khi **quá hạn** (PTA hiểu: việc vào nhóm "hôm nay" / "quá hạn" của badge + chuông theo cơ chế đang có, không thêm kênh mới).
+4. **Đợt Báo cáo PH do QL / Admin thêm được đặt ngày mở ở tương lai** (nay chỉ từ hôm nay về trước).
+5. **Chia việc:** logic · lỗi · luật (PTA Overhaul phát hiện hoặc chủ SP chốt đổi) → PTA Overhaul viết plan gửi **PTA Plan tự giao session**. PTA Overhaul **chỉ giao việc thiết kế** (session mockup — lời 15), nhưng vẫn phải rà luật, logic, workflow để đề xuất cải thiện.
+
+Đã làm trong lượt: viết `05-plan-logic-luat.md` (8 PR LG-1 … LG-8 + mục nhờ xem) gửi PTA Plan.

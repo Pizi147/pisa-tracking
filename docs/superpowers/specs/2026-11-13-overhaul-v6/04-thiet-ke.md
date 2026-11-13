@@ -26,7 +26,7 @@ GV là người nhập liệu chính. GV thật đang: "không biết thao tác 
 - Luật core: `luat/0`. Ý đồ phải giữ + ngôn ngữ thao tác chuẩn: `luat/5` mục 2, 3. Hướng đã bị bác: `luat/5` mục 5.
 - CLAUDE.md: mockup HTML duyệt trước khi code (1440 + 375, sáng + tối, đủ trạng thái) · một màn một PR · bảng truy vết + bảng thao tác TRƯỚC → SAU · ảnh cặp, cổng ≥ 90 % KHỚP · chủ SP duyệt ảnh cặp trước merge · hình ảnh theo mockup sát, tính năng theo luật.
 - Turso: mỗi PR có trần câu + dòng ở `server/src/tests/tocDoDuong.ts`, đo trước → sau; mục tiêu cả đợt: **không thêm request mới khi mở trang đầu**.
-- Model: Fable chỉ làm đề bài / thiết kế / plan / rà; mockup + code = session Opus 5.5 / Sonnet 5.5 (lời 13). **Session mockup: PTA Overhaul tự mở và giao (lời 15). Session code: PTA Plan giao, rà, merge.**
+- Model: Fable chỉ làm đề bài / thiết kế / plan / rà; mockup + code = session Opus 5.5 / Sonnet 5.5 (lời 13). **Session mockup: PTA Overhaul tự mở và giao (lời 15). Việc logic / lỗi / luật: PTA Overhaul viết plan, PTA Plan tự giao session (lời 16 ý 5). Session code: PTA Plan giao, rà, merge.**
 
 ## 4. Các hướng đã cân nhắc
 
@@ -76,7 +76,7 @@ Trang đầu = Công việc (Báo PH · Sau thi · Chốt ngày thi · Bổ sung
 ### 5.9 Các màn còn lại
 Áp luật mật độ M1–M10 (`2026-11-05-mat-do-thong-tin/de-xuat.md`) + một bộ thành phần (một thanh tab, một menu thả, một dải chỉ số, một kiểu lịch sử) cho: Học viên & Lớp · Test (Lịch Test, Kế hoạch Test, trang lượt) · Phân tích · Quản trị · Hồ sơ GV · Lưu trữ · Hướng dẫn. Không đổi bố cục các màn này → không cần mockup mới; mỗi màn một PR có ảnh trước | sau. Làm nốt: ô số hộp ở Tổng quan / hồ sơ lớp, tên đầu panel là link. Cập nhật Hướng dẫn "?" theo đường đi mới trong cùng PR đổi đường.
 
-### 5.10 Sáu điểm luật / máy chủ chủ SP đã chốt (lời 12–14)
+### 5.10 Chín điểm luật / máy chủ chủ SP đã chốt (lời 12–16) — plan giao việc: `05-plan-logic-luat.md` (PTA Plan giao)
 | # | Đổi | Nguồn |
 |---|---|---|
 | S1 | GV có việc "Báo cáo PH" (5.6) | lời 12, 13 |
@@ -85,6 +85,9 @@ Trang đầu = Công việc (Báo PH · Sau thi · Chốt ngày thi · Bổ sung
 | S4 | S chấm chéo: người nhập không phải GV Speaking phải chọn "GV chấm" | 2.4 |
 | S5 | Một định nghĩa "GV Speaking" theo quyền N7 | 2.5 |
 | S6 | TVV báo PH vi phạm xong → tin "Cập nhật" cho GVCN | 2.7 |
+| S7 | Báo cáo PH: Admin nhận tin khi lớp × đợt đủ hết báo cáo; GV được nhắc tới ngày hạn chưa xong + khi quá hạn (qua badge / chuông đang có); quá hạn hiện 7 ngày rồi rời | lời 16 ý 1, 3 |
+| S8 | Đợt Báo cáo PH do QL / Admin thêm được đặt ngày mở ở tương lai | lời 16 ý 4 |
+| S9 | Head tutor xem như GV | lời 16 ý 2 |
 
 ## 6. Màn × mức đổi × mockup
 
@@ -128,7 +131,7 @@ Tên biến, cách tách thành phần, cách ghép dữ liệu "Lớp của tô
 ## 11. Kết quả đọc soát 14/11 (agent đóng vai người làm, đối chiếu mã)
 
 ### 11.1 PTA Overhaul tự chốt (việc nhỏ, không đổi cái được dựng)
-- Head tutor giữ Tổng quan cũ (Tutor đang hoãn).
+- ~~Head tutor giữ Tổng quan cũ~~ → **chủ SP sửa 14/11 (lời 16): Head tutor xem như GV** (trang đầu, menu như GV) — PR LG-7.
 - "Lớp của tôi" chỉ lấy phân công **còn hiệu lực** hôm nay (session đang gửi mọi phân công, phải lọc).
 - Hai GV cùng một phần Báo cáo PH: bản ghi theo em × phần → một người viết đủ thì việc của cả hai cùng xong.
 - 375 dùng công tắc "Việc · Lớp của tôi" (đề bài `03` R24); câu "khối dưới tab" ở `02` là bản cũ.
@@ -148,7 +151,7 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 - Hướng dẫn "?": `shared/huongDan/gv.ts:214`, `:249` · `tvv.ts:33`, `:411` · mốc `data-hd="tq-lop-toi-day"`.
 - Phép kiểm đang khoá hành vi cũ (phải sửa cùng PR): `server/src/tests/khung.tests.ts:81–94`, `:184` · `prOv15e.tests.ts:97` · `prHd.tests.ts:95`, `:230–290` · `prSvTqGv.tests.ts:183` · `prDonA.tests.ts:781` · `tocDoDuong.ts:92`, `:114–122`, `:1370–1378`.
 
-### 11.5 Chờ chủ SP (ba câu, hỏi 14/11)
+### 11.5 Ba câu về việc Báo cáo PH — chủ SP 14/11 (lời 16): **theo đề xuất hết**
 1. Việc Báo cáo PH quá hạn còn hiện bao lâu — đề xuất: **7 ngày sau hạn rồi tự rời**, như chip tab Báo cáo PH và việc Admin đang làm (`baoCaoPh.ts:100`, `xuatBaoCaoPh.ts:306`); không sinh việc cho đợt đã qua trước ngày bật.
 2. GVCN vừa dạy kỹ năng vừa viết phần Chung — đề xuất: **một dòng**.
 3. Đợt QL thêm bất chợt — đề xuất: **có sinh việc**, theo hạn QL đặt.
