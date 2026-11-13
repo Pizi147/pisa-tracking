@@ -6,7 +6,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { bangLop, can, editableSkills, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
+import { bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -1272,6 +1272,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   const doiLichMon = new Map(prog.skills.map((k) => [k, !!attempts[0] && can(p, PERMISSIONS.PLAN_WEEK, { classId, studentId: attempts[0].student_id })]));
   /* Lịch và hạn chấm RIÊNG từng môn — một bài có thể trải hai ba tuần (mục 10.1). */
   const skillRows = loadSkillRows(attempts.map((a) => a.id));
+  const emBoTro = emChiXemBoTro(p, classId);
   /* Mã tuần mà dấu "-" đã dời môn đi (C08) — đọc gộp một lần cho cả bảng. */
   const noShowPeriodIds = [...new Set([...byAttempt.values()].flat()
     .map((r: any) => r.no_show_period_id).filter((x: any) => x))] as number[];
@@ -1377,6 +1378,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
         /** OV-6b2: Checkpoint — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case); null khi chưa đủ điểm hoặc bài khác. */
         chip: a.kind === 'checkpoint' ? chipCheckpoint(result, prog.code) : null,
         studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
+        ...(emBoTro && !emBoTro.has(a.student_id) ? { xemHoSo: false } : {}),   // GV-CU-BO-TRO [XM-2]
         /** OV-15i2: Dán từ Excel lớp thường khớp em theo email (như FT). */
         studentEmail: (a.student_email ?? null) as string | null,
         studentStatus: a.student_status,

@@ -578,6 +578,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
   const hoSoGv: any = await import('../giaoVien/hoSo.ts');
   check('GVCU-5 · lối vào: lớp cũ chưa kết thúc có dòng "Đã chuyển · đang bổ trợ" CHỈ cho Người dạy; hồ sơ GV "Em đang bổ trợ"; lớp mới chỉ xem có số HV đúng', () => {
     const f = daChuyen(true);
+    const khacMoi = hocVien(f.dich, 'BE').sid;
     assert(get('SELECT status FROM classes WHERE id = ?', f.nguon).status === 'active', 'lớp cũ phải chưa kết thúc');
     vao(THU_HAI, () => {
       const cu = (u: number) => (classesSvc.classRoster(loadPrincipal(u), f.nguon) as any[]).find((r) => r.id === f.sid);
@@ -588,6 +589,15 @@ export async function runPrCt2Tests(t: YThucTestKit) {
       assert(bt.length === 1 && bt[0].hvId === f.sid && bt[0].lopId === f.dich && bt[0].paId === f.w.id && bt[0].soBuoi === f.w.so_buoi && bt[0].hanMiniTest === f.mt.han,
         `Em đang bổ trợ: ${JSON.stringify(bt)}`);
       assert(hoSoGv.hoSoGiaoVien(loadPrincipal(GV[3]), GV[3]).boTro.length === 0, 'GVCN mới không phải Người dạy');
+      /* [XM-2] lớp mới chỉ xem: em mình dạy mở được hồ sơ; em khác `xemHoSo: false` (không link tới 403); người dạy thật của lớp không có cờ. */
+      const ro = (u: number) => classesSvc.classRoster(loadPrincipal(u), f.dich) as any[];
+      const moi = ro(GV[1]);
+      assert(moi.find((r) => r.id === f.sid)?.xemHoSo === undefined && moi.find((r) => r.id === khacMoi)?.xemHoSo === false, `lớp mới GV cũ: ${JSON.stringify(moi.map((r) => [r.id, r.xemHoSo]))}`);
+      assert(ro(GV[3]).every((r) => r.xemHoSo === undefined), 'GVCN lớp mới mở được mọi em');
+      const bang = (u: number) => (regular.regularSheet(loadPrincipal(u), f.dich).rows as any[]);
+      assert(bang(GV[1]).some((r) => r.studentId === khacMoi && r.xemHoSo === false) && bang(GV[1]).every((r) => r.studentId === khacMoi || r.xemHoSo === undefined),
+        `bảng điểm lớp mới GV cũ: ${JSON.stringify(bang(GV[1]).map((r) => [r.studentId, r.xemHoSo]))}`);
+      assert(bang(GV[3]).every((r) => r.xemHoSo === undefined), 'bảng điểm GVCN lớp mới không cờ');
       const tq = classesSvc.classOverview(loadPrincipal(GV[1]), f.dich);
       assert(tq.summary?.studentCount === all(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`, f.dich).length, `số HV lớp mới (chỉ xem): ${tq.summary?.studentCount}`);
     });

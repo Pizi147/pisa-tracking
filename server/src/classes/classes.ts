@@ -7,7 +7,7 @@ import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
-  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
+  can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -385,6 +385,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   if (!students.length) return [];
   const sids = students.map((s) => s.id);
   const ph = DS_JSON, json = JSON.stringify(sids);   // S5: một tham số JSON
+  const emBoTro = emChiXemBoTro(p, classId);   // GV-CU-BO-TRO [XM-2]: em khác `xemHoSo: false` (không link tới 403)
   const attempts = conn
     .prepare(
       `SELECT a.*, cy.seq AS cycle_seq, cy.route, cy.khong_cam_ket AS cy_kck, pr.code AS period_code, pr.week_start
@@ -683,6 +684,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       moiVao: !!s.enrollment_started_at && s.enrollment_status === 'active' && s.enrollment_started_at >= dauTuanNay,
       /** "Kết thúc vì" (Q18/Q22) — chỉ có nghĩa ở bảng lớp ĐÃ KẾT THÚC, nơi dòng không còn `active`. */
       ketThucVi: finished ? nhanKetThucVi(s.enrollment_end_kind ?? null, s.enrollment_status) : null,
+      ...(emBoTro && !emBoTro.has(s.id) ? { xemHoSo: false } : {}),
       /** GV-CU-BO-TRO: em đã chuyển, người xem đang dạy PA Bổ trợ miễn phí của em — mã lớp mới (chip "Đã chuyển · đang bổ trợ ›" → hồ sơ HV). */
       dangBoTro: s.enrollment_status === 'transferred' && (p.boTro ?? []).some((b) => b.studentId === s.id)
         ? { lopMoi: lopDayDu().get((p.boTro ?? []).find((b) => b.studentId === s.id)!.classId ?? -1)?.code ?? null } : null,

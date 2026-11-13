@@ -504,10 +504,13 @@ export function ChipLoc({ chon, so, onBam, children }: { chon: boolean; so: numb
  * TEN-HV-LINK (chủ SP 07/11): tên em = link mở hồ sơ HV (mang `state.ds` — Trước / Sau, Quay lại về lớp); nút ▾ cạnh tên (Tab + Enter) hoặc
  * bấm phần còn lại của hàng / thẻ (`bamHang`) = mở / đóng vùng mở rộng ngay dưới hàng.
  */
-export function TenEm({ s, mo, onMo, ds }: { s: { id: number; fullName: string }; mo: boolean; onMo: () => void; ds: NguCanhDs }) {
+export function TenEm({ s, mo, onMo, ds }: { s: { id: number; fullName: string; xemHoSo?: boolean }; mo: boolean; onMo: () => void; ds: NguCanhDs }) {
   return (
     <span className="inline-flex min-w-0 max-w-full items-center gap-0.5">
-      <Link className="ten-ho-so min-w-0 truncate" title={s.fullName} to={duongHoSoHocVien(s.id)} state={{ ds }}>{s.fullName}</Link>
+      {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp mới — em khác chữ thường, không link (máy chủ `xemHoSo: false`). */}
+      {s.xemHoSo === false
+        ? <span className="min-w-0 truncate font-semibold" style={{ color: 'var(--text)' }} title={s.fullName}>{s.fullName}</span>
+        : <Link className="ten-ho-so min-w-0 truncate" title={s.fullName} to={duongHoSoHocVien(s.id)} state={{ ds }}>{s.fullName}</Link>}
       <button type="button" className="lt-mo-ct ten-mo" aria-expanded={mo} aria-controls={`mo-${s.id}`} aria-label={t('Chi tiết {ten}', { ten: s.fullName })} onClick={onMo}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
       </button>

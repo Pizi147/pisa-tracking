@@ -204,10 +204,9 @@ export function emBoTroCuaGv(p: Principal, gvId: number): HoSoGv['boTro'] {
       ORDER BY s.full_name, iv.id`).all(gvId) as any[];
   const daCo = new Set<number>();
   return rows.filter((r) => !daCo.has(r.student_id) && daCo.add(r.student_id) && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }))
-    .map((r) => ({ hvId: r.student_id, ten: r.full_name, lopId: r.lop ?? null, lopMa: r.lop ? bangLopMa(r.lop) : null, daDay: r.da_day ?? 0, soBuoi: r.so_buoi ?? null,
+    .map((r) => ({ hvId: r.student_id, ten: r.full_name, lopId: r.lop ?? null, lopMa: r.lop ? lopDayDu().get(r.lop)?.code ?? null : null, daDay: r.da_day ?? 0, soBuoi: r.so_buoi ?? null,
       hanMiniTest: r.han_mt ?? null, caseId: r.case_id, paId: r.pa_id }));
 }
-const bangLopMa = (id: number): string | null => lopDayDu().get(id)?.code ?? null;
 
 export function hoSoGiaoVien(p: Principal, gvId: number): HoSoGv {
   const { branchIds, laChinhMinh, ten } = phamViHoSoGv(p, gvId);          // quyền TRƯỚC mọi câu khác (tên GV đọc cùng câu kiểm)

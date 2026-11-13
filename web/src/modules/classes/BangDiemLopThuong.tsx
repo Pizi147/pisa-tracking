@@ -39,6 +39,8 @@ type DongThuong = {
   ketThucVi?: string | null;
   /** GV-CU-BO-TRO: em đã chuyển, người xem đang dạy PA Bổ trợ miễn phí của em (máy chủ) — chip "Đã chuyển · đang bổ trợ ›" về hồ sơ HV. */
   dangBoTro?: { lopMoi: string | null } | null;
+  /** GV-CU-BO-TRO [XM-2]: `false` = người xem (người dạy bổ trợ, chỉ xem lớp) không mở được hồ sơ em này — tên không link. */
+  xemHoSo?: boolean;
   /** PR-UXF-a K2-12: % tổng Cuối khoá — cùng hàm với panel Chuyển lớp (`cuoiKhoaTheoHocVien`). */
   cuoiKhoa?: { tyLe: number | null } | null;
   /** PR-OV3a: hướng Quản lý ĐÃ CHỐT (máy chủ `loTrinhDaChot`) — nháp / đề xuất GVCN / gợi ý tự tính không có ở đây. */
