@@ -101,7 +101,7 @@ export const EN_HD_V3A = {
   'Mọi việc của bạn theo tab, quá hạn ở đầu.': 'All your tasks by tab, overdue first.',
   'Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu mục.': 'Past due and not saved: orange text + ⚠ in the due column, at the top of the section.',
   'Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.': 'Due filter: <b>Any due date</b> · <b>Overdue</b> · <b>Today</b> · due by a date; <b>More filters</b> for track and branch.',
-  'Đầu trang đếm “n việc · m quá hạn” và việc xong hôm nay.': 'The top counts “n tasks · m overdue” and tasks done today.',
+  'Đầu trang đếm “n việc · m quá hạn” và việc vừa xong (trong lần mở trang này).': 'The top counts “n tasks · m overdue” and tasks just done (since this page was opened).',
   'Lọc việc ở hàng này.': 'Filter tasks on this row.',
   'Cuối Công việc: các lớp bạn dạy, bài quá hạn và bài chờ chấm.': 'Bottom of Tasks: the classes you teach, overdue and pending tests.',
   '<b>Lịch thi thật ›</b> ở hàng tuần: em thi tháng này.': '<b>Real exam schedule ›</b> on the week row: students sitting exams this month.',

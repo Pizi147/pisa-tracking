@@ -146,6 +146,8 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
           ? [chuQuaHan ?? chung.filter(Boolean).sort().join(', '), sos.tuanThi ? tuanLich(sos.tuanThi) : null, sos.sos ? `SOS ${sos.sos}` : null].filter(Boolean).join(' · ')
           : chuQuaHan ?? (chung.length === 1 ? chung[0] : null),
       count: nhom.length, actionLabel: chuSo,
+      /* Audit 13/11 F01: `soBai` = tổng bài của nhóm (cùng `so` của tiêu đề) — không giữ số của lớp đầu từ `...it`; đầu tab Chấm điểm cộng số này. */
+      ...(laBai ? { soBai: so } : {}),
       reason: chuSo,
       href: href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
       con: tuan ? con.map((c) => ({ ...c, conTen: [c.classCode, c.conTen].filter(Boolean).join(' · ') })) : con,

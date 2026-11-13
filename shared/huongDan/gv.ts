@@ -252,7 +252,7 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'cv-gop', ten: 'Làm cả lớp một lần', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
         { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu mục.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
-        { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.', 'Đầu trang đếm “n việc · m quá hạn” và việc xong hôm nay.'],
+        { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.', 'Đầu trang đếm “n việc · m quá hạn” và việc vừa xong (trong lần mở trang này).'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc việc ở hàng này.' } },
         { id: 'tq-lop', ten: 'Lớp tôi dạy', buoc: ['Cuối Công việc: các lớp bạn dạy, bài quá hạn và bài chờ chấm.', 'Bấm tên lớp mở hồ sơ lớp.'],
           chi: { hd: 'tq-lop-toi-day', duong: CV, chu: 'Bấm tên lớp để mở hồ sơ lớp.' } },

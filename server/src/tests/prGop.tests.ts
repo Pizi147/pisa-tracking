@@ -6,6 +6,7 @@
  * Badge / summary đếm DÒNG; số việc thật (`items`) không đổi. Nhắc một dòng gộp = một chuông.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { docSach } from './panelUx3.tests.ts';
 
 export async function runPrGopTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P, TODAY } = t;
@@ -92,6 +93,25 @@ export async function runPrGopTests(t: YThucTestKit) {
     const [g] = d.gopViecTheoLop(ds, nhan);
     assert(g.tieuDe === 'Kết quả PA · MB FOU 15 · 1 em · 2 việc' && g.actionLabel === '1 em · 2 việc' && g.con.length === 2, `${g.tieuDe} / ${g.actionLabel}`);
     assert(g.con[0].conTen === 'Ngọc', 'con vẫn mang tên em');
+  });
+
+  check('GOP-1f (audit 13/11 F01) · Nhập điểm tuần thi 5 lớp 7+4+4+10+3 → `soBai` dòng gộp = 28 (đầu tab Chấm điểm cộng `soBai` dòng); lọc chi nhánh dựng lại đúng', () => {
+    const bai = [7, 4, 4, 10, 3];
+    const ds = bai.map((n, i) => v({ key: `score:${i}`, group: 'score', studentId: null, studentName: `Lớp ${i}`, classId: 20 + i, classCode: `L${i}`,
+      cn: i < 3 ? 1 : 2, tuanThi: '2026-11-09', soBai: n, count: n, tieuDe: `Nhập điểm Reading · L${i}`, contextLabel: null, attemptId: null }));
+    const [g] = d.gopViecTheoLop(ds, nhan);
+    assert(g.con?.length === 5, `một dòng 5 lớp: ${g.con?.length}`);
+    assert(g.soBai === 28 && g.actionLabel === '28 bài', `soBai dòng gộp: ${g.soBai} / ${g.actionLabel}`);
+    const [c1] = d.dongTheoChiNhanh([g], 1);
+    assert(c1.soBai === 15, `chi nhánh 1 (7+4+4): ${c1.soBai}`);
+    const [c2] = d.dongTheoChiNhanh([g], 2);
+    assert(c2.soBai === 13, `chi nhánh 2 (10+3): ${c2.soBai}`);
+  });
+
+  check('GOP-1g (audit 13/11 F07) · chip việc xong đếm theo phiên → chữ "Vừa xong", không "xong hôm nay"', () => {
+    const tab = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');
+    assert(!/t\('[^']*[Xx]ong hôm nay/.test(tab), 'còn chữ "xong hôm nay" trong t()');
+    assert(tab.includes("t('✓ Vừa xong · {n}'") && tab.includes("t('✓ {n} vừa xong'"), 'chip mới');
   });
 
   /* ---------------------------------------------------------------- máy chủ: myWork trả `dong`, summary đếm dòng */
