@@ -168,3 +168,15 @@ Câu hỏi của PTA Overhaul: "Các dòng 2.3, 2.4, 2.5, 2.7 làm theo đề xu
 - **2.6 (bổ sung lời 12):** Báo cáo PH **lớp thường cũng giao việc cho GV** — theo đợt Progress / Final đang có trong mã (mở thứ Hai tuần Test, hạn Chủ nhật tuần đó); FT: 20 → 30 (tháng 2: 28).
 
 VỀ CÁCH LÀM (chủ SP hỏi ý, PTA Overhaul đồng ý): session Fable này **chỉ làm phần đọc + quyết**: đề bài, thiết kế, plan PR, rà theo đề bài. **Dựng mockup và code giao session khác** (Opus 5.5 / Sonnet 5.5) qua PTA Plan. Mockup ① đang do một agent Opus dựng → để chạy nốt; từ ② trở đi là session riêng, ghi trong plan.
+
+## 13/11 — lời 14: hạn Báo cáo PH lớp thường
+
+> "hạn báo cáo cho lớp thường để thứ 3 tuần tiếp theo, sau tuần làm test"
+
+ĐÃ CHỐT (đổi luật đang chạy): đợt Báo cáo PH lớp thường (Progress / Final) vẫn mở thứ Hai tuần Test, **hạn = thứ Ba tuần kế tiếp** (thứ Hai tuần Test + 8 ngày). Mã đang là Chủ nhật tuần Test (`shared/domain/baoCaoPh.ts` `dotTuan`, + 6 ngày). Áp cho cả việc mới của GV lẫn tab Báo cáo PH và việc Admin "Xuất báo cáo PH" (cùng một hàm đợt). FT giữ 20 → 30 (tháng 2: 28).
+
+## 13/11 — lời 15: PTA Overhaul tự giao session mockup
+
+> "Từ sau bạn tự giao session làm mockup luôn không cần phải gửi qua PTA plan nữa, nhiều bước thừa quá"
+
+ĐÃ CHỐT (cách làm, áp từ nay): **session mockup do PTA Overhaul tự mở và giao** (Opus 5.5 / Sonnet 5.5), không qua PTA Plan. Session CODE, rà, check chung, merge PR code, deploy vẫn là việc PTA Plan (chủ SP chưa đổi phần này).
