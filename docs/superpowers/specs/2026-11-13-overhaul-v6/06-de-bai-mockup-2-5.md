@@ -5,6 +5,9 @@ PTA Overhaul · 14/11. Mỗi mockup một session Opus 5.5 do PTA Overhaul giao 
 
 ## Luật chung cho cả bốn mockup
 
+- **Chủ SP 14/11 đêm (lời 20) — áp cho cả bốn:** nút-chip "Việc cần làm" **không có biểu tượng** (chỉ chữ loại việc + số; quá hạn có ⚠), xếp gọn một hàng · bảng "Lớp của tôi" / dải việc theo lớp **không hiện việc Chấm Speaking** · việc **"Báo cáo PH" nằm trong tab / nhóm "Vận hành"**, không có tab riêng · bấm một việc → mở panel hoặc sang đúng trang (chủ SP: "rất hợp lý, tôi cần những thứ như thế") · nút tên **"+ Task"** (Case · Vi phạm / Nhắc nhở · Tình hình học tập) · tên tab **"Chấm Speaking"**. Chỗ nào trong `thiet-ke/v21/trang-dau-gv.html` khác các điều này thì theo các điều này.
+- **Chủ SP đang ngủ khi session chạy:** không hỏi chủ SP; chỗ phải đoán ghi [XM]; xong thì mở PR, KHÔNG merge, nhắn "PTA Overhaul" và để mockup đó chờ chủ SP duyệt sáng mai.
+
 - **Nâng cấp màn đang có, không dựng lại.** Mỗi màn có mockup nền đã duyệt (ghi ở từng mục) — giữ bố cục, hình ảnh, thao tác của nền; chỉ đổi đúng những điều đề bài nêu. Chạy web thật (`npm run seed` rồi `npm run dev`, tài khoản demo) để xem màn hiện tại trước khi vẽ.
 - Mỗi mockup: `thiet-ke/v21/<tên>.html` + `<tên>-ghi-chu.md` (bảng truy vết khung → thành phần → luật / việc → TRƯỚC → SAU có dòng GIỮ / BỎ · bảng thao tác TRƯỚC → SAU của màn · [XM] · bảng tự rà từng dòng R) + ảnh từng khung Tối / Sáng ở `thiet-ke/v21/anh/<tên>/`. Dùng `v21.css` (CHỈ ĐỌC — không sửa; cần thêm thì viết `<tên>.css` riêng).
 - 1440 + 375, Sáng + Tối, đủ trạng thái (rỗng, đang tải, lỗi, không có quyền). Chữ trong khung web ngắn, đúng thuật ngữ; không chú thích tĩnh (trừ dòng quy chế); ghi chú cho người duyệt đặt ngoài khung. Tên người bịa. Không thêm thành phần đề bài không yêu cầu.

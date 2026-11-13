@@ -232,3 +232,25 @@ PTA Overhaul trả lời (ĐỀ XUẤT, chờ chủ SP chốt): **mockup ②–�
 > "đổi speaking chấm chéo thành 'Chấm Speaking' là được rồi"
 
 ĐÃ CHỐT: tên tab / nhãn tính năng **"Chấm Speaking"** (thay "Speaking chấm chéo" — tên đặt 13/11 ở #1475). Áp: tab Công việc, đầu panel, nút-chip "Việc cần làm", Hướng dẫn "?". Dải đầu tab vẫn ghi "Việc chung của nhóm GV Speaking · n bài". Luật không đổi. Đã giao sửa vào mockup ①; đổi chữ trên web đi cùng PR giao diện của tab này.
+
+## 14/11 đêm — lời 20: mockup ① duyệt hẳn (4 chỉnh, không mockup lại) · mockup khác = session con · chạy qua đêm
+
+> "Mockup 1:
+> 1. Như đã nói, việc chấm speaking toàn là chấm chéo, nên đừng hiện công việc chấm speaking ở bảng lớp của tôi
+> 2. Để các đầu việc trong box nhỏ thì được, nhưng thôi đừng thêm icon bút viết, flag làm gì, hơi thừa thãi, và sắp xếp cho hợp lý để nhìn đỡ rối mắt là ok
+> 3. Việc bấm vào từng việc chuyển sang trang rất hợp lý, tôi cần những thứ như thế
+> 4. Việc 'Báo cáo PH' nên để vào tab 'vận hành' giờ đã nhiều tab rồi nên làm gọn đi nhé
+> 5. Còn lại ok, duyệt nhé, không cần mockup lại đâu
+>
+> Các mockup khác mở thành session con.
+>
+> Bây giờ tôi sẽ đi ngủ, bạn cứ tự chủ động làm tiếp, tự chủ động đề xuất, giao việc, chọn model, effort khi giao cho session, rà và để lại mockup ở session con mai tôi duyệt, những gì động vào luật, logic, bug cần sửa để cho mọi thứ hợp lý, cứ nhắn cho PTA Plan và bảo nó y hệt là tôi đang ngủ, tự chủ động rà, duyệt, merge, mọi thứ, archive thứ đã xong, sáng mai báo cáo cho tôi cụ thể và hỏi tôi những cái cần thiết là được. Bạn cũng vậy cái gì cảm tháy tự quyết được cứ tự quyết, còn nếu thấy không chắc chắn thì cứ tổng hợp lại rồi hỏi tôi mai tôi sẽ trả lời sau. Ngoài ra cần gì bây giờ thì suy nghĩ kĩ đi và hỏi luôn ngay bây giờ. Và khi bạn gửi cho PTA Plan, nó có tự giao việc cho session con được luôn không hay tôi lại vẫn phải bấm nút confirm như những đợt vừa rồi? có cách nào bypass việc đấy không vì tôi còn đi ngủ"
+
+ĐÃ CHỐT — mockup ① DUYỆT HẲN, không vẽ lại; bốn chỉnh dưới đây áp thẳng khi code và ở mockup ②–⑤ (thắng hình trong `thiet-ke/v21/trang-dau-gv.html`):
+1. Bảng "Lớp của tôi" **không hiện việc Chấm Speaking** (việc này toàn chấm chéo, chỉ nằm ở tab Chấm Speaking).
+2. Nút-chip "Việc cần làm": giữ hộp nhỏ, **bỏ biểu tượng** (bút, cờ…); xếp gọn, đỡ rối.
+3. Bấm một việc → mở panel / sang trang tương ứng: **giữ, làm rộng ra các chỗ khác**.
+4. Việc **"Báo cáo PH" nằm trong tab "Vận hành"** — không thêm tab riêng (đã nhiều tab).
+5. Mockup ②–⑤: **mỗi cái một session con**.
+
+CHẠY QUA ĐÊM: PTA Overhaul tự quyết việc tự quyết được (đề xuất, giao session thiết kế, chọn model + effort, rà mockup, để mockup ở session con chờ chủ SP duyệt sáng mai); việc luật / logic / lỗi → nhắn PTA Plan, nói rõ chủ SP đang ngủ: tự rà, duyệt, merge, archive, sáng báo cáo. Điều không chắc → gom lại hỏi sáng mai.
