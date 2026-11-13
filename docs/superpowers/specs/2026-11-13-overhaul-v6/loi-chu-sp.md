@@ -123,3 +123,17 @@ PTA Overhaul trả lời (ĐỀ XUẤT, chờ chủ SP chốt): **giữ tab riê
 - Tab này đã có ý đồ (chia tab hạng mục 06/11, đổi tên 13/11 #1475) → giữ.
 - Cái sửa là BÊN TRONG tab (đúng lời 9): dòng "Speaking · lớp · tuần Test · số bài · hạn" theo tuần + lớp, tuần mới ở trên, tuần cũ gập; mở ra cùng panel / lưới nhập, cùng "Lưu · bài tiếp". Đầu tab ghi thẳng "Việc chung của nhóm GV Speaking · n bài" thay cho "0 việc".
 - Đề xuất thêm (chờ chốt): lớp tôi đang dạy Speaking xếp lên đầu tab; ở cột "Lớp của tôi" của trang đầu, lớp đó ghi "Speaking tuần này · n bài · chấm chéo" và mở đúng panel này.
+
+## 13/11 — lời 11: chốt Speaking chấm chéo
+
+Câu hỏi của PTA Overhaul (hộp bước tiếp): "Giữ tab riêng cho Speaking chấm chéo, bên trong giống nhập điểm thường?"
+
+> "Đồng ý"
+
+ĐÃ CHỐT:
+- **Giữ tab riêng "Speaking chấm chéo"** ở Công việc (không gộp vào Chấm điểm).
+- **Vẫn MỘT dòng việc chung "Chấm Speaking"** (giữ ý đồ OV-14c: bài chung không đếm thành nhiều việc cho từng GV).
+- **Bên trong panel giống nhập điểm thường:** gom theo tuần Test → lớp, cùng lưới nhập, cùng "Lưu · bài tiếp"; tuần mới ở trên, tuần cũ gập.
+- Đầu tab ghi thẳng "Việc chung của nhóm GV Speaking · n bài" thay cho "0 việc".
+- Luật không đổi: ai chấm được, hạn, cách tính quá hạn (09/11).
+Đi kèm, còn là đề xuất (duyệt ở mockup): lớp tôi dạy Speaking xếp đầu tab · cột "Lớp của tôi" ghi "Speaking tuần này · n bài · chấm chéo".
