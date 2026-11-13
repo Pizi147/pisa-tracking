@@ -5,7 +5,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { NutChon, TargetText } from '../../ui/ui.tsx';
-import { chuTargetKck, docTargetKyThi, dsLoi, tachKck, type KyThi, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
+import { chuTargetKck, hanDuyetNgay, docTargetKyThi, dsLoi, tachKck, type KyThi, type LuatTruong, type TruongDeXuat } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -78,8 +78,8 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
           {busy ? t('Đang lưu…') : sua ? t('Lưu') : t('Gửi Quản lý')}
         </button>,
       }}>
-      <Khoi tieuDe={t('Đề xuất sửa')} luat={boLoTrinh ? t('Target do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.')
-        : t('Target và lộ trình do Quản lý sửa. Quản lý duyệt trong 5 ngày; kết quả báo ở chuông và Yêu cầu của tôi.')}>
+      <Khoi tieuDe={t('Đề xuất sửa')} luat={boLoTrinh ? t('Target do Quản lý sửa. Quản lý duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.', { n: hanDuyetNgay() })
+        : t('Target và lộ trình do Quản lý sửa. Quản lý duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.', { n: hanDuyetNgay() })}>
         <Truong nhan={t('Thông tin cần sửa')} batBuoc loi={lf.loiCua(loi, 'truong')}>
           <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'truong')}>
             {TRUONG.filter((x) => !(boLoTrinh && x.key === 'lo-trinh' && sua?.truong !== 'lo-trinh')).map((x) => (

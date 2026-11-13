@@ -20,8 +20,8 @@ import { mocNghiepVu } from '../duyet/yeuCau.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 
 /**
- * BÀN GIAO (PR-CT, §3.1f Q30-2): có quyết định chuyển lớp → mỗi GVBM ghi MỘT CÂU mỗi em cho môn mình (hạn 2 ngày), GVCN lớp cũ gom lại, viết nhận xét
- * chung rồi Xác nhận (hạn 3 ngày, tính cả ngày ra lệnh). Quá hạn không chặn việc chuyển — lệnh vẫn chạy đúng tuần. Phiếu = một dòng của
+ * BÀN GIAO (PR-CT, §3.1f Q30-2): có quyết định chuyển lớp → mỗi GVBM ghi MỘT CÂU mỗi em cho môn mình (cùng hạn với GVCN), GVCN lớp cũ gom lại, viết nhận xét
+ * chung rồi Xác nhận (hạn `hanBanGiao` = Hạn mặc định, gốc 7 ngày, tính cả ngày ra lệnh). Quá hạn không chặn việc chuyển — lệnh vẫn chạy đúng tuần. Phiếu = một dòng của
  * `lenh_chuyen_lop` (nhận xét chung + bản chụp phần tự điền + xác nhận) và các dòng `ban_giao_mon`.
  */
 

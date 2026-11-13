@@ -22,6 +22,7 @@ import { CHU_TOI_THIEU_CASE,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
+import { hanDuyetNgay } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
 
@@ -409,7 +410,7 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
       </div>
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY={t('Ví dụ: Em nghỉ ốm cả tuần Test')} loi={daBam ? loiGhiRo : null} />
       {daBam && thieu && <p className="m-0 text-xs text-bad" role="alert">{thieu}</p>}
-      <p className="m-0 text-xs text-slate-500">{t('Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi')}</p>
+      <p className="m-0 text-xs text-slate-500">{t('Gửi Quản lý duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>{t('Gửi Quản lý duyệt')}</button>

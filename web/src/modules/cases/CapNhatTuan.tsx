@@ -22,6 +22,7 @@ import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
+import { hanDuyetNgay } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
@@ -399,7 +400,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           <Truong nhan={t('Cần Quản lý giúp gì')} batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-xs text-slate-400">{t('Gửi Quản lý · trả lời trong 5 ngày · xem ở Yêu cầu của tôi')}</p>
+          <p className="m-0 text-xs text-slate-400">{t('Gửi Quản lý · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
         </div>
       );
     }

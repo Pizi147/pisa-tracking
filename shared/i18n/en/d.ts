@@ -251,7 +251,7 @@ const EN_D_WEB = {
   'Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi': 'Sent to manager — see My requests',
   'Không cần theo dõi Case này vì:': 'Stop tracking this case because:',
   'Ví dụ: Em nghỉ ốm cả tuần Test': 'E.g. Off sick the whole test week',
-  'Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi': 'Send to manager · reply within 5 days · see My requests',
+  'Gửi Quản lý duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi': 'Send to manager · reply within {n} days · see My requests',
 
   /* Vi phạm: chi tiết, xoá */
   'Đã xoá vi phạm': 'Incident deleted',
@@ -443,7 +443,7 @@ const EN_D_WEB = {
   /* Xác nhận xử lý / Đề xuất QL duyệt (XacNhanXuLyPanel), Xem lần xử lý (XemXuLyPanel) */
   'Loại': 'Type',
   'Bậc vừa đổi — đã mở lại với bậc mới.': 'The level just changed — reopened with the new level.',
-  'Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong 5 ngày.': 'Sent {nhan} for {ten} to the manager. Reply within 5 days.',
+  'Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.': 'Sent {nhan} for {ten} to the manager. Reply within {n} days.',
   'Đã xử lý {nhan} cho {ten} · {size} vi phạm.': (b) => `${b.nhan} done for ${b.ten} · ${so(b.size, 'incident', 'incidents')}.`,
   'Tệp hoặc liên kết · không bắt buộc': 'File or link · optional',
   '{nhan} · {size} vi phạm': (b) => `${b.nhan} · ${so(b.size, 'incident', 'incidents')}`,

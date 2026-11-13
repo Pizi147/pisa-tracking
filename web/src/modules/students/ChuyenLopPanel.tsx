@@ -18,6 +18,7 @@ import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, nguongThuongHienTai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
   mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
+import { hanDuyetNgay } from '@shared/domain/index.ts';
 
 type LopDich = {
   id: number; code: string; chiNhanhId: number; branchCode: string | null; ma: string | null; ft: boolean; route: string | null;
@@ -350,7 +351,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
           </Khoi>
 
           {dx ? (
-            <p className="mb-0 mt-3 text-xs text-slate-400">{t('Gửi Quản lý duyệt · trả lời trong 5 ngày · xem ở Yêu cầu của tôi')}</p>
+            <p className="mb-0 mt-3 text-xs text-slate-400">{t('Gửi Quản lý duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
           ) : toClassId && (
             <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay, không hoàn tác')}` : t('Khi chuyển, web sẽ')}>
               {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : t('Đang xem trước…')}</p> : (

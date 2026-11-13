@@ -493,7 +493,7 @@ export const HD_GV: HuongDan = {
     { id: 'sos-case', ten: 'SOS và Case', buoc: ['Số kỹ năng dưới kỳ vọng ở MT: 1 → SOS 1, 2 → SOS 2, 3–4 → SOS 3.', 'Lượt chưa chốt: Case tạm “Chờ chốt SOS” — ghi / sửa mô tả, đặt / sửa PA được; chưa hạn, chưa việc.', 'Lượt chốt: PA của bạn cùng loại PA quy chế thì giữ; khác → việc <b>Chọn PA</b> (Theo quy chế / Giữ PA của tôi — QL duyệt trong 3 ngày, quá hạn tự duyệt).',
       'Bấm chip SOS ở mọi màn: hộp “Vì sao SOS n” — kỹ năng dưới kỳ vọng, điểm từng kỹ năng, lối mở hồ sơ MT.'] },
     { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL bấm <b>Kết thúc sớm…</b> ở thẻ PA.', 'Lý do bắt buộc, từ <b>8</b> ký tự; nhật ký PA ghi lại.'] },
-    { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['GV bộ môn 2 ngày, GVCN 3 ngày, tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.', 'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.'] },
+    { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['GV bộ môn và GVCN cùng một hạn: Cấu hình hệ thống › <b>Hạn mặc định</b> (gốc <b>7 ngày</b>), tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.', 'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.'] },
     { id: 'sua-diem', ten: 'Sửa điểm sau hoàn tất', buoc: ['Ô còn trống: nhập được cả sau hoàn tất.', 'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'nhan-xet', ten: 'Nhận xét MT', buoc: ['Ô có điểm nên có nhận xét từ <b>10</b> ký tự, tối đa 300 — chỉ MT mới nhất của em (chỉ nhắc, không chặn).', 'Ô dưới kỳ vọng thêm nhóm nguyên nhân.', 'Nhận xét + nhóm thành mô tả Case khi Case chưa có mô tả.'] },
   ],

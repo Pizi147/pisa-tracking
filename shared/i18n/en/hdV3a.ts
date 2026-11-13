@@ -184,7 +184,7 @@ export const EN_HD_V3A = {
   'Bấm chip SOS ở mọi màn: hộp “Vì sao SOS n” — kỹ năng dưới kỳ vọng, điểm từng kỹ năng, lối mở hồ sơ MT.': 'Tap the SOS chip on any screen: the “Why SOS n” box — skills below expectation, per-skill scores, a link to the MT record.',
   'PA quy chế: GVCN / QL bấm <b>Kết thúc sớm…</b> ở thẻ PA.': 'Rule-based PA: the core teacher / manager taps <b>End early…</b> on the PA card.',
   'Lý do bắt buộc, từ <b>8</b> ký tự; nhật ký PA ghi lại.': 'A reason of at least <b>8</b> characters is required; the PA log keeps it.',
-  'GV bộ môn 2 ngày, GVCN 3 ngày, tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.': 'Subject teachers 2 days, core teacher 3 days, counting the decision day; overdue alerts the manager, the student still moves on time.',
+  'GV bộ môn và GVCN cùng một hạn: Cấu hình hệ thống › <b>Hạn mặc định</b> (gốc <b>7 ngày</b>), tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.': 'Subject teachers and the core teacher share one deadline: System settings › <b>Default deadlines</b> (default <b>7 days</b>), counting the decision day; overdue alerts the manager, the student still moves on time.',
   'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.': 'A skill still taught by the same teacher in the new class → no handover needed.',
   'Ô có điểm nên có nhận xét từ <b>10</b> ký tự, tối đa 300 — chỉ MT mới nhất của em (chỉ nhắc, không chặn).': 'A scored cell should have a comment of at least <b>10</b> characters, at most 300 — only the student’s latest MT (a reminder, never a block).',
   'Ô dưới kỳ vọng thêm nhóm nguyên nhân.': 'Cells below expectation also get a cause group.',

@@ -2,8 +2,8 @@
  * LỆNH CHUYỂN LỚP + BÀN GIAO — luật thuần (PR-CT, đặc tả §3.1f Q30-1…Q30-4, mockup 20).
  *
  * Quản lý ra lệnh: em nào, lớp chuyển đến nào, tuần bắt đầu (Thứ Hai, từ tuần sau trở đi). Tới Thứ Hai đó web tự thi hành
- * bằng luật lộ trình đang có (`lenLop.ts`). Có lệnh → phiếu bàn giao: GVBM ghi một câu mỗi em (hạn 2 ngày), GVCN lớp
- * cũ xác nhận (hạn 3 ngày, tính cả ngày ra lệnh). Một nguồn cho máy chủ và web.
+ * bằng luật lộ trình đang có (`lenLop.ts`). Có lệnh → phiếu bàn giao: GVBM ghi một câu mỗi em (cùng hạn), GVCN lớp
+ * cũ xác nhận (hạn `hanBanGiao`, gốc 7 ngày, tính cả ngày ra lệnh). Một nguồn cho máy chủ và web.
  */
 import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { hanTheoNgay } from './cases.ts';
