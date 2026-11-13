@@ -1,7 +1,6 @@
 import { Link } from 'react-router-dom';
 import { useSession, type Assignment } from '../../lib/session.tsx';
-import { ChipHan } from '../../ui/Nhan.tsx';
-import { ChipKy } from '../../ui/Nhan.tsx';
+import { ChipHan, ChipKy } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -114,11 +113,11 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
         <span className="hidden max-sm:flex max-sm:gap-1">{monCua(d, nhat)}</span>
       </span>
       <span className="flex flex-nowrap items-center gap-1 max-sm:hidden">{monCua(d, nhat)}</span>
-      <span className="grid min-w-0 justify-items-start gap-1 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-2">
+      <span className="grid min-w-0 justify-items-start gap-1 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-2 max-sm:empty:hidden">
         {d.test && <span className={`whitespace-nowrap text-sm leading-snug ${d.test.han ? 'font-medium text-[color:var(--text)]' : 'text-dim'}`}>{d.test.chu}</span>}
         {d.test?.han?.due && <ChipHan vien loai={LOAI_HAN_CUA_VIEC[d.test.han.group] ?? 'nhap-diem'} han={d.test.han.due} />}
       </span>
-      <span className="flex flex-wrap gap-1.5 max-sm:w-full">
+      <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
         {d.chip.map((c) => (
           <button key={c.tab} type="button" onClick={() => onMo(c.dau)}
             aria-label={`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so} · ${d.code}`}
