@@ -8,7 +8,7 @@ import {
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
-import { activeAt, can, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, can, lopDayDu, scopeFor, type Principal } from '../permissions.ts';
 import { latestAttempts } from './danhGia.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { mondayOf } from '../platform/week.ts';
@@ -312,21 +312,51 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong', chiKhiChuNhiem = false
   return { cua, trong, tap, coFt, coThuong, soFt, soThuong, today };
 }
 
+/** Test kế tiếp — FT: lượt mốc kế tiếp sớm nhất của lớp (`MOC_KE_TIEP_SQL`), MỘT câu cho cả tập lớp. */
+function keTiepFt(classIds: number[], today: string) {
+  const keTiep = new Map<number, string>();
+  if (!classIds.length) return keTiep;
+  for (const r of db().prepare(
+    `SELECT a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+       JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
+      WHERE a.kind = 'mock' AND a.class_id IN (${classIds.map(() => '?').join(',')}) AND ${MOC_KE_TIEP_SQL('a', 'rp')}
+      ORDER BY rp.week_start, a.attempt_no`,
+  ).all(...classIds, mondayOf(today)) as any[]) {
+    if (!keTiep.has(r.class_id)) keTiep.set(r.class_id, `MT${r.attempt_no} · ${tuanLich(r.week_start, today)}`);
+  }
+  return keTiep;
+}
+
+/** Lớp thường: mốc Giữa/Cuối khoá kế tiếp (từ thứ Hai tuần này) của một lớp đã có `classProgressMany`. */
+const mocThuong = (pr: any, today: string) => {
+  const thu2 = mondayOf(today);
+  return pr?.progressWeekStart && pr.progressWeekStart >= thu2 ? `Progress Test · ${tuanLich(pr.progressWeekStart, today)}`
+    : pr?.finalWeekStart && pr.finalWeekStart >= thu2 ? `Final Test · ${tuanLich(pr.finalWeekStart, today)}` : null;
+};
+
+/**
+ * LG-8 (Overhaul V6 — "Lớp của tôi" ở trang đầu GV): "Test sắp tới" từng lớp đang dạy hôm nay của GV / Head tutor, cùng nguồn và cùng chữ với
+ * `lopToiDay` (`testKeTiep` · `testTuanNay`). Lớp chưa có lịch → `null`. Gọi riêng cho vai GV / Head tutor — vai khác 0 câu. Tối đa 2 câu
+ * (FT: `keTiepFt`; lớp thường: `classProgressMany`) — bảng lớp / phân công đọc từ bộ nhớ tiến trình.
+ */
+export function testSapToiCuaGv(p: Principal) {
+  const today = demoToday();
+  if (!p.assignments.some((a) => activeAt(a, today))) return [];   // không phân công: khỏi đọc bảng lớp
+  const bang = bangLop(), lop = lopDayDu();
+  const ids =[...new Set(p.assignments.filter((a) => activeAt(a, today) && lop.get(a.classId)?.status === 'active').map((a) => a.classId))];
+  const ft = ids.filter((id) => bang.get(id)?.isFastTrack), thuong = ids.filter((id) => !bang.get(id)?.isFastTrack);
+  const keTiep = keTiepFt(ft, today);
+  const tienDo = thuong.length ? classProgressMany(thuong) : new Map();
+  const thang = tuanLich(mondayOf(today), today);
+  return ids.sort((a, b) => a - b).map((classId) => {
+    const testKeTiep = bang.get(classId)?.isFastTrack ? keTiep.get(classId) ?? null : mocThuong(tienDo.get(classId), today);
+    return { classId, testKeTiep, testTuanNay: testKeTiep?.endsWith(thang) ?? false };
+  });
+}
+
 export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }, chiKhiChuNhiem = false) {
   const { cua, trong, tap, coFt, coThuong, today } = tinhLopToiDay(p, f.ct, chiKhiChuNhiem);
-  const conn = db();
-  /* Test kế tiếp — FT: lượt mốc kế tiếp sớm nhất của lớp (`MOC_KE_TIEP_SQL`); lớp thường: mốc Giữa/Cuối khoá kế tiếp của lớp. */
-  const keTiep = new Map<number, string>();
-  if (trong.length && f.ct === 'ft') {
-    for (const r of conn.prepare(
-      `SELECT a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
-         JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
-        WHERE a.kind = 'mock' AND a.class_id IN (${trong.map(() => '?').join(',')}) AND ${MOC_KE_TIEP_SQL('a', 'rp')}
-        ORDER BY rp.week_start, a.attempt_no`,
-    ).all(...trong.map((l) => l.id), mondayOf(today)) as any[]) {
-      if (!keTiep.has(r.class_id)) keTiep.set(r.class_id, `MT${r.attempt_no} · ${tuanLich(r.week_start, today)}`);
-    }
-  }
+  const keTiep = f.ct === 'ft' ? keTiepFt(trong.map((l) => l.id), today) : new Map<number, string>();
   const tienDo = f.ct === 'thuong' && trong.length ? classProgressMany(trong.map((l) => l.id)) : new Map();
   const thu2 = mondayOf(today);
   return {
@@ -335,8 +365,7 @@ export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }, chiKhiChuNhi
       const c = cua.get(l.id)!;
       const ten = (k: string) => (f.ct === 'ft' ? tenMon(l.ct, k) : tenMonNgan(l.ct, k));
       const pr = tienDo.get(l.id);
-      const moc = pr?.progressWeekStart && pr.progressWeekStart >= thu2 ? `Progress Test · ${tuanLich(pr.progressWeekStart, today)}`
-        : pr?.finalWeekStart && pr.finalWeekStart >= thu2 ? `Final Test · ${tuanLich(pr.finalWeekStart, today)}` : null;
+      const moc = mocThuong(pr, today);
       const t = tap.get(l.id)!;
       return {
         classId: l.id as number, code: l.code as string, route: l.route ?? null, ct: l.ct ?? null,

@@ -254,3 +254,11 @@ PTA Overhaul trả lời (ĐỀ XUẤT, chờ chủ SP chốt): **mockup ②–�
 5. Mockup ②–⑤: **mỗi cái một session con**.
 
 CHẠY QUA ĐÊM: PTA Overhaul tự quyết việc tự quyết được (đề xuất, giao session thiết kế, chọn model + effort, rà mockup, để mockup ở session con chờ chủ SP duyệt sáng mai); việc luật / logic / lỗi → nhắn PTA Plan, nói rõ chủ SP đang ngủ: tự rà, duyệt, merge, archive, sáng báo cáo. Điều không chắc → gom lại hỏi sáng mai.
+
+## 14/11 đêm — lời 21: PTA Overhaul làm thay PTA Plan cho việc phát sinh
+
+> "vì sẽ còn những việc mà bạn giao thêm trong quá trình rà soát nếu phát hiện ra đúng không? nếu bạn gửi tin nhắn cho PTA Plan mà nó không tự giao việc được cho session con mà cần tôi confirm, thì tốt nhất là bạn chủ động làm thay nó luôn từ giờ, có cái gì thì cũng tự chủ động chọn model, effort và giao cho session con, tự chủ động rà duyệt và merge như PTA Plan đã làm nhé"
+
+ĐÃ CHỐT (áp từ nay): việc phát sinh trong lúc rà (kể cả logic / lỗi / luật) — **PTA Overhaul tự giao session con, tự chọn model + effort, tự rà, duyệt và merge** như PTA Plan vẫn làm; không phải chuyển qua PTA Plan rồi chờ chủ SP bấm thẻ. Sửa lời 16 ý 5 ở phần "ai giao".
+PTA Overhaul hiểu: (a) các việc ĐÃ gửi PTA Plan (F01–F07, L1–L8, LG-1…LG-8, GD-1…GD-3) và các session PTA Plan đã mở vẫn do PTA Plan theo dõi — không giao trùng; (b) vẫn giữ: không deploy; PR đổi bố cục dừng ở ảnh cặp chờ chủ SP (Q-6); điều không chắc gom lại hỏi sáng.
+Đã làm trong lượt: mở sẵn hai session dự bị (`du-bi-1` Opus 5.5 · high, `du-bi-2` Sonnet 5.5 · medium) vì app chỉ cho mở session ở lượt của chủ SP; việc phát sinh trong đêm giao cho hai session này bằng tin nhắn.

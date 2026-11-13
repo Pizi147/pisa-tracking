@@ -259,6 +259,13 @@ export default function StudentDetailPage() {
             <h1 className="m-0 flex flex-wrap items-center gap-2 text-xl font-bold leading-tight text-slate-100">
               {data.fullName}
               <MissingBadge items={data.missing} />
+              {/* L6 / 2.3 (chủ SP 13/11): GV lớp (không sửa thẳng Target) — nhắc + "Đề xuất sửa" tại chỗ, thay việc "Điền Target" (không vào số việc). */}
+              {data.viewer.coTheDeXuatSua && data.missing?.some((m: { key: string }) => m.key === 'target') && (
+                <>
+                  <Info>{t('Em chưa có Target')}</Info>
+                  <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setViecQuanLy('de-xuat-sua')}>{t('Đề xuất sửa')}</button>
+                </>
+              )}
               {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
               {data.status === 'inactive' && data.archivedAt ? <Info>{t('Tạm dừng {ngay} · Có thể quay lại', { ngay: ngay(data.archivedAt, homNay) })}</Info>
                 : data.status === 'finished' && data.finishedAt ? <Info>{t('Kết thúc học {ngay}', { ngay: ngay(data.finishedAt, homNay) })}</Info>
