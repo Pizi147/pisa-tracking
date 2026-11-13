@@ -80,3 +80,13 @@ PTA Overhaul hiểu:
 - **Bỏ "Đang chờ người khác"** khỏi trang đầu: GV chỉ cần thấy việc CỦA MÌNH.
 - **Nút "Nhập điểm" không gắn cứng vào mọi lớp:** chỉ hiện ở lớp / thời điểm thật sự có bài cần người đó nhập, đúng theo luật (lịch Test theo tuần, theo em, theo kỹ năng được phân công).
 - **Giao diện phải suy ra từ luật core, không vẽ trước rồi ép luật vào:** trước khi thiết kế, PTA Overhaul đọc kỹ luật theo 4 mảng (Test + nhập điểm · SOS / Case / PA · Ý thức / phối hợp / TVV · lớp / lộ trình / quyền) và viết bản "luật core → việc sinh ra → người làm cần thấy gì" ở `luat/`; mọi thành phần giao diện phải chỉ ra được nó phục vụ luật / việc nào, không có thì bỏ.
+
+## 13/11 — lời 7: web hiện tại là nền đã có ý đồ — học từ nó; vấn đề chỉ ở UI/UX
+
+> "nên nhớ một điều là website hiện tại cũng đã được tối ưu rất nhiều, các luật, các thao tác logic và mọi thứ gần như đều có ý đồ rõ ràng và đã xây dựng khá chắc chắn, hiện tại chỉ có vấn đề nhiều về UI/UX nên tôi mới cần bạn sửa, nên có thể học tập từ website đang có để hiểu rõ hơn logic, luật và các thao tác, những design thêm nhất là những PR gần về đây trong khoảng 3-4 lần deploy gần nhất đều có ý đồ hết, nên cứ học tập và rút ra những thứ cần rút"
+
+PTA Overhaul hiểu:
+- Overhaul V6 = sửa **UI/UX** (cách bày, cách dẫn đường, độ gọn, hình ảnh). **Luật, logic, thao tác đã có là nền** — không làm lại, không coi là thừa khi chưa hiểu ý đồ.
+- Nguồn học: (a) chính web đang chạy — tự bấm thử theo từng vai; (b) mã; (c) các PR + mockup của **3–4 lần deploy gần nhất** (và phần đã merge chưa deploy): mỗi thiết kế thêm đều có ý đồ của chủ SP → phải rút ý đồ rồi mới động vào.
+- Hệ quả cho cách làm: mỗi thay đổi giao diện phải ghi "thao tác / ý đồ cũ là gì → sau overhaul nằm ở đâu" (bảng TRƯỚC → SAU, như luật V5 "nâng cấp, không chép mockup"); thứ gì định BỎ phải nêu ý đồ gốc và vì sao không còn cần — đưa chủ SP quyết, không tự bỏ.
+- Việc làm ngay: thêm một bản đọc "ý đồ thiết kế 3–4 lần deploy gần nhất" (`luat/5-y-do-thiet-ke-gan-day.md`) cạnh 4 bản luật core; PTA Overhaul tự chạy bản thử, đi hết các luồng theo từng vai trước khi vẽ lại mẫu C.
