@@ -199,3 +199,24 @@ Câu hỏi của PTA Overhaul: ba câu về việc Báo cáo PH (quá hạn hi�
 5. **Chia việc:** logic · lỗi · luật (PTA Overhaul phát hiện hoặc chủ SP chốt đổi) → PTA Overhaul viết plan gửi **PTA Plan tự giao session**. PTA Overhaul **chỉ giao việc thiết kế** (session mockup — lời 15), nhưng vẫn phải rà luật, logic, workflow để đề xuất cải thiện.
 
 Đã làm trong lượt: viết `05-plan-logic-luat.md` (8 PR LG-1 … LG-8 + mục nhờ xem) gửi PTA Plan.
+
+## 14/11 — lời 17: duyệt mockup ① kèm 3 chỉnh; ô chọn có tìm ở mọi nơi
+
+Bối cảnh: PTA Overhaul gửi mockup ① `thiet-ke/v21/trang-dau-gv.html` (#1544) và hỏi "Duyệt mockup ① trang đầu GV để tôi mở session mockup ②–⑤?".
+
+> "1. Speaking chấm chéo thì phải hiểu là chủ yếu toàn chấm cho lớp khác, nên cứ để theo thứ tự lớp mặc định
+> 2. Phần lớp của tôi bên cạnh đừng để mặc định 'nhập điểm' đẻ chung cùng các việc khác ở cột cuối, và đổi cột cuối để thành 'Việc cần làm' (tất nhiên chỉ hiện việc của người đó) và hiện ra số việc + loại việc, thể hiện rõ hơn đừng để mỗi text, và khi bấm vào sẽ hiện ra panels tương ứng, hoặc đưa đến trang tương ứng nhé
+> 3. '+Ghi' thay bằng '+ Task', và xếp theo thứ tự: Case, Vi phạm/ Nhắc nhở, Tình hình học tập.
+> 4. Còn lại duyệt nhé, tôi thấy khá ok
+> 5. Cái này không cần phải làm ngay trong mockup 1, để chỗ khác cũng được, nhưng có một thứ tôi vừa nhớ ra, là những hộp box search + chọn (kiểu chọn tên, lớp, HV, người phụ trách,...) cần là hộp mặc định ở TẤT CẢ những chỗ cần chọn nhé, thay hết bộ dropdown thành bộ search + dropdown chọn, và tất nhiên nên hiện những cái relevant, kiểu chuyển lớp thì nên hiện ra lớp ở trong cùng chi nhánh, GV cùng chi nhánh,... trước"
+
+ĐÃ CHỐT:
+- **Mockup ① DUYỆT** kèm 3 chỉnh (đang sửa vào mockup):
+  1. Speaking chấm chéo: các lớp xếp theo **thứ tự lớp mặc định** — BỎ đề xuất "lớp tôi dạy Speaking lên đầu".
+  2. "Lớp của tôi": **không có nút "Nhập điểm" riêng**; cột cuối tên **"Việc cần làm"** — chỉ việc của người xem, mỗi loại việc một nút-chip rõ (loại + số), Nhập điểm nằm chung trong đó; bấm = mở panel tương ứng hoặc sang trang tương ứng.
+  3. Nút **"+ Task"** (thay "+ Ghi"); thứ tự: **Case · Vi phạm / Nhắc nhở · Tình hình học tập**.
+- **Ô chọn có tìm (search + chọn) là mặc định ở TẤT CẢ chỗ cần chọn** tên / lớp / HV / người phụ trách…; thay hết dropdown; **mục liên quan hiện trước** (chuyển lớp: lớp cùng chi nhánh; GV cùng chi nhánh…). Không bắt buộc ở mockup ① → đưa vào mockup ⑤ (bảng mẫu thành phần) + một đợt PR thay toàn web.
+
+PTA Overhaul hiểu thêm (chủ SP sửa nếu sai): (a) "Còn lại duyệt" = mockup ①; bản thiết kế `04-thiet-ke.md` là bản gom những điều chủ SP đã chốt từng lời, PTA Overhaul tiếp tục làm theo nó; (b) ô chọn có tìm áp cho chỗ chọn người / lớp / học viên và danh sách dài; danh sách ngắn cố định (vd 5 nhóm vi phạm, "Mọi hạn") giữ dáng chip / ô chọn thường.
+
+Đã làm trong lượt: giao sửa mockup ① theo 3 chỉnh; viết `06-de-bai-mockup-2-5.md` (đề bài mockup ② hồ sơ lớp · ③ hồ sơ HV · ④ trang đầu TVV · ⑤ bảng mẫu thành phần, có ô chọn có tìm).
