@@ -117,13 +117,13 @@ export function gomNhomViec<T extends ViecGom>(items: T[], tvv = false): NhomVie
 // ------------------------------------------------------------------ CV-TAB (chủ SP 06/11, mockup `thiet-ke/v17-nhap/`): Công việc chia TAB theo hạng mục
 /**
  * Tab = nhóm việc sẵn có (`NHOM_VIEC` / TVV `NHOM_CV_TVV`), thứ tự cố định; bài Speaking chấm chéo (T03, không là việc của ai) là tab riêng
- * "Bài thi Speaking" ngay sau Chấm điểm. Web thêm tab "Chờ bạn duyệt" (thẻ duyệt, không phải dòng việc) ở đầu.
+ * "Chấm Speaking" (chủ SP 14/11, lời 19 — thay "Speaking chấm chéo") ngay sau Chấm điểm. Web thêm tab "Chờ bạn duyệt" (thẻ duyệt, không phải dòng việc) ở đầu.
  */
 export const TAB_CV = ['cham-diem', 'cham-cheo', 'case-hoc-thuat', 'y-thuc', 'van-hanh'] as const;
 export const tabCuaViec = (it: { group: string; key: string }, tvv = false): string =>
   (tvv ? nhomViecTvvCua(it.group) : laViecChamCheo(it) ? 'cham-cheo' : nhomViecCua(it.group));
 export const nhanTabCv = (k: string, tvv = false): string =>
-  (k === 'cham-cheo' ? t('Speaking chấm chéo') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
+  (k === 'cham-cheo' ? t('Chấm Speaking') : tvv ? NHOM_CV_TVV_LABEL[k as NhomViecTvv] ?? k : NHOM_VIEC_LABEL[k as NhomViec] ?? k);
 
 /**
  * MỤC trong tab (chủ SP 06/11 "mô tả case, phương án, kết quả…"): mục theo LOẠI VIỆC, thứ tự `MUC_CV`; mục rỗng ẩn.
@@ -131,7 +131,7 @@ export const nhanTabCv = (k: string, tvv = false): string =>
  * Chấm điểm chia theo loại bài (`kind` của việc Nhập điểm). Loại lạ → "Khác" (không bao giờ mất việc).
  */
 const MUC_CV = [
-  ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Speaking chấm chéo')],
+  ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Việc chung của nhóm GV Speaking')],
   ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['tinh-hinh', t('Tình hình học tập')], ['phoi-hop', t('Phối hợp SOS')], ['phan-cong', t('Phân công')],
   ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
   ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],

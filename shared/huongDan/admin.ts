@@ -260,5 +260,5 @@ export const HD_ADMIN: HuongDan = {
     ...luatGv('han-cham', 'dau-gach'),
     { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch Test, nhập bù / sửa điểm, sửa thông tin HV, đổi lộ trình, sửa lịch lớp thường, xuất Excel và báo cáo PH.', 'Chỉ Quản lý: dời hạn chấm, huỷ / khôi phục lượt, Target, môn học.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
   ],
-  tu: HD_GV.tu.filter((x) => ['MT (Mock Test)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Speaking chấm chéo', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
+  tu: HD_GV.tu.filter((x) => ['MT (Mock Test)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Chấm Speaking', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
 };

@@ -96,6 +96,29 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
 }
 
 /**
+ * GD-1 "+ Task" (Overhaul V6, mockup v21 K5): ô gõ tên em — MỘT câu, em đang học (chưa lưu trữ) trong phạm vi xem học viên, kèm lớp đang học + tên TVV
+ * (hộp Tình hình học tập ghi "Gửi tới"). Nhẹ hơn `listStudents` (không đọc kết quả / Case từng em). Gõ < 2 ký tự → [] (0 câu).
+ */
+export function timHocVien(p: Principal, q: string | undefined): { id: number; ten: string; lopId: number; lop: string; tvv: string | null }[] {
+  const chu = (q ?? '').trim();
+  const needle = normalizeName(chu);
+  if (needle.length < 2) return [];
+  const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
+  if (scope.none) return [];
+  const cs = classScopeSql(scope, 'c');
+  const rows = db().prepare(
+    `SELECT s.id, s.full_name AS ten, c.id AS lopId, c.code AS lop, tv.full_name AS tvv
+       FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+       JOIN classes c ON c.id = e.class_id AND ${cs.sql}
+       LEFT JOIN users tv ON tv.id = s.consultant_user_id
+      WHERE s.archived_at IS NULL AND (s.normalized_name LIKE ? OR s.student_code LIKE ?)
+      ORDER BY s.full_name, e.id DESC LIMIT 40`,
+  ).all(...cs.params, `%${needle}%`, `%${chu.toUpperCase()}%`) as { id: number; ten: string; lopId: number; lop: string; tvv: string | null }[];
+  const da = new Set<number>();
+  return rows.filter((r) => !da.has(r.id) && !!da.add(r.id));   // em học hai lớp: lớp ghi danh mới nhất
+}
+
+/**
  * Kết quả gần nhất đã đủ căn cứ kết luận.
  * Sắp theo lộ trình rồi mới tới số lần, vì số MT được đánh lại từ đầu ở lộ trình mới.
  */

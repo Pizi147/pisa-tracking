@@ -71,8 +71,10 @@ const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
  * không có thẻ (hoặc chưa đếm xong) thì vào Hỗ trợ học viên. `/cong-viec` vẫn là Việc học viên (link cũ không gãy).
  */
 /* OV-15d: Công việc là MỘT danh sách — "Chờ bạn duyệt" là nhóm đầu khi có thẻ, nên mục menu luôn mở `/cong-viec` (tham số giữ cho nơi gọi cũ). */
+/* GD-1 (Overhaul V6): không có Tổng quan (GV) → Công việc là trang đầu, đứng đầu thanh: Công việc · Học viên & Lớp · Test. */
 export function khuVucHienThi(nav: NavQuyen, _soChoDuyet = 0): KhuVucMuc[] {
-  return KHU_VUC.filter((k) => HIEN[k.key](nav));
+  const ds = KHU_VUC.filter((k) => HIEN[k.key](nav));
+  return nav.overview ? ds : [...ds.filter((k) => k.key === 'cong-viec'), ...ds.filter((k) => k.key !== 'cong-viec')];
 }
 
 /**

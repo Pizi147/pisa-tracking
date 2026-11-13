@@ -23,6 +23,8 @@ export type WorkItem = {
   con?: (WorkItem & { conTen: string; conPhu: string })[];
   /** OV-5a: PA của việc (Kết quả PA, Xác nhận PA, Mini Test) · Nhập điểm: mã lượt (`mt:2`) + kỹ năng — panel Công việc mở đúng chỗ. */
   paId?: number | null; luot?: string; kn?: string; soBai?: number;
+  /** GD-1: việc chung Chấm Speaking — số bài quá hạn của nhóm (đầu tab). */
+  baiQuaHan?: number;
   /** OV-15b: mọi kỹ năng của việc Nhập điểm — panel chỉ hiện các cột này. */
   kns?: string[];
   /** OV-13b: Kết quả PA ghi nhanh được (máy chủ `ghiNhanhDuoc`) — CV-LOI: form gọn trong khung phải. */

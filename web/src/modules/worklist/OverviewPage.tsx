@@ -36,10 +36,12 @@ export default function OverviewPage() {
       : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
   const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
   /* TQ-GON (M3): kỳ số liệu GV / TVV ghi MỘT lần ở đầu trang như QL (L6) — cùng GET khối bên dưới đang gọi (`useApi` gộp), không thêm request. */
-  const kyGv = useApi<{ chiSo: { tu: string; den: string } }>(vai === 'gv' || vai === 'ht' ? '/tong-quan/lop-toi-day/hai-khoi' : null, [vai]).data?.chiSo;
+  const kyGv = useApi<{ chiSo: { tu: string; den: string } }>(vai === 'ht' ? '/tong-quan/lop-toi-day/hai-khoi' : null, [vai]).data?.chiSo;
   const kyTvv = useApi<{ ky: { tu: string; den: string } }>(vai === 'tvv' ? '/tong-quan/tvv' : null, [vai]).data?.ky;
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
+  /* GD-1 (Overhaul V6, mockup v21 ①): trang đầu GV = Công việc (việc bên trái + "Lớp của tôi" bên phải); số liệu GV sang Hồ sơ GV. Giữ tham số (`cn`…). */
+  if (vai === 'gv') return <Navigate to={`/cong-viec${params.toString() ? `?${params}` : ''}`} replace />;
   const congTac = <CongTacKhung v8 trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
   const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
@@ -51,7 +53,7 @@ export default function OverviewPage() {
   );
 
   if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />, undefined, kyTvv);
-  if (vai === 'gv' || vai === 'ht') return trang('', <TongQuanGvV5 lopToiDay={<HaiKhoiGv />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
+  if (vai === 'ht') return trang('', <TongQuanGvV5 lopToiDay={<HaiKhoiGv />} />, undefined, kyGv && { tu: kyGv.tu, den: kyGv.den });
   if (vai === 'admin') {
     return trang(t('Mock Test'), <TongQuanAdminV5 mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }

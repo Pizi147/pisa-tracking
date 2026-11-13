@@ -31,7 +31,7 @@ export const HD_GV: HuongDan = {
       id: 'cham-s', ten: 'Chấm Speaking chéo', nhom: 'diem', chiS: true,
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Speaking', duong: CV },
       loiTat: ['lich-test', 'p-nhap-diem'], cung: 'mở cùng ô điểm.',
-      buoc: ['Mở <b>Công việc</b>, tab <b>Speaking</b> (bài chấm chéo), bấm dòng <b>Chấm Speaking · n bài</b>.', 'Tìm em (tên, email), lọc lớp, bấm ô S để chấm.', '<b>Lưu · bài tiếp ›</b> sang em chưa chấm kế; không tính quá hạn.'],
+      buoc: ['Mở <b>Công việc</b>, tab <b>Chấm Speaking</b>, bấm dòng <b>Chấm Speaking · n bài</b>.', 'Tìm em (tên, email), lọc lớp, bấm ô S để chấm.', '<b>Lưu · bài tiếp ›</b> sang em chưa chấm kế; không tính quá hạn.'],
       tuKhac: ['speaking', 'chấm chéo', 'cross marking'],
     },
     /* ---------------------------------------------------------------- Case và PA */
@@ -512,7 +512,7 @@ export const HD_GV: HuongDan = {
     { ten: 'Tutor (học kèm)', nghia: 'PA học kèm; ghi kết quả từng buổi.' },
     { ten: 'Nháp kết quả PA', nghia: 'Kết quả PA ghi tạm (Lưu nháp): lưu trên máy chủ, sửa nhiều lần, chưa chốt; dòng việc có chip “Có nháp”.' },
     { ten: 'GVCN · GVBM', nghia: 'Giáo viên chủ nhiệm lớp · giáo viên dạy một kỹ năng.' },
-    { ten: 'Speaking chấm chéo', nghia: 'GV có kỹ năng Speaking chấm S Mock mọi lớp FT chi nhánh mình.' },
+    { ten: 'Chấm Speaking', nghia: 'GV có kỹ năng Speaking chấm S Mock mọi lớp FT chi nhánh mình.' },
     { ten: 'Mã tuần', nghia: '<b>W2 OCT</b> = tuần thứ 2 của tháng 10; tuần thuộc tháng chứa Thứ Năm.' },
     { ten: 'QL (Quản lý)', nghia: 'Quản lý chi nhánh — duyệt Case, PA, đề xuất, lịch Test.' },
   ],
