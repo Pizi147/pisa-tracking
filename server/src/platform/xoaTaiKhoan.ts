@@ -31,7 +31,7 @@ const TL = 'thiet_lap' as const;
 export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai; nhan: string }[] = [
   /* thiết lập (9) — xoá hẳn thì xoá theo; xoá mềm xử lý riêng (Q11) */
   c('user_roles', 'user_id', TL, 'vai trò'), c('user_permissions', 'user_id', TL, 'quyền riêng'), c('user_emails', 'user_id', TL, 'email phụ'),
-  c('user_skills', 'user_id', TL, 'kỹ năng'), c('user_prefs', 'user_id', TL, 'tuỳ chọn'), c('demo_sessions', 'user_id', TL, 'phiên đăng nhập'),
+  c('user_skills', 'user_id', TL, 'kỹ năng'), c('gv_cham_cot', 'user_id', TL, 'GV chấm S đã chọn'), c('gv_cham_cot', 'examiner_user_id', TL, 'GV chấm S đã chọn'), c('user_prefs', 'user_id', TL, 'tuỳ chọn'), c('demo_sessions', 'user_id', TL, 'phiên đăng nhập'),
   c('teacher_assignments', 'user_id', TL, 'phân công'), c('notifications', 'user_id', TL, 'thông báo'), c('task_followers', 'user_id', TL, 'theo dõi công việc'),
   /* dấu vết (66) */
   c('assessment_attempts', 'created_by', DV, 'lượt Test'), c('assessment_attempts', 'deadline_override_by', DV, 'lượt Test'),
