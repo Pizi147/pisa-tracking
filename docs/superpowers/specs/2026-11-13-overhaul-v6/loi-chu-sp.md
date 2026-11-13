@@ -19,3 +19,15 @@ PTA Overhaul hiểu:
 
 Đã làm trong lượt:
 - 13/11: gửi PTA Plan F01, F03, F04, F05, F06, F07 (đã đối chiếu mã `origin/main` 802f1b685; F02 = GV-CU-BO-TRO #1514 đang chạy).
+
+## 13/11 — lời 2: không giới hạn, kể cả điều đã chốt về bố cục
+
+Bối cảnh: PTA Overhaul báo hai điều đã chốt có thể vướng — 05/11 bác hướng làm lại Công việc thành bảng rộng ("thà như cũ còn hơn, cải thiện cái cũ thôi") và sáng 13/11 "Không cần đổi tổng quan nữa" (bỏ gộp Tổng quan GV) — và nói sẽ hỏi rõ.
+
+> "cứ thoải mái hết tất cả mọi nơi không sợ gì hết"
+
+PTA Overhaul hiểu:
+- MỌI quyết định cũ về bố cục / điều hướng / giao diện đều mở lại cho overhaul V6: trang đầu theo vai, Tổng quan, thứ tự menu, khung Công việc, hồ sơ lớp / HV, Quản trị… Lời này (mới hơn) thắng "Không cần đổi tổng quan nữa" sáng 13/11 và các chốt bố cục trước đó.
+- Hướng từng bị bác (bảng rộng một dòng một việc, 05/11) vẫn coi là bài học khẩu vị — không đề xuất lại đúng kiểu đó nếu không có lý do mới.
+- Luật NGHIỆP VỤ (`plan.md` 1.6: hạn, quyền, ai làm việc gì, cách tính) KHÔNG nằm trong "thoải mái": đề xuất nào đụng thì ghi [XM] hỏi riêng.
+- Quy trình giữ: mockup duyệt trước khi code, một màn một PR, chủ SP duyệt ảnh cặp.
