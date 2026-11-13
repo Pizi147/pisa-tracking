@@ -236,7 +236,7 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 | 06/10 | **Ô nhập ngày ở mọi nơi = ô gõ + nút lịch** (`ONgay`), không làm hàng nút Hôm nay / Hôm qua / 2 ngày trước; nhãn tuỳ chọn giữ chữ chuẩn "(không bắt buộc)" | mọi PR (LUI-b giữ ô ngày) |
 | 07/10 | PR-EN: nút **"VI \| EN"** chữ nhỏ cạnh nút Sáng/Tối; màn đăng nhập **hai nút to "Tiếng Việt \| English" ngay trên khung**; **bảng thuật ngữ EN planning tự chọn** (tiếng Anh tự nhiên của trung tâm IELTS), chủ sản phẩm xem trước khi merge; **lần này planning được tự duyệt mockup EN** (chỉ đổi chữ + nút đổi ngôn ngữ, giữ giao diện) **và dàn ý sổ tay**, chủ sản phẩm xem ảnh trước khi merge | EN, SOTAY |
 | 10/10 | **Kỳ vọng đầu ra (luật A):** Overall MT0 cần **≥ 3/4 kỹ năng có band**; W có band chỉ khi đủ W1 + W2; < 3 → "Chờ MT0"; kỹ năng thiếu = "chưa thi", không vào kỹ năng trượt; Đạt/Không đạt vẫn do QL chọn | KV #312 |
-| 06/10 | **Không dùng Fable** ở mọi session, kể cả subagent | mọi PR |
+| 06/10 → 13/11 | ~~Không dùng Fable~~ — **13/11 chủ SP bỏ cấm**: Fable 5.2 được dùng (gợi ý cho planning lớn) | mọi PR |
 | 11/10 | **Overhaul (OV)** — vai: **TVV** xem cả CN, mặc định "HV của tôi"; sửa họ tên, ngày sinh, email, TVV, dự kiến thi, điểm đầu vào (không Target); không Test, không Công việc · **CX** = như TVV ở mọi CN, xem Phân tích trừ phần GV · **Admin (MT)** dựng lại: xếp/dời lịch MT + MT cũ + lịch PT/Final/MT0 lớp thường, xem + sửa điểm, Kế hoạch Test, Công việc Chấm điểm + Nhắc, sửa thông tin HV như TVV; **không** huỷ/khôi phục | OV |
 | 11/10 | Đổi góc nhìn (QL, Quản trị nhiều vai) = **làm việc đúng quyền vai đang chọn**, chỉ vai đang nắm · Ô TVV = ô chọn người như chọn GV, chữ TVV cũ hiện mờ để chọn lại (không tự gán) · ~~Email + ngày sinh bắt buộc khi thêm/sửa~~ (thay bởi dòng 14/10 Q3) | OV |
 | 11/10 | Lộ trình mới (QL nháp → chốt, bỏ GVCN đề xuất lộ trình; nhắc từ Final−2, chốt trước hết tuần Final−2; bàn giao trước hết tuần Final, **≥ 2 ngày sau chốt**) **chỉ lớp thường**; FT giữ Chuyển tiếp lớp, **bàn giao FT 5 ngày** · Sửa lộ trình đã chốt tới ngày chuyển, đổi hướng/lớp đích → GV bàn giao lại · **Kết quả đầu ra** (GVCN đề xuất, QL chốt) cho em Lên FT từ FOU/BE/ELE theo MT0; **FOU đạt khi Overall > 3.5** | OV |
@@ -315,6 +315,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 **12/11 (chủ SP):** "Duyệt cả 2" — duyệt ảnh #1399 (Hạn mặc định) + #1390 (Case & SOS). PTA đổi thứ tự: #1399 merge trước → #1390 gộp main rồi merge → PHOI-HOP-SOS-V2 (#1384 #1388, đang sửa theo góp ý) merge sau và làm XM-1 (bản gốc Case & SOS theo luật GVCN + bước TVV).
 
 **12/11 Phối hợp SOS V2 #1384 + #1388 (chủ SP):** "Trong phần công việc thì chỉ cần chữ 'Học viên' thôi, không cần 'Học viên' cần làm'. Các trường thông tin ở dưới tên HV ở cả trang công việc lẫn các hồ sơ đều đang hơi thiếu rõ ràng và chưa phân loại rõ, làm lại nhưng không cần mockup lại đâu, cố gắng làm đẹp, không bị clipped và rõ ràng là được." → session PHOI-HOP-SOS-V2 sửa trên hai PR, chụp lại ảnh.
+
+**13/11 (chủ SP):** "sửa claude.md đi, giờ đã có fable 5.2 bạn nghĩ có nên để model đó lọc và brainstorm ý tưởng không?" → bỏ luật "Không dùng Fable" (CLAUDE.md mục Model, plan.md); PTA gợi ý Fable 5.2 cho planning lớn, code giữ Opus / Sonnet 5.5.
 
 **13/11 (chủ SP):** "Làm A nhé" — GV cũ (người dạy PA Bổ trợ miễn phí) có quyền tạm trong thời gian PA: xem hồ sơ HV + xem/ghi Case bổ trợ + xem hồ sơ lớp mới; giữ việc Ghi kết quả bổ trợ + Ghi Mini Test (GVCN mới theo dõi, làm thay); lối vào hồ sơ lớp cũ "Đã chuyển · đang bổ trợ ›" + hồ sơ GV "Em đang bổ trợ"; sửa 403. Thiết kế `docs/superpowers/specs/2026-11-13-gv-cu-bo-tro-design.md`. → session GV-CU-BO-TRO.
 
@@ -1230,7 +1232,7 @@ OV-3b đổi Lộ trình đề xuất GVCN → nháp: xem `kiem-truoc-ov3b`. Ba 
 | DON-MA | Sonnet 5.5 · high | Opus 5.5 · low | xoá mã chết |
 | DON-LUONG | Opus 5.5 · medium | — | lỗi luồng + migrate chỉ mục |
 | DON-HINH · V8-PT-2 · V8-HSL-2 | Opus 5.5 · medium | Sonnet 5.5 · high | giao diện theo mockup |
-Chọn model ở ô chọn model **trước khi dán prompt**. **Không Fable**; không Haiku. Người rà: session planning (Opus 5.5).
+Chọn model ở ô chọn model **trước khi dán prompt**. Fable 5.2 được (chủ SP 13/11); không Haiku. Người rà: session planning (Opus 5.5).
 
 | PR | Khuyến nghị | Phương án B | Ponytail | Impeccable | Ghi chú |
 |---|---|---|---|---|---|
@@ -1263,7 +1265,7 @@ Mọi PR có giao diện: `audit` + `web-design-guidelines` cuối PR (1.2 bư�
 ```
 Đọc trước: CLAUDE.md, plan.md (mục 1 Luật làm việc, mục 3 Quyết định, mục 4 dòng của PR này); PR OV: thêm đặc tả docs/superpowers/specs/2026-10-11-overhaul-ux-workflow-design.md (mục của PR) + mockup.
 Dòng đọc Turso (CLAUDE.md, 30/10): đọc ít nhất có thể; đường API mới / đổi có trần ở tocDoDuong.ts; tăng đọc đáng kể → ghi ước số dòng / ngày trong mô tả PR và báo PTA Plan.
-Đầu phiên: nói rõ mình đang chạy model nào. Model ghi trên prompt (khuyến nghị) HOẶC phương án B đều được chạy tiếp — ghi model thật vào mô tả PR. Chỉ DỪNG báo chủ sản phẩm khi là model khác cả hai (vd Haiku) hoặc Fable (cấm, 06/10).
+Đầu phiên: nói rõ mình đang chạy model nào. Model ghi trên prompt (khuyến nghị) HOẶC phương án B đều được chạy tiếp — ghi model thật vào mô tả PR. Chỉ DỪNG báo chủ sản phẩm khi là model khác cả hai (vd Haiku) (Fable 5.2 được dùng từ 13/11).
 Nhánh mới từ origin/main mới nhất. Làm theo plan.md mục 1.2 + 1.3b: Task ngay trong session (executing-plans, KHÔNG subagent),
 test-driven-development (đỏ trước), systematic-debugging khi lỗi lạ, brainstorming chỉ khi cần chủ SP quyết (dừng, hỏi).
 npm run check MỘT lần cuối → bấm thử MỘT lần chỉ màn PR chạm (1440 tối + 375 sáng, vai PR chạm), ảnh đính PR; PR chỉ máy chủ
