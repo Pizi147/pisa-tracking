@@ -31,3 +31,16 @@ PTA Overhaul hiểu:
 - Hướng từng bị bác (bảng rộng một dòng một việc, 05/11) vẫn coi là bài học khẩu vị — không đề xuất lại đúng kiểu đó nếu không có lý do mới.
 - Luật NGHIỆP VỤ (`plan.md` 1.6: hạn, quyền, ai làm việc gì, cách tính) KHÔNG nằm trong "thoải mái": đề xuất nào đụng thì ghi [XM] hỏi riêng.
 - Quy trình giữ: mockup duyệt trước khi code, một màn một PR, chủ SP duyệt ảnh cặp.
+
+## 13/11 — lời 3: luật nghiệp vụ — không tự đổi, nhưng được đề xuất; chia hai nhóm
+
+Bối cảnh: PTA Overhaul nói "luật nghiệp vụ tôi vẫn không tự đổi; đề xuất nào đụng tới thì hỏi riêng từng điểm".
+
+> "không tự đổi nhưng cứ thoải mái thấy chỗ nào có thể nâng cấp thì nâng cấp, đề xuất cho tôi, chia 2 nhóm là đè xuất nên có và cái vi phạm luật, ghi rõ luật tôi bảo và bạn định làm gì, tại sao thấy không cần thiết, có những luật core thì tôi nghĩ không nên đụng vào thôi"
+
+PTA Overhaul hiểu:
+- Không tự đổi luật, nhưng ĐƯỢC (và nên) đề xuất nâng cấp ở mọi chỗ, kể cả chỗ đụng luật.
+- Mọi bản đề xuất / thiết kế / plan chia HAI NHÓM:
+  - **Nhóm 1 — Nên có:** không trái luật nào; làm được ngay khi chủ SP duyệt thiết kế.
+  - **Nhóm 2 — Đụng luật:** mỗi dòng ghi đủ ba ý — (a) luật chủ SP đã bảo (nguyên văn / mã luật + ngày), (b) PTA định làm gì thay, (c) vì sao thấy luật đó không còn cần. Chỉ làm khi chủ SP đồng ý từng dòng.
+- **Luật core không đụng**, cũng không đưa vào nhóm 2. PTA sẽ liệt kê danh sách "luật core" theo cách hiểu của mình trong bản thiết kế để chủ SP sửa (dự kiến: cách tính SOS / Overall / kỳ vọng, thang vi phạm, quyền theo vai + phạm vi, ai giữ việc nào, các bước duyệt của QL, luật vắng / dời MT, hạn theo quy chế).
