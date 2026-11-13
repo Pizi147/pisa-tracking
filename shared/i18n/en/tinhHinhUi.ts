@@ -43,6 +43,8 @@ export const EN_TINH_HINH_UI = {
   'Đã gửi TVV · {n} em': 'Sent to consultant · {n} students',
   'Đã gửi kết quả cho TVV': 'Reply sent to consultant',
   'Đã rút': 'Withdrawn',
+  'Đã rút {n}/{m}': 'Withdrawn {n}/{m}',
+  'Đã rút {n}/{m} · chưa rút: {ds}': 'Withdrawn {n}/{m} · not withdrawn: {ds}',
   'Đã trả lời · {ngay}': 'Replied · {ngay}',
   'Đang chờ': 'Waiting',
   'Việc · Ý thức & Phối hợp': 'Task · Conduct & SOS',

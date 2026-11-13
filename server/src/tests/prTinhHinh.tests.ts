@@ -8,7 +8,7 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrTinhHinhTests(t: YThucTestKit) {
-  const { checkAsync, assert, conn, TODAY, P, classId, addDays } = t as any;
+  const { check, checkAsync, assert, conn, TODAY, P, classId, addDays } = t as any;
   console.log('\nTINH-HINH · nhắc nhở · chọn cách xử lý + tự chốt · tình hình học tập GV ↔ TVV');
 
   const thu = async (fn: () => void | Promise<void>) => { conn.exec('BEGIN IMMEDIATE'); try { await fn(); } finally { conn.exec('ROLLBACK'); } };
@@ -169,6 +169,58 @@ export async function runPrTinhHinhTests(t: YThucTestKit) {
     try { th.guiTinhHinh(tvv, { chieu: 'gv_tvv', studentIds: [sid], noiDung: 'TVV gửi chiều GV thử' }); } catch { camTvv = true; }
     assert(camTvv, 'TVV không có quyền chiều gv_tvv');
   }));
+
+  await checkAsync('TH-11 (F05 audit 13/11) · gửi → Rút → gửi lại cùng chữ trong 2 phút: bản MỚI đang mở + việc mới; gửi lại khi chưa rút vẫn trả bản cũ; cả hai chiều + lô', () => thu(() => {
+    const [s1, s2] = [moiEm(), moiEm()];
+    const A = 'Em nghỉ 2 buổi Reading liên tiếp';
+    const { ids: [a1, a2] } = th.guiTinhHinh(gvbm, { chieu: 'gv_tvv', studentIds: [s1, s2], noiDung: A });
+    const { ids: lai } = th.guiTinhHinh(gvbm, { chieu: 'gv_tvv', studentIds: [s1, s2], noiDung: A });
+    assert(JSON.stringify(lai) === JSON.stringify([a1, a2]), `bấm đôi / thử lại: ${JSON.stringify(lai)}`);
+    th.rutTinhHinh(gvbm, a1);
+    const { ids: [b1, b2] } = th.guiTinhHinh(gvbm, { chieu: 'gv_tvv', studentIds: [s1, s2], noiDung: A });
+    assert(b1 !== a1 && b2 === a2, `sau Rút em 1: ${JSON.stringify({ a1, b1, a2, b2 })}`);
+    assert(hang('SELECT trang_thai FROM tinh_hinh_hoc_tap WHERE id = ?', b1)[0].trang_thai === 'mo', 'bản mới đang mở');
+    assert(hang("SELECT 1 FROM viec_bao_ph WHERE tinh_hinh_id = ? AND trang_thai = 'mo'", b1).length === 1, 'việc TVV mới');
+    assert(hang('SELECT trang_thai FROM tinh_hinh_hoc_tap WHERE id = ?', a1)[0].trang_thai === 'rut', 'bản rút giữ lịch sử');
+    const Q = 'PH hỏi em có theo kịp Listening không';
+    const { ids: [q1] } = th.guiTinhHinh(tvv, { chieu: 'tvv_gvcn', studentIds: [s1], noiDung: Q });
+    th.rutTinhHinh(tvv, q1);
+    const { ids: [q2] } = th.guiTinhHinh(tvv, { chieu: 'tvv_gvcn', studentIds: [s1], noiDung: Q });
+    assert(q2 !== q1 && hang('SELECT trang_thai FROM tinh_hinh_hoc_tap WHERE id = ?', q2)[0].trang_thai === 'mo', `tvv_gvcn: ${q1} → ${q2}`);
+    xoaNho();
+    assert(((myWork(gvcn, {}) as any).items as any[]).some((x) => x.key === `yt_hoi_tinh_hinh:${q2}`), 'việc GVCN cho câu hỏi lại');
+    th.traLoiTinhHinh(gvcn, q2, { traLoi: 'Em theo kịp, cần luyện thêm Part 3' });
+    const { ids: [q3] } = th.guiTinhHinh(tvv, { chieu: 'tvv_gvcn', studentIds: [s1], noiDung: Q });
+    assert(q3 === q2, `thử lại sau khi GVCN đã trả lời: không sinh câu thứ hai (${q2} → ${q3})`);
+  }));
+
+  const fs = await import('node:fs');
+  const doc = (p: string) => fs.readFileSync(new URL(`../../../../${p}`, import.meta.url), 'utf8');
+  await checkAsync('TH-12 (F04) · Hoàn tác lô đọc kết quả từng em: 3 em, 1 lỗi → "2/3" + tên em chưa rút; hộp dùng hàm này', async () => {
+    const lo: any = await import('../../../web/src/modules/yThuc/hoanTacLo.ts');
+    const daGui: string[] = [];
+    const post = async (u: string) => { daGui.push(u); if (u.includes('/2/')) throw new Error('Đã có kết quả — không rút được.'); return {}; };
+    const kq = await lo.hoanTacLo([{ id: 1, ten: 'An' }, { id: 2, ten: 'Bình' }, { id: 3, ten: 'Chi' }], post);
+    assert(kq.xong === 2 && kq.tong === 3 && kq.loi.length === 1 && kq.loi[0].ten === 'Bình' && /kết quả/.test(kq.loi[0].loi), JSON.stringify(kq));
+    assert(daGui.length === 3 && daGui.every((u) => /\/rut$/.test(u)), JSON.stringify(daGui));
+    const s = doc('web/src/modules/yThuc/TinhHinh.tsx');
+    assert(/hoanTacLo\(/.test(s) && !/Promise\.allSettled/.test(s), 'HopTinhHinh còn Promise.allSettled bỏ kết quả');
+  });
+
+  check('TH-13 (F03) · đang gửi: ô chữ khoá (readOnly) ở hộp + panel; panel "Đã trả lời" hiện chữ ĐÃ GỬI, không phải chữ đang có; Đóng khi đang gửi không đóng', () => {
+    const s = doc('web/src/modules/yThuc/TinhHinh.tsx');
+    assert((s.match(/readOnly=\{luu\}/g) ?? []).length >= 2, 'ô chữ chưa khoá khi đang gửi');
+    const panel = s.slice(s.indexOf('export function PanelHoiTinhHinh'));
+    assert(!/\{chu\.trim\(\)\}<\/span>/.test(panel) && /\{daGui\}/.test(panel), 'khối Đã trả lời còn vẽ chu.trim() hiện tại');
+    assert(/const ngoai = \(\) => \{ if \(luu\) return;/.test(s), 'hộp: Đóng / Esc khi đang gửi');
+    assert(/onDong=\{\(\) => \{ if \(!luu\) onDong\(\); \}\}/.test(panel), 'panel: ✕ / Esc khi đang gửi');
+  });
+
+  check('TH-14 (F06) · Sửa kết quả PA cũ: đổi ô → báo panel ngoài hỏi "Bỏ chữ?"; chưa đổi → không hỏi (so với giá trị lúc mở)', () => {
+    const s = doc('web/src/modules/cases/CapNhatTuan.tsx');
+    assert(/useBaoDangSua\(daSua\)/.test(s) && !/useBaoDangSua\(!sua && daSua\)/.test(s), 'nhánh Sửa bị loại khỏi useBaoDangSua');
+    assert(/const daSua = sua \? chupSua !== gocSua/.test(s), 'daSua của Sửa phải so với giá trị lúc mở');
+  });
 
   await checkAsync('TH-10 · Mô tả xử lý ≤ 300 (mockup v20 D1, N35): 301 → 400 không lưu; 300 lưu được', () => thu(() => {
     const sid = moiEm();
