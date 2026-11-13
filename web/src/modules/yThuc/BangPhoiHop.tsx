@@ -408,8 +408,10 @@ function FormBo({ id, tvv, onDong, onXong }: { id: number; tvv: number | null; o
  * cột ① Việc; MỘT KHỐI mỗi lượt (ô gộp trái: em hoặc lượt · SOS · một dòng điểm · x/y xong · + Thêm việc · Học thuật ›). Người có việc làm tại chỗ
  * (GVCN / QL: Xác nhận; TVV: Ghi kết quả Meeting CX), GV / GVBM đọc ③ kết quả. Dữ liệu = request sẵn có của tab, không thêm.
  */
-export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic }: {
+export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic, khongMo }: {
   turns: CoordTurn[]; cot1: 'hocVien' | 'luot'; onChanged: () => void; onGoAcademic?: () => void;
+  /** GV-CU-BO-TRO [XM-2]: em người xem không mở được hồ sơ (người dạy bổ trợ chỉ xem lớp) — tên chữ thường. */
+  khongMo?: ReadonlySet<number>;
 }) {
   const [vuaLuu, setVuaLuu] = useState<ReadonlySet<number>>(new Set());
   if (!turns.length) return <p className="m-0 px-4 py-8 text-center text-[15px] font-semibold text-[color:var(--text)]">{t('Không còn việc phối hợp nào')}</p>;
@@ -427,13 +429,14 @@ export function BangPhoiHopHoSo({ turns, cot1, onChanged, onGoAcademic }: {
           <span role="columnheader"><span className="sr-only">{t('Thao tác khác')}</span></span>
         </span>
       </div>
-      {ds.map((luot) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} />)}
+      {ds.map((luot) => <KhoiLuot key={luot.attemptId} luot={luot} cot1={cot1} vuaLuu={vuaLuu} vua={vua} onChanged={onChanged} onGoAcademic={onGoAcademic} khongMo={khongMo} />)}
     </div>
   );
 }
 
-function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic }: {
+function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic, khongMo }: {
   luot: CoordTurn; cot1: 'hocVien' | 'luot'; vuaLuu: ReadonlySet<number>; vua: (id: number) => (co: boolean) => void; onChanged: () => void; onGoAcademic?: () => void;
+  khongMo?: ReadonlySet<number>;
 }) {
   /* Mockup K7: lượt đã xong (hồ sơ HV) gập một dòng, "Xem việc ▸" mở tại chỗ. */
   const [mo, setMo] = useState(!(cot1 === 'luot' && luot.summary.complete));
@@ -444,7 +447,7 @@ function KhoiLuot({ luot, cot1, vuaLuu, vua, onChanged, onGoAcademic }: {
       <span role="cell" className="grid content-start justify-items-start gap-1.5 border-r px-4 py-3 max-sm:border-r-0 max-sm:px-3 max-sm:pb-1" style={{ borderColor: 'var(--line)' }}>
         <span className="flex flex-wrap items-center gap-2">
           {cot1 === 'hocVien'
-            ? <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
+            ? khongMo?.has(luot.studentId) ? <span className="text-[15px] font-semibold text-[color:var(--text)]">{luot.studentName}</span> : <Link to={`/hoc-vien/${luot.studentId}?tab=y-thuc&sub=phoi-hop`} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{luot.studentName}</Link>
             : <b className={`text-[15px] font-bold ${xong ? 'text-dim' : 'text-[color:var(--text)]'}`}>{luot.nhanDot ?? `MT${luot.attemptNo}`}</b>}
           {luot.sosLevel !== null && <ChipSos muc={luot.sosLevel} kyNang={luot.kyNangNgan} hienKyNang={false} dot={`MT${luot.attemptNo}`} ten={luot.studentName} tinh />}
         </span>

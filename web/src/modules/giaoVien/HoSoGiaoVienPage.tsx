@@ -1,7 +1,7 @@
 import { Fragment, useState, type ReactNode } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
-  NHOM_VIEC_LABEL, addDaysIso, tabCongViecHienThi, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
+  NHOM_VIEC_LABEL, addDaysIso, ngay, tabCongViecHienThi, duongHieuQuaPaGv, duongHoSoHocVien, duongViecCuaGv, laVaiQuanLy, mondayOfDate, trangCha, tuanLich, viecTiepCuaEm,
   NHAN_TRANG_THAI, type ChipBanGiao, type ChiSoHoSoGv, type NhomViec, type OPtGv, type TrangThai, type ViecTiepCase,
 } from '@shared/domain/index.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -46,8 +46,11 @@ type HoSo = {
   phamVi: { chiNhanh: string[] | null; cn: number | null };
   lop: LopHs[]; tongHocVien: number; caseMo: CaseHs[];
   yeuCau: { cho: number; choQuaHan: number; tuChoi: number };
+  /** GV-CU-BO-TRO: em GV đang dạy PA Bổ trợ miễn phí (kể cả em đã chuyển lớp) — lối vào hồ sơ HV. */
+  boTro?: BoTroHs[];
   homNay: string;
 };
+type BoTroHs = { hvId: number; ten: string; lopId: number | null; lopMa: string | null; daDay: number; soBuoi: number | null; hanMiniTest: string | null; caseId: number; paId: number };
 
 const nguon = (id: number, q: string) => `/giao-vien/${id}/o?${q}`;
 const soDam = 'font-semibold';
@@ -130,6 +133,7 @@ export function HoSoGiaoVienPage() {
       <KhoiLop data={data} />
       <KhoiHocThuat data={data} cs={cs} ky={ky} />
       <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} viec={viec} />
+      <KhoiBoTro ds={data.boTro ?? []} homNay={homNay} />
       <KhoiCase data={data} homNay={homNay}
         linkPa={!gv.laChinhMinh && session?.nav?.analysis && data.phamVi.cn
           ? { den: duongHieuQuaPaGv(data.phamVi.cn, gv.id, data.lop), chu: t('Hiệu quả PA của {ten} ›', { ten: tenGoi }) } : null} />
@@ -544,6 +548,41 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: {
             })}
           </div>
         )}
+    </Card>
+  );
+}
+
+// ------------------------------------------------------------------ GV-CU-BO-TRO · Em đang bổ trợ
+
+/**
+ * Em GV đang dạy PA Bổ trợ miễn phí (chủ SP 13/11, A): tên → hồ sơ HV (Case + ô Mini Test), lớp em đang học, buổi đã dạy / số buổi, hạn Mini Test.
+ * Không có em thì không hiện khối (không thêm ô rỗng).
+ */
+function KhoiBoTro({ ds, homNay }: { ds: BoTroHs[]; homNay: string }) {
+  if (!ds.length) return null;
+  const o = (x: BoTroHs, k: string): ReactNode => {
+    if (k === 'ten') return <Link to={duongHoSoHocVien(x.hvId, { caseId: x.caseId, paId: x.paId })} className="ten-ho-so">{x.ten}</Link>;
+    if (k === 'buoi') return <span className="tabular-nums text-slate-300">{x.soBuoi ? t('buổi {n}/{m}', { n: x.daDay, m: x.soBuoi }) : '—'}</span>;
+    return x.hanMiniTest ? <span className="whitespace-nowrap text-sm text-slate-400">{t('hạn {ngay}', { ngay: ngay(x.hanMiniTest, homNay) })}</span> : <span className="text-slate-500">—</span>;
+  };
+  return (
+    <Card title={<span className="inline-flex items-center gap-2">{t('Em đang bổ trợ')}
+        <span className={`${CHIP_VUONG} font-semibold tabular-nums text-slate-100`} style={{ borderColor: 'var(--line-strong)' }}>{ds.length}</span></span>}
+      bodyClass="px-4 pb-4 pt-3">
+      <Bang ten={t('Em đang bổ trợ')} khung={false} khoa={(x) => x.hvId} hang={ds}
+        cot={[
+          { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 220 },
+          { key: 'buoi', nhan: t('Bổ trợ miễn phí'), kieu: 'chu', linhHoat: true },
+          { key: 'han', nhan: 'Mini Test', kieu: 'chu', rong: 180 },
+        ]}
+        phuCua={(x, k) => (k.key === 'ten' && x.lopMa ? x.lopMa : null)}
+        theRieng={(x) => (
+          <div className="grid gap-1">
+            <div className="flex items-baseline gap-2">{o(x, 'ten')}{x.lopMa && <span className="text-xs text-slate-500">{x.lopMa}</span>}</div>
+            <div className="flex items-baseline gap-3 text-sm">{o(x, 'buoi')}<span className="ml-auto">{o(x, 'han')}</span></div>
+          </div>
+        )}
+        oCua={(x, k) => o(x, k.key)} />
     </Card>
   );
 }

@@ -101,7 +101,7 @@ export const EN_HD_V3A = {
   'Mọi việc của bạn theo tab, quá hạn ở đầu.': 'All your tasks by tab, overdue first.',
   'Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu mục.': 'Past due and not saved: orange text + ⚠ in the due column, at the top of the section.',
   'Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.': 'Due filter: <b>Any due date</b> · <b>Overdue</b> · <b>Today</b> · due by a date; <b>More filters</b> for track and branch.',
-  'Đầu trang đếm “n việc · m quá hạn” và việc vừa xong (trong lần mở trang này).': 'The top counts “n tasks · m overdue” and tasks just done (since this page was opened).',
+  'Đầu trang đếm “n việc · m quá hạn” và việc xong hôm nay.': 'The top counts “n tasks · m overdue” and tasks done today.',
   'Lọc việc ở hàng này.': 'Filter tasks on this row.',
   'Cuối Công việc: các lớp bạn dạy, bài quá hạn và bài chờ chấm.': 'Bottom of Tasks: the classes you teach, overdue and pending tests.',
   '<b>Lịch thi thật ›</b> ở hàng tuần: em thi tháng này.': '<b>Real exam schedule ›</b> on the week row: students sitting exams this month.',
@@ -218,4 +218,13 @@ export const EN_HD_V3A = {
   'Xuất Excel đúng danh sách học viên đang lọc.': 'Export exactly the filtered student list to Excel.',
   'Chọn mẫu bảng, rồi xuất: tệp Excel tải về máy.': 'Pick the table template, then export: the Excel file downloads to your device.',
   'Muốn ít em hơn: đóng panel, lọc lại danh sách.': 'Want fewer students: close the panel and filter the list again.',
+  /* GV-CU-BO-TRO (13/11) */
+  'Người dạy bổ trợ ghi; GVCN lớp mới thấy dòng của Người dạy, bấm <b>Làm thay</b> khi cần.': "The extra-class teacher records it; the new class's homeroom teacher sees the teacher's row and can tap <b>Do it for them</b>.",
+  'Dạy bổ trợ miễn phí (em đã chuyển lớp)': 'Teach a free extra class (student changed class)',
+  'Hồ sơ giáo viên › Em đang bổ trợ': 'Teacher profile › Students in your extra class',
+  'có lối vào hồ sơ em.': 'has a way into the student profile.',
+  'Em lên lớp có PA Bổ trợ miễn phí: bạn (GV cũ) vẫn là Người dạy tới khi ghi Mini Test — có chuông khi em chuyển lớp.': 'A promoted student with a free extra-class PA: you (former teacher) stay the teacher until the Mini Test is recorded — you get a bell when the student changes class.',
+  'Vào hồ sơ em: dòng việc ở <b>Công việc</b>, khối <b>Em đang bổ trợ</b> ở Hồ sơ giáo viên, hoặc <b>Đã chuyển · đang bổ trợ</b> ở hồ sơ lớp cũ.': 'Open the student profile: the task row in <b>Tasks</b>, the <b>Students in your extra class</b> block on the teacher profile, or <b>Transferred · in extra class</b> on the old class profile.',
+  'Ghi kết quả từng kỳ, buổi cuối ghi Mini Test. Hồ sơ lớp mới của em: chỉ xem.': "Record each period's result; at the last session record the Mini Test. The student's new class profile: view only.",
+  'Khối <b>Em đang bổ trợ</b> (khi bạn dạy PA Bổ trợ miễn phí): tên em mở hồ sơ, kể cả em đã chuyển lớp.': 'The <b>Students in your extra class</b> block (when you teach a free extra-class PA): the name opens the profile, even after the student changed class.',
 } as const;

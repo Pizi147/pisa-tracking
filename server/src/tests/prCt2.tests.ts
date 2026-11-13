@@ -489,8 +489,9 @@ export async function runPrCt2Tests(t: YThucTestKit) {
   };
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e.status ?? 500; } };
   /** FOU 55% → BE đã thi hành: PA writing GV[1], speaking GV[2] (GV cũ, không phân công lớp BE); GVCN BE = GV[3]. */
-  const daChuyen = () => {
+  const daChuyen = (giuLop = false) => {
     const f = dungFou();
+    if (giuLop) hocVien(f.nguon, 'FOU');   // lớp cũ còn em đang học → chưa tự kết thúc
     ra(f.nguon, f.sid, 'len_lop', f.dich);
     nhap(f.a, { listening: 18, reading: 18, writing: 10, speaking: 9 });
     chay(f.sid);
@@ -571,6 +572,34 @@ export async function runPrCt2Tests(t: YThucTestKit) {
       const gv = loadPrincipal(GV[1]);
       assert(!gv.boTro?.some((b: any) => b.studentId === f.sid), `còn quyền tạm: ${JSON.stringify(gv.boTro)}`);
       assert(ma(() => cases.caseDetail(gv, f.w.case_id)) === 403 && ma(() => classesSvc.classOverview(gv, f.dich)) === 403, 'hết PA vẫn xem');
+    });
+  });
+
+  const hoSoGv: any = await import('../giaoVien/hoSo.ts');
+  check('GVCU-5 · lối vào: lớp cũ chưa kết thúc có dòng "Đã chuyển · đang bổ trợ" CHỈ cho Người dạy; hồ sơ GV "Em đang bổ trợ"; lớp mới chỉ xem có số HV đúng', () => {
+    const f = daChuyen(true);
+    const khacMoi = hocVien(f.dich, 'BE').sid;
+    assert(get('SELECT status FROM classes WHERE id = ?', f.nguon).status === 'active', 'lớp cũ phải chưa kết thúc');
+    vao(THU_HAI, () => {
+      const cu = (u: number) => (classesSvc.classRoster(loadPrincipal(u), f.nguon) as any[]).find((r) => r.id === f.sid);
+      const dong = cu(GV[1]);
+      assert(dong?.dangBoTro?.lopMoi === get('SELECT code FROM classes WHERE id = ?', f.dich).code, `dòng lớp cũ của GV cũ: ${JSON.stringify(dong?.dangBoTro)}`);
+      assert(!cu(GV[0]), 'GVCN lớp cũ (không dạy bổ trợ) không thấy em đã chuyển');
+      const bt = (hoSoGv.hoSoGiaoVien(loadPrincipal(GV[1]), GV[1]).boTro as any[]).filter((x) => x.hvId === f.sid);
+      assert(bt.length === 1 && bt[0].hvId === f.sid && bt[0].lopId === f.dich && bt[0].paId === f.w.id && bt[0].soBuoi === f.w.so_buoi && bt[0].hanMiniTest === f.mt.han,
+        `Em đang bổ trợ: ${JSON.stringify(bt)}`);
+      assert(hoSoGv.hoSoGiaoVien(loadPrincipal(GV[3]), GV[3]).boTro.length === 0, 'GVCN mới không phải Người dạy');
+      /* [XM-2] lớp mới chỉ xem: em mình dạy mở được hồ sơ; em khác `xemHoSo: false` (không link tới 403); người dạy thật của lớp không có cờ. */
+      const ro = (u: number) => classesSvc.classRoster(loadPrincipal(u), f.dich) as any[];
+      const moi = ro(GV[1]);
+      assert(moi.find((r) => r.id === f.sid)?.xemHoSo === undefined && moi.find((r) => r.id === khacMoi)?.xemHoSo === false, `lớp mới GV cũ: ${JSON.stringify(moi.map((r) => [r.id, r.xemHoSo]))}`);
+      assert(ro(GV[3]).every((r) => r.xemHoSo === undefined), 'GVCN lớp mới mở được mọi em');
+      const bang = (u: number) => (regular.regularSheet(loadPrincipal(u), f.dich).rows as any[]);
+      assert(bang(GV[1]).some((r) => r.studentId === khacMoi && r.xemHoSo === false) && bang(GV[1]).every((r) => r.studentId === khacMoi || r.xemHoSo === undefined),
+        `bảng điểm lớp mới GV cũ: ${JSON.stringify(bang(GV[1]).map((r) => [r.studentId, r.xemHoSo]))}`);
+      assert(bang(GV[3]).every((r) => r.xemHoSo === undefined), 'bảng điểm GVCN lớp mới không cờ');
+      const tq = classesSvc.classOverview(loadPrincipal(GV[1]), f.dich);
+      assert(tq.summary?.studentCount === all(`SELECT 1 FROM enrollments WHERE class_id = ? AND status = 'active'`, f.dich).length, `số HV lớp mới (chỉ xem): ${tq.summary?.studentCount}`);
     });
   });
 

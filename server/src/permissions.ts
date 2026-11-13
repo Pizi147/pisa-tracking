@@ -459,6 +459,15 @@ export function boTroTamCo(p: Principal, permission: string, ctx: Ctx): boolean 
   return !!ctx.classId && p.boTro.some((b) => b.classId === ctx.classId);
 }
 
+/**
+ * GV-CU-BO-TRO [XM-2] (PTA 13/11): người xem vào lớp CHỈ nhờ quyền tạm người dạy bổ trợ → tập em mở được hồ sơ (em mình dạy); em khác hiện tên chữ thường
+ * (`xemHoSo: false` ở roster / bảng điểm lớp), không link dẫn tới 403. `null` = xem lớp bằng quyền thật. Không câu SQL.
+ */
+export function emChiXemBoTro(p: Principal, classId: number): Set<number> | null {
+  if (!p.boTro?.some((b) => b.classId === classId)) return null;
+  return can({ ...p, boTro: [] }, PERMISSIONS.ATTEMPT_VIEW, { classId }) ? null : new Set(p.boTro.map((b) => b.studentId));
+}
+
 /** PC-GV-A: lớp GV cũ CHỈ XEM ở ngày này (còn hạn, không còn phân công nào ở lớp đó) — mỗi lớp một dòng, `den` muộn nhất. */
 export function lopXemTam(p: Principal, date = demoToday()): { classId: number; den: string }[] {
   const dang = new Set(p.assignments.filter((a) => activeAt(a, date)).map((a) => a.classId));

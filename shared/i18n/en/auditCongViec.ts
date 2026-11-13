@@ -2,8 +2,8 @@
 import type { Dich } from '../en.ts';
 
 export const EN_AUDIT_CONG_VIEC = {
-  '✓ Vừa xong · {n}': '✓ Just done · {n}',
-  '✓ {n} vừa xong': '✓ {n} just done',
+  '✓ Xong hôm nay · {n}': '✓ Done today · {n}',
+  '✓ {n} xong hôm nay': '✓ {n} done today',
   'Loại việc': 'Task type',
   'Lọc thêm': 'More filters',
   'chưa đủ dữ liệu': 'not enough data',

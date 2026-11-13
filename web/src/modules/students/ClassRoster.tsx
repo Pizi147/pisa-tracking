@@ -47,6 +47,8 @@ export type RosterRow = {
   tvv?: string | null;
   /** "Kết thúc vì" (Q18/Q22) — chỉ có ở bảng lớp ĐÃ KẾT THÚC, thay cho nhãn chung "Đã kết thúc". */
   ketThucVi?: string | null;
+  /** GV-CU-BO-TRO [XM-2]: `false` = người dạy bổ trợ chỉ xem lớp, không mở được hồ sơ em này — tên không link. */
+  xemHoSo?: boolean;
   skills: string[] | null;
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean } | null;
   standingLine: string | null;

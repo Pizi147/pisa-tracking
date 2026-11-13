@@ -190,6 +190,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const xemLai = (sid: number, ids: number[]) => { setLsVua(ids); moLichSu(sid); };
 
   const tvvChinh = tvvChinhCuaLop((roster.data ?? []).filter((r: any) => !r.archived));
+  const khongMo = new Set((roster.data ?? []).filter((r: any) => r.xemHoSo === false).map((r: any) => r.id as number));
   const emLop = new Map(d.emLop.map((e) => [e.studentId, e]));
   const vpCua = (ids: readonly number[], du?: DongEm['viPhamCho'], vpm: Map<number, VpDong> = tra.vp) => ids.map((id): VpDong => vpm.get(id)
     ?? (() => { const v = du?.find((u) => u.id === id); return { id, ngay: v?.ngay ?? '', ten: v?.ten ?? '', skill: null, nhom: null, nguoiGhi: null, moTa: '' }; })());
@@ -207,7 +208,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
       <span className="flex min-w-0 items-start gap-2">
         {chonN.bat && <OChon chon={chonN} id={sid} ten={ten} />}
         <span className="flex min-w-0 flex-col items-start gap-2">
-          <Link className="block text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${sid}?tab=y-thuc`}>{ten}</Link>
+          {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em không mở được hồ sơ (roster `xemHoSo: false`) là chữ thường, không link tới 403. */}
+          {khongMo.has(sid)
+            ? <span className="block text-[15px] font-semibold text-slate-100">{ten}</span>
+            : <Link className="block text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/${sid}?tab=y-thuc`}>{ten}</Link>}
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
             {/* Chủ SP 12/11: mốc viết hoa, không "Đã tới"; chưa có → "Chưa có vi phạm" — cùng `bac` với thang (TH-9). */}
             {e && (e.bac > 0 || e.soLs > 0 || theoEmCo(sid)) && <ChipBac bac={e.bac} ten={ten}>{(dong) => <ThangEm sid={sid} ten={ten} homNay={homNay} onKhai={() => { dong(); mo({ loai: 'khai', studentId: sid }); }} onLichSu={() => { dong(); moLichSu(sid); }} />}</ChipBac>}
@@ -515,7 +519,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           {coord.error ? <LoiTaiNho chu={t('Không tải được Phối hợp.')} onRetry={coord.reload} className="px-4 py-3" />
             : !coord.data ? <div className="px-4 py-3"><Skeleton rows={3} /></div>
             /* PHOI-HOP-V2 PR-2 (mockup #1368 K5–K6): bảng chung với panel Công việc. */
-            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="hocVien" onChanged={() => { coord.reload(); }} />}
+            : <BangPhoiHopHoSo turns={coord.data.rows} cot1="hocVien" onChanged={() => { coord.reload(); }} khongMo={khongMo} />}
         </div>
       ) : !d.emLop.length ? (
         <div className="p-4"><Empty title={t('Lớp chưa có học viên')} /></div>

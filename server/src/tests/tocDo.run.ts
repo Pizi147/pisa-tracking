@@ -1220,7 +1220,6 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * TD4-a: Công việc trên dữ liệu ×3 — JSON đầy đủ (`items`, `dong`, `groups`, `summary`) TRÙNG ảnh chụp chụp bằng mã TRƯỚC TD4 (main 35517670), mọi vai
  * và mọi góc nhìn. Lọc sớm lượt ở `listAttempts` không được đổi một việc nào. Đổi đầu ra Công việc CÓ CHỦ Ý (hoặc seed / phép kiểm phía trên đổi
  * dữ liệu) thì lệch: chụp lại băm bằng mã trước thay đổi đó (phép in băm đang ra), không sửa cho khớp.
- * 13/11 audit F01 (SUA-CV-F01): chụp lại 8 băm — đổi CÓ CHỦ Ý chỉ `soBai` của dòng gộp Nhập điểm (= tổng bài của nhóm, trước: số của lớp đầu); diff mã chỉ một dòng ở `gopViecTheoLop`. QL toi / QT toi / ADMIN toi giữ.
  * 15/10 (OV-13b, chụp lại trên bản gộp OV-13c/d/h): GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn — đổi có chủ ý: thêm trường
  * `ghiNhanh` của Kết quả PA (ghi nhanh trên dòng) và `pa.soBuoi` của Xác nhận PA cùng lúc (ô Số buổi Tutor, mockup §9); băm bỏ hai trường đó
  * trùng ảnh của main a4f9c00, đã kiểm.
@@ -1361,9 +1360,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        So JSON ×3 origin/main ↔ nhánh, 11 góc: lệch CHỈ `minitest:1` / `minitest:4` — người giữ GVCN 7 → Người dạy 8 (tên, `mine`), GV 8 (GVBM, GVS) có thêm hai dòng đó,
        số đếm theo. Trước: GVCN toi 31ebd923a221e835, GVBM toi 0ebf563606c50ead, GVCN_THUONG toi 31ebd923a221e835, QL tat-ca c0b740c6097c651b, QT tat-ca 931741b7e9d11882,
        QT tat-ca cn 19b4c0743b6f7b36, QL gvcn ac54489ae58e3bcf, GVS toi 3c702438ea810b91 */
-    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': '27effcca9940390b', 'GVBM toi': 'ada4028478d0ae7c',
-    'GVCN_THUONG toi': '27effcca9940390b', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '7673a451ab092c10', 'QT tat-ca': 'bb9e3b6820e0750b',
-    'QT tat-ca cn': '628d417d81e33f66', 'QL gvcn': '863d3f52ce59250f', 'GVS toi': '04447e060fa30642',
+    'QL toi': '09c37684928d6602', 'QT toi': '7ebe5b04a14bdd39', 'GVCN toi': 'ec2e83ad7d3149f8', 'GVBM toi': 'b8ff6f87720838f4',
+    'GVCN_THUONG toi': 'ec2e83ad7d3149f8', 'ADMIN toi': '4c6c4dd6a797d681', 'QL tat-ca': '6db0b9a1a2224b80', 'QT tat-ca': '9c90c2073d99edd3',
+    'QT tat-ca cn': 'd1a5972ac6f0863d', 'QL gvcn': 'd377a756eb1da0cf', 'GVS toi': '5b46fdd308634d6b',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

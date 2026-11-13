@@ -7,7 +7,7 @@ import { mondayOf } from '../platform/week.ts';
 import { badRequest, forbidden, loi as loiCo, notFound, nowIso } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
 import {
-  can, classScopeSql, coTheXemLuotCham, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
+  can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, defaultWorkScope, duocSuaLichLop, editableSkills, isCoreTeacherOf, lopDayDu, mySkills, require_, scopeFor,
   type Principal,
 } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -357,10 +357,17 @@ function hocVienCuaLop(p: Principal, classId: number, q?: string) {
                LEFT JOIN report_periods sp ON sp.id = cy.start_period_id
                LEFT JOIN report_periods ep ON ep.id = cy.exam_period_id
               WHERE e.class_id = ?`;
+  /* GV-CU-BO-TRO (chủ SP 13/11, A): em đã chuyển mà người xem đang dạy PA Bổ trợ miễn phí của em (`p.boTro`, đọc cùng câu phiên) vẫn ở lớp cũ chưa kết thúc —
+     dòng "Đã chuyển · đang bổ trợ ›" dẫn về hồ sơ HV (lối vào của GV cũ). Lớp đã kết thúc vốn có mọi em. */
+  const boTroSid = finished ? [] : [...new Set((p.boTro ?? []).map((b) => b.studentId))];
   sql += finished
     ? ` AND e.id IN (SELECT MAX(id) FROM enrollments WHERE class_id = ? GROUP BY student_id)`
-    : ` AND e.status = 'active'`;
+    : boTroSid.length
+      ? ` AND (e.status = 'active' OR (e.status = 'transferred' AND s.id IN (${boTroSid.map(() => '?').join(',')})
+           AND e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.class_id = e.class_id AND x.student_id = s.id)))`
+      : ` AND e.status = 'active'`;
   if (finished) params.push(classId);
+  else params.push(...boTroSid);
   if (q?.trim()) {
     sql += ' AND (s.full_name LIKE ? OR s.normalized_name LIKE ? OR s.student_code LIKE ?)';
     params.push(`%${q.trim()}%`, `%${q.trim().toLowerCase()}%`, `%${q.trim().toUpperCase()}%`);
@@ -378,6 +385,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
   if (!students.length) return [];
   const sids = students.map((s) => s.id);
   const ph = DS_JSON, json = JSON.stringify(sids);   // S5: một tham số JSON
+  const emBoTro = emChiXemBoTro(p, classId);   // GV-CU-BO-TRO [XM-2]: em khác `xemHoSo: false` (không link tới 403)
   const attempts = conn
     .prepare(
       `SELECT a.*, cy.seq AS cycle_seq, cy.route, cy.khong_cam_ket AS cy_kck, pr.code AS period_code, pr.week_start
@@ -676,6 +684,10 @@ export function classRoster(p: Principal, classId: number, q?: string) {
       moiVao: !!s.enrollment_started_at && s.enrollment_status === 'active' && s.enrollment_started_at >= dauTuanNay,
       /** "Kết thúc vì" (Q18/Q22) — chỉ có nghĩa ở bảng lớp ĐÃ KẾT THÚC, nơi dòng không còn `active`. */
       ketThucVi: finished ? nhanKetThucVi(s.enrollment_end_kind ?? null, s.enrollment_status) : null,
+      ...(emBoTro && !emBoTro.has(s.id) ? { xemHoSo: false } : {}),
+      /** GV-CU-BO-TRO: em đã chuyển, người xem đang dạy PA Bổ trợ miễn phí của em — mã lớp mới (chip "Đã chuyển · đang bổ trợ ›" → hồ sơ HV). */
+      dangBoTro: s.enrollment_status === 'transferred' && (p.boTro ?? []).some((b) => b.studentId === s.id)
+        ? { lopMoi: lopDayDu().get((p.boTro ?? []).find((b) => b.studentId === s.id)!.classId ?? -1)?.code ?? null } : null,
       cycle: s.cycle_id
         ? {
           id: s.cycle_id, seq: s.cycle_seq, route: s.route,
@@ -792,18 +804,19 @@ function classOverviewThat(p: Principal, classId: number) {
    * nên trả rỗng cho lớp này; dựng tóm tắt tối thiểu từ `classProgressMany` (tiến độ thô,
    * không việc cần làm — lớp đã đóng thì không còn gì cần xếp/nhập nữa).
    */
-  const summary = finished
-    ? (() => {
-      const pr = classProgressMany([classId]).get(classId) ?? null;
-      const studentCount = new Set(ghiDanhLop(classId).map((e) => e.studentId)).size;
-      return {
-        studentCount, needScores: 0, workScope: defaultWorkScope(p) as WorkScope,
-        phase: pr?.phase ?? 'finished', currentWeek: pr?.currentWeek ?? null, totalWeeks: pr?.totalWeeks ?? null,
-        needsPlacement: false, missing: [] as { key: string; label: string; who: string }[], missingSkills: [] as string[],
-        canXepLop: 0, soChuaLoTrinhTiep: 0,
-      };
-    })()
-    : listClassSummaries(p, { classId }).rows.find((r) => r.id === classId) ?? null;
+  /* GV-CU-BO-TRO: lớp CHỈ XEM (quyền tạm người dạy bổ trợ — không nằm trong `scopeFor`) cũng không có dòng `listClassSummaries` → cùng tóm tắt tối thiểu
+     (trước: chip "0 HV" ở lớp có em). */
+  const tomTatToiThieu = () => {
+    const pr = classProgressMany([classId]).get(classId) ?? null;
+    const studentCount = new Set(ghiDanhLop(classId).filter((e) => finished || e.status === 'active').map((e) => e.studentId)).size;
+    return {
+      studentCount, needScores: 0, workScope: defaultWorkScope(p) as WorkScope,
+      phase: pr?.phase ?? 'finished', currentWeek: pr?.currentWeek ?? null, totalWeeks: pr?.totalWeeks ?? null,
+      needsPlacement: false, missing: [] as { key: string; label: string; who: string }[], missingSkills: [] as string[],
+      canXepLop: 0, soChuaLoTrinhTiep: 0,
+    };
+  };
+  const summary = finished ? tomTatToiThieu() : listClassSummaries(p, { classId }).rows.find((r) => r.id === classId) ?? tomTatToiThieu();
   const assignments = conn
     .prepare(
       `SELECT ta.skill, ta.is_core, u.id AS user_id, u.full_name FROM teacher_assignments ta

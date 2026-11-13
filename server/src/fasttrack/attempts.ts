@@ -7,7 +7,7 @@ import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  bangLop, can, classScopeSql, coTheXemLuotCham, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -2679,6 +2679,7 @@ export function classScoreSheet(
     throw badRequest('Số lượt MT không hợp lệ.');
   }
   const conn = db();
+  const emBoTro = emChiXemBoTro(p, classId);   // GV-CU-BO-TRO [XM-2]
   const cls = conn.prepare('SELECT c.*, b.name AS branch_name FROM classes c JOIN branches b ON b.id=c.branch_id WHERE c.id=?')
     .get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
@@ -2758,6 +2759,7 @@ export function classScoreSheet(
         studentId: a.student_id,
         studentName: a.full_name,
         studentCode: a.student_code,
+        ...(emBoTro && !emBoTro.has(a.student_id) ? { xemHoSo: false } : {}),   // GV-CU-BO-TRO [XM-2]
         /* OV-15b: Dán từ Excel — phân biệt hai em trùng tên (cột đã có trong ATTEMPT_SELECT, không thêm câu đọc). */
         studentEmail: a.student_email ?? null,
         attemptNo: a.attempt_no,

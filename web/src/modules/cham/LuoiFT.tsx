@@ -382,8 +382,13 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       <OBang c={cc.hv}>
         <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
           {/* TEN-HV-LINK (chủ SP 07/11): tên = hồ sơ HV; lượt mở qua "MTn ›". */}
-          <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
-          <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
+          {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`): tên + MTn chữ thường (hồ sơ / lượt của em đó 403). */}
+          {(row as { xemHoSo?: boolean }).xemHoSo === false
+            ? <><span className="min-w-0 truncate font-semibold" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span><span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400">MT{row.attemptNo}</span></>
+            : <>
+              <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
+              <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
+            </>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
           {vangHang && <span className="whitespace-nowrap">{vangHang}</span>}
@@ -540,8 +545,11 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
   return (
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2">{/* DO-KHUNG-DO: thiếu chỗ thì chip xuống dòng, không cắt tên */}
-        <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongHoSoHocVien(row.studentId)} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>
-        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400"><Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+        {(row as { xemHoSo?: boolean }).xemHoSo === false   /* GV-CU-BO-TRO [XM-2] */
+          ? <span className="inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span>
+          : <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongHoSoHocVien(row.studentId)} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>}
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="inline-flex min-h-[44px] items-center">MT{row.attemptNo}</span>
+          : <Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
       {vangHang && <span className="-mt-2 text-xs text-slate-400">{vangHang}</span>}
