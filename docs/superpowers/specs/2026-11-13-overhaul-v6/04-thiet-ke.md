@@ -164,3 +164,12 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 - **5.11 (mới) Ô chọn có tìm:** mọi chỗ chọn người / lớp / học viên / người phụ trách dùng MỘT thành phần "gõ để tìm + danh sách thả", **mục liên quan đứng trước** theo ngữ cảnh (cùng lớp → cùng chi nhánh → khác). Thay hết ô chọn thường cho các loại này trên toàn web. Danh sách ngắn cố định giữ dáng cũ. Mẫu + bảng kê chỗ thay: mockup ⑤ (`06-de-bai-mockup-2-5.md` R5.1, R5.2). Dữ liệu gợi ý dùng đường tìm đang có (`timNguoi`, tìm lớp của Chuyển lớp…) — không tải cả danh sách chi nhánh khi mở trang; đo Turso khi làm.
 - Mockup ②–⑤: đề bài `06-de-bai-mockup-2-5.md`; mỗi mockup một session Opus do PTA Overhaul giao.
 - **Tên (lời 19):** tab / tính năng gọi là **"Chấm Speaking"** (thay "Speaking chấm chéo"); mọi chỗ trong tài liệu này ghi "Speaking chấm chéo" hiểu là tab "Chấm Speaking".
+
+## 13. Chủ SP duyệt hẳn mockup ① 14/11 đêm (lời 20) — THẮNG mục 5, 12 và hình mockup khi khác
+
+- "Lớp của tôi" **không hiện việc Chấm Speaking**; lớp tôi chỉ dạy Speaking không có chip việc nào từ bài chấm chéo (bài đó nằm ở tab Chấm Speaking).
+- Nút-chip "Việc cần làm": **không biểu tượng**; chữ loại việc + số; chip quá hạn giữ ⚠ + màu; mỗi lớp tối đa một hàng chip khi đủ chỗ, thứ tự cố định Nhập điểm · Case · Ý thức · Vận hành.
+- **Việc "Báo cáo PH" nằm trong tab "Vận hành"** (nhóm riêng "Báo cáo PH" trong tab đó), không có tab "Báo cáo PH". Ở "Lớp của tôi" việc này thuộc chip "Vận hành".
+- Bấm một việc → mở panel / sang đúng trang: nguyên tắc chung cho mọi màn (chip, dòng việc, ô số, chuông).
+- Không vẽ lại mockup ①: session code đọc `thiet-ke/v21/trang-dau-gv.html` + mục 12, 13 này.
+
