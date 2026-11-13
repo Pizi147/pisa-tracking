@@ -86,6 +86,7 @@ import { migratePrChiNhanhLienHe } from './migrate/prChiNhanhLienHe.ts';
 import { migratePrMt0Em } from './migrate/prMt0Em.ts';
 import { migratePrGiamDoc0611 } from './migrate/prGiamDoc0611.ts';
 import { migratePrGvCuBoTro } from './migrate/prGvCuBoTro.ts';
+import { migratePrBcPhViecGv } from './migrate/prBcPhViecGv.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
 import { migratePrTd7a } from './migrate/prTd7a.ts';
@@ -526,6 +527,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrTinhLuiPc(conn, applied));
   /* GV-CU-BO-TRO (chủ SP 13/11): chỉ mục một phần idx_iv_nguoi_day_bo_tro — quyền tạm Người dạy bổ trợ trong câu phiên (chỉ thêm chỉ mục, chạy lặp được). */
   buoc(() => migratePrGvCuBoTro(conn, applied));
+  buoc(() => migratePrBcPhViecGv(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

@@ -541,11 +541,11 @@ export async function runBanChinhTests(t: BanChinhTestKit) {
       assert(sai.length === 0, `Bảng có dữ liệu không được phép: ${sai.join(', ')}`);
       /* PR-Z2c-b: demo_config chỉ được có đúng dòng dấu ngưỡng đạt lớp Normal (napDuLieuNen ghi — để migrate lần đầu không ghi
          audit "đổi luật" sai). Vẫn: không ngày demo, không kịch bản, không seeded_at. */
-      /* PR-DEPLOY (DEP-1, DEP-2): thêm đúng hai khoá dấu — khoá backfill Lưu trữ + dấu DB mới (giá trị = giờ init). PR-QU: + khoá `case.close` GV. OV-15g: + mốc lịch sử. */
+      /* PR-DEPLOY (DEP-1, DEP-2): thêm đúng hai khoá dấu — khoá backfill Lưu trữ + dấu DB mới (giá trị = giờ init). PR-QU: + khoá `case.close` GV. OV-15g: + mốc lịch sử. LG-3: + mốc bật việc GV Báo cáo PH (`bc_ph_viec_gv_tu`, ngày init). */
       const cauHinh = cacBang(o.conn).includes('demo_config') ? o.conn.prepare('SELECT key, value FROM demo_config ORDER BY key').all() as any[] : null;
-      assert(JSON.stringify(cauHinh?.map((r) => r.key)) === '["khoi_tao_moi_at","lich_su_thay_doi_tu","normal_pass_threshold","pr_ct2_dien_buoi","pr_cv_loi_gan_chu_case_at","pr_k316_da_chay","pr_mon_ct_1311_at","pr_mt_vang_reset_da_chay","pr_nghi_hoc_luu_tru_da_chay","pr_ov13p_tvv_cx_tao_lop_at","pr_ov13q_han_sau_thi_at","pr_ov1b_da_chay","pr_ov1c_da_chay","pr_pa_trung_0711_da_chay","pr_qu_case_close_gv_at","pr_reset_han_case_da_chay","pr_sos_tam_pa_da_chay","pr_tinh_lui_phan_cong_da_chay","pr_w_lech_da_chay","xoa_du_lieu_backfill_at"]'
+      assert(JSON.stringify(cauHinh?.map((r) => r.key)) === '["bc_ph_viec_gv_tu","khoi_tao_moi_at","lich_su_thay_doi_tu","normal_pass_threshold","pr_ct2_dien_buoi","pr_cv_loi_gan_chu_case_at","pr_k316_da_chay","pr_mon_ct_1311_at","pr_mt_vang_reset_da_chay","pr_nghi_hoc_luu_tru_da_chay","pr_ov13p_tvv_cx_tao_lop_at","pr_ov13q_han_sau_thi_at","pr_ov1b_da_chay","pr_ov1c_da_chay","pr_pa_trung_0711_da_chay","pr_qu_case_close_gv_at","pr_reset_han_case_da_chay","pr_sos_tam_pa_da_chay","pr_tinh_lui_phan_cong_da_chay","pr_w_lech_da_chay","xoa_du_lieu_backfill_at"]'
         && cauHinh!.find((r) => r.key === 'normal_pass_threshold').value === '0.7'
-        && cauHinh!.filter((r) => r.key !== 'normal_pass_threshold').every((r) => r.value === (r.key === 'pr_reset_han_case_da_chay' ? '' : O.now)),   // RESET-HAN-CASE: giá trị = ngày reset, DB mới rỗng
+        && cauHinh!.filter((r) => r.key !== 'normal_pass_threshold').every((r) => r.value === (r.key === 'pr_reset_han_case_da_chay' ? '' : r.key === 'bc_ph_viec_gv_tu' ? O.now.slice(0, 10) : O.now)),   // RESET-HAN-CASE: giá trị = ngày reset, DB mới rỗng
         `demo_config chỉ được có dấu ngưỡng 0.7 + hai khoá dấu: ${JSON.stringify(cauHinh)}`);
       assert(cacBang(o.conn).length === cacBang(t.conn).length, `Phải có đủ bảng như schema: ${cacBang(o.conn).length} / ${cacBang(t.conn).length}`);
     } finally { dongLai(o); }

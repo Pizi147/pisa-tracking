@@ -1,3 +1,4 @@
+import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { capNhatConOChoTatCa } from '../fasttrack/conOCho.ts';
 import { GHI_NGAM_NGUOI_CHAM } from '../fasttrack/attempts.ts';
 import { buildOv2aDemo } from './ov2aSeed.ts';
@@ -254,6 +255,7 @@ function runSeedTho() {
     });
 
     setConfig('demo_date', DEMO_DATE);
+    setConfig(KHOA_MOC_BC_PH_VIEC_GV, DEMO_DATE);   // LG-3: mốc bật việc GV "Viết Báo cáo PH" = ngày seed
     setConfig('scenario_mode', 'normal');
     setConfig('seeded_at', NOW);
 

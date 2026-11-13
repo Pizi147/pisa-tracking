@@ -7,7 +7,7 @@
  */
 import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { lopDayDu, type Principal } from '../permissions.ts';
+import { activeAt, lopDayDu, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
@@ -309,5 +309,56 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
   }
   return out;
 }
+/**
+ * LG-3 VIỆC GV "Báo cáo PH" (chủ SP 13–14/11 — lời 12, 13, 16): mỗi lớp × đợt một việc cho người có phần phải viết theo phân công HÔM NAY
+ * (GV kỹ năng: phần mình · GVCN: Chung · GVCN kiêm kỹ năng: MỘT dòng mọi phần của mình). Đợt: đang mở hoặc quá hạn ≤ 7 ngày (rồi tự rời, như việc Admin);
+ * mọi loại đợt (tháng FT, Progress / Final lớp thường, đợt QL thêm). Xong = mọi em trong đợt đủ mọi phần của mình — tính theo bản ghi em × phần nên hai GV
+ * cùng phần: một người viết đủ thì cả hai cùng xong. `batTu`: không sinh việc cho đợt có hạn trước ngày này (ngày bật tính năng).
+ * Turso: 0 câu khi không có phân công lớp có mẫu báo cáo; còn lại tiến độ lớp + tuỳ chỉnh đợt (lớp của GV, nhớ theo request) và — chỉ khi có đợt trong
+ * cửa sổ — em (1 câu) + bản ghi đủ của phần mình (1 câu, ≤ em × phần dòng).
+ */
+export type ViecBcGv = { userId: number; classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; phan: string[] };
+/** Người giữ phần: GV (chính người xem) hoặc mọi GV trong phạm vi khi QL / QT xem "Tất cả" — cùng câu đọc cho cả nhóm. */
+export type NguoiBc = { userId: number; assignments: readonly Pick<Principal['assignments'][number], 'classId' | 'skill' | 'isCore' | 'effectiveFrom' | 'effectiveTo'>[] };
+export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu = ''): ViecBcGv[] {
+  const cuaToi = new Map<string, Set<string>>();   // "người|lớp" → phần
+  for (const n of nguoi) for (const a of n.assignments) {
+    const k = a.isCore ? 'chung' : a.skill;
+    if (!k || !activeAt(a, homNay)) continue;
+    const khoa = `${n.userId}|${a.classId}`;
+    cuaToi.set(khoa, (cuaToi.get(khoa) ?? new Set<string>()).add(k));
+  }
+  if (!cuaToi.size) return [];
+  const lop = lopDayDu();
+  const can = [...cuaToi].flatMap(([khoa, k]) => {
+    const [userId, id] = khoa.split('|').map(Number);
+    const c = lop.get(id) as LopBc | undefined;
+    const phan = c?.status === 'active' ? boPhanBc(c.programme_code ?? c.kind)?.filter((x) => k.has(x.khoa)) ?? [] : [];
+    return phan.length ? [{ userId, c: c!, phan }] : [];
+  });
+  if (!can.length) return [];
+  const ids = [...new Set(can.map((x) => x.c.id))];
+  const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
+  const dotLop = new Map(ids.map((id) => [id, (dotCuaLop(lop.get(id) as LopBc, homNay, tienDo, tuyChinh)?.ds ?? [])
+    .filter((d) => soNgayQuaHan(d, homNay) <= 7 && d.han >= batTu)]));
+  const cap = can.flatMap((x) => (dotLop.get(x.c.id) ?? []).map((d) => ({ ...x, d })));
+  if (!cap.length) return [];
+  const emDot = emTheoLo(cap, homNay);
+  const sids = [...new Set([...emDot.values()].flatMap((ds) => ds.map((e) => e.id)))];
+  const du = new Set<string>();
+  const dots = JSON.stringify([...new Set(cap.map((x) => x.d.ma))]), phans = JSON.stringify([...new Set(cap.flatMap((x) => x.phan.map((ph) => ph.khoa)))]);
+  theoLoJson(sids, (json) => {
+    for (const r of db().prepare(`SELECT dot, student_id, phan FROM bao_cao_ph WHERE du = 1 AND student_id IN (${DS_JSON})
+        AND dot IN (SELECT value FROM json_each(?)) AND phan IN (SELECT value FROM json_each(?))`).all(json, dots, phans) as any[]) du.add(`${r.dot}|${r.student_id}|${r.phan}`);
+  });
+  const out: ViecBcGv[] = [];
+  for (const { userId, c, d, phan } of cap) {
+    const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
+    const thieu = em.filter((e) => phan.some((ph) => !du.has(`${d.ma}|${e.id}|${ph.khoa}`))).length;
+    if (thieu) out.push({ userId, classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu, phan: phan.map((ph) => ph.khoa) });
+  }
+  return out;
+}
+
 /** Ngày (giờ VN) của một mốc ISO. */
 const ngayVn = (iso: string) => new Date(Date.parse(iso) + 7 * 3_600_000).toISOString().slice(0, 10);

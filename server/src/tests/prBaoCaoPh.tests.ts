@@ -11,6 +11,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   const sch: any = await import('../classes/schedule.ts');
   const { loadPrincipal }: any = await import('../permissions.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const require_mg: any = await import('../migrate/prBcPhViecGv.ts');
+  const cfg: any = await import('../demoConfig.ts');
   console.log('\nBAO-CAO-PH — báo cáo gửi phụ huynh: đợt, quyền, em đủ, điểm sửa tay');
   const thu = <T>(fn: () => T): T => {
     conn.exec('BEGIN IMMEDIATE');
@@ -414,4 +416,91 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     });
     assert(daKiem, 'seed không còn lớp thường MB có đợt + em thiếu điểm L — đổi lớp mẫu của phép kiểm');
   });
+
+  /* ------------------------------------------------------------ LG-3: việc GV "Báo cáo PH" */
+  check('BC-20 · LG-3: việc GV "Báo cáo PH" — mỗi lớp × đợt một dòng (GVCN kiêm kỹ năng một dòng); xong khi đủ phần của mình; quá hạn 7 ngày rồi rời; không đợt trước ngày bật; vai khác không có', () => thu(() => {
+    const han = d.addDaysIso(TODAY, 6);
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt việc GV', mo: TODAY, han });
+    const ma = r.ma[0].ma;
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const em = tr.em.map((e: any) => e.id);
+    assert(em.length > 1, 'tiền đề: lớp có em');
+    const cua = (pp: any, homNay = TODAY, batTu = '') => xbc.viecBaoCaoPhGv([pp], homNay, batTu).filter((v: any) => v.classId === lop && v.dot === ma);
+    /* mỗi GV có phần: một dòng, đúng phần của mình; GVCN kiêm kỹ năng: một dòng gồm Chung + phần kỹ năng */
+    for (const [ten, gv] of [['L', P.lrTeacher], ['W1', P.w1Teacher], ['S', P.sTeacher], ['GVCN', P.coreTeacher]] as const) {
+      const v = cua(gv);
+      const phanGv = new Set(gv.assignments.filter((a: any) => a.classId === lop).map((a: any) => (a.isCore ? 'chung' : a.skill)));
+      assert(v.length === 1 && v[0].soEm === em.length && v[0].thieu === em.length && v[0].phan.every((k: string) => phanGv.has(k)), `${ten}: ${JSON.stringify(v)}`);
+    }
+    assert(cua(P.coreTeacher)[0].phan.includes('chung'), 'GVCN có phần Chung');
+    /* xong: GV W1 (chỉ W1) — người khác viết W1 ("hai GV cùng phần" theo bản ghi em × phần): còn n − 1 em, rồi đủ mọi em → việc rời; GV khác còn */
+    const W1 = tr.phan.filter((x: any) => x.khoa === 'writing1');
+    assert(P.w1Teacher.assignments.filter((a: any) => a.classId === lop).every((a: any) => a.skill === 'writing1' && !a.isCore), 'tiền đề: GV W1 thuần');
+    viet(lop, ma, tr.em.slice(0, 1), W1);
+    xoaNho();
+    assert(cua(P.w1Teacher)[0]?.thieu === em.length - 1 && cua(P.sTeacher)[0]?.thieu === em.length, 'W1: còn n − 1 em; S không đổi');
+    viet(lop, ma, tr.em, W1);
+    xoaNho();
+    assert(cua(P.w1Teacher).length === 0 && cua(P.sTeacher).length === 1, 'W1 đủ mọi em → việc rời; S còn');
+    /* quá hạn: hiện thêm 7 ngày rồi rời; không sinh cho đợt có hạn trước ngày bật */
+    assert(cua(P.sTeacher, d.addDaysIso(han, 7)).length === 1 && cua(P.sTeacher, d.addDaysIso(han, 8)).length === 0, 'quá hạn 7 ngày rồi rời');
+    assert(cua(P.sTeacher, TODAY, d.addDaysIso(han, 1)).length === 0 && cua(P.sTeacher, TODAY, han).length === 1, 'ngày bật');
+    /* em Tạm dừng không tính */
+    conn.prepare("UPDATE students SET status = 'paused' WHERE id = ?").run(em[em.length - 1]);
+    xoaNho();
+    assert(cua(P.sTeacher)[0].soEm === em.length - 1, 'em Tạm dừng không tính');
+    /* /my-work: GV có dòng nhóm bao_cao_ph (hạn = hạn đợt, chưa tới hạn → normal); QL / Admin / TVV không có */
+    const it = mw.myWork(P.sTeacher).items.find((x: any) => x.key === `bc-ph:${P.sTeacher.userId}:${lop}:${ma}`);
+    assert(it && it.group === 'bao_cao_ph' && it.due === han && it.urgency === 'normal' && it.mine && it.classId === lop && it.count === em.length - 1, JSON.stringify(it));
+    for (const x of [P.mbManager, admin, nguoi('consultant', 'MB')].filter(Boolean)) {
+      assert(!mw.myWork(x).items.some((y: any) => y.group === 'bao_cao_ph'), `${x.fullName}: không có việc Báo cáo PH`);
+    }
+    const ql = mw.myWork(P.mbManager, { nguoi: 'tat-ca' }).items.find((x: any) => x.key === `bc-ph:${P.sTeacher.userId}:${lop}:${ma}`);
+    assert(ql && !ql.mine && ql.ownerId === P.sTeacher.userId, 'QL "Tất cả" thấy việc của GV (như "Của một GV"): ' + JSON.stringify(ql));
+    /* đổi GV giữa đợt: GV S hết phân công → hết việc */
+    conn.prepare("UPDATE teacher_assignments SET effective_to = ? WHERE class_id = ? AND skill = 'speaking' AND status = 'active'").run(d.addDaysIso(TODAY, -1), lop);
+    xoaNho();
+    assert(cua(loadPrincipal(P.sTeacher.userId)).length === 0, 'GV hết phân công → không còn việc');
+  }));
+
+  check('BC-21 · LG-3: Admin nhận MỘT tin khi lớp × đợt đủ hết báo cáo (kèm việc "Xuất báo cáo PH"); chưa đủ không có tin', () => thu(() => {
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: TODAY, han: d.addDaysIso(TODAY, 6) });
+    const ma = r.ma[0].ma;
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    const tin = () => conn.prepare("SELECT user_id, title, duong FROM notifications WHERE kind = 'bc_ph_du' AND dedup_key = ?").all(`bc_ph_du:${lop}:${ma}`) as any[];
+    viet(lop, ma, tr.em.slice(1), tr.phan);
+    viet(lop, ma, tr.em.slice(0, 1), tr.phan.slice(1));
+    assert(tin().length === 0, 'chưa đủ: không tin');
+    viet(lop, ma, tr.em.slice(0, 1), tr.phan.slice(0, 1));
+    const t1 = tin();
+    assert(admin && t1.some((x) => x.user_id === admin.userId) && t1.every((x) => x.duong.includes(encodeURIComponent(ma))), JSON.stringify(t1));
+    assert(!t1.some((x) => x.user_id === P.mbManager.userId), 'QL không nhận');
+    viet(lop, ma, tr.em.slice(0, 1), tr.phan.slice(0, 1));   // lưu lại khi đã đủ
+    assert(tin().length === t1.length, 'đúng một lần mỗi người');
+  }));
+
+  check('BC-22 · LG-3: mốc bật việc GV (demo_config, migrate ghi một lần): đợt hạn trước mốc không sinh việc, sau mốc có; migrate chạy lặp không đổi; thiếu mốc = hôm nay', () => thu(() => {
+    const mg: any = require_mg;
+    const { setConfig } = cfg;
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, -3), han: d.addDaysIso(TODAY, -1) });
+    const khoa = `bc-ph:${P.sTeacher.userId}:${lop}:${r.ma[0].ma}`;
+    const co = () => { xoaNho(); return mw.myWork(P.sTeacher).items.some((x: any) => x.key === khoa); };
+    setConfig(mg.KHOA_MOC_BC_PH_VIEC_GV, d.addDaysIso(TODAY, -5));
+    assert(co(), 'đợt mở trước mốc nhưng hạn sau mốc → có việc (đợt chưa qua lúc bật)');
+    setConfig(mg.KHOA_MOC_BC_PH_VIEC_GV, TODAY);
+    assert(!co(), 'đợt có hạn trước mốc (đã qua lúc bật) → không việc');
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mg.KHOA_MOC_BC_PH_VIEC_GV);
+    assert(!co(), 'thiếu mốc = hôm nay: đợt đã qua không sinh việc');
+    const ap: string[] = [];
+    mg.migratePrBcPhViecGv(conn, ap);
+    xoaNho();
+    const v1 = (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(mg.KHOA_MOC_BC_PH_VIEC_GV) as any)?.value;
+    assert(v1 === TODAY && ap.length === 1, `migrate ghi mốc = ngày nghiệp vụ: ${v1}`);
+    setConfig('demo_date', d.addDaysIso(TODAY, 3));
+    mg.migratePrBcPhViecGv(conn, ap);
+    const v2 = (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(mg.KHOA_MOC_BC_PH_VIEC_GV) as any)?.value;
+    assert(v2 === v1 && ap.length === 1, 'chạy lặp không đổi mốc');
+  }));
 }
