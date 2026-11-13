@@ -55,7 +55,12 @@ export const EN_BAO_CAO_PH = {
   'Đợt không hợp lệ': 'Invalid round',
   'Đợt này đang được báo cáo': 'This round is already reported',
   'Chọn ngày mở và hạn của đợt': 'Pick the open and due dates',
-  'Đợt mở từ hôm nay trở về trước': 'A round opens today or earlier',
+  /* LG-2 (chủ SP 14/11): đợt hẹn trước ngày mở. */
+  'Sắp mở': 'Opening soon',
+  'Sắp mở {ngay}': 'Opens {ngay}',
+  'Sửa đợt': 'Edit round',
+  'Đã sửa đợt {dot}': 'Round {dot} updated',
+  'Đã hẹn đợt báo cáo · mở {ngay} · {n} lớp': 'Report round scheduled · opens {ngay} · {n} classes',
   'Hạn phải sau hoặc cùng ngày mở': 'Due date must be on or after the open date',
   'Không tìm thấy đợt': 'Round not found',
   'em đủ': 'students complete',

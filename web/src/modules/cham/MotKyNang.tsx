@@ -168,7 +168,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
   const phien = usePhienCham();
   /* K4-24: GV chấm chọn một lần cho cả lớp × tuần — cùng ô nhớ với tiêu đề cột S của lưới máy tính. */
   const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
-  const [gvCot, setGvCot] = useGvChamCot(data.classId, dot);
+  const [gvCot, setGvCot] = useGvChamCot(data.classId, dot, data.gvChamCot);
 
   if (data.rows.length === 0 || !chon) return <LuoiFT data={data} onReload={onReload} kn={kn} hv={hv} hangMo={hangMo} onHet={onHet} />;
 

@@ -2577,3 +2577,14 @@ CREATE TRIGGER tg_tc_cau_hinh_phien_ban_upd AFTER UPDATE ON cau_hinh_phien_ban
     BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
 CREATE TRIGGER tg_tc_cau_hinh_phien_ban_del AFTER DELETE ON cau_hinh_phien_ban
     BEGIN UPDATE moc_he_thong SET so = so + 1 WHERE khoa = 'tham-chieu'; END;
+
+-- LG-5c (13/11): "GV chấm S" đầu cột lưới FT — người chọn × lớp × đợt (id tuần / mt{n}), thay localStorage.
+CREATE TABLE gv_cham_cot (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  class_id INTEGER NOT NULL REFERENCES classes(id),
+  dot TEXT NOT NULL,
+  examiner_user_id INTEGER REFERENCES users(id),
+  examiner_name TEXT,
+  cap_nhat TEXT NOT NULL,
+  PRIMARY KEY (user_id, class_id, dot)
+);

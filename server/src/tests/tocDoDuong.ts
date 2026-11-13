@@ -121,6 +121,11 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan GV', vai: ['GVCN', 'GVBM', 'GVCN_THUONG'], url: '/tong-quan/lop-toi-day/hai-khoi' },
   { trang: 'Tổng quan GV', vai: ['GVCN'], url: '/tong-quan/lop-toi-day/o?ct=ft&classId={lopFT}&cot=thi-thang-nay' },
 
+  /* OV6-DOC-CHON: ô tìm thanh trên (Ctrl K) — trước `/students?q` không LIMIT (QL "ng": 544 câu / 1 063 dòng, ×3 dữ liệu 1 622 câu), web chỉ hiện 6. */
+  { trang: 'Chung · tìm', vai: MOI_VAI, url: '/students?q=ng&gioiHan=6&gon=1' },
+  /* OV6-DOC-CHON: ô Lớp của Giao việc — trước `/classes` đầy đủ (QL 15 câu / 470 dòng) chỉ để lấy mã + sĩ số. */
+  { trang: 'Công việc · Giao việc', vai: ['QL', 'QT'], url: '/classes?gon=1' },
+
   // ---------------------------------------------------------------- Học viên & Lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/classes' },
   { trang: 'Học viên & Lớp', vai: ['QL', 'QT'], url: '/classes?branchId={cn}' },
@@ -464,6 +469,10 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* OV6-DOC-CHON (14/11): ô tìm thanh trên — trước `/students?q=ng` 360–845 câu (×3 dữ liệu tới 2 517); nay LIMIT 6 + gon đo 15 câu mọi vai · ô Lớp của Giao
+     việc — trước `/classes` 15 câu, nay `gon=1` đo 3 → max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /students?q=ng&gioiHan=6&gon=1': 25, 'QT /students?q=ng&gioiHan=6&gon=1': 25, 'GVCN /students?q=ng&gioiHan=6&gon=1': 25,
+  'GVBM /students?q=ng&gioiHan=6&gon=1': 25, 'GVCN_THUONG /students?q=ng&gioiHan=6&gon=1': 25, 'QL /classes?gon=1': 13, 'QT /classes?gon=1': 13,
   /* TL-GV (v20): hộp Tuần dạy — lộ trình · ghi danh · lớp FT · phân công (+ lần thi trước khi thi lại) trên nền phiên; đo 9 · 6 · 10 · 10 câu → max(đo + 10, ⌈đo × 1,3⌉). */
   'QL /cycles/{loTrinhThi}/tuan-day': 19, 'QT /cycles/{loTrinhThi}/tuan-day': 16, 'GVCN /cycles/{loTrinhThi}/tuan-day': 20, 'GVBM /cycles/{loTrinhThi}/tuan-day': 20,
   /* CAU-HINH-CASE-SOS (11/11): 3 câu riêng của tab (bản đang dùng · nhật ký · đếm đang dùng) trên nền phiên như /admin/mo-sua-lich-test (12). */
@@ -1085,6 +1094,9 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* OV6-DOC-CHON (14/11): trước `/students?q=ng` 712–1 722 dòng, `/classes` 308–709 dòng; nay đo 14–17 · 23 / 33 dòng → max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /students?q=ng&gioiHan=6&gon=1': 64, 'QT /students?q=ng&gioiHan=6&gon=1': 64, 'GVCN /students?q=ng&gioiHan=6&gon=1': 67,
+  'GVBM /students?q=ng&gioiHan=6&gon=1': 64, 'GVCN_THUONG /students?q=ng&gioiHan=6&gon=1': 67, 'QL /classes?gon=1': 73, 'QT /classes?gon=1': 83,
   /* TL-GV: hộp Tuần dạy một em — đo 11 dòng (lộ trình · ghi danh · lớp · phân công) → đo + 50. */
   'QL /cycles/{loTrinhThi}/tuan-day': 61,
   /* CAU-HINH-CASE-SOS (11/11): bản đang dùng (≤ 3 dòng) + ≤ 30 dòng nhật ký + nhóm đếm theo mã (≈ 40 mã) trên nền phiên (≈ 51 như mo-sua-lich-test). */

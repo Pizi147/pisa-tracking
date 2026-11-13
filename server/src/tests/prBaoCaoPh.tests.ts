@@ -270,7 +270,6 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const x = xbc.xuatLopBaoCaoPh(P.mbManager, lop, ma, null);
     assert(x.sheets.length === 1 && x.sheets[0].aoa[0].length === tr.em.length + 1, 'Excel một lớp theo đợt thêm');
     /* kiểm dữ liệu vào */
-    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, 3), han: d.addDaysIso(TODAY, 9) }), /./, 'mở trong tương lai');
     assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: TODAY, han: d.addDaysIso(TODAY, -1) }), /./, 'hạn trước ngày mở');
     assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [], mo: TODAY, han: TODAY }), /./, 'chưa chọn lớp');
 
@@ -296,9 +295,48 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(a.ds.map((x: any) => x.ma).join() === 'thang:2026-11,them:9,thang:2026-09', a.ds.map((x: any) => x.ma).join());
     assert(a.daBo.map((x: any) => x.ma).join() === 'thang:2026-10' && a.dau === null, 'daBo / dau');
     assert(d.nhanDotBc(them, '2026-11-24').startsWith('Đợt ') && d.nhanDotBc({ ...them, ten: 'Kiểm tra giữa kỳ' }, '2026-11-24') === 'Kiểm tra giữa kỳ', d.nhanDotBc(them, '2026-11-24'));
+    assert(a.sapMo.map((x: any) => x.ma).join() === 'them:10', 'LG-2: đợt thêm chưa tới ngày mở vào sapMo');
+    const toi = d.dsDotLop(l, '2026-12-01', { bo: new Set(), them: [{ ...them, ma: 'them:10', mo: '2026-12-01', han: '2026-12-05' }] });
+    assert(toi.ds.some((x: any) => x.ma === 'them:10') && !toi.sapMo.length, 'LG-2: tới ngày mở tự mở');
     const b = d.dsDotLop(l, '2026-11-24');
-    assert(b.ds.length === 3 && b.daBo.length === 0, 'không tuỳ chỉnh = như cũ');
+    assert(b.ds.length === 3 && b.daBo.length === 0 && b.sapMo.length === 0, 'không tuỳ chỉnh = như cũ');
   });
+
+  check('BC-19 · LG-2: đợt thêm mở ở tương lai — "sắp mở", chưa viết / chip / việc Admin; sửa ngày (hạn ≥ ngày mở), xoá; tới ngày mở như đợt thường', () => thu(() => {
+    const admin_ = nguoi('office_admin', 'MB');
+    const r = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Hẹn trước', mo: d.addDaysIso(TODAY, 3), han: d.addDaysIso(TODAY, 9) });
+    const ma = r.ma[0].ma, id = r.dotIds[0];
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
+    assert(!tr.dsDot.some((x: any) => x.ma === ma) && tr.dsSapMo.some((x: any) => x.ma === ma && x.mo === d.addDaysIso(TODAY, 3) && x.ten === 'Hẹn trước'), JSON.stringify(tr.dsSapMo));
+    assert(bc.trangBaoCaoPh(P.lrTeacher, lop, null).dsSapMo.some((x: any) => x.ma === ma), 'GV của lớp cũng thấy "sắp mở"');
+    const xem = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    assert(xem.dot === null && xem.sapMo?.ma === ma && xem.em.length === 0, 'chọn đợt sắp mở → thẻ, không bảng: ' + JSON.stringify(xem.sapMo));
+    const sid = tr.em[0]?.id ?? (conn.prepare("SELECT student_id id FROM enrollments WHERE class_id = ? AND status = 'active'").get(lop) as any).id;
+    assertThrows(() => bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: sid, muc: {}, chu: 'x' }), /./, 'chưa mở: không viết');
+    assert(bc.chipBaoCaoPh(P.mbManager, lop)?.dot !== ma, 'chưa mở: không chip');
+    if (admin_) assert(!xbc.viecXuatBaoCaoPh(admin_, null).some((v: any) => v.dot === ma), 'chưa mở: không việc Admin');
+    /* sửa ngày + tên; hạn trước ngày mở bị chặn; GV không sửa */
+    assertThrows(() => dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotId: id, mo: d.addDaysIso(TODAY, 5), han: d.addDaysIso(TODAY, 4) }), /./, 'hạn trước ngày mở');
+    assertThrows(() => dq.doiDotBaoCaoPh(P.lrTeacher, { viec: 'sua', dotId: id, mo: TODAY, han: TODAY }), /./, 'GV không sửa');
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotId: id, ten: 'Hẹn lại', mo: d.addDaysIso(TODAY, 7), han: d.addDaysIso(TODAY, 14) });
+    xoaNho();
+    const sau = bc.trangBaoCaoPh(P.mbManager, lop, null).dsSapMo.find((x: any) => x.ma === ma);
+    assert(sau?.mo === d.addDaysIso(TODAY, 7) && sau.han === d.addDaysIso(TODAY, 14) && sau.nhan === 'Hẹn lại', JSON.stringify(sau));
+    /* sửa ngày mở về hôm nay → mở như đợt thường, GV viết được */
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'sua', dotId: id, mo: TODAY, han: d.addDaysIso(TODAY, 6) });
+    xoaNho();
+    const mo = bc.trangBaoCaoPh(P.mbManager, lop, ma);
+    assert(mo.dot === ma && mo.em.length > 0 && !mo.dsSapMo.some((x: any) => x.ma === ma), 'tới ngày mở: đợt thường');
+    assert(bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: mo.em[0].id, muc: { c1: 'tot', c2: 'tot', c3: 'kha', c4: 'kha' }, chu: 'ok' }).du === true, 'mở rồi viết được');
+    /* xoá đợt sắp mở */
+    const r2 = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], mo: d.addDaysIso(TODAY, 2), han: d.addDaysIso(TODAY, 3) });
+    dq.doiDotBaoCaoPh(P.mbManager, { viec: 'xoa', dotIds: r2.dotIds });
+    xoaNho();
+    assert(!bc.trangBaoCaoPh(P.mbManager, lop, null).dsSapMo.some((x: any) => x.ma === r2.ma[0].ma), 'xoá đợt sắp mở');
+    const acts = (conn.prepare("SELECT DISTINCT action FROM audit_logs WHERE action = 'bao_cao_ph.dot_sua'").all() as any[]);
+    assert(acts.length === 1, 'nhật ký sửa đợt');
+  }));
 
   check('BC-16 · RA-LOI-0711e: thêm 2 đợt bất chợt (mở sau đợt tháng) không làm mất việc Admin "Xuất báo cáo PH" của đợt tháng còn trong 30 ngày', () => thu(() => {
     const admin_ = nguoi('office_admin', 'MB');

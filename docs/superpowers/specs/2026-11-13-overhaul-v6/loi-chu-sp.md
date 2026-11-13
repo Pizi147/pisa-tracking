@@ -262,3 +262,9 @@ CHẠY QUA ĐÊM: PTA Overhaul tự quyết việc tự quyết được (đề 
 ĐÃ CHỐT (áp từ nay): việc phát sinh trong lúc rà (kể cả logic / lỗi / luật) — **PTA Overhaul tự giao session con, tự chọn model + effort, tự rà, duyệt và merge** như PTA Plan vẫn làm; không phải chuyển qua PTA Plan rồi chờ chủ SP bấm thẻ. Sửa lời 16 ý 5 ở phần "ai giao".
 PTA Overhaul hiểu: (a) các việc ĐÃ gửi PTA Plan (F01–F07, L1–L8, LG-1…LG-8, GD-1…GD-3) và các session PTA Plan đã mở vẫn do PTA Plan theo dõi — không giao trùng; (b) vẫn giữ: không deploy; PR đổi bố cục dừng ở ảnh cặp chờ chủ SP (Q-6); điều không chắc gom lại hỏi sáng.
 Đã làm trong lượt: mở sẵn hai session dự bị (`du-bi-1` Opus 5.5 · high, `du-bi-2` Sonnet 5.5 · medium) vì app chỉ cho mở session ở lượt của chủ SP; việc phát sinh trong đêm giao cho hai session này bằng tin nhắn.
+
+## 14/11 đêm — lời 22: để ý tác vụ chạy nền
+
+> "nhớ để ý những việc chạy background, không cần thì tắt, như cái vừa rồi nếu tôi tắt nhầm thì cứ tự bật lại"
+
+ĐÃ CHỐT (cách làm): tác vụ nền / tiến trình không còn cần thì PTA Overhaul tự tắt (chỉ theo cổng / worktree của mình); cái nào chủ SP tắt nhầm mà còn cần thì tự bật lại, không hỏi. Bản chạy thử cổng 5310 chủ SP vừa tắt: không còn cần (các session mockup tự chạy bản thử riêng) → không bật lại.
