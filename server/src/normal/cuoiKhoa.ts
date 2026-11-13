@@ -13,7 +13,7 @@ import { dongBoTrangThaiCaseLo } from '../cases/sosState.ts';
 import { chuyenCaseSangLoTrinh, dongCaseHeThongLo } from '../cases/systemClose.ts';
 import { suggestCaseOwner } from '../cases/owner.ts';
 import { chenPa, type DongPa } from '../cases/taoPa.ts';
-import { nguoiGiuKetQua } from '../cases/giuKetQua.ts';
+import { NGUOI_DAY_NHOM, nguoiGiuKetQua } from '../cases/giuKetQua.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
@@ -255,6 +255,23 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     conn.prepare(`UPDATE mini_test SET cycle_id = (SELECT lc.id FROM learning_cycles lc WHERE lc.student_id = mini_test.student_id AND lc.status = 'active')
        WHERE ty_le IS NULL AND (student_id, cycle_id) IN (VALUES ${lo.map(() => '(?,?)').join(',')})`).run(...lo.flat());
   }, Math.floor(THAM_SO_TOI_DA / 2));
+  /* GV-CU-BO-TRO (chủ SP 13/11): PA Bổ trợ miễn phí sinh sớm đi theo em sang lớp mới → chuông Người dạy (GV cũ): vẫn ghi kết quả + Mini Test. Cùng khoá
+     với chuông lúc sinh (`taoBoTroFinal`) — đổi chữ, đánh dấu chưa đọc. Một câu mỗi lô em (chỉ em có PA đang chạy mới ra dòng). */
+  const denLop = new Map(thuong.map((d) => [d.sid, d]));
+  const baoDay: unknown[][] = [];
+  theoLo([...denLop.keys()], (lo, ph) => {
+    for (const r of conn.prepare(
+      `SELECT DISTINCT sc.student_id AS sid, iv.performer_user_id AS u, iv.nhom_bo_tro AS nhom, m.han
+         FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id JOIN mini_test m ON m.nhom_bo_tro = iv.nhom_bo_tro AND m.ty_le IS NULL
+        WHERE iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND iv.performer_user_id IS NOT NULL AND sc.student_id IN (${ph})`,
+    ).all(...lo) as any[]) {
+      const d = denLop.get(r.sid)!;
+      baoDay.push([r.u, 'bo_tro_mien_phi', 'Em bổ trợ đã chuyển lớp', `Bạn vẫn ghi kết quả và Mini Test (hạn ${ngay(r.han, d.ngay)}) — mở hồ sơ học viên.`, 'student', r.sid,
+        `bo-tro-mien-phi:${String(r.nhom).slice(3)}:day:${r.u}`, nowIso(), null]);
+    }
+  });
+  chenNhieuDong('INSERT INTO notifications (user_id, kind, title, body, entity_type, entity_id, dedup_key, created_at, duong)', baoDay,
+    ' ON CONFLICT(user_id, dedup_key) DO UPDATE SET title = excluded.title, body = excluded.body, created_at = excluded.created_at, read_at = NULL');
 
   /* Bài Cuối khoá của từng em ở lớp nguồn + % (2 câu cho cả lô). */
   const theoLop = new Map<number, number[]>();
@@ -425,7 +442,7 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
        VALUES ${rows.map(() => `(${Array(COT_CASE).fill('?').join(',')})`).join(',')} RETURNING id, dedup_key`,
     ).all(...rows.flat()) as any[]) coSan.set(r.dedup_key, { id: r.id, status: 'in_progress' });
   }, Math.floor(THAM_SO_TOI_DA / COT_CASE));
-  const daMo = new Set<string>();
+  const daMo = new Set<string>(), daBaoDay = new Set<string>();
   for (const y of o) {
     const khoa = khoaCua(y);
     const caseId = coSan.get(khoa)!.id;
@@ -436,10 +453,17 @@ function taoBoTroFinal(p: Principal, dongs: readonly DongBoTroFinal[]): void {
       if (!laMoi) canDongBo.push(caseId);
       daMo.add(khoa);
     }
+    const nguoiDay = gvCu.get(y.x.ngay)?.get(`${y.x.fromClassId}|${y.mon}`)?.userId ?? null;
+    /* GV-CU-BO-TRO: chuông cho Người dạy (một lần mỗi em × người) — khoá cùng tiền tố `bo-tro-mien-phi:{lượt}:` nên huỷ bộ xoá theo (`huyBoTroFinal`). */
+    if (nguoiDay && !daBaoDay.has(`${y.x.luot.id}:${nguoiDay}`)) {
+      daBaoDay.add(`${y.x.luot.id}:${nguoiDay}`);
+      thongBao.push([nguoiDay, 'bo_tro_mien_phi', 'Bạn dạy PA Bổ trợ miễn phí', `Final Test ${y.phanTram}% — bạn ghi kết quả từng kỳ và Mini Test (hạn ${ngay(y.lich.hanMiniTest, y.x.ngay)}).`,
+        'student', y.x.sid, `bo-tro-mien-phi:${y.x.luot.id}:day:${nguoiDay}`, nowIso(), null]);
+    }
     paRows.push({
       caseId, kind: 'bo_tro_mien_phi', description: CHU_BO_TRO(y.x.b.soBuoi, y.x.b.soTuan, y.x.b.theoMon ? chuMonTruot(y.x.ct, y.x.b.mon) : null), soBuoi: y.x.b.soBuoi,
-      /* PR-CT2 (§8): Người dạy = GV cũ của môn (lớp của bài Final); việc Kết quả theo `nguoiGiuKetQua` (nhóm `mt:` → GVCN lớp đang học). */
-      performerUserId: gvCu.get(y.x.ngay)?.get(`${y.x.fromClassId}|${y.mon}`)?.userId ?? null,
+      /* PR-CT2 (§8): Người dạy = GV cũ của môn (lớp của bài Final); GV-CU-BO-TRO: Người dạy giữ việc Kết quả + Mini Test (`nguoiGiuKetQua`). */
+      performerUserId: nguoiDay,
       recordedBy: p.userId, status: 'started', startedDate: y.batDau, preset: true, confirmedBy: p.userId, confirmedAt: nowIso(),
       cycleStartedOn: y.batDau, actionDue: hanKyGhiKetQua(y.batDau), followupDue: y.lich.ngayMiniTest, mocQuyChe: 'mini_test', nhomBoTro: `mt:${y.x.luot.id}`,
     });
@@ -672,7 +696,7 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
     chotYeuCau(conn, { loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id }, 'tu_dong', { lyDo: 'Chuyển sang Xét lại lộ trình' });
   } else if (cases.length) {
     const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
-    /* PR-CT2 (§8): thẻ về người giữ việc Ghi Mini Test (GVCN lớp đang học; không có → chủ Case), không về Người dạy (GV cũ). */
+    /* PR-CT2 (§8): thẻ về GVCN lớp đang học (không có → chủ Case) — PA nhóm đã khép trước lúc này nên `nguoiGiuMotMiniTest` không còn Người dạy (GV-CU-BO-TRO: giữ như cũ). */
     const chu = nguoiGiuMotMiniTest(conn, mt, lopId);
     const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ ${ptNguong}%) — Quản lý xử lý từng trường hợp`;
     const duLieu = { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe };
@@ -854,11 +878,11 @@ export function baoLenCuoiKhoaDoiQuaHan(conn: any, a: { id: number; student_id: 
 }
 
 /**
- * PR-CT2 (§8): người giữ việc "Ghi Mini Test" = người giữ Kết quả của nhóm `mt:{lượt}` (`nguoiGiuKetQua` — nhóm chung → GVCN lớp em ĐANG học; không có → chủ Case),
- * không còn là Người dạy (GV cũ ở lớp của bài Final). Theo lô; khoá = id Mini Test.
+ * Người giữ việc "Ghi Mini Test" = người giữ Kết quả của nhóm `mt:{lượt}` (`nguoiGiuKetQua`): Người dạy của nhóm (GV cũ — GV-CU-BO-TRO, thay PR-CT2) · không có
+ * → GVCN lớp em ĐANG học · không có → chủ Case. Theo lô; khoá = id Mini Test.
  */
-export function nguoiGiuMiniTest(rows: readonly { id: number; nhom: string; lop: number | null; owner: number | null }[]): Map<number, number | null> {
-  return nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: null, nhomBoTro: r.nhom, classId: r.lop, ownerUserId: r.owner })), demoToday());
+export function nguoiGiuMiniTest(rows: readonly { id: number; nhom: string; lop: number | null; owner: number | null; nguoiDay?: number | null }[]): Map<number, number | null> {
+  return nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: null, nhomBoTro: r.nhom, classId: r.lop, ownerUserId: r.owner, nguoiDay: r.nguoiDay })), demoToday());
 }
 
 /** `nguoiGiuMiniTest` cho MỘT Mini Test (`lop` = lớp em đang học): chủ Case = MIN owner trên nhóm. */
@@ -867,7 +891,7 @@ function nguoiGiuMotMiniTest(conn: any, mt: { id: number; nhom_bo_tro: string },
   return nguoiGiuMiniTest([{ id: mt.id, nhom: mt.nhom_bo_tro, lop, owner }]).get(mt.id) ?? null;
 }
 
-/** Người giữ việc Ghi Mini Test của nhóm `mt:{lượt}` (cùng `emConMiniTest().gv`: GVCN lớp em ĐANG học, không có thì chủ Case) — để `updateResult` cho đúng người có nút ở hồ sơ HV lưu được. */
+/** Người giữ việc Ghi Mini Test của nhóm `mt:{lượt}` (cùng `emConMiniTest().gv`) — để `updateResult` cho đúng người có nút ở hồ sơ HV lưu được. */
 export function laNguoiGiuMiniTestCuaPa(p: Principal, iv: { nhom_bo_tro?: string | null }): boolean {
   if (!iv.nhom_bo_tro?.startsWith('mt:')) return false;
   const conn = db();
@@ -883,19 +907,19 @@ export function emConMiniTest(sids: readonly number[]): Map<number, { han: strin
   theoLoJson([...sids], (json) => {
     dong.push(...db().prepare(
       `SELECT m.id, m.student_id, m.han, m.nhom_bo_tro, MIN(iv.case_id) AS case_id, MIN(CASE WHEN iv.status IN ('planned', 'started') THEN iv.id END) AS pa_id,
-              MIN(sc.owner_user_id) AS owner,
+              MIN(sc.owner_user_id) AS owner, ${NGUOI_DAY_NHOM('m.nhom_bo_tro')} AS nguoi_day,
               (SELECT e.class_id FROM enrollments e WHERE e.student_id = m.student_id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1) AS lop
          FROM mini_test m LEFT JOIN case_interventions iv ON iv.nhom_bo_tro = m.nhom_bo_tro LEFT JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE m.ty_le IS NULL AND m.student_id IN (${DS_JSON}) GROUP BY m.id ORDER BY m.id`,
     ).all(json) as any[]);
   });
-  const giu = nguoiGiuMiniTest(dong.map((r) => ({ id: r.id, nhom: r.nhom_bo_tro, lop: r.lop ?? null, owner: r.owner ?? null })));
+  const giu = nguoiGiuMiniTest(dong.map((r) => ({ id: r.id, nhom: r.nhom_bo_tro, lop: r.lop ?? null, owner: r.owner ?? null, nguoiDay: r.nguoi_day ?? null })));
   return new Map(dong.map((r) => [r.student_id as number, { han: r.han, caseId: r.case_id ?? null, paId: r.pa_id ?? null, gv: giu.get(r.id) ?? null }]));
 }
 
-/** Ai thấy việc "Ghi Mini Test" ở cột Việc tiếp theo: người giữ việc (`emConMiniTest().gv`), không có thì GVCN lớp em ĐANG học. */
+/** Ai thấy việc "Ghi Mini Test" ở cột Việc tiếp theo: người giữ việc (`emConMiniTest().gv` — Người dạy), và GVCN lớp em ĐANG học (theo dõi + làm thay — GV-CU-BO-TRO). */
 export function nguoiGhiMiniTest(p: Principal, classId: number, mt: { han: string; caseId: number | null; paId: number | null; gv: number | null } | undefined) {
   if (!mt) return null;
-  const laNguoiLam = mt.gv ? mt.gv === p.userId : isCoreTeacherOf(p, classId);
+  const laNguoiLam = mt.gv === p.userId || isCoreTeacherOf(p, classId);
   return laNguoiLam ? { han: mt.han, caseId: mt.caseId, paId: mt.paId } : null;
 }

@@ -95,13 +95,14 @@ function caseOwner(caseId: number): OwnerAccess {
     requireView: (p) => a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.'),
     requireEdit: (p) => {
       /* PR-LUI-a2: người tạo Case đính kèm được vào Case mình tạo (Tạo Case có bằng chứng — GVCN tạo Case môn không dạy). */
-      if (a.reportedBy === p.userId) return a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
+      /* GV-CU-BO-TRO: quyền xem TẠM của người dạy bổ trợ không mở lại quyền đính kèm (`{ ...p, boTro: [] }`). */
+      if (a.reportedBy === p.userId) return a.requireView({ ...p, boTro: [] }, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
       a.requireEdit(p, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của bản ghi này.');
     },
     /* Rà #229: người CHỈ có quyền nhờ là người tạo Case thì chỉ gỡ tệp mình tải lên; người sửa được Case gỡ mọi tệp như cũ. */
     requireRemove: (p, uploadedBy) => {
       if (a.reportedBy === p.userId && uploadedBy === p.userId && !can(p, PERMISSIONS.SOS_EDIT, a.ctx)) {
-        return a.requireView(p, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
+        return a.requireView({ ...p, boTro: [] }, 'Bản ghi này nằm ngoài phạm vi bạn được xem.');
       }
       a.requireEdit(p, 'Bạn không có quyền gỡ bằng chứng của bản ghi này.');
     },
