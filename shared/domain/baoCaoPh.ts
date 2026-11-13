@@ -1,6 +1,6 @@
 /**
  * BÁO CÁO PH (đặc tả `docs/superpowers/specs/2026-11-05-bao-cao-ph/de-xuat.md`, mockup `thiet-ke/v15/bao-cao-ph.html`, chủ SP duyệt 06/11).
- * Báo cáo gửi phụ huynh: lớp FT mỗi tháng (mở ngày 20, hạn 30 — tháng 2 hạn 28); lớp thường tuần Progress / Final (mở thứ Hai, hạn Chủ nhật).
+ * Báo cáo gửi phụ huynh: lớp FT mỗi tháng (mở ngày 20, hạn 30 — tháng 2 hạn 28); lớp thường tuần Progress / Final (mở thứ Hai tuần Test, hạn thứ Ba tuần sau — chủ SP 13/11).
  * Phần, tiêu chí, thang là DỮ LIỆU ở đây (đặc tả §3, §11) — đổi chữ không sửa màn. Chữ tiêu chí chép hai mẫu (CP FT 131.xlsx, NORMAL.pdf), cả EN.
  */
 import { NGON_NGU, t } from '../i18n/index.ts';
@@ -143,8 +143,8 @@ export function dotThang(nam: number, thang: number): DotBc {
   const ym = `${nam}-${pad(thang)}`;
   return { ma: `thang:${ym}`, loai: 'thang', mo: `${ym}-20`, han: `${ym}-${thang === 2 ? '28' : '30'}` };
 }
-/** Đợt Progress / Final lớp thường: mở thứ Hai tuần thi, hạn Chủ nhật tuần đó. */
-export const dotTuan = (loai: 'progress' | 'final', thuHai: string): DotBc => ({ ma: `${loai}:${thuHai}`, loai, mo: thuHai, han: addDaysIso(thuHai, 6) });
+/** Đợt Progress / Final lớp thường: mở thứ Hai tuần thi, hạn thứ Ba tuần kế tiếp (+ 8 ngày — chủ SP 13/11, LG-1). */
+export const dotTuan = (loai: 'progress' | 'final', thuHai: string): DotBc => ({ ma: `${loai}:${thuHai}`, loai, mo: thuHai, han: addDaysIso(thuHai, 8) });
 
 export function docMaDot(ma: string): DotBc | null {
   const m = /^thang:(\d{4})-(\d{2})$/.exec(ma);
