@@ -79,10 +79,10 @@ export async function runPrKckTests(t: YThucTestKit) {
   });
 
   /* OV-9 (chủ SP 13/10): KCK là DẤU RIÊNG, Target giữ — em KCK chưa có Target cũng thiếu Target như em thường (đổi ý phép kiểm cũ "không việc Điền target"). */
-  check('KCK (4) → OV-9 · em KCK chưa có Target vẫn có việc "Điền target" + "Thiếu thông tin" target (như ô trống); có Target thì không', () => {
-    const keys = new Set((myWork(P.coreTeacher, { nguoi: 'toi' }).items ?? []).map((i: any) => i.key));
-    assert(keys.has(`target:${han.sid}`) && keys.has(`target:${duc.sid}`), 'em KCK chưa có Target mất việc Điền target');
-    assert(keys.has(`target:${trong.sid}`), 'em trống target mất việc Điền target');
+  /* L6 / 2.3 (chủ SP 13/11): việc "Điền Target" bỏ khỏi GVCN (Target thiếu ở việc TVV "Bổ sung hồ sơ thiếu") — chỉ còn "Thiếu thông tin" target. */
+  check('KCK (4) → OV-9 + L6 · em KCK chưa có Target vẫn "Thiếu thông tin" target (như ô trống); GVCN không còn việc "Điền target"; có Target thì không thiếu', () => {
+    const keys = [...new Set((myWork(P.coreTeacher, { nguoi: 'toi' }).items ?? []).map((i: any) => i.key as string))];
+    assert(!keys.some((k) => k.startsWith('target:')), `GVCN còn việc Điền target: ${keys.filter((k) => k.startsWith('target:'))}`);
     const thieu = (c: any) => missingForStudent({ cycle: { start_period_id: 1, exam_month: '2027-01', baseline: true, ...c },
       student: null, isFastTrack: true }).map((m: any) => m.key);
     assert(thieu({ target_score: null, khong_cam_ket: 1 }).includes('target'), 'KCK chưa có Target không báo thiếu');

@@ -260,7 +260,8 @@ export async function runPrS4fTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.admin, e.aid, 'speaking', { gvCham: null }, t.TODAY);
     assert(get(`SELECT examiner_user_id u FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.aid).u === null, 'null = xoá GV chấm');
     const gc = docWeb('modules/cham/GvCham.tsx'), od = docWeb('modules/fasttrack/ODiemLon.tsx');
-    assert(gc.includes('`pisa:gv-cham:${userId}:${classId}:${dot}`') && gc.includes('khoaGvChamCot(session?.user?.id'), 'khoá localStorage GV chấm phải gắn userId');
+    /* LG-5c (13/11): GV chấm đầu cột nhớ ở MÁY CHỦ theo người × lớp × đợt (thay khoá localStorage gắn userId) — ca GVC-COT. */
+    assert(gc.includes("api.put('/cham/gv-cham-cot'") && !gc.includes('localStorage'), 'GV chấm đầu cột: lưu máy chủ, không localStorage');
     assert(od.includes('const vo = `flex min-w-0 flex-col') && od.includes('col-span-2 flex min-w-0 flex-col'), 'ô nút và ô chỉ đọc/Overall cùng flex-col');
     assert(od.includes("title: t('GV chấm: {ten}', { ten: bai[0].gvCham.ten })") && od.includes('duoiKyVong='), 'title GV chấm + chip Dưới kỳ vọng');
     assert(docWeb('ui/KetQuaDot.tsx').includes("t('Dưới kỳ vọng: {ds}', { ds: duoiKyVong.join"), 'KetQuaDot liệt kê kỹ năng dưới kỳ vọng');

@@ -824,6 +824,23 @@ const truocNhan = await doMotLuot(dongTruocNhan, docLap);
 if (inJson) fs.writeFileSync(process.env.PISA_IN_JSON!, JSON.stringify(inJson));
 if (process.env.PISA_IN_DO) fs.writeFileSync(process.env.PISA_IN_DO, JSON.stringify(Object.fromEntries([...truocNhan].map(([k, n]) => [k, [n, dongTruocNhan.get(k)]])), null, 1));
 
+/* LG-8: `GET /my-work` thêm `testSapToi` CHỈ cho vai GV (GVCN · GVBM · GVCN_THUONG); QL · QT · Admin · TVV · CX không có khoá này (JSON và số câu như cũ). */
+await checkAsync('LG-8 · /my-work: `testSapToi` chỉ vai GV; vai khác không có khoá; GV: mỗi lớp đang dạy một dòng, mã lớp không trùng', async () => {
+  const COC = '/my-work';
+  for (const vai of ['GVCN', 'GVBM', 'GVCN_THUONG'] as Vai[]) {
+    const r = await doSql(vai, 'GET', COC);
+    const ds = (r.json as any).testSapToi;
+    assert(r.status === 200 && Array.isArray(ds) && ds.length > 0, `${vai}: thiếu testSapToi`);
+    assert(new Set(ds.map((x: any) => x.classId)).size === ds.length, `${vai}: lớp trùng`);
+    assert(ds.every((x: any) => 'testKeTiep' in x && typeof x.testTuanNay === 'boolean'), `${vai}: sai dạng dòng ${JSON.stringify(ds[0])}`);
+    console.log(`      (${vai} /my-work: ${r.n} câu, ${ds.length} lớp)`);
+  }
+  for (const vai of ['QL', 'QT', 'ADMIN', 'TVV', 'CX'] as Vai[]) {
+    const r = await doSql(vai, 'GET', COC);
+    if (r.status === 200) assert(!('testSapToi' in (r.json as any)), `${vai}: không được có testSapToi`);
+  }
+});
+
 /* DOC-IT-1: `isInitialised` hỏi `sqlite_master` (SCAN ~270 dòng trên bản chính) mỗi lần mở app — đã khởi tạo thì nhớ theo kết nối. */
 await checkAsync('DOC-IT-1 · GET /demo/session (mọi vai) không đọc sqlite_master', async () => {
   const ghi: { sql: string; args: unknown[] }[] = [];
@@ -1365,9 +1382,11 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        QT tat-ca cn 19b4c0743b6f7b36, QL gvcn ac54489ae58e3bcf, GVS toi 3c702438ea810b91 */
     /* SUA-CHU-L1 (PTA 13/11): chụp lại 9 băm (QL toi, ADMIN giữ) — đổi CÓ CHỦ Ý CHỈ chữ hint nhóm `ban_giao` (2 / 3 ngày → hạn tối thiểu đọc Hạn mặc định, gốc 7) và `buoc_tiep`
        (Tạm dừng hoặc Thôi học → Tạm dừng / Kết thúc học; 7 ngày đọc Hạn mặc định). Đã kiểm: trả hai hint về chữ cũ trên nhánh → TD4-a đạt với băm cũ. Trước: QT toi 7ebe5b04a14bdd39, GVCN toi ec2e83ad7d3149f8, GVBM toi b8ff6f87720838f4, GVCN_THUONG toi ec2e83ad7d3149f8, QL tat-ca 6db0b9a1a2224b80, QT tat-ca 9c90c2073d99edd3, QT tat-ca cn d1a5972ac6f0863d, QL gvcn d377a756eb1da0cf, GVS toi 5b46fdd308634d6b */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'b1ad0af2e1dd4bd5', 'GVBM toi': '77e235e4611522bc',
-    'GVCN_THUONG toi': 'b1ad0af2e1dd4bd5', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'a378c8afa18b77ca', 'QT tat-ca': 'de6263e02466a6c0',
-    'QT tat-ca cn': '7c2866d4ce5cfb1a', 'QL gvcn': '1083304bc01cd683', 'GVS toi': 'dcacfa50220ee88d',
+    /* L6 / 2.3 (chủ SP 13/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý CHỈ bỏ việc "Điền Target" (`target:`) của GVCN
+       (`mywork.ts`); QL / QT / GVBM toi, ADMIN, GVS giữ. Trước: GVCN toi b1ad0af2e1dd4bd5, GVCN_THUONG toi b1ad0af2e1dd4bd5, QL tat-ca a378c8afa18b77ca, QT tat-ca de6263e02466a6c0, QT tat-ca cn 7c2866d4ce5cfb1a, QL gvcn 1083304bc01cd683 */
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'a79c2967be82df5e', 'GVBM toi': '77e235e4611522bc',
+    'GVCN_THUONG toi': 'a79c2967be82df5e', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '29da5f0c277723a2', 'QT tat-ca': '9dfb712f3d614d40',
+    'QT tat-ca cn': '0252208bd2d3fcdc', 'QL gvcn': '217ad0083cb42779', 'GVS toi': 'dcacfa50220ee88d',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

@@ -9613,6 +9613,9 @@ await runPrUiConLaiTests({ check, assert, P } as any);
 // ==================================================================== V5 SV-TQ-GV (Tổng quan GV hai khối — số = hồ sơ GV / Phân tích, quyền)
 const { runPrSvTqGvTests } = bocTep('prSvTqGv', await import('./prSvTqGv.tests.ts'));
 await runPrSvTqGvTests({ check, assert, conn, P } as any);
+// ==================================================================== LG-8 (/my-work: Test sắp tới từng lớp của GV)
+const { runPrMyWorkTestSapToiTests } = bocTep('prMyWorkTestSapToi', await import('./prMyWorkTestSapToi.tests.ts'));
+await runPrMyWorkTestSapToiTests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = bocTep('prSuaChamLai', await import('./prSuaChamLai.tests.ts'));
 await runPrSuaChamLaiTests({ check, assert } as any);

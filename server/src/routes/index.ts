@@ -142,6 +142,7 @@ import * as caseSvc from '../cases/cases.ts';
 import * as ownerSvc from '../cases/owner.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
+import * as gvChamCotSvc from '../cham/gvChamCot.ts';
 import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
 
 export const api = Router();
@@ -557,6 +558,9 @@ api.get('/ref/teachers', requireAuth, wrap((req) =>
  */
 /* PR-VN3 (GOP): web chỉ đọc `dong` + `summary` — bỏ `items` / `groups` khỏi JSON (nặng ~3 lần); hàm giữ nguyên cho Nhắc và hồ sơ GV. */
 const nheMyWork = ({ items: _items, groups: _groups, ...con }: any) => con;
+/** LG-8: "Test sắp tới" từng lớp (khối "Lớp của tôi" trang đầu) — CHỈ vai GV / Head tutor, vai khác JSON và số câu không đổi. */
+const kemTestSapToi = (p: Principal, kq: any) =>
+  p.roleKeys.some((k) => k === 'teacher' || k === 'head_tutor') ? { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p) } : kq;
 /**
  * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·
  * một ID giáo viên cụ thể (Q2, "Chọn giáo viên…"). Chuỗi lạ bị `thamSoNguoi` bỏ qua, coi như
@@ -571,7 +575,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   /* UI-CV-TVV: không có khu Công việc (TVV) → chỉ việc TVV của chính mình; không xem việc người khác. */
   if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })) {
     if (nguoi === 'tat-ca' || typeof nguoi === 'number') throw forbidden('Bạn chỉ xem được việc của mình.');
-    return nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV }));
+    return kemTestSapToi(p, nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV })));
   }
 
   if (nguoi === 'tat-ca') {
@@ -580,8 +584,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
-  const kq = myWork(p, { branchId });
-  return nheMyWork(kq);
+  return kemTestSapToi(p, nheMyWork(myWork(p, { branchId })));
 }));
 
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */
@@ -1061,6 +1064,9 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
     nhomNguyenNhan: b.nhomNguyenNhan,
   });
 }));
+
+/** LG-5c: "GV chấm S" đầu cột lưới FT — người xem × lớp × đợt, nhớ ở máy chủ (`gv: null` = xoá về mặc định). */
+api.put('/cham/gv-cham-cot', requireAuth, wrap((req) => gvChamCotSvc.ghiGvChamCot(principalOf(req), req.body ?? {})));
 
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */
 api.put('/attempts/:id/scores/speaking/phu-trach', requireAuth, wrap((req) => {
