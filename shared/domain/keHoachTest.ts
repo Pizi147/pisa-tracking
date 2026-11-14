@@ -116,6 +116,8 @@ export type OKyNang = {
   sit: string | null; tuanKetThuc: string | null; choDuyet: boolean;
   /** T3 (PR-MTa): huỷ vì vắng 2 lần — ô MT "S huỷ" (PR-MTb). */
   huyVang?: boolean;
+  /** NHAP-DIEM-b: "Đã huỷ" do Huỷ điểm tay — lý do huỷ không ghi "vắng" / "QL từ chối dời". */
+  huyTay?: boolean;
   /** PR-MTb sau rà (I2): MT cũ ghi "-" (không dự thi, `no_show_cu`) — tính là xong / không yêu cầu, ô MT ✓ 3/4. */
   khongDuThi?: boolean;
   /** T6 (PR-MTb): hạn chấm hiệu lực (ngày) — null: không yêu cầu, MT cũ, đã huỷ phần thi, chưa có tuần. */

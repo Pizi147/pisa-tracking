@@ -21,6 +21,7 @@ import { HopBoChu } from '../../../ui/Drawer.tsx';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
+import { guiHuyDiem } from '../../cham/huyDiem.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
 import { DsLichSu, LichSuGap, lucNgan } from '../../../ui/LichSuThayDoi.tsx';
@@ -300,6 +301,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     if (muc === 'doi-tuan') doiDong(k);
     else if (muc === 'bo-ky-nang') datTick(k, !rows[k].tick);   // lưu cùng nút Lưu, bấm lại = thôi
     else if (muc === 'nhat-ky') setNhatKy(k);
+    /* NHAP-DIEM-b: Huỷ điểm một bấm + Hoàn tác (không hộp) — cùng hàm với hồ sơ Mock. */
+    else if (muc === 'huy-diem' && attemptId !== null) void guiHuyDiem(toast, { attemptId, skill: k, mon: tenMon(ct, k), tenHv, huy: true, onDone: onSaved });
     else setThaoTac({ t: muc, k });
   };
 
@@ -468,7 +471,6 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
       {thaoTac && attemptId !== null && (
         <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'}
           quanLy row={{ periodId: kn[thaoTac.k]?.periodId ?? null, weekStart: kn[thaoTac.k]?.tuan ?? null }}
-          oCoDiem={thaoTac.k === 'writing' && loai === 'ft' ? ['writing1', 'writing2'] : [thaoTac.k]}
           trongHop hocVien={tieuDe}
           onClose={() => setThaoTac(null)} onDone={() => { onSaved(); onClose(); }} />
       )}

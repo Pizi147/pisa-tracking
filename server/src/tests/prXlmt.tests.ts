@@ -194,7 +194,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   // PR-MTa T7: Báo vắng — lý do tuỳ chọn (bỏ nhánh "lý do ngắn"); chữ "MT lịch sử" → "MT cũ".
   /* LUAT-34: MT cũ không còn bị chặn — Báo vắng ở MT cũ = Đã huỷ ngay (mtTrangThai T06). */
-  check('PR-XLMT (2) · Báo vắng bị chặn: GV ngoài kỹ năng · đã có điểm; tuần tương lai = báo trước (NHAP-DIEM-a)', () => {
+  check('PR-XLMT (2) · Báo vắng: GV ngoài kỹ năng bị chặn; tuần tương lai = báo trước; đã có điểm = cất + vắng, không hỏi (NHAP-DIEM-a/b)', () => {
     /* NHAP-DIEM-a: GV nhập được ô báo vắng được; GV không dạy kỹ năng đó vẫn bị chặn. */
     assertThrows(() => absence.baoVang(P.sTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /người nhập được ô/, 'GV ngoài kỹ năng');
     /* NHAP-DIEM-a (PTA 14/11): tuần tương lai = báo trước — ghi đúng tuần Test, dời tuần sau nó (thử rồi cuộn lại). */
@@ -204,7 +204,12 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
       assert(r.daDoi, `báo trước: ${JSON.stringify(r)}`);
     } finally { conn.exec('ROLLBACK TO xlmt2'); conn.exec('RELEASE xlmt2'); }
     diem(m1.id, 'reading');
-    assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
+    /* NHAP-DIEM-b (PTA 14/11, thay "hỏi 409"): kỹ năng đã có điểm → cất điểm rồi báo vắng, không hỏi; `daCat` để web Hoàn tác = Khôi phục. */
+    conn.exec('SAVEPOINT xlmt3');
+    try {
+      const r = absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY);
+      assert(r.daCat && (conn.prepare(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'reading'`).get(m1.id) as any)?.raw_score == null, `có điểm: ${JSON.stringify(r)}`);
+    } finally { conn.exec('ROLLBACK TO xlmt3'); conn.exec('RELEASE xlmt3'); }
   });
 
   check('PR-XLMT (2) · Lớp thường Báo vắng có lý do (GVCN): dời tuần sau, nhật ký lịch ghi lý do (K4-32)', () => {

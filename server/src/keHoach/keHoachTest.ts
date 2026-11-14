@@ -307,7 +307,7 @@ function oKyNangCua(cheDo: CheDo, a: any, row: any, scores: any[], daDoi: boolea
     tuan: row.week_start ?? null, periodId: row.planned_period_id ?? null, doiTu: daDoi ? doiTu : null, batBuoc,
     khoa: khoaCua(cheDo, row, scores),
     sit: row.sit_status ?? null, tuanKetThuc: row.week_end ?? null, choDuyet,
-    ...(row.huy_vang ? { huyVang: true } : {}),
+    ...(row.huy_vang === 1 ? { huyVang: true } : row.huy_vang === 2 ? { huyTay: true } : {}),   // NHAP-DIEM-b: 2 = Huỷ điểm tay
     ...(khongDuThiCua(cheDo, row.skill, scores, row.planned_period_id ?? null) ? { khongDuThi: true } : {}),
     ...(diem ? { diem } : {}),
     hanCham: them && !them.chiTre && batBuoc && !them.lichSu && row.sit_status !== 'cancelled'

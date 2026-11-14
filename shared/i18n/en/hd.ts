@@ -151,8 +151,8 @@ export const EN_HD = {
   'Lý do bắt buộc, từ <b>10</b> ký tự; nhật ký PA ghi lại.': 'A reason of at least <b>10</b> characters is required; the PA log keeps it.',
   'Bàn giao khi em chuyển lớp': 'Handover when a student changes class',
   'Hạn bàn giao = muộn hơn của (ngày quyết định chuyển lớp + 7 ngày) và mốc cũ.': 'Handover deadline = the later of (class-change decision date + 7 days) and the earlier deadline.',
-  'Sửa điểm sau hoàn tất': 'Changing scores after completion',
-  'Ô còn trống: nhập được cả sau hoàn tất.': 'Empty cells can still be filled after completion.',
-  'Sửa hoặc xoá một điểm đã có: nhờ QL sửa.': 'Changing / deleting an existing score: ask the manager to do it.',
+  'Sửa · Huỷ điểm': 'Edit · Cancel score',
+  'Sửa điểm ngay tại ô, mọi lúc — cả sau hoàn tất, cả khi chưa tới tuần Test (bài tự về tuần này). Xoá trống ô + Lưu = bỏ điểm (Hoàn tác được).': 'Edit a score right in its cell, any time — even after completion or before the Test week (the test moves to this week). Clear the cell + Save = remove the score (undo available).',
+  '<b>⋯</b> › <b>Huỷ điểm</b> = bỏ một kỹ năng khỏi lượt, coi như không làm (hết việc, hết quá hạn); <b>Khôi phục</b> trả lại đủ.': '<b>⋯</b> › <b>Cancel score</b> = take one skill out of the attempt, as if not taken (no task, no overdue); <b>Restore</b> brings it all back.',
   'Gỡ "-" lúc nào cũng được.': 'A "-" can be removed any time.',
 };

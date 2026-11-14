@@ -1002,18 +1002,12 @@ api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
 }));
 
-/**
- * NHAP-DIEM-a: Huỷ điểm / Khôi phục MỘT kỹ năng — `{ huy: boolean (mặc định true), lyDo? }`, một đường cho Mock / MT0 / lớp thường (`huyDiemKn`).
- * `/huy-tay` (LG-9) và `/khoi-phuc-diem` (T20b) là lối cũ web còn gọi tới PR-2 — cùng hàm.
- */
-const huyDiemRoute = (huy: (req: any) => boolean) => wrap((req) => {
+/** NHAP-DIEM-a/b: Huỷ điểm / Khôi phục MỘT kỹ năng — `{ huy: boolean (mặc định true), lyDo? }`, một đường cho Mock / MT0 / lớp thường (`huyDiemKn`). */
+api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return absenceSvc.huyDiemKn(principalOf(req), pInt(req, 'id'), String(req.params.skill), huy(req),
+  return absenceSvc.huyDiemKn(principalOf(req), pInt(req, 'id'), String(req.params.skill), req.body?.huy !== false,
     typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
-});
-api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, huyDiemRoute((req) => req.body?.huy !== false));
-api.post('/attempts/:id/skills/:skill/huy-tay', requireAuth, huyDiemRoute((req) => req.body?.huy !== false));
-api.post('/attempts/:id/skills/:skill/khoi-phuc-diem', requireAuth, huyDiemRoute(() => false));
+}));
 
 /** PR-XLMT (T37 "ép vào đợt trùng"): Quản lý cho thi lại kỹ năng đã có điểm — xoá ô (lịch sử giữ), đặt tuần mới. */
 api.post('/ke-hoach-test/thi-lai', requireAuth, wrap((req) => {

@@ -587,9 +587,8 @@ export async function runPrDlTests(t: YThucTestKit) {
 
   check('DL-5 fix 2 nguồn: hộp lý do mở = ô chưa lưu (chỉ BaoDangLuuContext); blur trước khi xét; lỗi tải lại nền không gỡ lưới', () => {
     const se = doc('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const hop = se.slice(se.indexOf('export function SuaDiemCoLyDo'));
-    assert(/useBaoHopLyDoMo\(busy\)/.test(hop.slice(0, hop.indexOf('return ('))), 'SuaDiemCoLyDo phải gọi useBaoHopLyDoMo(busy)');
-    assert(se.includes('setSua('), 'ô lớp thường có điểm: hộp lý do qua SuaDiemCoLyDo');
+    /* NHAP-DIEM-b: ô lớp thường có điểm sửa ngay tại ô (bỏ hộp lý do `SuaDiemCoLyDo`) — chữ đang gõ là bản nháp của ô (`dirty`), như ô trống. */
+    assert(!se.includes('SuaDiemCoLyDo') && !se.includes('setSua('), 'ô lớp thường có điểm không còn hộp lý do riêng');
     /* OV-4b: ô MT sửa trong hộp nhập điểm — hộp có chữ đã gõ = ô chưa lưu (cùng BaoDangLuuContext). */
     assert(/useBaoHopLyDoMo\(busy, daGo\)/.test(doc('web/src/modules/fasttrack/HopNhapDiem.tsx')), 'hộp nhập điểm phải báo ô chưa lưu');
     const ss = doc('web/src/ui/SaveState.tsx');

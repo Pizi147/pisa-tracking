@@ -101,7 +101,7 @@ export async function runPrMtVangTests(t: YThucTestKit) {
     const a = luot[0];
     dung(a);
     vang(a, 'listening', TRONG);
-    absence.huyTay(QL, a, 'listening', true);
+    absence.huyDiemKn(QL, a, 'listening', true);
     assert(ky(a, 'listening').sit_status === 'cancelled', `Mock huỷ: ${JSON.stringify(ky(a, 'listening'))}`);
     absence.huyDiemKn(QL, a, 'listening', false);
     const k = ky(a, 'listening');

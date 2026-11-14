@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from '../cham/thongBaoVang.ts';
+import { guiHuyDiem } from '../cham/huyDiem.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -15,8 +16,8 @@ import {
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
-/** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Trả lời đề nghị có hộp riêng. */
-export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'huy-diem', 'khoi-phuc'];
+/** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Trả lời đề nghị có hộp riêng. NHAP-DIEM-b: Huỷ điểm / Khôi phục một bấm (`guiHuyDiem`). */
+export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang'];
 
 /**
  * N38 (một luật "-" cho mọi cổng): tuần Test đã qua ≥ 2 tuần = Không dự thi (không dời, không tính lần vắng); còn lại lớp thường dời sang tuần
@@ -39,10 +40,8 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
     case 'bao-vang': return vang?.khongDuThi
       ? t('Tuần Test đã qua 2 tuần: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.', { mon })
       : laThuong
-        ? t('Ghi "-" cho {mon}: dời sang {x}; vắng mấy lần cũng không tự huỷ — cần thì ⋯ › Huỷ môn.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
+        ? t('Ghi "-" cho {mon}: dời sang {x}; vắng mấy lần cũng không tự huỷ — cần thì ⋯ › Huỷ điểm.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
         : t('Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.', { mon });
-    case 'huy-diem': return t('Ô điểm trở về trống; nhận xét giữ. Lấy lại bằng ⋯ "Khôi phục điểm".');
-    case 'khoi-phuc': return t('Mở lại kỹ năng {mon} đã huỷ và đặt tuần Test mới trong cùng một lần.', { mon });
     default: return '';
   }
 }
@@ -54,8 +53,6 @@ export type HopThaoTacProps = {
   /** Chủ SP 28/10: GVCN lớp đó — dời kỹ năng tuần ĐÃ QUA sang tuần đã qua / tuần này (máy chủ `gvcnDoiMtCu`). */
   gvcn?: boolean;
   row: { periodId: number | null; weekStart: string | null; deadline?: string | null };
-  /** Huỷ điểm Writing (FT): ô W1/W2 đang có điểm; `oMacDinh` = ô tích sẵn (dòng W2 chỉ tích W2). */
-  oCoDiem?: string[]; oMacDinh?: string[];
   /** Mở từ hộp xếp lịch nổi (`HopKyNang`, z-60): panel nằm trên hộp đó và không thay panel đang mở bên dưới (PR-LM). */
   trongHop?: boolean;
   /** Ngữ cảnh ở đầu panel (luật KhungPanel). */
@@ -69,7 +66,7 @@ export type HopThaoTacProps = {
  * Máy chủ kiểm lại mọi luật; câu lỗi của máy chủ hiện nguyên văn TRONG panel (không đóng panel, không mất chữ đã gõ).
  * Khung: `KhungPanel` (I4, PR-LM) — chân theo luật S3: chưa sửa "Đóng", đã sửa "Huỷ thay đổi"; thao tác nguy hiểm nút chính đỏ.
  */
-export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, gvcn = false, row, oCoDiem = [], oMacDinh, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
+export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, gvcn = false, row, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
   const toast = useToast();
   const lf = useLoiForm();
   const { homNay } = useNgayNghiepVu();
@@ -77,7 +74,6 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const [tuan, setTuan] = useState<Tuan | null>(row.periodId && row.weekStart ? { periodId: row.periodId, weekStart: row.weekStart } : null);
   const [han, setHan] = useState('');
   const [lyDo, setLyDo] = useState('');
-  const [o, setO] = useState<string[]>(oMacDinh ?? oCoDiem);
   const [canhBao, setCanhBao] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loiMay, setLoiMay] = useState<string | null>(null);
@@ -89,15 +85,14 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const ten = CHU_THAO_TAC[tt];
   const mon = tenMon(ct, skill);
   const batBuoc = canLyDo(tt);
-  const coTuan = tt === 'dat-lich' || tt === 'doi-lich' || tt === 'khoi-phuc';
+  const coTuan = tt === 'dat-lich' || tt === 'doi-lich';
   /* K2-33: GVCN dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. Quản lý được (T4): chỉ hiện chip vàng.
      PR-MTa T21: Khôi phục (chỉ Quản lý) cũng chọn được tuần đã qua — em đã thi thật. */
   /* Chủ SP 28/10: GVCN dời MT tuần đã qua → tuần đích ≤ tuần này (thay "từ tuần này trở đi"). */
   const gvcnCu = !quanLy && gvcn && tt === 'doi-lich' && !!homNay && tuanDaQua(row.weekStart, homNay);
-  const tuanNay = homNay && !quanLy && !gvcnCu && tt !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
-  const quaTuan = quanLy && coTuan && tt !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
+  const tuanNay = homNay && !quanLy && !gvcnCu ? mondayOfDate(homNay) : null;
+  const quaTuan = quanLy && coTuan && !!tuan && tuan.periodId !== row.periodId && !!homNay
     && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
-  const chonW = tt === 'huy-diem' && !laThuong && oCoDiem.length > 1;
   /* P6 N15: MT / MT0 thứ Sáu → CN — đặt / dời / bỏ khi tuần gốc hoặc đích thuộc 3 tuần khoá (Khôi phục, Vắng là ngoại lệ). */
   const khoa = !laThuong && (['dat-lich', 'doi-lich', 'bo-ky-nang'] as ThaoTac[]).includes(tt)
     ? khoaCt(row.weekStart, coTuan && tuan?.periodId !== row.periodId ? tuan?.weekStart : null) : null;
@@ -108,7 +103,6 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Tuần đã qua — chọn từ tuần này trở đi') }]
       : gvcnCu && tuan!.weekStart.slice(0, 10) > mondayOfDate(homNay!) ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Chọn tuần đã qua hoặc tuần này — tuần tới do Quản lý xếp') }] : []),
     ...(tt === 'doi-han' && !han ? [{ khoa: 'han', nhan: t('Hạn chấm mới'), lyDo: t('Chưa chọn') }] : []),
-    ...(chonW && !o.length ? [{ khoa: 'o', nhan: t('Ô cần huỷ'), lyDo: t('Chưa chọn') }] : []),
   ];
   const lyDoGui = lyDo.trim() || undefined;
 
@@ -119,9 +113,6 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       case 'doi-lich':
         await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force });
         return `${tt === 'doi-lich' ? t('Đã dời lịch Test') : t('Đã lên lịch Test')} ${mon} ${tt === 'doi-lich' ? t('sang') : t('vào')} ${tuanLich(tuan!.weekStart, homNay)}`;
-      case 'khoi-phuc':
-        await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
-        return t('Đã khôi phục {mon} và đặt {tuanLich}', { mon, tuanLich: tuanLich(tuan!.weekStart, homNay) });
       case 'doi-han':
         await api.post(`${goc}/deadline`, { deadline: han, reason: lyDoGui ?? null });
         return t('Đã dời hạn chấm {mon} tới {ngay}', { mon, ngay: ngay(han) });
@@ -132,19 +123,17 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         /* OV-11a (CA3-1): một câu thông báo cho mọi cổng ghi vắng — nói đúng hậu quả máy chủ trả (`cauDaGhiVang`). */
         if (laThuong) {
           const r = await api.put<any>(`/regular/attempts/${attemptId}/scores/${skill}`, { noShow: true, lyDo: lyDoGui });
-          return cauDaGhiVang(mon, hocVien ?? undefined, r?.khongDuThi ? { kq: 'khong-du-thi' } : r?.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null);
+          catVua = !!r?.daCat;
+          vangVua = r?.khongDuThi ? { kq: 'khong-du-thi' } : r?.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : { kq: 'cho-o-kia' };
+          return cauDaGhiVang(mon, hocVien ?? undefined, vangVua);
         }
-        const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; huyVang?: boolean; khongDuThi?: boolean; canhBao?: string | null }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
+        const r = await api.post<{ daDoi: boolean; tuanMoi: string | null; huyVang?: boolean; khongDuThi?: boolean; canhBao?: string | null; daCat?: boolean }>(`${goc}/bao-vang`, { lyDo: lyDoGui });
+        catVua = !!r.daCat;
         const kq: KetQuaVang | null = r.khongDuThi ? { kq: 'khong-du-thi' }
           : r.daDoi ? { kq: 'doi', tuanMoi: tuanLich(r.tuanMoi, homNay), canhBao: r.canhBao ?? null }
           : r.huyVang ? { kq: 'huy' } : null;   // N38 L2: vắng lần 2 → huỷ
         vangVua = kq ?? { kq: 'cho-o-kia' };   // LUAT-34: báo bằng `thongBaoVang` + Hoàn tác 10 s, như gõ "-" ở ô
         return cauDaGhiVang(mon, hocVien ?? undefined, kq);
-      }
-      case 'huy-diem': {
-        /* NHAP-DIEM-a: một đường máy chủ cho Mock / MT0 / lớp thường — huỷ cả kỹ năng ("Đã huỷ"), điểm cất. Hộp / chữ: PR-2. */
-        await api.post(`${goc}/huy-diem`, { huy: true, lyDo: lyDoGui });
-        return t('Đã huỷ điểm {mon}', { mon });
       }
       default: return '';
     }
@@ -152,10 +141,14 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
 
   /* LUAT-34: Báo vắng Mock vừa ghi — Hoàn tác = gỡ "-" mọi ô của kỹ năng (Writing: W1 + W2; vắng đã chốt gỡ cả buổi ở ô đầu). */
   let vangVua: KetQuaVang | null = null;
+  /* NHAP-DIEM-b (PTA 14/11): Vắng trên kỹ năng đã có điểm — máy chủ cất điểm (không hỏi) → Hoàn tác = Khôi phục (điểm về + bỏ vắng). */
+  let catVua = false;
   const hoanTacVang = async () => {
     try {
-      for (const o of skill === 'writing' ? ['writing1', 'writing2'] : [skill]) await api.put(`/attempts/${attemptId}/scores/${o}`, { noShow: false });
-      invalidate('/attempts'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
+      /* NHAP-DIEM-b: lớp thường cũng Hoàn tác (= gỡ "-", trả lịch tuần cũ) như gõ "-" ở lưới. */
+      if (laThuong) await api.put(`/regular/attempts/${attemptId}/scores/${skill}`, { noShow: false });
+      else for (const o of skill === 'writing' ? ['writing1', 'writing2'] : [skill]) await api.put(`/attempts/${attemptId}/scores/${o}`, { noShow: false });
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/regular');
       onDone();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -167,7 +160,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
     try {
       const cau = await goi(!!canhBao);
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
-      if (vangVua) thongBaoVang(toast, `${attemptId}:${skill}`, mon, hocVien ?? undefined, vangVua, () => void hoanTacVang());
+      const traLai = () => void guiHuyDiem(toast, { attemptId, skill, mon, tenHv: hocVien, huy: false, onDone });
+      if (vangVua) thongBaoVang(toast, `${attemptId}:${skill}`, mon, hocVien ?? undefined, vangVua, catVua ? traLai : () => void hoanTacVang());
       else toast.push('ok', cau);
       onDone(); dong();
     } catch (e: any) {
@@ -177,10 +171,9 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       else setLoiMay(e.message);
     } finally { setBusy(false); }
   };
-  const nguyHiem = tt === 'bo-ky-nang' || tt === 'huy-diem';
+  const nguyHiem = tt === 'bo-ky-nang';
   /* Luật S3: chưa sửa ô nào → "Đóng"; đã sửa → "Huỷ thay đổi". */
-  const daSua = lyDo !== '' || han !== '' || (coTuan && (tuan?.periodId ?? null) !== row.periodId)
-    || (chonW && o.join() !== (oMacDinh ?? oCoDiem).join());
+  const daSua = lyDo !== '' || han !== '' || (coTuan && (tuan?.periodId ?? null) !== row.periodId);
 
   return (
     <KhungPanel tieuDe={`${ten} · ${mon}`} hocVien={hocVien} lop={lop} onDong={dong} longTrong={trongHop} z={trongHop ? 'z-[70]' : undefined}
@@ -210,21 +203,9 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
             {row.deadline && <span className="mt-1 block text-xs text-slate-500">{t('Hạn đang áp dụng')}{' '}{ngay(row.deadline)}</span>}
           </Truong>
         )}
-        {chonW && (
-          <Truong nhan={t('Ô cần huỷ')} batBuoc as="div" loi={lf.loiCua(loi, 'o')}>
-            <div className="flex gap-4" {...lf.o(loi, 'o')}>
-              {oCoDiem.map((e) => (
-                <label key={e} className="flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:min-h-0">
-                  <input type="checkbox" checked={o.includes(e)} onChange={(ev) => setO(ev.target.checked ? [...o, e] : o.filter((x) => x !== e))} />
-                  {e === 'writing1' ? 'W1' : 'W2'}
-                </label>
-              ))}
-            </div>
-          </Truong>
-        )}
         <Truong nhan={t('Lý do')} batBuoc={batBuoc} tuyChon={!batBuoc} loi={lf.loiCua(loi, 'ly-do')}>
           <textarea className="field w-full" rows={2} maxLength={300} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
-            placeholder={tt === 'bao-vang' ? t('Ví dụ: em ốm, phụ huynh đã báo') : tt === 'huy-diem' ? t('Ví dụ: nhập nhầm bài của em khác') : t('Ví dụ: trùng lịch phòng')} />
+            placeholder={tt === 'bao-vang' ? t('Ví dụ: em ốm, phụ huynh đã báo') : t('Ví dụ: trùng lịch phòng')} />
         </Truong>
         {canhBao && <p className="m-0 text-xs text-amber-200" role="status">{canhBao}</p>}
         {xoaDiem && <p className="m-0 text-xs text-amber-200" role="status">{t('{mon} đã có điểm. Xoá cả điểm?', { mon })}</p>}

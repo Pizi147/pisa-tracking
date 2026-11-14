@@ -11,7 +11,7 @@ import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
-import { guiHuyTay } from './huyTay.ts';
+import { guiHuyDiem } from './huyDiem.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import type { DinhNghiaCot } from '@shared/domain/index.ts';
@@ -19,7 +19,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, duongHoSoHocVien, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, HOAN_TAC_VANG_MS, PERMISSIONS, duongDotTest, duongHoSoHocVien, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -105,7 +105,7 @@ export const ketQuaCua = (r: Row, k: string) => r.result.skills.find((x) => x.sk
 /**
  * MỘT Ô CỦA DÒNG — dữ liệu cho `ODiemThuong`, dùng chung cho lưới và màn điện thoại (MotKyNang) để hai nơi không lệch.
  * `trong` = ô còn phải nhập của người đang xem (cuộn tới em đầu tiên chưa có điểm, Q12). `dung` = môn vắng / đã huỷ phần
- * thi mà chưa có điểm: không có ô nhập, chỉ hiện `chuDung`.
+ * thi mà chưa có điểm: không là việc; `chuDung` ghi trạng thái (NHAP-DIEM-b: người nhập được ô vẫn có ô nhập).
  */
 export function oThuong(r: Row, k: string, homNay: string) {
   const s = lichCua(r, k);
@@ -126,6 +126,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
     tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : t('tuần cũ')) : null,
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
     chuaToiTuan: s?.progress === 'upcoming',
+    luotHuy: r.status === 'cancelled',
     tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
   };
   return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };
@@ -172,6 +173,13 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       if ('noShow' in body) ds.forEach(invalidate); else invalidateGop(...ds);
       tt.thanhCong(skill);
       onReload();
+      /* NHAP-DIEM-b: xoá một điểm đã có (ô trống + Lưu) — điểm được cất; Hoàn tác 10 s = Khôi phục (điểm, người nhập, ngày nhập đầu về đủ). */
+      if (opts.xoaDiem) {
+        toast.push('ok', t('Đã xoá {mon}{ai}', { mon: tenMonNgan(ct, skill), ai: tenHv ? ` · ${tenHv}` : '' }), {
+          key: `xoa-diem:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true,
+          hanhDong: { nhan: t('Hoàn tác'), onBam: () => void guiHuyDiem(toast, { attemptId, skill, mon: tenMonNgan(ct, skill), tenHv, huy: false, onDone: onReload }) },
+        });
+      }
       return r ?? {};
     } catch (e: any) {
       /* Hộp lý do đang mở: câu lỗi hiện trong hộp, ô không bật "Lưu lại". */
@@ -200,9 +208,11 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
   const dau = async (skill: string, bat: boolean, hoanTac?: () => void) => {
     const r = await gui(skill, { noShow: bat });
     if (r && bat) {
-      /* Rà 11/11 G1-03: lớp thường cũng có Hoàn tác 10 s (= gỡ "-"), như FT. */
+      /* Rà 11/11 G1-03: lớp thường cũng có Hoàn tác 10 s (= gỡ "-"), như FT. NHAP-DIEM-b: "-" đè lên điểm (máy chủ cất điểm, `daCat`) →
+         Hoàn tác = Khôi phục (điểm về + bỏ vắng), không chỉ gỡ "-". */
+      const traLai = r.daCat ? () => void guiHuyDiem(toast, { attemptId, skill, mon: tenMonNgan(ct, skill), tenHv, huy: false, onDone: onReload }) : null;
       thongBaoVang(toast, `${attemptId}:${skill}`, tenMonNgan(ct, skill), tenHv,   // K4: gõ "-" và nút Vắng cùng một thông báo
-        r.khongDuThi ? { kq: 'khong-du-thi' } : r.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null, hoanTac ?? (() => void dau(skill, false)));
+        r.khongDuThi ? { kq: 'khong-du-thi' } : r.moved ? { kq: 'doi', tuanMoi: r.tuanMoi } : null, traLai ?? hoanTac ?? (() => void dau(skill, false)));
     } else if (r && r.moved) {
       toast.push('ok', t('Đã bỏ vắng {tenMonNgan}{x} · về {x2}', { tenMonNgan: tenMonNgan(ct, skill), x: tenHv ? ` · ${tenHv}` : '', x2: r.tuanMoi ?? t('tuần cũ') }));
     } else if (r && r.giuLich) {
@@ -353,15 +363,10 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   );
 }
 
-function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onReload, tuanDangXem, register, onMove, gon = false }: {
-  row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; cc: Record<string, DinhNghiaCot>; active: boolean; tuanDangXem: string | null; gon?: boolean;
-  tongCot: (k: string) => number | null;
-  dien: Record<string, { gt: number; lan: number }>;
-  onReload: () => void;
-  register: (col: number, el: HTMLInputElement | null) => void;
-  onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
-}) {
-  const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
+/**
+ * MENU ⋯ CỦA MỘT Ô LỚP THƯỜNG + hộp thao tác + Lịch sử — dùng chung cho lưới (`DongThuong`) và màn điện thoại (`MotKyNang`, NHAP-DIEM-b: 375 có ⋯).
+ */
+export function useMenuOThuong(row: Row, sheet: ThuongSheet, onReload: () => void) {
   const homNay = sheet.today;
   /* 6C-NHO (bảng kê lỗi 4): lưới nằm trong panel (Nhập điểm, Quá hạn chấm, panel việc) → hộp ⋯ / Lịch sử mở đè, không đóng panel cha. */
   const trongKhung = useTrongKhung();
@@ -370,18 +375,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
   const [lichSu, setLichSu] = useState<string | null>(null);
   const toast = useToast();
-  const dangKhoiPhuc = useRef(false);   // chống bấm đúp
-  /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — máy chủ ghi lại điểm cất qua đúng đường lưu điểm (quyền, nhật ký). */
-  const khoiPhuc = async (k: string) => {
-    try {
-      if (dangKhoiPhuc.current) return;
-      dangKhoiPhuc.current = true;
-      await api.post(`/attempts/${row.attemptId}/skills/${k}/khoi-phuc-diem`, {});
-      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts'); invalidate('/students'); invalidate('/my-work');
-      toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: tenMonNgan(ct, k), x2: ` · ${row.studentName}` }));
-      onReload();
-    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
-  };
+  /* NHAP-DIEM-b: Huỷ điểm / Khôi phục một bấm (Hoàn tác 10 s) — cùng hàm với hồ sơ Mock. */
+  const huyDiem = (k: string, huy: boolean) => void guiHuyDiem(toast, { attemptId: row.attemptId, skill: k, mon: tenMonNgan(ct, k), tenHv: row.studentName, huy, onDone: onReload });
   /*
    * MENU ⋯ TỪNG Ô (K4-32): thao tác theo `thaoTacKyNang` (laFt = false → không bao giờ có "Bỏ kỹ năng khỏi đợt") + mục cuối
    * "Lịch sử" (không phải thao tác, ngoài ≤ 3 — Q5). Nhập/Sửa điểm làm ngay trong ô nên không lặp trong menu. Nút ⋯ đứng SAU ô nhập
@@ -392,8 +387,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
     const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
     const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
-      huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy,
-      khongTuHuy: true, vang: !!s?.noShow && !s?.khongDuThi, huyTay: !!s?.huyTay });
+      huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯.
        U0 (chủ SP 30/10): ⋯ nằm TRONG dòng đầu của ô (cùng hàng tuần / số / "Nhận xét", căn baseline) — không đè, không lệch dọc;
@@ -401,9 +395,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     return (
       <span className={`inline-flex shrink-0 ${luon ? '' : 'sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible'}`}>
         <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
-          ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'khoi-phuc-diem' ? void khoiPhuc(k)
-            : x === 'huy-tay' || x === 'bo-huy-tay' ? void guiHuyTay(toast, { attemptId: row.attemptId, skill: k, mon: tenMonNgan(ct, k), tenHv: row.studentName, huy: x === 'huy-tay' })
-            : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' || x === 'huy-tay' })),
+          ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'huy-diem' || x === 'khoi-phuc-diem' ? huyDiem(k, x === 'huy-diem')
+            : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' })),
           { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
         ]} />
       </span>
@@ -418,6 +411,22 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         onClose={() => setHop(null)} onDone={onReload} />
     );
   })();
+  const lichSuO = lichSu ? <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} trongHop={trongKhung} onClose={() => setLichSu(null)} /> : null;
+  return { menuO, hopO, lichSuO };
+}
+
+function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onReload, tuanDangXem, register, onMove, gon = false }: {
+  row: Row; rowIndex: number; sheet: ThuongSheet; laCp?: boolean; cc: Record<string, DinhNghiaCot>; active: boolean; tuanDangXem: string | null; gon?: boolean;
+  tongCot: (k: string) => number | null;
+  dien: Record<string, { gt: number; lan: number }>;
+  onReload: () => void;
+  register: (col: number, el: HTMLInputElement | null) => void;
+  onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
+}) {
+  const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
+  const homNay = sheet.today;
+  const ct = sheet.programme.code;
+  const { menuO, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
 
   return (
     <tr className={`do-hang group/hang ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`}
@@ -442,15 +451,15 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             <KetQua row={row} sheet={sheet} />
             {laCp && row.result.tyLeTong != null && <span className="text-xs tabular-nums text-slate-400">{t('{n}% tổng', { n: Math.round(row.result.tyLeTong * 100) })}</span>}
             {hopO}
-            {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} trongHop={trongKhung} onClose={() => setLichSu(null)} />}
+            {lichSuO}
           </div>
         )}
       </OBang>
       {sheet.programme.skills.map((k, ci) => {
         const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, homNay);
         /*
-         * MÔN VẮNG / ĐÃ HUỶ PHẦN THI mà chưa có điểm: không phải một ô trống chờ nhập — hiện đúng trạng thái, không có ô
-         * nhập (việc tiếp theo là xếp lại lịch, không phải chấm). Đã có điểm thì vẫn là ô điểm như thường.
+         * MÔN VẮNG / ĐÃ HUỶ PHẦN THI mà chưa có điểm: không phải một ô trống chờ nhập (không vào việc) — NHAP-DIEM-b: người nhập được ô vẫn có ô
+         * nhập (gõ điểm = em đã làm bài), trạng thái ghi dưới ô; người chỉ xem thấy chữ trạng thái.
          */
         if (tuanDangXem && s?.weekStart && s.weekStart !== tuanDangXem && cell.diem === null && !s.noShow) {
           return (
@@ -460,7 +469,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             </OBang>
           );
         }
-        if (dung) {
+        if (dung && !canEdit) {
           return (
             <OBang key={k} c={cc[k]} className="group relative" data-kn={k} tabIndex={0}>
               <span className="inline-flex items-center gap-1">
@@ -490,6 +499,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             onSave={(p, o) => luu(k, p, o)}
             onDau={(bat, ht) => dau(k, bat, ht)}
             onLoiNhap={(c) => loiNhap(k, c)}
+            moTaId={dung ? `tt-${row.attemptId}-${k}` : undefined}
             inputRef={(el) => register(ci, el)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1, e.key === 'Enter'); }
@@ -521,6 +531,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
               <div className="text-xs leading-4 text-slate-400" data-phu-odiem=""
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
+            {/* NHAP-DIEM-b: môn vắng / "Đã huỷ" vẫn nhập được tại ô (máy chủ đổi về đã làm bài) — trạng thái là dòng chữ mờ dưới ô (V22, không ⚠). */}
+            {dung && <div id={`tt-${row.attemptId}-${k}`} className="text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDung}</div>}
           </OBang>
         );
       })}
@@ -533,7 +545,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         <OBang c={cc.kq}>
           <KetQua row={row} sheet={sheet} />
           {hopO}
-          {lichSu && <NganLichSuBai attemptId={row.attemptId} skill={lichSu} ct={ct} tenHv={row.studentName} trongHop={trongKhung} onClose={() => setLichSu(null)} />}
+          {lichSuO}
         </OBang>
       )}
     </tr>

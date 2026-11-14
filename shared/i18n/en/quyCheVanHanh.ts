@@ -10,7 +10,7 @@ export const EN_QUY_CHE_VANHANH = {
   'MT0: "-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ': 'MT0: "-" = absent: 1st time moves to next week · 2nd time cancelled',
   'Đạt từ {n} % · "-" = vắng: dời sang tuần sau, không tự huỷ': (b) => `Pass from ${b.n}% · "-" = absent: moves to next week, not cancelled automatically`,
   '"-" = vắng: dời sang tuần sau, không tự huỷ': '"-" = absent: moves to next week, not cancelled automatically',
-  'Cần thì ⋯ › Huỷ môn.': 'If needed: ⋯ › Cancel subject.',
+  'Cần thì ⋯ › Huỷ điểm.': 'If needed: ⋯ › Cancel score.',
   'Bạn nhập hộ: chọn GV chấm trước khi lưu': 'Entering on behalf: pick the marking teacher before saving',
   'Mọi GV Speaking chi nhánh chấm được · GV chấm mặc định là bạn': 'Any branch Speaking teacher can mark · marker defaults to you',
   'Quá hạn vẫn viết được · việc rời sau 7 ngày': 'Still writable when overdue · task leaves after 7 days',
