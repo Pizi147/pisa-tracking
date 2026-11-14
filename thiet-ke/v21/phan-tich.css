@@ -724,3 +724,4 @@ table.mk td, table.mk th { border:1px solid #cfd5e2; padding:4px 8px; text-align
 .dt .the-dau:has(.lk-doi) .nut-i { top:2px; }
 .so-to .phu a.oso, .so-thi .hai-so em a.oso, .dong-sos a.oso { text-decoration:none !important; }
 .hang-loc .mui-ten { color:var(--text-faint) !important; }
+.ngay-thi.du-kien { color:var(--text-dim); font-weight:500; font-family:var(--phong); }

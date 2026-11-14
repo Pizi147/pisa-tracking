@@ -8,7 +8,11 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 ·
 
 ## 0. Lời chủ SP trong session này
 
-(chưa có)
+**15/11 — lời 37** (PTA Overhaul chuyển lại nguyên văn): duyệt mockup ⑨ kèm một chỉnh —
+
+> "M9: Sắp thi tính đến tháng tiếp theo thôi, ví dụ đang ở tháng 11 thì tính lịch thi đến hết tháng sau nhé. Còn lại ok"
+
+Đã áp: ô thành **"Sắp thi · tới hết T12 · còn SOS"** (dữ liệu tháng 11) — lịch thi trong tháng này hoặc tháng sau, gồm ngày đã chốt **và** tháng dự kiến chưa chốt ngày (thay XM-2 cũ); dòng phụ bỏ "thi W3 NOV – W4 DEC"; panel phân biệt "thi 12/12" ↔ "dự kiến T12"; ước lại dòng đọc (mục 5). Ảnh: `cap-c1`, `cap-c4`, `cap-c5`, `cap-c6`, `cap-e2`, `cap-e4`.
 
 ## 1. Khung
 
@@ -19,7 +23,7 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 ·
 | L3 | Tìm GV: đã chọn một GV (✕ bỏ lọc) · đang gõ "linh" | R9.3 |
 | L4 | 375: hàng lọc Chi nhánh · Thi thật · Giáo viên | R9.3 |
 | A1 · A6 | Chi nhánh toàn trang 1440 · 375 | R9.3, R9.4, R9.6 |
-| C1 · C4 | Thi thật toàn trang 1440 · 375 — ô mới "Sắp thi · 6 tuần · còn SOS" | R9.5 |
+| C1 · C4 | Thi thật toàn trang 1440 · 375 — ô mới "Sắp thi · tới hết T12 · còn SOS" | R9.5, lời 37 |
 | C5 · C6 | Panel Sắp thi · còn SOS 1440 · 375 | R9.5 |
 | B1 | SOS toàn trang | R9.2, R9.3 |
 | B5 · B6 · B3 | ⓘ mở: Theo tuần · PA nào hiệu quả · 375 | R9.2 |
@@ -47,8 +51,8 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 ·
 | A1 | Cột "Thi thật" bảng Theo lớp (Vượt · Đạt · Chưa đạt, hộp chữ xanh / đỏ) | web có, nền V2 không | như web | GIỮ (theo web) |
 | A1 | Xuất Excel Chi nhánh | web đã có (nền V2 ẩn tới PR Excel) | giữ trên web, cuối hàng | GIỮ (theo web) |
 | C1 | Khối kết quả (2 ô công tắc + thanh), Không thi, Chưa có KQ | có | như cũ, khối kết quả hẹp lại một chút | GIỮ |
-| C1 | **Ô "Sắp thi · 6 tuần · còn SOS"** | — | ô thứ ba: số em + chip SOS 1 · 2 · 3 (bấm được) + "hiện tại · thi W3 NOV – W4 DEC" + ⓘ | MỚI (R9.5, lời 35) |
-| C5 / C6 | Panel Sắp thi · còn SOS | — | dáng panel số V2 (loại · ✕ · ⓘ · tiêu đề · dòng ngữ · chip chia), bảng: Học viên (link) · Lớp (link) · Ngày thi (dd/mm + mã tuần) · SOS · MT mới nhất (mức + kỹ năng) · TVV; 375 mỗi em một thẻ | MỚI |
+| C1 | **Ô "Sắp thi · tới hết T12 · còn SOS"** | — | ô thứ ba: số em + chip SOS 1 · 2 · 3 (bấm được) + "hiện tại" + ⓘ (phạm vi: lịch thi tháng này + tháng sau, ngày đã chốt hoặc tháng dự kiến). Nhãn ghi mốc cụ thể "tới hết T{tháng sau}" | MỚI (R9.5, lời 35, 37) |
+| C5 / C6 | Panel Sắp thi · còn SOS | — | dáng panel số V2 (loại · ✕ · ⓘ · tiêu đề · dòng ngữ · chip chia SOS + "đã chốt ngày n · dự kiến n"), chân "Đóng"; bảng: Học viên (link) · Lớp (link) · **Lịch thi** ("thi 18/11" + mã tuần ↔ "dự kiến T12 · chưa chốt ngày", dự kiến xếp cuối) · SOS · MT mới nhất · TVV; 375 mỗi em một thẻ | MỚI |
 | B1 | Dải 6 ô, bảng Theo tuần, khối PA | có | như cũ | GIỮ |
 | B5 | Giải thích cột Theo tuần | `title` ở tiêu đề nhóm cột (`TongHopTestSos.tsx:438`), ô HV - Case (`:226`), ⚠ quá hạn (`:238`) | ⓘ đầu thẻ "Theo tuần" mở hộp: mỗi cột một dòng | ĐỔI (R9.2) |
 | B6 | Giải thích khối PA | `title` "mỗi vấn đề ≤ 2 PA có kết quả" (`HieuQuaPa.tsx:218`), chip "Nên dùng" (`:82`); web có ⓘ ở thẻ + hai khối con | giữ ba ⓘ như web; hai câu rê chuột vào ⓘ "PA do GV thêm" (Nên dùng · n vấn đề khác); khối con có "n có cải thiện" như web | ĐỔI (R9.2) |
@@ -90,7 +94,7 @@ Không mất thao tác nào.
 | | Tab SOS | Ô Sắp thi · còn SOS (Thi thật) |
 |---|---|---|
 | Đếm gì | **lượt** MT có mức SOS (SOS 1 · 2 · 3), Case, PA | **em** đang SOS ở MT mới nhất |
-| Thời gian | lượt MT chốt **trong kỳ đã chọn (quá khứ)** | **hiện tại**, nhìn về trước: ngày thi đã chốt trong 6 tuần tới |
+| Thời gian | lượt MT chốt **trong kỳ đã chọn (quá khứ)** | **hiện tại**, nhìn về trước: lịch thi (ngày chốt hoặc tháng dự kiến) trong tháng này + tháng sau |
 | Câu hỏi | "Em bị tụt có được giúp không?" | "Em sắp đi thi mà vẫn SOS — còn kịp gì?" |
 
 Không số nào trên tab SOS bằng số này theo định nghĩa: em SOS lâu ngày có thể không có lượt nào trong kỳ (SOS không đếm, ô này đếm); em có lượt SOS trong kỳ nhưng chưa chốt ngày thi (SOS đếm, ô này không). Cũng không trùng các số của Thi thật (Em thi, Chưa có KQ, Không thi — đều về ngày thi đã qua) và Chi nhánh (Đạt MT · HV — kết quả trong kỳ). Tab Chi nhánh **không** chép ô này (ngoại lệ chép số chỉ dành cho ô Thi thật đã duyệt).
@@ -99,18 +103,18 @@ Không số nào trên tab SOS bằng số này theo định nghĩa: em SOS lâu
 
 | Phần | Đường | Ước thêm | Ghi chú |
 |---|---|---|---|
-| Ô Sắp thi · còn SOS | kèm `GET /phan-tich/thi-that` (cùng lần tải) | **+ 2–3 câu**, ≤ ~400 dòng / lần mở (một chi nhánh) | (1) chu kỳ thi có `exam_date` từ hôm nay → +42 ngày, em đang học, theo chi nhánh / lớp — vài chục dòng; (2) mức SOS ở MT mới nhất của các em đó (một câu theo lô `IN`, ≤ 5 kỹ năng × n em); (3) tên TVV nếu chưa có trong câu (1). Đọc đúng phạm vi chi nhánh, không quét lịch thi cả hệ thống |
-| Panel Sắp thi | `GET /phan-tich/thi-that/o?o=sap-thi` (đường panel đang có) | 2–3 câu, ≤ 300 dòng, **chỉ khi bấm** | cùng hàm với ô → số khớp |
+| Ô Sắp thi · còn SOS | kèm `GET /phan-tich/thi-that` (cùng lần tải) | **+ 2–3 câu**, ≤ ~600 dòng / lần mở (một chi nhánh) | (1) chu kỳ thi của em đang học trong chi nhánh / lớp có `exam_date` trong tháng này + tháng sau **hoặc** `exam_month` là một trong hai tháng đó (thêm điều kiện `OR`, cùng câu — lời 37) — vài chục đến ~150 dòng; (2) mức SOS ở MT mới nhất của các em đó (một câu theo lô `IN`, ≤ 5 kỹ năng × n em); (3) tên TVV nếu chưa có trong câu (1). Đọc đúng phạm vi chi nhánh, không quét lịch thi cả hệ thống |
+| Panel Sắp thi | `GET /phan-tich/thi-that/o?o=sap-thi` (đường panel đang có) | 2–3 câu, ≤ ~400 dòng, **chỉ khi bấm** | cùng hàm với ô → số khớp |
 | Panel Chưa làm | `GET /phan-tich/giao-vien/danh-sach` (đang có, Excel dùng) | như đường đang có, **chỉ khi bấm** | không đọc thêm khi mở tab; lọc `chua` + nhóm theo GV ở web hoặc tham số |
 | Ô chọn Lớp / Tìm GV | dữ liệu đã nạp (`/ref/classes`, hàng GV của bảng) | 0 | không request mới |
 | ⓘ | chữ tĩnh | 0 | |
 
-Ước ngày: ~20 lần mở Thi thật / chi nhánh / ngày × 5 chi nhánh × ~400 dòng ≈ **40 000 dòng / ngày** (trần giữ < 15 triệu). Không cần cảnh báo. PR code thêm trần câu + dòng cho `/phan-tich/thi-that` (có ô mới) vào `server/src/tests/tocDoDuong.ts`.
+Ước ngày (lời 37, thêm tháng dự kiến): ~20 lần mở Thi thật / chi nhánh / ngày × 5 chi nhánh × ~600 dòng ≈ **60 000 dòng / ngày** (trần giữ < 15 triệu). Không cần cảnh báo. PR code thêm trần câu + dòng cho `/phan-tich/thi-that` (có ô mới) vào `server/src/tests/tocDoDuong.ts`.
 
 ## 6. [XM] — PTA Overhaul đã quyết (rà #1609)
 
 1. **XM-1 giữ:** ⓘ chỉ ở đầu thẻ (luật cấm điều khiển trong tiêu đề bảng).
-2. **XM-2 giữ:** "Sắp thi" chỉ tính ngày thi đã chốt — đã ghi trong ⓘ của ô.
+2. **XM-2 — thay theo lời 37:** "Sắp thi" tính lịch thi trong tháng này + tháng sau, gồm ngày đã chốt **và** tháng dự kiến chưa chốt ngày (trước: chỉ ngày đã chốt, 6 tuần). Ghi trong ⓘ của ô.
 3. **XM-3 theo web:** ô số dạng hộp; khung SAU = web + R9.x (chỉnh 1).
 4. **XM-4 theo web:** SOS tách "HV có Case · Case".
 5. **XM-5:** "REPORT 4 + MEETING" viết hoa, "CX / GĐCN" giữ nguyên.
@@ -128,7 +132,7 @@ Không còn [XM] mở.
 | R9.2 | Giải thích trong rê chuột → ⓘ đầu thẻ / đầu cột (Ý thức, SOS, khối PA); 375 đọc được | B5 (Theo tuần), B6 (PA), Y2 (Ý thức); B3 / Y3 375 hộp hết bề ngang; mọi `title` giải thích đã bỏ. Đầu cột: không — [XM-1] | Đạt (đầu thẻ) |
 | R9.3 | Hàng lọc cố định giữa 5 tab, ô không áp dụng mờ; Mọi lớp, Tìm GV là ô chọn có tìm | L1 (5 hàng cùng vị trí, ô mờ có `title` lý do), L2, L3; L4 375: ô không áp dụng ẩn (PTA chỉnh 3) | Đạt |
 | R9.4 | Ô Thi thật ở Chi nhánh ghi rõ kỳ; nhãn "Đạt MT · HV", "Đạt kỳ vọng Test · lượt" | A1, A6 ("Thi thật · W1–W4 NOV", "Đạt MT · HV"); D1 cột + D4 thẻ "Đạt kỳ vọng Test · lượt" | Đạt |
-| R9.5 | Ô mới "Sắp thi · 6 tuần · còn SOS" → panel em: lớp · ngày thi · mức SOS · TVV; ước đọc | C1, C4, C5, C6, E2 (0 không bấm), E4 (TVV); mục 4 (không trùng), mục 5 (+ 2–3 câu) | Đạt |
+| R9.5 | Ô mới "Sắp thi · còn SOS" → panel em: lớp · ngày thi · mức SOS · TVV; ước đọc. Lời 37: tới hết tháng sau, gồm tháng dự kiến | C1, C4 ("Sắp thi · tới hết T12 · còn SOS"), C5, C6 ("thi 18/11" ↔ "dự kiến T12"), E2 (0 không bấm), E4 (TVV); mục 4 (không trùng), mục 5 (+ 2–3 câu, ~60 000 dòng / ngày) | Đạt |
 | R9.6 | Thanh tab, panel, Xuất theo bộ chuẩn; không đổi gì khác | tab ⑤ H1, panel 736 (bảng có điểm 820), panel chỉ đọc chân "Đóng" (lời 36), Xuất Excel cuối hàng; mọi phần khác vẽ như web (mục 2 dòng GIỮ) | Đạt |
 | Tâm ✕ / ⓘ (PTA chỉnh 4) | lệch tâm dọc ≤ 1 px ở đầu panel và đầu thẻ | đo tự động trên mọi khung (59 chỗ): đầu panel ⓘ↔✕ 0,0 px (1440: ⓘ 28 · ✕ 36; 375: 44 · 44); dải ⓘ ✕↔dòng đầu 0,0 px; đầu thẻ ⓘ↔tiêu đề 0,0 px ở 53 chỗ, 0,5 px ở 3 chỗ (375 "Tiến bộ theo kỹ năng", "Từng kỹ năng" ×2), 1,0 px ở 1 chỗ (375 "PA nào hiệu quả") | Đạt |
 | G1 | Nâng cấp, giữ bố cục + mọi thao tác | mục 3: không mất thao tác | Đạt |

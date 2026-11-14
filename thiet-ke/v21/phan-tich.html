@@ -45,14 +45,14 @@
   </section>
 
   <section class="khu" id="thi">
-    <h2>C · Thi thật — ô mới "Sắp thi · 6 tuần · còn SOS" (R9.5, chủ SP đồng ý lời 35)</h2>
+    <h2>C · Thi thật — ô mới "Sắp thi · tới hết T12 · còn SOS" (R9.5, lời 35, lời 37)</h2>
     <div class="ghi"><ul>
-      <li>Ô thứ ba bên phải: số em <b>đang SOS</b> (MT mới nhất) có <b>ngày thi đã chốt</b> trong 6 tuần tới, chia SOS 1 · 2 · 3. Số <b>hiện tại</b> như "Chưa có KQ" — không theo khoảng tuần đang chọn; theo chi nhánh + ô Lớp. Bấm số hoặc chip → panel em: lớp · ngày thi · mức SOS · TVV.</li>
+      <li>Ô thứ ba bên phải: số em <b>đang SOS</b> (MT mới nhất) có <b>lịch thi trong tháng này hoặc tháng sau</b> (lời 37: tới hết tháng sau — dữ liệu tháng 11 thì tới hết T12): ngày đã chốt <b>hoặc</b> tháng dự kiến chưa chốt ngày; chia SOS 1 · 2 · 3. Số <b>hiện tại</b> như "Chưa có KQ" — không theo khoảng tuần đang chọn; theo chi nhánh + ô Lớp. Bấm số hoặc chip → panel em: lớp · lịch thi ("thi 18/11" ↔ "dự kiến T12") · mức SOS · TVV.</li>
       <li>Không trùng tab SOS: SOS đếm <b>lượt MT trong kỳ đã qua</b>; ô này đếm <b>em</b>, nhìn <b>về trước</b> (sắp thi). Chi tiết ở ghi chú mục 4.</li>
     </ul></div>
     <div class="hang-khung">
       <figure id="f-c1"><figcaption>C1 · QL · 1440 · toàn trang</figcaption><div class="man" data-k="c1"></div></figure>
-      <figure id="f-c5"><figcaption>C5 · bấm "9" Sắp thi · còn SOS → panel em (chỉ đọc)</figcaption><div class="man co-pn" data-k="c5"></div></figure>
+      <figure id="f-c5"><figcaption>C5 · bấm "11" Sắp thi · còn SOS → panel em (chỉ đọc)</figcaption><div class="man co-pn" data-k="c5"></div></figure>
       <figure id="f-c4"><figcaption>C4 · 375 · ô mới hết hàng dưới hai ô nhỏ</figcaption><div class="dt" data-k="c4"></div></figure>
       <figure id="f-c6"><figcaption>C6 · 375 · panel Sắp thi · còn SOS (toàn màn, mỗi em một thẻ)</figcaption><div class="dt co-pn" data-k="c6"></div></figure>
     </div>
@@ -368,30 +368,34 @@
   }
   function daiThi(tong, hep, rong, qt) {
     const tile = (ten, ky, gt, mau) => `<div class="chi-so"><span class="ten">${ten} <i><span class="cham">· </span>${ky}</i></span><span class="gt">${gt}</span><span class="mau">${mau}</span></div>`;
-    return `<div class="thi-dai">${rong || khoiKq(tong, hep, qt)}<div class="cot-phu">${tile('Không thi', 'trong kỳ', o(rong ? 0 : qt ? 6 : 2), 'không vào %')}${tile('Chưa có KQ', 'hiện tại', o(qt ? 32 : 11), 'đã qua ngày thi')}</div>${sapThi(qt ? [31, 14, 11, 6] : rong ? [0, 0, 0, 0] : [9, 4, 3, 2], hep)}</div>`;
+    return `<div class="thi-dai">${rong || khoiKq(tong, hep, qt)}<div class="cot-phu">${tile('Không thi', 'trong kỳ', o(rong ? 0 : qt ? 6 : 2), 'không vào %')}${tile('Chưa có KQ', 'hiện tại', o(qt ? 32 : 11), 'đã qua ngày thi')}</div>${sapThi(qt ? [38, 17, 14, 7] : rong ? [0, 0, 0, 0] : [11, 5, 4, 2], hep)}</div>`;
   }
-  /* v21 (R9.5) — ô mới: em đang SOS (MT mới nhất) có ngày thi ĐÃ CHỐT trong 6 tuần tới. Số hiện tại, không theo khoảng tuần; theo chi nhánh + ô Lớp. */
-  const I_SAP = 'Em đang học có <b>ngày thi đã chốt</b> trong 6 tuần tới (W3 NOV – W4 DEC) và đang SOS ở <b>MT mới nhất</b>. Em mới có tháng dự kiến chưa tính. Số hiện tại: không đổi theo khoảng tuần đang chọn.';
+  /* v21 (R9.5, lời 37 — chủ SP 15/11): ô "Sắp thi · tới hết T{tháng sau} · còn SOS" — em đang SOS (MT mới nhất) có lịch thi trong THÁNG NÀY hoặc THÁNG SAU:
+     ngày đã chốt HOẶC tháng dự kiến (chưa chốt ngày). Số hiện tại, không theo khoảng tuần; theo chi nhánh + ô Lớp. */
+  const I_SAP = 'Em đang học, đang SOS ở <b>MT mới nhất</b>, có lịch thi trong <b>tháng này hoặc tháng sau</b> (tới hết T12): ngày thi đã chốt hoặc tháng dự kiến chưa chốt ngày. Số hiện tại: không đổi theo khoảng tuần đang chọn.';
   function sapThi(n, hep) {
     const chip = (m, x) => x ? `<a class="sos m${m}" href="#so" aria-label="SOS ${m}: ${x} em">SOS ${m} · ${x}</a>` : `<span class="sos m${m}" style="opacity:.55">SOS ${m} · 0</span>`;
-    return `<div class="chi-so sap-thi"><span class="ten">Sắp thi · 6 tuần · còn SOS${I(I_SAP)}</span><span class="gt">${o(n[0])}<small>em</small></span>`
-      + `<span class="dong-sos">${chip(1, n[1])}${chip(2, n[2])}${chip(3, n[3])}</span><span class="mau">hiện tại · thi W3 NOV – W4 DEC</span></div>`;
+    return `<div class="chi-so sap-thi"><span class="ten">Sắp thi · tới hết T12 · còn SOS${I(I_SAP)}</span><span class="gt">${o(n[0])}<small>em</small></span>`
+      + `<span class="dong-sos">${chip(1, n[1])}${chip(2, n[2])}${chip(3, n[3])}</span><span class="mau">hiện tại</span></div>`;
   }
+  /* [tên, lớp, ngày đã chốt | null, mã tuần | tháng dự kiến, mức SOS, kỹ năng, TVV] — xếp theo lịch thi, dự kiến cuối */
   const SAP = [['Trịnh Quốc Huy', 'MB FT 108', '18/11', 'W3 NOV', 3, 'L · W', 'Hoàng Mai Lan'], ['Lê Minh Thư', 'MB FT 102', '21/11', 'W3 NOV', 2, 'W', 'Hoàng Mai Lan'],
     ['Bùi Thảo Vy', 'MB FT 101', '25/11', 'W4 NOV', 1, 'W2', 'Đặng Hải Yến'], ['Hồ Gia Bảo', 'MB FT 101', '28/11', 'W4 NOV', 1, 'R', 'Đặng Hải Yến'],
     ['Ngô Tuấn Kiệt', 'MB FT 102', '02/12', 'W1 DEC', 2, 'S', 'Hoàng Mai Lan'], ['Vũ Hà My', 'MB FT 108', '05/12', 'W1 DEC', 3, 'R · W', 'Phùng Thị Ngân'],
     ['Đào Minh Châu', 'MB FT 105', '09/12', 'W2 DEC', 1, 'L', 'Phùng Thị Ngân'], ['Cao Minh Đức', 'MB FT 105', '16/12', 'W3 DEC', 2, 'W1', 'Phùng Thị Ngân'],
-    ['Lý Gia Khang', 'MB FT 110', '23/12', 'W4 DEC', 1, 'S', 'Đặng Hải Yến']];
-  const chiaSap = `<div class="tom-chia"><span class="tong-pn"><b>9</b> em</span><span class="chip-dk">SOS 1 <b>4</b></span><span class="chip-dk">SOS 2 <b>3</b></span><span class="chip-dk">SOS 3 <b>2</b></span></div>`;
-  const dauSap = (hep) => pnDau('SỐ · THI THẬT', 'Sắp thi · 6 tuần · còn SOS', hep ? 'Monbay · thi W3 NOV – W4 DEC · hiện tại' : 'Monbay · ngày thi W3 NOV – W4 DEC · hiện tại · dữ liệu đến 12/11', chiaSap, I_SAP);
+    ['Lý Gia Khang', 'MB FT 110', null, 'T12', 1, 'S', 'Đặng Hải Yến'], ['Phan Gia Hân', 'MB FT 105', null, 'T12', 1, 'W2', 'Phùng Thị Ngân'],
+    ['Tạ Minh Khoa', 'MB FT 110', null, 'T12', 2, 'R', 'Hoàng Mai Lan']];
+  const lichThi = (r) => r[2] ? `<span class="ngay-thi">thi ${r[2]}<small>${r[3]}</small></span>` : `<span class="ngay-thi du-kien">dự kiến ${r[3]}<small>chưa chốt ngày</small></span>`;
+  const chiaSap = `<div class="tom-chia"><span class="tong-pn"><b>11</b> em</span><span class="chip-dk">SOS 1 <b>5</b></span><span class="chip-dk">SOS 2 <b>4</b></span><span class="chip-dk">SOS 3 <b>2</b></span><span class="chip-dk">đã chốt ngày <b>8</b></span><span class="chip-dk">dự kiến <b>3</b></span></div>`;
+  const dauSap = (hep) => pnDau('SỐ · THI THẬT', 'Sắp thi · tới hết T12 · còn SOS', hep ? 'Monbay · lịch thi T11 – T12 · hiện tại' : 'Monbay · lịch thi T11 – T12 · hiện tại · dữ liệu đến 12/11', chiaSap, I_SAP);
   function c5() {
-    const bang = `<table class="bang"><colgroup><col style="width:200px"><col style="width:112px"><col style="width:104px"><col style="width:130px"><col></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày thi</th><th>SOS · MT mới nhất</th><th>TVV</th></tr></thead><tbody>`
-      + SAP.map((r) => `<tr><td class="ten">${lkHv(r[0])}</td><td class="ten">${lkLop(r[1])}</td><td><span class="ngay-thi">${r[2]}<small>${r[3]}</small></span></td><td>${sos(r[4], `SOS ${r[4]} · ${r[5]}`)}</td><td class="ten mo">${r[6]}</td></tr>`).join('') + '</tbody></table>';
+    const bang = `<table class="bang"><colgroup><col style="width:200px"><col style="width:112px"><col style="width:132px"><col style="width:130px"><col></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>Lịch thi</th><th>SOS · MT mới nhất</th><th>TVV</th></tr></thead><tbody>`
+      + SAP.map((r) => `<tr><td class="ten">${lkHv(r[0])}</td><td class="ten">${lkLop(r[1])}</td><td>${lichThi(r)}</td><td>${sos(r[4], `SOS ${r[4]} · ${r[5]}`)}</td><td class="ten mo">${r[6]}</td></tr>`).join('') + '</tbody></table>';
     return c1() + panel(dauSap() + `<div class="pn-than cuon">${bang}</div>`);
   }
   function c6() {
-    const the = (r) => `<div class="the-hv"><div class="h1">${lkHv(r[0])}${sos(r[4], `SOS ${r[4]} · ${r[5]}`)}</div><div class="hang-tt">${lkLop(r[1])}<span>thi <b style="color:var(--text)">${r[2]}</b> · ${r[3]}</span><span>TVV ${r[6]}</span></div></div>`;
-    return c4() + panel(dauSap(true) + `<div class="pn-than cuon">${SAP.slice(0, 6).map(the).join('')}</div>`);
+    const the = (r) => `<div class="the-hv"><div class="h1">${lkHv(r[0])}${sos(r[4], `SOS ${r[4]} · ${r[5]}`)}</div><div class="hang-tt">${lkLop(r[1])}<span>${r[2] ? `thi <b style="color:var(--text)">${r[2]}</b> · ${r[3]}` : `dự kiến <b style="color:var(--text)">${r[3]}</b> · chưa chốt ngày`}</span><span>TVV ${r[6]}</span></div></div>`;
+    return c4() + panel(dauSap(true) + `<div class="pn-than cuon">${[...SAP.slice(0, 4), ...SAP.slice(8, 10)].map(the).join('')}</div>`);
   }
   const LOP_THI = [['MB FT 101', 9, 2, 4, 3, 1, 3], ['MB FT 102', 7, 2, 3, 2, 0, 2], ['MB FT 105', 5, 1, 3, 1, 1, 4], ['MB FT 108', 4, 1, 2, 1, 0, 2]];
   const CN_THI = [['Monbay', 25, 6, 12, 7, 2, 11], ['Bãi Cháy', 14, 3, 8, 3, 1, 5], ['Cẩm Phả', 22, 5, 9, 8, 2, 9], ['Hải Dương', 9, 2, 5, 2, 0, 3], ['Uông Bí', 6, 1, 3, 2, 1, 4]];
