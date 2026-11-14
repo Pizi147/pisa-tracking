@@ -160,6 +160,41 @@ export async function runPrKyVongMt0Tests(t: any, h: any) {
     assert(caseKv(Z).length === 0, `Case Tutor cho em đã đạt: ${JSON.stringify(caseKv(Z))}`);
   });
 
+  check('KQDR-B1 · bảng Kết quả đầu ra: em vào lớp FT quá 4 tuần mà CHƯA CHỐT vẫn hiện (đợt hienToi null) để việc "Kỳ vọng" mở ra đủ em; chốt xong / tự Đạt → thôi hiện; chotDuoc QL có, GV không; ≤ 23 câu', () => {
+    const be6 = lopMoi('BE', false, 11), ft6 = lopMoi('FT', true, 1);
+    const [P1, P2, P3] = [hocVien(be6, 'BE'), hocVien(be6, 'BE'), hocVien(be6, 'BE')];
+    lenFt(be6, [P1, P2, P3], ft6, true);
+    diemMt0(P1, { L: 4, R: 3.5, W: 3, S: 3.5 });   // chưa đạt
+    diemMt0(P2, { L: 4.5, R: 4.5, W: 4, S: 4 });   // tự Đạt
+    const cu = t.addDays(TODAY, -40);
+    conn.prepare(`UPDATE enrollments SET started_at = ? WHERE class_id = ? AND status = 'active'`).run(cu, ft6);
+    conn.prepare(`UPDATE lenh_chuyen_lop SET tuan_bat_dau = ? WHERE lop_nguon_id = ?`).run(d.mondayOfDate(cu), be6);
+    const emCua = (p: any) => kv.kqdrLopFt(p, ft6).bang.flatMap((b: any) => b.dot.map((d: any) => ({ ...d, em: d.em.map((e: any) => e.id) })));
+    const dot = emCua(P.mbManager);
+    assert(dot.length === 1 && dot[0].hienToi === null && dot[0].em.includes(P1) && dot[0].em.includes(P3) && !dot[0].em.includes(P2), `đợt cũ: ${JSON.stringify(dot)}`);
+    const e1 = kv.kqdrLopFt(P.mbManager, ft6).bang[0].dot[0].em.find((e: any) => e.id === P1);
+    assert(e1.chotDuoc === true && e1.moTay === false, JSON.stringify(e1));
+    const e3 = kv.kqdrLopFt(P.mbManager, ft6).bang[0].dot[0].em.find((e: any) => e.id === P3);
+    assert(e3.mt0 === null && e3.moTay === true, `chưa MT0, quá tuần 2 FT → chốt tay: ${JSON.stringify(e3)}`);
+    const gv = GV[0];
+    conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?, 'reading', 1, '2026-01-01', 'active', ?)`).run(gv, ft6, new Date().toISOString());
+    const gvP = h.loadPrincipal(gv);
+    assert(kv.kqdrLopFt(gvP, ft6).bang[0].dot[0].em.every((e: any) => e.chotDuoc === false), 'GV không chốt được');
+    /* Việc "Kỳ vọng" của QL trỏ đúng bảng này, đủ em. */
+    const v = viecKv(P.mbManager).find((i: any) => i.classId === ft6);
+    assert(v && v.href === `/hoc-vien/lop/${ft6}?che-do=ket-qua` && [P1, P3].every((x) => v.emIds.includes(x)), JSON.stringify(v));
+    ck.ghiKetLuanFt(P.mbManager, P1, { dat: false, nguyenNhan: 'hoc_sinh', ghiChu: 'Nghỉ nhiều' });
+    ck.ghiKetLuanFt(P.mbManager, P3, { dat: true });
+    assert(kv.kqdrLopFt(P.mbManager, ft6).bang.length === 0, `chốt xong mà còn hiện: ${JSON.stringify(emCua(P.mbManager))}`);
+    assert(!viecKv(P.mbManager).some((i: any) => i.classId === ft6), 'hết việc');
+    conn.prepare(`UPDATE enrollments SET started_at = ? WHERE class_id = ? AND status = 'active'`).run(TODAY, ft6);
+    const e1b = kv.kqdrLopFt(P.mbManager, ft6).bang[0].dot[0].em.find((e: any) => e.id === P1);
+    assert(e1b.kqdr?.ghiChu === 'Nghỉ nhiều' && e1b.kqdr.nguyenNhan === 'hoc_sinh', `trong 4 tuần: kết luận có phương án để sửa tại chỗ ${JSON.stringify(e1b.kqdr)}`);
+    const n0 = nguCanh.soCauSql();
+    kv.kqdrLopFt(P.mbManager, ft6);
+    assert(nguCanh.soCauSql() - n0 <= 23, `kqdrLopFt ${nguCanh.soCauSql() - n0} câu`);
+  });
+
   check('KV-7 · trần: kqdrLopFt / việc QL không thêm câu khi có em tự Đạt (kỹ năng huỷ đọc bằng câu con)', () => {
     const n0 = nguCanh.soCauSql();
     kv.kqdrLopFt(P.mbManager, ft);
