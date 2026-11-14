@@ -507,18 +507,16 @@ export function ExamPlanText({ plan }: { plan?: { confidence: string; label: str
 export const CHON = '!border-[color:var(--accent)] !bg-[color:var(--accent-soft)] text-slate-100';
 type NutChonProps = {
   chon: boolean; onClick: () => void; children: ReactNode; nho?: boolean; className?: string; disabled?: boolean; title?: string;
-  /** Dấu góc khi đang chọn — mặc định ✓; OV-12b: số thứ tự chọn (chip nhóm nguyên nhân, 1 = chính). */
+  /** Dấu (chữ trong chip, trước tên) khi đang chọn — mặc định ✓; OV-12b: số thứ tự chọn (chip nhóm nguyên nhân, 1 = chính). */
   dau?: ReactNode;
 };
-export function NutChon({ chon, onClick, children, nho, className = '', disabled, title, dau = '✓', dauTrong = false }: NutChonProps & {
-  /** GD-11b (chip chọn chuẩn, như #1669): ✓ là CHỮ trong chip, trước tên — không ô góc lòi ra ngoài viền. Nơi khác giữ dáng cũ tới GD-18. */
-  dauTrong?: boolean;
-}) {
+export function NutChon({ chon, onClick, children, nho, className = '', disabled, title, dau = '✓' }: NutChonProps) {
+  /* NUT-CHON-DAU-TRONG (chủ SP chê ✓ lòi ngoài viền; PTA 15/11): MỘT dáng chip chọn ở mọi nơi — viền + nền nhấn, dấu (✓ hoặc số thứ tự)
+     là CHỮ trong chip, trước tên; không ô góc đè ra ngoài viền. */
   return (
     <button type="button" aria-pressed={chon} onClick={onClick} disabled={disabled} title={title}
       className={`btn ${nho ? 'btn-sm' : ''} relative min-h-[44px] min-w-0 gap-1 whitespace-normal text-center leading-tight sm:min-h-0 ${chon ? CHON : ''} ${className}`}>
-      {chon && (dauTrong ? <span aria-hidden>{dau}</span>
-        : <span aria-hidden className="pointer-events-none absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-md border border-[color:var(--accent)] bg-[color:var(--surface)] text-[12px] leading-none tabular-nums text-[color:var(--accent-strong)]">{dau}</span>)}{children}
+      {chon && <span aria-hidden className="tabular-nums">{dau}</span>}{children}
     </button>
   );
 }
