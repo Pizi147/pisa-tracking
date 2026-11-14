@@ -13,6 +13,12 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 
 ## 0. Lời chủ SP trong session này
 
+**Chủ SP nói trong session này (15/11):**
+
+> "Chọn A nhé"
+
+→ khớp quyết định PTA đã chốt (phương án A, bảng Giáo viên tách cột). Mockup đã chỉ còn A.
+
 **Lời 39 (15/11, PTA Overhaul chuyển lại):**
 
 > "không cần gửi mockup lại đâu, sửa lại rồi gửi luôn cho PTA Plan"
