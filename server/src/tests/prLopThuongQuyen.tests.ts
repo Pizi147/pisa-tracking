@@ -4,7 +4,6 @@
  *  · GV có kỹ năng S (không phân công) thấy MT0 S các lớp thường cùng chi nhánh ở hàng đợi Chấm Speaking + Công việc, nhập được ô S;
  *  · KHÔNG mở: L/R/W của MT0, S Progress / Final lớp thường, chi nhánh khác.
  */
-import fs from 'node:fs';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
@@ -109,30 +108,27 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     assert(!sc?.no_show_period_id && k.sit_status === 'scheduled', `Bỏ vắng: ${JSON.stringify([sc, k])}`);
   }));
 
-  /* PTA 14/11 (SUA-LUAT-1411): MT0 của lớp THƯỜNG "-" theo luật lớp thường — chỉ dời, vắng bao nhiêu lần cũng không huỷ (MT0 lớp FT: lần 2 huỷ, MV-11). */
-  check('LTQ-VANG · MT0 lớp thường "-" lần 1 dời tuần sau tuần thi, lần 2 VẪN dời (không huỷ); nút Vắng cùng luật', () => thu(() => {
+  /* LG-9 (chủ SP 15/11 lời 32: "áp luật vắng như mock"): MT0 — kể cả MT0 ở lớp THƯỜNG — "-" theo N38 như Mock: lần 1 dời, lần 2 huỷ (thay ngoại lệ PTA 14/11). */
+  check('LTQ-VANG · MT0 lớp thường "-" lần 1 dời tuần sau tuần thi (lưới MT0 tuần mới có em), xoá "-" về tuần gốc, lần 2 HUỶ; nút Vắng cùng luật', () => thu(() => {
     const e = emMt0();
     const tuan = d.mondayOfDate(TODAY);
     const ky = (s: string) => one(`SELECT k.sit_status AS sit, k.huy_vang AS huy, k.absence_move_count AS lan, rp.week_start AS ws FROM attempt_skills k
       JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = ?`, e.mt0, s);
+    const coO = (ws: string) => svc.classScoreSheet(P.mbManager, LOP, { theo: 'mt0', periodId: week.ensurePeriod(ws).id }, TODAY).rows.some((r: any) => r.attemptId === e.mt0);
     const r1 = svc.saveScore(P.mbManager, e.mt0, 'listening', { noShow: true }, TODAY);
     assert(r1.vang?.kq === 'doi' && ky('listening').ws.slice(0, 10) === d.addDaysIso(tuan, 7) && ky('listening').lan === 1, `lần 1: ${JSON.stringify([r1.vang, ky('listening')])}`);
+    assert(coO(d.addDaysIso(tuan, 7)), 'việc nhập điểm MT0 theo tuần mới');
+    svc.saveScore(P.mbManager, e.mt0, 'listening', { noShow: false }, TODAY);
+    assert(ky('listening').ws.slice(0, 10) === tuan && ky('listening').lan === 0 && ky('listening').sit === 'scheduled', `xoá "-": về tuần gốc, trừ một lần: ${JSON.stringify(ky('listening'))}`);
+    svc.saveScore(P.mbManager, e.mt0, 'listening', { noShow: true }, TODAY);
     const r2 = svc.saveScore(P.mbManager, e.mt0, 'listening', { noShow: true }, d.addDaysIso(TODAY, 7));
     const k2 = ky('listening');
-    assert(r2.vang?.kq === 'doi' && k2.sit === 'scheduled' && !k2.huy && k2.lan === 2 && k2.ws.slice(0, 10) === d.addDaysIso(tuan, 14), `lần 2 phải dời, không huỷ: ${JSON.stringify([r2.vang, k2])}`);
+    assert(r2.vang?.kq === 'huy' && k2.sit === 'cancelled' && k2.huy === 1, `lần 2 phải huỷ: ${JSON.stringify([r2.vang, k2])}`);
     const absence: any = absenceMod;
     absence.baoVang(P.mbManager, e.mt0, 'reading', null, TODAY);
     const b = absence.baoVang(P.mbManager, e.mt0, 'reading', null, d.addDaysIso(TODAY, 7));
-    assert(b.daDoi && !b.huyVang && ky('reading').sit === 'scheduled', `nút Vắng lần 2: ${JSON.stringify([b, ky('reading')])}`);
+    assert(b.huyVang && ky('reading').sit === 'cancelled', `nút Vắng lần 2: ${JSON.stringify([b, ky('reading')])}`);
   }));
-
-  check('LTQ-VANG-CHU · câu báo trước nút Vắng theo CÙNG hàm luật: MT0 lớp thường "không huỷ", Mock / MT0 FT "vắng 2 lần thì huỷ"; trang MT0 lấy cờ từ máy chủ', () => {
-    assert(!d.vangLan2Huy('mt0', false) && d.vangLan2Huy('mt0', true) && d.vangLan2Huy('mock', true), 'vangLan2Huy');
-    assert(/không huỷ/.test(d.cauVangMt('Listening', false)) && !/thì huỷ/.test(d.cauVangMt('Listening', false)) && /vắng 2 lần thì huỷ/.test(d.cauVangMt('Listening', true)), 'cauVangMt');
-    thu(() => assert(svc.attemptDetail(P.mbManager, emMt0().mt0).vangLan2Huy === false, 'chi tiết MT0 lớp thường: vangLan2Huy = false'));
-    const hop = fs.readFileSync('web/src/modules/fasttrack/HopThaoTacMt.tsx', 'utf8'), trang = fs.readFileSync('web/src/modules/fasttrack/MockDetailPage.tsx', 'utf8');
-    assert(hop.includes('cauVangMt(mon, huyLan2)') && !hop.includes('vắng 2 lần thì huỷ') && trang.includes('huyLan2={d.vangLan2Huy !== false}'), 'web phải dùng cauVangMt + cờ máy chủ');
-  });
 
   /* B' 6b (chủ SP 10/11 tối): Kế hoạch Test của GV S hiện lớp thường CÓ MT0 — chỉ xem, chỉ ô MT0 (Giữa / Cuối khoá vẫn chỉ GV lớp thấy, chủ SP 08/11). */
   check('LTQ-5 · Kế hoạch Test GV S: lớp thường có MT0 vào danh sách, chỉ xem, chỉ em có MT0, không lộ Final; lớp không MT0 không vào; QL thấy đủ', () => thu(() => {
