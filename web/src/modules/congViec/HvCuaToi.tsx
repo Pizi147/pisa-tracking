@@ -144,7 +144,7 @@ function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: bo
         {d.chip.map((c) => {
           const nhan = NHOM_CV_TVV_LABEL[c.nhom];
           const lop = `inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold no-underline max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
-            ? 'border-late-line bg-late-bg !text-late hover:brightness-110' : 'surface-2 !text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`;
+            ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 !text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`;
           const vien = c.quaHan ? undefined : { borderColor: 'var(--line-strong)' };
           /* [XM-4] Bổ sung hồ sơ: một dòng tổng nhiều em — chip sang hồ sơ em (Sửa thông tin ở đầu hồ sơ của TVV), không số. */
           if (!c.dau) return <Link key={c.nhom} to={duongHoSoHocVien(e.id)} className={lop} style={vien} aria-label={`${nhan} · ${e.ten}`}>{nhan}<span aria-hidden> ›</span></Link>;
