@@ -34,7 +34,7 @@ Nguồn: `12-plan-giao-dien-dot-3.md` dòng GD-13a · mockup `thiet-ke/v21/hoc-v
 ## 2. KHÁC (có lý do)
 
 1. **Đầu lớp — QL**: mockup vẽ thẻ đếm "4 bài chờ chấm" không bấm; web giữ `ChipBadgeLop` "Chờ chấm · n ›" (GD-6) bấm sang Lịch Test — lối vào sẵn có, không bớt thao tác.
-8. **Ô hẹp không "…"** (PTA rà #1685 ý 2): Lộ trình em chưa có Target ghi "Target —" (không kèm KCK); ô Ý thức chỉ chip bậc ("REPORT 5"), mốc "+ MEETING …" ở hộp mở (dòng Mốc).
+8. **Ô hẹp không "…"** (PTA rà #1685 ý 2 + rà lại): Lộ trình em chưa có Target ghi "Target —" (không kèm KCK); ô Lộ trình xuống dòng thay vì cắt ("LT1 · MT 1/3", "Preliminary English Test"); ô Ý thức chỉ chip bậc ("REPORT 5"), mốc "+ MEETING …" ở hộp mở; cột Ý thức 100 → 116 px (chip REPORT cần ~113), Lịch thi 150 → 134 (ô nay là chữ), tổng cột cố định giữ 956. Đo trên web (Quản trị, mọi lớp FT + Lớp thường): 0 ô tràn. Ảnh `zoom-k1-y-thuc-gv-1440-toi.png`.
 2. **⋯ em — "Tình hình học tập"**: mockup có mục thứ ba trong "+ Task"; ⋯ dòng chưa có hộp Tình hình cho một em (hộp neo ở nút "+ Task" đầu trang / hồ sơ). Không thêm thao tác mới trong PR này — đã có ở "+ Task" trang đầu, hồ sơ lớp, hồ sơ HV. → backlog.
 3. **Ô Xem**: mockup ghi phụ "22 lớp · 214 HV" từng chi nhánh — web không có số theo chi nhánh trong dữ liệu đã nạp; thêm sẽ cần câu đọc mới (Turso) → không vẽ.
 4. **V22**: mockup vẽ "⚠ Nhập điểm 21", "⚠ Case 2" — web chỉ màu đỏ (luật V22, không ⚠).
