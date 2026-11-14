@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
-import { useSoViecCuaToi } from '../../lib/viecCuaToi.ts';
+import { useDemYeuCau, useSoViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
@@ -12,10 +12,11 @@ import { LOP_OSO, VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { ChipHan, CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import { rateView, thamSoCt, tuanLich, type ChuongTrinh, type DemYeuCau, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -320,6 +321,8 @@ export const phuGv = (h: Pick<HangGv, 'mon'>) => h.mon || null;
  */
 function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const [loai, setLoai] = useThamSoUrl('gv', 'hc');
+  const dienThoai = useDienThoai();
+  const [moHetGv, setMoHetGv] = useState(false);
   const q = `cn=${d.branchId}${thamSoCt(d.ct)}${kyQ(d)}`;
   const ht = loai === 'ht';
   /* TURSO-1211: thẻ chỉ đọc Việc · Chấm · Đạt kỳ vọng (Case có PA lấy `d.caseGv`) → `v2=1` (cùng hàm, bỏ phần thẻ không đọc: 41–85 câu → ~15);
@@ -367,7 +370,25 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
   const phuCua = (h: HangGv, c: CotBang) => (c.key !== 'gv' ? null : h.id === ID_S_CHUNG ? t('chưa ai nhận') : phuGv(h));
   /* G2 (N32 ②, U09 #1): đủ mọi GV, GV có bài chấm quá hạn lên đầu (nhiều trước); không ngưỡng, không nhãn người. Hàng "S chéo chung" cuối (chỉ Hành chính). */
   const ds = pt.data ? [...pt.data.hang].sort((a, b) => (tre.get(b.id) ?? 0) - (tre.get(a.id) ?? 0)) : [];
-  const hang: HangGv[] = !ht && (sc || treSc) ? [...ds, { ...ds[0], id: ID_S_CHUNG, ten: t('S chéo chung'), mon: '' }] : ds;
+  const hangDu: HangGv[] = !ht && (sc || treSc) ? [...ds, { ...ds[0], id: ID_S_CHUNG, ten: t('S chéo chung'), mon: '' }] : ds;
+  /* ⑧ T7a: 375 chỉ GV có bài quá hạn; còn lại (và hàng S chéo chung) sau nút "+ n GV · S chéo chung" mở tại chỗ. */
+  const gonDt = dienThoai && !moHetGv && !ht;
+  const hang = gonDt ? hangDu.filter((h) => h.id !== ID_S_CHUNG && (tre.get(h.id) ?? 0) > 0) : hangDu;
+  const anGv = hangDu.filter((h) => h.id !== ID_S_CHUNG).length - hang.filter((h) => h.id !== ID_S_CHUNG).length;
+  const anSc = gonDt && hangDu.some((h) => h.id === ID_S_CHUNG);
+  /* 375: thẻ có nhãn đủ nhóm ("Việc · % đúng hạn", "Chấm Test · chưa làm") — nhãn cột trần "% đúng hạn" không nói của nhóm nào. */
+  const COT_THE: [string, string][] = [['v-pt', t('Việc · % đúng hạn')], ['v-chua', t('Việc · chưa làm')], ['tre', t('Bài quá hạn')], ['cd-pt', t('Chấm Test · % đúng hạn')], ['cd-chua', t('Chấm Test · chưa làm')]];
+  const theGv = (h: HangGv) => (
+    <div className="grid gap-2">
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[15px]">{oCua(h, COT_GV_HC[0])}<span className="text-[13px] text-dim">{phuCua(h, COT_GV_HC[0])}</span></div>
+      <div className="grid grid-cols-3 gap-x-2 gap-y-2.5">
+        {COT_THE.map(([k, nhan]) => (
+          <div key={k} className="grid content-start justify-items-start gap-1"><span className="text-xs leading-tight text-dim">{nhan}</span>
+            <span className="inline-flex min-h-9 items-center">{oCua(h, COT_GV_HC.find((c) => c.key === k)!)}</span></div>
+        ))}
+      </div>
+    </div>
+  );
   return (
     <Card bodyClass="p-0"
       title={<span className="inline-flex items-center" title={kyChu(d.ky)}>{t('Giáo viên')}{ds.length > 0 && <DemDau n={ds.length} />}<span className="ml-2 inline-flex"><NutLuat label={t('Giáo viên')}>{LUAT_GV}</NutLuat></span></span>}
@@ -376,7 +397,14 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
         : !pt.data ? <Skeleton rows={3} className="p-4" />
           : <div data-hd="tq-gv-tre"><Bang ten={t('Giáo viên')} cot={ht ? COT_GV_HT.filter((c) => d.ct === 'ft' || c.key !== 'tb') : COT_GV_HC}
             hang={hang} khoa={(h) => h.id} oCua={oCua} phuCua={phuCua} khung={false} theLuoi lopHang={(h) => (h.id === ID_S_CHUNG ? 'tong' : '')}
-            rong={{ tieuDe: t('Chi nhánh chưa có GV nào trong kỳ') }} /></div>}
+            theRieng={ht ? undefined : theGv} rong={{ tieuDe: t('Chi nhánh chưa có GV nào trong kỳ') }} />
+            {(anGv > 0 || anSc) && (
+              <div className="border-t px-4 py-3" style={{ borderColor: 'var(--line)' }}>
+                <button type="button" className="btn w-full min-h-[44px] justify-center" onClick={() => setMoHetGv(true)}>
+                  {[anGv > 0 ? t('+ {n} GV', { n: anGv }) : null, anSc ? t('S chéo chung') : null].filter(Boolean).join(' · ')}
+                </button>
+              </div>
+            )}</div>}
     </Card>
   );
 }
@@ -465,12 +493,12 @@ export function TheoChiNhanh({ d, baoCao, onChiNhanh }: { d: TongQuanV5Data; /**
 
 /**
  * QUẢN TRỊ / QL nhiều chi nhánh (GD-14, ⑧ T3, R8.2): + "Việc của tôi ›" + "Chờ duyệt ›" (cùng nguồn badge / chuông — số chờ duyệt từ `/yeu-cau/dem` khung App
- * đã tải, `chiNghe`: 0 request). Cột phải "Chờ duyệt" như QL — GET danh sách CHỈ khi số > 0 ([XM-4]).
+ * đã tải, `useDemYeuCau`: 0 request). Cột phải "Chờ duyệt" như QL — GET danh sách CHỈ khi số > 0 ([XM-4]).
  */
 export function TongQuanQtV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh: (id: number) => void }) {
   const { session } = useSession();
   const duyet = !!session?.nav?.workApprove;
-  const dem = useApi<DemYeuCau>(duyet ? '/yeu-cau/dem' : null, [duyet], { chiNghe: true }).data;
+  const dem = useDemYeuCau();
   const choN = dem?.cho ?? 0;
   const hop = useApi<Hop>(choN > 0 ? `/yeu-cau?hop=cho-duyet${d.branchId ? `&branchId=${d.branchId}` : ''}` : null, [d.branchId, choN > 0]);
   return (
