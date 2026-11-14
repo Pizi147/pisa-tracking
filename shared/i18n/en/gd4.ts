@@ -12,4 +12,5 @@ export const EN_GD4 = {
   'Task {x} chưa có': (b) => `Task ${b.x} not entered yet`,
   'Cách tính Writing': 'How Writing is calculated',
   'Đã xem · việc tiếp ›': 'Seen · next task ›',
+  '<b>Tình hình học tập</b>: chọn em (tối đa 8) và gõ nội dung ngay trong một hộp, rồi <b>Gửi TVV</b>.': '<b>Learning situation</b>: pick students (up to 8) and type the message in one box, then <b>Send to consultant</b>.',
 } satisfies Record<string, Dich>;

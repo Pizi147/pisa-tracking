@@ -227,7 +227,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           </span>
         </div>
       )}
-      {(che.loai === 'bao' || che.loai === 'hoi') && (
+      {/* Lời 40: chưa chọn em thì "Gửi tới" / hạn chưa có nghĩa — ẩn. */}
+      {(che.loai === 'hoi' || (che.loai === 'bao' && em.length > 0)) && (
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-1 text-[13px] text-slate-400">
           <dt>{t('Gửi tới')}</dt>
           <dd className="m-0">{che.loai === 'hoi'

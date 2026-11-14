@@ -392,7 +392,8 @@ const DongPhu = ({ nguoi, ds, children }: { nguoi?: ReactNode; ds: readonly Reac
   <span onMouseEnter={(e) => { e.currentTarget.title = e.currentTarget.textContent ?? ''; }}
     className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px] ${coHuy ? '' : 'sm:h-5 sm:overflow-hidden'}`}>
     {nguoi && <span className="shrink-0 whitespace-nowrap sm:mr-1">{nguoi}{ds.length > 0 && <span aria-hidden className="sm:hidden"> ·</span>}</span>}
-    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{x}{cham(i)}</span>)}
+    {/* GD-4d (⑤ H5): thẻ phụ dòng việc (vd "bậc kế tiếp: Report 2") — tên bậc viết hoa, dạng tắt. */}
+    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{typeof x === 'string' ? bacNgan(x) : x}{cham(i)}</span>)}
     {children}
   </span>
 ) : null;
