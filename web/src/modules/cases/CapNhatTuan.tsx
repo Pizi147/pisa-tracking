@@ -22,7 +22,7 @@ import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay, quyCheKetQuaPa } from '@shared/domain/index.ts';
+import { hanDuyetNgay, quyCheGhiKetQua } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
@@ -644,8 +644,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               {!khoaLuaChon && <><span aria-hidden>·</span><NutChu onClick={() => setMoNgay(true)}>{t('Đổi')}</NutChu></>}
             </p>
           )}
-          {/* GD-3: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân. PA chờ Mini Test, Sửa: không có câu kỳ / hạn. */}
-          {!sua && !pa.miniTestHan && <DongQuyChe px="px-0" qc={quyCheKetQuaPa(pa.actionDue ? ngan(pa.actionDue) : null)} />}
+          {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
+          {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
+            lanCuoi, batBuoc: !!pa.batBuoc, miniTest: coMiniTest || !!pa.miniTestHan })} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden">{nutNhap}{nut}</div>
         </CanLam>
       </div>

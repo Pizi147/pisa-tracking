@@ -19,7 +19,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 import {
   ENTRY_SKILLS, ENTRY_SKILL_LABEL, HANG_SO, HANG_SO_LABEL, TASK_GROUPS, TASK_GROUP_LABEL, TASK_PROGRESS, TASK_PROGRESS_LABEL,
   TASK_PROGRESS_NEEDS_REASON, TRANG_THAI_LOC, catDongPhu, dongHanDaDoi, dsLoi, duocGiao, giaTriDauGiaoViec, moiKhoaGui,
-  trangThaiKyGiao, tuanLich,
+  trangThaiKyGiao, tuanLich, quyCheViecGiao,
   type HangSo, type LoiTruong, type NguoiChon, type TrangThai, type TrangThaiLoc,
 } from '@shared/domain/index.ts';
 
@@ -291,7 +291,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
   /* 6c (bảng kê lỗi 9): Sửa việc = view kế trong CÙNG panel (‹ về việc, ✕ đóng cả panel), không mở panel đè. */
   if (data && editing) return <SuaViec onClose={() => setEditing(false)} dongCa={onClose} task={data} onDone={() => { reload(); onDone(); }} />;
   return (
-    <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai}
+    <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai} quyChe={data ? quyCheViecGiao() : null}
       ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
       {loading && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (

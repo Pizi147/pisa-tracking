@@ -18,7 +18,7 @@ import {
   URGENCY_LEVELS, URGENCY_LABEL, issuesForTopic, FOLLOWUP_OUTCOMES, GOI_Y_MO_TA_PA, outcomeLabelFor,
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, CHU_THEM_PA, tenMon, tenMonNgan,
   categoryOf, componentsFor, componentsAreCounts,
-  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, TRAN_CHU, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU, CHU_TOI_THIEU_CASE,
+  nguoiThanhPayload, nguoiThieu, tuanLich, type NguoiChon, dsLoi, type LuatTruong, TRAN_CHU, laKhac, kiemGhiRoKhac, KHAC_TOI_THIEU, CHU_TOI_THIEU_CASE, quyCheBaoCase,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -532,6 +532,8 @@ export function QuickReport({
 
   return (
     <KhungPanel tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dong}
+      /* GD-4b Q32 / Q33: Case đang mở — câu theo Mức độ đang chọn (Gấp: hạn thêm PA 3 ngày). Nhập bù không có hạn: không có câu. */
+      quyChe={mode === 'now' ? quyCheBaoCase(urgency === 'urgent', CHU_TOI_THIEU_CASE, TRAN_CHU.moTaCase) : null}
       vungTab={{ id: 'qr-vung', nhan: mode === 'now' ? t('Đang mở') : t('Đã xong từ trước') }}
       tabs={(
         <HangTab cap="con" panelId="qr-vung" ariaLabel={t('Loại Case')} value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}

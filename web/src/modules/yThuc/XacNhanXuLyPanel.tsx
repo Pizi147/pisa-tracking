@@ -14,7 +14,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon,
+  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
@@ -253,6 +253,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const nhanO = (chu: string, batBuoc = false) => <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{chu}{batBuoc && <span aria-hidden className="text-bad"> *</span>}</span>;
   return (
     <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={tieuDe} hocVien={d.ten} onDong={onDong} dau={dau(cheDo === 'xu-ly')}
+      quyChe={quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl })}
       chan={{
         /* Mockup v20 D1: chân lưu chung — trái trạng thái lưu, phải Đóng + nút chính. */
         huy: { nhan: t('Đóng'), onClick: onDong }, huyPhai: true, chinh: nutChinh, daSua: !!moTa.trim(),
@@ -350,8 +351,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           <Truong nhan={t('Bằng chứng')} batBuoc={cheDo === 'de-xuat' && canTep(loai)} tuyChon={!(cheDo === 'de-xuat' && canTep(loai))} as="div" loi={lf.loiCua(loi, 'tep')}>
             <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} khoa={busy} /></div>
           </Truong>
-          {/* Mockup v20 D1: bước kế sau khi lưu — ai nhận việc, hạn (cùng hàm hạn với việc máy chủ sinh). */}
-          {cheDo === 'xu-ly' && d.tvv && <p className="m-0 text-[13px] text-slate-400">{t('Lưu xong: TVV {ten} nhận việc báo PH · hạn {ngay}.', { ten: d.tvv, ngay: ngay(hanBaoPh(homNay), homNay) })}</p>}
+          {/* GD-4b: bước kế (TVV nhận việc báo PH · hạn) nay ở dòng quy chế Q45 trên chân — bỏ dòng trùng ở thân. */}
       </div>
     </KhungPanel>
   );

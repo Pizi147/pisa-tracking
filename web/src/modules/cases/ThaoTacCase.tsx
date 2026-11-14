@@ -1,7 +1,7 @@
 import { useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHU_TOI_THIEU_CASE,
   CASE_OUTCOMES, INTERVENTION_KIND_LABEL, CASE_OUTCOME_LABEL, hanDuyetNgay,
   componentsAreCounts, componentsFor, interventionKindsFor, isProposalKind,
-  dsLoi, moiKhoaGui, loiFormPa, paMoi, paPayload, type GiaTriPa, } from '@shared/domain/index.ts';
+  dsLoi, moiKhoaGui, loiFormPa, paMoi, paPayload, type GiaTriPa, quyCheHoanThanhCase, quyCheThemPa, } from '@shared/domain/index.ts';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { FormPa } from './FormPa.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -121,8 +121,10 @@ export function phanNgayThemPa(h: ReturnType<typeof useThemPa>) {
  * em (link) · lớp · ngữ cảnh (nơi gọi truyền `dau`), MỘT khối Cần làm (form + nút chính "Thêm PA" / "Gửi QL duyệt"), Bối cảnh ≤ 3 dòng, chân trạng thái lưu;
  * Bắt đầu = ô ngày gõ được + nút lịch (`ChonNgayGan` = `ONgay`, không sau hôm nay), mặc định hôm nay.
  */
-export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh, tiep: tiepViec }: ChungPanel & {
+export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quayLai, onClose, onSaved, dau, boiCanh, tiep: tiepViec, hanLapPa }: ChungPanel & {
   caseId: number; studentId?: number | null;
+  /** GD-4b Q18: hạn việc "Thêm PA" (đã định dạng) · `null` = Case không có hạn lập PA · không truyền = không biết (câu không ngày). */
+  hanLapPa?: string | null;
   /** M6 6b-3: panel việc có việc kế — "Thêm PA · việc tiếp ›" (đề xuất cần Quản lý duyệt thì không). */
   tiep?: TiepViec;
   /** Case có PA theo quy chế đang chạy → PA này là hỗ trợ thêm. */
@@ -149,6 +151,8 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
               ? t('Đây là một ĐỀ XUẤT nên Quản lý phải trả lời trong {HAN_DUYET_NGAY} ngày, tính cả hôm gửi. Trong lúc chờ thì chưa ghi kết quả được.', { HAN_DUYET_NGAY: hanDuyetNgay() })
               : t('Chọn một mục trong "Cần Quản lý duyệt" tức là đang xin ý kiến Quản lý.')}
             ngay={ngay} cuoi={cuoi} />
+          {/* GD-4b Q18 / Q19: dòng quy chế theo loại PA đang chọn, ngay trên hàng nút. PA đã làm trước đây: không có câu. */}
+          {h.status === 'started' && <DongQuyChe px="px-0" qc={quyCheThemPa(deXuat, hanLapPa)} />}
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
           <DongTiep tiep={tiep} />
         </CanLam>
@@ -164,8 +168,10 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
  * HOÀN THÀNH CASE — MỘT NÚT, MỘT PANEL (mục 9.3). Sau cả đợt, em tiến bộ đến đâu (bốn mức, bấm một cái) · kết luận (BẮT BUỘC —
  * ba tháng sau chính người viết cũng cần đọc lại) · ngày hoàn thành. Điểm chi tiết theo kỹ năng: tuỳ chọn, đúng kỹ năng của Case.
  */
-export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paGanNhat, ketLuanSan, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
+export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paGanNhat, ketLuanSan, soPaChay = 0, hocVien, lop, quayLai, onClose, onSaved }: ChungPanel & {
   caseId: number; category: string | null; categoryLabel: string | null; ratio: boolean;
+  /** GD-4b Q31: số PA còn chạy (chờ / đang theo dõi) — dừng khi hoàn thành Case. */
+  soPaChay?: number;
   /** #3 (G2-07): Nhận xét của Kết quả PA gần nhất — điền sẵn ô kết luận (sửa được), không gõ lại cùng một ý. */
   ketLuanSan?: string | null;
   /** C6: kết quả cuối của PA gần nhất — gợi ý khi chọn mức. */
@@ -207,6 +213,7 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
 
   return (
     <KhungPanel tieuDe={t('Hoàn thành Case')} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}
+      quyChe={quyCheHoanThanhCase(soPaChay, CHU_TOI_THIEU_CASE)}
       chan={{
         daSua: !!note.trim() || Object.keys(metrics).length > 0,   // "← …" hỏi trước khi bỏ chữ đang gõ (rà #395)
         conThieu: lf.conThieu(loi),

@@ -2,7 +2,7 @@ import { useContext, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { KhungPanel, KhungTrongThe, Truong, traLaiO, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, KhungPanel, KhungTrongThe, Truong, traLaiO, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
@@ -22,7 +22,7 @@ import { CHU_TOI_THIEU_CASE,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay, quyCheChonPa } from '@shared/domain/index.ts';
+import { hanDuyetNgay, quyCheChonPa, quyCheKhongTheoDoi, quyCheXacNhanCase, quyCheXacNhanPa } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
 
@@ -108,6 +108,8 @@ export function ketQuaGanNhat(data: CaseDetail): ReactNode {
  */
 export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & { data: CaseDetail; onXong: () => void; tiep?: TiepViec }) {
   const toast = useToast();
+  const { ngan } = useNgayNghiepVu();
+  const hanXn = data.sos?.dueOn ?? data.trangThaiV4?.han ?? null;   // cùng hạn chip đầu panel (`dauCase`)
   const caseId = data.id;
   const topic = data.topic ?? data.category ?? '';
   const ct = data.chuongTrinh ?? null;
@@ -189,6 +191,8 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
               )}
             </div>
           )}
+          {/* GD-4b Q27: dòng quy chế ngay trên hàng nút (chân v3 để nút trong thân). */}
+          <DongQuyChe px="px-0" qc={quyCheXacNhanCase(hanXn ? ngan(hanXn) : null)} />
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
           <DongTiep tiep={tiep} />
         </CanLam>
@@ -302,7 +306,8 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const trongThe = useContext(KhungTrongThe);
   return (
     <KhungPanel tieuDe={paGv ? t('Chọn PA · {kn}', { kn: data.categoryLabel ?? '' }) : t('Xác nhận PA · {kn}', { kn: data.categoryLabel ?? '' })} {...chung} quayLai={xemCase ? undefined : chung.quayLai} onDong={chung.onClose}
-      quyChe={paGv && cheDo === 'xac-nhan' ? quyCheChonPa(giuPa) : null}
+      /* GD-4b: Q16 / Q17 Chọn PA · Q14 Xác nhận PA (ngày Bắt đầu đang chọn) · Không cần theo dõi: câu Q15 nằm trong form đó. */
+      quyChe={cheDo !== 'xac-nhan' ? null : paGv ? quyCheChonPa(giuPa) : quyCheXacNhanPa(batDau && batDau !== homNay ? ngan(batDau) : null)}
       dau={dauCase(data, chung.lop, [`MT${data.tenSos?.mt ?? data.attemptNo ?? ''}`, data.categoryLabel ?? ''].filter(Boolean).join(' · '), true)}
       /* U01 #6 / #23 (audit 03/11, khung A1 · C1): chân dính MỘT hàng — trạng thái lưu / "Tiếp: …" trái · Xác nhận PA (phụ) · Xác nhận · việc tiếp › (chính). */
       chan={cheDo === 'ktd' ? undefined : { huy: null, daSua, conThieu: lf.conThieu(loi), chinh: nut,
@@ -434,7 +439,8 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
       </div>
       <OKhac hien={reasonNeedsText(reason)} value={text} onChange={setText} goiY={t('Ví dụ: Em nghỉ ốm cả tuần Test')} loi={daBam ? loiGhiRo : null} />
       {daBam && thieu && <p className="m-0 text-xs text-bad" role="alert">{thieu}</p>}
-      <p className="m-0 text-xs text-slate-500">{t('Gửi Quản lý duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
+      {/* GD-4b Q15: dòng quy chế ngay trên hàng nút. */}
+      <DongQuyChe px="px-0" qc={quyCheKhongTheoDoi(hanDuyetNgay())} />
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
         <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>{t('Gửi Quản lý duyệt')}</button>

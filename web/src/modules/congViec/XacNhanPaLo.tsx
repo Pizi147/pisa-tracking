@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
-import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { CanLam, DaiVuaLuu, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, soBuoiTu, type LoiTruong, type NguoiChon,
+  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, quyCheXacNhanPa, soBuoiTu, type LoiTruong, type NguoiChon,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -33,7 +33,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   it: WorkItem; onDong: () => void; onDaLam: () => void; onMo?: (it: WorkItem) => void; onTiep?: (() => void) | null;
 }) {
   const toast = useToast();
-  const { homNay } = useNgayNghiepVu();
+  const { homNay, ngan: nganNgay } = useNgayNghiepVu();
   const [ds] = useState<Em[]>(() => it.con ?? []);
   const [tick, setTick] = useState<ReadonlySet<string>>(() => new Set(ds.map((x) => x.key)));
   const [moTa, setMoTa] = useState('');
@@ -237,6 +237,8 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                 })}
               </ul>
             </div>
+            {/* GD-4b Q14: dòng quy chế ngay trên nút (chân v3 để nút trong thân) — ngày Bắt đầu chung đang chọn. */}
+            <DongQuyChe px="px-0" qc={quyCheXacNhanPa(ngay !== homNay ? nganNgay(ngay) : null)} />
             <div className="max-sm:hidden">{nut}</div>
           </CanLam>
         )}

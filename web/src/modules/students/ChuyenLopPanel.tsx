@@ -18,7 +18,7 @@ import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, nguongThuongHienTai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
   mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay } from '@shared/domain/index.ts';
+import { hanDuyetNgay, quyCheChuyenLop } from '@shared/domain/index.ts';
 
 type LopDich = {
   id: number; code: string; chiNhanhId: number; branchCode: string | null; ma: string | null; ft: boolean; route: string | null;
@@ -292,6 +292,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 
   return (
     <KhungPanel hd="chuyen-lop" tieuDe={dx ? (duyet ? t('Sửa đề xuất chuyển lớp') : t('Đề xuất chuyển lớp')) : t('Chuyển lớp')} hocVien={studentName} lop={dt ? null : lop} onDong={onClose}
+      /* GD-4b Q59 (đề xuất) · Q78 / Q79 (quyết định, "Ngay hôm nay"). */
+      quyChe={quyCheChuyenLop({ deXuat: dx, ngayNay, tuan: tuan || null, homNay: homNayMay })}
       chan={{
         daSua, huy: { onClick: onClose, disabled: busy },
         ...(!dx && lenh && !duyet ? { xoa: { nhan: dichChu(CHU_CHUYEN_LOP.huy), onClick: () => { if (!busy) void huyLenh(); } } } : {}),
@@ -478,6 +480,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
 
   return (
     <KhungPanel hd="chuyen-lop" rong="toan" tieuDe={tieuDe} onDong={dong}
+      quyChe={quyCheChuyenLop({ deXuat: false, ngayNay: !!homNay && laChuyenNgay(tuan, homNay), tuan: tuan || null, homNay })}
       chan={{
         daSua, huy: { onClick: dong, disabled: busy },
         conThieu: conThieuChu(lf.daBam, loi),

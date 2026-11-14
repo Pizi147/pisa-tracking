@@ -14,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, kiemGhiRoKhac, luuRoiTiep, reasonNeedsText, shortDate, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -156,7 +156,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       tieu: h.macDinh ? t('Về hạn mặc định {ngay}', { ngay: shortDate(h.moi, hn) }) : t('Đổi hạn {cu} → {moi}', { cu: h.cu ? shortDate(h.cu, hn) : '—', moi: shortDate(h.moi, hn) }) })),
   ].sort((a, b) => b.luc.localeCompare(a.luc));
   return (
-    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
+    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
+      quyChe={sua && !bo ? quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null) : null}>
       <div className="flex flex-col gap-4 pt-4">
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">
