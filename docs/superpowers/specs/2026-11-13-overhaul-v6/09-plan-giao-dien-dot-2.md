@@ -18,3 +18,5 @@ Luật mọi PR như `07-plan-giao-dien-dot-1.md` (ponytail lite, karpathy-guide
 Thứ tự gợi ý: GD-4 → (GD-5 ∥ GD-6 ∥ GD-7 ∥ GD-8, mỗi cái một màn) → GD-9 → GD-10. Sau GD-10: nghiệm thu 5 kịch bản ở `04-thiet-ke.md` mục 8.
 
 **Bổ sung 15/11 (lời 33):** badge tab "Chấm Speaking" = dáng mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng badge menu (`04-thiet-ke.md` mục 15) — làm trong GD-4 (thanh tab chung); nếu GD-1 đã merge với badge đỏ thì sửa ở GD-4.
+
+**15/11 (lời 34, 35, 39): GD-10 BỎ** — các màn còn lại đã có mockup v21; plan thay thế: `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18).

@@ -448,3 +448,12 @@ Bối cảnh: PTA Overhaul hiểu lời 37 ý M6 (c) là bỏ cả cột Target,
 ĐÃ CHỐT (sửa cách hiểu của PTA ở lời 37): bảng Lịch thi **GIỮ cột Target** ("target thì luôn cần"); chỉ bỏ **nhãn nhóm "Hiện tại"** phía trên các cột. Bảng: Học viên · Lịch thi · Target · MT gần nhất · SOS · Ghi chú. Cột Lộ trình vẫn bỏ; ô lịch thi một dòng.
 Bài học cho các mockup khác: không đặt nhãn nhóm phía trên đầu cột khi tên cột đã tự rõ; Target của em là thông tin luôn hiện ở các bảng về thi.
 Trạng thái mockup đợt 2: ⓪ #1607, ⑦ #1606, ⑨ #1609 đã merge (⑨ đã sửa ô "Sắp thi · tới hết tháng sau", gồm cả tháng dự kiến) · ⑥ #1611 đang sửa lại theo lời này · ⑧ #1613, ⑩ #1614 đang sửa theo lời 37.
+
+## 15/11 — lời 39: không gửi mockup lại — sửa xong gửi thẳng PTA Plan; cái gì xong thì archive
+
+Bối cảnh: mockup ⑥ ⑧ ⑩ đang sửa theo lời 37, 38; PTA Overhaul định gửi ảnh ⑧ để chủ SP xem lại.
+
+> "không cần gửi mockup lại đâu, sửa lại rồi gửi luôn cho PTA Plan, cái gì xong rồi thì archive đi nào"
+
+ĐÃ CHỐT: mockup ⑥ ⑧ ⑩ **không cần chủ SP xem lại** — session sửa xong, PTA Overhaul rà theo lời 37 / 38 rồi **merge và gửi plan code cho PTA Plan luôn**. Session / việc đã xong thì archive. (PR code đổi bố cục vẫn dừng ở ảnh cặp chờ chủ SP như luật chung — chủ SP chưa đổi phần này.)
+Đã làm trong lượt: archive session mockup ⓪ ⑦ ⑨ (đã merge); viết `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18, thay GD-10).
