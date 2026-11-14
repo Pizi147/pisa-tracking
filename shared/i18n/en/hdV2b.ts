@@ -64,7 +64,7 @@ export const EN_HD_V2B = {
   'Mở <b>Công việc</b>, nhóm <b>Chờ bạn duyệt</b>; quá hạn xếp trước.': 'Open <b>Tasks</b>, the <b>Awaiting your approval</b> group; overdue first.',
   'Bấm dòng: panel mở bên phải, thẻ ghi "Nếu duyệt: …".': 'Press a row: the panel opens on the right, the card says "If approved: …".',
   '<b>Duyệt</b> (<b>Duyệt…</b> khi cần chọn thêm) hoặc <b>Từ chối…</b> kèm lý do; <b>Xin ý kiến</b>: <b>Trả lời…</b>.': '<b>Approve</b> (<b>Approve…</b> when you must choose more) or <b>Decline…</b> with a reason; <b>Ask for opinion</b>: <b>Reply…</b>.',
-  'Ý thức: duyệt xong GVCN bấm <b>Đã thực hiện</b>; thẻ <b>Báo QL</b> chỉ để biết.': 'Conduct: after approval the homeroom teacher presses <b>Done</b>; <b>Notify manager</b> cards are for information only.',
+  'Ý thức: duyệt xong GVCN bấm <b>Đã thực hiện</b>; đề xuất xử lý và thu hồi quá hạn thì máy chốt theo GVCN; thẻ <b>Báo QL</b> chỉ để biết.': 'Conduct: after approval the homeroom teacher presses <b>Done</b>; overdue action proposals and revokes are finalised as the homeroom teacher decided; <b>Notify manager</b> cards are for information only.',
   'Nhập hộ bài quá hạn': 'Enter for them of overdue work',
   'Tổng quan › Bài chấm quá hạn': 'Home › Overdue scoring',
   'Bấm số ở cột <b>Bài chấm quá hạn</b> của GV.': 'Press the number in the teacher’s <b>Overdue scoring</b> column.',

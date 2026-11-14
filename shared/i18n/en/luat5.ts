@@ -15,6 +15,8 @@ export const EN_LUAT5 = {
   'Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”': (b) => `Awaiting manager to revoke · sent ${b.ngay}: “${b.lyDo}”`,
   '{x} từ chối thu hồi {ngay}: “{lyDo}”': (b) => `${b.x} declined the revoke ${b.ngay}: “${b.lyDo}”`,
   'Đã thu hồi {ngay} · {x} duyệt: “{lyDo}”': (b) => `Revoked ${b.ngay} · approved by ${b.x}: “${b.lyDo}”`,
+  'Chờ QL duyệt thu hồi · gửi {ngay} · quá {han} tự chốt theo GVCN: “{lyDo}”': (b) => `Awaiting manager to revoke · sent ${b.ngay} · after ${b.han} it takes effect as the homeroom teacher asked: “${b.lyDo}”`,
+  'Đã thu hồi {ngay} · tự chốt vì hết hạn duyệt: “{lyDo}”': (b) => `Revoked ${b.ngay} · finalised when the approval deadline passed: “${b.lyDo}”`,
   'Không tăng bậc': 'Keep level',
   'Cần xử lý nặng hơn (Meeting CX/GĐCN, WL 3, Đình chỉ…) hoặc không tăng bậc': 'Needs a heavier action (CX/Branch Director meeting, WL 3, Suspension…) or keeping the level',
 } satisfies Record<string, Dich>;

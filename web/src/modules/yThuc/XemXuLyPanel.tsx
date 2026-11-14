@@ -57,9 +57,13 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const th = d?.thuHoi ?? null;
   const rutThuHoi = th?.trangThai === 'cho' && th.nguoiXinId === session?.user?.id && !!d?.coTheSua;
   const dongThuHoi = !th || !d ? null
-    : th.trangThai === 'cho' ? t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' })
+    /* LG-10 (chủ SP 15/11): QL quá hạn chưa quyết → máy chốt theo GVCN (thu hồi có hiệu lực). */
+    : th.trangThai === 'cho' ? (th.hanDuyet
+      ? t('Chờ QL duyệt thu hồi · gửi {ngay} · quá {han} tự chốt theo GVCN: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), han: ngay(th.hanDuyet, homNay), lyDo: th.lyDo ?? '' })
+      : t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' }))
     : th.trangThai === 'tu_choi' ? t('{x} từ chối thu hồi {ngay}: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDoTuChoi ?? '' })
     : th.trangThai === 'duyet' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · {x} duyệt: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
+    : th.trangThai === 'tu_dong' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · tự chốt vì hết hạn duyệt: “{lyDo}”', { ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
     : null;
 
   const moSua = () => { if (d) { setChon(d.viPham.map((v) => v.id)); setDaBam(false); setLoiMay(null); setTt(null); setSua(true); } };

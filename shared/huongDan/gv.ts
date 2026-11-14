@@ -332,7 +332,7 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'hv-ghi-mini', viec: 'ghi-mini-test', ten: 'Ghi Mini Test', buoc: ['Tab <b>Học thuật</b>, khối kết luận khoá: nút <b>Ghi Mini Test</b>.', 'Gõ điểm, lưu.'] },
         { id: 'hv-hoc-thuat', ten: 'Tab Học thuật', buoc: ['Ô điểm <b>Overall · L · R · W1 · W2 · S</b>: bấm một ô đổi kỹ năng cho cả phần dưới.', '<b>Hành trình</b>: điểm từng MT của kỹ năng, kỳ vọng dạng bậc thang mờ.', '<b>Tiến độ trên lớp</b>: ghi / sửa / xoá bài trên lớp (không vào MT).'] },
-        { id: 'hv-y-thuc', ten: 'Tab Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.'] },
+        { id: 'hv-y-thuc', ten: 'Tab Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.', 'Lần xử lý sai: mở lần đó, <b>Thu hồi…</b> ghi lý do, gửi QL; QL quá hạn chưa quyết thì máy thu hồi theo bạn.'] },
         { id: 'hv-hanh-trinh', ten: 'Tab Lộ trình & lớp', buoc: ['Lưới tuần theo lớp: chương đang học, mọi lượt Test, Case / PA theo tuần.'] },
       ],
     },

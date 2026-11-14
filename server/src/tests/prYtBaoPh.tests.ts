@@ -133,6 +133,48 @@ export async function runPrYtBaoPhTests(t: YThucTestKit) {
     assert(baoLaiCua(m2).length === 0, 'QL thẳng tắt');
   }));
 
+  /* LG-10 (chủ SP 15/11, lời 33): thẻ Thu hồi hết hạn duyệt → tự chốt theo GVCN, dùng chung `quetYThucHetHan` với thẻ xử lý. */
+  const the = (mid: number) => hang(`SELECT * FROM yeu_cau_duyet WHERE loai = 'thu_hoi_y_thuc' AND doi_tuong_id = ? ORDER BY id DESC`, mid)[0];
+  const stXl = (mid: number) => hang('SELECT status FROM discipline_measures WHERE id = ?', mid)[0].status;
+  await checkAsync('LG-10a · thẻ Thu hồi quá hạn → tự chốt: "Đã thu hồi" đúng một lần, TVV đã báo → "Báo lại PH", lịch sử ghi tự chốt', () => thu(() => {
+    const sid = moiEm(); const mid = daXuLyDaBao(sid);
+    xu.thuHoiXuLy(gvcn, mid, { lyDo: 'Ghi nhầm em, vi phạm của bạn khác' });
+    const han = the(mid).han_duyet as string;
+    xu.quetYThucHetHan(conn, han);
+    assert(the(mid).trang_thai === 'cho' && stXl(mid) === 'done', 'đúng ngày hạn: chưa chốt');
+    assert(xu.quetYThucHetHan(conn, addDays(han, 1)) >= 1, 'sau hạn: chốt');
+    const y = the(mid);
+    assert(y.trang_thai === 'tu_dong' && /giữ quyết định GVCN/.test(y.ly_do_dong) && stXl(mid) === 'thu_hoi', JSON.stringify({ tt: y.trang_thai, ld: y.ly_do_dong, st: stXl(mid) }));
+    assert(JSON.parse(y.du_lieu).bacVe !== undefined, 'thẻ giữ số lúc chốt');
+    assert(baoLaiCua(mid).length === 1 && baoLaiCua(mid)[0].trang_thai === 'mo', 'TVV đã báo → Báo lại PH');
+    const au = hang(`SELECT * FROM audit_logs WHERE action = 'discipline.revoke' AND entity_id = ? ORDER BY id DESC`, mid);
+    assert(au.length === 1 && au[0].actor_user_id === null && /tự chốt vì hết hạn duyệt/.test(au[0].entity_label), JSON.stringify(au[0]));
+    xu.quetYThucHetHan(conn, addDays(han, 2));
+    assert(baoLaiCua(mid).length === 1 && hang(`SELECT 1 FROM audit_logs WHERE action = 'discipline.revoke' AND entity_id = ?`, mid).length === 1, 'quét lại không làm lại');
+    const v = xu.xemXuLy(gvcn, mid);
+    assert(v.status === 'thu_hoi' && v.thuHoi?.trangThai === 'tu_dong', JSON.stringify({ st: v.status, th: v.thuHoi?.trangThai }));
+  }));
+
+  await checkAsync('LG-10b · QL duyệt / từ chối trước hạn như cũ — quét sau hạn không đụng; TVV chưa báo → không "Báo lại PH"', () => thu(() => {
+    const sid = moiEm(); const mid = daXuLyDaBao(sid);
+    xu.thuHoiXuLy(gvcn, mid, { lyDo: 'Ghi nhầm em, vi phạm của bạn khác' });
+    const han = the(mid).han_duyet as string;
+    yc.tuChoiYeuCau(ql, the(mid).id, 'Vi phạm đúng của em');
+    xu.quetYThucHetHan(conn, addDays(han, 1));
+    assert(the(mid).trang_thai === 'tu_choi' && stXl(mid) === 'done' && baoLaiCua(mid).length === 0, 'từ chối giữ nguyên');
+    const sid2 = moiEm();
+    const m2 = xu.xacNhanXuLy(gvcn, sid2, { violationIds: [vp(sid2)], performedOn: TODAY, performerName: 'Cô Hà', note: 'Gặp em sau giờ học, ký Report 1' }).id;
+    xu.thuHoiXuLy(gvcn, m2, { lyDo: 'Ghi nhầm em, vi phạm của bạn khác' });
+    yc.duyetYeuCau(ql, the(m2).id);
+    xu.quetYThucHetHan(conn, addDays(han, 1));
+    assert(the(m2).trang_thai === 'duyet' && stXl(m2) === 'thu_hoi' && hang(`SELECT 1 FROM audit_logs WHERE action = 'discipline.revoke' AND entity_id = ?`, m2).length === 1, 'duyệt như cũ');
+    const sid3 = moiEm();
+    const m3 = xu.xacNhanXuLy(gvcn, sid3, { violationIds: [vp(sid3)], performedOn: TODAY, performerName: 'Cô Hà', note: 'Gặp em sau giờ học, ký Report 1' }).id;
+    xu.thuHoiXuLy(gvcn, m3, { lyDo: 'Ghi nhầm em, vi phạm của bạn khác' });
+    xu.quetYThucHetHan(conn, addDays(the(m3).han_duyet, 1));
+    assert(stXl(m3) === 'thu_hoi' && baoLaiCua(m3).length === 0 && viecCuaXl(m3).trang_thai === 'bo', 'TVV chưa báo: việc cũ Đã bỏ, không báo lại');
+  }));
+
   const board: any = await import('../yThuc/board.ts');
   const vte: any = await import('../classes/viecTheoEm.ts');
   await checkAsync('BPH-7 · G3-14: việc "Báo lại PH" có dòng ở tab Ý thức lớp (lần đã thu hồi, baoLai mở, TVV ghi được) — em Báo PH của TVV: tab = dải Việc của tôi = Công việc', () => thu(() => {
