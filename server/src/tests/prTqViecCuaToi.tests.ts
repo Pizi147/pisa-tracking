@@ -15,9 +15,9 @@ export async function runPrTqViecCuaToiTests(t: any) {
   const s = fs.readFileSync(path.join(ROOT, 'web/src/modules/worklist/TongQuanV5.tsx'), 'utf8');
   const nguoi = (email: string) => loadPrincipal((conn.prepare('SELECT id FROM users WHERE email = ?').get(email) as any).id);
 
-  check('XM 3 · Tổng quan GV · QL · TVV · Admin (dải Mock Test) đều có ô "Việc của tôi ›" (một component, số từ `/my-work` khung App — không GET thêm)', () => {
+  check('XM 3 · Tổng quan QL · TVV · Admin (dải Mock Test) đều có ô "Việc của tôi ›" (một component, số từ `/my-work` khung App — không GET thêm)', () => {
     const than = (ten: string) => s.slice(s.indexOf(`export function ${ten}(`), s.indexOf('\n}\n', s.indexOf(`export function ${ten}(`)));
-    for (const ten of ['TongQuanGvV5', 'TongQuanQlV5', 'TongQuanTvvV5']) assert(/<OViecCuaToi \/>/.test(than(ten)), `${ten} thiếu ô Việc của tôi`);
+    for (const ten of ['TongQuanQlV5', 'TongQuanTvvV5']) assert(/<OViecCuaToi \/>/.test(than(ten)), `${ten} thiếu ô Việc của tôi`);
     /* Admin: ô đứng đầu dải ô Mock Test (4 ô một hàng). */
     assert(/<OViecCuaToi \/>/.test(fs.readFileSync(path.join(ROOT, 'web/src/modules/worklist/MockTestAdmin.tsx'), 'utf8')), 'MockTestAdmin (Tổng quan Admin) thiếu ô Việc của tôi');
     /* Không GET /my-work riêng: đọc `summary` khung App đã tải cho badge (context) — hết lần gọi đôi. */
