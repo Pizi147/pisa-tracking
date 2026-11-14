@@ -14,11 +14,12 @@ export const EN_MT_VANG = {
   '{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. Muốn làm lại thì Dời — chọn tuần.': '{mon} leaves this round and does not count toward its result. To sit it again, Move — pick a week.',
   'Tuần Test đã qua 2 tuần: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.': 'Test week is 2+ weeks past: record did not sit for {mon} — no move, no absence counted.',
   'Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.': 'Record "-" for {mon}: the first time it moves to the week after its test week; absent twice cancels it.',
+  'Ghi "-" cho {mon}: dời sang tuần sau tuần Test; vắng mấy lần cũng không huỷ.': 'Record "-" for {mon}: it moves to the week after its test week; it is never cancelled, however many absences.',
   '{nhan} là MT cũ: nhập bù điểm; "-" là Không dự thi.': '{nhan} is an old MT: enter missing scores; "-" means did not sit.',
   'Gõ "-" = vắng, chốt ngay: lần 1 dời sang tuần sau tuần Test.':
     'Type "-" = absent, closed at once: the first time it moves to the week after its test week.',
-  'MT, MT0 vắng 2 lần thì huỷ (không thẻ, không nhắc); bài lớp thường dời tiếp. Tuần Test đã qua 2 tuần: "-" không dời, không tính lần vắng.':
-    'An MT or MT0 absent twice is cancelled (no card, no reminder); regular-class tests move again. Test week 2+ weeks past: "-" does not move it and is not counted as an absence.',
+  'MT vắng 2 lần thì huỷ (không thẻ, không nhắc); lớp thường dời tiếp. Tuần Test đã qua 2 tuần: "-" không dời, không tính lần vắng.':
+    'An MT absent twice is cancelled (no card, no reminder); regular classes move again. Test week 2+ weeks past: "-" does not move it and is not counted as an absence.',
   'Chọn tuần cho kỹ năng (Dời) = xếp lại từ đầu. Gỡ vắng: xoá "-", lúc nào cũng được.':
     'Picking a week for a skill (Move) = reschedule from scratch. Undo absent: delete the "-", any time.',
   'Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Bỏ khỏi đợt</b>, rồi <b>Lưu</b>.':
