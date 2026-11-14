@@ -354,10 +354,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               {/* RA-UI-6 (critique A4): panel nằm trong cột hồ sơ (`trongCot`) dưới đầu mục 15 → tiêu đề 15, không lớn hơn tầng cha. */}
-              {/* CV-TAB (mockup v17 `.pv-tieu` 20 px → 22, cỡ gần nhất trong thang khoá): ở Công việc tiêu đề 22 / 700, chip hạn đứng ngay sau tiêu đề, ✕ góc phải. */}
+              {/* CV-TAB: chip hạn đứng ngay sau tiêu đề, ✕ góc phải. GD-3 (mockup v21 ① `.pn-tieu h2` 17 / 700, chủ SP duyệt 14/11 — thay 22 của v17). */}
               {cvNgoai ? (
-                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1">
-                  <h2 className={`m-0 min-w-0 text-[22px] font-bold leading-7 text-slate-100${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
+                <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1">
+                  <h2 className={`m-0 min-w-0 text-[17px] font-bold leading-6 text-slate-100${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
                   {dau.han}
                 </div>
               ) : <>

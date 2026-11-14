@@ -503,7 +503,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 /* LT-GON (M3): "Chờ L, R, W, S" lặp đúng các ô trống bên trái → Kết quả chưa có ghi "–", tên môn còn thiếu ở `title`. */
                 /* RA-GD-0711c: chữ thường trong cột chip lùi 8 px (`px-2`) như chữ trong chip — thẳng tiêu đề "Kết quả" (index.css `th[data-kieu=chip]`). */
                 /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột (mở từ việc, Chấm Speaking) hoặc trong panel việc — ghi thẳng "Chờ S", chỉ kỹ năng đang có cột. */
-                : cot.chiKq || trongPanel ? <span className="whitespace-normal px-2 text-[13px] font-medium text-dim">{choMon(row, hien)}</span>
+                : cot.chiKq || trongPanel ? <span className="whitespace-normal text-[13px] font-medium text-dim">{choMon(row, hien)}</span>
                 : <span className="px-2 text-faint" title={choMon(row)}>–</span>
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}

@@ -597,7 +597,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       {/* GD-3 HOP-NHAP-GON (mockup v21 K2b): ngoài chỉ ⋯ · Vắng · nút chính; ⋯ = Lưu · đóng (thay "Lưu" ở lại khi có bài kế) · Khôi phục điểm · Bỏ vắng
           (hai mục sau chỉ khi ô ở trạng thái đó). Không có bài kế: "Lưu" vẫn là nút chính như cũ. */}
       {!daLuu && (
-        <MenuDong canhTrai muc={[
+        <MenuDong canhTrai lopNut={`${nut} w-9 justify-center px-0`} muc={[
           ...(onTiep ? [{ key: 'luu-dong', nhan: t('Lưu · đóng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => luu(false, true) }] : []),
           ...(cell.diemHuy ? [{ key: 'khoi-phuc', nhan: CHU_THAO_TAC['khoi-phuc-diem'], tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ khoiPhuc: true }], onDong, 'khac') }] : []),
           ...(boKhongDuThi ? [{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }] : []),
@@ -776,15 +776,20 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
       <div ref={box} role="dialog" aria-label={nhanHop} tabIndex={-1} onKeyDown={(e) => { if (!hoi) onKeyDown(e); }}
         className={`z-[60] border outline-none ${dienThoai
           ? 'fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl'
-          : 'fixed w-[min(400px,calc(100vw-32px))] rounded-xl shadow-2xl'}`}
+          : 'fixed w-[min(440px,calc(100vw-32px))] rounded-xl shadow-2xl'   /* GD-3: = mockup v21 `.hop` 440 */}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {dienThoai && <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />}
-        <div className="border-b px-3.5 pb-2 pt-3" style={{ borderColor: 'var(--line)' }}>
-          <div className="text-[15px] font-bold text-slate-100">{ten}</div>
-          <div className="mt-0.5 truncate text-xs text-slate-400" title={nhanHop}>{phu}</div>
+        <div className="flex items-start gap-2 border-b pb-2.5 pl-4 pr-3 pt-3" style={{ borderColor: 'var(--line)' }}>
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-bold text-slate-100">{ten}</div>
+            <div className="mt-0.5 truncate text-[13px] text-slate-400" title={nhanHop}>{phu}</div>
+          </div>
+          {/* GD-3 (mockup v21 K2b): ✕ ở đầu hộp — cùng đường với Esc (đã gõ thì hỏi bỏ chữ ở chân). */}
+          <button type="button" aria-label={t('Đóng')} className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[17px] text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"
+            onClick={() => { if (daGo) setHoi(true); else onDong(); }}>✕</button>
         </div>
-        <div className="flex flex-col gap-3 px-3.5 py-3">{children}</div>
-        <div className="flex flex-wrap items-center gap-2 border-t px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-col gap-2.5 px-4 py-3">{children}</div>
+        <div className="flex flex-wrap items-center gap-2 border-t px-4 pb-3 pt-2.5" style={{ borderColor: 'var(--line)' }}>
           {hoi ? (
             <>
               <span role="alert" className="min-w-0 flex-1 text-[13px] text-slate-200">{cauBo}</span>

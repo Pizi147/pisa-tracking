@@ -319,7 +319,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
   );
   return (
     <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheVang(it.khung === 'thuong')}>
-      {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-2 pt-1') : (
+      {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-5 pt-1') : (
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {
           const dangMo = mo.has(x.key);

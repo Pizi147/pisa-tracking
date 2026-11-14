@@ -265,12 +265,19 @@
   /* Lưới trong panel việc (`LuoiTrongPanel`, chủ SP 08/11): rộng hơn panel thì cuộn ngang — cột tên HV đứng yên (dính trái, nền đặc),
      đang cuộn thì có viền + bóng nhẹ; còn cột bên phải thì mép phải mờ dần (chỉ báo cuộn). Ô không bị cắt cụt. */
   .luoi-trong-panel .table-scroll > table > :is(thead, tbody) > tr > :first-child { position: sticky; left: 0; z-index: 1; background: var(--surface); }
-  .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface-2); }
+  .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface); }   /* GD-3: đầu cột nền trong như mockup v21 */
   .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong), 6px 0 8px -4px var(--line-strong); }
   .luoi-trong-panel .table-scroll[data-con-phai] { mask-image: linear-gradient(to right, var(--surface) calc(100% - 48px), transparent); }   /* mask chỉ dùng độ đục — màu nào đặc cũng được */
   /* GD-3 (mockup v21 K2 `.luoi`): lưới trong panel việc — cột tên lấy phần còn lại, cột ô 112 / Kết quả 132 (LuoiFT); tên cột + ô căn trái như mockup. */
   .luoi-trong-panel .bang > colgroup > col:first-child { width: auto !important; }
   .luoi-trong-panel .bang :is(th, td)[data-kieu="diem"] { text-align: left; }
+  /* Đo DevTools so mockup (`v21.css` .luoi th / td): đầu cột 12 / 600 màu mờ nhất, đệm 8, nền trong; ô đệm 6 × 8, kẻ dưới mảnh; Kết quả không lùi 20. */
+  .luoi-trong-panel .bang > thead > tr > th { padding: 8px; font-size: 12px; line-height: 15px; color: var(--text-faint); background: var(--surface); }
+  .luoi-trong-panel .bang > tbody > tr > td { padding: 6px 8px; font-size: 14px; }
+  .luoi-trong-panel .bang > tbody > tr > td { vertical-align: middle; }
+  .luoi-trong-panel .bang > tbody > tr:last-child > td { border-bottom: 0; }
+  .luoi-trong-panel .table-scroll:not([data-con-trai]) .bang > tbody > tr:last-child > td { box-shadow: none; }
+  .luoi-trong-panel .bang th[data-kieu="chip"] { padding-left: 8px; }
   /* G1-11 (mockup L4): lưới lớp thường gọn ở màn hẹp ("Xem dạng bảng") — cột Học viên · Kết quả 128 px (đứng yên), môn cuộn ngang, thấy 2 môn mỗi khung. */
   @media (max-width: 767px) { .luoi-thuong-gon table > colgroup > col:first-child { width: 128px !important; } }
   .luoi-thuong-gon .ten-ho-so { white-space: normal; overflow: visible; }   /* G1-11: tên dài xuống dòng trong cột 200 px, không cắt "…" */

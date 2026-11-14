@@ -9,11 +9,11 @@ Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17�
 |---|---|---|---|---|
 | 1 | K2–K5 | Dòng quy chế ("Quy chế" · câu 13 px · ⓘ) ngay trên chân | `KhungPanel.quyChe` / `DongQuyChe`, câu ở `shared/domain/quyChe.ts` | KHỚP |
 | 2 | K2 | Panel một lớp: tiêu đề = tên việc "Nhập điểm Listening, Reading", dòng 2 lớp · tuần · bài, lưới ngay dưới | `PanelNhapDiemTuan`: một lớp → không hàng gập lớp | KHỚP (dòng 2 ghi "10 bài", không "MT1 · còn 4 / 10" — dữ liệu dòng việc không có số còn lại) |
-| 3 | K2 | Lưới: cột tên lấy phần còn lại, cột ô 112, Kết quả 132; tên cột đủ chữ, căn trái | `OTrongPanel` (LuoiTrongPanel) → `LuoiFT` + `index.css .luoi-trong-panel` | KHỚP |
+| 3 | K2 | Lưới: cột tên lấy phần còn lại, cột ô 112, Kết quả 132; đầu cột 12 / 600 màu mờ, đệm 8, nền trong; ô đệm 6 × 8, hàng 57, căn giữa dọc; lưới cách mép panel 20 | `OTrongPanel` (LuoiTrongPanel) → `LuoiFT` + `index.css .luoi-trong-panel` | KHỚP — đo DevTools: mockup 338 / 112 / 112 / 132 · hàng 57 · ô 96 × 44 viền 1 px rgb(102,120,159) bo 6; web 346 / 112 / 112 / 132 (panel web rộng hơn 8 px) · 57 · 96 × 44 · cùng viền / bo |
 | 4 | K2 | Ô điểm 96 × 44, viền liền (trống cũng liền), số 15 + "27 câu" TRONG ô | `ODiemMt` nhánh trong panel | KHỚP |
 | 5 | K2 | Kết quả "Chờ R" / "Chờ L, R" (chỉ kỹ năng của việc) | `choMon(row, hien)` trong panel | KHỚP |
 | 6 | K2 | — | hàng "Mở lưới đầy đủ ›" · "Cả lớp" trên lưới | GIỮ (thao tác cũ, mockup không vẽ) |
-| 7 | K2b | Chân hộp ⋯ · Vắng · Lưu · bài tiếp › + "Tiếp: …" | `HopNhapDiem` | KHỚP |
+| 7 | K2b | Hộp 440, đầu có ✕ (cao 67, đệm 12 12 10 16), thân / chân đệm 16; chân ⋯ (36 × 30) · Vắng · Lưu · bài tiếp › + "Tiếp: …" | `KhungHop` + `HopNhapDiem` (thêm ✕ cùng đường Esc) | KHỚP — đo DevTools cùng số |
 | 8 | K2b | ⋯ = Lưu · đóng · Khôi phục điểm · Bỏ vắng, menu canh mép trái nút | `MenuDong canhTrai` | KHỚP (sát đáy màn thì menu mở lên) |
 | 9 | K4a/b | Nhãn "Phương án" + hai ô chọn (Mặc định), dòng quy chế + nút chính đổi theo ô | `XacNhanPaPanel` | KHỚP |
 | 10 | K4b | Ô "Lý do" | ô + đếm n / 300, máy chủ lưu, hiện ở thẻ QL + panel Case | KHỚP (không dấu * — luật Q3, PTA đang hỏi chủ SP) |
@@ -24,6 +24,7 @@ Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17�
 | 15 | K4c | Quyết định hàng chip tròn | chip tròn; PA quy chế chỉ Giữ nguyên · Điều chỉnh | KHỚP dáng (số lựa chọn theo luật) |
 | 16 | K4c | Chân "Lưu nháp" (nút) · "Lưu" | đúng thứ tự + chữ; "Lưu kết quả" → "Lưu" (lời 13/11) | KHỚP |
 | 17 | K4c | — | "Ngày ghi", câu "PA theo quy chế — không thay…" + "+ Thêm PA" | GIỮ (ghi lùi ngày, lối thêm PA) |
+| 24 | K2 | Tiêu đề panel việc 17 / 700 | `KhungPanel` (Công việc): 22 → 17 (v21 ① thắng v17) | KHỚP |
 | 18 | K5d/e | Đầu "Ý thức" · tiêu đề · dòng 2; không dòng "* = bắt buộc" | `dau` + bỏ ngCanh | KHỚP |
 | 19 | K5d/e | Công tắc gọn · Học viên · Nhóm chip tròn · Vi phạm · Môn + Ngày · Mô tả (tuỳ chọn) · Bằng chứng một hàng; không tiêu đề khối | `RecordViolationPanel` / `DongViPham` sắp lại | KHỚP |
 | 20 | K5d/e | Chân "Chưa lưu" · Đóng · Lưu vi phạm / Lưu nhắc nhở | `chan.trai` + `huyPhai` | KHỚP |
@@ -31,7 +32,7 @@ Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17�
 | 22 | K5d | — | "+ Thêm vi phạm", bộ đếm 0 / 60, cảnh báo trùng | GIỮ (thao tác cũ) |
 | 23 | K8 375 | Ô điểm viền liền, dòng quy chế | ô dáng #4 cả dạng điện thoại; quy chế xuống 2 dòng khi hẹp | KHỚP (tab kỹ năng L / R / W1… của dạng điện thoại GIỮ — mockup chỉ vẽ 375 Chấm Speaking) |
 
-**Đếm (bỏ dòng GIỮ — tính năng mockup không vẽ): KHỚP 16 / 17 = 94 %.** 1 KHÁC có lý do (#11: việc PA mở trong panel Case). 6 dòng GIỮ có lý do.
+**Đếm (bỏ dòng GIỮ — tính năng mockup không vẽ): KHỚP 17 / 18 = 94 %.** Còn lệch nhỏ đã biết (không tính KHÁC): dòng 2 panel không có "MT1 · còn x / y"; tên em có link lượt "MT3 ›" (GIỮ thao tác mở lượt); vạch hồng trước "Việc · …" chưa có. 1 KHÁC có lý do (#11: việc PA mở trong panel Case). 6 dòng GIỮ có lý do.
 
 ## Thao tác TRƯỚC → SAU
 
@@ -67,7 +68,8 @@ Không mất thao tác nào.
 0 câu / 0 dòng thêm — chỉ đổi giao diện, dùng dữ liệu panel đã nạp.
 
 ## Ảnh
-- `k2-nhap-diem-1440.png` — K2 trang Công việc + panel Nhập điểm (GVCN Trần Ngọc Hà, MB FT 101 W3 SEP) · tối
+- `k2-nhap-diem-1440.png` — K2 trang Công việc + panel Nhập điểm (GVCN Trần Ngọc Hà, MB FT 101 W3 SEP) · tối · cùng tỉ lệ 1:1
+- `k2-panel-nhap-diem-1440.png` — chỉ panel Nhập điểm, mockup | web cùng tỉ lệ 1:1 (đo px)
 - `k2b-hop-mot-o-1440.png` — K2b hộp một ô + ⋯ mở (ô thường: ⋯ chỉ có "Lưu · đóng"; Khôi phục điểm / Bỏ vắng chỉ khi ô ở trạng thái đó)
 - `k4a-chon-pa-quy-che-1440.png` · `k4b-chon-pa-giu-1440.png` — Chọn PA trong panel Case (Công việc mở panel Case có thẻ PA; mockup vẽ panel riêng — khung panel giữ như web)
 - `k4c-ket-qua-pa-1440.png` — Ghi kết quả PA: dòng quy chế ngay trên hàng nút
