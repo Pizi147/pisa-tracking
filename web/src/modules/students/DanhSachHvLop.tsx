@@ -238,12 +238,14 @@ function OYThuc({ h, g, lop, onDoi }: { h: HvGon; g: HangHv; lop: LopGon | undef
   const y = g.yThucHop;
   if (!g.yThuc) return trong;
   /* GD-4d (lời 35, ⑤ H5): chip ở cột bảng = viết tắt "WL 1" (nơi chật); hộp mở ra = viết đủ "WARNING LETTER 1". */
-  if (!y) return <Nhan tone="doing">{bacNgan(dich(g.yThuc)).toUpperCase()}</Nhan>;
+  /* PTA rà #1685: ô hẹp chỉ chip BẬC ("REPORT 5"), không "+ MEETING …" bị cắt "…" — mốc đủ ở hộp mở ("Mốc"). */
+  const chip = bacNgan(dich(g.yThuc)).toUpperCase().split(' + ')[0];
+  if (!y) return <Nhan tone="doing">{chip}</Nhan>;
   const cl = y.canLam;
   const tieu = t('Ý thức · {ten}', { ten: h.ten });
   return (
     <>
-      <HopNho nutLop="chip-bac" nhan={tieu} rong nut={bacNgan(dich(g.yThuc)).toUpperCase()}>
+      <HopNho nutLop="chip-bac" nhan={tieu} rong nut={chip}>
         <b className="block text-[14px]">{tieu}</b>
         <dl className="hop-dl">
           <dt>{t('Cần làm')}</dt>
@@ -343,7 +345,7 @@ export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim,
         ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${g.loTrinh.khacLop ? `${t('Lộ trình')} ${maLoTrinhNgan(g.loTrinh.khacLop)} · ` : ''}${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {/* #9: em khác lộ trình lớp (RF trong lớp LT1…) — mã lộ trình trước "MT x/y". */}
             {g.loTrinh.khacLop && `${maLoTrinhNgan(g.loTrinh.khacLop)} · `}{g.loTrinh.soMt ? `MT ${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
-            <span className="dong2">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.kck} /></span></span>
+            <span className="dong2">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.target != null && g.loTrinh.kck} /></span></span>
         : <span className="block truncate text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
       case 'mt': return g ? <OMtGan g={g} mo={dai.co(k)} onMo={() => dai.doi(k)} /> : trong;
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
