@@ -1344,6 +1344,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             noShow: !!row?.no_show_period_id,
             /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi, không dời, không nợ (`regularSkillViews` đã bỏ khỏi việc). */
             khongDuThi: !scored && !!row?.no_show_cu && row.no_show_period_id === v.periodId,
+            /** LG-9: môn GV đã Huỷ tay (⋯ › Huỷ môn) — web hiện "Khôi phục" một bấm. Cờ từ dòng lịch đã đọc, không thêm câu. */
+            huyTay: v.sitStatus === 'cancelled' && !!v.huyVang,
             /** OV-4b: nhận xét của môn (nút "Nhận xét" cạnh ô). */
             nhanXet: (row?.comment ?? null) as string | null,
             /** HSL-MAY-CHU: người nhập điểm môn này (null = chưa có điểm). */

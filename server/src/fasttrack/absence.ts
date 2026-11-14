@@ -1,6 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, duocHoanTacVang, vangLan2Huy, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { laLopKetThuc } from './hoanTat.ts';
@@ -176,9 +176,9 @@ export type MoveOutcome = {
 function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: any, o: { lyDo: string | null }): MoveOutcome {
   const skill = row.skill as AssessedSkill;
   const moveNo = row.absence_move_count + 1;
-  /* PTA 14/11: MT0 của lớp THƯỜNG theo luật "-" lớp thường — chỉ dời, không bao giờ huỷ; MT0 / Mock lớp FT: lần 2 huỷ (N38 L2). */
-  const huy = moveNo >= 2 && vangLan2Huy(attempt.kind,
-    attempt.kind !== 'mt0' || (conn.prepare('SELECT is_fast_track AS ft FROM classes WHERE id = ?').get(attempt.class_id) as any)?.ft !== 0);
+  /* N38 L2: vắng lần 2 huỷ — Mock và MỌI MT0, kể cả MT0 ở lớp thường (chủ SP 15/11: "đã có chữ MT thì tức là Mock test, tính như luật MT
+     bình thường" — LG-9, thay ngoại lệ PTA 14/11). Progress / Final lớp thường không qua đây (`reportRegularNoShow`, GV chọn Huỷ môn — `huyTay`). */
+  const huy = moveNo >= 2;
   if (huy) return huyVangNoi(conn, actor, attempt, row, moveNo);
   const target = nextWeekOf(row.week_start);
   /* L4: vướng thứ tự đợt (MT0 trước MT1) hay trùng / sát lượt khác → VẪN dời; câu chặn / cảnh báo của dời tay thành cảnh báo. */
@@ -196,14 +196,14 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
  * N38 L2: huỷ một kỹ năng vì vắng lần `moveNo` (≥ 2) — `sit_status = 'cancelled'` + `huy_vang = 1`, giữ tuần cũ để tra lại. Kỹ năng huỷ là
  * ĐÃ XONG (thiếu): không chuông, không thẻ, không việc. Muốn xếp lại thì chọn tuần (L5). Gọi trong tx của nơi gọi.
  */
-function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, moveNo: number): MoveOutcome {
+function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, moveNo: number, lyDo?: string): MoveOutcome {
   const skill = row.skill as AssessedSkill;
   conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1, absent_from_no_show = 0, updated_at = ? WHERE id = ?`).run(nowIso(), row.id);
-  logSchedule(attempt.id, { action: 'skill_cancelled_absence', field: skill, oldValue: row.period_code, newValue: null, reason: `Vắng lần ${moveNo}`, actor });
+  logSchedule(attempt.id, { action: lyDo ? 'skill_huy_tay' : 'skill_cancelled_absence', field: skill, oldValue: row.period_code, newValue: null, reason: lyDo ?? `Vắng lần ${moveNo}`, actor });
   recomputeCompletionWeek(attempt.id, actor);
   writeAudit({
-    actorUserId: actor, action: 'attempt.huy_vang', entityType: 'assessment_attempt', entityId: attempt.id,
-    entityLabel: `MT${attempt.attempt_no} · ${skill}`, before: { sitStatus: row.sit_status, week: row.period_code }, after: { sitStatus: 'cancelled', lan: moveNo },
+    actorUserId: actor, action: lyDo ? 'attempt.huy_tay' : 'attempt.huy_vang', entityType: 'assessment_attempt', entityId: attempt.id,
+    entityLabel: `MT${attempt.attempt_no} · ${skill}`, before: { sitStatus: row.sit_status, week: row.period_code }, after: { sitStatus: 'cancelled', lan: moveNo, ...(lyDo ? { lyDo } : {}) },
   });
   return {
     skill, result: 'huy-vang', toWeek: null, moveNo, canhBao: null,
@@ -642,7 +642,7 @@ export function settleGroup(
 /** Dòng lịch sử lịch là QUYẾT ĐỊNH của người về lịch / trạng thái thi (khi `actor_user_id` có người). */
 const QUYET_DINH_LICH = [
   'skill_week_set', 'skill_week_moved_absence', 'skill_move_decision_undone', 'skill_week_restored', 'skill_part_restored', 'skill_part_cancelled', 'skill_appointment_cancelled',
-  'skill_skipped', 'skill_restored', 'skill_sit_status', 'skill_unscheduled',
+  'skill_skipped', 'skill_restored', 'skill_sit_status', 'skill_unscheduled', 'skill_huy_tay', 'skill_bo_huy_tay',
 ];
 
 /**
@@ -833,5 +833,45 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
     refreshOutcome(p, attemptId);   // OV-1c: vắng = kỹ năng thiếu đã xong → lượt có thể chốt
     const sau = ensureSkillRows(attemptId).find((r) => r.skill === skill)!;
     return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, huyVang: !!sau.huy_vang, khongDuThi: false, canhBao: kq ? kq.canhBao : null };
+  });
+}
+
+/**
+ * LG-9 (chủ SP 15/11: "test lớp thường không hủy nhưng có lựa chọn cho GV chọn hủy nếu cần thiết… không thể đợi vắng mãi được";
+ * "test lớp thường là Progress test và Final test"): HUỶ TAY một môn bài Progress / Final LỚP THƯỜNG đang vắng (MT0 tự huỷ ở lần 2 — N38). "-" ở đây chỉ dời, không tự huỷ; GV chọn
+ * dừng thì bấm ⋯ › Huỷ môn — cùng kết cục huỷ-vì-vắng của N38 (`huyVangNoi`: `cancelled` + `huy_vang`, giữ tuần, hết việc ở mọi nơi qua
+ * `viewSkill` / `dotHoanTat`). `huy = false` = Hoàn tác / Khôi phục một bấm: về đúng tuần, giữ dấu "-" và bộ đếm. Không hộp xác nhận
+ * (khôi phục được), lịch sử ghi ai · lúc. Quyền: GV nhập được môn đó, GVCN lớp, Quản lý.
+ */
+export function huyTay(p: Principal, attemptId: number, skill: string, huy: boolean) {
+  const conn = db();
+  const a = loadAttempt(attemptId);
+  if (!isRatio(a)) throw loi(400, 'Chỉ Progress / Final lớp thường có Huỷ môn — MT vắng 2 lần tự huỷ.');
+  const o = [skill];
+  if (!canRequest(p, a) && !can(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill })) {
+    throw loi(403, 'Chỉ GV của môn, GVCN lớp hoặc Quản lý huỷ được bài này.');
+  }
+  return tx(() => {
+    const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+    if (!row?.required) throw loi(400, '{skill} không nằm trong bài này.', { skill: skillName(skill) });
+    const diem = conn.prepare(`SELECT band, raw_score, no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')})`)
+      .all(attemptId, ...o) as any[];
+    if (huy) {
+      if (row.sit_status === 'cancelled') return { ok: true };   // bấm lại: vô hại
+      if (diem.some((d) => d.band !== null || d.raw_score !== null)) throw loi(400, '{skill} đã có điểm — không huỷ được.', { skill: skillName(skill) });
+      if (!diem.some((d) => d.no_show_period_id !== null)) throw loi(400, '{skill} chưa vắng lần nào — chưa cần huỷ.', { skill: skillName(skill) });
+      huyVangNoi(conn, p.userId, a, row, row.absence_move_count, 'Huỷ tay');
+    } else {
+      if (row.sit_status !== 'cancelled' || !row.huy_vang) return { ok: true };
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled', huy_vang = 0, updated_at = ? WHERE id = ?`).run(nowIso(), row.id);
+      logSchedule(attemptId, { action: 'skill_bo_huy_tay', field: skill, oldValue: null, newValue: row.period_code, reason: 'Khôi phục (bỏ Huỷ môn)', actor: p.userId });
+      recomputeCompletionWeek(attemptId, p.userId);
+      writeAudit({
+        actorUserId: p.userId, action: 'attempt.restore_part', entityType: 'assessment_attempt', entityId: attemptId,
+        entityLabel: `${a.kind} · ${skill}`, before: { sitStatus: 'cancelled' }, after: { sitStatus: 'scheduled', week: row.period_code },
+      });
+    }
+    refreshOutcome(p, attemptId);
+    return { ok: true };
   });
 }
