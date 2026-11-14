@@ -1343,6 +1343,8 @@
 .o-so-hop .so-bam.text-kq-vuot { color: rgb(var(--kq-vuot-rgb)); }
 .o-so-hop .so-bam.text-kq-duoi { color: rgb(var(--kq-duoi-rgb)); }
 .o-so-hop .text-xs .so-bam { min-width: 26px; height: 22px; padding: 0 6px; border-radius: 5px; }
+/* PTA rà #1710: số PHỤ trong dòng phụ ô chỉ số ("trong 58 đang mở") — chữ số gạch chân màu nhấn, không hộp (mockup ⑧ T1 / T7). */
+.o-so-hop .so-bam.so-bam.so-phu { height: auto; min-width: 0; padding: 0; border: 0; background: none; font-weight: 600; text-decoration-line: underline; text-underline-offset: 3px; }
 /* Số lớn thẻ chỉ số (`DaiChiSo` `.chi-so-gt`, `SoTo` `.so-chinh`) — chủ SP rà #1490 (thay XM-5): KHÔNG hộp. Vẫn là nút: màu nhấn, rê / focus gạch chân,
    màu nghĩa bằng màu chữ (đỏ quá hạn, vàng đang chờ). Lặp `.so-bam` để thắng các luật hộp ở trên (cùng độ đặc hiệu). */
 .o-so-hop :is(.chi-so-gt .so-bam.so-bam, .so-bam.so-bam.so-chinh) { height: auto; min-width: 0; padding: 0; border: 0; border-radius: 4px; background: none;

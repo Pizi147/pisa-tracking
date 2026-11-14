@@ -2316,6 +2316,13 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   });
 }));
 
+/** TQ-SOS-CN: em SOS 2–3 của một chi nhánh (ô bảng "Theo chi nhánh", Tổng quan QT / CX) — chỉ đọc khi bấm. */
+api.get('/tong-quan/chi-nhanh/sos23', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const ids = (qStr(req, 'ids') ?? '').split(',').map(Number).filter((x) => Number.isInteger(x) && x > 0);
+  return bangSvc.sos23ChiNhanh(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ids });
+}));
+
 /** P14 DICH (N19): dịch chữ GV nhập — máy chủ tự đọc chữ theo (bang, cot) cố định, quyền như đường đọc; không ghi đè chữ gốc. */
 api.post('/dich', requireAuth, wrap((req) => dichSvc.dich(principalOf(req), req.body ?? {})));
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));

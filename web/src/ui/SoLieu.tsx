@@ -10,7 +10,7 @@ import { KhungPanel } from './KhungPanel.tsx';
 import { HangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { lopKq } from './BieuTuong.tsx';
-import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
+import { CHIP_SOS, CHIP_VUONG, ChipHan, ChipSoQuaHan, lopSos } from './Nhan.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
@@ -49,6 +49,8 @@ export type ViecDongSoLieu = {
 export type DongSoLieu = {
   id: number; title: string; sub: string; href: string; nguoi?: string | null; han?: string | null;
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null; ngayThiThat?: string;
+  /** TQ-SOS-CN: mức SOS của em (panel SOS 2–3) — badge cạnh tên, cùng dáng chip SOS mọi nơi. */
+  sos?: { muc: number; tam: boolean } | null;
   viec?: ViecDongSoLieu | null; tinhTrang?: string | null;
   /** PANEL-RIENG (XM-2): bài không có người chấm (môn chưa phân công) — "chưa phân công" + "Phân công ›" (QL). */
   chuaPhanCong?: true;
@@ -428,6 +430,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
           {xh && <span className={`xh ${xh.lop}`}>{xh.chu}</span>}
           <Link to={r.em ? duongHoSoHocVien(r.em.id) : r.href} className="text-[15px] font-semibold text-slate-100 no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-[11px] max-sm:py-[11px]">{ten}</Link>
           {hienLop(tieuDe, lop) && <span className="whitespace-nowrap text-[13px] text-slate-400">{lop}</span>}
+          {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
           <span className="ml-auto inline-flex items-center gap-2">
             {r.xuHuong?.truoc && r.xuHuong.sau && <span className="doi">{r.xuHuong.truoc.luot} <b>{r.xuHuong.truoc.v.toFixed(1)}</b> → {r.xuHuong.sau.luot} <b>{r.xuHuong.sau.v.toFixed(1)}</b></span>}
             {chipHan}
