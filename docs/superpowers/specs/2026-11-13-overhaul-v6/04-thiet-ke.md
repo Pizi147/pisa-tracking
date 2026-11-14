@@ -178,3 +178,8 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 - **Dòng việc luôn một dạng "Lớp · tên việc ngắn"**, kể cả việc của một em; tên em là thẻ phụ (link). Bỏ dạng "vòng chữ đầu + tên em + cây việc" ở danh sách việc. Mẫu chuẩn: `thiet-ke/v21/bang-mau.html` (mockup ⑤, mục dòng việc).
 - Đầu tab / dải nhóm ghi **"Chấm Speaking"**; không ghi "Việc chung của nhóm GV Speaking".
 
+## 15. Chủ SP 15/11 (lời 32, 33) — THẮNG mọi mục trên và hình mockup khi khác
+
+- **Badge tab "Chấm Speaking": dáng mờ (chỉ đếm số bài) + ⚠ khi có bài quá hạn**; không đỏ; không cộng vào badge menu / chuông. Đỏ chỉ dành cho "việc của tôi quá hạn". Dáng badge mờ: mockup ⑤ (`bang-mau.html`, thanh tab).
+- **Chip "Việc cần làm" quá hạn:** mọi loại việc cùng một dáng ⚠ + đỏ như mockup; không tách riêng Nhập điểm.
+- Luật (không phải giao diện): MT0 gõ "-" như Mock (LG-9) · thẻ Thu hồi xử lý vi phạm tự chốt theo GVCN khi hết hạn duyệt (LG-10) · việc Bước tiếp và xoá học viên / lớp trống giữ như mã.
