@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
-import { BoiCanh, ChuLuu, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, ChuLuu, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -132,7 +132,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     huy: null, daSua: daGo, conThieu: lf.conThieu(loiO),
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" /> : <ChuLuu tt="nhap" />,
     /* Việc cuối (không còn việc kế): chỉ "Lưu" là nút chính. */
-    phu: tt === 'loi' || !onTiep ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Lưu')}</button>,
+    /* GD-4b (lời 36, dòng 40c ⓪): "Đóng" · Lưu · "Lưu · việc tiếp ›"; 375 giữ "Lưu · Lưu · việc tiếp ›" (Đóng qua ✕ / ‹). Đóng đi đường ✕ (gõ dở thì hỏi bỏ chữ). */
+    phu: <><NutDongPanel busy={tt === 'dang'} />{tt === 'loi' || !onTiep ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Lưu')}</button>}</>,
     chinh: tt === 'loi'
       ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}>{t('Thử lại')}</button>
       : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void (onTiep ? luuRoiTiep(luu, onTiep) : luu())}>{onTiep ? t('Lưu · việc tiếp ›') : t('Lưu')}</button>,

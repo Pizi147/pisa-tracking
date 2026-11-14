@@ -36,4 +36,7 @@ export const EN_QUY_CHE_VANHANH = {
   'quá hạn vẫn chờ': 'stays pending when overdue',
   'Duyệt = mở Chuyển lớp điền sẵn': 'Approve = open a prefilled Class transfer',
   'MT0 của lớp thường: chỉ dời, không huỷ.': 'MT0 of a regular class: only moves, never cancelled.',
+  'Dòng quy chế ở panel việc': 'Rule line in task panels',
+  'Ngay trên nút lưu: <b>Quy chế</b> · một câu — lưu xong ai nhận việc, hạn nào. Câu đổi theo lựa chọn; <b>ⓘ</b> xem chi tiết.': 'Right above the save button: <b>Rule</b> · one sentence — who gets the next task after saving, and by when. It changes with your choice; <b>ⓘ</b> shows details.',
+  'Chân panel: <b>Đóng</b> · nút việc · <b>Lưu · việc tiếp ›</b> khi còn việc kế.': 'Panel footer: <b>Close</b> · the task button · <b>Save · next task ›</b> when there is a next task.',
 } satisfies Record<string, Dich>;
