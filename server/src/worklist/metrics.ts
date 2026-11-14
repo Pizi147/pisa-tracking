@@ -130,6 +130,8 @@ export type MetricRow = {
   id: number; title: string; sub: string; href: string;
   /** PR-VAI-a (Q26): dòng Case/PA — người phụ trách/thực hiện và hạn (xác nhận nguyên nhân / ghi kết quả), 12 px ở panel. */
   nguoi?: string | null; han?: string | null;
+  /** TQ-SOS-CN (PTA rà #1710): mức SOS của em (lượt mới nhất hợp lệ) + tạm — badge cạnh tên ở panel SOS 2–3. */
+  sos?: { muc: number; tam: boolean } | null;
   /** PANEL-RIENG (XM-2): dòng BÀI không có người giữ ô (môn chưa phân công GV). */
   chuaPhanCong?: true;
   /** OV-12e: đầu dòng v3 — em (link hồ sơ) · lớp · ngữ cảnh; việc của dòng (null = không còn việc, ví dụ Case đã xong). */

@@ -249,7 +249,8 @@ export function sos23ChiNhanh(p: Principal, f: { branchId: number | null; ids: r
   const muc = (sid: number) => Math.min(3, ev.get(sid)?.sosLevel ?? 0);
   const ids = [...giu].filter((sid) => muc(sid) >= 2).sort((a, b) => muc(b) - muc(a) || a - b);
   const ten = f.branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(f.branchId) as { name?: string } | undefined)?.name ?? '' : '';
-  const rows = rowsFor('hoc-vien', ids, 'hv-sos-hien-tai', p, false, new Map(ids.map((sid) => [sid, diemTuEval(ev.get(sid)!)])));
+  const rows = rowsFor('hoc-vien', ids, 'hv-sos-hien-tai', p, false, new Map(ids.map((sid) => [sid, diemTuEval(ev.get(sid)!)])))
+    .map((r) => ({ ...r, sos: { muc: muc(r.id), tam: !!ev.get(r.id)?.provisional } }));   // PTA rà #1710: dòng ghi rõ mức (0 câu thêm)
   return { n: ids.length, unit: 'hoc-vien', tieuDe: `${ids.length} HV — SOS 2–3${ten ? ` · ${ten}` : ''}`, rows };
 }
 

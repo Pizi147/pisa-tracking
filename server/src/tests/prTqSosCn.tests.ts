@@ -25,6 +25,7 @@ export async function runPrTqSosCnTests(t: any) {
         const ev = latestAttempts(r.rows.map((x: any) => x.id), 'valid', demoToday());
         const muc = r.rows.map((x: any) => Math.min(3, ev.get(x.id)?.sosLevel ?? 0));
         assert(muc.every((m: number) => m >= 2), `${h.ten}: có em SOS < 2`);
+        assert(r.rows.every((x: any, i: number) => x.sos?.muc === muc[i]), `${h.ten}: dòng thiếu / sai badge mức SOS (PTA rà #1710)`);
         for (let i = 1; i < muc.length; i++) assert(muc[i - 1] > muc[i] || (muc[i - 1] === muc[i] && r.rows[i - 1].id < r.rows[i].id), `${h.ten}: thứ tự sai ở dòng ${i}`);
       }
       const ids = [...new Set(hang.flatMap((h: any) => h.sos23Ids))];

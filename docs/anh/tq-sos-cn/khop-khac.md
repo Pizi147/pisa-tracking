@@ -9,13 +9,14 @@ Mockup `thiet-ke/v21/tong-quan.html` (⑧ T3, T7b) + `tong-quan-ghi-chu.md` (rà
 | `t3-qt-1440-toi.png` | T3 | QT 1440 tối: cột SOS 2–3 là hộp số (0 = chữ thường), cùng dáng Đạt MT / Case chưa có PA |
 | `t3-qt-panel-sos-1440-toi.png` | T3 | bấm "12" hàng Monbay → panel tại chỗ "SOS 2–3 · Monbay · 12 học viên" (dòng em + điểm lượt mới nhất) |
 | `t7b-qt-375-sang.png` | T7b | 375 sáng: thẻ chi nhánh, SOS 2–3 là hộp số |
+| `t7b-qt-panel-sos-375-sang.png` | T7b | 375 sáng: panel SOS 2–3 · Monbay, mỗi dòng có badge mức (SOS 3 / SOS 2, "tạm" viền đứt) |
 
 ## Bảng truy vết
 | Khung | Thành phần | Sau PR | Ảnh | Đánh giá |
 |---|---|---|---|---|
 | T3 | Ô SOS 2–3 mỗi chi nhánh | chữ → hộp số `OSo` (0 không bấm), panel chỉ đọc `DanhSachNguon` | t3 | KHỚP |
 | T3 | Hàng Toàn hệ thống · SOS 2–3 | hộp số, panel gộp em mọi chi nhánh | t3 | KHỚP |
-| T3 | Panel SOS 2–3 | em SOS 3 trước, rồi SOS 2, rồi id; dòng em có lớp + điểm lượt mới nhất (dòng chuẩn panel số) | t3-panel | KHỚP (mockup không vẽ panel này — dùng panel số chuẩn T2) |
+| T3 | Panel SOS 2–3 | em SOS 3 trước, rồi SOS 2, rồi id; dòng em có lớp + **badge mức SOS** (cùng dáng chip SOS mọi nơi, "tạm" viền đứt — PTA rà #1710) + điểm lượt mới nhất | t3-panel, t7b-panel | KHỚP (mockup không vẽ panel này — dùng panel số chuẩn T2) |
 | T7b | 375 thẻ chi nhánh | SOS 2–3 hộp số | t7b | KHÁC nhỏ — mockup T7b vẽ "12" chữ, T3 (1440) vẽ hộp; theo rà vòng 2 "bấm được" → hộp ở cả hai |
 | T7b | "+ 3 chi nhánh" gập chi nhánh rỗng | chưa làm | t7b | để PR kế TQ-375-GAP |
 | — | Báo cáo HV (Phân tích) dùng cùng bảng | giữ chữ như cũ (chỉ Tổng quan đổi) | — | GIỮ |
