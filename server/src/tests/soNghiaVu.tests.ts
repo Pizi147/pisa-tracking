@@ -292,6 +292,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const timNguoi: any = await import('../platform/timNguoi.ts');
   const permMod: any = await import('../permissions.ts');
   const gvChamCotMod: any = await import('../cham/gvChamCot.ts');
+  const donNguoiChamMod: any = await import('../migrate/prDonNguoiChamS.ts');
   /** Dòng sổ giả (chỉ cột đếm cần) — ca đếm cô lập khỏi luật tính dòng. */
   let soGia = 0;
   const chenSo = (o: { nguoi: number | null; cn?: number; han: string; xong?: string | null; hanGoc?: string; tuan?: string | null; sCheo?: boolean; khongTinh?: string | null; loai?: string }) =>
@@ -457,6 +458,47 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     attempts.saveScore(tuNhap, a.id, 'speaking', { band: 6.5 }, han);
     assert(get(`SELECT examiner_user_id AS e FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, a.id).e === gvS, 'GV Speaking tự nhập → chính họ');
     } finally { attempts.GHI_NGAM_NGUOI_CHAM.bat = cuBat; }
+  }));
+
+  /* DON-NGUOI-CHAM-S (chủ SP 14/11 "dọn đi"): ô S chéo cũ ghi ngầm người nhập (QL) là người chấm → bỏ; GV Speaking tự nhập giữ; sổ đi theo; khôi phục. */
+  check('DNC-1 · migrate dọn người chấm ghi ngầm: QL nhập (ghi ngầm) → examiner NULL + sổ không tính + nhật ký Lịch sử; GV Speaking tự nhập giữ; chạy lặp không đổi; khoá; khôi phục trả lại một lần', () => thu(() => {
+    const perm: any = permMod;
+    const mig: any = donNguoiChamMod;
+    const a = oL();
+    const han = nv.tinhBai(a.id).find((d: any) => d.kieu === 'speaking').han;
+    const ql = perm.loadPrincipal(get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id AND r.key = 'manager' WHERE ur.status = 'active' AND ur.branch_id = ? ORDER BY ur.user_id LIMIT 1`,
+      get('SELECT branch_id FROM classes WHERE id = ?', a.class_id).branch_id).id);
+    const gvS = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
+    const o = () => get(`SELECT id, examiner_user_id AS e FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, a.id);
+    const so = () => get(`SELECT nguoi, khong_tinh FROM nghia_vu WHERE khoa = ?`, `bai:${a.id}:speaking`);
+    const cuBat = attempts.GHI_NGAM_NGUOI_CHAM.bat;
+    attempts.GHI_NGAM_NGUOI_CHAM.bat = true;   // dựng dữ liệu kiểu cũ (trước #1545)
+    try {
+      conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
+      attempts.saveScore(perm.loadPrincipal(gvS), a.id, 'speaking', { band: 6 }, han);
+      assert(o().e === gvS && !mig.oNguoiChamNgam(conn).some((x: any) => x.attemptId === a.id), 'GV Speaking tự nhập → không dọn');
+      conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
+      attempts.saveScore(ql, a.id, 'speaking', { band: 6 }, han);
+    } finally { attempts.GHI_NGAM_NGUOI_CHAM.bat = cuBat; }
+    nv.ghiDong(nv.tinhBai(a.id));
+    assert(o().e === ql.userId && so()?.nguoi === ql.userId && so()?.khong_tinh == null, `tiền đề ghi ngầm: ${JSON.stringify([o(), so()])}`);
+    const n0 = mig.oNguoiChamNgam(conn).length;
+    conn.prepare('DELETE FROM demo_config WHERE key = ?').run(mig.KHOA_DON_NGUOI_CHAM_S);
+    const ap: string[] = [];
+    mig.migratePrDonNguoiChamS(conn, ap);
+    assert(ap.some((x) => x.startsWith(`DON-NGUOI-CHAM-S: ${n0} ô`)) && get('SELECT 1 AS c FROM demo_config WHERE key = ?', mig.KHOA_DON_NGUOI_CHAM_S), `lần đầu: ${JSON.stringify(ap)}`);
+    assert(o().e === null && so()?.nguoi === null && so()?.khong_tinh === 'khong-ghi-nguoi-cham', `sau dọn: ${JSON.stringify([o(), so()])}`);
+    const d = nv.tinhBai(a.id).find((x: any) => x.kieu === 'speaking');
+    assert(d.nguoi === null && d.khongTinh === 'khong-ghi-nguoi-cham', `sổ khớp tinhBai: ${JSON.stringify(d)}`);
+    const ls = attempts.scoreHistoryOf(a.id, true).find((x: any) => x.phan === 'gv');
+    assert(ls && ls.before !== 'Trống' && ls.after === 'Trống' && !ls.actorName, `Lịch sử ô có dòng GV chấm (máy ghi): ${JSON.stringify(ls)}`);
+    const ap2: string[] = [];
+    mig.migratePrDonNguoiChamS(conn, ap2);
+    assert(!ap2.length && !mig.oNguoiChamNgam(conn).length, 'chạy lặp không đổi');
+    const tra = mig.khoiPhucNguoiChamS(conn);
+    assert(tra.includes(o().id) && o().e === ql.userId && so()?.nguoi === ql.userId && so()?.khong_tinh == null, `khôi phục: ${JSON.stringify([o(), so()])}`);
+    assert(!mig.khoiPhucNguoiChamS(conn).length, 'khôi phục một lần');
   }));
 
   /* LG-5c (chủ SP 13/11): "GV chấm S" đầu cột lưu MÁY CHỦ theo người × lớp × đợt; đọc kèm lưới (classScoreSheet), mặc định theo vai (2.4). */

@@ -609,7 +609,7 @@ export function settleGroup(
     entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${assessed}`,
     before: { sitStatus: 'scheduled' }, after: { sitStatus: 'absent', week: periodCode },
   });
-  /* Q-A, K4-03 · N38 — MÁY TỰ XỬ LÝ NGAY TRONG CÙNG GIAO DỊCH: lần 1 dời tuần sau tuần thi, lần 2 huỷ. Lớp thường không qua đây (chỉ Mock). */
+  /* Q-A, K4-03 · N38 — MÁY TỰ XỬ LÝ NGAY TRONG CÙNG GIAO DỊCH: lần 1 dời tuần sau tuần thi, lần 2 huỷ. Lớp thường không qua đây (Mock + MT0). */
   const row = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const kq = xuLyVangMotKyNang(conn, null, attempt, row, { lyDo: 'Vắng — tự dời' });
   if (kq.result === 'moved') {
@@ -780,7 +780,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const conn = db();
   let a = loadAttempt(attemptId);
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
-  if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
+  if (isRatio(a)) throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');   // chủ SP 14/11: MT0 báo vắng như Mock (N38)
   if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row?.required) throw loi(400, '{skill} không nằm trong lượt này.', { skill: skillName(skill) });

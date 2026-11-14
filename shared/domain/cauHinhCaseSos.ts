@@ -25,8 +25,8 @@ export type NhomPa = 'gv_tu_lam' | 'can_ql_duyet';
 export type MucPa = { ma: string; ten: string; tenEn?: string; nhom: NhomPa; nguoiDay: boolean; soBuoi: boolean; an?: true };
 export type PhuongAn = { muc: MucPa[] };
 
-export type AiLam = 'gvcn' | 'tvv' | 'cx';
-export type Viec = { ma: string; ten: string; tenEn?: string; aiLam: AiLam; hanNgay: number | null; ghiChu: 'khong' | 'bat_buoc'; toiThieu?: number;
+/** Việc phối hợp: người làm luôn GVCN (QL làm thẳng) — chủ SP 14/11 bỏ ô "Ai làm"; bản cấu hình cũ còn trường `aiLam` thì bỏ qua (không đọc, không kiểm). */
+export type Viec = { ma: string; ten: string; tenEn?: string; hanNgay: number | null; ghiChu: 'khong' | 'bat_buoc'; toiThieu?: number;
   buocTvv?: { hanNgay: number; toiThieu: number }; an?: true };
 export type OMoc = { pa: { loai: string; den: AcademicSupportSpan } | null; viec: string[] };
 export const HANG_FT = ['mt1', 'mt2', 'mt3', 'mt4', 'mt5', 'rf'] as const;
@@ -88,7 +88,7 @@ export function cauHinhGoc(): DuLieuCauHinh {
         const meeting = k === 'cx_meeting_student' || k === 'cx_meeting_family';
         const batBuoc = !meeting && k !== 'bao_ph_tvv';
         return {
-          ma: k, ten: NHAN_VIEC_GOC[k], aiLam: 'gvcn' as const,
+          ma: k, ten: NHAN_VIEC_GOC[k],
           hanNgay: meeting ? HAN_MEETING_CX_NGAY : null,
           ghiChu: batBuoc ? 'bat_buoc' as const : 'khong' as const,
           ...(batBuoc ? { toiThieu: 1 } : {}),
@@ -211,7 +211,6 @@ export function kiemCauHinh<L extends LoaiCauHinh>(l: L, d: unknown): LoiCauHinh
     const maViec = new Map(x.viec.map((v) => [v.ma, v]));
     x.viec.forEach((v, i) => {
       const d0 = `viec[${i}]`;
-      if (!['gvcn', 'tvv', 'cx'].includes(v.aiLam)) loi.push({ duong: `${d0}.aiLam`, loi: 'Ai làm: GVCN, TVV hoặc CX.' });
       if (v.hanNgay !== null && !soNguyen(v.hanNgay, 1, 60)) loi.push({ duong: `${d0}.hanNgay`, loi: 'Hạn 1–60 ngày hoặc không hạn.' });
       if (v.ghiChu !== 'khong' && v.ghiChu !== 'bat_buoc') loi.push({ duong: `${d0}.ghiChu`, loi: 'Ghi chú: không bắt buộc / bắt buộc.' });
       if (v.ghiChu === 'bat_buoc' && !soNguyen(v.toiThieu, 1, 200)) loi.push({ duong: `${d0}.toiThieu`, loi: 'Tối thiểu 1–200 ký tự.' });
@@ -292,7 +291,7 @@ export function thayDoi<L extends LoaiCauHinh>(l: L, a: DuLieuCauHinh[L], b: DuL
       (p, q) => [p.nhom !== q.nhom ? 'nhóm' : '', p.nguoiDay !== q.nguoiDay ? 'người dạy' : '', p.soBuoi !== q.soBuoi ? 'số buổi' : '', (p.tenEn ?? '') !== (q.tenEn ?? '') ? 'tên tiếng Anh' : ''].filter(Boolean));
   } else {
     const x = a as MocSos, y = b as MocSos;
-    doiDs(x.viec, y.viec, 'Việc', r, (p, q) => [p.aiLam !== q.aiLam ? 'ai làm' : '', p.hanNgay !== q.hanNgay ? 'hạn' : '',
+    doiDs(x.viec, y.viec, 'Việc', r, (p, q) => [p.hanNgay !== q.hanNgay ? 'hạn' : '',
       p.ghiChu !== q.ghiChu || p.toiThieu !== q.toiThieu ? 'ghi kết quả' : '', JSON.stringify(p.buocTvv ?? null) !== JSON.stringify(q.buocTvv ?? null) ? 'bước TVV' : '',
       (p.tenEn ?? '') !== (q.tenEn ?? '') ? 'tên tiếng Anh' : ''].filter(Boolean));
     for (const h of HANG_FT) for (const s of ['1', '2', '3'] as const) {

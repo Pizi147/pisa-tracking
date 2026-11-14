@@ -52,7 +52,7 @@ export async function runPrCaseGonTests(t: YThucTestKit) {
     const tep = ['cases/QuickReport.tsx', 'cases/ThaoTacCase.tsx', 'cases/CasePanel.tsx', 'cases/FormPa.tsx', 'cases/CapNhatTuan.tsx', 'yThuc/CaseSosControls.tsx'];
     for (const f of tep) assert(web(f).includes('CHU_TOI_THIEU_CASE'), `${f} chưa dùng CHU_TOI_THIEU_CASE`);
     assert(!/toiThieu: 15|can: 15|toiThieu: 10\b/.test(web('cases/QuickReport.tsx')) && !/toiThieu: 10\b|can: 10\b/.test(web('cases/ThaoTacCase.tsx')), 'còn số viết tay');
-    assert(!/toiThieu=\{15\}/.test(web('yThuc/CaseSosControls.tsx')) && /const toiThieu = laMt \? NHAN_XET_MT_TOI_THIEU : CHU_TOI_THIEU_CASE/.test(web('cases/CasePanel.tsx')), 'Xác nhận PA / Mô tả Case còn 15');
+    assert(!/toiThieu=\{15\}/.test(web('yThuc/CaseSosControls.tsx')) && /const toiThieu = CHU_TOI_THIEU_CASE;/.test(web('cases/CasePanel.tsx')) && !web('cases/CasePanel.tsx').includes('NHAN_XET_MT_TOI_THIEU'), 'Xác nhận PA / Mô tả Case còn 15');
   });
 
   check('CG-4 · + Case: Mức độ mặc định "Bình thường" (attention), Tên Case tự sinh {Kỹ năng} · {nhóm} tới khi gõ tay, gửi đúng chữ trong ô; Tên / Mức không dấu *', () => {

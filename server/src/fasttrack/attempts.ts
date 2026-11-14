@@ -2388,10 +2388,11 @@ export function saveScore(
         if (existing?.no_show_period_id === scheduleRow.planned_period_id) return done();
         /*
          * OV-1b (đặc tả 3.3): "-" CÓ TÁC DỤNG NGAY, không chờ hết Chủ nhật. N38 (`chuyenVang`, một luật cho mọi lối "-"):
-         *   · Mock, MT cũ CỦA KỸ NĂNG (`laMtCuKyNang`, cả lượt `lich_su`) → Không dự thi (`no_show_cu`): không dời, không đếm, không chuông.
-         *   · Mock còn lại (trong tuần thi HOẶC ghi muộn) → đủ mọi ô của buổi "-" (Writing: task kia "-" hoặc có điểm) thì chốt vắng ngay:
+         *   · MT cũ CỦA KỸ NĂNG (`laMtCuKyNang`, cả lượt `lich_su`) → Không dự thi (`no_show_cu`): không dời, không đếm, không chuông.
+         *   · Còn lại (trong tuần thi HOẶC ghi muộn) → đủ mọi ô của buổi "-" (Writing: task kia "-" hoặc có điểm) thì chốt vắng ngay:
          *     lần 1 dời tuần sau TUẦN THI (vướng lượt khác vẫn dời, cảnh báo), lần 2 huỷ. Không thẻ.
-         *   · MT0 / lượt khác ghi muộn → "Không dự thi" như cũ.
+         *   Chủ SP 14/11: MỌI Test trong khung cần chấm, KỂ CẢ MT0, theo cùng luật này (trước: MT0 ghi muộn → Không dự thi, trong tuần treo chờ).
+         *   Lớp thường đi `reportRegularNoShow` (trên).
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
         /* RKC: "-" trước tuần thi — người dời được lịch hỏi "Dời về tuần này" rồi ghi vắng (lần vắng của tuần này, dời tiếp theo N38). */
@@ -2400,7 +2401,7 @@ export function saveScore(
         if (!scheduleRow.week_end || !scheduleRow.planned_period_id) throw loi(400, '{assessed} chưa có tuần Test nên chưa báo "không có bài" được.', { assessed });
         const late = today > scheduleRow.week_end.slice(0, 10);
         /* RKC: lớp đã kết thúc (không còn tuần để dời) → "-" = Không dự thi, như MT cũ. */
-        const cu = (laLopKetThuc(a.class_id) || (a.kind === 'mock' ? laMtCuKyNang(scheduleRow.week_start ?? scheduleRow.week_end, today) : late)) ? 1 : 0;
+        const cu = (laLopKetThuc(a.class_id) || laMtCuKyNang(scheduleRow.week_start ?? scheduleRow.week_end, today)) ? 1 : 0;
         const now = nowIso();
         if (existing) {
           conn
@@ -2457,7 +2458,7 @@ export function saveScore(
             entityLabel: k, before: kia ? { ...kia } : null, after: { noShow: true, week: scheduleRow.period_code, late, khongDuThi: !!cu, theo: skill },
           });
         }
-        const chot = !cu && a.kind === 'mock' ? chotVangNgay(conn, p, a, scheduleRow, today) : false;
+        const chot = !cu ? chotVangNgay(conn, p, a, scheduleRow, today) : false;
         /* OV-11a (CA3-1): hậu quả thật của lần ghi — web nói đúng ("· dời W4 SEP" / "· huỷ (vắng 2 lần)" / "Không dự thi"). */
         const sau = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
         const vang: KetQuaVang = cu ? { kq: 'khong-du-thi' }

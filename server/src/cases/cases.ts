@@ -19,7 +19,7 @@ import { mucPaCua, maNhomHopLe, cauHinh,
   canEndWithOutcome, hanThemPa, stepsForMode, hanKe, hanKyGhiKetQua, LY_DO_KET_THUC_PA_TOI_THIEU,
   hanDuyetNgay, hanTheoNgay,
   type NextStep, type RescheduleTarget,
-  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, NHAN_XET_MT_TOI_THIEU, TRAN_CHU, vuotTran,
+  issueBranchOf, issueLabel, caseTopicLabel, urgencyFromSos, docNhomNguyenNhan, TRAN_CHU, vuotTran,
   SIGNAL_WITHDRAW_SCORE_FIXED, caseTopicsFor, ghepKhac, kiemGhiRoKhac, laKhac, chanHoanThanh, laLanGhiCuoi, mocChuPa, programmeOf, quyetDinhChoPa, trangThaiCaseV4, viecTiepCuaCase, tenCaseSos, tenCaseThuong, nhanDot, tenMon, tenMonNgan, moiNhatTruoc,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
@@ -1486,8 +1486,8 @@ export function suaCase(p: Principal, caseId: number, input: {
   const doi = Object.keys(sau).filter((k) => (truoc[k] ?? null) !== (sau[k] ?? null));
   if (!doi.length) return caseDetail(p, caseId);
   const doiMoTa = guiMoTa && (doi.includes('primaryCode') || doi.includes('observation') || doi.includes('nhomPhu') || !chinh);
-  if (st.laMt && doiMoTa && (nd.observation ?? '').length < NHAN_XET_MT_TOI_THIEU) {
-    throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: NHAN_XET_MT_TOI_THIEU });
+  if (st.laMt && doiMoTa && (nd.observation ?? '').length < CHU_TOI_THIEU_CASE) {   // chủ SP 14/11: Case MT / S dùng ngưỡng chung (trước 10)
+    throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: CHU_TOI_THIEU_CASE });
   }
   return tx(() => {
     const ban = (conn.prepare('SELECT updated_at FROM sos_cases WHERE id = ?').get(caseId) as any)?.updated_at ?? null;
@@ -1537,8 +1537,8 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
   if (cach === 'giu' && !chinh) throw badRequest('Case chưa có mô tả — dùng nhận xét chấm chéo hoặc viết mô tả khác.');
   const moTa = cach === 'viet' ? String(body.moTa ?? '').trim() : '';
   if (cach === 'viet' && moTa.length > TRAN_CHU.moTaCase) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả', toiDa: TRAN_CHU.moTaCase, n: moTa.length });   // N35
-  if (cach === 'viet' && moTa.length < NHAN_XET_MT_TOI_THIEU) {
-    throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: NHAN_XET_MT_TOI_THIEU });
+  if (cach === 'viet' && moTa.length < CHU_TOI_THIEU_CASE) {
+    throw loi(400, 'Mô tả Case cần ít nhất {n} ký tự — vấn đề học thuật của kỹ năng.', { n: CHU_TOI_THIEU_CASE });
   }
   return tx(() => {
     /* Đọc lại cờ TRONG giao dịch: hai người bấm cùng lúc → người sau 400, không ghi đè mô tả người trước vừa chọn. */

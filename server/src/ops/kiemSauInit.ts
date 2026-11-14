@@ -14,7 +14,7 @@ import { BANG_NEN_INIT } from './initBanChinh.ts';
 import { KHONG_NOI_BO } from './saoLuu.ts';
 
 /** Khoá `demo_config` mà database mới được có (dấu do `napDuLieuNen` ghi). Khoá nào khác = dữ liệu / cấu hình demo lọt vào. */
-const KHOA_DUOC_CO = new Set(['normal_pass_threshold', 'xoa_du_lieu_backfill_at', 'khoi_tao_moi_at', 'pr_qu_case_close_gv_at', 'pr_ov13p_tvv_cx_tao_lop_at', 'pr_ov13q_han_sau_thi_at', 'pr_ct2_dien_buoi', 'pr_ov1c_da_chay', 'pr_ov1b_da_chay', 'pr_mt_vang_reset_da_chay', 'pr_nghi_hoc_luu_tru_da_chay', 'pr_reset_han_case_da_chay', 'pr_pa_trung_0711_da_chay', 'pr_w_lech_da_chay', 'pr_k316_da_chay', 'pr_tinh_lui_phan_cong_da_chay', 'pr_sos_tam_pa_da_chay', 'lich_su_thay_doi_tu', 'pr_cv_loi_gan_chu_case_at', 'pr_mon_ct_1311_at', 'bc_ph_viec_gv_tu']);
+const KHOA_DUOC_CO = new Set(['normal_pass_threshold', 'xoa_du_lieu_backfill_at', 'khoi_tao_moi_at', 'pr_qu_case_close_gv_at', 'pr_ov13p_tvv_cx_tao_lop_at', 'pr_ov13q_han_sau_thi_at', 'pr_ct2_dien_buoi', 'pr_ov1c_da_chay', 'pr_ov1b_da_chay', 'pr_mt_vang_reset_da_chay', 'pr_nghi_hoc_luu_tru_da_chay', 'pr_reset_han_case_da_chay', 'pr_pa_trung_0711_da_chay', 'pr_w_lech_da_chay', 'pr_k316_da_chay', 'pr_don_nguoi_cham_s_da_chay', 'pr_tinh_lui_phan_cong_da_chay', 'pr_sos_tam_pa_da_chay', 'lich_su_thay_doi_tu', 'pr_cv_loi_gan_chu_case_at', 'pr_mon_ct_1311_at', 'bc_ph_viec_gv_tu']);
 
 /**
  * Kiểm một database đã mở. Hàm thuần (nhận `conn`, trả `{ dong, loi }`) để phép kiểm chạy được mà không cần tiến trình con.

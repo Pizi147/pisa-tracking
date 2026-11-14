@@ -145,6 +145,28 @@ export async function runPrMtVangTests(t: YThucTestKit) {
     assert(chuongHuy(b) === 0 && !theMoi(b), 'không chuông / thẻ');
   }));
 
+  check('MV-11 · (chủ SP 14/11) MT0 "-" theo CÙNG luật N38: lần 1 dời tuần sau tuần thi (trong tuần + ghi muộn), lần 2 huỷ, nút Vắng như nhau; MT0 cũ (≥ 2 tuần) = Không dự thi, không dời', () => thu(() => {
+    /* MT0 của em luot[1] (seed không có thì dựng — trong giao dịch, cuộn lại). */
+    const cy = one('SELECT cycle_id, student_id FROM assessment_attempts WHERE id = ?', luot[1]);
+    const m0 = (one(`SELECT id FROM assessment_attempts WHERE cycle_id = ? AND kind = 'mt0'`, cy.cycle_id)?.id as number | undefined)
+      ?? Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at) VALUES (?, ?, 0, 'mt0', ?, ?, 'planned', ?)`)
+        .run(cy.cycle_id, cy.student_id, lop, W, new Date().toISOString()).lastInsertRowid);
+    luot.push(m0);
+    try {
+      dung(m0);
+      const r = vang(m0, 'listening', TRONG, QL);
+      assert(ky(m0, 'listening').planned_period_id === W1 && ky(m0, 'listening').absence_move_count === 1 && r.vang?.kq === 'doi', `MT0 trong tuần: ${JSON.stringify([ky(m0, 'listening'), r.vang])}`);
+      const r2 = vang(m0, 'reading', BU, QL);
+      assert(ky(m0, 'reading').planned_period_id === W1 && r2.vang?.kq === 'doi', `MT0 ghi muộn: ${JSON.stringify([ky(m0, 'reading'), r2.vang])}`);
+      const r3 = vang(m0, 'listening', BU, QL);
+      assert(ky(m0, 'listening').sit_status === 'cancelled' && ky(m0, 'listening').huy_vang === 1 && r3.vang?.kq === 'huy', `MT0 lần 2: ${JSON.stringify([ky(m0, 'listening'), r3.vang])}`);
+      const b = absence.baoVang(QL, m0, 'speaking', null, TRONG);
+      assert(b.daDoi && ky(m0, 'speaking').planned_period_id === W1, `nút Vắng MT0: ${JSON.stringify(b)}`);
+      const r4 = vang(m0, 'writing1', QUA, QL);
+      assert(r4.vang?.kq === 'khong-du-thi' && ky(m0, 'writing').planned_period_id === W && ky(m0, 'writing').absence_move_count === 0, `MT0 cũ: ${JSON.stringify([ky(m0, 'writing'), r4.vang])}`);
+    } finally { luot.pop(); }
+  }));
+
   /* LUAT-NX-MT: giữa hai MT không còn chặn trùng / vượt — cảnh báo dời tay còn lại là "Chỉ cách MTn đúng một tuần" (MT0 ↔ MT1 vẫn chặn: thành cảnh báo). */
   check('MV-4 · L4: "-" lần 1 mà tuần đích vướng lượt khác (cảnh báo dời tay) → vẫn dời, có cảnh báo, không thẻ', () => thu(() => {
     const a = luot[0];

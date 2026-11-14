@@ -32,7 +32,7 @@ export function duocHoanTacVang(ghiLuc: string | null | undefined, bayGio: numbe
 
 /**
  * Kết quả một lần ghi vắng (máy chủ trả): `doi` lần 1 dời tuần (`canhBao` khi vướng lượt khác — vẫn dời, L4) · `huy` lần 2 huỷ ·
- * `khong-du-thi` MT cũ / lớp thường ≥ 2 tuần · `cho-o-kia` "-" chưa chốt (MT0 trong tuần; Writing: "-" một task ghi cả hai từ CV-SUA-1011).
+ * `khong-du-thi` MT cũ / lớp thường ≥ 2 tuần · `cho-o-kia` "-" chưa chốt (hiếm: Writing "-" một task ghi cả hai từ CV-SUA-1011; MT0 theo luật Mock từ 14/11).
  */
 export type KetQuaVang = { kq: 'doi' | 'huy' | 'khong-du-thi' | 'cho-o-kia'; tuanMoi?: string | null; canhBao?: string | null };
 
