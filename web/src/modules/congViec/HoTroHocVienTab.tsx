@@ -22,6 +22,8 @@ import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
 import { NutTask } from './NutTask.tsx';
+import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
+import { DaiChiSoTvv, type ChiSoTvv } from '../worklist/TongQuanV5.tsx';
 import { ChonPhuTrach } from './ChonPhuTrach.tsx';
 import { CongTacKhung, khungDaNho, nhoKhung, phamViCoHaiKhung, type KhungLoc } from '../../ui/CongTacKhung.tsx';
 import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/KhungPanel.tsx';
@@ -406,7 +408,13 @@ export function HoTroHocVienTab() {
   const dongLop = useMemo(() => (laGv ? dungLopCuaToi(session?.assignments ?? [], dsGoc, data?.testSapToi, moCaDong) : []),
     [laGv, session?.assignments, dsGoc, data?.testSapToi]);
   const [xemLop, setXemLop] = useState(false);
-  const coTask = laGv && dongLop.length > 0;
+  /* GD-8 (mockup v21 ④, [XM-13]): trang đầu TVV — MỘT GET em + chỉ số (`/tong-quan/tvv/em`); việc từng em từ `/my-work` đã nạp. */
+  const hvTvv = useApi<{ em: EmTvv[]; chiSo?: ChiSoTvv }>(laTvv ? '/tong-quan/tvv/em' : null, [laTvv]);
+  /* GD-1: GV có lớp. GD-8 (④ R4.5, [XM-7]): TVV luôn có "+ Task" = Hỏi tình hình học tập (em chọn từ HV của tôi đã nạp). */
+  const coTask = (laGv && dongLop.length > 0) || laTvv;
+  const nutTask = (noi: 'dau' | 'noi') => (laTvv
+    ? <NutTask noi={noi} muc={['tinh-hinh']} hoi={{ gvcn: null }} dsHoi={(hvTvv.data?.em ?? []).filter((e) => e.status === 'active').map((e) => ({ id: e.id, ten: e.ten }))} />
+    : <NutTask noi={noi} />);
   const tenCn = useTenChiNhanh(laTvv);
   /* a2 "7 việc ở Cẩm Phả": QL xem một GV trong một chi nhánh — tên chi nhánh đang lọc (danh sách chi nhánh của ô Chi nhánh, đã nạp). */
   /* RA-LOI-0711d: QL chỉ một chi nhánh (không có ô Chi nhánh, `branchId` null) → chi nhánh duy nhất của quyền. */
@@ -457,7 +465,7 @@ export function HoTroHocVienTab() {
   const tenNhom = tenTab;
   const anTrenDienThoai = chon || theId ? 'max-lg:hidden' : '';
   /* GD-1 (mockup v21 K8): < 1024 px không có khung phải — công tắc "Việc · Lớp của tôi" thay hai cột. */
-  const xemLopHep = laGv && xemLop && !chon && !theId;
+  const xemLopHep = (laGv || laTvv) && xemLop && !chon && !theId;
   /* Đang tải / lỗi: không số ở ô phạm vi (không nơi nào báo chờ khi chưa chắc). */
   const hienSoToi = !!data && !error && soToi > 0;
   return (
@@ -471,9 +479,12 @@ export function HoTroHocVienTab() {
             /* AUDIT-UI B5 (mockup 375): "n việc · m quá hạn" xuống dòng riêng dưới tiêu đề. */
             <span className="text-sm text-dim max-sm:w-full" data-hd="cv-tom">
               {/* a2: đang xem việc MỘT GV — tên GV đứng đầu dòng tóm tắt (thay dải "Đang xem việc của …"). */}
+              {/* GD-8 ([XM-1]): TVV — số việc ở ô "Việc" của dải chỉ số, đầu trang chỉ còn chi nhánh (khỏi lặp). */}
+              {laTvv ? tenCn : <>
               {[tenGvChon, tenCn].filter(Boolean).map((x) => <span key={x}>{x} · </span>)}
               <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {xemMotGv && tenCnXem ? t('việc ở {cn}', { cn: tenCnXem }) : t('việc')}
               {tong.quaHan > 0 && <> · <b className="font-bold tabular-nums text-late">{tong.quaHan}</b> {t('quá hạn')}</>}
+              </>}
               {tab === 'cham-diem' && soBaiCham > 0 && <> · <b className="font-bold tabular-nums text-[color:var(--text)]">{soBaiCham}</b> {t('bài')}</>}
             </span>
           )}
@@ -518,7 +529,7 @@ export function HoTroHocVienTab() {
               <svg aria-hidden width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5" className={moLocThem ? 'rotate-180' : ''}><path d="M1 1l3 3 3-3" /></svg>
             </button>
             {/* GD-1 (mockup v21 K1, K5): "+ Task" cạnh bộ lọc — chỉ GV có lớp (K7: GV mới chưa có em để ghi). 375: nút tròn nổi (K8a). */}
-            {coTask && <NutTask noi="dau" />}
+            {coTask && nutTask('dau')}
           </span>
         </header>
         {/* U01 #1: "Lọc thêm" mở MỘT hàng ngay dưới (cùng kiểu "Bộ lọc thêm" HV & Lớp) — không popover lồng ô chọn có popover riêng. */}
@@ -543,11 +554,13 @@ export function HoTroHocVienTab() {
             {t('{gv} dạy cả {cn} — việc ở đó do QL {cn} theo dõi, không hiện ở đây.', { gv: (tenGvChon ?? '').trim().split(/\s+/).pop() ?? '', cn: data.cnAn.join(', ') })}
           </p>
         )}
+        {/* GD-8 (④ K1, R4.2): dải mỏng 5 chỉ số của TVV ngay dưới đầu trang (thay 5 ô to của Tổng quan TVV cũ). */}
+        {laTvv && data && !data.scopeEmpty && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><DaiChiSoTvv chiSo={hvTvv.data?.chiSo} em={hvTvv.data?.em} /></div>}
         {/* CV-TAB: hàng tab hạng mục — dưới hàng lọc, kẻ dưới hết bề ngang (mockup `.tabs`). */}
         {/* GD-1 (mockup v21 K8a/b): < 1024 px — công tắc hai đoạn "Việc · Lớp của tôi" thay khung phải. */}
-        {laGv && data && !data.scopeEmpty && (
+        {(laGv || laTvv) && data && !data.scopeEmpty && (
           <div role="group" aria-label={t('Xem')} className="flex h-11 overflow-hidden rounded-lg border lg:hidden" style={{ borderColor: 'var(--line-strong)' }}>
-            {[[false, t('Việc')], [true, t('Lớp của tôi')]].map(([k, nhan], i) => (
+            {[[false, t('Việc')], [true, laTvv ? t('HV của tôi') : t('Lớp của tôi')]].map(([k, nhan], i) => (
               <button key={String(k)} type="button" aria-pressed={xemLop === k} onClick={() => setXemLop(k as boolean)}
                 className={`flex-1 appearance-none border-0 text-[15px] ${i ? 'border-l' : ''} ${xemLop === k
                   ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'surface-2 font-medium text-dim'}`}
@@ -581,7 +594,7 @@ export function HoTroHocVienTab() {
           {chiCc && tab !== 'duyet' && !trongTab.some(laViecChamCheo) && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length === 0 && !(tab === 'van-hanh' && coVanHanh) && (
             <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : t('Không còn việc đang mở')}
-              action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : laTvv ? <Link className="link" to="/hoc-vien">{t('HV của tôi ›')}</Link> : undefined} /></Card>
+              action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : undefined} /></Card>
           )}
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length > 0 && (
             <DanhSachViec muc={mucs} dem={demMuc} soHien={10} cuoi={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
@@ -653,6 +666,10 @@ export function HoTroHocVienTab() {
             /* GD-1 (mockup v21 ① K1, K7): GV chưa chọn việc → "Lớp của tôi" (thay ô "Chọn một việc"); cả khi tab hết việc, GV chưa có lớp, đang tải, lỗi. */
             <LopCuaToi dong={dongLop} dangTai={!error && !data} onMo={(x) => boChuRoi(() => mo(x))}
               loi={error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : null} />
+          ) : laTvv && tab !== 'duyet' && !data?.scopeEmpty ? (
+            /* GD-8 (mockup v21 ④ K1, R4.3): TVV chưa chọn việc → "HV của tôi" (em · lớp · tình trạng · chip Việc cần làm) thay ô "Chọn một việc". */
+            <HvCuaToi em={hvTvv.data?.em} viec={dsGoc} dangTai={!hvTvv.error && !hvTvv.data} onMo={(x) => boChuRoi(() => mo(x))}
+              loi={hvTvv.error ? <ErrorState message={hvTvv.error.message} hint={hvTvv.error.hint} status={hvTvv.error.status} onRetry={hvTvv.reload} /> : null} />
           ) : data && !data.scopeEmpty && (mucs.length > 0 || tab === 'duyet') ? (
             /* V8-CV (P2): panel trống, khung viền đứt. v12 S7: chữ ở ĐẦU khung (không rơi giữa trang dài), một câu — bỏ câu "Làm tại đây…" (S4). */
             <div className="flex min-h-[320px] flex-col items-center justify-start rounded-xl border border-dashed px-6 pb-10 pt-14 text-center"
@@ -666,7 +683,7 @@ export function HoTroHocVienTab() {
 
       {/* OV-13q: Gia hạn sau thi ngay ở dòng việc — hộp nhỏ đè lên, không đổi việc đang mở. */}
       {giaHan && <HopGiaHan x={{ cycleId: giaHan.cycleId!, han: giaHan.due, daGiaHan: !!giaHan.daGiaHan }} hocVien={giaHan.studentName} lop={giaHan.classCode} onClose={() => setGiaHan(null)} />}
-      {coTask && !chon && !theId && <NutTask noi="noi" />}
+      {coTask && !chon && !theId && nutTask('noi')}
       <CreateTask open={giaoViec} onClose={() => setGiaoViec(false)} onDone={() => invalidate('/my-work')} branchId={branchId} />
     </div>
   );
