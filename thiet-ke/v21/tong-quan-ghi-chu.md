@@ -6,6 +6,11 @@ Mã đã đọc: `worklist/OverviewPage.tsx`, `TongQuanV5.tsx`, `MockTestAdmin.t
 Web thật đã chạy (seed, cổng riêng 4183 / 5183) theo từng vai: QL Monbay · Quản trị · CX · Admin VP Monbay · Head tutor · GV xem hồ sơ mình · QL xem hồ sơ GV — ảnh TRƯỚC ở `anh/tong-quan/truoc-*.png`, `anh/ho-so-gv/truoc-*.png`.
 Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng · CX Lưu Thanh Tâm · Admin VP Kha Thanh Xuân · GV Đinh Thu Hằng — cùng người mockup ①). Hôm nay thứ Hai 14/09/2026 · W3 SEP.
 
+## Điểm chủ SP cần nhìn (PTA Overhaul 15/11)
+
+1. **Ô "Case chưa có PA"** (XM-2): số to là số Case **chưa có PA** (38), dòng phụ "trong 45 Case đang mở" — thay ô "Case có PA 16 %". Một tên cho ô, cột bảng, tiêu đề panel.
+2. **Bảng "Theo chi nhánh" một bộ cột cho Quản trị và CX** (XM-3): Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa có PA · Thi tháng này — đổi lời 23/10 (CX từng có bộ cột riêng).
+
 ## 0. Lời chủ SP trong session này
 
 (chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển PTA Overhaul)
@@ -17,8 +22,8 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 | Khối | QL một chi nhánh | Quản trị / QL nhiều chi nhánh | CX | Admin văn phòng | Gom gì |
 |---|---|---|---|---|---|
 | Đầu trang (tên · phạm vi · tuần · kỳ │ link · khung · chi nhánh) | ✓ | ✓ | ✓ | ✓ (không khung) | một dáng; công tắc khung = đoạn chuẩn `.doan`; "Báo cáo HV ›" → "Báo cáo ›" |
-| Ô "Việc của tôi ›" | ✓ | **thêm** | **thêm** (0 — XM-1) | ✓ | cùng nguồn badge Công việc / chuông (`useSoViecCuaToi`) |
-| Ô "Chờ duyệt ›" | ✓ | **thêm** | **thêm** (0 — XM-1) | — (không duyệt) | cùng nguồn hộp duyệt (một GET với cột phải) |
+| Ô "Việc của tôi ›" | ✓ | **thêm** | — (không quyền, XM-1) | ✓ | cùng nguồn badge Công việc / chuông (`useSoViecCuaToi`) |
+| Ô "Chờ duyệt ›" | ✓ | **thêm** | — (không quyền, XM-1) | — (không duyệt) | cùng nguồn hộp duyệt (một GET với cột phải) |
 | Ô tình hình | Đạt MT · Case chưa có PA · Thi tháng này | + Đạt Target thi thật | Đạt MT · Đạt Target · HV SOS 2–3 › · Chờ KQ › · Chưa chốt lộ trình tiếp › | Lượt MT tuần này › · Bài chưa nhập điểm › · HV chưa đủ MT › | một dáng ô; một tên cho số Case |
 | Khối chính trái | Lớp cần chú ý + Giáo viên | Theo chi nhánh | Theo chi nhánh (một chi nhánh: Lớp cần chú ý) | GV chấm quá hạn | **"Theo chi nhánh" của Quản trị và CX = MỘT bảng** (cột hợp, cả hai bấm được dòng) |
 | Cột phải 400 | Chờ duyệt | **Chờ duyệt** (thêm, cùng khối QL) | — (rỗng → bảng rộng hết) | **Lịch sắp tới** (chuyển từ dưới khối chính) | khối phụ của mọi vai cùng một chỗ |
@@ -51,6 +56,7 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 | T1 | Ô Đạt MT ⓘ | % · "2/3 HV · 8 chưa đủ dữ liệu" | như cũ | GIỮ |
 | T1 | Ô "Case có PA" | 16 % · "7/45 Case · 38 chưa PA" (38 là ô số riêng) | **"Case chưa có PA" 38** · "trong 45 Case đang mở" (45 ô số → panel Case đang mở) | ĐỔI tên + số chính (XM-2) |
 | T1 | Ô Thi tháng này ⓘ | 0 (mờ) | như cũ | GIỮ |
+| T1–T7, H1–H7 | Số bấm được trong bảng | gạch chân màu nhấn (`OSo`) | **hộp viền** như Phân tích (`.o-so-hop .so-bam`, chủ SP 12/11 "hộp = bấm được, màu = cần làm"): quá hạn = hộp đỏ + ⚠; 0 / không bấm = chữ thường; ô số thẻ lớn + dải mỏng giữ dáng | ĐỔI dáng (việc dở luat/5 mục 6) |
 | T1 | Lớp cần chú ý | Lớp · Đạt MT · SOS · **"Case chưa PA"** · Thi tháng này; tối đa 5 lớp | cột **"Case chưa có PA"**; đếm "4" ở đầu khối | GIỮ / ĐỔI tên cột |
 | T1 | Giáo viên | công tắc Hành chính / Học thuật `CongTac v8`; cột Việc đúng hạn · Chấm Test đúng hạn · Bài chấm quá hạn | công tắc `.doan`; cột GIỮ; Học thuật: cột "Case có PA" → "Case chưa có PA" | GIỮ / ĐỔI dáng |
 | T1 | Chờ bạn duyệt | tên khối "Chờ bạn duyệt"; 5 dòng + "Hộp duyệt ›" | tên **"Chờ duyệt"** (một tên với ô và tab Công việc); 5 dòng + **"+ 5 yêu cầu"** mở thêm tại chỗ; "Hộp duyệt ›" BỎ (trùng ô Chờ duyệt ›) | GOM (XM-6) |
@@ -58,7 +64,7 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 | T3 | Ô Quản trị | Đạt MT · Case có PA · Đạt Target thi thật · Thi tháng này | **+ Việc của tôi › + Chờ duyệt ›** · Case chưa có PA | THÊM (R8.2) |
 | T3 | Theo chi nhánh (QT) | Chi nhánh · Đạt MT · Case có PA % · Đạt Target · Thi tháng này · bấm dòng | cột hợp với CX: + SOS 2–3; "Case có PA %" → "Case chưa có PA" (n / tổng); tên chi nhánh là link, không chevron (chevron chỉ cho đổi trang) | GOM (XM-3) |
 | T3 | Cột phải QT | không có | Chờ bạn duyệt (như QL) | THÊM (XM-4) |
-| T4 | Ô CX | 5 ô | + Việc của tôi · Chờ duyệt (0, mờ) | THÊM (R8.2, XM-1) |
+| T4 | Ô CX | 5 ô | 5 ô GIỮ (không thêm Việc / Chờ duyệt — XM-1 PTA chốt) | GIỮ |
 | T4 | Theo chi nhánh (CX) | 4 cột số, **không bấm dòng**, không hàng Toàn hệ thống | **cùng bảng T3**, bấm dòng, có Toàn hệ thống | GOM / THÊM (R8.2) |
 | T4 | Link đầu trang CX | Lịch thi › · **Báo cáo HV ›** | Lịch thi › · **Báo cáo ›** | ĐỔI chữ (một tên) |
 | T5 | Ô Admin | Việc của tôi › · Lượt MT tuần này › · Bài chưa nhập điểm › · HV chưa đủ MT › ("đã thi hết lượt MT đã xếp" ở dòng phụ) | như cũ; định nghĩa vào ⓘ | GIỮ / BỎ chú thích |
@@ -74,6 +80,7 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 |---|---|---|---|---|
 | H1 | Đầu trang | nhãn Vai · Kỹ năng (Sửa) · **GVCN 8 lớp** · Từ tuần – đến (ONgay) · ⓘ · Mở Công việc › | dáng `.o-tin` ③; **GVCN = mã lớp link** | GIỮ / ĐỔI (R8.4) |
 | H1 | Dải chỉ số | thẻ 4 ô số to (kiểu thứ ba) | **dải chuẩn 44**: Chấm Test │ Việc × Đúng hạn · Làm muộn · Chưa làm (+ %), + "S chéo chung" | ĐỔI (R8.4, C4) |
+| H1 | Ba chỉ số học thuật ở đầu trang web (Đạt kỳ vọng Test · Case có PA · Kết quả thi thật) | dải 4 ô đầu trang | **nay sau tab**: Đạt kỳ vọng Test (+ Tiến bộ) và Kết quả thi thật → **dải đầu tab Học thuật** (H2); Case có PA → chip **"Chưa có PA 9"** đầu khối Case, **tab Việc & Case** (H3) — không mất số (ảnh cặp `cap-h2-…`, `cap-h3-…`) | ĐỔI chỗ |
 | H1 | Tab | không tab, 9 khối xếp chồng | thanh tab chuẩn Lớp (mờ 8) · Học thuật · Việc & Case (đỏ 9) | ĐỔI (R8.5) |
 | H1 | Kỹ năng tôi dạy + Lớp đang dạy | hai khối (bảng + thẻ) cùng lớp × kỹ năng | **một bảng "Lớp đang dạy"**; lớp mình chủ nhiệm = chip "GVCN" (cột GVCN để trống, chỉ ghi tên GV khác) | GOM |
 | H1 | Lớp chủ nhiệm | "Lớp tôi chủ nhiệm" (chỉ hồ sơ mình) | "Lớp chủ nhiệm" tab Lớp; Case → "Case đang mở" | GIỮ |
@@ -94,8 +101,8 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 | Thao tác hiện có | Sau | Ghi chú |
 |---|---|---|
 | Bấm cả ô số (mọi ô) | GIỮ | "›" = đổi trang, không "›" = panel; 0 không bấm (C3: "Việc của tôi ›" nay còn "›" khi 0 → sửa) |
-| Ô Việc của tôi › → Công việc | GIỮ (QL, Admin), THÊM (Quản trị, CX) | |
-| Ô Chờ duyệt › → Công việc · Chờ duyệt | GIỮ (QL), THÊM (Quản trị, CX) | |
+| Ô Việc của tôi › → Công việc | GIỮ (QL, Admin), THÊM (Quản trị) | CX không có (XM-1) |
+| Ô Chờ duyệt › → Công việc · Chờ duyệt | GIỮ (QL), THÊM (Quản trị) | CX không có (XM-1) |
 | Ô Đạt MT / Đạt Target / Thi tháng này → panel | GIỮ | |
 | Ô Case có PA → panel Case đang mở; số "38 chưa PA" → panel Case chưa chốt PA | ô "Case chưa có PA" → panel Case chưa có PA; số "45" ở dòng phụ → panel Case đang mở | cả hai panel còn, một tên |
 | CX: HV SOS 2–3 › · Chờ KQ thi thật › · Chưa chốt lộ trình tiếp › | GIỮ (đích cũ) | |
@@ -144,27 +151,27 @@ Mọi số của hai màn còn, mỗi số MỘT chỗ: Tổng quan — 38 số 
 ## 5. Dòng đọc Turso (ước, đo khi code)
 
 - Tổng quan QL: không đổi (giữ `/tong-quan/v5`, `/yeu-cau?hop=cho-duyet`, `/phan-tich/giao-vien?v2=1`).
-- Quản trị: **+1 GET** `/yeu-cau?hop=cho-duyet` (cột phải + ô Chờ duyệt; QL đang gọi đúng đường này) — ước vài câu / < 100 dòng. "Việc của tôi" đọc từ bản badge đã tải (0).
-- CX: bảng hợp cột dùng `DongCn` đã có (`sos23`, `caseChuaPa`, `thiThangNay`) → 0. Hai ô 0 không gọi gì (XM-1 đề xuất ẩn).
+- Quản trị: số ô "Chờ duyệt" lấy từ số đã có (cùng nguồn badge / chuông — 0 request); **chỉ khi số > 0** mới GET `/yeu-cau?hop=cho-duyet` cho cột phải (đường QL đang dùng, ước vài câu / < 100 dòng). Không có yêu cầu → 0 request thêm. "Việc của tôi" đọc từ bản badge đã tải (0).
+- CX: bảng hợp cột dùng `DongCn` đã có (`sos23`, `caseChuaPa`, `thiThangNay`) → 0. Không có ô Việc / Chờ duyệt (XM-1) → 0.
 - Admin: bấm dòng dùng đường `/tong-quan/gv-tre?gv=` đang có → 0 khi mở trang.
-- Hồ sơ GV: dòng phụ "Test kế tiếp" khi QL xem cần thêm trường `MOC_KE_TIEP` vào `/giao-vien/:id` (~ +2 câu); GV xem mình: phần "day" của `/tong-quan/lop-toi-day/hai-khoi` không còn cần (chỉ giữ phần chủ nhiệm) → giảm. Tab Việc & Case của chính mình: badge lấy từ bản badge đã tải → `/giao-vien/:id/viec` có thể tải khi mở tab (−1 GET lúc mở trang).
+- Hồ sơ GV: dòng phụ "Test kế tiếp" chỉ khi xem hồ sơ của mình (lấy từ đường người gọi đang có) → QL xem không thêm câu; GV xem mình: phần "day" của `/tong-quan/lop-toi-day/hai-khoi` không còn cần (chỉ giữ phần chủ nhiệm) → giảm. Tab Việc & Case của chính mình: badge lấy từ bản badge đã tải → `/giao-vien/:id/viec` có thể tải khi mở tab (−1 GET lúc mở trang).
 
 ## 6. [XM] — cần PTA / chủ SP quyết
 
-1. **[XM-1] CX: ô "Việc của tôi", "Chờ duyệt".** Đề bài R8.2 yêu cầu có; CX hôm nay không có menu Công việc, không duyệt (luật A6 "CX theo dõi, không giữ việc") → hai ô luôn 0. Mockup vẽ theo đề bài (0, mờ). Đề xuất: **ẩn ô khi vai không có quyền** (`workSupport` / `workApprove`), hiện lại khi có — đỡ hai ô chết.
-2. **[XM-2] "Case có PA" % → "Case chưa có PA" (số).** Một tên cho ô, cột, panel (R8.1). Số chính đổi từ % (16 %) sang số Case cần làm (38), tổng đang mở ở dòng phụ. Cùng thông tin; nếu chủ SP muốn giữ % làm số to thì đổi tên ô thành "Case chưa có PA" vẫn giữ được, nhưng % là "đã có" còn cột là "chưa có" → không còn một tên.
-3. **[XM-3] Bảng "Theo chi nhánh" một bộ cột cho Quản trị và CX.** Hợp cột hai bảng cũ: Quản trị thêm SOS 2–3, CX thêm Thi tháng này + hàng Toàn hệ thống; không bỏ cột nào. Chủ SP 23/10 chọn cột riêng cho CX ("thiên về điểm + tình trạng HV") — lời 35 mới hơn.
-4. **[XM-4] Quản trị có cột phải "Chờ bạn duyệt"** (như QL) → +1 GET (mục 5).
-5. **[XM-5] Hồ sơ GV gom "Kỹ năng tôi dạy" vào "Lớp đang dạy".** Cột Đạt / Tiến bộ theo lớp chỉ còn ở tab Học thuật (theo kỳ đang chọn, một nguồn). Dòng phụ "Test kế tiếp" khi QL xem cần thêm trường (mục 5) — hoặc chỉ hiện khi xem hồ sơ mình.
-6. **[XM-6] Bỏ "Hộp duyệt ›"** cuối khối Chờ bạn duyệt (trùng đích ô "Chờ duyệt ›"), thay "+ n yêu cầu" mở thêm tại chỗ.
-7. **[XM-7] Admin bỏ link đầu trang "Kế hoạch Test ›"** (đã có ở ô và đầu khối Lịch sắp tới); Lịch sắp tới sang cột phải.
-8. **[XM-8] Việc đang tồn: bốn link "n quá hạn" → một "⚠ 9 quá hạn ›"** (lọc quá hạn mọi nhóm). Cần `duongViecCuaGv(…, nhom=null, chiQuaHan)` chạy được — kiểm khi code.
-9. **[XM-9] "Cần làm trước" mở panel việc tại hồ sơ GV** thay đổi trang. QL xem GV khác cũng mở panel (QL làm thay — luật A4, như Công việc QL đang làm).
-10. **[XM-10] Chip "Bàn giao 0/5 em"** là chip trạng thái (không phải nút-chip việc) → giữ chữ "em". Nếu lời 35 áp cả chip trạng thái thì thành "Bàn giao 0/5".
-11. **[XM-11] Head tutor** (R8.6): không vẽ Tổng quan riêng — xem như GV (trang đầu Công việc, mockup ①); hồ sơ của mình vẽ ở H6c (chưa phân công, không nút Công việc). Head tutor không có Công việc (LG-7) → không badge tab Việc & Case.
-12. **[XM-12] Admin "GV chấm quá hạn" mỗi GV một dòng** (nay mỗi lượt × kỹ năng một dòng) — cùng hạt với bảng Giáo viên của QL và với panel theo GV; dòng "chờ chấm" (Chấm Speaking chưa tới hạn) ra khỏi khối "quá hạn". Số bài vẫn cùng tập Trễ chấm.
-13. **[XM-13] Kỳ của hồ sơ GV đi theo trang nguồn** (Tổng quan / Phân tích GV truyền `tu`, `den` qua URL) — để số GV trên hồ sơ bằng số ở dòng GV vừa bấm. Vào thẳng: 4 tuần như nay.
-14. **[XM-14] Số phụ "45" (Case đang mở) nằm trong ô "Case chưa có PA" vốn bấm cả ô**: số phụ nổi trên vùng bấm cả ô (mẫu web đang có ở "38 chưa PA") — giữ; 375 vùng bấm số phụ ≥ 44 khi code.
+1. **[XM-1] — PTA chốt: ẨN.** Vai không có quyền (CX) không có ô "Việc của tôi" / "Chờ duyệt"; Quản trị nhiều chi nhánh vẫn có (T4 đã bỏ hai ô, CX còn 5 ô như web). Bản đề xuất: CX: ô "Việc của tôi", "Chờ duyệt".** Đề bài R8.2 yêu cầu có; CX hôm nay không có menu Công việc, không duyệt (luật A6 "CX theo dõi, không giữ việc") → hai ô luôn 0. Mockup vẽ theo đề bài (0, mờ). Đề xuất: **ẩn ô khi vai không có quyền** (`workSupport` / `workApprove`), hiện lại khi có — đỡ hai ô chết.
+2. **[XM-2] — PTA chốt: đồng ý** (điểm chủ SP cần nhìn). "Case có PA" % → "Case chưa có PA" (số).** Một tên cho ô, cột, panel (R8.1). Số chính đổi từ % (16 %) sang số Case cần làm (38), tổng đang mở ở dòng phụ. Cùng thông tin; nếu chủ SP muốn giữ % làm số to thì đổi tên ô thành "Case chưa có PA" vẫn giữ được, nhưng % là "đã có" còn cột là "chưa có" → không còn một tên.
+3. **[XM-3] — PTA chốt: đồng ý** (điểm chủ SP cần nhìn). Bảng "Theo chi nhánh" một bộ cột cho Quản trị và CX.** Hợp cột hai bảng cũ: Quản trị thêm SOS 2–3, CX thêm Thi tháng này + hàng Toàn hệ thống; không bỏ cột nào. Chủ SP 23/10 chọn cột riêng cho CX ("thiên về điểm + tình trạng HV") — lời 35 mới hơn.
+4. **[XM-4] — PTA chốt: đồng ý, chỉ gọi khi số "Chờ duyệt" > 0** (mục 5). Quản trị có cột phải "Chờ bạn duyệt"** (như QL) → +1 GET (mục 5).
+5. **[XM-5] — PTA chốt: đồng ý gom; "Test kế tiếp" chỉ hiện khi xem hồ sơ của chính mình** (không thêm câu đọc; QL xem → dòng phụ trống). Hồ sơ GV gom "Kỹ năng tôi dạy" vào "Lớp đang dạy".** Cột Đạt / Tiến bộ theo lớp chỉ còn ở tab Học thuật (theo kỳ đang chọn, một nguồn). Dòng phụ "Test kế tiếp" khi QL xem cần thêm trường (mục 5) — hoặc chỉ hiện khi xem hồ sơ mình.
+6. **[XM-6] — PTA chốt: đồng ý.** Bỏ "Hộp duyệt ›"** cuối khối Chờ bạn duyệt (trùng đích ô "Chờ duyệt ›"), thay "+ n yêu cầu" mở thêm tại chỗ.
+7. **[XM-7] — PTA chốt: đồng ý.** Admin bỏ link đầu trang "Kế hoạch Test ›"** (đã có ở ô và đầu khối Lịch sắp tới); Lịch sắp tới sang cột phải.
+8. **[XM-8] — PTA chốt: đồng ý.** Việc đang tồn: bốn link "n quá hạn" → một "⚠ 9 quá hạn ›"** (lọc quá hạn mọi nhóm). Cần `duongViecCuaGv(…, nhom=null, chiQuaHan)` chạy được — kiểm khi code.
+9. **[XM-9] — PTA chốt: đồng ý.** "Cần làm trước" mở panel việc tại hồ sơ GV** thay đổi trang. QL xem GV khác cũng mở panel (QL làm thay — luật A4, như Công việc QL đang làm).
+10. **[XM-10] — PTA chốt: giữ "em"** (lời 35 chỉ áp nút-chip việc và badge). Chip "Bàn giao 0/5 em"** là chip trạng thái (không phải nút-chip việc) → giữ chữ "em". Nếu lời 35 áp cả chip trạng thái thì thành "Bàn giao 0/5".
+11. **[XM-11] — PTA chốt: đồng ý.** Head tutor** (R8.6): không vẽ Tổng quan riêng — xem như GV (trang đầu Công việc, mockup ①); hồ sơ của mình vẽ ở H6c (chưa phân công, không nút Công việc). Head tutor không có Công việc (LG-7) → không badge tab Việc & Case.
+12. **[XM-12] — PTA chốt: đồng ý, với điều kiện bấm dòng GV mở panel có ĐỦ từng lượt × kỹ năng như nay** (panel `gvTre` theo GV: lớp · lượt · kỹ năng → em còn trống → Nhập hộ — không mất thông tin). Admin "GV chấm quá hạn" mỗi GV một dòng** (nay mỗi lượt × kỹ năng một dòng) — cùng hạt với bảng Giáo viên của QL và với panel theo GV; dòng "chờ chấm" (Chấm Speaking chưa tới hạn) ra khỏi khối "quá hạn". Số bài vẫn cùng tập Trễ chấm.
+13. **[XM-13] — PTA chốt: đồng ý.** Kỳ của hồ sơ GV đi theo trang nguồn** (Tổng quan / Phân tích GV truyền `tu`, `den` qua URL) — để số GV trên hồ sơ bằng số ở dòng GV vừa bấm. Vào thẳng: 4 tuần như nay.
+14. **[XM-14] — PTA chốt: đồng ý.** Số phụ "45" (Case đang mở) nằm trong ô "Case chưa có PA" vốn bấm cả ô**: số phụ nổi trên vùng bấm cả ô (mẫu web đang có ở "38 chưa PA") — giữ; 375 vùng bấm số phụ ≥ 44 khi code.
 
 ## 7. Tự rà từng dòng R8.x (+ G)
 
@@ -174,7 +181,7 @@ Mọi số của hai màn còn, mỗi số MỘT chỗ: Tổng quan — 38 số 
 | R8.1 | Ô số thẻ lớn, cả ô bấm được, 0 không bấm và không "›" | ✓ | `.o-lon`, `.o-lon.khong`; T6c (mọi ô 0) |
 | R8.1 | Một dáng cho số đổi trang | ✓ | đổi trang = tên ô có "›" (cả ô là link); trong bảng không số nào đổi trang (chỉ panel); link chữ đầu trang "… ›" |
 | R8.1 | Một tên cho số Case ở ô, cột, tiêu đề panel | ✓ | "Case chưa có PA" T1 ô + cột, T2 panel, T3/T4 cột, hồ sơ GV chip (XM-2) |
-| R8.2 | QL / Quản trị nhiều chi nhánh và CX có "Việc của tôi ›", "Chờ duyệt" cùng nguồn badge | ✓ (CX: XM-1) | T3, T4 |
+| R8.2 | QL / Quản trị nhiều chi nhánh có "Việc của tôi ›", "Chờ duyệt" cùng nguồn badge; CX không (XM-1, PTA chốt) | ✓ | T3; T4 5 ô |
 | R8.2 | Bảng "Theo chi nhánh" của CX bấm được dòng như Quản trị | ✓ | T4 `tr.bam` + chevron; T7b thẻ bấm |
 | R8.3 | Ba vai chung một khung: ô số → khối chính → cột phải; khối hai vai cùng có thì cùng dáng, cùng chỗ; liệt kê khối đã gom | ✓ | mục 1 bảng khối; T1, T3, T4, T5 |
 | R8.4 | Đầu hồ sơ GV giữ (Vai · Kỹ năng sửa tại chỗ có Hoàn tác · "Việc của {tên} ›") | ✓ | H1, H4, H4b |
@@ -190,6 +197,10 @@ Mọi số của hai màn còn, mỗi số MỘT chỗ: Tổng quan — 38 số 
 | G3 | Không chú thích tĩnh / tab / màn mới ngoài đề bài | ✓ | chú thích dòng phụ "đã thi hết lượt MT đã xếp" → ⓘ; tab hồ sơ GV là đề bài |
 | G4 | Tệp + ảnh 1440 Tối / Sáng, 375 Sáng; phông đã nạp; ảnh cặp | ✓ | mục 9 |
 | G5 | PR chỉ `thiet-ke/v21/`, không merge | ✓ | — |
+| Chỉnh PTA 1 | Số bấm được trong bảng = hộp viền, 0 / không bấm chữ thường | ✓ | `.bang`, thẻ 375 `.cap`, "⚠ n quá hạn" ở Lớp đang dạy; tile + dải mỏng giữ |
+| Chỉnh PTA 2 | CX bỏ hai ô chết → 5 ô như web | ✓ | T4 |
+| Chỉnh PTA 3 | Ba chỉ số học thuật đầu trang cũ → ghi rõ tab mới + khung tab Học thuật, Việc & Case có ảnh cặp | ✓ | bảng truy vết dòng H1 "Ba chỉ số học thuật…"; H2, H3 + `cap-h2-1440-toi.jpg`, `cap-h3-1440-toi.jpg` |
+| Tâm ✕ / ⓘ / ⋯ ≤ 1 px | đo vùng mực so với tâm nút trên ảnh ×2 (máy) | ✓ | tong-quan: ⓘ 12 nút lệch tối đa 0,5 px ngang · 0,5 px dọc; ✕ 1 nút 0 · 0,5 px. ho-so-gv: ⓘ 14 nút 0,5 · 0,5 px; ✕ 1 nút 0 · 0,5 px. Không có ⋯ trên hai màn |
 
 ## 8. Critique impeccable
 

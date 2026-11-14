@@ -51,7 +51,18 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .bang .ten a, .bang .ten b { font:600 15px/1.35 var(--phong); color:var(--text) !important; }
 .bang .ten a:hover { color:var(--accent) !important; text-decoration:underline; }
 .bang .p { display:block; font:400 12px/1.4 var(--phong); color:var(--text-faint); white-space:nowrap; }
-.bang .oso { font-size:15px; display:inline-block; line-height:1.5; }
+/* số bấm được trong BẢNG = hộp viền (web index.css `.o-so-hop .so-bam`, Phân tích mockup v19 — chủ SP 12/11 "hộp = bấm được, màu = cần làm");
+   0 / không bấm = chữ thường; ô số thẻ lớn và dải mỏng giữ dáng riêng. Token --os-* chép từ web/src/index.css. */
+.toi { --os-nen:#1a2b4c; --os-vien:#4b6b9f; --os-chu:#d3e3f8; --os-re:#223a63; --os-do-nen:#3d2020; --os-do-vien:#b0655a; --os-do-chu:#f2b0a4; }
+.sang { --os-nen:#edf1fb; --os-vien:#7385c4; --os-chu:#1f3077; --os-re:#dfe6f8; --os-do-nen:#fbecea; --os-do-vien:#c9776b; --os-do-chu:#9a3427; }
+:is(.bang, .the-luoi .cap, .p.qua) .oso:not(.khong) { display:inline-flex; align-items:center; justify-content:center; gap:4px; min-width:40px; height:30px; padding:0 9px; border-radius:7px;
+  border:1px solid var(--os-vien); background:var(--os-nen); color:var(--os-chu); font:600 14px/1 var(--phong-so); text-decoration:none; vertical-align:middle; white-space:nowrap; }
+:is(.bang, .the-luoi .cap, .p.qua) .oso:not(.khong):hover { background:var(--os-re); border-color:var(--accent); }
+:is(.bang, .the-luoi .cap, .p.qua) .oso.xau { background:var(--os-do-nen); border-color:var(--os-do-vien); color:var(--os-do-chu); font-weight:700; }
+:is(.bang, .the-luoi .cap, .p.qua) .oso.xau::before { content:"⚠"; font-size:12px; }
+.p.qua .oso { height:24px; min-width:32px; padding:0 7px; font-size:12px; }
+.bang .p { margin-top:3px; }
+.dt .the-luoi .cap .oso:not(.khong) { height:36px; min-width:44px; }
 .bang .o0 { color:var(--text-faint); font:400 15px var(--phong-so); }
 .bang .gach { color:var(--text-faint); }
 .bang .qua { color:var(--bad); font-weight:700; white-space:nowrap; }
@@ -147,3 +158,5 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .dt .dai-375 .oso, .dt .yc-dai .oso { display:inline-flex; align-items:center; min-height:44px; }
 .dt .chip-tt2 { height:44px; }
 .bang .ten a.cn-lk { font-weight:600; }
+.sos-dem .sos + .oso, .hang-rieng .sos + .oso { margin-left:6px; }
+.man .bang .sos-dem { flex-wrap:nowrap; }
