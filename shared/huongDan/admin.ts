@@ -45,7 +45,7 @@ export const HD_ADMIN: HuongDan = {
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
       loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.',
-        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Lịch sử</b> · <b>Xóa lịch</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
+        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b> môn: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b>; mọi thay đổi ở khối <b>Lịch sử · n</b> trong hộp; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'schedule', 'reschedule'],
     },
     {
@@ -190,7 +190,7 @@ export const HD_ADMIN: HuongDan = {
       dangO: { cau: 'Xếp, dời lịch MT, Progress, Final các lớp.', sau: { chu: 'Lịch Test tuần', duong: TEST } },
       khongLam: [KHONG_QL],
       muc: [
-        { id: 'ad-kh-xoa', ten: 'Xóa lịch, ghi chú', buoc: ['⋯ đầu hộp › <b>Xóa lịch</b> → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: mục mờ).', 'Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
+        { id: 'ad-kh-xoa', ten: 'Xoá lịch, ghi chú', buoc: ['Lớp thường: <b>Xoá lịch</b> ở đầu hộp → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: nút mờ). FT: <b>Xoá MTn</b>.', 'Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
         { id: 'ad-kh-tim', ten: 'Tìm lớp, học viên', buoc: ['Gõ vào <b>Tìm lớp, học viên hoặc email…</b>: chọn em → lớp mở, hàng em được đánh dấu.'] },
         { id: 'ad-kh-xuat', viec: 'xuat-test', ten: 'Xuất Excel kế hoạch, điểm Test', buoc: ['<b>Xuất Excel…</b> cạnh <b>Xếp nhiều MT…</b>: tab <b>Lịch Test</b> mở sẵn.'] },
       ],

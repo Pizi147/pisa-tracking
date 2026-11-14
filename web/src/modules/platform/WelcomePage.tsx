@@ -338,7 +338,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
 
 /** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4 · PR-XLMT: xếp lịch MT nhiều lớp. */
 const XEM_DUOC: Record<string, string[]> = {
-  'Nguyễn Khánh Vy': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Chờ duyệt Ý thức + Báo QL'), t('Xếp lịch MT nhiều lớp, Cần xếp lại'), t('Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)')],
+  'Nguyễn Khánh Vy': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Chờ duyệt Ý thức + Báo QL'), t('Xếp lịch MT nhiều lớp, Chưa đủ MT'), t('Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)')],
   'Trần Ngọc Hà': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2'), t('Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo PH kết quả Test (MB FOU 15)')],
 };
 

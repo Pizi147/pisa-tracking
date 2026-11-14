@@ -4,6 +4,7 @@ import { useApi } from '../../../lib/useApi.ts';
 import { useNgayNghiepVu } from '../../../ui/ngayNghiepVu.ts';
 import { KhungPanel, Khoi } from '../../../ui/KhungPanel.tsx';
 import { ChonLop } from '../../../ui/ChonLop.tsx';
+import { HangTab } from '../../../ui/HangTab.tsx';
 import { useToast } from '../../../ui/Toast.tsx';
 import { BoLocDoan, NutChon } from '../../../ui/ui.tsx';
 import { BranchFilter } from '../../../ui/Filters.tsx';
@@ -25,11 +26,10 @@ export function KhungXepLich({ value, onChange, coFt, coThuong }: {
   value: 'ft' | 'thuong'; onChange: (k: 'ft' | 'thuong') => void; coFt: boolean; coThuong: boolean;
 }) {
   if (!coFt || !coThuong) return null;
+  /* GD-11b (mockup ⑦ B3, R7.5): khung = THANH TAB chuẩn (gạch dưới), cách xếp = đoạn chuẩn — hai thứ không còn cùng dáng. */
   return (
-    <div className="py-2">
-      <BoLocDoan<'ft' | 'thuong'> ariaLabel={t('Khung lớp')} value={value} onChange={onChange}
-        muc={[{ key: 'ft', nhan: 'Fast Track', so: null }, { key: 'thuong', nhan: t('Lớp thường'), so: null }]} />
-    </div>
+    <HangTab<'ft' | 'thuong'> ariaLabel={t('Khung lớp')} value={value} onChange={onChange}
+      tabs={[{ key: 'ft', label: 'Fast Track' }, { key: 'thuong', label: t('Lớp thường') }]} />
   );
 }
 
@@ -59,10 +59,10 @@ export function NganXepLichMt(props: NganProps) {
   const [tab, setTab] = useState<'tuan' | 'hv'>('tuan');
   const coHv = can(PERMISSIONS.PLAN_WEEK);
   const tabs = (
-    <div className="flex flex-wrap items-center gap-x-3">
+    <div>
       <KhungXepLich value="ft" onChange={props.onDoiKhung} coFt coThuong={props.coThuong} />
       {coHv && (
-        <div className="py-2">
+        <div className="pb-2 pt-3">
           <BoLocDoan<'tuan' | 'hv'> ariaLabel={t('Cách xếp')} value={tab} onChange={setTab}
             muc={[{ key: 'tuan', nhan: t('Xếp theo tuần'), so: null }, { key: 'hv', nhan: t('Xếp theo học viên'), so: null }]} />
         </div>
@@ -234,7 +234,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
   const lopConLai = lopTheoChiNhanh.filter((l) => !lopChon.includes(l.id));
 
   return (
-    <KhungPanel tieuDe={t('Xếp lịch Mock Test')} rong="toan" hd="xep-lich-mt" onDong={onClose}
+    <KhungPanel tieuDe={t('Xếp nhiều MT')} rong="toan" hd="xep-lich-mt" onDong={onClose}
       tabs={tabs}
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, chinh: nutChinh,
         /* 6c (lỗi 5): lựa chọn đã chỉnh tay (tuần riêng, đợt / thi lại từng em) chưa lưu → ✕ hỏi. Tuần chung, tick là mặc định tự điền. */
@@ -244,7 +244,8 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
           <div className="min-w-0 flex-1">
             <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Lớp')}</span>
-            <div role="group" aria-label={t('Lớp đã chọn')} className="flex flex-wrap items-center gap-1.5">
+            {/* GD-11b (mockup ⑦ B3): MỘT ô chọn có tìm — chip lớp đã chọn nằm TRONG ô, gõ tên lớp ngay sau chip. */}
+            <div role="group" aria-label={t('Lớp đã chọn')} className="field flex min-h-[40px] max-w-[440px] flex-wrap items-center gap-1.5 !py-1">
               {lopChon.map((id) => {
                 const l = lopFT.find((x) => x.id === id) ?? lopTheoChiNhanh.find((x) => x.id === id);
                 return (
@@ -256,15 +257,15 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
                 );
               })}
               {lopConLai.length > 0 && (
-                <ChonLop className="w-44 max-sm:w-full" ariaLabel={t('Thêm lớp')} value={null} placeholder={lopChon.length ? t('+ lớp') : t('Gõ tên lớp…')}
+                <ChonLop className="oc-trong min-w-[8rem] flex-1" ariaLabel={t('Thêm lớp')} value={null} placeholder={lopChon.length ? t('+ lớp') : t('Gõ tên lớp…')}
                   onChange={(id) => { if (id) { setLopChon((s) => [...s, id]); setGiuLoi(null); } }}
                   ds={lopConLai.map((l) => ({ id: l.id, ma: l.code, phu: t('{n} em', { n: l.soHv }) }))} />
               )}
             </div>
           </div>
-          <label className="block w-full sm:w-52">
-            <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Tìm học viên')}</span>
-            <input className="field w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={t('Tên hoặc mã')} />
+          <label className="block w-full sm:w-72">
+            <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Học viên')}</span>
+            <input className="field w-full" type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={t('Tìm tên hoặc mã')} />
           </label>
         </div>
       </Khoi>

@@ -17,10 +17,12 @@ export function OSEx({ x, so, onMo, onThem, soKe }: {
   soKe?: number;
 }) {
   if (!x) {
-    if (onThem && soKe != null && so !== soKe) return <span className="o-sex o-sex-trong" aria-hidden="true" />;
+    /* GD-11b (mockup ⑦ B1): chỉ ô mang số lượt kế ("+ S Ex n") hiện; ô trống sau nó không vẽ khung. */
+    if (onThem && soKe != null && so !== soKe) return null;
     return onThem
       ? <button type="button" className="o-sex o-sex-trong o-sex-them" aria-label={t('Xếp S Ex {n}', { n: so })} onClick={onThem}>{t('+ S Ex {n}', { n: so })}</button>
-      : <span className="o-sex o-sex-trong" aria-label={t('S Ex {n} chưa xếp', { n: so })}>{t('S Ex {n}', { n: so })} —</span>;
+      /* GD-11b (mockup ⑦ B5): người chỉ xem không có S Ex nào → không vẽ ô trống "S Ex n —". */
+      : null;
   }
   const tuan = tuanLich(x.tuan);
   const doc = [`${t('S Ex')} ${so}`, tuan, x.diem !== null ? fmtBand(x.diem) : t('chờ chấm')].join(' · ');
