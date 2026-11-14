@@ -554,6 +554,7 @@ export function skillCells(
     return {
       skill,
       ...(!required && (skill === boTask || scheduleRow.scope_reason === LY_DO_KHONG_HOC) ? { khongHoc: true } : {}),
+      ...(cancelled ? { luotHuy: true } : {}),   // NHAP-DIEM-b (5.5): ô chỉ đọc nói đúng lý do "Lượt đã huỷ" — chỉ gửi khi có
       assessedSkill: assessed,
       required,
       rawScore: row?.raw_score ?? null,

@@ -340,4 +340,13 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     absence.huyDiemKn(QL, e.fin, 'listening', false, null, HN);
     assert(o(e.fin, 'listening').raw_score === 15 && !o(e.fin, 'listening').no_show_period_id && ky(e.fin, 'listening').ws === WS, 'Hoàn tác lớp thường');
   }));
+
+  /* NHAP-DIEM-b (PTA 14/11 [XM] 2): ô chỉ đọc của lượt đã huỷ nói đúng lý do — máy chủ gắn `luotHuy` (chỉ khi có, JSON ô khác không đổi). */
+  check('NDT-15 · ô của lượt đã huỷ mang luotHuy; lượt thường không có trường này', () => thu(() => {
+    const { aid } = dung();
+    assert(attempts.attemptDetail(QL, aid).cells.every((c: any) => !('luotHuy' in c)), 'lượt thường không có luotHuy');
+    attempts.huyLuot(QL, aid, { lyDo: 'thử NDT-15' });
+    xoaNho();
+    assert(attempts.attemptDetail(QL, aid).cells.every((c: any) => c.luotHuy === true), 'lượt đã huỷ: mọi ô luotHuy');
+  }));
 }

@@ -126,6 +126,7 @@ export function oThuong(r: Row, k: string, homNay: string) {
     tuanDoiTu: s?.noShow ? (s.movedFromStart ? tuanLich(s.movedFromStart, homNay) : t('tuần cũ')) : null,
     tuanHienTai: s?.weekStart ? tuanLich(s.weekStart, homNay) : null,
     chuaToiTuan: s?.progress === 'upcoming',
+    luotHuy: r.status === 'cancelled',
     tiLe: kq?.ratio ?? null, ketQua: kq?.outcome,
   };
   return { s, kq, canEdit, trong, dung, chuDung, quaHan, cell };

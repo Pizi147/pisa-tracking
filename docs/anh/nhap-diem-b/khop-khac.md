@@ -32,7 +32,7 @@ Không có mockup mới: PR chỉ đổi thao tác trên mẫu sẵn có (ô đi
 | 7 | 5.5 Ô có điểm nhận "-" | `ODiemThuong` commit + nút Vắng 375 không còn ẩn ở ô có điểm | 9 | KHỚP |
 | 8 | 5.5 375 có ⋯ | `useMenuOThuong` (tách từ `DongThuong`, dùng chung lưới + `MotKyNang`) | 9, 10, 13 | KHỚP |
 | 9 | 5.5 GV môn có ⋯ "Vắng" ở Mock | `MockDetailPage` lọc menu GV: + `bao-vang` (máy chủ PR-1 cho người nhập được ô) | 1 | KHỚP |
-| 10 | 5.5 Ô chỉ đọc nói đúng lý do | `lyDoChiDoc`: kỹ năng ngoài đợt → "Không có trong đợt này", còn lại "Bạn không được phân công kỹ năng này" | — | KHỚP (một phần — xem KHÁC 2) |
+| 10 | 5.5 Ô chỉ đọc nói đúng lý do | `lyDoChiDoc` / `ODiemThuong`: lượt đã huỷ → "Lượt đã huỷ"; kỹ năng ngoài đợt → "Không có trong đợt này"; còn lại "Bạn không được phân công kỹ năng này" | — | KHỚP |
 | 11 | 5.5 Bỏ ⋯ "Nhập điểm" mở hộp rỗng (lớp thường) | `thaoTacKyNang` PR-1 (giữ) | 7 | KHỚP |
 | 12 | 5.6 Ô "Đã huỷ": chữ "Đã huỷ" mờ (không ⚠, V22) | Mock: Huỷ tay ghi `huy_vang = 2` → chữ "Đã huỷ" (không "vắng n lần" / "QL từ chối dời"); lớp thường: dòng mờ dưới ô | 14, 8 | KHỚP |
 | 13 | 5.6 Hướng dẫn "?" GV, QL | `huongDan/gv.ts` (dau-gach, sua-diem), `ql.ts` (ql-sua-diem), ⓘ quy chế (`quyCheVanHanh`) | — | KHỚP |
@@ -64,8 +64,8 @@ Không thao tác nào mất mà không có lý do ở cột phải.
 
 ## 3. KHÁC / [XM]
 
-1. **Lý do sửa điểm (lớp thường) bỏ ở ô.** Đặc tả 5.5 ghi "lý do tuỳ chọn ở ⋯ nếu cần" — PR không thêm mục ⋯ "Sửa có lý do" (YAGNI: lý do vốn tuỳ chọn, lịch sử ô vẫn ghi ai · lúc · trước → sau). Cần lại thì một mục ⋯ mở hộp lý do cũ. **[XM] PTA quyết** có cần không.
-2. **Lý do ô chỉ đọc** chỉ tách "Không có trong đợt này" / "Bạn không được phân công kỹ năng này". "Lượt đã huỷ" chưa tách ở ô (ô của lượt đã huỷ đã có dòng trạng thái lượt ở đầu trang) — [XM] nếu PTA muốn ghi riêng.
+1. **Lý do sửa điểm (lớp thường) bỏ hẳn** — PTA 14/11: không thêm mục ⋯; lịch sử ô đã ghi ai · lúc · trước → sau.
+2. **Ô chỉ đọc nói đúng lý do** — PTA 14/11: "Lượt đã huỷ" (máy chủ gắn `luotHuy` vào ô của lượt đã huỷ, Mock + lớp thường) · "Không có trong đợt này" · "Bạn không được phân công kỹ năng này".
 3. Hộp nhập Mock ⋯ (trong hộp) giữ: Lưu · đóng · Khôi phục · Bỏ vắng — không thêm "Huỷ điểm" trong hộp (Huỷ điểm ở ⋯ dòng kỹ năng).
 
 ## 4. Đo ✕ / ⋯ (≤ 1 px)

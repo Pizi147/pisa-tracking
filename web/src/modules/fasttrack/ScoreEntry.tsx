@@ -18,6 +18,8 @@ export type Cell = {
   skill: EntrySkill;
   /** P8 (N13): em không học ô này — "Không học", không nhận gõ. */
   khongHoc?: boolean;
+  /** NHAP-DIEM-b: lượt đã huỷ (máy chủ chỉ gửi khi có) — ô chỉ đọc ghi "Lượt đã huỷ". */
+  luotHuy?: boolean;
   assessedSkill: string;
   /** false khi Quản lý đã chốt trước là đợt này không yêu cầu kỹ năng đó. */
   required: boolean;
@@ -121,8 +123,8 @@ export const bandBanDau = (cell: Cell) => (cell.band !== null && cell.criteria.e
 
 /** Vì sao ô này chỉ đọc — MỘT câu cho ô số câu và ô tiêu chí (RKC: chỉ còn lý do quyền). */
 export const LY_DO_CHI_DOC = t('Bạn không được phân công kỹ năng này');
-/** NHAP-DIEM-b (đặc tả 5.5 "ô chỉ đọc nói đúng lý do"): kỹ năng ngoài đợt ≠ chưa phân công. */
-export const lyDoChiDoc = (c: { required: boolean }) => (c.required ? LY_DO_CHI_DOC : t('Không có trong đợt này'));
+/** NHAP-DIEM-b (đặc tả 5.5 "ô chỉ đọc nói đúng lý do"): lượt đã huỷ · kỹ năng ngoài đợt · chưa phân công. */
+export const lyDoChiDoc = (c: { required: boolean; luotHuy?: boolean }) => (c.luotHuy ? t('Lượt đã huỷ') : c.required ? LY_DO_CHI_DOC : t('Không có trong đợt này'));
 
 /**
  * HOTFIX-3 (OV-13o): điểm vừa lưu (dòng `score` máy chủ trả về) đè lên ô cũ tới khi bảng tải lại được — tải lại hỏng thì ô vẫn hiện
@@ -403,6 +405,8 @@ export function ODiemThuong({
     dau?: boolean; chuaToiTuan?: boolean; tiLe?: number | null; ketQua?: 'pass' | 'fail' | 'missing';
     /** OV-11a (Q1): ô "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi (không dời). */
     khongDuThi?: boolean;
+    /** NHAP-DIEM-b: lượt đã huỷ — ô chỉ đọc ghi đúng lý do. */
+    luotHuy?: boolean;
     /** PR-BV: người xem gỡ được dấu "-" lúc này · `oTuanCu` = đang xem đúng tuần có dấu (tuần mới có thể đã có điểm). */
     goDau?: boolean; oTuanCu?: boolean;
   };
@@ -613,7 +617,7 @@ export function ODiemThuong({
 
   /* ---- Chỉ đọc: môn không được phân công. */
   if (!canEdit) {
-    const khongDay = t('Bạn không được phân công kỹ năng này.');
+    const khongDay = cell.luotHuy ? `${t('Lượt đã huỷ')}.` : t('Bạn không được phân công kỹ năng này.');
     if (coDiem) {
       return (
         <span className="inline-flex flex-col items-center justify-center tabular-nums text-slate-400"
