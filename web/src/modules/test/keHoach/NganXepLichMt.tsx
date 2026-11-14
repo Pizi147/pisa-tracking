@@ -239,13 +239,14 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
       chan={{ huy: { nhan: t('Đóng'), onClick: onClose }, chinh: nutChinh,
         /* 6c (lỗi 5): lựa chọn đã chỉnh tay (tuần riêng, đợt / thi lại từng em) chưa lưu → ✕ hỏi. Tuần chung, tick là mặc định tự điền. */
         daSua: Object.keys(rieng).length > 0 || Object.keys(dotTheoEm).length > 0 || Object.keys(thiLai).length > 0 }}>
-      <Khoi tieuDe={t('Lọc')}>
-        <div className="flex flex-wrap items-end gap-2">
+      {/* GD-11b (mockup ⑦ B3): không nhãn "Lọc" thừa — Lớp và Học viên cùng một hàng, cùng cao 40, sát nhau. */}
+      <section className="pt-3.5">
+        <div className="flex flex-wrap items-end gap-3">
           <BranchFilter branchId={branchId} onBranch={setBranchId} />
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 w-full sm:w-[440px]">
             <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Lớp')}</span>
             {/* GD-11b (mockup ⑦ B3): MỘT ô chọn có tìm — chip lớp đã chọn nằm TRONG ô, gõ tên lớp ngay sau chip. */}
-            <div role="group" aria-label={t('Lớp đã chọn')} className="field flex min-h-[40px] max-w-[440px] flex-wrap items-center gap-1.5 !py-1 focus-within:border-[color:var(--accent)]">
+            <div role="group" aria-label={t('Lớp đã chọn')} className="field flex min-h-[40px] flex-wrap items-center gap-1.5 !py-1 focus-within:border-[color:var(--accent)]">
               {lopChon.map((id) => {
                 const l = lopFT.find((x) => x.id === id) ?? lopTheoChiNhanh.find((x) => x.id === id);
                 return (
@@ -265,16 +266,16 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
           </div>
           <label className="block w-full sm:w-72">
             <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Học viên')}</span>
-            <input className="field w-full" type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={t('Tìm tên hoặc mã')} />
+            <input className="field h-10 w-full" type="search" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={t('Tìm tên hoặc mã')} />
           </label>
         </div>
-      </Khoi>
+      </section>
 
       <Khoi so={1} tieuDe={t('Đợt')}>
         <div role="group" aria-label={t('Đợt')} className="flex flex-wrap gap-1.5">
-          <NutChon nho chon={dot === 'moi'} onClick={() => setDot('moi')}
+          <NutChon nho dauTrong chon={dot === 'moi'} onClick={() => setDot('moi')}
             title={t('Mỗi em một đợt riêng: đợt nhỏ nhất chưa có lịch của em; không có thì đợt kế tiếp.')}>{t('MT mới')}</NutChon>
-          {cot.map((n) => <NutChon key={n} nho chon={dot === n} onClick={() => setDot(n)}>MT{n}</NutChon>)}
+          {cot.map((n) => <NutChon key={n} nho dauTrong chon={dot === n} onClick={() => setDot(n)}>MT{n}</NutChon>)}
         </div>
       </Khoi>
 

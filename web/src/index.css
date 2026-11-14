@@ -602,7 +602,7 @@
   .o-xep-chan, .o-xep-chan:hover { border-style: solid; border-color: var(--line); background: none; color: var(--text-faint); cursor: not-allowed; }
   /* GD-11b (mockup ⑦ B2): bong lý do của nút mờ — nổi trên nút khi rê / focus / chạm, không đẩy hàng. */
   /* GD-11b (mockup ⑦ B3): ô chọn lớp nằm TRONG ô có chip — bỏ viền riêng. */
-  .oc-trong .oc { border: 0; background: none; min-height: 30px; padding-left: 2px; }
+  .oc-trong .oc { border: 0; background: none; min-height: 30px; padding-top: 0; padding-bottom: 0; padding-left: 2px; }
   .bong-nut { position: relative; display: inline-flex; }
   .bong-nut-chu { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 5; display: none; padding: 4px 8px; border-radius: 6px;
     background: var(--text); color: var(--bg); font-size: 12px; font-weight: 500; line-height: 1.3; white-space: nowrap; pointer-events: none; }

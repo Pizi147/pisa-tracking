@@ -68,3 +68,8 @@ Mở trang: 0 câu thêm. Khối "Lịch sử · n" của hộp đọc khi mở 
 
 ## Đo ✕ / ⋯ (hộp một kỹ năng)
 ⋯ mỗi môn so nút Xoá cạnh nó: 1440 lệch tâm 0 px (36×30), 375 lệch 0 px (44×44). ✕ đầu hộp so tên lượt: lệch tâm 0 px (1440 cao 30, 375 cao 44), cách mép phải hộp 13 px ở cả hai cỡ.
+
+## Sửa sau rà PTA (ngăn Xếp nhiều MT)
+- Chip Đợt (MT mới · MT1…): trạng thái chọn chuẩn như #1669 — viền + nền nhấn, "✓" là chữ trong chip trước tên (`NutChon dauTrong`), không còn ô ✓ góc lòi viền; cùng dáng chip kỹ năng ✓L ✓R ✓W ✓S. Đo: ✓ nằm trong chip (không phần tử nào tràn mép trên / phải), chip cao 26.
+- Hàng lọc: bỏ nhãn "Lọc" thừa; Lớp (440) và Học viên cùng một hàng, cùng đỉnh y = 188, cùng cao 40, cách nhau 12 px. `zoom-b3-loc-chip.png`.
+- [XM] mũi mở lớp: PTA chốt giữ tam giác trong PR này, đổi chung "›" ở GD-18.
