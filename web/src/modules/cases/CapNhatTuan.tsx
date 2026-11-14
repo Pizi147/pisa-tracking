@@ -4,7 +4,7 @@ import { BuoiTutorO } from './BuoiTutorO.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { Hang2, KhungPanel, Truong, useBaoDangSua, useNhap } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, Hang2, KhungPanel, Truong, useBaoDangSua, useNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam, NutChu, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
@@ -15,14 +15,14 @@ import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import type { DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
-  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL,
+  FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KY_HIEU_TIEN_TRIEN,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
   type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, TRAN_CHU,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay } from '@shared/domain/index.ts';
+import { hanDuyetNgay, quyCheKetQuaPa } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
@@ -159,6 +159,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const [loiLuu, setLoiLuu] = useState<{ chu: string; thuLai: boolean } | null>(null);
   const [reason, setReason] = useState<string>(g?.decisionNote ?? '');
   const [on, setOn] = useState<string>(g?.observedOn ?? homNay);
+  const [moNgay, setMoNgay] = useState(false);
   const [endOn, setEndOn] = useState<string>(g?.completedOn ?? homNay);
   /* #3: ô "Hoàn thành Case" (mặc định tắt) · mức (null = theo Tiến triển) · kết luận (null = theo Nhận xét). */
   const [htCase, setHtCase] = useState(false);
@@ -459,7 +460,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     if (xungDot.tu === 'nhap') void luuNhap(goc); else void luu(bam === 'tiep', goc);
   };
   const nutNhap = !sua && !nhanXetTheoBuoi && (
-    <NutChu onClick={() => void luuNhap()} disabled={!!gui}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</NutChu>
+    /* GD-3 (mockup v21 K4c): "Lưu nháp" là nút phụ đứng trước nút chính. */
+    <button type="button" className="btn min-h-[40px] px-4" onClick={() => void luuNhap()} disabled={!!gui}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</button>
   );
   const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi QL duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
   const nut = tiep && !sua
@@ -482,7 +484,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       dau={dauViec({ han: sua ? null : pa.miniTestHan ? <ChipHan loai="mini-test" han={pa.miniTestHan} /> : pa.actionDue ? <ChipHan loai="cap-nhat-pa" han={pa.actionDue} /> : null, em: em ?? null, lop, ngCanh: ngCanh ?? tenPa })}
       chan={{
         /* U01 — một bộ chữ: ● Chưa lưu → ⟳ Đang lưu nháp… → ✓ Đã lưu nháp · chưa chốt → (Lưu) ✓ Đã lưu kết quả · Sửa (dải sau lưu). */
-        v3: true, chinh: <>{nut}{nutNhap}</>, daSua, conThieu: lf.conThieu(loi),
+        v3: true, chinh: <>{nutNhap}{nut}</>, daSua, conThieu: lf.conThieu(loi),
         dongTren: gui ? <TrangThaiLuu tt="dang" chuDang={gui === 'nhap' ? t('Đang lưu nháp…') : undefined} />
           : xungDot ? <span role="alert" className="font-semibold text-bad">⚠ {t('Chưa lưu · có bản nháp mới hơn')}</span>
           : loiLuu ? <TrangThaiLuu tt="loi" loi={loiLuu.chu} onThuLai={loiLuu.thuLai ? () => void luu(bam === 'tiep') : undefined} />
@@ -496,6 +498,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             <span className="mt-0.5 text-slate-400"><KhoaNho /></span><span>{sua.chan}</span>
           </p>
         )}
+        {/* GD-3 (mockup v21 K4c): bối cảnh (PA · người dạy · kỳ trước) ĐẦU form, trước Tiến triển. */}
+        <BoiCanh dong={boiCanh ?? [[t('Phương án'), [tenPa, pa.performer, pa.mocChu && dich(pa.mocChu)].filter(Boolean).join(' · ')]]} />
         <CanLam>
           {banNhap && !xungDot && <p className="m-0 text-xs text-slate-400">{t('Nháp lưu {luc} · {ten}', { luc: lucNhap(banNhap.luc), ten: banNhap.boi })}</p>}
           {xungDot && (
@@ -524,9 +528,11 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             {/* 5 mức một hàng chip (xuống dòng khi hẹp); "Chưa đủ dữ liệu" là mức thứ năm. */}
             <div {...o('ket-qua')} tabIndex={-1} className="flex flex-wrap gap-1.5 outline-none" role="group" aria-labelledby={`tt-${pa.id}`}>
               {FOLLOWUP_OUTCOMES.map((x) => (
-                <NutChon key={x} nho chon={outcome === x} disabled={khoaLuaChon && outcome !== x} onClick={() => pickOutcome(x)} className="rounded-full px-3">
-                  {dich(outcomeLabelFor(x))}
-                </NutChon>
+                /* GD-3 (mockup v21 K4c): chip tròn có ký hiệu ✓ ↗ – ↓ ?, chọn = viền nhấn (không dấu ✓ góc). */
+                <button key={x} type="button" aria-pressed={outcome === x} disabled={khoaLuaChon && outcome !== x} onClick={() => pickOutcome(x)}
+                  className={`btn btn-sm min-h-[44px] whitespace-nowrap rounded-full px-3 sm:min-h-[34px] ${outcome === x ? '!border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : ''}`}>
+                  <span aria-hidden className="mr-1">{KY_HIEU_TIEN_TRIEN[x]}</span>{dich(outcomeLabelFor(x))}
+                </button>
               ))}
             </div>
             {loiCua('ket-qua') && <span className="mt-1 block text-xs text-late">{loiCua('ket-qua')}</span>}
@@ -580,6 +586,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           {!lanCuoi && (
             <div {...o('quyet-dinh')} tabIndex={-1} className="flex flex-col gap-2 outline-none">
               <span className="block text-[13px] font-semibold text-slate-300">{t('Quyết định')}</span>
+              {/* Chủ SP 14/11 (rà #1563): Quyết định giữ dáng nút đoạn như cũ. */}
               <BoLocDoan ariaLabel={t('Quyết định')} value={(trongDc ? 'adjust' : decision || '') as PlanDecision}
                 muc={dsTren.map((d) => ({ key: d, nhan: dich(PLAN_DECISION_NGAN[d]) }))} onChange={chonQd} />
               {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
@@ -630,10 +637,17 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               )}
             </div>
           )}
-          <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
-          <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}{nutNhap}</div>
+          {/* Chủ SP 14/11 (rà #1563): Ngày ghi gọn — một dòng "Ghi ngày dd/mm · Đổi"; bấm Đổi mới mở ô ngày (ghi muộn). */}
+          {moNgay ? <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong> : (
+            <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-400">
+              <span>{t('Ghi ngày {ngay}', { ngay: ngan(on) })}</span>
+              {!khoaLuaChon && <><span aria-hidden>·</span><NutChu onClick={() => setMoNgay(true)}>{t('Đổi')}</NutChu></>}
+            </p>
+          )}
+          {/* GD-3: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân. PA chờ Mini Test, Sửa: không có câu kỳ / hạn. */}
+          {!sua && !pa.miniTestHan && <DongQuyChe px="px-0" qc={quyCheKetQuaPa(pa.actionDue ? ngan(pa.actionDue) : null)} />}
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden">{nutNhap}{nut}</div>
         </CanLam>
-        <BoiCanh dong={boiCanh ?? [[t('Phương án'), [tenPa, pa.performer, pa.mocChu && dich(pa.mocChu)].filter(Boolean).join(' · ')]]} />
       </div>
     </KhungPanel>
   );

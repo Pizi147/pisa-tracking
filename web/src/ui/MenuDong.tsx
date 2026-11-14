@@ -39,13 +39,15 @@ export type MucMenu = {
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut }: {
+export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut, canhTrai = false }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
   /** `chip`: mặt nút là chip họ tròn xám ("+2" cạnh các badge lớp, PR-HK2) thay cho ô vuông viền. */
   kieu?: 'chip';
   /** KHUNG-LOI: mặt nút riêng (nút "Thêm" của thanh trên / thanh dưới) + lớp của nút — thay ô ⋯. */
   mat?: ReactNode; lopNut?: string;
+  /** GD-3 (mockup v21 K2b): nút ⋯ ở mép TRÁI hàng nút — menu canh mép trái nút, không chìa ra ngoài hộp. */
+  canhTrai?: boolean;
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
@@ -69,7 +71,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
     const moXuong = r.bottom + 4 + cao <= window.innerHeight - 64;
     setViTri({
       top: moXuong ? r.bottom + 4 : Math.max(8, r.top - 4 - cao),
-      left: Math.max(8, Math.min(r.right - rong, window.innerWidth - rong - 8)),
+      left: Math.max(8, Math.min(canhTrai ? r.left : r.right - rong, window.innerWidth - rong - 8)),
       cao,
     });
   }, [mo, muc.length]);

@@ -206,7 +206,7 @@ function traPaGv(conn: any, ds: readonly { id: number; truoc: Record<string, unk
 
 /**
  * "GIỮ PA CỦA TÔI" (việc Chọn PA): thẻ `giu_pa_gv` cho QL (đối tượng = PA quy chế chờ, hạn 3 ngày — quá hạn máy chốt theo GV), PA quy chế chờ
- * (`superseded_by` → PA GV, Case "Chờ duyệt đổi PA", việc Chọn PA rời GV), PA GV vẫn chạy. Lý do không bắt buộc (Q3). Quyền như Xác nhận PA.
+ * (`superseded_by` → PA GV, Case "Chờ duyệt đổi PA", việc Chọn PA rời GV), PA GV vẫn chạy. Lý do không bắt buộc (Q3), ≤ 300 ký tự (N35). Quyền như Xác nhận PA.
  */
 export function giuPaGv(p: Principal, qId: number, input: { lyDo?: unknown } = {}) {
   const conn = db();
@@ -222,7 +222,9 @@ export function giuPaGv(p: Principal, qId: number, input: { lyDo?: unknown } = {
     return { q, gs };
   };
   kiem();
-  const lyDo = typeof input.lyDo === 'string' ? input.lyDo.trim().slice(0, 1000) || null : null;
+  /* GD-3 (mockup v21 K4b, chủ SP 14/11): ô Lý do — vẫn không bắt buộc (Q3); N35: quá 300 ký tự báo, không cắt lặng. */
+  const lyDo = typeof input.lyDo === 'string' ? input.lyDo.trim() || null : null;
+  if (lyDo && lyDo.length > 300) throw badRequest('Lý do tối đa 300 ký tự.');
   return tx(() => {
     const { q, gs } = kiem();
     const id = taoYeuCau(conn, { loai: 'giu_pa_gv', doiTuongLoai: 'intervention', doiTuongId: q.id, hocVienId: q.sid, nguoiXin: p.userId, lyDo,

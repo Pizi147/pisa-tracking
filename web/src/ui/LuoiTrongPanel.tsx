@@ -1,4 +1,7 @@
-import { useEffect, useRef, type ReactNode } from 'react';
+import { createContext, useEffect, useRef, type ReactNode } from 'react';
+
+/** GD-3 (mockup v21 K2 `.luoi` / `.od`): lưới đang nằm trong panel việc — ô điểm 96 × 44 (số + "n câu" trong ô), tên cột đủ chữ, cột Kết quả ghi "Chờ …". */
+export const OTrongPanel = createContext(false);
 
 /**
  * LƯỚI NHẬP ĐIỂM TRONG PANEL VIỆC (chủ SP 08/11 duyệt #1246: "ô điểm ở panel bị clipped"). Lưới rộng hơn panel vẫn cuộn ngang
@@ -23,5 +26,5 @@ export function LuoiTrongPanel({ className, children }: { className: string; chi
     r.addEventListener('scroll', cap, true);
     return () => { ro.disconnect(); mo.disconnect(); r.removeEventListener('scroll', cap, true); };
   }, []);
-  return <div ref={goc} className={className}>{children}</div>;
+  return <div ref={goc} className={className}><OTrongPanel.Provider value>{children}</OTrongPanel.Provider></div>;
 }

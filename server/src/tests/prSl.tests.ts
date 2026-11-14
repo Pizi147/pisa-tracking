@@ -72,7 +72,8 @@ export async function runPrSlTests(t: YThucTestKit) {
 
   check('SL-8 · I6 Ghi vi phạm: chú thích "* = bắt buộc" một dòng, không còn "(bắt buộc)" hiện ở ô; "Xem" không inline-flex cao 44 px', () => {
     const s = doc('web/src/modules/yThuc/RecordViolationPanel.tsx');
-    assert(s.includes("{t('= bắt buộc')}</>}") && !/>\s*\(bắt buộc\)/.test(s), 'chú thích dấu *');
+    /* GD-3 (mockup v21 K5d, chủ SP duyệt 14/11): bỏ cả dòng chú thích "* = bắt buộc" — dấu * đỏ ở nhãn đủ nói; vẫn không "(bắt buộc)" ở ô. */
+    assert(!s.includes("t('= bắt buộc')") && !/>\s*\(bắt buộc\)/.test(s), 'chú thích dấu *');
     assert(/className="link appearance-none border-0 bg-transparent p-0 align-baseline max-sm:-my-3 max-sm:py-3" aria-expanded=\{xemTrung\}/.test(s), 'nút Xem');
   });
 
