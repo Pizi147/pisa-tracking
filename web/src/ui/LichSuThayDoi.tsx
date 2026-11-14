@@ -137,13 +137,27 @@ export function LichSuGap({ so, tieuDe, moSan, onMo, className, children }: {
   const ten = tieuDe ?? t('Lịch sử');
   return (
     <details className={`ls${className ? ` ${className}` : ''}`} open={moSan} onToggle={onMo ? (e) => onMo(e.currentTarget.open) : undefined}>
-      <summary>
-        <svg className="ls-ic" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3l2 1.5" /></svg>
-        <span>{so === null ? ten : `${ten} · ${so}`}</span>
-        <svg className="ls-chev" viewBox="0 0 16 16" aria-hidden><path d="M6 3.5L10.5 8 6 12.5" /></svg>
-      </summary>
+      <summary><DauLs chu={so === null ? ten : `${ten} · ${so}`} /></summary>
       {children}
     </details>
+  );
+}
+const DauLs = ({ chu }: { chu: string }) => <>
+  <svg className="ls-ic" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3l2 1.5" /></svg>
+  <span>{chu}</span>
+  <svg className="ls-chev" viewBox="0 0 16 16" aria-hidden><path d="M6 3.5L10.5 8 6 12.5" /></svg>
+</>;
+
+/**
+ * Đầu gập "Lịch sử · n" dạng NÚT (GD-6) — cùng dáng `LichSuGap` khi phần thân phải nằm chỗ khác (tab Ý thức: thân mở dưới cả dòng em, rộng hết bảng).
+ * `mo` do nơi gọi giữ; `so` null = chưa biết số (đọc khi mở).
+ */
+export function NutLichSuGap({ so, mo, nhan, tieuDe, onClick }: { so: number | null; mo: boolean; nhan: string; tieuDe?: string; onClick: () => void }) {
+  const ten = tieuDe ?? t('Lịch sử');
+  return (
+    <span className="ls nut-ls" data-mo={mo ? '' : undefined}>
+      <button type="button" aria-expanded={mo} aria-label={`${ten} · ${nhan}`} onClick={onClick}><DauLs chu={so === null ? ten : `${ten} · ${so}`} /></button>
+    </span>
   );
 }
 

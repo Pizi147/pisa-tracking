@@ -20,7 +20,9 @@ const nang = (u: WorkItem['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 
 const xepHan = (a: WorkItem, b: WorkItem) => nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999');
 
 /** `so` = chỉ số trên nút (chủ SP 15/11: "Nhập điểm · 6" như "Case · 2", không chữ "bài"); `doc` = nghĩa đủ cho tooltip / trình đọc màn hình. */
-type Chip = { tab: string; nhan: string; so: number; doc: string; quaHan: boolean; dau: WorkItem };
+/** `ds` = mọi việc (lá) của loại đó ở lớp, quá hạn trước — panel mở từ chip đi hết `ds` bằng "Việc tiếp ›" (hồ sơ lớp, GD-6). */
+export type ChipViec = { tab: string; nhan: string; so: number; doc: string; quaHan: boolean; dau: WorkItem; ds: WorkItem[] };
+type Chip = ChipViec;
 type Dong = { classId: number; code: string; mon: string[]; chuNhiem: boolean; test: { chu: string; han: WorkItem | null } | null; chip: Chip[] };
 
 /**
@@ -43,15 +45,7 @@ export function dungLopCuaToi(phanCong: readonly Assignment[], viec: readonly Wo
   const la = cuaToi.flatMap((x) => (x.con?.length ? x.con : [x]));
   for (const d of lop.values()) {
     const cuaLop = (x: WorkItem) => x.classId === d.classId;
-    for (const [tab, nhan] of LOAI_CHIP) {
-      const laTab = la.filter((x) => cuaLop(x) && tabCuaViec(x) === tab).sort(xepHan);
-      if (!laTab.length) continue;
-      const bai = tab === 'cham-diem';
-      const so = bai ? laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0)
-        : dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
-      const doc = bai ? t('{n} bài chờ nhập điểm', { n: so }) : t('{n} việc', { n: so });
-      d.chip.push({ tab, nhan, so, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0] });
-    }
+    d.chip = chipViecLop(viec, d.classId, caDong);
     /* Cột Test: có bài của tôi → bài gần hạn nhất (loại · tuần + chip hạn); không có → Test sắp tới của lớp (LG-8), chữ mờ. */
     const bai = la.filter((x) => cuaLop(x) && x.group === 'score').sort(xepHan)[0];
     const sapToi = testSapToi?.find((x) => x.classId === d.classId)?.testKeTiep ?? null;
@@ -66,6 +60,38 @@ export function dungLopCuaToi(phanCong: readonly Assignment[], viec: readonly Wo
     if (!!a.test !== !!b.test) return a.test ? -1 : 1;
     return a.code.localeCompare(b.code, 'vi', { numeric: true });
   });
+}
+
+/**
+ * Chip "Việc cần làm" của MỘT lớp (thứ tự Nhập điểm · Case · Ý thức · Vận hành; bỏ Chấm Speaking) — dùng chung "Lớp của tôi" (Công việc) và đầu hồ sơ lớp.
+ * Chip Nhập điểm đếm BÀI (`soBai`); chip khác đếm DÒNG của tab có lớp đó (`dongTab`, cùng đơn vị badge). Dữ liệu đã nạp, không request.
+ */
+export function chipViecLop(viec: readonly WorkItem[], classId: number, caDong: (it: WorkItem) => boolean = () => false): ChipViec[] {
+  const cuaToi = viec.filter((x) => !laViecChamCheo(x));
+  const cuaLop = (x: WorkItem) => x.classId === classId;
+  const la = cuaToi.flatMap((x) => (x.con?.length ? x.con : [x])).filter(cuaLop);
+  return LOAI_CHIP.flatMap(([tab, nhan]) => {
+    const laTab = la.filter((x) => tabCuaViec(x) === tab).sort(xepHan);
+    if (!laTab.length) return [];
+    const bai = tab === 'cham-diem';
+    const so = bai ? laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0)
+      : dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
+    const doc = bai ? t('{n} bài chờ nhập điểm', { n: so }) : t('{n} việc', { n: so });
+    return [{ tab, nhan, so, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab }];
+  });
+}
+
+/** Nút-chip "{loại} · {số}" (GD-4b, ⑤ C): đỏ khi có việc quá hạn (V22 chỉ màu), "›" khi bấm là đổi trang. `ngu` = lớp cho trình đọc màn. */
+export function NutChipViec({ c, ngu, doiTrang, onBam }: { c: ChipViec; ngu?: string; doiTrang: boolean; onBam: () => void }) {
+  return (
+    <button type="button" onClick={onBam}
+      title={c.doc} aria-label={[`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so}`, ngu, c.doc].filter(Boolean).join(' · ')}
+      className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
+        ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`}
+      style={c.quaHan ? undefined : { borderColor: 'var(--line-strong)' }}>
+      {c.nhan} · <span className="tabular-nums">{c.so}</span>{doiTrang && <span aria-hidden> ›</span>}
+    </button>
+  );
 }
 
 const COT = 'grid grid-cols-[104px_150px_152px_minmax(0,1fr)] items-center gap-x-3 px-4';
@@ -121,15 +147,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
         {d.test?.han?.due && <ChipHan vien loai={LOAI_HAN_CUA_VIEC[d.test.han.group] ?? 'nhap-diem'} han={d.test.han.due} />}
       </span>
       <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
-        {d.chip.map((c) => (
-          <button key={c.tab} type="button" onClick={() => onMo(c.dau)}
-            title={c.doc} aria-label={`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so} · ${d.code} · ${c.doc}`}
-            className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
-              ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`}
-            style={c.quaHan ? undefined : { borderColor: 'var(--line-strong)' }}>
-            {c.nhan} · <span className="tabular-nums">{c.so}</span>{!lamTaiCho(c.dau) && <span aria-hidden> ›</span>}
-          </button>
-        ))}
+        {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} doiTrang={!lamTaiCho(c.dau)} onBam={() => onMo(c.dau)} />)}
       </span>
     </li>
   );

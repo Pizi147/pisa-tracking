@@ -33,7 +33,7 @@ for uid, roles, cnq, cng in rows:
         p = {'tq': ['/tong-quan/v5?ct=ft', '/tong-quan/hoc-vien'], 'hv': hv + ['/hoc-vien-lop/theo-vai'],
              'pt': ['/tong-quan/v5?ct=ft&kieu=2-tuan&tu=2026-11-02&den=2026-11-29&baoCao=chi-nhanh']}
     else:
-        p = {'tq': ['/tong-quan/tvv', '/tong-quan/hoc-vien', '/my-work'], 'hv': hv + [f'/hoc-vien-lop/theo-vai?phamVi=chi-nhanh&branchId={cn}']}
+        p = {'tq': ['/tong-quan/tvv/em', '/my-work'], 'hv': hv + [f'/hoc-vien-lop/theo-vai?phamVi=chi-nhanh&branchId={cn}']}
     for trang, urls in p.items():
         ds.append({'ten': f'{vai} {uid} {trang}', 'user': uid, 'urls': urls, **({'goc': GOC[vai]} if len(r) > 1 else {})})
 json.dump(ds, open(out, 'w', encoding='utf-8'), ensure_ascii=False)

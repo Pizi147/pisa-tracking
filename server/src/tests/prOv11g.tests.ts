@@ -267,6 +267,6 @@ export async function runPrOv11gTests(t: YThucTestKit) {
     assert(new RegExp(`^Còn \\d+ em (chưa chốt Lộ trình tiếp theo|chờ tới tuần chuyển lớp)\\.$`).test(tt.luuYKetThuc ?? '') && n > 0, `lớp thường: ${tt.luuYKetThuc}`);
     assert(/chuyển lớp từng em/.test(xoaKetThuc.xemXoaKetThuc(QL, FT101).luuYKetThuc ?? ''), 'FT');
     assert(d.badgeLop({ vai: 'ql', needsPlacement: false, canXepLop: 0, missingSkills: [], soBaiChoCham: 0, needScoresTitle: null, phase: 'running', missingCount: 0, soChuaLoTrinhTiep: 4 })
-      .hien.some((b: any) => b.nhan === '4 HV chưa chốt lộ trình'), 'badge "n HV chưa chốt lộ trình"');
+      .hien.some((b: any) => b.nhan === 'Chưa chốt lộ trình · 4'), 'badge "n HV chưa chốt lộ trình"');
   }));
 }

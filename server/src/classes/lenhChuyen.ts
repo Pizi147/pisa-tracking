@@ -840,7 +840,6 @@ export function lopChoChotLoTrinh(p: Principal, branchId: number | null, today: 
 }
 
 function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: string, lopId?: number): ChotLoTrinh[] {
-  const conn = db();
   const lop = [...lopDayDu().values()].filter((c) => c.status === 'active' && c.is_fast_track === 0 && (!branchId || c.branch_id === branchId) && (!lopId || c.id === lopId));
   const tienDo = classProgressMany(lop.map((c) => c.id as number));
   const toi = lop.flatMap((c) => {
@@ -854,8 +853,15 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
     return den && can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id }) ? [{ classId: c.id as number, code: c.code as string, han }] : [];
   });
   if (!toi.length) return [];
+  const dem = demChotTheoLop(toi.map((x) => x.classId));
+  return toi.flatMap((x) => { const d = dem.get(x.classId); return d?.chuaLenh ? [{ ...x, ...d }] : []; });
+}
+
+/** Đếm em đã / chưa có quyết định lộ trình theo lớp — một câu mỗi lô (dùng chung việc QL "Chốt lộ trình" và dải hồ sơ lớp, GD-6). */
+export function demChotTheoLop(ids: number[]): Map<number, DemChotLoTrinh & { emIds: number[] }> {
+  const conn = db();
   const dem = new Map<number, DemChotLoTrinh & { emIds: number[] }>();
-  theoLo(toi.map((x) => x.classId), (lo, ph) => {
+  theoLo(ids, (lo, ph) => {
     for (const r of conn.prepare(
       `SELECT x.class_id, COUNT(*) AS tong, SUM(NOT x.co_lenh) AS chua_lenh, SUM(NOT x.co_lenh AND x.cho_duyet) AS cho_duyet,
               SUM(NOT x.co_lenh AND NOT x.cho_duyet AND x.co_huong) AS de_xuat,
@@ -873,7 +879,7 @@ function tinhLopChoChotLoTrinh(p: Principal, branchId: number | null, today: str
       dem.set(r.class_id, { tong: Number(r.tong), chuaLenh, choDuyet, deXuat, chuaHuong: chuaLenh - choDuyet - deXuat, emIds: String(r.em_chua ?? '').split(',').filter(Boolean).map(Number) });
     }
   });
-  return toi.flatMap((x) => { const d = dem.get(x.classId); return d?.chuaLenh ? [{ ...x, ...d }] : []; });
+  return dem;
 }
 
 /**

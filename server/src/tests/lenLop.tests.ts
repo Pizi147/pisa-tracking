@@ -159,10 +159,10 @@ export async function runLenLopTests(t: YThucTestKit) {
     const het = d.badgeLop({ ...goc, needsPlacement: true, canXepLop: 3 });
     assert(het.hien.map((x: any) => x.key).join(',') === 'cham,thieu-gv', `Hai badge đầu: ${JSON.stringify(het.hien)}`);
     assert(het.an.map((x: any) => x.key).join(',') === 'xep-lop', `Phần gom: ${JSON.stringify(het.an)}`);
-    assert(het.an[0].nhan === '3 HV cần xếp lớp tiếp' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
+    assert(het.an[0].nhan === 'Cần xếp lớp tiếp · 3' && /hết khoá/.test(het.an[0].title ?? ''), 'Hết khoá: số em cần xếp lớp');
     const chua = d.badgeLop({ ...goc, needsPlacement: false, canXepLop: 0 });
     /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp (cùng tập dòng Cần xử lý). */
-    assert(chua.an[0].nhan === '5 HV chưa chốt lộ trình' && /Lộ trình tiếp theo/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
+    assert(chua.an[0].nhan === 'Chưa chốt lộ trình · 5' && /Lộ trình tiếp theo/.test(chua.an[0].title ?? '') && chua.an[0].tone === 'warn', JSON.stringify(chua.an[0]));
   });
 
   // ==================================================================== trongHaiTuanCuoi

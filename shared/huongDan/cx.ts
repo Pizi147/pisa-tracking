@@ -83,7 +83,7 @@ export const HD_CX: HuongDan = {
         { id: 'cx-tq-dau', ten: 'Đầu trang', buoc: ['Link <b>Lịch thi ›</b> · <b>Báo cáo HV ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).', 'Chuông chỉ có khối <b>Cập nhật</b>: CX không có Công việc nên không có <b>Việc cần làm</b>.'] },
       ],
     },
-    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2); thêm <b>Theo GV</b> ở tab Thi thật, không có tab Giáo viên.',
+    { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, /* GD-8: TVV không còn Tổng quan (Trước = Công việc) — CX còn. */ dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } }, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2); thêm <b>Theo GV</b> ở tab Thi thật, không có tab Giáo viên.',
       'Mọi chi nhánh; <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang; <b>Xuất Excel</b> ở hàng lọc.'],
       chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }] },
     {

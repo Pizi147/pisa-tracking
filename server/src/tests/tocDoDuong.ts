@@ -57,7 +57,6 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong' },
   { trang: 'Tổng quan V5', vai: ['QT'], url: '/tong-quan/v5?ct=ft&branchId={cn}' },
   { trang: 'Tổng quan V5', vai: ['CX'], url: '/tong-quan/v5?ct=ft' },
-  { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv' },
   { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv/o?o=bao-ph' },
   /* GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; thay `/tong-quan/tvv` + `/tong-quan/hoc-vien` khi GD-8 giao diện merge. */
   { trang: 'Trang đầu TVV', vai: ['TVV', 'QL', 'GVCN'], url: '/tong-quan/tvv/em', maChuDich: { QL: 400, GVCN: 400 } },
@@ -1425,10 +1424,6 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
     urls: ['/demo/session', '/tong-quan/tvv/em', '/my-work'],
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
-  'TVV trang Tổng quan': {
-    vai: 'TVV', tran: 43,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 33 → max(33 + 10, ⌈33 × 1,3⌉) ·   // RA-DOC-0611: đo 77 (trước 79) → max(77 + 10, ⌈77 × 1,3⌉) · UI-TONG-QUAN: + /tong-quan/tvv + /my-work (n việc của tôi) — đo 143 → max(143 + 10, ⌈143 × 1,3⌉)
-    urls: ['/demo/session', '/tong-quan/hoc-vien', '/tong-quan/tvv', '/my-work'],   // UI-TONG-QUAN: 3 nhóm TVV
-  },
   'QL trang Tổng quan': {
     vai: 'QL', tran: 107,   // TURSO-1211: thẻ Giáo viên `v2=1` — đo 82 (trước 108) → max(82 + 10, ⌈82 × 1,3⌉) · CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 108 → max(108 + 10, ⌈108 × 1,3⌉) ·   // PR-Dọn (9e): đủ 15 GET lúc mở trang → đo 346 câu (trước chỉ 6 GET, đo 126) — max(346 + 10, ⌈346 × 1,3⌉)
     /* PR-Dọn (9e): đủ MỌI GET lúc mở trang (phép quét `prDonA.tests.ts` 9e bắt route mới). OV-15d (Tổng quan QL A): bỏ sáu ô số + Điểm đáng chú ý;

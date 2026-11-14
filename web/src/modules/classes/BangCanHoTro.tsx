@@ -59,17 +59,23 @@ function tachViec(viec: string, kn: string): { nut: string; ky: string | null } 
   return { nut: /^Kết quả/.test(bo) ? `Ghi k${bo.slice(1)}` : bo, ky: sau[0] ?? null };
 }
 
-/** Một dòng Case. 375 (`the`): xếp dọc — môn + tên (+ SOS, Gấp) · nguyên nhân · viên · PA · người · nút việc full rộng + hạn. */
-export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }: {
-  h: HangKyNang<CaseCua>; c: CaseCua; ct: string | null; homNay: string; chiDoc?: boolean; the?: boolean;
-  onMo: (viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
-}) {
+/** Việc tiếp của một Case + loại panel mở (Xác nhận Case / Xác nhận PA / Ghi kết quả PA) + "chờ QL" — `DongCase` và tóm tắt môn lớp thường (GD-6) dùng chung. */
+export function viecCase(c: CaseCua, ct: string | null, homNay: string) {
   const [viec] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: ct });
   const d = viec?.dich?.loai === 'case' ? viec.dich : null;
   /* So trên chữ GỐC của máy chủ (`viecTiep.chu`, tiếng Việt) — `viec.viec` đã theo tiếng của trang. */
   const goc = c.viecTiep?.chu ?? '';
   const loai = !viec ? undefined : goc.startsWith('Xác nhận Case') || goc.startsWith('Mô tả Case') ? 'xac-nhan' as const
     : goc.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
+  return { viec, d, loai, choQl: goc.startsWith('Chờ Quản lý duyệt') };
+}
+
+/** Một dòng Case. 375 (`the`): xếp dọc — môn + tên (+ SOS, Gấp) · nguyên nhân · viên · PA · người · nút việc full rộng + hạn. */
+export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }: {
+  h: HangKyNang<CaseCua>; c: CaseCua; ct: string | null; homNay: string; chiDoc?: boolean; the?: boolean;
+  onMo: (viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa', paId?: number) => void;
+}) {
+  const { viec, d, loai, choQl } = viecCase(c, ct, homNay);
   const pa = c.pas.filter((p) => !p.xong);
   const gap = c.urgency === 'urgent';
   const mon = <span className="inline-flex h-6 min-w-[36px] items-center justify-center justify-self-start rounded-md border bg-[color:var(--surface-2)] px-1.5 text-xs font-bold text-slate-100" style={{ borderColor: 'var(--line-strong)' }} title={h.tenDu}>{h.nhan}</span>;
@@ -117,7 +123,6 @@ export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }
   const nguoi = [...new Set(pa.map((p) => p.nguoi).filter(Boolean))].join(', ');
   const cotNguoi = nguoi ? <span className="inline-flex min-w-0 items-center gap-1.5 text-[13px] font-medium text-dim">{ICON_NGUOI}<span className="truncate">{nguoi}</span></span> : <span className="text-faint">–</span>;
   const tach = viec ? tachViec(viec.viec, h.nhan) : null;
-  const choQl = goc.startsWith('Chờ Quản lý duyệt');
   const cotViec = !viec || !tach ? <span className="text-faint">–</span> : (
     <span className="grid min-w-0 justify-items-start gap-0.5">
       {/* Cùng việc, cùng panel như trước (loai / paId); "Chờ Quản lý duyệt" chữ mờ nhưng vẫn bấm mở panel (QL duyệt tại đó). */}

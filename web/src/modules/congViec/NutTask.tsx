@@ -10,11 +10,15 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { HopTinhHinh, type ChonEmTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
+import { boDau } from '@shared/huongDan/kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
 export type EmTask = { id: number; ten: string; lopId: number; lop: string; tvv: string | null };
 type Em = EmTask;
-type Loai = 'case' | 'vi-pham' | 'tinh-hinh';
+export type LoaiTask = 'case' | 'vi-pham' | 'tinh-hinh';
+type Loai = LoaiTask;
+/** Em của lớp đã nạp + dòng phụ tình trạng (SOS n / Đạt…). */
+export type EmLop = EmTask & { phu?: string };
 /** Chủ SP 14/11 (lời 17): tên nút "+ Task", thứ tự Case · Vi phạm / Nhắc nhở · Tình hình học tập. */
 const MUC: [Loai, string][] = [['case', t('Case')], ['vi-pham', t('Vi phạm / Nhắc nhở')], ['tinh-hinh', t('Tình hình học tập')]];
 /** GD-4a (mockup ⑤ F1, [XM-7]): menu giữ biểu tượng mục — cờ Case · khiên Ý thức · bóng lời Tình hình. */
@@ -29,7 +33,7 @@ const TOI_DA_TINH_HINH = 8;
  * GD-4a (mockup ⑤ F): MỘT nút cho trang đầu, hồ sơ lớp, hồ sơ HV — `lopId`: mở từ hồ sơ lớp, nhóm "Lớp này" lên đầu; `em`: hồ sơ HV điền sẵn em → bỏ bước chọn.
  * < 640 px menu neo đáy (F4).
  */
-export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false }: {
+export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false, dsHoi, dsEm }: {
   noi: 'dau' | 'noi'; lopId?: number; em?: EmTask;
   /** GD-7 (③ K6, [XM-6]): chỉ các mục người xem làm được (máy chủ quyết: `canReport` · `canRecord` · `coTheBao` / `coTheHoi`); bỏ trống = đủ 3 mục. */
   muc?: readonly Loai[];
@@ -43,12 +47,16 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   phu?: boolean;
   /** GD-7: nút ở hàng nút đầu hồ sơ — cao 36 như "⋯" (`NUT_DAU_HO_SO`), không 34. */
   dauHoSo?: boolean;
+  /** GD-6 ([XM-7] mockup ②): hồ sơ lớp truyền em của lớp đã nạp (`/roster`) — chọn em tìm tại chỗ, chỉ nhóm "Lớp này", không request. */
+  dsEm?: EmLop[];
+  /** GD-8 (④ R4.5, [XM-7]): TVV ở trang đầu — Hỏi tình hình chọn em trong danh sách em của mình đã nạp (không tìm `lop=toi`). */
+  dsHoi?: { id: number; ten: string }[];
 }) {
   const neo = useRef<HTMLSpanElement>(null);
   const [loai, setLoai] = useState<Loai | null>(null);
   const [em, setEm] = useState<Em[] | null>(null);
   const { homNay } = useNgayNghiepVu();
-  const timEm = useTimEm(lopId);
+  const timEm = useTimEm(lopId, dsEm);
   /* Hộp Tình hình một bước: HopNeo focus nút đầu (✕) — đưa focus về ô gõ tên em (người dùng gõ ngay), như bước chọn em. */
   useEffect(() => {
     if (loai !== 'tinh-hinh' || emSan) return undefined;
@@ -60,7 +68,8 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   const dsMuc = MUC.filter(([k]) => !chiMuc || chiMuc.includes(k)).map(([k, nhan]) => [k, k === 'tinh-hinh' && hoi ? t('Hỏi tình hình học tập') : nhan] as const);
   if (!dsMuc.length) return null;
   const mat = noi === 'dau'
-    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-8'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
+    /* GD-8: tổng chiều cao (mặt + viền 2 px) = nút cạnh — 32 như "Mọi hạn" / "Lọc thêm" ở Công việc, 36 như "⋯" ở đầu hồ sơ (đo ≤ 1 px). */
+    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-[30px]'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
     : <span className="grid h-[60px] w-[60px] place-items-center text-sm font-bold">{t('+ Task')}</span>;
   return (
     <>
@@ -75,7 +84,7 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
       {/* GD-4d (⓪ 40d, ⑤ F3 / ① K5c): Tình hình học tập = MỘT hộp — chọn em (ô chọn có tìm chung, ≤ 8) ngay trong hộp gửi; hồ sơ HV: em cố định. */}
       {loai === 'tinh-hinh' && em && (
         <HopTinhHinh neo={neo} homNay={homNay} onDong={dong} onXong={() => { invalidate('/my-work'); onXong?.(); }}
-          che={hoi && emSan ? { loai: 'hoi', em: { id: emSan.id, ten: emSan.ten }, gvcn: hoi.gvcn }
+          che={hoi ? { loai: 'hoi', em: emSan ? { id: emSan.id, ten: emSan.ten } : null, ds: emSan ? undefined : dsHoi ?? [], gvcn: hoi.gvcn }
             : { loai: 'bao', em: em.map((e) => ({ id: e.id, ten: e.ten, tvv: e.tvv })), chonEm: emSan ? undefined : chonEmTinhHinh(timEm) }} />
       )}
     </>
@@ -88,7 +97,7 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
  * và hộp Tình hình học tập một bước (GD-4d).
  */
 type TimEm = { tim: TimXa; emCua: Map<number, Em> };
-function useTimEm(lopId?: number): TimEm {
+function useTimEm(lopId?: number, dsEm?: EmLop[]): TimEm {
   const { session } = useSession();
   const pc = session?.assignments ?? [];
   const lopToi = new Set(pc.map((a) => a.classId));
@@ -98,7 +107,16 @@ function useTimEm(lopId?: number): TimEm {
   /* Thứ tự nhóm: lớp này → lớp của tôi (theo mã) → lớp khác; giữ thứ tự tên máy chủ trong mỗi nhóm. */
   const hang = (e: Em) => (e.lopId === lopId ? 0 : lopToi.has(e.lopId) ? 1 : 2);
   const tenNhom = (e: Em) => (hang(e) === 0 ? `${t('Lớp này')} · ${e.lop}` : hang(e) === 1 ? (chuNhiem.has(e.lopId) ? `${e.lop} · ${t('chủ nhiệm')}` : e.lop) : t('Lớp khác'));
-  const tim: TimXa = {
+  /* GD-6: em của lớp đã nạp → lọc tại chỗ (không dấu, từ một chữ), dòng phụ = tình trạng em. */
+  const timTaiCho: TimXa | null = dsEm ? {
+    toiThieu: 1, goiY: t('Gõ tên em'),
+    goi: async (q) => {
+      const kim = boDau(q).toLowerCase().trim();
+      return dsEm.filter((e) => boDau(e.ten).toLowerCase().includes(kim)).slice(0, 12)
+        .map((e) => { emCua.set(e.id, e); return { id: e.id, ten: e.ten, phu: e.phu ?? e.lop, nhom: `${t('Lớp này')} · ${e.lop}` }; });
+    },
+  } : null;
+  const tim: TimXa = timTaiCho ?? {
     toiThieu: 2, goiY: t('Gõ ít nhất 2 chữ của tên em'),
     goi: async (q) => {
       const r = await api.get<Em[]>(`/tim/hoc-vien?q=${encodeURIComponent(q)}&lop=toi`);

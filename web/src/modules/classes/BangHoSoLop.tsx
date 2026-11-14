@@ -20,12 +20,13 @@ import { MissingBadge } from '../students/MissingBadge.tsx';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
+import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
   CASE_CATEGORY_LABEL, GIAI_THICH_KCK, INTERVENTION_KIND_LABEL, KCK, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
-  lyDoChuaDu, maLoTrinhNgan, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, tvvChinhCuaLop, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
+  lyDoChuaDu, maLoTrinhNgan, nhanThang, outcomeLabelFor, soKyVong, tuanLich, dongTabHocVien, type DinhNghiaCot, type EntrySkill, type KetQuaVao, type LichThi, type NguCanhDs,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -106,6 +107,8 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
   const { homNay } = useNgayNghiepVu();
   const roster = useApi<Hang[]>(`/classes/${classId}/roster`, [classId]);
   const cases = useApi<{ rows: CaseLop[] }>(`/cases?classId=${classId}`, [classId]);
+  /* GD-6 (mockup ② mục 0 ý 3): thẻ kỹ năng có việc QUÁ HẠN của người xem tô màu quá hạn (V22) — dùng chung lời gọi `viec-theo-em` của đầu trang (không thêm request). */
+  const viec = useApi<ViecLop>(duongViecLop(classId), [classId]);
   const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { roster.reload(); onDoi(); } });
   const COT = cotCua(!!quyen.theoVai);
   /* Chip lọc nằm trên URL (`?loc=`) — sang hồ sơ em rồi Quay lại / F5 vẫn đúng lọc (luật Quay lại về đúng nguồn). */
@@ -120,15 +123,22 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
 
   const caseCua = new Map<number, CaseLop[]>();
   for (const c of cases.data?.rows ?? []) if (c.studentId !== null && c.status !== 'done') caseCua.set(c.studentId, [...(caseCua.get(c.studentId) ?? []), c]);
-  const dangLuu = roster.data.filter((r) => !r.archived);
   const tatCa = dongTabHocVien(roster.data, daKetThuc);
   const kq = new Map(tatCa.map((r) => [r.id, ketQua(r)]));
   const dem = { 'tat-ca': tatCa.length, sos: tatCa.filter((r) => kq.get(r.id) === 'sos').length, thieu: tatCa.filter((r) => kq.get(r.id) === 'thieu').length };
   const ds = tatCa.filter((r) => loc === 'tat-ca' || kq.get(r.id) === loc);
   const ngCanh: NguCanhDs = { loai: 'hoc-vien', ids: ds.map((s) => s.id), nhan: t('Lớp {lop}', { lop: maLop }) };
-  /* HSL-GON (M3): TVV chính đã ghi ở đầu hồ sơ lớp (hàng GV) — dòng em chỉ ghi TVV khác TVV chính. */
-  const tvvChinh = tvvChinhCuaLop(dangLuu);
-  const tvvRieng = (r: Hang) => !!r.tvv && r.tvv !== tvvChinh;
+  /* GD-6 (lời 25 ý 3): TVV không ở đầu trang, không dưới tên em — chỉ ghi nhỏ ở đầu khối "Điểm theo lượt" khi mở rộng em. */
+  /* Kỹ năng có việc quá hạn của người xem ở em: Nhập điểm theo `kn` / `kns`, việc Case theo kỹ năng của Case. */
+  const quaHanKn = (sid: number): Set<Kn> => {
+    const ra = new Set<Kn>();
+    for (const v of viec.data?.cuaToi ?? []) {
+      if (v.studentId !== sid || v.urgency !== 'overdue') continue;
+      for (const s of [v.kn, ...(v.kns ?? [])]) for (const k of KN) if (s && (BAND[k] === s || (s === 'writing' && (k === 'w1' || k === 'w2')))) ra.add(k);
+      if (v.caseId !== null) for (const k of KN) if (caseKn(caseCua.get(sid) ?? [], k).some((c) => c.id === v.caseId)) ra.add(k);
+    }
+    return ra;
+  };
   /* #9 (chủ SP 11/11 lộ trình theo em): em RF trong lớp LT1… — chữ mờ như TVV, không màu (không phải việc cần làm). */
   const ltKhac = (r: Hang) => (loTrinhLop && r.cycle?.route && r.cycle.route !== loTrinhLop ? r.cycle.route : null);
   const chuLt = (r: Hang) => ltKhac(r) && <span className="tvv">{t('Lộ trình')} {maLoTrinhNgan(ltKhac(r)!)}</span>;
@@ -136,7 +146,15 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
   /* `moiVao` = vào lớp từ đầu tuần này → tuần của hôm nay. */
   const nhanPhu = (r: Hang) => <>{r.archived && <Nhan tone="muted">{t('Lưu trữ')}</Nhan>}{r.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}<MissingBadge items={r.missing} gon /><CanhBaoYThuc cb={r.canhBaoYThuc} /></>;
   /* Bấm tên: mở / đóng; mở thì chọn sẵn kỹ năng đầu tiên có Case (đỡ một bấm), không có Case → chưa chọn. Bấm ô điểm: mở với kỹ năng đó. */
-  const moTen = (r: Hang) => setMo(mo?.sid === r.id ? null : { sid: r.id, kn: KN.find((k) => caseKn(caseCua.get(r.id) ?? [], k).length > 0) ?? null });
+  /* GD-6 (mockup ② mục 0): không Case thì kỹ năng trượt thấp nhất so kỳ vọng ở lượt mới nhất (đỡ một bấm); không trượt → chưa chọn. */
+  const knTruot = (r: Hang): Kn | null => {
+    const h = (r.history as Moc[])[0];
+    const kv = h?.expectation ?? null;
+    if (!h || kv === null) return null;
+    const ds = KN.map((k) => [k, h.bands?.[BAND[k]] ?? null] as const).filter(([, v]) => v !== null && v < kv);
+    return ds.length ? ds.reduce((a, b) => (b[1]! < a[1]! ? b : a))[0] : null;
+  };
+  const moTen = (r: Hang) => setMo(mo?.sid === r.id ? null : { sid: r.id, kn: KN.find((k) => caseKn(caseCua.get(r.id) ?? [], k).length > 0) ?? knTruot(r) });
   const moO = (r: Hang, kn: Kn) => setMo(mo?.sid === r.id && mo.kn === kn ? null : { sid: r.id, kn });
 
   const oDiem = (r: Hang, h: Moc | null, k: KyO) => {
@@ -170,7 +188,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
           <span className="flex min-w-0 flex-col items-start">
             <TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />
             {/* Dòng dưới tên (mockup v10 `.chip-phu`): TVV (chữ mờ) · mới vào (chữ) · thiếu thông tin · Ý thức — chỉ việc cần làm có màu. */}
-            <ChipXetLaiDong sid={r.id} />{(tvvRieng(r) || ltKhac(r) || r.archived || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{chuLt(r)}{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}{nhanPhu(r)}</span>}
+            <ChipXetLaiDong sid={r.id} />{(ltKhac(r) || r.archived || r.moiVao || r.missing.length > 0 || r.canhBaoYThuc) && <span className="mt-0.5 flex flex-wrap items-center gap-1.5">{chuLt(r)}{nhanPhu(r)}</span>}
           </span>
         </span>
       );
@@ -201,10 +219,10 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
       <div className="flex cursor-pointer flex-col gap-2" onClick={bamHang(() => moTen(r))}>
         <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2">
           <span className="inline-flex min-w-0 items-center gap-2.5 text-[15px]">{chon?.bat && <OChon chon={chon} id={r.id} ten={r.fullName} />}
-            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{(ltKhac(r) || tvvRieng(r)) && <span className="flex flex-wrap gap-1.5">{chuLt(r)}{tvvRieng(r) && <span className="tvv">TVV {r.tvv}</span>}</span>}</span></span>
+            <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{ltKhac(r) && <span className="flex flex-wrap gap-1.5">{chuLt(r)}</span>}</span></span>
           {o(r, 'kq')}
           <MenuDong muc={r.archived ? [] : tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
-            lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />
+            lopNut={NUT_BA_CHAM} />
         </div>
         <ChipXetLaiDong sid={r.id} />
         {coNhan && <span className="flex flex-wrap items-center gap-1.5">{nhanPhu(r)}</span>}
@@ -226,7 +244,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
   };
   const lopHang = (r: Hang) => `${r.status !== 'active' ? 'row-muted' : ''} ${chon?.chon.has(r.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
   const moRong = (r: Hang) => (
-    <MoRongEm r={r} kn={mo?.kn ?? null} ca={caseCua.get(r.id) ?? []} ds={ngCanh} classId={classId} coTheBaoCase={quyen.coTheBaoCase}
+    <MoRongEm r={r} kn={mo?.kn ?? null} ca={caseCua.get(r.id) ?? []} ds={ngCanh} classId={classId} coTheBaoCase={quyen.coTheBaoCase} quaHan={quaHanKn(r.id)}
       onKn={(kn) => setMo({ sid: r.id, kn })} onChiTiet={(caseId, kn) => setNgan2({ caseId, hv: r.fullName, sid: r.id, kn })} onThemCase={() => tt.moCase(r.id, r.fullName)} />
   );
   const hangCua = (r: Hang) => (
@@ -317,8 +335,10 @@ function DongTieuChi({ nhan, d, band }: { nhan: string; d: [string, string][]; b
  * + "Lượt tới …" · phải 5 ô kỹ năng (lượt trước → mới nhất · Case) rồi tóm tắt kỹ năng đang chọn. Dữ liệu điểm có sẵn trong `/roster`; Case chi tiết
  * chỉ đọc khi chọn kỹ năng có Case (`TomTatKn`, một `/cases/:id`).
  */
-function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThemCase }: {
+function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, quaHan, onKn, onChiTiet, onThemCase }: {
   r: Hang; kn: Kn | null; ca: CaseLop[]; ds: NguCanhDs; classId: number; coTheBaoCase: boolean;
+  /** GD-6: kỹ năng có việc quá hạn của người xem — thẻ tô chữ màu quá hạn (V22: chỉ màu, không ⚠; mockup ② vẽ ⚠ → KHÁC theo V22). */
+  quaHan: ReadonlySet<Kn>;
   onKn: (k: Kn) => void; onChiTiet: (caseId: number, kn: Kn) => void; onThemCase: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
@@ -338,7 +358,11 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThe
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <section className={KHOI} aria-label={t('Điểm theo lượt')}>
-        <h3 className={MUC_H}>{t('Điểm theo lượt')}</h3>
+        <div className="flex items-center gap-3">
+          <h3 className={MUC_H}>{t('Điểm theo lượt')}</h3>
+          {/* GD-6 (lời 25 ý 3): TVV của em — chữ nhỏ mờ, chỉ ở đây. */}
+          {r.tvv && <span className="ml-auto text-xs font-medium text-faint">TVV {r.tvv}</span>}
+        </div>
         {ls.length || dv ? (
           /* `Bang chat` (BANG-3: một bảng cho cả hệ) — hàng tự vẽ để dòng Đầu vào gộp ô W1 · W2. 375 (mockup B1): W gộp một cột, không Kỳ vọng. */
           <div className="[&_tbody_tr:last-child>td]:!border-b-0 [&_th]:!bg-transparent [&_th]:!text-xs [&_th]:!text-faint max-sm:[&_td]:!px-1 max-sm:[&_th]:!px-1"><Bang chat deu khung={false} the375={false} ten={t('Điểm theo lượt')} cot={cotLuot} hang={[...ls.map((h) => ({ h, dv: null })), ...(dv ? [{ h: null, dv }] : [])]}
@@ -387,9 +411,9 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, onKn, onChiTiet, onThe
             return (
               <button key={k} type="button" aria-pressed={kn === k} onClick={() => onKn(k)}
                 className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
-                <span className="text-[13px] font-bold text-slate-100">{NHAN_KN[k]}</span>
+                <span className={`text-[13px] font-bold ${quaHan.has(k) ? 'text-late' : 'text-slate-100'}`}>{NHAN_KN[k]}{quaHan.has(k) && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
                 <span className="text-[15px] font-bold tabular-nums">{truoc !== null && moi !== null && <span className="max-sm:hidden">{fmtBand(truoc)} → </span>}{o(moi, ls[0]?.expectation)}</span>
-                <span className="text-xs text-dim max-sm:hidden">{coCase.length ? (coCase.some((c) => c.interventionCount > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
+                <span className={`text-xs max-sm:hidden ${quaHan.has(k) ? 'font-semibold text-late' : 'text-dim'}`}>{coCase.length ? (coCase.some((c) => c.interventionCount > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
               </button>
             );
           })}
