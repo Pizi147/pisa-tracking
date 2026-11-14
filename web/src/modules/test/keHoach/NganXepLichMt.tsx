@@ -245,7 +245,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
           <div className="min-w-0 flex-1">
             <span className="mb-1 block text-[12px] font-bold text-slate-200">{t('Lớp')}</span>
             {/* GD-11b (mockup ⑦ B3): MỘT ô chọn có tìm — chip lớp đã chọn nằm TRONG ô, gõ tên lớp ngay sau chip. */}
-            <div role="group" aria-label={t('Lớp đã chọn')} className="field flex min-h-[40px] max-w-[440px] flex-wrap items-center gap-1.5 !py-1">
+            <div role="group" aria-label={t('Lớp đã chọn')} className="field flex min-h-[40px] max-w-[440px] flex-wrap items-center gap-1.5 !py-1 focus-within:border-[color:var(--accent)]">
               {lopChon.map((id) => {
                 const l = lopFT.find((x) => x.id === id) ?? lopTheoChiNhanh.find((x) => x.id === id);
                 return (
