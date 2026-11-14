@@ -176,8 +176,8 @@ export default function LuuTruPage() {
     <h2 className="m-0 flex items-baseline gap-2 text-[15px] font-bold text-slate-100">{ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{dem}</span></h2>
   );
   const nhanDai = (h: DaiNhom) => (
-    <span className="whitespace-nowrap text-[14px] font-bold text-[color:var(--text)]">
-      {h.href ? <Link to={h.href} className="link">{h.dai}</Link> : h.dai} <span className="text-[13px] font-medium text-faint">{h.donVi === 'lop' ? t('{n} lớp', { n: h.n }) : t('{n} em', { n: h.n })}</span>
+    <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap text-[14px] font-bold text-[color:var(--text)]">
+      {h.href ? <Link to={h.href} className="link">{h.dai}</Link> : h.dai}<span className="text-[13px] font-medium text-faint">{h.donVi === 'lop' ? t('{n} lớp', { n: h.n }) : t('{n} em', { n: h.n })}</span>
     </span>
   );
   /* Lớp: trong chi nhánh dải Fast Track → Lớp thường (máy chủ đã xếp FT trước, số to trước). */
@@ -240,10 +240,8 @@ export default function LuuTruPage() {
       {/* GD-16 (mockup ⑩ L1): một hàng — "Lưu trữ" · Xem (ô chi nhánh; tự ẩn khi chỉ một chi nhánh) · ô tìm bên phải; 375 một cột. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <h1 className="m-0 text-xl font-bold text-slate-100">{t('Lưu trữ')}</h1>
-        <span className="inline-flex items-center gap-2 max-sm:w-full">
-          <span className="text-[13px] font-semibold text-dim">{t('Xem')}</span>
-          <BranchFilter branchId={branchId} onBranch={(id) => setParam({ cn: id ? String(id) : null, branchId: null })} />
-        </span>
+        {/* Ô chi nhánh chung (D3 `OChiNhanh`: nhãn trong ô, tự ẩn khi chỉ một chi nhánh) — mockup ghi "Xem"; giữ một mẫu mọi trang. */}
+        <BranchFilter branchId={branchId} onBranch={(id) => setParam({ cn: id ? String(id) : null, branchId: null })} />
         <input className="field w-full sm:ml-auto sm:w-80" aria-label={t('Tìm')} placeholder={t('Tìm tên, mã học viên hoặc mã lớp…')}
           value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
       </div>
