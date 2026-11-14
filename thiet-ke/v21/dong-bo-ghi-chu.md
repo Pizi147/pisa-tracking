@@ -57,6 +57,7 @@ Chỉ sửa tại chỗ, không vẽ lại, không đổi bố cục. Ảnh cặ
 | 38 | ② | panel trượt (CSS) | Bề rộng panel 720 → **736** (cùng ①⑤) | `10` B |
 | 39 | ② ⑤ | ② K7f; ⑤ B3 | Câu lỗi / hết việc theo mẫu ①: "⚠ Không tải được … · Thử lại"; "Hết việc Chấm điểm của bạn · Còn: Case học thuật · 3 việc · Việc tiếp ›" | `10` B |
 | 40 | ⑤ | tiêu đề khung B | "dải 'Việc cần làm' hồ sơ lớp" → hồ sơ lớp dùng nút-chip (② đã duyệt) | `10` B |
+| 40b | ⑤ | E2 (hộp nhập Writing) | Dòng chú thích "Writing = (W1 + 2×W2) / 3 · Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5 ✓" → chỉ giữ dòng xem trước **"Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5 ✓"**, công thức vào **ⓘ** cạnh dòng (như mockup ⑦) | luật bỏ chú thích tĩnh · PTA Overhaul 15/11 |
 | 41 | CSS | `v21.css` | Dời nguyên văn từ `bang-mau.css`: ô chọn có tìm (`.oc*`), dải chỉ số + ô số (`.dai-cs`, `.oso`), badge mờ (`.bd.mo`), lịch sử (`details.ls`, `.ls-ds`), mục nguy hiểm `.menu-tha .nguy`; từ `ho-so-hv.css`: thang cấp bậc `.vach-bac` → ①–⑤ dùng MỘT bản | G2 "cùng thành phần" |
 | 42 | ghi chú | `trang-dau-gv-ghi-chu.md` [XM-2], [XM-5] · `bang-mau-ghi-chu.md` [XM-15], bảng mục 3 · `ho-so-lop-ghi-chu.md` [XM-10] · `trang-dau-tvv-ghi-chu.md` [XM-7], [XM-10] | Ghi "ĐÃ CHỐT / ĐÃ XONG" theo lời 33 và mockup ⓪; bảng mục 3: bỏ `test/keHoach/XepTheoHocVien.tsx` khỏi danh sách `soMo`, bỏ `worklist/LamDongSoLieu.tsx` khỏi danh sách dải (giữ số to — [XM-11]) | R0.6 |
 
