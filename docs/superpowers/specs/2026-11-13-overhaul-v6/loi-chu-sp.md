@@ -332,3 +332,19 @@ Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đ
 > "merge xong hết mockup archive hết những gì đã xong và cho tôi prompt bàn giao sang session overhaul plan mới"
 
 Đã làm: năm mockup ①–⑤ đã merge (#1544 / #1547, #1560, #1559, #1557, #1558); archive bốn session mockup + hai session dự bị; plan giao diện đợt 2 (`09`) đã gửi PTA Plan; prompt bàn giao đưa chủ SP trong chat. Session planning mới đọc thư mục này theo thứ tự: `loi-chu-sp.md` → `04-thiet-ke.md` (mục 12–14 thắng mục 5) → `05`, `07`, `09` (plan) → `08-bao-cao-sang.md` (17 câu hỏi còn mở) → `luat/`.
+
+## 15/11 — lời 32 (session PTA Overhaul mới): ba chỗ tài liệu ↔ mã lệch
+
+Câu hỏi của PTA Overhaul (câu 12, 13, 14 ở `08-bao-cao-sang.md`): (1) MT0 gõ "-": mã chỉ ghi vắng, Rulebook ghi áp luật vắng như Mock — theo bên nào (PTA đề xuất theo mã); (2) việc Bước tiếp sau thi: N6 "TVV của em", mã cho mọi TVV cùng chi nhánh — đề xuất theo mã; (3) xoá học viên / lớp trống: Rulebook "chỉ Quản trị", mã cho QL — đề xuất theo mã.
+
+> "1. áp luật vắng như mock
+> 2. theo đề xuất
+> 3. theo đề xuất
+>
+> 3 câu nhỏ hơn hỏi luôn và cho đề xuất đi"
+
+ĐÃ CHỐT:
+1. **MT0 gõ "-" áp luật vắng như Mock** (lần 1 dời sang tuần sau, lần 2 huỷ — N38) — BÁC đề xuất của PTA; mã phải sửa (nay chỉ ghi dấu, không dời, hết tuần thành "Không dự thi") → LG-9 ở `05-plan-logic-luat.md`, gửi PTA Plan.
+2. **Việc Bước tiếp sau thi: giữ như mã** — việc giao cho TVV của em, mọi TVV cùng chi nhánh làm thay được. Sửa chữ N6 trong tài liệu.
+3. **Xoá học viên / lớp trống: QL làm được** (giữ như mã; có Thùng rác 30 ngày). Sửa chữ Rulebook.
+Câu 1–11 ở `08`: coi là đã chốt theo năm mockup đã duyệt (lời 27–30). Còn hỏi: câu 15, 16, 17.
