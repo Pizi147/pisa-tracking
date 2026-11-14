@@ -1,21 +1,26 @@
 import { db } from '../db.ts';
-import { CHU_DA_XONG, CHU_THEM_PA, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
+import { CHU_DA_XONG, CHU_THEM_PA, HAN_GAN_NGAY, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { diffDays } from '../util.ts';
+import { addDays, diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
-import { hanGhiKetQuaToi } from '../worklist/mywork.ts';
+import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
+import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
+
+/** Độ gấp của hạn (V22) — MỘT hàm cho mọi dòng việc của hồ sơ; `quaHan` ép đỏ khi nguồn đã có cờ quá hạn riêng (ô Nhập điểm). */
+const gapCua = (han: string | null, today: string, quaHan = false): ViecHocVien['gap'] =>
+  quaHan || (han && han < today) ? 'qua-han' : !han ? null : han <= addDays(today, HAN_GAN_NGAY) ? 'gan' : 'chua';
 
 export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
   key: string;
   loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
-    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep' | 'thi-that';
+    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep' | 'thi-that' | 'nhap-diem' | 'tinh-hinh';
   /** "Kết quả W3–W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
   /** PR-EN-c: khoá + biến của `chu` (câu có biến) — web dịch bằng `dichChu`. Câu không biến dịch theo chính `chu`. */
@@ -23,14 +28,22 @@ export type ViecHocVien = {
   /** U02 (mockup `audit-0311/u02` dòng 3): thẻ phụ dưới tên việc — "Kỳ W5 OCT – W1 NOV" · "PA Học Tutor" (chữ, tên PA giữ nguyên). */
   the?: { chu: string; khoa?: string; bien?: Bien }[];
   kyNang: string | null; caseId: number | null; paId: number | null;
-  han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
+  han: string | null; quaHanNgay: number | null;
+  /** GD-7a (luật hạn V22): độ gấp để web tô màu — đỏ quá hạn · vàng gần tới hạn (≤ `HAN_GAN_NGAY`) · thường chưa tới · null không hạn. KHÔNG chuỗi ⚠. */
+  gap: 'qua-han' | 'gan' | 'chua' | null;
+  tone: 'danger' | 'warn' | 'info' | 'wait';
   /** "Đỗ Thanh Tùng · GVBM Speaking" · "Quản lý" (vai, không tên). */
   nguoi: { id: number | null; ten: string; vai: string | null };
   cuaBan: boolean;
   /** Nút động từ + chỗ mở (Ngăn Case / tab Ý thức / trang bàn giao). */
   nut: string;
   mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'them-pa' }
-    | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' } | { loai: 'duong'; href: string } | null;
+    | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' }
+    /** GD-7a: panel Nhập điểm lớp × tuần của việc (như Công việc: `classId` · `luot` · `kns` · `tuanThi`). */
+    | { loai: 'nhap-diem'; classId: number; luot: string; kns: string[]; tuanThi: string | null }
+    /** GD-7a: panel Trả lời tình hình (`viecId` = id câu hỏi, như `yt_hoi_tinh_hinh:{id}` của Công việc). */
+    | { loai: 'tinh-hinh'; viecId: number }
+    | { loai: 'duong'; href: string } | null;
 };
 
 type Nguon = {
@@ -61,7 +74,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     const quaHanNgay = v.due < today ? diffDays(today, v.due) : null;
     /* UI-HO-SO-HV (nợ #515): câu bắt đầu bằng động từ như mọi việc — "Chọn bước tiếp · OVR 6.5 · Đạt Target" (không "Đã xong · …"). */
     const kq = String(v.contextLabel ?? '').replace(new RegExp(`^${CHU_DA_XONG}( · )?`), '');   // contextLabel = nhanDaXong(…) [· đã gia hạn]
-    return { key: v.key, loai: 'buoc-tiep', chu: kq ? `Chọn bước tiếp · ${kq}` : 'Chọn bước tiếp', ...(kq ? { khoa: 'Chọn bước tiếp · {kq}', bien: { kq } } : {}), kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay,
+    return { key: v.key, loai: 'buoc-tiep', chu: kq ? `Chọn bước tiếp · ${kq}` : 'Chọn bước tiếp', ...(kq ? { khoa: 'Chọn bước tiếp · {kq}', bien: { kq } } : {}), kyNang: null, caseId: null, paId: null, han: v.due, quaHanNgay, gap: gapCua(v.due, today),
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Chọn bước tiếp ›', mo: { loai: 'duong', href: v.href } };
   });
   /* OV-13q: "Cập nhật kết quả thi thật ›" mở panel Kết quả thi thật ngay trong hồ sơ (`?viec=thi-that`); hạn = hạn sau thi (cùng việc Công việc). */
@@ -69,13 +82,13 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* SV-TVV-VIEC: việc của người giữ (TVV của em / QL khi em chưa có TVV) — GVCN vẫn nhập được ở panel nhưng không còn là việc của GVCN. */
   if (st && st.giaiDoan === 'da_thi_cho_kq' && st.coTheNhap && chuViecTvv(p, sid, tvvCuaEm([sid]).get(sid) ?? null)) {
     const quaHanNgay = st.quaHan && st.han ? diffDays(today, st.han) : null;
-    bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: st.han, quaHanNgay,
+    bt.push({ key: `thi_that:${st.cycleId}`, loai: 'thi-that', chu: 'Cập nhật kết quả thi thật', kyNang: null, caseId: null, paId: null, han: st.han, quaHanNgay, gap: gapCua(st.han, today),
       tone: quaHanNgay !== null ? 'danger' : 'info', nguoi: { id: p.userId, ten: p.fullName, vai: null }, cuaBan: true, nut: 'Cập nhật kết quả thi thật ›',
       mo: { loai: 'duong', href: duongHoSoHocVien(sid, { loTrinh: st.cycleId, viec: 'thi-that' }) } });
   }
   if (n.trangThaiEm !== 'active') return { cuaBan: bt, nguoiKhac: [] };
   const conn = db();
-  type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean };
+  type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay' | 'gap'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean; quaHan?: boolean };
   const ds: Nhap[] = [];
 
   const cases = board.rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done').map((c: any) => ({ r, c })));
@@ -187,6 +200,23 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       mo: { loai: 'duong', href: `/hoc-vien/lop/${dai.lopNguon.id}?viec=ban-giao&lenh=${dai.lenhId}&mon=${dai.mon.ma}` } });
   }
 
+  /* GD-7a (XM-10): Nhập điểm + Trả lời tình hình của NGƯỜI XEM với em này — cùng hàm với Công việc (`viecNhapDiemCuaEm` = `listAttempts` + `gomBaiNhapDiem`,
+     `viecHoiTinhHinhCuaToi`), cùng khoá → hai nơi không lệch; việc xong thì nguồn không còn trả. Chỉ đọc đúng em này (thêm ~2 câu). */
+  for (const v of viecNhapDiemCuaEm(p, sid, today, n.lopId)) {
+    const nhieu = (v.soBai ?? 0) > 1;
+    ds.push({ key: v.key, loai: 'nhap-diem', chu: 'Nhập điểm',
+      the: [...(v.kns ?? []).map((k) => ({ chu: tenMon(n.chuongTrinh, k) })), ...(v.contextLabel ? [{ chu: v.contextLabel }] : []),
+        ...(nhieu ? [kem('{n} bài', { n: v.soBai! })] : [])],
+      kyNang: v.kn ?? null, caseId: null, paId: null, han: v.due, tone: 'info', quaHan: v.urgency === 'overdue', nguoiId: p.userId, nut: 'Nhập điểm',
+      mo: v.classId && v.luot ? { loai: 'nhap-diem', classId: v.classId, luot: v.luot, kns: v.kns ?? [], tuanThi: v.tuanThi ?? null } : { loai: 'duong', href: v.href } });
+  }
+  for (const v of viecHoiTinhHinhCuaToi(p, { today, tatCa: false, branchId: null, studentId: sid })) {
+    const hoi = String(v.due ? addDays(v.due, -2) : '');   // hạn = ngày hỏi + 2 (`hanHoiTinhHinh`)
+    ds.push({ key: v.key, loai: 'tinh-hinh', chu: 'Trả lời tình hình', the: [{ chu: 'TVV hỏi' }, ...(hoi ? [{ chu: `${hoi.slice(8, 10)}/${hoi.slice(5, 7)}` }] : [])],
+      kyNang: null, caseId: null, paId: null, han: v.due ?? null, tone: 'info', nguoiId: p.userId, nut: 'Trả lời',
+      mo: v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId } : { loai: 'duong', href: v.href } });
+  }
+
   /* Tên + vai người làm — MỘT câu: người có việc + GVCN lớp đang học (Báo PH / Mini Test không người dạy dùng `-1` = GVCN). */
   const ids = [...new Set(ds.map((x) => x.nguoiId).filter((x): x is number => !!x && x > 0))];
   const nguoi = new Map<number, { ten: string; gvcn: boolean; mon: string[] }>();
@@ -211,11 +241,11 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     return mon ? `GVBM ${tenMon(n.chuongTrinh, mon)}` : null;
   };
 
-  const ra: ViecHocVien[] = ds.map(({ nguoiId, vaiChu, cuaBanTheoVai, ...x }) => {
+  const ra: ViecHocVien[] = ds.map(({ nguoiId, vaiChu, cuaBanTheoVai, quaHan, ...x }) => {
     const id = nguoiId === -1 ? gvcnId : nguoiId;
     const quaHanNgay = x.han && x.han < today ? diffDays(today, x.han) : null;
     return {
-      ...x, quaHanNgay, tone: quaHanNgay !== null ? 'danger' : x.tone,
+      ...x, quaHanNgay, gap: gapCua(x.han, today, quaHan), tone: quaHanNgay !== null || quaHan ? 'danger' : x.tone,
       nguoi: id ? { id, ten: nguoi.get(id)?.ten ?? '—', vai: vaiCua(id, x.kyNang) } : { id: null, ten: vaiChu ?? 'Chưa có người phụ trách', vai: null },
       cuaBan: cuaBanTheoVai ?? (x.loai !== 'cho-duyet' && !!id && id === p.userId),
     };

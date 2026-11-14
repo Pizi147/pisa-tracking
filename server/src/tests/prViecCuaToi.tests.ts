@@ -21,6 +21,9 @@ export async function runPrViecCuaToiTests(t: any) {
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const nguon = (f: string) => fs.readFileSync(path.join(ROOT, f), 'utf8');
+  const { viecNhapDiemCuaEm } = await import('../worklist/mywork.ts');
+  const { viecCuaHocVien } = await import('../students/viecHocVien.ts');
+  const casesMod: any = await import('../cases/cases.ts');
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { xoaNho(); return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); } };
 
   check('G5-05 · chuông: thông báo gắn tín hiệu `pending` → Để biết (không việc nào đọc tín hiệu chờ)', () => thu(() => {
@@ -53,4 +56,64 @@ export async function runPrViecCuaToiTests(t: any) {
     const s = nguon('server/src/students/viecHocVien.ts');
     assert(/choMini = n\.miniTest && n\.miniTest\.tyLe === null/.test(s) && /!\(pl\.lanCuoi && choMini && pl\.nhom === choMini\)/.test(s), 'viecHocVien bỏ KQ PA lần cuối khi Mini Test chờ');
   });
+
+  /* GD-7a (XM-10): hồ sơ HV có thêm Nhập điểm + Trả lời tình hình của người xem — MỘT hàm với Công việc (cùng khoá), xong thì hết ở cả hai nơi. */
+  check('GD-7a · Nhập điểm: mọi dòng score của Công việc cũng có ở hồ sơ từng em của dòng (cùng khoá), và ngược lại; viecCuaHocVien trả đủ trường + gap, không ⚠', () => {
+    const homNay = demoToday();
+    const users = (conn.prepare(`SELECT DISTINCT user_id FROM teacher_assignments WHERE status = 'active' ORDER BY user_id LIMIT 12`).all() as any[]).map((r) => r.user_id as number);
+    let soSo = 0, daThuHoSo = false;
+    for (const u of users) {
+      const p = loadPrincipal(u);
+      const dongs = ((myWork(p) as any).items as any[]).filter((it) => it.group === 'score' && (it.studentId || it.emIds?.length));
+      const theoEm = new Map<number, Set<string>>();
+      for (const it of dongs) for (const sid of it.studentId ? [it.studentId as number] : it.emIds as number[]) (theoEm.get(sid) ?? theoEm.set(sid, new Set()).get(sid)!).add(it.key);
+      for (const [sid, keys] of [...theoEm].slice(0, 6)) {
+        const lopEm = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(sid) as any)?.class_id ?? null;
+        const hs = viecNhapDiemCuaEm(p, sid, homNay, lopEm).map((x) => x.key);
+        assert(hs.length === keys.size && hs.every((k) => keys.has(k)), `GV ${u} · em ${sid}: Công việc ${[...keys]} ≠ hồ sơ ${hs}`);
+        soSo++;
+      }
+      /* Em có ở Công việc thì hồ sơ phải trả; em KHÔNG có ở Công việc thì hồ sơ không trả dòng score nào ngoài tập của người đó. */
+      const ngoai = (conn.prepare(`SELECT DISTINCT student_id FROM assessment_attempts ORDER BY student_id DESC LIMIT 5`).all() as any[]).map((r) => r.student_id as number).filter((x) => !theoEm.has(x));
+      for (const sid of ngoai) assert(viecNhapDiemCuaEm(p, sid, homNay, (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' LIMIT 1`).get(sid) as any)?.class_id ?? null).length === 0, `GV ${u} · em ${sid} không có ở Công việc nhưng hồ sơ trả việc`);
+      if (!daThuHoSo && theoEm.size) {
+        const sid = [...theoEm.keys()][0];
+        const board = casesMod.skillSupportBoard(p, sid) as any;
+        const lop = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' LIMIT 1`).get(sid) as any)?.class_id ?? null;
+        const v = viecCuaHocVien(p, sid, board, { trangThaiEm: 'active', lopId: lop, chuongTrinh: board.chuongTrinh, yThuc: null, miniTest: null, dai: null });
+        const nd = v.cuaBan.filter((x) => x.loai === 'nhap-diem');
+        assert(nd.length === theoEm.get(sid)!.size && nd.every((x) => theoEm.get(sid)!.has(x.key)), `viecCuaHocVien nhap-diem: ${nd.map((x) => x.key)}`);
+        for (const x of nd) {
+          assert(x.mo?.loai === 'nhap-diem' && x.nut === 'Nhập điểm' && x.cuaBan && x.nguoi.id === u, `dòng Nhập điểm thiếu trường: ${JSON.stringify(x)}`);
+          assert((x.han === null) === (x.gap === null) && (x.gap === null || ['qua-han', 'gan', 'chua'].includes(x.gap)) && !JSON.stringify(x).includes('⚠'), `gap / ⚠: ${JSON.stringify(x)}`);
+        }
+        daThuHoSo = true;
+      }
+    }
+    assert(soSo > 0 && daThuHoSo, 'seed không có em nào còn việc Nhập điểm để so');
+  });
+
+  check('GD-7a · Trả lời tình hình: GVCN lớp em thấy ở Công việc VÀ hồ sơ (cùng khoá); người không giữ không thấy; xong thì hết cả hai', () => thu(() => {
+    const homNay = demoToday();
+    const r = get(`SELECT e.student_id AS sid, e.class_id AS lop, ta.user_id AS gvcn FROM enrollments e JOIN teacher_assignments ta ON ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active'
+        WHERE e.status = 'active' ORDER BY e.id LIMIT 1`);
+    assert(r, 'seed có em + GVCN');
+    const tvv = get(`SELECT id FROM users WHERE id <> ? ORDER BY id LIMIT 1`, r.gvcn).id;
+    const id = Number(conn.prepare(`INSERT INTO tinh_hinh_hoc_tap (student_id, class_id, chieu, noi_dung, nguoi_gui, tao_luc, han, trang_thai) VALUES (?,?, 'tvv_gvcn', 'Em vắng nhiều buổi gần đây?', ?, ?, ?, 'mo')`)
+      .run(r.sid, r.lop, tvv, new Date().toISOString(), d.addDaysIso(homNay, 2)).lastInsertRowid);
+    const khoa = `yt_hoi_tinh_hinh:${id}`;
+    const trongCv = (u: number) => ((myWork(loadPrincipal(u)) as any).items as any[]).some((it) => it.key === khoa);
+    const trongHs = (u: number) => {
+      const p = loadPrincipal(u);
+      const v = viecCuaHocVien(p, r.sid, { rows: [] }, { trangThaiEm: 'active', lopId: r.lop, chuongTrinh: null, yThuc: null, miniTest: null, dai: null });
+      return v.cuaBan.find((x: any) => x.key === khoa) ?? null;
+    };
+    const x = trongHs(r.gvcn);
+    assert(trongCv(r.gvcn) && x && x.loai === 'tinh-hinh' && (x.mo as any)?.viecId === id && x.nut === 'Trả lời' && x.cuaBan && x.han === d.addDaysIso(homNay, 2) && x.gap === 'gan' && !JSON.stringify(x).includes('⚠'),
+      `GVCN: Công việc ${trongCv(r.gvcn)} · hồ sơ ${JSON.stringify(x)}`);
+    const khac = get(`SELECT DISTINCT ta.user_id AS u FROM teacher_assignments ta WHERE ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) AND ta.status = 'active' LIMIT 1`, r.lop).u;
+    assert(!trongCv(khac) && !trongHs(khac), `người không giữ vẫn thấy: Công việc ${trongCv(khac)} · hồ sơ ${!!trongHs(khac)}`);
+    conn.prepare(`UPDATE tinh_hinh_hoc_tap SET trang_thai = 'xong' WHERE id = ?`).run(id);
+    assert(!trongCv(r.gvcn) && !trongHs(r.gvcn), 'xong rồi mà còn ở Công việc / hồ sơ');
+  }));
 }
