@@ -508,7 +508,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     for (const x of no) {
       assert(x.key === `${x.classId}:${x.kind}:${x.attemptNo ?? 0}:${x.periodId ?? 0}`, `Khoá = lớp + đợt + tuần: ${x.key}`);
       assert(x.attemptIds.length >= x.soHv && x.soHv > 0, `Dòng ${x.key}: có em, có lượt`);
-      assert(x.hrefDayDu.startsWith(`/nhap-diem/${x.classId}`), `Mở lưới đầy đủ: ${x.hrefDayDu}`);
+      /* GD-11a (R7.6): lưới theo tuần → thẳng Lịch Test đúng lớp; lượt lớp thường không theo tuần → đường cũ (panel Nhập điểm lớp). */
+      assert(x.hrefDayDu.startsWith(`/test/lich?classId=${x.classId}`) || x.hrefDayDu.startsWith(`/nhap-diem/${x.classId}?kind=`), `Mở lưới đầy đủ: ${x.hrefDayDu}`);
       assert(x.quaHan === (!!x.han && x.han < TODAY), `Quá hạn theo hạn sớm nhất: ${x.key}`);
     }
     const thuong = no.filter((x: any) => x.mode === 'ratio');
@@ -555,7 +556,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(tatCa.every((x: any) => TRANG_THAI.test(x.trangThai)), `Câu trạng thái lạ: ${tatCa.map((x: any) => x.trangThai).join(' | ')}`);
     for (const l of r.lop.filter((x: any) => x.mode === 'ielts_band')) {
       assert(l.dong.every((x: any) => x.href.includes(`periodId=${tuan.id}`)), 'Lớp FT mở lưới đúng tuần đang xem');
-      assert(l.hrefDayDu === `/nhap-diem/${l.classId}?periodId=${tuan.id}`, `Lưới đầy đủ FT: ${l.hrefDayDu}`);
+      assert(l.hrefDayDu === `/test/lich?classId=${l.classId}&periodId=${tuan.id}`, `Lưới đầy đủ FT: ${l.hrefDayDu}`);   // GD-11a R7.6
     }
     /* Lớp thường: link kèm `kn` = môn của dòng, không kèm periodId. */
     for (const x of dong) {

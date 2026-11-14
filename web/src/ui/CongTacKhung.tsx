@@ -35,7 +35,7 @@ export function nhoKhung(trang: Trang, k: KhungLoc) {
   try { localStorage.setItem(khoa(trang), k); } catch { /* không lưu được thì thôi — lần sau về mặc định */ }
 }
 
-export function CongTacKhung({ trang, value, onChange, dem, coTatCa = false, kieu = 'doan', chuTatCa, v8 }: {
+export function CongTacKhung({ trang, value, onChange, dem, coTatCa = false, kieu = 'doan', chuTatCa, v8, giuSo }: {
   trang: Trang; value: KhungLoc; onChange: (k: KhungLoc) => void;
   /** Số hiện cạnh tên khung (lớp, việc…); khung có số 0 coi như không có dữ liệu. */
   dem?: Partial<Record<KhungLoc, number>>;
@@ -46,6 +46,8 @@ export function CongTacKhung({ trang, value, onChange, dem, coTatCa = false, kie
   chuTatCa?: string;
   /** V8 (mockup v8 `.doan`): nút đoạn liền cao 36 (375: 44 full bề rộng), mục chọn đậm + gạch đáy — `BoLocDoan v8`. */
   v8?: boolean;
+  /** GD-11a (⑦ A6): 375 vẫn hiện số sau tên — Fast Track 1. */
+  giuSo?: boolean;
 }) {
   /* SUA-NHO-UI U2 (chủ SP 30/10 "làm hết cả thể"): MỌI kiểu (đoạn · chip · ô chọn) gọn "Fast Track 4" — số sau tên, không "·", không đơn vị. */
   /* UX-2 (5): hiện theo lớp trong phạm vi người xem; chưa biết phạm vi thì theo dữ liệu đang xem như cũ. */
@@ -87,7 +89,7 @@ export function CongTacKhung({ trang, value, onChange, dem, coTatCa = false, kie
     );
   }
   return (
-    <BoLocDoan<KhungLoc> ariaLabel={t('Khung lớp')} value={value} v8={v8}
+    <BoLocDoan<KhungLoc> ariaLabel={t('Khung lớp')} value={value} v8={v8} giuSo={giuSo}
       onChange={(k) => { nhoKhung(trang, k); onChange(k); }}
       /* SUA-NHO-UI U2 (chủ SP 30/10): đoạn gọn "Fast Track 4" mọi màn — số đứng sau tên, không đơn vị. */
       muc={[

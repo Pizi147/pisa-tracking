@@ -252,9 +252,9 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     {/* FIX-DTL (chủ sản phẩm 07/10): GV chấm S ở hàng trên bảng (công cụ ngoài khung — BANG-1). */}
     {/* CV-LOI (CV-09): mở từ việc không có S (`chiCot`) → không hiện nút GV chấm S. */}
     {(coKhongHoc || (nutGv && hien('speaking'))) && (
-      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 pb-1">
+      <div className="flex flex-wrap items-center justify-end gap-x-4 gap-y-1 px-3 py-2">
         {coKhongHoc && <ChuGiaiKhongHoc />}
-        {nutGv && hien('speaking') && <NutGvCham nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
+        {nutGv && hien('speaking') && <NutGvCham oChon nhan={t('GV chấm S')} value={gvCot} onChange={setGvCot} goiY={data.period ? undefined : GOI_Y_COT_MT} />}
       </div>
     )}
     {/* gon (Điểm theo lớp / Lịch Test) vừa khung → đầu cột dính; đủ cột (Nhập điểm) rộng hơn khung → cuộn ngang trong khung. */}

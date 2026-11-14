@@ -21,6 +21,24 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   console.log('\nPR-NEN · Thành phần chung');
   const H = '2026-09-28'; // Thứ Hai
 
+  check('QC-GAN · Q74 / Q75 / Q77 Cuối khoá + Q83 Xuất báo cáo PH: câu khớp mã (hạn chốt từ mocLoTrinh, Tutor từ mocThuong, 7 ngày của việc Admin) và gắn đúng chỗ', () => {
+    const q = (o: any) => d.quyCheChotLoTrinh({ trungTam: false, khacGoiY: false, tutor: 10, hanChot: null, homNay: H, ...o }).chu as string;
+    const moc = d.mocLoTrinh('2026-10-05');
+    assert(q({ hanChot: moc.hanChot }) === `Hạn ${d.thuNgay(moc.hanChot, H)} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp`, q({ hanChot: moc.hanChot }));
+    assert(!/thứ Năm/i.test(q({ hanChot: moc.hanChot })), 'không cứng "thứ Năm" — hạn chốt cấu hình được');
+    assert(q({ khacGoiY: true }) === 'Khác gợi ý: cần lý do', 'Q75');
+    const n = d.mocThuong().khongDatKyVong.tutor;
+    assert(q({ khacGoiY: true, trungTam: true, tutor: n }) === `Do Trung tâm: Case + Tutor ${n} buổi mỗi kỹ năng cho GV lớp FT`, 'Q77 thắng Q75');
+    assert(d.quyCheXuatBaoCaoPh(true).chu === 'Lớp đủ báo cáo · việc tự rời sau 7 ngày' && /7 ngày từ hạn/.test(d.quyCheXuatBaoCaoPh(false).chu), 'Q83');
+    const xbc = doc('server/src/classes/xuatBaoCaoPh.ts');
+    assert(/hiện 7 ngày từ ngày lớp đủ/.test(xbc) && /7 ngày, "thiếu n em"/.test(xbc), 'câu Q83 phải theo luật 7 ngày của viecXuatBaoCaoPh');
+    assert(/Tới Thứ Hai tuần bắt đầu mới thi\s*\*?\s*hành/.test(doc('server/src/classes/lenhChuyen.ts')), 'câu Q74 theo luật thi hành lệnh (Thứ Hai tuần bắt đầu)');
+    const ck = doc('web/src/modules/classes/CuoiKhoaLop.tsx');
+    assert(/quyCheChotLoTrinh\(/.test(ck) && /<DongQuyChe qc=\{qcChot\}/.test(ck), 'Cuối khoá có dòng quy chế ở chân QL');
+    assert(/⚠ \{t\('Ghi lý do ngắn'\)\}/.test(ck), 'GIỮ cảnh báo chặn từng dòng "Ghi lý do ngắn" (không phải chú thích)');
+    assert(/<NutLuat phai label=\{t\('Xuất báo cáo PH'\)\}>\{quyCheXuatBaoCaoPh\(/.test(doc('web/src/modules/classes/TabBaoCaoPh.tsx')), 'ⓘ Q83 cạnh nút Xuất');
+  });
+
   check('NEN (1) · docONgay kiểu ngày: dd/mm/yyyy, dd/mm (năm của hôm nay), d/m/yyyy, dấu . và -', () => {
     const ok = (s: string, k: any, iso: string, l?: any) => { const r = d.docONgay(s, k, H, l); assert(r.iso === iso, `${s} → ${JSON.stringify(r)}`); };
     ok('28/09/2026', 'ngay', '2026-09-28'); ok('28/9', 'ngay', '2026-09-28'); ok('1/10/2026', 'ngay', '2026-10-01');
