@@ -1,5 +1,4 @@
 import type { LoaiNhanLop, LuoiNoLop, PhamViLichTest } from '@shared/domain/index.ts';
-import type { ToneNhan } from '../../../ui/Nhan.tsx';
 import type { DongSEx } from '../keHoach/kieu.ts';
 
 /** Trả lời của `GET /cham/lich-test` (`lichTest` ở server/src/cham/canCham.ts). */
@@ -20,6 +19,8 @@ export type DongNo = {
   cuaToi: boolean; duocCham: boolean; coDayLop: boolean; hrefDayDu: string;
   /** PR-VAI-a (UX-B5): tên GV đang nợ, sắp theo tên; rồi `GV chấm chéo` (Speaking Mock, T18); môn chưa phân công → "chưa phân công". */
   gvNo: string[];
+  /** GD-11a: tên GV → môn nhập còn nợ ("còn chờ: GV (môn)"); người có phân công không thấy phần của chính mình. */
+  gvMon: Record<string, string[]>;
   /** OV-11e (TE-7): phần của người có phân công như khối 2; `null` với Quản lý / Quản trị. `quaHan` khi có `phan` = ô của chính họ. */
   phan: PhanCuaBan | null;
 };
@@ -48,6 +49,8 @@ export type LopLichTest = {
   moSan: boolean; hrefDayDu: string;
   /** Số bài vắng tuần này đang chờ Quản lý duyệt dời (PR-MT). */
   choDuyetDoi: number;
+  /** GD-11a (⑦ A3): "Còn chờ: GV (môn)" — ô còn chờ theo người phụ trách, bỏ phần của người xem. */
+  gvMon: Record<string, string[]>;
   /** PR-LT3: tuần thi của hàng — lưới mở tại chỗ đúng tuần này (khối 2 có hàng của nhiều tuần). */
   periodId: number; weekStart: string;
 };
@@ -72,11 +75,6 @@ export type LichTest = {
   /** SV-S-EXPERT: lượt S Ex của tuần đang xem (không vào dải số / nợ) — cột S Ex của lưới FT. */
   sEx: (DongSEx & { studentId: number; ten: string; classId: number | null })[];
   nhacLichSu: { classId: number; classCode: string; soEm: number; href: string; luot: { so: number; soEm: number; href: string }[] }[];
-};
-
-/** Màu badge theo loại nhãn (N-3; UI-LICH-TUAN): chờ mình = vàng · chờ người khác = chờ · xong = xanh lá (mockup "Đã chấm") · chưa tới = xám. */
-export const TONE_NHAN_LOP: Record<LoaiNhanLop, ToneNhan> = {
-  'da-cham': 'ok', 'chua-toi-han': 'muted', 'cho-ban': 'soon', 'cho-gv-khac': 'muted', 'cho-cham': 'muted',
 };
 
 /** Khoá một hàng lớp trên màn (nhớ mở/thu, React key): khối 2 có thể có hai hàng cùng lớp ở hai tuần thi khác nhau. */

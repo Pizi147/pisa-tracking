@@ -229,7 +229,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     assert(/useGvChamCot\(/.test(ft) && /skill === 'writing'/.test(ft) && /verdicts/.test(ft), 'LuoiFT thiếu GV chấm / cột W');
     const th = docSach('web/src/modules/cham/LuoiThuong.tsx');
     assert(th.includes('Điền cả cột') && !/>\s*↓\s*</.test(th) && /tongLaySan=\{/.test(th), 'LuoiThuong');
-    assert(/COT_DAU_LICH_TEST/.test(docSach('web/src/modules/test/lichTest/KhoiNo.tsx')), 'KhoiNo không dùng COT_DAU_LICH_TEST');
+    assert(/<ColLichTest \/>/.test(docSach('web/src/modules/test/lichTest/KhoiNo.tsx')), 'KhoiNo không dùng bộ cột chung ColLichTest (GD-11a)');
     assert(/<ODiemMt/.test(docSach('web/src/modules/cham/MotKyNang.tsx')), 'MotKyNang thiếu ODiemMt (nhận xét trong hộp nhập điểm, OV-4b)');
     assert(d.nhanLuot('planned', 2, 4) === 'Đang chấm · 2/4' && d.nhanLuot('planned', 0, 4) === 'Đã lên lịch', 'nhanLuot planned');
     assert(d.nhanLuot('cancelled', 2, 4) === 'Đã huỷ' && d.nhanLuot('done', 4, 4) === 'Xong', 'nhanLuot huỷ / xong');

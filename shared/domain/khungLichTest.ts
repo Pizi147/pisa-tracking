@@ -34,6 +34,8 @@ export type DongNoGopVao = {
   key: string; classId: number; mode: string; kind: string; attemptNo: number | null; dotLabel: string; periodId: number | null; weekStart: string | null;
   kyNang: string[]; kyNangLabel: string; conBai: number; soHv: number; attemptIds: number[]; han: string | null; quaHan: boolean; luiLich: unknown;
   cuaToi: boolean; duocCham: boolean; coDayLop: boolean; gvNo: string[];
+  /** GD-11a: tên GV -> môn nhập còn nợ (còn chờ: GV (môn)). */
+  gvMon?: Record<string, string[]>;
   phan: { toi: { kyNang: string[]; con: number } | null; khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null } | null;
 };
 export type LuoiNoLop = { kind: string | null; nhan: string };
@@ -62,6 +64,10 @@ export function gopNoTheoLop<T extends DongNoGopVao>(ds: readonly T[], chamCheo:
       han, quaHan: g.some((d) => d.quaHan), luiLich: null,
       cuaToi: g.some((d) => d.cuaToi), duocCham: g.some((d) => d.duocCham), coDayLop: g.some((d) => d.coDayLop),
       gvNo: [...gv.filter((x) => x !== chamCheo), ...gv.filter((x) => x === chamCheo)],
+      gvMon: g.reduce<Record<string, string[]>>((m, d) => {
+        for (const [ten, kn] of Object.entries(d.gvMon ?? {})) m[ten] = [...new Set([...(m[ten] ?? []), ...kn])];
+        return m;
+      }, {}),
       phan: coPhan ? { toi: gopPhan('toi'), khac: gopPhan('khac') } as T['phan'] : null,
       luoi, soDong: g.length,
     };
