@@ -12,6 +12,7 @@ import { tuanDayChung } from './tuanDay.ts';
 import { tenChiNhanh } from './tongHop.ts';
 import { thiThatTrongKhoang, tongThiThat, type LocKetQuaThi, type ThiThatTho } from './ketQuaThi.ts';
 import { tapChuaCoKq } from './chiNhanh.ts';
+import { sapThiSos, type SapThiSos } from './sapThiSos.ts';
 
 /** 2E: khối Theo GV — QL, Quản trị (`analysis.view_teacher`), CX. TVV / GV không. */
 export const coTheoGv = (p: Principal): boolean => !scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER).none || p.roleKeys.includes('cx');
@@ -19,9 +20,10 @@ export const coTheoGv = (p: Principal): boolean => !scopeFor(p, PERMISSIONS.ANAL
 /** Tuần dạy (2C-7) của các lộ trình có mức thi — lõi chung với hộp Tuần dạy của một em (`tuanDay.ts`: chia đều tuần dạy chung, XM-7). */
 export const tuanDay = (ds: readonly ThiThatTho[]): { day: Map<number, DoanDay[]>; ten: Map<number, string> } => tuanDayChung(ds.filter((x) => coMucThi(x.kq)));
 
-export type ThiThatTabKq = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb; /** V2 (đặc tả 9.9): Chưa có KQ — HIỆN TẠI, không lọc kỳ. */ chuaCoKq: number };
+export type ThiThatTabKq = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb; /** V2 (đặc tả 9.9): Chưa có KQ — HIỆN TẠI, không lọc kỳ. */ chuaCoKq: number;
+  /** GD-12b-a: ô "Sắp thi · tới hết T{tháng sau} · còn SOS" — HIỆN TẠI, không lọc kỳ (panel `o=sap-thi`). */ sapThi: SapThiSos };
 
-/** GET /phan-tich/thi-that — danh sách (như `ket-qua-thi?loai=thi-that`) + thống kê. ≤ 6 câu: thi thật · lớp lúc thi (2) · lớp · ghi danh (chung) · phân công. */
+/** GET /phan-tich/thi-that — danh sách (như `ket-qua-thi?loai=thi-that`) + thống kê + ô Sắp thi · còn SOS (`sapThiSos.ts`). */
 export function thiThatTab(p: Principal, f: LocKetQuaThi): ThiThatTabKq {
   const ds = thiThatTrongKhoang(p, f);
   const gv = coTheoGv(p) ? tuanDay(ds) : null;
@@ -29,6 +31,7 @@ export function thiThatTab(p: Principal, f: LocKetQuaThi): ThiThatTabKq {
   const rows = ds.map((x) => x.dong);
   return {
     loai: 'thi-that', tu: f.tu, den: f.den, rows, tong: tongThiThat(rows), chuaCoKq: tapChuaCoKq(p, { branchId: f.branchId ?? null, ct: 'ft', tu: f.tu, den: f.den }).length,
+    sapThi: sapThiSos(p, f),
     thongKe: { tong: tk.tong, kyNang: tk.kyNang, gv: gv ? tk.gv.map(({ ds: _ds, ...g }) => ({ ...g, ten: gv.ten.get(g.userId) ?? '' })) : null },
   };
 }

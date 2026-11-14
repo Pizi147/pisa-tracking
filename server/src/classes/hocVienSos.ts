@@ -76,7 +76,7 @@ export function tomTatCase(cases: readonly MappedCase[]): Map<number, CaseTomTat
 }
 
 /** Tên + mã + TVV + liên hệ của các em (một câu mỗi lô). */
-function thongTinEm(ids: readonly number[]): Map<number, { ten: string; ma: string; tvv: string | null; lienHe: LienHe }> {
+export function thongTinEm(ids: readonly number[]): Map<number, { ten: string; ma: string; tvv: string | null; lienHe: LienHe }> {
   const out = new Map<number, { ten: string; ma: string; tvv: string | null; lienHe: LienHe }>();
   theoLo([...new Set(ids)], (lo, ph) => {
     for (const s of db().prepare(
