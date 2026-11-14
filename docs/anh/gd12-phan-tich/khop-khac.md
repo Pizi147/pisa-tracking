@@ -7,7 +7,7 @@ Máy chủ ô Sắp thi: #1674 (đã merge). Luật: V22 (hạn chỉ màu, khô
 - 1440 tối QL: `cap-a1` Chi nhánh · `cap-c1` Thi thật · `cap-c5` panel Sắp thi · `cap-b1` SOS · `cap-b5` ⓘ Theo tuần · `cap-d1` Giáo viên · `cap-d5` / `cap-d6` panel Chưa làm (Chấm Test / Việc) · `cap-y1` Ý thức · `cap-y2` ⓘ Học viên cần chú ý
 - 375 sáng QL: `cap-a6` · `cap-c4` · `cap-c6` · `cap-b3` · `cap-d4` · `cap-d7` · `cap-y3`
 - Quản trị: `cap-a1-qt-1440-toi` · `cap-d1-qt-1440-toi` · `cap-a6-qt-375-sang` · TVV: `cap-e4-tvv-1440-toi`
-- C1 / C4 / C5 / C6: seed không có kết quả thi thật trong kỳ và không em nào sắp thi → để chụp ô / panel có số, DB dev của worktree được đặt TẠM lịch thi cho 10 em SOS (7 chốt ngày, 3 tháng dự kiến) rồi trả lại như cũ. Khối kết quả thi thật hiện câu rỗng (dữ liệu seed), không phải khác bố cục.
+- C1 / C4 / C5 / C6: seed không có kết quả thi thật trong kỳ và không em nào sắp thi → để chụp có số, DB dev của worktree được đặt TẠM kết quả thi thật cho 12 lộ trình (W2–W3 SEP) và lịch thi cho 10 em SOS (7 chốt ngày, 3 tháng dự kiến), chụp xong trả lại như cũ.
 - TRƯỚC: `thiet-ke/v21/anh/phan-tich/truoc/` (web main lúc vẽ mockup).
 
 ## 1. Truy vết khung → thành phần → ảnh
@@ -45,13 +45,17 @@ Máy chủ ô Sắp thi: #1674 (đã merge). Luật: V22 (hạn chỉ màu, khô
 
 **KHỚP 28 / 28 (100 %).**
 
+### Sửa sau rà PTA (#1681)
+- **C1 / E2**: một hàng ba cột cố định — thẻ kết quả (kỳ rỗng: câu ngắn + "Xem Toàn bộ" TRONG khung) │ Không thi · Chưa có KQ │ Sắp thi; bảng "Từng kỹ năng" / "Theo GV": % mờ DƯỚI hộp số (cùng dòng thì tràn bảng 430 px).
+- **A6 (375)**: thẻ Theo lớp Fast Track = HV đang học · Đạt MT · Tiến bộ một hàng (nhãn một dòng, phân số dưới hộp) + dòng "Thi thật" (Vượt · Đạt · Chưa đạt) dưới; bảng Tiến bộ theo kỹ năng: tên kỹ năng đọc trọn, "n lượt" xuống dòng phụ.
+- **D5 / D7**: bài Chấm Test gộp một dòng mỗi lớp × lượt × kỹ năng ("MB FT 101 · W2" · MT1 · W1 SEP · 5 bài; một bài thì thẻ tên em), hạn = bài quá hạn lâu nhất.
+
 ## 2. KHÁC (có lý do)
 
 1. **V22**: mockup còn ⚠ trước số / chip quá hạn — web chỉ màu.
 2. **Đầu panel**: mockup đặt ⓘ cạnh ✕ ở đầu panel; web để ⓘ cạnh dòng đếm "15 bài · 3 GV" trong thân (khung `KhungPanel` chung không có chỗ ⓘ đầu — không sửa thành phần chung cho một chỗ). Nhãn loại theo khung chung ("Số · Giáo viên", chữ thường).
-3. **Dòng panel Chưa làm**: mỗi dòng một bài (em · môn) theo nguồn `danh-sach` (mockup gom "2 bài" một dòng) — cùng nguồn Excel, không thêm đường.
-4. **C1 bảng "Theo lớp"** trong hình mockup không phải R9.x (nền V2) — web chưa có, không thêm trong PR này (ghi chú ⑨: "khung SAU = web + R9.x").
-5. **SOS 375**: Xuất Excel vẫn ở ⋯ như web (mockup vẽ nút ⬇ riêng) — giữ thao tác cũ 375.
+3. **C1 bảng "Theo lớp"** trong hình mockup không phải R9.x (nền V2) — web chưa có, không thêm trong PR này (ghi chú ⑨: "khung SAU = web + R9.x").
+4. **SOS 375**: Xuất Excel vẫn ở ⋯ như web (mockup vẽ nút ⬇ riêng) — giữ thao tác cũ 375.
 
 Không có [XM] mới.
 

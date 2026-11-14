@@ -7,6 +7,7 @@ import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { DauThe, NutXemToanBo, NutXuat, RongDau, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { napDanhSach, ptX, sheetDanhSachHoacLoi, soX, xuatBaoCao } from './xuatV2.ts';
@@ -75,7 +76,8 @@ export function BaoCao(pv: PhamViPhanTich) {
     if (!h.thi) return <span className="text-slate-500" title={t('Không em nào thi trong kỳ')}>—</span>;
     const o = (n: number, k: 'exceed' | 'dat' | 'fail', kq: 'vuot' | 'dat' | 'duoi', nhan: string) =>
       <OSo giaTri={n} nguon={nThi(h, `tong:${k}`)} tieuDe={`${t('Thi thật')} · ${nhan} · ${h.ten || d.tenChiNhanh || ''}`} className={n ? lopKq(kq) : ''} vung="bang" />;
-    return <span className="inline-flex items-baseline gap-2 whitespace-nowrap tabular-nums">{o(h.thi.vuot, 'exceed', 'vuot', t('Vượt'))}<span className={MO}>·</span>{o(h.thi.dat, 'dat', 'dat', t('Đạt'))}<span className={MO}>·</span>{o(h.thi.chuaDat, 'fail', 'duoi', t('Chưa đạt'))}</span>;
+    /* PTA rà #1681 (⑨ A6): thẻ 375 (ô hẹp) — ba số xuống dòng trong ô, bỏ dấu chấm ngăn; ≥ 640 một dòng như cũ. */
+    return <span className="inline-flex items-baseline gap-2 tabular-nums max-sm:flex-wrap max-sm:gap-1 sm:whitespace-nowrap">{o(h.thi.vuot, 'exceed', 'vuot', t('Vượt'))}<span className={`${MO} max-sm:hidden`}>·</span>{o(h.thi.dat, 'dat', 'dat', t('Đạt'))}<span className={`${MO} max-sm:hidden`}>·</span>{o(h.thi.chuaDat, 'fail', 'duoi', t('Chưa đạt'))}</span>;
   };
   const CK = [['Đạt', 'ck-dat', 'text-kq-vuot'], ['60–69 %', 'ck-60', 'text-soon'], ['50–59 %', 'ck-50', 'text-kq-thieu10'], ['< 50 %', 'ck-duoi50', 'text-kq-duoi']] as const;
 
@@ -207,10 +209,31 @@ export function BaoCao(pv: PhamViPhanTich) {
     } finally { setDangXuat(false); }
   }
   const trang = lop ? pt6.cat(d.hang) : d.hang;
+  /* PTA rà #1681 (⑨ A6): thẻ 375 Fast Track — HV đang học · Đạt MT · Tiến bộ một hàng ba ô (như mockup), Thi thật một dòng dưới (Vượt · Đạt · Chưa đạt, không mất số). */
+  const theFt = (h: DongChiNhanhV2) => {
+    const o3 = cot.filter((c) => c.key === 'hv' || c.key === 'datMt' || c.key === 'tienBo');
+    return (
+      <div className="grid gap-2.5">
+        <div className="text-[15px]">{oCua(h, cot[0])}</div>
+        <div className="grid grid-cols-3 gap-x-2.5 [&_.cap-so]:!grid [&_.cap-so]:![grid-template-columns:auto] [&_.cap-so]:justify-items-start [&_.cap-so]:gap-0.5 [&_.cap-so>*]:!justify-self-start [&_.cap-so_.so-bam]:!justify-self-start [&_.cap-so>span:last-child]:text-xs [&_.cap-so>span:last-child]:font-normal">
+          {o3.map((c) => (
+            <div key={c.key} className="grid content-start gap-y-px">
+              <span className="whitespace-nowrap text-xs font-medium text-slate-400">{c.nhan}</span>
+              <span className="text-[17px] font-bold tabular-nums">{oCua(h, c)}</span>
+            </div>
+          ))}
+        </div>
+        {h.thi && <div className="flex flex-wrap items-center gap-x-2 text-[13px]"><span className="font-medium text-slate-400">{t('Thi thật')}</span>{oCua(h, cot.find((c) => c.key === 'thi')!)}</div>}
+      </div>
+    );
+  };
   const bang = !d.hang.length ? <RongDau chu={lop ? t('Chi nhánh chưa có lớp đang học ở khung này') : t('Chưa có chi nhánh nào trong phạm vi')} nut={<NutXemToanBo />} /> : (
     <>
+      {/* PTA rà #1681 (⑨ A6): 375 nhãn ô thẻ một dòng ("HV đang học" không gãy). */}
+      <div className="contents max-sm:[&_.luoi-n]:whitespace-nowrap max-sm:[&_.luoi-n]:text-xs">
       <Bang ten={lop ? t('Theo lớp') : t('Theo chi nhánh')} cot={cot} hang={[...trang, tong]} khoa={(h) => h.khoa} oCua={oCua} khung={false} deu theLuoi
-        lopHang={(h) => (h.khoa === 'tong' ? 'tong' : '')} />
+        lopHang={(h) => (h.khoa === 'tong' ? 'tong' : '')} theRieng={ft ? theFt : undefined} />
+      </div>
       {lop && <div className="border-t px-3" style={{ borderColor: 'var(--line)' }}><PhanTrang {...pt6.thanh} /></div>}
     </>
   );
@@ -242,9 +265,12 @@ const COT_TB: readonly CotBang[] = [
 /** Tiến bộ theo kỹ năng (giữ bảng sẵn có): lượt có mốc MT trước của em, band kỹ năng tăng · giữ nguyên · giảm so mốc đó. */
 function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; nguon: (o: string) => string }) {
   type H = (typeof hang)[number];
+  /* PTA rà #1681 (⑨ A6): 375 tên kỹ năng đọc trọn — số lượt xuống dòng phụ (1440 giữ một dòng). */
+  const dienThoai = useDienThoai();
   const so = (h: H, k: string) => (k === 'tang' ? h.tang : k === 'giam' ? h.giam : h.tong - h.tang - h.giam);
   const oCua = (h: H, c: CotBang): ReactNode => {
-    if (c.key === 'kn') return <span className="whitespace-nowrap"><b className="text-slate-100">{tenMonNgan(null, h.skill)}</b> <span className={`text-[13px] font-normal ${MO}`}>{t('{n} lượt', { n: h.tong })}</span></span>;
+    if (c.key === 'kn') return dienThoai ? <b className="text-slate-100">{tenMonNgan(null, h.skill)}</b>
+      : <span className="whitespace-nowrap"><b className="text-slate-100">{tenMonNgan(null, h.skill)}</b> <span className={`text-[13px] font-normal ${MO}`}>{t('{n} lượt', { n: h.tong })}</span></span>;
     const n = so(h, c.key);
     return <span className={h.tong ? 'cap-so' : 'whitespace-nowrap'}><OSo giaTri={n} tieuDe={`${t('Tiến bộ {kn}', { kn: tenMonNgan(null, h.skill) })} · ${c.nhan}`} nguon={nguon(`tien-bo:${h.skill}:${c.key}`)}
       className={!n ? '' : c.key === 'tang' ? 'text-kq-vuot' : c.key === 'giam' ? 'text-kq-duoi' : ''} />{h.tong ? <span>{Math.round((100 * n) / h.tong)} %</span> : null}</span>;
@@ -253,7 +279,8 @@ function TienBo({ hang, nguon }: { hang: NonNullable<ChiNhanhV2Kq['tienBoKn']>; 
     <section className="card overflow-clip">
       <DauThe ten={t('Tiến bộ theo kỹ năng')} phu={t('so mốc MT trước')} />
       {!hang.length ? <RongDau chu={t('Chưa có lượt nào có mốc MT trước trong kỳ')} nut={<NutXemToanBo />} />
-        : <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu khung={false} />}
+        : <Bang ten={t('Tiến bộ theo kỹ năng')} cot={COT_TB} hang={hang} khoa={(h) => h.skill} oCua={oCua} the375={false} deu khung={false}
+            phuCua={dienThoai ? (h, c) => (c.key === 'kn' ? t('{n} lượt', { n: h.tong }) : null) : undefined} />}
     </section>
   );
 }

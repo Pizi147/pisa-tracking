@@ -12,7 +12,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { DaiChiSo, DauThe, NutXemToanBo, RongDau, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
+import { DaiChiSo, DauThe, NutXemToanBo, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { ngayX, ptX, soX, xuatBaoCao } from './xuatV2.ts';
 import { OSapThiSos, type SapThiSosSo } from './SapThiSos.tsx';
 import type { MauXlsx, OXlsx } from '../../lib/xlsxDep.ts';
@@ -129,26 +129,31 @@ export function KetQuaThi(pv: PhamViPhanTich) {
       <div className="space-y-3">
         {error ? <Card bodyClass="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
           : loading || !data || !tk ? <Card bodyClass="p-4"><Skeleton rows={8} /></Card>
-          : !rows.length ? (
-            <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-              <Card bodyClass="p-0"><RongDau chu={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} nut={<NutXemToanBo />} /></Card>
-              {oSapThi}
-            </div>
-          )
           : (
             <>
-              <div className={`grid gap-3 ${oSapThi ? 'lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]'}`}>
-                <KhoiKetQua tk={tk} tongThe={tongThe} onTongThe={setTongThe} so={so} />
+              {/* PTA rà #1681 (⑨ C1 / E2): một hàng ba cột cố định — thẻ kết quả (kỳ rỗng: câu ngắn TRONG khung) │ Không thi · Chưa có KQ │ Sắp thi · còn SOS. */}
+              <div className={`grid items-stretch gap-3 ${oSapThi ? 'lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]'}`}>
+                {rows.length ? <KhoiKetQua tk={tk} tongThe={tongThe} onTongThe={setTongThe} so={so} /> : (
+                  <section className="flex min-w-0 flex-col gap-2 rounded-xl border px-4 pb-4 pt-3" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+                    <span className="text-[13px] font-medium text-[color:var(--text-dim)]">{t('Kết quả thi thật')}<i className="font-normal not-italic text-[color:var(--text-faint)]"> · {t('trong kỳ')}</i></span>
+                    <p className="m-0 text-sm text-[color:var(--text-dim)]">{t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })}</p>
+                    <span><NutXemToanBo /></span>
+                  </section>
+                )}
                 <DaiChiSo cot={1} ds={[
                   { ten: t('Không thi'), ky: t('trong kỳ'), gt: so(tk.tong.khongThi, 'tong:khong-thi', t('Không thi')), mau: t('không vào %') },
                   { ten: t('Chưa có KQ'), ky: t('hiện tại'), gt: data.chuaCoKq ? <OSo giaTri={data.chuaCoKq} nguon={`/tong-quan/chi-nhanh-v2/o?${query}&ct=ft&o=chua-co-kq`} tieuDe={t('Chưa có KQ')} vung="chi-so" className="text-soon" /> : <span className="font-medium text-faint">0</span>, mau: t('đã qua ngày thi') },
                 ]} />
                 {oSapThi}
               </div>
+              {rows.length > 0 && (
+                <>
               {tk.gv && !dienThoai
                 ? <div className="grid items-start gap-3" style={{ gridTemplateColumns: 'minmax(0, 430px) minmax(0, 1fr)' }}><BangKyNang tk={tk} so={so} /><BangGv gv={tk.gv} so={so} /></div>
                 : <><BangKyNang tk={tk} so={so} />{tk.gv && <TheGv gv={tk.gv} so={so} />}</>}
               <DanhSach rows={rows} homNay={homNay} pt={pt_} />
+                </>
+              )}
             </>
           )}
       </div>
@@ -157,6 +162,8 @@ export function KetQuaThi(pv: PhamViPhanTich) {
 }
 
 type So = (n: number, o: string, tieuDe: string, mau?: string, nhan?: string) => ReactNode;
+/** ⑨ C1: hộp số trên, % mờ dưới (Từng kỹ năng · Theo GV). */
+const SO_TREN_PT = 'inline-grid justify-items-center gap-0.5 [&>span:last-child]:text-xs [&>span:last-child]:tabular-nums [&>span:last-child]:text-[color:var(--text-faint)]';
 
 /** Từng kỹ năng (C1): KN · HV · Exceed · Đạt · Fail (số + % mờ dưới) · Điểm TB — điểm kỹ năng so Target overall. */
 function BangKyNang({ tk, so }: { tk: ThongKeThiThatWeb; so: So }) {
@@ -185,7 +192,8 @@ function BangKyNang({ tk, so }: { tk: ThongKeThiThatWeb; so: So }) {
                 {MUC.map((m) => (
                   <td key={m} className="td text-center leading-tight">
                     {/* PT-b (mockup v19 khung 4a): hộp số em + % mờ cùng dòng, thẳng cột. */}
-                    {x[m] > 0 ? <span className="cap-so">{so(x[m], `kn:${k}:${m}`, `${NHAN_MUC[m]} · ${NHAN_KN[k]}`, MAU_MUC[m])}<span>{pt(x[m], x.hv)} %</span></span>
+                    {/* PTA rà #1681 (⑨ C1): % mờ DƯỚI hộp số (bảng hẹp 430 px — cùng dòng thì tràn). */}
+                    {x[m] > 0 ? <span className={SO_TREN_PT}>{so(x[m], `kn:${k}:${m}`, `${NHAN_MUC[m]} · ${NHAN_KN[k]}`, MAU_MUC[m])}<span>{pt(x[m], x.hv)} %</span></span>
                       : so(x[m], `kn:${k}:${m}`, `${NHAN_MUC[m]} · ${NHAN_KN[k]}`, MAU_MUC[m])}
                   </td>
                 ))}
@@ -209,7 +217,7 @@ const cachTinhGv = (
 /** V2 (đặc tả 11): một nhóm của dòng GV — SỐ EM là chữ chính; PT-b (mockup v19 khung 4a): % mờ cùng dòng (`.cap-so`); bấm → em của nhóm (số = số dòng). */
 const oPct = (g: DongGvThiWeb, m: MucThi, so: So) => {
   const o = so(g.so[m], `gv:${g.userId}:${g.kn}:${m}`, `${g.ten} · ${NHAN_KN[g.kn]} · ${NHAN_MUC[m]}`, MAU_MUC[m]);
-  return g.so[m] > 0 ? <span className="cap-so">{o}<span>{g[m]} %</span></span> : o;
+  return g.so[m] > 0 ? <span className={SO_TREN_PT}>{o}<span>{g[m]} %</span></span> : o;
 };
 const nhomGv = (gv: DongGvThiWeb[]) => {
   const ds: { userId: number; ten: string; hang: DongGvThiWeb[] }[] = [];

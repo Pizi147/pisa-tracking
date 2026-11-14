@@ -20,15 +20,35 @@ export type TabChuaLam = 'cham' | 'viec';
 
 const THE = 'h-5 min-w-0 shrink truncate rounded-md px-1.5 text-xs font-medium leading-5 text-dim';
 
-function DongChiDoc({ d }: { d: DongViecHan }) {
-  const phu = [d.phu, d.chiNhanh].filter((x): x is string => !!x);
+/**
+ * PTA rà #1681 (⑨ D5): bài Chấm Test gộp MỘT dòng mỗi lớp × lượt × kỹ năng ("MB FT 101 · W2" · thẻ MT1 · W1 SEP · 2 bài); một bài thì thẻ tên em (link).
+ * Hạn quá = bài quá hạn lâu nhất của dòng. Việc giữ mỗi việc một dòng. Nguồn bài: `ten` = "đợt · môn".
+ */
+type Dong = { d: DongViecHan; n: number };
+function gopBai(ds: readonly DongViecHan[]): Dong[] {
+  const m = new Map<string, Dong>();
+  for (const d of ds) {
+    const k = d.tab === 'cham' ? `${d.lop?.ma}|${d.ten}|${d.phu ?? ''}|${d.chiNhanh ?? ''}` : `v:${m.size}`;
+    const x = m.get(k);
+    if (!x) m.set(k, { d, n: 1 });
+    else { x.n += 1; if ((d.treNgay ?? 0) > (x.d.treNgay ?? 0)) x.d = { ...x.d, treNgay: d.treNgay }; }
+  }
+  return [...m.values()];
+}
+
+function DongChiDoc({ d, n }: Dong) {
+  const bai = d.tab === 'cham';
+  const cat = bai ? d.ten.indexOf(' · ') : -1;
+  const dot = cat >= 0 ? d.ten.slice(0, cat) : null, mon = cat >= 0 ? d.ten.slice(cat + 3) : d.ten;
+  const phu = [dot, d.phu, d.chiNhanh, bai && n > 1 ? t('{n} bài', { n }) : null].filter((x): x is string => !!x);
+  const em = n === 1 ? d.em : null;
   return (
     <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
       <span className="min-w-0">
-        <span className="block truncate text-[15px] font-medium text-[color:var(--text)]">{[d.lop?.ma, d.ten].filter(Boolean).join(' · ')}</span>
-        {(d.em || phu.length > 0) && (
+        <span className="block truncate text-[15px] font-medium text-[color:var(--text)]">{[d.lop?.ma, mon].filter(Boolean).join(' · ')}</span>
+        {(em || phu.length > 0) && (
           <span className="mt-[3px] flex min-w-0 flex-wrap items-center gap-[3px]">
-            {d.em && <Link to={`/hoc-vien/${d.em.id}`} className={`${THE} no-underline hover:underline`} style={{ background: 'var(--surface-2)' }}>{d.em.ten}</Link>}
+            {em && <Link to={`/hoc-vien/${em.id}`} className={`${THE} no-underline hover:underline`} style={{ background: 'var(--surface-2)' }}>{em.ten}</Link>}
             {phu.map((x) => <span key={x} className={THE} style={{ background: 'var(--surface-2)' }}>{x}</span>)}
           </span>
         )}
@@ -61,7 +81,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
         <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded border px-[7px] text-xs font-semibold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{n}</span>
         {phu && <span className="text-[13px] font-normal text-[color:var(--text-dim)]">{phu}</span>}
       </h3>
-      <ul className="m-0 list-none p-0 [&>li:first-child]:border-t-0">{dong.map((d, i) => <DongChiDoc key={i} d={d} />)}</ul>
+      <ul className="m-0 list-none p-0 [&>li:first-child]:border-t-0">{gopBai(dong).map((x, i) => <DongChiDoc key={i} {...x} />)}</ul>
     </section>
   );
   return (
