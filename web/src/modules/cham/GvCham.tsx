@@ -4,8 +4,7 @@
  * Nằm ở: Test › Lịch Test (lưới mở tại chỗ) / trang Nhập điểm cả lớp (lưới FT) → tiêu đề cột S; điện thoại (< 640 px) → đầu
  * danh sách khi chọn chip S; hộp 4 tiêu chí S (dòng "GV chấm · Đổi"); hồ sơ Mock → khối "Nhận xét Speaking".
  *
- * "Chọn một lần" = nhớ TRÊN MÁY (localStorage) theo lớp × tuần, gửi kèm mỗi lần lưu ô S (Q3) — không bảng mới cho một lựa chọn
- * giao diện. Sửa riêng một em ở hộp 4 tiêu chí.
+ * "Chọn một lần" = nhớ Ở MÁY CHỦ theo người × lớp × đợt (LG-5c, `gv_cham_cot`), gửi kèm mỗi lần lưu ô S (Q3). Sửa riêng một em ở hộp 4 tiêu chí.
  */
 import { useState } from 'react';
 import { nguoiThanhPayload, type NguoiChon } from '@shared/domain/index.ts';
@@ -13,6 +12,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { MuiTenGap } from '../yThuc/NhanViPham.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { api } from '../../lib/api.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** GV chấm đã lưu của một ô (máy chủ) → giá trị của ô chọn người. */
@@ -29,35 +29,21 @@ export function cungGvCham(a: NguoiChon | null, b: NguoiChon | null, toiId: numb
 }
 
 /**
- * Ô nhớ trên máy: người dùng × lớp × đợt (PR-S4F #10 — máy dùng chung: đổi tài khoản không kế thừa lựa chọn của người trước). Đợt = id tuần
- * hoặc "mt{n}" ở Điểm theo lớp xem theo MT (`dotGvCham`, VIEC-NHO-2).
+ * GV chấm mặc định của cột S — người xem × lớp × đợt (đợt = id tuần hoặc "mt{n}", `dotGvCham`), NHỚ Ở MÁY CHỦ (LG-5c, chủ SP 13/11 — thay ô nhớ trên trình duyệt:
+ * đổi máy / trình duyệt vẫn còn; máy dùng chung không kế thừa lựa chọn người trước). Giá trị đầu đọc kèm lưới (`FtSheet.gvChamCot`, 0 request thêm):
+ * chưa chọn → GV Speaking "Tôi", người khác "chưa chọn" (2.4). Đổi = một PUT; lỗi thì trả về lựa chọn cũ (không giả là đã nhớ).
  */
-export const khoaGvChamCot = (userId: number | null | undefined, classId: number | null | undefined, dot: string | null | undefined) =>
-  userId && classId && dot ? `pisa:gv-cham:${userId}:${classId}:${dot}` : null;
-
-/**
- * GV chấm mặc định của cột S — lớp × tuần, nhớ trên máy. Không có/hỏng → CHÍNH người đang xem (Q3, PR-LT3, chủ sản phẩm 06/10: Speaking
- * Mock không có GV mặc định — người lưu không đổi thì ghi chính người đó, trễ tính cho người đó).
- */
-export function useGvChamCot(classId: number | null | undefined, dot: string | null | undefined) {
-  const { session } = useSession();
-  const khoa = khoaGvChamCot(session?.user?.id, classId, dot);
-  const doc = (): NguoiChon | null => {
-    /* 2.4 (chủ SP 13/11): người không phải GV Speaking (QL / Admin nhập hộ) không có mặc định — phải chọn GV chấm. */
-    const macDinh: NguoiChon | null = session?.gvS ? { kieu: 'toi' } : null;
-    if (!khoa) return macDinh;
-    try {
-      const v = JSON.parse(localStorage.getItem(khoa) ?? 'null');
-      return v && (v.kieu === 'toi' || (v.kieu === 'tai_khoan' && v.id) || (v.kieu === 'ngoai' && v.ten)) ? v : macDinh;
-    } catch { return macDinh; }
-  };
-  const [gt, setGt] = useState<{ khoa: string | null; v: NguoiChon | null }>(() => ({ khoa, v: doc() }));
-  /* Đổi tuần/MT/lớp thì đọc lại đúng ô nhớ mới. */
-  const v = gt.khoa === khoa ? gt.v : doc();
+export function useGvChamCot(classId: number | null | undefined, dot: string | null | undefined, tuMayChu: NguoiChon | null | undefined) {
+  const khoa = classId && dot ? `${classId}:${dot}` : null;
+  const [gt, setGt] = useState<{ khoa: string | null; v: NguoiChon | null }>(() => ({ khoa, v: tuMayChu ?? null }));
+  /* Đổi tuần/MT/lớp: giá trị máy chủ của đúng đợt mới. */
+  const v = gt.khoa === khoa ? gt.v : tuMayChu ?? null;
   const dat = (moi: NguoiChon | null) => {
+    const cu = v;
     setGt({ khoa, v: moi });
-    if (!khoa) return;
-    try { if (moi) localStorage.setItem(khoa, JSON.stringify(moi)); else localStorage.removeItem(khoa); } catch { /* chế độ riêng tư: chỉ nhớ trong phiên */ }
+    if (!classId || !dot) return;
+    const gv = !moi ? null : moi.kieu === 'toi' ? { kieu: 'toi' } : moi.kieu === 'tai_khoan' ? { kieu: 'tai_khoan', id: moi.id } : { kieu: 'ngoai', ten: moi.ten };
+    api.put('/cham/gv-cham-cot', { classId, dot, gv }).catch(() => setGt({ khoa, v: cu }));
   };
   return [v, dat] as const;
 }

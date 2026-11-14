@@ -81,10 +81,12 @@ export function notify(n: {
 }
 
 /** Quản lý của một chi nhánh (kể cả Quản lý toàn hệ thống) còn hoạt động — người nhận thông báo "để biết" (PR-QU: GVCN phân công, GV đóng Case). */
-export function quanLyCuaChiNhanh(branchId: number): number[] {
+export const quanLyCuaChiNhanh = (branchId: number): number[] => nguoiVaiCuaChiNhanh(branchId, 'manager');
+/** Người còn hoạt động có vai `vai` ở chi nhánh (kể cả vai toàn hệ thống). LG-3: Admin (`office_admin`) nhận tin lớp đủ báo cáo PH. */
+export function nguoiVaiCuaChiNhanh(branchId: number, vai: string): number[] {
   return (db().prepare(
     `SELECT DISTINCT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
-      WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL
+      WHERE r.key = ? AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL
         AND (ur.branch_id IS NULL OR ur.branch_id = ?)`,
-  ).all(branchId) as any[]).map((r) => r.id as number);
+  ).all(vai, branchId) as any[]).map((r) => r.id as number);
 }

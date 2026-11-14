@@ -25,7 +25,11 @@ import { LUOT_HIEN_TAI_SQL, LUOT_LO_TRINH_CUOI_SQL } from './tamDung.ts';
 
 
 
-export function listStudents(p: Principal, f: { q?: string; branchId?: number; classId?: number; needAttention?: boolean } = {}) {
+/**
+ * OV6-DOC-CHON (ô tìm thanh trên): `gioiHan` = LIMIT trong SQL (không áp khi `needAttention` — lọc sau khi dựng dòng); `gon` = chỉ trường ô tìm
+ * cần (tên, email, lớp, Lưu trữ, Case mở) — bỏ lộ trình / kết quả gần nhất / MT sắp tới (`latestResult` đọc mọi lượt của em).
+ */
+export function listStudents(p: Principal, f: { q?: string; branchId?: number; classId?: number; needAttention?: boolean; gioiHan?: number; gon?: boolean } = {}) {
   const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
   if (scope.none) return { rows: [], scopeEmpty: true };
   const conn = db();
@@ -51,7 +55,9 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
   }
 
   /* NGHI-HOC-LUU-TRU: em Lưu trữ (nghỉ học, tạm dừng) vẫn tìm ra để mở hồ sơ, xếp CUỐI + cờ `archived` (web ghi "Lưu trữ"). */
-  const rows = conn.prepare(`SELECT s.* FROM students s WHERE ${where.join(' AND ')} ORDER BY s.archived_at IS NOT NULL, s.full_name`).all(...params) as any[];
+  const gioiHan = f.gioiHan && !f.needAttention ? f.gioiHan : null;
+  const rows = conn.prepare(`SELECT s.* FROM students s WHERE ${where.join(' AND ')} ORDER BY s.archived_at IS NOT NULL, s.full_name${gioiHan ? ' LIMIT ?' : ''}`)
+    .all(...params, ...(gioiHan ? [gioiHan] : [])) as any[];
   const mapped = rows.map((s) => {
     const cur = conn
       .prepare(
@@ -60,6 +66,17 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
           WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`,
       )
       .get(s.id) as any;
+    const openCase = conn
+      .prepare(
+        `SELECT sc.id, sc.sos_level, sc.status FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE a.student_id = ? AND sc.sos_level > 0 AND sc.status != 'done' AND ${CASE_THAT('sc')} ORDER BY sc.id DESC LIMIT 1`,
+      )
+      .get(s.id) as any;
+    const goc = {
+      id: s.id, studentCode: s.student_code, fullName: s.full_name, email: s.email ?? null, status: s.status, archived: !!s.archived_at,
+      classId: cur?.id ?? null, classCode: cur?.code ?? null, branchName: cur?.branch_name ?? null, openCase: openCase ?? null,
+    };
+    if (f.gon) return goc;
     const cycle = currentCycle(s.id);
     const latest = latestResult(s.id);
     const next = conn
@@ -70,12 +87,6 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
           WHERE a.student_id = ? AND a.status = 'planned' AND a.lich_su = 0 ORDER BY pr.week_start IS NULL, pr.week_start, a.attempt_no LIMIT 1`,
       )
       .get(s.id) as any;   /* PR-MT: MT lịch sử (tuần thi đã qua) không phải "MT sắp tới" */
-    const openCase = conn
-      .prepare(
-        `SELECT sc.id, sc.sos_level, sc.status FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE a.student_id = ? AND sc.sos_level > 0 AND sc.status != 'done' AND ${CASE_THAT('sc')} ORDER BY sc.id DESC LIMIT 1`,
-      )
-      .get(s.id) as any;
     return {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, email: s.email ?? null, status: s.status, archived: !!s.archived_at,
       cycleId: cycle?.id ?? null, route: cycle?.route ?? null,
@@ -86,7 +97,7 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
         ? { id: next.id, attemptNo: next.attempt_no, periodCode: next.period_code,
             weekStart: next.week_start ?? null }
         : null,
-      openCase: openCase ?? null,
+      openCase: goc.openCase,
     };
   });
   return {

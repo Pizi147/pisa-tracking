@@ -19,7 +19,7 @@ export const NHAN_LOAI_VIEC: Record<string, string> = {
   score: t('Nhập điểm'), no_plan: t('Thiếu PA học thuật'), ghi_ket_qua_pa: t('Kết quả PA'), no_owner: t('Chưa có người phụ trách'),
   chot_len_ft: t('Chốt lộ trình'), xet_lai_lo_trinh: t('Xét lại lộ trình'), missing_data: t('Thiếu dữ liệu đánh giá'), yt_xu_ly: t('Xử lý vi phạm'),
   yt_xem: t('Xem vi phạm mới'), bao_ph_yt: t('Báo PH vi phạm'), yt_hoi_tinh_hinh: t('Tình hình học tập'), yt_thuc_hien: t('Ghi "Đã thực hiện"'), ban_giao: t('Bàn giao'),
-  xuat_bc_ph: t('Xuất báo cáo PH'), mgmt: t('Việc được giao'),
+  xuat_bc_ph: t('Xuất báo cáo PH'), bao_cao_ph: t('Viết Báo cáo PH'), mgmt: t('Việc được giao'),
 };
 
 export type DongViecChuong = DongDem & { group: string; mine: boolean; cn?: number | null };
@@ -77,6 +77,7 @@ const LOAI_TIN: Record<string, string> = {
   doi_lich_thuong: t('Lịch Test'), tu_doi_lich: t('Lịch Test'), doi_lich_lop: t('Lịch lớp'),
   phan_cong_gvcn: t('Phân công'), phan_cong_moi: t('Phân công'), phan_cong_loi: t('Phân công'),
   case_dong_gv: 'Case', bo_tro_mien_phi: 'Case', sos: 'SOS', discipline_de_biet: t('Ý thức'), buoc_tiep_loi: t('Lộ trình'),
+  bc_ph_du: t('Báo cáo PH'),   // LG-3: Admin — lớp × đợt đủ báo cáo PH
 };
 export const loaiTin = (kind: string | null | undefined) => LOAI_TIN[kind ?? ''] ?? t('Thông báo');
 
