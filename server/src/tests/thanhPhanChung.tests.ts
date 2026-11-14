@@ -447,6 +447,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
       assert(!/title=\{t\('Bạn không được phân công kỹ năng này'\)\}/.test(x), 'Chỉ xem: lý do qua lyDoChiDoc');
     }
     assert(/k === 'writing' && <NutLuat label=\{t\('Cách tính Writing'\)\}>/.test(md), 'ⓘ công thức Writing cạnh tên');
+    const od = doc('web/src/modules/fasttrack/ODiemLon.tsx');
+    assert(/const oTask = \(c: Cell, gon: boolean\)/.test(od) && /bai\.map\(\(c\) => oTask\(c, gon\)\)/.test(od) && !/t\('Nhập'\)\}/.test(od), 'Writing = hai ô W1 / W2 (chủ SP 15/11), không còn chữ "W1 Nhập · W2 Nhập"');
     const nk = doc('shared/domain/nhatKy.ts');
     assert(/'attempt\.huy_tay': 'Huỷ điểm'/.test(nk) && /'score\.khoi_phuc': 'Khôi phục'/.test(nk) && !/Huỷ môn|Khôi phục điểm/.test(nk), 'nhật ký: một tên Huỷ điểm / Khôi phục');
   });

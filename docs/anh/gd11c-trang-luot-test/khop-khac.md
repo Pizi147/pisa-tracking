@@ -64,3 +64,9 @@ GV `nd-luot` (⋯ Vắng · Huỷ điểm · Khôi phục, một khối Lịch s
 ## Sửa sau rà PTA (375)
 - Thẻ Writing 375 cùng dáng L / R: tên + ô điểm (ô "—" có viền như ô khác) cùng hàng, "W1 Nhập · W2 Nhập" đứng trước ô trên cùng hàng; lịch, trạng thái, người chấm dòng dưới; hàng nút cuối thẻ, ⋯ sát phải. `zoom-ba-cham-375.png`: mép phải ⋯ 4 thẻ (Mock) và 4 thẻ (lớp thường) cùng x = 346 px (lệch 0 px), 1440 cùng x = 1407 px.
 - Khối "Còn lại" ẩn ở 375 (lời 40 — mỗi việc đã là nút trong thẻ kỹ năng, mockup C3); 1440 giữ.
+
+## Writing = hai ô W1 / W2 (chủ SP 15/11: "Để W1 W2 thành 2 ô cạnh nhau, hoặc 1 cái trên 1 cái dưới đi, đừng để mỗi W phải bấm chữ")
+- Thay chữ "W1 Nhập · W2 Nhập" + ô "—" chung bằng HAI ô điểm thật nhãn W1 / W2, cùng dáng ô L / R (`oTask` trong `ODiemLon.tsx` — dùng chung trang lượt Mock + dải ô lớn `DaiODiemLon` ở hồ sơ HV). Bấm ô nào mở đúng task đó (hộp neo dưới ô, `web-w1-hop-1440-toi.png`). Có điểm: số task + ✓ / ✗ so kỳ vọng; band Writing chung là dòng phụ "Writing ✓ 6.5" dưới hai ô. Không nhập được: ô chỉ đọc.
+- 1440: hai ô cạnh nhau (cột Điểm 13rem) — `web-w1-w2-diem-1440-toi.png`, `zoom-w1-w2-1440.png`. 375: cạnh nhau, sát phải cùng hàng tên; chỗ hẹp thì tự xuống dòng — `web-w1-w2-diem-375-sang.png`, `zoom-w1-w2-375.png`.
+- ⋯ vẫn thẳng hàng: mép phải 8 thẻ cùng x (1407 px / 346 px), lệch tâm so nút chính 0 px.
+- Hồ sơ HV (bảng Mock Test, dải ô gần nhất) đã tách W1 / W2 từ trước — không đổi.

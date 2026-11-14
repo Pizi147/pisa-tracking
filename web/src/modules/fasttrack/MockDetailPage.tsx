@@ -141,7 +141,7 @@ type DotCuaHv = {
  * Lưới một dòng kỹ năng của bảng kết quả (khung M4-A): Kỹ năng · Lịch · Điểm · Trạng thái · Nhận xét · Case · thao tác. Dưới `md` mỗi kỹ năng là
  * một thẻ: tên + điểm, rồi lịch · trạng thái, nhận xét · Case, nút (các nhóm `md:contents` thành ô lưới ở màn rộng).
  */
-const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_150px_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_13rem_150px_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
 
 export default function MockDetailPage() {
   const { id } = useParams();
