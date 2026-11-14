@@ -11,6 +11,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attempt.cancel_appointment': 'Huỷ lịch Test môn', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
   'attempt.unschedule': 'Huỷ lịch lượt (bỏ tuần, giữ lượt)',
   'attempt.huy_vang': 'Huỷ kỹ năng (vắng 2 lần)',
+  'attempt.huy_tay': 'Huỷ môn (GV chọn, bài vắng)',
   'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng', 'attempt.khoi_phuc': 'Khôi phục lượt MT',
   'attempt.skip_skill': 'Xoá kỹ năng khỏi MT', 'attempt.sit_status': 'Ghi đã làm bài / vắng', 'attempt.skill_week': 'Dời lịch Test',

@@ -24,13 +24,6 @@ export function chuyenVang(o: { lan: number; tuanThi: string; homNay: string }):
   return { kq: 'doi', tuanDich: tuanKeTiep(mondayOfDate(o.tuanThi)) };
 }
 
-/** N38 L2 + PTA 14/11: vắng lần 2 HUỶ kỹ năng — Mock / MT0 lớp FT; MT0 lớp thường theo luật "-" lớp thường: chỉ dời, không bao giờ huỷ. */
-export const vangLan2Huy = (kind: string | null | undefined, lopFt: boolean): boolean => !(kind === 'mt0' && !lopFt);
-/** Câu báo trước của nút Vắng (FT / MT0) — theo `vangLan2Huy`, không ghi cứng "huỷ" cho bài chỉ dời. */
-export const cauVangMt = (mon: string, huyLan2: boolean): string => huyLan2
-  ? t('Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.', { mon })
-  : t('Ghi "-" cho {mon}: dời sang tuần sau tuần Test; vắng mấy lần cũng không huỷ.', { mon });
-
 /** Hoàn tác "-" (21/10): 10 giây trên web; máy chủ nhận thêm 5 giây cho mạng chậm. */
 export const HOAN_TAC_VANG_MS = 10_000;
 export function duocHoanTacVang(ghiLuc: string | null | undefined, bayGio: number): boolean {

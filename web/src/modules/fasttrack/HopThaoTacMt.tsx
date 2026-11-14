@@ -10,7 +10,7 @@ import { useKhoaCuoiTuan, useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { Nhan } from '../../ui/Nhan.tsx';
 import {
-  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, cauVangMt, kiemLyDoThaoTac, kiemTuanXep, laMtCuKyNang, tuanDaQua, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich, type KetQuaVang,
+  CAU_TUAN_DA_QUA, CHU_THAO_TAC, canLyDo, cauDaGhiVang, kiemLyDoThaoTac, kiemTuanXep, laMtCuKyNang, tuanDaQua, luatVangThuong, mondayOfDate, ngay, tenMon, tuanLich, type KetQuaVang,
   type LoiTruong, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -30,7 +30,7 @@ function vangSeRa(laThuong: boolean, weekStart: string | null, homNay: string): 
 }
 
 /** Một câu nói hệ quả của thao tác — người bấm biết trước điều gì xảy ra (T38, clarify). */
-function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<typeof vangSeRa> = null, huyLan2 = true): string {
+function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<typeof vangSeRa> = null): string {
   switch (tt) {
     case 'dat-lich': return t('Đặt tuần Test cho {mon}; các kỹ năng khác giữ nguyên.', { mon });
     case 'doi-lich': return t('Chỉ {mon} đổi tuần Test; các kỹ năng khác giữ nguyên. Không tính là một lần dời do vắng.', { mon });
@@ -39,8 +39,8 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
     case 'bao-vang': return vang?.khongDuThi
       ? t('Tuần Test đã qua 2 tuần: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.', { mon })
       : laThuong
-        ? t('Ghi "-" cho {mon}: môn này dời sang {x} ngay.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
-        : cauVangMt(mon, huyLan2);
+        ? t('Ghi "-" cho {mon}: dời sang {x}; vắng mấy lần cũng không tự huỷ — cần thì ⋯ › Huỷ môn.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
+        : t('Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.', { mon });
     case 'huy-diem': return t('Ô điểm trở về trống; nhận xét giữ. Lấy lại bằng ⋯ "Khôi phục điểm".');
     case 'khoi-phuc': return t('Mở lại kỹ năng {mon} đã huỷ và đặt tuần Test mới trong cùng một lần.', { mon });
     default: return '';
@@ -49,8 +49,6 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
 
 export type HopThaoTacProps = {
   thaoTac: ThaoTac | null; attemptId: number; skill: string; ct: string | null; laThuong: boolean;
-  /** PTA 14/11: vắng lần 2 có huỷ không (máy chủ `vangLan2Huy` — MT0 lớp thường chỉ dời). Mặc định: có (Mock). */
-  huyLan2?: boolean;
   /** Quản lý / Quản trị xếp được tuần đã qua (T4, chip "Tuần đã qua"); người khác bị khoá từ tuần này (K2-33). */
   quanLy: boolean;
   /** Chủ SP 28/10: GVCN lớp đó — dời kỹ năng tuần ĐÃ QUA sang tuần đã qua / tuần này (máy chủ `gvcnDoiMtCu`). */
@@ -71,7 +69,7 @@ export type HopThaoTacProps = {
  * Máy chủ kiểm lại mọi luật; câu lỗi của máy chủ hiện nguyên văn TRONG panel (không đóng panel, không mất chữ đã gõ).
  * Khung: `KhungPanel` (I4, PR-LM) — chân theo luật S3: chưa sửa "Đóng", đã sửa "Huỷ thay đổi"; thao tác nguy hiểm nút chính đỏ.
  */
-export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, huyLan2 = true, quanLy, gvcn = false, row, oCoDiem = [], oMacDinh, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
+export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, gvcn = false, row, oCoDiem = [], oMacDinh, trongHop, hocVien, lop, onClose, onDone }: HopThaoTacProps) {
   const toast = useToast();
   const lf = useLoiForm();
   const { homNay } = useNgayNghiepVu();
@@ -200,7 +198,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, huyLan2 
         ),
       }}>
       <div className="space-y-3 pt-3">
-        <p className="m-0 text-sm text-slate-300">{cauHeQua(tt, mon, laThuong, vang, huyLan2)}</p>
+        <p className="m-0 text-sm text-slate-300">{cauHeQua(tt, mon, laThuong, vang)}</p>
         {coTuan && (
           <Truong nhan={t('Tuần Test mới')} batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
             <div {...lf.o(loi, 'tuan')}>
