@@ -348,3 +348,15 @@ Câu hỏi của PTA Overhaul (câu 12, 13, 14 ở `08-bao-cao-sang.md`): (1) MT
 2. **Việc Bước tiếp sau thi: giữ như mã** — việc giao cho TVV của em, mọi TVV cùng chi nhánh làm thay được. Sửa chữ N6 trong tài liệu.
 3. **Xoá học viên / lớp trống: QL làm được** (giữ như mã; có Thùng rác 30 ngày). Sửa chữ Rulebook.
 Câu 1–11 ở `08`: coi là đã chốt theo năm mockup đã duyệt (lời 27–30). Còn hỏi: câu 15, 16, 17.
+
+## 15/11 — lời 33: ba câu nhỏ (câu 15, 16, 17 ở `08`) theo đề xuất
+
+Đề xuất của PTA Overhaul: (15, đụng luật N5) thẻ "Thu hồi xử lý vi phạm" hết 5 ngày QL chưa duyệt → tự chốt theo GVCN, như thẻ xử lý; (16) chip "Việc cần làm" quá hạn: giữ như mockup, mọi loại việc một dáng (⚠ + đỏ), không tách riêng Nhập điểm; (17) badge tab "Chấm Speaking": badge mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng vào badge menu.
+
+> "Theo đề xuất hết"
+
+ĐÃ CHỐT:
+1. **Thẻ "Thu hồi xử lý vi phạm" hết hạn duyệt (5 ngày, theo Hạn mặc định) mà QL chưa duyệt → tự chốt theo GVCN** (thu hồi có hiệu lực: dòng "Đã thu hồi", bậc tính lại, TVV đã báo thì có việc "Báo lại PH") — như thẻ xử lý vi phạm (D3). ĐỔI luật đang chạy (nay chờ mãi) → LG-10 ở `05-plan-logic-luat.md`, gửi PTA Plan.
+2. **Chip "Việc cần làm" quá hạn: giữ như mockup** — mọi loại việc cùng một dáng ⚠ + đỏ.
+3. **Badge tab "Chấm Speaking": mờ (số bài) + ⚠ khi có bài quá hạn**; không đỏ; không cộng vào badge menu / chuông. Thắng hình mockup ① (badge đỏ "6", [XM-2]). Ghi ở `04-thiet-ke.md` mục 15.
+Cả 17 câu ở `08-bao-cao-sang.md` đã có trả lời.
