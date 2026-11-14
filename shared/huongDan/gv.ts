@@ -52,8 +52,8 @@ export const HD_GV: HuongDan = {
     {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
-      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Case ở đầu trang.',
-      buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Case</b> đầu trang).', 'Ghi mô tả, lưu.'],
+      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Task › Case ở đầu trang.',
+      buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ lớp).', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },
     {
@@ -321,7 +321,7 @@ export const HD_GV: HuongDan = {
       khongLam: [KHONG_XEP_MT],
       muc: [
         { id: 'lop-nhap-diem', viec: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final', buoc: ['Bấm nút <b>Nhập điểm</b> đầu trang, hoặc <b>⋯</b> ở dòng em › <b>Nhập điểm</b>.', 'Chọn lượt và môn, gõ điểm.'] },
-        { id: 'lop-hoc-vien', ten: 'Các tab của lớp', buoc: ['Đầu trang: thanh <b>Việc của tôi</b> của lớp — bấm việc làm ngay tại trang. Lớp thường ghi tuần 5/8 (tuần đang học / số tuần).', 'Tab <b>Học viên</b> · <b>Ý thức & Phối hợp</b> · <b>Phân tích lớp</b> · <b>Báo cáo PH</b>; lớp đã kết thúc có <b>Tổng kết</b>.', 'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới dòng.'] },
+        { id: 'lop-hoc-vien', ten: 'Các tab của lớp', buoc: ['Đầu trang: <b>Việc cần làm</b> của bạn ở lớp theo loại (Nhập điểm · Case · Ý thức · Vận hành) — bấm chip mở thẳng việc đầu, <b>Việc tiếp ›</b> đi hết việc cùng loại. Lớp thường ghi tuần 5/8 (tuần đang học / số tuần).', 'Tab <b>Học viên</b> · <b>Ý thức & Phối hợp</b> · <b>Phân tích lớp</b> · <b>Báo cáo PH</b>; lớp đã kết thúc có <b>Tổng kết</b>.', 'Bảng em: bấm tên hoặc ô điểm mở phần dưới dòng — Điểm theo lượt (TVV của em ghi nhỏ ở đây) · thẻ kỹ năng (lớp thường: môn) → Điểm · Case · PA.'] },
         { id: 'lop-menu', ten: 'Nút ⋯ của lớp', buoc: ['GVCN: <b>Thông tin lớp</b> · <b>Sửa thông tin học viên</b> · <b>+ Học viên</b> · <b>Cuối khoá…</b> (lớp thường) · <b>Xuất Excel</b>.', 'Mọi GV: <b>Lịch sử</b> — mỗi lần lưu: ai · lúc · nguồn · lý do · trước → sau.'] },
       ],
     },

@@ -69,7 +69,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
-      loiTat: ['ho-so-lop'], tatThem: ['Nút + Case đầu hồ sơ', '⋯ dòng em'], cung: 'mở cùng form Case.',
+      loiTat: ['ho-so-lop'], tatThem: ['Nút + Task › Case đầu hồ sơ lớp', '⋯ dòng em'], cung: 'mở cùng form Case.',
       buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b>.', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },
@@ -354,7 +354,7 @@ export const HD_QL: HuongDan = {
       muc: [
         { id: 'lop-nhap-diem', viec: 'sua-diem', ten: 'Nhập điểm, sửa điểm một lớp', buoc: ['Bấm nút <b>Nhập điểm</b> đầu trang, hoặc <b>⋯</b> ở dòng em › <b>Nhập điểm</b>.', 'Chọn lượt và môn, gõ điểm; sửa điểm đã có: bấm ô.'] },
         mucGv('ho-so-lop', 'lop-hoc-vien'),
-        { id: 'lop-tao-case', viec: 'tao-case', ten: 'Tạo Case tay', buoc: ['Ở dòng em bấm <b>⋯ › + Case</b>.', 'Ghi mô tả, lưu.'] },
+        { id: 'lop-tao-case', viec: 'tao-case', ten: 'Tạo Case tay', buoc: ['Bấm <b>+ Task › Case</b> đầu trang rồi chọn em, hoặc ở dòng em bấm <b>⋯ › + Case</b>.', 'Ghi mô tả, lưu.'] },
         { id: 'lop-chuyen', viec: 'chuyen-lop', ten: 'Chuyển lớp một em', buoc: ['Ở dòng em bấm <b>⋯ › Chuyển lớp…</b>; nhiều em: <b>Chọn nhiều học viên</b> › <b>Chuyển lớp…</b>.', 'Chọn <b>Lớp chuyển đến</b>, <b>Tuần bắt đầu</b>, ghi <b>Lý do</b>.'] },
         { id: 'lop-sua', viec: 'sua-hv', ten: 'Sửa thông tin cả lớp', buoc: ['<b>⋯ › Sửa thông tin học viên</b>: bảng cả lớp, sửa nhiều em một lần.', 'Đổi Target nhiều em: một <b>Lý do đổi Target</b> chung.'] },
         { id: 'lop-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc nhiều em', buoc: ['<b>Chọn nhiều học viên</b> › <b>Tạm dừng/ Kết thúc học</b>.', 'Xem lại ở <b>Học viên & Lớp</b> › <b>⋯ › Lưu trữ</b>.'] },
