@@ -27,6 +27,8 @@ import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
 
 const GHI_CHU_TOI_DA = 300;
+/** LICH-THI-NOI-THI: nơi thi là chữ NGẮN (IDP · BC · British Council Hà Nội…) — đủ cho tên trung tâm thi, không thành ô ghi chú thứ hai. */
+export const NOI_THI_TOI_DA = 40;
 
 /** KQ thi thật đã ghi: Overall (điểm lộ trình cũ có `outcome_score`), đạt Target (null = không Target), "Không thi". */
 export type KqThiThatHang = {
@@ -43,6 +45,8 @@ export type HangLichThi = {
   /** LT-SV: trạng thái lịch thi thật (`trangThaiLichThi`) — web vẽ chữ bằng `nhanLichThi`. */
   lichThi: LichThi;
   ketLuan: KetLuanLichThi | null; luu: LuuLichThi | null; coTheSua: boolean;
+  /** LICH-THI-NOI-THI (⑥ K4 "Nơi thi IDP"): nơi thi thật, chữ ngắn; null = chưa ghi. Cột đọc chung câu danh sách — 0 câu thêm. */
+  noiThi: string | null;
   /** LICH-THI-UI: bước của em (`buocLichThi` — trước thi gộp sau thi) + trạng thái sau thi (`trangThaiSauThi`, cùng luật Công việc) + KQ thi thật + bước tiếp đã chọn. */
   buoc: BuocLichThi; sauThi: TrangThaiSauThi; kq: KqThiThatHang | null; buocTiep: string | null;
   /** OV-15h2 (ý 2): ai · lúc đặt ngày thi đang có ("chốt 05/10 · Lê Thu"); chỉ khi đã chốt ngày và có nhật ký. */
@@ -72,7 +76,7 @@ export function luuTuCot(r: any): LuuLichThi | null {
   return kl || ghiChu ? { ketLuan: kl, thang: r.lich_thi_thang ?? null, ghiChu, ai: r.ghi_chu_ai ?? null, luc: r.lich_thi_ghi_chu_luc ?? '' } : null;
 }
 /** Cột `lich_thi_*` + người ghi chú — gắn vào câu SELECT lộ trình (`cy`) có `LEFT JOIN users gu ON gu.id = cy.lich_thi_ghi_chu_boi`. */
-export const COT_LICH_THI_SQL = 'cy.lich_thi_ket_luan, cy.lich_thi_thang, cy.lich_thi_ghi_chu, cy.lich_thi_ghi_chu_luc, gu.full_name AS ghi_chu_ai';
+export const COT_LICH_THI_SQL = 'cy.lich_thi_ket_luan, cy.lich_thi_thang, cy.lich_thi_ghi_chu, cy.lich_thi_ghi_chu_luc, cy.noi_thi, gu.full_name AS ghi_chu_ai';
 
 /** Tình trạng lịch của một lộ trình + nhật ký → các trường của hàng (một nguồn cho danh sách và cho kết quả sau khi lưu). */
 function tinhLich(c: any, luu: LuuLichThi | null, homNay: string, chot: { luc: string; ai: string | null } | null = null) {
@@ -85,6 +89,7 @@ function tinhLich(c: any, luu: LuuLichThi | null, homNay: string, chot: { luc: s
     duKien, coNgay, thangDuKien, chuaCo: duKien.confidence === 'none', lichThi, ketLuan: ketLuanHienTai({ coNgay, thangDuKien, luu }), luu,
     chot: coNgay ? chot : null,
     buoc: buocLichThi(lichThi, sauThi.giaiDoan), sauThi, kq: kqThiThatCua(c), buocTiep: c?.buoc_tiep ?? null,
+    noiThi: (c?.noi_thi as string | null | undefined) || null,
   };
 }
 
@@ -198,7 +203,8 @@ export function danhSachLichThi(
   return { thang, rows };
 }
 
-export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null; kq?: string | null };
+export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null; kq?: string | null;
+  /** LICH-THI-NOI-THI: lần lưu này đổi nơi thi → giá trị mới ('' = bỏ). */ noiThi?: string | null };
 /**
  * Lịch sử lịch thi của các lộ trình (đổi tháng / ngày · kết luận + ghi chú · ghi KQ thi thật; mới trước, tối đa `gioiHan` dòng mỗi lộ trình) — theo lô. Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) —
  * không OR giữa hai loại (Turso quét cả bảng nhật ký). Dùng cho dải mở hàng (3 dòng) và "Xem toàn bộ" (một lộ trình, khi bấm).
@@ -224,7 +230,7 @@ export function lichSuLichThi(cyc: readonly number[], gioiHan: number, dem?: Map
       dem?.set(x.entity_id, (dem.get(x.entity_id) ?? 0) + 1);
       if (ls.length >= gioiHan) continue;
       if (x.action === 'lich_thi.luu') {
-        ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null });
+        ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null, ...(sau.noiThi !== undefined ? { noiThi: sau.noiThi } : {}) });
       } else if (x.action === 'cycle.thi_that') {
         const kq = sau.khongThi ? 'Không thi' : sau.ovr != null ? Number(sau.ovr).toFixed(1) : null;
         ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: 'ghi-kq', ngay: null, ghiChu: null, kq });
@@ -301,8 +307,8 @@ export function lichSuLichThiMotEm(p: Principal, cycleId: number): DongLichSu[] 
  */
 export function luuLichThi(
   p: Principal, cycleId: number,
-  i: { ketLuan?: unknown; ngay?: unknown; thang?: unknown; ghiChu?: unknown; boLich?: unknown },
-): Pick<HangLichThi, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'lichThi' | 'ketLuan' | 'luu' | 'chot' | 'buoc' | 'sauThi' | 'kq' | 'buocTiep'> {
+  i: { ketLuan?: unknown; ngay?: unknown; thang?: unknown; ghiChu?: unknown; boLich?: unknown; noiThi?: unknown },
+): Pick<HangLichThi, 'duKien' | 'coNgay' | 'thangDuKien' | 'chuaCo' | 'lichThi' | 'ketLuan' | 'luu' | 'chot' | 'buoc' | 'sauThi' | 'kq' | 'buocTiep' | 'noiThi'> {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
   if (!coTheSua(p, c.student_id)) throw forbidden('Bạn không có quyền sửa dự kiến thi của em này.');
@@ -315,7 +321,12 @@ export function luuLichThi(
   if (ketLuan !== null && !(KET_LUAN_LICH_THI as readonly string[]).includes(ketLuan)) throw badRequest('Kết luận không hợp lệ.');
   /* LICH-THI-UI (XM-2): Hoàn tác một lần ĐẶT tháng đầu tiên = xoá lịch về "chưa có" (các lần khác hoàn tác bằng PUT lại giá trị cũ); có nhật ký. */
   const boLich = i.boLich === true && ketLuan === null;
-  if (ketLuan === null && ghiChu === undefined && !boLich) throw badRequest('Chọn kết luận hoặc ghi chú.');
+  /* LICH-THI-NOI-THI: nơi thi — chữ ngắn, '' = bỏ; quyền như sửa ngày thi (cùng `coTheSua`), nhật ký trong cùng dòng `lich_thi.luu`. */
+  const noiThiGui = i.noiThi === undefined ? undefined : String(i.noiThi ?? '').trim().replace(/\s+/g, ' ');
+  if (noiThiGui !== undefined && noiThiGui.length > NOI_THI_TOI_DA) throw loi(400, 'Nơi thi tối đa {NOI_THI_TOI_DA} ký tự.', { NOI_THI_TOI_DA });
+  const noiThiCu: string | null = (doc()?.noi_thi as string | null) || null;
+  const doiNoiThi = noiThiGui !== undefined && (noiThiGui || null) !== noiThiCu;
+  if (ketLuan === null && ghiChu === undefined && !boLich && noiThiGui === undefined) throw badRequest('Chọn kết luận hoặc ghi chú.');
   const homNay = demoToday();
   const truoc = tinhLich(c, cu, homNay);
   let thangGhi: string | null = cu?.thang ?? null;
@@ -340,10 +351,13 @@ export function luuLichThi(
     `UPDATE learning_cycles SET lich_thi_ket_luan = ?, lich_thi_thang = ?, lich_thi_ghi_chu = ?,
             lich_thi_ghi_chu_boi = CASE WHEN ? = 1 THEN ? ELSE lich_thi_ghi_chu_boi END, lich_thi_ghi_chu_luc = CASE WHEN ? = 1 THEN ? ELSE lich_thi_ghi_chu_luc END WHERE id = ?`,
   ).run(moi.ketLuan, moi.thang, moi.ghiChu, doiGhiChu, p.userId, doiGhiChu, luc, cycleId);
+  if (doiNoiThi) db().prepare('UPDATE learning_cycles SET noi_thi = ? WHERE id = ?').run(noiThiGui || null, cycleId);
   const st = db().prepare('SELECT student_code FROM students WHERE id = ?').get(c.student_id) as any;
   writeAudit({
     actorUserId: p.userId, action: 'lich_thi.luu', entityType: 'lich_thi', entityId: cycleId,
-    entityLabel: `${st?.student_code ?? ''} · ${moi.ketLuan ?? (boLich ? 'bỏ lịch' : 'ghi chú')}`, before: cu ? { ketLuan: cu.ketLuan, thang: cu.thang, ghiChu: cu.ghiChu } : null, after: boLich ? { ...moi, boLich: true } : moi,
+    entityLabel: `${st?.student_code ?? ''} · ${moi.ketLuan ?? (boLich ? 'bỏ lịch' : doiNoiThi && ghiChu === undefined ? 'nơi thi' : 'ghi chú')}`,
+    before: cu || doiNoiThi ? { ketLuan: cu?.ketLuan ?? null, thang: cu?.thang ?? null, ghiChu: cu?.ghiChu ?? null, ...(doiNoiThi ? { noiThi: noiThiCu } : {}) } : null,
+    after: { ...moi, ...(boLich ? { boLich: true } : {}), ...(doiNoiThi ? { noiThi: noiThiGui || null } : {}) },
   });
   const sau = doc();
   return tinhLich(sau, luuTuCot(sau), homNay, chotNgayCua([{ id: cycleId, exam_date: sau.exam_date ?? null }]).get(cycleId) ?? null);

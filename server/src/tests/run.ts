@@ -9806,6 +9806,8 @@ await runPrChuongV2Tests({ check, assert, conn } as any);
 // ==================================================================== TQ-VIEC-CUA-TOI ([XM 3] rà 11/11: ô Việc của tôi ở Tổng quan TVV / QL / Admin)
 const { runPrTqViecCuaToiTests } = bocTep('prTqViecCuaToi', await import('./prTqViecCuaToi.tests.ts'));
 await runPrTqViecCuaToiTests({ check, assert, conn, P } as any);
+const { runPrNoiThiTests } = bocTep('prNoiThi', await import('./prNoiThi.tests.ts'));
+await runPrNoiThiTests({ check, assert, assertThrows, conn, P } as any);
 const { runPrTqSosCnTests } = bocTep('prTqSosCn', await import('./prTqSosCn.tests.ts'));
 await runPrTqSosCnTests({ check, assert, assertThrows, conn, P } as any);
 // ==================================================================== DON-LUONG (luồng còn sót ra-luong + OV-11)
