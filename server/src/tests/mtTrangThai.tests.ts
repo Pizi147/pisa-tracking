@@ -212,7 +212,8 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     const [a, b, c] = luot;
     dung(a);
     attempts.saveScore(gvW1, a, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
-    assert(loi(() => attempts.saveScore(gvW2, a, 'writing2', { noShow: true }, TRONG))?.status === 409, 'phải hỏi huỷ điểm W1');
+    /* NHAP-DIEM-a: không hỏi nữa — nhưng GV W2 không cất được điểm của GV W1 (403 chỉ đường); GVCN / QL ghi thẳng. */
+    assert(loi(() => attempts.saveScore(gvW2, a, 'writing2', { noShow: true }, TRONG))?.status === 403, 'GV W2 không huỷ được điểm W1');
     voiXacNhan(() => attempts.saveScore(QL, a, 'writing2', { noShow: true }, TRONG));
     let k = ky(a, 'writing');
     assert(k.planned_period_id === W1 && k.absence_move_count === 1 && dau(a, 'writing1').band === null, `W1 điểm + W2 "-": ${JSON.stringify(k)}`);
@@ -283,7 +284,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(QL, d, 'writing2', { noShow: false }, TRONG);
     k = ky(d, 'writing');
     assert(k.planned_period_id === W && k.absence_move_count === 0 && !dau(d, 'writing1').no_show_period_id && !dau(d, 'writing2').no_show_period_id, `Hoàn tác W2 "-": ${JSON.stringify(k)}`);
-    ketQuaHuy.khoiPhucDiem(gvW1, d, 'writing1', TRONG);
+    absence.huyDiemKn(gvW1, d, 'writing1', false, null, TRONG);
     assert(dau(d, 'writing1').band === 6, 'Khôi phục điểm W1');
   }));
 
@@ -388,7 +389,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.setSkillSkip(QL, a, 'listening', true, null, { xoaDiem: true });
     attempts.setSkillSkip(QL, a, 'listening', false, null);
     assert(ky(a, 'listening').required === 1, 'đưa lại');
-    ketQuaHuy.khoiPhucDiem(QL, a, 'listening', TRONG);
+    absence.huyDiemKn(QL, a, 'listening', false, null, TRONG);
     assert(dau(a, 'listening').raw_score === 30, 'điểm cũ về');
   }));
 
@@ -400,7 +401,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(hoanTat.dotHoanTat(a, QUA).hoanTat, 'tiền đề: đợt đủ điểm');
     attempts.saveScore(gvL, a, 'listening', { rawScore: null, lyDo: 'nhập nhầm' }, QUA);
     assert(dau(a, 'listening').raw_score === null && banCat(a).length === 1, 'GVBM huỷ được, điểm cất');
-    keHoach.huyDiem(QL, { attemptId: a, skill: 'speaking' });
+    absence.huyDiemKn(QL, a, 'speaking', true);
     const s = dau(a, 'speaking');
     assert(s.band === null && s.comment === 'Nói trôi chảy, phát âm cần sửa.', `Huỷ điểm giữ nhận xét: ${JSON.stringify(s)}`);
     assert(one('SELECT status FROM assessment_attempts WHERE id = ?', a).status === 'planned', 'lượt tính lại (chưa đủ điểm)');
@@ -412,19 +413,19 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     attempts.saveScore(gvL, a, 'listening', { rawScore: 30 }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { rawScore: null }, TRONG);
     const goc = dau(a, 'listening');   // dòng đã huỷ: người / ngày nhập đầu chưa đổi khi cất
-    assert(loi(() => ketQuaHuy.khoiPhucDiem(gvS, a, 'listening', TRONG))?.status === 403, 'GV khác môn không khôi phục (quyền trước)');
+    assert(loi(() => absence.huyDiemKn(gvS, a, 'listening', false, null, TRONG))?.status === 403, 'GV khác môn không khôi phục (quyền trước)');
     conn.prepare(`UPDATE ket_qua_huy SET diem_json = json_set(diem_json, '$[0].nhap_dau_ngay', '2026-11-03', '$[0].entered_at', '2026-11-03T02:00:00.000Z') WHERE attempt_id = ?`).run(a);
-    ketQuaHuy.khoiPhucDiem(QL, a, 'listening', TRONG);
+    absence.huyDiemKn(QL, a, 'listening', false, null, TRONG);
     const sau = dau(a, 'listening');
     assert(sau.raw_score === 30 && !banCat(a).length, 'khôi phục');
     assert(sau.nhap_dau_ngay === '2026-11-03' && sau.entered_at === '2026-11-03T02:00:00.000Z' && sau.entered_by === gvL.userId,
       `giữ người nhập / ngày nhập đầu của bản cất: ${JSON.stringify({ n: sau.nhap_dau_ngay, a: sau.entered_at, b: sau.entered_by, goc: goc.entered_by })}`);
     assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'score.khoi_phuc' AND entity_id = ?`, a).n === 1, 'nhật ký khôi phục');
-    assert(loi(() => ketQuaHuy.khoiPhucDiem(gvL, a, 'listening', TRONG))?.status === 400, 'không còn gì để khôi phục');
+    assert(loi(() => absence.huyDiemKn(gvL, a, 'listening', false, null, TRONG))?.status === 400, 'không còn gì để khôi phục');
     attempts.saveScore(gvL, a, 'listening', { rawScore: null }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { rawScore: 25 }, TRONG);
     assert(!banCat(a).length, 'nhập điểm mới đóng bản cất');
-    assert(loi(() => ketQuaHuy.khoiPhucDiem(gvL, a, 'listening', TRONG))?.status === 400, 'đã có điểm mới → 400');
+    assert(loi(() => absence.huyDiemKn(gvL, a, 'listening', false, null, TRONG))?.status === 400, 'đã có điểm mới → 400');
   }));
 
   check('T21 · SỬA: Sửa điểm — GVBM đúng ô mọi lúc (sau Đủ điểm, MT cũ quá 7 ngày, RKC: cả lớp kết thúc); GV khác môn 403', () => thu(() => {
@@ -545,7 +546,8 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     const a = luot[0];
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
-    assert(loi(() => attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG))?.status === 400, 'gõ lại trong tuần cũ: tuần đích chưa tới → không ghi');
+    attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);   // NHAP-DIEM-a: gõ lại trong tuần cũ (tuần đích chưa tới) — vô hại
+    assert(ky(a, 'listening').absence_move_count === 1 && ky(a, 'listening').planned_period_id === W1, 'gõ lại không ghi thêm');
     attempts.saveScore(gvL, a, 'listening', { noShow: false }, TRONG);
     attempts.saveScore(gvL, a, 'listening', { noShow: true }, TRONG);
     let k = ky(a, 'listening');
@@ -573,7 +575,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     const homNay = t.addDays(String(r.het).slice(0, 10), 10);
     regular.saveRegularScore(gv, r.id, r.skill, { score: null }, homNay);
     assert(dau(r.id, r.skill).raw_score === null && banCat(r.id).length === 1, 'GVBM huỷ được, điểm cất');
-    ketQuaHuy.khoiPhucDiem(gv, r.id, r.skill, homNay);
+    absence.huyDiemKn(gv, r.id, r.skill, false, null, homNay);
     assert(dau(r.id, r.skill).raw_score === r.raw_score, 'Khôi phục điểm lớp thường');
   }));
 

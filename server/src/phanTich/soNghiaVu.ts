@@ -105,7 +105,8 @@ export function tinhBaiNhieu(ids: readonly number[]): Map<number, DongNv[]> {
       const l = lopLucThi(ghiDanh.get(a.student_id) ?? [], tuan, a.class_id);
       const li = lop.get(l) ?? lop.get(a.class_id)!;
       const row = scores.find((s: any) => s.skill === x.skill) as any;
-      const xongLuc = row?.nhap_dau_ngay ?? null;
+      /* NHAP-DIEM-a: ô xoá điểm giữ `nhap_dau_ngay` (nhập lại không tính muộn) — chỉ ô CÒN điểm mới là xong. */
+      const xongLuc = row && (row.band != null || row.raw_score != null) ? row.nhap_dau_ngay ?? null : null;
       const cheo = laChamCheo(a.kind, x.skill);
       const ngayPc = x.deadline ?? tuan;
       let nguoi: number | null = null, pcNhapSau = false;

@@ -39,7 +39,7 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   for (const r of conn
     .prepare(
       `SELECT a.id, a.kind, p.scoring_mode AS mode, a.lich_su,
-              (SELECT COALESCE(MAX(sx.nhap_dau_ngay), substr(MAX(sx.entered_at), 1, 10))
+              (SELECT COALESCE(MAX(CASE WHEN sx.band IS NOT NULL OR sx.raw_score IS NOT NULL THEN sx.nhap_dau_ngay END), substr(MAX(sx.entered_at), 1, 10))   -- NHAP-DIEM-a: ô đã xoá giữ ngày nhập đầu
                  FROM assessment_scores sx WHERE sx.attempt_id = a.id) AS nhap_cuoi
          FROM assessment_attempts a
          LEFT JOIN classes c ON c.id = a.class_id

@@ -735,23 +735,6 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
   });
 }
 
-/**
- * HUỶ ĐIỂM (T38) một kỹ năng FT — mọi ô được chọn (Writing: W1 và/hoặc W2) trong MỘT `tx`: lỗi ở ô sau thì ô trước cuộn lại,
- * không còn nửa điểm (rà #126). Mỗi ô đi qua `saveScore` (quyền, R11, RB-5 ghi lý do vào Lịch sử).
- */
-export function huyDiem(p: Principal, i: { attemptId: number; skill: string; o?: string[]; lyDo?: string | null }) {
-  const tatCa = entrySkillsOf(chonKyNang(i.skill) as any) as string[];
-  const o = i.o?.length ? i.o : tatCa;
-  if (o.some((e) => !tatCa.includes(e))) throw badRequest('Ô không thuộc kỹ năng này.');
-  const diem = scoresOf(i.attemptId);
-  const coDiem = o.filter((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)));
-  if (!coDiem.length) throw badRequest(`${tenMon(null, i.skill)} chưa có điểm để huỷ.`);
-  return tx(() => {
-    for (const e of coDiem) saveScore(p, i.attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: i.lyDo?.trim() || null });
-    return { ok: true as const, huy: coDiem };
-  });
-}
-
 // ---------------------------------------------------------------- xếp mới
 
 function docTuan(ids: number[]): Map<number, any> {

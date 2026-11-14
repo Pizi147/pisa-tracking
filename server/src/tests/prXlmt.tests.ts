@@ -194,9 +194,15 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   // PR-MTa T7: Báo vắng — lý do tuỳ chọn (bỏ nhánh "lý do ngắn"); chữ "MT lịch sử" → "MT cũ".
   /* LUAT-34: MT cũ không còn bị chặn — Báo vắng ở MT cũ = Đã huỷ ngay (mtTrangThai T06). */
-  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · đã có điểm', () => {
-    assertThrows(() => absence.baoVang(P.subjectTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /chủ nhiệm/, 'GVBM');
-    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần Test/, 'tương lai');
+  check('PR-XLMT (2) · Báo vắng bị chặn: GV ngoài kỹ năng · đã có điểm; tuần tương lai = báo trước (NHAP-DIEM-a)', () => {
+    /* NHAP-DIEM-a: GV nhập được ô báo vắng được; GV không dạy kỹ năng đó vẫn bị chặn. */
+    assertThrows(() => absence.baoVang(P.sTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /người nhập được ô/, 'GV ngoài kỹ năng');
+    /* NHAP-DIEM-a (PTA 14/11): tuần tương lai = báo trước — ghi đúng tuần Test, dời tuần sau nó (thử rồi cuộn lại). */
+    conn.exec('SAVEPOINT xlmt2');
+    try {
+      const r = absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY);
+      assert(r.daDoi, `báo trước: ${JSON.stringify(r)}`);
+    } finally { conn.exec('ROLLBACK TO xlmt2'); conn.exec('RELEASE xlmt2'); }
     diem(m1.id, 'reading');
     assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
   });
@@ -415,24 +421,30 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     attemptsSvc.saveScore(P.w1Teacher, a.id, 'writing1', { criteria: [6, 6, 6, 6] }, TODAY);
     attemptsSvc.saveScore(P.w2Teacher, a.id, 'writing2', { criteria: [6, 6, 6, 6] }, TODAY);
     const band = (e: string) => attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === e)?.band ?? null;
-    assertThrows(() => keHoach.huyDiem(P.w1Teacher, { attemptId: a.id, skill: 'writing', lyDo: 'Nhập nhầm bài' }), /./, 'GV W1 không huỷ được W2');
-    assert(band('writing1') !== null && band('writing2') !== null, 'lỗi ở W2 → W1 cuộn lại');
-    keHoach.huyDiem(QL, { attemptId: a.id, skill: 'writing', lyDo: ' ' });   // rà #212 thay PR-MTa T7: lý do tuỳ chọn
-    assert(band('writing1') === null && band('writing2') === null, 'QL huỷ cả hai ô');
+    /* NHAP-DIEM-a (6b): Huỷ điểm = cả kỹ năng Writing — người nhập được một ô (GV W1) huỷ được cả W1 + W2 trong một giao dịch (Khôi phục trả cả hai). */
+    assertThrows(() => absence.huyDiemKn(P.sTeacher, a.id, 'writing', true, 'Nhập nhầm bài'), /./, 'GV ngoài Writing không huỷ được');
+    assert(band('writing1') !== null && band('writing2') !== null, 'bị chặn → không đổi gì');
+    absence.huyDiemKn(P.w1Teacher, a.id, 'writing', true, ' ');   // rà #212 thay PR-MTa T7: lý do tuỳ chọn
+    assert(band('writing1') === null && band('writing2') === null, 'huỷ cả hai ô');
+    absence.huyDiemKn(P.w1Teacher, a.id, 'writing', false);
+    assert(band('writing1') !== null && band('writing2') !== null, 'Khôi phục cả hai ô');
   });
 
-  check('PR-XLMT (rà #126) · RKC · Quản lý ghi "-" đè ô ĐÃ CÓ ĐIỂM → chưa xác nhận: 409 hỏi, điểm giữ (FT và lớp thường)', () => {
+  /* NHAP-DIEM-a (thay RKC "409 hỏi"): "-" đè ô đã có điểm → điểm CẤT (Khôi phục được) rồi ghi vắng, không hỏi. */
+  check('PR-XLMT (rà #126) · NHAP-DIEM-a · Quản lý ghi "-" đè ô ĐÃ CÓ ĐIỂM → điểm cất, ghi vắng, không hỏi (FT và lớp thường)', () => {
     const s = them('MB FT 101', 'XLMT Rà Dấu Đè');
     const a = luotCua(s)[0];
     datTuan(a.id, tuan(0).id);
     attemptsSvc.saveScore(QL, a.id, 'reading', { rawScore: 30 }, TODAY);
-    assertThrows(() => attemptsSvc.saveScore(QL, a.id, 'reading', { noShow: true, lyDo: 'Em nghỉ ốm có phép' }, TODAY), /đã có điểm — huỷ điểm/, 'FT');
+    attemptsSvc.saveScore(QL, a.id, 'reading', { noShow: true, lyDo: 'Em nghỉ ốm có phép' }, TODAY);
     const lop = classId('MB FOU 12');
     const at = (conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN assessment_scores s ON s.attempt_id = a.id AND s.skill = 'listening' AND s.raw_score IS NOT NULL
       WHERE a.class_id = ? AND a.status != 'cancelled' ORDER BY a.id LIMIT 1`).get(lop) as any)?.id;
     assert(at, 'Seed: MB FOU 12 cần một bài có điểm L');
-    assertThrows(() => regular.reportRegularNoShow(QL, at, 'listening', true, TODAY, 'Em nghỉ ốm có phép'), /đã có điểm — huỷ điểm/, 'lớp thường');
-    assert((conn.prepare(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'reading'`).get(a.id) as any).raw_score === 30, 'chưa xác nhận: điểm FT giữ');
+    regular.reportRegularNoShow(QL, at, 'listening', true, TODAY, 'Em nghỉ ốm có phép');
+    const cat = (id: number, k: string) => (conn.prepare(`SELECT diem_json FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL`).all(id) as any[])
+      .some((x) => JSON.parse(x.diem_json)[0]?.skill === k);
+    assert(cat(a.id, 'reading') && cat(at, 'listening'), 'điểm FT + lớp thường phải được cất');
   });
 
   // ------------------------------------------------------------------ khối 4+: web — đọc nguồn (không dựng trình duyệt)

@@ -228,9 +228,17 @@ export type PendingCell = {
   noShow?: boolean;
 };
 
+/**
+ * NHAP-DIEM-a (chủ SP 14/11): MỘT luật "còn phải nhập" cho mọi nơi đếm nợ điểm (Công việc, việc HV, nợ chấm, Lịch Test, chuông, Phân tích —
+ * qua `pendingSkillsOf` và `scoreDebtCells`). Đã huỷ / vắng / "-" / có điểm / chưa tới tuần / MT lịch sử → không nợ.
+ */
+export function conPhaiNhap(c: { required: boolean; scored: boolean; noShow?: boolean; progress: SkillProgress }): boolean {
+  return c.required && !c.scored && !c.noShow && awaitingScore(c.progress);
+}
+
 export function pendingSkillsOf(cells: PendingCell[], scope: 'mine' | 'managed'): string[] {
   return cells
-    .filter((c) => c.required && !c.scored && !c.noShow && awaitingScore(c.progress))
+    .filter(conPhaiNhap)
     .filter((c) => (scope === 'mine' ? c.mine : true))
     .map((c) => c.skill);
 }

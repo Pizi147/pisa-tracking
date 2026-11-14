@@ -6,6 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
+import { theoChiNhanh } from '../../ui/theoChiNhanh.ts';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
@@ -19,14 +20,14 @@ import { t } from '@shared/i18n/index.ts';
 
 type LopLuuTru = {
   id: number; code: string; ma: string | null; tenChuongTrinh: string | null;
-  chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
+  chiNhanh: string; branchId: number; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
   /** PR-LUI-b: nút "Mở lại" (Quản lý của lớp / Quản trị). */
   coTheMoLai: boolean;
   /** Chủ SP 12/11: nhóm Fast Track · Lớp thường. */
   ft: boolean;
 };
 type HocVienLuuTru = {
-  id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null;
+  id: number; studentCode: string; fullName: string; lopCuoi: string | null; lopCuoiId: number | null; chiNhanh: string | null; branchId: number | null;
   archivedAt: string; cycleIdCuoi: number | null;
   /** P7 (k5): em Tạm dừng (giữ chỗ lớp) hay Kết thúc học — cả hai ở Lưu trữ; một nút Quay lại học. */
   trangThai: 'tam-dung' | 'ket-thuc'; loTrinh: string | null; coTheQuayLai: boolean;
@@ -35,7 +36,10 @@ type HocVienLuuTru = {
 };
 type DuLieuLuuTru = { lop: LopLuuTru[]; hocVien: HocVienLuuTru[]; phamVi: { chiNhanh: number | null } };
 
-type TabLuuTru = 'lop' | 'hv';
+type TabLuuTru = 'lop' | 'hv' | 'xoa';
+/** GD-16 (mockup ⑩ L1, L2): hàng dải nhóm trong bảng (Fast Track / Lớp thường, hoặc lớp cuối) — dòng giả của `Bang` (`hang-nhom-lop`, mẫu BangLuotPanel). */
+type DaiNhom = { dai: string; n: number; khoa: string; href?: string; donVi: 'lop' | 'em' };
+const laDai = (h: object): h is DaiNhom => 'dai' in h;
 
 /**
  * KHU LƯU TRỮ (PR-LT, Q16/Q22, chủ sản phẩm 23/09) — lớp đã kết thúc · học viên đã lưu trữ,
@@ -47,7 +51,7 @@ export default function LuuTruPage() {
   const navigate = useNavigate();
   const toast = useToast();
   const [params, setParams] = useSearchParams();
-  const tab: TabLuuTru = params.get('tab') === 'hv' ? 'hv' : 'lop';
+  const tab: TabLuuTru = params.get('tab') === 'hv' ? 'hv' : params.get('tab') === 'xoa' ? 'xoa' : 'lop';
   const cnUrl = params.get('cn') ?? params.get('branchId');
   const macDinh = useChiNhanhMacDinh();
   const branchId = cnUrl ? Number(cnUrl) : macDinh;
@@ -86,6 +90,8 @@ export default function LuuTruPage() {
     return `/hoc-vien-lop/luu-tru?${s.toString()}`;
   })();
   const { data, loading, error, reload, cu } = useApi<DuLieuLuuTru>(qs, [], { giuCu: true });
+  /* GD-16: số tab "Đã xoá" khi mở trang (+1 câu); danh sách thùng rác chỉ nạp khi bấm tab (`DaXoaAdmin` gắn ở tab đó). */
+  const demXoa = useApi<{ n: number }>('/thung-rac/dem?loai=hoc_vien');
 
   /*
    * U02 (SUA-RA-1311, đề bài 13/11): kết quả "Quay lại học · n em" TỪNG EM nằm lại ở thanh chọn (khe `dongTren`, mẫu OV-13d) sau khi toast tắt:
@@ -163,103 +169,158 @@ export default function LuuTruPage() {
     );
   })();
 
+  /* GD-16 (lời 37): chia theo chi nhánh — dải "tên · n lớp / n em"; ô Xem một chi nhánh → chỉ dải đó (máy chủ đã lọc). Thứ tự trong dải GIỮ máy chủ. */
+  const cnLop = theoChiNhanh(data?.lop ?? [], (l) => ({ id: l.branchId, ten: l.chiNhanh }));
+  const cnHv = theoChiNhanh(data?.hocVien ?? [], (s) => (s.branchId != null ? { id: s.branchId, ten: s.chiNhanh ?? '—' } : null));
+  const dauCn = (ten: string, dem: string) => (
+    <h2 className="m-0 flex items-baseline gap-2 text-[15px] font-bold text-slate-100">{ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{dem}</span></h2>
+  );
+  const nhanDai = (h: DaiNhom) => (
+    <span className="inline-flex items-baseline gap-1.5 whitespace-nowrap text-[14px] font-bold text-[color:var(--text)]">
+      {h.href ? <Link to={h.href} className="link">{h.dai}</Link> : h.dai}<span className="text-[13px] font-medium text-faint">{h.donVi === 'lop' ? t('{n} lớp', { n: h.n }) : t('{n} em', { n: h.n })}</span>
+    </span>
+  );
+  /* Lớp: trong chi nhánh dải Fast Track → Lớp thường (máy chủ đã xếp FT trước, số to trước). */
+  const hangLop = (ds: LopLuuTru[]): (LopLuuTru | DaiNhom)[] => [{ ten: 'Fast Track', ft: true }, { ten: t('Lớp thường'), ft: false }]
+    .flatMap((g) => { const xs = ds.filter((l) => l.ft === g.ft); return xs.length ? [{ dai: g.ten, n: xs.length, khoa: `dai-${g.ft ? 'ft' : 'thuong'}`, donVi: 'lop' as const }, ...xs] : []; });
+  /* Học viên: trong chi nhánh dải lớp cuối (mã lớp là link · n em); em chưa học lớp nào là dải cuối (máy chủ xếp cuối). */
+  const hangHv = (ds: HocVienLuuTru[]): (HocVienLuuTru | DaiNhom)[] => {
+    const m = new Map<string, HocVienLuuTru[]>();
+    for (const s of ds) { const k = s.lopCuoiId != null ? String(s.lopCuoiId) : 'chua'; (m.get(k) ?? m.set(k, []).get(k)!).push(s); }
+    return [...m].flatMap(([k, xs]) => [{ dai: xs[0].lopCuoi ?? t('Chưa học lớp nào'), n: xs.length, khoa: `dai-${k}`, href: k === 'chua' ? undefined : `/hoc-vien/lop/${k}`, donVi: 'em' as const }, ...xs]);
+  };
+  const nutLop = (l: LopLuuTru) => (
+    <span className="inline-flex gap-2 max-sm:w-full">
+      <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0 max-sm:flex-1">{t('Tổng kết')}</Link>
+      {/* Chỗ nút giữ cố định để cột thẳng (mockup L1). */}
+      {l.coTheMoLai ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0 max-sm:flex-1" onClick={() => setMoLai(l)}>{t('Mở lại')}</button> : <span aria-hidden className="inline-block w-[64px] max-sm:hidden" />}
+    </span>
+  );
+  const nutHv = (s: HocVienLuuTru) => chon.bat ? null : (
+    <span className="inline-flex flex-wrap justify-end gap-2 max-sm:w-full">
+      {s.cycleIdCuoi != null
+        ? <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0 max-sm:flex-1">{t('Tổng kết')}</Link>
+        /* Mockup L2: em chưa có khoá học — nút mờ, lý do ngay tại nút. */
+        : <span className="btn btn-sm pointer-events-none flex-col !gap-0 border-dashed text-faint min-h-[44px] sm:min-h-0 max-sm:flex-1" aria-disabled="true">{t('Tổng kết')}<span className="text-xs font-normal leading-tight">{t('chưa có khoá học')}</span></span>}
+      {s.coTheSuaThongTin && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0 max-sm:flex-1" onClick={() => setSuaEm(s)}>{NHAN_VIEC_QUAN_LY.info}</button>}
+      {s.coTheQuayLai && (
+        <button type="button" className={s.trangThai === 'tam-dung' ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0 max-sm:flex-1' : 'btn btn-sm min-h-[44px] sm:min-h-0 max-sm:flex-1'} disabled={quayLai.dangMo === s.id}
+          onClick={() => { dangXuLy.current = null; void quayLai.mo({ id: s.id, ten: s.fullName, lop: s.lopCuoi }); }}>{t('Quay lại học')}</button>
+      )}
+    </span>
+  );
+  const ttHv = (s: HocVienLuuTru) => <Nhan tone={s.trangThai === 'tam-dung' ? 'doing' : 'soon'}>{s.trangThai === 'tam-dung' ? t('Tạm dừng · Có thể quay lại') : t('Kết thúc học')}</Nhan>;
+  const tenHv = (s: HocVienLuuTru) => (
+    <span className="inline-flex min-w-0 items-center gap-2.5">
+      {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
+      {/* OV-13f (Q8): không in mã học viên — mockup L2 vẽ mã dưới tên → KHÁC theo luật đã chốt. */}
+      <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link>
+    </span>
+  );
+  const COT_LOP: CotBang[] = [
+    { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 180 },
+    { key: 'trinhDo', nhan: t('Trình độ'), kieu: 'chu', rong: 180 },
+    { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', rong: 240 },
+    { key: 'hv', nhan: t('HV từng học'), kieu: 'so', rong: 120 },
+    { key: 'ketThuc', nhan: t('Kết thúc'), kieu: 'chu', linhHoat: true },
+    { key: 'nut', nhan: '', kieu: 'nut', rong: 200 },
+  ];
+  const COT_HV: CotBang[] = [
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 240 },
+    { key: 'tt', nhan: t('Trạng thái'), kieu: 'chu', rong: 230 },
+    { key: 'lt', nhan: t('Lộ trình'), kieu: 'chu', rong: 110 },
+    { key: 'tu', nhan: t('Từ ngày'), kieu: 'chu', linhHoat: true },
+    { key: 'nut', nhan: '', kieu: 'nut', rong: 340 },
+  ];
+
   return (
     <div className="page space-y-3">
       <div>
         <button className="btn btn-sm btn-ghost max-sm:min-h-[44px]" onClick={() => navigate('/hoc-vien')}>‹ {t('Học viên & Lớp')}</button>
       </div>
-      <h1 className="text-xl font-bold text-slate-100 m-0">{t('Lưu trữ')}</h1>
-
-      <div className="flex flex-wrap items-center gap-2">
-        <input className="field w-full sm:w-72" aria-label={t('Tìm')} placeholder={t('Tìm tên, mã học viên hoặc mã lớp…')}
-          value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
+      {/* GD-16 (mockup ⑩ L1): một hàng — "Lưu trữ" · Xem (ô chi nhánh; tự ẩn khi chỉ một chi nhánh) · ô tìm bên phải; 375 một cột. */}
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+        <h1 className="m-0 text-xl font-bold text-slate-100">{t('Lưu trữ')}</h1>
+        {/* Ô chi nhánh chung (D3 `OChiNhanh`: nhãn trong ô, tự ẩn khi chỉ một chi nhánh) — mockup ghi "Xem"; giữ một mẫu mọi trang. */}
         <BranchFilter branchId={branchId} onBranch={(id) => setParam({ cn: id ? String(id) : null, branchId: null })} />
+        <input className="field w-full sm:ml-auto sm:w-80" aria-label={t('Tìm')} placeholder={t('Tìm tên, mã học viên hoặc mã lớp…')}
+          value={draftQ} onChange={(e) => setDraftQ(e.target.value)} />
       </div>
 
       <HangTab panelId="luu-tru-ds" ariaLabel={t('Lưu trữ')} value={tab} onChange={(k) => setParam({ tab: k === 'lop' ? null : k })}
         tabs={[
           { key: 'lop', label: t('Lớp đã kết thúc'), so: data?.lop.length },
           { key: 'hv', label: t('Học viên đã lưu trữ'), so: data?.hocVien.length },
+          /* GD-16 (mockup ⑩ L4): "Đã xoá" là tab thứ ba có số; rỗng vẫn hiện số 0. */
+          { key: 'xoa', label: t('Đã xoá'), so: demXoa.data?.n ?? null },
         ]} />
 
-      {error && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
-      {loading && !data && <Skeleton rows={6} />}
-      <div id="luu-tru-ds" role="tabpanel" aria-label={t('Lưu trữ')} className={cu ? 'dang-tai-lai space-y-3' : 'space-y-3'} aria-busy={cu || undefined}>
+      {error && tab !== 'xoa' && <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />}
+      {loading && !data && tab !== 'xoa' && <Skeleton rows={6} />}
+      <div id="luu-tru-ds" role="tabpanel" aria-label={t('Lưu trữ')} className={cu ? 'dang-tai-lai space-y-4' : 'space-y-4'} aria-busy={cu || undefined}>
       {data && tab === 'lop' && (
         data.lop.length === 0
           ? <Card><Empty title={loc ? t('Không có lớp khớp "{loc}"', { loc }) : t('Chưa có lớp nào kết thúc')} /></Card>
-          /* Chủ SP 12/11: hai nhóm Fast Track → Lớp thường (dải tên nhóm + số lớp, mẫu Cấu hình › Chương trình); máy chủ đã xếp số lớp lớn trước. */
-          : [{ key: 'ft', ten: 'Fast Track', ds: data.lop.filter((l) => l.ft) }, { key: 'thuong', ten: t('Lớp thường'), ds: data.lop.filter((l) => !l.ft) }]
-            .filter((g) => g.ds.length > 0).map((g) => (
-            <section key={g.key} aria-labelledby={`luu-tru-nhom-${g.key}`} className="space-y-1.5">
-              <h2 id={`luu-tru-nhom-${g.key}`} className="m-0 flex items-center gap-2 text-[15px] font-bold text-slate-100">
-                {g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{t('{n} lớp', { n: g.ds.length })}</span>
-              </h2>
-            <Bang ten={`${t('Lớp đã kết thúc')} · ${g.ten}`} khoa={(l) => l.id} hang={g.ds}
-              cot={[
-                { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 180 },
-                { key: 'trinhDo', nhan: t('Trình độ'), kieu: 'chu', rong: 180 },
-                /* B12: chi nhánh là trường đã biết khi danh sách chỉ một chi nhánh (đã lọc) — chỉ thêm cột khi lẫn nhiều chi nhánh. */
-                ...(new Set(data.lop.map((l) => l.chiNhanh)).size > 1 ? [{ key: 'cn', nhan: t('Chi nhánh'), kieu: 'chu', rong: 140 } as CotBang] : []),
-                { key: 'gvcn', nhan: t('GVCN'), kieu: 'chu', rong: 240 },
-                { key: 'hv', nhan: t('HV từng học'), kieu: 'so', rong: 120 },
-                { key: 'ketThuc', nhan: t('Kết thúc'), kieu: 'chu', linhHoat: true },
-                { key: 'nut', nhan: '', kieu: 'nut', rong: 200 },
-              ]}
-              oCua={(l, c) => {
-                if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${l.id}`} className="link font-bold">{l.code}</Link>;
-                if (c.key === 'trinhDo') return l.tenChuongTrinh ?? l.ma ?? '—';
-                if (c.key === 'cn') return l.chiNhanh;
-                if (c.key === 'gvcn') return l.gvcn ? <span className="text-slate-400">{l.gvcn}</span> : <span className="text-slate-500">—</span>;
-                if (c.key === 'hv') return l.soHvTungHoc;
-                if (c.key === 'ketThuc') return l.finishedAt ? ngay(l.finishedAt) : '—';
-                return (
-                  <span className="inline-flex gap-2">
-                    <Link to={`/hoc-vien/lop/${l.id}?tab=tong-ket`} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
-                    {l.coTheMoLai && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoLai(l)}>{t('Mở lại')}</button>}
-                  </span>
-                );
-              }} />
+          : cnLop.map((g) => (
+            <section key={g.khoa} aria-label={g.ten} className="space-y-1.5">
+              {dauCn(g.ten, t('{n} lớp', { n: g.ds.length }))}
+              <Bang<LopLuuTru | DaiNhom> ten={`${t('Lớp đã kết thúc')} · ${g.ten}`} khoa={(h) => (laDai(h) ? h.khoa : h.id)} hang={hangLop(g.ds)} cot={COT_LOP}
+                lopHang={(h) => (laDai(h) ? 'hang-nhom-lop' : '')}
+                oCua={(h, c) => {
+                  if (laDai(h)) return c.key === 'lop' ? nhanDai(h) : null;
+                  if (c.key === 'lop') return <Link to={`/hoc-vien/lop/${h.id}`} className="link font-bold">{h.code}</Link>;
+                  if (c.key === 'trinhDo') return h.tenChuongTrinh ?? h.ma ?? '—';
+                  if (c.key === 'gvcn') return h.gvcn ? <span className="text-slate-400">{h.gvcn}</span> : <span className="text-slate-500">—</span>;
+                  if (c.key === 'hv') return h.soHvTungHoc;
+                  if (c.key === 'ketThuc') return h.finishedAt ? ngay(h.finishedAt) : '—';
+                  return nutLop(h);
+                }}
+                theRieng={(h) => (laDai(h) ? nhanDai(h) : (
+                  <div className="grid gap-1.5">
+                    <div className="flex items-baseline gap-2"><Link to={`/hoc-vien/lop/${h.id}`} className="link text-[15px] font-bold">{h.code}</Link><span className="text-[13px] text-dim">{h.tenChuongTrinh ?? h.ma ?? ''}</span><span className="ml-auto text-[13px] tabular-nums text-dim">{h.finishedAt ? ngay(h.finishedAt) : '—'}</span></div>
+                    <div className="text-[13px] text-dim">{[h.gvcn, t('{n} HV', { n: h.soHvTungHoc })].filter(Boolean).join(' · ')}</div>
+                    {nutLop(h)}
+                  </div>
+                ))} />
             </section>
           ))
       )}
       {data && tab === 'hv' && (
         data.hocVien.length === 0
           ? <Card><Empty title={loc ? t('Không có học viên khớp "{loc}"', { loc }) : t('Chưa có học viên nào được lưu trữ')} /></Card>
-          : <div className="space-y-1.5">
-              {data.hocVien.some((s) => s.coTheQuayLai) && (
-                <div className="flex justify-end">
+          : <>
+              <div className="flex items-center gap-2 text-sm text-dim">
+                <span><b className="tabular-nums text-slate-100">{data.hocVien.length}</b> {t('học viên')}</span>
+                {data.hocVien.some((s) => s.coTheQuayLai) && (
                   <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}
-                    className={`btn btn-sm min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'btn-ghost'}`}>{t('Chọn nhiều học viên')}</button>
-                </div>
-              )}
-              {data.hocVien.map((s) => {
-                const dung = s.trangThai === 'tam-dung';
-                return (
-                  <div key={s.id} className={`card flex flex-wrap items-center gap-x-2.5 gap-y-1.5 p-3 ${chon.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`}>
-                    {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-                    <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link>
-                    <Nhan tone={dung ? 'doing' : 'soon'}>{dung ? t('Tạm dừng · Có thể quay lại') : t('Kết thúc học')}</Nhan>
-                    <span className="min-w-0 flex-1 text-xs text-slate-500 max-sm:basis-full">
-                      {[s.lopCuoi ?? t('chưa từng học lớp nào'), s.loTrinh ? `FT ${s.loTrinh}` : null, dung ? t('từ {ngay}', { ngay: ngay(s.archivedAt) }) : ngay(s.archivedAt), s.chiNhanh].filter(Boolean).join(' · ')}
-                    </span>
-                    {!chon.bat && s.cycleIdCuoi != null && (
-                      <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0">{t('Tổng kết')}</Link>
-                    )}
-                    {!chon.bat && s.coTheSuaThongTin && (
-                      <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaEm(s)}>{NHAN_VIEC_QUAN_LY.info}</button>
-                    )}
-                    {!chon.bat && s.coTheQuayLai && (
-                      <button type="button" className={dung ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0'} disabled={quayLai.dangMo === s.id}
-                        onClick={() => { dangXuLy.current = null; void quayLai.mo({ id: s.id, ten: s.fullName, lop: s.lopCuoi }); }}>{t('Quay lại học')}</button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+                    className={`btn btn-sm ml-auto min-h-[44px] sm:min-h-0 ${chon.bat ? 'bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}>{t('Chọn nhiều học viên')}</button>
+                )}
+              </div>
+              {cnHv.map((g) => (
+                <section key={g.khoa} aria-label={g.ten} className="space-y-1.5">
+                  {dauCn(g.ten, t('{n} em', { n: g.ds.length }))}
+                  <Bang<HocVienLuuTru | DaiNhom> ten={`${t('Học viên đã lưu trữ')} · ${g.ten}`} khoa={(h) => (laDai(h) ? h.khoa : h.id)} hang={hangHv(g.ds)} cot={COT_HV}
+                    lopHang={(h) => (laDai(h) ? 'hang-nhom-lop' : chon.chon.has(h.id) ? 'bg-[color:var(--accent-soft)]' : '')}
+                    oCua={(h, c) => {
+                      if (laDai(h)) return c.key === 'hv' ? nhanDai(h) : null;
+                      if (c.key === 'hv') return tenHv(h);
+                      if (c.key === 'tt') return ttHv(h);
+                      if (c.key === 'lt') return h.loTrinh ? `FT ${h.loTrinh}` : <span className="text-slate-500">—</span>;
+                      if (c.key === 'tu') return <span className="tabular-nums">{ngay(h.archivedAt)}</span>;
+                      return nutHv(h);
+                    }}
+                    theRieng={(h) => (laDai(h) ? nhanDai(h) : (
+                      <div className="grid gap-1.5">
+                        <div className="flex items-start gap-2">{tenHv(h)}<span className="ml-auto">{ttHv(h)}</span></div>
+                        <div className="text-[13px] text-dim">{[h.loTrinh ? `FT ${h.loTrinh}` : null, ngay(h.archivedAt)].filter(Boolean).join(' · ')}</div>
+                        {nutHv(h)}
+                      </div>
+                    ))} />
+                </section>
+              ))}
+            </>
       )}
-      {/* Q-RL2b: học viên đã xoá 30 ngày (thùng rác) — Khôi phục tại dòng; rỗng thì không vẽ. */}
-      {tab === 'hv' && <DaXoaAdmin loai="hoc_vien" loc={loc} />}
+      {tab === 'xoa' && <DaXoaAdmin loai="hoc_vien" loc={loc} branchId={branchId} onDoi={() => { demXoa.reload(); reload(); }} />}
       {data && tab === 'hv' && (
         <ThanhChonNhieu chon={chon} viec={[{ key: 'quay-lai', nhan: t('Quay lại học') }]} dangChay={dangChay} dongTren={dongKetQua} onViec={() => void quayLaiNhieu([...chon.chon])} />
       )}

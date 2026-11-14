@@ -386,7 +386,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
       dangO: { cau: 'Lớp đã kết thúc và em đã lưu trữ.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
-      muc: [{ id: 'ql-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc học, xem Lưu trữ', buoc: ['Hai tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b>.', 'Mỗi em: <b>Tổng kết</b> · <b>Quay lại học</b>; chọn nhiều em để quay lại một lần.'] }],
+      muc: [{ id: 'ql-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc học, xem Lưu trữ', buoc: ['Ba tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b> · <b>Đã xoá</b>; chia theo chi nhánh, học viên theo lớp cuối.', 'Mỗi em: <b>Tổng kết</b> · <b>Quay lại học</b>; chọn nhiều em để quay lại một lần.'] }],
     },
     {
       id: 'lich-test', ten: 'Lịch Test tuần', duong: ['/test', TEST],

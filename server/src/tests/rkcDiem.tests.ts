@@ -62,13 +62,12 @@ export async function runRkcDiemTests(t: any) {
     assert(!daXacNhan(A), 'ra ngoài phải tắt');
   });
 
-  check('RKC-1 · ô ĐANG VẮNG: nhập điểm → 409 hỏi (không đổi gì); xác nhận → kỹ năng "đã làm bài" + điểm lưu + nhật ký lịch', () => thu(() => {
+  /* NHAP-DIEM-a (chủ SP 14/11, thay "409 hỏi"): nhập điểm vào ô đang vắng = em đã làm bài — lưu thẳng. */
+  check('RKC-1 · NHAP-DIEM-a · ô ĐANG VẮNG: nhập điểm → không hỏi; kỹ năng "đã làm bài" + điểm lưu + nhật ký lịch', () => thu(() => {
     const { id } = luot();
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'absent' WHERE attempt_id = ? AND skill = 'listening'`).run(id);
     xoaNho();
-    const e = loiCua(() => svc.saveScore(QL, id, 'listening', { rawScore: 30 }, T3));
-    assert(hoi(e) && !diem(id, 'listening')?.raw_score, `chưa xác nhận: ${e?.status} ${e?.message}`);
-    voiXacNhan(() => svc.saveScore(QL, id, 'listening', { rawScore: 30 }, T3));
+    svc.saveScore(QL, id, 'listening', { rawScore: 30 }, T3);
     assert(diem(id, 'listening').raw_score === 30, 'điểm phải lưu');
     assert(get(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`, id).sit_status === 'sat', 'phải về đã làm bài');
     assert(get(`SELECT COUNT(*) n FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_sit_status' AND new_value = 'sat'`, id).n >= 1, 'thiếu nhật ký lịch');
@@ -105,9 +104,9 @@ export async function runRkcDiemTests(t: any) {
     /* Ô vừa có điểm mới thì bản cất cũ hết hiệu lực (T20b) — dựng lại bản mở như trước để thử luồng đè. */
     conn.prepare(`UPDATE ket_qua_huy SET khoi_phuc_luc = NULL WHERE attempt_id = ? AND loai = 'huy_diem'`).run(id);
     xoaNho();
-    const e = loiCua(() => kqh.khoiPhucDiem(QL, id, 'reading', T3));
+    const e = loiCua(() => absence.huyDiemKn(QL, id, 'reading', false, null, T3));
     assert(hoi(e) && diem(id, 'reading').raw_score === 25, `chưa xác nhận: ${e?.status} ${e?.message}`);
-    voiXacNhan(() => kqh.khoiPhucDiem(QL, id, 'reading', T3));
+    voiXacNhan(() => absence.huyDiemKn(QL, id, 'reading', false, null, T3));
     assert(diem(id, 'reading').raw_score === 30, `điểm cũ phải về: ${JSON.stringify(diem(id, 'reading'))}`);
     const mo = conn.prepare(`SELECT diem_json FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL`).all(id) as any[];
     assert(mo.some((k) => JSON.parse(k.diem_json)[0]?.raw_score === 25), `điểm mới 25 phải được cất: ${JSON.stringify(mo)}`);

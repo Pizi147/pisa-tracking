@@ -167,6 +167,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT'], url: '/lenh-chuyen/{lenhBg}/ban-giao' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/ids' },   // PR-TD2-b: Trước/Sau của hồ sơ lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
+  /* GD-16: Lưu trữ — số tab Đã xoá khi mở trang (một câu, chỉ mục học viên) · danh sách Đã xoá khi bấm tab. */
+  { trang: 'Lưu trữ', vai: MOI_VAI, url: '/thung-rac/dem?loai=hoc_vien' },
+  { trang: 'Lưu trữ · Đã xoá', vai: MOI_VAI, url: '/thung-rac?loai=hoc_vien' },
 
   // ---------------------------------------------------------------- Hồ sơ lớp (FT)
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/overview' },
@@ -1311,6 +1314,8 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** NHAP-DIEM-a: POST /attempts/:id/skills/:skill/huy-diem { huy } (Huỷ điểm / Khôi phục một kỹ năng — Mock / MT0 / lớp thường; /huy-tay, /khoi-phuc-diem cùng hàm). Trần = trần Huỷ môn cũ. */
+  huyDiem: 60,
   huyTay: 60,   // LG-9: POST /attempts/:id/skills/:skill/huy-tay (Huỷ / Hoàn tác một môn lớp thường): đo 46 câu (phần lớn `refreshOutcome`) → max(46 + 10, ⌈46 × 1,3⌉)
   /** #8 (bản rà 11/11): POST /students/:id/transfer tuần = hôm nay (FT → FT) — ra lệnh + thi hành ngay + ghi_dao 21 bảng của MỘT em (thao tác hiếm). */
   chuyenNgay: 201,   // đo 154 câu, 471 dòng (không chụp: xem CLSS-6) → max(154 + 10, ⌈154 × 1,3⌉)
