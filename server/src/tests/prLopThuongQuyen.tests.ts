@@ -4,6 +4,7 @@
  *  · GV có kỹ năng S (không phân công) thấy MT0 S các lớp thường cùng chi nhánh ở hàng đợi Chấm Speaking + Công việc, nhập được ô S;
  *  · KHÔNG mở: L/R/W của MT0, S Progress / Final lớp thường, chi nhánh khác.
  */
+import fs from 'node:fs';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
@@ -124,6 +125,14 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     const b = absence.baoVang(P.mbManager, e.mt0, 'reading', null, d.addDaysIso(TODAY, 7));
     assert(b.daDoi && !b.huyVang && ky('reading').sit === 'scheduled', `nút Vắng lần 2: ${JSON.stringify([b, ky('reading')])}`);
   }));
+
+  check('LTQ-VANG-CHU · câu báo trước nút Vắng theo CÙNG hàm luật: MT0 lớp thường "không huỷ", Mock / MT0 FT "vắng 2 lần thì huỷ"; trang MT0 lấy cờ từ máy chủ', () => {
+    assert(!d.vangLan2Huy('mt0', false) && d.vangLan2Huy('mt0', true) && d.vangLan2Huy('mock', true), 'vangLan2Huy');
+    assert(/không huỷ/.test(d.cauVangMt('Listening', false)) && !/thì huỷ/.test(d.cauVangMt('Listening', false)) && /vắng 2 lần thì huỷ/.test(d.cauVangMt('Listening', true)), 'cauVangMt');
+    thu(() => assert(svc.attemptDetail(P.mbManager, emMt0().mt0).vangLan2Huy === false, 'chi tiết MT0 lớp thường: vangLan2Huy = false'));
+    const hop = fs.readFileSync('web/src/modules/fasttrack/HopThaoTacMt.tsx', 'utf8'), trang = fs.readFileSync('web/src/modules/fasttrack/MockDetailPage.tsx', 'utf8');
+    assert(hop.includes('cauVangMt(mon, huyLan2)') && !hop.includes('vắng 2 lần thì huỷ') && trang.includes('huyLan2={d.vangLan2Huy !== false}'), 'web phải dùng cauVangMt + cờ máy chủ');
+  });
 
   /* B' 6b (chủ SP 10/11 tối): Kế hoạch Test của GV S hiện lớp thường CÓ MT0 — chỉ xem, chỉ ô MT0 (Giữa / Cuối khoá vẫn chỉ GV lớp thấy, chủ SP 08/11). */
   check('LTQ-5 · Kế hoạch Test GV S: lớp thường có MT0 vào danh sách, chỉ xem, chỉ em có MT0, không lộ Final; lớp không MT0 không vào; QL thấy đủ', () => thu(() => {

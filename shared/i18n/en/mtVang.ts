@@ -14,6 +14,7 @@ export const EN_MT_VANG = {
   '{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. Muốn làm lại thì Dời — chọn tuần.': '{mon} leaves this round and does not count toward its result. To sit it again, Move — pick a week.',
   'Tuần Test đã qua 2 tuần: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.': 'Test week is 2+ weeks past: record did not sit for {mon} — no move, no absence counted.',
   'Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.': 'Record "-" for {mon}: the first time it moves to the week after its test week; absent twice cancels it.',
+  'Ghi "-" cho {mon}: dời sang tuần sau tuần Test; vắng mấy lần cũng không huỷ.': 'Record "-" for {mon}: it moves to the week after its test week; it is never cancelled, however many absences.',
   '{nhan} là MT cũ: nhập bù điểm; "-" là Không dự thi.': '{nhan} is an old MT: enter missing scores; "-" means did not sit.',
   'Gõ "-" = vắng, chốt ngay: lần 1 dời sang tuần sau tuần Test.':
     'Type "-" = absent, closed at once: the first time it moves to the week after its test week.',

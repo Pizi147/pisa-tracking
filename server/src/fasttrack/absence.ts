@@ -1,6 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, duocHoanTacVang, vangLan2Huy, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { laLopKetThuc } from './hoanTat.ts';
@@ -177,8 +177,8 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
   const skill = row.skill as AssessedSkill;
   const moveNo = row.absence_move_count + 1;
   /* PTA 14/11: MT0 của lớp THƯỜNG theo luật "-" lớp thường — chỉ dời, không bao giờ huỷ; MT0 / Mock lớp FT: lần 2 huỷ (N38 L2). */
-  const huy = moveNo >= 2 && !(attempt.kind === 'mt0'
-    && (conn.prepare('SELECT is_fast_track AS ft FROM classes WHERE id = ?').get(attempt.class_id) as any)?.ft === 0);
+  const huy = moveNo >= 2 && vangLan2Huy(attempt.kind,
+    attempt.kind !== 'mt0' || (conn.prepare('SELECT is_fast_track AS ft FROM classes WHERE id = ?').get(attempt.class_id) as any)?.ft !== 0);
   if (huy) return huyVangNoi(conn, actor, attempt, row, moveNo);
   const target = nextWeekOf(row.week_start);
   /* L4: vướng thứ tự đợt (MT0 trước MT1) hay trùng / sát lượt khác → VẪN dời; câu chặn / cảnh báo của dời tay thành cảnh báo. */
