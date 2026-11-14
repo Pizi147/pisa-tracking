@@ -6,7 +6,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { chenNhieuDong, db, theoLo } from '../db.ts';
 import {
-  ASSESSED_SKILLS, coMt0, skillShort, hanChamMt0, kyNangSosMt0, trangThaiMt0, tuanLich,
+  ASSESSED_SKILLS, coMt0, skillShort, hanChamMt0, kyNangHuy, kyNangSosMt0, trangThaiMt0, tuanLich,
   type AssessedSkill, type Huong, type ProgrammeCode, type TrangThaiMt0,
 } from '../../../shared/domain/index.ts';
 import { nowIso } from '../util.ts';
@@ -266,11 +266,13 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
   const rows: any[] = [];
   theoLo(sids, (lo, ph) => {
     rows.push(...conn.prepare(
-      `SELECT a.id, a.student_id, a.status, a.target_at_attempt, a.deadline_override, cy.route, cy.status AS cy_status, lt.huong,
+      `SELECT a.id, a.student_id, a.status, a.target_at_attempt, a.deadline_override, cy.route, cy.status AS cy_status, lt.huong, c.programme_code,
+              (SELECT GROUP_CONCAT(k.skill) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'cancelled') AS huy,
               (SELECT MIN(pr.week_start) FROM attempt_skills k JOIN report_periods pr ON pr.id = k.planned_period_id
                 WHERE k.attempt_id = a.id AND k.required = 1 AND k.sit_status != 'cancelled') AS tuan
          FROM assessment_attempts a
          JOIN learning_cycles cy ON cy.id = a.cycle_id
+         LEFT JOIN classes c ON c.id = a.class_id
          LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = a.student_id AND lt.class_id = a.class_id
         WHERE a.kind = 'mt0' AND a.status != 'cancelled' AND a.student_id IN (${ph})
         ORDER BY a.id`,
@@ -293,7 +295,7 @@ export function mt0TheoHocVien(sids: readonly number[]): Map<number, Mt0View> {
       han: r.deadline_override ?? (tuan ? hanChamMt0(tuan) : null),
       trangThai: trangThaiMt0({ status: r.status, trongLoTrinhFt: !!r.route, huongFt: r.huong === 'fast_track', khoaDaDong: r.cy_status !== 'active' }),
       coDiem: Object.values(e).some((b) => b !== null && b !== undefined),
-      sos: kyNangSosMt0(bands, r.target_at_attempt ?? null),
+      sos: kyNangSosMt0(bands, r.target_at_attempt ?? null, r.programme_code, kyNangHuy(r.huy)),
     });
   }
   return out;

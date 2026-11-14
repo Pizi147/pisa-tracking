@@ -19,7 +19,7 @@ import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes, evaluateRegular, maCtCuaLuot, nguongDatLop } from './regular.ts';
-import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
+import { KHONG_DAT_KHI_DAT, emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
  * CUỐI KHOÁ LỚP THƯỜNG — MỘT CỬA phía máy chủ (T47, T49, §6.3). Luật thuần ở `shared/domain/cuoiKhoa.ts`; file này chỉ đọc dữ liệu
@@ -307,10 +307,17 @@ export function sauChuyenCuoiKhoa(p: Principal, dongs: readonly DongSauChuyen[])
     const viec = viecKhiChot(d.huong, goiY);
     if (viec.length) baoPh.set(luot.id, { sid: d.sid, viec });
   }
-  /* (4) sang FT có kết luận Không đạt kỳ vọng (PR-KV): Trung tâm → Case + Tutor, Học viên → Case không PA. Không cần điểm Final — theo lô. */
+  /* (4) sang FT có kết luận Không đạt kỳ vọng (PR-KV): Trung tâm → Case + Tutor, Học viên → Case không PA. Không cần điểm Final — theo lô.
+     KY-VONG-MT0 (chủ SP 14/11): "Không đạt" đã lưu mà MT0 nay đạt mốc (sửa / nhập điểm sau khi chốt) → coi là Đạt, không Case (2 câu mỗi lớp, chỉ khi có em như vậy). */
+  const khongDat = dongs.filter((d) => d.toFt && moi.get(d.sid) && kyVong.get(d.sid)?.ky_vong_dat === 0 && kyVong.get(d.sid).ky_vong_nguyen_nhan);
+  const datMt0 = new Set<number>();
+  for (const lop of new Set(khongDat.map((d) => d.fromClassId))) {
+    const ct = (conn.prepare('SELECT programme_code FROM classes WHERE id = ?').get(lop) as any)?.programme_code ?? null;
+    for (const [sid, m] of mt0TheoLop(khongDat.filter((d) => d.fromClassId === lop).map((d) => ({ sid: d.sid, lop, ct })))) if (m.goiY?.dat) datMt0.add(sid);
+  }
   for (const d of dongs) {
     const kv = kyVong.get(d.sid), toCycle = moi.get(d.sid);
-    if (!d.toFt || !toCycle || kv?.ky_vong_dat !== 0 || !kv.ky_vong_nguyen_nhan) continue;
+    if (!d.toFt || !toCycle || kv?.ky_vong_dat !== 0 || !kv.ky_vong_nguyen_nhan || datMt0.has(d.sid)) continue;
     kyVongCase.push({ sid: d.sid, dat: false, nguyenNhan: kv.ky_vong_nguyen_nhan, mon: jsonMang(kv.ky_vong_mon) as RegularSkill[], lyDo: kv.ky_vong_ghi_chu ?? null,
       fromClassId: d.fromClassId, ftClassId: d.toClassId, ftCycleId: toCycle, ngay: d.ngay });
   }
@@ -834,6 +841,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
     if (!muonNhat || demoToday() <= addDays(muonNhat, 6)) throw badRequest(CHO_MT0);
   }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt.');
+  if (!input.dat && goiY?.dat) throw loi(400, KHONG_DAT_KHI_DAT, { ten: 'Kỳ vọng' });
   /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do (phương án) bắt buộc, không Case (N17). */
   const coMon = Array.isArray(input.mon) && input.mon.length > 0;
   const dong = kiemDongKyVong({ sid, dat: input.dat, nguyenNhan: input.nguyenNhan, mon: coMon ? input.mon : goiY?.monTruot ?? [], lyDo: input.ghiChu }, 'Kỳ vọng');

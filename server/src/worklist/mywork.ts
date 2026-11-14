@@ -1610,7 +1610,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   }
 
   // ------------------------------------------------- 5c. kỳ vọng đầu ra (PR-KV, §3) — việc của Quản lý, MỘT dòng mỗi lớp BE/ELE nguồn
-  /* CÙNG hàm `lopKyVong` với chỉ số `hv-len-ft-chua-ky-vong` (tập em chưa kết luận) — Σ `count` = số của chỉ số. Mở panel ở trang lớp. */
+  /* CÙNG hàm `lopKyVong` với chỉ số `hv-len-ft-chua-ky-vong` (tập em chưa kết luận) — Σ `count` = số của chỉ số. KY-VONG-MT0 (chủ SP 14/11): em đã sang FT →
+     bảng Kết quả đầu ra của lớp FT em đang học; em chưa chuyển → Cuối khoá lớp nguồn. */
   for (const x of co('ky_vong_dau_ra') ? lopKyVong(p, f.branchId ?? null) : []) {
     const n = x.chua.length;
     const chu = x.choMt0 === n ? `Chờ MT0 ${n} em` : `MT0 đủ ${n - x.choMt0}/${n}`;
@@ -1619,8 +1620,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       studentId: null, studentName: `Lớp ${x.code}`, classId: x.classId, classCode: x.code,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: n, emIds: x.chua,
       reason: chu,
-      tieuDe: `Kỳ vọng · ${x.code} · ${n} em`, actionLabel: 'Cuối khoá ›',
-      href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
+      tieuDe: `Kỳ vọng · ${x.code} · ${n} em`, actionLabel: x.ftDangHoc ? 'Kết quả đầu ra ›' : 'Cuối khoá ›',
+      href: `/hoc-vien/lop/${x.classId}?${x.ftDangHoc ? 'che-do=ket-qua' : 'xem=cuoi-khoa'}`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
     });
   }
 

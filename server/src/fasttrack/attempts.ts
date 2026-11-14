@@ -1,7 +1,7 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { ghiSoLuot } from '../phanTich/soNghiaVu.ts';
 import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
-import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, dotGvCham, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, dotGvCham, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangHuy, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
@@ -1297,7 +1297,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
     caseLuot,
     /** HSL-FT: Case mở · PA thêm của các Case ở khối trên — Lịch sử kỹ năng / Lịch sử lượt (cùng tập Case, không bịa sự kiện). */
     lichSuCase: lichSuCaseCua(caseLuot?.map((c) => c.id) ?? []),
-    mt0: laMt0(a) ? { sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : null,
+    mt0: laMt0(a) ? { sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null, a.programme_code, kyNangHuy(skillRows)) } : null,
     cells,
     skips: (conn
       .prepare(
@@ -2775,7 +2775,7 @@ export function classScoreSheet(
         ...(ngung ? { ngungHoc: ngung.nhan } : {}),
         result: resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []),
         /* PR-MT0: chip SOS chỉ để nhìn (band ≤ Target − 2.0) thay cho mức SOS. */
-        ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(resultOf(a, scores, skips).bands, a.target_at_attempt ?? null) } : {}),
+        ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(resultOf(a, scores, skips).bands, a.target_at_attempt ?? null, a.programme_code, kyNangHuy(bundle.skillRows.get(a.id))) } : {}),
         hoanTat: hoanTat.hoanTat,
         chuNhatCuoi: hoanTat.chuNhatCuoi,
       };
@@ -2841,7 +2841,7 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
       studentCode: a.student_code as string, status: a.status as string,
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
       weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell, cells, result,
-      ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : {}),
+      ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null, a.programme_code, kyNangHuy(skillRows)) } : {}),
     }];
   }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi') || x.attemptNo - y.attemptNo);
   /* GD-2: ô "GV chấm" đầu ngăn lớp × tuần — lựa chọn của NGƯỜI XEM (người lưu), một câu theo lô. */

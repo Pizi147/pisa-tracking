@@ -201,7 +201,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
   /* VAI-a (2c) bỏ cùng chỉ số `hv-ft-xong-mt-cuoi-chua-mt-ke` — V5 C20. */
 
   /* PR-KV: MT0 đủ 4 kỹ năng của em ở lớp `cid` (kỳ vọng đầu ra xét theo Overall MT0). */
-  const mt0Du = (hv: { sid: number; cy: number; cid: number }, band = 4) => {
+  const mt0Du = (hv: { sid: number; cy: number; cid: number }, band = 3.5) => {   // KY-VONG-MT0: < mốc BE 4 — em đạt mốc tự Đạt, không vào việc
     const a = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?,0,'mt0',?, 'planned', ?)`)
       .run(hv.cy, hv.sid, hv.cid, NOW).lastInsertRowid);
     for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, band);

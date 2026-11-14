@@ -186,7 +186,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
       .run(sid, cid, t.addDays(thu2, 7), t.P.mbManager.userId, TODAY, NOW);
     const mt0 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?,0,'mt0',?, 'planned', ?)`)
       .run(cy, sid, cid, NOW).lastInsertRowid);
-    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,4)').run(mt0, k);
+    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,3.5)').run(mt0, k);   // KY-VONG-MT0: < mốc BE 4
     const items = (myworkSvc.myWork(t.P.mbManager, {}) as any).items.filter((x: any) => x.group === 'ky_vong_dau_ra');
     assert(items.length > 0, 'phải có việc "Kỳ vọng đầu ra · lớp" để kiểm');
     /* CN-3a: P9b đưa Kỳ vọng vào trang con Cuối khoá (`?xem=cuoi-khoa`; link cũ `?viec=ky-vong` web tự chuyển — ClassOverviewPage) — kỳ vọng cũ
