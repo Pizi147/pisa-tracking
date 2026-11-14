@@ -15,7 +15,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -179,8 +179,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
         {v.tinhHinhId == null && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
-            ? [<BadgeViec xuong tong="cho">{v.nhan}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
-            : [<BadgeViec xuong tong="xong">{v.nhan}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
+            ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
+            : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{v.nhanTrangThai}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />}
         <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
