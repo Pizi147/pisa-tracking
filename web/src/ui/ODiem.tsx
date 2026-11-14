@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { LOP_DA_LUU } from './KhuonViec.tsx';
 import { lopKq, type KqDiem } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -61,7 +62,7 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
         className={`o-sua relative inline-flex h-8 w-16 items-center justify-center gap-1 tabular-nums max-sm:h-11 ${so === null ? 'border-dashed' : ''} ${luu === 'loi' ? '!border-bad' : ''}`}>
         {so === null ? <span className="text-transparent" aria-hidden>0</span> : so_}
         {luu === 'dang-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title={t('Đang lưu…')}>◷</span>}
-        {luu === 'da-luu' && <span className="absolute right-0.5 top-0 text-[12px] leading-none text-slate-400" title={t('Đã lưu')}>✓</span>}
+        {luu === 'da-luu' && <span className={`absolute right-0.5 top-0 text-[12px] leading-none ${LOP_DA_LUU}`} title={t('Đã lưu')}>✓</span>}
       </button>
       {luu === 'loi'
         ? <button type="button" data-phu-odiem="" className="link mt-1 appearance-none border-0 bg-transparent p-0 text-[12px] font-semibold leading-4 text-bad" onClick={onLuuLai}>{t('Lưu lại')}</button>

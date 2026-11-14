@@ -8,7 +8,7 @@ import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../..
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { COT_VIEC, DaiNhom, DanhSachViec, HangTab, tenBoEm } from './DanhSachViec.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { TheMuc, Trich, TruongDoc } from '../../ui/KhuonViec.tsx';
+import { LOP_DA_LUU, TheMuc, Trich, TruongDoc } from '../../ui/KhuonViec.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { mucSosTheoNhan } from '../../lib/format.ts';
@@ -650,7 +650,7 @@ function HetViecNhom({ nhom, ke, con, daLuu, dai, tenNhom, onDong, onTiep, onXem
   return (
     <section className="card flex flex-col p-0" aria-label={t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}>
       <div className="grid justify-items-center gap-2.5 px-5 pb-6 pt-10 text-center" role="status">
-        {dai ? <div className="w-full text-left">{dai}</div> : <span className="text-[15px] font-semibold text-dim">{t('✓ Đã lưu')}</span>}
+        {dai ? <div className="w-full text-left">{dai}</div> : <span className={`text-[15px] font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>}
         <span className="text-[17px] font-bold">{t('Hết việc {nhom} của bạn', { nhom: tenNhom(nhom) })}</span>
         {daLuu > 0 && <span className="text-sm text-dim">{t('Đã lưu {n} việc trong nhóm này hôm nay.', { n: daLuu })}</span>}
         <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={onXemLai}>{t('‹ Xem lại việc vừa lưu')}</button>

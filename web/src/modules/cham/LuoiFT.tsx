@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
@@ -663,7 +664,7 @@ export function DauLuu({ status, error, onRetry, soLoi = 0, lon = false }: {
     );
   }
   if (status === 'saving') return <span className="text-xs text-slate-400">{t('Đang lưu…')}</span>;
-  if (status === 'saved') return <span className="text-[12px] text-done" title={t('Đã lưu')}>✓</span>;
+  if (status === 'saved') return <span className={`text-[12px] ${LOP_DA_LUU}`} title={t('Đã lưu')}>✓</span>;
   return null;
 }
 
@@ -688,7 +689,7 @@ export function DauO({ tt, loi, onLuuLai, lon = false }: {
     );
   }
   if (tt === 'dang-luu') return <span className={`${cho} text-[12px] text-slate-500`} title={t('Đang lưu')}>…</span>;
-  if (tt === 'da-luu') return <span className={`${cho} text-[12px] text-done`} title={t('Đã lưu')}>✓</span>;
+  if (tt === 'da-luu') return <span className={`${cho} text-[12px] ${LOP_DA_LUU}`} title={t('Đã lưu')}>✓</span>;
   return null;
 }
 

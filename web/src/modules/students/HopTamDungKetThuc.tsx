@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
@@ -139,7 +140,7 @@ export function HopTamDungKetThuc({ em, lop, tamDungDuoc, onClose, onDone, onChu
         </>
       )}>
       <div className="space-y-3">
-        {daLuu.length > 0 && <p className="m-0 text-[13px] font-semibold text-slate-300" role="status">✓ {t('Đã lưu {n} em: {ten}', { n: daLuu.length, ten: daLuu.join(', ') })}</p>}
+        {daLuu.length > 0 && <p className={`m-0 text-[13px] font-semibold ${LOP_DA_LUU}`} role="status">✓ {t('Đã lưu {n} em: {ten}', { n: daLuu.length, ten: daLuu.join(', ') })}</p>}
         {loiEm.map((e) => (
           <p key={e.id} role="alert" className="m-0 flex gap-2 rounded-lg border border-late/50 bg-late/10 px-3 py-2 text-sm text-slate-100">
             <span aria-hidden className="text-late">⚠</span><span><b className="text-late">{t('{ten} chưa lưu.', { ten: e.ten })}</b> {e.message}</span>

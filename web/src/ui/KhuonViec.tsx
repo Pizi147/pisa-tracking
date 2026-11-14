@@ -6,6 +6,9 @@ import { t } from '@shared/i18n/index.ts';
 import { KhungTrongThe, NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
+/** "✓ Đã lưu" — MỘT lớp màu cho mọi nơi báo đã lưu: LUÔN XANH (chủ SP 14/11, DESIGN.md V12 — thay K-HTT-3 xám). */
+export const LOP_DA_LUU = 'text-ok';
+
 /**
  * KHUÔN PANEL LÀM VIỆC v3 (OV-12c, mockup `thiet-ke/mockup-ov12-panel-v3-2026-10-14.html` §1) — phần dùng chung đặt trong `KhungPanel`:
  *   (ChipHan — chip hạn ở đầu panel — nằm ở `ui/Nhan.tsx` cùng các chip khác.)
@@ -141,7 +144,7 @@ export function ChuLuu({ tt, loi, luc, gon, chuDang }: { tt: TtLuu; loi?: string
       </span>
     );
   }
-  if (tt === 'da') return <span role="status" className="font-semibold text-done">✓ {t('Đã lưu')}{luc ? <span className="tabular-nums"> {luc}</span> : null}</span>;
+  if (tt === 'da') return <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu')}{luc ? <span className="tabular-nums"> {luc}</span> : null}</span>;
   return <span className="inline-flex items-center gap-1.5 font-semibold text-soon"><span aria-hidden>●</span>{t('Chưa lưu')}</span>;
 }
 
@@ -243,7 +246,7 @@ export function NutHoanTac({ hoanTac, onHoanTac }: { hoanTac?: () => Promise<voi
 function ChanDaLuu({ luc, hoanTac, onHoanTac }: { luc: string; hoanTac?: () => Promise<void>; onHoanTac?: () => void }) {
   return (
     <p className="m-0 flex min-h-6 flex-wrap items-center gap-2 border-t pt-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
-      <span className="font-semibold text-done">✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
+      <span className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu')} <span className="tabular-nums">{luc}</span></span>
       <span className="flex-1" />
       <NutHoanTac hoanTac={hoanTac} onHoanTac={onHoanTac} />
     </p>

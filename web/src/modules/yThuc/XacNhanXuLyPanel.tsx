@@ -6,7 +6,7 @@ import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPa
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { LOP_DA_LUU, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -199,7 +199,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     const xong = <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void thuLai()}>{t('Thử lại')}</button>;
     return (
       <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Xác nhận xử lý')} hocVien={d.ten} onDong={() => { toast.push('ok', cauXong(daLuu.nhan)); onClose(); }} dau={dau(false)}
-        chan={{ v3: true, chinh: xong, dongTren: <span className="font-semibold text-done">✓ {t('Đã lưu')}</span> }}>
+        chan={{ v3: true, chinh: xong, dongTren: <span className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu')}</span> }}>
         <div className="flex flex-col gap-5 pt-4">
           <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
             <span className="text-sm font-bold text-ok">✓ {t('Đã xác nhận')}</span>
