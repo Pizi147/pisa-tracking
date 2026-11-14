@@ -387,7 +387,9 @@ export function ChonNguoi({
   /* Nhóm có nhãn + số (mockup ⑤ A2): số = số mục của nhóm đang hiện; dòng cùng nhóm liền nhau. */
   const nhomCua = (o: ChonNguoiOption | undefined) => (o?.kind === 'nguoi' ? o.row.nhom : o?.kind === 'dau' ? dau?.nhom : undefined);
   const dauNhom: Record<number, number> = {};
-  for (let i = 0, d = -1; i < options.length; i++) {
+  /* Lời 40 (chủ SP 15/11): nhãn nhóm chỉ khi có nghĩa — danh sách đang hiện có ≥ 2 nhóm; một nhóm thì danh sách phẳng (dòng phụ đã nói đủ). */
+  const coNhieuNhom = new Set(options.map(nhomCua).filter(Boolean)).size >= 2;
+  if (coNhieuNhom) for (let i = 0, d = -1; i < options.length; i++) {
     const n = nhomCua(options[i]);
     if (n && nhomCua(options[i - 1]) !== n) { d = i; dauNhom[i] = 0; }
     if (n && d >= 0 && options[i].kind === 'nguoi') dauNhom[d]++;

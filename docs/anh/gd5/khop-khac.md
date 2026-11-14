@@ -46,6 +46,19 @@ Dòng BỎ / GIỮ / KHÁC:
 | B1 | Dòng phụ cùng hàng đẩy phải của `ChonLop` (`phuPhai`, mockup V6 cũ) | BỎ | ⑤ A5 lớp đích = mục hai hàng (mã · dòng phụ) |
 | B3 | `.oc-man-dau h2` 17 px (mockup 16) | KHÁC nhỏ | luật thang chữ K-CHU-1 (12·13·14·15·17·22·28); 16 chỉ cho ô nhập |
 
+## 1b. Luật lời 40 (chủ SP 15/11 — "cái gì logic thì mình làm") — thông tin hiện theo trạng thái
+
+| Chỗ | Áp |
+|---|---|
+| Nhãn nhóm "liên quan trước" | chỉ hiện khi danh sách ĐANG HIỆN có ≥ 2 nhóm; một nhóm (vd mọi GV cùng chi nhánh, mọi em cùng lớp, gõ ra kết quả một lớp) → danh sách phẳng, không nhãn; không bao giờ vẽ nhóm rỗng |
+| "n / trần" | chỉ ở ô chọn nhiều; 375 chỉ ở đầu màn, không lặp trong ô |
+| Chân "Gõ để tìm thêm" | chỉ khi máy chủ đã cắt (đủ 20 người) và chưa gõ |
+| "Xong · n em" (375) | chỉ ô chọn nhiều |
+| "Cả lớp · n" (Ghi vi phạm) | ẩn khi đang gõ tên |
+| ✕ / ▾ phải ô | ▾ khi chưa có giá trị, ✕ khi có giá trị / có chữ gõ (không hiện cả hai) |
+| Dòng "Lớp của tôi / Lớp khác", "Tôi / TVV chi nhánh", "Đang chạy / Đã kết thúc", "Tên gần giống / Khác" | chỉ gắn khi có cả hai phía |
+| "Chỉ tìm … trong phạm vi" dưới "Không thấy" | chỉ ô tìm người máy chủ (ô danh sách có sẵn không cần) |
+
 ## 2. Bảng thay 16 chỗ (R5.2 C + D)
 
 | # R5.2 | Chỗ | Trước | Sau |
