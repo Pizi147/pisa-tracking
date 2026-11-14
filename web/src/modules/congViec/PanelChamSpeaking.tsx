@@ -99,7 +99,8 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   const tatCa = data?.rows ?? [];
   const quaHan = soQua(tatCa);
   const dau = {
-    loai: t('Việc chung · Chấm Speaking'),
+    /* GD-1b (lời 24): không ghi "Việc chung" — cùng dạng đầu panel việc khác ("Việc · {tab}"). */
+    loai: t('Việc · Chấm Speaking'),
     dong2: data ? [t('{n} bài', { n: data.soBai }), ...(quaHan ? [<ChipSoQuaHan key="q" n={quaHan} />] : [])] : [],
   };
   const veNgan = (n: Ngan) => <NganLop key={n.khoa} n={n} mo={dangMo(n)} onMo={(m) => doi(n, m)} onDaLuu={daLuu} onHet={onHet(n)} homNay={homNay} gvChamCot={data?.gvChamCot} />;

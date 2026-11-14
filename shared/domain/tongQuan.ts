@@ -132,7 +132,7 @@ export const nhanTabCv = (k: string, tvv = false): string =>
  * Chấm điểm chia theo loại bài (`kind` của việc Nhập điểm). Loại lạ → "Khác" (không bao giờ mất việc).
  */
 const MUC_CV = [
-  ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Việc chung của nhóm GV Speaking')],
+  ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Chấm Speaking')],
   ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['tinh-hinh', t('Tình hình học tập')], ['phoi-hop', t('Phối hợp SOS')], ['phan-cong', t('Phân công')],
   ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
   ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],
