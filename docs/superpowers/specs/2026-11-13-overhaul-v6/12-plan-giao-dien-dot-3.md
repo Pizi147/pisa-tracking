@@ -2,7 +2,7 @@
 
 PTA Overhaul · 15/11. Chủ SP bảo làm mockup cho các màn còn lại (lời 34, 35) nên GD-10 ("làm gọn mật độ, không mockup") BỎ; thay bằng GD-11 … GD-18 dưới đây, mỗi màn có mockup v21 đã duyệt.
 
-Mockup (`thiet-ke/v21/`, mỗi tệp có `-ghi-chu.md`: bảng truy vết, bảng thao tác TRƯỚC → SAU, [XM] đã quyết, ảnh cặp TRƯỚC web │ SAU mockup ở `anh/<tên>/`): `test.html` (⑦ — đã merge) · `phan-tich.html` (⑨ — đã merge) · `hoc-vien-lop.html` (⑥) · `tong-quan.html` + `ho-so-gv.html` (⑧) · `quan-tri.html` + `luu-tru.html` (⑩). **⑥ ⑧ ⑩ đang sửa theo lời 37, 38 — chỉ giao PR của màn nào khi PTA Overhaul báo mockup đó đã merge.**
+Mockup (`thiet-ke/v21/`, mỗi tệp có `-ghi-chu.md`: bảng truy vết, bảng thao tác TRƯỚC → SAU, [XM] đã quyết, ảnh cặp TRƯỚC web │ SAU mockup ở `anh/<tên>/`): `test.html` (⑦ — đã merge) · `phan-tich.html` (⑨ — đã merge) · `hoc-vien-lop.html` (⑥ — đã merge) · `tong-quan.html` + `ho-so-gv.html` (⑧ — đã merge) · `quan-tri.html` + `luu-tru.html` (⑩ — đã merge). **Cập nhật 15/11: cả sáu mockup đợt 2 đã merge** (⓪ #1607 · ⑥ #1611 · ⑦ #1606 · ⑧ #1613 · ⑨ #1609 · ⑩ #1614) — mọi PR GD-11 … GD-17 giao được theo phụ thuộc trong bảng. Mockup ⑧: PTA chốt phương án A cho số đếm việc (lời 37, 39).
 
 Thứ tự thắng: lời chủ SP mới nhất (`loi-chu-sp.md`, tới lời 39) → `04-thiet-ke.md` mục 12–15 → luật G2 ở `11-de-bai-mockup-dot-2.md` → bảng mẫu ⑤ (bản sau ⓪) → mockup từng màn. [XM] trong ghi chú đã có chữ "PTA chốt" → làm theo.
 
