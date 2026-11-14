@@ -137,6 +137,7 @@ import { EN_UI_HO_SO_HV_2 } from './en/uiHoSoHv2.ts';
 import { EN_UI_TONG_QUAN } from './en/uiTongQuan.ts';
 import { EN_SUA_CHAM_LAI } from './en/suaChamLai.ts';
 import { EN_GD6_HO_SO_LOP } from './en/gd6HoSoLop.ts';
+import { EN_GD9_CHUONG } from './en/gd9Chuong.ts';
 import { EN_GD16_LUU_TRU } from './en/gd16LuuTru.ts';
 import { EN_GD2_CHAM_SPEAKING } from './en/gd2ChamSpeaking.ts';
 import { EN_P1_DIEM_TIEU_CHI } from './en/p1DiemTieuChi.ts';
