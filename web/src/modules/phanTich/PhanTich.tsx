@@ -5,6 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
@@ -14,7 +15,7 @@ import { KetQuaThi } from './KetQuaThi.tsx';
 import { PhanTichGiaoVien } from './PhanTichGiaoVien.tsx';
 import { TongHopTestSos } from './TongHopTestSos.tsx';
 import { YThucPhoiHop } from './YThucPhoiHop.tsx';
-import { KheHangLoc, OChon, type PhamViPhanTich } from './dungChung.tsx';
+import { KheHangLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { dich as dichGoc, t } from '@shared/i18n/index.ts';
 import {
   GOC_NHIN, PERMISSIONS, chuongTrinhTuThamSo, gocNhinTuThamSo, khoangChiNhanhMacDinh, khoangPhanTichMacDinh, khoangTuUrl, nhanGocNhin, thamSoKhoang, thamSoXoaKhiDoiGoc,
@@ -136,15 +137,11 @@ export function PhanTich() {
           <span ref={setDau} className={goc === 'ket-qua-thi' ? LOP_DOAN : 'contents'} />
           <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo macDinh={mdPt} />
           {coLop && (
-            <OChon className="max-sm:w-[calc(50%-4px)]" dangLoc={!!classId} value={classId ?? ''} onChange={(e) => dat({ lop: e.target.value || null })} aria-label={t('Lớp')}>
-              <option value="">{t('Mọi lớp')}</option>
-              {classes.filter((c) => !c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-              {classes.some((c) => c.ket_thuc) && (
-                <optgroup label={t('Đã kết thúc')}>
-                  {classes.filter((c) => c.ket_thuc).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-                </optgroup>
-              )}
-            </OChon>
+            /* GD-5 (R5.2 #51): ô lọc có tìm — lớp đang chạy → "Đã kết thúc" (nhóm sẵn có, lớp từ `/ref/classes` đã nạp). */
+            <ChonLop className="w-[200px] max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={classId ? Number(classId) : null}
+              onChange={(v) => dat({ lop: v ? String(v) : null })}
+              ds={[...classes.filter((c) => !c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, ...(classes.some((x) => x.ket_thuc) ? { nhom: t('Đang chạy') } : {}) })),
+                ...classes.filter((c) => c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, nhom: t('Đã kết thúc') }))]} />
           )}
           <span ref={setGiua} className="contents" />
           <span ref={setPhai} className={`ml-auto flex items-center gap-2 empty:hidden ${canhDoan ? 'max-sm:order-[-1] max-sm:ml-0' : ''}`}>

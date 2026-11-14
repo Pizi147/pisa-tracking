@@ -17,6 +17,7 @@ import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
+import { ChonLop, nhomLopToi } from '../../ui/ChonLop.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { type TrangSos, type DongSos } from './BangSos.tsx';
 import { PanelMotEm } from './PanelMotEm.tsx';
@@ -149,6 +150,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const daNho = tuLienKet ? null : docChiNhanhDaNho(session?.user?.id);
   const phamViUrl = params.get('phamVi');
   const chiLop = params.get('classId') ? Number(params.get('classId')) : null;
+  const lopToi = useMemo(() => new Set((session?.assignments ?? []).map((x) => x.classId)), [session?.assignments]);
   const khungUrl = params.get('khung');
   /* PTA chốt [XM] 04/11 (mockup U04): chương trình là HAI trạng thái, luôn một mục chọn — URL `khung` (link cũ "cả hai" → mặc định), không có thì lần chọn trong phiên. */
   const khungMuon = khungUrl === 'ft' || khungUrl === 'thuong' ? khungUrl : docKhungDaNho();
@@ -385,10 +387,9 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const locChung = (
     <>
       {locTim}
-      <select className={SELECT_GON} aria-label={t('Lớp')} value={chiLop ?? ''} onChange={(e) => setParam({ classId: e.target.value || null })}>
-        <option value="">{t('Mọi lớp')}</option>
-        {(data?.rows ?? []).filter((c) => khung === 'tat-ca' || khungCua(c.scoringMode) === khung).map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
-      </select>
+      {/* GD-5 (R5.2 #54): ô lọc có tìm — lớp của tôi lên trước, rồi các lớp khác của trang (dữ liệu đã nạp, không gọi thêm). */}
+      <ChonLop className="w-[200px] max-sm:w-full" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={chiLop} onChange={(v) => setParam({ classId: v ? String(v) : null })}
+        ds={nhomLopToi((data?.rows ?? []).filter((c) => khung === 'tat-ca' || khungCua(c.scoringMode) === khung).map((c) => ({ id: c.id, ma: c.code })), lopToi)} />
     </>
   );
   /* Chip lọc (B11, G6 "số 0 không bấm"): số 0 mờ, không bấm — trừ khi đang bật (để còn tắt được). */
