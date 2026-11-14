@@ -96,6 +96,15 @@ export async function runPrMtVangTests(t: YThucTestKit) {
   const chuongHuy = (aid: number) => (one(`SELECT COUNT(*) n FROM notifications WHERE kind = 'huy_vang' AND entity_id = ?`, aid).n as number);
   const vang = (aid: number, s: string, homNay: string, p = gvL) => attempts.saveScore(p, aid, s, { noShow: true }, homNay);
 
+  check('MV-HUY-TAY · (LG-9) Mock không có Huỷ môn — vắng 2 lần đã tự huỷ (N38)', () => thu(() => {
+    const a = luot[0];
+    dung(a);
+    vang(a, 'listening', TRONG);
+    let loi = '';
+    try { absence.huyTay(QL, a, 'listening', true); } catch (e: any) { loi = e.message; }
+    assert(/Progress \/ Final/.test(loi), `Mock không Huỷ môn: ${loi}`);
+  }));
+
   check('MV-1 · L1: "-" lần 1 → dời TUẦN SAU TUẦN THI (trong tuần → W+1; ghi muộn tuần sau → vẫn W+1, không W+2), không thẻ', () => thu(() => {
     const a = luot[0];
     dung(a);

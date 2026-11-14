@@ -300,3 +300,5 @@ button.gt-lt { align-content:center; }
 /* lời 38: trả lại cột Target (không nhãn nhóm "Hiện tại") — cân lại */
 .ltt .c-hv { width:230px; } .ltt .c-lich { width:280px; } .ltt .c-tg { width:100px; } .ltt .c-mt { width:160px; } .ltt .c-sos { width:180px; }
 .hop-dong { padding-left:236px; }
+/* chủ SP 15/11: em ĐÃ THI thật → phần mở chỉ KQ thi · kỳ thi · phụ trách · làm tiếp (không MT gần nhất, không Test sắp tới) */
+.lt-mo.da-thi { grid-template-columns:auto minmax(0,.9fr) minmax(0,.9fr) 380px; }
