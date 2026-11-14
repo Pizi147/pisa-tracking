@@ -19,12 +19,14 @@ Dữ liệu ảnh: DB demo + 5 em mẫu chèn tay vào bản demo cục bộ (BE
 | Hộp chốt · Trung tâm 375 (em có kỹ năng huỷ) | — | `sau-hop-chot-trung-tam-375-sang.png` |
 | Hộp chốt · Học viên 375 | — | `sau-hop-chot-hoc-vien-375-sang.png` |
 | Zoom ô Kết quả (2×) | — | `sau-zoom-o-ket-qua-1440-toi.png` |
+| Bảng chung có nhóm cột (Phân tích › Báo cáo, nhóm "Cuối khoá") | `truoc-bang-nhom-bao-cao-1440-toi.png` | `sau-bang-nhom-bao-cao-1440-toi.png` |
 
 ## Truy vết: yêu cầu → thành phần → ảnh
 
 | Yêu cầu (5.2 / PTA) | Thành phần | Ảnh | |
 |---|---|---|---|
-| Phần điểm "kinh dị" → ô L · R · W · S · Overall riêng như bảng Tổng hợp | `Bang` chung (nhóm cột "MT0") + `ODiem kieu="gon"` (✓ / ✗ là chữ trong cùng span với số) | sau-ql-1440 · zoom | KHỚP |
+| Phần điểm "kinh dị" → ô L · R · W · S · Overall riêng như bảng Tổng hợp | `Bang` chung + `ODiem kieu="gon"` (✓ / ✗ là chữ trong cùng span với số). Chủ SP 14/11 vòng 2: **bỏ hẳn hàng nhóm "MT0"** — tiêu đề khối ghi "mốc MT0 4.0", tên đủ ("MT0 · Listening") ở rê chuột tiêu đề cột | sau-ql-1440 · zoom | KHỚP |
+| Chủ SP 14/11 vòng 2: "cho cái đường kẻ cột nó kéo dài đến hết bảng, đừng để lôm côm" | Sửa ở **thành phần bảng chung** (`Bang` + `vienNhom` ở `shared/domain/bang.ts` + `index.css`): vạch đầu / cuối mỗi nhóm cột chạy suốt từ hàng nhóm → tiêu đề → hàng cuối, cùng một nét `--accent-line` (cả hàng tự vẽ `OBang` qua context). Áp mọi bảng có nhóm cột (Báo cáo "Cuối khoá", Lịch thi, hồ sơ GV…); bảng đã kẻ nhóm bằng vạch đậm `tach` suốt bảng (Phân tích GV) giữ nguyên, không thêm nét thứ hai | sau-bang-nhom-bao-cao | KHỚP |
 | Chỉ tô đỏ kỹ năng dưới mốc khi CHƯA đạt; đạt thì màu thường | ô kỹ năng: ✗ đỏ chỉ khi `!dat && monTruot`; Overall ✓ xanh khi đạt, ✗ khi chưa | Đỗ Minh An (W 3.0 thường, ✓ 4.0) | KHỚP |
 | Final "76 %" không "●" | `ODiem` "✓ 73%" — bỏ chip tròn có chấm | sau-ql-1440 | KHỚP (màu kết quả trên chính số — G12) |
 | QL chốt / sửa ngay ở cột Kết quả bằng hộp nhỏ | `HopNeo` neo ô (mũi chỉ ô): **radio-card** như panel Xác nhận xử lý (⑤ D1a — chấm tròn + tên + dòng hệ quả, chọn = viền + nền nhấn): Đạt · Không đạt · Trung tâm ("Mỗi kỹ năng một Case + Tutor {n} buổi" theo cấu hình; chip kỹ năng L R W S điền sẵn kỹ năng MT0 dưới mốc, chip chọn chuẩn — viền + nền nhấn, "✓" là chữ trong chip trước tên) · Không đạt · Học viên ("Ghi phương án, không Case.") → `PUT /students/:id/ket-luan-ft` | sau-hop-* | KHỚP (vòng rà PTA: bỏ ✓ góc lòi viền của `NutChon`) |

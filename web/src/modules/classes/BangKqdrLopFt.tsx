@@ -35,8 +35,9 @@ const BAN_GIAO_DAI = 110;   // hơn ~2 dòng ở cột Bàn giao → "Xem" mở 
 const COT: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten' },
   { key: 'final', nhan: 'Final', kieu: 'phan-tram', goiY: t('Final Test lớp cũ · % tổng') },
-  ...REGULAR_SKILLS.map((k): CotBang => ({ key: k, nhan: NGAN[k], kieu: 'diem', nhom: 'MT0', rong: 60 })),
-  { key: 'overall', nhan: 'Overall', kieu: 'diem', nhom: 'MT0', rong: 76 },
+  /* Chủ SP 14/11: bỏ hàng nhóm "MT0" — tiêu đề khối đã ghi "mốc MT0"; tên đủ ở `goiY`. */
+  ...REGULAR_SKILLS.map((k): CotBang => ({ key: k, nhan: NGAN[k], kieu: 'diem', rong: 60, goiY: `MT0 · ${dich(tenMon(null, k))}` })),
+  { key: 'overall', nhan: 'Overall', kieu: 'diem', rong: 76, goiY: 'MT0 · Overall' },
   { key: 'kq', nhan: t('Kết quả đầu ra'), kieu: 'chip', rong: 236 },
   { key: 'ho-tro', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 150 },
   { key: 'ban-giao', nhan: t('Bàn giao từ GV cũ'), kieu: 'chu' },
