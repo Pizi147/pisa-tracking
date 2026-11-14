@@ -48,10 +48,12 @@ export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
  * Danh sách: (1) `location.state.ds` — danh sách vừa mở, đúng bộ lọc + thứ tự đang dùng; (2) `sessionStorage` (tải lại trang);
  * (3) `dsDuPhong` (mở thẳng bằng link: lớp của em, A→Z). Chuyển hồ sơ dùng `replace` để "Quay lại" vẫn về danh sách, không qua từng hồ sơ.
  */
-export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }: {
+export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet, giua }: {
   loai: NguCanhDs['loai']; id: number; duong: (id: number) => string;
   dsDuPhong?: () => Promise<{ ids: number[]; nhan: string }>;
   cha: Cha; ten?: string | null; chiTiet?: string | null;
+  /** GD-6 (mockup v21 ② hàng 1): nội dung giữa nút ‹ nguồn và ‹ n/N › (mã lớp, chip, nút) — một hàng; ‹ n/N › sau vạch, tên danh sách chỉ ở `title`. */
+  giua?: ReactNode;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
@@ -84,10 +86,11 @@ export function ThanhTruocSau({ loai, id, duong, dsDuPhong, cha, ten, chiTiet }:
   return (
     /* OV-11i (P1-3): tab hồ sơ HV ghi tên em, hồ sơ lớp ghi mã lớp — bỏ chữ "Hồ sơ (lớp)" của tên nút Quay lại. */
     <DuongVe cha={cha} ten={ten} chiTiet={chiTiet} tieuDe={ten?.replace(loai === 'lop' ? /^Hồ sơ lớp / : /^Hồ sơ /, '')}>
+      {giua}
       {ben && ds && (
-        <span className="ml-auto flex items-center gap-1 text-[13px] font-semibold text-dim" role="group" aria-label={t('Chuyển trong danh sách {ds}', { ds: ds.nhan })}>
+        <span className={giua ? 'flex items-center gap-1 border-l pl-3 text-[13px] font-semibold text-dim max-sm:order-1 max-sm:ml-auto max-sm:border-l-0 max-sm:pl-0' : 'ml-auto flex items-center gap-1 text-[13px] font-semibold text-dim'} style={giua ? { borderColor: 'var(--line)' } : undefined} role="group" aria-label={t('Chuyển trong danh sách {ds}', { ds: ds.nhan })}>
           <button type="button" className="nut-mui" disabled={ben.truoc === null} onClick={() => sang(ben.truoc)} aria-label={t('Trước')} title={t('Trước ( [ )')}>‹</button>
-          <span className="px-1.5 tabular-nums" title={ds.nhan}>{ben.viTri}/{ben.tong}<span className="max-sm:sr-only"> · {ds.nhan}</span></span>
+          <span className="px-1.5 tabular-nums" title={ds.nhan}>{ben.viTri}/{ben.tong}<span className={giua ? 'sr-only' : 'max-sm:sr-only'}> · {ds.nhan}</span></span>
           <button type="button" className="nut-mui" disabled={ben.sau === null} onClick={() => sang(ben.sau)} aria-label="Sau" title="Sau ( ] )">›</button>
         </span>
       )}

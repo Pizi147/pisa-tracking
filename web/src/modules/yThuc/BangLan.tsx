@@ -356,18 +356,6 @@ export function DongLan({ vp, dx, tiep, nen, duoi, ls = false, homNay, moVp, onM
   );
 }
 
-/** Thanh "Xem lịch sử · n" — một dáng ở mọi chỗ (khối em, dòng em gọn); 375 cao 44. */
-export function ThanhLs({ so, mo, ten, onClick }: { so: number | null; mo: boolean; ten: string; onClick: () => void }) {
-  return (
-    <button type="button" aria-expanded={mo} aria-label={`${mo ? t('Thu gọn lịch sử') : t('Xem lịch sử')} · ${ten}`} onClick={onClick}
-      className={`inline-flex h-8 min-w-[200px] shrink-0 appearance-none items-center gap-2 rounded-[7px] border px-2.5 text-left text-[13px] font-semibold text-[color:var(--accent)] hover:border-[color:var(--accent)] max-sm:h-11 max-sm:w-full ${mo ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : 'border-[color:var(--line-strong)] bg-[color:var(--surface)]'}`}>
-      <span aria-hidden className={`text-xs transition-transform motion-reduce:transition-none ${mo ? 'rotate-90' : ''}`}>▶</span>
-      {mo ? t('Thu gọn lịch sử') : t('Xem lịch sử')}
-      {so != null && <span className="ml-auto rounded-[5px] px-1.5 text-xs font-semibold tabular-nums text-slate-400 surface-2">{so}</span>}
-    </button>
-  );
-}
-
 /** Phần lịch sử mở tại chỗ (dưới khối / dòng em): đầu = phạm vi + ⓘ; thân = các dòng `DongLan ls`. */
 export function KhungLs({ dau, children }: { dau: ReactNode; children: ReactNode }) {
   return (

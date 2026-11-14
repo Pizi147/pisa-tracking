@@ -128,16 +128,16 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     const tatCa = [...b.hien, ...b.an];
     assert(tatCa.length === 7, `Bộ đủ phải có 7 badge, đang ${tatCa.length}`);
     const cham = tatCa.find((x: any) => x.key === 'cham')!;
-    assert(cham.nhan === '9 bài chờ chấm' && cham.title === 'Lớp còn 9 bài chưa nhập điểm', JSON.stringify(cham));
+    assert(cham.nhan === 'Chờ chấm · 9' && cham.title === 'Lớp còn 9 bài chưa nhập điểm', JSON.stringify(cham));
     // Miễn: `chang` (tên chặng thi, chữ chốt ở PR-LT/PR-Qa), `xep-lop` ("n HV cần xếp lớp tiếp") và `qua-han` ("n HV quá hạn việc") — chữ chốt ở PR-HVL (B4), "HV" là viết tắt.
     for (const x of tatCa) {
       if (x.key === 'chang' || x.key === 'xep-lop' || x.key === 'qua-han') continue;
-      const tu = x.nhan.split(/\s+/).filter((w: string) => !/^\d+$/.test(w));
+      const tu = x.nhan.split(/\s+/).filter((w: string) => !/^(\d+|·)$/.test(w));   // GD-6 (lời 35): "loại · số" — dấu "·" không là từ
       assert(tu.length <= 3, `${x.key}: "${x.nhan}" quá 3 từ`);
     }
     assert(!tatCa.some((x: any) => x.key === 'case'), 'Không còn badge "Case mở" (K2-06)');
-    assert(tatCa.find((x: any) => x.key === 'xep-lop')!.nhan === '4 HV cần xếp lớp tiếp', 'Cần xếp lớp tiếp');
-    assert(tatCa.find((x: any) => x.key === 'cho-duyet')!.nhan === '2 chờ duyệt', 'Chờ duyệt');
+    assert(tatCa.find((x: any) => x.key === 'xep-lop')!.nhan === 'Cần xếp lớp tiếp · 4', 'Cần xếp lớp tiếp');
+    assert(tatCa.find((x: any) => x.key === 'cho-duyet')!.nhan === 'Chờ duyệt · 2', 'Chờ duyệt');
   });
 
   check('UX0 · N-4: mở panel thứ hai thì panel thứ nhất bị đóng, không bao giờ hai panel', () => {

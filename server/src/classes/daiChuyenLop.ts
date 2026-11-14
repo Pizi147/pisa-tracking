@@ -9,7 +9,7 @@ import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { MDK_SQL, cungGvTuPhanCong, type PhanCongLop } from './banGiao.ts';
 import type { DaiHocVien, DaiLop } from '../../../shared/domain/index.ts';
 import { mocKetKhoa, type TienDoMoc } from './schedule.ts';
-import { lopChoChotLoTrinh } from './lenhChuyen.ts';
+import { demChotTheoLop } from './lenhChuyen.ts';
 import { coTheRaLenh, phanCongO } from './quyenChuyenLop.ts';
 import { EM_KQDR_FT_SQL, KQDR_HIEN_NGAY, laChiAdmin } from '../normal/kyVong.ts';
 
@@ -115,8 +115,11 @@ function daiLopGoc(p: Principal, classId: number, o: { pr: TienDoMoc; ft: boolea
 
   /* OV-3b: thanh nhắc "Lộ trình tiếp theo" (Quản lý, lớp thường) — CÙNG hàm với việc QL "Chốt lộ trình" (N20: từ thứ Hai tuần trước Final, còn em chưa chốt). */
   const den = o.pr?.finalWeekStart ? homNay >= mocLoTrinh(o.pr.finalWeekStart).nhacTu : mocKetKhoa(o.pr, homNay).hetKhoa;   // lọc rẻ trước khi đếm
-  const chot = !o.ft && ra && den ? lopChoChotLoTrinh(p, null, homNay, classId)[0] : undefined;
-  const loTrinh: DaiLop['loTrinh'] = chot ? { hanChot: chot.han, tong: chot.tong, daChot: chot.tong - chot.chuaLenh, do: !!chot.han && homNay > chot.han } : null;
+  /* GD-6 (mockup ② K6): dải hiện cho MỌI người xem lớp khi lớp tới bước chốt (lời 40) — "6/6 em đã chốt" vẫn hiện tới hết khoá; nút "Cuối khoá ›"
+     (QL quyết hướng, GV ghi nhận xét). Một câu đếm cho đúng lớp này (`demChotTheoLop`, cùng câu với việc QL). Lớp liên tục (không số tuần) không có. */
+  const d = !o.ft && den && o.pr?.totalWeeks ? demChotTheoLop([classId]).get(classId) : undefined;
+  const hanChot = d?.chuaLenh && o.pr?.finalWeekStart ? mocLoTrinh(o.pr.finalWeekStart).hanChot : null;
+  const loTrinh: DaiLop['loTrinh'] = d ? { hanChot, tong: d.tong, daChot: d.tong - d.chuaLenh, do: !!hanChot && homNay > hanChot } : null;
   /* PR-S5F-a: lệnh lỗi (kể cả Dừng học hẳn) — Quản lý thấy ngay ở hồ sơ lớp để sửa (trang Cuối khoá). R5.3: lớp FT không còn dải này (không còn Chuyển tiếp lớp). */
   const loi = ra && !o.ft ? rows.filter((r) => r.k === 'nguon' && r.c === 'cho' && r.h) : [];
   const chuaChuyenDuoc = loi.length ? { n: loi.length, loi: loi[0].h as string } : null;
