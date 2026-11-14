@@ -1003,7 +1003,8 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(q.viewer.coTheRaLenh === true && !('coTheChuyenNhieuEm' in q.viewer), JSON.stringify(q.viewer));   // R5.3: bỏ cờ Chuyển tiếp lớp FT
     assert(q.banGiao === null && q.sapNhan === null && q.banGiaoMon.length === 0, 'chưa lệnh → chưa có dải bàn giao');
     const g = daiCua(g7, n7);
-    assert(g.loTrinh === null && g.viewer.coTheRaLenh === false && g.viewer.laGvcn === true, 'GVCN không có thanh nhắc (việc của QL)');
+    /* GD-6 (mockup ② K6): GVCN thấy dải "Chốt lộ trình n/m em" (chỉ xem tiến độ, Cuối khoá ›), không ra lệnh. */
+    assert(g.loTrinh?.tong === 7 && g.loTrinh.daChot === 0 && g.viewer.coTheRaLenh === false && g.viewer.laGvcn === true, 'GVCN thấy dải chốt lộ trình, không ra lệnh');
     assert(daiCua(l7, n7).viewer.coTheRaLenh === false, 'GVBM không có nút');
   });
   ra(P.mbManager, n7, 'cuoi-khoa', em7.map((s) => dongCua(s, 'len_lop', d7)));
@@ -1011,7 +1012,7 @@ export async function runPrCtTests(t: YThucTestKit) {
   for (const l of lenh7.slice(0, 2)) { bg.ghiMon(l7, l.id, 'listening', 'Nghe ổn.'); bg.xacNhanBanGiao(g7, l.id, 'Em học đều, cần nhắc nộp bài đúng hạn.'); }
   check('CT (7b) · dải lớp nguồn dạng 2 "Bàn giao 2/7 em" (GVCN) và dạng 3 "Bàn giao môn L · 2/7 em" (GVBM); hết dải "chưa lệnh"', () => {
     const g = daiCua(g7, n7);
-    assert(g.banGiao.daXacNhan === 2 && g.banGiao.tong === 7 && g.banGiao.hanGvcn === hanCk(n7).gvcn && g.loTrinh === null, JSON.stringify(g.banGiao));
+    assert(g.banGiao.daXacNhan === 2 && g.banGiao.tong === 7 && g.banGiao.hanGvcn === hanCk(n7).gvcn && g.loTrinh?.daChot === g.loTrinh?.tong && g.loTrinh?.hanChot === null, JSON.stringify([g.banGiao, g.loTrinh]));   // GD-6: chốt đủ → dải "7/7 em đã chốt", hết hạn chốt
     assert(g.viewer.xacNhanDuoc === true && g.banGiaoMon.length === 0, 'GVCN không có dòng môn');
     const b = daiCua(l7, n7);
     assert(b.banGiaoMon.length === 1 && b.banGiaoMon[0].mon === 'listening' && b.banGiaoMon[0].daGhi === 2 && b.banGiaoMon[0].tong === 7 && b.banGiaoMon[0].han === hanCk(n7).gvbm, JSON.stringify(b.banGiaoMon));

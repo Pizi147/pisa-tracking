@@ -392,7 +392,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     assert(tab.includes('const coTheSua = thang || tong != null;') && tab.includes('thang={data.ft}'), 'lớp thường chưa có điểm gốc: không có nút Sửa');
     assert(tab.includes('if (keTiep) setChon(keTiep.id); else setXong(true);'), 'hết em thiếu khác → thẻ Xong (PTA 06/11: không đứng im)');
     const lop_ = doc('web/src/modules/classes/ClassOverviewPage.tsx');
-    assert(tab.includes('onDuHet(data.dot,') && lop_.includes('!(bc.quaHan && bcDu === bc.dot)'), 'chip quá hạn tắt tại chỗ khi tab thấy đủ (không thêm request)');
+    assert(tab.includes('onDuHet(data.dot,') && lop_.includes('bcDu && bcDu === bc?.dot ? []'), 'badge tab Báo cáo PH tắt tại chỗ khi tab thấy đủ (không thêm request; GD-6: số thay chip đợt)');
     assert(tab.includes('const dongPanel = dongSauKhiLuu(hang, onDong, baoChuaLuu);'), '✕ / Esc (đã qua hộp Bỏ chữ) không dùng cờ nút');
     assert(/error\?\.status === 404 && dot\) onDot\(null\)/.test(tab), '?dot= không còn → đợt mặc định');
     const ngan = doc('web/src/modules/students/NganXuatDs.tsx');

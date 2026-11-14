@@ -6,18 +6,18 @@ import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { ChipLoc, KHOI, MUC_H, TenEm, bamHang } from './BangHoSoLop.tsx';
-import { DongCase, NhanCotCase, type CanHoTro } from './BangCanHoTro.tsx';
+import { viecCase, type CanHoTro, type CaseCua } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { MenuDong, NUT_BA_CHAM } from '../../ui/MenuDong.tsx';
+import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, tvvChinhCuaLop, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -97,7 +97,6 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 
   if (error) return <p className="m-0 text-xs text-rose-200">{error.message}</p>;
   if (loading || !data) return <Skeleton rows={4} />;
-  const dangLuu = data.filter((s) => !s.archived);
   const tatCa = dongTabHocVien(data, daKetThuc);
   if (!tatCa.length) return <Empty title={t('Lớp chưa có học viên')} />;
   const mon = tatCa[0].skills ?? [];
@@ -133,8 +132,34 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     }
     return false;
   };
-  const dem: Record<Loc, number> = { 'tat-ca': tatCa.length, 'chua-dat': tatCa.filter(chuaDat).length, case: tatCa.filter((s) => s.openCases > 0).length };
-  const rows = tatCa.filter((s) => loc === 'tat-ca' || (loc === 'case' ? s.openCases > 0 : chuaDat(s)));
+  /* Chip đếm đúng tập của bảng (em đã chuyển còn bổ trợ ở khối riêng dưới bảng). */
+  const trongBang = tatCa.filter((s) => !s.dangBoTro);
+  const dem: Record<Loc, number> = { 'tat-ca': trongBang.length, 'chua-dat': trongBang.filter(chuaDat).length, case: trongBang.filter((s) => s.openCases > 0).length };
+  /* GD-6 (mockup v21 ② K6, R2.6): em đã chuyển còn bổ trợ không nằm lẫn trong bảng — khối gập "Đã chuyển · đang bổ trợ · n em" dưới bảng. */
+  const boTro = tatCa.filter((s) => s.dangBoTro);
+  const rows = tatCa.filter((s) => !s.dangBoTro && (loc === 'tat-ca' || (loc === 'case' ? s.openCases > 0 : chuaDat(s))));
+  const khoiBoTro = boTro.length > 0 && (
+    <details className="group/bt border-t" style={{ borderColor: 'var(--line)' }} open>
+      <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-4 text-[15px] font-bold text-slate-100">
+        <svg aria-hidden viewBox="0 0 16 16" width="14" height="14" className="shrink-0 -rotate-90 fill-none stroke-current text-dim transition-transform group-open/bt:rotate-0 motion-reduce:transition-none" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 6L8 10.5 12.5 6" /></svg>
+        {t('Đã chuyển · đang bổ trợ')}
+        <span className="inline-flex h-[22px] items-center rounded border px-1.5 text-xs font-bold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{t('{n} em', { n: boTro.length })}</span>
+      </summary>
+      <ul className="m-0 list-none p-0">
+        {boTro.map((s) => (
+          <li key={s.id} className="flex flex-wrap items-center gap-x-6 gap-y-1 border-t px-4 py-2.5 text-sm max-sm:gap-x-3" style={{ borderColor: 'var(--line)' }}>
+            <span className="min-w-[10rem] font-semibold text-slate-100">{s.fullName}</span>
+            {s.dangBoTro?.lopMoi && <span className="text-dim">→ {s.dangBoTro.lopMoi}</span>}
+            {s.loTrinhChot?.boTro && <span className="text-slate-100">{dich(s.loTrinhChot.boTro)}</span>}
+            {s.xemHoSo !== false && (
+              <Link to={duongHoSoHocVien(s.id)} state={{ ds }} className="link ml-auto whitespace-nowrap font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center"
+                title={s.dangBoTro?.lopMoi ? t('Đang học {lop} — bạn vẫn ghi kết quả bổ trợ và Mini Test', { lop: s.dangBoTro.lopMoi }) : undefined}>{t('Hồ sơ HV ›')}</Link>
+            )}
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
   const ds: NguCanhDs = { loai: 'hoc-vien', ids: rows.map((s) => s.id), nhan: maLop ? t('Lớp {lop}', { lop: maLop }) : t('Lớp') };   // PR-DH: Trước/Sau theo thứ tự bảng
   const thanh = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2.5 border-b px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
@@ -153,7 +178,9 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
     </div>
   );
   const moRong = (s: DongThuong) => (
-    <MoRongThuong s={s} chot={chot} ct={chot.data?.ct ?? chuongTrinh} ds={ds} homNay={homNay} the={dienThoai} chiDoc={!!quyen.theoVai}
+    <MoRongThuong s={s} mon={mon} chot={chot} ct={chot.data?.ct ?? chuongTrinh} ds={ds} homNay={homNay}
+      moc={BAI.map((b) => { const lu = luotCua(s, b.kind); return { kind: b.kind, nhan: b.nhan, tuan: Object.values(lu?.tuanMon ?? {}).find(Boolean) ?? null,
+        o: lu?.ratios ?? {}, pt: phanTram(s, b.kind, lu?.ratios?.[mon[0]] ?? null), coPt: cotPhu(b.kind).includes('%') }; })}
       coTheBaoCase={quyen.coTheBaoCase} onThemCase={() => tt.moCase(s.id, s.fullName)} onMo={(n) => setNgan({ ...n, em: s.fullName })} />
   );
   const nganCase = ngan && (
@@ -161,23 +188,15 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   );
   const tenEm = (s: DongThuong) => <TenEm s={s} mo={mo === s.id} onMo={() => moTen(s.id)} ds={ds} />;
   /* HSL-THUONG (như FT `nhanPhu`): dòng dưới tên — TVV khác TVV chính của lớp · "mới vào W3 SEP" chữ mờ · thiếu thông tin · Ý thức · Kết thúc vì. */
-  const tvvChinh = tvvChinhCuaLop(dangLuu);
+  /* GD-6 (lời 25 ý 3): không TVV dưới tên — TVV ở phần mở rộng em. */
   const dongPhu = (s: DongThuong) => {
-    const tvv = !!s.tvv && s.tvv !== tvvChinh;
-    if (!tvv && !s.archived && !s.moiVao && !s.missing.length && !s.canhBaoYThuc && !s.ketThucVi && !s.dangBoTro) return null;
+    if (!s.archived && !s.moiVao && !s.missing.length && !s.canhBaoYThuc && !s.ketThucVi && !s.dangBoTro) return null;
     return (
       <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
         {s.archived && <Nhan tone="muted">{t('Lưu trữ')}</Nhan>}
-        {tvv && <span className="tvv">TVV {s.tvv}</span>}
         {s.moiVao && <span className="whitespace-nowrap text-[12px] text-faint">{t('mới vào')} {tuanLich(homNay, homNay)}</span>}
         <MissingBadge items={s.missing} gon /><CanhBaoYThuc cb={s.canhBaoYThuc} />
         {s.ketThucVi && !s.dangBoTro && <span className="text-xs text-faint">{dich(s.ketThucVi)}</span>}
-        {s.dangBoTro && (
-          <Link to={duongHoSoHocVien(s.id)} className="link whitespace-nowrap text-[12px] font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center"
-            title={s.dangBoTro.lopMoi ? t('Đang học {lop} — bạn vẫn ghi kết quả bổ trợ và Mini Test', { lop: s.dangBoTro.lopMoi }) : undefined}>
-            {t('Đã chuyển · đang bổ trợ')} ›
-          </Link>
-        )}
       </span>
     );
   };
@@ -214,7 +233,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
           ];
           return (
             <TheDong key={s.id} onClick={bamHang(() => moTen(s.id))} className={`grid cursor-pointer gap-2 !px-3.5 !py-3 ${mo === s.id ? 'dang-mo' : ''} ${lopHang(s)}`}
-              dau={<span className="text-[15px]">{oTen(s)}</span>} hanhDong={menu(s, 'btn h-11 w-11 shrink-0 justify-center !px-0 text-[13px] font-bold tracking-wider')} dong={[]}>
+              dau={<span className="text-[15px]">{oTen(s)}</span>} hanhDong={menu(s, NUT_BA_CHAM)} dong={[]}>
               <div className={`grid items-center gap-y-1 rounded-lg px-2 py-1.5 text-center ${mo === s.id ? 'bg-[color:var(--surface)]' : 'bg-[color:var(--surface-2)]'}`} style={luoi}>
                 <span />{cotMon.map((k) => <abbr key={k} className="text-xs font-semibold text-faint no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>)}{coPt && <span className="text-xs font-semibold text-faint">%</span>}
                 {BAI.map((b) => {
@@ -238,6 +257,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
           );
         })}
         </div>
+        {khoiBoTro}
         {tt.panels}{nganCase}
       </div>
     );
@@ -310,48 +330,171 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
         </tbody>
       </table>
     </div>}
+    {khoiBoTro}
     {tt.panels}{nganCase}
     </section>
   );
 }
 
+/** Một mốc của em trong phần mở rộng (cũ → mới do nơi gọi xếp): nhãn · tuần · ô theo môn · % (nếu mốc có). */
+type MocEm = { kind: string; nhan: string; tuan: string | null; o: Record<string, ODiem | null>; pt: number | null; coPt: boolean };
+const KY_VONG_THUONG = 0.7;   // đạt từ 70 % (`outcome` máy chủ, rule book lớp thường) — chỉ để ghi "đạt từ 70 %"
+
 /**
- * MỞ RỘNG MỘT EM · LỚP THƯỜNG (HSL-THUONG, mockup A): khối "Case đang mở" — đầu khối "Hồ sơ HV ›" · "+ Case" (nút thường: việc trên dòng là nút
- * mạnh nhất); hàng nhãn cột rồi mỗi Case một dòng tách trường (`DongCase`, theo kỹ năng của chương trình — `locCanHoTro`). Lỗi tải chỉ trong khối + Thử lại.
+ * MỞ RỘNG MỘT EM · LỚP THƯỜNG (GD-6, mockup v21 ② K6, lời 25 ý 2 — CÙNG KHUNG FT `MoRongEm`, đơn vị là MÔN): trái "Điểm theo lượt" (mốc mới nhất đậm,
+ * cột môn của chương trình · % · Kỳ vọng 70 %, TVV nhỏ) · phải thẻ Môn (mốc trước → mới nhất · Không Case / Có Case / Có Case · có PA; Case quá hạn tô màu — V22)
+ * rồi tóm tắt môn đang chọn: Hồ sơ HV › · Xem chi tiết (panel Case) / + Case · Điểm (chuỗi mốc) · Case · PA (Bổ trợ miễn phí, buổi) · Việc tiếp
+ * (cùng nút, cùng panel với dòng Case cũ — không mất thao tác). Thay khối "Case đang mở" 08/11. Case chỉ đọc khi mở em đầu tiên (`can-ho-tro`, như trước).
  */
-function MoRongThuong({ s, chot, ct, ds, homNay, the, chiDoc, coTheBaoCase, onThemCase, onMo }: {
-  s: DongThuong; chot: { data: CanHoTro | null | undefined; error: unknown; reload: () => void }; ct: string | null; ds: NguCanhDs; homNay: string; the: boolean;
-  chiDoc: boolean; coTheBaoCase: boolean; onThemCase: () => void; onMo: (n: Omit<MoNgan, 'em'>) => void;
+function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemCase, onMo }: {
+  s: DongThuong; moc: MocEm[]; mon: string[];
+  chot: { data: CanHoTro | null | undefined; error: unknown; reload: () => void }; ct: string | null; ds: NguCanhDs; homNay: string;
+  coTheBaoCase: boolean; onThemCase: () => void; onMo: (n: Omit<MoNgan, 'em'>) => void;
 }) {
   const e = chot.data?.em.find((x) => x.id === s.id);
+  /* Case theo môn đi qua `locCanHoTro` (PR-S4F #5 — cùng hàng theo kỹ năng của chương trình như bảng Case); một môn (Pre FOU) = mọi Case. */
   const hang = e ? locCanHoTro({ ct, em: [e], boCt: chot.data?.boMon }).em[0]?.hang ?? [] : [];
-  const NUT = 'btn h-[30px] justify-center px-2.5 text-[13px] max-sm:h-11 max-sm:flex-1';
+  const caseMon = (k: string) => (mon.length === 1 ? e?.cases ?? []
+    : hang.find((h): h is Extract<typeof h, { kind: 'hang' }> => h.kind === 'hang' && (h.khoa === k || h.kyNang.includes(k)))?.cases ?? []);
+  const coDiem = moc.filter((m) => Object.values(m.o).some((x) => x?.score != null));
+  const moi = coDiem[coDiem.length - 1] ?? null;
+  /* Môn mặc định: môn có Case quá hạn → môn có Case → môn chưa đạt ở mốc mới nhất → chưa chọn. */
+  const macDinh = mon.find((k) => caseMon(k).some((c) => c.quaHan)) ?? mon.find((k) => caseMon(k).length > 0) ?? mon.find((k) => moi?.o[k]?.outcome === 'fail') ?? null;
+  const [chonTay, setChon] = useState<string | null>(null);
+  const kn = chonTay ?? macDinh;
+  const coPt = moc.some((m) => m.coPt);
+  const dienThoai = useDienThoai();
+  const NUT = 'btn h-[30px] px-2.5 text-[13px] max-sm:h-11 max-sm:flex-1';
+  const NH = 'text-xs font-medium text-faint';
+  const caKn = kn ? caseMon(kn) : [];
+  const c0 = caKn[0] ?? null;
+  const nguoiPa = c0?.pas.find((p) => p.nguoi)?.nguoi ?? null;
   return (
-    <div className={`${KHOI} !gap-2 !px-4 !pb-1.5 max-sm:!px-3`} style={{ borderColor: 'var(--line)' }}>
-      <div className="flex flex-wrap items-center gap-2">
-        <h4 className={MUC_H}>{t('Case đang mở')}{e && <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded border px-1.5 text-xs font-bold tabular-nums text-slate-100" style={{ borderColor: 'var(--line-strong)' }}>{e.cases.length}</span>}</h4>
-        <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
-          <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(s.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
-          {coTheBaoCase && <button type="button" className={NUT} onClick={onThemCase}>+ Case</button>}
-        </span>
-      </div>
-      {chot.error ? (
-        <div role="alert" className="mb-2.5 flex flex-wrap items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm bg-bad-bg border-bad-line">
-          <span>{t('Chưa tải được chi tiết Case.')}</span>
-          <button type="button" className="btn btn-sm ml-auto" onClick={chot.reload}>{t('Thử lại')}</button>
+    <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <section className={KHOI} style={{ borderColor: 'var(--line)' }} aria-label={t('Điểm theo lượt')}>
+        <div className="flex items-center gap-3">
+          <h4 className={MUC_H}>{t('Điểm theo lượt')}</h4>
+          {/* GD-6 (lời 25 ý 3): TVV của em — chữ nhỏ mờ, chỉ ở đây. */}
+          {s.tvv && <span className="ml-auto text-xs font-medium text-faint">TVV {s.tvv}</span>}
         </div>
-      ) : !chot.data ? <div className="pb-3"><Skeleton rows={2} /></div>
-        : !hang.some((h) => h.kind !== 'rong' && h.cases.length) ? <p className="m-0 pb-2.5 text-sm text-dim">{t('Không có Case nào đang mở.')}</p>
-        : (
-          <div>
-            {!the && <NhanCotCase chiDoc={chiDoc} />}
-            {hang.flatMap((h) => (h.kind === 'rong' ? [] : h.cases.map((c) => (
-              <DongCase key={c.id} h={h} c={c} ct={ct} homNay={homNay} the={the} chiDoc={chiDoc}
-                onMo={(viec, paId) => onMo({ caseId: c.id, viec, paId })} />
-            ))))}
+        {coDiem.length ? (
+          <table className="w-full table-fixed text-sm">
+            <thead><tr className="text-xs font-medium text-faint">
+              <th className="w-[30%] pb-1.5 text-left font-medium">{t('Lượt')}</th>
+              {mon.map((k) => <th key={k} className="pb-1.5 text-center font-medium"><abbr className="no-underline" title={tenMon(ct, k)}>{tenMonNgan(ct, k)}</abbr></th>)}
+              {coPt && <th className="pb-1.5 text-center font-medium">%</th>}
+              <th className="pb-1.5 text-center font-medium max-sm:hidden">{t('Kỳ vọng')}</th>
+            </tr></thead>
+            <tbody>
+              {[...coDiem].reverse().map((m, i) => (
+                <tr key={m.kind} className="border-t" style={{ borderColor: 'var(--line)' }}>
+                  <td className="py-2">
+                    <span className={`block whitespace-nowrap text-slate-100 ${i === 0 ? 'font-bold' : 'font-normal'}`}>{m.nhan}</span>
+                    {m.tuan && <small className="block whitespace-nowrap text-xs font-medium text-faint">{tuanLich(m.tuan, homNay)}</small>}
+                  </td>
+                  {mon.map((k) => <td key={k} className="py-2 text-center"><ODiemThuong o={m.o[k] ?? null} gon={dienThoai} /></td>)}
+                  {coPt && <td className="py-2 text-center">{m.coPt ? <OPhanTram v={m.pt} /> : <span className="text-faint">–</span>}</td>}
+                  <td className="py-2 text-center text-[13px] tabular-nums text-dim max-sm:hidden">{Math.round(KY_VONG_THUONG * 100)} %</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        ) : <p className="m-0 text-sm text-dim">{t('Chưa có điểm.')}</p>}
+      </section>
+      <section className={KHOI} style={{ borderColor: 'var(--line)' }} aria-label={t('Môn')}>
+        <h4 className={MUC_H}>{t('Môn')}</h4>
+        <div className="grid gap-2 max-sm:gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, mon.length)}, minmax(0,1fr))` }}>
+          {mon.map((k) => {
+            const cs = caseMon(k);
+            const truoc = coDiem[coDiem.length - 2]?.o[k] ?? null;
+            const sau = moi?.o[k] ?? null;
+            const qua = cs.some((c) => c.quaHan);
+            return (
+              <button key={k} type="button" aria-pressed={kn === k} onClick={() => setChon(k)}
+                className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
+                <span className={`text-[13px] font-bold ${qua ? 'text-late' : 'text-slate-100'}`} title={tenMon(ct, k)}>{tenMonNgan(ct, k)}{qua && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
+                <span className="text-[15px] font-bold tabular-nums">{truoc?.score != null && sau?.score != null && <span className="max-sm:hidden">{truoc.score} → </span>}<ODiemThuong o={sau} /></span>
+                <span className={`text-xs max-sm:hidden ${qua ? 'font-semibold text-late' : 'text-dim'}`}>{!e ? (chot.data ? t('Không Case') : '…') : cs.length ? (cs.some((c) => c.pas.length > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
+              </button>
+            );
+          })}
+        </div>
+        {chot.error ? (
+          <div role="alert" className="flex flex-wrap items-center gap-2.5 rounded-lg border px-3.5 py-2.5 text-sm bg-bad-bg border-bad-line">
+            <span>{t('Chưa tải được chi tiết Case.')}</span>
+            <button type="button" className="btn btn-sm ml-auto" onClick={chot.reload}>{t('Thử lại')}</button>
+          </div>
+        ) : kn && (
+          <div className="grid gap-3 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h5 className="m-0 text-[15px] font-bold text-slate-100">{tenMon(ct, kn)}</h5>
+              {nguoiPa && <span className={TAG_PHU} style={{ borderColor: 'var(--line-strong)' }}>{t('phụ trách')} <b>{nguoiPa}</b></span>}
+              <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
+                <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(s.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
+                {c0 ? <button type="button" className={`${NUT} btn-primary`} onClick={() => onMo({ caseId: c0.id })}>{t('Xem chi tiết')}</button>
+                  : coTheBaoCase && <button type="button" className={NUT} onClick={onThemCase}>+ Case</button>}
+              </span>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1fr)] max-sm:gap-2.5">
+              <div className="grid content-start gap-1">
+                <span className={NH}>{t('Điểm')}</span>
+                <div className="flex flex-wrap items-center gap-1">
+                  {coDiem.filter((m) => m.o[kn]).map((m, i, a) => (
+                    <Fragment key={m.kind}>
+                      {i > 0 && <span aria-hidden className="text-[13px] text-faint">→</span>}
+                      <span className={`grid min-w-[52px] justify-items-center gap-px rounded-lg border px-2 py-1 ${i === a.length - 1 ? 'bg-[color:var(--surface-2)] [border-color:var(--line-strong)]' : '[border-color:var(--line)]'}`}>
+                        <span className="whitespace-nowrap text-xs font-medium text-faint">{m.nhan.replace(/ Test$/, '')}</span>
+                        <b className="text-sm font-bold"><ODiemThuong o={m.o[kn]} /></b>
+                      </span>
+                    </Fragment>
+                  ))}
+                </div>
+                <span className="text-[13px] text-dim">{t('đạt từ {x} %', { x: Math.round(KY_VONG_THUONG * 100) })}</span>
+              </div>
+              <div className="grid content-start gap-1">
+                <span className={NH}>{t('Case · PA')}</span>
+                {!e && !chot.data ? <Skeleton rows={1} /> : !c0 ? <span className="text-[15px] font-semibold text-dim">{t('Không có Case')}</span> : caKn.slice(0, 2).map((c) => (
+                  <Fragment key={c.id}>
+                    <span className="text-[15px] font-semibold text-slate-100">{dich(c.tieuDe)}</span>
+                    <span className="text-[13px] text-dim">{dich(c.trangThai.chu)}</span>
+                    {c.pas.filter((p) => !p.xong).map((p) => (
+                      <span key={p.id} className="grid gap-px">
+                        <span className="mt-1 text-[15px] font-semibold text-slate-100">{p.ten.split(' · ')[0]}</span>
+                        {p.mocChu && <span className="text-[13px] text-dim">{dich(p.mocChu)}</span>}
+                      </span>
+                    ))}
+                    {!c.pas.some((p) => !p.xong) && <span className="mt-1 text-[13px] text-dim">{t('Chưa có PA')}</span>}
+                  </Fragment>
+                ))}
+              </div>
+              <div className="grid content-start gap-1">
+                <span className={NH}>{t('Việc tiếp')}</span>
+                {!e && !chot.data ? <Skeleton rows={1} /> : caKn.some((c) => c.viecTiep)
+                  ? caKn.filter((c) => c.viecTiep).map((c) => <ViecTiepCase key={c.id} c={c} ct={ct} homNay={homNay} onMo={onMo} />)
+                  : <span className="text-faint">–</span>}
+              </div>
+            </div>
           </div>
         )}
+      </section>
     </div>
+  );
+}
+
+const TAG_PHU = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim [&_b]:font-bold [&_b]:text-slate-100';
+
+/** Việc tiếp của một Case (cùng nút + cùng panel với `DongCase` — Xác nhận Case / Xác nhận PA / Ghi kết quả PA / Chờ QL duyệt) + hạn. */
+function ViecTiepCase({ c, ct, homNay, onMo }: { c: CaseCua; ct: string | null; homNay: string; onMo: (n: Omit<MoNgan, 'em'>) => void }) {
+  const { viec, d, loai, choQl } = viecCase(c, ct, homNay);
+  if (!viec) return null;
+  return (
+    <span className="grid justify-items-start gap-0.5">
+      <button type="button" onClick={() => onMo({ caseId: c.id, viec: loai, paId: d?.paId ?? undefined })} title={viec.title}
+        className={choQl ? 'cursor-pointer border-0 bg-transparent p-0 text-left text-[13px] font-medium text-dim hover:text-slate-100 max-sm:min-h-[44px]' : 'btn h-[30px] whitespace-nowrap px-2.5 text-[13px] max-sm:h-11'}>
+        {choQl ? t('Chờ Quản lý duyệt') : viec.viec.split(' · ')[0]}
+      </button>
+      {viec.quaHanNgay != null && viec.quaHanNgay > 0 ? <QuaHan ngay={viec.quaHanNgay} /> : viec.han && <span className="text-xs font-medium tabular-nums text-faint">{viec.han}</span>}
+    </span>
   );
 }
 

@@ -334,7 +334,9 @@ export function khoaLopThuong(i: {
 // ---------------------------------------------------------------- badge hộp lớp / đầu hồ sơ lớp (Q5, Q7)
 
 export type BadgeLop = {
-  key: 'xep-lop' | 'thieu-gv' | 'cham' | 'chang' | 'thieu-tt' | 'cho-duyet' | 'qua-han'; nhan: string;
+  key: 'xep-lop' | 'thieu-gv' | 'cham' | 'chang' | 'thieu-tt' | 'cho-duyet' | 'qua-han';
+  /** GD-6 (lời 35, mockup ② `.b-lop`): chip "loại · số" — `nhan` = "Chờ chấm · 21"; `so` để nơi vẽ đổi tên loại theo ngữ cảnh ("Quá hạn của lớp · 15"). */
+  nhan: string; so?: number;
   tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted';
   /** Câu đầy đủ cho tooltip (PR-UX0, B-1: badge là danh từ + số, câu dài nằm ở đây). */
   title?: string;
@@ -367,16 +369,16 @@ export function badgeLop(c: {
   if (nXep > 0) {
     co['xep-lop'] = {
       /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp. PR-LCb: Quản lý quyết ở panel "Lộ trình tiếp theo". */
-      key: 'xep-lop', nhan: c.needsPlacement ? t('{n} HV cần xếp lớp tiếp', { n: nXep }) : t('{n} HV chưa chốt lộ trình', { n: nXep }), tone: 'warn',
+      key: 'xep-lop', nhan: c.needsPlacement ? t('Cần xếp lớp tiếp · {n}', { n: nXep }) : t('Chưa chốt lộ trình · {n}', { n: nXep }), so: nXep, tone: 'warn',
       title: c.needsPlacement ? t('Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp') : t('Quản lý quyết định ở Lộ trình tiếp theo'),
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
-  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: t('{n} bài chờ chấm', { n: c.soBaiChoCham }), tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
+  if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: t('Chờ chấm · {n}', { n: c.soBaiChoCham }), so: c.soBaiChoCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
-  if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu {n} thông tin', { n: c.missingCount }), tone: 'warn' };
-  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('{n} chờ duyệt', { n: c.soChoDuyet }), tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
-  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('{n} việc quá hạn', { n: c.soViecQuaHan }), tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
+  if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu thông tin · {n}', { n: c.missingCount }), so: c.missingCount, tone: 'warn' };
+  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('Chờ duyệt · {n}', { n: c.soChoDuyet }), so: c.soChoDuyet, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
+  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('Quá hạn · {n}', { n: c.soViecQuaHan }), so: c.soViecQuaHan, tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
