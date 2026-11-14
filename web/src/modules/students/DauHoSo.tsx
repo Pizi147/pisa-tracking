@@ -1,10 +1,10 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { bacNgan, chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, nhanHan, ngay, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, bacNgan, chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, ngay, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { IconNhom, ThePhu, thePhu } from '../congViec/DanhSachViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { LoiTaiNho, TargetText } from '../../ui/ui.tsx';
-import { NhanLich } from '../../ui/Nhan.tsx';
+import { ChipHan, NhanLich } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -104,16 +104,10 @@ export function DongLienHe({ l, email, dob, tvv }: { l: LienHe | null | undefine
   );
 }
 
-/** Viên hạn (V22, ⑤ B1 `.han-v`) theo `gap` máy chủ (`viecHocVien.ts`, một hàm cho mọi dòng): đỏ quá hạn · vàng gần tới · xám chưa tới — chỉ màu, không biểu tượng. */
-const MAU_GAP: Record<NonNullable<Viec['gap']>, string> = {
-  'qua-han': 'bg-late-bg text-late font-semibold',
-  gan: 'bg-soon-bg text-soon font-semibold shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]',
-  chua: 'bg-[rgb(var(--muted-bg-rgb))] text-dim font-medium',
-};
-function HanGap({ x, homNay }: { x: Viec; homNay: string | null }) {
-  if (!x.han || !x.gap) return x.han ? null : <span className="sr-only">{t('không hạn')}</span>;
-  const chu = x.gap === 'qua-han' ? (x.quaHanNgay ? t('quá hạn {n} ngày', { n: x.quaHanNgay }) : t('quá hạn')) : nhanHan(x.han, homNay ?? '');
-  return <span className={`inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full px-[9px] text-xs tabular-nums ${MAU_GAP[x.gap]}`}>{chu}</span>;
+/** Viên hạn (V22, ⑤ B1 `.han-v`): CÙNG `ChipHan vien` với dòng Công việc — đỏ quá hạn · vàng gần tới · xám chưa tới, chỉ màu. Không hạn → trống (trình đọc màn nghe). */
+function HanGap({ x }: { x: Viec }) {
+  if (!x.han) return <span className="sr-only">{t('không hạn')}</span>;
+  return <ChipHan vien loai={LOAI_HAN_CUA_VIEC[NHOM_PANEL[x.loai] ?? ''] ?? 'viec-van-hanh'} han={x.han} />;
 }
 
 /* ③ K1 `.vl-luoi .viec.dt-lop`: [ô vuông 28 | tên + thẻ phụ | hạn 150 | nút 118] từ 640 px; 375 [ô | tên + thẻ phụ, hạn dưới | ›] — chạm cả dòng. */
@@ -125,8 +119,8 @@ const DONG_VIEC = 'grid min-h-[56px] grid-cols-[28px_minmax(0,1fr)_auto] items-c
  * (kỹ năng → kỳ / tuần → số) · viên hạn · nút động từ; lớp + tên em đã ở đầu hồ sơ nên không lặp ([XM-1]). ≥ 1024 hai cột dòng; 375 một cột.
  * Bấm dòng = panel việc tại chỗ (nơi gọi — `onLam`). Người xem không có việc → không vẽ (T72).
  */
-export function ThanhViec({ viec, homNay, onLam, dangMo }: {
-  viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null; onLam: (x: Viec) => void;
+export function ThanhViec({ viec, onLam, dangMo }: {
+  viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; onLam: (x: Viec) => void;
   /** Khoá việc đang mở trong panel — dòng tô nhấn. */
   dangMo?: string | null;
 }) {
@@ -141,12 +135,12 @@ export function ThanhViec({ viec, homNay, onLam, dangMo }: {
         <span className="text-[color:var(--text)]">{t('Việc cần làm')}</span>
         <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{ds.length}<span className="max-sm:sr-only">&nbsp;{t('việc')}</span></span>
-        {quaHan > 0 && <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{t('{n} quá hạn', { n: quaHan })}</span>}
+        {quaHan > 0 && <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>}
       </h2>
       <ul className="m-0 grid list-none p-0 lg:grid-cols-2">
         {ds.map((x, i) => (
           <li key={x.key} className={`min-w-0 ${i > 0 ? 'border-t' : ''} ${i === 1 ? 'lg:border-t-0' : ''} ${i % 2 === 1 ? 'lg:border-l' : ''}`} style={{ borderColor: 'var(--line)' }}>
-            <DongViecHs x={x} homNay={homNay} onLam={onLam} dangMo={dangMo === x.key} />
+            <DongViecHs x={x} onLam={onLam} dangMo={dangMo === x.key} />
           </li>
         ))}
       </ul>
@@ -155,7 +149,7 @@ export function ThanhViec({ viec, homNay, onLam, dangMo }: {
 }
 
 /** Một dòng việc: cả dòng bấm được (nút động từ bên phải cùng việc); việc không mở được tại hồ sơ → dòng chữ, không nút. */
-function DongViecHs({ x, homNay, onLam, dangMo }: { x: Viec; homNay: string | null; onLam: (x: Viec) => void; dangMo: boolean }) {
+function DongViecHs({ x, onLam, dangMo }: { x: Viec; onLam: (x: Viec) => void; dangMo: boolean }) {
   const chu = chuViec(x);
   const nut = nutViec(x).replace(/ ›$/, '');
   /* Tên việc thường bắt đầu bằng nhãn nút ("Ghi kết quả PA · Reading") → tên = nhãn, phần sau thành thẻ phụ; không thì đoạn đầu của chữ. */
@@ -173,9 +167,9 @@ function DongViecHs({ x, homNay, onLam, dangMo }: { x: Viec; homNay: string | nu
               className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</button>
           : <span className="text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</span>}
         <ThePhu ds={the} />
-        <span className="mt-0.5 sm:hidden"><HanGap x={x} homNay={homNay} /></span>
+        <span className="mt-0.5 sm:hidden"><HanGap x={x} /></span>
       </span>
-      <span className="max-sm:hidden"><HanGap x={x} homNay={homNay} /></span>
+      <span className="max-sm:hidden"><HanGap x={x} /></span>
       {bam ? <>
         <span className="flex max-sm:hidden"><button type="button" tabIndex={-1} aria-hidden className="btn btn-sm h-[30px] min-h-[30px] w-full justify-center whitespace-nowrap px-2.5 text-[13px] font-semibold"
           onClick={(e) => { e.stopPropagation(); bam(); }}>{nut}</button></span>

@@ -246,7 +246,7 @@ export default function StudentDetailPage() {
   const nutTask = (noi: 'dau' | 'noi') => mucTask.length > 0 && (
     <NutTask noi={noi} em={{ id: emHs.id, ten: emHs.ten, lopId: emHs.lopId ?? 0, lop: emHs.lop ?? '', tvv: data.tvv?.ten ?? data.consultantName ?? null }}
       muc={mucTask} hoi={!yThuc.data?.coTheBao && yThuc.data?.coTheHoi ? { gvcn: yThuc.data?.gvcn ?? null } : undefined}
-      cycleId={cy?.id ?? null} phu={!!data.lopHoc?.chiXem}
+      cycleId={cy?.id ?? null} phu={!!data.lopHoc?.chiXem} dauHoSo
       onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }}
       onXong={(cid) => { daLamViec(); if (cid) setOpenCase({ caseId: cid }); }} />
   );
@@ -358,7 +358,7 @@ export default function StudentDetailPage() {
         thi={homNay && !cy.ratio ? thiThatCua(cy as LoTrinhD, homNay) : null} />}
 
       {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
-      <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={(x) => lamViec(x)} dangMo={viecMo?.it.key ?? null} />
+      <ThanhViec viec={data.dauHoSo.viec} onLam={(x) => lamViec(x)} dangMo={viecMo?.it.key ?? null} />
       {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
       {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} onThemPa={(caseId) => setOpenCase({ caseId, viec: 'them-pa' })} />}
 

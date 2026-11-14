@@ -85,6 +85,9 @@ export async function runPrViecCuaToiTests(t: any) {
         assert(nd.length === theoEm.get(sid)!.size && nd.every((x) => theoEm.get(sid)!.has(x.key)), `viecCuaHocVien nhap-diem: ${nd.map((x) => x.key)}`);
         for (const x of nd) {
           assert(x.mo?.loai === 'nhap-diem' && x.nut === 'Nhập điểm' && x.cuaBan && x.nguoi.id === u, `dòng Nhập điểm thiếu trường: ${JSON.stringify(x)}`);
+          /* GD-7: panel việc ở hồ sơ mở CÙNG lưới tuần như Công việc — `periodId` / `kind` trùng dòng score cùng khoá. */
+          const cv = dongs.find((it) => it.key === x.key);
+          assert(x.mo.periodId === (cv?.periodId ?? null) && x.mo.kind === (cv?.kind ?? null), `GD-7 periodId / kind lệch Công việc: ${JSON.stringify(x.mo)} ≠ ${cv?.periodId} / ${cv?.kind}`);
           assert((x.han === null) === (x.gap === null) && (x.gap === null || ['qua-han', 'gan', 'chua'].includes(x.gap)) && !JSON.stringify(x).includes('⚠'), `gap / ⚠: ${JSON.stringify(x)}`);
         }
         daThuHoSo = true;
@@ -109,7 +112,7 @@ export async function runPrViecCuaToiTests(t: any) {
       return v.cuaBan.find((x: any) => x.key === khoa) ?? null;
     };
     const x = trongHs(r.gvcn);
-    assert(trongCv(r.gvcn) && x && x.loai === 'tinh-hinh' && (x.mo as any)?.viecId === id && x.nut === 'Trả lời' && x.cuaBan && x.han === d.addDaysIso(homNay, 2) && x.gap === 'gan' && !JSON.stringify(x).includes('⚠'),
+    assert(trongCv(r.gvcn) && x && x.loai === 'tinh-hinh' && (x.mo as any)?.viecId === id && (x.mo as any)?.cauHoi === 'Em vắng nhiều buổi gần đây?' && x.nut === 'Trả lời' && x.cuaBan && x.han === d.addDaysIso(homNay, 2) && x.gap === 'gan' && !JSON.stringify(x).includes('⚠'),
       `GVCN: Công việc ${trongCv(r.gvcn)} · hồ sơ ${JSON.stringify(x)}`);
     const khac = get(`SELECT DISTINCT ta.user_id AS u FROM teacher_assignments ta WHERE ta.user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) AND ta.status = 'active' LIMIT 1`, r.lop).u;
     assert(!trongCv(khac) && !trongHs(khac), `người không giữ vẫn thấy: Công việc ${trongCv(khac)} · hồ sơ ${!!trongHs(khac)}`);
