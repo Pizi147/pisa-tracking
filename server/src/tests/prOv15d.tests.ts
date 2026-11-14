@@ -28,9 +28,9 @@ export async function runPrOv15dTests(t: YThucTestKit) {
   const gv = [P.w1Teacher, P.w2Teacher, P.lrTeacher, P.coreTeacher, P.subjectTeacher, P.sTeacher].find(coQuaHan);
 
   /* NEN-V5 (08 K10): thay OV-15d-5 — GV có Tổng quan (trang đầu), vẫn có Công việc. */
-  check('OV15d-5 · NEN-V5 K10: nav.overview true cho GV (vẫn có Công việc), QL / Admin', () => {
+  check('OV15d-5 → GD-1 (Overhaul V6) · GV: Công việc là trang đầu, không Tổng quan; QL / Admin giữ Tổng quan', () => {
     const g = nav.navOf(P.w1Teacher);
-    assert(g.work && g.overview, 'GV: có Công việc và Tổng quan');
+    assert(g.work && !g.overview, 'GV: có Công việc, không Tổng quan');
     assert(nav.navOf(P.mbManager).overview, 'QL giữ Tổng quan');
     assert(nav.navOf(P.admin).overview, 'Admin giữ Tổng quan');
   });

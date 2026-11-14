@@ -139,6 +139,8 @@ export type WorkItem = {
   knsQuaHan?: string[];
   /** OV-5a: số bài của dòng Nhập điểm (một kỹ năng của một em) — dòng phạm vi "m bài cần chấm". */
   soBai?: number;
+  /** GD-1: việc chung Chấm Speaking — số bài quá hạn của nhóm (đầu tab). */
+  baiQuaHan?: number;
   /** OV-11c (CV-1): id các em của việc cả lớp (`studentId` null) — dòng phạm vi đếm em KHÁC NHAU, không cộng dồn `count`. */
   emIds?: number[];
   /** OV-13c (Q4): thứ Hai tuần thi của lượt (Case SOS FT · Nhập điểm) · mức SOS 1/2/3 của Case — khoá dòng gộp (`gopViec.ts`). */
@@ -825,7 +827,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         /* Dòng phụ: số lớp (tiêu đề đã có số bài). */
         attemptId: null, attemptNo: null, contextLabel: `${new Set(ccDongs.map((x) => x.classId)).size} lớp`, phu: null, luot: undefined, periodId: null, tuanThi: null,
         /* G1-04: ô "n HV" đọc `count` — số em khác nhau (một em có thể nhiều bài S). */
-        tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: new Set(ccDongs.map((x) => x.studentId)).size, soBai, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
+        tieuDe: `${VIEC_CHAM_CHEO} · ${soBai} bài`, reason: `${soBai} bài`, count: new Set(ccDongs.map((x) => x.studentId)).size, soBai,
+        /* GD-1 (mockup v21 K3): đầu tab "Việc chung của nhóm GV Speaking · n bài · ⚠ m quá hạn" — số bài quá hạn đã có (`hanQua`), 0 câu thêm. */
+        baiQuaHan: hanQua.length, href: `/cong-viec?viec=${encodeURIComponent(KHOA_CHAM_SPEAKING)}`,
       });
     }
   }

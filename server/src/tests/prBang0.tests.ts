@@ -53,7 +53,6 @@ const MIEN_TABLE: string[] = [
   'web/src/modules/tutor/PanelTutor.tsx',
   'web/src/modules/tutor/TaiDanhSach.tsx',
   'web/src/modules/tutor/TutorPage.tsx',
-  'web/src/modules/worklist/LopToiDay.tsx',
   'web/src/modules/worklist/MeetingPage.tsx',
   'web/src/modules/worklist/MgmtTasksPage.tsx',
 ];
@@ -78,7 +77,6 @@ const MIEN_CAN: string[] = [
   'web/src/modules/test/lichTest/HangLop.tsx',
   'web/src/modules/test/lichTest/KhoiNo.tsx',
   'web/src/modules/tutor/TutorPage.tsx',
-  'web/src/modules/worklist/LopToiDay.tsx',
 ];
 /** BANG-2: tệp còn ô nhập / nút trong `<th>` (trừ `ui/ui.tsx` — nút sắp xếp của `Th`). Chỉ được GIẢM. */
 const MIEN_TH_DIEU_KHIEN: string[] = [

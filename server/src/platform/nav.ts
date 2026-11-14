@@ -31,9 +31,11 @@ export function navOf(p: Principal): NavQuyen {
   const tutor = coPhamVi(PERMISSIONS.TUTOR_VIEW);
   /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1, C05): TVV có Công việc — CHỈ việc của chính mình (`/my-work` lọc `NHOM_VIEC_TVV`), không Chấm điểm / Case / duyệt. */
   const viecTvv = !viec && p.roleKeys.includes('consultant');
+  const work = (viec && (attempt || board || meeting)) || viecTvv;
   return {
-    /* NEN-V5 (08 K10, 01 mục 2): mọi vai có Tổng quan (GV: trang đầu = Tổng quan, dữ liệu chỉ phạm vi của mình). AN-TUTOR: Head tutor cũng vậy. */
-    overview: true,
+    /* NEN-V5: mọi vai có Tổng quan. GD-1 (Overhaul V6, `04-thiet-ke.md` 5.1): GV (Công việc, không Phân tích, không TVV — cùng điều kiện vai 'gv'
+       của `OverviewPage`) không còn Tổng quan: trang đầu = Công việc, số liệu sang Hồ sơ GV. */
+    overview: !(work && !analysis && !hvCuaToi),
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,
@@ -43,7 +45,7 @@ export function navOf(p: Principal): NavQuyen {
     test, testGrade: test, testSchedule: test, testPlan: test && plan,
     /* Chủ SP 28/10: GV xem Kế hoạch Test lớp mình dạy (chỉ xem). */
     testPlanXem: test && (plan || p.assignments.some((a) => activeAt(a, demoToday())) || lopFtChoGvSpeaking(p).length > 0),
-    work: (viec && (attempt || board || meeting)) || viecTvv,
+    work,
     workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
     workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,

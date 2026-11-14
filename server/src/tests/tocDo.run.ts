@@ -1250,6 +1250,8 @@ await checkAsync('TD6 (×3) · câu đã sửa không SCAN bảng lớn; migrate
  * 15/10 OV-13c: chụp lại 7 băm — đổi CÓ CHỦ Ý: Nhập điểm gom theo tuần thi (khoá `|p{tuần}|`, dòng phụ có mã tuần), việc Case SOS FT + Nhập điểm
  * thêm `tuanThi` / `sos` / `pa` / `periodId` / `kind`. Đã so JSON mã trước (main 0359276) ↔ sau trên bộ demo, 5 vai × Của tôi / Tất cả: việc khác
  * TRÙNG hoàn toàn (trừ trường mới), tổng số bài Nhập điểm không đổi.
+ * 15/11 GD-1 gộp main (LG-3 #1567, GD-2 #1565): chụp lại 'GVS toi' (trước bf6d53088022e822) — lệch CHỈ do `baiQuaHan` của việc Chấm Speaking (GD-1) cộng trên JSON mới của main.
+ * 14/11 GD-1 (Overhaul V6): chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ thêm `baiQuaHan` (số bài quá hạn) vào việc Chấm Speaking — đầu tab "Việc chung của nhóm GV Speaking".
  * 12/11 rà 11/11 #2 (G1-04): chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ `count` của việc Chấm Speaking (số bài → số em khác nhau, ô "n HV").
  * 18/10 OV-14c: chụp lại 'GVS toi' — đổi CÓ CHỦ Ý chỉ ở việc chấm chéo: các dòng "Speaking chấm chéo · {tuần}" gộp theo tuần thay bằng MỘT việc (dòng phụ "n lớp")
  *   "Chấm Speaking · n bài" (khoá `KHOA_CHAM_SPEAKING`), cộng bài thi tuần này (từ thứ Hai tuần thi); 10 băm khác trùng.
@@ -1390,7 +1392,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        Trước (main sau L6 / 2.3 #1556 · #1564): GVCN toi a79c2967be82df5e, GVBM toi 77e235e4611522bc, GVCN_THUONG toi a79c2967be82df5e, QL tat-ca 29da5f0c277723a2, QT tat-ca 9dfb712f3d614d40, QT tat-ca cn 0252208bd2d3fcdc, QL gvcn 217ad0083cb42779, GVS toi dcacfa50220ee88d */
     'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '2be2a58247c4c4e9', 'GVBM toi': '8c05c3e43fd827f4',
     'GVCN_THUONG toi': '2be2a58247c4c4e9', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '57e114e2c2891f6a', 'QT tat-ca': '4e54cccf94bb64fc',
-    'QT tat-ca cn': 'b6d206fc33ba09f7', 'QL gvcn': '464100c07359814a', 'GVS toi': 'bf6d53088022e822',
+    'QT tat-ca cn': 'b6d206fc33ba09f7', 'QL gvcn': '464100c07359814a', 'GVS toi': 'c0f71c10ba0f7d2d',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
