@@ -5,6 +5,24 @@ Mockup: `thiet-ke/v21/ho-so-hv.html` (+ `v21.css` chỉ đọc, + `ho-so-hv.css`
 Nền đã xem: web thật (`main` 45a1a3a79, seed demo, GV Trần Ngọc Hà, hồ sơ Lý Minh Châu — 3 tab, ⋯ của GVCN, form Ghi kết quả) · `v18/ho-so-hv.html` · `v16/case-pa.html` · `v19/y-thuc.html` · `v20/tinh-hinh.html` · mockup ① `trang-dau-gv.html`.
 Dữ liệu bịa, hôm nay thứ Hai 14/09/2026 · W3 SEP (cùng ①). Mã luật (cột "Phục vụ") theo `luat/0-luat-core-mot-trang.md`.
 
+## 0. Chủ SP DUYỆT 14/11 kèm 3 chỉnh (lời 25 — nói thẳng trong session mockup ③)
+
+> "1. 'Không cần theo dõi' cũng thành nút hẳn nhé, mờ hơn chẳng hạn nhưng đừng để mỗi một dòng chữ như vậy
+> 2. 'Xác nhận xử lý' cũng nên là một nút hẳn, không để là chữ
+> 3. Cấp bậc xử lý vi phạm có progress bar khá ok nhưng cần làm nổi bật hơn phần WL1 và WL2 nhé
+> 4. Còn lại duyệt, những panels, nút các thứ cần đồng bộ với những chỗ cần động bộ khi code nhé"
+
+Đã sửa vào mockup:
+1. "Không cần theo dõi…" (Kết luận của Case) → **nút** `.nut-mo`: viền, nền trong, chữ mờ hơn nút thường (K1).
+2. "Xác nhận xử lý" (cột Bước đang làm, tab Ý thức) → **nút** cùng cỡ "Đã xem · 2" (K4a, K8c).
+3. Thang xử lý → đủ 7 mốc Report 1 · Report 2 · **WL 1** · Report 4 + Meeting · Report 5 · **WL 2** · Report 7; WL 1, WL 2 là **nhãn đỏ** ngay trong thanh (đã tới thì nền đỏ đặc); rê từng vạch hiện tên mốc (K1 tab Ý thức, K4a, K8c).
+
+**Cho session code (ý 4 — đồng bộ):** ba chỉnh trên áp ở MỌI chỗ có cùng thành phần, không chỉ hồ sơ HV:
+- "Không cần theo dõi…" → nút mờ ở mọi nơi có Kết luận Case (panel Case ở Công việc, hồ sơ HV, hồ sơ lớp mở Case dưới hàng).
+- "Xác nhận xử lý" (và các lối làm việc khác còn là chữ trong cột Bước đang làm) → nút, ở tab Ý thức hồ sơ lớp, hồ sơ HV, panel Công việc.
+- Thang có WL nổi bật ở mọi chỗ vẽ thang: thanh đầu khối hồ sơ HV, ô "Đã tới …" mỗi em ở tab lớp, popover "Thang", panel Xác nhận xử lý.
+- Panel việc, dòng việc, dòng quy chế, "+ Task": dùng chung một thành phần với Công việc / hồ sơ lớp / bảng mẫu ⑤ — không dựng riêng cho hồ sơ HV.
+
 ## 1. Bảng truy vết khung → thành phần → luật / việc → TRƯỚC → SAU
 
 | Khung | Thành phần | Phục vụ | Trước (web / mockup đã duyệt) | Sau (v21) | Loại |
