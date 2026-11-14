@@ -253,7 +253,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
   }
   return (
     <KhungPanel hd="nhap-diem" tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong} quyChe={data ? quyCheNhapDiem({
-        /* GD-4b Q1/Q2/Q5/Q6/Q7/Q9/Q58: MT0 lớp thường (`thuong:mt0`) theo luật "-" lớp thường; dữ liệu đã nạp, không request thêm. */
+        /* GD-4b Q1/Q2/Q5/Q6/Q7/Q9/Q58: MT0 (kể cả lớp thường `thuong:mt0`) theo luật vắng Mock (chủ SP 14/11, #1619); dữ liệu đã nạp, không request thêm. */
         thuong: data.mode === 'ratio' || data.luot.ma === 'thuong:mt0', mt0: data.luot.ma === 'thuong:mt0' || data.luot.ma === 'mt:0',
         tuanThi: data.luot.tuanStart, homNay, han: it.due ?? data.luot.quaHan ?? null, nguongDat: data.thuong?.passThreshold ?? null, mtCu: data.luot.lichSu,
       }) : null}

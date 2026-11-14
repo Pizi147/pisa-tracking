@@ -13,17 +13,19 @@ import { laMtCuKyNang } from './vang.ts';
 const CHI_TIET_MT_CU = (): string => t('Tuần Test đã qua 2 tuần: "-" ghi Không dự thi — không dời, không tính lần vắng.');
 
 /**
- * NHẬP ĐIỂM (Q1, Q2, Q5, Q6, Q7, Q9, Q58). Theo mã đang chạy (`server/src/fasttrack/absence.ts` `xuLyVangMotKyNang`, `normal/regular.ts`):
- * Mock / MT0 lớp FT: lần 1 dời · lần 2 huỷ; MT0 lớp thường + Progress / Final: chỉ dời, không huỷ; tuần Test qua ≥ 2 tuần = Không dự thi (`laMtCuKyNang`).
- * Q9 bảng cũ ("chỉ ghi dấu") thay bằng luật mới (overhaul V6 04 mục 15, lời 32–33). Thứ tự: MT cũ › tuần đã qua 2 tuần › chưa tới tuần › quá hạn › mặc định.
+ * NHẬP ĐIỂM (Q1, Q2, Q5, Q6, Q7, Q9, Q58). Chủ SP 14/11 (plan.md, #1619): "đã có chữ MT thì tức là Mock test, tính như luật MT bình thường" —
+ * Mock + MT0 (KỂ CẢ lớp thường): "-" lần 1 dời sang tuần sau · lần 2 huỷ; Progress / Final lớp thường: dời, không tự huỷ · cần thì ⋯ › Huỷ môn (#1601);
+ * tuần Test qua ≥ 2 tuần = Không dự thi (`laMtCuKyNang`). Thứ tự: MT cũ › tuần đã qua 2 tuần › chưa tới tuần › quá hạn › mặc định.
  */
 export function quyCheNhapDiem(o: {
-  /** Lớp thường (Progress / Final / MT0 lớp thường) — "-" chỉ dời. */ thuong: boolean;
+  /** Lớp thường. */ thuong: boolean;
   mt0?: boolean; tuanThi?: string | null; homNay?: string | null; han?: string | null;
   /** Q7: ngưỡng Đạt (%) của lớp thường, nếu bảng đã trả. */ nguongDat?: number | null;
   /** Q58: lượt MT cũ (nhập lịch sử). */ mtCu?: boolean;
 }): QuyChe {
   const h = o.homNay ?? null;
+  /* Luật vắng Mock áp cho Mock FT và MỌI MT0; chỉ Progress / Final lớp thường là "dời, không tự huỷ". */
+  const theoMock = !o.thuong || !!o.mt0;
   if (o.mtCu) return { chu: t('MT cũ: không hạn · MT trong 4 tuần gần đây vẫn sinh Case') };
   if (o.tuanThi && h && laMtCuKyNang(o.tuanThi, h)) return { chu: t('"-" lúc này = Không dự thi, không dời'), chiTiet: CHI_TIET_MT_CU() };
   if (o.tuanThi && h && mondayOfDate(h) < mondayOfDate(o.tuanThi)) {
@@ -32,18 +34,17 @@ export function quyCheNhapDiem(o: {
   const quaHan = !!o.han && !!h && o.han < h;
   if (quaHan) {
     return {
-      chu: o.thuong ? t('Quá hạn từ {ngay}, vẫn nhập được · "-" = vắng, dời sang tuần sau', { ngay: shortDate(o.han, h!) })
-        : t('Quá hạn từ {ngay}, vẫn nhập được · "-" = vắng, lần 2 huỷ', { ngay: shortDate(o.han, h!) }),
+      chu: theoMock ? t('Quá hạn từ {ngay}, vẫn nhập được · "-" = vắng, lần 2 huỷ', { ngay: shortDate(o.han, h!) })
+        : t('Quá hạn từ {ngay}, vẫn nhập được · "-" = vắng, dời sang tuần sau', { ngay: shortDate(o.han, h!) }),
       chiTiet: CHI_TIET_MT_CU(),
     };
   }
-  const chu = o.mt0
-    ? (o.thuong ? t('MT0: "-" = vắng, dời sang tuần sau, không huỷ') : t('MT0: "-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ'))
-    : !o.thuong ? t('"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ')
-      : o.nguongDat != null ? t('Đạt từ {n} % · "-" = vắng: dời sang tuần sau, không huỷ', { n: o.nguongDat })
-        : t('"-" = vắng: dời sang tuần sau, không huỷ');
-  /* `mt:0` ở lớp FT có thể là MT0 em mang từ lớp thường (máy chủ xét lớp của bài) — nói rõ ở ⓘ thay vì đoán. */
-  const chiTiet = o.mt0 && !o.thuong ? `${t('MT0 của lớp thường: chỉ dời, không huỷ.')} ${CHI_TIET_MT_CU()}` : CHI_TIET_MT_CU();
+  const chu = o.mt0 ? t('MT0: "-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ')
+    : theoMock ? t('"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ')
+      : o.nguongDat != null ? t('Đạt từ {n} % · "-" = vắng: dời sang tuần sau, không tự huỷ', { n: o.nguongDat })
+        : t('"-" = vắng: dời sang tuần sau, không tự huỷ');
+  /* Progress / Final lớp thường: huỷ môn bằng tay ở ⋯ (#1601) — nói ở ⓘ. */
+  const chiTiet = theoMock ? CHI_TIET_MT_CU() : `${t('Cần thì ⋯ › Huỷ môn.')} ${CHI_TIET_MT_CU()}`;
   return { chu, chiTiet };
 }
 
