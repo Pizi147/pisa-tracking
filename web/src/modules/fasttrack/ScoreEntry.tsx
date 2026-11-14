@@ -658,6 +658,9 @@ export function ODiemThuong({
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''} ${coDiem && !dirty ? `font-bold ${cell.ketQua === 'fail' ? 'text-kq-duoi' : cell.ketQua === 'pass' ? 'text-kq-bang' : ''}` : ''}`}
         aria-invalid={canhBao?.o === 'diem' ? true : undefined} aria-describedby={canhBao?.o === 'diem' ? idLoi : undefined}
         inputMode="numeric" value={diem} disabled={busy} title={titleDiem}
+        /* NHAP-DIEM-b: ô đã có điểm — vào ô là chọn cả số, gõ là thay (như hộp sửa cũ); bấm chuột không bỏ chọn. */
+        onFocus={coDiem ? (e) => e.currentTarget.select() : undefined}
+        onMouseUp={coDiem && !dirty ? (e) => e.preventDefault() : undefined}
         aria-label={t('{tenMon} — số câu đúng. Gõ "-" nếu em không làm bài', { tenMon })}
         onChange={(e) => {
           const v = e.target.value.trim();
