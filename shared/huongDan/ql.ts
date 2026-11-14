@@ -353,7 +353,7 @@ export const HD_QL: HuongDan = {
       dangO: { cau: 'Tìm em, lớp; thêm lớp, học viên; xem nhanh một em không rời trang.', sau: { chu: 'Công việc', duong: CV } },
       khongLam: [DEN_KH, KHONG_QT],
       muc: [
-        mucGv('hoc-vien', 'hv-tim'), mucGv('hoc-vien', 'hv-goc'), mucGv('hoc-vien', 'hv-lich-thi'),
+        mucGv('hoc-vien', 'hv-tim'), mucGv('hoc-vien', 'hv-goc'), mucGv('hoc-vien', 'hv-ba-cham'), mucGv('hoc-vien', 'hv-lich-thi'),
         { id: 'hvl-xem-case', viec: 'xem-case', ten: 'Xem mọi Case của em', buoc: ['Bấm dòng em: panel một em mở bên phải, không rời trang.', 'Khối <b>Case & phương án</b>: bấm Case để mở.'] },
         { id: 'ql-hvl-pham-vi', ten: 'Xem, lọc và Lưu trữ', buoc: ['Ô <b>Xem</b>: lớp tôi dạy, chi nhánh hoặc mọi chi nhánh; <b>Fast Track</b> / <b>Lớp thường</b>.', 'Chip <b>Thi tháng này</b> · <b>Có việc quá hạn</b> · <b>Đã thi · chờ KQ</b>; <b>Bộ lọc thêm</b> (Thiếu thông tin…).', '<b>Lưu trữ ›</b> ở đầu trang: lớp đã kết thúc, em đã lưu trữ. Ô <b>Mọi lớp</b> · <b>Mọi TVV</b> gõ để tìm.'],
           chi: { hd: 'hvl-goc', duong: HV, chu: 'Tab và lọc của trang ở hàng này.' } },

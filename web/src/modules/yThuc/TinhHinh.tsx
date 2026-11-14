@@ -208,7 +208,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           <span className="text-sm font-bold text-slate-100">{t('Học viên')} <span className="text-bad">*</span></span>
           {chonEm({ em, setEm, luu })}
         </div>
-      ) : canEm && (chonThem || che.loai === 'bao') && (
+      ) : canEm && (chonThem || em.length > 0) && (
         <div className="grid gap-1.5">
           <span className="text-sm font-bold text-slate-100">{t('Học viên')}</span>
           {/* GD-5 (R5.2 #56, mockup ⑤ A4 / F3): có danh sách em để thêm → ô chọn nhiều có tìm (chip ✕ + "n / trần" trong ô); không thì giữ chip. */}
