@@ -483,3 +483,10 @@ Bối cảnh: sau lời 40, session ⑥ tự áp thêm "em đã thi thì ô MT g
 > "Hiện lại MT"
 
 ĐÃ CHỐT (sửa phần áp thêm ở lời 40): **trên hàng bảng Lịch thi, MỌI em đều hiện MT gần nhất**, kể cả em đã thi. Chỉ PHẦN MỞ dưới hàng của em đã thi mới bỏ khối MT gần nhất và Test sắp tới (lời 40 giữ nguyên). Thẻ 375: dòng 2 luôn có Target · MT gần nhất · SOS.
+
+## 15/11 — lời 43 (chủ SP nói ở session PTA Plan, PTA Plan chuyển lại; đã thành luật V22 ở `DESIGN.md`, PR #1642): hạn chỉ bằng MÀU, không biểu tượng
+
+> "Từ giờ những badge công việc/ số quá hạn hay chưa đến hạn chỉ để màu thôi, không còn icon nữa, đỏ là quá, vàng là gần tới, bình thường là chưa tới? Và sửa hết lại những cái đã làm rồi, những cái chưa làm thì sửa lại kế hoạch, những cái chưa động vào thì cũng rà soát lại và sửa cho đồng bộ"
+
+ĐÃ CHỐT (luật V22, thắng mọi mockup và lời cũ khi khác): badge, nút-chip việc, số quá hạn / chưa tới hạn, chữ hạn trong dòng việc, đầu mục ("1 quá hạn"), badge tab, ô số trong bảng — **đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; KHÔNG ⚠ hay biểu tượng nào kèm**. Chữ ("quá hạn 1 ngày", "hạn hôm nay") vẫn nói nghĩa. ⚠ chỉ còn cho cảnh báo KHÔNG phải hạn (lỗi tải / lưu, bị chặn, xác nhận).
+Hệ quả: (a) sửa mọi mockup v21 (①–⑩, bảng mẫu, `v21.css`) — bỏ ⚠ ở chỗ nói về hạn; (b) các câu "quá hạn có ⚠", "⚠ m quá hạn", "hộp đỏ ⚠ n" trong `04`, `09`, `11`, `12` đọc là "màu đỏ, không ⚠"; (c) badge tab "Chấm Speaking" (lời 33: "mờ + ⚠, không đỏ") mâu thuẫn V22 — PTA Plan đang hỏi chủ SP, tạm: badge mờ, không ⚠.

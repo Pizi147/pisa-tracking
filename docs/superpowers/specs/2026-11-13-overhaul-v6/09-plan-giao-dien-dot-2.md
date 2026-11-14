@@ -20,3 +20,5 @@ Thứ tự gợi ý: GD-4 → (GD-5 ∥ GD-6 ∥ GD-7 ∥ GD-8, mỗi cái một
 **Bổ sung 15/11 (lời 33):** badge tab "Chấm Speaking" = dáng mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng badge menu (`04-thiet-ke.md` mục 15) — làm trong GD-4 (thanh tab chung); nếu GD-1 đã merge với badge đỏ thì sửa ở GD-4.
 
 **15/11 (lời 34, 35, 39): GD-10 BỎ** — các màn còn lại đã có mockup v21; plan thay thế: `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18).
+
+**Luật V22 (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: tạm mờ, không ⚠ (chờ chủ SP).
