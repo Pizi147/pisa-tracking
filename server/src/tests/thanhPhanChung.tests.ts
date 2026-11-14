@@ -433,4 +433,19 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/\{pending\.length > 0 && \(/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')) && !/Đăng ký chờ duyệt'\)\} <span className="tabular-nums">0/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')), 'lời 40: 0 đăng ký thì không hiện dòng');
     assert(/<OBang c=\{COT\[0\]\} className="!overflow-visible !px-0/.test(doc('web/src/modules/platform/cauHinh/BangDanhSach.tsx')), 'nút kéo ⠿ không bị cắt thành "⠿…"');
   });
+
+  console.log('\nGD-11c · Trang lượt Test (FT + lớp thường)');
+  check('GD-11c · Chỉnh lịch menu chuẩn (không dòng mô tả, mục tắt có lý do); Lớp lúc Test là link; MỘT khối "Lịch sử · n"; ⓘ Writing; ⋯ cao bằng nút chính', () => {
+    const md = doc('web/src/modules/fasttrack/MockDetailPage.tsx'), lt = doc('web/src/modules/fasttrack/LuotThuongPage.tsx');
+    const menu = md.slice(md.indexOf('const headerItems: MucMenu[] = ['), md.indexOf('const laRf ='));
+    assert(!/\bgoi:/.test(menu), 'Chỉnh lịch: còn dòng mô tả dưới mục');
+    assert(/tat: true, title: t\('Chưa có kết quả nào bị huỷ'\)/.test(menu) && /lyDoXoa \? \{ tat: true, title: lyDoXoa \}/.test(menu), 'Chỉnh lịch: mục tắt phải có lý do');
+    assert(/<LopLucTest lop=/.test(md) && /<LopLucTest lop=\{d\.class\} nay=\{d\.lopHienTai\} \/>/.test(lt) && /to=\{`\/hoc-vien\/lop\/\$\{lop\.id\}`\}/.test(md), 'Lớp lúc Test phải là link hồ sơ lớp');
+    for (const x of [md, lt]) {
+      assert(!/tieuDe=\{t\('Lịch sử lượt'\)\}/.test(x) && (x.match(/<LichSuGon /g) ?? []).length === 1, 'một khối Lịch sử · n mỗi trang');
+      assert(!/<VungMoKn [^>]*lichSu=/.test(x) && /lopNut=\{NUT_BA_CHAM_DONG\}/.test(x) && /<MuiMoDong mo=/.test(x), 'vùng mở không còn dải Lịch sử riêng; ⋯ + mũi mở dùng chung');
+      assert(!/title=\{t\('Bạn không được phân công kỹ năng này'\)\}/.test(x), 'Chỉ xem: lý do qua lyDoChiDoc');
+    }
+    assert(/k === 'writing' && <NutLuat label=\{t\('Cách tính Writing'\)\}>/.test(md), 'ⓘ công thức Writing cạnh tên');
+  });
 }
