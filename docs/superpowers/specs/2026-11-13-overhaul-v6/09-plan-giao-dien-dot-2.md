@@ -22,3 +22,4 @@ Thứ tự gợi ý: GD-4 → (GD-5 ∥ GD-6 ∥ GD-7 ∥ GD-8, mỗi cái một
 **15/11 (lời 34, 35, 39): GD-10 BỎ** — các màn còn lại đã có mockup v21; plan thay thế: `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18).
 
 **Luật V22 (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: tạm mờ, không ⚠ (chờ chủ SP).
+**Mockup v21 KHÔNG sửa lại vì V22 (chủ SP 15/11, lời 44):** ⚠ về hạn còn trong hình mockup → code chỉ dùng màu; khi so ảnh cặp ghi "KHÁC theo V22", không tính lệch.
