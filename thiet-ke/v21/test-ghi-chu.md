@@ -30,13 +30,14 @@ _(chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển
 | A5 | Rỗng · đang tải · lỗi | rỗng câu dài; tải = xương; lỗi = `ErrorState` toàn trang | rỗng một dòng; xương giữ; lỗi câu chuẩn "⚠ Không tải được … · Thử lại" trong thẻ | ĐỔI dáng |
 | A6 | 375 | mã lớp + x/y bài + một viên; mở ra lưới thẻ từng em | mỗi lớp một thẻ: mã · tiến độ / đợt · môn / hạn · chờ duyệt dời · trạng thái; Quá hạn có nút "Nhập điểm" 44 | ĐỔI (R7.7) |
 | A6 | Nút "Lọc" 375 (chi nhánh, phạm vi) | có | GIỮ (không vẽ — GV một chi nhánh không thấy) | GIỮ |
+| A6 | 375: thanh trên (tìm · ? · chuông · tên) · Tuần này · Xuất Excel… · Lịch thi thật › · badge Công việc ở thanh dưới | có | thanh trên như ① / ④; "Tuần này" cạnh ô tuần; Xuất Excel… + Lịch thi thật › trong một nút "⋯" 44 px (khung phải của A6 vẽ ⋯ mở); badge "9" ở Công việc | GIỮ, gọn |
 | B1 | Đầu trang: Xuất Excel… · Xếp nhiều MT… | có | giữ, nút chính | GIỮ |
-| B1 | Hàng lọc: Fast Track n / Lớp thường n · chip "Chưa đủ MT n" · ô tìm · ⓘ · n HV · Mở tất cả lớp | ô tìm tự viết (`TimKeHoach`); "Mở tất cả lớp" chữ link | ô chọn có tìm mẫu A; "Chưa đủ MT" nút-chip lọc chuẩn; "Mở tất cả lớp" nút | ĐỔI (R7.5) |
+| B1 | Hàng lọc: Fast Track n / Lớp thường n · chip "Chưa đủ MT n" · ô tìm · ⓘ · n HV · Mở tất cả lớp | ô tìm tự viết (`TimKeHoach`) "Tìm lớp, học viên hoặc email"; "Mở tất cả lớp" chữ link | ô chọn có tìm mẫu A, GIỮ tìm theo email (chữ gợi ý "Tìm lớp, học viên hoặc email"); "Chưa đủ MT" nút-chip lọc chuẩn; "Mở tất cả lớp" nút | ĐỔI (R7.5) |
 | B1 | Hàng lớp: mã (link) · n HV · GVCN · tình trạng · "Chưa đủ MT · n em" | có | "Chưa đủ MT · n em" = ô số chuẩn (bấm = lọc) | GIỮ |
 | B1 | Lưới HV × MT1…MTn + Thêm; ô = tuần · chip L R W S · trạng thái | có | giữ dáng | GIỮ (R7.3) |
 | B1 | Ô mờ "Đã xoá · Khôi phục" | có | giữ; "Khôi phục" là nút | GIỮ |
 | B1 | S Ex ô dẹt dưới MT1 ("+ S Ex 1" / có kết quả) | có | giữ | GIỮ |
-| B1 | Ô bị chặn (MT trước chưa xếp) | "—" + lý do trong `title` (`LuoiKeHoach.tsx:269`) | nút mờ "Xếp MT2" + lý do ngay dưới "Xếp MT1 trước" | ĐỔI (R7.3) |
+| B1 | Ô bị chặn (MT trước chưa xếp) | "—" + lý do trong `title` (`LuoiKeHoach.tsx:269`) | CHỈ cột kế tiếp: nút mờ "Xếp MT2" + lý do ngay dưới "Xếp MT1 trước"; các cột sau nữa "—" | ĐỔI (R7.3, XM-5) |
 | B1 | "+ MT ▾" | `ui/Menu` cũ (`LuoiKeHoach.tsx:383`) | menu chuẩn `.menu-tha` | ĐỔI dáng |
 | B1 | "+ Ghi chú lớp" · "+ n HV · Hiện tất cả n" | chữ link | nút nhỏ | ĐỔI (G2) |
 | B2 | Hộp xếp một kỹ năng: đầu (tên lượt link · lớp · Xoá MTn · ✕) · Cả lượt · Tuần chung · Từng môn (Dời · Vắng · Xoá · ⋯) · Ghi chú lịch Test | có | giữ | GIỮ (R7.3) |
@@ -44,6 +45,7 @@ _(chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển
 | B2 | "Mở hồ sơ MT ›" | link riêng trên chân | BỎ link riêng — tên lượt ở đầu hộp đã là link hồ sơ MT (`duongDotTest`), nay có "›" | GỘP |
 | B2 | Nhật ký (cả lượt + ⋯ từng môn) · Lịch sử ghi chú | ba kiểu, hai tên | MỘT khối "Lịch sử · n" (⑤ H4), dòng ghi tên môn | ĐỔI (G2) — [XM-3] |
 | B2 | ⋯ từng môn | Dời hạn chấm · Huỷ điểm · Nhật ký | Dời hạn chấm · Huỷ điểm (mục nguy hiểm đỏ) | ĐỔI |
+| B2 | Nút "Vắng" mờ (môn đã có điểm) | lý do trong `title` (rê chuột) | lý do đặt tại nút: bong nhỏ "Đã có điểm — Huỷ điểm trước" hiện khi chạm / focus nút mờ (nổi trên nút, không làm hàng cao thêm, đọc được ở 375) | ĐỔI (R7.3) |
 | B2 | ⓘ "W = chấm cả W1 và W2" | ⓘ rê chuột (`title`) | ⓘ bấm được | ĐỔI (G2) |
 | B2 | Chữ "Xóa lịch" / "Xóa" | "Xóa" | "Xoá" | ĐỔI chữ (R7.5) |
 | B3 | Ngăn xếp lịch: tiêu đề | "Xếp lịch Mock Test" (nút ghi "Xếp nhiều MT…") | "Xếp nhiều MT" = tên nút | ĐỔI chữ |
@@ -75,8 +77,8 @@ _(chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển
 | Mở / thu nhóm, mở / thu hàng lớp (Xem · Thu) | có | như cũ (chevron + bấm hàng) | GIỮ |
 | Nhập điểm (hàng Quá hạn) → lưới tại chỗ; đang mở thì "Thu" | có | như cũ | GIỮ |
 | Mở tất cả lớp / Thu gọn tất cả (QL) | chữ link | nút | GIỮ, đổi dáng |
-| Lịch thi thật › | có | như cũ | GIỮ |
-| Xuất Excel… | có | như cũ | GIỮ |
+| Lịch thi thật › | có | 1440 như cũ; 375 trong "⋯" | GIỮ |
+| Xuất Excel… | có | 1440 như cũ; 375 trong "⋯" (Lịch Test) | GIỮ |
 | Gõ điểm · Lưu · bài tiếp › · Vắng · ⋯ (Lưu · đóng · Bỏ vắng · Khôi phục điểm) | có | như cũ (⑤ E) | GIỮ (R7.2) |
 | Lớp tiếp: {mã} › (hết bài của mình ở lớp) | có | như cũ (không vẽ) | GIỮ |
 | Chọn GV chấm S | ô thả | ô chọn có tìm | GIỮ, đổi dáng |
@@ -86,7 +88,7 @@ _(chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển
 | Bỏ lọc lớp (✕) | "Đang lọc: lớp X ✕" | "Lớp: X ✕" | GIỮ |
 | Xếp nhiều MT… (FT) · Xếp lịch Test… (thường) | có | như cũ, một nhãn theo khung | GIỮ |
 | Chưa đủ MT (lọc) · bấm "Chưa đủ MT · n em" | có | như cũ | GIỮ |
-| Tìm lớp / học viên | ô tự viết | ô chọn có tìm | GIỮ |
+| Tìm lớp / học viên / email | ô tự viết | ô chọn có tìm, vẫn tìm được theo email | GIỮ |
 | + MT ▾ (MTn · MT thường · S Ex) · + S Ex | có | menu chuẩn | GIỮ |
 | Xếp MTn (đề xuất tuần) · Xếp cả lớp theo đề xuất | có | như cũ; ô bị chặn = nút tắt có lý do | GIỮ |
 | + Ghi chú lớp · Hiện tất cả n | chữ link | nút | GIỮ |
@@ -102,13 +104,18 @@ _(chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển
 
 Không thao tác nào bị bỏ. Hai chỗ GỘP (Nhật ký → Lịch sử · n; Mở hồ sơ MT › → tên lượt) giữ nguyên đích.
 
-## 3. [XM] — cần PTA / chủ SP quyết
+## 3. [XM] — PTA Overhaul đã quyết 15/11 (ghi ngay dưới mỗi dòng)
 
 1. **[XM-1] "Cần xếp lại" ↔ "Chưa đủ MT" (R7.5) — KHÁC nghĩa, không gộp tự động.** Web chỉ còn chip "Chưa đủ MT" (lộ trình chưa đủ số MT: 3 · RF 2). "Cần xếp lại" chỉ còn trong Hướng dẫn (`shared/i18n/en/hdb.ts`, `hdV2b.ts`, câu "chip Cần xếp lại: em vắng cần xếp lại") và mô tả tài khoản demo (`WelcomePage.tsx:341`) — nghĩa cũ "em vắng cần xếp lại", nay vắng tự dời / huỷ theo N38 ("huỷ là huỷ thôi"). Đề xuất: sửa chữ Hướng dẫn + demo thành "Chưa đủ MT" với nghĩa thật; không có khái niệm "Cần xếp lại" nữa.
+   → **PTA: đồng ý, không gộp; sửa chữ Hướng dẫn + mô tả demo khi code.**
 2. **[XM-2] Công thức Writing.** R7.4 bảo đưa vào ⓘ; bảng mẫu ⑤ E2 (đã duyệt) vẽ dòng "Writing = (W1 + 2×W2) / 3 · Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5 ✓" dưới ô nhập. Đề xuất: hộp nhập giữ phần xem trước "Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5 ✓", công thức vào ⓘ cạnh đó; trang lượt dùng ⓘ cạnh "Writing" (C1). Cần ⓪ sửa E2 cho khớp nếu PTA đồng ý.
+   → **PTA: đồng ý — công thức vào ⓘ, hộp giữ dòng xem trước; PTA báo ⓪ sửa E2.**
 3. **[XM-3] Nhật ký từng môn trong hộp kỹ năng.** Gộp ba lối thành một "Lịch sử · n" của cả lượt, mỗi dòng ghi tên môn. Nếu cần xem riêng một môn: mở "Lịch sử · n" từ ⋯ môn thì lọc sẵn môn đó (giữ ý cũ, không thêm lối). Hỏi PTA có cần lọc theo môn không.
+   → **PTA: MỘT khối "Lịch sử · n", mỗi dòng ghi tên môn, KHÔNG lọc theo môn, không thêm mục vào ⋯.**
 4. **[XM-4] Dòng giải thích dưới mục "Chỉnh lịch".** Menu chuẩn ⑤ H2 không có dòng mô tả (chỉ lý do khi tắt). Hậu quả vẫn nói ở bước sau: Xoá MT3 hỏi lại tại chỗ ("Ô vẫn hiện Đã xoá, khôi phục được"), Dời cả đợt mở hộp chọn tuần có câu "kỹ năng còn dời được sang một tuần". Đề xuất theo menu chuẩn.
+   → **PTA: đồng ý.**
 5. **[XM-5] Ô bị chặn ở Kế hoạch Test.** Nay vẽ nút mờ "Xếp MT2" + "Xếp MT1 trước" thay cho "—". Mỗi em thiếu MT1 sẽ có 2–3 nút mờ trên hàng → hàng cao hơn một chút. Nếu thấy rối: chỉ hiện nút mờ ở cột kế tiếp (MT2), cột sau nữa để "—".
+   → **PTA: chỉ cột KẾ TIẾP có nút mờ + lý do; cột sau "—". Đã áp ở B1, B7.**
 6. **[XM-6] Turso — không thêm đọc.** Đợt, môn của tôi (`phan.toi.kyNang`), hạn, số bài chờ duyệt dời đã có trong `/cham/lich-test` (đang chỉ dùng cho `title`) → hiện ra hàng không thêm câu / dòng. "Nhập điểm lớp ›" chỉ đổi đường dẫn. Ô "GV chấm S" dùng đúng danh sách đang nạp cho ô thả hiện tại. Ô chọn có tìm "Tìm lớp hoặc học viên" lọc trên dữ liệu Kế hoạch đã nạp (như `TimKeHoach`). Ước: 0 câu thêm mỗi lần mở trang.
 
 ## 4. Tự rà từng dòng đề bài
@@ -126,7 +133,13 @@ Không thao tác nào bị bỏ. Hai chỗ GỘP (Nhật ký → Lịch sử · 
 | G2 | Thành phần, chữ, vị trí theo ⑤ (tab, ô chọn có tìm, dải số, menu, lịch sử, câu lỗi, mã tuần, chip không đơn vị) | Đạt | toàn tệp |
 | G3 | Không chú thích tĩnh / bước xác nhận / tab mới | Đạt (chỉ hỏi lại khi Xoá — như nay) | — |
 | G4 | html + css riêng + ghi chú + ảnh 1440 Tối/Sáng, 375 Sáng, ảnh cặp TRƯỚC │ SAU, đủ trạng thái (rỗng, tải, lỗi, chỉ xem) | Đạt (B6 không có ảnh TRƯỚC: seed không có ca rỗng khi lọc) | `anh/test/` |
-| G5 | PR chỉ `thiet-ke/v21/`, không merge, nhắn PTA Overhaul | xem PR | — |
+| G5 | PR chỉ `thiet-ke/v21/`, không merge, nhắn PTA Overhaul | Đạt | PR #1606 |
+| PTA rà 1 | A6 đủ Tuần này · Xuất Excel… · Lịch thi thật › (⋯ 44 px, 2 mục) · thanh trên tìm + tên · badge Công việc thanh dưới | Đạt | A6 (hai khung) |
+| PTA rà 2 | A6 nhóm "Quá hạn chấm · 2 lớp · 12 bài" như 1440 | Đạt | A6 |
+| PTA rà 3 | Ô tìm Kế hoạch Test giữ tìm theo email | Đạt | B1, B4, B5, B7 + bảng thao tác |
+| PTA rà 4 | XM-5: em thiếu MT1 chỉ một nút mờ | Đạt | B1, B7 |
+| PTA rà 5 | Lý do "Vắng" mờ đặt tại nút, không làm hàng cao thêm | Đạt | B2 |
+| PTA rà 6 | Tâm ✕ / ⋯ lệch ≤ 1 px so với ô chứa | Đạt — đo bằng Playwright (tâm mực chữ so với tâm nút): ✕ hộp kỹ năng / hộp nhập / ngăn xếp 36×36 dx 0 dy −0,3 · ✕ chip "Lớp: X" 24×24 dx 0,2 dy 1,0 · ✕ chip lớp ngăn xếp 22×22 dx 0,5 dy 1,0 · ⋯ 36×30 dx 0 dy 0,5 · ⋯ 375 44×44 dx 0,4 dy 1,0 | toàn tệp |
 
 ## 5. impeccable `critique` (15/11) — hai agent độc lập (A rà thiết kế · B detector)
 
@@ -134,7 +147,7 @@ Không thao tác nào bị bỏ. Hai chỗ GỘP (Nhật ký → Lịch sử · 
 
 | P1 | Xử lý |
 |---|---|
-| B2: nút "Vắng" mờ không có lý do tại nút | ĐÃ SỬA: "Vắng mờ: môn đã có điểm — Huỷ điểm trước" ngay đầu nhóm Từng môn. "Lưu" mờ khi chưa đổi gì giữ như web. |
+| B2: nút "Vắng" mờ không có lý do tại nút | ĐÃ SỬA: lý do đặt tại nút (bong "Đã có điểm — Huỷ điểm trước" khi chạm / focus nút mờ — sau PTA rà 5). "Lưu" mờ khi chưa đổi gì giữ như web. |
 | 375: ô điểm, chip lọc, ✕ bỏ lọc, ô số < 44 px | ĐÃ SỬA (`test.css` cuối tệp): mọi thứ bấm được ở 375 cao ≥ 44. |
 | Nền sáng: chữ S Ex hồng #f25a98 ≈ 3,1 : 1 | ĐÃ SỬA: chữ S Ex nền sáng #b8285f (≥ 4,5 : 1), viền giữ hồng. |
 | B3: "Sẽ xếp · 6" mà chỉ 3 dòng; C2 "nay" trùng lớp; 375 Tổng quan trùng biểu tượng Công việc | ĐÃ SỬA số liệu / chữ / biểu tượng. |

@@ -239,3 +239,11 @@ table.kh { width:100%; border-collapse:collapse; table-layout:fixed; }
 .dt .oso { min-height:44px; display:inline-flex; align-items:center; }
 .sang .sex { color:#b8285f; }
 .hkn .ly-mo { justify-self:end; font-size:12px; color:var(--text-faint); margin-top:-2px; }
+/* PTA rà 15/11: badge Công việc ở thanh dưới 375 · lý do nút mờ hiện khi chạm / focus (nổi, không làm hàng cao thêm) */
+.ic-bd { position:relative; display:inline-grid; }
+.bd-d { position:absolute; top:-7px; right:-12px; min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:var(--bad-nen); color:var(--bad); border:1px solid var(--bad-vien); font:700 11px/16px var(--phong-so); text-align:center; }
+.vung-ly { position:relative; display:inline-flex; }
+.bong-ly { position:absolute; right:-40px; bottom:calc(100% + 6px); white-space:nowrap; padding:5px 10px; border-radius:6px; background:var(--text); color:var(--bg); font:500 12px var(--phong); box-shadow:0 4px 12px var(--bong); z-index:3; }
+.bong-ly::after { content:""; position:absolute; right:58px; top:100%; border:5px solid transparent; border-top-color:var(--text); }
+.dt .hang-loc .o-tuan { flex:1; }
+.dt .nut-vuong { width:44px; }
