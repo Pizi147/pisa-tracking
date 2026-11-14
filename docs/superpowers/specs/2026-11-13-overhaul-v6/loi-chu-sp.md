@@ -400,3 +400,15 @@ PTA Overhaul đề xuất (duyệt ở mockup):
 - Tên bậc: luôn hoa — **REPORT 1 … · WL 1 · WL 2**. Viết đủ **"WARNING LETTER 1"** ở nơi người ta QUYẾT hoặc nơi PHỤ HUYNH đọc: thang cấp bậc (mốc WL) · panel Xác nhận xử lý / Thu hồi (dòng "Bậc kế", nút chọn) · bậc hiện tại ở khối của em trong tab Ý thức · dòng lịch sử xử lý · việc TVV "Báo PH" và Báo cáo PH / tệp xuất · Hướng dẫn "?". Viết tắt **"WL 1"** ở nơi chật: chip, cột bảng, dòng việc, badge, ô số, 375.
 - Tab Lịch thi: hàng = em · lớp · lịch thi (tháng dự kiến / ngày đã chốt / chờ KQ / KQ) · thông tin hiện tại (Target, MT gần nhất, SOS, lộ trình + tuần học). Không badge việc, không cột việc. Thao tác đang có (Chốt / Sửa ngày, Đặt / Dời tháng, Ghi KQ, Bước tiếp, Sửa KQ, + Ghi chú, Hoàn tác) GIỮ — bấm thẳng giá trị để sửa / mở dưới hàng; việc tới hạn của TVV nằm ở trang Công việc của TVV.
 Đề bài: `11-de-bai-mockup-dot-2.md`. Sáu session con Opus 5.5 · high.
+
+## 15/11 — lời 36 (chủ SP nói trong session mockup ⓪; session đó chuyển lại nguyên văn): thang cấp bậc không ghi chữ WARNING LETTER
+
+Bối cảnh: mockup ⓪ vẽ thang cấp bậc xử lý vi phạm có chữ "WARNING LETTER 1 / 2" trong thanh (theo đề xuất "viết đủ ở thang cấp bậc" của PTA Overhaul ở lời 35).
+
+> "KHÔNG ĐỂ HẲN CHỮ WARNING LETTER vào trong progress bar, ý là chỉ để nó khác màu và nổi bật hơn thôi, vẫn đẻ progress bar như bình thường"
+
+ĐÃ CHỐT (sửa đề xuất tên bậc ở lời 35, làm rõ lời 28 ý 3): **thang cấp bậc là thanh vạch bình thường, KHÔNG có chữ trong thanh**; mốc WL 1 / WL 2 chỉ **khác màu và nổi hơn** (vạch đỏ, đậm hơn). Tên bậc viết đủ "WARNING LETTER 1" vẫn dùng ở: danh sách bậc khi mở "Thang ▾" · panel Xác nhận xử lý / Thu hồi (dòng "Bậc kế", nút chọn) · bậc hiện tại của em ở tab Ý thức · dòng lịch sử xử lý · nội dung báo PH. Viết tắt "WL 1" ở chip, cột bảng, dòng việc, badge, 375. Áp mọi nơi có thang (hồ sơ HV, panel Xác nhận xử lý, tab Ý thức lớp).
+
+PTA Overhaul quyết khi rà mockup ⓪ (chủ SP duyệt lại ở mockup ⓪):
+- **Chân panel việc:** khi panel mở từ một danh sách còn việc kế → "Đóng" · "Lưu" · **"Lưu · việc tiếp ›"** (nút chính); không còn việc kế hoặc panel mở lẻ → "Đóng" · "Lưu". Giữ nút gộp đang có trên web (D.V12, R1-LUU-TIEP 26/10) — bảng mẫu ⑤ D2 và mockup ① ② bỏ nút gộp làm mỗi việc thêm một bấm. Thay dòng "chân panel → theo ⑤ D2" ở `10-ra-dong-bo.md` mục B.
+- **Hộp Tình hình học tập từ "+ Task":** một hộp (chọn em + Nội dung + "Gửi TVV") như mockup ① K5c; ⑤ F3 sửa theo.
