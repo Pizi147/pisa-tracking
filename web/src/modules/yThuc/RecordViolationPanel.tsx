@@ -4,11 +4,12 @@ import { lamMoiYThuc as lamMoiCache } from './kieu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { TrangThaiLuu } from '../../ui/KhuonViec.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
-import { NutChon, BoLocDoan } from '../../ui/ui.tsx';
+import { BoLocDoan } from '../../ui/ui.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
@@ -203,19 +204,22 @@ export function RecordViolationPanel({
 
   const chuaLuu = luu ? hocVien.filter((s) => !luu.daXong.includes(s)) : [];
   const khoa = busy || !!luu;
-  const nhan = busy ? (luu?.tien ? t('Đang lưu {x}/{x2}…', { x: luu.tien[0], x2: luu.tien[1] }) : t('Đang lưu…')) : chiNhac ? t('Lưu nhắc nhở') : t('Lưu');
+  const nhan = busy ? (luu?.tien ? t('Đang lưu {x}/{x2}…', { x: luu.tien[0], x2: luu.tien[1] }) : t('Đang lưu…')) : chiNhac ? t('Lưu nhắc nhở') : t('Lưu vi phạm');
+  const daSua = editing && violation
+    ? !luu && (chiNhac !== !!violation.chiNhac || dong[0].ten !== violation.ten || dong[0].moTa !== violation.moTa || dong[0].nhom !== violation.category || dong[0].ngay !== violation.occurredOn || (dong[0].mon || null) !== (violation.skill ?? null))
+    : dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0;
+  /* GD-3 (mockup v21 K5d): đầu "Ý thức" · tiêu đề · "{em} · {lớp}" (chọn nhiều: "{lớp} · n học viên"). */
+  const dau = { loai: t('Ý thức'), dong2: (chonNhieu ? [lop, hocVien.length ? t('{n} học viên', { n: hocVien.length }) : null] : [tenChon, lop]).filter(Boolean) as string[] };
 
   return (
-    /* I6 (PR-SL): một dòng chú thích dấu `*` thay cho "(bắt buộc)" lặp ở từng ô. */
-    <KhungPanel hd="vi-pham" tieuDe={tieuDe} hocVien={tenChon} lop={lop} onDong={dongPanel} quyChe={quyCheViPham(chiNhac)}
-      ngCanh={<><span aria-hidden className="text-bad">*</span> {t('= bắt buộc')}</>}
+    /* GD-3 (mockup v21 K5d / K5e): bỏ dòng "* = bắt buộc" (mockup không có — dấu * đỏ ở nhãn đã đủ), thân phẳng không tiêu đề khối, chân "Chưa lưu" · Đóng · Lưu vi phạm. */
+    <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={dongPanel} quyChe={quyCheViPham(chiNhac)}
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: t('Xoá vi phạm'), onClick: () => onDelete(violation.id) } : undefined,
-        daSua: editing && violation
-          ? !luu && (chiNhac !== !!violation.chiNhac || dong[0].ten !== violation.ten || dong[0].moTa !== violation.moTa || dong[0].nhom !== violation.category || dong[0].ngay !== violation.occurredOn || (dong[0].mon || null) !== (violation.skill ?? null))
-          : dong.some((d) => d.ten || d.moTa || d.nhom) || tep.length > 0,
-        huy: luu ? { nhan: t('Đóng'), onClick: dongPanel, disabled: busy } : undefined,
+        daSua, huyPhai: true,
+        huy: { nhan: t('Đóng'), onClick: dongPanel, disabled: busy },
+        trai: !luu && daSua ? <TrangThaiLuu tt="nhap" /> : undefined,
         conThieu: lf.conThieu(loi),
         phu: luu && !luu.tien ? <span className="text-xs text-slate-400">{t('Đã lưu {length} học viên · {length2} học viên chưa lưu', { length: luu.daXong.length, length2: chuaLuu.length })}</span> : undefined,
         chinh: luu && !busy
@@ -233,19 +237,17 @@ export function RecordViolationPanel({
         </Khoi>
       )}
 
-      <fieldset disabled={khoa} className="m-0 min-w-0 space-y-3.5 border-0 p-0">
-        <div className="grid gap-1.5 pt-3">
+      <fieldset disabled={khoa} className="m-0 min-w-0 space-y-3.5 border-0 p-0 pt-3">
+        <div>
           <BoLocDoan v8 ariaLabel={t('Loại ghi')} value={chiNhac ? 'nn' : 'vp'} onChange={(k) => setChiNhac(k === 'nn')}
             muc={[{ key: 'vp', nhan: t('Vi phạm') }, { key: 'nn', nhan: t('Chỉ nhắc nhở') }]} />
         </div>
         {chonNhieu && !luu && (
-          <Khoi tieuDe={t('Học viên')}>
-            <ChonHocVien ds={students!} chon={hocVien} onChange={setHocVien} loi={lf.loiCua(loi, 'hoc-vien')} lf={lf} loiList={loi}
-              rieng={moTaRieng} onRieng={setMoTaRieng} />
-          </Khoi>
+          <ChonHocVien ds={students!} chon={hocVien} onChange={setHocVien} loi={lf.loiCua(loi, 'hoc-vien')} lf={lf} loiList={loi}
+            rieng={moTaRieng} onRieng={setMoTaRieng} />
         )}
 
-        <Khoi tieuDe={chiNhac ? t('Nhắc nhở') : t('Vi phạm')}>
+        <div className="space-y-3.5">
           {dong.map((d, k) => (
             <DongViPham key={d.key} d={d} k={k} nhieu={nDong > 1} today={today} ct={ct} defaultSkill={defaultSkill} editing={editing} batBuocMon={batBuocMon}
               sid={hocVien.length === 1 ? hocVien[0] : 0} loi={loi} lf={lf} chiNhac={chiNhac} onSua={(v) => suaDong(d.key, v)}
@@ -254,14 +256,16 @@ export function RecordViolationPanel({
           {!editing && hocVien.length <= 1 && nDong < VI_PHAM_TOI_DA_DONG && (
             <button type="button" className="btn btn-sm btn-ghost self-start" onClick={themDong}>{t('+ Thêm vi phạm')}</button>
           )}
-        </Khoi>
+        </div>
 
+        {/* Mockup K5d: "Bằng chứng  + Tệp  + Liên kết" một hàng, không tiêu đề khối. */}
         {!luu && (editing && violation ? (
-          <Khoi tieuDe={t('Bằng chứng')}><BangChung ownerType="violation" ownerId={violation.id} canEdit tieuDe="" /></Khoi>
+          <BangChung ownerType="violation" ownerId={violation.id} canEdit />
         ) : (
-          <Khoi tieuDe={t('Bằng chứng')}>
-            <div id={lf.oId('tep')} tabIndex={-1}><TepCho value={tep} onChange={setTep} /></div>
-          </Khoi>
+          <div id={lf.oId('tep')} tabIndex={-1} className="flex flex-wrap items-baseline gap-x-3">
+            <span className="text-[13px] font-semibold text-slate-200">{t('Bằng chứng')}</span>
+            <div className="min-w-0 flex-1"><TepCho value={tep} onChange={setTep} /></div>
+          </div>
         ))}
       </fieldset>
     </KhungPanel>
@@ -296,28 +300,15 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon,
           <button type="button" className="btn btn-sm btn-ghost" onClick={onXoa}>{t('Xoá dòng')}</button>
         </div>
       )}
-      <Hang2>
-        <Truong nhan={t('Ngày')} batBuoc>
-          <ONgay kieu="ngay" value={d.ngay} onChange={(v) => onSua({ ngay: v })} toiDa={today} />
-        </Truong>
-        {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
-        {dsMon.length > 0 && (
-          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)} phu={!d.daChonMon && defaultSkill ? t('Tự điền môn bạn dạy lớp này') : undefined}>
-            <select className="field w-full" {...lf.o(loi, `mon-${n}`)} value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
-              <option value="">{t('Chưa chọn')}</option>
-              {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
-            </select>
-          </Truong>
-        )}
-      </Hang2>
-
       {/* Năm nhóm: danh sách hai hàng (≤ 4 nút/hàng), nút cao 44px ở điện thoại. B' 5 (chủ SP 10/11): ngoại lệ K2 — tên nhóm không xuống dòng, tên giữ. */}
       <Truong nhan={t('Nhóm')} batBuoc as="div" loi={lf.loiCua(loi, `nhom-${n}`)}>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3" {...lf.o(loi, `nhom-${n}`)}>
+        {/* GD-3 (mockup v21 K5d): chip tròn một hàng, chọn = viền nhấn (không dấu ✓). */}
+        <div className="flex flex-wrap gap-2" {...lf.o(loi, `nhom-${n}`)}>
           {VIOLATION_CATEGORIES.map((c) => (
-            <NutChon key={c} chon={d.nhom === c} className="justify-center whitespace-nowrap" onClick={() => onSua({ nhom: c })}>
+            <button key={c} type="button" aria-pressed={d.nhom === c} onClick={() => onSua({ nhom: c })}
+              className={`btn btn-sm min-h-[44px] whitespace-nowrap rounded-full px-3 sm:min-h-[34px] ${d.nhom === c ? '!border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : ''}`}>
               {VIOLATION_CATEGORY_LABEL[c as ViolationCategory]}
-            </NutChon>
+            </button>
           ))}
         </div>
       </Truong>
@@ -327,7 +318,23 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon,
           placeholder={t('Ví dụ: Không nộp BTVN Reading')} />
       </Truong>
 
-      <Truong nhan={t('Mô tả')}>
+      <Hang2>
+        {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
+        {dsMon.length > 0 && (
+          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)} phu={!d.daChonMon && defaultSkill ? t('Tự điền môn bạn dạy lớp này') : undefined}>
+            <select className="field w-full" {...lf.o(loi, `mon-${n}`)} value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
+              <option value="">{t('Chưa chọn')}</option>
+              {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
+            </select>
+          </Truong>
+        )}
+
+        <Truong nhan={t('Ngày')} batBuoc>
+          <ONgay kieu="ngay" value={d.ngay} onChange={(v) => onSua({ ngay: v })} toiDa={today} />
+        </Truong>
+      </Hang2>
+
+      <Truong nhan={t('Mô tả')} tuyChon>
         <textarea className="field w-full" rows={2} maxLength={2000} value={d.moTa} onChange={(e) => onSua({ moTa: e.target.value })} placeholder={t('Chi tiết nếu cần')} />
       </Truong>
 

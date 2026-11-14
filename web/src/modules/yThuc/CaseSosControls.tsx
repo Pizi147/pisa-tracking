@@ -348,7 +348,9 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
           ) : (
             <>
               {paGv && (
-                <div role="radiogroup" aria-label={t('Phương án')} className="grid gap-2 sm:grid-cols-2" data-chon-pa>
+                <div className="flex flex-col gap-1.5">
+                <span id={`chon-pa-${pa.id}`} className="text-[13px] font-semibold text-slate-200">{t('Phương án')}</span>
+                <div role="radiogroup" aria-labelledby={`chon-pa-${pa.id}`} className="grid gap-2 sm:grid-cols-2" data-chon-pa>
                   {([['quy-che', t('Theo PA quy chế'), [tenLoai, pa.soBuoi ? t('{n} buổi', { n: pa.soBuoi }) : null].filter(Boolean).join(' · ')],
                     ['giu', t('Giữ PA của tôi'), paGv.map((g) => [dich(INTERVENTION_KIND_LABEL[g.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? g.kind), g.description, g.performer].filter(Boolean).join(' · ')).join(', ')]] as const).map(([k, ten, phu]) => (
                     <button key={k} type="button" role="radio" aria-checked={chon === k} disabled={busy} onClick={() => setChon(k)}
@@ -360,6 +362,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
                       {k === 'quy-che' && <span className="ml-[22px] mt-1 justify-self-start rounded border px-[5px] text-xs font-semibold leading-4 text-slate-500" style={{ borderColor: 'var(--line-strong)' }}>{t('Mặc định')}</span>}
                     </button>
                   ))}
+                </div>
                 </div>
               )}
               {giuPa && (

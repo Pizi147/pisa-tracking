@@ -20,7 +20,8 @@
  * Ô có điểm mà thiếu: chữ nhắc vàng "nên có nhận xét" / "nên chọn nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
  */
 import { OKhongHoc } from '../../ui/ODiem.tsx';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, caHaiKieu, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi, LOI_MOT_KIEU,
@@ -207,6 +208,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
   dauKq?: 'vuot' | 'bang' | 'duoi' | null;
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
+  const trongPanel = useContext(OTrongPanel);
   const vangGoc = oVangCua(cell, hop.tuanXem);
   if (cell.khongHoc) return <OKhongHoc nhan={skillLabel(cell.skill)} />;   // P8: môn em không học — không phải nút
   const h = hienO(cell, vangGoc);
@@ -232,6 +234,21 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
           {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>
         {phu}
+      </span>
+    );
+  }
+  const nhanO = `${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`;
+  const tieuDeO = cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }));
+  if (trongPanel) {
+    /* GD-3 (mockup v21 K2 `.od`): ô 96 × 44 viền liền (trống cũng viền liền), số 15 / 600 + dòng phụ 12 ("27 câu", "→ W4 SEP") NẰM TRONG ô. */
+    return (
+      <span className="inline-flex max-w-full">
+        <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={nhanO} title={tieuDeO} onClick={() => onMo(!mo)}
+          className={`o-sua grid h-11 w-24 max-w-full place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
+          <span className="inline-flex items-baseline">{kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}</span>
+          {h.kieu === 'trong' ? null : phu}
+        </button>
+        {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}
       </span>
     );
   }

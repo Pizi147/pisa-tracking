@@ -295,19 +295,31 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     if (!ke) return hetViec(onTiep)();
     return { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode ?? '' }), onClick: () => { setMo(new Set([ke.key])); setConTro(ke.key); } };
   };
-  const [tieuDe] = useState(() => t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' }));
+  /* GD-3 (mockup v21 K2): một lớp → tiêu đề = tên việc ("Nhập điểm Listening, Reading"), dòng 2 "lớp · tuần · n bài", lưới ngay dưới (không hàng gập lớp). */
+  const motLop = lop.length === 1;
+  const [tieuDe] = useState(() => (motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
   const periodId = lop[0].periodId ?? null;
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     ngCanh: (
       <Link className="link" to={duongLichTest({ periodId })}>
-        {t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
+        {motLop ? [lop[0].classCode, it.tuanThi ? tuanLich(it.tuanThi) : null].filter(Boolean).join(' · ') : t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
       </Link>
     ),
   });
+  const luoiLop = (x: WorkItem, lopKhung: string) => (
+    <LuoiTrongPanel className={lopKhung}>
+      <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
+                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
+                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
+                    /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
+                    datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
+    </LuoiTrongPanel>
+  );
   return (
     <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheVang(it.khung === 'thuong')}>
+      {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-2 pt-1') : (
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {
           const dangMo = mo.has(x.key);
@@ -321,19 +333,12 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
                 <b className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-slate-100">{x.classCode}</b>
                 <span className="min-w-0 truncate text-xs text-slate-400">{dich(x.contextLabel ?? '')} · {dich(x.phu ?? x.reason)} · {t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
               </button>
-              {dangMo && (
-                <LuoiTrongPanel className="luoi-trong-panel px-2 pb-2">
-                  <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
-                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
-                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
-                    /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
-                    datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
-                </LuoiTrongPanel>
-              )}
+              {dangMo && luoiLop(x, 'luoi-trong-panel px-2 pb-2')}
             </li>
           );
         })}
       </ul>
+      )}
     </KhungPanel>
   );
 }

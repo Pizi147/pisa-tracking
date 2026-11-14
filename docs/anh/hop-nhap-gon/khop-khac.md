@@ -3,22 +3,35 @@
 Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17–20) · plan `docs/superpowers/specs/2026-11-13-overhaul-v6/07-plan-giao-dien-dot-1.md` dòng GD-3 · khung K2, K2b, K4a, K4b, K4c, K5d, K5e.
 Ảnh cặp (trái mockup | phải web, bộ demo): xem danh sách tệp ở cuối.
 
-## Truy vết khung → thành phần → kết quả
+## Truy vết khung → thành phần → kết quả (đếm lại sau góp ý chủ SP 14/11: "nhập điểm giống mockup hơn, cột cân đối; panel Case + vi phạm giống mockup, phần cần thiết mockup không có vẫn để")
 
-| Khung | Thành phần mockup | Thành phần web | Kết quả |
-|---|---|---|---|
-| K2 / K3 / K4 / K5 | **Dòng quy chế**: "Quy chế" 12 px đậm mờ · câu 13 px màu phụ · ⓘ cuối · kẻ trên · ngay trên chân panel | `KhungPanel` prop `quyChe` (một chỗ cho mọi panel); câu ở `shared/domain/quyChe.ts` (không viết tay từng panel); ⓘ = `NutLuat` (chi tiết) | KHỚP |
-| K2 | Panel Nhập điểm (lưới) + dòng quy chế vắng | `PanelViec` › nhập điểm theo lượt + theo tuần: FT `"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ`; lớp thường (`mode = ratio` / `khung = thuong`) `"-" = vắng: môn đó dời sang tuần sau` (luật N38) | KHỚP (thêm biến thể lớp thường theo luật) |
-| K2b | Chân hộp một ô: ⋯ · Vắng · (phải) **Lưu · bài tiếp ›** | `HopNhapDiem` chân thường | KHỚP |
-| K2b | ⋯ = Lưu · đóng · Khôi phục điểm · Bỏ vắng (hai mục sau chỉ khi ô ở trạng thái đó) | `MenuDong` (menu ⋯ dùng chung: phím ↑↓ Enter Esc) | KHỚP |
-| K2b | "Tiếp: {em} · {kỹ năng}" dòng trên nút | giữ (`nhanTiep`) | GIỮ |
-| K4a / K4b | Chọn PA: hai ô chọn "Theo PA quy chế" (Mặc định) / "Giữ PA của tôi"; dòng quy chế + nút chính đổi theo ô | `XacNhanPaPanel` (khi PA của GV khác PA quy chế): radiogroup cùng dáng ô chọn của panel Xác nhận xử lý; Theo PA quy chế → "PA của bạn dừng, kết quả giữ" + **Xác nhận PA**; Giữ → "QL duyệt trong 3 ngày · quá hạn theo bạn" + **Gửi Quản lý duyệt** (luật S3: tên đầy đủ — mockup ghi "Gửi QL duyệt"), form PA ẩn | KHỚP |
-| K4b | Ô "Lý do *" khi Giữ PA của tôi | ô Lý do + đếm `n / 300`; máy chủ `giu-pa-gv` đã có cột `ly_do` — nay chặn > 300 ký tự (N35, không cắt lặng), web gửi lý do; hiện lại ở thẻ duyệt QL ("Lý do: “…”"), dòng "Chờ QL duyệt PA của GV" trong panel Case và nhật ký | KHỚP (chủ SP chốt 14/11) — **không có dấu \***: luật Q3 "lý do không bắt buộc" (nghiệp vụ thắng mockup) |
-| K4c | Ghi kết quả PA: dòng quy chế "Kỳ 2 tuần · hạn thứ Ba 22/09 · Lưu là chốt, đổi bằng Sửa" | `CapNhatTuan`: "Kỳ 2 tuần · hạn 22/09 · Lưu là chốt, đổi bằng Sửa" (không có ở Sửa kết quả và PA chờ Mini Test) | KHỚP (bỏ chữ thứ: luật P7 "một nhãn hạn, không thứ") |
-| K5d / K5e | Ghi vi phạm: công tắc Vi phạm \| Chỉ nhắc nhở đổi dòng quy chế "GVCN nhận việc xem · đủ 3 trong 2 tuần thì phải xử lý" ↔ "Không tính vào bậc, không sinh việc" | `RecordViolationPanel` — câu dưới công tắc (chỉ có ở Nhắc nhở) chuyển xuống dòng quy chế, ⓘ giữ câu cũ đầy đủ | KHỚP |
-| — | Các panel khác (Case, Ý thức GVCN, TVV…) | chưa gắn — chờ bảng câu mockup ⑤ (R5.5), đúng plan | GIỮ (để sau) |
+| # | Khung | Thành phần mockup | Web | Kết quả |
+|---|---|---|---|---|
+| 1 | K2–K5 | Dòng quy chế ("Quy chế" · câu 13 px · ⓘ) ngay trên chân | `KhungPanel.quyChe` / `DongQuyChe`, câu ở `shared/domain/quyChe.ts` | KHỚP |
+| 2 | K2 | Panel một lớp: tiêu đề = tên việc "Nhập điểm Listening, Reading", dòng 2 lớp · tuần · bài, lưới ngay dưới | `PanelNhapDiemTuan`: một lớp → không hàng gập lớp | KHỚP (dòng 2 ghi "10 bài", không "MT1 · còn 4 / 10" — dữ liệu dòng việc không có số còn lại) |
+| 3 | K2 | Lưới: cột tên lấy phần còn lại, cột ô 112, Kết quả 132; tên cột đủ chữ, căn trái | `OTrongPanel` (LuoiTrongPanel) → `LuoiFT` + `index.css .luoi-trong-panel` | KHỚP |
+| 4 | K2 | Ô điểm 96 × 44, viền liền (trống cũng liền), số 15 + "27 câu" TRONG ô | `ODiemMt` nhánh trong panel | KHỚP |
+| 5 | K2 | Kết quả "Chờ R" / "Chờ L, R" (chỉ kỹ năng của việc) | `choMon(row, hien)` trong panel | KHỚP |
+| 6 | K2 | — | hàng "Mở lưới đầy đủ ›" · "Cả lớp" trên lưới | GIỮ (thao tác cũ, mockup không vẽ) |
+| 7 | K2b | Chân hộp ⋯ · Vắng · Lưu · bài tiếp › + "Tiếp: …" | `HopNhapDiem` | KHỚP |
+| 8 | K2b | ⋯ = Lưu · đóng · Khôi phục điểm · Bỏ vắng, menu canh mép trái nút | `MenuDong canhTrai` | KHỚP (sát đáy màn thì menu mở lên) |
+| 9 | K4a/b | Nhãn "Phương án" + hai ô chọn (Mặc định), dòng quy chế + nút chính đổi theo ô | `XacNhanPaPanel` | KHỚP |
+| 10 | K4b | Ô "Lý do" | ô + đếm n / 300, máy chủ lưu, hiện ở thẻ QL + panel Case | KHỚP (không dấu * — luật Q3, PTA đang hỏi chủ SP) |
+| 11 | K4a/b | Panel riêng "Chọn PA · Reading", dải "Reading 4.5 · kỳ vọng 5.5" | việc mở panel Case (đầu Case, Case trước) + thẻ PA chứa form | KHÁC có lý do: luồng V20 / CASE-PA-UI mở việc PA trong panel Case — đổi luồng ngoài phạm vi |
+| 12 | K4a | Chỉ hai ô chọn | form PA (Nội dung *, Số buổi, Người dạy, Bắt đầu) + 3 link (Ghi kết quả… · Đề xuất PA khác… · Không cần theo dõi…) | GIỮ (luật: Xác nhận PA cần Nội dung — chủ SP 14/11) |
+| 13 | K4c | Dải bối cảnh ĐẦU form, rồi Tiến triển · Nhận xét · Quyết định | `BoiCanh` lên đầu | KHỚP (nội dung dải theo nơi gọi: "Kết quả kỳ trước · Điểm") |
+| 14 | K4c | Chip Tiến triển tròn có ký hiệu ✓ ↗ – ↓ ? | `KY_HIEU_TIEN_TRIEN` | KHỚP |
+| 15 | K4c | Quyết định hàng chip tròn | chip tròn; PA quy chế chỉ Giữ nguyên · Điều chỉnh | KHỚP dáng (số lựa chọn theo luật) |
+| 16 | K4c | Chân "Lưu nháp" (nút) · "Lưu" | đúng thứ tự + chữ; "Lưu kết quả" → "Lưu" (lời 13/11) | KHỚP |
+| 17 | K4c | — | "Ngày ghi", câu "PA theo quy chế — không thay…" + "+ Thêm PA" | GIỮ (ghi lùi ngày, lối thêm PA) |
+| 18 | K5d/e | Đầu "Ý thức" · tiêu đề · dòng 2; không dòng "* = bắt buộc" | `dau` + bỏ ngCanh | KHỚP |
+| 19 | K5d/e | Công tắc gọn · Học viên · Nhóm chip tròn · Vi phạm · Môn + Ngày · Mô tả (tuỳ chọn) · Bằng chứng một hàng; không tiêu đề khối | `RecordViolationPanel` / `DongViPham` sắp lại | KHỚP |
+| 20 | K5d/e | Chân "Chưa lưu" · Đóng · Lưu vi phạm / Lưu nhắc nhở | `chan.trai` + `huyPhai` | KHỚP |
+| 21 | K5d | Học viên là chip em đã chọn | ô chọn em của lớp (chọn nhiều) | GIỮ (ghi nhiều em một lần; ô chọn có tìm làm ở đợt ⑤) |
+| 22 | K5d | — | "+ Thêm vi phạm", bộ đếm 0 / 60, cảnh báo trùng | GIỮ (thao tác cũ) |
+| 23 | K8 375 | Ô điểm viền liền, dòng quy chế | ô dáng #4 cả dạng điện thoại; quy chế xuống 2 dòng khi hẹp | KHỚP (tab kỹ năng L / R / W1… của dạng điện thoại GIỮ — mockup chỉ vẽ 375 Chấm Speaking) |
 
-**KHỚP 11 / 11 = 100 %** (chủ SP chốt 14/11 các XM: hạn không ghi thứ · "Gửi Quản lý duyệt" · Chọn PA quy chế vẫn nhập Nội dung · làm ô Lý do).
+**Đếm (bỏ dòng GIỮ — tính năng mockup không vẽ): KHỚP 16 / 17 = 94 %.** 1 KHÁC có lý do (#11: việc PA mở trong panel Case). 6 dòng GIỮ có lý do.
 
 ## Thao tác TRƯỚC → SAU
 
@@ -36,6 +49,13 @@ Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17�
 | Chọn PA: Giữ PA của tôi | nút trong thân (1 bấm) | ô chọn + "Gửi Quản lý duyệt" ở chân (2 bấm) | ĐỔI — mockup K4b; chân nói trước hậu quả |
 | Đề xuất PA khác… · Không cần theo dõi… · Ghi kết quả… | link dưới form | như cũ (ẩn khi chọn Giữ PA của tôi) | GIỮ |
 | Xem chi tiết quy chế | câu tĩnh trong thân (nơi có) | ⓘ ở dòng quy chế | ĐỔI chỗ |
+
+| Ghi kết quả PA: lưu (Giữ nguyên) | nút "Lưu kết quả" | nút "Lưu" | ĐỔI chữ (mockup K4c, lời 13/11) |
+| Ghi kết quả PA: Lưu nháp | link chữ sau nút chính | nút phụ trước nút chính | ĐỔI dáng |
+| Ghi kết quả PA: chọn Quyết định | nút đoạn | chip tròn | ĐỔI dáng |
+| Ghi vi phạm: lưu | nút "Lưu" | nút "Lưu vi phạm" (nhắc nhở: "Lưu nhắc nhở" như cũ) | ĐỔI chữ |
+| Ghi vi phạm: Đóng | chỉ ✕ / Esc (Đóng khi lưu lỗi một phần) | ✕ / Esc + nút Đóng ở chân (cùng đường hỏi bỏ chữ) | GIỮ + thêm |
+| Nhập điểm (panel một lớp) | bấm hàng lớp để mở / gập lưới | lưới mở sẵn, không hàng lớp (nhiều lớp: giữ hàng gập) | ĐỔI (mockup K2) |
 
 Không mất thao tác nào.
 

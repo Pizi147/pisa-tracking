@@ -16,4 +16,5 @@ export const EN_QUY_CHE = {
   'Không tính vào bậc, không sinh việc': 'Not counted towards levels, no task',
   'GVCN nhận việc xem · đủ 3 trong 2 tuần thì phải xử lý': 'Homeroom gets a review task · 3 within 2 weeks must be handled',
   'Đủ 3 vi phạm trong 2 tuần: GVCN phải xử lý theo bậc.': '3 violations within 2 weeks: the homeroom teacher must act by level.',
+  'Lưu vi phạm': 'Save violation',
 } as const;

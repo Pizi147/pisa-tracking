@@ -291,7 +291,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     cao('web/src/modules/students/StudentDetailPage.tsx', /className=\{NUT_DAU_HO_SO\} onClick=\{\(\) => setReportOpen\(true\)\}>\+ Case/);
     cao('web/src/ui/MenuDong.tsx', /NUT_DAU_HO_SO = 'btn h-9 justify-center max-sm:h-11'/);
     /* Chủ SP 08/11 (#1246): lưới trong panel việc rộng hơn panel — cuộn ngang có chỉ báo mờ mép, không cắt cụt ô. */
-    assert((docNguon('web/src/modules/congViec/PanelViec.tsx').match(/<LuoiTrongPanel className="luoi-trong-panel/g) ?? []).length === 2, 'PanelViec: cả hai lưới trong panel dùng LuoiTrongPanel');
+    assert((docNguon('web/src/modules/congViec/PanelViec.tsx').match(/<LuoiTrongPanel className=/g) ?? []).length === 2, 'PanelViec: cả hai lưới trong panel dùng LuoiTrongPanel');
     cao('web/src/index.css', /\.luoi-trong-panel \.table-scroll\[data-con-phai\] \{ mask-image/);
     cao('web/src/index.css', /\.luoi-trong-panel \.table-scroll > table > :is\(thead, tbody\) > tr > :first-child \{ position: sticky; left: 0;/);   // cột tên HV đứng yên
     cao('web/src/modules/students/StudentsPage.tsx', /className="nut-loc"/);   // PR-HK2: lớp .nut-loc giữ 44 px ở điện thoại

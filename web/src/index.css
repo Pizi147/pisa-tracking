@@ -268,6 +268,9 @@
   .luoi-trong-panel .table-scroll > table > thead > tr > :first-child { z-index: 11; background: var(--surface-2); }
   .luoi-trong-panel .table-scroll[data-con-trai] > table > :is(thead, tbody) > tr > :first-child { box-shadow: inset -1px 0 0 var(--line-strong), 6px 0 8px -4px var(--line-strong); }
   .luoi-trong-panel .table-scroll[data-con-phai] { mask-image: linear-gradient(to right, var(--surface) calc(100% - 48px), transparent); }   /* mask chỉ dùng độ đục — màu nào đặc cũng được */
+  /* GD-3 (mockup v21 K2 `.luoi`): lưới trong panel việc — cột tên lấy phần còn lại, cột ô 112 / Kết quả 132 (LuoiFT); tên cột + ô căn trái như mockup. */
+  .luoi-trong-panel .bang > colgroup > col:first-child { width: auto !important; }
+  .luoi-trong-panel .bang :is(th, td)[data-kieu="diem"] { text-align: left; }
   /* G1-11 (mockup L4): lưới lớp thường gọn ở màn hẹp ("Xem dạng bảng") — cột Học viên · Kết quả 128 px (đứng yên), môn cuộn ngang, thấy 2 môn mỗi khung. */
   @media (max-width: 767px) { .luoi-thuong-gon table > colgroup > col:first-child { width: 128px !important; } }
   .luoi-thuong-gon .ten-ho-so { white-space: normal; overflow: visible; }   /* G1-11: tên dài xuống dòng trong cột 200 px, không cắt "…" */
