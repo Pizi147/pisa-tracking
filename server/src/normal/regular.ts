@@ -838,7 +838,7 @@ export function reportRegularNoShow(
   p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),
   /** K4-32 (PR-XLMT): "Báo vắng" từ menu ⋯ ô lưới — có lý do (ghi vào nhật ký lịch). Gõ "-" trong ô thì không có. */
   lyDo?: string,
-): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean; khongDuThi?: boolean } {
+): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean; khongDuThi?: boolean; daCat?: boolean } {
   const conn = db();
   let a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt đánh giá');
@@ -883,7 +883,7 @@ export function reportRegularNoShow(
     if (bat && coDiem) {
       /* NHAP-DIEM-a (thay hỏi RKC-B): cất điểm ("Khôi phục" một bấm) rồi ghi "-" — web báo kèm Hoàn tác. */
       saveRegularScore(p, attemptId, skill, { score: null, lyDo: 'Ghi vắng' }, today);
-      return reportRegularNoShow(p, attemptId, skill, bat, today, lyDo);
+      return { ...reportRegularNoShow(p, attemptId, skill, bat, today, lyDo), daCat: true };   // NHAP-DIEM-b: web — Hoàn tác = Khôi phục (điểm về)
     }
     const tuanCua = (id: number | null) =>
       (id ? (conn.prepare('SELECT code, week_start FROM report_periods WHERE id = ?').get(id) as any) : null);

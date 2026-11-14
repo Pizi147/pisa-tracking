@@ -287,10 +287,10 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     assert(ky(e.fin, 'writing').ws === WS, 'nhập sớm tự dời về tuần này');
   }));
 
-  check('NDT-12 · MT0 lớp thường: Huỷ điểm / Khôi phục cùng đường; lối cũ /huy-tay và /khoi-phuc-diem đi cùng hàm', () => thu(() => {
+  check('NDT-12 · MT0 lớp thường: Huỷ điểm / Khôi phục cùng đường; một đường cho mọi loại bài', () => thu(() => {
     const e = emThuong();
     attempts.saveScore(QL, e.mt0, 'listening', { band: 5 }, HN);
-    absence.huyTay(QL, e.mt0, 'listening', true);
+    absence.huyDiemKn(QL, e.mt0, 'listening', true);
     assert(ky(e.mt0, 'listening').sit_status === 'cancelled' && banMo(e.mt0).length === 1, 'MT0 huỷ qua lối cũ');
     absence.huyDiemKn(QL, e.mt0, 'listening', false);
     assert(o(e.mt0, 'listening').band === 5, 'MT0 khôi phục');
@@ -315,5 +315,27 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     xoaNho();
     const rt = regular.saveRegularScore(QL, e.fin, 'listening', { noShow: true }, HN);
     assert(rt.moved && ky(e.fin, 'listening').ws === W2S && o(e.fin, 'listening').no_show_period_id === pid(W1S), `lớp thường: ${JSON.stringify([rt, ky(e.fin, 'listening')])}`);
+  }));
+
+  /* NHAP-DIEM-b (PTA 14/11): "-" / nút Vắng đè lên điểm — máy chủ cất điểm, không hỏi, trả `daCat`; Hoàn tác của web = Khôi phục (điểm về + bỏ vắng). */
+  check('NDT-14 · "-" / Vắng đè điểm → daCat; Khôi phục (Hoàn tác) trả điểm + bỏ vắng (Mock gõ "-", nút Vắng, lớp thường)', () => thu(() => {
+    const { aid } = dung();
+    attempts.saveScore(gvL, aid, 'listening', { rawScore: 30 }, HN);
+    const r = attempts.saveScore(gvL, aid, 'listening', { noShow: true }, HN);
+    assert(r.daCat && ky(aid, 'listening').absence_move_count === 1, `Mock "-" đè điểm: ${JSON.stringify(r.vang)}`);
+    absence.huyDiemKn(gvL, aid, 'listening', false, null, HN);
+    assert(o(aid, 'listening').raw_score === 30 && o(aid, 'listening').no_show_period_id === null && ky(aid, 'listening').ws === WS && ky(aid, 'listening').absence_move_count === 0,
+      `Hoàn tác Mock: ${JSON.stringify([o(aid, 'listening'), ky(aid, 'listening')])}`);
+    attempts.saveScore(gvL, aid, 'reading', { rawScore: 30 }, HN);
+    const b = absence.baoVang(gvcn, aid, 'reading', null, HN);
+    assert(b.daCat && b.daDoi, `nút Vắng đè điểm, không hỏi: ${JSON.stringify(b)}`);
+    absence.huyDiemKn(gvcn, aid, 'reading', false, null, HN);
+    assert(o(aid, 'reading').raw_score === 30 && ky(aid, 'reading').ws === WS, 'Hoàn tác nút Vắng');
+    const e = emThuong();
+    regular.saveRegularScore(QL, e.fin, 'listening', { score: 15, total: 20 }, HN);
+    const rt = regular.saveRegularScore(QL, e.fin, 'listening', { noShow: true }, HN);
+    assert(rt.daCat && rt.moved, `lớp thường "-" đè điểm: ${JSON.stringify(rt)}`);
+    absence.huyDiemKn(QL, e.fin, 'listening', false, null, HN);
+    assert(o(e.fin, 'listening').raw_score === 15 && !o(e.fin, 'listening').no_show_period_id && ky(e.fin, 'listening').ws === WS, 'Hoàn tác lớp thường');
   }));
 }

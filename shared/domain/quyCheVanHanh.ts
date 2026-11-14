@@ -14,7 +14,7 @@ const CHI_TIET_MT_CU = (): string => t('Tuần Test đã qua 2 tuần: "-" ghi K
 
 /**
  * NHẬP ĐIỂM (Q1, Q2, Q5, Q6, Q7, Q9, Q58). Chủ SP 14/11 (plan.md, #1619): "đã có chữ MT thì tức là Mock test, tính như luật MT bình thường" —
- * Mock + MT0 (KỂ CẢ lớp thường): "-" lần 1 dời sang tuần sau · lần 2 huỷ; Progress / Final lớp thường: dời, không tự huỷ · cần thì ⋯ › Huỷ môn (#1601);
+ * Mock + MT0 (KỂ CẢ lớp thường): "-" lần 1 dời sang tuần sau · lần 2 huỷ; Progress / Final lớp thường: dời, không tự huỷ · cần thì ⋯ › Huỷ điểm (NHAP-DIEM-b);
  * tuần Test qua ≥ 2 tuần = Không dự thi (`laMtCuKyNang`). Thứ tự: MT cũ › tuần đã qua 2 tuần › chưa tới tuần › quá hạn › mặc định.
  */
 export function quyCheNhapDiem(o: {
@@ -43,8 +43,8 @@ export function quyCheNhapDiem(o: {
     : theoMock ? t('"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ')
       : o.nguongDat != null ? t('Đạt từ {n} % · "-" = vắng: dời sang tuần sau, không tự huỷ', { n: o.nguongDat })
         : t('"-" = vắng: dời sang tuần sau, không tự huỷ');
-  /* Progress / Final lớp thường: huỷ môn bằng tay ở ⋯ (#1601) — nói ở ⓘ. */
-  const chiTiet = theoMock ? CHI_TIET_MT_CU() : `${t('Cần thì ⋯ › Huỷ môn.')} ${CHI_TIET_MT_CU()}`;
+  /* Progress / Final lớp thường: Huỷ điểm bằng tay ở ⋯ (NHAP-DIEM-b) — nói ở ⓘ. */
+  const chiTiet = theoMock ? CHI_TIET_MT_CU() : `${t('Cần thì ⋯ › Huỷ điểm.')} ${CHI_TIET_MT_CU()}`;
   return { chu, chiTiet };
 }
 

@@ -802,12 +802,11 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
      RKC: lớp đã kết thúc (không còn tuần để dời) → Không dự thi. */
   const khongDuThi = laLopKetThuc(a.class_id) || laMtCuKyNang(row.week_start, today);
   const late = today > row.week_end.slice(0, 10);
-  /* RKC (B): ô của kỹ năng đã có điểm → hỏi; đồng ý → huỷ điểm (cất, Khôi phục được) rồi báo vắng — cùng giao dịch ghi vắng. */
+  /* NHAP-DIEM-b (PTA 14/11, thay hỏi RKC-B): ô của kỹ năng đã có điểm → cất điểm (Khôi phục được) rồi báo vắng — cùng giao dịch; web báo kèm Hoàn tác (= Khôi phục). */
   const coDiem = entrySkillsOf(skill as AssessedSkill).filter((k) => k !== boTask).filter((e) => {
     const s = conn.prepare('SELECT band, raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
     return s && ((s.band ?? null) !== null || (s.raw_score ?? null) !== null);
   });
-  if (coDiem.length) canXacNhan('{skill} đã có điểm — huỷ điểm (khôi phục lại được) rồi báo vắng?', { skill: skillName(skill) }, 'Huỷ điểm, báo vắng');
   return tx(() => {
     for (const e of coDiem) saveScore(p, attemptId, e, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Báo vắng' });
     const ids: number[] = [];
@@ -830,12 +829,12 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
         before: null, after: { noShow: true, week: row.period_code, late, khongDuThi: true, lyDo: lyDo?.trim() || null },
       });
       refreshOutcome(p, attemptId);
-      return { daDoi: false, tuanMoi: null, huyVang: false, khongDuThi: true, canhBao: null };
+      return { daDoi: false, tuanMoi: null, huyVang: false, khongDuThi: true, canhBao: null, daCat: coDiem.length > 0 };
     }
     const kq = settleGroup(conn, attemptId, row.id, skill, row.week_end!, row.period_code ?? '', ids, p.userId, lyDo?.trim() ? `Báo vắng: ${lyDo.trim()}` : 'Báo vắng', today);
     refreshOutcome(p, attemptId);   // OV-1c: vắng = kỹ năng thiếu đã xong → lượt có thể chốt
     const sau = ensureSkillRows(attemptId).find((r) => r.skill === skill)!;
-    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, huyVang: !!sau.huy_vang, khongDuThi: false, canhBao: kq ? kq.canhBao : null };
+    return { daDoi: sau.sit_status === 'scheduled', tuanMoi: sau.week_start, huyVang: !!sau.huy_vang, khongDuThi: false, canhBao: kq ? kq.canhBao : null, daCat: coDiem.length > 0 };
   });
 }
 
@@ -923,5 +922,3 @@ export function huyDiemKn(p: Principal, attemptId: number, skill: string, huy: b
   });
 }
 
-/** Lối cũ `/huy-tay` (LG-9, web lớp thường tới PR-2) — cùng một đường. */
-export const huyTay = (p: Principal, attemptId: number, skill: string, huy: boolean) => huyDiemKn(p, attemptId, skill, huy);

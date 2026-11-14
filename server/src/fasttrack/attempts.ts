@@ -2368,6 +2368,7 @@ export function saveScore(
         };
       };
       if (patch.noShow === true) {
+        let daCat = hasOfficial;   // NHAP-DIEM-b: có điểm bị cất (ô này / task Writing kia) → web: Hoàn tác = Khôi phục
         if (hasOfficial) {
           /* NHAP-DIEM-a (thay hỏi RKC-B): "-" vào ô đã có điểm → cất điểm ("Khôi phục" một bấm, `catDiemO`) rồi ghi "-"; web báo kèm Hoàn tác. */
           saveScore(p, attemptId, skill, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng' }, today);
@@ -2423,6 +2424,7 @@ export function saveScore(
           let kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;
           if (kia && (kia.band !== null || kia.raw_score !== null)) {
             const o = ENTRY_SKILL_SHORT[k as EntrySkill];
+            daCat = true;
             try {
               saveScore(p, attemptId, k, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng cả Writing' }, today);
             } catch (e) {
@@ -2456,7 +2458,7 @@ export function saveScore(
           : sau.planned_period_id !== scheduleRow.planned_period_id
             ? { kq: 'doi', tuanMoi: sau.week_start ? tuanLich(sau.week_start, today) : null, canhBao: chot ? chot.canhBao : null }
           : { kq: 'cho-o-kia' };
-        return { ...done(), vang };
+        return { ...done(), vang, ...(daCat ? { daCat: true } : {}) };
       }
       /* patch.noShow === false: gỡ dấu chưa chốt / Không dự thi. Vắng đã chốt đi `goVangDaChot` (trên). */
       if (!existing?.no_show_period_id) return done();
