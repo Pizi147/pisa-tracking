@@ -183,3 +183,7 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 - **Badge tab "Chấm Speaking": dáng mờ (chỉ đếm số bài) + ⚠ khi có bài quá hạn**; không đỏ; không cộng vào badge menu / chuông. Đỏ chỉ dành cho "việc của tôi quá hạn". Dáng badge mờ: mockup ⑤ (`bang-mau.html`, thanh tab).
 - **Chip "Việc cần làm" quá hạn:** mọi loại việc cùng một dáng ⚠ + đỏ như mockup; không tách riêng Nhập điểm.
 - Luật (không phải giao diện): MT0 gõ "-" như Mock (LG-9) · thẻ Thu hồi xử lý vi phạm tự chốt theo GVCN khi hết hạn duyệt (LG-10) · việc Bước tiếp và xoá học viên / lớp trống giữ như mã.
+
+## 16. Luật V22 — hạn chỉ bằng màu
+
+** (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: tạm mờ, không ⚠ (chờ chủ SP).

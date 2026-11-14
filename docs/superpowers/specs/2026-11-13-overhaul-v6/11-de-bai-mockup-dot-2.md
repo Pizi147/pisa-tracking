@@ -84,3 +84,5 @@ Nền: `thiet-ke/2026-11-11-quan-tri-v2/quan-tri-v2.html`. Mã + chỗ lệch: `
 - R10.3 Lưu trữ: 3 tab chuẩn có số — Lớp đã kết thúc · Học viên đã lưu trữ · **Đã xoá** (câu "giữ 30 ngày" vào ⓘ). Học viên dùng BẢNG cùng dáng với lớp (tên link · trạng thái · ngày · nút); lọc chi nhánh dùng ô "Xem" như Học viên & Lớp.
 - R10.4 Giữ đủ: Tổng kết · Mở lại · Quay lại học (một / n em) · Xử lý tiếp · Sửa thông tin · Chọn nhiều · Khôi phục · Hoàn tác; tab "Đã xoá" ở Quản trị dùng cùng thành phần.
 - R10.5 375 cho Lưu trữ; Quản trị 375 chỉ cần tab Tài khoản.
+
+**Luật V22 (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: tạm mờ, không ⚠ (chờ chủ SP).
