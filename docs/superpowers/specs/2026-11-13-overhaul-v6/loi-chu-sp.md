@@ -305,3 +305,12 @@ Câu hỏi của PTA Overhaul: hồ sơ học viên (mockup ③) có bỏ TVV kh
 > "ok rồi nhé"
 
 Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đã sửa (dòng việc một dạng, "Chấm Speaking", chuông dáng 11/11). PTA Overhaul ghi nhận là **mockup ⑤ ĐÃ DUYỆT** (`thiet-ke/v21/bang-mau.html`, PR #1558 đã merge) — chủ SP báo lại nếu hiểu sai.
+
+## 15/11 — lời 28 (chủ SP nói trong session mockup ③; session đó chuyển lại nguyên văn): duyệt mockup ③ kèm 3 chỉnh
+
+> "1. 'Không cần theo dõi' cũng thành nút hẳn nhé, mờ hơn chẳng hạn nhưng đừng để mỗi một dòng chữ như vậy
+> 2. 'Xác nhận xử lý' cũng nên là một nút hẳn, không để là chữ
+> 3. Cấp bậc xử lý vi phạm có progress bar khá ok nhưng cần làm nổi bật hơn phần WL1 và WL2 nhé
+> 4. Còn lại duyệt, những panels, nút các thứ cần đồng bộ với những chỗ cần động bộ khi code nhé"
+
+ĐÃ CHỐT: **mockup ③ hồ sơ HV ĐÃ DUYỆT** (`thiet-ke/v21/ho-so-hv.html`, PR #1559 đã merge, 3 chỉnh đã vào mockup). Áp chung khi code (ý 4): "Không cần theo dõi" và "Xác nhận xử lý" là NÚT (không là chữ link) ở mọi nơi có chúng — tab Ý thức lớp, panel Công việc, hồ sơ HV; thang cấp bậc vi phạm làm nổi WL 1, WL 2 ở mọi nơi hiện thang; panel / nút / dòng việc / dòng quy chế dùng chung một bộ thành phần (mockup ⑤).
