@@ -271,7 +271,10 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
               <span className="flex flex-wrap items-baseline gap-x-2.5 text-sm text-slate-400">
                 <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac, d.dongThoiGian.some((x) => x.loai === 'vi-pham' && !x.chiNhac))}</b>
                 {/* Mockup v20 A4: thang mini sáu vạch (vạch đã qua tô) — chỉ để nhìn, đủ tên ở "Thang ▾". */}
-                <span aria-hidden className="inline-flex items-center gap-[3px] self-center">{[1, 2, 3, 4, 5, 6].map((b) => <i key={b} className={`h-1.5 w-[26px] rounded-full ${b <= d.bac ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]'}`} />)}</span>
+                {/* GD-4a (chủ SP lời 28 ý 3; mockup ③ `.vach-bac b.wl`): bậc 3 = WL 1, bậc 6 = WL 2 — nhãn đỏ nổi trong thanh (đã tới: nền đỏ đặc), không chỉ là vạch. */}
+                <span aria-hidden className="inline-flex items-center gap-[3px] self-center">{[1, 2, 3, 4, 5, 6].map((b) => (b === 3 || b === 6
+                  ? <b key={b} className={`inline-flex h-5 items-center whitespace-nowrap rounded px-[7px] text-xs font-bold tabular-nums ${b <= d.bac ? 'bg-[rgb(var(--late-rgb))] text-[color:var(--surface)]' : 'border border-late-line bg-late-bg text-late'}`}>WL {b / 3}</b>
+                  : <i key={b} className={`h-1.5 w-[22px] rounded-full ${b <= d.bac ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]'}`} />))}</span>
                 {xuLyCuoi && <span className="tabular-nums">{ngay(xuLyCuoi.ngay, homNay)}</span>}
                 <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{dich(d.keTiep.nhan)}</b></span>
                 <button type="button" aria-expanded={thang} className={LINK} onClick={() => setThang((x) => !x)}>{thang ? `${t('Thang')} ▴` : `${t('Thang')} ▾`}</button>
