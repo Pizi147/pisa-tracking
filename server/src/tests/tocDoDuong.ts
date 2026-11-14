@@ -404,6 +404,8 @@ export const DUONG_DO: MucDo[] = [
   /* PR-4 THI-THAT: tab Thi thật — danh sách + Tổng · Từng kỹ năng · Theo GV (QL / QT / CX; TVV không chạy 2 câu Theo GV); panel ô chỉ khi bấm. */
   { trang: 'Phân tích QL', vai: ['QL', 'QT', 'GVCN', 'TVV', 'CX'], url: '/phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { GVCN: 403 } },
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT'], url: '/phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
+  /* GD-12b-a: panel ô "Sắp thi · còn SOS" (đọc khi bấm — cùng `tapSapThiSos` với ô kèm `/phan-tich/thi-that`). */
+  { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV', 'CX'], url: '/phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20' },
   { trang: 'Phân tích · panel thẻ', vai: ['QL', 'QT', 'TVV'], url: '/phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20', maChuDich: { TVV: 403 } },
   { trang: 'Phân tích GV', vai: ['QL', 'QT'], url: '/phan-tich/giao-vien/o?cn={cn}&ct=ft&gv={gv}&cot=ghi-pa' },
   /* DEM-QUA-HAN b: ô Chấm Test đúng hạn mở panel số chung (dòng việc) thay panel Chấm điểm riêng. */
@@ -1089,7 +1091,9 @@ export const TRAN: Record<string, number> = {
   'QL /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
   'QT /phan-tich/ket-qua-thi?loai=thi-that&kieu=tuan&tu=2026-07-06&den=2026-09-20': 15,   // đo 5
   /* PR-4 THI-THAT: tab Thi thật (danh sách + thống kê; Theo GV +1 câu phân công, ghi danh nhớ chung với lớp lúc thi) · panel ô — trần = max(đo+10, ⌈đo×1,3⌉), đo 05/11. */
-  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 18, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7 · 8 · 7
+  'QL /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17, 'TVV /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 18, 'CX /phan-tich/thi-that?kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7 · 8 · 7 · GD-12b-a (ô Sắp thi · còn SOS): đo 8 · 9 · 10 · 9 — seed 14/09 không em sắp thi; bản chép thật (14/11, một chi nhánh) +5 câu, +470–705 dòng
+  /* GD-12b-a: panel Sắp thi · còn SOS (đọc khi bấm): seed đo 3 câu → max(3 + 10, ⌈3 × 1,3⌉); bản chép thật 8–9 câu (lượt mới nhất của em sắp thi). */
+  'QL /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13, 'QT /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13, 'TVV /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13, 'CX /phan-tich/thi-that/o?o=sap-thi&kieu=tuan&tu=2026-07-06&den=2026-09-20': 13,
   'QL /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=kn:w:fail&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16,   // đo 6 · 6
   'QL /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 16, 'QT /phan-tich/thi-that/o?o=gv:{gv}:w1:hv&kieu=tuan&tu=2026-07-06&den=2026-09-20': 17,   // đo 6 · 7
   'QL /phan-tich/giao-vien/o?cn=1&ct=ft&gv=7&cot=ghi-pa': 29,   // đo 19
