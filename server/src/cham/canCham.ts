@@ -24,6 +24,7 @@ import { allProgrammes, cheDoCua, isRatioClass, programmeOfClass, regularSheet, 
 import { quaHanNhapDiem, skillScoreDeadline, weekInfo } from '../platform/week.ts';
 import { addDays } from '../util.ts';
 import { overdueScoreBai, rowsFor } from '../worklist/metrics.ts';
+import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { sExTuan, type DongSEx } from './sExpert.ts';
 
@@ -98,7 +99,20 @@ export type DongNo = {
   hrefDayDu: string;
   /** PR-VAI-a (UX-B5, Q23): tên GV đang nợ các ô của dòng (từ `pendingOwners`, sắp theo tên, không trùng); rồi `GV chấm chéo` (T18); môn chưa phân công → "chưa phân công". */
   gvNo: string[];
+  /** GD-11a (⑦ A1, A3): "còn chờ: GV (môn)" — tên GV → môn nhập còn nợ (cùng nguồn `pendingOwners`); người có phân công không thấy phần của chính mình. */
+  gvMon: Record<string, string[]>;
 };
+
+/** GD-11a (R7.6): "Nhập điểm lớp ›" của lưới theo tuần — Lịch Test đúng tuần + lớp (cùng đích `duongNhapDiemCu`). */
+const lichTestHref = (classId: number, periodId: number | null) => `/test/lich?classId=${classId}${periodId ? `&periodId=${periodId}` : ''}`;
+
+/** GD-11a: (tên, môn nhập) → `{ tên: [môn…] }`, môn theo thứ tự L R W1 W2 S, "GV chấm chéo" cuối. */
+function gomGvMon(ds: readonly { ten: string; kn: string }[]): Record<string, string[]> {
+  const m = new Map<string, Set<string>>();
+  for (const x of ds) (m.get(x.ten) ?? m.set(x.ten, new Set()).get(x.ten)!).add(x.kn);
+  const ten = [...m.keys()].sort((a, b) => (a === CHAM_CHEO ? 1 : b === CHAM_CHEO ? -1 : a.localeCompare(b, 'vi')));
+  return Object.fromEntries(ten.map((x) => [x, [...m.get(x)!].sort(theoThuTu)]));
+}
 
 /** Tên đợt trên dòng: FT gọi MT{n}; lớp thường gọi "Giữa khoá"/"Cuối khoá" — không bao giờ gọi đợt lớp thường là MT. */
 const dotLabelOf = (kind: string, attemptNo: number | null) =>
@@ -283,7 +297,7 @@ export function noQuaHan(
     moved: MonDoiLich | null;
   };
   type Gom = DongNo & {
-    _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _chuaPc: boolean;
+    _hs: Set<number>; _aid: Set<number>; _gv: Set<string>; _chuaPc: boolean; _gvMon: { ten: string; kn: string; toi: boolean }[];
     /* OV-11e (TE-7): phần của người xem / của GV khác (cùng luật `hangLopTuan`). */
     _toiKn: Set<string>; _toiCon: number; _toiQuaHan: boolean; _khacKn: Set<string>; _khacCon: number; _khacTre: number | null;
   };
@@ -323,8 +337,8 @@ export function noQuaHan(
           kind: a.kind, attemptNo: a.attemptNo ?? null, dotLabel: dotLabelOf(a.kind, a.attemptNo ?? null),
           periodId: x.periodId, weekStart: x.weekStart,
           kyNang: [], kyNangLabel: '', conBai: 0, soHv: 0, attemptIds: [], han: null, quaHan: false, luiLich: null,
-          cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), phan: null, hrefDayDu: '', gvNo: [],
-          _hs: new Set(), _aid: new Set(), _gv: new Set(), _chuaPc: false,
+          cuaToi: false, duocCham: false, coDayLop: f.lopCuaToi.has(a.classId), phan: null, hrefDayDu: '', gvNo: [], gvMon: {},
+          _hs: new Set(), _aid: new Set(), _gv: new Set(), _chuaPc: false, _gvMon: [],
           _toiKn: new Set(), _toiCon: 0, _toiQuaHan: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null,
         };
         gom.set(key, cu);
@@ -335,6 +349,7 @@ export function noQuaHan(
       cu._aid.add(a.id);
       const gv = (a.pendingOwners ?? {})[x.skill] ?? null;   // cùng nguồn tên với lượt (listAttempts) — không câu SQL mới
       if (gv) cu._gv.add(gv); else cu._chuaPc = true;
+      cu._gvMon.push({ ten: gv ?? 'chưa phân công', kn: x.skill, toi: cuaToi(a.classId, a.kind, x.skill) });
       if (x.deadline && (!cu.han || x.deadline < cu.han)) cu.han = x.deadline;
       if (x.overdue) cu.quaHan = true;
       if (cuaToi(a.classId, a.kind, x.skill)) {
@@ -358,7 +373,7 @@ export function noQuaHan(
   const luiLichOf = dungLuiLich(doi);
 
   const dong: DongNo[] = [...gom.values()].map((d) => {
-    const { _hs, _aid, _gv, _chuaPc, _toiKn, _toiCon, _toiQuaHan, _khacKn, _khacCon, _khacTre, ...rest } = d;
+    const { _hs, _aid, _gv, _chuaPc, _gvMon, _toiKn, _toiCon, _toiQuaHan, _khacKn, _khacCon, _khacTre, ...rest } = d;
     const kyNang = [...d.kyNang].sort(theoThuTu);
     /* OV-11e (TE-7, CA3-4): người có phân công — "Quá hạn" đỏ + số chỉ phần của mình; Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
     const phanRieng = !!f.coPhanCong && !can(p, PERMISSIONS.PLAN_WEEK, { classId: d.classId });
@@ -373,15 +388,17 @@ export function noQuaHan(
       kyNangLabel: kyNangLabelOf(d.mode, kyNang, d.chuongTrinh),
       soHv: _hs.size,
       gvNo: [...[..._gv].filter((x) => x !== CHAM_CHEO).sort((x, y) => x.localeCompare(y, 'vi')), ...(_gv.has(CHAM_CHEO) ? [CHAM_CHEO] : []), ...(_chuaPc ? ['chưa phân công'] : [])],
+      gvMon: gomGvMon(_gvMon.filter((x) => !phanRieng || !x.toi)),
       attemptIds: [..._aid],
       luiLich: luiLichOf.get(d.key) ?? null,
       cuaToi: mySkills(p, d.classId, kyNang.filter((k) => !laChamCheo(d.kind, k))).length > 0,
       /* Chỉ còn ô Speaking Mock (không của ai) → "Chờ chấm", không "Chờ GV khác" (mockup LT3, T18). */
       coDayLop: rest.coDayLop && kyNang.some((k) => !laChamCheo(d.kind, k)),
       duocCham: editableSkills(p, d.classId, kyNang).length > 0,
-      hrefDayDu: d.kind === 'mt0' ? `/nhap-diem/${d.classId}?kind=mt0${d.periodId ? `&periodId=${d.periodId}` : ''}`
+      /* GD-11a (⑦ A4, R7.6): lưới theo tuần → thẳng Lịch Test đúng tuần + lớp (không qua đường cũ `/nhap-diem` chuyển hướng). */
+      hrefDayDu: d.kind === 'mt0' ? (d.periodId ? lichTestHref(d.classId, d.periodId) : `/nhap-diem/${d.classId}?kind=mt0`)
         : d.mode === 'ielts_band'
-        ? `/nhap-diem/${d.classId}${d.periodId ? `?periodId=${d.periodId}` : ''}`
+        ? lichTestHref(d.classId, d.periodId)
         : `/nhap-diem/${d.classId}?kind=${encodeURIComponent(khoaBai(d.kind, d.attemptNo))}`,
     };
   });
@@ -473,6 +490,8 @@ export type LopLichTest = {
   dong: DongLichTest[];
   /** PR-MT (YC-13.1, K4 §4e): số bài vắng tuần này đang chờ Quản lý duyệt dời (lần 2+) — dòng tím nhạt trong hàng lớp. */
   choDuyetDoi: number;
+  /** GD-11a (⑦ A3): "Còn chờ: GV (môn)" — ô còn chờ theo người phụ trách (phân công đang hiệu lực; S Mock = "GV chấm chéo"); bỏ phần của người xem. */
+  gvMon: Record<string, string[]>;
   /** PR-LT3: tuần thi của hàng — khối 2 có hàng của tuần trước và của tuần cũ có hạn riêng (lưới mở đúng tuần đó). */
   periodId: number; weekStart: string;
 };
@@ -608,10 +627,12 @@ function hangLopTuan(
     return cuaToiNho.get(k)!;
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
-  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart' | 'phan' | 'tongCuaToi' | 'soHv' | 'luot'> & {
+  type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart' | 'phan' | 'tongCuaToi' | 'soHv' | 'luot' | 'gvMon'> & {
     dong: Map<string, DongTam>; _dot: string[]; _hv: Set<number>; _luot: Map<string, Set<number>>; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
     /* OV-1b: phần của người xem / của GV khác. */
     _toiKn: Set<string>; _toiQuaHan: boolean; _quaHanMoi: boolean; _khacKn: Set<string>; _khacCon: number; _khacTre: number | null; _tongToi: number;
+    /** GD-11a: ô còn chờ chưa phải của người xem (ô nhập, kèm loại bài để biết S chấm chéo). */
+    _conKhac: { kn: string; kind: string }[];
   };
   const byLop = new Map<string, LopTam>();
   /* PR-MT: bài vắng tuần này có đề nghị dời chờ Quản lý — MỘT lần tra sổ đề nghị cho cả trang (không hỏi từng dòng). */
@@ -639,12 +660,12 @@ function hangLopTuan(
         boMon: mt0 ? [...ASSESSED_SKILLS] : [...boMonLich(r.programme_code, modes.get(r.programme_code)?.skills)],
         kind: mt0 || mode === 'ratio' ? bai : null,
         tong: 0, conBai: 0, conBaiCuaToi: 0, quaHan: false,
-        hrefDayDu: mt0 ? `/nhap-diem/${r.class_id}?kind=mt0&periodId=${periodId}`
+        hrefDayDu: mt0 ? lichTestHref(r.class_id, periodId)
           : mode === 'ratio'
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(bai)}`
-          : `/nhap-diem/${r.class_id}?periodId=${periodId}`,
+          : lichTestHref(r.class_id, periodId),
         dong: new Map(), _dot: [], _hv: new Set(), _luot: new Map(), _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
-        _toiKn: new Set(), _toiQuaHan: false, _quaHanMoi: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null, _tongToi: 0,
+        _toiKn: new Set(), _toiQuaHan: false, _quaHanMoi: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null, _tongToi: 0, _conKhac: [],
       };
       byLop.set(khoa, lop);
     }
@@ -705,16 +726,21 @@ function hangLopTuan(
       if (tre) { d.quaHan = true; lop._quaHanMoi = true; }
       if (tre && toi) lop._toiQuaHan = true;
       if (con.length > toi) {
-        for (const o of con) if (!cuaToi(o.nhap)) lop._khacKn.add(o.nhap);
+        for (const o of con) if (!cuaToi(o.nhap)) { lop._khacKn.add(o.nhap); lop._conKhac.push({ kn: o.nhap, kind: r.kind }); }
         lop._khacCon += con.length - toi;
         if (tre) lop._khacTre = Math.max(lop._khacTre ?? 0, Math.round((Date.parse(today.slice(0, 10)) - Date.parse(han.slice(0, 10))) / 86_400_000));
       }
     }
   }
 
+  /* GD-11a: người phụ trách ô còn chờ — phân công đang hiệu lực (nhớ theo lớp trong request: khối Quá hạn thường đã nạp cùng lớp). CHỈ hàng không có
+     `phan` (Quản lý / Quản trị — cột "Còn chờ"); GV không có cột này → 0 câu thêm. Đo: QL +2 câu, ~+20 dòng mỗi lần mở. */
+  const xemCaLop = (classId: number) => !coPhanCong || can(p, PERMISSIONS.PLAN_WEEK, { classId });
+  const lopCon = [...new Set([...byLop.values()].filter((l) => l._conKhac.length && xemCaLop(l.classId)).map((l) => l.classId))];
+  const pc = lopCon.length ? phanCongDangHieuLuc(lopCon, demoToday()) : new Map<string, { ten: string }>();
   /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
   return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({
-    dong, _dot, _hv, _luot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, ...l
+    dong, _dot, _hv, _luot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, _conKhac, ...l
   }) => {
     /* OV-1b (3.5): nhãn "Quá hạn" của hàng = ô CỦA NGƯỜI XEM quá hạn (GV); Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
     const phanRieng = coPhanCong && !can(p, PERMISSIONS.PLAN_WEEK, { classId: l.classId });
@@ -738,6 +764,7 @@ function hangLopTuan(
       /* Tuần chưa tới thì chưa có gì để chấm — không tự mở. */
       moSan: !chuaToiHan && lopTuMo({ conBai: l.conBai, conBaiCuaToi: l.conBaiCuaToi, coPhanCong }),
       choDuyetDoi: l.mode === 'ielts_band' ? choDuyetCua.get(l.classId) ?? 0 : 0,
+      gvMon: phanRieng ? {} : gomGvMon(_conKhac.map((o) => ({ kn: o.kn, ten: laChamCheo(o.kind, o.kn) ? CHAM_CHEO : pc.get(`${l.classId}|${o.kn}`)?.ten ?? 'chưa phân công' }))),
       periodId, weekStart: String(tuan.week_start),
       dong: [...dong.values()].map(({ quaHan, ...d }) => ({
         ...d,

@@ -496,7 +496,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     const h = hang.find((x: any) => x.kind === 'mt0');
     assert(h && h.mode === 'ielts_band' && h.dotLabel === 'MT0' && h.boMon.join() === 'listening,reading,writing,speaking' && h.han === dm.hanChamMt0(tuanFinal),
       JSON.stringify(h));
-    assert(/kind=mt0/.test(h.hrefDayDu), h.hrefDayDu);
+    assert(h.hrefDayDu === `/test/lich?classId=${l.classId}&periodId=${week.ensurePeriod(tuanFinal).id}`, h.hrefDayDu);   // GD-11a R7.6: cùng đích `duongNhapDiemCu`
     const fin = hang.find((x: any) => x.kind === 'final');
     assert(fin && fin.mode === 'ratio' && fin.dong.every((d: any) => d.soHv === 2), `Final vẫn 2 em: ${JSON.stringify(fin?.dong)}`);
     assert(lt0.tongQuanKhung.thuong.tong === lt0.tongQuan.tong && lt0.tongQuanKhung.ft.tong === 0, 'MT0 đếm vào khung Lớp thường');

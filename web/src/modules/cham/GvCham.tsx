@@ -63,12 +63,14 @@ export function tenNgan(v: NguoiChon | null): string | null {
  * Luôn ghi "GV chấm: {tên thật}" (mockup HK2 J9): "Tôi" hiện bằng tên tài khoản. Tên dài xuống dòng (không cắt); tooltip có đủ tên.
  * Bấm mở hộp nhỏ chọn người (`ChonNguoi nhom="gv_speaking" choNgoai` — GV Speaking theo N7, L4).
  */
-export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = GOI_Y_COT, nhan = t('GV chấm') }: {
+export function NutGvCham({ value, onChange, lon = false, hang = false, oChon = false, goiY = GOI_Y_COT, nhan = t('GV chấm') }: {
   /** Chữ trước tên (lưới FT: "GV chấm S" — nút nằm trên bảng, không trong đầu cột S). */
   nhan?: string;
   value: NguoiChon | null; onChange: (v: NguoiChon | null) => void; lon?: boolean;
   /** VIEC-NHO-2 (điện thoại, dưới hàng chip): hàng "GV chấm S [tên ▾]" — nhãn + ô có viền cao 44 px như ô chọn khác. */
   hang?: boolean;
+  /** GD-11a (⑦ A3 `.gvs`, lời 17): ô chọn có tìm NGAY TẠI CHỖ ("GV chấm S [ô 300 px]") — không mở panel; GV Speaking chi nhánh trước. */
+  oChon?: boolean;
   /** Câu giải thích dưới ô chọn — cột S (mặc định) hay một bài (hồ sơ Mock). */
   goiY?: string;
 }) {
@@ -88,6 +90,14 @@ export function NutGvCham({ value, onChange, lon = false, hang = false, goiY = G
       </div>
     </KhungPanel>
   );
+  if (oChon) {
+    return (
+      <div className="flex items-center gap-2.5" title={goiY}>
+        <span className="whitespace-nowrap text-[13px] font-semibold text-dim">{nhan}</span>
+        <div className="w-[300px] max-w-full"><ChonNguoi value={value} onChange={(v) => onChange(v)} nhom="gv_speaking" choNgoai ariaLabel={nhan} /></div>
+      </div>
+    );
+  }
   if (hang) {
     return (
       <div className="flex items-center gap-2.5 px-3 pb-2">

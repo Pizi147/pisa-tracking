@@ -379,8 +379,8 @@ export default function MockDetailPage() {
           {d.classId && d.viewer.editableSkills.length > 0 && daToiTuan && (
             /* R16 — mở lưới cả lớp đúng TUẦN của đợt đang xem, không phải tuần hôm nay. */
             <Link className="btn min-h-[44px] no-underline sm:min-h-0"
-              to={d.mt0 ? `/nhap-diem/${d.classId}?kind=mt0${d.period ? `&periodId=${d.period.id}` : ''}`
-                : `/nhap-diem/${d.classId}${d.period ? `?periodId=${d.period.id}` : ''}`}>
+              /* GD-11a (⑦ A4, R7.6): thẳng Lịch Test đúng tuần + lớp + môn đầu người xem nhập được (con trỏ ở ô trống đầu). */
+              to={`/test/lich?${new URLSearchParams({ classId: String(d.classId), ...(d.period ? { periodId: String(d.period.id) } : {}), kn: d.viewer.editableSkills[0] })}`}>
               {t('Nhập điểm lớp ›')}
             </Link>
           )}
