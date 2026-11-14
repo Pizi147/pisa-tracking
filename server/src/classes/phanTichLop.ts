@@ -179,7 +179,7 @@ export function danhGiaMon(a: any, scores: readonly any[], prog: ProgrammeInfo |
 } | null {
   if (prog?.scoringMode === 'ratio') {
     if (a.kind !== 'progress' && a.kind !== 'final' && a.kind !== 'checkpoint') return null;
-    const r = evaluateRegular(boMonTheoLuot(prog?.skills ?? REGULAR_SKILLS, daGhiLuot(lich, scores), a.bo_mon), scores as any, prog?.code, nguongDatLop(a.class_id), a.created_at);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog?.skills ?? REGULAR_SKILLS, daGhiLuot(lich, scores), a.bo_mon), scores as any, prog?.code, nguongDatLop(a.class_id), a.created_at, lich as any);   // P13: bộ môn theo lượt
     return {
       mon: r.skills.filter((x) => x.outcome === 'pass' || x.outcome === 'fail').map((x) => ({ skill: x.skill as string, dat: x.outcome === 'pass' })),
       tyLeTong: r.tyLeTong ?? null, nguong: r.passThreshold, ovr: null, kv: null,

@@ -444,7 +444,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     assert(/const ten = [^;\n]*CHU_THAO_TAC\[tt?\]/.test(hop) && /(title|tieuDe)=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop)   /* PR-LM: KhungPanel dùng tieuDe */ && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
     assert(/tenMon\(ct, skill\)/.test(hop), 'tên môn phải qua tenMon');
     const dtg = docSach('web/src/modules/fasttrack/DongThoiGianLuot.tsx');
-    assert(/<svg/.test(dtg) && !/[✓✕▸◌●○]/.test(dtg), 'biểu tượng dòng thời gian phải là SVG');
+    assert(/<DsLichSu/.test(dtg) && !/[✓✕▸◌●○]/.test(dtg), 'dòng thời gian vẽ bằng một kiểu lịch sử (GD-4c: DsLichSu, bỏ biểu tượng theo H4), không ký tự Unicode');
     assert(!/KY_NANG_KHONG_KIEM_TRA|KIEM_TRA_LAI_KY_NANG/.test(docSach('web/src/ui/chu.ts')), 'chu.ts còn chữ cũ');
   });
 

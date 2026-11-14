@@ -17,6 +17,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Info as Tag, Skeleton, Status } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
+import { guiHuyTay } from '../cham/huyTay.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
@@ -224,8 +225,15 @@ export default function LuotThuongPage() {
           <span className="mt-1 block">
             {r.result.tyLeTong != null
               ? <span className="text-xl font-bold leading-none tabular-nums text-slate-100">{Math.round(r.result.tyLeTong * 100)}%</span>
-              : <span className="text-sm text-slate-400">{huy ? '—' : t('chờ {x}', { x: r.result.skills.filter((x) => x.outcome === 'missing').map((x) => tenMonNgan(ct, x.skill)).join(', ') })}</span>}
+              : <span className="text-sm text-slate-400">{huy ? '—' : r.result.required === 0 && r.result.daHuy?.length ? t('đã huỷ')
+                : t('chờ {x}', { x: r.result.skills.filter((x) => x.outcome === 'missing').map((x) => tenMonNgan(ct, x.skill)).join(', ') })}</span>}
           </span>
+          {/* LG-9b (chủ SP 15/11 "Tính trên môn còn lại"): có môn đã huỷ → % tính trên các môn còn lại, ghi rõ. */}
+          {!huy && !!r.result.daHuy?.length && r.result.required > 0 && (
+            <span className="mt-1 block text-xs text-slate-400">
+              {t('trên {n} môn · {x} đã huỷ', { n: r.result.required, x: r.result.daHuy.map((k) => tenMonNgan(ct, k)).join(', ') })}
+            </span>
+          )}
         </div>
         <div className="min-w-0 sm:pt-4">
           {huy ? <Status kind="idle">{t('Đã huỷ')}</Status> : <KetQua row={r} sheet={{ ...d, rows: [r] }} anCase />}
@@ -250,7 +258,9 @@ export default function LuotThuongPage() {
             <DongMon key={k} d={d} k={k} homNay={homNay} chiDoc={chiDoc} hep={hep} luu={luu} mo={moKn === k} thaoTac={thaoTac(k)}
               caseChu={(() => { const c = r.cases.find((x) => x.skill === k); const the = c && theCase.get(c.id); return the ? dich(the.trangThaiV4.chu) : null; })()}
               onMo={() => setMoKn((x) => (x === k ? null : k))}
-              onThaoTac={(x) => (x === 'khoi-phuc-diem' ? void khoiPhuc(k) : setHop({ t: x, k }))}
+              onThaoTac={(x) => (x === 'khoi-phuc-diem' ? void khoiPhuc(k)
+                : x === 'huy-tay' || x === 'bo-huy-tay' ? void guiHuyTay(toast, { attemptId: r.attemptId, skill: k, mon: tenMonNgan(ct, k), tenHv: r.studentName, huy: x === 'huy-tay', onDone: reload })
+                : setHop({ t: x, k }))}
               onLichSu={() => setLichSuMon(k)}
               vungCase={(
                 <>
@@ -266,7 +276,7 @@ export default function LuotThuongPage() {
                 </>
               )}
               lichSu={(
-                <LichSuGon tieuDe={t('Lịch sử {x}', { x: tenMon(ct, k) })}
+                <LichSuGon tieuDe={t('Lịch sử')}
                   dong={dongLuot({ history: d.history.filter((h) => h.field === k), scoreHistory: d.scoreHistory.filter((h) => h.skill === k),
                     lichSuCase: d.lichSuCase.filter((h) => h.topic === k), ct, homNay })} />
               )} />
@@ -312,7 +322,8 @@ function thaoTacMon(d: ChiTiet, k: string, homNay: string, can: (p: string) => b
   const coDiem = (d.dong.result.skills.find((x) => x.skill === k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s.weekStart ?? null, coDiem, sit: s.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
   const tat = thaoTacKyNang(tt, { nhapDiem: s.canEdit, quanLy: d.canPlan, gvcn: !!d.laGvcn, laFt: false, dotHoanTat: !!d.dong.hoanTat, doiLich: s.doiLich, quaTuan: tuanDaQua(s.weekStart, homNay),
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy });
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy,
+    khongTuHuy: true, vang: !!s.noShow && !s.khongDuThi, huyTay: !!s.huyTay });
   const chinh = tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? tat.chinh : null;
   return { chinh, menu: tat.menu };
 }
@@ -421,8 +432,8 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
           </div>
           <div role="cell" aria-colindex={4} className={`min-w-0 space-y-1 md:col-start-4 md:row-start-1 ${O_CHIP_XUONG_DONG}`}>
             <Status kind={tt.kind}>{tt.chu}</Status>
-            {/* Quá hạn: đỏ khi là việc của người xem; việc người khác "⚠" + chữ mờ (cùng màu chip "Còn lại" của người khác). */}
-            {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{quaHan ? `⚠ ${han}` : han}</div>}
+            {/* Quá hạn: đỏ khi là việc của người xem; việc người khác chữ mờ (cùng màu chip "Còn lại" của người khác). */}
+            {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{han}</div>}
             {/* LUOT-TEN-GV: môn còn nợ mà người xem không nhập được — tên GV môn (khung "Chờ điểm · hạn …" + tên). */}
             {!coDiem && !dung && !s.khongDuThi && !huy && !(canEdit && !chiDoc) && <div className="text-xs text-slate-500">{tenNguoiLam(d.nguoiLam, [k])}</div>}
           </div>
@@ -450,7 +461,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
             )}
             <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} muc={[
-              ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' })),
+              ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' || x === 'huy-tay' })),
               { key: 'lich-su', nhan: t('Lịch sử'), onChon: onLichSu, keTruoc: !chiDoc && thaoTac.menu.length > 0 },
             ]} />
           </div>

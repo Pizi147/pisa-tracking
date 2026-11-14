@@ -17,11 +17,12 @@ export async function runPrTqViecCuaToiTests(t: any) {
 
   check('XM 3 · Tổng quan QL · TVV · Admin (dải Mock Test) đều có ô "Việc của tôi ›" (một component, số từ `/my-work` khung App — không GET thêm)', () => {
     const than = (ten: string) => s.slice(s.indexOf(`export function ${ten}(`), s.indexOf('\n}\n', s.indexOf(`export function ${ten}(`)));
-    for (const ten of ['TongQuanQlV5', 'TongQuanTvvV5']) assert(/<OViecCuaToi \/>/.test(than(ten)), `${ten} thiếu ô Việc của tôi`);
+    /* GD-4 e: TVV dùng ô của dải mỏng (`<OViecCuaToi dai />`) — cùng component, cùng nguồn số. */
+    for (const ten of ['TongQuanQlV5', 'TongQuanTvvV5']) assert(/<OViecCuaToi( dai)? \/>/.test(than(ten)), `${ten} thiếu ô Việc của tôi`);
     /* Admin: ô đứng đầu dải ô Mock Test (4 ô một hàng). */
     assert(/<OViecCuaToi \/>/.test(fs.readFileSync(path.join(ROOT, 'web/src/modules/worklist/MockTestAdmin.tsx'), 'utf8')), 'MockTestAdmin (Tổng quan Admin) thiếu ô Việc của tôi');
     /* Không GET /my-work riêng: đọc `summary` khung App đã tải cho badge (context) — hết lần gọi đôi. */
-    assert(/function OViecCuaToi\(\)[\s\S]{0,300}useSoViecCuaToi\(\)/.test(s) && !/useApi<[^>]*>\([^)]*'\/my-work'/.test(s), 'ô đọc số từ khung App, Tổng quan không GET /my-work');
+    assert(/function OViecCuaToi\([^)]*\)[\s\S]{0,300}useSoViecCuaToi\(\)/.test(s) && !/useApi<[^>]*>\([^)]*'\/my-work'/.test(s), 'ô đọc số từ khung App, Tổng quan không GET /my-work');
     assert(/<ViecCuaToiCtx\.Provider value=\{viecGv\?\.summary \?\? null\}>/.test(fs.readFileSync(path.join(ROOT, 'web/src/App.tsx'), 'utf8')), 'App cấp số Việc của tôi');
   });
 

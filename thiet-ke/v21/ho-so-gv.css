@@ -1,0 +1,110 @@
+/* v21 · Hồ sơ GV (mockup ⑧ — phần 2). Token + thành phần chung: v21.css + bang-mau.css (CHỈ ĐỌC); bảng, thẻ, panel nổi: tong-quan.css.
+   Đầu hồ sơ cùng dáng hồ sơ HV ③ (chép .hs .lui .hs-1 .o-tin từ ho-so-hv.css — không link tệp đó để khỏi kéo luật riêng của màn kia).
+   Nguồn dáng: web `giaoVien/HoSoGiaoVienPage.tsx` + `worklist/LopToiDay.tsx` (HaiKhoiGv). */
+
+.hs { padding:16px 24px 28px; display:grid; gap:16px; align-content:start; }
+.dt .hs { padding:12px 16px 150px; gap:12px; }
+.lui { display:flex; align-items:center; gap:8px; }
+.hs-1 { display:flex; align-items:center; flex-wrap:wrap; gap:8px 12px; }
+.hs-1 h1 { font-size:22px; font-weight:700; }
+.hs-1 .phai { margin-left:auto; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.o-tin { display:flex; flex-wrap:wrap; gap:8px 0; }
+.o-tin > div { display:grid; gap:2px; padding:0 18px; border-left:1px solid var(--line); min-width:0; align-content:start; }
+.o-tin > div:first-child { padding-left:0; border-left:0; }
+.o-tin .n { font-size:12px; color:var(--text-faint); white-space:nowrap; }
+.o-tin .g { font:600 15px/1.35 var(--phong); color:var(--text); white-space:nowrap; min-height:22px; display:flex; flex-wrap:wrap; gap:4px 6px; align-items:center; }
+.o-tin .g a { color:var(--text) !important; } .o-tin .g a:hover { color:var(--accent) !important; text-decoration:underline; }
+.o-tin .g .sep { color:var(--text-faint); font-weight:400; }
+.o-tin .g .link-nho { font-size:13px; }
+.ky-chon { display:inline-flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); }
+.ky-chon .o-ngay { width:140px; height:36px; font-size:14px; }
+.ky-chon .o-ngay.loi { border-color:var(--bad); box-shadow:0 0 0 3px var(--bad-nen); }
+.loi-ky { font:600 14px var(--phong); color:var(--bad); }
+.luu-ok { display:inline-flex; align-items:center; gap:8px; font:600 13px var(--phong); color:var(--ok); }
+.luu-ok .link-nho { font-size:13px; }
+.chip-on { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:999px; background:var(--surface-2); color:var(--text-dim); font:600 12px var(--phong); white-space:nowrap; }
+.chip-bg { display:inline-flex; align-items:center; height:22px; padding:0 8px; border-radius:999px; background:var(--soon-nen); color:var(--soon) !important; font:600 12px var(--phong-so); white-space:nowrap; }
+
+/* dải chỉ số chuẩn (bang-mau .dai-cs) + nhãn nhóm đậm (Chấm Test │ Việc) */
+.dai-cs .nhom-cs { color:var(--text); font-weight:700; }
+.dai-cs .nhom-cs .pt { color:var(--text-dim); font:600 14px var(--phong-so); margin-left:4px; }
+.dai-cs .phu-cs { font-size:13px; color:var(--text-faint); }
+.dai-cs > span.ngan { border-left:2px solid var(--line-strong); }
+.dai-cs .ba-thi { display:inline-flex; gap:10px; }
+.dai-cs .ba-thi span { white-space:nowrap; }
+
+/* tab hồ sơ: thanh tab chuẩn, thân dưới */
+.hs .tabs { margin:0 -24px 0; }
+.dt .hs .tabs { margin:0 -16px; }
+.than-tab { display:grid; gap:16px; align-content:start; }
+.hai-cot { display:grid; grid-template-columns:minmax(0,1fr) 400px; gap:16px; align-items:start; }
+.hai-cot > div { display:grid; gap:16px; align-content:start; min-width:0; }
+
+/* bảng Lớp đang dạy: chip kỹ năng, GVCN, bàn giao */
+.bang .ky-hang { display:flex; gap:4px; flex-wrap:wrap; }
+.bang .ten .h { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.bang td .gvcn { color:var(--text-dim); white-space:nowrap; }
+.bang td .ban-than { font-weight:600; color:var(--text); }
+
+/* Học thuật: hai bảng tách khung (KhungBang) · ô tỉ lệ một kiểu (% · thanh · n/N) */
+.khung-bang { border:1px solid var(--line-strong); border-radius:10px; overflow:clip; min-width:0; }
+.khung-bang > h3 { display:flex; align-items:center; gap:8px; min-height:44px; padding:6px 16px; margin:0; font:700 14px var(--phong); background:var(--surface-2); border-bottom:1px solid var(--line); }
+.khung-bang > h3 .phai { margin-left:auto; display:flex; gap:6px; align-items:center; font-weight:400; font-size:13px; color:var(--text-dim); }
+.khung-bang .bang th { background:transparent; border-top:0; }
+.ht-luoi { display:grid; grid-template-columns:minmax(0,2fr) minmax(0,3fr); gap:16px; padding:16px; }
+.tl { display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+.tl .oso, .tl b { width:46px; text-align:left; }
+.tl b { font:700 15px var(--phong-so); }
+.tl .thanh { width:32px; height:6px; border-radius:3px; background:var(--line); overflow:hidden; }
+.tl .thanh i { display:block; height:100%; background:var(--accent); border-radius:3px; }
+.tl small { width:38px; font:500 12px var(--phong-so); color:var(--text-faint); text-align:left; }
+
+/* Việc & Case: Việc đang tồn = số đếm chuẩn + nút-chip (loại + số, "›" đổi trang sang Công việc đúng tab) */
+.viec-ton { display:grid; gap:10px; padding:12px 16px 16px; }
+.viec-ton .dem-tong a { font-weight:700; }
+.case-tt { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.chip-tt2 { display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:999px; background:var(--muted-nen); border:1px solid var(--line); font:600 13px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.chip-tt2 .oso { font-size:13px; text-underline-offset:3px; }
+.chip-tt2.qua { color:var(--bad); border-color:var(--bad-vien); background:var(--bad-nen); }
+.chip-tt2.qua .oso { color:var(--bad); }
+.nhan-phu { font:600 13px var(--phong); color:var(--text-faint); padding:10px 16px 4px; border-top:1px solid var(--line); }
+.ds-ct > .viec { border-top:1px solid var(--line); }
+.ds-ct > .viec:first-child { border-top:0; }
+.yc-dai { display:flex; flex-wrap:wrap; gap:6px 16px; align-items:baseline; padding:12px 16px 14px; font-size:14px; color:var(--text-dim); }
+.yc-dai .qua { color:var(--bad); font-weight:700; font-size:13px; }
+
+/* sửa kỹ năng tại chỗ (QL / Quản trị) */
+.sua-ky { display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
+.sua-ky .nut-chon { height:30px; padding:0 10px; }
+
+/* ---------- 375 ---------- */
+.dt .hs-1 .phai { margin-left:0; width:100%; }
+.dt .hs-1 .phai .nut { flex:1; }
+.dt .o-tin { display:grid; grid-template-columns:1fr; gap:10px; }
+.dt .o-tin > div { padding:0; border-left:0; }
+.dt .o-tin .g { white-space:normal; }
+.dt .ky-chon { width:100%; flex-wrap:wrap; }
+.dt .ky-chon .o-ngay { flex:1; width:auto; min-width:0; height:44px; }
+.dt .hai-cot { grid-template-columns:minmax(0,1fr); }
+.dt .ht-luoi { grid-template-columns:minmax(0,1fr); padding:12px; }
+.dt .dai-cs .nhom-cs { grid-column:1 / -1; border-left:0 !important; background:var(--surface-2); }
+.dt .dai-cs > span.ngan { border-left:0; }
+.dt .viec-lam .vc { height:44px; }
+.dt .viec { padding-right:12px; }
+/* dải chuẩn ở 375: mỗi nhóm một hàng nhãn + 3 ô (Đúng hạn · Làm muộn · Chưa làm) thẳng cột */
+.dai-375 { border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:clip; }
+.dai-375 .n3 { display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); }
+.dai-375 .n3 + .n3 { border-top:1px solid var(--line); }
+.dai-375 .nh { grid-column:1 / -1; display:flex; align-items:baseline; gap:6px; padding:8px 12px 2px; font:700 14px var(--phong); color:var(--text); }
+.dai-375 .nh .pt { font:600 14px var(--phong-so); color:var(--text-dim); }
+.dai-375 .nh small { margin-left:auto; font:400 12px var(--phong); color:var(--text-faint); }
+.dai-375 .n3 > span:not(.nh) { display:grid; gap:2px; padding:4px 12px 10px; font-size:13px; color:var(--text-dim); min-height:44px; }
+.dai-375 .n3 > span:not(.nh) + span:not(.nh) { border-left:1px solid var(--line); }
+.dai-375 .oso { justify-self:start; }
+.dai-375 .oso.xau::before { content:"⚠ "; display:inline-block; text-decoration:none; }
+.the-luoi .cap .v.chu { font:600 14px var(--phong); }
+.vach-chip { width:1px; height:20px; background:var(--line-strong); margin:0 4px; }
+/* lời 37: bảng nhỏ (Việc đang tồn, Yêu cầu) — mỗi nhóm một hàng: tên · số · hộp đỏ quá hạn */
+.bang-nho td, .bang-nho th { padding-top:7px; padding-bottom:7px; }
+.bang-nho .ten a { font-weight:600; }
+.dai-375 .n3 { grid-template-columns:repeat(2, minmax(0,1fr)); }

@@ -178,3 +178,13 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 - **Dòng việc luôn một dạng "Lớp · tên việc ngắn"**, kể cả việc của một em; tên em là thẻ phụ (link). Bỏ dạng "vòng chữ đầu + tên em + cây việc" ở danh sách việc. Mẫu chuẩn: `thiet-ke/v21/bang-mau.html` (mockup ⑤, mục dòng việc).
 - Đầu tab / dải nhóm ghi **"Chấm Speaking"**; không ghi "Việc chung của nhóm GV Speaking".
 
+## 15. Chủ SP 15/11 (lời 32, 33) — THẮNG mọi mục trên và hình mockup khi khác
+
+- **Badge tab "Chấm Speaking": dáng mờ (chỉ đếm số bài) + ⚠ khi có bài quá hạn**; không đỏ; không cộng vào badge menu / chuông. Đỏ chỉ dành cho "việc của tôi quá hạn". Dáng badge mờ: mockup ⑤ (`bang-mau.html`, thanh tab).
+- **Chip "Việc cần làm" quá hạn:** mọi loại việc cùng một dáng ⚠ + đỏ như mockup; không tách riêng Nhập điểm.
+- Luật (không phải giao diện): MT0 gõ "-" như Mock (LG-9) · thẻ Thu hồi xử lý vi phạm tự chốt theo GVCN khi hết hạn duyệt (LG-10) · việc Bước tiếp và xoá học viên / lớp trống giữ như mã.
+
+## 16. Luật V22 — hạn chỉ bằng màu
+
+** (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: có bài quá hạn thì ĐỎ như mọi tab, không ⚠; vẫn không cộng vào badge menu / chuông (chủ SP 15/11, lời 45 — thay lời 33 và mục 15 của `04`).
+**Mockup v21 KHÔNG sửa lại vì V22 (chủ SP 15/11, lời 44):** ⚠ về hạn còn trong hình mockup → code chỉ dùng màu; khi so ảnh cặp ghi "KHÁC theo V22", không tính lệch.

@@ -107,8 +107,8 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
   return (
     <Card title={t('Lịch sắp tới')} bodyClass="p-0" action={hep ? undefined : xemHet}>
       <div className="px-2 pt-1">
-        <HangTab cap="con" panelId="lich-sap-toi-vung" ariaLabel={t('Tuần')} value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
-          tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0), donVi: t('em') }))} />
+        <HangTab panelId="lich-sap-toi-vung" ariaLabel={t('Tuần')} value={String(i)} onChange={(k) => { setTab(k); setMoHet(false); }}
+          tabs={data.weeks.map((x, j) => ({ key: String(j), label: nhanTab(x), so: theoTuan[j].reduce((n, d) => n + d.soEm, 0) }))} />
       </div>
       {/* DON-NHO-3 (TAB-A11Y): vùng tab — khối thường, p / ul đã m-0 → khoảng cách không đổi. */}
       <div id="lich-sap-toi-vung" role="tabpanel" aria-label={nhanTab(w)}>

@@ -11,8 +11,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
 import { DauKetQua, lopKq } from '../../ui/BieuTuong.tsx';
-import { Menu, type MenuItem } from '../../ui/Menu.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
+import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
@@ -50,7 +49,7 @@ import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
+import { LichSuGap, LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 
 type Detail = {
@@ -60,8 +59,6 @@ type Detail = {
   student: { id: number; name: string; code: string };
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean; examPlan: ExamPlan };
   classId: number | null; classCode: string | null; branchName: string | null;
-  /** PTA 14/11: vắng lần 2 có huỷ kỹ năng không (`vangLan2Huy`; MT0 lớp thường: không). */
-  vangLan2Huy?: boolean;
   /** OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
   phuTrachS?: boolean;
   /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
@@ -266,32 +263,32 @@ export default function MockDetailPage() {
       .then((r) => (r.dong[0]?.noiDung ? r.dong[0] : null), () => undefined)
       .then((ghiChu) => setHopLich({ anchor, k, ghiChu }));
   };
-  const headerItems: MenuItem[] = [
+  const headerItems: MucMenu[] = [
     ...(d.viewer.canSkipSkill && !cancelled && huyHet && !daXoa ? [{
-      label: t('Đưa lại cả 4 kỹ năng'), onClick: () => void duaLaiCaLuot(),
-      hint: t('Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch'),
+      key: 'dua-lai', nhan: t('Đưa lại cả 4 kỹ năng'), onChon: () => void duaLaiCaLuot(),
+      goi: t('Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch'),
     }] : []),
     /* RA-LUONG-3 (plan mục 4 HOP1): lượt không gắn lớp không mở được hộp lịch (`HopKyNang` cần lớp) — không bày mục bấm mà không ra gì. */
     ...(d.viewer.canPlanWeek && !cancelled && !huyHet && d.classId !== null ? [{
-      label: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-lich'] }), onClick: () => { if (nutChinhLich.current) moHopLich(nutChinhLich.current, null); },
-      hint: t('Mọi kỹ năng còn dời được sang một tuần'),
+      key: 'doi-lich', nhan: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-lich'] }), onChon: () => { if (nutChinhLich.current) moHopLich(nutChinhLich.current, null); },
+      goi: t('Mọi kỹ năng còn dời được sang một tuần'),
     }] : []),
     ...(d.viewer.canOverrideDeadline && !cancelled && !d.lichSu ? [{
-      label: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-han'] }), onClick: () => setDeadlineOpen(true),
-      hint: t('Một hạn chấm riêng cho mọi kỹ năng'),
+      key: 'doi-han', nhan: t('{x} cả đợt', { x: CHU_THAO_TAC['doi-han'] }), onChon: () => setDeadlineOpen(true),
+      goi: t('Một hạn chấm riêng cho mọi kỹ năng'),
     }] : []),
     /* PR-MTb T8 (T2): lượt bị vượt có kết quả đã huỷ → Quản lý khôi phục. */
     ...(d.viewer.canCancel && !cancelled && d.ketQuaHuy ? [{
-      label: t('Khôi phục kết quả'), onClick: () => setKhoiPhucOpen(true),
+      key: 'khoi-phuc-kq', nhan: t('Khôi phục kết quả'), onChon: () => setKhoiPhucOpen(true),
     }] : []),
     /* PR-OV4a: số MT đã xếp lại mà còn bản huỷ cũ → hộp nói rõ cách khôi phục (huỷ MT mới trước). */
     ...(d.viewer.canCancel && !cancelled && d.khoiPhuc.ban.length ? [{
-      label: t('Khôi phục MT{attemptNo} cũ', { attemptNo: d.attemptNo }), onClick: () => setKhoiPhucLuot(true),
+      key: 'khoi-phuc-luot', nhan: t('Khôi phục MT{attemptNo} cũ', { attemptNo: d.attemptNo }), onChon: () => setKhoiPhucLuot(true),
     }] : []),
     /* Chủ SP 06/11: "Xoá MT{n}" cuối menu, vạch đỏ — bị chặn thì vẫn hiện, dòng phụ nói lý do (máy chủ trả cùng câu). */
     ...(d.viewer.canPlanWeek && d.kind === 'mock' && !cancelled && !huyHet && d.classId !== null ? [{
-      label: t('Xoá MT{attemptNo}', { attemptNo: d.attemptNo }), onClick: xoa, danger: true, keTruoc: 'do' as const,
-      hint: lyDoXoa ?? t('Ô vẫn hiện "Đã xoá", khôi phục được ngay'),
+      key: 'xoa', nhan: t('Xoá MT{attemptNo}', { attemptNo: d.attemptNo }), onChon: xoa, nguyHiem: true, keTruoc: 'do' as const,
+      goi: lyDoXoa ?? t('Ô vẫn hiện "Đã xoá", khôi phục được ngay'),
     }] : []),
   ];
   const laRf = d.cycle.route === 'RF';
@@ -386,7 +383,7 @@ export default function MockDetailPage() {
               {t('Nhập điểm lớp ›')}
             </Link>
           )}
-          {headerItems.length > 0 && <span ref={nutChinhLich} className="inline-flex"><Menu label={t('Chỉnh lịch')} items={headerItems} className="btn min-h-[44px] sm:min-h-0" /></span>}
+          {headerItems.length > 0 && <span ref={nutChinhLich} className="inline-flex"><MenuDong chu={t('Chỉnh lịch')} muc={headerItems} lopNut="btn min-h-[44px] sm:min-h-0" /></span>}
         </div>
       </div>
 
@@ -446,7 +443,7 @@ export default function MockDetailPage() {
         }}
         nhanXet={(k) => <NhanXetKn k={k} attemptId={d.id} cells={d.cells} save={save} phuTrach={d.phuTrachS ? luuPhuTrach : null} />}
         lichSuKn={(k) => (
-          <LichSuGon tieuDe={t('Lịch sử {x}', { x: skillLabel(k) })} 
+          <LichSuGon tieuDe={t('Lịch sử')}
             dong={dongLuot({
               history: d.history.filter((h) => h.field === k), scoreHistory: d.scoreHistory.filter((h) => kyNangO(h.skill) === k),
               lichSuCase: (d.lichSuCase ?? []).filter((h) => kyNangCase(h.topic) === k), homNay,
@@ -509,17 +506,17 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
               {v.mo ? (
                 <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
                   <b className="mr-1 text-[color:var(--accent)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
-                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">{v.quaHan}</span>}
                 </button>
               ) : (
                 /* Khung `.viec.khac`: cao 30, nền surface, viền đứt mảnh, khoảng 6, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn. Quá hạn của người
-                   khác: "⚠" + chữ cùng màu text-dim (không đỏ đậm — việc không phải của người xem). Tên người giữ việc không cắt; hẹp thì xuống
+                   khác: chữ cùng màu text-dim (không đỏ đậm — việc không phải của người xem). Tên người giữ việc không cắt; hẹp thì xuống
                    dòng giữa các mẩu (việc · tên · quá hạn), không bẻ giữa tên. */
                 <span className="inline-flex min-h-[30px] max-w-full items-center rounded-md border border-dashed px-2.5 py-0.5 text-[13px] font-medium text-slate-400"
                   style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
                   <span className="min-w-0">
                     <b className="mr-1.5 text-[color:var(--accent)]">{v.nhan}</b>
-                    {[v.viec, v.ai].filter(Boolean).map((x) => giuLien(x!)).join(' · ')}{v.quaHan && ` ${giuLien(`⚠ ${v.quaHan}`)}`}
+                    {[v.viec, v.ai].filter(Boolean).map((x) => giuLien(x!)).join(' · ')}{v.quaHan && ` ${giuLien(v.quaHan)}`}
                   </span>
                 </span>
               )}
@@ -539,7 +536,7 @@ export const tenNguoiLam = (m: Record<string, string | null> | undefined, o: rea
 const giuLien = (x: string) => x.replace(/ /g, '\u00a0');
 
 export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
-  /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
+  /** HSL-LT: việc đã quá hạn — chữ "quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
   quaHan?: string | null };
 
 /**
@@ -928,7 +925,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
               {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
               {r.pendingMove && (
                 <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
-                  ⚠ {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
+                  {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
                 </div>
               )}
               {/* LUOT-TEN-GV (khung: "Chờ điểm · hạn …" + tên): bài còn nợ mà người xem không nhập được — ai đang giữ việc. */}
@@ -1002,7 +999,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
 
       {hopDiem}
       {hop && (
-        <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false} huyLan2={d.vangLan2Huy !== false}
+        <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false}
           quanLy={d.viewer.canPlanWeek} gvcn={d.viewer.laGvcn} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
           oCoDiem={oCoDiemCua(hop.c)} hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
       )}
@@ -1044,35 +1041,27 @@ function DongSEx({ ds, homNay }: { ds: NonNullable<Detail['sEx']>; homNay: strin
 }
 
 /**
- * LỊCH SỬ THU GỌN (khung M4-A ⑤ dải Lịch sử kỹ năng, ⑦ Lịch sử lượt): "n thay đổi · mới nhất {ngày} {việc}"; mở ra là dòng thời gian
- * (`DongThoiGianLuot`) của đúng tập đó (`dongLuot`) — số và dòng cùng nguồn. Lịch sử lượt giữ nút "Lịch sử chi tiết" (OV-15g).
+ * LỊCH SỬ THU GỌN (khung M4-A ⑤ dải Lịch sử kỹ năng, ⑦ Lịch sử lượt) — GD-4c (H4): MỘT KIỂU LỊCH SỬ `LichSuGap` "{tieuDe} · n"; mở ra là
+ * dòng thời gian (`DongThoiGianLuot`) của đúng tập đó (`dongLuot`) — số và dòng cùng nguồn. Không dòng → không vẽ (lời 40).
+ * Lịch sử lượt giữ nút "Lịch sử chi tiết" (OV-15g).
  */
 export function LichSuGon({ tieuDe, dong, the = false, chiTiet }: {
   tieuDe: string; dong: DongLuot[]; the?: boolean;
   chiTiet?: { id: number; dong2: (string | null)[] };
 }) {
   const [mo, setMo] = useState(false);
-  const { ngan } = useNgayNghiepVu();
-  if (!dong.length && !the) return null;
-  const moi = dong[0];
   return (
-    <details className={`group ${the ? 'card px-4 py-3' : 'rounded-lg border px-3 py-2'}`} style={the ? undefined : { borderColor: 'var(--line)' }}>
-      <summary className="flex min-h-[44px] cursor-pointer list-none flex-wrap items-baseline gap-x-2 sm:min-h-0 [&::-webkit-details-marker]:hidden">
-        <span aria-hidden className="w-3 text-xs text-slate-500 transition-transform group-open:rotate-90">▸</span>
-        <b className={the ? 'text-[15px] text-slate-100' : 'text-sm text-slate-200'}>{tieuDe}</b>
-        <span className="text-xs tabular-nums text-slate-400">
-          {dong.length ? t('{n} thay đổi', { n: dong.length }) : t('Chưa có thay đổi nào.')}
-          {moi && <> · {t('mới nhất')} {ngan(moi.at)} {[moi.viec, moi.mon, moi.ai].filter(Boolean).join(' · ')}</>}
-        </span>
-      </summary>
-      <div className="mt-2.5">
+    <>
+      <LichSuGap so={dong.length} tieuDe={tieuDe}>
         <DongThoiGianLuot history={[]} scoreHistory={[]} dong={dong} gioiHan={the ? 10 : 5} />
         {chiTiet && (
-          <button type="button" className="btn btn-ghost btn-sm mt-2 min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{t('Lịch sử chi tiết')}</button>
+          <div className="ls-them border-t" style={{ borderColor: 'var(--line)' }}>
+            <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{t('Lịch sử chi tiết')}</button>
+          </div>
         )}
-      </div>
+      </LichSuGap>
       {mo && chiTiet && <LichSuThayDoi loai="o" id={chiTiet.id} dong2={chiTiet.dong2} onClose={() => setMo(false)} />}
-    </details>
+    </>
   );
 }
 

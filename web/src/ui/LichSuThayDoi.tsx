@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef, useState } from 'react';
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../lib/api.ts';
 import { useApi } from '../lib/useApi.ts';
 import { KhungPanel } from './KhungPanel.tsx';
@@ -85,6 +85,68 @@ function CacTruong({ ds }: { ds: Truong[] }) {
   );
 }
 
+/** GD-4c (H4) — MỘT DÒNG LỊCH SỬ: giờ · người · việc · cũ → mới (+ dòng phụ: lý do, tệp, ghi chú) · ô phải (Khôi phục khi có). */
+export type DongLs = {
+  key: string | number; gio: string; ai: string | null; viec: ReactNode;
+  cu?: string | null; moi?: string | null; phu?: (string | null | undefined)[];
+  /** Ô phải (vd "Khôi phục bản trước"). */ cuoi?: ReactNode;
+};
+
+/** MỘT KIỂU LỊCH SỬ (GD-4c, H4): danh sách dòng `DongLs`, mới nhất trước; `gioiHan` mở sẵn n dòng + "Xem hết n". */
+export function DsLichSu({ dong, gioiHan, rong }: { dong: DongLs[]; gioiHan?: number; rong?: string }) {
+  const [het, setHet] = useState(false);
+  if (!dong.length) return <p className="ls-rong">{rong ?? t('Chưa có thay đổi nào.')}</p>;
+  const hien = het || !gioiHan ? dong : dong.slice(0, gioiHan);
+  return (
+    <>
+      <ul className="ls-ds">
+        {hien.map((d) => (
+          <li key={d.key}>
+            <time>{d.gio}</time>
+            <span className="min-w-0 break-words">
+              {d.ai && <><span className="ai">{d.ai}</span> </>}{d.viec}
+              {(d.cu || d.moi) && ' '}
+              {d.cu && <span className="cu">{d.cu}</span>}
+              {d.cu && d.moi && <><span className="sr-only">{t('thành')}</span><span aria-hidden> → </span></>}
+              {d.moi && <span className="moi">{d.moi}</span>}
+              {d.phu?.filter(Boolean).map((x, i) => <span key={i} className="phu">{x}</span>)}
+            </span>
+            <span>{d.cuoi}</span>
+          </li>
+        ))}
+      </ul>
+      {gioiHan !== undefined && dong.length > gioiHan && (
+        <div className="ls-them">
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" onClick={() => setHet((v) => !v)}>
+            {het ? t('Thu gọn') : t('Xem hết {length}', { length: dong.length })}
+          </button>
+        </div>
+      )}
+    </>
+  );
+}
+
+/**
+ * GẬP "Lịch sử · n" (GD-4c, H4) — vỏ chung quanh `DsLichSu`. `so` = 0: không vẽ (lời 40); `null` = chưa biết số (đọc khi mở) → chỉ "Lịch sử".
+ * `onMo`: báo mở / gập (nơi đọc lười gọi API khi mở).
+ */
+export function LichSuGap({ so, tieuDe, moSan, onMo, className, children }: {
+  so: number | null; tieuDe?: string; moSan?: boolean; onMo?: (mo: boolean) => void; className?: string; children: ReactNode;
+}) {
+  if (so === 0) return null;
+  const ten = tieuDe ?? t('Lịch sử');
+  return (
+    <details className={`ls${className ? ` ${className}` : ''}`} open={moSan} onToggle={onMo ? (e) => onMo(e.currentTarget.open) : undefined}>
+      <summary>
+        <svg className="ls-ic" viewBox="0 0 16 16" aria-hidden><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3l2 1.5" /></svg>
+        <span>{so === null ? ten : `${ten} · ${so}`}</span>
+        <svg className="ls-chev" viewBox="0 0 16 16" aria-hidden><path d="M6 3.5L10.5 8 6 12.5" /></svg>
+      </summary>
+      {children}
+    </details>
+  );
+}
+
 /**
  * OV-15g — LỊCH SỬ THAY ĐỔI (C22, mẫu OV-13j): một panel cho mọi đối tượng (`GET /lich-su?loai=&id=`). Mới nhất trước, mỗi lần lưu một mục:
  * "18/10 14:32 · Người · Nguồn: … · Lý do: …" rồi từng trường trước → sau. Chỉ xem — trừ SUA-LUU-TRU (chủ SP 07/11): Lịch sử thi thật có
@@ -153,25 +215,24 @@ export function LichSuThayDoi({ loai, id, dong2, quayLai, onClose, khoiPhuc }: {
           : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
           : !ds.length ? (tiep === null ? <Empty title={t('Chưa có thay đổi nào')} /> : dangTai ? <div className="pt-3"><Skeleton rows={3} /></div> : null)
           : (
-            <ul className="m-0 mt-3 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
+            <ul className="ls-ds -mx-3 mt-3">
               {ds.map((d) => (
-                <li key={d.id} className="py-3" style={{ borderColor: 'var(--line)' }}>
-                  <div className="flex flex-wrap items-baseline gap-x-1.5 text-[13px] text-slate-400">
-                    <span className="tabular-nums">{lucNgan(d.luc)}</span>
-                    <span aria-hidden>·</span>
-                    <span className="font-semibold text-slate-200">{dich(d.nguoi)}</span>
-                    {d.nguon && <><span aria-hidden>·</span><span>{t('Nguồn')}: {dich(d.nguon)}</span></>}
-                    {d.lyDo && <><span aria-hidden>·</span><span className="break-words">{t('Lý do')}: {d.lyDo}</span></>}
+                <li key={d.id}>
+                  <time>{lucNgan(d.luc)}</time>
+                  <div className="min-w-0 break-words">
+                    <span className="ai">{dich(d.nguoi)}</span>
+                    {d.nguon && <span className="phu">{t('Nguồn')}: {dich(d.nguon)}</span>}
+                    {d.lyDo && <span className="phu">{t('Lý do')}: {d.lyDo}</span>}
+                    <CacTruong ds={d.truong} />
+                    {loiKp?.id === d.id && <span className="mt-1 block text-sm text-bad" role="alert">{loiKp.loi}</span>}
                   </div>
-                  <CacTruong ds={d.truong} />
-                  {khoiPhuc && d.khoiPhuc && (
-                    <div className="mt-1">
-                      <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" disabled={dangKp !== null} onClick={() => void bamKp(d.id)}>
+                  <span>
+                    {khoiPhuc && d.khoiPhuc && (
+                      <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] sm:min-h-0" disabled={dangKp !== null} onClick={() => void bamKp(d.id)}>
                         {dangKp === d.id ? t('Đang lưu…') : t('Khôi phục bản trước')}
                       </button>
-                      {loiKp?.id === d.id && <p className="m-0 mt-1 text-sm text-bad" role="alert">{loiKp.loi}</p>}
-                    </div>
-                  )}
+                    )}
+                  </span>
                 </li>
               ))}
             </ul>

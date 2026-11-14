@@ -11,6 +11,7 @@ import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { thongBaoVang } from './thongBaoVang.ts';
+import { guiHuyTay } from './huyTay.ts';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
 import { Bang, OBang } from '../../ui/Bang.tsx';
 import type { DinhNghiaCot } from '@shared/domain/index.ts';
@@ -47,6 +48,8 @@ type SkillSchedule = {
   goDau?: boolean;
   /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi (không dời, không nợ). */
   khongDuThi?: boolean;
+  /** LG-9: môn đã Huỷ tay — menu ⋯ có "Khôi phục". */
+  huyTay?: boolean;
   /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất → ⋯ "Khôi phục điểm". */
   diemHuy?: boolean;
   /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi ô đã khoá điểm. */
@@ -74,6 +77,8 @@ type Row = {
     failedCount: number | null; sosLevel: number | null; passThreshold: number;
     /** Σ điểm / Σ tổng — chỉ khi đủ mọi môn (K5-44). */
     tyLeTong?: number | null;
+    /** LG-9b: môn đã huỷ — kết quả tính trên môn còn lại. */
+    daHuy?: string[];
   };
   cases: { id: number; status: string; level: number | null; skill: string; category: string }[];
   caseId: number | null; caseStatus: string | null; caseLevel: number | null;
@@ -387,7 +392,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     const coDiem = (ketQuaCua(row, k)?.score ?? null) !== null;
     const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s?.weekStart ?? null, coDiem, sit: s?.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
     const tat = thaoTacKyNang(tt, { nhapDiem: s?.canEdit ?? false, quanLy: sheet.canPlan, gvcn: !!sheet.laGvcn, laFt: false, dotHoanTat: !!row.hoanTat, doiLich: s?.doiLich, quaTuan: tuanDaQua(s?.weekStart, homNay),
-      huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy });
+      huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s?.diemHuy,
+      khongTuHuy: true, vang: !!s?.noShow && !s?.khongDuThi, huyTay: !!s?.huyTay });
     const ds = [...(tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? [tat.chinh] : []), ...tat.menu];
     /* OV-11i (P3-3): chỉ ẩn chờ rê chuột khi thiết bị rê được — máy tính bảng cảm ứng ≥ 640 px vẫn thấy ⋯.
        U0 (chủ SP 30/10): ⋯ nằm TRONG dòng đầu của ô (cùng hàng tuần / số / "Nhận xét", căn baseline) — không đè, không lệch dọc;
@@ -395,7 +401,9 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
     return (
       <span className={`inline-flex shrink-0 ${luon ? '' : 'sm:[@media(hover:hover)]:invisible sm:[@media(hover:hover)]:group-hover:visible sm:[@media(hover:hover)]:group-focus-within:visible'}`}>
         <MenuDong nhan={t('Thao tác · {tenMon} · {studentName}', { tenMon: tenMon(ct, k), studentName: row.studentName })} muc={[
-          ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'khoi-phuc-diem' ? void khoiPhuc(k) : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' })),
+          ...ds.map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => (x === 'khoi-phuc-diem' ? void khoiPhuc(k)
+            : x === 'huy-tay' || x === 'bo-huy-tay' ? void guiHuyTay(toast, { attemptId: row.attemptId, skill: k, mon: tenMonNgan(ct, k), tenHv: row.studentName, huy: x === 'huy-tay' })
+            : setHop({ t: x, k })), nguyHiem: x === 'huy-diem' || x === 'huy-tay' })),
           { key: 'lich-su', nhan: t('Lịch sử'), onChon: () => setLichSu(k), keTruoc: ds.length > 0 },
         ]} />
       </span>
@@ -555,8 +563,10 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
   const doi = new Map<string, string[]>();
   /* OV-11a: môn Không dự thi không "dời" — dòng phụ ghi đúng tên. */
   const kdt = row.skillSchedule.filter((s) => s.khongDuThi).map((s) => s.skill);
+  /* LG-9: môn đã huỷ (Huỷ môn) không "dời" — dòng phụ ghi "đã huỷ". */
+  const daHuy = row.skillSchedule.filter((s) => s.sitStatus === 'cancelled').map((s) => s.skill);
   for (const s of row.skillSchedule) {
-    if (!s.noShow || s.khongDuThi || ketQuaCua(row, s.skill)?.outcome !== 'missing' || !s.weekStart) continue;
+    if (!s.noShow || s.khongDuThi || s.sitStatus === 'cancelled' || ketQuaCua(row, s.skill)?.outcome !== 'missing' || !s.weekStart) continue;
     const t = tuanLich(s.weekStart, sheet.today);
     doi.set(t, [...(doi.get(t) ?? []), s.skill]);
   }
@@ -567,6 +577,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
       title: t('{x}: em không làm bài, môn đã dời sang {x2}.', { x: doiDau[1].map(du).join(', '), x2: doiDau[0] }),
     }
     : kdt.length ? { chu: t('{x} vắng', { x: kdt.map(ngan).join(', ') }), tone: 'text-slate-400', title: t('{x}: Vắng.', { x: kdt.map(du).join(', ') }) }
+    : daHuy.length ? { chu: t('{x} đã huỷ', { x: daHuy.map(ngan).join(', ') }), tone: 'text-slate-400', title: t('{x}: đã huỷ (vắng).', { x: daHuy.map(du).join(', ') }) }
     : row.goiY
       ? { chu: dich(row.goiY.nhanNgan), tone: 'text-slate-500', title: `${nhanGoiY(row.goiY)}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip
@@ -584,7 +595,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
     ? <Level tone={row.chip.dat ? 'info' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
-    ? <span className="px-2 text-xs text-slate-500">{kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
+    ? <span className="px-2 text-xs text-slate-500">{r.required === 0 && r.daHuy?.length ? t('Đã huỷ') : kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
     : (
       <Level tone={tone} title={chiTiet}>
         {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}

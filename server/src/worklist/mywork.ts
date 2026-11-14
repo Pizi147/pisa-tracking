@@ -572,6 +572,140 @@ export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
   return { ok: true };
 }
 
+/*
+ * GOM THEO LỚP · BÀI · KỸ NĂNG (mục 3.3).
+ *
+ * Trước đây mỗi học viên còn thiếu điểm là một dòng, nên một lớp mười hai em chưa nhập
+ * Reading sinh ra mười hai dòng giống hệt nhau, đẩy mọi việc khác xuống dưới — trong khi
+ * người nhập chỉ mở MỘT bảng điểm và gõ một lượt.
+ *
+ * Nay một dòng là một NHÓM VIỆC: "CP FT 110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
+ * thông tin của dòng, không phải số dòng (mục 2.2).
+ *
+ * Hạn của nhóm lấy hạn SỚM NHẤT trong nhóm — nhóm quá hạn khi có bất kỳ em nào quá hạn.
+ */
+type ScoreBucket = {
+  classId: number | null; classCode: string | null; attemptNo: number | null;
+  kind: string | null; testLabel: string; skill: string; skillLabel: string;
+  students: Map<number, string>; due: string | null; href: string; attemptId: number; ownerId: number | null;
+  /** PR-S6F-a Q6: có ô quá hạn theo cờ ô (`quaHanNhapDiem`) — không so hạn trơn. */
+  quaHan: boolean;
+  /** OV-13c: tuần thi của môn (lưới Lịch Test). */
+  periodId: number | null; weekStart: string | null;
+};
+export type BaiChuaCham = {
+  classId: number | null; classCode: string | null; attemptNo: number | null; kind: string | null;
+  attemptId: number; studentId: number; studentName: string;
+  skill: string; deadline: string | null; ownerId: number | null; overdue: boolean; periodId: number | null; weekStart: string | null;
+};
+/*
+ * PR-Ra Q1: tách phần gom thành một hàm dùng chung cho "việc của mình" (ownerId luôn là
+ * chính người xem) và "việc của người khác trong phạm vi" (ownerId theo `teacher_assignments`).
+ * KHOÁ mỗi dòng kèm hậu tố người phụ trách (`|u…`) — để cùng một khoá dù nhìn từ Quản lý hay
+ * từ chính giáo viên (nút Nhắc dựa vào khoá này để tìm lại đúng dòng).
+ */
+export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: number | null | undefined) => string | null, dongs: BaiChuaCham[]): WorkItem[] {
+  const buckets = new Map<string, ScoreBucket>();
+  for (const d of dongs) {
+    const testLabel = d.kind && d.kind !== 'mock'
+      ? (ATTEMPT_KIND_SHORT[d.kind as AttemptKind] ?? 'Bài kiểm tra')
+      : `MT${d.attemptNo}`;
+    const skillLabel = tenMon(ctCua(d.classId), d.skill);
+    /* OV-11c (TQ-1, TE-4): khoá có hạn + cờ quá hạn — bài quá hạn và bài chưa quá hạn (em thi bù tuần này) không chung một việc. */
+    const k = `${d.classId ?? 0}|${d.kind ?? 'mock'}|${d.attemptNo ?? 0}|${d.skill}|u${d.ownerId ?? 0}|${d.deadline ?? ''}|${d.overdue ? 'q' : ''}`;
+    let b = buckets.get(k);
+    if (!b) {
+      b = {
+        classId: d.classId, classCode: d.classCode, attemptNo: d.attemptNo,
+        kind: d.kind, testLabel, skill: d.skill, skillLabel,
+        /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
+        students: new Map(), due: null,
+        /* PR-LT3: không kèm tuần — Lịch Test ở tuần hiện tại có đủ ba khối (bài tuần trước ở khối 2, quá hạn ở khối 1); kèm tuần thi
+           thì màn mở chế độ "tuần khác" (không có khối 2). */
+        href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
+        attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false, periodId: d.periodId, weekStart: d.weekStart,
+      };
+      buckets.set(k, b);
+    }
+    b.students.set(d.studentId, d.studentName);
+    if (d.overdue) b.quaHan = true;
+    if (d.deadline && (!b.due || d.deadline < b.due)) b.due = d.deadline;
+  }
+  /*
+   * MỘT LỚP · MỘT TUẦN THI · CÙNG NGƯỜI PHỤ TRÁCH = MỘT dòng (OV-13c, Q4: gom theo tuần thi như lưới Lịch Test, không theo lượt) —
+   * người nhập mở lưới điểm của tuần đó và gõ mọi cột, mọi lượt. Khác người phụ trách thì KHÔNG gộp. Môn chưa có tuần giữ khoá lượt + hạn cũ.
+   */
+  const byTest = new Map<string, ScoreBucket[]>();
+  for (const b of buckets.values()) {
+    const lich = b.periodId ? `p${b.periodId}` : `${b.attemptNo ?? 0}|${b.due ?? ''}${b.quaHan ? '|q' : ''}`;
+    const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${lich}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
+    (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
+  }
+  const out: WorkItem[] = [];
+  for (const [k, list] of byTest) {
+    const first = list[0];
+    const skills = [...new Set(list.map((b) => b.skillLabel))].join(', ');
+    const due = list.map((b) => b.due).filter((x): x is string => !!x).sort()[0] ?? null;
+    const luotCua = [...new Set(list.map((b) => b.testLabel))].sort().join(', ');
+    const students = new Map<number, string>();
+    for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
+    /* PR-S6F-a Q6: nhập điểm quá hạn ⇔ có ô `overdue` (tuần thi đã hết và qua hạn) — cùng cờ với Nợ điểm, Lịch Test, bảng GV. */
+    const u: WorkUrgency = list.some((b) => b.quaHan) ? 'overdue' : due === today ? 'today' : 'normal';
+    /*
+     * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
+     * "cả lớp" cho một học viên là một câu nói vòng vo.
+     */
+    const only = students.size === 1 ? [...students.entries()][0] : null;
+    const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài kiểm tra');
+    out.push({
+      key: `score:${k}`,
+      group: 'score', urgency: u,
+      /*
+       * Ô ĐẦU là LỚP, không phải một em đại diện: việc này làm cho cả nhóm cùng lúc. Chỉ khi
+       * đúng một em còn thiếu thì mới nói tên em — lúc đó "lớp" là cách nói vòng vo.
+       */
+      studentId: only ? only[0] : null,
+      studentName: where, emIds: only ? undefined : [...students.keys()],
+      classId: first.classId, classCode: first.classCode,
+      attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
+      /* N39 (chủ SP 05/11): Mock theo tuần + lớp — dòng con chỉ ghi tuần ("Speaking · W3 OCT · 2 bài"), bỏ danh sách "MT1, MT4". */
+      contextLabel: !first.weekStart ? luotCua : (first.kind ?? 'mock') === 'mock' ? tuanLich(first.weekStart) : `${luotCua} ${tuanLich(first.weekStart)}`,
+      count: students.size,
+      reason: skills,
+      tieuDe: `Nhập điểm ${skills}`, phu: skills,
+      actionLabel: 'Nhập điểm',
+      href: first.href,
+      /* Mã lượt của Điểm theo lớp (`docMaLuot`): MT `mt:n`, Checkpoint lớp liên tục `cp:n` (OV-6b2), lớp thường `thuong:{bài}`. */
+      luot: first.kind === 'checkpoint' ? `cp:${first.attemptNo}` : first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
+      kns: [...new Set(list.map((b) => b.skill))],
+      knsQuaHan: [...new Set(list.filter((b) => b.quaHan).map((b) => b.skill))],
+      soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
+      ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
+      due, tuanThi: first.weekStart, periodId: first.periodId, kind: first.kind ?? 'mock',
+      statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
+    });
+  }
+  return out;
+}
+
+/**
+ * GD-7a: việc Nhập điểm của NGƯỜI XEM với MỘT em — cùng nguồn (`listAttempts` → `myPendingDetail`) và cùng hàm gom (`gomBaiNhapDiem`) với `myWork`,
+ * nên cùng khoá `score:…`; chỉ đọc lượt của em này (một lần `listAttempts` theo `studentId`), không quét phạm vi.
+ */
+export function viecNhapDiemCuaEm(p: Principal, studentId: number, today: string, lopId: number | null): WorkItem[] {
+  /* Cùng cổng `nhapDiemTheoEm`: người xem không có phân công ở lớp em đang học (và không có SCORE_EDIT ở đó) thì không có việc Nhập điểm — khỏi đọc lượt. */
+  if (!lopId || !(p.assignments.some((a) => a.classId === lopId && activeAt(a, today)) || can(p, PERMISSIONS.SCORE_EDIT, { classId: lopId }))) return [];
+  const dongs: BaiChuaCham[] = [];
+  for (const a of listAttempts(p, { studentId, chiDangHoc: true, chiConO: true }).rows as any[]) {
+    if (a.status === 'cancelled') continue;
+    for (const c of (a.myPendingDetail ?? []) as any[]) {
+      dongs.push({ classId: a.classId ?? null, classCode: a.classCode ?? null, attemptNo: a.attemptNo ?? null, kind: a.kind ?? null, attemptId: a.id, studentId: a.studentId,
+        studentName: a.studentName, skill: c.skill, deadline: c.deadline, ownerId: p.userId, overdue: !!c.overdue, periodId: c.periodId ?? null, weekStart: c.weekStart ?? null });
+    }
+  }
+  return dongs.length ? gomBaiNhapDiem(p, today, (id) => (id ? bangLop().get(id)?.ct ?? null : null), dongs) : [];
+}
+
 /**
  * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
@@ -665,121 +799,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   };
 
   // ---------------------------------------------------------------- 1. nhập điểm
-  /*
-   * GOM THEO LỚP · BÀI · KỸ NĂNG (mục 3.3).
-   *
-   * Trước đây mỗi học viên còn thiếu điểm là một dòng, nên một lớp mười hai em chưa nhập
-   * Reading sinh ra mười hai dòng giống hệt nhau, đẩy mọi việc khác xuống dưới — trong khi
-   * người nhập chỉ mở MỘT bảng điểm và gõ một lượt.
-   *
-   * Nay một dòng là một NHÓM VIỆC: "CP FT 110 · MT2 · Nhập điểm R cho 6 học viên". Số em là
-   * thông tin của dòng, không phải số dòng (mục 2.2).
-   *
-   * Hạn của nhóm lấy hạn SỚM NHẤT trong nhóm — nhóm quá hạn khi có bất kỳ em nào quá hạn.
-   */
-  type ScoreBucket = {
-    classId: number | null; classCode: string | null; attemptNo: number | null;
-    kind: string | null; testLabel: string; skill: string; skillLabel: string;
-    students: Map<number, string>; due: string | null; href: string; attemptId: number; ownerId: number | null;
-    /** PR-S6F-a Q6: có ô quá hạn theo cờ ô (`quaHanNhapDiem`) — không so hạn trơn. */
-    quaHan: boolean;
-    /** OV-13c: tuần thi của môn (lưới Lịch Test). */
-    periodId: number | null; weekStart: string | null;
-  };
-  type BaiChuaCham = {
-    classId: number | null; classCode: string | null; attemptNo: number | null; kind: string | null;
-    attemptId: number; studentId: number; studentName: string;
-    skill: string; deadline: string | null; ownerId: number | null; overdue: boolean; periodId: number | null; weekStart: string | null;
-  };
-  /*
-   * PR-Ra Q1: tách phần gom thành một hàm dùng chung cho "việc của mình" (ownerId luôn là
-   * chính người xem) và "việc của người khác trong phạm vi" (ownerId theo `teacher_assignments`).
-   * KHOÁ mỗi dòng kèm hậu tố người phụ trách (`|u…`) — để cùng một khoá dù nhìn từ Quản lý hay
-   * từ chính giáo viên (nút Nhắc dựa vào khoá này để tìm lại đúng dòng).
-   */
-  const gomBaiChuaCham = (dongs: BaiChuaCham[]): WorkItem[] => {
-    const buckets = new Map<string, ScoreBucket>();
-    for (const d of dongs) {
-      const testLabel = d.kind && d.kind !== 'mock'
-        ? (ATTEMPT_KIND_SHORT[d.kind as AttemptKind] ?? 'Bài kiểm tra')
-        : `MT${d.attemptNo}`;
-      const skillLabel = tenMon(ctCua(d.classId), d.skill);
-      /* OV-11c (TQ-1, TE-4): khoá có hạn + cờ quá hạn — bài quá hạn và bài chưa quá hạn (em thi bù tuần này) không chung một việc. */
-      const k = `${d.classId ?? 0}|${d.kind ?? 'mock'}|${d.attemptNo ?? 0}|${d.skill}|u${d.ownerId ?? 0}|${d.deadline ?? ''}|${d.overdue ? 'q' : ''}`;
-      let b = buckets.get(k);
-      if (!b) {
-        b = {
-          classId: d.classId, classCode: d.classCode, attemptNo: d.attemptNo,
-          kind: d.kind, testLabel, skill: d.skill, skillLabel,
-          /* PR-UX1 Q13: bấm Chấm mở Lịch Test đúng lớp, con trỏ vào môn này; bài không có lớp giữ hồ sơ lượt. */
-          students: new Map(), due: null,
-          /* PR-LT3: không kèm tuần — Lịch Test ở tuần hiện tại có đủ ba khối (bài tuần trước ở khối 2, quá hạn ở khối 1); kèm tuần thi
-             thì màn mở chế độ "tuần khác" (không có khối 2). */
-          href: d.classId ? duongLichTest({ classId: d.classId, kn: d.skill }) : attemptHref({ id: d.attemptId, kind: d.kind, classId: d.classId }),
-          attemptId: d.attemptId, ownerId: d.ownerId, quaHan: false, periodId: d.periodId, weekStart: d.weekStart,
-        };
-        buckets.set(k, b);
-      }
-      b.students.set(d.studentId, d.studentName);
-      if (d.overdue) b.quaHan = true;
-      if (d.deadline && (!b.due || d.deadline < b.due)) b.due = d.deadline;
-    }
-    /*
-     * MỘT LỚP · MỘT TUẦN THI · CÙNG NGƯỜI PHỤ TRÁCH = MỘT dòng (OV-13c, Q4: gom theo tuần thi như lưới Lịch Test, không theo lượt) —
-     * người nhập mở lưới điểm của tuần đó và gõ mọi cột, mọi lượt. Khác người phụ trách thì KHÔNG gộp. Môn chưa có tuần giữ khoá lượt + hạn cũ.
-     */
-    const byTest = new Map<string, ScoreBucket[]>();
-    for (const b of buckets.values()) {
-      const lich = b.periodId ? `p${b.periodId}` : `${b.attemptNo ?? 0}|${b.due ?? ''}${b.quaHan ? '|q' : ''}`;
-      const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${lich}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
-      (byTest.get(k) ?? byTest.set(k, []).get(k)!).push(b);
-    }
-    const out: WorkItem[] = [];
-    for (const [k, list] of byTest) {
-      const first = list[0];
-      const skills = [...new Set(list.map((b) => b.skillLabel))].join(', ');
-      const due = list.map((b) => b.due).filter((x): x is string => !!x).sort()[0] ?? null;
-      const luotCua = [...new Set(list.map((b) => b.testLabel))].sort().join(', ');
-      const students = new Map<number, string>();
-      for (const b of list) for (const [sid, name] of b.students) students.set(sid, name);
-      /* PR-S6F-a Q6: nhập điểm quá hạn ⇔ có ô `overdue` (tuần thi đã hết và qua hạn) — cùng cờ với Nợ điểm, Lịch Test, bảng GV. */
-      const u: WorkUrgency = list.some((b) => b.quaHan) ? 'overdue' : due === today ? 'today' : 'normal';
-      /*
-       * ĐÚNG MỘT EM thì gọi tên em, không nói "Lớp X" — người đọc đi tìm một cái tên, và
-       * "cả lớp" cho một học viên là một câu nói vòng vo.
-       */
-      const only = students.size === 1 ? [...students.entries()][0] : null;
-      const where = only ? only[1] : (first.classCode ? `Lớp ${first.classCode}` : 'Bài kiểm tra');
-      out.push({
-        key: `score:${k}`,
-        group: 'score', urgency: u,
-        /*
-         * Ô ĐẦU là LỚP, không phải một em đại diện: việc này làm cho cả nhóm cùng lúc. Chỉ khi
-         * đúng một em còn thiếu thì mới nói tên em — lúc đó "lớp" là cách nói vòng vo.
-         */
-        studentId: only ? only[0] : null,
-        studentName: where, emIds: only ? undefined : [...students.keys()],
-        classId: first.classId, classCode: first.classCode,
-        attemptId: first.attemptId, attemptNo: first.attemptNo, caseId: null, level: null,
-        /* N39 (chủ SP 05/11): Mock theo tuần + lớp — dòng con chỉ ghi tuần ("Speaking · W3 OCT · 2 bài"), bỏ danh sách "MT1, MT4". */
-        contextLabel: !first.weekStart ? luotCua : (first.kind ?? 'mock') === 'mock' ? tuanLich(first.weekStart) : `${luotCua} ${tuanLich(first.weekStart)}`,
-        count: students.size,
-        reason: skills,
-        tieuDe: `Nhập điểm ${skills}`, phu: skills,
-        actionLabel: 'Nhập điểm',
-        href: first.href,
-        /* Mã lượt của Điểm theo lớp (`docMaLuot`): MT `mt:n`, Checkpoint lớp liên tục `cp:n` (OV-6b2), lớp thường `thuong:{bài}`. */
-        luot: first.kind === 'checkpoint' ? `cp:${first.attemptNo}` : first.kind && first.kind !== 'mock' ? `thuong:${first.kind}` : `mt:${first.attemptNo}`, kn: first.skill,
-        kns: [...new Set(list.map((b) => b.skill))],
-        knsQuaHan: [...new Set(list.filter((b) => b.quaHan).map((b) => b.skill))],
-        soBai: list.reduce((n, b) => n + b.students.size, 0),   // OV-5a: "bài cần chấm" = kỹ năng × em
-        ownerId: first.ownerId, owner: null, mine: first.ownerId === p.userId,
-        due, tuanThi: first.weekStart, periodId: first.periodId, kind: first.kind ?? 'mock',
-        statusLabel: laChamCheo(first.kind, first.skill) ? CHAM_CHEO : first.ownerId === null ? 'Chưa phân công giáo viên' : 'Chưa nhập điểm',
-      });
-    }
-    return out;
-  };
+  const gomBaiChuaCham = (dongs: BaiChuaCham[]): WorkItem[] => gomBaiNhapDiem(p, today, ctCua, dongs);
 
   const minhDongs: BaiChuaCham[] = [];
   for (const a of attempts as any[]) {

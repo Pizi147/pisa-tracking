@@ -136,7 +136,7 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
     role: 'option',
     'aria-selected': i === dong,
     tabIndex: -1,
-    className: `w-full min-h-[44px] sm:min-h-0 text-left px-3 py-2 text-sm ${i === dong ? 'bg-white/5' : 'bam'}`,
+    className: `w-full min-h-[44px] text-left px-3 py-2 text-sm ${i === dong ? 'bg-[color:var(--accent-soft)]' : 'bam'}`,   // GD-5: dòng đang chọn = `.oc-muc.re`, cao 44
     onMouseEnter: () => setDong(i),
     onMouseDown: (e: ReactMouseEvent) => e.preventDefault(),
     onClick: () => moMuc(i),
@@ -217,7 +217,8 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
           {/* k1: đầu nhóm có số; nhóm rỗng gom một dòng ("Lớp · 0 · Giáo viên · 0"). */}
           {nhomTim.filter((n) => n.so > 0).map((n) => (
             <li key={n.key} role="none" className="contents">
-              <span aria-hidden className="block px-3 pt-2 pb-1 text-[12px] font-semibold text-slate-500">{n.ten} · <span className="tabular-nums">{n.so}</span></span>
+              {/* GD-5 (R5.2 #57, mockup ⑤ A2): nhãn nhóm cùng dáng ô chọn có tìm chung (`.oc-nhom`: tên + số mờ, dính đầu khi cuộn). */}
+              <span aria-hidden className="oc-nhom">{n.ten} <span className="so">{n.so}</span></span>
               <ul role="none" className="list-none m-0 p-0">{n.dong}</ul>
             </li>
           ))}

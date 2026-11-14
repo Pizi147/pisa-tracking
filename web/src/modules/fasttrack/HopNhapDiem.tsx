@@ -4,8 +4,8 @@
  * dải ô lớn và ô gõ thẳng L/R.
  *
  *   ODiemMt      Ô điểm là NÚT: L/R "4.5" + dòng "14 câu", W/S "5.0", ô trống = khung rỗng (OV-15b), ô vắng "Vắng → W3 OCT". Bấm → hộp neo ngay ô.
- *   HopNhapDiem  Đầu "Reading · MT2" / "{em} · {lớp} · {W2 OCT}"; con trỏ đứng sẵn ở ô điểm; chân Vắng · Lưu · Lưu · bài tiếp ›.
- *                R1-LUU-TIEP (V12 26/10): "Lưu" ở lại ("✓ Đã lưu" · Bài tiếp ›); "Lưu · bài tiếp ›" (Enter) sang bài còn thiếu kế; hết →
+ *   HopNhapDiem  Đầu "Reading · MT2" / "{em} · {lớp} · {W2 OCT}"; con trỏ đứng sẵn ở ô điểm; chân ⋯ · Vắng · Lưu · bài tiếp › (GD-3, mockup v21 K2b:
+ *                ⋯ = Lưu · đóng · Khôi phục điểm · Bỏ vắng). Không có bài kế: "Lưu" ở lại ("✓ Đã lưu" · Đóng); "Lưu · bài tiếp ›" (Enter) sang bài còn thiếu kế; hết →
  *                "Đã xong phần của bạn" + Lớp tiếp / Việc tiếp / Đóng. Esc đóng. < 640 px: tấm trượt từ dưới.
  *
  * Luật dùng lại, không luật thứ hai: `rawPatchFrom` / `criteriaPatchFrom` dựng lệnh ("-" = Vắng; W / S: 4 tiêu chí HOẶC ô Band, không cả hai — BAND-THANG), lưu qua
@@ -21,20 +21,24 @@
  */
 import { OKhongHoc } from '../../ui/ODiem.tsx';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
-import { useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, caHaiKieu, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi, LOI_MOT_KIEU,
-  chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
+  chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, rawPatchFrom, roundToHalf, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
+import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { DemChu } from '../../ui/KhungPanel.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DauKetQua, MuiTenKyVong, lopKq } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
@@ -65,15 +69,14 @@ export type NguCanhHop = {
 function LichSuO({ attemptId, skill }: { attemptId: number; skill: string }) {
   const [mo, setMo] = useState(false);
   const { data, error } = useApi<{ scoreHistory: any[] }>(mo ? `/attempts/${attemptId}` : null);
+  const ds = data?.scoreHistory.filter((h) => h.skill === skill);
+  /* GD-4c (H4): một kiểu lịch sử — gập "Lịch sử" (số hiện khi đã đọc), bấm mới tải như cũ. */
   return (
-    <div className="text-[13px]">
-      <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px]" aria-expanded={mo} onClick={() => setMo((v) => !v)}>
-        {mo ? t('Ẩn lịch sử') : t('Lịch sử')}
-      </button>
-      {mo && (error ? <p className="m-0 mt-1 text-bad">{error.message}</p>
-        : !data ? <p className="m-0 mt-1 text-slate-500">{t('Đang tải…')}</p>
-          : <div className="mt-1"><DongThoiGianLuot history={[]} scoreHistory={data.scoreHistory.filter((h) => h.skill === skill)} gioiHan={5} /></div>)}
-    </div>
+    <LichSuGap so={ds?.length || null} onMo={(m) => { if (m) setMo(true); }}>
+      {error ? <p className="ls-rong text-bad">{error.message}</p>
+        : !ds ? <p className="ls-rong">{t('Đang tải…')}</p>
+          : <DongThoiGianLuot history={[]} scoreHistory={ds} gioiHan={5} />}
+    </LichSuGap>
   );
 }
 
@@ -207,6 +210,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
   dauKq?: 'vuot' | 'bang' | 'duoi' | null;
 }) {
   const [neo, setNeo] = useState<HTMLButtonElement | null>(null);
+  const trongPanel = useContext(OTrongPanel);
   const vangGoc = oVangCua(cell, hop.tuanXem);
   if (cell.khongHoc) return <OKhongHoc nhan={skillLabel(cell.skill)} />;   // P8: môn em không học — không phải nút
   const h = hienO(cell, vangGoc);
@@ -232,6 +236,22 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
           {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>
         {phu}
+      </span>
+    );
+  }
+  const nhanO = `${skillLabel(cell.skill)} · ${hop.ctx.tenHv}: ${h.doc}${cell.thieuNhanXet ? `, ${CHU_O_THIEU[cell.thieuNhanXet]}` : ''}`;
+  const tieuDeO = cell.noShow?.text ?? (cell.thieuNhanXet ? CHU_O_THIEU[cell.thieuNhanXet] : t('{skillLabel} — bấm để nhập', { skillLabel: skillLabel(cell.skill) }));
+  if (trongPanel) {
+    /* GD-3 (mockup v21 K2 `.od`): ô 96 × 44 viền liền (trống cũng viền liền), số 15 / 600 + dòng phụ 12 ("27 câu", "→ W4 SEP") NẰM TRONG ô. */
+    return (
+      <span className="inline-flex max-w-full">
+        <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={nhanO} title={tieuDeO} onClick={() => onMo(!mo)}
+          className={`o-sua grid h-11 w-24 max-w-full place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
+          {/* Chủ SP 14/11: số CĂN GIỮA ô — không chừa chỗ ký hiệu khi ô không có ✓ / ✗. */}
+          <span className="inline-flex items-baseline">{kq && kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}</span>
+          {h.kieu === 'trong' ? null : phu}
+        </button>
+        {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}
       </span>
     );
   }
@@ -373,7 +393,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     sau();
   };
 
-  const luu = (tiep: boolean) => {
+  /** `dong`: "Lưu · đóng" của ⋯ (GD-3) — lưu xong đóng hộp. */
+  const luu = (tiep: boolean, dong = false) => {
     if (haiKieu) { luoiRef.current?.querySelector<HTMLElement>('input')?.focus(); return; }
     if (dauLai) { setLoi({ cau: t('Đã ghi vắng — muốn gỡ thì bấm Bỏ vắng.'), o: 0 }); return; }
     if (doiDiem && !diem.patch) { setLoi({ cau: diem.loi ?? LOI_SO_CAU, o: diem.o }); return; }
@@ -399,12 +420,13 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       if (vang) onDong();
       else if (!coDiemChinhThuc(cell) && !cell.noShow) setLoi({ cau: t('Ô còn trống — nhập điểm hoặc Vắng'), o: 0 });
       else if (tiep && onTiep) onTiep(false);
+      else if (dong) onDong();
       else setLuuAnh(anh);
       return;
     }
     /* Ô vắng ("Lưu điểm · đóng" — tên nói đúng hành vi, V12): đóng sau lưu như cũ. V12: "Lưu" ở lại; "Lưu · bài tiếp ›" chỉ chuyển khi máy chủ đã nhận. */
     if (vang) void gui(lenh, onDong, 'luu');
-    else void gui(lenh, tiep && onTiep ? () => onTiep(true) : () => undefined, tiep ? 'tiep' : 'luu');
+    else void gui(lenh, tiep && onTiep ? () => onTiep(true) : dong ? onDong : () => undefined, tiep ? 'tiep' : 'luu');
   };
 
   /* CA3-8: đã gõ thì `KhungHop` hỏi ngay chân hộp ("Bỏ điểm Listening · {em}?" · Bỏ · Gõ tiếp) — không hộp trình duyệt. */
@@ -433,6 +455,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const tuan = cell.weekStart ? tuanLich(cell.weekStart, homNay) : null;
   const kvHien = !vang ? kv : null;   // OV-12b: "Kỳ vọng MT{n}" ở cả W1 / W2 / S
   const nTask = cell.skill === 'writing1' ? 1 : 2;
+  /* Cùng công thức `writingBand` máy chủ (W1 + W2 × 2) / 3, làm tròn 0.5 — chỉ để xem trước trong hộp. */
+  const wSau = laW && bandSau !== null && ctx.bandTaskKia != null
+    ? roundToHalf(nTask === 1 ? (bandSau + ctx.bandTaskKia * 2) / 3 : (ctx.bandTaskKia + bandSau * 2) / 3) : null;
 
   /* OV-14c: S đã có điểm của NGƯỜI KHÁC — nói ai / lúc nào trước khi ghi đè (hai GV cùng chấm chéo một em). */
   const nguoiKhac = laS && coDiemChinhThuc(cell) && !!cell.enteredByName && cell.enteredById != null && cell.enteredById !== session?.user?.id;
@@ -502,10 +527,16 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
             </span>
           </div>
           {haiKieu && <p id="hop-diem-hai-kieu" role="alert" className="mt-1 text-xs text-bad">{LOI_MOT_KIEU}</p>}
-          {!vang && <DongKyVong luot={ctx.luot} kv={kvHien} />}
+          {!vang && !laW && <DongKyVong luot={ctx.luot} kv={kvHien} />}
+          {/* GD-4d (dòng 40b, ⑤ E2): W chỉ một dòng xem trước "Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5" — công thức vào ⓘ (bỏ chú thích tĩnh). */}
           {laW && !vang && (
-            <div className="mt-1.5 text-xs text-slate-500">
-              {ctx.bandTaskKia == null ? t('Task {x} chưa có · ', { x: 3 - nTask }) : ''}{t('Writing = (Task 1 + Task 2 × 2) / 3 khi đủ hai task')}
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs tabular-nums text-slate-500">
+              <span className="inline-flex items-center gap-1">
+                {ctx.bandTaskKia == null ? t('Task {x} chưa có', { x: 3 - nTask })
+                  : `Task ${3 - nTask} ${fmtBand(ctx.bandTaskKia)} → Writing ${wSau === null ? '—' : fmtBand(wSau)}`}
+                {kvHien !== null && <>{' · '}{t('kỳ vọng {kv}', { kv: fmtBand(kvHien) })}{ctx.bandTaskKia != null && <MuiTenKyVong kq={soKyVong(wSau, kvHien)} />}</>}
+              </span>
+              <NutLuat label={t('Cách tính Writing')}>{t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.')}</NutLuat>
             </div>
           )}
         </div>
@@ -565,29 +596,34 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     </>
   ) : vang ? (
     <>
+      {/* Chủ SP 14/11 (rà #1563): ô đang Vắng — cùng dáng chân: ⋯ (Bỏ vắng khi gỡ được) · nút chính "Lưu điểm · đóng". */}
       {cell.daChot!.goDuoc && (
-        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong, 'khac')}>{t('Bỏ vắng')}</button>
+        <MenuDong canhTrai lopNut={`${nut} w-9 justify-center px-0`}
+          muc={[{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }]} />
       )}
+      <span className="flex-1" />
       <LyDoThieu thieu={thieu} />
       {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy ? dangLuuChu : t('Lưu điểm · đóng')}</button>}
     </>
   ) : (
     <>
       {onTiep && nhanTiep && <span className="basis-full truncate text-xs text-slate-400" title={nhanTiep}>{t('Tiếp: {x}', { x: nhanTiep })}</span>}
-      {cell.diemHuy && !daLuu && (
-        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ khoiPhuc: true }], onDong, 'khac')}>{dangLuu === 'khac' ? dangLuuChu : CHU_THAO_TAC['khoi-phuc-diem']}</button>
-      )}
-      {boKhongDuThi && !daLuu && (
-        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong, 'khac')}>
-          {dangLuu === 'khac' ? dangLuuChu : t('Bỏ vắng')}
-        </button>
+      {/* GD-3 HOP-NHAP-GON (mockup v21 K2b): ngoài chỉ ⋯ · Vắng · nút chính; ⋯ = Lưu · đóng (thay "Lưu" ở lại khi có bài kế) · Khôi phục điểm · Bỏ vắng
+          (hai mục sau chỉ khi ô ở trạng thái đó). Không có bài kế: "Lưu" vẫn là nút chính như cũ. */}
+      {!daLuu && (
+        <MenuDong canhTrai lopNut={`${nut} w-9 justify-center px-0`} muc={[
+          ...(onTiep ? [{ key: 'luu-dong', nhan: t('Lưu · đóng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => luu(false, true) }] : []),
+          ...(cell.diemHuy ? [{ key: 'khoi-phuc', nhan: CHU_THAO_TAC['khoi-phuc-diem'], tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ khoiPhuc: true }], onDong, 'khac') }] : []),
+          ...(boKhongDuThi ? [{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }] : []),
+        ]} />
       )}
       {nhanVang && !daLuu && (
         /* LUAT-34: một chữ "Vắng" — hậu quả (dời / thẻ QL / huỷ) nói ở thông báo sau khi ghi, kèm Hoàn tác 10 giây. Vắng kết thúc ô → sang bài tiếp. */
-        <button type="button" className={`${nut} btn-ghost`} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac')}>
+        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: true }], onTiep ? () => onTiep(true, true) : onDong, 'khac')}>
           {dangLuu === 'khac' ? dangLuuChu : t('Vắng')}
         </button>
       )}
+      <span className="flex-1" />
       <LyDoThieu thieu={thieu} />
       {daLuu ? (
         <>
@@ -598,7 +634,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         </>
       ) : (
         <>
-          <button type="button" className={onTiep ? nut : `${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{dangLuu === 'luu' ? dangLuuChu : t('Lưu')}</button>
+          {!onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{dangLuu === 'luu' ? dangLuuChu : t('Lưu')}</button>}
           {onTiep && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(true)}>{dangLuu === 'tiep' ? dangLuuChu : tiepEm ? t('Lưu · em tiếp ›') : t('Lưu · bài tiếp ›')}</button>}
         </>
       )}
@@ -754,15 +790,20 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
       <div ref={box} role="dialog" aria-label={nhanHop} tabIndex={-1} onKeyDown={(e) => { if (!hoi) onKeyDown(e); }}
         className={`z-[60] border outline-none ${dienThoai
           ? 'fixed inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-2xl'
-          : 'fixed w-[min(400px,calc(100vw-32px))] rounded-xl shadow-2xl'}`}
+          : 'fixed w-[min(440px,calc(100vw-32px))] rounded-xl shadow-2xl'   /* GD-3: = mockup v21 `.hop` 440 */}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
         {dienThoai && <div aria-hidden className="mx-auto mt-2 h-1 w-10 rounded-full bg-white/20" />}
-        <div className="border-b px-3.5 pb-2 pt-3" style={{ borderColor: 'var(--line)' }}>
-          <div className="text-[15px] font-bold text-slate-100">{ten}</div>
-          <div className="mt-0.5 truncate text-xs text-slate-400" title={nhanHop}>{phu}</div>
+        <div className="flex items-start gap-2 border-b pb-2.5 pl-4 pr-3 pt-3" style={{ borderColor: 'var(--line)' }}>
+          <div className="min-w-0 flex-1">
+            <div className="text-[15px] font-bold text-slate-100">{ten}</div>
+            <div className="mt-0.5 truncate text-[13px] text-slate-400" title={nhanHop}>{phu}</div>
+          </div>
+          {/* GD-3 (mockup v21 K2b): ✕ ở đầu hộp — cùng đường với Esc (đã gõ thì hỏi bỏ chữ ở chân). */}
+          <button type="button" aria-label={t('Đóng')} className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[17px] text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"
+            onClick={() => { if (daGo) setHoi(true); else onDong(); }}>✕</button>
         </div>
-        <div className="flex flex-col gap-3 px-3.5 py-3">{children}</div>
-        <div className="flex flex-wrap items-center gap-2 border-t px-3.5 py-2.5" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex flex-col gap-2.5 px-4 py-3">{children}</div>
+        <div className="flex flex-wrap items-center gap-2 border-t px-4 pb-3 pt-2.5" style={{ borderColor: 'var(--line)' }}>
           {hoi ? (
             <>
               <span role="alert" className="min-w-0 flex-1 text-[13px] text-slate-200">{cauBo}</span>

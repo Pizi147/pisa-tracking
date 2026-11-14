@@ -2,10 +2,10 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
-import { nhanMocViPham, ngay } from '@shared/domain/index.ts';
+import { nhanMocViPham, ngay, bacDu } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
-import { phimHangTab } from '../../ui/HangTab.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
 import { lucVn } from '../congViec/PanelBaoPhTvv.tsx';
 import type { BaoPhLan } from './kieu.ts';
 
@@ -204,11 +204,11 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
   return (
     <div className="grid gap-2.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
       <div className="flex flex-wrap items-center gap-2.5">
-        <h4 className="m-0 text-[15px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: dich(v.nhan) })}</h4>
+        <h4 className="m-0 text-[15px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: bacDu(dich(v.nhan)) })}</h4>
         {v.trangThai === 'mo' && <span className="rounded-md px-2 text-xs font-semibold leading-[22px] text-slate-400 surface-2">{t('hạn {ngay}', { ngay: ngay(v.han, homNay) })}</span>}
         {v.coTheSuaHan && onSuaHan && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" onClick={onSuaHan}>{t('Sửa hạn')}</button>}
       </div>
-      {v.bo && <p className="m-0 text-[13px] text-slate-400">{t('Đã bỏ')}{v.bo.nhan ? ` · ${dich(v.bo.nhan)}` : ''}{v.bo.chu ? ` · ${v.bo.chu}` : ''}</p>}
+      {v.bo && <p className="m-0 text-[13px] text-slate-400">{t('Đã bỏ')}{v.bo.nhan ? ` · ${bacDu(dich(v.bo.nhan))}` : ''}{v.bo.chu ? ` · ${v.bo.chu}` : ''}</p>}
       {ds.length === 0 ? <p className="m-0 text-[13px] text-slate-500">{t('Chưa có lần ghi nào.')}</p> : ds.map((l, i) => (
         <div key={i} className={`grid gap-x-4 gap-y-1.5 py-2 text-sm sm:grid-cols-[120px_180px_minmax(0,1fr)] ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
           <span className="text-[13px] font-semibold tabular-nums text-slate-400">{lucVn(l.luc)}{l.nguoi && <span className="block text-xs font-medium text-slate-500">{l.nguoi}</span>}</span>
@@ -401,17 +401,8 @@ export function TheLoai({ loai, so }: { loai: 'vp' | 'nn' | 'th' | 'hoi'; so?: n
 /** TINH-HINH (mockup v20 A1): hai tab nhỏ trong tab "Ý thức & Phối hợp" — "Tình hình học tập / Ý thức" · "Phối hợp SOS" (số việc chờ). */
 export function TabNho<K extends string>({ value, onChange, muc }: { value: K; onChange: (k: K) => void; muc: { key: K; nhan: string; ngan?: string; so?: number | null }[] }) {
   return (
-    <div role="tablist" aria-label={t('Ý thức & Phối hợp')} onKeyDown={phimHangTab} className="flex gap-1 border-b px-4 pt-3 max-sm:px-2 max-sm:pt-2" style={{ borderColor: 'var(--line)' }}>
-      {muc.map((m) => {
-        const on = m.key === value;
-        return (
-          <button key={m.key} type="button" role="tab" aria-selected={on} tabIndex={on ? 0 : -1} onClick={() => onChange(m.key)}
-            className={`inline-flex h-10 appearance-none items-center gap-2 rounded-t-lg border-0 px-3.5 text-sm max-sm:h-11 max-sm:flex-1 max-sm:justify-center max-sm:px-2 ${on ? 'font-semibold text-slate-100 shadow-[inset_0_-2px_0_var(--accent)] surface-2' : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-            {m.ngan ? <><span className="max-sm:hidden">{m.nhan}</span><span className="sm:hidden">{m.ngan}</span></> : m.nhan}
-            {m.so != null && m.so > 0 && <span className={`rounded-[5px] px-1.5 text-xs font-semibold tabular-nums ${on ? 'text-[color:var(--accent)]' : 'text-slate-500 surface-2'}`} style={on ? { background: 'var(--surface)' } : undefined}>{m.so}</span>}
-          </button>
-        );
-      })}
-    </div>
+    /* GD-4c: dáng chung `HangTab` (H1) — tab con trong khối, đệm theo khối. */
+    <HangTab ariaLabel={t('Ý thức & Phối hợp')} value={value} onChange={onChange} className="px-4 pt-3 max-sm:px-2 max-sm:pt-2"
+      tabs={muc.map((m) => ({ key: m.key, label: m.nhan, ngan: m.ngan, so: m.so }))} />
   );
 }

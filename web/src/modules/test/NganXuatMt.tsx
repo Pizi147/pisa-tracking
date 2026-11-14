@@ -50,7 +50,6 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
   const [khung, setKhung] = useState<KhungXuat>(khungDau);
   const [cn, setCn] = useState<number[]>(chiNhanh ? [chiNhanh] : []);
   const [lopChon, setLopChon] = useState<{ id: number; ma: string }[]>(lop ? [lop] : []);
-  const [timLop, setTimLop] = useState('');
 
   const macDinhDot = (k: KhungXuat) => [...(k === 'ft' ? DOT_XUAT_FT : DOT_XUAT_THUONG)];
   const t0 = thoiGianMacDinh;
@@ -193,8 +192,8 @@ export function NganXuatMt({ khung: khungDau, chiNhanh, lop, thoiGianMacDinh, ti
                       ))}
                     </div>
                   )}
-                  <TimLop lop={lopGoiY} value={timLop} onChange={setTimLop} placeholder={t('Tìm lớp… (trống = mọi lớp)')}
-                    onChon={(l) => { setLopChon((ds) => [...ds, { id: l.id, ma: l.code }]); setTimLop(''); }} />
+                  <TimLop lop={lopGoiY} placeholder={t('Tìm lớp… (trống = mọi lớp)')}
+                    onChon={(l) => { setLopChon((ds) => [...ds, { id: l.id, ma: l.code }]); }} />
                 </div>
               )}
             </Truong>

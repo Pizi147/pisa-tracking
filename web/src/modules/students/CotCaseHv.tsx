@@ -6,7 +6,7 @@ import { DaiDaXoa } from '../cases/TaiCho.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
-import { IconCanhBao, IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
+import { IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
@@ -65,7 +65,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
     const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
     const chuHan = dong(c) ? <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />
       : han ? <span title={han.text} className={`inline-flex items-center gap-1 whitespace-nowrap text-[13px] tabular-nums ${han.quaHan ? 'font-bold text-bad' : han.ganHan ? 'font-semibold text-slate-100' : 'text-slate-400'}`}>
-        {han.quaHan && <IconCanhBao />}{han.han}</span> : null;
+        {han.han}</span> : null;
     /* #3 (G2-04): mọi PA đã khép mà Case chưa xong → "n PA xong · chờ Hoàn thành" (không phải "Chưa có PA"). */
     const chuPa = pa ? `PA ${pa.name}` : dong(c) ? null : c.plans.length ? t('{n} PA xong · chờ Hoàn thành', { n: c.plans.length }) : t('Chưa có PA');
     return (

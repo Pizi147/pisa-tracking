@@ -69,7 +69,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'case-xac-dinh-nguyen-nhan-qua-han', ten: 'Case chưa chốt PA quá hạn',
     cauHoi: 'Trong các Case chưa chốt PA, bao nhiêu Case đã quá hạn?',
     donVi: 'case',
-    tapDuDieuKien: 'Trong tập "Case chưa chốt PA": hạn Xác nhận PA / Xác nhận Case / Mô tả Case (5 ngày, Gấp / SOS 3: 3 ngày, tính cả ngày Case ra đời) đã qua, hoặc Case chưa có PA nào đã qua hạn Thêm PA. Hết ngày hạn mới tính quá hạn. Cùng tập với ⚠ ở cột "Chưa có PA" của Tổng hợp (OV-12d).',
+    tapDuDieuKien: 'Trong tập "Case chưa chốt PA": hạn Xác nhận PA / Xác nhận Case / Mô tả Case (5 ngày, Gấp / SOS 3: 3 ngày, tính cả ngày Case ra đời) đã qua, hoặc Case chưa có PA nào đã qua hạn Thêm PA. Hết ngày hạn mới tính quá hạn. Cùng tập với số quá hạn ở cột "Chưa có PA" của Tổng hợp (OV-12d).',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-xac-dinh-nguyen-nhan-qua-han',
   },
   {

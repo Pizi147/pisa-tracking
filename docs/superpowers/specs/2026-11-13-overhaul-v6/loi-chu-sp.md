@@ -332,3 +332,177 @@ Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đ
 > "merge xong hết mockup archive hết những gì đã xong và cho tôi prompt bàn giao sang session overhaul plan mới"
 
 Đã làm: năm mockup ①–⑤ đã merge (#1544 / #1547, #1560, #1559, #1557, #1558); archive bốn session mockup + hai session dự bị; plan giao diện đợt 2 (`09`) đã gửi PTA Plan; prompt bàn giao đưa chủ SP trong chat. Session planning mới đọc thư mục này theo thứ tự: `loi-chu-sp.md` → `04-thiet-ke.md` (mục 12–14 thắng mục 5) → `05`, `07`, `09` (plan) → `08-bao-cao-sang.md` (17 câu hỏi còn mở) → `luat/`.
+
+## 15/11 — lời 32 (session PTA Overhaul mới): ba chỗ tài liệu ↔ mã lệch
+
+Câu hỏi của PTA Overhaul (câu 12, 13, 14 ở `08-bao-cao-sang.md`): (1) MT0 gõ "-": mã chỉ ghi vắng, Rulebook ghi áp luật vắng như Mock — theo bên nào (PTA đề xuất theo mã); (2) việc Bước tiếp sau thi: N6 "TVV của em", mã cho mọi TVV cùng chi nhánh — đề xuất theo mã; (3) xoá học viên / lớp trống: Rulebook "chỉ Quản trị", mã cho QL — đề xuất theo mã.
+
+> "1. áp luật vắng như mock
+> 2. theo đề xuất
+> 3. theo đề xuất
+>
+> 3 câu nhỏ hơn hỏi luôn và cho đề xuất đi"
+
+ĐÃ CHỐT:
+1. **MT0 gõ "-" áp luật vắng như Mock** (lần 1 dời sang tuần sau, lần 2 huỷ — N38) — BÁC đề xuất của PTA; mã phải sửa (nay chỉ ghi dấu, không dời, hết tuần thành "Không dự thi") → LG-9 ở `05-plan-logic-luat.md`, gửi PTA Plan.
+2. **Việc Bước tiếp sau thi: giữ như mã** — việc giao cho TVV của em, mọi TVV cùng chi nhánh làm thay được. Sửa chữ N6 trong tài liệu.
+3. **Xoá học viên / lớp trống: QL làm được** (giữ như mã; có Thùng rác 30 ngày). Sửa chữ Rulebook.
+Câu 1–11 ở `08`: coi là đã chốt theo năm mockup đã duyệt (lời 27–30). Còn hỏi: câu 15, 16, 17.
+
+## 15/11 — lời 33: ba câu nhỏ (câu 15, 16, 17 ở `08`) theo đề xuất
+
+Đề xuất của PTA Overhaul: (15, đụng luật N5) thẻ "Thu hồi xử lý vi phạm" hết 5 ngày QL chưa duyệt → tự chốt theo GVCN, như thẻ xử lý; (16) chip "Việc cần làm" quá hạn: giữ như mockup, mọi loại việc một dáng (⚠ + đỏ), không tách riêng Nhập điểm; (17) badge tab "Chấm Speaking": badge mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng vào badge menu.
+
+> "Theo đề xuất hết"
+
+ĐÃ CHỐT:
+1. **Thẻ "Thu hồi xử lý vi phạm" hết hạn duyệt (5 ngày, theo Hạn mặc định) mà QL chưa duyệt → tự chốt theo GVCN** (thu hồi có hiệu lực: dòng "Đã thu hồi", bậc tính lại, TVV đã báo thì có việc "Báo lại PH") — như thẻ xử lý vi phạm (D3). ĐỔI luật đang chạy (nay chờ mãi) → LG-10 ở `05-plan-logic-luat.md`, gửi PTA Plan.
+2. **Chip "Việc cần làm" quá hạn: giữ như mockup** — mọi loại việc cùng một dáng ⚠ + đỏ.
+3. **Badge tab "Chấm Speaking": mờ (số bài) + ⚠ khi có bài quá hạn**; không đỏ; không cộng vào badge menu / chuông. Thắng hình mockup ① (badge đỏ "6", [XM-2]). Ghi ở `04-thiet-ke.md` mục 15.
+Cả 17 câu ở `08-bao-cao-sang.md` đã có trả lời.
+
+## 15/11 — lời 34: mockup các màn còn lại · rà đồng bộ · nâng cấp (kể cả Phân tích)
+
+Bối cảnh: chủ SP hỏi "không còn mockup nào cần làm nữa hả?"; PTA Overhaul trả lời theo plan thì hết (các màn còn lại chỉ làm gọn mật độ ở GD-10, không mockup), đề xuất làm thêm mockup Học viên & Lớp và Lịch Test tuần.
+
+> "1. Luôn nhớ là cần đồng bộ những chỗ cần đồng bộ, với những gì tôi đã chốt tất nhiên. Làm mockup những phần còn lại đi.
+> 2. Rà soát xem có chỗ nào tôi đã chốt ở các mockup trước rồi chưa đồng bộ, hoặc đơn thuần là chỗ nào cùng chức nằng mà chưa có tính đồng bộ thì cũng làm luôn nhé, gửi ảnh tôi xem trước xem có cần sửa gì không
+> 3. Nững chỗ bạn đề xuất làm mockup nâng cấp bạn cứ mockup nhé, phần phân tích cũng xem lại xem bạn thấy ổn chưa, nâng cấp được gì thì cũng brainstorm làm nhé /superpowers:brainstorming"
+
+PTA Overhaul hiểu:
+1. **Làm mockup cho các màn còn lại** (nay ở GD-10 chỉ "làm gọn mật độ, không mockup"): Học viên & Lớp · Test (Lịch Test tuần, Kế hoạch Test, trang lượt) · Phân tích · Quản trị · Hồ sơ GV · Lưu trữ · Tổng quan QL / Admin / CX. Luật xuyên suốt: **chỗ cần đồng bộ thì đồng bộ, theo đúng những gì chủ SP đã chốt**.
+2. **Rà đồng bộ:** (a) điều đã chốt ở mockup ①–⑤ / lời 17–33 mà mockup nào đó chưa theo; (b) chỗ cùng chức năng mà dáng / cách làm chưa giống nhau (kể cả chưa có lời chốt). Sửa luôn vào mockup, **gửi ảnh chủ SP xem trước** khi coi là xong.
+3. **Nâng cấp:** các màn PTA Overhaul đề xuất (Học viên & Lớp, Lịch Test tuần) cứ làm mockup; **Phân tích** xem lại, thấy nâng cấp được gì thì brainstorm rồi làm.
+Hệ quả cho plan: GD-10 ("không mockup") chờ đợt mockup này; `09-plan-giao-dien-dot-2.md` sẽ sửa sau khi mockup được duyệt.
+
+## 15/11 — lời 35: duyệt 6 mockup đợt 2 kèm chỉnh
+
+Bối cảnh: PTA Overhaul gửi kết quả rà (`10-ra-dong-bo.md`) và đề xuất 6 mockup: ⓪ sửa đồng bộ ①–⑤ · ⑥ Học viên & Lớp (tab Lịch thi có badge số việc, việc thành nút-chip) · ⑦ Test · ⑧ Tổng quan QL / Admin / CX + Hồ sơ GV · ⑨ Phân tích (chỉnh, thêm ô "Sắp thi · còn SOS") · ⑩ Quản trị + Lưu trữ; tự quyết tên bậc viết "Report 1", "WL 1".
+
+> "0: Bảng mẫu ok nhưng nên nhớ là badge công việc của nhập điểm bên cạnh chỉ ghi số thôi, không thêm chữ 'bài' nữa
+> 6: Tab lịch thi không cần việc, cần thông tin về lịch thi và thông tin hiện tại cần thiết của HV thôi
+> 7: oke thử mockup đi, tôi chưa hình dung ra
+> 8: Gom chung cái gì được thì gom chung
+> 9: Ok
+> 10: Ok
+>
+> Tên bậc cần viết hoa hết và viết đủ ở một số chỗ cần thiết, bạn tự đề xuất"
+
+ĐÃ CHỐT:
+- **⓪** làm. **Badge / chip việc Nhập điểm chỉ ghi SỐ, không thêm chữ "bài"** ("Nhập điểm 6"). PTA áp chung: mọi nút-chip "Việc cần làm" và badge tab = chữ loại việc + số, không đơn vị.
+- **⑥ Tab Lịch thi KHÔNG cần việc** (bác đề xuất badge số việc + nút-chip việc): tab này là THÔNG TIN — lịch thi + thông tin hiện tại cần thiết của HV.
+- **⑦** làm mockup để chủ SP hình dung rồi mới quyết.
+- **⑧ Gom chung cái gì được thì gom chung.**
+- **⑨, ⑩** làm như đề xuất (⑨ gồm ô "Sắp thi · 6 tuần · còn SOS").
+- **Tên bậc vi phạm: VIẾT HOA hết; viết đủ ở chỗ cần** — bác cách PTA tự quyết ("Report 1", "WL 1"). Chỗ nào viết đủ: PTA đề xuất, chủ SP duyệt ở mockup ⓪.
+
+PTA Overhaul đề xuất (duyệt ở mockup):
+- Tên bậc: luôn hoa — **REPORT 1 … · WL 1 · WL 2**. Viết đủ **"WARNING LETTER 1"** ở nơi người ta QUYẾT hoặc nơi PHỤ HUYNH đọc: thang cấp bậc (mốc WL) · panel Xác nhận xử lý / Thu hồi (dòng "Bậc kế", nút chọn) · bậc hiện tại ở khối của em trong tab Ý thức · dòng lịch sử xử lý · việc TVV "Báo PH" và Báo cáo PH / tệp xuất · Hướng dẫn "?". Viết tắt **"WL 1"** ở nơi chật: chip, cột bảng, dòng việc, badge, ô số, 375.
+- Tab Lịch thi: hàng = em · lớp · lịch thi (tháng dự kiến / ngày đã chốt / chờ KQ / KQ) · thông tin hiện tại (Target, MT gần nhất, SOS, lộ trình + tuần học). Không badge việc, không cột việc. Thao tác đang có (Chốt / Sửa ngày, Đặt / Dời tháng, Ghi KQ, Bước tiếp, Sửa KQ, + Ghi chú, Hoàn tác) GIỮ — bấm thẳng giá trị để sửa / mở dưới hàng; việc tới hạn của TVV nằm ở trang Công việc của TVV.
+Đề bài: `11-de-bai-mockup-dot-2.md`. Sáu session con Opus 5.5 · high.
+
+## 15/11 — lời 36 (chủ SP nói trong session mockup ⓪; session đó chuyển lại nguyên văn): thang cấp bậc không ghi chữ WARNING LETTER
+
+Bối cảnh: mockup ⓪ vẽ thang cấp bậc xử lý vi phạm có chữ "WARNING LETTER 1 / 2" trong thanh (theo đề xuất "viết đủ ở thang cấp bậc" của PTA Overhaul ở lời 35).
+
+> "KHÔNG ĐỂ HẲN CHỮ WARNING LETTER vào trong progress bar, ý là chỉ để nó khác màu và nổi bật hơn thôi, vẫn đẻ progress bar như bình thường"
+
+ĐÃ CHỐT (sửa đề xuất tên bậc ở lời 35, làm rõ lời 28 ý 3): **thang cấp bậc là thanh vạch bình thường, KHÔNG có chữ trong thanh**; mốc WL 1 / WL 2 chỉ **khác màu và nổi hơn** (vạch đỏ, đậm hơn). Tên bậc viết đủ "WARNING LETTER 1" vẫn dùng ở: danh sách bậc khi mở "Thang ▾" · panel Xác nhận xử lý / Thu hồi (dòng "Bậc kế", nút chọn) · bậc hiện tại của em ở tab Ý thức · dòng lịch sử xử lý · nội dung báo PH. Viết tắt "WL 1" ở chip, cột bảng, dòng việc, badge, 375. Áp mọi nơi có thang (hồ sơ HV, panel Xác nhận xử lý, tab Ý thức lớp).
+
+PTA Overhaul quyết khi rà mockup ⓪ (chủ SP duyệt lại ở mockup ⓪):
+- **Chân panel việc:** khi panel mở từ một danh sách còn việc kế → "Đóng" · "Lưu" · **"Lưu · việc tiếp ›"** (nút chính); không còn việc kế hoặc panel mở lẻ → "Đóng" · "Lưu". Giữ nút gộp đang có trên web (D.V12, R1-LUU-TIEP 26/10) — bảng mẫu ⑤ D2 và mockup ① ② bỏ nút gộp làm mỗi việc thêm một bấm. Thay dòng "chân panel → theo ⑤ D2" ở `10-ra-dong-bo.md` mục B.
+- **Hộp Tình hình học tập từ "+ Task":** một hộp (chọn em + Nội dung + "Gửi TVV") như mockup ① K5c; ⑤ F3 sửa theo.
+
+## 15/11 — lời 37: duyệt mockup ⓪, ⑦ · chỉnh ⑥, ⑧, ⑨, ⑩
+
+Bối cảnh: sáu mockup đợt 2 (⓪ #1607 · ⑥ #1611 · ⑦ #1606 · ⑧ #1613 · ⑨ #1609 · ⑩ #1614) đã qua rà của PTA Overhaul, chờ chủ SP.
+
+> "M0: ok
+> M6:
+> 1. Lịch thi: Dòng text bên dưới lịch thi hơi vướng, và không cần cột lộ trình đâu, còn cái chữ target trên đầu bảng để làm gì? xóa đi
+> 2. Còn lại ok
+> M7: duyệt
+> M9: Sắp thi tính đến tháng tiếp theo thôi, ví dụ đang ở tháng 11 thì tính lịch thi đến hết tháng sau nhé. Còn lại ok
+> M8: những chỗ phần ghi việc mà có text ở dưới đêm việc đúng hạn/ quá hạn đang hơi bị intrusive và loạn quá, nên nghĩ làm thế nào để hiển thị tốt hơn đi
+> M10: Lưu trữ vẫn chia theo chi nhánh, và danh sách học sinh vẫn chia theo lớp, lớp số to nhất xếp lên đầu"
+
+ĐÃ CHỐT:
+- **⓪ ĐÃ DUYỆT** (sửa đồng bộ năm mockup ①–⑤) — gồm: chân panel việc giữ nút gộp "Lưu · việc tiếp ›"; tên bậc VIẾT HOA, bảng "viết đủ │ viết tắt" (⑤ H5); thang không chữ (lời 36); hộp Tình hình học tập một hộp; công thức Writing vào ⓘ. Merge #1607.
+- **⑦ Test ĐÃ DUYỆT.** Merge #1606.
+- **⑥ Học viên & Lớp: duyệt kèm chỉnh tab Lịch thi** — (a) bỏ dòng chữ phụ dưới giá trị lịch thi; (b) bỏ cột Lộ trình; (c) bỏ chữ "Target" ở đầu bảng. Còn lại ok (gồm lọc theo trạng thái thi, bỏ chữ đỏ "quá hạn").
+- **⑨ Phân tích: duyệt kèm chỉnh** — ô "Sắp thi · còn SOS" tính **tới hết tháng kế tiếp** (đang tháng 11 → lịch thi tới hết tháng 12), không phải 6 tuần.
+- **⑧ Tổng quan + Hồ sơ GV: CHƯA duyệt** — chỗ ghi việc có dòng chữ dưới số đếm đúng hạn / quá hạn "intrusive và loạn" → nghĩ cách hiển thị tốt hơn, gửi lại.
+- **⑩ Quản trị + Lưu trữ: chỉnh Lưu trữ** — vẫn **chia theo chi nhánh**; danh sách học viên vẫn **chia theo lớp**, **lớp số to nhất xếp lên đầu**. (Quản trị: chưa có lời riêng → coi như ok cùng lượt.)
+
+PTA Overhaul hiểu (chủ SP sửa nếu sai):
+- ⑥ (c): bỏ cả cột Target và nhãn nhóm "Hiện tại" khỏi bảng Lịch thi (Target vẫn có khi mở hàng). Thông tin hiện tại còn MT gần nhất · SOS.
+- ⑨: tính theo lịch thi của em — ngày đã chốt HOẶC tháng dự kiến — rơi vào tháng này hoặc tháng sau; nhãn ô ghi mốc cụ thể ("Sắp thi · tới hết T12 · còn SOS").
+- ⑧: mỗi ô bảng chỉ còn MỘT thành phần, không dòng chữ phụ dưới số; tách cột theo đúng tên của Phân tích GV (% đúng hạn · Chưa làm); chi tiết mở khi bấm hộp.
+
+## 15/11 — lời 38: tab Lịch thi giữ cột Target, chỉ bỏ nhãn "Hiện tại"
+
+Bối cảnh: PTA Overhaul hiểu lời 37 ý M6 (c) là bỏ cả cột Target, cho mockup ⑥ sửa như vậy rồi hỏi lại.
+
+> "bỏ mỗi cái nhãn hiện tại bên trên thôi, chả hiểu để làm gì, target thì luôn cần chứ"
+
+ĐÃ CHỐT (sửa cách hiểu của PTA ở lời 37): bảng Lịch thi **GIỮ cột Target** ("target thì luôn cần"); chỉ bỏ **nhãn nhóm "Hiện tại"** phía trên các cột. Bảng: Học viên · Lịch thi · Target · MT gần nhất · SOS · Ghi chú. Cột Lộ trình vẫn bỏ; ô lịch thi một dòng.
+Bài học cho các mockup khác: không đặt nhãn nhóm phía trên đầu cột khi tên cột đã tự rõ; Target của em là thông tin luôn hiện ở các bảng về thi.
+Trạng thái mockup đợt 2: ⓪ #1607, ⑦ #1606, ⑨ #1609 đã merge (⑨ đã sửa ô "Sắp thi · tới hết tháng sau", gồm cả tháng dự kiến) · ⑥ #1611 đang sửa lại theo lời này · ⑧ #1613, ⑩ #1614 đang sửa theo lời 37.
+
+## 15/11 — lời 39: không gửi mockup lại — sửa xong gửi thẳng PTA Plan; cái gì xong thì archive
+
+Bối cảnh: mockup ⑥ ⑧ ⑩ đang sửa theo lời 37, 38; PTA Overhaul định gửi ảnh ⑧ để chủ SP xem lại.
+
+> "không cần gửi mockup lại đâu, sửa lại rồi gửi luôn cho PTA Plan, cái gì xong rồi thì archive đi nào"
+
+ĐÃ CHỐT: mockup ⑥ ⑧ ⑩ **không cần chủ SP xem lại** — session sửa xong, PTA Overhaul rà theo lời 37 / 38 rồi **merge và gửi plan code cho PTA Plan luôn**. Session / việc đã xong thì archive. (PR code đổi bố cục vẫn dừng ở ảnh cặp chờ chủ SP như luật chung — chủ SP chưa đổi phần này.)
+Đã làm trong lượt: archive session mockup ⓪ ⑦ ⑨ (đã merge); viết `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18, thay GD-10).
+
+## 15/11 — lời 40 (chủ SP nói trong session mockup ⑥; session đó chuyển lại nguyên văn): em đã thi thật thì không hiện MT gần nhất / Test sắp tới
+
+> "thi thật rồi thì khi expand không cần bảng MT gần nhất và test sắp tới nữa / chỉ có HV chưa thi thì mới có bảng thông tin của MT gần nhất chứ, động não liên tục và cái gì logic thì mình làm chứ đừng có làm vô tội vạ như thế"
+
+ĐÃ CHỐT (tab Lịch thi, mockup ⑥ — PR #1627 đã merge): phần mở dưới hàng đổi theo TRẠNG THÁI THI của em —
+- **Chưa thi:** MT gần nhất · Hỗ trợ đang mở · Test sắp tới · Phụ trách · + Ghi chú · Lịch sử.
+- **Đã thi, chờ KQ:** Kỳ thi (ngày · nơi · có KQ khoảng) · KQ "Chưa có" · Phụ trách · Ghi kết quả · + Ghi chú · Lịch sử.
+- **Có KQ:** KQ thi thật so Target · Kỳ thi · Phụ trách · Chọn bước tiếp · + Ghi chú · Lịch sử.
+Session mockup áp thêm cùng logic (PTA Overhaul đồng ý): trên hàng, em đã thi thì ô "MT gần nhất" ghi "—"; thẻ 375 của em đã thi dòng 2 chỉ còn Target; SOS giữ tới khi chọn bước tiếp.
+
+BÀI HỌC CHUNG (áp cho mọi mockup và mọi PR code): **thông tin hiện ra phải theo trạng thái của đối tượng** — không bày một khuôn cố định cho mọi hàng; trước khi đặt một khối / cột, hỏi "ở trạng thái này người xem còn cần nó không?" (em đã thi không cần MT gần nhất; việc đã xong không báo hạn; em Tạm dừng không hiện việc…). Cái gì hiển nhiên theo logic thì làm, không chờ nhắc.
+
+## 15/11 — lời 41 (chủ SP nói trong session mockup ⑧; session đó chuyển lại): chọn phương án A
+
+> "Chọn A nhé"
+
+ĐÃ CHỐT: mockup ⑧ dùng **phương án A** cho số đếm việc (tách cột, mỗi ô một thành phần, không chữ nhỏ dưới số) — khớp điều PTA Overhaul đã chốt theo lời 39. Mockup ⑧ (`tong-quan.html`, `ho-so-gv.html`) trên main chỉ còn A. **⑧ ĐÃ DUYỆT.**
+
+## 15/11 — lời 42 (chủ SP nói trong session mockup ⑥; session đó chuyển lại): hiện lại MT trên hàng
+
+Bối cảnh: sau lời 40, session ⑥ tự áp thêm "em đã thi thì ô MT gần nhất TRÊN HÀNG ghi —" (PTA Overhaul đã đồng ý) và hỏi lại chủ SP.
+
+> "Hiện lại MT"
+
+ĐÃ CHỐT (sửa phần áp thêm ở lời 40): **trên hàng bảng Lịch thi, MỌI em đều hiện MT gần nhất**, kể cả em đã thi. Chỉ PHẦN MỞ dưới hàng của em đã thi mới bỏ khối MT gần nhất và Test sắp tới (lời 40 giữ nguyên). Thẻ 375: dòng 2 luôn có Target · MT gần nhất · SOS.
+
+## 15/11 — lời 43 (chủ SP nói ở session PTA Plan, PTA Plan chuyển lại; đã thành luật V22 ở `DESIGN.md`, PR #1642): hạn chỉ bằng MÀU, không biểu tượng
+
+> "Từ giờ những badge công việc/ số quá hạn hay chưa đến hạn chỉ để màu thôi, không còn icon nữa, đỏ là quá, vàng là gần tới, bình thường là chưa tới? Và sửa hết lại những cái đã làm rồi, những cái chưa làm thì sửa lại kế hoạch, những cái chưa động vào thì cũng rà soát lại và sửa cho đồng bộ"
+
+ĐÃ CHỐT (luật V22, thắng mọi mockup và lời cũ khi khác): badge, nút-chip việc, số quá hạn / chưa tới hạn, chữ hạn trong dòng việc, đầu mục ("1 quá hạn"), badge tab, ô số trong bảng — **đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; KHÔNG ⚠ hay biểu tượng nào kèm**. Chữ ("quá hạn 1 ngày", "hạn hôm nay") vẫn nói nghĩa. ⚠ chỉ còn cho cảnh báo KHÔNG phải hạn (lỗi tải / lưu, bị chặn, xác nhận).
+Hệ quả: (a) sửa mọi mockup v21 (①–⑩, bảng mẫu, `v21.css`) — bỏ ⚠ ở chỗ nói về hạn; (b) các câu "quá hạn có ⚠", "⚠ m quá hạn", "hộp đỏ ⚠ n" trong `04`, `09`, `11`, `12` đọc là "màu đỏ, không ⚠"; (c) badge tab "Chấm Speaking" (lời 33: "mờ + ⚠, không đỏ") mâu thuẫn V22 — PTA Plan đang hỏi chủ SP, tạm: badge mờ, không ⚠.
+
+## 15/11 — lời 44: không làm lại mockup vì V22
+
+Bối cảnh: PTA Plan nhờ PTA Overhaul sửa mockup v21 bỏ ⚠ theo luật V22 (lời 43).
+
+> "không cần làm lại mockup đâu, chỉ cần viết lại mô tả và plan để cho PTA Plan code là được"
+
+ĐÃ CHỐT: **KHÔNG sửa mockup v21 vì V22.** Hình mockup còn ⚠ ở badge / chip / số hạn → session code đọc là "chỉ màu, không ⚠" theo `DESIGN.md` V22 + ghi chú V22 ở cuối `04`, `09`, `11`, `12`. Ảnh cặp: chỗ khác mockup vì V22 ghi một dòng "KHÁC theo V22", không tính là lệch.
+
+## 15/11 — lời 45 (chủ SP nói ở session PTA Plan, PTA Plan chuyển lại): badge tab Chấm Speaking đỏ như mọi nơi
+
+Câu hỏi của PTA Plan: tab Chấm Speaking có bài quá hạn thì badge có đỏ không (lời 33 "mờ + ⚠, không đỏ" mâu thuẫn V22).
+
+> "Có, đỏ như mọi nơi"
+
+ĐÃ CHỐT (thay phần "mờ, không đỏ" của lời 33 và `04-thiet-ke.md` mục 15): tab "Chấm Speaking" có bài quá hạn → **badge ĐỎ như mọi tab khác, không ⚠** (V22). Vẫn GIỮ: không cộng vào badge menu / chuông (bài chung của nhóm GV Speaking).

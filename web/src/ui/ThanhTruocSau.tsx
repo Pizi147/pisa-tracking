@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { docNguCanhDs, keBen, type NguCanhDs, type TenTrang } from '@shared/domain/index.ts';
 import { useChongVe, useTenTrang, useVe } from '../lib/quayLai.ts';
-import { Menu } from './Menu.tsx';
+import { MenuDong } from './MenuDong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 const khoaLuu = (loai: NguCanhDs['loai']) => `pisa.ds.${loai}`;
@@ -35,8 +35,8 @@ export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
         <span aria-hidden>‹</span><span className="min-w-0 truncate">{dich.ten}</span>
       </button>
       {chong.length > 1 && (
-        <Menu label={t('Các bước ({n})', { n: chong.length })} align="left" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"
-          items={chong.map((b) => ({ label: `‹ ${b.ten}`, hint: b.chiTiet, onClick: () => ve(b.url) }))} />
+        <MenuDong chu={t('Các bước ({n})', { n: chong.length })} canhTrai lopNut="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"
+          muc={chong.map((b, i) => ({ key: `${i}-${b.url}`, nhan: `‹ ${b.ten}`, goi: b.chiTiet ?? undefined, onChon: () => ve(b.url) }))} />
       )}
       {children}
     </div>

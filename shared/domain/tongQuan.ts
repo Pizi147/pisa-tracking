@@ -39,9 +39,11 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
  */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
-  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
+  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
   /* PHOI-HOP-V2 (mockup #1368): Phối hợp SOS sang tab "Ý thức & Phối hợp". */
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'y-thuc', phoi_hop_tvv: 'y-thuc',
+  /* GD-4a (chủ SP 14/11 "tất nhiên nó phải ở ý thức phối hợp rồi"): "Báo PH kết quả Test" sang tab Ý thức & Phối hợp — badge tab, chip Ý thức, hồ sơ GV cùng hàm này. */
+  phoi_hop: 'y-thuc',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc', yt_hoi_tinh_hinh: 'y-thuc',
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
@@ -133,7 +135,10 @@ export const nhanTabCv = (k: string, tvv = false): string =>
  */
 const MUC_CV = [
   ['mock', t('Mock Test')], ['pf', t('Progress / Final Test')], ['cp', t('Checkpoint')], ['cham-cheo', t('Chấm Speaking')],
-  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['tinh-hinh', t('Tình hình học tập')], ['phoi-hop', t('Phối hợp SOS')], ['phan-cong', t('Phân công')],
+  ['mo-ta', t('Mô tả Case')], ['pa', t('Phương án')], ['kq-pa', t('Kết quả PA')], ['bao-ph', t('Báo PH')], ['vi-pham', t('Vi phạm')], ['tinh-hinh', t('Tình hình học tập')], ['phoi-hop', t('Phối hợp SOS')],
+  /* GD-4b (PTA Plan 15/11): "Báo PH kết quả Test" của GVCN (không hạn) đứng SAU Phối hợp SOS — việc có hạn lên trước. Mục riêng, cùng tên "Báo PH":
+     TVV giữ mục `bao-ph` (Báo PH vi phạm · tình hình) ở chỗ cũ, thứ tự tab Báo PH của TVV không đổi. */
+  ['bao-ph-test', t('Báo PH')], ['phan-cong', t('Phân công')],
   ['ban-giao', t('Bàn giao')], ['sau-thi', t('Sau thi')], ['lo-trinh', t('Lộ trình')], ['chot-ngay', t('Chốt ngày thi')], ['thieu', t('Thiếu dữ liệu')],
   ['bo-sung', t('Bổ sung hồ sơ')], ['giao', t('Việc được giao')], ['bc-ph', t('Báo cáo PH')], ['khac', t('Khác')],
 ] as const;
@@ -141,7 +146,7 @@ type MaMuc = (typeof MUC_CV)[number][0];
 const MUC_CUA_LOAI: Record<string, MaMuc> = {
   cause: 'mo-ta', ghi_nhan_xet: 'mo-ta', xem_nx_s: 'mo-ta',
   no_plan: 'pa', xac_nhan_pa: 'pa', do_plan: 'pa', mini_test: 'pa',
-  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop_tvv: 'phoi-hop', phoi_hop: 'bao-ph', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
+  ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop_tvv: 'phoi-hop', phoi_hop: 'bao-ph-test', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
   /* PHOI-HOP-V2 (mockup #1368 K1): việc Ý thức chung MỘT mục "Vi phạm" — tên dòng nói loại việc, không lặp tên mục. */
   yt_xu_ly: 'vi-pham', yt_xem: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham', yt_hoi_tinh_hinh: 'tinh-hinh',
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
@@ -162,7 +167,7 @@ export function mucCuaViec(it: { group: string; key: string; kind?: string | nul
 export function dongTab<T extends { studentId: number | null; con?: readonly T[] | null }>(ds: readonly T[], caDong: (it: T) => boolean = () => false): T[] {
   return ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? [...it.con] : [it]));
 }
-export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "⚠ n quá hạn"). */ quaHan: number };
+export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "n quá hạn"). */ quaHan: number };
 /** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4). */
 export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false): MucTab<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
@@ -179,7 +184,8 @@ export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | nu
  * BADGE TAB — AUDIT-UI B3 (chủ SP 08/11, thay CV-TAB 06/11 "đỏ / vàng / trắng"): MỘT nghĩa như badge menu V13 — số dòng CẦN LÀM NGAY (quá hạn + hạn hôm nay);
  * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
-export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number };
+/** `bai`: tab "Chấm Speaking" (chủ SP lời 33, `04-thiet-ke.md` mục 15) — số bài; có bài quá hạn → badge ĐỎ như mọi badge (V22, chủ SP 14/11), không thì MỜ; không vào badge menu / chuông. */
+export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number; bai?: { n: number; quaHan: number } };
 export function badgeTab(dong: readonly { urgency: string; key?: string }[]): BadgeTab {
   /* Rà 11/11 #2 (G5-02): S chấm chéo ghi "quá hạn" ở dòng nhưng KHÔNG đếm (T18 06/11) — tab không đỏ khi số đầu trang không có (cùng `demDongViec`). */
   const tinh = dong.filter((x) => !(x.key && laViecChamCheo({ key: x.key })));

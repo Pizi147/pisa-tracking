@@ -202,14 +202,15 @@ export function boMonCuaLuot(conn: any, attemptId: number, dongLich?: readonly {
 }
 
 /** P13: dòng lịch MÔN GỘP cũ (L+S, R+W) của các lượt — nơi chưa nạp dòng lịch; chỉ trả dòng môn gộp (rất ít, không nâng số dòng đọc). */
-export function lichGopCua(ids: readonly number[]): Map<number, { skill: string }[]> {
-  const out = new Map<number, { skill: string }[]>();
+export function lichGopCua(ids: readonly number[]): Map<number, { skill: string; sit_status: string | null }[]> {
+  const out = new Map<number, { skill: string; sit_status: string | null }[]>();
   const gop = Object.keys(MON_GOP);
   theoLo([...new Set(ids)], (lo, ph) => {
-    for (const r of db().prepare(`SELECT attempt_id, skill FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`)
+    /* LG-9b: cùng câu lấy thêm dòng môn ĐÃ HUỶ (`evaluateRegular` tính trên môn còn lại) — chỉ mục theo lượt nên không thêm dòng đọc. */
+    for (const r of db().prepare(`SELECT attempt_id, skill, sit_status FROM attempt_skills WHERE attempt_id IN (${ph}) AND (skill IN (${gop.map(() => '?').join(',')}) OR sit_status = 'cancelled')`)
       .all(...lo, ...gop) as any[]) {
       if (!out.has(r.attempt_id)) out.set(r.attempt_id, []);
-      out.get(r.attempt_id)!.push({ skill: r.skill });
+      out.get(r.attempt_id)!.push({ skill: r.skill, sit_status: r.sit_status });
     }
   }, THAM_SO_TOI_DA - gop.length);
   return out;

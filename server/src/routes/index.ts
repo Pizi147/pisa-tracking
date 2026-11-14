@@ -135,7 +135,7 @@ import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../wo
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
-import { soHocVien } from '../worklist/hvCuaToi.ts';
+import { emCuaTvv, soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
 import { gvTre } from '../worklist/gvTre.ts';   // M6 6b-4
 import * as caseSvc from '../cases/cases.ts';
@@ -997,6 +997,12 @@ api.post('/attempts/:id/skills/:skill/restore', requireAuth, wrap((req) => {
 api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
+}));
+
+/** LG-9: Huỷ tay / bỏ Huỷ tay một kỹ năng bài lớp thường (gồm MT0 lớp thường) đang vắng — `{ huy: boolean }`. */
+api.post('/attempts/:id/skills/:skill/huy-tay', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.huyTay(principalOf(req), pInt(req, 'id'), String(req.params.skill), req.body?.huy !== false);
 }));
 
 /** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch; lý do tuỳ chọn (PR-MTa, 06/10). */
@@ -2180,7 +2186,8 @@ const soDuong = (v: unknown, ten: string): number | null => {
 /** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
 /* UI-CON-LAI k1: nhóm Giáo viên của ô tìm thanh trên — chỉ GV người xem mở được hồ sơ (`phamViHoSoGv`). */
 /* GD-1 "+ Task": tìm em (ô gõ tên) — một câu, phạm vi xem học viên (`timHocVien`). */
-api.get('/tim/hoc-vien', requireAuth, wrap((req) => studentSvc.timHocVien(principalOf(req), qStr(req, 'q'))));
+/* GD-4a [XM-A]: `lop=toi` — "+ Task" chỉ em lớp mình (trừ QL / Quản trị). */
+api.get('/tim/hoc-vien', requireAuth, wrap((req) => studentSvc.timHocVien(principalOf(req), qStr(req, 'q'), qStr(req, 'lop') === 'toi')));
 api.get('/tim/giao-vien', requireAuth, wrap((req) => timGiaoVien(principalOf(req), qStr(req, 'q'))));
 api.get('/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2298,6 +2305,11 @@ api.get('/tong-quan/chi-nhanh-v2/o', requireAuth, wrap((req) => {
 api.get('/tong-quan/tvv', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanV5Svc.tongQuanTvv(principalOf(req));
+}));
+/** GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; `tvv` = Quản lý / Quản trị xem em của một TVV. */
+api.get('/tong-quan/tvv/em', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return emCuaTvv(principalOf(req), { tvv: qInt(req, 'tvv') ?? null });
 }));
 api.get('/tong-quan/tvv/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();

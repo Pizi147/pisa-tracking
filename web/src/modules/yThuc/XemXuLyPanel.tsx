@@ -3,14 +3,14 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
+import { bacDu, hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -57,9 +57,13 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const th = d?.thuHoi ?? null;
   const rutThuHoi = th?.trangThai === 'cho' && th.nguoiXinId === session?.user?.id && !!d?.coTheSua;
   const dongThuHoi = !th || !d ? null
-    : th.trangThai === 'cho' ? t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' })
+    /* LG-10 (chủ SP 15/11): QL quá hạn chưa quyết → máy chốt theo GVCN (thu hồi có hiệu lực). */
+    : th.trangThai === 'cho' ? (th.hanDuyet
+      ? t('Chờ QL duyệt thu hồi · gửi {ngay} · quá {han} tự chốt theo GVCN: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), han: ngay(th.hanDuyet, homNay), lyDo: th.lyDo ?? '' })
+      : t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' }))
     : th.trangThai === 'tu_choi' ? t('{x} từ chối thu hồi {ngay}: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDoTuChoi ?? '' })
     : th.trangThai === 'duyet' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · {x} duyệt: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
+    : th.trangThai === 'tu_dong' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · tự chốt vì hết hạn duyệt: “{lyDo}”', { ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
     : null;
 
   const moSua = () => { if (d) { setChon(d.viPham.map((v) => v.id)); setDaBam(false); setLoiMay(null); setTt(null); setSua(true); } };
@@ -89,7 +93,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
     try {
       await api.post(`/y-thuc/xu-ly/${d.id}/chua-thuc-hien`);
       lamMoiYThuc(); onDone?.(); reload();
-      toast.push('ok', t('{nhan}: về Đã duyệt · chờ thực hiện', { nhan: d.nhan }));
+      toast.push('ok', t('{nhan}: về Đã duyệt · chờ thực hiện', { nhan: bacDu(dich(d.nhan)) }));
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
   const doi = (id: number) => setChon((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
@@ -114,7 +118,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       if (rutDuoc) await api.post(`/yeu-cau/${the!.id}/rut`);
       else await api.post(`/discipline-measures/${d.id}/thu-hoi`, { lyDo: lyDo.trim(), ...(ql && d.daBaoPh ? { baoLai } : {}) });
       lamMoiYThuc(); invalidate('/yeu-cau');
-      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: d.nhan }) : ql ? t('Đã thu hồi {nhan}', { nhan: d.nhan }) : t('Đã gửi QL thu hồi {nhan}', { nhan: d.nhan }));
+      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: bacDu(dich(d.nhan)) }) : ql ? t('Đã thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }) : t('Đã gửi QL thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }));
       setHoiXoa(false); setDaBam(false); onDone?.();
       if (rutDuoc) dong(); else { setLyDo(''); reload(); }
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
@@ -125,18 +129,18 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
     try {
       await api.post(`/yeu-cau/${th.id}/rut`);
       invalidate('/yeu-cau'); onDone?.(); reload();
-      toast.push('ok', t('Đã rút yêu cầu thu hồi {nhan}', { nhan: d.nhan }));
+      toast.push('ok', t('Đã rút yêu cầu thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }));
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
 
   /* Mọi vi phạm để chọn: đang gắn (đã chọn sẵn) + chưa xử lý của em, cũ trước mới sau. */
   const dsChon = d ? [...d.viPham, ...d.chuaXuLy].sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id) : [];
   const dangGan = new Set(d?.viPham.map((v) => v.id));
-  const bacVe = d?.bacVe ? nhanLoaiXuLy(kindCuaBac(d.bacVe)) : t('chưa có bậc');
+  const bacVe = d?.bacVe ? bacDu(dich(nhanLoaiXuLy(kindCuaBac(d.bacVe)))) : t('chưa có bậc');
 
   return (
     <>
-      <KhungPanel tieuDe={d ? dich(d.nhan) : t('Lần xử lý')} hocVien={d?.ten} onDong={dong}
+      <KhungPanel tieuDe={d ? bacDu(dich(d.nhan)) : t('Lần xử lý')} hocVien={d?.ten} onDong={dong}
         ngCanh={d ? <span className="truncate">{dich(d.statusLabel)}{d.bac ? t(' · bậc {bac} trên thang', { bac: d.bac }) : t(' · ngoài thang, không đổi bậc')}</span> : undefined}
         chan={{
           daSua: sua || !!tt,
@@ -239,7 +243,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
           confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} busyLabel={rutDuoc ? t('Đang rút…') : ql ? t('Đang thu hồi…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
           body={<>
             <p className="m-0">
-              {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: d.nhan, length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: d.nhan, length: d.viPham.length, bacVe })}
+              {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, bacVe })}
             </p>
             {!rutDuoc && (
               <div className="pt-3">
@@ -255,6 +259,8 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
               </div>
             )}
             {loiMay && <p className="m-0 mt-2 text-xs text-late" role="alert">{loiMay}</p>}
+            {/* GD-4b Q50 + lời 33 (LG-10): dòng quy chế thu hồi, ngay trên hàng nút của hộp. */}
+            {!rutDuoc && <div className="mt-3"><DongQuyChe px="px-0" qc={quyCheThuHoi({ ql, soNgay: hanDuyetNgay(homNay), daBaoPh: !!d.daBaoPh, baoLai })} /></div>}
           </>} />
       )}
     </>

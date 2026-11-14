@@ -22,6 +22,7 @@
  "web/src/modules/cham/MotKyNang.tsx",
  "web/src/modules/cham/NganLichSuBai.tsx",
  "web/src/modules/cham/PanelNhapDiemLop.tsx",
+ "web/src/modules/cham/huyTay.ts",
  "web/src/modules/cham/phienCham.ts",
  "web/src/modules/cham/thongBaoVang.ts",
  "web/src/modules/classes/BanGiaoGvPanel.tsx",

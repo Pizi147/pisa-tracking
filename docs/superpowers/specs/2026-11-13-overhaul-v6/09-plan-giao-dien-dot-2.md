@@ -16,3 +16,10 @@ Luật mọi PR như `07-plan-giao-dien-dot-1.md` (ponytail lite, karpathy-guide
 | **GD-10** MAT-DO các màn còn lại | Áp luật mật độ M1–M10 + bộ thành phần chung cho: Học viên & Lớp · Test (Lịch Test, Kế hoạch Test, trang lượt) · Phân tích · Quản trị · Hồ sơ GV · Lưu trữ · Tổng quan QL / Admin / CX. Không đổi bố cục → không mockup; **mỗi màn một PR nhỏ**, ảnh trước │ sau; làm nốt ô số hộp ở Tổng quan / hồ sơ lớp, tên đầu panel là link. | GD-4 | Sonnet 5.5 · high (B: Opus 5.5 · medium) | theo mẫu ⑤ | 0 |
 
 Thứ tự gợi ý: GD-4 → (GD-5 ∥ GD-6 ∥ GD-7 ∥ GD-8, mỗi cái một màn) → GD-9 → GD-10. Sau GD-10: nghiệm thu 5 kịch bản ở `04-thiet-ke.md` mục 8.
+
+**Bổ sung 15/11 (lời 33):** badge tab "Chấm Speaking" = dáng mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng badge menu (`04-thiet-ke.md` mục 15) — làm trong GD-4 (thanh tab chung); nếu GD-1 đã merge với badge đỏ thì sửa ở GD-4.
+
+**15/11 (lời 34, 35, 39): GD-10 BỎ** — các màn còn lại đã có mockup v21; plan thay thế: `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18).
+
+**Luật V22 (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: có bài quá hạn thì ĐỎ như mọi tab, không ⚠; vẫn không cộng vào badge menu / chuông (chủ SP 15/11, lời 45 — thay lời 33 và mục 15 của `04`).
+**Mockup v21 KHÔNG sửa lại vì V22 (chủ SP 15/11, lời 44):** ⚠ về hạn còn trong hình mockup → code chỉ dùng màu; khi so ảnh cặp ghi "KHÁC theo V22", không tính lệch.

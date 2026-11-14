@@ -6,7 +6,8 @@ import { useSession } from '../../lib/session.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { COT_VIEC, DaiNhom, DanhSachViec, HangTab, tenBoEm } from './DanhSachViec.tsx';
+import { COT_VIEC, DaiNhom, DanhSachViec, tenBoEm } from './DanhSachViec.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { LOP_DA_LUU, TheMuc, Trich, TruongDoc } from '../../ui/KhuonViec.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -220,7 +221,14 @@ export function HoTroHocVienTab() {
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
     /* GD-1 (lời 19): tab "Chấm Speaking" — đủ ngắn, 375 giữ nguyên tên (mockup v21 K8a). */
-    const ds = thuTuTab.map((k) => ({ key: k, nhan: tenTab(k), badge: badgeTab(dongCuaTab(items, k)) as BadgeTab | null }))
+    /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục); V22: có bài quá hạn → badge đỏ. */
+    const badgeCua = (k: string): BadgeTab => {
+      const b = badgeTab(dongCuaTab(items, k));
+      if (k !== 'cham-cheo') return b;
+      const ds = dongCuaTab(items, k);
+      return { ...b, bai: { n: ds.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: ds.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } };
+    };
+    const ds = thuTuTab.map((k) => ({ key: k, nhan: tenTab(k), badge: badgeCua(k) as BadgeTab | null }))
       .filter((x) => x.badge!.n > 0 || conGiu.has(x.key) || (x.key === 'van-hanh' && (coVanHanh || !!data?.daBoQua?.length)))
       .map((x) => (x.badge!.n > 0 ? x : { ...x, badge: null }));
     if (!coDuyet) return ds;
@@ -547,7 +555,7 @@ export function HoTroHocVienTab() {
             ))}
           </div>
         )}
-        {data && !data.scopeEmpty && tabs.length > 0 && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><HangTab tabs={tabs} dang={tab} idPanel="cv-tab-than" onChon={(k) => {
+        {data && !data.scopeEmpty && tabs.length > 0 && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><HangTab ariaLabel={t('Hạng mục việc')} className="-mx-4 px-4 md:-mx-5 md:px-5" tabs={tabs.map((x) => ({ key: x.key, label: x.nhan, badge: x.badge }))} value={tab ?? ''} panelId="cv-tab-than" onChange={(k) => {
           const next = new URLSearchParams(params); next.set('nhom', k); next.delete('loai'); next.delete('the'); setParams(next, { replace: true });
         }} /></div>}
         {tab === 'duyet' && <div ref={setKhuLocDuyet} />}

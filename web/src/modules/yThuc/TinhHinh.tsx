@@ -1,12 +1,13 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from 'react';
 import { api } from '../../lib/api.ts';
 import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { DongQuyChe, KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { addDaysIso, dsLoi, hanBaoPh, ngay } from '@shared/domain/index.ts';
+import { addDaysIso, dsLoi, hanBaoPh, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { TheLoai } from './BangLan.tsx';
@@ -125,8 +126,12 @@ export function BuocTinhHinh({ x, homNay, tvv, gvcn, f }: { x: TinhHinhView; hom
   );
 }
 
+export type EmTinhHinh = { id: number; ten: string; tvv: string | null };
+/** GD-4d (dòng 40d, ⑤ F3 / ① K5c): ô chọn em do nơi mở vẽ ("+ Task" dùng ô tìm mẫu A) — hộp giữ danh sách em, gửi, Hoàn tác. */
+export type ChonEmTinhHinh = (p: { em: EmTinhHinh[]; setEm: Dispatch<SetStateAction<EmTinhHinh[]>>; luu: boolean }) => ReactNode;
+
 export type CheDoHop =
-  | { loai: 'bao'; em: { id: number; ten: string; tvv: string | null }[]; chonThem?: { id: number; ten: string; tvv: string | null }[] }
+  | { loai: 'bao'; em: EmTinhHinh[]; chonThem?: EmTinhHinh[]; chonEm?: ChonEmTinhHinh }
   | { loai: 'hoi'; em: { id: number; ten: string } | null; ds?: { id: number; ten: string }[]; gvcn: string | null }
   | { loai: 'sua'; x: TinhHinhView }
   | { loai: 'tra-loi'; x: TinhHinhView };
@@ -148,6 +153,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
   const [luu, setLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const daDoi = chu.trim() !== (che.loai === 'sua' ? che.x.noiDung : che.loai === 'tra-loi' ? che.x.traLoi ?? '' : '');
+  const chonEm = che.loai === 'bao' ? che.chonEm : undefined;
   const tieuDe = che.loai === 'bao' ? t('Báo tình hình học tập') : che.loai === 'hoi' ? t('Hỏi tình hình học tập')
     : che.loai === 'sua' ? (che.x.chieu === 'gv_tvv' ? t('Sửa tình hình học tập') : t('Sửa câu hỏi')) : t('Ghi kết quả tình hình học tập');
   const nhanO = che.loai === 'hoi' || (che.loai === 'sua' && che.x.chieu === 'tvv_gvcn') ? t('Câu hỏi') : che.loai === 'tra-loi' ? t('Kết quả') : t('Nội dung');
@@ -184,31 +190,47 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
   /* Không khai component trong lúc vẽ (vẽ lại là mất focus ô chữ) — dựng thân rồi bọc. */
   const than = (
     <>
+      {che.loai === 'bao' ? (
+        /* GD-4d (⑤ F3 / ① K5c `.h-dau`): "Tình hình học tập" + dòng phụ "Gửi TVV", ✕ cùng hàng tiêu đề. */
+        <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
+          <b className="min-w-0 text-[15px] font-bold text-slate-100">{t('Tình hình học tập')}</b>
+          <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={ngoai}>✕</button>
+          <span className="text-[13px] text-dim">{t('Gửi TVV')}</span>
+        </div>
+      ) : (
       <div className="grid gap-0.5 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
         <b className="text-base font-bold text-slate-100">{tieuDe}</b>
         {(che.loai === 'tra-loi' || che.loai === 'sua') && <span className="text-[13px] text-slate-400">{che.x.chieu === 'tvv_gvcn' && che.loai === 'tra-loi' ? `“${che.x.noiDung}”` : null}</span>}
       </div>
-      {canEm && (chonThem || che.loai === 'bao') && (
+      )}
+      {chonEm ? (
+        <div className="grid gap-1.5">
+          <span className="text-sm font-bold text-slate-100">{t('Học viên')} <span className="text-bad">*</span></span>
+          {chonEm({ em, setEm, luu })}
+        </div>
+      ) : canEm && (chonThem || che.loai === 'bao') && (
         <div className="grid gap-1.5">
           <span className="text-sm font-bold text-slate-100">{t('Học viên')}</span>
+          {/* GD-5 (R5.2 #56, mockup ⑤ A4 / F3): có danh sách em để thêm → ô chọn nhiều có tìm (chip ✕ + "n / trần" trong ô); không thì giữ chip. */}
+          {chonThem ? (
+            <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" choToi={false} choNgoai={false} disabled={luu}
+              ariaLabel={t('Chọn em')} tieuDe={t('Học viên')} placeholder={t('Gõ tên em…')} ds={chonThem.map((c) => ({ id: c.id, ten: c.ten }))}
+              nhieu={{ chon: em.map((e) => ({ id: e.id, ten: e.ten })), toiDa: toiDaEm, donVi: t('em'),
+                onDoi: (ds) => setEm(ds.map((x) => em.find((e) => e.id === x.id) ?? chonThem.find((c) => c.id === x.id)!).filter(Boolean)) }} />
+          ) : (
           <span className="flex flex-wrap items-center gap-1.5">
             {em.map((e) => (
               <span key={e.id} className="inline-flex h-7 items-center gap-1 rounded-full border pl-2.5 pr-1 text-[13px] font-medium surface-2" style={{ borderColor: 'var(--line-strong)' }}>
                 {e.ten}
-                {(em.length > 1 || chonThem) && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11" disabled={luu} onClick={() => setEm((c) => c.filter((x) => x.id !== e.id))}>✕</button>}
+                {em.length > 1 && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11" disabled={luu} onClick={() => setEm((c) => c.filter((x) => x.id !== e.id))}>✕</button>}
               </span>
             ))}
-            {chonThem && em.length < toiDaEm && (
-              <select className="field h-8 w-auto py-0 text-[13px] max-sm:h-11" aria-label={t('Chọn em')} value="" disabled={luu}
-                onChange={(ev) => { const x = chonThem.find((c) => c.id === Number(ev.target.value)); if (x) setEm((c) => [...c, x]); }}>
-                <option value="">{t('+ Chọn em')}</option>
-                {chonThem.filter((c) => !em.some((e) => e.id === c.id)).map((c) => <option key={c.id} value={c.id}>{c.ten}</option>)}
-              </select>
-            )}
           </span>
+          )}
         </div>
       )}
-      {(che.loai === 'bao' || che.loai === 'hoi') && (
+      {/* Lời 40: chưa chọn em thì "Gửi tới" / hạn chưa có nghĩa — ẩn. */}
+      {(che.loai === 'hoi' || (che.loai === 'bao' && em.length > 0)) && (
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-1 text-[13px] text-slate-400">
           <dt>{t('Gửi tới')}</dt>
           <dd className="m-0">{che.loai === 'hoi'
@@ -216,7 +238,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
             : [...new Set(em.map((e) => e.tvv ?? ''))].map((tv) => (
               <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Quản lý chi nhánh')}</b> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</span>
             ))}</dd>
-          <dt>{t('Hạn')}</dt>
+          <dt>{che.loai === 'bao' ? t('Hạn TVV') : t('Hạn')}</dt>
           <dd className="m-0"><b className="font-semibold text-slate-100">{che.loai === 'hoi' ? t('3 ngày') : t('5 ngày')}</b> · {t('tới {ngay}', { ngay: ngay(che.loai === 'hoi' ? addDaysIso(homNay, 2) : hanBaoPh(homNay), homNay) })}</dd>
         </dl>
       )}
@@ -227,9 +249,12 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
         <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-bad' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
       </label>
       {loi && <p role="alert" className="m-0 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-[13px] text-late" >⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
+      {/* GD-4b dòng quy chế: Q36 (GV báo) · Q63 (TVV hỏi) — ngay trên hàng nút của hộp. */}
+      {(che.loai === 'bao' || che.loai === 'hoi') && <DongQuyChe px="px-0" qc={che.loai === 'bao' ? quyCheBaoTinhHinh() : quyCheHoiTinhHinh()} />}
       <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={ngoai}>{t('Đóng')}</button>
-        <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}>
+        <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}
+          title={luu ? undefined : canEm && !em.length ? t('Chọn em trước') : ngan ? t('Cần ít nhất 10 ký tự') : dai ? t('Tối đa {n} ký tự', { n: TOI_DA }) : undefined}>
           {luu ? t('Đang gửi…') : che.loai === 'bao' ? t('Gửi TVV') : che.loai === 'hoi' ? t('Gửi GVCN') : che.loai === 'tra-loi' ? t('Lưu · gửi TVV') : t('Lưu')}
         </button>
       </div>
@@ -276,6 +301,7 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
     <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
+      quyChe={xong ? null : quyCheTraLoiTinhHinh(han ? ngay(han, homNay) : null)}
       chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>, conThieu: lf.conThieu(loiO),
         phu: !xong ? nutTiep ?? undefined : undefined }}>
       <div className="flex flex-col gap-4 pt-4">

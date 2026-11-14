@@ -75,7 +75,7 @@ export default function TutorPage() {
     ? <span className="whitespace-nowrap text-xs"><span className={d.ketLuan.kl === 'ngung' ? 'text-slate-400' : d.ketLuan.kl === 'can_cai_thien' ? 'text-late' : 'text-slate-200'}>{NHAN_KET_LUAN[d.ketLuan.kl]}</span>
       <span className="ml-1.5 tabular-nums text-slate-500">{ngay(d.ketLuan.luc, homNay)}</span></span>
     : <span className="text-faint">—</span>);
-  /* Lý do bằng chữ (không chỉ màu); không dùng ⚠ — ký hiệu đó chỉ nghĩa quá hạn (G-4). */
+  /* Lý do bằng chữ (không chỉ màu); không ký hiệu cảnh báo. */
   const lyDo = (d: DongTutor) => (d.chuY ? <span className="block text-xs text-late">{dich(d.chuY)}</span> : null);
   const ten = (d: DongTutor) => (
     <span className="block min-w-0">

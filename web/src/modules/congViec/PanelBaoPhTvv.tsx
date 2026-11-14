@@ -2,19 +2,20 @@ import { useRef, useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
-import { BoiCanh, ChuLuu, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, ChuLuu, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { ChipMon, TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
 import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, kiemGhiRoKhac, luuRoiTiep, reasonNeedsText, shortDate, type KetQuaBaoPh,
+  COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -132,7 +133,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     huy: null, daSua: daGo, conThieu: lf.conThieu(loiO),
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" /> : <ChuLuu tt="nhap" />,
     /* Việc cuối (không còn việc kế): chỉ "Lưu" là nút chính. */
-    phu: tt === 'loi' || !onTiep ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Lưu')}</button>,
+    /* GD-4b (lời 36, dòng 40c ⓪): "Đóng" · Lưu · "Lưu · việc tiếp ›"; 375 giữ "Lưu · Lưu · việc tiếp ›" (Đóng qua ✕ / ‹). Đóng đi đường ✕ (gõ dở thì hỏi bỏ chữ). */
+    phu: <><NutDongPanel busy={tt === 'dang'} />{tt === 'loi' || !onTiep ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Lưu')}</button>}</>,
     chinh: tt === 'loi'
       ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()}>{t('Thử lại')}</button>
       : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void (onTiep ? luuRoiTiep(luu, onTiep) : luu())}>{onTiep ? t('Lưu · việc tiếp ›') : t('Lưu')}</button>,
@@ -156,7 +158,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       tieu: h.macDinh ? t('Về hạn mặc định {ngay}', { ngay: shortDate(h.moi, hn) }) : t('Đổi hạn {cu} → {moi}', { cu: h.cu ? shortDate(h.cu, hn) : '—', moi: shortDate(h.moi, hn) }) })),
   ].sort((a, b) => b.luc.localeCompare(a.luc));
   return (
-    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
+    <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
+      quyChe={sua && !bo ? quyCheBaoPhTvv(kq === 'chua_lien_he', v.han ? shortDate(v.han, hn) : null) : null}>
       <div className="flex flex-col gap-4 pt-4">
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">
@@ -176,8 +179,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
         {v.tinhHinhId == null && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
-            ? [<BadgeViec xuong tong="cho">{v.nhan}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
-            : [<BadgeViec xuong tong="xong">{v.nhan}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
+            ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
+            : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{v.nhanTrangThai}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />}
         <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
@@ -213,20 +216,10 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             </Truong>
           </>
         )}
-        <details className="border-t pt-3" style={{ borderColor: 'var(--line)' }} open={lichSu.length > 0}>
-          <summary className="cursor-pointer text-sm font-semibold text-slate-400">{t('Lịch sử ({n})', { n: lichSu.length })}</summary>
-          {lichSu.length ? (
-            <ul className="m-0 mt-2 list-none space-y-2 p-0 text-[13px]">
-              {lichSu.map((l, i) => (
-                <li key={i} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3">
-                  <span className="tabular-nums text-slate-400">{lucVn(l.luc)}</span>
-                  <span className="min-w-0 break-words text-slate-300"><b className="block text-slate-100">{l.tieu}</b>
-                    {l.nguoi && <span className="block text-slate-400">{l.nguoi}</span>}{l.phu.map((x, j) => <span key={j} className="block">{x}</span>)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="m-0 pt-2 text-[13px] text-slate-500">{t('Chưa có lần ghi nào.')}</p>}
-        </details>
+        {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n" mở sẵn; chưa có lần ghi thì không vẽ (lời 40). */}
+        <LichSuGap so={lichSu.length} moSan>
+          <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
+        </LichSuGap>
       </div>
     </KhungPanel>
   );

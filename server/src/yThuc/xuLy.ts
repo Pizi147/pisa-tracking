@@ -787,7 +787,7 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown;
     });
     if (id === null) throw badRequest('Lần xử lý này đang chờ QL duyệt thu hồi.');
     if (ql) {
-      apDungThuHoi(p, m, hv, lyDo, v.baoLai !== false);
+      apDungThuHoi(p.userId, m, hv, lyDo, v.baoLai !== false);
       chotYeuCau(db(), theThuHoi(measureId), 'duyet', { nguoiDuyet: p.userId });
       /* QL làm thẳng → GVCN lớp em biết (thẻ đã đóng nên không có chuông kết quả của hộp). */
       if (em.gvcnId && em.gvcnId !== p.userId) {
@@ -804,18 +804,18 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown;
 }
 
 /** Áp thu hồi (TRONG tx): `thu_hoi` giữ dòng + liên kết + tệp; vi phạm về chưa xử lý (lịch sử vi phạm), hạn chốt lại; nhật ký đủ nội dung. */
-function apDungThuHoi(p: Principal, m: any, hv: { student_code: string }, lyDo: string, baoLai: boolean): void {
+function apDungThuHoi(boi: number | null, m: any, hv: { student_code: string }, lyDo: string, baoLai: boolean, tuChot = false): void {
   const doi = db().prepare(`UPDATE discipline_measures SET status = 'thu_hoi', updated_at = ? WHERE id = ? AND status IN ('done', 'da_duyet')`)
     .run(nowIso(), m.id).changes;
   if (!doi) throw conflict('Lần xử lý này vừa được cập nhật — mở lại.');
   const vIds = viPhamCua(m.id);
-  for (const vid of vIds) noteMeasureChange(vid, m.id, null, p.userId);
+  for (const vid of vIds) noteMeasureChange(vid, m.id, null, boi);
   chotHanXuLy([m.student_id]);
-  dongViecTheoXuLy(m.id, 'system_thu_hoi', lyDo, p.userId, { baoLai });
+  dongViecTheoXuLy(m.id, 'system_thu_hoi', lyDo, boi, { baoLai });
   const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
-  writeAudit({ actorUserId: p.userId, action: 'discipline.revoke', entityType: 'discipline_measure', entityId: m.id,
-    entityLabel: `${hv.student_code} · thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
-    before: { status: m.status, kind: m.kind, violations: vIds, daBaoPhuHuynh: daBaoPh }, after: { status: 'thu_hoi', lyDo, baoLai } });
+  writeAudit({ actorUserId: boi, action: 'discipline.revoke', entityType: 'discipline_measure', entityId: m.id,
+    entityLabel: `${hv.student_code} · ${tuChot ? 'tự chốt vì hết hạn duyệt · ' : ''}thu hồi ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+    before: { status: m.status, kind: m.kind, violations: vIds, daBaoPhuHuynh: daBaoPh }, after: { status: 'thu_hoi', lyDo, baoLai, ...(tuChot ? { tuChot: true } : {}) } });
 }
 
 /** Hộp Chờ duyệt: QL Duyệt thẻ thu hồi (TRONG tx của hộp) — kiểm lại như lúc gửi rồi áp. */
@@ -823,7 +823,7 @@ export function duyetThuHoiYThuc(p: Principal, measureId: number, lyDo: string, 
   const m = loadXuLy(measureId);
   if (!THU_HOI_DUOC.has(m.status)) throw badRequest('Lần xử lý này không còn để thu hồi. Danh sách đã được làm mới.');
   hoiLanSau(m, true);
-  apDungThuHoi(p, m, hocVien(m.student_id), lyDo, baoLai);
+  apDungThuHoi(p.userId, m, hocVien(m.student_id), lyDo, baoLai);
 }
 
 /**
@@ -1008,15 +1008,27 @@ export const LY_DO_TU_CHOT_Y_THUC = 'Quá 5 ngày QL chưa duyệt — giữ quy
 /**
  * TINH-HINH (chủ SP 12/11 "hết 5 ngày thì quyết định của GVCN là quyết định cuối") — quét trong `quetYeuCau` (khi đọc + quét đêm): thẻ `y_thuc` còn chờ có
  * `han_duyet` < hôm nay → chốt theo GVCN (`tu_dong`). Mẫu `quetGiuPaGv`. Trả số thẻ đã chốt.
+ * LG-10 (chủ SP 15/11, lời 33): thẻ `thu_hoi_y_thuc` cùng câu, cùng luật — thu hồi có hiệu lực như QL duyệt (bậc tính lại, "Báo lại PH" mặc định bật).
+ * Lần sau đã có: GVCN đã xác nhận lúc gửi (`hoiLanSau`) nên không hỏi lại. Lần xử lý không còn để thu hồi: lượt "chết" đã đóng thẻ trước đó.
  */
 export function quetYThucHetHan(conn: any, homNay: string): number {
-  const ds = conn.prepare(`SELECT id, doi_tuong_id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
-    .all(homNay) as { id: number; doi_tuong_id: number }[];
+  const ds = conn.prepare(`SELECT id, loai, doi_tuong_id, ly_do, du_lieu, hoc_vien_id FROM yeu_cau_duyet
+    WHERE loai IN ('y_thuc', 'thu_hoi_y_thuc') AND trang_thai = 'cho' AND han_duyet IS NOT NULL AND han_duyet < ?`)
+    .all(homNay) as { id: number; loai: string; doi_tuong_id: number; ly_do: string | null; du_lieu: string | null; hoc_vien_id: number | null }[];
   if (!ds.length) return 0;
   tx(() => {
     for (const y of ds) {
-      chotDeXuatYThuc(y.doi_tuong_id, homNay, null, true);
-      chotYeuCau(conn, { loai: 'y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: y.doi_tuong_id }, 'tu_dong', { lyDo: LY_DO_TU_CHOT_Y_THUC });
+      if (y.loai === 'y_thuc') chotDeXuatYThuc(y.doi_tuong_id, homNay, null, true);
+      else {
+        const m = loadXuLy(y.doi_tuong_id);
+        if (!THU_HOI_DUOC.has(m.status)) continue;
+        /* Như `khiDuyet` của thẻ: thẻ giữ số lúc chốt (bậc về / số vi phạm). */
+        const sl = y.hoc_vien_id ? soLieuThuHoi([{ measureId: y.doi_tuong_id, studentId: y.hoc_vien_id }]).get(y.doi_tuong_id) : undefined;
+        if (sl) conn.prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(y.du_lieu ?? '{}'), ...sl }), y.id);
+        apDungThuHoi(null, m, hocVien(m.student_id), y.ly_do ?? '', true, true);
+        xoaNho();
+      }
+      chotYeuCau(conn, { loai: y.loai as 'y_thuc' | 'thu_hoi_y_thuc', doiTuongLoai: 'discipline_measure', doiTuongId: y.doi_tuong_id }, 'tu_dong', { lyDo: LY_DO_TU_CHOT_Y_THUC });
     }
   });
   return ds.length;

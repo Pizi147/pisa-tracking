@@ -60,7 +60,7 @@ export async function runPrUxdTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ Task 4 · Hồ sơ HV điện thoại: thẻ Mock Test / Kết quả kiểm tra, hàng tab vừa màn
-  check('UXD (4) · hồ sơ HV: IeltsAttempts và RatioAttempts có nhánh điện thoại vẽ TheDong; HangTab px-2.5 sm:px-3 + scrollIntoView', () => {
+  check('UXD (4) · hồ sơ HV: IeltsAttempts và RatioAttempts có nhánh điện thoại vẽ TheDong; HangTab px-2.5 · sm:px-3.5 (GD-4c, mockup v21 H1 `.tab` 10 / 14) + scrollIntoView', () => {
     const sdp = doc('web/src/modules/students/StudentDetailPage.tsx');
     for (const ten of ['IeltsAttempts', 'RatioAttempts']) {
       const f = than(sdp, ten);
@@ -68,7 +68,7 @@ export async function runPrUxdTests(t: YThucTestKit) {
       assert(/useDienThoai\(\)/.test(f) && /<TheDong\b/.test(f), `${ten} thiếu nhánh điện thoại (useDienThoai + TheDong)`);
     }
     const ht = doc('web/src/ui/HangTab.tsx');
-    assert(/px-2\.5 sm:px-3/.test(ht), 'HangTab chưa px-2.5 sm:px-3');
+    assert(/px-2\.5 [^`]*sm:px-3\.5/.test(ht), 'HangTab chưa px-2.5 · sm:px-3.5');
     assert(/scrollIntoView/.test(ht), 'HangTab chưa cuộn tab đang chọn vào tầm nhìn');
   });
 

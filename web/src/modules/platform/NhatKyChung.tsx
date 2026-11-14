@@ -4,6 +4,7 @@ import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { Card, ChonDangNut, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { ChonLoc } from '../../ui/PeoplePicker.tsx';
 import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
@@ -56,10 +57,9 @@ export function NhatKyChung() {
           <option value="">{t('Mục: Tất cả')}</option>
           {(r.data?.muc ?? []).map((m) => <option key={m} value={m}>{TEN_MUC[m]}</option>)}
         </ChonDangNut>
-        <ChonDangNut aria-label={t('Người')} value={nguoi} onChange={(e) => setNguoi(e.target.value)}>
-          <option value="">{t('Người: Tất cả')}</option>
-          {(r.data?.nguoi ?? []).map((n) => <option key={n.id} value={n.id}>{n.ten}</option>)}
-        </ChonDangNut>
+        {/* GD-5 (R5.2 #52): ô lọc có tìm — người có trong nhật ký đang xem (máy chủ đã trả, không gọi thêm). */}
+        <ChonLoc className="w-[220px] max-sm:w-full" ariaLabel={t('Người')} tatCa={t('Người: Tất cả')} placeholder={t('Gõ tên…')} value={nguoi} onChange={setNguoi}
+          ds={(r.data?.nguoi ?? []).map((n) => ({ gt: String(n.id), ten: n.ten }))} />
         <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400">{t('Từ')}
           <ONgay kieu="tuan" moc="dau" value={tu} onChange={setTu} ariaLabel={t('Từ tuần')} nutTrong /></span>
         <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400">{t('Đến')}

@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
+import { LOP_DA_LUU, NutDongPanel } from '../../ui/KhuonViec.tsx';
 import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { DsEmBanGiao, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu, type HangLuu } from '../../lib/luuChac.ts';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, mucDiem, deadlineView, ngay, nhanDocDiem, shortDate, tuanLich, type KnDiem, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, mucDiem, deadlineView, luuRoiTiep, ngay, nhanDocDiem, quyCheBanGiao, shortDate, tuanLich, type KnDiem, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -26,8 +26,10 @@ import { dich, t } from '@shared/i18n/index.ts';
  * Lối vào: Công việc › việc Bàn giao · hồ sơ lớp › dải Bàn giao / Sắp nhận · hồ sơ học viên › dải Sắp chuyển (mở thẳng em đó — `lenhId`).
  * BAN-GIAO-NHAN (chủ SP 05/11): `docLenh` — hồ sơ HV (dải Đã chuyển, thẻ chương, chuông) đọc MỘT phiếu theo lệnh, chỉ đọc, không cần quyền xem lớp cũ.
  */
-export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, quayLai }: {
+export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, quayLai, onTiep = null }: {
   classId?: number; docLenh?: number; mon?: string | null; lenhId?: number | null; onClose: () => void; onDone: () => void;
+  /** Việc kế ở danh sách Công việc (GD-4d) — GVCN: "Xác nhận · việc tiếp ›" ở em cuối; GVBM: "Việc tiếp ›". */
+  onTiep?: (() => void) | null;
   /** OV-15h1: mở thay panel Lộ trình ở Tổng quan — "‹ Lộ trình" về lại panel đó. */
   quayLai?: { nhan: string; onClick: () => void };
 }) {
@@ -47,8 +49,8 @@ export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, q
   /* G: chỉ GVBM (không GVCN, không Quản lý thay) mở kèm môn của mình. */
   const cheDoG = !docLenh && !data.nguoiXem.gvcn && !data.nguoiXem.xacNhan && data.nguoiXem.xemTuNguon && monToi.length > 0;
   return cheDoG
-    ? <BangGvbm dto={data} mons={monMo(mon, monToi)} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />
-    : <MasterDetail dto={data} lenhId={docLenh ?? lenhId ?? null} chiDoc={!!docLenh} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
+    ? <BangGvbm dto={data} mons={monMo(mon, monToi)} lenhId={lenhId ?? null} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} onTiep={onTiep} />
+    : <MasterDetail dto={data} lenhId={docLenh ?? lenhId ?? null} chiDoc={!!docLenh} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} onTiep={docLenh ? null : onTiep} />;
 }
 
 /*
@@ -64,11 +66,11 @@ function useLamMoiPhieuKhiDong() {
   return () => { if (r.current.song) r.current.doi = true; else invalidate('/lenh-chuyen'); };
 }
 
-type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; chiDoc?: boolean; onClose: () => void; onDone: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void } };
+type Chung = { dto: PhieuBanGiaoDto; lenhId: number | null; chiDoc?: boolean; onClose: () => void; onDone: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void }; onTiep?: (() => void) | null };
 
 // ==================================================================== F · GVCN
 
-function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }: Chung) {
+function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, onTiep = null }: Chung) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const [chon, setChon] = useState<number | null>(lenhId ?? dto.ds.find((e) => !e.xacNhan)?.lenhId ?? dto.ds[0]?.lenhId ?? null);
@@ -119,10 +121,10 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
     void oCua(em).luu();
   };
 
-  const xacNhan = async () => {
-    if (!em) return;
+  const xacNhan = async (): Promise<boolean> => {
+    if (!em) return false;
     setDaBam(true);
-    if (thieu) return;
+    if (thieu) return false;
     setBusy(true);
     try {
       await hang.xong();
@@ -132,8 +134,11 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
       const con = dto.ds.filter((e) => !e.xacNhan && e.lenhId !== em.lenhId);
       onDone(); reload();
       if (con.length) setChon(con[0].lenhId);
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+      return true;
+    } catch (e: any) { toast.push('error', e.message); return false; } finally { setBusy(false); }
   };
+  /* GD-4d (lời 36, dòng 40c ⓪): em CUỐI chưa xác nhận + còn việc kế → "Đóng" · Xác nhận · "Xác nhận · việc tiếp ›"; em khác còn chờ thì Xác nhận tự sang em kế trong panel. */
+  const gopTiep = !!onTiep && ghi && !!em && !em.xacNhan && dsXn === 1;
   const luuSua = async () => {
     if (!em) return;
     setDaBam(true);
@@ -166,16 +171,20 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
 
   return (
     <KhungPanel hd="ban-giao" quayLai={quayLai} rong="vua" loai={ghi ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={`${t('Bàn giao')} · ${dto.lop.code}`} onDong={onClose}
+      quyChe={ghi && em && !em.xacNhan ? quyCheBanGiao(true, dto.hanGvcn, homNay) : null}
       ngCanh={chiDoc ? undefined : <span className="tabular-nums">{t('{n} em', { n: dto.tong })} · {t('{a}/{b} đã xác nhận', { a: dto.daXacNhan, b: dto.tong })}{dto.hanGvcn && <> · {t('hạn sớm nhất {ngay}', { ngay: shortDate(dto.hanGvcn, homNay) })}{quaHanSom != null && <> · {dto.hanGvcnEm} <QuaHan ngay={quaHanSom} /></>}</>}</span>}
       chan={{
         daSua: daSuaNx,
-        huy: suaPhieu
+        huy: gopTiep ? null : suaPhieu
           ? { nhan: t('Huỷ thay đổi'), disabled: busy, onClick: () => { setDangSua(false); setDaBam(false); setDienThay(null); setNhanXet((m) => { const { [em!.lenhId]: _, ...con } = m; return con; }); } }
           : { nhan: t('Đóng'), onClick: onClose },
         dongTren: ghi && em && !em.xacNhan ? (
           <p className="m-0 px-4 pt-2 text-right text-xs text-slate-400">{t('Môn còn trống sẽ ghi “GVBM chưa bàn giao”.')}</p>
         ) : undefined,
-        chinh: ghi && em && !em.xacNhan ? (
+        phu: gopTiep ? <><NutDongPanel busy={busy} /><button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => void xacNhan()} disabled={busy || (canNx && !nhap.trim())} title={canNx && !nhap.trim() ? t('Viết nhận xét chung trước khi xác nhận') : undefined}>{dich(CHU_CHUYEN_LOP.banGiao)}</button></> : undefined,
+        chinh: gopTiep && onTiep ? (
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luuRoiTiep(xacNhan, onTiep)} disabled={busy || (canNx && !nhap.trim())} title={canNx && !nhap.trim() ? t('Viết nhận xét chung trước khi xác nhận') : undefined}>{t('Xác nhận · việc tiếp ›')}</button>
+        ) : ghi && em && !em.xacNhan ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={xacNhan} disabled={busy || (canNx && !nhap.trim())} title={canNx && !nhap.trim() ? t('Viết nhận xét chung trước khi xác nhận') : undefined}>{dich(CHU_CHUYEN_LOP.banGiao)}</button>
         ) : suaPhieu ? (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuSua} disabled={busy}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
@@ -300,7 +309,7 @@ function monMo(mon: string | null | undefined, monToi: readonly string[]): strin
 
 type TtO = 'idle' | 'go' | 'dang' | 'xong' | 'loi';
 
-function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung & { mons: string[] }) {
+function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep = null }: Chung & { mons: string[] }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const hai = mons.length > 1;
@@ -373,11 +382,14 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
 
   return (
     <KhungPanel hd="ban-giao" quayLai={quayLai} rong={hai ? 'vua' : 'rong'} loai={t('Việc · Bàn giao')} onDong={dong}
+      quyChe={conThieu.length ? quyCheBanGiao(false, han, homNay) : null}
       tieuDe={hai ? t('Bàn giao môn {mon} · {lop}', { mon: mDs.map((x) => x.ngan).join(' · '), lop: dto.lop.code }) : t('Bàn giao môn {mon} ({ten})', { mon: mDs[0].ngan, ten: mDs[0].ten })}
       ngCanh={<span className="tabular-nums">{!hai && <>{dto.lop.code} · </>}{t('{n} em', { n: dto.tong })}{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · {hai ? t('mỗi em một câu mỗi task') : t('mỗi em một câu')}</span>}
       chan={{
         daSua,
         huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, dongHan, baoChuaLuu, true) },
+        /* GD-4d: ô tự lưu khi rời ô — còn việc kế thì "Việc tiếp ›" (chờ ô đang lưu như Đóng); hết em thiếu → nút chính. */
+        chinh: onTiep ? <button type="button" className={`btn ${conThieu.length ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={dongSauKhiLuu(hang, () => { onDone(); onTiep(); }, baoChuaLuu, true)}>{t('Việc tiếp ›')}</button> : undefined,
         trai: (
           <span className="flex flex-wrap items-center gap-x-3 text-[13px] text-slate-400">
             <span className="tabular-nums">{hai ? t('Tự lưu khi rời ô') : t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>

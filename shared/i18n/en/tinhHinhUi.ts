@@ -32,6 +32,7 @@ export const EN_TINH_HINH_UI = {
   'Sửa tình hình học tập': 'Edit learning update',
   'TVV báo PH · hạn {ngay}': 'Consultant → parent · due {ngay}',
   'TVV hỏi': 'Consultant asks',
+  'Trả lời tình hình': 'Reply to learning update',
   'Tình hình': 'Update',
   'Tình hình / Ý thức': 'Updates / Conduct',
   'Tình hình học tập / Ý thức': 'Learning updates / Conduct',

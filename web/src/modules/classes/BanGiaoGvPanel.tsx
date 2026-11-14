@@ -6,7 +6,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { mondayOfDate, ngay, shortDate, trangThaiEmBg, tuanLich, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
+import { mondayOfDate, ngay, quyCheBanGiaoGv, shortDate, trangThaiEmBg, tuanLich, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { DsEmBanGiao, OGopY, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu } from '../../lib/luuChac.ts';
@@ -17,8 +17,9 @@ import { dongSauKhiLuu } from '../../lib/luuChac.ts';
  * (kỹ năng / GVCN, bắt buộc, lưu khi rời ô). Nhận xét chung cả lớp tuỳ chọn, gập ▸. Xác nhận khi đủ mọi em × mọi cột.
  * Người không viết được (GV mới sau xác nhận, QL trước hạn) đọc cùng khung, chỉ đọc. Lối vào: Công việc · hồ sơ lớp `?viec=ban-giao-gv&id=`.
  */
-export function BanGiaoGvPanel({ id, onClose, onDone, quayLai }: {
+export function BanGiaoGvPanel({ id, onClose, onDone, quayLai, onTiep }: {
   id: number; onClose: () => void; onDone?: () => void; quayLai?: { nhan: string; onClick: () => void };
+  /** GD-4d (lời 36): mở từ danh sách Công việc còn việc kế → "Xác nhận · việc tiếp ›". */ onTiep?: (() => void) | null;
 }) {
   const { data, loading, error, reload } = useApi<PhieuBanGiaoGvDto>(`/ban-giao-gv/${id}`, [id]);
   if (error) {
@@ -29,11 +30,11 @@ export function BanGiaoGvPanel({ id, onClose, onDone, quayLai }: {
     );
   }
   if (loading || !data) return <KhungPanel hd="ban-giao" quayLai={quayLai} rong="toan" tieuDe={t('Bàn giao')} onDong={onClose}><Skeleton rows={6} /></KhungPanel>;
-  return <Phieu dto={data} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} />;
+  return <Phieu dto={data} onClose={onClose} onDone={onDone} reload={reload} quayLai={quayLai} onTiep={onTiep} />;
 }
 
-function Phieu({ dto, onClose, onDone, reload, quayLai }: {
-  dto: PhieuBanGiaoGvDto; onClose: () => void; onDone?: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void };
+function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
+  dto: PhieuBanGiaoGvDto; onClose: () => void; onDone?: () => void; reload: () => void; quayLai?: { nhan: string; onClick: () => void }; onTiep?: (() => void) | null;
 }) {
   const toast = useToast();
   const h = dto.homNay;
@@ -81,7 +82,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
     toast.push('error', t('Còn {n} ô chưa lưu được — chữ vẫn giữ. Rời ô để lưu lại; bấm Đóng lần nữa thì chữ ở ô lỗi sẽ mất.', { n }));
   };
   const dong = dongSauKhiLuu(hang, onClose, baoChuaLuu);
-  const xacNhan = async () => {
+  const xacNhan = async (diTiep = false) => {
     if (!hang.cho.size && !hang.chuaLuu.size && thieu.length) { denThieu(); return; }
     setBusy(true);
     try {
@@ -91,12 +92,14 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
       await api.post(`/ban-giao-gv/${dto.id}/xac-nhan`, {});
       invalidate('/my-work'); invalidate('/classes');
       toast.push('ok', t('Đã xác nhận bàn giao {lop}', { lop: dto.lop.code }));
-      onDone?.(); reload();
+      onDone?.();
+      if (diTiep && onTiep) onTiep(); else reload();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
 
   return (
     <KhungPanel hd="ban-giao" quayLai={quayLai} rong="toan" loai={viet ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={tieuDe} onDong={dong}
+      quyChe={viet && cho ? quyCheBanGiaoGv() : null}
       ngCanh={(
         <span className="flex flex-wrap gap-x-3 gap-y-1 tabular-nums">
           <span><b className="text-slate-100">{ds.length}</b> {t('em')}</span>
@@ -117,9 +120,14 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
               : <span className="font-semibold text-done">{t('✓ Đủ {a}/{b} em', { a: du, b: ds.length })}</span>)}
           </span>
         ),
+        /* GD-4d (lời 36, ⓪ 40c): còn việc kế → "Đóng" · Xác nhận bàn giao · "Xác nhận · việc tiếp ›" (chính); lẻ → Xác nhận bàn giao (chính). */
+        phu: viet && cho && onTiep ? (
+          <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${thieu.length ? "opacity-50" : ""}`} onClick={() => void xacNhan()} disabled={busy}
+            aria-disabled={thieu.length > 0} title={thieu.length ? t('Còn {n} em thiếu góp ý', { n: thieu.length }) : undefined}>{t('Xác nhận bàn giao')}</button>
+        ) : undefined,
         chinh: viet && cho ? (
-          <button type="button" className={`btn btn-primary min-h-[44px] sm:min-h-0 ${thieu.length ? "opacity-50" : ""}`} onClick={xacNhan} disabled={busy}
-            aria-disabled={thieu.length > 0} title={thieu.length ? t('Còn {n} em thiếu góp ý', { n: thieu.length }) : undefined}>{busy ? t('Đang lưu…') : t('Xác nhận bàn giao')}</button>
+          <button type="button" className={`btn btn-primary min-h-[44px] sm:min-h-0 ${thieu.length ? "opacity-50" : ""}`} onClick={() => void xacNhan(!!onTiep)} disabled={busy}
+            aria-disabled={thieu.length > 0} title={thieu.length ? t('Còn {n} em thiếu góp ý', { n: thieu.length }) : undefined}>{busy ? t('Đang lưu…') : onTiep ? t('Xác nhận · việc tiếp ›') : t('Xác nhận bàn giao')}</button>
         ) : undefined,
       }}>
       <div className="space-y-4 pt-3">

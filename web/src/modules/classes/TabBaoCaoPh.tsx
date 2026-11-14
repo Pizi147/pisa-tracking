@@ -10,6 +10,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { ChonDangNut } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { HopDotBaoCaoPh, guiDotBc, lamMoiBaoCaoPh } from './HopDotBaoCaoPh.tsx';
@@ -17,7 +18,7 @@ import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, tieuChiPhan, tuanLich,
+  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, tieuChiPhan, tuanLich,
   type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -429,7 +430,9 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
 
   return (
     <KhungPanel hd="bao-cao-ph" tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
-      dau={{ dong2: ngCanh ?? [] }} chan={chan}>
+      dau={{ dong2: ngCanh ?? [] }} chan={chan}
+      /* GD-4b Q37–Q40: theo đợt / phần đã nạp; thẻ "Xong phần" không có dòng. */
+      quyChe={data && em && !xong ? quyCheBaoCaoPh({ ft: data.ft, chung: phan.khoa === 'chung', dot: dich(data.dot.nhan), han: data.dot.han, homNay }) : null}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : !em ? <p className="m-0 text-sm text-slate-400">{t('Đợt này không có học viên.')}</p>
@@ -439,9 +442,13 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
             {dt ? (
               <div className="mb-3 flex items-center gap-2">
                 <button type="button" className="btn h-11 w-11 justify-center" aria-label={t('Em trước')} disabled={i <= 0} onClick={() => setChon(ds[i - 1].id)}>‹</button>
-                <select className="field min-h-[44px] flex-1" aria-label={t('Học viên')} value={em.id} onChange={(ev) => setChon(Number(ev.target.value))}>
-                  {ds.map((e, k) => <option key={e.id} value={e.id}>{t('Em {n}', { n: k + 1 })} · {e.ten}{duCua(e) ? ' ✓' : ''}</option>)}
-                </select>
+                {/* GD-5 (R5.2 #48): đi tới em bằng ô chọn có tìm — em chưa viết xong lên trước, "Xong" sau; giữ ‹ › hai bên. */}
+                <div className="min-w-0 flex-1">
+                  <ChonNguoi key={em.id} value={{ kieu: 'tai_khoan', id: em.id, ten: em.ten, phu: t('Em {n}', { n: i + 1 }) }} nhom="nhan_vien" choToi={false} choNgoai={false}
+                    ariaLabel={t('Học viên')} placeholder={t('Gõ tên em…')} onChange={(v) => { if (v?.kieu === 'tai_khoan') setChon(v.id); }}
+                    ds={[...ds.map((e, k) => ({ e, k })).filter((x) => !duCua(x.e)), ...ds.map((e, k) => ({ e, k })).filter((x) => duCua(x.e))]
+                      .map(({ e, k }) => ({ id: e.id, ten: e.ten, phu: t('Em {n}', { n: k + 1 }), nhom: duCua(e) ? t('Xong') : t('Chưa xong') }))} />
+                </div>
                 <button type="button" className="btn h-11 w-11 justify-center" aria-label={t('Em sau')} disabled={i >= ds.length - 1} onClick={() => setChon(ds[i + 1].id)}>›</button>
               </div>
             ) : (

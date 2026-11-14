@@ -12,6 +12,7 @@ import { luuRoiTiep, nhanHan, nhanThangDuKien } from '@shared/domain/index.ts';
 import { KhungPanel, NhapViec, KhungTaiCho, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { BoiCanh, ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 
 /**
  * BẢNG MẪU V5 (NEN-V5, 08 mục 6) — bản web của `thiet-ke/v5/bang-mau.html`, dựng bằng THÀNH PHẦN THẬT (token `index.css`, `Nhan*`, `ChipSos`,
@@ -33,7 +34,7 @@ const Muc = ({ so, ten, children, ghi }: { so: number; ten: ReactNode; children:
 const O_MAU: Array<[string, string, string?]> = [
   ['Nền đọc', '--surface'], ['Nền trang', '--bg'], ['Đầu bảng, ô phụ', '--surface-2'], ['Thanh điều hướng', '--dieu-huong-nen'],
   ['Nút chính, link', '--accent'], ['Đang chọn / đang mở', '--accent-soft', 'vạch'], ['Điểm nhấn (không chữ)', '--hong'], ['Hồng khi là chữ', '--hong-chu'],
-  ['⚠ Lỗi · quá hạn · ✗', 'rgb(var(--bad-rgb))'], ['⚠ Sắp hạn · chú ý', 'rgb(var(--soon-rgb))'], ['✓ Đạt · đã lưu', 'rgb(var(--ok-rgb))'],
+  ['Lỗi · quá hạn · ✗', 'rgb(var(--bad-rgb))'], ['Sắp hạn · chú ý', 'rgb(var(--soon-rgb))'], ['✓ Đạt · đã lưu', 'rgb(var(--ok-rgb))'],
   ['– Thiếu dữ liệu', '--surface-2', 'dut'], ['Lịch thi', '--lich-nen'],
 ];
 const HOM_NAY = '2026-09-14';
@@ -164,7 +165,7 @@ export function BangMauV5() {
             <NhanLich loai="co">Ngày thi 10/10</NhanLich><NhanLich loai="du-kien">{nhanThangDuKien('2026-11')}</NhanLich><NhanLich loai="chua">Chưa có lịch</NhanLich>
             <NhanLich loai="da-thi">Đã thi · chờ KQ</NhanLich><NhanLich loai="co">Có KQ · chờ bước tiếp</NhanLich>
           </HangBd>
-          <HangBd ten="Tiến độ xử lý" phu="viên tròn · chấm / ⚠">
+          <HangBd ten="Tiến độ xử lý" phu="viên tròn · chấm">
             <Nhan tone="muted">Chờ duyệt</Nhan><Nhan tone="doing">Đang làm</Nhan><Nhan tone="ok">Xong</Nhan><Nhan tone="soon">{nhanHan('2026-09-14', HOM_NAY)}</Nhan>
             <Nhan tone="late">Quá hạn 2 ngày</Nhan><Nhan tone="muted">Chưa liên hệ được · lần 1</Nhan>
           </HangBd>
@@ -301,10 +302,9 @@ function PanelViecMau() {
           <textarea className="field w-full" rows={3} value={ghiChu} placeholder="Ví dụ: Đã gọi mẹ em Yến, mẹ biết và sẽ nhắc em." onChange={(e) => { setGhiChu(e.target.value); setTt(null); }} />
         </Truong>
         <label className="flex items-center gap-2 text-[13px] text-slate-400"><input type="checkbox" checked={mat} onChange={(e) => setMat(e.target.checked)} /> Giả lập mất mạng khi lưu</label>
-        <details className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <summary className="cursor-pointer text-sm font-semibold text-slate-400">Lịch sử (2)</summary>
-          <NhanGiaTri className="mt-2 text-[13px]" hang={[['14/09 10:00', 'Ngô Bảo Nam lưu xử lý Report 1 → tạo việc Báo PH'], ['12/09 18:20', 'Ngô Bảo Nam ghi vi phạm lần 2 (nghỉ không phép)']]} />
-        </details>
+        <LichSuGap so={2}>
+          <DsLichSu dong={[{ key: 1, gio: '14/09 10:00', ai: 'Ngô Bảo Nam', viec: 'lưu xử lý Report 1 → tạo việc Báo PH' }, { key: 2, gio: '12/09 18:20', ai: 'Ngô Bảo Nam', viec: 'ghi vi phạm lần 2 (nghỉ không phép)' }]} />
+        </LichSuGap>
       </div>
     </KhungPanel>
   );

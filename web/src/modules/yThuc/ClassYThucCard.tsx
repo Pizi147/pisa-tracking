@@ -3,11 +3,11 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { BoLocDoan, Card, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
-import { Menu } from '../../ui/Menu.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { addDaysIso, laDongLs, ngay, quaHanChiXem, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
+import { addDaysIso, bacNgan, laDongLs, ngay, quaHanChiXem, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
 import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
@@ -263,8 +263,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     </span>
   );
   const oXl = (x: XuLyDong) => x.status === 'thu_hoi'
-    ? <OBuoc badge={<BadgeViec xuong tong="xam" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{t('Đã thu hồi')}</BadgeViec>} phu={[dich(x.nhan)]} />
-    : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{dich(x.nhan)} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[x.nguoi, x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
+    ? <OBuoc badge={<BadgeViec xuong tong="xam" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{t('Đã thu hồi')}</BadgeViec>} phu={[bacNgan(dich(x.nhan))]} />
+    : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{bacNgan(dich(x.nhan))} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[x.nguoi, x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
   const hanBuoc = (noi: ReactNode) => <span className="flex flex-col items-start gap-1.5">{noi}</span>;
 
   /* ---------------- Em còn bước chưa xong (thứ tự độ gấp: bắt buộc / quá hạn › mới › chờ QL › chờ TVV) ---------------- */
@@ -300,9 +300,9 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
 
   const kBb = nhomBb.map(({ x, k }) => {
     const vp = x.viPhamCho.filter((v) => v.trangThai !== 'cho_duyet');
-    const gv = x.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(x.tuChoi!.id)}>{t('QL từ chối')}</BadgeViec>} phu={[dich(x.tuChoi.nhan)]} /> : null;
+    const gv = x.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(x.tuChoi!.id)}>{t('QL từ chối')}</BadgeViec>} phu={[bacNgan(dich(x.tuChoi.nhan))]} /> : null;
     const tiep = <>
-      {hanBuoc(<><CanLamEm x={{ ...x, nhom: k, deXuat: null }} homNay={homNay} hanDuoi /><span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{dich(x.keTiep.nhan)}</b></span></>)}
+      {hanBuoc(<><CanLamEm x={{ ...x, nhom: k, deXuat: null }} homNay={homNay} hanDuoi /><span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{bacNgan(dich(x.keTiep.nhan))}</b></span></>)}
       {d.canManage && !x.deXuat
         ? <>{nutChinh(t('Xác nhận xử lý'), x.ten, () => mo({ loai: 'xu-ly', studentId: x.studentId }))}</>
         : choAi('GVCN', d.gvcn)}
@@ -320,7 +320,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                 aria-label={`${t('Đã xem · {n}', { n: ids.length })} · ${x.ten}`} title={t('Đã xem, chưa cần xử lý')} onClick={() => void daXem(x, x.studentId, ids)}>
                 {dangGhi === x.studentId ? t('Đang lưu…') : t('Đã xem · {n}', { n: ids.length })}
               </button>
-              {nutPhu([[t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId: x.studentId })]], x.ten)}
+              {/* GD-4a (lời 28): "Xác nhận xử lý" là NÚT (viền), không chữ link. */}
+              {nutChinh(t('Xác nhận xử lý'), x.ten, () => mo({ loai: 'xu-ly', studentId: x.studentId }), true)}
             </>
           : choAi('GVCN', d.gvcn)}
       </>;
@@ -340,7 +341,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
       const dx = x.deXuat!;
       const xl = tra.xl.get(dx.id);
       const vpDx = x.viPhamCho.filter((v) => v.trangThai === 'cho_duyet');
-      const gv = <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem đề xuất')} onClick={() => xemXl(dx.id)}>{dx.status === 'da_duyet' ? t('QL đã duyệt {nhan}', { nhan: dich(dx.nhan) }) : t('Đề xuất {nhan} · chờ QL', { nhan: dich(dx.nhan) })}</BadgeViec>}
+      const gv = <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem đề xuất')} onClick={() => xemXl(dx.id)}>{dx.status === 'da_duyet' ? t('QL đã duyệt {nhan}', { nhan: bacNgan(dich(dx.nhan)) }) : t('Đề xuất {nhan} · chờ QL', { nhan: bacNgan(dich(dx.nhan)) })}</BadgeViec>}
         phu={[dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('QL trả lời trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null]} />;
       const tiep = dx.status === 'cho_duyet' && d.coTheDuyet
         ? <>{nutChinh(t('Duyệt'), x.ten, () => setDuyet({ id: dx.id, thuHoi: false, moSan: 'duyet' }))}{nutPhu([[t('Từ chối…'), () => setDuyet({ id: dx.id, thuHoi: false, moSan: 'tu-choi' })], [t('Xem'), () => xemXl(dx.id)]], x.ten)}</>
@@ -352,7 +353,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     ...emThuHoi.map((x) => {
       const id = x.thuHoi!.id;
       const xl = tra.xl.get(id);
-      const gv = <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem lần xử lý')} onClick={() => xemXl(id)}>{t('Xin thu hồi {nhan}', { nhan: dich(x.thuHoi!.nhan) })}</BadgeViec>} phu={[t('chờ QL')]} />;
+      const gv = <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem lần xử lý')} onClick={() => xemXl(id)}>{t('Xin thu hồi {nhan}', { nhan: bacNgan(dich(x.thuHoi!.nhan)) })}</BadgeViec>} phu={[t('chờ QL')]} />;
       const tiep = d.coTheDuyet
         ? <>{nutChinh(t('Duyệt thu hồi'), x.ten, () => setDuyet({ id, thuHoi: true, moSan: 'duyet' }))}{nutPhu([[t('Từ chối…'), () => setDuyet({ id, thuHoi: true, moSan: 'tu-choi' })], [t('Xem'), () => xemXl(id)]], x.ten)}</>
         : choAi('QL', null);
@@ -415,7 +416,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
         tiep: d.canManage ? (
           <span className="flex flex-wrap gap-x-3">
             {x.trongChuoi !== false && (
-              <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]"
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]"
                 aria-label={`${t('Xác nhận xử lý')} · ${x.ten} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId: x.studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>
             )}
             <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" disabled={dangGhi === x.studentId}
@@ -503,10 +504,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
               {nutGhi}
               {/* Mockup v20: Khai / sửa cấp bậc · Chọn nhiều vào ⋯ (thao tác giữ nguyên). */}
               {(d.canManage || onDiemMt) && (
-                <Menu label="⋯" ariaLabel={t('Thao tác khác')} className="btn h-9 min-w-[36px] max-sm:h-11 max-sm:min-w-[44px]" items={[
-                  ...(onDiemMt ? [{ label: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onClick: onDiemMt }] : []),
-                  ...(d.canManage ? [{ label: t('Khai / sửa cấp bậc'), onClick: () => setLoMo({ viec: 'cap-bac', ids: null }) },
-                    { label: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onClick: batChon }] : []),
+                <MenuDong lopNut="btn h-9 min-w-[36px] max-sm:h-11 max-sm:min-w-[44px]" muc={[
+                  ...(onDiemMt ? [{ key: 'diem-mt', nhan: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onChon: onDiemMt }] : []),
+                  ...(d.canManage ? [{ key: 'cap-bac', nhan: t('Khai / sửa cấp bậc'), onChon: () => setLoMo({ viec: 'cap-bac', ids: null }) },
+                    { key: 'chon-nhieu', nhan: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onChon: batChon }] : []),
                 ]} />
               )}
             </>

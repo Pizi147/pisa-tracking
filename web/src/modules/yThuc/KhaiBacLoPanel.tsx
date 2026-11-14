@@ -3,13 +3,14 @@ import { api, ApiError } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { NutDongPanel } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { IconKhoa } from '../../ui/BieuTuong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, nhanLoaiXuLy, ngay } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, luuRoiTiep, nhanLoaiXuLy, ngay, quyCheKhaiBac, bacDu, bacNgan } from '@shared/domain/index.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { CO_LO, guiTheoLo } from './LoYThucPanel.tsx';
@@ -29,11 +30,13 @@ export const nganBac = (b: number) => NGAN_BAC[b] ?? dich(BAC[b] ?? '');
  * chung TUỲ CHỌN, MỘT nút Lưu. Lưu theo ô Bậc mới ("— giữ nguyên —" không gửi). Sau lưu: "✓ Đã lưu n em · Hoàn tác" (cả lô), panel dùng tiếp;
  * em lỗi báo riêng dòng đó (dữ liệu mới cho thấy em đã khoá → dòng khoá kèm lý do). Quyền do máy chủ quyết (`capBac.duoc` / `lyDo`).
  */
-export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone }: {
+export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone, onTiep = null }: {
   classId: number; lop?: string | null; han?: string | null;
   /** Em đã chọn (Chọn nhiều); null = mọi em của lớp. */
   studentIds: number[] | null;
   onClose: () => void; onDone?: () => void;
+  /** Việc kế ở danh sách Công việc (GD-4d) — có thì chân thêm "Lưu · việc tiếp ›". */
+  onTiep?: (() => void) | null;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -83,9 +86,10 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
 
   /* Luật N1: bấm Lưu khi chưa đổi em nào → báo còn thiếu "Bậc mới" (không tắt nút im lặng). */
   const loi = dsLoi([{ khoa: 'bac', nhan: t('Bậc mới'), chon: true }], { bac: gui.length ? 'co' : '' });
-  const luu = async () => {
+  /** true = mọi em gửi đều lưu được (Lưu · việc tiếp › mới sang việc kế; có em lỗi thì ở lại). */
+  const luu = async (): Promise<boolean> => {
     lf.bam();
-    if (loi.length) return;
+    if (loi.length) return false;
     setBusy(true); setLoiLuu(null);
     const ids = gui.map((e) => e.studentId);
     const daGui = new Map(gui.map((e) => [e.studentId, bacMoi[e.studentId]]));
@@ -112,6 +116,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
       setBusy(false);
       if (okMoi.length) { setLoVua(okMoi); onDone?.(); lamMoi(); reload(); }
     }
+    return okMoi.length === ids.length;
   };
 
   /* Hoàn tác cả lô: mỗi em về bậc trước — máy chủ chỉ trả khi bậc vẫn là bậc vừa lưu. */
@@ -144,7 +149,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
     const cu = e.capBac.khai;
     if (doi && cu !== null) return `${ngan(cu)} → ${ngan(bacMoi[e.studentId])}${bacMoi[e.studentId] < cu ? ' ↓' : ''}`;
     return cu !== null ? `${ngan(cu)}${e.capBac.luc ? ` · ${t('khai {ngay}', { ngay: ngay(e.capBac.luc, homNay) })}` : ''}`
-      : e.bacNhan ? `${dich(e.bacNhan)} · ${t('trên web')}` : t('Chưa khai');
+      : e.bacNhan ? `${bacNgan(dich(e.bacNhan))} · ${t('trên web')}` : t('Chưa khai');
   };
   const coXuLy = (e: EmLo) => e.capBac.khai !== null || !!e.bacNhan;
   const dsLoc = loc === 'chua' ? ds.filter((e) => !coXuLy(e)) : loc === 'co' ? ds.filter(coXuLy) : ds;
@@ -170,7 +175,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
 
   const COT = '[@container(min-width:600px)]:grid-cols-[28px_minmax(0,1fr)_150px_316px] [@container(min-width:600px)]:items-center';
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong"
+    <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong" quyChe={duoc.length ? quyCheKhaiBac() : null}
       dau={{ loai: han ? t('Việc') : undefined, han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
         dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }),
           <NutLuat key="luat" label={t('Bậc khai là gì')}>{t('Bậc cao nhất em đã bị xử lý trước khi dùng web. R = Report · WL = thư cảnh cáo · R4 = Report 4 + Meeting CX/GĐCN.')}</NutLuat>] }}
@@ -185,10 +190,21 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
               {soHa > 0 && <span className="font-semibold text-soon">· {t('{n} em hạ bậc', { n: soHa })}</span>}
             </span>
           ) : <span className="text-[13px] text-dim">{t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em khoá (chỉ QL sửa)', { n: soKhoa })}` : ''}</span>,
-        chinh: (
-          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
-            {gui.length ? t('Lưu · {n} em', { n: gui.length }) : t('Lưu')}</button>
-        ),
+        /* GD-4d (lời 36, dòng 40c ⓪): còn việc kế + người xem khai được → "Đóng" · Lưu · "Lưu · việc tiếp ›" (375: Đóng qua ✕);
+           đã lưu hết, không còn em đổi → "Việc tiếp ›". Không có việc kế → như cũ. */
+        ...(onTiep && duoc.length ? {
+          huy: null,
+          phu: <><NutDongPanel busy={busy} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
+            {gui.length ? t('Lưu · {n} em', { n: gui.length }) : t('Lưu')}</button></>,
+          chinh: !gui.length && soOk > 0
+            ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={onTiep}>{t('Việc tiếp ›')}</button>
+            : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{t('Lưu · việc tiếp ›')}</button>,
+        } : {
+          chinh: (
+            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>
+              {gui.length ? t('Lưu · {n} em', { n: gui.length }) : t('Lưu')}</button>
+          ),
+        }),
       }}>
       <div className="-mx-4 [container-type:inline-size] sm:-mx-5">
         {soOk > 0 && (
@@ -286,7 +302,7 @@ export function ChipBac({ chon, cu, onPick, nhan, lon = false }: { chon: number 
       {BAC.map((b, i) => {
         const dang = chon === i;
         return (
-          <button key={i} type="button" aria-pressed={dang} title={dich(b)} aria-label={dich(b)} onClick={() => onPick(i)}
+          <button key={i} type="button" aria-pressed={dang} title={bacDu(dich(b))} aria-label={bacDu(dich(b))} onClick={() => onPick(i)}
             className={`min-h-[44px] rounded-md border px-1.5 text-[13px] font-semibold tabular-nums transition-colors sm:min-w-[38px] ${lon ? 'sm:h-9 sm:min-w-[44px] sm:px-2.5 sm:text-sm' : 'sm:h-[30px] sm:min-h-0'} ${
               dang ? 'btn-primary'   /* nền đặc = nút chính (token `--nut-chinh-*`) */
                 : cu === i ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]'

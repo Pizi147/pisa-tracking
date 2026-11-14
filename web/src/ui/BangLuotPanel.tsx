@@ -6,7 +6,7 @@ import { NutLuat } from './NutLuat.tsx';
 import { Bang } from './Bang.tsx';
 import { ODiem } from './ODiem.tsx';
 import { OTuanDay } from './TuanDayGv.tsx';
-import { phimHangTab } from './HangTab.tsx';
+import { HangTab } from './HangTab.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
@@ -420,7 +420,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'han') return <span className="tabular-nums">{ddmm(h.han)}</span>;
     if (c.key === 'ghi') return h.ngayGhi ? <span className="tabular-nums">{ddmm(h.ngayGhi)}</span> : mo(t('Chưa ghi'));
     if (c.key === 'dung') return h.dungHan ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
-      : <span className="font-semibold text-late">⚠ {h.treNgay ? t('Trễ {n} ngày', { n: h.treNgay }) : t('Quá hạn')}</span>;
+      : <span className="font-semibold text-late">{h.treNgay ? t('Trễ {n} ngày', { n: h.treNgay }) : t('Quá hạn')}</span>;
     return h.nguoiPhuTrach ?? mo('—');
   };
   const theP = (h: HP) => (
@@ -448,7 +448,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     const k = ttViec(h);
     return k === 'dung' ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
       : k === 'muon' ? <span className="font-semibold text-late">{t('Làm muộn {n} ngày', { n: h.treNgay ?? 0 })}</span>
-      : <span className="font-semibold text-bad">⚠ {t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</span>;
+      : <span className="font-semibold text-bad">{t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</span>;
   };
   const ngayLam = (h: HVc) => (h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('đã làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
   const oVc = (h: HVc, c: DinhNghiaCot): ReactNode => {
@@ -513,33 +513,22 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
             <div className="pn-bang grid gap-3 pt-3">
               {vk && tabsViec.length > 0 && (
                 /* Sổ nghĩa vụ: 3 tab trạng thái (Chưa làm số đỏ, tab 0 mờ) — cùng dáng tab Chưa đạt · Đạt. */
-                <div role="tablist" aria-label={t('Trạng thái')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex flex-wrap border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                  {tabsViec.map((k) => {
+                /* GD-4c (H1): tab con trong panel = `HangTab`, badge mờ chỉ đếm (0 → không badge); bài S chéo chung "+n" mờ riêng sau badge. */
+                <HangTab ariaLabel={t('Trạng thái')} value={tabViec} onChange={setTabViec} className="-mt-3"
+                  tabs={tabsViec.map((k) => {
                     /* Sổ nghĩa vụ: số tab = 3 số riêng (như ô bảng); bài S chéo chung ghi "+n" mờ riêng. */
                     const n = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && (chiSc || !r.dongViec.sChung)).length;
                     const chung = chiSc ? 0 : goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && r.dongViec.sChung).length;
-                    return (
-                      <button key={k} type="button" role="tab" aria-selected={tabViec === k} tabIndex={tabViec === k ? 0 : -1} onClick={() => setTabViec(k)}
-                        className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tabViec === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-                        {nhanTabViec(k)} <span className={`ml-1 inline-flex h-[22px] min-w-6 items-center justify-center rounded-md border px-1.5 text-[13px] tabular-nums ${k === 'chua' && n
-                          ? 'border-[color:var(--os-do-vien)] bg-[color:var(--os-do-nen)] font-semibold text-[color:var(--os-do-chu)]'
-                          : `border-[color:var(--line-strong)] bg-[color:var(--surface-2)] ${n ? 'font-semibold text-[color:var(--text)]' : 'font-normal text-faint'}`}`}>{n}</span>
-                        {chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}> +{chung}<span className="sr-only"> {t('S chéo chung')}</span></span>}
-                      </button>
-                    );
-                  })}
-                </div>
+                    /* PTA Plan quyết [XM-T2] (V22): tab "Chưa làm" có dòng quá hạn → badge ĐỎ (số = số dòng); không có → badge thường (mờ). */
+                    const q = k === 'chua' ? goc.filter((r) => r.dongViec && ttViec(r.dongViec) === 'chua' && (chiSc || !r.dongViec.sChung) && (r.dongViec.treNgay ?? 0) > 0).length : 0;
+                    return { key: k, label: nhanTabViec(k), ...(q > 0 ? { badge: { so: n, n, quaHan: q, homNay: 0 } } : { so: n }),
+                      phu: chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}>+{chung}<span className="sr-only"> {t('S chéo chung')}</span></span> };
+                  })} />
               )}
               {coTab && (
                 /* Giữ hai tab Chưa đạt · Đạt của panel cũ (chủ SP 05/11) — cùng dáng tab `NganDanhSach`. */
-                <div role="tablist" aria-label={t('Kết quả')} onKeyDown={phimHangTab} className="-mx-4 -mt-3 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                  {([['chua', t('Chưa đạt'), soChua], ['dat', t('Đạt'), soDat]] as const).map(([k, nhan, n]) => (
-                    <button key={k} type="button" role="tab" aria-selected={tab === k} tabIndex={tab === k ? 0 : -1} onClick={() => setTab(k)}
-                      className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-                      {nhan} <span className="tabular-nums">{n}</span>
-                    </button>
-                  ))}
-                </div>
+                <HangTab ariaLabel={t('Kết quả')} value={tab} onChange={setTab} className="-mt-3"
+                  tabs={[{ key: 'chua', label: t('Chưa đạt'), so: soChua }, { key: 'dat', label: t('Đạt'), so: soDat }]} />
               )}
               {/* PTA rà #1292: tab Chưa làm chia nhóm → mỗi nhóm có số riêng, bỏ dòng tổng (lẫn với số nhóm). */}
               {!(vk && nhomChung) && <span className="text-sm text-dim"><b className="tabular-nums text-[15px] text-slate-100">{soDong}</b> {(data.dem ?? dem).replace(/^\d+\s*/, '')}</span>}

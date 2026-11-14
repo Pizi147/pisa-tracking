@@ -13,7 +13,7 @@ import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
 import { HangSExThe, OSEx, sapSEx } from './HangSEx.tsx';
-import { Menu } from '../../../ui/Menu.tsx';
+import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { ODiem } from '../../../ui/ODiem.tsx';
 import { useDienThoai } from '../../../ui/TheDong.tsx';
 import { kqOverall } from '../../students/GocLichThi.tsx';
@@ -380,9 +380,9 @@ function NutThemLuot({ hang, coXep, onMt, onSEx }: { hang: HangFT; coXep: boolea
   if (coXep) return <button type="button" className="nut-them self-start" onClick={onSEx}>{t('+ S Ex')}</button>;
   return (
     <span ref={neo} className="self-start">
-      <Menu label={t('+ MT')} align="right" className="nut-them" items={[
-        { label: t('MT{n} · MT thường', { n: hang.soKeTiep }), onClick: () => onMt(hang.soKeTiep, neo.current!) },
-        { label: t('S Ex · Speaking với chuyên gia'), onClick: onSEx },
+      <MenuDong chu={t('+ MT')} lopNut="nut-them" muc={[
+        { key: 'mt', nhan: t('MT{n} · MT thường', { n: hang.soKeTiep }), onChon: () => onMt(hang.soKeTiep, neo.current!) },
+        { key: 'sex', nhan: t('S Ex · Speaking với chuyên gia'), onChon: onSEx },
       ]} />
     </span>
   );

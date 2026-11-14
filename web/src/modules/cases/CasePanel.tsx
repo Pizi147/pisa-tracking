@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -25,8 +25,9 @@ import {
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
+import { quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
-import { CanLam, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KhongTheoDoiForm, XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
@@ -275,6 +276,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         <dt>{t('Mô tả')}</dt>
         <dd>
           <MoTaCase data={data} sua={suaCase || !!s} viec={nhanViec} tuMo={dichMo?.loai === 'mo-ta' || (dichMo === null && viecMoTa)} nhomNhap={nhomNhap} onDoi={nhan} onXong={lamMoi} />
+          {/* GD-4b Q13: việc Mô tả Case (Case MT chưa có mô tả) — dòng quy chế ngay dưới ô (ô tự lưu, không hàng nút). */}
+          {choNhanXet && !!vw.canEdit && !s && <div className="basis-full"><DongQuyChe px="px-0" qc={quyCheMoTaCase(hanViec)} /></div>}
           {primary?.observation && (primary.moTaTuMt || primary.byName) && (
             <span className="nguon basis-full">{(primary.moTaTuMt ? [t('theo nhận xét {mt}', { mt: primary.moTaTuMt })] : [primary.byName, primary.createdAt ? ngan(primary.createdAt) : null]).filter(Boolean).join(' · ')}</span>
           )}
@@ -324,6 +327,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
             <div className="pa-than">
               <KhungTrongThe.Provider value>
                 <ThemPaPanel caseId={data.id} studentId={data.student?.id} coPaBatBuoc={coPaBatBuoc} onClose={() => setThemPa(false)}
+                  hanLapPa={canDong && data.viecTiep?.loaiHan === 'lap-pa' && data.viecTiep.han ? ngan(data.viecTiep.han) : dsPa.length ? null : undefined}
                   onSaved={(x) => { setThemPa(false); if (x?.paId) setVuaDoi({ paId: x.paId, chu: x.chu, hoanTac: x.hoanTac }); if (x) bao?.daLuu(x); lamMoi(); }} />
               </KhungTrongThe.Provider>
             </div>
@@ -363,6 +367,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         <HoanThanhCasePanel caseId={data.id} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
           paGanNhat={(() => { const f = (data.followups ?? []).find((x: any) => x.outcome); return f ? outcomeLabelFor(f.outcome) : null; })()}
           ketLuanSan={(data.followups ?? []).find((x: any) => x.outcome && x.note)?.note ?? null}
+          soPaChay={(data.interventions ?? []).filter((x: any) => x.status === 'planned' || x.status === 'started').length}
           onClose={() => setHoanThanh(false)} onSaved={() => { setHoanThanh(false); lamMoi(); }} />
       </KhungTrongThe.Provider>
     </div>
@@ -380,7 +385,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         ) : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setHoanThanh(true)}>{t('Hoàn thành Case')}</button>}
         {/* G2-10: form Xác nhận PA đang mở đã có "Không cần theo dõi…" — không hiện nút thứ hai cùng việc. */}
         {data.sos?.fromSos && !data.sos?.choDuyetKhongTheoDoi && !ktd && !formXacNhanMo && (
-          <button type="button" className="link-nho min-h-[44px] sm:min-h-0" onClick={() => setKtd(true)}>{t('Không cần theo dõi…')}</button>
+          <button type="button" className={NUT_MO} onClick={() => setKtd(true)}>{t('Không cần theo dõi…')}</button>
         )}
       </div>
       {ktd && <KhongTheoDoiForm caseId={data.id} onClose={() => setKtd(false)} onDone={() => { setKtd(false); lamMoi(); }} />}
@@ -572,6 +577,8 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
         <div className="flex basis-full flex-col gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
           <span className="text-[13px] font-semibold">{t('Nhận xét chấm chéo · {ai} · {luot}', { ai: s.nguoiCham ?? '—', luot: s.luot })}</span>
           {s.nhanXet && <span className="text-sm leading-relaxed">“<ChuDich chu={s.nhanXet} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'comment', kyNang: 'speaking' } : null} />”</span>}
+          {/* GD-4b Q28 / Q29: dùng nhận xét người chấm (mặc định) · đang gõ mô tả của mình = viết khác. */}
+          <DongQuyChe px="px-0" qc={quyCheXacNhanS(go || !s.nhanXet, s.nguoiCham, toiThieu)} />
           <span className="flex flex-wrap items-center gap-2">
             {s.nhanXet && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('dung')}>{t('Dùng nhận xét này')}</button>}
             {chinh?.observation && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('giu')}>{t('Giữ mô tả đang có')}</button>}
@@ -766,7 +773,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     : dangChay ? (ghiDuoc && toiKy && !mo
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
       : data.tamDungTu && hanGhi ? <NhanTamDung tu={data.tamDungTu} />
-      : hanGhi?.tone === 'overdue' ? vien(`⚠ ${hanGhi.quaHan ?? ''}`, 'rgb(var(--bad-rgb))')
+      : hanGhi?.tone === 'overdue' ? vien(hanGhi.quaHan ?? '', 'rgb(var(--bad-rgb))')
       : vien(hanGhi ? t('Đang chạy · KQ hạn {ngay}', { ngay: ngan(iv.actionDue) }) : t('Đang chạy'), 'var(--accent)'))
     : fGan ? <span className={`ket ${LOP_KET[OUTCOME_TONE[fGan.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(fGan.outcome))}</span>
     : vien(t('Đã khép'), 'var(--text-faint)');
@@ -1068,7 +1075,7 @@ function DaiVuaDoi({ x, onHoanTac, onSua }: { x: VuaDoiPa; onHoanTac?: () => voi
  */
 function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan: (d: string | null | undefined) => string; onDoi?: () => void }) {
   const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; paMoiId: number; loaiMoi: string; guiLuc: string; hanDuyet: string | null; lyDoTuChoi: string | null; yeuCauId: number; laNguoiGui: boolean;
-    /** SOS-TAM-PA: GV giữ PA của mình khác PA quy chế — quá hạn QL chưa trả lời thì chốt theo GV. */ giuPaGv?: boolean } | null;
+    /** SOS-TAM-PA: GV giữ PA của mình khác PA quy chế — quá hạn QL chưa trả lời thì chốt theo GV. */ giuPaGv?: boolean; lyDo?: string } | null;
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [lai, setLai] = useState(false);
@@ -1088,6 +1095,8 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
           <span className="text-slate-400">· {d.giuPaGv ? t('PA của GV vẫn chạy') : iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${d.giuPaGv ? t('quá {ngay} tự chốt theo GV', { ngay: ngan(d.hanDuyet) }) : t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
           {d.laNguoiGui && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void rut()}>{busy ? t('Đang lưu…') : t('Rút')}</button>}
           {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
+          {/* GD-3: lý do "Giữ PA của tôi" (mockup v21 K4b) hiện lại tại PA. */}
+          {d.giuPaGv && d.lyDo && <span className="basis-full text-slate-400">{t('Lý do')}: “{d.lyDo}”</span>}
         </p>
         {the && <TheYeuCau gon yc={the} onXong={() => onDoi?.()} />}
       </div>

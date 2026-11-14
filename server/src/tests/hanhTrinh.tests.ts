@@ -172,7 +172,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const running = d.nhanKhoiPa({ ten, status: 'started', lastOutcome: null, followupOverdue: false });
     assert(running.day === 'Reading · ▶ Đang thực hiện' && running.tone === 'run' && running.dau === '▶', `Đang chạy: ${JSON.stringify(running)}`);
     const late = d.nhanKhoiPa({ ten, status: 'planned', lastOutcome: null, followupOverdue: true });
-    assert(late.tone === 'late' && late.dau === '⚠' && late.day.includes('Quá hạn'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
+    assert(late.tone === 'late' && late.dau === '▶' && late.day.includes('Quá hạn'), `Quá hạn cập nhật: ${JSON.stringify(late)}`);
   });
 
   check('PR-Qb (1) → PR-SOS (K3-29) · trangThaiHop: nhãn §7.3 — Cần làm · chờ xác nhận Case / chờ ghi nhận xét (OV-12c) / Chờ duyệt / Cần làm · chưa có PA / Đang làm · n tuần / Xong dd/mm / Đã huỷ', () => {
@@ -338,7 +338,7 @@ export async function runHanhTrinhTests(t: YThucTestKit) {
     const cacNhanh = [
       [{ lastOutcome: 'improved' }, '✓', 'ok'], [{ lastOutcome: 'partial' }, '◐', 'part'],
       [{ lastOutcome: 'unchanged' }, '✗', 'bad'], [{ lastOutcome: 'worse' }, '✗', 'bad'],
-      [{}, '■', 'done'], [{ status: 'started' }, '▶', 'run'], [{ status: 'started', followupOverdue: true, soNgayQuaHan: 2 }, '⚠', 'late'],
+      [{}, '■', 'done'], [{ status: 'started' }, '▶', 'run'], [{ status: 'started', followupOverdue: true, soNgayQuaHan: 2 }, '▶', 'late'],   // V22: không ⚠
     ] as const;
     for (const [o, dau, tone] of cacNhanh) {
       const n = dem(o);

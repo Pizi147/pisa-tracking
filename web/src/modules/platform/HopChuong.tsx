@@ -15,8 +15,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import {
   NHAN_NHOM_NGAY, VIEC_TU_TIN, duongThongBao, gomViecChuong, laTinViec, laViecTuTin, loaiTin, moDuocThongBao, nhomNgayTin, soViecMoi, tachTin,
-  thoiGianThongBao, xepLoaiViec, type DemYeuCau, type DongViecChuong, type LoaiViecChuong, type NhomNgayTin,
-} from '@shared/domain/index.ts';
+  thoiGianThongBao, xepLoaiViec, type DemYeuCau, type DongViecChuong, type LoaiViecChuong, type NhomNgayTin, bacNgan } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** Phần `/my-work` chuông đọc (bản của badge ở App). */
@@ -75,7 +74,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
   }, [coViec, viec, nav]);
   /*
    * Ngoài `/my-work` (badge / Công việc không đếm): thẻ Chờ bạn duyệt (`/yeu-cau/dem`) + việc chỉ có ở thông báo (đăng ký tài khoản…). Nhóm riêng dưới vạch,
-   * KHÔNG cộng vào đầu khối — "n việc · ⚠ n quá hạn" giữ đúng số Công việc / ô "Việc của tôi" / chuông (một nguồn, một hàm).
+   * KHÔNG cộng vào đầu khối — "n việc · n quá hạn" giữ đúng số Công việc / ô "Việc của tôi" / chuông (một nguồn, một hàm).
    */
   const them = useMemo<DongLoai[]>(() => {
     const ra: DongLoai[] = [];
@@ -123,7 +122,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
     const doc = `${n.read_at ? '' : t('Chưa đọc: ')}${nhanLoai}: ${kq ? `${kq.chu} · ` : ''}${chu}`;
     return (
       <li key={n.id}>
-        <button type="button" className={`chv-tin${n.read_at ? '' : ' chv-chua'}${day ? ' chv-day' : ''}`} onClick={() => { void moTin(n); }} title={`${chu}${n.body ? ` · ${dich(n.body)}` : ''}`} aria-label={`${doc}, ${luc}`}>
+        <button type="button" className={`chv-tin${n.read_at ? '' : ' chv-chua'}${day ? ' chv-day' : ''}`} onClick={() => { void moTin(n); }} title={`${chu}${n.body ? ` · ${bacNgan(dich(n.body))}` : ''}`} aria-label={`${doc}, ${luc}`}>
           <span aria-hidden className="chv-c" />
           <span className="chv-m"><span className="chv-l">{nhanLoai}</span><time title={nhan(homNay, n.created_at)}>{luc}</time></span>
           <span className="chv-x">{kq && <><b className={`chv-kq chv-${kq.tone}`}>{kq.chu}</b> · </>}{chu}</span>
@@ -146,7 +145,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
           </span>
           <span className="chv-so"><b>{l.n}</b> {dv}</span>
           <span className="chv-tt">
-            {l.quaHan > 0 ? <span className="chv-td chv-qua">⚠ {t('{n} quá hạn', { n: l.quaHan })}</span>
+            {l.quaHan > 0 ? <span className="chv-td chv-qua">{t('{n} quá hạn', { n: l.quaHan })}</span>
               : l.homNay > 0 ? <span className="chv-td chv-nay">{t('{n} hôm nay', { n: l.homNay })}</span> : null}
           </span>
           <Mui />
@@ -191,7 +190,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
             <button type="button" className="chv-lk" onClick={() => { navigate('/cong-viec'); onDong(); }}>{t('Công việc')} <Mui /></button>
             {tong.n > 0 && (
               <span className="chv-tom">
-                {tong.qua > 0 && <span className="chv-qua">⚠ <span className="chv-so-n">{tong.qua}</span> {t('quá hạn')}</span>}
+                {tong.qua > 0 && <span className="chv-qua"><span className="chv-so-n">{tong.qua}</span> {t('quá hạn')}</span>}
                 {tong.nay > 0 && <span className="chv-nay">{t('{n} hôm nay', { n: tong.nay })}</span>}
                 <span className="chv-tong">{t('{n} việc', { n: tong.n })}</span>
               </span>

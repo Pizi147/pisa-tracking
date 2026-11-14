@@ -10,6 +10,7 @@ import { laViecChamCheo } from './gopViec.ts';
 import { ngayTheoGioVN } from './display.ts';
 import { mondayOfDate } from './week.ts';
 import { addDaysIso } from './sos.ts';
+import { bacNgan } from './yThuc.ts';
 
 /** Tên loại việc — CÙNG chữ `GROUP_META.label` của máy chủ (`mywork.ts`; phép kiểm CHUONG-V2-1 so hai bảng). */
 export const NHAN_LOAI_VIEC: Record<string, string> = {
@@ -91,7 +92,8 @@ const KQ_YC: [RegExp, KetQuaTin['tone'], string][] = [
   [/ · Đã duyệt$/, 'ok', t('Đã duyệt')], [/ · Bị từ chối:? ?/, 'bad', t('Từ chối')], [/ · Đã trả lời:? ?/, 'trung', t('Đã trả lời')], [/ · Tự đóng:? ?/, 'trung', t('Tự đóng')],
 ];
 export function tachTin(n: { kind: string | null; title: string }): { kq: KetQuaTin | null; chu: string } {
-  const tieuDe = n.title ?? '';
+  /* GD-4d (⓪ dòng 18, ⑤ H5): tên bậc trong tin (chuỗi máy chủ "Thu hồi Report 2") viết hoa, dạng tắt — một khái niệm một cách viết. */
+  const tieuDe = bacNgan(n.title ?? '');
   if (n.kind === 'duyet_ket_qua' || n.kind === 'duyet_tu_choi') {
     for (const [re, tone, chu] of KQ_YC) {
       const m = re.exec(tieuDe);

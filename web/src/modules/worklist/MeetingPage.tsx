@@ -12,6 +12,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { SignalList } from './SignalList.tsx';
 import { ManagerTaskList } from './ManagerTasks.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { fmtDate, fmtDateTime, unitStatusLabel, unitTone } from '../../lib/format.ts';
 import { UNIT_STATUSES, demTrangThaiDonVi, hienONgay, khopChiNhanhBaoCao, locDonViBaoCao, luaChonChiNhanhBaoCao } from '@shared/domain/index.ts';
 
@@ -406,19 +407,13 @@ function NganBaoCao({ unit, cell, periodId, editable, editWindow, onClose, onSav
             )}
           </section>
 
-          {cell.history.length > 0 && (
-            <details>
-              <summary className="text-xs text-slate-500 cursor-pointer">{t('Lịch sử ({n})', { n: cell.history.length })}</summary>
-              <ul className="list-none p-0 m-0 mt-1 space-y-0.5">
-                {cell.history.map((h, i) => (
-                  <li key={i} className="text-xs text-slate-500">
-                    {fmtDate(h.at.slice(0, 10))} · {unitStatusLabel(h.status)}{h.kind ? ` · ${h.kind === 'nop' ? t('nộp') : h.kind === 'sua' ? t('sửa') : t('nháp')}` : ''}
-                    {h.actor ? ` · ${h.actor}` : ''}
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
+          {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n", không dòng thì không vẽ. */}
+          <LichSuGap so={cell.history.length}>
+            <DsLichSu dong={cell.history.map((h, i) => ({
+              key: i, gio: fmtDate(h.at.slice(0, 10)), ai: h.actor,
+              viec: `${unitStatusLabel(h.status)}${h.kind ? ` · ${h.kind === 'nop' ? t('nộp') : h.kind === 'sua' ? t('sửa') : t('nháp')}` : ''}`,
+            }))} />
+          </LichSuGap>
 
           {!chiDoc && (
             <div className="flex items-center gap-2 pt-2 border-t" style={{ borderColor: 'var(--line)' }}>

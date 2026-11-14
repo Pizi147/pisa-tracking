@@ -909,6 +909,8 @@ export const FOLLOWUP_OUTCOME_LABEL: Record<FollowUpOutcome, string> = {
   worse: t('Kém hơn'),
   insufficient: t('Chưa đủ dữ liệu'),
 };
+/** GD-3 (mockup v21 K4c): ký hiệu đứng trước tên mức Tiến triển trên chip. */
+export const KY_HIEU_TIEN_TRIEN: Record<FollowUpOutcome, string> = { improved: '✓', partial: '↗', unchanged: '–', worse: '↓', insufficient: '?' };
 export function outcomeLabelFor(outcome: string): string {
   return FOLLOWUP_OUTCOME_LABEL[outcome as FollowUpOutcome] ?? outcome;
 }
@@ -1042,7 +1044,8 @@ export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
-  keep: t('Lưu kết quả'), adjust: t('Lưu điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Gửi Quản lý'),
+  /* GD-3 (mockup v21 K4c, lời chủ SP 13/11): Giữ nguyên → nút "Lưu". */
+  keep: t('Lưu'), adjust: t('Lưu điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Gửi Quản lý'),
 };
 
 export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {

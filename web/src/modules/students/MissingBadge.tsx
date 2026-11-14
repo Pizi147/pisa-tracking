@@ -73,7 +73,7 @@ export function MissingBadge({ items, className = '', gon = false }: {
         title={open ? undefined : items.map((i) => dich(i.label)).join(' · ')}
         onClick={(e) => { e.stopPropagation(); e.preventDefault(); setOpen((v) => !v); }}
       >
-        {/* G-4: ⚠ chỉ nghĩa là quá hạn — thiếu thông tin là badge chữ (Q12). CA2-7: dòng tên em (`gon`) chữ mờ không viền, vẫn bấm; vàng để cho SOS / sắp hạn. */}
+        {/* Thiếu thông tin là badge chữ (Q12), không ký hiệu cảnh báo. CA2-7: dòng tên em (`gon`) chữ mờ không viền, vẫn bấm; vàng để cho SOS / sắp hạn. */}
         {gon
           ? <span className="text-xs text-slate-400 underline-offset-2 hover:underline">{t('Thiếu {n}', { n: items.length })}</span>
           : <span className={`${CHIP_VUONG} border-soon-line bg-soon-bg text-soon`}>{t('Thiếu {n} thông tin', { n: items.length })}</span>}

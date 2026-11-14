@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { laBand } from '../students/StudentPlanPanel.tsx';
 import type { TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
-import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, shortDate, type HuongSauThi } from '@shared/domain/index.ts';
+import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, type HuongSauThi } from '@shared/domain/index.ts';
 import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { LuaChonRadio, gioVnNay } from './PanelBaoPhTvv.tsx';
@@ -133,7 +133,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   } : {
     huy: null, daSua: !!chon || !!ghiChu.trim(), conThieu: lf.conThieu(loiB),
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" />
-      : <span className="inline-flex items-center gap-1.5 font-semibold text-soon"><span aria-hidden>●</span>{t('Bước tiếp chưa chốt')}</span>,
+      : <span className="font-semibold text-soon">{t('Bước tiếp chưa chốt')}</span>,
     chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chon === 'dung' ? (dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc) : t('Chốt bước tiếp')}</button>,
   };
   if (chon === 'lo_trinh_moi' && !khoaBuoc2) {
@@ -144,7 +144,8 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   }
 
   return (
-    <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
+    <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
+      quyChe={daChot ? null : moDiem ? quyCheKqThiThat() : !khoaBuoc2 && chon === 'dung' ? quyCheDungHoc(b.han ? shortDate(b.han, hn) : null) : null}>
       <div className="flex flex-col gap-4 pt-4">
         <Buoc so={coKq && !moDiem ? '✓' : '1'} xong={coKq && !moDiem} tieuDe={t('Kết quả thi thật')}
           phu={coKq && c.thi_that_nhap_luc ? t('lưu {ngay}', { ngay: shortDate(c.thi_that_nhap_luc, hn) }) : t('không hạn')}>
@@ -196,9 +197,8 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
         </Buoc>
 
         <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <button type="button" className="flex min-h-[44px] appearance-none items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-semibold text-slate-400 sm:min-h-0" onClick={() => setLichSu(true)}>
-            <span aria-hidden>▸</span>{t('Lịch sử')}
-          </button>
+          {/* GD-4c: cùng link "Lịch sử" như Kết quả thi thật / Bước tiếp (mở panel Lịch sử thay nội dung) — bỏ "▸" giả gập. */}
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
         </div>
       </div>
     </KhungPanel>
@@ -249,7 +249,7 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
   return (
-    <KhungPanel hd="chot-ngay-thi" tieuDe={t('Chốt ngày thi · {ten}', { ten: em.ten })} onDong={onDong}
+    <KhungPanel hd="chot-ngay-thi" tieuDe={t('Chốt ngày thi · {ten}', { ten: em.ten })} onDong={onDong} quyChe={xong ? null : quyCheChotNgayThi(kieu === 'thang')}
       dau={dauViec({ em, lop, ngCanh: duKien ? <span className="inline-flex items-center gap-1.5">{t('hiện')} <NhanLich loai="du-kien">{duKien}</NhanLich></span> : null })}
       chan={xong ? { huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
         chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> }

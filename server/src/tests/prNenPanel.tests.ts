@@ -160,9 +160,10 @@ export async function runPrNenPanelTests(t: YThucTestKit) {
     assert(/html\[data-ban-phim\] \[data-thanh-duoi\] \{ display: none; \}/.test(css) && /<nav data-thanh-duoi/.test(docSach('web/src/App.tsx')), 'thanh dưới chưa ẩn khi bàn phím mở');
   });
 
-  check('NEN-PANEL · dòng loại (B11: chữ thường, không vạch hồng): panel việc "Việc" (M6 6b-1: khai qua dauViec, khung không đoán); panel số không dòng làm được = "Báo cáo · chỉ đọc"', () => {
+  /* GD-3 (mockup v21 ① `.loai`, chủ SP duyệt 14/11 — thay B11 08/11): dòng loại có lại vạch nhấn hồng 14 × 3, chữ 12 / 700 mờ. */
+  check('NEN-PANEL · dòng loại (v21: vạch hồng 14 × 3 + chữ 12 / 700 mờ): panel việc "Việc" (M6 6b-1: khai qua dauViec, khung không đoán); panel số không dòng làm được = "Báo cáo · chỉ đọc"', () => {
     const kp = docSach('web/src/ui/KhungPanel.tsx');
-    assert(/loai === undefined \? \(cvNgoai\?\.loai \?\? dau\?\.loai \?\? null\) : loai/.test(kp) && !/--hong/.test(kp), 'dòng loại (B11 08/11: chữ thường 13 / 600 mờ, bỏ vạch hồng)');
+    assert(/loai === undefined \? \(cvNgoai\?\.loai \?\? dau\?\.loai \?\? null\) : loai/.test(kp) && /h-\[3px\] w-3\.5[^"]*bg-\[color:var\(--hong\)\]/.test(kp), 'dòng loại (v21 ①: vạch hồng 14 × 3, chữ 12 / 700 mờ)');
     assert(/t\('Báo cáo · chỉ đọc'\)/.test(docSach('web/src/ui/SoLieu.tsx')), 'SoLieu chưa đặt loại báo cáo');
   });
 }

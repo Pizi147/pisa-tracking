@@ -10,7 +10,7 @@ import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
   NHAN_VIEC_QUAN_LY, mucQuanLyHocVien, coTheTamDungKetThuc, type LopHocQuyen, type ViecQuanLy, dsLoi, docEmail,
   cauMtSeDoi, tuanLich, GIAI_THICH_KCK, chuTargetKck, tachKck, roundToHalf, type NguoiChon, duongLoTrinhLop,
-  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi, ROUTE_KHAC, ROUTE_LO_TRINH_MOI,
+  LIEN_HE_TOI_DA, NHAN_LIEN_HE, QUAN_HE_GOI_Y, TRUONG_LIEN_HE, docSoDienThoai, type LienHe, docTargetKyThi, type KyThi, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, quyCheBoSungHoSo,
 } from '@shared/domain/index.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -29,7 +29,7 @@ import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 
 /**
- * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
+ * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`MenuDong`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
  * `← Chọn việc khác`. Mỗi mục mở THẲNG panel của việc đó, một `KhungPanel` một lúc. `Lộ trình` (Fast Track) mở `StudentPlanPanel` như cũ
  * (nơi gọi lo). Nơi gọi: `mucQuanLyHocVien(...)` quyết mục nào hiện; `StudentManagePanel` vẽ đúng panel cho `viec`.
  *
@@ -456,6 +456,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 
   return (
     <KhungPanel hd="sua-thong-tin" tieuDe={tiep && tiep.tong > 1 ? `${NHAN_VIEC.info} · ${t('em {stt}/{tong}', { stt: tiep.stt, tong: tiep.tong })}` : NHAN_VIEC.info} hocVien={studentName} lop={lop} onDong={onClose}
+      /* GD-4b Q68: đi theo việc Bổ sung hồ sơ (`tiep` — chỉ PanelBoSungHoSo truyền) → dòng quy chế. */
+      quyChe={tiep ? quyCheBoSungHoSo() : null}
       chan={{
         daSua,
         conThieu: lf.conThieu(loi),

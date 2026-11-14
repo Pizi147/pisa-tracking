@@ -19,6 +19,8 @@ F01–F07 (13/11) · L1–L8 (13/11) · L6 đã có quyết định (LG-4 dướ
 | **LG-6** TIN-BAO-PH-GVCN | TVV ghi kết quả Báo PH về vi phạm → GVCN nhận một tin "Cập nhật" (không vào số việc), cùng kiểu tin của tình hình học tập (`baoPhTvv.ts:284-290`). | 2.7 (lời 13) | Sonnet 5.5 · medium | tin đúng người, một lần; không tăng badge | 0 |
 | **LG-7** HEAD-TUTOR-NHU-GV | Vai Head tutor: trang đầu, menu, thanh tab, ô tìm **như GV** (nay chỉ có Tổng quan). Đụng `nav.ts`, `dieuHuong.ts`, `OverviewPage.tsx:37`. Nếu phải đổi `ROLE_PERMISSIONS` thì liệt kê quyền thêm, hỏi chủ SP trước khi merge. Làm SAU PR đổi trang đầu GV (mục C). | lời 16 ý 2: "Head tutor vẫn là GV là chính, nên view nên như của GV là chính nha" | Opus 5.5 · medium · rà `/security-review` | Head tutor có phân công thấy việc + lớp như GV; không có phân công: trang rỗng đúng chữ; không lộ dữ liệu ngoài phạm vi | đo `/my-work` vai ht |
 | **LG-8** MY-WORK-TEST-SAP-TOI | `/my-work` thêm trường "Test sắp tới" từng lớp của GV (cho "Lớp của tôi"), chỉ tính cho vai GV / Head tutor, dùng `MOC_KE_TIEP` + `classProgressMany` (`tongQuan.ts:321`). Chạy TRƯỚC PR giao diện trang đầu. | thiết kế 5.2, 11.2 | Sonnet 5.5 · high (B: Opus 5.5 · medium) | lớp FT / lớp thường / chưa có lịch; vai khác không tốn câu | + ~2 câu, vai GV |
+| **LG-9** MT0-VANG-NHU-MOCK | MT0 gõ "-" **áp luật vắng như Mock** (N38): lần 1 dời sang tuần sau, lần 2 huỷ; xoá "-" trả về tuần gốc, trừ một lần vắng; "Bỏ vắng" như Mock. Nay mã chỉ ghi dấu, không dời, hết tuần thành "Không dự thi" (`attempts.ts:2395`, `:2452`). Dùng lại đúng hàm vắng của Mock, không viết nhánh riêng. Người làm kiểm và báo lại trước khi sửa: MT0 dời sang tuần sau có vướng việc "Kỳ vọng" của QL (cần MT0 đủ 3 kỹ năng) và mốc thứ Hai tự chuyển lên FT không — em vẫn chuyển, MT0 đi theo em. Sửa chữ Rulebook / Hướng dẫn cùng PR. | lời 32 ý 1: "áp luật vắng như mock" | Opus 5.5 · medium (B: Sonnet 5.5 · high) | MT0 "-" lần 1 → dời tuần sau, việc nhập điểm theo tuần mới; lần 2 → huỷ, không nhắc xếp lại; xoá "-"; thử trên bản chép thật (`mig.sqlite`) | 0 |
+| **LG-10** THU-HOI-TU-CHOT | Thẻ QL "Thu hồi xử lý vi phạm" (`thu_hoi_y_thuc`): hết hạn duyệt (Hạn mặc định, gốc 5 ngày) mà QL chưa Duyệt / Từ chối → **tự chốt theo GVCN** = thu hồi có hiệu lực (dòng "Đã thu hồi", bậc tính lại, TVV đã báo PH thì sinh việc "Báo lại PH"), đúng cơ chế tự chốt của thẻ xử lý vi phạm — dùng lại hàm đó, không viết đường riêng. Lịch sử ghi "tự chốt vì hết hạn duyệt". Thẻ đã quá hạn từ trước ngày bật: chốt ở lần chạy đầu (báo số thẻ trên bản chép thật trong mô tả PR trước khi merge). Dòng quy chế ở panel Thu hồi + Hướng dẫn "?" sửa chữ cùng PR. | lời 33 ý 1 (đụng luật N5; chủ SP: "Theo đề xuất hết") | Opus 5.5 · medium (B: Sonnet 5.5 · high) | hết hạn → thu hồi có hiệu lực đúng một lần; QL duyệt / từ chối trước hạn như cũ; TVV đã báo → có "Báo lại PH"; thẻ xử lý không đổi hành vi; thử trên `mig.sqlite` | 0 |
 
 ## C. Phần GIAO DIỆN (chưa giao — chờ mockup duyệt, PTA Overhaul gửi sau)
 Đổi trang đầu GV / TVV sang Công việc (chỗ đụng mã + 6 tệp phép kiểm: `04-thiet-ke.md` 11.4) · "Lớp của tôi" · "+ Ghi" · panel Speaking chấm chéo theo tuần → lớp · dòng việc + dòng quy chế chuẩn · hộp nhập gọn · hồ sơ lớp · hồ sơ HV · TVV · mật độ các màn còn lại.
@@ -26,10 +28,10 @@ F01–F07 (13/11) · L1–L8 (13/11) · L6 đã có quyết định (LG-4 dướ
 ## D. Nhờ PTA Plan xem (PTA Overhaul đọc mã thấy, CHƯA tái hiện — cái nào là lỗi thì giao)
 Mục cuối các tệp `luat/1`–`4` ("chỗ tài liệu và mã lệch"). Đáng xem trước:
 - GV lớp thường gõ điểm trước tuần Test: được hỏi "Dời về tuần này" rồi có thể báo lỗi quyền (`skillSchedule.ts:1076` ↔ `:943-945`).
-- MT0 gõ "-": không dời, không huỷ; Rulebook ghi áp luật vắng (`attempts.ts:2395`, `:2452`).
-- Thẻ "Thu hồi xử lý" hết 5 ngày không tự chốt, khác thẻ xử lý.
+- ~~MT0 gõ "-"~~ → chủ SP chốt 15/11 (lời 32): áp luật vắng như Mock — LG-9.
+- ~~Thẻ "Thu hồi xử lý" hết 5 ngày không tự chốt~~ → chủ SP chốt 15/11 (lời 33): tự chốt theo GVCN — LG-10.
 - Cấu hình "ai làm" của Phối hợp SOS (TVV / CX) không thấy máy chủ dùng để giao việc (`shared/domain/cauHinhCaseSos.ts:28`).
-- Việc Bước tiếp: N6 "TVV của em", mã cho mọi TVV chi nhánh (`permissions.ts:794`).
+- ~~Việc Bước tiếp~~ → chủ SP chốt 15/11 (lời 32): giữ như mã (mọi TVV cùng chi nhánh làm thay được); chỉ sửa chữ N6.
 - Xác nhận Case Speaking còn ngưỡng 10 ký tự (chung là 8) (`cases.ts:1540`).
 
 ## E. PTA Overhaul tự làm
