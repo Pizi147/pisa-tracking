@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Empty, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NhanKq } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { HopNeo } from '../../ui/HopNeo.tsx';
@@ -138,7 +138,8 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
             case 'ten': return tenEm(e);
             case 'final': return oFinal(e);
             case 'overall': return oBand(e, 'overall', nguong);
-            case 'kq': return oKq(e, b.ct);
+            /* Khung cao đúng dòng tên (14 px × 1,5 = 21), căn giữa dọc: chip 22 px / nút không lệch tâm so với tên cùng hàng (đo 0 px). */
+            case 'kq': return <span className="inline-flex h-[21px] items-center align-top">{oKq(e, b.ct)}</span>;
             case 'ho-tro': return oCase(e);
             case 'ban-giao': return oBanGiao(e);
             default: return oBand(e, c.key as RegularSkill, nguong);
@@ -242,10 +243,25 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
             : t('MT0 Overall {ov} · mốc {ct} {n}', { ov: em.mt0.overall.toFixed(1), ct, n: (NGUONG_KY_VONG[ct] ?? 0).toFixed(1) })}
         </span>
       </div>
+      {/* Radio-card như panel Xác nhận xử lý (⑤ D1a): chấm tròn + tên + một dòng hệ quả; đang chọn = viền + nền nhấn. */}
       <div role="radiogroup" aria-label={t('Kết quả đầu ra')} className="grid gap-2">
-        <NutChon chon={chon === 'dat'} onClick={() => setChon('dat')} className="justify-start">{t('Đạt')}</NutChon>
-        <NutChon chon={chon === 'trung_tam'} onClick={() => setChon('trung_tam')} disabled={datMoc} title={lyDoTat} className="justify-start">{t('Không đạt · Trung tâm')}</NutChon>
-        <NutChon chon={chon === 'hoc_sinh'} onClick={() => setChon('hoc_sinh')} disabled={datMoc} title={lyDoTat} className="justify-start">{t('Không đạt · Học viên')}</NutChon>
+        {([
+          ['dat', t('Đạt'), null],
+          ['trung_tam', t('Không đạt · Trung tâm'), t('Mỗi kỹ năng một Case + Tutor {n} buổi', { n: tutor })],
+          ['hoc_sinh', t('Không đạt · Học viên'), t('Ghi phương án, không Case.')],
+        ] as const).map(([k, ten, phu]) => {
+          const tat = k !== 'dat' && datMoc;
+          return (
+            <button key={k} type="button" role="radio" aria-checked={chon === k} disabled={tat || busy} title={tat ? lyDoTat : undefined} onClick={() => setChon(k)}
+              className={`grid min-h-[44px] content-center gap-0.5 rounded-[10px] border px-3 py-2 text-left appearance-none disabled:cursor-not-allowed disabled:opacity-50 ${chon === k
+                ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] shadow-[0_0_0_1px_var(--accent)]' : 'border-[color:var(--line-strong)] surface-2 hover:border-[color:var(--accent)]'}`}>
+              <span className="flex items-center gap-2 text-sm font-semibold text-slate-100">
+                <span aria-hidden className={`h-3.5 w-3.5 shrink-0 rounded-full border-[1.5px] ${chon === k ? 'border-[4px] border-[color:var(--accent)]' : 'border-[color:var(--o-vien,var(--line-strong))]'}`} />{ten}
+              </span>
+              {phu && <span className="pl-[22px] text-[13px] leading-snug text-slate-400">{phu}</span>}
+            </button>
+          );
+        })}
         {lyDoTat && <span className="text-[13px] text-slate-400">{lyDoTat}</span>}
       </div>
       {chon === 'trung_tam' && (
@@ -253,11 +269,14 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
           <span className="text-[13px] font-medium text-slate-400">{t('Kỹ năng chưa đạt')}</span>
           <div className="flex flex-wrap gap-2">
             {REGULAR_SKILLS.map((s) => (
-              <NutChon key={s} nho chon={mon.includes(s)} title={dich(tenMon(ct, s))}
-                onClick={() => setMon((m) => (m.includes(s) ? m.filter((x) => x !== s) : REGULAR_SKILLS.filter((x) => x === s || m.includes(x))))}>{NGAN[s]}</NutChon>
+              /* Chip chọn chuẩn (như "✓ Chọn nhiều"): viền + nền nhấn, ✓ là chữ trong chip, trước tên. */
+              <button key={s} type="button" aria-pressed={mon.includes(s)} title={dich(tenMon(ct, s))}
+                className={`btn h-[30px] min-w-[44px] justify-center px-2.5 text-[13px] max-sm:h-11 ${mon.includes(s) ? '!border-[color:var(--accent)] !bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : ''}`}
+                onClick={() => setMon((m) => (m.includes(s) ? m.filter((x) => x !== s) : REGULAR_SKILLS.filter((x) => x === s || m.includes(x))))}>
+                {mon.includes(s) && <span aria-hidden>✓&nbsp;</span>}{NGAN[s]}
+              </button>
             ))}
           </div>
-          <span className="text-[13px] text-slate-400">{t('Lưu: mỗi kỹ năng một Case + Tutor {n} buổi.', { n: tutor })}</span>
         </div>
       )}
       {chon === 'hoc_sinh' && (

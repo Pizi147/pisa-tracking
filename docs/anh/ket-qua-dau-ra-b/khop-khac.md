@@ -16,7 +16,8 @@ Dữ liệu ảnh: DB demo + 5 em mẫu chèn tay vào bản demo cục bộ (BE
 | GV 375 sáng | `truoc-gv-375-sang.png` | `sau-gv-375-sang.png` |
 | Hộp chốt · Trung tâm (1440) | — | `sau-hop-chot-trung-tam-1440-toi.png` |
 | Hộp chốt · Học viên (1440) | — | `sau-hop-chot-hoc-vien-1440-toi.png` |
-| Hộp chốt 375 (em có kỹ năng huỷ) | — | `sau-hop-chot-375-sang.png` |
+| Hộp chốt · Trung tâm 375 (em có kỹ năng huỷ) | — | `sau-hop-chot-trung-tam-375-sang.png` |
+| Hộp chốt · Học viên 375 | — | `sau-hop-chot-hoc-vien-375-sang.png` |
 | Zoom ô Kết quả (2×) | — | `sau-zoom-o-ket-qua-1440-toi.png` |
 
 ## Truy vết: yêu cầu → thành phần → ảnh
@@ -26,7 +27,7 @@ Dữ liệu ảnh: DB demo + 5 em mẫu chèn tay vào bản demo cục bộ (BE
 | Phần điểm "kinh dị" → ô L · R · W · S · Overall riêng như bảng Tổng hợp | `Bang` chung (nhóm cột "MT0") + `ODiem kieu="gon"` (✓ / ✗ là chữ trong cùng span với số) | sau-ql-1440 · zoom | KHỚP |
 | Chỉ tô đỏ kỹ năng dưới mốc khi CHƯA đạt; đạt thì màu thường | ô kỹ năng: ✗ đỏ chỉ khi `!dat && monTruot`; Overall ✓ xanh khi đạt, ✗ khi chưa | Đỗ Minh An (W 3.0 thường, ✓ 4.0) | KHỚP |
 | Final "76 %" không "●" | `ODiem` "✓ 73%" — bỏ chip tròn có chấm | sau-ql-1440 | KHỚP (màu kết quả trên chính số — G12) |
-| QL chốt / sửa ngay ở cột Kết quả bằng hộp nhỏ | `HopNeo` neo ô (mũi chỉ ô): Đạt · Không đạt · Trung tâm (kỹ năng, điền sẵn kỹ năng MT0 dưới mốc, "mỗi kỹ năng một Case + Tutor {n} buổi" theo cấu hình) · Không đạt · Học viên (phương án) → `PUT /students/:id/ket-luan-ft` | sau-hop-* | KHỚP |
+| QL chốt / sửa ngay ở cột Kết quả bằng hộp nhỏ | `HopNeo` neo ô (mũi chỉ ô): **radio-card** như panel Xác nhận xử lý (⑤ D1a — chấm tròn + tên + dòng hệ quả, chọn = viền + nền nhấn): Đạt · Không đạt · Trung tâm ("Mỗi kỹ năng một Case + Tutor {n} buổi" theo cấu hình; chip kỹ năng L R W S điền sẵn kỹ năng MT0 dưới mốc, chip chọn chuẩn — viền + nền nhấn, "✓" là chữ trong chip trước tên) · Không đạt · Học viên ("Ghi phương án, không Case.") → `PUT /students/:id/ket-luan-ft` | sau-hop-* | KHỚP (vòng rà PTA: bỏ ✓ góc lòi viền của `NutChon`) |
 | Đạt rồi thì Không đạt tắt, có lý do | `NutChon disabled` + dòng "MT0 đã đạt mốc {ct} — Kết quả đầu ra là Đạt." (máy chủ cũng chặn, #1662) | — (em tự Đạt không mở hộp) | KHỚP |
 | Tự Đạt → chip "Đạt" + "tự theo MT0" qua ⓘ | `NhanKq dat` + `NutLuat` ⓘ "MT0 Overall 4.0 ≥ mốc BE 4.0 — tự Đạt, không cần chốt." | Đỗ Minh An | KHỚP |
 | "Chờ MT0" (< 3 band) chữ mờ; quá tuần 2 FT → QL chốt tay | "Chờ MT0" mờ; `moTay` (máy chủ, tuần của lệnh Lên FT như `ghiKetLuanFt`) → "Chốt…" | Phan Thu Hà | KHỚP |
@@ -63,7 +64,7 @@ Không mất thao tác nào.
 - Sửa sai = bấm chip, chọn lại. Đổi từ Trung tâm sang khác: Case đã tạo giữ, toast nói rõ (máy chủ `luuY`).
 
 ## Đo
-- ✕ / ⋯: màn này **không có** ✕ / ⋯ (hộp dùng nút chữ "Đóng"; sửa bấm thẳng chip). Ô Kết quả lệch tâm dọc so với tên em cùng hàng: 1,3 · 1 · 1,5 · 1 · 1,3 · 0,5 · 1,3 px (cùng đường cơ sở hàng 64 px của `Bang`).
+- ✕ / ⋯: màn này **không có** ✕ / ⋯ (hộp dùng nút chữ "Đóng"; sửa bấm thẳng chip). Ô Kết quả lệch tâm dọc so với tên em cùng hàng: **0 px** mọi hàng, sáng và tối (khung cao đúng dòng tên 21 px, căn giữa dọc; trước vòng rà PTA 0,5–1,5 px).
 - impeccable `detect`: 0 lỗi (1 gợi ý cỡ chữ 14 px → đã đổi 15 px). Web Interface Guidelines: sửa `name` / `autocomplete` ô phương án, rê chip, Lưu không tắt khi chưa đổi.
 - Turso bản chép thật 12/11 (QL chi nhánh 3): `/classes/12/ket-qua-dau-ra` trước 2 câu · 1 dòng (bảng rỗng, việc "Kỳ vọng · CP FT 141 · 6 em" là ngõ cụt) → sau 9 câu · 185 dòng (6 em chưa chốt). `/classes/94/ket-qua-dau-ra` 7 câu · 82 dòng trước = sau. Trần câu 23 giữ (KQDR-B1 khoá), trần dòng 64 (seed) giữ.
 

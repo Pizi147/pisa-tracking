@@ -30,6 +30,7 @@ export const EN_KET_QUA_DAU_RA_B = {
   'Việc <b>Kỳ vọng · lớp FT · n em</b> mở thẳng hồ sơ lớp FT, cách xem <b>Kết quả đầu ra</b>.': 'The <b>Expectation · FT class · n students</b> task opens the FT class profile, <b>Exit result</b> view.',
   'Ô <b>Kết quả đầu ra</b>: bấm <b>Chốt…</b> — chọn <b>Đạt</b>, <b>Không đạt · Trung tâm</b> (kỹ năng, mỗi kỹ năng một Case + Tutor) hoặc <b>Không đạt · Học viên</b> (phương án). Đã chốt: bấm chip để sửa.': 'In the <b>Exit result</b> cell tap <b>Decide…</b> — choose <b>Met</b>, <b>Not met · Centre</b> (skills; one case + Tutor per skill) or <b>Not met · Student</b> (plan). Already decided: tap the chip to edit.',
   'MT0 đạt mốc chương trình (FOU 4 · BE 4 · ELE 4.5) thì em <b>tự Đạt</b>, không cần chốt; Không đạt bị tắt.': 'When MT0 meets the programme mark (FOU 4 · BE 4 · ELE 4.5) the student is <b>met automatically</b>, no decision needed; Not met is disabled.',
+  'Mỗi kỹ năng một Case + Tutor {n} buổi': 'One case per skill + Tutor {n} sessions',
   'Kết quả đầu ra lên FT': 'Exit result to FT',
   'Lớp FT › <b>Học viên</b> › <b>Kết quả đầu ra</b>: bấm <b>Chốt…</b> ở ô Kết quả đầu ra.': 'FT class › <b>Students</b> › <b>Exit result</b>: tap <b>Decide…</b> in the Exit result cell.',
 };
