@@ -29,7 +29,11 @@ import { listCases, type MappedCase } from '../cases/cases.ts';
 const GHI_CHU_TOI_DA = 300;
 
 /** KQ thi thật đã ghi: Overall (điểm lộ trình cũ có `outcome_score`), đạt Target (null = không Target), "Không thi". */
-export type KqThiThatHang = { ovr: number | null; dat: boolean | null; khongThi: boolean };
+export type KqThiThatHang = {
+  ovr: number | null; dat: boolean | null; khongThi: boolean;
+  /** GD-13b (lời 40): 4 ô thi thật (null = dữ liệu cũ chỉ có Overall) + ngày có KQ (mốc Hành trình — chỉ khi chưa chọn bước tiếp) — cột đã có trong câu, 0 câu thêm. */
+  kn: { L: number | null; R: number | null; W: number | null; S: number | null } | null; ngayKq: string | null;
+};
 export type LuuLichThi = { ketLuan: KetLuanLichThi | null; thang: string | null; ghiChu: string | null; ai: string | null; luc: string };
 export type HangLichThi = {
   studentId: number; cycleId: number | null; ten: string; ma: string;
@@ -55,6 +59,8 @@ export type HangLichThi = {
     sapToi: { luot: string; tuan: string } | null;
     caseMo: { id: number; kyNang: string | null; sos: number | null; soPa: number }[];
     lichSu: DongLichSu[];
+    /** GD-13b: tổng số dòng lịch sử ("Lịch sử · n") — đếm từ chính hai câu nhật ký đã đọc, 0 câu thêm. */
+    soLichSu: number;
   };
 };
 export type TrangLichThi = { thang: string[]; rows: HangLichThi[] };
@@ -85,7 +91,7 @@ function tinhLich(c: any, luu: LuuLichThi | null, homNay: string, chot: { luc: s
 /** KQ thi thật của lộ trình: 4 ô thi thật (đủ → Overall + so Target) hoặc `outcome_score` cũ; chưa có → null. */
 function kqThiThatCua(c: any): KqThiThatHang | null {
   if (!c) return null;
-  if (c.thi_that_khong_thi) return { ovr: null, dat: null, khongThi: true };
+  if (c.thi_that_khong_thi) return { ovr: null, dat: null, khongThi: true, kn: null, ngayKq: c.ngay_kq ?? null };
   const d = [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].map((x) => (x === null || x === undefined ? null : Number(x)));
   let ovr: number | null = null; let dat: boolean | null = null;
   try {
@@ -93,7 +99,8 @@ function kqThiThatCua(c: any): KqThiThatHang | null {
     ovr = k.ovr; dat = k.ketLuan === 'reached' ? true : k.ketLuan === 'not_reached' ? false : null;
   } catch { /* điểm hỏng trong dữ liệu cũ → coi như chưa có */ }
   if (ovr === null && c.outcome_score != null) { ovr = Number(c.outcome_score); dat = c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null; }
-  return ovr === null ? null : { ovr, dat, khongThi: false };
+  const kn = d.every((x) => x !== null) ? { L: d[0], R: d[1], W: d[2], S: d[3] } : null;
+  return ovr === null ? null : { ovr, dat, khongThi: false, kn, ngayKq: c.ngay_kq ?? null };
 }
 
 /**
@@ -196,7 +203,7 @@ export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | nul
  * Lịch sử lịch thi của các lộ trình (mới trước, tối đa `gioiHan` dòng mỗi lộ trình) — theo lô. Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) —
  * không OR giữa hai loại (Turso quét cả bảng nhật ký). Dùng cho dải mở hàng (3 dòng) và "Xem toàn bộ" (một lộ trình, khi bấm).
  */
-export function lichSuLichThi(cyc: readonly number[], gioiHan: number): Map<number, DongLichSu[]> {
+export function lichSuLichThi(cyc: readonly number[], gioiHan: number, dem?: Map<number, number>): Map<number, DongLichSu[]> {
   const out = new Map<number, DongLichSu[]>();
   theoLo([...cyc], (lo, ph) => {
     const nk = [
@@ -211,10 +218,11 @@ export function lichSuLichThi(cyc: readonly number[], gioiHan: number): Map<numb
     ].sort((x, y) => y.id - x.id);
     for (const x of nk) {
       const ls = out.get(x.entity_id) ?? [];
-      if (ls.length >= gioiHan) continue;
       const sau = (() => { try { return JSON.parse(x.after_json ?? 'null') ?? {}; } catch { return {}; } })();
+      if (x.action === 'lich_thi.luu' && sau.boLich) continue;   // Hoàn tác đặt tháng: dòng `cycle.update` (tháng → trống) đã nói "bỏ tháng thi"
+      dem?.set(x.entity_id, (dem.get(x.entity_id) ?? 0) + 1);
+      if (ls.length >= gioiHan) continue;
       if (x.action === 'lich_thi.luu') {
-        if (sau.boLich) continue;   // Hoàn tác đặt tháng: dòng `cycle.update` (tháng → trống) đã nói "bỏ tháng thi"
         ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null });
       } else {
         const moc = sau.exam_date ?? sau.exam_month ?? null;
@@ -246,7 +254,8 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
       if (!sapToi.has(a.cycle_id)) sapToi.set(a.cycle_id, { luot: a.kind === 'mt0' ? 'MT0' : a.kind === 'final' ? 'Final' : `MT${a.attempt_no}`, tuan: a.week_start });
     }
   });
-  const lichSu = lichSuLichThi(cyc, 3);
+  const demLs = new Map<number, number>();
+  const lichSu = lichSuLichThi(cyc, 3, demLs);
   /* "Case mở" CÙNG nguồn với hàng HV / `chiTietCaseMo` (`listCases` của người xem, status ≠ done, không Case tạm) — không câu SQL riêng. */
   const caseMo = new Map<number, { id: number; kyNang: string | null; sos: number | null; soPa: number }[]>();
   const ids = [...new Set(ds.map((r) => r.id as number))];
@@ -269,6 +278,7 @@ function chiTietLichThi(p: Principal, ds: readonly any[], standing: ReturnType<t
       mtTuan: st?.attemptWeekStart ?? null,
       truoc: tr ? { nhan: `MT${tr.mt}`, ovr: tr.ovr, kn: kn5(tr.attemptId) } : null,
       sapToi: sapToi.get(r.cycle_id) ?? null, caseMo: caseMo.get(r.id) ?? [], lichSu: lichSu.get(r.cycle_id) ?? [],
+      soLichSu: demLs.get(r.cycle_id) ?? 0,
     };
   };
 }

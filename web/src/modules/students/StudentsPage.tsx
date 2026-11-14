@@ -413,7 +413,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
      GD-5 (R5.2 #54): ô lọc có tìm — lớp của tôi lên trước, rồi các lớp khác của trang (dữ liệu đã nạp, không gọi thêm). */
   /* Tìm không ra lớp nào (máy chủ lọc theo chữ tìm): ẩn ô thay vì "Không có lớp để chọn" — trừ khi đang lọc một lớp (còn ✕ để bỏ). */
   const locLop = ((data?.rows.length ?? 0) > 0 || !!chiLop) && (
-      <ChonLop className="w-[176px] max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={chiLop} onChange={(v) => setParam({ classId: v ? String(v) : null })}
+      <ChonLop className="lt-o-loc w-[176px] max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={chiLop} onChange={(v) => setParam({ classId: v ? String(v) : null })}
         ds={nhomLopToi((data?.rows ?? []).filter((c) => khung === 'tat-ca' || khungCua(c.scoringMode) === khung).map((c) => ({ id: c.id, ma: c.code,
           phu: phuLop({ ct: c.route ? `${c.programmeCode ?? 'FT'} ${c.route}` : c.programmeCode, cn: branchId ? null : c.branchName, siSo: c.studentCount, tuan: c.currentWeek }) })), lopToi)} />
   );
@@ -636,7 +636,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
         {goc === 'lich-thi' && (
           <GocLichThi duongGoc={qs.slice(qs.indexOf('?'))} thangUrl={params.get('thang')} onDoiThang={(m) => setParam({ thang: m.join(',') })}
-            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locChung} loc={trongLoc}
+            onIds={setIdsLichThi} ds={{ loai: 'hoc-vien', nhan: t('Lịch thi'), ids: idsLichThi }} locTren={locTim} locLop={locLop} dangLocLop={!!chiLop} loc={trongLoc}
             onMoCase={(id, caseId) => setPanelEm({ id, caseMo: caseId })} />
         )}
 
