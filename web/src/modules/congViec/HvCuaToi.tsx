@@ -132,7 +132,8 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
 function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: boolean; ranh: boolean; homNay: string; onMo: (x: WorkItem) => void; nhat?: boolean }) {
   const e = d.em;
   return (
-    <li className={`${COT} min-h-[52px] py-[7px] ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-col max-sm:items-start max-sm:gap-1.5 max-sm:py-3`}
+    /* ④ K7b: 375 — tên · lớp · trạng thái một hàng (gói khi hẹp), chip xuống hàng riêng cao 44. */
+    <li className={`${COT} min-h-[52px] py-[7px] ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-2 max-sm:py-3`}
       style={{ borderColor: ranh ? 'var(--line-strong)' : 'var(--line)' }}>
       <Link to={duongHoSoHocVien(e.id)} className={`min-w-0 max-w-full truncate text-[15px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
       <span className="truncate whitespace-nowrap text-[13px] text-dim">

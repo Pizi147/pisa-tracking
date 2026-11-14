@@ -555,7 +555,7 @@ export function HoTroHocVienTab() {
           </p>
         )}
         {/* GD-8 (④ K1, R4.2): dải mỏng 5 chỉ số của TVV ngay dưới đầu trang (thay 5 ô to của Tổng quan TVV cũ). */}
-        {laTvv && data && !data.scopeEmpty && <DaiChiSoTvv chiSo={hvTvv.data?.chiSo} em={hvTvv.data?.em} />}
+        {laTvv && data && !data.scopeEmpty && <div className={xemLopHep ? 'max-lg:hidden' : undefined}><DaiChiSoTvv chiSo={hvTvv.data?.chiSo} em={hvTvv.data?.em} /></div>}
         {/* CV-TAB: hàng tab hạng mục — dưới hàng lọc, kẻ dưới hết bề ngang (mockup `.tabs`). */}
         {/* GD-1 (mockup v21 K8a/b): < 1024 px — công tắc hai đoạn "Việc · Lớp của tôi" thay khung phải. */}
         {(laGv || laTvv) && data && !data.scopeEmpty && (
