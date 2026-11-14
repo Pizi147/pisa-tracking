@@ -46,16 +46,8 @@ export const DOAN = 'inline-flex h-9 shrink-0 overflow-hidden rounded-lg border 
 export const doanNut = (bat: boolean) => `inline-flex cursor-pointer items-center justify-center gap-1.5 whitespace-nowrap border-0 px-3 text-sm [&+button]:border-l [&+button]:border-[color:var(--o-nhap-vien)] max-sm:flex-1 max-sm:px-1.5 max-sm:text-[15px] ${
   bat ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'bg-[color:var(--o-nhap-nen)] font-medium text-[color:var(--text-dim)] hover:text-[color:var(--text)]'}`;
 
-/** Ô chọn của hàng lọc (`.o-chon`): ô chọn gốc (bàn phím, đọc màn hình) dáng ô nhập cao 36, chữ 14, mũi tên nét mảnh; `dangLoc` = viền nhấn khi đang lọc. */
-export function OChon({ className = '', dangLoc = false, children, ...p }: SelectHTMLAttributes<HTMLSelectElement> & { dangLoc?: boolean }) {
-  return (
-    <span className={`relative inline-flex shrink-0 ${className}`}>
-      <select {...p} className={`h-9 w-full cursor-pointer appearance-none rounded-lg border bg-[color:var(--o-nhap-nen)] pl-3 pr-8 text-sm text-[color:var(--text)] max-sm:h-11 ${
-        dangLoc ? 'border-[color:var(--accent)] font-bold shadow-[inset_0_0_0_1px_var(--accent)]' : 'border-[color:var(--o-nhap-vien)] font-medium'}`}>{children}</select>
-      <svg aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--text-faint)]" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4 4-4" /></svg>
-    </span>
-  );
-}
+/** Ô chọn thường (⑤ A6) — chuyển sang `ui/OChonThuong.tsx` (GD-17: Quản trị dùng chung); giữ tên `OChon` ở Phân tích. */
+export { OChonThuong as OChon } from '../../ui/OChonThuong.tsx';
 
 /** V8-PT: số trong chip Đạt / SOS không gạch chân, mang màu chip (chip đã là ô bấm — mockup `.chip-so`). */
 export const SO_TRONG_CHIP = '!no-underline !text-inherit !font-semibold';

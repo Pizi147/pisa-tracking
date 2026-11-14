@@ -405,8 +405,8 @@ export function SectionNote({ children }: { children: ReactNode }) {
 }
 
 /** DẢI CHỈ XEM (PR-LT, Q22) — lớp đã kết thúc / học viên đã lưu trữ: không nút, không ⋮ thao tác. */
-export function DaiChiXem({ children }: { children: ReactNode }) {
-  return <div className="surface-2 rounded-md px-3 py-1.5 text-xs text-slate-400">{children}</div>;
+export function DaiChiXem({ children, lon = false }: { children: ReactNode; /** GD-17a (mockup ⑩ K5): dải chỉ-xem đầu trang cấu hình — cao 36, chữ 13. */ lon?: boolean }) {
+  return <div className={`surface-2 rounded-md px-3 text-slate-400 ${lon ? 'flex min-h-9 items-center py-2 text-[13px]' : 'py-1.5 text-xs'}`}>{children}</div>;
 }
 
 /**

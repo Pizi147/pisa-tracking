@@ -16,6 +16,12 @@ export async function runPrQtv2QuyenTests(t: { check: any; assert: any; assertTh
   const thu = <T>(fn: () => T): T => { conn.exec('BEGIN IMMEDIATE'); try { return fn(); } finally { conn.exec('ROLLBACK'); } };
   const cp = () => conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any;
 
+  check('GD-17a-NK · giá trị nhật ký là chữ người đọc (cùng chữ với ô): Đạt từ %, Còn dùng Có / Không', () => {
+    assert(nk.giaTriDoc('nguongDat', '0.65', 'programmes') === '65 %' && nk.giaTriDoc('nguongDat', '70', 'programmes') === '70 %', 'Đạt từ thô');
+    assert(nk.giaTriDoc('status', 'inactive', 'routes') === 'Không' && nk.giaTriDoc('status', 'active', 'programmes') === 'Có', 'Còn dùng thô');
+    assert(nk.giaTriDoc('bat', 'true', 'system_config') === 'Có' && nk.giaTriDoc('ten', null, 'x') === null, 'Mở / rỗng');
+  });
+
   check('QTV2-NK-1 · mục chi nhánh: dòng mới nhất là lần sửa vừa lưu, có trước → sau theo trường; QL xem được mục cấu hình', () => thu(() => {
     sc.luuChiNhanh(P.admin, cp().id, { name: 'Cẩm Phả', diaChi: 'Số 1 Tô Hiệu', soDienThoai: '082.228.9288' });
     const r = nk.nhatKyQuanTri(P.admin, { muc: 'chi-nhanh' });

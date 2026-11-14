@@ -30,9 +30,24 @@ const tenTruong = (k: string): string => {
 };
 const TEN_TRUONG: Record<string, string> = {
   name: 'Tên', fullName: 'Họ tên', email: 'Email', phone: 'Số điện thoại', title: 'Chức danh', diaChi: 'Địa chỉ', soDienThoai: 'Số điện thoại',
-  status: 'Trạng thái', weeks: 'Số tuần', nguongDat: 'Đạt từ', lapMoiTuan: 'Checkpoint mỗi', lichMt: 'Lịch MT', roles: 'Vai trò', skills: 'Kỹ năng',
-  granted: 'Có quyền', permission: 'Quyền', bat: 'Bật', scoring: 'Cách chấm', trangThai: 'Trạng thái', soNguoiAnhHuong: 'Số tài khoản ảnh hưởng',
+  status: 'Trạng thái', weeks: 'Số tuần', scoringMode: 'Cách chấm', nguongDat: 'Đạt từ', lapMoiTuan: 'Checkpoint mỗi', lichMt: 'Lịch MT', roles: 'Vai trò', skills: 'Kỹ năng',
+  granted: 'Có quyền', permission: 'Quyền', bat: 'Mở', scoring: 'Cách chấm', trangThai: 'Trạng thái', soNguoiAnhHuong: 'Số tài khoản ảnh hưởng',
 };
+/**
+ * GD-17 (PTA rà #1675): GIÁ TRỊ cho người đọc — cùng chữ với ô ở trang (một tên một khái niệm): Đạt từ 0.65 → "65 %"; trạng thái chương trình
+ * active / inactive → "Còn dùng: Có / Không"; Mở sửa lịch Test true / false → "Có / Không"; cách chấm ratio / band → "Đúng / tổng" / "Band IELTS"; số tuần → "n tuần".
+ */
+const LA_CHUONG_TRINH = new Set(['programmes', 'routes']);
+const tenTruongCua = (k: string, entity: string): string => (k === 'status' && LA_CHUONG_TRINH.has(entity) ? 'Còn dùng' : tenTruong(k));
+export function giaTriDoc(k: string, v: string | null, entity: string): string | null {
+  if (v === null) return null;
+  if (k === 'nguongDat') { const n = Number(v); return Number.isFinite(n) ? `${Math.round(n <= 1 ? n * 100 : n)} %` : v; }
+  if (k === 'status' && LA_CHUONG_TRINH.has(entity)) return v === 'active' ? 'Có' : v === 'inactive' ? 'Không' : v;
+  if (k === 'bat') return v === 'true' ? 'Có' : v === 'false' ? 'Không' : v;
+  if (k === 'scoring' || k === 'scoringMode') return v === 'ratio' ? 'Đúng / tổng' : v === 'band' ? 'Band IELTS' : v;
+  if (k === 'weeks' || k === 'lapMoiTuan') return /^\d+$/.test(v) ? `${v} tuần` : v;
+  return v;
+}
 const chu = (v: unknown): string | null => (v === null || v === undefined || v === '' ? null : typeof v === 'object' ? JSON.stringify(v) : String(v));
 /** Quyền vai ghi before = 'có' / 'không' (chuỗi) — đặt cùng khoá với `after.trangThai` để so được. */
 const docJson = (s: string | null): Record<string, unknown> => { try { const v = s ? JSON.parse(s) : {}; return v && typeof v === 'object' && !Array.isArray(v) ? v : { trangThai: v }; } catch { return {}; } };
@@ -65,7 +80,7 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
   const dong: DongNhatKy[] = rows.slice(0, TRANG).map((r) => {
     const truoc = docJson(r.before_json); const sau = docJson(r.after_json);
     const truong = [...new Set([...Object.keys(truoc), ...Object.keys(sau)])].filter((k) => !k.startsWith('_') && chu(truoc[k]) !== chu(sau[k]))
-      .map((k) => ({ ten: tenTruong(k), cu: chu(truoc[k]), moi: chu(sau[k]) }));
+      .map((k) => ({ ten: tenTruongCua(k, r.entity_type), cu: giaTriDoc(k, chu(truoc[k]), r.entity_type), moi: giaTriDoc(k, chu(sau[k]), r.entity_type) }));
     /* Hạn mặc định: tên việc đã nằm trong "Sửa hạn mặc định" — bỏ "· Hạn mặc định" lặp. */
     const doiTuong = r.entity_type.startsWith('cau_hinh.') ? null : r.entity_label ?? null;   // tên mục đã nằm trong việc ("Sửa hạn mặc định")
     return { id: r.id, luc: r.created_at, nguoi: r.ten ?? 'Hệ thống', muc: mucCua.get(r.entity_type)!, viec: r.action, doiTuong, truong };

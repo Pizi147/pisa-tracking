@@ -99,7 +99,6 @@ export function CauHinhCaseSos() {
           {t('Áp cho Case / SOS sinh sau')}
           <NutLuat label={t('Giải thích')} phai>{t('Lưu là áp ngay cho Case, PA, SOS sinh SAU lúc lưu. Case, PA, việc đã sinh giữ đúng bản lúc sinh (tên, hạn, người làm). Đổi tên = cùng nghĩa (Phân tích gộp theo nhóm); muốn đổi nghĩa thì Ẩn nhóm cũ, Thêm nhóm mới.')}</NutLuat>
         </span>
-        {chiXem && <span className="text-[13px] font-semibold text-slate-300" title={t('Quản trị hệ thống sửa')}><span aria-hidden>🔒</span> {t('Chỉ xem')}</span>}
       </div>
 
       {xung && (

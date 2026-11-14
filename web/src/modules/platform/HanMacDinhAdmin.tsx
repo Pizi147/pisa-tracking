@@ -83,7 +83,6 @@ export function HanMacDinhAdmin() {
           <span className="ml-auto inline-flex items-center gap-1 text-[13px] text-slate-400">{t('Áp cho việc sinh sau')}
             <NutLuat label={t('Áp cho việc sinh sau')}>{t('Việc đã sinh giữ hạn lúc sinh; việc sinh từ ngày lưu theo hạn mới. Hạn sửa tay từng việc (Gia hạn) vẫn thắng.')}</NutLuat></span>
         </header>
-        {!suaDuoc && <p className="m-0 border-b px-4 py-2 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
         <div className="hidden grid-cols-[minmax(0,1.3fr)_minmax(0,1.2fr)_minmax(0,1fr)_minmax(0,0.8fr)_2rem] gap-3 border-b px-4 py-2 text-[13px] font-semibold text-slate-400 sm:grid" style={{ borderColor: 'var(--line-strong)' }}>
           <span>{t('Việc')}</span><span>{t('Hạn')}</span><span>{t('Tính từ')}</span><span>{t('Ai làm')}</span><span />
         </div>
