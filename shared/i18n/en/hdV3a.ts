@@ -128,6 +128,7 @@ export const EN_HD_V3A = {
   'Nút ⋯ của lớp': 'The class ⋯ button',
   'GVCN: <b>Thông tin lớp</b> · <b>Sửa thông tin học viên</b> · <b>+ Học viên</b> · <b>Cuối khoá…</b> (lớp thường) · <b>Xuất Excel</b>.': 'Core teacher: <b>Class info</b> · <b>Edit student info</b> · <b>+ Student</b> · <b>End of course…</b> (regular class) · <b>Export Excel</b>.',
   'Mọi GV: <b>Lịch sử</b> — mỗi lần lưu: ai · lúc · nguồn · lý do · trước → sau.': 'Every teacher: <b>History</b> — each save: who · when · source · reason · before → after.',
+  'Lần xử lý sai: mở lần đó, <b>Thu hồi…</b> ghi lý do, gửi QL; QL quá hạn chưa quyết thì máy thu hồi theo bạn.': 'Wrong action: open it, <b>Revoke…</b> with a reason, sent to the manager; if the manager does not decide by the deadline, the system revokes it as you asked.',
   'Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.': 'The student’s incidents, actions, parent call results and SOS coordination.',
   'Menu Tài khoản: <b>Ngôn ngữ</b> VI / EN (nhớ theo tài khoản) · <b>Giao diện</b> Theo máy / Sáng / Tối.': 'Account menu: <b>Language</b> VI / EN (kept per account) · <b>Display</b> System / Light / Dark.',
   'Dải chỉ số theo <b>Từ tuần → Đến tuần</b>; bấm số mở danh sách.': 'Metrics strip by <b>From week → To week</b>; tap a number for the list.',

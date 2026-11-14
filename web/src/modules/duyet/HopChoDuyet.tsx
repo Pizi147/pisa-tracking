@@ -570,7 +570,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
         <ThePhu vien={em && y.nhanPhanLoai ? [dich(y.nhanPhanLoai)] : []} ds={phu} />
       </button>
       <span className="col-start-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 sm:col-start-auto sm:grid sm:justify-items-start">
-        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
+        {y.trangThai === 'cho' ? y.hanDuyet && (y.loai === 'y_thuc' || y.loai === 'thu_hoi_y_thuc' ? <DemNguocYThuc han={y.hanDuyet} /> : <ChipHan vien loai="duyet" han={y.hanDuyet} />)
           : <span className="flex items-center gap-1.5"><NhanTrangThai t={tt.t} />{y.xuLyLuc && <span className="text-[12px] text-dim">{ngan(y.xuLyLuc)}</span>}</span>}
         {/* audit CV7: người gửi là chính người xem → "Bạn", không vai. */}
         {y.nguoiXin && (y.nguoiXinId != null && y.nguoiXinId === toi ? <NguoiGiu ten={t('Bạn')} /> : <NguoiGiu ten={y.nguoiXin} vai={y.vaiNguoiXin} />)}
@@ -595,7 +595,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
 }
 
 /**
- * TINH-HINH (mockup v20 E, chủ SP 12/11): thẻ Xử lý Ý thức khác mặc định — QL có 5 ngày, hết hạn TỰ CHỐT theo GVCN. Đếm ngược "Còn n ngày" + 5 vạch
+ * TINH-HINH (mockup v20 E, chủ SP 12/11): thẻ Xử lý Ý thức khác mặc định (LG-10, 15/11: cả thẻ Thu hồi) — QL có 5 ngày, hết hạn TỰ CHỐT theo GVCN. Đếm ngược "Còn n ngày" + 5 vạch
  * (vạch đã qua tô) + "hết hạn: giữ quyết định GVCN"; ≤ 1 ngày: nền vàng ⚠ (không chỉ màu).
  */
 function DemNguocYThuc({ han }: { han: string }) {

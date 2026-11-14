@@ -29,8 +29,8 @@ export const HD_QL: HuongDan = {
       loiTat: ['tong-quan', 'ho-so-hv', 'p-duyet'], tatThem: ['Chuông › Việc cần làm › Chờ bạn duyệt'], cung: 'mở cùng panel duyệt.',
       buoc: ['Mở <b>Công việc</b>, tab <b>Chờ bạn duyệt</b>; quá hạn xếp trước.', 'Bấm dòng: panel mở bên phải, thẻ ghi "Nếu duyệt: …".',
         '<b>Duyệt</b> (<b>Duyệt…</b> khi cần chọn thêm) hoặc <b>Từ chối…</b> kèm lý do; <b>Xin ý kiến</b>: <b>Trả lời…</b>; thẻ <b>PA khác quy chế</b>: quá hạn thì máy chốt theo PA của GV.',
-        'Ý thức: duyệt xong GVCN bấm <b>Đã thực hiện</b>; thẻ <b>Báo QL</b> chỉ để biết.'],
-      tuKhac: ['duyệt', 'từ chối', 'đề xuất', 'xin ý kiến', 'xin xoá', 'ý thức', 'wl 3', 'dời lịch', 'pa khác quy chế', 'không theo dõi', 'approve', 'reject', 'request'],
+        'Ý thức: duyệt xong GVCN bấm <b>Đã thực hiện</b>; đề xuất xử lý và thu hồi quá hạn thì máy chốt theo GVCN; thẻ <b>Báo QL</b> chỉ để biết.'],
+      tuKhac: ['duyệt', 'từ chối', 'đề xuất', 'xin ý kiến', 'xin xoá', 'ý thức', 'thu hồi', 'wl 3', 'dời lịch', 'pa khác quy chế', 'không theo dõi', 'approve', 'reject', 'request'],
     },
     /* ---------------------------------------------------------------- Điểm */
     {
