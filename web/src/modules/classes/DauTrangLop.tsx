@@ -355,7 +355,7 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.ma !== 'mt:0' && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
   /* GD-6 "+ Task": em đang học của lớp cho bước chọn em (dòng phụ = tình trạng, như chữ dưới tên ở bảng). */
   const emTask: EmLop[] = em.map((r) => ({ id: r.id, ten: r.fullName, lopId: data.id, lop: data.code, tvv: r.tvv ?? null,
-    phu: (r.sosLevel ?? 0) > 0 ? `SOS ${Math.min(r.sosLevel ?? 0, 3)}` : r.sosLevel === 0 ? t('Đạt kỳ vọng') : t('Chưa có kết quả') }));
+    phu: (r.sosLevel ?? 0) > 0 ? `SOS ${Math.min(r.sosLevel ?? 0, 3)}` : r.sosLevel === 0 ? t('Đạt') : t('Chưa có kết quả') }));
   return { sos, sosDong, emTask, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
 }
 

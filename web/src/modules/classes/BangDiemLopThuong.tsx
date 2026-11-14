@@ -6,7 +6,7 @@ import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { ChipLoc, KHOI, MUC_H, TenEm, bamHang } from './BangHoSoLop.tsx';
-import type { CanHoTro, CaseCua } from './BangCanHoTro.tsx';
+import { viecCase, type CanHoTro, type CaseCua } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -17,7 +17,7 @@ import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, khoaBai, nhanBai, viecTiepCuaEm, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -338,7 +338,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
 
 /** Một mốc của em trong phần mở rộng (cũ → mới do nơi gọi xếp): nhãn · tuần · ô theo môn · % (nếu mốc có). */
 type MocEm = { kind: string; nhan: string; tuan: string | null; o: Record<string, ODiem | null>; pt: number | null; coPt: boolean };
-const KY_VONG_THUONG = 0.7;   // đạt từ 70 % (`outcome` máy chủ, rule book lớp thường) — chỉ để ghi "kỳ vọng 70 %"
+const KY_VONG_THUONG = 0.7;   // đạt từ 70 % (`outcome` máy chủ, rule book lớp thường) — chỉ để ghi "đạt từ 70 %"
 
 /**
  * MỞ RỘNG MỘT EM · LỚP THƯỜNG (GD-6, mockup v21 ② K6, lời 25 ý 2 — CÙNG KHUNG FT `MoRongEm`, đơn vị là MÔN): trái "Điểm theo lượt" (mốc mới nhất đậm,
@@ -352,7 +352,10 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
   coTheBaoCase: boolean; onThemCase: () => void; onMo: (n: Omit<MoNgan, 'em'>) => void;
 }) {
   const e = chot.data?.em.find((x) => x.id === s.id);
-  const caseMon = (k: string) => (e?.cases ?? []).filter((c) => mon.length === 1 || c.topic === k);
+  /* Case theo môn đi qua `locCanHoTro` (PR-S4F #5 — cùng hàng theo kỹ năng của chương trình như bảng Case); một môn (Pre FOU) = mọi Case. */
+  const hang = e ? locCanHoTro({ ct, em: [e], boCt: chot.data?.boMon }).em[0]?.hang ?? [] : [];
+  const caseMon = (k: string) => (mon.length === 1 ? e?.cases ?? []
+    : hang.find((h): h is Extract<typeof h, { kind: 'hang' }> => h.kind === 'hang' && (h.khoa === k || h.kyNang.includes(k)))?.cases ?? []);
   const coDiem = moc.filter((m) => Object.values(m.o).some((x) => x?.score != null));
   const moi = coDiem[coDiem.length - 1] ?? null;
   /* Môn mặc định: môn có Case quá hạn → môn có Case → môn chưa đạt ở mốc mới nhất → chưa chọn. */
@@ -482,13 +485,8 @@ const TAG_PHU = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap round
 
 /** Việc tiếp của một Case (cùng nút + cùng panel với `DongCase` — Xác nhận Case / Xác nhận PA / Ghi kết quả PA / Chờ QL duyệt) + hạn. */
 function ViecTiepCase({ c, ct, homNay, onMo }: { c: CaseCua; ct: string | null; homNay: string; onMo: (n: Omit<MoNgan, 'em'>) => void }) {
-  const [viec] = viecTiepCuaEm({ nhapDiem: null, cases: [{ caseId: c.id, topic: c.topic, viecTiep: c.viecTiep }], yThuc: null, homNay, chuongTrinh: ct });
+  const { viec, d, loai, choQl } = viecCase(c, ct, homNay);
   if (!viec) return null;
-  const d = viec.dich?.loai === 'case' ? viec.dich : null;
-  const goc = c.viecTiep?.chu ?? '';
-  const loai = goc.startsWith('Xác nhận Case') || goc.startsWith('Mô tả Case') ? 'xac-nhan' as const
-    : goc.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
-  const choQl = goc.startsWith('Chờ Quản lý duyệt');
   return (
     <span className="grid justify-items-start gap-0.5">
       <button type="button" onClick={() => onMo({ caseId: c.id, viec: loai, paId: d?.paId ?? undefined })} title={viec.title}

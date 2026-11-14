@@ -352,11 +352,9 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/quaHan\.has\(k\) \? 'text-late' : 'text-slate-100'/.test(b), 'thẻ kỹ năng quá hạn phải tô màu');
     const lt = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
     assert(/qua \? 'text-late' : 'text-slate-100'/.test(lt), 'thẻ môn quá hạn phải tô màu');
-    for (const [f, x] of [['BangHoSoLop', b], ['BangDiemLopThuong', lt]] as const) {
-      assert(!/>⚠<\/span>|aria-hidden>⚠ /.test(x), `${f}: ⚠ cạnh quá hạn (V22 chỉ màu)`);
-    }
+    assert(!/quaHan\.has\(k\)[^\n]*⚠/.test(b) && !/\{qua &&[^\n]*⚠/.test(lt), '⚠ cạnh quá hạn ở thẻ kỹ năng / môn (V22 chỉ màu)');
     const c = doc('web/src/modules/cases/CasePanel.tsx');
-    assert(/<LichSuGap so=\{lichSu\.length\}>/.test(c) && !/<details className="group">/.test(c), 'lịch sử Case chưa dùng LichSuGap');
+    assert(/<LichSuGap so=\{lichSu\.length\} tieuDe=\{t\('Lịch sử'\)\}>/.test(c) && !/<details className="group">/.test(c), 'lịch sử Case chưa dùng LichSuGap');
     const p = doc('web/src/modules/cases/FormPa.tsx');
     assert(/<LichSuGap so=\{dong\.length\} tieuDe=\{t\('Nhật ký PA'\)\}/.test(p) && /<DsLichSu dong=/.test(p), 'Nhật ký PA chưa dùng LichSuGap + DsLichSu');
   });

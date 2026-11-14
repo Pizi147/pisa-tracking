@@ -406,7 +406,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         {lichSu.length > 0 && (
           /* GD-6 (L1 của GD-4c, H4): dáng gập chung "Lịch sử · n" (`LichSuGap`); dòng giữ nội dung riêng của Case (badge, Xoá kết quả, Sửa xem lại),
              lưới dòng theo `.ls-ds` (giờ · việc · nút). */
-          <LichSuGap so={lichSu.length}>
+          <LichSuGap so={lichSu.length} tieuDe={t('Lịch sử')}>
             <ol className="ls-ds">
               {lichSu.map((m) => (
                 <li key={m.key}>

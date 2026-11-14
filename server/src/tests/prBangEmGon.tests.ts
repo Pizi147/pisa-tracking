@@ -39,10 +39,11 @@ export async function runPrBangEmGonTests(t: YThucTestKit) {
 
   /* HSL-GON (05/11, M3): TVV chính ghi một lần ở đầu hồ sơ lớp; dòng em chỉ ghi TVV KHÁC TVV chính (`tvvRieng`). HSL-LUU-TRU: TVV chính tính trên em chưa lưu trữ (`dangLuu`) như đầu trang. */
   check('B1 · TVV dưới tên chỉ khi khác TVV chính của lớp (.tvv 11 px mờ); TVV chính = TVV giữ nhiều em nhất; mới vào là chữ (không chip MoiVao)', () => {
-    assert(/tvvRieng\(r\) && <span className="tvv">TVV \{r\.tvv\}<\/span>/.test(bang) && /const tvvChinh = tvvChinhCuaLop\(dangLuu\)/.test(bang), 'thiếu TVV ngoại lệ dưới tên');
+    /* GD-6 (chủ SP 15/11, lời 25): TVV KHÔNG ở đầu trang, KHÔNG dưới tên em — chỉ chữ nhỏ ở đầu khối "Điểm theo lượt" khi mở rộng em. */
+    assert(!/tvvRieng|tvvChinhCuaLop/.test(bang) && /TVV \{r\.tvv\}<\/span>/.test(bang), 'TVV chỉ ở phần mở rộng em');
     assert(dm.tvvChinhCuaLop([{ tvv: 'Lê Thu' }, { tvv: 'Phan Mai' }, { tvv: 'Phan Mai' }, { tvv: null }]) === 'Phan Mai', 'TVV chính = nhiều em nhất');
     assert(dm.tvvChinhCuaLop([]) === null && dm.tvvChinhCuaLop([{ tvv: 'B' }, { tvv: 'A' }]) === 'A', 'TVV chính: rỗng → null, hoà → theo chữ cái');
-    assert(doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'TVV'"), 'đầu hồ sơ lớp thiếu ô TVV chính');
+    assert(!doc('web/src/modules/classes/DauTrangLop.tsx').includes("nhan: 'TVV'"), 'đầu hồ sơ lớp còn ô TVV (lời 25)');
     assert(/\.tvv \{[^}]*font-size: 11px[^}]*color: var\(--text-faint\)/.test(css), 'CSS .tvv 11 px text-faint');
     assert(!bang.includes('<MoiVao'), 'bảng em còn chip MoiVao');
     assert(doc('web/src/modules/students/ClassRoster.tsx').includes('tvv?: string | null'), 'RosterRow thiếu tvv');

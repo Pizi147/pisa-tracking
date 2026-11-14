@@ -626,7 +626,7 @@ function ThangEm({ sid, ten, homNay, onKhai, onLichSu }: { sid: number; ten: str
   const { data: hv, error, reload } = useApi<YThucHocVien>(`/students/${sid}/y-thuc`, [sid]);
   return (
     <>
-      {/* GD-6 (lời 28 ý 3, lời 36): cùng thang vạch như hồ sơ HV / panel Xác nhận xử lý — mốc WL đỏ, dày hơn, không chữ trong thanh. */}
+      {/* GD-6 (lời 28, 36): thang vạch chung. */}
       <span className="flex flex-wrap items-center gap-3">
         <b className="text-[15px] font-bold text-slate-100">{t('Thang · {ten}', { ten })}</b>
         {hv && <ThangVach dong={hv.dongThang} />}

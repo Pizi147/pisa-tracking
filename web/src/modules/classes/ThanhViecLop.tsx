@@ -6,6 +6,7 @@ import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { NutChipViec, chipViecLop } from '../congViec/LopCuaToi.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { laViecChamCheo } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
@@ -17,7 +18,7 @@ export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-
 /**
  * DẢI "VIỆC CẦN LÀM" ĐẦU HỒ SƠ LỚP (GD-6, mockup v21 ② K1 ④ / K2, R2.3 — thay "Việc của tôi" 3 ô): nút-chip theo LOẠI (`chipViecLop`, cùng chip "Lớp của tôi"):
  * Nhập điểm · Case · Ý thức · Vận hành, không biểu tượng, đỏ khi có việc quá hạn (V22 chỉ màu). Bấm chip mở THẲNG panel việc đầu (quá hạn trước) tại trang —
- * đầu panel "i / n", chân "Việc tiếp ›" đi hết việc cùng loại ở lớp ([XM-1]); chip Nhập điểm mở panel nhập điểm của lớp (K2a). Bỏ "+n việc ở Công việc ›".
+ * đầu panel "i / n", chân "Việc tiếp ›" đi hết việc cùng loại ở lớp ([XM-1]); chip Nhập điểm mở panel nhập điểm của lớp (K2a). Bỏ lối tắt sang trang Công việc (R2.3).
  * Dữ liệu: `viec-theo-em?chi=toi` đã tải ([XM-11]) — không request thêm. Không có việc → không vẽ dải.
  */
 export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; classCode: string; onDoi: () => void }) {
@@ -30,11 +31,18 @@ export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; c
   const conKhoa = new Set((data?.cuaToi ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).map((x) => x.key));
   const keTiep = mo ? mo.ds.findIndex((x, k) => k > mo.i && conKhoa.has(x.key)) : -1;
   const viecMo = mo?.ds[mo.i];
+  /* Cùng phạm vi với chip: bỏ việc Chấm Speaking chéo (chỉ ở tab của nó — lời 20). */
+  const dong = (data?.dongToi ?? data?.cuaToi ?? []).filter((x) => !laViecChamCheo(x));
+  const quaHan = dong.filter((x) => x.urgency === 'overdue').length;
   return (
     <>
       {chip.length > 0 && (
-        <section aria-label={t('Việc cần làm')} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-0.5 max-sm:grid max-sm:grid-cols-2">
-          <span className="whitespace-nowrap pr-1 text-[13px] font-medium text-slate-400 max-sm:col-span-2">{t('Việc cần làm')}</span>
+        <section aria-label={t('Việc cần làm')} className="flex flex-wrap items-center gap-x-2 gap-y-1.5 pt-0.5">
+          {/* Mockup ② K1: "Việc cần làm · n việc · m quá hạn" — n = DÒNG như Công việc (`dongToi`); quá hạn chỉ màu (V22, mockup vẽ ⚠ → KHÁC theo V22). */}
+          <span className="whitespace-nowrap pr-1 text-[13px] font-medium text-slate-400 max-sm:basis-full">
+            {t('Việc cần làm')} · <b className="tabular-nums text-slate-100">{t('{n} việc', { n: dong.length })}</b>
+            {quaHan > 0 && <> · <b className="tabular-nums text-late">{t('{n} quá hạn', { n: quaHan })}</b></>}
+          </span>
           {chip.map((c) => (
             <NutChipViec key={c.tab} c={c} doiTrang={false}
               onBam={() => (c.tab === 'cham-diem' ? setNhapDiem(true) : setMo({ ds: c.ds, i: 0, nhan: t('Việc {loai} của bạn ở lớp này', { loai: c.nhan }) }))} />
