@@ -122,7 +122,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
         {mat ?? bieuTuong}
       </button>
       {mo && createPortal(<>
-        {viTri?.day && <div aria-hidden className="fixed inset-0 z-[59] bg-black/50" />}
+        {viTri?.day && <div aria-hidden className="fixed inset-0 z-[59] bg-black/60" />}
         <div ref={hop} role="menu" aria-label={nhan}
           onKeyDown={(e) => {
             const k = buocDanhSach(bam.length, dang, e.key);

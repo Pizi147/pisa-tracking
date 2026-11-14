@@ -222,10 +222,10 @@ export function HoTroHocVienTab() {
     /* GD-1 (lời 19): tab "Chấm Speaking" — đủ ngắn, 375 giữ nguyên tên (mockup v21 K8a). */
     /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục), ⚠ khi có bài quá hạn. */
     const badgeCua = (k: string): BadgeTab => {
-      const dong = dongCuaTab(items, k);
+      const ds = dongCuaTab(items, k);
       return k === 'cham-cheo'
-        ? { ...badgeTab(dong), bai: { n: dong.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: dong.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } }
-        : badgeTab(dong);
+        ? { ...badgeTab(ds), bai: { n: ds.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: ds.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } }
+        : badgeTab(ds);
     };
     const ds = thuTuTab.map((k) => ({ key: k, nhan: tenTab(k), badge: badgeCua(k) as BadgeTab | null }))
       .filter((x) => x.badge!.n > 0 || conGiu.has(x.key) || (x.key === 'van-hanh' && (coVanHanh || !!data?.daBoQua?.length)))

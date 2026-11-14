@@ -138,7 +138,7 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
               className={`grid min-h-11 cursor-pointer content-center rounded-md px-2.5 py-1 ${i === dang ? 'bg-[color:var(--accent-soft)]' : ''}`}
               onMouseEnter={() => setDang(i)} onMouseDown={(ev) => ev.preventDefault()} onClick={() => lay(e)}>
               {/* Mockup ⑤ `.oc-muc`: tên 14 / 500 (chữ khớp đậm màu nhấn), lớp dòng phụ 12 mờ. */}
-              <span className="min-w-0 truncate text-sm font-medium leading-snug text-[color:var(--text)] [&_mark]:rounded-none [&_mark]:bg-transparent [&_mark]:p-0 [&_mark]:font-bold [&_mark]:text-[color:var(--accent)]"><ToKhop chu={e.ten} q={chu} /></span>
+              <span className="min-w-0 truncate text-sm font-medium text-[color:var(--text)] [&_mark]:rounded-none [&_mark]:bg-transparent [&_mark]:p-0 [&_mark]:font-bold [&_mark]:text-[color:var(--accent)]"><ToKhop chu={e.ten} q={chu} /></span>
               <small className="text-xs text-faint">{e.lop}</small>
             </li>,
           ])}
