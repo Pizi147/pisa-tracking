@@ -130,7 +130,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
             else if (e.key === 'Tab') { e.preventDefault(); dongVeNut(); }
           }}
           className={viTri?.day
-            ? 'menu-hop fixed inset-x-0 bottom-0 z-[60] overflow-y-auto overscroll-contain rounded-t-[14px] border-t px-2 pb-[18px] pt-2 shadow-xl [&_.menu-muc]:min-h-12'
+            ? 'menu-hop fixed inset-x-0 bottom-0 z-[60] overflow-y-auto overscroll-contain rounded-t-[14px] border-t px-2 pb-[max(18px,env(safe-area-inset-bottom))] pt-2 shadow-xl [&_.menu-muc]:min-h-12'
             : 'menu-hop fixed z-[60] w-[216px] overflow-y-auto overscroll-contain rounded-lg border p-1 shadow-xl surface-2'}
           style={viTri?.day ? { borderColor: 'var(--line-strong)', maxHeight: viTri.cao }
             : { borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, maxHeight: viTri?.cao, visibility: viTri ? 'visible' : 'hidden' }}>
