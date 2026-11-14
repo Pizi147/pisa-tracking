@@ -29,7 +29,7 @@ const TOI_DA_TINH_HINH = 8;
  * GD-4a (mockup ⑤ F): MỘT nút cho trang đầu, hồ sơ lớp, hồ sơ HV — `lopId`: mở từ hồ sơ lớp, nhóm "Lớp này" lên đầu; `em`: hồ sơ HV điền sẵn em → bỏ bước chọn.
  * < 640 px menu neo đáy (F4).
  */
-export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false }: {
+export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false, dsHoi }: {
   noi: 'dau' | 'noi'; lopId?: number; em?: EmTask;
   /** GD-7 (③ K6, [XM-6]): chỉ các mục người xem làm được (máy chủ quyết: `canReport` · `canRecord` · `coTheBao` / `coTheHoi`); bỏ trống = đủ 3 mục. */
   muc?: readonly Loai[];
@@ -43,6 +43,8 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   phu?: boolean;
   /** GD-7: nút ở hàng nút đầu hồ sơ — cao 36 như "⋯" (`NUT_DAU_HO_SO`), không 34. */
   dauHoSo?: boolean;
+  /** GD-8 (④ R4.5, [XM-7]): TVV ở trang đầu — Hỏi tình hình chọn em trong danh sách em của mình đã nạp (không tìm `lop=toi`). */
+  dsHoi?: { id: number; ten: string }[];
 }) {
   const neo = useRef<HTMLSpanElement>(null);
   const [loai, setLoai] = useState<Loai | null>(null);
@@ -60,7 +62,8 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   const dsMuc = MUC.filter(([k]) => !chiMuc || chiMuc.includes(k)).map(([k, nhan]) => [k, k === 'tinh-hinh' && hoi ? t('Hỏi tình hình học tập') : nhan] as const);
   if (!dsMuc.length) return null;
   const mat = noi === 'dau'
-    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-8'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
+    /* GD-8: tổng chiều cao (mặt + viền 2 px) = nút cạnh — 32 như "Mọi hạn" / "Lọc thêm" ở Công việc, 36 như "⋯" ở đầu hồ sơ (đo ≤ 1 px). */
+    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-[30px]'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
     : <span className="grid h-[60px] w-[60px] place-items-center text-sm font-bold">{t('+ Task')}</span>;
   return (
     <>
@@ -75,7 +78,7 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
       {/* GD-4d (⓪ 40d, ⑤ F3 / ① K5c): Tình hình học tập = MỘT hộp — chọn em (ô chọn có tìm chung, ≤ 8) ngay trong hộp gửi; hồ sơ HV: em cố định. */}
       {loai === 'tinh-hinh' && em && (
         <HopTinhHinh neo={neo} homNay={homNay} onDong={dong} onXong={() => { invalidate('/my-work'); onXong?.(); }}
-          che={hoi && emSan ? { loai: 'hoi', em: { id: emSan.id, ten: emSan.ten }, gvcn: hoi.gvcn }
+          che={hoi ? { loai: 'hoi', em: emSan ? { id: emSan.id, ten: emSan.ten } : null, ds: emSan ? undefined : dsHoi ?? [], gvcn: hoi.gvcn }
             : { loai: 'bao', em: em.map((e) => ({ id: e.id, ten: e.ten, tvv: e.tvv })), chonEm: emSan ? undefined : chonEmTinhHinh(timEm) }} />
       )}
     </>
