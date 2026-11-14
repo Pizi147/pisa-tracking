@@ -167,6 +167,12 @@ export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; x
  * `DongCanSua`) — chỉ truyền `conThieu` SAU khi bấm Lưu; lý do từng ô nằm dưới ô (`Truong loi`). CHỈ thân cuộn, trang sau khoá cuộn. Mở việc khác thì THAY nội dung, không
  * chồng panel (`khoPanelChung`). Không chữ dev; chữ mẫu bắt đầu "Ví dụ:".
  */
+/**
+ * NÚT ✕ ĐẦU HỘP / PANEL — MỘT dáng (mockup v21 `.x`; chủ SP 15/11 "mấy nút ⋯ hay ✕ hay bị lệch"): ô 36 × 36 (điện thoại 44) không viền, nền trong,
+ * ✕ 17 px giữa ô, rê mới có nền. Nơi đặt để ô cùng HÀNG với dòng tiêu đề (`items-center`) — tâm ✕ thẳng tâm chữ tiêu đề; mép phải cách hộp 12 px.
+ */
+export const NUT_DONG = 'grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-lg border-0 bg-transparent p-0 text-[17px] leading-none text-dim hover:bg-[rgb(var(--phu-rgb)/0.1)] hover:text-[color:var(--text)] max-sm:h-11 max-sm:w-11';
+
 export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
@@ -337,7 +343,10 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
      lớp xếp chồng của ô, không kế thừa chữ in hoa / căn phải của ô. Sự kiện React vẫn nổi theo cây React như cũ. */
-  const nutDong = trongCot ? null : <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px] ${dau && !lui ? '-my-1' : ''} ${lui ? 'ml-auto' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>;
+  /* GD-4a: ✕ một dáng `NUT_DONG` (36 / 44). Mockup ⑤ D1 `.pn-h1`: có dòng loại ("Việc · Ý thức") thì ✕ đứng CÙNG HÀNG dòng loại (hàng cao 36, căn giữa);
+     không có thì cùng hàng tiêu đề (dòng 24 px, `items-start` → kéo ô lên nửa phần dư 6 / 10 px: tâm ✕ = tâm dòng tiêu đề). */
+  const xHangLoai = !!dau && !lui && !!vachLoai;
+  const nutDong = trongCot ? null : <button type="button" className={`${NUT_DONG} ${dau && !lui && !xHangLoai ? '-my-1.5 max-sm:-my-2.5' : ''} ${lui ? 'ml-auto' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>;
   /* M6 6b-1 (mockup panel-pilot khu K ①): "‹ {view trước}" cùng hàng ✕ ở đầu panel, ✕ luôn góc phải — thay dòng "← …" riêng dưới đầu. */
   const hangLui = lui && (
     <div className="-ml-2 flex min-h-9 w-[calc(100%+0.5rem)] items-center gap-2">
@@ -356,7 +365,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         ) : anDau && !lui ? null : dau ? (
           <header className={`flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 sm:px-5 ${lui ? 'pt-2' : 'pt-4'}`} style={{ borderColor: 'var(--line)' }}>
             {hangLui}
-            {vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
+            {xHangLoai ? (
+              <div className="-mb-0.5 -mt-1.5 flex min-h-9 items-center gap-2 max-sm:min-h-11"><div className="min-w-0 flex-1 [&>div]:mb-0">{vachLoai}</div>{nutDong}</div>
+            ) : vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               {/* RA-UI-6 (critique A4): panel nằm trong cột hồ sơ (`trongCot`) dưới đầu mục 15 → tiêu đề 15, không lớn hơn tầng cha. */}
               {/* CV-TAB: chip hạn đứng ngay sau tiêu đề, ✕ góc phải. GD-3 (mockup v21 ① `.pn-tieu h2` 17 / 700, chủ SP duyệt 14/11 — thay 22 của v17). */}
@@ -369,7 +380,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
                 <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
                 {dau.han}
               </>}
-              {!lui && nutDong}
+              {!lui && !xHangLoai && nutDong}
             </div>
             {/* 6c (#641 XM-3): mỗi mục mang "·" rộng cố định ĐỨNG TRƯỚC, hàng lùi trái đúng bề rộng đó, khung cắt ngang → mục đầu mỗi dòng
                 (kể cả khi xuống hàng ở 375) mất dấu, không còn "·" mồ côi đầu dòng. "· Xem Case" không tách dòng.

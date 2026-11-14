@@ -13,6 +13,8 @@ Mockup ⑤ `thiet-ke/v21/bang-mau.html` khu B, C, F (lời 27 duyệt) · mockup
 | `cap-1440-task-chon-em.png` | ⑤ F2 | "+ Task" › Vi phạm / Nhắc nhở, gõ "tran" |
 | `cap-375-task-menu.png` | ⑤ F4 | Công việc 375, nút tròn "+ Task" → menu neo đáy |
 | `cap-1440-y-thuc-hv.png` | ③ K4a | hồ sơ HV › Ý thức & Phối hợp, "Thang" mở |
+| `cap-1440-panel-viec.png` | ⑤ D1 | Công việc › Case › Xác nhận Case (panel mở) |
+| `zoom-x-ba-cham.png` | ⑤ F2, D1 · ③ K4a | góc ✕ / ⋯ phóng to: mockup · web 1440 tối · web 375 sáng |
 | `cap-1440-tab-cham-speaking.png` | ⑤ H1 (badge `.bd.mo`) | Công việc › Chấm Speaking, vai 9 GV Speaking |
 
 Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục menu và `gõ:chữ`; `KEO_TRUOC=1` kéo dài khung nhìn trước khi bấm — menu thả đóng khi đổi cỡ màn).
@@ -34,12 +36,13 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 | 11 | Lời 28 ý 1 (f): "Không cần theo dõi" là NÚT mờ | `NUT_MO` (`ui/KhuonViec.tsx`) ở `CasePanel` + form Xác nhận PA (`CaseSosControls`) | — (seed vai 7 không có Case SOS chờ — kiểm mã) | KHỚP (mã) |
 | 12 | Lời 28 ý 2 (f): "Xác nhận xử lý" là NÚT | hồ sơ HV (ô bước + dòng vi phạm) · tab Ý thức lớp (ô bước + dòng) · panel Xem vi phạm (chân) | y-thuc-hv | KHỚP |
 | 13 | Lời 28 ý 3 / ③ `.vach-bac b.wl` (f): WL 1, WL 2 nhãn đỏ nổi trên thanh (đã tới: đỏ đặc) | thang mini hồ sơ HV (`StudentYThucSection`) | y-thuc-hv | KHỚP |
+| 14b | ⑤ F2 / D1 `.x`: ✕ đầu hộp / panel một dáng, cùng hàng dòng loại hoặc tiêu đề | `NUT_DONG` + `KhungPanel` + hộp chọn em — mục 7 | zoom-x-ba-cham, panel-viec, task-chon-em | KHỚP |
 | 14 | (f) "mọi nơi hiện thang" | thang đầy đủ `ThangYThuc` (hồ sơ HV "Thang ▾", chip mốc tab lớp, panel Xử lý) — chip WL đỏ | y-thuc-hv | KHỚP |
 | 15a | Lời 33 / `04-thiet-ke.md` mục 15 (thắng hình ①, ⑤ H1 badge vàng / đỏ): badge tab "Chấm Speaking" MỜ đếm bài + ⚠ khi có bài quá hạn; không đỏ, không cộng badge menu / chuông | `BadgeTabSo` nhánh `bai` (`ui/Nhan.tsx`), `BadgeTab.bai` (`shared/domain/tongQuan.ts`), tính ở `HoTroHocVienTab` (cùng số đầu mục "22 bài · ⚠ 15 quá hạn"); badge menu / chuông vẫn `demDongViec` (không đếm chấm chéo) | tab-cham-speaking | KHỚP |
 | 15 | ⑤ B tên khung: dòng chuẩn ở "dải Việc cần làm hồ sơ lớp, thanh việc hồ sơ HV" | GIỮ ô việc hiện tại ở hai hồ sơ — đổi sang dòng chuẩn ở GD-6 / GD-7 (plan ghi rõ "dùng dòng việc chuẩn" trong dòng GD-7; một màn một PR) | — | GIỮ (chuyển GD-6/7) |
 | 16 | Chuông (a "một thành phần cho … chuông") | GIỮ dáng chuông v2 — [XM-1] ⑤ đã chốt: không dùng dòng việc chuẩn; đổi đích bấm ở GD-9 | — | GIỮ (theo [XM-1]) |
 
-**KHỚP 15 / 15 dòng thuộc PR = 100 %** (dòng 15, 16 là GIỮ có lý do, không tính).
+**KHỚP 16 / 16 dòng thuộc PR = 100 %** (dòng 15, 16 là GIỮ có lý do, không tính).
 
 ## 2. KHÁC (có lý do)
 - ~~KHÁC-1~~ (bỏ): "Không hạn" nay theo ⑤ B1 + `10-ra-dong-bo.md` mục B — cột hạn trống, vạch nhóm "Không hạn" kể cả khi mục chỉ có một nhóm.
@@ -76,6 +79,28 @@ Chỉ đổi hiển thị — 0 câu, 0 request thêm. Hộp chọn em vẫn m�
 - B "Không hạn" → làm (dòng 3). B menu "+ Task" có biểu tượng → làm (dòng 6). B hộp chọn em một chân → "Đóng · Tiếp" (dòng 8). B tên bậc "Report 1" / "WL 1" → web đã ghi dạng này.
 - Ngoài 4a (để PR khác): chân panel một dáng (⑤ D2 — 4b), dải chỉ số / lịch sử / badge tab ② (4c), chip hạn "hạn hôm nay" dáng viên (⑤ B1 — dòng việc hiện ghi "⚠ còn n ngày · dd/mm" từ GD-1; đổi dáng chip hạn → hỏi PTA Plan [XM-B]), câu lỗi tải / hết việc, đếm việc.
 - **[XM-B] (hỏi PTA Plan)** chip hạn: ⑤ B1 vẽ viên "quá hạn 5 ngày" / "hạn hôm nay" / "hạn 23/09"; web (GD-1, đã duyệt ảnh) ghi "⚠ 68 ngày · 08/07". Mục B nói "theo ⑤" — PR này chưa đổi (ngoài 4 ý a b d f); làm ở 4c hay PR riêng?
+
+## 7. Nút ✕ / ⋯ — chủ SP 15/11 ("dấu X lại bị lệch … mấy nút ⋯ hay X hay bị lệch")
+Nguyên nhân: ba dáng ✕ khác nhau (hộp chọn em: ô 32 có viền, xếp đầu khối hai dòng; `KhungPanel`: ô 32 viền trong suốt ở hàng tiêu đề; hộp nhập điểm: ô 36). Sửa ở THÀNH PHẦN CHUNG:
+- `NUT_DONG` (`ui/KhungPanel.tsx`) — một dáng theo mockup `.x`: ô 36 × 36 (375: 44 × 44), không viền, nền trong, ✕ 17 px giữa ô, rê mới có nền.
+- `KhungPanel`: có dòng loại ("Việc · Ý thức") → ✕ đứng CÙNG HÀNG dòng loại (⑤ D1 `.pn-h1`, hàng 36); không có → cùng hàng tiêu đề, tâm thẳng dòng 24 px. Áp cho mọi panel dùng khung.
+- Hộp chọn em "+ Task": tiêu đề 15 + ✕ một hàng (lưới `1fr auto`, căn giữa), "Chọn em" dòng dưới; ✕ cách mép phải hộp 12 px như ⑤ F2.
+
+Bảng đo (`getBoundingClientRect` + `Range` chữ ✕; "lệch" = tâm chữ ✕ − tâm dòng chữ cùng hàng; "giữa ô" = tâm chữ ✕ − tâm ô, ngang / dọc; seed vai 7):
+
+| Chỗ | Bề rộng | Ô | Viền | Lệch (px) | Giữa ô (px) |
+|---|---|---|---|---|---|
+| Hộp chọn em "Vi phạm / Nhắc nhở" (so với tiêu đề) | 1440 | 36×36 | 0 | 0,3 | 0 / −0,5 |
+| — | 375 | 44×44 | 0 | 0,3 | 0 / −0,5 |
+| Panel việc · Case "Xác nhận Case" (so với dòng loại) | 1440 | 36×36 | 0 | 0 | 0 / −0,5 |
+| — | 375 | 44×44 | 0 | 0 | 0 / −0,5 |
+| Panel Xem vi phạm (so với dòng loại) | 1440 | 36×36 | 0 | 0 | 0 / −0,5 |
+| — | 375 | 44×44 | 0 | 0 | 0 / −0,5 |
+| ⋯ đầu hồ sơ HV (so với "+ Case" cùng hàng) | 1440 | 36×36 (nút cạnh 80×36) | — | 0 | — |
+| — | 375 | 44×44 (nút cạnh 80×44) | — | 0 | — |
+| Menu "+ Task" 1440 / 375 | — | không có ✕ / ⋯ (375 neo đáy có tiêu đề "+ Task", đóng bằng chạm nền / Esc) | — | — | — |
+
+"Giữa ô −0,5" = độ lệch của chính hình chữ ✕ trong phông (nửa điểm ảnh), không phải lề. Tất cả ≤ 1 px. View Case (hàng "‹ …" + ✕) cùng dạng `items-center`; seed vai 7 không có việc mở được "Xem Case" để đo.
 
 ## 6. Hướng dẫn "?"
 `shared/huongDan/gv.ts` mục `cv-task`: câu chọn em đổi theo nhóm lớp + nút tròn / menu đáy ở điện thoại (+ bản EN `shared/i18n/en/gd1.ts`).

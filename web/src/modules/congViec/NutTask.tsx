@@ -3,6 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HopNeo } from '../../ui/HopNeo.tsx';
+import { NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
@@ -103,9 +104,11 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
   const tieuDe = MUC.find(([k]) => k === loai)![1];
   return (
     <HopNeo neo={neo} nhan={tieuDe} rong={440} onNgoai={onDong}>
-      <div className="flex items-start justify-between gap-3 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
-        <div className="grid gap-0.5"><b className="text-base font-bold text-slate-100">{tieuDe}</b><span className="text-[13px] text-dim">{t('Chọn em')}</span></div>
-        <button type="button" className="btn btn-sm h-8 w-8 !px-0 max-sm:h-11 max-sm:w-11" aria-label={t('Đóng')} onClick={onDong}>✕</button>
+      {/* ⑤ F2 `.h-dau`: tiêu đề 15 + ✕ CÙNG HÀNG (tâm ✕ = tâm dòng tiêu đề), dòng phụ "Chọn em" dưới; ✕ cách mép phải hộp 12 px (đệm 16 − 4). */}
+      <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
+        <b className="min-w-0 text-[15px] font-bold text-slate-100">{tieuDe}</b>
+        <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={onDong}>✕</button>
+        <span className="text-[13px] text-dim">{t('Chọn em')}</span>
       </div>
       {nhieu && chon.length > 0 && (
         <span className="flex flex-wrap items-center gap-1.5">
