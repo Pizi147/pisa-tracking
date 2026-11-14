@@ -46,19 +46,25 @@ if (!r.ok()) { console.error(`Đăng nhập vai ${vai}: ${r.status()}`); process
 const pw = await ctx.newPage();
 await pw.goto(`${BASE}/${duong.replace(/^\//, '')}`, { waitUntil: 'networkidle' });
 await pw.waitForTimeout(600);
-// DUYET-QL: BAM="Duyệt|Lịch sử" — bấm lần lượt các nút (tên đúng như trình đọc màn hình đọc, khớp đầu chữ) trước khi chụp — trạng thái sau thao tác.
-for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
-  const tenRe = new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
-  const nut = pw.getByRole('button', { name: tenRe });
-  await ((await nut.count()) ? nut : pw.getByRole('radio', { name: tenRe })).last().click();   // BAO-CAO-PH: lựa chọn dạng radio (ngăn Xuất › Mẫu)
-  await pw.waitForTimeout(900);
-}
-for (let i = 0; i < 5; i++) {   // kéo dài khung nhìn tới khi main hết cuộn (bảng nạp thêm khi cao lên)
+const keo = async () => { for (let i = 0; i < 5; i++) {   // kéo dài khung nhìn tới khi main hết cuộn (bảng nạp thêm khi cao lên)
   const thua = await pw.evaluate(() => { const m = document.getElementById('noi-dung') ?? document.scrollingElement; return m.scrollHeight - m.clientHeight; });
   if (thua <= 1) break;
   await pw.setViewportSize({ width: rong, height: pw.viewportSize().height + thua });
   await pw.waitForTimeout(400);
+} };
+// GD-4a: KEO_TRUOC=1 — kéo dài khung nhìn TRƯỚC khi bấm (menu thả đóng khi đổi cỡ màn).
+if (process.env.KEO_TRUOC) await keo();
+// DUYET-QL: BAM="Duyệt|Lịch sử" — bấm lần lượt các nút (tên đúng như trình đọc màn hình đọc, khớp đầu chữ) trước khi chụp — trạng thái sau thao tác.
+// GD-4a: "gõ:chữ" gõ vào ô đang focus (hộp chọn em); mục menu (`menuitem`) cũng bấm được.
+for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
+  if (ten.startsWith('gõ:')) { await pw.keyboard.type(ten.slice(3), { delay: 40 }); await pw.waitForTimeout(1200); continue; }
+  const tenRe = new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
+  let nut = pw.getByRole('button', { name: tenRe }).filter({ visible: true });   // "+ Task" có hai nút (đầu trang / nổi 375), mỗi cỡ màn hiện một
+  if (!(await nut.count())) nut = pw.getByRole('menuitem', { name: tenRe });
+  await ((await nut.count()) ? nut : pw.getByRole('radio', { name: tenRe })).last().click();   // BAO-CAO-PH: lựa chọn dạng radio (ngăn Xuất › Mẫu)
+  await pw.waitForTimeout(900);
 }
+if (!process.env.KEO_TRUOC) await keo();
 await pw.mouse.move(0, 0);   // chuột rời phần tử vừa bấm — ảnh không dính trạng thái rê (gạch chân tên)
 const anhWeb = await pw.screenshot({ fullPage: true });
 

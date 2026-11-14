@@ -26,6 +26,8 @@ export type MucMenu = {
   tieuDe?: boolean;
   /** Ô tick (☑ / ☐): bấm là đổi, menu GIỮ MỞ để tick tiếp (PR-HK2: "Cột hiện" của Tổng hợp). */
   chon?: boolean;
+  /** GD-4a (mockup ⑤ F1, [XM-7]): biểu tượng 16 px màu nhấn trước chữ (menu "+ Task") — nút-chip thì không có biểu tượng (lời 20). */
+  bieuTuong?: ReactNode;
 };
 
 /**
@@ -39,7 +41,7 @@ export type MucMenu = {
  * Bàn phím (E2): mở → focus mục đầu; ↑/↓/Home/End đi vòng; Enter chọn; Esc/Tab đóng và trả focus về nút ⋯. Esc chỉ đóng menu,
  * không đóng panel chứa nó (pha bắt + chặn lan, như `LichNho`).
  */
-export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut, canhTrai = false }: {
+export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', luonHien = false, kieu, mat, lopNut, canhTrai = false, tieuDeDay }: {
   /** `bieuTuong`: ⋯ · ⋮, hoặc chữ ngắn như "+2" (badge còn ẩn của hộp lớp — PR-HVL B4). `luonHien`: vẽ nút kể cả khi không có mục / mọi mục `tat`. */
   muc: MucMenu[]; nhan?: string; bieuTuong?: string; luonHien?: boolean;
   /** `chip`: mặt nút là chip họ tròn xám ("+2" cạnh các badge lớp, PR-HK2) thay cho ô vuông viền. */
@@ -48,11 +50,13 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
   mat?: ReactNode; lopNut?: string;
   /** GD-3 (mockup v21 K2b): nút ⋯ ở mép TRÁI hàng nút — menu canh mép trái nút, không chìa ra ngoài hộp. */
   canhTrai?: boolean;
+  /** GD-4a (mockup ⑤ F4): < 640 px menu NEO ĐÁY màn (tấm dưới có tiêu đề này, nền mờ phía sau, mục cao 48) thay vì thả cạnh nút. */
+  tieuDeDay?: string;
 }) {
   const [mo, setMo] = useState(false);
   const nut = useRef<HTMLButtonElement>(null);
   const hop = useRef<HTMLDivElement>(null);
-  const [viTri, setViTri] = useState<{ top: number; left: number; cao: number } | null>(null);
+  const [viTri, setViTri] = useState<{ top: number; left: number; cao: number; day?: boolean } | null>(null);
   const [dang, setDang] = useState(0);
   const mucDom = () => [...(hop.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? [])];
   const bam = muc.filter((m) => !m.tieuDe);   // vòng ↑/↓ chỉ qua mục bấm được; `chiSo` = vị trí trong vòng đó
@@ -62,6 +66,7 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
 
   useLayoutEffect(() => {
     if (!mo || !nut.current) { setViTri(null); return; }
+    if (tieuDeDay && window.innerWidth < 640) { setViTri({ top: 0, left: 0, cao: window.innerHeight - 80, day: true }); return; }
     const r = nut.current.getBoundingClientRect();
     const rong = 216;
     /* Mục cao 44px trên điện thoại (ô bấm), ~36px từ sm. */
@@ -116,15 +121,20 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
         style={kieu === 'chip' || lopNut ? undefined : { borderColor: 'var(--line)' }}>
         {mat ?? bieuTuong}
       </button>
-      {mo && createPortal(
+      {mo && createPortal(<>
+        {viTri?.day && <div aria-hidden className="fixed inset-0 z-[59] bg-black/50" />}
         <div ref={hop} role="menu" aria-label={nhan}
           onKeyDown={(e) => {
             const k = buocDanhSach(bam.length, dang, e.key);
             if (k !== null) { e.preventDefault(); tro(k); }
             else if (e.key === 'Tab') { e.preventDefault(); dongVeNut(); }
           }}
-          className="menu-hop fixed z-[60] w-[216px] overflow-y-auto overscroll-contain rounded-lg border p-1 shadow-xl surface-2"
-          style={{ borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, maxHeight: viTri?.cao, visibility: viTri ? 'visible' : 'hidden' }}>
+          className={viTri?.day
+            ? 'menu-hop fixed inset-x-0 bottom-0 z-[60] overflow-y-auto overscroll-contain rounded-t-[14px] border-t px-2 pb-[18px] pt-2 shadow-xl [&_.menu-muc]:min-h-12'
+            : 'menu-hop fixed z-[60] w-[216px] overflow-y-auto overscroll-contain rounded-lg border p-1 shadow-xl surface-2'}
+          style={viTri?.day ? { borderColor: 'var(--line-strong)', maxHeight: viTri.cao }
+            : { borderColor: 'var(--line-strong)', top: viTri?.top ?? 0, left: viTri?.left ?? 0, maxHeight: viTri?.cao, visibility: viTri ? 'visible' : 'hidden' }}>
+          {viTri?.day && <div role="presentation" className="px-3 pb-1.5 pt-2 text-[15px] font-bold">{tieuDeDay}</div>}
           {muc.map((m, i) => m.tieuDe ? (
             <div key={m.key} role="presentation" className="menu-nhom">{m.nhan}</div>
           ) : (
@@ -135,11 +145,12 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
               className={`menu-muc ${m.tat ? 'text-slate-500 cursor-not-allowed' : `${m.nguyHiem ? 'text-rose-200' : 'text-slate-200'} bam`} ${
                 i === 0 || muc[i - 1]?.tieuDe ? '' : m.nguyHiem && !muc[i - 1]?.nguyHiem ? 'menu-muc-nguy' : m.keTruoc ? 'menu-muc-ke' : ''}`}
               onClick={(e) => { if (m.tat) { e.stopPropagation(); return; } if (m.chon === undefined) dongVeNut(); m.onChon(); }}>
-              {m.chon !== undefined && <span aria-hidden>{m.chon ? '☑' : '☐'} </span>}{m.nhan}
+              {m.chon !== undefined && <span aria-hidden>{m.chon ? '☑' : '☐'} </span>}
+              {m.bieuTuong ? <span className="flex items-center gap-2.5"><span aria-hidden className="text-[color:var(--accent)]">{m.bieuTuong}</span>{m.nhan}</span> : m.nhan}
             </button>
           ))}
-        </div>,
-        document.body,
+        </div>
+      </>, document.body,
       )}
     </>
   );
