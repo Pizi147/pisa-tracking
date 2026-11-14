@@ -270,7 +270,7 @@ export async function runPrHdTests(t: any) {
     const nhom = Object.values(NHOM_CV_TVV_LABEL) as string[];
     const nut = Object.values(NHAN_VIEC_QUAN_LY) as string[];
     const LOI: Record<string, Record<string, string>> = {
-      tvv: { 'xem-viec': 'cong-viec', 'bao-ph': 'cong-viec', 'chot-ngay-thi': 'cong-viec', 'thi-that': 'cong-viec', 'buoc-tiep': 'cong-viec', 'bo-sung': 'cong-viec', 'sua-hv': 'ho-so-hv', 'tam-dung': 'ho-so-hv', 'xem-case': 'ho-so-hv', 'xem-thi-thang': 'tong-quan', 'loc-hv': 'hoc-vien', 'phan-tich': 'phan-tich' },
+      tvv: { 'xem-viec': 'cong-viec', 'bao-ph': 'cong-viec', 'chot-ngay-thi': 'cong-viec', 'thi-that': 'cong-viec', 'buoc-tiep': 'cong-viec', 'bo-sung': 'cong-viec', 'sua-hv': 'ho-so-hv', 'tam-dung': 'ho-so-hv', 'xem-case': 'ho-so-hv', 'xem-thi-thang': 'cong-viec', 'loc-hv': 'hoc-vien', 'phan-tich': 'phan-tich' },
       cx: { 'thi-that': 'ho-so-hv', 'sua-hv': 'ho-so-hv', 'tam-dung': 'ho-so-hv', 'xem-so': 'tong-quan', 'loc-hv': 'hoc-vien' },
       ht: { 'xem-tong-quan': 'tong-quan', 'sua-ho-so': 'ho-so-ca-nhan' },
     };

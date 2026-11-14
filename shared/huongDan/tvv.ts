@@ -30,10 +30,10 @@ export const VIEC_TVV: ViecHd[] = [
   },
   {
     id: 'xem-thi-thang', ten: 'Xem em thi tháng này', nhom: 'hv',
-    loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Thi tháng này', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } },
+    loiChinh: { man: 'cong-viec', chu: 'Công việc', duong: CV },
     loiTat: ['hoc-vien'], cung: 'mở cùng danh sách.',
-    buoc: ['Mở <b>Tổng quan</b>: <b>Việc của tôi ›</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ thi thật ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>.',
-      'Bấm số: <b>Báo PH đúng hạn</b> mở panel tại trang; ba số HV mở <b>Học viên & Lớp</b> đúng nhóm em.'],
+    buoc: ['Dải số đầu <b>Công việc</b>: <b>Việc</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>.',
+      'Bấm số: <b>Báo PH đúng hạn</b> mở panel tại trang; ba số HV mở <b>Học viên & Lớp</b> đúng nhóm em. Khung <b>HV của tôi</b> bên phải ghi tình trạng từng em.'],
     tuKhac: ['sắp thi', 'ngày thi', 'exam month', 'thi', 'chờ kết quả'],
   },
   {
@@ -144,7 +144,7 @@ export const VIEC_TVV: ViecHd[] = [
   },
   {
     id: 'phan-tich', ten: 'Xem thống kê theo kỳ', nhom: 'khac',
-    loiChinh: { man: 'phan-tich', chu: 'Tổng quan › Phân tích', duong: '/phan-tich', chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
+    loiChinh: { man: 'phan-tich', chu: 'Phân tích', duong: '/phan-tich', chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
     buoc: ['Mở <b>Phân tích</b>; tab <b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (lớp thường: <b>Test</b>).',
       'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b> (hai ô tuần); Chi nhánh mặc định một tháng, tab khác 2 tuần.',
       'Bấm số mở danh sách tại trang; <b>Xuất Excel</b> ở hàng lọc.'],
@@ -401,24 +401,19 @@ export const HD_TVV: HuongDan = {
   man: [
     {
       /* UI-CV-TVV (C05): TVV có Công việc — chỉ việc của mình. */
-      id: 'cong-viec', ten: 'Công việc', duong: [CV],
-      dangO: { cau: 'Mọi việc của bạn: Báo PH (vi phạm, meeting CX/GĐCN), sau thi, chốt ngày thi, bổ sung hồ sơ.', truoc: { chu: 'Tổng quan', duong: '/' }, sau: { chu: 'Học viên & Lớp', duong: HV } },
+      id: 'cong-viec', ten: 'Công việc', duong: [CV, '/'],   // `/` chuyển thẳng sang Công việc (GD-8, như GV GD-1)
+      /* GD-8 (mockup v21 ④): trang đầu TVV — dải 5 chỉ số trên, việc trái, HV của tôi phải; "+ Task" = Hỏi tình hình học tập. */
+      dangO: { cau: 'Trang đầu của bạn: năm chỉ số, việc của bạn (Báo PH, sau thi, chốt ngày thi, bổ sung hồ sơ) và HV của tôi.', sau: { chu: 'Học viên & Lớp', duong: HV } },
       khongLam: [KHONG_GV, KHONG_QL],
       muc: [{ id: 'tvv-cv-nhom', ten: 'Cách làm một việc', buoc: ['Bấm dòng em: panel mở bên phải, làm xong không rời trang; <b>Việc tiếp ›</b> sang việc kế.',
         'Nút ⓘ cạnh tên nhóm nói hạn: Báo PH 5 ngày; Bước tiếp sau thi 7 ngày từ ngày có kết quả; Chốt ngày thi, Bổ sung hồ sơ không hạn.', 'Chỉ có việc của bạn — không có <b>Làm thay</b>; QL mới xem việc người khác.'] },
+      { id: 'tvv-cv-hv', ten: 'HV của tôi · + Task', buoc: ['Chưa chọn việc: khung phải là <b>HV của tôi</b> — em · lớp · tình trạng (Thi dd/mm · Đã thi · chờ KQ · SOS) · nút <b>Báo PH · n</b>, <b>Sau thi · n</b>… mở việc ngay tại trang; quá hạn màu đỏ.',
+        'Em không việc, không tình trạng gập ở <b>n em khác</b>; ô <b>Tìm em</b> lọc cả nhóm gập.', '<b>+ Task</b> › <b>Hỏi tình hình học tập</b>: chọn em của bạn, gõ câu hỏi, gửi GVCN.'] },
       { id: 'tvv-cv-loc', ten: 'Lọc việc', buoc: ['<b>Lọc theo hạn</b>: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b>.', '<b>Lọc thêm</b>: chi nhánh, khung Fast Track / Lớp thường.'] }],
     },
     {
-      id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      dangO: { cau: 'Năm ô của HV bạn phụ trách: việc của tôi, Báo PH đúng hạn, thi tháng này, chờ kết quả, chưa chốt lộ trình tiếp.', sau: { chu: 'Công việc', duong: CV } },
-      khongLam: [KHONG_GV, KHONG_QL],
-      muc: [{ id: 'tvv-tq-o', ten: 'Năm ô của TVV', buoc: ['<b>Việc của tôi ›</b> (cả ô bấm) mở Công việc; <b>Báo PH đúng hạn</b> mở panel ngay tại trang.',
-        '<b>Thi tháng này ›</b> · <b>Chờ KQ thi thật ›</b> · <b>Chưa chốt lộ trình tiếp ›</b> mở Học viên & Lớp đúng nhóm em.', 'Đầu trang: <b>HV của tôi ›</b> mở danh sách em bạn phụ trách.'],
-        chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để xem danh sách tạo nên nó.' } }],
-    },
-    {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
-      dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } },
+      dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Công việc', duong: CV } },
       khongLam: [KHONG_GV],
       muc: [{ id: 'tvv-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2); không có tab Giáo viên, Ý thức.',
         'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.', '<b>Xuất Excel</b> ở hàng lọc (tab Chi nhánh thêm <b>In</b>).'],
