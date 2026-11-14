@@ -5,7 +5,7 @@ import { useSession } from '../../lib/session.tsx';
 import { useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
-import { ChonLop } from '../../ui/ChonLop.tsx';
+import { ChonLop, phuLop, tuanHoc } from '../../ui/ChonLop.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChonChuongTrinh } from '../worklist/ChonChuongTrinh.tsx';
@@ -108,6 +108,9 @@ export function PhanTich() {
   const qLop = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den, ...(branchId ? { branchId: String(branchId) } : {}) });
   const classesApi = useApi<any[]>(coLop && !choCn ? `/ref/classes?${qLop}` : null, [qLop.toString(), coLop, choCn]);
   const ctLop: ChuongTrinh = goc === 'ket-qua-thi' ? 'ft' : ct;
+  /* GD-5 dòng phụ: từ `/ref/classes` đã nạp; đang xem một chi nhánh (lời 40) thì bỏ chi nhánh. */
+  const phuLopPt = (c: any) => phuLop({ ct: c.route ? `${c.programme_code ?? 'FT'} ${c.route}` : c.programme_code, cn: branchId ? null : c.branch_code,
+    siSo: c.ket_thuc ? null : c.student_count, tuan: c.ket_thuc ? null : tuanHoc(c.start_date, homNay) });
   const classes = (classesApi.data ?? []).filter((c) => laYThuc || (c.scoring_mode === 'ratio') === (ctLop === 'thuong'));
   useEffect(() => {
     if (classId && classesApi.data && !classes.some((c) => c.id === classId)) dat({ lop: null }, true);
@@ -140,8 +143,8 @@ export function PhanTich() {
             /* GD-5 (R5.2 #51): ô lọc có tìm — lớp đang chạy → "Đã kết thúc" (nhóm sẵn có, lớp từ `/ref/classes` đã nạp). */
             <ChonLop className="w-[200px] max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={classId ? Number(classId) : null}
               onChange={(v) => dat({ lop: v ? String(v) : null })}
-              ds={[...classes.filter((c) => !c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, ...(classes.some((x) => x.ket_thuc) ? { nhom: t('Đang chạy') } : {}) })),
-                ...classes.filter((c) => c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, nhom: t('Đã kết thúc') }))]} />
+              ds={[...classes.filter((c) => !c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, phu: phuLopPt(c), ...(classes.some((x) => x.ket_thuc) ? { nhom: t('Đang chạy') } : {}) })),
+                ...classes.filter((c) => c.ket_thuc).map((c) => ({ id: c.id, ma: c.code, phu: phuLopPt(c), nhom: t('Đã kết thúc') }))]} />
           )}
           <span ref={setGiua} className="contents" />
           <span ref={setPhai} className={`ml-auto flex items-center gap-2 empty:hidden ${canhDoan ? 'max-sm:order-[-1] max-sm:ml-0' : ''}`}>

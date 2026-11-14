@@ -17,7 +17,7 @@ import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { IntakePanel } from './IntakePanel.tsx';
-import { ChonLop, nhomLopToi } from '../../ui/ChonLop.tsx';
+import { ChonLop, nhomLopToi, phuLop } from '../../ui/ChonLop.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { type TrangSos, type DongSos } from './BangSos.tsx';
 import { PanelMotEm } from './PanelMotEm.tsx';
@@ -389,7 +389,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {locTim}
       {/* GD-5 (R5.2 #54): ô lọc có tìm — lớp của tôi lên trước, rồi các lớp khác của trang (dữ liệu đã nạp, không gọi thêm). */}
       <ChonLop className="w-[200px] max-sm:w-full" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={chiLop} onChange={(v) => setParam({ classId: v ? String(v) : null })}
-        ds={nhomLopToi((data?.rows ?? []).filter((c) => khung === 'tat-ca' || khungCua(c.scoringMode) === khung).map((c) => ({ id: c.id, ma: c.code })), lopToi)} />
+        ds={nhomLopToi((data?.rows ?? []).filter((c) => khung === 'tat-ca' || khungCua(c.scoringMode) === khung).map((c) => ({ id: c.id, ma: c.code,
+          phu: phuLop({ ct: c.route ? `${c.programmeCode ?? 'FT'} ${c.route}` : c.programmeCode, cn: branchId ? null : c.branchName, siSo: c.studentCount, tuan: c.currentWeek }) })), lopToi)} />
     </>
   );
   /* Chip lọc (B11, G6 "số 0 không bấm"): số 0 mờ, không bấm — trừ khi đang bật (để còn tắt được). */

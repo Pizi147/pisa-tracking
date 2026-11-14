@@ -26,4 +26,5 @@ export const EN_GD5 = {
   'Gõ tên tutor…': 'Type a tutor name…',
   'Tên gần giống': 'Similar names',
   'Chưa xong': 'Not done',
+  '{n} thẻ chờ': (b) => `${b.n} pending`,
 } satisfies Record<string, Dich>;

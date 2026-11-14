@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChonNguoi } from './PeoplePicker.tsx';
+import { mondayOfDate } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
@@ -67,4 +68,18 @@ export function nhomLopToi(ds: LopChon[], lopToi: ReadonlySet<number>, nhan = { 
   const toi = ds.filter((l) => lopToi.has(l.id)), khac = ds.filter((l) => !lopToi.has(l.id));
   if (!toi.length || !khac.length) return ds;
   return [...toi.map((l) => ({ ...l, nhom: nhan.toi })), ...khac.map((l) => ({ ...l, nhom: nhan.khac }))];
+}
+
+/**
+ * GD-5 (mockup ⑤ A3 / A5 dòng phụ lớp: "FOU · MB · 12 em · tuần 3"): chương trình · chi nhánh · sĩ số · tuần học — chỉ trường đã có trong dữ liệu lớp
+ * nơi gọi đã nạp; trường trống bỏ (không "—"). Lời 40: nơi gọi đang xem MỘT chi nhánh thì không truyền `cn`.
+ */
+export function phuLop(x: { ct?: string | null; cn?: string | null; siSo?: number | null; tuan?: number | null }): string | undefined {
+  return [x.ct, x.cn, x.siSo != null ? t('{n} em', { n: x.siSo }) : null, x.tuan ? t('tuần {n}', { n: x.tuan }) : null].filter(Boolean).join(' · ') || undefined;
+}
+/** Tuần học thứ mấy tính từ ngày bắt đầu lớp (tuần 1 = tuần chứa ngày bắt đầu); chưa bắt đầu / thiếu ngày → null. */
+export function tuanHoc(batDau: string | null | undefined, homNay: string | null | undefined): number | null {
+  if (!batDau || !homNay) return null;
+  const n = Math.round((Date.parse(mondayOfDate(homNay.slice(0, 10))) - Date.parse(mondayOfDate(batDau.slice(0, 10)))) / (7 * 864e5)) + 1;
+  return Number.isFinite(n) && n >= 1 ? n : null;
 }

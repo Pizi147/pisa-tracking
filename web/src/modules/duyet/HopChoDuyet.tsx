@@ -267,7 +267,8 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
         {(dsLop.length > 0 || lopId) && (
           /* GD-5 (R5.2 #50): ô lọc có tìm — lớp có thẻ đang chờ (suy từ dòng đã nạp + lớp đang lọc, không gọi thêm). */
           <ChonLop className="w-[160px] shrink-0" gon ariaLabel={t('Lọc theo lớp')} macDinhTrong={t('Lớp')} value={lopId ? Number(lopId) : null}
-            onChange={(v) => setParam('lop', v ? String(v) : null)} ds={dsLop.map(([id, ma]) => ({ id, ma }))} />
+            onChange={(v) => setParam('lop', v ? String(v) : null)}
+            ds={dsLop.map(([id, ma]) => { const n = ds.filter((y) => y.lopId === id && y.trangThai === 'cho').length; return { id, ma, ...(n ? { phu: t('{n} thẻ chờ', { n }) } : {}) }; })} />
         )}
         {quaHan && (
           <button type="button" className="nut-loc nut-loc-dang" title={t('Bỏ lọc quá hạn')} onClick={() => setParam('qua-han', null)}>

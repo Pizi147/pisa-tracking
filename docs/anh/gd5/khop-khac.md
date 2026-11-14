@@ -35,9 +35,10 @@ Chụp bằng `scripts/anh-cap.mjs` (không đổi công cụ).
 | 13 | F2 / F3 bước chọn em của "+ Task" dùng mẫu A trong hộp (danh sách nằm trong hộp) | `HopChonEm` → `ChonNguoi tim tinh` (`/tim/hoc-vien`, cờ `lop=toi` giữ) | task-chon-em | KHỚP |
 | 15 | A2 nhãn nhóm kèm mã: "GV của lớp · MB FT 101", "Cùng chi nhánh MB" | `/ref/nguoi` trả `lopMa`, `cnMa` (bảng nhớ lớp + chi nhánh đã đọc cùng câu — 0 câu thêm) | — | KHỚP |
 | 16 | A2 tô chữ khớp kể cả khi gõ liền không dấu cách ("ft1" → **MB FT 1**01) | `ToKhop` bỏ qua dấu cách như bộ lọc | loc-lop | KHỚP |
+| 17 | A3 / A5 dòng phụ lớp "FOU · MB · 12 em · tuần 3" (PTA rà #1639) | `phuLop` (chương trình · chi nhánh · n em · tuần n, chỉ trường đã nạp, trường trống bỏ) — Phân tích (`/ref/classes`), Học viên & Lớp (`currentWeek`), Thêm học viên; Chờ duyệt không có dữ liệu lớp → "n thẻ chờ" từ danh sách đã nạp; nơi khác đã có dòng phụ (`phuLopDich`, sĩ số) giữ. 0 câu đọc thêm | loc-lop | KHỚP |
 | 14 | Lọc "Mọi lớp" / "Người" / "Mọi TVV" là ô chọn có tìm (`10-ra-dong-bo.md` mục B, dòng 43, 68, 75) | `ChonLop gon` · `ChonLoc` (mới, giá trị chuỗi như `<select>` cũ) cao 36, đang lọc viền nhấn như `OChon dangLoc` | loc-lop | KHỚP |
 
-**Cổng: 16 KHỚP / 17 dòng so hình (B3 KHÁC theo luật thang chữ) = 94 % ≥ 90 % — ĐẠT.**
+**Cổng: 17 KHỚP / 18 dòng so hình (B3 KHÁC theo luật thang chữ) = 94 % ≥ 90 % — ĐẠT.**
 
 Dòng BỎ / GIỮ / KHÁC:
 
@@ -57,6 +58,7 @@ Dòng BỎ / GIỮ / KHÁC:
 | "Cả lớp · n" (Ghi vi phạm) | ẩn khi đang gõ tên |
 | ✕ / ▾ phải ô | ▾ khi chưa có giá trị, ✕ khi có giá trị / có chữ gõ (không hiện cả hai) |
 | Dòng "Lớp của tôi / Lớp khác", "Tôi / TVV chi nhánh", "Đang chạy / Đã kết thúc", "Tên gần giống / Khác" | chỉ gắn khi có cả hai phía |
+| Dòng phụ lớp: chi nhánh | bỏ khi trang đang xem MỘT chi nhánh (Phân tích, Học viên & Lớp có `cn`) hoặc mọi lớp cùng chi nhánh (Thêm học viên); lớp đã kết thúc bỏ sĩ số + tuần |
 | "Chỉ tìm … trong phạm vi" dưới "Không thấy" | chỉ ô tìm người máy chủ (ô danh sách có sẵn không cần) |
 
 ## 2. Bảng thay 16 chỗ (R5.2 C + D)
