@@ -101,14 +101,16 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                     draggable={!p.chiXem && !khac && !busy} onDragStart={() => setKeo({ nhom: n.key, idx: i })} onDragOver={(e) => { if (keo?.nhom === n.key) e.preventDefault(); }}
                     onDrop={() => { if (keo?.nhom === n.key) void doiCho(n, keo.idx, i); setKeo(null); }}
                     onKeyDown={(e) => { if (!p.chiXem && e.altKey && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) { e.preventDefault(); void doiCho(n, i, i + (e.key === 'ArrowUp' ? -1 : 1)); } }}>
-                    <OBang c={COT[0]} className="py-1.5 pl-3.5 align-middle">
-                      {!p.chiXem && !khac && <span className="cursor-grab select-none text-slate-500" title={t('Kéo để đổi thứ tự · Alt + ↑ ↓')} aria-hidden>⠿</span>}
+                    <OBang c={COT[0]} className="!overflow-visible !px-0 py-1.5 text-center align-top">
+                      {/* GD-17c: một biểu tượng kéo, căn giữa dọc với ô tên (cao bằng nút tên) — không đệm trái để khỏi bị cắt thành "⠿…". */}
+                      {!p.chiXem && !khac && <span className="inline-flex h-[34px] cursor-grab select-none items-center text-slate-500" title={t('Kéo để đổi thứ tự · Alt + ↑ ↓')} aria-hidden>⠿</span>}
                     </OBang>
                     <OBang c={COT[1]} className="!whitespace-normal py-1.5 pr-3">
                       {p.chiXem || m.an
                         ? <span className={`text-[15px] font-medium ${m.an ? 'line-through decoration-1' : 'text-slate-100'}`}>{m.ten}</span>
-                        : <button type="button" className="-ml-2 rounded-md px-2 py-1.5 text-left text-[15px] font-medium text-slate-100 hover:bg-[color:var(--accent-soft)]"
-                            title={t('Sửa tên')} onClick={() => setSua({ nhom: n.key, idx: i, m: { ...m } })}>{m.ten} <span aria-hidden className="text-slate-500">✎</span></button>}
+                        /* GD-17c (mockup ⑩ K6): tên nhóm là ô có viền (bấm là sửa) như Chi nhánh — thay chữ + ✎. */
+                        : <button type="button" className="rounded-md border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-2.5 py-1 text-left text-[15px] font-medium text-slate-100 hover:border-[color:var(--accent)] max-sm:min-h-[44px]"
+                            title={t('Sửa tên')} onClick={() => setSua({ nhom: n.key, idx: i, m: { ...m } })}>{m.ten}</button>}
                       {phu && <div className="text-[13px] text-slate-400">{phu}</div>}
                       {/* Mục gốc: máy chủ không đếm (luôn coi là đang dùng, chỉ ẩn được) → để trống. */}
                       {(dung || !p.coDinh(m)) && <div className="text-[13px] text-slate-400 sm:hidden">{dung ? `${dung} ${p.donVi}` : t('Chưa dùng')}</div>}
@@ -118,12 +120,12 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                       {p.chiXem ? (m.an ? <span className="text-[12px] font-semibold text-slate-400">{t('Đang ẩn')}</span> : null)
                         : khac ? <span className="text-[13px] text-slate-500">{t('Luôn cuối')}</span>
                         : m.an ? <span className="inline-flex items-center gap-2"><span className="text-[12px] font-semibold text-slate-400 max-sm:hidden">{t('Đang ẩn')}</span>
-                            <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
+                            <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
                               onClick={() => void ghi(n.key, n.muc.map((x) => (x.ma === m.ma ? { ...x, an: undefined } as M : x)), t('Đã hiện lại "{ten}"', { ten: m.ten }))}>{t('Hiện lại')}</button></span>
-                        : khoa ? <span className="inline-flex items-center gap-2" title={khoa}><button type="button" className="btn btn-ghost btn-sm" aria-disabled="true" disabled>{t('Ẩn')}</button><span className="text-[12px] text-slate-500 max-sm:hidden">{khoa}</span></span>
-                        : !dung && !p.coDinh(m) ? <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
+                        : khoa ? <span className="inline-flex items-center gap-2" title={khoa}><button type="button" className="btn btn-sm" aria-disabled="true" disabled>{t('Ẩn')}</button><span className="text-[12px] text-slate-500 max-sm:hidden">{khoa}</span></span>
+                        : !dung && !p.coDinh(m) ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
                             onClick={() => void ghi(n.key, n.muc.filter((x) => x.ma !== m.ma), t('Đã xoá "{ten}"', { ten: m.ten }))}>{t('Xoá')}</button>
-                        : <button type="button" className="btn btn-ghost btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
+                        : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy}
                             onClick={() => void ghi(n.key, n.muc.map((x) => (x.ma === m.ma ? { ...x, an: true } as M : x)), dung ? t('Đã ẩn "{ten}" — {n} {donVi} giữ nguyên', { ten: m.ten, n: dung, donVi: p.donVi }) : t('Đã ẩn "{ten}"', { ten: m.ten }))}>{t('Ẩn')}</button>}
                     </OBang>
                   </tr>
@@ -134,7 +136,7 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                 : !p.chiXem && n.themChu && (
                   <tr key={`t-${n.key}`} className="border-b" style={{ borderColor: 'var(--line)' }}>
                     <OBang c={COT[0]} />
-                    <OBang c={COT[1]} colSpan={3} className="py-1.5"><button type="button" className="btn btn-ghost btn-sm -ml-2 min-h-[44px] text-[color:var(--accent)] sm:min-h-0" onClick={() => setSua({ nhom: n.key, idx: 'moi', m: p.moi(n.key) })}>+ {n.themChu}</button></OBang>
+                    <OBang c={COT[1]} colSpan={3} className="py-1.5"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua({ nhom: n.key, idx: 'moi', m: p.moi(n.key) })}>+ {n.themChu}</button></OBang>
                   </tr>
                 ),
             ];

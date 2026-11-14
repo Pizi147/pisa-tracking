@@ -17,8 +17,12 @@ type Branch = { code: string; name: string };
  * ≥ 640 px mở `HopNeo` ngay dưới ô, điện thoại mở `KhungPanel` toàn màn. Bấm ngoài / Esc: chưa đổi → đóng; đã đổi → hỏi một lần ngay trong hộp.
  * Lưu: chờ máy chủ, lỗi thì GIỮ hộp + lựa chọn, báo lỗi trong hộp; xong → toast Hoàn tác (gửi lại giá trị cũ).
  */
-function SuaTaiDong({ nhan, tieuDe, ten, mat, daDoi, loiTruoc, onMo, onLuu, children }: {
+export function SuaTaiDong({ nhan, tieuDe, ten, mat, daDoi, loiTruoc, onMo, onLuu, vien = false, phu, children }: {
   nhan: string; tieuDe: string; ten: string; mat: ReactNode; daDoi: boolean;
+  /** GD-17b (mockup ⑩ K2): "ô có viền = bấm là sửa" — viền luôn hiện (Chương trình, như Chi nhánh); không có thì viền khi rê. */
+  vien?: boolean;
+  /** GD-17b: dòng hậu quả ngay trên nút Lưu (vd "Áp cho lớp mở sau · 12 lớp đang chạy giữ lịch cũ"). */
+  phu?: ReactNode;
   /** Lỗi chặn trước khi gửi (vd vai thiếu chi nhánh) — có thì nút Lưu không gửi. */
   loiTruoc: boolean;
   onMo: () => void; onLuu: () => Promise<void>; children: ReactNode;
@@ -52,16 +56,19 @@ function SuaTaiDong({ nhan, tieuDe, ten, mat, daDoi, loiTruoc, onMo, onLuu, chil
   );
   const than = (<>
     {children}
+    {phu}
     {loi && <p className="m-0 text-sm text-late" role="alert">{loi}</p>}
   </>);
   return (
     <>
       <button ref={o} type="button" aria-haspopup="dialog" aria-expanded={mo} aria-label={`${nhan} · ${ten}`} title={nhan}
         onClick={() => { if (!mo) { onMo(); setMo(true); } }}
-        className="group -mx-1.5 inline-flex max-w-full flex-wrap items-center gap-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-left hover:border-[color:var(--line-strong)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] max-sm:border-[color:var(--line)] cursor-pointer"
+        className={vien
+          ? 'inline-flex min-h-[34px] max-w-full flex-wrap items-center gap-1 rounded-md border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-2.5 py-1 text-left text-sm text-slate-100 hover:border-[color:var(--accent)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] cursor-pointer'
+          : 'group -mx-1.5 inline-flex max-w-full flex-wrap items-center gap-1 rounded-md border border-transparent bg-transparent px-1.5 py-1 text-left hover:border-[color:var(--line-strong)] focus-visible:border-[color:var(--accent)] max-sm:min-h-[44px] max-sm:border-[color:var(--line)] cursor-pointer'}
         style={mo ? { borderColor: 'var(--accent)' } : undefined}>
         {mat}
-        <span aria-hidden className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 max-sm:opacity-100">✎</span>
+        {!vien && <span aria-hidden className="text-xs text-slate-500 opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 max-sm:opacity-100">✎</span>}
       </button>
       {mo && (dienThoai ? (
         <KhungPanel tieuDe={tieuDe} hocVien={ten} onDong={ngoai}>

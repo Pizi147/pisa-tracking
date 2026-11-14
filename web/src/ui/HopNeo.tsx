@@ -23,7 +23,12 @@ export function HopNeo({ neo, nhan, rong = 420, onNgoai, lop = 'grid gap-3 p-4',
     const cach = mui ? 10 : 6;
     const xuong = r.bottom + cach + cao <= window.innerHeight - 8;
     const top = xuong ? r.bottom + cach : Math.max(8, r.top - cach - cao);
-    const left = Math.max(8, Math.min(mui ? r.left + r.width / 2 - 70 : r.left, window.innerWidth - rong - 8));
+    /* GD-17b: hộp nằm trong thẻ chứa ô neo (vùng bảng) — gặp mép phải thẻ thì dịch vào trong, không đè cột bên cạnh (Nhật ký). Thẻ hẹp hơn hộp thì theo màn. */
+    const the = neo.current?.closest('.card')?.getBoundingClientRect();
+    const vua = !!the && the.width >= rong + 16;
+    const trai = vua ? Math.max(8, the.left + 8) : 8;
+    const phai = vua ? Math.min(window.innerWidth, the.right) - 8 : window.innerWidth - 8;
+    const left = Math.max(trai, Math.min(mui ? r.left + r.width / 2 - 70 : r.left, phai - rong));
     const muiX = r.left + r.width / 2 - left - 6;
     setViTri((v) => (v && v.top === top && v.left === left && v.xuong === xuong && v.muiX === muiX ? v : { top, left, xuong, muiX }));   // không đổi thì giữ object cũ — không vẽ lại vô tận
   };
