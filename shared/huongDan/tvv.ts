@@ -265,7 +265,7 @@ const MAN_LUOT_TEST: ManHd = {
   id: 'luot-test', ten: 'Hồ sơ lượt Test', duong: ['/mock-test', '/luot-test'],
   dangO: { cau: 'Điểm một lượt Test của một em — chỉ xem.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
   khongLam: [{ ten: 'Nhập điểm, dời lịch Test', cua: 'việc của GV' }, { ten: 'Xếp, dời lịch Test', cua: 'việc của QL' }],
-  muc: [{ id: 'lt-diem', ten: 'Đọc điểm lượt Test', buoc: ['Điểm từng kỹ năng, nhận xét, Case của lượt; không có ô nhập.', 'Mở từ ô điểm ở hồ sơ em; <b>⋯</b> ở dòng kỹ năng: <b>Lịch sử</b>.'] }],
+  muc: [{ id: 'lt-diem', ten: 'Đọc điểm lượt Test', buoc: ['Điểm từng kỹ năng, nhận xét, Case của lượt; không có ô nhập.', 'Mở từ ô điểm ở hồ sơ em; mọi thay đổi ở khối <b>Lịch sử · n</b> cuối trang.'] }],
 };
 
 /* ponytail: màn này chỉ để phủ route `/giao-vien/:id` (HD-ROUTE: `nav.analysis` đủ để phép kiểm coi TVV / CX vào được; máy chủ 403). Gỡ khi route có cổng riêng. */

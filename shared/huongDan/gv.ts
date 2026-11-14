@@ -297,6 +297,8 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'nd-go', viec: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final',
           buoc: ['Gõ điểm; Enter sang ô còn nhập kế.', 'Em vắng: gõ <b>-</b>; ô đã dời ghi "vắng W3 SEP".', 'MT mới nhất: ô thiếu nhận xét viền vàng — nên ghi, không chặn lưu.'] },
+        /* GD-11c (mockup ⑦ C1): ⋯ kỹ năng theo luật nhập điểm mới (#1676) + một khối Lịch sử. */
+        { id: 'nd-luot', ten: 'Vắng, Huỷ điểm, Khôi phục một kỹ năng', buoc: ['Trang lượt: <b>⋯</b> cuối dòng kỹ năng › <b>Vắng</b> · <b>Huỷ điểm</b> (Hoàn tác 10 giây) · <b>Khôi phục</b>.', 'Mọi thay đổi của lượt: khối <b>Lịch sử · n</b> cuối trang, mỗi dòng ghi kỹ năng.'] },
       ],
     },
     {

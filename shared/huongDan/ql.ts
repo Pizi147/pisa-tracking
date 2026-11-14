@@ -434,7 +434,9 @@ export const HD_QL: HuongDan = {
     {
       id: 'nhap-diem', ten: 'Hồ sơ lượt Test', duong: ['/nhap-diem', '/bang-diem-thuong', '/mock-test', '/luot-test'],
       dangO: { cau: 'Điểm một lượt Test của một em.', truoc: { chu: 'Lịch Test tuần', duong: TEST } },
-      muc: [{ id: 'nd-go', viec: 'sua-diem', ten: 'Nhập điểm, sửa điểm một lớp', buoc: ['Gõ điểm; Enter sang ô còn nhập kế.', 'Em vắng: gõ <b>-</b>.', 'Sửa hoặc xoá một điểm đã có: bấm ô, ghi <b>Lý do sửa</b> (QL, Admin).'] }],
+      muc: [{ id: 'nd-go', viec: 'sua-diem', ten: 'Nhập điểm, sửa điểm một lớp', buoc: ['Gõ điểm; Enter sang ô còn nhập kế.', 'Em vắng: gõ <b>-</b>.', 'Sửa hoặc xoá một điểm đã có: bấm ô, ghi <b>Lý do sửa</b> (QL, Admin).'] },
+        /* GD-11c (mockup ⑦ C1): Chỉnh lịch menu chuẩn, Lớp lúc Test là link, một khối Lịch sử. */
+        { id: 'nd-chinh-lich', ten: 'Chỉnh lịch cả đợt', buoc: ['Trang lượt MT: <b>Chỉnh lịch ▾</b> › <b>Dời lịch cả đợt</b> · <b>Dời hạn chấm cả đợt</b> · <b>Khôi phục kết quả</b> · <b>Xoá MTn</b>; mục mờ ghi lý do ngay dưới.', '<b>Lớp lúc Test</b> là link hồ sơ lớp; <b>Lịch sử chi tiết</b> trong khối <b>Lịch sử · n</b> có Khôi phục.'] }],
     },
     {
       id: 'cong-viec', ten: 'Công việc', duong: [CV],
