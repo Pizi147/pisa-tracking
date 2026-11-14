@@ -8,7 +8,7 @@ import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { Field, Outcome, Th } from '../../ui/ui.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { ChonLop } from '../../ui/ChonLop.tsx';
+import { ChonLop, phuLop, tuanHoc } from '../../ui/ChonLop.tsx';
 import {
   chuanOTarget, cotLuoiNhap, dsLoi, duongDotTest, nhanCotNhap, tuanBatDauMacDinh, type CachDoc, type CotNhap, type VanDeNhap,
   kyThiCuaChuongTrinh, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, type CotLuoi,
@@ -103,6 +103,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
   const lopThuong = cls?.scoring_mode === 'ratio';
   const ktLop = kyThiCuaChuongTrinh(cls?.programme_code);   // P13: lớp KET / PET — Target theo thang Cambridge
   const cols = lopThuong || !cls?.route ? cotLuoiNhap(lopThuong) : [...cotLuoiNhap(false), COT_LO_TRINH];
+  /* GD-5 dòng phụ lớp (lời 40): mọi lớp cùng một chi nhánh thì bỏ chi nhánh. */
+  const motCn = new Set((classes.data ?? []).map((c: any) => c.branch_id)).size <= 1;
   const macDinh = cls ? tuanBatDauMacDinh({ lopThuong, khaiGiang: cls.start_date ?? null }, homNay) : null;
   const tuanChung = startWeek || macDinh || '';
 
@@ -199,7 +201,8 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
           <Field label={t('Thêm vào lớp')} required loi={lf.loiCua(loiLo, 'lop')}>
             <ChonLop ariaLabel={t('Thêm vào lớp')} {...lf.o(loiLo, 'lop')} value={classId} khongKhop={classes.data ? undefined : t('Đang tải…')}
               onChange={(id) => { setClassId(id); setStartWeek(''); setKetQua(null); setPreview(null); setDaDan(null); }}
-              ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code, phu: c.programme_name ?? undefined }))} />
+              ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code,
+                phu: phuLop({ ct: c.programme_name, cn: motCn ? null : c.branch_code, siSo: c.student_count, tuan: tuanHoc(c.start_date, homNay) }) }))} />
           </Field>
           <Field label={t('Tuần bắt đầu học (mặc định cho mọi dòng)')} hint={goiYTuan ?? undefined}>
             <ONgay kieu="tuan" value={tuanChung} onChange={(v) => { setStartWeek(v); setPreview(null); }} />

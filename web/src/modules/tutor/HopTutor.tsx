@@ -4,6 +4,7 @@ import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ConfirmDialog, Modal } from '../../ui/Drawer.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { KN_TUTOR, ngay } from '@shared/domain/index.ts';
@@ -112,6 +113,13 @@ export function HopGop({ ds, onDong, onThem }: { ds: DongTutor[]; onDong: () => 
   const [loi, setLoi] = useState<string | null>(null);
   const muc = Object.entries(chon).filter(([, v]) => /^\d+$/.test(v)).map(([khoa, v]) => ({ khoa, tutorId: Number(v) }));
   const tutors = [...ds].sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+  /* Tên gần giống = cùng tên gọi (chữ cuối, không dấu) với tên gõ tay → nhóm đầu; chỉ gắn nhãn khi có cả hai nhóm. */
+  const cuoi = (x: string) => boDau(x.trim().split(/\s+/).pop() ?? '').toLowerCase();
+  const dsGop = (ten: string) => {
+    const dong = (d: DongTutor) => ({ id: d.id, ten: d.ten, phu: d.sdt ? `…${d.sdt.slice(-3)}` : undefined });
+    const gan = tutors.filter((d) => cuoi(d.ten) === cuoi(ten)), khac = tutors.filter((d) => cuoi(d.ten) !== cuoi(ten));
+    return gan.length && khac.length ? [...gan.map((d) => ({ ...dong(d), nhom: t('Tên gần giống') })), ...khac.map((d) => ({ ...dong(d), nhom: t('Khác') }))] : tutors.map(dong);
+  };
 
   async function gop() {
     setGui(true);
@@ -144,15 +152,14 @@ export function HopGop({ ds, onDong, onThem }: { ds: DongTutor[]; onDong: () => 
                   <b className="font-semibold text-slate-100">{g.ten}</b>
                   <span className="block text-xs text-slate-400">{[t('{n} buổi', { n: g.soBuoi }), g.lop.join(', '), g.ngay.slice(-3).map((d) => ngay(d, homNay)).join(', ')].filter(Boolean).join(' · ')}</span>
                 </span>
-                <select className="field w-full text-sm sm:w-56 max-sm:min-h-[44px]" aria-label={t('Gộp "{ten}" vào', { ten: g.ten })} value={chon[g.khoa] ?? ''}
-                  onChange={(e) => {
-                    if (e.target.value === 'them') onThem(g.ten, (id) => setChon((c) => ({ ...c, [g.khoa]: String(id) })));
-                    else setChon({ ...chon, [g.khoa]: e.target.value });
-                  }}>
-                  <option value="">{t('— Chưa gộp —')}</option>
-                  {tutors.map((d) => <option key={d.id} value={d.id}>{d.ten}{d.sdt ? ` · …${d.sdt.slice(-3)}` : ''}</option>)}
-                  <option value="them">{t('+ Thêm vào danh sách')}</option>
-                </select>
+                {/* GD-5 (R5.2 #55): ô chọn có tìm — tutor tên gần giống lên trước, "+ Thêm vào danh sách" cuối (mở hộp Thêm điền sẵn tên). */}
+                <div className="w-full sm:w-56">
+                  <ChonNguoi value={/^\d+$/.test(chon[g.khoa] ?? '') ? { kieu: 'tai_khoan', id: Number(chon[g.khoa]), ten: tutors.find((d) => d.id === Number(chon[g.khoa]))?.ten ?? g.ten } : null}
+                    nhom="nhan_vien" choToi={false} choNgoai={false} choTrong={t('— Chưa gộp —')} macDinhTrong={t('— Chưa gộp —')} xBo
+                    ariaLabel={t('Gộp "{ten}" vào', { ten: g.ten })} placeholder={t('Gõ tên tutor…')} ds={dsGop(g.ten)}
+                    them={{ nhan: t('+ Thêm vào danh sách'), onChon: () => onThem(g.ten, (id) => setChon((c) => ({ ...c, [g.khoa]: String(id) }))) }}
+                    onChange={(v) => setChon((c) => ({ ...c, [g.khoa]: v?.kieu === 'tai_khoan' ? String(v.id) : '' }))} />
+                </div>
               </li>
             ))}
           </ul>

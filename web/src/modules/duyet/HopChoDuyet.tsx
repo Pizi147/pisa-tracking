@@ -9,6 +9,7 @@ import { Empty, ErrorState, NhanTrangThai, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { ChonLop } from '../../ui/ChonLop.tsx';
 import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
@@ -264,14 +265,10 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
         <ChipLoc bat={xem === 'de-biet'} so={data?.demBiet ?? null} onClick={() => chonLoc(xem === 'de-biet' ? 'cho' : 'de-biet', null)}>{t('Báo QL')}</ChipLoc>
         <ChipLoc bat={xem === 'da-xu-ly'} onClick={() => chonLoc(xem === 'da-xu-ly' ? 'cho' : 'da-xu-ly', phan)}>{t('Đã xử lý · 30 ngày')}</ChipLoc>
         {(dsLop.length > 0 || lopId) && (
-          <span className="relative inline-flex">
-            <select aria-label={t('Lọc theo lớp')} value={lopId ? String(lopId) : ''} onChange={(e) => setParam('lop', e.target.value || null)}
-              aria-pressed={!!lopId} className={`nut-loc appearance-none pr-7 [field-sizing:content] text-[14px] text-[color:var(--text)] ${lopId ? 'nut-loc-dang font-semibold' : 'font-medium'}`}>
-              <option value="">{t('Lớp')}</option>
-              {dsLop.map(([id, ma]) => <option key={id} value={id}>{ma}</option>)}
-            </select>
-            <svg aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2" width="8" height="5" viewBox="0 0 8 5" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l3 3 3-3" /></svg>
-          </span>
+          /* GD-5 (R5.2 #50): ô lọc có tìm — lớp có thẻ đang chờ (suy từ dòng đã nạp + lớp đang lọc, không gọi thêm). */
+          <ChonLop className="w-[160px] shrink-0" gon ariaLabel={t('Lọc theo lớp')} macDinhTrong={t('Lớp')} value={lopId ? Number(lopId) : null}
+            onChange={(v) => setParam('lop', v ? String(v) : null)}
+            ds={dsLop.map(([id, ma]) => { const n = ds.filter((y) => y.lopId === id && y.trangThai === 'cho').length; return { id, ma, ...(n ? { phu: t('{n} thẻ chờ', { n }) } : {}) }; })} />
         )}
         {quaHan && (
           <button type="button" className="nut-loc nut-loc-dang" title={t('Bỏ lọc quá hạn')} onClick={() => setParam('qua-han', null)}>

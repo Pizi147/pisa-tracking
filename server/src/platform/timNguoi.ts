@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { normalizeName } from '../util.ts';
-import { bangLop, require_, scopeFor, sqlGvSpeaking, type Principal } from '../permissions.ts';
+import { bangLop, lopDayDu, require_, scopeFor, sqlGvSpeaking, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
 
@@ -54,7 +54,10 @@ function dangDayLop(classId: number): HangDangDay[] {
     .all(classId, today, today) as HangDangDay[];
 }
 
-type HangNguoi = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[] };
+/** GD-5: `cungCn` — có vai ở chi nhánh tham chiếu (chi nhánh lớp của em / của việc / phạm vi người xem); `null` khi không có chi nhánh tham chiếu (Quản trị). */
+type HangNguoi = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[]; cungCn: boolean | null;
+  /** GD-5: mã lớp của em (`studentId`) và mã chi nhánh tham chiếu (khi chỉ một) cho nhãn nhóm "GV của lớp · MB FT 101" / "Cùng chi nhánh MB" — từ bảng nhớ, 0 câu thêm. */
+  lopMa: string | null; cnMa: string | null };
 
 type HangNguoiTho = { id: number; full_name: string; code: string; role: string | null; branches: string | null };
 
@@ -78,7 +81,7 @@ function nguoiHopLe(nhom: NhomNguoi, ids: readonly number[] | null, branchIds: r
               (SELECT r2.name_vi FROM user_roles ur2 JOIN roles r2 ON r2.id = ur2.role_id
                 WHERE ur2.user_id = u.id AND ur2.status = 'active' AND r2.key IN (${keyPlaceholders})
                 ORDER BY ur2.id LIMIT 1) AS role,
-              (SELECT GROUP_CONCAT(DISTINCT b.code) FROM user_roles ur3 JOIN branches b ON b.id = ur3.branch_id
+              (SELECT GROUP_CONCAT(DISTINCT b.id || '|' || b.code) FROM user_roles ur3 JOIN branches b ON b.id = ur3.branch_id
                 WHERE ur3.user_id = u.id AND ur3.status = 'active') AS branches
          FROM users u
          JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
@@ -122,17 +125,26 @@ export function timNguoi(
   const branchIds = cnViec ? [cnViec] : cnLop ? [cnLop] : scope.all ? null : cnPhamVi;
   if (branchIds && !branchIds.length) return [];
 
-  const build = (row: HangNguoiTho): HangNguoi => ({
-    id: row.id, name: row.full_name, role: row.role,
-    branches: row.branches ? row.branches.split(',') : [],
-    cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [],
-  });
+  /* GD-5 (mockup ⑤ A5): nhóm "Cùng chi nhánh" → "Chi nhánh khác" — so chi nhánh của vai (đã đọc cùng câu, 0 câu thêm) với chi nhánh tham chiếu. */
+  const cnLopEm = classId ? bang.get(classId)?.branchId ?? null : null;
+  const cnThamChieu = new Set<number>(cnViec ? [cnViec] : cnLop ? [cnLop] : cnLopEm ? [cnLopEm] : cnPhamVi);
+  const lopMa: string | null = classId ? lopDayDu().get(classId)?.code ?? null : null;
+  const build = (row: HangNguoiTho): HangNguoi => {
+    const cn = (row.branches ? row.branches.split(',') : []).map((x) => { const [id, ...ma] = x.split('|'); return { id: Number(id), ma: ma.join('|') }; });
+    return {
+      id: row.id, name: row.full_name, role: row.role,
+      branches: [...new Set(cn.map((x) => x.ma))].sort(),
+      cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [],
+      cungCn: cnThamChieu.size ? cn.some((x) => cnThamChieu.has(x.id)) : null, lopMa,
+      cnMa: cnThamChieu.size === 1 ? cn.find((x) => cnThamChieu.has(x.id))?.ma ?? null : null,
+    };
+  };
 
-  /* T14: chưa gõ → 20 người (GV cùng lớp đứng đầu); có gõ (kể cả 1–2 ký tự) → 12 người khớp. */
+  /* T14: chưa gõ → 20 người (GV cùng lớp → cùng chi nhánh → khác); có gõ (kể cả 1–2 ký tự) → 12 người khớp. */
   const needle = normalizeName(term);
   return nguoiHopLe(nhom, null, branchIds, cnViec)
     .filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle))
     .map(build)
-    .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.name.localeCompare(b.name, 'vi')))
+    .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.cungCn !== b.cungCn ? (a.cungCn ? -1 : 1) : a.name.localeCompare(b.name, 'vi') || a.id - b.id))
     .slice(0, needle ? 12 : 20);
 }

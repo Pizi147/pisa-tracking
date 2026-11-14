@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { api } from '../../../lib/api.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../../ui/useBamNgoai.ts';
+import { ToKhop } from '../../../ui/ToKhop.tsx';
 
 export type KetQuaTim = {
   lop: { id: number; code: string; loai: 'ft' | 'thuong'; chiNhanh: string; soHv: number; gvcn: string | null }[];
@@ -47,56 +48,42 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
     else if (e.key === 'Enter' && mo && ds[dong]) { e.preventDefault(); chon(ds[dong]); }
     else if (e.key === 'Escape' && mo) { e.stopPropagation(); setMo(false); }
   };
-  const dongCls = (i: number) => `flex min-h-[44px] cursor-pointer flex-col justify-center rounded px-2 text-xs sm:min-h-[36px] ${i === dong ? 'bg-white/10' : 'bam'}`;
-  const nhom = 'px-2 pb-0.5 pt-1.5 text-[12px] font-bold text-slate-400';
+  /* GD-5 (R5.2 #58, mockup ⑤ A): cùng dáng ô chọn có tìm chung — `.oc` (kính lúp · ô gõ · ✕ xoá chữ) + danh sách `.oc-ds` (nhóm có nhãn + số, mục hai hàng,
+     tô chữ khớp, tải / rỗng / lỗi). Giữ ô gõ ĐIỀU KHIỂN bởi nơi gọi: chữ gõ còn lọc lưới Kế hoạch (`khopMa`), không phải ô chọn thuần. */
+  const muc = (i: number, m: Muc, t1: ReactNode, p: string) => (
+    <button key={m.loai === 'lop' ? `l${m.x.id}` : `h${m.x.studentId}-${m.x.classId}`} id={`tim-kht-${i}`} type="button" tabIndex={-1} role="option" aria-selected={i === dong}
+      className={`oc-muc${i === dong ? ' re' : ''}`} onMouseDown={(e) => { e.preventDefault(); chon(m); }} onMouseEnter={() => setDong(i)}>
+      <span className="t">{t1}</span>{p && <span className="p">{p}</span>}
+    </button>
+  );
 
   return (
-    <div ref={goc} className={`relative ${className}`}>
-      <div className="o-tim w-full">
-        {/* U05 (mockup `.otim`): kính lúp + nền --bg, chữ 14 — cùng ô tìm Học viên & Lớp. */}
-        <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
-        <input className={`field h-9 w-full max-sm:min-h-[44px] ${value ? "pr-8" : ""}`} value={value} placeholder={t('Tìm lớp, học viên hoặc email')} aria-label={t('Tìm lớp, học viên hoặc email')}
+    <div ref={goc} className={`oc-vung ${className}`}>
+      <div className="oc gon" onClick={() => goc.current?.querySelector('input')?.focus()}>
+        <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0 fill-none stroke-current text-faint" strokeWidth={1.5} strokeLinecap="round"><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5L14 14" /></svg>
+        <input value={value} placeholder={t('Tìm lớp, học viên hoặc email')} aria-label={t('Tìm lớp, học viên hoặc email')} autoComplete="off" spellCheck={false}
           role="combobox" aria-expanded={mo && !!q} aria-controls="tim-kht-goi-y" aria-autocomplete="list"
           aria-activedescendant={mo && ds[dong] ? `tim-kht-${dong}` : undefined}
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />
         {value && (
-          <button type="button" aria-label={t('Xoá chữ tìm')} title={t('Xoá')}
-            className="absolute right-1 top-1/2 min-h-[32px] min-w-[32px] -translate-y-1/2 appearance-none border-0 bg-transparent text-slate-500 hover:text-slate-200"
-            onClick={() => { onChange(''); setMo(false); }}>✕</button>
+          <button type="button" className="oc-bo" aria-label={t('Xoá chữ tìm')} title={t('Xoá')} onMouseDown={(e) => e.preventDefault()}
+            onClick={(e) => { e.stopPropagation(); onChange(''); setMo(false); }}>✕</button>
         )}
       </div>
       {mo && q && (
-        <div id="tim-kht-goi-y" role="listbox" aria-label={t('Kết quả tìm')}
-          className="surface-2 absolute left-0 top-full z-30 mt-1 max-h-80 w-80 max-w-[calc(100vw-2rem)] overflow-y-auto rounded-lg border p-1 shadow-xl"
-          style={{ borderColor: 'var(--line-strong)' }}>
-          {loi ? <p className="m-0 p-2 text-xs text-bad">{t('Chưa tìm được — thử lại.')}</p>
-            : !r ? <p className="m-0 p-2 text-xs text-slate-400">{t('Đang tìm…')}</p>
-              : !ds.length ? <p className="m-0 p-2 text-xs text-slate-400">{t('Không có lớp hoặc học viên khớp')}</p>
+        <div id="tim-kht-goi-y" role="listbox" aria-label={t('Kết quả tìm')} aria-busy={!r && !loi ? true : undefined} className="oc-ds w-80 max-w-[calc(100vw-2rem)] !right-auto">
+          {loi ? <div className="oc-loi" role="alert"><span><b>{t('Không tải được')}</b></span></div>
+            : !r ? <div className="oc-tai" role="status"><span className="chu">{t('Đang tìm…')}</span>{[0, 1].map((k) => <span key={k} className="xd"><i /><i /></span>)}</div>
+              : !ds.length ? <div className="oc-rong" role="status"><b>{t('Không có lớp hoặc học viên khớp')}</b></div>
                 : (
                   <>
-                    <div className={nhom}>{t('Lớp')}{r.lop.length ? ` · ${r.lop.length}` : ''}</div>
-                    {!r.lop.length && <div className="px-2 pb-1 text-xs text-slate-500">{t('Không có lớp khớp “{q}”', { q })}</div>}
-                    {r.lop.map((l, i) => (
-                      <div key={`l${l.id}`} id={`tim-kht-${i}`} role="option" aria-selected={i === dong} className={dongCls(i)}
-                        onMouseDown={(e) => { e.preventDefault(); chon({ loai: 'lop', x: l }); }} onMouseEnter={() => setDong(i)}>
-                        <b className="text-slate-100">{l.code}</b>
-                        <span className="truncate text-slate-400">
-                          {[l.loai === 'ft' ? 'Fast Track' : t('Lớp thường'), `${l.soHv} HV`, l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')}
-                        </span>
-                      </div>
-                    ))}
-                    <div className={nhom}>{t('Học viên')}{r.hocVien.length ? ` · ${r.hocVien.length}` : ''}</div>
-                    {!r.hocVien.length && <div className="px-2 pb-1 text-xs text-slate-500">{t('Không có học viên khớp “{q}”', { q })}</div>}
-                    {r.hocVien.map((h, j) => {
-                      const i = r.lop.length + j;
-                      return (
-                        <div key={`h${h.studentId}-${h.classId}`} id={`tim-kht-${i}`} role="option" aria-selected={i === dong} className={dongCls(i)}
-                          onMouseDown={(e) => { e.preventDefault(); chon({ loai: 'hv', x: h }); }} onMouseEnter={() => setDong(i)}>
-                          <b className="text-slate-100">{h.ten}</b>
-                          <span className="truncate text-slate-400">{[h.classCode, h.email].filter(Boolean).join(' · ')}</span>
-                        </div>
-                      );
-                    })}
+                    <div role="presentation" className="oc-nhom">{t('Lớp')} <span className="so">{r.lop.length}</span></div>
+                    {!r.lop.length && <div className="oc-rong !py-1.5 text-[13px]">{t('Không có lớp khớp “{q}”', { q })}</div>}
+                    {r.lop.map((l, i) => muc(i, { loai: 'lop', x: l }, l.code,
+                      [l.loai === 'ft' ? 'Fast Track' : t('Lớp thường'), t('{n} HV', { n: l.soHv }), l.gvcn ? `GVCN ${l.gvcn}` : null].filter(Boolean).join(' · ')))}
+                    <div role="presentation" className="oc-nhom">{t('Học viên')} <span className="so">{r.hocVien.length}</span></div>
+                    {!r.hocVien.length && <div className="oc-rong !py-1.5 text-[13px]">{t('Không có học viên khớp “{q}”', { q })}</div>}
+                    {r.hocVien.map((h, j) => muc(r.lop.length + j, { loai: 'hv', x: h }, <ToKhop chu={h.ten} q={q} />, [h.classCode, h.email].filter(Boolean).join(' · ')))}
                   </>
                 )}
         </div>

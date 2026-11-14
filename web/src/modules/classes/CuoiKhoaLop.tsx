@@ -545,7 +545,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const dsLop = lopTheoHuong(d.candidates, x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` }));
     return (
       <span className="block">
-        <ChonLop ds={dsLop} value={x.lop} onChange={(id) => doi(e.id, { lop: id })} ariaLabel={t('Lớp · {ten}', { ten: e.fullName })} noi
+        <ChonLop ds={dsLop} value={x.lop} onChange={(id) => doi(e.id, { lop: id })} ariaLabel={t('Lớp · {ten}', { ten: e.fullName })}
           maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} />
         {x.lop !== null && tuan}
       </span>
@@ -657,7 +657,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       {(ap.huong || dsChon[0]?.x.huong) !== 'dung' && (ap.huong || dsChon[0]?.x.huong) && (
         <span className="flex items-center gap-2 text-[13px] font-semibold text-slate-400 sm:w-64">{t('Lớp')}
           <span className="min-w-0 flex-1"><ChonLop ds={lopAp.map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` }))} value={ap.lop}
-            onChange={(id) => apNgay({ lop: id })} ariaLabel={t('Lớp cho các em đã chọn')} noi
+            onChange={(id) => apNgay({ lop: id })} ariaLabel={t('Lớp cho các em đã chọn')}
             moLopMoi={() => setMoLop({ huong: ap.huong || dsChon[0]?.x.huong || '', ganCho: 'thanh' })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} /></span>
         </span>
       )}
@@ -742,7 +742,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         </span>
         {coO && (
           <span className="flex flex-wrap items-center gap-2 max-xl:[grid-column:1/-1] xl:[grid-column:5]" title={t('Lớp cho cả nhóm')}>
-            <span className="min-w-[150px] flex-1"><ChonLop ds={dsLop} value={lopCuaNhom(k)} onChange={(id) => chonLopNhom(k, id)} ariaLabel={t('Lớp cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })} noi
+            <span className="min-w-[150px] flex-1"><ChonLop ds={dsLop} value={lopCuaNhom(k)} onChange={(id) => chonLopNhom(k, id)} ariaLabel={t('Lớp cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })}
               moLopMoi={() => setMoLop({ huong, ganCho: 'thanh' })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} /></span>
             <span className="w-36"><OTuan tuanChon={d.tuanChon} value={tuanNhom(k)} onChange={(v) => chonTuanNhom(k, v)} ariaLabel={t('Tuần cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })} chuaChon={tuanLich(tuanChung, h)} /></span>
           </span>
