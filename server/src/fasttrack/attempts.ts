@@ -454,10 +454,6 @@ export function skillCells(
   const cancelled = attempt.status === 'cancelled';
   /* RKC: quyền khôi phục lượt / dời lịch hỏi MỘT lần mỗi lớp trong request (bảng lớp vẽ hàng trăm ô — không một câu mỗi lượt). Chỉ hỏi khi cần. */
   const khoiPhucDuoc = cancelled && nho(`rkc-khoi-phuc:${attempt.class_id}`, () => choHuyKhoiPhucLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id }));
-  /* Theo LỚP (không theo em): tránh câu đọc chi nhánh của từng em — quyền dời lịch Test đi theo lớp (QL chi nhánh lớp, GVCN lớp). Máy chủ kiểm lại
-     đủ theo em lúc lưu (`doiVeTuanNayNeuChua`). */
-  const doiLich = () => !!attempt.class_id && nho(`rkc-doi-lich:${attempt.class_id}`, () => choSuaLichTest(p, { classId: attempt.class_id })
-    || can(p, PERMISSIONS.SCHEDULE_MOVE, { classId: attempt.class_id }));
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
@@ -545,10 +541,8 @@ export function skillCells(
     const doiTu = hasScore && view.absenceMoveCount > 0 ? vangCu?.get(`${attempt.id}:${assessed}`) ?? null : null;
     /* RKC (thay E8 "vắng / huỷ không nhập ở đâu cả"): ô vắng / huỷ nhập được — `saveScore` hỏi rồi đổi trạng thái thi; lượt đã huỷ: người
        khôi phục được (QL…) nhập được, máy hỏi rồi khôi phục lượt. */
+    /* NHAP-DIEM-a: chưa tới tuần thi / chưa xếp tuần không còn khoá ô — lưu thì máy tự dời về tuần này (`doiVeTuanNayNeuChua`). */
     const canEdit = required && (!cancelled || khoiPhucDuoc)
-      /* T19: chưa tới tuần thi / chưa xếp tuần → ô khoá với người KHÔNG dời được lịch; RKC: người dời được lịch nhập được — máy chủ hỏi "Dời về tuần
-       * này" (`doiVeTuanNayNeuChua`). */
-      && ((!!view.weekStart && view.weekStart.slice(0, 10) <= mondayOf(today)) || doiLich())
       /* LUAT-34 (L3): "Đủ điểm" không còn khoá — GV đúng ô sửa mọi lúc (cùng `saveScore`). */
       && editable.includes(skill);
     const noShow = ns.state === 'none' ? null : {
@@ -2308,18 +2302,14 @@ export function saveScore(
    * gì). Nhận xét lưu thẳng; "-" vào phần đã vắng / huỷ không có nghĩa → câu chỉ đường.
    */
   const sitChan = scheduleRow.sit_status === 'cancelled' || scheduleRow.sit_status === 'absent';
-  let doiSit: (() => void) | null = null;
-  if (sitChan && ghiDiem) {
-    canXacNhan(scheduleRow.sit_status === 'absent'
-      ? '{x} đang ghi vắng — đổi thành đã làm bài rồi lưu điểm?' : '{x} đã huỷ (vắng 2 lần) — đưa lại thành đã làm bài rồi lưu điểm?',
-    { x: tenMon(null, assessed) }, 'Đổi thành đã làm bài');
-    const goc = scheduleRow;
-    doiSit = () => { ghiSitStatus(p, attemptId, goc, 'sat', 'Nhập điểm'); };
-    scheduleRow = { ...scheduleRow, sit_status: 'sat' };
-  }
+  /* NHAP-DIEM-a (chủ SP 14/11, đặc tả 6b): gõ điểm đè "-" ĐÃ CHỐT khi tuần đã dời tới CHƯA TỚI = sửa "-" nhầm → Bỏ vắng (`goVangDaChot`: về tuần
+     gốc, trừ một lần vắng) rồi lưu, cùng MỘT lần lưu. Tuần dời tới đã tới = em thi bù → giữ tuần mới + lần vắng (BV V6). Kỹ năng vắng / "Đã huỷ"
+     (huỷ tay hay vắng 2 lần) mà nhập điểm = em đã làm bài — không hỏi (thay câu hỏi RKC 07/11). */
+  const dauChot = ghiDiem && (!scheduleRow.week_start || scheduleRow.week_start.slice(0, 10) > mondayOf(today)) ? dauDaChot(attemptId, skill) : null;
   /* CV-SUA-1011 (chủ SP 10/11): "-" ở task Writing kia đã ghi luôn ô này và chốt (vắng / huỷ / dời sang tuần sau) — gõ lại "-" ở ô này
-     (hai ô cùng lô, hai thẻ) là vô hại: không hỏi dời, không lỗi. */
-  if (patch.noShow === true && entrySkillsOf(assessed).length > 1 && (sitChan || (scheduleRow.week_start ?? '').slice(0, 10) > mondayOf(today))) {
+     (hai ô cùng lô, hai thẻ) là vô hại: không hỏi dời, không lỗi. NHAP-DIEM-a: mọi kỹ năng — gõ lại "-" vào ô "-" đã chốt (đã dời sang tuần chưa tới /
+     đã huỷ) không được thành "-" sớm (tự dời về rồi vắng thêm một lần). */
+  if (patch.noShow === true && (sitChan || (scheduleRow.week_start ?? '').slice(0, 10) > mondayOf(today))) {
     const dau = dauDaChot(attemptId, skill);
     if (dau) { const fresh = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any; return { score: dau, result: resultOf(fresh), attemptStatus: fresh.status }; }
   }
@@ -2346,16 +2336,19 @@ export function saveScore(
   const nhomKiem = coNhom ? kiemNhomNguyenNhan(patch.nhomNguyenNhan, skill, null, nhomCuaO(attemptId, skill)) : null;   // CAU-HINH-CASE-SOS: giữ nhóm đã ẩn
   if (nhomKiem && 'loi' in nhomKiem) throw badRequest(nhomKiem.loi);
   const nhomGui = nhomKiem && 'gt' in nhomKiem ? nhomKiem.gt : undefined;
-  /* RKC: chưa tới tuần thi → người dời được lịch hỏi "Dời về tuần này" (dời trong giao dịch lưu, dưới); người khác: câu chỉ đường. */
-  const doiTuan = ghiDiem ? doiVeTuanNayNeuChua(p, a, scheduleRow, today) : null;
-  if (doiTuan) scheduleRow = { ...scheduleRow, week_start: mondayOf(today) };
   const chiNhanXet = (coNhanXet || coGvCham || coNhom) && patch.rawScore === undefined && patch.band === undefined && patch.rawTotal === undefined
     && patch.criteria === undefined && patch.noShow === undefined && patch.resultDate === undefined && patch.note === undefined;
   if (chiNhanXet) return tx(() => luuNhanXet(p, a, skill, nxGt, gv, nhomGui));
 
   return tx(() => {
-    doiTuan?.();
-    doiSit?.();
+    if (dauChot) { goVangDaChot(p, attemptId, skill, dauChot, today); scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!; }
+    if (ghiDiem && (scheduleRow.sit_status === 'cancelled' || scheduleRow.sit_status === 'absent')) {
+      ghiSitStatus(p, attemptId, scheduleRow, 'sat', 'Nhập điểm');
+      scheduleRow = { ...scheduleRow, sit_status: 'sat' };
+    }
+    /* NHAP-DIEM-a: chưa tới tuần thi → tự dời về tuần này, không hỏi (`doiVeTuanNayNeuChua`). */
+    const doiTuan = ghiDiem ? doiVeTuanNayNeuChua(p, a, scheduleRow, today) : null;
+    if (doiTuan) { doiTuan(); scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!; }
     let existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
       .get(attemptId, skill) as ScoreRow | undefined;
     const before = existing ? { ...existing } : null;
@@ -2376,8 +2369,7 @@ export function saveScore(
       };
       if (patch.noShow === true) {
         if (hasOfficial) {
-          /* RKC (B): "-" vào ô đã có điểm → hỏi; đồng ý thì huỷ điểm (cất — "Khôi phục điểm" một bấm, `catDiemO`) rồi ghi "-". */
-          canXacNhan('Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?', undefined, 'Huỷ điểm, ghi vắng');
+          /* NHAP-DIEM-a (thay hỏi RKC-B): "-" vào ô đã có điểm → cất điểm ("Khôi phục" một bấm, `catDiemO`) rồi ghi "-"; web báo kèm Hoàn tác. */
           saveScore(p, attemptId, skill, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng' }, today);
           existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as ScoreRow | undefined;
         }
@@ -2395,9 +2387,8 @@ export function saveScore(
          *   Lớp thường đi `reportRegularNoShow` (trên).
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
-        /* RKC: "-" trước tuần thi — người dời được lịch hỏi "Dời về tuần này" rồi ghi vắng (lần vắng của tuần này, dời tiếp theo N38). */
-        const doiVe = doiVeTuanNayNeuChua(p, a, scheduleRow, today, 'vang');
-        if (doiVe) { doiVe(); scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!; }
+        /* NHAP-DIEM-a (PTA 14/11, thay RKC "dời về tuần này"): "-" TRƯỚC tuần thi = báo trước em vắng — ghi cho ĐÚNG tuần Test đó, xử lý theo N38
+           (lần 1 dời tuần sau tuần Test, lần 2 huỷ); KHÔNG kéo bài về tuần này (tự dời chỉ khi nhập ĐIỂM sớm). */
         if (!scheduleRow.week_end || !scheduleRow.planned_period_id) throw loi(400, '{assessed} chưa có tuần Test nên chưa báo "không có bài" được.', { assessed });
         const late = today > scheduleRow.week_end.slice(0, 10);
         /* RKC: lớp đã kết thúc (không còn tuần để dời) → "-" = Không dự thi, như MT cũ. */
@@ -2432,7 +2423,6 @@ export function saveScore(
           let kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;
           if (kia && (kia.band !== null || kia.raw_score !== null)) {
             const o = ENTRY_SKILL_SHORT[k as EntrySkill];
-            canXacNhan('{o} đã có điểm — vắng là vắng cả Writing: huỷ điểm {o} (khôi phục lại được) rồi ghi vắng?', { o }, 'Huỷ điểm, ghi vắng');
             try {
               saveScore(p, attemptId, k, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng cả Writing' }, today);
             } catch (e) {
@@ -2584,7 +2574,8 @@ export function saveScore(
      * PR-S6F-a (Q18, P0): "có điểm" = điểm THẬT (điểm thô hoặc band) — ô tiêu chí mới gõ 1/4 (band còn NULL) chưa phải lần nhập đầu.
      */
     const coDiemThat = raw !== null || band !== null;
-    const nhapDau = coDiemThat ? existing?.nhap_dau_ngay ?? today : null;
+    /* NHAP-DIEM-a (đặc tả 5.4): xoá ô KHÔNG reset ngày nhập đầu (nhập lại không bị tính muộn); Thi lại = bài mới → NULL. */
+    const nhapDau = coDiemThat ? existing?.nhap_dau_ngay ?? today : o.thiLai ? null : existing?.nhap_dau_ngay ?? null;
     /* LUAT-34: Huỷ điểm giữ nhóm cũ (Thi lại → NULL như nhận xét). */
     const nhom = matHet && !boKem ? existing?.nhom_nguyen_nhan ?? null
       : nhomSeLuu(a, { band, nhomGui, nhomCu: existing?.nhom_nguyen_nhan });

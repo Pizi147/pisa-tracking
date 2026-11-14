@@ -96,13 +96,16 @@ export async function runPrMtVangTests(t: YThucTestKit) {
   const chuongHuy = (aid: number) => (one(`SELECT COUNT(*) n FROM notifications WHERE kind = 'huy_vang' AND entity_id = ?`, aid).n as number);
   const vang = (aid: number, s: string, homNay: string, p = gvL) => attempts.saveScore(p, aid, s, { noShow: true }, homNay);
 
-  check('MV-HUY-TAY · (LG-9) Mock không có Huỷ môn — vắng 2 lần đã tự huỷ (N38)', () => thu(() => {
+  /* NHAP-DIEM-a (thay LG-9 "Mock không có Huỷ môn"): Huỷ điểm một kỹ năng — một đường cho mọi loại bài; lối cũ `huyTay` cùng hàm. */
+  check('MV-HUY-TAY · (NHAP-DIEM-a) Mock: Huỷ điểm kỹ năng đang vắng lần 1 → Đã huỷ; Khôi phục về tuần đã dời, giữ lần vắng', () => thu(() => {
     const a = luot[0];
     dung(a);
     vang(a, 'listening', TRONG);
-    let loi = '';
-    try { absence.huyTay(QL, a, 'listening', true); } catch (e: any) { loi = e.message; }
-    assert(/Progress \/ Final/.test(loi), `Mock không Huỷ môn: ${loi}`);
+    absence.huyTay(QL, a, 'listening', true);
+    assert(ky(a, 'listening').sit_status === 'cancelled', `Mock huỷ: ${JSON.stringify(ky(a, 'listening'))}`);
+    absence.huyDiemKn(QL, a, 'listening', false);
+    const k = ky(a, 'listening');
+    assert(k.sit_status === 'scheduled' && k.planned_period_id === W1 && k.absence_move_count === 1, `Khôi phục: ${JSON.stringify(k)}`);
   }));
 
   check('MV-1 · L1: "-" lần 1 → dời TUẦN SAU TUẦN THI (trong tuần → W+1; ghi muộn tuần sau → vẫn W+1, không W+2), không thẻ', () => thu(() => {

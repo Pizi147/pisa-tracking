@@ -128,7 +128,7 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
     for (const r of conn.prepare(
       `SELECT a.student_id, a.class_id, a.id,
               (SELECT MAX(sc.entered_at) FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS moc_luc,
-              (SELECT MAX(sc.nhap_dau_ngay) FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS moc_ngay,
+              (SELECT MAX(CASE WHEN sc.band IS NOT NULL OR sc.raw_score IS NOT NULL THEN sc.nhap_dau_ngay END) FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS moc_ngay,   -- NHAP-DIEM-a: ô đã xoá giữ ngày nhập đầu
               m.id AS mt_id, m.ty_le AS mt_ty_le, m.ngay_lam AS mt_ngay_lam, m.ghi_luc AS mt_ghi_luc, m.so_buoi AS mt_so_buoi, m.ngay_du_kien AS mt_ngay_du_kien, m.nhom_bo_tro AS mt_nhom,
               b.performed_on AS ph_luc, b.note AS ph_note, COALESCE(u.full_name, b.performer_name) AS ph_tvv, b.id AS ph_id
          FROM assessment_attempts a

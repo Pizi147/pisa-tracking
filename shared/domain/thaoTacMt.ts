@@ -16,7 +16,7 @@ export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch'), 'doi-han': t('Dời hạn chấm'),
   'bo-ky-nang': t('Xoá'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
-  'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'), 'khoi-phuc-diem': t('Khôi phục điểm'), 'khoi-phuc-kn': t('Khôi phục'),
+  'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'), 'khoi-phuc-diem': t('Khôi phục'), 'khoi-phuc-kn': t('Khôi phục'),   // NHAP-DIEM-a: Huỷ điểm ⇄ Khôi phục
   'huy-tay': t('Huỷ môn'), 'bo-huy-tay': t('Khôi phục'),
 };
 
@@ -54,19 +54,17 @@ export type QuyenTT = {
   doiLich?: boolean;
   /** Chủ SP 28/10: tuần thi của kỹ năng ĐÃ QUA (Chủ nhật < hôm nay) — GVCN được "Dời lịch" (máy chủ `gvcnDoiMtCu`). */
   quaTuan?: boolean;
-  /** LG-9 (chủ SP 15/11): bài KHÔNG tự huỷ khi vắng (lớp thường, MT0 lớp thường) — GV môn / GVCN / QL tự chọn "Huỷ" (một bấm, Hoàn tác). */
+  /** LG-9 cũ — NHAP-DIEM-a không còn đọc (Huỷ điểm mọi trạng thái); web còn gửi, PR-2 (NHAP-DIEM-b) bỏ. */
   khongTuHuy?: boolean;
-  /** Môn đang có dấu "-" (đã vắng ít nhất một lần) — điều kiện của "Huỷ". */
   vang?: boolean;
-  /** Môn đã Huỷ tay — "Khôi phục" một bấm (tuần cũ giữ). */
   huyTay?: boolean;
 };
 
 /** ≤ 1 nút chính + ≤ 3 mục menu (K4-27). "Lịch sử" KHÔNG nằm trong menu dòng — ở dòng thời gian của đợt (YC-13.6). */
 export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | null; menu: ThaoTac[] } {
   const ql = q.quanLy, ftQl = q.laFt && q.quanLy && (q.huy ?? true), han = ql && (q.han ?? true);
-  /* PR-MTGON (luật 3): Quản lý FT "Huỷ kỹ năng" ở MỌI trạng thái còn kỹ năng trong đợt (có điểm thì web hỏi "Xoá điểm và huỷ kỹ năng?"). */
-  const huy: ThaoTac[] = ftQl ? ['bo-ky-nang'] : [];
+  /* NHAP-DIEM-a (chủ SP 14/11, đặc tả 5.1 "không để hai nút cùng nghĩa"): menu kỹ năng KHÔNG còn "Xoá" (`bo-ky-nang`) — "Huỷ điểm" thay. "Xoá" chỉ còn
+     là thao tác lập lịch của Quản lý FT ở hộp một đợt (`menuHopKyNang`) và "Khôi phục" môn đã xoá (`khong-yeu-cau`). */
   /* LUAT-34 (T20b): ô trống có điểm cũ đã huỷ còn cất → "Khôi phục điểm" một bấm, người sửa được ô. */
   const khoiPhuc: ThaoTac[] = q.diemHuy && (q.nhapDiem || ql) ? ['khoi-phuc-diem'] : [];
   /* Chủ SP 28/10: GVCN dời MT tuần đã qua (kể cả có điểm) — như Quản lý, chỉ "Dời lịch". */
@@ -74,33 +72,35 @@ export function thaoTacKyNang(tt: TrangThaiTT, q: QuyenTT): { chinh: ThaoTac | n
   /* N38 (PR-MT-VANG L5, L6): FT vắng / đã huỷ / huỷ vắng 2 lần / bỏ khỏi đợt → "Dời lịch" = chọn tuần = xếp lại từ đầu (một thao tác thay Xếp lại
      bài vắng, Khôi phục, Giữ huỷ, Đưa lại vào đợt). Máy chủ `setSkillWeek` / `luuDot` làm phần còn lại. */
   const xepLai: ThaoTac | null = q.laFt && ql ? 'doi-lich' : null;
-  /* RKC (chủ SP 07/11 "không chặn cứng"): ô vắng / đã huỷ vẫn NHẬP điểm được — máy chủ hỏi rồi đổi về "đã làm bài" (`saveScore`). */
-  const nhap: ThaoTac[] = q.nhapDiem ? ['nhap-diem'] : [];
-  /* LG-9: bài không tự huỷ — người nhập được môn / GVCN / QL "Huỷ" môn đang vắng; môn đã Huỷ tay thì "Khôi phục". Máy chủ `huyTay` kiểm lại. */
-  const tay = !!q.khongTuHuy && (q.nhapDiem || q.gvcn || ql);
-  const huyTay: ThaoTac[] = tay && q.vang ? ['huy-tay'] : [];
-  const boHuyTay: ThaoTac[] = tay && q.huyTay ? ['bo-huy-tay'] : [];
+  /* RKC (chủ SP 07/11 "không chặn cứng"): ô vắng / đã huỷ vẫn NHẬP điểm được (máy chủ tự đổi về "đã làm bài"). NHAP-DIEM-a: chỉ FT — lớp thường
+     nhập ngay trong ô lưới, mục ⋯ "Nhập điểm" ở đó mở hộp rỗng. */
+  const nhap: ThaoTac[] = q.nhapDiem && q.laFt ? ['nhap-diem'] : [];
+  /* NHAP-DIEM-a (chủ SP 14/11, thay Huỷ môn LG-9): "Huỷ điểm" một kỹ năng ⇄ "Khôi phục" — người nhập được ô / GVCN / QL, mọi loại bài,
+     mọi trạng thái còn kỹ năng (máy chủ `huyDiemKn` kiểm lại). */
+  const nguoiHuy = q.nhapDiem || q.gvcn || ql;
+  const huyDiem: ThaoTac[] = nguoiHuy ? ['huy-diem'] : [];
+  const traLai: ThaoTac[] = nguoiHuy ? ['khoi-phuc-diem'] : [];
   switch (tt) {
     /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm (tuần cũ giữ); muốn đổi tuần thì Dời (L5). */
     case 'khong-yeu-cau': return { chinh: ftQl ? 'khoi-phuc-kn' : null, menu: ftQl ? ['doi-lich'] : [] };
-    case 'chua-xep': return { chinh: ql ? 'dat-lich' : null, menu: huy };
-    case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...huy, ...huyTay] as ThaoTac[] };
+    case 'chua-xep': return { chinh: ql ? 'dat-lich' : null, menu: [...huyDiem] };
+    case 'chua-toi-tuan': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...(ql ? ['doi-lich'] : []), ...huyDiem] as ThaoTac[] };
     case 'dang-thi': return { chinh: q.nhapDiem ? 'nhap-diem' : null,
-      menu: [...khoiPhuc, ...(q.gvcn || ql ? ['bao-vang'] : []), ...(han ? ['doi-han'] : []), ...(doi ? ['doi-lich'] : []), ...huy, ...huyTay] as ThaoTac[] };
+      menu: [...khoiPhuc, ...(nguoiHuy ? ['bao-vang'] : []), ...(han ? ['doi-han'] : []), ...(doi ? ['doi-lich'] : []), ...huyDiem] as ThaoTac[] };   // NHAP-DIEM-a: GV nhập được ô có Vắng
     /* PR-MTb T20: Quản lý / Quản trị dời được kỹ năng đã có điểm (điểm đi theo; máy chủ `setSkillWeek` `quanLy`). LUAT-34 (L3): "Đủ điểm"
      * không còn khoá — Huỷ điểm theo quyền sửa ô. */
     case 'co-diem': return { chinh: q.nhapDiem ? 'sua-diem' : null,
-      menu: [...(doi ? ['doi-lich'] : []), ...(q.nhapDiem || ql ? ['huy-diem'] : []), ...huy] as ThaoTac[] };
+      menu: [...(doi ? ['doi-lich'] : []), ...huyDiem] as ThaoTac[] };
     /* `vang` chỉ còn dữ liệu trước N38 (vắng chờ thẻ Quản lý) → Dời (L5). CV-LOI (V4B H15): cờ quyền máy chủ `doiLich` thắng; không cờ thì suy
        như máy chủ — GVCN chỉ lớp thường (`SCHEDULE_MOVE` loại FT). */
-    case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'doi-lich' : null, menu: [...nhap, ...huy, ...huyTay] };
+    case 'vang': return { chinh: (q.doiLich ?? (ql || (q.gvcn && !q.laFt))) ? 'doi-lich' : null, menu: [...nhap, ...huyDiem] };
     /* Thẻ dời cũ còn chờ (dữ liệu trước N38): Quản lý trả lời thẻ, hoặc Dời (thẻ tự rút, L5). */
-    case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: ql && q.laFt ? ['doi-lich', ...huy] as ThaoTac[] : [] };
-    /* Lớp thường giữ Khôi phục và đặt tuần (dữ liệu "đã huỷ" cũ). */
-    case 'da-huy': return { chinh: q.laFt ? xepLai : ql ? 'khoi-phuc' : null, menu: [...boHuyTay, ...nhap, ...huy] };
-    case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...khoiPhuc, ...(doi ? ['doi-lich'] : []), ...huy] as ThaoTac[] };
+    case 'cho-duyet': return { chinh: ql ? 'tra-loi-de-nghi' : null, menu: ql && q.laFt ? ['doi-lich'] as ThaoTac[] : [] };
+    /* NHAP-DIEM-a: một trạng thái "Đã huỷ" (huỷ tay / vắng 2 lần / dữ liệu cũ) — "Khôi phục" một bấm về đúng tuần; thay "Khôi phục và đặt tuần" của lớp thường. */
+    case 'da-huy': return { chinh: q.laFt ? xepLai : null, menu: [...traLai, ...nhap] };
+    case 'lich-su': return { chinh: q.nhapDiem ? 'nhap-diem' : null, menu: [...khoiPhuc, ...(doi ? ['doi-lich'] : []), ...huyDiem] as ThaoTac[] };
     /* L2: huỷ vắng 2 lần đã là kết cục (không việc, không "Giữ huỷ"); muốn xếp lại thì Dời. Chỉ Quản lý (luật 09/10). */
-    case 'huy-vang': return { chinh: xepLai, menu: [...boHuyTay, ...nhap, ...huy] };
+    case 'huy-vang': return { chinh: xepLai, menu: [...traLai, ...nhap] };
   }
 }
 
@@ -140,7 +140,7 @@ export function menuHopKyNang(tt: TrangThaiTT, q: QuyenTT, moi: boolean): Array<
     'doi-tuan': doiTuan,
     'bao-vang': !moi && t.menu.includes('bao-vang'),
     /* Đợt mới: bỏ kỹ năng trước khi tạo (Quản lý FT); đợt đã có: theo bảng thao tác. */
-    'bo-ky-nang': moi ? q.laFt && q.quanLy && (q.huy ?? true) : t.menu.includes('bo-ky-nang') || t.chinh === 'khoi-phuc-kn',
+    'bo-ky-nang': (q.laFt && q.quanLy && (q.huy ?? true) && (moi || tt !== 'khong-yeu-cau')) || t.chinh === 'khoi-phuc-kn',   // NHAP-DIEM-a: không còn trong `thaoTacKyNang`
     'doi-han': !moi && t.menu.includes('doi-han'),
     'huy-diem': !moi && t.menu.includes('huy-diem'),
     'nhat-ky': !moi,

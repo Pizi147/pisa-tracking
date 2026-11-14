@@ -77,7 +77,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const o = (aid: number, skill: string) => get('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?', aid, skill);
   const D = TODAY;
 
-  check('Pb2b (1c) · FT: nhập L ngày D → D; sửa D+3 có lý do → vẫn D (entered_at đổi); Huỷ điểm → NULL; nhập lại D+5 → D+5; dấu "-" → NULL', () => {
+  check('Pb2b (1c) · FT: nhập L ngày D → D; sửa D+3 có lý do → vẫn D (entered_at đổi); xoá ô → giữ D, nhập lại D+5 → vẫn D (NHAP-DIEM-a); dấu "-" → NULL', () => {
     const { sid, cy } = emMoi('MB FT 101');
     boLichTuTao(conn, cy);
     const a = luotThu(conn, svc.createAttempt, P.admin, { studentId: sid, cycleId: cy, classId: classId('MB FT 101'), no: 1, periodId: week.ensurePeriod(week.mondayOf(D)).id });
@@ -88,13 +88,13 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     const sua = o(a.id, 'listening');
     assert(sua.nhap_dau_ngay === D && sua.entered_at !== '2000-01-01T00:00:00.000Z', JSON.stringify(sua));
     svc.saveScore(P.admin, a.id, 'listening', { rawScore: null, lyDo: 'Huỷ điểm nhập nhầm' }, addDays(D, 4));
-    assert(o(a.id, 'listening').nhap_dau_ngay === null, 'huỷ điểm phải NULL');
+    assert(o(a.id, 'listening').nhap_dau_ngay === D, 'xoá ô giữ ngày nhập đầu');
     svc.saveScore(P.admin, a.id, 'listening', { rawScore: 28 }, addDays(D, 5));
-    assert(o(a.id, 'listening').nhap_dau_ngay === addDays(D, 5), `nhập lại: ${o(a.id, 'listening').nhap_dau_ngay}`);
+    assert(o(a.id, 'listening').nhap_dau_ngay === D, `nhập lại không tính muộn: ${o(a.id, 'listening').nhap_dau_ngay}`);
     svc.saveScore(P.admin, a.id, 'reading', { noShow: true }, D);
     assert(o(a.id, 'reading') && o(a.id, 'reading').nhap_dau_ngay === null, 'dấu "-" không đặt ngày nhập');
   });
-  check('Pb2b (1d) · Lớp thường cùng luật: nhập D → D; sửa D+2 có lý do → vẫn D; xoá điểm → NULL', () => {
+  check('Pb2b (1d) · Lớp thường cùng luật: nhập D → D; sửa D+2 có lý do → vẫn D; xoá điểm → giữ D (NHAP-DIEM-a)', () => {
     const { sid } = emMoi('MB FOU 12');
     const a = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, sid);
     assert(a, 'em lớp thường phải có bài tự tạo');
@@ -103,7 +103,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
     regular.saveRegularScore(P.admin, a.id, 'listening', { score: 32, total: 40, lyDo: 'Cộng sót câu 12' }, addDays(D, 2));
     assert(o(a.id, 'listening').nhap_dau_ngay === D, 'sửa giữ ngày đầu');
     regular.saveRegularScore(P.admin, a.id, 'listening', { score: null, total: null, lyDo: 'Nhập nhầm em' }, addDays(D, 2));
-    assert(o(a.id, 'listening').nhap_dau_ngay === null, 'xoá điểm phải NULL');
+    assert(o(a.id, 'listening').nhap_dau_ngay === D, 'xoá điểm giữ ngày nhập đầu');
   });
 
   // ------------------------------------------------------------------ khối 3 · han_xu_ly + phan_hoi_ngay (Q14)

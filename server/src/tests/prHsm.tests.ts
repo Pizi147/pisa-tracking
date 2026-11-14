@@ -141,7 +141,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const e = emMoi('Huỷ Điểm');
     svc.saveScore(QL, e.aid, 'speaking', { criteria: S4, nhanXet: 'Nói trôi', gvCham: { performerUserId: P.sTeacher.userId } }, TODAY);
     assert(dong(e.aid, 'speaking').comment === 'Nói trôi' && dong(e.aid, 'speaking').examiner_user_id === P.sTeacher.userId, 'lưu kèm điểm');
-    keHoach.huyDiem(QL, { attemptId: e.aid, skill: 'speaking', lyDo: 'Chấm nhầm bài của em khác' });
+    absence.huyDiemKn(QL, e.aid, 'speaking', true, 'Chấm nhầm bài của em khác');
     const r = dong(e.aid, 'speaking');
     assert(r.band === null && r.comment === 'Nói trôi' && r.examiner_user_id === P.sTeacher.userId, JSON.stringify(r));
     const nk = get(`SELECT before_json FROM audit_logs WHERE entity_id = ? AND entity_label = 'speaking' AND action LIKE 'score.%' ORDER BY id DESC`, e.aid);
@@ -159,7 +159,12 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const sheet = svc.classScoreSheet(QL, LOP, week.ensurePeriod(tuanNay).id, TODAY);
     const row = sheet.rows.find((r: any) => r.attemptId === eV.aid);
     assert(row && row.cells.find((c: any) => c.skill === 'speaking').canEdit === true, 'lưới');
-    assert(maLoi(() => svc.saveScore(QL, eV.aid, 'speaking', { criteria: S4 }, TODAY)) === 409, 'saveScore vắng phải hỏi');
+    /* NHAP-DIEM-a (thay "hỏi 409"): nhập điểm vào kỹ năng vắng = em đã làm bài, lưu thẳng — thử rồi cuộn lại (ca sau cần S còn vắng). */
+    conn.exec('SAVEPOINT hsm2f');
+    try {
+      svc.saveScore(QL, eV.aid, 'speaking', { criteria: S4 }, TODAY);
+      assert(get('SELECT sit_status s FROM attempt_skills WHERE attempt_id = ? AND skill = ?', eV.aid, 'speaking').s === 'sat', 'saveScore vắng → đã làm bài');
+    } finally { conn.exec('ROLLBACK TO hsm2f'); conn.exec('RELEASE hsm2f'); }
   });
 
   check('HSM (2g) · dời do vắng lần 1 → skillSchedule.doiTu = tuần cũ; lượt huỷ → huy.ai / huy.lyDo', () => {

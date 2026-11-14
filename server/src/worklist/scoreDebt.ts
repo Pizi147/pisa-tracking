@@ -1,5 +1,5 @@
 import { DS_JSON, db, theoLoJson } from '../db.ts';
-import { LUOT_TINH_NO_SQL, boMonLich, laChamCheo, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { LUOT_TINH_NO_SQL, boMonLich, conPhaiNhap, laChamCheo, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { activeAt, phanCongDaNap, type Principal } from '../permissions.ts';
 import { loadBundle, regularSkillViews, skillCells } from '../fasttrack/attempts.ts';
 import { scoringModeOf } from '../fasttrack/skillSchedule.ts';
@@ -25,8 +25,6 @@ export type DebtCell = { attemptId: number; classId: number; skill: string; user
   /** OV-13o: tuần thi của ô (chỉ ô chấm chéo) — `canChamCheo` lọc bài đã tới lượt chấm như Công việc. */
   tuanThi?: string | null };
 
-/** Tiến độ KHÔNG phải nợ điểm: vắng đã xác nhận, huỷ phần thi, ngoài phạm vi, đang chờ Quản lý duyệt dời, MT lịch sử (T34). */
-const NOT_DEBT = new Set(['absent', 'cancelled', 'skipped', 'reschedule_pending', 'lich_su']);
 
 /**
  * PR-Dọn (Q13): MỘT luật phân công cho "người giữ việc" (Nợ điểm), "GV chấm" (Lịch Test) và "người khác" (Công việc) — phân công
@@ -118,13 +116,13 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
       const views = regularSkillViews(a, skillRows, scores, today, bo);
       for (const skill of bo) {
         const v = views.get(skill);
-        if (!v || !v.required || v.scored || !v.weekStart || v.weekStart > today || NOT_DEBT.has(v.progress)) continue;
+        if (!v || !conPhaiNhap(v)) continue;   // NHAP-DIEM-a: một luật
         out.push({ attemptId: a.id, classId: a.class_id, skill, userId: teacherOf.get(`${a.class_id}|${skill}`) ?? null, overdue: v.overdue, han: v.deadline ?? null });
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
       for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
-        if (!c.required || c.xong || c.noShow !== null || !c.weekStart || c.weekStart > today || NOT_DEBT.has(c.progress)) continue;
+        if (!conPhaiNhap({ required: c.required, scored: c.xong, noShow: c.noShow !== null, progress: c.progress })) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
         out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,
           overdue: c.overdue, han: c.deadline ?? null, ...(chamCheo ? { chamCheo, tuanThi: c.weekStart } : {}) });

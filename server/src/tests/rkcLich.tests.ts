@@ -59,18 +59,15 @@ export async function runRkcLichTests(t: any) {
     assert(String(tuanL(id)).startsWith(SAU), `phải dời: ${tuanL(id)}`);
   }));
 
-  check('RKC-L2 · chưa tới tuần thi: QL nhập điểm → 409 "Dời về tuần này"; xác nhận → kỹ năng về tuần này + điểm lưu; GV → câu chỉ đường', () => thu(T3, () => {
+  /* NHAP-DIEM-a (chủ SP 14/11, thay RKC "QL hỏi / GV chỉ đường"): ai nhập được ô — GV cũng vậy — lưu thẳng, kỹ năng tự về tuần này. */
+  check('RKC-L2 · NHAP-DIEM-a · chưa tới tuần thi: GV nhập điểm → kỹ năng tự về tuần này + điểm lưu, không hỏi', () => thu(T3, () => {
     const id = luot(SAU);
-    const eGv = loiCua(() => svc.saveScore(gvL, id, 'listening', { rawScore: 30 }, T3));
-    assert(eGv?.status === 400 && /nhờ Quản lý dời về tuần này/.test(eGv.message), `GV: ${eGv?.status} ${eGv?.message}`);
-    const e = loiCua(() => svc.saveScore(QL, id, 'listening', { rawScore: 30 }, T3));
-    assert(hoi(e) && /dời về tuần này/.test(e.message), `QL chưa xác nhận: ${e?.status} ${e?.message}`);
-    voiXacNhan(() => svc.saveScore(QL, id, 'listening', { rawScore: 30 }, T3));
+    svc.saveScore(gvL, id, 'listening', { rawScore: 30 }, T3);
     assert(String(tuanL(id)).startsWith(NAY), `phải về tuần này: ${tuanL(id)}`);
     assert(get(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, id)?.raw_score === 30, 'điểm phải lưu');
   }));
-  /* RA-LECH-D ①: GV lớp thường (SCHEDULE_MOVE, không PLAN_WEEK — R14) nhập điểm trước tuần Test → câu chỉ đường, KHÔNG hỏi "Dời về tuần này" rồi 403. */
-  check('RKC-L3 · lớp thường chưa tới tuần: GV đúng môn nhập điểm / ghi "-" → 400 "nhờ Quản lý", không hỏi; QL vẫn được hỏi', () => thu(T3, () => {
+  /* NHAP-DIEM-a (thay RA-LECH-D ① "GV → câu chỉ đường"): GV lớp thường nhập điểm / ghi "-" trước tuần Test → môn tự về tuần này, không hỏi. */
+  check('RKC-L3 · NHAP-DIEM-a · lớp thường chưa tới tuần: GV đúng môn nhập điểm → môn về tuần này; ghi "-" → về tuần này rồi dời; không hỏi', () => thu(T3, () => {
     const LOP = classId('MB FOU 12');
     const now = new Date().toISOString();
     const sid = Number(conn.prepare(`INSERT INTO students (student_code, full_name, normalized_name, branch_id, status, created_at) VALUES (?,?,?,?, 'active', ?)`)
@@ -85,11 +82,10 @@ export async function runRkcLichTests(t: any) {
     const gv = perm.loadPrincipal(gvRow.user_id);
     xoaNho();
     assert(ss.canMoveSkillSchedule(gv, { classId: LOP, studentId: sid, skill: gvRow.skill }), 'tiền đề: GV lớp thường có SCHEDULE_MOVE');
-    const eDiem = loiCua(() => regularSvc.saveRegularScore(gv, aid, gvRow.skill, { score: 5, total: 10 }, T3));
-    assert(eDiem?.status === 400 && /nhờ Quản lý dời về tuần này/.test(eDiem.message), `GV điểm: ${eDiem?.status} ${eDiem?.message}`);
-    const eVang = loiCua(() => regularSvc.saveRegularScore(gv, aid, gvRow.skill, { noShow: true }, T3));
-    assert(eVang?.status === 400 && /nhờ Quản lý dời về tuần này/.test(eVang.message), `GV "-": ${eVang?.status} ${eVang?.message}`);
-    const eQl = loiCua(() => regularSvc.saveRegularScore(QL, aid, gvRow.skill, { score: 5, total: 10 }, T3));
-    assert(hoi(eQl), `QL phải được hỏi: ${eQl?.status} ${eQl?.message}`);
+    const tuanMon = () => String(get(`SELECT rp.week_start w FROM attempt_skills k JOIN report_periods rp ON rp.id = k.planned_period_id WHERE k.attempt_id = ? AND k.skill = ?`, aid, gvRow.skill).w);
+    regularSvc.saveRegularScore(gv, aid, gvRow.skill, { score: 5, total: 10 }, T3);
+    assert(tuanMon().startsWith(NAY), `GV điểm: môn về tuần này: ${tuanMon()}`);
+    regularSvc.saveRegularScore(gv, aid, gvRow.skill, { score: null }, T3);
+    assert(regularSvc.saveRegularScore(gv, aid, gvRow.skill, { noShow: true }, T3).moved, 'GV "-": ghi được (dời tuần sau)');
   }));
 }

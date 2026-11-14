@@ -85,15 +85,14 @@ export async function runPrCvSua1011Tests(t: YThucTestKit) {
     assert(!dau('writing1')?.no_show_period_id && !dau('writing2')?.no_show_period_id, 'gỡ một W phải gỡ cả hai');
   }));
 
-  check('CV1011-4 · W1 có điểm + W2 "-": hỏi huỷ điểm W1 (409) → đồng ý: điểm W1 cất (Khôi phục được), CẢ HAI "-", W dời; không còn một W điểm một W vắng', () => thu(() => {
+  /* NHAP-DIEM-a (thay "hỏi 409"): không hỏi — điểm W1 cất ngay; GV W2 không cất được điểm của GV W1 → chỉ đường, không đổi gì. */
+  check('CV1011-4 · W1 có điểm + W2 "-": GV W2 → 403 chỉ đường (không đổi gì); QL → điểm W1 cất (Khôi phục được), CẢ HAI "-", W dời; không còn một W điểm một W vắng', () => thu(() => {
     dung();
     attempts.saveScore(P.w1Teacher, a, 'writing1', { criteria: [6, 6, 6, 6] }, TRONG);
-    const e = (() => { try { attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG); } catch (x) { return x as any; } return null; })();
-    assert(e?.status === 409 && ky().planned_period_id === W && dau('writing1').band === 6, `phải hỏi trước khi huỷ điểm W1: ${e?.status} ${e?.message}`);
-    /* GV W2 không nhập được W1: được chỉ đường, không lỗi mơ hồ. */
-    const e2 = (() => { try { voiXacNhan(() => attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG)); } catch (x) { return x as any; } return null; })();
-    if (e2) assert(e2.status === 403 && /nhờ GV W1/.test(e2.message), `GV W2: ${e2.status} ${e2.message}`);
-    voiXacNhan(() => attempts.saveScore(P.mbManager, a, 'writing2', { noShow: true }, TRONG));
+    const e2 = (() => { try { attempts.saveScore(P.w2Teacher, a, 'writing2', { noShow: true }, TRONG); } catch (x) { return x as any; } return null; })();
+    if (e2) assert(e2.status === 403 && /nhờ GV W1/.test(e2.message) && ky().planned_period_id === W && dau('writing1').band === 6, `GV W2: ${e2.status} ${e2.message}`);
+    else assert(dau('writing1').band === null, 'GV W2 kiêm W1: điểm W1 cất');
+    attempts.saveScore(P.mbManager, a, 'writing2', { noShow: true }, TRONG);
     const w1 = dau('writing1');
     assert(w1.band === null && w1.no_show_period_id === W && dau('writing2').no_show_period_id === W, `W1 / W2: ${JSON.stringify([w1, dau('writing2')])}`);
     assert(ky().planned_period_id === W1 && ky().absence_move_count === 1, `dời cả W: ${JSON.stringify(ky())}`);

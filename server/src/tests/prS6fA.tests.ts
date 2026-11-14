@@ -62,19 +62,20 @@ export async function runPrS6fATests(t: YThucTestKit) {
     const r = dongCham('2026-09-28').get(d.baiId(a1.id, 'writing1'));
     assert(r && !r.dung && r.nhapDau === '2026-09-28', `dòng Chấm điểm: ${JSON.stringify(r)}`);
   });
-  check('S6F-a (1b) · bỏ bớt tiêu chí làm band về NULL → nhap_dau_ngay NULL; sửa điểm (band vẫn có) giữ ngày đầu', () => {
+  /* NHAP-DIEM-a (đặc tả 5.4): ô mất band vẫn GIỮ ngày nhập đầu (nhập lại không tính muộn); mọi nơi đọc ngày này chỉ khi ô còn điểm. */
+  check('S6F-a (1b) · bỏ bớt tiêu chí làm band về NULL → nhap_dau_ngay GIỮ (NHAP-DIEM-a); sửa điểm (band vẫn có) giữ ngày đầu', () => {
     svc.saveScore(P.admin, a1.id, 'writing1', { criteria: [7, 6, 6, 6], lyDo: 'Chấm lại tiêu chí 1' }, '2026-09-29');
     assert(o(a1.id, 'writing1').nhap_dau_ngay === '2026-09-28', 'sửa sau phải giữ ngày đầu');
     svc.saveScore(P.admin, a1.id, 'writing1', { criteria: [7, 6, null, null], lyDo: 'Nhập nhầm hai tiêu chí cuối' }, '2026-09-29');
-    assert(o(a1.id, 'writing1').band === null && o(a1.id, 'writing1').nhap_dau_ngay === null, JSON.stringify(o(a1.id, 'writing1')));
+    assert(o(a1.id, 'writing1').band === null && o(a1.id, 'writing1').nhap_dau_ngay === '2026-09-28', JSON.stringify(o(a1.id, 'writing1')));
   });
-  check('S6F-a (1c) · lớp thường (khoá lại): lưu điểm ngày D → D; xoá điểm → NULL', () => {
+  check('S6F-a (1c) · lớp thường (khoá lại): lưu điểm ngày D → D; xoá điểm → giữ D (NHAP-DIEM-a)', () => {
     const { sid } = emMoi('MB FOU 12');
     const a = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, sid);
     regular.saveRegularScore(P.admin, a.id, 'reading', { score: 20, total: 40 }, TODAY);
     assert(o(a.id, 'reading').nhap_dau_ngay === TODAY, 'lần đầu');
     regular.saveRegularScore(P.admin, a.id, 'reading', { score: null, total: null, lyDo: 'Nhập nhầm em' }, TODAY);
-    assert(o(a.id, 'reading').nhap_dau_ngay === null, 'xoá điểm phải NULL');
+    assert(o(a.id, 'reading').nhap_dau_ngay === TODAY, 'xoá điểm giữ ngày nhập đầu');
   });
   check('S6F-a (1d) · HAI ĐƯỜNG: ô W2 1/4 tiêu chí quá hạn nằm trong CẢ scoreDebtCells(...).overdue VÀ tập "chưa nhập & trễ" của bảng GV', () => {
     svc.saveScore(P.admin, a1.id, 'writing2', { criteria: [6, null, null, null] }, '2026-09-20');

@@ -137,13 +137,11 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     const e = emMt0();
     const absence: any = absenceMod;
     const ky = (id: number, s: string) => one(`SELECT sit_status AS sit, huy_vang AS huy, planned_period_id AS w, absence_move_count AS lan FROM attempt_skills WHERE attempt_id = ? AND skill = ?`, id, s);
-    svc.saveScore(P.mbManager, e.mt0, 'listening', { noShow: true }, TODAY);
-    assertThrows(() => absence.huyTay(P.mbManager, e.mt0, 'listening', true), /Progress \/ Final/, 'MT0 không có Huỷ môn');
-    assertThrows(() => absence.huyTay(P.mbManager, e.fin, 'listening', true), /chưa vắng/, 'chưa vắng');
+    /* NHAP-DIEM-a: Huỷ điểm mọi loại bài (MT0 có), không cần đã vắng — phép kiểm riêng ở prNhapDiemTuDo. */
     regular.reportRegularNoShow(P.mbManager, e.fin, 'listening', true, TODAY);
     const truoc = ky(e.fin, 'listening');
-    assertThrows(() => absence.huyTay(perm.loadPrincipal(idKhac), e.fin, 'listening', true), /GV của môn/, 'chi nhánh khác 403');
-    assertThrows(() => absence.huyTay(gvS(), e.fin, 'listening', true), /GV của môn/, 'GV ngoài môn 403');
+    assertThrows(() => absence.huyTay(perm.loadPrincipal(idKhac), e.fin, 'listening', true), /người nhập được ô/, 'chi nhánh khác 403');
+    assertThrows(() => absence.huyTay(gvS(), e.fin, 'listening', true), /người nhập được ô/, 'GV ngoài môn 403');
     xoaNho(); let s0 = soCauSql(); absence.huyTay(P.mbManager, e.fin, 'listening', true); const nHuy = soCauSql() - s0;
     assert(nHuy <= TRAN_GHI_LO.huyTay, `trần câu Huỷ môn: ${nHuy} > ${TRAN_GHI_LO.huyTay}`);
     assert(ky(e.fin, 'listening').sit === 'cancelled' && ky(e.fin, 'listening').huy === 1, `Final huỷ: ${JSON.stringify(ky(e.fin, 'listening'))}`);
@@ -155,8 +153,8 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     const sau = ky(e.fin, 'listening');
     assert(sau.sit === 'scheduled' && !sau.huy && sau.w === truoc.w && sau.lan === truoc.lan, `Hoàn tác: ${JSON.stringify([truoc, sau])}`);
     const q = { nhapDiem: true, quanLy: false, gvcn: false, laFt: false, dotHoanTat: false, khongTuHuy: true };
-    assert(d.thaoTacKyNang('dang-thi', { ...q, vang: true }).menu.includes('huy-tay') && !d.thaoTacKyNang('dang-thi', { ...q, vang: false }).menu.includes('huy-tay'), 'menu Huỷ môn chỉ khi đang vắng');
-    assert(d.thaoTacKyNang('da-huy', { ...q, huyTay: true }).menu.includes('bo-huy-tay'), 'menu Khôi phục');
+    assert(d.thaoTacKyNang('dang-thi', { ...q, vang: true }).menu.includes('huy-diem') && d.thaoTacKyNang('dang-thi', { ...q, vang: false }).menu.includes('huy-diem'), 'menu Huỷ điểm (NHAP-DIEM-a: cả khi chưa vắng)');
+    assert(d.thaoTacKyNang('da-huy', { ...q, huyTay: true }).menu.includes('khoi-phuc-diem'), 'menu Khôi phục');
     const hop = fs.readFileSync('web/src/modules/fasttrack/MockDetailPage.tsx', 'utf8');
     assert(!hop.includes('khongTuHuy'), 'trang MT không có Huỷ môn');
   }));
