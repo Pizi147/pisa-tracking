@@ -73,7 +73,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
         onDaLam={() => setGiu((m) => new Map(m).set(d.key, { nhom: { ...g, dong: [] }, dong: d }))}
         it={{ key: d.key, classId: d.classId, luot: d.luot ?? undefined, kn: d.kns[0], kns: d.kns, studentId: null, emIds: d.em,
           tieuDe: g.gvId === toi ? t('Nhập điểm {mon}', { mon: d.knChu }) : t('Nhập hộ {mon}', { mon: d.knChu }), classCode: d.lop ?? '',
-          contextLabel: [d.luotChu, d.tuan ? tuanLich(d.tuan) : null].filter(Boolean).join(' '), due: d.han }} />
+          contextLabel: [d.luotChu, d.tuan ? tuanLich(d.tuan) : null].filter(Boolean).join(' '), due: d.han, mine: g.gvId === toi }} />
     );
   } else if (tim && view === 'em') {
     noiDung = <ViewEm g={tim.g} d={tim.d} toi={toi} loai={cauHinh.loai} veNhan={tieuDe} onLui={xem.lui} onNhap={() => xem.vao('nhap')} onDong={onDong} />;
