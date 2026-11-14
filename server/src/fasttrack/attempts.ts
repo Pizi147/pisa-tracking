@@ -4,7 +4,7 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { ASSESSED_SKILLS, ASSESSED_SKILL_LABEL, boMonDaBo, duongDotTest, ENTRY_SKILLS, ENTRY_SKILL_SHORT, LY_DO_KHONG_HOC, NO_SHOW_OVERRIDDEN_NOTE, CHAM_CHEO, O_FT_XONG_SQL, addDaysIso, canChamCheo, dotGvCham, mondayOfDate, soSanhLop, LOI_MOT_KIEU, caHaiKieu, PERMISSIONS, awaitingScore, kyNangXongThieu, laChamCheo, cachHuyLuot, kiemBand, kiemTieuChi, LOI_TIEU_CHI_NGUYEN, kiemNhanXet, TRAN_CHU, kiemNhomNguyenNhan, kiemSoMtMoi, nenCoNhanXetMt, canNhomNguyenNhan, docNhomNguyenNhan, issueLabel, thieuNhanXetMt, type ThieuNhanXet, kyNangSosMt0, laMt0, laMtCu, laMtCuKyNang, ngay, dauTruCuaO, noShowText, pendingSkillsOf, soMtKeTiep, tenGvCham, tenMon, tuanHocCuaMt, tuanLich, type CachHuy, CASE_CATEGORY_LABEL, INTERVENTION_KIND_LABEL, SYSTEM_CLOSE_REASON_LABEL, categoryOf, type CaseCategory, type InterventionKind, type AssessedSkill, type EntrySkill, type KetQuaVang, type NoShowState, type PendingCell, type SkillProgress, type WorkScope, boMonTheoLuot, daGhiLuot, khoaBai, nhanBai } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { phanCongDangHieuLuc } from '../worklist/scoreDebt.ts';
-import { docGvChamCot } from '../cham/gvChamCot.ts';
+import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
@@ -2839,13 +2839,21 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
     if (!cell?.required) return [];
     const cho = pendingSkillsOf(pendingInputOf(cells), 'managed').includes('speaking') && canChamCheo(true, cell.weekStart, tuanNay);
     if (!cho && cell.band === null) return [];
+    /* GD-2 (V6 K3): panel gom tuần → lớp, mỗi ngăn là lưới FT (`LuoiFT`) — dòng mang đủ ô + kết quả lượt như `bangFt` (cột Kết quả "Chờ W2, S" / SOS).
+       Tính từ `bundle` đã nạp: không thêm câu đọc. */
+    const skillRows = bundle.skillRows.get(a.id) ?? [];
+    const skips = bundle.skips.get(a.id) ?? [];
+    const result = resultOf(a, scores, skips, skillRows);
     return [{
       attemptId: a.id as number, studentId: a.student_id as number, studentName: a.full_name as string, studentEmail: (a.student_email ?? null) as string | null,
+      studentCode: a.student_code as string, status: a.status as string,
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
-      weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell,
+      weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell, cells, result,
+      ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null) } : {}),
     }];
   }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi') || x.attemptNo - y.attemptNo);
-  return { rows, soBai: rows.filter((r) => r.cho).length };
+  /* GD-2: ô "GV chấm" đầu ngăn lớp × tuần — lựa chọn của NGƯỜI XEM (người lưu), một câu theo lô. */
+  return { rows, soBai: rows.filter((r) => r.cho).length, gvChamCot: docGvChamCotLo(p, rows.map((r) => r.classId)) };
 }
 
 export { notify };

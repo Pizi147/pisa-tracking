@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -415,7 +416,7 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
           ].filter(Boolean) }}
         chan={xong ? {
           huy: tiep ? null : { nhan: t('Đóng'), onClick: onDong },
-          trai: <span className="min-w-0 truncate text-dim"><b className="font-semibold text-dim">{t('✓ Đã lưu')}</b>{chuTiep && ` · ${chuTiep}`}</span>,
+          trai: <span className="min-w-0 truncate text-dim"><b className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</b>{chuTiep && ` · ${chuTiep}`}</span>,
           chinh: tiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => xong.onTiep(tiep)}>{t('Yêu cầu tiếp ›')}</button> : undefined,
         } : !cho ? undefined : {
           huy: null,
