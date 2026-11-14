@@ -14,6 +14,7 @@ Plan `09-plan-giao-dien-dot-2.md` GD-4 ý (e); `thiet-ke/v21/bang-mau-ghi-chu.md
 | `cap-1440-chip-han.png` | ⑤ B1 | Công việc › Case — chip hạn dạng viên |
 | `zoom-x-ba-cham.png` | ⑤ F2, D1 · ③ | góc ✕ / ⋯ phóng to |
 | `zoom-v22-truoc-sau.png` | — | V22: chip hạn, chip "Việc cần làm", cột Test, badge Chấm Speaking — TRƯỚC (có ⚠) │ SAU (chỉ màu) |
+| `zoom-v22-cham-truoc-sau.png` | — | V22: đầu hồ sơ lớp "21 bài chờ chấm ›" / "6 việc quá hạn của lớp ›" — TRƯỚC (có ●) │ SAU (chỉ màu) |
 
 ## 1. Truy vết
 
@@ -34,22 +35,23 @@ Plan `09-plan-giao-dien-dot-2.md` GD-4 ý (e); `thiet-ke/v21/bang-mau-ghi-chu.md
 - **GIỮ** `cham/DiemTheoLop.tsx` thẻ chọn lượt (hai dòng: tên + dòng phụ, nút trước / sau, phím riêng) — đổi sang HangTab mất dòng phụ, đổi bố cục ([XM-T1]).
 - **GIỮ** ([XM-11]) Tổng quan QL / QT / CX và Admin (`ChiSo` số to, `LamDongSoLieu`), `phanTich/*` — ⓪ dòng 42.
 - **GIỮ** ([XM-12]) `students/HanhTrinh.tsx`; `platform/NhatKyChung.tsx` là trang "Nhật ký"; cột "Nhật ký" ở Quản trị.
-- **[XM-T2]** Sổ nghĩa vụ, tab "Chưa làm": số đỏ → mờ ("Chưa làm" không phải việc của tôi quá hạn); 0 không còn badge.
+- **[XM-T2] → PTA chốt, đã làm:** Sổ nghĩa vụ, tab "Chưa làm" theo V22: có việc quá hạn → số đỏ; không có → thường.
 - **[XM-T3]** Tab con trong panel (BangLuotPanel, SoLieu) bỏ `-mx-4` → vạch tab không chạy hết bề ngang panel (theo `.tabs.trong`); Hướng dẫn 375 cuộn ngang thay ba tab chia đều.
 - **[XM-M1]** Menu rộng cố định 220 px (Menu cũ tự giãn) — tên dài ở "Các bước" xuống dòng. MenuDong trả focus về nút khi đóng (Menu cũ không) — "Đổi lịch cả đợt" chưa bấm thử. BangPhoiHop: mở ⋯ không còn đóng form đang mở tại dòng.
 - **[XM-D1]** Ô "Việc" ở dải TVV: số không bấm (mockup), nhãn "Việc ›" là link sang Công việc (dải đang ở Tổng quan).
-- **[XM-D2]** "Báo PH đúng hạn 0 %" khi đã có việc vẫn bấm (panel liệt kê việc trễ có ích) — chỉ "0 %" hồ sơ lớp tắt; cần thống nhất luật "0 không bấm" cho tỷ lệ.
-- **[XM-D3]** Hồ sơ GV "Việc đang tồn": máy chủ chưa có nguồn panel theo nhóm việc → ô "n ›" đổi trang sang Công việc (không OSo); dải GV nhiều chữ phụ xuống nhiều hàng ở 1440 — bố cục hồ sơ GV để GD sau.
+- **[XM-D2] → PTA chốt, đã làm:** tỷ lệ 0 % có mẫu số > 0 VẪN bấm ("Báo PH đúng hạn 0 %", "Đạt MT 0 %" hồ sơ lớp); "0 không bấm" chỉ khi không có gì để mở.
+- **[XM-D3]** Hồ sơ GV "Việc đang tồn": máy chủ chưa có nguồn panel theo nhóm việc → ô "n ›" đổi trang sang Công việc (không OSo); dải GV nhiều chữ phụ xuống nhiều hàng ở 1440 — bố cục hồ sơ GV để GD sau. **PTA chốt:** giữ đổi trang tạm thời; GD-15 làm panel.
 - **[XM-D4]** Dòng đếm Ý thức (`PhoiHopSosSection` / `BangPhoiHop`) chưa sang `DaiChiSo` — làm cùng GD-6 / GD-7.
-- **[XM-L1]** Bỏ biểu tượng loại dòng ở dòng thời gian lượt (H4 không có; chữ việc vẫn nói loại). Chưa đổi: `cases/CasePanel.tsx` dòng lịch sử Case (badge, Xoá kết quả…), `cases/FormPa.tsx` "Nhật ký PA (n)", `students/HangLichThi.tsx` "Lịch sử lịch thi", phần lịch sử ở `yThuc/BangLan.tsx` — PR sau.
-- **[XM-C1]** Chữ "Tạm dừng/ Kết thúc học" (⓪ dòng 35: "Tạm dừng / Kết thúc học", mục ⋯ chữ đỏ) — đổi chữ đụng > 50 chỗ (nhãn, phép kiểm, khoá dịch, Hướng dẫn) → PR riêng / GD-7.
+- **[XM-L1]** Bỏ biểu tượng loại dòng ở dòng thời gian lượt (H4 không có; chữ việc vẫn nói loại). Chưa đổi: `cases/CasePanel.tsx` dòng lịch sử Case (badge, Xoá kết quả…), `cases/FormPa.tsx` "Nhật ký PA (n)", `students/HangLichThi.tsx` "Lịch sử lịch thi", phần lịch sử ở `yThuc/BangLan.tsx` — **PTA chốt:** Case / Nhật ký PA → GD-6 / GD-7; Lịch thi → GD-13b.
+- **[XM-C1]** Chữ "Tạm dừng/ Kết thúc học" (⓪ dòng 35: "Tạm dừng / Kết thúc học", mục ⋯ chữ đỏ) — đổi chữ đụng > 50 chỗ (nhãn, phép kiểm, khoá dịch, Hướng dẫn) → **PTA chốt: GD-18.**
 - Chip bậc ở panel Báo PH TVV ("✓ REPORT 1") viết hoa theo 4d (`bacNgan`).
 
 ## 2c. V22 — chỗ GIỮ ⚠ và [XM]
 - GIỮ ⚠ (không phải hạn): lỗi lưu / máy chủ (CasePanel, TaiCho, LoYThucPanel, TinhHinh, CuoiKhoaLop, GocPhanCongGv, HopTamDungKetThuc…), xung đột bản ghi (CapNhatTuan, CauHinhCaseSos), xác nhận hậu quả (ChuyenLopPanel, XacNhanXuLyPanel, CuoiKhoaLop), dữ liệu thiếu / sai, mất kết nối (App), trang dev độ tương phản.
-- **[XM-V1]** "⚠ Gấp" (mức khẩn Case, `BangCanHoTro`) và "⚠ Chưa liên hệ được · lần n" (việc TVV) giữ ⚠ — không phải hạn. "Chờ QL duyệt dời lần n · hạn" (MockDetailPage) đã bỏ ⚠ (trạng thái chờ có hạn).
-- **[XM-V2]** ⓪ dòng 32 ("còn 1 ngày → hạn 23/09, màu còn hạn") vs V22 ("vàng là gần tới"): theo V22 (mới hơn) — chip viên vàng cả khi sắp hạn theo ngưỡng `ganHan` sẵn có.
+- **[XM-V1]** "⚠ Gấp" (mức khẩn Case, `BangCanHoTro`) và "⚠ Chưa liên hệ được · lần n" (việc TVV) giữ ⚠ — không phải hạn. **PTA đồng ý.** "Chờ QL duyệt dời lần n · hạn" (MockDetailPage) đã bỏ ⚠ (trạng thái chờ có hạn).
+- **[XM-V2]** ⓪ dòng 32 ("còn 1 ngày → hạn 23/09, màu còn hạn") vs V22 ("vàng là gần tới"): theo V22 (mới hơn) — chip viên vàng cả khi sắp hạn theo ngưỡng `ganHan` sẵn có. **PTA đồng ý.**
 - Phép kiểm `thanhPhanChung` "V22 · hạn chỉ bằng màu…": quét `web/src/**/*.tsx` + `shared/domain` + CSS, báo lỗi nếu ⚠ / `IconCanhBao` đứng gần khoá hạn (không ngoại lệ). Phép kiểm cũ đòi ⚠ ở hạn đã sửa theo V22 (`hanhTrinh`, `hocVienLop`, `prHvl`, `prOv13b`, `prHk2` C15a / C41…).
+- **Bỏ chấm "●" cùng hạn (PTA 14/11, V22 "không biểu tượng nào kèm"):** `Nhan` tông late / soon không còn chấm `::before`; badge lớp ("n bài chờ chấm ›", "n việc quá hạn của lớp ›" ở `DauTrangLop`, `StudentsPage`) `cham={false}`; `DongHan` bỏ chấm; `BadgeViec` ("Ý thức · cần xử lý") quá hạn / chờ không chấm; `.vh-qua::before` tắt; Sau thi "Bước tiếp chưa chốt" bỏ ●. **GIỮ ●:** chấm "có việc mới" trên tab (vd "Ý thức & Phối hợp ●"), "● Chưa lưu" (trạng thái lưu), chấm trạng thái (xong / đang làm / mờ). Phép kiểm `thanhPhanChung` "V22 · không chấm ●…" quét `.tsx` tìm "●" gần chữ hạn / quá hạn / chờ chấm. Ảnh `zoom-v22-cham-truoc-sau`.
 
 ## 3. Thao tác TRƯỚC → SAU
 
