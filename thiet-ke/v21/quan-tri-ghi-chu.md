@@ -8,7 +8,13 @@ Nguyên tắc: **nâng cấp, không dựng lại** — giữ vị trí cũ, 8 t
 
 ## 0. Lời chủ SP trong session này
 
-(chưa có)
+**15/11 (lời 37, qua PTA Overhaul) — nguyên văn:**
+> "M10: Lưu trữ vẫn chia theo chi nhánh, và danh sách học sinh vẫn chia theo lớp, lớp số to nhất xếp lên đầu"
+
+Quản trị: chủ SP không có ý kiến thêm.
+
+Đã áp (L1–L6, 1440 + 375): cả ba tab chia theo **chi nhánh** (dải "tên · n"; Xem: Mọi chi nhánh → đủ dải, chọn một chi nhánh → chỉ dải đó; bỏ cột Chi nhánh từng hàng) · tab Học viên chia tiếp theo **lớp cuối** (dải "mã lớp (link) · n em"; em chưa học lớp nào là nhóm cuối chi nhánh; bỏ cột Lớp cuối) · lớp **số to nhất lên đầu** (MB FT 108 trước MB FT 101; MB FT 96 trước MB FT 88) · Chọn nhiều chạy xuyên nhóm (L3 chọn em ở Monbay + Uông Bí).
+Kiểm web thật (seed, QT + QL): máy chủ ĐÃ xếp đúng thứ tự này (`server/src/classes/luuTru.ts` + `soSanhLopLuuTru`, phép kiểm `prLuuTruThuTu.tests.ts`: FT → Lớp thường, số lớp lớn trước; học viên theo lớp cuối rồi tên) → **GIỮ thứ tự**. Web hiện KHÔNG có dải chi nhánh (cột Chi nhánh từng hàng khi lẫn) và tab học viên là thẻ phẳng không dải lớp → mockup thêm dải để thấy cách chia (lượt đầu mockup đã làm mất thứ tự vì dữ liệu bịa xếp sai).
 
 ## 1. Bảng truy vết khung → thành phần → TRƯỚC → SAU
 
@@ -42,8 +48,10 @@ Nguyên tắc: **nâng cấp, không dựng lại** — giữ vị trí cũ, 8 t
 | K11 | 375 Tài khoản | thẻ mỗi tài khoản, Lọc | giữ, ô chọn cao 44, hộp sửa vai toàn màn | GIỮ | R10.5 |
 | L1–L6 | Lọc chi nhánh | `BranchFilter` ("Chi nhánh Tất cả" select) cạnh ô tìm | ô **Xem** cạnh tiêu đề như Học viên & Lớp (nhóm Chi nhánh + Mọi chi nhánh); chỉ hiện khi > 1 chi nhánh | ĐỔI | R10.3 |
 | L1–L6 | Tab | 2 tab có số (`HangTab`) | **3 tab** có số, badge mờ: + **Đã xoá** | ĐỔI | R10.3 |
-| L1 | Bảng lớp, dải Fast Track / Lớp thường, Tổng kết, Mở lại | có | giữ (bảng chuẩn `.bang`) | GIỮ | |
-| L2 | Học viên đã lưu trữ | thẻ mỗi em | **bảng** cùng dáng lớp: Học viên · Trạng thái · Lớp cuối · Lộ trình · Chi nhánh · Từ ngày · nút | ĐỔI | R10.3 |
+| L1, L2, L4 | Chia theo chi nhánh | không dải; cột "Chi nhánh" từng hàng khi lẫn nhiều chi nhánh | **dải chi nhánh** "tên · n" ở cả ba tab; bỏ cột Chi nhánh | ĐỔI | lời 37 |
+| L1, L2 | Thứ tự lớp | máy chủ: FT → Lớp thường, số lớp lớn trước (`soSanhLopLuuTru`) | giữ | GIỮ | lời 37 ("vẫn") |
+| L1 | Bảng lớp, dải Fast Track / Lớp thường, Tổng kết, Mở lại | có | giữ (bảng chuẩn `.bang`, dải FT / Lớp thường thành hàng nhóm trong bảng của chi nhánh) | GIỮ | |
+| L2 | Học viên đã lưu trữ | thẻ mỗi em, phẳng (đã xếp theo lớp cuối, không dải) | **bảng** cùng dáng lớp, **dải lớp cuối** (mã lớp link · n em; "Chưa học lớp nào" cuối); cột Học viên · Trạng thái · Lộ trình · Từ ngày · nút (bỏ Lớp cuối, Chi nhánh — đã ở dải) | ĐỔI | R10.3; lời 37 |
 | L2 | Trạng thái em | `Nhan` tone doing / soon | chữ + chấm, cùng màu | GIỮ ý | |
 | L2 | Em chưa học lớp nào (không có `cycleIdCuoi`) | không có nút Tổng kết | nút "Tổng kết" mờ + lý do "chưa có khoá học" ngay tại nút; Sửa thông tin, Quay lại học giữ | ĐỔI (không để ô trống) | PTA 15/11 chỉnh 3 |
 | L3 | Chọn nhiều + kết quả từng em (U02) | thẻ + thanh dính | bảng có cột tick + thanh dính (giữ dòng kết quả, Xử lý tiếp, Thử lại) | GIỮ | C5 Giữ |
@@ -77,7 +85,7 @@ Nguyên tắc: **nâng cấp, không dựng lại** — giữ vị trí cũ, 8 t
 | Lưu trữ | Tìm · lọc chi nhánh | ô tìm + `BranchFilter` | ô tìm + ô Xem | |
 | Lưu trữ | Tổng kết (lớp) · Mở lại (panel + Hoàn tác) | có | giữ | |
 | Lưu trữ | Tổng kết (em) · Sửa thông tin · Quay lại học (một em) + Hoàn tác | có | giữ | |
-| Lưu trữ | Chọn nhiều học viên · Quay lại học · n em · Xử lý tiếp · Thử lại · ✕ kết quả · Bỏ chọn | có | giữ | |
+| Lưu trữ | Chọn nhiều học viên · Quay lại học · n em · Xử lý tiếp · Thử lại · ✕ kết quả · Bỏ chọn | có | giữ; chọn xuyên chi nhánh / lớp | |
 | Lưu trữ | Khôi phục học viên đã xoá | khối dưới tab HV | tab Đã xoá | |
 
 **Mất thao tác: không.** Chỉ đổi đường tới: Chương trình bấm thẳng ô thay nút Sửa → panel.
@@ -121,6 +129,9 @@ Nguyên tắc: **nâng cấp, không dựng lại** — giữ vị trí cũ, 8 t
 | R10.2 Chương trình sửa tại dòng như Chi nhánh | Đạt — sửa tại ô; + Chương trình giữ panel [XM-3] | K2 |
 | R10.3 ba tab chuẩn có số, Đã xoá, câu 30 ngày vào ⓘ | Đạt | L1–L4 |
 | R10.3 học viên dùng bảng cùng dáng lớp (tên link · trạng thái · ngày · nút) | Đạt | L2, L3 |
+| Lời 37 · ba tab chia theo chi nhánh, bỏ cột Chi nhánh | Đạt | L1–L6 |
+| Lời 37 · học viên chia theo lớp cuối, số to lên đầu, "chưa học lớp nào" cuối, bỏ cột Lớp cuối | Đạt | L2, L3, L5, L6b, L6d, L6e |
+| Lời 37 · lớp đã kết thúc số to lên đầu, giữ dải FT / Lớp thường | Đạt — GIỮ thứ tự máy chủ | L1, L6a |
 | R10.3 lọc chi nhánh dùng ô "Xem" | Đạt (ẩn khi một chi nhánh) | L1, L5 |
 | R10.4 giữ Tổng kết · Mở lại · Quay lại học (một / n) · Xử lý tiếp · Sửa thông tin · Chọn nhiều · Khôi phục · Hoàn tác | Đạt | L1–L4 |
 | R10.4 Đã xoá ở Quản trị cùng thành phần | Đạt — bảng `.bang` chung (luu-tru.css) | K9, L4 |
@@ -154,3 +165,7 @@ Không sửa (lý do): vạch trái 3 px ở dải nhóm / quyền (dải nhóm 
 ## 6. PTA Overhaul rà 15/11 — đã làm
 
 ĐẠT hướng (rà qua cap-k1, k2, k7, l2). Quyết [XM-1] panel thay tab, [XM-5] COUNT; đồng ý XM-2…4, 6…10. Bốn chỉnh đã làm: K5 / K8 panel nhật ký QL (bỏ tab Nhật ký) · K7 ⓘ từng quyền + gập nhóm · L2 hàng em chưa học lớp có nút · đo tâm ✕ / ⋯ / công tắc (mục 4). Ảnh chụp lại: `anh/quan-tri/{k5,k7,k8}-*.png`, `cap-{k5,k7,k8}-*.png`, `anh/luu-tru/{l2,l3}-*.png`, `cap-{l2,l3}-*.png`.
+
+## 7. Lời 37 (15/11) — đã làm
+
+Lưu trữ chia theo chi nhánh → lớp (mục 0). Đưa `origin/main` (gồm PR #1607 mockup ⓪) vào nhánh; ⓪ chuyển phần ô chọn có tìm / lịch sử / badge từ `bang-mau.css` sang `v21.css` — mọi lớp mockup ⑩ dùng vẫn có, ảnh chụp lại không lệch. Ảnh chụp lại: `anh/luu-tru/{l1…l6e}-*.png` + `cap-*.png`.

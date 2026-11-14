@@ -24,7 +24,7 @@
 <div class="trang">
   <header class="dau-mk">
     <h1>v21 · Lưu trữ (mockup ⑩) — chờ chủ SP duyệt</h1>
-    <p>Đề bài <code>docs/superpowers/specs/2026-11-13-overhaul-v6/11-de-bai-mockup-dot-2.md</code> mục ⑩ (R10.3, R10.4, R10.5) + Luật chung G1–G5; chỗ lệch + thao tác giữ: <code>10-ra-dong-bo.md</code> C5. Nâng cấp trang <code>/hoc-vien/luu-tru</code> đang chạy: <b>ba tab chuẩn có số</b> — Lớp đã kết thúc · Học viên đã lưu trữ · <b>Đã xoá</b>; <b>học viên dùng bảng cùng dáng với lớp</b> (nay là thẻ); lọc chi nhánh dùng ô <b>"Xem"</b> như Học viên &amp; Lớp (nay <code>BranchFilter</code>); câu "Giữ 30 ngày" vào <b>ⓘ</b>. Giữ mọi thao tác: Tổng kết · Mở lại · Quay lại học (một / n em) · Xử lý tiếp · Sửa thông tin · Chọn nhiều · Khôi phục · Hoàn tác.</p>
+    <p>Đề bài <code>docs/superpowers/specs/2026-11-13-overhaul-v6/11-de-bai-mockup-dot-2.md</code> mục ⑩ (R10.3, R10.4, R10.5) + Luật chung G1–G5; chỗ lệch + thao tác giữ: <code>10-ra-dong-bo.md</code> C5. Nâng cấp trang <code>/hoc-vien/luu-tru</code> đang chạy: <b>ba tab chuẩn có số</b> — Lớp đã kết thúc · Học viên đã lưu trữ · <b>Đã xoá</b>; <b>học viên dùng bảng cùng dáng với lớp</b> (nay là thẻ); lọc chi nhánh dùng ô <b>"Xem"</b> như Học viên &amp; Lớp (nay <code>BranchFilter</code>); câu "Giữ 30 ngày" vào <b>ⓘ</b>. <b>Chủ SP 15/11 (lời 37): "Lưu trữ vẫn chia theo chi nhánh, và danh sách học sinh vẫn chia theo lớp, lớp số to nhất xếp lên đầu"</b> → cả ba tab có dải chi nhánh; học viên có dải lớp cuối; lớp số to lên đầu. Giữ mọi thao tác: Tổng kết · Mở lại · Quay lại học (một / n em) · Xử lý tiếp · Sửa thông tin · Chọn nhiều · Khôi phục · Hoàn tác.</p>
     <p>Dữ liệu = seed demo 14/09/2026, tên người bịa. Người xem: Quản trị <b>Lương Minh Đức</b> (mọi chi nhánh) — L5 có QL một chi nhánh. Nền vàng viền đứt = chú thích cho người duyệt. Ghi chú chung với Quản trị: <code>quan-tri-ghi-chu.md</code>. Ảnh cặp: <code>anh/luu-tru/</code>.</p>
     <nav class="muc-mk" aria-label="Mục lục khung">
       <a href="#l1">L1 · Lớp đã kết thúc</a><a href="#l2">L2 · Học viên đã lưu trữ</a><a href="#l3">L3 · Chọn nhiều</a><a href="#l4">L4 · Đã xoá</a><a href="#l5">L5 · Trạng thái</a><a href="#l6">L6 · 375</a>
@@ -32,28 +32,28 @@
     </nav>
   </header>
 
-  <section class="khu" id="l1"><h2>L1 · Lớp đã kết thúc — Quản trị, Xem: Mọi chi nhánh · 1440 (R10.3)</h2>
-    <p class="ghi"><span class="so-mk">1</span>Đầu trang: ‹ Học viên &amp; Lớp · <b>Lưu trữ</b> · ô <b>Xem</b> (nhóm Chi nhánh + "Mọi chi nhánh", cùng ô với Học viên &amp; Lớp; chỉ hiện khi người xem có hơn một chi nhánh) · ô tìm bên phải · <span class="so-mk">2</span>Ba tab chuẩn H1, badge <b>mờ</b> (chỉ đếm — không phải việc) · <span class="so-mk">3</span>Bảng giữ nguyên cột + dải nhóm Fast Track · Lớp thường; cột Chi nhánh chỉ khi lẫn nhiều chi nhánh (như nay) · nút Tổng kết · Mở lại (Mở lại chỉ ở QL của lớp / Quản trị) · Mở lại → panel Mở lại lớp như nay, xong có Hoàn tác.</p>
+  <section class="khu" id="l1"><h2>L1 · Lớp đã kết thúc — chia theo chi nhánh, số to lên đầu · Quản trị, Xem: Mọi chi nhánh · 1440 (R10.3, lời 37)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Đầu trang: ‹ Học viên &amp; Lớp · <b>Lưu trữ</b> · ô <b>Xem</b> (cùng ô Học viên &amp; Lớp; chỉ hiện khi người xem có hơn một chi nhánh) · ô tìm bên phải · ba tab chuẩn, badge <b>mờ</b> (chỉ đếm) · <span class="so-mk">2</span><b>Chia theo chi nhánh</b> (chủ SP 15/11, lời 37): mỗi chi nhánh một dải "tên · n lớp"; Xem: Mọi chi nhánh → đủ các dải, chọn một chi nhánh → chỉ dải đó; <b>bỏ cột Chi nhánh</b> ở từng hàng · <span class="so-mk">3</span>Trong chi nhánh giữ dải <b>Fast Track · Lớp thường</b> như web; lớp <b>số to lên đầu</b> (MB FT 96 trước MB FT 88) — đúng thứ tự máy chủ đang trả (<code>soSanhLopLuuTru</code>: FT trước, cùng loại số giảm dần) · <span class="so-mk">4</span>Nút Tổng kết · Mở lại (Mở lại chỉ ở QL của lớp / Quản trị; chỗ nút giữ cố định để cột thẳng) · Mở lại → panel như nay, xong có Hoàn tác.</p>
     <div class="hang-khung"><figure><figcaption>L1 · Lớp đã kết thúc</figcaption><div class="man toi" data-web data-khung="l1"></div></figure></div></section>
 
-  <section class="khu" id="l2"><h2>L2 · Học viên đã lưu trữ — bảng cùng dáng với lớp (R10.3, R10.4)</h2>
-    <p class="ghi"><span class="so-mk">1</span>Thẻ từng em → <b>bảng</b>: Học viên (tên link hồ sơ + mã) · Trạng thái (chữ + chấm: "Tạm dừng · Có thể quay lại" / "Kết thúc học") · Lớp cuối (link) · Lộ trình · Chi nhánh (khi lẫn) · Từ ngày · nút · <span class="so-mk">2</span>Nút giữ đủ: Tổng kết · Sửa thông tin (khi máy chủ cho) · <b>Quay lại học</b> (nút chính cho em Tạm dừng — như nay) · em chưa học lớp nào (Đỗ Minh Quân): "Tổng kết" là nút mờ kèm lý do "chưa có khoá học" ngay tại nút (không để ô trống); Sửa thông tin, Quay lại học (→ chọn lớp) vẫn có · <span class="so-mk">3</span>"Chọn nhiều học viên" là nút ở đầu bảng (giữ) · <span class="so-mk">4</span>Quay lại học một em xong: toast "Đã cho Ngô Thanh Tùng quay lại học · Hoàn tác".</p>
+  <section class="khu" id="l2"><h2>L2 · Học viên đã lưu trữ — chia theo chi nhánh, rồi theo lớp cuối (R10.3, R10.4, lời 37)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Thẻ từng em → <b>bảng</b> cùng dáng lớp; <b>dải chi nhánh</b> → trong đó <b>dải lớp cuối</b> (mã lớp là link · n em), lớp <b>số to lên đầu</b> (MB FT 108 trước MB FT 101), em "chưa học lớp nào" là nhóm cuối của chi nhánh; trong lớp theo tên — đúng thứ tự máy chủ đang trả · <span class="so-mk">2</span>Bỏ cột Lớp cuối và cột Chi nhánh (đã nằm ở dải); cột: Học viên (tên link + mã) · Trạng thái (chữ + chấm) · Lộ trình · Từ ngày · nút · <span class="so-mk">3</span>Nút giữ đủ: Tổng kết · Sửa thông tin · <b>Quay lại học</b> (nút chính cho em Tạm dừng); em chưa học lớp nào (Đỗ Minh Quân): "Tổng kết" mờ kèm lý do "chưa có khoá học" ngay tại nút · <span class="so-mk">4</span>"Chọn nhiều học viên" ở đầu danh sách (trên mọi chi nhánh) · Quay lại học xong: toast Hoàn tác.</p>
     <div class="hang-khung"><figure><figcaption>L2 · Học viên đã lưu trữ · toast Hoàn tác</figcaption><div class="man toi" data-web data-khung="l2"></div></figure></div></section>
 
-  <section class="khu" id="l3"><h2>L3 · Chọn nhiều → Quay lại học · n em → kết quả từng em (giữ U02)</h2>
-    <p class="ghi"><span class="so-mk">1</span>Bật "Chọn nhiều": cột ô tick đầu bảng, ẩn nút từng dòng (như nay); em không quay lại được thì không có ô tick · <span class="so-mk">2</span>Thanh dính đáy: "3 em đã chọn · Bỏ chọn · <b>Quay lại học · 3 em</b>" · <span class="so-mk">3</span>Sau khi chạy: dòng kết quả nằm lại trên thanh: "Xong 1/3 · Cần chọn lớp: Lý Thanh Trúc · <b>Xử lý tiếp · Lý Thanh Trúc</b> · Không lưu được: Hồ Gia Bảo (mất kết nối) · <b>Thử lại</b> · ✕"; em xong rời danh sách chọn, em chưa xong vẫn được chọn; toast Hoàn tác cho các em đã xong.</p>
+  <section class="khu" id="l3"><h2>L3 · Chọn nhiều xuyên chi nhánh / lớp → Quay lại học · n em → kết quả từng em (giữ U02)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Bật "Chọn nhiều": cột ô tick ở mọi bảng chi nhánh, ẩn nút từng dòng (như nay); chọn được em ở nhiều chi nhánh / lớp cùng lúc (Hồ Gia Bảo · Monbay, Lý Thanh Trúc · Uông Bí) · <span class="so-mk">2</span>Thanh dính đáy: "2 em đã chọn · Bỏ chọn · <b>Quay lại học · 2 em</b>" · <span class="so-mk">3</span>Sau khi chạy: dòng kết quả nằm lại trên thanh: "Xong 1/3 · Cần chọn lớp: Lý Thanh Trúc · <b>Xử lý tiếp · Lý Thanh Trúc</b> · Không lưu được: Hồ Gia Bảo · <b>Thử lại</b> · ✕"; em xong (Ngô Thanh Tùng) rời danh sách, em chưa xong vẫn được chọn; toast Hoàn tác cho các em đã xong.</p>
     <div class="hang-khung"><figure><figcaption>L3 · chọn nhiều, sau khi chạy</figcaption><div class="man toi" data-web data-khung="l3"></div></figure></div></section>
 
-  <section class="khu" id="l4"><h2>L4 · Tab "Đã xoá" — tab thứ ba có số, câu 30 ngày vào ⓘ (R10.3, R10.4)</h2>
-    <p class="ghi"><span class="so-mk">1</span>Khối "Đã xoá" đang nằm dưới danh sách học viên (rỗng thì ẩn) → <b>tab thứ ba có số</b>; cùng bảng chuẩn với Quản trị › Đã xoá (bỏ cột Loại vì chỉ có học viên) · <span class="so-mk">2</span>"Giữ 30 ngày, sau đó xoá hẳn." (chú thích tĩnh) → <b>ⓘ</b> ở đầu bảng (đang mở) · <span class="so-mk">3</span>Khôi phục tại dòng → em về lại danh sách cũ + toast "Đã khôi phục"; em đã khôi phục / đã xoá hẳn vẫn hiện, chữ mờ + câu trạng thái thay nút (như nay) · <span class="so-mk">4</span>Tab Đã xoá rỗng vẫn hiện, số 0 (không ẩn tab — chỗ cố định).</p>
+  <section class="khu" id="l4"><h2>L4 · Tab "Đã xoá" — tab thứ ba có số, chia theo chi nhánh, câu 30 ngày vào ⓘ (R10.3, R10.4, lời 37)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Khối "Đã xoá" đang nằm dưới danh sách học viên (rỗng thì ẩn) → <b>tab thứ ba có số</b>; cùng bảng chuẩn với Quản trị › Đã xoá (bỏ cột Loại vì chỉ có học viên); <b>dải chi nhánh</b> như hai tab kia · <span class="so-mk">2</span>"Giữ 30 ngày, sau đó xoá hẳn." (chú thích tĩnh) → <b>ⓘ</b> ở đầu danh sách (đang mở) · <span class="so-mk">3</span>Khôi phục tại dòng → em về lại danh sách cũ + toast "Đã khôi phục"; em đã khôi phục / đã xoá hẳn vẫn hiện, chữ mờ + câu trạng thái thay nút (như nay) · <span class="so-mk">4</span>Tab Đã xoá rỗng vẫn hiện, số 0.</p>
     <div class="hang-khung"><figure><figcaption>L4 · Đã xoá · ⓘ đang mở</figcaption><div class="man toi" data-web data-khung="l4"></div></figure></div></section>
 
   <section class="khu" id="l5"><h2>L5 · Trạng thái — rỗng · không khớp tìm · đang tải · lỗi tải · QL một chi nhánh</h2>
-    <p class="ghi"><span class="so-mk">1</span>Rỗng: một câu ("Chưa có lớp nào kết thúc") · tìm không khớp: "Không có học viên khớp “…”" + nút Bỏ tìm · <span class="so-mk">2</span>Đang tải: khung xương trong bảng, hàng tab giữ chỗ · lỗi tải "⚠ Không tải được lưu trữ · Thử lại" · <span class="so-mk">3</span>QL một chi nhánh (Trịnh Thu Hà, Cẩm Phả): không có ô Xem (một chi nhánh thì không cần chọn), không cột Chi nhánh.</p>
+    <p class="ghi"><span class="so-mk">1</span>Rỗng: một câu ("Chưa có lớp nào kết thúc") · tìm không khớp: "Không có học viên khớp “…”" + nút Bỏ tìm · <span class="so-mk">2</span>Đang tải: khung xương, hàng tab giữ chỗ · lỗi tải "⚠ Không tải được lưu trữ · Thử lại" · <span class="so-mk">3</span>QL một chi nhánh (Trịnh Thu Hà, Cẩm Phả): không ô Xem; chỉ một dải chi nhánh, trong đó vẫn chia theo lớp.</p>
     <div class="hang-khung"><figure><figcaption>L5 · trạng thái</figcaption><div class="man toi" data-web data-khung="l5"></div></figure></div></section>
 
-  <section class="khu" id="l6"><h2>L6 · 375 (R10.5)</h2>
-    <p class="ghi"><span class="so-mk">1</span>Đầu trang một cột: ‹ Học viên &amp; Lớp · Lưu trữ · ô Xem cả hàng · ô tìm cả hàng (cao 44) · tab cuộn ngang, badge mờ · <span class="so-mk">2</span>Bảng → <b>thẻ</b> (một dòng bảng = một thẻ, cùng cột, cùng nút, nút cao 44) — như web đang làm ở điện thoại · <span class="so-mk">3</span>Chọn nhiều: chạm cả thẻ để chọn / bỏ (vùng chạm cả thẻ, ô tick 24); thanh dính trên thanh điều hướng dưới; sau khi chạy, dòng kết quả xếp trên thanh chọn (L6e) · ⓘ mở tại chỗ (bấm, không rê).</p>
+  <section class="khu" id="l6"><h2>L6 · 375 (R10.5, lời 37)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Đầu trang một cột: ‹ Học viên &amp; Lớp · Lưu trữ · ô Xem cả hàng · ô tìm cả hàng (cao 44) · tab cuộn ngang, badge mờ · <span class="so-mk">2</span>Bảng → <b>thẻ</b> (một dòng bảng = một thẻ, cùng cột, cùng nút, nút cao 44); dải chi nhánh ngoài thẻ, dải Fast Track / Lớp thường hoặc dải lớp cuối trong thẻ · <span class="so-mk">3</span>Chọn nhiều: chạm cả thẻ để chọn / bỏ (ô tick 24); thanh dính trên thanh điều hướng dưới; sau khi chạy, dòng kết quả xếp trên thanh chọn (L6e) · ⓘ mở tại chỗ (bấm, không rê).</p>
     <div class="hang-khung">
       <figure><figcaption>L6a · Sáng · Lớp đã kết thúc</figcaption><div class="dt sang" data-web data-khung="l6a" style="height:812px"></div></figure>
       <figure><figcaption>L6b · Sáng · Học viên đã lưu trữ</figcaption><div class="dt sang" data-web data-khung="l6b" style="height:812px"></div></figure>
@@ -92,89 +92,125 @@
   var TOAST = function (chu) { return '<div class="toast" role="status">' + chu + '<button type="button" class="nut nut-nho">Hoàn tác</button><span class="dem-lui">8 s</span></div>'; };
   var BONG_30 = '<span class="bong-i" role="tooltip">Học viên đã xoá giữ <b style="color:var(--text)">30 ngày</b>, sau đó xoá hẳn. Khôi phục trả em về đúng lớp, hồ sơ, điểm như trước khi xoá.</span>';
 
-  /* ---------- dữ liệu ---------- */
-  var LOP_FT = [['MB FT 96', 'FT · LT1', 'Monbay', 'Đinh Thu Hằng', 14, '22/08/2026', 1], ['UB FT 380', 'FT · LT2', 'Uông Bí', 'Vương Đức Long', 9, '15/08/2026', 1]];
-  var LOP_TH = [['MB FOU 03', 'Foundation', 'Monbay', 'Nguyễn Hải Đăng', 1, '25/01/2026', 1], ['MB BE 08', 'Beginner', 'Monbay', 'Cao Bích Thảo', 2, '26/04/2026', 1], ['CP ELE 02', 'Elementary', 'Cẩm Phả', 'Lê Quang Vinh', 11, '30/05/2026', 0]];
-  function bangLop(ds, cn) {
-    return '<table class="bang"><colgroup><col style="width:170px"><col style="width:170px">' + (cn ? '<col style="width:140px">' : '') + '<col><col style="width:130px"><col style="width:150px"><col style="width:210px"></colgroup>'
-      + '<thead><tr><th>Lớp</th><th>Trình độ</th>' + (cn ? '<th>Chi nhánh</th>' : '') + '<th>GVCN</th><th class="so-c">HV từng học</th><th>Kết thúc</th><th></th></tr></thead><tbody>'
-      + ds.map(function (r) {
-        return '<tr><td><a class="ma" href="#">' + r[0] + '</a></td><td>' + r[1] + '</td>' + (cn ? '<td class="mo">' + r[2] + '</td>' : '') + '<td class="mo">' + r[3] + '</td><td class="so-c">' + r[4] + '</td><td class="ngay">' + r[5] + '</td>'
-          + '<td class="nut-o"><button type="button" class="nut nut-nho">Tổng kết</button>' + (r[6] ? '<button type="button" class="nut nut-nho">Mở lại</button>' : '') + '</td></tr>';
-      }).join('') + '</tbody></table>';
+  /* ---------- dữ liệu (lời 37: chia theo CHI NHÁNH; học viên chia tiếp theo LỚP cuối; lớp số to lên đầu — cùng thứ tự máy chủ `soSanhLopLuuTru`) ---------- */
+  var CN_DS = ['Monbay', 'Cẩm Phả', 'Uông Bí'];   // thứ tự chi nhánh như ô Xem (MB · BC · CP · HD · UB)
+  /* [mã, trình độ, chi nhánh, GVCN, HV từng học, kết thúc, Mở lại?, FT?] — trong chi nhánh: FT trước, số to trước; lớp thường theo trình độ rồi số to trước */
+  var LOP = [['MB FT 96', 'FT · LT1', 'Monbay', 'Đinh Thu Hằng', 14, '22/08/2026', 1, 1], ['MB FT 88', 'FT · LT2', 'Monbay', 'Phạm Thu Trang', 11, '08/08/2026', 1, 1],
+    ['MB FOU 03', 'Foundation', 'Monbay', 'Nguyễn Hải Đăng', 1, '25/01/2026', 1, 0], ['MB BE 08', 'Beginner', 'Monbay', 'Cao Bích Thảo', 2, '26/04/2026', 1, 0],
+    ['CP ELE 02', 'Elementary', 'Cẩm Phả', 'Lê Quang Vinh', 11, '30/05/2026', 0, 0],
+    ['UB FT 380', 'FT · LT2', 'Uông Bí', 'Vương Đức Long', 9, '15/08/2026', 1, 1]];
+  function cua(ds, cn, cot) { return ds.filter(function (r) { return r[cot] === cn; }); }
+  function hangLop(r) {
+    return '<tr><td><a class="ma" href="#">' + r[0] + '</a></td><td>' + r[1] + '</td><td class="mo">' + r[3] + '</td><td class="so-c">' + r[4] + '</td><td class="ngay">' + r[5] + '</td>'
+      + '<td class="nut-o"><button type="button" class="nut nut-nho">Tổng kết</button>' + (r[6] ? '<button type="button" class="nut nut-nho">Mở lại</button>' : '<span class="nut-cho" aria-hidden="true"></span>') + '</td></tr>';
   }
-  /* [tên, mã, trạng thái dung|ket, lớp cuối, lộ trình, chi nhánh, từ ngày, sửa TT?, quay lại?] */
-  var HV = [['Ngô Thanh Tùng', 'PISA-000041', 'dung', 'MB FT 101', 'FT LT1', 'Monbay', '07/09/2026', 1, 1],
-    ['Lý Thanh Trúc', 'PISA-000077', 'ket', 'UB FT 401', 'FT LT2', 'Uông Bí', '14/09/2026', 1, 1],
+  function bangLop(ds) {
+    var ft = ds.filter(function (r) { return r[7]; }), th = ds.filter(function (r) { return !r[7]; });
+    return '<table class="bang"><colgroup><col style="width:190px"><col style="width:190px"><col><col style="width:130px"><col style="width:150px"><col style="width:210px"></colgroup>'
+      + '<thead><tr><th>Lớp</th><th>Trình độ</th><th>GVCN</th><th class="so-c">HV từng học</th><th>Kết thúc</th><th></th></tr></thead><tbody>'
+      + (ft.length ? '<tr class="nhom-tr"><td colspan="6">Fast Track<span>' + ft.length + '</span></td></tr>' + ft.map(hangLop).join('') : '')
+      + (th.length ? '<tr class="nhom-tr"><td colspan="6">Lớp thường<span>' + th.length + '</span></td></tr>' + th.map(hangLop).join('') : '')
+      + '</tbody></table>';
+  }
+  function khuCn(cn, dem, than) { return '<section class="khu-cn" aria-label="' + cn + '"><div class="nhom-dai">' + cn + '<span>' + dem + '</span></div><div class="the-bang">' + than + '</div></section>'; }
+  function dsLop(ds) { return CN_DS.filter(function (cn) { return cua(ds, cn, 2).length; }).map(function (cn) { var d = cua(ds, cn, 2); return khuCn(cn, d.length + ' lớp', bangLop(d)); }).join(''); }
+
+  /* [tên, mã, trạng thái dung|ket, lớp cuối ('' = chưa học lớp nào), lộ trình, chi nhánh, từ ngày, sửa TT?, quay lại?] — trong chi nhánh: theo lớp cuối (thứ tự lớp như trên), trong lớp theo tên */
+  var HV = [['Ngô Thanh Tùng', 'PISA-000041', 'dung', 'MB FT 108', 'FT LT1', 'Monbay', '07/09/2026', 1, 1],
+    ['An Gia Phúc', 'PISA-000035', 'ket', 'MB FT 101', 'FT LT1', 'Monbay', '20/08/2026', 1, 1],
+    ['Kha Minh Thư', 'PISA-000036', 'ket', 'MB FT 101', 'FT LT1', 'Monbay', '20/08/2026', 1, 1],
     ['Hồ Gia Bảo', 'PISA-000052', 'dung', 'MB FOU 12', '', 'Monbay', '01/09/2026', 1, 1],
     ['Vũ Thu Uyên', 'PISA-000019', 'ket', 'MB BE 08', '', 'Monbay', '26/04/2026', 1, 1],
-    ['Đỗ Minh Quân', 'PISA-000088', 'ket', '', '', 'Cẩm Phả', '02/03/2026', 1, 1]];
+    ['Trương Mỹ An', 'PISA-000071', 'ket', 'CP ELE 02', '', 'Cẩm Phả', '30/05/2026', 1, 1],
+    ['Đỗ Minh Quân', 'PISA-000088', 'ket', '', '', 'Cẩm Phả', '02/03/2026', 1, 1],
+    ['Lý Thanh Trúc', 'PISA-000077', 'ket', 'UB FT 401', 'FT LT2', 'Uông Bí', '14/09/2026', 1, 1]];
   var TK_TAT = '<button type="button" class="nut nut-nho nut-tat" aria-disabled="true" aria-describedby="ly-tk">Tổng kết<small id="ly-tk">chưa có khoá học</small></button>';
   function ttHv(t) { return t === 'dung' ? '<span class="tt-hv dung">Tạm dừng · Có thể quay lại</span>' : '<span class="tt-hv ket">Kết thúc học</span>'; }
-  function bangHv(ds, cn, chon) {
-    chon = chon || null;
-    return '<table class="bang"><colgroup>' + (chon ? '<col style="width:44px">' : '') + '<col style="width:220px"><col style="width:220px"><col style="width:160px"><col style="width:96px">' + (cn ? '<col style="width:120px">' : '') + '<col style="width:120px"><col></colgroup>'
-      + '<thead><tr>' + (chon ? '<th class="c-chon"><span class="o-tick on" aria-label="Chọn tất cả">–</span></th>' : '') + '<th>Học viên</th><th>Trạng thái</th><th>Lớp cuối</th><th>Lộ trình</th>' + (cn ? '<th>Chi nhánh</th>' : '') + '<th>Từ ngày</th><th></th></tr></thead><tbody>'
-      + ds.map(function (r, i) {
-        var c = chon && chon[i];
-        return '<tr' + (c === 1 ? ' class="chon"' : '') + '>' + (chon ? '<td class="c-chon">' + (r[8] ? '<span class="o-tick' + (c === 1 ? ' on' : '') + '" role="checkbox" aria-checked="' + (c === 1) + '" aria-label="Chọn ' + r[0] + '">' + (c === 1 ? '✓' : '') + '</span>' : '') + '</td>' : '')
-          + '<td><a class="ten" href="#">' + r[0] + '</a><small class="so">' + r[1] + '</small></td><td>' + ttHv(r[2]) + '</td>'
-          + '<td>' + (r[3] ? '<a class="ma" href="#">' + r[3] + '</a>' : '<span class="mo">chưa học lớp nào</span>') + '</td><td class="mo">' + (r[4] || '—') + '</td>' + (cn ? '<td class="mo">' + r[5] + '</td>' : '') + '<td class="ngay">' + r[6] + '</td>'
-          + '<td class="nut-o">' + (chon ? '' : (r[3] ? '<button type="button" class="nut nut-nho">Tổng kết</button>' : TK_TAT) + (r[7] ? '<button type="button" class="nut nut-nho">Sửa thông tin</button>' : '') + (r[8] ? '<button type="button" class="nut nut-nho' + (r[2] === 'dung' ? ' nut-chinh' : '') + '">Quay lại học</button>' : '')) + '</td></tr>';
+  /* nhóm theo lớp cuối, giữ thứ tự sẵn có; "chưa học lớp nào" luôn cuối chi nhánh */
+  function theoLop(ds) {
+    var nhom = [], gap = {};
+    ds.forEach(function (r) { var k = r[3] || ''; if (!gap[k]) { gap[k] = []; nhom.push(k); } gap[k].push(r); });
+    nhom.sort(function (a, b) { return (a === '') - (b === ''); });
+    return nhom.map(function (k) { return [k, gap[k]]; });
+  }
+  function hangHv(r, chon) {
+    var c = chon && chon.indexOf(r[0]) >= 0;
+    return '<tr' + (c ? ' class="chon"' : '') + '>' + (chon ? '<td class="c-chon">' + (r[8] ? '<span class="o-tick' + (c ? ' on' : '') + '" role="checkbox" aria-checked="' + c + '" aria-label="Chọn ' + r[0] + '">' + (c ? '✓' : '') + '</span>' : '') + '</td>' : '')
+      + '<td><a class="ten" href="#">' + r[0] + '</a><small class="so">' + r[1] + '</small></td><td>' + ttHv(r[2]) + '</td><td class="mo">' + (r[4] || '—') + '</td><td class="ngay">' + r[6] + '</td>'
+      + '<td class="nut-o">' + (chon ? '' : (r[3] ? '<button type="button" class="nut nut-nho">Tổng kết</button>' : TK_TAT) + (r[7] ? '<button type="button" class="nut nut-nho">Sửa thông tin</button>' : '') + (r[8] ? '<button type="button" class="nut nut-nho' + (r[2] === 'dung' ? ' nut-chinh' : '') + '">Quay lại học</button>' : '')) + '</td></tr>';
+  }
+  function bangHv(ds, chon) {
+    var n = chon ? 6 : 5;
+    return '<table class="bang"><colgroup>' + (chon ? '<col style="width:44px">' : '') + '<col style="width:260px"><col style="width:240px"><col style="width:120px"><col style="width:130px"><col></colgroup>'
+      + '<thead><tr>' + (chon ? '<th class="c-chon"></th>' : '') + '<th>Học viên</th><th>Trạng thái</th><th>Lộ trình</th><th>Từ ngày</th><th></th></tr></thead><tbody>'
+      + theoLop(ds).map(function (g) {
+        return '<tr class="nhom-tr nhom-lop"><td colspan="' + n + '">' + (g[0] ? '<a class="ma" href="#">' + g[0] + '</a>' : 'Chưa học lớp nào') + '<span>' + g[1].length + ' em</span></td></tr>' + g[1].map(function (r) { return hangHv(r, chon); }).join('');
       }).join('') + '</tbody></table>';
   }
-  var DX = [['Bùi Khánh Linh', 'PISA-000010', 'MB FOU 12', 'Lương Minh Đức', '14/09 10:20', '14/10', 1], ['Mai Đức Anh', 'PISA-000063', 'MB FT 104', 'Nguyễn Hải Đăng', '11/09 16:05', '11/10', 1], ['Phan Gia Hân', 'PISA-000031', 'CP ELE 02', 'Trịnh Thu Hà', '20/08 09:12', '—', 0, 'Đã khôi phục · Trịnh Thu Hà · 21/08']];
-  function bangDx(ds, cn) {
+  function dsHv(ds, chon) { return CN_DS.filter(function (cn) { return cua(ds, cn, 5).length; }).map(function (cn) { var d = cua(ds, cn, 5); return khuCn(cn, d.length + ' em', bangHv(d, chon)); }).join(''); }
+  function dauDs(chu, nut, chon) { return '<div class="dau-ds"><span>' + chu + '</span>' + (nut ? '<button type="button" class="nut nut-nho' + (chon ? ' nut-chinh' : '') + '" aria-pressed="' + !!chon + '">Chọn nhiều học viên</button>' : '') + '</div>'; }
+
+  /* [tên, mã, lớp lúc xoá, chi nhánh, người xoá, lúc xoá, giữ đến, khôi phục được?, câu trạng thái] */
+  var DX = [['Bùi Khánh Linh', 'PISA-000010', 'MB FOU 12', 'Monbay', 'Lương Minh Đức', '14/09 10:20', '14/10', 1], ['Mai Đức Anh', 'PISA-000063', 'MB FT 104', 'Monbay', 'Nguyễn Hải Đăng', '11/09 16:05', '11/10', 1],
+    ['Phan Gia Hân', 'PISA-000031', 'CP ELE 02', 'Cẩm Phả', 'Trịnh Thu Hà', '20/08 09:12', '—', 0, 'Đã khôi phục · Trịnh Thu Hà · 21/08']];
+  function bangDx(ds) {
     return '<table class="bang"><colgroup><col><col style="width:150px"><col style="width:200px"><col style="width:150px"><col style="width:110px"><col style="width:270px"></colgroup>'
       + '<thead><tr><th>Học viên</th><th>Lớp lúc xoá</th><th>Người xoá</th><th>Lúc xoá</th><th>Giữ đến</th><th></th></tr></thead><tbody>'
       + ds.map(function (r) {
-        return '<tr' + (r[6] ? '' : ' class="da-xong"') + '><td><a class="ten" href="#">' + r[0] + '</a><small class="so">' + r[1] + '</small></td><td>' + r[2] + '</td><td class="mo">' + r[3] + '</td><td class="ngay">' + r[4] + '</td><td class="ngay">' + r[5] + '</td>'
-          + '<td class="nut-o">' + (r[6] ? '<button type="button" class="nut nut-nho">Khôi phục</button>' : '<span class="cho-chu">' + r[7] + '</span>') + '</td></tr>';
+        return '<tr' + (r[7] ? '' : ' class="da-xong"') + '><td><a class="ten" href="#">' + r[0] + '</a><small class="so">' + r[1] + '</small></td><td>' + r[2] + '</td><td class="mo">' + r[4] + '</td><td class="ngay">' + r[5] + '</td><td class="ngay">' + r[6] + '</td>'
+          + '<td class="nut-o">' + (r[7] ? '<button type="button" class="nut nut-nho">Khôi phục</button>' : '<span class="cho-chu">' + r[8] + '</span>') + '</td></tr>';
       }).join('') + '</tbody></table>';
   }
-  var SO = [5, 5, 2];
-  function man(tt, xem, tab, than, cao, tim) { return tt + '<div class="noi-dung"' + (cao ? ' style="min-height:' + cao + 'px"' : '') + '>' + DAU(xem, tim) + TABS(tab, SO) + than + '</div>'; }
-  function nhomLop(ten, ds, cn) { return '<div class="nhom-dai">' + ten + '<span>' + ds.length + ' lớp</span></div><section class="the-bang">' + bangLop(ds, cn) + '</section>'; }
+  function dsDx(ds) { return CN_DS.filter(function (cn) { return cua(ds, cn, 3).length; }).map(function (cn) { var d = cua(ds, cn, 3); return khuCn(cn, d.length + ' em', bangDx(d)); }).join(''); }
 
-  var L1 = man(QT, 'Mọi chi nhánh', 'Lớp đã kết thúc', nhomLop('Fast Track', LOP_FT, 1) + '<div style="height:16px"></div>' + nhomLop('Lớp thường', LOP_TH, 1), 620);
-  var CC_HV = function (chon) { return '<div class="bang-cc"><b>Học viên đã lưu trữ</b><span class="so">· 5</span><span class="phai"><button type="button" class="nut nut-nho' + (chon ? ' nut-chinh' : '') + '" aria-pressed="' + !!chon + '">Chọn nhiều học viên</button></span></div>'; };
-  var L2 = man(QT, 'Mọi chi nhánh', 'Học viên đã lưu trữ', '<section class="the-bang">' + CC_HV(0) + bangHv(HV, 1) + '</section>' + TOAST('Đã cho Ngô Thanh Tùng quay lại học · MB FT 101'), 620);
+  var SO = [6, 8, 2];
+  function man(tt, xem, tab, than, cao, tim) { return tt + '<div class="noi-dung"' + (cao ? ' style="min-height:' + cao + 'px"' : '') + '>' + DAU(xem, tim) + TABS(tab, SO) + than + '</div>'; }
+
+  var L1 = man(QT, 'Mọi chi nhánh', 'Lớp đã kết thúc', dsLop(LOP), 640);
+  var L2 = man(QT, 'Mọi chi nhánh', 'Học viên đã lưu trữ', dauDs('<b>8</b> học viên', 1) + dsHv(HV) + '<div style="height:64px"></div>' + TOAST('Đã cho Ngô Thanh Tùng quay lại học · MB FT 108'), 760);
   var THANH = '<div class="thanh-chon" role="region" aria-label="Chọn nhiều"><div class="kq" role="status"><b>Xong 1/3</b><span>· Cần chọn lớp: Lý Thanh Trúc</span><button type="button" class="nut nut-nho">Xử lý tiếp · Lý Thanh Trúc</button>'
     + '<span class="loi">· Không lưu được: Hồ Gia Bảo (mất kết nối)</span><button type="button" class="nut nut-nho">Thử lại</button><button type="button" class="nut nut-nho nut-vuong x" style="width:30px;height:30px" aria-label="Đóng kết quả">✕</button></div>'
     + '<div class="hang"><b>2</b> em đã chọn<span class="phai"><button type="button" class="nut nut-nho">Bỏ chọn</button><button type="button" class="nut nut-nho nut-chinh">Quay lại học · 2 em</button></span></div></div>';
-  var HV3 = HV.filter(function (r, i) { return i !== 0; });
-  var L3 = man(QT, 'Mọi chi nhánh', 'Học viên đã lưu trữ', '<section class="the-bang">' + CC_HV(1).replace('· 5', '· 4') + bangHv(HV3, 1, [1, 1, 0, 0]) + '</section>' + THANH, 640);
-  var L4 = man(QT, 'Mọi chi nhánh', 'Đã xoá', '<section class="the-bang"><div class="bang-cc"><b>Học viên đã xoá</b><span class="so">· 2 em khôi phục được</span><span class="goi-i">' + NI('Đã xoá') + BONG_30 + '</span></div>' + bangDx(DX, 1) + '</section>' + '<div class="toast" role="status" style="padding-right:16px">Đã khôi phục</div>', 560);
+  var HV3 = HV.filter(function (r) { return r[0] !== 'Ngô Thanh Tùng'; });
+  var CHON = ['Hồ Gia Bảo', 'Lý Thanh Trúc'];   // hai em ở hai chi nhánh — chọn nhiều chạy xuyên nhóm
+  var L3 = man(QT, 'Mọi chi nhánh', 'Học viên đã lưu trữ', dauDs('<b>7</b> học viên', 1, 1) + dsHv(HV3, CHON) + '<div style="height:120px"></div>' + THANH, 900);
+  var L4 = man(QT, 'Mọi chi nhánh', 'Đã xoá', '<div class="dau-ds"><span><b>2</b> em khôi phục được</span><span class="goi-i">' + NI('Đã xoá') + BONG_30 + '</span></div>' + dsDx(DX) + '<div class="toast" role="status" style="padding-right:16px">Đã khôi phục</div>', 620);
 
   var XUONG = '<section class="the-bang" aria-busy="true"><table class="bang"><thead><tr><th>Lớp</th><th>Trình độ</th><th>GVCN</th><th>Kết thúc</th></tr></thead><tbody>'
     + [60, 48, 70].map(function (w) { return '<tr><td><span class="xuong" style="display:block;width:' + w + '%"></span></td><td><span class="xuong" style="display:block;width:55%"></span></td><td><span class="xuong" style="display:block;width:40%"></span></td><td><span class="xuong" style="display:block;width:50%"></span></td></tr>'; }).join('') + '</tbody></table></section>';
   function o(nhan, noi) { return '<div class="mau"><span class="nhan-mk">' + nhan + '</span>' + noi + '</div>'; }
-  var L5 = QL + '<div class="noi-dung">' + DAU(null) + '<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Lớp đã kết thúc <span class="bd mo">0</span></button><button class="tab" role="tab" aria-selected="false">Học viên đã lưu trữ <span class="bd mo">1</span></button><button class="tab" role="tab" aria-selected="false">Đã xoá <span class="bd mo">0</span></button></div>'
+  var L5 = QL + '<div class="noi-dung">' + DAU(null) + '<div class="tabs" role="tablist"><button class="tab" role="tab" aria-selected="true">Lớp đã kết thúc <span class="bd mo">0</span></button><button class="tab" role="tab" aria-selected="false">Học viên đã lưu trữ <span class="bd mo">2</span></button><button class="tab" role="tab" aria-selected="false">Đã xoá <span class="bd mo">0</span></button></div>'
     + '<div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 24px">'
     + o('QL một chi nhánh (không ô Xem) · rỗng', '<section class="the-bang"><div class="rong" style="padding:28px 16px"><b style="font-size:15px">Chưa có lớp nào kết thúc</b></div></section>')
     + o('tìm không khớp', '<section class="the-bang"><div class="rong" style="padding:24px 16px"><b style="font-size:15px">Không có học viên khớp “hoang mi”</b><button type="button" class="nut nut-nho">Bỏ tìm</button></div></section>')
     + o('đang tải (lần đầu)', XUONG)
     + o('lỗi tải', '<section class="the-bang"><div class="bao-loi"><b>⚠</b> Không tải được lưu trữ<button type="button" class="nut nut-nho">Thử lại</button></div></section>')
-    + '<div style="grid-column:1 / -1">' + o('QL một chi nhánh · tab Học viên (không cột Chi nhánh)', '<section class="the-bang">' + CC_HV(0).replace('· 5', '· 1') + bangHv([['Phan Gia Hân', 'PISA-000031', 'dung', 'CP ELE 02', '', 'Cẩm Phả', '05/09/2026', 1, 1]], 0) + '</section>') + '</div>'
+    + '<div style="grid-column:1 / -1">' + o('QL một chi nhánh · tab Học viên — chỉ dải Cẩm Phả, chia theo lớp', dauDs('<b>2</b> học viên', 1) + dsHv(cua(HV, 'Cẩm Phả', 5))) + '</div>'
     + '</div></div>';
 
-  /* ---------- 375: một dòng bảng = một thẻ ---------- */
-  function theLop(r) { return '<div class="the-dong"><div class="h"><a class="ma" href="#" style="font-weight:700;color:var(--accent);text-decoration:none">' + r[0] + '</a><span class="tag nhat">' + r[1] + '</span></div><div class="p">' + r[2] + ' · GVCN ' + r[3] + ' · <span class="so">' + r[4] + '</span> HV · kết thúc <span class="so">' + r[5] + '</span></div><div class="n"><button type="button" class="nut">Tổng kết</button>' + (r[6] ? '<button type="button" class="nut">Mở lại</button>' : '') + '</div></div>'; }
+  /* ---------- 375: một dòng bảng = một thẻ; dải chi nhánh ngoài thẻ, dải loại lớp / lớp trong thẻ ---------- */
+  function theLop(r) { return '<div class="the-dong"><div class="h"><a class="ma" href="#" style="font-weight:700;color:var(--accent);text-decoration:none">' + r[0] + '</a><span class="tag nhat">' + r[1] + '</span></div><div class="p">GVCN ' + r[3] + ' · <span class="so">' + r[4] + '</span> HV · kết thúc <span class="so">' + r[5] + '</span></div><div class="n"><button type="button" class="nut">Tổng kết</button>' + (r[6] ? '<button type="button" class="nut">Mở lại</button>' : '') + '</div></div>'; }
   function theHv(r, chon) {
-    return '<div class="the-dong' + (chon === 1 ? ' chon' : '') + '"><div class="h">' + (chon !== undefined && r[8] ? '<span class="o-tick' + (chon === 1 ? ' on' : '') + '" role="checkbox" aria-checked="' + (chon === 1) + '">' + (chon === 1 ? '✓' : '') + '</span>' : '') + '<a class="ten" href="#" style="font-weight:600;color:var(--text);text-decoration:none">' + r[0] + '</a>' + ttHv(r[2]) + '</div>'
-      + '<div class="p">' + [r[3] || 'chưa từng học lớp nào', r[4], 'từ ' + r[6], r[5]].filter(Boolean).join(' · ') + '</div>'
-      + (chon !== undefined ? '' : '<div class="n">' + (r[3] ? '<button type="button" class="nut">Tổng kết</button>' : TK_TAT.replace(' nut-nho', '')) + (r[7] ? '<button type="button" class="nut">Sửa thông tin</button>' : '') + (r[8] ? '<button type="button" class="nut' + (r[2] === 'dung' ? ' nut-chinh' : '') + '">Quay lại học</button>' : '') + '</div>') + '</div>';
+    var c = chon && chon.indexOf(r[0]) >= 0;
+    return '<div class="the-dong' + (c ? ' chon' : '') + '"><div class="h">' + (chon && r[8] ? '<span class="o-tick' + (c ? ' on' : '') + '" role="checkbox" aria-checked="' + c + '">' + (c ? '✓' : '') + '</span>' : '') + '<a class="ten" href="#" style="font-weight:600;color:var(--text);text-decoration:none">' + r[0] + '</a>' + ttHv(r[2]) + '</div>'
+      + '<div class="p">' + [r[4], 'từ ' + r[6]].filter(Boolean).join(' · ') + '</div>'
+      + (chon ? '' : '<div class="n">' + (r[3] ? '<button type="button" class="nut">Tổng kết</button>' : TK_TAT.replace(' nut-nho', '')) + (r[7] ? '<button type="button" class="nut">Sửa thông tin</button>' : '') + (r[8] ? '<button type="button" class="nut' + (r[2] === 'dung' ? ' nut-chinh' : '') + '">Quay lại học</button>' : '') + '</div>') + '</div>';
   }
-  function theDx(r) { return '<div class="the-dong"><div class="h"><a class="ten" href="#" style="font-weight:600;color:var(--text);text-decoration:none">' + r[0] + '</a><span class="phu12 so">' + r[1] + '</span></div><div class="p">' + r[2] + ' · xoá bởi ' + r[3] + ' · <span class="so">' + r[4] + '</span>' + (r[5] !== '—' ? ' · giữ đến <span class="so">' + r[5] + '</span>' : '') + '</div><div class="n">' + (r[6] ? '<button type="button" class="nut">Khôi phục</button>' : '<span class="cho-chu">' + r[7] + '</span>') + '</div></div>'; }
+  function theDx(r) { return '<div class="the-dong"><div class="h"><a class="ten" href="#" style="font-weight:600;color:var(--text);text-decoration:none">' + r[0] + '</a><span class="phu12 so">' + r[1] + '</span></div><div class="p">' + r[2] + ' · xoá bởi ' + r[4] + ' · <span class="so">' + r[5] + '</span>' + (r[6] !== '—' ? ' · giữ đến <span class="so">' + r[6] + '</span>' : '') + '</div><div class="n">' + (r[7] ? '<button type="button" class="nut">Khôi phục</button>' : '<span class="cho-chu">' + r[8] + '</span>') + '</div></div>'; }
+  function dai375(t, n) { return '<div class="dai-the">' + t + '<span>' + n + '</span></div>'; }
   function m375(tab, than, them) { return TT375 + '<div class="noi-dung">' + DAU375('Mọi chi nhánh') + TABS(tab, SO) + than + '</div>' + (them || '') + DUOI; }
-  var L6A = m375('Lớp đã kết thúc', '<div class="nhom-dai">Fast Track<span>2 lớp</span></div><section class="the-bang ds-the">' + LOP_FT.map(theLop).join('') + '</section><div style="height:14px"></div><div class="nhom-dai">Lớp thường<span>3 lớp</span></div><section class="the-bang ds-the">' + LOP_TH.slice(0, 1).map(theLop).join('') + '</section>');
-  var L6B = m375('Học viên đã lưu trữ', '<section class="the-bang">' + CC_HV(0) + '<div class="ds-the">' + HV.slice(0, 3).map(function (r) { return theHv(r); }).join('') + '</div></section>');
-  var L6C = m375('Đã xoá', '<section class="the-bang"><div class="bang-cc"><b>Học viên đã xoá</b><span class="so">· 2</span><span class="goi-i">' + NI('Đã xoá') + BONG_30.replace('width:300px', '') + '</span></div><div class="ds-the">' + DX.map(theDx).join('') + '</div></section>');
+  var MB_LOP = cua(LOP, 'Monbay', 2);
+  var L6A = m375('Lớp đã kết thúc', '<section class="khu-cn"><div class="nhom-dai">Monbay<span>4 lớp</span></div><div class="the-bang ds-the">' + dai375('Fast Track', 2) + MB_LOP.filter(function (r) { return r[7]; }).map(theLop).join('') + dai375('Lớp thường', 2) + MB_LOP.filter(function (r) { return !r[7]; }).slice(0, 1).map(theLop).join('') + '</div></section>');
+  function theHvNhom(ds, chon) { return theoLop(ds).map(function (g) { return dai375(g[0] ? '<a class="ma" href="#">' + g[0] + '</a>' : 'Chưa học lớp nào', g[1].length + ' em') + g[1].map(function (r) { return theHv(r, chon); }).join(''); }).join(''); }
+  var MB_HV = cua(HV, 'Monbay', 5);
+  var L6B = m375('Học viên đã lưu trữ', dauDs('<b>8</b> học viên', 1) + '<section class="khu-cn"><div class="nhom-dai">Monbay<span>5 em</span></div><div class="the-bang ds-the">' + theHvNhom(MB_HV.slice(0, 3)) + '</div></section>');
+  var L6C = m375('Đã xoá', '<div class="dau-ds"><span><b>2</b> em khôi phục được</span><span class="goi-i">' + NI('Đã xoá') + BONG_30.replace('width:300px', '') + '</span></div><section class="khu-cn"><div class="nhom-dai">Monbay<span>2 em</span></div><div class="the-bang ds-the">' + cua(DX, 'Monbay', 3).map(theDx).join('') + '</div></section>');
   var THANH375 = '<div class="thanh-chon" role="region" aria-label="Chọn nhiều"><div class="hang"><b>2</b> em đã chọn<button type="button" class="nut nut-nho" style="margin-left:auto">Bỏ chọn</button><span class="phai"><button type="button" class="nut nut-chinh">Quay lại học · 2 em</button></span></div></div>';
-  var L6D = m375('Học viên đã lưu trữ', '<section class="the-bang">' + CC_HV(1).replace('· 5', '· 4') + '<div class="ds-the">' + HV3.slice(0, 3).map(function (r, i) { return theHv(r, [1, 1, 0][i]); }).join('') + '</div></section>', THANH375);
-
-  var THANH375KQ = THANH.replace('<button type="button" class="nut nut-nho nut-vuong x" style="width:30px"', '<button type="button" class="nut nut-nho nut-vuong x" style="width:44px;height:44px"');
-  var L6E = m375('Học viên đã lưu trữ', '<section class="the-bang">' + CC_HV(1).replace('· 5', '· 4') + '<div class="ds-the">' + HV3.slice(0, 3).map(function (r, i) { return theHv(r, [1, 1, 0][i]); }).join('') + '</div></section>', THANH375KQ);
+  var CHON375 = ['An Gia Phúc', 'Hồ Gia Bảo'];
+  var MB_HV3 = cua(HV3, 'Monbay', 5);
+  var L6D = m375('Học viên đã lưu trữ', dauDs('<b>7</b> học viên', 1, 1) + '<section class="khu-cn"><div class="nhom-dai">Monbay<span>4 em</span></div><div class="the-bang ds-the">' + theHvNhom(MB_HV3, CHON375) + '</div></section>', THANH375);
+  var THANH375KQ = THANH.replace('<button type="button" class="nut nut-nho nut-vuong x" style="width:30px;height:30px"', '<button type="button" class="nut nut-nho nut-vuong x" style="width:44px;height:44px"').replace('Lý Thanh Trúc</span>', 'Kha Minh Thư</span>').replace('Xử lý tiếp · Lý Thanh Trúc', 'Xử lý tiếp · Kha Minh Thư');
+  var L6E = m375('Học viên đã lưu trữ', dauDs('<b>7</b> học viên', 1, 1) + '<section class="khu-cn"><div class="nhom-dai">Monbay<span>4 em</span></div><div class="the-bang ds-the">' + theHvNhom(MB_HV3, CHON375) + '</div></section>', THANH375KQ);
   var KHUNG = { l1: L1, l2: L2, l3: L3, l4: L4, l5: L5, l6a: L6A, l6b: L6B, l6c: L6C, l6d: L6D, l6e: L6E };
   document.querySelectorAll('[data-khung]').forEach(function (k) { k.innerHTML = KHUNG[k.dataset.khung]; });
   document.querySelectorAll('.dt .tabs').forEach(function (t) { var s = t.querySelector('[aria-selected="true"]'); if (s) t.scrollLeft = s.offsetLeft - 16; });

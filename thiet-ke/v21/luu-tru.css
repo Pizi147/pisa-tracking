@@ -96,3 +96,19 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .nut-tat { flex-direction:column; gap:0; line-height:1.15; color:var(--text-faint); border-style:dashed; background:transparent; cursor:not-allowed; height:auto; min-height:30px; padding:3px 10px; }
 .nut-tat small { font:500 12px var(--phong); color:var(--text-faint); }
 .nut-tat:hover { border-color:var(--line-strong); }
+/* lời 37 (chủ SP 15/11): chia theo chi nhánh → (học viên) theo lớp cuối; dải nhóm trong bảng như dải Fast Track / Lớp thường */
+.khu-cn + .khu-cn { margin-top:18px; }
+.khu-cn > .nhom-dai { margin-bottom:8px; }
+.dau-ds { display:flex; align-items:center; gap:10px; min-height:36px; margin:0 0 10px; font-size:14px; color:var(--text-dim); }
+.dau-ds b { color:var(--text); font-family:var(--phong-so); }
+.dau-ds .nut { margin-left:auto; }
+.bang tr.nhom-tr td { background:var(--surface-2); box-shadow:inset 3px 0 0 var(--accent); font:700 14px var(--phong); padding-top:9px; padding-bottom:9px; }
+.bang tr.nhom-tr td span { font:500 12px var(--phong-so); color:var(--text-faint); margin-left:8px; }
+.bang tr.nhom-lop td a.ma { font-size:14px; }
+.nut-cho { display:inline-block; width:61px; margin-left:6px; vertical-align:middle; }
+.dai-the { display:flex; align-items:baseline; gap:8px; min-height:40px; padding:9px 14px; background:var(--surface-2); box-shadow:inset 3px 0 0 var(--accent); border-top:1px solid var(--line); font:700 14px var(--phong); }
+.ds-the .dai-the:first-child { border-top:0; }
+.dai-the span { font:500 12px var(--phong-so); color:var(--text-faint); }
+.dai-the a.ma { font-weight:700; color:var(--accent); text-decoration:none; }
+.dt .dau-ds { flex-wrap:wrap; }
+.dt .dau-ds .nut { height:44px; }
