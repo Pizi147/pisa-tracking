@@ -34,6 +34,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Chung', vai: ['QL', 'QT'], url: '/ref/classes?branchId={cn}' },
   /* GD-1 (Overhaul V6): "+ Task" ở trang đầu GV — ô gõ tên em (một câu mỗi lần gõ, ≥ 2 ký tự). */
   { trang: 'Chung', vai: ['QL', 'GVCN', 'GVBM'], url: '/tim/hoc-vien?q=ng' },
+  /* GD-4a [XM-A]: "+ Task" gọi kèm `lop=toi` (GV chỉ em lớp mình) — cùng một câu. */
+  { trang: 'Chung', vai: ['QL', 'GVCN', 'GVBM'], url: '/tim/hoc-vien?q=ng&lop=toi' },
 
   // ---------------------------------------------------------------- Tổng quan · Quản lý
   {
@@ -559,6 +561,7 @@ export const TRAN: Record<string, number> = {
   'QL /ref/classes?branchId={cn}': 13, 'QT /ref/classes?branchId={cn}': 13,
   /* GD-1: `/tim/hoc-vien` một câu đọc — đo 3 câu (cả phiên) → đo + 10. */
   'QL /tim/hoc-vien?q=ng': 13, 'GVCN /tim/hoc-vien?q=ng': 13, 'GVBM /tim/hoc-vien?q=ng': 13,
+  'QL /tim/hoc-vien?q=ng&lop=toi': 13, 'GVCN /tim/hoc-vien?q=ng&lop=toi': 13, 'GVBM /tim/hoc-vien?q=ng&lop=toi': 13,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */

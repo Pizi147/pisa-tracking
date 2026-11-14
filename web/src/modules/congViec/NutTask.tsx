@@ -68,7 +68,7 @@ function HopChonEm({ neo, loai, onDong, onChon }: {
     if (q.length < 2) { setKq([]); return undefined; }
     const my = ++luot.current;
     const h = setTimeout(() => {
-      api.get<Em[]>(`/tim/hoc-vien?q=${encodeURIComponent(q)}`)
+      api.get<Em[]>(`/tim/hoc-vien?q=${encodeURIComponent(q)}&lop=toi`)
         /* Em các lớp của tôi lên trước (mockup K5b), giữ thứ tự tên máy chủ trong mỗi phần. */
         .then((r) => { if (my === luot.current) { setLoi(null); setDang(0); setKq([...r.filter((e) => lopToi.has(e.lopId)), ...r.filter((e) => !lopToi.has(e.lopId))].slice(0, 8)); } })
         .catch((e: any) => { if (my === luot.current) { setKq([]); setLoi(e?.message ?? t('Không tìm được — thử lại.')); } });

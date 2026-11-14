@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
-import { chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_KET_THUC_CHUYEN_LOP, CAU_LO_TRINH_MOI_LUU_TRU, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
+import { laVaiQuanLy, chuTargetKck, NO_HANDOVER_NOTE, PERMISSIONS, STUDENT_STATUSES, luatDoiLop, NGAY_SINH_TOI_THIEU, docEmail, docNgayNhap, type LoaiLop, type ProgrammeCode, CHI_SUA_THONG_TIN, LIEN_HE_TOI_DA, NHAN_LIEN_HE, docSoDienThoai, CAU_KET_THUC_CHUYEN_LOP, CAU_LO_TRINH_MOI_LUU_TRU, TRUONG_LIEN_HE, coONhapLienHe } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, kiemKieuO, normalizeName, notFound, nowIso, loi } from '../util.ts';
 import { ganChuCaseThieu } from '../cases/owner.ts';
@@ -109,12 +109,16 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
 /**
  * GD-1 "+ Task" (Overhaul V6, mockup v21 K5): ô gõ tên em — MỘT câu, em đang học (chưa lưu trữ) trong phạm vi xem học viên, kèm lớp đang học + tên TVV
  * (hộp Tình hình học tập ghi "Gửi tới"). Nhẹ hơn `listStudents` (không đọc kết quả / Case từng em). Gõ < 2 ký tự → [] (0 câu).
+ * `chiLopToi` (GD-4a [XM-A], ⑤ [XM-3]; luat/3 Y-01, Y-17 — GV chỉ ghi / báo cho em lớp mình): người gọi không phải QL / Quản trị → chỉ em các lớp
+ * mình được phân công (dạy / chủ nhiệm), bỏ phạm vi chi nhánh của vai khác. QL / Quản trị giữ phạm vi xem đủ. Cùng một câu, không thêm câu.
  */
-export function timHocVien(p: Principal, q: string | undefined): { id: number; ten: string; lopId: number; lop: string; tvv: string | null }[] {
+export function timHocVien(p: Principal, q: string | undefined, chiLopToi = false): { id: number; ten: string; lopId: number; lop: string; tvv: string | null }[] {
   const chu = (q ?? '').trim();
   const needle = normalizeName(chu);
   if (needle.length < 2) return [];
-  const scope = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
+  const xem = scopeFor(p, PERMISSIONS.STUDENT_VIEW);
+  /* Lớp phân công (vai teacher) nằm ở `classIds`; vai theo chi nhánh ở `all` / `branchIds` — bỏ hai phần đó khi chỉ lấy lớp của tôi. */
+  const scope = chiLopToi && !laVaiQuanLy(p.roleKeys) ? { all: false, branchIds: [], classIds: xem.classIds, none: !xem.classIds.length } : xem;
   if (scope.none) return [];
   const cs = classScopeSql(scope, 'c');
   const rows = db().prepare(

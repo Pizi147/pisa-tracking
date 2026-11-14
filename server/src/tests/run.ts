@@ -9985,6 +9985,9 @@ await runPrNhapKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } 
 // ==================================================================== OV6-DOC-CHON (14/11: ô chọn / ô tìm đọc ít — LIMIT, /classes gọn)
 const { runPrOv6DocChonTests } = bocTep('prOv6DocChon', await import('./prOv6DocChon.tests.ts'));
 await runPrOv6DocChonTests({ check, assert, conn, P } as any);
+// ==================================================================== TIM-HV-LOP-TOI (GD-4a [XM-A]: "+ Task" chỉ em lớp của tôi)
+const { runPrTimHvLopToiTests } = bocTep('prTimHvLopToi', await import('./prTimHvLopToi.tests.ts'));
+await runPrTimHvLopToiTests({ check, assert, P } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
