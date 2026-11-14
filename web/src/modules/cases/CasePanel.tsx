@@ -1,5 +1,5 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
@@ -25,6 +25,7 @@ import {
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
+import { quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import { CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -275,6 +276,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         <dt>{t('Mô tả')}</dt>
         <dd>
           <MoTaCase data={data} sua={suaCase || !!s} viec={nhanViec} tuMo={dichMo?.loai === 'mo-ta' || (dichMo === null && viecMoTa)} nhomNhap={nhomNhap} onDoi={nhan} onXong={lamMoi} />
+          {/* GD-4b Q13: việc Mô tả Case (Case MT chưa có mô tả) — dòng quy chế ngay dưới ô (ô tự lưu, không hàng nút). */}
+          {choNhanXet && !!vw.canEdit && !s && <div className="basis-full"><DongQuyChe px="px-0" qc={quyCheMoTaCase(hanViec)} /></div>}
           {primary?.observation && (primary.moTaTuMt || primary.byName) && (
             <span className="nguon basis-full">{(primary.moTaTuMt ? [t('theo nhận xét {mt}', { mt: primary.moTaTuMt })] : [primary.byName, primary.createdAt ? ngan(primary.createdAt) : null]).filter(Boolean).join(' · ')}</span>
           )}
@@ -324,6 +327,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
             <div className="pa-than">
               <KhungTrongThe.Provider value>
                 <ThemPaPanel caseId={data.id} studentId={data.student?.id} coPaBatBuoc={coPaBatBuoc} onClose={() => setThemPa(false)}
+                  hanLapPa={canDong && data.viecTiep?.loaiHan === 'lap-pa' && data.viecTiep.han ? ngan(data.viecTiep.han) : dsPa.length ? null : undefined}
                   onSaved={(x) => { setThemPa(false); if (x?.paId) setVuaDoi({ paId: x.paId, chu: x.chu, hoanTac: x.hoanTac }); if (x) bao?.daLuu(x); lamMoi(); }} />
               </KhungTrongThe.Provider>
             </div>
@@ -363,6 +367,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         <HoanThanhCasePanel caseId={data.id} category={data.category} categoryLabel={data.categoryLabel} ratio={!!data.ratio}
           paGanNhat={(() => { const f = (data.followups ?? []).find((x: any) => x.outcome); return f ? outcomeLabelFor(f.outcome) : null; })()}
           ketLuanSan={(data.followups ?? []).find((x: any) => x.outcome && x.note)?.note ?? null}
+          soPaChay={(data.interventions ?? []).filter((x: any) => x.status === 'planned' || x.status === 'started').length}
           onClose={() => setHoanThanh(false)} onSaved={() => { setHoanThanh(false); lamMoi(); }} />
       </KhungTrongThe.Provider>
     </div>
@@ -572,6 +577,8 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
         <div className="flex basis-full flex-col gap-2 rounded-lg border p-3" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
           <span className="text-[13px] font-semibold">{t('Nhận xét chấm chéo · {ai} · {luot}', { ai: s.nguoiCham ?? '—', luot: s.luot })}</span>
           {s.nhanXet && <span className="text-sm leading-relaxed">“<ChuDich chu={s.nhanXet} nguon={data.attemptId ? { bang: 'assessment_scores', id: data.attemptId, cot: 'comment', kyNang: 'speaking' } : null} />”</span>}
+          {/* GD-4b Q28 / Q29: dùng nhận xét người chấm (mặc định) · đang gõ mô tả của mình = viết khác. */}
+          <DongQuyChe px="px-0" qc={quyCheXacNhanS(go || !s.nhanXet, s.nguoiCham, toiThieu)} />
           <span className="flex flex-wrap items-center gap-2">
             {s.nhanXet && <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('dung')}>{t('Dùng nhận xét này')}</button>}
             {chinh?.observation && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xacNhanS('giu')}>{t('Giữ mô tả đang có')}</button>}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { CanLam, NutChu, TrangThaiLuu } from '../../ui/KhuonViec.tsx';
@@ -10,7 +10,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { NutChon, Skeleton } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon } from '@shared/domain/index.ts';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
 import { KhaiBacLoPanel } from './KhaiBacLoPanel.tsx';
@@ -265,6 +265,8 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
               </Truong>
             </>
           )}
+          {/* GD-4b dòng quy chế (lô): xử lý = Q45 (nhiều TVV, không tên) · ghi nhận = Q44 — ngay trên nút chính. */}
+          {!xongHet && viec !== 'cap-bac' && <DongQuyChe px="px-0" qc={viec === 'xu-ly' ? quyCheXuLy('nang', { tvv: null, han: ngay(hanBaoPh(homNay), homNay), soNgay: 0 }) : quyCheXemViPham()} />}
           <div className="max-sm:hidden">{nutChinh}</div>
         </CanLam>
         {khongDua.length > 0 && viec !== 'cap-bac' && (

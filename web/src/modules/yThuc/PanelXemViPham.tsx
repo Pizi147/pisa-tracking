@@ -6,7 +6,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ngay } from '@shared/domain/index.ts';
+import { ngay, quyCheXemViPham } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { ChipMon, TienTrinh, chuMoc } from './BangLan.tsx';
@@ -48,7 +48,7 @@ export function PanelXemViPham({ studentId, dau, onDong, onDaLam }: { studentId:
   };
   const nguoiGhi = [...new Set(moi.map((v) => v.reportedByName).filter(Boolean))].join(', ');
   return (
-    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}
+    <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong} quyChe={d.canManage && ids.length ? quyCheXemViPham() : null}
       chan={d.canManage && ids.length ? {
         huy: null, trai: null,
         phu: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setXuLy(true)}>{t('Xác nhận xử lý')}</button>,   // GD-4a (lời 28): NÚT, không chữ link

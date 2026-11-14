@@ -9,7 +9,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, lopChonLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, lopChonLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich, quyCheLoTrinhMoi } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
 import type { TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
@@ -124,7 +124,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const tat = !!(xem.data?.loi && !loiTen && !lopKhac) || !!loiMon || (bamLuu && !!lyDoTat);
   const nut = <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => void luu()} disabled={tt === 'dang' || tat}>{nutChinh}</button>;
   return (
-    <KhungPanel hd="lo-trinh" tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose}
+    <KhungPanel hd="lo-trinh" tieuDe={t('Lộ trình mới')} dau={dau} quayLai={quayLai} onDong={onClose} quyChe={quyCheLoTrinhMoi()}
       chan={{
         daSua: true, chinh: nut, conThieu: lf.conThieu(loiO),
         trai: tat && lyDoTat ? <span className="text-[13px] text-slate-400">{lyDoTat}</span> : <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={() => void luu()} />,

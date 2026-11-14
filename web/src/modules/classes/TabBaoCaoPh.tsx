@@ -17,7 +17,7 @@ import { Nhan } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, tieuChiPhan, tuanLich,
+  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, tieuChiPhan, tuanLich,
   type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -418,7 +418,9 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
 
   return (
     <KhungPanel hd="bao-cao-ph" tieuDe={tieuDe} loai={t('Báo cáo PH · viết')} rong="bang" onDong={dongPanel} quayLai={dt ? { nhan: lopMa, onClick: dongPanel } : undefined}
-      dau={{ dong2: ngCanh ?? [] }} chan={chan}>
+      dau={{ dong2: ngCanh ?? [] }} chan={chan}
+      /* GD-4b Q37–Q40: theo đợt / phần đã nạp; thẻ "Xong phần" không có dòng. */
+      quyChe={data && em && !xong ? quyCheBaoCaoPh({ ft: data.ft, chung: phan.khoa === 'chung', dot: dich(data.dot.nhan), han: data.dot.han, homNay }) : null}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : !em ? <p className="m-0 text-sm text-slate-400">{t('Đợt này không có học viên.')}</p>

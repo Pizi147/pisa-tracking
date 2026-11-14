@@ -8,7 +8,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ngay, nguoiThanhPayload, nguoiThieu, type NguoiChon } from '@shared/domain/index.ts';
+import { ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -63,6 +63,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
 
   return (
     <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
+      quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? dich(m.nhan) : null, laMeeting && phDu) : null}
       ngCanh={<span className="truncate">{dich(m.nhan)}{m.quyetLuc ? t(' · QL duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),

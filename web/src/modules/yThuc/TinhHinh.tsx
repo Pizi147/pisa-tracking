@@ -2,11 +2,11 @@ import { useRef, useState, type ReactNode, type RefObject } from 'react';
 import { api } from '../../lib/api.ts';
 import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { addDaysIso, dsLoi, hanBaoPh, ngay } from '@shared/domain/index.ts';
+import { addDaysIso, dsLoi, hanBaoPh, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { TheLoai } from './BangLan.tsx';
@@ -227,6 +227,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
         <span className={`justify-self-end text-xs tabular-nums ${dai ? 'font-semibold text-bad' : 'text-slate-500'}`}>{chu.length} / {TOI_DA}</span>
       </label>
       {loi && <p role="alert" className="m-0 rounded-lg border border-late-line bg-late-bg px-3 py-2 text-[13px] text-late" >⚠ {loi} · {t('Chữ của bạn vẫn còn.')}</p>}
+      {/* GD-4b dòng quy chế: Q36 (GV báo) · Q63 (TVV hỏi) — ngay trên hàng nút của hộp. */}
+      {(che.loai === 'bao' || che.loai === 'hoi') && <DongQuyChe px="px-0" qc={che.loai === 'bao' ? quyCheBaoTinhHinh() : quyCheHoiTinhHinh()} />}
       <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={ngoai}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}>
@@ -276,6 +278,7 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   const nutTiep = onTiep && <button type="button" className={xong ? 'btn btn-primary max-sm:h-11' : 'btn max-sm:h-11'} onClick={onTiep}>{t('Việc tiếp ›')}</button>;
   return (
     <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
+      quyChe={xong ? null : quyCheTraLoiTinhHinh(han ? ngay(han, homNay) : null)}
       chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>, conThieu: lf.conThieu(loiO),
         phu: !xong ? nutTiep ?? undefined : undefined }}>
       <div className="flex flex-col gap-4 pt-4">
