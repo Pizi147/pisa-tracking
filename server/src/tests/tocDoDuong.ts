@@ -778,9 +778,10 @@ export const TRAN: Record<string, number> = {
   'QL /lich-su?loai=bai-lop&id=1': 9, 'QT /lich-su?loai=bai-lop&id=1': 6, 'GVCN /lich-su?loai=bai-lop&id=1': 10, 'GVBM /lich-su?loai=bai-lop&id=1': 10,
   'QL /classes/3/gop-y': 19, 'GVCN /classes/3/gop-y': 19, 'GVBM /classes/3/gop-y': 19, 'GVCN_THUONG /classes/3/gop-y': 19, 'QT /classes/3/gop-y': 18,
   'QL /classes/6/gop-y': 19, 'GVCN_THUONG /classes/6/gop-y': 19, 'QT /classes/6/gop-y': 18,
-  'QL /classes/6/can-ho-tro': 25,
-  'GVCN_THUONG /classes/6/can-ho-tro': 25,
-  'QT /classes/6/can-ho-tro': 22,
+  /* XM-K6: lớp thường + MỘT câu Kết quả PA / buổi / Mini Test theo lô Case (bản chép thật 15/11: 8 → 9 câu, 111–132 → 125–148 dòng, không thêm quét cả bảng); FT không đổi. */
+  'QL /classes/6/can-ho-tro': 26,
+  'GVCN_THUONG /classes/6/can-ho-tro': 26,
+  'QT /classes/6/can-ho-tro': 23,
   'QL /classes/3/roster': 33,   // TL-NEN: đo 28 (trước 32); TL-HVL: đo 23 (trước 27)
   'GVCN /classes/3/roster': 33,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 28 (trước 32); TL-HVL: đo 23 (trước 27)
   'GVBM /classes/3/roster': 33,   // PR-UXF-a VN29: +6 câu (listAttempts một lần/trang cho việc nhập điểm của GV — chỉ lớp người xem dạy): đo 58, trần min(max(đo+10, ⌈đo×1.3⌉), ⌊cũ×1.3⌋); TL-NEN: đo 28 (trước 32); TL-HVL: đo 23 (trước 27)
