@@ -351,6 +351,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ GV', vai: ['QL', 'QT'], url: '/giao-vien/9/chi-so' },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=chua-nhap', maChuDich: { GVBM: 403 } },
   { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=case-mo', maChuDich: { GVBM: 403 } },
+  /* GD-15 (GD-4c D3): panel "Việc đang tồn" tại chỗ — đọc khi bấm, CÙNG `myWork` / `viecCuaNguoi` như `/giao-vien/:id/viec` (không câu thêm). */
+  { trang: 'Hồ sơ GV', vai: MOI_VAI, url: '/giao-vien/{gv}/o?cot=viec&nhom=case-hoc-thuat&qh=1', maChuDich: { GVBM: 403 } },
   /* Bảng giáo viên của chi nhánh (Tổng quan › Theo lớp › Theo giáo viên): chỉ Quản lý / Quản trị; GVCN → 403. */
   { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/giao-vien?cn={cn}&ct=ft', maChuDich: { GVCN: 403 } },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT', 'GVCN'], url: '/giao-vien?cn={cn}&ct=thuong', maChuDich: { GVCN: 403 } },
@@ -1016,6 +1018,9 @@ export const TRAN: Record<string, number> = {
   'GVBM /giao-vien/7/viec': 14,
   'GVCN_THUONG /giao-vien/7/viec': 49,   // TL-NEN: đo 47 (trước 59)
   'QT /giao-vien/7/viec': 52,   // TL-NEN: đo 53 (trước 65)
+  /* GD-15: panel Việc đang tồn = cùng đọc với `/giao-vien/7/viec` → cùng trần. */
+  'QL /giao-vien/7/o?cot=viec&nhom=case-hoc-thuat&qh=1': 54, 'GVCN /giao-vien/7/o?cot=viec&nhom=case-hoc-thuat&qh=1': 49, 'GVBM /giao-vien/7/o?cot=viec&nhom=case-hoc-thuat&qh=1': 14,
+  'GVCN_THUONG /giao-vien/7/o?cot=viec&nhom=case-hoc-thuat&qh=1': 49, 'QT /giao-vien/7/o?cot=viec&nhom=case-hoc-thuat&qh=1': 52,
   'QL /giao-vien/7/o?cot=chua-nhap': 26,
   'GVCN /giao-vien/7/o?cot=chua-nhap': 24,
   'GVBM /giao-vien/7/o?cot=chua-nhap': 14,

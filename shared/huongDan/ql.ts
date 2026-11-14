@@ -277,7 +277,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'xem-ho-so-gv', ten: 'Xem hồ sơ giáo viên', nhom: 'khac',
       loiChinh: { man: 'ho-so-gv', chu: 'Phân tích › Giáo viên › tên GV' },
-      buoc: ['Mở <b>Phân tích</b>, tab <b>Giáo viên</b> (hoặc bảng <b>Giáo viên</b> ở Tổng quan), bấm tên GV.', 'Chọn <b>Từ tuần</b> → <b>Đến tuần</b>: số đúng hạn, đạt kỳ vọng Test, Case theo khoảng đó.', 'Kỹ năng của GV: <b>Sửa</b> (QL, Quản trị).'],
+      buoc: ['Mở <b>Phân tích</b>, tab <b>Giáo viên</b> (hoặc bảng <b>Giáo viên</b> ở Tổng quan), bấm tên GV.', 'Chọn <b>Từ tuần</b> → <b>Đến tuần</b>: dải đúng hạn và tab <b>Học thuật</b> theo khoảng đó; tab <b>Lớp</b> · <b>Việc & Case</b> tính tới hôm nay.', 'Kỹ năng của GV: <b>Sửa</b> (QL, Quản trị).'],
       tuKhac: ['hồ sơ gv', 'giáo viên', 'teacher profile', 'kỹ năng gv'],
     },
     {
@@ -453,7 +453,7 @@ export const HD_QL: HuongDan = {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
       dangO: { cau: 'Một GV: lớp dạy, số theo khoảng tuần, việc đang tồn.', truoc: { chu: 'Phân tích', duong: '/phan-tich' } },
       khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }, { ten: 'Phân công GV', den: { chu: 'Học viên & Lớp', duong: HV } }],
-      muc: [{ id: 'ql-hsgv', viec: 'xem-ho-so-gv', ten: 'Xem hồ sơ giáo viên', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b>: số đúng hạn, đạt kỳ vọng Test, Case có PA theo khoảng đó; bấm số mở danh sách.', 'Kỹ năng của GV: <b>Sửa</b> (QL, Quản trị).'] }],
+      muc: [{ id: 'ql-hsgv', viec: 'xem-ho-so-gv', ten: 'Xem hồ sơ giáo viên', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b>: dải Việc · Chấm Test (% đúng hạn · Chưa làm) và tab <b>Học thuật</b> theo khoảng đó; bấm số mở danh sách ngay tại trang.', 'Kỹ năng của GV: <b>Sửa</b> → <b>Lưu</b>, lỡ tay thì <b>Hoàn tác</b> (QL, Quản trị).', 'Tab <b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm thay; <b>Việc của {tên} ›</b> mở Công việc của GV.'] }],
     },
     {
       id: 'quan-tri', ten: 'Cấu hình hệ thống', duong: ['/quan-tri'],

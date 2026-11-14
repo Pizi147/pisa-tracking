@@ -1279,6 +1279,8 @@
 .dai-cs-o:first-child { padding-left: 0; }
 .dai-cs-o + .dai-cs-o { border-left: 1px solid var(--line); }
 .dai-cs-nhom { color: var(--text); font-weight: 700; }
+/* GD-15 (mockup ho-so-gv H1/H3): bảng hồ sơ GV — ô căn giữa dòng (hộp số ngang tên lớp hai dòng). */
+.hsgv .bang :is(th, td) { vertical-align: middle; }
 .dai-cs .so-bam:not(.decoration-dotted) { font-size: 15px; font-weight: 600; text-decoration-line: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
 .dai-cs-so, .dai-cs-0 { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
 .dai-cs-0 { color: var(--text-faint); }
@@ -1291,6 +1293,11 @@
   .dai-cs-o:nth-child(even) { border-left: 1px solid var(--line); }
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }
   .dai-cs-o:last-child:nth-child(odd), .dai-cs-o:nth-child(odd):not(:has(+ .dai-cs-o)) { grid-column: 1 / -1; }   /* GD-6: ô lẻ cuối (kể cả khi chip lớp đứng sau) chiếm hai cột */
+  /* GD-15 (hồ sơ GV H7): dải hai nhóm "Việc │ Chấm Test" — nhãn nhóm một hàng riêng, dưới là hai ô (nhãn trên, số dưới) thẳng cột; nhóm sau ngăn vạch ngang. */
+  .dai-cs-2nhom .dai-cs-o { border: 0; flex-direction: column; align-items: flex-start; gap: 4px; }
+  .dai-cs-2nhom .dai-cs-nhom { grid-column: 1 / -1; min-height: 0; padding-bottom: 0; }
+  .dai-cs-2nhom .dai-cs-nhom:not(:first-child) { border-top: 1px solid var(--line); }
+  .dai-cs-2nhom .dai-cs-nhom + .dai-cs-o + .dai-cs-o { border-left: 1px solid var(--line); }
 }
 /* PT-a (mockup v19 `.os`, chủ SP duyệt 12/11): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx). Số bấm được = hộp nhỏ (nhìn ra là nút, không gạch chân);
    màu chỉ cho ô cần làm: đỏ = quá hạn (`text-bad` / `text-late`; V22 không biểu tượng), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
