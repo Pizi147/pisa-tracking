@@ -240,7 +240,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   );
   const locTvv = (dsTvv.length > 0 || coChuaTvv) && (
     /* GD-5 (R5.2 #53, `10` mục B): ô lọc có tìm — "Tôi" (khi là TVV) lên trước, rồi TVV chi nhánh, "Chưa có TVV" cuối. */
-    <ChonLoc className="w-[200px] max-sm:w-full" ariaLabel={t('TVV')} tatCa={t('Mọi TVV')} placeholder={t('Gõ tên TVV…')} value={tvv} onChange={setTvv}
+    <ChonLoc className="w-[176px] max-sm:w-[calc(50%-4px)]" ariaLabel={t('TVV')} tatCa={t('Mọi TVV')} placeholder={t('Gõ tên TVV…')} value={tvv} onChange={setTvv}
       ds={[...dsTvv.filter((x) => x === toi).map((x) => ({ gt: x, ten: x, nhom: t('Tôi') })),
         ...dsTvv.filter((x) => x !== toi).map((x) => ({ gt: x, ten: x, ...(toi && dsTvv.includes(toi) ? { nhom: t('TVV chi nhánh') } : {}) })),
         ...(coChuaTvv ? [{ gt: TVV_CHUA, ten: t('Chưa có TVV') }] : [])]} />

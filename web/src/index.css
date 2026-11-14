@@ -632,9 +632,12 @@
     .bang-hv .bang > colgroup > col:nth-child(3) { width: 300px !important; } .bang-hv .bang > colgroup > col:nth-child(4) { width: 186px !important; }
     .bang-hv .bang > colgroup > col:nth-child(6) { width: 172px !important; }
   }
-  /* mockup `.lich.dk` / `.lich.chua`: dự kiến viền đậm chữ dim 500 · chưa có lịch viền ĐỨT — chỉ bảng này (NhanLich dùng chung; !important đè tiện ích Tailwind). */
-  .bang-hv [class*='lich-vien'] { box-shadow: none !important; border: 1px solid var(--line-strong); color: var(--text-dim) !important; font-weight: 500 !important; }
-  .bang-hv [class*='thieu-vien'] { box-shadow: none !important; border: 1px dashed var(--thieu-vien); color: var(--text-dim) !important; font-weight: 500 !important; }
+  /* GD-13a (mockup v21 ⑥ `.lt-nho`): ô Lịch thi của bảng Tất cả là CHỮ — "Chưa có lịch" chữ dim, "Dự kiến 01/2027" chữ thường 500; không viên viền
+     (chỉ bảng này — NhanLich dùng chung; !important đè tiện ích Tailwind). Lịch đã chốt / đã thi giữ chip. */
+  .bang-hv [class*='lich-vien'], .bang-hv [class*='thieu-vien'] { box-shadow: none !important; border: 0; background: none !important; padding-left: 0; padding-right: 0;
+    font-size: 13px; font-weight: 500 !important; }
+  .bang-hv [class*='lich-vien'] { color: var(--text) !important; }
+  .bang-hv [class*='thieu-vien'] { color: var(--text-dim) !important; font-weight: 400 !important; }
   .o-tim { position: relative; display: inline-flex; align-items: center; }
   .o-tim > svg { position: absolute; left: 10px; color: var(--text-faint); pointer-events: none; }
   .o-tim > input { padding-left: 34px; background: var(--bg); font-size: 14px; }
@@ -643,6 +646,18 @@
   .loc-hv .nut-loc:where([aria-pressed='true'], .nut-loc-dang) { border-color: var(--accent-line); background: var(--accent-soft); font-weight: 700; }
   .loc-hv .nut-loc-tat { border-style: solid; }   /* mockup `.chip.tat`: viền liền như chip khác, chỉ chữ + số mờ */
   .loc-hv .nut-loc-tat, .loc-hv .nut-loc-tat > b { color: var(--text-faint); font-weight: 500; }
+  /* GD-13a (mockup v21 ⑥ `.nut-chon` · `.vach` · `.lk-trang` · `.nut-nho`): hàng lọc Học viên & Lớp (Tất cả + Đang SOS) — chip chữ dim 500, số 600 chữ thường;
+     đang bật viền nhấn nền nhạt chữ 600; số 0 tắt viền ĐỨT. */
+  .loc-hvl .nut-loc { border-color: var(--line-strong); background: none; color: var(--text-dim); font-weight: 500; }
+  .loc-hvl .nut-loc > b { margin-left: 2px; font-weight: 600; color: var(--text); }
+  .loc-hvl .nut-loc:where([aria-pressed='true'], .nut-loc-dang) { border-color: var(--accent); background: var(--accent-soft); color: var(--text); font-weight: 600; }
+  .loc-hvl .nut-loc-tat, .loc-hvl .nut-loc-tat > b { color: var(--text-faint); }
+  .vach-loc { display: inline-block; flex: none; width: 1px; height: 24px; margin: 0 4px; background: var(--line); }
+  .lk-trang { display: inline-flex; align-items: center; min-height: 36px; padding: 0 6px; font-size: 14px; font-weight: 600; color: var(--accent); white-space: nowrap; text-decoration: none; }
+  .lk-trang:hover { text-decoration: underline; }
+  .lk-trang .so { margin-left: 6px; font-weight: 500; color: var(--text-faint); }
+  .btn.nut-nho { height: 30px; padding: 0 10px; font-size: 13px; font-weight: 600; }
+  @media (max-width: 639.98px) { .btn.nut-nho, .lk-trang { min-height: 44px; } .btn.nut-nho { height: auto; } }
   .o-so { appearance: none; border: 0; background: none; padding: 0 2px; border-radius: 4px; color: var(--accent); font-weight: 700; font-size: 15px;
     font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: underline 1px var(--accent-line); text-underline-offset: 3px; }
   .dong2 { display: block; margin-top: 2px; font-size: 13px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
@@ -688,14 +703,6 @@
   .chip-bac { display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border: 1px solid var(--line-strong); border-radius: 6px;
     background: none; color: var(--text); font-size: 12px; font-weight: 600; white-space: nowrap; cursor: pointer; }
   .chip-bac[aria-expanded='true'] { border-color: var(--accent); box-shadow: inset 0 0 0 1px var(--accent); background: var(--accent-soft); }
-  .o-xem { display: inline-flex; align-items: center; gap: 8px; height: 36px; padding: 0 0 0 12px; border: 1px solid var(--o-nhap-vien); border-radius: 8px;
-    background: var(--surface); font-size: 14px; cursor: pointer; }
-  .o-xem-nhan { color: var(--text-faint); font-size: 13px; }
-  .o-xem::after { content: '▾'; margin: 0 10px 0 -4px; color: var(--text-faint); font-size: 12px; pointer-events: none; }   /* mockup `.oxem::after` thay mũi tên gốc của select */
-  .o-xem select { appearance: none; field-sizing: content; align-self: stretch; min-width: 0; padding: 0 10px 0 0; border: 0; border-radius: 0 8px 8px 0; background: var(--surface); color: var(--text);
-    font-weight: 700; outline: none; cursor: pointer; padding-right: 8px; }
-  .o-xem:focus-within { border-color: var(--accent); }
-  .o-xem:has(select:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }   /* A3 C12: vòng focus chung (select bỏ outline) */
   .doan { display: inline-flex; height: 36px; overflow: hidden; border: 1px solid var(--o-nhap-vien); border-radius: 8px; }   /* A3 C9: viền điều khiển chọn ≥ 3 : 1 (--line-strong 1,7–2,2) */
   .doan > button { padding: 0 12px; border: 0; background: transparent; color: var(--text-dim); font-size: 14px; font-weight: 500; white-space: nowrap; cursor: pointer; }
   .doan > button + button { border-left: 1px solid var(--line-strong); }
@@ -709,7 +716,7 @@
   .the-em-3 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
   .the-em-3 > div { flex: 1; }   /* U05 375: ô MT kế tiếp rộng hết thẻ */
   @media (max-width: 639.98px) {
-    .o-xem, .doan { height: 44px; }
+    .doan { height: 44px; }
     .ba-cham { width: 44px; height: 44px; }
     .hvl-dai-kn { flex-wrap: nowrap; } .hvl-dai-kn > * { flex: 1; min-width: 0; }
     .doan > button { flex: 1; }
@@ -1632,6 +1639,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .oc .oc-bo:hover { background: var(--accent-soft); color: var(--text); }
   .oc .da { flex: 1; min-width: 0; display: flex; align-items: baseline; gap: 8px; white-space: nowrap; overflow: hidden; }
   .oc .da b { font-weight: 600; overflow: hidden; text-overflow: ellipsis; flex: none; max-width: 100%; }
+  .oc .nh { flex: none; font-size: 13px; font-weight: 500; color: var(--text-faint); }   /* GD-13a (⑥ `.oc.gon .nh`): nhãn ô luôn có giá trị — "Xem" */
   .oc .da small { font-size: 13px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; min-width: 0; }
   .oc:not(.oc-tat):hover { border-color: var(--accent); }
   .oc.go, .oc:not(.oc-tat):focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }

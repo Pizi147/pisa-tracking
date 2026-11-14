@@ -193,7 +193,7 @@ export const EN_HD_V3C = {
   '<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2); không có tab Giáo viên, Ý thức.': '<b>Branch</b> · <b>Real exam</b> · <b>SOS</b> (Analysis V2); there are no Teacher or Conduct tabs.',
   'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang.': 'Period: <b>All weeks</b> or <b>Choose weeks</b>; tap a number to open its list on the page.',
   '<b>Xuất Excel</b> ở hàng lọc (tab Chi nhánh thêm <b>In</b>).': '<b>Export Excel</b> is in the filter row (the Branch tab also has <b>Print</b>).',
-  'Cột <b>Việc của tôi</b>: việc của bạn với em đó; bấm <b>tên</b> em mở hồ sơ.': 'The <b>My tasks</b> column: your task for that student; tap the student <b>name</b> to open the profile.',
+  'Cột <b>Việc cần làm</b>: chip việc của bạn với em đó, bấm để làm ngay tại trang; bấm <b>tên</b> em mở hồ sơ.': 'The <b>To do</b> column: chips for your tasks with that student, tap to do them right here; tap the student <b>name</b> to open the profile.',
   '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.': '<b>⋯</b> at the row end (<b>More actions</b>): <b>Edit info</b> · <b>Pause / End study</b> · <b>Real exam result</b> · <b>Resume</b> · <b>Open profile</b>.',
 
   /* ---------------------------------------------------------------- Hồ sơ HV / lớp (hai biến thể cx / tvv) */

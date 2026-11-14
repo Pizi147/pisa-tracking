@@ -34,11 +34,13 @@ export async function runPrHvLopViecTests(t: YThucTestKit) {
     assert(tong <= 960, `cột cố định ${tong} px > 960`);
   });
 
-  check('U04 · OViec: một việc trong ô có khung + "+{n} việc" mở dải dưới hàng (không panel), không còn "Xem thêm"', () => {
-    const o = than(ds, 'export function OViec');
-    assert(o.length > 200, 'thiếu OViec');
-    assert(!o.includes("'Xem thêm {n}'") && !o.includes("'Thu gọn'"), 'còn Xem thêm / Thu gọn');
-    assert(o.includes('<OMotViec x={v[0]}') && o.includes("t('+{n} việc'") && /onClick=\{onMoDai\}/.test(o), '"+n việc" phải mở dải (onMoDai)');
+  /* GD-13a (mockup v21 ⑥ R6.3): ô "+n việc" thay bằng nút-chip mỗi loại việc ("{loại} · {số}", chung Công việc / hồ sơ lớp); dải dưới hàng vẫn liệt kê từng việc. */
+  check('GD-13a · OViecCan: nút-chip chuẩn mỗi loại (chipViecEm + NutChipViec), bấm = việc gấp nhất, panel đi hết loại; không còn "+n việc" / "Xem thêm"', () => {
+    const o = than(ds, 'export function OViecCan');
+    assert(o.length > 150, 'thiếu OViecCan');
+    assert(o.includes('chipViecEm(') && o.includes('<NutChipViec') && /onMo\(c\.dau, c\.ds\)/.test(o), 'chip phải mở việc đầu + cả loại');
+    assert(!o.includes("'+{n} việc'") && !o.includes("'Xem thêm {n}'"), 'còn "+n việc" / Xem thêm');
+    assert(/key: 'viec', nhan: t\('Việc cần làm'\)/.test(ds) && !/t\('Việc tiếp'\), kieu/.test(ds), 'một tên cột "Việc cần làm" ở Tất cả + Đang SOS');
     assert(!/function HanViec/.test(ds), 'bỏ HanViec');
   });
 
