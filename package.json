@@ -34,7 +34,8 @@
     "preview": "vite preview",
     "migrate": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/run.js",
     "hoan-tac-reset-han-case": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/hoanTacResetHan.js",
-    "khoi-phuc-nguoi-cham-s": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/khoiPhucNguoiChamS.js"
+    "khoi-phuc-nguoi-cham-s": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/khoiPhucNguoiChamS.js",
+    "khoi-phuc-ky-vong-tu-dat": "node scripts/check-node.mjs && npm run build:server && node dist-server/server/src/migrate/khoiPhucKyVongTuDat.js"
   },
   "dependencies": {
     "@fontsource/be-vietnam-pro": "5.3.0",

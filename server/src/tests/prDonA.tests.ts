@@ -559,7 +559,8 @@ export async function runPrDonATests(t: YThucTestKit) {
       VALUES (?, ?, ?, 'fast_track', 'cuoi-khoa', ?, ?, ?, 'cho', ?)`).run(sid, classId(lopBe), classId('MB FT 101'), t.addDays(tuanNay, 7), P.mbManager.userId, TODAY, new Date().toISOString());
     const a = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 0, 'mt0', ?, 'planned', ?)`)
       .run(cy, sid, classId(lopBe), new Date().toISOString()).lastInsertRowid);
-    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, 4);
+    /* KY-VONG-MT0: 3.5 < mốc BE 4 — em chưa đạt mới còn việc (đạt = tự Đạt). */
+    for (const k of ['listening', 'reading', 'writing1', 'writing2', 'speaking']) conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, 3.5);
     const lopKhac = get(`SELECT id FROM classes WHERE status = 'active' AND id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) LIMIT 1`, classId(lopBe), classId(lopBe)).id;
     conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', ?, ?)`).run(sid, lopKhac, TODAY, new Date().toISOString());
     const ql = loadPrincipal(get(`SELECT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'manager' AND ur.status = 'active'

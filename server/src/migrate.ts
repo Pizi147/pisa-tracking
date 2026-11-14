@@ -87,6 +87,7 @@ import { migratePrMt0Em } from './migrate/prMt0Em.ts';
 import { migratePrGiamDoc0611 } from './migrate/prGiamDoc0611.ts';
 import { migratePrGvCuBoTro } from './migrate/prGvCuBoTro.ts';
 import { migratePrBcPhViecGv } from './migrate/prBcPhViecGv.ts';
+import { migratePrKyVongTuDat } from './migrate/prKyVongTuDat.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
@@ -532,6 +533,9 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* DON-NGUOI-CHAM-S (chủ SP 14/11): ô S chấm chéo cũ mà máy ghi ngầm người nhập (không phải GV Speaking) là người chấm → bỏ người chấm; nhật ký audit giữ
      người cũ, khôi phục `khoiPhucNguoiChamS` (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrDonNguoiChamS(conn, applied));
+  /* KY-VONG-MT0 (chủ SP 14/11): Kết quả đầu ra "Không đạt" mà MT0 đạt mốc chương trình → Đạt, Case Kỳ vọng + PA Tutor đóng; nhật ký audit giữ bản cũ,
+     khôi phục `khoiPhucKyVongTuDat` (đổi dữ liệu MỘT lần, khoá demo_config). */
+  buoc(() => migratePrKyVongTuDat(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

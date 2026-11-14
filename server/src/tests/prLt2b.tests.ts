@@ -358,7 +358,8 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const l = taoLop('BE', 3);
     const [a, b, c2] = l.sids;
     for (const s of l.sids) ghiDiem(l.luot.get(s)!, { [L]: 30, [R]: 30, [W]: 30, [S]: 30 });   // 75%
-    mt0Kv(l.classId, a, [4, 3.5, 3.5, 4]); mt0Kv(l.classId, b, [4, 4, 4, 4]); mt0Kv(l.classId, c2, [3.5, 4, 4, 4]);
+    /* KY-VONG-MT0: cả ba < mốc BE 4 (3.625 → 3.5) — em đạt mốc thì tự Đạt, không ghi Không đạt được. */
+    mt0Kv(l.classId, a, [4, 3.5, 3.5, 3.5]); mt0Kv(l.classId, b, [3.5, 3.5, 3.5, 3.5]); mt0Kv(l.classId, c2, [3.5, 3.5, 3.5, 4]);
     voiLenhFt(l.classId, a, () => cuoiSvc.ghiKetLuanFt(P.mbManager, a, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] }));
     /* P9b (rà PTA 26/10): Học viên = ghi phương án, không bắt kỹ năng, không Case (N17). */
     voiLenhFt(l.classId, b, () => cuoiSvc.ghiKetLuanFt(P.mbManager, b, { dat: false, nguyenNhan: 'hoc_sinh', mon: [], ghiChu: 'Em nghỉ nhiều — phương án case-by-case với phụ huynh' }));
@@ -500,8 +501,9 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     mt0Kv(be.classId, s, [4, 4, 4, 4]);
     assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Quản lý/, 'GVCN');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.cpManager, s, { dat: true }), /Quản lý|phạm vi/, 'QL chi nhánh khác');
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', mon: ['reading'], ghiChu: '  ' }), /lý do/, 'Học viên thiếu lý do (PR-KV: bắt buộc, không còn tối thiểu 15 ký tự)');
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /kỹ năng/, 'Trung tâm, MT0 không kỹ năng dưới ngưỡng');
+    /* KY-VONG-MT0 (chủ SP 14/11): MT0 4.0 đạt mốc BE → mọi "Không đạt" bị chặn (thiếu lý do / kỹ năng: prKv KV4, KV9). */
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', mon: ['reading'], ghiChu: '  ' }), /đã đạt mốc/, 'Học viên khi MT0 đạt');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /đã đạt mốc/, 'Trung tâm khi MT0 đạt');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: 'x' }), /Đạt hoặc Không đạt/, 'dat sai kiểu');
     const fou = taoLop('FOU', 1);
     voiLenhFt(fou.classId, fou.sids[0], () => assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, fou.sids[0], { dat: true }), /Chờ MT0/, 'em FOU (OV-3b: FOU có Kết quả đầu ra) chưa có MT0'));

@@ -11,6 +11,7 @@ import { addDaysIso } from './sos.ts';
 import type { ProgrammeCode } from './normal.ts';
 import type { Huong } from './lenLop.ts';
 import { ASSESSED_SKILLS, type AssessedSkill } from './skills.ts';
+import { goiYKyVong } from './cuoiKhoa.ts';
 import { t } from '../i18n/index.ts';
 
 /** Chương trình có MT0 (không Pre FOU). */
@@ -49,14 +50,22 @@ export function kiemTuanMt0(o: {
   return null;
 }
 
-/** Kỹ năng MT0 có band ≤ Target − 2.0 (chip SOS hiển thị). Target null → không SOS. */
-export function kyNangSosMt0(bands: Partial<Record<AssessedSkill, number | null>>, target: number | null): { skill: AssessedSkill; band: number }[] {
+/**
+ * Kỹ năng MT0 có band ≤ Target − 2.0 (chip SOS hiển thị). Target null → không SOS. KY-VONG-MT0 (chủ SP 14/11): em lớp thường (`ct` = chương trình
+ * lớp của MT0) đạt mốc Kỳ vọng (`goiYKyVong`) → không SOS. `huy` = kỹ năng Đã huỷ (`kyNangHuy`).
+ */
+export function kyNangSosMt0(bands: Partial<Record<AssessedSkill, number | null>>, target: number | null, ct: string | null | undefined, huy: readonly string[] = []): { skill: AssessedSkill; band: number }[] {
   if (target === null || target === undefined) return [];
+  if (goiYKyVong(ct, bands, huy)?.dat) return [];
   return ASSESSED_SKILLS.flatMap((skill) => {
-    const band = bands[skill];
+    const band = huy.includes(skill) || (skill === 'writing' && (huy.includes('writing1') || huy.includes('writing2'))) ? null : bands[skill];   // kỹ năng Đã huỷ: không chip
     return band !== null && band !== undefined && band <= target - MT0_SOS_CACH ? [{ skill, band }] : [];
   });
 }
+
+/** Kỹ năng Đã huỷ của một lượt (`sit_status = 'cancelled'`) — dòng `attempt_skills` đã nạp hoặc chuỗi `GROUP_CONCAT(skill)`. */
+export const kyNangHuy = (x: readonly { skill: string; sit_status?: string | null }[] | string | null | undefined): string[] =>
+  typeof x === 'string' ? x.split(',') : (x ?? []).filter((r) => r.sit_status === 'cancelled').map((r) => r.skill);
 
 export type TrangThaiMt0 = 'cho' | 'dung' | 'khong_dung' | 'huy';
 

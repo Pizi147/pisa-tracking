@@ -11,14 +11,14 @@ import { t } from '@shared/i18n/index.ts';
 /** `GET /classes/:id/ket-qua-dau-ra` (server/src/normal/kyVong.ts → kqdrLopFt). Chỉ giá trị QL đã chốt. */
 type Em = {
   id: number; ten: string; lopCu: { id: number; code: string }; final: number | null; finalDat: boolean | null;
-  mt0: (Record<RegularSkill, number | null> & { overall: number; dat: boolean; monTruot: string[] }) | null;
+  mt0: (Record<RegularSkill, number | null> & { overall: number | null; dat: boolean; monTruot: string[] }) | null;
   kqdr: { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[] } | null;
   case: { id: number; mon: string }[]; banGiao: string | null;
 };
 type Bang = { ct: string; lop: { id: number; code: string }[]; dot: { vao: string; hienToi: string; em: Em[] }[] };
 
 const NGAN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
-const b1 = (n: number) => n.toFixed(1);
+const b1 = (n: number | null) => (n === null ? '—' : n.toFixed(1));   // KY-VONG-MT0: có kỹ năng Đã huỷ → không Overall
 
 /**
  * HỒ SƠ LỚP FT › Học viên › "Kết quả đầu ra" (OV-3c, mockup M2 §5): mỗi chương trình nguồn một bảng, nhóm con theo đợt (= tuần vào lớp FT),
