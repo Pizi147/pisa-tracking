@@ -277,8 +277,8 @@ const COT_HV: CotBang[] = [
   { key: 'lo', nhan: t('Lộ trình'), kieu: 'chu', rong: 96 },
   { key: 'mt', nhan: t('MT gần nhất'), kieu: 'chu', rong: 200 },
   { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 172 },
-  { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 100 },
-  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 150 },
+  { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 116 },   // PTA rà #1685: chip "REPORT 5" cần ~113 px — không "…"
+  { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 134 },   // GD-13a: ô Lịch thi nay là chữ (⑥ .lt-nho) — bớt 16 px cho Ý thức, tổng cố định giữ 956
   { key: 'viec', nhan: t('Việc cần làm'), kieu: 'viec' },
   { key: 'nut', nhan: '', kieu: 'nut', rong: 48 },
 ];
@@ -342,11 +342,11 @@ export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim,
     switch (c.key) {
       case 'ten': return <TenEm h={h} ev={ev} ds={nguCanh} tim={tim} />;
       case 'lo': return g
-        ? <span className="block"><b className="block font-medium tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${g.loTrinh.khacLop ? `${t('Lộ trình')} ${maLoTrinhNgan(g.loTrinh.khacLop)} · ` : ''}${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
+        ? <span className="block whitespace-normal"><b className="block font-medium tabular-nums text-slate-100" aria-label={g.loTrinh.soMt ? `${g.loTrinh.khacLop ? `${t('Lộ trình')} ${maLoTrinhNgan(g.loTrinh.khacLop)} · ` : ''}${t('MT đã xong / đã tạo')}: ${g.loTrinh.mt}/${g.loTrinh.soMt}` : undefined}>
             {/* #9: em khác lộ trình lớp (RF trong lớp LT1…) — mã lộ trình trước "MT x/y". */}
             {g.loTrinh.khacLop && `${maLoTrinhNgan(g.loTrinh.khacLop)} · `}{g.loTrinh.soMt ? `MT ${g.loTrinh.mt}/${g.loTrinh.soMt}` : '—'}</b>
             <span className="dong2">Target <TargetText band={g.loTrinh.target} kck={g.loTrinh.target != null && g.loTrinh.kck} /></span></span>
-        : <span className="block truncate text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
+        : <span className="block whitespace-normal text-xs text-faint">{lop.get(h.classId)?.programmeName ? dich(lop.get(h.classId)!.programmeName!) : '—'}</span>;
       case 'mt': return g ? <OMtGan g={g} mo={dai.co(k)} onMo={() => dai.doi(k)} /> : trong;
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
       case 'y': return g ? <OYThuc h={h} g={g} lop={lop.get(h.classId)} onDoi={onDoi} /> : trong;
