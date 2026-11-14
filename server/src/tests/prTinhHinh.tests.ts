@@ -147,6 +147,10 @@ export async function runPrTinhHinhTests(t: YThucTestKit) {
     const { nhanMocViPham } = shared;
     assert(nhanMocViPham(1) === 'REPORT 1' && nhanMocViPham(3) === 'WARNING LETTER 1' && nhanMocViPham(4) === 'REPORT 4 + MEETING CX/GĐCN' && nhanMocViPham(0) === null,
       [1, 3, 4].map((b) => nhanMocViPham(b)).join(' | '));
+    /* GD-4d (lời 35, ⑤ H5): tên bậc viết hoa — tắt "WL 1" nơi chật, đủ "WARNING LETTER 1" nơi quyết; chữ ngoài tên bậc giữ. */
+    const { bacNgan, bacDu } = shared;
+    assert(bacNgan('Đã xử lý · Report 1') === 'Đã xử lý · REPORT 1' && bacNgan('Report 4 + Meeting CX/GĐCN') === 'REPORT 4 + MEETING CX/GĐCN' && bacNgan('WL 2') === 'WL 2'
+      && bacDu('Bậc kế WL 1') === 'Bậc kế WARNING LETTER 1' && bacDu('Report 7') === 'REPORT 7', `${bacNgan('Report 4 + Meeting CX/GĐCN')} | ${bacDu('Bậc kế WL 1')}`);
     for (const x of lop.emLop) assert(x.bac === xu.yThucHocVien(gvcn, x.studentId).bac, `em ${x.studentId}`);
   }));
 

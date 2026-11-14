@@ -6,7 +6,7 @@ import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPa
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { LOP_DA_LUU, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
+import { LOP_DA_LUU, NutVaTiep, TrangThaiLuu, dauViec } from '../../ui/KhuonViec.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
@@ -14,11 +14,12 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
+  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, bacDu, luuRoiTiep, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { ChipMon, chuMoc } from './BangLan.tsx';
+import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 const MO_TA_MIN = 10;
@@ -43,7 +44,7 @@ type Cach = 'nang' | 'giu' | 'vuot' | 'ngoai';
  * OV-12e (mockup v3 §8): khuôn panel v3 — đầu "Xác nhận xử lý" + chip hạn / tên em (link) · lớp · Ý thức; MỘT khối Cần làm (Bậc xử lý tự điền · vi phạm đưa vào
  * · Ngày * (ô ngày gõ được) · Người * · Mô tả * · nút chính; "Đề xuất QL duyệt" là nút chữ); Bối cảnh: Lần trước · Bậc tiếp theo; chân trạng thái lưu.
  */
-export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, onClose, onDone, onKhai }: {
+export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, onClose, onDone, onKhai, onTiep }: {
   studentId: number | null; cheDo?: 'xu-ly' | 'de-xuat';
   /** Rà 11/11 G3-6: mở từ dòng Đã xem — vi phạm đó tick sẵn (cùng tick mặc định), nằm ở "Cũ hơn" thì mở sẵn nhóm đó. */
   tickThem?: readonly number[];
@@ -52,6 +53,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   onClose: () => void; onDone?: () => void;
   /** Mở panel Xác nhận cấp bậc vi phạm (Q7): chuỗi chưa có lần xử lý nào và em chưa từng xác nhận. */
   onKhai?: (studentId: number) => void;
+  /** GD-4d (lời 36, ⑤ D1a): mở từ danh sách còn việc kế — chân "Đóng · {nút việc} · Lưu · việc tiếp ›" (chính); lưu xong gọi `onDone` rồi `onTiep`. */
+  onTiep?: (() => void) | null;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -69,6 +72,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const [loai, setLoai] = useState<string>('');
   const [tenKhac, setTenKhac] = useState('');
   const [busy, setBusy] = useState(false);
+  const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
   /** [XM 5] (chủ SP 11/11): tệp chọn NGAY trong form (như Ghi vi phạm), tải sau khi lưu — không tệp / tải xong thì panel tự đóng, không bước "Xong". */
   const [tep, setTep] = useState<TepChoMuc[]>([]);
   const [loiLuu, setLoiLuu] = useState<string | null>(null);
@@ -123,9 +127,10 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     onClose();
   };
 
-  const luuXuLy = async () => {
+  /** `diTiep`: lưu xong sang việc kế (nơi gọi thay nội dung panel) — không tự đóng. Trả `false` khi chưa xong (lỗi / tệp lỗi) để `luuRoiTiep` ở lại. */
+  const luuXuLy = async (diTiep = false): Promise<boolean> => {
     lf.bam();
-    if (loi.length || loiNguoi) return;
+    if (loi.length || loiNguoi) return false;
     setBusy(true);
     setLoiLuu(null);
     try {
@@ -136,16 +141,17 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       const traNhap = xoaNhap();
       onDone?.();
       lamMoi();
-      await xongTep(m.id, m.nhan, tep, traNhap);
+      return await xongTep(m.id, m.nhan, tep, traNhap, diTiep);
     } catch (e: any) {
       if (e instanceof ApiError && e.status === 409) {
         toast.push('error', t('Bậc vừa đổi — đã mở lại với bậc mới.'));
         reload();
       } else setLoiLuu(e.message);
+      return false;
     } finally { setBusy(false); }
   };
 
-  const cauXong = (nhan: string) => t('Đã xác nhận {nhan} cho {ten}.', { nhan: dich(nhan), ten: d.ten });
+  const cauXong = (nhan: string) => t('Đã xác nhận {nhan} cho {ten}.', { nhan: bacDu(dich(nhan)), ten: d.ten });
   /** Tải tệp chờ vào lần xử lý vừa lưu; xong hết (hoặc không có tệp) → toast + đóng panel. Tệp lỗi → ở lại chỗ tệp, `Thử lại` (lần xử lý đã lưu). */
   /** [XM 5] (PTA 11/11 duyệt): Hoàn tác ở toast = xoá hẳn lần vừa lưu (máy chủ chỉ nhận khi người vừa lưu, TVV chưa ghi, chưa có lần sau); chữ Mô tả trả lại nháp. */
   const hoanTac = async (id: number, traNhap?: () => void) => {
@@ -155,25 +161,26 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       toast.push('ok', t('Đã hoàn tác — vi phạm về như trước.'));
     } catch (e: any) { toast.push('error', e.message); }
   };
-  const xongTep = async (id: number, nhan: string, ds: TepChoMuc[], traNhap?: () => void) => {
+  const xongTep = async (id: number, nhan: string, ds: TepChoMuc[], traNhap?: () => void, diTiep = false): Promise<boolean> => {
     const kq = ds.some((x) => !x.xong) ? await taiTepCho(ds, { ownerType: 'discipline_measure', ownerIds: [id] }) : ds;
     setTep(kq);
     if (kq.every((x) => x.xong)) {
       toast.hoanTac(cauXong(nhan), () => void hoanTac(id, traNhap));
-      /* Chữ đã lưu — xoá khỏi ô rồi mới đóng (đóng lúc ô còn chữ thì khung hỏi "Bỏ chữ đang gõ?"). */
-      setMoTa(''); setTimeout(onClose, 0);
-      return;
+      /* Chữ đã lưu — xoá khỏi ô rồi mới đóng (đóng lúc ô còn chữ thì khung hỏi "Bỏ chữ đang gõ?"). Sang việc kế: nơi gọi thay panel, không đóng. */
+      setMoTa(''); if (!diTiep) setTimeout(onClose, 0);
+      return true;
     }
     setDaLuu({ id, loai: 'xu-ly', nhan });
+    return false;
   };
 
   /**
    * #6 (mockup #1346 K1–K2): MỘT nút "Gửi QL duyệt" = tạo nháp (chủ của tệp) → tải tệp chờ → gửi. Tệp lỗi → chưa gửi (QL chưa thấy gì), ở lại, chữ giữ;
    * Thử lại = làm lại từ đầu (máy chủ dọn nháp cũ của cùng người · cùng em, tải lại mọi tệp) — form có thể đã sửa giữa hai lần.
    */
-  const guiDeXuat = async () => {
+  const guiDeXuat = async (diTiep = false): Promise<boolean> => {
     lf.bam();
-    if (loi.length) return;
+    if (loi.length) return false;
     setBusy(true); setLoiLuu(null);
     try {
       const m = await api.post<{ id: number; nhan: string }>(`/students/${studentId}/y-thuc/de-xuat`, {
@@ -183,13 +190,14 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       const kq = await taiTepCho(tep.map((x) => ({ ...x, xong: undefined, tuId: undefined, loi: undefined, daGui: undefined })), { ownerType: 'discipline_measure', ownerIds: [m.id] });
       setTep(kq);
       const loiTep = kq.filter((x) => !x.xong).length;
-      if (loiTep) { setLoiLuu(t('Chưa gửi — {n} tệp tải lỗi', { n: loiTep })); return; }
+      if (loiTep) { setLoiLuu(t('Chưa gửi — {n} tệp tải lỗi', { n: loiTep })); return false; }
       await api.post(`/y-thuc/xu-ly/${m.id}/gui`);
       nhapDo.current = null;
       xoaNhap(); setMoTa(''); lamMoi(); onDone?.();
-      toast.push('ok', t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.', { nhan: m.nhan, ten: d.ten, n: hanDuyetNgay(homNay) }));
-      setTimeout(onClose, 0);
-    } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
+      toast.push('ok', t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.', { nhan: bacDu(dich(m.nhan)), ten: d.ten, n: hanDuyetNgay(homNay) }));
+      if (!diTiep) setTimeout(onClose, 0);
+      return true;
+    } catch (e: any) { setLoiLuu(e.message); return false; } finally { setBusy(false); }
   };
 
   /* ---------------------------------------------------------------- bước 2: đã lưu */
@@ -203,7 +211,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
         <div className="flex flex-col gap-5 pt-4">
           <div className="flex flex-col gap-2 rounded-[10px] border px-4 py-3.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>
             <span className="text-sm font-bold text-ok">✓ {t('Đã xác nhận')}</span>
-            <p className="m-0 text-sm text-slate-200">{dich(daLuu.nhan)} · {t('{n} vi phạm', { n: chon.size })} · {ngay(ngayTh, homNay)}</p>
+            <p className="m-0 text-sm text-slate-200">{bacDu(dich(daLuu.nhan))} · {t('{n} vi phạm', { n: chon.size })} · {ngay(ngayTh, homNay)}</p>
             <TepCho value={tep} onChange={setTep} khoa={busy} onThuLai={() => void thuLai()} />
           </div>
           <div className="max-sm:hidden">{xong}</div>
@@ -229,23 +237,24 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     </li>
   );
 
-  /* Bối cảnh ≤ 3 dòng (mockup v3 §8): lần xử lý trước · bậc sau bậc này. */
-  /* LUAT-5: lần "Đã thu hồi" vẫn ở dòng thời gian nhưng không phải "Lần trước". */
-  const truoc = d.dongThoiGian.filter((x): x is Extract<typeof x, { loai: 'xu-ly' }> => x.loai === 'xu-ly' && x.status !== 'thu_hoi').sort((a, b) => b.ngay.localeCompare(a.ngay))[0];
-  const nutChinh = cheDo === 'xu-ly'
-    ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={luuXuLy}>{busy ? t('Đang lưu…') : bacKe ? t('Xác nhận · {nhan}', { nhan: dich(bacKe.nhan) }) : t('Xác nhận xử lý')}</button>
-    : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void guiDeXuat()}>{busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}</button>;
+  /* GD-4d (lời 36, ⑤ D1a / D1b): chân = "Đóng" · nút việc · "Lưu · việc tiếp ›" (chính, khi còn việc kế) — dùng lại `NutVaTiep` + `luuRoiTiep`
+     (chỉ sang việc kế khi máy chủ đã nhận và tệp tải xong). Không có việc kế: "Đóng" · nút việc (chính) như cũ. "Đóng" ẩn ở 375 (đóng bằng ✕). */
+  const hanh = (diTiep: boolean) => (cheDo === 'xu-ly' ? luuXuLy(diTiep) : guiDeXuat(diTiep));
+  const luu = (diTiep: boolean) => { setBam(diTiep ? 'tiep' : 'luu'); void (diTiep && onTiep ? luuRoiTiep(() => hanh(true), onTiep) : hanh(false)); };
+  const nutChinh = <NutVaTiep busy={busy} bam={bam} luu={luu} tiep={onTiep ? { ten: null, lam: () => {} } : undefined} chuTiep={t('Lưu · việc tiếp ›')}
+    chu={cheDo === 'xu-ly' ? (bacKe ? t('Xác nhận · {nhan}', { nhan: bacDu(dich(bacKe.nhan)) }) : t('Xác nhận xử lý')) : t('Gửi Quản lý duyệt')} />;
   /* Lựa chọn bậc của từng cách (máy chủ kiểm lại `deXuatHopLe`). */
   const bacGiu = THANG.slice(0, Math.min(d.bac, THANG.length)).reverse() as string[];
   const bacVuot = THANG.slice(Math.min(d.bac + 1, THANG.length)) as string[];
   const chipCua: Record<Exclude<Cach, 'nang'>, string[]> = { giu: bacGiu, vuot: bacVuot, ngoai: [...LOAI_DE_XUAT] };
   const chonCach = (c: Cach) => { setCach(c); setLoai(c === 'nang' ? '' : chipCua[c][0] ?? ''); lf.datLai(); };
-  const tenBac = (k: string) => dich(MEASURE_KIND_LABEL[k as keyof typeof MEASURE_KIND_LABEL] ?? k);
+  /* GD-4d (⑤ H5): nút chọn bậc / Bậc kế ở panel quyết — viết đủ, viết hoa ("WARNING LETTER 1"). */
+  const tenBac = (k: string) => bacDu(dich(MEASURE_KIND_LABEL[k as keyof typeof MEASURE_KIND_LABEL] ?? k));
   const soNgayQl = hanDuyetNgay(homNay);   // Hạn mặc định › QL trả lời Chờ duyệt — cùng số máy chủ dùng (`hanDuyetMacDinh`)
   const hanQl = hanTheoNgay(homNay, soNgayQl);
   const CACH: { k: Cach; ten: string; phu: string; tat?: boolean }[] = [
-    { k: 'nang', ten: t('Nâng 1 bậc'), phu: bacKe ? `${d.bacNhan ? dich(d.bacNhan) : t('Chưa có')} → ${dich(bacKe.nhan)}` : '' },
-    { k: 'giu', ten: t('Không nâng'), phu: d.bacNhan ? t('Giữ {nhan}', { nhan: dich(d.bacNhan) }) : t('Chưa có bậc'), tat: !bacGiu.length },
+    { k: 'nang', ten: t('Nâng 1 bậc'), phu: bacKe ? `${d.bacNhan ? bacDu(dich(d.bacNhan)) : t('Chưa có')} → ${bacDu(dich(bacKe.nhan))}` : '' },
+    { k: 'giu', ten: t('Không nâng'), phu: d.bacNhan ? t('Giữ {nhan}', { nhan: bacDu(dich(d.bacNhan)) }) : t('Chưa có bậc'), tat: !bacGiu.length },
     { k: 'vuot', ten: t('Vượt bậc'), phu: bacVuot.length ? t('Lên {nhan} trở lên', { nhan: tenBac(bacVuot[0]) }) : '—', tat: !bacVuot.length },
     { k: 'ngoai', ten: t('Ngoài thang'), phu: t('WL 3 · Meeting · Đình chỉ · Khác') },
   ];
@@ -256,17 +265,23 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       quyChe={quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl })}
       chan={{
         /* Mockup v20 D1: chân lưu chung — trái trạng thái lưu, phải Đóng + nút chính. */
-        huy: { nhan: t('Đóng'), onClick: onDong }, huyPhai: true, chinh: nutChinh, daSua: !!moTa.trim(),
+        chinh: nutChinh, daSua: !!moTa.trim(),
         conThieu: lf.conThieu(loi) ?? (lf.daBam && loiNguoi ? [{ nhan: t('Người thực hiện'), lyDo: loiNguoi }] : undefined),
         trai: busy || loiLuu ? <TrangThaiLuu tt={busy ? 'dang' : 'loi'} loi={loiLuu} onThuLai={() => void (cheDo === 'xu-ly' ? luuXuLy() : guiDeXuat())} />
           : <span className="text-slate-400">{t('Chưa lưu')}</span>,
       }}>
       <div className="flex flex-col gap-4 pt-4">
-        {/* TINH-HINH (mockup v20 D, PTA 12/11): bố cục phẳng (không hộp lồng, không khối Bối cảnh trùng); bỏ dải bước — hạn ở đầu panel; một dòng mốc · bậc kế, cách xử lý ngay trong form. */}
-        <p className="m-0 flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[13px] text-slate-400">
-          <span><b className="font-semibold text-slate-100">{chuMoc(d.bac, d.viPham.length > 0)}</b>{truoc ? ` · ${ngay(truoc.ngay, homNay)}` : ''}</span>
-          {bacKe && <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{dich(bacKe.nhan)}</b></span>}
-        </p>
+        {/* GD-4d (⑤ D1a): khối bối cảnh nền lặng "Bậc hiện tại · Bậc kế · TVV" (viết đủ, viết hoa; TVV chỉ khi em có) + hàng "Thang xử lý" dạng vạch. */}
+        <div className="flex flex-col gap-3">
+          <p className="m-0 flex flex-wrap gap-x-[18px] gap-y-1.5 rounded-lg px-3 py-2.5 text-[13px] text-slate-400" style={{ background: 'var(--surface-2)' }}>
+            <span>{t('Bậc hiện tại')} <b className="font-semibold text-slate-100">{chuMoc(d.bac, d.viPham.length > 0)}</b></span>
+            {bacKe && <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{bacDu(dich(bacKe.nhan))}</b></span>}
+            {d.tvv && <span>{t('TVV')} <b className="font-semibold text-slate-100">{d.tvv}</b></span>}
+          </p>
+          <p className="m-0 flex flex-wrap items-center gap-3 text-[13px] text-slate-400">
+            <span className="font-semibold">{t('Thang xử lý')}</span><ThangVach dong={d.dongThang} />
+          </p>
+        </div>
           <div>
             {nhanO(t('Vi phạm đưa vào · {n}', { n: chon.size }))}
             {tick.length + cuHon.length === 0 ? (

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
-import { nhanMocViPham, ngay } from '@shared/domain/index.ts';
+import { nhanMocViPham, ngay, bacDu } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { phimHangTab } from '../../ui/HangTab.tsx';
@@ -204,11 +204,11 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
   return (
     <div className="grid gap-2.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
       <div className="flex flex-wrap items-center gap-2.5">
-        <h4 className="m-0 text-[15px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: dich(v.nhan) })}</h4>
+        <h4 className="m-0 text-[15px] font-bold text-slate-100">{t('Báo PH · lần {nhan}', { nhan: bacDu(dich(v.nhan)) })}</h4>
         {v.trangThai === 'mo' && <span className="rounded-md px-2 text-xs font-semibold leading-[22px] text-slate-400 surface-2">{t('hạn {ngay}', { ngay: ngay(v.han, homNay) })}</span>}
         {v.coTheSuaHan && onSuaHan && <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" onClick={onSuaHan}>{t('Sửa hạn')}</button>}
       </div>
-      {v.bo && <p className="m-0 text-[13px] text-slate-400">{t('Đã bỏ')}{v.bo.nhan ? ` · ${dich(v.bo.nhan)}` : ''}{v.bo.chu ? ` · ${v.bo.chu}` : ''}</p>}
+      {v.bo && <p className="m-0 text-[13px] text-slate-400">{t('Đã bỏ')}{v.bo.nhan ? ` · ${bacDu(dich(v.bo.nhan))}` : ''}{v.bo.chu ? ` · ${v.bo.chu}` : ''}</p>}
       {ds.length === 0 ? <p className="m-0 text-[13px] text-slate-500">{t('Chưa có lần ghi nào.')}</p> : ds.map((l, i) => (
         <div key={i} className={`grid gap-x-4 gap-y-1.5 py-2 text-sm sm:grid-cols-[120px_180px_minmax(0,1fr)] ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
           <span className="text-[13px] font-semibold tabular-nums text-slate-400">{lucVn(l.luc)}{l.nguoi && <span className="block text-xs font-medium text-slate-500">{l.nguoi}</span>}</span>

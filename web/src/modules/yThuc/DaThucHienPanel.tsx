@@ -8,7 +8,8 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon } from '@shared/domain/index.ts';
+import { luuRoiTiep, ngay, nguoiThanhPayload, nguoiThieu, quyCheDaThucHien, type NguoiChon, bacDu } from '@shared/domain/index.ts';
+import { NutDongPanel } from '../../ui/KhuonViec.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -16,7 +17,11 @@ import { dich, t } from '@shared/i18n/index.ts';
  * ĐÃ THỰC HIỆN (V4-10) — QL đã duyệt đề xuất (WL 3 · Meeting CX/GĐCN · Đình chỉ · Khác), GVCN ghi ngày đã làm (hạn 5 ngày từ ngày
  * duyệt). Ngày từ ngày duyệt tới hôm nay; người thực hiện nhận tên ngoài; ghi chú tuỳ chọn (nối vào mô tả đề xuất).
  */
-export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: number | null; onClose: () => void; onDone?: () => void }) {
+export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
+  measureId: number | null; onClose: () => void; onDone?: () => void;
+  /** Việc kế ở danh sách Công việc (GD-4d) — có thì chân thêm "Lưu · việc tiếp ›". */
+  onTiep?: (() => void) | null;
+}) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: m, error: loiTai, reload } = useApi<XuLyView>(measureId ? `/y-thuc/xu-ly/${measureId}` : null, [measureId]);
@@ -39,7 +44,9 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   if (daLuu) {
     return (
       <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
-        chan={{ huy: null, chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
+        chan={{ huy: null, chinh: onTiep
+          ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
+          : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
         <Khoi tieuDe={t('Đã lưu')}><p className="m-0 text-sm text-slate-200">{daLuu}</p></Khoi>
       </KhungPanel>
     );
@@ -47,9 +54,9 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
   const loiNgay = m.quyetLuc && ngayTh < m.quyetLuc.slice(0, 10) ? t('Chọn từ ngày QL duyệt ({ngay}) trở đi', { ngay: ngay(m.quyetLuc, homNay) }) : null;
   const loiNguoi = nguoiThieu(nguoi, true);
   const laMeeting = m.kind === 'meeting_cx';
-  const luu = async () => {
+  const luu = async (): Promise<boolean> => {
     lf.bam();
-    if (loiNgay || loiNguoi) return;
+    if (loiNgay || loiNguoi) return false;
     setBusy(true);
     try {
       await api.post(`/y-thuc/xu-ly/${measureId}/da-thuc-hien`, { performedOn: ngayTh, ...nguoiThanhPayload(nguoi), note: ghiChu.trim() || undefined, ...(laMeeting ? { phDu } : {}) });
@@ -57,18 +64,26 @@ export function DaThucHienPanel({ measureId, onClose, onDone }: { measureId: num
       DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
       const chu = t('Đã ghi {nhan} cho {ten} — {length} vi phạm chuyển sang Đã xử lý.', { nhan: m.nhan, ten: m.ten, length: m.viPham.length });
       toast.push('ok', chu);
-      if (taiCho) setDaLuu(chu); else onClose();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
+      if (taiCho || onTiep) setDaLuu(chu); else onClose();
+      return true;
+    } catch (e: any) { toast.push('error', e.message); return false; } finally { setBusy(false); }
   };
 
   return (
     <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
-      quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? dich(m.nhan) : null, laMeeting && phDu) : null}
-      ngCanh={<span className="truncate">{dich(m.nhan)}{m.quyetLuc ? t(' · QL duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
+      quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? bacDu(dich(m.nhan)) : null, laMeeting && phDu) : null}
+      ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}{m.quyetLuc ? t(' · QL duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),
         conThieu: lf.daBam && (loiNgay || loiNguoi) ? [{ nhan: t('Đã thực hiện'), lyDo: loiNgay ?? loiNguoi ?? '' }] : undefined,
-        chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || m.status !== 'da_duyet'} onClick={luu}>{t('Lưu · Đã thực hiện')}</button> }}>
+        /* GD-4d (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · Lưu · "Lưu · việc tiếp ›" (375: Đóng qua ✕); không có → như cũ. Chỉ khi còn làm được. */
+        ...(onTiep && m.status === 'da_duyet' ? {
+          huy: null,
+          phu: <><NutDongPanel busy={busy} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luu()}>{t('Lưu')}</button></>,
+          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void luuRoiTiep(luu, onTiep)}>{t('Lưu · việc tiếp ›')}</button>,
+        } : {
+          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || m.status !== 'da_duyet'} onClick={() => void luu()}>{t('Lưu · Đã thực hiện')}</button>,
+        }) }}>
       <Khoi tieuDe={t('Đã thực hiện')}>
         {m.status !== 'da_duyet' && <p className="m-0 text-sm text-slate-400">{t('Lần xử lý này không còn chờ "Đã thực hiện" ({statusLabel}).', { statusLabel: m.statusLabel })}</p>}
         <Hang2>

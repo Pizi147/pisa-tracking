@@ -1,6 +1,6 @@
 import { Fragment } from 'react';
 import { NutLuat } from '../../ui/NutLuat.tsx';
-import { ngay } from '@shared/domain/index.ts';
+import { bacDu, ngay } from '@shared/domain/index.ts';
 import { DauTich } from './NhanViPham.tsx';
 import type { BacThangDong, YThucHocVien } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -103,7 +103,7 @@ function ChipDeXuat({ d }: { d: Pick<YThucHocVien, 'deXuat'> }) {
   if (!d.deXuat) return null;
   return (
     <li className="inline-flex shrink-0 items-center rounded border border-dashed border-soon px-[7px] py-px font-bold text-soon">
-      {dich(d.deXuat.nhan)} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ QL') : t('QL đã duyệt')}
+      {bacDu(dich(d.deXuat.nhan))} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ QL') : t('QL đã duyệt')}
     </li>
   );
 }
@@ -122,14 +122,40 @@ function BacO({ b, title, coDeXuat }: { b: BacThangDong; title?: string; coDeXua
     : b.trangThai === 'khai' ? 'border border-ok-line px-[7px] text-ok opacity-75'
     : b.trangThai === 'qua' ? 'border border-ok-line px-[7px] text-ok'
     : 'border border-[color:var(--line)] px-[7px] text-faint';
-  const moTa = b.trangThai === 'lan-nay' ? t('{nhan}, lần xử lý kế tiếp', { nhan: dich(b.nhan) })
-    : daQua ? `${t('{nhan}, đã xử lý{x}', { nhan: dich(b.nhan), x: b.trangThai === 'khai' ? t(' (cấp bậc xác nhận từ trước)') : '' })}${title ? ` — ${title}` : ''}`
-    : dich(b.nhan);
+  /* GD-4d (lời 35, ⑤ H5): danh sách "Thang ▾" là nơi QUYẾT đọc — tên bậc viết đủ, viết hoa (WARNING LETTER 1). */
+  const ten = bacDu(dich(b.nhan));
+  const moTa = b.trangThai === 'lan-nay' ? t('{nhan}, lần xử lý kế tiếp', { nhan: ten })
+    : daQua ? `${t('{nhan}, đã xử lý{x}', { nhan: ten, x: b.trangThai === 'khai' ? t(' (cấp bậc xác nhận từ trước)') : '' })}${title ? ` — ${title}` : ''}`
+    : ten;
   return (
     <li className={`inline-flex shrink-0 items-center gap-1 rounded py-px ${lop}`} title={title} aria-label={moTa}>
       {daQua && <DauTich />}
-      <span>{dich(b.nhan)}</span>
+      <span>{ten}</span>
       {b.trangThai === 'lan-nay' && <span className="font-normal">{lanNay ? t('· lần này') : t('· kế tiếp')}</span>}
     </li>
+  );
+}
+
+/**
+ * GD-4d — THANG DẠNG VẠCH (⑤ D1a, ③ K1 / K4a `.vach-bac`; chủ SP 15/11: "không để chữ WARNING LETTER vào trong progress bar, chỉ khác màu và nổi bật hơn").
+ * MỘT thành phần cho mọi nơi hiện thang mini (hồ sơ HV, panel Xác nhận xử lý). Vạch thường 22 × 5 (375: 14), đã tới màu nhấn, bậc kế nhạt;
+ * mốc WL = vạch ĐỎ dày 9, dài 30 (375: 20), đã tới thêm viền mờ đỏ. KHÔNG chữ trong thanh — tên bậc (viết đủ) ở `aria-label` / `title`, đủ tên ở "Thang ▾".
+ */
+export function ThangVach({ dong }: { dong: readonly BacThangDong[] }) {
+  const ten = (b: BacThangDong) => bacDu(dich(b.nhan));
+  const daToi = dong.filter((b) => b.trangThai === 'qua' || b.trangThai === 'khai');
+  const toi = daToi[daToi.length - 1];
+  const nhan = t('Thang xử lý: {ds} — {x}', { ds: dong.map(ten).join(', '), x: toi ? t('đã tới {nhan}', { nhan: ten(toi) }) : t('chưa có bậc') });
+  return (
+    <span role="img" aria-label={nhan} className="inline-flex shrink-0 items-center gap-[3px] self-center">
+      {dong.map((b) => {
+        const wl = b.kind.startsWith('wl_');
+        const co = b.trangThai === 'qua' || b.trangThai === 'khai';
+        const ke = b.trangThai === 'lan-nay';
+        const mau = wl ? 'bg-[rgb(var(--bad-rgb))]' : co || ke ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]';
+        return <i key={b.kind} title={ke ? t('{nhan} · bậc kế', { nhan: ten(b) }) : ten(b)}
+          className={`block rounded-[3px] ${wl ? 'h-[9px] w-[30px] max-sm:w-5' : 'h-[5px] w-[22px] max-sm:w-3.5'} ${mau}${ke ? ' opacity-[.45]' : ''}${wl && co ? ' shadow-[0_0_0_2px_rgb(var(--bad-bg-rgb))]' : ''}`} />;
+      })}
+    </span>
   );
 }

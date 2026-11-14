@@ -7,7 +7,7 @@ import { NUT_DONG, NUT_DONG_NHO } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
-import { HopTinhHinh } from '../yThuc/TinhHinh.tsx';
+import { HopTinhHinh, type ChonEmTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { ToKhop } from '../../ui/ToKhop.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -23,7 +23,8 @@ const TOI_DA_TINH_HINH = 8;
 
 /**
  * "+ TASK" Ở TRANG ĐẦU GV (GD-1, mockup v21 ① K5; `04-thiet-ke.md` 5.4 + mục 12): menu 3 mục → hộp "Chọn em" (gõ tên, em lớp của tôi lên trước,
- * lớp bên cạnh tên; Tình hình học tập chọn nhiều ≤ 8) → ĐÚNG form đang có (QuickReport · RecordViolationPanel · hộp Báo tình hình) — cùng quyền, cùng luật.
+ * lớp bên cạnh tên) → ĐÚNG form đang có (QuickReport · RecordViolationPanel) — cùng quyền, cùng luật. GD-4d (dòng 40d): Tình hình học tập không qua bước
+ * chọn em — mở thẳng hộp Báo tình hình (`HopTinhHinh`) có ô chọn em (chọn nhiều ≤ 8) bên trong.
  * Tìm em: `/tim/hoc-vien` (một câu mỗi lần gõ, ≥ 2 ký tự, chờ 250 ms). Nút cũ ở hồ sơ lớp / HV giữ nguyên.
  * `noi`: nút ở đầu trang (máy rộng) hoặc nút tròn nổi trên thanh tab dưới (< 640 px, K8a).
  * GD-4a (mockup ⑤ F): MỘT nút cho trang đầu, hồ sơ lớp, hồ sơ HV — `lopId`: mở từ hồ sơ lớp, nhóm "Lớp này" lên đầu; `em`: hồ sơ HV điền sẵn em → bỏ bước chọn.
@@ -44,34 +45,61 @@ export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?:
       <span ref={neo} className={noi === 'noi' ? 'fixed bottom-[80px] right-4 z-[35] sm:hidden' : 'max-sm:hidden'}>
         <MenuDong nhan={t('Task: Case, vi phạm / nhắc nhở, tình hình học tập')} mat={mat} tieuDeDay={t('+ Task')}
           lopNut={noi === 'dau' ? 'btn btn-primary !p-0' : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
-          muc={MUC.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : null); setLoai(k); } }))} />
+          muc={MUC.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />
       </span>
-      {loai && !em && <HopChonEm neo={neo} loai={loai} lopId={lopId} onDong={dong} onChon={setEm} />}
+      {loai && loai !== 'tinh-hinh' && !em && <HopChonEm neo={neo} loai={loai} lopId={lopId} onDong={dong} onChon={setEm} />}
       {loai === 'case' && em?.[0] && <QuickReport open onClose={dong} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={xong} />}
       {loai === 'vi-pham' && em?.[0] && <RecordViolationPanel open onClose={dong} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={xong} />}
-      {loai === 'tinh-hinh' && em?.length && (
-        <HopTinhHinh neo={neo} homNay={homNay} che={{ loai: 'bao', em: em.map((e) => ({ id: e.id, ten: e.ten, tvv: e.tvv })) }} onDong={dong} onXong={() => invalidate('/my-work')} />
+      {/* GD-4d (dòng 40d, ⑤ F3 / ① K5c): Tình hình học tập = MỘT hộp — chọn em ngay trong hộp gửi; hồ sơ HV: em cố định (chip không ✕). */}
+      {loai === 'tinh-hinh' && em && (
+        <HopTinhHinh neo={neo} homNay={homNay} onDong={dong} onXong={() => invalidate('/my-work')}
+          che={{ loai: 'bao', em: em.map((e) => ({ id: e.id, ten: e.ten, tvv: e.tvv })), chonEm: emSan ? undefined : chonEmTinhHinh(lopId) }} />
       )}
     </>
   );
 }
 
-/**
- * GD-4a (mockup ⑤ F2, F3): kết quả nhóm theo lớp, có nhãn + số — "Lớp này" (mở từ hồ sơ lớp) → từng lớp của tôi ("· chủ nhiệm") → "Lớp khác"; tô chữ khớp.
- * ponytail: ô tìm riêng của "+ Task" — GD-5 thay bằng ô chọn có tìm chung (mẫu ⑤ A) khi nâng `ChonNguoi`.
- */
+/** GD-4d (dòng 40d): ô chọn em trong hộp Tình hình học tập ("+ Task") — chọn nhiều ≤ 8; em kèm TVV cho khối "Gửi tới". */
+const chonEmTinhHinh = (lopId?: number): ChonEmTinhHinh => ({ em, setEm, luu }) => (
+  <OTimEm lopId={lopId} toiDa={TOI_DA_TINH_HINH} chon={em} khoa={luu}
+    onLay={(e) => setEm((c) => (c.length < TOI_DA_TINH_HINH && !c.some((x) => x.id === e.id) ? [...c, { id: e.id, ten: e.ten, tvv: e.tvv }] : c))}
+    onBo={(id) => setEm((c) => c.filter((x) => x.id !== id))} />
+);
+
+/** Bước "Chọn em" của Case · Vi phạm / Nhắc nhở (một em) → form panel. */
 function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
   neo: React.RefObject<HTMLElement | null>; loai: Loai; lopId?: number; onDong: () => void; onChon: (em: Em[]) => void;
+}) {
+  const tieuDe = MUC.find(([k]) => k === loai)![1];
+  return (
+    <HopNeo neo={neo} nhan={tieuDe} rong={440} onNgoai={onDong}>
+      {/* ⑤ F2 `.h-dau`: tiêu đề 15 + ✕ CÙNG HÀNG (tâm ✕ = tâm dòng tiêu đề), dòng phụ "Chọn em" dưới; ✕ cách mép phải hộp 12 px (đệm 16 − 4). */}
+      <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
+        <b className="min-w-0 text-[15px] font-bold text-slate-100">{tieuDe}</b>
+        <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={onDong}>✕</button>
+        <span className="text-[13px] text-dim">{t('Chọn em')}</span>
+      </div>
+      <OTimEm lopId={lopId} toiDa={1} chon={[]} onLay={(e) => onChon([e])} />
+    </HopNeo>
+  );
+}
+
+/**
+ * GD-4a (mockup ⑤ F2, F3): ô gõ tên em — kết quả nhóm theo lớp, có nhãn + số — "Lớp này" (mở từ hồ sơ lớp) → từng lớp của tôi ("· chủ nhiệm") → "Lớp khác"; tô chữ khớp.
+ * `toiDa` > 1 = chọn nhiều: chip em đã chọn + ✕ + "n / toiDa" (Tình hình học tập).
+ * ponytail: ô tìm riêng của "+ Task" — GD-5 thay bằng ô chọn có tìm chung (mẫu ⑤ A) khi nâng `ChonNguoi`.
+ */
+function OTimEm({ lopId, toiDa, chon, khoa = false, onLay, onBo }: {
+  lopId?: number; toiDa: number; chon: readonly { id: number; ten: string }[]; khoa?: boolean; onLay: (em: Em) => void; onBo?: (id: number) => void;
 }) {
   const { session } = useSession();
   const pc = session?.assignments ?? [];
   const lopToi = new Set(pc.map((a) => a.classId));
   const chuNhiem = new Set(pc.filter((a) => a.isCore).map((a) => a.classId));
-  const nhieu = loai === 'tinh-hinh';
+  const nhieu = toiDa > 1;
   const [chu, setChu] = useState('');
   const [kq, setKq] = useState<Em[]>([]);
   const [dang, setDang] = useState(0);
-  const [chon, setChon] = useState<Em[]>([]);
   const [loi, setLoi] = useState<string | null>(null);
   const luot = useRef(0);
   const o = useRef<HTMLInputElement>(null);
@@ -96,36 +124,25 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
   const tenNhom = (e: Em) => (hang(e) === 0 ? `${t('Lớp này')} · ${e.lop}` : hang(e) === 1 ? (chuNhiem.has(e.lopId) ? `${e.lop} · ${t('chủ nhiệm')}` : e.lop) : t('Lớp khác'));
   const nhom = new Map<string, number>();
   for (const e of ds) nhom.set(tenNhom(e), (nhom.get(tenNhom(e)) ?? 0) + 1);
-  const lay = (e: Em) => {
-    if (!nhieu) { onChon([e]); return; }
-    if (chon.length < TOI_DA_TINH_HINH) setChon((c) => [...c, e]);
-    setChu('');
-  };
-  const tieuDe = MUC.find(([k]) => k === loai)![1];
+  const lay = (e: Em) => { onLay(e); if (nhieu) setChu(''); };
   return (
-    <HopNeo neo={neo} nhan={tieuDe} rong={440} onNgoai={onDong}>
-      {/* ⑤ F2 `.h-dau`: tiêu đề 15 + ✕ CÙNG HÀNG (tâm ✕ = tâm dòng tiêu đề), dòng phụ "Chọn em" dưới; ✕ cách mép phải hộp 12 px (đệm 16 − 4). */}
-      <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
-        <b className="min-w-0 text-[15px] font-bold text-slate-100">{tieuDe}</b>
-        <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={onDong}>✕</button>
-        <span className="text-[13px] text-dim">{t('Chọn em')}</span>
-      </div>
+    <>
       {nhieu && chon.length > 0 && (
         <span className="flex flex-wrap items-center gap-1.5">
           {chon.map((e) => (
             <span key={e.id} className="inline-flex h-7 items-center gap-1 rounded-full border pl-2.5 pr-1 text-[13px] font-medium surface-2" style={{ borderColor: 'var(--line-strong)' }}>
-              {e.ten}<button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11"
-                onClick={() => setChon((c) => c.filter((x) => x.id !== e.id))}>✕</button>
+              {e.ten}{onBo && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11"
+                disabled={khoa} onClick={() => onBo(e.id)}>✕</button>}
             </span>
           ))}
-          <span className="text-xs tabular-nums text-faint">{chon.length} / {TOI_DA_TINH_HINH}</span>
+          <span className="text-xs tabular-nums text-faint">{chon.length} / {toiDa}</span>
         </span>
       )}
       {/* ⑤ F2 `.oc`: kính lúp trái · ✕ xoá chữ phải (chỉ khi có chữ, căn giữa theo cao ô; bấm = xoá, giữ focus ô). */}
       <div className="relative">
       <span aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-faint"><IconNhom k="tim" /></span>
       <input ref={o} name="tim-em" autoComplete="off" spellCheck={false} className={`field h-10 pl-9 text-[15px] max-sm:h-11 ${chu ? 'pr-10 max-sm:pr-12' : ''}`} role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
-        aria-label={t('Gõ tên em')} placeholder={t('Gõ tên em…')} value={chu} disabled={nhieu && chon.length >= TOI_DA_TINH_HINH}
+        aria-label={t('Gõ tên em')} placeholder={t('Gõ tên em…')} value={chu} disabled={khoa || (nhieu && chon.length >= toiDa)}
         aria-activedescendant={ds[dang] ? `tim-em-${ds[dang].id}` : undefined}
         onChange={(e) => setChu(e.target.value)}
         onKeyDown={(e) => {
@@ -157,13 +174,6 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
       )}
       {chu.trim().length >= 2 && !ds.length && !loi && <p role="status" className="m-0 text-[13px] text-dim">{t('Không thấy em nào khớp.')}</p>}
       {loi && <p role="alert" className="m-0 text-[13px] text-late">⚠ {loi}</p>}
-      {nhieu && (
-        <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
-          {/* ⑤ F3 + rà đồng bộ 15/11 mục B: một chân "Đóng · Tiếp" cho hộp chọn em. */}
-          <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={onDong}>{t('Đóng')}</button>
-          <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={!chon.length} onClick={() => onChon(chon)}>{t('Tiếp ›')}</button>
-        </div>
-      )}
-    </HopNeo>
+    </>
   );
 }

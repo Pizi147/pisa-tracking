@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
-import { docNhap, docNhapChuyen, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
+import { bacDu, docNhap, docNhapChuyen, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { HopBoChu } from './Drawer.tsx';
 import { khoRoiNhap } from './chanRoiNhap.tsx';
@@ -367,7 +367,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
     <>
         {trongThe ? (
           /* Chỉ form có hạn riêng (Kết quả PA · tuần + hạn — v16 e1) mới cần dòng đầu; Thêm PA / Hoàn thành đã có tên ở thẻ / mục. */
-          dau?.han ? <div className="muc-h mt-3 flex-wrap">{dau.tieu ?? tieuDe}<span className="phai-h">{dau.han}</span></div> : null
+          dau?.han ? <div className="muc-h mt-3 flex-wrap">{dau.tieu ?? bacDu(tieuDe)}<span className="phai-h">{dau.han}</span></div> : null
         ) : anDau && !lui ? null : dau ? (
           <header className={`flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 sm:px-5 ${lui ? 'pt-2' : 'pt-4'}`} style={{ borderColor: 'var(--line)' }}>
             {hangLui}
@@ -379,11 +379,11 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
               {/* CV-TAB: chip hạn đứng ngay sau tiêu đề, ✕ góc phải. GD-3 (mockup v21 ① `.pn-tieu h2` 17 / 700, chủ SP duyệt 14/11 — thay 22 của v17). */}
               {cvNgoai ? (
                 <div className="flex min-w-0 flex-1 flex-wrap items-center gap-x-2.5 gap-y-1">
-                  <h2 className={`m-0 min-w-0 text-[17px] font-bold leading-6 text-slate-100${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
+                  <h2 className={`m-0 min-w-0 text-[17px] font-bold leading-6 text-slate-100${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? bacDu(tieuDe)}</h2>
                   {dau.han}
                 </div>
               ) : <>
-                <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
+                <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? bacDu(tieuDe)}</h2>
                 {dau.han}
               </>}
               {!lui && !xHangLoai && nutDong}
@@ -416,7 +416,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${lui ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
           {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
-          <h2 className={`m-0 min-w-0 truncate font-bold text-slate-100 ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={tieuDe}>{tieuDe}</h2>
+          <h2 className={`m-0 min-w-0 truncate font-bold text-slate-100 ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={bacDu(tieuDe)}>{bacDu(tieuDe)}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1" />}
           {nutXem}
