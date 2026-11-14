@@ -324,6 +324,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **13/11 — OVERHAUL V6 (chủ SP: "overhaul lại TOÀN BỘ tất cả các trang, panels, nút, không có giới hạn nào cả"):** session planning riêng **"PTA Overhaul"** (Fable 5.2 · high) lọc đề xuất, brainstorm, lên plan — lời chủ SP, thiết kế, plan PR đều ở `docs/superpowers/specs/2026-11-13-overhaul-v6/` (đọc `loi-chu-sp.md` trước). PTA Plan chỉ nhận danh sách PR khi chủ SP duyệt plan; lỗi F01–F07 của bản audit ChatGPT đã chuyển PTA Plan 13/11.
 
+**14/11 (chủ SP):** "Duyệt cả hai" — duyệt ảnh cặp #1566 (GD-1 trang đầu GV, chip "Nhập điểm · 6") + #1565 (GD-2 panel Chấm Speaking, "✓ Đã lưu" xanh) → PTA check chung + merge; sau đó HT-NHU-GV (LG-7) bắt đầu; GD-3 #1563 còn sửa.
+
 **14/11 (chủ SP rà ảnh #1566 GD-1):** "Ngoài ra, kể cả nhập điểm cũng chỉ cần ghi số bên cạnh thôi không cần chữ 'bài' nhé, cho đồng bộ" → nút-chip "Việc cần làm" (Lớp của tôi): "Nhập điểm · 6" như "Case · 2" (bỏ "bài"). GD-1 sửa trong #1566.
 
 **14/11 (chủ SP rà ảnh #1563 GD-3):** "1. Phần nhập điểm cũng cần giống hơn với mockup, các cột phải cân đối 2. panels tuyến case + vi phạm cũng cần giống mockup, một số phần cần thiết không có trong mockup vẫn để nhé" → GD-3 sửa trong #1563: lưới / hộp nhập điểm cân cột như mockup; panel Case (Chọn PA, Ghi kết quả PA) + Ghi vi phạm / nhắc nhở theo mockup sát, giữ phần cần thiết mockup không vẽ.
