@@ -127,6 +127,7 @@ import * as giaoVienPtSvc from '../phanTich/giaoVien.ts';
 import * as baoCaoSvc from '../phanTich/baoCao.ts';
 import * as ketQuaThiSvc from '../phanTich/ketQuaThi.ts';
 import * as thiThatTkSvc from '../phanTich/thiThatThongKe.ts';
+import { oSapThiSos } from '../phanTich/sapThiSos.ts';
 import * as tuanDaySvc from '../phanTich/tuanDay.ts';
 import { khungPtGvTuThamSo } from '../../../shared/domain/index.ts';   // PR-Pb2-b: dòng riêng (Hợp đồng a↔b — không sửa import chung)
 import { O_KE_HOACH } from '../../../shared/domain/index.ts';   // MON-CT-1311: ô xếp lịch (cả L+S, R+W)
@@ -890,7 +891,9 @@ api.get('/phan-tich/thi-that', requireAuth, wrap((req) => {
 }));
 api.get('/phan-tich/thi-that/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return thiThatTkSvc.oThiThat(principalOf(req), { ...filterBaoCaoOf(req), o: qStr(req, 'o') ?? '' });
+  const o = qStr(req, 'o') ?? '';
+  /* GD-12b-a: ô "Sắp thi · còn SOS" (hiện trạng, không theo kỳ) — `sap-thi[:mức]`. */
+  return o.startsWith('sap-thi') ? oSapThiSos(principalOf(req), { ...filterBaoCaoOf(req), o }) : thiThatTkSvc.oThiThat(principalOf(req), { ...filterBaoCaoOf(req), o });
 }));
 /* V8-PT-2: panel thẻ chỉ số Kết quả Test — `o` = luot · dat · chua-dat · chua-du · sos1-3 (Mock) | luot · dat · chua-dat · chua-chon (Thi thật). */
 api.get('/phan-tich/ket-qua-thi/o', requireAuth, wrap((req) => {

@@ -9900,6 +9900,8 @@ await runPrMtVangTests({ check, assert, conn, P, classId } as any);
 // ==================================================================== PR-4 THI-THAT (chủ SP 05/11: tab Thi thật, luật mới thay C10 — một hàm `thongKeThiThat`)
 const { runPrThiThatTkTests } = bocTep('prThiThatTk', await import('./prThiThatTk.tests.ts'));
 await runPrThiThatTkTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+const { runPrGd12bSapThiTests } = bocTep('prGd12bSapThi', await import('./prGd12bSapThi.tests.ts'));
+await runPrGd12bSapThiTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== PR-6 MAU-THONG-NHAT (chủ SP 05/11: đỏ không đạt · xanh dương đạt · xanh lá vượt)
 const { runPrMauKqTests } = bocTep('prMauKq', await import('./prMauKq.tests.ts'));
 await runPrMauKqTests({ check, assert } as any);
