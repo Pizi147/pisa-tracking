@@ -498,3 +498,11 @@ Bối cảnh: PTA Plan nhờ PTA Overhaul sửa mockup v21 bỏ ⚠ theo luật 
 > "không cần làm lại mockup đâu, chỉ cần viết lại mô tả và plan để cho PTA Plan code là được"
 
 ĐÃ CHỐT: **KHÔNG sửa mockup v21 vì V22.** Hình mockup còn ⚠ ở badge / chip / số hạn → session code đọc là "chỉ màu, không ⚠" theo `DESIGN.md` V22 + ghi chú V22 ở cuối `04`, `09`, `11`, `12`. Ảnh cặp: chỗ khác mockup vì V22 ghi một dòng "KHÁC theo V22", không tính là lệch.
+
+## 15/11 — lời 45 (chủ SP nói ở session PTA Plan, PTA Plan chuyển lại): badge tab Chấm Speaking đỏ như mọi nơi
+
+Câu hỏi của PTA Plan: tab Chấm Speaking có bài quá hạn thì badge có đỏ không (lời 33 "mờ + ⚠, không đỏ" mâu thuẫn V22).
+
+> "Có, đỏ như mọi nơi"
+
+ĐÃ CHỐT (thay phần "mờ, không đỏ" của lời 33 và `04-thiet-ke.md` mục 15): tab "Chấm Speaking" có bài quá hạn → **badge ĐỎ như mọi tab khác, không ⚠** (V22). Vẫn GIỮ: không cộng vào badge menu / chuông (bài chung của nhóm GV Speaking).
