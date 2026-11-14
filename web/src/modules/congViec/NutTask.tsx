@@ -10,6 +10,7 @@ import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { HopTinhHinh, type ChonEmTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
+import { boDau } from '@shared/huongDan/kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
 export type EmTask = { id: number; ten: string; lopId: number; lop: string; tvv: string | null };
@@ -94,8 +95,8 @@ function useTimEm(lopId?: number, dsEm?: EmLop[]): TimEm {
   const timTaiCho: TimXa | null = dsEm ? {
     toiThieu: 1, goiY: t('Gõ tên em'),
     goi: async (q) => {
-      const kim = boDau(q);
-      return dsEm.filter((e) => boDau(e.ten).includes(kim)).slice(0, 12)
+      const kim = boDau(q).toLowerCase().trim();
+      return dsEm.filter((e) => boDau(e.ten).toLowerCase().includes(kim)).slice(0, 12)
         .map((e) => { emCua.set(e.id, e); return { id: e.id, ten: e.ten, phu: e.phu ?? e.lop, nhom: `${t('Lớp này')} · ${e.lop}` }; });
     },
   } : null;
@@ -144,4 +145,3 @@ function HopChonEm({ neo, loai, timEm, onDong, onChon }: {
   );
 }
 const O_TIM_EM = 'tim-em-task';
-const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();
