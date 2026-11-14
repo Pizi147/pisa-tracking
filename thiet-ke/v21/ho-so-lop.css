@@ -220,3 +220,75 @@ table.bc-t { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .the-bc a { font:600 15px var(--phong); color:var(--text) !important; }
 .the-bc .thieu { grid-column:1 / -1; display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
 .the-bc .thieu .link-nho { font-size:13px; min-height:32px; }
+
+/* ---------- PHẦN MỞ RỘNG MỘT EM (web hiện tại `MoRongEm` — chủ SP 15/11 "khá ok", nâng cấp trên nó; FT + lớp thường cùng khung) ----------
+   trái "Điểm theo lượt" (lượt mới nhất đậm, ‹ lượt › đổi trang) · phải thẻ Kỹ năng / Môn chọn được → tóm tắt: Điểm · Case · PA · Kết quả PA.
+   v21: TVV ghi nhỏ ở đầu khối trái (bỏ khỏi đầu trang); thẻ có việc của người xem quá hạn mang ⚠; ô điểm đang chọn trên hàng có viền. */
+tr.duoi td { background:var(--bg); padding:12px 16px 16px; text-align:left; white-space:normal; }
+.mr { display:grid; grid-template-columns:minmax(0,5fr) minmax(0,7fr); gap:16px; align-items:start; }
+.mr-k { background:var(--surface); border:1px solid var(--line); border-radius:12px; padding:14px 16px; display:grid; gap:12px; align-content:start; justify-items:stretch; }
+.mr-k > .tag { justify-self:start; }
+.mr-h { display:flex; align-items:center; gap:8px; font:700 15px var(--phong); }
+.mr-h::before { content:""; width:3px; height:16px; border-radius:2px; background:var(--accent); }
+.mr-h .tvv { margin-left:auto; font:500 12px var(--phong); color:var(--text-faint); white-space:nowrap; }
+.mr-h .tvv b { font-weight:600; color:var(--text-dim); }
+table.mr-t { width:100%; border-collapse:collapse; table-layout:fixed; }
+.mr-t th { font:500 12px var(--phong); color:var(--text-faint); padding:6px 4px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; }
+.mr-t th:first-child, .mr-t td:first-child { text-align:left; width:96px; padding-left:0; }
+.mr-t td { padding:8px 4px; border-bottom:1px solid var(--line); text-align:center; white-space:nowrap; }
+.mr-t tr:last-child td { border-bottom:0; }
+.mr-t .mr-l { font:500 14px var(--phong); color:var(--accent); }
+.mr-t span.mr-l { color:var(--text-dim); }
+.mr-t small { display:block; font:500 12px var(--phong); color:var(--text-faint); }
+.mr-t tr.moi .mr-l { font-weight:700; }
+.mr-t tr:not(.moi) .d { font-weight:500; }
+.d .tong { font-weight:500; font-size:12px; color:var(--text-faint); }
+.d.chon { outline:1.5px solid var(--accent); outline-offset:4px; border-radius:4px; }
+.the-kn { display:grid; grid-template-columns:repeat(var(--n), minmax(0,1fr)); gap:8px; }
+.kn { display:grid; gap:4px; text-align:left; padding:8px 10px; border-radius:8px; border:1px solid var(--line); background:var(--surface); min-width:0; }
+.kn:hover { border-color:var(--accent); }
+.kn[aria-pressed="true"] { border-color:var(--accent); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); }
+.kn > b { font:700 13px var(--phong); }
+.kn .gt { font:700 15px var(--phong-so); white-space:nowrap; }
+.kn .gt .d { font-size:15px; font-weight:700; }
+.kn .tr0 { color:var(--text); }
+.kn .chu { font:400 12px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.kn .chu.qua { color:var(--bad); font-weight:600; }
+.tt-kn { display:grid; gap:12px; border-top:1px solid var(--line); padding-top:12px; }
+.tt-dau { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+.tt-dau h4 { margin:0; font:700 15px var(--phong); }
+.tt-dau .tag b { color:var(--text); }
+.tt-dau .phai { margin-left:auto; display:flex; gap:8px; }
+.tt-cot { display:grid; grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) minmax(0,1fr); gap:16px; }
+.tt-cot .c { display:grid; gap:4px; align-content:start; font-size:14px; }
+.tt-cot .nh { font:500 12px var(--phong); color:var(--text-faint); }
+.tt-cot .ct-b { font:600 14px var(--phong); }
+.tt-cot small { font-size:12px; color:var(--text-dim); }
+.tt-cot .chua-pa { color:var(--text-dim); font-size:13px; margin-top:4px; }
+.tt-cot .kv { font-size:13px; color:var(--text-dim); }
+.chuoi { display:flex; align-items:center; gap:4px; flex-wrap:nowrap; }
+.chuoi .mui { color:var(--text-faint); font-size:13px; }
+.moc { display:grid; justify-items:center; gap:1px; min-width:52px; padding:4px 8px; border:1px solid var(--line); border-radius:8px; }
+.moc.cuoi { background:var(--surface-2); border-color:var(--line-strong); }
+.moc small { font:500 12px var(--phong); color:var(--text-faint); white-space:nowrap; }
+.moc b { font:700 15px var(--phong-so); white-space:nowrap; }
+/* 375: xếp dọc như web (max-sm) — thẻ kỹ năng chỉ nhãn + điểm (+ ⚠), nút cao 44 */
+.mr-375 { padding:0 12px 12px; display:grid; }
+.dt .mr { grid-template-columns:minmax(0,1fr); gap:10px; }
+.dt .mr-k { padding:12px; }
+.dt .mr-t th:first-child, .dt .mr-t td:first-child, .bhv-t .dt .mr-t td:first-child { width:64px; }
+.dt .mr-t .d { font-size:14px; }
+.dt .mr-t small { display:none; }
+.dt .the-kn { gap:4px; }
+.dt .kn { padding:6px 2px; justify-items:center; text-align:center; }
+.dt .kn .tr0 { display:none; }
+.dt .kn .chu { display:none; }
+.dt .kn:has(.chu.qua) > b::after { content:" ⚠"; color:var(--bad); }
+.dt .tt-dau .phai { width:100%; margin-left:0; }
+.dt .tt-dau .phai .nut { flex:1; height:44px; }
+.dt .tt-cot { grid-template-columns:minmax(0,1fr); gap:10px; }
+/* bảng lượt nằm trong ô của bảng lớp: chặn kiểu ô / nền / xuống dòng của .bhv-t và tr.duoi lọt xuống */
+.bhv-t .mr-t th, .bhv-t .mr-t td { background:none; white-space:nowrap; text-align:center; padding:8px 4px; }
+.bhv-t .mr-t th { padding:6px 4px; }
+.bhv-t .mr-t th:first-child, .bhv-t .mr-t td:first-child { text-align:left; padding-left:0; }
+.mr-t.dai th:first-child, .mr-t.dai td:first-child { width:124px; }
