@@ -26,7 +26,8 @@ Seed 14/09, GVCN tài khoản 7 (tên bịa của bộ demo). Phông Be Vietnam 
 Bấm thử (GV 7): Xử lý vi phạm → `?nhom=y-thuc` · Viết Báo cáo PH → `?nhom=van-hanh` · Bàn giao → `?nhom=van-hanh` · Nhập điểm → `?nhom=cham-diem` · Kết quả PA → `?nhom=case-hoc-thuat`.
 
 ## 2. [XM] — hỏi PTA Plan
-- **[XM-9a] Tổng số việc chuông ≠ Công việc 1 đơn vị** (seed GV 7: chuông "33 việc", Công việc "34 việc"; số quá hạn cùng 9, badge cùng 9). Có từ trước PR này (GD-9 không đổi cách đếm). Chuông đếm việc CỦA TÔI (`gomViecChuong` lọc `mine`), đầu Công việc đếm mọi dòng của trang — cần PTA chốt một nguồn hay để PR riêng.
+- **[XM-9a] ĐÃ SỬA (PTA 15/11 "cùng nguồn, cùng hàm"):** lệch 1 việc là việc **LÀM THAY** (seed GV 7: "Ghi Mini Test · Vương Bảo Ngọc" — PA bổ trợ của GV Lê Minh Khoa ở lớp GV 7 chủ nhiệm, `mine: false`, `lamThay: true`), không phải Chấm Speaking (lời 33). Chuông · Tổng quan "Việc của tôi" · `summary.viec` đều đếm việc CỦA TÔI; chỉ đầu trang Công việc của GV / TVV cộng thêm dòng làm thay. Sửa: MỘT hàm `dongCuaToi` (shared/domain/chuong.ts) cho chuông và đầu trang Công việc → hai nơi cùng "33 việc"; dòng làm thay vẫn trong danh sách, đầu trang ghi riêng "· 1 làm thay" (title giải thích). Phép kiểm CHUONG-V2-1: mọi vai seed — đầu Công việc = Σ chuông = `summary.viec`.
+- **375 (PTA rà ảnh G4):** vùng danh sách loại việc cuộn trong hộp (≤ 70 vh) — còn dòng dưới thì lớp mờ 40 px ở đáy (`.chv-con-duoi`, tắt khi cuộn tới đáy): không còn mẩu chip dòng kế lòi qua đường kẻ.
 
 ## 3. Thao tác TRƯỚC → SAU
 

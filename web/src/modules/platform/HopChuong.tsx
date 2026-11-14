@@ -98,6 +98,10 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
   useEffect(() => { tatCaKhoa.current = loai ? [...loai, ...them].flatMap((l) => l.keys) : null; }, [loai, them]);
   useEffect(() => () => { if (tatCaKhoa.current) ghiDaThay(uid, tatCaKhoa.current); }, [uid]);
 
+  const vungCuon = useRef<HTMLDivElement>(null);
+  const [conDuoi, setConDuoi] = useState(false);
+  const xetCuoi = (el: HTMLDivElement) => setConDuoi(el.scrollHeight - el.scrollTop - el.clientHeight > 2);
+  useEffect(() => { if (vungCuon.current) xetCuoi(vungCuon.current); }, [loai, them]);
   const tong = (loai ?? []).reduce((a, l) => ({ n: a.n + l.n, qua: a.qua + l.quaHan, nay: a.nay + l.homNay }), { n: 0, qua: 0, nay: 0 });
   const maCn = new Map((viec?.chiNhanh ?? []).map((b) => [b.id, b.code]));
 
@@ -202,7 +206,8 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
           {loai == null ? <div className="chv-tai" aria-busy="true"><i /><i /><i /></div>
             : !loai.length && !them.length ? <p className="chv-xong">{t('Không còn việc nào')}</p>
             : (
-              <div className="min-h-0 overflow-y-auto">
+              /* GD-9 (PTA rà ảnh G4 375): còn dòng dưới → lớp mờ cuối vùng cuộn, không để mẩu dòng kế lòi qua đường kẻ; cuộn tới đáy thì tắt. */
+              <div ref={vungCuon} onScroll={(e) => xetCuoi(e.currentTarget)} className={`min-h-0 overflow-y-auto${conDuoi ? ' chv-con-duoi' : ''}`}>
                 {loai.length > 0 && <ul className="chv-ds-v">{loai.map(dongViec)}</ul>}
                 {them.length > 0 && <ul className="chv-ds-v chv-them">{them.map(dongViec)}</ul>}
               </div>

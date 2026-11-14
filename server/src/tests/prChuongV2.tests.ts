@@ -45,6 +45,8 @@ export async function runPrChuongV2Tests(t: any) {
       const loai = d.gomViecChuong(kq.dong);
       const n = loai.reduce((a: number, l: any) => a + l.n, 0), gap = loai.reduce((a: number, l: any) => a + l.quaHan + l.homNay, 0);
       assert(n === kq.summary.viec, `${key}#${id}: Σ loại ${n} ≠ summary.viec ${kq.summary.viec}`);
+      /* GD-9 [XM-9a]: đầu trang Công việc của GV / TVV đếm CÙNG hàm (`dongCuaToi` → `demDongViec`) — việc làm thay có trong danh sách nhưng không tính. */
+      assert(d.demDongViec(d.dongCuaToi(kq.dong)).n === n, `${key}#${id}: đầu Công việc ${d.demDongViec(d.dongCuaToi(kq.dong)).n} ≠ chuông ${n}`);
       assert(gap === kq.summary.canLamNgay, `${key}#${id}: Σ quá hạn + hôm nay ${gap} ≠ canLamNgay ${kq.summary.canLamNgay}`);
       assert(loai.every((l: any) => l.ten && l.ten !== l.loai), `${key}#${id}: có loại chưa có tên — ${loai.filter((l: any) => l.ten === l.loai).map((l: any) => l.loai)}`);
       if (n) coViec++;
@@ -95,7 +97,9 @@ export async function runPrChuongV2Tests(t: any) {
   check('GD-9 · chuông: bấm một loại → Công việc ĐÚNG TAB (cả tab, mockup ⑤ G2) — Báo cáo PH, Bàn giao → Vận hành; "Báo PH kết quả Test", Xử lý vi phạm, Phối hợp SOS → Ý thức & Phối hợp; không dòng Chấm Speaking', () => {
     const tab = { score: 'cham-diem', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat', yt_xu_ly: 'y-thuc', phoi_hop_sos: 'y-thuc', phoi_hop: 'y-thuc', bao_cao_ph: 'van-hanh', ban_giao: 'van-hanh' };
     for (const [l, k] of Object.entries(tab)) assert(d.nhomViecCua(l) === k, `${l} → ${d.nhomViecCua(l)}, cần ${k}`);
+    assert(/demDongViec\(laQuanLy \? items : dongCuaToi\(items\)\)/.test(nguon('web/src/modules/congViec/HoTroHocVienTab.tsx')), '[XM-9a] đầu Công việc GV phải đếm dongCuaToi (cùng chuông)');
     const hop = nguon('web/src/modules/platform/HopChuong.tsx');
+    assert(/chv-con-duoi/.test(hop) && /\.chv-con-duoi \{ -webkit-mask-image/.test(nguon('web/src/index.css')), 'vùng cuộn chuông: lớp mờ đáy khi còn dòng (375)');
     assert(/new URLSearchParams\(\{ nhom: tabCua\(l\.loai\) \}\)/.test(hop) && !/new URLSearchParams\(\{ loai: l\.loai \}\)/.test(hop), 'chuông chưa mở đúng tab (còn ?loai= lọc riêng loại)');
     assert(/const tabCua = !laQl && nav\?\.hvCuaToi \? nhomViecTvvCua : nhomViecCua;/.test(hop), 'TVV dùng tab của TVV — cùng hàm trang Công việc');
     const cheo = d.gomViecChuong([{ key: 'score:1|cc', group: 'score', urgency: 'overdue', mine: true, studentId: null, con: null }] as any);

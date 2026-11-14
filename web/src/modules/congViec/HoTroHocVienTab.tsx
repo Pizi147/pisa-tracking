@@ -38,7 +38,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
-  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
+  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
   NHAN_LOAI_VIEC,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
@@ -423,7 +423,9 @@ export function HoTroHocVienTab() {
   const dsCnXem = useApi<{ id: number; name: string }[]>(xemMotGv && cnXem ? '/ref/branches' : null).data;
   const tenCnXem = cnXem ? dsCnXem?.find((b) => b.id === cnXem)?.name ?? null : null;
   /* CV-TAB (mockup v17 `.tom`): đầu trang "n việc · m quá hạn" — đếm dòng (`demDongViec`), cùng phạm vi lọc người / khung với badge tab. */
-  const tong = useMemo(() => demDongViec(items), [items]);
+  /* GD-9 ([XM-9a]): GV / TVV — "n việc" đếm DÒNG CỦA TÔI (`dongCuaToi`, cùng hàm chuông / Tổng quan); việc làm thay vẫn trong danh sách, ghi riêng "· n làm thay". */
+  const tong = useMemo(() => demDongViec(laQuanLy ? items : dongCuaToi(items)), [items, laQuanLy]);
+  const soLamThay = useMemo(() => (laQuanLy ? 0 : demDongViec(items).n - tong.n), [items, laQuanLy, tong]);
   /* Rà 11/11 G5-09: tab Chấm điểm ghi thêm số BÀI (đơn vị của ô "Bài chưa nhập điểm" ở Tổng quan) — người bấm ô thấy lại đúng số vừa bấm. Dữ liệu đã nạp. */
   const soBaiCham = useMemo(() => items.filter((it) => it.group === 'score').reduce((n, it) => n + (it.soBai ?? 0), 0), [items]);
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
@@ -484,6 +486,7 @@ export function HoTroHocVienTab() {
               {[tenGvChon, tenCn].filter(Boolean).map((x) => <span key={x}>{x} · </span>)}
               <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {xemMotGv && tenCnXem ? t('việc ở {cn}', { cn: tenCnXem }) : t('việc')}
               {tong.quaHan > 0 && <> · <b className="font-bold tabular-nums text-late">{tong.quaHan}</b> {t('quá hạn')}</>}
+              {soLamThay > 0 && <> · <span title={t('Việc của GV khác mà bạn làm thay được — có trong danh sách, không tính vào việc của bạn.')}>{t('{n} làm thay', { n: soLamThay })}</span></>}
               </>}
               {tab === 'cham-diem' && soBaiCham > 0 && <> · <b className="font-bold tabular-nums text-[color:var(--text)]">{soBaiCham}</b> {t('bài')}</>}
             </span>
