@@ -79,8 +79,8 @@ export const HD_CX: HuongDan = {
       dangO: { cau: 'Năm ô toàn hệ thống và bảng Theo chi nhánh.', sau: { chu: 'Học viên & Lớp', duong: HV } },
       khongLam: [...KHONG],
       muc: [
-        { id: 'cx-tq-so', ten: 'Theo chi nhánh', buoc: ['Bảng: Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa PA; hàng không bấm được — chọn chi nhánh ở ô <b>Chi nhánh</b> đầu trang.'] },
-        { id: 'cx-tq-dau', ten: 'Đầu trang', buoc: ['Link <b>Lịch thi ›</b> · <b>Báo cáo HV ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).', 'Chuông chỉ có khối <b>Cập nhật</b>: CX không có Công việc nên không có <b>Việc cần làm</b>.'] },
+        { id: 'cx-tq-so', ten: 'Theo chi nhánh', buoc: ['Bảng (cùng bảng Quản trị): Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa có PA · Thi tháng này; hàng cuối <b>Toàn hệ thống</b>.', 'Bấm dòng một chi nhánh: trang chuyển sang chi nhánh đó (như ô <b>Chi nhánh</b> đầu trang).'] },
+        { id: 'cx-tq-dau', ten: 'Đầu trang', buoc: ['Link <b>Lịch thi ›</b> · <b>Báo cáo ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).', 'Chuông chỉ có khối <b>Cập nhật</b>: CX không có Công việc nên không có <b>Việc cần làm</b>.'] },
       ],
     },
     { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, /* GD-8: TVV không còn Tổng quan (Trước = Công việc) — CX còn. */ dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } }, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> (Phân tích V2); thêm <b>Theo GV</b> ở tab Thi thật, không có tab Giáo viên.',

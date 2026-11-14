@@ -1123,6 +1123,8 @@ export const TRAN_DONG: Record<string, number> = {
   'TVV /my-work': 63,
   /* GD-8a: em của TVV (HV của tôi) — đo 74 dòng (thay /tong-quan/hoc-vien 234 + /tong-quan/tvv 2) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 109 em: 1 641 dòng (trước 2 168). */
   'TVV /tong-quan/tvv/em': 124,
+  /* KY-VONG-MT0 (14/11): bảng Kết quả đầu ra lớp FT — đo 14 dòng (kỹ năng Đã huỷ đọc bằng câu con, 0 câu thêm) → max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /classes/{lopFT}/ket-qua-dau-ra': 64, 'GVCN /classes/{lopFT}/ket-qua-dau-ra': 64,
   /* GD-5: `/ref/nguoi` đo 12 dòng (QT 22) chưa gõ / có gõ, GV Speaking 6 (QT 10) — đọc trong phạm vi + cắt 20 / 12 ở máy chủ → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /ref/nguoi?nhom=nhan_vien': 62, 'GVCN /ref/nguoi?nhom=nhan_vien': 62, 'GVBM /ref/nguoi?nhom=nhan_vien': 62, 'GVCN_THUONG /ref/nguoi?nhom=nhan_vien': 62, 'QT /ref/nguoi?nhom=nhan_vien': 72,
   'QL /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVCN /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVBM /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'QT /ref/nguoi?q=ng&nhom=nhan_vien': 72,

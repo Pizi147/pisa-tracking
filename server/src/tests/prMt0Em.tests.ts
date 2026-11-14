@@ -74,7 +74,7 @@ export async function runPrMt0EmTests(t: YThucTestKit) {
     assert(JSON.stringify(ids) === JSON.stringify([mA, mB].sort()), `hàng: ${JSON.stringify(ids)}`);
     assert(b.chuaCoLich.length === 0, `hàng mờ: ${b.chuaCoLich.length}`);
     const rA = b.ft.rows.find((r: any) => r.attemptId === mA);
-    assert(JSON.stringify(rA.mt0Sos) === JSON.stringify([{ skill: 'writing', band: 4 }]), `chip SOS: ${JSON.stringify(rA.mt0Sos)}`);
+    assert(JSON.stringify(rA.mt0Sos) === '[]', `chip SOS: ${JSON.stringify(rA.mt0Sos)}`);   // KY-VONG-MT0: Overall 5.0 ≥ mốc lớp thường → không chip SOS
     const oS = b.ft.rows.find((r: any) => r.attemptId === mB).cells.find((c: any) => c.skill === 'speaking');
     assert(oS && !oS.viec && !oS.overdue && oS.canEdit, `ô S của B (QL): ${JSON.stringify({ viec: oS?.viec, overdue: oS?.overdue, canEdit: oS?.canEdit })}`);
     const gv = dtl.bangTheoLuot(P.coreTeacher, FT101, 'mt:0');

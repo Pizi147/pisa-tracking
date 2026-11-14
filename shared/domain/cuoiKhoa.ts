@@ -208,17 +208,36 @@ export const kyNangLopDich = (mon: string, denFt: boolean): string => (denFt && 
 
 /** PR-KV (đặc tả 08/10 §3): Đạt Kết quả đầu ra = Overall MT0 ≥ ngưỡng của chương trình lớp nguồn. OV-3b: FOU "Overall > 3.5" = ≥ 4 (Overall làm tròn 0.5). */
 export const NGUONG_KY_VONG: Readonly<Record<string, number>> = { FOU: 4, BE: 4, ELE: 4.5 };
-export type GoiYKyVong = { overall: number; dat: boolean; monTruot: RegularSkill[] };
+export type GoiYKyVong = { overall: number | null; dat: boolean; monTruot: RegularSkill[] };
 /**
  * Gợi ý điền sẵn từ band MT0 (L R W S): Overall = trung bình các kỹ năng CÓ band, làm tròn 0.5 (cần ≥ 3/4 kỹ năng có band — chủ SP 10/10; W có band khi đủ W1 + W2);
  * `monTruot` chỉ gồm kỹ năng có band dưới ngưỡng — kỹ năng thiếu là "chưa thi", không tự thành trượt. Dưới 3 band / không BE-ELE → null.
+ * KY-VONG-MT0 (chủ SP 14/11): Overall đạt mốc = Đạt, `monTruot: []` (không ghi SOS / bổ trợ). Có kỹ năng Đã huỷ (`huy`: kỹ năng `sit_status = 'cancelled'`,
+ * W1 / W2 → W) → không Overall; mọi kỹ năng còn lại có band thì xét từng kỹ năng theo mốc, còn thiếu → null (Chờ MT0).
  */
-export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<RegularSkill, number | null>>): GoiYKyVong | null {
+export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<RegularSkill, number | null>>, huy: readonly string[] = []): GoiYKyVong | null {
   const nguong = NGUONG_KY_VONG[programmeOf(ct) ?? ''];
-  const co = REGULAR_SKILLS.filter((k) => typeof bands[k] === 'number');
-  if (nguong === undefined || co.length < 3) return null;
+  if (nguong === undefined) return null;
+  const daHuy = (k: RegularSkill) => huy.includes(k) || (k === 'writing' && (huy.includes('writing1') || huy.includes('writing2')));
+  const con = REGULAR_SKILLS.filter((k) => !daHuy(k));
+  const co = con.filter((k) => typeof bands[k] === 'number');
+  const duoi = co.filter((k) => bands[k]! < nguong);
+  if (con.length < REGULAR_SKILLS.length) return co.length && co.length === con.length ? { overall: null, dat: !duoi.length, monTruot: duoi } : null;
+  if (co.length < 3) return null;
   const overall = roundToHalf(co.reduce((a, k) => a + bands[k]!, 0) / co.length);
-  return { overall, dat: overall >= nguong, monTruot: co.filter((k) => bands[k]! < nguong) };
+  return overall >= nguong ? { overall, dat: true, monTruot: [] } : { overall, dat: false, monTruot: duoi };
+}
+
+/** KY-VONG-MT0 (chủ SP 14/11): MT0 đạt mốc mà QL chưa chốt → tự Đạt — SUY RA khi đọc (không ghi DB), cùng dáng kết luận đã lưu. */
+export function tuDatKyVong(goiY: GoiYKyVong | null | undefined): { dat: true; nguyenNhan: null; mon: string[]; ghiChu: null; tuDong: true } | null {
+  return goiY?.dat ? { dat: true, nguyenNhan: null, mon: [], ghiChu: null, tuDong: true } : null;
+}
+/**
+ * Kết luận hiệu lực: Đạt đã lưu giữ; MT0 đạt mốc → Đạt (kể cả "Không đạt" lưu trước khi điểm MT0 được sửa lên — "đạt rồi thì coi như đạt"); còn lại = đã lưu.
+ * ponytail: Case Tutor tạo TRƯỚC khi điểm sửa lên không tự đóng (migrate `prKyVongTuDat` chỉ một lần) — GV tự đóng; nối `suaKyVongTuDat` vào lưu điểm MT0 nếu hay gặp.
+ */
+export function ketLuanKyVong<T extends { dat: boolean | null }>(daLuu: T | null, goiY: GoiYKyVong | null | undefined): T | NonNullable<ReturnType<typeof tuDatKyVong>> | null {
+  return daLuu?.dat === true ? daLuu : tuDatKyVong(goiY) ?? daLuu;
 }
 
 /** FOU IELTS > 3.5 · BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4, OV-3b, quy chế lớp thường) — chỉ nhắc chữ, không lưu Placement. */
