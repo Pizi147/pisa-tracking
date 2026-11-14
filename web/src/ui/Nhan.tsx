@@ -148,7 +148,8 @@ export function ChipHan({ loai, han, chuThuong = false, vien = false }: { loai: 
   if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{ngay}</span>;
   if (chuThuong) return <span title={v.text} className={`${CHU_HAN} text-late font-bold min-h-[22px] whitespace-normal`}>{ngay} · {t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</span>;
   if (vien) {
-    const muc = v.tone === 'overdue' ? 'bg-late-bg text-late font-semibold' : han.slice(0, 10) === homNay
+    /* V22 (chủ SP 14/11): đỏ = quá hạn · vàng = gần tới hạn (hôm nay hoặc `ganHan` — ngưỡng sẵn có của `deadlineView`) · xám = chưa tới. */
+    const muc = v.tone === 'overdue' ? 'bg-late-bg text-late font-semibold' : han.slice(0, 10) === homNay || v.ganHan
       ? 'bg-soon-bg text-soon font-semibold shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]' : 'bg-[rgb(var(--muted-bg-rgb))] text-dim font-medium';
     return (
       <span title={v.text} className={`inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-[9px] text-xs tabular-nums ${muc}`}>

@@ -13,6 +13,7 @@ Plan `09-plan-giao-dien-dot-2.md` GD-4 ý (e); `thiet-ke/v21/bang-mau-ghi-chu.md
 | `cap-1440-lich-su.png` | ⑤ H4 | Công việc › Báo PH (TVV) — "Lịch sử · 1" |
 | `cap-1440-chip-han.png` | ⑤ B1 | Công việc › Case — chip hạn dạng viên |
 | `zoom-x-ba-cham.png` | ⑤ F2, D1 · ③ | góc ✕ / ⋯ phóng to |
+| `zoom-v22-truoc-sau.png` | — | V22: chip hạn, chip "Việc cần làm", cột Test, badge Chấm Speaking — TRƯỚC (có ⚠) │ SAU (chỉ màu) |
 
 ## 1. Truy vết
 
@@ -22,9 +23,12 @@ Plan `09-plan-giao-dien-dot-2.md` GD-4 ý (e); `thiet-ke/v21/bang-mau-ghi-chu.md
 | 2 | ⑤ H2 menu thả `.menu-tha`: bo 10, bóng, mục 14 / 500, nhóm 12, `hr`, nguy hiểm đỏ, mục tắt ghi lý do NGAY DƯỚI | MỘT `ui/MenuDong.tsx`; `ui/Menu.tsx` XOÁ (5 nơi: MockDetailPage "Chỉnh lịch", StudentDetailPage ⋯, LuoiKeHoach "+ MT", ClassYThucCard ⋯, ThanhTruocSau "Các bước"); `role="menu"` tự viết → MenuDong (ChonPhuTrach, BangPhoiHop). Thêm vào MenuDong: dòng phụ `goi`, lý do mục tắt hiện dưới mục, `keTruoc` 'dam' / 'do', nút chữ `chu` | menu | KHỚP |
 | 3 | ⑤ H3 dải chỉ số: một hàng cao 44, "nhãn + ô số `OSo`", 0 không bấm, xấu ⚠, ⓘ là nút, "›" đổi trang; 375 lưới 2 cột | MỘT `ui/DaiChiSo.tsx` (`DaiChiSo`, `ODai`, `SoDen`, `SoTinh`) dùng lại `OSo` (thêm nguồn `dong` — panel dựng từ dữ liệu đã nạp, 0 request). Thay ở: Tổng quan TVV (5 ô — "Chờ KQ thi thật" → "Chờ KQ", ⓪ 22), đầu hồ sơ lớp (Đạt MT, SOS là ô số, "0 %" không bấm — ⓪ 21), Lịch tuần (`DaiSo`), hồ sơ GV (dải trong kỳ + "Việc đang tồn") | dai-lop, dai-tvv | KHỚP |
 | 4 | ⑤ H4 lịch sử: gập "Lịch sử · n" → dòng giờ · người · việc · cũ → mới · Khôi phục; 0 dòng không vẽ (lời 40) | MỘT `ui/LichSuThayDoi.tsx` thêm `LichSuGap` (`details.ls`) · `DsLichSu` (`ul.ls-ds`) · `DongLs`; panel LichSuThayDoi (9 nơi) cùng lưới dòng. Thay ở: DongThoiGianLuot, MockDetailPage (dải kỹ năng, Lịch sử lượt), LuotThuongPage, NganLichSuBai (LuoiThuong, HopKyNang), HopNhapDiem, HopKyNang (ghi chú), Báo PH TVV ("các lần thử"), Hộp duyệt, Meeting, Sau thi. "Nhật ký" ở Test → "Lịch sử" (`CHU_MUC_HOP`, Hướng dẫn) | lich-su | KHỚP |
-| 5 | ⑤ B1 chip hạn dạng viên `.han-v`: "⚠ quá hạn 5 ngày" (đỏ) · "⚠ hạn hôm nay" (vàng viền) · "hạn 23/09" (xám; bỏ "còn n ngày" — ⓪ 32) — một dáng cho dòng việc ở mọi nơi | `CotHan` (`DanhSachViec`) dùng `ChipHan vien` — cùng chip đã dùng ở đầu panel, Chờ bạn duyệt, Lớp của tôi, Lịch tuần | chip-han | KHỚP |
+| 5 | ⑤ B1 chip hạn dạng viên `.han-v` ("quá hạn 5 ngày" đỏ · "hạn hôm nay" vàng viền · "hạn 23/09"; bỏ "còn n ngày" — ⓪ 32) — một dáng cho dòng việc ở mọi nơi; V22: không ⚠, vàng cả khi sắp hạn | `CotHan` (`DanhSachViec`) dùng `ChipHan vien` — cùng chip đã dùng ở đầu panel, Chờ bạn duyệt, Lớp của tôi, Lịch tuần | chip-han | KHỚP |
 
-**KHỚP 5 / 5 = 100 %.**
+| 6 | **V22** (chủ SP 14/11, DESIGN.md V22, #1642): hạn / quá hạn CHỈ MÀU — đỏ quá hạn · vàng gần tới (hôm nay + ngưỡng `ganHan` sẵn có) · thường chưa tới; bỏ ⚠ và mọi biểu tượng; chữ giữ nghĩa | Tận gốc ở thành phần chung: `ChipHan` (3 dáng), `QuaHan`, `Nhan` tông late, `ChipSoQuaHan`, `BadgeTabSo`, `Alert` / `NhanTrangThai`, `DongHan`, `DaiChiSo`, `BadgeViec`, CSS `::before` ⚠ (số xấu, dải, ô số); rồi toàn web (~55 tệp: chip "Việc cần làm", đầu mục "n quá hạn", cột Test, chip "Quá hạn n ngày" panel vi phạm, chuông, dải việc hồ sơ, `DemNguocYThuc`, ô số bảng, Hướng dẫn "có ⚠" → "tô đỏ"). Chỉ có số + màu → thêm chữ sr-only "quá hạn". ⚠ GIỮ cho lỗi / chặn / xác nhận / dữ liệu sai | zoom-v22-truoc-sau, chip-han, tab | KHỚP |
+| 7 | Chủ SP chốt badge tab Chấm Speaking: "Có, đỏ như mọi nơi" | có bài quá hạn → viên ĐỎ (dáng badge đỏ chung), không ⚠; không có → mờ; số = số bài, không cộng badge menu / chuông (lời 33 giữ) | tab, zoom-v22 | KHỚP |
+
+**KHỚP 7 / 7 = 100 %.** Chỗ mockup v21 còn vẽ ⚠ cạnh hạn mà web chỉ dùng màu: **KHÁC theo V22** (chủ SP lời 44, #1644: mockup không sửa) — không tính là lệch: ⑤ B1 (chip hạn, đầu mục), ⑤ C (chip "Việc cần làm"), ⑤ H1 (badge Chấm Speaking), ⑤ H3 (ô số xấu).
 
 ## 2. GIỮ / KHÁC / [XM] (hỏi PTA Plan)
 - **GIỮ** `cham/DiemTheoLop.tsx` thẻ chọn lượt (hai dòng: tên + dòng phụ, nút trước / sau, phím riêng) — đổi sang HangTab mất dòng phụ, đổi bố cục ([XM-T1]).
@@ -41,6 +45,12 @@ Plan `09-plan-giao-dien-dot-2.md` GD-4 ý (e); `thiet-ke/v21/bang-mau-ghi-chu.md
 - **[XM-C1]** Chữ "Tạm dừng/ Kết thúc học" (⓪ dòng 35: "Tạm dừng / Kết thúc học", mục ⋯ chữ đỏ) — đổi chữ đụng > 50 chỗ (nhãn, phép kiểm, khoá dịch, Hướng dẫn) → PR riêng / GD-7.
 - Chip bậc ở panel Báo PH TVV ("✓ REPORT 1") viết hoa theo 4d (`bacNgan`).
 
+## 2c. V22 — chỗ GIỮ ⚠ và [XM]
+- GIỮ ⚠ (không phải hạn): lỗi lưu / máy chủ (CasePanel, TaiCho, LoYThucPanel, TinhHinh, CuoiKhoaLop, GocPhanCongGv, HopTamDungKetThuc…), xung đột bản ghi (CapNhatTuan, CauHinhCaseSos), xác nhận hậu quả (ChuyenLopPanel, XacNhanXuLyPanel, CuoiKhoaLop), dữ liệu thiếu / sai, mất kết nối (App), trang dev độ tương phản.
+- **[XM-V1]** "⚠ Gấp" (mức khẩn Case, `BangCanHoTro`) và "⚠ Chưa liên hệ được · lần n" (việc TVV) giữ ⚠ — không phải hạn. "Chờ QL duyệt dời lần n · hạn" (MockDetailPage) đã bỏ ⚠ (trạng thái chờ có hạn).
+- **[XM-V2]** ⓪ dòng 32 ("còn 1 ngày → hạn 23/09, màu còn hạn") vs V22 ("vàng là gần tới"): theo V22 (mới hơn) — chip viên vàng cả khi sắp hạn theo ngưỡng `ganHan` sẵn có.
+- Phép kiểm `thanhPhanChung` "V22 · hạn chỉ bằng màu…": quét `web/src/**/*.tsx` + `shared/domain` + CSS, báo lỗi nếu ⚠ / `IconCanhBao` đứng gần khoá hạn (không ngoại lệ). Phép kiểm cũ đòi ⚠ ở hạn đã sửa theo V22 (`hanhTrinh`, `hocVienLop`, `prHvl`, `prOv13b`, `prHk2` C15a / C41…).
+
 ## 3. Thao tác TRƯỚC → SAU
 
 | Thao tác | Trước | Sau | |
@@ -49,7 +59,8 @@ Plan `09-plan-giao-dien-dot-2.md` GD-4 ý (e); `thiet-ke/v21/bang-mau-ghi-chu.md
 | Mở ⋯ / menu chữ ("Chỉnh lịch", "+ MT", "Các bước") | hai thành phần (Menu / MenuDong) + menu tự viết không phím | một MenuDong, đủ phím ↑ ↓ Home End Esc; mục tắt có lý do ngay dưới | ĐỔI / THÊM phím |
 | Bấm số trong dải chỉ số | ô số to, một số chỗ 0 vẫn bấm | ô số `OSo` trong dải mỏng; 0 không bấm (luật M); cùng panel / cùng đích "›" | ĐỔI dáng |
 | Xem lịch sử | "Lịch sử (n)", "▸ Lịch sử", nút "Lịch sử / Ẩn lịch sử", danh sách tự viết | "Lịch sử · n" gập / mở; 0 dòng không vẽ; Khôi phục giữ | ĐỔI dáng |
-| Đọc hạn ở dòng việc | chữ "⚠ 68 ngày · 08/07", "còn 2 ngày · 16/09" | viên "⚠ quá hạn 68 ngày", "hạn 16/09" | ĐỔI dáng |
+| Đọc hạn ở dòng việc | chữ "⚠ 68 ngày · 08/07", "⚠ còn 2 ngày · 16/09" | viên đỏ "quá hạn 68 ngày", viên vàng "hạn 16/09" (không ⚠ — V22) | ĐỔI dáng |
+| Đọc mức hạn / số quá hạn ở mọi nơi | ⚠ + màu | chỉ màu (đỏ / vàng / thường), chữ giữ nghĩa | ĐỔI (V22) |
 | Mọi thao tác khác | có | có | GIỮ |
 
 Không thao tác nào bị mất.
