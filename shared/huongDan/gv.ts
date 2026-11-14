@@ -347,7 +347,7 @@ export const HD_GV: HuongDan = {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
       dangO: { cau: 'Lớp bạn dạy và số của bạn theo khoảng tuần.', truoc: { chu: 'Công việc', duong: CV } },
       muc: [{ id: 'hsgv-so', ten: 'Đầu trang', buoc: ['Chọn <b>Từ tuần</b> → <b>Đến tuần</b>: dải <b>Việc</b> · <b>Chấm Test</b> (% đúng hạn · Chưa làm) theo khoảng đó; bấm số mở danh sách ngay tại trang.', 'GVCN: bấm mã lớp mở hồ sơ lớp; <b>Mở Công việc ›</b> sang Công việc.'] },
-        { id: 'hsgv-tab', ten: 'Ba tab Lớp · Học thuật · Việc & Case', buoc: ['<b>Lớp</b>: Lớp đang dạy (Chưa nhập · Quá hạn theo lớp, Test kế tiếp dưới mã lớp) · Lớp chủ nhiệm · Em đang bổ trợ (tên em mở hồ sơ, kể cả em đã chuyển lớp).',
+        { id: 'hsgv-tab', ten: 'Ba tab Lớp · Học thuật · Việc & Case', buoc: ['<b>Lớp</b>: Lớp đang dạy (Chưa nhập · Quá hạn theo lớp, Test sắp tới dưới mã lớp) · Lớp chủ nhiệm · Em đang bổ trợ (tên em mở hồ sơ, kể cả em đã chuyển lớp).',
           '<b>Học thuật</b>: Đạt kỳ vọng Test · Tiến bộ · Kết quả thi thật, bảng Theo kỹ năng · Theo lớp; công tắc Fast Track / Lớp thường.',
           '<b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm việc ngay tại trang; <b>Việc đang tồn</b> bấm số xem danh sách, tên nhóm › mở Công việc; <b>Yêu cầu đã gửi</b>.'],
         chi: { hd: 'hsgv-tab', duong: '/giao-vien', chu: 'Ba tab của hồ sơ ở đây.' } }],

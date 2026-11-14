@@ -464,6 +464,12 @@ function KhoiHocThuat({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
               {d ? <PhanTram gon x={tyLeGv(d.tienBo)} nguon={nguonCs('tien-bo')} tieuDe={t('HV tiến bộ')} /> : <SoTinh n="…" />}
             </ODai>
           )}
+          {/* GIỮ thao tác dải cũ (ô "Case có PA" · PA cải thiện n/m → panel `pa-hieu-qua`, theo kỳ, FT) — mockup không vẽ; đặt ở dải Học thuật (số theo kỳ). */}
+          {ft && d?.paHieuQua.k === 'so' && (
+            <ODai nhan={t('PA cải thiện')}>
+              <OSo giaTri={d.paHieuQua.tong} nhan={`${d.paHieuQua.dung}/${d.paHieuQua.tong}`} nguon={nguonCs('pa-hieu-qua')} tieuDe={t('PA hiệu quả')} />
+            </ODai>
+          )}
           {/* Chủ SP 23/10: thi thật (IELTS) RẤT quan trọng — % Pass Target + Fail · Pass · Exceed (bấm → danh sách có điểm). */}
           {ft && d?.thiThat.k !== 'na' && (
             <ODai nhan={t('Kết quả thi thật')} phu={thi ? null : t('chưa có dữ liệu trong kỳ')}>
@@ -576,7 +582,7 @@ function BangLop({ data, d, ky, khung }: { data: HoSo; d: ChiSoHoSoGv; ky: strin
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },
     { key: 'kq', nhan: t('Đạt kỳ vọng Test'), kieu: 'chu', rong: RONG_TL },
     { key: 'tb', nhan: t('Tiến bộ'), kieu: 'chu', rong: RONG_TL },
-    { key: 'tt', nhan: t('Kết quả thi thật'), kieu: 'chu', rong: RONG_TL, goiY: '% Pass Target' },
+    { key: 'tt', nhan: t('Thi thật'), kieu: 'chu', rong: RONG_TL, goiY: `${t('Kết quả thi thật')} · % Pass Target` },
   ] : [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 128 },
     { key: 'ky', nhan: t('Kỹ năng'), kieu: 'chu' },

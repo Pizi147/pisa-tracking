@@ -25,8 +25,8 @@ export const EN_GD15 = {
     'Pick <b>From week</b> → <b>To week</b>: the <b>Tasks</b> · <b>Test marking</b> strip (% on time · Not done) follows that range; click a number for the list right on the page.',
   'GVCN: bấm mã lớp mở hồ sơ lớp; <b>Mở Công việc ›</b> sang Công việc.': 'Homeroom: click a class code for the class profile; <b>Open To do ›</b> goes to To do.',
   'Ba tab Lớp · Học thuật · Việc & Case': 'Three tabs Classes · Academic · Tasks & Cases',
-  '<b>Lớp</b>: Lớp đang dạy (Chưa nhập · Quá hạn theo lớp, Test kế tiếp dưới mã lớp) · Lớp chủ nhiệm · Em đang bổ trợ (tên em mở hồ sơ, kể cả em đã chuyển lớp).':
-    '<b>Classes</b>: Classes I teach (Not entered · Overdue per class, next Test under the class code) · Homeroom classes · Students in free support (a name opens the profile, moved students included).',
+  '<b>Lớp</b>: Lớp đang dạy (Chưa nhập · Quá hạn theo lớp, Test sắp tới dưới mã lớp) · Lớp chủ nhiệm · Em đang bổ trợ (tên em mở hồ sơ, kể cả em đã chuyển lớp).':
+    '<b>Classes</b>: Classes I teach (Not entered · Overdue per class, upcoming Test under the class code) · Homeroom classes · Students in free support (a name opens the profile, moved students included).',
   '<b>Học thuật</b>: Đạt kỳ vọng Test · Tiến bộ · Kết quả thi thật, bảng Theo kỹ năng · Theo lớp; công tắc Fast Track / Lớp thường.':
     '<b>Academic</b>: Test expectation met · Progress · Real exam results, tables By skill · By class; Fast Track / Regular switch.',
   '<b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm việc ngay tại trang; <b>Việc đang tồn</b> bấm số xem danh sách, tên nhóm › mở Công việc; <b>Yêu cầu đã gửi</b>.':
@@ -35,8 +35,8 @@ export const EN_GD15 = {
   '<b>Từ tuần</b> → <b>Đến tuần</b>: dải Việc · Chấm Test (% đúng hạn · Chưa làm) và tab <b>Học thuật</b> theo khoảng đó; bấm số mở danh sách ngay tại trang.':
     '<b>From week</b> → <b>To week</b>: the Tasks · Test marking strip (% on time · Not done) and the <b>Academic</b> tab follow that range; click a number for the list right on the page.',
   'Kỹ năng của GV: <b>Sửa</b> → <b>Lưu</b>, lỡ tay thì <b>Hoàn tác</b> (QL, Quản trị).': 'Teacher skills: <b>Edit</b> → <b>Save</b>, <b>Undo</b> if it was a slip (Manager, System admin).',
-  'Tab <b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm thay; <b>Việc của {tên} ›</b> mở Công việc của GV.':
-    '<b>Tasks & Cases</b> tab: click a <b>Do first</b> row to do it for them; <b>{tên}\'s tasks ›</b> opens the teacher\'s To do.',
+  'Tab <b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm thay; nút việc của GV ở đầu trang mở Công việc của GV.':
+    '<b>Tasks & Cases</b> tab: click a <b>Do first</b> row to do it for them; the teacher\'s tasks button in the page header opens their To do.',
   'Chọn <b>Từ tuần</b> → <b>Đến tuần</b>: dải đúng hạn và tab <b>Học thuật</b> theo khoảng đó; tab <b>Lớp</b> · <b>Việc & Case</b> tính tới hôm nay.':
     'Pick <b>From week</b> → <b>To week</b>: the on-time strip and the <b>Academic</b> tab follow that range; the <b>Classes</b> · <b>Tasks & Cases</b> tabs count up to today.',
   '<b>Từ tuần</b> → <b>Đến tuần</b>: dải Việc · Chấm Test (% đúng hạn · Chưa làm) theo khoảng đó; tab <b>Học thuật</b> · <b>Việc & Case</b>.':
