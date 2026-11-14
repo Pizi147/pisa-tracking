@@ -129,15 +129,14 @@ export function timNguoi(
   const cnLopEm = classId ? bang.get(classId)?.branchId ?? null : null;
   const cnThamChieu = new Set<number>(cnViec ? [cnViec] : cnLop ? [cnLop] : cnLopEm ? [cnLopEm] : cnPhamVi);
   const lopMa: string | null = classId ? lopDayDu().get(classId)?.code ?? null : null;
-  let cnMa: string | null = null;   // mã chi nhánh tham chiếu — lấy từ chính các dòng đã đọc
   const build = (row: HangNguoiTho): HangNguoi => {
     const cn = (row.branches ? row.branches.split(',') : []).map((x) => { const [id, ...ma] = x.split('|'); return { id: Number(id), ma: ma.join('|') }; });
-    if (cnThamChieu.size === 1) cnMa ??= cn.find((x) => cnThamChieu.has(x.id))?.ma ?? null;
     return {
       id: row.id, name: row.full_name, role: row.role,
       branches: [...new Set(cn.map((x) => x.ma))].sort(),
       cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [],
-      cungCn: cnThamChieu.size ? cn.some((x) => cnThamChieu.has(x.id)) : null, lopMa, cnMa: null,
+      cungCn: cnThamChieu.size ? cn.some((x) => cnThamChieu.has(x.id)) : null, lopMa,
+      cnMa: cnThamChieu.size === 1 ? cn.find((x) => cnThamChieu.has(x.id))?.ma ?? null : null,
     };
   };
 
@@ -147,6 +146,5 @@ export function timNguoi(
     .filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle))
     .map(build)
     .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.cungCn !== b.cungCn ? (a.cungCn ? -1 : 1) : a.name.localeCompare(b.name, 'vi') || a.id - b.id))
-    .slice(0, needle ? 12 : 20)
-    .map((r) => ({ ...r, cnMa }));
+    .slice(0, needle ? 12 : 20);
 }

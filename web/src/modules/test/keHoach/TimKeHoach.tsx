@@ -66,7 +66,7 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
           aria-activedescendant={mo && ds[dong] ? `tim-kht-${dong}` : undefined}
           onChange={(e) => { onChange(e.target.value); setMo(true); }} onFocus={() => setMo(true)} onKeyDown={onKey} />
         {value && (
-          <button type="button" className="bo" aria-label={t('Xoá chữ tìm')} title={t('Xoá')} onMouseDown={(e) => e.preventDefault()}
+          <button type="button" className="oc-bo" aria-label={t('Xoá chữ tìm')} title={t('Xoá')} onMouseDown={(e) => e.preventDefault()}
             onClick={(e) => { e.stopPropagation(); onChange(''); setMo(false); }}>✕</button>
         )}
       </div>

@@ -356,11 +356,11 @@ export function ChonNguoi({
 
     return (
       /* Mockup ⑤ A3 "đã chọn một": tên đậm · dòng phụ + ✕ (cùng cao ô gõ — lưới Tạo nhiều lớp); vùng bấm = cả ô. Chưa có giá trị: chữ mờ + ▾. */
-      <div className={`oc${gonLop}${gon && coGt ? ' dang' : ''}${invalid ? ' loi' : ''}${disabled ? ' tat' : ' bam'}`} aria-disabled={disabled || undefined}
+      <div className={`oc${gonLop}${gon && coGt ? ' dang' : ''}${invalid ? ' loi' : ''}${disabled ? ' oc-tat' : ' bam'}`} aria-disabled={disabled || undefined}
         onBlur={onBlur} onClick={disabled ? undefined : () => setEditing(true)}>
-        {coGt ? <span className="da"><b>{chinh}</b>{phu && <small>{phu}</small>}</span> : <span className="goi">{chinh}</span>}
+        {coGt ? <span className="da"><b>{chinh}</b>{phu && <small>{phu}</small>}</span> : <span className="oc-goi">{chinh}</span>}
         {/* Nhãn ô trỏ vào nút này (htmlFor): ✕ = Đổi (mở lại ô, giữ người cũ tới khi chọn người khác); `xBo` (ô lọc) = bỏ chọn. */}
-        {!disabled && <button id={oId} type="button" className={coGt ? 'bo' : 'bo mui-xuong'}
+        {!disabled && <button id={oId} type="button" className={coGt ? 'oc-bo' : 'oc-bo mui-xuong'}
           aria-label={!coGt ? ariaLabel ?? t('Chọn') : xBo ? t('Bỏ chọn {ma} · {o}', { ma: chinh, o: ariaLabel ?? t('Chọn') }) : ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : t('Đổi')}
           onClick={(e) => { e.stopPropagation(); if (coGt && xBo) onChange(null); else setEditing(true); }}>{coGt ? '✕' : <IcXuong />}</button>}
       </div>
@@ -396,7 +396,7 @@ export function ChonNguoi({
   let tatTran = false;   // tới trần: dòng tắt đầu tiên ghi "bỏ bớt một …"
 
   const oGo = (
-    <div className={`oc${nhieu ? ' nhieu' : ''}${gonLop}${invalid ? ' loi' : ''}${disabled ? ' tat' : ''}`} onClick={() => inputRef.current?.focus()}>
+    <div className={`oc${nhieu ? ' oc-nhieu' : ''}${gonLop}${invalid ? ' loi' : ''}${disabled ? ' oc-tat' : ''}`} onClick={() => inputRef.current?.focus()}>
       {!nhieu && <IcTim />}
       {nhieu?.chon.map((x, k) => (
         <span key={x.id} className={`chip-em${tron && k === nhieu.chon.length - 1 ? ' tron' : ''}`}>
@@ -448,7 +448,7 @@ export function ChonNguoi({
       {/* 375 toàn màn: số đếm ở đầu màn (mockup ⑤ A7), không lặp trong ô. ✕ xoá chữ luôn sát mép phải (#1602: lề 7, tâm = tâm ô). */}
       {nhieu && !manMo && <span className={`dem-chon${day ? ' day' : ''}`}>{nhieu.chon.length} / {nhieu.toiDa}</span>}
       {term
-        ? <button type="button" className="bo" aria-label={t('Xoá chữ')} onMouseDown={(e) => e.preventDefault()}
+        ? <button type="button" className="oc-bo" aria-label={t('Xoá chữ')} onMouseDown={(e) => e.preventDefault()}
             onClick={(e) => { e.stopPropagation(); setTerm(''); setOpen(true); inputRef.current?.focus(); }}>✕</button>
         : !nhieu && <span className="mui-xuong" aria-hidden><IcXuong /></span>}
     </div>
@@ -481,7 +481,7 @@ export function ChonNguoi({
               aria-disabled={tat(opt) || undefined}
               tabIndex={-1}
               type="button"
-              className={`oc-muc${i === activeIndex ? ' re' : ''}${daChon || (opt.kind === 'dau' && dau?.bat) ? ' da-chon' : ''}${opt.kind === 'them' ? ' them' : ''}${opt.kind === 'trong' ? ' trong' : ''}`}
+              className={`oc-muc${i === activeIndex ? ' re' : ''}${daChon || (opt.kind === 'dau' && dau?.bat) ? ' da-chon' : ''}${opt.kind === 'them' ? ' oc-them' : ''}${opt.kind === 'trong' ? ' trong' : ''}`}
               onMouseEnter={() => { if (!tat(opt)) setActiveIndex(i); }}
               onClick={() => chon(opt)}
             >
@@ -493,7 +493,7 @@ export function ChonNguoi({
                 : (chiTutor ? t('Tutor khác: «{ten}»', { ten: opt.text }) : t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text }))}</span>}
               {opt.kind === 'dau' && <span className="t">{dau?.nhan}</span>}
               {opt.kind === 'them' && <><span className="t">{them?.nhan}</span>{them?.phu && <span className="p">{them.phu}</span>}</>}
-              {ben && <span className="ben">{ben}</span>}
+              {ben && <span className="oc-ben">{ben}</span>}
             </button>
           </Fragment>
         );
@@ -512,7 +512,7 @@ export function ChonNguoi({
       onBlur?.();
     }}>
       {manMo
-        ? <div className={`oc${gonLop} go`} aria-hidden><IcTim /><span className="goi">{placeholder ?? t('Gõ tên…')}</span></div>
+        ? <div className={`oc${gonLop} go`} aria-hidden><IcTim /><span className="oc-goi">{placeholder ?? t('Gõ tên…')}</span></div>
         : <>{oGo}{danhSach}</>}
       {manMo && createPortal(
         <div className="oc-man" role="dialog" aria-modal="true" aria-label={ten}

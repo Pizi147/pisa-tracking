@@ -15,14 +15,12 @@ export type LopChon = { id: number; ma: string; phu?: string; tat?: string; nhom
  * Ô "thêm lớp" (value luôn null, nơi gọi thêm vào danh sách chip): sau mỗi lần chọn, ô gõ trống lại và mở tiếp danh sách.
  * `gon`: ô lọc cao 36 trong hàng lọc (thay `<select>` "Mọi lớp").
  */
-export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKhop, placeholder, maCu, noi: _noi, id, invalid: invalidP, 'aria-invalid': ariaInvalid, onBlur, className, moLopMoi, ghiChuDs, gon, macDinhTrong }: {
+export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKhop, placeholder, maCu, id, invalid: invalidP, 'aria-invalid': ariaInvalid, onBlur, className, moLopMoi, ghiChuDs, gon, macDinhTrong }: {
   ds: LopChon[]; value: number | null; onChange: (id: number | null) => void; ariaLabel: string;
   choTrong?: string; tat?: boolean;
   /** Chữ khi danh sách rỗng (không có lớp nào để chọn). */
   khongKhop?: string;
   placeholder?: string; maCu?: string;
-  /** Cũ (ô "Thêm lớp" trong dòng chip): danh sách nay luôn nổi trên nội dung (mockup ⑤ `.oc-ds`) — giữ tham số cho nơi gọi. */
-  noi?: boolean;
   /** Như `<select>` cũ dưới `useLoiForm` (`{...lf.o(loi, khoa)}` gắn thẳng được): id cho nhãn / "n ô cần sửa ↑", viền lỗi, rời ô. */
   id?: string; invalid?: boolean; 'aria-invalid'?: boolean; onBlur?: () => void; className?: string;
   /** P9b (R5.1): dòng "+ Mở lớp mới…" cuối danh sách — nơi gọi mở hộp tạo lớp tại chỗ, xong thì tự chọn lớp mới (giữ lựa chọn đang có). */
@@ -41,15 +39,15 @@ export function ChonLop({ ds, value, onChange, ariaLabel, choTrong, tat, khongKh
     const ma = chon?.ma ?? maCu ?? '—';
     return (
       /* Mockup ⑤ A3 "đã chọn · focus": mã đậm · dòng phụ + ✕ (bỏ chọn). */
-      <div className={`oc${gon ? ' gon dang' : ''}${invalid ? ' loi' : ''}${tat ? ' tat' : ''} ${className ?? ''}`} onBlur={onBlur}>
+      <div className={`oc${gon ? ' gon dang' : ''}${invalid ? ' loi' : ''}${tat ? ' oc-tat' : ''} ${className ?? ''}`} onBlur={onBlur}>
         <span className="da"><b>{ma}</b>{chon?.phu && <small>{chon.phu}</small>}</span>
-        {!tat && <button id={id} type="button" className="bo"
+        {!tat && <button id={id} type="button" className="oc-bo"
           aria-label={t('Bỏ chọn {ma} · {o}', { ma, o: ariaLabel })} onClick={() => { setLan((n) => n + (macDinhTrong === undefined ? 1 : 0)); onChange(null); }}>✕</button>}
       </div>
     );
   }
   if (!ds.length && !moLopMoi) {
-    return <div id={id} tabIndex={-1} className={`oc tat${gon ? ' gon' : ''}${invalid ? ' loi' : ''} ${className ?? ''}`} title={ariaLabel}><span className="goi">{khongKhop ?? t('Không có lớp để chọn')}</span></div>;
+    return <div id={id} tabIndex={-1} className={`oc oc-tat${gon ? ' gon' : ''}${invalid ? ' loi' : ''} ${className ?? ''}`} title={ariaLabel}><span className="oc-goi">{khongKhop ?? t('Không có lớp để chọn')}</span></div>;
   }
   return (
     <div className={className ?? ''}>

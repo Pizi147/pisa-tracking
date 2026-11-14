@@ -9,7 +9,7 @@ Mockup: ⑤ `thiet-ke/v21/bang-mau.html` khu A (A1–A7) + F2 / F3; bảng kê 6
 |---|---|---|
 | `cap-1440-toi-task-chon-em.png` | ⑤ khu A (A1–A7) | Công việc, vai 7 GVCN › "+ Task" › Tình hình học tập, gõ "ng" (nhóm theo lớp, chọn nhiều 0 / 8) |
 | `cap-375-sang-chon-em.png` | ⑤ A7 (Học viên, chọn nhiều) | Công việc 375, nút tròn "+ Task" › Tình hình học tập → toàn màn, gõ "ng" |
-| `cap-1440-toi-loc-lop.png` | ⑤ A2 | Phân tích › Ý thức, vai 2 QL — ô lọc "Mọi lớp" mở, gõ "ft" |
+| `cap-1440-toi-loc-lop.png` | ⑤ A3 (trạng thái ô) | Phân tích › Ý thức, vai 2 QL — ô lọc "Mọi lớp" mở, gõ "ft" |
 | `zoom-x.png` | ⑤ A3 · A2 góc ✕ (×3) | ô lọc lớp đã chọn · đang gõ ✕ xoá chữ (×3) |
 
 Chụp bằng `scripts/anh-cap.mjs` (không đổi công cụ).
