@@ -20,5 +20,5 @@ export const EN_GD1 = {
   'Bấm nút việc của một lớp để làm ngay.': 'Tap a class task button to do it now.',
   'Nút <b>+ Task</b> đầu trang: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b>.':
     'The <b>+ Task</b> button at the top: <b>Case</b> · <b>Violation / Reminder</b> · <b>Learning update</b>.',
-  'Gõ tên em (em lớp của bạn lên trước), rồi điền form như ở hồ sơ lớp.': 'Type the student name (your classes first), then fill the same form as on the class profile.',
+  'Gõ tên em: kết quả nhóm theo từng lớp của bạn (lớp chủ nhiệm ghi rõ), rồi điền form như ở hồ sơ lớp. Trên điện thoại: nút tròn <b>+ Task</b>, menu mở ở đáy màn.': 'Type the student name: results are grouped by each of your classes (homeroom marked), then fill the same form as on the class profile. On a phone: the round <b>+ Task</b> button, the menu opens at the bottom of the screen.',
 };

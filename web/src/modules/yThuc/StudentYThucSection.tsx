@@ -143,7 +143,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   );
   const choAi = (vai: string, ten: string | null) => <span className="text-[13px] text-slate-500">{t('Chờ {vai}', { vai })}{ten && <> <b className="whitespace-nowrap font-semibold text-slate-300">{ten}</b></>}</span>;
   const nutChinh = (chu: string, onClick: () => void, vien = false) => <button type="button" className={`btn w-full justify-center max-sm:h-11 ${vien ? '' : 'btn-primary'}`} onClick={onClick}>{chu}</button>;
-  const nutPhu = (chu: string, f: () => void) => <span className="mt-1 flex justify-center"><button type="button" onClick={f} className={`${LINK} px-1`}>{chu}</button></span>;
   const oXl = (x: XuLyDong) => x.status === 'thu_hoi'
     ? <OBuoc badge={<BadgeViec xuong tong="xam" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{t('Đã thu hồi')}</BadgeViec>} phu={[dich(x.nhan)]} />
     : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{dich(x.nhan)} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[t('Đã xử lý'), x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
@@ -167,7 +166,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
             <button type="button" className="btn w-full justify-center max-sm:h-11" style={{ borderColor: 'var(--accent)', color: 'var(--accent)', background: 'transparent' }} disabled={dangGhi}
               title={t('Đã xem, chưa cần xử lý')} onClick={() => void daXem(xemIds)}>{dangGhi ? t('Đang lưu…') : t('Đã xem · {n}', { n: xemIds.length })}</button>
           )}
-          {nutPhu(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }))}
+          {/* GD-4a (lời 28): "Xác nhận xử lý" là NÚT (viền), không chữ link. */}
+          {nutChinh(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }), true)}
         </>}
     </>,
   }) : null;
@@ -234,7 +234,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           /* Rà 11/11 G3-6: vi phạm đã xem vẫn xử lý ngay được. */
           tiep: d.canManage ? (
             <span className="flex flex-wrap gap-x-3">
-              {x.trongChuoi !== false && <button type="button" className={LINK} aria-label={`${t('Xác nhận xử lý')} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>}
+              {x.trongChuoi !== false && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-label={`${t('Xác nhận xử lý')} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>}
               <button type="button" className={LINK} disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button>
             </span>
           ) : <span className="text-slate-500">—</span>,
@@ -271,7 +271,10 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
               <span className="flex flex-wrap items-baseline gap-x-2.5 text-sm text-slate-400">
                 <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac, d.dongThoiGian.some((x) => x.loai === 'vi-pham' && !x.chiNhac))}</b>
                 {/* Mockup v20 A4: thang mini sáu vạch (vạch đã qua tô) — chỉ để nhìn, đủ tên ở "Thang ▾". */}
-                <span aria-hidden className="inline-flex items-center gap-[3px] self-center">{[1, 2, 3, 4, 5, 6].map((b) => <i key={b} className={`h-1.5 w-[26px] rounded-full ${b <= d.bac ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]'}`} />)}</span>
+                {/* GD-4a (chủ SP lời 28 ý 3; mockup ③ `.vach-bac b.wl`): bậc 3 = WL 1, bậc 6 = WL 2 — nhãn đỏ nổi trong thanh (đã tới: nền đỏ đặc), không chỉ là vạch. */}
+                <span aria-hidden className="inline-flex items-center gap-[3px] self-center">{[1, 2, 3, 4, 5, 6].map((b) => (b === 3 || b === 6
+                  ? <b key={b} className={`inline-flex h-5 items-center whitespace-nowrap rounded px-[7px] text-xs font-bold tabular-nums ${b <= d.bac ? 'bg-[rgb(var(--late-rgb))] text-[color:var(--surface)]' : 'border border-late-line bg-late-bg text-late'}`}>WL {b / 3}</b>
+                  : <i key={b} className={`h-1.5 w-[22px] rounded-full ${b <= d.bac ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]'}`} />))}</span>
                 {xuLyCuoi && <span className="tabular-nums">{ngay(xuLyCuoi.ngay, homNay)}</span>}
                 <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{dich(d.keTiep.nhan)}</b></span>
                 <button type="button" aria-expanded={thang} className={LINK} onClick={() => setThang((x) => !x)}>{thang ? `${t('Thang')} ▴` : `${t('Thang')} ▾`}</button>

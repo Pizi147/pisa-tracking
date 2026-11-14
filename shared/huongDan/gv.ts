@@ -69,9 +69,9 @@ export const HD_GV: HuongDan = {
       tuKhac: ['phụ trách', 'giao Case', 'owner'],
     },
     {
-      id: 'bao-ph-test', ten: 'Báo PH kết quả Test', nhom: 'case', chiGvcn: true,
-      loiChinh: { man: 'cong-viec', chu: 'Công việc › Case học thuật › Báo PH', duong: CV },
-      buoc: ['Lớp thường sau Progress Test: dòng <b>Báo PH kết quả Test</b> ở tab <b>Case học thuật</b>, mục <b>Báo PH</b>.', 'Bấm <b>Phối hợp</b>, báo phụ huynh, rồi <b>Đánh dấu đã làm</b>; không tính hạn.'],
+      id: 'bao-ph-test', ten: 'Báo PH kết quả Test', nhom: 'hv', chiGvcn: true,
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Báo PH', duong: CV },
+      buoc: ['Lớp thường sau Progress Test: dòng <b>Báo PH kết quả Test</b> ở tab <b>Ý thức & Phối hợp</b>, mục <b>Báo PH</b>.', 'Bấm <b>Phối hợp</b>, báo phụ huynh, rồi <b>Đánh dấu đã làm</b>; không tính hạn.'],
       tuKhac: ['phụ huynh', 'báo ph', 'progress', 'parent'],
     },
     /* ---------------------------------------------------------------- Học viên và lớp */
@@ -255,7 +255,7 @@ export const HD_GV: HuongDan = {
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc việc ở hàng này.' } },
         { id: 'cv-lop', ten: 'Lớp của tôi', buoc: ['Khung phải khi chưa chọn việc (điện thoại: nút <b>Lớp của tôi</b>): mỗi lớp một dòng — bạn dạy gì, Test, <b>Việc cần làm</b>.', 'Bấm một nút việc (Nhập điểm, Case, Ý thức, Vận hành) mở đúng việc đó; bấm tên lớp mở hồ sơ lớp.'],
           chi: { hd: 'cv-lop-cua-toi', duong: CV, chu: 'Bấm nút việc của một lớp để làm ngay.' } },
-        { id: 'cv-task', ten: '+ Task', buoc: ['Nút <b>+ Task</b> đầu trang: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b>.', 'Gõ tên em (em lớp của bạn lên trước), rồi điền form như ở hồ sơ lớp.'] },
+        { id: 'cv-task', ten: '+ Task', buoc: ['Nút <b>+ Task</b> đầu trang: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b>.', 'Gõ tên em: kết quả nhóm theo từng lớp của bạn (lớp chủ nhiệm ghi rõ), rồi điền form như ở hồ sơ lớp. Trên điện thoại: nút tròn <b>+ Task</b>, menu mở ở đáy màn.'] },
       ],
     },
     {
