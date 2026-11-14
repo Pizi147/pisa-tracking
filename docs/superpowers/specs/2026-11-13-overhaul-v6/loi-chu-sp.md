@@ -374,3 +374,29 @@ PTA Overhaul hiểu:
 2. **Rà đồng bộ:** (a) điều đã chốt ở mockup ①–⑤ / lời 17–33 mà mockup nào đó chưa theo; (b) chỗ cùng chức năng mà dáng / cách làm chưa giống nhau (kể cả chưa có lời chốt). Sửa luôn vào mockup, **gửi ảnh chủ SP xem trước** khi coi là xong.
 3. **Nâng cấp:** các màn PTA Overhaul đề xuất (Học viên & Lớp, Lịch Test tuần) cứ làm mockup; **Phân tích** xem lại, thấy nâng cấp được gì thì brainstorm rồi làm.
 Hệ quả cho plan: GD-10 ("không mockup") chờ đợt mockup này; `09-plan-giao-dien-dot-2.md` sẽ sửa sau khi mockup được duyệt.
+
+## 15/11 — lời 35: duyệt 6 mockup đợt 2 kèm chỉnh
+
+Bối cảnh: PTA Overhaul gửi kết quả rà (`10-ra-dong-bo.md`) và đề xuất 6 mockup: ⓪ sửa đồng bộ ①–⑤ · ⑥ Học viên & Lớp (tab Lịch thi có badge số việc, việc thành nút-chip) · ⑦ Test · ⑧ Tổng quan QL / Admin / CX + Hồ sơ GV · ⑨ Phân tích (chỉnh, thêm ô "Sắp thi · còn SOS") · ⑩ Quản trị + Lưu trữ; tự quyết tên bậc viết "Report 1", "WL 1".
+
+> "0: Bảng mẫu ok nhưng nên nhớ là badge công việc của nhập điểm bên cạnh chỉ ghi số thôi, không thêm chữ 'bài' nữa
+> 6: Tab lịch thi không cần việc, cần thông tin về lịch thi và thông tin hiện tại cần thiết của HV thôi
+> 7: oke thử mockup đi, tôi chưa hình dung ra
+> 8: Gom chung cái gì được thì gom chung
+> 9: Ok
+> 10: Ok
+>
+> Tên bậc cần viết hoa hết và viết đủ ở một số chỗ cần thiết, bạn tự đề xuất"
+
+ĐÃ CHỐT:
+- **⓪** làm. **Badge / chip việc Nhập điểm chỉ ghi SỐ, không thêm chữ "bài"** ("Nhập điểm 6"). PTA áp chung: mọi nút-chip "Việc cần làm" và badge tab = chữ loại việc + số, không đơn vị.
+- **⑥ Tab Lịch thi KHÔNG cần việc** (bác đề xuất badge số việc + nút-chip việc): tab này là THÔNG TIN — lịch thi + thông tin hiện tại cần thiết của HV.
+- **⑦** làm mockup để chủ SP hình dung rồi mới quyết.
+- **⑧ Gom chung cái gì được thì gom chung.**
+- **⑨, ⑩** làm như đề xuất (⑨ gồm ô "Sắp thi · 6 tuần · còn SOS").
+- **Tên bậc vi phạm: VIẾT HOA hết; viết đủ ở chỗ cần** — bác cách PTA tự quyết ("Report 1", "WL 1"). Chỗ nào viết đủ: PTA đề xuất, chủ SP duyệt ở mockup ⓪.
+
+PTA Overhaul đề xuất (duyệt ở mockup):
+- Tên bậc: luôn hoa — **REPORT 1 … · WL 1 · WL 2**. Viết đủ **"WARNING LETTER 1"** ở nơi người ta QUYẾT hoặc nơi PHỤ HUYNH đọc: thang cấp bậc (mốc WL) · panel Xác nhận xử lý / Thu hồi (dòng "Bậc kế", nút chọn) · bậc hiện tại ở khối của em trong tab Ý thức · dòng lịch sử xử lý · việc TVV "Báo PH" và Báo cáo PH / tệp xuất · Hướng dẫn "?". Viết tắt **"WL 1"** ở nơi chật: chip, cột bảng, dòng việc, badge, ô số, 375.
+- Tab Lịch thi: hàng = em · lớp · lịch thi (tháng dự kiến / ngày đã chốt / chờ KQ / KQ) · thông tin hiện tại (Target, MT gần nhất, SOS, lộ trình + tuần học). Không badge việc, không cột việc. Thao tác đang có (Chốt / Sửa ngày, Đặt / Dời tháng, Ghi KQ, Bước tiếp, Sửa KQ, + Ghi chú, Hoàn tác) GIỮ — bấm thẳng giá trị để sửa / mở dưới hàng; việc tới hạn của TVV nằm ở trang Công việc của TVV.
+Đề bài: `11-de-bai-mockup-dot-2.md`. Sáu session con Opus 5.5 · high.
