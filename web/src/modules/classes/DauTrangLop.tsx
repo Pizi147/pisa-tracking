@@ -21,6 +21,7 @@ import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeL
 import { dich, t } from '@shared/i18n/index.ts';
 import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
+import { NutTask, type EmLop, type LoaiTask } from '../congViec/NutTask.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import type { RosterRow } from '../students/ClassRoster.tsx';
 
@@ -81,7 +82,7 @@ export type HoSoLop = {
 /** `phan-cong`: panel Thông tin lớp mở sẵn phần Phân công (badge "Thiếu GV", `?viec=phan-cong`). */
 /** `lich-su-gop-y`: Góp ý hàng tuần gỡ khỏi giao diện 24/10 (chủ SP) — dữ liệu cũ chỉ còn xem ở Lịch sử góp ý tuần. */
 /** `chuyen-tiep`: dải nhắc / badge lớp thường → trang Cuối khoá (lớp FT không còn Chuyển tiếp lớp — R5.3). */
-export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'case' | 'lich-su-gop-y';
+export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong' | 'lich-su-gop-y';
 
 /**
  * ĐẦU TRANG HỒ SƠ LỚP (đặc tả §3.7, mockup 06c §1; PR-HVL K2-14, B4, E7, K2-13). Nằm ở: Học viên & Lớp → Hồ sơ lớp → đầu trang.
@@ -141,7 +142,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
     vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
-    /* GD-6 (XM-2, PTA 14/11): GV không có badge "n việc quá hạn của lớp" — máy chủ đếm việc của chính GV, trùng chip ⚠ của Việc cần làm; QL giữ (cả lớp). */
+    /* GD-6 (XM-2, PTA 14/11): GV không có badge "n việc quá hạn của lớp" — máy chủ đếm việc của chính GV, trùng chip đỏ của Việc cần làm; QL giữ (cả lớp). */
     phase: s?.phase ?? 'running', soChoDuyet: data.soChoDuyet, soViecQuaHan: laVaiQuanLy(session?.roles) ? soViecQuaHan : 0,
     missingCount: (s?.missing ?? []).filter((m) => m.key !== 'teachers').length,
     soChuaLoTrinhTiep: s?.soChuaLoTrinhTiep ?? 0,
@@ -225,6 +226,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
     return [dau, ...ds.filter((g) => g !== cung)];
   })();
   const nhomDu: NhomGiaoVien[] = [...(gvcn ? [{ nhan: t('GVCN'), title: t('Giáo viên chủ nhiệm'), id: gvcn.id, ten: gvcn.name, kyNang: [] }] : []), ...nhom];
+  const loaiTask: LoaiTask[] = [...(data.viewer.canReportCase ? ['case' as const] : []), ...(data.viewer.canRecordViolation ? ['vi-pham' as const, 'tinh-hinh' as const] : [])];
   const coSo = !!tomTat && (!!tomTat.luot || !!tomTat.dat || tomTat.sos.length > 0);
   const coBadge = bConLai.hien.length > 0 || bConLai.an.length > 0;
 
@@ -251,7 +253,13 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
           <div className="ml-auto flex items-center gap-2 max-sm:order-3 max-sm:ml-0 max-sm:w-full max-sm:[&>button:not([aria-haspopup])]:flex-1">
             {data.viewer.canEnterScores && <button type="button" className={NUT_DAU_HO_SO} onClick={() => setNhapDiem(true)}>{t('Nhập điểm')}</button>}
             {nhapDiem && <PanelNhapDiemLop classId={data.id} classCode={data.code} onDong={() => setNhapDiem(false)} />}
-            {data.viewer.canReportCase && <button type="button" className={NUT_DAU_HO_SO} onClick={() => onViec('case')}>+ Case</button>}
+            {/* GD-6 (mockup ② K1, R2.2): "+ Task" (Case · Vi phạm / Nhắc nhở · Tình hình học tập) thay "+ Case" — mục theo quyền, chọn em trong lớp
+                từ `/roster` đã nạp ([XM-7], không request). Lớp đã kết thúc: không nút ([XM-9]). */}
+            {loaiTask.length > 0 && data.status !== 'finished' && <>
+              <NutTask noi="dau" lopId={data.id} loai={loaiTask} dsEm={tomTat?.emTask} />
+              {/* 375 (K8, R2.9): "+ Task" nút tròn nổi trên thanh tab dưới — như trang đầu ①. */}
+              <NutTask noi="noi" lopId={data.id} loai={loaiTask} dsEm={tomTat?.emTask} />
+            </>}
             <MenuDong muc={menu} nhan={t('Thao tác khác')} lopNut={NUT_BA_CHAM} />
           </div>
         </>} />
@@ -345,7 +353,10 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   const homNayTuan = homNay ?? '9999';
   /* MT0-THEO-EM: `mt:0` = MT0 em mang từ lớp thường (thi ở lớp cũ) — không là lượt của lớp FT. */
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.ma !== 'mt:0' && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
-  return { sos, sosDong, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
+  /* GD-6 "+ Task": em đang học của lớp cho bước chọn em (dòng phụ = tình trạng, như chữ dưới tên ở bảng). */
+  const emTask: EmLop[] = em.map((r) => ({ id: r.id, ten: r.fullName, lopId: data.id, lop: data.code, tvv: r.tvv ?? null,
+    phu: (r.sosLevel ?? 0) > 0 ? `SOS ${Math.min(r.sosLevel ?? 0, 3)}` : r.sosLevel === 0 ? t('Đạt kỳ vọng') : t('Chưa có kết quả') }));
+  return { sos, sosDong, emTask, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null };
 }
 
 /**

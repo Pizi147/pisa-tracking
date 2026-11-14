@@ -322,4 +322,49 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     }
     assert(loi.length === 0, `${loi.length} chỗ "●" cạnh chữ hạn / việc chờ: ` + loi.slice(0, 6).join(' · '));
   });
+
+  console.log('\nGD-6 · Hồ sơ lớp (mockup ②)');
+  check('GD-6 · đầu trang: "+ Task" (lopId + em của lớp đã nạp, mục theo quyền) thay "+ Case"; bản nổi 375; lớp đã kết thúc không nút', () => {
+    const s = doc('web/src/modules/classes/DauTrangLop.tsx');
+    assert(!/>\+ Case<\/button>/.test(s), 'còn nút "+ Case" ở đầu hồ sơ lớp');
+    assert(/<NutTask noi="dau" lopId=\{data\.id\} loai=\{loaiTask\} dsEm=\{tomTat\?\.emTask\} \/>/.test(s), 'thiếu "+ Task" đầu trang');
+    assert(/<NutTask noi="noi" lopId=\{data\.id\}/.test(s), 'thiếu "+ Task" nút nổi 375');
+    assert(/loaiTask\.length > 0 && data\.status !== 'finished'/.test(s), '[XM-9] lớp đã kết thúc vẫn có "+ Task"');
+    assert(/canReportCase \? \['case'/.test(s) && /canRecordViolation \? \['vi-pham'/.test(s), 'mục "+ Task" không theo quyền');
+    const n = doc('web/src/modules/congViec/NutTask.tsx');
+    assert(/const timTaiCho: TimXa \| null = dsEm \?/.test(n) && /t\('Lớp này'\)/.test(n), '[XM-7] chọn em ở hồ sơ lớp phải lọc tại chỗ, nhóm "Lớp này"');
+    assert(!/api\.get[^\n]*dsEm/.test(n), 'chọn em từ em đã nạp không được gọi máy chủ');
+  });
+  check('GD-6 · "Việc cần làm": chip theo loại dùng chung với "Lớp của tôi", mở thẳng panel "i / n" + "Việc tiếp ›"; bỏ "+n việc ở Công việc"', () => {
+    const s = doc('web/src/modules/classes/ThanhViecLop.tsx');
+    assert(/chipViecLop\(data\?\.cuaToi \?\? \[\], classId\)/.test(s), 'dải không dùng chipViecLop chung');
+    assert(/<NutChipViec /.test(s) && /NutChipViec key=\{c\.tab\}/.test(doc('web/src/modules/congViec/LopCuaToi.tsx')), 'chip không dùng chung một nút');
+    assert(/<DemViecPanel\.Provider value=\{\{ i: mo\.i \+ 1, n: mo\.ds\.length/.test(s), 'thiếu "i / n" ở đầu panel');
+    assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');
+    assert(!/việc ở Công việc/.test(s) && !/TOI_DA/.test(s), 'còn lối tắt "+n việc ở Công việc ›"');
+    const k = doc('web/src/ui/KhungPanel.tsx');
+    assert(/export const DemViecPanel = createContext/.test(k) && /\{oDem\}\{nutDong\}/.test(k), 'KhungPanel thiếu ô "i / n" trước ✕');
+  });
+  check('GD-6 · phần mở rộng em: TVV chỉ ở "Điểm theo lượt"; thẻ kỹ năng / môn quá hạn chỉ màu (V22); lịch sử Case + Nhật ký PA = LichSuGap', () => {
+    const b = doc('web/src/modules/classes/BangHoSoLop.tsx');
+    assert(!/tvvChinhCuaLop|tvvRieng/.test(b), 'còn TVV dưới tên em');
+    assert(/\{r\.tvv && <span className="ml-auto text-xs font-medium text-faint">TVV \{r\.tvv\}<\/span>\}/.test(b), 'thiếu TVV nhỏ ở đầu khối Điểm theo lượt');
+    assert(/quaHan\.has\(k\) \? 'text-late' : 'text-slate-100'/.test(b), 'thẻ kỹ năng quá hạn phải tô màu');
+    const lt = doc('web/src/modules/classes/BangDiemLopThuong.tsx');
+    assert(/qua \? 'text-late' : 'text-slate-100'/.test(lt), 'thẻ môn quá hạn phải tô màu');
+    for (const [f, x] of [['BangHoSoLop', b], ['BangDiemLopThuong', lt]] as const) {
+      assert(!/>⚠<\/span>|aria-hidden>⚠ /.test(x), `${f}: ⚠ cạnh quá hạn (V22 chỉ màu)`);
+    }
+    const c = doc('web/src/modules/cases/CasePanel.tsx');
+    assert(/<LichSuGap so=\{lichSu\.length\}>/.test(c) && !/<details className="group">/.test(c), 'lịch sử Case chưa dùng LichSuGap');
+    const p = doc('web/src/modules/cases/FormPa.tsx');
+    assert(/<LichSuGap so=\{dong\.length\} tieuDe=\{t\('Nhật ký PA'\)\}/.test(p) && /<DsLichSu dong=/.test(p), 'Nhật ký PA chưa dùng LichSuGap + DsLichSu');
+  });
+  check('GD-6 · đầu trang: dải chỉ số chung + badge lớp cuối dải; không TVV; GV không badge "việc quá hạn của lớp"; tab Ý thức có thang vạch', () => {
+    const s = doc('web/src/modules/classes/DauTrangLop.tsx');
+    assert(/<DaiChiSo nhan=\{t\('Số của lớp'\)\}>/.test(s) && /\{bConLai\.hien\.map\(nutBadge\)\}[\s\S]{0,400}<\/DaiChiSo>/.test(s), 'badge lớp phải ở cuối dải số');
+    assert(!/tvvChinhCuaLop|tomTat\?\.tvv/.test(s), 'còn TVV ở đầu trang (lời 25)');
+    assert(/soViecQuaHan: laVaiQuanLy\(session\?\.roles\) \? soViecQuaHan : 0/.test(s), '[XM-2] GV còn badge "việc quá hạn của lớp"');
+    assert(/<ThangVach dong=\{hv\.dongThang\} \/>/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'tab Ý thức lớp thiếu thang vạch (lời 28, 36)');
+  });
 }

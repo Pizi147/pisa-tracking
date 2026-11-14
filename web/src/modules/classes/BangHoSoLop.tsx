@@ -107,7 +107,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
   const { homNay } = useNgayNghiepVu();
   const roster = useApi<Hang[]>(`/classes/${classId}/roster`, [classId]);
   const cases = useApi<{ rows: CaseLop[] }>(`/cases?classId=${classId}`, [classId]);
-  /* GD-6 (lời 25 ý 1): thẻ kỹ năng có việc QUÁ HẠN của người xem mang ⚠ — dùng chung lời gọi `viec-theo-em` của đầu trang (không thêm request). */
+  /* GD-6 (mockup ② mục 0 ý 3): thẻ kỹ năng có việc QUÁ HẠN của người xem tô màu quá hạn (V22) — dùng chung lời gọi `viec-theo-em` của đầu trang (không thêm request). */
   const viec = useApi<ViecLop>(duongViecLop(classId), [classId]);
   const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { roster.reload(); onDoi(); } });
   const COT = cotCua(!!quyen.theoVai);
@@ -337,7 +337,7 @@ function DongTieuChi({ nhan, d, band }: { nhan: string; d: [string, string][]; b
  */
 function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, quaHan, onKn, onChiTiet, onThemCase }: {
   r: Hang; kn: Kn | null; ca: CaseLop[]; ds: NguCanhDs; classId: number; coTheBaoCase: boolean;
-  /** GD-6: kỹ năng có việc quá hạn của người xem — thẻ mang ⚠ + chữ màu quá hạn. */
+  /** GD-6: kỹ năng có việc quá hạn của người xem — thẻ tô chữ màu quá hạn (V22: chỉ màu, không ⚠; mockup ② vẽ ⚠ → KHÁC theo V22). */
   quaHan: ReadonlySet<Kn>;
   onKn: (k: Kn) => void; onChiTiet: (caseId: number, kn: Kn) => void; onThemCase: () => void;
 }) {
@@ -411,9 +411,9 @@ function MoRongEm({ r, kn, ca, ds, classId, coTheBaoCase, quaHan, onKn, onChiTie
             return (
               <button key={k} type="button" aria-pressed={kn === k} onClick={() => onKn(k)}
                 className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
-                <span className="text-[13px] font-bold text-slate-100">{NHAN_KN[k]}{quaHan.has(k) && <span className="ml-1 text-late sm:hidden" aria-label={t('quá hạn')}>⚠</span>}</span>
+                <span className={`text-[13px] font-bold ${quaHan.has(k) ? 'text-late' : 'text-slate-100'}`}>{NHAN_KN[k]}{quaHan.has(k) && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
                 <span className="text-[15px] font-bold tabular-nums">{truoc !== null && moi !== null && <span className="max-sm:hidden">{fmtBand(truoc)} → </span>}{o(moi, ls[0]?.expectation)}</span>
-                <span className={`text-xs max-sm:hidden ${quaHan.has(k) ? 'font-semibold text-late' : 'text-dim'}`}>{quaHan.has(k) && <span aria-hidden>⚠ </span>}{coCase.length ? (coCase.some((c) => c.interventionCount > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
+                <span className={`text-xs max-sm:hidden ${quaHan.has(k) ? 'font-semibold text-late' : 'text-dim'}`}>{coCase.length ? (coCase.some((c) => c.interventionCount > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
               </button>
             );
           })}

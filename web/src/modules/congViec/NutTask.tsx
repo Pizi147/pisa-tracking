@@ -14,7 +14,10 @@ import { t } from '@shared/i18n/index.ts';
 
 export type EmTask = { id: number; ten: string; lopId: number; lop: string; tvv: string | null };
 type Em = EmTask;
-type Loai = 'case' | 'vi-pham' | 'tinh-hinh';
+export type LoaiTask = 'case' | 'vi-pham' | 'tinh-hinh';
+type Loai = LoaiTask;
+/** Em của lớp đã nạp + dòng phụ tình trạng (SOS n / Đạt…). */
+export type EmLop = EmTask & { phu?: string };
 /** Chủ SP 14/11 (lời 17): tên nút "+ Task", thứ tự Case · Vi phạm / Nhắc nhở · Tình hình học tập. */
 const MUC: [Loai, string][] = [['case', t('Case')], ['vi-pham', t('Vi phạm / Nhắc nhở')], ['tinh-hinh', t('Tình hình học tập')]];
 /** GD-4a (mockup ⑤ F1, [XM-7]): menu giữ biểu tượng mục — cờ Case · khiên Ý thức · bóng lời Tình hình. */
@@ -29,12 +32,18 @@ const TOI_DA_TINH_HINH = 8;
  * GD-4a (mockup ⑤ F): MỘT nút cho trang đầu, hồ sơ lớp, hồ sơ HV — `lopId`: mở từ hồ sơ lớp, nhóm "Lớp này" lên đầu; `em`: hồ sơ HV điền sẵn em → bỏ bước chọn.
  * < 640 px menu neo đáy (F4).
  */
-export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?: number; em?: EmTask }) {
+export function NutTask({ noi, lopId, em: emSan, dsEm, loai: choLoai }: {
+  noi: 'dau' | 'noi'; lopId?: number; em?: EmTask;
+  /** GD-6 ([XM-7] mockup ②): hồ sơ lớp truyền em của lớp đã nạp (`/roster`) — chọn em tìm tại chỗ, chỉ nhóm "Lớp này", không request. */
+  dsEm?: EmLop[];
+  /** Mục hiện theo quyền người xem ở nơi đặt nút (hồ sơ lớp); bỏ trống = cả ba. */
+  loai?: Loai[];
+}) {
   const neo = useRef<HTMLSpanElement>(null);
   const [loai, setLoai] = useState<Loai | null>(null);
   const [em, setEm] = useState<Em[] | null>(null);
   const { homNay } = useNgayNghiepVu();
-  const timEm = useTimEm(lopId);
+  const timEm = useTimEm(lopId, dsEm);
   /* Hộp Tình hình một bước: HopNeo focus nút đầu (✕) — đưa focus về ô gõ tên em (người dùng gõ ngay), như bước chọn em. */
   useEffect(() => {
     if (loai !== 'tinh-hinh' || emSan) return undefined;
@@ -51,7 +60,7 @@ export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?:
       <span ref={neo} className={noi === 'noi' ? 'fixed bottom-[80px] right-4 z-[35] sm:hidden' : 'max-sm:hidden'}>
         <MenuDong nhan={t('Task: Case, vi phạm / nhắc nhở, tình hình học tập')} mat={mat} tieuDeDay={t('+ Task')}
           lopNut={noi === 'dau' ? 'btn btn-primary !p-0' : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
-          muc={MUC.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />
+          muc={MUC.filter(([k]) => !choLoai || choLoai.includes(k)).map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />
       </span>
       {loai && loai !== 'tinh-hinh' && !em && <HopChonEm neo={neo} loai={loai} timEm={timEm} onDong={dong} onChon={setEm} />}
       {loai === 'case' && em?.[0] && <QuickReport open onClose={dong} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={xong} />}
@@ -71,7 +80,7 @@ export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?:
  * và hộp Tình hình học tập một bước (GD-4d).
  */
 type TimEm = { tim: TimXa; emCua: Map<number, Em> };
-function useTimEm(lopId?: number): TimEm {
+function useTimEm(lopId?: number, dsEm?: EmLop[]): TimEm {
   const { session } = useSession();
   const pc = session?.assignments ?? [];
   const lopToi = new Set(pc.map((a) => a.classId));
@@ -81,7 +90,16 @@ function useTimEm(lopId?: number): TimEm {
   /* Thứ tự nhóm: lớp này → lớp của tôi (theo mã) → lớp khác; giữ thứ tự tên máy chủ trong mỗi nhóm. */
   const hang = (e: Em) => (e.lopId === lopId ? 0 : lopToi.has(e.lopId) ? 1 : 2);
   const tenNhom = (e: Em) => (hang(e) === 0 ? `${t('Lớp này')} · ${e.lop}` : hang(e) === 1 ? (chuNhiem.has(e.lopId) ? `${e.lop} · ${t('chủ nhiệm')}` : e.lop) : t('Lớp khác'));
-  const tim: TimXa = {
+  /* GD-6: em của lớp đã nạp → lọc tại chỗ (không dấu, từ một chữ), dòng phụ = tình trạng em. */
+  const timTaiCho: TimXa | null = dsEm ? {
+    toiThieu: 1, goiY: t('Gõ tên em'),
+    goi: async (q) => {
+      const kim = boDau(q);
+      return dsEm.filter((e) => boDau(e.ten).includes(kim)).slice(0, 12)
+        .map((e) => { emCua.set(e.id, e); return { id: e.id, ten: e.ten, phu: e.phu ?? e.lop, nhom: `${t('Lớp này')} · ${e.lop}` }; });
+    },
+  } : null;
+  const tim: TimXa = timTaiCho ?? {
     toiThieu: 2, goiY: t('Gõ ít nhất 2 chữ của tên em'),
     goi: async (q) => {
       const r = await api.get<Em[]>(`/tim/hoc-vien?q=${encodeURIComponent(q)}&lop=toi`);
@@ -126,3 +144,4 @@ function HopChonEm({ neo, loai, timEm, onDong, onChon }: {
   );
 }
 const O_TIM_EM = 'tim-em-task';
+const boDau = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase().trim();

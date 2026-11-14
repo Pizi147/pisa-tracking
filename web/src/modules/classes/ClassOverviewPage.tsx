@@ -7,7 +7,6 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
 import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
-import { QuickReport } from '../cases/QuickReport.tsx';
 import { IntakePanel } from '../students/IntakePanel.tsx';
 import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
@@ -58,7 +57,6 @@ export default function ClassOverviewPage() {
   const [bg, setBg] = useState<{ mon: string | null; lenhId: number | null; lop: number | null }>({ mon: null, lenhId: null, lop: null });
   /* PR-B: panel bàn giao khi đổi GV đang mở (id việc). */
   const [bgGv, setBgGv] = useState<number | null>(null);
-  const [caseFor, setCaseFor] = useState(0);
   /* RA-LOI-0611 (PTA 06/11): đợt mà tab Báo cáo PH vừa thấy đủ mọi em mọi phần — chip "quá hạn" của đợt đó tắt tại chỗ, không tải lại /overview. */
   const [bcDu, setBcDu] = useState<string | null>(null);
   /*
@@ -72,8 +70,6 @@ export default function ClassOverviewPage() {
     taiTruoc(duongDiemTheoLuot(Number(classId)));
   }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
-  /* Danh sách em cho ô chọn học viên của "+ Case" — chỉ nạp khi mở. */
-  const roster = useApi<any[]>(classId && viec === 'case' ? `/classes/${classId}/roster` : null, [classId, viec]);
   /* P9a: em có dòng Xét lại → chip "Xét lại" trên dòng em — chỉ gọi khi người xem là QL (`coTheChuyenTiep` = cùng luật ra quyết định) hoặc GVCN lớp này. */
   const xemXl = !!data && (data.viewer.coTheChuyenTiep || data.viewer.isCoreTeacher);
   const xl = useApi<{ em: EmXetLai[] }>(classId && xemXl ? duongXetLai(Number(classId)) : null, [classId, xemXl]);
@@ -178,7 +174,7 @@ export default function ClassOverviewPage() {
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
     <div className="page space-y-4 max-sm:space-y-3">
-      <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
+      <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
       <HangTab panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
@@ -235,9 +231,6 @@ export default function ClassOverviewPage() {
       {viec === 'hoc-vien' && (
         <IntakePanel defaultClass={{ id: data.id, code: data.code }} onClose={dong} onDone={xong} />
       )}
-      <QuickReport open={viec === 'case'} onClose={() => { dong(); setCaseFor(0); }} studentId={caseFor} lop={data.code}
-        students={(roster.data ?? []).filter((r: any) => !r.archived).map((r: any) => ({ id: r.id, name: r.fullName, code: r.studentCode ?? null }))}
-        onPickStudent={setCaseFor} onDone={() => { dong(); setCaseFor(0); xong(); }} />
     </div>
     </XetLaiCtx.Provider>
   );

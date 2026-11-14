@@ -161,6 +161,8 @@ export const HienLaiPanel = createContext<(() => void) | null>(null);
  *  trước nút việc; null khi panel trong cột hồ sơ (`trongCot`, không có ✕) HOẶC chân thường đã có nút "Đóng" mặc định (`huy`) — một chân một nút "Đóng" (GD-4d). */
 export const DongKhungPanel = createContext<(() => void) | null>(null);
 export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; xem?: boolean } | null>(null);
+/** GD-6 (mockup ② K2 `.dem-pn`): panel việc mở từ chip "Việc cần làm" — "i / n" trong các việc cùng loại ở lớp, đứng trước ✕ (dòng loại việc). */
+export const DemViecPanel = createContext<{ i: number; n: number; nhan: string } | null>(null);
 
 /**
  * KHUÔN PANEL CHUNG (PR-UX0, N-4 — mockup 15 (1)). Ngăn phải 480px (V5 07 mục 4: 420–480; form dạng bảng `rong` = 720px), 375px toàn màn.
@@ -354,6 +356,11 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   /* GD-4a: ✕ một dáng `NUT_DONG` (36 / 44). Mockup ⑤ D1 `.pn-h1`: có dòng loại ("Việc · Ý thức") thì ✕ đứng CÙNG HÀNG dòng loại (hàng cao 36, căn giữa);
      không có thì cùng hàng tiêu đề (dòng 24 px, `items-start` → kéo ô lên nửa phần dư 6 / 10 px: tâm ✕ = tâm dòng tiêu đề). */
   const xHangLoai = !!dau && !lui && !!vachLoai;
+  const dem = useContext(DemViecPanel);
+  const oDem = dem && dem.n > 1 && (
+    <span className="inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full bg-[color:var(--surface-2)] px-2 text-xs font-semibold tabular-nums text-dim"
+      title={dem.nhan}><span className="sr-only">{dem.nhan}: </span>{dem.i} / {dem.n}</span>
+  );
   const nutDong = trongCot ? null : <button type="button" className={`${NUT_DONG} ${dau && !lui && !xHangLoai ? '-my-1.5 max-sm:-my-2.5' : ''} ${lui ? 'ml-auto' : ''}`} onClick={dong} aria-label={t('Đóng')}>✕</button>;
   /* M6 6b-1 (mockup panel-pilot khu K ①): "‹ {view trước}" cùng hàng ✕ ở đầu panel, ✕ luôn góc phải — thay dòng "← …" riêng dưới đầu. */
   const hangLui = lui && (
@@ -374,7 +381,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
           <header className={`flex shrink-0 flex-col gap-1.5 border-b px-4 pb-3.5 sm:px-5 ${lui ? 'pt-2' : 'pt-4'}`} style={{ borderColor: 'var(--line)' }}>
             {hangLui}
             {xHangLoai ? (
-              <div className="-mb-0.5 -mt-1.5 flex min-h-9 items-center gap-2 max-sm:min-h-11"><div className="min-w-0 flex-1 [&>div]:mb-0">{vachLoai}</div>{nutDong}</div>
+              <div className="-mb-0.5 -mt-1.5 flex min-h-9 items-center gap-2 max-sm:min-h-11"><div className="min-w-0 flex-1 [&>div]:mb-0">{vachLoai}</div>{oDem}{nutDong}</div>
             ) : vachLoai && <div className="-mb-1.5">{vachLoai}</div>}
             <div className="flex items-start gap-2.5">
               {/* RA-UI-6 (critique A4): panel nằm trong cột hồ sơ (`trongCot`) dưới đầu mục 15 → tiêu đề 15, không lớn hơn tầng cha. */}
@@ -388,6 +395,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
                 <h2 className={`m-0 min-w-0 flex-1 font-bold leading-6 text-slate-100 ${trongCot ? 'text-[15px]' : 'text-[17px]'}${dau.tieu ? ' flex flex-wrap items-center gap-x-2 gap-y-1' : ''}`}>{dau.tieu ?? tieuDe}</h2>
                 {dau.han}
               </>}
+              {!xHangLoai && oDem}
               {!lui && !xHangLoai && nutDong}
             </div>
             {/* 6c (#641 XM-3): mỗi mục mang "·" rộng cố định ĐỨNG TRƯỚC, hàng lùi trái đúng bề rộng đó, khung cắt ngang → mục đầu mỗi dòng

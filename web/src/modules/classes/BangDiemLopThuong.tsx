@@ -342,7 +342,7 @@ const KY_VONG_THUONG = 0.7;   // đạt từ 70 % (`outcome` máy chủ, rule bo
 
 /**
  * MỞ RỘNG MỘT EM · LỚP THƯỜNG (GD-6, mockup v21 ② K6, lời 25 ý 2 — CÙNG KHUNG FT `MoRongEm`, đơn vị là MÔN): trái "Điểm theo lượt" (mốc mới nhất đậm,
- * cột môn của chương trình · % · Kỳ vọng 70 %, TVV nhỏ) · phải thẻ Môn (mốc trước → mới nhất · Không Case / Có Case / Có Case · có PA, ⚠ Case quá hạn)
+ * cột môn của chương trình · % · Kỳ vọng 70 %, TVV nhỏ) · phải thẻ Môn (mốc trước → mới nhất · Không Case / Có Case / Có Case · có PA; Case quá hạn tô màu — V22)
  * rồi tóm tắt môn đang chọn: Hồ sơ HV › · Xem chi tiết (panel Case) / + Case · Điểm (chuỗi mốc) · Case · PA (Bổ trợ miễn phí, buổi) · Việc tiếp
  * (cùng nút, cùng panel với dòng Case cũ — không mất thao tác). Thay khối "Case đang mở" 08/11. Case chỉ đọc khi mở em đầu tiên (`can-ho-tro`, như trước).
  */
@@ -409,9 +409,9 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
             return (
               <button key={k} type="button" aria-pressed={kn === k} onClick={() => setChon(k)}
                 className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
-                <span className="text-[13px] font-bold text-slate-100" title={tenMon(ct, k)}>{tenMonNgan(ct, k)}{qua && <span className="ml-1 text-late sm:hidden" aria-label={t('quá hạn')}>⚠</span>}</span>
+                <span className={`text-[13px] font-bold ${qua ? 'text-late' : 'text-slate-100'}`} title={tenMon(ct, k)}>{tenMonNgan(ct, k)}{qua && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
                 <span className="text-[15px] font-bold tabular-nums">{truoc?.score != null && sau?.score != null && <span className="max-sm:hidden">{truoc.score} → </span>}<ODiemThuong o={sau} /></span>
-                <span className={`text-xs max-sm:hidden ${qua ? 'font-semibold text-late' : 'text-dim'}`}>{qua && <span aria-hidden>⚠ </span>}{!e ? (chot.data ? t('Không Case') : '…') : cs.length ? (cs.some((c) => c.pas.length > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
+                <span className={`text-xs max-sm:hidden ${qua ? 'font-semibold text-late' : 'text-dim'}`}>{!e ? (chot.data ? t('Không Case') : '…') : cs.length ? (cs.some((c) => c.pas.length > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
               </button>
             );
           })}
