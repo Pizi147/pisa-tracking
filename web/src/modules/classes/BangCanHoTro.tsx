@@ -10,7 +10,10 @@ import { dich, t } from '@shared/i18n/index.ts';
  * HSL-THUONG (mockup HSL-THUONG trong `thiet-ke/`, chủ SP duyệt 09/11): TÁCH TRƯỜNG — mỗi loại thông tin một cột
  * Môn · Case · Trạng thái (viên) · Phương án (một dòng ngắn + ⓘ) · Phụ trách PA · Việc tiếp (nút) · Hạn; 375 xếp dọc cùng thứ tự.
  */
-type PaCase = { id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean; nguoi: string | null; mocChu: string | null };
+type PaCase = { id: number; ten: string; batBuoc: boolean; choXacNhan: boolean; choDuyet: boolean; xong: boolean; nguoi: string | null; mocChu: string | null;
+  /** XM-K6 (`can-ho-tro`, chỉ lớp thường): lần ghi có kết luận gần nhất · buổi đã dạy / dự kiến · Mini Test (PA Bổ trợ miễn phí). */
+  ketQua?: { outcome: string; ngay: string } | null; buoi?: { da: number; tong: number } | null;
+  miniTest?: { tyLe: number | null; dat: boolean | null; ngay: string } | null };
 export type CaseCua = {
   id: number; studentId: number; topic: string | null; sosLevel: number | null; tieuDe: string;
   tenSos: { mt: number | null; giua: string; sos: number | null } | null;
@@ -53,7 +56,7 @@ const ICON_NGUOI = (
 );
 
 /** "Kết quả PA L · kỳ W4 SEP – W1 OCT" → nút "Ghi kết quả PA" + dòng phụ "kỳ …" (môn đã ở cột Môn). */
-function tachViec(viec: string, kn: string): { nut: string; ky: string | null } {
+export function tachViec(viec: string, kn: string): { nut: string; ky: string | null } {
   const [chinh, ...sau] = viec.split(' · ');
   const bo = chinh.endsWith(` ${kn}`) ? chinh.slice(0, -kn.length - 1) : chinh;
   return { nut: /^Kết quả/.test(bo) ? `Ghi k${bo.slice(1)}` : bo, ky: sau[0] ?? null };

@@ -419,6 +419,60 @@ export async function runPrHvlTests(t: YThucTestKit) {
     }
   });
 
+  check('XM-K6 · can-ho-tro lớp thường: mỗi PA có Kết quả (lần ghi gần nhất) · buổi · Mini Test; PA huỷ không có; Case không PA thì pas rỗng; ≤ 1 câu thêm', () => {
+    const now = new Date().toISOString();
+    const em = (conn.prepare(`SELECT e.student_id s, lc.id cy FROM enrollments e JOIN learning_cycles lc ON lc.student_id = e.student_id AND lc.status = 'active'
+      WHERE e.class_id = ? AND e.status = 'active' ORDER BY e.student_id LIMIT 1`).get(LOP_FOU) as any);
+    const ca: number[] = []; const pa: number[] = []; let luot = 0;
+    const themCa = (topic: string) => { const id = Number(conn.prepare(`INSERT INTO sos_cases (student_id, cycle_id, category, topic, origin_kind, status, detected_at, created_at)
+      VALUES (?, ?, ?, ?, 'teacher_report', 'open', ?, ?)`).run(em.s, em.cy, topic, topic, TODAY, now).lastInsertRowid); ca.push(id); return id; };
+    const themPa = (caseId: number, kind: string, o: { status?: string; buoi?: number; nhom?: string } = {}) => { const id = Number(conn.prepare(
+      `INSERT INTO case_interventions (case_id, kind, status, so_buoi, nhom_bo_tro, created_at) VALUES (?,?,?,?,?,?)`).run(caseId, kind, o.status ?? 'started', o.buoi ?? null, o.nhom ?? null, now).lastInsertRowid);
+      pa.push(id); return id; };
+    const ghi = (caseId: number, iv: number, ngay: string, outcome: string | null, buoi: number | null) => conn.prepare(
+      `INSERT INTO case_followups (case_id, intervention_id, observed_on, outcome, so_buoi, created_at) VALUES (?,?,?,?,?,?)`).run(caseId, iv, ngay, outcome, buoi, now);
+    try {
+      const dem = () => { const a = soCauSql(); const r = canHoTro.canHoTroLop(P.admin, LOP_FOU); return { n: soCauSql() - a, r }; };
+      const truoc = dem().n;
+      const khongPa = themCa('reading');
+      const coKq = themCa('listening');
+      const tutor = themPa(coKq, 'tutor', { buoi: 4 });
+      ghi(coKq, tutor, '2026-09-01', 'unchanged', 1); ghi(coKq, tutor, '2026-09-08', 'improved', 1); ghi(coKq, tutor, '2026-09-15', null, null);
+      const huy = themPa(coKq, 'self_study', { status: 'cancelled' });
+      luot = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?, ?, 99, 'final', ?, 'planned', ?)`)
+        .run(em.cy, em.s, LOP_FOU, now).lastInsertRowid);
+      const nhom = `mt:${luot}`;
+      conn.prepare(`INSERT INTO mini_test (student_id, cycle_id, tu_attempt_id, nhom_bo_tro, so_buoi, ngay_du_kien, han) VALUES (?,?,?,?, 4, '2026-09-28', '2026-09-30')`).run(em.s, em.cy, luot, nhom);
+      const mp = themPa(coKq, 'bo_tro_mien_phi', { nhom });
+      const { n: sau, r } = dem();
+      assert(sau <= truoc + 1, `${truoc} → ${sau} câu`);
+      const cs = r.em.find((e: any) => e.id === em.s).cases;
+      eq(cs.find((c: any) => c.id === khongPa).pas, [], 'Case không PA');
+      const pas = cs.find((c: any) => c.id === coKq).pas;
+      assert(!pas.some((x: any) => x.id === huy), 'PA đã huỷ không có');
+      const t = pas.find((x: any) => x.id === tutor);
+      eq([t.ketQua, t.buoi, t.miniTest], [{ outcome: 'improved', ngay: '2026-09-08' }, { da: 2, tong: 4 }, null], 'PA có KQ: lần có kết luận gần nhất');
+      eq(pas.find((x: any) => x.id === mp).miniTest, { tyLe: null, dat: null, ngay: '2026-09-28' }, 'Mini Test chưa ghi');
+      eq(pas.find((x: any) => x.id === mp).buoi, { da: 0, tong: 4 }, 'buổi lấy từ Mini Test khi PA chưa có số buổi');
+      conn.prepare(`UPDATE mini_test SET ty_le = 0.75, ngay_lam = '2026-09-29' WHERE tu_attempt_id = ?`).run(luot);
+      const m2 = canHoTro.canHoTroLop(P.admin, LOP_FOU).em.find((e: any) => e.id === em.s).cases.find((c: any) => c.id === coKq).pas.find((x: any) => x.id === mp).miniTest;
+      eq([m2.tyLe, m2.dat, m2.ngay], [0.75, 0.75 >= d.nguongMiniTest('2026-09-29'), '2026-09-29'], 'Mini Test đã ghi');
+      /* FT: Kết quả PA đọc theo Case khi mở — không thêm câu, các trường để trống. */
+      assert(canHoTro.canHoTroLop(P.admin, LOP_FT).em.flatMap((e: any) => e.cases).flatMap((c: any) => c.pas).every((x: any) => x.ketQua === null && x.miniTest === null), 'FT không đọc thêm');
+    } finally {
+      for (const id of pa) { conn.prepare('DELETE FROM case_followups WHERE intervention_id = ?').run(id); conn.prepare('DELETE FROM case_interventions WHERE id = ?').run(id); }
+      for (const id of ca) conn.prepare('DELETE FROM sos_cases WHERE id = ?').run(id);
+      if (luot) { conn.prepare('DELETE FROM mini_test WHERE tu_attempt_id = ?').run(luot); conn.prepare('DELETE FROM assessment_attempts WHERE id = ?').run(luot); }
+    }
+  });
+
+  check('XM-K6 · web tóm tắt môn lớp thường: cột Kết quả PA (Mini Test / nhãn kết quả) chỉ khi có PA; nút việc giữ cùng `viecCase`; hạn bằng `ChipHan` (V22)', () => {
+    const lt = web('modules/classes/BangDiemLopThuong.tsx');
+    assert(/function KetQuaPaO/.test(lt) && /coPa &&/.test(lt) && /t\('Kết quả PA'\)/.test(lt) && !/t\('Việc tiếp'\)/.test(lt), 'cột Kết quả PA / bỏ cột Việc tiếp');
+    assert((lt.match(/<ViecTiepCase /g) ?? []).length === 2 && /loai === 'ghi-ket-qua'/.test(lt) && /loai !== 'ghi-ket-qua'/.test(lt), 'Ghi kết quả PA ở cột Kết quả PA, việc khác dưới Case');
+    assert(/<ChipHan loai=\{c\.viecTiep\.loaiHan\}/.test(lt) && !/<QuaHan /.test(lt), 'hạn chỉ bằng màu (ChipHan)');
+  });
+
   check('PR-HVL (5) · web Case theo kỹ năng (lớp thường, chủ SP 04/11 bỏ cách xem Cần hỗ trợ): mở em → `locCanHoTro` + DongCase + Ngăn Case tại chỗ; không còn luật một-Case-chính/em', () => {
     const b = web('modules/classes/BangCanHoTro.tsx');
     const lt = web('modules/classes/BangDiemLopThuong.tsx');
