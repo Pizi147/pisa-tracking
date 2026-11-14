@@ -3,4 +3,5 @@ import type { Dich } from '../en.ts';
 
 export const EN_GD6_HO_SO_LOP = {
   'Giáo viên của lớp': 'Class teachers',
+  'đạt từ {x} %': 'pass from {x} %',
 } satisfies Record<string, Dich>;
