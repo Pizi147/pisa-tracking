@@ -242,7 +242,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
           <span className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 max-sm:order-2 max-sm:basis-full">
             <h1 className="m-0 whitespace-nowrap text-[22px] font-bold leading-[1.3] text-slate-100 sm:ml-1">{data.code}</h1>
             {/* U03 (mockup `.tags .tag.nhat`): chương trình · HV · tuần thành chip nền phụ. */}
-            <span className="flex flex-wrap items-center gap-1.5">
+            <span className="flex flex-wrap items-center gap-1.5 max-sm:basis-full">
               {meta.map((m, i) => <span key={i} className="inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md bg-[color:var(--surface-2)] px-2 text-xs font-medium text-dim">{m}</span>)}
             </span>
           </span>
@@ -264,7 +264,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
 
       {/* Dải số mỏng (mockup `.dai-so`): số của lớp │ badge phạm vi lớp "›" (dời từ hàng tiêu đề — XM-5). */}
       {(coSo || coBadge) && (
-        <div className="flex min-h-[38px] flex-wrap items-center gap-y-1.5 rounded-lg border py-[5px] pr-1.5 max-sm:px-3 max-sm:py-2"
+        <div className="flex min-h-[38px] flex-wrap items-center gap-y-1.5 rounded-lg border py-[5px] pr-1.5 max-sm:gap-x-4 max-sm:px-3 max-sm:py-2"
           style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
           {tomTat?.luot && <SoMong n={t('Lượt mới nhất')}><b className={SO_DAM}>{tomTat.luot}</b></SoMong>}
           {tomTat?.dat && (
@@ -306,7 +306,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
 const SO_DAM = 'text-sm font-semibold tabular-nums text-slate-100';
 function SoMong({ n, children }: { n: ReactNode; children: ReactNode }) {
   return (
-    <span className="inline-flex min-h-[22px] items-center gap-1.5 whitespace-nowrap border-l px-3.5 text-[13px] text-dim first:border-l-0 max-sm:px-2.5 max-sm:first:pl-0"
+    <span className="inline-flex min-h-[22px] flex-wrap items-center gap-1.5 whitespace-nowrap border-l px-3.5 text-[13px] text-dim first:border-l-0 max-sm:border-l-0 max-sm:px-0"
       style={{ borderColor: 'var(--line)' }}>
       {n} {children}
     </span>
@@ -359,12 +359,12 @@ function DongGiaoVien({ gon, du }: { gon: NhomGiaoVien[]; du: NhomGiaoVien[] }) 
         className="group inline-flex min-h-7 max-w-full items-center overflow-hidden whitespace-nowrap rounded-md border-0 bg-transparent p-0 text-left text-[13px] leading-[1.35] max-sm:min-h-[44px]">
         {gon.map((g, i) => (
           <span key={`${g.nhan}-${i}`} title={g.title} style={{ borderColor: 'var(--line)' }}
-            className={`items-baseline gap-1.5 border-l px-3 first:border-l-0 first:pl-0 max-sm:px-2.5 ${i >= 2 ? 'hidden sm:inline-flex' : 'inline-flex'}`}>
+            className={`items-baseline gap-1.5 border-l px-3 first:border-l-0 first:pl-0 max-sm:px-2.5 ${i >= 1 ? 'hidden sm:inline-flex' : 'inline-flex'}`}>
             <i className="text-xs font-semibold not-italic text-faint">{g.nhan}</i>
             <b className={`font-semibold group-hover:text-[color:var(--accent)] ${g.id === null ? 'text-soon' : 'text-slate-100'}`}>{g.ten}</b>
           </span>
         ))}
-        {gon.length > 2 && <span className="pl-2.5 text-xs font-semibold text-dim sm:hidden">{t('+{n} người', { n: gon.length - 2 })}</span>}
+        {gon.length > 1 && <span className="border-l pl-2.5 text-xs font-semibold text-dim sm:hidden" style={{ borderColor: 'var(--line)' }}>{t('+{n} người', { n: gon.length - 1 })}</span>}
         <svg aria-hidden viewBox="0 0 16 16" width="14" height="14" className={`ml-0.5 shrink-0 fill-none stroke-current text-dim transition-transform motion-reduce:transition-none ${mo ? 'rotate-180' : ''}`} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3.5 6L8 10.5 12.5 6" /></svg>
       </button>
       {mo && (
