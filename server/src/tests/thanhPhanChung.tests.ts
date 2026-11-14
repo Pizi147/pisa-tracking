@@ -21,6 +21,25 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   console.log('\nPR-NEN · Thành phần chung');
   const H = '2026-09-28'; // Thứ Hai
 
+  check('OCHON-GAN-DAY · nhóm "Gần đây": dời (không nhân đôi) mục vừa chọn lên đầu, gần nhất trước, tối đa 3; danh sách ngắn / đang gõ / hỏng localStorage → như cũ', () => {
+    const N = { ganDay: 'Gần đây', khac: 'Khác' };
+    const rows = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, ten: `Người ${i + 1}`, ...(i < 3 ? { nhom: 'GV của lớp' } : {}) }));
+    const x = d.xepGanDay(rows, [{ id: 7, ten: 'Người 7' }, { id: 2, ten: 'Người 2' }, { id: 99, ten: 'Vắng' }], N);
+    assert(x.length === 10 && x.map((r: any) => r.id).join() === '7,2,1,3,4,5,6,8,9,10', x.map((r: any) => r.id).join());
+    assert(x[0].nhom === 'Gần đây' && x[1].nhom === 'Gần đây' && x[2].nhom === 'GV của lớp' && x[5].nhom === 'Khác', 'nhóm: Gần đây → nhóm cũ → Khác (≥ 2 nhóm để có nhãn)');
+    assert(d.xepGanDay(rows.slice(0, 7), [{ id: 2, ten: 'Người 2' }], N).map((r: any) => r.id).join() === '1,2,3,4,5,6,7', '≤ 7 mục (⑤ A6): giữ nguyên');
+    assert(d.xepGanDay(rows, [{ id: 2, ten: 'Tên khác' }], N)[0].id === 1, 'khớp id + tên (ô ds đánh id theo vị trí)');
+    assert(d.xepGanDay(rows.map((r: any) => (r.id === 2 ? { ...r, tat: 'đã đủ' } : r)), [{ id: 2, ten: 'Người 2' }], N)[0].id === 1, 'mục tắt không đưa lên');
+    let g: any[] = [];
+    for (const id of [1, 2, 3, 2, 4]) g = d.themGanDay(g, { id, ten: `Người ${id}` });
+    assert(g.map((m) => m.id).join() === '4,2,3', `gần nhất trước, không trùng, tối đa ${d.GAN_DAY_TOI_DA}: ${JSON.stringify(g)}`);
+    for (const bad of [null, '', '{', '"x"', '[{"id":"1","ten":2}]']) assert(JSON.stringify(d.docChuoiGanDay(bad)) === '[]', `hỏng → rỗng: ${bad}`);
+    const pp = doc('web/src/ui/PeoplePicker.tsx');
+    assert(/for \(const r of rowsHien\) out\.push/.test(pp) && /term\.trim\(\) \? rows : xepGanDay\(/.test(pp), 'phím ↑ ↓ Enter đi theo `options` dựng từ danh sách đã xếp; đang gõ → không nhóm Gần đây');
+    assert((pp.match(/localStorage\.(get|set)Item/g) ?? []).length === 2 && /try \{ return khoaGanDay \?/.test(pp) && /try \{ localStorage\.setItem/.test(pp), 'localStorage bọc try/catch');
+    assert(/pisa-gan-day:\$\{session\.user\.id\}/.test(pp) && !/api\.(get|post)\([^)]*gan/.test(pp), 'theo người dùng, không gọi máy chủ');
+  });
+
   check('QC-GAN · Q74 / Q75 / Q77 Cuối khoá + Q83 Xuất báo cáo PH: câu khớp mã (hạn chốt từ mocLoTrinh, Tutor từ mocThuong, 7 ngày của việc Admin) và gắn đúng chỗ', () => {
     const q = (o: any) => d.quyCheChotLoTrinh({ trungTam: false, khacGoiY: false, tutor: 10, hanChot: null, homNay: H, ...o }).chu as string;
     const moc = d.mocLoTrinh('2026-10-05');

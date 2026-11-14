@@ -4,7 +4,7 @@ import { api } from '../lib/api.ts';
 import { BaoOTrongNhan } from './ONgay.tsx';
 import { ToKhop } from './ToKhop.tsx';
 import { useDienThoai } from './TheDong.tsx';
-import { buocDanhSach, chotChuGo, locNguoiChon, skillShort, type NguoiChon } from '@shared/domain/index.ts';
+import { buocDanhSach, chotChuGo, docChuoiGanDay, locNguoiChon, skillShort, themGanDay, xepGanDay, type MucGanDay, type NguoiChon } from '@shared/domain/index.ts';
 import { useSession } from '../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -259,6 +259,19 @@ export function ChonNguoi({
       });
     return [...dsTutor, ...nguoi];
   }, [ds, term, xa.rows, tx.rows, tim, tt.kq, chiTutor, nhom]);
+  /* OCHON-GAN-DAY (GD-5 [XM-d], ⑤ A5): "Gần đây" của ĐÚNG ô này cho đúng người dùng — localStorage (lỗi / rỗng → không nhóm), 0 request.
+     ponytail: chỉ đưa lên mục CÓ trong danh sách đang tải (ô `/ref/nguoi` chưa gõ trả 20 người) — mục ngoài 20 không hiện; cần thì máy chủ nhận `gan=` id. */
+  const khoaGanDay = !chiTutor && session?.user ? `pisa-gan-day:${session.user.id}:${nhom}:${ds ? 'ds' : tim ? 'tim' : 'ref'}:${tieuDe ?? ariaLabel ?? placeholder ?? ''}` : null;
+  const [ganDay, setGanDay] = useState<MucGanDay[]>(() => {
+    try { return khoaGanDay ? docChuoiGanDay(localStorage.getItem(khoaGanDay)) : []; } catch { return []; }
+  });
+  const ghiGanDay = (muc: MucGanDay) => {
+    if (!khoaGanDay) return;
+    const moi = themGanDay(ganDay, muc);
+    setGanDay(moi);
+    try { localStorage.setItem(khoaGanDay, JSON.stringify(moi)); } catch { /* chế độ riêng tư / đầy bộ nhớ: chỉ nhớ trong phiên */ }
+  };
+  const rowsHien = useMemo(() => (term.trim() ? rows : xepGanDay(rows, ganDay, { ganDay: t('Gần đây'), khac: t('Khác') })), [rows, ganDay, term]);
   const loading = (!ds && !chiTutor && (tim ? tx.loading : xa.loading)) || (!!tutor && tt.loading && !tt.kq);
   const loiTai = ds || chiTutor ? null : tim ? tx.loi : xa.loi;
   const oId = id ?? `${uid}-o`;
@@ -298,11 +311,11 @@ export function ChonNguoi({
     if (choTrong && !term.trim()) out.push({ kind: 'trong' });
     if (dau && !term.trim()) out.push({ kind: 'dau' });   // đang gõ tên → ↓ Enter chọn người khớp đầu, không phải dòng trống
     if (choToi && toiHopLe && !nhieu) out.push({ kind: 'toi' });
-    for (const r of rows) out.push({ kind: 'nguoi', row: r });
+    for (const r of rowsHien) out.push({ kind: 'nguoi', row: r });
     if (choNgoai && !nhieu) out.push({ kind: 'ngoai', text: term.trim() });
     if (them) out.push({ kind: 'them' });
     return out;
-  }, [choTrong, choToi, toiHopLe, rows, choNgoai, term, them, nhieu, dau]);
+  }, [choTrong, choToi, toiHopLe, rowsHien, choNgoai, term, them, nhieu, dau]);
   /** Dòng "tên ngoài" chưa đủ 2 ký tự / dòng nơi gọi tắt (`row.tat`) / tới trần chọn nhiều: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
   const tat = (opt: ChonNguoiOption) => (opt.kind === 'ngoai' && opt.text.length < 2)
     || (opt.kind === 'nguoi' && (!!opt.row.tat || (day && !daChonIds.has(opt.row.id))));
@@ -312,6 +325,7 @@ export function ChonNguoi({
 
   const chon = (opt: ChonNguoiOption) => {
     if (tat(opt)) return;
+    if (opt.kind === 'nguoi' && !(nhieu && daChonIds.has(opt.row.id))) ghiGanDay({ id: opt.row.id, ten: opt.row.ten });
     if (nhieu && opt.kind === 'nguoi') {
       nhieu.onDoi(daChonIds.has(opt.row.id) ? nhieu.chon.filter((x) => x.id !== opt.row.id) : [...nhieu.chon, opt.row]);
       setTerm('');
