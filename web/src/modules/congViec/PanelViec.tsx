@@ -24,13 +24,13 @@ import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
 import { PanelHoiTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
-import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
+import { LuoiChamLop, duongCham, duongDiemTheoLuot, type BangTheoLuot, type Cham } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { khopKn } from '../cham/LuoiFT.tsx';
 import { oThuong } from '../cham/LuoiThuong.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { tenBoEm } from './DanhSachViec.tsx';
-import { KHOA_CHAM_SPEAKING, conThieuFt, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, tenMon, tuanLich } from '@shared/domain/index.ts';
+import { KHOA_CHAM_SPEAKING, conThieuFt, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, tenMon, tuanLich, quyCheVang } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { laLo, soCuaKhoa } from './lamTaiCho.ts';
@@ -252,7 +252,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
     return <PanelNhapDiemLop classId={it.classId!} classCode={it.classCode} luot={it.luot} onDong={onDong} quayLai={{ nhan: t('Việc'), onClick: () => setCaLop(false) }} />;
   }
   return (
-    <KhungPanel hd="nhap-diem" tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong}
+    <KhungPanel hd="nhap-diem" tieuDe={dich(tieuDe)} dau={dau} quayLai={quayLai} onDong={onDong} quyChe={data ? quyCheVang(data.mode === 'ratio') : null}
       chan={chanViecTiep(onTiep, !!data && !!homNay && conBaiLuoi(data, chiAttempt, kns, homNay) === 0)}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>
@@ -295,19 +295,43 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     if (!ke) return hetViec(onTiep)();
     return { nhan: t('Lớp tiếp: {lop} ›', { lop: ke.classCode ?? '' }), onClick: () => { setMo(new Set([ke.key])); setConTro(ke.key); } };
   };
-  const [tieuDe] = useState(() => t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' }));
+  /* GD-3 (mockup v21 K2): một lớp → tiêu đề = tên việc ("Nhập điểm Listening, Reading"), dòng 2 "lớp · tuần · n bài", lưới ngay dưới (không hàng gập lớp). */
+  const motLop = lop.length === 1;
+  /* Mockup K2 dòng 2 "MB FT 104 · MT1 · W3 SEP · còn 4 / 10 bài": cùng URL lưới `LuoiNhung` đang đọc (`useApi` gộp GET đang bay / vừa xem) → 0 request thêm.
+     Bài = ô kỹ năng của việc ở tuần thi này, sửa được; còn = `conThieuFt`. MT ghi khi cả lớp cùng một lượt. */
+  const dsLop = useApi<Cham>(motLop && lop[0].classId ? duongCham(lop[0].classId, { periodId: lop[0].periodId ?? null, kind: lop[0].kind ?? null }) : null, [motLop]).data;
+  const demBai = useMemo(() => {
+    const x = lop[0]; const kns = x.kns ?? (x.kn ? [x.kn] : null);
+    if (!dsLop?.ft || !it.tuanThi) return null;
+    const o = dsLop.ft.rows.flatMap((r) => r.cells.filter((c) => c.canEdit && c.required && c.weekStart === it.tuanThi && (!kns || kns.some((k) => khopKn(c.skill, k))))
+      .map((c) => ({ c, mt: r.attemptNo })));
+    if (!o.length) return null;
+    const mt = new Set(o.map((v) => v.mt));
+    return { con: o.filter((v) => conThieuFt(v.c)).length, tong: o.length, mt: mt.size === 1 ? `MT${[...mt][0]}` : null };
+  }, [dsLop, it.tuanThi]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const [tieuDe] = useState(() => (motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
   const periodId = lop[0].periodId ?? null;
   const dau = dauViec({
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     ngCanh: (
       <Link className="link" to={duongLichTest({ periodId })}>
-        {t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
+        {motLop ? [lop[0].classCode, demBai?.mt, it.tuanThi ? tuanLich(it.tuanThi) : null].filter(Boolean).join(' · ') : t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {motLop && demBai ? t('còn {con} / {tong} bài', demBai) : t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
       </Link>
     ),
   });
+  const luoiLop = (x: WorkItem, lopKhung: string) => (
+    <LuoiTrongPanel className={lopKhung}>
+      <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
+                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
+                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
+                    /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
+                    datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
+    </LuoiTrongPanel>
+  );
   return (
-    <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)}>
+    <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheVang(it.khung === 'thuong')}>
+      {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-5 pt-1') : (
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {
           const dangMo = mo.has(x.key);
@@ -321,19 +345,12 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
                 <b className="shrink-0 whitespace-nowrap text-[13px] font-semibold text-slate-100">{x.classCode}</b>
                 <span className="min-w-0 truncate text-xs text-slate-400">{dich(x.contextLabel ?? '')} · {dich(x.phu ?? x.reason)} · {t('{soBai} bài', { soBai: x.soBai ?? 0 })}</span>
               </button>
-              {dangMo && (
-                <LuoiTrongPanel className="luoi-trong-panel px-2 pb-2">
-                  <LuoiNhung chiHv={emCuaViec(x)} classId={x.classId!} periodId={x.periodId ?? null} kind={x.kind ?? null} tuanDangXem={x.tuanThi ?? null} kn={x.kn ?? null}
-                    hrefDayDu={duongLichTest({ classId: x.classId, periodId: x.periodId })} onDaLuu={onDaLam} chiCot={x.kns ?? (x.kn ? [x.kn] : null)}
-                    emCoBaiTuan={(x.kind ?? 'mock') === 'mock'} luoiGon
-                    /* OV-14b: lớp đầu (mở sẵn) cuộn ngang tới cột của việc + con trỏ ở ô trống đầu cột đó; lớp mở sau không giật trang. */
-                    datConTro={(!tuMo && !!x.kn && x.key === lop[0].key) || x.key === conTro} onHet={hetLop(x)} />
-                </LuoiTrongPanel>
-              )}
+              {dangMo && luoiLop(x, 'luoi-trong-panel px-2 pb-2')}
             </li>
           );
         })}
       </ul>
+      )}
     </KhungPanel>
   );
 }

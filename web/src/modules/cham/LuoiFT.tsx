@@ -1,4 +1,5 @@
-import { useEffect, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
+import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { Empty, Level, Status } from '../../ui/ui.tsx';
@@ -147,8 +148,10 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const goiYO = (s: string) => (s === 'listening' || s === 'reading'
     ? t('{skillLabel} — bấm ô để nhập số câu đúng (0–40), máy tự quy ra band.', { skillLabel: skillLabel(s) })
     : t('{skillLabel} — bấm ô để chấm bốn tiêu chí, ra band.', { skillLabel: skillLabel(s) }));
-  /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. */
-  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: chiCot && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
+  /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột → tên kỹ năng đầy đủ ("Speaking"); W1 / W2 giữ tên ngắn. GD-3: trong panel việc cột ô 112, Kết quả 132,
+     cột tên lấy phần còn lại (index.css `.luoi-trong-panel`). */
+  const trongPanel = useContext(OTrongPanel);
+  const oKn = (s: string): DinhNghiaCot => ({ key: s, nhan: (chiCot || trongPanel) && !s.startsWith('writing') ? skillLabel(s) : skillShort(s), kieu: 'diem', rong: trongPanel ? 112 : chiCot ? 80 : 96, sang: khopKn(s, kn), goiY: goiYO(s) });
   const cotDs: DinhNghiaCot[] = [
     /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: chiCot ? 140 : 230,   /* V6 K8c: lưới vài cột vừa 375 (phần dư 1440 vẫn chia theo `deu`) */ goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
@@ -159,7 +162,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ...(hien('speaking') ? [oKn('speaking')] : []),
     ...(cot.kyVong ? [{ key: 'kv', nhan: t('Kỳ vọng'), kieu: lich ? 'diem' : 'noi-bat', rong: lich ? 88 /* "Expected" (EN) 62 px + đệm 24 — DON-NHO-3 */ : undefined, goiY: t('Mức mong đợi của chính lượt này, tính theo Target tại thời điểm đó.') } as const] : []),
     ...(cot.ovr ? [{ key: 'ovr', nhan: 'Overall', kieu: lich ? 'diem' : 'noi-bat', rong: coKhongHoc ? 156 : 84, goiY: t('Band tổng, chỉ có khi đã đủ điểm mọi kỹ năng bắt buộc.') } as const] : []),
-    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
+    ...(cot.kq ? [{ key: 'kq', nhan: t('Kết quả'), kieu: 'chip', rong: trongPanel ? 132 : chiCot ? 84 : 140, goiY: t('Số kỹ năng dưới kỳ vọng của lượt này — đó chính là mức SOS.') } as const] : []),
   ];
   const cc = Object.fromEntries(cotDs.map((c) => [c.key, c])) as Record<string, DinhNghiaCot>;
   /* K4-24: GV chấm chọn MỘT lần ở đầu cột S (nhớ theo lớp × tuần); chỉ người sửa được S, chỉ khi có tuần. */
@@ -356,6 +359,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   sEx?: SExTuan; cotDs: DinhNghiaCot[]; lich?: boolean;
 }) {
   const { save, status, lastError, retry, o, loi, luuLai, soLoi, coGuiLai, vuaLuu, xoaVuaLuu } = useSaveScore(row.attemptId, onReload, row.studentName);
+  const trongPanel = useContext(OTrongPanel);
   // eslint-disable-next-line react-hooks/exhaustive-deps -- bảng tải lại (dòng mới) thì bỏ điểm tạm
   useEffect(() => { xoaVuaLuu(); }, [row]);
   const cellOf = (skill: string) => { const c = row.cells.find((x) => x.skill === skill); return c && apDiemVuaLuu(c, vuaLuu[skill]); };
@@ -498,8 +502,8 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
                 : row.result.required.length === 0 ? <Level tone="muted">{t('Chưa xếp lịch')}</Level>
                 /* LT-GON (M3): "Chờ L, R, W, S" lặp đúng các ô trống bên trái → Kết quả chưa có ghi "–", tên môn còn thiếu ở `title`. */
                 /* RA-GD-0711c: chữ thường trong cột chip lùi 8 px (`px-2`) như chữ trong chip — thẳng tiêu đề "Kết quả" (index.css `th[data-kieu=chip]`). */
-                /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột (mở từ việc, Chấm Speaking) — ô trống bên trái không còn đủ để đọc → ghi thẳng "Chờ S". */
-                : cot.chiKq ? <span className="whitespace-normal px-2 text-[13px] text-dim">{choMon(row)}</span>
+                /* V6 K2 / K3 (mockup ①): lưới chỉ vài cột (mở từ việc, Chấm Speaking) hoặc trong panel việc — ghi thẳng "Chờ S", chỉ kỹ năng đang có cột. */
+                : cot.chiKq || trongPanel ? <span className="whitespace-normal text-[13px] font-medium text-dim">{choMon(row, hien)}</span>
                 : <span className="px-2 text-faint" title={choMon(row)}>–</span>
           )}
           {/* B19 (U06 #5): bỏ dòng phụ `scopeNote` ("1 kỹ năng") — "Chờ W2, S" đã nói đủ; chi tiết ở `title`. */}
@@ -514,8 +518,9 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
 /**
  * B19 (U06 #5, mockup V11): "Chờ L, R" — tên môn CÒN THIẾU (bắt buộc, chưa điểm, chưa huỷ), thứ tự chuẩn; W1 và W2 cùng thiếu gộp "W". Thay "Chờ n kỹ năng".
  */
-function choMon(row: FtSheet['rows'][number]): string {
-  const thieu = row.cells.filter((c) => c.required && c.progress !== 'cancelled' && c.band === null && c.rawScore === null).map((c) => c.skill);
+/** `hien`: chỉ các kỹ năng đang có cột (GD-3: panel việc chỉ có cột của việc — "Chờ R", không kể W, S của người khác). */
+function choMon(row: FtSheet['rows'][number], hien: (s: string) => boolean = () => true): string {
+  const thieu = row.cells.filter((c) => c.required && c.progress !== 'cancelled' && c.band === null && c.rawScore === null && hien(c.skill)).map((c) => c.skill);
   const w = thieu.includes('writing1') && thieu.includes('writing2');
   const ten = thieu.filter((k) => !(w && k === 'writing2')).map((k) => (w && k === 'writing1' ? 'W' : skillShort(k)));
   return ten.length ? t('Chờ {mon}', { mon: ten.join(', ') }) : t('Chờ chấm');

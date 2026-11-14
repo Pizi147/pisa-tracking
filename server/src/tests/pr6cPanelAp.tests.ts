@@ -41,7 +41,7 @@ export async function runPr6cPanelApTests(t: { check: (ten: string, f: () => voi
       ['yThuc/KhaiBacPanel.tsx', /daSua: !daLuu && \(bac !== /],
       ['yThuc/DaThucHienPanel.tsx', /daSua: !daLuu && !!ghiChu\.trim\(\)/],
       ['yThuc/XemXuLyPanel.tsx', /daSua: sua \|\| !!tt/],
-      ['yThuc/RecordViolationPanel.tsx', /daSua: editing && violation\n/],
+      ['yThuc/RecordViolationPanel.tsx', /const daSua = editing && violation\n[\s\S]*chan=\{\{[\s\S]*daSua, huyPhai/],
     ];
     const thieu = can.filter(([f, re]) => !re.test(doc(W + f).replace(/\r\n/g, '\n'))).map(([f]) => f);
     assert(thieu.length === 0, `chưa báo đang sửa: ${thieu.join(', ')}`);
