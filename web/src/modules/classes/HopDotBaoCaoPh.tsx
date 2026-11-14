@@ -114,7 +114,7 @@ export function HopDotBaoCaoPh({ kieu, lopId, lopMa, chiNhanh, ft, dot, sua, onC
             );
           })}
           {choThem.length > 0 && (
-            <ChonLop noi className="w-44 max-sm:w-full" ariaLabel={t('Thêm lớp')} value={null} placeholder={t('+ lớp')}
+            <ChonLop className="w-44 max-sm:w-full" ariaLabel={t('Thêm lớp')} value={null} placeholder={t('+ lớp')}
               onChange={(id) => { if (id) setThem((s) => [...s, id]); }} ds={choThem.map((l) => ({ id: l.id, ma: l.ma, phu: l.ct }))} />
           )}
         </div>

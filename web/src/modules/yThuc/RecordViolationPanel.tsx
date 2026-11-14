@@ -10,6 +10,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
@@ -363,32 +364,20 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
   lf: ReturnType<typeof useLoiForm>; loiList: readonly LoiTruong[];
   rieng: Record<number, string>; onRieng: (v: Record<number, string>) => void;
 }) {
-  const [mo, setMo] = useState(false);
-  const [tim, setTim] = useState('');
-  const loc = ds.filter((s) => !tim.trim() || s.name.toLowerCase().includes(tim.trim().toLowerCase()));
   const tatCa = ds.length > 0 && ds.slice(0, TOI_DA_EM_GHI_VI_PHAM).every((s) => chon.includes(s.id));
-  const doi = (id: number) => onChange(chon.includes(id) ? chon.filter((x) => x !== id) : chon.length >= TOI_DA_EM_GHI_VI_PHAM ? chon : [...chon, id]);
   const bo = (id: number) => { onChange(chon.filter((x) => x !== id)); const { [id]: _b, ...con } = rieng; onRieng(con); };
-  const nhan = chon.length === 0 ? t('Chọn học viên') : chon.length === 1 ? ds.find((s) => s.id === chon[0])?.name ?? t('1 học viên') : t('{length} học viên', { length: chon.length });
+  const o = lf.o(loiList, 'hoc-vien');
+  const dsO = ds.map((s) => ({ id: s.id, ten: s.name, ...(s.code ? { phu: s.code } : {}), nhom: t('Lớp này') }));
 
   return (
-    /* Rời khỏi khối (bấm chỗ khác) thì danh sách tự gấp lại. */
-    <div className="space-y-2" onBlur={(e) => { if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setMo(false); }}>
+    <div className="space-y-2">
       <Truong nhan={t('Học viên')} batBuoc as="div" loi={loi}>
-        <button type="button" className="field flex w-full items-center justify-between gap-2 text-left" aria-expanded={mo} {...lf.o(loiList, 'hoc-vien')} onClick={() => setMo((v) => !v)}>
-          <span className={`min-w-0 truncate ${chon.length ? '' : 'text-slate-500'}`}>{nhan}</span>
-          <span aria-hidden className="text-slate-400">▾</span>
-        </button>
-        {mo && (
-          <div className="mt-1.5 rounded-lg border p-2" style={{ borderColor: 'var(--line)' }}>
-            <input className="field mb-1.5 w-full" value={tim} onChange={(e) => setTim(e.target.value)} placeholder={t('Gõ tên…')} aria-label={t('Tìm học viên')} />
-            <div className="max-h-56 space-y-0.5 overflow-y-auto">
-              <ONhieu chon={tatCa} onClick={() => onChange(tatCa ? [] : ds.slice(0, TOI_DA_EM_GHI_VI_PHAM).map((s) => s.id))}>{t('Cả lớp · {length}', { length: ds.length })}</ONhieu>
-              {loc.map((s) => <ONhieu key={s.id} chon={chon.includes(s.id)} onClick={() => doi(s.id)}>{s.name}</ONhieu>)}
-              {loc.length === 0 && <p className="m-0 px-2 py-1.5 text-xs text-slate-500">{t('Không có học viên nào khớp')}</p>}
-            </div>
-          </div>
-        )}
+        {/* GD-5 (R5.2 #61, mockup ⑤ A4): ô chọn nhiều có tìm — chip ✕ + "n / trần" trong ô; "Cả lớp · n" là mục đầu nhóm "Lớp này". */}
+        <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" choToi={false} choNgoai={false} id={o.id} onBlur={o.onBlur} invalid={o['aria-invalid']}
+          ariaLabel={t('Tìm học viên')} tieuDe={t('Học viên')} placeholder={t('Gõ tên…')} ds={dsO}
+          dau={{ nhan: t('Cả lớp · {length}', { length: ds.length }), bat: tatCa, nhom: t('Lớp này'), onChon: () => onChange(tatCa ? [] : ds.slice(0, TOI_DA_EM_GHI_VI_PHAM).map((s) => s.id)) }}
+          nhieu={{ chon: chon.map((id) => dsO.find((x) => x.id === id) ?? { id, ten: String(id) }), toiDa: TOI_DA_EM_GHI_VI_PHAM, donVi: t('em'),
+            onDoi: (v) => { const ids = v.map((x) => x.id); const con = { ...rieng }; for (const id of chon) if (!ids.includes(id)) delete con[id]; onRieng(con); onChange(ids); } }} />
       </Truong>
       {chon.length > 1 && chon.length <= LO_GHI_VI_PHAM && (
         <ul className="m-0 list-none space-y-1.5 p-0">
@@ -412,15 +401,5 @@ function ChonHocVien({ ds, chon, onChange, loi, lf, loiList, rieng, onRieng }: {
         </ul>
       )}
     </div>
-  );
-}
-
-function ONhieu({ chon, onClick, children }: { chon: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" aria-pressed={chon} onClick={onClick}
-      className="flex min-h-[44px] w-full items-center gap-2 rounded-md px-2 text-left text-sm hover:bg-slate-500/10 sm:min-h-[32px]">
-      <span aria-hidden className={`w-3 text-[12px] text-[color:var(--accent-strong)] ${chon ? '' : 'invisible'}`}>✓</span>
-      <span className="min-w-0 truncate">{children}</span>
-    </button>
   );
 }

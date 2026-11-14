@@ -5,6 +5,8 @@ import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
+import { ChonLoc } from '../../ui/PeoplePicker.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelSauThi } from '../congViec/PanelSauThi.tsx';
@@ -127,6 +129,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   useEffect(() => { onIds?.(hien.map((r) => r.studentId)); }, [hienKey]);   // eslint-disable-line react-hooks/exhaustive-deps
   const dsTvv = useMemo(() => [...new Set(rows.map((r) => r.tvv).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, 'vi')), [rows]);
   const coChuaTvv = rows.some((r) => !r.tvv);
+  const toi = useSession().session?.user?.fullName ?? null;
   /* Dòng tiêu đề lớp: số em · số cần làm · ⚠ quá hạn — đếm cùng hàm với hàng, dữ liệu đã nạp. */
   const dauLop = useMemo(() => {
     const m = new Map<number, { lop: string; n: number; can: number; qua: number }>();
@@ -236,11 +239,11 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
     </span>
   );
   const locTvv = (dsTvv.length > 0 || coChuaTvv) && (
-    <select className={SELECT_GON} aria-label={t('TVV')} value={tvv} onChange={(e) => setTvv(e.target.value)}>
-      <option value="">{t('Mọi TVV')}</option>
-      {dsTvv.map((x) => <option key={x} value={x}>{x}</option>)}
-      {coChuaTvv && <option value={TVV_CHUA}>{t('Chưa có TVV')}</option>}
-    </select>
+    /* GD-5 (R5.2 #53, `10` mục B): ô lọc có tìm — "Tôi" (khi là TVV) lên trước, rồi TVV chi nhánh, "Chưa có TVV" cuối. */
+    <ChonLoc className="w-[200px] max-sm:w-full" ariaLabel={t('TVV')} tatCa={t('Mọi TVV')} placeholder={t('Gõ tên TVV…')} value={tvv} onChange={setTvv}
+      ds={[...dsTvv.filter((x) => x === toi).map((x) => ({ gt: x, ten: x, nhom: t('Tôi') })),
+        ...dsTvv.filter((x) => x !== toi).map((x) => ({ gt: x, ten: x, ...(toi && dsTvv.includes(toi) ? { nhom: t('TVV chi nhánh') } : {}) })),
+        ...(coChuaTvv ? [{ gt: TVV_CHUA, ten: t('Chưa có TVV') }] : [])]} />
   );
 
   return (

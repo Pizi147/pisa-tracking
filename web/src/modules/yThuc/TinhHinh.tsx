@@ -2,6 +2,7 @@ import { useRef, useState, type Dispatch, type ReactNode, type RefObject, type S
 import { api } from '../../lib/api.ts';
 import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DongQuyChe, KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -210,21 +211,22 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       ) : canEm && (chonThem || che.loai === 'bao') && (
         <div className="grid gap-1.5">
           <span className="text-sm font-bold text-slate-100">{t('Học viên')}</span>
+          {/* GD-5 (R5.2 #56, mockup ⑤ A4 / F3): có danh sách em để thêm → ô chọn nhiều có tìm (chip ✕ + "n / trần" trong ô); không thì giữ chip. */}
+          {chonThem ? (
+            <ChonNguoi value={null} onChange={() => {}} nhom="nhan_vien" choToi={false} choNgoai={false} disabled={luu}
+              ariaLabel={t('Chọn em')} tieuDe={t('Học viên')} placeholder={t('Gõ tên em…')} ds={chonThem.map((c) => ({ id: c.id, ten: c.ten }))}
+              nhieu={{ chon: em.map((e) => ({ id: e.id, ten: e.ten })), toiDa: toiDaEm, donVi: t('em'),
+                onDoi: (ds) => setEm(ds.map((x) => em.find((e) => e.id === x.id) ?? chonThem.find((c) => c.id === x.id)!).filter(Boolean)) }} />
+          ) : (
           <span className="flex flex-wrap items-center gap-1.5">
             {em.map((e) => (
               <span key={e.id} className="inline-flex h-7 items-center gap-1 rounded-full border pl-2.5 pr-1 text-[13px] font-medium surface-2" style={{ borderColor: 'var(--line-strong)' }}>
                 {e.ten}
-                {(em.length > 1 || chonThem) && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11" disabled={luu} onClick={() => setEm((c) => c.filter((x) => x.id !== e.id))}>✕</button>}
+                {em.length > 1 && <button type="button" aria-label={t('Bỏ {ten}', { ten: e.ten })} className="h-6 w-6 appearance-none rounded-full border-0 bg-transparent text-slate-500 max-sm:h-11 max-sm:w-11" disabled={luu} onClick={() => setEm((c) => c.filter((x) => x.id !== e.id))}>✕</button>}
               </span>
             ))}
-            {chonThem && em.length < toiDaEm && (
-              <select className="field h-8 w-auto py-0 text-[13px] max-sm:h-11" aria-label={t('Chọn em')} value="" disabled={luu}
-                onChange={(ev) => { const x = chonThem.find((c) => c.id === Number(ev.target.value)); if (x) setEm((c) => [...c, x]); }}>
-                <option value="">{t('+ Chọn em')}</option>
-                {chonThem.filter((c) => !em.some((e) => e.id === c.id)).map((c) => <option key={c.id} value={c.id}>{c.ten}</option>)}
-              </select>
-            )}
           </span>
+          )}
         </div>
       )}
       {/* Lời 40: chưa chọn em thì "Gửi tới" / hạn chưa có nghĩa — ẩn. */}

@@ -127,6 +127,10 @@ export const DUONG_DO: MucDo[] = [
 
   /* OV6-DOC-CHON: ô tìm thanh trên (Ctrl K) — trước `/students?q` không LIMIT (QL "ng": 544 câu / 1 063 dòng, ×3 dữ liệu 1 622 câu), web chỉ hiện 6. */
   { trang: 'Chung · tìm', vai: MOI_VAI, url: '/students?q=ng&gioiHan=6&gon=1' },
+  /* GD-5 (ô chọn có tìm chung `ChonNguoi`): chưa gõ (20 người, nhóm GV của lớp → cùng chi nhánh → khác) · mỗi lần gõ (12 người) · GV Speaking. */
+  { trang: 'Chung · tìm', vai: MOI_VAI, url: '/ref/nguoi?nhom=nhan_vien' },
+  { trang: 'Chung · tìm', vai: MOI_VAI, url: '/ref/nguoi?q=ng&nhom=nhan_vien' },
+  { trang: 'Chung · tìm', vai: MOI_VAI, url: '/ref/nguoi?q=ng&nhom=gv_speaking' },
   /* OV6-DOC-CHON: ô Lớp của Giao việc — trước `/classes` đầy đủ (QL 15 câu / 470 dòng) chỉ để lấy mã + sĩ số. */
   { trang: 'Công việc · Giao việc', vai: ['QL', 'QT'], url: '/classes?gon=1' },
 
@@ -473,6 +477,10 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* GD-5 (ô chọn có tìm `ChonNguoi`): `/ref/nguoi` đo 3 câu mọi vai (chưa gõ / gõ / GV Speaking) — trần 25 câu / lần gõ (plan GD-5). */
+  'QL /ref/nguoi?nhom=nhan_vien': 25, 'GVCN /ref/nguoi?nhom=nhan_vien': 25, 'GVBM /ref/nguoi?nhom=nhan_vien': 25, 'GVCN_THUONG /ref/nguoi?nhom=nhan_vien': 25, 'QT /ref/nguoi?nhom=nhan_vien': 25,
+  'QL /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVCN /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVBM /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'QT /ref/nguoi?q=ng&nhom=nhan_vien': 25,
+  'QL /ref/nguoi?q=ng&nhom=gv_speaking': 25, 'GVCN /ref/nguoi?q=ng&nhom=gv_speaking': 25, 'GVBM /ref/nguoi?q=ng&nhom=gv_speaking': 25, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=gv_speaking': 25, 'QT /ref/nguoi?q=ng&nhom=gv_speaking': 25,
   /* OV6-DOC-CHON (14/11): ô tìm thanh trên — trước `/students?q=ng` 360–845 câu (×3 dữ liệu tới 2 517); nay LIMIT 6 + gon đo 15 câu mọi vai · ô Lớp của Giao
      việc — trước `/classes` 15 câu, nay `gon=1` đo 3 → max(đo + 10, ⌈đo × 1,3⌉). */
   'QL /students?q=ng&gioiHan=6&gon=1': 25, 'QT /students?q=ng&gioiHan=6&gon=1': 25, 'GVCN /students?q=ng&gioiHan=6&gon=1': 25,
@@ -1101,6 +1109,10 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* GD-5: `/ref/nguoi` đo 12 dòng (QT 22) chưa gõ / có gõ, GV Speaking 6 (QT 10) — đọc trong phạm vi + cắt 20 / 12 ở máy chủ → max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /ref/nguoi?nhom=nhan_vien': 62, 'GVCN /ref/nguoi?nhom=nhan_vien': 62, 'GVBM /ref/nguoi?nhom=nhan_vien': 62, 'GVCN_THUONG /ref/nguoi?nhom=nhan_vien': 62, 'QT /ref/nguoi?nhom=nhan_vien': 72,
+  'QL /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVCN /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVBM /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'QT /ref/nguoi?q=ng&nhom=nhan_vien': 72,
+  'QL /ref/nguoi?q=ng&nhom=gv_speaking': 56, 'GVCN /ref/nguoi?q=ng&nhom=gv_speaking': 56, 'GVBM /ref/nguoi?q=ng&nhom=gv_speaking': 56, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=gv_speaking': 56, 'QT /ref/nguoi?q=ng&nhom=gv_speaking': 60,
   /* OV6-DOC-CHON (14/11): trước `/students?q=ng` 712–1 722 dòng, `/classes` 308–709 dòng; nay đo 14–17 · 23 / 33 dòng → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /students?q=ng&gioiHan=6&gon=1': 64, 'QT /students?q=ng&gioiHan=6&gon=1': 64, 'GVCN /students?q=ng&gioiHan=6&gon=1': 67,
   'GVBM /students?q=ng&gioiHan=6&gon=1': 64, 'GVCN_THUONG /students?q=ng&gioiHan=6&gon=1': 67, 'QL /classes?gon=1': 73, 'QT /classes?gon=1': 83,

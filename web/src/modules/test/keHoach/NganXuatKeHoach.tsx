@@ -21,7 +21,6 @@ export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe 
   tieuDe?: string; tabs?: ReactNode; vungTab?: { id: string; nhan: string }; onDong: () => void }) {
   const toast = useToast();
   const [chon, setChon] = useState<{ id: number; ma: string }[]>([]);   // rỗng = theo bộ lọc đang xem
-  const [tim, setTim] = useState('');
   const [kq, setKq] = useState<KetQua | null>(null);
   const [lopCo, setLopCo] = useState<LopCo[]>([]);
   const [loi, setLoi] = useState<string | null>(null);
@@ -83,8 +82,8 @@ export function NganXuatKeHoach({ branchId, classIds, chiXepLai = false, tieuDe 
                 {kq && <span className="tabular-nums text-slate-400"> · {t('{n} lớp', { n: kq.dem.lop })} · {t('{n} HV', { n: kq.dem.hocVien })}</span>}
               </p>
             )}
-            <TimLop lop={goiY} value={tim} onChange={setTim} placeholder={t('Thu hẹp: tìm lớp FT…')}
-              onChon={(l) => { setChon((ds) => [...ds, { id: l.id, ma: l.code }]); setTim(''); }} />
+            <TimLop lop={goiY} placeholder={t('Thu hẹp: tìm lớp FT…')}
+              onChon={(l) => { setChon((ds) => [...ds, { id: l.id, ma: l.code }]); }} />
           </div>
         </Truong>
       </Khoi>
