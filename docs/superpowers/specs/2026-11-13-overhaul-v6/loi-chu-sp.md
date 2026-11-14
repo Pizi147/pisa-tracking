@@ -475,3 +475,11 @@ BÀI HỌC CHUNG (áp cho mọi mockup và mọi PR code): **thông tin hiện r
 > "Chọn A nhé"
 
 ĐÃ CHỐT: mockup ⑧ dùng **phương án A** cho số đếm việc (tách cột, mỗi ô một thành phần, không chữ nhỏ dưới số) — khớp điều PTA Overhaul đã chốt theo lời 39. Mockup ⑧ (`tong-quan.html`, `ho-so-gv.html`) trên main chỉ còn A. **⑧ ĐÃ DUYỆT.**
+
+## 15/11 — lời 42 (chủ SP nói trong session mockup ⑥; session đó chuyển lại): hiện lại MT trên hàng
+
+Bối cảnh: sau lời 40, session ⑥ tự áp thêm "em đã thi thì ô MT gần nhất TRÊN HÀNG ghi —" (PTA Overhaul đã đồng ý) và hỏi lại chủ SP.
+
+> "Hiện lại MT"
+
+ĐÃ CHỐT (sửa phần áp thêm ở lời 40): **trên hàng bảng Lịch thi, MỌI em đều hiện MT gần nhất**, kể cả em đã thi. Chỉ PHẦN MỞ dưới hàng của em đã thi mới bỏ khối MT gần nhất và Test sắp tới (lời 40 giữ nguyên). Thẻ 375: dòng 2 luôn có Target · MT gần nhất · SOS.
