@@ -283,3 +283,11 @@ PTA Overhaul hiểu: (a) các việc ĐÃ gửi PTA Plan (F01–F07, L1–L8, LG
 1. **Dòng việc luôn một dạng "Lớp · tên việc ngắn"**, kể cả việc của MỘT em (vd "MB FT 101 · Reading", "MB FOU 12 · Xác nhận xử lý"); tên em là thẻ phụ (link) cạnh tuần / số bài / SOS. Bỏ dạng "đầu em + cây việc". Em con trong dòng gộp "n em" vẫn đứng đầu bằng tên em.
 2. Dải đầu tab / nhóm ghi **"Chấm Speaking"** — không ghi "Việc chung của nhóm GV Speaking".
 Đã áp ở mockup ⑤ (#1558). Mockup ① (đã merge) còn dạng cũ → code theo lời này, không vẽ lại.
+
+## 15/11 — lời 25 (chủ SP nói trong session mockup ②; session đó THUẬT LẠI, nguyên văn ở `thiet-ke/v21/ho-so-lop-ghi-chu.md` mục 0 trên PR #1560)
+
+Theo session mockup ② (chủ SP đã duyệt "làm đi" trong session đó) — áp cho hồ sơ lớp:
+1. Phần mở rộng một em giữ đúng khung web hiện tại (Điểm theo lượt │ thẻ Kỹ năng → Điểm · Case · PA · Kết quả PA); nâng cấp: bấm ô điểm trên hàng mở sẵn đúng kỹ năng (ô có viền); thẻ kỹ năng có việc quá hạn của người xem mang ⚠.
+2. Lớp thường dùng CÙNG khung (đơn vị là Môn: Progress / Final, %, kỳ vọng 70 %, Bổ trợ miễn phí, Mini Test) — thay khối "Case đang mở" 08/11.
+3. Bỏ TVV khỏi đầu trang hồ sơ lớp và khỏi dòng "TVV …" dưới tên em; TVV ghi nhỏ ở đầu khối trái của phần mở rộng.
+PTA Overhaul CHƯA tự áp sang hồ sơ HV (mockup ③): session ② đề xuất "TVV không ở đầu" cho cả hồ sơ HV, nhưng đó là đề xuất của session, không phải lời chủ SP → hỏi chủ SP.
