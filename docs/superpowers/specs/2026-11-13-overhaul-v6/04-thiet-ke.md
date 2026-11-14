@@ -187,3 +187,4 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 ## 16. Luật V22 — hạn chỉ bằng màu
 
 ** (chủ SP 14–15/11, lời 43 — THẮNG mọi chỗ khác trong tệp này và hình mockup):** hạn chỉ bằng MÀU — đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; badge / nút-chip / số hạn / chữ hạn / đầu mục / ô số bảng KHÔNG kèm ⚠ hay biểu tượng. Mọi câu trong tệp này ghi "⚠" cho việc quá hạn đọc là "màu đỏ, không ⚠". ⚠ chỉ còn cho lỗi, bị chặn, xác nhận. Badge tab Chấm Speaking: tạm mờ, không ⚠ (chờ chủ SP).
+**Mockup v21 KHÔNG sửa lại vì V22 (chủ SP 15/11, lời 44):** ⚠ về hạn còn trong hình mockup → code chỉ dùng màu; khi so ảnh cặp ghi "KHÁC theo V22", không tính lệch.

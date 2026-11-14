@@ -490,3 +490,11 @@ Bối cảnh: sau lời 40, session ⑥ tự áp thêm "em đã thi thì ô MT g
 
 ĐÃ CHỐT (luật V22, thắng mọi mockup và lời cũ khi khác): badge, nút-chip việc, số quá hạn / chưa tới hạn, chữ hạn trong dòng việc, đầu mục ("1 quá hạn"), badge tab, ô số trong bảng — **đỏ = quá hạn · vàng = gần tới hạn · thường = chưa tới; KHÔNG ⚠ hay biểu tượng nào kèm**. Chữ ("quá hạn 1 ngày", "hạn hôm nay") vẫn nói nghĩa. ⚠ chỉ còn cho cảnh báo KHÔNG phải hạn (lỗi tải / lưu, bị chặn, xác nhận).
 Hệ quả: (a) sửa mọi mockup v21 (①–⑩, bảng mẫu, `v21.css`) — bỏ ⚠ ở chỗ nói về hạn; (b) các câu "quá hạn có ⚠", "⚠ m quá hạn", "hộp đỏ ⚠ n" trong `04`, `09`, `11`, `12` đọc là "màu đỏ, không ⚠"; (c) badge tab "Chấm Speaking" (lời 33: "mờ + ⚠, không đỏ") mâu thuẫn V22 — PTA Plan đang hỏi chủ SP, tạm: badge mờ, không ⚠.
+
+## 15/11 — lời 44: không làm lại mockup vì V22
+
+Bối cảnh: PTA Plan nhờ PTA Overhaul sửa mockup v21 bỏ ⚠ theo luật V22 (lời 43).
+
+> "không cần làm lại mockup đâu, chỉ cần viết lại mô tả và plan để cho PTA Plan code là được"
+
+ĐÃ CHỐT: **KHÔNG sửa mockup v21 vì V22.** Hình mockup còn ⚠ ở badge / chip / số hạn → session code đọc là "chỉ màu, không ⚠" theo `DESIGN.md` V22 + ghi chú V22 ở cuối `04`, `09`, `11`, `12`. Ảnh cặp: chỗ khác mockup vì V22 ghi một dòng "KHÁC theo V22", không tính là lệch.
