@@ -112,7 +112,12 @@ function BacO({ b, title, coDeXuat }: { b: BacThangDong; title?: string; coDeXua
   const daQua = b.trangThai === 'qua' || b.trangThai === 'khai';
   /* V5 (mockup `.bac`, cùng chip ThangNho tab lớp): đã qua ✓ viền xanh lá · lần này viền nhấn đậm · còn lại viền mảnh. */
   const lanNay = b.trangThai === 'lan-nay' && !coDeXuat;
-  const lop = lanNay
+  /* GD-4a (chủ SP lời 28 ý 3; mockup ③ `.vach-bac b.wl`): mốc WL 1 / WL 2 NỔI hơn bậc Report — nhãn đỏ đậm; đã qua: nền đỏ đặc. Ở mọi nơi hiện thang. */
+  const wl = /\bWL \d|WARNING LETTER/i.test(b.nhan);
+  const lop = wl
+    ? (daQua ? 'border border-transparent bg-[rgb(var(--late-rgb))] px-[7px] font-bold text-[color:var(--surface)]'
+      : `border border-late-line bg-late-bg px-[7px] font-bold text-late ${lanNay ? 'shadow-[0_0_0_1px_rgb(var(--late-rgb))]' : ''}`)
+    : lanNay
     ? 'border border-[color:var(--accent)] bg-[color:var(--accent-soft)] px-[7px] font-bold text-[color:var(--accent)]'
     : b.trangThai === 'khai' ? 'border border-ok-line px-[7px] text-ok opacity-75'
     : b.trangThai === 'qua' ? 'border border-ok-line px-[7px] text-ok'

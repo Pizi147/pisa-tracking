@@ -330,7 +330,9 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     const khoa = gvOf('MB FOU 12', 'writing'), ha = P.normalCoreTeacher;
     sosAuto.xacNhanCase(khoa, cGv.id, XN('writing', 'FOU'));
     assert(!dongViec(ha, 'kehoach:', em.id).length && !dongViec(P.mbManager, 'kehoach:', em.id).length, 'không còn dòng Nộp kế hoạch');
-    assert(d.LOAI_HAN_CUA_VIEC.ke_hoach_bo_tro === undefined && d.nhomViecCua('phoi_hop') === 'case-hoc-thuat', 'nhóm + loại hạn');
+    assert(d.LOAI_HAN_CUA_VIEC.ke_hoach_bo_tro === undefined && d.nhomViecCua('phoi_hop') === 'y-thuc', 'nhóm + loại hạn');
+    /* GD-4a (chủ SP 14/11): Báo PH kết quả Test nằm ở tab Ý thức & Phối hợp (GV / GVCN), mục "Báo PH". */
+    assert(d.tabCuaViec({ group: 'phoi_hop', key: 'baoph:1' }, false) === 'y-thuc' && d.mucCuaViec({ group: 'phoi_hop', key: 'baoph:1' }) === 'bao-ph', 'Báo PH kết quả Test phải ở tab Ý thức & Phối hợp, mục Báo PH');
     const bp = dongViec(ha, 'baoph:', em.id);
     assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo PH kết quả Test · LT2a VIEC · Progress Test', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
     assert(!dongViec(khoa, 'baoph:', em.id).length, 'GVBM G+V không phải GVCN — không thấy Báo PH');

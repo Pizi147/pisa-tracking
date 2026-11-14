@@ -191,6 +191,17 @@ export const chuBadgeTab = (b: BadgeTab) => {
   return t('{phan} trong {n} việc', { phan, n: b.n });
 };
 export function BadgeTabSo({ b }: { b: BadgeTab }) {
+  /* GD-4a (chủ SP lời 33; mockup ⑤ `.bd.mo`): tab Chấm Speaking — viên MỜ đếm bài, ⚠ khi có bài quá hạn; không đỏ (đỏ chỉ cho việc của tôi quá hạn). */
+  if (b.bai) {
+    if (!b.bai.n) return null;
+    const chu = b.bai.quaHan ? t('{n} bài, {q} quá hạn', { n: b.bai.n, q: b.bai.quaHan }) : t('{n} bài', { n: b.bai.n });
+    return (
+      <span title={chu} className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center gap-0.5 rounded-full border px-1.5 text-xs font-bold tabular-nums text-dim surface-2"
+        style={{ borderColor: 'var(--line-strong)' }}>
+        <span aria-hidden>{b.bai.quaHan ? '⚠ ' : ''}{b.bai.n}</span><span className="sr-only">{chu}</span>
+      </span>
+    );
+  }
   if (!b.so) return null;
   return (
     <span title={chuBadgeTab(b)} className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border px-1.5 text-xs font-bold tabular-nums ${
