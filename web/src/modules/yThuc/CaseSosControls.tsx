@@ -9,7 +9,7 @@ import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BoiCanh, CanLam, DiemKq, DongTiep, MucH, NutChu, NutVaTiep, TheMuc, TrangThaiLuu, Trich, TruongDoc, type DaLuuPanel, type TiepViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, DiemKq, DongTiep, MucH, NUT_MO, NutChu, NutVaTiep, TheMuc, TrangThaiLuu, Trich, TruongDoc, type DaLuuPanel, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -362,7 +362,8 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
               <div className="-mt-1 flex flex-wrap items-center gap-x-4 gap-y-1">
                 {onGhiKetQua && <NutChu onClick={onGhiKetQua}>{t('Ghi kết quả…')}</NutChu>}
                 <NutChu onClick={() => { setCheDo('doi'); lf.datLai(); }}>{t('Đề xuất PA khác…')}</NutChu>
-                <NutChu onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</NutChu>
+                {/* GD-4a (lời 28): "Không cần theo dõi" là NÚT mờ, không chữ link. */}
+                <button type="button" className={NUT_MO} onClick={() => setCheDo('ktd')}>{t('Không cần theo dõi…')}</button>
               </div>
             </>
           )}

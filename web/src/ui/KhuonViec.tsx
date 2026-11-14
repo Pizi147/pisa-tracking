@@ -8,6 +8,8 @@ import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
 /** "✓ Đã lưu" — MỘT lớp màu cho mọi nơi báo đã lưu: LUÔN XANH (chủ SP 14/11, DESIGN.md V12 — thay K-HTT-3 xám). */
 export const LOP_DA_LUU = 'text-ok';
+/** GD-4a (chủ SP lời 28 ý 1; mockup ③ `.nut-mo`): nút phụ MỜ — vẫn là NÚT (viền, nền trong), chữ mờ; cho lối hiếm như "Không cần theo dõi…". */
+export const NUT_MO = 'btn btn-sm min-h-[44px] bg-transparent font-medium text-dim sm:min-h-[32px]';
 
 /**
  * KHUÔN PANEL LÀM VIỆC v3 (OV-12c, mockup `thiet-ke/mockup-ov12-panel-v3-2026-10-14.html` §1) — phần dùng chung đặt trong `KhungPanel`:

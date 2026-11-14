@@ -143,7 +143,6 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   );
   const choAi = (vai: string, ten: string | null) => <span className="text-[13px] text-slate-500">{t('Chờ {vai}', { vai })}{ten && <> <b className="whitespace-nowrap font-semibold text-slate-300">{ten}</b></>}</span>;
   const nutChinh = (chu: string, onClick: () => void, vien = false) => <button type="button" className={`btn w-full justify-center max-sm:h-11 ${vien ? '' : 'btn-primary'}`} onClick={onClick}>{chu}</button>;
-  const nutPhu = (chu: string, f: () => void) => <span className="mt-1 flex justify-center"><button type="button" onClick={f} className={`${LINK} px-1`}>{chu}</button></span>;
   const oXl = (x: XuLyDong) => x.status === 'thu_hoi'
     ? <OBuoc badge={<BadgeViec xuong tong="xam" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{t('Đã thu hồi')}</BadgeViec>} phu={[dich(x.nhan)]} />
     : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{dich(x.nhan)} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[t('Đã xử lý'), x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
@@ -167,7 +166,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
             <button type="button" className="btn w-full justify-center max-sm:h-11" style={{ borderColor: 'var(--accent)', color: 'var(--accent)', background: 'transparent' }} disabled={dangGhi}
               title={t('Đã xem, chưa cần xử lý')} onClick={() => void daXem(xemIds)}>{dangGhi ? t('Đang lưu…') : t('Đã xem · {n}', { n: xemIds.length })}</button>
           )}
-          {nutPhu(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }))}
+          {/* GD-4a (lời 28): "Xác nhận xử lý" là NÚT (viền), không chữ link. */}
+          {nutChinh(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }), true)}
         </>}
     </>,
   }) : null;
@@ -234,7 +234,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
           /* Rà 11/11 G3-6: vi phạm đã xem vẫn xử lý ngay được. */
           tiep: d.canManage ? (
             <span className="flex flex-wrap gap-x-3">
-              {x.trongChuoi !== false && <button type="button" className={LINK} aria-label={`${t('Xác nhận xử lý')} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>}
+              {x.trongChuoi !== false && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-label={`${t('Xác nhận xử lý')} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>}
               <button type="button" className={LINK} disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button>
             </span>
           ) : <span className="text-slate-500">—</span>,
