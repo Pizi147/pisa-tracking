@@ -60,8 +60,6 @@ type Detail = {
   student: { id: number; name: string; code: string };
   cycle: { id: number; seq: number; route: string | null; target: number | null; khongCamKet?: boolean; examPlan: ExamPlan };
   classId: number | null; classCode: string | null; branchName: string | null;
-  /** PTA 14/11: vắng lần 2 có huỷ kỹ năng không (`vangLan2Huy`; MT0 lớp thường: không). */
-  vangLan2Huy?: boolean;
   /** OV-13k: người xem ghi được "Nhận xét GV phụ trách" + sửa nhóm ô S chấm chéo (GV phụ trách S, GVCN, QL). */
   phuTrachS?: boolean;
   /** LUOT-TEN-GV: người được phân công từng ô (`writing1` / `writing2` riêng; Speaking Mock = "GV chấm chéo", null = chưa phân công). */
@@ -1002,7 +1000,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
 
       {hopDiem}
       {hop && (
-        <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false} huyLan2={d.vangLan2Huy !== false}
+        <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false}
           quanLy={d.viewer.canPlanWeek} gvcn={d.viewer.laGvcn} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
           oCoDiem={oCoDiemCua(hop.c)} hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
       )}

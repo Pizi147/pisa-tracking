@@ -999,6 +999,12 @@ api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
 }));
 
+/** LG-9: Huỷ tay / bỏ Huỷ tay một kỹ năng bài lớp thường (gồm MT0 lớp thường) đang vắng — `{ huy: boolean }`. */
+api.post('/attempts/:id/skills/:skill/huy-tay', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return absenceSvc.huyTay(principalOf(req), pInt(req, 'id'), String(req.params.skill), req.body?.huy !== false);
+}));
+
 /** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch; lý do tuỳ chọn (PR-MTa, 06/10). */
 api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

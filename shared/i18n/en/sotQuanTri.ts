@@ -342,6 +342,7 @@ export const EN_SOT_QUAN_TRI = {
   'Huỷ phần còn lại của lượt': 'Cancel the rest of the attempt',
   'Huỷ lịch lượt (bỏ tuần, giữ lượt)': 'Unschedule attempt (clear week, keep attempt)',
   'Huỷ kỹ năng (vắng 2 lần)': 'Cancel skill (absent twice)',
+  'Huỷ môn (GV chọn, bài vắng)': 'Cancel subject (teacher chose, absent)',
   'Tạo lượt Test': 'Create Test attempt',
   'Chốt vắng': 'Confirm absence',
   'Tạo lại lượt Test (số dùng lại)': 'Recreate Test attempt (number reused)',

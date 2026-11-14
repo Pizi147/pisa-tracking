@@ -489,7 +489,6 @@ const EN_B_WEB = {
   '{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. "Đưa lại vào đợt" để làm bài lại.': '{mon} leaves this round and does not count toward its result. Use "Add back" to test it again.',
   '{mon} trở lại danh sách làm bài của đợt này. Tuần cũ còn hợp lệ thì giữ, không thì về Chưa xếp lịch.': '{mon} goes back into this round. The old week is kept if still valid, otherwise Not scheduled.',
   'Tuần Test đã qua: ghi Vắng cho {mon} — không dời, không tính lần vắng.': 'The test week has passed: records Absent for {mon} — no move, no absence counted.',
-  'Ghi "-" cho {mon}: môn này dời sang {x} ngay.': 'Records "-" for {mon}: it moves to {x} straight away.',
   'tuần sau': 'next week',
   'Ghi "-" cho {mon} và chốt ngay. Lần vắng đầu máy tự dời sang tuần kế tiếp; lần 2 huỷ kỹ năng này.': 'Records "-" for {mon} and confirms it. The first absence moves it to the next week; the second cancels this paper.',
   'Ô điểm trở về trống. Điểm cũ vẫn nằm trong Lịch sử cùng lý do.': 'The score cell goes back to empty. The old score stays in History with the reason.',

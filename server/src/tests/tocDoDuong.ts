@@ -1281,6 +1281,7 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  huyTay: 60,   // LG-9: POST /attempts/:id/skills/:skill/huy-tay (Huỷ / Hoàn tác một môn lớp thường): đo 46 câu (phần lớn `refreshOutcome`) → max(46 + 10, ⌈46 × 1,3⌉)
   /** #8 (bản rà 11/11): POST /students/:id/transfer tuần = hôm nay (FT → FT) — ra lệnh + thi hành ngay + ghi_dao 21 bảng của MỘT em (thao tác hiếm). */
   chuyenNgay: 201,   // đo 154 câu, 471 dòng (không chụp: xem CLSS-6) → max(154 + 10, ⌈154 × 1,3⌉)
   /** #8: POST /students/:id/hoan-tac-chuyen-ngay — daoLai một bản ghi + nhật ký. */
