@@ -324,6 +324,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **13/11 — OVERHAUL V6 (chủ SP: "overhaul lại TOÀN BỘ tất cả các trang, panels, nút, không có giới hạn nào cả"):** session planning riêng **"PTA Overhaul"** (Fable 5.2 · high) lọc đề xuất, brainstorm, lên plan — lời chủ SP, thiết kế, plan PR đều ở `docs/superpowers/specs/2026-11-13-overhaul-v6/` (đọc `loi-chu-sp.md` trước). PTA Plan chỉ nhận danh sách PR khi chủ SP duyệt plan; lỗi F01–F07 của bản audit ChatGPT đã chuyển PTA Plan 13/11.
 
+**14/11 (chủ SP):** "Duyệt #1584" — GD-1b dòng việc một dạng "Lớp · tên việc ngắn" + "Chấm Speaking" → PTA check chung + merge.
+
 **14/11 (chủ SP):** "Giữ 3 nút như cũ" — Quyết định PA giữ Giữ nguyên · Điều chỉnh (Sửa PA · Thay PA · Xin hỗ trợ QL) · Kết thúc PA; không gộp.
 
 **14/11 (chủ SP rà #1563 vòng 2):** "1. Box nhập điểm khi bấm vào '...' có các nút Khôi phục điểm và vắng khi cần thiết không? nên có những nút cần thiết nhé 2. Số điểm band phải căn giữa chứ sao lại cứ lệch về bên phải thế 3. Có cần ngày ghi ở kết quả PA không? nếu có thì làm nó gọn lại thôi. 4. Quyết định đang là: giữ nguyên, điều chỉnh (bao gồm tự chỉnh sửa nội dung phương án hoặc đổi PA, kết thúc PA, xin hỗ trợ QL) đúng không?" → GD-3 sửa 1–3 trong #1563 (⋯ đủ nút theo trạng thái; số điểm căn giữa; Ngày ghi một dòng gọn "Ghi ngày · Đổi"); câu 4 PTA trả lời + hỏi lại (hiện: Giữ nguyên · Điều chỉnh [Sửa PA · Thay PA · Xin hỗ trợ QL] · Kết thúc riêng; PA quy chế không Thay / Kết thúc trừ QL).
