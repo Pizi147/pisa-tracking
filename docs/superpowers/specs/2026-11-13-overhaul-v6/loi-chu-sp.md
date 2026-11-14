@@ -314,3 +314,9 @@ Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đ
 > 4. Còn lại duyệt, những panels, nút các thứ cần đồng bộ với những chỗ cần động bộ khi code nhé"
 
 ĐÃ CHỐT: **mockup ③ hồ sơ HV ĐÃ DUYỆT** (`thiet-ke/v21/ho-so-hv.html`, PR #1559 đã merge, 3 chỉnh đã vào mockup). Áp chung khi code (ý 4): "Không cần theo dõi" và "Xác nhận xử lý" là NÚT (không là chữ link) ở mọi nơi có chúng — tab Ý thức lớp, panel Công việc, hồ sơ HV; thang cấp bậc vi phạm làm nổi WL 1, WL 2 ở mọi nơi hiện thang; panel / nút / dòng việc / dòng quy chế dùng chung một bộ thành phần (mockup ⑤).
+
+## 15/11 — lời 29 (chủ SP nói trong session mockup ④; session đó chuyển lại): duyệt mockup ④
+
+> "Duyệt mockup rồi nhé"
+
+ĐÃ CHỐT: **mockup ④ trang đầu TVV ĐÃ DUYỆT** (`thiet-ke/v21/trang-dau-tvv.html`, PR #1557 đã merge; bản đã áp lời 24). Các [XM] của mockup này chưa có lời riêng → làm theo đề xuất trong tệp ghi chú, trừ khi chủ SP nói khác.
