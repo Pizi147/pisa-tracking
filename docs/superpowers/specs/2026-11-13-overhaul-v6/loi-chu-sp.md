@@ -299,3 +299,9 @@ Câu hỏi của PTA Overhaul: hồ sơ học viên (mockup ③) có bỏ TVV kh
 > "không bỏ ở Hồ sơ HV"
 
 ĐÃ CHỐT: hồ sơ HV GIỮ TVV ở dòng thông tin đầu hồ sơ. Việc bỏ TVV (lời 25 ý 3) chỉ áp cho hồ sơ lớp. Mockup ③ không đổi.
+
+## 15/11 — lời 27 (chủ SP nói trong session mockup ⑤; session đó chuyển lại): duyệt mockup ⑤
+
+> "ok rồi nhé"
+
+Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đã sửa (dòng việc một dạng, "Chấm Speaking", chuông dáng 11/11). PTA Overhaul ghi nhận là **mockup ⑤ ĐÃ DUYỆT** (`thiet-ke/v21/bang-mau.html`, PR #1558 đã merge) — chủ SP báo lại nếu hiểu sai.
