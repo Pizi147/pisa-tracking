@@ -6,6 +6,12 @@ Soát tự động cả Tối và Sáng: không phần tử nào tràn / ra ngo�
 Đã xem màn thật trước khi vẽ (seed, cổng 4340 / 5340, TVV "Phan Mai" Monbay): Tổng quan TVV 5 ô to · Công việc 2 tab (Báo PH · Bổ sung hồ sơ) + khung phải trống "Chọn một việc ở danh sách" · panel Báo PH · Học viên & Lớp "HV của tôi". Đã tắt tiến trình của mình.
 Mã luật (cột "Phục vụ") theo `luat/0-luat-core-mot-trang.md` và `luat/3-y-thuc-phoi-hop-tvv.md`.
 
+## 0. Chủ SP 14/11 sáng — lời 24 (PTA Overhaul chuyển)
+
+> "Kể cả những trường hợp chỉ có 1 học sinh, thì vẫn để mọi thứ đồng bộ theo form ở bảng công việc: Lớp - Tên công việc ngắn gọn như hiện tại."
+
+Đã sửa: mọi dòng việc TVV ở K1 (tab Báo PH · Phối hợp SOS · Sau thi · Chốt ngày thi) và K7a (375) bỏ dạng "đầu em + cây việc", thành "Lớp · tên việc ngắn" + thẻ phụ tên em (link); bỏ thẻ "GV gửi" ở dòng Tình hình học tập (tên GV gửi đã ở panel) để thẻ phụ không bị cắt. Bảng "HV của tôi" (theo em) giữ nguyên. Ảnh chụp lại: k1-1, k7-1 (Tối + Sáng).
+
 ## 1. Bảng truy vết khung → thành phần → luật / việc → TRƯỚC → SAU
 
 | Khung | Thành phần | Phục vụ | Trước (web) | Sau (v21) | Loại |
@@ -14,7 +20,7 @@ Mã luật (cột "Phục vụ") theo `luat/0-luat-core-mot-trang.md` và `luat/
 | #k1 | Đầu trang "Công việc · Monbay" + Mọi hạn + **+ Task** | D5 | "Công việc · Monbay · 2 việc" + Mọi hạn + Lọc thêm | số việc sang ô "Việc" của dải (khỏi lặp); thêm "+ Task"; "Lọc thêm" giữ khi có (không vẽ — [XM-11]) | ĐỔI nhỏ |
 | #k1 | **Dải chỉ số mỏng** 5 ô: Việc · Báo PH đúng hạn · Thi tháng này · Chờ KQ thi thật · Chưa chốt lộ trình tiếp | Y-14, L-19–L-21 | 5 thẻ ô số to ở Tổng quan TVV (`TongQuanTvvV5`) | một dải cao 58, kẻ dọc, cùng số, cùng nguồn, cùng ⓘ; cả ô bấm, "›" = đổi trang, 0 không bấm | ĐỔI (R4.2) |
 | #k1 | Tab hạng mục Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ + badge | Y-14, L-20, L-21 | có (`NHOM_CV_TVV`) | giữ thứ tự, tab rỗng ẩn, badge đỏ = quá hạn | GIỮ |
-| #k1 | Danh sách trái 640: dải mục (Báo PH · Phối hợp SOS · Sau thi · Chốt ngày thi · Bổ sung hồ sơ), vạch hạn, cột hạn + cột nút cố định | Y-14–Y-19 | dòng phẳng "Báo PH · Report 1" + thẻ tên em, lớp | dáng dòng việc ① (một em một khối: tên em link · lớp · SOS; việc dưới) | ĐỔI dáng (5.3) |
+| #k1 | Danh sách trái 640: dải mục (Báo PH · Phối hợp SOS · Sau thi · Chốt ngày thi · Bổ sung hồ sơ), vạch hạn, cột hạn + cột nút cố định | Y-14–Y-19 | dòng phẳng "Báo PH · Report 1" + thẻ tên em, lớp | dòng việc MỘT dạng **"Lớp · tên việc ngắn"** kể cả việc của một em (vd "MB FOU 12 · Báo PH Report 2"); tên em là thẻ phụ (link) cạnh SOS / số vi phạm; cột hạn + cột nút giữ — lời 24, mẫu ⑤ #1558 | ĐỔI dáng (5.3, lời 24) |
 | #k1 | **HV của tôi** (khung phải khi chưa chọn việc): Học viên · Lớp · Tình trạng · **Việc cần làm** | A5, L-19, C1 | ô trống "Chọn một việc ở danh sách" | một em một dòng; tình trạng = Thi dd/mm · Đã thi · chờ KQ · SOS n; cột cuối = nút-chip KHÔNG biểu tượng (loại + số, quá hạn ⚠ + màu); em có việc trên, em chỉ có tình trạng dưới vạch, em còn lại gập "n em khác"; ô "Tìm em" | THÊM (R4.3) |
 | #k1 | Chip Báo PH / Sau thi / Chốt ngày thi → mở panel ở khung phải; "Bổ sung hồ sơ ›" → đổi trang | 5.3, lời 20 ý 3 | — | như mockup ① | THÊM |
 | #k2 | Panel Báo PH: loại · tên + hạn · em · lớp · ⋯ (Bỏ việc…) · dải ① Vi phạm ② GVCN xử lý ③ TVV báo PH · Hạn + Sửa hạn · bối cảnh chỉ đọc · Kết quả · Ngày · Nội dung · Lịch sử · Lưu / Lưu · việc tiếp › | Y-14, Y-15, Y-16 | `PanelBaoPhTvv` | giữ đủ; em + lớp ở đầu panel là link; TVV không có nút sửa vi phạm | GIỮ |
@@ -74,6 +80,7 @@ Không thao tác nào bị mất.
 |---|---|---|
 | Lời 20: chip không biểu tượng, một hàng, ⚠ khi quá hạn | Đạt (mỗi em tối đa 2 chip, một hàng ở 1440) | #k1, #k6 K6a, #k7 K7b |
 | Lời 20: "+ Task" | Đạt | #k1, #k4 |
+| Lời 24: dòng việc một dạng "Lớp · tên việc ngắn", tên em là thẻ phụ | Đạt | #k1, #k7 K7a |
 | Lời 20: bấm việc → panel / đúng trang | Đạt (chip, dòng việc, ô số) | #k1, #k5 |
 | Luật chung: 1440 + 375, Sáng + Tối, rỗng / tải / lỗi / không quyền | Đạt (không quyền: TVV chỉ xem vi phạm, không nút sửa — K2; em TVV khác không hiện — K6c) | #k1–#k7 |
 | Luật chung: chữ ngắn, không chú thích tĩnh (trừ dòng quy chế) | Đạt | mọi khung |
