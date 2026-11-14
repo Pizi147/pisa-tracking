@@ -16,3 +16,5 @@ Luật mọi PR như `07-plan-giao-dien-dot-1.md` (ponytail lite, karpathy-guide
 | **GD-10** MAT-DO các màn còn lại | Áp luật mật độ M1–M10 + bộ thành phần chung cho: Học viên & Lớp · Test (Lịch Test, Kế hoạch Test, trang lượt) · Phân tích · Quản trị · Hồ sơ GV · Lưu trữ · Tổng quan QL / Admin / CX. Không đổi bố cục → không mockup; **mỗi màn một PR nhỏ**, ảnh trước │ sau; làm nốt ô số hộp ở Tổng quan / hồ sơ lớp, tên đầu panel là link. | GD-4 | Sonnet 5.5 · high (B: Opus 5.5 · medium) | theo mẫu ⑤ | 0 |
 
 Thứ tự gợi ý: GD-4 → (GD-5 ∥ GD-6 ∥ GD-7 ∥ GD-8, mỗi cái một màn) → GD-9 → GD-10. Sau GD-10: nghiệm thu 5 kịch bản ở `04-thiet-ke.md` mục 8.
+
+**Bổ sung 15/11 (lời 33):** badge tab "Chấm Speaking" = dáng mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng badge menu (`04-thiet-ke.md` mục 15) — làm trong GD-4 (thanh tab chung); nếu GD-1 đã merge với badge đỏ thì sửa ở GD-4.

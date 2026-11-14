@@ -348,3 +348,29 @@ Câu hỏi của PTA Overhaul (câu 12, 13, 14 ở `08-bao-cao-sang.md`): (1) MT
 2. **Việc Bước tiếp sau thi: giữ như mã** — việc giao cho TVV của em, mọi TVV cùng chi nhánh làm thay được. Sửa chữ N6 trong tài liệu.
 3. **Xoá học viên / lớp trống: QL làm được** (giữ như mã; có Thùng rác 30 ngày). Sửa chữ Rulebook.
 Câu 1–11 ở `08`: coi là đã chốt theo năm mockup đã duyệt (lời 27–30). Còn hỏi: câu 15, 16, 17.
+
+## 15/11 — lời 33: ba câu nhỏ (câu 15, 16, 17 ở `08`) theo đề xuất
+
+Đề xuất của PTA Overhaul: (15, đụng luật N5) thẻ "Thu hồi xử lý vi phạm" hết 5 ngày QL chưa duyệt → tự chốt theo GVCN, như thẻ xử lý; (16) chip "Việc cần làm" quá hạn: giữ như mockup, mọi loại việc một dáng (⚠ + đỏ), không tách riêng Nhập điểm; (17) badge tab "Chấm Speaking": badge mờ (số bài) + ⚠ khi có bài quá hạn, không đỏ, không cộng vào badge menu.
+
+> "Theo đề xuất hết"
+
+ĐÃ CHỐT:
+1. **Thẻ "Thu hồi xử lý vi phạm" hết hạn duyệt (5 ngày, theo Hạn mặc định) mà QL chưa duyệt → tự chốt theo GVCN** (thu hồi có hiệu lực: dòng "Đã thu hồi", bậc tính lại, TVV đã báo thì có việc "Báo lại PH") — như thẻ xử lý vi phạm (D3). ĐỔI luật đang chạy (nay chờ mãi) → LG-10 ở `05-plan-logic-luat.md`, gửi PTA Plan.
+2. **Chip "Việc cần làm" quá hạn: giữ như mockup** — mọi loại việc cùng một dáng ⚠ + đỏ.
+3. **Badge tab "Chấm Speaking": mờ (số bài) + ⚠ khi có bài quá hạn**; không đỏ; không cộng vào badge menu / chuông. Thắng hình mockup ① (badge đỏ "6", [XM-2]). Ghi ở `04-thiet-ke.md` mục 15.
+Cả 17 câu ở `08-bao-cao-sang.md` đã có trả lời.
+
+## 15/11 — lời 34: mockup các màn còn lại · rà đồng bộ · nâng cấp (kể cả Phân tích)
+
+Bối cảnh: chủ SP hỏi "không còn mockup nào cần làm nữa hả?"; PTA Overhaul trả lời theo plan thì hết (các màn còn lại chỉ làm gọn mật độ ở GD-10, không mockup), đề xuất làm thêm mockup Học viên & Lớp và Lịch Test tuần.
+
+> "1. Luôn nhớ là cần đồng bộ những chỗ cần đồng bộ, với những gì tôi đã chốt tất nhiên. Làm mockup những phần còn lại đi.
+> 2. Rà soát xem có chỗ nào tôi đã chốt ở các mockup trước rồi chưa đồng bộ, hoặc đơn thuần là chỗ nào cùng chức nằng mà chưa có tính đồng bộ thì cũng làm luôn nhé, gửi ảnh tôi xem trước xem có cần sửa gì không
+> 3. Nững chỗ bạn đề xuất làm mockup nâng cấp bạn cứ mockup nhé, phần phân tích cũng xem lại xem bạn thấy ổn chưa, nâng cấp được gì thì cũng brainstorm làm nhé /superpowers:brainstorming"
+
+PTA Overhaul hiểu:
+1. **Làm mockup cho các màn còn lại** (nay ở GD-10 chỉ "làm gọn mật độ, không mockup"): Học viên & Lớp · Test (Lịch Test tuần, Kế hoạch Test, trang lượt) · Phân tích · Quản trị · Hồ sơ GV · Lưu trữ · Tổng quan QL / Admin / CX. Luật xuyên suốt: **chỗ cần đồng bộ thì đồng bộ, theo đúng những gì chủ SP đã chốt**.
+2. **Rà đồng bộ:** (a) điều đã chốt ở mockup ①–⑤ / lời 17–33 mà mockup nào đó chưa theo; (b) chỗ cùng chức năng mà dáng / cách làm chưa giống nhau (kể cả chưa có lời chốt). Sửa luôn vào mockup, **gửi ảnh chủ SP xem trước** khi coi là xong.
+3. **Nâng cấp:** các màn PTA Overhaul đề xuất (Học viên & Lớp, Lịch Test tuần) cứ làm mockup; **Phân tích** xem lại, thấy nâng cấp được gì thì brainstorm rồi làm.
+Hệ quả cho plan: GD-10 ("không mockup") chờ đợt mockup này; `09-plan-giao-dien-dot-2.md` sẽ sửa sau khi mockup được duyệt.
