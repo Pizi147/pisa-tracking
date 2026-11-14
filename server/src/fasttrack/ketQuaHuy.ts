@@ -56,7 +56,7 @@ export function diemHuyMo(): Set<string> {
  * mới cất (khôi phục lại được). Gọi trong tx của nơi gọi (quyền đã kiểm); nơi gọi tính lại kết quả.
  */
 export function traDiemCat(conn: any, p: Principal, attemptId: number, ban: ReturnType<typeof banMoCuaO>): void {
-  const lyDo = 'Khôi phục điểm';
+  const lyDo = 'Khôi phục';   // GD-11c: một tên với ⋯ "Khôi phục"
   for (const { k, d } of ban) {
     const hien = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, d.skill) as any;
     if (hien && CO_DIEM(hien)) {

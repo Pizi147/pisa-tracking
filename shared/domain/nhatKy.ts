@@ -11,7 +11,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'attempt.cancel_appointment': 'Huỷ lịch Test môn', 'attempt.cancel_part': 'Huỷ phần còn lại của lượt',
   'attempt.unschedule': 'Huỷ lịch lượt (bỏ tuần, giữ lượt)',
   'attempt.huy_vang': 'Huỷ kỹ năng (vắng 2 lần)',
-  'attempt.huy_tay': 'Huỷ môn (GV chọn, bài vắng)',
+  'attempt.huy_tay': 'Huỷ điểm',   // GD-11c: một tên với ⋯ "Huỷ điểm" (NHAP-DIEM-a) — dòng nhật ký cũ cũng đọc tên mới
   'attempt.create': 'Tạo lượt Test', 'attempt.no_show_settled': 'Chốt vắng', 'attempt.recreate': 'Tạo lại lượt Test (số dùng lại)',
   'attempt.restore_part': 'Khôi phục phần đã huỷ', 'attempt.restore_skill': 'Khôi phục kỹ năng', 'attempt.khoi_phuc': 'Khôi phục lượt MT',
   'attempt.skip_skill': 'Xoá kỹ năng khỏi MT', 'attempt.sit_status': 'Ghi đã làm bài / vắng', 'attempt.skill_week': 'Dời lịch Test',
@@ -63,7 +63,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'score.lich_su': 'Nhập điểm MT cũ',
   'score.huy_vuot': 'Huỷ điểm do dời vượt',
   'ket_qua_huy.bo': 'Bỏ kết quả đã huỷ khi xếp lại lượt',
-  'score.khoi_phuc': 'Khôi phục điểm',
+  'score.khoi_phuc': 'Khôi phục',   // GD-11c: một tên với ⋯ "Khôi phục" (NHAP-DIEM-a)
   'report.unlock': 'Mở khoá báo cáo', 'report.relock': 'Khoá lại báo cáo',
   'role.permission.grant': 'Cấp quyền cho vai', 'role.permission.revoke': 'Bỏ quyền của vai', 'role.retired': 'Bỏ vai cũ', 'rule.changed': 'Đổi luật',
   'schedule.autoplan': 'Tự xếp lịch Test',

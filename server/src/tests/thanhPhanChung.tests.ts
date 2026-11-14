@@ -447,5 +447,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
       assert(!/title=\{t\('Bạn không được phân công kỹ năng này'\)\}/.test(x), 'Chỉ xem: lý do qua lyDoChiDoc');
     }
     assert(/k === 'writing' && <NutLuat label=\{t\('Cách tính Writing'\)\}>/.test(md), 'ⓘ công thức Writing cạnh tên');
+    const nk = doc('shared/domain/nhatKy.ts');
+    assert(/'attempt\.huy_tay': 'Huỷ điểm'/.test(nk) && /'score\.khoi_phuc': 'Khôi phục'/.test(nk) && !/Huỷ môn|Khôi phục điểm/.test(nk), 'nhật ký: một tên Huỷ điểm / Khôi phục');
   });
 }
