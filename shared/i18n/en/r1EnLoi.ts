@@ -236,6 +236,8 @@ export const EN_R1_EN_LOI = {
   'Thiếu tên bài.': 'Paper name missing.',
   'Thẻ không có học viên.': 'The card has no student.',
   'Trang này dành cho TVV.': 'This page is for counsellors.',
+  'Chỉ xem được học viên của chính mình.': 'You can only view your own students.',
+  'Thiếu TVV.': 'Counsellor missing.',
   'Trạng thái học viên đã đổi sau quyết định — sửa ở hồ sơ học viên.': 'The student\'s status changed after the decision — edit it on the student profile.',
   'Tuần bắt đầu đã tới — ra quyết định mới.': 'The start week has arrived — make a new decision.',
   'Tên lớp chưa theo mẫu — gõ số lớp để máy đặt lại tên.': 'The class name is not in the standard format — type the class number to rename it.',
