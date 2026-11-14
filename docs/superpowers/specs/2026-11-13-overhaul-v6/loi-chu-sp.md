@@ -457,3 +457,15 @@ Bối cảnh: mockup ⑥ ⑧ ⑩ đang sửa theo lời 37, 38; PTA Overhaul đ�
 
 ĐÃ CHỐT: mockup ⑥ ⑧ ⑩ **không cần chủ SP xem lại** — session sửa xong, PTA Overhaul rà theo lời 37 / 38 rồi **merge và gửi plan code cho PTA Plan luôn**. Session / việc đã xong thì archive. (PR code đổi bố cục vẫn dừng ở ảnh cặp chờ chủ SP như luật chung — chủ SP chưa đổi phần này.)
 Đã làm trong lượt: archive session mockup ⓪ ⑦ ⑨ (đã merge); viết `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18, thay GD-10).
+
+## 15/11 — lời 40 (chủ SP nói trong session mockup ⑥; session đó chuyển lại nguyên văn): em đã thi thật thì không hiện MT gần nhất / Test sắp tới
+
+> "thi thật rồi thì khi expand không cần bảng MT gần nhất và test sắp tới nữa / chỉ có HV chưa thi thì mới có bảng thông tin của MT gần nhất chứ, động não liên tục và cái gì logic thì mình làm chứ đừng có làm vô tội vạ như thế"
+
+ĐÃ CHỐT (tab Lịch thi, mockup ⑥ — PR #1627 đã merge): phần mở dưới hàng đổi theo TRẠNG THÁI THI của em —
+- **Chưa thi:** MT gần nhất · Hỗ trợ đang mở · Test sắp tới · Phụ trách · + Ghi chú · Lịch sử.
+- **Đã thi, chờ KQ:** Kỳ thi (ngày · nơi · có KQ khoảng) · KQ "Chưa có" · Phụ trách · Ghi kết quả · + Ghi chú · Lịch sử.
+- **Có KQ:** KQ thi thật so Target · Kỳ thi · Phụ trách · Chọn bước tiếp · + Ghi chú · Lịch sử.
+Session mockup áp thêm cùng logic (PTA Overhaul đồng ý): trên hàng, em đã thi thì ô "MT gần nhất" ghi "—"; thẻ 375 của em đã thi dòng 2 chỉ còn Target; SOS giữ tới khi chọn bước tiếp.
+
+BÀI HỌC CHUNG (áp cho mọi mockup và mọi PR code): **thông tin hiện ra phải theo trạng thái của đối tượng** — không bày một khuôn cố định cho mọi hàng; trước khi đặt một khối / cột, hỏi "ở trạng thái này người xem còn cần nó không?" (em đã thi không cần MT gần nhất; việc đã xong không báo hạn; em Tạm dừng không hiện việc…). Cái gì hiển nhiên theo logic thì làm, không chờ nhắc.
