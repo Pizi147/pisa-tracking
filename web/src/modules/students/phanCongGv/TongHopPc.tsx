@@ -54,7 +54,7 @@ function BangTong({ loai, dem, demNhap, gv, to, onTo, toiDa }: {
         <h2>{tieu}</h2>
         <NutLuat label={t('Cách đếm')}>{loai === 'day' ? t(CACH_DEM) : t('Số lớp chủ nhiệm. Bấm tên GV để tô các lớp GV đó chủ nhiệm. Đếm GVCN hôm nay — ô chờ đổi tính từ tuần hiệu lực.')}</NutLuat>
         <span className="phai">
-          <select className="pc-xep" aria-label={t('Xếp theo')} value={xep} onChange={(e) => setXep(e.target.value as XepPc)}>
+          <select className="pc-xep o-chon-vai" aria-label={t('Xếp theo')} value={xep} onChange={(e) => setXep(e.target.value as XepPc)}>
             <option value="tong">{t('Xếp: Tổng')}</option>
             <option value="ft">{t('Xếp: FT')}</option>
             <option value="th">{t('Xếp: Lớp thường')}</option>

@@ -65,7 +65,9 @@ export async function runPrKhungTests(t: Pick<YThucTestKit, 'check' | 'assert'>)
   /* OV-14b (rà UX 17/10, chủ SP chọn gói sửa nhỏ): BoLocDoan điện thoại xuống dòng — nút cuối không còn bị cắt; HangTab giữ vuốt ngang. */
   check('K6 · điện thoại: BoLocDoan xuống dòng (OV-14b), HangTab một hàng vuốt ngang có mép mờ (chủ sản phẩm 06/10, Q2 = B)', () => {
     assert(/max-sm:flex-wrap/.test(than(ui, 'BoLocDoan')) && !/max-sm:\[mask-image:/.test(than(ui, 'BoLocDoan')), 'BoLocDoan điện thoại phải xuống dòng (OV-14b)');
-    assert(/max-sm:\[mask-image:/.test(doc('web/src/ui/HangTab.tsx')), 'HangTab thiếu mép mờ max-sm');
+    /* PTA rà #1690: mép mờ theo vị trí cuộn (trái khi đã cuộn qua tab đầu, phải khi còn tab sau) — `maskImage` khi hàng tab tràn. */
+    const ht = doc('web/src/ui/HangTab.tsx');
+    assert(/maskImage: matMep\(mep\)/.test(ht) && /onScroll=\{doMep\}/.test(ht) && /overflow-x-auto/.test(ht), 'HangTab thiếu mép mờ khi tràn (vuốt ngang)');
   });
 
   check('K7 · Học viên & Lớp: đầu cột dính sát mép <main> (md:-top-5), hàng lớp mở dính ngay dưới (top trừ đệm)', () => {

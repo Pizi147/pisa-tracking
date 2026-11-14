@@ -214,10 +214,18 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
         ...ung.filter((g) => !dayLop(g).length).map((g) => ({ id: g.id, ten: g.ten, phu: `${hienTai(g)}${soNguoi(g.id)}`, ...(a.length ? { nhom: t('GV khác · {cn}', { cn: tenCn }) } : {}) })),
       ];
     }
+    /* GD-13c (mockup ⑥ K6): ô môn cũng nhóm "Đang dạy lớp này" (người giữ ô nào của lớp, kể cả GVCN) → "GV khác · {cn}"; trong nhóm: dạy được môn trước. */
     const o = oPhanCong(l.ct, l.kyNang).find((x) => x.khoa === khoa);
     const duoc = (g: GvPc) => (o ? nhanDayDuoc(l.ct, o, g.kyNang) : []);
-    return [...ung].sort((x, y) => Number(duoc(y).length > 0) - Number(duoc(x).length > 0))
-      .map((g) => ({ id: g.id, ten: g.ten, phu: [`${hienTai(g)}${soNguoi(g.id)}`, duoc(g).length ? t('dạy được {ds}', { ds: duoc(g).join(', ') }) : ''].filter(Boolean).join(' · ') }));
+    const oLop = (g: GvPc) => oDongPc(l).filter((k) => c[k] === g.id).map((k) => (k === 'gvcn' ? t('GVCN') : tenMonNgan(l.ct, k)));
+    const phu = (g: GvPc) => [`${hienTai(g)}${oLop(g).length ? `${t('{mon} lớp này', { mon: oLop(g).join(', ') })} · ` : ''}${soNguoi(g.id)}`,
+      duoc(g).length ? t('dạy được {ds}', { ds: duoc(g).join(', ') }) : ''].filter(Boolean).join(' · ');
+    const xep = (ds: GvPc[]) => [...ds].sort((x, y) => Number(c[khoa] === y.id) - Number(c[khoa] === x.id) || Number(duoc(y).length > 0) - Number(duoc(x).length > 0));
+    const a = xep(ung.filter((g) => oLop(g).length));
+    return [
+      ...a.map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), nhom: t('Đang dạy lớp này') })),
+      ...xep(ung.filter((g) => !oLop(g).length)).map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), ...(a.length ? { nhom: t('GV khác · {cn}', { cn: tenCn }) } : {}) })),
+    ];
   };
   const oCua = (l: LopPc, khoa: string, h?: number, c?: number) => {
     const a = goc(l)[khoa] ?? ''; const v = chonDong(l)[khoa] ?? '';
@@ -305,14 +313,19 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
   const soNghi = gv.filter((g) => g.nghi).length;
   const lopMo = mo ? lop.find((l) => l.id === mo.classId) : null;
   const lopCho = hopCho ? lop.find((l) => l.id === hopCho.classId) : null;
+  /* GD-13c (⑥ K6): ô tìm có kính lúp như các tab khác (`o-tim`); chip "Thiếu GV {n}" dáng ⑥, số 0 không bấm (trừ khi đang bật). */
   const tim = (
-    <input className="field pc-tim" aria-label={t('Tìm lớp, GV')} placeholder={t('Tìm lớp, GV')} autoComplete="off" spellCheck={false} value={q} onChange={(e) => onQ(e.target.value)} />
+    <span className="o-tim max-sm:flex-1">
+      <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="7" /><path d="m20 20-3.5-3.5" /></svg>
+      <input className="field pc-tim h-9 w-full text-sm sm:w-[260px] max-sm:min-h-[44px]" aria-label={t('Tìm lớp, GV')} placeholder={t('Tìm lớp, GV')} autoComplete="off" spellCheck={false}
+        value={q} onChange={(e) => onQ(e.target.value)} />
+    </span>
   );
-  const nutThieu = (
-    <button type="button" className="nut-loc" aria-pressed={thieu} title={t('Ô Chưa có + ô của GV đã nghỉ')} onClick={() => setThieu((v) => !v)}>
-      {t('Thiếu GV · {n} ô', { n: oThieu })}
-    </button>
-  );
+  const nutThieu = oThieu === 0 && !thieu
+    ? <span className="nut-loc nut-loc-tat" aria-disabled="true">{t('Thiếu GV')} <b className="tabular-nums">0</b></span>
+    : <button type="button" className="nut-loc" aria-pressed={thieu} aria-label={t('Thiếu GV · {n} ô', { n: oThieu })} title={t('Ô Chưa có + ô của GV đã nghỉ')} onClick={() => setThieu((v) => !v)}>
+        {t('Thiếu GV')} <b className="tabular-nums">{oThieu}</b>
+      </button>;
   const rong = !lop.length
     ? <div className="pc-rong"><span className="tieu">{t('Chi nhánh chưa có lớp nào')}</span>{coTheTaoLop && onTaoLop && <button type="button" className="btn btn-primary" onClick={onTaoLop}>{t('+ Lớp mới')}</button>}</div>
     : !hien.length
@@ -328,10 +341,10 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
           <span>{t('Chỉ xem — đổi phân công là việc của Quản lý chi nhánh.')}</span>
         </div>
       )}
-      <section className="card pc-the-lop-bang" aria-label={t('Phân công theo lớp')}>
-        <div className="pc-cong-cu">
+      <div className="loc-hvl pc-cong-cu">
           {tim}
           <div className="pc-cong-cu-2">
+            <span aria-hidden className="vach-loc max-sm:hidden" />
             {nutThieu}
             <span className="phai">
               <span><b>{lop.length}</b> {t('lớp')} · <b>{gv.length}</b> {t('GV')}{soNghi > 0 && !hep && <span className="pc-phu"> {t('({n} đã nghỉ)', { n: soNghi })}</span>}</span>
@@ -342,7 +355,8 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
               )}
             </span>
           </div>
-        </div>
+      </div>
+      <section className="card pc-the-lop-bang" aria-label={t('Phân công theo lớp')}>
         {gvTo && (
           <DaiToPc g={gvTo} dem={dem.get(gvTo.id)} demNhap={demNhap.get(gvTo.id)} soLop={lopCuaTo.length} hoSo={coTheMoHoSo(gvTo.id)} gon={hep}
             onChiHien={() => onQ(gvTo.ten)} onBo={() => setTo(null)} />

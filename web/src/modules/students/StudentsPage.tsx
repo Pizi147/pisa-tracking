@@ -352,6 +352,13 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   /* Chip vai và "Đã thi · chờ kết quả" cùng `loc` — bật chip này tắt chip kia (như bảng V4 của vai); `view=` của link cũ bỏ khi bấm. */
   const batChipVai = (k: string | null) => setParam({ loc: k, view: null });
 
+  /* GD-13c (⑥ K6b, R6.6): Phân công GV là MỘT chi nhánh — vai xem nhiều chi nhánh (Quản trị) mở tab thì vào thẳng chi nhánh gần nhất (nhớ ở `nhoChiNhanh`,
+     chưa có thì chi nhánh đầu) thay màn "Chọn chi nhánh"; đổi ở ô Xem như các tab khác. */
+  const canVaoCn = goc === 'phan-cong' && !!pv && pv.dangDung !== 'chi-nhanh' && pv.coThe.includes('chi-nhanh');
+  const cnGanNhat = canVaoCn && branches.data?.length
+    ? (() => { const nho = docChiNhanhDaNho(session?.user?.id); return branches.data.find((b) => b.id === nho)?.id ?? branches.data[0].id; })() : null;
+  useEffect(() => { if (cnGanNhat !== null) setParam({ phamVi: 'chi-nhanh', cn: String(cnGanNhat), branchId: null }); }, [cnGanNhat]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   if ('chuyenDen' in doc) return <Navigate to={`${doc.chuyenDen}${branchId ? `?cn=${branchId}` : ''}`} replace />;
 
   /* TVV / CX: chỉ phạm vi của vai (đang dùng phạm vi khác qua link cũ thì vẫn hiện để đổi được). */
@@ -377,7 +384,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   /* GD-13a (⑥ K2, R6.2): ô "Xem" = ô chọn có tìm cùng dáng ô lọc (nhãn "Xem" · giá trị · ▾), nhóm Chi nhánh · Khác (TVV: Khác trước) — giữ URL `phamVi` / `cn`. */
   const mucXem = [
     ...coCn ? cnDs.map((b) => ({ gt: `cn:${b.id}`, ten: b.name, nhom: t('Chi nhánh') })) : [],
-    ...mucPv.map((v) => ({ gt: `pv:${v}`, ten: v === 'tat-ca' ? t('Mọi chi nhánh') : dich(PHAM_VI_NHAN[v]), nhom: t('Khác') })),
+    /* GD-13c: tab Phân công GV không có "Mọi chi nhánh" / phạm vi khác (một bảng = một chi nhánh). */
+    ...(goc === 'phan-cong' && coCn ? [] : mucPv).map((v) => ({ gt: `pv:${v}`, ten: v === 'tat-ca' ? t('Mọi chi nhánh') : dich(PHAM_VI_NHAN[v]), nhom: t('Khác') })),
   ].sort((a, b) => (vai === 'tvv' ? Number(a.nhom === t('Chi nhánh')) - Number(b.nhom === t('Chi nhánh')) : 0));
   const iXem = mucXem.findIndex((x) => x.gt === giaTriXem);
   const oXem = pv && (mucPv.length + (coCn ? Math.max(cnDs.length, 1) : 0) > 1) && (
@@ -481,11 +489,12 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       </div>
       {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:flex-1">{oXem}{chonKhung}</div>}
 
+      {/* PTA rà #1690: 375 nhãn tab gọn (SOS · Phân công) để cả hàng tab thấy được, không cuộn mất "Tất cả". */}
       <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
-        ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
+        ...(admin ? [] : [{ key: 'sos' as const, label: dienThoai ? 'SOS' : t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
-        ...(coGocPc ? [{ key: 'phan-cong' as const, label: t('Phân công GV') }] : []),
+        ...(coGocPc ? [{ key: 'phan-cong' as const, label: dienThoai ? t('Phân công') : t('Phân công GV') }] : []),
       ]} />
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-3 của trang → khoảng cách không đổi. */}
@@ -632,7 +641,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
         )}
 
         {/* key: đổi chi nhánh (đã OK "rời đi sẽ mất") → góc dựng lại, nháp chi nhánh cũ không theo sang. */}
-        {goc === 'phan-cong' && (
+        {/* GD-13c (Turso): dựng góc khi đã biết phạm vi + không còn chờ vào chi nhánh gần nhất — bỏ lượt `/phan-cong` không chi nhánh đọc thừa lúc mở tab. */}
+        {goc === 'phan-cong' && pv && cnGanNhat === null && !(canVaoCn && !branches.data) && (
           <GocPhanCongGv key={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? 0 : 0} branchId={pv?.dangDung === 'chi-nhanh' ? pv.chiNhanh ?? null : null} khung={khung}
             q={params.get('tim') ?? ''} onQ={(v) => setParam({ tim: v || null })}
             coTheTaoLop={!!data?.coTheTaoLop} onTaoLop={() => setTaoLop(true)}
