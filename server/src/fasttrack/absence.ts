@@ -14,6 +14,8 @@ import {
   checkSkillWeekMove, ensureSkillRows, kiemVuot, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu, tuanCuoiSauKhiDoi,
 } from './skillSchedule.ts';
 import { moLaiLuotNeuHuy, refreshOutcome, resultOf, saveScore, setSkillSkip } from './attempts.ts';
+import { banMoCuaO, catDiemO, traDiemCat } from './ketQuaHuy.ts';
+import { reportRegularNoShow } from '../normal/regular.ts';
 
 /**
  * VẮNG MOCK TEST — nơi sở hữu DUY NHẤT của luật "-" (N38, chủ SP 05/11 — đặc tả `2026-11-04-luat-mt-thong-nhat-design.md`).
@@ -782,7 +784,10 @@ export function goVangDaChot(p: Principal, attemptId: number, skill: string, dau
 export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: string | null | undefined, today: string = demoToday()) {
   const conn = db();
   let a = loadAttempt(attemptId);
-  if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
+  /* NHAP-DIEM-a (chủ SP 14/11 "GV nhập có quyền ghi vắng, bỏ vắng"): + người nhập được ô của kỹ năng — như gõ "-" ở ô. */
+  if (!canRequest(p, a) && !(a.class_id && entrySkillsOf(skill as AssessedSkill).some((e) => scoreEditPath(p, a.class_id, e, { lich_su: a.lich_su ?? 0, kind: a.kind }) !== null))) {
+    throw forbidden('Chỉ người nhập được ô này, GVCN của lớp và Quản lý báo vắng được.');
+  }
   if (isRatio(a)) throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');   // chủ SP 14/11: MT0 báo vắng như Mock (N38)
   if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
@@ -837,41 +842,88 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
 }
 
 /**
- * LG-9 (chủ SP 15/11: "test lớp thường không hủy nhưng có lựa chọn cho GV chọn hủy nếu cần thiết… không thể đợi vắng mãi được";
- * "test lớp thường là Progress test và Final test"): HUỶ TAY một môn bài Progress / Final LỚP THƯỜNG đang vắng (MT0 tự huỷ ở lần 2 — N38). "-" ở đây chỉ dời, không tự huỷ; GV chọn
- * dừng thì bấm ⋯ › Huỷ môn — cùng kết cục huỷ-vì-vắng của N38 (`huyVangNoi`: `cancelled` + `huy_vang`, giữ tuần, hết việc ở mọi nơi qua
- * `viewSkill` / `dotHoanTat`). `huy = false` = Hoàn tác / Khôi phục một bấm: về đúng tuần, giữ dấu "-" và bộ đếm. Không hộp xác nhận
- * (khôi phục được), lịch sử ghi ai · lúc. Quyền: GV nhập được môn đó, GVCN lớp, Quản lý.
+ * NHAP-DIEM-a (chủ SP 14/11 "hủy điểm = xóa khỏi danh sách điểm trong kĩ năng MT, coi như không làm - và có thể khôi phục"; "chỉ hủy 1 kĩ năng";
+ * đặc tả `2026-11-14-nhap-diem-tu-do-design.md` cách A): HUỶ ĐIỂM / KHÔI PHỤC MỘT KỸ NĂNG của một em — MỘT đường cho Mock, MT0, lớp thường
+ * (gộp Huỷ điểm `keHoach.huyDiem` + Huỷ môn LG-9 + Khôi phục điểm `khoiPhucDiem`). `skill` = kỹ năng hoặc ô của nó (W1 / W2 → cả Writing, 6b).
+ *  · Huỷ: ô có điểm → cất (`catDiemO`, giữ nhận xét / nhóm / ngày nhập đầu) rồi trống; kỹ năng → "Đã huỷ" (`cancelled` + `huy_vang`, giữ tuần,
+ *    `huyVangNoi` — cùng kết cục huỷ vắng 2 lần N38): hết việc / nợ / quá hạn ở mọi nơi (`conPhaiNhap`), kết quả bài tính trên kỹ năng còn lại.
+ *  · Khôi phục: kỹ năng về đúng tuần, số lần vắng giữ; "-" của chính tuần đó (lần vắng đã huỷ) gỡ — vắng tiếp lại huỷ theo N38; điểm cất trả đủ
+ *    (`traDiemCat`, ô đã có điểm mới → hỏi). Kỹ năng chưa huỷ mà còn điểm cất (xoá ô / "-" đè điểm) → trả điểm, "-" đè lên thì Bỏ vắng trước.
+ * Ai: người nhập được ô (GV môn, GV Speaking chéo), GVCN lớp, Quản lý. Không hộp xác nhận (Hoàn tác / Khôi phục), không khoá N15 (thao tác điểm).
  */
-export function huyTay(p: Principal, attemptId: number, skill: string, huy: boolean) {
+export function huyDiemKn(p: Principal, attemptId: number, skill: string, huy: boolean, lyDo?: string | null, today: string = demoToday()) {
   const conn = db();
   const a = loadAttempt(attemptId);
-  if (!isRatio(a)) throw loi(400, 'Chỉ Progress / Final lớp thường có Huỷ môn — MT vắng 2 lần tự huỷ.');
-  const o = [skill];
-  if (!canRequest(p, a) && !can(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill })) {
-    throw loi(403, 'Chỉ GV của môn, GVCN lớp hoặc Quản lý huỷ được bài này.');
-  }
+  const thuong = isRatio(a);
+  const kn = thuong ? skill : assessedSkillOf(skill);
+  const o: string[] = thuong ? [kn] : entrySkillsOf(kn as AssessedSkill);
+  const lq = { lich_su: a.lich_su ?? 0, kind: a.kind };
+  const duoc = canRequest(p, a) || (!!a.class_id && o.some((e) => scoreEditPath(p, a.class_id, e, lq) !== null
+    || can(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill: e })));
+  if (!duoc) throw loi(403, 'Chỉ người nhập được ô này, GVCN lớp hoặc Quản lý huỷ / khôi phục được điểm.');
+  if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ — khôi phục lượt trước.');
   return tx(() => {
-    const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
-    if (!row?.required) throw loi(400, '{skill} không nằm trong bài này.', { skill: skillName(skill) });
-    const diem = conn.prepare(`SELECT band, raw_score, no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')})`)
-      .all(attemptId, ...o) as any[];
+    const row = ensureSkillRows(attemptId).find((r) => r.skill === kn);
+    if (!row?.required) throw loi(400, '{skill} không nằm trong bài này.', { skill: skillName(kn) });
+    const ly = lyDo?.trim() || null;
     if (huy) {
-      if (row.sit_status === 'cancelled') return { ok: true };   // bấm lại: vô hại
-      if (diem.some((d) => d.band !== null || d.raw_score !== null)) throw loi(400, '{skill} đã có điểm — không huỷ được.', { skill: skillName(skill) });
-      if (!diem.some((d) => d.no_show_period_id !== null)) throw loi(400, '{skill} chưa vắng lần nào — chưa cần huỷ.', { skill: skillName(skill) });
-      huyVangNoi(conn, p.userId, a, row, row.absence_move_count, 'Huỷ tay');
-    } else {
-      if (row.sit_status !== 'cancelled' || !row.huy_vang) return { ok: true };
-      conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled', huy_vang = 0, updated_at = ? WHERE id = ?`).run(nowIso(), row.id);
-      logSchedule(attemptId, { action: 'skill_bo_huy_tay', field: skill, oldValue: null, newValue: row.period_code, reason: 'Khôi phục (bỏ Huỷ môn)', actor: p.userId });
-      recomputeCompletionWeek(attemptId, p.userId);
+      if (row.sit_status === 'cancelled') return { ok: true as const, o: [] as string[] };   // bấm lại: vô hại
+      const huyO: string[] = [];
+      for (const e of o) {
+        const s = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, e) as any;
+        if (!s || [s.raw_score, s.band, s.c1, s.c2, s.c3, s.c4].every((v) => v == null)) continue;
+        catDiemO(conn, { attemptId, row: s, actor: p.userId, lyDo: ly ?? 'Huỷ điểm' });
+        conn.prepare(`UPDATE assessment_scores SET raw_score = NULL, c1 = NULL, c2 = NULL, c3 = NULL, c4 = NULL, band = NULL, entered_by = NULL, entered_at = NULL
+                       WHERE id = ?`).run(s.id);
+        writeAudit({
+          actorUserId: p.userId, action: thuong ? 'regular.score' : 'score.edit', entityType: thuong ? 'assessment_score' : 'assessment_attempt',
+          entityId: thuong ? s.id : attemptId, entityLabel: thuong ? `${a.kind} · ${e}` : e,
+          before: s, after: { ...s, raw_score: null, c1: null, c2: null, c3: null, c4: null, band: null, entered_by: null, entered_at: null, lyDo: ly ?? 'Huỷ điểm' },
+        });
+        huyO.push(e);
+      }
+      rutDeNghiDoi(attemptId, kn);
+      huyVangNoi(conn, p.userId, a, row, row.absence_move_count, ly ?? 'Huỷ điểm');   // gồm tính lại tuần hoàn tất + ô chờ
+      refreshOutcome(p, attemptId);
+      return { ok: true as const, o: huyO };
+    }
+    const ban = banMoCuaO(conn, attemptId, o);
+    const daHuy = row.sit_status === 'cancelled';
+    if (!daHuy && !ban.length) throw loi(400, '{x} không có điểm đã huỷ để khôi phục.', { x: skillName(kn) });
+    if (daHuy) {
+      /* N38 L2: "-" của CHÍNH tuần đang giữ là lần vắng vừa huỷ — gỡ, không thì gõ "-" lại ở tuần đó "vô hại", không huỷ lại được. */
+      if (row.planned_period_id) {
+        conn.prepare(
+          `UPDATE assessment_scores SET no_show_period_id = NULL, no_show_by = NULL, no_show_at = NULL, no_show_late = 0, no_show_settled_at = NULL
+            WHERE attempt_id = ? AND skill IN (${o.map(() => '?').join(',')}) AND no_show_period_id = ? AND no_show_cu = 0 AND band IS NULL AND raw_score IS NULL`,
+        ).run(attemptId, ...o, row.planned_period_id);
+      }
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled', huy_vang = 0, absent_from_no_show = 0, updated_at = ? WHERE id = ?`).run(nowIso(), row.id);
+      logSchedule(attemptId, { action: 'skill_bo_huy_tay', field: kn, oldValue: null, newValue: row.period_code, reason: ly ?? 'Khôi phục', actor: p.userId });
       writeAudit({
         actorUserId: p.userId, action: 'attempt.restore_part', entityType: 'assessment_attempt', entityId: attemptId,
-        entityLabel: `${a.kind} · ${skill}`, before: { sitStatus: 'cancelled' }, after: { sitStatus: 'scheduled', week: row.period_code },
+        entityLabel: `${a.kind === 'mock' ? `MT${a.attempt_no}` : a.kind} · ${kn}`, before: { sitStatus: 'cancelled', huyVang: !!row.huy_vang },
+        after: { sitStatus: 'scheduled', week: row.period_code, lan: row.absence_move_count },
       });
+    } else if (thuong) {
+      /* "-" đè điểm rồi Khôi phục = như trước khi gõ "-": trả lịch về tuần cũ (gỡ dấu) rồi trả điểm. */
+      if ((conn.prepare('SELECT no_show_period_id n FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, kn) as any)?.n) {
+        reportRegularNoShow(p, attemptId, kn, false, today);
+      }
+    } else {
+      const dau = o.map((e) => dauDaChot(attemptId, e)).find(Boolean);
+      if (dau) goVangDaChot(p, attemptId, dau.skill, dau, today);
     }
+    traDiemCat(conn, p, attemptId, ban);
+    /* Có điểm thì đã thi (như `saveScore`) — Khôi phục về đúng "đã làm bài" như trước khi huỷ. Lớp thường không dùng `sat`. */
+    if (!thuong && ban.some((x) => x.d.band != null)) {
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'sat', updated_at = ? WHERE id = ? AND sit_status = 'scheduled'`).run(nowIso(), row.id);
+    }
+    recomputeCompletionWeek(attemptId, p.userId);
     refreshOutcome(p, attemptId);
-    return { ok: true };
+    return { ok: true as const, o: ban.map((x) => x.d.skill as string) };
   });
 }
+
+/** Lối cũ `/huy-tay` (LG-9, web lớp thường tới PR-2) — cùng một đường. */
+export const huyTay = (p: Principal, attemptId: number, skill: string, huy: boolean) => huyDiemKn(p, attemptId, skill, huy);

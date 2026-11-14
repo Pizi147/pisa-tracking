@@ -156,7 +156,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
   check('MTa T7 (L6) · huyDiem lý do trắng → huỷ được; huyLuot lý do trống → huỷ được (PR-MTGON, rà #282)', () => {
     const a = emMoi([0, 4, 8]);
     diem(a.m1, 'listening');
-    keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '  ' });
+    absence.huyDiemKn(QL, a.m1, 'listening', true, '  ');
     assert(soDiem(a.m1) === 0, 'chưa huỷ');
     attemptsSvc.huyLuot(QL, a.m3, { lyDo: '' });
     assert(luot(a.m3).status === 'cancelled', 'huỷ lượt');
@@ -411,9 +411,10 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const tt = d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16', huyVang: true });
     assert(tt === 'huy-vang', tt);
     const q = { nhapDiem: false, quanLy: false, gvcn: true, laFt: true, dotHoanTat: false };
-    assert(JSON.stringify(d.thaoTacKyNang('huy-vang', q)) === JSON.stringify({ chinh: null, menu: [] }), 'GVCN không còn nút (09/10)');
-    /* N38 L5, L6: Quản lý chọn tuần (Dời) = xếp lại từ đầu; Bỏ khỏi đợt — không còn Khôi phục / Không mock lại. */
-    assert(JSON.stringify(d.thaoTacKyNang('huy-vang', { ...q, quanLy: true })) === JSON.stringify({ chinh: 'doi-lich', menu: ['bo-ky-nang'] }),
+    /* NHAP-DIEM-a: GVCN có "Khôi phục" một bấm (một trạng thái Đã huỷ — 6b). */
+    assert(JSON.stringify(d.thaoTacKyNang('huy-vang', q)) === JSON.stringify({ chinh: null, menu: ['khoi-phuc-diem'] }), 'GVCN: Khôi phục');
+    /* N38 L5, L6: Quản lý chọn tuần (Dời) = xếp lại từ đầu; NHAP-DIEM-a: Khôi phục thay Bỏ khỏi đợt trong menu kỹ năng. */
+    assert(JSON.stringify(d.thaoTacKyNang('huy-vang', { ...q, quanLy: true })) === JSON.stringify({ chinh: 'doi-lich', menu: ['khoi-phuc-diem'] }),
       `QL: ${JSON.stringify(d.thaoTacKyNang('huy-vang', { ...q, quanLy: true }))}`);
     assert(d.thaoTacKyNang('huy-vang', { ...q, gvcn: false }).chinh === null, 'GVBM');
     assert(d.trangThaiTT({ batBuoc: true, tuanBatDau: '2026-09-07', coDiem: false, sit: 'cancelled', choDuyet: false, lichSu: false, homNay: '2026-09-16' }) === 'da-huy', 'không cờ → da-huy');
@@ -430,7 +431,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     assert(soDeNghi(a.m1) === 0 && (conn.prepare('SELECT COUNT(*) n FROM yeu_cau_duyet').get() as any).n === theTruoc, 'có đề nghị / thẻ');
     assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc && chuong('schedule_move', QL.userId, a.m1) === 0, 'N38 L2: không chuông QL');
     assert(chuong('huy_vang', GVCN.userId, a.m1) === gvTruoc, 'GVCN không có chuông (09/10)');
-    assertThrows(() => attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true }), /đã ghi vắng \/ đã huỷ/, 'gõ lại "-" vào phần thi đã huỷ');
+    attemptsSvc.saveScore(P.sTeacher, a.m1, 'speaking', { noShow: true });   // NHAP-DIEM-a: gõ lại "-" vào phần thi đã huỷ — vô hại
     assert(chuong('huy_vang', QL.userId, a.m1) === chTruoc && kyNang(a.m1, 'speaking').huy_vang === 1, 'gõ lại đổi');
   });
 
@@ -612,18 +613,14 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ T19 khung nhập điểm (chủ sản phẩm 06/10)
   console.log('\nPR-MTa · T19 không nhập điểm trước tuần thi; hạn lớp thường thứ Tư tuần sau');
-  const CHUA_TOI = /^Chưa tới tuần Test W\d [A-Z]{3} — nhờ Quản lý dời về tuần này rồi nhập\.$/;   // RKC: GV được chỉ đường
   check('MTa T19 (F1, F2) → RKC · MT tuần sau: GVBM → 400 chỉ đường; Quản lý, Quản trị (dời được lịch) → 409 hỏi "Dời về tuần này"; không ghi gì', () => {
     const a = emMoi();
-    const eGv = loiCua(() => attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 }));
-    assert(eGv.status === 400 && CHUA_TOI.test(eGv.message), `GVBM: ${eGv.status} ${eGv.message}`);
-    for (const ai of [QL, P.admin]) {
-      const e = loiCua(() => attemptsSvc.saveScore(ai, a.m1, 'listening', { rawScore: 30 }));
-      assert(e.status === 409 && /dời về tuần này/.test(e.message), `${ai.userId}: ${e.status} ${e.message}`);
-    }
-    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'writing1', { criteria: [6, 6, 6, 6] })).status === 409, 'tiêu chí');
-    assert(loiCua(() => attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { band: 6 })).status === 409, 'band');
-    assert(soDiem(a.m1) === 0 && !conn.prepare('SELECT 1 FROM assessment_scores WHERE attempt_id = ?').get(a.m1), 'đã ghi');
+    /* NHAP-DIEM-a (chủ SP 14/11, thay RKC "400 / 409"): MT tuần sau — ai nhập được ô (GVBM cũng vậy) lưu thẳng, kỹ năng tự dời về tuần này. */
+    attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
+    attemptsSvc.saveScore(P.admin, a.m1, 'writing1', { criteria: [6, 6, 6, 6] });
+    attemptsSvc.saveScore(P.admin, a.m1, 'speaking', { band: 6 });
+    const tuanKn = (k: string) => (conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = ?`).get(a.m1, k) as any).p;
+    assert(soDiem(a.m1) === 3 && ['listening', 'writing', 'speaking'].every((k) => tuanKn(k) === tuan(0).id) && tuanKn('reading') !== tuan(0).id, 'tự dời đúng kỹ năng đã nhập');
   });
 
   check('MTa T19 (F3, F4, F7) · tuần này → được; quá hạn (2 tuần trước) → được, vẫn tính trễ; MT cũ → được', () => {
@@ -643,8 +640,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
 
   check('MTa T19 (F5, F6) → RKC · lớp thường: tuần sau → Quản trị được hỏi (409); tuần này / đã qua → được; hạn = thứ Tư tuần sau', () => {
     const tuanSau = baiThuong(1);
-    const e = loiCua(() => regular.saveRegularScore(P.admin, tuanSau.aid, 'listening', { score: 7, total: 10 }));
-    assert(e.status === 409 && /dời về tuần này/.test(e.message), e.message);
+    regular.saveRegularScore(P.admin, tuanSau.aid, 'listening', { score: 7, total: 10 });   // NHAP-DIEM-a: tự dời về tuần này, không hỏi
     regular.saveRegularScore(P.admin, baiThuong(0).aid, 'listening', { score: 7, total: 10 });
     regular.saveRegularScore(P.admin, baiThuong(-2).aid, 'listening', { score: 7, total: 10 });
     assert(week.skillScoreDeadline('ratio', '2026-09-14') === '2026-09-23' && week.skillScoreDeadline('band', '2026-09-14') === '2026-09-23', 'hạn');
@@ -655,9 +651,11 @@ export async function runPrMtaTests(t: YThucTestKit) {
   check('MTa T19 (F8, F9) → RKC · kỹ năng chưa xếp tuần → hỏi "xếp vào tuần này"; "-" lớp thường trước tuần thi → hỏi; xoá điểm giữ luật cũ', () => {
     const a = emMoi([0, 4, 8]);
     skillSch.boTuanLuot(QL, a.m3, {});
-    assert(/chưa xếp tuần — xếp vào tuần này/.test(loiCua(() => attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 })).message), 'chưa xếp');
+    /* NHAP-DIEM-a: chưa xếp tuần / "-" lớp thường trước tuần thi → tự xếp / dời về tuần này, không hỏi. */
+    attemptsSvc.saveScore(P.admin, a.m3, 'listening', { rawScore: 30 });
+    assert((conn.prepare(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'listening'`).get(a.m3) as any).p === tuan(0).id, 'chưa xếp → tuần này');
     const b = baiThuong(1);
-    assert(/dời về tuần này rồi ghi vắng/.test(loiCua(() => regular.saveRegularScore(P.admin, b.aid, 'listening', { noShow: true })).message), '"-" lớp thường');
+    assert(regular.saveRegularScore(P.admin, b.aid, 'listening', { noShow: true }).moved, '"-" lớp thường trước tuần thi: về tuần này rồi dời');
     attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: 30 });
     attemptsSvc.saveScore(P.lrTeacher, a.m1, 'listening', { rawScore: null, lyDo: 'x' });
     assert(soDiem(a.m1) === 0, 'xoá điểm');
@@ -718,7 +716,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     attemptsSvc.saveScore(P.coreTeacher, cu.id, 'reading', { rawScore: null });
     assert(diemCua(cu.id, 'reading').raw_score === null, 'xoá');
     attemptsSvc.saveScore(P.admin, cu.id, 'listening', { rawScore: 30 });
-    keHoach.huyDiem(QL, { attemptId: cu.id, skill: 'listening', lyDo: '' });
+    absence.huyDiemKn(QL, cu.id, 'listening', true, '');
     assert(diemCua(cu.id, 'listening').raw_score === null, 'Huỷ điểm không lý do');
   });
 
@@ -772,7 +770,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     for (const x of ['huy-ket-qua', 'tu-choi'] as const) assert(d.canLyDo(x), x);
     const a = emMoi([0, 4, 8]);
     diem(a.m1, 'listening');
-    keHoach.huyDiem(QL, { attemptId: a.m1, skill: 'listening', lyDo: '' });
+    absence.huyDiemKn(QL, a.m1, 'listening', true, '');
     assert(soDiem(a.m1) === 0, 'chưa huỷ');
   });
 
@@ -783,7 +781,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const o = attemptsSvc.attemptDetail(P.admin, a.m1).cells.find((x: any) => x.skill === 'listening');
     assert(o.rawScore === 30 && o.canEdit === true, JSON.stringify({ r: o.rawScore, e: o.canEdit }));
     const oGv = attemptsSvc.attemptDetail(P.lrTeacher, a.m1).cells.find((x: any) => x.skill === 'listening');
-    assert(oGv.canEdit === false, 'GVBM vẫn khoá (không dời được lịch FT)');
+    assert(oGv.canEdit === true, 'NHAP-DIEM-a: GVBM sửa được (lưu thì tự dời về tuần này)');
     const b = baiThuong(0);
     regular.saveRegularScore(P.admin, b.aid, 'speaking', { score: 7, total: 10 });
     skillSch.setSkillWeek(QL, b.aid, 'speaking', tuan(1).id, {});

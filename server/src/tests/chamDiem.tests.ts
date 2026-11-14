@@ -228,8 +228,9 @@ export async function runChamDiemTests(t: YThucTestKit) {
     assert(!sc || !sc.no_show_period_id, 'Dấu đã được xoá');
 
     regular.saveRegularScore(P.normalSubjectTeacher, attemptId, k, { score: 30, total: 40 });
-    assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16'),
-      /đã có điểm|lý do/, 'Ô đã có điểm thì phải đi đường hiệu chỉnh có lý do');
+    /* NHAP-DIEM-a (thay Q5 "ô đã có điểm không nhận dấu"): "-" đè điểm → điểm cất (Khôi phục được) rồi ghi "-", không hỏi. */
+    regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-16');
+    assert(dauCua(attemptId, k).raw_score === null && dauCua(attemptId, k).no_show_period_id, '"-" đè điểm: cất + dấu');
   });
 
   check('PR-Rc1 · Q4 Vắng hai tuần liên tiếp → 28/09; tuần mới chưa tới thì ghi lại không dời', () => {
@@ -283,21 +284,17 @@ export async function runChamDiemTests(t: YThucTestKit) {
     }
   });
 
-  check('PR-Rc1 · RKC · "-" lần đầu trước tuần thi: GV → câu chỉ đường, không ghi gì, lịch giữ nguyên', () => {
+  /* NHAP-DIEM-a (thay RKC "GV → câu chỉ đường"): "-" trước tuần thi → môn tự dời về tuần này rồi ghi vắng (dời sang tuần sau). */
+  check('PR-Rc1 · NHAP-DIEM-a · "-" lần đầu trước tuần thi: GV ghi được — môn tự về tuần này rồi dời tuần sau, một dòng nhật ký vắng', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { attemptId } = taoBaiThuong('2026-09-28');
     const nk = () => (conn.prepare(
       `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
     ).get(attemptId) as any).n;
-    assertThrows(() => regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22'),
-      /nhờ Quản lý dời về tuần này/, 'RKC + R14 (RA-LECH-D ①): tuần thi 28/09 chưa tới (hôm nay 22/09) → GV lớp thường không dời tay được → câu chỉ đường, chưa ghi gì');
-    const sc = dauCua(attemptId, k);
-    assert(!sc || !sc.no_show_period_id, 'Không có dòng dấu "-" nào được ghi');
-    assert(tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-28', 'Lịch giữ nguyên');
-    assert(nk() === 0, 'Không có dòng nhật ký nào');
-    /* Tới tuần thi thì ghi được như thường. */
-    assert(regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-28').moved, 'Đúng tuần thi thì ghi được');
+    const r = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22');
+    assert(r.moved && tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-28', `về tuần này (21/09) rồi dời tuần sau: ${JSON.stringify(r)}`);
+    assert(nk() === 1, 'một dòng nhật ký vắng');
   });
 
   check('PR-Rc1 · Q3+Q4 Gỡ dấu sau lần dời thứ hai chỉ lùi về 21/09 (tuần vừa dời khỏi), không về 14/09', () => {

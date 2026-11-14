@@ -142,12 +142,8 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
         return cauDaGhiVang(mon, hocVien ?? undefined, kq);
       }
       case 'huy-diem': {
-        if (laThuong) {
-          await api.put(`/regular/attempts/${attemptId}/scores/${skill}`, { score: null, total: null, lyDo: lyDoGui });
-        } else {
-          /* Một yêu cầu, một giao dịch ở máy chủ — W1 + W2 không bao giờ còn nửa điểm (rà #126). */
-          await api.post(`${goc}/huy-diem`, { o: chonW ? o : oCoDiem.length ? oCoDiem : undefined, lyDo: lyDoGui });
-        }
+        /* NHAP-DIEM-a: một đường máy chủ cho Mock / MT0 / lớp thường — huỷ cả kỹ năng ("Đã huỷ"), điểm cất. Hộp / chữ: PR-2. */
+        await api.post(`${goc}/huy-diem`, { huy: true, lyDo: lyDoGui });
         return t('Đã huỷ điểm {mon}', { mon });
       }
       default: return '';

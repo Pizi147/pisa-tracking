@@ -1066,25 +1066,34 @@ export function kiemDaToiTuanThi(row: { week_start: string | null }, today: stri
 }
 
 /**
- * RKC (chủ SP 07/11, PTA quyết định 3): nhập điểm / ghi "-" khi kỹ năng CHƯA TỚI tuần thi (hoặc chưa xếp tuần) — người dời được lịch kỹ năng đó hỏi một câu
- * rồi DỜI VỀ TUẦN NÀY (`setSkillWeek`, nhật ký lịch). Trả hàm ghi để nơi lưu gọi TRONG giao dịch của mình (lưu hỏng → không dời). Người không dời được
- * lịch → câu cũ kèm chỉ đường. Tuần đã tới → null.
+ * NHAP-DIEM-a (chủ SP 14/11 "bỏ chặn", đặc tả 5.5 + 6b; thay RKC 07/11 "người dời được lịch hỏi, người khác 400"): nhập điểm / ghi "-" khi kỹ năng
+ * CHƯA TỚI tuần thi (hoặc chưa xếp tuần) → máy TỰ DỜI kỹ năng đó (lớp thường: môn đó) VỀ TUẦN NÀY, không hỏi, không cần Quản lý. Nơi gọi đã kiểm
+ * quyền nhập ô. Thao tác điểm → ngoại lệ N15 (không khoá cuối tuần). Trái thứ tự lượt / nhảy lượt / trùng lượt khác → vẫn dời, câu cảnh báo vào
+ * lịch sử lịch. Trả hàm ghi để nơi lưu gọi TRONG giao dịch của mình (lưu hỏng → không dời). Tuần đã tới → null.
  */
 export function doiVeTuanNayNeuChua(p: Principal, a: { id: number; class_id: number | null; student_id: number }, row: { skill: string; week_start: string | null },
   today: string, viec: 'diem' | 'vang' = 'diem'): (() => void) | null {
   const nay = mondayOf(today);
   if (row.week_start && row.week_start.slice(0, 10) <= nay) return null;
-  /* RA-LECH-D ①: dời về tuần này = dời TAY (`setSkillWeek` không `ghiBuDau`) → chỉ người sửa được lịch Test (R14), không `SCHEDULE_MOVE` của GV lớp thường. */
-  if (!a.class_id || !choSuaLichTest(p, { classId: a.class_id, studentId: a.student_id })) {
-    if (!row.week_start) throw badRequest('Chưa xếp tuần Test — nhờ Quản lý xếp tuần rồi nhập.');
-    throw loi(400, 'Chưa tới tuần Test {x} — nhờ Quản lý dời về tuần này rồi nhập.', { x: tuanLich(row.week_start, today) });
-  }
-  const x = tenMon(null, row.skill);
-  if (!row.week_start) canXacNhan(viec === 'vang' ? '{x} chưa xếp tuần — xếp vào tuần này rồi ghi vắng?' : '{x} chưa xếp tuần — xếp vào tuần này rồi lưu điểm?', { x }, 'Xếp vào tuần này');
-  else canXacNhan(viec === 'vang' ? '{x} thi tuần {tuan} (chưa tới) — dời về tuần này rồi ghi vắng?' : '{x} thi tuần {tuan} (chưa tới) — dời về tuần này rồi lưu điểm?',
-    { x, tuan: tuanLich(row.week_start, today) }, 'Dời về tuần này');
-  const pid = ensurePeriod(nay).id as number;
-  return () => { setSkillWeek(p, a.id, row.skill, pid, { reason: viec === 'vang' ? 'Ghi vắng sớm — dời về tuần này' : 'Nhập điểm sớm — dời về tuần này', force: true, today }); };
+  return () => {
+    const conn = db();
+    const { attempt, row: r } = loadOne(a.id, row.skill);
+    const pid = ensurePeriod(nay).id as number;
+    const check = checkSkillWeekMove({ attemptId: a.id, skill: r.skill, newWeekStart: nay });
+    const vuot = kiemVuot(a.id, tuanCuoiSauKhiDoi(ensureSkillRows(a.id), new Map([[r.skill, nay]]))!, nay).chan;
+    const canhBao = [vuot, ...check.blockers, ...check.warnings].filter(Boolean).join(' ');
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual', updated_at = ? WHERE id = ?`).run(pid, nowIso(), r.id);
+    const lyDo = viec === 'vang' ? 'Ghi vắng sớm — dời về tuần này' : 'Nhập điểm sớm — dời về tuần này';
+    logSchedule(a.id, { action: 'skill_week_set', field: r.skill, oldValue: r.period_code, newValue: weekInfo(nay).code,
+      reason: canhBao ? `${lyDo}. ${canhBao}` : lyDo, actor: p.userId });
+    recomputeCompletionWeek(a.id, p.userId);
+    tinhLaiMtCu(a.id, today);
+    writeAudit({
+      actorUserId: p.userId, action: 'attempt.skill_week', entityType: 'assessment_attempt', entityId: a.id,
+      entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${r.skill}`,
+      before: { week: r.period_code }, after: { week: weekInfo(nay).code, tuDoi: viec, ...(canhBao ? { canhBao } : {}) },
+    });
+  };
 }
 
 /** GVCN đang hoạt động của một lớp. */
@@ -1235,8 +1244,9 @@ export function ghiSitStatus(p: Principal, attemptId: number, row: { id: number;
   note?: string | null, skill: string = row.skill) {
   return tx(() => {
     db()
-      .prepare('UPDATE attempt_skills SET sit_status = ?, sit_by = ?, sit_at = ?, sit_note = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?')
-      .run(status, p.userId, nowIso(), note ?? null, nowIso(), row.id);
+      .prepare(`UPDATE attempt_skills SET sit_status = ?, sit_by = ?, sit_at = ?, sit_note = ?, absent_from_no_show = 0,
+                huy_vang = CASE WHEN ? = 'cancelled' THEN huy_vang ELSE 0 END, updated_at = ? WHERE id = ?`)   // NHAP-DIEM-a: rời "Đã huỷ" thì hết cờ huỷ
+      .run(status, p.userId, nowIso(), note ?? null, status, nowIso(), row.id);
     if (row.sit_status === 'absent') rutDeNghiDoi(attemptId, row.skill);
     logSchedule(attemptId, {
       action: 'skill_sit_status', field: skill, oldValue: row.sit_status, newValue: status,

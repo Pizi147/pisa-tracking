@@ -450,9 +450,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
   });
 
   check('MTb (T5) · menuHopKyNang: (a) chưa tới tuần thi — Dời, Bỏ khỏi đợt, Nhật ký sáng; Vắng, Dời hạn chấm mờ theo luật máy chủ', () => {
-    assert(JSON.stringify(dsDuoc('chua-toi-tuan')) === '[true,false,true,false,false,true]', JSON.stringify(dsDuoc('chua-toi-tuan')));
+    /* NHAP-DIEM-a: Huỷ điểm (một kỹ năng = Đã huỷ) sáng ở mọi trạng thái còn kỹ năng — không chờ có điểm. */
+    assert(JSON.stringify(dsDuoc('chua-toi-tuan')) === '[true,false,true,false,true,true]', JSON.stringify(dsDuoc('chua-toi-tuan')));
     const m = duoc('chua-toi-tuan');
-    assert(m[1].viSao === 'Chưa tới tuần Test' && m[3].viSao === 'Chưa tới tuần Test' && m[4].viSao === 'Chưa có điểm', JSON.stringify(m));
+    assert(m[1].viSao === 'Chưa tới tuần Test' && m[3].viSao === 'Chưa tới tuần Test', JSON.stringify(m));
   });
 
   check('MTb (T5) · menuHopKyNang: (b) đã có điểm (T20) — Dời SÁNG cho Quản lý, Huỷ điểm sáng; Vắng / Dời hạn mờ "Đã có điểm"', () => {
@@ -477,8 +478,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     const m = duoc('chua-xep', true);
     assert(JSON.stringify(m.map((x: any) => x.duoc)) === '[true,false,true,false,false,false]', JSON.stringify(m));
     assert([1, 3, 4, 5].every((i) => m[i].viSao === 'Đợt chưa tạo'), JSON.stringify(m));
-    assert(JSON.stringify(dsDuoc('dang-thi')) === '[true,true,true,true,false,true]', JSON.stringify(dsDuoc('dang-thi')));
-    assert(duoc('dang-thi')[4].viSao === 'Chưa có điểm', 'huỷ điểm mờ khi chưa có điểm');
+    assert(JSON.stringify(dsDuoc('dang-thi')) === '[true,true,true,true,true,true]', JSON.stringify(dsDuoc('dang-thi')));   // NHAP-DIEM-a: Huỷ điểm sáng
   });
 
   check('MTb (T5) · menuHopKyNang: MT cũ chưa điểm — Quản lý vẫn Dời được (giữ PR-LM D3 / T20)', () => {

@@ -143,9 +143,11 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(d.thaoTacKyNang('da-huy', q).chinh === 'doi-lich', JSON.stringify(d.thaoTacKyNang('da-huy', q)));
     assert(d.thaoTacKyNang('khong-yeu-cau', q).chinh === 'khoi-phuc-kn' && d.thaoTacKyNang('khong-yeu-cau', q).menu.includes('doi-lich'), 'khong-yeu-cau → Khôi phục (chủ SP 06/11), Dời trong ⋯');
     assert(!('dua-lai' in d.CHU_THAO_TAC) && d.CHU_THAO_TAC['bo-ky-nang'] === 'Xoá', 'chữ');
+    /* NHAP-DIEM-a (đặc tả 5.1 "không để hai nút cùng nghĩa"): menu kỹ năng có "Huỷ điểm" thay "Xoá"; "Xoá" chỉ còn ở hộp lập lịch một đợt (Quản lý FT). */
     for (const s of ['chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'lich-su'] as const) {
-      assert(d.thaoTacKyNang(s, q).menu.includes('bo-ky-nang'), `thiếu Huỷ kỹ năng ở ${s}`);
-      assert(!d.thaoTacKyNang(s, { ...q, quanLy: false }).menu.includes('bo-ky-nang'), `GV có Huỷ kỹ năng ở ${s}`);
+      assert(d.thaoTacKyNang(s, q).menu.includes('huy-diem') && !d.thaoTacKyNang(s, q).menu.includes('bo-ky-nang'), `menu ${s}: ${d.thaoTacKyNang(s, q).menu}`);
+      assert(d.menuHopKyNang(s, q, false).find((m: any) => m.muc === 'bo-ky-nang').duoc, `hộp một đợt còn Xoá ở ${s}`);
+      assert(!d.menuHopKyNang(s, { ...q, quanLy: false }, false).find((m: any) => m.muc === 'bo-ky-nang').duoc, `GV có Xoá ở ${s}`);
     }
     const a = emMoi();
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id = ? AND skill IN ('speaking', 'reading')`).run(a.m1);

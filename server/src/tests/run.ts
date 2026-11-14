@@ -5706,10 +5706,13 @@ check('[10.6] Ô điểm trống KHÔNG tự thành vắng; và không nhập đ
     .get() as any;
   assert(guessed.n === 0, `${guessed.n} kỹ năng bị đánh vắng mà không có ai xác nhận`);
 
-  assertThrows(
-    () => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }),
-    /đang ghi vắng — đổi thành đã làm bài/, 'RKC: nhập điểm vào phần thi đã vắng phải HỎI (409) trước khi đổi',
-  );
+  /* NHAP-DIEM-a (thay RKC "hỏi 409"): nhập điểm vào phần thi đã vắng = em đã làm bài — lưu thẳng, không hỏi (thử rồi cuộn lại). */
+  conn.exec('SAVEPOINT nd106');
+  try {
+    attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] });
+    const sp = conn.prepare(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
+    assert(sp.sit_status === 'sat', `nhập điểm vào phần đã vắng → đã làm bài: ${JSON.stringify(sp)}`);
+  } finally { conn.exec('ROLLBACK TO nd106'); conn.exec('RELEASE nd106'); }
 });
 
 check('[10.6] Bộ đếm dời do vắng tính RIÊNG từng kỹ năng trong từng đợt', () => {
@@ -6214,7 +6217,13 @@ check('[10.6] Thẻ dời cũ bị từ chối: Fast Track huỷ PHẦN THI (gi�
   assert(sp.sit_status === 'cancelled' && sp.p && sp.required === 1, `Từ chối: ${JSON.stringify(sp)}`);
   const d = attempts.attemptDetail(mgr, a.id) as any;
   assert(d.completionWeek.valid && !d.completionWeek.blocking.includes('speaking'), `N38 L2: kỹ năng huỷ không chặn đợt: ${JSON.stringify(d.completionWeek)}`);
-  assertThrows(() => attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] }), /đã huỷ \(vắng 2 lần\) — đưa lại/, 'RKC: nhập điểm vào phần thi đã huỷ phải HỎI (409) trước');
+  /* NHAP-DIEM-a (thay RKC "hỏi 409"): nhập điểm vào phần thi "Đã huỷ" = bỏ huỷ, lưu thẳng (thử rồi cuộn lại). */
+  conn.exec('SAVEPOINT nd106b');
+  try {
+    attempts.saveScore(P.admin, a.id, 'speaking', { criteria: [6, 6, 6, 6] });
+    const sp2 = conn.prepare(`SELECT sit_status, huy_vang FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
+    assert(sp2.sit_status === 'sat' && !sp2.huy_vang, `nhập điểm vào phần đã huỷ → bỏ huỷ: ${JSON.stringify(sp2)}`);
+  } finally { conn.exec('ROLLBACK TO nd106b'); conn.exec('RELEASE nd106b'); }
   /* N38 L5: Fast Track chọn tuần (Dời) = xếp lại từ đầu — kỹ năng về "đã xếp", bộ đếm 0. */
   skillSchedule.setSkillWeek(mgr, a.id, 'speaking', periodOf(addDays(demoToday(), cleanWeeksAhead(a, 4) * 7)), { reason: 'Xếp lại cho em thi bù', force: true });
   const after = conn.prepare(`SELECT sit_status, absence_move_count AS n FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`).get(a.id) as any;
@@ -8082,8 +8091,8 @@ check('PR-G · (OV-1b) GV nhập "-" trong tuần thi: chốt vắng NGAY — d�
   assert(c.rawScore === null && c.band === null, `"-" không phải điểm 0: raw=${c.rawScore} band=${c.band}`);
   assert(c.daChot?.doiSang, `Ô phải ghi đã dời: ${JSON.stringify(c.daChot)}`);
   assert(!prgCell(id, 'reading').noShow, 'Dấu "-" của Listening lây sang Reading');
-  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any), /Chưa tới tuần Test/,
-    'Bấm lại "-" khi tuần mới chưa tới');
+  attempts.saveScore(P.lrTeacher, id, 'listening', { noShow: true } as any);   // NHAP-DIEM-a: bấm lại "-" khi tuần mới chưa tới — vô hại (không dời về, không vắng thêm)
+  assert(prgSit(id, 'listening').planned_period_id === periodOf('2026-09-21') && prgSit(id, 'listening').sit_status === 'scheduled', 'Bấm lại "-" đổi lịch');
   assert(prgSettled(id, 'listening') === 1, 'Bấm lại làm bộ đếm vắng tăng');
   const doi = conn.prepare(
     `SELECT reason, old_value FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_week_moved_absence' AND field = 'listening'`,
@@ -8125,10 +8134,12 @@ check('PR-G · (OV-1b) Đổi ý sau "-": Bỏ vắng trả bài về tuần cũ
   assert(band !== null, 'Điểm hợp lệ phải được lưu');
   assert(!prgCell(id, 'reading').noShow, 'Dấu "-" phải hết hiệu lực khi đã có điểm');
   assert(prgSit(id, 'reading').sit_status === 'sat', 'Có điểm thì đã thi');
-  /* Đã có điểm chính thức: "-" KHÔNG được xoá âm thầm — RKC: hỏi (409) trước khi huỷ điểm. */
-  assertThrows(() => attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any), /đã có điểm — huỷ điểm/,
-    'Nhập "-" đè lên một điểm chính thức phải hỏi');
-  assert(prgCell(id, 'reading').band === band, 'Điểm chính thức bị mất');
+  /* NHAP-DIEM-a (thay RKC "hỏi 409"): "-" đè điểm chính thức → điểm CẤT (không mất), ghi vắng; Khôi phục → như trước khi gõ "-". */
+  attempts.saveScore(P.lrTeacher, id, 'reading', { noShow: true } as any);
+  assert(prgCell(id, 'reading').band === null && prgSit(id, 'reading').absence_move_count === 1, '"-" đè điểm: cất + vắng');
+  absence.huyDiemKn(P.lrTeacher, id, 'reading', false);
+  assert(prgCell(id, 'reading').band === band && prgCell(id, 'reading').rawScore === 30 && prgSit(id, 'reading').planned_period_id === prgWeek
+    && prgSit(id, 'reading').absence_move_count === 0, `Khôi phục: điểm về, bỏ vắng: ${JSON.stringify(prgSit(id, 'reading'))}`);
 });
 
 check('PR-G · "-" ở W1 KHÔNG xoá điểm W2 và không đếm hai lần: "-" một W = CẢ buổi Writing vắng (CV-SUA-1011), đúng MỘT lần', () => {
@@ -8136,10 +8147,8 @@ check('PR-G · "-" ở W1 KHÔNG xoá điểm W2 và không đếm hai lần: "-
   /* CV-SUA-1011 (thay LUAT-34 "điểm W2 đi theo"): W2 đã có điểm; W1 báo "-" → HỎI huỷ điểm W2 (không âm thầm xoá); đồng ý → điểm W2 cất
      (Khôi phục được), cả W vắng, dời lần 1 — không còn một W điểm một W vắng / huỷ. */
   attempts.saveScore(prgWriting2, id, 'writing2', { criteria: [6, 6, 6, 6] });
-  assertThrows(() => attempts.saveScore(prgWriting1, id, 'writing1', { noShow: true } as any), /huỷ điểm W2/, 'W1 "-" khi W2 có điểm phải hỏi trước');
-  assert(prgCell(id, 'writing2').band === 6, 'chưa đồng ý mà điểm W2 đã mất');
-  voiXacNhan(() => attempts.saveScore(P.mbManager, id, 'writing1', { noShow: true } as any));
-  assert(prgCell(id, 'writing2').band === null, 'đồng ý mà điểm W2 còn');
+  attempts.saveScore(P.mbManager, id, 'writing1', { noShow: true } as any);   // NHAP-DIEM-a: không hỏi — điểm W2 cất (Khôi phục được)
+  assert(prgCell(id, 'writing2').band === null, '"-" W1: điểm W2 phải cất');
   assert(prgSit(id, 'writing').sit_status === 'scheduled' && prgSit(id, 'writing').absence_move_count === 1, `W1 "-" (W2 điểm đã huỷ) phải dời cả W: ${JSON.stringify(prgSit(id, 'writing'))}`);
 
   const id2 = prgAttempts[5];
@@ -9988,6 +9997,9 @@ await runPrOv6DocChonTests({ check, assert, conn, P } as any);
 // ==================================================================== TIM-HV-LOP-TOI (GD-4a [XM-A]: "+ Task" chỉ em lớp của tôi)
 const { runPrTimHvLopToiTests } = bocTep('prTimHvLopToi', await import('./prTimHvLopToi.tests.ts'));
 await runPrTimHvLopToiTests({ check, assert, P } as any);
+// ==================================================================== NHAP-DIEM-a (chủ SP 14/11: Huỷ điểm một kỹ năng = "Đã huỷ" mọi nơi · nhập / vắng tự do)
+const { runPrNhapDiemTuDoTests } = bocTep('prNhapDiemTuDo', await import('./prNhapDiemTuDo.tests.ts'));
+await runPrNhapDiemTuDoTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
