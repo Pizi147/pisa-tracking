@@ -290,3 +290,6 @@ button.gt-lt.mo3 .s1 { text-decoration-color:var(--line-strong); }
 .dt .tab { padding:12px 8px; }
 .dt .the-lt .d1 button.gt-lt { margin-left:0; }
 .pc-nhom:first-child { border-radius:0; }
+/* 375: badge số trên thanh dưới (Công việc = việc của tôi quá hạn + hôm nay, cùng số thanh trên) */
+.thanh-duoi .ic-o { position:relative; display:inline-grid; }
+.thanh-duoi .bd-td { position:absolute; top:-7px; left:12px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--bad-nen); color:var(--bad); border:1px solid var(--bad-vien); font:700 11px/16px var(--phong-so); text-align:center; }

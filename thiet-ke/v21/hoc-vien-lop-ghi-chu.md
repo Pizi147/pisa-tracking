@@ -12,6 +12,8 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 
 (chưa có)
 
+**PTA Overhaul rà 15/11 (chuyển tiếp, không phải lời chủ SP):** ĐẠT R6.1–R6.8. [XM-1] để chủ SP quyết ở mockup · [XM-3] đồng ý · [XM-4] đồng ý · [XM-2] KHÔNG đổi quyền: "Lưu trữ ›" chỉ hiện với vai hôm nay vào được Lưu trữ · 375 thêm vòng chữ đầu tài khoản + badge Công việc ở thanh dưới · đo tâm ✕ / ⋯ / mũi tên ≤ 1 px. Đã sửa cả ba (mục 4, 5, 8).
+
 ## 1. Khung
 
 | Khung | Vai | Nội dung | Ảnh cặp (TRƯỚC lấy từ) |
@@ -33,7 +35,7 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 
 | Khung | Thành phần (nguồn chuẩn) | TRƯỚC (web) | SAU (mockup) | GIỮ / ĐỔI / BỎ |
 |---|---|---|---|---|
-| mọi | Đầu trang | tên · Xem (`<select>`) · FT/LT · Xuất Excel · + Thêm học viên · ⋯ (+ Lớp mới · Lưu trữ) | như cũ + **"Lưu trữ ›"** link có số (R6.7, cả 375); ⋯ còn + Lớp mới | GIỮ + thêm link |
+| mọi | Đầu trang | tên · Xem (`<select>`) · FT/LT · Xuất Excel · + Thêm học viên · ⋯ (+ Lớp mới · Lưu trữ) | như cũ + **"Lưu trữ ›"** link có số cho vai đã có quyền (R6.7, cả 375; TVV / CX không có); ⋯ còn + Lớp mới | GIỮ + đưa link ra ngoài ⋯ |
 | mọi | Thanh tab (⑤ H1) | `HangTab v8 soMo`, số trong viên xám | `.tabs` chuẩn, badge **mờ** (chỉ đếm) · Lịch thi không mang số việc (lời 35) | ĐỔI dáng |
 | mọi | Ô "Xem" (⑤ A, dáng gọn) | `<select>` "Xem HV của tôi ▾" | ô chọn có tìm cùng cỡ ô lọc, nhóm Chi nhánh · Khác, có số lớp / HV | ĐỔI dáng, GIỮ URL `phamVi`/`cn` |
 | Tất cả · SOS · Lịch thi | Hàng lọc | Tất cả: Tìm + chip; SOS / Lịch thi: Tìm + `<select>` Mọi lớp (+ Mọi TVV ở Lịch thi) — mỗi tab một thứ tự | MỘT thứ tự, cùng chỗ: Tìm · **Mọi lớp** · **Mọi TVV** (ô chọn có tìm, "Lớp của tôi" / "Tôi" trước) · lọc riêng của tab · phải (R6.2) | ĐỔI |
@@ -68,7 +70,7 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 | 1 | Xuất Excel | mọi vai | đầu trang (giữ); 375 trong ⋯ | |
 | 2 | + Thêm học viên | vai có quyền | đầu trang (giữ); 375 trong ⋯ | |
 | 3 | + Lớp mới | QL / Quản trị | ⋯ đầu trang (giữ) · rỗng Phân công | |
-| 4 | Lưu trữ | QL / Quản trị / GV (trong ⋯) | **link "Lưu trữ ›"** đầu trang, mọi vai [XM-2]; 375 cũng thấy (cạnh ⋯) | R6.7 |
+| 4 | Lưu trữ | GV / QL / Quản trị / Admin (trong ⋯) | **link "Lưu trữ ›"** đầu trang cho đúng các vai đó (cả 375, cạnh ⋯); TVV / CX không có lối Lưu trữ như nay — không vẽ | R6.7, [XM-2] đã quyết |
 | 5 | Xem (chi nhánh / phạm vi) | nhiều phạm vi | ô Xem (ô chọn có tìm) | |
 | 6 | Fast Track / Lớp thường | mọi vai | đoạn đầu trang (giữ) | |
 | 7 | Đổi tab Tất cả · Đang SOS · Lịch thi · Phân công GV | theo vai | thanh tab chuẩn (giữ) | |
@@ -122,10 +124,10 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 
 ## 4. [XM] — cần chủ SP / PTA quyết
 
-- **[XM-1] Lọc Lịch thi theo trạng thái thi** thay "Cần làm / Tất cả": Tất cả · Chưa chốt ngày · Đã chốt · Chờ KQ · Có KQ (Có KQ = chờ bước tiếp + xong). Đề bài nêu, chủ SP quyết. Đề xuất: theo — tab là thông tin nên lọc theo tình trạng thi; "việc cần làm" đã ở Công việc TVV. Số trên đoạn dùng dữ liệu đã nạp (không thêm request).
-- **[XM-2] "Lưu trữ ›" mọi vai xem được:** nay TVV / CX không có lối Lưu trữ (`StudentsPage.tsx` menu ⋯: `laVai ? []`). Nếu máy chủ chặn `/hoc-vien/luu-tru` với TVV / CX thì đây là đổi quyền → chủ SP quyết; nếu chỉ giao diện ẩn thì làm theo R6.7. Phiên code kiểm quyền máy chủ trước.
-- **[XM-4] Bỏ "⚠ quá hạn" trên tab Lịch thi:** web nay ghi đỏ "⚠ quá hạn 12/09" ở hàng chờ bước tiếp. Tab là thông tin (lời 35) nên mockup ghi trung tính "hạn chọn 12/09"; cảnh báo quá hạn nằm ở việc "Sau thi" bên Công việc TVV (badge đỏ). Đề xuất: theo mockup; chủ SP muốn giữ đỏ thì đổi lại một dòng.
-- **[XM-3] "Lớp" ở hàng Lịch thi:** R6.5 ghi hàng gồm "em · lớp · …"; mockup giữ lớp ở **dải nhóm lớp** (xếp theo lớp, chủ SP duyệt v16 bản 3) thay vì thêm cột lớp lặp ở mọi hàng. Đổi sang cột nếu chủ SP muốn.
+- **[XM-1] (PTA: chủ SP quyết ở mockup) Lọc Lịch thi theo trạng thái thi** thay "Cần làm / Tất cả": Tất cả · Chưa chốt ngày · Đã chốt · Chờ KQ · Có KQ (Có KQ = chờ bước tiếp + xong). Đề bài nêu, chủ SP quyết. Đề xuất: theo — tab là thông tin nên lọc theo tình trạng thi; "việc cần làm" đã ở Công việc TVV. Số trên đoạn dùng dữ liệu đã nạp (không thêm request).
+- **[XM-2] — ĐÃ QUYẾT (PTA Overhaul 15/11): không đổi quyền.** "Lưu trữ ›" chỉ hiện với vai hôm nay vào được Lưu trữ (GV, QL, Quản trị, Admin — `StudentsPage.tsx` menu ⋯ `laVai ? []`); TVV / CX không có link (K4, K8b đã bỏ).
+- **[XM-4] — PTA đồng ý.** Bỏ "⚠ quá hạn" trên tab Lịch thi:** web nay ghi đỏ "⚠ quá hạn 12/09" ở hàng chờ bước tiếp. Tab là thông tin (lời 35) nên mockup ghi trung tính "hạn chọn 12/09"; cảnh báo quá hạn nằm ở việc "Sau thi" bên Công việc TVV (badge đỏ). Đề xuất: theo mockup; chủ SP muốn giữ đỏ thì đổi lại một dòng.
+- **[XM-3] — PTA đồng ý.** "Lớp" ở hàng Lịch thi:** R6.5 ghi hàng gồm "em · lớp · …"; mockup giữ lớp ở **dải nhóm lớp** (xếp theo lớp, chủ SP duyệt v16 bản 3) thay vì thêm cột lớp lặp ở mọi hàng. Đổi sang cột nếu chủ SP muốn.
 
 ## 5. Tự rà từng dòng R6.x
 
@@ -137,10 +139,27 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 | R6.4 | Mở tất cả, Bỏ lọc, Xoá lọc thêm, Hoàn tác, Thử lại là nút chuẩn; rỗng một dòng | Đạt | K1 / K2 (Mở tất cả, Bỏ lọc), K4 (Hoàn tác, Thử lại), K7 (rỗng); "Xoá lọc thêm" nằm trong Bộ lọc thêm — ghi ở bảng mục 2 (không vẽ ngăn mở) |
 | R6.5 | Lịch thi = THÔNG TIN: không badge việc, không cột việc, không nút-chip, không "Đặt lịch ▾"; hàng em · lớp · lịch thi · thông tin hiện tại; thao tác giữ đủ (bấm giá trị / mở dưới hàng, Hoàn tác); lọc trạng thái [XM] | Đạt (lớp ở dải nhóm — [XM-3]) | K4 (TVV), K5 (GV chỉ xem), K8b; bảng thao tác 30–43; [XM-1] |
 | R6.6 | Phân công: một bảng cả chi nhánh, sửa theo dòng, Ngay / Từ tuần, hỏi bàn giao; Xếp, ô tuần chuẩn; Quản trị vào chi nhánh gần nhất | Đạt | K6, K6c, K6b |
-| R6.7 | Xuất Excel · + Thêm học viên · ⋯ giữ; link "Lưu trữ ›" thấy được, mọi vai | Đạt (quyền TVV / CX — [XM-2]) | mọi khung 1440 |
-| R6.8 | 375: lớp thẻ gập; Lịch thi mỗi em một thẻ hai dòng | Đạt | K8a, K8b |
+| R6.7 | Xuất Excel · + Thêm học viên · ⋯ giữ; đưa lối vào "Lưu trữ ›" ra khỏi ⋯ cho vai đã có quyền (PTA sửa đề bài: không phải "mọi vai") | Đạt | K1, K2, K3, K5, K6, K6b, K8a có link; K4, K8b (TVV) không |
+| R6.8 | 375: lớp thẻ gập; Lịch thi mỗi em một thẻ hai dòng | Đạt | K8a, K8b (thanh trên có vòng chữ đầu tài khoản như ① / ④; thanh dưới Công việc có badge 9 / 2) |
 | G2 | thanh tab + badge · chip chữ + số · ô chọn có tìm · chân hộp Đóng + nút chính · dòng quy chế · menu chuẩn · Lịch sử · n · câu lỗi chuẩn · tên bậc HOA (REPORT 1) · mã tuần | Đạt | K1 (REPORT 1, W2 SEP), K4 (Lịch sử · 3), K6c (dòng quy chế, Đóng · Lưu), K7 (câu lỗi) |
 | G3 | Không chú thích tĩnh, không bước xác nhận thêm, không tab / màn mới | Đạt | chỉ có ⓘ sẵn có; hộp Lưu phân công là hộp cũ |
+
+### Đo tâm ✕ · ⋯ · mũi tên (PTA yêu cầu ≤ 1 px)
+
+Đo trên trang mockup bằng `getBoundingClientRect` (tâm hộp ký tự / tâm nét SVG so với tâm ô chứa), cả trang, mọi khung:
+
+| Thành phần | Số chỗ | Lệch ngang tối đa | Lệch dọc tối đa |
+|---|---|---|---|
+| ✕ trong ô lọc ("Tôi ✕", "MB FT 105 ✕") `.oc .bo` | 6 | 0 px | 0,5 px |
+| ✕ đóng hộp Lưu phân công `.x` | 1 | 0,01 px | 0,33 px |
+| ⋯ cuối dòng em / lớp `.nut-ba` | 14 | 0 px | 0 px |
+| ⋯ đầu trang `.nut-vuong` | 9 | 0 px | 0 px |
+| ⌄ mở hàng Lịch thi `.nut-mo` | 20 | 0 px | 0,25 px |
+| › mở / gập lớp `.bl-lop .mui` | 3 | 0,25 px | 0,25 px |
+| ▾ ô chọn `.mui-xuong` | 14 | 0 px | 0 px |
+| ⌄ trong ô MT `.o-mt` | 8 | — | 0,19 px |
+
+Mọi chỗ ≤ 0,5 px — đạt.
 
 ## 6. Dòng đọc Turso (CLAUDE.md)
 
