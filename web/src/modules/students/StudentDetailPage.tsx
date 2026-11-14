@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api } from '../../lib/api.ts';
+import { api, invalidate } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
@@ -19,7 +19,10 @@ import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan, NhanLich } from '../../ui/Nhan.tsx';
 import { CHU_DA_XONG, diemW12 } from '@shared/domain/index.ts';
-import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, type Viec } from './DauHoSo.tsx';
+import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, viecSangPanel, type Viec } from './DauHoSo.tsx';
+import { NutTask } from '../congViec/NutTask.tsx';
+import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCaseLuoi.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
@@ -139,8 +142,10 @@ export default function StudentDetailPage() {
     if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
   };
-  /* A5 (PR-YT4): dấu chấm trên tab Ý thức = em Quá hạn hoặc Bắt buộc xử lý. CÙNG đường với tab bên trong (một cửa trạng thái). */
-  const yThuc = useApi<{ nhom: string | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
+  /* A5 (PR-YT4) · GD-7: đường Ý thức của em — CÙNG đường với tab bên trong; nay còn cho quyền "+ Task" (Vi phạm / Nhắc nhở · Báo / Hỏi tình hình), không thêm request. */
+  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
+  /* GD-7 (③ R3.2): việc đang mở ở panel việc tại chỗ + danh sách lúc mở (để "Việc tiếp ›" đi đúng thứ tự khi việc vừa xong rời danh sách). */
+  const [viecMo, setViecMo] = useState<{ it: WorkItem; ds: Viec[] } | null>(null);
 
   /*
    * MỞ ĐÚNG ĐỢT / ĐÚNG KỸ NĂNG (R7, R8c) — cuộn một lần khi dữ liệu vừa có cho ĐÚNG cặp `dot`/`kn`
@@ -212,14 +217,39 @@ export default function StudentDetailPage() {
     if (!o?.paId || o.viec) cuonOnDinh(() => document.getElementById(`case-${caseId}`), null);
   };
 
-  /** Nút động từ của thanh việc: mở đúng Ngăn Case / tab Ý thức / trang bàn giao. */
-  const lamViec = (x: Viec) => {
+  /* GD-7: em của hồ sơ — điền sẵn cho "+ Task" và panel việc. */
+  const emHs = { id: data.id, ten: data.fullName, lopId: data.currentClass?.id ?? tt?.lopId ?? null, lop: data.currentClass?.code ?? tt?.lop ?? null };
+  const dsViec: Viec[] = data.dauHoSo?.viec?.cuaBan ?? [];
+  /**
+   * Bấm một việc ở "Việc cần làm" (③ R3.2, [XM-3]): CÙNG panel việc của Công việc, nổi phải, tại hồ sơ (không nhảy tab). Việc không có panel (Báo PH → tab
+   * Phối hợp, Bàn giao → trang lớp) mở như cũ.
+   */
+  const lamViec = (x: Viec, ds: Viec[] = dsViec) => {
+    const w = viecSangPanel(x, emHs);
+    if (w) { setViecMo({ it: w, ds }); return; }
     const m = x.mo;
     if (!m) return;
     if (m.loai === 'case') moCase(m.caseId, { paId: m.paId, viec: m.viec });
     else if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
-    else navigate(m.href);
+    else if (m.loai === 'duong') navigate(m.href);
   };
+  /* "Việc tiếp ›": việc kế sau việc đang mở trong danh sách lúc mở, còn trong danh sách mới và mở được tại panel. */
+  const keTiep = viecMo ? viecMo.ds.slice(viecMo.ds.findIndex((x) => x.key === viecMo.it.key) + 1)
+    .find((x) => dsViec.some((y) => y.key === x.key) && viecSangPanel(x, emHs)) ?? null : null;
+  const daLamViec = () => { invalidate('/my-work'); invalidate(`/students/${data.id}/y-thuc`); reload(); board.reload(); yThuc.reload(); };
+  /* "+ Task" (③ R3.1, K6): mục theo quyền máy chủ — Case `canReport` · Vi phạm `canRecord` · Tình hình `coTheBao` (GV báo TVV) / `coTheHoi` (TVV hỏi GVCN). */
+  const mucTask = [
+    ...(data.viewer.canReport ? ['case' as const] : []),
+    ...(yThuc.data?.canRecord ? ['vi-pham' as const] : []),
+    ...(yThuc.data?.coTheBao || yThuc.data?.coTheHoi ? ['tinh-hinh' as const] : []),
+  ];
+  const nutTask = (noi: 'dau' | 'noi') => mucTask.length > 0 && (
+    <NutTask noi={noi} em={{ id: emHs.id, ten: emHs.ten, lopId: emHs.lopId ?? 0, lop: emHs.lop ?? '', tvv: data.tvv?.ten ?? data.consultantName ?? null }}
+      muc={mucTask} hoi={!yThuc.data?.coTheBao && yThuc.data?.coTheHoi ? { gvcn: yThuc.data?.gvcn ?? null } : undefined}
+      cycleId={cy?.id ?? null} phu={!!data.lopHoc?.chiXem}
+      onMoCase={(cid, viec) => { reload(); setOpenCase({ caseId: cid, viec }); }}
+      onXong={(cid) => { daLamViec(); if (cid) setOpenCase({ caseId: cid }); }} />
+  );
 
   return (
     <div className="page space-y-4">
@@ -258,13 +288,6 @@ export default function StudentDetailPage() {
             <h1 className="m-0 flex flex-wrap items-center gap-2 text-xl font-bold leading-tight text-slate-100">
               {data.fullName}
               <MissingBadge items={data.missing} />
-              {/* L6 / 2.3 (chủ SP 13/11): GV lớp (không sửa thẳng Target) — nhắc + "Đề xuất sửa" tại chỗ, thay việc "Điền Target" (không vào số việc). */}
-              {data.viewer.coTheDeXuatSua && data.missing?.some((m: { key: string }) => m.key === 'target') && (
-                <>
-                  <Info>{t('Em chưa có Target')}</Info>
-                  <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setViecQuanLy('de-xuat-sua')}>{t('Đề xuất sửa')}</button>
-                </>
-              )}
               {/* P7 (k6): em Tạm dừng ở Lưu trữ — "Tạm dừng 14/09 · Có thể quay lại"; em Kết thúc học — "Kết thúc học 22/08". */}
               {data.status === 'inactive' && data.archivedAt ? <Info>{t('Tạm dừng {ngay} · Có thể quay lại', { ngay: ngay(data.archivedAt, homNay) })}</Info>
                 : data.status === 'finished' && data.finishedAt ? <Info>{t('Kết thúc học {ngay}', { ngay: ngay(data.finishedAt, homNay) })}</Info>
@@ -278,10 +301,9 @@ export default function StudentDetailPage() {
             </h1>
             {/* ml-auto: xuống dòng ở 375 thì nút vẫn bám phải — menu ⋯ (mở về bên trái) không tràn khỏi màn. */}
             <div className="ml-auto flex flex-wrap items-start gap-2">
-              {/* RKC (mở Q-B1): em Lưu trữ vẫn + Case / Gia hạn như em đang học. */}
-              {data.viewer.canReport && (
-                <button type="button" className={NUT_DAU_HO_SO} onClick={() => setReportOpen(true)}>+ Case</button>
-              )}
+              {/* GD-7 (③ R3.1, [XM-2]): "+ Task" (Case · Vi phạm / Nhắc nhở · Tình hình học tập) thay "+ Case" — em điền sẵn, không bước chọn em.
+                  RKC (mở Q-B1): em Lưu trữ vẫn có (nút thường — [XM-5]). 375: nút tròn nổi (K8). */}
+              {nutTask('dau')}
               {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → MenuDong không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
               {(() => {
                 const muc = mucQuanLyHocVien({
@@ -305,7 +327,9 @@ export default function StudentDetailPage() {
             </div>
           </div>
           {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.finishedAt ?? null} />
-            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} mon={cy?.monHoc ?? null} />}
+            : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} mon={cy?.monHoc ?? null}
+              /* L6 / 2.3 (chủ SP 13/11) · ③ K5: GV lớp (không sửa thẳng Target) — nhắc + "Đề xuất sửa" ở ô Target, thay việc "Điền Target" (không vào số việc). */
+              deXuatTarget={data.viewer.coTheDeXuatSua && data.missing?.some((m: { key: string }) => m.key === 'target') ? () => setViecQuanLy('de-xuat-sua') : undefined} />}
           <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} />
         </header>
       </div>
@@ -334,7 +358,7 @@ export default function StudentDetailPage() {
         thi={homNay && !cy.ratio ? thiThatCua(cy as LoTrinhD, homNay) : null} />}
 
       {/* UI-HO-SO-HV: thanh Việc cần làm — chỗ DUY NHẤT có việc; bấm = mở đúng chỗ làm ngay tại trang. */}
-      <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={lamViec} />
+      <ThanhViec viec={data.dauHoSo.viec} homNay={homNay} onLam={(x) => lamViec(x)} dangMo={viecMo?.it.key ?? null} />
       {/* PR-VAI-b (V1/K3-47): Quản lý duyệt ngay trong hồ sơ — chỗ của thanh việc (Quản lý không có việc học thuật với em). */}
       {data.viewer.coTheDuyet && <DaiChoDuyet studentId={data.id} homNay={homNay} onDoi={reload} onThemPa={(caseId) => setOpenCase({ caseId, viec: 'them-pa' })} />}
 
@@ -346,7 +370,8 @@ export default function StudentDetailPage() {
       <HangTab panelId="hshv-vung" ariaLabel={t('Nội dung hồ sơ học viên')} value={tab} onChange={setTab}
         tabs={[
           { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
-          { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'], canhBao: yThuc.data?.nhom === 'qua_han' || yThuc.data?.nhom === 'bat_buoc' },
+          /* GD-7 (③ K1 / K4, V22): bỏ chấm cảnh báo ở tab — việc Ý thức của người xem đã ở "Việc cần làm" (đỏ khi quá hạn). */
+          { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'] },
           { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
         ]} />
 
@@ -464,6 +489,11 @@ export default function StudentDetailPage() {
         <NganCase caseId={ngan.caseId} paId={ngan.paId} viec={ngan.viec} hocVien={data.fullName} lop={data.currentClass?.code}
           onClose={dongNgan} onChanged={reload} />
       )}
+
+      {/* GD-7: panel việc của Công việc, tại hồ sơ — lưu xong tải lại hồ sơ + bảng kỹ năng (thanh việc, cột Case cùng nguồn). */}
+      {viecMo && <PanelViec key={viecMo.it.key} it={viecMo.it} onDong={() => setViecMo(null)} onDaLam={daLamViec}
+        onTiep={keTiep ? () => lamViec(keTiep, viecMo.ds) : null} />}
+      {!viecMo && !ngan && nutTask('noi')}
 
       {giaHan && data.sauThi && (
         <HopGiaHan x={{ cycleId: data.sauThi.cycleId, han: data.sauThi.han, daGiaHan: data.sauThi.daGiaHan }} hocVien={data.fullName} lop={lopTruocSau?.code ?? null}

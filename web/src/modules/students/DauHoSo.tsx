@@ -1,6 +1,8 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, deadlineView, ngay, type DeadlineKind, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { bacNgan, chuKetQuaKyThi, chuPhuHuynh, chuTamDung, chuTuanHoc, nhanHan, ngay, type LienHe, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { IconNhom, ThePhu, thePhu } from '../congViec/DanhSachViec.tsx';
+import type { WorkItem } from '../worklist/WorkList.tsx';
 import { LoiTaiNho, TargetText } from '../../ui/ui.tsx';
 import { NhanLich } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
@@ -18,11 +20,16 @@ import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
 export type Viec = {
   key: string; loai: string; chu: string; khoa?: string; bien?: Bien; kyNang: string | null; caseId: number | null; paId: number | null;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
+  /** GD-7a (V22): độ gấp của hạn — màu viên hạn. */
+  gap: 'qua-han' | 'gan' | 'chua' | null;
   nguoi: { id: number | null; ten: string; vai: string | null }; cuaBan: boolean; nut: string;
   /** U02: thẻ phụ dưới tên việc (kỳ, PA) — `viecHocVien.ts`. */
   the?: { chu: string; khoa?: string; bien?: Bien }[];
   mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'them-pa' }
-    | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' } | { loai: 'duong'; href: string } | null;
+    | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' }
+    | { loai: 'nhap-diem'; classId: number; luot: string; kns: string[]; tuanThi: string | null; periodId: number | null; kind: string | null; soBai: number | null }
+    | { loai: 'tinh-hinh'; viecId: number; cauHoi: string }
+    | { loai: 'duong'; href: string } | null;
 };
 
 /** PR-EN-c: chữ máy chủ dựng — có khoá thì dịch theo khoá, không thì theo chính chữ. */
@@ -36,10 +43,16 @@ const nutViec = (x: Viec) => dich(x.nut);
  *   lớp thường  Lớp MB FOU 15 · Chương trình FOU · Tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS 06/2027 · GVCN · TVV
  */
 /** P8 (mockup k7): `mon` = "L · R · W2 · S" — chỉ khi em không học đủ 5 môn (null = đủ, không hiện). */
-export function DongThongTin({ tt, tvv, mon }: { tt: any; tvv?: string | null; mon?: string | null }) {
+export function DongThongTin({ tt, tvv, mon, deXuatTarget }: { tt: any; tvv?: string | null; mon?: string | null;
+  /** GD-7 (③ K5, R3.6 · L6 / 2.3): GV lớp, em chưa có Target — ô Target "Chưa có" màu nhắc + "Đề xuất sửa" tại chỗ (không thành việc). */
+  deXuatTarget?: () => void }) {
   if (!tt?.lop) return <p className="m-0 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
   const target = ((tt.target !== null && tt.target !== undefined) || (tt.kck && !tt.kyThi))   // OV-9: "6.5 · KCK" · "— · KCK"; P13: KET / PET số nguyên
-    && <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} kyThi={tt.kyThi} /></span>} />;
+    ? <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} kyThi={tt.kyThi} /></span>} />
+    : deXuatTarget && <NhanGt key="tg" n="Target" g={<span className="inline-flex flex-wrap items-baseline gap-x-2">
+      <span className="font-semibold text-soon">{t('Chưa có')}</span>
+      <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={deXuatTarget}>{t('Đề xuất sửa')}</button>
+    </span>} />;
   /* P13 KET-PET: kết quả thi thật "159 · Grade B · B1" (máy tính khi hiện) — chưa đủ 4 điểm thì không hiện. */
   const thiThat = tt.kyThi && tt.thiThat
     && <NhanGt key="tt" n={t('Thi thật {ten}', { ten: tt.kyThi.ten })} g={<span className="tabular-nums">{chuKetQuaKyThi(tt.thiThat)}{tt.thiThat.dat != null && ` · ${tt.thiThat.dat ? t('Đạt Target') : t('Chưa đạt Target')}`}</span>} />;
@@ -91,84 +104,113 @@ export function DongLienHe({ l, email, dob, tvv }: { l: LienHe | null | undefine
   );
 }
 
-/** Loại hạn của từng loại việc — để chữ hạn đúng đồng hồ (HE_GIAO_DIEN §4). */
-const LOAI_HAN: Record<string, DeadlineKind> = {
-  'nguyen-nhan': 'xac-minh-sos', 'de-ra-pa': 'lap-pa', 'xac-nhan-pa': 'xac-minh-sos', 'ghi-ket-qua': 'cap-nhat-pa',
-  'cho-duyet': 'duyet', 'mini-test': 'mini-test', 'y-thuc': 'xu-ly-vi-pham', 'yt-xem': 'xu-ly-vi-pham', 'yt-thuc-hien': 'xu-ly-vi-pham', 'ban-giao': 'viec-van-hanh', 'ban-giao-mon': 'viec-van-hanh',
+/** Viên hạn (V22, ⑤ B1 `.han-v`) theo `gap` máy chủ (`viecHocVien.ts`, một hàm cho mọi dòng): đỏ quá hạn · vàng gần tới · xám chưa tới — chỉ màu, không biểu tượng. */
+const MAU_GAP: Record<NonNullable<Viec['gap']>, string> = {
+  'qua-han': 'bg-late-bg text-late font-semibold',
+  gan: 'bg-soon-bg text-soon font-semibold shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]',
+  chua: 'bg-[rgb(var(--muted-bg-rgb))] text-dim font-medium',
 };
-
-/** Hạn 12 px (Q22): "hạn hết 02/10" mờ · quá hạn: "quá hạn 3 ngày" đỏ (V22: không biểu tượng) (`chiQuaHan`: bỏ mốc, như thanh việc mockup 24 A). */
-export function HanViec({ x, homNay, chiQuaHan }: { x: Viec; homNay: string | null; chiQuaHan?: boolean }) {
-  if (!x.han) return null;
-  const v = deadlineView({ kind: LOAI_HAN[x.loai] ?? 'viec-van-hanh', due: x.han, today: homNay ?? '' });
-  if (v.quaHan) {
-    return (
-      <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold tabular-nums text-bad" title={v.text}>
-        {chiQuaHan ? v.quaHan : `${v.han} · ${v.quaHan}`}
-      </span>
-    );
-  }
-  return <span className={`whitespace-nowrap text-[12px] tabular-nums ${v.ganHan ? 'font-semibold text-soon' : 'text-slate-400'}`} title={v.text}>{v.han}{v.homNay ? ` · ${t('hôm nay')}` : ''}</span>;
+function HanGap({ x, homNay }: { x: Viec; homNay: string | null }) {
+  if (!x.han || !x.gap) return x.han ? null : <span className="sr-only">{t('không hạn')}</span>;
+  const chu = x.gap === 'qua-han' ? (x.quaHanNgay ? t('quá hạn {n} ngày', { n: x.quaHanNgay }) : t('quá hạn')) : nhanHan(x.han, homNay ?? '');
+  return <span className={`inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded-full px-[9px] text-xs tabular-nums ${MAU_GAP[x.gap]}`}>{chu}</span>;
 }
 
-function NutGap({ mo, onClick, children }: { mo: boolean; onClick: () => void; children: ReactNode }) {
-  return (
-    <button type="button" aria-expanded={mo} onClick={onClick}
-      className="inline-flex min-h-[44px] items-center gap-[5px] border-0 bg-transparent p-0 text-[12px] font-semibold text-[color:var(--accent)] hover:underline sm:min-h-[28px]">
-      {children}<IconGap mo={mo} />
-    </button>
-  );
-}
+/* ③ K1 `.vl-luoi .viec.dt-lop`: [ô vuông 28 | tên + thẻ phụ | hạn 150 | nút 118] từ 640 px; 375 [ô | tên + thẻ phụ, hạn dưới | ›] — chạm cả dòng. */
+const DONG_VIEC = 'grid min-h-[56px] grid-cols-[28px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-3 py-2 text-left sm:grid-cols-[28px_minmax(0,1fr)_150px_118px] sm:px-4 sm:py-1.5';
 
 /**
- * THANH "VIỆC CẦN LÀM" (UI-HO-SO-HV, `ho-so-hv.html` `.thanh-viec` + ô việc của Hồ sơ lớp khu b) — CHỖ DUY NHẤT trên hồ sơ có việc: mỗi việc CỦA NGƯỜI XEM
- * với em một ô một dòng (MOCKUP-1111: cả ô là nút — tên việc · phần phụ · hạn), vạch trái theo hạn (quá hạn đỏ · còn lại xanh). Bấm = mở đúng chỗ làm
- * ngay tại trang (cột Case & PA / ngăn Case / tab Ý thức / panel). Quá 3 việc → "+n việc khác của tôi". UI-HO-SO-HV-2 (mockup M5): CHỈ việc của người xem — bỏ
- * "n việc của người khác" (TVV / CX / Admin vẫn có khối Đang xử lý). Người xem không có việc → không vẽ (T72).
+ * THANH "VIỆC CẦN LÀM" (GD-7, mockup ③ K1 `.vl-hs` + ⑤ B — dòng việc chuẩn, lời 24): MỘT thẻ nhóm — dải "Việc cần làm · n việc · n quá hạn" rồi ĐỦ việc của
+ * NGƯỜI XEM với em (máy chủ `viecHocVien.ts`: Case, Ý thức, Nhập điểm, Trả lời tình hình…), quá hạn lên đầu. Dòng: ô vuông · tên việc ngắn · thẻ phụ
+ * (kỹ năng → kỳ / tuần → số) · viên hạn · nút động từ; lớp + tên em đã ở đầu hồ sơ nên không lặp ([XM-1]). ≥ 1024 hai cột dòng; 375 một cột.
+ * Bấm dòng = panel việc tại chỗ (nơi gọi — `onLam`). Người xem không có việc → không vẽ (T72).
  */
-export function ThanhViec({ viec, homNay, onLam }: { viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null; onLam: (x: Viec) => void }) {
-  const [mo, setMo] = useState(false);
-  if (!viec?.cuaBan.length) return null;
-  const hien = mo ? viec.cuaBan : viec.cuaBan.slice(0, 3);
-  const con = viec.cuaBan.length - 3;
-  /* MOCKUP-1111 K5: "+n việc khác" mở thêm tại chỗ (việc của một em ít) — 1440 dưới nhãn, 375 cuối dải. */
-  const nutCon = (lop: string) => con > 0 && <span className={lop}><NutGap mo={mo} onClick={() => setMo(!mo)}>{t('{n} việc khác của tôi', { n: con })}</NutGap></span>;
+export function ThanhViec({ viec, homNay, onLam, dangMo }: {
+  viec: { cuaBan: Viec[]; nguoiKhac: Viec[] } | null | undefined; homNay: string | null; onLam: (x: Viec) => void;
+  /** Khoá việc đang mở trong panel — dòng tô nhấn. */
+  dangMo?: string | null;
+}) {
+  const ds = viec?.cuaBan ?? [];
+  if (!ds.length) return null;
+  const quaHan = ds.filter((x) => x.gap === 'qua-han').length;
   return (
-    /* MOCKUP-1111 màn 1 K5 (chủ SP duyệt 11/11): CÙNG ô việc một dòng với hồ sơ lớp — nhãn "Việc của tôi · n" + ô cao 40 px (375: hai dòng 56 px). */
-    <section aria-label={t('Việc của tôi')} className="grid items-start gap-1.5 lg:grid-cols-[auto_repeat(3,minmax(0,1fr))] lg:gap-2">
-      <span className="grid gap-px pr-1 text-[13px] font-medium leading-[1.3] text-slate-400 lg:row-span-full lg:pt-2.5">
-        <span className="whitespace-nowrap">{t('Việc của tôi')} · <b className="tabular-nums text-slate-100">{viec.cuaBan.length}</b></span>
-        {nutCon('max-lg:hidden')}
-      </span>
-      {hien.map((x) => <OViec key={x.key} x={x} homNay={homNay} onLam={onLam} />)}
-      {nutCon('justify-self-end lg:hidden')}
+    <section aria-label={t('Việc cần làm')} className="card overflow-clip p-0">
+      <h2 className="m-0 flex min-h-[44px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
+        style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
+        <svg viewBox="0 0 16 16" aria-hidden className="h-4 w-4 shrink-0 fill-none stroke-current text-[color:var(--accent)]" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M3 4l1.5 1.5L7 3M3 9l1.5 1.5L7 8M9 4.5h4M9 9.5h4M3 13h10" /></svg>
+        <span className="text-[color:var(--text)]">{t('Việc cần làm')}</span>
+        <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
+          style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{ds.length}<span className="max-sm:sr-only">&nbsp;{t('việc')}</span></span>
+        {quaHan > 0 && <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{t('{n} quá hạn', { n: quaHan })}</span>}
+      </h2>
+      <ul className="m-0 grid list-none p-0 lg:grid-cols-2">
+        {ds.map((x, i) => (
+          <li key={x.key} className={`min-w-0 ${i > 0 ? 'border-t' : ''} ${i === 1 ? 'lg:border-t-0' : ''} ${i % 2 === 1 ? 'lg:border-l' : ''}`} style={{ borderColor: 'var(--line)' }}>
+            <DongViecHs x={x} homNay={homNay} onLam={onLam} dangMo={dangMo === x.key} />
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
 
-/**
- * Một ô việc (MOCKUP-1111, cùng dáng `ThanhViecLop`): CẢ Ô là nút làm việc — tên việc = nhãn hành động (14/600, không cắt trước) · phần phụ
- * (kỹ năng, kỳ, PA — 13 mờ, cắt "…" trước) · hạn bên phải. Vạch trái 3 px: quá hạn đỏ, còn lại nhấn. Việc không mở được tại hồ sơ → ô không bấm.
- */
-function OViec({ x, homNay, onLam }: { x: Viec; homNay: string | null; onLam: (x: Viec) => void }) {
-  const vach = x.quaHanNgay !== null ? 'rgb(var(--bad-rgb))' : 'var(--accent)';
+/** Một dòng việc: cả dòng bấm được (nút động từ bên phải cùng việc); việc không mở được tại hồ sơ → dòng chữ, không nút. */
+function DongViecHs({ x, homNay, onLam, dangMo }: { x: Viec; homNay: string | null; onLam: (x: Viec) => void; dangMo: boolean }) {
   const chu = chuViec(x);
-  const nut = nutViec(x);
-  /* Tên việc thường bắt đầu bằng nhãn nút ("Ghi kết quả PA · Reading") → tên = nhãn, phần còn lại vào phần phụ; không thì giữ cả chữ. */
-  const ten = chu.startsWith(nut) ? nut : chu;
-  const phu = [chu.startsWith(nut) ? chu.slice(nut.length).replace(/^[\s·]+/, '') : '', ...(x.the ?? []).map((th) => dichChu(th))].filter(Boolean).join(' · ');
-  const lop = 'grid min-w-0 grid-cols-[minmax(0,1fr)_auto] content-center gap-x-2 gap-y-0.5 rounded-lg border border-l-[3px] bg-[color:var(--surface)] px-3 text-left max-lg:h-14 lg:flex lg:h-10 lg:items-center';
-  const trong = (
-    <>
-      <span className="truncate text-sm font-semibold text-slate-100 lg:max-w-[72%] lg:shrink-0">{ten}</span>
-      {x.han && <span className="col-start-2 row-start-1 shrink-0 lg:order-last lg:ml-auto"><HanViec x={x} homNay={homNay} chiQuaHan /></span>}
-      {phu && <span className="col-span-2 min-w-0 truncate text-[13px] font-medium text-slate-400">{phu}</span>}
-    </>
+  const nut = nutViec(x).replace(/ ›$/, '');
+  /* Tên việc thường bắt đầu bằng nhãn nút ("Ghi kết quả PA · Reading") → tên = nhãn, phần sau thành thẻ phụ; không thì đoạn đầu của chữ. */
+  const ten = chu.startsWith(nut) ? nut : chu.split(' · ')[0];
+  /* GD-4d (lời 35, ⑤ H5): tên bậc trong thẻ phụ VIẾT HOA, dạng tắt ("REPORT 2", "WL 1"). */
+  const the = thePhu([chu.slice(ten.length).replace(/^[\s·]+/, ''), ...(x.the ?? []).map((th) => dichChu(th))]).map(bacNgan);
+  const bam = x.mo ? () => onLam(x) : undefined;
+  return (
+    <div data-hd="hs-viec" data-khoa={x.key} onClick={bam} title={chu}
+      className={`${DONG_VIEC} ${bam ? 'cursor-pointer hover:bg-[color:var(--accent-soft)]' : ''} ${dangMo ? 'bg-[color:var(--accent-soft)] shadow-[inset_3px_0_0_var(--accent)]' : ''}`}>
+      <span aria-hidden className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)] max-sm:self-start"><IconNhom k="ca-lop" /></span>
+      <span className="grid min-w-0 gap-px">
+        {bam
+          ? <button type="button" aria-label={[ten, ...the].join(', ')} aria-expanded={dangMo} onClick={(e) => { e.stopPropagation(); bam(); }}
+              className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</button>
+          : <span className="text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</span>}
+        <ThePhu ds={the} />
+        <span className="mt-0.5 sm:hidden"><HanGap x={x} homNay={homNay} /></span>
+      </span>
+      <span className="max-sm:hidden"><HanGap x={x} homNay={homNay} /></span>
+      {bam ? <>
+        <span className="flex max-sm:hidden"><button type="button" tabIndex={-1} aria-hidden className="btn btn-sm h-[30px] min-h-[30px] w-full justify-center whitespace-nowrap px-2.5 text-[13px] font-semibold"
+          onClick={(e) => { e.stopPropagation(); bam(); }}>{nut}</button></span>
+        <span aria-hidden className="text-[15px] text-faint sm:hidden">›</span>
+      </> : <span />}
+    </div>
   );
-  const nhan = [ten, phu].filter(Boolean).join(', ');
-  return x.mo
-    ? <button type="button" className={`${lop} hover:bg-[color:var(--nut-hover)]`} style={{ borderColor: 'var(--line)', borderLeftColor: vach }} title={chu} aria-label={nhan} onClick={() => onLam(x)}>{trong}</button>
-    : <div className={lop} style={{ borderColor: 'var(--line)', borderLeftColor: vach }} title={chu}>{trong}</div>;
+}
+
+/** Loại việc hồ sơ → nhóm việc của Công việc (`PanelViec` mở đúng panel theo `group`). Không có ở đây → mở như cũ (tab / trang). */
+const NHOM_PANEL: Partial<Record<string, string>> = {
+  'de-ra-pa': 'no_plan', 'xac-nhan-pa': 'xac_nhan_pa', 'ghi-ket-qua': 'ghi_ket_qua_pa', 'mini-test': 'mini_test',
+  'y-thuc': 'yt_xu_ly', 'yt-xem': 'yt_xem', 'yt-thuc-hien': 'yt_thuc_hien', 'nhap-diem': 'score', 'tinh-hinh': 'yt_hoi_tinh_hinh',
+  'buoc-tiep': 'buoc_tiep', 'thi-that': 'thi_that',
+};
+
+/**
+ * GD-7 (③ R3.2, [XM-3]): việc của thanh "Việc cần làm" → `WorkItem` cho CÙNG panel việc của Công việc (`PanelViec`) — khoá việc trùng khoá `myWork` (Q2),
+ * nên panel đọc / ghi đúng đường cũ, không đường mới. `null` = việc mở chỗ khác (Báo PH → tab Phối hợp, Bàn giao → trang lớp).
+ */
+export function viecSangPanel(x: Viec, em: { id: number; ten: string; lopId: number | null; lop: string | null }): WorkItem | null {
+  const m = x.mo;
+  const group = x.loai === 'nguyen-nhan' ? (x.key.startsWith('cause:') ? 'cause' : 'ghi_nhan_xet') : NHOM_PANEL[x.loai];
+  if (!m || !group) return null;
+  const nd = m.loai === 'nhap-diem' ? m : null;
+  return {
+    key: x.key, group, urgency: x.gap === 'qua-han' ? 'overdue' : x.han && x.gap === 'gan' ? 'today' : 'normal',
+    studentId: em.id, studentName: em.ten, classId: nd?.classId ?? em.lopId, classCode: em.lop,
+    attemptId: null, attemptNo: null, caseId: x.caseId, paId: x.paId, level: null,
+    reason: m.loai === 'tinh-hinh' ? m.cauHoi : chuViec(x), actionLabel: x.nut, href: m.loai === 'duong' ? m.href : '',
+    tieuDe: chuViec(x), ownerId: x.nguoi.id, owner: x.nguoi.ten, mine: x.cuaBan, due: x.han, statusLabel: '',
+    contextLabel: null, count: null,
+    ...(nd ? { luot: nd.luot, kn: nd.kns[0], kns: nd.kns, tuanThi: nd.tuanThi, periodId: nd.periodId, kind: nd.kind, soBai: nd.soBai ?? undefined, emIds: [em.id] } : {}),
+    ...(m.loai === 'tinh-hinh' ? { viecId: m.viecId } : {}),
+  };
 }
 
 /**

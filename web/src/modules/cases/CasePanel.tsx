@@ -11,7 +11,7 @@ import { NutChon, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
-import { LinkLuot, MuiTen, NhanTamDung, type LuotCase } from './SkillBoard.tsx';
+import { LinkLuot, NhanTamDung, type LuotCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -25,7 +25,8 @@ import {
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
-import { quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
+import { nhatKyPa, quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
+import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import { CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -402,11 +403,9 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
       {paMuc}
       {ketLuan}
       <div className="muc !pt-2">
-        {lichSu.length > 0 && (
-          <details className="group">
-            <summary className="dong-gap cursor-pointer list-none"><span>{t('Lịch sử')} · {lichSu.length}</span>
-              <span className="phai link-nho">{t('Xem')} <span aria-hidden className="inline-flex transition-transform group-open:rotate-90"><MuiTen mo={false} /></span></span></summary>
-            <ol className="m-0 mt-2 list-none space-y-2 border-l p-0 pl-3" style={{ borderColor: 'var(--line)' }}>
+        {/* GD-7 (GD-4c H4 — một kiểu lịch sử): gập "Lịch sử · n" chung; dòng giữ nội dung riêng của Case (điểm, SOS, Xoá kết quả, sửa xem lại). */}
+        <LichSuGap so={lichSu.length} className="mb-2">
+            <ol className="m-0 list-none space-y-2 p-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
                 <li key={m.key} className="text-[13px]">
                   <span className="block text-xs tabular-nums text-slate-400">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
@@ -419,9 +418,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
                 </li>
               ))}
             </ol>
-          </details>
-        )}
-        <div className="border-t pt-1" style={{ borderColor: lichSu.length ? 'var(--line)' : 'transparent' }}>
+        </LichSuGap>
+        <div className="pt-1">
           <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={`${t('Bằng chứng')} · ${bc.data?.rows.length || t('chưa có')}`} onChanged={bc.reload} />
         </div>
       </div>
@@ -879,9 +877,12 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
           <NutXoaKetQua f={fGan} onXong={lamMoi} />
         </> : <span className="text-slate-300">{t('Chưa có')}{hanGhi ? ` · ${t('hạn {ngay}', { ngay: ngan(iv.actionDue) })}` : ''}</span>}</dd>
       </>}
-      <dt>{t('Nhật ký')}</dt>
-      <dd><NhatKyPa pa={iv} ketQua={ketQua} /></dd>
     </dl>
+  );
+  /* GD-7 (GD-4c H4): Nhật ký PA = gập "Nhật ký · n" chung, dưới các trường của PA. */
+  const soNhatKy = nhatKyPa(iv, ketQua, homNay).length;
+  const nhatKy = (
+    <LichSuGap so={soNhatKy} tieuDe={t('Nhật ký')} className="mt-2"><div className="px-3 py-2"><NhatKyPa pa={iv} ketQua={ketQua} /></div></LichSuGap>
   );
 
   const xoaNut = theXoa ? (
@@ -921,7 +922,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
             {theXoa && vw.canApprove && <div className="pt-2.5"><TheYeuCau gon yc={theXoa} onXong={lamMoi} /></div>}
             {vw.canApprove && iv.yeuCau && (iv.yeuCau.loai === 'de_xuat_pa' || iv.yeuCau.loai === 'giu_pa_gv') && <div className="pt-2.5"><TheYeuCau gon yc={iv.yeuCau} onXong={lamMoi} /></div>}
             <div className="pt-1"><DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={lamMoi} /></div>
-            {fld}
+            {fld}{nhatKy}
             {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
             {choDuyet && !(vw.canApprove && iv.yeuCau) && (
               <p className="m-0 text-xs text-slate-400">{t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}</p>
