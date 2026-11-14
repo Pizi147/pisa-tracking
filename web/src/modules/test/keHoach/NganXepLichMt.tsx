@@ -273,9 +273,9 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
 
       <Khoi so={1} tieuDe={t('Đợt')}>
         <div role="group" aria-label={t('Đợt')} className="flex flex-wrap gap-1.5">
-          <NutChon nho dauTrong chon={dot === 'moi'} onClick={() => setDot('moi')}
+          <NutChon nho chon={dot === 'moi'} onClick={() => setDot('moi')}
             title={t('Mỗi em một đợt riêng: đợt nhỏ nhất chưa có lịch của em; không có thì đợt kế tiếp.')}>{t('MT mới')}</NutChon>
-          {cot.map((n) => <NutChon key={n} nho dauTrong chon={dot === n} onClick={() => setDot(n)}>MT{n}</NutChon>)}
+          {cot.map((n) => <NutChon key={n} nho chon={dot === n} onClick={() => setDot(n)}>MT{n}</NutChon>)}
         </div>
       </Khoi>
 

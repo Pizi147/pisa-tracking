@@ -422,13 +422,11 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/hang\.scrollLeft\s*=/.test(s) || /\.scrollLeft\s*=/.test(s), 'chưa đặt scrollLeft');
   });
 
-  check('C36 · NutChon: ✓ đè góc (absolute), nút relative, không padding / chừa chỗ theo `chon`; giữ min-w-0 whitespace-normal leading-tight', () => {
+  check('C36 · NutChon (NUT-CHON-DAU-TRONG, chủ SP / PTA 15/11): ✓ là CHỮ trong chip trước tên — không ô góc absolute lòi ra ngoài viền; không padding / chừa chỗ theo `chon`; giữ min-w-0 whitespace-normal leading-tight', () => {
     const n = than(doc('web/src/ui/ui.tsx'), 'NutChon');
-    assert(/(^|[\s`'"])relative(\s|$)/.test(n.split('{chon &&')[0]), 'nút chưa relative');
-    /* GD-11b: `dauTrong` (✓ chữ trong chip, chip chọn chuẩn) là tuỳ chọn; mặc định vẫn ✓ góc. */
-    const v = /\{chon && \(dauTrong \? <span aria-hidden>\{dau\}<\/span>\s*: <span([^>]*)>/.exec(n);
-    assert(v && /(^|\s)absolute(\s|$)/.test(v[1]) && /-right-1\.5/.test(v[1]) && /-top-1\.5/.test(v[1]), `✓: ${v?.[1]}`);
-    assert(!/shrink-0/.test(v![1]), '✓ còn nằm trong luồng chữ (shrink-0)');
+    const v = /\{chon && <span([^>]*)>\{dau\}<\/span>\}\{children\}/.exec(n);
+    assert(v && !/absolute|-right-|-top-/.test(v[1]), `✓ phải là chữ trong chip: ${v?.[1]}`);
+    assert(!/dauTrong/.test(doc('web/src/ui/ui.tsx')) && !tsx('web/src').some((f) => /<NutChon\b[^>]*dauTrong/.test(doc(f))), 'một dáng — không còn tuỳ chọn dauTrong');
     assert(!/\$\{chon \? '[^']*\bp[lrx]-/.test(n) && !/invisible/.test(n), 'chừa chỗ ✓ bằng padding / invisible');
     for (const lop of ['min-w-0', 'whitespace-normal', 'text-center', 'leading-tight']) assert(n.includes(lop), `mất ${lop}`);
   });
