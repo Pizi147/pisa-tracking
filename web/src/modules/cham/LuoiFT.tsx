@@ -25,6 +25,8 @@ export type FtSheet = {
   classId: number; classCode: string; branchName: string;
   period: { id: number; code: string; weekStart: string; weekEnd: string } | null;
   editableSkills: string[];
+  /** LG-5c: "GV chấm S" đầu cột đã chọn ở máy chủ (người xem × lớp × đợt); chưa chọn = mặc định theo vai (GV Speaking "Tôi"). */
+  gvChamCot?: NguoiChon | null;
   rows: {
     attemptId: number; studentId: number; studentName: string; studentCode: string;
     /** OV-15b: phân biệt em trùng tên (lưới dán điểm đã bỏ — R1-BO-DAN-EXCEL). */
@@ -164,7 +166,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
   const suaS = data.editableSkills.includes('speaking');
   /* VIEC-NHO-2: Điểm theo lớp xem theo MT (không tuần) nhớ theo lớp × MT; MT cũ cũng có nút, không bắt buộc chọn. */
   const dot = dotGvCham(data.period?.id, data.rows.map((r) => r.attemptNo));
-  const [gvCotRieng, setGvCot] = useGvChamCot(data.classId, gvCham === undefined ? dot : null);
+  const [gvCotRieng, setGvCot] = useGvChamCot(data.classId, gvCham === undefined ? dot : null, data.gvChamCot);
   const gvCot = gvCham === undefined ? gvCotRieng : gvCham;
   const nutGv = suaS && !!dot && gvCham === undefined;
 

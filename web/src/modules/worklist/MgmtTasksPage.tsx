@@ -657,7 +657,7 @@ function CreateTaskForm({ onClose, onDone, branchId, parent, defaultGroup, unitR
   const [loai, setLoai] = useState<LoaiViec>('chi-nhanh');
   const giaoGv = !chiChiNhanh && loai === 'giao-gv';
   const branches = useApi<any[]>(!parent ? '/ref/branches' : null, []);
-  const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(giaoGv ? '/classes' : null, [giaoGv]);
+  const classes = useApi<{ rows: { id: number; code: string; studentCount: number }[] }>(giaoGv ? '/classes?gon=1' : null, [giaoGv]);   // OV6-DOC-CHON: chỉ mã + sĩ số
   /* Việc giao GV gắn tuần đang chạy — hiện ở Báo cáo đơn vị › "Việc được giao" của tuần đó (như trước khi gộp cửa). */
   const tuanNay = useApi<{ id: number | null; weekStart: string; code?: string; isAnchor: boolean }[]>(giaoGv ? '/ref/period-window' : null, [giaoGv]);
   /* F04: chưa rõ tuần (đang tải, lỗi, không có tuần neo) thì KHÔNG giao — việc giao GV thiếu kỳ không hiện ở danh sách tuần nào. */

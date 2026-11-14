@@ -9,6 +9,7 @@ import { addDaysIso, dotGvCham, mondayOfDate, ngay, soSanhLop, tuanLich } from '
 import { suaDuoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { LuoiFT, type FtSheet } from '../cham/LuoiFT.tsx';
 import { NutGvCham, useGvChamCot } from '../cham/GvCham.tsx';
+import type { NguoiChon } from '@shared/domain/index.ts';
 import { MuiTenGap } from '../yThuc/NhanViPham.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -53,7 +54,7 @@ function gom(rows: Dong[]): Tuan[] {
  * CHẤM SPEAKING (OV-14c; V6 GD-2 — mockup `thiet-ke/v21/trang-dau-gv.html` K3, K8c; `04-thiet-ke.md` 5.5, 12) — panel của MỘT việc chung
  * "Chấm Speaking" (GV Speaking chấm chéo S Mock / MT0 lớp chi nhánh mình). Gom **tuần Test → lớp**: tuần mới trên, "Tuần cũ hơn" gập cuối;
  * mỗi lớp một ngăn gập / mở với ĐÚNG lưới FT (`LuoiFT`, cột Speaking + Kết quả — cùng hộp chấm, cùng "Lưu · bài tiếp ›"); ô "GV chấm" đầu ngăn
- * (lớp × tuần, `useGvChamCot` — cùng ô nhớ với lưới Nhập điểm); bài đã có điểm ở ngăn con "Đã có điểm · n bài" ghi "GV chấm: … · dd/mm".
+ * (lớp × tuần, lưu máy chủ — `useGvChamCot` + `gv_cham_cot`, cùng ô với lưới Nhập điểm); bài đã có điểm ở ngăn con "Đã có điểm · n bài" ghi "GV chấm: … · dd/mm".
  * Hết bài của ngăn → "Lớp tiếp: {mã} ›" (ngăn kế còn bài) hoặc "Việc tiếp ›".
  */
 export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = null, nguoi = null }: { onDong: () => void; onDaLam: () => void;
@@ -64,7 +65,9 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   /** UI-CHAM-TEST: mở từ một lớp ở Chấm Test — mở sẵn ngăn của lớp đó. */
   lopDau?: number | null;
 }) {
-  const { data, error, reload } = useApi<{ rows: Dong[]; soBai: number }>(`/my-work/cham-speaking${nguoi ? `?nguoi=${nguoi}` : ''}`, [nguoi]);
+  const { data, error, reload } = useApi<{ rows: Dong[]; soBai: number;
+    /** LG-5c / GD-2: "GV chấm" đã chọn của người xem theo "lớp:đợt" (`docGvChamCotLo`); ô chưa chọn → `macDinh`. */
+    gvChamCot?: { chon: Record<string, NguoiChon | null>; macDinh: NguoiChon | null } }>(`/my-work/cham-speaking${nguoi ? `?nguoi=${nguoi}` : ''}`, [nguoi]);
   const { homNay } = useNgayNghiepVu();
   const [q, setQ] = useState('');
   const [mo, setMo] = useState<ReadonlySet<string> | null>(null);
@@ -99,7 +102,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
     loai: t('Việc chung · Chấm Speaking'),
     dong2: data ? [t('{n} bài', { n: data.soBai }), ...(quaHan ? [<ChipSoQuaHan key="q" n={quaHan} />] : [])] : [],
   };
-  const veNgan = (n: Ngan) => <NganLop key={n.khoa} n={n} mo={dangMo(n)} onMo={(m) => doi(n, m)} onDaLuu={daLuu} onHet={onHet(n)} homNay={homNay} />;
+  const veNgan = (n: Ngan) => <NganLop key={n.khoa} n={n} mo={dangMo(n)} onMo={(m) => doi(n, m)} onDaLuu={daLuu} onHet={onHet(n)} homNay={homNay} gvChamCot={data?.gvChamCot} />;
   const veTuan = (x: Tuan) => (
     <section key={x.khoa} aria-label={tuanLich(x.weekStart, homNay)}>
       <div className="flex items-center gap-2 px-4 pt-4 pb-2 text-[15px] font-bold" style={{ color: 'var(--text)' }}>
@@ -146,11 +149,13 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
 }
 
 /** Một ngăn lớp × tuần: đầu ngăn (mã · n bài · ⚠ quá hạn) bấm gập / mở; thân = ô "GV chấm" + lưới FT bài chờ + ngăn con "Đã có điểm". */
-function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay }: {
+function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay, gvChamCot }: {
+  gvChamCot?: { chon: Record<string, NguoiChon | null>; macDinh: NguoiChon | null };
   n: Ngan; mo: boolean; onMo: (mo: boolean) => void; onDaLuu: () => void; onHet: () => { nhan: string; onClick: () => void } | null; homNay: string | null;
 }) {
   const dot = dotGvCham(n.periodId, n.rows.map((r) => r.attemptNo));
-  const [gv, setGv] = useGvChamCot(n.classId, dot);
+  const tuMayChu = !gvChamCot ? null : dot && `${n.classId}:${dot}` in gvChamCot.chon ? gvChamCot.chon[`${n.classId}:${dot}`] : gvChamCot.macDinh;
+  const [gv, setGv] = useGvChamCot(n.classId, dot, tuMayChu);
   /* Ảnh chụp tập bài chờ lúc mở ngăn: bài vừa chấm đứng nguyên trong lưới (không nhảy sang "Đã có điểm" giữa phiên chấm). */
   const [choLucMo, setChoLucMo] = useState<ReadonlySet<number>>(() => new Set(n.rows.filter((r) => r.cho).map((r) => r.attemptId)));
   useEffect(() => { if (mo) setChoLucMo(new Set(n.rows.filter((r) => r.cho).map((r) => r.attemptId))); }, [mo]);   // eslint-disable-line react-hooks/exhaustive-deps -- chỉ chụp lúc mở

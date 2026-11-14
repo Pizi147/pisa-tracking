@@ -15,14 +15,14 @@ Phần cột trái / tab / đầu trang Công việc trong ảnh là việc củ
 | K3 đầu tuần | "W3 SEP · 8 bài · hạn 23/09", tuần mới trên | `veTuan`: `tuanLich` · `{n} bài` (bài chờ) · `ChipHan vien` hạn sớm nhất | KHỚP |
 | K3 ngăn lớp | mã lớp · n bài, gập / mở, lớp theo mã mặc định | `NganLop` nút `aria-expanded`, `soSanhLop`; mở sẵn ngăn đầu còn bài (hoặc `lopDau`) | KHỚP |
 | K3 ngăn lớp | — | "⚠ n quá hạn" ở đầu ngăn khi có | THÊM nhỏ (đầu tuần chỉ có hạn; ngăn quá hạn phải thấy khi gập) |
-| K3 ô GV chấm | "GV chấm [Đinh Thu Hằng · tôi]" đầu ngăn | `NutGvCham hang` + `useGvChamCot(lớp, tuần)` — cùng ô nhớ với lưới Nhập điểm; lưới không vẽ nút riêng (`LuoiFT gvCham`) | KHỚP (lưu máy chủ đến với LG-5 PR-C — hook dùng chung) |
+| K3 ô GV chấm | "GV chấm [Đinh Thu Hằng · tôi]" đầu ngăn | `NutGvCham hang` + `useGvChamCot(lớp, tuần)` — cùng ô nhớ với lưới Nhập điểm; lưới không vẽ nút riêng (`LuoiFT gvCham`) | KHỚP — lưu máy chủ (LG-5c `gv_cham_cot`, người xem × lớp × đợt); hàng đợi gửi kèm lựa chọn theo lô |
 | K3 lưới | Học viên · Speaking · Kết quả, cùng lưới K2 | `LuoiFT chiCot=['speaking'] gon` — cùng hộp chấm 4 tiêu chí, "Lưu · bài tiếp ›", Hoàn tác vắng; lưới vài cột ghi tên kỹ năng đầy đủ ("Speaking") và thu cột để vừa 375 (cũng áp K2) | KHỚP |
 | K3 Kết quả | "Chờ S" / "Chờ W2, S" / "✓ Đạt" / "SOS 1" | máy chủ gửi `cells` + `result` (từ bundle đã nạp); lưới chỉ vài cột ghi thẳng "Chờ …" thay "–" (cũng áp K2) | KHỚP |
 | K3 vắng | "vắng W2 SEP" dưới tên | lưới một cột: chữ vắng lên dòng phụ dưới tên (ô không lặp — DON-HINH B6) | KHỚP |
 | K3 Đã có điểm | ngăn con "Đã có điểm · 2 bài", dòng phụ "GV chấm: … · 13/09" | `details` + `LuoiFT` thứ hai, `phu` = `gvCham.ten` (không có → người nhập) · `ngay(enteredAt)` | KHỚP |
 | K3 Tuần cũ hơn | gập cuối, "7 bài · 6 quá hạn" | `details` tuần trước tuần trước; trong là cùng đầu tuần + ngăn | KHỚP |
 | K3 dòng quy chế | "Quy chế · "-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ · ⓘ" | — chờ thành phần dòng quy chế của GD-3 (`KhungPanel`) | KHÁC (phụ thuộc GD-3, thêm một dòng khi GD-3 merge) |
-| K3 chân | "✓ Đã lưu 1 bài" + "Việc tiếp ›" | `chan.phu` "✓ Đã lưu n bài" (đếm lần lưu từ khi mở panel, `role=status`) + "Việc tiếp ›" — chữ **xám** theo luật NEN K-HTT-3 ("Đã lưu" một cách báo, xanh lá dành cho ✓ vượt kỳ vọng); mockup vẽ xanh → [XM-1] PTA chốt | KHỚP |
+| K3 chân | "✓ Đã lưu 1 bài" + "Việc tiếp ›" | `chan.phu` "✓ Đã lưu n bài" (đếm lần lưu từ khi mở panel, `role=status`) + "Việc tiếp ›" — **xanh** như mockup (chủ SP chốt XM-1 14/11: "Đã lưu" luôn xanh, DESIGN.md V12); mọi nơi "✓ Đã lưu" dùng chung `LOP_DA_LUU` | KHỚP |
 | K3 hết bài ngăn | — | "Lớp tiếp: {mã} ›" (ngăn kế còn bài) / "Việc tiếp ›" | GIỮ luật R1-LUU-TIEP |
 | K8c 375 | toàn màn, "‹ Quay lại", cùng thứ tự | `KhungPanel` 375 toàn màn (sẵn có) | KHỚP |
 
@@ -46,12 +46,15 @@ Khác hình nhỏ không thành dòng: ô điểm trống dáng viền đứt c�
 Không mất thao tác nào.
 
 ## Turso
-`GET /my-work/cham-speaking` (GV Speaking, bộ demo, `prOv14c` OV14c-9): **18 câu → 18 câu**, 23 dòng → 23 dòng (trần 24 giữ). Thêm `cells`, `result`, `mt0Sos`, `studentCode`, `status` mỗi dòng — tính từ `loadBundle` đã nạp (`resultOf(a, scores, skips, skillRows)`), không câu đọc mới. Trang đầu / Công việc không thêm request (panel chỉ gọi khi bấm việc, như trước).
+`GET /my-work/cham-speaking` (GV Speaking, bộ demo, `prOv14c` OV14c-9): **18 câu → 19 câu** (+1: `docGvChamCotLo` — lựa chọn GV chấm của người xem ở các lớp của hàng đợi, một câu theo khoá chính), 23 dòng → 23 dòng (trần 24 giữ). Thêm `cells`, `result`, `mt0Sos`, `studentCode`, `status` mỗi dòng — tính từ `loadBundle` đã nạp (`resultOf(a, scores, skips, skillRows)`), không câu đọc mới. Trang đầu / Công việc không thêm request (panel chỉ gọi khi bấm việc, như trước).
 
 ## Phụ thuộc
 - **GD-3** (dòng quy chế trong `KhungPanel`): khi merge, thêm một dòng "\"-\" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ" cho panel này.
-- **LG-5 PR-C** (GV chấm lưu máy chủ): panel dùng `useGvChamCot(lớp, tuần)` chung với lưới Nhập điểm — đổi kho lưu ở hook là panel theo, không sửa ở đây.
+- **LG-5c** (#đã merge, GV chấm lưu máy chủ): panel ghi qua `useGvChamCot` → `PUT /cham/gv-cham-cot`, đọc kèm hàng đợi (`gvChamCot`).
 - **GD-1** đổi tên tab / dải đầu tab; tệp không chồng với PR này.
 
 ## Chú thích `ponytail:`
 Không có.
+
+## Đổi thêm theo chủ SP 14/11 (XM-1)
+"✓ Đã lưu" luôn xanh: hằng `LOP_DA_LUU = 'text-ok'` (`ui/KhuonViec.tsx`) dùng ở `ChuLuu`, Hoàn tác, lưới FT, `ODiem`, hộp nhập điểm, panel Sau thi, Xác nhận xử lý, Hộp chờ duyệt, Tạm dừng / Kết thúc, Xét lại, Bàn giao, Công việc. Phép `prNenTypoMau` K-HTT-3 đổi thành "Đã lưu luôn xanh — một lớp màu" (giữ ngoài lệ "Đã lưu nháp").

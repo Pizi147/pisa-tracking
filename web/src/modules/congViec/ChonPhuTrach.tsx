@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react';
-import { api } from '../../lib/api.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { buocDanhSach, type NguoiChon } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -24,7 +23,7 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
   value: NguoiPhuTrach;
   /** PR-DUYET (K1-29): "Của tôi · Của GV" đã là công tắc riêng — ô này chỉ còn việc chọn MỘT giáo viên cụ thể. */
   chiChonGv?: boolean;
-  /** Tên giáo viên đã biết trước (ví dụ vừa chọn từ ô tìm) — tránh phải tra lại. */
+  /** Tên giáo viên đang chọn — nơi gọi luôn biết (danh sách việc đã nạp); OV6-DOC-CHON bỏ lượt tra cả `/ref/users` (không bao giờ chạy). */
   valueName?: string | null;
   onChange: (v: NguoiPhuTrach, name?: string | null) => void;
 }) {
@@ -39,16 +38,6 @@ export function ChonPhuTrach({ value, valueName, onChange, chiChonGv }: {
   const dongVeNut = () => { setOpen(false); setPicking(false); nut.current?.focus(); };
 
   useEffect(() => { setTen(valueName ?? null); }, [valueName]);
-
-  /* Chỉ có ID trên địa chỉ (mở link trực tiếp `?nguoi=12`) thì tra tên một lượt. */
-  useEffect(() => {
-    if (typeof value !== 'number' || ten) return;
-    let huy = false;
-    api.get<{ id: number; fullName: string }[]>('/ref/users')
-      .then((rows) => { if (!huy) { const r = rows.find((x) => x.id === value); if (r) setTen(r.fullName); } })
-      .catch(() => {});
-    return () => { huy = true; };
-  }, [value, ten]);
 
   useBamNgoai(open, () => { setOpen(false); setPicking(false); }, box);
   useEffect(() => {

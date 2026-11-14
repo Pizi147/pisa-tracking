@@ -111,4 +111,11 @@ export const EN_BAO_CAO_PH = {
   'Lớp đã đủ báo cáo PH': 'Class parent report is complete',
   'Báo cáo PH ›': 'Parent report ›',
   'Lớp đã viết đủ báo cáo phụ huynh của đợt — xuất Excel gửi phụ huynh. Đợt quá hạn mà còn thiếu em cũng hiện để biết lớp kẹt. Tự rời sau 7 ngày.': 'The class has finished the parent report for this round — export the Excel file for parents. Overdue rounds with missing students also show, so you know which class is stuck. Leaves the list after 7 days.',
+  /* LG-3 (chủ SP 13–14/11): việc GV "Báo cáo PH" + tin Admin lớp đủ. */
+  'Viết ›': 'Write ›',
+  'Còn {n}/{tong} em chưa đủ phần của bạn': '{n}/{tong} students still need your section',
+  'còn {n}/{tong} em': '{n}/{tong} students left',
+  'Đợt báo cáo phụ huynh đang mở — viết phần của bạn cho mọi em của lớp. Xong khi mọi em đủ phần của bạn. Quá hạn còn hiện 7 ngày.':
+    'A parent report round is open — write your section for every student in the class. Done when every student has your section. Stays 7 days after the due date.',
+  'Báo cáo PH đủ · {lop}': 'Parent report complete · {lop}',
 } satisfies Record<string, Dich>;
