@@ -10,7 +10,11 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 
 ## 0. Lời chủ SP trong session này
 
-(chưa có)
+**Lời 37 (15/11, chủ SP nói với PTA Overhaul, chuyển nguyên văn sang đây) — DUYỆT mockup ⑥ kèm chỉnh tab Lịch thi:**
+
+> "1. Lịch thi: Dòng text bên dưới lịch thi hơi vướng, và không cần cột lộ trình đâu, còn cái chữ target trên đầu bảng để làm gì? xóa đi 2. Còn lại ok"
+
+PTA Overhaul hiểu (và đã áp ở K4, K5, K8b): bỏ dòng chữ phụ dưới giá trị lịch thi (ô một dòng; chi tiết vào phần mở dưới hàng; "✓ Đã lưu · Hoàn tác" / "⚠ Không lưu được · Thử lại" vẫn hiện tại ô vì là phản hồi) · bỏ cột "Lộ trình · tuần" · bỏ cột "Target" và nhãn nhóm "Hiện tại" (Target vẫn có ở phần mở). Bảng còn: Học viên · Lịch thi · MT gần nhất · SOS · Ghi chú. "Còn lại ok" gồm lọc theo trạng thái thi ([XM-1]) và bỏ chữ đỏ "quá hạn" ([XM-4]).
 
 **PTA Overhaul rà 15/11 (chuyển tiếp, không phải lời chủ SP):** ĐẠT R6.1–R6.8. [XM-1] để chủ SP quyết ở mockup · [XM-3] đồng ý · [XM-4] đồng ý · [XM-2] KHÔNG đổi quyền: "Lưu trữ ›" chỉ hiện với vai hôm nay vào được Lưu trữ · 375 thêm vòng chữ đầu tài khoản + badge Công việc ở thanh dưới · đo tâm ✕ / ⋯ / mũi tên ≤ 1 px. Đã sửa cả ba (mục 4, 5, 8).
 
@@ -22,7 +26,7 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 | K2 | Quản trị | Tất cả: ô Xem, lọc lớp đang bật, dòng Đang lọc + Bỏ lọc (nút), chip "Chờ duyệt 3", thẻ đếm "4 bài chờ chấm" | `cap/k2` (web: Quản trị) |
 | K2b | GV · QL · TVV · Quản trị | Ô chọn có tìm mở: Mọi lớp (GV "Lớp của tôi" trước; QL đang gõ) · Mọi TVV ("Tôi" trước) · Xem · đã chọn | `cap/k2b` (web: ô `<select>` Quản trị) |
 | K3 | GV | Đang SOS: hàng lọc cùng chỗ, cột "Việc cần làm" | `cap/k3` |
-| K4 | TVV (có quyền sửa) | Lịch thi THÔNG TIN: đủ 7 trạng thái, bấm giá trị → hộp dưới hàng (Tháng dự kiến / Ngày thi), mở dưới hàng (Chọn bước tiếp · + Ghi chú · Lịch sử · 3), đã lưu + Hoàn tác, lỗi lưu + Thử lại, lọc trạng thái thi [XM-1]. **Bấm thử được** | `cap/k4` (web: TVV, hàng mở + "Đặt lịch ▾") |
+| K4 | TVV (có quyền sửa) | Lịch thi THÔNG TIN (lời 37: ô lịch thi một dòng; cột Học viên · Lịch thi · MT gần nhất · SOS · Ghi chú): đủ 7 trạng thái, bấm giá trị → hộp dưới hàng (Tháng dự kiến / Ngày thi), mở dưới hàng (Chọn bước tiếp · + Ghi chú · Lịch sử · 3), đã lưu + Hoàn tác, lỗi lưu + Thử lại, lọc trạng thái thi [XM-1]. **Bấm thử được** | `cap/k4` (web: TVV, hàng mở + "Đặt lịch ▾") |
 | K5 | GV (chỉ xem) | Lịch thi: giá trị là chữ thường, ⌄ chỉ đọc | `cap/k5` |
 | K6 | QL | Phân công GV: dòng đang sửa, ô GV mở ô chọn có tìm, thanh "Lưu cả 2 lớp…", tổng hợp + Xếp + Bỏ tô | `cap/k6` |
 | K6c | QL | Hộp Lưu phân công: hiệu lực Ngay / Từ tuần (ô tuần W4 SEP + lịch), tạo việc bàn giao, dòng quy chế, Đóng · Lưu | `cap/k6c` (web: bảng PC) |
@@ -48,7 +52,7 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 | SOS | Cột cuối | "Việc tiếp" | "Việc cần làm" nút-chip | ĐỔI tên + dáng |
 | Lịch thi | Cột Việc tiếp + "Đặt lịch ▾" + nút chính | có | **BỎ** (lời 35) — thao tác dời vào giá trị lịch thi + phần mở dưới hàng | BỎ (thao tác giữ, xem mục 3) |
 | Lịch thi | Công tắc "Cần làm n / Tất cả n" | có | **BỎ** → lọc trạng thái thi Tất cả · Chưa chốt ngày · Đã chốt · Chờ KQ · Có KQ [XM-1] | ĐỔI, chờ chủ SP |
-| Lịch thi | Hàng em | Học viên · MT gần nhất · Target · Lịch thi · Việc tiếp · Ghi chú · ⌄ | Học viên · **Lịch thi** · nhóm **Hiện tại** (Target · MT gần nhất · SOS · Lộ trình · tuần) · Ghi chú · ⌄ (R6.5) | ĐỔI thứ tự + thêm SOS, lộ trình |
+| Lịch thi | Hàng em | Học viên · MT gần nhất · Target · Lịch thi (chữ trạng thái + dòng phụ) · Việc tiếp · Ghi chú · ⌄ | Học viên · **Lịch thi (MỘT dòng)** · MT gần nhất · SOS · Ghi chú · ⌄ — bỏ dòng phụ, bỏ cột Target, bỏ nhóm "Hiện tại"; chi tiết (nơi thi, hạn chọn bước tiếp, Target, lịch sử) ở phần mở dưới hàng (R6.5 + lời 37) | ĐỔI |
 | Lịch thi | Hộp làm tại chỗ | một hàng dưới hàng (Chốt ngày / Dời tháng) | GIỮ một hàng dưới hàng; thêm đoạn **Tháng dự kiến / Ngày thi** để một lần bấm giá trị làm được cả 4 việc lịch | GIỮ + đoạn |
 | Lịch thi | Lịch sử | "Lịch sử lịch thi" 3 dòng + "Xem toàn bộ" tự viết | `details.ls` "Lịch sử · n" chuẩn ⑤ H4 | ĐỔI dáng |
 | Lịch thi | Đã lưu / lỗi | "✓ Đã lưu Hoàn tác" (link) · lỗi + "Thử lại" (link) | giá trị mới + "✓ Đã lưu · Hoàn tác" (nút) · "⚠ Không lưu được · Thử lại" (nút), chữ đã gõ giữ | ĐỔI dáng |
@@ -61,7 +65,7 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 | mọi | Rỗng | câu đầu + câu dài hướng dẫn + nút | một dòng ngắn + nút đi tiếp (R6.4) | ĐỔI chữ |
 | mọi | Lỗi tải | `ErrorState` | "⚠ Không tải được … · Thử lại" (⑤ B3) | ĐỔI chữ |
 | 375 | Tất cả | thẻ lớp + thẻ em (đã có) | GIỮ, chip việc cao 44 | GIỮ |
-| 375 | Lịch thi | thẻ: tên · Đặt lịch ▾ · MT · Target · lịch thi | thẻ: tên + ⌄ · dòng lịch thi (bấm để sửa) · dòng Target · MT · SOS · lộ trình (R6.8) | ĐỔI |
+| 375 | Lịch thi | thẻ: tên · Đặt lịch ▾ · MT · Target · lịch thi | thẻ: tên + ⌄ · dòng lịch thi một dòng (bấm để sửa) · dòng MT gần nhất · SOS (R6.8 + lời 37) | ĐỔI |
 
 ## 3. Bảng thao tác TRƯỚC → SAU (không mất thao tác nào)
 
@@ -124,9 +128,9 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 
 ## 4. [XM] — cần chủ SP / PTA quyết
 
-- **[XM-1] (PTA: chủ SP quyết ở mockup) Lọc Lịch thi theo trạng thái thi** thay "Cần làm / Tất cả": Tất cả · Chưa chốt ngày · Đã chốt · Chờ KQ · Có KQ (Có KQ = chờ bước tiếp + xong). Đề bài nêu, chủ SP quyết. Đề xuất: theo — tab là thông tin nên lọc theo tình trạng thi; "việc cần làm" đã ở Công việc TVV. Số trên đoạn dùng dữ liệu đã nạp (không thêm request).
+- **[XM-1] — chủ SP DUYỆT (lời 37 "còn lại ok").** Lọc Lịch thi theo trạng thái thi** thay "Cần làm / Tất cả": Tất cả · Chưa chốt ngày · Đã chốt · Chờ KQ · Có KQ (Có KQ = chờ bước tiếp + xong). Đề bài nêu, chủ SP quyết. Đề xuất: theo — tab là thông tin nên lọc theo tình trạng thi; "việc cần làm" đã ở Công việc TVV. Số trên đoạn dùng dữ liệu đã nạp (không thêm request).
 - **[XM-2] — ĐÃ QUYẾT (PTA Overhaul 15/11): không đổi quyền.** "Lưu trữ ›" chỉ hiện với vai hôm nay vào được Lưu trữ (GV, QL, Quản trị, Admin — `StudentsPage.tsx` menu ⋯ `laVai ? []`); TVV / CX không có link (K4, K8b đã bỏ).
-- **[XM-4] — PTA đồng ý.** Bỏ "⚠ quá hạn" trên tab Lịch thi:** web nay ghi đỏ "⚠ quá hạn 12/09" ở hàng chờ bước tiếp. Tab là thông tin (lời 35) nên mockup ghi trung tính "hạn chọn 12/09"; cảnh báo quá hạn nằm ở việc "Sau thi" bên Công việc TVV (badge đỏ). Đề xuất: theo mockup; chủ SP muốn giữ đỏ thì đổi lại một dòng.
+- **[XM-4] — PTA đồng ý, chủ SP DUYỆT (lời 37).** Bỏ "⚠ quá hạn" trên tab Lịch thi:** web nay ghi đỏ "⚠ quá hạn 12/09" ở hàng chờ bước tiếp. Tab là thông tin (lời 35) nên mockup ghi trung tính "hạn chọn 12/09"; cảnh báo quá hạn nằm ở việc "Sau thi" bên Công việc TVV (badge đỏ). Đề xuất: theo mockup; chủ SP muốn giữ đỏ thì đổi lại một dòng.
 - **[XM-3] — PTA đồng ý.** "Lớp" ở hàng Lịch thi:** R6.5 ghi hàng gồm "em · lớp · …"; mockup giữ lớp ở **dải nhóm lớp** (xếp theo lớp, chủ SP duyệt v16 bản 3) thay vì thêm cột lớp lặp ở mọi hàng. Đổi sang cột nếu chủ SP muốn.
 
 ## 5. Tự rà từng dòng R6.x
@@ -137,7 +141,7 @@ Chụp bằng chrome-headless-shell có sẵn (CDP, không cài gói); phông Be
 | R6.2 | "Mọi lớp", "Mọi TVV" là ô chọn có tìm, "Lớp của tôi" / "Tôi" trước, có ở cả Tất cả; ô Xem cùng dáng; hàng lọc cùng vị trí mọi tab | Đạt | K1–K5 (cùng thứ tự Tìm · lớp · TVV), K2b (nhóm liên quan trước), K2 / K4 / K6b ô Xem; Phân công: Tìm cùng chỗ, không lọc lớp / TVV (bảng theo lớp + GV) |
 | R6.3 | Một tên cột "Việc cần làm", nút-chip chuẩn, chỉ việc người xem, bấm = panel việc tại trang | Đạt | K1 (cột + đầu lớp + dải), K3 |
 | R6.4 | Mở tất cả, Bỏ lọc, Xoá lọc thêm, Hoàn tác, Thử lại là nút chuẩn; rỗng một dòng | Đạt | K1 / K2 (Mở tất cả, Bỏ lọc), K4 (Hoàn tác, Thử lại), K7 (rỗng); "Xoá lọc thêm" nằm trong Bộ lọc thêm — ghi ở bảng mục 2 (không vẽ ngăn mở) |
-| R6.5 | Lịch thi = THÔNG TIN: không badge việc, không cột việc, không nút-chip, không "Đặt lịch ▾"; hàng em · lớp · lịch thi · thông tin hiện tại; thao tác giữ đủ (bấm giá trị / mở dưới hàng, Hoàn tác); lọc trạng thái [XM] | Đạt (lớp ở dải nhóm — [XM-3]) | K4 (TVV), K5 (GV chỉ xem), K8b; bảng thao tác 30–43; [XM-1] |
+| R6.5 | (+ lời 37: ô lịch thi một dòng, bỏ Target, Lộ trình, nhóm "Hiện tại") Lịch thi = THÔNG TIN: không badge việc, không cột việc, không nút-chip, không "Đặt lịch ▾"; hàng em · lớp · lịch thi · thông tin hiện tại; thao tác giữ đủ (bấm giá trị / mở dưới hàng, Hoàn tác); lọc trạng thái [XM] | Đạt (lớp ở dải nhóm — [XM-3]) | K4 (TVV), K5 (GV chỉ xem), K8b; bảng thao tác 30–43; [XM-1] |
 | R6.6 | Phân công: một bảng cả chi nhánh, sửa theo dòng, Ngay / Từ tuần, hỏi bàn giao; Xếp, ô tuần chuẩn; Quản trị vào chi nhánh gần nhất | Đạt | K6, K6c, K6b |
 | R6.7 | Xuất Excel · + Thêm học viên · ⋯ giữ; đưa lối vào "Lưu trữ ›" ra khỏi ⋯ cho vai đã có quyền (PTA sửa đề bài: không phải "mọi vai") | Đạt | K1, K2, K3, K5, K6, K6b, K8a có link; K4, K8b (TVV) không |
 | R6.8 | 375: lớp thẻ gập; Lịch thi mỗi em một thẻ hai dòng | Đạt | K8a, K8b (thanh trên có vòng chữ đầu tài khoản như ① / ④; thanh dưới Công việc có badge 9 / 2) |
@@ -163,7 +167,7 @@ Mọi chỗ ≤ 0,5 px — đạt.
 
 ## 6. Dòng đọc Turso (CLAUDE.md)
 
-Không thêm request khi mở trang. Ô Mọi lớp lấy từ `rows` đã nạp; số "Lưu trữ" = `demLuuTru` đã có; số đoạn trạng thái Lịch thi đếm từ danh sách đã nạp. Cần phiên code kiểm, nếu thiếu thì thêm cột vào câu đang có (không thêm câu): `tvvId` của em trong `/hoc-vien-lop` (để lọc TVV ở Tất cả / SOS), mức SOS + lộ trình / tuần học trong `/hoc-vien-lop/lich-thi`. Ô chọn mở danh sách không gọi máy chủ (dữ liệu tại chỗ).
+Không thêm request khi mở trang. Ô Mọi lớp lấy từ `rows` đã nạp; số "Lưu trữ" = `demLuuTru` đã có; số đoạn trạng thái Lịch thi đếm từ danh sách đã nạp. Cần phiên code kiểm, nếu thiếu thì thêm cột vào câu đang có (không thêm câu): `tvvId` của em trong `/hoc-vien-lop` (để lọc TVV ở Tất cả / SOS), mức SOS trong `/hoc-vien-lop/lich-thi` (lộ trình / tuần không còn cần — lời 37). Ô chọn mở danh sách không gọi máy chủ (dữ liệu tại chỗ).
 
 ## 7. Critique (impeccable `critique`, hai đánh giá tách riêng)
 

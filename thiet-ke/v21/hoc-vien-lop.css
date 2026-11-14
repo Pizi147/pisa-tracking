@@ -293,3 +293,7 @@ button.gt-lt.mo3 .s1 { text-decoration-color:var(--line-strong); }
 /* 375: badge số trên thanh dưới (Công việc = việc của tôi quá hạn + hôm nay, cùng số thanh trên) */
 .thanh-duoi .ic-o { position:relative; display:inline-grid; }
 .thanh-duoi .bd-td { position:absolute; top:-7px; left:12px; min-width:18px; height:18px; padding:0 5px; border-radius:999px; background:var(--bad-nen); color:var(--bad); border:1px solid var(--bad-vien); font:700 11px/16px var(--phong-so); text-align:center; }
+/* lời 37 (chủ SP 15/11): Lịch thi bỏ cột Target, Lộ trình · tuần, nhóm "Hiện tại"; ô lịch thi một dòng — cân lại cột */
+.ltt .c-hv { width:240px; } .ltt .c-lich { width:300px; } .ltt .c-mt { width:170px; } .ltt .c-sos { width:190px; }
+.hop-dong { padding-left:246px; }
+button.gt-lt { align-content:center; }
