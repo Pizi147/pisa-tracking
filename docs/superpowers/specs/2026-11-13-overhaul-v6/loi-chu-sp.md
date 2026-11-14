@@ -469,3 +469,9 @@ Bối cảnh: mockup ⑥ ⑧ ⑩ đang sửa theo lời 37, 38; PTA Overhaul đ�
 Session mockup áp thêm cùng logic (PTA Overhaul đồng ý): trên hàng, em đã thi thì ô "MT gần nhất" ghi "—"; thẻ 375 của em đã thi dòng 2 chỉ còn Target; SOS giữ tới khi chọn bước tiếp.
 
 BÀI HỌC CHUNG (áp cho mọi mockup và mọi PR code): **thông tin hiện ra phải theo trạng thái của đối tượng** — không bày một khuôn cố định cho mọi hàng; trước khi đặt một khối / cột, hỏi "ở trạng thái này người xem còn cần nó không?" (em đã thi không cần MT gần nhất; việc đã xong không báo hạn; em Tạm dừng không hiện việc…). Cái gì hiển nhiên theo logic thì làm, không chờ nhắc.
+
+## 15/11 — lời 41 (chủ SP nói trong session mockup ⑧; session đó chuyển lại): chọn phương án A
+
+> "Chọn A nhé"
+
+ĐÃ CHỐT: mockup ⑧ dùng **phương án A** cho số đếm việc (tách cột, mỗi ô một thành phần, không chữ nhỏ dưới số) — khớp điều PTA Overhaul đã chốt theo lời 39. Mockup ⑧ (`tong-quan.html`, `ho-so-gv.html`) trên main chỉ còn A. **⑧ ĐÃ DUYỆT.**
