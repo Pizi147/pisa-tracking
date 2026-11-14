@@ -1,5 +1,6 @@
 import type { HTMLAttributes } from 'react';
 import { NutChon } from '../../ui/ui.tsx';
+import { OChon as OChonThuong } from '../phanTich/dungChung.tsx';
 import { ROLES, ROLE_LABEL, roleLabel, type Role } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -44,10 +45,11 @@ export function SuaVaiChiNhanh({ value, onChange, branches, qtCuaMinh, loiHang, 
         return (
           <div key={i} className="surface-2 rounded-lg p-2.5">
             <div className="flex flex-wrap items-center gap-2" {...propsHang?.(i)} tabIndex={-1}>
-              <select className="field w-44 max-sm:min-h-[44px]" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
+              {/* GD-17c (⑤ A6): ô chọn thường — một dáng với lọc Tài khoản. */}
+              <OChonThuong className="w-44" aria-label={t('Vai trò')} value={g.role} disabled={khoaQt}
                 onChange={(e) => sua(i, (x) => ({ ...x, role: e.target.value }))}>
                 {ROLES.map((r) => <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>)}
-              </select>
+              </OChonThuong>
               {/* TU-a: Head tutor như Quản trị — luôn toàn hệ thống. */}
               {g.role === 'system_admin' || g.role === 'head_tutor' ? (
                 <span className="text-xs text-slate-400">{t('Toàn hệ thống — không gắn chi nhánh')}</span>

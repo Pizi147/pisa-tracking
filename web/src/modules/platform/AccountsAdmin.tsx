@@ -3,14 +3,15 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { BoLocDoan, Card, ChonDangNut, ErrorState, Field, Forbidden, Info, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
+import { BoLocDoan, Card, ErrorState, Field, Forbidden, Info, NutChon, Skeleton, Th} from '../../ui/ui.tsx';
+import { OChon as OChonThuong } from '../phanTich/dungChung.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { fmtDate, skillLabel, skillShort } from '../../lib/format.ts';
-import { CHIP_VUONG, ChipKy } from '../../ui/Nhan.tsx';
+import { BadgeMo, CHIP_VUONG, ChipKy } from '../../ui/Nhan.tsx';
 import { ChonKyNang } from './ProfilePage.tsx';
 import { useSession } from '../../lib/session.tsx';
 import {
@@ -145,19 +146,19 @@ export function AccountsAdmin() {
     <input className="field w-full min-w-0 sm:w-56" type="search" placeholder={t('Tên, mã hoặc email')} aria-label={t('Tìm tài khoản')}
       value={loc3.q} maxLength={100} onChange={(e) => datLoc({ q: e.target.value })} />
   );
-  /* B14 / QT6: ô chọn dáng chung của web (`ChonDangNut`, như "Mọi hạn ▾") thay `select` gốc của trình duyệt. */
+  /* GD-17c (mockup ⑩ K1, R10.1 · ⑤ A6): Chi nhánh / Vai trò / Nhóm theo là danh sách ngắn cố định → MỘT dáng ô chọn thường (`OChonThuong`). */
   const chonCn = (
-    <ChonDangNut aria-label={t('Chi nhánh')} value={loc3.chiNhanh} onChange={(e) => datLoc({ chiNhanh: e.target.value })}>
+    <OChonThuong aria-label={t('Chi nhánh')} value={loc3.chiNhanh} onChange={(e) => datLoc({ chiNhanh: e.target.value })}>
       <option value="tat-ca">{t('Chi nhánh: Tất cả')}</option>
       {(branches.data ?? []).map((b) => <option key={b.id} value={b.code}>{b.name}</option>)}
       <option value="toan-he-thong">{t('Toàn hệ thống')}</option>
-    </ChonDangNut>
+    </OChonThuong>
   );
   const chonVai = (
-    <ChonDangNut aria-label={t('Vai trò')} value={loc3.vai} onChange={(e) => datLoc({ vai: e.target.value })}>
+    <OChonThuong aria-label={t('Vai trò')} value={loc3.vai} onChange={(e) => datLoc({ vai: e.target.value })}>
       <option value="tat-ca">{t('Vai trò: Tất cả')}</option>
       {ROLES.map((r) => <option key={r} value={r}>{dich(roleLabel(r))}</option>)}
-    </ChonDangNut>
+    </OChonThuong>
   );
   /* OV-11b (QT-9): 375 — nhãn lên trên, nút đoạn đủ một hàng (không cắt "S"). */
   const chonKyNang = (
@@ -168,11 +169,11 @@ export function AccountsAdmin() {
     </span>
   );
   const chonNhom = (
-    <ChonDangNut aria-label={t('Nhóm theo')} value={nhomTheo ?? ''} onChange={(e) => datParams({ nhom: e.target.value || null })}>
+    <OChonThuong aria-label={t('Nhóm theo')} value={nhomTheo ?? ''} onChange={(e) => datParams({ nhom: e.target.value || null })}>
       <option value="">{t('Không nhóm')}</option>
       <option value="chi-nhanh">{t('Nhóm theo chi nhánh')}</option>
       <option value="vai">{t('Nhóm theo vai trò')}</option>
-    </ChonDangNut>
+    </OChonThuong>
   );
   /* Số bộ lọc trong tấm "Lọc" đang khác mặc định — hiện trên nút để thấy đang lọc khi tấm đóng. */
   const soLocTam = [loc3.chiNhanh !== 'tat-ca', loc3.vai !== 'tat-ca', loc3.kyNang !== 'tat-ca', !!nhomTheo].filter(Boolean).length;
@@ -184,11 +185,9 @@ export function AccountsAdmin() {
 
   return (
     <div className="space-y-4">
-      {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. AUDIT-UI QT2: rỗng thì một dòng, không chiếm cả thẻ. */}
-      {pending.length === 0 ? (
-        <p data-hd="qt-dang-ky" className="m-0 text-sm text-faint">{t('Đăng ký chờ duyệt')} <span className="tabular-nums">0</span></p>
-      ) : (
-        <Card title={<span data-hd="qt-dang-ky">{t('Đăng ký chờ duyệt')} <span className={`${CHIP_VUONG} ml-1 text-amber-200`} style={{ borderColor: 'var(--line-strong)' }}>{pending.length}</span></span>}
+      {/* PR-DUYET (K1-52, K5-63): duyệt tài khoản ở đây, ngoài hộp Chờ duyệt — việc của Quản trị. GD-17c (lời 40): 0 việc thì không hiện khối / dòng này. */}
+      {pending.length > 0 && (
+        <Card title={<span data-hd="qt-dang-ky">{t('Đăng ký chờ duyệt')} <span className="ml-1 inline-flex align-middle"><BadgeMo so={pending.length} /></span></span>}
           bodyClass="p-0">
           <ul className="divide-y list-none p-0 m-0" style={{ borderColor: 'var(--line)' }}>
             {pending.map((u) => (
@@ -478,11 +477,11 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
           )}
         </div>
         <div className="flex flex-wrap gap-2">
-          <select className="field w-36" aria-label={t('Vai trò')} value={role} onChange={(e) => setRole(e.target.value)}>
+          <OChonThuong className="w-40" aria-label={t('Vai trò')} value={role} onChange={(e) => setRole(e.target.value)}>
             {ROLES.filter((r) => r !== 'system_admin').map((r) => (
               <option key={r} value={r}>{dich(ROLE_LABEL[r as Role])}</option>
             ))}
-          </select>
+          </OChonThuong>
           <button className="btn btn-sm btn-primary" disabled={busy || (picked.size === 0 && role !== 'cx' && role !== 'head_tutor')}
             onClick={() => act(() => api.post(`/admin/accounts/${user.id}/approve`, { role, branches: [...picked] }),
               t('Đã duyệt {ten} · {vai} · {cn}', { ten: user.fullName, vai: roleLabel(role), cn: cnChon }))}>

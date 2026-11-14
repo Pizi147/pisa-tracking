@@ -6,6 +6,7 @@ import { fmtDate, fmtDateTime } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { BadgeMo } from '../../ui/Nhan.tsx';
 import { theoChiNhanh } from '../../ui/theoChiNhanh.ts';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { t } from '@shared/i18n/index.ts';
@@ -101,7 +102,11 @@ export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
 
   return (
     <div className="space-y-2">
-      <p className="m-0 text-xs text-slate-500">{t('Giữ 30 ngày, sau đó xoá hẳn.')}</p>
+      {/* GD-17c (mockup ⑩ K9, R10.4): đầu bảng "Đã xoá · n" + ⓘ (câu 30 ngày — thay chú thích tĩnh), cùng cách tab Đã xoá của Lưu trữ. */}
+      <div className="flex items-center gap-1.5 text-sm text-dim">
+        <b className="font-bold text-slate-100">{t('Đã xoá')}</b>{data && <BadgeMo so={data.length} />}
+        <NutLuat label={t('Đã xoá')}>{t('Giữ 30 ngày, sau đó xoá hẳn.')}</NutLuat>
+      </div>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : !data ? <Skeleton rows={6} /> : (
         <Bang ten={t('Đã xoá')} cot={COT} hang={data} khoa={(m) => m.id} oCua={oCua} lopHang={(m) => (m.khoiPhucDuoc ? '' : 'opacity-70')}
           rong={{ tieuDe: t('Không có mục nào đã xoá trong 30 ngày.') }} />
