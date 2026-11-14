@@ -1210,13 +1210,14 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den
     const nhan = mt[2] ? `${t('Kết quả thi thật')} ${tenMonNgan(null, mt[2])}` : t('Kết quả thi thật');
     return { n: rows.length, tieuDe: t('{nhan} · {ai} · {dung}/{tong} lượt kỹ năng', { nhan, ai: kyChu, dung: ds.filter((m) => m.muc !== 'fail').length, tong: ds.length }), rows };
   }
-  const m = /^ket-qua:(ft|thuong):(\w+)(?::(\d+))?$/.exec(q.cot);
+  /* GD-15: `ket-qua:<khung>` (không kỹ năng) = dải tab Học thuật hồ sơ GV theo công tắc khung — cùng tập hàng Cộng của bảng Theo lớp. */
+  const m = /^ket-qua:(ft|thuong)(?::([a-z_]\w*))?(?::(\d+))?$/.exec(q.cot);
   /* UI-HO-SO-GV: `ket-qua-lop:<lớp>` · `tien-bo-lop:<lớp>` = ô một hàng bảng Học thuật (`hocThuatTheoLop`) — mọi kỹ năng GV dạy ở lớp đó. */
   const ml = /^(ket-qua|tien-bo)-lop:(\d+)$/.exec(q.cot);
   if (!m && !ml && !['ghi-pa', 'ket-qua', 'tien-bo', 'pa-hieu-qua'].includes(q.cot)) throw badRequest(`Cột "${q.cot}" không có ở hồ sơ.`);
   const lopId = m?.[3] ? Number(m[3]) : ml ? Number(ml[2]) : null;
   const ds = g.ds.filter((c) => (m ? c.khung === m[1] : lopId !== null ? c.lop.has(lopId) : ['tien-bo', 'pa-hieu-qua'].includes(q.cot) ? c.khung === 'ft' : true));
-  const phan = ds.map((c) => oChiSoCua(p, c, gvId, m ? `ket-qua:${m[2]}` : ml ? ml[1] : q.cot, xemChiNhanh(c.cn)));
+  const phan = ds.map((c) => oChiSoCua(p, c, gvId, m ? (m[2] ? `ket-qua:${m[2]}` : 'ket-qua') : ml ? ml[1] : q.cot, xemChiNhanh(c.cn)));
   /* P8: `ket-qua:<khung>:<kỹ năng>:<lớp>` = ô một lớp của `ketQuaTheoLop` — dòng của chính các mục em học lớp đó lúc thi. */
   const maLop = lopId !== null ? ds.find((c) => c.lop.has(lopId))?.lop.get(lopId)?.ma : null;
   if (lopId !== null && !maLop) throw badRequest('Lớp này không có trong kỳ của giáo viên.');

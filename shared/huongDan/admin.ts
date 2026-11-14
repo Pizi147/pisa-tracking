@@ -173,7 +173,7 @@ export const HD_ADMIN: HuongDan = {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
       dangO: { cau: 'Một GV: lớp dạy, số theo khoảng tuần (chỉ xem).', truoc: { chu: 'Phân tích', duong: '/phan-tich' } },
       khongLam: [{ ten: 'Sửa kỹ năng của GV', cua: 'việc của QL' }],
-      muc: [{ id: 'ad-hsgv', ten: 'Xem hồ sơ giáo viên', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b>: số đúng hạn, đạt kỳ vọng Test, Case theo khoảng đó.', 'Bấm số mở danh sách.'] }],
+      muc: [{ id: 'ad-hsgv', ten: 'Xem hồ sơ giáo viên', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b>: dải Việc · Chấm Test (% đúng hạn · Chưa làm) theo khoảng đó; tab <b>Học thuật</b> · <b>Việc & Case</b>.', 'Bấm số mở danh sách ngay tại trang.'] }],
     },
     {
       /* Khối "Test tuần này" chỉ có khi tuần có Test — chi nhánh nhỏ thường trống, nên Lịch Test tuần không "Chỉ cho tôi". */
