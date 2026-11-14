@@ -16,7 +16,7 @@ Dữ liệu demo khác dữ liệu mockup (8 lớp mockup ↔ 12 lớp của GV 
 | 5 | K1 R4 danh sách trái 640 (v12 / v18) | `DanhSachViec` (giữ nguyên) | cap-1440-toi | KHỚP |
 | 6 | K1 R4 BỎ nhóm gập "Lớp tôi dạy"; GIỮ "Yêu cầu của tôi" | `NhomGap lop-toi-day` bỏ; `LopToiDay` (V4) xoá | cap-1440-toi | KHỚP |
 | 7 | K1 R5 khung phải chưa chọn việc = **Lớp của tôi**: Lớp · Tôi dạy · Test · **Việc cần làm** | `LopCuaToi` (mới, `congViec/LopCuaToi.tsx`) | cap-1440-toi | KHỚP |
-| 8 | Mục 13: nút-chip KHÔNG biểu tượng; chữ loại + số; ⚠ + màu khi quá hạn; thứ tự Nhập điểm · Case · Ý thức · Vận hành | `LOAI_CHIP` | cap-1440-toi | KHỚP (mockup còn vẽ biểu tượng — mục 13 thắng) |
+| 8 | Mục 13: nút-chip KHÔNG biểu tượng; chữ loại + số (chủ SP 15/11: "Nhập điểm · 6" như "Case · 2", không chữ "bài"); ⚠ + màu khi quá hạn; thứ tự Nhập điểm · Case · Ý thức · Vận hành | `LOAI_CHIP` | cap-1440-toi | KHỚP (mockup còn vẽ biểu tượng — mục 13 thắng) |
 | 9 | Mục 13: "Lớp của tôi" KHÔNG có chip Chấm Speaking | `dungLopCuaToi` bỏ `laViecChamCheo` | — | KHỚP |
 | 10 | R6 (a)(b) FT có bài: "MT · W1 SEP" + chip hạn; quá hạn đỏ | cột Test = bài gần hạn nhất của tôi (`ChipHan vien`) | cap-1440-toi (MB FT 101) | KHỚP |
 | 11 | R6 (c) lớp chưa tới tuần Test: "Final · W3 OCT" mờ, không chip | `testSapToi` (LG-8 #1550) | cap-1440-toi (sau gộp #1550) | KHỚP |
@@ -55,7 +55,7 @@ Dữ liệu demo khác dữ liệu mockup (8 lớp mockup ↔ 12 lớp của GV 
 | Ô Case đang xử lý · Đạt kỳ vọng Test · Tiến bộ | Tổng quan GV | dải chỉ số Hồ sơ GV (đã có, cùng nguồn) | ĐỔI chỗ |
 | Mở "Lớp tôi dạy" (gập), đổi FT / Lớp thường, bấm ô số dưới KV / SOS / Case / chờ chấm | cuối Công việc | Lớp của tôi (khung phải, không công tắc — mỗi dòng ghi kỹ năng); ô số → Hồ sơ GV | ĐỔI |
 | Bấm mã lớp → hồ sơ lớp | Lớp tôi dạy | Lớp của tôi | GIỮ |
-| Nhập điểm theo lớp | dòng việc | dòng việc + chip "Nhập điểm · n bài" của lớp | GIỮ + THÊM lối |
+| Nhập điểm theo lớp | dòng việc | dòng việc + chip "Nhập điểm · n" của lớp (n = số bài, tooltip "n bài chờ nhập điểm") | GIỮ + THÊM lối |
 | Ghi vi phạm / Báo tình hình / + Case | hồ sơ lớp / HV | "+ Task" ở trang đầu (lối cũ giữ) | THÊM |
 | Tab "Speaking chấm chéo" (375: "Speaking") | Công việc | tab "Chấm Speaking" | ĐỔI chữ (lời 19) |
 | Mọi thao tác khác của Công việc (tab, lọc, panel, Việc tiếp, Yêu cầu của tôi, Bỏ qua, Gia hạn…) | Công việc | Công việc | GIỮ |

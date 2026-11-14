@@ -18,7 +18,8 @@ const TEN_BAI: Record<string, string> = { mock: 'MT', mt0: 'MT0', progress: 'Pro
 const nang = (u: WorkItem['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 const xepHan = (a: WorkItem, b: WorkItem) => nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999');
 
-type Chip = { tab: string; nhan: string; so: string; quaHan: boolean; dau: WorkItem };
+/** `so` = chỉ số trên nút (chủ SP 15/11: "Nhập điểm · 6" như "Case · 2", không chữ "bài"); `doc` = nghĩa đủ cho tooltip / trình đọc màn hình. */
+type Chip = { tab: string; nhan: string; so: number; doc: string; quaHan: boolean; dau: WorkItem };
 type Dong = { classId: number; code: string; mon: string[]; chuNhiem: boolean; test: { chu: string; han: WorkItem | null } | null; chip: Chip[] };
 
 /**
@@ -44,10 +45,11 @@ export function dungLopCuaToi(phanCong: readonly Assignment[], viec: readonly Wo
     for (const [tab, nhan] of LOAI_CHIP) {
       const laTab = la.filter((x) => cuaLop(x) && tabCuaViec(x) === tab).sort(xepHan);
       if (!laTab.length) continue;
-      const so = tab === 'cham-diem'
-        ? t('{n} bài', { n: laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0) })
-        : String(dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length);
-      d.chip.push({ tab, nhan, so, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0] });
+      const bai = tab === 'cham-diem';
+      const so = bai ? laTab.reduce((n, x) => n + (x.soBai ?? x.count ?? 1), 0)
+        : dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
+      const doc = bai ? t('{n} bài chờ nhập điểm', { n: so }) : t('{n} việc', { n: so });
+      d.chip.push({ tab, nhan, so, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0] });
     }
     /* Cột Test: có bài của tôi → bài gần hạn nhất (loại · tuần + chip hạn); không có → Test sắp tới của lớp (LG-8), chữ mờ. */
     const bai = la.filter((x) => cuaLop(x) && x.group === 'score').sort(xepHan)[0];
@@ -120,7 +122,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
       <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
         {d.chip.map((c) => (
           <button key={c.tab} type="button" onClick={() => onMo(c.dau)}
-            aria-label={`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so} · ${d.code}`}
+            title={c.doc} aria-label={`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so} · ${d.code} · ${c.doc}`}
             className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
               ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`}
             style={c.quaHan ? undefined : { borderColor: 'var(--line-strong)' }}>

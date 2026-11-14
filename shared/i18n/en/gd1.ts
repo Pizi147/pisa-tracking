@@ -11,6 +11,7 @@ export const EN_GD1 = {
   'Chưa được phân công lớp nào': 'No classes assigned yet',
   'Không có lớp nào đang mở.': 'No open classes.',
   'chủ nhiệm': 'homeroom',
+  '{n} bài chờ nhập điểm': '{n} tests awaiting scores',
   'Việc chung của nhóm GV Speaking': 'Shared task of the Speaking teachers',
   'Trang đầu của bạn: việc theo tab bên trái, Lớp của tôi bên phải.': 'Your start page: tasks by tab on the left, My classes on the right.',
   'Khung phải khi chưa chọn việc (điện thoại: nút <b>Lớp của tôi</b>): mỗi lớp một dòng — bạn dạy gì, Test, <b>Việc cần làm</b>.':
