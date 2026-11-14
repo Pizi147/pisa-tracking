@@ -1,5 +1,5 @@
 /**
- * PHÉP KIỂM XOA-MT (chủ SP 06/11): MỘT thao tác "Xoá" MT ở Kế hoạch Test và hồ sơ MT (thay "Xóa lịch" + "Bỏ khỏi đợt" cả lượt) —
+ * PHÉP KIỂM XOA-MT (chủ SP 06/11): MỘT thao tác "Xoá" MT ở Kế hoạch Test và hồ sơ MT (thay "Xoá lịch" + "Bỏ khỏi đợt" cả lượt) —
  * mọi kỹ năng ra khỏi đợt, tuần giữ; Khôi phục / Hoàn tác đưa lại đúng các kỹ năng đã xoá; chặn có điểm / đã làm bài; quyền như sửa lịch Test
  * (QL · Admin · Quản trị, GVCN khi công tắc #1064 bật); khoá cuối tuần N15. Chữ: "Bỏ khỏi đợt" → "Xoá", môn đã xoá → "Khôi phục".
  */

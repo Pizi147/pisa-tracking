@@ -538,7 +538,7 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
      * Ý THỨC (PR-J, thiet-ke/Y_THUC_VI_PHAM_VA_BIEN_PHAP.md mục 6). C02 KHÔNG áp ở đây — vi phạm không thuộc kỹ năng nào.
      *
      *   Ghi vi phạm (V01)     mọi giáo viên có phân công dạy lớp đó, kể cả trái môn
-     *   Xử lý (V10, B01)      chỉ GVCN của lớp đó: sửa/hủy vi phạm của người khác, tạo · sửa · xác nhận · xóa biện pháp
+     *   Xử lý (V10, B01)      chỉ GVCN của lớp đó: sửa/hủy vi phạm của người khác, tạo · sửa · xác nhận · xoá biện pháp
      */
     case PERMISSIONS.VIOLATION_RECORD:
       return ctx.anyScope === true || hasAssignment(p, ctx, 'any');

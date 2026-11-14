@@ -934,7 +934,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW(`${YT}/KhaiBacPanel.tsx`);
     assert(/BAC_KHAI = \[BAC_0_NHAN, \.\.\.THANG\./.test(s) && !/GHI_CHU_MIN/.test(s) && /nhan=\{t\('Ghi chú'\)\} tuyChon/.test(s) && /api\.put\(/.test(s) && /kieu="thang"/.test(s), 'khai bậc');
   });
-  check('YT4 (8) · + Ghi vi phạm (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
+  check('YT4 (8) · + Vi phạm / Nhắc nhở (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);
     assert(/'Ghi vi phạm'/.test(s) && /nhom: ''/.test(s) && /dsLoiGhiViPham/.test(s), 'panel ghi (nhóm không chọn sẵn, bắt buộc chọn — luật ở dsLoiGhiViPham)');
     assert(!/Ghi nhận vi phạm/.test(boChuThich(s)), 'chữ cũ');
@@ -947,12 +947,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(!/BO_LOC_PHU|hopBoLocPhu|tuNgayTheoKhoang|byTime|type="checkbox"|Theo thời gian/.test(s), 'bộ lọc v3');
     assert(/params\.get\('mo'\)/.test(s) && /t\('Phối hợp'\)/.test(s), '?mo, khối Phối hợp');
   });
-  check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Ghi vi phạm (canRecord)', () => {
+  check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Vi phạm / Nhắc nhở (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
     assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage && ids\.length/.test(s)
       && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ key: 'cap-bac', nhan: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
-    assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
+    assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Vi phạm \/ Nhắc nhở/.test(s), '+ Vi phạm / Nhắc nhở');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {
     const s = docW(`${YT}/PhoiHopSosSection.tsx`);

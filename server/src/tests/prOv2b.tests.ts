@@ -197,13 +197,13 @@ export async function runPrOv2bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV2b-8 → P7 · ⋯ hồ sơ HV: Sửa thông tin · Chuyển lớp · Tạm dừng/ Kết thúc học đầu, một mục; Admin/TVV có Sửa thông tin', () => {
+  check('OV2b-8 → P7 · ⋯ hồ sơ HV: Sửa thông tin · Chuyển lớp · Tạm dừng / Kết thúc học đầu, một mục; Admin/TVV có Sửa thông tin', () => {
     const q = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: false, boLuuTru: false, hocLai: false };
     const ds = dm.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: { ratio: false }, status: 'active' });
     const k = ds.map((x: any) => x.key);
     assert(k.slice(0, 3).join() === 'info,chuyen-lop,tam-dung-ket-thuc', `thứ tự: ${k.join()}`);
     assert(!k.includes('tam-dung') && !k.includes('ket-thuc'), 'còn hai mục Tạm dừng / Kết thúc riêng');
-    assert(ds[0].nhan === 'Sửa thông tin' && ds[2].nhan === 'Tạm dừng/ Kết thúc học', `nhãn: ${ds.map((x: any) => x.nhan).join()}`);
+    assert(ds[0].nhan === 'Sửa thông tin' && ds[2].nhan === 'Tạm dừng / Kết thúc học', `nhãn: ${ds.map((x: any) => x.nhan).join()}`);
     const xong = dm.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: { ...q, luuTru: true, tamDung: false, ketThuc: false } }, cycle: null, status: 'finished' }).map((x: any) => x.key);
     assert(xong.slice(0, 2).join() === 'info,chuyen-lop' && !xong.includes('tam-dung-ket-thuc') && !xong.includes('luu-tru'), `đã thôi học: ${xong.join()}`);
     /* Đang tạm dừng: còn Kết thúc học → vẫn một mục (ô "Có thể quay lại học" tắt); Quay lại học xếp sau. */

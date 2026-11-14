@@ -353,7 +353,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     assert(d.duongHoSoHocVien(7) === '/hoc-vien/7', 'hồ sơ trơn');
   });
 
-  check('UX3 (6) · mucQuanLyHocVien: thứ tự OV-2b → P7 (Sửa thông tin · Chuyển lớp · Tạm dừng/ Kết thúc học, rồi mục khác); HV đã kết thúc học không còn Tạm dừng/ Kết thúc học', () => {
+  check('UX3 (6) · mucQuanLyHocVien: thứ tự OV-2b → P7 (Sửa thông tin · Chuyển lớp · Tạm dừng / Kết thúc học, rồi mục khác); HV đã kết thúc học không còn Tạm dừng / Kết thúc học', () => {
     const q = { ghiLoTrinhTiep: true, chuyenLop: true, tamDung: true, quayLai: false, ketThuc: true, luuTru: true, boLuuTru: false };
     const ds = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: q }, cycle: { ratio: false }, status: 'active' }).map((x: any) => x.key);
     /* PR-OV2b (mockup overhaul-2 §6): bốn mục chính trước, mục khác (Lộ trình tiếp theo, Lộ trình, Kết quả thi thật…) sau, giữ thứ tự cũ. */

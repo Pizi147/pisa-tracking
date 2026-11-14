@@ -83,10 +83,10 @@ export const VIEC_TVV: ViecHd[] = [
     tuKhac: ['target', 'liên hệ', 'họ tên', 'dự kiến thi', 'edit student', 'ghi chú'],
   },
   {
-    id: 'tam-dung', ten: 'Tạm dừng/ Kết thúc học', nhom: 'hv',
-    loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Tạm dừng/ Kết thúc học' },
+    id: 'tam-dung', ten: 'Tạm dừng / Kết thúc học', nhom: 'hv',
+    loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Tạm dừng / Kết thúc học' },
     loiTat: ['hoc-vien', 'luu-tru'], tatThem: ['⋯ dòng em'], cung: 'mở cùng hộp.',
-    buoc: ['Ở hồ sơ em, bấm <b>Tạm dừng/ Kết thúc học</b>.', 'Ô <b>Có thể quay lại học</b> bật là Tạm dừng, tắt là Kết thúc học; ghi <b>Lý do</b>, <b>Từ ngày</b>.',
+    buoc: ['Ở hồ sơ em, bấm <b>Tạm dừng / Kết thúc học</b>.', 'Ô <b>Có thể quay lại học</b> bật là Tạm dừng, tắt là Kết thúc học; ghi <b>Lý do</b>, <b>Từ ngày</b>.',
       'Em Tạm dừng về học: bấm <b>Quay lại học</b> (đầu hồ sơ, ⋯ dòng em hoặc trang Lưu trữ). Em Kết thúc học: QL mở lại.'],
     tuKhac: ['nghỉ học', 'thôi học', 'dừng', 'pause', 'stop', 'quit', 'quay lại học'],
   },
@@ -110,7 +110,7 @@ export const VIEC_TVV: ViecHd[] = [
     loiChinh: { man: 'hoc-vien', chu: 'Học viên & Lớp › lọc', duong: HV, chi: { hd: 'hvl-goc', duong: HV, chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
     buoc: ['Ô <b>Xem</b>: <b>HV của tôi</b> (mặc định, khi bạn có em được gán) hoặc một chi nhánh; đoạn <b>Tất cả</b> · <b>Đang SOS</b> · <b>Lịch thi</b>.',
       'Chip: <b>Thi tháng này</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Có việc quá hạn</b>; <b>Bộ lọc thêm</b> › <b>Theo vai</b>: <b>Thiếu thông tin</b> · <b>Chờ chọn bước tiếp</b>.',
-      'Bấm <b>tên</b> em mở hồ sơ; <b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'],
+      'Bấm <b>tên</b> em mở hồ sơ; <b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'],
     tuKhac: ['quá hạn', 'sos', 'hv của tôi', 'filter', 'chi nhánh'],
   },
   {
@@ -175,7 +175,7 @@ const VIEC_RIENG_TVV: ViecHd[] = [
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Sau thi', duong: CV },
     loiTat: ['ho-so-hv', 'p-sau-thi', 'p-lo-trinh'], cung: 'mở cùng chỗ.',
     buoc: ['Lưu điểm xong, <b>Bước tiếp</b> mở ngay trong panel. Hạn 7 ngày từ ngày có kết quả; <b>Gia hạn</b> ở dòng việc.',
-      'Chọn <b>Tạm dừng/ Kết thúc học</b> (ô <b>Có thể quay lại học</b>: bật là Tạm dừng) hoặc <b>Lộ trình mới</b>; ghi chú, lưu.',
+      'Chọn <b>Tạm dừng / Kết thúc học</b> (ô <b>Có thể quay lại học</b>: bật là Tạm dừng) hoặc <b>Lộ trình mới</b>; ghi chú, lưu.',
       'Làm sau: dòng <b>Chọn bước tiếp</b> ở Công việc, hoặc <b>Chọn bước tiếp ›</b> ở đầu hồ sơ em.'],
     tuKhac: ['lộ trình mới', 'thi thật', 'next step', 'sau thi', 'gia hạn'],
   },
@@ -225,8 +225,8 @@ export const manHoSoHv = (cx = false): ManHd => ({
   khongLam: [KHONG_GV, KHONG_QL],
   muc: [
     { id: 'tvv-hv-nut', ten: 'Nút trên đầu hồ sơ', buoc: cx
-      ? ['<b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.', 'CX không đổi Lộ trình đang học, Môn học; không chọn Bước tiếp.']
-      : ['<b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Bước tiếp…</b> (khi đã chọn) · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.',
+      ? ['<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.', 'CX không đổi Lộ trình đang học, Môn học; không chọn Bước tiếp.']
+      : ['<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Bước tiếp…</b> (khi đã chọn) · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.',
         'Thanh <b>Việc cần làm</b> đầu hồ sơ: <b>Chọn bước tiếp ›</b> · <b>Cập nhật kết quả thi thật ›</b> khi là việc của bạn; bấm dòng mở panel ngay tại hồ sơ.',
         '<b>+ Task</b> đầu hồ sơ: <b>Hỏi tình hình học tập</b> — gửi GVCN của em.'] },
     cx ? THI_THAT_CX : THI_THAT_TVV,
@@ -322,7 +322,7 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
     khongLam: [KHONG_QL],
     muc: cx ? [{ id: 'pst-kq', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['<b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.', 'Bước tiếp: bạn chỉ xem.'] }]
       : [{ id: 'pst-kq', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Gõ điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu điểm</b>.', 'Sai điểm: <b>Sửa điểm</b>.'] },
-        { id: 'pst-tiep', viec: 'buoc-tiep', ten: 'Chọn bước tiếp', buoc: ['<b>Tạm dừng/ Kết thúc học</b> (ô <b>Có thể quay lại học</b>) hoặc <b>Lộ trình mới</b>.', 'Hạn 7 ngày từ ngày có kết quả; <b>Gia hạn</b> ở dòng việc.'] }],
+        { id: 'pst-tiep', viec: 'buoc-tiep', ten: 'Chọn bước tiếp', buoc: ['<b>Tạm dừng / Kết thúc học</b> (ô <b>Có thể quay lại học</b>) hoặc <b>Lộ trình mới</b>.', 'Hạn 7 ngày từ ngày có kết quả; <b>Gia hạn</b> ở dòng việc.'] }],
   },
   ...chiTvvMan(cx, [{
     id: 'p-lo-trinh', ten: 'Lộ trình mới đang mở', duong: [], panel: 'lo-trinh',
@@ -379,7 +379,7 @@ export const TU_TVV: TuHd[] = [
   { ten: 'Cần chú ý trước', nghia: 'Cách xếp em trong lớp: việc quá hạn lên đầu, rồi SOS cao.' },
   { ten: 'Sắp thi', nghia: 'Em thi IELTS trong 6 tuần tới.' },
   { ten: 'Thiếu thông tin', nghia: 'Hồ sơ chưa đủ để theo dõi; điền đủ là hết.' },
-  { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Lộ trình mới · Tạm dừng/ Kết thúc học.' },
+  { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Lộ trình mới · Tạm dừng / Kết thúc học.' },
   { ten: 'Phối hợp SOS', nghia: 'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting); TVV chỉ báo lại kết quả meeting CX/GĐCN.' },
 ];
 
@@ -426,7 +426,7 @@ export const HD_TVV: HuongDan = {
       muc: [
         { id: 'hv-tim', ten: 'Tìm em, lớp', buoc: ['Bấm <b>/</b> hoặc <b>Ctrl K</b> (hoặc ô tìm trên thanh trên), gõ ít nhất 2 chữ.', 'Kết quả chia <b>Học viên · Lớp</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Không thấy: <b>Tìm trong HV lưu trữ ›</b>.'],
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
-        { id: 'tvv-hvl-cot', ten: 'Bảng và thao tác dòng', buoc: ['Cột <b>Việc cần làm</b>: chip việc của bạn với em đó, bấm để làm ngay tại trang; bấm <b>tên</b> em mở hồ sơ.', '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
+        { id: 'tvv-hvl-cot', ten: 'Bảng và thao tác dòng', buoc: ['Cột <b>Việc cần làm</b>: chip việc của bạn với em đó, bấm để làm ngay tại trang; bấm <b>tên</b> em mở hồ sơ.', '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
         mucGv('hoc-vien', 'hv-lich-thi'),
       ],
     },

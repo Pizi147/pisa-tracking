@@ -79,7 +79,7 @@ export async function runPrLmTests(t: YThucTestKit) {
   check('PR-LM (7) · hồ sơ MT + HopThaoTacMt: Modal → KhungPanel (chỉ còn ConfirmDialog), chân luật S3, không nút "Huỷ" trần', () => {
     const md = nguon('web/src/modules/fasttrack/MockDetailPage.tsx');
     const tt = nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
-    /* OV-15h2 (ý 7): hộp Huỷ MT{n} (`HopHuyMt.tsx`) đã bỏ — Huỷ = Xóa từ OV-15c. */
+    /* OV-15h2 (ý 7): hộp Huỷ MT{n} (`HopHuyMt.tsx`) đã bỏ — Huỷ = Xoá từ OV-15c. */
     assert(!/<Modal\b/.test(md), 'MockDetailPage còn Modal');
     assert(!/from '..\/..\/ui\/Drawer.tsx'/.test(tt) && !/<Modal\b/.test(tt), 'HopThaoTacMt còn Modal');
     /* PR-HOP1: WeekModal (một KhungPanel) bỏ. N38 (PR-MT-VANG): hộp "Xếp lại bài vắng" (AbsenceMoveModal) bỏ → còn 2: hạn chấm, trả lời đề nghị. */
@@ -213,7 +213,7 @@ export async function runPrLmMayChu(t: YThucTestKit) {
     assert(r.soKeTiep === 4 && r.studentId === b.sid && r.classId === LOP, JSON.stringify({ k: r.soKeTiep, c: r.classId }));
     const hl = nguon('web/src/modules/students/HangLichMt.tsx');
     const pn = nguon('web/src/modules/students/StudentPlanPanel.tsx');
-    assert(/Dời lịch/.test(hl) && /t\('Xóa'\)/.test(hl) &&   // OV-15c: "Huỷ lịch" → "Xóa"
+    assert(/Dời lịch/.test(hl) && /t\('Xoá'\)/.test(hl) &&   // OV-15c: "Huỷ lịch" → "Xoá"
        /Nhập điểm/.test(hl) && /Xếp lịch/.test(hl), 'HangLichMt thiếu thao tác');
     assert(/Thêm MT/.test(pn) && /<HangLichMt/.test(pn), 'panel thiếu "+ Thêm MT" / HangLichMt');
   });

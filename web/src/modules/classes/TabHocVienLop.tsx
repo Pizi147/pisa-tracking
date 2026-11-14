@@ -61,7 +61,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   };
   const chon = useChonNhieu();
   const [viecChon, setViecChon] = useState<{ viec: ViecHangLoat; ids: number[] } | null>(null);
-  const [hopTd, setHopTd] = useState<number[] | null>(null);   // P7: hộp Tạm dừng/ Kết thúc học · n em
+  const [hopTd, setHopTd] = useState<number[] | null>(null);   // P7: hộp Tạm dừng / Kết thúc học · n em
   /* R5.3: lớp FT bỏ "Chuyển tiếp lớp" — chọn nhiều em → "Chuyển lớp…" (cùng panel Chuyển lớp nhiều em, ô lớp có "+ Mở lớp mới…"). */
   const [chuyenNhieu, setChuyenNhieu] = useState<number[] | null>(null);
   /* Chỉ Quản lý / Quản trị (`plan.week` của lớp), chỉ cách xem Tổng hợp; lớp đã kết thúc thì mọi cờ viewer tắt nên không có nút. */
@@ -111,12 +111,12 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
       {coTheChon && (
         <ThanhChonNhieu chon={chon}
           viec={[...(!thuong && lop.viewer.coTheChuyenTiep ? [{ key: 'chuyen-lop', nhan: t('Chuyển lớp…') }] : []),
-            { key: 'tam-dung-ket-thuc', nhan: t('Tạm dừng/ Kết thúc học') },
+            { key: 'tam-dung-ket-thuc', nhan: t('Tạm dừng / Kết thúc học') },
             /* G4-17: chỉ khi trong các em đã chọn có em đang có quyết định chuyển lớp chờ (cờ của /roster — cùng URL bảng đã tải, không gọi thêm). */
             ...([...chon.chon].some((id) => coLenh.has(id)) ? [{ key: 'huy-lenh', nhan: t('Huỷ chuyển lớp') }] : []), { key: 'xoa', nhan: t('Xoá') }]}
           onViec={(k) => (k === 'chuyen-lop' ? setChuyenNhieu([...chon.chon]) : k === 'tam-dung-ket-thuc' ? setHopTd([...chon.chon]) : setViecChon({ viec: k as ViecHangLoat, ids: [...chon.chon] }))} />
       )}
-      {/* P7 (N11, k3): một mục "Tạm dừng/ Kết thúc học" thay Lưu trữ + Kết thúc học — cùng hộp một em, thêm số em; lỗi một phần giữ em lỗi trong hộp. */}
+      {/* P7 (N11, k3): một mục "Tạm dừng / Kết thúc học" thay Lưu trữ + Kết thúc học — cùng hộp một em, thêm số em; lỗi một phần giữ em lỗi trong hộp. */}
       {hopTd && (
         <HopTamDungKetThuc em={hopTd.map((id) => ({ id }))} lop={lop.code} tamDungDuoc onClose={() => setHopTd(null)} onDone={() => { chon.bo(); onDoi(); }} />
       )}

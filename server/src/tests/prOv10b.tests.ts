@@ -213,7 +213,7 @@ export async function runPrOv10bTests(t: YThucTestKit) {
       && dm.vaiXemHocVien(['cx']) === 'cx' && dm.vaiXemHocVien(['office_admin']) === 'admin' && dm.vaiXemHocVien(['manager', 'consultant']) === null, 'vaiXemHocVien');
   });
 
-  check('OV10b-14 · ⋯ dòng theo vai = mục ⋯ hồ sơ HV của vai (Sửa thông tin · Tạm dừng/ Kết thúc học · Quay lại · Kết quả thi thật chỉ FT)', () => {
+  check('OV10b-14 · ⋯ dòng theo vai = mục ⋯ hồ sơ HV của vai (Sửa thông tin · Tạm dừng / Kết thúc học · Quay lại · Kết quả thi thật chỉ FT)', () => {
     const k = (i: any) => dm.mucDongTheoVai(i).map((m: any) => m.key).join();
     assert(k({ suaThongTin: true, suaThem: true, ft: true, status: 'active' }) === 'info,tam-dung-ket-thuc,outcome', `TVV FT: ${k({ suaThongTin: true, suaThem: true, ft: true, status: 'active' })}`);
     assert(k({ suaThongTin: true, suaThem: true, ft: false, status: 'active' }) === 'info,tam-dung-ket-thuc', 'TVV lớp thường: không Kết quả thi thật');

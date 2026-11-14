@@ -6,7 +6,7 @@
  *    Chuyển lớp (`raLenh`, OV-13l: "Ngay bây giờ" chuyển ngay, tuần sau = lệnh chờ + phiếu bàn giao), `apDungMotDong` đóng-mở vì lộ trình đã xong.
  *    Bắt đầu một Thứ Hai sau (không qua lệnh) = "Hẹn bắt đầu" (`buoc_tiep_hen`), tới tuần đó tự bắt đầu (`batDauHenDenHan`, cùng cron / quét khi đọc).
  *  · `hoc_tiep` / `hoc_lai` (OV-8a) — chỉ dữ liệu / API cũ.
- * P7 SV-LO-TRINH (N12): web hai hướng — "Tạm dừng/ Kết thúc học" (`tam_dung` / `ket_thuc` theo ô "Có thể quay lại học", ngày + lý do của hộp) · "Lộ trình mới" chọn
+ * P7 SV-LO-TRINH (N12): web hai hướng — "Tạm dừng / Kết thúc học" (`tam_dung` / `ket_thuc` theo ô "Có thể quay lại học", ngày + lý do của hộp) · "Lộ trình mới" chọn
  *  LT1 / LT2 / RF / Khác (`route`, `routeTen`, `boTarget`): lớp đích là lớp FT bất kỳ (`kiemLopLoTrinhMoi`, lộ trình theo em), không chép ngày thi (E1), đầu vào = KQ thi thật (E3), Giữ lớp đã
  *  kết thúc → máy chủ tự mở lại lớp (E2), Case chưa xong của lộ trình cũ đóng "Kết thúc lộ trình" (PA "Dừng — kết thúc lộ trình", không vào Hiệu quả PA).
  * Mỗi lựa chọn MỘT giao dịch; đổi lựa chọn = hoàn tác đúng lựa chọn cũ (`buoc_tiep_json`) rồi làm cái mới. Target giữ (Sửa = `mucTieu`).
@@ -114,7 +114,7 @@ export type ChonBuocTiepVao = {
 const CHI_QL = 'Chỉ Quản lý hoặc TVV của chi nhánh chọn được bước tiếp sau thi.';
 const LY_DO_MOI = 'Lộ trình mới sau thi';
 
-/** Ngày của hộp "Tạm dừng/ Kết thúc học" trong panel Bước tiếp: trống → hôm nay; sai dạng / sau hôm nay → 400. */
+/** Ngày của hộp "Tạm dừng / Kết thúc học" trong panel Bước tiếp: trống → hôm nay; sai dạng / sau hôm nay → 400. */
 function docNgayDung(v: unknown, homNay: string): string {
   if (v === undefined || v === null || v === '') return homNay;
   const s = String(v);
@@ -341,7 +341,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   const tg = mucTieu === null ? null : docTarget(mucTieu);
   const tgLenh = tg ? ghepMucTieu(tg.target, tg.kck) : null;
   const ghiChu = chuTuDo(input.ghiChu, 'Ghi chú', 2000);
-  /* P7 (N12): Lộ trình mới — lộ trình + lớp đích hợp loại, kiểm TRƯỚC khi ghi (cùng hàm panel xem trước). Hộp "Tạm dừng/ Kết thúc học": ngày + lý do. */
+  /* P7 (N12): Lộ trình mới — lộ trình + lớp đích hợp loại, kiểm TRƯỚC khi ghi (cùng hàm panel xem trước). Hộp "Tạm dừng / Kết thúc học": ngày + lý do. */
   const lt = chon === 'lo_trinh_moi' ? docLoTrinhMoi(c0, input, lopMoiId) : null;
   const lyDoDung = chon === 'tam_dung' || chon === 'ket_thuc' ? chuTuDo(input.lyDo, 'Lý do', 2000) : null;
   const ngayDung = chon === 'tam_dung' || chon === 'ket_thuc' ? docNgayDung(input.date, homNay) : homNay;
@@ -431,7 +431,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
       before: { buocTiep: cu.buoc_tiep ?? null, buocTiepHen: cu.buoc_tiep_hen ?? null }, after: { buocTiep: chon, buocTiepHen: hen, lopMoiId, ...ghi } });
     const kq = trangThaiBuocTiep(p, cycleId);
-    /* P7: "Tạm dừng/ Kết thúc học" — câu báo theo trạng thái thật của em (cùng hàm hộp hồ sơ). */
+    /* P7: "Tạm dừng / Kết thúc học" — câu báo theo trạng thái thật của em (cùng hàm hộp hồ sơ). */
     return chon === 'tam_dung' || chon === 'ket_thuc'
       ? { ...kq, thongBao: thongBaoTrangThai(conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(c.student_id) as any) } : kq;
   });

@@ -840,7 +840,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
 }
 
 /**
- * NHAP-DIEM-a (chủ SP 14/11 "hủy điểm = xóa khỏi danh sách điểm trong kĩ năng MT, coi như không làm - và có thể khôi phục"; "chỉ hủy 1 kĩ năng";
+ * NHAP-DIEM-a (chủ SP 14/11 "hủy điểm = xoá khỏi danh sách điểm trong kĩ năng MT, coi như không làm - và có thể khôi phục"; "chỉ hủy 1 kĩ năng";
  * đặc tả `2026-11-14-nhap-diem-tu-do-design.md` cách A): HUỶ ĐIỂM / KHÔI PHỤC MỘT KỸ NĂNG của một em — MỘT đường cho Mock, MT0, lớp thường
  * (gộp Huỷ điểm `keHoach.huyDiem` + Huỷ môn LG-9 + Khôi phục điểm `khoiPhucDiem`). `skill` = kỹ năng hoặc ô của nó (W1 / W2 → cả Writing, 6b).
  *  · Huỷ: ô có điểm → cất (`catDiemO`, giữ nhận xét / nhóm / ngày nhập đầu) rồi trống; kỹ năng → "Đã huỷ" (`cancelled` + `huy_vang`, giữ tuần,

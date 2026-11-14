@@ -9467,7 +9467,7 @@ await runPrOv15bTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-15d (Công việc một danh sách, Tổng quan QL A, thông báo tự động thay Nhắc)
 const { runPrOv15dTests } = bocTep('prOv15d', await import('./prOv15d.tests.ts'));
 await runPrOv15dTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
-// ==================================================================== OV-15c (Kế hoạch Test: Xóa = bỏ tuần, năm, tìm HV / email, ghi chú lịch thi, xuất 13 cột + điểm)
+// ==================================================================== OV-15c (Kế hoạch Test: Xoá = bỏ tuần, năm, tìm HV / email, ghi chú lịch thi, xuất 13 cột + điểm)
 const { runPrOv15cTests } = bocTep('prOv15c', await import('./prOv15c.tests.ts'));
 await runPrOv15cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15e (Phân tích thanh trên, Báo cáo, Kết quả thi, Phân tích GV, bộ chọn thời gian, phân trang)
@@ -9676,7 +9676,7 @@ await runPrBaoCaoLichSuTests({ check, assert, conn, P, TODAY, classId, addDays }
 // ==================================================================== P11 VIEC-DUNG-VAI (cột Việc đúng vai: GV việc của mình, QL gộp theo môn)
 const { runPrViecDungVaiTests } = bocTep('prViecDungVai', await import('./prViecDungVai.tests.ts'));
 await runPrViecDungVaiTests({ check, assert, conn, P, classId } as any);
-// ==================================================================== P7 SV-LO-TRINH (một nút Tạm dừng/ Kết thúc học · Quay lại học · Bước tiếp 2 hướng · Lộ trình mới)
+// ==================================================================== P7 SV-LO-TRINH (một nút Tạm dừng / Kết thúc học · Quay lại học · Bước tiếp 2 hướng · Lộ trình mới)
 const { runPrSvLoTrinhTests } = bocTep('prSvLoTrinh', await import('./prSvLoTrinh.tests.ts'));
 await runPrSvLoTrinhTests({ check, assert, conn, P, TODAY, classId, addDays } as any);
 // ==================================================================== P9b CUOI-KHOA (trang Cuối khoá lớp thường, hạn chốt N20, N17, N22)
