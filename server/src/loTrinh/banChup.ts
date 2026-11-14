@@ -44,11 +44,11 @@ const ketQuaTu = (huy: boolean, sos: number | null): LuotTinh['ketQua'] => (huy 
  */
 export function tinhLuot(
   nc: NguCanhLuot, a: { attempt_no: number; kck_at_attempt?: number | null; route_at_attempt?: string | null; created_at?: string | null; bo_mon?: string | null }, target: number | null, rows: any[], skips: readonly string[], huy: boolean,
-  /** P13: dòng lịch của lượt (`daGhiLuot`). */ lich?: readonly { skill: string }[],
+  /** P13: dòng lịch của lượt (`daGhiLuot`); LG-9b: kèm `sit_status` — môn đã huỷ ra khỏi kết quả lớp thường. */ lich?: readonly { skill: string; sit_status?: string | null }[],
 ): LuotTinh {
   const diemRows = huy ? [] : rows;
   if (!nc.laFt) {
-    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows), a.bo_mon), diemRows, nc.maCt, nc.nguong, a.created_at ?? null);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(nc.mon, daGhiLuot(lich, rows), a.bo_mon), diemRows, nc.maCt, nc.nguong, a.created_at ?? null, lich);   // P13: bộ môn theo lượt
     const dong = r.skills.map((s) => ({
       kyNang: s.skill, batBuoc: 1, boQua: 0, diem: s.score, diemTho: null, diemTong: s.total,
       dat: s.outcome === 'missing' ? null : s.outcome === 'pass' ? 1 : 0,
@@ -133,7 +133,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
   const baseIds = cycles.map((c) => c.baseline_attempt_id as number | null).filter((x): x is number => !!x);
   const idLuot = attempts.map((a) => a.id as number);
   const diemCua = gom(hoi<any>((ph) => `SELECT * FROM assessment_scores WHERE attempt_id IN (${ph})`, [...new Set([...idLuot, ...baseIds])]), 'attempt_id');
-  const batBuocCua = gom(hoi<any>((ph) => `SELECT attempt_id, skill, required, bo_task, scope_reason, ${monLuotSql('attempt_skills')} AS mon_luot FROM attempt_skills WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
+  const batBuocCua = gom(hoi<any>((ph) => `SELECT attempt_id, skill, required, bo_task, scope_reason, sit_status, ${monLuotSql('attempt_skills')} AS mon_luot FROM attempt_skills WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
   const boCu = gom(hoi<any>((ph) => `SELECT attempt_id, skill FROM attempt_skill_skips WHERE attempt_id IN (${ph})`, idLuot), 'attempt_id');
   /** Cùng luật `skipsOf`: có dòng `attempt_skills` thì lấy dòng không bắt buộc; không có thì bảng cũ. */
   const boQuaCua = (id: number): string[] => {
@@ -201,7 +201,7 @@ function ghiMotLo(conn: any, ids: number[], o: BanChupVao): number[] {
     });
     const plan = laFt ? examPlanOf(c) : null;
     const luotCuoiKhoa = luot.filter((a) => a.kind === 'final' && a.status !== 'cancelled').at(-1);
-    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id)), luotCuoiKhoa.bo_mon), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong, luotCuoiKhoa.created_at) : null;
+    const kqCk = !laFt && luotCuoiKhoa ? evaluateRegular(boMonTheoLuot(mon, daGhiLuot(batBuocCua.get(luotCuoiKhoa.id), diemCua.get(luotCuoiKhoa.id)), luotCuoiKhoa.bo_mon), diemCua.get(luotCuoiKhoa.id) ?? [], nc.maCt, nc.nguong, luotCuoiKhoa.created_at, batBuocCua.get(luotCuoiKhoa.id)) : null;
     const tyLe = kqCk ? kqCk.tyLeTong : null;
     const routeMoi = o.routeMoi !== undefined ? o.routeMoi : (cungEm.get(c.student_id) ?? []).find((x) => x.seq > c.seq)?.route ?? null;
     const lan = (lanCuoi.get(c.id) ?? 0) + 1;
@@ -268,7 +268,7 @@ export function lamMoiDiemBanChup(conn: any, attemptIds: number[]): void {
     const rows = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ?').all(a.id) as any[];
     const boQua = cu.filter((r) => r.bo_qua === 1 && (ASSESSED_SKILLS as readonly string[]).includes(r.ky_nang)).map((r) => r.ky_nang as string);
     const t = tinhLuot(nc, a, cu[0].target_luc_thi ?? null, rows, boQua, false,
-      conn.prepare('SELECT skill FROM attempt_skills WHERE attempt_id = ?').all(a.id) as any[]);
+      conn.prepare('SELECT skill, sit_status FROM attempt_skills WHERE attempt_id = ?').all(a.id) as any[]);
     for (const d of t.dong) {
       const rieng = rows.filter((r) => (KY_NANG_THO.includes(d.kyNang) ? r.skill === d.kyNang : gocKyNang(r.skill) === d.kyNang));
       const nhap = rieng.filter((r) => r.entered_at).sort((x, y) => String(y.entered_at).localeCompare(String(x.entered_at)))[0];

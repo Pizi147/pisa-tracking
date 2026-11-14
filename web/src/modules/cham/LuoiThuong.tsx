@@ -77,6 +77,8 @@ type Row = {
     failedCount: number | null; sosLevel: number | null; passThreshold: number;
     /** Σ điểm / Σ tổng — chỉ khi đủ mọi môn (K5-44). */
     tyLeTong?: number | null;
+    /** LG-9b: môn đã huỷ — kết quả tính trên môn còn lại. */
+    daHuy?: string[];
   };
   cases: { id: number; status: string; level: number | null; skill: string; category: string }[];
   caseId: number | null; caseStatus: string | null; caseLevel: number | null;
@@ -593,7 +595,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
     ? <Level tone={row.chip.dat ? 'info' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
-    ? <span className="px-2 text-xs text-slate-500">{kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
+    ? <span className="px-2 text-xs text-slate-500">{r.required === 0 && r.daHuy?.length ? t('Đã huỷ') : kq.chinh}</span>   /* chữ thường trong cột chip lùi 8 px như chữ trong chip (index.css `th[data-kieu="chip"]`) */
     : (
       <Level tone={tone} title={chiTiet}>
         {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}

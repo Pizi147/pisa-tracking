@@ -508,7 +508,7 @@ export function classRoster(p: Principal, classId: number, q?: string) {
         /* P13: bộ môn theo lượt (`boMonTheoLuot`) — lượt đã ghi môn gộp cũ giữ L+S / R+W. */
         const mon = boMonTheoLuot(prog!.skills, daGhiLuot(bundle.skillRows.get(a.id), scores), a.bo_mon);
         const myLuot = mon === prog!.skills ? myRegularSkills : editableSkills(p, classId, mon, undefined, true);
-        const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id), a.created_at);
+        const r = evaluateRegular(mon, scores, prog!.code, nguongDatLop(a.class_id), a.created_at, bundle.skillRows.get(a.id));
         /* Lịch và hạn của TỪNG môn — bốn môn của một bài có thể trải hai ba tuần. */
         const regViews = regularSkillViews(a, bundle.skillRows.get(a.id), scores, today, mon);
         return {

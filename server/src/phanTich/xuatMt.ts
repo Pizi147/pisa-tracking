@@ -135,7 +135,7 @@ function dongFT(a: any, b: AttemptBundle): { d: DongFT; du: boolean } {
 function dongThuong(a: any, b: AttemptBundle, prog: { code: string; skills: string[] }): { d: DongThuong; du: boolean } {
   const scores = b.scores.get(a.id) ?? [];
   const skillRows = b.skillRows.get(a.id) ?? [];
-  const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(skillRows, scores), a.bo_mon), scores, prog.code, nguongDatLop(a.class_id, prog.code), a.created_at);   // P13: bộ môn theo lượt
+  const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(skillRows, scores), a.bo_mon), scores, prog.code, nguongDatLop(a.class_id, prog.code), a.created_at, skillRows);   // P13: bộ môn theo lượt
   const d: DongThuong = {
     ten: a.full_name, email: a.email ?? null, chiNhanh: a.branch_name ?? '', lop: a.class_code, bai: nhanDot(a.kind, a.attempt_no), tuan: a.tuan_code, tuanBd: a.week_start,
     mon: r.skills.map((m) => ({

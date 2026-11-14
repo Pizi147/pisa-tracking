@@ -225,8 +225,15 @@ export default function LuotThuongPage() {
           <span className="mt-1 block">
             {r.result.tyLeTong != null
               ? <span className="text-xl font-bold leading-none tabular-nums text-slate-100">{Math.round(r.result.tyLeTong * 100)}%</span>
-              : <span className="text-sm text-slate-400">{huy ? '—' : t('chờ {x}', { x: r.result.skills.filter((x) => x.outcome === 'missing' && r.skillSchedule.find((s) => s.skill === x.skill)?.sitStatus !== 'cancelled').map((x) => tenMonNgan(ct, x.skill)).join(', ') })}</span>}
+              : <span className="text-sm text-slate-400">{huy ? '—' : r.result.required === 0 && r.result.daHuy?.length ? t('đã huỷ')
+                : t('chờ {x}', { x: r.result.skills.filter((x) => x.outcome === 'missing').map((x) => tenMonNgan(ct, x.skill)).join(', ') })}</span>}
           </span>
+          {/* LG-9b (chủ SP 15/11 "Tính trên môn còn lại"): có môn đã huỷ → % tính trên các môn còn lại, ghi rõ. */}
+          {!huy && !!r.result.daHuy?.length && r.result.required > 0 && (
+            <span className="mt-1 block text-xs text-slate-400">
+              {t('trên {n} môn · {x} đã huỷ', { n: r.result.required, x: r.result.daHuy.map((k) => tenMonNgan(ct, k)).join(', ') })}
+            </span>
+          )}
         </div>
         <div className="min-w-0 sm:pt-4">
           {huy ? <Status kind="idle">{t('Đã huỷ')}</Status> : <KetQua row={r} sheet={{ ...d, rows: [r] }} anCase />}

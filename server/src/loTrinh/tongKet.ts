@@ -92,13 +92,14 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
     `SELECT a.id, a.cycle_id, a.attempt_no, a.status, a.target_at_attempt, a.class_id, a.created_at, a.bo_mon FROM assessment_attempts a WHERE a.kind != 'mt0' AND a.cycle_id IN (${dangChay.map(() => '?').join(',')}) ORDER BY a.cycle_id, a.attempt_no, a.id`,
   ).all(...dangChay.map((c) => c.id)) as any[] : [];
   const diem = new Map<number, any[]>();
-  const lichGop = new Map<number, { skill: string }[]>();   // P13: dòng lịch MÔN GỘP cũ — bộ môn theo lượt (`daGhiLuot`), cùng câu với điểm
+  const lichGop = new Map<number, { skill: string; sit_status?: string | null }[]>();   // P13: dòng lịch MÔN GỘP cũ — bộ môn theo lượt (`daGhiLuot`), cùng câu với điểm
   const gop = Object.keys(MON_GOP);
   theoLo(luot.map((a) => a.id as number), (lo, ph) => {
     for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, band AS band, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
-        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${gop.map(() => '?').join(',')})`).all(...lo, ...lo, ...gop) as any[]) {
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, NULL, IIF(sit_status = 'cancelled', 2, 1) FROM attempt_skills WHERE attempt_id IN (${ph}) AND (skill IN (${gop.map(() => '?').join(',')}) OR sit_status = 'cancelled')`).all(...lo, ...lo, ...gop) as any[]) {
+      /* LG-9b: cùng câu lấy thêm dòng môn ĐÃ HUỶ (`la_lich` = 2) — kết quả lớp thường tính trên môn còn lại. */
       const m: Map<number, any[]> = r.la_lich ? lichGop : diem;
-      m.set(r.attempt_id, [...(m.get(r.attempt_id) ?? []), r]);
+      m.set(r.attempt_id, [...(m.get(r.attempt_id) ?? []), r.la_lich ? { ...r, sit_status: r.la_lich === 2 ? 'cancelled' : null } : r]);
     }
   }, Math.floor((THAM_SO_TOI_DA - gop.length) / 2));
   const lopDang = dangChay.length ? (conn.prepare(

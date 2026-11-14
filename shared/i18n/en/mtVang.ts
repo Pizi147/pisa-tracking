@@ -6,6 +6,7 @@ export const EN_MT_VANG = {
   'Đã huỷ {mon}{ai}': 'Cancelled {mon}{ai}',
   'Huỷ môn': 'Cancel subject',
   '{x} đã huỷ': '{x} cancelled',
+  'trên {n} môn · {x} đã huỷ': 'over {n} subjects · {x} cancelled',
   '{x}: đã huỷ (vắng).': '{x}: cancelled (absent).',
   'Chỉ Progress / Final lớp thường có Huỷ môn — MT vắng 2 lần tự huỷ.': 'Only regular-class Progress / Final tests have Cancel subject — an MT cancels itself after 2 absences.',
   'Chỉ GV của môn, GVCN lớp hoặc Quản lý huỷ được bài này.': 'Only the subject teacher, homeroom teacher or a manager can cancel this test.',
