@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 're
 import { createPortal } from 'react-dom';
 import { api } from '../../lib/api.ts';
 import { resolveWeek } from '../../ui/Filters.tsx';
+import { ONgay } from '../../ui/ONgay.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -77,15 +78,13 @@ const KHOA_NHO = 'pc-hieu-luc';
 const docNho = (): 'hom-nay' | 'tuan' => { try { return sessionStorage.getItem(KHOA_NHO) === 'tuan' ? 'tuan' : 'hom-nay'; } catch { return 'hom-nay'; } };
 const ghiNho = (v: 'hom-nay' | 'tuan') => { try { sessionStorage.setItem(KHOA_NHO, v); } catch { /* chỉ là tiện lợi trong phiên */ } };
 
-/** Ô tuần hiệu lực: các thứ Hai từ tuần sau, mã tuần `W1 NOV` (mockup: một ô chọn gọn trong nhãn radio). */
+/** Ô tuần hiệu lực (GD-13c, mockup ⑥ K6c): ô gõ mã tuần "W4 SEP" + nút lịch (`ONgay` chuẩn) — chỉ thứ Hai từ tuần sau; mốc chờ cũ (đã qua) vẫn hiện để đổi. */
 function OTuan({ value, onChange, homNay, nhan }: { value: string; onChange: (v: string) => void; homNay: string; nhan: string }) {
   const dau = addDaysStr(mondayOfDate(homNay), 7);
-  const ds = Array.from({ length: 12 }, (_, i) => addDaysStr(dau, 7 * i));
-  if (value && !ds.includes(value)) ds.unshift(value);
   return (
-    <select className="pc-o-tuan" aria-label={nhan} value={value} onChange={(e) => onChange(e.target.value)}>
-      {ds.map((d) => <option key={d} value={d}>{tuanLich(d, homNay)}</option>)}
-    </select>
+    <span className="pc-o-tuan">
+      <ONgay kieu="tuan" moc="dau" gon value={value} toiThieu={value && value < dau ? value : dau} ariaLabel={nhan} onChange={(v) => { if (v) onChange(mondayOfDate(v)); }} />
+    </span>
   );
 }
 

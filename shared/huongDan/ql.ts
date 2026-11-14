@@ -357,6 +357,7 @@ export const HD_QL: HuongDan = {
         { id: 'hvl-xem-case', viec: 'xem-case', ten: 'Xem mọi Case của em', buoc: ['Bấm dòng em: panel một em mở bên phải, không rời trang.', 'Khối <b>Case & phương án</b>: bấm Case để mở.'] },
         { id: 'ql-hvl-pham-vi', ten: 'Xem, lọc và Lưu trữ', buoc: ['Ô <b>Xem</b>: lớp tôi dạy, chi nhánh hoặc mọi chi nhánh; <b>Fast Track</b> / <b>Lớp thường</b>.', 'Chip <b>Thi tháng này</b> · <b>Có việc quá hạn</b> · <b>Đã thi · chờ KQ</b>; <b>Bộ lọc thêm</b> (Thiếu thông tin…).', '<b>Lưu trữ ›</b> ở đầu trang: lớp đã kết thúc, em đã lưu trữ. Ô <b>Mọi lớp</b> · <b>Mọi TVV</b> gõ để tìm.'],
           chi: { hd: 'hvl-goc', duong: HV, chu: 'Tab và lọc của trang ở hàng này.' } },
+        { id: 'ql-hvl-phan-cong', ten: 'Phân công GV', buoc: ['Tab <b>Phân công GV</b>: một bảng cả chi nhánh; vai xem nhiều chi nhánh vào thẳng chi nhánh gần nhất, đổi ở ô <b>Xem</b>.', 'Bấm ô GV, gõ tên: GV đang dạy lớp lên trước, <b>Bỏ trống (Chưa có)</b> cuối. <b>Lưu</b> cuối dòng hỏi hiệu lực <b>Ngay hôm nay</b> / <b>Từ tuần</b> (gõ W4 SEP hoặc bấm lịch).'] },
       ],
     },
     {
