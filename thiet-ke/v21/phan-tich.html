@@ -91,11 +91,11 @@
     <h2>Y · Ý thức — giải thích cột vào ⓘ đầu thẻ, tên bậc VIẾT HOA (R9.2, G2)</h2>
     <div class="ghi"><ul>
       <li>Web: 6 câu giải thích nằm trong rê chuột ở tiêu đề cột (Vi phạm, Chưa xử lý, Bậc, Lần xử lý gần nhất, HV có vi phạm, ± kỳ trước) → gom vào ⓘ đầu thẻ (đã có ⓘ "cách chọn").</li>
-      <li>G2: tên bậc VIẾT HOA — cột bảng viết tắt "REPORT 1 › WL 1"; thang cấp bậc trong ⓘ viết đủ "WARNING LETTER 1". Mọi số, bảng, thao tác giữ như web.</li>
+      <li>G2 (lời 36): tên bậc VIẾT HOA — cột bảng và thang trong ⓘ viết tắt "REPORT 1 › WL 1" (viết đủ WARNING LETTER chỉ ở nơi quyết / lịch sử — không có ở Phân tích). Panel chỉ đọc: chân chỉ "Đóng". Mọi số, bảng, thao tác giữ như web.</li>
     </ul></div>
     <div class="hang-khung">
       <figure id="f-y1"><figcaption>Y1 · QL · 1440 · toàn trang</figcaption><div class="man" data-k="y1"></div></figure>
-      <figure id="f-y2"><figcaption>Y2 · bấm ⓘ "Học viên cần chú ý" → cách chọn + từng cột + thang viết đủ</figcaption><div class="man" data-k="y2"></div></figure>
+      <figure id="f-y2"><figcaption>Y2 · bấm ⓘ "Học viên cần chú ý" → cách chọn + từng cột + thang cấp bậc</figcaption><div class="man" data-k="y2"></div></figure>
       <figure id="f-y3"><figcaption>Y3 · 375</figcaption><div class="dt" data-k="y3"></div></figure>
     </div>
   </section>
@@ -183,7 +183,8 @@
   }
   const soTo = (x) => `<div class="so-to"><span class="ten">${x.ten}${x.ky ? ` <i>· ${x.ky}</i>` : ''}${x.i ? I('Cách tính') : ''}</span><span class="gt">${x.gt}${x.don ? `<small>${x.don}</small>` : ''}</span>${x.chia || ''}${x.phu ? `<span class="phu">${x.phu}</span>` : ''}</div>`;
   const pnDau = (loai, h2, ngu, them, cach) => `<div class="pn-dau"><div class="pn-h1"><span class="loai">${loai}</span>${cach ? `<span style="margin-left:auto">${I(cach)}</span>` : ''}<button type="button" class="x"${cach ? ' style="margin-left:4px"' : ''} aria-label="Đóng">✕</button></div><h2>${h2}</h2><p class="pn-ngu">${ngu}</p>${them || ''}</div>`;
-  const panel = (ruot, rong) => `<div class="phu-hop"></div><div class="pn${rong ? ' pn-rong' : ''}" role="dialog" aria-label="Danh sách">${ruot}</div>`;
+  /* v21 (lời 36): panel ở Phân tích là panel CHỈ ĐỌC — chân chỉ "Đóng" */
+  const panel = (ruot, rong) => `<div class="phu-hop"></div><div class="pn${rong ? ' pn-rong' : ''}" role="dialog" aria-label="Danh sách">${ruot}<div class="pn-chan"><span class="phai"><button type="button" class="nut">Đóng</button></span></div></div>`;
   const d = (kq, v) => v == null ? '<span class="mo2">—</span>' : `<span class="d ${kq}">${v}</span>`;
 
   /* ======================= A · CHI NHÁNH ======================= */
@@ -589,7 +590,7 @@
   ];
   const I_YT_HV = '<span><b>Cách chọn:</b> em đang học có vi phạm chưa xử lý đã qua hạn, bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất chờ QL duyệt.</span>'
     + '<dl><dt>Vi phạm</dt><dd>trong khoảng đang lọc.</dd><dt>Chưa xử lý</dt><dd>Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính).</dd><dt>Bậc · hiện tại › kế</dt><dd>bậc cao nhất đã xử lý › lần xử lý bắt buộc kế tiếp; đề xuất ngoài thang không đổi bậc.</dd><dt>Lần xử lý gần nhất</dt><dd>lần đã xong; lần mới hơn đang chờ duyệt / bị từ chối ghi kèm trạng thái.</dd></dl>'
-    + '<span><b>Thang cấp bậc:</b></span><ol class="thang"><li>REPORT 1</li><li>REPORT 2</li><li>WARNING LETTER 1 (WL 1)</li><li>REPORT 4 + MEETING CX / GĐCN</li><li>WARNING LETTER 2 (WL 2)</li><li>WARNING LETTER 3 (WL 3) · cần QL duyệt</li></ol>';
+    + '<span><b>Thang cấp bậc:</b></span><ol class="thang"><li>REPORT 1</li><li>REPORT 2</li><li>WL 1</li><li>REPORT 4 + MEETING CX / GĐCN</li><li>WL 2</li><li>WL 3 · cần QL duyệt</li></ol>';
   const I_YT_LOP = '<dl><dt>Xếp</dt><dd>theo vi phạm chưa xử lý, nhiều trước.</dd><dt>HV có vi phạm</dt><dd>số em có vi phạm / sĩ số lớp.</dd><dt>± kỳ trước</dt><dd>so khoảng cùng độ dài liền trước.</dd></dl>';
   const cx = (n, m) => n === 0 ? '<span class="oso-0">0</span>' : `<a class="oso" href="#so" style="color:${m === 'q' ? 'var(--bad)' : 'var(--soon)'} !important">${m === 'q' ? '⚠ ' : ''}${n}</a>`;
   function soYt() {

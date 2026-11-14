@@ -56,7 +56,8 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 ·
 | D1 | `title` "Bấm ▸ xem từng chi nhánh" (QT, `PhanTichGiaoVien.tsx:81`, `:132`) | rê chuột | bỏ — nút ▸ đã có `aria-label` "tách n chi nhánh" | BỎ (R9.2) |
 | D4 | Thẻ 375 | "Đạt kỳ vọng Test" | "Đạt kỳ vọng Test · lượt" | ĐỔI chữ (R9.4) |
 | Y1 / Y2 | Giải thích cột | `Th hint` (rê chuột) ở 6 cột (`YThucPhoiHop.tsx:157–160`, `:231–232`) | gom vào ⓘ đầu thẻ "Học viên cần chú ý" (cách chọn + từng cột + thang) và "Lớp nhiều vi phạm" (xếp · HV có vi phạm · ± kỳ trước) | ĐỔI (R9.2) |
-| Y1 | Tên bậc | "Report 1 › Report 2", "WL 2 › Report 7" | VIẾT HOA: cột viết tắt "REPORT 1 › REPORT 2", "WL 1 › REPORT 4 + MEETING", "WL 2 › WL 3"; thang trong ⓘ viết đủ "WARNING LETTER 1 / 2 / 3" | ĐỔI (G2, lời 35) |
+| Y1 | Tên bậc | "Report 1 › Report 2", "WL 2 › Report 7" | VIẾT HOA, viết tắt (lời 36): cột "REPORT 1 › REPORT 2", "WL 1 › REPORT 4 + MEETING", "WL 2 › WL 3"; thang trong ⓘ là danh sách viết tắt. Viết đủ WARNING LETTER chỉ ở nơi quyết / lịch sử — Phân tích không có | ĐỔI (G2, lời 35, 36) |
+| C5 / C6 / D5–D7 / E3 / E5 | Chân panel | (panel số V2 không có chân) | panel chỉ đọc: chân chỉ "Đóng" (⑤ D2, lời 36) | ĐỔI |
 | Y1 | Dải 4 ô, hai bảng, mở nhóm vi phạm, Xuất Excel | có | như cũ | GIỮ |
 | E1 / E5 | Lỗi tải | `ErrorState` (tiêu đề + gợi ý + Thử lại) | một dòng "⚠ Không tải được … · Thử lại" (⑤ B3), hàng lọc vẫn dùng | ĐỔI chữ |
 | E4 | TVV | không tab Giáo viên, link cũ → toast | như cũ | GIỮ |
@@ -109,7 +110,7 @@ Không số nào trên tab SOS bằng số này theo định nghĩa: em SOS lâu
 2. **[XM-2] "Sắp thi" chỉ tính ngày thi ĐÃ CHỐT.** Em chỉ có tháng dự kiến không tính (không biết ngày → không biết có trong 6 tuần không). Muốn tính cả tháng dự kiến rơi vào 6 tuần tới thì ô to hơn nhưng kém chính xác. Đề xuất: chỉ ngày đã chốt.
 3. **[XM-3] Dáng ô số.** Web hiện vẽ số bấm được trong hộp viền; nền V2 và bộ chuẩn ⑤ H3 vẽ chữ màu nhấn có gạch chân (⑤) / gạch khi rê (V2). Mockup giữ theo nền V2 (đề bài: giữ hình ảnh sát nền). PR code cần một dáng chung với ⑤ — PTA chọn.
 4. **[XM-4] Cột "HV - Case" ở SOS.** Web đã tách hai cột "HV có Case" · "Case"; nền V2 gộp "HV - Case". Không thuộc R9 → mockup không vẽ lại; PR code **giữ như web** (hai cột), ⓘ ghi theo cột đang có.
-5. **[XM-5] Tên bậc "REPORT 4 + MEETING CX / GĐCN".** Viết hoa theo G2; chờ ⓪ chốt bảng "chỗ viết đủ │ chỗ viết tắt" rồi theo. Biện pháp ngoài thang ("Đình chỉ học tạm thời") giữ chữ thường (không phải tên bậc).
+5. **[XM-5] Tên bậc "REPORT 4 + MEETING CX / GĐCN".** Viết hoa theo G2 (lời 36 đã chốt: viết tắt ở cột / chip / thang). Chỉ còn hỏi: giữ đủ "+ MEETING CX / GĐCN" trong cột hay rút "+ MEETING". Biện pháp ngoài thang ("Đình chỉ học tạm thời") giữ chữ thường (không phải tên bậc).
 6. **[XM-6] Panel Chưa làm có nhóm "S chéo chung".** Nhóm cuối của tab Chấm Test, không cộng vào "6 bài" (khớp ô và tỉ lệ). "Chưa phân công" không vào panel này (ô riêng bên cạnh, đã bấm được). Đề xuất giữ.
 7. **[XM-7] Ô Chương trình ở Ý thức** mờ cả hai nút (Ý thức tính cả hai khung). Nếu sau này Ý thức lọc được theo khung thì ô bật lại tại chỗ, không dời gì.
 8. Lặt vặt `10` mục D không vẽ (ngoài R9): Excel Ý thức theo khung `xuatV2.ts` → PR Excel; dòng "Chưa tính" ở khối PA — web 14/11 không còn hiện dòng này, giải thích vào ⓘ khối PA nếu PR thấy còn.
@@ -125,7 +126,7 @@ Không số nào trên tab SOS bằng số này theo định nghĩa: em SOS lâu
 | R9.5 | Ô mới "Sắp thi · 6 tuần · còn SOS" → panel em: lớp · ngày thi · mức SOS · TVV; ước đọc | C1, C4, C5, C6, E2 (0 không bấm), E4 (TVV); mục 4 (không trùng), mục 5 (+ 2–3 câu) | Đạt |
 | R9.6 | Thanh tab, panel, Xuất theo bộ chuẩn; không đổi gì khác | tab ⑤ H1, panel 736 (bảng có điểm 820) dáng panel số, Xuất Excel cuối hàng; mục 2 dòng GIỮ | Đạt |
 | G1 | Nâng cấp, giữ bố cục + mọi thao tác | mục 3: không mất thao tác | Đạt |
-| G2 | Đồng bộ: ô chọn có tìm, câu lỗi chuẩn, tên bậc hoa, mã tuần | L2 / L3, E1 / E5, Y1 / Y2, mọi thời gian dạng mã tuần (ngày chỉ ở ngày thi, hạn) | Đạt |
+| G2 | Đồng bộ: ô chọn có tìm, câu lỗi chuẩn, tên bậc hoa (lời 36: viết tắt ở cột / thang), chân panel chỉ đọc "Đóng", mã tuần | L2 / L3, E1 / E5, Y1 / Y2, C5 / D5 (chân "Đóng"), mọi thời gian dạng mã tuần (ngày chỉ ở ngày thi, hạn) | Đạt |
 | G3 | Không chú thích tĩnh, không bước xác nhận, không tab mới | không thêm câu tĩnh; dòng mẫu dưới số là đơn vị / phạm vi (như nền) | Đạt |
 | G4 | html + css riêng + ghi chú + ảnh 1440 Tối / Sáng, 375 Sáng; ảnh cặp; đủ trạng thái | 46 ảnh + 27 ảnh cặp; E1–E5 | Đạt |
 | G5 | PR chỉ `thiet-ke/v21/`, không merge | xem mô tả PR | Đạt |

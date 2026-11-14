@@ -664,3 +664,7 @@ table.mk td, table.mk th { border:1px solid #cfd5e2; padding:4px 8px; text-align
 .dt .hop-i dl, .co-pn .hop-i dl { grid-template-columns:max-content minmax(0,1fr); }
 .hang-loc-mau { align-content:start; }
 .doan.tat button[aria-pressed="true"] { background:var(--accent-soft); color:var(--text); box-shadow:inset 0 -2px 0 var(--line-strong); }
+/* v21 (lời 36): chân panel chỉ đọc — chỉ "Đóng" (⑤ D2) */
+.pn-chan { border-top:1px solid var(--line-strong); padding:10px 20px; display:flex; align-items:center; gap:10px; background:var(--surface); flex:none; }
+.pn-chan .phai { margin-left:auto; display:flex; gap:8px; }
+.dt .pn-chan { padding:10px 16px 14px; } .dt .pn-chan .phai { flex:1; } .dt .pn-chan .nut { flex:1; }
