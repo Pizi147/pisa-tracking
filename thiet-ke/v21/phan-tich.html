@@ -1,0 +1,663 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Phân tích · v21</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="phan-tich.css">
+</head>
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v21 ⑨ · Phân tích — CHỈNH, không làm lại (chờ chủ SP duyệt)</h1>
+    <p>Nền đã duyệt: <code>thiet-ke/2026-11-12-phan-tich-v2/phan-tich-v2.html</code> (token, bảng, số to, panel chép nguyên). Đề bài <code>docs/superpowers/specs/2026-11-13-overhaul-v6/11-de-bai-mockup-dot-2.md</code> mục ⑨ R9.1–R9.6.
+      Bảng truy vết, thao tác TRƯỚC → SAU, [XM], tự rà, ước dòng đọc: <code>phan-tich-ghi-chu.md</code>. Dữ liệu giả chi nhánh Monbay, đến <b>12/11/2026</b> (W2 NOV). Mỗi khung chụp 1440 Tối + Sáng, 375 Sáng (nút "Đổi sáng / tối").
+      Nền vàng viền đứt = ghi chú mockup, không lên web. Chỉ có khung CÓ ĐỔI + một khung toàn trang mỗi tab.</p>
+    <nav class="muc-mk"><a href="#loc">L · Hàng lọc</a><a href="#cn">A · Chi nhánh</a><a href="#thi">C · Thi thật</a><a href="#sos">B · SOS</a><a href="#gv">D · Giáo viên</a><a href="#yt">Y · Ý thức</a><a href="#tt">E · Trạng thái</a><button type="button" id="doi-theme">Đổi sáng / tối</button></nav>
+  </header>
+
+  <section class="khu" id="loc">
+    <h2>L · Hàng lọc cố định giữa 5 tab (R9.3)</h2>
+    <div class="ghi"><ul>
+      <li>Một thứ tự cho mọi tab: <b>Chương trình · Thời gian · tuần → tuần · Lớp</b> · ô riêng của tab (Xếp theo ở SOS, Tìm GV ở Giáo viên — luôn đứng cuối nhóm trái nên không đẩy ô khác) · phải: In / ⋯ · <b>Xuất Excel luôn cuối</b>.</li>
+      <li>Ô không áp dụng ở tab đó <b>mờ, viền đứt, không bấm</b> (dáng ô tắt ⑤ A3) — không biến mất, nên đổi tab mắt không phải tìm lại. Thi thật: "Fast Track" giữ chọn, "Lớp thường" mờ (chỉ FT có thi thật). Ý thức: cả hai mờ (tính cả hai khung).</li>
+      <li>"Mọi lớp" và "Tìm GV" là <b>ô chọn có tìm</b> (⑤ mẫu A): Mọi lớp nhóm "Đang chạy" trước "Đã kết thúc" (nhóm web đang có); Tìm GV nhóm "GV chi nhánh" — đang gõ thì bảng vẫn lọc theo chữ như nay; chọn một GV thì bảng còn dòng đó; ✕ bỏ lọc.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-l1"><figcaption>L1 · cùng một hàng lọc ở 5 tab (1440) — ô mờ = không áp dụng</figcaption><div class="man loc" data-k="l1"></div></figure>
+      <figure id="f-l2"><figcaption>L2 · bấm "Mọi lớp" (tab SOS) — ô chọn có tìm, nhóm Đang chạy · Đã kết thúc</figcaption><div class="man loc" data-k="l2"></div></figure>
+      <figure id="f-l3"><figcaption>L3 · gõ "linh" ở Tìm GV (tab Giáo viên) — khớp không dấu</figcaption><div class="man loc" data-k="l3"></div></figure>
+      <figure id="f-l4"><figcaption>L4 · 375 — cùng thứ tự, ô mờ giữ chỗ (Chi nhánh · Thi thật · Giáo viên)</figcaption><div class="dt loc" data-k="l4"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="cn">
+    <h2>A · Chi nhánh — toàn trang (đổi: hàng lọc, nhãn có đơn vị, kỳ ở ô Thi thật)</h2>
+    <div class="ghi"><ul>
+      <li>R9.4: ô Thi thật ghi rõ kỳ <b>"Thi thật · W1–W4 NOV"</b> (trước: "· trong kỳ"); nhãn có đơn vị <b>"Đạt MT · HV"</b>. Ô Lớp mờ (bảng đã chia theo lớp). Xuất Excel đã có trên web → giữ, cuối hàng.</li>
+      <li>Giữ nguyên: số 48 px trình chiếu, bảng 6 lớp / trang + hàng tổng, In, bấm một lần ra panel.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-a1"><figcaption>A1 · QL · Fast Track · 1440</figcaption><div class="man" data-k="a1"></div></figure>
+      <figure id="f-a6"><figcaption>A6 · 375</figcaption><div class="dt" data-k="a6"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="thi">
+    <h2>C · Thi thật — ô mới "Sắp thi · 6 tuần · còn SOS" (R9.5, chủ SP đồng ý lời 35)</h2>
+    <div class="ghi"><ul>
+      <li>Ô thứ ba bên phải: số em <b>đang SOS</b> (MT mới nhất) có <b>ngày thi đã chốt</b> trong 6 tuần tới, chia SOS 1 · 2 · 3. Số <b>hiện tại</b> như "Chưa có KQ" — không theo khoảng tuần đang chọn; theo chi nhánh + ô Lớp. Bấm số hoặc chip → panel em: lớp · ngày thi · mức SOS · TVV.</li>
+      <li>Không trùng tab SOS: SOS đếm <b>lượt MT trong kỳ đã qua</b>; ô này đếm <b>em</b>, nhìn <b>về trước</b> (sắp thi). Chi tiết ở ghi chú mục 4.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-c1"><figcaption>C1 · QL · 1440 · toàn trang</figcaption><div class="man" data-k="c1"></div></figure>
+      <figure id="f-c5"><figcaption>C5 · bấm "9" Sắp thi · còn SOS → panel em (chỉ đọc)</figcaption><div class="man co-pn" data-k="c5"></div></figure>
+      <figure id="f-c4"><figcaption>C4 · 375 · ô mới hết hàng dưới hai ô nhỏ</figcaption><div class="dt" data-k="c4"></div></figure>
+      <figure id="f-c6"><figcaption>C6 · 375 · panel Sắp thi · còn SOS (toàn màn, mỗi em một thẻ)</figcaption><div class="dt co-pn" data-k="c6"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="sos">
+    <h2>B · SOS — giải thích rời khỏi rê chuột, vào ⓘ đầu thẻ (R9.2)</h2>
+    <div class="ghi"><ul>
+      <li>Trên web các câu giải thích nằm trong <code>title</code> (rê chuột) ở tiêu đề nhóm cột, ô "HV - Case", "n vấn đề khác", chip "Nên dùng". Nay gom vào <b>ⓘ ở đầu thẻ</b>: bấm mở một dải ngay dưới đầu thẻ (đẩy bảng xuống, không che cột, có ✕), mỗi cột một dòng; 375 dải hết bề ngang, đọc được.</li>
+      <li>Không đặt ⓘ trong tiêu đề cột (luật "cấm điều khiển trong tiêu đề bảng") — xem [XM-1]. Mọi thứ khác giữ như nền.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-b1"><figcaption>B1 · QL · Fast Track · 1440 · toàn trang</figcaption><div class="man" data-k="b1"></div></figure>
+      <figure id="f-b5"><figcaption>B5 · bấm ⓘ "Theo tuần" → hộp nổi giải thích từng cột</figcaption><div class="man" data-k="b5"></div></figure>
+      <figure id="f-b6"><figcaption>B6 · bấm ⓘ "PA nào hiệu quả" → "Nên dùng", "vấn đề khác" (trước: rê chuột)</figcaption><div class="man" data-k="b6"></div></figure>
+      <figure id="f-b3"><figcaption>B3 · 375 · ⓘ "PA nào hiệu quả" mở hết bề ngang (khung cắt gọn: một thẻ tuần)</figcaption><div class="dt" data-k="b3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="gv">
+    <h2>D · Giáo viên — ô "Chưa làm" bấm được → panel nhóm theo GV (R9.1)</h2>
+    <div class="ghi"><ul>
+      <li>Ô "Chưa làm" nay là hai ô số <b>6 bài · 4 việc</b> (đỏ, ⚠). Bấm số → panel <b>Chưa làm</b>: hai tab con Chấm Test · Việc (badge mờ), trong mỗi tab nhóm theo GV, mỗi dòng = <b>dòng việc chuẩn ⑤ B1, chỉ đọc</b>: "Lớp · việc" · thẻ phụ (em, đợt, tuần) · chip hạn. Cuối: nhóm "S chéo chung".</li>
+      <li>Cùng nguồn sổ nghĩa vụ (<code>/phan-tich/giao-vien/danh-sach</code>), chỉ đọc khi bấm. Giữ: bảng, panel 3 tab của từng GV, "Thi thật theo GV ›", Xuất Excel.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-d1"><figcaption>D1 · QL · 1440 · toàn trang</figcaption><div class="man" data-k="d1"></div></figure>
+      <figure id="f-d5"><figcaption>D5 · bấm "6" bài Chưa làm → panel nhóm theo GV, tab Chấm Test</figcaption><div class="man co-pn" data-k="d5"></div></figure>
+      <figure id="f-d6"><figcaption>D6 · cùng panel, tab Việc</figcaption><div class="man co-pn" data-k="d6"></div></figure>
+      <figure id="f-d4"><figcaption>D4 · 375</figcaption><div class="dt" data-k="d4"></div></figure>
+      <figure id="f-d7"><figcaption>D7 · 375 · panel Chưa làm toàn màn</figcaption><div class="dt co-pn" data-k="d7"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="yt">
+    <h2>Y · Ý thức — giải thích cột vào ⓘ đầu thẻ, tên bậc VIẾT HOA (R9.2, G2)</h2>
+    <div class="ghi"><ul>
+      <li>Web: 6 câu giải thích nằm trong rê chuột ở tiêu đề cột (Vi phạm, Chưa xử lý, Bậc, Lần xử lý gần nhất, HV có vi phạm, ± kỳ trước) → gom vào ⓘ đầu thẻ (đã có ⓘ "cách chọn").</li>
+      <li>G2: tên bậc VIẾT HOA — cột bảng viết tắt "REPORT 1 › WL 1"; thang cấp bậc trong ⓘ viết đủ "WARNING LETTER 1". Mọi số, bảng, thao tác giữ như web.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-y1"><figcaption>Y1 · QL · 1440 · toàn trang</figcaption><div class="man" data-k="y1"></div></figure>
+      <figure id="f-y2"><figcaption>Y2 · bấm ⓘ "Học viên cần chú ý" → cách chọn + từng cột + thang viết đủ</figcaption><div class="man" data-k="y2"></div></figure>
+      <figure id="f-y3"><figcaption>Y3 · 375</figcaption><div class="dt" data-k="y3"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="tt">
+    <h2>E · Trạng thái — lỗi · rỗng · đang tải · chỉ xem</h2>
+    <div class="ghi"><ul>
+      <li>E1 lỗi tải câu chuẩn "⚠ Không tải được … · Thử lại" (⑤ B3), hàng lọc vẫn dùng được. E2 Thi thật rỗng trong kỳ: "Sắp thi · còn SOS" vẫn hiện số hiện tại; 0 thì không bấm. E3 panel Chưa làm đang tải / lỗi. E4 TVV: không có tab Giáo viên (như nay), hàng lọc giữ chỗ.</li>
+    </ul></div>
+    <div class="hang-khung">
+      <figure id="f-e1"><figcaption>E1 · Giáo viên · lỗi tải</figcaption><div class="man" data-k="e4"></div></figure>
+      <figure id="f-e2"><figcaption>E2 · Thi thật · rỗng trong kỳ, Sắp thi · còn SOS = 0</figcaption><div class="man" data-k="e3"></div></figure>
+      <figure id="f-e3"><figcaption>E3 · panel Chưa làm · đang tải</figcaption><div class="man co-pn" data-k="e6"></div></figure>
+      <figure id="f-e5"><figcaption>E5 · panel Chưa làm · lỗi tải (số trên ô vẫn đúng)</figcaption><div class="man co-pn" data-k="e7"></div></figure>
+      <figure id="f-e4"><figcaption>E4 · TVV · chỉ xem — không tab Giáo viên, Thi thật có ô Sắp thi</figcaption><div class="man" data-k="e5" data-vai="tvv"></div></figure>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  const svg = (d) => `<svg class="ic" viewBox="0 0 16 16" aria-hidden="true">${d}</svg>`;
+  const IC = {
+    lich: svg('<rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/>'),
+    chuong: svg('<path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3z"/><path d="M6.5 14a1.5 1.5 0 0 0 3 0"/>'),
+    tim: svg('<circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/>'),
+    xuat: svg('<path d="M8 2.5v8M4.5 7.5L8 11l3.5-3.5M3 13.5h10"/>'),
+    in: svg('<path d="M4.5 6V2.5h7V6M4.5 11.5h-2v-5h11v5h-2"/><rect x="4.5" y="9.5" width="7" height="4"/>'),
+    xuong: svg('<path d="M4 6.5l4 4 4-4"/>'),
+  };
+  const TABS = ['Chi nhánh', 'Thi thật', 'SOS', 'Giáo viên', 'Ý thức'];
+  const TEN_TAB = ['Chi nhánh', 'SOS', 'Thi thật', 'Giáo viên', 'Ý thức'];   // chỉ số tab trong các khung (0 CN · 1 SOS · 2 Thi thật · 3 GV)
+  const o = (n, cls) => (n === 0 || n === '0' || n === '0 %') ? `<span class="oso-0">${n}</span>` : `<a class="oso${cls ? ' ' + cls : ''}" href="#so">${n}</a>`;
+  const pc = (a, b) => b ? Math.round((100 * a) / b) + ' %' : '—';
+  /* v21 (R9.2): ⓘ không còn title (rê chuột) — bấm mở hộp nổi. I(chữ, true) = vẽ trạng thái đang mở; trai = hộp mở sang phải. */
+  const I = (t, mo, trai) => mo
+    ? `<span class="co-i"><button type="button" class="nut-i" aria-label="Giải thích" aria-expanded="true">ⓘ</button><span class="hop-i${trai ? ' trai' : ''}" role="dialog" aria-label="Giải thích"><button type="button" class="dong-i" aria-label="Đóng giải thích">✕</button>${t}</span></span>`
+    : `<button type="button" class="nut-i" aria-label="Giải thích" aria-expanded="false">ⓘ</button>`;
+  const XUAT = (hep) => hep ? `<button type="button" class="nut nut-vuong nut-xuat" aria-label="Xuất Excel">${IC.xuat}</button>` : `<button type="button" class="nut nut-xuat">${IC.xuat}Xuất Excel</button>`;
+  const IN = `<button type="button" class="nut">${IC.in}In</button>`;
+  const MENU = `<button type="button" class="nut nut-vuong" aria-label="Thao tác khác: Cột hiện · Xuất kết quả từng lượt · Excel Mock">⋯</button>`;
+  const lkHv = (t) => `<a class="ten-hv" href="#hs">${t}</a>`;
+  const lkLop = (t) => `<a class="lk-t lop" href="#lop">${t}</a>`;
+  const dem = (t) => `<span class="dem">${t}</span>`;
+  const sos = (m, t) => `<span class="sos m${m}">${t || 'SOS ' + m}</span>`;
+  const cs = (cls, n) => n === 0 ? '<span class="oso-0">0</span>' : `<a class="chip-so ${cls}" href="#so">${n}</a>`;
+  const NGUOI = { ql: 'Nguyễn Khánh Vy · QL', qt: 'Đỗ Vũ Tuấn Phong · QT', tvv: 'Hoàng Mai Lan · TVV' };
+
+  function nav(hep, vai) {
+    const M = ['Tổng quan', 'Học viên &amp; Lớp', 'Test', 'Công việc', 'Phân tích'];
+    return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>`
+      + (hep ? '' : M.map((m, i) => `<span class="m${i === 4 ? ' dang' : ''}">${m}${i === 3 ? '<span class="so-nav">6</span>' : ''}</span>`).join(''))
+      + `<span class="phai"><span>${IC.tim}</span><span>${IC.chuong}</span>${hep ? '' : `<span>${NGUOI[vai]}</span>`}</span></div>`;
+  }
+  function dau(tab, hep, vai) {
+    const tabs = vai === 'tvv' ? TABS.filter((t) => t !== 'Giáo viên') : TABS;
+    return `<header class="dau-trang"><h1>Phân tích</h1><span class="ngay">Dữ liệu đến 12/11/2026</span>${vai === 'qt' && !hep ? '<span class="phai"><span class="o-chon" role="button" aria-label="Chi nhánh">Tất cả chi nhánh</span></span>' : ''}</header>`
+      + `<div class="tab-hang" role="tablist" aria-label="Phân tích">${tabs.map((t) => `<button type="button" role="tab" aria-selected="${t === TEN_TAB[tab]}">${t}</button>`).join('')}</div>`;
+  }
+  /* Hàng lọc chung — c.ct: 0 FT · 1 lớp thường · false không có ô chương trình; c.ky [từ, đến]; c.lop; c.them (ô riêng); c.phai (In / ⋯). Xuất Excel LUÔN cuối. */
+  /* v21 (R9.3): MỘT hàng lọc, MỘT thứ tự cho 5 tab — Chương trình · Thời gian · tuần → tuần · Lớp · [ô riêng: Xếp theo (SOS) / Tìm GV (GV)] · phải: In / ⋯ · Xuất Excel.
+     Ô không áp dụng: mờ + viền đứt + disabled (không biến mất). c.tab: cn · thi · sos · gv · yt. c.lopMo / c.timMo = vẽ ô đang mở. */
+  function loc(c, hep) {
+    const tab = c.tab;
+    const [tu, den] = c.ky || (tab === 'cn' ? ['W1 NOV', 'W4 NOV'] : ['W1 NOV', 'W2 NOV']);
+    const ctTat = tab === 'thi' || tab === 'yt', ctChon = tab === 'yt' ? -1 : (c.ct || 0);
+    const ct = `<span class="doan ct${ctTat ? ' tat' : ''}" role="group" aria-label="${tab === 'thi' ? 'Chương trình: thi thật chỉ có ở Fast Track' : tab === 'yt' ? 'Chương trình: Ý thức tính cả hai khung' : 'Chương trình'}">${['Fast Track', 'Lớp thường'].map((x, i) => `<button type="button" aria-pressed="${i === ctChon}"${ctTat ? ' disabled' : ''}>${x}</button>`).join('')}</span>`;
+    const doanTg = `<span class="doan" role="group" aria-label="Thời gian"><button type="button" aria-pressed="${!!c.tb}">Toàn bộ</button><button type="button" aria-pressed="${!c.tb}">Chọn khoảng tuần</button></span>`;
+    const tuan = c.tb ? '' : `<span class="cap-tuan"><span class="o-tuan" aria-label="Tuần bắt đầu">${tu} ${IC.lich}</span><span class="mui-ten" aria-hidden="true">→</span><span class="o-tuan" aria-label="Tuần kết thúc">${den} ${IC.lich}</span></span>`;
+    const lopTat = tab === 'cn' || tab === 'gv';
+    const lop = c.lopMo || `<span class="oc-vung"><span class="oc oc-lop${lopTat ? ' tat' : ''}" role="combobox" aria-expanded="false" aria-label="Lớp${lopTat ? ' — báo cáo này không lọc theo lớp' : ''}"${lopTat ? ' aria-disabled="true"' : ''}><span class="goi">Mọi lớp</span><span class="mui-xuong">${IC.xuong}</span></span></span>`;
+    const rieng = tab === 'sos' ? XEP : tab === 'gv' ? (c.timMo || TIM) : '';
+    const phai = (tab === 'cn' && !hep ? IN : '') + (tab === 'sos' ? MENU : '');
+    const xuat = XUAT(!!hep);
+    if (hep) return `<div class="hang-loc"><span class="hang-dau">${ct}${phai}${xuat}</span><span class="rong-het">${doanTg}</span>${tuan}<span class="rong-het" style="display:flex;gap:8px">${lop}${rieng ? rieng.replace('class="o-chon"', 'class="o-chon" style="flex:1"') : '<span style="flex:1"></span>'}</span></div>`;
+    return `<div class="hang-loc">${ct}${doanTg}${tuan}${lop}${rieng}<span class="phai">${phai}${xuat}</span></div>`;
+  }
+  const the = (dauThe, ruot, style) => `<section class="the"${style ? ` style="${style}"` : ''}>${dauThe}${ruot}</section>`;
+  const XEP = '<span class="o-chon" role="button" aria-label="Xếp theo">Theo tuần</span>';   // danh sách ngắn cố định → giữ ô chọn thường (⑤ A6)
+  const TIM = `<span class="oc-vung"><span class="oc oc-gv" role="combobox" aria-expanded="false" aria-label="Tìm GV">${IC.tim}<span class="goi">Tìm GV</span><span class="mui-xuong">${IC.xuong}</span></span></span>`;
+  const dauThe = (ten, demT, phu, phai) => `<div class="the-dau"><h2>${ten}</h2>${demT ? dem(demT) : ''}${phu ? `<span class="phu">${phu}</span>` : ''}${phai ? `<span class="phai" style="display:flex;gap:10px;align-items:center">${phai}</span>` : ''}</div>`;
+  function chiSo(ds, cot) {
+    return `<div class="dai-chi-so" style="--cot:${cot || ds.length}">${ds.map((x) => `<div class="chi-so${x.rong ? ' rong-2' : ''}"><span class="ten">${x.ten}${x.ky ? ` <i><span class="cham">· </span>${x.ky}</i>` : ''}</span><span class="gt">${x.gt}${x.don ? `<small>${x.don}</small>` : ''}</span>${x.mau ? `<span class="mau">${x.mau}</span>` : ''}</div>`).join('')}</div>`;
+  }
+  const soTo = (x) => `<div class="so-to"><span class="ten">${x.ten}${x.ky ? ` <i>· ${x.ky}</i>` : ''}${x.i ? I('Cách tính') : ''}</span><span class="gt">${x.gt}${x.don ? `<small>${x.don}</small>` : ''}</span>${x.chia || ''}${x.phu ? `<span class="phu">${x.phu}</span>` : ''}</div>`;
+  const pnDau = (loai, h2, ngu, them, cach) => `<div class="pn-dau"><div class="pn-h1"><span class="loai">${loai}</span>${cach ? `<span style="margin-left:auto">${I(cach)}</span>` : ''}<button type="button" class="x"${cach ? ' style="margin-left:4px"' : ''} aria-label="Đóng">✕</button></div><h2>${h2}</h2><p class="pn-ngu">${ngu}</p>${them || ''}</div>`;
+  const panel = (ruot, rong) => `<div class="phu-hop"></div><div class="pn${rong ? ' pn-rong' : ''}" role="dialog" aria-label="Danh sách">${ruot}</div>`;
+  const d = (kq, v) => v == null ? '<span class="mo2">—</span>' : `<span class="d ${kq}">${v}</span>`;
+
+  /* ======================= A · CHI NHÁNH ======================= */
+  const LOP_FT8 = [['MB FT 101', 18, 10, 14, 13, 28], ['MB FT 102', 16, 7, 12, 9, 24], ['MB FT 105', 14, 5, 10, 7, 20], ['MB FT 108', 15, 9, 13, 11, 25], ['MB FT 110', 12, 4, 7, 6, 15], ['MB FT 112', 10, 3, 6, 4, 12], ['MB FT 115', 9, 2, 4, 3, 10], ['MB FT RF 12', 11, 3, 5, 6, 15]];
+  const LOP_FT = [['MB FT 101', 18, 10, 14, 13, 28], ['MB FT 102', 16, 7, 12, 9, 24], ['MB FT 105', 14, 5, 10, 7, 20], ['MB FT 108', 15, 9, 13, 11, 25], ['MB FT 110', 12, 4, 7, 6, 15], ['MB FT RF 12', 11, 3, 5, 6, 15]];
+  const CN_FT = [['Monbay', 105, 43, 71, 59, 149], ['Bãi Cháy', 54, 23, 35, 35, 80], ['Cẩm Phả', 71, 29, 51, 39, 105], ['Hải Dương', 48, 21, 30, 31, 69], ['Uông Bí', 39, 14, 23, 21, 54]];
+  const oPt = (a, b, don) => `<td data-k="so">${a ? o(pc(a, b)) : '<span class="oso-0">0 %</span>'}<span class="mau-c">${a}/${b}</span></td>`;
+  /* Ô thi thật ở Chi nhánh (chủ SP rà #1400: để trình chiếu) — CÙNG hàm báo cáo Thi thật, ngoại lệ có chủ ý của luật không trùng (đặc tả 11). */
+  const thiTo = (qt) => `<div class="so-to so-thi"><span class="ten">Thi thật <i>· W1–W4 NOV</i>${I('Cùng số với báo cáo Thi thật. Đạt Target trừ KCK (KCK gồm em không cam kết Target và em đã nhận WL 2). Chưa có KQ là số hiện tại.')}</span>`
+    + `<span class="hai-so"><span><i>Đạt Target · trừ KCK</i><b>${o(qt ? '71 %' : '70 %')}</b><em><b>${qt ? '98/138' : '26/37'}</b> em</em></span><span><i>Em thi</i><b>${o(qt ? 176 : 48)}</b><em>Chưa có KQ ${o(qt ? 32 : 11)} · hiện tại</em></span></span></div>`;
+  function soCnFt(qt) {
+    return [
+      { ten: 'Học viên đang học', ky: 'hiện tại', gt: o(qt ? 317 : 105), phu: `vào ${o(qt ? 24 : 7)} · kết thúc ${o(qt ? 11 : 3)} trong kỳ` },
+      { ten: 'Đạt MT · HV', ky: 'trong kỳ', i: 1, gt: o(qt ? '62 %' : '61 %'), phu: qt ? '<b>130/210</b> HV có MT chốt' : '<b>43/71</b> HV có MT chốt' },
+      { ten: 'Tiến bộ', ky: 'trong kỳ', i: 1, gt: o('40 %'), phu: qt ? '<b>185/457</b> lượt kỹ năng tăng band' : '<b>59/149</b> lượt kỹ năng tăng band' },
+    ].map(soTo).join('') + thiTo(qt);
+  }
+  function bangCnFt(qt) {
+    const tat = qt ? CN_FT : LOP_FT8, ds = qt ? tat : tat.slice(0, 6);   // 6 lớp / trang, hàng tổng luôn hiện
+    const dong = (r) => `<tr><td class="ten">${qt ? `<a class="lk-t lk-cn" href="#cn">${r[0]}</a>` : lkLop(r[0])}</td><td data-k="so">${o(r[1])}</td>${oPt(r[2], r[3], 'HV')}${oPt(r[4], r[5], 'lượt')}</tr>`;
+    const t = tat.reduce((s, r) => r.map((v, i) => (i ? (s[i] || 0) + v : v)), []);
+    return the(dauThe(qt ? 'Theo chi nhánh' : 'Theo lớp', qt ? '5 chi nhánh' : tat.length + ' lớp', null, I('Cách tính')),
+      `<table class="bang"><colgroup><col style="width:34%"><col><col><col></colgroup><thead><tr><th>${qt ? 'Chi nhánh' : 'Lớp'}</th><th data-k="so">HV đang học</th><th data-k="so">Đạt MT · HV</th><th data-k="so">Tiến bộ · lượt kỹ năng</th></tr></thead><tbody>`
+      + ds.map(dong).join('') + `</tbody><tfoot><tr class="tong"><td class="ten">${qt ? 'Toàn hệ thống' : 'Monbay'}</td><td data-k="so">${o(t[1])}</td>${oPt(t[2], t[3], 'HV')}${oPt(t[4], t[5], 'lượt')}</tr></tfoot></table>`
+      + (qt ? '' : '<div class="phan-trang"><span>1–6 / 8 lớp</span><span class="trang-so"><b>1</b><span>2</span></span><span class="phai"><button type="button" class="nut nut-nho">Trang sau ›</button></span></div>'));
+  }
+  function bangTienBo(qt) {
+    const KN = qt ? [['L', 101, 42, 10], ['R', 101, 43, 11], ['W1', 86, 31, 10], ['W2', 86, 29, 11], ['S', 83, 40, 8]] : [['L', 33, 13, 3], ['R', 33, 14, 4], ['W1', 28, 10, 3], ['W2', 28, 9, 4], ['S', 27, 13, 2]];
+    const oo = (n, m, cls) => `<td data-k="so">${o(n, n ? cls : '')}<span class="mau-c">${pc(n, m)}</span></td>`;
+    return the(dauThe('Tiến bộ theo kỹ năng', null, 'so mốc MT trước', I('Cách tính')),
+      `<table class="bang"><colgroup><col style="width:34%"><col><col><col></colgroup><thead><tr><th>Kỹ năng</th><th data-k="so">↑ Tăng</th><th data-k="so">Giữ nguyên</th><th data-k="so">↓ Giảm</th></tr></thead><tbody>`
+      + KN.map((r) => `<tr><td class="ten"><b>${r[0]}</b> <span class="mo2" style="font-size:13px">${r[1]} lượt</span></td>${oo(r[2], r[1], 'c-v')}${oo(r[1] - r[2] - r[3], r[1])}${oo(r[3], r[1], 'c-x')}</tr>`).join('') + '</tbody></table>');
+  }
+  function cnFt(qt) {
+    return dau(0, false, qt ? 'qt' : 'ql') + loc({ tab: 'cn' })
+      + `<div class="cn-luoi"><div class="cot-so">${soCnFt(qt)}</div><div class="cot-bang">${bangCnFt(qt)}${bangTienBo(qt)}</div></div>`;
+  }
+  const LOP_LT = [['MB BE 03', 14, 7, 10, null], ['MB ELE 07', 16, 7, 11, [4, 2, 1, 1]], ['MB FOU 14', 15, 9, 12, null], ['MB FOU 15', 13, 6, 10, null], ['MB FOU 25', 16, 5, 7, [4, 3, 2, 1]]];
+  function cnLt() {
+    const chia = `<span class="chia"><a class="c-dat" href="#so"><span>Đạt</span><b>8</b></a><a class="c-60" href="#so"><span>60–69 %</span><b>5</b></a><a class="c-50" href="#so"><span>50–59 %</span><b>3</b></a><a class="c-duoi" href="#so"><span>&lt; 50 %</span><b>2</b></a></span>`;
+    const so = [
+      { ten: 'Học viên đang học', ky: 'hiện tại', gt: o(74), phu: `vào ${o(6)} · kết thúc ${o(9)} trong kỳ` },
+      { ten: 'Đạt Test', ky: 'trong kỳ', i: 1, gt: o('68 %'), phu: '<b>34/50</b> HV · Progress, Final' },
+      { ten: 'Cuối khoá', ky: 'trong kỳ', i: 1, gt: o(18), don: 'HV có Final', chia },
+    ].map(soTo).join('');
+    const MAU = ['m-dat', 'm-05', 'm-10', 'm-15'];
+    const fin = (f) => f ? f.map((x, i) => `<td data-k="so"${i === 0 ? ' class="ke-trai"' : ''}><span class="${MAU[i]}">${o(x)}</span></td>`).join('') : '<td data-k="so" class="ke-trai"><span class="mo2">—</span></td>' + '<td data-k="so"><span class="mo2">—</span></td>'.repeat(3);
+    const bang = the(dauThe('Theo lớp', '5 lớp', null, I('Cách tính')),
+      `<table class="bang"><colgroup><col style="width:24%"><col style="width:14%"><col style="width:16%"><col><col><col><col></colgroup><thead><tr><th rowspan="2">Lớp</th><th rowspan="2" data-k="so">HV đang học</th><th rowspan="2" data-k="so">Đạt Test · HV</th><th colspan="4" class="nhom-cot ke-trai">Cuối khoá · HV có Final</th></tr><tr><th data-k="so" class="ke-trai">Đạt</th><th data-k="so">60–69 %</th><th data-k="so">50–59 %</th><th data-k="so">&lt; 50 %</th></tr></thead><tbody>`
+      + LOP_LT.map((r) => `<tr><td class="ten">${lkLop(r[0])}</td><td data-k="so">${o(r[1])}</td>${oPt(r[2], r[3], 'HV')}${fin(r[4])}</tr>`).join('')
+      + `<tr class="tong"><td class="ten">Monbay</td><td data-k="so">${o(74)}</td>${oPt(34, 50, 'HV')}${fin([8, 5, 3, 2])}</tr></tbody></table>`);
+    return dau(0, false, 'ql') + loc({ ct: 1, ky: ['W1 NOV', 'W4 NOV'], phai: IN, xuat: false }) + `<div class="cn-luoi"><div class="cot-so">${so}</div><div class="cot-bang">${bang}</div></div>`;
+  }
+  /* bảng lượt có điểm (BangLuotPanel) — FT */
+  const KN5 = ['L', 'R', 'W1', 'W2', 'S'];
+  function bangLuot(ds) {
+    return `<table class="bang"><colgroup><col style="width:150px"><col style="width:96px"><col style="width:104px">${KN5.map(() => '<col style="width:56px">').join('')}<col style="width:60px"><col style="width:70px"></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>MT</th>${KN5.map((k) => `<th data-k="so">${k}</th>`).join('')}<th data-k="so" class="ke-trai">OVR</th><th data-k="so">Kỳ vọng</th></tr></thead><tbody>`
+      + ds.map((r) => `<tr><td class="ten">${lkHv(r[0])}</td><td class="ten">${lkLop(r[1])}</td><td class="ten"><a class="lk-t mt" href="#mt">${r[2]}</a> <span class="mo2" style="font-size:13px">${r[3]}</span></td>${r[4].map((x) => `<td data-k="so">${d(x[0], x[1])}</td>`).join('')}<td data-k="so" class="ke-trai">${d(r[5][0], r[5][1])}</td><td data-k="so" class="mo">${r[6]}</td></tr>`).join('') + '</tbody></table>';
+  }
+  function a5() {
+    const ds = [
+      ['Bùi Thảo Vy', 'MB FT 101', 'MT2', 'W1 NOV', [['v', '6.5'], ['b', '6.0'], ['b', '6.0'], ['x', '5.5'], ['b', '6.0']], ['b', '6.0'], '6.0'],
+      ['Đặng Thu Hà', 'MB FT 101', 'MT3', 'W2 NOV', [['v', '7.0'], ['v', '6.5'], ['b', '6.0'], ['b', '6.0'], ['v', '6.5']], ['v', '6.5'], '6.0'],
+      ['Hồ Gia Bảo', 'MB FT 101', 'MT2', 'W1 NOV', [['b', '5.5'], ['v', '6.0'], ['b', '5.5'], ['b', '5.5'], ['b', '5.5']], ['b', '5.5'], '5.5'],
+      ['Lê Minh Thư', 'MB FT 102', 'MT1', 'W2 NOV', [['v', '6.0'], ['b', '5.5'], ['x', '5.0'], ['b', '5.5'], ['v', '6.0']], ['b', '5.5'], '5.5'],
+      ['Ngô Tuấn Kiệt', 'MB FT 102', 'MT2', 'W1 NOV', [['b', '6.0'], ['b', '6.0'], ['b', '6.0'], ['v', '6.5'], ['b', '6.0']], ['b', '6.0'], '6.0'],
+      ['Phan Gia Hân', 'MB FT 105', 'MT4', 'W2 NOV', [['v', '7.0'], ['v', '7.0'], ['b', '6.5'], ['b', '6.5'], ['v', '7.0']], ['v', '7.0'], '6.5'],
+      ['Trịnh Quốc Huy', 'MB FT 108', 'MT1', 'W1 NOV', [['b', '5.0'], ['b', '5.0'], ['b', '5.0'], ['x', '4.5'], ['v', '5.5']], ['b', '5.0'], '5.0'],
+      ['Vũ Hà My', 'MB FT 108', 'MT3', 'W2 NOV', [['b', '6.0'], ['v', '6.5'], ['b', '6.0'], ['b', '6.0'], ['b', '6.0']], ['b', '6.0'], '6.0'],
+    ];
+    const chia = `<div class="tom-chia"><span class="tong-pn"><b>43</b> HV đạt / 71 HV</span>${LOP_FT8.map((l) => `<span class="chip-dk">${l[0]} <b>${l[2]}</b></span>`).join('')}</div>`;
+    return cnFt(false) + panel(pnDau('SỐ · CHI NHÁNH', 'Đạt MT · W1 NOV – W4 NOV', 'Monbay · Fast Track · dữ liệu đến 12/11', '', 'HV có lượt MT chốt trong kỳ, Overall ≥ kỳ vọng của lượt. HV chưa đủ điểm không tính. Mỗi em tính một lần, theo lượt mới nhất.') + `<div class="pn-than cuon">${chia}${bangLuot(ds)}<div class="phan-trang" style="border:0;padding:0"><span>1–8 / 43 HV</span><span class="trang-so"><b>1</b><span>2</span><span>3</span><span>4</span><span>5</span></span></div></div>`, true);
+  }
+  function a6() {
+    return dau(0, true, 'ql') + loc({ tab: 'cn' }, true)
+      + `<div class="cot-so">${soCnFt(false)}</div>`
+      + `<div class="dau-con" style="padding:4px 0 0"><h3>Theo lớp</h3>${dem('8 lớp')}<span class="phai">${I('Cách tính')}</span></div>`
+      + [...LOP_FT8.slice(0, 6), ['Monbay', 105, 43, 71, 59, 149]].map((l, i) => `<div class="the-dong"><div class="dau">${i === 6 ? 'Tổng · Monbay' : lkLop(l[0])}</div><div class="phan"><div class="luoi" style="--n:3"><span><i>HV đang học</i><b>${o(l[1])}</b></span><span><i>Đạt MT</i><b>${o(pc(l[2], l[3]))}</b><i>${l[2]}/${l[3]} HV</i></span><span><i>Tiến bộ</i><b>${o(pc(l[4], l[5]))}</b><i>${l[4]}/${l[5]} lượt</i></span></div></div></div>`).join('')
+      + '<div class="phan-trang" style="border:0;padding:0"><span>1–6 / 8 lớp</span><span class="trang-so"><b>1</b><span>2</span></span></div>'
+      + bangTienBo();
+  }
+
+  /* ======================= B · SOS ======================= */
+  const TS = [
+    ['W2 NOV', '09/11–15/11 · tuần này', [14, 2, 1, 0, 2], [2, 3, 1, 2, 1], ['3 - 3', 3, 0], null],
+    ['W1 NOV', '02/11–08/11', [24, 4, 3, 2, 1], [4, 5, 3, 4, 2], ['9 - 11', 2, 6], [
+      ['MB FT 101', [8, 1, 1, 1, 0], [1, 2, 1, 1, 1], ['3 - 4', 1, 2]], ['MB FT 102', [6, 1, 1, 0, 1], [1, 1, 1, 1, 0], ['2 - 2', 0, 2]],
+      ['MB FT 108', [6, 1, 1, 1, 0], [1, 1, 1, 1, 1], ['3 - 4', 1, 2]], ['MB FT RF 12', [4, 1, 0, 0, 0], [1, 1, 0, 1, 0], ['1 - 1', 0, 0]]]],
+  ];
+  const TS_TONG = [38, 6, 4, 2, 3], TS_KN = [6, 8, 4, 6, 3], TS_XL = ['12 - 14', 5, 6];
+  function dongTs(lop, ten, phu, kq, kn, xl, mo) {
+    const hpc = (v, k) => `<td data-k="so"${k ? ' class="ke-trai"' : ''}>${v === '—' ? '<span class="mo2">—</span>' : o(v)}</td>`;
+    const csd = (cls, v) => `<td data-k="so">${cs(cls, v)}</td>`;
+    const hv = (s) => `<td data-k="so" class="ke-trai">${s === '0 - 0' ? '<span class="oso-0">0 - 0</span>' : s.split(' - ').map((x) => o(Number(x))).join(' - ')}</td>`;
+    const tenO = lop === 'hang-con' ? ten : lop === 'tong' ? ten : `<span class="mui-mo">${mo ? '▾' : '▸'}</span>${ten} <span class="phu-o" style="display:inline;margin-left:6px">${phu}</span>`;
+    return `<tr class="${lop}"><td class="ten">${tenO}</td>${hpc(kq[0], 1)}${csd('m1', kq[1])}${csd('m2', kq[2])}${csd('m3', kq[3])}${hpc(kq[4])}${kn.map((v, i) => hpc(v, i === 0)).join('')}${hv(xl[0])}${hpc(xl[1])}${hpc(xl[2])}</tr>`;
+  }
+  const I_TUAN = '<dl><dt>Lượt MT</dt><dd>lượt Mock Test chốt trong kỳ.</dd><dt>SOS 1 · 2 · 3</dt><dd>số lượt theo mức; % trên lượt MT.</dd><dt>Thiếu điểm</dt><dd>lượt chưa đủ kỹ năng, gồm SOS tạm.</dd><dt>Dưới kỳ vọng · HV</dt><dd>số em có kỹ năng dưới kỳ vọng của lượt.</dd><dt>HV - Case</dt><dd>số em có Case - số Case mở trong kỳ.</dd><dt>Chưa chốt PA</dt><dd>Case chưa có PA, tính tới hôm nay.</dd><dt>Đang xử lý</dt><dd>Case có PA chưa kết thúc.</dd></dl><span>Bấm ▸ mở từng lớp; bấm số ra danh sách em.</span>';
+  const I_PA = '<span>PA kết thúc trong kỳ có kết quả xác định. PA chưa rõ nơi học không tính.</span><dl><dt>Có cải thiện</dt><dd>Tiến bộ rõ + Tiến bộ một phần.</dd><dt>Nên dùng</dt><dd>từ 3 PA, cải thiện từ 70 % và cao nhất trong vấn đề.</dd><dt>n vấn đề khác</dt><dd>gom các vấn đề có ≤ 2 PA có kết quả — chưa đủ để so.</dd><dt>PA theo quy chế</dt><dd>PA bắt buộc: không so sánh, không xếp hạng.</dd></dl>';
+  function bangSos(moI) {
+    return the(dauThe('Theo tuần', '2 tuần', null, I(I_TUAN, moI)),
+      `<table class="bang bang-deu"><colgroup><col style="width:15%"><col style="width:7%">${'<col style="width:6.5%">'.repeat(3)}<col style="width:7.5%">${'<col style="width:5.4%">'.repeat(5)}${'<col style="width:8%">'.repeat(3)}</colgroup>`
+      + `<thead><tr><th rowspan="2">Tuần</th><th colspan="5" class="nhom-cot ke-trai">Kết quả</th><th colspan="5" class="nhom-cot ke-trai">Dưới kỳ vọng · HV</th><th colspan="3" class="nhom-cot ke-trai">Xử lý</th></tr>`
+      + `<tr><th data-k="so" class="ke-trai">Lượt MT</th><th data-k="so">SOS 1</th><th data-k="so">SOS 2</th><th data-k="so">SOS 3</th><th data-k="so">Thiếu điểm</th>${KN5.map((k, i) => `<th data-k="so"${i ? '' : ' class="ke-trai"'}>${k}</th>`).join('')}<th data-k="so" class="ke-trai">HV - Case</th><th data-k="so">Chưa chốt PA</th><th data-k="so">Đang xử lý</th></tr></thead><tbody>`
+      + TS.map((r) => dongTs('hang-lon', r[0], r[1], r[2], r[3], r[4], !!r[5]) + (r[5] ? r[5].map((c) => dongTs('hang-con', c[0], '', c[1], c[2], c[3])).join('') : '')).join('')
+      + dongTs('tong', 'Tổng 2 tuần', '', TS_TONG, TS_KN, TS_XL) + '</tbody></table>');
+  }
+  function soSos() {
+    return chiSo([
+      { ten: 'Lượt MT', ky: 'trong kỳ', gt: o(38), mau: '36 HV' },
+      { ten: sos(1), gt: o(6), don: '16 %', mau: 'trên lượt MT' },
+      { ten: sos(2), gt: o(4), don: '11 %', mau: 'trên lượt MT' },
+      { ten: sos(3), gt: o(2), don: '5 %', mau: 'trên lượt MT' },
+      { ten: 'Thiếu điểm', gt: o(3), mau: 'gồm 1 SOS tạm' },
+      { ten: 'Chưa chốt PA', ky: 'hiện tại', gt: o(5), mau: '<span class="qua">2 quá hạn</span> · trên 7 Case' },
+    ]);
+  }
+  function khoiPa(lt, moI) {
+    const row = (cls, ten, n, hv, ct, goi) => `<tr class="${cls}"><td class="ten">${ten}</td><td data-k="so">${o(n)}</td><td data-k="so">${o(hv)}</td><td data-k="so">${o(ct)}<span class="mau-c">${pc(ct, n)}</span></td>${goi === undefined ? '' : `<td class="ten">${goi}</td>`}</tr>`;
+    const head = (c1, goi) => `<table class="bang bang-deu"><colgroup><col style="width:${goi ? 40 : 46}%"><col style="width:${goi ? 13 : 16}%"><col style="width:${goi ? 11 : 14}%"><col style="width:${goi ? 18 : 24}%">${goi ? '<col>' : ''}</colgroup><thead><tr><th>${c1}</th><th data-k="so">Số PA</th><th data-k="so">HV</th><th data-k="so">Có cải thiện</th>${goi ? '<th>Gợi ý</th>' : ''}</tr></thead><tbody>`;
+    const gv = lt
+      ? head('Vấn đề / loại PA', 1) + row('hang-lon', '<span class="mui-mo">▸</span>Grammar · thiếu ôn bài', 1, 1, 0, '') + '</tbody></table>'
+      : head('Vấn đề / loại PA', 1)
+        + row('hang-lon', '<span class="mui-mo">▾</span>Reading · đọc chậm, thiếu từ', 3, 3, 2, '')
+        + row('hang-con', 'Luyện đọc 20 phút mỗi ngày', 2, 2, 2, '<span class="nhan-nen">Nên dùng</span>')
+        + row('hang-con', 'Kèm 1-1 sau giờ', 1, 1, 0, '')
+        + row('hang-lon', '<span class="mui-mo">▸</span>2 vấn đề khác', 3, 3, 2, '')
+        + '</tbody></table>';
+    const qc = head(lt ? 'Loại PA' : 'Mức SOS / loại PA')
+      + (lt ? row('hang-lon', 'Bổ trợ', 2, 2, 2)
+        : row('hang-lon', `${sos(2)} &nbsp;Bổ trợ`, 2, 2, 1) + row('hang-lon', `${sos(3)} &nbsp;Bổ trợ`, 1, 1, 1)) + '</tbody></table>';
+    const tom = lt ? `PA có kết quả ${o(3)} · có cải thiện ${o(2)} <span class="mo2">67 %</span>` : `PA có kết quả ${o(9)} · có cải thiện ${o(6)} <span class="mo2">67 %</span>`;
+    return `<section class="the khoi-pa" id="khoi-pa">${dauThe('PA nào hiệu quả', null, `<span class="tom-pa">${tom}</span>`, I(I_PA, moI))}`
+      + `<div class="pa-2"><div><div class="dau-con"><h3>PA do GV thêm</h3>${dem(lt ? '1 PA' : '6 PA')}</div>${gv}</div>`
+      + `<div class="pa-qc"><div class="dau-con"><h3>PA theo quy chế</h3>${dem(lt ? '2 PA' : '3 PA')}</div>${qc}</div></div></section>`;
+  }
+  function b4() {
+    const CN = [['Monbay', [38, 6, 4, 2, 3], [6, 8, 4, 6, 3], ['12 - 14', 5, 6]], ['Bãi Cháy', [22, 3, 2, 1, 1], [3, 4, 2, 3, 2], ['6 - 7', 2, 3]], ['Cẩm Phả', [31, 5, 3, 2, 2], [5, 6, 4, 5, 2], ['10 - 12', 4, 5]], ['Hải Dương', [15, 2, 1, 0, 1], [2, 2, 1, 2, 1], ['3 - 3', 1, 2]], ['Uông Bí', [12, 2, 1, 1, 0], [2, 3, 1, 2, 1], ['4 - 4', 1, 2]]];
+    const bang = bangSos().replace(/<tbody>[\s\S]*<\/tbody>/, '<tbody>' + CN.map((r) => dongTs('hang-lon', `<a class="lk-t lk-cn" href="#cn">${r[0]}</a>`, '', r[1], r[2], r[3])).join('') + dongTs('tong', 'Toàn hệ thống', '', [118, 18, 11, 6, 7], [18, 23, 12, 18, 9], ['35 - 40', 13, 18]) + '</tbody>').replace('<h2>Theo tuần</h2><span class="dem">2 tuần</span>', '<h2>Theo chi nhánh</h2><span class="dem">5 chi nhánh</span>').replace('<th rowspan="2">Tuần</th>', '<th rowspan="2">Chi nhánh</th>');
+    return dau(1, false, 'qt') + loc({ ct: 0, lop: 1, them: XEP.replace('Theo tuần', 'Theo chi nhánh'), phai: MENU })
+      + chiSo([{ ten: 'Lượt MT', ky: 'trong kỳ', gt: o(118), mau: '110 HV' }, { ten: sos(1), gt: o(18), don: '15 %', mau: 'trên lượt MT' }, { ten: sos(2), gt: o(11), don: '9 %', mau: 'trên lượt MT' }, { ten: sos(3), gt: o(6), don: '5 %', mau: 'trên lượt MT' }, { ten: 'Thiếu điểm', gt: o(7), mau: 'gồm 2 SOS tạm' }, { ten: 'Chưa chốt PA', ky: 'hiện tại', gt: o(13), mau: '<span class="qua">4 quá hạn</span> · trên 21 Case' }]) + bang;
+  }
+  function b1() { return dau(1, false, 'ql') + loc({ tab: 'sos' }) + soSos() + bangSos() + khoiPa(false); }
+  function b2() {
+    const LT = [['W2 NOV', '09/11–15/11 · tuần này', [12, 3, 0, 1], null], ['W1 NOV', '02/11–08/11', [16, 5, 2, 1], [['MB BE 03', [2, 1, 0, 0]], ['MB FOU 14', [5, 2, 1, 1]], ['MB FOU 15', [5, 2, 1, 0]], ['MB FOU 25', [4, 0, 0, 0]]]]];
+    const hang = (cls, ten, v, mo) => `<tr class="${cls}"><td class="ten">${cls === 'hang-lon' ? `<span class="mui-mo">${mo ? '▾' : '▸'}</span>` : ''}${ten}</td><td data-k="so" class="ke-trai">${o(v[0])}</td><td data-k="so" class="ke-trai">${cs('m2', v[1])}</td><td data-k="so">${cs('m3', v[2])}</td><td data-k="so" class="ke-trai">${o(v[3])}</td></tr>`;
+    const bang = the(dauThe('Theo tuần', '2 tuần', null, I('Cách tính')), `<table class="bang bang-deu"><colgroup><col style="width:28%"><col style="width:18%"><col style="width:18%"><col style="width:18%"><col style="width:18%"></colgroup><thead><tr><th rowspan="2">Tuần</th><th rowspan="2" data-k="so" class="ke-trai">Bài kiểm tra</th><th colspan="2" class="nhom-cot ke-trai">Progress Test · HV chưa đạt</th><th rowspan="2" data-k="so" class="ke-trai">Thiếu điểm</th></tr><tr><th data-k="so" class="ke-trai">1 môn trượt</th><th data-k="so">≥ 2 môn trượt</th></tr></thead><tbody>`
+      + LT.map((r) => hang('hang-lon', `${r[0]} <span class="phu-o" style="display:inline;margin-left:6px">${r[1]}</span>`, r[2], !!r[3]) + (r[3] ? r[3].map((c) => hang('hang-con', c[0], c[1])).join('') : '')).join('')
+      + hang('tong', 'Tổng 2 tuần', [28, 8, 2, 2]) + '</tbody></table>');
+    return dau(1, false, 'ql') + loc({ ct: 1, lop: 1, them: XEP, phai: MENU })
+      + chiSo([{ ten: 'Bài kiểm tra', ky: 'trong kỳ', gt: o(28), mau: '28 HV' }, { ten: 'Progress · 1 môn trượt', gt: o(8), don: '29 %', mau: 'trên bài kiểm tra' }, { ten: 'Progress · ≥ 2 môn trượt', gt: o(2), don: '7 %', mau: 'trên bài kiểm tra' }, { ten: 'Thiếu điểm', gt: o(2) }], 4)
+      + bang + khoiPa(true);
+  }
+  function b3() {
+    const theTuan = (r) => `<div class="the-dong"><div class="dau">${r[0]} <span class="mo2" style="font-weight:400;font-size:13px">${r[1]}</span><span class="phai">${r[5] ? r[5].length : 1} lớp ▾</span></div>`
+      + `<div class="phan"><div class="nhan">Kết quả</div><div class="luoi" style="--n:3"><span><i>Lượt MT</i><b>${o(r[2][0])}</b></span><span><i>Thiếu điểm</i><b>${o(r[2][4])}</b></span><span></span><span><i>SOS 1</i><b>${cs('m1', r[2][1])}</b></span><span><i>SOS 2</i><b>${cs('m2', r[2][2])}</b></span><span><i>SOS 3</i><b>${cs('m3', r[2][3])}</b></span></div></div>`
+      + `<div class="phan"><div class="nhan">Dưới kỳ vọng · HV</div><div class="luoi" style="--n:5">${KN5.map((k, i) => `<span><i>${k}</i><b>${o(r[3][i])}</b></span>`).join('')}</div></div>`
+      + `<div class="phan"><div class="nhan">Xử lý</div><div class="luoi" style="--n:3"><span><i>HV - Case</i><b>${r[4][0].split(' - ').map((x) => o(Number(x))).join(' - ')}</b></span><span><i>Chưa chốt PA</i><b>${o(r[4][1])}</b></span><span><i>Đang xử lý</i><b>${o(r[4][2])}</b></span></div></div></div>`;
+    return dau(1, true, 'ql') + loc({ tab: 'sos' }, true) + soSos() + theTuan(TS[0])
+
+      + `<section class="the khoi-pa">${dauThe('PA nào hiệu quả', null, `<span class="tom-pa">PA có kết quả ${o(9)} · có cải thiện ${o(6)} <span class="mo2">67 %</span></span>`, I(I_PA, true))}<div class="dau-con"><h3>PA do GV thêm</h3>${dem('6 PA')}<span class="phai" style="color:var(--accent);font-size:13px">3 vấn đề ▾</span></div><div class="dau-con ke-tren"><h3>PA theo quy chế</h3>${dem('3 PA')}<span class="phai" style="color:var(--accent);font-size:13px">2 dòng ▾</span></div></section>`;
+  }
+
+  /* ======================= C · THI THẬT ======================= */
+  const KQ_CN = { pt: ['72 %', '65 %'], mau: ['18/25', '20/31'], seg: [[[6, 25], [12, 25], [7, 25]], [[7, 31], [13, 31], [11, 31]]] };
+  const KQ_QT = { pt: ['71 %', '66 %'], mau: ['54/76', '61/92'], seg: [[[17, 76], [37, 76], [22, 76]], [[19, 92], [42, 92], [31, 92]]] };
+  function khoiKq(tong, hep, qt) {
+    const K = qt ? KQ_QT : KQ_CN;
+    const seg = K.seg[tong ? 1 : 0];
+    const t = [['sv', '✓ Vượt'], ['sb', '✓ Đạt'], ['sx', '✗ Chưa đạt']];
+    const thanh = `<div class="thanh-kq" role="group" aria-label="Vượt · Đạt · Chưa đạt · ${tong ? 'gồm KCK' : 'trừ KCK'}">${seg.map((s, i) => `<a class="${t[i][0]}" href="#so" style="flex:${s[0]} 1 0" aria-label="${t[i][1].slice(2)} ${s[0]} em">${hep ? `<b>${s[0]}</b><span>${t[i][1]}</span>` : `${t[i][1]} <b>${s[0]}</b><span class="pct">${pc(s[0], s[1])}</span>`}</a>`).join('')}</div>`;
+    return `<div class="khoi-kq"><div class="dau-k">Kết quả thi thật <i>· trong kỳ</i>${I('KCK gồm em không cam kết Target và em đã nhận WL 2. Em không có Target không tính vào %.')}</div>`
+      + `<div class="cong-tac" role="group" aria-label="Cách tính thanh kết quả">`
+      + `<button type="button" aria-pressed="${!tong}"><span class="ten">Đạt Target<span class="chon">${!tong ? (hep ? '✓' : '✓ đang xem') : (hep ? '○' : 'Xem')}</span></span><span class="pt">${K.pt[0]}</span><span class="mau"><b>${K.mau[0]}</b> em · trừ KCK</span></button>`
+      + `<button type="button" aria-pressed="${tong}"><span class="ten">Tổng thể<span class="chon">${tong ? (hep ? '✓' : '✓ đang xem') : (hep ? '○' : 'Xem')}</span></span><span class="pt nho">${K.pt[1]}</span><span class="mau"><b>${K.mau[1]}</b> em · gồm KCK</span></button></div>${thanh}</div>`;
+  }
+  function daiThi(tong, hep, rong, qt) {
+    const tile = (ten, ky, gt, mau) => `<div class="chi-so"><span class="ten">${ten} <i><span class="cham">· </span>${ky}</i></span><span class="gt">${gt}</span><span class="mau">${mau}</span></div>`;
+    return `<div class="thi-dai">${rong || khoiKq(tong, hep, qt)}<div class="cot-phu">${tile('Không thi', 'trong kỳ', o(rong ? 0 : qt ? 6 : 2), 'không vào %')}${tile('Chưa có KQ', 'hiện tại', o(qt ? 32 : 11), 'đã qua ngày thi')}</div>${sapThi(qt ? [31, 14, 11, 6] : rong ? [0, 0, 0, 0] : [9, 4, 3, 2], hep)}</div>`;
+  }
+  /* v21 (R9.5) — ô mới: em đang SOS (MT mới nhất) có ngày thi ĐÃ CHỐT trong 6 tuần tới. Số hiện tại, không theo khoảng tuần; theo chi nhánh + ô Lớp. */
+  const I_SAP = 'Em đang học có <b>ngày thi đã chốt</b> trong 6 tuần tới (W3 NOV – W4 DEC) và đang SOS ở <b>MT mới nhất</b>. Em mới có tháng dự kiến chưa tính. Số hiện tại: không đổi theo khoảng tuần đang chọn.';
+  function sapThi(n, hep) {
+    const chip = (m, x) => x ? `<a class="sos m${m}" href="#so" aria-label="SOS ${m}: ${x} em">SOS ${m} · ${x}</a>` : `<span class="sos m${m}" style="opacity:.55">SOS ${m} · 0</span>`;
+    return `<div class="chi-so sap-thi"><span class="ten">Sắp thi · 6 tuần · còn SOS${I(I_SAP)}</span><span class="gt">${o(n[0])}<small>em</small></span>`
+      + `<span class="dong-sos">${chip(1, n[1])}${chip(2, n[2])}${chip(3, n[3])}</span><span class="mau">hiện tại · thi W3 NOV – W4 DEC</span></div>`;
+  }
+  const SAP = [['Trịnh Quốc Huy', 'MB FT 108', '18/11', 'W3 NOV', 3, 'L · W', 'Hoàng Mai Lan'], ['Lê Minh Thư', 'MB FT 102', '21/11', 'W3 NOV', 2, 'W', 'Hoàng Mai Lan'],
+    ['Bùi Thảo Vy', 'MB FT 101', '25/11', 'W4 NOV', 1, 'W2', 'Đặng Hải Yến'], ['Hồ Gia Bảo', 'MB FT 101', '28/11', 'W4 NOV', 1, 'R', 'Đặng Hải Yến'],
+    ['Ngô Tuấn Kiệt', 'MB FT 102', '02/12', 'W1 DEC', 2, 'S', 'Hoàng Mai Lan'], ['Vũ Hà My', 'MB FT 108', '05/12', 'W1 DEC', 3, 'R · W', 'Phùng Thị Ngân'],
+    ['Đào Minh Châu', 'MB FT 105', '09/12', 'W2 DEC', 1, 'L', 'Phùng Thị Ngân'], ['Cao Minh Đức', 'MB FT 105', '16/12', 'W3 DEC', 2, 'W1', 'Phùng Thị Ngân'],
+    ['Lý Gia Khang', 'MB FT 110', '23/12', 'W4 DEC', 1, 'S', 'Đặng Hải Yến']];
+  const chiaSap = `<div class="tom-chia"><span class="tong-pn"><b>9</b> em</span><span class="chip-dk">SOS 1 <b>4</b></span><span class="chip-dk">SOS 2 <b>3</b></span><span class="chip-dk">SOS 3 <b>2</b></span></div>`;
+  const dauSap = (hep) => pnDau('SỐ · THI THẬT', 'Sắp thi · 6 tuần · còn SOS', hep ? 'Monbay · thi W3 NOV – W4 DEC · hiện tại' : 'Monbay · ngày thi W3 NOV – W4 DEC · hiện tại · dữ liệu đến 12/11', chiaSap, I_SAP);
+  function c5() {
+    const bang = `<table class="bang"><colgroup><col style="width:200px"><col style="width:112px"><col style="width:104px"><col style="width:130px"><col></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày thi</th><th>SOS · MT mới nhất</th><th>TVV</th></tr></thead><tbody>`
+      + SAP.map((r) => `<tr><td class="ten">${lkHv(r[0])}</td><td class="ten">${lkLop(r[1])}</td><td><span class="ngay-thi">${r[2]}<small>${r[3]}</small></span></td><td>${sos(r[4], `SOS ${r[4]} · ${r[5]}`)}</td><td class="ten mo">${r[6]}</td></tr>`).join('') + '</tbody></table>';
+    return c1() + panel(dauSap() + `<div class="pn-than cuon">${bang}</div>`);
+  }
+  function c6() {
+    const the = (r) => `<div class="the-hv"><div class="h1">${lkHv(r[0])}${sos(r[4], `SOS ${r[4]} · ${r[5]}`)}</div><div class="hang-tt">${lkLop(r[1])}<span>thi <b style="color:var(--text)">${r[2]}</b> · ${r[3]}</span><span>TVV ${r[6]}</span></div></div>`;
+    return c4() + panel(dauSap(true) + `<div class="pn-than cuon">${SAP.slice(0, 6).map(the).join('')}</div>`);
+  }
+  const LOP_THI = [['MB FT 101', 9, 2, 4, 3, 1, 3], ['MB FT 102', 7, 2, 3, 2, 0, 2], ['MB FT 105', 5, 1, 3, 1, 1, 4], ['MB FT 108', 4, 1, 2, 1, 0, 2]];
+  const CN_THI = [['Monbay', 25, 6, 12, 7, 2, 11], ['Bãi Cháy', 14, 3, 8, 3, 1, 5], ['Cẩm Phả', 22, 5, 9, 8, 2, 9], ['Hải Dương', 9, 2, 5, 2, 0, 3], ['Uông Bí', 6, 1, 3, 2, 1, 4]];
+  function bangLopThi(qt) {
+    const ds = qt ? CN_THI : LOP_THI;
+    const oo = (n, m, cls) => `<td data-k="so" class="so-2">${o(n, n ? cls : '')}<span class="mau">${pc(n, m)}</span></td>`;
+    const dong = (r, tong) => `<tr${tong ? ' class="tong"' : ''}><td class="ten">${tong ? r[0] : qt ? `<a class="lk-t lk-cn" href="#cn">${r[0]}</a>` : lkLop(r[0])}</td><td data-k="so">${o(r[1])}</td>${oo(r[2], r[1], 'c-v')}${oo(r[3], r[1])}${oo(r[4], r[1], 'c-x')}<td data-k="so" class="ke-trai">${o(r[5])}</td><td data-k="so">${o(r[6])}</td></tr>`;
+    const t = ds.reduce((s, r) => r.map((v, i) => (i ? (s[i] || 0) + v : v)), []);
+    t[0] = qt ? 'Toàn hệ thống' : 'Monbay';
+    return the(dauThe(qt ? 'Theo chi nhánh' : 'Theo lớp', qt ? '5 chi nhánh' : '4 lớp', 'trừ KCK', I('Vượt · Đạt · Chưa đạt trên em thi có KQ, trừ KCK. Không thi: trong kỳ. Chưa có KQ: hiện tại, đã qua ngày thi.')),
+      `<table class="bang"><colgroup><col style="width:24%"><col><col><col><col><col><col></colgroup><thead><tr><th>${qt ? 'Chi nhánh' : 'Lớp'}</th><th data-k="so">Em thi</th><th data-k="so">Vượt</th><th data-k="so">Đạt</th><th data-k="so">Chưa đạt</th><th data-k="so" class="ke-trai">Không thi</th><th data-k="so">Chưa có KQ · hiện tại</th></tr></thead><tbody>`
+      + ds.map((r) => dong(r)).join('') + dong(t, true) + '</tbody></table>');
+  }
+  function bangKnGv() {
+    const KN4 = [['L', 25, 6, 10, 9, '6.0'], ['R', 25, 5, 9, 11, '5.8'], ['W', 25, 2, 9, 14, '5.4'], ['S', 25, 4, 11, 10, '5.8']];
+    const oo = (n, m, cls) => `<td data-k="so" class="so-2">${o(n, n ? cls : '')}<span class="mau">${pc(n, m)}</span></td>`;
+    const kn = the(dauThe('Từng kỹ năng', null, 'so Target overall', I('Cách tính')), `<table class="bang"><colgroup><col style="width:18%"><col><col><col><col><col></colgroup><thead><tr><th>Kỹ năng</th><th data-k="so">Em</th><th data-k="so">Vượt</th><th data-k="so">Đạt</th><th data-k="so">Chưa đạt</th><th data-k="so">Điểm TB</th></tr></thead><tbody>`
+      + KN4.map((r) => `<tr><td class="ten"><b>${r[0]}</b></td><td data-k="so">${o(r[1])}</td>${oo(r[2], r[1], 'c-v')}${oo(r[3], r[1])}${oo(r[4], r[1], 'c-x')}<td data-k="so">${r[5]}</td></tr>`).join('') + '</tbody></table>');
+    const GV = [['Cao Khánh Linh', [['L', 9, '5.9', 2, 3, 4], ['W2', 8, '5.4', 1, 3, 4]]], ['Lê Minh Khoa', [['R', 9, '5.8', 2, 3, 4], ['W1', 9, '5.4', 1, 3, 5]]], ['Lâm Quang Vinh', [['S', 12, '5.8', 2, 5, 5]]], ['Trần Ngọc Hà', [['L', 8, '6.1', 2, 3, 3]]]];
+    const gv = the(dauThe('Theo GV', '7 GV', 'trừ KCK', I('Mỗi GV đếm em mình từng dạy kỹ năng đó có KQ trong kỳ, trừ KCK. Một em có thể tính cho nhiều GV.')), `<table class="bang"><colgroup><col style="width:27%"><col style="width:11%"><col style="width:10%"><col style="width:12%"><col><col><col></colgroup><thead><tr><th>Giáo viên</th><th>Kỹ năng</th><th data-k="so">Em</th><th data-k="so">Điểm TB</th><th data-k="so">Vượt</th><th data-k="so">Đạt</th><th data-k="so">Chưa đạt</th></tr></thead><tbody>`
+      + GV.map((g) => g[1].map((k, i) => `<tr class="${g[1].length > 1 && i === 0 ? 'gv-giua' : 'gv-cuoi'}"><td class="ten">${i ? '' : `<a class="ten-gv lk-t" href="#gv">${g[0]}</a>`}</td><td>${k[0]}</td><td data-k="so">${o(k[1])}</td><td data-k="so">${k[2]}</td>${oo(k[3], k[1], 'c-v')}${oo(k[4], k[1])}${oo(k[5], k[1], 'c-x')}</tr>`).join('')).join('')
+      + '</tbody></table><div class="phan-trang"><button type="button" class="lk">Xem 3 GV còn lại</button></div>');
+    return `<div class="hai-bang">${kn}${gv}</div>`;
+  }
+  const kq = (k) => ({ v: '<span class="kq vuot">✓ Vượt</span>', b: '<span class="kq ngang">✓ Đạt</span>', x: '<span class="kq duoi">✗ Chưa đạt</span>', k: '<span class="kq khong">Không thi</span>', n: '' })[k];
+  const kck = (w) => w ? '<span class="chip-kck wl">WL 2</span>' : '<span class="chip-kck">KCK</span>';
+  function dsThi() {
+    const r = (ten, ngay, kn, ovr, tg, k, chip, buoc) => `<tr><td class="ten">${lkHv(ten)}</td><td class="mo">${ngay}</td>${kn.map((x, i) => `<td data-k="so"${i === 0 ? ' class="ke-trai"' : ''}>${d(x[0], x[1])}</td>`).join('')}<td data-k="so" class="ke-trai">${d(ovr[0], ovr[1])}</td><td data-k="so" class="mo">${tg}</td><td class="ten"><span style="display:inline-flex;gap:6px;align-items:center">${kq(k)}${chip || ''}</span></td><td class="ten${buoc === 'Chưa chọn' ? ' mo' : ''}">${buoc}</td></tr>`;
+    const nhom = (lop, n) => `<tr class="hang-lon"><td class="ten" colspan="10"><b>${lop}</b> <span class="mo2" style="font-weight:400;font-size:13px;margin-left:6px">${n} em</span></td></tr>`;
+    return the(dauThe('Danh sách kết quả', '35 em', 'theo lớp → ngày thi', I('Mọi em có kết quả hoặc được đánh Không thi trong kỳ, kể cả KCK. Bước tiếp chọn ở Sau thi; ở đây chỉ xem.')),
+      `<table class="bang"><colgroup><col style="width:20%"><col style="width:7%">${'<col style="width:6.5%">'.repeat(6)}<col style="width:17%"><col style="width:17%"></colgroup><thead><tr><th>Học viên</th><th>Ngày thi</th><th data-k="so" class="ke-trai">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so" class="ke-trai">OVR</th><th data-k="so">Target</th><th>Kết quả</th><th>Bước tiếp</th></tr></thead><tbody>`
+      + nhom('MB FT 101', 12)
+      + r('Nguyễn Minh An', '03/11', [['v', '7.5'], ['v', '7.0'], ['x', '6.0'], ['v', '6.5']], ['v', '7.0'], '6.5', 'v', '', 'Lên FT 7.5')
+      + r('Phan Gia Hân', '03/11', [['v', '7.0'], ['b', '6.5'], ['x', '6.0'], ['b', '6.5']], ['b', '6.5'], '6.5', 'b', '', 'Kết thúc · đạt đầu ra')
+      + r('Đinh Tuấn Kiệt', '05/11', [['b', '6.0'], ['x', '5.5'], ['x', '5.0'], ['x', '5.5']], ['x', '5.5'], '6.0', 'x', '', 'Học lại FT 6.0')
+      + r('Hồ Đức Thịnh', '05/11', [[null, '5.0'], [null, '5.5'], [null, '4.5'], [null, '5.0']].map((x) => ['', x[1]]), ['', '5.0'], '<span class="mo2">—</span>', 'n', kck(), 'Học lại FT 5.5')
+      + r('Lê Hoài Nam', '05/11', [['b', '6.0'], ['b', '6.0'], ['x', '5.5'], ['b', '6.0']], ['b', '6.0'], '6.0', 'b', kck(true), 'Chưa chọn')
+      + r('Mạc Thu Trang', '—', [[null], [null], [null], [null]], [null], '6.0', 'k', '', 'Chưa chọn')
+      + r('Vũ Nhật Quang', '10/11', [['x', '5.0'], ['x', '5.0'], ['x', '4.5'], ['b', '5.5']], ['x', '5.0'], '5.5', 'x', kck(), 'Học lại FT 5.5')
+      + nhom('MB FT 102', 9)
+      + r('Bùi Thảo Nhi', '05/11', [['x', '6.0'], ['x', '6.0'], ['x', '5.5'], ['x', '6.0']], ['x', '6.0'], '6.5', 'x', '', 'Học lại FT 6.5')
+      + '</tbody></table><div class="phan-trang"><span>1–10 / 35 em</span><span class="trang-so"><b>1</b><span>2</span><span>3</span><span>4</span></span><span class="phai">Mỗi trang <span class="doan" style="height:30px"><button type="button" aria-pressed="true">10</button><button type="button" aria-pressed="false">20</button><button type="button" aria-pressed="false">50</button></span></span></div>');
+  }
+  const locThi = (hep) => loc({ tab: 'thi' }, hep);
+  function c1() { return dau(2, false, 'ql') + locThi() + daiThi(false) + bangKnGv() + bangLopThi(false) + dsThi(); }
+  function c2() {
+    const r = (ten, lop, ngay, kn, ovr, tg, chip) => `<tr><td class="ten">${lkHv(ten)}${chip || ''}</td><td class="ten">${lkLop(lop)}</td><td class="mo">${ngay}</td>${kn.map((x) => `<td data-k="so">${d(x[0], x[1])}</td>`).join('')}<td data-k="so" class="ke-trai">${d(ovr[0], ovr[1])}</td><td data-k="so" class="mo">${tg}</td></tr>`;
+    const bang = `<table class="bang"><colgroup><col style="width:220px"><col style="width:110px"><col style="width:76px">${'<col style="width:58px">'.repeat(4)}<col style="width:62px"><col></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th>Ngày thi</th><th data-k="so">L</th><th data-k="so">R</th><th data-k="so">W</th><th data-k="so">S</th><th data-k="so" class="ke-trai">OVR</th><th data-k="so">Target</th></tr></thead><tbody>`
+      + r('Đinh Tuấn Kiệt', 'MB FT 101', '05/11', [['b', '6.0'], ['x', '5.5'], ['x', '5.0'], ['x', '5.5']], ['x', '5.5'], '6.0')
+      + r('Trần Bảo Ngọc', 'MB FT 101', '05/11', [['x', '5.5'], ['b', '6.0'], ['x', '5.0'], ['b', '6.0']], ['x', '5.5'], '6.0')
+      + r('Vũ Nhật Quang', 'MB FT 101', '10/11', [['x', '5.0'], ['x', '5.0'], ['x', '4.5'], ['b', '5.5']], ['x', '5.0'], '5.5', kck())
+      + r('Đào Minh Châu', 'MB FT 101', '10/11', [['x', '5.0'], ['b', '5.5'], ['x', '5.0'], ['x', '5.0']], ['x', '5.0'], '5.5')
+      + r('Bùi Thảo Nhi', 'MB FT 102', '05/11', [['x', '6.0'], ['x', '6.0'], ['x', '5.5'], ['x', '6.0']], ['x', '6.0'], '6.5')
+      + r('Lý Gia Khang', 'MB FT 102', '05/11', [['x', '5.5'], ['x', '5.5'], ['x', '5.0'], ['b', '6.0']], ['x', '5.5'], '6.0', '<span class="chip-kck wl" style="margin-left:6px">WL 2</span>')
+      + r('Ngô Hải Yến', 'MB FT 102', '10/11', [['b', '6.0'], ['x', '5.5'], ['x', '5.0'], ['x', '5.5']], ['x', '5.5'], '6.0')
+      + r('Cao Minh Đức', 'MB FT 105', '05/11', [['x', '5.0'], ['x', '5.0'], ['x', '4.5'], ['x', '5.0']], ['x', '5.0'], '5.5', '<span class="chip-kck" style="margin-left:6px">KCK</span>')
+      + '</tbody></table>';
+    const chia = `<div class="tom-chia"><span class="tong-pn"><b>11</b> em chưa đạt / 31 em</span><span class="chip-dk">MB FT 101 <b>4</b></span><span class="chip-dk">MB FT 102 <b>3</b></span><span class="chip-dk">MB FT 105 <b>2</b></span><span class="chip-dk">MB FT 108 <b>2</b></span><span class="chip-dk">trong đó KCK · WL 2 <b>4</b></span></div>`;
+    return dau(2, false, 'ql') + locThi() + daiThi(true) + bangKnGv()
+      + panel(pnDau('SỐ · THI THẬT', 'Chưa đạt · Tổng thể · W1 NOV – W2 NOV', 'Monbay · gồm KCK · dữ liệu đến 12/11', '', 'OVR dưới Target lúc nhập kết quả. Gồm em KCK và em đã nhận WL 2 có Target.') + `<div class="pn-than cuon">${chia}${bang.replace('<span class="chip-kck">KCK</span>', '<span class="chip-kck" style="margin-left:6px">KCK</span>')}<div class="phan-trang" style="border:0;padding:0"><span>1–8 / 11 em</span><span class="trang-so"><b>1</b><span>2</span></span></div></div>`, true);
+  }
+  function c3() { return dau(2, false, 'qt') + locThi() + daiThi(false, false, null, true) + bangLopThi(true); }
+  function c4() {
+    const theLop = (l) => `<div class="the-dong"><div class="dau">${lkLop(l[0])}<span class="phai" style="color:var(--text-dim)">${l[1]} em thi</span></div><div class="phan"><div class="luoi" style="--n:3"><span><i>Vượt</i><b>${o(l[2], 'c-v')}</b></span><span><i>Đạt</i><b>${o(l[3])}</b></span><span><i>Chưa đạt</i><b>${o(l[4], 'c-x')}</b></span><span><i>Không thi</i><b>${o(l[5])}</b></span><span><i>Chưa có KQ</i><b>${o(l[6])}</b></span></div></div></div>`;
+    const hv = (ten, lop, ngay, ovr, tg, k, chip) => `<div class="the-hv"><div class="h1">${lkHv(ten)}${kq(k)}${chip || ''}</div><div class="hang-tt">${lkLop(lop)}<span>thi ${ngay}</span><span>OVR ${d(ovr[0], ovr[1])} · Target ${tg}</span></div></div>`;
+    const nho = (n, m, cls) => `<b>${o(n, n ? cls : '')}</b><i class="pct-nho">${pc(n, m)}</i>`;
+    return dau(2, true, 'ql') + locThi(true) + daiThi(false, true)
+      + `<section class="the">${dauThe('Từng kỹ năng', null, 'so Target overall', I('Cách tính'))}<table class="bang hep"><colgroup><col style="width:16%"><col><col><col><col style="width:16%"></colgroup><thead><tr><th>KN</th><th data-k="so">Vượt</th><th data-k="so">Đạt</th><th data-k="so">Chưa đạt</th><th data-k="so">TB</th></tr></thead><tbody>${[['L', 25, 6, 10, 9, '6.0'], ['R', 25, 5, 9, 11, '5.8'], ['W', 25, 2, 9, 14, '5.4'], ['S', 25, 4, 11, 10, '5.8']].map((r) => `<tr><td class="ten"><b>${r[0]}</b></td><td data-k="so" class="so-2">${o(r[2], 'c-v')}<span class="mau">${pc(r[2], r[1])}</span></td><td data-k="so" class="so-2">${o(r[3])}<span class="mau">${pc(r[3], r[1])}</span></td><td data-k="so" class="so-2">${o(r[4], 'c-x')}<span class="mau">${pc(r[4], r[1])}</span></td><td data-k="so">${r[5]}</td></tr>`).join('')}</tbody></table></section>`
+      + `<div class="dau-con" style="padding:4px 0 0"><h3>Theo GV</h3>${dem('7 GV')}<span class="phu">trừ KCK</span><span class="phai">${I('Cách tính')}</span></div>`
+      + [['Cao Khánh Linh', 'L', 9, 2, 3, 4], ['Lê Minh Khoa', 'R', 9, 2, 3, 4]].map((g) => `<div class="the-dong"><div class="dau"><a class="ten-gv lk-t" href="#gv">${g[0]}</a> <span class="mo2" style="font-weight:400;font-size:13px">${g[1]} · ${g[2]} em</span></div><div class="phan"><div class="luoi" style="--n:3"><span><i>Vượt</i>${nho(g[3], g[2], 'c-v')}</span><span><i>Đạt</i>${nho(g[4], g[2])}</span><span><i>Chưa đạt</i>${nho(g[5], g[2], 'c-x')}</span></div></div></div>`).join('') + '<button type="button" class="lk" style="justify-self:start">Xem 5 GV còn lại</button>'
+      + `<div class="dau-con" style="padding:4px 0 0"><h3>Theo lớp</h3>${dem('4 lớp')}<span class="phu">trừ KCK</span><span class="phai">${I('Cách tính')}</span></div>` + LOP_THI.slice(0, 2).map(theLop).join('')
+      + `<div class="dau-con" style="padding:4px 0 0"><h3>Danh sách kết quả</h3>${dem('35 em')}<span class="phai">${I('Cách tính')}</span></div>`
+      + hv('Nguyễn Minh An', 'MB FT 101', '03/11', ['v', '7.0'], '6.5', 'v') + hv('Lê Hoài Nam', 'MB FT 101', '05/11', ['b', '6.0'], '6.0', 'b', kck(true)) + hv('Vũ Nhật Quang', 'MB FT 101', '10/11', ['x', '5.0'], '5.5', 'x', kck())
+      + hv('Mạc Thu Trang', 'MB FT 101', '—', [null], '6.0', 'k');
+  }
+
+  /* ======================= D · GIÁO VIÊN ======================= */
+  const GVS = [
+    ['Cao Khánh Linh', 'L · R · W2', [14, 2, 3], 0, [6, 1, 1], [15, 21]], ['Đỗ Thu Hương', 'L · R', [16, 0, 0], 0, [3, 0, 0], [12, 15]],
+    ['Lâm Quang Vinh', 'S', [6, 1, 0], 8, [2, 0, 0], [9, 12]], ['Lê Minh Khoa', 'R · W1 · W2', [12, 3, 2], 0, [4, 2, 1], [14, 22]],
+    ['Phạm Thu Trang', 'S', [7, 0, 1], 8, [5, 0, 0], [8, 12]], ['Trần Ngọc Hà', 'L · R', [15, 1, 0], 0, [7, 1, 2], [18, 24]], ['Võ Mỹ Duyên', 'W1 · W2', [13, 2, 0], 0, null, [9, 15]],
+  ];
+  function oNv(a, sCheo) {
+    if (!a) return '<td data-k="so" class="ke-trai"><span class="mo2">—</span></td><td data-k="so"><span class="mo2">—</span></td><td data-k="so"><span class="mo2">—</span></td>';
+    const tong = a[0] + a[1] + a[2];
+    return `<td data-k="so" class="so-2 ke-trai">${o(a[0])}<span class="mau">${pc(a[0], tong)}</span></td><td data-k="so">${o(a[1])}</td><td data-k="so" class="so-2">${o(a[2], a[2] ? 'c-bad' : '')}${sCheo ? `<span class="s-cheo">+ ${o(sCheo)} S chéo chung</span>` : ''}</td>`;
+  }
+  function headGv(qt) {
+    return `<table class="bang"><colgroup><col style="width:${qt ? 28 : 26}%"><col><col><col><col><col><col><col style="width:14%"></colgroup><thead><tr><th rowspan="2">Giáo viên</th><th colspan="3" class="nhom-cot ke-trai">Chấm Test · bài</th><th colspan="3" class="nhom-cot ke-trai">Việc</th><th rowspan="2" data-k="so" class="ke-trai">Đạt kỳ vọng Test · lượt</th></tr><tr><th data-k="so" class="ke-trai">Đúng hạn</th><th data-k="so">Làm muộn</th><th data-k="so">Chưa làm</th><th data-k="so" class="ke-trai">Đúng hạn</th><th data-k="so">Làm muộn</th><th data-k="so">Chưa làm</th></tr></thead><tbody>`;
+  }
+  const oDat = (x) => x ? `<td data-k="so" class="so-2 ke-trai">${o(pc(x[0], x[1]))}<span class="mau">${x[0]}/${x[1]} lượt</span></td>` : '<td data-k="so" class="ke-trai"><span class="mo2">—</span></td>';
+  const dongGv = (g, cls, ten) => `<tr${cls ? ` class="${cls}"` : ''}><td class="ten">${ten || `<a class="ten-gv lk-t" href="#gv">${g[0]}</a><span class="phu-o">${g[1]}</span>`}</td>${oNv(g[2], g[3])}${oNv(g[4])}${oDat(g[5])}</tr>`;
+  const dongCpc = (n, ten) => `<tr class="cpc"><td class="ten">${ten || 'Chưa phân công'}</td><td data-k="so" class="ke-trai" colspan="3">${o(n, 'c-bad')} <span class="mo" style="font-family:var(--phong);font-size:13px">bài chưa có GV</span></td>${'<td data-k="so" class="ke-trai"><span class="mo2">—</span></td><td data-k="so"><span class="mo2">—</span></td><td data-k="so"><span class="mo2">—</span></td>'}<td data-k="so" class="ke-trai"><span class="mo2">—</span></td></tr>`;
+  function soGv(qt) {
+    return chiSo([
+      { ten: 'Chấm Test đúng hạn', ky: 'trong kỳ', gt: o(qt ? '82 %' : '85 %'), mau: qt ? '214/261 bài' : '83/98 bài' },
+      { ten: 'Việc đúng hạn', ky: 'trong kỳ', gt: o(qt ? '74 %' : '77 %'), mau: qt ? '71/96 việc' : '27/35 việc' },
+      { ten: 'Chưa làm', ky: 'trong kỳ', gt: `<span class="c-bad" aria-hidden="true" style="color:var(--bad)">⚠</span>${o(qt ? 19 : 6, 'c-bad')}<small>bài</small> ${o(qt ? 12 : 4, 'c-bad')}<small>việc</small>`, mau: `đã qua hạn · + ${o(8)} bài S chéo chung` },
+      { ten: 'Chưa phân công', ky: 'trong kỳ', gt: o(qt ? 9 : 4), don: 'bài', mau: 'chưa có GV' },
+    ]);
+  }
+  const LOI_TT = `<a class="lk-doi" href="#thi">Thi thật theo GV ›</a>${I('Chấm Test và Việc theo sổ nghĩa vụ: tỉ lệ = đúng hạn / (đúng hạn + làm muộn + chưa làm). S chéo chung = bài Speaking chấm chéo chưa ai nhận, mọi GV có kỹ năng S cùng thấy, không vào tỉ lệ. Xếp theo tên, không xếp hạng.')}`;
+  function d1() {
+    return dau(3, false, 'ql') + loc({ tab: 'gv' }) + soGv(false)
+      + the(dauThe('Giáo viên', '7 GV', null, LOI_TT), headGv(false) + GVS.map((g) => dongGv(g)).join('') + `</tbody><tfoot>${dongCpc(4)}</tfoot></table>`);
+  }
+  function d2() {
+    const linh = ['Cao Khánh Linh', '', [22, 3, 5], 0, [9, 2, 1], [24, 34]];
+    const con = [['Monbay', '', [14, 2, 3], 0, [6, 1, 1], [15, 21]], ['Cẩm Phả', '', [8, 1, 2], 0, [3, 1, 0], [9, 13]]];
+    const rows = dongGv(linh, 'hang-lon', `<span class="mui-mo">▾</span><a class="ten-gv lk-t" href="#gv">Cao Khánh Linh</a><span class="phu-o" style="padding-left:16px">L · R · W2 · 2 chi nhánh</span>`)
+      + con.map((c) => dongGv(c, 'hang-con', c[0])).join('')
+      + [['Bùi Hải Yến', 'L · R · S · Bãi Cháy', [11, 0, 1], 6, [4, 0, 0], [10, 14]], ['Dương Tuấn Kiên', 'L · R · W1 · W2 · S · 2 chi nhánh', [18, 2, 0], 6, [5, 1, 0], [16, 23]], ['Đỗ Thu Hương', 'L · R · Monbay', [16, 0, 0], 0, [3, 0, 0], [12, 15]], ['Đỗ Vũ Tuấn Phong', 'W1 · W2 · Cẩm Phả', [10, 1, 1], 0, [6, 0, 1], [11, 17]], ['Hoàng Quang Dũng', 'W1 · W2 · Hải Dương', [9, 0, 0], 0, [2, 0, 0], [8, 11]], ['Lâm Quang Vinh', 'S · Monbay', [6, 1, 0], 8, [2, 0, 0], [9, 12]]]
+        .map((g) => dongGv([g[0], g[1], g[2], g[3], g[4], g[5]], 'hang-lon', `<span class="mui-mo">${/chi nhánh/.test(g[1]) ? '▸' : ''}</span><a class="ten-gv lk-t" href="#gv">${g[0]}</a><span class="phu-o" style="padding-left:16px">${g[1]}</span>`)).join('')
+      + '';
+    const cpc = dongCpc(9, '<span class="mui-mo">▸</span>Chưa phân công<span class="phu-o" style="font-style:normal;padding-left:16px">3 chi nhánh</span>');
+    return dau(3, false, 'qt') + loc({ tab: 'gv' }) + soGv(true)
+      + the(dauThe('Giáo viên · tất cả chi nhánh', '17 GV', null, LOI_TT), headGv(true) + rows + `</tbody><tfoot>${cpc}</tfoot></table><div class="phan-trang"><span>1–10 / 17 GV</span><span class="trang-so"><b>1</b><span>2</span></span><span class="phai">Mỗi trang <span class="doan" style="height:30px"><button type="button" aria-pressed="true">10</button><button type="button" aria-pressed="false">20</button><button type="button" aria-pressed="false">50</button></span></span></div>`);
+  }
+  function d3() {
+    const r = (bai, hv, lop, han, tt, goc) => `<tr><td class="ten"><a class="lk-t mt" href="#mt">${bai[0]}</a> <span class="mo2" style="font-size:13px">${bai[1]}</span></td><td class="ten">${lkHv(hv)}</td><td class="ten">${lkLop(lop)}</td><td class="mo">hạn ${han}${goc ? `<span class="phu-o">hạn gốc ${goc}</span>` : ''}</td><td>${tt}</td></tr>`;
+    const tab = `<div class="pn-tab" role="tablist"><button type="button" role="tab" aria-selected="true">Chưa làm ${dem('3')}</button><button type="button" role="tab" aria-selected="false">Làm muộn ${dem('2')}</button><button type="button" role="tab" aria-selected="false">Đúng hạn ${dem('14')}</button></div>`;
+    const bang = `<table class="bang"><colgroup><col style="width:148px"><col style="width:160px"><col style="width:104px"><col style="width:118px"><col></colgroup><thead><tr><th>Bài</th><th>Học viên</th><th>Lớp</th><th>Hạn</th><th>Trạng thái</th></tr></thead><tbody>`
+      + r(['MT2 · W2', 'W1 NOV'], 'Bùi Thảo Vy', 'MB FT 101', '08/11', '<span class="qua">quá 4 ngày</span>')
+      + r(['MT2 · W2', 'W1 NOV'], 'Hồ Gia Bảo', 'MB FT 101', '08/11', '<span class="qua">quá 4 ngày</span>')
+      + r(['MT1 · R', 'W1 NOV'], 'Trịnh Quốc Huy', 'MB FT 108', '10/11', '<span class="qua">quá 2 ngày</span>', '08/11') + '</tbody></table>';
+    const chia = `<div class="tom-chia"><span class="tong-pn"><b>3</b> bài chưa làm</span><span class="chip-dk">MB FT 101 <b>2</b></span><span class="chip-dk">MB FT 108 <b>1</b></span></div>`;
+    return d1() + panel(pnDau('SỐ · GIÁO VIÊN', 'Chấm Test · Cao Khánh Linh', 'Monbay · Fast Track · W1 NOV – W2 NOV · dữ liệu đến 12/11', `<a class="lk-doi" href="#gv" style="justify-self:start;font-size:13px">Hồ sơ GV ›</a>`, 'Bài thường tính cho GV được phân công kỹ năng ở lớp em học, theo phân công ở ngày hạn. Hạn = hạn chấm hoặc Chủ nhật tuần thi, ngày muộn hơn.') + `<div class="pn-than">${tab}${chia}${bang}</div>`);
+  }
+  function d4() {
+    const the = (g) => `<div class="the-dong"><div class="dau"><a class="ten-gv lk-t" href="#gv">${g[0]}</a> <span class="mo2" style="font-weight:400;font-size:13px">${g[1]}</span></div>`
+      + `<div class="phan"><div class="nhan">Chấm Test · bài</div><div class="luoi" style="--n:3"><span><i>Đúng hạn</i><b>${o(g[2][0])}</b></span><span><i>Làm muộn</i><b>${o(g[2][1])}</b></span><span><i>Chưa làm</i><b>${o(g[2][2], g[2][2] ? 'c-bad' : '')}</b></span></div>${g[3] ? `<span class="s-cheo" style="margin-top:4px">+ ${o(g[3])} S chéo chung</span>` : ''}</div>`
+      + `<div class="phan"><div class="nhan">Việc</div>${g[4] ? `<div class="luoi" style="--n:3"><span><i>Đúng hạn</i><b>${o(g[4][0])}</b></span><span><i>Làm muộn</i><b>${o(g[4][1])}</b></span><span><i>Chưa làm</i><b>${o(g[4][2], g[4][2] ? 'c-bad' : '')}</b></span></div>` : '<span class="mo2">—</span>'}</div>`
+      + `<div class="phan"><div class="luoi" style="--n:1"><span><i>Đạt kỳ vọng Test · lượt</i><b>${o(pc(g[5][0], g[5][1]))} <span class="mo2" style="font-weight:400;font-size:12px">${g[5][0]}/${g[5][1]} lượt</span></b></span></div></div></div>`;
+    return dau(3, true, 'ql') + loc({ tab: 'gv' }, true) + soGv(false)
+      + `<div class="dau-con" style="padding:4px 0 0"><h3>Giáo viên</h3>${dem('7 GV')}<span class="phai" style="display:flex;gap:6px;align-items:center">${LOI_TT}</span></div>`
+      + GVS.slice(0, 3).map(the).join('') + `<div class="the-dong"><div class="dau" style="font-style:italic;color:var(--text-dim)">Chưa phân công<span class="phai" style="font-style:normal">${o(4, 'c-bad')} bài chưa có GV</span></div></div>`;
+  }
+
+  /* ======================= E · TRẠNG THÁI ======================= */
+  function e1() {
+    const sk = '<div class="so-to"><span class="skel vua"></span><span class="skel to"></span><span class="skel" style="width:70%"></span></div>';
+    const bang = `<section class="the"><div class="the-dau"><h2>Theo lớp</h2></div><div class="khung-skel">${'<span class="skel"></span>'.repeat(7)}</div></section>`;
+    return dau(0, false, 'ql') + loc({ tab: 'cn' }) + `<div class="cn-luoi"><div class="cot-so" aria-busy="true">${sk.repeat(4)}</div><div class="cot-bang">${bang}</div></div>`;
+  }
+  function e2() {
+    return dau(1, false, 'ql') + loc({ tab: 'sos' })
+      + chiSo([{ ten: 'Lượt MT', ky: 'trong kỳ', gt: o(0) }, { ten: sos(1), gt: o(0) }, { ten: sos(2), gt: o(0) }, { ten: sos(3), gt: o(0) }, { ten: 'Thiếu điểm', gt: o(0) }, { ten: 'Chưa chốt PA', ky: 'hiện tại', gt: o(2), mau: 'trên 3 Case' }])
+      + the(dauThe('Theo tuần', '0 tuần'), '<div class="rong-dau">Chưa có lượt MT nào trong W1 NOV – W2 NOV<button type="button" class="nut nut-nho">Xem Toàn bộ</button></div>')
+      + the(dauThe('PA nào hiệu quả', null, null, I('Cách tính')), '<div class="rong-dau">Chưa có PA nào có kết quả trong W1 NOV – W2 NOV<button type="button" class="nut nut-nho">Xem Toàn bộ</button></div>');
+  }
+  function e3() {
+    const rong = `<div class="khoi-kq"><div class="dau-k">Kết quả thi thật <i>· trong kỳ</i>${I('Cách tính')}</div><div class="cong-tac" role="group" aria-label="Cách tính thanh kết quả"><button type="button" aria-pressed="true"><span class="ten">Đạt Target<span class="chon">✓ đang xem</span></span><span class="pt mo2">—</span><span class="mau">chưa em nào có KQ · trừ KCK</span></button><button type="button" aria-pressed="false"><span class="ten">Tổng thể</span><span class="pt nho mo2">—</span><span class="mau">gồm KCK</span></button></div></div>`;
+    return dau(2, false, 'ql') + locThi() + daiThi(false, false, rong) + the(dauThe('Danh sách kết quả', '0 em'), '<div class="rong-dau">Chưa có kết quả thi thật nào trong W1 NOV – W2 NOV<button type="button" class="nut nut-nho">Xem Toàn bộ</button></div>');
+  }
+  function e4() {
+    return dau(3, false, 'ql') + loc({ tab: 'gv' }) + '<div class="bao-loi" role="alert"><span><b>⚠ Không tải được báo cáo Giáo viên</b> · máy chủ chưa trả lời, bộ lọc vẫn giữ</span><button type="button" class="nut nut-nho" style="margin-left:auto">Thử lại</button></div>';
+  }
+  function e5() { return dau(2, false, 'tvv') + locThi() + daiThi(false) + bangKnGv(); }
+
+
+  /* ======================= v21 — khung mới ======================= */
+  /* SOS: ⓘ đang mở */
+  function b5() { return dau(1, false, 'ql') + loc({ tab: 'sos' }) + soSos() + bangSos(true) + khoiPa(false); }
+  function b6() { return dau(1, false, 'ql') + loc({ tab: 'sos' }) + soSos() + bangSos() + khoiPa(false, true); }
+
+  /* Giáo viên (R9.1): panel "Chưa làm" — nhóm theo GV, dòng việc chuẩn chỉ đọc (lớp · việc · thẻ phụ · chip hạn; không nút) */
+  const tag = (t) => `<span class="tag">${t}</span>`;
+  const tagHv = (t) => `<a class="tag" href="#hs" style="color:var(--text)">${t}</a>`;
+  const dv = (ten, phu, han) => `<div class="dv"><span><span class="dv-ten">${ten}</span><span class="the-phu">${phu.join('')}</span></span><span class="han-v qua">quá hạn ${han}</span></div>`;
+  const nhomGv = (ten, n, dong, cpc) => `<section class="nhom-gv${cpc ? ' cpc' : ''}"><div class="ng-dau">${cpc ? `<span class="ten-gv">${ten}</span>` : `<a class="ten-gv lk-t" href="#gv">${ten}</a>`}<span class="bd">${n}</span>${cpc ? `<span class="mo2" style="font-size:13px">${cpc}</span>` : ''}</div>${dong.join('')}</section>`;
+  const CT_GV = [
+    nhomGv('Cao Khánh Linh', 3, [dv('MB FT 101 · Writing 2', [tag('MT2'), tag('W1 NOV'), tag('2 bài')], '4 ngày'), dv('MB FT 108 · Reading', [tagHv('Trịnh Quốc Huy'), tag('MT1'), tag('W1 NOV')], '2 ngày')]),
+    nhomGv('Lê Minh Khoa', 2, [dv('MB FT 102 · Reading, Writing 1', [tag('MT2'), tag('W1 NOV'), tag('2 bài')], '5 ngày')]),
+    nhomGv('Phạm Thu Trang', 1, [dv('MB FT 105 · Speaking', [tagHv('Phan Gia Hân'), tag('MT4'), tag('W2 NOV')], '1 ngày')]),
+    nhomGv('S chéo chung', 8, [dv('MB FT 101 · Speaking chấm chéo', [tag('MT2'), tag('W1 NOV'), tag('5 bài')], '3 ngày'), dv('MB FT 110 · Speaking chấm chéo', [tag('MT1'), tag('W1 NOV'), tag('3 bài')], '3 ngày')], 'không vào tỉ lệ'),
+  ];
+  const V_GV = [
+    nhomGv('Cao Khánh Linh', 1, [dv('MB FT 101 · Mô tả Case', [tagHv('Đặng Thu Hà'), tag('Reading'), tag('W1 NOV')], '3 ngày')]),
+    nhomGv('Lê Minh Khoa', 1, [dv('MB FT 102 · Xác nhận PA', [tagHv('Lê Minh Thư'), '<span class="sos m2">SOS 2</span>', tag('Writing')], '2 ngày')]),
+    nhomGv('Trần Ngọc Hà', 2, [dv('MB FT 108 · Viết Báo cáo PH', [tag('Tháng 10'), tag('còn 4 / 15 em')], '6 ngày'), dv('MB FT 108 · Xác nhận xử lý', [tagHv('Vũ Hà My'), tag('WL 1')], '1 ngày')]),
+  ];
+  const I_CHUA = 'Bài / việc có <b>hạn trong kỳ</b>, đã qua hạn mà chưa làm — cùng sổ nghĩa vụ với bảng. Tính cho GV được phân công ở ngày hạn. S chéo chung (nhóm cuối): bài Speaking chấm chéo chưa ai nhận — để riêng, không cộng vào số bài Chưa làm, không vào tỉ lệ của ai.';
+  function pnChua(viec, hep) {
+    const tab = `<div class="pn-tab" role="tablist" aria-label="Chưa làm"><button type="button" role="tab" aria-selected="${!viec}">Chấm Test <span class="bd">6</span></button><button type="button" role="tab" aria-selected="${!!viec}">Việc <span class="bd">4</span></button></div>`;
+    const tom = viec ? `<div class="tom-chia"><span class="tong-pn"><b>4</b> việc · 3 GV</span></div>` : `<div class="tom-chia"><span class="tong-pn"><b>6</b> bài · 3 GV</span></div>`;
+    return panel(pnDau('SỐ · GIÁO VIÊN', 'Chưa làm · W1 NOV – W2 NOV', hep ? 'Monbay · Fast Track · đã qua hạn' : 'Monbay · Fast Track · đã qua hạn · dữ liệu đến 12/11', '', I_CHUA)
+      + `<div class="pn-than cuon">${tab}${tom}${(viec ? V_GV : CT_GV).join('')}</div>`);
+  }
+  function d5() { return d1() + pnChua(false); }
+  function d6() { return d1() + pnChua(true); }
+  function d7() { return d4() + pnChua(false, true); }
+
+  /* Ý thức (R9.2 + G2): giải thích cột rời rê chuột → ⓘ đầu thẻ; tên bậc VIẾT HOA (cột: viết tắt; thang trong ⓘ: viết đủ) */
+  const YT_HV = [
+    ['Phạm Bảo Ngọc', 'MB FT 101', 3, 3, 'q', '<b>REPORT 1</b> › REPORT 2', 'REPORT 1 · 07/11'],
+    ['Vũ Hải Đăng', 'MB FT 101', 1, 1, 'q', '<span class="mo2">Chưa xử lý lần nào</span> › REPORT 1', '<span class="mo2">—</span>'],
+    ['Lê Quang Huy', 'MB FT 102', 3, 3, 's', '<span class="mo2">Chưa xử lý lần nào</span> › REPORT 1', '<span class="mo2">—</span>'],
+    ['Quách Thành Nam', 'MB FT 105', 2, 1, 's', '<b>WL 1</b> › REPORT 4 + MEETING', 'WL 1 · 28/10'],
+    ['Kiều Minh Đức', 'MB FT 101', 2, 2, 's', '<span class="mo2">Chưa xử lý lần nào</span> › REPORT 1', 'Đình chỉ học tạm thời · QL từ chối'],
+    ['Lương Gia Bảo', 'MB FT 102', 3, 0, '', '<b>WL 2</b> › WL 3', 'WL 3 · chờ QL duyệt'],
+  ];
+  const I_YT_HV = '<span><b>Cách chọn:</b> em đang học có vi phạm chưa xử lý đã qua hạn, bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất chờ QL duyệt.</span>'
+    + '<dl><dt>Vi phạm</dt><dd>trong khoảng đang lọc.</dd><dt>Chưa xử lý</dt><dd>Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính).</dd><dt>Bậc · hiện tại › kế</dt><dd>bậc cao nhất đã xử lý › lần xử lý bắt buộc kế tiếp; đề xuất ngoài thang không đổi bậc.</dd><dt>Lần xử lý gần nhất</dt><dd>lần đã xong; lần mới hơn đang chờ duyệt / bị từ chối ghi kèm trạng thái.</dd></dl>'
+    + '<span><b>Thang cấp bậc:</b></span><ol class="thang"><li>REPORT 1</li><li>REPORT 2</li><li>WARNING LETTER 1 (WL 1)</li><li>REPORT 4 + MEETING CX / GĐCN</li><li>WARNING LETTER 2 (WL 2)</li><li>WARNING LETTER 3 (WL 3) · cần QL duyệt</li></ol>';
+  const I_YT_LOP = '<dl><dt>Xếp</dt><dd>theo vi phạm chưa xử lý, nhiều trước.</dd><dt>HV có vi phạm</dt><dd>số em có vi phạm / sĩ số lớp.</dd><dt>± kỳ trước</dt><dd>so khoảng cùng độ dài liền trước.</dd></dl>';
+  const cx = (n, m) => n === 0 ? '<span class="oso-0">0</span>' : `<a class="oso" href="#so" style="color:${m === 'q' ? 'var(--bad)' : 'var(--soon)'} !important">${m === 'q' ? '⚠ ' : ''}${n}</a>`;
+  function soYt() {
+    return chiSo([
+      { ten: 'HV cần chú ý', ky: 'hôm nay', gt: o(6), mau: '3 bắt buộc xử lý · 1 chờ QL duyệt' },
+      { ten: 'Vi phạm', ky: 'trong kỳ', gt: o(18), mau: '↓ 3 so kỳ trước' },
+      { ten: 'Chưa xử lý', gt: o(10), mau: 'vi phạm' },
+      { ten: 'Lớp có vi phạm', gt: o(3), mau: '14/98 HV' },
+    ], 4);
+  }
+  function bangYtHv(moI) {
+    return the(dauThe('Học viên cần chú ý', '6 HV', null, I(I_YT_HV, moI)),
+      `<table class="bang"><colgroup><col style="width:19%"><col style="width:11%"><col style="width:9%"><col style="width:10%"><col style="width:26%"><col></colgroup><thead><tr><th>Học viên</th><th>Lớp</th><th data-k="so">Vi phạm</th><th data-k="so">Chưa xử lý</th><th>Bậc · hiện tại › kế</th><th>Lần xử lý gần nhất</th></tr></thead><tbody>`
+      + YT_HV.map((r) => `<tr><td class="ten">${lkHv(r[0])}</td><td class="ten">${lkLop(r[1])}</td><td data-k="so">${o(r[2])}</td><td data-k="so">${cx(r[3], r[4])}</td><td class="ten bac">${r[5]}</td><td class="ten mo">${r[6]}</td></tr>`).join('') + '</tbody></table>');
+  }
+  function bangYtLop() {
+    const L = [['MB FT 101', 10, 6, 'q', 7, 33, '↑ 2', 'Trần Ngọc Hà', [['Chuyên cần', 3, 2], ['BTVN', 4, 3], ['Thái độ / hành vi', 2, 1], ['Kỷ luật lớp học', 1, 0]]], ['MB FT 102', 5, 3, 's', 4, 32, '↓ 4', 'Đỗ Thu Hương'], ['MB FT 105', 3, 1, 's', 3, 33, '↓ 1', 'Lê Minh Khoa']];
+    const dong = (r) => `<tr class="hang-lon"><td class="ten"><span class="mui-mo">${r[8] ? '▾' : '▸'}</span>${lkLop(r[0])}</td><td data-k="so">${o(r[1])}</td><td data-k="so">${cx(r[2], r[3])}</td><td data-k="so">${o(r[4])}<span class="mau-c">/${r[5]}</span></td><td data-k="so" class="${r[6][0] === '↑' ? 'giam' : 'tang'}">${r[6]}</td><td class="ten mo">${r[7]}</td></tr>`
+      + (r[8] ? r[8].map((c) => `<tr class="hang-con"><td>${c[0]}</td><td data-k="so">${o(c[1])}</td><td data-k="so">${c[2] ? cx(c[2], 's') : '<span class="oso-0">0</span>'}</td><td data-k="so"></td><td data-k="so"></td><td></td></tr>`).join('') : '');
+    return the(dauThe('Lớp nhiều vi phạm', '3 lớp', null, I(I_YT_LOP)),
+      `<table class="bang"><colgroup><col style="width:27%"><col><col><col><col><col style="width:23%"></colgroup><thead><tr><th>Lớp / nhóm vi phạm</th><th data-k="so">Vi phạm</th><th data-k="so">Chưa xử lý</th><th data-k="so">HV có vi phạm</th><th data-k="so">± kỳ trước</th><th>GVCN</th></tr></thead><tbody>${L.map(dong).join('')}</tbody></table>`);
+  }
+  function y1() { return dau(4, false, 'ql') + loc({ tab: 'yt' }) + soYt() + bangYtHv() + bangYtLop(); }
+  function y2() { return dau(4, false, 'ql') + loc({ tab: 'yt' }) + soYt() + bangYtHv(true) + bangYtLop(); }
+  function y3() {
+    const the = (r) => `<div class="the-hv"><div class="h1">${lkHv(r[0])}<span style="margin-left:auto;font-size:13px;color:var(--text-dim)">Chưa xử lý <b>${cx(r[3], r[4])}</b></span></div><div class="hang-tt">${lkLop(r[1])}<span>Vi phạm ${o(r[2])}</span></div><div class="hang-tt bac">${r[5]}</div></div>`;
+    return dau(4, true, 'ql') + loc({ tab: 'yt' }, true) + soYt()
+      + `<div class="dau-con" style="padding:4px 0 0"><h3>Học viên cần chú ý</h3>${dem('6 HV')}<span class="phai">${I(I_YT_HV, true)}</span></div>` + YT_HV.slice(0, 3).map(the).join('');
+  }
+
+  /* Trạng thái: panel Chưa làm đang tải / lỗi */
+  function e6() { return d1() + panel(pnDau('SỐ · GIÁO VIÊN', 'Chưa làm · W1 NOV – W2 NOV', 'Monbay · Fast Track · đã qua hạn · dữ liệu đến 12/11', '', I_CHUA) + `<div class="pn-than" aria-busy="true"><div class="pn-tab"><button type="button" aria-selected="true">Chấm Test <span class="bd">6</span></button><button type="button" aria-selected="false">Việc <span class="bd">4</span></button></div><span style="font-size:14px;color:var(--text-dim)">Đang tải…</span><div class="khung-skel" style="padding:0">${'<span class="skel" style="height:44px"></span>'.repeat(5)}</div></div>`); }
+  function e7() { return d1() + panel(pnDau('SỐ · GIÁO VIÊN', 'Chưa làm · W1 NOV – W2 NOV', 'Monbay · Fast Track · đã qua hạn · dữ liệu đến 12/11', '', I_CHUA) + `<div class="pn-than"><div class="bao-loi" role="alert"><span><b>⚠ Không tải được danh sách Chưa làm</b> · số trên ô vẫn đúng</span><button type="button" class="nut nut-nho" style="margin-left:auto">Thử lại</button></div></div>`); }
+
+  /* Hàng lọc (R9.3) */
+  const TEN5 = ['Chi nhánh', 'Thi thật', 'SOS', 'Giáo viên', 'Ý thức'], KHOA5 = ['cn', 'thi', 'sos', 'gv', 'yt'];
+  function l1() { return `<div class="hang-loc-mau">${KHOA5.map((k, i) => `<span class="nhan-mk">${TEN5[i]}</span>${loc({ tab: k })}`).join('')}</div>`; }
+  function l2() {
+    const mo = `<span class="oc-vung"><span class="oc oc-lop go" role="combobox" aria-expanded="true" aria-label="Lớp">${IC.tim}<span class="go-chu"><span class="con"></span><span class="goi" style="margin-left:4px">Gõ mã lớp</span></span></span>`
+      + `<div class="oc-ds" role="listbox"><div class="oc-nhom">Đang chạy <span class="so">6</span></div>${['MB FT 101', 'MB FT 102', 'MB FT 105', 'MB FT 108'].map((l, i) => `<div class="oc-muc${i === 0 ? ' re' : ''}" role="option"><span class="t">${l}</span><span class="p">${[18, 16, 14, 15][i]} HV · tuần ${[16, 12, 9, 6][i]}</span></div>`).join('')}<div class="oc-nhom">Đã kết thúc <span class="so">2</span></div><div class="oc-muc" role="option"><span class="t">MB FT 96</span><span class="p">kết thúc W1 NOV · có lượt trong kỳ</span></div><div class="oc-chan">Gõ để tìm · ↑ ↓ chọn · Esc đóng</div></div></span>`;
+    return `<div class="hang-loc-mau" style="min-height:430px"><span class="nhan-mk">SOS · ô Lớp đang mở</span>${loc({ tab: 'sos', lopMo: mo })}</div>`;
+  }
+  function l3() {
+    const mo = `<span class="oc-vung"><span class="oc oc-gv go" role="combobox" aria-expanded="true" aria-label="Tìm GV">${IC.tim}<span class="go-chu">linh<span class="con"></span></span><button type="button" class="bo" aria-label="Xoá chữ">✕</button></span>`
+      + `<div class="oc-ds" role="listbox"><div class="oc-nhom">GV chi nhánh <span class="so">2</span></div><div class="oc-muc re" role="option"><span class="t">Cao Khánh <mark>Linh</mark></span><span class="p">L · R · W2 · 3 lớp</span></div><div class="oc-muc" role="option"><span class="t">Hà Thùy <mark>Linh</mark></span><span class="p">Speaking · 2 lớp</span></div></div></span>`;
+    const da = `<span class="oc-vung"><span class="oc oc-gv dang-loc" role="combobox" aria-label="Tìm GV: Cao Khánh Linh"><span class="da">Cao Khánh Linh</span><button type="button" class="bo" aria-label="Bỏ lọc GV">✕</button></span></span>`;
+    return `<div class="hang-loc-mau" style="min-height:330px"><span class="nhan-mk">Giáo viên · đã chọn (bảng còn một dòng, ✕ bỏ lọc)</span>${loc({ tab: 'gv', timMo: da })}<span class="nhan-mk">Giáo viên · đang gõ</span>${loc({ tab: 'gv', timMo: mo })}</div>`;
+  }
+  function l4() { return `<div class="hang-loc-mau" style="padding:12px 16px">${['cn', 'thi', 'gv'].map((k) => `<span class="nhan-mk">${TEN5[KHOA5.indexOf(k)]}</span>${loc({ tab: k }, true)}`).join('')}</div>`; }
+  const KHUNG = { a1: () => cnFt(false), a6, b1, b3, b5, b6, c1, c4, c5, c6, d1, d4, d5, d6, d7, y1, y2, y3, e3, e4, e5, e6, e7, l1, l2, l3, l4 };
+  document.querySelectorAll('[data-k]').forEach((el) => {
+    const hep = el.classList.contains('dt'), k = el.getAttribute('data-k');
+    const vai = el.dataset.vai || 'ql';
+    el.innerHTML = k[0] === 'l' ? KHUNG[k]() : nav(hep, vai) + `<div class="noi-dung">${KHUNG[k]()}</div>`;
+    const ph = el.querySelector('.phu-hop'), pn = el.querySelector('.pn');
+    if (ph) { el.appendChild(ph); el.appendChild(pn); }
+  });
+  /* Thi thật: bấm ô công tắc đổi thanh (minh hoạ tương tác) */
+  document.addEventListener('click', (e) => {
+    const b = e.target.closest('.cong-tac button'); if (!b) return;
+    const k = b.closest('.khoi-kq'), moi = document.createElement('div');
+    moi.innerHTML = khoiKq(b === b.parentElement.lastElementChild, !!b.closest('.dt'), b.closest('[data-vai="qt"]') != null);
+    k.replaceWith(moi.firstElementChild);
+  });
+  document.getElementById('doi-theme').addEventListener('click', () => {
+    const h = document.documentElement; if (h.getAttribute('data-theme') === 'light') h.removeAttribute('data-theme'); else h.setAttribute('data-theme', 'light');
+  });
+})();
+</script>
+</body>
+</html>
