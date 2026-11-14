@@ -30,11 +30,11 @@ import { KetQua, oThuong, useLuuThuong, type ThuongSheet } from '../cham/LuoiThu
 import { DauO, VIEN_LOI } from '../cham/LuoiFT.tsx';
 import { NganLichSuBai } from '../cham/NganLichSuBai.tsx';
 import { HopThaoTacMt, THAO_TAC_CO_HOP } from './HopThaoTacMt.tsx';
-import { ODiemThuong, datPhanTram } from './ScoreEntry.tsx';
+import { ODiemThuong, datPhanTram, lyDoChiDoc } from './ScoreEntry.tsx';
 import { ONhanXet } from './NhanXet.tsx';
 import { CaseLuotKn } from './CaseLuotKn.tsx';
 import { dongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
-import { ChonDot, ConLaiLuot, Info, LichSuGon, VungMoKn, dongKhoiPhucVang, tenNguoiLam, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
+import { ChonDot, ConLaiLuot, Info, LichSuGon, LopLucTest, MuiMoDong, NUT_BA_CHAM_DONG, VungMoKn, dongKhoiPhucVang, tenNguoiLam, viecCaseLuot, type ViecConLai } from './MockDetailPage.tsx';
 import { attemptHref, fmtDate } from '../../lib/format.ts';
 import {
   CHU_THAO_TAC, CHU_THEM_PA, NAV_RONG, PERMISSIONS, duongDotTest, duongNhapDiemCu, moDiemLopCu, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangCha, trangThaiTT, tuanDaQua, tuanLich,
@@ -189,7 +189,7 @@ export default function LuotThuongPage() {
             </span>
           </div>
           <div className="mt-1.5 flex flex-wrap gap-x-5 gap-y-1.5">
-            <NhanGt n={t('Lớp lúc Test')} g={<>{d.class.code}{d.lopHienTai && <span className="ml-1 text-xs font-medium text-slate-400">· {t('nay {x}', { x: d.lopHienTai.code })}</span>}</>} />
+            <NhanGt n={t('Lớp lúc Test')} g={<LopLucTest lop={d.class} nay={d.lopHienTai} />} />
             <NhanGt n={t('Lịch')} g={!tuanThi.length ? t('Chưa chốt tuần') : tuanThi.length === 1 ? <span className="tabular-nums">{tuanThi[0].tuan}</span> : (
               /* Nhiều tuần: nhóm theo tuần, tuần sớm trước — "W3 AUG R, G+V, P · W3 SEP L"; mỗi nhóm không xuống dòng giữa chừng. */
               <span className="inline-flex flex-wrap gap-x-2 gap-y-0.5">
@@ -262,19 +262,15 @@ export default function LuotThuongPage() {
                     </button>
                   ))}
                 </>
-              )}
-              lichSu={(
-                <LichSuGon tieuDe={t('Lịch sử')}
-                  dong={dongLuot({ history: d.history.filter((h) => h.field === k), scoreHistory: d.scoreHistory.filter((h) => h.skill === k),
-                    lichSuCase: d.lichSuCase.filter((h) => h.topic === k), ct, homNay })} />
               )} />
           ))}
         </div>
       </section>
 
-      {/* ④ LỊCH SỬ LƯỢT — thu gọn cuối trang; "Lịch sử chi tiết" mở nhật ký các ô. */}
+      {/* ④ LỊCH SỬ — GD-11c (mockup ⑦ C2): MỘT khối "Lịch sử · n" cuối trang, mỗi dòng ghi tên môn; "Lịch sử chi tiết" mở nhật ký các ô.
+          ⋯ "Lịch sử" của từng môn (ngăn lịch sử một bài, như ⋯ ô của lưới) giữ. */}
       <div id="lich-su">
-        <LichSuGon tieuDe={t('Lịch sử lượt')} dong={dongLuot({ history: d.history, scoreHistory: d.scoreHistory, lichSuCase: d.lichSuCase, ct, homNay })} the
+        <LichSuGon tieuDe={t('Lịch sử')} dong={dongLuot({ history: d.history, scoreHistory: d.scoreHistory, lichSuCase: d.lichSuCase, ct, homNay })} the
           chiTiet={{ dong2: [r.studentName, r.kindLabel, d.class.code], id: r.attemptId }} />
       </div>
 
@@ -354,12 +350,12 @@ function conLaiThuong(d: ChiTiet, homNay: string, theCase: Map<number, CaseCard>
  * MỘT DÒNG MÔN (khung "A · lớp thường"): Môn · Lịch (gốc gạch → tuần mới khi "-" dời) · Điểm (ô của bảng điểm lớp: số câu đúng / tổng, "-" = vắng,
  * sửa có lý do) + % · Trạng thái + hạn · Nhận xét có / chưa · Case · nút chính + ⋯ (+ "Lịch sử" như ⋯ ô của lưới). Bấm khoảng trống mở vùng.
  */
-function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, onThaoTac, onLichSu, vungCase, lichSu }: {
+function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, onThaoTac, onLichSu, vungCase }: {
   d: ChiTiet; k: string; homNay: string; chiDoc: boolean; hep: boolean; luu: ReturnType<typeof useLuuThuong>;
   mo: boolean; thaoTac: { chinh: ThaoTac | null; menu: ThaoTac[] };
   /** Dòng phụ cột Case: trạng thái Case đại diện của môn (thẻ hồ sơ HV — `trangThaiV4`), cùng chữ với khối Case. */
   caseChu: string | null;
-  onMo: () => void; onThaoTac: (x: ThaoTac) => void; onLichSu: () => void; vungCase: ReactNode; lichSu: ReactNode;
+  onMo: () => void; onThaoTac: (x: ThaoTac) => void; onLichSu: () => void; vungCase: ReactNode;
 }) {
   const r = d.dong;
   const ct = d.programme.code;
@@ -386,7 +382,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
         <div role="cell" aria-colindex={1} className="min-w-0">
           <button type="button" aria-expanded={mo} aria-controls={mo ? `vung-${k}` : undefined} onClick={onMo}
             className="inline-flex min-h-[44px] items-center gap-2 border-0 bg-transparent p-0 text-left text-[15px] font-bold text-slate-100 sm:min-h-0">
-            <span aria-hidden className="w-3 text-xs text-slate-500">{mo ? '▾' : '▸'}</span>{ten}
+            <MuiMoDong mo={mo} />{ten}
           </button>
         </div>
         <div role="cell" aria-colindex={3} className={`justify-self-end md:col-start-3 md:row-start-1 md:justify-self-start ${luu.o[k] === 'loi' ? `rounded-md ${VIEN_LOI}` : ''}`} data-kn={k}>
@@ -417,7 +413,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               </span>
             ) : <Tag pending>{t('Chưa xếp tuần')}</Tag>}
           </div>
-          <div role="cell" aria-colindex={4} className={`min-w-0 space-y-1 md:col-start-4 md:row-start-1 ${O_CHIP_XUONG_DONG}`}>
+          <div role="cell" aria-colindex={4} className={`min-w-0 max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-2 max-md:gap-y-1 md:col-start-4 md:row-start-1 md:space-y-1 ${O_CHIP_XUONG_DONG}`}>
             <Status kind={tt.kind}>{tt.chu}</Status>
             {/* Quá hạn: đỏ khi là việc của người xem; việc người khác chữ mờ (cùng màu chip "Còn lại" của người khác). */}
             {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{han}</div>}
@@ -442,12 +438,12 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
           {/* ⋯ cùng hàng Nhận xét · Case ở điện thoại; màn rộng là cột cuối (md:contents). */}
           <div role="cell" aria-colindex={7} className="ml-auto flex flex-wrap items-center gap-1.5 md:col-start-7 md:row-start-1 md:ml-0 md:justify-end">
             {thaoTac.chinh && !chiDoc && (
-              <button type="button" data-chinh className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => onThaoTac(thaoTac.chinh!)}>{CHU_THAO_TAC[thaoTac.chinh]}</button>
+              <button type="button" data-chinh className="btn btn-sm btn-primary min-h-[44px] max-md:flex-1 max-md:justify-center sm:min-h-0" onClick={() => onThaoTac(thaoTac.chinh!)}>{CHU_THAO_TAC[thaoTac.chinh]}</button>
             )}
             {!thaoTac.chinh && !chiDoc && !canEdit && !huy && (
-              <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
+              <span className="text-xs text-slate-500" title={lyDoChiDoc({ required: true, luotHuy: huy })}>{t('Chỉ xem')}</span>
             )}
-            <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} muc={[
+            <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} lopNut={NUT_BA_CHAM_DONG} muc={[
               ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' })),
               { key: 'lich-su', nhan: t('Lịch sử'), onChon: onLichSu, keTruoc: !chiDoc && thaoTac.menu.length > 0 },
             ]} />
@@ -455,7 +451,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
         </div>
       </div>
       {mo && (
-        <VungMoKn id={`vung-${k}`} lichSu={lichSu} caseNode={vungCase}
+        <VungMoKn id={`vung-${k}`} caseNode={vungCase}
           nhanXet={(
             <section className="min-w-0 space-y-3">
               <h2 className="m-0 text-sm font-semibold text-slate-200">{t('Nhận xét')} {ten}</h2>

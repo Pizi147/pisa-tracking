@@ -110,32 +110,63 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
 
   const ketLuan = result.evaluable ? result.sosLevel === 0 : null;
 
+  /**
+   * GD-11c (chủ SP 15/11: "Để W1 W2 thành 2 ô cạnh nhau, hoặc 1 cái trên 1 cái dưới đi, đừng để mỗi W phải bấm chữ"): Writing = HAI ô điểm thật,
+   * nhãn W1 / W2, cùng dáng ô L / R — bấm ô nào mở đúng task đó; có điểm thì số task + ✓ / ✗ so kỳ vọng; không nhập được thì ô chỉ đọc.
+   */
+  const oTask = (c: Cell, gon: boolean) => {
+    const nhan = c.skill === 'writing1' ? 'W1' : 'W2';
+    const kqT = c.band !== null ? soKyVong(c.band, result.expectation) : null;
+    const dangMo = mo === c.skill;
+    const thieuT = c.thieuNhanXet ? `${nhan} ${CHU_O_THIEU[c.thieuNhanXet]}` : null;
+    const noi = (
+      <span className="flex items-center gap-1.5">
+        <span className="text-xs font-semibold text-slate-400">{nhan}</span>
+        {kqT && <DauKetQua kq={kqT} />}
+        <span className={`${gon ? 'text-xl' : 'text-[22px]'} font-bold leading-none tabular-nums ${c.band === null ? 'text-slate-600' : lopKq(kqT) || 'text-slate-100'}`}>
+          {c.band === null ? '—' : fmtBand(c.band)}
+        </span>
+      </span>
+    );
+    const lop = `flex min-w-0 flex-col justify-center rounded-lg border px-2.5 py-1.5 text-left max-sm:min-h-[44px] ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
+    const vien = dangMo ? undefined : { borderColor: thieuT ? 'rgb(var(--soon-rgb))' : 'var(--line)' };
+    const nhapBoiT = c.enteredByName ? t('{skillLabel}: nhập bởi {enteredByName}', { skillLabel: skillLabel(c.skill), enteredByName: c.enteredByName }) : '';
+    return suaDuoc(c) ? (
+      <button key={c.skill} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[c.skill] = el; }}
+        aria-label={`${skillLabel(c.skill)} ${c.band === null ? '—' : fmtBand(c.band)}`} aria-description={thieuT ?? undefined}
+        title={[thieuT, nhapBoiT, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
+        className={`${lop} bam focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[color:var(--accent-strong)]`} style={vien}
+        onClick={() => onMo(dangMo ? null : c.skill)}>{noi}</button>
+    ) : <div key={c.skill} className={lop} style={vien} title={[thieuT, nhapBoiT].filter(Boolean).join('\n') || undefined}>{noi}</div>;
+  };
+
   const oKyNang = (k: KyNangLon, gon = false) => {
     const bai = baiCua(k);
+    if (k === 'writing' && bai.length) {
+      const bandW: number | null = result.bands?.writing ?? null;
+      const vW = result.verdicts?.find((x: any) => x.skill === 'writing');
+      const kqW = bandW !== null && vW && vW.passed !== null ? soKyVong(bandW, result.expectation) ?? (vW.passed ? 'bang' : 'duoi') : null;
+      /* Hai ô cạnh nhau; chỗ hẹp (375 thẻ) không vừa thì tự xuống dòng — trên / dưới. Band Writing chung = dòng phụ dưới hai ô. */
+      const hai = <div className="flex flex-wrap gap-1.5 max-md:justify-end">{bai.map((c) => oTask(c, gon))}</div>;
+      const chungW = bandW !== null && (
+        <span className={`mt-1 flex items-center gap-1 text-xs ${gon ? 'max-md:justify-end' : ''} text-slate-400`} title={CONG_THUC_W}>
+          Writing {kqW && <DauKetQua kq={kqW} />}<b className={`tabular-nums ${lopKq(kqW) || 'text-slate-200'}`}>{fmtBand(bandW)}</b>
+        </span>
+      );
+      return gon ? <div key={k} className="min-w-0">{hai}{chungW}</div> : (
+        <div key={k} className="flex min-w-0 flex-col rounded-lg border px-3 py-2.5" style={{ borderColor: 'var(--line)' }}>
+          <span className="mb-1.5 block text-xs font-medium text-slate-400">{NHAN[k]}</span>
+          {hai}{chungW}
+        </div>
+      );
+    }
     const band: number | null = result.bands?.[k] ?? null;
     const v = result.verdicts?.find((x: any) => x.skill === k);
     const l = lich.find((x) => x.skill === k);
     const laW = k === 'writing';
     const sua = !laW && bai.some(suaDuoc);
     let phu: { chu: React.ReactNode; mau?: string; title?: string };
-    if (laW && bai.some(suaDuoc)) {
-      /* W1 · W2 hai nút — mỗi task một hộp. */
-      phu = { chu: bai.map((c, i) => (
-        <span key={c.skill}>
-          {i > 0 && <span className="text-slate-600"> · </span>}
-          {suaDuoc(c) ? (
-            <button type="button" ref={(el) => { neo.current[c.skill] = el; }} aria-expanded={mo === c.skill}
-              className="link appearance-none border-0 bg-transparent p-0 tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center"
-              onClick={() => onMo(mo === c.skill ? null : c.skill)}>
-              {c.skill === 'writing1' ? 'W1' : 'W2'} {c.band !== null ? fmtBand(c.band) : t('Nhập')}
-            </button>
-          ) : <span className="tabular-nums">{c.skill === 'writing1' ? 'W1' : 'W2'} {fmtBand(c.band)}</span>}
-        </span>
-      )), title: CONG_THUC_W };
-    } else if (k === 'writing' && bai.some(coDiem)) {
-      const w = (s: string) => fmtBand(oCua(s)?.band ?? null);
-      phu = { chu: `W1 ${w('writing1')} · W2 ${w('writing2')}`, title: CONG_THUC_W };
-    } else if ((k === 'listening' || k === 'reading') && bai[0]?.rawScore != null) {
+    if ((k === 'listening' || k === 'reading') && bai[0]?.rawScore != null) {
       phu = { chu: t('{rawScore} câu', { rawScore: bai[0].rawScore }) };
     } else if (k === 'speaking' && bai[0]?.gvCham && band !== null) {   // OV-15b (7): người chấm chỉ hiện khi đã có điểm
       /* PR-S4F #10: tên dài bị cắt (truncate) — title cho đủ tên. */
@@ -188,7 +219,7 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
       <div key={k} className={vienGon ? 'flex min-w-0 flex-col py-1.5' : vo} style={vienGon ? undefined : { borderColor: thieu.length ? 'rgb(var(--soon-rgb))' : 'var(--line)' }} title={[...thieu, nhapBoi].filter(Boolean).join('\n') || undefined}>{noiDung}</div>
     );
     /* 375: ô gọn chưa có gì để nói ("—") thì không vẽ — trông như nút thu ở góc thẻ. */
-    return gon ? <div key={k} className={`min-w-0 ${band === null && chuRong === '—' && !sua && !bai.some(suaDuoc) ? 'max-md:hidden' : ''}`}>{o}{(band !== null || (laW && (bai.some(suaDuoc) || bai.some(coDiem)))) && dongPhu}</div> : o;
+    return gon ? <div key={k} className={`min-w-0 ${band === null && chuRong === '—' && !sua && !bai.some(suaDuoc) ? 'max-md:hidden' : ''}`}>{o}{band !== null && dongPhu}</div> : o;
   };
 
   const kqOverall = soKyVong(result.overall, result.expectation);
