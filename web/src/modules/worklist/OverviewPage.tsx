@@ -41,7 +41,7 @@ export default function OverviewPage() {
   /* GD-8 (mockup v21 ④ R4.1): TVV cũng vậy — trang đầu = Công việc (việc trái + "HV của tôi" phải, dải 5 chỉ số trên). */
   if (vai === 'gv' || vai === 'tvv') return <Navigate to={`/cong-viec${params.toString() ? `?${params}` : ''}`} replace />;
   const congTac = <CongTacKhung v8 trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
-  const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
+  const chiNhanh = <BranchFilter hetHang branchId={branchId} onBranch={setBranchId} />;   // PTA rà #1710: 375 rộng cả hàng
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
     /* GD-14 (⑧ T1–T7): số bấm được trong bảng = hộp viền (`.o-so-hop`, như Phân tích); số to ô chỉ số giữ dáng chữ. */
     <div className="page tq-v8 o-so-hop space-y-4">

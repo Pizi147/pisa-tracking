@@ -182,11 +182,15 @@ const ChiSoThi = ({ d }: { d: TongQuanV5Data }) => (
  * GD-14 (⑧ XM-2, XM-14): ô "Case chưa có PA" — số to = Case chưa có PA (panel `caseChuaChot`), dòng phụ "trong 45 Case đang mở" (số 45 → panel Case đang mở,
  * nổi trên lớp phủ cả ô). Một tên cho ô, cột bảng, tiêu đề panel. Thay ô "Case có PA %" (cùng hai số: chưa có = mở − có PA).
  */
-const ChiSoCaseChuaPa = ({ d }: { d: TongQuanV5Data }) => (
-  <ChiSo ten={t('Case chưa có PA')} ky={t('hiện tại')}
-    giaTri={<OSo giaTri={d.casePa.chuaPa} tieuDe={t('Case chưa có PA')} nguon={qCn(d, 'caseChuaChot', 'tong')} className="so-chinh" />}
-    mau={d.casePa.mo ? <>{t('trong')} <OSo giaTri={d.casePa.mo} tieuDe={t('Case đang mở')} nguon={qCn(d, 'caseMo', 'tong')} /> {t('Case đang mở')}</> : null} />
-);
+function ChiSoCaseChuaPa({ d }: { d: TongQuanV5Data }) {
+  /* PTA rà #1710 (mockup ⑧ T7a/b): số phụ là chữ số gạch chân (`.so-phu`), không hộp lẻ; 375 gọn "trong 58 đang mở" một dòng. */
+  const dienThoai = useDienThoai();
+  return (
+    <ChiSo ten={t('Case chưa có PA')} ky={t('hiện tại')}
+      giaTri={<OSo giaTri={d.casePa.chuaPa} tieuDe={t('Case chưa có PA')} nguon={qCn(d, 'caseChuaChot', 'tong')} className="so-chinh" />}
+      mau={d.casePa.mo ? <span className="whitespace-nowrap">{t('trong')} <OSo giaTri={d.casePa.mo} tieuDe={t('Case đang mở')} nguon={qCn(d, 'caseMo', 'tong')} className="so-phu" /> {dienThoai ? t('đang mở') : t('Case đang mở')}</span> : null} />
+  );
+}
 /** GD-14 (⑧ T1, T3): ô "Chờ duyệt ›" — số = thẻ chờ bạn duyệt; dòng phụ chỉ khi có quá hạn (lời 37). 0 → mờ, không "›", không bấm. */
 const ChiSoChoDuyet = ({ n, quaHan }: { n: number; quaHan: number }) => (
   <ChiSo ten={tenDen(t('Chờ duyệt'), n)} ky={t('hiện tại')} giaTri={<SoDen n={n} to="/cong-viec?nhom=duyet" className="so-chinh" />}
@@ -218,15 +222,16 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
               * Lớp · lượt · người gửi không thành dòng thứ hai: rê chuột (`title`) hoặc bấm dòng → panel duyệt đủ chữ.
               */}
             <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.vaiNguoiXin ? `${y.nguoiXin} (${t(y.vaiNguoiXin)})` : y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
-              className={`bam grid min-h-[44px] w-full grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-x-2.5 px-4 py-2 text-left leading-[1.45] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
+              className={`bam grid min-h-[44px] w-full grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 px-4 py-2 text-left leading-[1.45] max-sm:grid-cols-[auto_minmax(0,1fr)] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
               {/* RA-GD-0711c: tên em giữ một dòng — thiếu chỗ thì chữ chip xuống dòng trong chip (không cắt "…"). NHAN-MOT-DONG (audit C5): tên loại
                 * ngắn + chip rộng tối thiểu bằng tên loại thường gặp ("Xử lý Ý thức") → chip một dòng, tên em thẳng cột (khối hẹp 360 px ở 1440 cũng vậy). */}
               {/* AUDIT-UI B1 (chủ SP 08/11): cột loại cố định 96 px; "Không cần theo dõi" quá dài → nhãn ngắn, tên đủ khi rê. */}
               <span className="justify-self-start whitespace-nowrap rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}
                 title={y.loai === 'khong_theo_doi' ? dich(y.nhanLoai) : undefined}>{y.loai === 'khong_theo_doi' ? <><span aria-hidden>{t('Không theo dõi')}</span><span className="sr-only">{dich(y.nhanLoai)}</span></> : dich(y.nhanLoai)}</span>
-              <span className="min-w-0 truncate text-sm font-semibold text-slate-100" title={y.hocVien ?? y.lop ?? dich(y.tieuDe)}>{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
+              {/* PTA rà #1710 (⑧ T7 "Chờ bạn duyệt 375 hai hàng"): tên em KHÔNG cắt "…" — xuống dòng; 375: hàng 1 loại · hạn, hàng 2 tên em đủ chữ. */}
+              <span className="min-w-0 break-words text-sm font-semibold text-slate-100 max-sm:col-span-2 max-sm:row-start-2">{y.hocVien ?? y.lop ?? dich(y.tieuDe)}</span>
               {/* AUDIT-UI B1 (mockup `.td-han`): hạn chỉ chữ, không viên. */}
-              {y.hanDuyet && <ChipHan vien loai="duyet" han={y.hanDuyet} />}
+              {y.hanDuyet && <span className="max-sm:col-start-2 max-sm:row-start-1 max-sm:justify-self-end"><ChipHan vien loai="duyet" han={y.hanDuyet} /></span>}
             </button>
           </li>
         ))}

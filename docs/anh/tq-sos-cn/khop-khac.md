@@ -50,3 +50,13 @@ Không thao tác nào bị bỏ.
 - impeccable `audit`: detector 0 phát hiện; dùng lại `OSo` + `DanhSachNguon` có sẵn (không thành phần mới) — a11y / theming / responsive như ô số khác.
 - `web-design-guidelines`: ô là `button` có nhãn số, panel chuẩn có ✕ + Esc; không chữ bị cắt mới.
 - `/ponytail-review`: không có gì cắt.
+
+## Vòng PTA rà #1710 (15/11) — sửa thêm lỗi 375 Tổng quan có từ trước
+| Chỗ | Sửa | Ảnh |
+|---|---|---|
+| Panel SOS 2–3: dòng không cho thấy mức | badge mức SOS mỗi dòng (cùng dáng chip SOS, "tạm" viền đứt) | t3-panel, t7b-panel |
+| Thẻ Chờ duyệt 375: tên em cắt "Phan Minh…" | không cắt: 375 hai hàng (loại · hạn / tên em đủ chữ — mockup ⑧ T7); 1440 tên xuống dòng nếu chật | t7b |
+| Ô "Case chưa có PA": "trong [58] Case đang mở" hộp lẻ, gãy dòng | số phụ là chữ số gạch chân màu nhấn, không hộp (`.so-phu`); 375 "trong 58 đang mở" một dòng | t7b, t3 |
+| Ô chọn "Chi nhánh · Tất cả" 375 hẹp, mũi tên gốc | rộng cả hàng, mũi tên nét mảnh như ô chọn chung (`BranchFilter hetHang` — chỉ Tổng quan; HV & Lớp không đổi) | t7b |
+
+Đo lại: 0 phần tử bị cắt "…" trên toàn trang Tổng quan (QT, 375 + 1440).
