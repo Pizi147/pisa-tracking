@@ -182,7 +182,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       </dl>
       <p className="m-0">{t('Thang (bậc kế):')}</p>
       <ol className="m-0 list-decimal space-y-0.5 pl-5">
-        {['Report 1', 'Report 2', 'WL 1', 'Report 4 + Meeting CX/GĐCN', 'WL 2', 'WL 3'].map((b) => <li key={b}>{bacNgan(dich(b))}{b === 'WL 3' ? ` (${t('cần QL')})` : ''}</li>)}
+        {['Report 1', 'Report 2', 'WL 1', t('Report 4 + Meeting CX/GĐCN'), 'WL 2', 'WL 3'].map((b) => <li key={b}>{bacNgan(b)}{b === 'WL 3' ? ` (${t('cần QL')})` : ''}</li>)}
       </ol>
       <p className="m-0">{t('Đề xuất ngoài thang không đổi bậc.')}</p>
     </>
