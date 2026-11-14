@@ -4,7 +4,8 @@ import type { Dich } from '../en.ts';
 export const EN_QUY_CHE_VANHANH = {
   'MT cũ: không hạn · MT trong 4 tuần gần đây vẫn sinh Case': 'Past MT: no due date · MTs in the last 4 weeks still create Cases',
   '"-" lúc này = Không dự thi, không dời': '"-" now = Did not sit, no move',
-  'Chưa tới tuần Test {tuan} · em làm sớm thì nhờ QL dời lịch': (b) => `Test week ${b.tuan} not reached · sat early? Ask a manager to move it`,
+  'Chưa tới tuần Test {tuan} · lưu điểm thì máy dời về tuần này': (b) => `Test week ${b.tuan} not reached · saving a score moves it to this week`,
+  'Bạn nhập hộ · {cau}': (b) => `Entering for a teacher · ${b.cau}`,
   'Quá hạn từ {ngay}, vẫn nhập được · "-" = vắng, dời sang tuần sau': (b) => `Overdue since ${b.ngay}, still editable · "-" = absent, moves to next week`,
   'Quá hạn từ {ngay}, vẫn nhập được · "-" = vắng, lần 2 huỷ': (b) => `Overdue since ${b.ngay}, still editable · "-" = absent, 2nd time cancelled`,
   'MT0: "-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ': 'MT0: "-" = absent: 1st time moves to next week · 2nd time cancelled',

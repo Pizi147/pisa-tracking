@@ -23,14 +23,23 @@ export function quyCheNhapDiem(o: {
   mt0?: boolean; tuanThi?: string | null; homNay?: string | null; han?: string | null;
   /** Q7: ngưỡng Đạt (%) của lớp thường, nếu bảng đã trả. */ nguongDat?: number | null;
   /** Q58: lượt MT cũ (nhập lịch sử). */ mtCu?: boolean;
+  /** Q82: người xem làm việc của người khác (QL / Admin nhập hộ — `WorkItem.mine === false`). */ nhapHo?: boolean;
 }): QuyChe {
+  const qc = quyCheNhapDiemGoc(o);
+  /* QC-Q82: "Bạn nhập hộ · " đứng đầu mọi biến thể — câu sau vẫn đúng luật của lượt (máy chủ kiểm quyền từng ô). */
+  return o.nhapHo ? { ...qc, chu: t('Bạn nhập hộ · {cau}', { cau: qc.chu }) } : qc;
+}
+
+function quyCheNhapDiemGoc(o: Parameters<typeof quyCheNhapDiem>[0]): QuyChe {
   const h = o.homNay ?? null;
   /* Luật vắng Mock áp cho Mock FT và MỌI MT0; chỉ Progress / Final lớp thường là "dời, không tự huỷ". */
   const theoMock = !o.thuong || !!o.mt0;
   if (o.mtCu) return { chu: t('MT cũ: không hạn · MT trong 4 tuần gần đây vẫn sinh Case') };
   if (o.tuanThi && h && laMtCuKyNang(o.tuanThi, h)) return { chu: t('"-" lúc này = Không dự thi, không dời'), chiTiet: CHI_TIET_MT_CU() };
   if (o.tuanThi && h && mondayOfDate(h) < mondayOfDate(o.tuanThi)) {
-    return { chu: t('Chưa tới tuần Test {tuan} · em làm sớm thì nhờ QL dời lịch', { tuan: tuanLich(o.tuanThi, h) }) };
+    /* QC-Q82 [XM]: theo mã NHAP-DIEM-a (`doiVeTuanNayNeuChua`) — lưu điểm trước tuần Test thì máy TỰ dời về tuần này, không hỏi, không cần QL
+       (bảng 83 câu ghi "hỏi dời về tuần này rồi lưu"; câu cũ "nhờ QL dời lịch" là luật trước 14/11). */
+    return { chu: t('Chưa tới tuần Test {tuan} · lưu điểm thì máy dời về tuần này', { tuan: tuanLich(o.tuanThi, h) }) };
   }
   const quaHan = !!o.han && !!h && o.han < h;
   if (quaHan) {
