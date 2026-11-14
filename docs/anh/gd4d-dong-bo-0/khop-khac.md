@@ -12,6 +12,7 @@ Nguồn: `thiet-ke/v21/dong-bo-ghi-chu.md` (mockup ⓪, chủ SP duyệt lời 3
 | `cap-1440-tinh-hinh.png` | ⑤ F3 | "+ Task" › Tình hình học tập (một hộp), gõ "tran" |
 | `cap-1440-chip.png` | ⑤ C2 | Công việc › Lớp của tôi (chip số) |
 | `zoom-x-ba-cham.png` | ⑤ F2, D1 · ③ | góc ✕ / ⋯ phóng to |
+| `zoom-chan-xu-ly.png` | ⑤ D1a | chân panel Xác nhận xử lý phóng to: "Chưa lưu" trái · "Đóng · Xác nhận · REPORT 2 · Lưu · việc tiếp ›" (một nút Đóng) |
 
 ## 1. Truy vết
 
@@ -28,7 +29,7 @@ Nguồn: `thiet-ke/v21/dong-bo-ghi-chu.md` (mockup ⓪, chủ SP duyệt lời 3
 **KHỚP 7 / 7 = 100 %.**
 
 ## 2. KHÁC / [XM] (hỏi PTA Plan)
-- **[XM-1] Nhãn bậc ở máy chủ giữ "Report 1" / "WL 1"**: `MEASURE_KIND_LABEL` / `nhanLoaiXuLy` dựng tiêu đề việc, thông báo, dòng lưu trong DB — đổi ở đó là đổi dữ liệu / API và vỡ ~25 phép kiểm chạy thật. Web viết hoa khi HIỂN THỊ qua `bacNgan` / `bacDu` (cả chuỗi máy chủ cũ). Tệp xuất / thông báo chuông chưa viết hoa — PR riêng nếu cần.
+- **[XM-1] → ĐÃ LÀM (PTA Plan rà #1641, "một khái niệm một cách viết"):** nhãn bậc lưu ở máy chủ / DB vẫn "Report 1" (dữ liệu, ~25 phép kiểm chạy thật), nhưng MỌI chỗ hiển thị đi qua `bacNgan` / `bacDu`: dòng việc + thẻ phụ + tooltip (`tenViec`, `DongPhu`, `reason`), tiêu đề panel (`KhungPanel`), chuông + "Xem tất cả" (`tachTin` — một chỗ cho mọi tin; thân tin), Phân tích Ý thức (bảng: tắt; tệp Excel: đủ — ⑤ H5 "tệp xuất"), Chuyển lớp (tên bậc ô Reset), các panel Ý thức. Tệp xuất phía máy chủ (Báo cáo PH, danh sách lớp) không có tên bậc.
 - **[XM-2] Ngoài thang** (Meeting CX/GĐCN, Đình chỉ, Khác) giữ chữ thường (cùng nhãn dùng ở Case và Hướng dẫn); WL 3 vốn đã hoa.
 - **[XM-3] Xem vi phạm 375 khi còn việc kế**: chân 3 nút xuống hai hàng (Xác nhận xử lý · Đã xem · n / "Đã xem · việc tiếp ›" cả hàng) — đã chụp `cap-375-xem-vi-pham.png`, đủ rộng, vùng bấm 44; mockup D4 chỉ vẽ 2 nút. Bỏ "Đã xem · n" ở 375 nếu PTA muốn một hàng.
 - **[XM-4] Đầu hộp "Báo tình hình"** ở hồ sơ lớp / HV cũng đổi theo (cùng hộp: "Tình hình học tập · Gửi TVV" + ✕); loại Hỏi / Sửa / Ghi kết quả giữ đầu cũ.
@@ -38,6 +39,9 @@ Nguồn: `thiet-ke/v21/dong-bo-ghi-chu.md` (mockup ⓪, chủ SP duyệt lời 3
 - Ngày lần xử lý trước không còn ở khối bậc (⑤ D1a không vẽ) — vẫn xem ở lịch sử.
 
 Từ 4b chuyển backlog (PTA chép): Q27 chữ theo mã · Q29 tối thiểu 8 ký tự theo hằng · Q74 / Q75 / Q77 (trang Cuối khoá), Q80, Q82, Q83 chưa gắn câu.
+
+## 2b. Một chân một nút "Đóng" (PTA Plan rà #1641)
+Ảnh cũ có hai "Đóng" ở chân Xác nhận xử lý (`huy` mặc định của khung + `NutDongPanel` trong `NutVaTiep`). Sửa tận gốc: `KhungPanel` không đưa hàm đóng xuống `NutDongPanel` khi chân thường đã có `huy` (`DongKhungPanel` = null) → không panel nào vẽ hai "Đóng"; Xác nhận xử lý đặt `huy: null` để "Đóng" đứng sát nút như ⑤ D1a. Đã rà: Case / PA (chân v3, không `huy`), Báo PH TVV, Đã thực hiện, Khai bậc, Xem vi phạm, Bàn giao (`huy: null` khi có NutDongPanel). Phép kiểm `thanhPhanChung` "GD-4d · chân panel việc một nút Đóng".
 
 ## 3. Thao tác TRƯỚC → SAU
 

@@ -416,7 +416,7 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const muc = chipMuc(it, true);
   const bam = () => dong.onOpen(it);
   return (
-    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
+    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
       className={`${DONG} ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
       <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><AvViec it={it} />
       <span className="grid min-w-0 gap-0.5">
@@ -477,7 +477,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const muc = chipMuc(it, false);
   return (
     <div className={con && mo ? 'bg-[color:var(--bg)]' : ''}>
-      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={con ? undefined : dich(it.reason)}
+      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={con ? undefined : bacNgan(dich(it.reason))}
         className={`${DONG} ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
         <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><AvViec it={it} />
         <span className="grid min-w-0 gap-0.5">
@@ -541,7 +541,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const maDs = `con-${it.key}`;
   return (
     <div className={con && mo ? 'bg-[color:var(--bg)]' : ''}>
-      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
+      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
         className={`${DONG} sm:min-h-16 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
         <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><AvViec it={it} />
         <span className="grid min-w-0 gap-[5px]">
@@ -583,7 +583,7 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
   const { daXong, dangChon, nut, nguoi } = useDong(it, dong);
   const bam = () => dong.onOpen(it);
   return (
-    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
+    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
       className={`${DONG} min-h-[48px] pl-8 max-sm:py-2 sm:pl-8 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
       <span className="grid min-w-0 gap-0.5">
         <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-current={dangChon ? 'true' : undefined}

@@ -16,8 +16,7 @@ import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, nguongThuongHienTai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
-  mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh,
-} from '@shared/domain/index.ts';
+  mondayOfDate, ngay, nhanTuanBatDau, phuLopDich, thuNgay, tomTatChuyenEm, tuanChonDuoc, tuanLich, type LoiTruong, type LuatTruong, type MucTieuLenh, bacDu } from '@shared/domain/index.ts';
 import { hanDuyetNgay, quyCheChuyenLop } from '@shared/domain/index.ts';
 
 type LopDich = {
@@ -49,7 +48,7 @@ const loiMayChu = (e: any) => e?.message ?? t('Không lưu được — thử l�
 const khoiVang = KHOI_VANG;
 
 /** Tên bậc vi phạm (1 = Report 1 …) — chữ dưới ô Reset bậc. */
-export const tenBac = (bac: number) => nhanLoaiXuLy(kindCuaBac(bac));
+export const tenBac = (bac: number) => bacDu(nhanLoaiXuLy(kindCuaBac(bac)));
 
 /**
  * N36 (chủ SP 05/11): ô "Reset bậc vi phạm" lúc chuyển từ lớp thường sang lộ trình mới (lớp thường / FT) — mặc định TẮT = giữ bậc, chuỗi đếm thang nối tiếp.

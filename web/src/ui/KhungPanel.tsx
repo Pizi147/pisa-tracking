@@ -158,7 +158,7 @@ export const HienLaiPanel = createContext<(() => void) | null>(null);
 /** HV-LOP-VIEC: nơi mở một panel việc THAY nội dung panel của mình (panel một em → PanelViec) cấp "← tên em" cho panel NGOÀI CÙNG bên trong
  *  (không phải sửa từng panel việc); prop `quayLai` riêng thắng; panel / hộp lồng trong không nhận lại. */
 /** GD-4b (lời 36, dòng 40c ⓪): hàm đóng của panel đang chứa (cùng đường ✕ / Esc — đang gõ dở thì hỏi "Bỏ chữ, đóng"). `NutVaTiep` đọc để vẽ nút "Đóng"
- *  trước nút việc; panel trong cột hồ sơ (`trongCot`, không có ✕) thì null. */
+ *  trước nút việc; null khi panel trong cột hồ sơ (`trongCot`, không có ✕) HOẶC chân thường đã có nút "Đóng" mặc định (`huy`) — một chân một nút "Đóng" (GD-4d). */
 export const DongKhungPanel = createContext<(() => void) | null>(null);
 export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; xem?: boolean } | null>(null);
 
@@ -465,7 +465,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
         {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => { setHoi(null); hoi.o?.(); }} onBo={boChu} />}
     </>
   );
-  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}><DongKhungPanel.Provider value={trongCot ? null : dong}>{x}</DongKhungPanel.Provider></QuayLaiPanel.Provider></TrongKhung.Provider>;
+  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}><DongKhungPanel.Provider value={trongCot || (chan && !chan.v3 && huy) ? null : dong}>{x}</DongKhungPanel.Provider></QuayLaiPanel.Provider></TrongKhung.Provider>;
   if (taiCho) {
     /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (
