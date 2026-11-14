@@ -142,6 +142,7 @@ import * as caseSvc from '../cases/cases.ts';
 import * as ownerSvc from '../cases/owner.ts';
 import * as regularSvc from '../normal/regular.ts';
 import * as chamSvc from '../cham/canCham.ts';
+import * as gvChamCotSvc from '../cham/gvChamCot.ts';
 import * as diemTheoLuotSvc from '../cham/diemTheoLuot.ts';
 
 export const api = Router();
@@ -1065,6 +1066,9 @@ api.put('/attempts/:id/scores/:skill', requireAuth, wrap((req) => {
   });
 }));
 
+/** LG-5c: "GV chấm S" đầu cột lưới FT — người xem × lớp × đợt, nhớ ở máy chủ (`gv: null` = xoá về mặc định). */
+api.put('/cham/gv-cham-cot', requireAuth, wrap((req) => gvChamCotSvc.ghiGvChamCot(principalOf(req), req.body ?? {})));
+
 /** OV-13k: "Nhận xét GV phụ trách" + nhóm nguyên nhân ô Speaking Mock chấm chéo — GV phụ trách S của lớp, GVCN, Quản lý; không đụng điểm. */
 api.put('/attempts/:id/scores/speaking/phu-trach', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -1145,6 +1149,7 @@ api.get('/cham/lich-test/qua-han', requireAuth, wrap((req) => {
 
 api.get('/classes', requireAuth, wrap((req) => {
   maybeSimulateReadError();
+  if (qStr(req, 'gon') === '1') return classSvc.lopGon(principalOf(req), qInt(req, 'branchId'));   // OV6-DOC-CHON: ô chọn lớp
   return classSvc.listClassSummaries(principalOf(req), {
     branchId: qInt(req, 'branchId'),
     q: qStr(req, 'q'),
@@ -2686,6 +2691,8 @@ api.get('/students', requireAuth, wrap((req) => {
     branchId: qInt(req, 'branchId'),
     classId: qInt(req, 'classId'),
     needAttention: qStr(req, 'need') === 'attention',
+    gioiHan: Math.min(Math.max(qInt(req, 'gioiHan') ?? 0, 0), 50) || undefined,   // OV6-DOC-CHON: ô tìm thanh trên (web 6)
+    gon: qStr(req, 'gon') === '1',
   });
 }));
 

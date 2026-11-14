@@ -7,7 +7,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
-import { demoToday } from '../demoConfig.ts';
+import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
@@ -16,7 +16,8 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
-import { viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
+import { viecBaoCaoPhGv, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
+import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
 import { CASE_THAT, CHO_DOI_PA, CO_THE_KHONG_THEO_DOI, LA_CASE_SOS, NOT_UNCONFIRMED_PRESET, PA_GV_MO, UNCONFIRMED_PRESET, sosCaseStateMany } from '../cases/sosState.ts';
@@ -198,7 +199,9 @@ export type WorkGroupKey =
   /* TINH-HINH (chủ SP 12/11): TVV hỏi tình hình học tập — GVCN lớp em ghi kết quả, hạn 3 ngày. */
   | 'yt_hoi_tinh_hinh'
   /* BAO-CAO-PH b: Admin xuất báo cáo PH của lớp đã đủ (7 ngày) / đợt quá hạn chưa đủ (7 ngày từ hạn). QL không nhận. */
-  | 'xuat_bc_ph';
+  | 'xuat_bc_ph'
+  /* LG-3 (chủ SP 13–14/11): GV viết Báo cáo PH — mỗi lớp × đợt một việc, hạn theo đợt (tab Vận hành, mục "Báo cáo PH"). */
+  | 'bao_cao_ph';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -344,6 +347,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   xuat_bc_ph: {
     label: 'Xuất báo cáo PH',
     hint: 'Lớp đã viết đủ báo cáo phụ huynh của đợt — xuất Excel gửi phụ huynh. Đợt quá hạn mà còn thiếu em cũng hiện để biết lớp kẹt. Tự rời sau 7 ngày.',
+  },
+  bao_cao_ph: {
+    label: 'Viết Báo cáo PH',
+    hint: 'Đợt báo cáo phụ huynh đang mở — viết phần của bạn cho mọi em của lớp. Xong khi mọi em đủ phần của bạn. Quá hạn còn hiện 7 ngày.',
   },
   mgmt: {
     label: 'Việc được giao',
@@ -1393,6 +1400,35 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         statusLabel: v.thieu ? `thiếu ${v.thieu} em` : `đủ ${v.duLuc!.slice(8, 10)}/${v.duLuc!.slice(5, 7)}`,
         /* Thẻ phụ (mockup k1): đợt · "thiếu n em" / "n/n em đủ" — web tách mã tuần thành thẻ "tuần W3 SEP" như mọi việc (U01 #3). */
         contextLabel: `${v.nhanDot} · ${v.thieu ? `thiếu ${v.thieu} em` : `${v.soEm}/${v.soEm} em đủ`}`, count: null,   // EN: 'thiếu {n} em' · '{du}/{tong} em đủ' · 'Tháng {m}'
+      });
+    }
+  }
+  /*
+   * LG-3: việc GV "Báo cáo PH" — người có phân công phần phải viết (QL / Admin / TVV không phân công thì không có việc). "Tất cả" của QL / QT: việc của mọi GV
+   * ở lớp trong phạm vi (như Bàn giao GVBM) — "Của GV" = "Của một GV" (OV11c-3). Phân công đọc một câu (`phanCongDangHoatDong`, nhớ theo request).
+   * Mốc bật (`demo_config`, migrate ghi một lần = ngày deploy; đọc qua bộ nhớ cấu hình): đợt có hạn trước mốc không sinh việc; thiếu mốc = hôm nay.
+   */
+  if (co('bao_cao_ph')) {
+    const nguoi = new Map<number, { userId: number; ten: string | null; assignments: Principal['assignments'] }>([[p.userId, { userId: p.userId, ten: p.fullName, assignments: p.assignments }]]);
+    if (tatCa) {
+      for (const a of phanCongDangHoatDong()) {
+        if (a.userId === p.userId || (f.branchId != null && a.branchId !== f.branchId) || !can(p, PERMISSIONS.CASE_APPROVE, { classId: a.classId })) continue;
+        const n = nguoi.get(a.userId) ?? { userId: a.userId, ten: a.ten, assignments: [] };
+        n.assignments.push({ id: a.id, classId: a.classId, skill: a.skill, isCore: a.isCore, effectiveFrom: a.effectiveFrom, effectiveTo: a.effectiveTo });
+        nguoi.set(a.userId, n);
+      }
+    }
+    for (const v of viecBaoCaoPhGv([...nguoi.values()], today, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today)) {
+      if (f.branchId != null && bangLop().get(v.classId)?.branchId !== f.branchId) continue;
+      items.push({
+        /* người trong khoá: hai GV cùng lớp × đợt ở "Tất cả" không trùng; cùng khoá ở mọi góc nhìn */
+        key: `bc-ph:${v.userId}:${v.classId}:${v.dot}`, group: 'bao_cao_ph', urgency: urgencyOf(v.han, today),
+        studentId: null, studentName: `Lớp ${v.code}`, classId: v.classId, classCode: v.code, attemptId: null, attemptNo: null, caseId: null, level: null,
+        reason: `Còn ${v.thieu}/${v.soEm} em chưa đủ phần của bạn`,
+        actionLabel: 'Viết ›', tieuDe: 'Viết Báo cáo PH',
+        href: `/hoc-vien/lop/${v.classId}?tab=bao-cao-ph&dot=${encodeURIComponent(v.dot)}`,
+        ownerId: v.userId, owner: nguoi.get(v.userId)?.ten ?? null, mine: v.userId === p.userId, due: v.han,
+        statusLabel: `còn ${v.thieu}/${v.soEm} em`, contextLabel: v.nhanDot, count: v.thieu,
       });
     }
   }

@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -434,7 +435,7 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
       <input className="field h-[34px] w-[340px] max-w-full text-sm" autoComplete="off" name={`nhan-xet-${e.studentId}`} aria-label={t('Nhận xét của GVCN lớp mới')} maxLength={1000} value={chu}
         onChange={(ev) => { setChu(ev.target.value); if (luu !== 'dang') setLuu('cho'); }} onBlur={ghi} />
       <span role="status" className="text-[13px]">
-        {luu === 'dang' ? <span className="text-slate-400">{t('Đang lưu…')}</span> : luu === 'da' && chu.trim() === cu.trim() && cu ? <span className="text-slate-400">✓ {t('Đã lưu')}</span>
+        {luu === 'dang' ? <span className="text-slate-400">{t('Đang lưu…')}</span> : luu === 'da' && chu.trim() === cu.trim() && cu ? <span className={LOP_DA_LUU}>✓ {t('Đã lưu')}</span>
           : typeof luu === 'object' ? <span className="text-late">{luu.loi} <button type="button" className="link border-0 bg-transparent p-0" onClick={ghi}>{t('Thử lại')}</button></span> : null}
       </span>
     </div>

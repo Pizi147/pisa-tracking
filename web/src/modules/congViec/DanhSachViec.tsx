@@ -1,4 +1,5 @@
 import { Children, type ReactNode, useState } from 'react';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Level } from '../../ui/ui.tsx';
@@ -222,7 +223,7 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   const qua = v?.tone === 'overdue';
   return (
     <span className={`grid min-w-0 content-center justify-items-start text-[13px] leading-snug ${O_HAN}`}>
-      {daXong ? <span className="font-semibold text-dim">{t('✓ Đã lưu')}</span>
+      {daXong ? <span className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>
         : v && it.due ? qua || v.homNay || v.ganHan ? (
           <span title={v.text} className={`inline-flex items-center gap-1 whitespace-nowrap tabular-nums ${qua ? 'font-bold text-late' : v.ganHan ? 'font-semibold text-soon' : 'font-semibold text-dim'}`}>
             {(qua || v.ganHan) && <span aria-hidden>⚠</span>}

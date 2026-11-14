@@ -80,7 +80,7 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
     const t = setTimeout(() => {
       const k = encodeURIComponent(q);
       Promise.all([
-        api.get<{ rows: SearchHit[] }>(`/students?q=${k}`),
+        api.get<{ rows: SearchHit[] }>(`/students?q=${k}&gioiHan=6&gon=1`),   // OV6-DOC-CHON: LIMIT + chỉ trường ô tìm cần (trước đọc mọi em khớp, đủ trường)
         timGv ? api.get<GvHit[]>(`/tim/giao-vien?q=${k}`).catch(() => [] as GvHit[]) : Promise.resolve([] as GvHit[]),
       ])
         .then(([d, g]) => { setHits((d.rows ?? []).slice(0, 6)); setGvs(g); setDaTim(q); setDong(-1); })

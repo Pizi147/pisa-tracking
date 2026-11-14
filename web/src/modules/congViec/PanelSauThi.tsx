@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
-import { ChuLuu, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { ChuLuu, LOP_DA_LUU, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
@@ -122,7 +122,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
   const chan = daChot ? {
-    huy: null, trai: <span role="status" className="font-semibold text-done">✓ {t('Đã lưu {gio} · Việc xong', { gio: daChot })}</span>,
+    huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: daChot })}</span>,
     phu: (b.hen || b.hoanTacDuoc) ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button> : null,
     chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,
   } : !coKq || moDiem ? {
@@ -251,7 +251,7 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   return (
     <KhungPanel hd="chot-ngay-thi" tieuDe={t('Chốt ngày thi · {ten}', { ten: em.ten })} onDong={onDong}
       dau={dauViec({ em, lop, ngCanh: duKien ? <span className="inline-flex items-center gap-1.5">{t('hiện')} <NhanLich loai="du-kien">{duKien}</NhanLich></span> : null })}
-      chan={xong ? { huy: null, trai: <span role="status" className="font-semibold text-done">✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
+      chan={xong ? { huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
         chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> }
         : { huy: null, daSua: !!gia, conThieu: lfC.conThieu(loiC), trai: <ChuLuu tt={tt ?? 'nhap'} loi={loi} />,
           chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{tt === 'loi' ? t('Thử lại') : t('Chốt ngày')}</button> }}>

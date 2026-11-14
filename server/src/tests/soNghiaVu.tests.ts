@@ -291,6 +291,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   const { loadPrincipal } = await import('../permissions.ts');
   const timNguoi: any = await import('../platform/timNguoi.ts');
   const permMod: any = await import('../permissions.ts');
+  const gvChamCotMod: any = await import('../cham/gvChamCot.ts');
   /** Dòng sổ giả (chỉ cột đếm cần) — ca đếm cô lập khỏi luật tính dòng. */
   let soGia = 0;
   const chenSo = (o: { nguoi: number | null; cn?: number; han: string; xong?: string | null; hanGoc?: string; tuan?: string | null; sCheo?: boolean; khongTinh?: string | null; loai?: string }) =>
@@ -399,8 +400,9 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(/khongCheo: !laChamCheo\(d\.kind, 'speaking'\)/.test(src), 'nguCanhChiTiet phải đặt khongCheo theo laChamCheo (một luật với máy chủ)');
     /* 2.4: không phải GV Speaking → chặn lưu khi chưa chọn GV chấm (hoặc chọn "Tôi"); cột GV chấm S không mặc định "Tôi". */
     assert(src.includes("!session?.gvS && (!gv || gv.kieu === 'toi')"), 'hộp nhập điểm phải chặn lưu S chéo khi chưa chọn GV chấm');
-    const cot = fs.readFileSync(path.join(ROOT, 'web/src/modules/cham/GvCham.tsx'), 'utf8');
-    assert(cot.includes("session?.gvS ? { kieu: 'toi' } : null"), 'GV chấm S đầu cột: chỉ GV Speaking mặc định Tôi');
+    /* LG-5c: mặc định cột GV chấm S tính ở máy chủ (`docGvChamCot`) — ca GVC-COT. */
+    const cot = fs.readFileSync(path.join(ROOT, 'server/src/cham/gvChamCot.ts'), 'utf8');
+    assert(cot.includes("laGvSpeaking(p) ? { kieu: 'toi' } : null"), 'GV chấm S đầu cột: chỉ GV Speaking mặc định Tôi');
   });
 
   /* 2.5 (chủ SP 13/11): MỘT định nghĩa GV Speaking (N7) — hồ sơ có S HOẶC đang dạy S một lớp FT — ở quyền, ô chọn người chấm, kiểm người chấm, sổ "S chéo chung". */
@@ -455,6 +457,36 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     attempts.saveScore(tuNhap, a.id, 'speaking', { band: 6.5 }, han);
     assert(get(`SELECT examiner_user_id AS e FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, a.id).e === gvS, 'GV Speaking tự nhập → chính họ');
     } finally { attempts.GHI_NGAM_NGUOI_CHAM.bat = cuBat; }
+  }));
+
+  /* LG-5c (chủ SP 13/11): "GV chấm S" đầu cột lưu MÁY CHỦ theo người × lớp × đợt; đọc kèm lưới (classScoreSheet), mặc định theo vai (2.4). */
+  check('GVC-COT · GV chấm đầu cột: GV Speaking mặc định Tôi, QL chưa chọn; QL chọn GV Speaking → lưới trả lại; "Tôi" của QL / người không S → 400; người khác không kế thừa; null = xoá', () => thu(() => {
+    const perm: any = permMod;
+    const gc: any = gvChamCotMod;
+    const lop = get(`SELECT id FROM classes WHERE code = 'MB FT 101'`).id as number;
+    const ql = P.mbManager;
+    const gvS = perm.loadPrincipal(get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
+      JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' AND ur.branch_id = ? WHERE u.status = 'active' ORDER BY u.id LIMIT 1`, MB).id);
+    assert(!perm.laGvSpeaking(ql) && perm.laGvSpeaking(gvS), 'seed: QL không, GV có S là GV Speaking');
+    const dot = '999';
+    assert(gc.docGvChamCot(gvS, lop, dot)?.kieu === 'toi' && gc.docGvChamCot(ql, lop, dot) === null, 'mặc định theo vai');
+    assertThrows(() => gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'toi' } }), /GV Speaking/, 'QL chọn "Tôi" → 400');
+    const khongS = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'manager'
+      WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
+    assertThrows(() => gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'tai_khoan', id: khongS } }), /GV Speaking/, 'chọn người không phải GV Speaking → 400');
+    assertThrows(() => gc.ghiGvChamCot(ql, { classId: lop, dot: 'x;--', gv: null }), /không hợp lệ/, 'đợt lạ → 400');
+    gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'tai_khoan', id: gvS.userId } });
+    const v = gc.docGvChamCot(ql, lop, dot);
+    assert(v?.kieu === 'tai_khoan' && v.id === gvS.userId && v.ten, `QL đọc lại: ${JSON.stringify(v)}`);
+    assert(gc.docGvChamCot(gvS, lop, dot)?.kieu === 'toi', 'người khác không kế thừa lựa chọn của QL');
+    gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'ngoai', ten: 'Cô Lan ngoài' } });
+    assert(gc.docGvChamCot(ql, lop, dot)?.kieu === 'ngoai', 'tên ngoài');
+    gc.ghiGvChamCot(ql, { classId: lop, dot, gv: null });
+    assert(gc.docGvChamCot(ql, lop, dot) === null && !get('SELECT 1 FROM gv_cham_cot WHERE user_id = ? AND class_id = ?', ql.userId, lop), 'null = xoá về mặc định');
+    const pid = get(`SELECT k.planned_period_id AS p FROM attempt_skills k JOIN assessment_attempts a ON a.id = k.attempt_id WHERE a.class_id = ? AND a.kind = 'mock' AND k.planned_period_id IS NOT NULL ORDER BY k.planned_period_id DESC LIMIT 1`, lop).p;
+    gc.ghiGvChamCot(ql, { classId: lop, dot: String(pid), gv: { kieu: 'tai_khoan', id: gvS.userId } });
+    const sheet = attempts.classScoreSheet(ql, lop, pid);
+    assert(sheet.gvChamCot?.kieu === 'tai_khoan' && sheet.gvChamCot.id === gvS.userId, `lưới trả GV chấm đầu cột: ${JSON.stringify(sheet.gvChamCot)}`);
   }));
 
   check('NV-TONG · GV có dòng ở hai chi nhánh → chiNhanh = null ra MỘT dòng = tổng hai chi nhánh', () => thu(() => {

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -265,7 +266,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai }:
             </Truong>
             {ghi && !em.xacNhan && (nxLuu !== 'yen' || !canNx) && (
               <p className="m-0 -mt-2 text-xs text-slate-500" aria-live="polite">
-                {nxLuu === 'luu' ? t('Đang lưu…') : nxLuu === 'da' ? t('✓ Đã lưu') : nxLuu === 'loi' ? <span className="text-late">{t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')}</span> : null}
+                {nxLuu === 'luu' ? t('Đang lưu…') : nxLuu === 'da' ? <span className={LOP_DA_LUU}>{t('✓ Đã lưu')}</span> : nxLuu === 'loi' ? <span className="text-late">{t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')}</span> : null}
                 {!canNx && nxLuu === 'yen' && t('GVCN lớp mới là bạn — nhận xét chung không bắt buộc.')}
               </p>
             )}

@@ -48,6 +48,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   chot_len_ft: 'van-hanh',   // PR-MT0 → PR-LCb: Chốt lộ trình
   xet_lai_lo_trinh: 'van-hanh',   // PR-CL: Xét lại lộ trình
   xuat_bc_ph: 'van-hanh',   // BAO-CAO-PH b: Admin xuất báo cáo PH
+  bao_cao_ph: 'van-hanh',   // LG-3 (chủ SP 20 ý 4): GV viết Báo cáo PH — tab Vận hành, mục "Báo cáo PH"
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
 
@@ -144,7 +145,7 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
   /* PHOI-HOP-V2 (mockup #1368 K1): việc Ý thức chung MỘT mục "Vi phạm" — tên dòng nói loại việc, không lặp tên mục. */
   yt_xu_ly: 'vi-pham', yt_xem: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham', yt_hoi_tinh_hinh: 'tinh-hinh',
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
-  missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph',
+  missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph', bao_cao_ph: 'bc-ph',
 };
 /** Mã mục của một việc (`MUC_CV`). */
 export function mucCuaViec(it: { group: string; key: string; kind?: string | null }, tvv = false): MaMuc {

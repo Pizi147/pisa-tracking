@@ -162,6 +162,11 @@ export function lopTrongPhamVi(p: Principal, branchId?: number, classId?: number
   return classes.sort((a, b) => soSanhLop({ code: a.code, branchId: a.branch_id }, { code: b.code, branchId: b.branch_id }));
 }
 
+/** OV6-DOC-CHON: ô chọn lớp (Giao việc) — id, mã, sĩ số như `/classes`, cùng phạm vi + thứ tự; không đếm Case / ô điểm từng lớp. */
+export function lopGon(p: Principal, branchId?: number) {
+  return { rows: (lopTrongPhamVi(p, branchId) ?? []).map((c) => ({ id: c.id as number, code: c.code as string, studentCount: c.student_count as number })) };
+}
+
 /** Một truy vấn cho mỗi loại dữ liệu, không hỏi lại theo từng lớp. */
 /*
  * PR-DUYET (K5-28): sổ đề nghị dời đang chờ (`pendingMove`, gọi ở từng ô lịch) nay nhớ THEO REQUEST. Hai trang đọc nặng dưới
