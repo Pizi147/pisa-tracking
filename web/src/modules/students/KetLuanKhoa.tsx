@@ -8,7 +8,7 @@ import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { REGULAR_SKILLS, nguongMiniTest, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
+import { REGULAR_SKILLS, mocThuong, nguongMiniTest, chuHopKetLuan, dsLoi, duongLoTrinhLop, ngay, tenMon, tenMonNgan, type GoiYCuoiKhoa } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** `studentProfile().cuoiKhoa` — cùng hình với `EmCuoiKhoa` của máy chủ. */
@@ -18,7 +18,7 @@ export type CuoiKhoaEm = {
   quyetDinh: { huong: string; luc: string } | null;
   ketLuanFt: { dat: boolean | null; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null } | null;
   /** PR-KV: gợi ý Kết quả đầu ra theo MT0 (FOU/BE/ELE) — kỹ năng điền sẵn ở "Không đạt". */
-  kyVongMt0?: { monTruot: string[] } | null;
+  kyVongMt0?: { monTruot: string[]; dat?: boolean; overall?: number | null } | null;
   /** PR-S5F-a: lớp của bài Cuối khoá (có thể là lớp em VỪA RỜI — `daChuyen`). */
   ct?: string | null; lop?: string | null; daChuyen?: boolean;
 };
@@ -66,7 +66,9 @@ export function KetLuanKhoa({ studentId, studentName, lop, classId, ct, cuoiKhoa
           {coTheKetLuan && (
             <span className="flex gap-1.5">
               <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={danhDauDat}>{t('Đạt')}</button>
-              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoKhongDat(true)}>{t('Không đạt')}</button>
+              {/* KY-VONG-MT0: MT0 đạt mốc → Đạt; "Không đạt" tắt có lý do (máy chủ cũng chặn). */}
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setMoKhongDat(true)} disabled={!!cuoiKhoa.kyVongMt0?.dat}
+                title={cuoiKhoa.kyVongMt0?.dat ? t('MT0 đã đạt mốc {ct} — Kết quả đầu ra là Đạt.', { ct: ct ?? '' }) : undefined}>{t('Không đạt')}</button>
             </span>
           )}
         </div>
@@ -126,7 +128,7 @@ function PanelKhongDat({ studentId, studentName, lop, ct, monTruot, ban, onDong,
         </div>
         {lf.loiCua(loi, 'nguyen-nhan') && <span className="mt-1 block text-xs text-late">{lf.loiCua(loi, 'nguyen-nhan')}</span>}
         <p className="m-0 mt-1 text-xs text-slate-500">
-          {nn === 'trung_tam' ? t('Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor 10 buổi.')
+          {nn === 'trung_tam' ? t('Sau khi em sang Fast Track: mỗi kỹ năng một Case + PA Tutor {n} buổi.', { n: mocThuong().khongDatKyVong.tutor })
             : nn === 'hoc_sinh' ? t('Ghi phương án, không Case.') : t('Trung tâm chưa dạy đủ hay học viên chưa theo kịp?')}
         </p>
       </Khoi>

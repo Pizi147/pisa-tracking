@@ -22,7 +22,7 @@ import { OResetBac } from '../students/ChuyenLopPanel.tsx';
 import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, boMonLich, canLopDich, chuDaiKetQua,
-  daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, conTrongCuoiKhoa, tenMonNgan,
+  daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, mocThuong, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, conTrongCuoiKhoa, tenMonNgan,
   thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -411,7 +411,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         {k!.bands && <span className="tabular-nums text-slate-500">{REGULAR_SKILLS.map((s) => `${NGAN[s]} ${k!.bands![s] === null ? '—' : b1(k!.bands![s]!)}`).join(' · ')}</span>}
         <span className="flex gap-1" role="group" aria-label={t('Kỳ vọng · {ten}', { ten: e.fullName })}>
           <button type="button" aria-pressed={kv?.dat === true} className={`${nut} ${kv?.dat === true ? 'border-doing text-kq-bang' : ''}`} onClick={() => dat(true)}>{t('Đạt')}</button>
-          <button type="button" aria-pressed={kv?.dat === false} className={`${nut} ${kv?.dat === false ? 'border-late text-late' : ''}`} onClick={() => dat(false)}>{t('Không đạt')}</button>
+          {/* KY-VONG-MT0: MT0 đạt mốc → Đạt; "Không đạt" tắt có lý do (máy chủ cũng chặn). */}
+          <button type="button" aria-pressed={kv?.dat === false} className={`${nut} ${kv?.dat === false ? 'border-late text-late' : ''}`} onClick={() => dat(false)}
+            disabled={goiDat === true} title={goiDat === true ? t('MT0 đã đạt mốc {ct} — Kết quả đầu ra là Đạt.', { ct: ma ?? '' }) : undefined}>{t('Không đạt')}</button>
         </span>
         {!kv && goiDat !== null && <span className="text-slate-500">{t('máy gợi ý: {kq}', { kq: goiDat ? t('Đạt') : t('Không đạt') })}</span>}
         {kv && !kv.dat && (
@@ -431,7 +433,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
                       onClick={() => doi(e.id, { kv: { ...kv, mon: kv.mon.includes(s) ? kv.mon.filter((m) => m !== s) : REGULAR_SKILLS.filter((m) => m === s || kv.mon.includes(m)) } })}>{NGAN[s]}</button>
                   ))}
                 </span>
-                <span className="text-slate-400">{t('→ Case + Tutor 10 buổi/kỹ năng')}</span>
+                <span className="text-slate-400">{t('→ Case + Tutor {n} buổi/kỹ năng', { n: mocThuong().khongDatKyVong.tutor })}</span>
               </>
             )}
             {kv.nn === 'hoc_sinh' && (

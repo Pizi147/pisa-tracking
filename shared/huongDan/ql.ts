@@ -184,6 +184,15 @@ export const HD_QL: HuongDan = {
       tuKhac: ['hết khoá', 'lên lớp', 'học lại', 'lộ trình tiếp theo', 'xét lại', 'end of course'],
     },
     {
+      id: 'ky-vong', ten: 'Chốt Kết quả đầu ra (lên FT)', nhom: 'hv',
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Vận hành › Kỳ vọng', duong: CV },
+      loiTat: ['ho-so-lop'], cung: 'mở cùng bảng Kết quả đầu ra.',
+      buoc: ['Việc <b>Kỳ vọng · lớp FT · n em</b> mở thẳng hồ sơ lớp FT, cách xem <b>Kết quả đầu ra</b>.',
+        'Ô <b>Kết quả đầu ra</b>: bấm <b>Chốt…</b> — chọn <b>Đạt</b>, <b>Không đạt · Trung tâm</b> (kỹ năng, mỗi kỹ năng một Case + Tutor) hoặc <b>Không đạt · Học viên</b> (phương án). Đã chốt: bấm chip để sửa.',
+        'MT0 đạt mốc chương trình (FOU 4 · BE 4 · ELE 4.5) thì em <b>tự Đạt</b>, không cần chốt; Không đạt bị tắt.'],
+      tuKhac: ['kỳ vọng', 'kết quả đầu ra', 'mt0', 'exit result', 'lên ft'],
+    },
+    {
       id: 'chot-ngay-thi', ten: 'Chốt ngày thi (em chưa có TVV)', nhom: 'hv',
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Vận hành › Chốt ngày thi', duong: CV },
       loiTat: ['p-chot-ngay-thi'], cung: 'mở cùng panel.',
@@ -359,6 +368,7 @@ export const HD_QL: HuongDan = {
         { id: 'lop-sua', viec: 'sua-hv', ten: 'Sửa thông tin cả lớp', buoc: ['<b>⋯ › Sửa thông tin học viên</b>: bảng cả lớp, sửa nhiều em một lần.', 'Đổi Target nhiều em: một <b>Lý do đổi Target</b> chung.'] },
         { id: 'lop-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc nhiều em', buoc: ['<b>Chọn nhiều học viên</b> › <b>Tạm dừng/ Kết thúc học</b>.', 'Xem lại ở <b>Học viên & Lớp</b> › <b>⋯ › Lưu trữ</b>.'] },
         { id: 'lop-lich-su', viec: 'lich-su', ten: 'Xem Lịch sử', buoc: ['<b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công; <b>⋯ › Lịch sử góp ý tuần</b>: góp ý cũ.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau.'] },
+        { id: 'lop-ky-vong', viec: 'ky-vong', ten: 'Kết quả đầu ra lên FT', buoc: ['Lớp FT › <b>Học viên</b> › <b>Kết quả đầu ra</b>: bấm <b>Chốt…</b> ở ô Kết quả đầu ra.', 'MT0 đạt mốc chương trình (FOU 4 · BE 4 · ELE 4.5) thì em <b>tự Đạt</b>, không cần chốt; Không đạt bị tắt.'] },
         { id: 'lop-chot', viec: 'chot-lo-trinh', ten: 'Cuối khoá lớp thường', buoc: ['<b>⋯ › Cuối khoá…</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…).', 'Lớp cũ có phiếu bàn giao; <b>⋯ › Kết thúc lớp</b> khi xong.'] },
         { id: 'lop-vi-pham', viec: 'vi-pham', ten: 'Ghi vi phạm', buoc: ['Tab <b>Ý thức & Phối hợp</b> › <b>+ Ghi vi phạm</b>, hoặc <b>⋯</b> ở dòng em.', 'Chọn em, điền từng dòng, <b>Lưu</b>.'] },
         { id: 'lop-xu-ly', viec: 'xu-ly-vi-pham', ten: 'Xử lý vi phạm', buoc: ['Tab <b>Ý thức & Phối hợp</b>, bảng <b>Cần làm</b>: bấm em cần xử lý.', 'Hoặc <b>⋯</b> ở dòng em › <b>Xác nhận xử lý</b>.'] },
