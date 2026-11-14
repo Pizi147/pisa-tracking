@@ -396,6 +396,18 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/lopCuoiId: lopCuoiCua\.get\(s\.id\)\?\.id \?\? null/.test(lt) && /branchId: r\.branch_id/.test(lt), 'máy chủ trả branchId / lopCuoiId');
   });
 
+  console.log('\nGD-17a · Quản trị — nhật ký một dáng, panel QL, dải chỉ xem');
+  check('GD-17a · nhật ký một dáng (DsLichSu) ở cột phải + Nhật ký chung; QL "Xem tất cả" mở panel tại chỗ (không tab mới); lọc Mục ô chọn thường, Người ô có tìm; một dải chỉ-xem', () => {
+    const nk = doc('web/src/modules/platform/NhatKyChung.tsx');
+    assert(/<DsLichSu dong=\{dong\.map\(\(d\) => dongLs\(d, true\)\)\}/.test(nk) && /<DsLichSu dong=\{dong\.map\(\(d\) => dongLs\(d, false\)\)\}/.test(nk), 'Nhật ký chung và cột phải chưa cùng DsLichSu');
+    assert(/<KhungPanel tieuDe=\{t\('Nhật ký cấu hình'\)\}/.test(nk) && /onClick=\{\(\) => \{ setMucPanel\(''\); setMoPanel\(true\); \}\}>\{t\('Xem tất cả'\)\}<\/button>/.test(nk), 'QL thiếu nút Xem tất cả mở panel');
+    assert(/<OChonThuong aria-label=\{t\('Mục'\)\}/.test(nk) && /<ChonLoc [^\n]*ariaLabel=\{t\('Người'\)\}/.test(nk) && !/ChonDangNut/.test(nk), 'lọc Mục / Người chưa đúng mẫu ô chọn');
+    const ad = doc('web/src/modules/platform/AdminPage.tsx');
+    assert(/!quanTri && tab !== 'da-xoa' && \(\s*<DaiChiXem lon>/.test(ad) && !/Quản trị hệ thống sửa; Quản lý xem/.test(ad + doc('web/src/modules/platform/HanMacDinhAdmin.tsx')), 'câu chỉ-xem phải một chỗ (dải dưới hàng tab)');
+    assert(!/🔒/.test(doc('web/src/modules/platform/CauHinhCaseSos.tsx')), 'Case & SOS còn nhãn chỉ-xem riêng');
+    assert(/\.ls-hep \.ls-ds time \{ grid-column: 1 \/ -1; \}/.test(doc('web/src/index.css')), 'cột hẹp: giờ trên dòng');
+  });
+
   console.log('\nGD-17b · Quản trị › Chương trình sửa tại ô');
   check('GD-17b · Chương trình: sửa tại ô (SuaTaiDong, một trường, cùng luật + thân PUT với panel), cột Môn · Đạt từ · Còn dùng (công tắc + Hoàn tác); + Chương trình giữ panel; bỏ nút Sửa', () => {
     const s = doc('web/src/modules/platform/CatalogAdmin.tsx');
