@@ -2180,7 +2180,8 @@ const soDuong = (v: unknown, ten: string): number | null => {
 /** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
 /* UI-CON-LAI k1: nhóm Giáo viên của ô tìm thanh trên — chỉ GV người xem mở được hồ sơ (`phamViHoSoGv`). */
 /* GD-1 "+ Task": tìm em (ô gõ tên) — một câu, phạm vi xem học viên (`timHocVien`). */
-api.get('/tim/hoc-vien', requireAuth, wrap((req) => studentSvc.timHocVien(principalOf(req), qStr(req, 'q'))));
+/* GD-4a [XM-A]: `lop=toi` — "+ Task" chỉ em lớp mình (trừ QL / Quản trị). */
+api.get('/tim/hoc-vien', requireAuth, wrap((req) => studentSvc.timHocVien(principalOf(req), qStr(req, 'q'), qStr(req, 'lop') === 'toi')));
 api.get('/tim/giao-vien', requireAuth, wrap((req) => timGiaoVien(principalOf(req), qStr(req, 'q'))));
 api.get('/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();

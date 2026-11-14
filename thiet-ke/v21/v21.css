@@ -432,3 +432,104 @@ details.da-co > summary::-webkit-details-marker { display:none; }
 .the-lop .viec-lam { gap:8px; }
 .dt .vc { height:44px; padding:0 12px; font-size:14px; }
 .lt-dong .day { flex-wrap:nowrap; }
+
+/* ================= THÀNH PHẦN CHUNG (mockup ⓪ 15/11 — dời nguyên văn từ bang-mau.css để ①–⑤ cùng một bản) ================= */
+/* ================= Ô CHỌN CÓ TÌM (R5.1) =================
+   Một thành phần cho MỌI chỗ chọn người / lớp / học viên. Ô = .o của v21 (cao 40, bo 8, viền o-vien); danh sách = thẻ nổi như menu-tha. */
+.oc-vung { position:relative; width:330px; }
+.oc { display:flex; align-items:center; gap:8px; min-height:40px; padding:4px 6px 4px 10px; border-radius:8px; border:1px solid var(--o-vien); background:var(--o-nen); font:15px var(--phong); color:var(--text); }
+.oc > .ic { color:var(--text-faint); }
+.oc .goi { color:var(--text-faint); flex:1; min-width:0; white-space:nowrap; overflow:hidden; }
+.oc .go-chu { flex:1; min-width:0; white-space:nowrap; display:inline-flex; align-items:center; }
+.oc .con { display:inline-block; width:1.5px; height:18px; background:var(--accent); margin-left:1px; }
+.oc .mui-xuong { width:28px; height:28px; display:grid; place-items:center; color:var(--text-dim); flex:none; border-radius:6px; }
+.oc .bo { width:28px; height:28px; border:0; background:none; border-radius:6px; color:var(--text-dim); font-size:14px; flex:none; display:grid; place-items:center; }
+.oc .bo:hover { background:var(--accent-soft); color:var(--text); }
+.oc .da { flex:1; min-width:0; display:flex; align-items:baseline; gap:8px; white-space:nowrap; overflow:hidden; }
+.oc .da b { font-weight:600; }
+.oc .da small { font-size:13px; color:var(--text-dim); overflow:hidden; text-overflow:ellipsis; }
+.oc.re { border-color:var(--accent); }
+.oc.go { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.oc.loi { border-color:var(--bad); box-shadow:0 0 0 3px var(--bad-nen); }
+.oc.tat { background:var(--muted-nen); border-color:var(--line-strong); border-style:dashed; color:var(--text-faint); }
+.oc.tat .goi, .oc.tat .da small { color:var(--text-faint); }
+.oc .dem-chon { font:500 12px var(--phong-so); color:var(--text-faint); white-space:nowrap; flex:none; margin-right:4px; }
+.oc .dem-chon.day { color:var(--soon); font-weight:700; }
+.oc.nhieu { flex-wrap:wrap; padding:5px 6px 5px 6px; row-gap:6px; }
+.oc.nhieu .go-chu { min-width:120px; padding-left:4px; }
+.oc .chip-em { height:28px; }
+.chip-em.tron { box-shadow:0 0 0 2px var(--accent); }
+.oc-sau { font:400 13px var(--phong); color:var(--bad); margin-top:6px; display:flex; gap:6px; align-items:center; }
+.oc-sau.ly { color:var(--text-dim); }
+
+.oc-ds { position:absolute; left:0; right:0; top:calc(100% + 4px); z-index:6; background:var(--surface); border:1px solid var(--line-strong); border-radius:10px; box-shadow:0 8px 24px var(--bong); padding:4px 0; max-height:356px; overflow:auto; scroll-padding-top:32px; }
+.oc-ds.tinh { position:static; margin-top:4px; }
+.oc-nhom { display:flex; align-items:baseline; gap:8px; padding:9px 12px 3px; font:600 12px var(--phong); color:var(--text-faint); position:sticky; top:-4px; background:var(--surface); }
+.oc-nhom + .oc-muc { margin-top:0; }
+.oc-nhom .so { font-weight:500; }
+.oc-ds hr { border:0; border-top:1px solid var(--line); margin:4px 0 0; }
+.oc-muc { display:grid; grid-template-columns:minmax(0,1fr) auto; column-gap:10px; align-items:center; min-height:44px; padding:5px 12px; cursor:pointer; }
+.oc-muc .t, .oc-muc .p { grid-column:1; }
+.oc-muc .t { font:500 14px/1.3 var(--phong); color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.oc-muc .p { font:400 12px/1.35 var(--phong); color:var(--text-faint); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.oc-muc .p .so { font-family:var(--phong-so); }
+.oc-muc .ben { grid-column:2; grid-row:1 / span 2; font:600 12px var(--phong); color:var(--text-faint); white-space:nowrap; }
+.oc-muc mark { background:none; color:var(--accent); font-weight:700; }
+.oc-muc:hover { background:var(--surface-2); }
+.oc-muc.re { background:var(--accent-soft); }
+.oc-muc[aria-selected="true"] .ben { color:var(--accent); }
+.oc-muc[aria-disabled="true"] { cursor:not-allowed; }
+.oc-muc[aria-disabled="true"] .t { color:var(--text-faint); }
+.oc-muc[aria-disabled="true"]:hover { background:none; }
+.oc-rong { padding:12px 14px; font-size:14px; color:var(--text-dim); display:grid; gap:2px; }
+.oc-rong b { color:var(--text); font-weight:600; }
+.oc-tai { padding:8px 12px 10px; display:grid; gap:12px; }
+.oc-tai .xd { display:grid; gap:5px; }
+.oc-tai .xd i { display:block; height:12px; border-radius:4px; background:var(--surface-2); }
+.oc-tai .xd i + i { height:10px; width:55%; }
+.oc-tai .chu { font-size:12px; color:var(--text-faint); }
+.oc-loi { display:flex; align-items:center; gap:10px; padding:10px 12px; font-size:14px; color:var(--text-dim); }
+.oc-loi b { color:var(--bad); }
+.oc-loi .nut { margin-left:auto; }
+.oc-chan { border-top:1px solid var(--line); margin-top:4px; padding:8px 12px 4px; font-size:12px; color:var(--text-faint); display:flex; gap:12px; }
+/* dải chỉ số mỏng: một hàng, mỗi ô "nhãn số" — số là ô số (OSo: gạch chân màu nhấn, bấm → panel chỉ đọc) */
+.dai-cs { display:flex; flex-wrap:wrap; align-items:center; gap:4px 0; min-height:44px; padding:6px 16px; border:1px solid var(--line); border-radius:10px; background:var(--surface); font-size:14px; color:var(--text-dim); }
+.dai-cs > span { display:inline-flex; align-items:baseline; gap:6px; white-space:nowrap; padding:0 16px; }
+.dai-cs > span:first-child { padding-left:0; }
+.dai-cs > span + span { border-left:1px solid var(--line); }
+.oso { font:600 15px var(--phong-so); color:var(--accent); text-decoration:underline; text-decoration-thickness:1.5px; text-underline-offset:4px; border:0; background:none; padding:0; }
+.oso.khong { color:var(--text-faint); text-decoration:none; cursor:default; }
+.oso.xau { color:var(--bad); }
+.dai-cs .oso.xau::before { content:"⚠ "; text-decoration:none; display:inline-block; }
+.dt .dai-cs { display:grid; grid-template-columns:1fr 1fr; gap:0; padding:0; }
+.dt .dai-cs > span { padding:10px 12px; border-left:0; min-height:44px; align-items:center; }
+.dt .dai-cs > span:nth-child(even) { border-left:1px solid var(--line); }
+.dt .dai-cs > span:nth-child(n+3) { border-top:1px solid var(--line); }
+.bd.mo { background:var(--surface-2); color:var(--text-dim); border:1px solid var(--line-strong); }
+/* một kiểu lịch sử: <details> "Lịch sử · n" → dòng thời gian (giờ · người · việc · cũ → mới · Khôi phục) */
+details.ls { border:1px solid var(--line); border-radius:10px; background:var(--surface); overflow:clip; }
+details.ls > summary { list-style:none; display:flex; align-items:center; gap:8px; min-height:44px; padding:0 12px; font:600 14px var(--phong); color:var(--text-dim); cursor:pointer; }
+details.ls > summary::-webkit-details-marker { display:none; }
+details.ls[open] > summary { border-bottom:1px solid var(--line); }
+.ls-ds { list-style:none; margin:0; padding:4px 0; }
+.ls-ds li { display:grid; grid-template-columns:92px minmax(0,1fr) auto; column-gap:12px; padding:8px 12px; font-size:14px; align-items:baseline; }
+.ls-ds li + li { border-top:1px solid var(--line); }
+.ls-ds time { font:500 12px var(--phong-so); color:var(--text-faint); white-space:nowrap; }
+.ls-ds .ai { font-weight:600; }
+.ls-ds .cu { color:var(--text-faint); text-decoration:line-through; }
+.ls-ds .moi { color:var(--text); font-weight:600; }
+.ls-ds .phu { display:block; font-size:12px; color:var(--text-faint); margin-top:1px; }
+.ls-ds li.xoa .ai::after { content:" · đã xoá"; font-weight:500; color:var(--bad); }
+.ls-ds .link-nho { font-size:13px; }
+.dt .ls-ds li { grid-template-columns:minmax(0,1fr) auto; }
+.dt .ls-ds time { grid-column:1 / -1; }
+.menu-tha .nguy { color:var(--bad) !important; }
+/* thang cấp bậc vi phạm (dời từ ho-so-hv.css — ③ và panel Xác nhận xử lý ⑤ dùng chung) */
+.vach-bac { display:inline-flex; align-items:center; gap:3px; }
+/* mốc WL nổi trên thang (lời 28) = vạch ĐỎ dày, dài hơn, KHÔNG chữ trong thanh (chủ SP 15/11 trong session ⓪); tên bậc ở aria-label / title và "Thang ▾" */
+.vach-bac i.wl { width:30px; height:9px; border-radius:3px; background:var(--bad); }
+.vach-bac i.wl.co { box-shadow:0 0 0 2px var(--bad-nen); }
+.dt .vach-bac i { width:14px; }
+.vach-bac i { width:22px; height:5px; border-radius:3px; background:var(--line-strong); }
+.vach-bac i.co { background:var(--accent); }
+.dt .vach-bac i.wl { width:20px; }

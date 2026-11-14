@@ -412,3 +412,48 @@ Bối cảnh: mockup ⓪ vẽ thang cấp bậc xử lý vi phạm có chữ "WA
 PTA Overhaul quyết khi rà mockup ⓪ (chủ SP duyệt lại ở mockup ⓪):
 - **Chân panel việc:** khi panel mở từ một danh sách còn việc kế → "Đóng" · "Lưu" · **"Lưu · việc tiếp ›"** (nút chính); không còn việc kế hoặc panel mở lẻ → "Đóng" · "Lưu". Giữ nút gộp đang có trên web (D.V12, R1-LUU-TIEP 26/10) — bảng mẫu ⑤ D2 và mockup ① ② bỏ nút gộp làm mỗi việc thêm một bấm. Thay dòng "chân panel → theo ⑤ D2" ở `10-ra-dong-bo.md` mục B.
 - **Hộp Tình hình học tập từ "+ Task":** một hộp (chọn em + Nội dung + "Gửi TVV") như mockup ① K5c; ⑤ F3 sửa theo.
+
+## 15/11 — lời 37: duyệt mockup ⓪, ⑦ · chỉnh ⑥, ⑧, ⑨, ⑩
+
+Bối cảnh: sáu mockup đợt 2 (⓪ #1607 · ⑥ #1611 · ⑦ #1606 · ⑧ #1613 · ⑨ #1609 · ⑩ #1614) đã qua rà của PTA Overhaul, chờ chủ SP.
+
+> "M0: ok
+> M6:
+> 1. Lịch thi: Dòng text bên dưới lịch thi hơi vướng, và không cần cột lộ trình đâu, còn cái chữ target trên đầu bảng để làm gì? xóa đi
+> 2. Còn lại ok
+> M7: duyệt
+> M9: Sắp thi tính đến tháng tiếp theo thôi, ví dụ đang ở tháng 11 thì tính lịch thi đến hết tháng sau nhé. Còn lại ok
+> M8: những chỗ phần ghi việc mà có text ở dưới đêm việc đúng hạn/ quá hạn đang hơi bị intrusive và loạn quá, nên nghĩ làm thế nào để hiển thị tốt hơn đi
+> M10: Lưu trữ vẫn chia theo chi nhánh, và danh sách học sinh vẫn chia theo lớp, lớp số to nhất xếp lên đầu"
+
+ĐÃ CHỐT:
+- **⓪ ĐÃ DUYỆT** (sửa đồng bộ năm mockup ①–⑤) — gồm: chân panel việc giữ nút gộp "Lưu · việc tiếp ›"; tên bậc VIẾT HOA, bảng "viết đủ │ viết tắt" (⑤ H5); thang không chữ (lời 36); hộp Tình hình học tập một hộp; công thức Writing vào ⓘ. Merge #1607.
+- **⑦ Test ĐÃ DUYỆT.** Merge #1606.
+- **⑥ Học viên & Lớp: duyệt kèm chỉnh tab Lịch thi** — (a) bỏ dòng chữ phụ dưới giá trị lịch thi; (b) bỏ cột Lộ trình; (c) bỏ chữ "Target" ở đầu bảng. Còn lại ok (gồm lọc theo trạng thái thi, bỏ chữ đỏ "quá hạn").
+- **⑨ Phân tích: duyệt kèm chỉnh** — ô "Sắp thi · còn SOS" tính **tới hết tháng kế tiếp** (đang tháng 11 → lịch thi tới hết tháng 12), không phải 6 tuần.
+- **⑧ Tổng quan + Hồ sơ GV: CHƯA duyệt** — chỗ ghi việc có dòng chữ dưới số đếm đúng hạn / quá hạn "intrusive và loạn" → nghĩ cách hiển thị tốt hơn, gửi lại.
+- **⑩ Quản trị + Lưu trữ: chỉnh Lưu trữ** — vẫn **chia theo chi nhánh**; danh sách học viên vẫn **chia theo lớp**, **lớp số to nhất xếp lên đầu**. (Quản trị: chưa có lời riêng → coi như ok cùng lượt.)
+
+PTA Overhaul hiểu (chủ SP sửa nếu sai):
+- ⑥ (c): bỏ cả cột Target và nhãn nhóm "Hiện tại" khỏi bảng Lịch thi (Target vẫn có khi mở hàng). Thông tin hiện tại còn MT gần nhất · SOS.
+- ⑨: tính theo lịch thi của em — ngày đã chốt HOẶC tháng dự kiến — rơi vào tháng này hoặc tháng sau; nhãn ô ghi mốc cụ thể ("Sắp thi · tới hết T12 · còn SOS").
+- ⑧: mỗi ô bảng chỉ còn MỘT thành phần, không dòng chữ phụ dưới số; tách cột theo đúng tên của Phân tích GV (% đúng hạn · Chưa làm); chi tiết mở khi bấm hộp.
+
+## 15/11 — lời 38: tab Lịch thi giữ cột Target, chỉ bỏ nhãn "Hiện tại"
+
+Bối cảnh: PTA Overhaul hiểu lời 37 ý M6 (c) là bỏ cả cột Target, cho mockup ⑥ sửa như vậy rồi hỏi lại.
+
+> "bỏ mỗi cái nhãn hiện tại bên trên thôi, chả hiểu để làm gì, target thì luôn cần chứ"
+
+ĐÃ CHỐT (sửa cách hiểu của PTA ở lời 37): bảng Lịch thi **GIỮ cột Target** ("target thì luôn cần"); chỉ bỏ **nhãn nhóm "Hiện tại"** phía trên các cột. Bảng: Học viên · Lịch thi · Target · MT gần nhất · SOS · Ghi chú. Cột Lộ trình vẫn bỏ; ô lịch thi một dòng.
+Bài học cho các mockup khác: không đặt nhãn nhóm phía trên đầu cột khi tên cột đã tự rõ; Target của em là thông tin luôn hiện ở các bảng về thi.
+Trạng thái mockup đợt 2: ⓪ #1607, ⑦ #1606, ⑨ #1609 đã merge (⑨ đã sửa ô "Sắp thi · tới hết tháng sau", gồm cả tháng dự kiến) · ⑥ #1611 đang sửa lại theo lời này · ⑧ #1613, ⑩ #1614 đang sửa theo lời 37.
+
+## 15/11 — lời 39: không gửi mockup lại — sửa xong gửi thẳng PTA Plan; cái gì xong thì archive
+
+Bối cảnh: mockup ⑥ ⑧ ⑩ đang sửa theo lời 37, 38; PTA Overhaul định gửi ảnh ⑧ để chủ SP xem lại.
+
+> "không cần gửi mockup lại đâu, sửa lại rồi gửi luôn cho PTA Plan, cái gì xong rồi thì archive đi nào"
+
+ĐÃ CHỐT: mockup ⑥ ⑧ ⑩ **không cần chủ SP xem lại** — session sửa xong, PTA Overhaul rà theo lời 37 / 38 rồi **merge và gửi plan code cho PTA Plan luôn**. Session / việc đã xong thì archive. (PR code đổi bố cục vẫn dừng ở ảnh cặp chờ chủ SP như luật chung — chủ SP chưa đổi phần này.)
+Đã làm trong lượt: archive session mockup ⓪ ⑦ ⑨ (đã merge); viết `12-plan-giao-dien-dot-3.md` (GD-11 … GD-18, thay GD-10).
