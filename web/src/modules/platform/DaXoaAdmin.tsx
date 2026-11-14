@@ -16,6 +16,8 @@ type MucRac = {
   hetHanLuc: string | null; xoaHanLuc: string; khoiPhucDuoc: boolean;
   /** GD-16: chi nhánh của mục (Lưu trữ › Đã xoá chia dải chi nhánh). */
   chiNhanh?: { id: number; ten: string } | null;
+  /** GD-16 (mockup ⑩ L4): lớp lúc xoá. */
+  lop?: string | null;
 };
 
 const nhanLoai = (l: MucRac['loai']) => (l === 'case' ? 'Case' : l === 'pa' ? t('PA') : l === 'ket_qua_pa' ? t('Kết quả PA') : l === 'vi_pham' ? t('Vi phạm') : l === 'hoc_vien' ? t('Học viên') : t('Tệp'));
@@ -50,7 +52,8 @@ export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
 
   const COT: CotBang[] = [
     ...(loai ? [] : [{ key: 'loai', nhan: t('Loại'), kieu: 'chu', rong: 96 } as CotBang]),
-    { key: 'muc', nhan: t('Mục'), kieu: 'ten', rong: 400 },
+    { key: 'muc', nhan: loai === 'hoc_vien' ? t('Học viên') : t('Mục'), kieu: 'ten', rong: loai === 'hoc_vien' ? 300 : 400 },
+    ...(loai === 'hoc_vien' ? [{ key: 'lop', nhan: t('Lớp lúc xoá'), kieu: 'chu', rong: 130 } as CotBang] : []),
     { key: 'ai', nhan: t('Người xoá'), kieu: 'chu', rong: 170 },
     { key: 'luc', nhan: t('Lúc xoá'), kieu: 'chu', rong: 150 },
     { key: 'den', nhan: t('Giữ đến'), kieu: 'tuan', rong: 110 },
@@ -59,6 +62,7 @@ export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
   const oCua = (m: MucRac, c: CotBang) => {
     if (c.key === 'loai') return <span className="text-[13px] text-slate-400">{nhanLoai(m.loai)}</span>;
     if (c.key === 'muc') return m.hocVienId ? <Link className="ten-ho-so" to={`/hoc-vien/${m.hocVienId}`}>{m.nhan}</Link> : m.nhan;
+    if (c.key === 'lop') return m.lop ?? '—';
     if (c.key === 'ai') return m.xoaBoi ?? '—';
     if (c.key === 'luc') return <span className="tabular-nums">{fmtDateTime(m.xoaLuc)}</span>;
     if (c.key === 'den') return <span className="tabular-nums">{m.khoiPhucLuc || m.hetHanLuc ? '—' : fmtDate(m.xoaHanLuc)}</span>;
@@ -81,7 +85,7 @@ export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
     return (
       <section className="space-y-3" aria-label={t('Đã xoá')}>
         <div className="flex items-center gap-1.5 text-sm text-dim">
-          <b className="tabular-nums text-slate-100">{hang.length}</b> {t('học viên')}
+          <b className="tabular-nums text-slate-100">{hang.filter((m) => m.khoiPhucDuoc).length}</b> {t('em khôi phục được')}
           <NutLuat label={t('Đã xoá')}>{t('Giữ 30 ngày, sau đó xoá hẳn.')}</NutLuat>
         </div>
         {!hang.length ? <Card><Empty title={tim ? t('Không có học viên khớp "{loc}"', { loc: loc.trim() }) : t('Chưa có học viên nào đã xoá')} /></Card>
