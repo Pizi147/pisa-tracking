@@ -1,7 +1,8 @@
 # v21 ⑨ · Phân tích (CHỈNH, không làm lại) — ghi chú cho người duyệt
 
 Mockup: `thiet-ke/v21/phan-tich.html` + `phan-tich.css` (CSS chép nguyên từ nền V2; phần mới ở cuối tệp, ghi "v21:"). Đề bài: `docs/superpowers/specs/2026-11-13-overhaul-v6/11-de-bai-mockup-dot-2.md` mục ⑨ R9.1–R9.6 + G1–G5; chi tiết `10-ra-dong-bo.md` mục D.
-Nền đã duyệt (giữ hình ảnh sát): `thiet-ke/2026-11-12-phan-tich-v2/phan-tich-v2.html` (+ v19 / v20 / v13). Chỉ vẽ khung CÓ ĐỔI + một khung toàn trang mỗi tab.
+Nền đã duyệt: `thiet-ke/2026-11-12-phan-tich-v2/phan-tich-v2.html` (+ v19 / v20 / v13). Chỉ vẽ khung CÓ ĐỔI + một khung toàn trang mỗi tab.
+**Nguyên tắc (PTA Overhaul rà #1609): khung SAU = WEB HIỆN TẠI + đúng các điểm R9.x, không gì khác.** Chỗ web khác nền V2 thì web thắng (web đã qua v19 "ô số nổi" + v20, chủ SP duyệt 12/11: "hộp = bấm được, màu = cần làm"): ô số dạng hộp, bảng Giáo viên có cột "% đúng hạn" + hàng S chéo chung / Chưa phân công, SOS tách "HV có Case · Case", Chi nhánh có cột Thi thật, khối PA có ⓘ ở hai khối con. Tab Thi thật (seed chưa có KQ): bố cục theo nền V2, dáng ô số theo web.
 Ảnh: `thiet-ke/v21/anh/phan-tich/` — `<khung>-1440-toi.png`, `<khung>-1440-sang.png`, `<khung>-375-sang.png` (46 ảnh) · **ảnh cặp `cap-<khung>.png`** = TRƯỚC │ SAU + một câu "đổi gì" (27 cặp) · `truoc/` = ảnh web thật.
 TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 · TVV userId 23), dev ở cổng 4410 / 5410 của worktree. Seed chưa có KQ thi thật → TRƯỚC của tab Thi thật lấy khung C1 / C4 của nền V2 (như README nền đã làm). Phông Be Vietnam Pro đã nạp (`document.fonts.check` = true) trước khi chụp. Soát tự động: không chữ < 12 px, không chữ tràn khung (trừ hàng tab 375 cuộn ngang có mờ mép — như nền).
 
@@ -42,17 +43,19 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 ·
 | L1 | In · ⋯ · Xuất Excel | SOS: ⋯ đứng SAU Xuất Excel | ⋯ trước, **Xuất Excel luôn cuối** (như nền V2) | ĐỔI thứ tự |
 | A1 | Ô Thi thật ở Chi nhánh | "Thi thật · trong kỳ" | "Thi thật · W1–W4 NOV" | ĐỔI chữ (R9.4) |
 | A1 | Ô Đạt MT | "Đạt MT · trong kỳ" | "Đạt MT · HV · trong kỳ" (cột bảng đã ghi "Đạt MT · HV") | ĐỔI chữ (R9.4) |
-| A1 | Số to 48, bảng 6 lớp / trang, hàng tổng, Tiến bộ theo kỹ năng, In | có | như cũ | GIỮ |
+| A1 | Số to 48, bảng 6 lớp / trang, hàng tổng, Tiến bộ theo kỹ năng, In | có | như web | GIỮ |
+| A1 | Cột "Thi thật" bảng Theo lớp (Vượt · Đạt · Chưa đạt, hộp chữ xanh / đỏ) | web có, nền V2 không | như web | GIỮ (theo web) |
 | A1 | Xuất Excel Chi nhánh | web đã có (nền V2 ẩn tới PR Excel) | giữ trên web, cuối hàng | GIỮ (theo web) |
 | C1 | Khối kết quả (2 ô công tắc + thanh), Không thi, Chưa có KQ | có | như cũ, khối kết quả hẹp lại một chút | GIỮ |
 | C1 | **Ô "Sắp thi · 6 tuần · còn SOS"** | — | ô thứ ba: số em + chip SOS 1 · 2 · 3 (bấm được) + "hiện tại · thi W3 NOV – W4 DEC" + ⓘ | MỚI (R9.5, lời 35) |
 | C5 / C6 | Panel Sắp thi · còn SOS | — | dáng panel số V2 (loại · ✕ · ⓘ · tiêu đề · dòng ngữ · chip chia), bảng: Học viên (link) · Lớp (link) · Ngày thi (dd/mm + mã tuần) · SOS · MT mới nhất (mức + kỹ năng) · TVV; 375 mỗi em một thẻ | MỚI |
 | B1 | Dải 6 ô, bảng Theo tuần, khối PA | có | như cũ | GIỮ |
 | B5 | Giải thích cột Theo tuần | `title` ở tiêu đề nhóm cột (`TongHopTestSos.tsx:438`), ô HV - Case (`:226`), ⚠ quá hạn (`:238`) | ⓘ đầu thẻ "Theo tuần" mở hộp: mỗi cột một dòng | ĐỔI (R9.2) |
-| B6 | Giải thích khối PA | `title` "mỗi vấn đề ≤ 2 PA có kết quả" (`HieuQuaPa.tsx:218`), chip "Nên dùng" (`:82`), ⓘ riêng ở "PA theo quy chế" | MỘT ⓘ đầu thẻ "PA nào hiệu quả": Có cải thiện · Nên dùng · n vấn đề khác · PA theo quy chế | ĐỔI (R9.2), BỎ ⓘ thứ hai |
+| B6 | Giải thích khối PA | `title` "mỗi vấn đề ≤ 2 PA có kết quả" (`HieuQuaPa.tsx:218`), chip "Nên dùng" (`:82`); web có ⓘ ở thẻ + hai khối con | giữ ba ⓘ như web; hai câu rê chuột vào ⓘ "PA do GV thêm" (Nên dùng · n vấn đề khác); khối con có "n có cải thiện" như web | ĐỔI (R9.2) |
 | D1 | Ô "Chưa làm" | "⚠ 15 bài 4 việc" — chữ, KHÔNG bấm được | hai ô số đỏ bấm được (6 bài · 4 việc) + "+ 8 bài S chéo chung" bấm được | ĐỔI (R9.1) |
 | D5 / D6 / D7 | **Panel Chưa làm** | — | tab con Chấm Test · Việc (badge mờ); nhóm theo GV (tên link · số); mỗi dòng = dòng việc chuẩn ⑤ B1 chỉ đọc: "Lớp · việc" · thẻ phụ (em link, đợt, tuần, số bài) · chip "⚠ quá hạn n ngày"; nhóm cuối "S chéo chung · chưa ai nhận · không vào tỉ lệ" | MỚI |
-| D1 | Bảng GV, panel 3 tab của từng GV, "Thi thật theo GV ›", Chưa phân công, Xuất Excel | có | như cũ | GIỮ |
+| D1 | Bảng GV | web: hộp cho số bấm được, cột "% đúng hạn" ở Chấm Test và Việc, hàng "S chéo chung" + "Chưa phân công" cuối bảng, Đạt kỳ vọng Test = hộp % + phân số | **vẽ y như web** | GIỮ (theo web) |
+| D1 | Panel 3 tab của từng GV, "Thi thật theo GV ›", Xuất Excel, Tìm GV | có | như cũ | GIỮ |
 | D1 | `title` "Bấm ▸ xem từng chi nhánh" (QT, `PhanTichGiaoVien.tsx:81`, `:132`) | rê chuột | bỏ — nút ▸ đã có `aria-label` "tách n chi nhánh" | BỎ (R9.2) |
 | D4 | Thẻ 375 | "Đạt kỳ vọng Test" | "Đạt kỳ vọng Test · lượt" | ĐỔI chữ (R9.4) |
 | Y1 / Y2 | Giải thích cột | `Th hint` (rê chuột) ở 6 cột (`YThucPhoiHop.tsx:157–160`, `:231–232`) | gom vào ⓘ đầu thẻ "Học viên cần chú ý" (cách chọn + từng cột + thang) và "Lớp nhiều vi phạm" (xếp · HV có vi phạm · ± kỳ trước) | ĐỔI (R9.2) |
@@ -61,7 +64,7 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026, vai QL userId 2 ·
 | Y1 | Dải 4 ô, hai bảng, mở nhóm vi phạm, Xuất Excel | có | như cũ | GIỮ |
 | E1 / E5 | Lỗi tải | `ErrorState` (tiêu đề + gợi ý + Thử lại) | một dòng "⚠ Không tải được … · Thử lại" (⑤ B3), hàng lọc vẫn dùng | ĐỔI chữ |
 | E4 | TVV | không tab Giáo viên, link cũ → toast | như cũ | GIỮ |
-| mọi khung | Ô số | web: số trong hộp viền (`OSo` hộp) | theo nền V2: chữ màu nhấn, rê / chạm mới gạch chân | GIỮ nền — xem [XM-3] |
+| mọi khung | Ô số | web: số bấm được = hộp (v19 ô số nổi), đỏ ⚠ = quá hạn, vàng = đang chờ; số lớn thẻ chỉ số không hộp | **như web** (token `--os-*` chép từ `web/src/index.css`) | GIỮ (theo web) — XM-3 PTA chốt |
 
 ## 3. Thao tác TRƯỚC → SAU
 
@@ -104,16 +107,18 @@ Không số nào trên tab SOS bằng số này theo định nghĩa: em SOS lâu
 
 Ước ngày: ~20 lần mở Thi thật / chi nhánh / ngày × 5 chi nhánh × ~400 dòng ≈ **40 000 dòng / ngày** (trần giữ < 15 triệu). Không cần cảnh báo. PR code thêm trần câu + dòng cho `/phan-tich/thi-that` (có ô mới) vào `server/src/tests/tocDoDuong.ts`.
 
-## 6. [XM] — cần PTA Overhaul / chủ SP quyết
+## 6. [XM] — PTA Overhaul đã quyết (rà #1609)
 
-1. **[XM-1] ⓘ chỉ ở đầu thẻ, không ở đầu cột.** R9.2 ghi "ⓘ ở đầu thẻ / đầu cột", nhưng luật giao diện (CLAUDE.md, DESIGN.md Luật V5) cấm điều khiển trong tiêu đề bảng. Mockup gom mọi giải thích cột vào MỘT ⓘ đầu thẻ (mỗi cột một dòng trong hộp). Đề xuất giữ.
-2. **[XM-2] "Sắp thi" chỉ tính ngày thi ĐÃ CHỐT.** Em chỉ có tháng dự kiến không tính (không biết ngày → không biết có trong 6 tuần không). Muốn tính cả tháng dự kiến rơi vào 6 tuần tới thì ô to hơn nhưng kém chính xác. Đề xuất: chỉ ngày đã chốt.
-3. **[XM-3] Dáng ô số.** Web hiện vẽ số bấm được trong hộp viền; nền V2 và bộ chuẩn ⑤ H3 vẽ chữ màu nhấn có gạch chân (⑤) / gạch khi rê (V2). Mockup giữ theo nền V2 (đề bài: giữ hình ảnh sát nền). PR code cần một dáng chung với ⑤ — PTA chọn.
-4. **[XM-4] Cột "HV - Case" ở SOS.** Web đã tách hai cột "HV có Case" · "Case"; nền V2 gộp "HV - Case". Không thuộc R9 → mockup không vẽ lại; PR code **giữ như web** (hai cột), ⓘ ghi theo cột đang có.
-5. **[XM-5] Tên bậc "REPORT 4 + MEETING CX / GĐCN".** Viết hoa theo G2 (lời 36 đã chốt: viết tắt ở cột / chip / thang). Chỉ còn hỏi: giữ đủ "+ MEETING CX / GĐCN" trong cột hay rút "+ MEETING". Biện pháp ngoài thang ("Đình chỉ học tạm thời") giữ chữ thường (không phải tên bậc).
-6. **[XM-6] Panel Chưa làm có nhóm "S chéo chung".** Nhóm cuối của tab Chấm Test, không cộng vào "6 bài" (khớp ô và tỉ lệ). "Chưa phân công" không vào panel này (ô riêng bên cạnh, đã bấm được). Đề xuất giữ.
-7. **[XM-7] Ô Chương trình ở Ý thức** mờ cả hai nút (Ý thức tính cả hai khung). Nếu sau này Ý thức lọc được theo khung thì ô bật lại tại chỗ, không dời gì.
-8. Lặt vặt `10` mục D không vẽ (ngoài R9): Excel Ý thức theo khung `xuatV2.ts` → PR Excel; dòng "Chưa tính" ở khối PA — web 14/11 không còn hiện dòng này, giải thích vào ⓘ khối PA nếu PR thấy còn.
+1. **XM-1 giữ:** ⓘ chỉ ở đầu thẻ (luật cấm điều khiển trong tiêu đề bảng).
+2. **XM-2 giữ:** "Sắp thi" chỉ tính ngày thi đã chốt — đã ghi trong ⓘ của ô.
+3. **XM-3 theo web:** ô số dạng hộp; khung SAU = web + R9.x (chỉnh 1).
+4. **XM-4 theo web:** SOS tách "HV có Case · Case".
+5. **XM-5:** "REPORT 4 + MEETING" viết hoa, "CX / GĐCN" giữ nguyên.
+6. **XM-6, XM-7 đồng ý:** nhóm S chéo chung cuối panel Chưa làm, không cộng vào số bài; Chương trình ở Ý thức mờ cả hai nút.
+7. **375 (PTA chỉnh 3):** ô lọc không áp dụng ẨN ở 375; 1440 giữ mờ + lý do ngắn khi rê / chạm (`title` + `aria-label`).
+8. Lặt vặt `10` mục D không vẽ (ngoài R9): Excel Ý thức theo khung `xuatV2.ts` → PR Excel; dòng "Chưa tính" ở khối PA — web 14/11 không còn hiện.
+
+Không còn [XM] mở.
 
 ## 7. Tự rà từng dòng R
 
@@ -121,10 +126,11 @@ Không số nào trên tab SOS bằng số này theo định nghĩa: em SOS lâu
 |---|---|---|---|
 | R9.1 | Ô "Chưa làm" bấm được → panel mọi bài / việc quá hạn nhóm theo GV, mỗi dòng lớp · việc · hạn, dòng việc chuẩn, chỉ đọc | D1 (hai ô số đỏ bấm được), D5 tab Chấm Test, D6 tab Việc, D7 375; mỗi dòng "Lớp · việc" + thẻ phụ + chip "⚠ quá hạn n ngày", không nút; E3 / E5 tải · lỗi | Đạt |
 | R9.2 | Giải thích trong rê chuột → ⓘ đầu thẻ / đầu cột (Ý thức, SOS, khối PA); 375 đọc được | B5 (Theo tuần), B6 (PA), Y2 (Ý thức); B3 / Y3 375 hộp hết bề ngang; mọi `title` giải thích đã bỏ. Đầu cột: không — [XM-1] | Đạt (đầu thẻ) |
-| R9.3 | Hàng lọc cố định giữa 5 tab, ô không áp dụng mờ; Mọi lớp, Tìm GV là ô chọn có tìm | L1 (5 hàng cùng vị trí), L2, L3, L4; mọi khung toàn trang | Đạt |
+| R9.3 | Hàng lọc cố định giữa 5 tab, ô không áp dụng mờ; Mọi lớp, Tìm GV là ô chọn có tìm | L1 (5 hàng cùng vị trí, ô mờ có `title` lý do), L2, L3; L4 375: ô không áp dụng ẩn (PTA chỉnh 3) | Đạt |
 | R9.4 | Ô Thi thật ở Chi nhánh ghi rõ kỳ; nhãn "Đạt MT · HV", "Đạt kỳ vọng Test · lượt" | A1, A6 ("Thi thật · W1–W4 NOV", "Đạt MT · HV"); D1 cột + D4 thẻ "Đạt kỳ vọng Test · lượt" | Đạt |
 | R9.5 | Ô mới "Sắp thi · 6 tuần · còn SOS" → panel em: lớp · ngày thi · mức SOS · TVV; ước đọc | C1, C4, C5, C6, E2 (0 không bấm), E4 (TVV); mục 4 (không trùng), mục 5 (+ 2–3 câu) | Đạt |
-| R9.6 | Thanh tab, panel, Xuất theo bộ chuẩn; không đổi gì khác | tab ⑤ H1, panel 736 (bảng có điểm 820) dáng panel số, Xuất Excel cuối hàng; mục 2 dòng GIỮ | Đạt |
+| R9.6 | Thanh tab, panel, Xuất theo bộ chuẩn; không đổi gì khác | tab ⑤ H1, panel 736 (bảng có điểm 820), panel chỉ đọc chân "Đóng" (lời 36), Xuất Excel cuối hàng; mọi phần khác vẽ như web (mục 2 dòng GIỮ) | Đạt |
+| Tâm ✕ / ⓘ (PTA chỉnh 4) | lệch tâm dọc ≤ 1 px ở đầu panel và đầu thẻ | đo tự động trên mọi khung (59 chỗ): đầu panel ⓘ↔✕ 0,0 px (1440: ⓘ 28 · ✕ 36; 375: 44 · 44); dải ⓘ ✕↔dòng đầu 0,0 px; đầu thẻ ⓘ↔tiêu đề 0,0 px ở 53 chỗ, 0,5 px ở 3 chỗ (375 "Tiến bộ theo kỹ năng", "Từng kỹ năng" ×2), 1,0 px ở 1 chỗ (375 "PA nào hiệu quả") | Đạt |
 | G1 | Nâng cấp, giữ bố cục + mọi thao tác | mục 3: không mất thao tác | Đạt |
 | G2 | Đồng bộ: ô chọn có tìm, câu lỗi chuẩn, tên bậc hoa (lời 36: viết tắt ở cột / thang), chân panel chỉ đọc "Đóng", mã tuần | L2 / L3, E1 / E5, Y1 / Y2, C5 / D5 (chân "Đóng"), mọi thời gian dạng mã tuần (ngày chỉ ở ngày thi, hạn) | Đạt |
 | G3 | Không chú thích tĩnh, không bước xác nhận, không tab mới | không thêm câu tĩnh; dòng mẫu dưới số là đơn vị / phạm vi (như nền) | Đạt |

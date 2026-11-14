@@ -668,3 +668,59 @@ table.mk td, table.mk th { border:1px solid #cfd5e2; padding:4px 8px; text-align
 .pn-chan { border-top:1px solid var(--line-strong); padding:10px 20px; display:flex; align-items:center; gap:10px; background:var(--surface); flex:none; }
 .pn-chan .phai { margin-left:auto; display:flex; gap:8px; }
 .dt .pn-chan { padding:10px 16px 14px; } .dt .pn-chan .phai { flex:1; } .dt .pn-chan .nut { flex:1; }
+
+/* ===== v21 (PTA rà #1609, chỉnh 1): ô số THEO WEB — v19 "ô số nổi", chủ SP duyệt 12/11: "hộp = bấm được, màu = cần làm" (web/src/index.css .o-so-hop .so-bam) ===== */
+.man, .dt, .chieu { --os-nen:#1a2b4c; --os-vien:#4b6b9f; --os-chu:#d3e3f8; --os-re:#223a63; --os-do-nen:#3d2020; --os-do-vien:#b0655a; --os-do-chu:#f2b0a4; --os-vang-nen:#33301c; --os-vang-vien:#9a8550; --os-vang-chu:#ecd59a; --kq-vuot:rgb(148 209 174); --kq-duoi:rgb(232 154 140); }
+[data-theme="light"] .man, [data-theme="light"] .dt, .dt[data-theme="light"], .man[data-theme="light"] { --os-nen:#edf1fb; --os-vien:#7385c4; --os-chu:#1f3077; --os-re:#dfe6f8; --os-do-nen:#fbecea; --os-do-vien:#c9776b; --os-do-chu:#9a3427; --os-vang-nen:#fbf3dc; --os-vang-vien:#9c7f3e; --os-vang-chu:#6e521f; --kq-vuot:rgb(56 103 76); --kq-duoi:rgb(166 58 45); }
+:where(.man, .dt) a.oso { display:inline-flex; align-items:center; justify-content:center; gap:4px; min-width:40px; height:30px; padding:0 9px; border-radius:7px; box-sizing:border-box;
+  border:1px solid var(--os-vien); background:var(--os-nen); color:var(--os-chu) !important; font:600 15px/1 var(--phong-so); vertical-align:middle; white-space:nowrap; text-decoration:none !important; }
+:where(.man, .dt) a.oso:hover { background:var(--os-re); border-color:var(--accent); }
+:where(.man, .dt) a.oso:is(.c-bad) { background:var(--os-do-nen); border-color:var(--os-do-vien); color:var(--os-do-chu) !important; font-weight:700; }
+:where(.man, .dt) a.oso.c-bad::before { content:"⚠"; font-size:12px; }
+:where(.man, .dt) a.oso.c-soon { background:var(--os-vang-nen); border-color:var(--os-vang-vien); color:var(--os-vang-chu) !important; }
+:where(.man, .dt) a.oso.c-v, :where(.man, .dt) .c-v a.oso { color:var(--kq-vuot) !important; }
+:where(.man, .dt) a.oso.c-x, :where(.man, .dt) .c-x a.oso { color:var(--kq-duoi) !important; }
+/* hộp nhỏ ở dòng phụ (web .text-xs .so-bam) */
+:where(.so-to .phu, .so-thi em, .mau, .mau-c, .s-cheo, .tom-pa, .dong-sos) a.oso { min-width:26px; height:22px; padding:0 6px; border-radius:5px; font-size:13px; }
+/* số lớn thẻ chỉ số: KHÔNG hộp (web .chi-so-gt / .so-chinh) — màu nhấn, rê gạch chân; đỏ ⚠ khi quá hạn */
+:where(.chi-so .gt, .so-to .gt, .so-thi .hai-so > span > b, .cong-tac) a.oso { min-width:0; height:auto; padding:0; border:0; background:none; color:var(--accent) !important; font:inherit; font-weight:700; line-height:inherit; }
+:where(.chi-so .gt, .so-to .gt, .so-thi .hai-so > span > b) a.oso.c-bad { color:var(--bad) !important; background:none; }
+:where(.chi-so .gt, .so-to .gt, .so-thi .hai-so > span > b) a.oso.c-bad::before { content:none; }
+:where(.chi-so .gt, .so-to .gt) a.oso:hover { text-decoration:underline !important; text-underline-offset:4px; }
+.canh-to { color:var(--bad); font-size:.75em; margin-right:4px; }
+/* ô SOS trong bảng: hộp theo mức (web so-m1/2/3) — cùng cỡ hộp */
+:where(.man, .dt) .bang a.chip-so { min-width:40px; height:30px; border-radius:7px; font-size:15px; box-sizing:border-box; }
+.bang th .sos { height:20px; font-size:12px; }
+.oso-0 { color:var(--text-faint); font-weight:500; }
+/* cặp hộp % + phân số mờ (web .cap-so) */
+.cap-so { display:inline-grid; grid-template-columns:auto auto; align-items:center; gap:6px; }
+.cap-so > span { font:400 12px var(--phong-so); color:var(--text-faint); text-align:left; }
+.bang td .mau-c { margin-left:6px; }
+.ba-thi { display:inline-flex; align-items:center; gap:6px; } .ba-thi i { font-style:normal; color:var(--text-faint); }
+/* bảng Giáo viên như web: hàng 52, cột % chữ thường, hàng chân nghiêng */
+.bang-gv tbody td { height:52px; }
+.bang-gv td.pt-dung { font:600 15px var(--phong-so); color:var(--text); }
+.bang-gv tr.cpc td { background:transparent; border-top:1px solid var(--line); }
+.ten-chan { display:block; font:600 15px var(--phong); font-style:italic; color:var(--text-dim); }
+.k-ds { display:grid; }
+.k-gv { padding:12px 14px; border-top:1px solid var(--line); display:grid; gap:10px; }
+.k-gv:first-child { border-top:0; }
+.k-ten { font-size:15px; } .k-ten .mo2 { font-size:13px; }
+.k-nhom { display:grid; gap:6px; border-top:1px solid var(--line); padding-top:8px; }
+.k-dau { display:flex; align-items:baseline; gap:8px; font-size:13px; } .k-dau b { font-weight:600; color:var(--text); } .k-dau span { margin-left:auto; color:var(--text-faint); font:500 13px var(--phong-so); } .k-dau span i { font-style:normal; font-family:var(--phong); }
+.k-chan { display:flex; align-items:center; justify-content:space-between; min-height:44px; }
+.k-chan .ten-chan { font-size:15px; }
+/* ⓘ hai khối con PA (như web) */
+.dau-con .phai { display:flex; align-items:center; }
+
+/* ===== v21 (PTA chỉnh 3): 375 — ô lọc KHÔNG áp dụng thì ẨN (màn dọc không nhảy chỗ); 1440 giữ mờ + lý do khi rê / chạm (title + aria) ===== */
+.dt .hang-loc .tat, .dt .hang-loc .oc-vung:has(.oc.tat) { display:none; }
+.dt .hang-loc .hang-dau:not(:has(.doan:not(.tat))) { display:flex; }
+/* v21 (PTA chỉnh 4): 375 — ⓘ đầu thẻ luôn ở hàng tiêu đề (góc phải), tâm thẳng tâm tiêu đề, kể cả khi dòng phụ xuống hàng */
+.dt .the-dau { position:relative; padding-right:56px; }
+.dt .the-dau .nut-i { position:absolute; top:0; right:6px; margin:0; }
+.dt .dau-con { position:relative; padding-right:48px !important; }
+.dt .dau-con .nut-i { position:absolute; top:-6px; right:0; margin:0; }
+.dt .the-dau:has(.lk-doi) .nut-i { top:2px; }
+.so-to .phu a.oso, .so-thi .hai-so em a.oso, .dong-sos a.oso { text-decoration:none !important; }
+.hang-loc .mui-ten { color:var(--text-faint) !important; }
