@@ -1,3 +1,4 @@
+import { MuiChev } from '../../ui/HangNhom.tsx';
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { rateView, tuanLich, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
@@ -153,7 +154,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const nutMo = (id: number, ten: string, n: number) => (
     <button type="button" aria-expanded={mo.has(id)} aria-label={t('{ten} — tách {n} chi nhánh', { ten, n })}
       onClick={() => setMo((s) => { const x = new Set(s); if (x.has(id)) x.delete(id); else x.add(id); return x; })}
-      className="inline-flex h-6 w-5 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[color:var(--text-dim)]">{mo.has(id) ? '▾' : '▸'}</button>
+      className="inline-flex h-6 w-5 cursor-pointer items-center justify-center border-0 bg-transparent p-0 text-[color:var(--text-dim)]"><MuiChev mo={mo.has(id)} /></button>
   );
   /* PT-a (mockup v19 khung 1a): hai hàng chân — "Chưa phân công" (bài chưa có GV) và "S chéo chung" (chưa ai nhận) — số ở đúng cột Chưa làm của Chấm Test,
      cột khác "—", cột % trống. Tất cả chi nhánh: ▸ tách từng chi nhánh. Màn 375 vẽ thẻ (`theRieng`). */

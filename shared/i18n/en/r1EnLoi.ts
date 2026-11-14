@@ -23,7 +23,7 @@ export const EN_R1_EN_LOI = {
   'Gõ {CHU_XAC_NHAN_XOA} để xác nhận xoá.': 'Type {CHU_XAC_NHAN_XOA} to confirm the delete.',
   'Học viên #{lap} có hai dòng trong lô.': 'Student #{lap} appears twice in the batch.',
   'Học viên #{studentId} không thuộc lớp này.': 'Student #{studentId} is not in this class.',
-  'Không còn huỷ MT{attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.': 'Cancelling MT{attempt_no} is no longer available — use Delete in the schedule box (Test plan): the round goes back to Not scheduled, history is kept.',
+  'Không còn huỷ MT{attempt_no} — dùng Xoá ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.': 'Cancelling MT{attempt_no} is no longer available — use Delete in the schedule box (Test plan): the round goes back to Not scheduled, history is kept.',
   'Không tìm thấy chỉ số "{id}".': 'Metric "{id}" not found.',
   'Kỹ năng {x} không có trong lượt này.': 'Skill {x} is not in this attempt.',
   'Kỹ năng {x} không nằm trong phạm vi yêu cầu của bài này.': 'Skill {x} is not required for this paper.',

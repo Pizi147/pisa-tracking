@@ -2316,6 +2316,13 @@ api.get('/tong-quan/chi-nhanh/o', requireAuth, wrap((req) => {
   });
 }));
 
+/** TQ-SOS-CN: em SOS 2–3 của một chi nhánh (ô bảng "Theo chi nhánh", Tổng quan QT / CX) — chỉ đọc khi bấm. */
+api.get('/tong-quan/chi-nhanh/sos23', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const ids = (qStr(req, 'ids') ?? '').split(',').map(Number).filter((x) => Number.isInteger(x) && x > 0);
+  return bangSvc.sos23ChiNhanh(principalOf(req), { branchId: qInt(req, 'branchId') ?? null, ids });
+}));
+
 /** P14 DICH (N19): dịch chữ GV nhập — máy chủ tự đọc chữ theo (bang, cot) cố định, quyền như đường đọc; không ghi đè chữ gốc. */
 api.post('/dich', requireAuth, wrap((req) => dichSvc.dich(principalOf(req), req.body ?? {})));
 api.get('/cases/:id', requireAuth, wrap((req) => caseSvc.caseDetail(principalOf(req), pInt(req, 'id'))));
@@ -2856,7 +2863,7 @@ api.post('/students/:id/status', requireAuth, wrap((req) => {
   /* RKC: em có quyết định chuyển lớp chờ → huỷ quyết định cùng lúc (`huyLenh: true` khi hộp đã nêu dòng đó; không thì máy hỏi). */
   return trangThaiHvSvc.doiTrangThai(principalOf(req), pInt(req, 'id'), { status, date: req.body?.date ?? demoToday(), reason: req.body?.reason, endKind: req.body?.endKind ?? null, huyLenh: req.body?.huyLenh === true });
 }));
-/** P7 (N11, k2): "Khi lưu, web sẽ" của hộp Tạm dừng/ Kết thúc học (`ketThuc=1` = ô "Có thể quay lại học" tắt) + câu chặn nếu có. */
+/** P7 (N11, k2): "Khi lưu, web sẽ" của hộp Tạm dừng / Kết thúc học (`ketThuc=1` = ô "Có thể quay lại học" tắt) + câu chặn nếu có. */
 api.get('/students/:id/trang-thai/xem-truoc', requireAuth, wrap((req) => trangThaiHvSvc.xemTruocTrangThai(principalOf(req), pInt(req, 'id'), qStr(req, 'ketThuc') === '1')));
 /** P7 (N11, N22 ⑤, k5): Quay lại học từ Lưu trữ — hướng (lớp cũ · chọn lớp · Lộ trình mới · Học lại) + lớp gợi ý; làm; Hoàn tác (lớp cũ). */
 api.get('/students/:id/quay-lai', requireAuth, wrap((req) => trangThaiHvSvc.thongTinQuayLai(principalOf(req), pInt(req, 'id'))));

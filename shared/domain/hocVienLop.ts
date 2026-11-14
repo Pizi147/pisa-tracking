@@ -424,10 +424,10 @@ export function nhomGiaoVienBoMon(
 
 // ---------------------------------------------------------------- menu ⋯ dòng học viên (§3.7, §4, Q1)
 
-/* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Ghi vi phạm" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
+/* PR-YT4 (K2-30 phần chữ): bỏ mục `Hồ sơ` (tên em đã là liên kết); "+ Vi phạm / Nhắc nhở" (T31 — "Ghi nhận" chỉ nghĩa đã xem). */
 export type MucMenuDong = 'vi-pham' | 'xu-ly-y-thuc' | 'case' | 'nhap-diem' | 'sua-thong-tin' | 'lo-trinh-tiep' | 'chuyen-lop' | 'de-xuat-chuyen-lop';
 export const MUC_MENU_DONG_NHAN: Record<MucMenuDong, string> = {
-  'vi-pham': t('+ Ghi vi phạm'), 'xu-ly-y-thuc': t('Xác nhận xử lý'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'sua-thong-tin': t('Sửa thông tin'),
+  'vi-pham': t('Vi phạm / Nhắc nhở'), 'xu-ly-y-thuc': t('Xác nhận xử lý'), case: '+ Case', 'nhap-diem': t('Nhập điểm'), 'sua-thong-tin': t('Sửa thông tin'),
   'lo-trinh-tiep': t('Cuối khoá…'), 'chuyen-lop': t('Chuyển lớp…'), 'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
 };
 /** Việc HIẾM của dòng (K2-30): kẻ vạch trước mục hiếm đầu tiên — tách khỏi việc hằng ngày (Case · Ghi vi phạm · Xác nhận xử lý · Nhập điểm). */
@@ -448,7 +448,7 @@ export function mucMenuDongHocVien(i: {
 }, bat: { loTrinhTiepTheo: boolean; chuyenLop: boolean } = MENU_DONG_CHO_PR_LT): MucMenuDong[] {
   const out: MucMenuDong[] = [];
   if (!i.dangHoc) return out;
-  /* MENU-DONG (chủ SP 29/10, v8): + Case · + Ghi vi phạm · Xác nhận xử lý · Nhập điểm {đợt} │ vạch │ việc hiếm (Sửa thông tin · Cuối khoá… · Chuyển lớp…). */
+  /* MENU-DONG (chủ SP 29/10, v8): + Case · + Vi phạm / Nhắc nhở · Xác nhận xử lý · Nhập điểm {đợt} │ vạch │ việc hiếm (Sửa thông tin · Cuối khoá… · Chuyển lớp…). */
   if (i.coTheBaoCase) out.push('case');
   if (i.coTheGhiViPham) out.push('vi-pham');
   if (i.coTheXuLyYThuc) out.push('xu-ly-y-thuc');

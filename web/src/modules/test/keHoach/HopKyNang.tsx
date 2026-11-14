@@ -44,7 +44,7 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *     chip "Tuần đã qua"). Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * PR-HOP1: một việc dời lịch một MT chỉ có hộp này và một đường lưu `/ke-hoach-test/dot` (Hồ sơ MT cũng mở nó). FT đợt đã có: ⋯ đầu
  *   hộp `Nhật ký · Mở hồ sơ MT`. `doiTuanDau`: dòng `kyNangDau` mở sẵn bộ chọn tuần (⋯ "Dời lịch thi" một kỹ năng).
- * OV-15c (mục 6, mockup 6 khung 8): lớp thường ⋯ "Xóa lịch" = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ), hỏi một lần
+ * OV-15c (mục 6, mockup 6 khung 8): lớp thường ⋯ "Xoá lịch" = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ), hỏi một lần
  *   NGAY TRONG hộp, xong có Hoàn tác. FT (chủ SP 06/11): ⋯ "Xoá MT{n}" (`xoaMt`, cùng đường hồ sơ MT) — không hỏi lại, ô "Đã xoá" + Khôi phục,
  *   Hoàn tác; MT đã xoá → ⋯ "Khôi phục MT{n}". Đã có điểm / đã thi → mờ + lý do. N38: bỏ `Khôi phục → Chưa xếp` · `Giữ huỷ` (Dời thay).
  *   Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
@@ -54,7 +54,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   /** U05 (mockup khu C): mã lớp ở góc phải đầu hộp. */
   maLop?: string | null;
   anchor: HTMLElement; tieuDe: string; loai: 'ft' | 'thuong'; classId: number; studentId: number; dot: DotChon;
-  /** OV-15c: tên em cho câu hỏi Xóa ("Xóa lịch MT4 của Đỗ Trọng Tiến?") và ghi chú lịch thi hiện tại của em × đợt (C21). */
+  /** OV-15c: tên em cho câu hỏi Xoá ("Xoá lịch MT4 của Đỗ Trọng Tiến?") và ghi chú lịch thi hiện tại của em × đợt (C21). */
   tenHv?: string;
   /** Không truyền (hồ sơ MT, Lộ trình) = không có ô ghi chú — ô trống không được đè ghi chú đang có mà nơi đó không tải. */
   ghiChu?: GhiChuLich | null;
@@ -121,7 +121,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   /* GD-11b (mockup ⑦ B2, [XM-3] PTA): MỘT khối "Lịch sử · n" của cả lượt — việc lịch / điểm (mọi môn, dòng ghi tên môn) + lịch sử ghi chú lịch Test;
      đọc khi mở (như "Nhật ký" cũ: `/attempts/:id` + lịch sử ghi chú), không đọc thêm lúc mở hộp. */
   const [lichSuLuot, setLichSuLuot] = useState<DongLuot[] | null>(null);
-  /* Xóa (mục 6): `hoi` = đang hỏi lại trong hộp; `loiXoa` = câu lỗi (lịch giữ nguyên, bấm lại được). */
+  /* Xoá (mục 6): `hoi` = đang hỏi lại trong hộp; `loiXoa` = câu lỗi (lịch giữ nguyên, bấm lại được). */
   const [hoi, setHoi] = useState(false);
   const [loiXoa, setLoiXoa] = useState<string | null>(null);
   const [bai, setBai] = useState<BaiXemTruoc[] | null>(null);
@@ -271,7 +271,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     setRieng({}); setDaChinh(false); setForce(false); setLyDo(''); setGhi(ghiChu?.noiDung ?? '');
   };
 
-  /* Lớp thường — Xóa lịch (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
+  /* Lớp thường — Xoá lịch (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
   const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn);
   const xoa = async () => {
     if (attemptId === null || busy) return;
@@ -351,7 +351,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   /* ⋯ đầu hộp (PR-HOP1): chữ y như nơi khác — "Nhật ký" (⋯ dòng), "Mở hồ sơ MT" (Lộ trình). OV-15c: bỏ "Huỷ MT{n}".
-     SUA-NHO-UI U3 (critique 30/10): "Xóa lịch" ít dùng, rời chân hộp (tránh bấm nhầm cạnh Lưu) vào ⋯ — FT + lớp thường; mục mờ, lý do ở `title`. */
+     SUA-NHO-UI U3 (critique 30/10): "Xoá lịch" ít dùng, rời chân hộp (tránh bấm nhầm cạnh Lưu) vào ⋯ — FT + lớp thường; mục mờ, lý do ở `title`. */
   /* Chủ SP 06/11: FT ⋯ "Xoá MT{n}" (mọi kỹ năng ra khỏi đợt, tuần giữ) — cùng đường, cùng chữ hồ sơ MT; MT đã xoá → "Khôi phục MT{n}". */
   const daXoaHet = loai === 'ft' && !moi && ky.every((k) => !kn[k]?.batBuoc);
   /* RKC: MT có điểm / đã làm bài vẫn Xoá — máy chủ hỏi "huỷ điểm rồi xoá?". */
@@ -475,7 +475,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
 }
 
 function DongKyNangHop({ k, o, moi, loai, d, noiBat, khaiGiang, tongTuan, onTuan, onMuc, goc, homNay, ct = null, muc: muc0, riengTuan, lichSu, busy, coSua }: {
-  /** Hộp còn thay đổi chưa lưu: Vắng / Dời hạn chấm / Huỷ điểm lưu NGAY rồi đóng hộp — chặn để không mất phần đang sửa (như Xóa lịch). */
+  /** Hộp còn thay đổi chưa lưu: Vắng / Dời hạn chấm / Huỷ điểm lưu NGAY rồi đóng hộp — chặn để không mất phần đang sửa (như Xoá lịch). */
   coSua: boolean;
   /** MT lịch sử: chip "chờ chấm" tím như mọi "chờ" (C2); tooltip không hạn. */
   lichSu: boolean;

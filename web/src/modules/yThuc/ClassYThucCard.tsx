@@ -29,7 +29,7 @@ import { dich, dichChu, t } from '@shared/i18n/index.ts';
 /**
  * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — YT-a (mockup `thiet-ke/v19/y-thuc.html` A1–A6, chủ SP duyệt #1482 kể cả XM-2 XM-3; nền Y-THUC-V2).
  *
- *   Đầu thẻ: `Vi phạm | Phối hợp SOS` · lọc em `Tất cả | Việc của tôi` · Tìm em · phải: Điểm Mock Test › · Khai / sửa cấp bậc · Chọn nhiều · + Ghi vi phạm.
+ *   Đầu thẻ: `Vi phạm | Phối hợp SOS` · lọc em `Tất cả | Việc của tôi` · Tìm em · phải: Điểm Mock Test › · Khai / sửa cấp bậc · Chọn nhiều · + Vi phạm / Nhắc nhở.
  *   MỌI em của lớp (`emLop`): em còn bước chưa xong lên đầu (bắt buộc / quá hạn › mới › chờ QL › chờ TVV), MỘT em MỘT khối (`KhoiEm`), mỗi lần một dòng
  *   `Vi phạm · Đã xử lý (GVCN / TVV) · Bước đang làm` (`DongLan`, một nút đúng vai; không phải việc của mình thì "Chờ …"). Rồi các em khác theo tên,
  *   mỗi em một dòng gọn ("✓ Chưa có vi phạm" / "Không có vi phạm chờ"). Thanh "Xem lịch sử · n" mở tại chỗ: Đã xem · Đã xử lý · Đã thu hồi + phạm vi
@@ -38,7 +38,7 @@ import { dich, dichChu, t } from '@shared/i18n/index.ts';
  *   Phối hợp SOS: mọi lượt (không đổi).
  *
  * Việc / thông báo mở `?tab=y-thuc&hv={id}&mo=xu-ly` (hoặc `mo=khai`, `mo=da-thuc-hien&xl={id}`, `mo=cap-bac&em=…`) → cuộn tới em + panel (một lần);
- * `?sub=phoi-hop` mở phân đoạn Phối hợp. GVBM (K2-39): đọc được, không nút xử lý; vẫn có `+ Ghi vi phạm`.
+ * `?sub=phoi-hop` mở phân đoạn Phối hợp. GVBM (K2-39): đọc được, không nút xử lý; vẫn có `+ Vi phạm / Nhắc nhở`.
  */
 /** `thuong`: lớp thường — "Phối hợp" (không có chữ SOS); lớp FT: "Phối hợp SOS" (chủ sản phẩm 02/10). `onDiemMt`: sang tab Học viên, mở bảng điểm (#29). */
 export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId: number; thuong?: boolean; onDiemMt?: () => void }) {
@@ -464,13 +464,13 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   );
 
   const tenPhoiHop = thuong ? t('Phối hợp') : t('Phối hợp SOS');
-  const nutGhi = d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:order-first max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Ghi vi phạm')}</button>;
+  const nutGhi = d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:order-first max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId: 0 })}>{t('+ Vi phạm / Nhắc nhở')}</button>;
   const batChon = () => { chonN.batTat(); setGhiNhanKq(null); };
 
   return (
     <Card bodyClass="p-0 [container-type:inline-size]">
       <h2 className="sr-only">{t('Ý thức & Phối hợp')}</h2>
-      {/* Mockup v19 A1: phân đoạn + lọc em + tìm em trái · thao tác phải; 375 (A2): + Ghi vi phạm rộng + ⋯. */}
+      {/* Mockup v19 A1: phân đoạn + lọc em + tìm em trái · thao tác phải; 375 (A2): + Vi phạm / Nhắc nhở rộng + ⋯. */}
       {/* Mockup v20 A1: MỘT tab lớn, hai tab nhỏ (chủ SP 12/11). */}
       <TabNho value={phan} onChange={setPhan}
         muc={[{ key: 'vi-pham', nhan: t('Tình hình học tập / Ý thức'), ngan: t('Tình hình / Ý thức') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />

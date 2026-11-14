@@ -30,11 +30,11 @@ const LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text
 
 /**
  * TINH-HINH (mockup `thiet-ke/v20/tinh-hinh.html` A4, chủ SP duyệt 12/11): hai tab nhỏ "Tình hình học tập / Ý thức" · "Phối hợp SOS"; trong tab nhỏ đầu:
- *   dải mốc (MỐC VIẾT HOA · Bậc kế · Thang ▾) + Khai / Hỏi / Báo tình hình / + Ghi vi phạm · "Đang chờ" (mọi bước còn chờ, cả tình hình hai chiều) ·
+ *   dải mốc (MỐC VIẾT HOA · Bậc kế · Thang ▾) + Khai / Hỏi / Báo tình hình / + Vi phạm / Nhắc nhở · "Đang chờ" (mọi bước còn chờ, cả tình hình hai chiều) ·
  *   "Cả quá trình" (vi phạm, nhắc nhở, tình hình, lần xử lý — mới nhất trước; lọc loại + phạm vi + nhóm). Cùng dòng `DongLan` với tab lớp.
  * (cũ) TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ HỌC VIÊN — Y-THUC-V2 (mockup `thiet-ke/2026-11-11-y-thuc-v2/y-thuc-v2.html` K3 · K4, chủ SP duyệt 11/11).
  *   Cùng kiểu dòng với tab lớp (`BangLan.tsx`, bỏ cột Học viên): một lần = một khối; ① Vi phạm → ② GVCN xử lý → ③ TVV báo PH (đúng lần, đọc Nội dung) → Bước tiếp.
- *   Đầu thẻ: phân đoạn `Vi phạm | Phối hợp SOS` · trong Vi phạm `Cần làm | Lịch sử` · phải: Khai / sửa cấp bậc · + Ghi vi phạm.
+ *   Đầu thẻ: phân đoạn `Vi phạm | Phối hợp SOS` · trong Vi phạm `Cần làm | Lịch sử` · phải: Khai / sửa cấp bậc · + Vi phạm / Nhắc nhở.
  *   Dải bậc MỘT hàng: Đã tới · Bậc kế · Thang ▾ (thay dải 5 ô + hàng 4 nút khác kiểu). "Lần này" chỉ hiện ở ô ② khi PHẢI xử lý.
  *   Lịch sử: Đã xem · Đã xử lý · Đã thu hồi (chủ SP 11/11) · phạm vi Lộ trình | Cả lịch sử · nhóm vi phạm. Phối hợp SOS: mọi lượt (không đổi).
  * Thông báo / việc mở `?tab=y-thuc&mo=xu-ly` → panel Xác nhận xử lý; `&sub=phoi-hop` → mở phân đoạn Phối hợp.

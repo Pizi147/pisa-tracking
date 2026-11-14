@@ -1,6 +1,6 @@
 /**
  * PHÉP KIỂM P7 SV-LO-TRINH (plan.md 1.6 N11, N12, N22 ⑤; thiết kế 24/10 mục 3.1–3.3, E1–E3, E9, E10):
- *  · một nút "Tạm dừng/ Kết thúc học" mọi nơi, cả hai vào Lưu trữ, Quay lại học từ Lưu trữ;
+ *  · một nút "Tạm dừng / Kết thúc học" mọi nơi, cả hai vào Lưu trữ, Quay lại học từ Lưu trữ;
  *  · Bước tiếp sau thi còn 2 hướng; Lộ trình mới LT1 / LT2 / RF / Khác, đầu vào = KQ thi thật, Case / PA cũ đóng "Kết thúc lộ trình".
  */
 import { emailThu } from '../seed/emailThu.ts';
@@ -10,7 +10,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
   const d: any = await import('../../../shared/domain/index.ts');
   const { migratePrSvLoTrinh } = await import('../migrate/prSvLoTrinh.ts');
   const { xoaNho, soCauSql, chayTrongRequest } = await import('../platform/nguCanhRequest.ts');
-  console.log('\nP7 SV-LO-TRINH — một nút Tạm dừng/ Kết thúc học, Quay lại học, Bước tiếp 2 hướng, Lộ trình mới');
+  console.log('\nP7 SV-LO-TRINH — một nút Tạm dừng / Kết thúc học, Quay lại học, Bước tiếp 2 hướng, Lộ trình mới');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   /** Chạy trong giao dịch rồi cuộn lại — phép kiểm không để dấu trên DB chung. */
   const thu = <T>(fn: () => T): T => {
@@ -21,10 +21,10 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
 
   // ------------------------------------------------------------------ Task 1: luật thuần
   const QUYEN_QL = { ghiLoTrinhTiep: false, chuyenLop: true, tamDung: true, quayLai: true, ketThuc: true, luuTru: true, boLuuTru: false, hocLai: true };
-  check('SV-1 · menu ⋯: MỘT mục "Tạm dừng/ Kết thúc học" (đang học / tạm dừng); Quay lại học cho em tạm dừng hoặc đã kết thúc; không còn Lưu trữ / Bỏ lưu trữ / Học lại', () => {
+  check('SV-1 · menu ⋯: MỘT mục "Tạm dừng / Kết thúc học" (đang học / tạm dừng); Quay lại học cho em tạm dừng hoặc đã kết thúc; không còn Lưu trữ / Bỏ lưu trữ / Học lại', () => {
     const dang = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { quyen: QUYEN_QL }, cycle: { ratio: false }, status: 'active' });
     assert(dang.slice(0, 3).map((m: any) => m.key).join() === 'info,chuyen-lop,tam-dung-ket-thuc', keys(dang));
-    assert(dang.find((m: any) => m.key === 'tam-dung-ket-thuc').nhan === 'Tạm dừng/ Kết thúc học', 'đúng chữ chủ SP');
+    assert(dang.find((m: any) => m.key === 'tam-dung-ket-thuc').nhan === 'Tạm dừng / Kết thúc học', 'đúng chữ chủ SP');
     for (const k of ['luu-tru', 'bo-luu-tru', 'hoc-lai', 'tam-dung-thoi-hoc']) assert(!keys(dang).split(',').includes(k), `còn ${k}`);
     assert(!keys(dang).includes('quay-lai'), 'đang học: không Quay lại học');
     const dung = d.mucQuanLyHocVien({ canEdit: true, lopHoc: { chiXem: true, quyen: QUYEN_QL }, cycle: { ratio: false }, status: 'inactive' });
@@ -49,7 +49,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'not_reached' }) === 'lo_trinh_moi', 'Chưa đạt');
     assert(d.goiYSauThi({ khongThi: true, ketLuan: 'unknown' }) === 'lo_trinh_moi', 'Không thi');
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'unknown' }) === null, 'không Target');
-    assert(d.NHAN_HUONG_SAU_THI.dung === 'Tạm dừng/ Kết thúc học' && d.NHAN_SAU_THI.ket_thuc === 'Kết thúc học', 'nhãn');
+    assert(d.NHAN_HUONG_SAU_THI.dung === 'Tạm dừng / Kết thúc học' && d.NHAN_SAU_THI.ket_thuc === 'Kết thúc học', 'nhãn');
     /* dữ liệu cũ vẫn đọc được */
     assert(['hoc_tiep', 'hoc_lai', 'tam_dung', 'ket_thuc', 'lo_trinh_moi'].every((k) => typeof d.NHAN_SAU_THI[k] === 'string'), 'đủ nhãn dữ liệu cũ');
   });
@@ -316,7 +316,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(get('SELECT status FROM classes WHERE id = ?', L).status === 'active' && cyMoi(a.sid).route === 'LT2' && hs(a.sid).status === 'active', 'E2: mở lại lớp, không 400');
   }));
 
-  check('SV-9 · Bước tiếp "Tạm dừng/ Kết thúc học" trong panel: ô tắt → ket_thuc + Lưu trữ, ô bật → tam_dung + Lưu trữ; ngày + lý do của hộp được ghi; Hoàn tác', () => thu(() => {
+  check('SV-9 · Bước tiếp "Tạm dừng / Kết thúc học" trong panel: ô tắt → ket_thuc + Lưu trữ, ô bật → tam_dung + Lưu trữ; ngày + lý do của hộp được ghi; Hoàn tác', () => thu(() => {
     const L = lop(); const a = emThiXong(L); const b = emThiXong(L);
     bt.chonBuocTiep(QL, a.cy, { chon: 'ket_thuc', lyDo: 'Đi du học' });
     assert(hs(a.sid).status === 'finished' && !!hs(a.sid).archived_at, 'Kết thúc học + Lưu trữ');

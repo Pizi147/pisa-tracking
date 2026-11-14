@@ -56,6 +56,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=ft' },
   { trang: 'Tổng quan V5', vai: ['QL', 'QT'], url: '/tong-quan/v5?ct=thuong' },
   { trang: 'Tổng quan V5', vai: ['QT'], url: '/tong-quan/v5?ct=ft&branchId={cn}' },
+  /* TQ-SOS-CN: panel ô SOS 2–3 của bảng Theo chi nhánh — chỉ đọc khi bấm (một chi nhánh / cả phạm vi). */
+  { trang: 'Tổng quan V5 · panel SOS 2–3', vai: ['QL', 'QT'], url: '/tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}' },
+  { trang: 'Tổng quan V5 · panel SOS 2–3', vai: ['QT'], url: '/tong-quan/chi-nhanh/sos23?ids={sos23}' },
   { trang: 'Tổng quan V5', vai: ['CX'], url: '/tong-quan/v5?ct=ft' },
   { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv/o?o=bao-ph' },
   /* GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; thay `/tong-quan/tvv` + `/tong-quan/hoc-vien` khi GD-8 giao diện merge. */
@@ -296,7 +299,7 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QT', 'QL', 'GVCN'], url: '/students/{hv}/xoa', maChuDich: { GVCN: 403 } },   // OV-12a: QL của em xem / xoá được
   /* PR-LUI-b (5f): panel Học lại — lớp cũ + lộ trình + lớp đang hoạt động kèm sĩ số; chỉ Quản lý / Quản trị của em (GV 403). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/hoc-lai/lop-dich', maChuDich: { GVCN: 403, GVBM: 403 } },
-  /* P7 SV-LO-TRINH: "Khi lưu, web sẽ" hộp Tạm dừng/ Kết thúc học · panel Lộ trình mới · Quay lại học (em Tạm dừng ở Lưu trữ). */
+  /* P7 SV-LO-TRINH: "Khi lưu, web sẽ" hộp Tạm dừng / Kết thúc học · panel Lộ trình mới · Quay lại học (em Tạm dừng ở Lưu trữ). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/students/{hv}/trang-thai/xem-truoc?ketThuc=1' },
   /* Panel Lộ trình mới + Quay lại học cần em đã thi / tạm dừng — bộ demo đo không có; trần đo ở phép kiểm SV-9b (`prSvLoTrinh.tests.ts`). */
   /* PR-LT: {hv} là em lớp FT nên `lop.laLopThuong=false`, nhưng đường vẫn 200 với mọi vai xem được hồ sơ. */
@@ -487,6 +490,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* TQ-SOS-CN: panel ô SOS 2–3 (đọc đúng các em của ô, dữ liệu ×3): đo 9 / 9 / 8 câu → đo + 10. Cách cũ (tính lại cả chi nhánh) đo 10 câu · 3 358 dòng. */
+  'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,
   /* GD-7a (XM-10): hồ sơ HV thêm Nhập điểm + Trả lời tình hình của người xem (listAttempts theo em + câu tình hình): đo 66 / 66 / 74 / 72 câu → đo + 10. */
   'QL /students/{hv}': 76, 'QT /students/{hv}': 76, 'GVCN /students/{hv}': 84, 'GVBM /students/{hv}': 82,
   /* GD-5 (ô chọn có tìm `ChonNguoi`): `/ref/nguoi` đo 3 câu mọi vai (chưa gõ / gõ / GV Speaking) — trần 25 câu / lần gõ (plan GD-5). */
@@ -584,7 +589,7 @@ export const TRAN: Record<string, number> = {
   'QL /tim/hoc-vien?q=ng&lop=toi': 13, 'GVCN /tim/hoc-vien?q=ng&lop=toi': 13, 'GVBM /tim/hoc-vien?q=ng&lop=toi': 13,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
-  /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */
+  /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng / Kết thúc học. */
   'QL /students/1/trang-thai/xem-truoc?ketThuc=1': 19, 'QT /students/1/trang-thai/xem-truoc?ketThuc=1': 17, 'GVCN /students/1/trang-thai/xem-truoc?ketThuc=1': 21, 'GVBM /students/1/trang-thai/xem-truoc?ketThuc=1': 21,
   'QL /students/1/hoc-lai/lop-dich': 28,
   'QT /students/1/hoc-lai/lop-dich': 26,
@@ -1129,6 +1134,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 621, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 621, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 619,
   /* MYWORK-TVV: đo 13 dòng (seed, không kèm quét nền) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 66 (109 em): 920–1 121 dòng (14–21 câu); lượt quét nền đầu ngày ~200 câu chạy một lần cho cả hệ thống, không thuộc TVV. */
   'TVV /my-work': 63,
   /* GD-8a: em của TVV (HV của tôi) — đo 74 dòng (thay /tong-quan/hoc-vien 234 + /tong-quan/tvv 2) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 109 em: 1 641 dòng (trước 2 168). */

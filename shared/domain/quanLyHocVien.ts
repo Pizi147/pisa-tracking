@@ -3,7 +3,7 @@
  * và mở THẲNG panel của mục được chọn. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
 import { t } from '../i18n/index.ts';
-/* P7 SV-LO-TRINH (N11): một mục "Tạm dừng/ Kết thúc học" thay Tạm dừng / Thôi học + Lưu trữ + Bỏ lưu trữ + Học lại; "Quay lại học" cho em tạm dừng
+/* P7 SV-LO-TRINH (N11): một mục "Tạm dừng / Kết thúc học" thay Tạm dừng / Thôi học + Lưu trữ + Bỏ lưu trữ + Học lại; "Quay lại học" cho em tạm dừng
    và em đã kết thúc (đường `hocLai` cũ). API cũ (`archive`, `unarchive`, `hoc-lai`) giữ ở máy chủ cho dữ liệu cũ — web không bày. */
 export type ViecQuanLy = 'info' | 'lo-trinh-tiep' | 'lo-trinh' | 'buoc-tiep' | 'chuyen-lop' | 'outcome' | 'tam-dung-ket-thuc' | 'quay-lai'
   | 'xoa-hoc-vien' | 'de-xuat-sua' | 'de-xuat-chuyen-lop' | 'lich-su-sua';
@@ -16,7 +16,7 @@ export const NHAN_VIEC_QUAN_LY: Record<ViecQuanLy, string> = {
   'chuyen-lop': t('Chuyển lớp…'),
   'de-xuat-chuyen-lop': t('Đề xuất chuyển lớp…'),
   outcome: t('Kết quả thi thật'),
-  'tam-dung-ket-thuc': t('Tạm dừng/ Kết thúc học'),
+  'tam-dung-ket-thuc': t('Tạm dừng / Kết thúc học'),
   'quay-lai': t('Quay lại học'),
   'xoa-hoc-vien': t('Xoá học viên'),
   'de-xuat-sua': t('Đề xuất sửa thông tin…'),
@@ -37,17 +37,17 @@ export type LopHocQuyen = {
   hocLai?: boolean;
 };
 
-/** P7 (N11): hộp "Tạm dừng/ Kết thúc học" — `tamDung` = ô "Có thể quay lại học" bật được (em đang học); `ketThuc` = Kết thúc học được (chưa kết thúc).
+/** P7 (N11): hộp "Tạm dừng / Kết thúc học" — `tamDung` = ô "Có thể quay lại học" bật được (em đang học); `ketThuc` = Kết thúc học được (chưa kết thúc).
  * Cả hai false → không có mục. Máy chủ vẫn kiểm. */
 export function coTheTamDungKetThuc(quyen: Pick<LopHocQuyen, 'tamDung' | 'ketThuc'> | null | undefined, status?: string): { tamDung: boolean; ketThuc: boolean } {
   return { tamDung: !!quyen?.tamDung && status === 'active', ketThuc: !!quyen?.ketThuc && (status === 'active' || status === 'inactive') };
 }
 
 /**
- * Các mục của menu ⋯ hồ sơ HV (PR-OV2b, mockup overhaul-2 §6; P7 mockup V6 trang-thai-hv k1): Sửa thông tin · Chuyển lớp · Tạm dừng/ Kết thúc học trước; các mục
+ * Các mục của menu ⋯ hồ sơ HV (PR-OV2b, mockup overhaul-2 §6; P7 mockup V6 trang-thai-hv k1): Sửa thông tin · Chuyển lớp · Tạm dừng / Kết thúc học trước; các mục
  * khác giữ điều kiện cũ, xếp sau một vạch (Lộ trình tiếp theo, Lộ trình FT, Đề xuất…, Kết quả thi thật, Quay lại học);
  * Xoá học viên CUỐI, vạch đỏ, chỉ Quản trị hệ thống. `suaThongTin`: Admin / TVV / CX (`student.edit_info`) — mục Sửa thông tin. OV-8b: `suaThem`
- * (TVV / CX, `student.edit_more`) thêm Kết quả thi thật; Tạm dừng/ Kết thúc học / Quay lại học theo cờ `lopHoc.quyen` của máy chủ.
+ * (TVV / CX, `student.edit_more`) thêm Kết quả thi thật; Tạm dừng / Kết thúc học / Quay lại học theo cờ `lopHoc.quyen` của máy chủ.
  * Không có mục nào → nơi gọi không vẽ ⋯. Ẩn một mục không phải là chặn nó: máy chủ vẫn kiểm quyền.
  */
 export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, lopHoc, cycle, status, coTheXoa, deXuatSua, buocTiep }: {
@@ -103,7 +103,7 @@ export function mucQuanLyHocVien({ canEdit, suaThongTin, suaThem, nhapThiThat, l
 
 /**
  * OV-10b (mockup vai 13/10 mục 1, 6): ⋯ dòng học viên của TVV / CX / Admin — cùng mục, cùng thứ tự ⋯ hồ sơ HV của vai đó (`mucQuanLyHocVien`), chỉ
- * việc thông tin / trạng thái: Sửa thông tin · Tạm dừng/ Kết thúc học · Quay lại học · Kết quả thi thật. Nơi gọi thêm "Mở hồ sơ".
+ * việc thông tin / trạng thái: Sửa thông tin · Tạm dừng / Kết thúc học · Quay lại học · Kết quả thi thật. Nơi gọi thêm "Mở hồ sơ".
  */
 export function mucDongTheoVai(i: { suaThongTin: boolean; suaThem: boolean; ft: boolean; status: string; /** P13: khoá KET / PET. */ kyThi?: boolean }) {
   const quyen: LopHocQuyen = { ghiLoTrinhTiep: false, chuyenLop: false, tamDung: i.suaThem, quayLai: i.suaThem, ketThuc: i.suaThem, luuTru: false, boLuuTru: false };

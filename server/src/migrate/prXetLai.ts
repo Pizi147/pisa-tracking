@@ -2,7 +2,7 @@ import { demoToday } from '../demoConfig.ts';
 import { MOC_TU_GIU, tapXetLaiChiDoc } from '../normal/xetLai.ts';
 
 /**
- * P9a XET-LAI (N21): bảng `xet_lai_lo_trinh` — quyết định Xét lại lộ trình của QL (Tiếp tục · Học lại · Tạm dừng/ Kết thúc học, cả dòng tự ghi
+ * P9a XET-LAI (N21): bảng `xet_lai_lo_trinh` — quyết định Xét lại lộ trình của QL (Tiếp tục · Học lại · Tạm dừng / Kết thúc học, cả dòng tự ghi
  * khi hết hạn) và nhận xét của GVCN lớp mới (dòng `quyet_dinh` NULL). Cùng định nghĩa trong `schema.sql`.
  * Cùng lần tạo bảng (một lần): ghi mốc deploy cho luật tự giữ; thẻ "Mini Test chưa đạt" (`bao_len_mini_test`) đang chờ → đóng khi em có dòng (d)
  * của đúng Mini Test đó. Bảng đã có → không làm gì.

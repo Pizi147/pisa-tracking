@@ -219,7 +219,7 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     assert(loiCua(() => attemptsSvc.duaLaiCaLuot(P.coreTeacher, a.m2)).status === 403, 'GV');
   });
 
-  check('MTG-3e · web: mọi kỹ năng huỷ → "Đưa lại cả 4 kỹ năng", ẩn "Dời lịch thi cả đợt" (hộp "Huỷ MT{n}" bỏ ở OV-15h2 — Huỷ = Xóa)', () => {
+  check('MTG-3e · web: mọi kỹ năng huỷ → "Đưa lại cả 4 kỹ năng", ẩn "Dời lịch thi cả đợt" (hộp "Huỷ MT{n}" bỏ ở OV-15h2 — Huỷ = Xoá)', () => {
     const s = nguon('web/src/modules/fasttrack/MockDetailPage.tsx') + nguon('web/src/modules/fasttrack/HopThaoTacMt.tsx');
     assert(!fs.existsSync(path.join(ROOT, 'web/src/modules/fasttrack/HopHuyMt.tsx')) && !/Huỷ MT\{attemptNo\}/.test(s), 'còn hộp / nút Huỷ MT');
     assert(/Đưa lại cả 4 kỹ năng/.test(s) && /dua-lai-ca-luot/.test(s), 'Đưa lại cả 4 kỹ năng');

@@ -102,7 +102,7 @@ export function NutXepO({ chu, title, ke = false, onMo, chan }: { chu: string; t
 export const OTrong = ({ title }: { title?: string }) => <span className="o-kh-khong" title={title}>—</span>;
 
 /**
- * Ô MT ĐÃ XOÁ (chủ SP 06/11 "đừng để nó xóa ẩn hẳn đi"): khung đứt mờ "Đã xoá" — bấm mở hộp như mọi ô (Dời từng môn, ⋯ Khôi phục MT) — và
+ * Ô MT ĐÃ XOÁ (chủ SP 06/11 "đừng để nó xoá ẩn hẳn đi"): khung đứt mờ "Đã xoá" — bấm mở hộp như mọi ô (Dời từng môn, ⋯ Khôi phục MT) — và
  * "Khôi phục" bấm ngay, trong khung (dòng dưới). GV chỉ xem: ô là link trang lượt, không Khôi phục.
  */
 export function ODaXoa({ nhan, onMo, href, onKhoiPhuc, busy = false }: {

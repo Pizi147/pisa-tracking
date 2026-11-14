@@ -44,7 +44,7 @@ function tuanThat(l: NonNullable<HangMt['luot']>, homNay: string): string | null
 
 /**
  * MỘT HÀNG LỊCH MT ở panel Lộ trình (PR-LM mục 2, 3): nút chính theo trạng thái lượt + menu ⋯ — xếp / dời lịch (hộp `HopKyNang`
- * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Xóa (bỏ tuần, giữ lượt — Q-0310-1, OV-15c), nhập điểm ngay dưới hàng
+ * như Kế hoạch Test, có xác nhận huỷ lịch lượt bị vượt), Xoá (bỏ tuần, giữ lượt — Q-0310-1, OV-15c), nhập điểm ngay dưới hàng
  * (`DaiODiemLon`, như hồ sơ MT). Không phải vào hồ sơ MT cho các việc lịch thường ngày.
  */
 export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienDien, onDoi }: {
@@ -73,8 +73,8 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
     if (l.trangThai === 'chua-xep') chinh = { nhan: t('Xếp lịch'), lam: moHop };
     else if (l.trangThai === 'da-xep') {
       chinh = { nhan: t('Dời lịch'), lam: moHop };
-      /* OV-15c (mục 6): "Huỷ lịch" → "Xóa" — cùng tên, cùng câu hỏi với chân hộp lịch ở Kế hoạch Test. */
-      muc.push({ key: 'huy-lich', nhan: t('Xóa'), onChon: () => setHuyLich(true), nguyHiem: true },
+      /* OV-15c (mục 6): "Huỷ lịch" → "Xoá" — cùng tên, cùng câu hỏi với chân hộp lịch ở Kế hoạch Test. */
+      muc.push({ key: 'huy-lich', nhan: t('Xoá'), onChon: () => setHuyLich(true), nguyHiem: true },
         { key: 'nhap-diem', nhan: t('Nhập điểm'), onChon: () => onMoDiem(true) });
     } else if (l.trangThai === 'co-diem' || l.trangThai === 'lich-su') {
       chinh = { nhan: t('Nhập điểm'), lam: () => onMoDiem(!moDiem) };
@@ -157,7 +157,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
   );
 }
 
-/** "Xóa" (Q-0310-1 · OV-15c mục 6): bỏ tuần, giữ lượt — đợt về Chưa xếp, lịch sử giữ; máy chủ chặn lượt đã có điểm / đã thi. Câu như hộp lịch. */
+/** "Xoá" (Q-0310-1 · OV-15c mục 6): bỏ tuần, giữ lượt — đợt về Chưa xếp, lịch sử giữ; máy chủ chặn lượt đã có điểm / đã thi. Câu như hộp lịch. */
 function HopHuyLich({ attemptId, nhan, hocVien, onDong, onDoi }: {
   attemptId: number; nhan: string; hocVien: string; onDong: () => void; onDoi: () => void;
 }) {
@@ -168,14 +168,14 @@ function HopHuyLich({ attemptId, nhan, hocVien, onDong, onDoi }: {
     if (busy) return;
     setBusy(true); setLoiMay(null);
     try {
-      await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: t('Xóa lịch') });
+      await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: t('Xoá lịch') });
       invalidate('/attempts'); invalidate('/cycles'); invalidate('/ke-hoach-test'); invalidate('/students'); invalidate('/classes');
-      toast.push('ok', t('Đã xóa lịch {dot} · {ten}', { dot: nhan, ten: hocVien }));
+      toast.push('ok', t('Đã xoá lịch {dot} · {ten}', { dot: nhan, ten: hocVien }));
       onDoi(); onDong();
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
   return (
-    <ConfirmDialog open danger busy={busy} title={t('Xóa lịch {dot} của {ten}?', { dot: nhan, ten: hocVien })} confirmLabel={t('Xóa')} onClose={onDong} onConfirm={() => void lam()}
+    <ConfirmDialog open danger busy={busy} title={t('Xoá lịch {dot} của {ten}?', { dot: nhan, ten: hocVien })} confirmLabel={t('Xoá')} onClose={onDong} onConfirm={() => void lam()}
       body={(
         <div className="space-y-3">
           <p className="m-0">{t('Đợt về Chưa xếp, lịch sử vẫn xem được.')}</p>
