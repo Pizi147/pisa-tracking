@@ -16,6 +16,7 @@
  *  NX14 migrate: Case mô tả từ nhận xét gắn nguồn (nội dung giữ), cờ S đã hết việc hạ, lần hai không đổi
  *  NX17 người chấm chéo sửa nhận xét ô S mà người chấm cũ là GV phụ trách → vẫn chờ Xác nhận Case, mô tả không đổi
  *  NX16 Sửa Case MT chưa mô tả chỉ đổi tên / mức độ → lưu (không đòi mô tả); `luc` cũ → 409, không ghi; mô tả > 1000 → 400; lượt nguồn mất → không "MT?"
+ *  NX18 Case MT / S: mô tả ≥ CHU_TOI_THIEU_CASE (8, chủ SP 14/11), không còn 10 riêng
  *  NX15 migrate: Case đã trượt sang MT2 mà mô tả là nhận xét MT1 → nguồn MT1 (nhận xét MT2 không đè); mô tả không trùng nhận xét nào → NULL, không bị đè
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
@@ -171,7 +172,7 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     /* Đổi mức độ / tên ở Case MT không gửi mô tả → không tách (Case khác cùng em không có ở đây; kiểm 400 mô tả ngắn). */
     let loi: any = null;
     try { cases.suaCase(gvPT, c.id, { primaryCode: code, observation: 'ngắn' }); } catch (e) { loi = e; }
-    assert(loi?.status === 400, `mô tả < 10 ký tự phải 400: ${loi?.status}`);
+    assert(loi?.status === 400, `mô tả < 8 ký tự phải 400: ${loi?.status}`);
   }));
 
   check('NX8 · Case MT chưa mô tả QUÁ HẠN SOS → vẫn việc "Ghi nhận xét" (quá hạn); GV ghi mô tả + nhóm ở Case → hết việc, sang Xác nhận PA', () => thu(() => {
@@ -234,6 +235,26 @@ export async function runPrSvNxCaseTests(t: YThucTestKit) {
     assert(moTa(c.id)?.observation === 'Em ngại nói trước lớp, Part 2 dừng sớm.' && moTa(c.id)?.created_by === gvPT.userId, JSON.stringify(moTa(c.id)));
     svc.saveScore(gvCheo, a.m1, 'speaking', { nhanXet: 'Người chấm sửa nhận xét sau khi đã xác nhận.' }, TODAY);
     assert(moTa(c.id)?.observation === 'Em ngại nói trước lớp, Part 2 dừng sớm.', 'mô tả viết riêng bị đè');
+  }));
+
+  check('NX18 · (chủ SP 14/11) Case MT / S cùng ngưỡng chung CHU_TOI_THIEU_CASE = 8 (trước 10): Sửa Case MT + Xác nhận Case S viết mô tả 8 ký tự được, 7 → 400', () => thu(() => {
+    const N = d.CHU_TOI_THIEU_CASE as number;
+    assert(N === 8, `CHU_TOI_THIEU_CASE = ${N}`);
+    const { gvPT, gvCheo } = nguoiS();
+    const a = emMoi();
+    const c = chot(a.m1, { bandS: 5, nxS: NX.speaking, nguoiLuuS: gvCheo });
+    let loi: any = null;
+    try { cases.xacNhanCaseS(gvPT, c.id, { cach: 'viet', moTa: 'y'.repeat(N - 1) }); } catch (e) { loi = e; }
+    assert(loi?.status === 400, `Xác nhận Case 7 ký tự phải 400: ${loi?.status}`);
+    cases.xacNhanCaseS(gvPT, c.id, { cach: 'viet', moTa: 'y'.repeat(N) });
+    assert(moTa(c.id)?.observation === 'y'.repeat(N), `Xác nhận Case 8 ký tự: ${JSON.stringify(moTa(c.id))}`);
+    xoaNho();
+    const code = one(`SELECT taxonomy_code FROM case_issues WHERE case_id = ? AND role = 'primary'`, c.id).taxonomy_code;
+    loi = null;
+    try { cases.suaCase(gvPT, c.id, { primaryCode: code, observation: 'z'.repeat(N - 1) }); } catch (e) { loi = e; }
+    assert(loi?.status === 400 && /8 ký tự/.test(loi.message), `Sửa Case MT 7 ký tự: ${loi?.status} ${loi?.message}`);
+    cases.suaCase(gvPT, c.id, { primaryCode: code, observation: 'z'.repeat(N) });
+    assert(moTa(c.id)?.observation === 'z'.repeat(N), `Sửa Case MT 8 ký tự: ${JSON.stringify(moTa(c.id))}`);
   }));
 
   // ---------------------------------------------------------------- ④ SOS tạm · Overall đạt

@@ -138,12 +138,11 @@ export const COORDINATION_KIND_LABEL: Record<CoordinationKind, string> = new Pro
   get: (goc, k) => (typeof k === 'string' ? tenViec(k) : Reflect.get(goc, k)),
 });
 /**
- * NGƯỜI LÀM của một dòng việc phối hợp (CAU-HINH-CASE-SOS + PHOI-HOP-SOS-V2) — theo bản chụp của dòng (`pb_moc`). Bản gốc: mọi việc GVCN; QL luôn làm thẳng.
- * `buocTvv` ≠ null: GVCN xác nhận xong thì sinh việc TVV (báo gia đình, sắp xếp họp, ghi kết quả).
+ * BƯỚC TVV của một dòng việc phối hợp (CAU-HINH-CASE-SOS + PHOI-HOP-SOS-V2) — theo bản chụp của dòng (`pb_moc`). Việc luôn của GVCN, QL làm thẳng (chủ SP 14/11 bỏ "Ai làm").
+ * ≠ null: GVCN xác nhận xong thì sinh việc TVV (báo gia đình, sắp xếp họp, ghi kết quả).
  */
-export function aiLamViec(dong: { kind: string; pb_moc?: number | null }): { aiLam: Viec['aiLam']; buocTvv: NonNullable<Viec['buocTvv']> | null } {
-  const v = viecCua(dong.kind, dong.pb_moc);
-  return { aiLam: v?.aiLam ?? 'gvcn', buocTvv: v?.buocTvv ?? null };
+export function buocTvvViec(dong: { kind: string; pb_moc?: number | null }): NonNullable<Viec['buocTvv']> | null {
+  return viecCua(dong.kind, dong.pb_moc)?.buocTvv ?? null;
 }
 /** Mã việc CÓ HẠN ở bản gốc hoặc bản đang dùng — lọc SQL trước (`kind IN (…)`), `hanPhoiHop(…, pb)` của từng dòng quyết sau.
  *  ponytail: bản giữa (có hạn rồi bỏ) không vào lọc — thêm hợp mọi phiên bản nếu Quản trị hay đổi qua lại. */

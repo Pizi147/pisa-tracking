@@ -1,6 +1,6 @@
 import { capNhatConOCho } from './conOCho.ts';
 import { db, tx } from '../db.ts';
-import { PERMISSIONS, duocHoanTacVang, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, duocHoanTacVang, vangLan2Huy, kiemLyDoThaoTac, laMtCuKyNang, tenMon, tenMonNgan, tuanLich, type AssessedSkill } from '../../../shared/domain/index.ts';
 import { assessedSkillOf, entrySkillsOf } from './scoring.ts';
 import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { laLopKetThuc } from './hoanTat.ts';
@@ -176,7 +176,10 @@ export type MoveOutcome = {
 function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: any, o: { lyDo: string | null }): MoveOutcome {
   const skill = row.skill as AssessedSkill;
   const moveNo = row.absence_move_count + 1;
-  if (moveNo >= 2) return huyVangNoi(conn, actor, attempt, row, moveNo);
+  /* PTA 14/11: MT0 của lớp THƯỜNG theo luật "-" lớp thường — chỉ dời, không bao giờ huỷ; MT0 / Mock lớp FT: lần 2 huỷ (N38 L2). */
+  const huy = moveNo >= 2 && vangLan2Huy(attempt.kind,
+    attempt.kind !== 'mt0' || (conn.prepare('SELECT is_fast_track AS ft FROM classes WHERE id = ?').get(attempt.class_id) as any)?.ft !== 0);
+  if (huy) return huyVangNoi(conn, actor, attempt, row, moveNo);
   const target = nextWeekOf(row.week_start);
   /* L4: vướng thứ tự đợt (MT0 trước MT1) hay trùng / sát lượt khác → VẪN dời; câu chặn / cảnh báo của dời tay thành cảnh báo. */
   const check = checkSkillWeekMove({ attemptId: attempt.id, skill, newWeekStart: target.week_start });
@@ -185,7 +188,7 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
   applyMove(conn, actor, attempt, row, target, o.lyDo, moveNo, actor === null);
   return {
     skill, result: 'moved', toWeek: target.code, moveNo, canhBao,
-    message: `${skillName(skill)} đã dời sang tuần ${target.code} (vắng lần 1).${canhBao ? ` ${canhBao}` : ''}`,
+    message: `${skillName(skill)} đã dời sang tuần ${target.code} (vắng lần ${moveNo}).${canhBao ? ` ${canhBao}` : ''}`,
   };
 }
 
@@ -609,7 +612,7 @@ export function settleGroup(
     entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${assessed}`,
     before: { sitStatus: 'scheduled' }, after: { sitStatus: 'absent', week: periodCode },
   });
-  /* Q-A, K4-03 · N38 — MÁY TỰ XỬ LÝ NGAY TRONG CÙNG GIAO DỊCH: lần 1 dời tuần sau tuần thi, lần 2 huỷ. Lớp thường không qua đây (chỉ Mock). */
+  /* Q-A, K4-03 · N38 — MÁY TỰ XỬ LÝ NGAY TRONG CÙNG GIAO DỊCH: lần 1 dời tuần sau tuần thi, lần 2 huỷ. Lớp thường không qua đây (Mock + MT0). */
   const row = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!;
   const kq = xuLyVangMotKyNang(conn, null, attempt, row, { lyDo: 'Vắng — tự dời' });
   if (kq.result === 'moved') {
@@ -625,7 +628,7 @@ export function settleGroup(
       if (t.user_id === actor) continue;   // OV-1b: người vừa gõ "-" đã thấy kết quả ngay ở ô
       notify({
         userId: t.user_id, kind: 'tu_doi_lich', title: `Đã dời bài vắng · ${em}`,   // PR-VAI-a (Q19): tin để biết, tách khỏi schedule_move
-        body: `Đã tự dời ${skillName(assessed)} của ${em} · MT${attempt.attempt_no} sang ${tuanMoi} (vắng lần 1).`,
+        body: `Đã tự dời ${skillName(assessed)} của ${em} · MT${attempt.attempt_no} sang ${tuanMoi} (vắng lần ${kq.moveNo}).`,
         entityType: 'assessment_attempt', entityId: attemptId,
         dedupKey: `no_show:${attemptId}:${assessed}:${weekEnd.slice(0, 10)}:${t.user_id}`,
       });
@@ -780,7 +783,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   const conn = db();
   let a = loadAttempt(attemptId);
   if (!canRequest(p, a)) throw forbidden('Chỉ giáo viên chủ nhiệm của lớp và Quản lý báo vắng được.');
-  if (a.kind !== 'mock') throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');
+  if (isRatio(a)) throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');   // chủ SP 14/11: MT0 báo vắng như Mock (N38)
   if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt
   const row = ensureSkillRows(attemptId).find((r) => r.skill === skill);
   if (!row?.required) throw loi(400, '{skill} không nằm trong lượt này.', { skill: skillName(skill) });

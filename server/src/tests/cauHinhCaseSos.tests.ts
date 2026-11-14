@@ -3,6 +3,7 @@
  * Đặc tả `docs/superpowers/specs/2026-11-11-cau-hinh-case-sos-design.md`, kế hoạch `docs/superpowers/plans/2026-11-11-cau-hinh-case-sos.md`.
  * Mỗi phép kiểm ghi DB thì cuộn lại (`thu`).
  */
+import fs from 'node:fs';
 import type { YThucTestKit } from './yThuc.tests.ts';
 
 export async function runCauHinhCaseSosTests(t: YThucTestKit) {
@@ -61,11 +62,8 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
       && dm.hanPhoiHop('cx_meeting_family', '2026-11-02T03:00:00Z', '2026-11-20') === '2026-11-20', 'hạn Meeting CX 5 ngày, việc khác không hạn, hạn chọn thắng');
     /* PHOI-HOP-V2 XM-1: Nội dung bắt buộc (≥ 1) khi GVCN xác nhận; Meeting CX: gửi TVV tuỳ chọn + bước TVV 5 ngày, ≥ 10 ký tự; lớp thường Báo PH kết quả Test: không. */
     assert(dm.toiThieuGhiChu('cx_meeting_family') === 0 && dm.toiThieuGhiChu('talk_student') === 1 && dm.toiThieuGhiChu('bao_ph_tvv') === 0, 'ghi chú tối thiểu');
-    const goc = dm.aiLamViec({ kind: 'cx_meeting_student', pb_moc: null });
-    assert(goc.aiLam === 'gvcn' && goc.buocTvv?.hanNgay === 5 && goc.buocTvv?.toiThieu === 10 && dm.aiLamViec({ kind: 'talk_family', pb_moc: null }).buocTvv === null
-      && dm.aiLamViec({ kind: 'talk_family', pb_moc: null }).aiLam === 'gvcn', `ai làm / bước TVV bản gốc: ${JSON.stringify(goc)}`);
-    const ai = dm.aiLamViec({ kind: 'talk_family', pb_moc: null });
-    assert(ai.aiLam === 'gvcn' && ai.buocTvv === null, 'bản gốc: GVCN, không bước TVV');
+    const goc = dm.buocTvvViec({ kind: 'cx_meeting_student', pb_moc: null });
+    assert(goc?.hanNgay === 5 && goc?.toiThieu === 10 && dm.buocTvvViec({ kind: 'talk_family', pb_moc: null }) === null, `bước TVV bản gốc: ${JSON.stringify(goc)}`);
     for (const l of dm.LOAI_CAU_HINH) assert(dm.kiemCauHinh(l, dm.cauHinhGoc()[l]).length === 0, `bản gốc ${l} hợp lệ: ${JSON.stringify(dm.kiemCauHinh(l, dm.cauHinhGoc()[l]))}`);
     assert(dm.benCua(null) === 'ft' && dm.benCua('FT') === 'ft' && dm.benCua('FOU') === 'thuong' && dm.benCua('KET') === 'thuong', 'benCua');
   });
@@ -89,6 +87,18 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     assert(dm.kiemCauHinh('nguyen_nhan', g7).length === 0, 'thêm nhóm mới trước "Khác" hợp lệ');
     const d7 = dm.thayDoi('nguyen_nhan', dm.cauHinhGoc().nguyen_nhan, g7);
     assert(d7.length === 1 && d7[0].viec === 'them' && /Nghe từ khoá/.test(d7[0].muc), `thayDoi: ${JSON.stringify(d7)}`);
+  });
+
+  check('CHCS-AI-LAM · (chủ SP 14/11) bỏ ô "Ai làm" Phối hợp SOS: việc mới không cần trường; bản cấu hình cũ còn `aiLam` (kể cả giá trị lạ) vẫn hợp lệ, bước TVV đọc đúng; web không còn ô', () => {
+    const d = sao(dm.cauHinhGoc().moc_sos);
+    assert(d.viec.every((v: any) => !('aiLam' in v)), 'bản gốc còn aiLam');
+    d.viec.push({ ma: 'viec.m1', ten: 'Gọi điện nhắc lịch', hanNgay: null, ghiChu: 'khong' });
+    assert(dm.kiemCauHinh('moc_sos', d).length === 0, `việc không có aiLam: ${JSON.stringify(dm.kiemCauHinh('moc_sos', d))}`);
+    const cu = sao(dm.cauHinhGoc().moc_sos);
+    for (const v of cu.viec) v.aiLam = v.ma === 'talk_family' ? 'tvv' : 'la';
+    assert(dm.kiemCauHinh('moc_sos', cu).length === 0, `bản cũ còn aiLam phải hợp lệ: ${JSON.stringify(dm.kiemCauHinh('moc_sos', cu))}`);
+    assert(dm.buocTvvViec({ kind: 'cx_meeting_student', pb_moc: null })?.hanNgay === 5, 'bước TVV');
+    assert(!/Ai làm|aiLam/.test(fs.readFileSync('web/src/modules/platform/cauHinh/BangDanhSach.tsx', 'utf8')), 'web còn ô Ai làm');
   });
 
   check('CHCS-MIG · migrate: 2 cột con trỏ + 3 chỉ mục một phần (bảng chung do QTV2-HAN tạo), chạy lặp không làm gì; ghi bảng tăng mốc tham chiếu; dòng loại khác không đổi bản nguyên nhân', () => thu(() => {
@@ -251,8 +261,8 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     const id = r.moc_sos.id;
     assert(dm.hanPhoiHop('cx_meeting_student', '2026-11-02T03:00:00Z', null, id) === '2026-11-09' && dm.hanPhoiHop('cx_meeting_student', '2026-11-02T03:00:00Z', null, null) === '2026-11-07', 'hạn theo bản');
     assert(dm.toiThieuGhiChu('cx_meeting_student', id) === 20 && dm.toiThieuGhiChu('cx_meeting_student', null) === 0, 'ghi chú tối thiểu theo bản (bản gốc: gửi TVV tuỳ chọn)');
-    const ai = dm.aiLamViec({ kind: 'cx_meeting_student', pb_moc: id });
-    assert(ai.aiLam === 'gvcn' && ai.buocTvv?.hanNgay === 7 && dm.aiLamViec({ kind: 'cx_meeting_student', pb_moc: null }).buocTvv?.hanNgay === 5, `aiLamViec: ${JSON.stringify(ai)}`);
+    const ai = dm.buocTvvViec({ kind: 'cx_meeting_student', pb_moc: id });
+    assert(ai?.hanNgay === 7 && dm.buocTvvViec({ kind: 'cx_meeting_student', pb_moc: null })?.hanNgay === 5, `buocTvvViec: ${JSON.stringify(ai)}`);
     const e = loi(() => doiMoc((d) => { d.viec.find((x: any) => x.ma === 'talk_student').an = true; }));
     assert(e?.status === 400 && /đang ẩn/.test(e.message), 'ẩn việc đang nằm trong ô mốc → 400');
   }));

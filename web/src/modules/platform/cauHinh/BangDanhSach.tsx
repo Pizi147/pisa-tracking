@@ -257,8 +257,7 @@ export function BangPhuongAn({ duLieu, chiXem, luuDs }: ChungProps) {
   );
 }
 
-const AI_LAM: Record<Viec['aiLam'], string> = { gvcn: 'GVCN', tvv: 'TVV', cx: 'CX' };
-export const tomTatViec = (v: Viec) => [AI_LAM[v.aiLam], v.hanNgay ? t('{n} ngày', { n: v.hanNgay }) : t('không hạn'),
+export const tomTatViec = (v: Viec) => [v.hanNgay ? t('{n} ngày', { n: v.hanNgay }) : t('không hạn'),
   v.ghiChu === 'bat_buoc' ? t('ghi chú ≥ {n}', { n: v.toiThieu ?? 1 }) : '', v.buocTvv ? t('→ TVV {n} ngày', { n: v.buocTvv.hanNgay }) : ''].filter(Boolean).join(' · ');
 
 export function DanhMucViec({ duLieu, chiXem, luuDs }: ChungProps) {
@@ -269,13 +268,9 @@ export function DanhMucViec({ duLieu, chiXem, luuDs }: ChungProps) {
       phu={(v) => tomTatViec(v)}
       khoaAn={(v) => (oDungViec(moc, v.ma) ? t('đang ở {n} ô mốc', { n: oDungViec(moc, v.ma) }) : null)}
       coDinh={(v) => gocMa.has(v.ma)}
-      moi={() => ({ ma: '', ten: '', aiLam: 'gvcn', hanNgay: null, ghiChu: 'khong' })}
+      moi={() => ({ ma: '', ten: '', hanNgay: null, ghiChu: 'khong' })}
       oThem={(v, dat) => (
-        <div className="grid gap-2 text-[13px] text-slate-400 sm:col-span-2 sm:grid-cols-3">
-          <label className="grid gap-1 font-medium">{t('Ai làm')}
-            <select className="field" value={v.aiLam} onChange={(e) => dat({ ...v, aiLam: e.target.value as Viec['aiLam'] })}>
-              <option value="gvcn">GVCN</option><option value="tvv">{t('TVV của em')}</option><option value="cx">CX</option>
-            </select></label>
+        <div className="grid gap-2 text-[13px] text-slate-400 sm:col-span-2 sm:grid-cols-2">
           <label className="grid gap-1 font-medium">{t('Hạn (ngày, trống = không hạn)')}
             <input className="field" inputMode="numeric" value={v.hanNgay ?? ''} onChange={(e) => dat({ ...v, hanNgay: e.target.value.trim() ? Number(e.target.value) : null })} /></label>
           <label className="grid gap-1 font-medium">{t('Ghi chú khi xác nhận')}
@@ -285,7 +280,7 @@ export function DanhMucViec({ duLieu, chiXem, luuDs }: ChungProps) {
               </select>
               {v.ghiChu === 'bat_buoc' && <><span>≥</span><input className="field w-16 text-center" inputMode="numeric" value={v.toiThieu ?? ''} onChange={(e) => dat({ ...v, toiThieu: Number(e.target.value) || undefined })} /></>}
             </span></label>
-          <label className="inline-flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:col-span-3 sm:min-h-0">
+          <label className="inline-flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:col-span-2 sm:min-h-0">
             <input type="checkbox" checked={!!v.buocTvv} onChange={(e) => dat({ ...v, buocTvv: e.target.checked ? { hanNgay: 5, toiThieu: 10 } : undefined })} />
             {t('Sau xác nhận: sinh việc TVV báo gia đình')}
             {v.buocTvv && <>
