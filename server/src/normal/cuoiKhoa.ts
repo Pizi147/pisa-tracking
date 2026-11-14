@@ -79,17 +79,18 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
     }
     /* P13: cùng câu đọc dòng lịch MÔN GỘP cũ (`la_lich` = 1) — bộ môn theo lượt (`daGhiLuot`), vẫn 2 câu cho cả lô. */
     for (const r of conn.prepare(`SELECT attempt_id AS attempt_id, skill AS skill, raw_score AS raw_score, raw_total AS raw_total, no_show_cu AS no_show_cu, 0 AS la_lich FROM assessment_scores WHERE attempt_id IN (${ph})
-        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, 1 FROM attempt_skills WHERE attempt_id IN (${ph}) AND skill IN (${GOP_PH})`).all(json, json, ...GOP) as any[]) {
+        UNION ALL SELECT attempt_id, skill, NULL, NULL, NULL, IIF(sit_status = 'cancelled', 2, 1) FROM attempt_skills WHERE attempt_id IN (${ph}) AND (skill IN (${GOP_PH}) OR sit_status = 'cancelled')`).all(json, json, ...GOP) as any[]) {
+      /* LG-9b: cùng câu lấy thêm dòng lịch môn ĐÃ HUỶ (`la_lich` = 2) — kết quả tính trên môn còn lại (chỉ mục theo lượt: không thêm dòng đọc). */
       const m = r.la_lich ? lichGop : diem;
       if (!m.has(r.attempt_id)) m.set(r.attempt_id, []);
-      m.get(r.attempt_id)!.push(r);
+      m.get(r.attempt_id)!.push(r.la_lich ? { ...r, sit_status: r.la_lich === 2 ? 'cancelled' : null } : r);
     }
   });
   const chuongTrinh = allProgrammes();
   for (const [id, l] of luot) {
     const prog = l.ct ? chuongTrinh.get(l.ct) : null;
     if (!prog || prog.scoringMode !== 'ratio') continue;
-    const kq = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(lichGop.get(id), diem.get(id)), l.boMon), diem.get(id) ?? [], prog.code, l.nguong ?? undefined, l.tao);   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
+    const kq = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(lichGop.get(id), diem.get(id)), l.boMon), diem.get(id) ?? [], prog.code, l.nguong ?? undefined, l.tao, lichGop.get(id));   // P13: bộ môn theo lượt   // OV-6b1: ngưỡng lớp đọc cùng câu
     out.set(id, {
       tyLe: kq.tyLeTong, du: kq.complete, nguong: kq.passThreshold, mocNguong: kq.mocNguong, scored: kq.scored, required: kq.required, ct: prog.code, kind: l.kind,
       monTruot: kq.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill),

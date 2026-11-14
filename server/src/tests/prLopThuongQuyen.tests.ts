@@ -161,6 +161,37 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     assert(!hop.includes('khongTuHuy'), 'trang MT không có Huỷ môn');
   }));
 
+  /* LG-9b (chủ SP 15/11 "Tính trên môn còn lại"): môn đã Huỷ môn ra khỏi % tổng / đạt — MỘT hàm `evaluateRegular` cho mọi nơi. */
+  check('LTQ-PHAN-TRAM · % tổng tính trên môn còn lại: hàm thuần (môn huỷ, huỷ hết môn, môn huỷ có điểm vẫn tính) + Final thật (3 môn có điểm, Huỷ môn L) ở regularResultOf / regularSheet; Khôi phục → lại chờ', () => thu(() => {
+    const ev = regular.evaluateRegular;
+    const mon = ['listening', 'reading', 'writing', 'speaking'];
+    const diem = [{ skill: 'reading', raw_score: 30, raw_total: 40 }, { skill: 'writing', raw_score: 14, raw_total: 20 }, { skill: 'speaking', raw_score: 18, raw_total: 20 }];
+    const lich = mon.map((k) => ({ skill: k, sit_status: k === 'listening' ? 'cancelled' : 'scheduled' }));
+    const r1 = ev(mon, diem, 'FOU', 0.7, null, lich);
+    assert(r1.complete && r1.required === 3 && JSON.stringify(r1.daHuy) === '["listening"]' && Math.abs(r1.tyLeTong - 62 / 80) < 1e-9, `một môn huỷ: ${JSON.stringify(r1)}`);
+    const r0 = ev(mon, diem, 'FOU', 0.7, null);
+    assert(!r0.complete && r0.tyLeTong === null && r0.daHuy.length === 0, 'không truyền lịch → như cũ (chờ L)');
+    const rHet = ev(mon, [], 'FOU', 0.7, null, mon.map((k) => ({ skill: k, sit_status: 'cancelled' })));
+    assert(rHet.required === 0 && !rHet.complete && rHet.tyLeTong === null && rHet.daHuy.length === 4, `huỷ hết: ${JSON.stringify(rHet)}`);
+    const rCoDiem = ev(mon, [...diem, { skill: 'listening', raw_score: 20, raw_total: 40 }], 'FOU', 0.7, null, lich);
+    assert(rCoDiem.required === 4 && rCoDiem.daHuy.length === 0, 'môn huỷ mà có điểm vẫn tính');
+    /* Final thật */
+    const e = emMt0();
+    const monFin: string[] = regular.regularResultOf(e.fin).skills.map((x: any) => x.skill);
+    const conLai = monFin.filter((k) => k !== 'listening');
+    for (const k of conLai) regular.saveRegularScore(P.mbManager, e.fin, k, { score: 15, total: 20 }, TODAY);
+    regular.reportRegularNoShow(P.mbManager, e.fin, 'listening', true, TODAY);
+    absenceMod.huyTay(P.mbManager, e.fin, 'listening', true);
+    xoaNho();
+    const kq = regular.regularResultOf(e.fin);
+    assert(kq.complete && kq.required === conLai.length && kq.daHuy.includes('listening') && Math.abs(kq.tyLeTong - 0.75) < 1e-9, `regularResultOf: ${JSON.stringify(kq)}`);
+    const dong = regular.regularSheet(P.mbManager, LOP).rows.find((r: any) => r.attemptId === e.fin);
+    assert(dong.result.complete && Math.abs(dong.result.tyLeTong - 0.75) < 1e-9 && dong.result.daHuy.includes('listening'), `lưới: ${JSON.stringify(dong.result)}`);
+    absenceMod.huyTay(P.mbManager, e.fin, 'listening', false);
+    xoaNho();
+    assert(!regular.regularResultOf(e.fin).complete, 'Khôi phục → lại chờ L');
+  }));
+
   /* B' 6b (chủ SP 10/11 tối): Kế hoạch Test của GV S hiện lớp thường CÓ MT0 — chỉ xem, chỉ ô MT0 (Giữa / Cuối khoá vẫn chỉ GV lớp thấy, chủ SP 08/11). */
   check('LTQ-5 · Kế hoạch Test GV S: lớp thường có MT0 vào danh sách, chỉ xem, chỉ em có MT0, không lộ Final; lớp không MT0 không vào; QL thấy đủ', () => thu(() => {
     const coLop = () => kh.danhSachLop(gvS(), {}).lop.some((l: any) => l.id === LOP);

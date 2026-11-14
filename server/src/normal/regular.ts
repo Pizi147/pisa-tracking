@@ -223,6 +223,8 @@ export type RegularResult = {
   tyLeTong: number | null;
   /** Q-RL1 (chủ SP 29/10): môn "Không dự thi" (dấu "-" ≥ 2 tuần, không điểm) — ra khỏi bộ môn cần đủ; kết quả tính trên môn đã thi, giao diện ghi rõ. */
   khongDuThi: string[];
+  /** LG-9b (chủ SP 15/11 "Tính trên môn còn lại"): môn đã huỷ (Huỷ môn / `sit_status = 'cancelled'`), chưa có điểm — ngoài % tổng, đạt / không đạt. */
+  daHuy: string[];
 };
 
 /**
@@ -241,10 +243,15 @@ export function evaluateRegular(
   nguong: number = RATIO_PASS_THRESHOLD,   // OV-6b1: ngưỡng đạt của LỚP — `nguongDatLop(classId)`
   /** QTV2-BAND: `created_at` của lượt (chọn bản Ngưỡng lớp thường). */
   mocLuot?: string | null,
+  /** LG-9b: dòng lịch của lượt (CÙNG nguồn truyền cho `daGhiLuot`) — môn `cancelled` chưa có điểm ra khỏi kết quả. */
+  lich?: readonly { skill: string; sit_status?: string | null }[] | null,
 ): RegularResult {
   /* Q-RL1 (chủ SP 29/10): môn Không dự thi (chưa có điểm) không còn làm kết quả "chưa đủ môn" mãi — tính trên các môn đã thi. */
+  const chuaDiem = (k: string) => !rows.some((r) => r.skill === k && r.raw_score != null);
   const khongDuThi = skillsVao.filter((k) => rows.some((r) => r.skill === k && !!r.no_show_cu && r.raw_score == null));
-  const skills = skillsVao.filter((k) => !khongDuThi.includes(k));
+  /* LG-9b (chủ SP 15/11 "Tính trên môn còn lại"): môn đã huỷ (chưa điểm) cũng tính như vậy — huỷ hết môn thì không có kết quả. */
+  const daHuy = skillsVao.filter((k) => chuaDiem(k) && !khongDuThi.includes(k) && !!lich?.some((r) => r.skill === k && r.sit_status === 'cancelled'));
+  const skills = skillsVao.filter((k) => !khongDuThi.includes(k) && !daHuy.includes(k));
   const results: RegularSkillResult[] = skills.map((skill) => {
     const row = rows.find((r) => r.skill === skill);
     const { outcome, ratio } = ratioResult(row?.raw_score ?? null, row?.raw_total ?? null, nguong);
@@ -286,6 +293,7 @@ export function evaluateRegular(
       ? results.reduce((s, r) => s + (r.score ?? 0), 0) / results.reduce((s, r) => s + (r.total ?? 0), 0)
       : null,
     khongDuThi,
+    daHuy,
   };
 }
 
@@ -309,7 +317,8 @@ export function regularResultOf(attemptId: number): RegularResult {
   const prog = a ? chuongTrinhCuaLuot(a) : null;
   const rows = conn.prepare('SELECT skill, raw_score, raw_total, no_show_cu FROM assessment_scores WHERE attempt_id = ?')
     .all(attemptId) as any[];
-  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lichGopCua([attemptId]).get(attemptId), rows), a?.bo_mon) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code), a?.created_at ?? null);
+  const lich = lichGopCua([attemptId]).get(attemptId);
+  return evaluateRegular(prog ? boMonTheoLuot(prog.skills, daGhiLuot(lich, rows), a?.bo_mon) : [], rows, prog?.code, nguongDatLop(a?.class_id, prog?.code), a?.created_at ?? null, lich);
 }
 
 /** Lớp có ngưỡng đạt khác 70 % — MỘT câu, nhớ trong request GET (thường rỗng: chỉ lớp mở sau khi Quản trị đổi "Đạt từ"). */
@@ -1298,7 +1307,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
     rows: attempts.map((a) => {
       const rows = byAttempt.get(a.id) ?? [];
       const mon = monDong(a.id);
-      const result = evaluateRegular(mon, rows, prog.code, nguongDatLop(classId), a.created_at);
+      const result = evaluateRegular(mon, rows, prog.code, nguongDatLop(classId), a.created_at, skillRows.get(a.id));
       const failing = result.skills.filter((s) => s.outcome === 'fail').map((s) => s.skill);
       const dongCases = casesOf(a.student_id, a.cycle_id ?? null, failing);
       const c = dongCases[0] ?? null;

@@ -79,7 +79,7 @@ export function evaluateAttemptRow(
   const prog = chuongTrinhTyLeCuaLuot(ma, () => programmes);
   if (prog) {
     const nguong = a.class_id && 'lop_nguong_dat' in a ? a.lop_nguong_dat || RATIO_PASS_THRESHOLD : nguongDatLop(a.class_id, prog.code);   // cùng luật `nguongDatLop` (thiếu → 70 %)
-    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores), a.bo_mon), scores, prog.code, nguong, a.created_at);   // P13: bộ môn theo lượt
+    const r = evaluateRegular(boMonTheoLuot(prog.skills, daGhiLuot(bundle.skillRows.get(a.id), scores), a.bo_mon), scores, prog.code, nguong, a.created_at, bundle.skillRows.get(a.id));   // P13: bộ môn theo lượt
     const skills: Record<string, SkillEval> = {};
     for (const s of r.skills) {
       skills[s.skill] = { evaluable: s.outcome !== 'missing', under: s.outcome === 'fail', v: s.ratio === null ? null : s.ratio * 100 };
