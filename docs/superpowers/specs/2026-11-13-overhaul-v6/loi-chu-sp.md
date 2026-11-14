@@ -291,3 +291,11 @@ Theo session mockup ② (chủ SP đã duyệt "làm đi" trong session đó) �
 2. Lớp thường dùng CÙNG khung (đơn vị là Môn: Progress / Final, %, kỳ vọng 70 %, Bổ trợ miễn phí, Mini Test) — thay khối "Case đang mở" 08/11.
 3. Bỏ TVV khỏi đầu trang hồ sơ lớp và khỏi dòng "TVV …" dưới tên em; TVV ghi nhỏ ở đầu khối trái của phần mở rộng.
 PTA Overhaul CHƯA tự áp sang hồ sơ HV (mockup ③): session ② đề xuất "TVV không ở đầu" cho cả hồ sơ HV, nhưng đó là đề xuất của session, không phải lời chủ SP → hỏi chủ SP.
+
+## 15/11 — lời 26: TVV ở hồ sơ HV giữ
+
+Câu hỏi của PTA Overhaul: hồ sơ học viên (mockup ③) có bỏ TVV khỏi đầu trang như hồ sơ lớp không.
+
+> "không bỏ ở Hồ sơ HV"
+
+ĐÃ CHỐT: hồ sơ HV GIỮ TVV ở dòng thông tin đầu hồ sơ. Việc bỏ TVV (lời 25 ý 3) chỉ áp cho hồ sơ lớp. Mockup ③ không đổi.
