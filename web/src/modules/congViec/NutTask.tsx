@@ -147,7 +147,9 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
       {chu.trim().length >= 2 && !ds.length && !loi && <p role="status" className="m-0 text-[13px] text-dim">{t('Không thấy em nào khớp.')}</p>}
       {loi && <p role="alert" className="m-0 text-[13px] text-late">⚠ {loi}</p>}
       {nhieu && (
-        <div className="flex justify-end border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
+        <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
+          {/* ⑤ F3 + rà đồng bộ 15/11 mục B: một chân "Đóng · Tiếp" cho hộp chọn em. */}
+          <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={onDong}>{t('Đóng')}</button>
           <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={!chon.length} onClick={() => onChon(chon)}>{t('Tiếp ›')}</button>
         </div>
       )}

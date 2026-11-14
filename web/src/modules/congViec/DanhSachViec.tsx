@@ -127,8 +127,9 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
             </h2>
             <ul className="m-0 list-none p-0">
               {m.items.slice(0, n).map((x, j, ds) => {
-                /* Chỉ vẽ vạch khi mục có ≥ 2 nhóm hạn (một nhóm: cột hạn đã nói đủ). */
-                const coVach = new Set(ds.map(vach)).size > 1;
+                /* Vạch khi mục có ≥ 2 nhóm hạn (một nhóm: cột hạn đã nói đủ) — hoặc có việc không hạn: cột hạn của việc đó để trống,
+                   vạch "Không hạn" nói thay (⑤ B1; rà đồng bộ 15/11 mục B). Mục Chấm Speaking không vạch. */
+                const coVach = !chung && (new Set(ds.map(vach)).size > 1 || ds.some((x) => !x.due));
                 const vachMoi = coVach && (j === 0 || vach(ds[j - 1]) !== vach(x));
                 return [
                   vachMoi && <li key={`v:${vach(x)}`} className={`flex min-h-9 items-center px-4 text-[13px] font-semibold text-dim max-sm:min-h-10 max-sm:px-3.5 ${j ? 'border-t' : ''}`}
@@ -256,7 +257,8 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
         ) : <span title={v.text} className="whitespace-nowrap font-semibold tabular-nums text-dim">{nhanHan(it.due, homNay)}</span>
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
-        : laViecChamCheo(it) ? null : <span className="text-faint">{t('không hạn')}</span>}
+        /* GD-4a (⑤ B1): không hạn → cột trống, vạch nhóm "Không hạn" ở đầu nhóm nói thay; trình đọc màn hình vẫn nghe. */
+        : laViecChamCheo(it) ? null : <span className="sr-only">{t('không hạn')}</span>}
     </span>
   );
 }
