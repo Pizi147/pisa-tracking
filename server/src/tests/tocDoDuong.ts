@@ -59,6 +59,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Tổng quan V5', vai: ['CX'], url: '/tong-quan/v5?ct=ft' },
   { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv' },
   { trang: 'Tổng quan V5', vai: ['TVV'], url: '/tong-quan/tvv/o?o=bao-ph' },
+  /* GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; thay `/tong-quan/tvv` + `/tong-quan/hoc-vien` khi GD-8 giao diện merge. */
+  { trang: 'Trang đầu TVV', vai: ['TVV', 'QL', 'GVCN'], url: '/tong-quan/tvv/em', maChuDich: { QL: 400, GVCN: 400 } },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/yeu-cau/dem?branchId={cn}' },
   /* PR-S6F-b (UXF-a P1): Báo cáo đơn vị — tín hiệu đọc sổ chỉ số MỘT lần mỗi chỉ số (không theo chi nhánh). */
   { trang: 'Báo cáo đơn vị', vai: ['QL', 'QT'], url: '/signals' },
@@ -611,6 +613,7 @@ export const TRAN: Record<string, number> = {
   'QL /highlights': 25,
   'QT /highlights': 25,
   /* OV-10c: Tổng quan theo vai — CX / QT gọi thêm danh sách Học viên & Lớp (chip Thiếu thông tin cùng nguồn): đo TVV 71, CX 95, QT 94, CX một CN 77, Admin 62 / 15. */
+  'TVV /tong-quan/tvv/em': 24,   // GD-8a: đo 14 câu (thay /tong-quan/hoc-vien 17 + /tong-quan/tvv 4) → max(đo + 10, ⌈đo × 1,3⌉)
   'TVV /tong-quan/hoc-vien': 26,   // TL-NEN: đo 55 (trước 68); RA-DOC-0611: đo 46 (trước 48); GIAM-DOC-0611: đo 16 (trước 46) — cờ Thiếu thông tin không dựng cả danh sách
   'CX /tong-quan/hoc-vien': 27,   // TL-NEN: đo 72 (trước 80); RA-DOC-0611: đo 60 (trước 62); GIAM-DOC-0611: đo 17 (trước 60) — cờ Thiếu thông tin không dựng cả danh sách
   'QT /tong-quan/hoc-vien': 26,   // TL-NEN: đo 71 (trước 81); RA-DOC-0611: đo 59 (trước 61); GIAM-DOC-0611: đo 16 (trước 59) — cờ Thiếu thông tin không dựng cả danh sách
@@ -1111,6 +1114,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* GD-8a: em của TVV (HV của tôi) — đo 74 dòng (thay /tong-quan/hoc-vien 234 + /tong-quan/tvv 2) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 109 em: 1 641 dòng (trước 2 168). */
+  'TVV /tong-quan/tvv/em': 124,
   /* GD-5: `/ref/nguoi` đo 12 dòng (QT 22) chưa gõ / có gõ, GV Speaking 6 (QT 10) — đọc trong phạm vi + cắt 20 / 12 ở máy chủ → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /ref/nguoi?nhom=nhan_vien': 62, 'GVCN /ref/nguoi?nhom=nhan_vien': 62, 'GVBM /ref/nguoi?nhom=nhan_vien': 62, 'GVCN_THUONG /ref/nguoi?nhom=nhan_vien': 62, 'QT /ref/nguoi?nhom=nhan_vien': 72,
   'QL /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVCN /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVBM /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=nhan_vien': 62, 'QT /ref/nguoi?q=ng&nhom=nhan_vien': 72,
@@ -1406,6 +1411,11 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   'GV trang đầu Công việc': {
     vai: 'GVCN', tran: 56,   // GD-1: đo 43 câu / 3 GET (Tổng quan GV cũ đo 109 câu / 5 GET) → max(43 + 10, ⌈43 × 1,3⌉)
     urls: ['/demo/session', '/my-work', '/yeu-cau/dem'],
+  },
+  /* GD-8a: trang đầu TVV = Công việc + HV của tôi — `/tong-quan/tvv/em` (em + chỉ số) thay `/tong-quan/tvv` + `/tong-quan/hoc-vien`; việc từng em từ `/my-work` đã nạp. */
+  'TVV trang đầu Công việc': {
+    vai: 'TVV', tran: 36,   // GD-8a: đo 26 câu / 3 GET (Tổng quan TVV đo 33 câu / 4 GET) → max(26 + 10, ⌈26 × 1,3⌉)
+    urls: ['/demo/session', '/tong-quan/tvv/em', '/my-work'],
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {

@@ -13,13 +13,14 @@ import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
 import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, thangKeTiep } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { addDays } from '../util.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { standingFor } from '../students/standing.ts';
 import { thieuThongTinHocVien } from '../classes/hocVienLop.ts';
 import { choBuocTiep } from '../loTrinh/buocTiep.ts';
 import { loTrinhChoKetQuaThi } from '../loTrinh/thiThat.ts';
+import { addDays, badRequest, forbidden } from '../util.ts';
+import { tongQuanTvv } from './tongQuanV5.ts';
 
 /** "Sắp thi" = dự kiến thi trong từng này tuần tới. "Mới" = trong 14 ngày gần nhất. */
 const SAP_THI_TUAN = 6;
@@ -123,4 +124,58 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
 export function soHocVien(p: Principal, f: { branchId?: number | null } = {}): SoHocVien {
   const { phamVi, tong, ids } = chipHocVien(p, f);
   return { phamVi, tong, dem: Object.fromEntries(CHIP_HOC_VIEN.map((k) => [k, ids[k].length])) as Record<ChipHocVien, number> };
+}
+
+/**
+ * GD-8a (Overhaul V6, [XM-13]): trang đầu TVV MỘT GET — khung "HV của tôi" (em · lớp · tình trạng) + dải chỉ số (Báo PH đúng hạn · Thi tháng này của
+ * `tongQuanTvv`); Chờ KQ thi thật / Chưa chốt LT tiếp = đếm cờ `choKq` / `choBuocTiep` của `em` (cùng hàm với chip `da-thi` / `cho-buoc-tiep`). Việc từng em
+ * lấy từ `/my-work` đã nạp. Thay `/tong-quan/tvv` + `/tong-quan/hoc-vien` ở trang đầu: một câu em đi chỉ mục `idx_student_consultant` (~40 dòng),
+ * không câu Case / Ý thức / Thiếu thông tin của `chipHocVien`.
+ * Quyền: TVV chỉ em của chính mình (`tvv` khác mình → 403); Quản lý / Quản trị (`cycle.edit`) truyền `tvv` → em của TVV đó trong phạm vi `student.view`,
+ * không kèm chỉ số. Lời 40: trường theo trạng thái — đã nhập ngày thi thật / Kết thúc học thì không còn lịch thi dự kiến; SOS chỉ em đang học.
+ */
+export type EmTvv = {
+  id: number; ten: string; status: 'active' | 'inactive' | 'finished'; lop: { id: number; ma: string }[];
+  /** Lịch thi chưa thi: ngày đã chốt, hoặc tuần / tháng dự kiến (đúng một khoá). */
+  thi?: { ngay: string } | { tuan: string } | { thang: string };
+  sos?: number; choKq?: true; choBuocTiep?: true;
+};
+export function emCuaTvv(p: Principal, f: { tvv?: number | null } = {}): { tvv: number; em: EmTvv[]; chiSo?: ReturnType<typeof tongQuanTvv> } {
+  const tvv = f.tvv ?? (laTvv(p) ? p.userId : null);
+  if (!tvv) throw badRequest('Thiếu TVV.');
+  const minh = tvv === p.userId;
+  if (!minh && !can(p, PERMISSIONS.CYCLE_EDIT, { anyScope: true })) throw forbidden('Chỉ xem được học viên của chính mình.');
+  const rows = db().prepare(
+    `SELECT s.id, s.full_name AS ten, s.status, c.id AS lop_id, c.code AS lop_ma, cy.exam_date, cy.exam_month, cy.thi_that_ngay, rp.week_start AS tuan_thi
+       FROM students s
+       LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
+       LEFT JOIN classes c ON c.id = e.class_id
+       LEFT JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active'
+       LEFT JOIN report_periods rp ON rp.id = cy.exam_period_id
+      WHERE s.consultant_user_id = ? AND s.archived_at IS NULL`,
+  ).all(tvv) as any[];
+  napTruocPhamVi(rows.map((r) => r.id));
+  const em = new Map<number, EmTvv>();
+  for (const r of rows) {
+    let x = em.get(r.id);
+    if (!x) {
+      if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) continue;
+      x = { id: r.id, ten: r.ten, status: r.status, lop: [] };
+      /* Như chip `sap-thi`: dòng đầu của em mang lịch thi; ngày > tuần > tháng. */
+      if (r.status !== 'finished' && !r.thi_that_ngay) {
+        const thi = r.exam_date ? { ngay: r.exam_date } : r.tuan_thi ? { tuan: r.tuan_thi } : r.exam_month ? { thang: r.exam_month } : null;
+        if (thi) x.thi = thi;
+      }
+      em.set(r.id, x);
+    }
+    if (r.lop_id && !x.lop.some((l) => l.id === r.lop_id)) x.lop.push({ id: r.lop_id, ma: r.lop_ma });
+  }
+  if (em.size) {
+    const dangHoc = [...em.values()].filter((x) => x.status === 'active').map((x) => x.id);
+    for (const [id, st] of standingFor(dangHoc)) if (st?.sosLevel && st.mode === 'ielts_band') em.get(id)!.sos = st.sosLevel;
+    for (const { c } of loTrinhChoKetQuaThi(demoToday())) { const x = em.get(c.student_id); if (x) x.choKq = true; }
+    for (const c of choBuocTiep()) { const x = em.get(c.student_id); if (x) x.choBuocTiep = true; }
+  }
+  const ds = [...em.values()].sort((a, b) => a.ten.localeCompare(b.ten, 'vi') || a.id - b.id);
+  return { tvv, em: ds, ...(minh && laTvv(p) ? { chiSo: tongQuanTvv(p) } : {}) };
 }
