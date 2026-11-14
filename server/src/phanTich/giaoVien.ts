@@ -818,7 +818,7 @@ function phanTichGiaoVienTong(p: Principal, f: LocPtGv, cns: number[] | null): P
  * + tên người chịu (`gv`, null = Chưa phân công). Một chi nhánh: ghi lại sổ việc như bảng; Tất cả chi nhánh: đọc sổ đang có như bảng tổng.
  * Chỉ gọi lúc bấm Xuất. Một câu sổ + 4 câu tên (em, lớp, lượt, người).
  */
-export function danhSachSoGv(p: Principal, f: LocPtGv): { rows: (MetricRow & { gv: string | null })[] } {
+export function danhSachSoGv(p: Principal, f: LocPtGv): { rows: (MetricRow & { gv: string | null; gvId: number | null })[] } {
   let v: PhamViSo;
   const tong = f.cn == null ? phamViTong(p) : null;
   if (tong) v = phamViSoTong(f, tong.cns);
@@ -831,7 +831,8 @@ export function danhSachSoGv(p: Principal, f: LocPtGv): { rows: (MetricRow & { g
   const ids = [...new Set(ds.map((d) => d.nguoi).filter((x): x is number => x != null))];
   const ten = new Map(ids.length ? (db().prepare(`SELECT id, full_name FROM users WHERE id IN (${DS_JSON})`).all(JSON.stringify(ids)) as any[]).map((r) => [r.id as number, r.full_name as string]) : []);
   const dong = dongPanelSo(ds, !!tong);
-  return { rows: dong.map((d, i) => ({ ...d.row, gv: ds[i].nguoi != null ? ten.get(ds[i].nguoi!) ?? null : null })) };
+  /* GD-12a: `gvId` — panel "Chưa làm" (tab Giáo viên) nhóm theo người, tên là link hồ sơ GV. */
+  return { rows: dong.map((d, i) => ({ ...d.row, gv: ds[i].nguoi != null ? ten.get(ds[i].nguoi!) ?? null : null, gvId: ds[i].nguoi ?? null })) };
 }
 
 /** Tiêu đề panel "{nhãn} · {ai / kỳ} · {đúng}/{tổng} {đơn vị}" — qua `t()` để web tiếng Anh dịch theo mẫu (K5: đơn vị ghi đúng chữ). */
