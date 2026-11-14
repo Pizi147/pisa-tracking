@@ -13,7 +13,7 @@ import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { HopDotBaoCaoPh, guiDotBc, lamMoiBaoCaoPh } from './HopDotBaoCaoPh.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
@@ -85,6 +85,9 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   if (loading || !data || !bo) return <Skeleton rows={6} />;
   const em = data.em.map((e) => ({ ...e, o: { ...e.o, ...Object.fromEntries(data.phan.flatMap((p) => (`${e.id}:${p.khoa}` in doi ? [[p.khoa, doi[`${e.id}:${p.khoa}`]]] : []))) } }));
   const soDu = em.filter((e) => emDuHet(e.o, data.phan)).length;
+  /* GD-6 (mockup v21 ② K5, R2.5): "bạn còn n / m em" = em chưa đủ MỌI phần của người xem (cột `cuaToi`); không có phần của mình → không ghi. */
+  const phanToi = data.phan.filter((p) => p.cuaToi);
+  const toiCon = phanToi.length ? em.filter((e) => !emDuHet(e.o, phanToi)).length : null;
   const dotHien = data.dsDot.find((d) => d.ma === data.dot);
   const mo_ = (phan: PhanCot, emId: number) => setMo({ phan: phan.khoa, em: emId, kieu: phan.cuaToi ? 'viet' : 'doc' });
   const tenGv = (p: PhanCot) => (p.cuaToi ? t('Bạn') : p.gv.length ? p.gv.map((g) => g.ten).join(', ') : t('Chưa phân công'));
@@ -124,8 +127,16 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
         {data.dsDot.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}
         {data.dsBo.length > 0 && <optgroup label={t('Không báo cáo')}>{data.dsBo.map((d) => <option key={d.ma} value={d.ma}>{dich(d.nhan)}</option>)}</optgroup>}
       </ChonDangNut>
-      {data.dot && <span className="text-[15px] text-slate-300"><b className="tabular-nums text-slate-100">{soDu}/{em.length}</b> {t('em đủ')}</span>}
+      {/* GD-6 (R2.5): đầu tab nói đợt · hạn · phần của bạn còn bao nhiêu em; đợt QL thêm chưa mở → "sắp mở {ngày}" (LG-2). */}
+      {data.sapMo && !data.dot && <span className="text-[13px] font-semibold text-soon">{t('Sắp mở {ngay}', { ngay: ngay(data.sapMo.mo, homNay) })}</span>}
+      {(dotHien ?? (data.dot ? null : data.sapMo)) && <ChipHan loai="viec-van-hanh" han={(dotHien ?? data.sapMo)!.han} vien />}
+      {data.dot && toiCon !== null && (
+        <span className="text-[13px] text-dim">{toiCon > 0
+          ? <>{t('bạn còn')} <b className="text-[15px] tabular-nums text-slate-100">{toiCon}</b> / {em.length} {t('em')}</>
+          : <span className="font-semibold text-ok">✓ {t('Xong phần của bạn')}</span>}</span>
+      )}
       <span className="flex-1" />
+      {data.dot && <span className="text-[13px] text-dim">{t('Cả lớp đủ')} <b className="text-[15px] tabular-nums text-slate-100">{soDu}</b> / {em.length} {t('em')}</span>}
       {data.quyetDot && (data.sapMo || (data.dot && dotHien?.them)) && <>
         <button type="button" className={nutDot} onClick={() => setHop('sua')}>{t('Sửa đợt')}</button>
         <button type="button" className={nutDot} onClick={() => void xoaDotThem()}>{t('Xoá đợt')}</button>
