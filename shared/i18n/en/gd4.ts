@@ -3,5 +3,6 @@ import type { Dich } from '../en.ts';
 
 export const EN_GD4 = {
   'Không hạn': 'No due date',
+  'Xoá chữ': 'Clear text',
   '{n} bài, {q} quá hạn': (b) => `${b.n} items, ${b.q} overdue`,
 } satisfies Record<string, Dich>;

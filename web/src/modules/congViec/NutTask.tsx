@@ -3,7 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { HopNeo } from '../../ui/HopNeo.tsx';
-import { NUT_DONG } from '../../ui/KhungPanel.tsx';
+import { NUT_DONG, NUT_DONG_NHO } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
@@ -121,7 +121,10 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
           <span className="text-xs tabular-nums text-faint">{chon.length} / {TOI_DA_TINH_HINH}</span>
         </span>
       )}
-      <input ref={o} name="tim-em" autoComplete="off" spellCheck={false} className="field h-10 text-[15px] max-sm:h-11" role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
+      {/* ⑤ F2 `.oc`: kính lúp trái · ✕ xoá chữ phải (chỉ khi có chữ, căn giữa theo cao ô; bấm = xoá, giữ focus ô). */}
+      <div className="relative">
+      <span aria-hidden className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-faint"><IconNhom k="tim" /></span>
+      <input ref={o} name="tim-em" autoComplete="off" spellCheck={false} className={`field h-10 pl-9 text-[15px] max-sm:h-11 ${chu ? 'pr-10 max-sm:pr-12' : ''}`} role="combobox" aria-expanded={ds.length > 0} aria-controls="tim-em-task" aria-autocomplete="list"
         aria-label={t('Gõ tên em')} placeholder={t('Gõ tên em…')} value={chu} disabled={nhieu && chon.length >= TOI_DA_TINH_HINH}
         aria-activedescendant={ds[dang] ? `tim-em-${ds[dang].id}` : undefined}
         onChange={(e) => setChu(e.target.value)}
@@ -129,6 +132,11 @@ function HopChonEm({ neo, loai, lopId, onDong, onChon }: {
           if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (ds.length) setDang((i) => (i + (e.key === 'ArrowDown' ? 1 : ds.length - 1)) % ds.length); }
           else if (e.key === 'Enter' && ds[dang]) { e.preventDefault(); lay(ds[dang]); }
         }} />
+      {chu && (
+        <button type="button" aria-label={t('Xoá chữ')} className={`${NUT_DONG_NHO} absolute right-1.5 top-1/2 -translate-y-1/2`}
+          onMouseDown={(e) => e.preventDefault()} onClick={() => { setChu(''); o.current?.focus(); }}>✕</button>
+      )}
+      </div>
       {ds.length > 0 && (
         <ul id="tim-em-task" role="listbox" aria-label={t('Học viên')} className="m-0 grid max-h-[288px] list-none overflow-y-auto p-0">
           {ds.map((e, i) => [

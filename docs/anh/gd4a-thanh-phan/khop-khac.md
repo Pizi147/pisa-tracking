@@ -29,7 +29,7 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 | 4 | ⑤ B1 (a) dòng "Lớp · tên việc", tên em là thẻ phụ — lời 24 | đã có (#1584), giữ một thành phần | case | KHỚP |
 | 5 | ⑤ C (b) nút-chip "Việc cần làm" không biểu tượng, thứ tự Nhập điểm · Case · Ý thức · Vận hành | đã có (#1566) `LopCuaToi` | task-menu (cột phải) | KHỚP |
 | 6 | ⑤ F1 (d) menu "+ Task" 3 mục Case · Vi phạm / Nhắc nhở · Tình hình học tập, có biểu tượng ([XM-7]) | `MenuDong` thêm `bieuTuong` mỗi mục; `NutTask` (cờ · khiên · bóng lời) | task-menu | KHỚP |
-| 7 | ⑤ F2 (d) chọn em: nhóm theo lớp có nhãn + số ("· chủ nhiệm"), tô chữ khớp, tên + lớp dòng phụ | `HopChonEm` (`NutTask.tsx`) nhóm Lớp này → lớp của tôi → Lớp khác; `ToKhop` | task-chon-em | KHỚP |
+| 7 | ⑤ F2 (d) chọn em: ô gõ kính lúp + ✕ xoá chữ, nhóm theo lớp có nhãn + số ("· chủ nhiệm"), tô chữ khớp, tên + lớp dòng phụ | `HopChonEm` (`NutTask.tsx`) nhóm Lớp này → lớp của tôi → Lớp khác; `ToKhop` | task-chon-em | KHỚP |
 | 8 | ⑤ F3 (d) Tình hình chọn nhiều ≤ 8, chip ✕, "n / 8", chân "Đóng · Tiếp" (`10-ra-dong-bo.md` B: một chân) | đã có (GD-1) + thêm "Đóng" ở chân | — (đã chụp ở GD-1) | KHỚP |
 | 9 | ⑤ F4 (d) 375 nút tròn → menu neo đáy, tiêu đề "+ Task", mục cao 48, nền mờ | `MenuDong` thêm `tieuDeDay` (< 640 px) | 375-task-menu | KHỚP |
 | 10 | ⑤ F mục 2 (d) mở từ hồ sơ lớp: nhóm "Lớp này" lên đầu · hồ sơ HV: em điền sẵn, bỏ bước chọn | `NutTask` nhận `lopId`, `em` — đặt nút ở hai hồ sơ là GD-6 / GD-7 (một màn một PR) | — | KHỚP (mã) |
@@ -48,7 +48,7 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 - ~~KHÁC-1~~ (bỏ): "Không hạn" nay theo ⑤ B1 + `10-ra-dong-bo.md` mục B — cột hạn trống, vạch nhóm "Không hạn" kể cả khi mục chỉ có một nhóm.
 - **KHÁC-2** Thang mini hồ sơ HV giữ 6 bậc mạch chính (Report 1 … WL 2); mockup ③ vẽ 7. Bậc sau WL 2 tăng mãi — thang đầy đủ ở "Thang ▾".
 - **KHÁC-3** Đầu mục trong tab Công việc (Mô tả Case, Phương án…) không có biểu tượng như dải hạng mục ⑤ B1 (Mock Test, Case học thuật…): ⑤ B1 vẽ dải theo HẠNG MỤC, web đã tách hạng mục thành tab (biểu tượng ở tab không cần) — mục trong tab là nhóm con.
-- **KHÁC-4** Ô gõ trong hộp chọn em chưa có kính lúp + ✕ của ô chọn có tìm (⑤ A): ô chọn chung là GD-5 (thay cả hộp này — ghi `ponytail:` ở `HopChonEm`).
+- ~~KHÁC-4~~ (bỏ, PTA Plan 15/11): ô gõ hộp chọn em nay có kính lúp trái + ✕ xoá chữ phải như ⑤ F2 (bảng đo mục 7).
 - **KHÁC-5** Mockup F4 chỉ vẽ tối; web 375 chụp sáng (luật ảnh cặp). Cùng bố cục.
 
 ## 3. Thao tác TRƯỚC → SAU
@@ -84,7 +84,8 @@ Chỉ đổi hiển thị — 0 câu, 0 request thêm. Hộp chọn em vẫn m�
 Nguyên nhân: ba dáng ✕ khác nhau (hộp chọn em: ô 32 có viền, xếp đầu khối hai dòng; `KhungPanel`: ô 32 viền trong suốt ở hàng tiêu đề; hộp nhập điểm: ô 36). Sửa ở THÀNH PHẦN CHUNG:
 - `NUT_DONG` (`ui/KhungPanel.tsx`) — một dáng theo mockup `.x`: ô 36 × 36 (375: 44 × 44), không viền, nền trong, ✕ 17 px giữa ô, rê mới có nền.
 - `KhungPanel`: có dòng loại ("Việc · Ý thức") → ✕ đứng CÙNG HÀNG dòng loại (⑤ D1 `.pn-h1`, hàng 36); không có → cùng hàng tiêu đề, tâm thẳng dòng 24 px. Áp cho mọi panel dùng khung.
-- Hộp chọn em "+ Task": tiêu đề 15 + ✕ một hàng (lưới `1fr auto`, căn giữa), "Chọn em" dòng dưới; ✕ cách mép phải hộp 12 px như ⑤ F2.
+- `NUT_DONG_NHO` — bản nhỏ cho ✕ xoá chữ trong ô gõ (⑤ `.oc .bo`: ô 28, ✕ 14; điện thoại 36).
+- Hộp chọn em "+ Task": ô gõ có kính lúp trái + ✕ xoá chữ phải (⑤ F2 `.oc`); tiêu đề 15 + ✕ một hàng (lưới `1fr auto`, căn giữa), "Chọn em" dòng dưới; ✕ cách mép phải hộp 12 px như ⑤ F2.
 
 Bảng đo (`getBoundingClientRect` + `Range` chữ ✕; "lệch" = tâm chữ ✕ − tâm dòng chữ cùng hàng; "giữa ô" = tâm chữ ✕ − tâm ô, ngang / dọc; seed vai 7):
 
@@ -98,6 +99,9 @@ Bảng đo (`getBoundingClientRect` + `Range` chữ ✕; "lệch" = tâm chữ �
 | — | 375 | 44×44 | 0 | 0 | 0 / −0,5 |
 | ⋯ đầu hồ sơ HV (so với "+ Case" cùng hàng) | 1440 | 36×36 (nút cạnh 80×36) | — | 0 | — |
 | — | 375 | 44×44 (nút cạnh 80×44) | — | 0 | — |
+| Ô gõ hộp chọn em · ✕ xoá chữ (so với tâm ô gõ; chỉ hiện khi có chữ — ô rỗng: 0 nút; bấm → ô rỗng, focus vẫn ở ô) | 1440 | 28×28 (`NUT_DONG_NHO`) | 0 | 0 (cách mép phải ô 6 px) | 0 / 0 |
+| — | 375 | 36×36 | 0 | 0 (6 px) | 0 / 0 |
+| Ô gõ · kính lúp (so với tâm ô gõ) | 1440 · 375 | 16 px | — | 0 | — |
 | Menu "+ Task" 1440 / 375 | — | không có ✕ / ⋯ (375 neo đáy có tiêu đề "+ Task", đóng bằng chạm nền / Esc) | — | — | — |
 
 "Giữa ô −0,5" = độ lệch của chính hình chữ ✕ trong phông (nửa điểm ảnh), không phải lề. Tất cả ≤ 1 px. View Case (hàng "‹ …" + ✕) cùng dạng `items-center`; seed vai 7 không có việc mở được "Xem Case" để đo.

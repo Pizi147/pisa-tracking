@@ -57,6 +57,8 @@ const DUONG_IC: Record<string, ReactNode> = {
   'bo-sung': <><path d="M4 2.5h5l3 3v8H4z" /><path d="M9 2.5v3h3" /></>,
   /* GD-4a (mockup ⑤ F1 `i-bao`): Tình hình học tập — bóng lời. */
   'tinh-hinh': <path d="M2.5 3.5h11v7h-6l-3 2.5v-2.5h-2z" />,
+  /* GD-4a (mockup ⑤ `i-tim`): kính lúp đầu ô gõ tìm. */
+  tim: <><circle cx="7" cy="7" r="4.5" /><path d="M10.5 10.5L14 14" /></>,
   duyet: <><circle cx="8" cy="8" r="5.5" /><path d="M5.6 8.2l1.7 1.7 3.2-3.4" /></>,
   /* BO-QUA-XEP-MT: "Đã bỏ qua" — mắt gạch. */
   'bo-qua': <><path d="M2 8s2.2-4 6-4 6 4 6 4-2.2 4-6 4-6-4-6-4z" /><circle cx="8" cy="8" r="1.8" /><path d="M3 13L13 3" /></>,
