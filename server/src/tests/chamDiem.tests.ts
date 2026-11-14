@@ -284,8 +284,8 @@ export async function runChamDiemTests(t: YThucTestKit) {
     }
   });
 
-  /* NHAP-DIEM-a (thay RKC "GV → câu chỉ đường"): "-" trước tuần thi → môn tự dời về tuần này rồi ghi vắng (dời sang tuần sau). */
-  check('PR-Rc1 · NHAP-DIEM-a · "-" lần đầu trước tuần thi: GV ghi được — môn tự về tuần này rồi dời tuần sau, một dòng nhật ký vắng', () => {
+  /* NHAP-DIEM-a (PTA 14/11, thay RKC "GV → câu chỉ đường"): "-" trước tuần thi = báo trước — ghi cho đúng tuần thi, dời tuần sau tuần thi (không kéo về tuần này). */
+  check('PR-Rc1 · NHAP-DIEM-a · "-" lần đầu trước tuần thi: GV ghi được — vắng ở tuần thi 28/09, dời 05/10; một dòng nhật ký vắng', () => {
     assert(monCuaGv.length > 0, 'Seed: GVBM của MB FOU 12 phải được phân công ít nhất một môn');
     const k = monCuaGv[0];
     const { attemptId } = taoBaiThuong('2026-09-28');
@@ -293,7 +293,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
       `SELECT COUNT(*) AS n FROM audit_logs WHERE action = 'regular.no_show' AND entity_type = 'assessment_attempt' AND entity_id = ?`,
     ).get(attemptId) as any).n;
     const r = regular.reportRegularNoShow(P.normalSubjectTeacher, attemptId, k, true, '2026-09-22');
-    assert(r.moved && tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-09-28', `về tuần này (21/09) rồi dời tuần sau: ${JSON.stringify(r)}`);
+    assert(r.moved && tuanCuaMon(skillSched.loadSkillRows([attemptId]).get(attemptId), k) === '2026-10-05', `dời tuần sau tuần thi: ${JSON.stringify(r)}`);
     assert(nk() === 1, 'một dòng nhật ký vắng');
   });
 

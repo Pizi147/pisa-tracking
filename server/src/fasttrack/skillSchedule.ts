@@ -1066,13 +1066,13 @@ export function kiemDaToiTuanThi(row: { week_start: string | null }, today: stri
 }
 
 /**
- * NHAP-DIEM-a (chủ SP 14/11 "bỏ chặn", đặc tả 5.5 + 6b; thay RKC 07/11 "người dời được lịch hỏi, người khác 400"): nhập điểm / ghi "-" khi kỹ năng
+ * NHAP-DIEM-a (chủ SP 14/11 "bỏ chặn", đặc tả 5.5 + 6b; thay RKC 07/11 "người dời được lịch hỏi, người khác 400"): nhập ĐIỂM khi kỹ năng
  * CHƯA TỚI tuần thi (hoặc chưa xếp tuần) → máy TỰ DỜI kỹ năng đó (lớp thường: môn đó) VỀ TUẦN NÀY, không hỏi, không cần Quản lý. Nơi gọi đã kiểm
  * quyền nhập ô. Thao tác điểm → ngoại lệ N15 (không khoá cuối tuần). Trái thứ tự lượt / nhảy lượt / trùng lượt khác → vẫn dời, câu cảnh báo vào
  * lịch sử lịch. Trả hàm ghi để nơi lưu gọi TRONG giao dịch của mình (lưu hỏng → không dời). Tuần đã tới → null.
  */
 export function doiVeTuanNayNeuChua(p: Principal, a: { id: number; class_id: number | null; student_id: number }, row: { skill: string; week_start: string | null },
-  today: string, viec: 'diem' | 'vang' = 'diem'): (() => void) | null {
+  today: string): (() => void) | null {
   const nay = mondayOf(today);
   if (row.week_start && row.week_start.slice(0, 10) <= nay) return null;
   return () => {
@@ -1083,7 +1083,7 @@ export function doiVeTuanNayNeuChua(p: Principal, a: { id: number; class_id: num
     const vuot = kiemVuot(a.id, tuanCuoiSauKhiDoi(ensureSkillRows(a.id), new Map([[r.skill, nay]]))!, nay).chan;
     const canhBao = [vuot, ...check.blockers, ...check.warnings].filter(Boolean).join(' ');
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ?, plan_source = 'manual', updated_at = ? WHERE id = ?`).run(pid, nowIso(), r.id);
-    const lyDo = viec === 'vang' ? 'Ghi vắng sớm — dời về tuần này' : 'Nhập điểm sớm — dời về tuần này';
+    const lyDo = 'Nhập điểm sớm — dời về tuần này';
     logSchedule(a.id, { action: 'skill_week_set', field: r.skill, oldValue: r.period_code, newValue: weekInfo(nay).code,
       reason: canhBao ? `${lyDo}. ${canhBao}` : lyDo, actor: p.userId });
     recomputeCompletionWeek(a.id, p.userId);
@@ -1091,7 +1091,7 @@ export function doiVeTuanNayNeuChua(p: Principal, a: { id: number; class_id: num
     writeAudit({
       actorUserId: p.userId, action: 'attempt.skill_week', entityType: 'assessment_attempt', entityId: a.id,
       entityLabel: `${attempt.kind === 'mock' ? `MT${attempt.attempt_no}` : attempt.kind} · ${r.skill}`,
-      before: { week: r.period_code }, after: { week: weekInfo(nay).code, tuDoi: viec, ...(canhBao ? { canhBao } : {}) },
+      before: { week: r.period_code }, after: { week: weekInfo(nay).code, tuDoi: 'diem', ...(canhBao ? { canhBao } : {}) },
     });
   };
 }

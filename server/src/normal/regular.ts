@@ -902,14 +902,8 @@ export function reportRegularNoShow(
         return { moved: false, tuanCu: tc ? tuanLich(tc.week_start, today) : null,
           tuanMoi: tuanLich(row.week_start, today), result: regularResultOf(attemptId) };
       }
-      /*
-       * Lần ghi ĐẦU cũng cần tuần thi của môn đã tới (phán quyết controller, cùng điều kiện với lần hai): chưa tới tuần
-       * thi thì em chưa có dịp vắng — ghi "-" lúc đó là dời lịch trước, việc của đổi lịch. Báo tuần bằng `tuanLich`
-       * (không có năm nếu cùng năm), không hiện ngày ISO.
-       */
-      /* RKC: "-" trước tuần thi — người dời được lịch hỏi "Dời về tuần này" rồi ghi vắng. */
-      const doiVe = doiVeTuanNayNeuChua(p, a, row, today, 'vang');
-      if (doiVe) { doiVe(); row = ensureSkillRows(attemptId).find((r) => r.skill === skill)!; }
+      /* NHAP-DIEM-a (PTA 14/11, thay RKC "dời về tuần này"): "-" TRƯỚC tuần thi = báo trước em vắng — ghi cho ĐÚNG tuần Test đó, dời sang tuần sau
+         tuần Test (N38 mục 3); KHÔNG kéo bài về tuần này (tự dời chỉ khi nhập ĐIỂM sớm). */
       if (!row.week_start || !row.planned_period_id) throw loi(400, '{skill} chưa có tuần Test nên chưa ghi dấu "-" được.', { skill });
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const luat = ketThuc ? { khongDuThi: true as const } : luatVangThuong(cu.weekStart, today);

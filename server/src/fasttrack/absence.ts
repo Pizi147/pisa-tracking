@@ -797,9 +797,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   if (!['scheduled', 'sat'].includes(row.sit_status) || !row.planned_period_id || !row.week_start || !row.week_end) {
     throw loi(400, '{skill} không còn chờ làm bài (đã làm bài, đang vắng hoặc đã huỷ) — không báo vắng được.', { skill: skillName(skill) });
   }
-  if (row.week_start.slice(0, 10) > mondayOf(today)) {
-    throw loi(400, '{skill} chưa tới tuần Test — muốn đổi tuần thì "Dời lịch".', { skill: skillName(skill) });
-  }
+  /* NHAP-DIEM-a (PTA 14/11): chưa tới tuần Test = báo trước — ghi cho đúng tuần Test đó, N38 như gõ "-" (không chặn, không kéo về tuần này). */
   /* N38 L3: MT cũ xét theo tuần thi của KỸ NĂNG (cả lượt `lich_su`) → Không dự thi, không dời, không đếm. Ghi muộn tuần gần → chốt như trong tuần.
      RKC: lớp đã kết thúc (không còn tuần để dời) → Không dự thi. */
   const khongDuThi = laLopKetThuc(a.class_id) || laMtCuKyNang(row.week_start, today);

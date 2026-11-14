@@ -194,10 +194,15 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
 
   // PR-MTa T7: Báo vắng — lý do tuỳ chọn (bỏ nhánh "lý do ngắn"); chữ "MT lịch sử" → "MT cũ".
   /* LUAT-34: MT cũ không còn bị chặn — Báo vắng ở MT cũ = Đã huỷ ngay (mtTrangThai T06). */
-  check('PR-XLMT (2) · Báo vắng bị chặn: GVBM · tuần tương lai · đã có điểm', () => {
+  check('PR-XLMT (2) · Báo vắng bị chặn: GV ngoài kỹ năng · đã có điểm; tuần tương lai = báo trước (NHAP-DIEM-a)', () => {
     /* NHAP-DIEM-a: GV nhập được ô báo vắng được; GV không dạy kỹ năng đó vẫn bị chặn. */
     assertThrows(() => absence.baoVang(P.sTeacher, m1.id, 'writing', 'Em ốm cả tuần', TODAY), /người nhập được ô/, 'GV ngoài kỹ năng');
-    assertThrows(() => absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY), /chưa tới tuần Test/, 'tương lai');
+    /* NHAP-DIEM-a (PTA 14/11): tuần tương lai = báo trước — ghi đúng tuần Test, dời tuần sau nó (thử rồi cuộn lại). */
+    conn.exec('SAVEPOINT xlmt2');
+    try {
+      const r = absence.baoVang(P.coreTeacher, m2.id, 'writing', 'Em ốm cả tuần', TODAY);
+      assert(r.daDoi, `báo trước: ${JSON.stringify(r)}`);
+    } finally { conn.exec('ROLLBACK TO xlmt2'); conn.exec('RELEASE xlmt2'); }
     diem(m1.id, 'reading');
     assertThrows(() => absence.baoVang(P.coreTeacher, m1.id, 'reading', 'Em ốm cả tuần', TODAY), /đã có điểm/, 'có điểm');
   });

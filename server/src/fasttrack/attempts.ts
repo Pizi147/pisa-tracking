@@ -2387,9 +2387,8 @@ export function saveScore(
          *   Lớp thường đi `reportRegularNoShow` (trên).
          * Ô `sat` mà không ô nào của buổi có điểm (điểm đã xoá — ca thật 09/10) vẫn nhận "-" như ô chưa thi.
          */
-        /* RKC: "-" trước tuần thi — người dời được lịch hỏi "Dời về tuần này" rồi ghi vắng (lần vắng của tuần này, dời tiếp theo N38). */
-        const doiVe = doiVeTuanNayNeuChua(p, a, scheduleRow, today, 'vang');
-        if (doiVe) { doiVe(); scheduleRow = ensureSkillRows(attemptId).find((r) => r.skill === assessed)!; }
+        /* NHAP-DIEM-a (PTA 14/11, thay RKC "dời về tuần này"): "-" TRƯỚC tuần thi = báo trước em vắng — ghi cho ĐÚNG tuần Test đó, xử lý theo N38
+           (lần 1 dời tuần sau tuần Test, lần 2 huỷ); KHÔNG kéo bài về tuần này (tự dời chỉ khi nhập ĐIỂM sớm). */
         if (!scheduleRow.week_end || !scheduleRow.planned_period_id) throw loi(400, '{assessed} chưa có tuần Test nên chưa báo "không có bài" được.', { assessed });
         const late = today > scheduleRow.week_end.slice(0, 10);
         /* RKC: lớp đã kết thúc (không còn tuần để dời) → "-" = Không dự thi, như MT cũ. */

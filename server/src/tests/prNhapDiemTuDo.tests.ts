@@ -161,7 +161,7 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     assert(ky(aid, 'reading').sit_status === 'cancelled', 'QL huỷ ô chưa điểm (coi như không làm)');
   }));
 
-  check('NDT-4 · GV nhập trước tuần Test → kỹ năng tự dời về tuần này (không hỏi), lịch sử ghi; "-" sớm cũng vậy', () => thu(() => {
+  check('NDT-4 · GV nhập ĐIỂM trước tuần Test → kỹ năng tự dời về tuần này (không hỏi), lịch sử ghi', () => thu(() => {
     const { aid } = dung();
     conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill IN ('listening', 'reading')`).run(pid(W1S), aid);
     xoaNho();
@@ -171,8 +171,6 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     assert(ky(aid, 'listening').ws === WS && o(aid, 'listening').raw_score === 28, `dời về tuần này + lưu: ${JSON.stringify(ky(aid, 'listening'))}`);
     const h = one(`SELECT * FROM attempt_schedule_history WHERE attempt_id = ? AND field = 'listening' AND action = 'skill_week_set' ORDER BY id DESC LIMIT 1`, aid);
     assert(h && h.actor_user_id === gvL.userId && /sớm/.test(h.reason ?? ''), `lịch sử: ${JSON.stringify(h)}`);
-    const r = attempts.saveScore(gvL, aid, 'reading', { noShow: true }, HN);
-    assert(r.vang && ky(aid, 'reading').ws === W1S && ky(aid, 'reading').absence_move_count === 1, `"-" sớm: dời về tuần này rồi vắng lần 1: ${JSON.stringify([r.vang, ky(aid, 'reading')])}`);
   }));
 
   check('NDT-5 · gõ điểm đè "-" đã chốt → một lần lưu: về tuần gốc, trừ một lần vắng, có điểm; "-" sau đó tính lần 1', () => thu(() => {
@@ -296,5 +294,26 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     assert(ky(e.mt0, 'listening').sit_status === 'cancelled' && banMo(e.mt0).length === 1, 'MT0 huỷ qua lối cũ');
     absence.huyDiemKn(QL, e.mt0, 'listening', false);
     assert(o(e.mt0, 'listening').band === 5, 'MT0 khôi phục');
+  }));
+
+  /* PTA 14/11: báo trước em vắng (gõ "-" / nút Vắng khi chưa tới tuần Test) KHÔNG kéo bài về tuần này — ghi cho đúng tuần Test đó theo N38. */
+  check('NDT-13 · "-" / Vắng TRƯỚC tuần Test → ghi cho đúng tuần Test: Mock lần 1 dời tuần sau tuần Test (không về tuần này); gõ lại vô hại; lớp thường dời tuần sau tuần Test', () => thu(() => {
+    const { aid } = dung();
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill IN ('reading', 'speaking')`).run(pid(W1S), aid);
+    xoaNho();
+    const r = attempts.saveScore(gvL, aid, 'reading', { noShow: true }, HN);
+    const k = ky(aid, 'reading');
+    assert(r.vang?.kq === 'doi' && k.ws === W2S && k.absence_move_count === 1 && o(aid, 'reading').no_show_period_id === pid(W1S),
+      `"-" trước tuần Test: vắng ở tuần Test, dời tuần sau nó: ${JSON.stringify([r.vang, k])}`);
+    assert(!all(`SELECT 1 FROM attempt_schedule_history WHERE attempt_id = ? AND field = 'reading' AND action = 'skill_week_set'`, aid).length, 'không có lần dời về tuần này');
+    attempts.saveScore(gvL, aid, 'reading', { noShow: true }, HN);
+    assert(ky(aid, 'reading').absence_move_count === 1 && ky(aid, 'reading').ws === W2S, 'gõ lại vô hại');
+    const b = absence.baoVang(gvcn, aid, 'speaking', 'Em báo nghỉ trước', HN);
+    assert(b.daDoi && ky(aid, 'speaking').ws === W2S && ky(aid, 'speaking').absence_move_count === 1, `nút Vắng trước tuần Test: ${JSON.stringify([b, ky(aid, 'speaking')])}`);
+    const e = emThuong();
+    conn.prepare(`UPDATE attempt_skills SET planned_period_id = ? WHERE attempt_id = ? AND skill = 'listening'`).run(pid(W1S), e.fin);
+    xoaNho();
+    const rt = regular.saveRegularScore(QL, e.fin, 'listening', { noShow: true }, HN);
+    assert(rt.moved && ky(e.fin, 'listening').ws === W2S && o(e.fin, 'listening').no_show_period_id === pid(W1S), `lớp thường: ${JSON.stringify([rt, ky(e.fin, 'listening')])}`);
   }));
 }
