@@ -146,8 +146,8 @@ export async function runPrMtGonTests(t: YThucTestKit) {
     /* NHAP-DIEM-a (đặc tả 5.1 "không để hai nút cùng nghĩa"): menu kỹ năng có "Huỷ điểm" thay "Xoá"; "Xoá" chỉ còn ở hộp lập lịch một đợt (Quản lý FT). */
     for (const s of ['chua-xep', 'chua-toi-tuan', 'dang-thi', 'co-diem', 'vang', 'lich-su'] as const) {
       assert(d.thaoTacKyNang(s, q).menu.includes('huy-diem') && !d.thaoTacKyNang(s, q).menu.includes('bo-ky-nang'), `menu ${s}: ${d.thaoTacKyNang(s, q).menu}`);
-      assert(d.menuHopKyNang(s, q, false).find((m: any) => m.muc === 'bo-ky-nang').duoc, `hộp một đợt còn Xoá ở ${s}`);
-      assert(!d.menuHopKyNang(s, { ...q, quanLy: false }, false).find((m: any) => m.muc === 'bo-ky-nang').duoc, `GV có Xoá ở ${s}`);
+      assert(d.menuHopKyNang(s, q, false).find((m: any) => m.muc === 'bo-ky-nang')?.duoc, `hộp một đợt còn Xoá ở ${s}`);
+      assert(!d.menuHopKyNang(s, { ...q, quanLy: false }, false).find((m: any) => m.muc === 'bo-ky-nang')?.duoc, `GV có Xoá ở ${s}`);
     }
     const a = emMoi();
     conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled' WHERE attempt_id = ? AND skill IN ('speaking', 'reading')`).run(a.m1);
