@@ -8,7 +8,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState } from '../../ui/ui.tsx';
 import { ChipBac } from './KhaiBacLoPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, luuRoiTiep, nhanLoaiXuLy } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, kindCuaBac, luuRoiTiep, nhanLoaiXuLy, quyCheKhaiBac } from '@shared/domain/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -75,7 +75,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   };
 
   return (
-    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={onClose} quyChe={sua ? null : quyCheKhaiBac()}
       ngCanh={<span className="truncate">{t('Thang {x} · xác nhận một lần, chỉ QL sửa sau', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan })}</span>}
       chan={{
         daSua: !daLuu && (bac !== (sua && d.khai ? d.khai.bac : null) || thang !== (sua && d.khai?.thang ? d.khai.thang : '') || ghiChu !== (sua && d.khai ? d.khai.ghiChu : '')),

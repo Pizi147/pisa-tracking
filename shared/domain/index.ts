@@ -118,3 +118,6 @@ export * from './hanMacDinh.ts';
 export * from './phienBan.ts';
 export * from './bandNguong.ts';
 export * from './quyChe.ts';
+export * from './quyCheCase.ts';
+export * from './quyCheYThuc.ts';
+export * from './quyCheVanHanh.ts';

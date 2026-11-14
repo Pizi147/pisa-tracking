@@ -157,6 +157,9 @@ export const NhanTruongDam = createContext(false);
 export const HienLaiPanel = createContext<(() => void) | null>(null);
 /** HV-LOP-VIEC: nơi mở một panel việc THAY nội dung panel của mình (panel một em → PanelViec) cấp "← tên em" cho panel NGOÀI CÙNG bên trong
  *  (không phải sửa từng panel việc); prop `quayLai` riêng thắng; panel / hộp lồng trong không nhận lại. */
+/** GD-4b (lời 36, dòng 40c ⓪): hàm đóng của panel đang chứa (cùng đường ✕ / Esc — đang gõ dở thì hỏi "Bỏ chữ, đóng"). `NutVaTiep` đọc để vẽ nút "Đóng"
+ *  trước nút việc; panel trong cột hồ sơ (`trongCot`, không có ✕) thì null. */
+export const DongKhungPanel = createContext<(() => void) | null>(null);
 export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; xem?: boolean } | null>(null);
 
 /**
@@ -429,7 +432,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
             hết thì cuộn tiếp trang. Trong cột: cao theo nội dung, không cuộn riêng — `overscroll-contain` trên khung không cuộn được vẫn nuốt
             bánh xe chuột, trỏ vào Case là trang đứng yên. */}
         <div id={vungTab?.id} role={vungTab ? 'tabpanel' : undefined} aria-label={vungTab?.nhan} className={`min-h-0 flex-1 ${trongThe ? 'px-0' : 'px-4'} ${trongCot ? 'pb-1' : taiCho ? 'pb-4 overflow-y-auto' : 'pb-4 overflow-y-auto overscroll-contain'}`}>{cvNgoai?.dai && <div className="pt-3">{cvNgoai.dai}</div>}<BaoSuaPanel.Provider value={baoSua}>{children}</BaoSuaPanel.Provider></div>
-        {quyChe && <DongQuyChe qc={quyChe} px={trongThe ? 'px-0' : 'px-4'} />}
+        {/* GD-4b (⑤ D4): có chân thường → dòng quy chế nằm TRONG chân (dính đáy ở 375, luôn thấy ngay trên nút); chân v3 / không chân → ngay trên chân. */}
+        {quyChe && (!chan || chan.v3) && <DongQuyChe qc={quyChe} px={trongThe ? 'px-0' : 'px-4'} />}
         {chan?.v3 && (
           /* Tại chỗ ở 375 (thẻ trong `main` cuộn): chân dính đáy, sát trên thanh điều hướng dưới — mép dính tính từ đệm `pb-20` (80 px) của `main`,
              thanh dưới cao 57 px + vùng an toàn → lùi 23 px. */
@@ -442,6 +446,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         {chan && !chan.v3 && (
           /* U02 (mockup c2, PTA 04/11): trong cột — chân không nền, không kẻ, không dải trống: nút về phải ngay dưới hàng cuối. */
           <footer className={`shrink-0 ${trongCot ? `${trongThe ? '' : 'mx-4'} [&>div]:px-0 [&>div]:pb-3 [&>div]:pt-0` : 'border-t'} ${taiCho && !trongThe ? 'chan-dinh-375' : ''}`} style={{ borderColor: 'var(--line)', background: trongCot ? 'transparent' : 'var(--surface)' }}>
+            {quyChe && <DongQuyChe qc={quyChe} px={trongCot ? 'px-0' : 'px-4'} vien={false} />}
             {chan.conThieu?.length ? <DongCanSua muc={chan.conThieu} /> : null}
             {chan.dongTren}
             {/* RA-UI-1 (mockup `v7/khai-bac-lo.html` #w375): 375 — dòng trạng thái / đếm lên đầu chân, mọi nút chia đều MỘT hàng (Huỷ | Lưu, Lưu không còn nhỏ lệch trái). */}
@@ -458,7 +463,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => { setHoi(null); hoi.o?.(); }} onBo={boChu} />}
     </>
   );
-  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}>{x}</QuayLaiPanel.Provider></TrongKhung.Provider>;
+  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}><DongKhungPanel.Provider value={trongCot ? null : dong}>{x}</DongKhungPanel.Provider></QuayLaiPanel.Provider></TrongKhung.Provider>;
   if (taiCho) {
     /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (
@@ -487,9 +492,9 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
  * DÒNG QUY CHẾ (GD-3, mockup v21 `.quy-che`): "Quy chế" · một câu · ⓘ chi tiết. `KhungPanel` vẽ ngay trên chân (`quyChe`); panel có chân v3 (nút nằm
  * trong thân) vẽ trực tiếp ngay trên hàng nút với `px="px-0"`.
  */
-export function DongQuyChe({ qc, px = 'px-4' }: { qc: { chu: string; chiTiet?: string }; px?: string }) {
+export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string; chiTiet?: string }; px?: string; /** false: đứng đầu chân (chân đã có vạch trên) — vạch DƯỚI tách khỏi hàng nút. */ vien?: boolean }) {
   return (
-    <div className={`flex min-h-9 shrink-0 items-center gap-2 border-t ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
+    <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
       <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
       {qc.chiTiet && <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>}

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { duongHoSoHocVien, mucDiem } from '@shared/domain/index.ts';
 import { lopKq } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
-import { KhungTrongThe, NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
+import { DongKhungPanel, KhungTrongThe, NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
 
 /** "✓ Đã lưu" — MỘT lớp màu cho mọi nơi báo đã lưu: LUÔN XANH (chủ SP 14/11, DESIGN.md V12 — thay K-HTT-3 xám). */
@@ -181,12 +181,22 @@ export const ViecVuaLuu = createContext<{ ten: string | null; bao: (x: DaLuuPane
  */
 export type TiepViec = { ten: string | null; lam: (x: DaLuuPanel) => void };
 /** Nút thường + "{việc} · việc tiếp ›" (nút chính khi có việc kế); "Đang lưu…" chỉ ở nút đã bấm (V12 ⑨). */
-export function NutVaTiep({ chu, chuTiep, busy, tat, tiep, bam, luu }: {
+/** Nút "Đóng" ở chân panel việc (lời 36) — chỉ khi đứng trong `KhungPanel` có ✕ (đọc `DongKhungPanel`). */
+export function NutDongPanel({ busy }: { busy?: boolean }) {
+  const dongPanel = useContext(DongKhungPanel);
+  /* 375 (⓪ dòng 26, ⑤ D4): chân dính đáy chỉ giữ nút việc — đóng bằng ✕ / ‹ ở đầu panel. */
+  return dongPanel ? <button type="button" className="btn min-h-[40px] px-4 max-sm:hidden" disabled={busy} onClick={dongPanel}>{t('Đóng')}</button> : null;
+}
+
+export function NutVaTiep({ chu, chuTiep, busy, tat, tiep, bam, luu, coDong = true }: {
   chu: string; chuTiep: string; busy: boolean; tiep?: TiepViec; bam: 'luu' | 'tiep' | null; luu: (diTiep: boolean) => void;
+  /** false: nơi gọi tự đặt `NutDongPanel` (có nút phụ đứng giữa, vd "Lưu nháp"). */ coDong?: boolean;
   /** Tắt cả hai nút mà không đổi chữ (form đang lưu việc khác, vd Lưu nháp). */
   tat?: boolean;
 }) {
+  /* GD-4b (lời 36, dòng 40c ⓪): chân panel việc = "Đóng" · nút việc · "{việc} · việc tiếp ›" (chính, khi còn việc kế); mở lẻ = "Đóng" · nút việc (chính). */
   return <>
+    {coDong && <NutDongPanel busy={busy} />}
     <button type="button" className={`btn ${tiep ? '' : 'btn-primary'} min-h-[40px] px-4 font-bold`} disabled={busy || tat} onClick={() => luu(false)}>{busy && bam !== 'tiep' ? t('Đang lưu…') : chu}</button>
     {tiep && <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy || tat} onClick={() => luu(true)}>{busy && bam === 'tiep' ? t('Đang lưu…') : chuTiep}</button>}
   </>;

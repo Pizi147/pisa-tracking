@@ -20,7 +20,7 @@ import { useSession } from '../../lib/session.tsx';
 import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy,
+  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy, hanDuyetNgay, quyCheDuyet,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -400,6 +400,7 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
   const [chanEl, setChanEl] = useState<HTMLElement | null>(null);
   /* Thẻ đã xử lý (tab Đã xử lý · Sửa trả lời… · Huỷ quyết định) giữ nút trong thân như cũ — chân dính chỉ cho thẻ đang chờ quyết. */
   const cho = yc.trangThai === 'cho';
+  const { homNay } = useNgayNghiepVu();
   const chuTiep = tiep ? t('Tiếp: {tieuDe}', { tieuDe: [dich(tiep.tieuDe), tiep.hocVien].filter(Boolean).join(' · ') }) : null;
   return (
     <KhungTaiCho.Provider value>
@@ -419,6 +420,8 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
           trai: chuTiep && <span className="min-w-0 truncate text-dim" title={chuTiep}>{chuTiep}</span>,
           chinh: <span ref={setChanEl} className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:[&>.btn]:flex-1 max-sm:[&>.btn]:justify-center" />,
         }}
+        /* GD-4b Q69–Q73: theo loại thẻ, chỉ thẻ đang chờ quyết. */
+        quyChe={cho && !xong ? quyCheDuyet(yc.loai, yc.hanDuyet ?? null, homNay, hanDuyetNgay()) : null}
         onDong={onDong}>
         {xong ? (
           <div role="status" className="mt-3 flex flex-wrap items-center gap-3 rounded-lg border border-ok-line bg-ok-bg px-3 py-2.5 text-[13px]">

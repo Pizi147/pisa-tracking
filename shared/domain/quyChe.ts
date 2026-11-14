@@ -1,17 +1,11 @@
 /**
  * DÒNG QUY CHẾ (overhaul V6, `04-thiet-ke.md` 5.3; mockup `thiet-ke/v21/trang-dau-gv.html` K2, K4, K5): một câu ≤ 90 ký tự ngay trên chân panel việc —
  * mặc định là gì · lưu xong ai nhận, hạn nào · chọn khác thì sao. Câu ở MỘT chỗ (không viết tay từng panel); chi tiết dài vào ⓘ.
- * Panel khác: chờ bảng câu của mockup ⑤ (R5.5).
+ * GD-4b: các panel khác ở `quyCheCase.ts` · `quyCheYThuc.ts` · `quyCheVanHanh.ts` (bảng 83 câu mockup ⑤ R5.5). Vắng khi nhập điểm: `quyCheNhapDiem`.
  */
 import { t } from '../i18n/index.ts';
 
 export type QuyChe = { chu: string; chiTiet?: string };
-
-/** N38 (`HopThaoTacMt` `vangSeRa`, máy chủ `chuyenVang`): Mock lần 1 dời / lần 2 huỷ; lớp thường dời sang tuần sau; tuần Test qua ≥ 2 tuần = Không dự thi. */
-export const quyCheVang = (laThuong: boolean): QuyChe => ({
-  chu: laThuong ? t('"-" = vắng: môn đó dời sang tuần sau') : t('"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ'),
-  chiTiet: t('Tuần Test đã qua 2 tuần: "-" ghi Không dự thi — không dời, không tính lần vắng.'),
-});
 
 /** SOS-TAM-PA: "Theo PA quy chế" = PA của GV dừng ("Được thay thế"); "Giữ PA của tôi" → QL duyệt, quá 3 ngày chưa trả lời chốt theo PA của GV. */
 export const quyCheChonPa = (giu: boolean): QuyChe => giu

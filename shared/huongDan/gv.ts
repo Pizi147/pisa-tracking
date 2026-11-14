@@ -255,6 +255,7 @@ export const HD_GV: HuongDan = {
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc việc ở hàng này.' } },
         { id: 'cv-lop', ten: 'Lớp của tôi', buoc: ['Khung phải khi chưa chọn việc (điện thoại: nút <b>Lớp của tôi</b>): mỗi lớp một dòng — bạn dạy gì, Test, <b>Việc cần làm</b>.', 'Bấm một nút việc (Nhập điểm, Case, Ý thức, Vận hành) mở đúng việc đó; bấm tên lớp mở hồ sơ lớp.'],
           chi: { hd: 'cv-lop-cua-toi', duong: CV, chu: 'Bấm nút việc của một lớp để làm ngay.' } },
+        { id: 'cv-quy-che', ten: 'Dòng quy chế ở panel việc', buoc: ['Ngay trên nút lưu: <b>Quy chế</b> · một câu — lưu xong ai nhận việc, hạn nào. Câu đổi theo lựa chọn; <b>ⓘ</b> xem chi tiết.', 'Chân panel: <b>Đóng</b> · nút việc · <b>Lưu · việc tiếp ›</b> khi còn việc kế.'] },
         { id: 'cv-task', ten: '+ Task', buoc: ['Nút <b>+ Task</b> đầu trang: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b>.', 'Gõ tên em: kết quả nhóm theo từng lớp của bạn (lớp chủ nhiệm ghi rõ), rồi điền form như ở hồ sơ lớp. Trên điện thoại: nút tròn <b>+ Task</b>, menu mở ở đáy màn.'] },
       ],
     },

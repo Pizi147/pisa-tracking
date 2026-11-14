@@ -7,7 +7,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DongQuyChe, Hang2, KhungPanel, Truong, useBaoDangSua, useNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
-import { BoiCanh, CanLam, NutChu, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, CanLam, NutChu, NutDongPanel, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -22,7 +22,7 @@ import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay, quyCheKetQuaPa } from '@shared/domain/index.ts';
+import { hanDuyetNgay, quyCheGhiKetQua } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
@@ -465,7 +465,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   );
   const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi QL duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
   const nut = tiep && !sua
-    ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tat={!!gui} tiep={tiep} bam={bam} luu={(x) => void luu(x)} />
+    ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tat={!!gui} tiep={tiep} bam={bam} luu={(x) => void luu(x)} coDong={false} />
     : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui} onClick={() => void luu()}>{nhanNut}</button>;
   /* PTA rà 1454: nháp chỉ giữ Tiến triển + Nhận xét — ô khác (Quyết định, Lý do, Điều chỉnh, buổi, Hoàn thành Case) đổi thì vẫn "đang sửa" dù hai ô trùng nháp. */
   const ngoaiNhap = !!(buoi.some((b) => b.tutor.trim() || b.nhanXet.trim()) || (decision && decision !== 'keep') || doi.daSua || reason.trim() || htCase
@@ -644,9 +644,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               {!khoaLuaChon && <><span aria-hidden>·</span><NutChu onClick={() => setMoNgay(true)}>{t('Đổi')}</NutChu></>}
             </p>
           )}
-          {/* GD-3: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân. PA chờ Mini Test, Sửa: không có câu kỳ / hạn. */}
-          {!sua && !pa.miniTestHan && <DongQuyChe px="px-0" qc={quyCheKetQuaPa(pa.actionDue ? ngan(pa.actionDue) : null)} />}
-          <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden">{nutNhap}{nut}</div>
+          {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
+          {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
+            lanCuoi, batBuoc: !!pa.batBuoc, miniTest: coMiniTest || !!pa.miniTestHan })} />}
+          <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden"><NutDongPanel busy={busy} />{nutNhap}{nut}</div>
         </CanLam>
       </div>
     </KhungPanel>

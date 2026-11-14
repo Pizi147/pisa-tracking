@@ -5,7 +5,7 @@ import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan, ChipSoQuaHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { addDaysIso, dotGvCham, mondayOfDate, ngay, soSanhLop, tuanLich } from '@shared/domain/index.ts';
+import { addDaysIso, dotGvCham, mondayOfDate, ngay, quyCheChamSpeaking, soSanhLop, tuanLich } from '@shared/domain/index.ts';
 import { suaDuoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { LuoiFT, type FtSheet } from '../cham/LuoiFT.tsx';
 import { NutGvCham, useGvChamCot } from '../cham/GvCham.tsx';
@@ -117,6 +117,8 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   const cuRows = cu.flatMap((x) => x.ngan.flatMap((n) => n.rows));
   return (
     <KhungPanel hd="nhap-diem" tieuDe={t('Chấm Speaking')} dau={dau} loai={dau.loai} onDong={onDong}
+      /* GD-4b Q10 / Q12: `nguoi` = hàng đợi của GV khác (QL theo dõi, nhập hộ). */
+      quyChe={tatCa.length ? quyCheChamSpeaking(nguoi != null) : null}
       chan={onTiep ? { huy: null, phu: soLuu > 0 ? <span role="status" className={`text-[13px] font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {n} bài', { n: soLuu })}</span> : undefined, chinh: <button type="button" className={data?.soBai === 0 ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> } : undefined}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : !data ? <div className="pt-3"><Skeleton rows={6} /></div>

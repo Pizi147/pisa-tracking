@@ -15,7 +15,7 @@ import { OResetBac, OTarget, OTuanBatDau, tenBac, type XemChuyenLopData } from '
 import { KHOI_VANG } from './chuyenLopChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
-import { RATIO_PASS_THRESHOLD, canHoiTarget, chuTyLeXetLai, docOTarget, kyHieuLop, laChuyenNgay, ngay, tenBacKe, tuanChonDuoc, tuanLich, type DiemHv, type ProgrammeCode } from '@shared/domain/index.ts';
+import { RATIO_PASS_THRESHOLD, canHoiTarget, chuTyLeXetLai, docOTarget, kyHieuLop, laChuyenNgay, ngay, quyCheXetLai, tenBacKe, tuanChonDuoc, tuanLich, type DiemHv, type ProgrammeCode } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 type Quyet = 'tiep_tuc' | 'hoc_lai' | 'len' | 'dung';
@@ -186,6 +186,7 @@ export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { cl
     e0 && (e0.daThiHanh ? t('vào lớp {tuan}', { tuan: tuanLich(e0.tuanBatDau, homNay) }) : t('chuyển lớp {tuan}', { tuan: tuanLich(e0.tuanBatDau, homNay) }))].filter(Boolean) as string[];
   return (
     <KhungPanel hd="xet-lai" rong="rong" tieuDe={tieuDe} loai={t('Việc · Xét lại lộ trình')} onDong={dong}
+      quyChe={data.chiXem || !em.length ? null : quyCheXetLai()}
       dau={{ han: data.han && !data.chiXem ? <ChipHan loai="viec-van-hanh" han={data.han} /> : null, dong2: nguCanh }}
       chan={data.chiXem ? { huy: { onClick: dong } } : {
         daSua: soan.length > 0, huy: { onClick: dong, disabled: busy },

@@ -3,14 +3,14 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, type NguoiChon } from '@shared/domain/index.ts';
+import { hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -259,6 +259,8 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
               </div>
             )}
             {loiMay && <p className="m-0 mt-2 text-xs text-late" role="alert">{loiMay}</p>}
+            {/* GD-4b Q50 + lời 33 (LG-10): dòng quy chế thu hồi, ngay trên hàng nút của hộp. */}
+            {!rutDuoc && <div className="mt-3"><DongQuyChe px="px-0" qc={quyCheThuHoi({ ql, soNgay: hanDuyetNgay(homNay), daBaoPh: !!d.daBaoPh, baoLai })} /></div>}
           </>} />
       )}
     </>

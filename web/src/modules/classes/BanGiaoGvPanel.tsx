@@ -6,7 +6,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { mondayOfDate, ngay, shortDate, trangThaiEmBg, tuanLich, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
+import { mondayOfDate, ngay, quyCheBanGiaoGv, shortDate, trangThaiEmBg, tuanLich, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { DsEmBanGiao, OGopY, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu } from '../../lib/luuChac.ts';
@@ -97,6 +97,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai }: {
 
   return (
     <KhungPanel hd="ban-giao" quayLai={quayLai} rong="toan" loai={viet ? t('Việc · Bàn giao') : t('Bàn giao · đọc')} tieuDe={tieuDe} onDong={dong}
+      quyChe={viet && cho ? quyCheBanGiaoGv() : null}
       ngCanh={(
         <span className="flex flex-wrap gap-x-3 gap-y-1 tabular-nums">
           <span><b className="text-slate-100">{ds.length}</b> {t('em')}</span>
