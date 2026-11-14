@@ -473,34 +473,6 @@ export function OViecCuaToi() {
     : o;
 }
 
-/* ───────────── GV ───────────── */
-
-type ChiSoGv = { tu: string; den: string; ketQua: OPtGv; tienBo: OPtGv };
-/** GV (chủ SP 23/10; Head tutor tạm dùng chung): Việc của tôi (+ quá hạn) · Case đang xử lý · Đạt kỳ vọng Test (kỹ năng tôi dạy) · Tiến bộ. */
-/** `lopToiDay`: kỹ năng tôi dạy + chủ nhiệm xếp chồng, rộng hết trang (AUDIT-UI B1: bỏ cột "Điều hướng"). */
-export function TongQuanGvV5({ lopToiDay }: { lopToiDay: ReactNode }) {
-  const { session } = useSession();
-  const id = session?.user?.id;
-  /* S1: chỉ số GV lấy từ CÙNG GET của khối hai bảng (`HaiKhoiGv` — `useApi` gộp một request), không GET thêm chỉ số hồ sơ GV (tính lại y hệt). */
-  const cs = useApi<{ chiSo: ChiSoGv }>('/tong-quan/lop-toi-day/hai-khoi', []).data?.chiSo;
-  const nguonCase = `/giao-vien/${id}/o?cot=case-mo`;
-  const caseMo = useApi<{ n: number }>(id ? nguonCase : null, [id]).data?.n;
-  const o = (x: OPtGv | undefined, cot: string, nhan: string) => <PhanTram x={tyLeGv(x)} nguon={`/giao-vien/${id}/chi-so/o?cot=${cot}`} tieuDe={nhan} className="so-chinh" />;
-  const ky = cs ? kyChu(cs) : undefined;
-  return (
-    <>
-      <DaiChiSo>
-        <OViecCuaToi />
-        <ChiSo ten={t('Case đang xử lý')} ky={t('hiện tại')} giaTri={caseMo === undefined ? '…' : <OSo giaTri={caseMo} tieuDe={t('Case đang xử lý')} nguon={nguonCase} className="so-chinh" />}
-          mau="Case" />
-        <ChiSo ten={t('Đạt kỳ vọng Test')} ky={ky} giaTri={o(cs?.ketQua, 'ket-qua', t('Đạt kỳ vọng Test'))} mau={tuMau(tyLeGv(cs?.ketQua), t('lượt Test'))} />
-        <ChiSo ten={t('Tiến bộ')} ky={ky} giaTri={o(cs?.tienBo, 'tien-bo', t('HV tiến bộ'))} mau={tuMau(tyLeGv(cs?.tienBo), t('lượt'))} />
-      </DaiChiSo>
-      {lopToiDay}
-    </>
-  );
-}
-
 /* ───────────── TVV: 4 ô, mỗi ô một số (AUDIT-UI B2) ───────────── */
 
 type TqTvv = { ky: { tu: string; den: string }; baoPh: { dung: number; tong: number; treXong: number }; thiThangNay: number };
@@ -548,7 +520,8 @@ export function lienKetTq(vai: string, o: { id?: number; cn: number | null; ky?:
   const baoCao = { to: `/phan-tich?goc=bao-cao${cn}`, nhan: t('Báo cáo'), goiY: o.ky ? kyChu(o.ky) : undefined };
   const lichThi = { to: `/hoc-vien?view=lich-thi${cn}`, nhan: t('Lịch thi') };
   if (vai === 'tvv') return [{ to: '/hoc-vien?phamVi=cua-toi', nhan: t('HV của tôi') }];
-  if (vai === 'gv' || vai === 'ht') return o.id ? [{ to: `/giao-vien/${o.id}`, nhan: t('Hồ sơ GV của tôi') }] : [];
+  /* LG-7: Head tutor / GV chưa có lớp — như trang đầu GV (Công việc), không link cạnh tiêu đề. GV có lớp không tới đây (chuyển sang Công việc). */
+  if (vai === 'ht') return [];
   if (vai === 'admin') { const q = o.cn ? `?cn=${o.cn}` : ''; return [{ to: `/test/lich${q}`, nhan: t('Lịch tuần') }, { to: `/test/ke-hoach${q}`, nhan: t('Kế hoạch Test') }]; }
   if (vai === 'cx') return [lichThi, { ...baoCao, nhan: t('Báo cáo HV') }];
   return o.motCn ? [lichThi, baoCao] : [{ to: '/phan-tich?goc=giao-vien', nhan: t('Phân tích GV') }, baoCao];

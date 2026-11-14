@@ -37,12 +37,11 @@ export async function runPrMoTatCaTests(t: YThucTestKit) {
     assert(/chuaLuu\[khoaHang\(l\)\]/.test(f) && /setHoiBo\(/.test(f), 'đếm ô chưa lưu + hộp hỏi');
   });
 
-  check('MTC-4 · Tổng quan GV: ô Việc của tôi là link /cong-viec', () => {
+  check('MTC-4 · ô Việc của tôi là link /cong-viec', () => {
     const s = doc('web/src/modules/worklist/TongQuanV5.tsx');
-    /* XM 3 (rà 11/11): ô là component chung `OViecCuaToi` (GV · QL · TVV · Admin) — Link ở đó, GV dùng component. */
-    const gv = s.slice(s.indexOf('export function TongQuanGvV5'), s.indexOf('/* ───────────── TVV'));
-    const o = s.slice(s.indexOf('export function OViecCuaToi'), s.indexOf('/* ───────────── GV'));
-    assert(/<OViecCuaToi \/>/.test(gv) && /<Link to="\/cong-viec"[^\n]*>\{o\}<\/Link>/.test(o), 'cả ô bọc Link /cong-viec');
+    /* XM 3 (rà 11/11): ô là component chung `OViecCuaToi` (QL · TVV · Admin) — Link ở đó. LG-7: bỏ Tổng quan GV (GD-1: trang đầu GV = Công việc). */
+    const o = s.slice(s.indexOf('export function OViecCuaToi'), s.indexOf('/* ───────────── TVV'));
+    assert(/<Link to="\/cong-viec"[^\n]*>\{o\}<\/Link>/.test(o), 'cả ô bọc Link /cong-viec');
   });
 
   check('MTC-5 · EN có đủ chữ mới', () => {

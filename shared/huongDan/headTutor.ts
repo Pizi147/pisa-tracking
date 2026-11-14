@@ -1,6 +1,7 @@
 /**
  * Hướng dẫn Head tutor — HD-V2 (c). AN-TUTOR (chủ SP 22/10): trang Tutor ẩn khỏi web — chỉ còn Tổng quan, Hồ sơ cá nhân, Hướng dẫn (không Học viên & Lớp, Test, Công việc).
- * UI-TONG-QUAN (chủ SP 23/10): Tổng quan tạm dùng góc nhìn GV. `lam` là MỘT nguồn (xem `ql.ts`).
+ * LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): trang đầu như GV — dạy lớp thì Quản trị cấp thêm vai Giáo viên (khi đó Hướng dẫn GV); chưa có lớp:
+ * khung "Lớp của tôi" rỗng. `lam` là MỘT nguồn (xem `ql.ts`).
  */
 import { mucGv } from './tvv.ts';
 import type { HuongDan } from './kieu.ts';
@@ -11,7 +12,7 @@ export const HD_HT: HuongDan = {
     {
       id: 'xem-tong-quan', ten: 'Xem trang đầu', nhom: 'khac',
       loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/' },
-      buoc: ['Mở <b>Tổng quan</b>: Case đang xử lý của bạn.', 'Khối lớp chỉ hiện khi bạn có lớp dạy; trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.'],
+      buoc: ['Mở <b>Tổng quan</b>: khung <b>Lớp của tôi</b> như trang đầu GV.', 'Chưa có lớp: ghi "Chưa được phân công lớp nào". Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — bạn có Công việc, Học viên & Lớp, Test như GV.', 'Trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.'],
       tuKhac: ['tutor', 'case', 'trang đầu', 'home'],
     },
     {
@@ -33,7 +34,7 @@ export const HD_HT: HuongDan = {
   man: [
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      dangO: { cau: 'Trang đầu tạm dùng góc nhìn GV: Case đang xử lý của bạn.' },
+      dangO: { cau: 'Trang đầu như GV: lớp của bạn (chưa có lớp thì trống).' },
       khongLam: [{ ten: 'Nhập điểm, xử lý Case', cua: 'việc của GV' }],
       muc: [],
     },
