@@ -53,7 +53,7 @@ export const HD_GV: HuongDan = {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
       loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Case ở đầu trang.',
-      buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Case</b> đầu trang).', 'Ghi mô tả, lưu.'],
+      buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ).', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },
     {
@@ -332,8 +332,9 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Duyệt đề xuất PA', cua: 'việc của QL' }, { ten: 'Duyệt / chuyển lớp', cua: 'việc của QL' }],
       muc: [
         { id: 'hv-ghi-mini', viec: 'ghi-mini-test', ten: 'Ghi Mini Test', buoc: ['Tab <b>Học thuật</b>, khối kết luận khoá: nút <b>Ghi Mini Test</b>.', 'Gõ điểm, lưu.'] },
+        { id: 'hv-viec', ten: 'Việc cần làm · + Task', buoc: ['Thanh <b>Việc cần làm</b> dưới ô điểm: mọi việc của bạn với em (Case, Nhập điểm, Trả lời tình hình, Ý thức), quá hạn đỏ lên đầu; bấm dòng mở panel ngay tại hồ sơ.', '<b>+ Task</b> đầu hồ sơ: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b> — em điền sẵn, không chọn lại.', 'Em chưa có Target: ô <b>Target</b> ghi <b>Chưa có</b> · <b>Đề xuất sửa</b> (GV lớp gửi QL / TVV).'] },
         { id: 'hv-hoc-thuat', ten: 'Tab Học thuật', buoc: ['Ô điểm <b>Overall · L · R · W1 · W2 · S</b>: bấm một ô đổi kỹ năng cho cả phần dưới.', '<b>Hành trình</b>: điểm từng MT của kỹ năng, kỳ vọng dạng bậc thang mờ.', '<b>Tiến độ trên lớp</b>: ghi / sửa / xoá bài trên lớp (không vào MT).'] },
-        { id: 'hv-y-thuc', ten: 'Tab Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.', 'Lần xử lý sai: mở lần đó, <b>Thu hồi…</b> ghi lý do, gửi QL; QL quá hạn chưa quyết thì máy thu hồi theo bạn.'] },
+        { id: 'hv-y-thuc', ten: 'Tab Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.', 'Một bảng: <b>Đang chờ</b> trên, <b>Lịch sử · n</b> gập dưới — mở ra có lọc loại · Lộ trình | Cả lịch sử · nhóm.', 'Lần xử lý sai: mở lần đó, <b>Thu hồi…</b> ghi lý do, gửi QL; QL quá hạn chưa quyết thì máy thu hồi theo bạn.'] },
         { id: 'hv-hanh-trinh', ten: 'Tab Lộ trình & lớp', buoc: ['Lưới tuần theo lớp: chương đang học, mọi lượt Test, Case / PA theo tuần.'] },
       ],
     },

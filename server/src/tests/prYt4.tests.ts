@@ -966,9 +966,9 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     /* Y-THUC-V2 (mockup K8b): việc yt_xem mở panel gọn PanelXemViPham (dải ①②③ + vi phạm mới), không nhét cả tab HV. */
     assert(/<PanelXemViPham key=\{it\.key\} studentId=\{it\.studentId!\}/.test(docW('web/src/modules/congViec/PanelViec.tsx')), 'panel Công việc yt_xem');
   });
-  check('YT4 (10) · Tab HV (TINH-HINH, mockup v20 A4): hai tab nhỏ, Đang chờ + Cả quá trình, cùng dòng DongLan với tab lớp, lọc loại + phạm vi, không ô tick', () => {
+  check('YT4 (10) · Tab HV (TINH-HINH v20 A4 → GD-7 ③ K4a): hai tab nhỏ, một bảng Đang chờ + Lịch sử gập (LichSuGap), cùng dòng DongLan với tab lớp, lọc loại + phạm vi, không ô tick', () => {
     const s = docW(`${YT}/StudentYThucSection.tsx`);
-    assert(/<TabNho/.test(s) && /<DongLan/.test(s) && /<DauCotEm[^>]*khongHv/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s) && /t\('Đang chờ'\)/.test(s) && /t\('Cả quá trình'\)/.test(s), 'bố cục');
+    assert(/<TabNho/.test(s) && /<DongLan/.test(s) && /<DauCotEm[^>]*khongHv/.test(s) && /<ThangYThuc/.test(s) && /'Cả lịch sử'/.test(s) && /t\('Đang chờ'\)/.test(s) && /<LichSuGap so=\{soTong\}/.test(s) && !/t\('Cả quá trình'\)/.test(s), 'bố cục');
     assert(/key: 'vi-pham'/.test(s) && /key: 'phoi-hop'/.test(s) && /key: 'nhac-nho'/.test(s) && /key: 'tinh-hinh'/.test(s) && !/type="checkbox"|coCotChon/.test(s), 'tab nhỏ + lọc, không tick');
     assert(!/violation-warning/.test(docW('web/src/modules/students/StudentDetailPage.tsx')), 'hồ sơ không gọi violation-warning');
   });

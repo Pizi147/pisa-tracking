@@ -29,7 +29,21 @@ const TOI_DA_TINH_HINH = 8;
  * GD-4a (mockup ⑤ F): MỘT nút cho trang đầu, hồ sơ lớp, hồ sơ HV — `lopId`: mở từ hồ sơ lớp, nhóm "Lớp này" lên đầu; `em`: hồ sơ HV điền sẵn em → bỏ bước chọn.
  * < 640 px menu neo đáy (F4).
  */
-export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?: number; em?: EmTask }) {
+export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycleId, onMoCase, phu = false, dauHoSo = false }: {
+  noi: 'dau' | 'noi'; lopId?: number; em?: EmTask;
+  /** GD-7 (③ K6, [XM-6]): chỉ các mục người xem làm được (máy chủ quyết: `canReport` · `canRecord` · `coTheBao` / `coTheHoi`); bỏ trống = đủ 3 mục. */
+  muc?: readonly Loai[];
+  /** GD-7 ([XM-6]): TVV — mục Tình hình là "Hỏi tình hình học tập" (gửi GVCN), không "Báo". */
+  hoi?: { gvcn: string | null };
+  /** GD-7: nơi gọi tải lại sau khi lưu (hồ sơ HV: hồ sơ + mở Case vừa tạo). */
+  onXong?: (caseId?: number) => void;
+  /** GD-7: giữ thao tác cũ của "+ Case" hồ sơ HV — Case vào lộ trình đang xem · "Thêm PA" / Case trùng mở Case ngay tại hồ sơ. */
+  cycleId?: number | null; onMoCase?: (caseId: number, viec: 'xac-nhan' | 'them-pa') => void;
+  /** GD-7 ([XM-5]): nút thường (không chính) — hồ sơ lưu trữ có "Quay lại học" là nút chính. */
+  phu?: boolean;
+  /** GD-7: nút ở hàng nút đầu hồ sơ — cao 36 như "⋯" (`NUT_DAU_HO_SO`), không 34. */
+  dauHoSo?: boolean;
+}) {
   const neo = useRef<HTMLSpanElement>(null);
   const [loai, setLoai] = useState<Loai | null>(null);
   const [em, setEm] = useState<Em[] | null>(null);
@@ -42,24 +56,27 @@ export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?:
     return () => clearTimeout(h);
   }, [loai, emSan]);
   const dong = () => { setLoai(null); setEm(null); };
-  const xong = () => { invalidate('/my-work'); dong(); };
+  const xong = (caseId?: number) => { invalidate('/my-work'); dong(); onXong?.(caseId); };
+  const dsMuc = MUC.filter(([k]) => !chiMuc || chiMuc.includes(k)).map(([k, nhan]) => [k, k === 'tinh-hinh' && hoi ? t('Hỏi tình hình học tập') : nhan] as const);
+  if (!dsMuc.length) return null;
   const mat = noi === 'dau'
-    ? <span className="inline-flex h-8 items-center px-3 text-[13px] font-semibold">{t('+ Task')}</span>
+    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-8'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
     : <span className="grid h-[60px] w-[60px] place-items-center text-sm font-bold">{t('+ Task')}</span>;
   return (
     <>
       <span ref={neo} className={noi === 'noi' ? 'fixed bottom-[80px] right-4 z-[35] sm:hidden' : 'max-sm:hidden'}>
         <MenuDong nhan={t('Task: Case, vi phạm / nhắc nhở, tình hình học tập')} mat={mat} tieuDeDay={t('+ Task')}
-          lopNut={noi === 'dau' ? 'btn btn-primary !p-0' : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
-          muc={MUC.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />
+          lopNut={noi === 'dau' ? `btn ${phu ? '' : 'btn-primary '}!p-0` : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
+          muc={dsMuc.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />
       </span>
       {loai && loai !== 'tinh-hinh' && !em && <HopChonEm neo={neo} loai={loai} timEm={timEm} onDong={dong} onChon={setEm} />}
-      {loai === 'case' && em?.[0] && <QuickReport open onClose={dong} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={xong} />}
-      {loai === 'vi-pham' && em?.[0] && <RecordViolationPanel open onClose={dong} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={xong} />}
+      {loai === 'case' && em?.[0] && <QuickReport open onClose={dong} cycleId={cycleId} onMoCase={onMoCase} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={(cid) => xong(cid)} />}
+      {loai === 'vi-pham' && em?.[0] && <RecordViolationPanel open onClose={dong} studentId={em[0].id} studentName={em[0].ten} lop={em[0].lop} onDone={() => xong()} />}
       {/* GD-4d (⓪ 40d, ⑤ F3 / ① K5c): Tình hình học tập = MỘT hộp — chọn em (ô chọn có tìm chung, ≤ 8) ngay trong hộp gửi; hồ sơ HV: em cố định. */}
       {loai === 'tinh-hinh' && em && (
-        <HopTinhHinh neo={neo} homNay={homNay} onDong={dong} onXong={() => invalidate('/my-work')}
-          che={{ loai: 'bao', em: em.map((e) => ({ id: e.id, ten: e.ten, tvv: e.tvv })), chonEm: emSan ? undefined : chonEmTinhHinh(timEm) }} />
+        <HopTinhHinh neo={neo} homNay={homNay} onDong={dong} onXong={() => { invalidate('/my-work'); onXong?.(); }}
+          che={hoi && emSan ? { loai: 'hoi', em: { id: emSan.id, ten: emSan.ten }, gvcn: hoi.gvcn }
+            : { loai: 'bao', em: em.map((e) => ({ id: e.id, ten: e.ten, tvv: e.tvv })), chonEm: emSan ? undefined : chonEmTinhHinh(timEm) }} />
       )}
     </>
   );

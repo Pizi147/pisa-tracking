@@ -8,6 +8,7 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NhanTrangThai } from '../../ui/ui.tsx';
 import { IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -25,12 +26,16 @@ const dong = (c: CaseCard) => c.status === 'done' || c.trangThaiV4.t === 'da-huy
  * mở sẵn, bấm dòng mở / gập, mở nhiều được; Case đã đóng / huỷ gập "n Case đã đóng". Case mở = Ngăn Case đặt THẲNG trong cột (`KhungTrongCot`, giữ mọi thao tác)
  * — chỉ Case đang mở mới gọi `/cases/:id`. Nút việc của người xem ở dòng tóm tắt (một việc một chỗ).
  */
-export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }: {
+export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, onMoNgan }: {
   rows: SkillBoardRow[]; tenKn: string; mo: MoCot | null; hocVien: string; lop?: string | null;
   onReport?: (category: string) => void; onChanged: () => void;
+  /** GD-7 (③ K8a): điện thoại — bấm dòng Case mở Ngăn Case toàn màn (nơi gọi), không bung Case trong trang. */
+  onMoNgan?: (caseId: number) => void;
 }) {
   const toi = useSession().session?.user?.id ?? null;
   const { homNay } = useNgayNghiepVu();
+  /* ③ K8a: 375 = danh sách dòng gọn (kỹ năng · tên · SOS · PA · người · hạn ›), bấm mở Case toàn màn; ≥ 640 giữ mở tại chỗ. */
+  const ngan = useDienThoai() && !!onMoNgan;
   /* Huỷ form trong một khối → dựng lại khối đó ở view Case (chuỗi view của Ngăn Case là cục bộ). */
   const [lai, setLai] = useState<Record<number, number>>({});
   /* Lần mở (`mo.n`) đã đóng — dựng lại không mở form lần nữa. */
@@ -55,11 +60,11 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
 
   const veDong = ({ c, r }: Dong) => {
     const ep = yeuCau?.caseId === c.id && daDong[c.id] !== yeuCau.n ? yeuCau : null;
-    const moRa = !!ep || (tay[c.id] ?? (!dong(c) && moSan(c)));
+    const moRa = !ngan && (!!ep || (tay[c.id] ?? (!dong(c) && moSan(c))));
     const v = c.viecTiep;
     const han = !dong(c) && v?.han && v.loaiHan && homNay ? deadlineView({ kind: v.loaiHan as DeadlineKind, due: v.han, today: homNay }) : null;
     const pa = c.plans.find((x) => x.status === 'started' || x.status === 'planned') ?? null;
-    const bat = () => setTay((x) => ({ ...x, [c.id]: !moRa }));
+    const bat = () => (ngan ? onMoNgan!(c.id) : setTay((x) => ({ ...x, [c.id]: !moRa })));
     /* B12 (mockup audit-ui 08/11, M10): tách trường — trạng thái = viên · PA = chữ mờ · người = chữ mờ + biểu tượng · hạn = cột phải. Bỏ tình trạng PA
        ("đã lên kế hoạch") vì trạng thái Case đã nói (rê chuột vẫn đọc được). Khung ≥ 640 px: mỗi trường một cột; hẹp hơn: dòng 2 gói lại. */
     const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
@@ -72,7 +77,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
       <div key={c.id} id={`case-${c.id}`} className="border-t px-4 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
         <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_140px_minmax(0,1fr)_150px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
           <span className="the-kn">{r.short}</span>
-          <button type="button" aria-expanded={moRa} onClick={bat}
+          <button type="button" aria-expanded={ngan ? undefined : moRa} onClick={bat}
             className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-3 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
             <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
             {(!dong(c) || chuPa) && (
@@ -87,7 +92,8 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged }
           </button>
           <span className={`flex items-center gap-2 [@container(min-width:640px)]:contents`}>
             <span className="hidden [@container(min-width:640px)]:inline-flex">{chuHan}</span>
-            <button type="button" className="mui-pa" aria-label={moRa ? t('Gập Case') : t('Mở Case')} aria-expanded={moRa} onClick={bat}><IconGap mo={moRa} /></button>
+            {ngan ? <span aria-hidden className="w-6 text-center text-[17px] text-faint">›</span>
+              : <button type="button" className="mui-pa" aria-label={moRa ? t('Gập Case') : t('Mở Case')} aria-expanded={moRa} onClick={bat}><IconGap mo={moRa} /></button>}
           </span>
         </div>
         {moRa && (

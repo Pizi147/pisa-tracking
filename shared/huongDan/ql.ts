@@ -69,7 +69,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
-      loiTat: ['ho-so-lop'], tatThem: ['Nút + Case đầu hồ sơ', '⋯ dòng em'], cung: 'mở cùng form Case.',
+      loiTat: ['ho-so-lop'], tatThem: ['+ Task › Case đầu hồ sơ', '⋯ dòng em'], cung: 'mở cùng form Case.',
       buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b>.', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },

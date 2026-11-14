@@ -632,8 +632,11 @@ export async function runPrVaiATests(t: YThucTestKit) {
     const src = fs.readFileSync(pathM.join(REPO, 'server/src/worklist/mywork.ts'), 'utf8');
     assert(!src.includes("key: `target:"), 'mywork còn việc Điền target');
     const hs = fs.readFileSync(pathM.join(REPO, 'web/src/modules/students/StudentDetailPage.tsx'), 'utf8');
-    assert(hs.includes("t('Em chưa có Target')") && /coTheDeXuatSua && data\.missing\?\.some\([^)]*\) => m\.key === 'target'\)/.test(hs) && hs.includes("setViecQuanLy('de-xuat-sua')"),
-      'hồ sơ HV: GV lớp thấy nhắc "Em chưa có Target" + Đề xuất sửa');
+    /* GD-7 (③ K5): nhắc ở ô Target của dòng thông tin — "Chưa có" màu nhắc + "Đề xuất sửa" (`DongThongTin deXuatTarget`). */
+    const dau = fs.readFileSync(pathM.join(REPO, 'web/src/modules/students/DauHoSo.tsx'), 'utf8');
+    assert(/deXuatTarget=\{data\.viewer\.coTheDeXuatSua && data\.missing\?\.some\([^)]*\) => m\.key === 'target'\) \? \(\) => setViecQuanLy\('de-xuat-sua'\)/.test(hs)
+      && dau.includes("text-soon\">{t('Chưa có')}") && dau.includes("onClick={deXuatTarget}>{t('Đề xuất sửa')}"),
+      'hồ sơ HV: GV lớp thấy ô Target "Chưa có" + Đề xuất sửa');
     eq(['MB FT 10', 'MB FT 9'].sort((a, b) => d.soSanhLop({ code: a }, { code: b })), ['MB FT 9', 'MB FT 10'], 'soSanhLop');
   });
 }
