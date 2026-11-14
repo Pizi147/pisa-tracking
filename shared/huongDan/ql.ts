@@ -279,7 +279,7 @@ export const HD_QL: HuongDan = {
       id: 'phan-tich', ten: 'Xem thống kê theo kỳ, xuất Excel', nhom: 'khac',
       loiChinh: { man: 'phan-tich', chu: 'Phân tích', duong: '/phan-tich', chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
       buoc: ['Mở <b>Phân tích</b>, chọn tab: <b>Chi nhánh</b> (mặc định một tháng) · <b>SOS</b> · <b>Thi thật</b> · <b>Giáo viên</b> · <b>Ý thức</b> (mặc định 2 tuần).',
-        'Đổi khoảng bằng <b>Từ tuần</b> → <b>Đến tuần</b>, <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm một số là mở danh sách ngay tại trang.',
+        'Đổi khoảng bằng <b>Từ tuần</b> → <b>Đến tuần</b>, <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm một số là mở danh sách ngay tại trang (cả <b>Chưa làm</b> ở tab Giáo viên, <b>Sắp thi · còn SOS</b> ở tab Thi thật).',
         '<b>Xuất Excel</b> ở mọi tab (file đã định dạng sẵn); <b>In</b> ra A4 ngang ở tab Chi nhánh.'],
       tuKhac: ['thống kê', 'báo cáo', 'in', 'excel', 'kck', 'thi thật', 'analytics', 'report'],
     },
@@ -341,8 +341,11 @@ export const HD_QL: HuongDan = {
       muc: [
         { id: 'ql-pt-goc', viec: 'phan-tich', ten: 'Năm tab phân tích', buoc: ['<b>Chi nhánh</b> (mặc định): số to để trình chiếu, bảng theo lớp; <b>In</b> ra A4 ngang.', '<b>SOS</b> (lớp thường ghi <b>Test</b>) · <b>Thi thật</b> (Đạt Target, Tổng thể; KCK chỉ ở danh sách) · <b>Giáo viên</b> (Hành chính | Học thuật) · <b>Ý thức</b>.'],
           chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
-        { id: 'ql-pt-thoi-gian', ten: 'Khoảng thời gian', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b> cho mọi tab (Chi nhánh một tháng, tab khác 2 tuần), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>.', 'Bảng dài: 10 dòng một trang, chọn 20 / 50 ở đầu hoặc cuối bảng.'],
+        { id: 'ql-pt-thoi-gian', ten: 'Khoảng thời gian', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b> cho mọi tab (Chi nhánh một tháng, tab khác 2 tuần), thêm <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>.', 'Hàng lọc giống nhau ở mọi tab; ô không dùng ở tab đó mờ đi (điện thoại: ẩn).', 'Bảng dài: 10 dòng một trang, chọn 20 / 50 ở đầu hoặc cuối bảng.'],
           chi: { hd: 'pt-thoi-gian', duong: '/phan-tich', chu: 'Đổi khoảng cho mọi tab ở đây.' } },
+        { id: 'ql-pt-chua-lam', ten: 'Giáo viên · Chưa làm', buoc: ['Tab <b>Giáo viên</b>: bấm số <b>bài</b> / <b>việc</b> ở ô <b>Chưa làm</b> — danh sách bài / việc quá hạn, nhóm theo GV (tab <b>Chấm Test</b> · <b>Việc</b>); nhóm cuối <b>S chéo chung</b> không vào tỉ lệ.', '<b>Tìm GV</b>: gõ để lọc bảng, hoặc chọn một GV.'] },
+        { id: 'ql-pt-sap-thi', ten: 'Thi thật · Sắp thi còn SOS', buoc: ['Tab <b>Thi thật</b>: ô <b>Sắp thi · tới hết T… · còn SOS</b> = em có lịch thi tháng này hoặc tháng sau (ngày đã chốt hoặc tháng dự kiến) mà vẫn SOS.', 'Bấm số hoặc chip <b>SOS 1 · 2 · 3</b>: danh sách em (lớp · lịch thi · SOS · TVV) ngay tại trang.'] },
+        { id: 'ql-pt-cach-tinh', ten: 'Cách tính', buoc: ['Bấm <b>ⓘ</b> ở đầu bảng: giải thích từng cột mở ngay dưới đầu bảng; <b>✕</b> hoặc Esc để đóng.'] },
       ],
     },
     {

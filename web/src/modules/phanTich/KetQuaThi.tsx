@@ -14,6 +14,7 @@ import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { DaiChiSo, DauThe, NutXemToanBo, RongDau, NutXuat, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { ngayX, ptX, soX, xuatBaoCao } from './xuatV2.ts';
+import { OSapThiSos, type SapThiSosSo } from './SapThiSos.tsx';
 import type { MauXlsx, OXlsx } from '../../lib/xlsxDep.ts';
 import {
   mucThi, ngay, nhanKhoang, soSanhDiem,
@@ -28,7 +29,7 @@ import {
  */
 /** Link chữ thường (U08-6): rê / focus mới báo. */
 const LINK_CHU = 'rounded-sm text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline hover:underline-offset-[3px] focus-visible:text-[color:var(--accent)] focus-visible:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]';
-type TabThiThat = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb; chuaCoKq: number };
+type TabThiThat = KetQuaThiThatKq & { thongKe: ThongKeThiThatWeb; chuaCoKq: number; /** GD-12b-a: ô Sắp thi · còn SOS (hiện tại). */ sapThi?: SapThiSosSo };
 const KN4: readonly KnThiThat[] = ['l', 'r', 'w', 's'];
 const MUC: readonly MucThi[] = ['exceed', 'dat', 'fail'];
 const NHAN_MUC: Record<MucThi, string> = { exceed: t('Vượt'), dat: t('Đạt'), fail: t('Chưa đạt') };   // V2 (XM-1): Vượt · Đạt · Chưa đạt
@@ -114,6 +115,12 @@ export function KetQuaThi(pv: PhamViPhanTich) {
   }
 
   const tk = data?.thongKe;
+  /* GD-12b (⑨ C1, E2): ô Sắp thi · còn SOS — hiện tại, có cả khi kỳ đang chọn chưa có kết quả thi thật. */
+  const dsCnTen = pv.branchId ? dsCn.data?.find((b) => b.id === pv.branchId)?.name ?? null : t('Tất cả chi nhánh');
+  const oSapThi = data?.sapThi ? (
+    <OSapThiSos so={data.sapThi} nguon={nguon}
+      ngCanh={[dsCnTen, t('lịch thi {a} – {b}', { a: `T${Number(homNay.slice(5, 7))}`, b: `T${Number(data.sapThi.den.slice(5, 7))}` }), t('hiện tại')].filter(Boolean).join(' · ')} />
+  ) : null;
   return (
     <>
       <VaoHangLoc o="phai">
@@ -122,15 +129,21 @@ export function KetQuaThi(pv: PhamViPhanTich) {
       <div className="space-y-3">
         {error ? <Card bodyClass="p-4"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>
           : loading || !data || !tk ? <Card bodyClass="p-4"><Skeleton rows={8} /></Card>
-          : !rows.length ? <Card bodyClass="p-0"><RongDau chu={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} nut={<NutXemToanBo />} /></Card>
+          : !rows.length ? (
+            <div className="grid items-start gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+              <Card bodyClass="p-0"><RongDau chu={t('Chưa có kết quả thi thật nào trong {ky}', { ky: nhanKhoang(pv.khoang).chinh })} nut={<NutXemToanBo />} /></Card>
+              {oSapThi}
+            </div>
+          )
           : (
             <>
-              <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+              <div className={`grid gap-3 ${oSapThi ? 'lg:grid-cols-[minmax(0,2.2fr)_minmax(0,1fr)_minmax(0,1fr)]' : 'lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]'}`}>
                 <KhoiKetQua tk={tk} tongThe={tongThe} onTongThe={setTongThe} so={so} />
                 <DaiChiSo cot={1} ds={[
                   { ten: t('Không thi'), ky: t('trong kỳ'), gt: so(tk.tong.khongThi, 'tong:khong-thi', t('Không thi')), mau: t('không vào %') },
                   { ten: t('Chưa có KQ'), ky: t('hiện tại'), gt: data.chuaCoKq ? <OSo giaTri={data.chuaCoKq} nguon={`/tong-quan/chi-nhanh-v2/o?${query}&ct=ft&o=chua-co-kq`} tieuDe={t('Chưa có KQ')} vung="chi-so" className="text-soon" /> : <span className="font-medium text-faint">0</span>, mau: t('đã qua ngày thi') },
                 ]} />
+                {oSapThi}
               </div>
               {tk.gv && !dienThoai
                 ? <div className="grid items-start gap-3" style={{ gridTemplateColumns: 'minmax(0, 430px) minmax(0, 1fr)' }}><BangKyNang tk={tk} so={so} /><BangGv gv={tk.gv} so={so} /></div>

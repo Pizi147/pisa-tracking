@@ -1,8 +1,8 @@
-import { createContext, useContext, type ReactNode, type SelectHTMLAttributes } from 'react';
+import { createContext, useContext, useId, useState, type ReactNode, type SelectHTMLAttributes } from 'react';
 import { createPortal } from 'react-dom';
 import { useSearchParams } from 'react-router-dom';
 import { OSo } from '../../ui/OSo.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
+import { NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { t } from '@shared/i18n/index.ts';
 import type { ChuongTrinh, KhoangNgay } from '@shared/domain/index.ts';
 
@@ -126,9 +126,16 @@ export function DaiChiSo({ ds, cot }: { ds: ChiSo[]; /** Số cột 1440 khi kh�
   );
 }
 
-/** ĐẦU THẺ BẢNG (`.the-dau`): tên 15 / 700 · chip đếm · phụ 13 · (phải) điều khiển + ⓘ Cách tính — ⓘ ra khỏi đầu cột (G9). */
+/**
+ * ĐẦU THẺ BẢNG (`.the-dau`): tên 15 / 700 · chip đếm · phụ 13 · (phải) điều khiển + ⓘ Cách tính — ⓘ ra khỏi đầu cột (G9).
+ * GD-12a (⑨ B5 / B6 / Y2, R9.2 — thay `title` rê chuột): ⓘ mở DẢI ngay dưới đầu thẻ (đẩy bảng xuống, không che cột), có ✕; Esc / ✕ / bấm ⓘ lần nữa đóng;
+ * vùng chạm 44 ở 375.
+ */
 export function DauThe({ ten, dem, phu, phai, cachTinh }: { ten: ReactNode; dem?: ReactNode; phu?: ReactNode; phai?: ReactNode; cachTinh?: ReactNode }) {
+  const [mo, setMo] = useState(false);
+  const id = useId();
   return (
+    <>
     <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5 border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
       <h2 className="m-0 text-[15px] font-bold text-[color:var(--text)]">{ten}</h2>
       {dem != null && (
@@ -139,9 +146,23 @@ export function DauThe({ ten, dem, phu, phai, cachTinh }: { ten: ReactNode; dem?
       {(phai || cachTinh) && (
         <span className="ml-auto flex items-center gap-2">
           {phai}
-          {cachTinh && <NutLuat phai label={t('Cách tính')}>{cachTinh}</NutLuat>}
+          {cachTinh && (
+            <button type="button" aria-expanded={mo} aria-controls={id} aria-label={typeof ten === 'string' ? `${t('Cách tính')} · ${ten}` : t('Cách tính')} onClick={() => setMo((v) => !v)}
+              className={`grid h-7 w-7 cursor-pointer place-items-center rounded-full border-0 bg-transparent p-0 text-sm leading-none max-sm:h-11 max-sm:w-11 ${mo ? 'text-[color:var(--accent)]' : 'text-slate-500 hover:text-slate-200'}`}>ⓘ</button>
+          )}
         </span>
       )}
     </div>
+    {cachTinh && mo && (
+      /* Mockup ⑨ B5 `.hop-i`: hộp lồng dưới đầu thẻ (viền, bo 8), ✕ 32 cách mép 7 px (375: 44). */
+      <div className="border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+        <div id={id} role="note" aria-label={t('Cách tính')} onKeyDown={(e) => { if (e.key === 'Escape') setMo(false); }}
+          className="relative rounded-lg border py-2.5 pl-3 pr-11 text-[13px] leading-relaxed text-[color:var(--text-dim)] max-sm:pr-14" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
+          <div className="min-w-0 space-y-1.5">{cachTinh}</div>
+          <button type="button" className={`${NUT_DONG} absolute right-[6px] top-[6px] !h-8 !w-8 max-sm:!h-11 max-sm:!w-11`} aria-label={t('Đóng')} onClick={() => setMo(false)} autoFocus>✕</button>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

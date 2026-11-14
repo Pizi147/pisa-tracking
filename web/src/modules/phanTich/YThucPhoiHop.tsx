@@ -145,9 +145,9 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         <thead>
           <tr>
             <Th className="sticky-col">{t('Học viên')}</Th><Th>{t('Lớp')}</Th>
-            <Th align="center" hint={t('Trong khoảng đang lọc')}>{t('Vi phạm')}</Th><Th align="center" hint={t('Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)')}>{t('Chưa xử lý')}</Th>
-            <Th hint={t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')}>{t('Bậc · hiện tại › kế')}</Th>
-            <Th hint={t('Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái')}>{t('Lần xử lý gần nhất')}</Th>
+            <Th align="center">{t('Vi phạm')}</Th><Th align="center">{t('Chưa xử lý')}</Th>
+            <Th>{t('Bậc · hiện tại › kế')}</Th>
+            <Th>{t('Lần xử lý gần nhất')}</Th>
           </tr>
         </thead>
         <tbody>
@@ -172,7 +172,19 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   const cachChon = (
     <>
       <p className="m-0">{t('Học viên đang học có vi phạm chưa xử lý đã qua hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.')}</p>
-      <p className="m-0">{t('Bậc kế theo thang Report 1 › Report 2 › WL 1 › Report 4 + Meeting CX/GĐCN › WL 2 › WL 3 (cần QL). Đề xuất ngoài thang không đổi bậc.')}</p>
+      {/* GD-12a (⑨ Y2, R9.2): giải thích từng cột (trước ở `title` tiêu đề cột) + thang là danh sách viết tắt VIẾT HOA (lời 35, 36). */}
+      <dl className="m-0 space-y-1">
+        {([[t('Vi phạm'), t('Trong khoảng đang lọc')], [t('Chưa xử lý'), t('Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)')],
+          [t('Bậc · hiện tại › kế'), t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')],
+          [t('Lần xử lý gần nhất'), t('Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái')]] as const).map(([c, g]) => (
+          <div key={c}><dt className="inline font-semibold text-slate-200">{c}: </dt><dd className="m-0 inline">{g}</dd></div>
+        ))}
+      </dl>
+      <p className="m-0">{t('Thang (bậc kế):')}</p>
+      <ol className="m-0 list-decimal space-y-0.5 pl-5">
+        {['Report 1', 'Report 2', 'WL 1', 'Report 4 + Meeting CX/GĐCN', 'WL 2', 'WL 3'].map((b) => <li key={b}>{bacNgan(dich(b))}{b === 'WL 3' ? ` (${t('cần QL')})` : ''}</li>)}
+      </ol>
+      <p className="m-0">{t('Đề xuất ngoài thang không đổi bậc.')}</p>
     </>
   );
 
@@ -216,7 +228,13 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                 : <><div ref={ptHv.thanh.dauBang} />{dienThoai ? ptHv.cat(data.hvCanChuY).map(theHv) : bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
             <Card bodyClass="p-0">
-              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} cachTinh={t('xếp theo vi phạm chưa xử lý')} />   {/* PT-GON (M4): cách xếp vào ⓘ */}
+              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} cachTinh={(
+                <dl className="m-0 space-y-1">
+                  <div>{t('xếp theo vi phạm chưa xử lý')}</div>
+                  <div><dt className="inline font-semibold text-slate-200">{t('HV có vi phạm')}: </dt><dd className="m-0 inline">{t('Học viên có vi phạm / sĩ số lớp')}</dd></div>
+                  <div><dt className="inline font-semibold text-slate-200">{t('± kỳ trước')}: </dt><dd className="m-0 inline">{t('So với khoảng cùng độ dài liền trước')}</dd></div>
+                </dl>
+              )} />   {/* PT-GON (M4): cách xếp vào ⓘ */}
               {data.lop.length === 0 && !data.gom
                 ? <RongDau chu={t('Chưa có vi phạm nào trong {ky}', { ky: nhanKy })} nut={<NutXemToanBo />} />
                 : (
@@ -242,8 +260,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                       <thead>
                         <tr>
                           <Th className="sticky-col">{t('Lớp / nhóm vi phạm')}</Th><Th align="center">{t('Vi phạm')}</Th><Th align="center">{t('Chưa xử lý')}</Th>
-                          <Th align="center" hint={t('Học viên có vi phạm / sĩ số lớp')}>{t('HV có vi phạm')}</Th>
-                          <Th align="center" hint={t('So với khoảng cùng độ dài liền trước')}>{t('± kỳ trước')}</Th><Th>GVCN</Th>
+                          <Th align="center">{t('HV có vi phạm')}</Th>
+                          <Th align="center">{t('± kỳ trước')}</Th><Th>GVCN</Th>
                         </tr>
                       </thead>
                       <tbody>

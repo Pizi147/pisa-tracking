@@ -79,7 +79,7 @@ export function HieuQuaPa(props: PhamViPhanTich & { onData?: (d: HieuQuaPaKetQua
         <td className="td text-center tabular-nums"><OSo giaTri={d.hocVien} nguon={nguon(d.khoa, 'hv')} tieuDe={t('{ten} · học viên', { ten })} /></td>
         <td className="td max-sm:text-center">{caiThien(d, ten)}</td>
         <td className="td max-sm:hidden">
-          {g && <Nhan tone={d.nenDung ? 'ok' : 'muted'} title={d.nenDung ? t('Cải thiện từ 70%, đủ mẫu và cao nhất trong vấn đề này') : t('Dưới {n} PA có kết quả — chưa đủ để so sánh', { n: NGUONG_IT_DU_LIEU })}>{g}</Nhan>}
+          {g && <Nhan tone={d.nenDung ? 'ok' : 'muted'}>{g}</Nhan>}
         </td>
       </>
     );
@@ -198,7 +198,8 @@ export function HieuQuaPa(props: PhamViPhanTich & { onData?: (d: HieuQuaPaKetQua
                   <>
                     {cachDoc}
                     <p className="m-0">{t('Tính theo nơi em học lúc làm PA. "Nên dùng" = từ {n} PA, cải thiện từ 70% và cao nhất trong vấn đề.', { n: NGUONG_IT_DU_LIEU })}</p>
-                    {data.gvThem.gom && <p className="m-0">{t('vấn đề khác')}: {t('mỗi vấn đề ≤ 2 PA có kết quả')}</p>}   {/* PT-GON: chạm (375) không có title → câu cũng ở ⓘ */}
+                    {data.gvThem.gom && <p className="m-0">{t('vấn đề khác')}: {t('mỗi vấn đề ≤ 2 PA có kết quả')}</p>}
+                    <p className="m-0">{t('Dưới {n} PA có kết quả — chưa đủ để so sánh', { n: NGUONG_IT_DU_LIEU })}.</p>   {/* PT-GON: chạm (375) không có title → câu cũng ở ⓘ */}
                   </>
                 )} />
               {data.gvThem.hang.length === 0 && !data.gvThem.gom
@@ -215,7 +216,7 @@ export function HieuQuaPa(props: PhamViPhanTich & { onData?: (d: HieuQuaPaKetQua
                             <Fragment>
                               <HangNhom mo={mo.has('gom')} onMo={() => doiMo('gom')} nhan={t('vấn đề khác')} soCotDau={5} className={HANG_LON}
                                 tieuDe={(
-                                  <span className="block min-w-0 truncate" title={t('mỗi vấn đề ≤ 2 PA có kết quả')}>{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>   /* PT-GON (M4): câu giải thích khi rê */
+                                  <span className="block min-w-0 truncate">{t('{n} vấn đề khác', { n: data.gvThem.gom.soVanDe })}</span>   /* GD-12a (R9.2): giải thích ở ⓘ đầu thẻ */
                                 )} />
                               {mo.has('gom') && data.gvThem.gom.hang.map((d) => (
                                 <HangCon key={d.khoa} className={HANG_CON}><td className="td">{tenDong(d)}</td>{oSo(d, d.nhan, true)}</HangCon>

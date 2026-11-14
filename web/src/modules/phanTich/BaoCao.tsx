@@ -12,7 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { napDanhSach, ptX, sheetDanhSachHoacLoi, soX, xuatBaoCao } from './xuatV2.ts';
 import type { OXlsx, SheetDep } from '../../lib/xlsxDep.ts';
 import { t } from '@shared/i18n/index.ts';
-import { tenMonNgan, type ChiNhanhV2Kq, type DongChiNhanhV2, type TyLeCn } from '@shared/domain/index.ts';
+import { nhanKhoang, tenMonNgan, type ChiNhanhV2Kq, type DongChiNhanhV2, type TyLeCn } from '@shared/domain/index.ts';
 
 /**
  * BÁO CÁO CHI NHÁNH (Phân tích V2 — đặc tả `2026-11-12-phan-tich-v2-design.md` mục 3, 11, 12; mockup `thiet-ke/2026-11-12-phan-tich-v2/` A1–A6, chủ SP duyệt 12/11).
@@ -88,14 +88,16 @@ export function BaoCao(pv: PhamViPhanTich) {
   const cotTrai = ft ? (
     <>
       {soHv}
-      <SoTo ten={t('Đạt MT')} ky={t('trong kỳ')} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
+      {/* GD-12a (⑨ A1, R9.4): nhãn có đơn vị như cột bảng. */}
+      <SoTo ten={`${t('Đạt MT')} · ${t('HV')}`} ky={t('trong kỳ')} luat={t('HV có lượt MT chốt trong kỳ, Overall so với kỳ vọng của lượt. HV chưa đủ điểm không tính.')}
         gt={phanTram(d.datMt, nBc(tong, 'dat-mt'), t('Đạt MT'))} phu={d.datMt?.mau ? <><Dam>{d.datMt.dat}/{d.datMt.mau}</Dam> {t('HV có MT chốt')}</> : t('Chưa có dữ liệu')} />
       <SoTo ten={t('Tiến bộ')} ky={t('trong kỳ')} luat={t('Lượt kỹ năng có band tăng so mốc MT trước của chính HV.')}
         gt={phanTram(d.tienBo, nBc(tong, 'tien-bo:tat-ca'), t('Tiến bộ'))} phu={d.tienBo?.mau ? <><Dam>{d.tienBo.dat}/{d.tienBo.mau}</Dam> {t('lượt kỹ năng tăng band')}</> : t('Chưa có dữ liệu')} />
       {d.thiThat && (() => {
         const x = d.thiThat; const mau = x.vuot + x.dat + x.chuaDat;
+        /* GD-12a (⑨ A1, R9.4): ô Thi thật ghi đúng kỳ (Thi thật tính theo ngày thi trong khoảng đang chọn). */
         return (
-          <SoTo ten={t('Thi thật')} ky={t('trong kỳ')} luat={t('Cùng số với báo cáo Thi thật. Đạt Target trừ KCK. Chưa có KQ là số hiện tại.')}>
+          <SoTo ten={t('Thi thật')} ky={nhanKhoang(pv.khoang).chinh} luat={t('Cùng số với báo cáo Thi thật. Đạt Target trừ KCK. Chưa có KQ là số hiện tại.')}>
             <span className="grid grid-cols-2 gap-3">
               <span className="grid min-w-0">
                 <i className="not-italic whitespace-nowrap text-sm font-medium text-[color:var(--text-dim)] max-sm:text-[13px]">{t('Đạt Target · trừ KCK')}</i>
