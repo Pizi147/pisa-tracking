@@ -38,7 +38,7 @@ Không có mockup mới: PR chỉ đổi thao tác trên mẫu sẵn có (ô đi
 | 13 | 5.6 Hướng dẫn "?" GV, QL | `huongDan/gv.ts` (dau-gach, sua-diem), `ql.ts` (ql-sua-diem), ⓘ quy chế (`quyCheVanHanh`) | — | KHỚP |
 | 14 | PTA 14/11: nút Vắng trên kỹ năng có điểm → không hỏi, Hoàn tác | máy chủ `baoVang` bỏ `canXacNhan`, trả `daCat`; `HopThaoTacMt` Hoàn tác = Khôi phục | (bấm thử) | KHỚP |
 | 15 | PTA 14/11: giữ "Xoá" ở hộp lập lịch một đợt | `HopKyNang` nút Xoá (không đổi) | — | GIỮ |
-| 16 | Xoá trống ô có điểm + Lưu (5.4) — rà guidelines: phải có Hoàn tác | toast "Đã xoá điểm {môn} · Hoàn tác" (= Khôi phục bản cất) | (bấm thử) | THÊM |
+| 16 | Xoá trống ô có điểm + Lưu (5.4) — rà guidelines: phải có Hoàn tác | toast "Đã xoá {môn} · Hoàn tác" (= Khôi phục bản cất) | (bấm thử) | THÊM |
 
 ## 2. Bảng thao tác TRƯỚC → SAU
 
@@ -58,6 +58,7 @@ Không có mockup mới: PR chỉ đổi thao tác trên mẫu sẵn có (ô đi
 | Nút Vắng (panel) trên kỹ năng có điểm | 409 hỏi "huỷ điểm rồi báo vắng?" | không hỏi; toast Hoàn tác = Khôi phục | PTA 14/11 |
 | Vắng (panel) lớp thường | toast không Hoàn tác | toast Hoàn tác (= gỡ "-") như gõ "-" ở lưới | rà guidelines (thống nhất) |
 | Chữ trạng thái Mock sau Huỷ điểm tay | (PR-1 lỡ) "Đã huỷ · vắng 1 lần" | "Đã huỷ" | `huy_vang = 2` cho huỷ tay |
+| Hộp "Khôi phục và đặt tuần" (lớp thường, dữ liệu "đã huỷ" cũ) | ⋯ › mở hộp chọn tuần | **bỏ** — "Khôi phục" một bấm về đúng tuần; muốn đổi tuần thì Dời lịch (QL) | một khái niệm một tên; menu PR-1 đã thôi sinh mục này (mã chết) |
 
 Không thao tác nào mất mà không có lý do ở cột phải.
 

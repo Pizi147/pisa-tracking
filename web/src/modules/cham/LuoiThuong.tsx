@@ -174,7 +174,7 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       onReload();
       /* NHAP-DIEM-b: xoá một điểm đã có (ô trống + Lưu) — điểm được cất; Hoàn tác 10 s = Khôi phục (điểm, người nhập, ngày nhập đầu về đủ). */
       if (opts.xoaDiem) {
-        toast.push('ok', t('Đã xoá điểm {mon}{ai}', { mon: tenMonNgan(ct, skill), ai: tenHv ? ` · ${tenHv}` : '' }), {
+        toast.push('ok', t('Đã xoá {mon}{ai}', { mon: tenMonNgan(ct, skill), ai: tenHv ? ` · ${tenHv}` : '' }), {
           key: `xoa-diem:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true,
           hanhDong: { nhan: t('Hoàn tác'), onBam: () => void guiHuyDiem(toast, { attemptId, skill, mon: tenMonNgan(ct, skill), tenHv, huy: false, onDone: onReload }) },
         });

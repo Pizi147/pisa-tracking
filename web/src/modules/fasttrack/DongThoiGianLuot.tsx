@@ -23,7 +23,7 @@ const NHAN_VIEC: Record<string, { chu: string; loai: Loai }> = {
   skill_no_show_settled: { chu: t('{x} / vắng', { x: CHU_THAO_TAC['bao-vang'] }), loai: 'vang' },
   skill_week_moved_absence: { chu: t('Dời do vắng'), loai: 'vang' }, skill_unscheduled: { chu: t('Huỷ lịch (về Chưa xếp lịch)'), loai: 'huy' },
   cancelled: { chu: t('Huỷ lượt'), loai: 'huy' }, skill_part_cancelled: { chu: t('Huỷ phần còn lại'), loai: 'huy' },
-  skill_cancelled_absence: { chu: t('Huỷ do vắng 2 lần'), loai: 'huy' }, skill_part_restored: { chu: CHU_THAO_TAC['khoi-phuc'], loai: 'lich' }, reopened: { chu: t('Khôi phục'), loai: 'lich' },
+  skill_cancelled_absence: { chu: t('Huỷ do vắng 2 lần'), loai: 'huy' }, skill_part_restored: { chu: t('Khôi phục và đặt tuần'), loai: 'lich' }, reopened: { chu: t('Khôi phục'), loai: 'lich' },
   skill_absence_undone: { chu: t('Bỏ vắng'), loai: 'vang' },
   skill_huy_tay: { chu: CHU_THAO_TAC['huy-diem'], loai: 'huy' }, skill_bo_huy_tay: { chu: CHU_THAO_TAC['khoi-phuc-diem'], loai: 'lich' },   // NHAP-DIEM-b: Huỷ điểm ⇄ Khôi phục (cùng dòng lịch sử LG-9 cũ)   // PR-BV: xoá "-" đã chốt
   skill_move_decision_undone: { chu: t('Huỷ quyết định dời lịch'), loai: 'vang' },   // RKC-3c: Huỷ quyết định ở Chờ duyệt

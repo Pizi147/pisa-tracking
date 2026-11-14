@@ -4,7 +4,7 @@ import type { Dich } from '../en.ts';
 export const EN_MT_VANG = {
   /* LG-9: Huỷ tay bài lớp thường / MT0 lớp thường. */
   /* NHAP-DIEM-a (chủ SP 14/11): Huỷ điểm / Khôi phục một kỹ năng — mọi loại bài. */
-  'Đã xoá điểm {mon}{ai}': 'Score cleared: {mon}{ai}',
+  'Đã xoá {mon}{ai}': 'Cleared {mon}{ai}',
   'Chỉ người nhập được ô này, GVCN lớp hoặc Quản lý huỷ / khôi phục được điểm.': 'Only whoever can enter this cell, the homeroom teacher or a manager can cancel / restore this score.',
   'Lượt này đã huỷ — khôi phục lượt trước.': 'This attempt is cancelled — restore the attempt first.',
   'Chỉ người nhập được ô này, GVCN của lớp và Quản lý báo vắng được.': 'Only whoever can enter this cell, the homeroom teacher and managers can report an absence.',

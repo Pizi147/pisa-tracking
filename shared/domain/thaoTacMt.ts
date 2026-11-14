@@ -8,15 +8,15 @@ import { mondayOfDate } from './week.ts';
 import { t } from '../i18n/index.ts';
 
 /* N38 (PR-MT-VANG): bỏ 'xep-lai' (Xếp lại bài vắng), 'dua-lai' (Đưa lại vào đợt), 'khong-mock-lai' (Giữ huỷ) — chọn tuần (Dời) thay cả ba (L5, L6).
-   'khoi-phuc' chỉ còn ở lớp thường (dữ liệu "đã huỷ" cũ). */
+   NHAP-DIEM-b: 'khoi-phuc' (Khôi phục và đặt tuần, lớp thường) bỏ — "Khôi phục" (`khoi-phuc-diem`) một bấm thay. */
 /* Chủ SP 06/11: "Bỏ khỏi đợt" → "Xoá" (một tên cho xoá một môn và xoá cả MT); môn đã xoá có "Khôi phục" một bấm ('khoi-phuc-kn'). */
 export type ThaoTac = 'nhap-diem' | 'sua-diem' | 'dat-lich' | 'doi-lich' | 'doi-han' | 'bo-ky-nang' | 'bao-vang' | 'huy-diem'
-  | 'tra-loi-de-nghi' | 'khoi-phuc' | 'khoi-phuc-diem' | 'khoi-phuc-kn';
+  | 'tra-loi-de-nghi' | 'khoi-phuc-diem' | 'khoi-phuc-kn';
 
 export const CHU_THAO_TAC: Record<ThaoTac, string> = {
   'nhap-diem': t('Nhập điểm'), 'sua-diem': t('Sửa điểm'), 'dat-lich': t('Xếp lịch'), 'doi-lich': t('Dời lịch'), 'doi-han': t('Dời hạn chấm'),
   'bo-ky-nang': t('Xoá'), 'bao-vang': t('Vắng'), 'huy-diem': t('Huỷ điểm'),
-  'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc': t('Khôi phục và đặt tuần'), 'khoi-phuc-diem': t('Khôi phục'), 'khoi-phuc-kn': t('Khôi phục'),   // NHAP-DIEM-a: Huỷ điểm ⇄ Khôi phục
+  'tra-loi-de-nghi': t('Trả lời đề nghị dời'), 'khoi-phuc-diem': t('Khôi phục'), 'khoi-phuc-kn': t('Khôi phục'),   // NHAP-DIEM-a: Huỷ điểm ⇄ Khôi phục
 };
 
 export type TrangThaiTT = 'khong-yeu-cau' | 'chua-xep' | 'chua-toi-tuan' | 'dang-thi' | 'co-diem' | 'vang' | 'cho-duyet' | 'da-huy' | 'lich-su'

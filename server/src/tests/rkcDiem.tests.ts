@@ -112,14 +112,13 @@ export async function runRkcDiemTests(t: any) {
     assert(mo.some((k) => JSON.parse(k.diem_json)[0]?.raw_score === 25), `điểm mới 25 phải được cất: ${JSON.stringify(mo)}`);
   }));
 
-  check('RKC-5 · Báo vắng kỹ năng ĐÃ CÓ ĐIỂM: 409 hỏi (điểm giữ); xác nhận → huỷ điểm (cất) rồi ghi vắng', () => thu(() => {
+  /* NHAP-DIEM-b (PTA 14/11, thay "409 hỏi"): Báo vắng kỹ năng có điểm → cất điểm rồi ghi vắng, không hỏi; `daCat` để web Hoàn tác = Khôi phục. */
+  check('RKC-5 · NHAP-DIEM-b · Báo vắng kỹ năng ĐÃ CÓ ĐIỂM: không hỏi — điểm cất rồi ghi vắng, trả daCat', () => thu(() => {
     const { id } = luot();
     svc.saveScore(QL, id, 'listening', { rawScore: 30 }, T3);
-    const e = loiCua(() => absence.baoVang(QL, id, 'listening', 'ốm', T3));
-    assert(hoi(e) && diem(id, 'listening').raw_score === 30, `chưa xác nhận: ${e?.status} ${e?.message}`);
-    voiXacNhan(() => absence.baoVang(QL, id, 'listening', 'ốm', T3));
+    const r = absence.baoVang(QL, id, 'listening', 'ốm', T3);
     const d = diem(id, 'listening');
-    assert(d.raw_score === null && d.no_show_period_id !== null, `sau xác nhận: ${JSON.stringify(d)}`);
+    assert(r.daCat && d.raw_score === null && d.no_show_period_id !== null, `báo vắng: ${JSON.stringify([r, d])}`);
     assert(get(`SELECT COUNT(*) n FROM ket_qua_huy WHERE attempt_id = ? AND loai = 'huy_diem' AND khoi_phuc_luc IS NULL`, id).n === 1, 'điểm phải được cất');
   }));
 }

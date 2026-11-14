@@ -17,7 +17,7 @@ import {
 import { t } from '@shared/i18n/index.ts';
 
 /** Thao tác một kỹ năng mở bằng hộp này — Nhập/Sửa điểm làm tại chỗ, Trả lời đề nghị có hộp riêng. NHAP-DIEM-b: Huỷ điểm / Khôi phục một bấm (`guiHuyDiem`). */
-export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang', 'khoi-phuc'];
+export const THAO_TAC_CO_HOP: readonly ThaoTac[] = ['dat-lich', 'doi-lich', 'doi-han', 'bo-ky-nang', 'bao-vang'];
 
 /**
  * N38 (một luật "-" cho mọi cổng): tuần Test đã qua ≥ 2 tuần = Không dự thi (không dời, không tính lần vắng); còn lại lớp thường dời sang tuần
@@ -42,7 +42,6 @@ function cauHeQua(tt: ThaoTac, mon: string, laThuong: boolean, vang: ReturnType<
       : laThuong
         ? t('Ghi "-" cho {mon}: dời sang {x}; vắng mấy lần cũng không tự huỷ — cần thì ⋯ › Huỷ điểm.', { mon, x: vang?.tuanMoi ?? t('tuần sau') })
         : t('Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.', { mon });
-    case 'khoi-phuc': return t('Mở lại kỹ năng {mon} đã huỷ và đặt tuần Test mới trong cùng một lần.', { mon });
     default: return '';
   }
 }
@@ -86,13 +85,13 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   const ten = CHU_THAO_TAC[tt];
   const mon = tenMon(ct, skill);
   const batBuoc = canLyDo(tt);
-  const coTuan = tt === 'dat-lich' || tt === 'doi-lich' || tt === 'khoi-phuc';
+  const coTuan = tt === 'dat-lich' || tt === 'doi-lich';
   /* K2-33: GVCN dời / xếp lại lượt có sẵn không vào tuần đã qua — tuần sớm nhất là tuần này. Quản lý được (T4): chỉ hiện chip vàng.
      PR-MTa T21: Khôi phục (chỉ Quản lý) cũng chọn được tuần đã qua — em đã thi thật. */
   /* Chủ SP 28/10: GVCN dời MT tuần đã qua → tuần đích ≤ tuần này (thay "từ tuần này trở đi"). */
   const gvcnCu = !quanLy && gvcn && tt === 'doi-lich' && !!homNay && tuanDaQua(row.weekStart, homNay);
-  const tuanNay = homNay && !quanLy && !gvcnCu && tt !== 'khoi-phuc' ? mondayOfDate(homNay) : null;
-  const quaTuan = quanLy && coTuan && tt !== 'khoi-phuc' && !!tuan && tuan.periodId !== row.periodId && !!homNay
+  const tuanNay = homNay && !quanLy && !gvcnCu ? mondayOfDate(homNay) : null;
+  const quaTuan = quanLy && coTuan && !!tuan && tuan.periodId !== row.periodId && !!homNay
     && kiemTuanXep({ ketThuc: [addDaysStr(tuan.weekStart.slice(0, 10), 6)], homNay, quanLy: true }).quaTuan;
   /* P6 N15: MT / MT0 thứ Sáu → CN — đặt / dời / bỏ khi tuần gốc hoặc đích thuộc 3 tuần khoá (Khôi phục, Vắng là ngoại lệ). */
   const khoa = !laThuong && (['dat-lich', 'doi-lich', 'bo-ky-nang'] as ThaoTac[]).includes(tt)
@@ -114,9 +113,6 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       case 'doi-lich':
         await api.post(`${goc}/week`, { periodId: tuan!.periodId, reason: lyDoGui ?? null, force });
         return `${tt === 'doi-lich' ? t('Đã dời lịch Test') : t('Đã lên lịch Test')} ${mon} ${tt === 'doi-lich' ? t('sang') : t('vào')} ${tuanLich(tuan!.weekStart, homNay)}`;
-      case 'khoi-phuc':
-        await api.post(`${goc}/restore`, { periodId: tuan!.periodId, reason: lyDoGui ?? null });
-        return t('Đã khôi phục {mon} và đặt {tuanLich}', { mon, tuanLich: tuanLich(tuan!.weekStart, homNay) });
       case 'doi-han':
         await api.post(`${goc}/deadline`, { deadline: han, reason: lyDoGui ?? null });
         return t('Đã dời hạn chấm {mon} tới {ngay}', { mon, ngay: ngay(han) });

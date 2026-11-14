@@ -488,7 +488,7 @@ export const HD_GV: HuongDan = {
       'Bấm chip SOS ở mọi màn: hộp “Vì sao SOS n” — kỹ năng dưới kỳ vọng, điểm từng kỹ năng, lối mở hồ sơ MT.'] },
     { id: 'ket-thuc-pa', ten: 'Kết thúc PA sớm', buoc: ['PA quy chế: GVCN / QL bấm <b>Kết thúc sớm…</b> ở thẻ PA.', 'Lý do bắt buộc, từ <b>8</b> ký tự; nhật ký PA ghi lại.'] },
     { id: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp', buoc: ['GV bộ môn và GVCN cùng một hạn: Cấu hình hệ thống › <b>Hạn mặc định</b> (gốc <b>7 ngày</b>), tính cả ngày ra quyết định; quá hạn QL được báo, em vẫn chuyển đúng tuần.', 'Kỹ năng ở lớp mới vẫn do đúng GV cũ dạy → không cần bàn giao.'] },
-    { id: 'sua-diem', ten: 'Sửa · Huỷ điểm', buoc: ['Sửa, xoá điểm ngay tại ô, mọi lúc — cả sau hoàn tất, cả khi chưa tới tuần Test (bài tự về tuần này). Xoá trống + Lưu = xoá điểm.', '<b>⋯</b> › <b>Huỷ điểm</b> = bỏ một kỹ năng khỏi lượt, coi như không làm (hết việc, hết quá hạn); <b>Khôi phục</b> trả lại đủ.', 'Gỡ "-" lúc nào cũng được.'] },
+    { id: 'sua-diem', ten: 'Sửa · Huỷ điểm', buoc: ['Sửa điểm ngay tại ô, mọi lúc — cả sau hoàn tất, cả khi chưa tới tuần Test (bài tự về tuần này). Xoá trống ô + Lưu = bỏ điểm (Hoàn tác được).', '<b>⋯</b> › <b>Huỷ điểm</b> = bỏ một kỹ năng khỏi lượt, coi như không làm (hết việc, hết quá hạn); <b>Khôi phục</b> trả lại đủ.', 'Gỡ "-" lúc nào cũng được.'] },
     { id: 'nhan-xet', ten: 'Nhận xét MT', buoc: ['Ô có điểm nên có nhận xét từ <b>10</b> ký tự, tối đa 300 — chỉ MT mới nhất của em (chỉ nhắc, không chặn).', 'Ô dưới kỳ vọng thêm nhóm nguyên nhân.', 'Nhận xét + nhóm thành mô tả Case khi Case chưa có mô tả.'] },
   ],
   tu: [
