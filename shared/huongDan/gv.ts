@@ -308,7 +308,7 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'hv-tim', ten: 'Tìm em, lớp, GV', buoc: ['Bấm <b>/</b> hoặc <b>Ctrl K</b> (hoặc ô tìm trên thanh trên), gõ ít nhất 2 chữ.', 'Kết quả chia <b>Học viên · Lớp · GV</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Không thấy: <b>Tìm trong HV lưu trữ ›</b>.'],
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
-        { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Lịch thi</b>.', 'Bấm dòng em mở panel một em, không rời trang; việc cần làm ở Công việc.'] },
+        { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Lịch thi</b>.', 'Hàng lọc: <b>Tìm</b> · <b>Mọi lớp</b> · <b>Mọi TVV</b> (gõ để tìm, ✕ bỏ lọc). Cột <b>Việc cần làm</b>: bấm chip làm việc ngay tại trang; lớp đã kết thúc, em đã lưu trữ: <b>Lưu trữ ›</b> ở đầu trang.'] },
       ],
     },
     {

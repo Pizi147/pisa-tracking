@@ -13,6 +13,10 @@ import {
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
+/** GD-13a: mục thuộc nhóm "+ Task" của ⋯ dòng — tên như menu nút "+ Task" (chủ SP 14/11, lời 17). */
+const LA_TASK = new Set<string>(['case', 'vi-pham']);
+const TEN_TASK: Partial<Record<string, string>> = { case: t('Case'), 'vi-pham': t('Vi phạm / Nhắc nhở') };
+
 /**
  * `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp.
  * OV-10b: `theoVai` (TVV / CX / Admin) — ⋯ dòng là việc thông tin / trạng thái của vai (`mucDongTheoVai`) + Mở hồ sơ, theo `coTheSuaThongTin` /
@@ -85,18 +89,21 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
     coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase, coTheXuLyYThuc: (quyen.coTheXuLyYThuc ?? quyen.coTheGhiViPham) && !!d.xuLyYThuc,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
     coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: !!quyen.coTheChuyenTiep, coTheDeXuatChuyenLop: quyen.coTheSuaHocVien && !quyen.coTheChuyenTiep,
-  }).filter((k) => k !== 'lo-trinh-tiep' || !!classId).map((k, i, ds) => ({
+  }).filter((k) => k !== 'lo-trinh-tiep' || !!classId).flatMap((k, i, ds): MucMenu[] => [
+    /* GD-13a (mockup ⑥ K1, ⑤ H2): Case · Vi phạm / Nhắc nhở dưới tiêu đề nhóm "+ Task" (cùng tên mục nút + Task); mục sau nhóm kẻ vạch. */
+    ...(i === 0 && LA_TASK.has(k) ? [{ key: 'nhom-task', nhan: t('+ Task'), tieuDe: true, keTruoc: false, onChon: () => undefined }] : []),
+    {
     key: k,
-    nhan: k === 'nhap-diem' && d.nhapDiem ? d.nhapDiem.nhan : MUC_MENU_DONG_NHAN[k],
+    nhan: k === 'nhap-diem' && d.nhapDiem ? d.nhapDiem.nhan : TEN_TASK[k] ?? MUC_MENU_DONG_NHAN[k],
     /* K2-30: vạch ngăn trước việc hiếm đầu tiên (khi phía trên còn việc hằng ngày). */
-    keTruoc: MUC_MENU_DONG_HIEM.includes(k) && i > 0 && !MUC_MENU_DONG_HIEM.includes(ds[i - 1]),
+    keTruoc: (MUC_MENU_DONG_HIEM.includes(k) && i > 0 && !MUC_MENU_DONG_HIEM.includes(ds[i - 1])) || (i > 0 && LA_TASK.has(ds[i - 1]) && !LA_TASK.has(k)),
     onChon: () => {
       /* OV-15b: Nhập điểm mở panel lớp tại chỗ (đúng lượt), không chuyển trang. */
       if (k === 'nhap-diem') { if (d.nhapDiem) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, lop: d.maLop, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
       else if (k === 'lo-trinh-tiep') navigate(duongLoTrinhLop(classId!, d.id));
       else setMo({ viec: k, id: d.id, ten: d.ten });
     },
-  }));
+  }]);
 
   const xong = () => { setMo(null); onDone(); };
   const panels = (

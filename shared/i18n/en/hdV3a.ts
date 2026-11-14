@@ -115,7 +115,7 @@ export const EN_HD_V3A = {
   'MT mới nhất: ô thiếu nhận xét viền vàng — nên ghi, không chặn lưu.': 'Latest MT: a cell missing a comment has a yellow border — worth writing, does not block saving.',
   'Kết quả chia <b>Học viên · Lớp · GV</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Không thấy: <b>Tìm trong HV lưu trữ ›</b>.': 'Results split into <b>Students · Class · Teacher</b>, only people you may see; ↑ ↓ Enter to open. Not found: <b>Search archived students ›</b>.',
   '<b>Tất cả</b> · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Lịch thi</b>.': '<b>All</b> · <b>In SOS</b> (current SOS, one row per student) · <b>Test schedule</b>.',
-  'Bấm dòng em mở panel một em, không rời trang; việc cần làm ở Công việc.': 'Tap a student row to open their panel without leaving the page; tasks live in Tasks.',
+  'Hàng lọc: <b>Tìm</b> · <b>Mọi lớp</b> · <b>Mọi TVV</b> (gõ để tìm, ✕ bỏ lọc). Cột <b>Việc cần làm</b>: bấm chip làm việc ngay tại trang; lớp đã kết thúc, em đã lưu trữ: <b>Lưu trữ ›</b> ở đầu trang.': 'Filter row: <b>Search</b> · <b>All classes</b> · <b>All counsellors</b> (type to search, ✕ clears). <b>To do</b> column: tap a chip to do the task right here; finished classes and archived students: <b>Archive ›</b> at the top.',
   'Lớp đã kết thúc và em đã tạm dừng / kết thúc học — để xem lại.': 'Finished classes and paused / ended students — to look back.',
   'Xem lớp, em đã lưu trữ': 'See archived classes and students',
   'Tab <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b>; chỉ lớp bạn từng dạy.': 'Tabs <b>Class finished</b> · <b>Archived students</b>; only classes you taught.',
