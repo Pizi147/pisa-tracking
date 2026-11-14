@@ -75,6 +75,25 @@ export function nhomTieuDe(cot: readonly DinhNghiaCot[]): Array<{ nhan: string |
   return out;
 }
 
+/**
+ * Chủ SP 14/11 (#1669): "cho cái đường kẻ cột nó kéo dài đến hết bảng, đừng để lôm côm" — vạch dọc của nhóm cột (`nhom`) chạy SUỐT bảng
+ * (hàng nhóm → tiêu đề → mọi hàng), không chỉ ở hàng nhóm. Trả cột đầu / cuối của mỗi nhóm có tên → `data-vn` trên th + td.
+ */
+export function vienNhom(cot: readonly DinhNghiaCot[]): Map<string, 'dau' | 'cuoi' | 'ca'> {
+  const out = new Map<string, 'dau' | 'cuoi' | 'ca'>();
+  if (cot.some((c) => c.tach)) return out;   // bảng đã kẻ nhóm bằng `tach` (vạch đậm suốt bảng) — không thêm nét thứ hai
+  let i = 0;
+  for (const n of nhomTieuDe(cot) ?? []) {
+    if (n.nhan) {
+      const dau = cot[i].key, cuoi = cot[i + n.span - 1].key;
+      out.set(dau, dau === cuoi ? 'ca' : 'dau');
+      if (dau !== cuoi) out.set(cuoi, 'cuoi');
+    }
+    i += n.span;
+  }
+  return out;
+}
+
 /** Thẻ 375 (04 mục 6.4): đầu = tên + chip · lưới điểm (không tách nhãn khỏi số) · còn lại theo thứ tự cột · dưới = việc + nút. */
 export function chiaThe(cot: readonly DinhNghiaCot[]): { dau: string[]; diem: string[]; khac: string[]; duoi: string[] } {
   const r = { dau: [] as string[], diem: [] as string[], khac: [] as string[], duoi: [] as string[] };

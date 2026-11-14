@@ -50,7 +50,8 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   const cacCheDo: CheDoHocVien[] = [
     /* U03 (chủ SP 03/11) + lớp thường (04/11): bỏ hẳn bảng "Cần hỗ trợ" — Case xem ở mở rộng dưới hàng em. */
     'diem',
-    ...(soDot && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
+    /* KET-QUA-DAU-RA-b: việc QL "Kỳ vọng" mở `?che-do=ket-qua` — có em chưa chốt quá 4 tuần thì 0 đợt vẫn mở được (máy chủ trả em chưa chốt). */
+    ...((soDot || cheDoUrl === 'ket-qua') && vai !== 'admin' ? ['ket-qua' as const] : []), ...(vai ? ['thong-tin' as const] : []),
   ];
   const cheDo: CheDoHocVien = cacCheDo.includes(cheDoUrl) ? cheDoUrl : 'diem';
   const quyen: QuyenDong = {
@@ -79,7 +80,7 @@ export function TabHocVienLop({ lop, cheDo: cheDoUrl, moChon, onCheDo, onDoi, on
   /* Chỉ một cách xem (không còn Cần hỗ trợ / chưa có đợt KQĐR) → không vẽ nút đoạn một mục (mockup U03). */
   const cachXem = cacCheDo.length < 2 ? null : (
     <BoLocDoan v8 ariaLabel={t('Cách xem')} value={cheDo} onChange={doiCheDo}
-      muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
+      muc={cacCheDo.map((k) => ({ key: k, nhan: CHE_DO_NHAN[k], ...(k === 'ket-qua' && soDot ? { so: t('{n} đợt', { n: soDot }) } : {}) }))} />
   );
   const nutChon = coTheChon ? (
     <button type="button" aria-pressed={chon.bat} onClick={chon.batTat}

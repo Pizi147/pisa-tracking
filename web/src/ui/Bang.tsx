@@ -1,10 +1,13 @@
-import { Fragment, type KeyboardEvent, type MouseEvent, type ReactNode, type TdHTMLAttributes } from 'react';
-import { chiaThe, nhomTieuDe, rongCot, type DinhNghiaCot } from '@shared/domain/index.ts';
+import { Fragment, createContext, useContext, type KeyboardEvent, type MouseEvent, type ReactNode, type TdHTMLAttributes } from 'react';
+import { chiaThe, nhomTieuDe, rongCot, vienNhom, type DinhNghiaCot } from '@shared/domain/index.ts';
 import { Empty } from './ui.tsx';
 import { useDienThoai } from './TheDong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export type { DinhNghiaCot as CotBang } from '@shared/domain/index.ts';
+
+/** Ranh giới nhóm cột (`vienNhom`) cho hàng tự vẽ (`hangRieng` → `OBang`) — vạch nhóm chạy suốt bảng như hàng do `Bang` vẽ. */
+const VienNhom = createContext<ReadonlyMap<string, 'dau' | 'cuoi' | 'ca'>>(new Map());
 
 /**
  * MỘT BẢNG CHO CẢ HỆ (BANG-0, 04 mục 6). `<table>` chỉ được viết ở đây (phép kiểm BANG-3). Kiểu cột (`shared/domain/bang.ts`) quyết định
@@ -58,6 +61,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   const rongCua = (c: DinhNghiaCot) => (deu && c.rong ? c.rong : rongCot(c, cot));
   const dienThoai = useDienThoai();
   const nhom = nhomTieuDe(cot);
+  const vien = vienNhom(cot);
   const lop = (h: H) => `${onHang ? 'bam' : cot.length >= 8 ? 'do-hang' : ''} ${dangMo?.(h) ? 'dang-mo' : ''} ${lopHang?.(h) ?? ''}`;
   /* Link / nút trong hàng giữ việc của nó: bấm / Enter trên đó không mở hàng lần nữa (KIEM-TAY-1011: hàng sổ nghĩa vụ có link em, lớp). */
   const tuConTuongTac = (e: { target: EventTarget; currentTarget: Element }) => {
@@ -133,6 +137,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
   } else {
     than = (
       <div className={`table-scroll ${dinh ? 'bang-dinh' : ''} ${dinh === '1440' ? 'bang-dinh-1440' : ''}`}>
+        <VienNhom.Provider value={vien}>
         <table className="bang" data-day={day || undefined} data-chat={chat || undefined} aria-label={ten} style={{ minWidth: cot.reduce((n, c) => n + (rongCua(c) ?? (c.linhHoat ? 140 : c.kieu === 'ten' ? 205 : 240)), 0) }}>
           <colgroup>{cot.map((c) => { const r = rongCua(c); return <col key={c.key} style={r ? { width: r } : undefined} />; })}</colgroup>
           <thead>
@@ -143,7 +148,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
             )}
             <tr>
               {cot.map((c) => (
-                <th key={c.key} scope="col" data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-sang={c.sang || undefined} title={c.goiY}
+                <th key={c.key} scope="col" data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-sang={c.sang || undefined} data-vn={vien.get(c.key)} title={c.goiY}
                   className={`th ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                   {c.nhan}{c.dv && <span className="bang-dv"> · {c.dv}</span>}{c.phu && <span className="bang-chu-thich"> {c.phu}</span>}
                 </th>
@@ -157,7 +162,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
                 <tr key={khoa(h)} className={lop(h)}
                   tabIndex={onHang ? 0 : undefined} onClick={bam(h)} onKeyDown={phim(h)}>
                   {cot.map((c, i) => (
-                    <td key={c.key} data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
+                    <td key={c.key} data-kieu={c.kieu} data-linh={c.linhHoat || undefined} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-vn={vien.get(c.key)} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''}`}>
                       {oCua(h, c)}
                       {/* SUA-375-3: dòng phụ dạng chữ bị cắt "…" thì rê chuột xem đủ (mẫu G4: cắt + title). */}
                       {coPhu(phu[i]) && <span className="bang-phu" data-phu-odiem="" title={typeof phu[i] === 'string' ? phu[i] : undefined}>{phu[i]}</span>}
@@ -169,6 +174,7 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
             {cuoi}
           </tbody>
         </table>
+        </VienNhom.Provider>
       </div>
     );
   }
@@ -183,7 +189,8 @@ export function Bang<H>({ ten, cot, hang, khoa, oCua = () => null, phuCua, congC
 
 /** Ô của hàng tự vẽ (`hangRieng`): cùng `data-kieu` với tiêu đề → căn, rộng, nền giống hệt ô do `Bang` vẽ. Cột tên dính trái. */
 export function OBang({ c, className = '', children, ...td }: { c: DinhNghiaCot; children?: ReactNode } & TdHTMLAttributes<HTMLTableCellElement>) {
+  const vn = useContext(VienNhom).get(c.key);
   return (
-    <td data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''} ${className}`} {...td}>{children}</td>
+    <td data-kieu={c.kieu} data-tinh={c.tinh || undefined} data-tach={c.tach || undefined} data-vn={vn} className={`td ${c.kieu === 'ten' ? 'sticky-col' : ''} ${className}`} {...td}>{children}</td>
   );
 }

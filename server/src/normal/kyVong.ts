@@ -297,14 +297,21 @@ const CT_NGUON = ['FOU', 'BE', 'ELE'];
  * Em ĐANG HỌC lớp FT (tham số 1) vào lớp từ ngày (tham số 2) trở đi, lượt ghi danh LIỀN TRƯỚC là lớp FOU/BE/ELE đã chuyển đi — đọc theo ghi danh
  * (em chuyển bằng `applyTransition` không có lệnh vẫn có). CÙNG nguồn cho bảng (`kqdrLopFt`) và số đợt ở đầu trang (`daiLop`).
  */
-export const EM_KQDR_FT_SQL = `FROM enrollments e
+const emKqdrFt = (vao: string) => `FROM enrollments e
   JOIN classes f ON f.id = e.class_id AND f.is_fast_track = 1
   JOIN students s ON s.id = e.student_id
   JOIN enrollments n ON n.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = e.student_id AND x.id < e.id)
   JOIN classes c ON c.id = n.class_id
   LEFT JOIN lo_trinh_tiep_theo lt ON lt.student_id = e.student_id AND lt.class_id = c.id
- WHERE e.class_id = ? AND e.status = 'active' AND substr(e.started_at, 1, 10) >= ? AND n.status = 'transferred'
+ WHERE e.class_id = ? AND e.status = 'active' AND ${vao} AND n.status = 'transferred'
    AND c.programme_code IN (${CT_NGUON.map((x) => `'${x}'`).join(', ')}) AND ${HV_DANG_HOC_SQL('s')}`;
+export const EM_KQDR_FT_SQL = emKqdrFt('substr(e.started_at, 1, 10) >= ?');
+/**
+ * KET-QUA-DAU-RA-b (PTA Plan 14/11): bảng còn hiện em vào lớp FT QUÁ 4 tuần mà CHƯA CHỐT (không kết quả lưu, có lệnh Lên FT từ lớp cũ — cùng tập việc QL
+ * "Kỳ vọng", `emKyVong`) — việc luôn mở ra đủ em cần chốt. Em tự Đạt theo MT0 bỏ ở `kqdrLopFt` (cần MT0, không lọc được bằng SQL).
+ */
+const EM_KQDR_FT_CHUA_CHOT_SQL = emKqdrFt(`(substr(e.started_at, 1, 10) >= ? OR (lt.ky_vong_dat IS NULL AND EXISTS (SELECT 1 FROM lenh_chuyen_lop l
+    WHERE l.student_id = e.student_id AND l.lop_nguon_id = c.id AND l.huong = 'fast_track' AND l.trang_thai IN ('cho', 'da_chuyen'))))`);
 
 /** Bảng vai đặc tả OV mục 2: Kết quả đầu ra — Admin "—". Người xem được lớp (`attempt.view`) trừ tài khoản chỉ có vai Admin. */
 export const laChiAdmin = (p: Principal) => !p.roleKeys.some((k) => k !== 'office_admin');
@@ -320,11 +327,13 @@ export function kqdrLopFt(p: Principal, classId: number) {
   const homNay = demoToday();
   const rows = conn.prepare(
     `SELECT e.student_id, s.full_name, substr(e.started_at, 1, 10) AS vao, c.id AS lop_id, c.code, c.programme_code,
-            lt.ky_vong_dat, lt.ky_vong_nguyen_nhan, lt.ky_vong_mon,
+            lt.ky_vong_dat, lt.ky_vong_nguyen_nhan, lt.ky_vong_mon, lt.ky_vong_ghi_chu,
+            (SELECT l.tuan_bat_dau FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = c.id AND l.huong = 'fast_track'
+              AND l.trang_thai IN ('cho', 'da_chuyen') ORDER BY l.id DESC LIMIT 1) AS tuan_lenh,
             (SELECT l.nhan_xet_chung FROM lenh_chuyen_lop l WHERE l.student_id = e.student_id AND l.lop_nguon_id = c.id AND l.trang_thai != 'huy'
               ORDER BY l.id DESC LIMIT 1) AS ban_giao,
             (SELECT MAX(a.id) FROM assessment_attempts a WHERE a.student_id = e.student_id AND a.class_id = c.id AND a.kind = 'final' AND a.status != 'cancelled') AS final_id
-       ${EM_KQDR_FT_SQL}`,
+       ${EM_KQDR_FT_CHUA_CHOT_SQL}`,
   ).all(classId, addDays(homNay, -KQDR_HIEN_NGAY)) as any[];
   if (!rows.length) return { bang: [] };
   const mt0 = mt0TheoLop(rows.map((r) => ({ sid: r.student_id, lop: r.lop_id, ct: r.programme_code })));
@@ -335,24 +344,36 @@ export function kqdrLopFt(p: Principal, classId: number) {
       .all(...lo) as any[]) caseCua.set(c.student_id, [...(caseCua.get(c.student_id) ?? []), { id: c.id, mon: c.category }]);
   });
   const bang = new Map<string, { ct: string; lop: Map<number, string>; dot: Map<string, unknown[]> }>();
+  const moc = addDays(homNay, -KQDR_HIEN_NGAY);
+  /* Quyền chốt (`ghiKetLuanFt`: `request.approve` của em) theo lớp cũ — vài lớp, không câu SQL (phạm vi từ phiên). */
+  const chotCua = new Map<number, boolean>();
+  const chotDuoc = (lop: number) => { if (!chotCua.has(lop)) chotCua.set(lop, can(p, PERMISSIONS.REQUEST_APPROVE, { classId: lop })); return chotCua.get(lop)!; };
   for (const r of [...rows].sort((a, b) => a.vao.localeCompare(b.vao) || a.full_name.localeCompare(b.full_name, 'vi'))) {
+    const { bands, goiY } = mt0.get(r.student_id)!;
+    const kqdr = ketLuanKyVong(r.ky_vong_dat === null ? null
+      : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null }, goiY);
+    if (r.vao < moc && kqdr) continue;   // quá 4 tuần: chỉ còn em chưa chốt (em tự Đạt theo MT0 thì thôi)
     const b = bang.get(r.programme_code) ?? { ct: r.programme_code, lop: new Map(), dot: new Map() };
     bang.set(r.programme_code, b);
     b.lop.set(r.lop_id, r.code);
-    const { bands, goiY } = mt0.get(r.student_id)!;
     const f = r.final_id ? final.get(r.final_id) : undefined;
+    /* N22 ② (P9b): MT0 quá tuần muộn nhất (tuần 2 FT — tuần của lệnh Lên FT như `ghiKetLuanFt`; không lệnh thì ngày vào lớp FT) vẫn < 3 kỹ năng có band
+       → QL tự đánh. Máy chủ kiểm lại khi lưu. */
+    const muonNhat = tuanMuonNhatMt0({ tuanBatDauFt: r.tuan_lenh ?? r.vao, tuanCuoiKhoa: null });
     b.dot.set(r.vao, [...(b.dot.get(r.vao) ?? []), {
       id: r.student_id, ten: r.full_name, lopCu: { id: r.lop_id, code: r.code },
       final: f?.tyLe ?? null, finalDat: f?.tyLe == null ? null : f.tyLe >= f.nguong,
       mt0: goiY ? { ...bands, overall: goiY.overall, dat: goiY.dat, monTruot: goiY.monTruot } : null,
-      kqdr: ketLuanKyVong(r.ky_vong_dat === null ? null : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon) }, goiY),
-      case: caseCua.get(r.student_id) ?? [], banGiao: r.ban_giao ?? null,
+      kqdr, case: caseCua.get(r.student_id) ?? [], banGiao: r.ban_giao ?? null,
+      /** KET-QUA-DAU-RA-b: người xem chốt / sửa được (QL, Quản trị) · chốt được khi chưa đủ MT0 (`moTay`). */
+      chotDuoc: chotDuoc(r.lop_id), moTay: !goiY && !!muonNhat && homNay > addDays(muonNhat, 6),
     }]);
   }
   return {
     bang: [...bang.values()].sort((a, b) => CT_NGUON.indexOf(a.ct) - CT_NGUON.indexOf(b.ct)).map((b) => ({
       ct: b.ct, lop: [...b.lop].map(([id, code]) => ({ id, code })).sort((x, y) => x.code.localeCompare(y.code, 'vi')),
-      dot: [...b.dot].map(([vao, em]) => ({ vao, hienToi: addDays(vao, KQDR_HIEN_NGAY), em })),
+      /* `hienToi` null = đợt đã quá 4 tuần, còn vì em chưa chốt. */
+      dot: [...b.dot].map(([vao, em]) => ({ vao, hienToi: vao < moc ? null : addDays(vao, KQDR_HIEN_NGAY), em })),
     })),
   };
 }

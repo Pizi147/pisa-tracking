@@ -275,6 +275,6 @@ export async function runPrKvTests(t: YThucTestKit) {
   });
 
   const { runPrKyVongMt0Tests } = await import('./prKyVongMt0.tests.ts');
-  await runPrKyVongMt0Tests(t, { d, kv, ck, lopMoi, hocVien, lenFt, diemMt0, viecKv, caseKv, paCua, get, all, maLoi, ganGv, GV, mt0Mod: await import('../fasttrack/mt0.ts'),
+  await runPrKyVongMt0Tests(t, { d, kv, ck, lopMoi, hocVien, lenFt, diemMt0, viecKv, caseKv, paCua, get, all, maLoi, ganGv, GV, mt0Mod: await import('../fasttrack/mt0.ts'), loadPrincipal: (await import('../permissions.ts')).loadPrincipal,
     thiHanh: () => { const cu = getConfig('demo_date'); setConfig('demo_date', THU_HAI); try { lenh.thiHanhLenhDenHan(THU_HAI); } finally { setConfig('demo_date', cu); } } });
 }
