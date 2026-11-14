@@ -16,7 +16,7 @@ Tài khoản demo tên giả: GV Trần Ngọc Hà (7) · TVV Nguyễn Thu Hươ
 | # | Thành phần (nguồn) | Web sau PR | Ảnh | Kết quả |
 |---|---|---|---|---|
 | 1 | ⋯ dòng em: nhóm "+ Task" có 3 mục Case · Vi phạm / Nhắc nhở · Tình hình học tập (mockup K1, lời 17) | `useThaoTacDongHocVien.mucCua`: "Tình hình học tập" ngay sau Vi phạm trong nhóm, vạch sau nhóm | cap-menu-gv | KHỚP |
-| 2 | Bấm mục → hộp Tình hình MỘT em, tại trang | DÙNG LẠI `HopTinhHinh` (prTinhHinh, như "+ Task" hồ sơ HV): `bao` em điền sẵn kèm TVV của em; neo nút ⋯ vừa bấm; 375 tấm dưới | cap-hop-gv, cap-hop-gv-375 | KHỚP |
+| 2 | Bấm mục → hộp Tình hình MỘT em, tại trang | DÙNG LẠI `HopTinhHinh` (prTinhHinh, như "+ Task" hồ sơ HV): `bao` em điền sẵn kèm TVV của em; neo nút ⋯ vừa bấm (dưới, hoặc cạnh khi thiếu chỗ); 375 tấm dưới; "Gửi tới" một em chỉ ghi người nhận ("TVV Lê Thu"), nhiều em mới kèm tên em | cap-hop-gv, cap-hop-gv-375 | KHỚP |
 | 3 | TVV (⋯ theo vai) | "+ Task" · **Hỏi tình hình học tập** (gửi GVCN) — cùng mục "+ Task" của TVV ở hồ sơ HV / trang đầu | cap-menu-tvv, cap-hop-tvv | KHỚP |
 | 4 | Quyền theo máy chủ, vai không làm được thì không có mục | Báo: cờ `coTheGhiViPham` đã nạp (= `violation.record` ở lớp — đúng điều kiện `quyenGui` gv_tvv); Hỏi: cờ `suaThem` đã nạp (≈ `coTheGhi`: TVV có `student.edit_more`); em không đang học → không có mục; máy chủ vẫn kiểm khi gửi, lỗi ở lại hộp, chữ giữ | — | KHỚP |
 | 5 | Hộp "Hỏi" từ danh sách phải nói rõ em nào | `HopTinhHinh`: khi đã có em (Báo hoặc Hỏi) luôn hiện "Học viên · {tên}" (trước chỉ hiện ở Báo) — áp chung, hồ sơ HV cũng thấy tên em | cap-hop-tvv | KHỚP |
@@ -24,7 +24,7 @@ Tài khoản demo tên giả: GV Trần Ngọc Hà (7) · TVV Nguyễn Thu Hươ
 
 ## 2. KHÁC (có lý do)
 
-1. **Hộp ở hàng cuối trang ngắn**: hộp cao ~460 px; dưới nút ⋯ không đủ chỗ thì `HopNeo` (chung) lật lên trên và giữ trong màn — có thể che một phần hàng của chính em (ảnh cap-hop-gv). Đây là hành vi sẵn có của hộp neo dùng ở mọi nơi; không đổi thành phần chung trong PR này.
+1. ~~Hộp ở hàng cuối trang ngắn kẹp sát mép trên~~ — **đã sửa (PTA rà #1708)** ở `HopNeo` (chung): chỉ lật lên khi phía trên (dưới thanh đầu trang) đủ chỗ; trên / dưới đều thiếu mà ô neo ở mép phải (⋯ cuối dòng) → đặt **cạnh trái nút ⋯**, dọc trong khoảng dưới thanh đầu → đáy màn; không thì phía rộng hơn, hộp cuộn trong. Không đè thanh đầu, không che nút ⋯. Soi lại "+ Task" trang Công việc (mở xuống như cũ); các chỗ đủ chỗ trên / dưới không đổi.
 2. **Hộp Hỏi không có ✕ ở tiêu đề**: dáng sẵn có của `HopTinhHinh` (chỉ hộp Báo có ✕, theo ⑤ F3); đóng bằng "Đóng" / Esc / bấm ngoài.
 
 ## 3. Thao tác TRƯỚC → SAU
