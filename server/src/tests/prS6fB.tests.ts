@@ -212,7 +212,7 @@ async function runTask9(t: YThucTestKit, d: any) {
     assert(/\.u\$\{/.test(doc('web/src/ui/CongTacKhung.tsx')) && /datNguoiDungKhung\(/.test(doc('web/src/lib/session.tsx')), 'khoá nhớ khung theo người');
     assert(d.khungLopToiDay('thuong', true, false) === 'ft' && d.khungLopToiDay('ft', false, true) === 'thuong', 'khung nhớ 0 lớp → mặc định');
     assert(d.khungLopToiDay('thuong', true, true) === 'thuong' && d.khungLopToiDay(null, true, true) === 'ft' && d.khungLopToiDay(null, false, true) === 'thuong', 'giữ khung nhớ hợp lệ');
-    assert(/khungLopToiDay\(/.test(doc('web/src/modules/worklist/LopToiDay.tsx')), 'LopToiDay gọi khungLopToiDay');
+    /* GD-1 (Overhaul V6): khối gập "Lớp tôi dạy" (công tắc khung) đã bỏ — "Lớp của tôi" ở khung phải Công việc không chia khung. */
   });
 
   check('S6F-b (9) · Q6 vế m: lớp thiếu GV môn có bài quá hạn → "m bài chưa có người chấm" = Σ hàng "Chưa phân công" bảng GV (FT + lớp thường); chú thích ponytail cũ đã xoá', () => {

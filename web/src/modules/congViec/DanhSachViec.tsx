@@ -95,14 +95,16 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
     <div className="flex flex-col gap-3.5">
       {muc.map((m, i) => {
         const n = soHien + (them[m.key] ?? 0);
-        const d = dem.get(m.key) ?? { n: 0, quaHan: 0 };
+        /* GD-1 (lời 11, 19; mockup v21 K3): mục Chấm Speaking là VIỆC CHUNG của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
+        const chung = m.key === 'cham-cheo';
+        const d = chung ? { n: m.items.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: m.items.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } : dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
           <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
             <h2 className="sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
-              style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
+              style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: chung ? 'var(--text-faint)' : 'var(--accent)' }}>
               <span className="min-w-0 text-[color:var(--text)] max-sm:flex-1">{m.label}</span>
               <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
-                style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span className="max-sm:sr-only">&nbsp;{t('việc')}</span></span>
+                style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span className="max-sm:sr-only">&nbsp;{chung ? t('bài') : t('việc')}</span></span>
               {d.quaHan > 0 && (
                 <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late"><span aria-hidden>⚠ </span>{d.quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>
               )}

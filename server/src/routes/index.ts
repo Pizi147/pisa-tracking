@@ -276,6 +276,7 @@ api.get('/demo/session', wrap((req) => {
      * theo tuần — không phải việc của ai cả. Nay Tổng quan CHÍNH LÀ việc của người đang xem,
      * nên không cần đường vòng: giáo viên mở ra thấy điểm mình phải nhập, Quản lý thấy em
      * đang cần hỗ trợ, Admin chi nhánh thấy lịch cần cập nhật.
+     * GD-1 (Overhaul V6): GV (`nav.overview` false) — `/` chuyển thẳng sang Công việc ở web (`OverviewPage`), link cũ `/` vẫn chạy.
      */
     landing: '/',
     // Bốn khu vực + tab con, ẩn/hiện theo quyền (PR-O, server/src/platform/nav.ts).
@@ -2178,6 +2179,8 @@ const soDuong = (v: unknown, ten: string): number | null => {
 };
 /** Bảng giáo viên của một chi nhánh (đặt TRƯỚC `/giao-vien/:id`). Không xếp hạng: sắp theo tên. */
 /* UI-CON-LAI k1: nhóm Giáo viên của ô tìm thanh trên — chỉ GV người xem mở được hồ sơ (`phamViHoSoGv`). */
+/* GD-1 "+ Task": tìm em (ô gõ tên) — một câu, phạm vi xem học viên (`timHocVien`). */
+api.get('/tim/hoc-vien', requireAuth, wrap((req) => studentSvc.timHocVien(principalOf(req), qStr(req, 'q'))));
 api.get('/tim/giao-vien', requireAuth, wrap((req) => timGiaoVien(principalOf(req), qStr(req, 'q'))));
 api.get('/giao-vien', requireAuth, wrap((req) => {
   maybeSimulateReadError();

@@ -17,7 +17,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
-  CASE_OUTCOMES, CASE_OUTCOME_LABEL, FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, CHU_TOI_THIEU_CASE, NEXT_STEP_LABEL, NHAN_XET_MT_TOI_THIEU, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
+  CASE_OUTCOMES, CASE_OUTCOME_LABEL, FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, CHU_TOI_THIEU_CASE, NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
   chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
   tenMon, thanSuaPa, toiKyGhi, tuanLich,
   type GiaTriPa, type TrangThai,
@@ -540,7 +540,7 @@ function MoTaCase({ data, sua, viec, tuMo, nhomNhap, onDoi, onXong }: {
   const [daXn, setDaXn] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
-  const toiThieu = laMt ? NHAN_XET_MT_TOI_THIEU : CHU_TOI_THIEU_CASE;   // #4 ngưỡng chung (trước 15)
+  const toiThieu = CHU_TOI_THIEU_CASE;   // #4 ngưỡng chung (trước 15) · Case MT / S cũng 8 (chủ SP 14/11, trước 10)
   const luu = async (x: string) => {
     if (s) { await api.post(`/cases/${data.id}/xac-nhan-s`, { cach: 'viet', moTa: x }); setDaXn(t('Đã xác nhận Case')); onXong(); return; }
     const body = laMt ? { luc: data.capNhatLuc, observation: x, ...(!chinh ? { nhom: nhomNhap } : {}) } : { luc: data.capNhatLuc, summary: x };

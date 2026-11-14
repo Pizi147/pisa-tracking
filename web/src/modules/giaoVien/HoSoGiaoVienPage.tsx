@@ -21,6 +21,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CongTac, PhanTram, PhuSo3, tuMau, tyLeGv, type TyLeV5 } from '../worklist/TongQuanV5.tsx';
 import { TenCase } from '../cases/SkillBoard.tsx';
+import { HaiKhoiGv } from '../worklist/LopToiDay.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 
@@ -130,6 +131,8 @@ export function HoSoGiaoVienPage() {
       </div>
 
       <DaiChiSo data={data} cs={cs} ky={ky} />
+      {/* GD-1 (Overhaul V6, `04-thiet-ke.md` 5.1, 11.1): hai bảng của Tổng quan GV cũ — chỉ khi xem hồ sơ của chính mình (đường chỉ đọc phân công người gọi). */}
+      {gv.laChinhMinh && <HaiKhoiGv />}
       <KhoiLop data={data} />
       <KhoiHocThuat data={data} cs={cs} ky={ky} />
       <KhoiViec gvId={gv.id} nguoiXem={nguoiXem} homNay={homNay} viec={viec} />

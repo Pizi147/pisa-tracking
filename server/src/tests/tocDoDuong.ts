@@ -32,6 +32,8 @@ export const DUONG_DO: MucDo[] = [
   /* DOC-IT-4: ô chọn lớp (IntakePanel, LuoiTaoLop, bộ lọc Phân tích…) — trước đọc mọi lớp cả hệ thống rồi lọc trong mã. */
   { trang: 'Chung', vai: MOI_VAI, url: '/ref/classes' },
   { trang: 'Chung', vai: ['QL', 'QT'], url: '/ref/classes?branchId={cn}' },
+  /* GD-1 (Overhaul V6): "+ Task" ở trang đầu GV — ô gõ tên em (một câu mỗi lần gõ, ≥ 2 ký tự). */
+  { trang: 'Chung', vai: ['QL', 'GVCN', 'GVBM'], url: '/tim/hoc-vien?q=ng' },
 
   // ---------------------------------------------------------------- Tổng quan · Quản lý
   {
@@ -555,6 +557,8 @@ export const TRAN: Record<string, number> = {
   /* DOC-IT-4: đo 3 câu mọi vai → max(đo+10, ⌈đo×1,3⌉). */
   'QL /ref/classes': 13, 'GVCN /ref/classes': 13, 'GVBM /ref/classes': 13, 'GVCN_THUONG /ref/classes': 13, 'QT /ref/classes': 13,
   'QL /ref/classes?branchId={cn}': 13, 'QT /ref/classes?branchId={cn}': 13,
+  /* GD-1: `/tim/hoc-vien` một câu đọc — đo 3 câu (cả phiên) → đo + 10. */
+  'QL /tim/hoc-vien?q=ng': 13, 'GVCN /tim/hoc-vien?q=ng': 13, 'GVBM /tim/hoc-vien?q=ng': 13,
   'QL /ref/branches': 14,
   /* PR-LUI-b (5f): trần = max(đo+10, ⌈đo×1,3⌉) — đo 06/10. */
   /* P7 SV-LO-TRINH: trần = max(đo+10, ⌈đo×1,3⌉), đo 25/10 — xem trước hộp Tạm dừng/ Kết thúc học. */
@@ -1382,6 +1386,12 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   'GV trang Tổng quan': {
     vai: 'GVCN', tran: 140,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 107 → max(107 + 10, ⌈107 × 1,3⌉) ·   // RA-DOC-0611: đo 116 (trước 128) → max(116 + 10, ⌈116 × 1,3⌉) · đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft` · S1: đo 193 (bỏ `/chi-so` tính lại, + ô Case) → max(193 + 10, ⌈193 × 1,3⌉)
     urls: ['/demo/session', '/my-work', '/tong-quan/lop-toi-day/hai-khoi', '/yeu-cau/dem', '/giao-vien/{gv}/o?cot=case-mo'],   // UI-TONG-QUAN: + chỉ số GV · SV-TQ-GV: hai khối thay Lớp tôi dạy · S1: chỉ số GV theo `/hai-khoi` (bỏ GET `/giao-vien/{gv}/chi-so`), thêm ô Case đang xử lý (gọi lúc mở, trước sót)
+  },
+  /* GD-1 (Overhaul V6): trang đầu GV = Công việc — "Lớp của tôi" dựng từ phiên + `/my-work` đã nạp (0 GET thêm); bỏ `/hai-khoi` + ô Case của Tổng quan GV
+     (hai GET đó nay chỉ ở Hồ sơ GV của chính mình). Mục 'GV trang Tổng quan' trên giữ cho Head tutor (vẫn Tổng quan góc nhìn GV tới LG-7). */
+  'GV trang đầu Công việc': {
+    vai: 'GVCN', tran: 56,   // GD-1: đo 43 câu / 3 GET (Tổng quan GV cũ đo 109 câu / 5 GET) → max(43 + 10, ⌈43 × 1,3⌉)
+    urls: ['/demo/session', '/my-work', '/yeu-cau/dem'],
   },
   /* OV-10c: Tổng quan TVV ("Học viên của tôi"), CX ("Số liệu"), Admin ("Mock Test") — đo bằng chính vai đó. */
   'TVV trang Tổng quan': {

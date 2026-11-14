@@ -12,7 +12,7 @@
 import { DS_JSON, db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  GHI_CHU_MEETING_TOI_THIEU, aiLamViec, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
+  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -275,7 +275,7 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
       const xl = xuLyCon(x);
       if (xl !== 'con') throw badRequest(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — việc Báo PH chỉ xem.`);
       /* PHOI-HOP-V2: kết quả buổi Meeting CX/GĐCN — luật ≥ 10 ký tự (OV-12h) chuyển từ bước GVCN sang bước TVV. */
-      const toiThieu = x.phoi_hop_id != null ? aiLamViec({ kind: x.ph_kind, pb_moc: x.ph_pb ?? null }).buocTvv?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU : 0;   // CAU-HINH-CASE-SOS
+      const toiThieu = x.phoi_hop_id != null ? buocTvvViec({ kind: x.ph_kind, pb_moc: x.ph_pb ?? null })?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU : 0;   // CAU-HINH-CASE-SOS
       if (ketQua === 'da_bao' && ghiChu.trim().length < toiThieu) throw badRequest(`Meeting CX/GĐCN: Nội dung ít nhất ${toiThieu} ký tự.`);
       db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?,?,?,?,?,?,?)')
         .run(id, ketQua, ngay, ghiChu, p.userId, nowIso(), khoa ? `${khoa}:${id}` : null);

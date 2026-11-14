@@ -2,7 +2,7 @@ import { DS_JSON, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { mocThuong, cauHinh, maViecCoHan, tenViec, toiThieuGhiChu,
   COORDINATION_KINDS, COORDINATION_KIND_LABEL, COORDINATION_REMOVE_REASON_LABEL, COORDINATION_STATUS_LABEL,
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
-  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot, hanBaoPhHieuLuc, type KetQuaBaoPh, aiLamViec, addDaysIso, HAN_MEETING_CX_NGAY, GHI_CHU_MEETING_TOI_THIEU,
+  type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot, hanBaoPhHieuLuc, type KetQuaBaoPh, buocTvvViec, addDaysIso, HAN_MEETING_CX_NGAY, GHI_CHU_MEETING_TOI_THIEU,
 } from '../../../shared/domain/index.ts';
 import { lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, conflict, loi, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -345,7 +345,7 @@ export function tvvCuaHanhDong(p: Principal, ids: readonly number[]): Map<number
       tvv: v.tvv_ten ?? null,
       lan: v.ket_qua ? { ketQua: v.ket_qua, nhan: NHAN_KET_QUA_BAO_PH[v.ket_qua as KetQuaBaoPh] ?? v.ket_qua, ngay: v.ngay, ghiChu: v.ghi_chu ?? null, nguoi: v.l_nguoi ?? null } : null,
       soLan: v.so_lan, coTheGhi: coTheGhi(p, goc), coTheSuaHan: v.trang_thai === 'mo' && coTheSuaHan(p, goc),
-      toiThieu: aiLamViec({ kind: v.ph_kind, pb_moc: v.ph_pb ?? null }).buocTvv?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU,
+      toiThieu: buocTvvViec({ kind: v.ph_kind, pb_moc: v.ph_pb ?? null })?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU,
     });
   }
   return out;
@@ -360,7 +360,7 @@ function dongBoViecTvv(id: number, truoc: string): void {
   const r = loadAction(id);
   const v = db().prepare('SELECT id, trang_thai, bo_ly_do FROM viec_bao_ph WHERE phoi_hop_id = ?').get(id) as { id: number; trang_thai: string; bo_ly_do: string | null } | undefined;
   /* CAU-HINH-CASE-SOS: bước TVV theo bản chụp của dòng (`pb_moc`); không có bước TVV → không sinh việc. */
-  const buoc = aiLamViec(r).buocTvv;
+  const buoc = buocTvvViec(r);
   const hanTvv = () => addDaysIso(demoToday(), (buoc?.hanNgay ?? HAN_MEETING_CX_NGAY) - 1);   // n ngày lịch = hôm nay + (n − 1), như Báo PH
   if (r.status === 'done') {
     /* Rà PTA (4): "Sửa" việc đã xong (ngày, chữ) không sinh lại việc TVV / chuông — chỉ lần chuyển sang Xong. */

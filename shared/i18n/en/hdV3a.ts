@@ -7,7 +7,7 @@ export const EN_HD_V3A = {
   'Mở <b>Công việc</b>, tab <b>Vận hành</b>, mục <b>Thiếu dữ liệu</b>.': 'Open <b>Tasks</b>, tab <b>Operations</b>, section <b>Missing data</b>.',
   'Gõ điểm các MT em đã làm, rồi lưu; không tính hạn.': 'Type the scores of the MTs the student took, then save; no due date.',
   'Công việc › Speaking': 'Tasks › Speaking',
-  'Mở <b>Công việc</b>, tab <b>Speaking</b> (bài chấm chéo), bấm dòng <b>Chấm Speaking · n bài</b>.': 'Open <b>Tasks</b>, the <b>Speaking</b> tab (cross-marking), tap the <b>Speaking marking · n tests</b> row.',
+  'Mở <b>Công việc</b>, tab <b>Chấm Speaking</b>, bấm dòng <b>Chấm Speaking · n bài</b>.': 'Open <b>Tasks</b>, the <b>Speaking marking</b> tab, tap the <b>Speaking marking · n tests</b> row.',
   '<b>Lưu · bài tiếp ›</b> sang em chưa chấm kế; không tính quá hạn.': '<b>Save & next ›</b> moves to the next unmarked student; never counted overdue.',
   'Việc Case, PA nằm ở tab <b>Case học thuật</b>.': 'Case and PA tasks are on the <b>Academic cases</b> tab.',
   'Mở <b>Công việc</b>, tab <b>Case học thuật</b> (mục Mô tả Case · Phương án).': 'Open <b>Tasks</b>, tab <b>Academic cases</b> (sections Describe Case · PA).',
