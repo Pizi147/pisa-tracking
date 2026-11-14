@@ -1,7 +1,7 @@
 /**
  * CHUÔNG V2 (chủ SP 11/11, mockup `thiet-ke/2026-11-11-chuong-v2/chuong-v2.html` — duyệt vòng 2): hộp dưới nút chuông.
  *  · Việc cần làm: việc của tôi gom theo loại (`gomViecChuong`, cùng `demDongViec` như badge / Công việc), từ bản `/my-work` App ĐÃ tải — không gọi thêm.
- *    Bấm một loại → Công việc lọc sẵn loại đó. Thẻ Chờ duyệt (`/yeu-cau/dem`, App đã tải) và việc chỉ có ở thông báo (đăng ký tài khoản…) thêm một dòng loại.
+ *    Bấm một loại → Công việc mở đúng tab của loại đó (GD-9, mockup ⑤ G2). Thẻ Chờ duyệt (`/yeu-cau/dem`, App đã tải) và việc chỉ có ở thông báo (đăng ký tài khoản…) thêm một dòng loại.
  *  · Cập nhật: tin một chiều của `/notifications` — tải khi hộp MỞ (trước: mỗi lần tải trang). Tin trỏ tới việc không hiện (việc ở khối trên).
  *  · Xem tất cả: thay nội dung hộp tại chỗ, nhóm theo ngày, "Đánh dấu đã đọc".
  */
@@ -14,7 +14,7 @@ import { LoiTaiNho } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import {
-  NHAN_NHOM_NGAY, VIEC_TU_TIN, duongThongBao, gomViecChuong, laTinViec, laViecTuTin, loaiTin, moDuocThongBao, nhomNgayTin, soViecMoi, tachTin,
+  NHAN_NHOM_NGAY, VIEC_TU_TIN, duongThongBao, nhomViecCua, nhomViecTvvCua, gomViecChuong, laTinViec, laViecTuTin, loaiTin, moDuocThongBao, nhomNgayTin, soViecMoi, tachTin,
   thoiGianThongBao, xepLoaiViec, type DemYeuCau, type DongViecChuong, type LoaiViecChuong, type NhomNgayTin, bacNgan } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -64,8 +64,11 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
     const ra: DongLoai[] = [];
     const nhieuCn = (viec?.chiNhanh?.length ?? 0) > 1;
     const laQl = !!nav?.workOps || !!nav?.workChamDiem;
+    /* GD-9 (mockup ⑤ G2, R5.8): bấm một loại → Công việc ĐÚNG TAB của loại đó (cả tab, không lọc riêng loại) — cùng hàm tab của trang Công việc
+       (`nhomViecCua` / `nhomViecTvvCua`): Báo cáo PH, Bàn giao → Vận hành; "Báo PH kết quả Test", Xử lý vi phạm, Phối hợp SOS → Ý thức & Phối hợp. */
+    const tabCua = !laQl && nav?.hvCuaToi ? nhomViecTvvCua : nhomViecCua;
     for (const l of gomViecChuong(viec?.dong ?? [])) {
-      const q = new URLSearchParams({ loai: l.loai });
+      const q = new URLSearchParams({ nhom: tabCua(l.loai) });
       if (laQl) q.set('nguoi', 'toi');
       if (nhieuCn) q.set('cn', 'tat-ca');
       ra.push({ ...l, den: `/cong-viec?${q}` });

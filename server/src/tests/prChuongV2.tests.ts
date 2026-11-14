@@ -91,4 +91,14 @@ export async function runPrChuongV2Tests(t: any) {
     const ls = [...hop.matchAll(/localStorage\.\w+\(/g)].length, tc = [...hop.matchAll(/try \{ [^\n]*localStorage/g)].length;
     assert(ls >= 2 && ls === tc, `localStorage ${ls} lần, trong try ${tc}`);
   });
+
+  check('GD-9 · chuông: bấm một loại → Công việc ĐÚNG TAB (cả tab, mockup ⑤ G2) — Báo cáo PH, Bàn giao → Vận hành; "Báo PH kết quả Test", Xử lý vi phạm, Phối hợp SOS → Ý thức & Phối hợp; không dòng Chấm Speaking', () => {
+    const tab = { score: 'cham-diem', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat', yt_xu_ly: 'y-thuc', phoi_hop_sos: 'y-thuc', phoi_hop: 'y-thuc', bao_cao_ph: 'van-hanh', ban_giao: 'van-hanh' };
+    for (const [l, k] of Object.entries(tab)) assert(d.nhomViecCua(l) === k, `${l} → ${d.nhomViecCua(l)}, cần ${k}`);
+    const hop = nguon('web/src/modules/platform/HopChuong.tsx');
+    assert(/new URLSearchParams\(\{ nhom: tabCua\(l\.loai\) \}\)/.test(hop) && !/new URLSearchParams\(\{ loai: l\.loai \}\)/.test(hop), 'chuông chưa mở đúng tab (còn ?loai= lọc riêng loại)');
+    assert(/const tabCua = !laQl && nav\?\.hvCuaToi \? nhomViecTvvCua : nhomViecCua;/.test(hop), 'TVV dùng tab của TVV — cùng hàm trang Công việc');
+    const cheo = d.gomViecChuong([{ key: 'score:1|cc', group: 'score', urgency: 'overdue', mine: true, studentId: null, con: null }] as any);
+    assert(!cheo.length, 'chuông không có dòng Chấm Speaking (việc chung)');
+  });
 }
