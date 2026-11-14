@@ -201,7 +201,7 @@ export async function runPrOv11eTests(t: YThucTestKit) {
        Cờ lộ trình về 0 để phân biệt "giữ dấu" (1) với "theo cờ" (0). */
     conn.prepare('UPDATE learning_cycles SET khong_cam_ket = 0 WHERE id = ?').run(a.cy);
     const o = one(`SELECT skill FROM assessment_scores WHERE attempt_id = ? AND band IS NOT NULL AND skill IN ('listening', 'reading', 'speaking') ORDER BY id LIMIT 1`, a.id);
-    keHoach.huyDiem(QL, { attemptId: a.id, skill: o.skill, lyDo: 'Thử hết chốt' });
+    attempts.saveScore(QL, a.id, o.skill, { band: null, lyDo: 'Thử hết chốt' });   // NHAP-DIEM-a: xoá ô thường (Huỷ điểm nay = Đã huỷ, lượt vẫn chốt)
     xoaNho();
     const conDiem = one('SELECT * FROM assessment_attempts WHERE id = ?', a.id);
     assert(!attempts.resultOf(conDiem).chot, 'tiền đề: huỷ điểm làm lượt hết chốt');

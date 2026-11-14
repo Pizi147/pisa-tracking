@@ -149,7 +149,9 @@ export async function runPrDlTests(t: YThucTestKit) {
   /* RKC-1b: Quản lý (dời được lịch) nhập được ô chưa tới tuần — máy hỏi "Dời về tuần này". So JSON trước / sau: chỉ 1 ô `canEdit` false → true ở bảng
      QL (`tuan`), bảng GVBM (`moi`) y nguyên (trước: tuan 6e3a3cc57097f59d). */
   /* LO-TRINH-THEO-HV: `moi` đổi vì em seed chuyển FT → FT sang lớp khác lộ trình nay GIỮ lộ trình em (kỳ vọng / lịch theo lộ trình em) — trả lại luật cũ thì về băm cũ 1948335ce82a6b6d. */
-  const ANH_CHUP = { tuan: '84a618be9795c451', moi: '6dfe12384db98d90' };
+  /* NHAP-DIEM-a (chủ SP 14/11): ô chưa tới tuần mở cho người nhập được ô (lưu thì máy tự dời về tuần này) — `moi` (góc GVBM) đổi; đã đo: trả điều kiện
+     `canEdit` cũ thì ra đúng băm cũ 6dfe12384db98d90 → chỉ cờ `canEdit` đổi, không trường nào khác. */
+  const ANH_CHUP = { tuan: '84a618be9795c451', moi: 'd3fc581b916c9b1f' };
   /* Mã cố ý độc lập với hàm: điều kiện lọc tuần của bản trước refactor, viết lại bằng SQL. */
   const idsTuan = (periodId: number) => (conn.prepare(
     `SELECT a.id FROM assessment_attempts a JOIN students s ON s.id = a.student_id

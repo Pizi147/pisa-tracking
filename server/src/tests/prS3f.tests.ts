@@ -18,6 +18,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
   const intake: any = await import('../classes/intake.ts');
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const keHoach: any = await import('../keHoach/keHoachTest.ts');
+  const absence: any = await import('../fasttrack/absence.ts');
   const { boLichTuTao, luotThu, nhanXetCaseThu } = await import('./luotThu.ts');
   console.log('\nPR-S3F · Sửa sau rà cuối đợt 3');
 
@@ -51,7 +52,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     for (const k of ['listening', 'reading', 'speaking']) enter(a, k, 5);
     const c = caseOf(st.id, 'listening');
     assert(c.status === 'open', 'chưa có Case L');
-    keHoach.huyDiem(P.admin, { attemptId: a.id, skill: 'listening', lyDo: 'Chấm nhầm bài, huỷ điểm' });
+    absence.huyDiemKn(P.admin, a.id, 'listening', true, 'Chấm nhầm bài, huỷ điểm');
     const sau = get('SELECT * FROM sos_cases WHERE id = ?', c.id);
     /* PR-BV thay S3F (1) "đã bị huỷ": Huỷ điểm là xoá điểm — chữ "đã bị xoá" (thi lại giữ "đã bị huỷ"). */
     assert(sau.status === 'done' && /điểm Listening.* đã bị xoá/.test(sau.outcome_note ?? ''), JSON.stringify(sau));
@@ -82,7 +83,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, XN);   // OV-12c: nguyên nhân Case MT = nhận xét của bài
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' }));
-    keHoach.huyDiem(P.admin, { attemptId: a.id, skill: 'listening', lyDo: 'Chấm nhầm bài, huỷ điểm' });
+    absence.huyDiemKn(P.admin, a.id, 'listening', true, 'Chấm nhầm bài, huỷ điểm');
     assert(get('SELECT status FROM sos_cases WHERE id = ?', c.id).status !== 'done', 'Case có PA đã chạy không được đóng');
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'started', 'PA đã chạy bị đụng');
     assert(get(`SELECT COUNT(*) n FROM notifications WHERE entity_type = 'sos_case' AND entity_id = ? AND title LIKE 'Xem lại Case%'`, c.id).n === 1, 'thiếu thông báo xem lại');

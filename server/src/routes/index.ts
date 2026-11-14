@@ -999,26 +999,18 @@ api.post('/attempts/:id/skills/:skill/bao-vang', requireAuth, wrap((req) => {
   return absenceSvc.baoVang(principalOf(req), pInt(req, 'id'), String(req.params.skill), typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
 }));
 
-/** LG-9: Huỷ tay / bỏ Huỷ tay một kỹ năng bài lớp thường (gồm MT0 lớp thường) đang vắng — `{ huy: boolean }`. */
-api.post('/attempts/:id/skills/:skill/huy-tay', requireAuth, wrap((req) => {
+/**
+ * NHAP-DIEM-a: Huỷ điểm / Khôi phục MỘT kỹ năng — `{ huy: boolean (mặc định true), lyDo? }`, một đường cho Mock / MT0 / lớp thường (`huyDiemKn`).
+ * `/huy-tay` (LG-9) và `/khoi-phuc-diem` (T20b) là lối cũ web còn gọi tới PR-2 — cùng hàm.
+ */
+const huyDiemRoute = (huy: (req: any) => boolean) => wrap((req) => {
   maybeSimulateSaveFailure();
-  return absenceSvc.huyTay(principalOf(req), pInt(req, 'id'), String(req.params.skill), req.body?.huy !== false);
-}));
-
-/** PR-XLMT (T38, rà #126): Huỷ điểm một kỹ năng FT — mọi ô chọn (W1/W2) trong một giao dịch; lý do tuỳ chọn (PR-MTa, 06/10). */
-api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return keHoachSvc.huyDiem(principalOf(req), {
-    attemptId: pInt(req, 'id'), skill: String(req.params.skill),
-    o: Array.isArray(req.body?.o) ? req.body.o.map(String) : undefined, lyDo: String(req.body?.lyDo ?? ''),
-  });
-}));
-
-/** LUAT-34 (T20b): Khôi phục điểm đã huỷ (FT: mọi ô của kỹ năng; lớp thường: môn) — một bấm, người sửa được ô. */
-api.post('/attempts/:id/skills/:skill/khoi-phuc-diem', requireAuth, wrap((req) => {
-  maybeSimulateSaveFailure();
-  return ketQuaHuySvc.khoiPhucDiem(principalOf(req), pInt(req, 'id'), String(req.params.skill));
-}));
+  return absenceSvc.huyDiemKn(principalOf(req), pInt(req, 'id'), String(req.params.skill), huy(req),
+    typeof req.body?.lyDo === 'string' ? req.body.lyDo : null);
+});
+api.post('/attempts/:id/skills/:skill/huy-diem', requireAuth, huyDiemRoute((req) => req.body?.huy !== false));
+api.post('/attempts/:id/skills/:skill/huy-tay', requireAuth, huyDiemRoute((req) => req.body?.huy !== false));
+api.post('/attempts/:id/skills/:skill/khoi-phuc-diem', requireAuth, huyDiemRoute(() => false));
 
 /** PR-XLMT (T37 "ép vào đợt trùng"): Quản lý cho thi lại kỹ năng đã có điểm — xoá ô (lịch sử giữ), đặt tuần mới. */
 api.post('/ke-hoach-test/thi-lai', requireAuth, wrap((req) => {

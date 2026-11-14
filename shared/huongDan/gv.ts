@@ -199,7 +199,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'xem-chuong', ten: 'Xem chuông thông báo', nhom: 'khac',
       loiChinh: { chu: 'Chuông trên thanh trên' },
-      buoc: ['Bấm chuông: <b>Việc cần làm</b> — mỗi loại việc một dòng, số mới, quá hạn tô đỏ; bấm dòng mở đúng việc.', '<b>Cập nhật</b>: báo một chiều; <b>Đánh dấu đã đọc</b>, <b>Xem tất cả</b>.'],
+      buoc: ['Bấm chuông: <b>Việc cần làm</b> — mỗi loại việc một dòng, số mới, quá hạn tô đỏ; bấm dòng mở <b>Công việc</b> đúng tab của loại đó.', '<b>Cập nhật</b>: báo một chiều; <b>Đánh dấu đã đọc</b>, <b>Xem tất cả</b>.'],
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell'],
     },
     {

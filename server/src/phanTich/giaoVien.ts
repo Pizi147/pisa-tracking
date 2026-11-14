@@ -287,7 +287,7 @@ function dungNapBai(p: Principal, c: NguCanhPtGv, rows: readonly any[], bundle: 
       const row = scores.find((s) => s.skill === skill);
       o.push({
         id: baiId(a.id, skill), attemptId: a.id, classId: lop, studentId: a.student_id, hocVien: a.hv_ten, skill, tuan: v.weekStart, han: v.deadline,
-        nhapDau: row?.nhap_dau_ngay ?? null, band: row?.band ?? null,
+        nhapDau: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null ? row?.nhap_dau_ngay ?? null : null, band: row?.band ?? null,   // NHAP-DIEM-a: ô đã xoá giữ ngày nhập đầu
         coDiem: (row?.band ?? null) !== null || (row?.raw_score ?? null) !== null, tienDo: v.progress, noShow: v.noShow,
         dangHoc: dangHocLuc(a, tamDung[a.student_id] ?? [], v.deadline ?? c.homNay), kck: !!a.khong_cam_ket, bai: nhanDotNgan(a.kind, a.attempt_no) ?? '',
         kind: a.kind, examinerUserId: row?.examiner_user_id ?? null,

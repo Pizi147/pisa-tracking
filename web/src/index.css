@@ -921,6 +921,7 @@
   .chv-lk:hover { background: var(--accent-soft); }
   .chv-v-dau { position: sticky; top: 0; z-index: 1; display: flex; flex-wrap: wrap; align-items: center; column-gap: 10px; padding: 12px 16px 10px; background: var(--surface); border-bottom: 1px solid var(--line); }
   .chv-v-dau h2 { margin: 0; font-size: 15px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .chv-con-duoi { -webkit-mask-image: linear-gradient(to bottom, currentColor calc(100% - 40px), transparent); mask-image: linear-gradient(to bottom, currentColor calc(100% - 40px), transparent); }
   .chv-tom { flex-basis: 100%; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; margin-top: -2px; font-size: 13px; }
   .chv-tom > * + *::before { content: "·"; margin-right: 10px; color: var(--text-faint); font-weight: 400; }
   .chv-tom .chv-qua { font-weight: 700; color: rgb(var(--late-rgb)); white-space: nowrap; }

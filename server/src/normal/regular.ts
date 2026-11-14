@@ -5,7 +5,7 @@ import { addMilestone, caseKhacChuongTrinh, chuongTrinhCuaLop, followUntilAfter,
 import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, canXacNhan, forbidden, notFound, nowIso, loi } from '../util.ts';
+import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -14,7 +14,7 @@ import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../pl
 import { chanKhoiPhucThuong, huyCua, moLaiLuotNeuHuy, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
 import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu } from '../platform/mocHeThong.ts';
-import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, doiVeTuanNayNeuChua, ensureSkillRows, loadSkillRows, logSchedule, setSkillWeek } from '../fasttrack/skillSchedule.ts';
+import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, doiVeTuanNayNeuChua, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
 import { catDiemO, diemHuyMo, dongBanCat } from '../fasttrack/ketQuaHuy.ts';
 import { canRequest, duocGoDau } from '../fasttrack/absence.ts';
@@ -730,10 +730,8 @@ export function saveRegularScore(
     });
   }
 
-  /* T19: ghi một điểm → môn phải tới tuần thi; RKC: người dời được lịch → hỏi "Dời về tuần này", dời trong giao dịch lưu (dưới). */
-  const doiTuan = patch.score !== undefined && patch.score !== null
-    ? doiVeTuanNayNeuChua(p, a, ensureSkillRows(attemptId).find((r) => r.skill === skill) ?? { skill, week_start: null }, today) : null;
-  const existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
+  const ghiDiem = patch.score !== undefined && patch.score !== null;
+  let existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?')
     .get(attemptId, skill) as any;
   const before = existing ? { ...existing } : null;
 
@@ -756,10 +754,24 @@ export function saveRegularScore(
    */
   /* T7 + T22 (PR-MTa): đổi giá trị hay xoá điểm đã có → lý do tuỳ chọn. */
 
-  /* PR-Pb2-b (Q13): cùng luật FT — ngày nghiệp vụ lần đầu ô có điểm, sửa sau giữ nguyên, xoá điểm về NULL. */
-  const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : null;
+  /* PR-Pb2-b (Q13) · NHAP-DIEM-a (đặc tả 5.4): ngày nghiệp vụ lần đầu ô có điểm — sửa sau giữ, XOÁ điểm cũng giữ (nhập lại không tính muộn). */
+  const nhapDau = (score ?? null) !== null ? existing?.nhap_dau_ngay ?? today : existing?.nhap_dau_ngay ?? null;
   return tx(() => {
-    doiTuan?.();
+    /* NHAP-DIEM-a (cùng luật Mock): điểm đè "-" khi tuần đã dời tới chưa tới = Bỏ vắng (trả lịch về tuần cũ) rồi lưu (tuần mới đã tới = thi bù, giữ);
+       môn "Đã huỷ" nhập điểm = bỏ huỷ; chưa tới tuần → tự dời về tuần này. */
+    const lich0 = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+    if (ghiDiem && existing?.no_show_period_id && !existing.no_show_cu && lich0?.week_start && lich0.week_start.slice(0, 10) > mondayOf(today)) {
+      reportRegularNoShow(p, attemptId, skill, false, today);
+      existing = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, skill) as any;
+    }
+    let lich = ensureSkillRows(attemptId).find((r) => r.skill === skill);
+    if (ghiDiem && lich?.sit_status === 'cancelled') {
+      conn.prepare(`UPDATE attempt_skills SET sit_status = 'scheduled', huy_vang = 0, updated_at = ? WHERE id = ?`).run(nowIso(), lich.id);
+      logSchedule(attemptId, { action: 'skill_bo_huy_tay', field: skill, oldValue: null, newValue: lich.period_code, reason: 'Nhập điểm — bỏ huỷ', actor: p.userId });
+      recomputeCompletionWeek(attemptId, p.userId);
+      lich = { ...lich, sit_status: 'scheduled' };
+    }
+    if (ghiDiem) doiVeTuanNayNeuChua(p, a, lich ?? { skill, week_start: null }, today)?.();
     /* LUAT-34 (T20, T20b): huỷ điểm → cất ("Khôi phục điểm" một bấm); ô trống nhập điểm mới → bản cất cũ hết hiệu lực. Nhận xét môn lưu riêng — giữ. */
     const coCu = (existing?.raw_score ?? null) !== null;
     if (coCu && (score ?? null) === null) catDiemO(conn, { attemptId, row: existing, actor: p.userId, lyDo: patch.lyDo ? String(patch.lyDo).trim() : null });
@@ -869,8 +881,7 @@ export function reportRegularNoShow(
      */
     const coDiem = !!existing && existing.raw_score !== null && existing.raw_score !== undefined;
     if (bat && coDiem) {
-      /* RKC (B): hỏi; đồng ý → huỷ điểm (cất, "Khôi phục điểm" một bấm) rồi ghi "-". */
-      canXacNhan('Ô này đã có điểm — huỷ điểm (khôi phục lại được) rồi ghi vắng?', undefined, 'Huỷ điểm, ghi vắng');
+      /* NHAP-DIEM-a (thay hỏi RKC-B): cất điểm ("Khôi phục" một bấm) rồi ghi "-" — web báo kèm Hoàn tác. */
       saveRegularScore(p, attemptId, skill, { score: null, lyDo: 'Ghi vắng' }, today);
       return reportRegularNoShow(p, attemptId, skill, bat, today, lyDo);
     }
@@ -891,14 +902,8 @@ export function reportRegularNoShow(
         return { moved: false, tuanCu: tc ? tuanLich(tc.week_start, today) : null,
           tuanMoi: tuanLich(row.week_start, today), result: regularResultOf(attemptId) };
       }
-      /*
-       * Lần ghi ĐẦU cũng cần tuần thi của môn đã tới (phán quyết controller, cùng điều kiện với lần hai): chưa tới tuần
-       * thi thì em chưa có dịp vắng — ghi "-" lúc đó là dời lịch trước, việc của đổi lịch. Báo tuần bằng `tuanLich`
-       * (không có năm nếu cùng năm), không hiện ngày ISO.
-       */
-      /* RKC: "-" trước tuần thi — người dời được lịch hỏi "Dời về tuần này" rồi ghi vắng. */
-      const doiVe = doiVeTuanNayNeuChua(p, a, row, today, 'vang');
-      if (doiVe) { doiVe(); row = ensureSkillRows(attemptId).find((r) => r.skill === skill)!; }
+      /* NHAP-DIEM-a (PTA 14/11, thay RKC "dời về tuần này"): "-" TRƯỚC tuần thi = báo trước em vắng — ghi cho ĐÚNG tuần Test đó, dời sang tuần sau
+         tuần Test (N38 mục 3); KHÔNG kéo bài về tuần này (tự dời chỉ khi nhập ĐIỂM sớm). */
       if (!row.week_start || !row.planned_period_id) throw loi(400, '{skill} chưa có tuần Test nên chưa ghi dấu "-" được.', { skill });
       const cu = { id: row.planned_period_id, code: row.period_code, weekStart: row.week_start };
       const luat = ketThuc ? { khongDuThi: true as const } : luatVangThuong(cu.weekStart, today);
@@ -1365,10 +1370,8 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** PR-BV: người xem gỡ được dấu "-" (QL, GV chấm môn, GVCN — mọi lúc từ OV-13h). */
             goDau: !huy && !!row?.no_show_period_id && duocGoDau(p, { classId, skill: k, today, duocNhap: canEditSkill.get(k) ?? false }) === null,
             /** Người đang xem có nhập được điểm / ghi được "-" ở ô này không (phân công hoặc nhập bù). */
-            canEdit: !huy && (canEditSkill.get(k) ?? false)
-              /* T19 (PR-MTa): môn chưa tới tuần thi / chưa xếp tuần → ô khoá như máy chủ, kể cả ô đã có điểm (rà #212); ô mang dấu "-"
-               * (đã dời sang tuần sau) vẫn mở để gỡ dấu. */
-              && (!!row?.no_show_period_id || (!!v.weekStart && String(v.weekStart).slice(0, 10) <= mondayOf(today)) || (doiLichMon.get(k) ?? false)),   // RKC: người dời được lịch → máy hỏi "Dời về tuần này"
+            /* NHAP-DIEM-a (thay T19): chưa tới tuần / đã huỷ không khoá ô — lưu thì máy tự dời về tuần này / bỏ huỷ. */
+            canEdit: !huy && (canEditSkill.get(k) ?? false),
             /** LUAT-34 (T20b): ô trống có điểm đã huỷ còn cất → "Khôi phục điểm". */
             diemHuy: !scored && diemHuy.has(`${a.id}:${k}`),
             /** OV-13h (rà #410): nút Nhận xét — GV đúng môn ghi được cả khi lớp đã kết thúc, cùng luật `saveRegularScore`. */
