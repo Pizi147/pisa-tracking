@@ -215,6 +215,8 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const [cheDo, setCheDo] = useState<'xac-nhan' | 'doi' | 'ktd'>('xac-nhan');
   /* GD-3 (mockup v21 K4a / K4b): Chọn PA — hai ô chọn, mặc định Theo PA quy chế; dòng quy chế + nút chính đổi theo ô đang chọn. */
   const [chon, setChon] = useState<'quy-che' | 'giu'>('quy-che');
+  /* K4b: lý do "Giữ PA của tôi" — không bắt buộc (Q3), ≤ 300 ký tự (N35, máy chủ cũng chặn); nháp của việc như Nội dung PA. */
+  const [lyDoGiu, setLyDoGiu] = useNhap(`giu-pa-ly-do:${pa.id}`, '');
   const doi = useDoiPa(pa.kind);
   const [busy, setBusy] = useState(false);
   const [bam, setBam] = useState<'luu' | 'tiep' | null>(null);
@@ -229,9 +231,11 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const paGv = pa.chonPa?.length ? pa.chonPa : null;
   const tenGv = paGv ? paGv.map((g) => dich(INTERVENTION_KIND_LABEL[g.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? g.kind)).join(', ') : '';
   const giu = async () => {
+    if (lyDoGiu.trim().length > 300) return;   // báo tại ô, chữ giữ
     setBusy(true); setLoiLuu(null);
     try {
-      const ct = await api.post<any>(`/interventions/${pa.id}/giu-pa-gv`, {});
+      const ct = await api.post<any>(`/interventions/${pa.id}/giu-pa-gv`, { lyDo: lyDoGiu.trim() || undefined });
+      xoaNhap();
       invalidateCases();
       const yc = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.doiPa?.yeuCauId ?? null;
       onXong({
@@ -288,7 +292,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
       {busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}
     </button>
   ) : <NutVaTiep chu={t('Xác nhận PA')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
-  const daSua = cheDo === 'doi' ? doi.daSua : !giuPa && !!v.description.trim();
+  const daSua = cheDo === 'doi' ? doi.daSua : giuPa ? !!lyDoGiu.trim() : !!v.description.trim();
   const theoLuot = data.nguyenNhanTheoLuot ?? [];
   const tuChoi = pa.doiPa?.trangThai === 'tu_choi' ? pa.doiPa : null;
   /* Nguyên nhân chính trước (cùng thứ tự `DongNguyenNhan`); "Xem Case" của panel việc nằm dưới Mô tả (mockup A1), không ở đầu panel. */
@@ -357,6 +361,12 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
                     </button>
                   ))}
                 </div>
+              )}
+              {giuPa && (
+                <Truong nhan={t('Lý do')} dem={{ co: lyDoGiu.trim().length, toiDa: 300 }}
+                  loi={lyDoGiu.trim().length > 300 ? t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: 300, n: lyDoGiu.trim().length }) : undefined}>
+                  <textarea className="field w-full" rows={2} value={lyDoGiu} readOnly={busy} onChange={(e) => setLyDoGiu(e.target.value)} />
+                </Truong>
               )}
               {!giuPa && <>
               {/* Mockup A1: "Phương án · Học Tutor" + thẻ "theo quy chế" · mốc — KHÔNG hộp lồng vạch trái. */}

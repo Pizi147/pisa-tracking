@@ -163,6 +163,8 @@ export async function runPrSosTamPaTests(t: YThucTestKit) {
 
   check('STP-5 · "Giữ PA của tôi" → thẻ QL hạn ngày gửi + 3, PA quy chế chờ duyệt (hết việc), PA GV chạy; Rút → về Chọn PA', () => thu(() => {
     const { c, g, q } = chotVoiPaGv(khacLoai);
+    /* GD-3 (N35): lý do quá 300 ký tự → 400, không cắt lặng, không tạo thẻ. */
+    assert(loiCua(() => sosAuto.giuPaGv(QL, q.id, { lyDo: 'x'.repeat(301) }))?.status === 400 && !theCho(q.id), 'lý do > 300 ký tự → 400, không thẻ');
     const ct = sosAuto.giuPaGv(QL, q.id, {});
     const y = theCho(q.id);
     assert(y?.trang_thai === 'cho' && y.han_duyet === t.addDays(TODAY, 3), `thẻ chờ, hạn +3: ${y?.trang_thai} · ${y?.han_duyet}`);
@@ -181,6 +183,7 @@ export async function runPrSosTamPaTests(t: YThucTestKit) {
     const GV = P.lrTeacher;
     sosAuto.giuPaGv(QL, q.id, { lyDo: 'Em hợp điều chỉnh dạy hơn Tutor.' });
     let y = theCho(q.id);
+    assert(y.ly_do === 'Em hợp điều chỉnh dạy hơn Tutor.', `GD-3: thẻ lưu lý do: ${y.ly_do}`);
     const kq = yeuCau.duyetYeuCau(P.admin, y.id, {});
     xoaNho();
     let qq = one('SELECT * FROM case_interventions WHERE id = ?', q.id);

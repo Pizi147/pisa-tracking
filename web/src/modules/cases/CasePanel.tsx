@@ -1068,7 +1068,7 @@ function DaiVuaDoi({ x, onHoanTac, onSua }: { x: VuaDoiPa; onHoanTac?: () => voi
  */
 function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan: (d: string | null | undefined) => string; onDoi?: () => void }) {
   const d = iv.doiPa as { trangThai: 'cho' | 'tu_choi'; paMoiId: number; loaiMoi: string; guiLuc: string; hanDuyet: string | null; lyDoTuChoi: string | null; yeuCauId: number; laNguoiGui: boolean;
-    /** SOS-TAM-PA: GV giữ PA của mình khác PA quy chế — quá hạn QL chưa trả lời thì chốt theo GV. */ giuPaGv?: boolean } | null;
+    /** SOS-TAM-PA: GV giữ PA của mình khác PA quy chế — quá hạn QL chưa trả lời thì chốt theo GV. */ giuPaGv?: boolean; lyDo?: string } | null;
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [lai, setLai] = useState(false);
@@ -1088,6 +1088,8 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
           <span className="text-slate-400">· {d.giuPaGv ? t('PA của GV vẫn chạy') : iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${d.giuPaGv ? t('quá {ngay} tự chốt theo GV', { ngay: ngan(d.hanDuyet) }) : t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
           {d.laNguoiGui && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void rut()}>{busy ? t('Đang lưu…') : t('Rút')}</button>}
           {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
+          {/* GD-3: lý do "Giữ PA của tôi" (mockup v21 K4b) hiện lại tại PA. */}
+          {d.giuPaGv && d.lyDo && <span className="basis-full text-slate-400">{t('Lý do')}: “{d.lyDo}”</span>}
         </p>
         {the && <TheYeuCau gon yc={the} onXong={() => onDoi?.()} />}
       </div>

@@ -13,12 +13,12 @@ Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17�
 | K2b | ⋯ = Lưu · đóng · Khôi phục điểm · Bỏ vắng (hai mục sau chỉ khi ô ở trạng thái đó) | `MenuDong` (menu ⋯ dùng chung: phím ↑↓ Enter Esc) | KHỚP |
 | K2b | "Tiếp: {em} · {kỹ năng}" dòng trên nút | giữ (`nhanTiep`) | GIỮ |
 | K4a / K4b | Chọn PA: hai ô chọn "Theo PA quy chế" (Mặc định) / "Giữ PA của tôi"; dòng quy chế + nút chính đổi theo ô | `XacNhanPaPanel` (khi PA của GV khác PA quy chế): radiogroup cùng dáng ô chọn của panel Xác nhận xử lý; Theo PA quy chế → "PA của bạn dừng, kết quả giữ" + **Xác nhận PA**; Giữ → "QL duyệt trong 3 ngày · quá hạn theo bạn" + **Gửi Quản lý duyệt** (luật S3: tên đầy đủ — mockup ghi "Gửi QL duyệt"), form PA ẩn | KHỚP |
-| K4b | Ô "Lý do *" khi Giữ PA của tôi | — | **KHÁC [XM-1]**: máy chủ `POST /interventions/:id/giu-pa-gv` không nhận lý do — thêm ô = đổi API (ngoài phạm vi GD-3) |
+| K4b | Ô "Lý do *" khi Giữ PA của tôi | ô Lý do + đếm `n / 300`; máy chủ `giu-pa-gv` đã có cột `ly_do` — nay chặn > 300 ký tự (N35, không cắt lặng), web gửi lý do; hiện lại ở thẻ duyệt QL ("Lý do: “…”"), dòng "Chờ QL duyệt PA của GV" trong panel Case và nhật ký | KHỚP (chủ SP chốt 14/11) — **không có dấu \***: luật Q3 "lý do không bắt buộc" (nghiệp vụ thắng mockup) |
 | K4c | Ghi kết quả PA: dòng quy chế "Kỳ 2 tuần · hạn thứ Ba 22/09 · Lưu là chốt, đổi bằng Sửa" | `CapNhatTuan`: "Kỳ 2 tuần · hạn 22/09 · Lưu là chốt, đổi bằng Sửa" (không có ở Sửa kết quả và PA chờ Mini Test) | KHỚP (bỏ chữ thứ: luật P7 "một nhãn hạn, không thứ") |
 | K5d / K5e | Ghi vi phạm: công tắc Vi phạm \| Chỉ nhắc nhở đổi dòng quy chế "GVCN nhận việc xem · đủ 3 trong 2 tuần thì phải xử lý" ↔ "Không tính vào bậc, không sinh việc" | `RecordViolationPanel` — câu dưới công tắc (chỉ có ở Nhắc nhở) chuyển xuống dòng quy chế, ⓘ giữ câu cũ đầy đủ | KHỚP |
 | — | Các panel khác (Case, Ý thức GVCN, TVV…) | chưa gắn — chờ bảng câu mockup ⑤ (R5.5), đúng plan | GIỮ (để sau) |
 
-**KHỚP 10 / 11 = 91 %** (1 KHÁC có lý do: ô Lý do cần đổi API).
+**KHỚP 11 / 11 = 100 %** (chủ SP chốt 14/11 các XM: hạn không ghi thứ · "Gửi Quản lý duyệt" · Chọn PA quy chế vẫn nhập Nội dung · làm ô Lý do).
 
 ## Thao tác TRƯỚC → SAU
 
@@ -40,7 +40,7 @@ Mockup `thiet-ke/v21/trang-dau-gv.html` (chủ SP duyệt hẳn 14/11, lời 17�
 Không mất thao tác nào.
 
 ## [XM]
-1. **[XM-1]** K4b ô "Lý do *" khi Giữ PA của tôi — cần trường mới ở `giu-pa-gv` (máy chủ + DB). Đề xuất: PR logic riêng nếu PTA muốn giữ.
+1. **[XM-1] — đã làm** (chủ SP 14/11): ô Lý do, không bắt buộc theo Q3. Nếu chủ SP muốn bắt buộc như dấu * của mockup thì là đổi luật Q3 — hỏi trước.
 2. **[XM-2]** K4c ghi "hạn thứ Ba 22/09" — web theo luật P7 (không thứ). Giữ "hạn 22/09".
 
 ## Turso
