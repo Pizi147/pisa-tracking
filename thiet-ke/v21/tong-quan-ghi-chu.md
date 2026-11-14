@@ -13,11 +13,17 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 
 ## 0. Lời chủ SP trong session này
 
-**Lời 37 (15/11, PTA Overhaul chuyển lại) — CHƯA duyệt:**
+**Lời 39 (15/11, PTA Overhaul chuyển lại):**
+
+> "không cần gửi mockup lại đâu, sửa lại rồi gửi luôn cho PTA Plan"
+
+→ **PTA chốt phương án A 15/11 theo lời 39** (bảng Giáo viên tách cột, mỗi ô một thành phần). **B không dùng** — lý do: thanh tỉ lệ không đọc ra số (hai GV cùng 50 % mà mẫu khác nhau trông như nhau). Khung B đã gỡ khỏi `tong-quan.html`; ảnh so sánh giữ làm hồ sơ: `anh/tong-quan/so-sanh-gv-truoc-a-b.jpg`.
+
+**Lời 37 (15/11, PTA Overhaul chuyển lại):**
 
 > "M8: những chỗ phần ghi việc mà có text ở dưới đêm việc đúng hạn/ quá hạn đang hơi bị intrusive và loạn quá, nên nghĩ làm thế nào để hiển thị tốt hơn đi"
 
-Đã sửa (mục 10): mỗi ô bảng một thành phần — không dòng chữ phụ dưới số; bảng Giáo viên tách cột theo tên Phân tích GV (phương án A, vẽ thêm B để chủ SP chọn); ô số thẻ lớn dòng phụ tối đa một ý, chỉ khi cần làm.
+Đã sửa (mục 10): mỗi ô bảng một thành phần — không dòng chữ phụ dưới số; bảng Giáo viên tách cột theo tên Phân tích GV (phương án A — PTA chốt theo lời 39; B không dùng); ô số thẻ lớn dòng phụ tối đa một ý, chỉ khi cần làm.
 
 ## 1. Ý chính (lời 35: "Gom chung cái gì được thì gom chung")
 
@@ -227,7 +233,7 @@ Kiểm "Bài chấm quá hạn" có trùng "Chưa làm" của Chấm Test không
 
 | Chỗ | TRƯỚC (bản mockup trước / web) | SAU | Số bỏ khỏi mặt bảng nay ở đâu |
 |---|---|---|---|
-| T1 Giáo viên (QL) | 3 cột: Việc đúng hạn "67 %" + "4 đúng hạn · ⚠ 2 chưa làm" · Chấm Test đúng hạn "71 %" + "12 đúng hạn · ⚠ 5 chưa làm · + 8 S chéo chung" · Bài chấm quá hạn | **A**: Việc (% đúng hạn · Chưa làm) │ Chấm Test (% đúng hạn · Chưa làm) │ Tới hôm nay (Bài quá hạn); hàng cuối "S chéo chung · chưa ai nhận" (⚠ 8 ở Chưa làm Chấm Test + Bài quá hạn) — như Phân tích GV. **B** (để chọn, T1b): mỗi nhóm một ô = hộp % + thanh mảnh đúng hạn │ làm muộn │ chưa làm + hộp đỏ ⚠ n | "n đúng hạn", "n làm muộn" → panel sổ nghĩa vụ 3 tab (bấm hộp %); "+ 8 S chéo chung" → hàng cuối bảng |
+| T1 Giáo viên (QL) | 3 cột: Việc đúng hạn "67 %" + "4 đúng hạn · ⚠ 2 chưa làm" · Chấm Test đúng hạn "71 %" + "12 đúng hạn · ⚠ 5 chưa làm · + 8 S chéo chung" · Bài chấm quá hạn | **A (PTA chốt, lời 39)**: Việc (% đúng hạn · Chưa làm) │ Chấm Test (% đúng hạn · Chưa làm) │ Tới hôm nay (Bài quá hạn); hàng cuối "S chéo chung · chưa ai nhận" (⚠ 8 ở Chưa làm Chấm Test + Bài quá hạn) — như Phân tích GV. B (thanh tỉ lệ + hộp đỏ) đã vẽ để so sánh, KHÔNG dùng — không đọc ra số; khung đã gỡ | "n đúng hạn", "n làm muộn" → panel sổ nghĩa vụ 3 tab (bấm hộp %); "+ 8 S chéo chung" → hàng cuối bảng |
 | T1 / T3 / T4 / T6 Lớp cần chú ý, Theo chi nhánh | dưới % / số: "2/3", "/ 45", "1/1" | chỉ hộp số | mẫu "2/3" → panel Đạt MT; "/ 45" → ô "Case chưa có PA" (dòng phụ "trong 45 Case đang mở") và panel Case đang mở |
 | Ô số thẻ lớn (mọi vai) | "11 / việc · ⚠ 6 quá hạn" · "10 / yêu cầu · ⚠ 1 quá hạn" · "2/3 HV · 8 chưa đủ dữ liệu" · "HV" · "3 lớp" · "bài · ⚠ 37 quá hạn" · "1/1 HV" | "⚠ 6 quá hạn" · "⚠ 1 quá hạn" · "8 HV chưa đủ dữ liệu" (GIỮ: chủ SP U09 #5 "không giấu em ngoài mẫu") · (không dòng phụ) · "⚠ 37 quá hạn" · "trong 45 Case đang mở" (XM-2) · "chỉ Fast Track" (giải thích "—") | đơn vị đã rõ ở tên ô; "2/3 HV", "1/1 HV" → panel của ô; "3 lớp" → trang Kế hoạch Test (đích ô) |
 | T5 / T7c Admin GV chấm quá hạn | "Listening, Reading · MB FT 101 (MT1 W1 JUL, …)" · "12 bài" · "quá hạn 68 ngày" | GV · kỹ năng · lớp · hộp đỏ ⚠ 12 · "lâu nhất 68 ngày" | danh sách lượt → panel GV (từng lượt × kỹ năng · em còn trống · Nhập hộ — XM-12) |
@@ -238,7 +244,7 @@ Kiểm "Bài chấm quá hạn" có trùng "Chưa làm" của Chấm Test không
 | H3 / H4 / H7b Yêu cầu đã gửi | "Chờ duyệt 5 ⚠ 1 quá hạn duyệt · Bị từ chối (60 ngày qua) 3" | bảng nhỏ: Chờ duyệt 5 · Quá hạn ⚠ 1; Bị từ chối · 60 ngày qua 3 | — |
 
 Không đổi: Chờ duyệt (loại · em · hạn — một dòng, không chữ phụ) · dòng việc "Cần làm trước" (dòng việc chuẩn ⑤, thẻ phụ là tên em / Case — không phải chữ đúng hạn) · bảng Học thuật (ô tỉ lệ % · thanh · n/N một dòng, đã duyệt).
-Ảnh so sánh: `anh/tong-quan/so-sanh-gv-truoc-a-b.jpg` (TRƯỚC web │ A │ B) + `t1ga-1440-toi.png`, `t1gb-1440-toi.png`.
+Ảnh so sánh (hồ sơ quyết định): `anh/tong-quan/so-sanh-gv-truoc-a-b.jpg` (TRƯỚC web │ A │ B). Khung A nằm trong T1.
 
 ## 9. Ảnh
 
