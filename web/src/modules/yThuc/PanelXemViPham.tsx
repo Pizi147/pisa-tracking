@@ -51,7 +51,7 @@ export function PanelXemViPham({ studentId, dau, onDong, onDaLam }: { studentId:
     <KhungPanel tieuDe={tieuDe} dau={dau} onDong={onDong}
       chan={d.canManage && ids.length ? {
         huy: null, trai: null,
-        phu: <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent px-2 font-semibold sm:min-h-0" onClick={() => setXuLy(true)}>{t('Xác nhận xử lý')}</button>,
+        phu: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setXuLy(true)}>{t('Xác nhận xử lý')}</button>,   // GD-4a (lời 28): NÚT, không chữ link
         chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" style={{ borderColor: 'var(--accent)', color: 'var(--accent)', background: 'transparent' }} disabled={busy}
           onClick={() => void daXem()}>{busy ? t('Đang lưu…') : t('Đã xem · {n}', { n: ids.length })}</button>,
       } : undefined}>

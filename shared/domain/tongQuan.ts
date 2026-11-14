@@ -39,9 +39,11 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
  */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
-  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
+  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
   /* PHOI-HOP-V2 (mockup #1368): Phối hợp SOS sang tab "Ý thức & Phối hợp". */
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'y-thuc', phoi_hop_tvv: 'y-thuc',
+  /* GD-4a (chủ SP 14/11 "tất nhiên nó phải ở ý thức phối hợp rồi"): "Báo PH kết quả Test" sang tab Ý thức & Phối hợp — badge tab, chip Ý thức, hồ sơ GV cùng hàm này. */
+  phoi_hop: 'y-thuc',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc', yt_hoi_tinh_hinh: 'y-thuc',
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
@@ -179,7 +181,8 @@ export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | nu
  * BADGE TAB — AUDIT-UI B3 (chủ SP 08/11, thay CV-TAB 06/11 "đỏ / vàng / trắng"): MỘT nghĩa như badge menu V13 — số dòng CẦN LÀM NGAY (quá hạn + hạn hôm nay);
  * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
-export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number };
+/** `bai`: tab "Chấm Speaking" (chủ SP lời 33, `04-thiet-ke.md` mục 15) — badge MỜ đếm bài + ⚠ khi có bài quá hạn; không đỏ, không vào badge menu / chuông. */
+export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number; bai?: { n: number; quaHan: number } };
 export function badgeTab(dong: readonly { urgency: string; key?: string }[]): BadgeTab {
   /* Rà 11/11 #2 (G5-02): S chấm chéo ghi "quá hạn" ở dòng nhưng KHÔNG đếm (T18 06/11) — tab không đỏ khi số đầu trang không có (cùng `demDongViec`). */
   const tinh = dong.filter((x) => !(x.key && laViecChamCheo({ key: x.key })));
