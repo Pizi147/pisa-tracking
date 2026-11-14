@@ -2207,7 +2207,7 @@ api.get('/giao-vien/:id/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return oHoSoGv(principalOf(req), soDuong(req.params.id, 'id') ?? pInt(req, 'id'), {
     cot: qStr(req, 'cot') ?? '', lop: soDuong(req.query.lop, 'lop'), tt: qStr(req, 'tt') ?? null,
-    cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null,
+    cn: soDuong(req.query.cn, 'cn'), ct: qStr(req, 'ct') ?? null, nhom: qStr(req, 'nhom') ?? null, qh: qStr(req, 'qh') === '1',
   });
 }));
 

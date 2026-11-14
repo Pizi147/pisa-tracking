@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, PERMISSIONS, TRANG_THAI, baiId, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC, PERMISSIONS, TRANG_THAI, baiId, dongNhinThay, laViecChamCheo, nhomViecCua, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -34,12 +34,12 @@ const theoLo = <T>(ds: readonly T[]) => Array.from({ length: Math.ceil(ds.length
  * Cùng nguồn (`dong`) với Công việc nên số ở ô = số dòng khi bấm.
  */
 export function viecCuaGv(p: Principal, gvId: number): { nhom: NhomViec; n: number; quaHan: number }[] {
-  /* S11 (chủ SP 05/11): đếm DÒNG việc như đầu nhóm Công việc (`demDongViec` trên `dong`, dòng gộp "Cả lớp" = 1). */
-  const dong = (p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong) ?? [];
   /* OV-11c (PT-7): chỉ ô nhóm người xem được xem — Admin chỉ Chấm điểm (không bày ô "0" của nhóm mình không thấy). */
   const chiChamDiem = p.userId !== gvId && phamViXemViec(p) === 'cham-diem';
-  return demViecTheoNhom(dong).filter((x) => !chiChamDiem || x.nhom === 'cham-diem');
+  return demViecTheoNhom(dongViecGv(p, gvId)).filter((x) => !chiChamDiem || x.nhom === 'cham-diem');
 }
+/** S11 (chủ SP 05/11): DÒNG việc như đầu nhóm Công việc (`dong`, dòng gộp "Cả lớp" = 1) — một nguồn cho số đếm (`viecCuaGv`) và panel (`cot=viec`). */
+const dongViecGv = (p: Principal, gvId: number) => (p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong) ?? [];
 
 // ------------------------------------------------------------------ các hàm tập — MỘT nguồn cho số ở ô và danh sách khi bấm
 
@@ -293,7 +293,8 @@ export function viecHoSoGv(p: Principal, gvId: number): { viec: { nhom: NhomViec
 // ------------------------------------------------------------------ danh sách sau một số (ô bấm được)
 
 /** `tt`: chỉ Case có trạng thái đó (`TRANG_THAI`) — hàng đếm theo trạng thái ở khối Case đang phụ trách (UI-HO-SO-GV). */
-export type ThamSoO = { cot: string; lop?: number | null; cn?: number | null; ct?: string | null; tt?: string | null };
+export type ThamSoO = { cot: string; lop?: number | null; cn?: number | null; ct?: string | null; tt?: string | null;
+  /** GD-15 (`cot=viec`): nhóm việc (`NHOM_VIEC`) · `qh` = chỉ dòng quá hạn. */ nhom?: string | null; qh?: boolean };
 
 export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; tieuDe: string; rows: MetricRow[] } {
   if (!laCotOGv(q.cot)) throw badRequest('Cột không hợp lệ.');
@@ -310,11 +311,25 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
 
   if (cot === 'yc-cho' || cot === 'yc-tu-choi') {
     const trang = cot === 'yc-cho' ? 'cho' : 'tu_choi';
-    const rows = theYeuCauCuaGv(p, gvId).filter((t) => t.trangThai === trang).map((t) => ({
+    /* GD-15 (lời 37): ô "Quá hạn" của hàng Chờ duyệt → `qh=1` — CÙNG điều kiện `choQuaHan` của số đếm (`soYeuCauCuaGv`). */
+    const rows = theYeuCauCuaGv(p, gvId).filter((t) => t.trangThai === trang && (!q.qh || (!!t.hanDuyet && t.hanDuyet < homNay))).map((t) => ({
       id: t.id, title: t.tieuDe, sub: [t.nhanLoai, t.hocVien, t.lop].filter(Boolean).join(' · '),
       href: duongThe(t.id, laChinhMinh ? 'nguoi-xin' : 'duyet'),
     }));
-    return ket(rows, (n) => `${n} yêu cầu ${cot === 'yc-cho' ? 'đang chờ duyệt' : 'bị từ chối'}`);
+    return ket(rows, (n) => `${n} yêu cầu ${cot === 'yc-cho' ? (q.qh ? 'quá hạn duyệt' : 'đang chờ duyệt') : 'bị từ chối'}`);
+  }
+  /* GD-15 (GD-4c D3): "Việc đang tồn" mở panel tại chỗ — CÙNG dòng + CÙNG lọc với số đếm (`demViecTheoNhom` → `demDongViec`), đọc khi bấm. */
+  if (cot === 'viec') {
+    if (q.nhom != null && !(NHOM_VIEC as readonly string[]).includes(q.nhom)) throw badRequest('Nhóm việc không hợp lệ.');
+    const chiChamDiem = p.userId !== gvId && phamViXemViec(p) === 'cham-diem';
+    const dong = dongNhinThay(dongViecGv(p, gvId)).filter((i) => !laViecChamCheo(i)
+      && (!q.nhom || nhomViecCua(i.group) === q.nhom) && (!chiChamDiem || nhomViecCua(i.group) === 'cham-diem') && (!q.qh || i.urgency === 'overdue'));
+    const rows: MetricRow[] = dong.map((i, k) => ({
+      id: k + 1, title: i.tieuDe, sub: '', href: i.href,
+      /* Dòng em: panel vẽ tên em + lớp — việc gì nằm ở ngữ cảnh ("Thêm PA R · Progress Test"). */
+      em: i.studentId ? { id: i.studentId, ten: i.studentName } : null, lop: i.classCode, ngCanh: i.studentId ? [i.tieuDe, i.contextLabel].filter(Boolean).join(' · ') : i.contextLabel, han: i.due,
+    }));
+    return ket(rows, (n) => `${n} việc${q.qh ? ' quá hạn' : ''}`);
   }
   /* GD-14: Case chưa có PA của GV — Case đang mở (`caseMoCuaGv`) ∩ "Case chưa chốt PA" (`case-cho-xac-dinh-nguyen-nhan`) — cùng tập `caseCoPaTheoGv` (mo − coPa). */
   if (cot === 'case-chua-pa') {

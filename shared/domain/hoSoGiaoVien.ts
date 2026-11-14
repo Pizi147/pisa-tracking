@@ -6,8 +6,9 @@ import { DUONG_TAB_CONG_VIEC } from './dieuHuong.ts';
 import { NHOM_VIEC, demDongViec, nhomViecCua, type DongDem, type NhomViec } from './tongQuan.ts';
 
 /** Ô bấm được ở hồ sơ GV / bảng GV chi nhánh (Q2, Q11). Mỗi ô một hàm tập ở server/src/giaoVien/hoSo.ts. */
+/* GD-15: `viec` — dòng việc của GV (nhóm `nhom`, `qh=1` chỉ quá hạn): panel "Việc đang tồn" tại chỗ (cùng `dong` + `demViecTheoNhom`). */
 /* GD-14: `case-chua-pa` — Case đang mở của GV chưa có PA (cột "Case chưa có PA" bảng Giáo viên · Học thuật ở Tổng quan, cùng tập `caseCoPaTheoGv`). */
-export const COT_O_GV = ['lop', 'hoc-vien', 'chua-nhap', 'qua-han', 'case-mo', 'case-qua-han', 'case-chua-pa', 'yc-cho', 'yc-tu-choi'] as const;
+export const COT_O_GV = ['lop', 'hoc-vien', 'chua-nhap', 'qua-han', 'case-mo', 'case-qua-han', 'case-chua-pa', 'viec', 'yc-cho', 'yc-tu-choi'] as const;
 export type CotOGv = (typeof COT_O_GV)[number];
 export const laCotOGv = (s: unknown): s is CotOGv => (COT_O_GV as readonly unknown[]).includes(s);
 
