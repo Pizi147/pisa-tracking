@@ -32,7 +32,7 @@ Nguồn: `thiet-ke/v21/dong-bo-ghi-chu.md` (mockup ⓪, chủ SP duyệt lời 3
 - **[XM-2] Ngoài thang** (Meeting CX/GĐCN, Đình chỉ, Khác) giữ chữ thường (cùng nhãn dùng ở Case và Hướng dẫn); WL 3 vốn đã hoa.
 - **[XM-3] Xem vi phạm 375 khi còn việc kế**: chân 3 nút xuống hai hàng (Xác nhận xử lý · Đã xem · n / "Đã xem · việc tiếp ›" cả hàng) — đã chụp `cap-375-xem-vi-pham.png`, đủ rộng, vùng bấm 44; mockup D4 chỉ vẽ 2 nút. Bỏ "Đã xem · n" ở 375 nếu PTA muốn một hàng.
 - **[XM-4] Đầu hộp "Báo tình hình"** ở hồ sơ lớp / HV cũng đổi theo (cùng hộp: "Tình hình học tập · Gửi TVV" + ✕); loại Hỏi / Sửa / Ghi kết quả giữ đầu cũ.
-- **[XM-5] Ô chọn em trong hộp Tình hình**: chip em đặt trên ô gõ (như ô hiện có), danh sách gợi ý đẩy nội dung (mockup F3: chip trong ô, danh sách nổi) — để GD-5 (ô chọn có tìm chung).
+- ~~[XM-5]~~ (xong sau khi gộp GD-5 #1639): ô chọn em trong hộp Tình hình dùng ô chọn có tìm chung (`ChonNguoi tim` — chip trong ô, "n / 8", danh sách nổi) qua `useTimEm` dùng chung với bước chọn em Case · Vi phạm; mở hộp thì focus ô gõ.
 - **[XM-6] Dòng xem trước Writing** dùng mũi tên kỳ vọng sẵn có (▲ / ▼) thay "✓" của mockup, cho khớp các ô khác.
 - **[XM-7] Chip "›"**: ⑤ C2 vẽ "Vận hành · 1" không "›"; web thêm "›" khi việc đầu của chip đổi trang (vd Báo cáo PH sang hồ sơ lớp) — theo luật ⑤ C "› = đổi trang".
 - Ngày lần xử lý trước không còn ở khối bậc (⑤ D1a không vẽ) — vẫn xem ở lịch sử.

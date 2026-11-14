@@ -35,6 +35,12 @@ export function NutTask({ noi, lopId, em: emSan }: { noi: 'dau' | 'noi'; lopId?:
   const [em, setEm] = useState<Em[] | null>(null);
   const { homNay } = useNgayNghiepVu();
   const timEm = useTimEm(lopId);
+  /* Hộp Tình hình một bước: HopNeo focus nút đầu (✕) — đưa focus về ô gõ tên em (người dùng gõ ngay), như bước chọn em. */
+  useEffect(() => {
+    if (loai !== 'tinh-hinh' || emSan) return undefined;
+    const h = setTimeout(() => document.getElementById(O_TIM_EM)?.focus());
+    return () => clearTimeout(h);
+  }, [loai, emSan]);
   const dong = () => { setLoai(null); setEm(null); };
   const xong = () => { invalidate('/my-work'); dong(); };
   const mat = noi === 'dau'
