@@ -75,18 +75,24 @@ export function khoiPhucRac(p: Principal, id: number): { ok: true; loai: string;
 }
 
 /** Quản trị › Đã xoá: mục trong `GIU_NGAY` ngày (cả đã khôi phục — lịch sử), mới trước; Quản trị thấy mọi mục, người khác chỉ mục mình khôi phục được. */
-export function danhSachRac(p: Principal) {
+export function danhSachRac(p: Principal, loai?: MucRac['loai'] | null) {
   const moc = new Date(Date.now() - (GIU_NGAY + 1) * 86_400_000).toISOString();
   const quanTri = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
-  const ds = db().prepare(`SELECT t.*, u1.full_name AS ten_xoa, u2.full_name AS ten_khoi_phuc FROM thung_rac t
+  /* GD-16 (Lưu trữ › Đã xoá): `loai` lọc trong SQL (chỉ đọc mục học viên); chi nhánh của học viên để chia dải (mockup ⑩ L4). */
+  const ds = db().prepare(`SELECT t.*, u1.full_name AS ten_xoa, u2.full_name AS ten_khoi_phuc, b.id AS cn_id, b.name AS cn_ten FROM thung_rac t
       LEFT JOIN users u1 ON u1.id = t.xoa_boi LEFT JOIN users u2 ON u2.id = t.khoi_phuc_boi
-      WHERE t.xoa_luc >= ? ORDER BY t.id DESC`).all(moc) as (MucRac & { ten_xoa: string | null; ten_khoi_phuc: string | null })[];
+      LEFT JOIN branches b ON b.id = t.branch_id
+      WHERE t.xoa_luc >= ?${loai ? ' AND t.loai = ?' : ''} ORDER BY t.id DESC`).all(...(loai ? [moc, loai] : [moc])) as (MucRac & { ten_xoa: string | null; ten_khoi_phuc: string | null; cn_id: number | null; cn_ten: string | null })[];
   /* Lọc quyền TRƯỚC, giới hạn 300 SAU — mục của người xem không bị mục ngoài phạm vi đẩy khỏi danh sách. */
   return ds.flatMap((m) => {
     const duoc = !m.khoi_phuc_luc && !m.het_han_luc && coQuyen(p, m);
     if (!duoc && !quanTri) return [];
     return [{ id: m.id, loai: m.loai, nhan: m.nhan, hocVienId: m.hoc_vien_id, xoaBoi: m.ten_xoa, xoaLuc: m.xoa_luc,
       khoiPhucBoi: m.ten_khoi_phuc, khoiPhucLuc: m.khoi_phuc_luc, hetHanLuc: m.het_han_luc,
-      xoaHanLuc: new Date(Date.parse(m.xoa_luc) + GIU_NGAY * 86_400_000).toISOString(), khoiPhucDuoc: duoc }];
+      xoaHanLuc: new Date(Date.parse(m.xoa_luc) + GIU_NGAY * 86_400_000).toISOString(), khoiPhucDuoc: duoc,
+      chiNhanh: m.cn_id != null ? { id: m.cn_id, ten: m.cn_ten ?? '' } : null }];
   }).slice(0, 300);
 }
+
+/** GD-16: số trên tab "Đã xoá" của Lưu trữ — CÙNG tập `danhSachRac` (một câu, chỉ mục loại đó) → số tab = số dòng tab. */
+export const demRac = (p: Principal, loai: MucRac['loai']) => ({ n: danhSachRac(p, loai).length });

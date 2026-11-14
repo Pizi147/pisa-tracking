@@ -10,6 +10,8 @@ import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '..
 export type LopLuuTru = {
   id: number; code: string; ma: ProgrammeCode | null; tenChuongTrinh: string | null;
   chiNhanh: string; gvcn: string | null; soHvTungHoc: number; finishedAt: string | null;
+  /** GD-16 (mockup ⑩ L1): chia dải theo chi nhánh. */
+  branchId: number;
   /** PR-LUI-b: nút "Mở lại" cuối dòng (Quản lý của lớp / Quản trị — `class.edit`). */
   coTheMoLai: boolean;
   /** Chủ SP 12/11: nhóm Fast Track (true) · Lớp thường (false) — `classes.is_fast_track`. */
@@ -17,6 +19,8 @@ export type LopLuuTru = {
 };
 export type HocVienLuuTru = {
   id: number; studentCode: string; fullName: string; lopCuoi: string | null; chiNhanh: string | null; archivedAt: string;
+  /** GD-16 (mockup ⑩ L2): dải lớp cuối (mã lớp là link) trong dải chi nhánh; em chưa học lớp nào → chi nhánh của hồ sơ em. */
+  lopCuoiId: number | null; branchId: number | null;
   /** P7 (N11, k5): em Tạm dừng (giữ chỗ lớp, "Tạm dừng · Có thể quay lại") hay Kết thúc học — cả hai ở Lưu trữ. */
   trangThai: 'tam-dung' | 'ket-thuc';
   /** Lộ trình gần nhất ("LT1" · tên lộ trình Khác) — dòng phụ "MB FT 101 · FT LT1 · từ 14/09". */
@@ -61,7 +65,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     .sort((a, b) => soSanhLopLuuTru(sapLop(a), sapLop(b)) || a.id - b.id)
     .map((r) => ({
     id: r.id, code: r.code, ma: (r.programme_code ?? null) as ProgrammeCode | null, tenChuongTrinh: r.programme_name ?? null,
-    chiNhanh: r.branch_name, gvcn: r.gvcn ?? null, soHvTungHoc: r.so_hv_tung_hoc, finishedAt: r.finished_at ?? null,
+    chiNhanh: r.branch_name, branchId: r.branch_id, gvcn: r.gvcn ?? null, soHvTungHoc: r.so_hv_tung_hoc, finishedAt: r.finished_at ?? null,
     coTheMoLai: can(p, PERMISSIONS.CLASS_EDIT, { classId: r.id }),
     ft: !!r.is_fast_track,
   }));
@@ -79,7 +83,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     paramsHv.push(`%${q}%`, `%${q.toLowerCase()}%`, `%${q.toUpperCase()}%`);
   }
   const archived = conn
-    .prepare(`SELECT s.id, s.student_code, s.full_name, s.archived_at, s.status,
+    .prepare(`SELECT s.id, s.student_code, s.full_name, s.archived_at, s.status, s.branch_id, (SELECT b.name FROM branches b WHERE b.id = s.branch_id) AS branch_name,
        (SELECT cy.route FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route,
        (SELECT cy.route_ten FROM learning_cycles cy WHERE cy.student_id = s.id ORDER BY cy.seq DESC LIMIT 1) AS route_ten
        FROM students s WHERE ${whereHv.join(' AND ')} ORDER BY s.archived_at DESC`)
@@ -92,13 +96,13 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     const enrRows: any[] = [];
     theoLo(ids, (lo, ph) => {
       enrRows.push(...conn.prepare(
-        `SELECT e.student_id, c.code AS class_code, c.branch_id, c.is_fast_track, b.name AS branch_name, e.started_at, e.id
+        `SELECT e.student_id, c.id AS class_id, c.code AS class_code, c.branch_id, c.is_fast_track, b.name AS branch_name, e.started_at, e.id
            FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
           WHERE e.student_id IN (${ph}) ORDER BY e.student_id, e.started_at DESC, e.id DESC`,
       ).all(...lo) as any[]);
     });
-    const lopCuoiCua = new Map<number, { code: string; branchName: string; branch_id: number; is_fast_track: number }>();
-    for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { code: r.class_code, branchName: r.branch_name, branch_id: r.branch_id, is_fast_track: r.is_fast_track });
+    const lopCuoiCua = new Map<number, { id: number; code: string; branchName: string; branch_id: number; is_fast_track: number }>();
+    for (const r of enrRows) if (!lopCuoiCua.has(r.student_id)) lopCuoiCua.set(r.student_id, { id: r.class_id, code: r.class_code, branchName: r.branch_name, branch_id: r.branch_id, is_fast_track: r.is_fast_track });
 
     /*
      * PHẠM VI ĐÚNG LUẬT `can(STUDENT_VIEW, {studentId})` (không viết lại `grantCovers` — nạp trước
@@ -120,7 +124,8 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
       })
       .map((s) => ({
         id: s.id, studentCode: s.student_code, fullName: s.full_name,
-        lopCuoi: lopCuoiCua.get(s.id)?.code ?? null, chiNhanh: lopCuoiCua.get(s.id)?.branchName ?? null,
+        lopCuoi: lopCuoiCua.get(s.id)?.code ?? null, lopCuoiId: lopCuoiCua.get(s.id)?.id ?? null,
+        chiNhanh: lopCuoiCua.get(s.id)?.branchName ?? s.branch_name ?? null, branchId: lopCuoiCua.get(s.id)?.branch_id ?? s.branch_id ?? null,
         archivedAt: s.archived_at,
         trangThai: s.status === 'inactive' ? 'tam-dung' as const : 'ket-thuc' as const,
         loTrinh: tenRoute(s),

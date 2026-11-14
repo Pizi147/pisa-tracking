@@ -4,7 +4,9 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { fmtDate, fmtDateTime } from '../../lib/format.ts';
 import { useToast } from '../../ui/Toast.tsx';
-import { ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
+import { theoChiNhanh } from '../../ui/theoChiNhanh.ts';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -12,6 +14,8 @@ type MucRac = {
   id: number; loai: 'case' | 'pa' | 'ket_qua_pa' | 'vi_pham' | 'tep' | 'hoc_vien'; nhan: string; hocVienId: number | null;
   xoaBoi: string | null; xoaLuc: string; khoiPhucBoi: string | null; khoiPhucLuc: string | null;
   hetHanLuc: string | null; xoaHanLuc: string; khoiPhucDuoc: boolean;
+  /** GD-16: chi nhánh của mục (Lưu trữ › Đã xoá chia dải chi nhánh). */
+  chiNhanh?: { id: number; ten: string } | null;
 };
 
 const nhanLoai = (l: MucRac['loai']) => (l === 'case' ? 'Case' : l === 'pa' ? t('PA') : l === 'ket_qua_pa' ? t('Kết quả PA') : l === 'vi_pham' ? t('Vi phạm') : l === 'hoc_vien' ? t('Học viên') : t('Tệp'));
@@ -21,9 +25,16 @@ const nhanLoai = (l: MucRac['loai']) => (l === 'case' ? 'Case' : l === 'pa' ? t(
  * Khôi phục tại dòng; mục đã khôi phục / hết hạn vẫn hiện để xem lịch sử (Quản trị).
  * Q-RL2b: `loai` = khối "Đã xoá" chỉ một loại (Lưu trữ › học viên): bỏ cột Loại, lọc theo `loc`, rỗng / đang tải thì không vẽ.
  */
-export function DaXoaAdmin({ loai, loc = '' }: { loai?: MucRac['loai']; loc?: string } = {}) {
+export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
+  loai?: MucRac['loai']; loc?: string;
+  /** GD-16: ô "Xem" của Lưu trữ — một chi nhánh thì chỉ dải đó. */
+  branchId?: number | null;
+  /** GD-16: báo nơi gọi sau khi khôi phục (số tab). */
+  onDoi?: () => void;
+} = {}) {
   const toast = useToast();
-  const { data, error, reload } = useApi<MucRac[]>('/thung-rac');
+  /* GD-16: một loại → máy chủ lọc loại trong SQL (`?loai=`), không đọc mục loại khác. */
+  const { data, error, reload } = useApi<MucRac[]>(loai ? `/thung-rac?loai=${loai}` : '/thung-rac');
   const [dang, setDang] = useState<number | null>(null);
 
   const khoiPhuc = async (m: MucRac) => {
@@ -32,7 +43,7 @@ export function DaXoaAdmin({ loai, loc = '' }: { loai?: MucRac['loai']; loc?: st
     try {
       await api.post(`/thung-rac/${m.id}/khoi-phuc`);
       for (const k of ['/thung-rac', '/cases', '/students', '/hoc-vien-lop', '/lenh-chuyen', '/my-work', '/tong-quan', '/yeu-cau', '/violations', '/measures', '/classes', '/y-thuc', '/attachments']) invalidate(k);
-      reload();
+      reload(); onDoi?.();
       toast.push('ok', t('Đã khôi phục'));
     } catch (e: any) { toast.push('error', e?.message ?? t('Chưa hoàn tác được — thử lại.')); } finally { setDang(null); }
   };
@@ -61,15 +72,25 @@ export function DaXoaAdmin({ loai, loc = '' }: { loai?: MucRac['loai']; loc?: st
   };
 
   if (loai) {
+    /* GD-16 (mockup ⑩ L4): tab thứ ba của Lưu trữ — đầu danh sách "n học viên · ⓘ" (câu 30 ngày vào ⓘ), dải chi nhánh như hai tab kia; rỗng vẫn có câu. */
     const tim = loc.trim().toLowerCase();
-    const hang = (data ?? []).filter((m) => m.loai === loai && (!tim || m.nhan.toLowerCase().includes(tim)));
-    if (!error && !hang.length) return null;
+    const hang = (data ?? []).filter((m) => m.loai === loai && (!tim || m.nhan.toLowerCase().includes(tim)) && (!branchId || m.chiNhanh?.id === branchId));
+    if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
+    if (!data) return <Skeleton rows={4} />;
+    const nhom = theoChiNhanh(hang, (m) => m.chiNhanh ?? null);
     return (
-      <section className="space-y-2" aria-label={t('Đã xoá')}>
-        <h2 className="m-0 text-[15px] font-bold text-slate-100">{t('Đã xoá')}</h2>
-        <p className="m-0 text-xs text-slate-500">{t('Giữ 30 ngày, sau đó xoá hẳn.')}</p>
-        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
-          : <Bang ten={t('Đã xoá')} cot={COT} hang={hang} khoa={(m) => m.id} oCua={oCua} lopHang={(m) => (m.khoiPhucDuoc ? '' : 'opacity-70')} />}
+      <section className="space-y-3" aria-label={t('Đã xoá')}>
+        <div className="flex items-center gap-1.5 text-sm text-dim">
+          <b className="tabular-nums text-slate-100">{hang.length}</b> {t('học viên')}
+          <NutLuat label={t('Đã xoá')}>{t('Giữ 30 ngày, sau đó xoá hẳn.')}</NutLuat>
+        </div>
+        {!hang.length ? <Card><Empty title={tim ? t('Không có học viên khớp "{loc}"', { loc: loc.trim() }) : t('Chưa có học viên nào đã xoá')} /></Card>
+          : nhom.map((g) => (
+            <section key={g.khoa} className="space-y-1.5" aria-label={g.ten}>
+              {nhom.length > 1 || !branchId ? <h2 className="m-0 flex items-baseline gap-2 text-[15px] font-bold text-slate-100">{g.ten}<span className="text-[13px] font-normal tabular-nums text-slate-400">{t('{n} em', { n: g.ds.length })}</span></h2> : null}
+              <Bang ten={`${t('Đã xoá')} · ${g.ten}`} cot={COT} hang={g.ds} khoa={(m) => m.id} oCua={oCua} lopHang={(m) => (m.khoiPhucDuoc ? '' : 'opacity-70')} />
+            </section>
+          ))}
       </section>
     );
   }

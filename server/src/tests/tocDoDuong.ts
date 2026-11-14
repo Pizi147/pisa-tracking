@@ -167,6 +167,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT'], url: '/lenh-chuyen/{lenhBg}/ban-giao' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/ids' },   // PR-TD2-b: Trước/Sau của hồ sơ lớp
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru?branchId={cn}' },
+  /* GD-16: Lưu trữ — số tab Đã xoá khi mở trang (một câu, chỉ mục học viên) · danh sách Đã xoá khi bấm tab. */
+  { trang: 'Lưu trữ', vai: MOI_VAI, url: '/thung-rac/dem?loai=hoc_vien' },
+  { trang: 'Lưu trữ · Đã xoá', vai: MOI_VAI, url: '/thung-rac?loai=hoc_vien' },
 
   // ---------------------------------------------------------------- Hồ sơ lớp (FT)
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/overview' },
