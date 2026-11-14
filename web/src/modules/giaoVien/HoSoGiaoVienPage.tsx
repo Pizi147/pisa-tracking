@@ -13,6 +13,7 @@ import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, Empty, ErrorState, LOP_NHAN, Skeleton } from '../../ui/ui.tsx';
 import { CHIP_TRON, CHIP_VUONG, ChipKy, QuaHan } from '../../ui/Nhan.tsx';
 import { OSo } from '../../ui/OSo.tsx';
+import { DaiChiSo as DaiChiSoMong, ODai, SoDen } from '../../ui/DaiChiSo.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
@@ -245,17 +246,12 @@ function DaiChiSo({ data, cs, ky }: { data: HoSo; cs: ApiCs; ky: string }) {
       t('Thi thật (IELTS) trong kỳ: mỗi HV × kỹ năng GV từng dạy em (W1 / W2 riêng), điểm kỹ năng so Target overall. Pass = bằng hoặc trên Target · Fail = dưới · Exceed = trên Target. % to tính theo tuần GV dạy em.')),
   ];
   return (
-    <section aria-label={t('Chỉ số')} className="card overflow-clip">
-      {cs.error && <div className="border-b p-3" style={{ borderColor: 'var(--line)' }}><ErrorState message={cs.error.message} hint={cs.error.hint} status={cs.error.status} onRetry={cs.reload} /></div>}
-      <div className="grid grid-cols-2 lg:grid-cols-4">
-        {ds.map((x) => (
-          <div key={x.ten} className="flex min-w-0 flex-col gap-0.5 border-b border-r px-4 py-3.5" style={{ borderColor: 'var(--line)' }}>
-            <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-400">{x.ten}{x.luat && <NutLuat label={x.ten}>{x.luat}</NutLuat>}</span>
-            <span className="text-2xl font-bold tabular-nums text-slate-100">{x.giaTri}</span>
-            {x.mau && <span className="text-xs text-slate-500">{x.mau}</span>}
-          </div>
-        ))}
-      </div>
+    /* GD-4 e (mockup v21 H3): dải chỉ số chung — mỗi ô "nhãn ⓘ · ô số · chữ phụ" (số phụ vẫn bấm → panel); bố cục tab (ho-so-gv v21) để GD sau. */
+    <section aria-label={t('Chỉ số')} className="flex flex-col gap-2">
+      {cs.error && <ErrorState message={cs.error.message} hint={cs.error.hint} status={cs.error.status} onRetry={cs.reload} />}
+      <DaiChiSoMong nhan={t('Chỉ số trong kỳ')}>
+        {ds.map((x) => <ODai key={x.ten} nhan={x.ten} luat={x.luat} phu={x.mau}>{x.giaTri}</ODai>)}
+      </DaiChiSoMong>
     </section>
   );
 }
@@ -531,25 +527,18 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: {
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
         : (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          /* GD-4 e: khối ô số to → dải chỉ số chung; số "›" đổi trang Công việc (đúng nhóm, cùng đích cũ), "⚠ n quá hạn" mở nhóm chỉ quá hạn; 0 không bấm. */
+          <DaiChiSoMong nhan={t('Việc đang tồn')}>
             {data.viec.map((x) => {
               const link = (chiQuaHan: boolean) => duongViecCuaGv(gvId, nguoiXem, x.nhom, chiQuaHan);
-              const trong = x.n === 0;
               return (
-                <div key={x.nhom} className={`relative flex min-w-0 flex-col gap-0.5 rounded-lg border px-3 py-2.5 ${trong ? '' : 'hover:border-[color:var(--accent-line)]'}`}
-                  style={{ borderColor: 'var(--line)' }}>
-                  <span className="text-xs text-slate-400">{dich(NHOM_VIEC_LABEL[x.nhom])}</span>
-                  {trong
-                    ? <span className="text-2xl font-bold leading-tight tabular-nums text-slate-500">0<span className="ml-1 text-xs font-normal">{t('việc')}</span></span>
-                    : <Link to={link(false)} className="text-2xl font-bold leading-tight tabular-nums text-slate-100 no-underline after:absolute after:inset-0 after:rounded-lg"
-                        aria-label={t('{n} việc {nhom}. Bấm để mở Công việc', { n: x.n, nhom: dich(NHOM_VIEC_LABEL[x.nhom]) })}>{x.n}<span className="ml-1 text-xs font-normal text-slate-400">{t('việc')}</span></Link>}
-                  {x.quaHan > 0
-                    ? <Link to={link(true)} className={`relative z-10 w-fit py-2 -my-2 text-xs text-bad no-underline hover:underline ${soDam}`}>{t('{n} quá hạn', { n: x.quaHan })}</Link>
-                    : <span className="text-xs text-slate-500">{trong ? '—' : t('không quá hạn')}</span>}
-                </div>
+                <ODai key={x.nhom} nhan={dich(NHOM_VIEC_LABEL[x.nhom])}
+                  phu={x.quaHan > 0 && <Link to={link(true)} className={`inline-block py-2 -my-2 text-bad no-underline hover:underline ${soDam}`}>⚠ {t('{n} quá hạn', { n: x.quaHan })}</Link>}>
+                  <SoDen n={x.n} to={link(false)} />
+                </ODai>
               );
             })}
-          </div>
+          </DaiChiSoMong>
         )}
     </Card>
   );

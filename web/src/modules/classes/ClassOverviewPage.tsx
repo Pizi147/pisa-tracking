@@ -181,7 +181,7 @@ export default function ClassOverviewPage() {
       <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
-      <HangTab v8 panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
+      <HangTab panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null, dot: null })}
         tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0, chip: k === 'bao-cao-ph' ? chipBc : null }))} />
 

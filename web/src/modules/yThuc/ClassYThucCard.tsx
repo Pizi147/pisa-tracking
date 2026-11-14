@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { BoLocDoan, Card, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
-import { Menu } from '../../ui/Menu.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -504,10 +504,10 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
               {nutGhi}
               {/* Mockup v20: Khai / sửa cấp bậc · Chọn nhiều vào ⋯ (thao tác giữ nguyên). */}
               {(d.canManage || onDiemMt) && (
-                <Menu label="⋯" ariaLabel={t('Thao tác khác')} className="btn h-9 min-w-[36px] max-sm:h-11 max-sm:min-w-[44px]" items={[
-                  ...(onDiemMt ? [{ label: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onClick: onDiemMt }] : []),
-                  ...(d.canManage ? [{ label: t('Khai / sửa cấp bậc'), onClick: () => setLoMo({ viec: 'cap-bac', ids: null }) },
-                    { label: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onClick: batChon }] : []),
+                <MenuDong lopNut="btn h-9 min-w-[36px] max-sm:h-11 max-sm:min-w-[44px]" muc={[
+                  ...(onDiemMt ? [{ key: 'diem-mt', nhan: thuong ? t('Điểm Test ›') : t('Điểm Mock Test ›'), onChon: onDiemMt }] : []),
+                  ...(d.canManage ? [{ key: 'cap-bac', nhan: t('Khai / sửa cấp bậc'), onChon: () => setLoMo({ viec: 'cap-bac', ids: null }) },
+                    { key: 'chon-nhieu', nhan: chonN.bat ? t('Tắt chọn nhiều') : t('Chọn nhiều'), onChon: batChon }] : []),
                 ]} />
               )}
             </>

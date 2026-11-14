@@ -45,7 +45,7 @@ export const HD_ADMIN: HuongDan = {
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
       loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.',
-        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Nhật ký</b> · <b>Xóa lịch</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
+        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Lịch sử</b> · <b>Xóa lịch</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'schedule', 'reschedule'],
     },
     {

@@ -5,6 +5,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NutChon } from '../../ui/ui.tsx';
+import { MenuDong } from '../../ui/MenuDong.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { AddCoordinationForm } from './PhoiHopSosSection.tsx';
@@ -134,7 +135,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
 }) {
   const { luot, a } = d;
   const toast = useToast();
-  const [mo, setMo] = useState<null | 'xac-nhan' | 'ghi' | 'bo' | 'menu' | 'han'>(null);
+  const [mo, setMo] = useState<null | 'xac-nhan' | 'ghi' | 'bo' | 'han'>(null);
   const { homNay } = useNgayNghiepVu();
   const [du, setDu] = useState(false);
   const cho = tvv ? a.tvv!.trangThai === 'mo' : a.status === 'pending';
@@ -199,7 +200,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
             <>
               {!gop && <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
               <span role="cell" className="relative py-2.5 text-right max-sm:col-start-2 max-sm:row-start-1 max-sm:pb-1">
-                <Menu3 a={a} tvv={tvv} canAct={luot.canAct} mo={mo === 'menu'} onMo={(v) => setMo(v ? 'menu' : null)} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
+                <Menu3 a={a} tvv={tvv} canAct={luot.canAct} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
                   onHan={a.status === 'pending' && a.hanMacDinh && luot.canAct ? () => setMo('han') : undefined} />
               </span>
             </>
@@ -252,8 +253,8 @@ function OKetQua({ a, tvv, du, onDu, onGhi }: { a: CoordAction; tvv: boolean; du
 }
 
 /** ⋯ — việc ít dùng: Bỏ việc… · Đưa lại Cần xử lý (việc đã làm). TVV: Bỏ việc… của việc báo PH. */
-function Menu3({ a, tvv, canAct, mo, onMo, onBo, onMoLai, onHan }: {
-  a: CoordAction; tvv: boolean; canAct: boolean; mo: boolean; onMo: (v: boolean) => void; onBo: () => void; onMoLai: () => void; onHan?: () => void;
+function Menu3({ a, tvv, canAct, onBo, onMoLai, onHan }: {
+  a: CoordAction; tvv: boolean; canAct: boolean; onBo: () => void; onMoLai: () => void; onHan?: () => void;
 }) {
   /* Khôi phục: chỉ việc NGƯỜI DÙNG bỏ (việc hệ thống bỏ theo điểm không khôi phục tay). */
   const khoiPhuc = a.status === 'removed' && (COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(a.removeReasonCode ?? '');
@@ -262,19 +263,8 @@ function Menu3({ a, tvv, canAct, mo, onMo, onBo, onMoLai, onHan }: {
     : !canAct ? [] : a.status === 'done' ? [[t('Đưa lại Cần xử lý'), onMoLai], [t('Bỏ việc…'), onBo]]
     : a.status === 'removed' ? (khoiPhuc ? [[t('Khôi phục'), onMoLai]] : [])
     : [...(onHan ? [[t('Sửa hạn…'), onHan] as [string, () => void]] : []), [t('Bỏ việc…'), onBo]];
-  if (!muc.length) return null;
-  return (
-    <>
-      <button type="button" className="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" aria-label={t('Thao tác khác')} aria-expanded={mo} onClick={() => onMo(!mo)}>⋯</button>
-      {mo && (
-        <span role="menu" className="absolute right-0 top-11 z-10 grid min-w-[200px] rounded-[10px] border p-1.5 text-left shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
-          {muc.map(([nhan, f]) => (
-            <button key={nhan} type="button" role="menuitem" className="min-h-[40px] appearance-none rounded-md border-0 bg-transparent px-2.5 text-left text-sm hover:bg-[color:var(--accent-soft)]" onClick={() => { onMo(false); f(); }}>{nhan}</button>
-          ))}
-        </span>
-      )}
-    </>
-  );
+  /* GD-4c: một menu thả = MenuDong (trước: role="menu" tự viết, không phím ↑ ↓ / Esc). */
+  return <MenuDong lopNut="btn btn-sm min-h-[44px] min-w-[44px] sm:min-h-[30px] sm:min-w-[30px]" muc={muc.map(([nhan, f]) => ({ key: nhan, nhan, onChon: f }))} />;
 }
 
 /** Xác nhận tại dòng (GVCN / QL): Ngày + MỘT ô Nội dung (bắt buộc; Meeting CX: "Nội dung gửi TVV" tuỳ chọn) · + Tệp · Người thực hiện. Sửa: điền sẵn. */

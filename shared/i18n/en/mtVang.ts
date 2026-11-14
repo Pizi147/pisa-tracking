@@ -38,11 +38,11 @@ export const EN_MT_VANG = {
     'Click an MT cell: each skill has <b>Move</b> · <b>Absent</b> · <b>Remove from round</b>, then <b>Save</b>.',
   '<b>Dời</b> = chọn tuần = xếp lại từ đầu — cả môn vắng, huỷ vắng 2 lần, bỏ khỏi đợt; chọn đúng tuần cũ cũng được.':
     '<b>Move</b> = pick a week = reschedule from scratch — also for absent, cancelled after two absences or skills removed from the round; the same week works too.',
-  '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b> · <b>Nhật ký</b>.':
+  '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b> · <b>Lịch sử</b>.':
     '<b>⋯</b>: <b>Extend marking due</b> · <b>Cancel score</b> · <b>Log</b>.',
   '<b>Dời lịch Test</b> (thẻ cũ, trước 05/11 — "-" nay không tạo thẻ): hết Chủ nhật tuần gửi; quá hạn thì kỹ năng bị huỷ.':
     '<b>Test reschedule</b> (old cards, before 05/11 — "-" no longer creates cards): until Sunday of the sending week; once overdue the skill is cancelled.',
-  'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> · <b>Vắng</b>; <b>⋯</b> có <b>Huỷ điểm</b>, <b>Nhật ký</b>.':
+  'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> · <b>Vắng</b>; <b>⋯</b> có <b>Huỷ điểm</b>, <b>Lịch sử</b>.':
     'One skill: click the MT cell — each skill <b>Move</b> · <b>Absent</b>; <b>⋯</b> has <b>Cancel score</b>, <b>Log</b>.',
   'Bấm ô MT: mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.':
     'Click an MT cell: each skill <b>Move</b> (pick a week = reschedule from scratch) · <b>Absent</b>, then <b>Save</b>.',

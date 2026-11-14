@@ -7,6 +7,7 @@ import { useSoViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Card, ErrorState, OChiSo, Skeleton } from '../../ui/ui.tsx';
 import { OSo } from '../../ui/OSo.tsx';
+import { DaiChiSo as DaiChiSoMong, ODai, SoDen as SoDenDai, SoTinh } from '../../ui/DaiChiSo.tsx';
 import { LOP_OSO, VUNG_BAM_SO } from '../../ui/SoLieu.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { ChipHan, CHIP_SOS, lopSos } from '../../ui/Nhan.tsx';
@@ -461,10 +462,19 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
  * tự gọi nên thường thành hai lời gọi `/my-work` mỗi lần mở trang). Cả ô là link Công việc (MO-TAT-CA 05/11).
  * Head tutor chưa có Công việc (không `workSupport`) → không ô.
  */
-export function OViecCuaToi() {
+/* `dai` — GD-4 e (⓪ dòng 22, trang-dau-tvv [XM-1]): ô của dải mỏng — số không bấm, giữ "⚠ m quá hạn"; nhãn "Việc ›" đổi trang Công việc. */
+export function OViecCuaToi({ dai }: { dai?: boolean } = {}) {
   const { session } = useSession();
   const viec = useSoViecCuaToi();
   if (!session?.nav?.workSupport) return null;
+  if (dai) {
+    const nhan = session.nav.work ? <Link to="/cong-viec" className="font-semibold text-[color:var(--accent)] no-underline hover:underline">{t('Việc')} ›</Link> : t('Việc');
+    return (
+      <ODai nhan={nhan} phu={!!viec?.viecQuaHan && <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}>
+        <SoTinh n={viec?.viec ?? '…'} />
+      </ODai>
+    );
+  }
   /* TQ-GON (M4, V13): dòng phụ = đơn vị (+ ⚠ quá hạn khi có). */
   const o = <ChiSo ten={session.nav.work ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
     mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />;
@@ -486,20 +496,21 @@ export function TongQuanTvvV5() {
   const choKq = hv.data?.dem['da-thi'] ?? 0, buoc = hv.data?.dem['cho-buoc-tiep'] ?? 0;
   return (
     <>
-      {/* AUDIT-UI B2 (chủ SP 08/11): mỗi ô một số — thay ô hai số "Chờ KQ · Lộ trình tiếp" + thẻ link "Thi thật". XM 3 (chủ SP 11/11): + "Việc của tôi ›" đầu dải → 5 ô. */}
-      <DaiChiSo nam>
-        <OViecCuaToi />
-        <ChiSo ten={t('Báo PH đúng hạn')} ky={kyChu(d.ky)} luat={t('Việc Báo PH đã báo trước hạn / việc Báo PH phát sinh trong kỳ.')}
-          /* AUDIT-UI B2 (mockup `.gt0`): chưa có việc Báo PH → "—" mờ + dòng phụ "chưa có dữ liệu" (cùng dáng ô 0 bên cạnh). */
-          giaTri={d.baoPh.tong ? <PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} className="so-chinh" />
-            : <span className="font-normal text-faint" aria-label={t('Chưa có dữ liệu')}>—</span>}
-          mau={d.baoPh.tong ? <>{d.baoPh.dung}/{d.baoPh.tong} {t('việc')}{d.baoPh.treXong > 0 && <> · {t('xong trễ {n}', { n: d.baoPh.treXong })}</>}</> : t('chưa có dữ liệu')} />
-        {/* TQ-GON (M3, M4): định nghĩa vào ⓘ, dòng phụ chỉ đơn vị; không lặp lại hai số đã hiện ("0 chờ KQ · 1 chưa chốt…"). */}
-        <ChiSo ten={tenDen(t('Thi tháng này'), d.thiThangNay)} ky={t('hiện tại')} luat={LUAT_THI} giaTri={<SoDen n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" className="so-chinh" />} mau={t('HV')} />
-        <ChiSo ten={tenDen(t('Chờ KQ thi thật'), choKq)} ky={t('hiện tại')} giaTri={hv.data ? <SoDen n={choKq} to={den('da-thi')} className="so-chinh" /> : '…'} mau={t('HV')} />
-        <ChiSo ten={tenDen(t('Chưa chốt lộ trình tiếp'), buoc)} tenNgan={tenDen(t('Chưa chốt LT tiếp'), buoc)} ky={t('hiện tại')}
-          giaTri={hv.data ? <SoDen n={buoc} to={den('cho-buoc-tiep')} className="so-chinh" /> : '…'} mau={t('HV')} />
-      </DaiChiSo>
+      {/* GD-4 e (mockup v21 H3 + trang-dau-tvv K1, ⓪ dòng 22): MỘT dải mỏng 5 ô "nhãn + số" — Việc (không bấm, "⚠ m quá hạn") · Báo PH đúng hạn ⓘ (ô số →
+          panel) · Thi tháng này ⓘ › · Chờ KQ › · Chưa chốt lộ trình tiếp › (đổi trang, cùng đích cũ). Đơn vị "HV" bỏ (tên ô đã nói); 0 không bấm. */}
+      <DaiChiSoMong nhan={t('Chỉ số của tôi')}>
+        <OViecCuaToi dai />
+        <ODai nhan={t('Báo PH đúng hạn')} title={kyChu(d.ky)} luat={t('Việc Báo PH đã báo trước hạn / việc Báo PH phát sinh trong kỳ.')}
+          phu={d.baoPh.treXong > 0 ? t('xong trễ {n}', { n: d.baoPh.treXong }) : undefined}>
+          {d.baoPh.tong ? <PhanTram x={{ dat: d.baoPh.dung, mau: d.baoPh.tong }} nguon="/tong-quan/tvv/o?o=bao-ph" tieuDe={t('Báo PH đúng hạn')} />
+            : <span aria-label={t('Chưa có dữ liệu')}><SoTinh n="—" /></span>}
+        </ODai>
+        <ODai nhan={t('Thi tháng này')} luat={LUAT_THI}><SoDenDai n={d.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" /></ODai>
+        <ODai nhan={t('Chờ KQ')} title={t('Chờ KQ thi thật')}>{hv.data ? <SoDenDai n={choKq} to={den('da-thi')} /> : <SoTinh n="…" />}</ODai>
+        <ODai nhan={<><span className="max-sm:hidden">{t('Chưa chốt lộ trình tiếp')}</span><span className="sm:hidden">{t('Chưa chốt')}</span></>} title={t('Chưa chốt lộ trình tiếp')}>
+          {hv.data ? <SoDenDai n={buoc} to={den('cho-buoc-tiep')} /> : <SoTinh n="…" />}
+        </ODai>
+      </DaiChiSoMong>
     </>
   );
 }

@@ -22,13 +22,15 @@ const BangLuotPanel = lazyTai(() => import('./BangLuotPanel.tsx').then((m) => ({
  * và tên hồ sơ (link). Dùng trong bảng, dòng phụ, dòng Cần xử lý. Hai nguồn, cùng một luật "số = số dòng khi bấm":
  *   · `id`    — một chỉ số trong sổ: mở `DanhSachSoLieu` (cùng `/metrics/:id` với ô số).
  *   · `nguon` — một đường máy chủ trả `{ n, tieuDe, rows }` tính bằng CHÍNH hàm sinh ra số (ví dụ ô bảng chi nhánh).
+ *   · `dong`  — GD-4 e: dòng trang ĐÃ NẠP (vd roster đầu hồ sơ lớp: Đạt MT, SOS) — panel vẽ thẳng, không request; `khoa` riêng cho `?so-lieu=`.
  * Số 0 không bấm được, chữ mờ.
  */
 type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút thay cho `giaTri` (vd "5/8": số bấm được là 8 học viên). */ nhan?: string;
   /** OV-11f (TQ-11): tên ở dòng đang bấm — tiêu đề panel dùng đúng chữ này. */ ten?: string;
   /** SL1 (A1-01): cùng số vẽ ở hai vùng một trang (dải + hàng tổng) → mỗi vùng một khoá panel (`khoaSoLieu`). */ vung?: string } & (
-  | { id: string; phamVi?: PhamViSoLieu; extra?: Record<string, string>; nguon?: undefined; tieuDe?: undefined }
-  | { nguon: string; tieuDe: string; id?: undefined; phamVi?: undefined; extra?: undefined;
+  | { id: string; phamVi?: PhamViSoLieu; extra?: Record<string, string>; nguon?: undefined; tieuDe?: undefined; dong?: undefined }
+  | { dong: DongSoLieu[]; khoa: string; tieuDe: string; id?: undefined; nguon?: undefined; phamVi?: undefined; extra?: undefined }
+  | { nguon: string; tieuDe: string; id?: undefined; phamVi?: undefined; extra?: undefined; dong?: undefined;
       /** M6 6b-4: `nguon` là `/tong-quan/gv-tre` — panel GV chấm quá hạn (theo GV → em còn trống → Nhập hộ) thay danh sách phẳng. */
       gvTre?: CauHinhGvTre }
 );
@@ -37,7 +39,7 @@ type Props = { giaTri: number; className?: string; /** Chữ hiện trên nút t
 const chuSoLieu = taoChuSoLieu();
 
 export function OSo(props: Props) {
-  const khoa = khoaSoLieu(props);
+  const khoa = khoaSoLieu(props.dong ? { nguon: `noi:${props.khoa}`, vung: props.vung } : props);
   const [mo, setOpen] = useMoSoLieu(khoa);
   const o = useId();
   const laChu = useSyncExternalStore(chuSoLieu.nghe, () => chuSoLieu.chu(khoa) === o);
@@ -60,6 +62,7 @@ export function OSo(props: Props) {
         aria-label={t('{gt} — {ten}. Bấm để xem danh sách', { gt: props.nhan ?? giaTri, ten })}>{props.nhan ?? giaTri}</button>
       {props.id !== undefined
         ? <DanhSachSoLieu id={props.id} giaTri={giaTri} phamVi={props.phamVi} extra={props.extra} open={open} onClose={() => setOpen(false)} ten={props.ten} />
+        : props.dong ? open && <NganDanhSach tieuDe={props.tieuDe} data={{ n: props.dong.length, rows: props.dong }} loading={false} error={null} reload={() => undefined} onDong={() => setOpen(false)} />
         : props.gvTre ? open && (
           <Suspense fallback={<KhungPanel tieuDe={props.tieuDe} rong="rong" onDong={() => setOpen(false)}><div className="pt-3"><Skeleton rows={5} /></div></KhungPanel>}>
             <PanelGvTre nguon={props.nguon} tieuDe={props.tieuDe} cauHinh={props.gvTre} onDong={() => setOpen(false)} />

@@ -8,6 +8,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { ChipMon, TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
 import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -215,20 +216,10 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
             </Truong>
           </>
         )}
-        <details className="border-t pt-3" style={{ borderColor: 'var(--line)' }} open={lichSu.length > 0}>
-          <summary className="cursor-pointer text-sm font-semibold text-slate-400">{t('Lịch sử ({n})', { n: lichSu.length })}</summary>
-          {lichSu.length ? (
-            <ul className="m-0 mt-2 list-none space-y-2 p-0 text-[13px]">
-              {lichSu.map((l, i) => (
-                <li key={i} className="grid grid-cols-[6.5rem_minmax(0,1fr)] gap-x-3">
-                  <span className="tabular-nums text-slate-400">{lucVn(l.luc)}</span>
-                  <span className="min-w-0 break-words text-slate-300"><b className="block text-slate-100">{l.tieu}</b>
-                    {l.nguoi && <span className="block text-slate-400">{l.nguoi}</span>}{l.phu.map((x, j) => <span key={j} className="block">{x}</span>)}</span>
-                </li>
-              ))}
-            </ul>
-          ) : <p className="m-0 pt-2 text-[13px] text-slate-500">{t('Chưa có lần ghi nào.')}</p>}
-        </details>
+        {/* GD-4c (H4): một kiểu lịch sử — "Lịch sử · n" mở sẵn; chưa có lần ghi thì không vẽ (lời 40). */}
+        <LichSuGap so={lichSu.length} moSan>
+          <DsLichSu dong={lichSu.map((l, i) => ({ key: i, gio: lucVn(l.luc), ai: l.nguoi, viec: l.tieu, phu: l.phu }))} />
+        </LichSuGap>
       </div>
     </KhungPanel>
   );

@@ -13,4 +13,8 @@ export const EN_GD4 = {
   'Cách tính Writing': 'How Writing is calculated',
   'Đã xem · việc tiếp ›': 'Seen · next task ›',
   '<b>Tình hình học tập</b>: chọn em (tối đa 8) và gõ nội dung ngay trong một hộp, rồi <b>Gửi TVV</b>.': '<b>Learning situation</b>: pick students (up to 8) and type the message in one box, then <b>Send to consultant</b>.',
+  'Số của lớp': 'Class figures',
+  'Chỉ số trong kỳ': 'Figures for the period',
+  'Chỉ số của tôi': 'My figures',
+  'Chờ KQ': 'Awaiting result',
 } satisfies Record<string, Dich>;

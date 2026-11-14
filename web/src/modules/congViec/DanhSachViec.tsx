@@ -3,13 +3,12 @@ import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Level } from '../../ui/ui.tsx';
-import { BadgeTabSo, CHIP_TRON, Nhan, NhanLich } from '../../ui/Nhan.tsx';
-import { phimHangTab } from '../../ui/HangTab.tsx';
+import { CHIP_TRON, ChipHan, Nhan, NhanLich } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
-  CHAM_CHEO, LOAI_HAN_CUA_VIEC, bacNgan, chiaVachHan, daysBetween, deadlineView, laViecChamCheo, nhanHan, shortDate, type BadgeTab, type MucTab,
+  CHAM_CHEO, LOAI_HAN_CUA_VIEC, bacNgan, chiaVachHan, daysBetween, deadlineView, laViecChamCheo, shortDate, type MucTab,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -158,31 +157,6 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
 }
 
 /**
- * HÀNG TAB HẠNG MỤC (mockup `.tabs`): dưới hàng lọc, kẻ dưới hết bề ngang; tab 15 / 500, đang chọn 700 + gạch 2 px nhấn. 375: cuộn ngang, tên ngắn (`ngan`).
- * Bàn phím: phím chung `phimHangTab` (← → Home End chuyển focus, Enter / Space chọn — roving tabindex).
- */
-export function HangTab({ tabs, dang, onChon, idPanel }: { tabs: readonly { key: string; nhan: string; ngan?: string; badge: BadgeTab | null }[]; dang: string | null; onChon: (k: string) => void; idPanel: string }) {
-  return (
-    <div role="tablist" aria-label={t('Hạng mục việc')} onKeyDown={phimHangTab}
-      /* RA-GD-0711: `relative` — chữ `sr-only` (absolute) của badge bám vào hàng tab, không kéo <main> trượt ngang ở 375 (784/375);
-         375 mép phải mờ như `ui/HangTab` (tab bị cắt ở mép thì biết còn tab để cuộn). */
-      className="relative -mx-4 flex gap-1 overflow-x-auto border-b px-4 [scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:-mx-5 md:px-5" style={{ borderColor: 'var(--line)' }}>
-      {tabs.map((x) => {
-        const on = x.key === dang;
-        return (
-          <button key={x.key} type="button" role="tab" data-tab={x.key} aria-selected={on} aria-controls={idPanel} tabIndex={on ? 0 : -1} onClick={() => onChon(x.key)}
-            /* AUDIT-UI B3 (mockup `.tab-hang .tb`): 15 px, chưa chọn 500 mờ, đang chọn 700 + gạch 2 px nhấn. */
-            className={`-mb-px inline-flex min-h-[44px] shrink-0 appearance-none items-center gap-2 whitespace-nowrap border-0 border-b-2 border-solid bg-transparent px-3.5 py-2.5 text-[15px] ${
-              on ? 'border-[color:var(--accent)] font-bold text-[color:var(--text)]' : 'border-transparent font-medium text-dim hover:text-[color:var(--text)]'}`}>
-            {x.ngan ? <><span className="sm:hidden">{x.ngan}</span><span className="max-sm:hidden">{x.nhan}</span></> : x.nhan}{x.badge && <BadgeTabSo b={x.badge} />}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/**
  * TẦNG ① — DẢI NHÓM (mockup `.dai-nhom`): nền `--surface-2`, vạch trái 3 px một màu nhấn (`trungTinh` xám = không phải việc của bạn), biểu tượng,
  * tên 15 / 700, chip đếm vuông có đơn vị, phụ 13; dính khi cuộn (thẻ cha `overflow-clip`, không `overflow-hidden`). Bấm tên = gập / mở. Dùng chung cho
  * "Chờ bạn duyệt" và "Việc quản lý" rỗng ở `HoTroHocVienTab` — mọi nhóm cùng dáng.
@@ -245,18 +219,12 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn }: Chung
 function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   const { homNay } = useNgayNghiepVu();
   const v = it.due && !daXong ? deadlineView({ kind: LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh', due: it.due, today: homNay }) : null;
-  const qua = v?.tone === 'overdue';
   return (
     <span className={`grid min-w-0 content-center justify-items-start text-[13px] leading-snug ${O_HAN}`}>
       {daXong ? <span className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>
-        : v && it.due ? qua || v.homNay || v.ganHan ? (
-          <span title={v.text} className={`inline-flex items-center gap-1 whitespace-nowrap tabular-nums ${qua ? 'font-bold text-late' : v.ganHan ? 'font-semibold text-soon' : 'font-semibold text-dim'}`}>
-            {(qua || v.ganHan) && <span aria-hidden>⚠</span>}
-            {qua ? <><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: v.daysOverdue ?? 0 })}</>
-              : v.homNay ? t('hạn hôm nay') : t('còn {n} ngày', { n: daysBetween(homNay, it.due.slice(0, 10)) })}
-            {!v.homNay && <span>· {shortDate(it.due, homNay)}</span>}
-          </span>
-        ) : <span title={v.text} className="whitespace-nowrap font-semibold tabular-nums text-dim">{nhanHan(it.due, homNay)}</span>
+        /* GD-4c ([XM-B] 4a, ⑤ B1 `.han-v`, ⓪ dòng 32): MỘT dáng chip hạn dạng viên cho dòng việc ở mọi nơi — "⚠ quá hạn 5 ngày" (đỏ) · "⚠ hạn hôm nay"
+           (vàng viền) · "hạn 23/09" (xám, kể cả sắp hạn — bỏ "còn n ngày"). Dùng `ChipHan vien` (cùng chip đầu panel, Chờ bạn duyệt, Lớp của tôi). */
+        : v && it.due ? <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         /* GD-4a (⑤ B1): không hạn → cột trống, vạch nhóm "Không hạn" ở đầu nhóm nói thay; trình đọc màn hình vẫn nghe. */

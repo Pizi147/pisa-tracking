@@ -276,7 +276,7 @@ export default function LuotThuongPage() {
                 </>
               )}
               lichSu={(
-                <LichSuGon tieuDe={t('Lịch sử {x}', { x: tenMon(ct, k) })}
+                <LichSuGon tieuDe={t('Lịch sử')}
                   dong={dongLuot({ history: d.history.filter((h) => h.field === k), scoreHistory: d.scoreHistory.filter((h) => h.skill === k),
                     lichSuCase: d.lichSuCase.filter((h) => h.topic === k), ct, homNay })} />
               )} />

@@ -445,7 +445,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
         }
       }
     }
-    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Dời","Vắng","Xoá","Dời hạn chấm","Huỷ điểm","Nhật ký"]', JSON.stringify(d.CHU_MUC_HOP));
+    assert(JSON.stringify(Object.values(d.CHU_MUC_HOP)) === '["Dời","Vắng","Xoá","Dời hạn chấm","Huỷ điểm","Lịch sử"]', JSON.stringify(d.CHU_MUC_HOP));
     assert(JSON.stringify(d.NUT_HOP) === '["doi-tuan","bao-vang","bo-ky-nang"]', 'ba nút trên dòng');
   });
 

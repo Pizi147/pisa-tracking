@@ -190,17 +190,17 @@ export const chuBadgeTab = (b: BadgeTab) => {
   const phan = [b.quaHan ? t('{n} quá hạn', { n: b.quaHan }) : null, b.homNay ? t('{n} hạn hôm nay', { n: b.homNay }) : null].filter(Boolean).join(', ');
   return t('{phan} trong {n} việc', { phan, n: b.n });
 };
+/** Badge tab MỜ (mockup v21 `.bd.mo`): viên tròn chỉ đếm — nền bề mặt 2, chữ mờ; dùng ở `HangTab` (`so`) và tab Chấm Speaking. */
+export const BadgeMo = ({ so, chu }: { so: ReactNode; chu?: string }) => (
+  <span title={chu} className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center gap-0.5 rounded-full border px-1.5 text-xs font-bold tabular-nums text-dim surface-2"
+    style={{ borderColor: 'var(--line-strong)' }}>{so}</span>
+);
 export function BadgeTabSo({ b }: { b: BadgeTab }) {
   /* GD-4a (chủ SP lời 33; mockup ⑤ `.bd.mo`): tab Chấm Speaking — viên MỜ đếm bài, ⚠ khi có bài quá hạn; không đỏ (đỏ chỉ cho việc của tôi quá hạn). */
   if (b.bai) {
     if (!b.bai.n) return null;
     const chu = b.bai.quaHan ? t('{n} bài, {q} quá hạn', { n: b.bai.n, q: b.bai.quaHan }) : t('{n} bài', { n: b.bai.n });
-    return (
-      <span title={chu} className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center gap-0.5 rounded-full border px-1.5 text-xs font-bold tabular-nums text-dim surface-2"
-        style={{ borderColor: 'var(--line-strong)' }}>
-        <span aria-hidden>{b.bai.quaHan ? '⚠ ' : ''}{b.bai.n}</span><span className="sr-only">{chu}</span>
-      </span>
-    );
+    return <BadgeMo so={<><span aria-hidden>{b.bai.quaHan ? '⚠ ' : ''}{b.bai.n}</span><span className="sr-only">{chu}</span></>} chu={chu} />;
   }
   if (!b.so) return null;
   return (

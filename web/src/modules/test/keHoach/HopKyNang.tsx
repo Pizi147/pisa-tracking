@@ -23,6 +23,7 @@ import { MenuDong } from '../../../ui/MenuDong.tsx';
 import { useGiuFocus } from '../../../ui/giuFocus.ts';
 import { HopThaoTacMt } from '../../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from '../../cham/NganLichSuBai.tsx';
+import { DsLichSu, LichSuGap, lucNgan } from '../../../ui/LichSuThayDoi.tsx';
 import { khoiPhucMt, xoaMt } from './xoaMt.ts';
 
 type Dong = { tick: boolean; periodId: number | null; weekStart: string | null };
@@ -290,8 +291,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
       setBusy(false);
     }
   };
-  const moLichSuGhi = () => {
-    if (lichSuGhi) { setLichSuGhi(null); return; }
+  const moLichSuGhi = (mo: boolean) => {
+    if (!mo || lichSuGhi) return;   // gập rồi mở lại: dùng bản đã đọc, không gọi lại
     void api.get<{ dong: GhiChuLich[] }>(`/ke-hoach-test/ghi-chu/lich-su?classId=${classId}&studentId=${studentId}&dot=${khoaDot(dot)}`)
       .then((r) => setLichSuGhi(r.dong)).catch(() => setLichSuGhi([]));
   };
@@ -412,18 +413,14 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
             <span className="text-[12px] font-bold text-slate-400">{t('Ghi chú lịch Test')}</span>
             <input className="field mt-1 w-full" maxLength={GHI_CHU_TOI_DA} value={ghi} onChange={(e) => setGhi(e.target.value)} placeholder={t('Thêm ghi chú…')} />
           </label>
+          {ghiChu && <div className="mt-1 text-[12px] text-slate-500">{chuTacGia(ghiChu)}</div>}
+          {/* GD-4c (H4): một kiểu lịch sử — gập "Lịch sử · n", đọc khi mở (như cũ). */}
           {ghiChu && (
-            <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[12px] text-slate-500">
-              <span>{chuTacGia(ghiChu)}</span>
-              <button type="button" className="link min-h-[44px] sm:min-h-0" aria-expanded={!!lichSuGhi} onClick={moLichSuGhi}>{t('Lịch sử')}</button>
-            </div>
-          )}
-          {lichSuGhi && (
-            <ul className="m-0 mt-1 list-none space-y-1 p-0 text-[12px]" aria-label={t('Lịch sử ghi chú')}>
-              {lichSuGhi.map((g, i) => (
-                <li key={i}><span className="text-slate-300">{g.noiDung || t('(đã xoá)')}</span> <span className="text-slate-500">· {chuTacGia(g)}</span></li>
-              ))}
-            </ul>
+            <LichSuGap so={lichSuGhi ? lichSuGhi.length || null : null} className="mt-1.5" onMo={moLichSuGhi}>
+              {lichSuGhi ? <DsLichSu rong={t('Chưa có thay đổi nào.')}
+                dong={lichSuGhi.map((g, i) => ({ key: i, gio: lucNgan(g.luc), ai: g.ai, viec: g.noiDung || t('(đã xoá)') }))} />
+                : <p className="ls-rong">{t('Đang tải…')}</p>}
+            </LichSuGap>
           )}
         </div>}
         {coDongDuoi && (

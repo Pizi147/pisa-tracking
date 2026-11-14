@@ -197,9 +197,8 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
         </Buoc>
 
         <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <button type="button" className="flex min-h-[44px] appearance-none items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-semibold text-slate-400 sm:min-h-0" onClick={() => setLichSu(true)}>
-            <span aria-hidden>▸</span>{t('Lịch sử')}
-          </button>
+          {/* GD-4c: cùng link "Lịch sử" như Kết quả thi thật / Bước tiếp (mở panel Lịch sử thay nội dung) — bỏ "▸" giả gập. */}
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
         </div>
       </div>
     </KhungPanel>

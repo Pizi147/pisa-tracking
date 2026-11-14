@@ -35,7 +35,7 @@ export async function runPrDuyetQlTests(t: YThucTestKit) {
   check('D1 · Lịch sử · n: chỉ tải /lich-su?loai=yeu-cau khi mở; ẩn khi 0', () => {
     const ls = than(hop, 'function LichSuYeuCau');
     assert(/useApi<[^>]*>\(mo \? `\/lich-su\?loai=yeu-cau&id=\$\{id\}` : null/.test(ls), `Lịch sử phải tải khi mở: ${ls.slice(0, 300)}`);
-    assert(/if \(!n\) return null/.test(ls) && ls.includes('aria-expanded={mo}'), 'Lịch sử thiếu ẩn khi 0 / aria-expanded');
+    assert(/if \(!n\) return null/.test(ls) && ls.includes('<LichSuGap so={n}'), 'Lịch sử thiếu ẩn khi 0 / kiểu gập chung');   // GD-4c: details của LichSuGap thay aria-expanded tự viết
     assert(/<LichSuYeuCau id=\{yc\.id\} n=\{yc\.soLichSu/.test(hop), 'PanelDuyet chưa vẽ Lịch sử');
     /* Sửa nhỏ 05/11: quyết xong → n theo số máy chủ trả kèm; danh sách đang mở tải lại khi n đổi. */
     assert(the.includes('onXong(yc.id, xongChu, huyDuoc, kq?.soLichSu)') && hop.includes('soLichSu != null ? { ...y, soLichSu } : y'), 'panel kết quả chưa cộng Lịch sử');

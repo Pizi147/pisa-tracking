@@ -10,7 +10,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
-import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
+import { DsLichSu, LichSuGap, lucNgan } from '../../ui/LichSuThayDoi.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -448,28 +448,19 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
   );
 }
 
-/** DUYET-QL: "Lịch sử · n ▸" gập cuối thân panel duyệt — bấm mở tại chỗ, CHỈ khi mở mới gọi `/lich-su?loai=yeu-cau` (≤ 3 câu, ≤ 50 dòng).
+/** DUYET-QL: "Lịch sử · n" gập cuối thân panel duyệt — bấm mở tại chỗ, CHỈ khi mở mới gọi `/lich-su?loai=yeu-cau` (≤ 3 câu, ≤ 50 dòng).
  *  `n` đổi (quyết xong — số máy chủ trả kèm) mà danh sách đang mở → tải lại đúng phần lịch sử; đang gập thì không gọi gì. */
 function LichSuYeuCau({ id, n }: { id: number; n: number }) {
   const [mo, setMo] = useState(false);
   const { data, loading, error, reload } = useApi<{ dong: { luc: string; nguoi: string | null; chu: string }[] }>(mo ? `/lich-su?loai=yeu-cau&id=${id}` : null, [mo, id, n]);
   if (!n) return null;
+  /* GD-4c (H4): một kiểu lịch sử — `LichSuGap` "Lịch sử · n" (details: trạng thái mở có sẵn cho đọc màn hình). */
   return (
-    <div className="mt-4 grid gap-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-      <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-        className="min-h-[44px] justify-self-start appearance-none border-0 bg-transparent p-0 text-left text-sm font-semibold text-dim hover:text-[color:var(--text)] sm:min-h-0 sm:py-1">
-        {t('Lịch sử · {n}', { n })} <span aria-hidden>{mo ? '▾' : '▸'}</span>
-      </button>
-      {mo && (error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
-        : loading && !data ? <Skeleton rows={2} />
-        : (
-          <ol className="m-0 grid list-none gap-1.5 p-0 text-[13px] text-dim">
-            {data?.dong.map((d, i) => (
-              <li key={i}><span className="mr-2 tabular-nums text-faint">{lucNgan(d.luc)}</span>{d.nguoi && <b className="font-semibold text-[color:var(--text)]">{d.nguoi}</b>} {dich(d.chu)}</li>
-            ))}
-          </ol>
-        ))}
-    </div>
+    <LichSuGap so={n} className="mt-4" onMo={setMo}>
+      {error ? <div className="ls-them"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+        : loading && !data ? <div className="ls-them"><Skeleton rows={2} /></div>
+        : <DsLichSu dong={(data?.dong ?? []).map((d, i) => ({ key: i, gio: lucNgan(d.luc), ai: d.nguoi, viec: dich(d.chu) }))} />}
+    </LichSuGap>
   );
 }
 

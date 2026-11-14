@@ -2,7 +2,9 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
-import { NutLuat } from '../../ui/NutLuat.tsx';
+import { DaiChiSo, ODai, SoTinh } from '../../ui/DaiChiSo.tsx';
+import { OSo } from '../../ui/OSo.tsx';
+import type { DongSoLieu } from '../../ui/SoLieu.tsx';
 import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO, type MucMenu } from '../../ui/MenuDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -15,7 +17,7 @@ import { TenGiaoVien } from './TenGiaoVien.tsx';
 import { DongChoDoi, type ChoDoiLop } from './TeacherAssignPanel.tsx';
 import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
-import { TAB_HO_SO_LOP_NHAN, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, tvvChinhCuaLop, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope } from '@shared/domain/index.ts';
+import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, tvvChinhCuaLop, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
@@ -259,32 +261,30 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
       <DongChoDoi cho={data.phanCongCho ?? []} ct={data.programme?.code ?? null} homNay={homNay} />
 
       {/* ④ số của lớp (badge đổi trang đã lên hàng ② — MOCKUP-1111). */}
-      <div className="flex min-h-7 flex-wrap items-center gap-x-[26px] gap-y-2">
-        {/* U03 (mockup `.facts`): Lượt mới nhất · Đạt · SOS là ô nhãn 12 trên – giá trị 15 dưới, vạch ngăn trái. */}
-        <span className="flex flex-wrap items-stretch gap-y-2">
-          {tomTat?.luot && <So n={t('Lượt mới nhất')} g={tomTat.luot} />}
-          {tomTat?.dat && (
-            <So n={tomTat.dat.nhan} g={(
-              <span className="inline-flex items-baseline gap-1">
-                <span className="tabular-nums">{Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %</span>
-                <span className="mr-1 text-[13px] font-medium tabular-nums text-slate-500">{tomTat.dat.so}/{tomTat.dat.tong} HV</span>
-                <NutLuat label={t('Cách tính Đạt')}>{t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}</NutLuat>
-              </span>
-            )} />
+      {/* GD-4 e (mockup v21 H3, ⓪ dòng 21): MỘT dải chỉ số cao 44 — Lượt mới nhất (chữ) · Đạt MT (ô số → panel em trong mẫu, tab Chưa đạt · Đạt) ·
+          SOS (ô số → panel em SOS, chip mức giữ sau). Panel dựng từ roster đã nạp, không request. "0 %" không bấm. Luật lời 40: ô chưa có dữ liệu không vẽ. */}
+      {(tomTat?.luot || tomTat?.dat || !!tomTat?.sos.length) && (
+        <DaiChiSo nhan={t('Số của lớp')}>
+          {tomTat.luot && <ODai nhan={t('Lượt mới nhất')}><SoTinh n={tomTat.luot} /></ODai>}
+          {tomTat.dat && (
+            <ODai nhan={tomTat.dat.nhan} phu={`${tomTat.dat.so}/${tomTat.dat.tong} HV`}
+              luat={t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}>
+              {tomTat.dat.so > 0
+                ? <OSo giaTri={tomTat.dat.tong} nhan={`${Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %`} dong={tomTat.dat.dong} khoa={`lop-${data.id}-dat`} tieuDe={`${tomTat.dat.nhan} · ${data.code}`} />
+                : <SoTinh n="0 %" />}
+            </ODai>
           )}
-          {tomTat && tomTat.sos.length > 0 && (
-            /* Mockup: tổng "n HV"; số theo mức giữ ở chip nhỏ sau (không mất thông tin). */
-            <So n="SOS" g={(
-              <span className="inline-flex flex-wrap items-center gap-x-2 gap-y-1">
-                <span className="tabular-nums">{tomTat.sos.reduce((n, [, x]) => n + x, 0)} HV</span>
-                {tomTat.sos.map(([muc, n]) => (
-                  <span key={muc} className={`${CHIP_SOS} ${lopSos(muc)} tabular-nums`} title={t('SOS {muc}: {n} HV', { muc, n })}>SOS {muc} · {n}</span>
-                ))}
-              </span>
-            )} />
+          {tomTat.sos.length > 0 && (
+            <ODai nhan="SOS">
+              <OSo giaTri={tomTat.sosDong.length} dong={tomTat.sosDong} khoa={`lop-${data.id}-sos`} tieuDe={`SOS · ${data.code}`} />
+              {/* Số theo mức giữ ở chip nhỏ sau (không mất thông tin). */}
+              {tomTat.sos.map(([muc, n]) => (
+                <span key={muc} className={`${CHIP_SOS} ${lopSos(muc)} self-center tabular-nums`} title={t('SOS {muc}: {n} HV', { muc, n })}>SOS {muc} · {n}</span>
+              ))}
+            </ODai>
           )}
-        </span>
-      </div>
+        </DaiChiSo>
+      )}
 
       <DaiLopChuyen dai={data.dai} homNay={homNay} onChuyenTiep={() => onViec('chuyen-tiep')} onBanGiao={onBanGiao} onBanGiaoGv={onBanGiaoGv} />
       {/* ⑤ "Việc của tôi" một hàng (ThanhViecLop — nơi gọi truyền vào). */}
@@ -293,16 +293,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   );
 }
 
-/** U03 (mockup `.fact`): ô nhãn 12 mờ trên – giá trị 15/600 dưới, vạch ngăn trái 1 px (ô đầu không vạch) — hàng GV và hàng số của lớp. */
+/** U03 (mockup `.fact`): ô nhãn 12 mờ trên – giá trị 15/600 dưới, vạch ngăn trái 1 px (ô đầu không vạch) — hàng GV. */
 const FACT = 'flex min-w-0 flex-col gap-0.5 whitespace-nowrap border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3';
-function So({ n, g }: { n: ReactNode; g: ReactNode }) {
-  return (
-    <span className={FACT} style={{ borderColor: 'var(--line)' }}>
-      <span className="text-xs font-medium leading-[1.3] text-faint">{n}</span>
-      <span className="text-[15px] font-semibold leading-[1.35] text-slate-100">{g}</span>
-    </span>
-  );
-}
 
 /** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2) — hồ sơ lớp + hồ sơ HV. */
 export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
@@ -325,14 +317,21 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
   if (!roster.data) return null;
   const em = roster.data.filter((r) => r.status === 'active' && !r.archived);
   const sos = ([1, 2, 3] as const).map((m) => [m, em.filter((r) => (r.sosLevel ?? 0) === m || (m === 3 && (r.sosLevel ?? 0) > 3)).length] as [number, number]).filter(([, n]) => n > 0);
+  /* GD-4 e: dòng panel ô số "Đạt" / "SOS" dựng từ roster đã nạp (không request) — tên em link hồ sơ, dòng phụ lượt / mức. */
+  const dong = (r: RosterRow, sub: string, ketQua?: 'dat' | 'chua'): DongSoLieu => ({ id: r.id, title: r.fullName, sub, href: duongHoSoHocVien(r.id), em: { id: r.id, ten: r.fullName }, ketQua });
+  const sosDong = em.filter((r) => (r.sosLevel ?? 0) > 0).sort((a, b) => (b.sosLevel ?? 0) - (a.sosLevel ?? 0)).map((r) => dong(r, `SOS ${Math.min(r.sosLevel ?? 0, 3)}`));
   /* Kết luận máy chủ (`standing` → `ketQuaGanNhat`, cùng ô Kết quả của bảng): mẫu = em có lượt đủ điểm, đạt = `dat`. */
-  const moi = em.map((r) => (r as { standing?: KetQuaVao | null }).standing).filter((k): k is KetQuaVao => !!k && k.scored >= k.required && !!k.attemptLabel);
+  const moiEm = em.map((r) => [r, (r as { standing?: KetQuaVao | null }).standing] as const).filter((x): x is readonly [RosterRow, KetQuaVao] => !!x[1] && x[1].scored >= x[1].required && !!x[1].attemptLabel);
+  const moi = moiEm.map(([, k]) => k);
   const nhanLuot = [...new Set(moi.map((k) => k.attemptLabel!))];
-  const dat = moi.length ? { nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length } : null;
+  const dat = moi.length ? {
+    nhan: nhanLuot.length === 1 ? t('Đạt {mt}', { mt: dich(nhanLuot[0]) }) : data.isFastTrack ? t('Đạt MT') : t('Đạt Test'), so: moi.filter((k) => ketQuaGanNhat(k).dat).length, tong: moi.length,
+    dong: moiEm.map(([r, k]) => dong(r, dich(k.attemptLabel!), ketQuaGanNhat(k).dat ? 'dat' : 'chua')),
+  } : null;
   const homNayTuan = homNay ?? '9999';
   /* MT0-THEO-EM: `mt:0` = MT0 em mang từ lớp thường (thi ở lớp cũ) — không là lượt của lớp FT. */
   const l = (ds.data?.luot ?? []).filter((x) => !x.lichSu && x.ma !== 'mt:0' && x.tuanStart && x.tuanStart <= homNayTuan).sort((a, b) => (b.tuanStart ?? '').localeCompare(a.tuanStart ?? ''))[0];
-  return { sos, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null, tvv: tvvChinhCuaLop(roster.data.filter((r) => !r.archived)) };
+  return { sos, sosDong, dat, luot: l ? `${dich(l.nhan)} · ${tuanLich(l.tuanStart!, homNayTuan)}` : null, tvv: tvvChinhCuaLop(roster.data.filter((r) => !r.archived)) };
 }
 
 /**

@@ -283,7 +283,7 @@ export async function runPrS3ChuTests(t: YThucTestKit) {
     cao('web/src/modules/fasttrack/MockDetailPage.tsx', /<DuongVe /);
     /* B11 (audit-ui 08/11, thay V8-HSL `gon`): mọi hồ sơ một dáng `.nut-ve` "‹ nguồn" + `.nut-mui` ‹ / › — cao 32, điện thoại 44. */
     cao('web/src/ui/ThanhTruocSau.tsx', /className="nut-ve" onClick=\{\(\) => ve\(/);
-    cao('web/src/ui/ThanhTruocSau.tsx', /<Menu label=\{t\('Các bước[^\n]*className="btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-\[32px\]"/);
+    cao('web/src/ui/ThanhTruocSau.tsx', /<MenuDong chu=\{t\('Các bước[^\n]*lopNut="btn btn-sm btn-ghost min-h-\[44px\] sm:min-h-\[32px\]"/);   // GD-4c: Menu gộp vào MenuDong
     cao('web/src/ui/ThanhTruocSau.tsx', /className="nut-mui" disabled=\{ben\.truoc === null\}/);   // ‹ Trước · Sau ›
     cao('web/src/index.css', /@media not all and \(min-width: 640px\) \{ \.nut-ve, \.nut-mui \{ height: 44px; \}/);
     assert(!/\bgon\b/.test(docNguon('web/src/ui/ThanhTruocSau.tsx')), 'B11: bỏ dáng gọn riêng của hồ sơ lớp');
