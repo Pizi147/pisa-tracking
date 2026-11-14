@@ -13,7 +13,11 @@ Tên người bịa (QL Tôn Bảo Ngân · Quản trị Trịnh Quốc Dũng ·
 
 ## 0. Lời chủ SP trong session này
 
-(chưa có — chủ SP nói gì sẽ ghi nguyên văn ở đây rồi chuyển PTA Overhaul)
+**Lời 37 (15/11, PTA Overhaul chuyển lại) — CHƯA duyệt:**
+
+> "M8: những chỗ phần ghi việc mà có text ở dưới đêm việc đúng hạn/ quá hạn đang hơi bị intrusive và loạn quá, nên nghĩ làm thế nào để hiển thị tốt hơn đi"
+
+Đã sửa (mục 10): mỗi ô bảng một thành phần — không dòng chữ phụ dưới số; bảng Giáo viên tách cột theo tên Phân tích GV (phương án A, vẽ thêm B để chủ SP chọn); ô số thẻ lớn dòng phụ tối đa một ý, chỉ khi cần làm.
 
 ## 1. Ý chính (lời 35: "Gom chung cái gì được thì gom chung")
 
@@ -165,7 +169,7 @@ Mọi số của hai màn còn, mỗi số MỘT chỗ: Tổng quan — 38 số 
 5. **[XM-5] — PTA chốt: đồng ý gom; "Test kế tiếp" chỉ hiện khi xem hồ sơ của chính mình** (không thêm câu đọc; QL xem → dòng phụ trống). Hồ sơ GV gom "Kỹ năng tôi dạy" vào "Lớp đang dạy".** Cột Đạt / Tiến bộ theo lớp chỉ còn ở tab Học thuật (theo kỳ đang chọn, một nguồn). Dòng phụ "Test kế tiếp" khi QL xem cần thêm trường (mục 5) — hoặc chỉ hiện khi xem hồ sơ mình.
 6. **[XM-6] — PTA chốt: đồng ý.** Bỏ "Hộp duyệt ›"** cuối khối Chờ bạn duyệt (trùng đích ô "Chờ duyệt ›"), thay "+ n yêu cầu" mở thêm tại chỗ.
 7. **[XM-7] — PTA chốt: đồng ý.** Admin bỏ link đầu trang "Kế hoạch Test ›"** (đã có ở ô và đầu khối Lịch sắp tới); Lịch sắp tới sang cột phải.
-8. **[XM-8] — PTA chốt: đồng ý.** Việc đang tồn: bốn link "n quá hạn" → một "⚠ 9 quá hạn ›"** (lọc quá hạn mọi nhóm). Cần `duongViecCuaGv(…, nhom=null, chiQuaHan)` chạy được — kiểm khi code.
+8. **[XM-8] — PTA chốt: đồng ý; lời 37 thay: KHÔNG gom nữa** — Việc đang tồn thành bảng nhỏ, mỗi nhóm có hộp đỏ quá hạn riêng (giữ link quá hạn từng nhóm như web). Bản đề xuất cũ: Việc đang tồn: bốn link "n quá hạn" → một "⚠ 9 quá hạn ›"** (lọc quá hạn mọi nhóm). Cần `duongViecCuaGv(…, nhom=null, chiQuaHan)` chạy được — kiểm khi code.
 9. **[XM-9] — PTA chốt: đồng ý.** "Cần làm trước" mở panel việc tại hồ sơ GV** thay đổi trang. QL xem GV khác cũng mở panel (QL làm thay — luật A4, như Công việc QL đang làm).
 10. **[XM-10] — PTA chốt: giữ "em"** (lời 35 chỉ áp nút-chip việc và badge). Chip "Bàn giao 0/5 em"** là chip trạng thái (không phải nút-chip việc) → giữ chữ "em". Nếu lời 35 áp cả chip trạng thái thì thành "Bàn giao 0/5".
 11. **[XM-11] — PTA chốt: đồng ý.** Head tutor** (R8.6): không vẽ Tổng quan riêng — xem như GV (trang đầu Công việc, mockup ①); hồ sơ của mình vẽ ở H6c (chưa phân công, không nút Công việc). Head tutor không có Công việc (LG-7) → không badge tab Việc & Case.
@@ -186,7 +190,7 @@ Mọi số của hai màn còn, mỗi số MỘT chỗ: Tổng quan — 38 số 
 | R8.3 | Ba vai chung một khung: ô số → khối chính → cột phải; khối hai vai cùng có thì cùng dáng, cùng chỗ; liệt kê khối đã gom | ✓ | mục 1 bảng khối; T1, T3, T4, T5 |
 | R8.4 | Đầu hồ sơ GV giữ (Vai · Kỹ năng sửa tại chỗ có Hoàn tác · "Việc của {tên} ›") | ✓ | H1, H4, H4b |
 | R8.4 | "GVCN n lớp" → mã lớp link | ✓ | H1 `.o-tin` |
-| R8.4 | Dải chuẩn Đúng hạn · Làm muộn · Chưa làm, cùng số / tên Phân tích GV, mọi số mở panel | ✓ | H1 `.dai-cs` (hai nhóm Chấm Test │ Việc như cột Phân tích GV) |
+| R8.4 | Dải chuẩn cùng số / tên Phân tích GV, mọi số mở panel | ✓ (lời 37) | H1 `.dai-cs`: Việc │ Chấm Test × % đúng hạn · Chưa làm (Đúng hạn / Làm muộn trong panel 3 tab) |
 | R8.5 | 9 khối → 3 tab chuẩn Lớp · Học thuật · Việc & Case | ✓ | H1 / H2 / H3; mục 1 bảng 9 khối |
 | R8.5 | Nhận hai bảng + 3 ô số Tổng quan GV vào tab Lớp, chỉ hồ sơ mình | ✓ (gom) | "Lớp chủ nhiệm" chỉ hồ sơ mình (H1, không có ở H4); "Kỹ năng tôi dạy" gom vào "Lớp đang dạy"; 3 ô → nơi số thuộc về (XM-5) |
 | R8.5 | "Em đang bổ trợ" giữ | ✓ | H1 |
@@ -214,6 +218,27 @@ Chạy theo `impeccable critique`: hai agent tách (A đánh giá thiết kế �
 Sau vòng 2: **không còn P0 / P1** (cổng: chạm 30 → chỉ cần không P0 / P1).
 P2 / P3 còn để chủ SP / PTA xem: hai nút cùng sang Công việc ở hồ sơ của chính mình ("‹ Công việc" + "Mở Công việc ›" — GIỮ thao tác cũ) · ô "Chờ duyệt 10" và đếm khối "10" cùng màn (đề bài cần cả hai) · ⓘ trong ô bấm được cả ô (mẫu web đang có) · "Tuần này" ở tab Lịch sắp tới chưa ghi mã tuần (giữ chữ web).
 Máy dò (B): tong-quan 88 · ho-so-gv 78 · bang-mau (đã duyệt) 129 — gần hết là kế thừa từ `v21.css` / `bang-mau.css` hoặc báo nhầm (số chú thích `.so-mk` tương phản thấp — khung mockup; phông khoá Be Vietnam Pro / Inter; "—" là dấu ô trống); một chỗ thật (`font-size` viết thẳng ở thẻ 375) đã sửa.
+
+## 10. Lời 37 — bỏ chữ phụ dưới số việc (đúng hạn / quá hạn)
+
+Nguyên tắc: **mỗi ô bảng một thành phần** (một hộp số, hoặc một chữ); số chi tiết xem khi bấm hộp → panel đang có. Ô số thẻ lớn: dòng phụ **tối đa một ý, chỉ khi cần làm**. Cùng tên, cùng cách đếm ở Tổng quan · Hồ sơ GV · Phân tích GV: **% đúng hạn** · **Chưa làm** (theo kỳ, sổ nghĩa vụ) và **Bài quá hạn** (tới hôm nay, tập Trễ chấm).
+
+Kiểm "Bài chấm quá hạn" có trùng "Chưa làm" của Chấm Test không: **KHÁC tập** → giữ cả hai. Chưa làm = bài có hạn **trong kỳ** chưa chấm (`viecDungHan` / `chamDiem` của Phân tích GV); Bài quá hạn = mọi ô kỹ năng còn trống đã qua hạn, **tính tới hôm nay**, kể cả kỳ trước (`/tong-quan/gv-tre`, panel Nhập hộ). Ví dụ Hằng: 5 trong kỳ W1–W2 SEP, 12 tới nay. Đầu cột ghi nhóm "Tới hôm nay" + ⓘ ở đầu khối.
+
+| Chỗ | TRƯỚC (bản mockup trước / web) | SAU | Số bỏ khỏi mặt bảng nay ở đâu |
+|---|---|---|---|
+| T1 Giáo viên (QL) | 3 cột: Việc đúng hạn "67 %" + "4 đúng hạn · ⚠ 2 chưa làm" · Chấm Test đúng hạn "71 %" + "12 đúng hạn · ⚠ 5 chưa làm · + 8 S chéo chung" · Bài chấm quá hạn | **A**: Việc (% đúng hạn · Chưa làm) │ Chấm Test (% đúng hạn · Chưa làm) │ Tới hôm nay (Bài quá hạn); hàng cuối "S chéo chung · chưa ai nhận" (⚠ 8 ở Chưa làm Chấm Test + Bài quá hạn) — như Phân tích GV. **B** (để chọn, T1b): mỗi nhóm một ô = hộp % + thanh mảnh đúng hạn │ làm muộn │ chưa làm + hộp đỏ ⚠ n | "n đúng hạn", "n làm muộn" → panel sổ nghĩa vụ 3 tab (bấm hộp %); "+ 8 S chéo chung" → hàng cuối bảng |
+| T1 / T3 / T4 / T6 Lớp cần chú ý, Theo chi nhánh | dưới % / số: "2/3", "/ 45", "1/1" | chỉ hộp số | mẫu "2/3" → panel Đạt MT; "/ 45" → ô "Case chưa có PA" (dòng phụ "trong 45 Case đang mở") và panel Case đang mở |
+| Ô số thẻ lớn (mọi vai) | "11 / việc · ⚠ 6 quá hạn" · "10 / yêu cầu · ⚠ 1 quá hạn" · "2/3 HV · 8 chưa đủ dữ liệu" · "HV" · "3 lớp" · "bài · ⚠ 37 quá hạn" · "1/1 HV" | "⚠ 6 quá hạn" · "⚠ 1 quá hạn" · "8 HV chưa đủ dữ liệu" (GIỮ: chủ SP U09 #5 "không giấu em ngoài mẫu") · (không dòng phụ) · "⚠ 37 quá hạn" · "trong 45 Case đang mở" (XM-2) · "chỉ Fast Track" (giải thích "—") | đơn vị đã rõ ở tên ô; "2/3 HV", "1/1 HV" → panel của ô; "3 lớp" → trang Kế hoạch Test (đích ô) |
+| T5 / T7c Admin GV chấm quá hạn | "Listening, Reading · MB FT 101 (MT1 W1 JUL, …)" · "12 bài" · "quá hạn 68 ngày" | GV · kỹ năng · lớp · hộp đỏ ⚠ 12 · "lâu nhất 68 ngày" | danh sách lượt → panel GV (từng lượt × kỹ năng · em còn trống · Nhập hộ — XM-12) |
+| T7a thẻ GV 375 | % + chữ phụ | 5 cặp nhãn – hộp (Việc % · Việc chưa làm · Bài quá hạn · Chấm Test % · Chấm Test chưa làm) | như T1 |
+| H1 / H4 / H7 dải đầu hồ sơ | Chấm Test 92 % · Đúng hạn 67 · Làm muộn 0 · Chưa làm ⚠ 6 │ Việc 76 % · Đúng hạn 13 · Làm muộn 0 · Chưa làm ⚠ 4 | **Việc · % đúng hạn 76 % · Chưa làm ⚠ 4 │ Chấm Test · % đúng hạn 92 % · Chưa làm ⚠ 6** — cùng cột với bảng Giáo viên T1 | Đúng hạn, Làm muộn → panel 3 tab khi bấm % (lời 37 mới hơn R8.4 "Đúng hạn · Làm muộn · Chưa làm") |
+| H1 Lớp đang dạy | "Bài chưa nhập" = "21" + "⚠ 11 quá hạn" (chữ đỏ dưới) / "2" + "hạn 16/09" | hai cột **Chưa nhập** (hộp) · **Quá hạn** (hộp đỏ) | hạn → panel bài chưa nhập của lớp |
+| H3 / H4 / H7b Việc đang tồn | "34 việc · ⚠ 9 quá hạn ›" + nút-chip "Chấm điểm 7 · ⚠ 4 ›" | bảng nhỏ: Nhóm (› Công việc đúng tab) · Việc (hộp) · Quá hạn (hộp đỏ → Công việc lọc quá hạn của nhóm) + hàng Tất cả 34 · ⚠ 9 | — (giữ cả link quá hạn từng nhóm của web — thay XM-8) |
+| H3 / H4 / H7b Yêu cầu đã gửi | "Chờ duyệt 5 ⚠ 1 quá hạn duyệt · Bị từ chối (60 ngày qua) 3" | bảng nhỏ: Chờ duyệt 5 · Quá hạn ⚠ 1; Bị từ chối · 60 ngày qua 3 | — |
+
+Không đổi: Chờ duyệt (loại · em · hạn — một dòng, không chữ phụ) · dòng việc "Cần làm trước" (dòng việc chuẩn ⑤, thẻ phụ là tên em / Case — không phải chữ đúng hạn) · bảng Học thuật (ô tỉ lệ % · thanh · n/N một dòng, đã duyệt).
+Ảnh so sánh: `anh/tong-quan/so-sanh-gv-truoc-a-b.jpg` (TRƯỚC web │ A │ B) + `t1ga-1440-toi.png`, `t1gb-1440-toi.png`.
 
 ## 9. Ảnh
 

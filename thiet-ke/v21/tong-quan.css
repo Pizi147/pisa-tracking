@@ -160,3 +160,29 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .bang .ten a.cn-lk { font-weight:600; }
 .sos-dem .sos + .oso, .hang-rieng .sos + .oso { margin-left:6px; }
 .man .bang .sos-dem { flex-wrap:nowrap; }
+/* lời 37: mỗi ô bảng một thành phần — đầu cột hai tầng (nhóm Việc │ Chấm Test │ Tới hôm nay), vạch ngăn nhóm */
+.bang tr.nhom-th th { padding:8px 12px 0; border-bottom:0; font-weight:700; color:var(--text-dim); }
+.bang tr.nhom-th + tr th { border-top:0; padding-top:4px; }
+.bang th.nhom-c { text-align:center; }
+.bang .ngan-c { border-left:1px solid var(--line); }
+/* phương án B: hộp % · thanh mảnh đúng hạn │ làm muộn │ chưa làm · hộp đỏ */
+.tl3 { display:inline-flex; align-items:center; gap:8px; }
+.tl3 .oso:first-child { min-width:58px; }
+.tl3-0 { display:inline-block; width:40px; }
+.vach3 { display:flex; width:64px; height:6px; border-radius:3px; overflow:hidden; background:var(--line); gap:1px; }
+.vach3 i { display:block; height:100%; }
+.vach3 i.d { background:var(--accent); } .vach3 i.m { background:var(--soon); } .vach3 i.c { background:var(--bad); }
+/* Admin GV chấm quá hạn: GV · kỹ năng · lớp · hộp đỏ · lâu nhất */
+.dong-tre { grid-template-columns:170px minmax(0,1fr) 64px 130px; }
+.dong-tre .bai { text-align:center; }
+.dong-tre .bai .oso:not(.khong) { display:inline-flex; align-items:center; justify-content:center; gap:4px; min-width:40px; height:30px; padding:0 9px; border-radius:7px; border:1px solid var(--os-do-vien); background:var(--os-do-nen); color:var(--os-do-chu); font:700 14px/1 var(--phong-so); text-decoration:none; }
+.dong-tre .bai .oso::before { content:"⚠"; font-size:12px; }
+.dong-tre .h { font-size:13px; color:var(--text-dim); white-space:nowrap; }
+.dt .dong-tre { grid-template-columns:minmax(0,1fr) auto; }
+.dt .dong-tre .bai { display:block; grid-row:1 / span 2; grid-column:2; }
+.dt .dong-tre .h { display:none; }
+.dt .the-luoi .cap .n { min-height:32px; display:flex; align-items:flex-end; }
+.bang-gv tbody td:nth-child(4), .bang-gv thead tr:last-child th:nth-child(4), .bang-gv tr.nhom-th th:nth-child(3),
+.bang-gvb tbody td:nth-child(3), .bang-gvb thead tr:last-child th:nth-child(3), .bang-gvb tr.nhom-th th:nth-child(3) { border-left:1px solid var(--line); }
+.bang-gv tr.nhom-th th:nth-child(n+2), .bang-gvb tr.nhom-th th:nth-child(n+2) { border-bottom:1px solid var(--line); padding-bottom:4px; }
+.the-luoi .hang-rieng .oso { display:inline-flex; align-items:center; justify-content:center; min-width:40px; height:36px; padding:0 9px; border-radius:7px; border:1px solid var(--os-vien); background:var(--os-nen); color:var(--os-chu); font:600 14px/1 var(--phong-so); text-decoration:none; }
