@@ -250,8 +250,11 @@ export function updateCycle(p: Principal, cycleId: number, patch: any) {
      */
     const ngaySangThang = !la && !!t.iso && !!c.exam_date;
     const tuanChonMoi = patch.examPeriodId != null && patch.examPeriodId !== '' && Number(patch.examPeriodId) !== c.exam_period_id ? patch.examPeriodId : null;
+    /* GD-13b: tháng → tháng KHÁC mà tuần đang giữ thuộc tháng cũ → bỏ tuần (tuần thắng tháng ở `examPlanOf` — giữ lại thì "Dời tháng" lưu mà lịch không đổi). */
+    const tuanCu = !la && t.iso && c.exam_period_id && !tuanChonMoi ? periodById(c.exam_period_id)?.weekStart ?? null : null;
+    const tuanLechThang = !!tuanCu && tuanCu.slice(0, 7) !== t.iso!.slice(0, 7);
     patch = { ...patch, examMonth: t.iso ? t.iso.slice(0, 7) : null, examDateGhi: la ? t.iso : null,
-      ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : ngaySangThang ? { examPeriodId: tuanChonMoi } : {}) };
+      ...(la ? { examPeriodId: ensurePeriod(mondayOf(t.iso!)).id } : ngaySangThang || tuanLechThang ? { examPeriodId: tuanChonMoi } : {}) };
   }
   /*
    * Cùng cận năm cho tuần / tháng gửi THẲNG (StudentPlanPanel gửi `startPeriodId`, `examPeriodId`; API cũ gửi `examMonth`) — cũng chỉ

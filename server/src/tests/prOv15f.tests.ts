@@ -144,6 +144,13 @@ export async function runPrOv15fTests(t: YThucTestKit) {
       assert(cuaEm(b.cy).exam_month === M3, 'tháng mới vào lịch chuẩn');
       assert(!(await dong(b.sid)), 'rời danh sách tháng cũ');
       assert((await dong(b.sid, M3))?.thangDuKien === M3, 'vào danh sách tháng mới');
+      /* GD-13b: em đang giữ TUẦN thi của tháng cũ → Dời tháng bỏ tuần cũ (tuần thắng tháng — giữ lại thì lịch không đổi). */
+      const tuanM1 = one(`SELECT id FROM report_periods WHERE substr(week_start, 1, 7) = ? ORDER BY week_start LIMIT 1`, M1);
+      if (tuanM1) {
+        conn.prepare(`UPDATE learning_cycles SET exam_period_id = ?, exam_month = ? WHERE id = ?`).run(tuanM1.id, M1, b.cy);
+        const d = await json(await goi(QL, `/hoc-vien-lop/lich-thi/${b.cy}`, put({ ketLuan: 'chuyen-thang', thang: M3 })));
+        assert(d.thangDuKien === M3 && one(`SELECT exam_period_id FROM learning_cycles WHERE id = ?`, b.cy).exam_period_id === null, `dời tháng bỏ tuần cũ: ${JSON.stringify(d.duKien)}`);
+      }
       /* Giữ tháng: lịch không đổi, nhật ký có; ghi chú sau đó giữ kết luận */
       const g = await json(await goi(QL, `/hoc-vien-lop/lich-thi/${c.cy}`, put({ ketLuan: 'giu-thang' })));
       assert(g.ketLuan === 'giu-thang' && cuaEm(c.cy).exam_month === M1 && cuaEm(c.cy).exam_date === null, JSON.stringify(g));
