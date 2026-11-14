@@ -274,3 +274,12 @@ PTA Overhaul hiểu: (a) các việc ĐÃ gửi PTA Plan (F01–F07, L1–L8, LG
 > "Tôi đã dậy nên từ giờ chuyển qua PTA Plan làm code nhé, 2 session dự bị nếu cần thì archive đi"
 
 ĐÃ CHỐT: hết chế độ qua đêm của lời 21. Từ nay việc CODE (logic, lỗi, giao diện) → PTA Overhaul viết plan gửi **PTA Plan** giao, rà, merge. PTA Overhaul giữ: đề bài, thiết kế, plan, rà theo đề bài, tự giao session mockup (lời 15). Đã archive hai session dự bị (`du-bi-1` — #1568 đã merge; `du-bi-2` — #1562 đã merge).
+
+## 14/11 sáng — lời 24 (chủ SP nói trong session mockup ⑤, session đó chuyển lại): dòng việc một dạng · "Chấm Speaking"
+
+> "1. Kể cả những trường hợp chỉ có 1 học sinh, thì vẫn để mọi thứ đồng bộ theo form ở bảng công việc: Lớp - Tên công việc ngắn gọn như hiện tại. 2. Không cần ghi là 'việc chung của nhóm GV Speaking' - Ghi là 'Chấm Speaking' là được rồi"
+
+ĐÃ CHỐT (thay lời 11 và `04-thiet-ke.md` 5.5 ở phần chữ đầu tab; áp cho mockup ①–⑤ và khi code):
+1. **Dòng việc luôn một dạng "Lớp · tên việc ngắn"**, kể cả việc của MỘT em (vd "MB FT 101 · Reading", "MB FOU 12 · Xác nhận xử lý"); tên em là thẻ phụ (link) cạnh tuần / số bài / SOS. Bỏ dạng "đầu em + cây việc". Em con trong dòng gộp "n em" vẫn đứng đầu bằng tên em.
+2. Dải đầu tab / nhóm ghi **"Chấm Speaking"** — không ghi "Việc chung của nhóm GV Speaking".
+Đã áp ở mockup ⑤ (#1558). Mockup ① (đã merge) còn dạng cũ → code theo lời này, không vẽ lại.
