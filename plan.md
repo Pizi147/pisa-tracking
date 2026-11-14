@@ -324,6 +324,8 @@ Còn treo của các PR cũ: PH, GVb G5 ("Nhắc tất cả" #263), DH → ✅ H
 
 **13/11 — OVERHAUL V6 (chủ SP: "overhaul lại TOÀN BỘ tất cả các trang, panels, nút, không có giới hạn nào cả"):** session planning riêng **"PTA Overhaul"** (Fable 5.2 · high) lọc đề xuất, brainstorm, lên plan — lời chủ SP, thiết kế, plan PR đều ở `docs/superpowers/specs/2026-11-13-overhaul-v6/` (đọc `loi-chu-sp.md` trước). PTA Plan chỉ nhận danh sách PR khi chủ SP duyệt plan; lỗi F01–F07 của bản audit ChatGPT đã chuyển PTA Plan 13/11.
 
+**14/11 sáng (chủ SP qua PTA Overhaul, lời 23–24):** "Tôi đã dậy nên từ giờ chuyển qua PTA Plan làm code nhé" (đêm PTA Overhaul đã tự merge #1568 giảm đọc ô tìm, #1562 Rulebook + 1.6 N40–N45) · "Kể cả những trường hợp chỉ có 1 học sinh, thì vẫn để mọi thứ đồng bộ theo form ở bảng công việc: Lớp - Tên công việc ngắn gọn như hiện tại." + "Không cần ghi là 'việc chung của nhóm GV Speaking' - Ghi là 'Chấm Speaking' là được rồi" → dòng việc LUÔN "Lớp · tên việc ngắn" (tên em là thẻ phụ / link), bỏ dạng vòng chữ đầu + cây việc; đầu nhóm "Chấm Speaking" (04-thiet-ke.md mục 14). #1566 đã duyệt giữ nguyên → GD-1 làm PR nối tiếp GD-1b sau khi #1566 merge (áp cả panel #1565 đã merge).
+
 **14/11 (chủ SP, nhập điểm #1563):** "Thôi sửa phần nhập điểm cho giống y hệt mockup đi, ô viền liền không đứt và các cột cân đối hẳn không bị lôm côm như web hiện tại dồn vào một bên và khoảng cách hợp lý" → GD-3: lưới nhập điểm Y HỆT mockup (K2 / K2b / 375): viền ô liền, cột chia đều hết bề ngang, khoảng cách như mockup.
 
 **14/11 (chủ SP):** "Duyệt cả hai" — duyệt ảnh cặp #1566 (GD-1 trang đầu GV, chip "Nhập điểm · 6") + #1565 (GD-2 panel Chấm Speaking, "✓ Đã lưu" xanh) → PTA check chung + merge; sau đó HT-NHU-GV (LG-7) bắt đầu; GD-3 #1563 còn sửa.
