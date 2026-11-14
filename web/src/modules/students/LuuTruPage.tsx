@@ -201,10 +201,10 @@ export default function LuuTruPage() {
       {s.cycleIdCuoi != null
         ? <Link to={duongHoSoHocVien(s.id, { tab: 'hanh-trinh', tongKet: s.cycleIdCuoi })} className="btn btn-sm min-h-[44px] no-underline sm:min-h-0 max-sm:flex-1">{t('Tổng kết')}</Link>
         /* Mockup L2: em chưa có khoá học — nút mờ, lý do ngay tại nút. */
-        : <span className="btn btn-sm pointer-events-none flex-col !gap-0 border-dashed opacity-70 min-h-[44px] sm:min-h-0 max-sm:flex-1" aria-disabled="true">{t('Tổng kết')}<span className="text-[11px] font-normal leading-tight">{t('chưa có khoá học')}</span></span>}
+        : <span className="btn btn-sm pointer-events-none flex-col !gap-0 border-dashed text-faint min-h-[44px] sm:min-h-0 max-sm:flex-1" aria-disabled="true">{t('Tổng kết')}<span className="text-xs font-normal leading-tight">{t('chưa có khoá học')}</span></span>}
       {s.coTheSuaThongTin && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0 max-sm:flex-1" onClick={() => setSuaEm(s)}>{NHAN_VIEC_QUAN_LY.info}</button>}
       {s.coTheQuayLai && (
-        <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 max-sm:flex-1 ${s.trangThai === 'tam-dung' ? 'btn-primary' : ''}`} disabled={quayLai.dangMo === s.id}
+        <button type="button" className={s.trangThai === 'tam-dung' ? 'btn btn-sm btn-primary min-h-[44px] sm:min-h-0 max-sm:flex-1' : 'btn btn-sm min-h-[44px] sm:min-h-0 max-sm:flex-1'} disabled={quayLai.dangMo === s.id}
           onClick={() => { dangXuLy.current = null; void quayLai.mo({ id: s.id, ten: s.fullName, lop: s.lopCuoi }); }}>{t('Quay lại học')}</button>
       )}
     </span>
@@ -213,7 +213,8 @@ export default function LuuTruPage() {
   const tenHv = (s: HocVienLuuTru) => (
     <span className="inline-flex min-w-0 items-center gap-2.5">
       {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
-      <span className="grid min-w-0"><Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link><span className="text-xs tabular-nums text-slate-500">{s.studentCode}</span></span>
+      {/* OV-13f (Q8): không in mã học viên — mockup L2 vẽ mã dưới tên → KHÁC theo luật đã chốt. */}
+      <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link>
     </span>
   );
   const COT_LOP: CotBang[] = [
