@@ -218,9 +218,11 @@ export function HopLich({ r, nut, onHuy, onLuu, the }: { r: HangHien; nut: ThaoT
       <button type="button" aria-pressed={ngayKieu} onClick={() => setNgayKieu(true)}>{t('Ngày thi')}</button>
     </span>
   );
+  /* PTA rà #1714: `key` riêng — đổi đoạn Tháng dự kiến ↔ Ngày thi là ô MỚI (trước React dùng lại một ô `ONgay`, chữ "12/2026" của ô tháng còn trong ô ngày).
+     Ô ngày: ngày đang có, không có thì rỗng (dd/mm/yyyy); "Chốt ngày" chỉ bật khi ngày hợp lệ (`duoc`). */
   const o = ngayKieu
-    ? <ONgay kieu="ngay" gon value={ngay} ariaLabel={nhan} onChange={setNgay} />
-    : <ONgay kieu="thang" gon value={thang} ariaLabel={nhan} toiThieu={homNay.slice(0, 7)} onChange={setThang} />;
+    ? <ONgay key="ngay" kieu="ngay" gon value={ngay} ariaLabel={nhan} onChange={setNgay} />
+    : <ONgay key="thang" kieu="thang" gon value={thang} ariaLabel={nhan} toiThieu={homNay.slice(0, 7)} onChange={setThang} />;
   const truoc = !ngayKieu && r.lichThi.thang ? t('trước: {thang}', { thang: nhanThang(r.lichThi.thang) }) : null;
   /* LICH-THI-NOI-THI (⑥ K4 "Nơi thi IDP / BC"): ô chữ ngắn cạnh Ngày thi — tuỳ chọn, Enter lưu như ô Ghi chú. */
   const oNoiThi = ngayKieu && (

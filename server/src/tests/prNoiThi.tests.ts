@@ -8,6 +8,8 @@ export async function runPrNoiThiTests(t: any) {
   const lt: any = await import('../classes/lichThi.ts');
   const mig: any = await import('../migrate/prNoiThi.ts');
   const Database = (await import('libsql')).default as any;
+  const fs = await import('node:fs');
+  const path = await import('node:path');
   const MB = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
   const cy = (conn.prepare(`SELECT cy.id FROM learning_cycles cy JOIN students s ON s.id = cy.student_id
     WHERE cy.status = 'active' AND s.branch_id = ? AND s.archived_at IS NULL ORDER BY cy.id LIMIT 1`).get(MB) as any).id as number;
@@ -43,5 +45,11 @@ export async function runPrNoiThiTests(t: any) {
     const cot = (c: any) => c.prepare(`SELECT name, type, "notnull" AS nn, dflt_value AS dv FROM pragma_table_info('learning_cycles') WHERE name = 'noi_thi'`).all().map((x: any) => `${x.name}:${x.type}:${x.nn}:${x.dv}`).join(',');
     assert(cot(tam) === cot(conn) && cot(conn) === 'noi_thi:TEXT:0:null', `${cot(tam)} ≠ ${cot(conn)}`);
     tam.close();
+  });
+
+  check('NOI-THI (4) · hộp sửa lịch thi: đổi Tháng dự kiến ↔ Ngày thi là hai ô ONgay khác `key` (ô ngày không giữ chữ tháng "12/2026"); "Chốt ngày" chỉ bật khi có ngày hợp lệ', () => {
+    const src = fs.readFileSync(path.resolve('web/src/modules/students/HangLichThi.tsx'), 'utf8');
+    assert(/<ONgay key="ngay" kieu="ngay"/.test(src) && /<ONgay key="thang" kieu="thang"/.test(src), 'hai ô ONgay thiếu key riêng — đổi đoạn sẽ dùng lại chữ của ô kia');
+    assert(/const duoc = ngayKieu \? !!ngay : !!thang;/.test(src) && /disabled=\{!duoc \|\| khoa\}/.test(src), 'nút chính phải tắt khi chưa có ngày / tháng hợp lệ');
   });
 }

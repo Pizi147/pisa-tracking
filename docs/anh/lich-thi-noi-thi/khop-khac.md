@@ -47,3 +47,9 @@ Cột mới đọc chung câu danh sách có sẵn — 0 câu, 0 dòng thêm. Tr
 - impeccable `audit`: detector 0 phát hiện; ô Nơi thi có `aria-label`, `maxLength` khớp máy chủ, `autoComplete="off"`, 375 cao 44; không chữ bị cắt "…" (đo DOM 1440 + 375: 0).
 - `web-design-guidelines`: nhãn + ô cùng nhóm; lỗi máy chủ (quá dài) hiện ở hàng lỗi có sẵn của hộp, chữ đang gõ giữ.
 - `/ponytail-review`: không có gì cắt — một cột, một nhánh trong `luuLichThi`, một ô.
+
+## Vòng PTA rà #1714 (15/11)
+| Chỗ | Sửa | Ảnh |
+|---|---|---|
+| Đoạn "Ngày thi" đang chọn mà ô ngày hiện "12/2026" (chữ của ô tháng) — lỗi có từ GD-13b | hai ô `ONgay` (tháng / ngày) có `key` riêng → đổi đoạn là ô mới: ô ngày = ngày đang có, không có thì rỗng (dd/mm/yyyy). "Chốt ngày" chỉ bật khi ngày hợp lệ — thử: "32/13/2026" → tắt, "20/11/2026" → bật. Phép kiểm `NOI-THI (4)` | k4-hop, k8b-hop |
+| Placeholder "dd/mm/yyyy" lẹm ở ô 150 px | ô 176 px (chữ 90 px / chỗ 94 px) | k4-hop |
