@@ -76,7 +76,7 @@ export async function runPrS5JsonEachTests(t: YThucTestKit) {
     ['GVCN', `/classes/${lopFt}/cham`], ['GVBM', `/classes/${lopFt}/cham`], ['QL', `/classes/${lopFt}/cham`], ['GVCN_THUONG', `/classes/${lopThuong}/cham`],
     ['GVCN', '/tong-quan/lop-toi-day?ct=ft'], ['GVBM', '/tong-quan/lop-toi-day?ct=ft'], ['GVCN_THUONG', '/tong-quan/lop-toi-day?ct=thuong'],
     ['QL', '/tong-quan/v5?ct=ft'], ['QL', '/tong-quan/v5?ct=thuong'], ['QL', '/tong-quan/ql?ct=ft'],
-    ['TVV', '/tong-quan/tvv'], ['TVV', '/my-work'], ['TVV', '/hoc-vien-lop/theo-vai'],
+    ['TVV', '/tong-quan/tvv/em'], ['TVV', '/my-work'], ['TVV', '/hoc-vien-lop/theo-vai'],
     ['GVCN', '/hoc-vien-lop'], ['GVBM', '/hoc-vien-lop'], ['QL', '/hoc-vien-lop'], ['QL', '/hoc-vien-lop?phamVi=chi-nhanh'],
     ['GVCN', '/cham/lich-test'], ['QL', '/cham/lich-test'],
     ['GVCN', `/classes/${lopFt}/roster`], ['QL', `/classes/${lopFt}/roster`],

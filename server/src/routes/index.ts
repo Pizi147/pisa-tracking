@@ -2301,12 +2301,7 @@ api.get('/tong-quan/chi-nhanh-v2/o', requireAuth, wrap((req) => {
   const x = chiNhanhSvc.oChiNhanh(principalOf(req), f);
   return { n: x.n, unit: 'hoc-vien', tieuDe: x.tieuDe, rows: rowsFor('hoc-vien', x.ids, undefined, principalOf(req)) };
 }));
-/** UI-TONG-QUAN: Tổng quan TVV (Báo PH đúng hạn · Thi tháng này) + panel `o=bao-ph`. */
-api.get('/tong-quan/tvv', requireAuth, wrap((req) => {
-  maybeSimulateReadError();
-  return tongQuanV5Svc.tongQuanTvv(principalOf(req));
-}));
-/** GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; `tvv` = Quản lý / Quản trị xem em của một TVV. */
+/** GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; `tvv` = Quản lý / Quản trị xem em của một TVV. GD-8: thay `/tong-quan/tvv` (đã gỡ). */
 api.get('/tong-quan/tvv/em', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return emCuaTvv(principalOf(req), { tvv: qInt(req, 'tvv') ?? null });

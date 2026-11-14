@@ -35,7 +35,8 @@ export function navOf(p: Principal): NavQuyen {
   return {
     /* NEN-V5: mọi vai có Tổng quan. GD-1 (Overhaul V6, `04-thiet-ke.md` 5.1): GV (Công việc, không Phân tích, không TVV — cùng điều kiện vai 'gv'
        của `OverviewPage`) không còn Tổng quan: trang đầu = Công việc, số liệu sang Hồ sơ GV. */
-    overview: !(work && !analysis && !hvCuaToi),
+    /* GD-8 (mockup v21 ④ R4.1): TVV (Công việc của mình + HV của tôi) cũng không còn Tổng quan — trang đầu = Công việc, dải 5 chỉ số ở đầu trang. */
+    overview: !(work && (!analysis || hvCuaToi)),
     students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,

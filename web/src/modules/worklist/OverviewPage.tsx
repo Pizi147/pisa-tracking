@@ -9,14 +9,14 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import {
-  DauTrangTq, lienKetTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanQlV5, TongQuanQtV5, TongQuanTvvV5, type TongQuanV5Data,
+  DauTrangTq, lienKetTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanQlV5, TongQuanQtV5, type TongQuanV5Data,
 } from './TongQuanV5.tsx';
 import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /**
  * TỔNG QUAN THEO VAI V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — trang đầu mọi vai (K10: GV cũng vậy). Chia vai theo cờ điều hướng của
- * máy chủ (`nav.ts`), dữ liệu theo quyền máy chủ: QL / QT / CX một GET `/tong-quan/v5`; GV `/giao-vien/:id/chi-so` + Lớp tôi dạy; TVV `/tong-quan/tvv`;
+ * máy chủ (`nav.ts`), dữ liệu theo quyền máy chủ: QL / QT / CX một GET `/tong-quan/v5`; GV / TVV → Công việc (GD-1, GD-8);
  * Admin 3 ô Mock Test + Lịch sắp tới (V4, bỏ "Đề nghị dời chờ"); LG-7: Head tutor (và GV chưa có lớp) — không có Công việc → trang đầu rỗng của GV ("Lớp của tôi"), 0 GET. Chi nhánh đang chọn ở URL (`cn`), khung nhớ theo máy.
  */
 export default function OverviewPage() {
@@ -35,12 +35,11 @@ export default function OverviewPage() {
     : !nav?.analysis ? (nav?.work ? 'gv' : nav?.students ? 'khac' : 'ht')
       : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
   const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
-  /* TQ-GON (M3): kỳ số liệu GV / TVV ghi MỘT lần ở đầu trang như QL (L6) — cùng GET khối bên dưới đang gọi (`useApi` gộp), không thêm request. */
-  const kyTvv = useApi<{ ky: { tu: string; den: string } }>(vai === 'tvv' ? '/tong-quan/tvv' : null, [vai]).data?.ky;
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   /* GD-1 (Overhaul V6, mockup v21 ①): trang đầu GV = Công việc (việc bên trái + "Lớp của tôi" bên phải); số liệu GV sang Hồ sơ GV. Giữ tham số (`cn`…). */
-  if (vai === 'gv') return <Navigate to={`/cong-viec${params.toString() ? `?${params}` : ''}`} replace />;
+  /* GD-8 (mockup v21 ④ R4.1): TVV cũng vậy — trang đầu = Công việc (việc trái + "HV của tôi" phải, dải 5 chỉ số trên). */
+  if (vai === 'gv' || vai === 'tvv') return <Navigate to={`/cong-viec${params.toString() ? `?${params}` : ''}`} replace />;
   const congTac = <CongTacKhung v8 trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
   const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
@@ -51,7 +50,6 @@ export default function OverviewPage() {
     </div>
   );
 
-  if (vai === 'tvv') return trang(t('HV của tôi'), <TongQuanTvvV5 />, undefined, kyTvv);
   /* LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): không quyền Công việc (Head tutor, GV chưa phân công) → khung "Lớp của tôi" của trang đầu GV,
      rỗng đúng chữ ("Chưa được phân công lớp nào"), không request. Head tutor dạy lớp = có thêm vai Giáo viên → vai 'gv' ở trên. */
   if (vai === 'ht') return trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} />);
