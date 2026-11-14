@@ -95,7 +95,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
     <div className="flex flex-col gap-3.5">
       {muc.map((m, i) => {
         const n = soHien + (them[m.key] ?? 0);
-        /* GD-1 (lời 11, 19; mockup v21 K3): mục Chấm Speaking là VIỆC CHUNG của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
+        /* GD-1 (lời 11, 19) · GD-1b (lời 24: tên mục "Chấm Speaking"): mục Chấm Speaking là việc chung của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
         const chung = m.key === 'cham-cheo';
         const d = chung ? { n: m.items.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: m.items.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } : dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
@@ -296,6 +296,8 @@ const tenBoEmGoc = (it: WorkItem) => {
   return vi.split(' · ').filter((x) => !x.startsWith(it.studentName)).join(' · ') || vi;
 };
 export const tenBoEm = (it: WorkItem) => tenViec(tenBoEmGoc(it));
+/** GD-1b (chủ SP lời 24, `04-thiet-ke.md` mục 14; mockup ⑤ B): MỌI dòng việc một dạng "Lớp · tên việc ngắn" — kể cả việc của một em (tên em là thẻ phụ). */
+const voiLop = (it: WorkItem, ten: string) => (it.classCode && !ten.split(' · ').includes(it.classCode) ? `${it.classCode} · ${ten}` : ten);
 /** U01 #15: tên việc máy chủ đã ghép "{thao tác} · {kỹ năng}" (`mywork.ts sauCham`) — web chỉ dịch. */
 export const tenViec = (vi: string) => vi.split(' · ').map((x) => dich(x)).join(' · ');
 /**
@@ -378,10 +380,10 @@ const TEN = 'min-w-0 scroll-mt-14 appearance-none border-0 bg-transparent p-0 te
 function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const { daXong, dangChon, nut, nguoi } = useDong(it, dong);
   const tvv = laViecTvvTheoEm(it);
-  const ten = tenViec(boDongTu(it.group, tenBoEmGoc(it)));
+  const ten = voiLop(it, tenViec(boDongTu(it.group, tenBoEmGoc(it))));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
-  /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). */
-  const phu = [...thePhu([it.classCode, sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
+  /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). GD-1b: lớp đã ở tên dòng. */
+  const phu = [...thePhu([sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
     .filter((x) => !ten.includes(x)), ...(it.coNhap ? [t('Có nháp')] : [])];
   const muc = chipMuc(it, true);
   const bam = () => dong.onOpen(it);
@@ -435,10 +437,9 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const tenGoc = phan.filter((x) => x !== it.classCode && !laThe(x)).join(' · ') || phan[0];
   /* 06/11: số em chỉ ghi MỘT lần — tên việc đã có "n em", hoặc việc cả lớp có thẻ ngữ cảnh "n em chưa chọn" thì không thêm "n HV". */
   const daCoSoEm = phan.some((x) => /^\d+ (em|HV)$/.test(x)) || (viecCaLop && !!ngCanh && /^\d+ em/.test(ngCanh));
-  const daNoi = (x: string) => it.tieuDe.includes(x.replace(/^Lớp /, ''));
+  /* GD-1b: lớp lên tên dòng ("MB FT 101 · Listening, Reading") — dòng phụ không lặp lớp. */
   const phu = thePhu([
-    caLop ? it.classCode : gop || viecCaLop ? null : it.studentName,
-    !caLop && it.classCode && it.studentName !== 'Lớp ' + it.classCode && !daNoi(it.classCode) ? it.classCode : null,
+    caLop || gop || viecCaLop || it.studentName === 'Lớp ' + it.classCode ? null : it.studentName,
     ngCanh,
     /* AUDIT-UI CV8: nút khay đã ghi "3 em ▾" → dòng phụ không lặp "· 3 em". */
     ...phan.filter((x) => x !== it.classCode && laThe(x) && !(gop && /^\d+ việc$/.test(x) && phan.some((y) => /^\d+ em$/.test(y))) && !(con && nut === dich(x))),   // "4 em · 8 việc" → chỉ "4 em"
@@ -452,7 +453,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
         <span className="grid min-w-0 gap-0.5">
           <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}
             aria-current={dangChon ? 'true' : undefined} className={`${TEN} ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
-            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={caTuan ? t('Cả lớp') : tenViec(boDongTu(it.group, tenGoc))} ma={dong.theCn?.(it)} /></span>
+            <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={caTuan ? t('Cả lớp') : voiLop(it, tenViec(boDongTu(it.group, tenGoc)))} ma={dong.theCn?.(it)} /></span>
             {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
             {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
           </button>
@@ -500,7 +501,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const em = con ? [...new Map(con.map((c) => [c.studentId, { ten: c.studentName, x: c as WorkItem }])).values()]
     : it.emTen ? it.emTen.map((ten) => ({ ten, x: it })) : it.studentId !== null ? [{ ten: it.studentName, x: it }] : [];
   const n = con ? em.length : it.count ?? em.length;
-  const ten = tenGon(it.group) ?? dich(it.tieuDe.split(' · ')[0]);
+  const ten = voiLop(it, tenGon(it.group) ?? dich(it.tieuDe.split(' · ')[0]));
   const hai = em.length > 1 && em[0].ten.length + em[1].ten.length <= HAI_CHIP_TOI_DA;
   const hien = em.slice(0, hai ? 2 : 1);
   const dongTu = nutGon(it.group) ?? dich(it.actionLabel);
@@ -520,7 +521,6 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
           </button>
           <span className="flex h-[22px] min-w-0 items-center gap-1.5 overflow-hidden max-sm:h-auto max-sm:flex-wrap max-sm:overflow-visible">
             {nguoi && !daXong && <span className="mr-1 shrink-0"><NguoiGiu ten={nguoi} /></span>}
-            {it.classCode && <span className="mr-1 shrink-0 whitespace-nowrap text-[13px] font-medium text-faint">{it.classCode}</span>}
             {hien.map((e, i) => (
               <button key={i} type="button" className={`${CHIP} cursor-pointer appearance-none bg-transparent hover:border-[color:var(--accent)] hover:text-[color:var(--text)] ${i ? 'max-sm:hidden' : ''}`}
                 style={{ borderColor: 'var(--line-strong)' }} title={t('Mở việc của {ten}', { ten: e.ten })} onClick={(ev) => { ev.stopPropagation(); dong.onOpen(e.x); }}>{e.ten}</button>

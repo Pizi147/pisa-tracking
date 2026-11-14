@@ -96,8 +96,8 @@ export async function runPrKhungNganXepTests(t: YThucTestKit) {
       assert(!/dauViec\(/.test(docSach(f)), `${f} chỉ đọc mà dùng dauViec (nhãn VIỆC)`);
     }
     for (const f of ['web/src/modules/congViec/PanelChamSpeaking.tsx', 'web/src/modules/yThuc/LoYThucPanel.tsx']) {
-      /* GD-2 (V6 K3): "Việc chung · Chấm Speaking" — nhãn loại vẫn mở đầu bằng "Việc". */
-      assert(/loai: t\('Việc( chung · [^']+)?'\)/.test(docSach(f)), `${f} là panel việc mà mất nhãn VIỆC`);
+      /* GD-2 (V6 K3) → GD-1b (lời 24): "Việc · Chấm Speaking" — nhãn loại vẫn mở đầu bằng "Việc". */
+      assert(/loai: t\('Việc( (chung )?· [^']+)?'\)/.test(docSach(f)), `${f} là panel việc mà mất nhãn VIỆC`);
     }
   });
 
