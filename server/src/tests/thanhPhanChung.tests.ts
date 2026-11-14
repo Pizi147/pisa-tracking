@@ -487,7 +487,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
 
   console.log('\nNT-SUA · nghiệm thu V6');
   check('NT-SUA P1-2 · đếm bài của việc Nhập điểm: dòng việc "n bài" = đầu panel "còn n / m" (em ngoài dòng việc / ngừng học không vào)', () => {
-    const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'cho_diem' : 'da_cham' });
+    const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'due' : 'scored' });
     const cells = (b: number | null) => [{ skill: 'listening', weekStart: '2026-07-06', ...o(b) }, { skill: 'reading', weekStart: '2026-07-06', ...o(b) }];
     const rows = [
       { studentId: 1, attemptNo: 1, cells: cells(null) }, { studentId: 2, attemptNo: 1, cells: cells(null) },   // 2 em của dòng việc × L, R = 4 ô

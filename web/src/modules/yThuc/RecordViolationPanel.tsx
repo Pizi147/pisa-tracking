@@ -1,3 +1,4 @@
+import { xoaViPham } from './DeleteViolationConfirm.tsx';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../../lib/api.ts';
 import { lamMoiYThuc as lamMoiCache } from './kieu.ts';
@@ -113,12 +114,12 @@ export function RecordViolationPanel({
   const suaDong = (key: number, v: Partial<Dong>) => setDong((ds) => ds.map((d) => (d.key === key ? { ...d, ...v } : d)));
   const themDong = () => setDong((ds) => [...ds, moiDong(Math.max(...ds.map((d) => d.key)) + 1, ds[ds.length - 1].ngay)]);
 
-  /** NT-SUA (luật chủ SP 21/10 "luôn Hoàn tác ngắn"): Hoàn tác = xoá đúng các vi phạm vừa tạo (`DELETE /violations/:id` — người ghi xoá được; chụp vào thùng rác 30 ngày nên khôi phục được). */
+  /** NT-SUA (luật chủ SP 21/10 "luôn Hoàn tác ngắn"): Hoàn tác = xoá đúng các vi phạm vừa tạo bằng MỘT đường xoá chung (`xoaViPham`: người ghi xoá được, thùng rác 30 ngày, toast "Đã xoá vi phạm · Hoàn tác" khôi phục). */
   const hoanTacGhi = async (ids: number[]) => {
     let hong = 0;
-    for (const id of ids) { try { await api.del(`/violations/${id}`); } catch { hong++; } }
-    lamMoiCache(); onDone?.();
-    toast.push(hong ? 'error' : 'ok', t('Đã rút {n}/{m}', { n: ids.length - hong, m: ids.length }));
+    for (const id of ids) { try { await xoaViPham(toast, id); } catch { hong++; } }
+    onDone?.();
+    if (hong) toast.push('error', t('Chưa rút được {n} vi phạm', { n: hong }));
   };
   const xongHan = (cau: string, ids: number[]) => {
     lamMoiCache(); reset(); onClose(); onDone?.();
