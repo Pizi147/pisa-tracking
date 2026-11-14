@@ -1,5 +1,5 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { createPortal } from 'react-dom';
 import { useApi, useGopTaiLai } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -8,7 +8,7 @@ import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { BranchFilter, WeekPicker, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { IconGap } from '../../ui/BieuTuong.tsx';
-import { useDienThoai } from '../../ui/TheDong.tsx';
+import { useDienThoai, useManHinh } from '../../ui/TheDong.tsx';
 import { CongTacKhung, phamViCoHaiKhung } from '../../ui/CongTacKhung.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinhHep } from '../cham/LuoiChamLop.tsx';
@@ -21,6 +21,7 @@ import { HangLop } from './lichTest/HangLop.tsx';
 import { NhomDau } from './lichTest/NhomDau.tsx';
 import { dangMo, docMo, ghiMo } from './lichTest/moLop.ts';
 import { NganXuatTest } from './NganXuatTest.tsx';
+import { MenuDong, NUT_BA_CHAM, type MucMenu } from '../../ui/MenuDong.tsx';
 import { DanhSachNguon } from '../../ui/OSo.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -45,7 +46,10 @@ export function LichTestTab() {
   const { session, branchCount } = useSession();
   const nguoiId = session?.user?.id ?? null;
   const { homNay } = useNgayNghiepVu();
+  const navigate = useNavigate();
   const hep = useManHinhHep();
+  /* GD-11a (⑦ A6): < 1024 px hàng lớp thành thẻ (cùng ngưỡng hàng Quá hạn). */
+  const gon = useManHinh('(max-width: 1023px)') || hep;
   /* Điện thoại (UX-D8, mockup 13 mục 4): hàng lọc gọn — tuần + công tắc khung ở trên, phần còn lại gom vào nút "Lọc". */
   const dienThoai = useDienThoai();
   const [moLoc, setMoLoc] = useState(false);
@@ -213,7 +217,8 @@ export function LichTestTab() {
     lam();
   };
   const nutMoHet = !!session?.nav?.testPlan && lopTab.length > 0 && (
-    <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" aria-pressed={moHetLop}
+    /* GD-11a (⑦ A3, G2 "nút là nút"): nút nhỏ chuẩn, không chữ link. */
+    <button type="button" className="btn btn-sm max-sm:min-h-[44px]" aria-pressed={moHetLop}
       onClick={doiMoHet}>{moHetLop ? t('Thu gọn tất cả') : t('Mở tất cả lớp')}</button>
   );
 
@@ -243,7 +248,8 @@ export function LichTestTab() {
     cuon('lich-test-k3');
   };
 
-  if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
+  /* GD-11a (⑦ A5): lỗi = câu chuẩn trong thẻ, nói rõ chưa mất gì; chi tiết máy chủ ở dòng phụ. */
+  if (error) return <div className="card p-3"><ErrorState message={t('Không tải được Lịch Test tuần.')} hint={`${t('Dữ liệu đã lưu không mất.')} ${error.hint ?? error.message}`} status={error.status} onRetry={reload} /></div>;
   if (!data) return <Skeleton rows={6} />;
   if (data.scopeEmpty) return <div className="card"><Empty title={t('Bạn chưa được cấp phạm vi nào')} /></div>;
 
@@ -254,7 +260,7 @@ export function LichTestTab() {
   const tenKhung = (k: Loai) => (k === 'ft' ? 'Fast Track' : t('Lớp thường'));
   /* "5 lớp · 2 đã chấm xong" — lớp xong đếm riêng (OV-11e TE-7: người có phân công tính phần của mình). */
   /* B21 (U06 #8, mockup V11): đơn vị khớp dòng — "4 lớp · 5 lượt" (một lớp có thể hai lượt / hai bài); bỏ "· n đã chấm xong" (PTA 03/11). */
-  const tomTatTuan = lopTab.length ? t('{n} lớp · {m} lượt', { n: new Set(lopTab.map((l) => l.classId)).size, m: lopTab.length }) : t('Không có Test');
+  const tomTatTuan = lopTab.length ? t('{n} lớp · {m} lượt', { n: new Set(lopTab.map((l) => l.classId)).size, m: lopTab.length }) : undefined;
   /* B13: dải số có MỘT nhãn nhóm — người có phân công "Của bạn:", Quản lý / Quản trị "Cả chi nhánh:". */
   const coPhan = [...lopTab, ...noTab].some((l) => !!l.phan);
 
@@ -276,14 +282,21 @@ export function LichTestTab() {
   const nutXuat = session?.nav?.xuatMt && (
     <button type="button" className="btn h-9 text-sm font-semibold max-sm:min-h-[44px]" aria-haspopup="dialog" data-hd="test-xuat" onClick={() => setMoXuat(true)}>{t('Xuất Excel…')}</button>
   );
+  const duongLichThi = `/hoc-vien?view=lich-thi&thang=${thangKeTiep(homNay)}${branchId ? `&cn=${branchId}` : ''}`;
   /* OV-15f: lối vào Học viên & Lớp › Lịch thi (rà soát thi thật), tháng kế tiếp; mang theo chi nhánh đang lọc. */
   const nutLichThi = session?.nav?.students && (
     <Link className="link inline-flex min-h-[44px] items-center whitespace-nowrap text-[13px] sm:min-h-0" data-hd="test-lich-thi-that"
-      to={`/hoc-vien?view=lich-thi&thang=${thangKeTiep(homNay)}${branchId ? `&cn=${branchId}` : ''}`}>{t('Lịch thi thật ›')}</Link>
+      to={duongLichThi}>{t('Lịch thi thật ›')}</Link>
   );
+  /* GD-11a (⑦ A6): 375 — "Xuất Excel…" + "Lịch thi thật ›" gom vào MỘT nút ⋯ 44 px ở đầu trang. */
+  const mucBaCham: MucMenu[] = [
+    ...(session?.nav?.xuatMt ? [{ key: 'xuat', nhan: t('Xuất Excel…'), onChon: () => setMoXuat(true) }] : []),
+    ...(session?.nav?.students ? [{ key: 'lich-thi', nhan: t('Lịch thi thật ›'), onChon: () => navigate(duongLichThi) }] : []),
+  ];
+  const nutBaCham = mucBaCham.length > 0 && <MenuDong muc={mucBaCham} nhan={t('Thao tác khác · Test')} lopNut={NUT_BA_CHAM} />;
   const locChiNhanh = <BranchFilter branchId={branchId} onBranch={(id) => datThamSo({ cn: id ? String(id) : null, branchId: null })} />;
   /* Số lựa chọn đang KHÁC mặc định: chi nhánh đã chọn, phạm vi "Tất cả" (máy chủ mặc định 'cua-toi' khi GV có lớp). */
-  const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0) + (loaiParam ? 1 : 0);
+  const soLoc = (branchId ? 1 : 0) + (data.coPhamViRong && data.phamVi !== 'cua-toi' ? 1 : 0);
   const coGiTrongLoc = branchCount > 1 || !!data.coPhamViRong;
 
   /* PR-MT (K2-32): nhắc — không số đỏ, không vào dải số hay Nợ, không hạn. Chỉ GVCN của lớp / Quản lý thấy. U06 (mockup V11): dòng cuối TRONG thẻ nhóm, chữ nhấn. */
@@ -312,12 +325,13 @@ export function LichTestTab() {
       {/* U06 (mockup V11 khu A): thanh tuần ĐỨNG NGOÀI thẻ · dải số một thẻ · các nhóm một thẻ. Điện thoại: tuần + "Lọc". */}
         <div className="flex flex-wrap items-center gap-2">
           {tuanPicker}
-          {!dienThoai && <span className="ml-1 inline-flex flex-wrap items-center gap-2">{congTacKhung}{nhomPhamVi}</span>}
+          {/* ⑦ A6: 375 công tắc khung vẫn trên hàng tuần; phạm vi + chi nhánh trong "Lọc". */}
+          <span className="ml-1 inline-flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">{congTacKhung}{!dienThoai && nhomPhamVi}</span>
           {!dienThoai && locChiNhanh}
           <span className="ml-auto inline-flex items-center gap-3">
             {nutMoHet}
-            {nutLichThi}
-            {dienThoai && (coGiTrongLoc || !!congTacKhung) && (
+            {!dienThoai && nutLichThi}
+            {dienThoai && coGiTrongLoc && (
               <button ref={nutLoc} type="button" className="btn btn-sm min-h-[44px] shrink-0" aria-expanded={moLoc}
                 onClick={() => setMoLoc((v) => !v)}>
                 {t('Lọc')}{soLoc ? ` · ${soLoc}` : ''} <IconGap mo={moLoc} />
@@ -327,16 +341,16 @@ export function LichTestTab() {
           {/* Mockup 375: chip khung, phạm vi, chi nhánh gom vào "Lọc" (G1-08: Xuất Excel… lên hàng tiêu đề). */}
           {dienThoai && moLoc && (
             <div className="grid w-full gap-3 pt-1">
-              {congTacKhung}
               {locChiNhanh}
               {nhomPhamVi}
             </div>
           )}
           {urlClassId && (
             <div className="w-full">
-              <button type="button" onClick={() => datThamSo({ classId: null, kn: null })} title={t('Bỏ lọc lớp')}
+              {/* GD-11a (⑦ A4, R7.5): một tên "Lớp: X ✕" — cùng dáng chip bỏ lọc ở Kế hoạch Test. */}
+              <button type="button" onClick={() => datThamSo({ classId: null, kn: null })} aria-label={t('Bỏ lọc lớp')}
                 className="nut-loc nut-loc-dang">
-                {t('Đang lọc: lớp')}{' '}{data.lopDangLoc?.code ?? `#${urlClassId}`} <span aria-hidden>✕</span>
+                {t('Lớp: {ma}', { ma: data.lopDangLoc?.code ?? `#${urlClassId}` })} <span aria-hidden>✕</span>
               </button>
             </div>
           )}
@@ -346,13 +360,13 @@ export function LichTestTab() {
           <div className="card"><Empty title={t('{khung} · {maTuan} không có Test nào', { khung: tenKhung(loai!), maTuan })}
             action={<button type="button" className="btn btn-sm" onClick={() => datThamSo({ loai: khungKhac })}>{tenKhung(khungKhac)} · {t('{n} lớp', { n: dem[khungKhac] })} ›</button>} /></div>
         ) : trong ? (
-          <div className="card"><Empty title={t('{maTuan} không có Test nào', { maTuan })}
-            hint={session?.nav?.testPlan ? t('Đổi tuần ở trên, hoặc mở Kế hoạch Test để xếp lịch.') : t('Đổi tuần ở trên để xem tuần khác.')} /></div>
+          /* GD-11a (⑦ A5): rỗng một dòng. */
+          <div className="card px-4 py-5 text-sm text-dim">{data.tuan ? t('Tuần {maTuan} không có Test.', { maTuan }) : t('Tuần này không có Test.')}</div>
         ) : (
           <>
             {/* UX-2 (1): ô "bài quá hạn" lấy từ `/cham/lich-test/qua-han`, theo khung đang xem (OV-14b) như hai ô đầu. */}
             <DaiSo tq={((tq) => ({ ...tq, no: { bai: quaHan?.n ?? 0, lop: quaHan?.lop ?? 0 }, khac: { ...tq.khac, no: quaHan?.khac ?? 0 } }))(loai ? data.tongQuanKhung[loai] : data.tongQuan)}
-              onBam={bamSo} dangTaiNo={!quaHan} nhom={coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
+              onBam={bamSo} dangTaiNo={!quaHan} nhom={dienThoai ? undefined : coPhan ? t('Của bạn:') : t('Cả chi nhánh:')} />
             <DanhSachNguon nguon={`/cham/lich-test/qua-han?${qsQuaHan}&rows=1`} tieuDe={t('Quá hạn chấm')} open={moQuaHan} onClose={() => setMoQuaHan(false)} />
             <div className="card overflow-clip p-0">
             <KhoiNo no={noTab} mo={moKhoi.k1} onMo={() => thuKhoi('k1')}
@@ -369,9 +383,11 @@ export function LichTestTab() {
               <NhomDau id="lich-test-k3-than" rong={!lopTab.length} mo={moKhoi.k3 && lopTab.length > 0} onMo={() => thuKhoi('k3')}
                 tieuDe={data.laTuanNay ? t('Test tuần này') : t('Test {maTuan}', { maTuan })} phu={tomTatTuan}>
                 {/* shortcut: lượt S Ex của em ở lớp không có Test tuần đó không có hàng lớp để hiện (xem ở Kế hoạch Test) — thêm hàng riêng nếu chủ SP cần. */}
-                <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} hep={hep}
+                <HangLop lop={lopTab} moCua={moCua} onMo={doiMo} onLopTiep={lopTiep} coChiNhanh={branchCount > 1 && !branchId} gon={gon}
                   urlClassId={urlClassId} urlKn={urlKn} conTro={conTro} onDaLuu={baoDaLuu} chuaLuu={chuaLuu} baoChuaLuu={baoChuaLuu} sEx={data.sEx} />
               </NhomDau>
+              {/* GD-11a (⑦ A5): tuần không có Test — một dòng trong nhóm (Quá hạn chấm vẫn ở trên). */}
+              {!lopTab.length && <div className="px-4 py-5 text-center text-sm text-dim">{data.tuan ? t('Tuần {maTuan} không có Test.', { maTuan }) : t('Tuần này không có Test.')}</div>}
             </div>
             {nhacMtCu}
             </div>
@@ -379,7 +395,7 @@ export function LichTestTab() {
         )}
       <ConfirmDialog open={!!hoiBo} onClose={() => setHoiBo(null)} title={hoiBo?.title ?? ''} body={hoiBo?.body} danger
         confirmLabel={hoiBo?.nut} closeLabel={t('Ở lại')} onConfirm={() => { hoiBo?.tiep(); setHoiBo(null); }} />
-      {choNut && nutXuat && createPortal(nutXuat, choNut)}
+      {choNut && (dienThoai ? nutBaCham : nutXuat) && createPortal(dienThoai ? nutBaCham : nutXuat, choNut)}
       {moXuat && data.tuan && (
         <NganXuatTest dau="diem" lich={{ branchId, classIds: [] }} onDong={() => setMoXuat(false)}
           diem={{ khung: loai ?? 'ft', chiNhanh: branchId, lop: urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null,

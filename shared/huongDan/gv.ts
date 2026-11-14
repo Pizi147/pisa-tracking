@@ -179,7 +179,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'xem-lich-test', ten: 'Xem Test tuần này, bài quá hạn chấm', nhom: 'lich',
       loiChinh: { man: 'lich-test', chu: 'Test › Lịch Test tuần', duong: '/test/lich', chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Mỗi lớp một dòng — bấm dòng để gõ điểm.' } },
-      buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>; <b>Lớp tôi dạy</b> / <b>Tất cả</b>.', '<b>Quá hạn chấm</b> ở trên, <b>Test tuần này</b> ở dưới — mỗi lớp một dòng.'],
+      buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>; <b>Lớp tôi dạy</b> / <b>Tất cả</b>.', '<b>Quá hạn chấm</b> ở trên, <b>Test tuần này</b> ở dưới — mỗi lớp một dòng: đợt · môn của bạn · hạn chấm · bài chờ duyệt dời.'],
       tuKhac: ['lịch test', 'quá hạn', 'schedule'],
     },
     {
@@ -273,7 +273,7 @@ export const HD_GV: HuongDan = {
         { id: 'lt-nhap-diem', viec: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final',
           buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>.', 'Bấm dòng lớp: lưới điểm mở ngay dưới.', 'Gõ điểm; em vắng gõ <b>-</b>.'],
           chi: { hd: 'lich-test-tuan', duong: '/test/lich', chu: 'Mỗi lớp một dòng — bấm dòng để gõ điểm.' } },
-        { id: 'lt-thi-that', ten: 'Lịch thi thật', buoc: ['<b>Lịch thi thật ›</b> ở hàng tuần: em thi tháng này.'],
+        { id: 'lt-thi-that', ten: 'Lịch thi thật', buoc: ['<b>Lịch thi thật ›</b> ở hàng tuần: em thi tháng này.', 'Điện thoại: <b>⋯</b> cạnh tên trang › <b>Lịch thi thật ›</b>.'],
           chi: { hd: 'test-lich-thi-that', duong: '/test/lich', chu: 'Lịch thi thật ở đây.' } },
       ],
     },

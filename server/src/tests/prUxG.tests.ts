@@ -97,13 +97,13 @@ export async function runPrUxGTests(t: YThucTestKit) {
   // ------------------------------------------------------------------ G4 · Lịch Test: cột thao tác nằm trong khung
   console.log('\nUX-G · G4 Lịch Test không cắt nút Nhập điểm');
   check('G4 · bảng Nợ tuần trước: cột thao tác rộng ≥ 110 px (nút "Nhập điểm" 86 px + đệm 2×12) ở cả bảng rộng lẫn hẹp; cột GV chấm xuống dòng, không cắt "…"', () => {
+    /* GD-11a (⑦ A1): hàng Quá hạn dùng bộ cột chung `COT_LICH_TEST` — cột nút ≥ 110 px; ô "còn chờ" một dòng cắt "…" CÓ `title` đủ chữ (mockup `.gc`). */
     const s = doc('web/src/modules/test/lichTest/KhoiNo.tsx');
-    const m = /const COT_THAO_TAC = (\d+)/.exec(s);
-    assert(m && Number(m[1]) >= 110, `COT_THAO_TAC = ${m?.[1]}`);
-    assert((s.match(/width: COT_THAO_TAC/g) ?? []).length === 2, 'cả hai colgroup phải dùng COT_THAO_TAC');
-    /* PR-LT3: ô GV chấm vẽ bằng <GvCham> (tô "GV chấm chéo") — vẫn xuống dòng, không cắt. */
-    const gv = s.split('\n').find((l) => /<td[^>]*><GvCham gv=\{d\.gvNo\} \/><\/td>/.test(l)) ?? '';
-    assert(gv && !/truncate/.test(gv), `ô GV chấm còn truncate: ${gv.trim()}`);
+    const m = /export const COT_LICH_TEST = \[([^\]]+)\]/.exec(doc('web/src/modules/test/lichTest/HangLop.tsx'));
+    const cuoi = Number(m?.[1].split(',').pop());
+    assert(cuoi >= 110, `cột nút = ${cuoi}`);
+    assert(/<ColLichTest \/>/.test(s) && /w-full justify-center/.test(s), 'hàng Quá hạn: bộ cột chung + nút hết bề rộng cột');
+    assert(/className="lt-gc" title=\{chuConChoDong/.test(s), 'ô còn chờ phải có title đủ chữ');
   });
 
   // ------------------------------------------------------------------ G5 · 0 vi phạm: không hai nút chính, ô nói "Không có vi phạm"

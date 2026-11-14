@@ -231,7 +231,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'xem-lich-test', ten: 'Xem Test tuần này, bài quá hạn chấm', nhom: 'lich',
       loiChinh: { man: 'lich-test', chu: 'Test › Lịch Test tuần', duong: TEST },
-      buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>.', '<b>Quá hạn chấm</b> ở trên, <b>Test tuần này</b> ở dưới — mỗi lớp một dòng; <b>Mở tất cả lớp</b> mở hết lưới.'],
+      buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>.', '<b>Quá hạn chấm</b> ở trên, <b>Test tuần này</b> ở dưới — mỗi lớp một dòng: đợt · môn · hạn chấm · <b>Còn chờ</b> GV (môn); <b>Mở tất cả lớp</b> mở hết lưới.'],
       tuKhac: ['lịch test', 'quá hạn', 'schedule'],
     },
     {
@@ -409,8 +409,8 @@ export const HD_QL: HuongDan = {
       muc: [
         { id: 'lt-nhap-diem', viec: 'sua-diem', ten: 'Nhập điểm, sửa điểm một lớp', buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>.', 'Bấm dòng lớp: lưới điểm mở ngay dưới.', 'Gõ điểm; sửa điểm đã có: bấm ô, ghi <b>Lý do sửa</b>.'],
           chi: { hd: 'lich-test-tuan', duong: TEST, chu: 'Mỗi lớp một dòng — bấm dòng để mở lưới điểm.' } },
-        { id: 'lt-xuat', viec: 'xuat-test', ten: 'Xuất Excel kết quả Test', buoc: ['<b>Xuất Excel…</b> ở hàng tiêu đề: tab <b>Điểm Test</b> theo phạm vi của bạn; cột <b>Email</b> ngay sau Tên.', 'Điện thoại: nút nằm ở hàng tiêu đề, cạnh tên trang.'] },
-        { id: 'lt-lich-thi', ten: 'Lịch thi thật', buoc: ['<b>Lịch thi thật ›</b> mở Học viên & Lớp, tab <b>Lịch thi</b>, tháng kế tiếp.'],
+        { id: 'lt-xuat', viec: 'xuat-test', ten: 'Xuất Excel kết quả Test', buoc: ['<b>Xuất Excel…</b> ở hàng tiêu đề: tab <b>Điểm Test</b> theo phạm vi của bạn; cột <b>Email</b> ngay sau Tên.', 'Điện thoại: <b>⋯</b> cạnh tên trang › <b>Xuất Excel…</b>.'] },
+        { id: 'lt-lich-thi', ten: 'Lịch thi thật', buoc: ['<b>Lịch thi thật ›</b> mở Học viên & Lớp, tab <b>Lịch thi</b>, tháng kế tiếp.', 'Điện thoại: <b>⋯</b> cạnh tên trang › <b>Lịch thi thật ›</b>.'],
           chi: { hd: 'test-lich-thi-that', duong: TEST, chu: 'Bấm <b>Lịch thi thật ›</b> để xem ngày thi.' } },
       ],
     },
