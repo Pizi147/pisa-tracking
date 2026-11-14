@@ -28,7 +28,7 @@ export const quyCheXuLy = (cach: 'nang' | 'giu' | 'vuot' | 'ngoai', o: { tvv: st
   const chiTiet = t('Quá {n} ngày QL chưa duyệt: giữ quyết định của bạn. TVV nhận việc báo PH sau khi chốt.', { n: o.soNgay });
   return cach === 'ngoai'
     ? { chu: t('Ngoài thang: cần tệp bằng chứng · QL duyệt {n} ngày', { n: o.soNgay }), chiTiet }
-    : { chu: t('Gửi QL duyệt {n} ngày · hết hạn giữ cách của bạn · TVV chưa có việc', { n: o.soNgay }), chiTiet };
+    : { chu: t('Gửi Quản lý duyệt {n} ngày · hết hạn giữ cách của bạn · TVV chưa có việc', { n: o.soNgay }), chiTiet };
 };
 
 /** Q48 / Q49 (luat/3 mục 2 (a), mục 4): GVCN ghi "Đã thực hiện". `nhan` = tên bậc đã dịch; lần ngoài thang (không bậc) → câu không có bậc. */
@@ -43,8 +43,8 @@ export const quyCheDaThucHien = (nhan: string | null, phDuMeeting: boolean): Quy
 export const quyCheThuHoi = (o: { ql: boolean; soNgay: number; daBaoPh: boolean; baoLai: boolean }): QuyChe => o.ql
   ? { chu: !o.daBaoPh ? t('Thu hồi ngay · bậc tính lại') : o.baoLai ? t('Thu hồi ngay · bậc tính lại · TVV báo lại PH') : t('Thu hồi ngay · bậc tính lại · TVV không báo lại PH') }
   : {
-    chu: o.daBaoPh ? t('Gửi QL duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại · TVV báo lại PH', { n: o.soNgay })
-      : t('Gửi QL duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại', { n: o.soNgay }),
+    chu: o.daBaoPh ? t('Gửi Quản lý duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại · TVV báo lại PH', { n: o.soNgay })
+      : t('Gửi Quản lý duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại', { n: o.soNgay }),
     chiTiet: t('Quá {n} ngày QL chưa duyệt: thu hồi theo bạn. TVV đã báo PH thì nhận việc báo lại.', { n: o.soNgay }),
   };
 

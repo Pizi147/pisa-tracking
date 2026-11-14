@@ -275,7 +275,9 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
 function PanelBaoPh({ it, onDong, onDaLam }: { it: WorkItem; onDong: () => void; onDaLam: () => void }) {
   const { data, loading, error, reload } = useApi<{ rows: CoordTurn[] }>(`/students/${it.studentId}/phoi-hop-sos`, [it.studentId]);
   return (
-    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dauViec({ em: { id: it.studentId!, ten: it.studentName }, lop: it.classCode, ngCanh: it.contextLabel })} onDong={onDong} quyChe={quyCheBaoPhTest()}>
+    <KhungPanel tieuDe={dich(it.tieuDe)} dau={dauViec({ em: { id: it.studentId!, ten: it.studentName }, lop: it.classCode, ngCanh: it.contextLabel })} onDong={onDong}
+      /* Lời 40: còn lượt chưa xong mà bạn làm được mới hiện câu — đã báo PH hết thì không. */
+      quyChe={data?.rows.some((r) => r.canAct && !r.summary.complete) ? quyCheBaoPhTest() : null}>
       <div className="pt-3">
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
           : <PhoiHopSosSection turns={data?.rows ?? null} loading={loading} cot1="luot" onChanged={() => { reload(); onDaLam(); }} />}
@@ -476,7 +478,7 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
     ngCanh: <><Link className="ten-ho-so" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{it.classCode}</Link>{` · ${tvv ? t('{n} em cần báo', { n }) : t('{n} em cần làm', { n })}`}</>,
   });
   return (
-    <KhungPanel hd="phoi-hop-sos" tieuDe={ten} dau={dau} onDong={onDong} quyChe={qc}
+    <KhungPanel hd="phoi-hop-sos" tieuDe={ten} dau={dau} onDong={onDong} quyChe={data?.rows.some((r) => r.canAct && !r.summary.complete) ? qc : null}
       chan={{
         huy: null,
         /* YT-b (mockup v19 B1–B2, XM-1 duyệt): panel chỉ còn em cần làm — việc đã làm xem / sửa ở hồ sơ lớp › Phối hợp SOS. */

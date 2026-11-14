@@ -291,7 +291,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
   /* 6c (bảng kê lỗi 9): Sửa việc = view kế trong CÙNG panel (‹ về việc, ✕ đóng cả panel), không mở panel đè. */
   if (data && editing) return <SuaViec onClose={() => setEditing(false)} dongCa={onClose} task={data} onDone={() => { reload(); onDone(); }} />;
   return (
-    <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai} quyChe={data ? quyCheViecGiao() : null}
+    <KhungPanel tieuDe={data?.title ?? t('Công việc')} rong="rong" onDong={onClose} quayLai={quayLai} quyChe={data?.viewer?.canUpdate && !['done', 'stopped'].includes(data.progress) ? quyCheViecGiao() : null}
       ngCanh={data ? TASK_GROUP_LABEL[data.group as keyof typeof TASK_GROUP_LABEL] || undefined : undefined}>
       {loading && <div className="pt-3"><Skeleton rows={6} /></div>}
       {data && (

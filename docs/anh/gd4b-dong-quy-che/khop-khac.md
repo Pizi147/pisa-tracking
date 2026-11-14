@@ -74,6 +74,15 @@ Câu ở `shared/domain/quyChe.ts` (GD-3) + `quyCheCase.ts` · `quyCheYThuc.ts` 
 - **Bỏ dòng trùng:** thân Xác nhận xử lý "Lưu xong: TVV {ten} nhận việc báo PH · hạn …" (nay ở dòng quy chế Q45); KhongTheoDoiForm "Gửi Quản lý duyệt · trả lời trong n ngày · xem ở Yêu cầu của tôi" (nay Q15, "Kết quả xem ở Yêu cầu của tôi." vào ⓘ).
 - **Mục Báo PH (GVCN)** ở tab Ý thức & Phối hợp đứng SAU Phối hợp SOS (mục riêng `bao-ph-test`, cùng tên "Báo PH"); TVV giữ mục `bao-ph` trước Phối hợp như cũ (phép kiểm `prLt2a` (7)).
 
+## 3b. Ẩn theo trạng thái (lời 40, chủ SP 15/11: "thông tin hiện theo trạng thái của đối tượng")
+Dòng quy chế chỉ hiện khi việc còn làm được bởi người xem; đã xong / chỉ xem / hết em thì không hiện:
+- Bàn giao môn (GV): ẩn khi mọi ô đã viết (`conThieu` rỗng) · Bàn giao GVCN: ẩn khi đã xác nhận · Bàn giao đổi GV: chỉ khi viết được và phiếu còn mở.
+- Báo PH kết quả Test · Phối hợp SOS: ẩn khi không còn lượt chưa xong mà người xem làm được (`canAct && !summary.complete`).
+- Việc được giao: ẩn khi Hoàn thành / Dừng hoặc người xem không cập nhật được (`viewer.canUpdate`).
+- Khai cấp bậc cả lô: ẩn khi không còn em khai được · Khai cấp bậc một em: ẩn ở chế độ Sửa.
+- (đã có từ ba nhóm) Báo PH TVV: chỉ khi đang ghi · Trả lời tình hình: ẩn sau khi lưu · Chốt ngày / Sau thi: ẩn khi đã chốt · Duyệt QL: chỉ thẻ đang chờ · Xét lại: ẩn khi chỉ xem / hết em · Đã thực hiện: chỉ khi đang chờ ghi · Xem vi phạm: chỉ khi có vi phạm mới và xử lý được · Báo cáo PH: ẩn khi phần đã xong · Chấm Speaking: ẩn khi hết bài · Ghi kết quả PA: ẩn ở màn Sửa kết quả · Thêm PA: chỉ khi Case đang chạy · Mô tả Case: chỉ khi chờ mô tả và sửa được.
+- Bỏ hàm `quyCheVang` (GD-3) — không còn nơi gọi, thay bằng `quyCheNhapDiem` (đủ biến thể).
+
 ## 4. Thao tác TRƯỚC → SAU
 
 | Thao tác | Trước | Sau | |

@@ -374,7 +374,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai }: Chung
 
   return (
     <KhungPanel hd="ban-giao" quayLai={quayLai} rong={hai ? 'vua' : 'rong'} loai={t('Việc · Bàn giao')} onDong={dong}
-      quyChe={quyCheBanGiao(false, han, homNay)}
+      quyChe={conThieu.length ? quyCheBanGiao(false, han, homNay) : null}
       tieuDe={hai ? t('Bàn giao môn {mon} · {lop}', { mon: mDs.map((x) => x.ngan).join(' · '), lop: dto.lop.code }) : t('Bàn giao môn {mon} ({ten})', { mon: mDs[0].ngan, ten: mDs[0].ten })}
       ngCanh={<span className="tabular-nums">{!hai && <>{dto.lop.code} · </>}{t('{n} em', { n: dto.tong })}{han && <> · <Han loai="viec-van-hanh" han={han} /></>} · {hai ? t('mỗi em một câu mỗi task') : t('mỗi em một câu')}</span>}
       chan={{

@@ -170,7 +170,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone 
 
   const COT = '[@container(min-width:600px)]:grid-cols-[28px_minmax(0,1fr)_150px_316px] [@container(min-width:600px)]:items-center';
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong" quyChe={quyCheKhaiBac()}
+    <KhungPanel tieuDe={tieuDe} onDong={onClose} rong="rong" quyChe={duoc.length ? quyCheKhaiBac() : null}
       dau={{ loai: han ? t('Việc') : undefined, han: han ? <ChipHan loai="xu-ly-vi-pham" han={han} /> : undefined,
         dong2: [lop ?? data.classCode, t('{n} HV', { n: ds.length }),
           <NutLuat key="luat" label={t('Bậc khai là gì')}>{t('Bậc cao nhất em đã bị xử lý trước khi dùng web. R = Report · WL = thư cảnh cáo · R4 = Report 4 + Meeting CX/GĐCN.')}</NutLuat>] }}
