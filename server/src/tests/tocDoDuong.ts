@@ -477,6 +477,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* GD-7a (XM-10): hồ sơ HV thêm Nhập điểm + Trả lời tình hình của người xem (listAttempts theo em + câu tình hình): đo 66 / 66 / 74 / 72 câu → đo + 10. */
+  'QL /students/{hv}': 76, 'QT /students/{hv}': 76, 'GVCN /students/{hv}': 84, 'GVBM /students/{hv}': 82,
   /* GD-5 (ô chọn có tìm `ChonNguoi`): `/ref/nguoi` đo 3 câu mọi vai (chưa gõ / gõ / GV Speaking) — trần 25 câu / lần gõ (plan GD-5). */
   'QL /ref/nguoi?nhom=nhan_vien': 25, 'GVCN /ref/nguoi?nhom=nhan_vien': 25, 'GVBM /ref/nguoi?nhom=nhan_vien': 25, 'GVCN_THUONG /ref/nguoi?nhom=nhan_vien': 25, 'QT /ref/nguoi?nhom=nhan_vien': 25,
   'QL /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVCN /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVBM /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'GVCN_THUONG /ref/nguoi?q=ng&nhom=nhan_vien': 25, 'QT /ref/nguoi?q=ng&nhom=nhan_vien': 25,

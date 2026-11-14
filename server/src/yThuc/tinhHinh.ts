@@ -239,7 +239,7 @@ export function tinhHinhCuaEm(p: Principal, ids: readonly number[], homNay = dem
  * Công việc GVCN: câu TVV hỏi còn chờ ở lớp mình chủ nhiệm (một câu, chỉ mục `idx_tinh_hinh_cho`). Em không có GVCN → QL trong phạm vi giữ.
  * `tatCa` (QL "Của GV"): thêm câu của GVCN trong phạm vi.
  */
-export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null }): WorkItem[] {
+export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null; studentId?: number }): WorkItem[] {
   const lopCn = [...new Set(p.assignments.filter((a) => a.isCore && a.effectiveFrom <= o.today && (!a.effectiveTo || a.effectiveTo >= o.today)).map((a) => a.classId))];
   const ql = p.roleKeys.some((k) => k === 'manager' || k === 'system_admin');
   if (!lopCn.length && !ql) return [];
@@ -252,9 +252,9 @@ export function viecHoiTinhHinhCuaToi(p: Principal, o: { today: string; tatCa: b
                 AND ta.effective_from <= ?1 AND (ta.effective_to IS NULL OR ta.effective_to >= ?1) ORDER BY ta.id LIMIT 1) AS gvcn
        FROM (SELECT t.id, t.student_id, ${LOP} AS lop, t.noi_dung, t.han, s.full_name, gu.full_name AS nguoi_gui_ten
                FROM tinh_hinh_hoc_tap t JOIN students s ON s.id = t.student_id LEFT JOIN users gu ON gu.id = t.nguoi_gui
-              WHERE t.chieu = 'tvv_gvcn' AND t.trang_thai = 'mo') x LEFT JOIN classes c ON c.id = x.lop
+              WHERE t.chieu = 'tvv_gvcn' AND t.trang_thai = 'mo'${o.studentId ? ' AND t.student_id = ?' : ''}) x LEFT JOIN classes c ON c.id = x.lop
       ${ql ? '' : `WHERE x.lop IN (${DS_JSON})`} ORDER BY x.han, x.id`,
-  ).all(o.today, ...(ql ? [] : [JSON.stringify(lopCn)])) as any[];
+  ).all(o.today, ...(o.studentId ? [o.studentId] : []), ...(ql ? [] : [JSON.stringify(lopCn)])) as any[];
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
