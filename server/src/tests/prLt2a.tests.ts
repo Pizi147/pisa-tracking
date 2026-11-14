@@ -332,7 +332,11 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!dongViec(ha, 'kehoach:', em.id).length && !dongViec(P.mbManager, 'kehoach:', em.id).length, 'không còn dòng Nộp kế hoạch');
     assert(d.LOAI_HAN_CUA_VIEC.ke_hoach_bo_tro === undefined && d.nhomViecCua('phoi_hop') === 'y-thuc', 'nhóm + loại hạn');
     /* GD-4a (chủ SP 14/11): Báo PH kết quả Test nằm ở tab Ý thức & Phối hợp (GV / GVCN), mục "Báo PH". */
-    assert(d.tabCuaViec({ group: 'phoi_hop', key: 'baoph:1' }, false) === 'y-thuc' && d.mucCuaViec({ group: 'phoi_hop', key: 'baoph:1' }) === 'bao-ph', 'Báo PH kết quả Test phải ở tab Ý thức & Phối hợp, mục Báo PH');
+    assert(d.tabCuaViec({ group: 'phoi_hop', key: 'baoph:1' }, false) === 'y-thuc' && d.mucCuaViec({ group: 'phoi_hop', key: 'baoph:1' }) === 'bao-ph-test', 'Báo PH kết quả Test phải ở tab Ý thức & Phối hợp, mục Báo PH');
+    /* GD-4b (PTA Plan 15/11): mục Báo PH (không hạn) sau Phối hợp SOS ở tab Ý thức của GV; TVV giữ Báo PH trước Phối hợp. */
+    const thuTu = (ds: any[], tvv: boolean) => d.chiaMucTab(ds.map((x, i) => ({ ...x, key: `${x.group}:${i}`, urgency: 'normal', due: null, studentId: 1 })), tvv).map((m: any) => m.key).join(',');
+    assert(thuTu([{ group: 'phoi_hop' }, { group: 'phoi_hop_sos' }, { group: 'yt_xem' }], false) === 'vi-pham,phoi-hop,bao-ph-test', 'GV: mục Báo PH phải sau Vi phạm, Phối hợp SOS');
+    assert(thuTu([{ group: 'phoi_hop_tvv' }, { group: 'bao_ph_yt' }], true) === 'bao-ph,phoi-hop', 'TVV: thứ tự Báo PH → Phối hợp không đổi');
     const bp = dongViec(ha, 'baoph:', em.id);
     assert(bp.length === 1 && bp[0].group === 'phoi_hop' && bp[0].due === null && bp[0].tieuDe === 'Báo PH kết quả Test · LT2a VIEC · Progress Test', `Báo PH: ${JSON.stringify(bp.map((x) => [x.group, x.due, x.tieuDe]))}`);
     assert(!dongViec(khoa, 'baoph:', em.id).length, 'GVBM G+V không phải GVCN — không thấy Báo PH');
