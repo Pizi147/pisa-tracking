@@ -1,23 +1,23 @@
 import { ChipXetLaiDong } from './PanelXetLai.tsx';
 import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { ChipLoc, KHOI, MUC_H, TenEm, bamHang } from './BangHoSoLop.tsx';
-import { viecCase, type CanHoTro, type CaseCua } from './BangCanHoTro.tsx';
+import { tachViec, viecCase, type CanHoTro, type CaseCua } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { MenuDong, NUT_BA_CHAM } from '../../ui/MenuDong.tsx';
-import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
+import { ChipHan, Nhan, NhanKetPa } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { MissingBadge } from '../students/MissingBadge.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { OChon, OChonTatCa, type ChonNhieu } from '../students/chonNhieuHocVien.tsx';
-import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, CHUONG_TRINH_KHONG_CHIA_MON, OUTCOME_TONE, outcomeLabelFor, GIAI_THICH_KCK, KCK, duongHoSoHocVien, dongTabHocVien, khoaBai, locCanHoTro, nhanBai, tenMon, tenMonNgan, tuanLich, type AttemptKind, type LienHe } from '@shared/domain/index.ts';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -359,7 +359,10 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
   const coDiem = moc.filter((m) => Object.values(m.o).some((x) => x?.score != null));
   const moi = coDiem[coDiem.length - 1] ?? null;
   /* Môn mặc định: môn có Case quá hạn → môn có Case → môn chưa đạt ở mốc mới nhất → chưa chọn. */
-  const macDinh = mon.find((k) => caseMon(k).some((c) => c.quaHan)) ?? mon.find((k) => caseMon(k).length > 0) ?? mon.find((k) => moi?.o[k]?.outcome === 'fail') ?? null;
+  /* XM-K6: Case không gắn môn (vd Bổ trợ miễn phí "tổng hợp" — Mini Test) thành thẻ "Chung" cuối hàng thẻ; trước đây khung GD-6 làm rơi Case này. */
+  const hangChung = mon.length > 1 ? hang.find((h): h is Extract<typeof h, { kind: 'hang' }> => h.kind === 'hang' && h.khoa === 'chung') : undefined;
+  const the = hangChung ? [...mon, 'chung'] : mon;
+  const macDinh = the.find((k) => caseMon(k).some((c) => c.quaHan)) ?? the.find((k) => caseMon(k).length > 0) ?? mon.find((k) => moi?.o[k]?.outcome === 'fail') ?? null;
   const [chonTay, setChon] = useState<string | null>(null);
   const kn = chonTay ?? macDinh;
   const coPt = moc.some((m) => m.coPt);
@@ -369,6 +372,7 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
   const caKn = kn ? caseMon(kn) : [];
   const c0 = caKn[0] ?? null;
   const nguoiPa = c0?.pas.find((p) => p.nguoi)?.nguoi ?? null;
+  const coPa = caKn.slice(0, 2).some((c) => c.pas.length > 0);
   return (
     <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
       <section className={KHOI} style={{ borderColor: 'var(--line)' }} aria-label={t('Điểm theo lượt')}>
@@ -403,8 +407,8 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
       </section>
       <section className={KHOI} style={{ borderColor: 'var(--line)' }} aria-label={t('Môn')}>
         <h4 className={MUC_H}>{t('Môn')}</h4>
-        <div className="grid gap-2 max-sm:gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, mon.length)}, minmax(0,1fr))` }}>
-          {mon.map((k) => {
+        <div className="grid gap-2 max-sm:gap-1" style={{ gridTemplateColumns: `repeat(${Math.max(1, the.length)}, minmax(0,1fr))` }}>
+          {the.map((k) => {
             const cs = caseMon(k);
             const truoc = coDiem[coDiem.length - 2]?.o[k] ?? null;
             const sau = moi?.o[k] ?? null;
@@ -412,8 +416,8 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
             return (
               <button key={k} type="button" aria-pressed={kn === k} onClick={() => setChon(k)}
                 className={`grid gap-1 rounded-lg border px-2.5 py-2 text-left max-sm:justify-items-center max-sm:px-1 max-sm:py-1.5 ${kn === k ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)] [border-color:var(--accent)]' : 'bg-[color:var(--surface)] [border-color:var(--line)] hover:[border-color:var(--accent)]'}`}>
-                <span className={`text-[13px] font-bold ${qua ? 'text-late' : 'text-slate-100'}`} title={tenMon(ct, k)}>{tenMonNgan(ct, k)}{qua && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
-                <span className="text-[15px] font-bold tabular-nums">{truoc?.score != null && sau?.score != null && <span className="max-sm:hidden">{truoc.score} → </span>}<ODiemThuong o={sau} /></span>
+                <span className={`text-[13px] font-bold ${qua ? 'text-late' : 'text-slate-100'}`} title={k === 'chung' ? hangChung?.tenDu : tenMon(ct, k)}>{k === 'chung' ? hangChung?.nhan : tenMonNgan(ct, k)}{qua && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
+                {k !== 'chung' && <span className="text-[15px] font-bold tabular-nums">{truoc?.score != null && sau?.score != null && <span className="max-sm:hidden">{truoc.score} → </span>}<ODiemThuong o={sau} /></span>}
                 <span className={`text-xs max-sm:hidden ${qua ? 'font-semibold text-late' : 'text-dim'}`}>{!e ? (chot.data ? t('Không Case') : '…') : cs.length ? (cs.some((c) => c.pas.length > 0) ? t('Có Case · có PA') : t('Có Case')) : t('Không Case')}</span>
               </button>
             );
@@ -427,7 +431,7 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
         ) : kn && (
           <div className="grid gap-3 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
             <div className="flex flex-wrap items-center gap-2.5">
-              <h5 className="m-0 text-[15px] font-bold text-slate-100">{tenMon(ct, kn)}</h5>
+              <h5 className="m-0 text-[15px] font-bold text-slate-100">{kn === 'chung' ? hangChung?.tenDu : tenMon(ct, kn)}</h5>
               {nguoiPa && <span className={TAG_PHU} style={{ borderColor: 'var(--line-strong)' }}>{t('phụ trách')} <b>{nguoiPa}</b></span>}
               <span className="ml-auto flex gap-2 max-sm:ml-0 max-sm:w-full">
                 <Link className={`${NUT} no-underline`} to={duongHoSoHocVien(s.id)} state={{ ds }}>{t('Hồ sơ HV ›')}</Link>
@@ -435,8 +439,10 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
                   : coTheBaoCase && <button type="button" className={NUT} onClick={onThemCase}>+ Case</button>}
               </span>
             </div>
-            <div className="grid gap-4 sm:grid-cols-[minmax(0,1.2fr)_minmax(0,1.3fr)_minmax(0,1fr)] max-sm:gap-2.5">
-              <div className="grid content-start gap-1">
+            {/* Lời 40: cột Kết quả PA chỉ khi môn có PA — không Case / chưa PA thì không có kết quả để xem. */}
+            <div className="grid gap-4 max-sm:gap-2.5 sm:grid-cols-[var(--cot)]"
+              style={{ '--cot': [kn !== 'chung' && 'minmax(0,1.2fr)', coPa ? 'minmax(0,1.3fr)' : 'minmax(0,2.3fr)', coPa && 'minmax(0,1fr)'].filter(Boolean).join(' ') } as CSSProperties}>
+              {kn !== 'chung' && <div className="grid content-start gap-1">
                 <span className={NH}>{t('Điểm')}</span>
                 <div className="flex flex-wrap items-center gap-1">
                   {coDiem.filter((m) => m.o[kn]).map((m, i, a) => (
@@ -450,29 +456,37 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
                   ))}
                 </div>
                 <span className="text-[13px] text-dim">{t('đạt từ {x} %', { x: Math.round(KY_VONG_THUONG * 100) })}</span>
-              </div>
+              </div>}
               <div className="grid content-start gap-1">
                 <span className={NH}>{t('Case · PA')}</span>
                 {!e && !chot.data ? <Skeleton rows={1} /> : !c0 ? <span className="text-[15px] font-semibold text-dim">{t('Không có Case')}</span> : caKn.slice(0, 2).map((c) => (
                   <Fragment key={c.id}>
                     <span className="text-[15px] font-semibold text-slate-100">{dich(c.tieuDe)}</span>
                     <span className="text-[13px] text-dim">{dich(c.trangThai.chu)}</span>
+                    {/* XM-K6: việc của Case (Xác nhận Case / PA, Chờ QL duyệt…) ngay dưới Case; Ghi kết quả PA ở cột Kết quả PA. */}
+                    {viecCase(c, ct, homNay).loai !== 'ghi-ket-qua' && <ViecTiepCase c={c} ct={ct} homNay={homNay} kn={kn} onMo={onMo} />}
                     {c.pas.filter((p) => !p.xong).map((p) => (
                       <span key={p.id} className="grid gap-px">
                         <span className="mt-1 text-[15px] font-semibold text-slate-100">{p.ten.split(' · ')[0]}</span>
-                        {p.mocChu && <span className="text-[13px] text-dim">{dich(p.mocChu)}</span>}
+                        {(p.buoi || p.mocChu) && <span className="text-[13px] tabular-nums text-dim">
+                          {[p.buoi && t('buổi {a} / {b}', { a: p.buoi.da, b: p.buoi.tong }), p.mocChu && dich(p.mocChu)].filter(Boolean).join(' · ')}</span>}
                       </span>
                     ))}
                     {!c.pas.some((p) => !p.xong) && <span className="mt-1 text-[13px] text-dim">{t('Chưa có PA')}</span>}
                   </Fragment>
                 ))}
               </div>
-              <div className="grid content-start gap-1">
-                <span className={NH}>{t('Việc tiếp')}</span>
-                {!e && !chot.data ? <Skeleton rows={1} /> : caKn.some((c) => c.viecTiep)
-                  ? caKn.filter((c) => c.viecTiep).map((c) => <ViecTiepCase key={c.id} c={c} ct={ct} homNay={homNay} onMo={onMo} />)
-                  : <span className="text-faint">–</span>}
-              </div>
+              {coPa && (
+                <div className="grid content-start gap-1">
+                  <span className={NH}>{t('Kết quả PA')}</span>
+                  {caKn.filter((c) => c.pas.length > 0).slice(0, 2).map((c) => (
+                    <span key={c.id} className="grid justify-items-start gap-1">
+                      <KetQuaPaO c={c} homNay={homNay} />
+                      {viecCase(c, ct, homNay).loai === 'ghi-ket-qua' && <ViecTiepCase c={c} ct={ct} homNay={homNay} kn={kn} onMo={onMo} />}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         )}
@@ -483,19 +497,44 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
 
 const TAG_PHU = 'inline-flex h-[22px] items-center gap-1 whitespace-nowrap rounded-md border px-2 text-xs font-semibold text-dim [&_b]:font-bold [&_b]:text-slate-100';
 
-/** Việc tiếp của một Case (cùng nút + cùng panel với `DongCase` — Xác nhận Case / Xác nhận PA / Ghi kết quả PA / Chờ QL duyệt) + hạn. */
-function ViecTiepCase({ c, ct, homNay, onMo }: { c: CaseCua; ct: string | null; homNay: string; onMo: (n: Omit<MoNgan, 'em'>) => void }) {
+/** Việc của một Case (cùng nút + cùng panel với `DongCase` — Xác nhận Case / Xác nhận PA / Ghi kết quả PA / Chờ QL duyệt) + hạn chỉ bằng màu (V22). */
+function ViecTiepCase({ c, ct, homNay, kn, onMo }: { c: CaseCua; ct: string | null; homNay: string; kn: string; onMo: (n: Omit<MoNgan, 'em'>) => void }) {
   const { viec, d, loai, choQl } = viecCase(c, ct, homNay);
   if (!viec) return null;
+  const tach = tachViec(viec.viec, tenMonNgan(ct, c.topic ?? kn));
   return (
-    <span className="grid justify-items-start gap-0.5">
+    <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
       <button type="button" onClick={() => onMo({ caseId: c.id, viec: loai, paId: d?.paId ?? undefined })} title={viec.title}
         className={choQl ? 'cursor-pointer border-0 bg-transparent p-0 text-left text-[13px] font-medium text-dim hover:text-slate-100 max-sm:min-h-[44px]' : 'btn h-[30px] whitespace-nowrap px-2.5 text-[13px] max-sm:h-11'}>
-        {choQl ? t('Chờ Quản lý duyệt') : viec.viec.split(' · ')[0]}
+        {choQl ? t('Chờ Quản lý duyệt') : tach.nut}<span className="sr-only"> – {tenMon(ct, c.topic ?? kn)}</span>
       </button>
-      {viec.quaHanNgay != null && viec.quaHanNgay > 0 ? <QuaHan ngay={viec.quaHanNgay} /> : viec.han && <span className="text-xs font-medium tabular-nums text-faint">{viec.han}</span>}
+      {!choQl && c.viecTiep?.han && c.viecTiep.loaiHan && <ChipHan loai={c.viecTiep.loaiHan} han={c.viecTiep.han} vien />}
     </span>
   );
+}
+
+/**
+ * XM-K6 (mockup K6 "Kết quả PA"): PA Bổ trợ miễn phí → Mini Test ("✓ 75 %" khi đã ghi, "–" khi chưa) + tuần; PA khác → lần ghi có kết luận gần nhất
+ * (nhãn + tuần, cùng `NhanKetPa` với FT); chưa có kết quả → "–". Ưu tiên PA đang chạy.
+ */
+function KetQuaPaO({ c, homNay }: { c: CaseCua; homNay: string }) {
+  const ds = [...c.pas.filter((p) => !p.xong), ...c.pas.filter((p) => p.xong).reverse()];
+  const mt = ds.find((p) => p.miniTest)?.miniTest;
+  const kq = ds.find((p) => p.ketQua)?.ketQua;
+  const PHU = 'whitespace-nowrap text-[13px] tabular-nums text-dim';
+  if (mt) return (
+    <span className="grid justify-items-start gap-0.5">
+      {mt.tyLe == null ? <span className="text-faint">–</span> : <ODiem kieu="gon" so={`${Math.round(mt.tyLe * 100)} %`} kq={mt.dat ? 'dat' : 'duoi'} />}
+      <span className={PHU}>Mini Test {tuanLich(mt.ngay, homNay)}</span>
+    </span>
+  );
+  if (kq) return (
+    <span className="grid justify-items-start gap-0.5">
+      <NhanKetPa tone={OUTCOME_TONE[kq.outcome] ?? 'muted'}>{dich(outcomeLabelFor(kq.outcome))}</NhanKetPa>
+      <span className={PHU}>{tuanLich(kq.ngay, homNay)}</span>
+    </span>
+  );
+  return <span className="text-faint">–</span>;
 }
 
 function OPhanTram({ v }: { v: number | null }) {

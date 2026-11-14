@@ -4,6 +4,8 @@ import type { Dich } from '../en.ts';
 export const EN_GD6_HO_SO_LOP = {
   'Giáo viên của lớp': 'Class teachers',
   'đạt từ {x} %': 'pass from {x} %',
+  // XM-K6: Kết quả PA lớp thường
+  'buổi {a} / {b}': 'session {a} / {b}',
   'bạn còn': 'you have',
   'Cả lớp đủ': 'Class complete',
   'Việc {loai} của bạn ở lớp này': 'Your {loai} tasks in this class',
