@@ -89,7 +89,11 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
 }
 
 /** Ô MT KẾ TIẾP chưa xếp: nút "Xếp MTn" (mockup `.oxep`; `ke` = em chưa có MT kế tiếp nào → viền nhấn đậm). GV chỉ xem: "—" như lượt không áp dụng. */
-export function NutXepO({ chu, title, ke = false, onMo }: { chu: string; title?: string; ke?: boolean; onMo?: (el: HTMLElement) => void }) {
+export function NutXepO({ chu, title, ke = false, onMo, chan }: { chu: string; title?: string; ke?: boolean; onMo?: (el: HTMLElement) => void;
+  /** GD-11b (mockup ⑦ B1, [XM-5]): ô bị chặn ở cột KẾ TIẾP — nút mờ không bấm được + lý do ngay dưới ("Xếp MT1 trước"). */
+  chan?: string;
+}) {
+  if (chan) return <span className="inline-flex flex-col items-start"><button type="button" disabled className="o-xep o-xep-chan">{chu}</button><span className="o-xep-ly-do">{chan}</span></span>;
   if (!onMo) return <OTrong title={title} />;
   return <button type="button" onClick={(e) => onMo(e.currentTarget)} title={title} className={`o-xep ${ke ? 'o-xep-ke' : ''}`}>{chu}</button>;
 }

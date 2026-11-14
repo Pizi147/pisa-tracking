@@ -16,14 +16,14 @@ export async function runSexHangTests(t: any) {
 
   check('SH-1 · web: mỗi S Ex một ô dẹt THẲNG CỘT MT (S Ex i dưới cột MTi, dư dồn ô cuối); ô trống "+ S Ex" chỉ khi onThem (không chiXem), không thì trống nhạt; 375 thẻ ≥ 3 ô; chip S Ex rời cột Thêm', () => {
     const h = doc('web/src/modules/test/keHoach/HangSEx.tsx');
-    assert(/return onThem\s*\?[\s\S]*?'\+ S Ex \{n\}'/.test(h) && /o-sex o-sex-trong" aria-label/.test(h), 'ô trống: + S Ex / trống nhạt');
+    assert(/return onThem\s*\?[\s\S]*?'\+ S Ex \{n\}'/.test(h) && /if \(onThem && soKe != null && so !== soKe\) return null;/.test(h), 'ô trống: + S Ex / không vẽ (GD-11b)');
     assert(/onMo && \(x\.sua \|\| x\.cham\)/.test(h) && /Math\.max\(3, xep\.length\)/.test(h), 'ô có lượt bấm khi sửa / chấm được; 375 ≥ 3 ô');
     const l = doc('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/cots\.map\(\(c, ci\) => \([\s\S]*?<OSEx x=\{xep\[ci\] \?\? null\} so=\{ci \+ 1\}/.test(l), 'S Ex i dưới cột MT i');
     assert(/xep\.slice\(cots\.length\)/.test(l), 'lượt dư dồn dưới ô cuối');
-    assert(/const them = chiXem \? undefined :/.test(l) && /onThem=\{chiXem \? undefined :/.test(l), '+ S Ex chỉ khi không chỉ xem (1440 + 375)');
+    assert(/const them = chiXem \? undefined :/.test(l), '+ S Ex chỉ khi không chỉ xem (GD-11b: 375 cùng lưới 1440)');
     assert(!/border-\[var\(--hong\)\]/.test(l), 'chip S Ex cũ ở cột Thêm đã bỏ');
-    assert((l.match(/<HopSEx /g) ?? []).length === 2, 'hộp S Ex có ở cả 1440 và 375');
+    assert((l.match(/<HopSEx /g) ?? []).length === 1, 'hộp S Ex một chỗ (GD-11b: 375 cùng lưới 1440)');
   });
   if (!t.conn) return;
 

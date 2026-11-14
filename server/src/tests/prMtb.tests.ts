@@ -511,9 +511,10 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(kn.listening.khoa === 'đã có điểm', 'khoa');
   });
 
-  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Nhật ký; PR-MTGON bỏ popup dời vượt); không còn ô lý do BẮT BUỘC (PR-VN3: chỉ còn ô Lý do tuỳ chọn) + câu trung tính', () => {
+  check('MTb (T5) · quét nguồn: HopKyNang vẽ theo mockup phần 2 (Tuần chung, ⋯ luôn hiện, Lịch sử · n — GD-11b; PR-MTGON bỏ popup dời vượt); không còn ô lý do BẮT BUỘC (PR-VN3: chỉ còn ô Lý do tuỳ chọn) + câu trung tính', () => {
     const h = nguon('web/src/modules/test/keHoach/HopKyNang.tsx');
-    for (const c of ['Tuần chung', 'luonHien', 'menuHopKyNang', 'NganLichSuBai', 'chipDongKyNang', 'CHU_MUC_HOP', 'Huỷ thay đổi', 'Vẫn xếp vào tuần này',
+    for (const c of ['Tuần chung', 'luonHien', 'menuHopKyNang', 'LichSuGap', 'chipDongKyNang',   // GD-11b: Nhật ký → khối Lịch sử · n trong hộp
+       'CHU_MUC_HOP', 'Huỷ thay đổi', 'Vẫn xếp vào tuần này',
       'Tuần đã qua', 'tuanDaSo', 'tat: !m.duoc', 'Chặn: ']) {
       assert(h.includes(c), `HopKyNang thiếu ${c}`);
     }
@@ -795,7 +796,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/import \{ Link\b[^}]*\} from 'react-router-dom'/.test(h) && /duongDotTest/.test(h), 'thiếu Link / duongDotTest');
     assert(/attemptId !== null\s*\?\s*<Link to=\{duongDotTest\(\{ id: attemptId,[^}]*classId \}, null\)\} onClick=\{onClose\}/.test(h), 'tên chưa là Link đóng hộp');
     const tieuDe = h.slice(h.indexOf('<Link to={duongDotTest'), h.indexOf('</Link>') + 120);
-    assert(/className="ten-ho-so flex min-h-\[44px\] items-center sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');
+    assert(/className="ten-ho-so flex min-h-\[44px\] items-center gap-1 sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');
     assert(/<span className="block truncate">\{tieuDe\}<\/span>/.test(tieuDe), 'đợt mới phải là chữ');
   });
 
@@ -891,7 +892,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('PR-OMT (C1, C6) · quét nguồn: panel Xếp lịch MT toàn màn, cột Mock Test không xuống dòng ở sm+; lưới FT vẽ ChipDotFT (đợt có lịch) + OMt (chưa có đợt), cột hẹp', () => {
     const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
-    assert(/<KhungPanel tieuDe=\{t\('Xếp lịch Mock Test'\)\} rong="toan"/.test(p), 'panel rong="toan"');
+    assert(/<KhungPanel tieuDe=\{t\('Xếp nhiều MT'\)\} rong="toan"/.test(p), 'panel rong="toan"');   // GD-11b: tên ngăn = tên nút
     assert(/sm:flex-nowrap/.test(p) && /sm:w-\[300px\]/.test(p), 'Mock Test nowrap, cột Sẽ xếp 300px');
     const l = nguon('web/src/modules/test/keHoach/LuoiKeHoach.tsx');
     assert(/<ODotGon\b/.test(l) && /dot\.attemptId !== null/.test(l), 'lưới: ODotGon cho đợt đã có (KHT-GON)');

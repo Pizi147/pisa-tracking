@@ -452,4 +452,18 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const nk = doc('shared/domain/nhatKy.ts');
     assert(/'attempt\.huy_tay': 'Huỷ điểm'/.test(nk) && /'score\.khoi_phuc': 'Khôi phục'/.test(nk) && !/Huỷ môn|Khôi phục điểm/.test(nk), 'nhật ký: một tên Huỷ điểm / Khôi phục');
   });
+
+  console.log('\nGD-11b · Kế hoạch Test');
+  check('GD-11b · ô bị chặn chỉ ở cột kế tiếp (nút mờ + lý do); nút thay chữ link; hộp kỹ năng một chân Đóng · Lưu + MỘT khối Lịch sử; ⋯ môn không còn Nhật ký; Xoá một chữ; ngăn "Xếp nhiều MT" tab chuẩn; 375 cùng lưới', () => {
+    const lk = doc('web/src/modules/test/keHoach/LuoiKeHoach.tsx'), hk = doc('web/src/modules/test/keHoach/HopKyNang.tsx');
+    assert(/soKeTiep \+ 1 && !chiXem/.test(lk) && /chan=\{t\('Xếp MT\{n\} trước'/.test(lk), 'ô bị chặn: nút mờ + lý do ở cột kế tiếp');
+    assert(!/dienThoai && loai === 'ft'/.test(lk), '375: cùng lưới cuộn ngang, cột Học viên dính');
+    assert(/className="btn btn-sm max-sm:min-h-\[44px\]" onClick=\{\(\) => setHetHang\(true\)\}/.test(lk), 'Hiện tất cả là nút');
+    assert(!/setNhatKy|NganLichSuBai|'Mở hồ sơ MT'/.test(hk) && (hk.match(/<LichSuGap /g) ?? []).length === 1, 'hộp: một chân, một khối Lịch sử');
+    assert(/m\.muc !== 'nhat-ky'/.test(hk) && /role="tooltip" className="bong-nut-chu"/.test(hk), '⋯ môn bỏ Nhật ký; lý do nút mờ tại nút');
+    assert(!/t\('[^']*(Xóa|xóa)/.test(hk), 'một chữ "Xoá"');
+    const ng = doc('web/src/modules/test/keHoach/NganXepLichMt.tsx');
+    assert(/tieuDe=\{t\('Xếp nhiều MT'\)\}/.test(ng) && /<HangTab<'ft' \| 'thuong'>/.test(ng), 'ngăn: tên = nút, khung = thanh tab');
+    assert(/className="btn btn-sm max-sm:min-h-\[44px\]" aria-pressed=\{moHet\}/.test(doc('web/src/modules/test/KeHoachTestTab.tsx')), 'Mở tất cả lớp là nút');
+  });
 }

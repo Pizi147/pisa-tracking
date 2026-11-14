@@ -63,7 +63,7 @@ ${chuTacGia(ghiChu)}`} className={`block w-full truncate text-left text-[12px] i
   }
   if (!ghiChu) {
     return them ? (
-      <button type="button" className={`btn btn-sm btn-ghost min-h-[44px] sm:min-h-0 ${className}`} onClick={() => setSua('')}>{them}</button>
+      <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0 ${className}`} onClick={() => setSua('')}>{them}</button>
     ) : null;
   }
   return (

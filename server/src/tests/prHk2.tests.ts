@@ -425,7 +425,8 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   check('C36 · NutChon: ✓ đè góc (absolute), nút relative, không padding / chừa chỗ theo `chon`; giữ min-w-0 whitespace-normal leading-tight', () => {
     const n = than(doc('web/src/ui/ui.tsx'), 'NutChon');
     assert(/(^|[\s`'"])relative(\s|$)/.test(n.split('{chon &&')[0]), 'nút chưa relative');
-    const v = /\{chon && <span([^>]*)>/.exec(n);
+    /* GD-11b: `dauTrong` (✓ chữ trong chip, chip chọn chuẩn) là tuỳ chọn; mặc định vẫn ✓ góc. */
+    const v = /\{chon && \(dauTrong \? <span aria-hidden>\{dau\}<\/span>\s*: <span([^>]*)>/.exec(n);
     assert(v && /(^|\s)absolute(\s|$)/.test(v[1]) && /-right-1\.5/.test(v[1]) && /-top-1\.5/.test(v[1]), `✓: ${v?.[1]}`);
     assert(!/shrink-0/.test(v![1]), '✓ còn nằm trong luồng chữ (shrink-0)');
     assert(!/\$\{chon \? '[^']*\bp[lrx]-/.test(n) && !/invisible/.test(n), 'chừa chỗ ✓ bằng padding / invisible');

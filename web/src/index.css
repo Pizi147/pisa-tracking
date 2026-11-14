@@ -599,6 +599,15 @@
   .o-xep { display: inline-flex; align-items: center; height: 32px; margin-top: 14px; padding: 0 12px; border: 1px dashed var(--accent-line); border-radius: 6px;
     background: none; color: var(--accent); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
   .o-xep-ke { border-style: solid; border-color: var(--accent); background: var(--accent-soft); }
+  .o-xep-chan, .o-xep-chan:hover { border-style: solid; border-color: var(--line); background: none; color: var(--text-faint); cursor: not-allowed; }
+  /* GD-11b (mockup ⑦ B2): bong lý do của nút mờ — nổi trên nút khi rê / focus / chạm, không đẩy hàng. */
+  /* GD-11b (mockup ⑦ B3): ô chọn lớp nằm TRONG ô có chip — bỏ viền riêng. */
+  .oc-trong .oc { border: 0; background: none; min-height: 30px; padding-top: 0; padding-bottom: 0; padding-left: 2px; }
+  .bong-nut { position: relative; display: inline-flex; }
+  .bong-nut-chu { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 5; display: none; padding: 4px 8px; border-radius: 6px;
+    background: var(--text); color: var(--bg); font-size: 12px; font-weight: 500; line-height: 1.3; white-space: nowrap; pointer-events: none; }
+  .bong-nut:hover .bong-nut-chu, .bong-nut:focus-within .bong-nut-chu { display: block; }
+  .o-xep-ly-do { margin-top: 4px; font-size: 12px; color: var(--text-faint); white-space: nowrap; }
   .nut-them { display: inline-flex; align-items: center; gap: 4px; height: 30px; margin-top: 15px; padding: 0 10px; border: 1px solid var(--line-strong); border-radius: 6px;
     background: none; color: var(--text); font-size: 13px; font-weight: 600; white-space: nowrap; cursor: pointer; }
   @media (max-width: 639.98px) {

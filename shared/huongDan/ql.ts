@@ -219,7 +219,7 @@ export const HD_QL: HuongDan = {
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Chọn chương trình, lọc lớp, xếp nhiều MT ở hàng này.' } },
       loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>; chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.', 'Fast Track: <b>Xếp nhiều MT…</b>; lớp thường: <b>Xếp lịch Test…</b>.',
-        'Một kỹ năng: bấm ô MT, mỗi môn <b>Dời</b> · <b>Vắng</b> · <b>Bỏ khỏi đợt</b>, rồi <b>Lưu</b>.', '<b>⋯</b> có <b>Dời hạn chấm</b>, <b>Huỷ điểm</b>, <b>Lịch sử</b>, <b>Xóa lịch</b>.'],
+        'Một kỹ năng: bấm ô MT, mỗi môn <b>Dời</b> · <b>Vắng</b> · <b>Xoá</b>, rồi <b>Lưu</b>.', '<b>⋯</b> môn: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b>; khối <b>Lịch sử · n</b> trong hộp; tên lượt ở đầu hộp mở hồ sơ MT.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'dời hạn chấm', 'schedule', 'reschedule'],
     },
     {
@@ -418,9 +418,9 @@ export const HD_QL: HuongDan = {
       dangO: { cau: 'Xếp, dời lịch MT, Progress, Final các lớp; thi lại; S Ex.', sau: { chu: 'Lịch Test tuần', duong: TEST } },
       khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }],
       muc: [
-        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Bỏ khỏi đợt</b>, rồi <b>Lưu</b>.', '<b>Dời</b> = chọn tuần = xếp lại từ đầu — cả môn vắng, huỷ vắng 2 lần, bỏ khỏi đợt.', '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b> · <b>Lịch sử</b>.'] },
+        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Xoá</b>, rồi <b>Lưu</b>; nút mờ nói lý do ngay tại nút.', '<b>Dời</b> = chọn tuần = xếp lại từ đầu — cả môn vắng, huỷ vắng 2 lần, đã xoá.', '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b>; lịch sử ở khối <b>Lịch sử · n</b> trong hộp.'] },
         { id: 'ql-kh-luat', ten: 'Luật xếp lịch, tìm lớp', buoc: ['Link <b>Luật xếp lịch Test</b> trên hàng lọc.', 'Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>; chọn em: lớp mở, hàng em được đánh dấu.'] },
-        { id: 'ql-kh-xoa', ten: 'Xóa lịch một đợt', buoc: ['Bấm ô MT, ⋯ đầu hộp › <b>Xóa lịch</b> → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã làm bài: mục mờ.'] },
+        { id: 'ql-kh-xoa', ten: 'Xoá lịch một đợt', buoc: ['Lớp thường: bấm ô, <b>Xoá lịch</b> ở đầu hộp → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã làm bài: nút mờ.'] },
         { id: 'ql-kh-ghi-chu', ten: 'Ghi chú lịch Test', buoc: ['Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).', '<b>+ Ghi chú lớp</b> dưới bảng. Chỉ là ghi chú, không dời lịch.'] },
         { id: 'kh-xuat', viec: 'xuat-test', ten: 'Xuất Excel kế hoạch, điểm Test', buoc: ['<b>Xuất Excel…</b> cạnh <b>Xếp nhiều MT…</b>: tab <b>Lịch Test</b> mở sẵn.', 'Chọn lớp, đợt rồi xuất; tab <b>Điểm Test</b> xuất kết quả.'] },
       ],
