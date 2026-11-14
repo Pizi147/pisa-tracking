@@ -485,6 +485,25 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/className="btn btn-sm max-sm:min-h-\[44px\]" aria-pressed=\{moHet\}/.test(doc('web/src/modules/test/KeHoachTestTab.tsx')), 'Mở tất cả lớp là nút');
   });
 
+  console.log('\nNT-SUA · nghiệm thu V6');
+  check('NT-SUA P1-2 · đếm bài của việc Nhập điểm: dòng việc "n bài" = đầu panel "còn n / m" (em ngoài dòng việc / ngừng học không vào)', () => {
+    const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'cho_diem' : 'da_cham' });
+    const cells = (b: number | null) => [{ skill: 'listening', weekStart: '2026-07-06', ...o(b) }, { skill: 'reading', weekStart: '2026-07-06', ...o(b) }];
+    const rows = [
+      { studentId: 1, attemptNo: 1, cells: cells(null) }, { studentId: 2, attemptNo: 1, cells: cells(null) },   // 2 em của dòng việc × L, R = 4 ô
+      { studentId: 3, attemptNo: 1, cells: cells(null) },                                                       // em khác trong lớp (ngoài dòng việc)
+      { studentId: 4, attemptNo: 1, ngungHoc: 'tam_dung', cells: cells(null) },                                  // em ngừng học
+    ];
+    const cot = (s: string) => s === 'listening' || s === 'reading';
+    const viec = d.demBaiViec(rows as any, { em: [1, 2], tuan: '2026-07-06', cot });
+    assert(viec.con === 4 && viec.tong === 4, `dòng việc 2 em × L, R: ${JSON.stringify(viec)}`);
+    const caLop = d.demBaiViec(rows as any, { em: null, tuan: '2026-07-06', cot });
+    assert(caLop.con === 6 && caLop.tong === 6, `việc cả lớp bỏ em ngừng học: ${JSON.stringify(caLop)}`);
+    const sau = d.demBaiViec([{ ...rows[0], cells: cells(6.5) }, rows[1]] as any, { em: [1, 2], tuan: '2026-07-06', cot });
+    assert(sau.con === 2 && sau.tong === 4, `nhập xong một em: còn 2 / 4: ${JSON.stringify(sau)}`);
+    assert(/demBaiViec\(dsLop\.ft\.rows, \{ em: emCuaViec\(x\)/.test(doc('web/src/modules/congViec/PanelViec.tsx')), 'đầu panel dùng demBaiViec với em của việc');
+  });
+
   console.log('\nGD-18 · Chữ đồng bộ toàn web');
   check('GD-18 · một chính tả: "Xoá" · "Tạm dừng / Kết thúc học" · "Vi phạm / Nhắc nhở"; mũi mở là chevron, không tam giác ▸ ▾ tự gõ', () => {
     const tep = [...tepNguon('web/src'), ...tepNguon('shared/domain'), ...tepNguon('shared/huongDan')];

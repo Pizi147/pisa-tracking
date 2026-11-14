@@ -113,16 +113,23 @@ export function RecordViolationPanel({
   const suaDong = (key: number, v: Partial<Dong>) => setDong((ds) => ds.map((d) => (d.key === key ? { ...d, ...v } : d)));
   const themDong = () => setDong((ds) => [...ds, moiDong(Math.max(...ds.map((d) => d.key)) + 1, ds[ds.length - 1].ngay)]);
 
-  const xongHan = (cau: string) => {
+  /** NT-SUA (luật chủ SP 21/10 "luôn Hoàn tác ngắn"): Hoàn tác = xoá đúng các vi phạm vừa tạo (`DELETE /violations/:id` — người ghi xoá được; chụp vào thùng rác 30 ngày nên khôi phục được). */
+  const hoanTacGhi = async (ids: number[]) => {
+    let hong = 0;
+    for (const id of ids) { try { await api.del(`/violations/${id}`); } catch { hong++; } }
+    lamMoiCache(); onDone?.();
+    toast.push(hong ? 'error' : 'ok', t('Đã rút {n}/{m}', { n: ids.length - hong, m: ids.length }));
+  };
+  const xongHan = (cau: string, ids: number[]) => {
     lamMoiCache(); reset(); onClose(); onDone?.();
-    toast.push('ok', cau);
+    toast.hoanTac(cau, () => void hoanTacGhi(ids), { key: 'ghi-vi-pham' });
   };
 
   /** Tải tệp chờ vào các vi phạm vừa tạo; xong hết thì đóng + toast, lỗi thì ở lại chỗ tệp lỗi. */
   const taiTep = async (ids: number[], cau: string, ds: TepChoMuc[]) => {
     const kq = ds.some((m) => !m.xong) ? await taiTepCho(ds, { ownerType: 'violation', ownerIds: ids }) : ds;
     setTep(kq);
-    if (kq.every((m) => m.xong)) xongHan(cau);
+    if (kq.every((m) => m.xong)) xongHan(cau, ids);
     else { lamMoiCache(); setLuu(null); setDaGhi({ ids, cau }); }
   };
 
@@ -184,14 +191,15 @@ export function RecordViolationPanel({
 
   /* ✕ / Esc / nền / `Xong`: đã lưu (dở hoặc tệp lỗi) thì làm mới danh sách; đã ghi mà tệp lỗi thì báo kết quả. */
   const dongPanel = () => {
-    if (daGhi) { lamMoiCache(); toast.push('ok', daGhi.cau); onClose(); onDone?.(); return; }
+    if (daGhi) { lamMoiCache(); toast.hoanTac(daGhi.cau, () => void hoanTacGhi(daGhi.ids), { key: 'ghi-vi-pham' }); onClose(); onDone?.(); return; }
     if (luu?.daXong.length) { lamMoiCache(); onClose(); onDone?.(); return; }
     onClose();
   };
 
   if (!open) return null;
 
-  const tieuDe = chiNhac ? (editing ? t('Sửa nhắc nhở') : t('Ghi nhắc nhở')) : editing ? t('Sửa vi phạm') : t('Ghi vi phạm');
+  /* NT-SUA: ghi mới = cùng tên mục menu / nút "+ Vi phạm / Nhắc nhở" (một khái niệm một tên); sửa giữ "Sửa vi phạm" / "Sửa nhắc nhở". */
+  const tieuDe = editing ? (chiNhac ? t('Sửa nhắc nhở') : t('Sửa vi phạm')) : t('Vi phạm / Nhắc nhở');
 
   if (daGhi) {
     return (
