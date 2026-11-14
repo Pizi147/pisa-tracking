@@ -30,7 +30,7 @@ Nguồn: `thiet-ke/v21/dong-bo-ghi-chu.md` (mockup ⓪, chủ SP duyệt lời 3
 ## 2. KHÁC / [XM] (hỏi PTA Plan)
 - **[XM-1] Nhãn bậc ở máy chủ giữ "Report 1" / "WL 1"**: `MEASURE_KIND_LABEL` / `nhanLoaiXuLy` dựng tiêu đề việc, thông báo, dòng lưu trong DB — đổi ở đó là đổi dữ liệu / API và vỡ ~25 phép kiểm chạy thật. Web viết hoa khi HIỂN THỊ qua `bacNgan` / `bacDu` (cả chuỗi máy chủ cũ). Tệp xuất / thông báo chuông chưa viết hoa — PR riêng nếu cần.
 - **[XM-2] Ngoài thang** (Meeting CX/GĐCN, Đình chỉ, Khác) giữ chữ thường (cùng nhãn dùng ở Case và Hướng dẫn); WL 3 vốn đã hoa.
-- **[XM-3] Xem vi phạm 375 khi còn việc kế**: chân 3 nút (Xác nhận xử lý · Đã xem · n · Đã xem · việc tiếp ›) — chưa chụp 375 panel này; nếu chật, bỏ "Đã xem · n" ở 375.
+- **[XM-3] Xem vi phạm 375 khi còn việc kế**: chân 3 nút xuống hai hàng (Xác nhận xử lý · Đã xem · n / "Đã xem · việc tiếp ›" cả hàng) — đã chụp `cap-375-xem-vi-pham.png`, đủ rộng, vùng bấm 44; mockup D4 chỉ vẽ 2 nút. Bỏ "Đã xem · n" ở 375 nếu PTA muốn một hàng.
 - **[XM-4] Đầu hộp "Báo tình hình"** ở hồ sơ lớp / HV cũng đổi theo (cùng hộp: "Tình hình học tập · Gửi TVV" + ✕); loại Hỏi / Sửa / Ghi kết quả giữ đầu cũ.
 - **[XM-5] Ô chọn em trong hộp Tình hình**: chip em đặt trên ô gõ (như ô hiện có), danh sách gợi ý đẩy nội dung (mockup F3: chip trong ô, danh sách nổi) — để GD-5 (ô chọn có tìm chung).
 - **[XM-6] Dòng xem trước Writing** dùng mũi tên kỳ vọng sẵn có (▲ / ▼) thay "✓" của mockup, cho khớp các ô khác.

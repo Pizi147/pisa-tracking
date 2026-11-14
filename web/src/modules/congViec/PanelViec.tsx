@@ -486,7 +486,7 @@ function PanelPhoiHop({ it, onDong, onDaLam, onTiep }: { it: WorkItem; onDong: (
         /* YT-b (mockup v19 B1–B2, XM-1 duyệt): panel chỉ còn em cần làm — việc đã làm xem / sửa ở hồ sơ lớp › Phối hợp SOS. */
         trai: <Link className="link text-sm font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={`/hoc-vien/lop/${it.classId}?tab=y-thuc&sub=phoi-hop`}>{tvv ? t('Đã báo · hồ sơ lớp ›') : t('Đã làm · hồ sơ lớp ›')}</Link>,
         /* GD-4d: hết em cần làm → "Việc tiếp ›" thành nút chính (lưu đã ở từng dòng). */
-        chinh: onTiep ? <button type="button" className={`btn ${data && !data.rows.some((r) => r.canAct && !r.summary.complete) ? 'btn-primary' : ''} min-h-[44px] sm:min-h-0`} onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
+        chinh: onTiep ? <button type="button" className={data && !data.rows.some((r) => r.canAct && !r.summary.complete) ? 'btn btn-primary min-h-[44px] sm:min-h-0' : 'btn min-h-[44px] sm:min-h-0'} onClick={onTiep}>{t('Việc tiếp ›')}</button> : undefined,
       }}>
       <div className="pt-2">
         {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
