@@ -438,3 +438,13 @@ PTA Overhaul hiểu (chủ SP sửa nếu sai):
 - ⑥ (c): bỏ cả cột Target và nhãn nhóm "Hiện tại" khỏi bảng Lịch thi (Target vẫn có khi mở hàng). Thông tin hiện tại còn MT gần nhất · SOS.
 - ⑨: tính theo lịch thi của em — ngày đã chốt HOẶC tháng dự kiến — rơi vào tháng này hoặc tháng sau; nhãn ô ghi mốc cụ thể ("Sắp thi · tới hết T12 · còn SOS").
 - ⑧: mỗi ô bảng chỉ còn MỘT thành phần, không dòng chữ phụ dưới số; tách cột theo đúng tên của Phân tích GV (% đúng hạn · Chưa làm); chi tiết mở khi bấm hộp.
+
+## 15/11 — lời 38: tab Lịch thi giữ cột Target, chỉ bỏ nhãn "Hiện tại"
+
+Bối cảnh: PTA Overhaul hiểu lời 37 ý M6 (c) là bỏ cả cột Target, cho mockup ⑥ sửa như vậy rồi hỏi lại.
+
+> "bỏ mỗi cái nhãn hiện tại bên trên thôi, chả hiểu để làm gì, target thì luôn cần chứ"
+
+ĐÃ CHỐT (sửa cách hiểu của PTA ở lời 37): bảng Lịch thi **GIỮ cột Target** ("target thì luôn cần"); chỉ bỏ **nhãn nhóm "Hiện tại"** phía trên các cột. Bảng: Học viên · Lịch thi · Target · MT gần nhất · SOS · Ghi chú. Cột Lộ trình vẫn bỏ; ô lịch thi một dòng.
+Bài học cho các mockup khác: không đặt nhãn nhóm phía trên đầu cột khi tên cột đã tự rõ; Target của em là thông tin luôn hiện ở các bảng về thi.
+Trạng thái mockup đợt 2: ⓪ #1607, ⑦ #1606, ⑨ #1609 đã merge (⑨ đã sửa ô "Sắp thi · tới hết tháng sau", gồm cả tháng dự kiến) · ⑥ #1611 đang sửa lại theo lời này · ⑧ #1613, ⑩ #1614 đang sửa theo lời 37.
