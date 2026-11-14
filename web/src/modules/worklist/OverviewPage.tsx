@@ -9,7 +9,7 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
 import { CongTacKhung, khungDaNho } from '../../ui/CongTacKhung.tsx';
 import {
-  DauTrangTq, lienKetTq, thamSoTq, TongQuanAdminV5, TongQuanCxV5, TongQuanQlV5, TongQuanQtV5, type TongQuanV5Data,
+  DauTrangTq, lienKetTq, thamSoTq, TongQuanCxV5, TongQuanQlV5, TongQuanQtV5, type TongQuanV5Data,
 } from './TongQuanV5.tsx';
 import { laVaiQuanLy } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -43,7 +43,8 @@ export default function OverviewPage() {
   const congTac = <CongTacKhung v8 trang="tong-quan" value={khung} onChange={(k) => setKhung(k === 'thuong' ? 'thuong' : 'ft')} />;
   const chiNhanh = <BranchFilter branchId={branchId} onBranch={setBranchId} />;
   const trang = (phamVi: string, than: React.ReactNode, ben?: React.ReactNode, ky?: { tu: string; den: string } | null) => (
-    <div className="page tq-v8 space-y-4">
+    /* GD-14 (⑧ T1–T7): số bấm được trong bảng = hộp viền (`.o-so-hop`, như Phân tích); số to ô chỉ số giữ dáng chữ. */
+    <div className="page tq-v8 o-so-hop space-y-4">
       <DauTrangTq phamVi={phamVi} ben={ben} ky={ky}
         lienKet={lienKetTq(vai === 'ql' && v5.data && !v5.data.lop ? 'qt' : vai, { id: session?.user?.id, cn: branchId, ky: v5.data?.ky, motCn: !!v5.data?.lop })} />
       {than}
@@ -54,7 +55,8 @@ export default function OverviewPage() {
      rỗng đúng chữ ("Chưa được phân công lớp nào"), không request. Head tutor dạy lớp = có thêm vai Giáo viên → vai 'gv' ở trên. */
   if (vai === 'ht') return trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} />);
   if (vai === 'admin') {
-    return trang(t('Mock Test'), <TongQuanAdminV5 mockTest={<MockTestAdmin branchId={branchId} />} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
+    /* GD-14 (⑧ T5): Lịch sắp tới sang cột phải 400 (khối phụ mọi vai cùng một chỗ). */
+    return trang(t('Mock Test'), <MockTestAdmin branchId={branchId} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }
   const d = v5.data;
   const phamVi = d?.tenChiNhanh ?? t('Tất cả chi nhánh');
