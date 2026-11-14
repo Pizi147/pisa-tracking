@@ -85,7 +85,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       <span className="inline-flex min-w-0 items-center gap-1.5">
         {/* Đã chốt: bấm thẳng chip để sửa (không ⋯ một mục — Case – PA bấm thẳng); tự Đạt không có gì để chốt. */}
         {e.chotDuoc && !k.tuDong
-          ? <button type="button" className="appearance-none rounded border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={mo}
+          ? <button type="button" className="appearance-none rounded border-0 bg-transparent p-0 hover:brightness-125 max-sm:min-h-[44px]" onClick={mo}
               aria-label={t('Sửa Kết quả đầu ra · {ten}', { ten: e.ten })} title={t('Sửa')}>{chip}</button>
           : chip}
         {k.tuDong && e.mt0 && (
@@ -188,7 +188,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       {xem && (
         <HopNeo neo={{ current: xem.neo }} nhan={t('Bàn giao từ GV cũ · {ten}', { ten: xem.em.ten })} rong={420} onNgoai={() => setXem(null)}>
           <b className="text-[15px] text-slate-100">{t('Bàn giao từ GV cũ')} · {xem.em.ten}</b>
-          <p className="m-0 max-h-[50vh] overflow-y-auto whitespace-pre-line break-words text-[14px] text-slate-300">{xem.em.banGiao}</p>
+          <p className="m-0 max-h-[50vh] overflow-y-auto whitespace-pre-line break-words text-[15px] text-slate-300">{xem.em.banGiao}</p>
           <div className="flex justify-end"><button type="button" className="btn" onClick={() => setXem(null)}>{t('Đóng')}</button></div>
         </HopNeo>
       )}
@@ -218,6 +218,7 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
   const daSua = chon !== dau || phuongAn !== (k?.ghiChu ?? '') || (chon === 'trung_tam' && mon.join() !== (k?.mon ?? []).join());
   const lyDoTat = datMoc ? t('MT0 đã đạt mốc {ct} — Kết quả đầu ra là Đạt.', { ct }) : undefined;
   const luu = async () => {
+    if (!daSua) { onDong(); return; }   // V12 ③: không đổi gì → đóng, không gọi máy chủ
     if (!chon) { setLoi(t('Chọn Đạt hoặc Không đạt.')); return; }
     if (chon === 'trung_tam' && !mon.length) { setLoi(t('Chọn ít nhất một kỹ năng chưa đạt')); return; }
     if (chon === 'hoc_sinh' && !phuongAn.trim()) { setLoi(t('Ghi phương án.')); return; }
@@ -262,14 +263,14 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
       {chon === 'hoc_sinh' && (
         <label className="grid gap-1">
           <span className="text-[13px] font-medium text-slate-400">{t('Phương án')}</span>
-          <textarea className="field w-full" rows={3} maxLength={2000} value={phuongAn} onChange={(e) => setPhuongAn(e.target.value)}
+          <textarea name="phuong-an" autoComplete="off" className="field w-full" rows={3} maxLength={2000} value={phuongAn} onChange={(e) => setPhuongAn(e.target.value)}
             placeholder={t('Ví dụ: Nghỉ 5 buổi trước Final Test')} />
         </label>
       )}
       {loi && <span role="alert" className="text-[13px] text-late">{loi}</span>}
       <div className="flex justify-end gap-2">
         <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Huỷ')}</button>
-        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !daSua} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
+        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
       </div>
     </HopNeo>
   );
