@@ -35,7 +35,7 @@ const VIEC_QT: ViecHd[] = [
   {
     id: 'chuong-trinh', ten: 'Sửa chương trình', nhom: 'khac',
     loiChinh: { man: 'quan-tri', chu: 'Tài khoản › Quản trị hệ thống › Chương trình', duong: '/quan-tri', chi: QT_TAB },
-    buoc: ['Tab <b>Chương trình</b>: Cách chấm, Độ dài, Mốc Test, số lớp đang chạy.', '<b>+ Chương trình</b> hoặc <b>Sửa</b>.'],
+    buoc: ['Tab <b>Chương trình</b>: bấm thẳng ô Tên · Môn · Đạt từ · Độ dài · Mốc Test để sửa tại chỗ; công tắc <b>Còn dùng</b> (có Hoàn tác).', '<b>+ Chương trình</b>: tạo mới trong panel.'],
     tuKhac: ['programme', 'mốc test', 'độ dài', 'program'],
   },
   {

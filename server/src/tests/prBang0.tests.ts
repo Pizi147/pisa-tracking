@@ -80,7 +80,6 @@ const MIEN_CAN: string[] = [
 /** BANG-2: tệp còn ô nhập / nút trong `<th>` (trừ `ui/ui.tsx` — nút sắp xếp của `Th`). Chỉ được GIẢM. */
 const MIEN_TH_DIEU_KHIEN: string[] = [
   'web/src/modules/platform/AccountsAdmin.tsx',
-  'web/src/modules/platform/CatalogAdmin.tsx',
   'web/src/modules/test/keHoach/NganXepLichMt.tsx',
 ];
 

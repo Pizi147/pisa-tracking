@@ -395,4 +395,15 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const lt = doc('server/src/classes/luuTru.ts');
     assert(/lopCuoiId: lopCuoiCua\.get\(s\.id\)\?\.id \?\? null/.test(lt) && /branchId: r\.branch_id/.test(lt), 'máy chủ trả branchId / lopCuoiId');
   });
+
+  console.log('\nGD-17b · Quản trị › Chương trình sửa tại ô');
+  check('GD-17b · Chương trình: sửa tại ô (SuaTaiDong, một trường, cùng luật + thân PUT với panel), cột Môn · Đạt từ · Còn dùng (công tắc + Hoàn tác); + Chương trình giữ panel; bỏ nút Sửa', () => {
+    const s = doc('web/src/modules/platform/CatalogAdmin.tsx');
+    for (const o of ['ten', 'mon', 'nguong', 'so-tuan', 'moc']) assert(new RegExp(`<OCt d=\{d\} o="${o}"`).test(s), `thiếu ô sửa tại chỗ "${o}"`);
+    assert(/function yeuCauLuu\(d: Dong, f: FormCt\)/.test(s) && (s.match(/yeuCauLuu\(/g) ?? []).length >= 4, 'panel, ô, công tắc, Hoàn tác phải cùng yeuCauLuu');
+    assert(/role="switch" aria-checked=\{bat\}/.test(s) && /toast\.hoanTac\(gt \?/.test(s), 'Còn dùng: công tắc + Hoàn tác');
+    assert(/<KhungPanel tieuDe=\{form\.f\.ma \?/.test(s) && !/>\{t\('Sửa'\)\}<\/button>/.test(s) && !/function SuaChuongTrinh/.test(s), '+ Chương trình giữ panel; sửa dòng không còn panel / nút Sửa');
+    assert(/export function SuaTaiDong\(/.test(doc('web/src/modules/platform/SuaTaiDong.tsx')) && /vien = false/.test(doc('web/src/modules/platform/SuaTaiDong.tsx')), 'SuaTaiDong dùng chung (ô có viền)');
+    assert(/closest\('\.card'\)/.test(doc('web/src/ui/HopNeo.tsx')) && /phai - rong/.test(doc('web/src/ui/HopNeo.tsx')), 'HopNeo phải nằm trong thẻ chứa ô (không đè cột Nhật ký)');
+  });
 }
