@@ -11,7 +11,6 @@ export async function runPrSvTqGvTests(t: any) {
   const hoSo: any = await import('../giaoVien/hoSo.ts');
   const perm: any = await import('../permissions.ts');
   const { demoToday }: any = await import('../demoConfig.ts');
-  const fs = await import('node:fs');
   const nguCanh: any = await import('../platform/nguCanhRequest.ts');
   console.log('\nSV-TQ-GV · Tổng quan GV hai khối');
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
@@ -178,9 +177,6 @@ export async function runPrSvTqGvTests(t: any) {
     /* `napBai` thu hẹp đi MULTI-INDEX OR (lớp · em · GV chấm qua idx_score_examiner), không quét lượt cả chi nhánh. */
     const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${hep}`).all(...Array((hep.match(/\?/g) ?? []).length).fill(1)) as any[]).map((x) => x.detail as string);
     assert(hep && plan.includes('MULTI-INDEX OR') && plan.some((d) => d.includes('idx_score_examiner')), `kế hoạch napBai thu hẹp: ${plan.join(' | ')}`);
-    const web = fs.readFileSync(new URL('../../../../web/src/modules/worklist/TongQuanV5.tsx', import.meta.url), 'utf8');
-    const gv = web.slice(web.indexOf('export function TongQuanGvV5'), web.indexOf('export function TongQuanTvvV5'));
-    assert(gv.includes(`'/tong-quan/lop-toi-day/hai-khoi'`) && !gv.includes('/chi-so`'), 'TongQuanGvV5 còn GET /giao-vien/:id/chi-so');
   });
 
   /* S1: `napBai` của MỘT GV chỉ nạp lượt gán được cho GV (lớp GV phân công · em từng ghi danh lớp đó · ô GV đã chấm) — số, panel KHÔNG đổi so với đường đủ. */

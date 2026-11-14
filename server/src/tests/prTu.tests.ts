@@ -249,6 +249,40 @@ export async function runPrTuTests(t: any) {
       assert(ql.status === 200 && x.dienSan === null && x.ds.filter((r: any) => r.goiY).map((r: any) => r.ten).sort().join() === 'Nguyễn Thu Lan,Phạm Đức Long,Vũ Thanh Hằng', `QL: ${ql.status} ${JSON.stringify(x.ds.map((r: any) => [r.ten, r.goiY]))}`);
       assert((await goi(GV.userId, '/tutors/chon')).status === 403, 'thiếu paId / studentId');
     });
+
+    /* LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính", phương án duyệt: KHÔNG thêm quyền — Head tutor dạy lớp = có thêm vai Giáo viên). */
+    await t.checkAsync('LG-7 · Head tutor như GV: kiêm vai GV → nav + /my-work y hệt GV (thêm cờ tutor); chỉ Head tutor → như GV chưa có lớp, khu dữ liệu 403 / rỗng', async () => {
+      const { navOf } = await import('../platform/nav.ts');
+      const { loadPrincipal } = await import('../permissions.ts');
+      const dh: any = await import('../../../shared/domain/dieuHuong.ts');
+      const htId = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'head_tutor' LIMIT 1`).id as number;
+      const vaiHt = get(`SELECT id FROM roles WHERE key = 'head_tutor'`).id as number;
+      const boTutor = ({ tutor, tutorSua, ...n }: any) => JSON.stringify(n);
+      const truoc = navOf(loadPrincipal(GV.userId));
+      const viecTruoc = await (await goi(GV.userId, '/my-work')).text();
+      const urId = Number(conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, ?, NULL, 'active', '2026-11-14')`).run(GV.userId, vaiHt).lastInsertRowid);
+      try {
+        const n = navOf(loadPrincipal(GV.userId));
+        assert(boTutor(n) === boTutor(truoc) && n.tutor && n.tutorSua, `GV + Head tutor ≠ GV: ${boTutor(n)} | ${boTutor(truoc)}`);
+        const viec = await goi(GV.userId, '/my-work');
+        assert(viec.status === 200 && (await viec.text()) === viecTruoc, 'GV + Head tutor: /my-work khác GV');
+      } finally { conn.prepare('DELETE FROM user_roles WHERE id = ?').run(urId); }
+      /* Chỉ Head tutor = GV chưa có lớp (`scopeFor` rỗng): chỉ trang đầu, không Công việc / HV & Lớp / Test / Phân tích. */
+      const ht = loadPrincipal(htId);
+      const nHt = navOf(ht);
+      const gvChuaLop = navOf({ ...loadPrincipal(GV.userId), assignments: [], kyNang: [], xemTam: [], boTro: [] });
+      const khu = (x: any) => dh.khuVucHienThi(x).map((k: any) => k.key).join();
+      assert(khu(nHt) === 'tong-quan' && khu(gvChuaLop) === 'tong-quan' && !nHt.work && !nHt.students && !nHt.test && !nHt.analysis, `Head tutor: ${khu(nHt)} · GV chưa lớp: ${khu(gvChuaLop)}`);
+      for (const url of ['/my-work', '/cham/lich-test', '/yeu-cau/dem']) {
+        const s = (await goi(htId, url)).status;
+        assert(s === 403, `Head tutor ${url}: ${s}`);
+      }
+      const hv: any = await (await goi(htId, '/students')).json().catch(() => null);
+      assert(!hv?.items?.length && !hv?.students?.length && !(Array.isArray(hv) && hv.length), `Head tutor thấy học viên: ${JSON.stringify(hv)?.slice(0, 200)}`);
+      /* Web: trang đầu Head tutor = khung "Lớp của tôi" rỗng, KHÔNG GET (trước: /hai-khoi + ô Case của Tổng quan GV cũ). */
+      const ov = readFileSync(join(process.cwd(), 'web/src/modules/worklist/OverviewPage.tsx'), 'utf8');
+      assert(/vai === 'ht'\) return trang\('', <LopCuaToi dong=\{\[\]\} dangTai=\{false\} loi=\{null\}/.test(ov) && !ov.includes('/hai-khoi') && !/TongQuanGvV5/.test(ov), 'OverviewPage vai ht');
+    });
   } finally { httpApp.close(); }
 
   // ------------------------------------------------------------------ T5 · thanh trên, vai trên Tài khoản

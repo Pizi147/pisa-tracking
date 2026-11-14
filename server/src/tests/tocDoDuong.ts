@@ -1383,12 +1383,8 @@ export const TRAN_GHI_LO = {
  */
 /* ponytail: danh sách viết tay, phép quét (prDonA 9e) bắt route mới; chuyển sang hằng dùng chung với web khi Tổng quan ổn định. */
 export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number }> = {
-  'GV trang Tổng quan': {
-    vai: 'GVCN', tran: 140,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 107 → max(107 + 10, ⌈107 × 1,3⌉) ·   // RA-DOC-0611: đo 116 (trước 128) → max(116 + 10, ⌈116 × 1,3⌉) · đo 157 (trước PR ≈ 157 + 2 × 66 = 289) · SV-TQ-GV: đo 208 — `/hai-khoi` đọc CẢ hai khung (Lớp thường +36 câu) thay `?ct=ft` · S1: đo 193 (bỏ `/chi-so` tính lại, + ô Case) → max(193 + 10, ⌈193 × 1,3⌉)
-    urls: ['/demo/session', '/my-work', '/tong-quan/lop-toi-day/hai-khoi', '/yeu-cau/dem', '/giao-vien/{gv}/o?cot=case-mo'],   // UI-TONG-QUAN: + chỉ số GV · SV-TQ-GV: hai khối thay Lớp tôi dạy · S1: chỉ số GV theo `/hai-khoi` (bỏ GET `/giao-vien/{gv}/chi-so`), thêm ô Case đang xử lý (gọi lúc mở, trước sót)
-  },
   /* GD-1 (Overhaul V6): trang đầu GV = Công việc — "Lớp của tôi" dựng từ phiên + `/my-work` đã nạp (0 GET thêm); bỏ `/hai-khoi` + ô Case của Tổng quan GV
-     (hai GET đó nay chỉ ở Hồ sơ GV của chính mình). Mục 'GV trang Tổng quan' trên giữ cho Head tutor (vẫn Tổng quan góc nhìn GV tới LG-7). */
+     (hai GET đó nay chỉ ở Hồ sơ GV của chính mình). LG-7: bỏ mục 'GV trang Tổng quan' (đo 109 câu / 5 GET) — Head tutor (không Công việc) mở trang đầu = khung 'Lớp của tôi' rỗng, chỉ /demo/session (0 GET thêm). */
   'GV trang đầu Công việc': {
     vai: 'GVCN', tran: 56,   // GD-1: đo 43 câu / 3 GET (Tổng quan GV cũ đo 109 câu / 5 GET) → max(43 + 10, ⌈43 × 1,3⌉)
     urls: ['/demo/session', '/my-work', '/yeu-cau/dem'],
