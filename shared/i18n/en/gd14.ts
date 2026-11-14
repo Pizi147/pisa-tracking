@@ -33,4 +33,6 @@ export const EN_GD14 = {
   'Bảng (cùng bảng Quản trị): Đạt MT · Đạt Target thi thật · SOS 2–3 · Case chưa có PA · Thi tháng này; hàng cuối <b>Toàn hệ thống</b>.': 'Table (same as System admin): MT met · Real exam Target met · SOS 2–3 · Cases without a PA · Exams this month; last row <b>Whole system</b>.',
   'Bấm dòng một chi nhánh: trang chuyển sang chi nhánh đó (như ô <b>Chi nhánh</b> đầu trang).': 'Click a branch row: the page switches to that branch (like the <b>Branch</b> picker at the top).',
   'Link <b>Lịch thi ›</b> · <b>Báo cáo ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).': 'Links <b>Exam schedule ›</b> · <b>Reports ›</b> (opens the <b>Branches</b> tab of Analysis).',
+  /* TQ-375-GAP */
+  '+ {n} chi nhánh': '+ {n} branches',
 };
