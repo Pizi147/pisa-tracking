@@ -512,7 +512,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
   return (
     <div className={con && mo ? 'bg-[color:var(--bg)]' : ''}>
       <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
-        className={`${DONG} sm:h-16 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
+        className={`${DONG} sm:min-h-16 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
         <span className="grid min-w-0 gap-[5px]">
           <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-expanded={con ? mo : undefined} aria-controls={con && mo ? maDs : undefined}
             aria-current={dangChon ? 'true' : undefined} className={`${TEN} flex min-w-0 items-baseline gap-2`}>
