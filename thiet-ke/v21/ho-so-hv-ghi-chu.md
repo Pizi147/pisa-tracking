@@ -15,7 +15,7 @@ Dữ liệu bịa, hôm nay thứ Hai 14/09/2026 · W3 SEP (cùng ①). Mã lu�
 | K1 K5 K6 | "⋯" theo vai (`mucQuanLyHocVien`) | A3–A5 | có | giữ đủ mục, đúng thứ tự (K5 vẽ menu GVCN) | GIỮ |
 | K1 | Dòng thông tin (Lớp · Lộ trình · Target · Tuần học · Thi thật · GVCN · TVV) + liên hệ | E1 | có (U02) | giữ; ô cách nhau bằng vạch dọc | GIỮ |
 | K1 | 6 ô điểm + dòng nguồn "Mock Test gần nhất · MT2 · W2 SEP" | B5 | v18 HS1 | giữ (Overall · L chưa có điểm; ✓ ✗ + màu) | GIỮ |
-| K1 K4 K8 | **Việc cần làm** = dòng việc chuẩn ① (tên việc · thẻ phụ · viên hạn · nút) trong một thẻ nhóm; 1440 hai cột dòng, 375 một cột chạm cả dòng | A7, B3, C4, D2, D5 | "Việc của tôi · n" ô 40 px, tối đa 3 + "n việc khác"; thiếu Nhập điểm, Tình hình | ĐỦ việc của người xem với em (thêm **Nhập điểm**, **Trả lời tình hình học tập**); quá hạn lên đầu; không lối tắt "+n" | ĐỔI (R3.2) |
+| K1 K4 K8 | **Việc cần làm** = dòng việc chuẩn, MỘT dạng với Công việc (`bang-mau.html` B, chủ SP lời 24): ô vuông · **tên việc ngắn** · thẻ phụ theo thứ tự kỹ năng → kỳ / tuần → số · cột hạn · cột nút; trong một thẻ nhóm; 1440 hai cột dòng, 375 một cột chạm cả dòng | A7, B3, C4, D2, D5 | "Việc của tôi · n" ô 40 px, tối đa 3 + "n việc khác"; thiếu Nhập điểm, Tình hình | ĐỦ việc của người xem với em (thêm **Nhập điểm**, **Trả lời tình hình học tập**); quá hạn lên đầu; không lối tắt "+n" | ĐỔI (R3.2) |
 | K2 K4c K8b | Bấm dòng việc → **panel việc** nổi bên phải, nền mờ; ✕ / Esc / bấm nền trả về chỗ cũ | §5.3, lời 20 ý 3 | Case → mở cột Case tại chỗ; Ý thức → nhảy sang tab | cùng panel việc với Công việc (①); không nhảy tab | ĐỔI (R3.2) |
 | K2b | Panel Nhập điểm = lưới lớp × tuần của việc, dòng em đang xem tô sẵn | B3, B6, B7 | không có lối từ hồ sơ | panel ① K2 | THÊM |
 | K1 | 3 tab Học thuật · Ý thức & Phối hợp · Lộ trình & lớp | — | có | giữ (dáng tab của ①) | GIỮ |
@@ -57,6 +57,7 @@ Không thao tác nào bị mất.
 ## 3. [XM] — chỗ phải tự đoán
 
 1. **[XM-1] Thanh Việc cần làm dùng DÒNG việc, không nút-chip theo loại.** Đề bài cho "dòng việc / nút-chip". Một em chỉ có 1–4 việc và GV cần thấy hạn từng việc → dòng việc chuẩn (tên · thẻ phụ · viên hạn · nút). 1440 xếp hai cột dòng cho đỡ trống bề ngang; 375 một cột.
+   **Sửa 14/11 theo lời 24** ("Kể cả … chỉ có 1 học sinh … đồng bộ theo form ở bảng công việc: Lớp - Tên công việc ngắn gọn"): dòng việc cùng dáng mẫu `bang-mau.html` B (#1558) — ô vuông, tên việc ngắn ("Ghi kết quả PA", "Nhập điểm", "Trả lời tình hình", "Phối hợp SOS"), thẻ phụ kỹ năng → kỳ / tuần → số. Theo PTA Overhaul: ở hồ sơ MỘT em, lớp và tên em đã ở đầu trang nên **không lặp "MB FT 112 ·"** và không thẻ tên em (M3). Không có dạng "đầu em + cây việc" nào trong mockup này. Nếu chủ SP muốn đúng chữ "Lớp · tên việc" cả ở hồ sơ thì chỉ cần thêm tiền tố lớp, dáng không đổi.
 2. **[XM-2] "+ Case" vào "+ Task".** R3.1 chỉ ghi "+ Task" + "⋯". Tạo Case từ hồ sơ thành 2 bấm (mở menu · Case). Không thêm "+ Case" riêng trong cột Case (web nay cũng không có).
 3. **[XM-3] Case: hai lối, cùng form.** Bấm việc Case ở thanh việc → panel việc (R3.2); bấm hàng Case ở cột phải → Case mở tại chỗ như nay (v16, N33 ①). Cả hai cùng thân form, cùng dòng quy chế.
 4. **[XM-4] Lịch sử Ý thức gập mặc định** (như "Xem lịch sử · n" tab lớp); K4 vẽ trạng thái đã mở.

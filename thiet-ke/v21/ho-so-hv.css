@@ -56,17 +56,15 @@
 .dt .odi { padding:8px 10px; min-height:64px; }
 .dt .odi .s { font-size:24px; }
 
-/* v21-③: thanh "Việc cần làm" = dòng việc chuẩn mockup ① trong một thẻ nhóm; 1440: hai cột dòng; 375: một cột, chạm cả dòng */
+/* v21-③: thanh "Việc cần làm" = dòng việc chuẩn (bang-mau B, lời 24: một dạng với Công việc — ô vuông · tên việc ngắn · thẻ phụ · hạn · nút; lớp + em đã ở đầu hồ sơ nên không lặp); 1440: hai cột dòng; 375: một cột, chạm cả dòng */
 .vl-hs .dai-nhom { min-height:44px; }
 .vl-luoi { display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); }
 .vl-luoi > .viec { padding-left:16px; border-top:1px solid var(--line); }
 .vl-luoi > .viec:nth-child(-n+2) { border-top:0; }
 .vl-luoi > .viec:nth-child(2n) { border-left:1px solid var(--line); }
-.vl-luoi > .viec .t1 { font-weight:600; }
 .dt .vl-luoi { grid-template-columns:minmax(0,1fr); }
 .dt .vl-luoi > .viec { padding:8px 12px; border-left:0 !important; }
 .dt .vl-luoi > .viec:nth-child(2) { border-top:1px solid var(--line); }
-.dt .vl-luoi > .viec .h { grid-column:1; }
 
 /* thẻ (card) + bảng Mock Test (v18 .the, .bmt) */
 .the { background:var(--surface); border:1px solid var(--line); border-radius:12px; min-width:0; }
