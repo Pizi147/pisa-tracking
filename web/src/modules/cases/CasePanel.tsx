@@ -26,7 +26,7 @@ import { DongXinYKien } from './DongXinYKien.tsx';
 import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
-import { CanLam, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KhongTheoDoiForm, XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
@@ -380,7 +380,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
         ) : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={() => setHoanThanh(true)}>{t('Hoàn thành Case')}</button>}
         {/* G2-10: form Xác nhận PA đang mở đã có "Không cần theo dõi…" — không hiện nút thứ hai cùng việc. */}
         {data.sos?.fromSos && !data.sos?.choDuyetKhongTheoDoi && !ktd && !formXacNhanMo && (
-          <button type="button" className="link-nho min-h-[44px] sm:min-h-0" onClick={() => setKtd(true)}>{t('Không cần theo dõi…')}</button>
+          <button type="button" className={NUT_MO} onClick={() => setKtd(true)}>{t('Không cần theo dõi…')}</button>
         )}
       </div>
       {ktd && <KhongTheoDoiForm caseId={data.id} onClose={() => setKtd(false)} onDone={() => { setKtd(false); lamMoi(); }} />}

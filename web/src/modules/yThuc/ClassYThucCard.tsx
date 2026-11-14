@@ -320,7 +320,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
                 aria-label={`${t('Đã xem · {n}', { n: ids.length })} · ${x.ten}`} title={t('Đã xem, chưa cần xử lý')} onClick={() => void daXem(x, x.studentId, ids)}>
                 {dangGhi === x.studentId ? t('Đang lưu…') : t('Đã xem · {n}', { n: ids.length })}
               </button>
-              {nutPhu([[t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId: x.studentId })]], x.ten)}
+              {/* GD-4a (lời 28): "Xác nhận xử lý" là NÚT (viền), không chữ link. */}
+              {nutChinh(t('Xác nhận xử lý'), x.ten, () => mo({ loai: 'xu-ly', studentId: x.studentId }), true)}
             </>
           : choAi('GVCN', d.gvcn)}
       </>;
@@ -415,7 +416,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
         tiep: d.canManage ? (
           <span className="flex flex-wrap gap-x-3">
             {x.trongChuoi !== false && (
-              <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]"
+              <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]"
                 aria-label={`${t('Xác nhận xử lý')} · ${x.ten} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId: x.studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>
             )}
             <button type="button" className="link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]" disabled={dangGhi === x.studentId}

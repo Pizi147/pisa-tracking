@@ -78,10 +78,10 @@ Không thao tác nào bị mất.
 ## 3. [XM] — chỗ phải tự đoán hoặc đụng lời cũ
 
 1. **[XM-1] Số đầu trang** — đề bài ghi ví dụ "30 việc · 9 quá hạn"; mockup ghi "14 việc · ⚠ 9 quá hạn" để khớp đúng dữ liệu mẫu (5 + 4 + 3 + 2 dòng; luật "cùng số liệu cùng nguồn"). v12 S11 đã bỏ tổng đầu trang; R2 đưa lại — PTA xác nhận.
-2. **[XM-2] Badge tab Chấm Speaking** — có badge đỏ riêng "6" (bài quá hạn của nhóm), KHÔNG cộng vào badge menu / tổng (bài chung, OV-14c) — chờ chủ SP xem.
+2. **[XM-2] Badge tab Chấm Speaking — ĐÃ CHỐT (lời 33), đã sửa ở mockup ⓪ 15/11:** badge MỜ đếm số bài ("⚠ 18", ⚠ khi có bài quá hạn), không đỏ, không cộng vào badge menu / chuông. Bỏ đề xuất badge đỏ "6".
 3. **[XM-3] "Lưu" ở lại** (R1-LUU-TIEP 26/10) — đề bài liệt kê ⋯ = Lưu · đóng, Khôi phục điểm, Bỏ vắng; nút "Lưu" (ở lại, "✓ Đã lưu") không còn. Mockup theo đề bài; nếu GV cần sửa lại ô vừa lưu, đề xuất ⋯ có thêm "Lưu".
 4. **[XM-4] Hộp W1 trong K2** — GV mẫu dạy L + R nên lưới K2 không có cột W1; hộp W1 vẽ riêng (K2b) như hộp của GV Writing, cùng thành phần.
-5. **[XM-5] Việc cần làm** — chip Case / Ý thức / Vận hành bấm = sang tab đó, lọc lớp, mở việc đầu tiên (mockup K1 chỉ chuyển tab); không "›" (G6). Chỉ chip "Báo cáo PH ›" có "›" (đổi trang). Lớp chỉ chủ nhiệm (d): cột Test để trống. Tự đoán: biểu tượng từng loại dùng lại biểu tượng tab; một chip mang ⚠ khi có ÍT NHẤT một việc quá hạn trong loại đó.
+5. **[XM-5] Việc cần làm** — chip Case / Ý thức / Vận hành bấm = sang tab đó, lọc lớp, mở việc đầu tiên (mockup K1 chỉ chuyển tab); không "›" (G6). Báo cáo PH không còn chip riêng: tính vào chip "Vận hành · n" (lời 20 — đã sửa ở mockup ⓪ 15/11); không chip nào có "›". Lớp chỉ chủ nhiệm (d): cột Test để trống. Tự đoán: biểu tượng từng loại dùng lại biểu tượng tab; một chip mang ⚠ khi có ÍT NHẤT một việc quá hạn trong loại đó.
 6. **[XM-6] Lối vào Hồ sơ GV** của chính GV khi bỏ Tổng quan — đề xuất: menu tên ở thanh trên. Không vẽ.
 7. **[XM-7] Panel Chọn PA** — không có mockup panel này; vẽ bằng thẻ lựa chọn `.cach` (v20 D). Nội dung PA ("Bổ trợ Reading · 2 buổi / 2 tuần") là dữ liệu bịa.
 8. **[XM-8] Speaking "Tuần cũ hơn · 7 bài · 6 quá hạn"** — bài thứ 7 coi là MT0 (cách tính quá hạn riêng 09/11). Đếm thật lấy máy chủ.
