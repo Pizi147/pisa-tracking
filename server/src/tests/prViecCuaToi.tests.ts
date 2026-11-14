@@ -87,7 +87,8 @@ export async function runPrViecCuaToiTests(t: any) {
           assert(x.mo?.loai === 'nhap-diem' && x.nut === 'Nhập điểm' && x.cuaBan && x.nguoi.id === u, `dòng Nhập điểm thiếu trường: ${JSON.stringify(x)}`);
           /* GD-7: panel việc ở hồ sơ mở CÙNG lưới tuần như Công việc — `periodId` / `kind` trùng dòng score cùng khoá. */
           const cv = dongs.find((it) => it.key === x.key);
-          assert(x.mo.periodId === (cv?.periodId ?? null) && x.mo.kind === (cv?.kind ?? null), `GD-7 periodId / kind lệch Công việc: ${JSON.stringify(x.mo)} ≠ ${cv?.periodId} / ${cv?.kind}`);
+          const mo = x.mo as any;
+          assert(mo.periodId === (cv?.periodId ?? null) && mo.kind === (cv?.kind ?? null), `GD-7 periodId / kind lệch Công việc: ${JSON.stringify(mo)} ≠ ${cv?.periodId} / ${cv?.kind}`);
           assert((x.han === null) === (x.gap === null) && (x.gap === null || ['qua-han', 'gan', 'chua'].includes(x.gap)) && !JSON.stringify(x).includes('⚠'), `gap / ⚠: ${JSON.stringify(x)}`);
         }
         daThuHoSo = true;

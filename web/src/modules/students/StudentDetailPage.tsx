@@ -229,8 +229,7 @@ export default function StudentDetailPage() {
     if (w) { setViecMo({ it: w, ds }); return; }
     const m = x.mo;
     if (!m) return;
-    if (m.loai === 'case') moCase(m.caseId, { paId: m.paId, viec: m.viec });
-    else if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
+    if (m.loai === 'tab') navigate(duongHoSoHocVien(data.id, { tab: m.tab, sub: m.sub }));
     else if (m.loai === 'duong') navigate(m.href);
   };
   /* "Việc tiếp ›": việc kế sau việc đang mở trong danh sách lúc mở, còn trong danh sách mới và mở được tại panel. */
