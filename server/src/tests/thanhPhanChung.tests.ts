@@ -359,7 +359,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
   check('GD-6 · đầu trang: dải chỉ số chung + badge lớp cuối dải; không TVV; GV không badge "việc quá hạn của lớp"; tab Ý thức có thang vạch', () => {
     const s = doc('web/src/modules/classes/DauTrangLop.tsx');
-    assert(/<DaiChiSo nhan=\{t\('Số của lớp'\)\}>/.test(s) && /\{bConLai\.hien\.map\(nutBadge\)\}[\s\S]{0,400}<\/DaiChiSo>/.test(s), 'badge lớp phải ở cuối dải số');
+    assert(/<DaiChiSo nhan=\{t\('Số của lớp'\)\}>/.test(s) && /\{bConLai\.hien\.map\(nutBadge\)\}(?:(?!<ODai|<\/DaiChiSo>)[\s\S])*<\/DaiChiSo>/.test(s), 'badge lớp phải ở cuối dải số');
     assert(!/tvvChinhCuaLop|tomTat\?\.tvv/.test(s), 'còn TVV ở đầu trang (lời 25)');
     assert(/soViecQuaHan: laVaiQuanLy\(session\?\.roles\) \? soViecQuaHan : 0/.test(s), '[XM-2] GV còn badge "việc quá hạn của lớp"');
     assert(/<ThangVach dong=\{hv\.dongThang\} \/>/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'tab Ý thức lớp thiếu thang vạch (lời 28, 36)');
