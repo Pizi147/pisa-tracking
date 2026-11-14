@@ -135,7 +135,7 @@ import { NHOM_VIEC_TVV, boQuaViec, gvDangXem, myWork, viecCuaNguoi } from '../wo
 import { bangGvChiNhanh, hoSoGiaoVien, oHoSoGv, viecHoSoGv } from '../giaoVien/hoSo.ts';
 import { timGiaoVien } from '../giaoVien/phamVi.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
-import { soHocVien } from '../worklist/hvCuaToi.ts';
+import { emCuaTvv, soHocVien } from '../worklist/hvCuaToi.ts';
 import { tongQuanMt } from '../worklist/tongQuanMt.ts';
 import { gvTre } from '../worklist/gvTre.ts';   // M6 6b-4
 import * as caseSvc from '../cases/cases.ts';
@@ -2305,6 +2305,11 @@ api.get('/tong-quan/chi-nhanh-v2/o', requireAuth, wrap((req) => {
 api.get('/tong-quan/tvv', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return tongQuanV5Svc.tongQuanTvv(principalOf(req));
+}));
+/** GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; `tvv` = Quản lý / Quản trị xem em của một TVV. */
+api.get('/tong-quan/tvv/em', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return emCuaTvv(principalOf(req), { tvv: qInt(req, 'tvv') ?? null });
 }));
 api.get('/tong-quan/tvv/o', requireAuth, wrap((req) => {
   maybeSimulateReadError();

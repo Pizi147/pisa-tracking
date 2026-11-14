@@ -7,7 +7,8 @@ export async function runPrUiTongQuanTests(t: any) {
   const v5: any = await import('../worklist/tongQuanV5.ts');
   const bc: any = await import('../phanTich/baoCao.ts');
   const d: any = await import('../../../shared/domain/index.ts');
-  const { loadPrincipal } = await import('../permissions.ts');
+  const { loadPrincipal, can } = await import('../permissions.ts');
+  const hv: any = await import('../worklist/hvCuaToi.ts');
   const { demoToday } = await import('../demoConfig.ts');
   console.log('\nV5 · UI-TONG-QUAN — số Tổng quan = Báo cáo, Σ tử / Σ mẫu theo chi nhánh, panel theo lớp, quyền');
   const ma = (fn: () => unknown) => { try { fn(); return 200; } catch (e: any) { return e?.status ?? 500; } };
@@ -44,5 +45,38 @@ export async function runPrUiTongQuanTests(t: any) {
     const o = v5.oTongQuanTvv(tvv, 'bao-ph');
     assert(o.n === x.baoPh.tong && x.baoPh.dung + x.baoPh.treXong <= x.baoPh.tong, `panel Báo PH ${o.n} ≠ số ${x.baoPh.tong}`);
     assert(ma(() => v5.oTongQuanTvv(tvv, 'khac')) === 400, 'o lạ phải 400');
+  });
+
+  check('GD-8a · /tong-quan/tvv/em: em = đúng em của TVV (cùng tập chip HV của tôi), chỉ số = /tong-quan/tvv, trường theo trạng thái; TVV khác / GV 403, QL theo phạm vi', () => {
+    const ids = (conn.prepare(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.status = 'active' ORDER BY ur.user_id`).all() as any[]).map((r) => r.id);
+    const tvv = loadPrincipal(ids[0]);
+    const r = hv.emCuaTvv(tvv);
+    const tap = (xs: number[]) => JSON.stringify([...new Set(xs)].sort((a, b) => a - b));
+    const goc = (conn.prepare('SELECT id FROM students WHERE consultant_user_id = ? AND archived_at IS NULL').all(tvv.userId) as any[]).map((x) => x.id);
+    assert(r.tvv === tvv.userId && r.em.length > 0 && tap(r.em.map((x: any) => x.id)) === tap(goc), `em ${tap(r.em.map((x: any) => x.id))} ≠ ${tap(goc)}`);
+    const chip = hv.chipHocVien(tvv);
+    assert(tap(r.em.filter((x: any) => x.status !== 'finished').map((x: any) => x.id)) === tap(chip.tatCa), 'em chưa kết thúc ≠ chip Tất cả');
+    assert(tap(r.em.filter((x: any) => x.choKq).map((x: any) => x.id)) === tap(chip.ids['da-thi']), 'choKq ≠ chip Đã thi · chờ KQ');
+    assert(tap(r.em.filter((x: any) => x.choBuocTiep).map((x: any) => x.id)) === tap(chip.ids['cho-buoc-tiep']), 'choBuocTiep ≠ chip Chờ bước tiếp');
+    assert(tap(r.em.filter((x: any) => x.sos).map((x: any) => x.id)) === tap([...chip.lyDo].filter(([, l]: any) => l.sos).map(([id]: any) => id)), 'SOS ≠ lý do chip');
+    assert(JSON.stringify(r.chiSo) === JSON.stringify(v5.tongQuanTvv(tvv)), 'chỉ số ≠ /tong-quan/tvv');
+    /* Lời 40: Kết thúc học / đã nhập ngày thi thật → không lịch thi dự kiến; SOS chỉ em đang học. */
+    const daThi = new Set((conn.prepare(`SELECT student_id AS id FROM learning_cycles WHERE status = 'active' AND thi_that_ngay IS NOT NULL`).all() as any[]).map((x) => x.id));
+    for (const x of r.em) {
+      assert(!(x.status === 'finished' || daThi.has(x.id)) || !x.thi, `${x.ten}: đã thi / kết thúc mà còn lịch thi`);
+      assert(x.status === 'active' || !x.sos, `${x.ten}: không đang học mà có SOS`);
+      assert(!x.thi || Object.keys(x.thi).length === 1, `${x.ten}: lịch thi phải đúng một khoá`);
+    }
+    assert(r.em.some((x: any) => x.lop.length && x.lop.every((l: any) => l.id && l.ma)), 'em phải có lớp (id + mã)');
+    /* Quyền: TVV xem em TVV khác → 403; GV → 403; QL không `tvv` → 400; QL có `tvv` → em trong phạm vi, không chỉ số. */
+    const khac = ids[1] ?? P.mbManager.userId;
+    assert(ma(() => hv.emCuaTvv(tvv, { tvv: khac })) === 403, 'TVV đọc được em của TVV khác');
+    if (ids[1]) assert(ma(() => hv.emCuaTvv(loadPrincipal(ids[1]), { tvv: tvv.userId })) === 403, 'TVV thứ hai đọc được em TVV đầu');
+    assert(ma(() => hv.emCuaTvv(P.coreTeacher, { tvv: tvv.userId })) === 403 && ma(() => hv.emCuaTvv(P.coreTeacher)) === 400, 'GV đọc được em TVV');
+    assert(ma(() => hv.emCuaTvv(P.mbManager)) === 400, 'QL thiếu tvv phải 400');
+    for (const q of [P.mbManager, P.admin]) {
+      const x = hv.emCuaTvv(q, { tvv: tvv.userId });
+      assert(!x.chiSo && x.em.every((e: any) => goc.includes(e.id) && can(q, d.PERMISSIONS.STUDENT_VIEW, { studentId: e.id })), 'QL / QT: em ngoài TVV / ngoài phạm vi hoặc kèm chỉ số');
+    }
   });
 }
