@@ -92,3 +92,7 @@ table.bang { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .dt .nut-i { width:44px; height:44px; }
 .dt .thanh-chon .kq .nut { height:44px; }
 .dt .doan button { height:44px; }
+/* nút tắt có lý do ngay tại nút (không để ô nút trống) */
+.nut-tat { flex-direction:column; gap:0; line-height:1.15; color:var(--text-faint); border-style:dashed; background:transparent; cursor:not-allowed; height:auto; min-height:30px; padding:3px 10px; }
+.nut-tat small { font:500 12px var(--phong); color:var(--text-faint); }
+.nut-tat:hover { border-color:var(--line-strong); }

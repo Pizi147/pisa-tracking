@@ -169,3 +169,14 @@
 .dt .vai-hang .nut-chon, .dt .vai-hang .go { height:44px; }
 .dt .pn .x { width:44px; height:44px; }
 .dt .nut-i { width:44px; height:44px; }
+/* PTA 15/11: panel nhật ký của QL (cùng dáng panel trượt ② / ⑤) */
+.phu-trang { position:absolute; inset:52px 0 0 0; background:var(--phu-hop); z-index:7; }
+.pn-truot { position:absolute; top:52px; right:0; bottom:0; width:736px; z-index:8; border-radius:0; border-width:0 0 0 1px; box-shadow:-12px 0 32px var(--bong); }
+.pn-truot .pn-than { flex:1; overflow:auto; }
+.pn-truot .pn-tieu .dem { margin-left:8px; }
+/* nút gập nhóm quyền (web: ^ cuối đầu nhóm) */
+.nut-gap { margin-left:auto; width:32px; height:32px; border:0; background:none; border-radius:6px; color:var(--text-dim); display:grid; place-items:center; }
+.nut-gap .ic { transform:rotate(-90deg); }
+.nut-gap.gap .ic { transform:rotate(90deg); }
+.nut-gap:hover { background:var(--accent-soft); }
+.qv-q .ten { display:inline-flex; align-items:center; gap:2px; flex-wrap:wrap; }
