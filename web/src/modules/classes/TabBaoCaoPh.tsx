@@ -15,10 +15,11 @@ import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
 import { HopDotBaoCaoPh, guiDotBc, lamMoiBaoCaoPh } from './HopDotBaoCaoPh.tsx';
 import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, tieuChiPhan, tuanLich,
+  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, quyCheXuatBaoCaoPh, tieuChiPhan, tuanLich,
   type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -149,6 +150,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
           title={k === 'pdf' ? t('Mỗi em một tệp PDF, gói .zip') : undefined}>
           {dangXuat === `${k}:0` ? chuDangXuat(k, td) : k === 'pdf' ? t('Xuất PDF lớp') : t('Xuất Excel lớp')}</button>
       ))}
+      {/* QC-GAN Q83: ⓘ cạnh nút Xuất — việc Admin tự rời Công việc (không panel nên không có dòng quy chế). */}
+      {data.xuat && data.dot && <NutLuat phai label={t('Xuất báo cáo PH')}>{quyCheXuatBaoCaoPh(soDu === em.length).chu}</NutLuat>}
     </div>
   );
   const hopDot = hop && (
