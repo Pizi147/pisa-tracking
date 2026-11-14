@@ -35,4 +35,6 @@ export const EN_GD14 = {
   'Link <b>Lịch thi ›</b> · <b>Báo cáo ›</b> (mở tab <b>Chi nhánh</b> của Phân tích).': 'Links <b>Exam schedule ›</b> · <b>Reports ›</b> (opens the <b>Branches</b> tab of Analysis).',
   /* TQ-SOS-CN: panel SOS 2–3 theo chi nhánh — câu lỗi máy chủ. */
   'Bạn không xem được chi nhánh này.': 'You cannot view this branch.',
+  /* TQ-375-GAP */
+  '+ {n} chi nhánh': '+ {n} branches',
 };

@@ -309,6 +309,7 @@ export const HD_GV: HuongDan = {
         { id: 'hv-tim', ten: 'Tìm em, lớp, GV', buoc: ['Bấm <b>/</b> hoặc <b>Ctrl K</b> (hoặc ô tìm trên thanh trên), gõ ít nhất 2 chữ.', 'Kết quả chia <b>Học viên · Lớp · GV</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Không thấy: <b>Tìm trong HV lưu trữ ›</b>.'],
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
         { id: 'hv-goc', ten: 'Ba góc nhìn', buoc: ['<b>Tất cả</b> · <b>Đang SOS</b> (SOS hiện tại, mỗi em một dòng) · <b>Lịch thi</b>.', 'Hàng lọc: <b>Tìm</b> · <b>Mọi lớp</b> · <b>Mọi TVV</b> (gõ để tìm, ✕ bỏ lọc). Cột <b>Việc cần làm</b>: bấm chip làm việc ngay tại trang; lớp đã kết thúc, em đã lưu trữ: <b>Lưu trữ ›</b> ở đầu trang.'] },
+        { id: 'hv-ba-cham', ten: '⋯ dòng em', buoc: ['<b>⋯</b> cuối dòng em: nhóm <b>+ Task</b> (<b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b>) mở ngay tại trang, em điền sẵn; rồi <b>Nhập điểm</b> · <b>Sửa thông tin</b>…'] },
         { id: 'hv-lich-thi', ten: 'Tab Lịch thi', buoc: ['Lọc theo trạng thái thi: <b>Tất cả</b> · <b>Chưa chốt ngày</b> · <b>Đã chốt</b> · <b>Chờ KQ</b> · <b>Có KQ</b>.',
           'Người sửa được: bấm giá trị lịch thi → hộp dưới hàng (<b>Tháng dự kiến</b> / <b>Ngày thi</b>); em đã thi → panel Sau thi. Lưu xong có <b>Hoàn tác</b> ngay ô.',
           '<b>⌄</b> mở chi tiết theo trạng thái thi: chưa thi có MT gần nhất · Test sắp tới; đã thi có Kỳ thi · KQ thi thật · <b>Ghi kết quả</b> / <b>Chọn bước tiếp</b>; luôn có <b>+ Ghi chú</b> · <b>Lịch sử</b>.'],

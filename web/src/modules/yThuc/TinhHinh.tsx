@@ -208,7 +208,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           <span className="text-sm font-bold text-slate-100">{t('Học viên')} <span className="text-bad">*</span></span>
           {chonEm({ em, setEm, luu })}
         </div>
-      ) : canEm && (chonThem || che.loai === 'bao') && (
+      ) : canEm && (chonThem || em.length > 0) && (
         <div className="grid gap-1.5">
           <span className="text-sm font-bold text-slate-100">{t('Học viên')}</span>
           {/* GD-5 (R5.2 #56, mockup ⑤ A4 / F3): có danh sách em để thêm → ô chọn nhiều có tìm (chip ✕ + "n / trần" trong ô); không thì giữ chip. */}
@@ -236,7 +236,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           <dd className="m-0">{che.loai === 'hoi'
             ? <b className="font-semibold text-slate-100">{che.gvcn ? t('GVCN {ten}', { ten: che.gvcn }) : t('GVCN lớp em')}</b>
             : [...new Set(em.map((e) => e.tvv ?? ''))].map((tv) => (
-              <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Quản lý chi nhánh')}</b> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</span>
+              <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Quản lý chi nhánh')}</b>{/* PTA rà #1708: một em → chỉ người nhận (tên em đã ở dòng Học viên); nhiều em → em nào gửi ai */}{em.length > 1 && <> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</>}</span>
             ))}</dd>
           <dt>{che.loai === 'bao' ? t('Hạn TVV') : t('Hạn')}</dt>
           <dd className="m-0"><b className="font-semibold text-slate-100">{che.loai === 'hoi' ? t('3 ngày') : t('5 ngày')}</b> · {t('tới {ngay}', { ngay: ngay(che.loai === 'hoi' ? addDaysIso(homNay, 2) : hanBaoPh(homNay), homNay) })}</dd>

@@ -208,7 +208,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   );
   const menu = (s: DongThuong, lopNut?: string) => (
     /* GV-CU-BO-TRO: em đã chuyển (dòng "Đã chuyển · đang bổ trợ ›") không còn thao tác ở lớp cũ — chỉ lối vào hồ sơ HV. */
-    <MenuDong lopNut={lopNut} muc={s.archived || s.dangBoTro ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
+    <MenuDong lopNut={lopNut} muc={s.archived || s.dangBoTro ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc, tvv: s.tvv ?? null })} />
   );
   const lopHang = (s: DongThuong) => `${s.status !== 'active' || s.dangBoTro ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
 
@@ -392,8 +392,9 @@ function MoRongThuong({ s, moc, mon, chot, ct, ds, homNay, coTheBaoCase, onThemC
             <tbody>
               {[...coDiem].reverse().map((m, i) => (
                 <tr key={m.kind} className="border-t" style={{ borderColor: 'var(--line)' }}>
-                  <td className="py-2">
-                    <span className={`block whitespace-nowrap text-slate-100 ${i === 0 ? 'font-bold' : 'font-normal'}`}>{m.nhan}</span>
+                  <td className="py-2 pr-2">
+                    {/* QC-GAN: 375 cột Lượt hẹp — tên lượt xuống dòng, không dính ô điểm. */}
+                    <span className={`block text-slate-100 sm:whitespace-nowrap ${i === 0 ? 'font-bold' : 'font-normal'}`}>{m.nhan}</span>
                     {m.tuan && <small className="block whitespace-nowrap text-xs font-medium text-faint">{tuanLich(m.tuan, homNay)}</small>}
                   </td>
                   {mon.map((k) => <td key={k} className="py-2 text-center"><ODiemThuong o={m.o[k] ?? null} gon={dienThoai} /></td>)}

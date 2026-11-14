@@ -38,4 +38,11 @@ export const EN_QUY_CHE_VANHANH = {
   'Dòng quy chế ở panel việc': 'Rule line in task panels',
   'Ngay trên nút lưu: <b>Quy chế</b> · một câu — lưu xong ai nhận việc, hạn nào. Câu đổi theo lựa chọn; <b>ⓘ</b> xem chi tiết.': 'Right above the save button: <b>Rule</b> · one sentence — who gets the next task after saving, and by when. It changes with your choice; <b>ⓘ</b> shows details.',
   'Chân panel: <b>Đóng</b> · nút việc · <b>Lưu · việc tiếp ›</b> khi còn việc kế.': 'Panel footer: <b>Close</b> · the task button · <b>Save · next task ›</b> when there is a next task.',
+  // QC-GAN: Q74 / Q75 / Q77 (Cuối khoá) · Q83 (Xuất báo cáo PH)
+  'Do Trung tâm: Case + Tutor {n} buổi mỗi kỹ năng cho GV lớp FT': 'Centre-caused: Case + Tutor {n} sessions per skill for the FT class teachers',
+  'Khác gợi ý: cần lý do': 'Different from suggestion: reason needed',
+  'Hạn {ngay} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp': 'Due {ngay} · on the Monday of the start week the system moves the class',
+  'Tới Thứ Hai tuần bắt đầu máy tự chuyển lớp': 'On the Monday of the start week the system moves the class',
+  'Lớp đủ báo cáo · việc tự rời sau 7 ngày': 'Class reports complete · the task leaves after 7 days',
+  'Đợt quá hạn còn thiếu em: việc Xuất hiện 7 ngày từ hạn': 'Round overdue with students missing: the Export task shows for 7 days from the due date',
 } satisfies Record<string, Dich>;

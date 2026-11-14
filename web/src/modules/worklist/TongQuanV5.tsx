@@ -463,6 +463,8 @@ export const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="t
     : gon ? <span className="text-slate-500" title={t('Chưa có dữ liệu')}>—</span> : <ChuaCoDl />);
 
 export function TheoChiNhanh({ d, baoCao, onChiNhanh }: { d: TongQuanV5Data; /** Báo cáo HV (kỳ chọn tự do): cột "Thi trong kỳ" + SOS 2–3. */ baoCao?: boolean; onChiNhanh: (id: number) => void }) {
+  const dienThoai = useDienThoai();
+  const [hetCn, setHetCn] = useState(false);
   type H = DongCn & { tong?: boolean };
   const hang: H[] = [...(d.chiNhanh ?? []), ...([{
     id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: (d.chiNhanh ?? []).reduce((n, h) => n + h.sos23, 0), sos23Ids: [...new Set((d.chiNhanh ?? []).flatMap((h) => h.sos23Ids))], caseChuaPa: d.casePa.chuaPa, tong: true,
@@ -485,10 +487,26 @@ export function TheoChiNhanh({ d, baoCao, onChiNhanh }: { d: TongQuanV5Data; /**
   /* GD-14 (lời 37): Tổng quan — mỗi ô một thành phần, mẫu "2/3" xem ở panel. Báo cáo HV (Phân tích) giữ mẫu như cũ. */
   const phuCua = (h: H, c: CotBang) => (!baoCao ? null : c.key === 'dat' ? tuMau(h.datMt) : c.key === 'case' ? (h.casePa.mo ? `${h.casePa.coPa}/${h.casePa.mo}` : null)
     : c.key === 'tt' ? tuMau(h.thiThat) : null);
+  /* TQ-375-GAP (mockup ⑧ T7b): 375, Tổng quan — chi nhánh RỖNG (mọi ô 0 / "—": không HV đạt / thi, không SOS, không Case, không thi) gập sau MỘT nút
+     "+ n chi nhánh" đặt trước thẻ Toàn hệ thống; bấm là hiện hết (không đổi trang). 1440 và Báo cáo HV không đổi. */
+  const rongCn = (h: H) => !h.tong && !h.datMt?.mau && !h.thiThat?.mau && !h.sos23 && !h.caseChuaPa && !h.thiThangNay;
+  const an = dienThoai && !baoCao && !hetCn ? hang.filter(rongCn) : [];
+  const bang = (ds: H[]) => (
+    <Bang ten={t('Theo chi nhánh')} cot={baoCao ? COT_CN_BC : COT_CN} hang={ds} khoa={(h) => h.khoa} oCua={oCua} phuCua={phuCua} khung={false} deu theLuoi
+      onHang={(h) => { if (!h.tong) onChiNhanh(h.id); }} lopHang={(h) => (h.tong ? 'tong' : '')} rong={{ tieuDe: t('Chưa có lớp nào trong khung này') }} />
+  );
   return (
     <Card title={<>{t('Theo chi nhánh')}{!baoCao && !!d.chiNhanh?.length && <DemDau n={d.chiNhanh.length} />}</>} bodyClass="p-0">
-      <Bang ten={t('Theo chi nhánh')} cot={baoCao ? COT_CN_BC : COT_CN} hang={hang} khoa={(h) => h.khoa} oCua={oCua} phuCua={phuCua} khung={false} deu theLuoi
-        onHang={(h) => { if (!h.tong) onChiNhanh(h.id); }} lopHang={(h) => (h.tong ? 'tong' : '')} rong={{ tieuDe: t('Chưa có lớp nào trong khung này') }} />
+      {an.length ? (
+        <>
+          {bang(hang.filter((h) => !h.tong && !rongCn(h)))}
+          <div className="border-t px-3.5 py-3" style={{ borderColor: 'var(--line)' }}>
+            <button type="button" className="btn min-h-[44px] w-full justify-center" onClick={() => setHetCn(true)}
+              title={an.map((h) => h.ten).join(', ')}>{t('+ {n} chi nhánh', { n: an.length })}</button>
+          </div>
+          <div className="border-t" style={{ borderColor: 'var(--line)' }}>{bang(hang.filter((h) => h.tong))}</div>
+        </>
+      ) : bang(hang)}
     </Card>
   );
 }
