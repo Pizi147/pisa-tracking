@@ -167,7 +167,7 @@ export const HD_ADMIN: HuongDan = {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
       dangO: { cau: 'Lớp đã kết thúc và em đã lưu trữ (từ ô tìm “Tìm trong HV lưu trữ ›”); chỉ xem.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
       khongLam: [{ ten: 'Tạm dừng, kết thúc học, Quay lại học', cua: 'việc của QL' }],
-      muc: [{ id: 'ad-luu-tru', ten: 'Xem Lưu trữ', buoc: ['Hai tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b>.', 'Bấm tên em hoặc lớp mở hồ sơ.'] }],
+      muc: [{ id: 'ad-luu-tru', ten: 'Xem Lưu trữ', buoc: ['Ba tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b> · <b>Đã xoá</b>; chia theo chi nhánh, học viên theo lớp cuối.', 'Bấm tên em hoặc lớp mở hồ sơ.'] }],
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],

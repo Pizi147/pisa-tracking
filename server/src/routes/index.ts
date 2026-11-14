@@ -2646,7 +2646,11 @@ api.delete('/s-expert/:id', requireAuth, wrap((req) => {
   return sExSvc.xoaSEx(principalOf(req), pInt(req, 'id'));
 }));
 /* Q-RL2a THÙNG RÁC: Quản trị › Đã xoá (đọc) · Khôi phục một mục (Hoàn tác 5 s của web gọi cùng đường) — quyền như thao tác gốc. */
-api.get('/thung-rac', requireAuth, wrap((req) => khoiPhucRacSvc.danhSachRac(principalOf(req))));
+const LOAI_RAC = ['case', 'pa', 'ket_qua_pa', 'vi_pham', 'tep', 'hoc_vien'] as const;
+const loaiRac = (v: string | undefined) => ((LOAI_RAC as readonly string[]).includes(v ?? '') ? v as (typeof LOAI_RAC)[number] : null);
+api.get('/thung-rac', requireAuth, wrap((req) => khoiPhucRacSvc.danhSachRac(principalOf(req), loaiRac(qStr(req, 'loai')))));
+/* GD-16: số tab "Đã xoá" ở Lưu trữ khi mở trang (danh sách chỉ nạp khi bấm tab). `loai` lạ → bỏ qua (null). */
+api.get('/thung-rac/dem', requireAuth, wrap((req) => khoiPhucRacSvc.demRac(principalOf(req), loaiRac(qStr(req, 'loai')) ?? 'hoc_vien')));
 api.post('/thung-rac/:id/khoi-phuc', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return khoiPhucRacSvc.khoiPhucRac(principalOf(req), pInt(req, 'id'));
