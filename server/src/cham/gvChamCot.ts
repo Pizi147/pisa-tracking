@@ -22,6 +22,21 @@ export function docGvChamCot(p: Principal, classId: number, dot: string | null):
   return r.ten ? { kieu: 'ngoai', ten: r.ten } : null;
 }
 
+/** GD-2 (panel Chấm Speaking, ngăn lớp × tuần): mọi lựa chọn của người xem ở các lớp của hàng đợi — MỘT câu theo lô (khoá chính user_id + class_id).
+ *  Trả `{ "classId:dot": NguoiChon }` chỉ cho ô đã chọn; ô không có → nơi gọi dùng `macDinh` (như `docGvChamCot`). */
+export function docGvChamCotLo(p: Principal, classIds: readonly number[]): { chon: Record<string, NguoiChon | null>; macDinh: NguoiChon | null } {
+  const macDinh: NguoiChon | null = laGvSpeaking(p) ? { kieu: 'toi' } : null;
+  const chon: Record<string, NguoiChon | null> = {};
+  const ids = [...new Set(classIds)];
+  if (!ids.length) return { chon, macDinh };
+  const rows = db().prepare(`SELECT g.class_id AS lop, g.dot, g.examiner_user_id AS id, g.examiner_name AS ten, u.full_name AS ten_tk FROM gv_cham_cot g
+     LEFT JOIN users u ON u.id = g.examiner_user_id WHERE g.user_id = ? AND g.class_id IN (${ids.map(() => '?').join(',')})`).all(p.userId, ...ids) as any[];
+  for (const r of rows) {
+    chon[`${r.lop}:${r.dot}`] = r.id === p.userId ? { kieu: 'toi' } : r.id ? { kieu: 'tai_khoan', id: r.id, ten: r.ten_tk ?? '' } : r.ten ? { kieu: 'ngoai', ten: r.ten } : null;
+  }
+  return { chon, macDinh };
+}
+
 export function ghiGvChamCot(p: Principal, b: { classId?: unknown; dot?: unknown; gv?: unknown }): { gv: NguoiChon | null } {
   const classId = Number(b.classId);
   const dot = String(b.dot ?? '');

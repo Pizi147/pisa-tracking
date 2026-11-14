@@ -173,3 +173,8 @@ Chưa có hàm "GV X còn thiếu n em"; ghép từ mảnh sẵn có: `quyenBc()
 - Bấm một việc → mở panel / sang đúng trang: nguyên tắc chung cho mọi màn (chip, dòng việc, ô số, chuông).
 - Không vẽ lại mockup ①: session code đọc `thiet-ke/v21/trang-dau-gv.html` + mục 12, 13 này.
 
+## 14. Chủ SP 14/11 sáng (lời 24) — THẮNG mọi mục trên và hình mockup khi khác
+
+- **Dòng việc luôn một dạng "Lớp · tên việc ngắn"**, kể cả việc của một em; tên em là thẻ phụ (link). Bỏ dạng "vòng chữ đầu + tên em + cây việc" ở danh sách việc. Mẫu chuẩn: `thiet-ke/v21/bang-mau.html` (mockup ⑤, mục dòng việc).
+- Đầu tab / dải nhóm ghi **"Chấm Speaking"**; không ghi "Việc chung của nhóm GV Speaking".
+

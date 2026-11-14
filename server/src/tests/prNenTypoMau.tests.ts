@@ -169,8 +169,15 @@ export async function runPrNenTypoMauTests(t: YThucTestKit) {
     assert(!/inset 0 0 0 2px|inset 0 2px 0/.test(khoi), 'còn viền khung 2 px (trùng vòng focus)');
   });
 
-  check('NEN · K-HTT-3: "Đã lưu" một cách báo — xám, không xanh lá (trùng ✓ vượt kỳ vọng)', () => {
-    const hong = dong((_f, s) => (/Đã lưu/.test(s) && /text-(?:ok|emerald|dat)\b/.test(s) ? 'Đã lưu màu xanh' : null));
+  /* Chủ SP 14/11 (DESIGN.md V12, #1571 — thay bản "xám"): "✓ Đã lưu" LUÔN XANH, một lớp màu `LOP_DA_LUU` (ui/KhuonViec.tsx) cho mọi nơi báo đã lưu.
+     "Đã lưu nháp · chưa chốt" là nháp (màu nháp riêng) — không thuộc luật này. */
+  check('NEN · K-HTT-3: "✓ Đã lưu" luôn xanh — một lớp màu LOP_DA_LUU', () => {
+    const kv = nguon.find((x) => x.f === 'web/src/ui/KhuonViec.tsx')!.text;
+    const hong: string[] = [];
+    if (!/export const LOP_DA_LUU = 'text-ok';/.test(kv)) hong.push('KhuonViec thiếu LOP_DA_LUU = text-ok');
+    if (!/tt === 'da'\) return <span role="status" className=\{`font-semibold \$\{LOP_DA_LUU\}`\}/.test(kv)) hong.push('ChuLuu "da" không dùng LOP_DA_LUU');
+    hong.push(...dong((_f, s) => (/✓[^'`]{0,4}\{?t\('Đã lưu|'✓ Đã lưu|title=\{t\('Đã lưu'\)\}>✓/.test(s) && !/nháp/.test(s)
+      && /text-(?:done|dim|faint|slate-\d+)\b/.test(s) && !/LOP_DA_LUU/.test(s) ? 'Đã lưu không xanh (dùng LOP_DA_LUU)' : null)));
     assert(hong.length === 0, tom(hong));
   });
 }

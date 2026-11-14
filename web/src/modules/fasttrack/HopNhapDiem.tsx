@@ -20,6 +20,7 @@
  * Ô có điểm mà thiếu: chữ nhắc vàng "nên có nhận xét" / "nên chọn nguyên nhân" dưới số (không vẽ ✓ "đủ" — trùng dấu "đã lưu" của ô).
  */
 import { OKhongHoc } from '../../ui/ODiem.tsx';
+import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { useContext, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { createPortal } from 'react-dom';
@@ -612,7 +613,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
       <LyDoThieu thieu={thieu} />
       {daLuu ? (
         <>
-          <span role="status" className="text-[13px] font-semibold text-done">{t('✓ Đã lưu')}</span>
+          <span role="status" className={`text-[13px] font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>
           {onTiep
             ? <button ref={nutHetRef} type="button" className={`${nut} btn-primary`} onClick={() => onTiep(true)}>{tiepEm ? t('Em tiếp ›') : t('Bài tiếp ›')}</button>
             : <button ref={nutHetRef} type="button" className={nut} onClick={onDong}>{t('Đóng')}</button>}
