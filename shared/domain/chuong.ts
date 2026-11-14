@@ -32,9 +32,8 @@ export type LoaiViecChuong = { loai: string; ten: string; n: number; quaHan: num
  * Xếp: loại có quá hạn → có hôm nay → nhiều việc.
  */
 export function gomViecChuong<T extends DongViecChuong>(dong: readonly T[], cuaToi: (d: T) => boolean = (d) => d.mine): LoaiViecChuong[] {
-  const cua = (d: T) => cuaToi(d) || !!(d.con as readonly T[] | null | undefined)?.some(cuaToi);
   const ra = new Map<string, LoaiViecChuong>();
-  for (const x of dongNhinThay(dong.filter(cua)) as T[]) {
+  for (const x of dongNhinThay(dongCuaToi(dong, cuaToi)) as T[]) {
     if (laViecChamCheo(x)) continue;
     const g: LoaiViecChuong = ra.get(x.group) ?? { loai: x.group, ten: NHAN_LOAI_VIEC[x.group] ?? x.group, n: 0, quaHan: 0, homNay: 0, cn: new Map(), keys: [] };
     g.n++;
@@ -46,6 +45,13 @@ export function gomViecChuong<T extends DongViecChuong>(dong: readonly T[], cuaT
   }
   return xepLoaiViec([...ra.values()]);
 }
+
+/**
+ * GD-9 ([XM-9a]): DÒNG CỦA TÔI — dòng của tôi hoặc dòng gộp có con của tôi. MỘT hàm cho chuông (`gomViecChuong`) và đầu trang Công việc của GV / TVV
+ * (trang đó còn liệt kê việc LÀM THAY — `mine: false` — nhưng không đếm vào "n việc", cùng số chuông · Tổng quan "Việc của tôi" · `summary.viec`).
+ */
+export const dongCuaToi = <T extends { mine: boolean; con?: readonly unknown[] | null }>(dong: readonly T[], cuaToi: (d: T) => boolean = (d) => d.mine): T[] =>
+  dong.filter((d) => cuaToi(d) || !!(d.con as readonly T[] | null | undefined)?.some(cuaToi));
 
 /** Thứ tự dòng loại: có quá hạn → có hôm nay → nhiều việc (dòng thêm từ Chờ duyệt / thông báo xếp chung một luật). */
 export const xepLoaiViec = <L extends Pick<LoaiViecChuong, 'quaHan' | 'homNay' | 'n'>>(ds: L[]): L[] =>

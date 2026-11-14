@@ -244,7 +244,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'chuong', ten: 'Xem việc cần làm ở chuông', nhom: 'khac',
       loiChinh: { chu: 'Chuông trên thanh trên' },
-      buoc: ['Bấm chuông cạnh <b>?</b>: khối <b>Việc cần làm</b> gom theo loại, ghi chi nhánh, quá hạn tô đỏ, hôm nay tô vàng; số trên chuông bằng số ở <b>Công việc</b>.', 'Bấm một dòng mở đúng danh sách; <b>Chờ bạn duyệt</b> là nhóm riêng.',
+      buoc: ['Bấm chuông cạnh <b>?</b>: khối <b>Việc cần làm</b> gom theo loại, ghi chi nhánh, quá hạn tô đỏ, hôm nay tô vàng; số trên chuông bằng số ở <b>Công việc</b>.', 'Bấm một dòng mở <b>Công việc</b> đúng tab của loại đó; <b>Chờ bạn duyệt</b> là nhóm riêng.',
         'Khối <b>Cập nhật</b> là tin cần biết: <b>Xem tất cả</b>, <b>Đánh dấu đã đọc</b>.'],
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell'],
     },
