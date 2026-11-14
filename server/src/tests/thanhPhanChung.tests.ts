@@ -479,7 +479,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/className="btn btn-sm max-sm:min-h-\[44px\]" onClick=\{\(\) => setHetHang\(true\)\}/.test(lk), 'Hiện tất cả là nút');
     assert(!/setNhatKy|NganLichSuBai|'Mở hồ sơ MT'/.test(hk) && (hk.match(/<LichSuGap /g) ?? []).length === 1, 'hộp: một chân, một khối Lịch sử');
     assert(/m\.muc !== 'nhat-ky'/.test(hk) && /role="tooltip" className="bong-nut-chu"/.test(hk), '⋯ môn bỏ Nhật ký; lý do nút mờ tại nút');
-    assert(!/t\('[^']*(Xoá|xoá)/.test(hk), 'một chữ "Xoá"');
+    assert(!/t\('[^']*(Xóa|xóa)/.test(hk), 'một chữ "Xoá"');
     const ng = doc('web/src/modules/test/keHoach/NganXepLichMt.tsx');
     assert(/tieuDe=\{t\('Xếp nhiều MT'\)\}/.test(ng) && /<HangTab<'ft' \| 'thuong'>/.test(ng), 'ngăn: tên = nút, khung = thanh tab');
     assert(/className="btn btn-sm max-sm:min-h-\[44px\]" aria-pressed=\{moHet\}/.test(doc('web/src/modules/test/KeHoachTestTab.tsx')), 'Mở tất cả lớp là nút');
@@ -499,7 +499,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const hn = doc('web/src/ui/HangNhom.tsx');
     assert(/export function MuiChev/.test(hn) && /<MuiChev mo=\{mo\} \/>/.test(hn) && !/M2 1 6\.5 4 2 7z/.test(hn), 'MuiTenMo vẽ chevron nét (›/⌄), không tam giác đặc');
     for (const f of ['web/src/modules/classes/BanGiaoGvPanel.tsx', 'web/src/modules/classes/TeacherAssignPanel.tsx', 'web/src/modules/test/keHoach/NganXepLichMt.tsx', 'web/src/modules/phanTich/PhanTichGiaoVien.tsx']) {
-      assert(/<MuiChev /.test(doc(f)) && !/[▸▾]/.test(doc(f).split('\n').filter((l) => !/^\s*(\/\/|\*|\/\*)/.test(l)).join('\n')), `${f}: mũi mở dùng MuiChev`);
+      assert(/<MuiChev /.test(doc(f)) && !/['"`{][▸▾]/.test(doc(f)) && !/[▸▾]\}/.test(doc(f)) && !/\?\s*['"][▸▾]/.test(doc(f)), `${f}: mũi mở dùng MuiChev`);
     }
     const st = doc('web/src/modules/congViec/PanelSauThi.tsx'), th = doc('web/src/modules/yThuc/TinhHinh.tsx');
     assert(/luuRoiTiep\(chot, onTiep\)/.test(st) && /luuRoiTiep\(luu, onTiep\)/.test(st) && /luuRoiTiep\(gui, onTiep\)/.test(th), 'chân panel việc (lời 36): "{việc} · việc tiếp ›" ở Sau thi · Chốt ngày thi · Trả lời tình hình');

@@ -1,7 +1,7 @@
 /** OV-15c — Kế hoạch Test: Xoá, năm, tìm, ghi chú lịch thi, xuất. Khoá = chữ Việt trên web. */
 import type { Dich } from '../en.ts';
 export const EN_OV15C = {
-  'Đã có điểm — không xoá được': 'Has scores — cannot delete',
+  'Đã có điểm — không xoá được': 'Already scored — cannot delete',
   'Đã làm bài — không xoá được': 'Already taken — cannot delete',
   'Chưa xếp lịch': 'Not scheduled',
   // Xoá (bỏ tuần) + vắng 2 lần
@@ -81,7 +81,7 @@ export const EN_OV15C = {
   "Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>.": "Type a class code, name (with or without accents) or email in <b>Search class, student or email…</b>.",
   "Tìm lớp, học viên": "Find class, student",
   "Tìm, xuất Excel": "Search, export Excel",
-  "Xoá lịch một đợt": "Delete a test schedule",
+  "Xoá lịch một đợt": "Delete one round’s schedule",
   "Xoá lịch, ghi chú": "Delete schedule, notes",
   "Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.": "<b>Schedule note</b> field in the box; <b>+ Class note</b> below the table.",
   "Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).": "<b>Schedule note</b> field in the box; the note shows as one line under the chip, click to edit (Enter saves · Esc cancels).",
