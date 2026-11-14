@@ -132,7 +132,7 @@ export async function runNenGiaoDienTests(t: YThucTestKit) {
     // Miễn: `chang` (tên chặng thi, chữ chốt ở PR-LT/PR-Qa), `xep-lop` ("n HV cần xếp lớp tiếp") và `qua-han` ("n HV quá hạn việc") — chữ chốt ở PR-HVL (B4), "HV" là viết tắt.
     for (const x of tatCa) {
       if (x.key === 'chang' || x.key === 'xep-lop' || x.key === 'qua-han') continue;
-      const tu = x.nhan.split(/\s+/).filter((w: string) => !/^\d+$/.test(w));
+      const tu = x.nhan.split(/\s+/).filter((w: string) => !/^(\d+|·)$/.test(w));   // GD-6 (lời 35): "loại · số" — dấu "·" không là từ
       assert(tu.length <= 3, `${x.key}: "${x.nhan}" quá 3 từ`);
     }
     assert(!tatCa.some((x: any) => x.key === 'case'), 'Không còn badge "Case mở" (K2-06)');

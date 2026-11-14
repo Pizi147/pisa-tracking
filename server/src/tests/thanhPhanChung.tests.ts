@@ -307,8 +307,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(!/cham\(/.test(doc('web/src/ui/DongHan.tsx')), 'DongHan: chip hạn không chấm');
     assert(/tong === 'qua' \|\| tong === 'cho' \? null/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), "BadgeViec: 'qua' / 'cho' không chấm");
     assert(/\.vh-qua::before \{ content: none; \}/.test(doc('web/src/index.css')), '.vh-qua không chấm');
-    for (const f of ['web/src/modules/classes/DauTrangLop.tsx', 'web/src/modules/students/StudentsPage.tsx'])
-      assert(/tone=\{toneBadgeLop\(x\)\} cham=\{false\}/.test(doc(f)), `${f}: badge lớp (đếm việc chờ / quá hạn) cham={false}`);
+    /* GD-6: badge lớp qua MỘT thành phần `ChipBadgeLop` (Nhan cham={false}) ở hồ sơ lớp + Học viên & Lớp. */
+    assert(/export function ChipBadgeLop[\s\S]{0,400}<Nhan tone=\{toneBadgeLop\(x\)\} cham=\{false\}/.test(doc('web/src/ui/Nhan.tsx')), 'ChipBadgeLop: badge lớp (đếm việc chờ / quá hạn) cham={false}');
     const HAN = /quá hạn|hạn hôm nay|hạn \{|chờ chấm|còn \{n\} ngày/i;   // "● … chưa chốt / chưa lưu" là trạng thái lưu nháp — không phải hạn
     const loi: string[] = [];
     for (const f of tepNguon('web/src').filter((x) => x.endsWith('.tsx'))) {
@@ -364,5 +364,18 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(!/tvvChinhCuaLop|tomTat\?\.tvv/.test(s), 'còn TVV ở đầu trang (lời 25)');
     assert(/soViecQuaHan: laVaiQuanLy\(session\?\.roles\) \? soViecQuaHan : 0/.test(s), '[XM-2] GV còn badge "việc quá hạn của lớp"');
     assert(/<ThangVach dong=\{hv\.dongThang\} \/>/.test(doc('web/src/modules/yThuc/ClassYThucCard.tsx')), 'tab Ý thức lớp thiếu thang vạch (lời 28, 36)');
+  });
+  check('GD-6 rà PTA · chip lớp "loại · số" MỘT thành phần (hồ sơ lớp + Học viên & Lớp); badge tab là số; tab Báo cáo PH chỉ nhãn; ⋯ thẻ em chung; TVV không dưới tên em tab Ý thức', () => {
+    const b = d.badgeLop({ vai: 'gv', needsPlacement: false, canXepLop: 0, soChuaLoTrinhTiep: 7, missingSkills: [], soBaiChoCham: 21, needScoresTitle: null, phase: 'running', missingCount: 3, soChoDuyet: 8, soViecQuaHan: 2 });
+    const nhan = Object.fromEntries([...b.hien, ...b.an].map((x: any) => [x.key, x.nhan]));
+    assert(nhan.cham === 'Chờ chấm · 21' && nhan['cho-duyet'] === 'Chờ duyệt · 8' && nhan['qua-han'] === 'Quá hạn · 2' && nhan['xep-lop'] === 'Chưa chốt lộ trình · 7' && nhan['thieu-tt'] === 'Thiếu thông tin · 3', JSON.stringify(nhan));
+    const dau = doc('web/src/modules/classes/DauTrangLop.tsx'), sp = doc('web/src/modules/students/StudentsPage.tsx');
+    assert(/<ChipBadgeLop key=\{x\.key\} x=\{x\}/.test(dau) && /<ChipBadgeLop key=\{x\.key\} x=\{x\}/.test(sp) && !/toneBadgeLop\(x\)/.test(dau + sp), 'chip lớp chưa dùng một thành phần');
+    const pg = doc('web/src/modules/classes/ClassOverviewPage.tsx');
+    assert(/\.\.\.badgeTabLop\(k\)/.test(pg) && !/chip: k === 'bao-cao-ph'/.test(pg) && !/canhBao: k === 'y-thuc'/.test(pg), 'tab hồ sơ lớp: badge số, không chip / chấm trong nhãn');
+    assert(/lopNut=\{NUT_BA_CHAM\}/.test(doc('web/src/modules/classes/BangHoSoLop.tsx')) && /menu\(s, NUT_BA_CHAM\)/.test(doc('web/src/modules/classes/BangDiemLopThuong.tsx')), '⋯ thẻ em chưa dùng NUT_BA_CHAM');
+    const yt = doc('web/src/modules/yThuc/ClassYThucCard.tsx');
+    assert(!/tvvChinh|t\('TVV \{ten\}', \{ ten: tvv \}\)/.test(yt) && /<NutLichSuGap /.test(yt), 'tab Ý thức: TVV dưới tên em / lịch sử chưa cùng dáng');
+    assert(/demChotTheoLop\(\[classId\]\)/.test(doc('server/src/classes/daiChuyenLop.ts')), 'dải Chốt lộ trình cho mọi người xem lớp');
   });
 }
