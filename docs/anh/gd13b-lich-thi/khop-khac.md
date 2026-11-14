@@ -15,6 +15,7 @@ Dữ liệu demo để đủ trạng thái: TVV 23 chốt ngày 26/09 cho một 
 | `web-k4-da-luu-tvv-1440-toi.png` | K4 hàng "✓ Đã lưu · Hoàn tác" | sau "Dời tháng" |
 | `web-k4-loi-luu-tvv-1440-toi.png` | K4 hàng "⚠ Không lưu được · Thử lại" | lưu lỗi (giả máy chủ 503), hộp đã đóng |
 | `zoom-hang-mo-ql-1440-toi.png` | — | zoom ×2: ô lịch thi, ⌄, ô điểm ✓ / ✗, phần mở |
+| `zoom-co-kq-tvv-1440-toi.png` | — | zoom ×2: phần mở có KQ — Lịch sử · 1 (ghi KQ), Chọn bước tiếp, + Ghi chú |
 
 ## 1. Truy vết khung → thành phần → ảnh
 
@@ -26,13 +27,13 @@ Dữ liệu demo để đủ trạng thái: TVV 23 chốt ngày 26/09 cho một 
 | 4 | K4 | Ô lịch thi MỘT dòng, không dòng phụ ("chốt ngày khi tới tháng", "hạn 21/09 · thi 12/09" bỏ) | `chuLich`: Chưa có lịch · Dự kiến 10/2026 · Chưa chốt ngày · Thi 26/09 · Đã thi 08/09 · chờ KQ · ✓ 7.0 · chờ bước tiếp · ✓ 7.5 · Kết thúc học | cap-k4-* | KHỚP |
 | 5 | K4 | Giá trị bấm được: viền nhạt + gạch chấm (nhận ra cả khi không rê), mở = viền nhấn + nền nhấn + vạch đáy | `.lt-gt-nut` (cùng số đo `.gt-lt`: cao 40, bo 8, lệch −5/−9) | cap-k4-co-kq, zoom | KHỚP |
 | 6 | K4 | Bấm giá trị → hộp MỘT hàng dưới hàng thẳng cột Lịch thi: đoạn **Tháng dự kiến \| Ngày thi** · ô (`ONgay`) · "trước: …" · Ghi chú · Đóng · nút chính | `HopLich` (một hộp làm đủ 4 việc lịch); chờ KQ chỉ "Ngày thi" | cap-k4-co-kq, cap-k8b | KHỚP |
-| 7 | K4 | Đã thi → giá trị mở panel Sau thi có sẵn (Ghi KQ · Bước tiếp · Sửa KQ) | `viecGiaTri` → `PanelSauThi` (không đổi panel); chờ KQ còn nút "Sửa ngày" ở Làm tiếp (thao tác cũ) | — | KHỚP |
+| 7 | K4 | Có KQ → giá trị mở panel Sau thi có sẵn (Bước tiếp · Sửa KQ); chờ KQ → giá trị là NGÀY thi nên mở hộp sửa ngày, **Ghi kết quả** ở Làm tiếp (PTA rà #1704: một thao tác một chỗ) | `viecGiaTri` | cap-k4-cho-kq | KHỚP (xem KHÁC 8) |
 | 8 | K4 | "✓ Đã lưu · Hoàn tác" (nút) và "⚠ Không lưu được · Thử lại" (nút) ngay ô, xanh / đỏ | `.lt-luu` + `btn nut-nho` cao 24; Hoàn tác 10 giây; lỗi khi hộp mở nằm ở hộp, chữ giữ | web-k4-da-luu, web-k4-loi-luu | KHỚP |
 | 9 | K4 | Phần mở **chưa thi**: MT gần nhất (6 ô, kỳ vọng, ↑↓ so MT trước) · Hỗ trợ đang mở · Test sắp tới · Phụ trách · Làm tiếp | `DaiMo` gd `chua-thi` | cap-k4-chua-thi | KHỚP |
 | 10 | K4 | Phần mở **chờ KQ** (lời 40): Kỳ thi · KQ thi thật "Chưa có" · Phụ trách · Làm tiếp (**Ghi kết quả** · + Ghi chú · Lịch sử) — không MT gần nhất / Test sắp tới | `DaiMo` gd `cho-kq` | cap-k4-cho-kq | KHỚP (xem KHÁC 1) |
 | 11 | K4 | Phần mở **có KQ**: KQ thi thật so Target (Overall + L R W S) · Kỳ thi (Ngày thi · Ghi KQ) · Phụ trách · Làm tiếp · "hạn chọn bước tiếp" (trung tính, [XM-4]) · **Chọn bước tiếp** | `DaiMo` gd `co-kq`; 4 ô thi thật đọc từ cột đã có trong câu | cap-k4-co-kq | KHỚP (xem KHÁC 1) |
 | 12 | K4, K8b | TRÊN HÀNG mọi em vẫn có MT gần nhất (lời 42) | `CotMt` mọi trạng thái + "MT3 · W3 AUG" | cap-k4-* | KHỚP |
-| 13 | K4 | Luôn có Phụ trách · **+ Ghi chú** (hiện luôn, không cần rê) · **Lịch sử · n** chuẩn (`LichSuGap` + `DsLichSu`, GD-4c) | "+ Ghi chú" / "Sửa ghi chú" bật ô Ghi chú của hàng; n đếm từ hai câu nhật ký đã đọc (0 câu thêm), mở > 3 dòng thì đọc đủ một lần | cap-k4-cho-kq | KHỚP |
+| 13 | K4 | Luôn có Phụ trách · **+ Ghi chú** (hiện luôn, không cần rê) · **Lịch sử · n** chuẩn (`LichSuGap` + `DsLichSu`, GD-4c) — ẩn chỉ khi n = 0 thật | "+ Ghi chú" (chưa có) / "Sửa ghi chú" (đã có) — cùng quy tắc ba trạng thái; n đếm từ hai câu nhật ký đã đọc, nay gồm cả **ghi KQ thi thật** (`cycle.thi_that`, cùng câu, cùng chỉ mục — 0 câu thêm); mở > 3 dòng thì đọc đủ một lần | cap-k4-co-kq, cap-k4-cho-kq, zoom-co-kq | KHỚP |
 | 14 | K4, K5 | Lọc trạng thái thi **Tất cả · Chưa chốt ngày · Đã chốt · Chờ KQ · Có KQ** ([XM-1] chủ SP duyệt) thay "Cần làm / Tất cả" | `.doan.lt-loc-thi`; số đếm từ dữ liệu đã nạp; số 0 không bấm; hàng vừa đổi trạng thái ở lại tới khi đổi lọc | cap-k4-* | KHỚP |
 | 15 | K4 | Hàng lọc: Tìm · Mọi lớp · Mọi TVV · Tháng thi từ → đến · phải: trạng thái thi — MỘT hàng ở 1440 | Tìm 200 · ô 156 · tháng 134 (ô gõ + nút lịch) · đoạn 13 px | cap-k4-* | KHỚP |
 | 16 | K4 | Không chữ đỏ "quá hạn" (cảnh báo ở Công việc TVV) — [XM-4] | bỏ `lt-qua`, bỏ "· 1 cần làm · 1 quá hạn" ở dải lớp | cap-k4-co-kq | KHỚP |
@@ -52,6 +53,8 @@ Dữ liệu demo để đủ trạng thái: TVV 23 chốt ngày 26/09 cho một 
 4. **375 dòng ghi chú**: mockup K8b không vẽ ghi chú trên thẻ; web giữ dòng "Ghi chú: …" khi em CÓ ghi chú (thông tin đã có trên thẻ trước PR, không mất); không có thì không có dòng.
 5. **Fast Track / Lớp thường ở đầu trang TVV**: mockup K4 vẽ đoạn FT / LT; web TVV không có đoạn này từ trước (ngoài phạm vi tab).
 6. **K5 chụp bằng GV bộ môn**: GVCN của lớp SỬA ĐƯỢC lịch thi theo quyền máy chủ (F15-5), nên mockup K5 "GV chỉ xem" khớp với GV không phụ trách lớp; không đổi quyền.
+8. **Chờ KQ — bấm giá trị**: mockup K4 cho "Chờ KQ" mở thẳng Ghi kết quả; PTA rà #1704 chốt một thao tác một chỗ: giá trị (ngày thi) → sửa ngày, Ghi kết quả ở "Làm tiếp". Không mất thao tác, không nút "Sửa ngày" lặp.
+9. **375 tab "Đang SOS"**: một tên ở mọi cỡ màn (trước PR 375 ghi "SOS"); số 0 / chưa nạp thì không badge.
 7. **V22**: mockup K4 "⚠ Không lưu được" — ⚠ ở đây là lỗi lưu (không phải hạn) nên giữ ⚠ đúng V22.
 
 ## 3. Thao tác TRƯỚC → SAU
@@ -61,8 +64,8 @@ Dữ liệu demo để đủ trạng thái: TVV 23 chốt ngày 26/09 cho một 
 | 1 | "Đặt lịch ▾" › Đặt tháng dự kiến | TVV, QL, GVCN | bấm "Chưa có lịch" → hộp, đoạn **Tháng dự kiến** | không |
 | 2 | Nút chính / menu "Chốt ngày" | TVV, QL, GVCN | bấm "Chưa chốt ngày" / "Dự kiến …" → hộp, đoạn **Ngày thi** (tới tháng thì mở sẵn Ngày thi) | không |
 | 3 | "Dời tháng" | TVV, QL, GVCN | bấm "Dự kiến …" → hộp, đoạn Tháng dự kiến (nút "Dời tháng") | không |
-| 4 | "Sửa ngày" | TVV, QL, GVCN | bấm "Thi 26/09" → hộp, Ngày thi (nút "Lưu ngày"); em đã thi chờ KQ: nút **Sửa ngày** ở "Làm tiếp" (lớp thường: bấm giá trị) | không |
-| 5 | Nút chính "Ghi kết quả" | TVV, QL (FT) | bấm "Đã thi … · chờ KQ" → panel Sau thi (bước KQ); **Ghi kết quả** cũng ở "Làm tiếp" phần mở | không |
+| 4 | "Sửa ngày" | TVV, QL, GVCN | bấm "Thi 26/09" hoặc "Đã thi 08/09 · chờ KQ" → hộp, Ngày thi (nút "Lưu ngày") | không |
+| 5 | Nút chính "Ghi kết quả" | TVV, QL (FT) | nút **Ghi kết quả** ở "Làm tiếp" phần mở → panel Sau thi (bước KQ) | không |
 | 6 | Nút chính "Bước tiếp" | TVV, QL (FT) | bấm "✓ 7.0 · chờ bước tiếp" → panel Sau thi; **Chọn bước tiếp** ở "Làm tiếp" | không |
 | 7 | "Sửa KQ" | TVV, QL (FT) | bấm "✓ 7.5 · Kết thúc học" → panel Sau thi | không |
 | 8 | Ghi chú: bấm ô để sửa · "+ Ghi chú" khi rê | TVV, QL, GVCN | bấm ô để sửa (giữ) · "+ Ghi chú" / "Sửa ghi chú" ở phần mở (hiện luôn) | không |

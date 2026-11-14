@@ -12,6 +12,7 @@ export const EN_GD13B = {
   'Làm tiếp': 'Next',
   'Sửa ghi chú': 'Edit note',
   'đổi lịch': 'schedule changed',
+  'ghi KQ': 'recorded result',
   /* Hướng dẫn "?" — tab Lịch thi (GV · QL · TVV) */
   'Tab Lịch thi': 'Exam schedule tab',
   'Lọc theo trạng thái thi: <b>Tất cả</b> · <b>Chưa chốt ngày</b> · <b>Đã chốt</b> · <b>Chờ KQ</b> · <b>Có KQ</b>.': 'Filter by exam status: <b>All</b> · <b>Date not set</b> · <b>Date set</b> · <b>Awaiting result</b> · <b>Has result</b>.',

@@ -29,7 +29,7 @@ export type KqThiThat = {
   kn: { L: number | null; R: number | null; W: number | null; S: number | null } | null; ngayKq: string | null;
 };
 export type CaseMoHang = { id: number; kyNang: string | null; sos: number | null; soPa: number };
-export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null };
+export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null; kq?: string | null };
 export type Hang = {
   studentId: number; cycleId: number | null; ten: string; ma: string; classId: number; classCode: string; thuong: boolean; gvcn: string | null; tvv: string | null;
   target: number | null; kck: boolean; standing: KetQuaVao | null;
@@ -76,7 +76,8 @@ export const laHop = (nut: ThaoTacLichThi) => MO_HOP.includes(nut);
 export function viecGiaTri(r: HangHien): ThaoTacLichThi | null {
   if (!r.coTheSua || !r.cycleId) return null;
   const { chinh, phu } = thaoTacLichThi(r.buoc, !r.thuong);
-  if (chinh && !laHop(chinh)) return chinh;   // chờ KQ → Ghi KQ, có KQ → Bước tiếp (panel Sau thi) — mockup K4 `data-hop="kq"`
+  /* Có KQ → Bước tiếp / Sửa KQ (panel Sau thi). Chờ KQ: giá trị là NGÀY thi → hộp sửa ngày; Ghi kết quả ở "Làm tiếp" (PTA rà #1704: một thao tác một chỗ). */
+  if (chinh && !laHop(chinh) && r.buoc !== 'cho-kq') return chinh;
   const ds = [chinh, ...phu].filter((x): x is ThaoTacLichThi => !!x);
   if (ds.some(laHop)) return r.buoc === 'chua-chot-ngay' || r.buoc === 'da-chot-ngay' || r.buoc === 'cho-kq' ? (r.coNgay ? 'sua-ngay' : 'chot-ngay') : r.lichThi.thang ? 'doi-thang' : 'dat-thang';
   return ds[0] ?? null;
@@ -237,7 +238,7 @@ export function HopLich({ r, nut, onHuy, onLuu, the }: { r: HangHien; nut: ThaoT
 }
 
 const CHU_KET_LUAN: Record<string, string> = {
-  'chot-ngay': t('chốt ngày'), 'chuyen-thang': t('dời tháng'), 'giu-thang': t('giữ tháng'), 'can-xac-nhan': t('chưa kết luận'), 'bo-lich': t('bỏ tháng thi'),
+  'chot-ngay': t('chốt ngày'), 'chuyen-thang': t('dời tháng'), 'ghi-kq': t('ghi KQ'), 'giu-thang': t('giữ tháng'), 'can-xac-nhan': t('chưa kết luận'), 'bo-lich': t('bỏ tháng thi'),
 };
 const mocLs = (x: DongLichSu, homNay: string) => (x.ngay ? (x.ngay.length === 7 ? nhanThang(x.ngay) : shortDate(x.ngay, homNay)) : null);
 
@@ -357,8 +358,6 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
       {r.coTheSua && (
         <span className="lt-lam-n">
           {nutChinh && <button type="button" className="btn btn-sm nut-nho btn-primary" onClick={() => hanh.bam(r, nutChinh)}>{nutChinh === 'ghi-kq' ? t('Ghi kết quả') : t('Chọn bước tiếp')}</button>}
-          {/* Chờ KQ: giá trị lịch thi mở Ghi KQ → sửa ngày thi (đã thi nhầm ngày) giữ ở đây. */}
-          {nutChinh === 'ghi-kq' && <button type="button" className="btn btn-sm nut-nho" aria-expanded={hanh.hop?.id === r.studentId} onClick={() => hanh.bam(r, 'sua-ngay')}>{t('Sửa ngày')}</button>}
           <button type="button" className="btn btn-sm nut-nho" onClick={() => hanh.suaGhi(r.studentId)}>{r.luu?.ghiChu ? t('Sửa ghi chú') : `+ ${t('Ghi chú')}`}</button>
         </span>
       )}
@@ -366,7 +365,7 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
         {canDu && day.loading ? <p className="ls-rong">{t('Đang tải')}…</p> : (
           <DsLichSu dong={ls.map((x, i) => ({
             key: i, gio: lucNgan(x.luc), ai: x.ai,
-            viec: x.ketLuan ? CHU_KET_LUAN[x.ketLuan] ?? x.ketLuan : t('đổi lịch'), moi: mocLs(x, homNay),
+            viec: x.ketLuan ? CHU_KET_LUAN[x.ketLuan] ?? x.ketLuan : t('đổi lịch'), moi: x.kq ?? mocLs(x, homNay),
             phu: [x.ghiChu ? `“${x.ghiChu}”` : null],
           }))} />
         )}

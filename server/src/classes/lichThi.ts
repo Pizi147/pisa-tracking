@@ -198,9 +198,9 @@ export function danhSachLichThi(
   return { thang, rows };
 }
 
-export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null };
+export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null; kq?: string | null };
 /**
- * Lịch sử lịch thi của các lộ trình (mới trước, tối đa `gioiHan` dòng mỗi lộ trình) — theo lô. Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) —
+ * Lịch sử lịch thi của các lộ trình (đổi tháng / ngày · kết luận + ghi chú · ghi KQ thi thật; mới trước, tối đa `gioiHan` dòng mỗi lộ trình) — theo lô. Hai câu, mỗi câu theo chỉ mục `idx_audit_entity` (entity_type, entity_id) —
  * không OR giữa hai loại (Turso quét cả bảng nhật ký). Dùng cho dải mở hàng (3 dòng) và "Xem toàn bộ" (một lộ trình, khi bấm).
  */
 export function lichSuLichThi(cyc: readonly number[], gioiHan: number, dem?: Map<number, number>): Map<number, DongLichSu[]> {
@@ -212,9 +212,10 @@ export function lichSuLichThi(cyc: readonly number[], gioiHan: number, dem?: Map
           WHERE a.entity_type = 'lich_thi' AND a.entity_id IN (${ph}) AND a.action = 'lich_thi.luu'`).all(...lo) as any[],
       ...db().prepare(
         `SELECT a.id, a.entity_id, a.action, a.created_at, u.full_name AS ai, a.after_json FROM audit_logs a LEFT JOIN users u ON u.id = a.actor_user_id
-          WHERE a.entity_type = 'learning_cycle' AND a.entity_id IN (${ph}) AND a.action = 'cycle.update'
-            AND (json_extract(a.after_json, '$.exam_date') IS NOT json_extract(a.before_json, '$.exam_date')
-              OR json_extract(a.after_json, '$.exam_month') IS NOT json_extract(a.before_json, '$.exam_month'))`).all(...lo) as any[],
+          WHERE a.entity_type = 'learning_cycle' AND a.entity_id IN (${ph})
+            AND ((a.action = 'cycle.update' AND (json_extract(a.after_json, '$.exam_date') IS NOT json_extract(a.before_json, '$.exam_date')
+              OR json_extract(a.after_json, '$.exam_month') IS NOT json_extract(a.before_json, '$.exam_month')))
+              OR a.action = 'cycle.thi_that')`).all(...lo) as any[],   /* GD-13b: + ghi KQ thi thật (cùng câu, cùng chỉ mục) */
     ].sort((x, y) => y.id - x.id);
     for (const x of nk) {
       const ls = out.get(x.entity_id) ?? [];
@@ -224,6 +225,9 @@ export function lichSuLichThi(cyc: readonly number[], gioiHan: number, dem?: Map
       if (ls.length >= gioiHan) continue;
       if (x.action === 'lich_thi.luu') {
         ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null });
+      } else if (x.action === 'cycle.thi_that') {
+        const kq = sau.khongThi ? 'Không thi' : sau.ovr != null ? Number(sau.ovr).toFixed(1) : null;
+        ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: 'ghi-kq', ngay: null, ghiChu: null, kq });
       } else {
         const moc = sau.exam_date ?? sau.exam_month ?? null;
         ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: moc ? null : 'bo-lich', ngay: moc, ghiChu: null });
