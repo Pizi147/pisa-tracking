@@ -26,7 +26,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 /** `pt` (thi thật GV, 2F): % theo tuần dạy — thay `dat / mau` khi có. */
 export type TyLeV5 = { dat: number; mau: number; pt?: number };
 type DongLop = { id: number; khoa: string; ma: string; hv: number; gvcn: string | null; datMt: TyLeV5 | null; sos: [number, number, number]; caseChuaPa: number; thiThangNay: number };
-type DongCn = { id: number; khoa: string; ten: string; datMt: TyLeV5 | null; casePa: { coPa: number; mo: number }; thiThat: TyLeV5 | null; thiThangNay: number; sos23: number; caseChuaPa: number };
+type DongCn = { id: number; khoa: string; ten: string; datMt: TyLeV5 | null; casePa: { coPa: number; mo: number }; thiThat: TyLeV5 | null; thiThangNay: number; sos23: number; sos23Ids: number[]; caseChuaPa: number };
 type GvTre = { khoa: number; ten: string; bai: number };
 export type TongQuanV5Data = {
   homNay: string; ky: { tu: string; den: string }; ct: ChuongTrinh; branchId: number | null; tenChiNhanh: string | null;
@@ -465,7 +465,7 @@ export const ptChu = (x: TyLeV5 | null, gon = false) => (!x ? <span className="t
 export function TheoChiNhanh({ d, baoCao, onChiNhanh }: { d: TongQuanV5Data; /** Báo cáo HV (kỳ chọn tự do): cột "Thi trong kỳ" + SOS 2–3. */ baoCao?: boolean; onChiNhanh: (id: number) => void }) {
   type H = DongCn & { tong?: boolean };
   const hang: H[] = [...(d.chiNhanh ?? []), ...([{
-    id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: (d.chiNhanh ?? []).reduce((n, h) => n + h.sos23, 0), caseChuaPa: d.casePa.chuaPa, tong: true,
+    id: 0, khoa: 'tong', ten: t('Toàn hệ thống'), datMt: d.datMt, casePa: d.casePa, thiThat: d.thiThat, thiThangNay: d.thiThangNay, sos23: (d.chiNhanh ?? []).reduce((n, h) => n + h.sos23, 0), sos23Ids: [...new Set((d.chiNhanh ?? []).flatMap((h) => h.sos23Ids))], caseChuaPa: d.casePa.chuaPa, tong: true,
   }])];
   const bc = (h: H, o: string) => `/phan-tich/bao-cao/o?o=${o}${h.tong ? '' : `&branchId=${h.id}`}${thamSoCt(d.ct)}${kyQ(d)}`;
   const oCua = (h: H, c: CotBang): ReactNode => {
@@ -477,7 +477,9 @@ export function TheoChiNhanh({ d, baoCao, onChiNhanh }: { d: TongQuanV5Data; /**
     /* GD-14: Đạt Target thi thật bấm được (panel cùng ô dải đầu trang). Báo cáo HV giữ chữ thường như cũ. */
     if (c.key === 'tt') return baoCao ? ptChu(h.thiThat, true) : <PhanTram gon x={h.thiThat} nguon={bc(h, 'dat-target-thi')} tieuDe={`${t('Đạt Target thi thật')} · ${h.ten}`} vung={vung} />;
     if (c.key === 'thi') return <OSo giaTri={h.thiThangNay} tieuDe={`${c.nhan} · ${h.ten}`} nguon={bc(h, baoCao ? 'thi-dot-nay' : 'thi-thang-nay')} vung={vung} />;
-    if (c.key === 'sos') return <span className="tabular-nums">{h.sos23}</span>;
+    /* TQ-SOS-CN (⑧ T3): SOS 2–3 bấm được — panel em của ĐÚNG chi nhánh (hàng Toàn hệ thống: cả phạm vi), máy chủ chỉ đọc khi bấm. Báo cáo HV giữ chữ. */
+    if (c.key === 'sos') return baoCao ? <span className="tabular-nums">{h.sos23}</span>
+      : <OSo giaTri={h.sos23} tieuDe={`${t('SOS 2–3')} · ${h.ten}`} nguon={`/tong-quan/chi-nhanh/sos23?${thamSoTq(h.tong ? d.branchId : h.id, d.ct)}&ids=${h.sos23Ids.join(',')}`} vung={vung} />;
     return <OSo giaTri={h.caseChuaPa} tieuDe={`${t('Case chưa có PA')} · ${h.ten}`} nguon={qCn(d, 'caseChuaChot', h.khoa)} vung={vung} />;
   };
   /* GD-14 (lời 37): Tổng quan — mỗi ô một thành phần, mẫu "2/3" xem ở panel. Báo cáo HV (Phân tích) giữ mẫu như cũ. */

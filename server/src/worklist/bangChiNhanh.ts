@@ -3,7 +3,7 @@ import {
   COT_BANG, COT_BANG_DON_VI, METRIC_UNIT_LABEL, PERMISSIONS, soSanhLop, tachBaiId, type ChuongTrinh, type CotBang,
 } from '../../../shared/domain/index.ts';
 import { forbidden, badRequest, loi } from '../util.ts';
-import { scopeFor, type Principal } from '../permissions.ts';
+import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { latestAttempts, studentsInScope, ungVienLuotMoi } from './danhGia.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -12,6 +12,7 @@ import { loadBundle } from '../fasttrack/attempts.ts';
 import { KEM_NO_DIEM } from './scoreDebt.ts';
 import { locTheoChuongTrinh, lopCuaTap } from './chuongTrinh.ts';
 import { metricSet, nhomCaseChuaChot, rowsFor, type MetricRow } from './metrics.ts';
+import { diemTuEval } from './diemDong.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 
 /**
@@ -33,6 +34,8 @@ export type HangBang = {
   o: Record<CotBang, OBang>; lop?: HangBang[];
   /** OV-15h1: GVCN đang hiệu lực của lớp — chỉ hàng lớp ở chế độ "Lớp cần chú ý". */
   gvcn?: string | null;
+  /** TQ-SOS-CN: id em SOS 2–3 của hàng chi nhánh (chế độ chú ý) — panel ô SOS 2–3 đọc đúng các em này khi bấm. */
+  sos23?: number[];
 };
 type Tap = Record<CotBang, Set<number>> & { duDuLieuMau: Set<number> };
 const tapRong = (): Tap => ({
@@ -189,6 +192,7 @@ export function bangChiNhanh(p: Principal, f: { branchId?: number | null; ct: Ch
   const r = tinh(p, f);
   const gon = (h: any): HangBang => ({
     khoa: h.khoa, id: h.id, loai: h.loai, nhan: h.nhan, laFt: h.laFt, o: soCua(h.tap), lop: h.lop?.map(gon), ...('gvcn' in h ? { gvcn: h.gvcn } : {}),
+    ...(f.chuY && h.loai === 'chi-nhanh' ? { sos23: [...new Set([...h.tap.sos2, ...h.tap.sos3])].sort((a: number, b: number) => a - b) } : {}),
   });
   return { cheDo: r.cheDo, hang: r.hang.map(gon), conLai: r.hangConLai && gon(r.hangConLai), tong: soCua(r.tongTap), tenChiNhanh: r.tenChiNhanh, branchId: r.branchId,
     ...(f.chuY ? { phanRa: r.phanRa } : {}) };
@@ -218,6 +222,35 @@ export function oBangChiNhanh(p: Principal, f: { branchId?: number | null; ct: C
   const nhom = caseViec ? nhomCaseChuaChot(ids, xuLyCaseMany(ids, demoToday())) : null;
   return { n: ids.length, unit, tieuDe: `${ids.length} ${METRIC_UNIT_LABEL[unit]} — ${NHAN_COT[cot]} · ${noi}`,
     rows: nhom ? rows.map((x) => ({ ...x, nhom: nhom.get(x.id) ?? null })) : rows };
+}
+
+/**
+ * TQ-SOS-CN (backlog GD-14, mockup ⑧ T3 "SOS 2–3 bấm được"): panel em SOS 2–3 của MỘT ô bảng "Theo chi nhánh" — chỉ đọc khi bấm.
+ * Tập em đi kèm bảng (`HangBang.sos23`, đã có trong bộ nhớ khi tính số — 0 câu thêm lúc mở trang); panel KHÔNG tính lại cả chi nhánh (đo: 3 358 dòng
+ * dữ liệu ×3) mà chỉ: (1) giữ em trong phạm vi người xem (+ đúng chi nhánh khi có) — một câu theo đúng các em; (2) đánh giá lượt mới nhất CỦA các em đó,
+ * giữ SOS ≥ 2 (danh sách luôn đúng tại lúc bấm). QL chi nhánh khác → 403; Quản trị / CX mọi chi nhánh. Thứ tự cố định: SOS 3 → SOS 2 → id em.
+ */
+export function sos23ChiNhanh(p: Principal, f: { branchId: number | null; ids: readonly number[] }): { n: number; unit: 'hoc-vien'; tieuDe: string; rows: MetricRow[] } {
+  const pt = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
+  if (pt.none || (f.branchId && !pt.all && !pt.branchIds.includes(f.branchId))) throw forbidden('Bạn không xem được chi nhánh này.');
+  const xin = [...new Set(f.ids)].filter((x) => Number.isInteger(x) && x > 0).slice(0, 2000);
+  const giu = new Set<number>();
+  if (xin.length) {
+    const cs = classScopeSql(scopeFor(p, PERMISSIONS.ATTEMPT_VIEW));
+    const thuCn = f.branchId ? ' AND c.branch_id = ?' : '';
+    theoLoJson(xin, (json) => {
+      for (const r of db().prepare(
+        `SELECT DISTINCT e.student_id FROM enrollments e JOIN classes c ON c.id = e.class_id
+          WHERE e.status = 'active' AND e.student_id IN (${DS_JSON}) AND ${cs.sql}${thuCn}`,
+      ).all(json, ...cs.params, ...(f.branchId ? [f.branchId] : [])) as any[]) giu.add(r.student_id);
+    });
+  }
+  const ev = latestAttempts([...giu].sort((a, b) => a - b), 'valid', demoToday());
+  const muc = (sid: number) => Math.min(3, ev.get(sid)?.sosLevel ?? 0);
+  const ids = [...giu].filter((sid) => muc(sid) >= 2).sort((a, b) => muc(b) - muc(a) || a - b);
+  const ten = f.branchId ? (db().prepare('SELECT name FROM branches WHERE id = ?').get(f.branchId) as { name?: string } | undefined)?.name ?? '' : '';
+  const rows = rowsFor('hoc-vien', ids, 'hv-sos-hien-tai', p, false, new Map(ids.map((sid) => [sid, diemTuEval(ev.get(sid)!)])));
+  return { n: ids.length, unit: 'hoc-vien', tieuDe: `${ids.length} HV — SOS 2–3${ten ? ` · ${ten}` : ''}`, rows };
 }
 
 /**
