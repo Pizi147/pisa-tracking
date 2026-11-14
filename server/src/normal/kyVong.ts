@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { mocThuong, NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangLopDich, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
+import { mocThuong, NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangHuy, kyNangLopDich, tuDatKyVong, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -20,11 +20,12 @@ import { classProgressMany } from '../classes/schedule.ts';
  * Em đã sang FT → Case ngay (`taoCaseKyVong`); chưa sang → lúc thi hành (`sauChuyenCuoiKhoa`). Mọi đọc / ghi theo lô (Turso).
  */
 
-type KetLuan = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null };
+/** `tuDong` = KY-VONG-MT0: MT0 đạt mốc, QL chưa chốt → tự Đạt (suy ra, không lưu — `tuDatKyVong`). */
+type KetLuan = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null; tuDong?: true };
 type EmKyVong = {
   id: number; ma: string; ten: string; lopId: number; lopCode: string; ct: string; daChuyen: boolean; lopFtId: number | null; lopFt: string | null;
   /** Band MT0 (kỹ năng chưa thi = null) + Overall; null = MT0 chưa đủ 3 kỹ năng có band ("Chờ MT0"). */
-  mt0: (Record<RegularSkill, number | null> & { overall: number }) | null;
+  mt0: (Record<RegularSkill, number | null> & { overall: number | null }) | null;
   goiY: GoiYKyVong | null; ketLuan: KetLuan | null;
   /** N22 ② (P9b): MT0 đã qua tuần muộn nhất (tuần 2 FT — `tuanMuonNhatMt0`) mà vẫn < 3 kỹ năng có band → QL tự đánh Đạt / Không đạt. */
   moTay: boolean;
@@ -59,7 +60,7 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
       id: r.student_id, ma: r.student_code, ten: r.full_name, lopId: r.lop_nguon_id, lopCode: r.code, ct: r.programme_code,
       daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.dich_id, lopFt: r.dich_code,
       mt0: goiY ? { ...bands, overall: goiY.overall } : null, goiY, moTay: !goiY && !!muonNhat && homNay > addDays(muonNhat, 6),
-      ketLuan: r.ky_vong_dat === null ? null
+      ketLuan: r.ky_vong_dat === null ? tuDatKyVong(goiY)
         : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null },
     };
   }).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
@@ -72,10 +73,13 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
 export function mt0TheoLop(ds: readonly { sid: number; lop: number; ct: string | null }[]): Map<number, { bands: Record<RegularSkill, number | null>; goiY: GoiYKyVong | null }> {
   const conn = db();
   const nguonCua = new Map(ds.map((x) => [x.sid, x]));
-  const mt0Cua = new Map<number, number>();
+  const mt0Cua = new Map<number, number>(), huyCua = new Map<number, string[]>();
+  /* KY-VONG-MT0: kỹ năng Đã huỷ đọc kèm (câu con, 0 câu thêm) — `goiYKyVong` không lấy band của chúng, không Overall. */
   theoLo([...nguonCua.keys()], (lo, ph) => {
-    for (const a of conn.prepare(`SELECT id, student_id, class_id FROM assessment_attempts WHERE kind = 'mt0' AND status != 'cancelled' AND student_id IN (${ph}) ORDER BY id`)
-      .all(...lo) as any[]) if (nguonCua.get(a.student_id)?.lop === a.class_id) mt0Cua.set(a.student_id, a.id);
+    for (const a of conn.prepare(`SELECT a.id, a.student_id, a.class_id,
+        (SELECT GROUP_CONCAT(k.skill) FROM attempt_skills k WHERE k.attempt_id = a.id AND k.sit_status = 'cancelled') AS huy
+        FROM assessment_attempts a WHERE a.kind = 'mt0' AND a.status != 'cancelled' AND a.student_id IN (${ph}) ORDER BY a.id`)
+      .all(...lo) as any[]) if (nguonCua.get(a.student_id)?.lop === a.class_id) { mt0Cua.set(a.student_id, a.id); huyCua.set(a.id, kyNangHuy(a.huy)); }
   });
   const diem = new Map<number, Record<string, number | null>>();
   theoLo([...mt0Cua.values()], (lo, ph) => {
@@ -86,26 +90,34 @@ export function mt0TheoLop(ds: readonly { sid: number; lop: number; ct: string |
   return new Map(ds.map((x) => {
     const m = mt0Cua.get(x.sid);
     const bands = assessedBands((m ? diem.get(m) : null) ?? {}) as Record<RegularSkill, number | null>;
-    return [x.sid, { bands, goiY: goiYKyVong(x.ct, bands) }];
+    return [x.sid, { bands, goiY: goiYKyVong(x.ct, bands, m ? huyCua.get(m) : []) }];
   }));
 }
 
-type LopKyVong = { classId: number; code: string; chua: number[]; choMt0: number };
+/** `ftDangHoc`: lớp FT em đang học (mở bảng Kết quả đầu ra) — false = lớp nguồn, em chưa chuyển (trang Cuối khoá). */
+type LopKyVong = { classId: number; code: string; ftDangHoc: boolean; chua: number[]; choMt0: number };
 
 /**
  * Việc QL "Kỳ vọng đầu ra · lớp · n em" (`myWork`) và chỉ số `hv-len-ft-chua-ky-vong` — CÙNG một tập: lớp có ít nhất một em có điểm MT0 và còn em
- * chưa kết luận (`chua`, kể cả em "Chờ MT0" — dòng còn tới khi hết em). Phạm vi `request.approve`. Nhớ trong request.
+ * chưa kết luận (`chua`, kể cả em "Chờ MT0" — dòng còn tới khi hết em; em tự Đạt theo MT0 không còn). Phạm vi `request.approve`. Nhớ trong request.
+ * KY-VONG-MT0 (chủ SP 14/11): em đã sang FT gom theo LỚP FT em đang học (chốt ở bảng Kết quả đầu ra lớp đó); em chưa chuyển theo lớp nguồn (Cuối khoá).
  */
 export function lopKyVong(p: Principal, branchId: number | null): LopKyVong[] {
   return nho(`ky-vong:${p.userId}:${branchId ?? ''}`, () => {
     const sc = scopeFor(p, PERMISSIONS.REQUEST_APPROVE);
     if (sc.none) return [];
-    const theoLop = new Map<number, EmKyVong[]>();
-    for (const e of emKyVong({ sc, branchId })) theoLop.set(e.lopId, [...(theoLop.get(e.lopId) ?? []), e]);
-    return [...theoLop.values()].flatMap((ds) => {
+    const theoLop = new Map<number, { classId: number; code: string; ftDangHoc: boolean; ds: EmKyVong[] }>();
+    for (const e of emKyVong({ sc, branchId })) {
+      const ft = e.daChuyen && e.lopFtId !== null;
+      const k = ft ? e.lopFtId! : e.lopId;
+      const g = theoLop.get(k) ?? { classId: k, code: ft ? e.lopFt ?? '' : e.lopCode, ftDangHoc: ft, ds: [] };
+      g.ds.push(e);
+      theoLop.set(k, g);
+    }
+    return [...theoLop.values()].flatMap(({ ds, ...g }) => {
       const chua = ds.filter((e) => !e.ketLuan);
       if (!chua.length || !ds.some((e) => e.mt0 || e.moTay)) return [];
-      return [{ classId: ds[0].lopId, code: ds[0].lopCode, chua: chua.map((e) => e.id), choMt0: chua.filter((e) => !e.mt0).length }];
+      return [{ ...g, chua: chua.map((e) => e.id), choMt0: chua.filter((e) => !e.mt0).length }];
     }).sort((a, b) => a.code.localeCompare(b.code, 'vi'));
   });
 }
@@ -132,6 +144,9 @@ export function panelKyVong(p: Principal, classId: number) {
     gvCu: Object.fromEntries(REGULAR_SKILLS.map((k) => [k, gv.get(`${classId}|${k}`)?.ten ?? null])) as Record<RegularSkill, string | null>,
   };
 }
+
+/** KY-VONG-MT0 (chủ SP 14/11): MT0 lớp thường đạt mốc = Đạt — không ghi "Không đạt" (cùng câu ở `ghiKetLuanFt`). */
+export const KHONG_DAT_KHI_DAT = '{ten}: MT0 đã đạt mốc chương trình — Kết quả đầu ra là Đạt, không ghi Không đạt.';
 
 /** Một dòng đã kiểm của "Lưu" (panel) hoặc hồ sơ HV (`ghiKetLuanFt`). */
 export type DongKyVong = { sid: number; dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: RegularSkill[]; lyDo: string | null };
@@ -164,6 +179,7 @@ export function luuKyVong(p: Principal, classId: number, body: any): { luu: numb
     const e = em.get(Number(x?.sid));
     if (!e) throw badRequest('Học viên không có quyết định Lên FT ở lớp này.');
     if (!e.mt0 && !e.moTay) throw loi(400, '{ten}: MT0 cần ít nhất 3 kỹ năng có điểm.', { ten: e.ten });
+    if (x?.dat === false && e.goiY?.dat) throw loi(400, KHONG_DAT_KHI_DAT, { ten: e.ten });
     /* Học viên không gửi kỹ năng → kỹ năng CÓ band MT0 dưới ngưỡng (kỹ năng chưa thi không tính); vẫn rỗng → 400 "chọn kỹ năng". */
     const thieu = x?.nguyenNhan === 'hoc_sinh' && !(Array.isArray(x.mon) && x.mon.length) && !!e.goiY;
     return [e.id, kiemDongKyVong(thieu ? { ...x, mon: e.goiY!.monTruot } : x, e.ten)] as const;
@@ -200,7 +216,7 @@ const soBuoiTutor = () => mocThuong().khongDatKyVong.tutor;
 const moTaTutor = () => `Tutor ${soBuoiTutor()} buổi/kỹ năng · tính vào buổi Free, có lương GV`;
 
 /**
- * Case "Kỳ vọng đầu ra chưa đạt…" ở lộ trình FT (T49, §3) — THEO LÔ, trong tx nơi gọi. Trung tâm: mỗi kỹ năng một Case + PA Tutor 10 buổi
+ * Case "Kỳ vọng đầu ra chưa đạt…" ở lộ trình FT (T49, §3) — THEO LÔ, trong tx nơi gọi. Trung tâm: mỗi kỹ năng một Case + PA Tutor (số buổi cấu hình)
  * (`chenPa`; Người dạy = GV cũ dạy kỹ năng đó ở lớp BE/ELE, hết phân công → trống; việc Kết quả theo `nguoiGiuKetQua` = GVBM Case). Học viên: không Case
  * (N17 — phương án ghi ở `ky_vong_ghi_chu`). Chủ Case = GVBM kỹ năng đó ở lớp FT (`suggestCaseOwner`). Một lần cho mỗi (lộ trình, kỹ năng) — đã có Case "Kỳ vọng
  * đầu ra…" bất kỳ trạng thái thì không tạo lại; Case đang mở cùng khoá (vd Case Mock) thì giữ, không gắn PA. Trả số Case mới + số em bị bỏ qua vì vậy (`boQua`).
@@ -261,7 +277,7 @@ export function taoCaseKyVong(p: Principal, tatCa: readonly DongCaseKyVong[]): {
       recordedBy: p.userId, status: 'started', startedDate: y.d.ngay, confirmedBy: p.userId, confirmedAt: nowIso(),
       cycleStartedOn: y.d.ngay, actionDue: hanKyGhiKetQua(y.d.ngay),
     });
-    moc.push([caseId, 'opened', y.d.ngay, 'Kỳ vọng đầu ra chưa đạt (Trung tâm) — Tutor 10 buổi', p.userId, nowIso(), `ky-vong:${caseId}`]);
+    moc.push([caseId, 'opened', y.d.ngay, `Kỳ vọng đầu ra chưa đạt (Trung tâm) — Tutor ${soBuoiTutor()} buổi`, p.userId, nowIso(), `ky-vong:${caseId}`]);
   }
   chenPa(conn, pa);
   chenNhieuDong('INSERT OR IGNORE INTO case_milestones (case_id, kind, occurred_on, note, created_by, created_at, dedup_key)', moc);
@@ -327,7 +343,7 @@ export function kqdrLopFt(p: Principal, classId: number) {
       id: r.student_id, ten: r.full_name, lopCu: { id: r.lop_id, code: r.code },
       final: f?.tyLe ?? null, finalDat: f?.tyLe == null ? null : f.tyLe >= f.nguong,
       mt0: goiY ? { ...bands, overall: goiY.overall, dat: goiY.dat, monTruot: goiY.monTruot } : null,
-      kqdr: r.ky_vong_dat === null ? null : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon) },
+      kqdr: r.ky_vong_dat === null ? tuDatKyVong(goiY) : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon) },
       case: caseCua.get(r.student_id) ?? [], banGiao: r.ban_giao ?? null,
     }]);
   }

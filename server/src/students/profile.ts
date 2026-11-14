@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { tachMaNhom } from '../cases/cases.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
-import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangSosMt0, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangHuy, kyNangSosMt0, tuDatKyVong, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -574,7 +574,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const attemptRows = selected
     ? conn
       .prepare(
-        `SELECT a.*, c.code AS class_code, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
+        `SELECT a.*, c.code AS class_code, c.programme_code AS lop_ct, pr.code AS period_code, pr.week_start, pr.week_end AS period_end, (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
                 ${LUOT_HUY_HET_SQL('a')} AS huyHet
            FROM assessment_attempts a
            LEFT JOIN classes c ON c.id = a.class_id
@@ -657,7 +657,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       scored: r.scoredRequired, required: r.required.length,
       complete: r.complete, chot: r.chot, provisional: r.provisional,
       sosLevel: r.sosLevel, kckDuoi: r.kckDuoi, scopeNote: r.scopeNote,
-      ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null) } : {}),
+      ...(mt0 ? { sosMt0: kyNangSosMt0(r.bands, a.target_at_attempt ?? null, a.lop_ct, kyNangHuy(lichCua.get(a.id))) } : {}),
     };
   });
 
@@ -849,12 +849,17 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
     const dangHoc = ds.find((r) => r.status === 'active');
     if (!dangHoc) return null;
     /* PR-KV: BE/ELE — gợi ý kỳ vọng đầu ra theo MT0 (điền sẵn kỹ năng ở "Không đạt"), cùng hàm với panel cả lớp. */
-    const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => (x ? {
-      ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen,
-      kyVongMt0: ['FOU', 'BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null,
+    const kem = (r: any, x: EmCuoiKhoa | null, daChuyen: boolean) => {
+      if (!x) return null;
+      const kyVongMt0 = ['FOU', 'BE', 'ELE'].includes(r.programme_code) ? mt0TheoLop([{ sid: studentId, lop: r.class_id, ct: r.programme_code }]).get(studentId)?.goiY ?? null : null;
+      return {
+      ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen, kyVongMt0,
+      /* KY-VONG-MT0 (chủ SP 14/11): MT0 đạt mốc, QL chưa chốt → hộp Kết luận khoá ghi "Đạt" (cùng `emKyVong`). */
+      ketLuanFt: x.ketLuanFt?.dat === true || x.ketLuanFt?.dat === false ? x.ketLuanFt : tuDatKyVong(kyVongMt0) ?? x.ketLuanFt,
       /* OV-11d (HV-17): dòng Kết quả đầu ra chỉ cho em có lệnh / lộ trình Lên FT từ lớp này (cùng nguồn `ghiKetLuanFt`) — kể cả Final chưa có điểm. */
       lenFt: ['FOU', 'BE', 'ELE'].includes(r.programme_code) && emLenFtTu(studentId, r.class_id),
-    } : null);
+      };
+    };
     /* OV-6b2: lớp liên tục không có Cuối khoá. */
     const dang = !dangHoc.is_fast_track && !laLienTuc(dangHoc) && isRatioClass(dangHoc.class_id) ? cuoiKhoaTheoHocVien(dangHoc.class_id, [studentId]).get(studentId) ?? null : null;
     /* bài Final Test của lớp đang học đã có điểm — hoặc em đã chốt Lên FT từ lớp này (OV-11d: dòng KQĐR của lớp đang học, dù Final chưa điểm) */

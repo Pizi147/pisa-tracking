@@ -40,7 +40,7 @@ type Em = {
   cuoiKhoa: { tyLe: number | null; scored: number; required: number; nguong: number | null; mon: { skill: string; ratio: number | null; dung: number | null; tong: number | null }[]; goiY: GoiYCuoiKhoa | null } | null;
   progress: { tuan: string | null; scored: number; required: number; monTruot: string[]; tyLe: number | null; mon?: { skill: string; ratio: number | null; dung: number | null; tong: number | null }[] } | null;
   lenh: Lenh | null; nhap?: Nhap | null; nhanXet: string | null; nhanXetLuc: string | null;
-  kqdr: { goiY: { overall: number; dat: boolean; monTruot: RegularSkill[] } | null; mt0: { overall: number } | null; moTay: boolean;
+  kqdr: { goiY: { overall: number | null; dat: boolean; monTruot: RegularSkill[] } | null; mt0: { overall: number | null } | null; moTay: boolean;
     bands: Record<RegularSkill, number | null> | null; chot: KetLuanKv | null } | null;
 };
 type Lop = { id: number; code: string; ft: boolean; programmeCode: ProgrammeCode | null; studentCount: number };
@@ -60,7 +60,7 @@ type Dong = { huong: ChonHuong; quayLai: boolean; lop: number | null; tuan: stri
 const NGAN: Record<RegularSkill, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 const huongLenh = (d: Pick<Dong, 'huong' | 'quayLai'>): HuongLenh | null => (d.huong === 'dung' ? (d.quayLai ? 'bao_luu' : 'dung_hoc') : d.huong || null);
 const chonCua = (h: HuongLenh | null | undefined): ChonHuong => (h === 'bao_luu' || h === 'dung_hoc' ? 'dung' : h === 'chuyen_lop' || !h ? '' : h);
-const b1 = (n: number) => n.toFixed(1);
+const b1 = (n: number | null) => (n === null ? '—' : n.toFixed(1));   // KY-VONG-MT0: có kỹ năng Đã huỷ → không Overall
 
 /** Lớp chuyển đến hợp lệ cho hướng: FT → lớp FT; Lên → chương trình kế; Học lại → cùng hoặc thấp hơn (`maHocLai`). Ứng viên máy chủ đã lọc cùng chi nhánh (N17). */
 function lopTheoHuong(ds: readonly Lop[], huong: ChonHuong, ma: ProgrammeCode | null, ke: ProgrammeCode | null): Lop[] {

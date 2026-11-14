@@ -19,7 +19,7 @@ import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { chotYeuCau, taoYeuCau } from '../duyet/yeuCau.ts';
 import { classProgressMany } from '../classes/schedule.ts';
 import { allProgrammes, evaluateRegular, maCtCuaLuot, nguongDatLop } from './regular.ts';
-import { emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
+import { KHONG_DAT_KHI_DAT, emDaSangFt, kiemDongKyVong, mt0TheoLop, taoCaseKyVong, type DongCaseKyVong } from './kyVong.ts';
 
 /**
  * CUỐI KHOÁ LỚP THƯỜNG — MỘT CỬA phía máy chủ (T47, T49, §6.3). Luật thuần ở `shared/domain/cuoiKhoa.ts`; file này chỉ đọc dữ liệu
@@ -834,6 +834,7 @@ export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; 
     if (!muonNhat || demoToday() <= addDays(muonNhat, 6)) throw badRequest(CHO_MT0);
   }
   if (typeof input.dat !== 'boolean') throw badRequest('Chọn Đạt hoặc Không đạt.');
+  if (!input.dat && goiY?.dat) throw loi(400, KHONG_DAT_KHI_DAT, { ten: 'Kỳ vọng' });
   /* Cùng luật dòng với panel (`kiemDongKyVong`): không gửi kỹ năng → kỹ năng MT0 dưới ngưỡng; vẫn rỗng → 400. Học viên: lý do (phương án) bắt buộc, không Case (N17). */
   const coMon = Array.isArray(input.mon) && input.mon.length > 0;
   const dong = kiemDongKyVong({ sid, dat: input.dat, nguyenNhan: input.nguyenNhan, mon: coMon ? input.mon : goiY?.monTruot ?? [], lyDo: input.ghiChu }, 'Kỳ vọng');

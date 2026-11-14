@@ -332,7 +332,8 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     diemMt0(mB, { listening: 3.5 });
     const plan = transition.transitionPlan(QL, l.classId);
     const pA = plan.students.find((x: any) => x.id === A);
-    assert(JSON.stringify(pA.mt0.sos) === JSON.stringify([{ skill: 'writing', band: 4 }]) && pA.baiChuaLam === get(`SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ? AND status = 'planned' AND kind != 'mt0'`, A).n, `kế hoạch: ${JSON.stringify(pA.mt0)} · bài chưa làm ${pA.baiChuaLam}`);
+    /* KY-VONG-MT0 (chủ SP 14/11): A Overall 5.5 ≥ mốc BE 4 → đạt, không chip SOS W 4.0. */
+    assert(JSON.stringify(pA.mt0.sos) === '[]' && pA.baiChuaLam === get(`SELECT COUNT(*) n FROM assessment_attempts WHERE student_id = ? AND status = 'planned' AND kind != 'mt0'`, A).n, `kế hoạch: ${JSON.stringify(pA.mt0)} · bài chưa làm ${pA.baiChuaLam}`);
     const cuA = lt(A).id;
     const r = transition.applyTransition(QL, { fromClassId: l.classId, effectiveDate: TODAY, dongs: [
       { studentId: A, huong: 'fast_track', toClassId: FT101, mucTieu: 6.5 },
@@ -523,7 +524,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     ] });
     const hs = profile.studentProfile(QL, A);
     const a0 = hs.attempts.find((x: any) => x.kind === 'mt0');
-    assert(a0 && a0.attemptNo === 0 && a0.sosLevel === null && JSON.stringify(a0.sosMt0) === JSON.stringify([{ skill: 'writing', band: 4 }]), JSON.stringify(a0));
+    assert(a0 && a0.attemptNo === 0 && a0.sosLevel === null && JSON.stringify(a0.sosMt0) === '[]', JSON.stringify(a0));   // KY-VONG-MT0: Overall 5.5 ≥ BE 4 → không chip
     const w = hs.trajectory.find((t2: any) => t2.skill === 'writing');
     assert(w.points.filter((x: any) => x.band === 4).length === 1 && w.points[0].kind === 'baseline', JSON.stringify(w.points));
     const lich = keHoach.lichMtLoTrinh(lt(A).id);
@@ -533,7 +534,7 @@ export async function runPrMt0Tests(t: YThucTestKit) {
     assert(ghim(A).includes('"nhanNgan":"MT0"'), 'Hành trình A: MT0');
     assert(ghim(B).includes('"nhanNgan":"MT0 · không dùng"'), 'Hành trình B: MT0 · không dùng');
     const ct = attempts.attemptDetail(QL, mA);
-    assert(ct.result.sosLevel === null && JSON.stringify(ct.mt0.sos) === JSON.stringify([{ skill: 'writing', band: 4 }]) && !('sosCase' in ct), 'hồ sơ Mock');
+    assert(ct.result.sosLevel === null && JSON.stringify(ct.mt0.sos) === '[]' && !('sosCase' in ct), 'hồ sơ Mock');   // KY-VONG-MT0: đạt mốc BE → không chip
     assert(dm.duongDotTest({ id: mA, kind: 'mt0', classId: l.classId }) === `/mock-test/${mA}`, 'đường hồ sơ Mock');
   });
 
