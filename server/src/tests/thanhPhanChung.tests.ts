@@ -418,4 +418,19 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/export function SuaTaiDong\(/.test(doc('web/src/modules/platform/SuaTaiDong.tsx')) && /vien = false/.test(doc('web/src/modules/platform/SuaTaiDong.tsx')), 'SuaTaiDong dùng chung (ô có viền)');
     assert(/closest\('\.card'\)/.test(doc('web/src/ui/HopNeo.tsx')) && /phai - rong/.test(doc('web/src/ui/HopNeo.tsx')), 'HopNeo phải nằm trong thẻ chứa ô (không đè cột Nhật ký)');
   });
+
+  console.log('\nGD-17c · Quản trị — Tài khoản, Case & SOS, Mở sửa lịch Test, Đã xoá');
+  check('GD-17c · Tài khoản ô chọn thường một dáng + badge mờ; Case & SOS "Ẩn" / "+ Thêm nhóm" là nút, tên nhóm ô có viền; Mở sửa lịch Test là công tắc + Hoàn tác; Đã xoá câu 30 ngày vào ⓘ', () => {
+    const ac = doc('web/src/modules/platform/AccountsAdmin.tsx');
+    assert(!/ChonDangNut|<select className="field w-36"/.test(ac) && (ac.match(/<OChonThuong /g) ?? []).length >= 4 && /<BadgeMo so=\{pending\.length\} \/>/.test(ac), 'Tài khoản: ô chọn / badge');
+    assert(!/<select className="field w-44/.test(doc('web/src/modules/platform/SuaVaiChiNhanh.tsx')), 'hộp sửa vai còn select.field');
+    const bd = doc('web/src/modules/platform/cauHinh/BangDanhSach.tsx');
+    assert(!/btn-ghost[^"]*"[^>]*>\{t\('Ẩn'\)\}/.test(bd) && !/btn-ghost[^\n]*\+ \{n\.themChu\}/.test(bd) && !/aria-hidden className="text-slate-500">✎/.test(bd), 'Case & SOS: "Ẩn" / "+ Thêm nhóm" là nút, tên không ✎');
+    const ms = doc('web/src/modules/platform/MoSuaLichTest.tsx');
+    assert(/role="switch" aria-checked=\{data\.bat\}/.test(ms) && /toast\.hoanTac\(chu, \(\) => doi\(!bat, true\)/.test(ms) && !/t\('Bật'\)/.test(ms), 'Mở sửa lịch Test: công tắc + Hoàn tác');
+    const dx = doc('web/src/modules/platform/DaXoaAdmin.tsx');
+    assert(!/<p className="m-0 text-xs text-slate-500">\{t\('Giữ 30 ngày/.test(dx), 'Đã xoá: câu 30 ngày vào ⓘ');
+    assert(/\{pending\.length > 0 && \(/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')) && !/Đăng ký chờ duyệt'\)\} <span className="tabular-nums">0/.test(doc('web/src/modules/platform/AccountsAdmin.tsx')), 'lời 40: 0 đăng ký thì không hiện dòng');
+    assert(/<OBang c=\{COT\[0\]\} className="!overflow-visible !px-0/.test(doc('web/src/modules/platform/cauHinh/BangDanhSach.tsx')), 'nút kéo ⠿ không bị cắt thành "⠿…"');
+  });
 }
