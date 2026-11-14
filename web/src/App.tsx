@@ -2,7 +2,7 @@ import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type
 import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
-import { ViecCuaToiCtx, type SoViecCuaToi } from './lib/viecCuaToi.ts';
+import { DemYeuCauCtx, ViecCuaToiCtx, type SoViecCuaToi } from './lib/viecCuaToi.ts';
 import { henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
@@ -319,7 +319,7 @@ export default function App() {
 
   return (
     /* XM 3 (rà 11/11): số Việc của tôi của badge — ô Tổng quan đọc chung (`useSoViecCuaToi`), không GET thêm. */
-    <ViecCuaToiCtx.Provider value={viecGv?.summary ?? null}>
+    <ViecCuaToiCtx.Provider value={viecGv?.summary ?? null}><DemYeuCauCtx.Provider value={dem ?? null}>
     <div className="h-full flex flex-col">
       <a href="#noi-dung" onClick={(e) => { e.preventDefault(); document.getElementById('noi-dung')?.focus(); }}
         className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[110] btn btn-sm">{t('Bỏ qua tới nội dung')}</a>
@@ -434,6 +434,6 @@ export default function App() {
         </nav>
       )}
     </div>
-    </ViecCuaToiCtx.Provider>
+    </DemYeuCauCtx.Provider></ViecCuaToiCtx.Provider>
   );
 }

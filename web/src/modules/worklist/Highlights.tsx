@@ -101,7 +101,7 @@ export function LichSapToi({ branchId, ct, duLieu }: { branchId: number | null; 
   const q = new URLSearchParams({ tuan: w.weekStart });
   if (branchId) q.set('cn', String(branchId));
   if (ct) q.set('loai', ct);
-  const xemHet = <Link to={`${DUONG_TAB_TEST['ke-hoach']}?${q}`} className="link inline-flex items-center whitespace-nowrap text-xs max-sm:min-h-[44px]">{t('Xem toàn bộ lịch ›')}</Link>;
+  const xemHet = <Link to={`${DUONG_TAB_TEST['ke-hoach']}?${q}`} className="link inline-flex items-center whitespace-nowrap text-xs max-sm:min-h-[44px]">{t('Kế hoạch Test ›')}</Link>;   // GD-14 (⑧ T5): một tên với trang đích
   const chuaRo = hienFt && data.examMonthOnly.students > 0;
 
   return (
