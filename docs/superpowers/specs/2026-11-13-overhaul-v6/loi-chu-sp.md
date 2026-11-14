@@ -283,3 +283,40 @@ PTA Overhaul hiểu: (a) các việc ĐÃ gửi PTA Plan (F01–F07, L1–L8, LG
 1. **Dòng việc luôn một dạng "Lớp · tên việc ngắn"**, kể cả việc của MỘT em (vd "MB FT 101 · Reading", "MB FOU 12 · Xác nhận xử lý"); tên em là thẻ phụ (link) cạnh tuần / số bài / SOS. Bỏ dạng "đầu em + cây việc". Em con trong dòng gộp "n em" vẫn đứng đầu bằng tên em.
 2. Dải đầu tab / nhóm ghi **"Chấm Speaking"** — không ghi "Việc chung của nhóm GV Speaking".
 Đã áp ở mockup ⑤ (#1558). Mockup ① (đã merge) còn dạng cũ → code theo lời này, không vẽ lại.
+
+## 15/11 — lời 25 (chủ SP nói trong session mockup ②; session đó THUẬT LẠI, nguyên văn ở `thiet-ke/v21/ho-so-lop-ghi-chu.md` mục 0 trên PR #1560)
+
+Theo session mockup ② (chủ SP đã duyệt "làm đi" trong session đó) — áp cho hồ sơ lớp:
+1. Phần mở rộng một em giữ đúng khung web hiện tại (Điểm theo lượt │ thẻ Kỹ năng → Điểm · Case · PA · Kết quả PA); nâng cấp: bấm ô điểm trên hàng mở sẵn đúng kỹ năng (ô có viền); thẻ kỹ năng có việc quá hạn của người xem mang ⚠.
+2. Lớp thường dùng CÙNG khung (đơn vị là Môn: Progress / Final, %, kỳ vọng 70 %, Bổ trợ miễn phí, Mini Test) — thay khối "Case đang mở" 08/11.
+3. Bỏ TVV khỏi đầu trang hồ sơ lớp và khỏi dòng "TVV …" dưới tên em; TVV ghi nhỏ ở đầu khối trái của phần mở rộng.
+PTA Overhaul CHƯA tự áp sang hồ sơ HV (mockup ③): session ② đề xuất "TVV không ở đầu" cho cả hồ sơ HV, nhưng đó là đề xuất của session, không phải lời chủ SP → hỏi chủ SP.
+
+## 15/11 — lời 26: TVV ở hồ sơ HV giữ
+
+Câu hỏi của PTA Overhaul: hồ sơ học viên (mockup ③) có bỏ TVV khỏi đầu trang như hồ sơ lớp không.
+
+> "không bỏ ở Hồ sơ HV"
+
+ĐÃ CHỐT: hồ sơ HV GIỮ TVV ở dòng thông tin đầu hồ sơ. Việc bỏ TVV (lời 25 ý 3) chỉ áp cho hồ sơ lớp. Mockup ③ không đổi.
+
+## 15/11 — lời 27 (chủ SP nói trong session mockup ⑤; session đó chuyển lại): duyệt mockup ⑤
+
+> "ok rồi nhé"
+
+Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đã sửa (dòng việc một dạng, "Chấm Speaking", chuông dáng 11/11). PTA Overhaul ghi nhận là **mockup ⑤ ĐÃ DUYỆT** (`thiet-ke/v21/bang-mau.html`, PR #1558 đã merge) — chủ SP báo lại nếu hiểu sai.
+
+## 15/11 — lời 28 (chủ SP nói trong session mockup ③; session đó chuyển lại nguyên văn): duyệt mockup ③ kèm 3 chỉnh
+
+> "1. 'Không cần theo dõi' cũng thành nút hẳn nhé, mờ hơn chẳng hạn nhưng đừng để mỗi một dòng chữ như vậy
+> 2. 'Xác nhận xử lý' cũng nên là một nút hẳn, không để là chữ
+> 3. Cấp bậc xử lý vi phạm có progress bar khá ok nhưng cần làm nổi bật hơn phần WL1 và WL2 nhé
+> 4. Còn lại duyệt, những panels, nút các thứ cần đồng bộ với những chỗ cần động bộ khi code nhé"
+
+ĐÃ CHỐT: **mockup ③ hồ sơ HV ĐÃ DUYỆT** (`thiet-ke/v21/ho-so-hv.html`, PR #1559 đã merge, 3 chỉnh đã vào mockup). Áp chung khi code (ý 4): "Không cần theo dõi" và "Xác nhận xử lý" là NÚT (không là chữ link) ở mọi nơi có chúng — tab Ý thức lớp, panel Công việc, hồ sơ HV; thang cấp bậc vi phạm làm nổi WL 1, WL 2 ở mọi nơi hiện thang; panel / nút / dòng việc / dòng quy chế dùng chung một bộ thành phần (mockup ⑤).
+
+## 15/11 — lời 29 (chủ SP nói trong session mockup ④; session đó chuyển lại): duyệt mockup ④
+
+> "Duyệt mockup rồi nhé"
+
+ĐÃ CHỐT: **mockup ④ trang đầu TVV ĐÃ DUYỆT** (`thiet-ke/v21/trang-dau-tvv.html`, PR #1557 đã merge; bản đã áp lời 24). Các [XM] của mockup này chưa có lời riêng → làm theo đề xuất trong tệp ghi chú, trừ khi chủ SP nói khác.
