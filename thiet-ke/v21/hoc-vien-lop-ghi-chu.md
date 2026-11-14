@@ -22,6 +22,21 @@ PTA Overhaul hiểu (đã áp ở K4, K5, K8b; ý bỏ Target được lời 38 
 
 Đã áp: TRẢ LẠI cột **Target** (trước "MT gần nhất"); chỉ bỏ nhãn nhóm "Hiện tại". Cột Lộ trình vẫn bỏ; ô lịch thi vẫn một dòng. Bảng: Học viên · Lịch thi · Target · MT gần nhất · SOS · Ghi chú. Thẻ 375 dòng 2: Target · MT gần nhất · SOS.
 
+**Chủ SP nói trực tiếp trong session này (15/11):**
+
+> "thi thật rồi thì khi expand không cần bảng MT gần nhất và test sắp tới nữa
+> chỉ có HV chưa thi thì mới có bảng thông tin của MT gần nhất chứ, động não liên tục và cái gì logic thì mình làm chứ đừng có làm vô tội vạ như thế"
+
+Đã áp — phần mở dưới hàng Lịch thi theo trạng thái thi:
+
+| Trạng thái em | Phần mở gồm | Không có |
+|---|---|---|
+| Chưa thi (chưa có lịch · dự kiến · chưa chốt ngày · đã chốt, chưa tới ngày) | MT gần nhất (5 ô, kỳ vọng, ↑↓) · Hỗ trợ đang mở · Test sắp tới · Phụ trách · Làm tiếp (+ Ghi chú · Lịch sử · n) | — |
+| Đã thi, chờ KQ | Kỳ thi (ngày · nơi · có KQ khoảng) · KQ thi thật "Chưa có" · Phụ trách · Làm tiếp (**Ghi kết quả** · + Ghi chú · Lịch sử · n) | MT gần nhất, Hỗ trợ, Test sắp tới |
+| Có KQ (chờ bước tiếp · xong) | KQ thi thật so Target (Overall + 4 kỹ năng) · Kỳ thi (ngày · nơi · ngày ghi KQ) · Phụ trách · Làm tiếp (**Chọn bước tiếp** khi chưa chọn · + Ghi chú · Lịch sử · n) | MT gần nhất, Hỗ trợ, Test sắp tới |
+
+Cùng lý do, áp luôn trên hàng: em đã thi thật thì ô **MT gần nhất** ghi "—" (KQ thi thật thay chỗ MT; Target vẫn giữ). Thẻ 375 của em đã thi: dòng 2 chỉ Target. SOS giữ (Case còn mở tới khi chọn bước tiếp).
+
 **PTA Overhaul rà 15/11 (chuyển tiếp, không phải lời chủ SP):** ĐẠT R6.1–R6.8. [XM-1] để chủ SP quyết ở mockup · [XM-3] đồng ý · [XM-4] đồng ý · [XM-2] KHÔNG đổi quyền: "Lưu trữ ›" chỉ hiện với vai hôm nay vào được Lưu trữ · 375 thêm vòng chữ đầu tài khoản + badge Công việc ở thanh dưới · đo tâm ✕ / ⋯ / mũi tên ≤ 1 px. Đã sửa cả ba (mục 4, 5, 8).
 
 ## 1. Khung
