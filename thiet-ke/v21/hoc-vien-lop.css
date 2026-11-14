@@ -297,3 +297,6 @@ button.gt-lt.mo3 .s1 { text-decoration-color:var(--line-strong); }
 .ltt .c-hv { width:240px; } .ltt .c-lich { width:300px; } .ltt .c-mt { width:170px; } .ltt .c-sos { width:190px; }
 .hop-dong { padding-left:246px; }
 button.gt-lt { align-content:center; }
+/* lời 38: trả lại cột Target (không nhãn nhóm "Hiện tại") — cân lại */
+.ltt .c-hv { width:230px; } .ltt .c-lich { width:280px; } .ltt .c-tg { width:100px; } .ltt .c-mt { width:160px; } .ltt .c-sos { width:180px; }
+.hop-dong { padding-left:236px; }
