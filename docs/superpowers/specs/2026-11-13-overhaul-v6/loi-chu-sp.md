@@ -326,3 +326,9 @@ Theo session mockup ⑤: chủ SP trả lời câu này về mockup ⑤ bản đ
 > "duyệt nhé"
 
 ĐÃ CHỐT: **mockup ② hồ sơ lớp ĐÃ DUYỆT** (`thiet-ke/v21/ho-so-lop.html`, PR #1560 đã merge; bản cuối gồm chip mở thẳng panel, bỏ badge trùng với GV, phần mở rộng em theo web, lớp thường cùng khung, bỏ TVV ở đầu trang). Cả năm mockup ①–⑤ đã duyệt → plan giao diện đợt 2: `09-plan-giao-dien-dot-2.md`, gửi PTA Plan.
+
+## 15/11 — lời 31: merge mockup, archive, bàn giao sang session overhaul plan mới
+
+> "merge xong hết mockup archive hết những gì đã xong và cho tôi prompt bàn giao sang session overhaul plan mới"
+
+Đã làm: năm mockup ①–⑤ đã merge (#1544 / #1547, #1560, #1559, #1557, #1558); archive bốn session mockup + hai session dự bị; plan giao diện đợt 2 (`09`) đã gửi PTA Plan; prompt bàn giao đưa chủ SP trong chat. Session planning mới đọc thư mục này theo thứ tự: `loi-chu-sp.md` → `04-thiet-ke.md` (mục 12–14 thắng mục 5) → `05`, `07`, `09` (plan) → `08-bao-cao-sang.md` (17 câu hỏi còn mở) → `luat/`.
