@@ -252,9 +252,9 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
             {/* GD-6 (mockup ② K1, R2.2): "+ Task" (Case · Vi phạm / Nhắc nhở · Tình hình học tập) thay "+ Case" — mục theo quyền, chọn em trong lớp
                 từ `/roster` đã nạp ([XM-7], không request). Lớp đã kết thúc: không nút ([XM-9]). */}
             {loaiTask.length > 0 && data.status !== 'finished' && <>
-              <NutTask noi="dau" lopId={data.id} loai={loaiTask} dsEm={tomTat?.emTask} />
+              <NutTask noi="dau" lopId={data.id} muc={loaiTask} dsEm={tomTat?.emTask} />
               {/* 375 (K8, R2.9): "+ Task" nút tròn nổi trên thanh tab dưới — như trang đầu ①. */}
-              <NutTask noi="noi" lopId={data.id} loai={loaiTask} dsEm={tomTat?.emTask} />
+              <NutTask noi="noi" lopId={data.id} muc={loaiTask} dsEm={tomTat?.emTask} />
             </>}
             <MenuDong muc={menu} nhan={t('Thao tác khác')} lopNut={NUT_BA_CHAM} />
           </div>

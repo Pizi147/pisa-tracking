@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { BoLocDoan, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.tsx';
+import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -61,6 +62,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   /* Phản hồi tại chỗ sau "Đã xem" (F03): khối ở lại, Hoàn tác + Xem lại — không chỉ toast. */
   const [vuaXem, setVuaXem] = useState<{ ids: number[]; luc: string } | null>(null);
   const [lsVua, setLsVua] = useState<number[]>([]);
+  /* [XM-4] Lịch sử gập mặc định (như "Xem lịch sử · n" tab lớp). */
+  const [moLs, setMoLs] = useState(false);
   /* Vi phạm đang gửi Đã xem — mọi nút Đã xem khoá tới khi xong (không gửi chồng). */
   const [dangGhi, setDangGhi] = useState(false);
   const dauRef = useRef<HTMLElement>(null);
@@ -176,7 +179,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     gv: <b role="status" className="text-sm font-semibold text-ok">✓ {t('Đã xem {n} vi phạm · {gio}', { n: vuaXem.ids.length, gio: vuaXem.luc })}</b>,
     tiep: <span className="flex gap-3.5">
       <button type="button" className={LINK} disabled={dangGhi} onClick={() => void daXem(vuaXem.ids, true)}>{t('Hoàn tác')}</button>
-      <button type="button" className={LINK} onClick={() => { setLoc('vi-pham'); setLsVua(vuaXem.ids); document.getElementById(`yt-ls-${studentId}`)?.scrollIntoView({ block: 'start' }); }}>{t('Xem lại')}</button>
+      <button type="button" className={LINK} onClick={() => { setLoc('vi-pham'); setLsVua(vuaXem.ids); setMoLs(true); document.getElementById(`yt-ls-${studentId}`)?.scrollIntoView({ block: 'start' }); }}>{t('Xem lại')}</button>
     </span>,
   }) : null;
   const dx = d.deXuat;
@@ -245,11 +248,14 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
     }),
     ...(loc === 'tat-ca' || loc === 'tinh-hinh' ? thLs.map((x) => ({ ngay: x.taoLuc.slice(0, 10), node: dongTh(x, true) })) : []),
   ].sort((a, b) => b.ngay.localeCompare(a.ngay)).map((x) => x.node);
+  /* Số "Lịch sử · n" = mọi dòng lịch sử của phạm vi (không theo lọc loại) — đổi lọc không làm khối biến mất; 0 dòng thì không vẽ khối (lời 40). */
+  const soTong = d.dongThoiGian.filter((x) => (x.loai === 'vi-pham' ? x.trangThai === 'da_ghi_nhan' : x.status === 'done' || x.status === 'thu_hoi')).length
+    + d.tinhHinh.filter((x) => x.trangThai !== 'mo').length;
   const nhanChuoi = d.chuoi.nhan.startsWith('lớp thường') ? d.chuoi.nhan.replace('lớp thường', t('Lớp thường')) : t('Lộ trình {nhan}', { nhan: d.chuoi.nhan });
   const xuLyCuoi = d.hang.xuLyGanNhat;
 
   return (
-    <section ref={dauRef} className="card scroll-mt-24 [container-type:inline-size]" aria-label={t('Ý thức & Phối hợp')}>
+    <section ref={dauRef} className="card scroll-mt-24 overflow-clip [container-type:inline-size]" aria-label={t('Ý thức & Phối hợp')}>
       {/* Mockup v20 A4: MỘT tab lớn, hai tab nhỏ (chủ SP 12/11). */}
       <TabNho value={phan} onChange={setPhan}
         muc={[{ key: 'vi-pham', nhan: t('Tình hình học tập / Ý thức'), ngan: t('Tình hình / Ý thức') }, { key: 'phoi-hop', nhan: tenPhoiHop, so: coord.data?.pendingCount ?? null }]} />
@@ -265,10 +271,11 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
         </div>
       ) : (
         <>
-          {/* Dải mốc (chủ SP 12/11: mốc VIẾT HOA, không "Đã tới") · Bậc kế · Thang ▾ · thao tác. */}
+          {/* Dải mốc: "Đã tới" + MỐC VIẾT HOA (③ K4a duyệt 15/11 — thay "không Đã tới" 12/11) · thang vạch · Bậc kế · Thang ▾ · thao tác. */}
           <div className="border-b px-4 py-3 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="flex flex-wrap items-baseline gap-x-2.5 text-sm text-slate-400">
+                {d.bac > 0 && <span>{t('Đã tới')}</span>}
                 <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac, d.dongThoiGian.some((x) => x.loai === 'vi-pham' && !x.chiNhac))}</b>
                 {/* GD-4d (chủ SP 15/11, ③ K1 / K4a): thang mini dạng vạch — mốc WL là vạch đỏ dày, không chữ trong thanh; đủ tên ở "Thang ▾". */}
                 <ThangVach dong={d.dongThang} />
@@ -283,41 +290,44 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
                   onClick={() => setHop({ neo: neoHoi, che: { loai: 'hoi', em: { id: studentId, ten: d.ten }, gvcn: d.gvcn } })}>{t('Hỏi tình hình')}</button>}
                 {d.coTheBao && <button ref={neoBao} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
                   onClick={() => setHop({ neo: neoBao, che: { loai: 'bao', em: [{ id: studentId, ten: d.ten, tvv: null }] } })}>{t('Báo tình hình')}</button>}
-                {d.canRecord && <button type="button" className="btn btn-primary h-9 max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Ghi vi phạm')}</button>}
+                {/* ③ K4a: cùng tên mục "+ Task" — "+ Vi phạm / Nhắc nhở" (form có Nhắc nhở), nút viền như hai nút cạnh. */}
+                {d.canRecord && <button type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Vi phạm / Nhắc nhở')}</button>}
               </span>
             </div>
             {thang && <div className="mt-3"><ThangYThuc d={d} homNay={homNay} onKhai={d.canManage && d.coTheKhai ? () => mo({ loai: 'khai', studentId }) : undefined} /></div>}
           </div>
 
-          <div className="flex flex-wrap items-baseline gap-x-2.5 px-4 pb-2 pt-4 max-sm:px-3">
+          {/* GD-7 (③ K4a, R3.5 — đồng bộ tab lớp): MỘT bảng của chính em — đầu cột một lần · "Đang chờ" (vạch vàng trái) · "Lịch sử · n" gập tại khối
+              ([XM-4], một kiểu lịch sử GD-4c) với lọc loại · Lộ trình | Cả lịch sử · Mọi nhóm bên trong. */}
+          <DauCotEm ph={iBaoPh} khongHv />
+          <div className="flex flex-wrap items-baseline gap-x-2.5 px-4 pb-1 pt-3 max-sm:px-3">
             <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Đang chờ')}</h3><span className="text-[13px] tabular-nums text-slate-400">{t('{n} việc', { n: soCanLam })}</span>
           </div>
           {soCanLam === 0 && !kVua ? (
-            <p className="m-0 px-4 pb-2 text-sm text-slate-400 max-sm:px-3"><span aria-hidden className="text-ok">✓ </span>{t('Không có việc nào đang chờ')}</p>
+            <p className="m-0 px-4 pb-3 text-sm text-slate-400 max-sm:px-3"><span aria-hidden className="text-ok">✓ </span>{t('Không có việc nào đang chờ')}</p>
           ) : (
-            <div className="mx-3 overflow-hidden rounded-[10px] border surface-2 max-sm:mx-2" style={{ borderColor: 'var(--line-strong)' }}>
-              <DauCotEm ph={iBaoPh} khongHv />
-              {kCho}{kVua}{kDx}{kTh}{kTvv}{kThMo}
-            </div>
+            <div className="shadow-[inset_3px_0_0_rgb(var(--soon-rgb))]">{kCho}{kVua}{kDx}{kTh}{kTvv}{kThMo}</div>
           )}
 
-          <div id={`yt-ls-${studentId}`} className="flex scroll-mt-24 flex-wrap items-center gap-x-3 gap-y-2 px-4 pb-2 pt-6 max-sm:px-3">
-            <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Cả quá trình')}</h3><span className="text-[13px] text-slate-400">{t('mới nhất trước')}</span>
-            <ChipLoc ariaLabel={t('Lọc theo loại')} value={loc} onChange={(k) => setLoc(k)}
-              muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: dongLs.length + thLs.length }, { key: 'vi-pham', nhan: t('Vi phạm'), so: soLs['vi-pham'] },
-                { key: 'nhac-nho', nhan: t('Nhắc nhở'), so: soLs['nhac-nho'] }, { key: 'tinh-hinh', nhan: t('Tình hình'), so: soLs['tinh-hinh'] }]} />
-            <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0">
-              <BoLocDoan v8 ariaLabel={t('Phạm vi')} value={phamVi} onChange={setPhamVi}
-                muc={[{ key: 'chuoi', nhan: nhanChuoi }, { key: 'tat-ca', nhan: t('Cả lịch sử') }]} />
-              <select className="field min-h-[44px] w-auto py-1 text-xs sm:min-h-0" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
-                <option value="">{t('Mọi nhóm')}</option>
-                {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{dich(VIOLATION_CATEGORY_LABEL[c as ViolationCategory])}</option>)}
-              </select>
-            </span>
+          <div id={`yt-ls-${studentId}`} className="scroll-mt-24 border-t" style={{ borderColor: 'var(--line)' }}>
+            <LichSuGap so={soTong} moSan={moLs} onMo={setMoLs} className="!rounded-none !border-0 !bg-transparent">
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b px-4 py-2.5 max-sm:px-3" style={{ borderColor: 'var(--line)' }}>
+                <ChipLoc ariaLabel={t('Lọc theo loại')} value={loc} onChange={(k) => setLoc(k)}
+                  muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: dongLs.length + thLs.length }, { key: 'vi-pham', nhan: t('Vi phạm'), so: soLs['vi-pham'] },
+                    { key: 'nhac-nho', nhan: t('Nhắc nhở'), so: soLs['nhac-nho'] }, { key: 'tinh-hinh', nhan: t('Tình hình'), so: soLs['tinh-hinh'] }]} />
+                <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0">
+                  <BoLocDoan v8 ariaLabel={t('Phạm vi')} value={phamVi} onChange={setPhamVi}
+                    muc={[{ key: 'chuoi', nhan: nhanChuoi }, { key: 'tat-ca', nhan: t('Cả lịch sử') }]} />
+                  <select className="field min-h-[44px] w-auto py-1 text-xs sm:min-h-0" aria-label={t('Nhóm vi phạm')} value={nhomVp} onChange={(e) => setNhomVp(e.target.value)}>
+                    <option value="">{t('Mọi nhóm')}</option>
+                    {VIOLATION_CATEGORIES.map((c) => <option key={c} value={c}>{dich(VIOLATION_CATEGORY_LABEL[c as ViolationCategory])}</option>)}
+                  </select>
+                </span>
+              </div>
+              {kLs.length ? <div>{kLs}</div>
+                : <div className="p-4"><Empty title={loc === 'tat-ca' && !nhomVp ? t('Chưa có gì trong lịch sử') : t('Không có dòng nào khớp bộ lọc')} /></div>}
+            </LichSuGap>
           </div>
-          {kLs.length
-            ? <div className="mx-3 mb-4 overflow-hidden rounded-[10px] border max-sm:mx-2" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>{kLs}</div>
-            : <div className="p-4"><Empty title={loc === 'tat-ca' && !nhomVp ? t('Chưa có gì trong lịch sử') : t('Không có dòng nào khớp bộ lọc')} /></div>}
         </>
       )}
 

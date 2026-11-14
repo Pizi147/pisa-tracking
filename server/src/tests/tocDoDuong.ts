@@ -100,6 +100,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work' },
   /* RA-DOC-0611: Admin — `/my-work` gọi ở mỗi lần mở app (badge `App.tsx`), kèm việc "Xuất báo cáo PH" (`viecXuatBaoCaoPh`, BAO-CAO-PH b). */
   { trang: 'Công việc Admin', vai: ['ADMIN'], url: '/my-work' },
+  /* MYWORK-TVV: việc của TVV (Báo PH, Sau thi, Chốt ngày thi, Bổ sung hồ sơ…) — trang đầu TVV (GD-8) gọi cùng `/tong-quan/tvv/em`. */
+  { trang: 'Công việc TVV', vai: ['TVV'], url: '/my-work' },
   /* SV-YT-TVV + SV-TVV-VIEC: việc của TVV (Báo PH, Chốt ngày thi, Bước tiếp, Bổ sung hồ sơ, KQ thi thật) ở Tổng quan TVV (TVV không có khu Công việc). */
   {
     trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/my-work?nguoi=tat-ca',
@@ -613,6 +615,7 @@ export const TRAN: Record<string, number> = {
   'QL /highlights': 25,
   'QT /highlights': 25,
   /* OV-10c: Tổng quan theo vai — CX / QT gọi thêm danh sách Học viên & Lớp (chip Thiếu thông tin cùng nguồn): đo TVV 71, CX 95, QT 94, CX một CN 77, Admin 62 / 15. */
+  'TVV /my-work': 19,   // MYWORK-TVV: đo 9 câu (seed, không kèm quét nền) → max(đo + 10, ⌈đo × 1,3⌉); bản chép TVV 66: 14–21 câu
   'TVV /tong-quan/tvv/em': 24,   // GD-8a: đo 14 câu (thay /tong-quan/hoc-vien 17 + /tong-quan/tvv 4) → max(đo + 10, ⌈đo × 1,3⌉)
   'TVV /tong-quan/hoc-vien': 26,   // TL-NEN: đo 55 (trước 68); RA-DOC-0611: đo 46 (trước 48); GIAM-DOC-0611: đo 16 (trước 46) — cờ Thiếu thông tin không dựng cả danh sách
   'CX /tong-quan/hoc-vien': 27,   // TL-NEN: đo 72 (trước 80); RA-DOC-0611: đo 60 (trước 62); GIAM-DOC-0611: đo 17 (trước 60) — cờ Thiếu thông tin không dựng cả danh sách
@@ -1114,6 +1117,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* MYWORK-TVV: đo 13 dòng (seed, không kèm quét nền) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 66 (109 em): 920–1 121 dòng (14–21 câu); lượt quét nền đầu ngày ~200 câu chạy một lần cho cả hệ thống, không thuộc TVV. */
+  'TVV /my-work': 63,
   /* GD-8a: em của TVV (HV của tôi) — đo 74 dòng (thay /tong-quan/hoc-vien 234 + /tong-quan/tvv 2) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 109 em: 1 641 dòng (trước 2 168). */
   'TVV /tong-quan/tvv/em': 124,
   /* GD-5: `/ref/nguoi` đo 12 dòng (QT 22) chưa gõ / có gõ, GV Speaking 6 (QT 10) — đọc trong phạm vi + cắt 20 / 12 ở máy chủ → max(đo + 50, ⌈đo × 1,3⌉). */

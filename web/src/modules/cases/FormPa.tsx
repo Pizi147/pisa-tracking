@@ -4,7 +4,6 @@ import { Khoi, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
-import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { CHU_TOI_THIEU_CASE,
   GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU,
   coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay, nhatKyPa,
@@ -173,11 +172,11 @@ export function KhoaNho() {
  */
 export function NhatKyPa({ pa, ketQua }: { pa: PaNhatKy; ketQua: readonly KetQuaNhatKy[] }) {
   const { homNay, ngan } = useNgayNghiepVu();
-  const dong = nhatKyPa(pa, ketQua, homNay);
-  /* GD-6 (L1 của GD-4c, H4): MỘT kiểu lịch sử — gập "Nhật ký PA · n" → dòng ngày · người · việc. */
   return (
-    <LichSuGap so={dong.length} tieuDe={t('Nhật ký PA')} className="mt-2">
-      <DsLichSu dong={dong.map((d) => ({ key: d.khoa, gio: d.ngay ? ngan(d.ngay) : '—', ai: d.ai, viec: dich(d.chu) }))} />
-    </LichSuGap>
+    <ol className="m-0 flex list-none flex-col gap-0.5 p-0 text-xs text-slate-500">
+      {nhatKyPa(pa, ketQua, homNay).map((d) => (
+        <li key={d.khoa} className="break-words"><b className="font-semibold text-slate-300 tabular-nums">{d.ngay ? ngan(d.ngay) : '—'} · {d.ai}</b> · {dich(d.chu)}</li>
+      ))}
+    </ol>
   );
 }

@@ -53,7 +53,7 @@ export const HD_GV: HuongDan = {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
       loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Task › Case ở đầu trang.',
-      buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ lớp).', 'Ghi mô tả, lưu.'],
+      buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ).', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },
     {
@@ -321,7 +321,7 @@ export const HD_GV: HuongDan = {
       khongLam: [KHONG_XEP_MT],
       muc: [
         { id: 'lop-nhap-diem', viec: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final', buoc: ['Bấm nút <b>Nhập điểm</b> đầu trang, hoặc <b>⋯</b> ở dòng em › <b>Nhập điểm</b>.', 'Chọn lượt và môn, gõ điểm.'] },
-        { id: 'lop-hoc-vien', ten: 'Các tab của lớp', buoc: ['Đầu trang: <b>Việc cần làm</b> của bạn ở lớp theo loại (Nhập điểm · Case · Ý thức · Vận hành) — bấm chip mở thẳng việc đầu, <b>Việc tiếp ›</b> đi hết việc cùng loại. Lớp thường ghi tuần 5/8 (tuần đang học / số tuần).', 'Tab <b>Học viên</b> · <b>Ý thức & Phối hợp</b> · <b>Phân tích lớp</b> · <b>Báo cáo PH</b>; lớp đã kết thúc có <b>Tổng kết</b>.', 'Bảng em: bấm tên hoặc ô điểm mở phần dưới dòng — Điểm theo lượt (TVV của em ghi nhỏ ở đây) · thẻ kỹ năng (lớp thường: môn) → Điểm · Case · PA.'] },
+        { id: 'lop-hoc-vien', ten: 'Các tab của lớp', buoc: ['Đầu trang: thanh <b>Việc của tôi</b> của lớp — bấm việc làm ngay tại trang. Lớp thường ghi tuần 5/8 (tuần đang học / số tuần).', 'Tab <b>Học viên</b> · <b>Ý thức & Phối hợp</b> · <b>Phân tích lớp</b> · <b>Báo cáo PH</b>; lớp đã kết thúc có <b>Tổng kết</b>.', 'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới dòng.'] },
         { id: 'lop-menu', ten: 'Nút ⋯ của lớp', buoc: ['GVCN: <b>Thông tin lớp</b> · <b>Sửa thông tin học viên</b> · <b>+ Học viên</b> · <b>Cuối khoá…</b> (lớp thường) · <b>Xuất Excel</b>.', 'Mọi GV: <b>Lịch sử</b> — mỗi lần lưu: ai · lúc · nguồn · lý do · trước → sau.'] },
       ],
     },
@@ -332,8 +332,9 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Duyệt đề xuất PA', cua: 'việc của QL' }, { ten: 'Duyệt / chuyển lớp', cua: 'việc của QL' }],
       muc: [
         { id: 'hv-ghi-mini', viec: 'ghi-mini-test', ten: 'Ghi Mini Test', buoc: ['Tab <b>Học thuật</b>, khối kết luận khoá: nút <b>Ghi Mini Test</b>.', 'Gõ điểm, lưu.'] },
+        { id: 'hv-viec', ten: 'Việc cần làm · + Task', buoc: ['Thanh <b>Việc cần làm</b> dưới ô điểm: mọi việc của bạn với em (Case, Nhập điểm, Trả lời tình hình, Ý thức), quá hạn đỏ lên đầu; bấm dòng mở panel ngay tại hồ sơ.', '<b>+ Task</b> đầu hồ sơ: <b>Case</b> · <b>Vi phạm / Nhắc nhở</b> · <b>Tình hình học tập</b> — em điền sẵn, không chọn lại.', 'Em chưa có Target: ô <b>Target</b> ghi <b>Chưa có</b> · <b>Đề xuất sửa</b> (GV lớp gửi QL / TVV).'] },
         { id: 'hv-hoc-thuat', ten: 'Tab Học thuật', buoc: ['Ô điểm <b>Overall · L · R · W1 · W2 · S</b>: bấm một ô đổi kỹ năng cho cả phần dưới.', '<b>Hành trình</b>: điểm từng MT của kỹ năng, kỳ vọng dạng bậc thang mờ.', '<b>Tiến độ trên lớp</b>: ghi / sửa / xoá bài trên lớp (không vào MT).'] },
-        { id: 'hv-y-thuc', ten: 'Tab Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.', 'Lần xử lý sai: mở lần đó, <b>Thu hồi…</b> ghi lý do, gửi QL; QL quá hạn chưa quyết thì máy thu hồi theo bạn.'] },
+        { id: 'hv-y-thuc', ten: 'Tab Ý thức & Phối hợp', buoc: ['Vi phạm, lần xử lý, kết quả báo phụ huynh và Phối hợp SOS của em.', 'Một bảng: <b>Đang chờ</b> trên, <b>Lịch sử · n</b> gập dưới — mở ra có lọc loại · Lộ trình | Cả lịch sử · nhóm.', 'Lần xử lý sai: mở lần đó, <b>Thu hồi…</b> ghi lý do, gửi QL; QL quá hạn chưa quyết thì máy thu hồi theo bạn.'] },
         { id: 'hv-hanh-trinh', ten: 'Tab Lộ trình & lớp', buoc: ['Lưới tuần theo lớp: chương đang học, mọi lượt Test, Case / PA theo tuần.'] },
       ],
     },

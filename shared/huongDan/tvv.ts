@@ -227,7 +227,8 @@ export const manHoSoHv = (cx = false): ManHd => ({
     { id: 'tvv-hv-nut', ten: 'Nút trên đầu hồ sơ', buoc: cx
       ? ['<b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.', 'CX không đổi Lộ trình đang học, Môn học; không chọn Bước tiếp.']
       : ['<b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Bước tiếp…</b> (khi đã chọn) · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.',
-        'Thanh <b>Việc cần làm</b> đầu hồ sơ: <b>Chọn bước tiếp ›</b> · <b>Cập nhật kết quả thi thật ›</b> khi là việc của bạn.'] },
+        'Thanh <b>Việc cần làm</b> đầu hồ sơ: <b>Chọn bước tiếp ›</b> · <b>Cập nhật kết quả thi thật ›</b> khi là việc của bạn; bấm dòng mở panel ngay tại hồ sơ.',
+        '<b>+ Task</b> đầu hồ sơ: <b>Hỏi tình hình học tập</b> — gửi GVCN của em.'] },
     cx ? THI_THAT_CX : THI_THAT_TVV,
     { id: 'tvv-hv-tab', ten: 'Ba tab', buoc: ['<b>Học thuật</b>: điểm, Case, PA — chỉ xem.',
       cx ? '<b>Ý thức & Phối hợp</b>: <b>Vi phạm</b> và <b>Phối hợp SOS</b> — chỉ xem; cột báo PH ghi “Chờ TVV” hoặc kết quả.'

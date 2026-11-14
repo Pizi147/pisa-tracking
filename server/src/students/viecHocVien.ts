@@ -40,9 +40,9 @@ export type ViecHocVien = {
   mo: { loai: 'case'; caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'xac-nhan' | 'xac-nhan-pa' | 'them-pa' }
     | { loai: 'tab'; tab: 'y-thuc'; sub?: 'phoi-hop' }
     /** GD-7a: panel Nhập điểm lớp × tuần của việc (như Công việc: `classId` · `luot` · `kns` · `tuanThi`). */
-    | { loai: 'nhap-diem'; classId: number; luot: string; kns: string[]; tuanThi: string | null }
-    /** GD-7a: panel Trả lời tình hình (`viecId` = id câu hỏi, như `yt_hoi_tinh_hinh:{id}` của Công việc). */
-    | { loai: 'tinh-hinh'; viecId: number }
+    | { loai: 'nhap-diem'; classId: number; luot: string; kns: string[]; tuanThi: string | null; periodId: number | null; kind: string | null; soBai: number | null }
+    /** GD-7a: panel Trả lời tình hình (`viecId` = id câu hỏi, như `yt_hoi_tinh_hinh:{id}` của Công việc) · GD-7: `cauHoi` = câu TVV hỏi (đầu panel). */
+    | { loai: 'tinh-hinh'; viecId: number; cauHoi: string }
     | { loai: 'duong'; href: string } | null;
 };
 
@@ -208,13 +208,13 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       the: [...(v.kns ?? []).map((k) => ({ chu: tenMon(n.chuongTrinh, k) })), ...(v.contextLabel ? [{ chu: v.contextLabel }] : []),
         ...(nhieu ? [kem('{n} bài', { n: v.soBai! })] : [])],
       kyNang: v.kn ?? null, caseId: null, paId: null, han: v.due, tone: 'info', quaHan: v.urgency === 'overdue', nguoiId: p.userId, nut: 'Nhập điểm',
-      mo: v.classId && v.luot ? { loai: 'nhap-diem', classId: v.classId, luot: v.luot, kns: v.kns ?? [], tuanThi: v.tuanThi ?? null } : { loai: 'duong', href: v.href } });
+      mo: v.classId && v.luot ? { loai: 'nhap-diem', classId: v.classId, luot: v.luot, kns: v.kns ?? [], tuanThi: v.tuanThi ?? null, periodId: v.periodId ?? null, kind: v.kind ?? null, soBai: v.soBai ?? null } : { loai: 'duong', href: v.href } });
   }
   for (const v of viecHoiTinhHinhCuaToi(p, { today, tatCa: false, branchId: null, studentId: sid })) {
     const hoi = String(v.due ? addDays(v.due, -2) : '');   // hạn = ngày hỏi + 2 (`hanHoiTinhHinh`)
     ds.push({ key: v.key, loai: 'tinh-hinh', chu: 'Trả lời tình hình', the: [{ chu: 'TVV hỏi' }, ...(hoi ? [{ chu: `${hoi.slice(8, 10)}/${hoi.slice(5, 7)}` }] : [])],
       kyNang: null, caseId: null, paId: null, han: v.due ?? null, tone: 'info', nguoiId: p.userId, nut: 'Trả lời',
-      mo: v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId } : { loai: 'duong', href: v.href } });
+      mo: v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') } : { loai: 'duong', href: v.href } });
   }
 
   /* Tên + vai người làm — MỘT câu: người có việc + GVCN lớp đang học (Báo PH / Mini Test không người dạy dùng `-1` = GVCN). */

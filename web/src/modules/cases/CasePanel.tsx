@@ -1,7 +1,6 @@
 import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { DongQuyChe, KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhatKyPa, VachBuoi } from './FormPa.tsx';
-import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
@@ -12,7 +11,7 @@ import { NutChon, Outcome } from '../../ui/ui.tsx';
 import { BangChung } from '../../ui/BangChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
-import { LinkLuot, MuiTen, NhanTamDung, type LuotCase } from './SkillBoard.tsx';
+import { LinkLuot, NhanTamDung, type LuotCase } from './SkillBoard.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
@@ -26,7 +25,8 @@ import {
 import { DongXinYKien } from './DongXinYKien.tsx';
 import { DongBuoiTutor } from './BuoiTutorO.tsx';
 import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
-import { quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
+import { nhatKyPa, quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
+import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
 import { CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
@@ -403,27 +403,23 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
       {paMuc}
       {ketLuan}
       <div className="muc !pt-2">
-        {lichSu.length > 0 && (
-          /* GD-6 (L1 của GD-4c, H4): dáng gập chung "Lịch sử · n" (`LichSuGap`); dòng giữ nội dung riêng của Case (badge, Xoá kết quả, Sửa xem lại),
-             lưới dòng theo `.ls-ds` (giờ · việc · nút). */
-          <LichSuGap so={lichSu.length} tieuDe={t('Lịch sử')}>
-            <ol className="ls-ds">
+        {/* GD-7 (GD-4c H4 — một kiểu lịch sử): gập "Lịch sử · n" chung; dòng giữ nội dung riêng của Case (điểm, SOS, Xoá kết quả, sửa xem lại). */}
+        <LichSuGap so={lichSu.length} className="mb-2">
+            <ol className="m-0 list-none space-y-2 p-3" style={{ borderColor: 'var(--line)' }}>
               {lichSu.map((m) => (
-                <li key={m.key}>
-                  <time>{ngan(m.on)}</time>
-                  <span className="min-w-0 break-words">
-                    <span className="flex min-w-0 flex-wrap items-center gap-1.5 text-[color:var(--text)]">{m.tieuDe}{m.badge}</span>
-                    {m.dot && <span className="phu">{m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</span>}
-                    {m.than}
-                    {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
+                <li key={m.key} className="text-[13px]">
+                  <span className="block text-xs tabular-nums text-slate-400">{ngan(m.on)}{m.dot ? <> · {m.dotHref ? <Link to={m.dotHref} className="link">{m.dot}</Link> : m.dot}</> : ''}</span>
+                  <span className="flex items-start gap-1.5 text-slate-200">
+                    <span className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5">{m.tieuDe}{m.badge}</span>
+                    {m.xoaKq && <NutXoaKetQua f={m.xoaKq.f} onXong={lamMoi} />}
                   </span>
-                  <span>{m.xoaKq && <NutXoaKetQua f={m.xoaKq.f} onXong={lamMoi} />}</span>
+                  {m.than}
+                  {m.suaXemLai && <SuaXemLai f={m.suaXemLai} />}
                 </li>
               ))}
             </ol>
-          </LichSuGap>
-        )}
-        <div className="border-t pt-1" style={{ borderColor: lichSu.length ? 'var(--line)' : 'transparent' }}>
+        </LichSuGap>
+        <div className="pt-1">
           <BangChung ownerType="sos_case" ownerId={data.id} canEdit={vw.canEdit} tieuDe={`${t('Bằng chứng')} · ${bc.data?.rows.length || t('chưa có')}`} onChanged={bc.reload} />
         </div>
       </div>
@@ -831,7 +827,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   );
 
   const tt = (ma: typeof sua) => sua === ma;
-  const fld = (<>
+  const fld = (
     <dl className="fld">
       <dt>{t('Loại')}</dt>
       <dd><span>{tenLoai}</span>{iv.preset && <span className="the-phu nhat">{t('theo quy chế')}{iv.mocChu ? ` · ${dich(iv.mocChu)}` : ''}</span>}
@@ -882,9 +878,12 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         </> : <span className="text-slate-300">{t('Chưa có')}{hanGhi ? ` · ${t('hạn {ngay}', { ngay: ngan(iv.actionDue) })}` : ''}</span>}</dd>
       </>}
     </dl>
-    {/* GD-6 (L1 của GD-4c, H4): nhật ký PA = MỘT kiểu lịch sử gập "Nhật ký PA · n" (0 dòng không vẽ — lời 40). */}
-    <NhatKyPa pa={iv} ketQua={ketQua} />
-  </>);
+  );
+  /* GD-7 (GD-4c H4): Nhật ký PA = gập "Nhật ký · n" chung, dưới các trường của PA. */
+  const soNhatKy = nhatKyPa(iv, ketQua, homNay).length;
+  const nhatKy = (
+    <LichSuGap so={soNhatKy} tieuDe={t('Nhật ký')} className="mt-2"><div className="px-3 py-2"><NhatKyPa pa={iv} ketQua={ketQua} /></div></LichSuGap>
+  );
 
   const xoaNut = theXoa ? (
     <span className="cho-xoa w-full"><span><b>{t('Chờ QL duyệt xoá PA')}</b> · {t('gửi {ngay}', { ngay: ngan(theXoa.taoLuc) })} · {t('PA vẫn chạy')}</span>
@@ -923,7 +922,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
             {theXoa && vw.canApprove && <div className="pt-2.5"><TheYeuCau gon yc={theXoa} onXong={lamMoi} /></div>}
             {vw.canApprove && iv.yeuCau && (iv.yeuCau.loai === 'de_xuat_pa' || iv.yeuCau.loai === 'giu_pa_gv') && <div className="pt-2.5"><TheYeuCau gon yc={iv.yeuCau} onXong={lamMoi} /></div>}
             <div className="pt-1"><DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={lamMoi} /></div>
-            {fld}
+            {fld}{nhatKy}
             {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
             {choDuyet && !(vw.canApprove && iv.yeuCau) && (
               <p className="m-0 text-xs text-slate-400">{t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}</p>

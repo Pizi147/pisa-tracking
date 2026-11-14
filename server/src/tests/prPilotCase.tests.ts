@@ -77,7 +77,8 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
   check('6b-2 · Case A: đầu mục Case · Phương án · Kết luận · Lịch sử; không còn "Vấn đề" / "Ghi nhận"; nhãn Mô tả; câu ai làm được', () => {
     const cp = docSach('web/src/modules/cases/CasePanel.tsx');
     const than = cp.slice(cp.indexOf('export function ThanCase'), cp.indexOf('function ThePa'));
-    for (const x of ['<p className="muc-h">Case</p>', "t('Phương án')", "t('Kết luận')", "t('Lịch sử')", "t('Mô tả')"]) assert(than.includes(x), `thiếu ${x}`);
+    /* GD-7: "Lịch sử · n" = gập chung `LichSuGap` (tiêu đề mặc định "Lịch sử", GD-4c H4). */
+    for (const x of ['<p className="muc-h">Case</p>', "t('Phương án')", "t('Kết luận')", '<LichSuGap so={lichSu.length}', "t('Mô tả')"]) assert(than.includes(x), `thiếu ${x}`);
     assert(!/t\('Vấn đề'\)|Ghi nhận/.test(than), 'còn "Vấn đề" / "Ghi nhận"');
     /* PTA rà #632 (N8): Nguyên nhân chỉ nhóm; Mô tả = câu của nguyên nhân chính (cùng nguồn #626) — không "Chưa có" khi đã có câu. */
     /* Chủ SP 04/11 (mockup audit 03/11 `.tag`): Nguyên nhân = thẻ từng nhóm. */

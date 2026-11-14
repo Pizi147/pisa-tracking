@@ -327,7 +327,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('GD-6 · đầu trang: "+ Task" (lopId + em của lớp đã nạp, mục theo quyền) thay "+ Case"; bản nổi 375; lớp đã kết thúc không nút', () => {
     const s = doc('web/src/modules/classes/DauTrangLop.tsx');
     assert(!/>\+ Case<\/button>/.test(s), 'còn nút "+ Case" ở đầu hồ sơ lớp');
-    assert(/<NutTask noi="dau" lopId=\{data\.id\} loai=\{loaiTask\} dsEm=\{tomTat\?\.emTask\} \/>/.test(s), 'thiếu "+ Task" đầu trang');
+    assert(/<NutTask noi="dau" lopId=\{data\.id\} muc=\{loaiTask\} dsEm=\{tomTat\?\.emTask\} \/>/.test(s), 'thiếu "+ Task" đầu trang');
     assert(/<NutTask noi="noi" lopId=\{data\.id\}/.test(s), 'thiếu "+ Task" nút nổi 375');
     assert(/loaiTask\.length > 0 && data\.status !== 'finished'/.test(s), '[XM-9] lớp đã kết thúc vẫn có "+ Task"');
     assert(/canReportCase \? \['case'/.test(s) && /canRecordViolation \? \['vi-pham'/.test(s), 'mục "+ Task" không theo quyền');
@@ -354,9 +354,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/qua \? 'text-late' : 'text-slate-100'/.test(lt), 'thẻ môn quá hạn phải tô màu');
     assert(!/quaHan\.has\(k\)[^\n]*⚠/.test(b) && !/\{qua &&[^\n]*⚠/.test(lt), '⚠ cạnh quá hạn ở thẻ kỹ năng / môn (V22 chỉ màu)');
     const c = doc('web/src/modules/cases/CasePanel.tsx');
-    assert(/<LichSuGap so=\{lichSu\.length\} tieuDe=\{t\('Lịch sử'\)\}>/.test(c) && !/<details className="group">/.test(c), 'lịch sử Case chưa dùng LichSuGap');
-    const p = doc('web/src/modules/cases/FormPa.tsx');
-    assert(/<LichSuGap so=\{dong\.length\} tieuDe=\{t\('Nhật ký PA'\)\}/.test(p) && /<DsLichSu dong=/.test(p), 'Nhật ký PA chưa dùng LichSuGap + DsLichSu');
+    /* Sau merge GD-7 (#1653): CasePanel đã gập lịch sử + nhật ký PA bằng `LichSuGap` — giữ bản GD-7. */
+    assert(/<LichSuGap so=\{lichSu\.length\}/.test(c) && /<LichSuGap so=\{soNhatKy\}/.test(c) && !/<details className="group">/.test(c), 'lịch sử Case / nhật ký PA chưa dùng LichSuGap');
   });
   check('GD-6 · đầu trang: dải chỉ số chung + badge lớp cuối dải; không TVV; GV không badge "việc quá hạn của lớp"; tab Ý thức có thang vạch', () => {
     const s = doc('web/src/modules/classes/DauTrangLop.tsx');
