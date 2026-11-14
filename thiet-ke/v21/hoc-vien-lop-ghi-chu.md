@@ -35,7 +35,7 @@ PTA Overhaul hiểu (đã áp ở K4, K5, K8b; ý bỏ Target được lời 38 
 | Đã thi, chờ KQ | Kỳ thi (ngày · nơi · có KQ khoảng) · KQ thi thật "Chưa có" · Phụ trách · Làm tiếp (**Ghi kết quả** · + Ghi chú · Lịch sử · n) | MT gần nhất, Hỗ trợ, Test sắp tới |
 | Có KQ (chờ bước tiếp · xong) | KQ thi thật so Target (Overall + 4 kỹ năng) · Kỳ thi (ngày · nơi · ngày ghi KQ) · Phụ trách · Làm tiếp (**Chọn bước tiếp** khi chưa chọn · + Ghi chú · Lịch sử · n) | MT gần nhất, Hỗ trợ, Test sắp tới |
 
-Cùng lý do, áp luôn trên hàng: em đã thi thật thì ô **MT gần nhất** ghi "—" (KQ thi thật thay chỗ MT; Target vẫn giữ). Thẻ 375 của em đã thi: dòng 2 chỉ Target. SOS giữ (Case còn mở tới khi chọn bước tiếp).
+Trên hàng: session đề xuất ô MT gần nhất của em đã thi ghi "—"; **chủ SP trả lời: "Hiện lại MT"** → hàng giữ MT gần nhất cho mọi em (cả 375); chỉ phần mở của em đã thi bỏ MT gần nhất và Test sắp tới.
 
 **PTA Overhaul rà 15/11 (chuyển tiếp, không phải lời chủ SP):** ĐẠT R6.1–R6.8. [XM-1] để chủ SP quyết ở mockup · [XM-3] đồng ý · [XM-4] đồng ý · [XM-2] KHÔNG đổi quyền: "Lưu trữ ›" chỉ hiện với vai hôm nay vào được Lưu trữ · 375 thêm vòng chữ đầu tài khoản + badge Công việc ở thanh dưới · đo tâm ✕ / ⋯ / mũi tên ≤ 1 px. Đã sửa cả ba (mục 4, 5, 8).
 
