@@ -377,12 +377,15 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
             onSave={(p, o) => luu(k, p, o)} onDau={(bat, ht) => dau(k, bat, ht)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
         )}
-        {s && (s.nhanXetDuoc ?? canEdit) && !dung && (
-          <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
-            phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
-            nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: k }} onLuu={(v) => nhanXet(k, v)} />
-        )}
-        {s && menuO(k, true)}
+        {/* NHAP-DIEM-b: Nhận xét + ⋯ thẳng hàng ô nhập (cao 44) — không theo giữa khối khi dưới ô có dòng "Đạt · %". */}
+        <span className="inline-flex min-h-11 items-center gap-1 self-start">
+          {s && (s.nhanXetDuoc ?? canEdit) && !dung && (
+            <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
+              phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
+              nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: k }} onLuu={(v) => nhanXet(k, v)} />
+          )}
+          {s && menuO(k, true)}
+        </span>
         {hopO}{lichSuO}
       </div>
     </DongHv>

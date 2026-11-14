@@ -149,8 +149,10 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
   let catVua = false;
   const hoanTacVang = async () => {
     try {
-      for (const o of skill === 'writing' ? ['writing1', 'writing2'] : [skill]) await api.put(`/attempts/${attemptId}/scores/${o}`, { noShow: false });
-      invalidate('/attempts'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work');
+      /* NHAP-DIEM-b: lớp thường cũng Hoàn tác (= gỡ "-", trả lịch tuần cũ) như gõ "-" ở lưới. */
+      if (laThuong) await api.put(`/regular/attempts/${attemptId}/scores/${skill}`, { noShow: false });
+      else for (const o of skill === 'writing' ? ['writing1', 'writing2'] : [skill]) await api.put(`/attempts/${attemptId}/scores/${o}`, { noShow: false });
+      invalidate('/attempts'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/regular');
       onDone();
     } catch (e: any) { toast.push('error', e.message); }
   };
@@ -163,7 +165,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
       const cau = await goi(!!canhBao);
       invalidate('/attempts'); invalidate('/tong-quan'); invalidate('/classes'); invalidate('/ke-hoach-test'); invalidate('/my-work'); invalidate('/cycles');
       const traLai = () => void guiHuyDiem(toast, { attemptId, skill, mon, tenHv: hocVien, huy: false, onDone });
-      if (vangVua) thongBaoVang(toast, `${attemptId}:${skill}`, mon, hocVien ?? undefined, vangVua, catVua ? traLai : laThuong ? undefined : () => void hoanTacVang());
+      if (vangVua) thongBaoVang(toast, `${attemptId}:${skill}`, mon, hocVien ?? undefined, vangVua, catVua ? traLai : () => void hoanTacVang());
       else toast.push('ok', cau);
       onDone(); dong();
     } catch (e: any) {

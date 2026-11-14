@@ -9,10 +9,14 @@ type Toast = { push: (kind: 'ok' | 'error', text: string, opts?: { key?: string;
  * (Mock, MT0, lớp thường; máy chủ `huyDiemKn`). Huỷ có Hoàn tác 10 giây; sau đó vẫn "Khôi phục" ở ⋯. Ô đã có điểm mới khi Khôi phục → máy chủ hỏi
  * (`api` mở hộp hỏi). Cùng một hàm cho hồ sơ Mock, hộp một đợt, lưới lớp thường và trang bài lớp thường.
  */
+const dangGui = new Set<string>();   // chống bấm đúp (menu ⋯, Hoàn tác, Khôi phục) — mọi nơi gọi
 export async function guiHuyDiem(toast: Toast, o: { attemptId: number; skill: string; mon: string; tenHv?: string | null; huy: boolean; onDone?: () => void }) {
+  const khoa = `${o.attemptId}:${o.skill}`;
+  if (dangGui.has(khoa)) return;
+  dangGui.add(khoa);
   try {
     await api.post(`/attempts/${o.attemptId}/skills/${o.skill}/huy-diem`, { huy: o.huy });
-  } catch (e: any) { toast.push('error', e.message); return; }
+  } catch (e: any) { toast.push('error', e.message); return; } finally { dangGui.delete(khoa); }
   invalidate('/regular'); invalidate('/classes'); invalidate('/attempts'); invalidate('/students'); invalidate('/my-work'); invalidate('/ke-hoach-test');
   o.onDone?.();
   const ai = o.tenHv ? ` · ${o.tenHv}` : '';

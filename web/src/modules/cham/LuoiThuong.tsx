@@ -19,7 +19,7 @@ import { useTrangThaiLuuO } from '../../ui/SaveState.tsx';
 import { ODiemThuong, laTuChoi, type SaveOpts } from '../fasttrack/ScoreEntry.tsx';
 import { caseStatusLabel } from '../../lib/format.ts';
 import {
-  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, PERMISSIONS, duongDotTest, duongHoSoHocVien, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
+  CHU_THAO_TAC, CHUONG_TRINH_KHONG_CHIA_MON, HOAN_TAC_VANG_MS, PERMISSIONS, duongDotTest, duongHoSoHocVien, nhanBai, nhanGoiY, ketQuaThuong, ngay, tenMon, tenMonNgan, thaoTacKyNang, trangThaiTT, tuanDaQua, tuanLich,
   type AttemptKind, type ThaoTac,
 } from '@shared/domain/index.ts';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -172,6 +172,13 @@ export function useLuuThuong(attemptId: number, onReload: () => void, ct: string
       if ('noShow' in body) ds.forEach(invalidate); else invalidateGop(...ds);
       tt.thanhCong(skill);
       onReload();
+      /* NHAP-DIEM-b: xoá một điểm đã có (ô trống + Lưu) — điểm được cất; Hoàn tác 10 s = Khôi phục (điểm, người nhập, ngày nhập đầu về đủ). */
+      if (opts.xoaDiem) {
+        toast.push('ok', t('Đã xoá điểm {mon}{ai}', { mon: tenMonNgan(ct, skill), ai: tenHv ? ` · ${tenHv}` : '' }), {
+          key: `xoa-diem:${attemptId}:${skill}`, ms: HOAN_TAC_VANG_MS, demLui: true,
+          hanhDong: { nhan: t('Hoàn tác'), onBam: () => void guiHuyDiem(toast, { attemptId, skill, mon: tenMonNgan(ct, skill), tenHv, huy: false, onDone: onReload }) },
+        });
+      }
       return r ?? {};
     } catch (e: any) {
       /* Hộp lý do đang mở: câu lỗi hiện trong hộp, ô không bật "Lưu lại". */
@@ -491,6 +498,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
             onSave={(p, o) => luu(k, p, o)}
             onDau={(bat, ht) => dau(k, bat, ht)}
             onLoiNhap={(c) => loiNhap(k, c)}
+            moTaId={dung ? `tt-${row.attemptId}-${k}` : undefined}
             inputRef={(el) => register(ci, el)}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === 'ArrowDown') { e.preventDefault(); onMove(rowIndex, ci, 1, e.key === 'Enter'); }
@@ -523,7 +531,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
                 title={t('{tenMon}: hạn chấm {ngay} đã qua', { tenMon: tenMon(sheet.programme.code, k), ngay: ngay(s!.deadline, homNay) })}>{quaHan}</div>
             )}
             {/* NHAP-DIEM-b: môn vắng / "Đã huỷ" vẫn nhập được tại ô (máy chủ đổi về đã làm bài) — trạng thái là dòng chữ mờ dưới ô (V22, không ⚠). */}
-            {dung && <div className="text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDung}</div>}
+            {dung && <div id={`tt-${row.attemptId}-${k}`} className="text-xs leading-4 text-slate-400" data-phu-odiem="">{chuDung}</div>}
           </OBang>
         );
       })}

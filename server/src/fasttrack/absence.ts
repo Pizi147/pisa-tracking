@@ -200,7 +200,8 @@ function xuLyVangMotKyNang(conn: any, actor: number | null, attempt: any, row: a
  */
 function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, moveNo: number, lyDo?: string): MoveOutcome {
   const skill = row.skill as AssessedSkill;
-  conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = 1, absent_from_no_show = 0, updated_at = ? WHERE id = ?`).run(nowIso(), row.id);
+  /* NHAP-DIEM-b: `huy_vang` 1 = huỷ do vắng 2 lần (N38) · 2 = Huỷ điểm tay (`lyDo`) — cùng trạng thái "Đã huỷ", chỉ khác chữ lý do trên màn. */
+  conn.prepare(`UPDATE attempt_skills SET sit_status = 'cancelled', huy_vang = ?, absent_from_no_show = 0, updated_at = ? WHERE id = ?`).run(lyDo ? 2 : 1, nowIso(), row.id);
   logSchedule(attempt.id, { action: lyDo ? 'skill_huy_tay' : 'skill_cancelled_absence', field: skill, oldValue: row.period_code, newValue: null, reason: lyDo ?? `Vắng lần ${moveNo}`, actor });
   recomputeCompletionWeek(attempt.id, actor);
   writeAudit({

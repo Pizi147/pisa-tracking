@@ -144,7 +144,7 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     assertThrows(() => absence.huyDiemKn(gvS(), e.fin, 'listening', true), /người nhập được ô/, 'GV ngoài môn 403');
     xoaNho(); let s0 = soCauSql(); absence.huyDiemKn(P.mbManager, e.fin, 'listening', true); const nHuy = soCauSql() - s0;
     assert(nHuy <= TRAN_GHI_LO.huyDiem, `trần câu Huỷ môn: ${nHuy} > ${TRAN_GHI_LO.huyDiem}`);
-    assert(ky(e.fin, 'listening').sit === 'cancelled' && ky(e.fin, 'listening').huy === 1, `Final huỷ: ${JSON.stringify(ky(e.fin, 'listening'))}`);
+    assert(ky(e.fin, 'listening').sit === 'cancelled' && ky(e.fin, 'listening').huy === 2, `Final huỷ: ${JSON.stringify(ky(e.fin, 'listening'))}`);
     xoaNho();
     const o = regular.regularSheet(P.mbManager, LOP).rows.find((r: any) => r.attemptId === e.fin)?.skillSchedule.find((x: any) => x.skill === 'listening');
     assert(o?.progress === 'cancelled' && o.huyTay && !o.overdue && !o.deadline, `lưới lớp thường hết việc: ${JSON.stringify(o)}`);

@@ -195,7 +195,7 @@ export function chipDongKyNang(o: OKyNang, homNay: string, ct?: string | null, c
  */
 export function oKyNangTuLich(r: {
   required: boolean; periodId: number | null; weekStart: string | null; weekEnd?: string | null; sitStatus: string; scored: boolean;
-  pendingMove: unknown; absenceMoveCount: number; deadline: string | null; doiTu: string | null; huyVang?: boolean;
+  pendingMove: unknown; absenceMoveCount: number; deadline: string | null; doiTu: string | null; huyVang?: boolean; huyTay?: boolean;
 }, khongDuThi = false): OKyNang {
   const choDuyet = !!r.pendingMove;
   return {
@@ -206,6 +206,7 @@ export function oKyNangTuLich(r: {
     tuan: r.weekStart, periodId: r.periodId, doiTu: r.doiTu, batBuoc: r.required, khoa: null,
     sit: r.sitStatus, tuanKetThuc: r.weekEnd ?? null, choDuyet,
     ...(r.huyVang ? { huyVang: true } : {}),
+    ...(r.huyTay ? { huyTay: true } : {}),
     ...(khongDuThi ? { khongDuThi: true } : {}),
     hanCham: r.deadline,
   };

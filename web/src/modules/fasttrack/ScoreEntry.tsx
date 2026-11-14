@@ -101,7 +101,8 @@ export type SavePatch = {
 };
 
 /** Tuỳ chọn của một lần lưu. `nem` = ném lỗi ra cho nơi gọi (hộp lý do hiện câu lỗi ngay tại ô) thay vì chỉ toast. */
-export type SaveOpts = { nem?: boolean };
+/** `xoaDiem` (NHAP-DIEM-b): lần lưu này xoá một điểm đã có (ô trống + Lưu) — nơi lưu báo kèm Hoàn tác (= Khôi phục bản cất). */
+export type SaveOpts = { nem?: boolean; xoaDiem?: boolean };
 
 
 /** Ô KHÔNG nhận lệnh "-" mới: đang mang dấu của chính tuần này. "-" đã chốt mà bài đã dời (`doiSang`) là dấu tuần cũ — tuần mới vẫn báo vắng được. */
@@ -395,7 +396,7 @@ const SO_NGUYEN = /^\d+$/;
  */
 export function ODiemThuong({
   cell, tongCot, canEdit, onSave, onDau, inputRef, onKeyDown, dienTong = null, tenMon = t('Môn'), tenHv,
-  lon = false, tongLaySan = false, chiChuKetQua = false, onLoiNhap,
+  lon = false, tongLaySan = false, chiChuKetQua = false, onLoiNhap, moTaId,
 }: {
   cell: {
     diem: number | null; tong: number | null; tuanDoiTu: string | null; tuanHienTai: string | null;
@@ -421,6 +422,8 @@ export function ODiemThuong({
   chiChuKetQua?: boolean;
   /** C9: báo câu lỗi nhập (hoặc `null`) lên dòng — dòng đếm vào "n ô chưa lưu". */
   onLoiNhap?: (cau: string | null) => void;
+  /** NHAP-DIEM-b: id dòng trạng thái nơi gọi vẽ dưới ô ("Đã huỷ" / vắng) — trình đọc màn hình đọc kèm ô nhập. */
+  moTaId?: string;
 }) {
   const toast = useToast();
   const idLoi = useId();
@@ -447,6 +450,8 @@ export function ODiemThuong({
   const lanDaDien = useRef(dienTong?.lan ?? 0);
   /* Ô trái vừa được GÕ thật — ↓ điền tổng hay con trỏ đi qua không bao giờ tính là gõ lại "-". */
   const goDiem = useRef(false);
+  /* NHAP-DIEM-b: chỉ cú bấm VÀO ô (lần focus đầu) giữ chọn cả số; bấm tiếp đặt con trỏ như thường. */
+  const vuaVao = useRef(false);
   const tongRef = useRef<HTMLInputElement>(null);
   /* PR-BV (L2): ô "-" của tuần cũ khi tuần mới đã có điểm — chỉ nhận xoá. */
   const [conDau, setConDau] = useState(true);
@@ -520,7 +525,7 @@ export function ODiemThuong({
     const total = tt === '' ? null : Number(tt);
     setCanhBao(null);
     if (score === cell.diem && total === cell.tong) { setDirty(false); return; }
-    return gui(() => onSave({ score, total }));
+    return gui(() => onSave({ score, total }, score === null && cell.diem !== null ? { xoaDiem: true } : undefined));
   };
   const huy = () => { setDiem(diemDaLuu()); setTong(tongDaLuu()); setDirty(false); setCanhBao(null); goDiem.current = false; };
 
@@ -656,11 +661,11 @@ export function ODiemThuong({
       onBlur={(e) => { if (!cap.current?.contains(e.relatedTarget as Node)) void commit(); }}>
       <input ref={goLai.gan}
         className={`${oSo} ${canhBao?.o === 'diem' ? 'border-rose-400/70' : ''} ${dangDau ? 'text-slate-400' : ''} ${coDiem && !dirty ? `font-bold ${cell.ketQua === 'fail' ? 'text-kq-duoi' : cell.ketQua === 'pass' ? 'text-kq-bang' : ''}` : ''}`}
-        aria-invalid={canhBao?.o === 'diem' ? true : undefined} aria-describedby={canhBao?.o === 'diem' ? idLoi : undefined}
+        aria-invalid={canhBao?.o === 'diem' ? true : undefined} aria-describedby={[canhBao?.o === 'diem' ? idLoi : null, moTaId].filter(Boolean).join(' ') || undefined}
         inputMode="numeric" value={diem} disabled={busy} title={titleDiem}
         /* NHAP-DIEM-b: ô đã có điểm — vào ô là chọn cả số, gõ là thay (như hộp sửa cũ); bấm chuột không bỏ chọn. */
-        onFocus={coDiem ? (e) => e.currentTarget.select() : undefined}
-        onMouseUp={coDiem && !dirty ? (e) => e.preventDefault() : undefined}
+        onFocus={coDiem ? (e) => { e.currentTarget.select(); vuaVao.current = true; } : undefined}
+        onMouseUp={(e) => { if (vuaVao.current) { vuaVao.current = false; e.preventDefault(); } }}
         aria-label={t('{tenMon} — số câu đúng. Gõ "-" nếu em không làm bài', { tenMon })}
         onChange={(e) => {
           const v = e.target.value.trim();

@@ -96,6 +96,8 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     }
     assert(d.thaoTacKyNang('dang-thi', { ...gv, gvcn: false }).menu.includes('bao-vang'), 'GV môn có Vắng ở Mock');
     assert(d.CHU_THAO_TAC['khoi-phuc-diem'] === 'Khôi phục', 'một tên: Khôi phục');
+    /* NHAP-DIEM-b: Huỷ điểm tay (`huy_vang = 2`) không mang chữ "vắng 2 lần" / "QL từ chối dời". */
+    assert(d.lyDoHuy({ huyTay: true, sit: 'cancelled' }) === null && d.lyDoHuy({ huyVang: true }) === 'vắng 2 lần' && d.lyDoHuy({ sit: 'cancelled' }) === 'QL từ chối dời', 'lý do huỷ');
   });
 
   check('NDT-1 · huỷ Mock L có điểm → "Đã huỷ", điểm cất; không còn nợ ở scoreDebt / my-work / việc HV / Lịch Test (xoá ô thường thì còn)', () => thu(() => {
@@ -110,7 +112,7 @@ export async function runPrNhapDiemTuDoTests(t: YThucTestKit) {
     const nHuy = soCauSql() - s0;
     assert(nHuy <= TRAN_GHI_LO.huyDiem, `trần câu Huỷ điểm: ${nHuy} > ${TRAN_GHI_LO.huyDiem}`);
     const k = ky(aid, 'listening');
-    assert(k.sit_status === 'cancelled' && k.huy_vang === 1 && k.ws === WS, `kỹ năng Đã huỷ, giữ tuần: ${JSON.stringify(k)}`);
+    assert(k.sit_status === 'cancelled' && k.huy_vang === 2 && k.ws === WS, `kỹ năng Đã huỷ, giữ tuần: ${JSON.stringify(k)}`);
     assert(o(aid, 'listening').raw_score === null && o(aid, 'listening').band === null, 'ô trống');
     const ban = banMo(aid);
     assert(ban.length === 1 && JSON.parse(ban[0].diem_json)[0].raw_score === 30, `điểm cất: ${JSON.stringify(ban)}`);

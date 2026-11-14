@@ -57,7 +57,8 @@ export function luatVangThuong(tuanThi: string, homNay: string): { khongDuThi: t
  * LÝ DO "ĐÃ HUỶ" MỘT KỸ NĂNG MT (Rulebook §21.4 T5, UI-CHAM-TEST): vắng lần 2 (`huyVang`) → "vắng 2 lần" · huỷ khác của kỹ năng (thẻ dời cũ bị
  * từ chối / hết hạn — dữ liệu trước N38) → "QL từ chối dời". MT cũ "-" không phải huỷ (Không dự thi, N38 L3). Cả lượt huỷ → null.
  */
-export function lyDoHuy(o: { huyVang?: boolean; sit?: string | null }): string | null {
+export function lyDoHuy(o: { huyVang?: boolean; huyTay?: boolean; sit?: string | null }): string | null {
   if (o.huyVang) return t('vắng 2 lần');
+  if (o.huyTay) return null;   // NHAP-DIEM-b: Huỷ điểm tay — chỉ "huỷ"
   return o.sit === 'cancelled' ? t('QL từ chối dời') : null;
 }
