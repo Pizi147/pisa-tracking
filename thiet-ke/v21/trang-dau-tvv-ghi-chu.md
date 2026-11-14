@@ -6,6 +6,8 @@ Soát tự động cả Tối và Sáng: không phần tử nào tràn / ra ngo�
 Đã xem màn thật trước khi vẽ (seed, cổng 4340 / 5340, TVV "Phan Mai" Monbay): Tổng quan TVV 5 ô to · Công việc 2 tab (Báo PH · Bổ sung hồ sơ) + khung phải trống "Chọn một việc ở danh sách" · panel Báo PH · Học viên & Lớp "HV của tôi". Đã tắt tiến trình của mình.
 Mã luật (cột "Phục vụ") theo `luat/0-luat-core-mot-trang.md` và `luat/3-y-thuc-phoi-hop-tvv.md`.
 
+**Chủ SP DUYỆT mockup ④ (15/11, trong session mockup ④):** "Duyệt mockup rồi nhé". Code theo mockup này + mục 0 dưới đây; các [XM] mục 3 làm theo đề xuất, trừ khi chủ SP nói khác.
+
 ## 0. Chủ SP 14/11 sáng — lời 24 (PTA Overhaul chuyển)
 
 > "Kể cả những trường hợp chỉ có 1 học sinh, thì vẫn để mọi thứ đồng bộ theo form ở bảng công việc: Lớp - Tên công việc ngắn gọn như hiện tại."
