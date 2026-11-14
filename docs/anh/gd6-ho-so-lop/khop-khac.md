@@ -38,13 +38,22 @@ Dữ liệu seed 14/09 (tên bịa của bộ demo), GVCN tài khoản 7 · lớ
 | 15 | Tab Ý thức & Phối hợp: lời 28 (Không cần theo dõi / Xác nhận xử lý là NÚT — GD-4a đã làm), thang WL nổi không chữ (lời 36) | `ThangEm` thêm `ThangVach` (cùng hồ sơ HV / panel Xác nhận xử lý) | y-thuc | KHỚP |
 | 16 | Lịch sử Case / Nhật ký PA (L1 của GD-4c) | `CasePanel` "Lịch sử · n" → `LichSuGap` (lưới `.ls-ds`, giữ nút Xoá kết quả / Sửa xem lại); `NhatKyPa` → `LichSuGap` + `DsLichSu` | — | KHỚP |
 
-**KHỚP 16 / 16 = 100 %.** Chỗ mockup vẽ ⚠ cạnh hạn / quá hạn (chip Việc cần làm, thẻ kỹ năng "⚠ Có Case", "⚠ 2 quá hạn"): **KHÁC theo V22** (hạn chỉ màu — chủ SP 14/11, mockup không sửa), không tính lệch.
+| 17 | (PTA rà #1654 ý 1) chip phạm vi lớp "loại · số" — "Chờ chấm · 21 ›", "Chờ duyệt · 8 ›", "Quá hạn của lớp · 15 ›" (lời 35) | `badgeLop` nhãn "loại · số" + `so`; MỘT thành phần `ChipBadgeLop` (Nhan.tsx) ở đầu hồ sơ lớp VÀ hộp lớp trang Học viên & Lớp | k1, k3c, k6 | KHỚP |
+| 18 | (ý 2) badge tab là SỐ, đỏ khi có việc quá hạn của tôi (lời 35, V22) — "Ý thức & Phối hợp 1", "Báo cáo PH 1" | `badgeTabLop` (ClassOverviewPage): Ý thức = số em cần xử lý (đỏ khi tôi có việc Ý thức quá hạn), Báo cáo PH = số việc Báo cáo PH của tôi; nguồn `viec-theo-em` đã tải | k1, k6, k8a | KHỚP |
+| 19 | (ý 4) nhãn tab chỉ "Báo cáo PH" (+ số); đợt + hạn ở đầu nội dung tab | bỏ `chip` đợt trong tab; `TabBaoCaoPh` đã ghi "Tháng 9 · hạn 30/09 · bạn còn …" | k5a, k6 | KHỚP |
+| 20 | (ý 3) ⋯ thẻ em 375 trong lề thẻ | `NUT_BA_CHAM` chung (BangHoSoLop, BangDiemLopThuong): 44×44, cách mép thẻ 13 px, lệch dọc −0,5 px | k8a, zoom | KHỚP |
+| 21 | (ý 5) dải "Chốt lộ trình n/m em đã chốt · Cuối khoá ›" + "Bàn giao môn … · Ghi bàn giao" hiện theo bước (lời 40) | máy chủ `daiChuyenLop`: dải chốt lộ trình cho MỌI người xem lớp (trước chỉ QL) từ mốc nhắc tới hết khoá, "7/7 em đã chốt" vẫn hiện (hết hạn chốt); chip "Chưa chốt lộ trình" tự ẩn khi có dải (`boXep`). Dải Bàn giao môn giữ (hiện khi có lệnh chuyển) | k6 | KHỚP |
+| 22 | (ý 6) TVV không dưới tên em ở mọi tab (cả tab Ý thức); "Xem lịch sử" cùng dáng lịch sử gập | bỏ TVV ở `hvEm` (ClassYThucCard); `NutLichSuGap` (LichSuThayDoi.tsx, cùng markup + CSS đầu gập `LichSuGap`) thay `ThanhLs` | y-thuc | KHỚP |
+| 23 | 375 dải số: SOS + chip mức một hàng | CSS `.dai-cs-o` lẻ cuối chiếm hai cột cả khi chip lớp đứng sau | k8a | KHỚP |
+
+**KHỚP 23 / 23 = 100 %.** Chỗ mockup vẽ ⚠ cạnh hạn / quá hạn (chip Việc cần làm, thẻ kỹ năng "⚠ Có Case", "⚠ 2 quá hạn"): **KHÁC theo V22** (hạn chỉ màu — chủ SP 14/11, mockup không sửa), không tính lệch.
 
 ## 2. GIỮ / KHÁC / [XM] — hỏi PTA Plan
 
-- **[XM-B1] Chữ badge lớp**: mockup (lời 35 "chip loại + số") ghi "Chờ chấm · 21 ›", "Chờ duyệt · 8 ›"; web giữ "21 bài chờ chấm ›", "8 chờ duyệt ›" (`badgeLop`, dùng chung trang Học viên & Lớp + > 10 phép kiểm). Đổi chữ = đổi cả hai trang cùng lúc → đề xuất PR riêng nhỏ (một khái niệm một tên).
-- **[XM-K6] Cột 3 tóm tắt môn lớp thường**: mockup "Kết quả PA (Mini Test W4 SEP)"; `/can-ho-tro` không trả kết quả PA / Mini Test → web giữ cột **"Việc tiếp"** (nút việc của Case: Xác nhận Case / Xác nhận PA / Ghi kết quả PA, cùng panel dòng Case cũ — không mất thao tác). Thêm kết quả PA cần máy chủ trả thêm trường (tăng đọc) → hỏi.
-- **[XM-Y1] Tab Ý thức**: "TVV …" dưới tên em ở bảng Tình hình / Ý thức GIỮ (nơi báo tình hình gửi TVV — lời 25 nói bảng Học viên). "Xem lịch sử" ở dòng em tab Ý thức chưa sang `LichSuGap` (ngoài phạm vi L1 PTA giao: Case / Nhật ký PA).
+- **[XM-B1] → PTA chốt, đã làm** (dòng 17): chip lớp "loại · số" một thành phần, áp cả Học viên & Lớp; phép kiểm cũ sửa theo.
+- **[XM-K6] → PTA đồng ý giữ cột "Việc tiếp"**; backlog (PTA ghi): máy chủ trả Kết quả PA / Mini Test cho lớp thường.
+- **[XM-Y1] → PTA chốt, đã làm** (dòng 22). Cột "Đã xử lý · TVV" và bước "Chờ TVV" ở tab Ý thức GIỮ (người làm bước, không phải dòng dưới tên em).
+- Dải "Bàn giao môn": web một dải mỗi môn ("Bàn giao môn L", "Bàn giao môn R" — mỗi môn số em + hạn + nút riêng) thay một dải gộp "L, R" của mockup — số em mỗi môn khác nhau, nút mở đúng bảng môn.
 - **[XM-N1] "Lớp này" nhóm** trong bước chọn em: ô chọn có tìm chung chỉ vẽ nhãn nhóm khi có ≥ 2 nhóm → hồ sơ lớp (một nhóm) không hiện chữ "Lớp này"; dòng phụ = tình trạng em (SOS n / Đạt / Chưa có kết quả).
 - **[XM-P1] Chân panel việc** (K2 vẽ "✓ Đã lưu · Việc tiếp ›"): web theo lời 36 (Đóng · Lưu · "Lưu · việc tiếp ›" / "Việc tiếp ›") — luật mới hơn mockup.
 - GIỮ: Nhập điểm nút thường, "+ Task" nút chính ([XM-4] mockup). ⋯ đầu trang giữ đủ mục (`menuHoSoLop`). Khối gập "Điểm Mock Test của lớp" giữ.
@@ -59,7 +68,9 @@ Dữ liệu seed 14/09 (tên bịa của bộ demo), GVCN tài khoản 7 · lớ
 | Ghi vi phạm · Báo tình hình | tab Ý thức, ⋯ dòng em | + "+ Task" đầu trang; nút cũ GIỮ | 5.4 |
 | ⋯ đầu trang | đủ mục | giữ | |
 | Badge chờ chấm / chờ duyệt / thiếu GV / thiếu TT / "+n" | hàng tiêu đề / dải | cuối dải số, cùng đích | [XM-5] |
-| Badge "n việc quá hạn của lớp ›" | GV + QL | QL giữ; GV bỏ (trùng chip Việc cần làm đỏ) | [XM-2] |
+| Badge "n việc quá hạn của lớp ›" | GV + QL | QL giữ ("Quá hạn của lớp · n ›"); GV bỏ (trùng chip Việc cần làm đỏ) | [XM-2] |
+| Chip lớp ở Học viên & Lớp (bấm → đích cũ) | "21 bài chờ chấm" | "Chờ chấm · 21 ›" (cùng đích, thêm "›" vì đổi trang) | lời 35 |
+| Mở Cuối khoá từ hồ sơ lớp thường (GV) | ⋯ › Cuối khoá… | + nút "Cuối khoá ›" trên dải Chốt lộ trình | ý 5 |
 | Ô số Đạt MT / SOS → panel em | có (GD-4) | giữ | |
 | Mở việc của tôi | 3 ô "Việc của tôi" + "+n việc ở Công việc ›" | chip loại → panel việc đầu "1 / n" + "Việc tiếp ›" đi hết loại | R2.3, bỏ lối tắt trùng |
 | Bấm tên GV → hồ sơ GV | bản đủ | giữ (bấm dòng mở bản đủ) | [XM-3] |
@@ -79,11 +90,12 @@ Dải Việc cần làm không vẽ khi không có việc; "m quá hạn" chỉ 
 | Chỗ | 1440 | 375 |
 |---|---|---|
 | ⋯ đầu trang (so với "Nhập điểm") | 36×36 · lệch dọc 0,3 · ngang 0 | 44×44 · 0,3 · 0 |
-| ⋯ dòng em (so với tên em) | 28×28 · −1,0 · 0 | (thẻ — GD-4c đã đo) |
+| ⋯ dòng em / thẻ em (so với tên em) | 28×28 · −1,0 · 0 | 44×44 · −0,5 · 0 · cách mép thẻ 13 px |
 | ✕ panel việc (so với ô "1 / n") | 36×36 · 0,4 · 0 | 44×44 · 0,4 · 0 |
 
 ## 6. Hướng dẫn "?"
 `shared/huongDan/gv.ts` (Hồ sơ lớp › Các tab: Việc cần làm theo loại, Việc tiếp; phần dưới dòng em + TVV; "+ Task › Case") · `ql.ts` (Tạo Case tay qua "+ Task › Case"). Khoá dịch ở `shared/i18n/en/gd6HoSoLop.ts`.
 
 ## 7. Turso — không thêm request
+Badge tab dùng `viec-theo-em` đã tải (cùng URL với dải Việc cần làm — không thêm lời gọi). Dải "Chốt lộ trình" cho mọi người xem: +1 câu đếm cho ĐÚNG lớp (`demChotTheoLop([lớp])`, ~sĩ số dòng) chỉ khi lớp thường đã tới mốc nhắc chốt (trước: chỉ QL) — ước < 2 000 dòng / ngày toàn hệ.
 Mở hồ sơ lớp: cùng các đường cũ (`/overview`, `/roster`, `/diem-theo-luot`, `/viec-theo-em?chi=toi`, `/cases?classId`, `/xet-lai`, `/hoc-vien-lop/ids`) — không đường mới. "+ Task" dùng `/roster` đã nạp (trước: "+ Case" tải `/roster` lần nữa khi mở → bớt 1 request mỗi lần ghi Case). Chip + panel "i / n" dựng từ `viec-theo-em` đã tải. Thang vạch dùng `/students/:id/y-thuc` đã đọc khi mở hộp thang. Lớp thường: `locCanHoTro` chạy trên `/can-ho-tro` đã đọc.

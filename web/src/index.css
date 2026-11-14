@@ -1290,7 +1290,7 @@
   .dai-cs-o:first-child { padding-left: 12px; }
   .dai-cs-o:nth-child(even) { border-left: 1px solid var(--line); }
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }
-  .dai-cs-o:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .dai-cs-o:last-child:nth-child(odd), .dai-cs-o:nth-child(odd):not(:has(+ .dai-cs-o)) { grid-column: 1 / -1; }   /* GD-6: ô lẻ cuối (kể cả khi chip lớp đứng sau) chiếm hai cột */
 }
 /* PT-a (mockup v19 `.os`, chủ SP duyệt 12/11): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx). Số bấm được = hộp nhỏ (nhìn ra là nút, không gạch chân);
    màu chỉ cho ô cần làm: đỏ = quá hạn (`text-bad` / `text-late`; V22 không biểu tượng), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
