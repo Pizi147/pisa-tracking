@@ -77,7 +77,7 @@ export const SCORE_TEXT: Record<ScoreTone, string> = {
  *   <Level>   pill nền sẫm, bo tròn hẳn — mức SOS, mức độ ưu tiên: tình trạng của một đứa trẻ
  *   <Status>  nền nhẹ + biểu tượng      — TRẠNG THÁI CÔNG VIỆC: đang làm · chờ · xong
  *   <Task>    viền vuông, gạch dọc trái — VIỆC PHẢI LÀM, bấm được
- *   <Alert>   nền sẫm + màu mạnh, ⚠ chỉ khi quá hạn — mức khẩn, thiếu thông tin
+ *   <Alert>   nền sẫm + màu mạnh (V22: không biểu tượng) — mức khẩn, thiếu thông tin
  *   <Outcome> biểu tượng kết quả        — KẾT QUẢ học tập: tiến bộ · chưa đổi · kém hơn
  *   <Info>    chữ mờ, viền mảnh         — chỉ để biết: vai trò, kỹ năng, mã lớp
  *
@@ -195,14 +195,12 @@ export function Status({ kind, children, title }: {
 /**
  * CẢNH BÁO — mức khẩn, thiếu thông tin (mục 2.1; PR-UX0 B-4).
  *
- * ⚠ CHỈ NGHĨA QUÁ HẠN (G-4). Nhắc mềm, lưu lỗi, dữ liệu demo, mức khẩn thì KHÔNG có ⚠ — màu đủ nói.
- * Chữ bắt đầu "Quá hạn" tự có ⚠ (chỗ cũ như `CasePanel` không phải sửa); chỗ khác truyền `quaHan`
- * để ép bật/tắt. Quá hạn dùng màu `late` (đỏ cam), khác `bad` của SOS 3 / Chưa đạt.
+ * V22 (chủ SP 14/11): hạn chỉ bằng MÀU, không biểu tượng — chữ ("Quá hạn…") nói nghĩa. `quaHan` giữ cho chỗ gọi cũ, không vẽ thêm gì.
+ * Quá hạn dùng màu `late` (đỏ cam), khác `bad` của SOS 3 / Chưa đạt.
  */
-export function Alert({ tone = 'danger', children, title, quaHan }: {
+export function Alert({ tone = 'danger', children, title }: {
   tone?: 'danger' | 'warn'; children: ReactNode; title?: string; quaHan?: boolean;
 }) {
-  const coDau = quaHan ?? (typeof children === 'string' && /^(quá hạn|overdue|\d+ days? overdue)/i.test(children));
   return (
     <span title={title}
       className={`${CHIP_VUONG} gap-1 ${
@@ -210,7 +208,6 @@ export function Alert({ tone = 'danger', children, title, quaHan }: {
           ? 'bg-late-bg text-late border-late-line'
           : 'bg-soon-bg text-soon border-soon-line'
       }`}>
-      {coDau && <span aria-hidden>⚠</span>}
       {children}
     </span>
   );
@@ -579,7 +576,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
 /** NHÃN TRẠNG THÁI CHÍNH (§7.3, brainstorm C.2) — một dòng một nhãn; màu điểm/SOS không dùng ở đây. */
 const NHAN_LOP: Record<TrangThai, string> = {
   'can-lam': 'border-[color:var(--line-strong)] text-slate-200', 'dang-lam': 'border-transparent bg-white/[.06] text-slate-200',
-  'cho-duyet': 'border-muted-line bg-muted-bg text-muted', 'qua-han': 'border-transparent !px-0 font-bold text-late',   // OV-15a: quá hạn chỉ chữ cam + ⚠, không chip
+  'cho-duyet': 'border-muted-line bg-muted-bg text-muted', 'qua-han': 'border-transparent !px-0 font-bold text-late',   // OV-15a: quá hạn chỉ chữ cam, không chip (V22: không biểu tượng)
   xong: 'border-transparent text-done', 'da-huy': 'border-transparent text-slate-500 line-through decoration-1',
 };
 export function NhanTrangThai({ t, soNgay, title, chu }: {
@@ -589,7 +586,7 @@ export function NhanTrangThai({ t, soNgay, title, chu }: {
 }) {
   const chuHien = chu ?? chuTrangThai(t, soNgay);
   return <span title={title} className={`${CHIP_VUONG} ${NHAN_LOP[t]}`}>
-    {t === 'qua-han' && !chuHien.includes('⚠') ? `⚠ ${chuHien}` : chuHien}</span>;
+    {chuHien}</span>;
 }
 
 /** V8 (mockup "Mọi khung ▾ · Mọi hạn ▾"): ô chọn gốc (bàn phím, đọc màn hình như cũ) mang dáng nút nhỏ — cùng viền, nền, chữ, mũi tên với nút menu "Một GV ▾". */

@@ -6,7 +6,7 @@ import { NhanLich } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import { IconCanhBao, IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
+import { IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';
 import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
 
 /**
@@ -97,14 +97,14 @@ const LOAI_HAN: Record<string, DeadlineKind> = {
   'cho-duyet': 'duyet', 'mini-test': 'mini-test', 'y-thuc': 'xu-ly-vi-pham', 'yt-xem': 'xu-ly-vi-pham', 'yt-thuc-hien': 'xu-ly-vi-pham', 'ban-giao': 'viec-van-hanh', 'ban-giao-mon': 'viec-van-hanh',
 };
 
-/** Hạn 12 px (Q22): "hạn hết 02/10" mờ · quá hạn: ⚠ SVG + "quá hạn 3 ngày" đỏ (`chiQuaHan`: bỏ mốc, như thanh việc mockup 24 A). */
+/** Hạn 12 px (Q22): "hạn hết 02/10" mờ · quá hạn: "quá hạn 3 ngày" đỏ (V22: không biểu tượng) (`chiQuaHan`: bỏ mốc, như thanh việc mockup 24 A). */
 export function HanViec({ x, homNay, chiQuaHan }: { x: Viec; homNay: string | null; chiQuaHan?: boolean }) {
   if (!x.han) return null;
   const v = deadlineView({ kind: LOAI_HAN[x.loai] ?? 'viec-van-hanh', due: x.han, today: homNay ?? '' });
   if (v.quaHan) {
     return (
       <span className="inline-flex items-center gap-1 whitespace-nowrap text-[12px] font-semibold tabular-nums text-bad" title={v.text}>
-        <IconCanhBao />{chiQuaHan ? v.quaHan : `${v.han} · ${v.quaHan}`}
+        {chiQuaHan ? v.quaHan : `${v.han} · ${v.quaHan}`}
       </span>
     );
   }
@@ -216,10 +216,10 @@ export function DaiChoDuyet({ studentId, homNay, onDoi, onThemPa }: {
     <section aria-label={t('Yêu cầu chờ bạn duyệt')} className="rounded-[10px] bg-muted-bg">
       <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
         className="flex w-full flex-wrap items-center gap-x-2.5 gap-y-1 border-0 bg-transparent px-3 py-[9px] text-left text-[13px] text-slate-100">
-        {/* CD-GON (M3, M5): "Chờ duyệt" + "n yêu cầu chờ bạn duyệt" nói hai lần → một tên "Chờ bạn duyệt" (như Công việc) + số + ⚠ quá hạn. */}
+        {/* CD-GON (M3, M5): "Chờ duyệt" + "n yêu cầu chờ bạn duyệt" nói hai lần → một tên "Chờ bạn duyệt" (như Công việc) + số + số quá hạn đỏ. */}
         <span className="whitespace-nowrap text-[13px] font-semibold text-slate-100">{t('Chờ bạn duyệt')}</span>
         <span className="text-dim">{t('{n} yêu cầu', { n: ds.length })}
-          {quaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: quaHan })}</span>}</span>
+          {quaHan > 0 && <span className="font-semibold text-bad"> · {t('{n} quá hạn', { n: quaHan })}</span>}</span>
         <span className="text-muted"><IconGap mo={mo} /></span>
       </button>
       {mo && (

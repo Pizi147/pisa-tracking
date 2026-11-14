@@ -295,9 +295,9 @@ function KhoiLop({ data }: { data: HoSo }) {
                 {l.chuaNhap > 0 && (
                   <span className="whitespace-nowrap">· <OSo giaTri={l.chuaNhap} tieuDe={`${t('Bài chưa nhập điểm')} · ${l.ma}`} nguon={nguon(id, `cot=chua-nhap&lop=${l.id}`)} className={`${vung} text-slate-200`} /> {t('chưa nhập')}</span>
                 )}
-                {/* V4 GIỮ: bài quá hạn nhập theo lớp (trước ở bảng lớp) — ⚠ + chữ, không chỉ màu. */}
+                {/* V4 GIỮ: bài quá hạn nhập theo lớp (trước ở bảng lớp) — chữ "quá hạn", không chỉ màu. */}
                 {l.quaHan > 0 && (
-                  <span className="whitespace-nowrap font-semibold text-bad">· ⚠ <OSo giaTri={l.quaHan} tieuDe={`${t('Bài quá hạn chưa nhập điểm')} · ${l.ma}`} nguon={nguon(id, `cot=qua-han&lop=${l.id}`)} className={`${vung} text-bad`} /> {t('quá hạn')}</span>
+                  <span className="whitespace-nowrap font-semibold text-bad">· <OSo giaTri={l.quaHan} tieuDe={`${t('Bài quá hạn chưa nhập điểm')} · ${l.ma}`} nguon={nguon(id, `cot=qua-han&lop=${l.id}`)} className={`${vung} text-bad`} /> {t('quá hạn')}</span>
                 )}
               </span>
             </li>
@@ -527,13 +527,13 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: {
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={2} />
         : (
-          /* GD-4 e: khối ô số to → dải chỉ số chung; số "›" đổi trang Công việc (đúng nhóm, cùng đích cũ), "⚠ n quá hạn" mở nhóm chỉ quá hạn; 0 không bấm. */
+          /* GD-4 e: khối ô số to → dải chỉ số chung; số "›" đổi trang Công việc (đúng nhóm, cùng đích cũ), "n quá hạn" mở nhóm chỉ quá hạn; 0 không bấm. */
           <DaiChiSoMong nhan={t('Việc đang tồn')}>
             {data.viec.map((x) => {
               const link = (chiQuaHan: boolean) => duongViecCuaGv(gvId, nguoiXem, x.nhom, chiQuaHan);
               return (
                 <ODai key={x.nhom} nhan={dich(NHOM_VIEC_LABEL[x.nhom])}
-                  phu={x.quaHan > 0 && <Link to={link(true)} className={`inline-block py-2 -my-2 text-bad no-underline hover:underline ${soDam}`}>⚠ {t('{n} quá hạn', { n: x.quaHan })}</Link>}>
+                  phu={x.quaHan > 0 && <Link to={link(true)} className={`inline-block py-2 -my-2 text-bad no-underline hover:underline ${soDam}`}>{t('{n} quá hạn', { n: x.quaHan })}</Link>}>
                   <SoDen n={x.n} to={link(false)} />
                 </ODai>
               );
@@ -625,14 +625,14 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
         <span className="flex flex-wrap items-center gap-2">
           {nhom.map((x) => (
             <span key={x.tt} className={`${CHIP_TRON} gap-1.5 bg-muted-bg ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-300'}`}>
-              {x.tt === 'qua-han' ? `⚠ ${dich(NHAN_TRANG_THAI[x.tt])}` : dich(NHAN_TRANG_THAI[x.tt])}
+              {dich(NHAN_TRANG_THAI[x.tt])}
               <OSo giaTri={x.n} tieuDe={`Case · ${dich(NHAN_TRANG_THAI[x.tt])}`} nguon={nguon(id, `cot=case-mo&tt=${x.tt}`)} className={`${vung} font-bold ${x.tt === 'qua-han' ? 'text-bad' : 'text-slate-100'}`} />
             </span>
           ))}
-          {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. AUDIT-UI GV2: tên đủ để không lẫn với «⚠ Quá hạn». */}
+          {/* V4 GIỮ: Case có việc tiếp quá hạn (khác nhãn trạng thái) → panel. AUDIT-UI GV2: tên đủ để không lẫn với «Quá hạn». */}
           {ds.some((c) => c.quaHan) && (
             <span className={`${CHIP_TRON} gap-1.5 bg-muted-bg text-bad`}>
-              ⚠ {t('Case có việc quá hạn')}
+              {t('Case có việc quá hạn')}
               <OSo giaTri={ds.filter((c) => c.quaHan).length} tieuDe={t('Case có việc quá hạn')} nguon={nguon(id, 'cot=case-qua-han')} className={`${vung} font-bold text-bad`} />
             </span>
           )}
@@ -646,7 +646,7 @@ function KhoiCase({ data, homNay, linkPa }: { data: HoSo; homNay: string; linkPa
             <div>
               <h3 className="m-0 mb-1 text-[13px] font-semibold text-slate-400">{t('Cần làm trước')}</h3>
               {/* B12 (mockup audit-ui 08/11, M10): tách trường — Học viên (lớp dòng phụ) · Case · Việc tiếp (kỳ chữ mờ) · Hạn cột phải; thay chuỗi
-                  "⚠ quá hạn 6 ngày Kết quả PA R · kỳ …" gãy hai dòng. */}
+                  "quá hạn 6 ngày Kết quả PA R · kỳ …" gãy hai dòng. */}
               <Bang ten={t('Cần làm trước')} khung={false} khoa={(c) => c.id} hang={truoc}
                 cot={[
                   { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 220 },

@@ -231,11 +231,11 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     const v = row.o[col.khoa] ?? 0;
     const mau = mauOKetQua(col.khoa, v);
     if (v <= 0) return soBam(row, col);
-    /* OV-12d: Chờ duyệt kèm "⚠ n" quá hạn (PR-HK2: ⚠ đỏ cam, chữ đầy đủ ở title). */
+    /* OV-12d: Chờ duyệt kèm "· n" quá hạn — V22: chỉ màu đỏ cam, chữ đầy đủ ở title + sr-only. */
     const quaHan = col.khoa === 'choDuyet' ? row.o.choDuyetQuaHan ?? 0 : 0;
     /* Chủ SP rà #1490 (bỏ XM-7): FT ô SOS 1 · 2 · 3 là hộp tô màu theo mức (CSS `.so-m1…3`), cùng cỡ hộp số khác; lớp thường giữ chip. */
     if (mau && !laThuong && (col.khoa === 'sos1' || col.khoa === 'sos2' || col.khoa === 'sos3')) return soBam(row, col, undefined, `so-m${col.khoa.slice(3)}`);
-    if (!mau || !laThuong) return <span>{soBam(row, col, undefined, MAU_COT[col.khoa])}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={t('{quaHan} quá hạn', { quaHan })}>⚠{quaHan}<span className="sr-only"> {t('quá hạn')}</span></span>}</span>;
+    if (!mau || !laThuong) return <span>{soBam(row, col, undefined, MAU_COT[col.khoa])}{quaHan > 0 && <span className="ml-1 font-bold text-late" title={t('{quaHan} quá hạn', { quaHan })}>· {quaHan}<span className="sr-only"> {t('quá hạn')}</span></span>}</span>;
     return <span className={`${CHIP_SO} ${MAU_O[mau]}`}>{soBam(row, col, undefined, SO_TRONG_CHIP)}</span>;
   };
 
@@ -355,7 +355,7 @@ export function TongHopTestSos({ branchId, ct, khoang, classId }: {
     { ten: t('Thiếu điểm'), gt: soTong('chuaDu', 'text-soon'), mau: laThuong ? undefined : t('gồm SOS tạm') },
     /* PT-LOP-THUONG (mockup v13 B): lớp thường bỏ thẻ "Chưa chốt PA" — PA xem ở tab Hiệu quả PA. */
     ...(laThuong ? [] : [{ ten: t('Chưa chốt PA'), ky: t('hôm nay'), gt: soTong('choDuyet', 'text-soon'),
-      nho: quaHanTong > 0 ? <>⚠ {t('{n} quá hạn', { n: quaHanTong })}</> : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) }]),
+      nho: quaHanTong > 0 ? t('{n} quá hạn', { n: quaHanTong }) : undefined, mau: t('trên {n} Case', { n: tong.case ?? 0 }) }]),
   ];
   const SKEL_SO = Array.from({ length: laThuong ? 4 : 6 }, (): ChiSo => ({
     ten: <span className="skel inline-block h-3 w-1/2 align-middle" />, gt: <span className="skel mt-1.5 inline-block h-6 w-2/5" />,

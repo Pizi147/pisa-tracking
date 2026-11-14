@@ -5,7 +5,7 @@ import { LOP_OSO, VUNG_BAM_SO } from './SoLieu.tsx';
 
 /**
  * DẢI CHỈ SỐ MỘT KIỂU (GD-4 e — mockup v21 `bang-mau.html` H3 `.dai-cs`; luật M): MỘT hàng mỏng cao 44, viền line, bo 10; mỗi ô "nhãn + số".
- * Số bấm được dùng `OSo` (gạch chân màu nhấn → panel chỉ đọc) hoặc `SoDen` (đổi trang, "›"); số 0 không bấm, mờ; số xấu (`text-bad`) có ⚠ (CSS `.dai-cs`).
+ * Số bấm được dùng `OSo` (gạch chân màu nhấn → panel chỉ đọc) hoặc `SoDen` (đổi trang, "›"); số 0 không bấm, mờ; số xấu (`text-bad`) chỉ bằng màu (V22, không biểu tượng).
  * ⓘ là nút (`NutLuat`). 375: lưới 2 cột, ô cao ≥ 44. Dải chỉ vẽ dữ liệu đã nạp — không request riêng.
  */
 export function DaiChiSo({ nhan, children, className = '' }: { /** Tên nhóm cho trình đọc màn ("Chỉ số của tôi"). */ nhan: string; children: ReactNode; className?: string }) {

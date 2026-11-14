@@ -133,7 +133,7 @@ export type Row = {
 };
 
 /**
- * NHÃN TẠM DỪNG (T65, Q11) — em đang Tạm dừng thì mọi hạn dừng: nhãn vàng `Tạm dừng từ 21/09` thay "Quá hạn" và "⚠ quá hạn n ngày" ở bảng
+ * NHÃN TẠM DỪNG (T65, Q11) — em đang Tạm dừng thì mọi hạn dừng: nhãn vàng `Tạm dừng từ 21/09` thay "Quá hạn" và "quá hạn n ngày" ở bảng
  * kỹ năng, Ngăn Case. Chỉ đổi chữ (máy chủ đã lọc em Tạm dừng khỏi số liệu). Ngày dd/mm — ngày của sự việc.
  */
 export function NhanTamDung({ tu }: { tu: string }) {

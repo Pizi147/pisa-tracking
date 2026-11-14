@@ -5,19 +5,19 @@ import { IconKhong } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /**
- * "⚠ quá hạn 15 ngày" — chữ đỏ cam đậm, KHÔNG nền, KHÔNG khung (B-3). ⚠ chỉ nghĩa quá hạn (G-4).
- * `gon` bỏ chữ "quá hạn" ("⚠ 15 ngày") cho chỗ đã có tiêu đề nói rõ.
+ * "quá hạn 15 ngày" — chữ đỏ cam đậm, KHÔNG nền, KHÔNG khung (B-3). V22 (chủ SP 14/11): hạn chỉ bằng MÀU, không biểu tượng.
+ * `gon` bỏ chữ "quá hạn" ("15 ngày") cho chỗ đã có tiêu đề nói rõ — kèm chữ sr-only "quá hạn".
  */
 /** `mo`: việc của người khác — chữ mờ, không đỏ (đỏ chỉ khi là việc của người xem, LUOT-TEN-GV). */
 export function QuaHan({ ngay, gon, mo }: { ngay: number | null; gon?: boolean; mo?: boolean }) {
-  return <span className={`whitespace-nowrap ${mo ? 'text-slate-400' : 'font-semibold text-late'}`}>⚠ {nhanQuaHan(ngay, gon)}</span>;
+  return <span className={`whitespace-nowrap ${mo ? 'text-slate-400' : 'font-semibold text-late'}`}>{nhanQuaHan(ngay, gon)}{gon && <span className="sr-only"> {t('quá hạn')}</span>}</span>;
 }
 
 /**
  * BADGE V5 — MỘT KÍCH THƯỚC, BỐN NHÓM KHÁC DÁNG (NEN-V5; `thiet-ke/v5/bang-mau.html` mục 3): cao 22, chữ 12 / 600. Mọi chip chữ lấy lớp từ đây.
  *   1 · KẾT QUẢ HỌC TẬP (`NhanKq`, `CHIP_VUONG`): góc 4 px, viền 1 px màu nghĩa, nền thẻ, ✓ ✗ – đứng đầu.
  *   2 · LỊCH THI (`NhanLich`): nền xanh lơ đặc, góc 2 px, không viền màu kết quả — "Đã thi · chờ KQ" không thể nhầm Đạt.
- *   3 · TIẾN ĐỘ XỬ LÝ (`Nhan`, `CHIP_TRON`): viên tròn nền xám nhạt + chấm màu; sắp hạn / quá hạn: nền nhạt + ⚠.
+ *   3 · TIẾN ĐỘ XỬ LÝ (`Nhan`, `CHIP_TRON`): viên tròn nền xám nhạt + chấm màu; sắp hạn / quá hạn: nền nhạt cùng họ (V22: chỉ màu, không biểu tượng).
  *   4 · MỨC SOS (`ChipSos`, `lopSos`): cùng họ góc 4 px với kết quả (C23); mức tách bằng độ đặc nền (rỗng · nền vừa · đặc) + chữ "SOS n".
  * Họ tròn viền trong suốt (tông có viền thì đè); tông viền đứt dùng `!border-current`.
  */
@@ -81,11 +81,11 @@ export function NhanVienCase({ tt, title, children }: { tt: string; title?: stri
 
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 
-/** Nhóm 3 (V5): viên nền xám nhạt + chấm màu đầu (`CHAM`); sắp hạn / quá hạn / lỗi: nền nhạt cùng họ (quá hạn luôn kèm ⚠ thay chấm). */
+/** Nhóm 3 (V5): viên nền xám nhạt + chấm màu đầu (`CHAM`); sắp hạn / quá hạn / lỗi: nền nhạt cùng họ (V22: quá hạn chỉ bằng màu, cùng chấm như các tông khác). */
 const CHAM = "gap-1.5 before:h-[7px] before:w-[7px] before:shrink-0 before:rounded-full before:bg-current before:content-['']";
 const NHAN: Record<ToneNhan, string> = {
   ok: `bg-[color:var(--surface-2)] text-ok ${CHAM}`, done: `bg-[color:var(--surface-2)] text-dim ${CHAM}`, bad: `bg-bad-bg text-bad ${CHAM}`,
-  late: 'gap-1 bg-late-bg text-late', soon: `bg-soon-bg text-soon ${CHAM}`,
+  late: `bg-late-bg text-late ${CHAM}`, soon: `bg-soon-bg text-soon ${CHAM}`,
   doing: `bg-[color:var(--surface-2)] text-doing ${CHAM}`, muted: `bg-[color:var(--surface-2)] text-dim ${CHAM} before:!bg-slate-600`,
 };
 
@@ -96,14 +96,13 @@ export { TONE_TRANG_THAI };
 
 /**
  * MỘT BADGE = MỘT TRẠNG THÁI NGẮN (≤ 3 từ + số; B-1). Xanh dương = đang chạy · xám = chờ (`TONE_TRANG_THAI`, OV-15a bỏ tím) · vàng = cần chú ý ·
- * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · đỏ cam = quá hạn (luôn kèm ⚠) · viền đứt (`dut`) = số tạm.
+ * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · đỏ cam = quá hạn (V22: chỉ màu + chữ, không biểu tượng) · viền đứt (`dut`) = số tạm.
  * Có `onClick` thì là nút (≥ 28px cao; điện thoại nới vùng bấm ẩn lên 44px — PR-HK1 K3); không thì chỉ là chữ.
  */
 export function Nhan({ tone, dut, title, onClick, children }: {
   tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void; children: ReactNode;
 }) {
   const cls = `${CHIP_TRON} ${NHAN[tone]} ${dut ? 'bg-transparent border-dashed !border-current' : ''}`;
-  if (tone === 'late' && !coCanhBao(children)) children = <>⚠ {children}</>;   // quá hạn luôn kèm ⚠
   if (onClick) {
     return (
       <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>
@@ -112,12 +111,7 @@ export function Nhan({ tone, dut, title, onClick, children }: {
   return <span title={title} className={cls}>{children}</span>;
 }
 
-/** Đã có ⚠ ở đầu nội dung (chỗ gọi tự ghi "⚠ n quá hạn") — không thêm lần nữa. */
-function coCanhBao(c: ReactNode): boolean {
-  return Array.isArray(c) ? c.some((x) => typeof x === 'string' && x.includes('⚠')) : typeof c === 'string' && c.includes('⚠');
-}
-
-/** Badge hộp lớp → tone `Nhan`; "n việc quá hạn" là chữ cam + ⚠ (OV-15a), không chip đỏ. */
+/** Badge hộp lớp → tone `Nhan`; "n việc quá hạn" là chữ cam (OV-15a; V22 không biểu tượng), không chip đỏ. */
 export function toneBadgeLop(x: { key: string; tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted' }): ToneNhan {
   return x.key === 'qua-han' ? 'late' : toneNhanTuBadge(x.tone);
 }
@@ -134,44 +128,40 @@ export function DauDuoi() {
   return <span className="mr-1 inline-flex align-middle" style={{ marginTop: -2 }}><IconKhong size={11} /></span>;
 }
 
-/** OV-15a (mockup 1 §1c): hạn ở đầu panel là CHỮ — NEN-PANEL: quá hạn / sắp hạn thành badge theo mockup V5 (`ChipHan`). Quá hạn = chữ cam đậm + ⚠; sắp hạn / hôm nay = chữ vàng; xa hơn = chữ phụ. */
+/** OV-15a (mockup 1 §1c): hạn ở đầu panel là CHỮ — NEN-PANEL: quá hạn / sắp hạn thành badge theo mockup V5 (`ChipHan`). Quá hạn = chữ cam đậm (V22: không biểu tượng); sắp hạn / hôm nay = chữ vàng; xa hơn = chữ phụ. */
 const CHU_HAN = 'inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[13px] tabular-nums';
-/** OV-12e: "⚠ n quá hạn" ở đầu panel số liệu — cùng kiểu chữ hạn quá hạn. */
+/** OV-12e: "n quá hạn" ở đầu panel số liệu — cùng kiểu chữ hạn quá hạn. */
 export function ChipSoQuaHan({ n }: { n: number }) {
-  return <span className={`${CHU_HAN} font-semibold text-late`}><span aria-hidden>⚠</span>{t('{n} quá hạn', { n })}</span>;
+  return <span className={`${CHU_HAN} font-semibold text-late`}>{t('{n} quá hạn', { n })}</span>;
 }
-/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn ⚠ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn viên xám; luôn có chữ.
+/** MỘT dòng hạn ở đầu panel làm việc v3 (OV-12c) — 3 mức (OV-12e): quá hạn đỏ + số ngày · còn ≤ 3 ngày (gồm hôm nay) vàng · xa hơn viên xám; luôn có chữ.
  *  Ngưỡng ở MỘT chỗ: `deadlineView` (`ganHan`). Chữ hạn = `nhanHan` "hạn 18/09" (NEN-V5 P7: ngày thật, kể cả hôm nay). */
 export function ChipHan({ loai, han, chuThuong = false, vien = false }: { loai: DeadlineKind; han: string | null;
-  /** UI-CONG-VIEC (dải sự kiện panel, mockup `.fact`): chưa quá hạn → ngày chữ thường "16/09", quá hạn vẫn ⚠ đỏ. */
+  /** UI-CONG-VIEC (dải sự kiện panel, mockup `.fact`): chưa quá hạn → ngày chữ thường "16/09", quá hạn vẫn đỏ. */
   chuThuong?: boolean;
-  /** v12 S13 (dòng Công việc / Chờ bạn duyệt, mockup `.han-v`): VIÊN tròn theo mức — quá hạn nền đỏ ⚠ · hôm nay nền vàng viền ⚠ · còn hạn nền xám. */
+  /** v12 S13 (dòng Công việc / Chờ bạn duyệt, mockup `.han-v`): VIÊN tròn theo mức — quá hạn nền đỏ · hôm nay nền vàng viền · còn hạn nền xám (V22: không biểu tượng). */
   vien?: boolean }) {
   const { homNay } = useNgayNghiepVu();
   if (!han) return null;
   const v = deadlineView({ kind: loai, due: han, today: homNay });
   const ngay = `${han.slice(8, 10)}/${han.slice(5, 7)}`;
   if (chuThuong && v.tone !== 'overdue') return <span className="tabular-nums">{ngay}</span>;
-  if (chuThuong) return <span title={v.text} className={`${CHU_HAN} text-late font-bold min-h-[22px] whitespace-normal`}><span aria-hidden>⚠</span>{ngay} · {t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</span>;
+  if (chuThuong) return <span title={v.text} className={`${CHU_HAN} text-late font-bold min-h-[22px] whitespace-normal`}>{ngay} · {t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 })}</span>;
   if (vien) {
     const muc = v.tone === 'overdue' ? 'bg-late-bg text-late font-semibold' : han.slice(0, 10) === homNay
       ? 'bg-soon-bg text-soon font-semibold shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]' : 'bg-[rgb(var(--muted-bg-rgb))] text-dim font-medium';
     return (
       <span title={v.text} className={`inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-[9px] text-xs tabular-nums ${muc}`}>
-        {(v.tone === 'overdue' || han.slice(0, 10) === homNay) && <span aria-hidden>⚠</span>}
         {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
       </span>
     );
   }
-  /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm + ⚠, sắp hạn vàng đậm + ⚠ (không trùng chip SOS 3
-     nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. Chữ + ⚠ mang nghĩa, màu chỉ phụ. */
-  /* Mockup `.han`: quá hạn đỏ ⚠ · hạn HÔM NAY vàng ⚠ · sắp hạn chữ thường 600 · hạn xa chữ mờ 500. */
+  /* U01 #27 (audit 03/11, mockup `audit-0311/ro.css .han`): hạn CHỈ CHỮ, không nền — quá hạn đỏ đậm, hạn hôm nay vàng đậm (không trùng chip SOS 3
+     nền đỏ đặc — V5); hạn thường chữ thường, hạn xa chữ mờ. V22 (chủ SP 14/11): không biểu tượng — chữ ("quá hạn n ngày", "hạn 18/09") mang nghĩa, màu phân mức. */
   const homNayHan = han.slice(0, 10) === homNay;
-  const can = v.tone === 'overdue' || homNayHan;
   const lop = v.tone === 'overdue' ? 'text-late font-bold' : homNayHan ? 'text-soon font-bold' : v.ganHan ? 'text-[color:var(--text)] font-semibold' : 'text-dim font-medium';
   return (
     <span title={v.text} className={`${CHU_HAN} ${lop} min-h-[22px] text-[13px]`}>
-      {can && <span aria-hidden>⚠</span>}
       {v.tone === 'overdue' ? t('quá hạn {n} ngày', { n: v.daysOverdue ?? 0 }) : nhanHan(han, homNay)}
     </span>
   );
@@ -195,17 +185,20 @@ export const BadgeMo = ({ so, chu }: { so: ReactNode; chu?: string }) => (
   <span title={chu} className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center gap-0.5 rounded-full border px-1.5 text-xs font-bold tabular-nums text-dim surface-2"
     style={{ borderColor: 'var(--line-strong)' }}>{so}</span>
 );
+const BADGE_TAB = 'inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border px-1.5 text-xs font-bold tabular-nums';
+const BADGE_DO = 'border-[rgb(var(--late-line-rgb))] bg-late-bg text-late';
 export function BadgeTabSo({ b }: { b: BadgeTab }) {
-  /* GD-4a (chủ SP lời 33; mockup ⑤ `.bd.mo`): tab Chấm Speaking — viên MỜ đếm bài, ⚠ khi có bài quá hạn; không đỏ (đỏ chỉ cho việc của tôi quá hạn). */
+  /* GD-4a (chủ SP lời 33) → V22 (chủ SP 14/11 "Có, đỏ như mọi nơi"): tab Chấm Speaking — số = số bài; có bài quá hạn → badge ĐỎ như mọi badge,
+     không thì viên MỜ đếm bài. Không biểu tượng. Vẫn không cộng vào badge menu / chuông (lời 33). */
   if (b.bai) {
     if (!b.bai.n) return null;
     const chu = b.bai.quaHan ? t('{n} bài, {q} quá hạn', { n: b.bai.n, q: b.bai.quaHan }) : t('{n} bài', { n: b.bai.n });
-    return <BadgeMo so={<><span aria-hidden>{b.bai.quaHan ? '⚠ ' : ''}{b.bai.n}</span><span className="sr-only">{chu}</span></>} chu={chu} />;
+    const so = <><span aria-hidden>{b.bai.n}</span><span className="sr-only">{chu}</span></>;
+    return b.bai.quaHan ? <span title={chu} className={`${BADGE_TAB} ${BADGE_DO}`}>{so}</span> : <BadgeMo so={so} chu={chu} />;
   }
   if (!b.so) return null;
   return (
-    <span title={chuBadgeTab(b)} className={`inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center rounded-full border px-1.5 text-xs font-bold tabular-nums ${
-      b.quaHan ? 'border-[rgb(var(--late-line-rgb))] bg-late-bg text-late' : 'border-[rgb(var(--soon-line-rgb))] bg-soon-bg text-soon'}`}>
+    <span title={chuBadgeTab(b)} className={`${BADGE_TAB} ${b.quaHan ? BADGE_DO : 'border-[rgb(var(--soon-line-rgb))] bg-soon-bg text-soon'}`}>
       <span aria-hidden>{b.so}</span><span className="sr-only">{chuBadgeTab(b)}</span>
     </span>
   );

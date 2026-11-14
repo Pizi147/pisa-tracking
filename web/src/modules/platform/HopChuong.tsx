@@ -74,7 +74,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
   }, [coViec, viec, nav]);
   /*
    * Ngoài `/my-work` (badge / Công việc không đếm): thẻ Chờ bạn duyệt (`/yeu-cau/dem`) + việc chỉ có ở thông báo (đăng ký tài khoản…). Nhóm riêng dưới vạch,
-   * KHÔNG cộng vào đầu khối — "n việc · ⚠ n quá hạn" giữ đúng số Công việc / ô "Việc của tôi" / chuông (một nguồn, một hàm).
+   * KHÔNG cộng vào đầu khối — "n việc · n quá hạn" giữ đúng số Công việc / ô "Việc của tôi" / chuông (một nguồn, một hàm).
    */
   const them = useMemo<DongLoai[]>(() => {
     const ra: DongLoai[] = [];
@@ -145,7 +145,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
           </span>
           <span className="chv-so"><b>{l.n}</b> {dv}</span>
           <span className="chv-tt">
-            {l.quaHan > 0 ? <span className="chv-td chv-qua">⚠ {t('{n} quá hạn', { n: l.quaHan })}</span>
+            {l.quaHan > 0 ? <span className="chv-td chv-qua">{t('{n} quá hạn', { n: l.quaHan })}</span>
               : l.homNay > 0 ? <span className="chv-td chv-nay">{t('{n} hôm nay', { n: l.homNay })}</span> : null}
           </span>
           <Mui />
@@ -190,7 +190,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
             <button type="button" className="chv-lk" onClick={() => { navigate('/cong-viec'); onDong(); }}>{t('Công việc')} <Mui /></button>
             {tong.n > 0 && (
               <span className="chv-tom">
-                {tong.qua > 0 && <span className="chv-qua">⚠ <span className="chv-so-n">{tong.qua}</span> {t('quá hạn')}</span>}
+                {tong.qua > 0 && <span className="chv-qua"><span className="chv-so-n">{tong.qua}</span> {t('quá hạn')}</span>}
                 {tong.nay > 0 && <span className="chv-nay">{t('{n} hôm nay', { n: tong.nay })}</span>}
                 <span className="chv-tong">{t('{n} việc', { n: tong.n })}</span>
               </span>

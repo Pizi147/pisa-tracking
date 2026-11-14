@@ -112,7 +112,7 @@ const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_40px] max-sm:grid-cols-[minm
 const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_40px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
 const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
 
-/** Hạn dưới tên em: quá hạn đỏ ⚠ + ngày; còn ≤ 3 ngày vàng; xa mờ. */
+/** Hạn dưới tên em: quá hạn đỏ + ngày (V22: chỉ màu); còn ≤ 3 ngày vàng; xa mờ. */
 function HanEm({ han }: { han: string }) {
   const { homNay } = useNgayNghiepVu();
   if (!homNay) return null;
@@ -120,7 +120,6 @@ function HanEm({ han }: { han: string }) {
   const gan = !qua && daysBetween(homNay, han) <= 3;
   return (
     <span className={`mt-1 block whitespace-nowrap text-[13px] tabular-nums ${qua ? 'font-bold text-late' : gan ? 'font-semibold text-soon' : 'text-dim'}`}>
-      {(qua || gan) && <span aria-hidden>⚠ </span>}
       {qua ? <><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: daysBetween(han, homNay) })} · {shortDate(han, homNay)}</> : nhanHan(han, homNay)}
     </span>
   );

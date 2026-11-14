@@ -167,7 +167,7 @@ export function mucCuaViec(it: { group: string; key: string; kind?: string | nul
 export function dongTab<T extends { studentId: number | null; con?: readonly T[] | null }>(ds: readonly T[], caDong: (it: T) => boolean = () => false): T[] {
   return ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? [...it.con] : [it]));
 }
-export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "⚠ n quá hạn"). */ quaHan: number };
+export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "n quá hạn"). */ quaHan: number };
 /** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4). */
 export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false): MucTab<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
@@ -184,7 +184,7 @@ export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | nu
  * BADGE TAB — AUDIT-UI B3 (chủ SP 08/11, thay CV-TAB 06/11 "đỏ / vàng / trắng"): MỘT nghĩa như badge menu V13 — số dòng CẦN LÀM NGAY (quá hạn + hạn hôm nay);
  * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
-/** `bai`: tab "Chấm Speaking" (chủ SP lời 33, `04-thiet-ke.md` mục 15) — badge MỜ đếm bài + ⚠ khi có bài quá hạn; không đỏ, không vào badge menu / chuông. */
+/** `bai`: tab "Chấm Speaking" (chủ SP lời 33, `04-thiet-ke.md` mục 15) — số bài; có bài quá hạn → badge ĐỎ như mọi badge (V22, chủ SP 14/11), không thì MỜ; không vào badge menu / chuông. */
 export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number; bai?: { n: number; quaHan: number } };
 export function badgeTab(dong: readonly { urgency: string; key?: string }[]): BadgeTab {
   /* Rà 11/11 #2 (G5-02): S chấm chéo ghi "quá hạn" ở dòng nhưng KHÔNG đếm (T18 06/11) — tab không đỏ khi số đầu trang không có (cùng `demDongViec`). */

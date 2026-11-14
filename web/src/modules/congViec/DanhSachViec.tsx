@@ -89,7 +89,7 @@ export const chuDau = (ten: string) => {
 /**
  * DANH SÁCH MỘT TAB — AUDIT-UI B4 (chủ SP 08/11, mockup `thiet-ke/2026-11-08-audit-ui-mockup.html` khu B4; thay CV-TAB "một thẻ, mục Quá hạn trên cùng"):
  * MỖI MỤC LOẠI VIỆC MỘT THẺ (`chiaMucTab`, mục rỗng ẩn), quá hạn lên đầu mục. Đầu thẻ = dải nhóm (`.dai-nhom`: nền `--surface-2`, vạch trái 3 px nhấn, 15 / 700)
- * · chip "n việc" · "⚠ n quá hạn" đỏ (375: "n" · "⚠ n"). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
+ * · chip "n việc" · "n quá hạn" đỏ (375: "n" + chữ sr-only). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
  * Số đầu mục chỉ từ việc máy chủ trả (`dem`; dòng giữ chỗ vừa xong không đếm). Mỗi mục 10 dòng đầu + "Xem thêm".
  */
 export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDong & {
@@ -122,7 +122,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
               <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
                 style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span className="max-sm:sr-only">&nbsp;{chung ? t('bài') : t('việc')}</span></span>
               {d.quaHan > 0 && (
-                <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late"><span aria-hidden>⚠ </span>{d.quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>
+                <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{d.quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>
               )}
               {i === 0 && luat}
             </h2>
@@ -165,7 +165,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false 
   k: string; nhan: string; chip?: string; mo: boolean; onMo: () => void; luat?: ReactNode; phu?: ReactNode; trungTinh?: boolean;
 }) {
   return (
-    /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · ⚠ quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
+    /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · số quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
        CV6 (mockup v18, chủ SP 10/11): chevron 16 px NGAY SAU tên (sau chip), xoay khi mở; CẢ DẢI là một nút (lớp phủ `after:`) — rê / focus cả dải;
        ⓘ và phần phụ nằm trên lớp phủ (`relative z-[1]`) nên vẫn bấm riêng. */
     <h2 className={`sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
@@ -212,8 +212,8 @@ function useDong(it: WorkItem, { chon, xong, moCaDong, theoDoi, nguoiAn }: Chung
 }
 
 /**
- * Cột hạn — AUDIT-UI B4 (mockup `.td-han`, 13 px): MỘT dòng mọi trạng thái — quá hạn đỏ 700 "⚠ 68 ngày · 08/07" · gần hạn (mốc sẵn có `ganHan`, ≤ 3 ngày)
- * vàng "⚠ còn 2 ngày · 16/09" / "⚠ hạn hôm nay" · còn xa "hạn 23/09" mờ 600 (V8 hạn = ngày thật) · "không hạn" mờ. Câu đủ ở `title` + trình đọc màn.
+ * Cột hạn — AUDIT-UI B4 (mockup `.td-han`, 13 px): MỘT dòng mọi trạng thái — quá hạn đỏ 700 "68 ngày · 08/07" · gần hạn (mốc sẵn có `ganHan`, ≤ 3 ngày)
+ * vàng "còn 2 ngày · 16/09" / "hạn hôm nay" (V22: chỉ màu) · còn xa "hạn 23/09" mờ 600 (V8 hạn = ngày thật) · "không hạn" mờ. Câu đủ ở `title` + trình đọc màn.
  * Người giữ việc ở ĐẦU dòng phụ (`NguoiGiu`, mockup v17 a2).
  */
 function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
@@ -222,7 +222,7 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
   return (
     <span className={`grid min-w-0 content-center justify-items-start text-[13px] leading-snug ${O_HAN}`}>
       {daXong ? <span className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>
-        /* GD-4c ([XM-B] 4a, ⑤ B1 `.han-v`, ⓪ dòng 32): MỘT dáng chip hạn dạng viên cho dòng việc ở mọi nơi — "⚠ quá hạn 5 ngày" (đỏ) · "⚠ hạn hôm nay"
+        /* GD-4c ([XM-B] 4a, ⑤ B1 `.han-v`, ⓪ dòng 32): MỘT dáng chip hạn dạng viên cho dòng việc ở mọi nơi — "quá hạn 5 ngày" (đỏ) · "hạn hôm nay"
            (vàng viền) · "hạn 23/09" (xám, kể cả sắp hạn — bỏ "còn n ngày"). Dùng `ChipHan vien` (cùng chip đầu panel, Chờ bạn duyệt, Lớp của tôi). */
         : v && it.due ? <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */

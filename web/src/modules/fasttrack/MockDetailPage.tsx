@@ -506,17 +506,17 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
               {v.mo ? (
                 <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
                   <b className="mr-1 text-[color:var(--accent)]">{v.nhan}</b><span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span>
-                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">⚠ {v.quaHan}</span>}
+                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">{v.quaHan}</span>}
                 </button>
               ) : (
                 /* Khung `.viec.khac`: cao 30, nền surface, viền đứt mảnh, khoảng 6, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn. Quá hạn của người
-                   khác: "⚠" + chữ cùng màu text-dim (không đỏ đậm — việc không phải của người xem). Tên người giữ việc không cắt; hẹp thì xuống
+                   khác: chữ cùng màu text-dim (không đỏ đậm — việc không phải của người xem). Tên người giữ việc không cắt; hẹp thì xuống
                    dòng giữa các mẩu (việc · tên · quá hạn), không bẻ giữa tên. */
                 <span className="inline-flex min-h-[30px] max-w-full items-center rounded-md border border-dashed px-2.5 py-0.5 text-[13px] font-medium text-slate-400"
                   style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
                   <span className="min-w-0">
                     <b className="mr-1.5 text-[color:var(--accent)]">{v.nhan}</b>
-                    {[v.viec, v.ai].filter(Boolean).map((x) => giuLien(x!)).join(' · ')}{v.quaHan && ` ${giuLien(`⚠ ${v.quaHan}`)}`}
+                    {[v.viec, v.ai].filter(Boolean).map((x) => giuLien(x!)).join(' · ')}{v.quaHan && ` ${giuLien(v.quaHan)}`}
                   </span>
                 </span>
               )}
@@ -536,7 +536,7 @@ export const tenNguoiLam = (m: Record<string, string | null> | undefined, o: rea
 const giuLien = (x: string) => x.replace(/ /g, '\u00a0');
 
 export type ViecConLai = { khoa: string; nhan: string; viec: string; ai?: string | null; mo?: () => void;
-  /** HSL-LT: việc đã quá hạn — chữ "⚠ quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
+  /** HSL-LT: việc đã quá hạn — chữ "quá hạn dd/mm" (không chỉ màu), xếp đầu danh sách. */
   quaHan?: string | null };
 
 /**
@@ -925,7 +925,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
               {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
               {r.pendingMove && (
                 <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
-                  ⚠ {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
+                  {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
                 </div>
               )}
               {/* LUOT-TEN-GV (khung: "Chờ điểm · hạn …" + tên): bài còn nợ mà người xem không nhập được — ai đang giữ việc. */}

@@ -10,7 +10,7 @@ import { t } from '@shared/i18n/index.ts';
  * Ô MỘT ĐỢT của lưới Kế hoạch Test (U05, mockup `thiet-ke/v11/ke-hoach-test.html` khu A — chủ SP 03/11 khuya, 14-ra-ux-b 11.2) — dùng chung FT và lớp thường.
  * Mỗi DÒNG một tuần thi: tuần + 4 vị trí badge môn cố định (L R W S): môn thi tuần đó sáng, môn khác MỜ HẲN (giữ chỗ, đọc màn "không thi").
  * Môn dời vì vắng → dòng "Vắng → W2 NOV". Dòng cuối = trạng thái CHỮ: điểm "✓ 6.5" (ODiem) · "Đang làm bài" · "Chờ chấm" (badge môn chờ viền vàng) ·
- * "⚠ Quá hạn chấm" (badge môn nền đỏ đặc) · "Vắng · xếp lại S" (vàng rõ — 30-pr-giao-dien U05). Nội dung do `oGon` quyết — ở đây chỉ vẽ.
+ * "Quá hạn chấm" (badge môn nền đỏ đặc; V22 không biểu tượng) · "Vắng · xếp lại S" (vàng rõ — 30-pr-giao-dien U05). Nội dung do `oGon` quyết — ở đây chỉ vẽ.
  */
 const CHU_MON: Record<MonGon['loai'], string> = { co: t('có điểm'), cho: t('chưa có điểm'), tre: t('trễ chấm') };
 
@@ -38,7 +38,7 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
   const choCham = o.dong.some((d) => d.tt?.loai === 'cho');
   /* Một chữ trạng thái cho cả ô, theo mức cần làm: trễ chấm > vắng chờ xếp > chờ chấm > đang làm bài > chưa xếp tuần. */
   const tt: { chu: string; lop: string } | null = kq ? null
-    : o.tt?.loai === 'tre' ? { chu: `⚠ ${t('Quá hạn chấm')}`, lop: 'text-bad' }
+    : o.tt?.loai === 'tre' ? { chu: t('Quá hạn chấm'), lop: 'text-bad' }
     : o.tt?.loai === 'vang' ? { chu: `${t('Vắng')} · ${o.tt.chu}`, lop: 'text-soon' }
     : choCham ? { chu: t('Chờ chấm'), lop: 'text-soon' }
     : o.tt?.loai === 'nay' || o.dong.some((d) => d.tt?.loai === 'nay') ? { chu: t('Đang làm bài'), lop: 'text-doing' }

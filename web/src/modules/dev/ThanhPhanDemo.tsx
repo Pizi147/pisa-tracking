@@ -175,7 +175,7 @@ function SanMauCu() {
         </div>
         <div className="mt-3 overflow-hidden rounded-lg border" style={{ borderColor: 'var(--line)' }}>
           <KhoiNhom id="demo-khoi" mo={moNhom.a} onMo={() => setMoNhom((s2) => ({ ...s2, a: !s2.a }))} nhan="Nhập điểm" tieuDe="Nhập điểm" dem={2}
-            phu={<span className="font-bold text-late">⚠ 1 quá hạn</span>}>
+            phu={<span className="font-bold text-late">1 quá hạn</span>}>
             <div className="py-2 pr-3 text-xs">Dòng việc mẫu <QuaHan ngay={4} /></div>
           </KhoiNhom>
         </div>

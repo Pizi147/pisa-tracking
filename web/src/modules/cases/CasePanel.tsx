@@ -773,7 +773,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     : dangChay ? (ghiDuoc && toiKy && !mo
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
       : data.tamDungTu && hanGhi ? <NhanTamDung tu={data.tamDungTu} />
-      : hanGhi?.tone === 'overdue' ? vien(`⚠ ${hanGhi.quaHan ?? ''}`, 'rgb(var(--bad-rgb))')
+      : hanGhi?.tone === 'overdue' ? vien(hanGhi.quaHan ?? '', 'rgb(var(--bad-rgb))')
       : vien(hanGhi ? t('Đang chạy · KQ hạn {ngay}', { ngay: ngan(iv.actionDue) }) : t('Đang chạy'), 'var(--accent)'))
     : fGan ? <span className={`ket ${LOP_KET[OUTCOME_TONE[fGan.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(fGan.outcome))}</span>
     : vien(t('Đã khép'), 'var(--text-faint)');

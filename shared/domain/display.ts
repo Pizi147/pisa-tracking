@@ -157,7 +157,7 @@ export type AttemptProgressView = {
   overallText: string;
   /** CHỈ true khi đủ điểm VÀ Overall đạt kỳ vọng. Chưa đủ điểm thì luôn false, bất kể `passed`. */
   passBadge: boolean;
-  /** SOS mới chấm một phần (chưa đủ điểm): số còn đổi được — vẽ viền nét đứt + `title`, không ⚠ (PR-UX3 Q13, B-7). */
+  /** SOS mới chấm một phần (chưa đủ điểm): số còn đổi được — vẽ viền nét đứt + `title`, không ký hiệu cảnh báo (PR-UX3 Q13, B-7). */
   tamThoi?: boolean;
   /** Câu giải thích cho tooltip khi `tamThoi`: "Tạm thời: 1/3 môn có điểm". */
   title?: string;
@@ -373,7 +373,7 @@ export function nhanTuanGhiKetQua(actionDue: string | null, homNay: string): { t
  * LUẬT HIỆN HẠN (PR-UX0, B-3): việc · mốc · quá hạn/hôm nay · hẹn — mỗi thông tin nói MỘT lần.
  * Quá hạn đếm số ngày từ hạn GỐC cho mọi loại, kể cả `cap-nhat-pa` (mockup 17 #1, #21).
  */
-/** OV-12e: chip hạn 3 mức — quá hạn cam ⚠ · còn ≤ 3 ngày vàng · xa hơn viền xám (chủ SP 14/10 tối). */
+/** OV-12e: chip hạn 3 mức — quá hạn cam · còn ≤ 3 ngày vàng · xa hơn viền xám (chủ SP 14/10 tối). */
 export const HAN_GAN_NGAY = 3;
 
 /** C-004: một chữ cho "việc không đặt hạn"; nơi so khớp (hồ sơ HV, thẻ kỹ năng) dùng hằng này, không so chuỗi hiển thị. */

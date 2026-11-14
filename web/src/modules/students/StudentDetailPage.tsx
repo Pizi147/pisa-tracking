@@ -139,7 +139,7 @@ export default function StudentDetailPage() {
     if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
   };
-  /* A5 (PR-YT4): dấu ⚠ trên tab Ý thức = em Quá hạn hoặc Bắt buộc xử lý. CÙNG đường với tab bên trong (một cửa trạng thái). */
+  /* A5 (PR-YT4): dấu chấm trên tab Ý thức = em Quá hạn hoặc Bắt buộc xử lý. CÙNG đường với tab bên trong (một cửa trạng thái). */
   const yThuc = useApi<{ nhom: string | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
 
   /*

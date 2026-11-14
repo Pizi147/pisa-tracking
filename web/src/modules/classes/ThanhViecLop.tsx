@@ -63,13 +63,13 @@ export function ThanhViecLop({ classId, onDoi }: { classId: number; onDoi: () =>
 
 /**
  * Một ô việc: CẢ Ô là nút mở panel việc tại trang. Cao 40 px một dòng — tên việc 14/600 (không cắt trước phần phụ) · phần phụ 13 mờ · hạn chữ bên phải
- * (⚠ quá hạn đỏ · ⚠ hôm nay vàng · còn lại mờ; không hạn → trống). Vạch trái 3 px theo hạn (giữ mockup v8). 375: hai dòng cố định 56 px.
+ * (quá hạn đỏ · hôm nay vàng · còn lại mờ — V22 chỉ màu; không hạn → trống). Vạch trái 3 px theo hạn (giữ mockup v8). 375: hai dòng cố định 56 px.
  */
 function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
   const vach = it.urgency === 'overdue' ? 'rgb(var(--bad-rgb))' : it.urgency === 'today' ? 'rgb(var(--soon-line-rgb))' : 'var(--accent)';
   const { ten, phu } = tachViec(it);
-  /* U01 / U03 (PTA 03/11): quá hạn mọi màn "⚠ quá hạn n ngày". */
+  /* U01 / U03 (PTA 03/11): quá hạn mọi màn "quá hạn n ngày" (V22: chỉ màu). */
   const han = it.due ? (it.urgency === 'overdue' && homNay ? nhanQuaHan(Math.max(1, daysBetween(it.due.slice(0, 10), homNay))) : it.urgency === 'today' ? t('hạn hôm nay') : t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })) : null;
   const canhBao = it.urgency === 'overdue' || it.urgency === 'today';
   return (
@@ -80,7 +80,7 @@ function OViec({ it, dangMo, onMo }: { it: WorkItem; dangMo: boolean; onMo: () =
       {han && (
         <span className={`col-start-2 row-start-1 shrink-0 whitespace-nowrap text-[13px] tabular-nums lg:order-last lg:ml-auto ${
           it.urgency === 'overdue' ? 'font-bold text-bad' : it.urgency === 'today' ? 'font-bold text-soon' : 'font-semibold text-slate-400'}`}>
-          {canhBao && <span aria-hidden className="mr-0.5">⚠</span>}{han}
+          {han}
         </span>
       )}
       {phu && <span className="col-span-2 min-w-0 truncate text-[13px] font-medium text-slate-400 lg:min-w-0">{phu}</span>}

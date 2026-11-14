@@ -334,7 +334,7 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
       {skillShort(soonest.skill)}{' '}{t('· đợt này làm bài trong {size} tuần', { size: weeks.size })}
     </span>
   ));
-  /* BANG-1: hàng tối đa 64 px — hạn đã quá thì pill đã hai dòng ("hạn …" + "⚠ quá hạn …"): dòng phụ vào tooltip của ô. */
+  /* BANG-1: hàng tối đa 64 px — hạn đã quá thì pill đã hai dòng ("hạn …" + "quá hạn …"): dòng phụ vào tooltip của ô. */
   const quaHan = !!homNay && soonest.deadline!.slice(0, 10) < homNay;
   const goiY = quaHan && phu ? (dongDau ? noShows.map((c) => `${skillShort(c.skill)}: ${dich(c.noShow!.text)}`).join('\n')
     : `${skillShort(soonest.skill)} ${t('· đợt này làm bài trong {size} tuần', { size: weeks.size })}`) : undefined;

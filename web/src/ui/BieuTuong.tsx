@@ -8,7 +8,7 @@ const khung = ({ className = '', size = 12 }: P) => ({
   'aria-hidden': true, viewBox: '0 0 12 12', width: size, height: size, className: `inline-block shrink-0 align-[-2px] ${className}`,
 });
 
-/** ⚠ — chỉ nghĩa QUÁ HẠN (G-4). */
+/** Tam giác cảnh báo — chỉ cho lỗi / chặn (V22 chủ SP 14/11: hạn chỉ bằng màu, không biểu tượng). */
 export function IconCanhBao(p: P) {
   return (
     <svg {...khung(p)}>

@@ -420,7 +420,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'han') return <span className="tabular-nums">{ddmm(h.han)}</span>;
     if (c.key === 'ghi') return h.ngayGhi ? <span className="tabular-nums">{ddmm(h.ngayGhi)}</span> : mo(t('Chưa ghi'));
     if (c.key === 'dung') return h.dungHan ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
-      : <span className="font-semibold text-late">⚠ {h.treNgay ? t('Trễ {n} ngày', { n: h.treNgay }) : t('Quá hạn')}</span>;
+      : <span className="font-semibold text-late">{h.treNgay ? t('Trễ {n} ngày', { n: h.treNgay }) : t('Quá hạn')}</span>;
     return h.nguoiPhuTrach ?? mo('—');
   };
   const theP = (h: HP) => (
@@ -448,7 +448,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     const k = ttViec(h);
     return k === 'dung' ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
       : k === 'muon' ? <span className="font-semibold text-late">{t('Làm muộn {n} ngày', { n: h.treNgay ?? 0 })}</span>
-      : <span className="font-semibold text-bad">⚠ {t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</span>;
+      : <span className="font-semibold text-bad">{t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</span>;
   };
   const ngayLam = (h: HVc) => (h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('đã làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
   const oVc = (h: HVc, c: DinhNghiaCot): ReactNode => {

@@ -130,7 +130,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   const dsTvv = useMemo(() => [...new Set(rows.map((r) => r.tvv).filter((x): x is string => !!x))].sort((a, b) => a.localeCompare(b, 'vi')), [rows]);
   const coChuaTvv = rows.some((r) => !r.tvv);
   const toi = useSession().session?.user?.fullName ?? null;
-  /* Dòng tiêu đề lớp: số em · số cần làm · ⚠ quá hạn — đếm cùng hàm với hàng, dữ liệu đã nạp. */
+  /* Dòng tiêu đề lớp: số em · số cần làm · số quá hạn — đếm cùng hàm với hàng, dữ liệu đã nạp. */
   const dauLop = useMemo(() => {
     const m = new Map<number, { lop: string; n: number; can: number; qua: number }>();
     const dau = new Map<number, number>();

@@ -34,7 +34,7 @@ const Muc = ({ so, ten, children, ghi }: { so: number; ten: ReactNode; children:
 const O_MAU: Array<[string, string, string?]> = [
   ['Nền đọc', '--surface'], ['Nền trang', '--bg'], ['Đầu bảng, ô phụ', '--surface-2'], ['Thanh điều hướng', '--dieu-huong-nen'],
   ['Nút chính, link', '--accent'], ['Đang chọn / đang mở', '--accent-soft', 'vạch'], ['Điểm nhấn (không chữ)', '--hong'], ['Hồng khi là chữ', '--hong-chu'],
-  ['⚠ Lỗi · quá hạn · ✗', 'rgb(var(--bad-rgb))'], ['⚠ Sắp hạn · chú ý', 'rgb(var(--soon-rgb))'], ['✓ Đạt · đã lưu', 'rgb(var(--ok-rgb))'],
+  ['Lỗi · quá hạn · ✗', 'rgb(var(--bad-rgb))'], ['Sắp hạn · chú ý', 'rgb(var(--soon-rgb))'], ['✓ Đạt · đã lưu', 'rgb(var(--ok-rgb))'],
   ['– Thiếu dữ liệu', '--surface-2', 'dut'], ['Lịch thi', '--lich-nen'],
 ];
 const HOM_NAY = '2026-09-14';
@@ -165,7 +165,7 @@ export function BangMauV5() {
             <NhanLich loai="co">Ngày thi 10/10</NhanLich><NhanLich loai="du-kien">{nhanThangDuKien('2026-11')}</NhanLich><NhanLich loai="chua">Chưa có lịch</NhanLich>
             <NhanLich loai="da-thi">Đã thi · chờ KQ</NhanLich><NhanLich loai="co">Có KQ · chờ bước tiếp</NhanLich>
           </HangBd>
-          <HangBd ten="Tiến độ xử lý" phu="viên tròn · chấm / ⚠">
+          <HangBd ten="Tiến độ xử lý" phu="viên tròn · chấm">
             <Nhan tone="muted">Chờ duyệt</Nhan><Nhan tone="doing">Đang làm</Nhan><Nhan tone="ok">Xong</Nhan><Nhan tone="soon">{nhanHan('2026-09-14', HOM_NAY)}</Nhan>
             <Nhan tone="late">Quá hạn 2 ngày</Nhan><Nhan tone="muted">Chưa liên hệ được · lần 1</Nhan>
           </HangBd>

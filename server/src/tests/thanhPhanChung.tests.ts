@@ -275,4 +275,29 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(!/loi \? <div/.test(doc('web/src/ui/KhungPanel.tsx')), 'Truong còn bọc/bỏ bọc ô theo loi (ô dựng lại, mất focus)');
     assert(/<button id=\{oId\}/.test(doc('web/src/ui/PeoplePicker.tsx')) && /const oId = id \?\? `\$\{uid\}-o`/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi đang hiện tên: nhãn không trỏ vào nút Đổi');
   });
+
+  /* V22 (chủ SP 14/11, DESIGN.md): hạn / số quá hạn chỉ bằng MÀU (đỏ quá · vàng gần · thường chưa tới), KHÔNG ⚠ / biểu tượng. ⚠ chỉ còn cho lỗi, chặn,
+     xác nhận. Chống tái phát: ⚠ (hay `<IconCanhBao`) đứng trong vài chục ký tự quanh chữ / khoá hạn trên CÙNG một dòng mã (bỏ chú thích) → lỗi;
+     CSS: `content: '⚠'` ở bộ chọn hạn / số xấu → lỗi. */
+  check('V22 · hạn chỉ bằng màu: không ⚠ / IconCanhBao cạnh chữ hạn (web .tsx, shared/domain) và không ::before ⚠ cho hạn / số xấu (index.css)', () => {
+    const boChuThich = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+    const HAN = /quá hạn|hạn hôm nay|hạn \{|hạn \$\{|còn \{n\} ngày|\{n\} ngày|quaHan|qua-han|'qua'|late:|overdue|treNgay|daysOverdue|ganHan|\bhan\b/i;
+    /* Ngoại lệ có lý do: [tệp, mẩu chữ của dòng]. */
+    const NGOAI_LE: [string, string][] = [
+    ];
+    const tep = [...tepNguon('web/src').filter((f) => f.endsWith('.tsx')), ...tepNguon('shared/domain')];
+    const loi: string[] = [];
+    for (const f of tep) {
+      boChuThich(doc(f)).split('\n').forEach((dong, i) => {
+        for (const m of dong.matchAll(/⚠|<IconCanhBao\b/g)) {
+          const quanh = dong.slice(Math.max(0, m.index! - 60), m.index! + 40);
+          if (HAN.test(quanh) && !NGOAI_LE.some(([nf, chu]) => nf === f && dong.includes(chu))) loi.push(`${f}:${i + 1}: ${quanh.trim()}`);
+        }
+      });
+    }
+    for (const m of boChuThich(doc('web/src/index.css')).matchAll(/([^{}]*)\{[^{}]*content:\s*["'][^"']*⚠/g)) {
+      if (/qua|han|late|tre|so-bam|dai-cs/i.test(m[1])) loi.push(`index.css: ${m[1].trim()}`);
+    }
+    assert(loi.length === 0, `${loi.length} chỗ hạn còn ⚠ (V22: chỉ màu): ` + loi.slice(0, 6).join(' · '));
+  });
 }

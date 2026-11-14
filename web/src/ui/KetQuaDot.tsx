@@ -15,7 +15,7 @@ function hoMau(tone: ProgressTone, overall: string, soMon: number | null): Score
 }
 /**
  * Mỗi trạng thái có biểu tượng riêng — màu không bao giờ đứng một mình. Số tạm thời (đợt còn thiếu điểm) dùng ◌ + viền đứt;
- * đợt đã đủ điểm mà có SOS thì màu theo mức SOS + dấu ● — ⚠ chỉ dành cho quá hạn (G-4).
+ * đợt đã đủ điểm mà có SOS thì màu theo mức SOS + dấu ● — không dùng ký hiệu cảnh báo.
  * Xám (chưa có điểm, chưa đủ điểm) không có dấu: "·" đứng đầu đọc như dấu ngăn thừa (PR-HK1 H3); chữ đã nói đủ.
  */
 const TONE_MARK: Record<ProgressTone, string> = { muted: '', danger: '●', info: '✓', ok: '✓' };
@@ -70,7 +70,7 @@ export function KetQuaDot({ coDiem, yeuCau, dat, sos, phan = 'cau', cheDo, soMon
   if (kckDuoi) return <ChipDuoiKck />;
   const v = attemptProgressView({ scored: coDiem, required: yeuCau, passed: dat, sos, cheDo, soMonChuaDat, chot });
   const tone: ProgressTone = phan === 'overall' && v.overall === 'incomplete' ? 'muted' : v.tone;
-  /* ⚠ chỉ nghĩa quá hạn (G-4): số tạm thời dùng ◌ (viền đứt), không dùng ⚠. */
+  /* Số tạm thời dùng ◌ (viền đứt), không dùng ký hiệu cảnh báo. */
   const mark = phan === 'overall' ? (v.passBadge ? '✓' : '') : v.tamThoi ? '◌' : TONE_MARK[tone];
   const soMon = cheDo === 'ratio' ? (soMonChuaDat ?? sos) : sos;
   const mau = hoMau(tone, v.overall, soMon);

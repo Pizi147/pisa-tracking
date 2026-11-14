@@ -221,7 +221,7 @@ export function HoTroHocVienTab() {
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
     /* GD-1 (lời 19): tab "Chấm Speaking" — đủ ngắn, 375 giữ nguyên tên (mockup v21 K8a). */
-    /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục), ⚠ khi có bài quá hạn. */
+    /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục); V22: có bài quá hạn → badge đỏ. */
     const badgeCua = (k: string): BadgeTab => {
       const b = badgeTab(dongCuaTab(items, k));
       if (k !== 'cham-cheo') return b;

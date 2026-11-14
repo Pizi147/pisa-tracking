@@ -70,7 +70,7 @@ const diemKq = (kq: KqThiThat | null): ReactNode => {
   return <>KQ <span className={`lt-kq ${kq.dat === true ? 'dat' : kq.dat === false ? 'duoi' : ''}`}>{kq.ovr!.toFixed(1)}</span></>;
 };
 
-/** Cột Lịch thi: chữ trạng thái (tên của `nhanLichThi` / `chuSauThi`) + MỘT dòng phụ; hạn quá → dòng phụ đỏ có ⚠. Không thanh, không chip màu. */
+/** Cột Lịch thi: chữ trạng thái (tên của `nhanLichThi` / `chuSauThi`) + MỘT dòng phụ; hạn quá → dòng phụ đỏ (V22: chỉ màu, chữ nói "quá hạn"). Không thanh, không chip màu. */
 export function CotLich({ r }: { r: HangHien }) {
   const { homNay } = useNgayNghiepVu();
   const l = r.lichThi;
@@ -337,7 +337,7 @@ export function TenEm({ r, ds }: { r: HangHien; ds?: NguCanhDs }) {
   return <Link className="ten-ho-so khong-mui lt-ten" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>;
 }
 
-/** Dòng tiêu đề lớp: "MB FT 101 · 3 em · 1 cần làm ⚠ 1 quá hạn" — việc gấp không chìm khi xếp theo lớp. */
+/** Dòng tiêu đề lớp: "MB FT 101 · 3 em · 1 cần làm · 1 quá hạn" — việc gấp không chìm khi xếp theo lớp. */
 export function ChuLop({ lop, n, can, qua }: { lop: string; n: number; can: number; qua: number }) {
-  return <>{lop} <span className="lt-lop-n">· {t('{n} em', { n })}{can ? ` · ${t('{n} cần làm', { n: can })}` : ''}</span>{qua > 0 && <b className="lt-qua-lop">{t('⚠ {n} quá hạn', { n: qua })}</b>}</>;
+  return <>{lop} <span className="lt-lop-n">· {t('{n} em', { n })}{can ? ` · ${t('{n} cần làm', { n: can })}` : ''}</span>{qua > 0 && <b className="lt-qua-lop"> · {t('{n} quá hạn', { n: qua })}</b>}</>;
 }

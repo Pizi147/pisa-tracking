@@ -14,9 +14,9 @@ import { t } from '@shared/i18n/index.ts';
 /* OV-15d (C03): chấm ● = tab có việc cần xử lý (hồ sơ HV › Ý thức) — không còn "Đã nhắc" (Nhắc thủ công đã bỏ). */
 const CAN_XU_LY = t('Cần xử lý');
 
-/** `so` = badge MỜ chỉ đếm; `badge` = badge việc của tôi (đỏ quá hạn · vàng hôm nay · Chấm Speaking mờ + ⚠ — `BadgeTabSo`); `ngan` = tên ngắn ở 375. */
+/** `so` = badge MỜ chỉ đếm; `badge` = badge việc của tôi (đỏ quá hạn · vàng hôm nay · Chấm Speaking: đỏ khi có bài quá hạn, không thì mờ — `BadgeTabSo`); `ngan` = tên ngắn ở 375. */
 export type HangTabMuc<K extends string> = { key: K; label: string; ngan?: string; so?: number | null; badge?: BadgeTab | null; canhBao?: boolean;
-  /** BAO-CAO-PH (mockup v15 t1, e1): chip nhẹ sau nhãn — "Tháng 11 · hạn 30/11"; `xau` = quá hạn (đỏ; nơi gọi đặt ký hiệu cảnh báo trong `chu` — không chỉ màu). */
+  /** BAO-CAO-PH (mockup v15 t1, e1): chip nhẹ sau nhãn — "Tháng 11 · hạn 30/11"; `xau` = quá hạn (đỏ; chữ `chu` đã nói "quá hạn" — V22 không biểu tượng). */
   chip?: { chu: string; xau?: boolean } | null;
   /** Phần phụ mờ sau badge (sổ nghĩa vụ: "+n" bài S chéo chung). */
   phu?: ReactNode };

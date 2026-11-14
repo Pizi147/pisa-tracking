@@ -193,13 +193,13 @@ export const HD_GV: HuongDan = {
     {
       id: 'xem-viec', ten: 'Xem việc của bạn', nhom: 'khac',
       loiChinh: { man: 'cong-viec', chu: 'Công việc', duong: CV, chi: { hd: 'nav-cong-viec', chu: 'Bấm <b>Công việc</b> — mọi việc của bạn ở đây.' } },
-      buoc: ['Mở <b>Công việc</b>: mỗi tab một nhóm việc, quá hạn ở đầu mục, có ⚠.', 'Bấm dòng để làm ngay; lưu xong việc rời danh sách.'],
+      buoc: ['Mở <b>Công việc</b>: mỗi tab một nhóm việc, quá hạn ở đầu mục, chữ đỏ.', 'Bấm dòng để làm ngay; lưu xong việc rời danh sách.'],
       tuKhac: ['việc', 'todo', 'tasks'],
     },
     {
       id: 'xem-chuong', ten: 'Xem chuông thông báo', nhom: 'khac',
       loiChinh: { chu: 'Chuông trên thanh trên' },
-      buoc: ['Bấm chuông: <b>Việc cần làm</b> — mỗi loại việc một dòng, số mới, ⚠ quá hạn; bấm dòng mở đúng việc.', '<b>Cập nhật</b>: báo một chiều; <b>Đánh dấu đã đọc</b>, <b>Xem tất cả</b>.'],
+      buoc: ['Bấm chuông: <b>Việc cần làm</b> — mỗi loại việc một dòng, số mới, quá hạn tô đỏ; bấm dòng mở đúng việc.', '<b>Cập nhật</b>: báo một chiều; <b>Đánh dấu đã đọc</b>, <b>Xem tất cả</b>.'],
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell'],
     },
     {
@@ -250,7 +250,7 @@ export const HD_GV: HuongDan = {
       khongLam: [KHONG_XEP_MT, { ten: 'Duyệt yêu cầu', cua: 'việc của QL' }],
       muc: [
         { id: 'cv-gop', ten: 'Làm cả lớp một lần', buoc: ['Dòng "n em" mở danh sách em; làm từng em hoặc cùng lúc.'] },
-        { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chữ cam + ⚠ ở cột hạn, nằm đầu mục.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
+        { id: 'cv-qua-han', ten: 'Vì sao việc quá hạn', buoc: ['Qua hạn mà chưa Lưu: chữ đỏ ở cột hạn, nằm đầu mục.', 'Lưu xong là hết quá hạn ở mọi nơi.'] },
         { id: 'cv-loc', ten: 'Lọc việc', buoc: ['Ô hạn: <b>Mọi hạn</b> · <b>Quá hạn</b> · <b>Hôm nay</b> · hạn đến một ngày; <b>Lọc thêm</b> cho khung, chi nhánh.', 'Đầu trang đếm “n việc · m quá hạn” và việc xong hôm nay.'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc việc ở hàng này.' } },
         { id: 'cv-lop', ten: 'Lớp của tôi', buoc: ['Khung phải khi chưa chọn việc (điện thoại: nút <b>Lớp của tôi</b>): mỗi lớp một dòng — bạn dạy gì, Test, <b>Việc cần làm</b>.', 'Bấm một nút việc (Nhập điểm, Case, Ý thức, Vận hành) mở đúng việc đó; bấm tên lớp mở hồ sơ lớp.'],

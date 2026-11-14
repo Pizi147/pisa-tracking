@@ -34,7 +34,7 @@ export type TongQuanV5Data = {
 };
 
 /** Tham số chung của mọi đường trên trang (chi nhánh + khung). */
-/** M6 6b-4 (Q5, Q8): ô "⚠ n" Quá hạn của GV → panel GV chấm quá hạn (lớp · lượt · kỹ năng → em còn trống → Nhập hộ), cùng tập Trễ chấm. */
+/** M6 6b-4 (Q5, Q8): ô "n" Quá hạn của GV → panel GV chấm quá hạn (lớp · lượt · kỹ năng → em còn trống → Nhập hộ), cùng tập Trễ chấm. */
 const GV_TRE_QL = {
   loai: t('Số liệu · Tổng quan'), trong: t('Giáo viên này không còn bài trễ chấm'),
   cachTinh: t('Bài = ô kỹ năng còn trống của em đã thi (W1, W2 tính riêng), đã qua hạn chấm. Cùng tập với cột "Quá hạn" của bảng GV cần chú ý; Speaking chấm chéo chưa ai nhận vẫn tính quá hạn.'),
@@ -304,7 +304,7 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
     if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'tre') {
       const n = tre.get(h.id) ?? 0;
-      return n ? <span className="font-semibold text-bad">⚠ <OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={`/tong-quan/gv-tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} gvTre={GV_TRE_QL} /></span>
+      return n ? <span className="font-semibold text-bad"><OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={`/tong-quan/gv-tre?gv=${h.id}&${thamSoTq(d.branchId, d.ct)}`} gvTre={GV_TRE_QL} /></span>
         : <span className="tabular-nums text-faint">0</span>;
     }
     /* PT-SO-LOI (PTA 12/11): % đúng hạn → panel sổ nghĩa vụ mở thẳng tab Đúng hạn (`tt`). */
@@ -349,7 +349,7 @@ export function TongQuanQlV5({ d }: { d: TongQuanV5Data }) {
           giaTri={<PhanTram x={{ dat: d.casePa.coPa, mau: d.casePa.mo }} nguon={qCn(d, 'caseMo', 'tong')} tieuDe={t('Case đang mở')} className="so-chinh" />}
           mau={<MauCasePa d={d} />} />
         {/* TQ-GON (M5): "yêu cầu" — cùng tên với Chờ bạn duyệt ở Công việc / Hộp duyệt. */}
-        {duyet && <ChiSo ten={tenDen(t('Chờ duyệt'), choN)} ky={t('hiện tại')} giaTri={<SoDen n={choN} to="/cong-viec?nhom=duyet" className="so-chinh" />} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
+        {duyet && <ChiSo ten={tenDen(t('Chờ duyệt'), choN)} ky={t('hiện tại')} giaTri={<SoDen n={choN} to="/cong-viec?nhom=duyet" className="so-chinh" />} mau={<>{t('yêu cầu')}{choQuaHan > 0 && <span className="font-semibold text-bad"> · {t('{n} quá hạn', { n: choQuaHan })}</span>}</>} />}
         <ChiSoThi d={d} />
       </DaiChiSo>
       <BoCuc
@@ -462,7 +462,7 @@ export function TongQuanCxV5({ d, onChiNhanh }: { d: TongQuanV5Data; onChiNhanh:
  * tự gọi nên thường thành hai lời gọi `/my-work` mỗi lần mở trang). Cả ô là link Công việc (MO-TAT-CA 05/11).
  * Head tutor chưa có Công việc (không `workSupport`) → không ô.
  */
-/* `dai` — GD-4 e (⓪ dòng 22, trang-dau-tvv [XM-1]): ô của dải mỏng — số không bấm, giữ "⚠ m quá hạn"; nhãn "Việc ›" đổi trang Công việc. */
+/* `dai` — GD-4 e (⓪ dòng 22, trang-dau-tvv [XM-1]): ô của dải mỏng — số không bấm, giữ "m quá hạn"; nhãn "Việc ›" đổi trang Công việc. */
 export function OViecCuaToi({ dai }: { dai?: boolean } = {}) {
   const { session } = useSession();
   const viec = useSoViecCuaToi();
@@ -470,14 +470,14 @@ export function OViecCuaToi({ dai }: { dai?: boolean } = {}) {
   if (dai) {
     const nhan = session.nav.work ? <Link to="/cong-viec" className="font-semibold text-[color:var(--accent)] no-underline hover:underline">{t('Việc')} ›</Link> : t('Việc');
     return (
-      <ODai nhan={nhan} phu={!!viec?.viecQuaHan && <span className="font-semibold text-bad">⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}>
+      <ODai nhan={nhan} phu={!!viec?.viecQuaHan && <span className="font-semibold text-bad">{t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}>
         <SoTinh n={viec?.viec ?? '…'} />
       </ODai>
     );
   }
-  /* TQ-GON (M4, V13): dòng phụ = đơn vị (+ ⚠ quá hạn khi có). */
+  /* TQ-GON (M4, V13): dòng phụ = đơn vị (+ số quá hạn đỏ khi có). */
   const o = <ChiSo ten={session.nav.work ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')} giaTri={viec?.viec ?? '…'}
-    mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · ⚠ {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />;
+    mau={<>{t('việc')}{!!viec?.viecQuaHan && <span className="font-semibold text-bad"> · {t('{n} quá hạn', { n: viec.viecQuaHan })}</span>}</>} />;
   return session.nav.work
     ? <Link to="/cong-viec" className="block h-full rounded-xl no-underline hover:[&>.card]:border-[color:var(--accent)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[color:var(--accent)]">{o}</Link>
     : o;
@@ -496,7 +496,7 @@ export function TongQuanTvvV5() {
   const choKq = hv.data?.dem['da-thi'] ?? 0, buoc = hv.data?.dem['cho-buoc-tiep'] ?? 0;
   return (
     <>
-      {/* GD-4 e (mockup v21 H3 + trang-dau-tvv K1, ⓪ dòng 22): MỘT dải mỏng 5 ô "nhãn + số" — Việc (không bấm, "⚠ m quá hạn") · Báo PH đúng hạn ⓘ (ô số →
+      {/* GD-4 e (mockup v21 H3 + trang-dau-tvv K1, ⓪ dòng 22): MỘT dải mỏng 5 ô "nhãn + số" — Việc (không bấm, "m quá hạn") · Báo PH đúng hạn ⓘ (ô số →
           panel) · Thi tháng này ⓘ › · Chờ KQ › · Chưa chốt lộ trình tiếp › (đổi trang, cùng đích cũ). Đơn vị "HV" bỏ (tên ô đã nói); 0 không bấm. */}
       <DaiChiSoMong nhan={t('Chỉ số của tôi')}>
         <OViecCuaToi dai />

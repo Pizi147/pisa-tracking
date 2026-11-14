@@ -371,7 +371,7 @@ export function chuKetQuaPa(nhan: string | null, ngay: string | null, homNay: st
 
 /**
  * VIỆC TIẾP của một hàng kỹ năng (K3-07, Q3): việc của Case đang mở có hạn sớm nhất + NGƯỜI LÀM (`nguoiLam` máy chủ tính một chỗ).
- * Dòng phụ: `hạn hết 02/10 · Đỗ Thanh Tùng` · quá hạn: `quaHan` = "quá hạn 3 ngày" (giao diện thêm ⚠ SVG, đỏ).
+ * Dòng phụ: `hạn hết 02/10 · Đỗ Thanh Tùng` · quá hạn: `quaHan` = "quá hạn 3 ngày" (giao diện tô đỏ, V22 không biểu tượng).
  */
 export function viecTiepHang(cases: readonly {
   status: string; viecTiep?: { chu: string; loaiHan: DeadlineKind | null; han: string | null } | null; nguoiLam?: { id: number | null; ten: string | null } | null;

@@ -76,13 +76,13 @@ export function NhanSauThi({ s, gon }: { s: { giaiDoan: GiaiDoanSauThi; han: str
   const tone = s.quaHan ? 'late' : s.giaiDoan === 'cho_buoc_tiep' ? 'ok' : 'soon';
   const han = s.han ? (
     <span className={`text-xs tabular-nums ${s.quaHan ? 'font-semibold text-late' : 'text-slate-400'}`}>
-      {[t('hạn {ngay}', { ngay: ngay(s.han, homNay) }), s.quaHan ? `⚠ ${t('quá hạn')}` : s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
+      {[t('hạn {ngay}', { ngay: ngay(s.han, homNay) }), s.quaHan ? t('quá hạn') : s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
     </span>
   ) : null;
-  /* OV-15a: ô bảng — chip viền xanh "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp" (hàng tô nền đã thi ở chỗ gọi), trễ thêm ⚠ trong chip. */
+  /* OV-15a: ô bảng — chip viền xanh "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp" (hàng tô nền đã thi ở chỗ gọi), trễ: chip viền đỏ + chữ sr-only "quá hạn" (V22: không biểu tượng). */
   if (gon) return (
     <span className="block text-xs leading-snug">
-      <span className={`${CHIP_TRON} border-ok bg-[color:var(--surface)] font-semibold text-slate-100`}>{s.quaHan && <span aria-hidden className="mr-1 text-late">⚠</span>}{chipSauThi(s)}</span>
+      <span className={`${CHIP_TRON} border-ok bg-[color:var(--surface)] font-semibold text-slate-100`}>{chipSauThi(s)}{s.quaHan && <span className="sr-only"> · {t('quá hạn')}</span>}</span>
       <span className="block">{han}</span>
     </span>
   );

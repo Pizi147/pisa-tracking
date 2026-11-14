@@ -285,7 +285,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
       <section id="nhom-cho-duyet" className="card overflow-clip p-0" aria-label={t('Chờ bạn duyệt')}>
         <h3 className="m-0 flex min-h-[38px] items-center gap-2 px-4 py-[9px] text-[13px] font-bold" style={{ background: 'var(--surface-2)' }}>
           {t('{n} yêu cầu', { n: ds.length })}
-          {quaHanN > 0 && <span className="font-semibold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: quaHanN })}</span>}
+          {quaHanN > 0 && <span className="font-semibold text-late">{t('{quaHan} quá hạn', { quaHan: quaHanN })}</span>}
           {choHangLoat && <NutLuat label={t('Duyệt nhiều')}>{t('Đánh dấu ô ở dòng để duyệt nhiều yêu cầu cùng loại một lần.')}</NutLuat>}
         </h3>
         {loading && !data && <div className="px-4 py-3"><Skeleton rows={4} /></div>}
@@ -587,7 +587,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
 
 /**
  * TINH-HINH (mockup v20 E, chủ SP 12/11): thẻ Xử lý Ý thức khác mặc định (LG-10, 15/11: cả thẻ Thu hồi) — QL có 5 ngày, hết hạn TỰ CHỐT theo GVCN. Đếm ngược "Còn n ngày" + 5 vạch
- * (vạch đã qua tô) + "hết hạn: giữ quyết định GVCN"; ≤ 1 ngày: nền vàng ⚠ (không chỉ màu).
+ * (vạch đã qua tô) + "hết hạn: giữ quyết định GVCN"; ≤ 1 ngày: chữ vàng "Còn n ngày" (V22: chỉ màu, chữ nói hạn).
  */
 function DemNguocYThuc({ han }: { han: string }) {
   const { homNay } = useNgayNghiepVu();
@@ -596,7 +596,7 @@ function DemNguocYThuc({ han }: { han: string }) {
   return (
     <span className={`grid w-full gap-1 rounded-lg border px-2 py-1.5 ${gap ? 'border-soon-line bg-soon-bg' : ''}`} style={gap ? undefined : { borderColor: 'var(--line-strong)' }}
       title={t('Hết hạn: tự chốt theo GVCN')}>
-      <span className={`text-[13px] font-bold tabular-nums ${gap ? 'text-soon' : 'text-[color:var(--text)]'}`}>{gap ? '⚠ ' : ''}{con ? t('Còn {n} ngày', { n: con }) : t('Hết hôm nay')}</span>
+      <span className={`text-[13px] font-bold tabular-nums ${gap ? 'text-soon' : 'text-[color:var(--text)]'}`}>{con ? t('Còn {n} ngày', { n: con }) : t('Hết hôm nay')}</span>
       <span aria-hidden className="grid grid-cols-5 gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-[4px] rounded-sm ${i < 5 - Math.min(5, con) ? (gap ? 'bg-soon' : 'bg-[color:var(--accent)]') : 'bg-[color:var(--line-strong)]'}`} />)}</span>
       <span className="text-xs leading-tight text-dim">{t('Hết hạn: giữ quyết định GVCN')}</span>
     </span>

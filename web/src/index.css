@@ -22,7 +22,7 @@
      * NEN-V5 (08 mục 6, `thiet-ke/v5/v5-nen.css`): MÀU PISA TỪ LOGO — xanh #273C8F (cấu trúc), hồng #F25A98 (nhận diện, dùng ít).
      * Tên biến CŨ giữ nguyên (Tailwind + mọi component đọc chúng), chỉ đổi GIÁ TRỊ theo token vai trò V5:
      *   --bg = --nen · --surface = --be-mat · --surface-2 = --be-mat-2 · --line = --vien · --line-strong = --vien-dam · --accent = --nhan ·
-     *   --text = --chu · ok/dat = --dat · bad/late = --loi (quá hạn luôn kèm ⚠) · soon = --canh-bao · doing = --dang · muted/done = xám V5.
+     *   --text = --chu · ok/dat = --dat · bad/late = --loi (quá hạn chỉ bằng màu — V22) · soon = --canh-bao · doing = --dang · muted/done = xám V5.
      * Khối này = TỐI (mặc định khi không có `data-theme`); khối `:root[data-theme="light"]` dưới = SÁNG. Đo: `thiet-ke/v5/kiem-tuong-phan.py`.
      */
     --bg: #050a16;   /* P3 (chủ SP 22/10): xanh bớt ngả tím, tối hơn V5 #0b1026; thẻ tách nền ≥ 1,15 : 1 (OV-15a) */
@@ -58,7 +58,7 @@
      */
     --ok-rgb: 148 209 174;    --ok-bg-rgb: 30 50 43;     --ok-line-rgb: 73 117 92;     /* đạt · đã lưu ✓ */
     --bad-rgb: 232 154 140;   --bad-bg-rgb: 52 28 29;    --bad-line-rgb: 126 72 65;    /* lỗi · chưa đạt ✗ */
-    --late-rgb: 232 154 140;  --late-bg-rgb: 52 28 29;   --late-line-rgb: 126 72 65;   /* quá hạn = màu lỗi V5, luôn kèm ⚠ */
+    --late-rgb: 232 154 140;  --late-bg-rgb: 52 28 29;   --late-line-rgb: 126 72 65;   /* quá hạn = màu lỗi V5, không biểu tượng (V22) */
     --soon-rgb: 228 199 132;   --soon-bg-rgb: 48 42 26;   --soon-line-rgb: 118 102 63;  /* sắp hạn · hôm nay · cần chú ý */
     --doing-rgb: 156 189 231; --doing-bg-rgb: 25 43 70;  --doing-line-rgb: 67 99 148;  /* đang làm · đang lưu */
     --done-rgb: 158 172 200;  --done-bg-rgb: 22 34 58;   --done-line-rgb: 51 70 105;   /* đã xong */
@@ -641,7 +641,7 @@
   .vh-cho::before { background: rgb(var(--muted-line-rgb)); }
   .vh-xong { color: rgb(var(--ok-rgb)); } .vh-xong::before { background: rgb(var(--ok-rgb)); }
   .vh-qua { background: rgb(var(--bad-bg-rgb)); color: rgb(var(--bad-rgb)); }
-  .vh-qua::before { content: '⚠'; width: auto; height: auto; border-radius: 0; background: none; font-size: 12px; }
+  .vh-qua::before { background: currentColor; }   /* V22: quá hạn chỉ bằng màu — chấm đỏ như các mức khác */
   tr.hang-dai > td { padding: 10px 12px 12px 24px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
   tr.hang-khop > td { background: color-mix(in srgb, var(--hong) 7%, var(--surface)); }
   .khop-tim { color: var(--hong-chu); font-weight: 700; }   /* A3 (AUDIT-UI C10): --hong chữ ở sáng chỉ 2,9 : 1; --hong-chu 5,5 : 1 */
@@ -976,7 +976,7 @@
   @media (max-width: 639px) {
     .chv-v-dau { padding: 10px 12px 8px; }
     .chv-cn-dau { padding: 2px 12px 4px; }
-    .chv-viec { grid-template-columns: minmax(0, 1fr) 66px 98px 10px; column-gap: 6px; padding: 6px 12px; }   /* chip "⚠ 12 quá hạn" ≈ 98 px */
+    .chv-viec { grid-template-columns: minmax(0, 1fr) 66px 98px 10px; column-gap: 6px; padding: 6px 12px; }   /* chip "12 quá hạn" ≈ 98 px */
     .chv-tin, .chv-tin.chv-day { padding: 8px 12px; min-height: 48px; }
     .chv-lk, .chv-cn-dau .chv-lk, .chv-nut-chu, .chv-lai { min-height: 44px; }
     .chv-lai { width: 44px; }
@@ -1255,7 +1255,7 @@
 /* SO-GON (DESIGN G6, luật mật độ M1 + M10 — chủ SP 05/11, toàn web): số bấm được (`LOP_OSO` → `OSo`, `SoDen`, ô chỉ số; ô `.o-so.so-bam`) mang lớp
    đánh dấu `.so-bam`: màu nhấn, gạch chân CHỈ khi rê / focus — hết "số gạch chân khắp nơi". Ngoài @layer để thắng tiện ích `underline`.
    Giữ gạch: số nằm giữa câu (dòng phụ `.text-xs` "38 chưa PA" — chỉ màu không đủ phân biệt link trong chữ, WCAG 1.4.1) và gạch CHẤM gợi ý (KCK).
-   Chữ 500 khi số nằm trong ô bảng / dòng phụ / ô `.o-so` — đậm chỉ tên ở cột đầu, số lớn ô chỉ số 700; quá hạn (đỏ ⚠) vẫn đậm vì là việc cần làm ngay. */
+   Chữ 500 khi số nằm trong ô bảng / dòng phụ / ô `.o-so` — đậm chỉ tên ở cột đầu, số lớn ô chỉ số 700; quá hạn (đỏ) vẫn đậm vì là việc cần làm ngay. */
 .so-bam:not(.text-xs *, .decoration-dotted):not(:hover, :focus-visible) { text-decoration-line: none; }
 /* A3 (AUDIT-UI C11): hàng / mục "không còn dùng" (rời sớm, ngừng, chưa chọn) — chữ mờ bằng token thay opacity (opacity ở sáng kéo chữ xuống 2,1–2,9 : 1). */
 .hang-mo, .hang-mo * { color: var(--text-faint); }
@@ -1263,7 +1263,7 @@
 .thanh-xanh input + kbd { color: var(--goc-text-faint); }
 :is(td, .text-xs) .so-bam:not(.text-bad, .text-late, .decoration-dotted, .o-so-hop *), .o-so.so-bam { font-weight: 500; }
 /* GD-4 e — DẢI CHỈ SỐ MỘT KIỂU (`ui/DaiChiSo.tsx`, mockup v21 H3 `.dai-cs` / `.oso`): một hàng mỏng cao 44, ô "nhãn + số" ngăn vạch line; số bấm được
-   gạch chân liền màu nhấn (thắng luật SO-GON "gạch khi rê" — dải là chỗ số đứng riêng, cần nhận ra là bấm được); số xấu ⚠ + màu xấu; 0 mờ. 375: lưới 2 cột. */
+   gạch chân liền màu nhấn (thắng luật SO-GON "gạch khi rê" — dải là chỗ số đứng riêng, cần nhận ra là bấm được); số xấu chỉ màu xấu (V22); 0 mờ. 375: lưới 2 cột. */
 .dai-cs { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; min-height: 44px; padding: 6px 16px; border: 1px solid var(--line); border-radius: 10px;
   background: var(--surface); font-size: 14px; color: var(--text-dim); }
 .dai-cs-o { display: inline-flex; align-items: baseline; gap: 6px; white-space: nowrap; padding: 0 16px; }
@@ -1271,7 +1271,6 @@
 .dai-cs-o + .dai-cs-o { border-left: 1px solid var(--line); }
 .dai-cs-nhom { color: var(--text); font-weight: 700; }
 .dai-cs .so-bam:not(.decoration-dotted) { font-size: 15px; font-weight: 600; text-decoration-line: underline; text-decoration-thickness: 1.5px; text-underline-offset: 4px; }
-.dai-cs .so-bam:is(.text-bad, .text-late)::before { content: '⚠ '; display: inline-block; text-decoration: none; white-space: pre; }
 .dai-cs-so, .dai-cs-0 { font-size: 15px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
 .dai-cs-0 { color: var(--text-faint); }
 .dai-cs-phu { font-size: 13px; color: var(--text-faint); }
@@ -1285,7 +1284,7 @@
   .dai-cs-o:last-child:nth-child(odd) { grid-column: 1 / -1; }
 }
 /* PT-a (mockup v19 `.os`, chủ SP duyệt 12/11): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx). Số bấm được = hộp nhỏ (nhìn ra là nút, không gạch chân);
-   màu chỉ cho ô cần làm: đỏ + ⚠ = quá hạn (`text-bad` / `text-late`), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
+   màu chỉ cho ô cần làm: đỏ = quá hạn (`text-bad` / `text-late`; V22 không biểu tượng), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
    Số 0 / "—" không phải nút (OSo) → mờ, không hộp. Số trong chip (SOS, `SO_TRONG_CHIP` → `!text-inherit`) giữ dáng chip. Panel (portal) nằm ngoài vùng → giữ dáng cũ. Tổng quan / hồ sơ lớp: PR riêng (XM-6). */
 .o-so-hop .so-bam:not([class~="!text-inherit"]) { display: inline-flex; align-items: center; justify-content: center; gap: 4px; min-width: 40px; height: 30px; padding: 0 9px; border-radius: 7px;
   border: 1px solid var(--os-vien); background: var(--os-nen); color: var(--os-chu); font-weight: 600; line-height: 1; vertical-align: middle; white-space: nowrap;
@@ -1294,7 +1293,6 @@
 .o-so-hop .so-bam:is(:hover, :focus-visible) { background: var(--os-re); border-color: var(--accent); }
 .o-so-hop .so-bam[aria-expanded="true"] { border: 2px solid var(--accent); padding: 0 8px; background: var(--accent-soft); }
 .o-so-hop .so-bam:is(.text-bad, .text-late) { background: var(--os-do-nen); border-color: var(--os-do-vien); color: var(--os-do-chu); font-weight: 700; }
-.o-so-hop .so-bam:is(.text-bad, .text-late)::before { content: '⚠'; font-size: 12px; }
 .o-so-hop .so-bam.text-soon { background: var(--os-vang-nen); border-color: var(--os-vang-vien); color: var(--os-vang-chu); }
 /* Chủ SP rà #1490 (bỏ XM-7): ô SOS 1 · 2 · 3 bảng SOS tô màu theo mức như chip SOS (MAU-MUC: SOS 1 rỗng viền vàng · SOS 2 nền cam · SOS 3 nền đỏ chữ trắng). */
 .o-so-hop .so-bam.so-m1 { background: transparent; border-color: rgb(var(--sos1-rgb)); color: rgb(var(--sos1-chu-rgb)); }
@@ -1305,7 +1303,7 @@
 .o-so-hop .so-bam.text-kq-duoi { color: rgb(var(--kq-duoi-rgb)); }
 .o-so-hop .text-xs .so-bam { min-width: 26px; height: 22px; padding: 0 6px; border-radius: 5px; }
 /* Số lớn thẻ chỉ số (`DaiChiSo` `.chi-so-gt`, `SoTo` `.so-chinh`) — chủ SP rà #1490 (thay XM-5): KHÔNG hộp. Vẫn là nút: màu nhấn, rê / focus gạch chân,
-   màu nghĩa bằng màu chữ (đỏ + ⚠ quá hạn, vàng đang chờ). Lặp `.so-bam` để thắng các luật hộp ở trên (cùng độ đặc hiệu). */
+   màu nghĩa bằng màu chữ (đỏ quá hạn, vàng đang chờ). Lặp `.so-bam` để thắng các luật hộp ở trên (cùng độ đặc hiệu). */
 .o-so-hop :is(.chi-so-gt .so-bam.so-bam, .so-bam.so-bam.so-chinh) { height: auto; min-width: 0; padding: 0; border: 0; border-radius: 4px; background: none;
   color: var(--accent); font-weight: 700; line-height: 1.2; }
 .o-so-hop :is(.chi-so-gt .so-bam.so-bam, .so-bam.so-bam.so-chinh):is(:hover, :focus-visible, [aria-expanded="true"]) { background: none; border: 0; padding: 0; text-decoration-line: underline; text-underline-offset: 4px; }
@@ -1389,7 +1387,7 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .lt-lich { display: grid; gap: 1px; min-width: 0; }
   .lt-s1 { font-size: 15px; font-weight: 600; line-height: 1.35; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .lt-s2 { font-size: 13px; line-height: 1.4; color: var(--text-dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .lt-s2.lt-qua { color: rgb(var(--bad-rgb)); font-weight: 700; } .lt-s2.lt-qua::before { content: '⚠ '; }
+  .lt-s2.lt-qua { color: rgb(var(--bad-rgb)); font-weight: 700; }
   .lt-lich.lt-xong .lt-s1 { color: var(--text-dim); font-weight: 500; }
   .lt-kq { font-weight: 700; font-variant-numeric: tabular-nums; }
   .lt-kq.dat { color: var(--ok); } .lt-kq.dat::before { content: '✓ '; }
