@@ -41,8 +41,8 @@ Chỉ sửa tại chỗ, không vẽ lại, không đổi bố cục. Ảnh cặ
 | 22 | ④ | K1, K4a, K5, K6, K7 (dải "Chỉ số của tôi") | Dải 5 ô cao 58 có dòng phụ → **dải mỏng 44 một hàng ⑤ H3** ("nhãn + ô số", ⓘ là nút, ô "›" giữ đổi trang, 0 không bấm); ô "Việc" không bấm, giữ "⚠ m quá hạn" (④ [XM-1]); "Chờ KQ thi thật" → **"Chờ KQ"** | ⑤ H3 · `10` B |
 | 23 | ② | mọi khung | Tab Ý thức chỉ có chấm vàng → **badge viên tròn** (đỏ khi việc Ý thức của tôi quá hạn, mờ khi chỉ đếm); tab Báo cáo PH mang chip "Tháng 9 · hạn 30/09" → **badge mờ "1"** (hạn vẫn ở đầu tab) | ⑤ H1 · `10` B |
 | 24 | ② | K1–K8 | Menu "+ Task" không biểu tượng → **có biểu tượng** như ⑤ F1 / ① | ⑤ F1 · `10` B |
-| 25 | ② | K2b, K8b, panel mẫu | Chân panel chưa lưu "Việc tiếp › + Xác nhận PA" → **"Đóng + Xác nhận PA"**; "Việc tiếp ›" chỉ sau khi lưu | ⑤ D2 · `10` B |
-| 26 | ④ | K2a, K2b, K2c, K7c | Chân "Lưu + Lưu · việc tiếp ›" → **"Đóng + Lưu"** (375: "Lưu"); bỏ chấm trước "Chưa lưu" | ⑤ D2 · `10` B · [XM-⓪1] |
+| 25 | ② | K2b, K8b, panel mẫu Chọn PA · panel mẫu Phối hợp SOS | Chân Chọn PA (mở từ chip "Case · 2", còn việc kế) "Việc tiếp › + Xác nhận PA" → **"Đóng · Xác nhận PA · Lưu · việc tiếp ›"** (nút chính); Phối hợp SOS (panel lẻ) "Xác nhận" → **"Đóng · Xác nhận"** | lời 36 (PTA [XM ⓪1]) · `10` B |
+| 26 | ④ | K2a, K2b, K2c, K3c, K7c | Báo PH "Lưu + Lưu · việc tiếp ›" → **"Đóng · Lưu · Lưu · việc tiếp ›"** (giữ nút gộp, thêm "Đóng"; 375 giữ "Lưu · Lưu · việc tiếp ›"); Chốt ngày "Chốt ngày" → "Đóng · Chốt ngày · Lưu · việc tiếp ›"; bỏ chấm trước "Chưa lưu" | lời 36 (PTA [XM ⓪1]) · ⑤ D2 |
 | 27 | ② | panel Phối hợp SOS (mẫu) | Câu quy chế → **"Meeting: hạn 18/09 · xác nhận xong TVV nhận việc báo PH"** | bảng ⑤ · `10` B |
 | 28 | ③ | K3a–K3f, K4c | 7 câu quy chế → câu bảng ⑤ (Mô tả Case · Chọn PA hai biến thể · Ghi kết quả "Điều chỉnh / Thay PA cần lý do" · Hoàn thành Case hai biến thể · Trả lời tình hình) | bảng ⑤ · `10` B |
 | 29 | ④ | K2a–K2c, K3a–K3c, K7c | 7 câu quy chế → câu bảng ⑤ (Báo PH đã báo / chưa liên hệ được · Báo PH tình hình · Cập nhật KQ thi thật · Lộ trình mới · Chốt ngày thi) | bảng ⑤ · `10` B |
@@ -58,6 +58,8 @@ Chỉ sửa tại chỗ, không vẽ lại, không đổi bố cục. Ảnh cặ
 | 39 | ② ⑤ | ② K7f; ⑤ B3 | Câu lỗi / hết việc theo mẫu ①: "⚠ Không tải được … · Thử lại"; "Hết việc Chấm điểm của bạn · Còn: Case học thuật · 3 việc · Việc tiếp ›" | `10` B |
 | 40 | ⑤ | tiêu đề khung B | "dải 'Việc cần làm' hồ sơ lớp" → hồ sơ lớp dùng nút-chip (② đã duyệt) | `10` B |
 | 40b | ⑤ | E2 (hộp nhập Writing) | Dòng chú thích "Writing = (W1 + 2×W2) / 3 · Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5 ✓" → chỉ giữ dòng xem trước **"Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5 ✓"**, công thức vào **ⓘ** cạnh dòng (như mockup ⑦) | luật bỏ chú thích tĩnh · PTA Overhaul 15/11 |
+| 40c | ① ③ ⑤ | ① K4a, K4b · ③ K4c · ⑤ D1a, D1b, D2, D4 | Chân panel việc mở từ danh sách còn việc kế: "Đóng" · nút việc · **"Lưu · việc tiếp ›"** (nút chính); ⑤ D2 vẽ thêm trạng thái "panel mở lẻ / hết việc kế": "Đóng" · nút việc (chính). Hộp nhập điểm giữ "Lưu · bài tiếp ›" + "Vắng" + "⋯" | lời 36 (PTA [XM ⓪1]) |
+| 40d | ⑤ | F3 | Hộp Tình hình học tập từ "+ Task" = **MỘT hộp như ① K5c**: chọn em mẫu A (chọn nhiều ≤ 8) + Gửi tới + **Nội dung** + "Đóng" · **"Gửi TVV"** (thay "Tiếp" sang form) | PTA [XM ⓪2] |
 | 41 | CSS | `v21.css` | Dời nguyên văn từ `bang-mau.css`: ô chọn có tìm (`.oc*`), dải chỉ số + ô số (`.dai-cs`, `.oso`), badge mờ (`.bd.mo`), lịch sử (`details.ls`, `.ls-ds`), mục nguy hiểm `.menu-tha .nguy`; từ `ho-so-hv.css`: thang cấp bậc `.vach-bac` → ①–⑤ dùng MỘT bản | G2 "cùng thành phần" |
 | 42 | ghi chú | `trang-dau-gv-ghi-chu.md` [XM-2], [XM-5] · `bang-mau-ghi-chu.md` [XM-15], bảng mục 3 · `ho-so-lop-ghi-chu.md` [XM-10] · `trang-dau-tvv-ghi-chu.md` [XM-7], [XM-10] | Ghi "ĐÃ CHỐT / ĐÃ XONG" theo lời 33 và mockup ⓪; bảng mục 3: bỏ `test/keHoach/XepTheoHocVien.tsx` khỏi danh sách `soMo`, bỏ `worklist/LamDongSoLieu.tsx` khỏi danh sách dải (giữ số to — [XM-11]) | R0.6 |
 
@@ -70,7 +72,7 @@ Chỉ sửa tại chỗ, không vẽ lại, không đổi bố cục. Ảnh cặ
 | ① Bấm chip Chấm Speaking ở Lớp của tôi | mở panel Chấm Speaking | BỎ chip — vào tab Chấm Speaking | lời 20 (việc toàn chấm chéo) |
 | ① Bấm chip "Báo cáo PH ›" | đổi trang → tab Báo cáo PH hồ sơ lớp | chip "Vận hành · n" → tab Vận hành, nhóm Báo cáo PH, nút "Viết ›" đổi trang | lời 20; thêm 1 bấm khi lớp chỉ có việc Báo cáo PH |
 | ① Tab "Báo cáo PH" | tab riêng | nhóm trong tab Vận hành | lời 20 |
-| ④ Lưu Báo PH rồi sang việc kế | 1 bấm "Lưu · việc tiếp ›" | 2 bấm: "Lưu" → "Việc tiếp ›" | ⑤ D2 một chân — [XM-⓪1] |
+| Lưu việc rồi sang việc kế (mọi panel việc mở từ danh sách) | ④ có nút gộp; ①②③⑤ "Việc tiếp ›" chỉ sau lưu | MỌI panel: 1 bấm "Lưu · việc tiếp ›"; thêm nút "Đóng" | lời 36 — giữ nút gộp đang có trên web |
 | ② Đóng panel khi chưa lưu | ✕ hoặc nền | ✕, nền hoặc nút "Đóng" (Việc tiếp › chỉ sau lưu) | ⑤ D2 |
 | ② ④ Bấm số trong dải chỉ số | ② không bấm được; ④ bấm cả ô | ② "Đạt MT", "SOS" bấm → panel chỉ đọc; ④ bấm ô số (ô "Việc" không bấm), ô "›" vẫn đổi trang | ⑤ H3 |
 | ① ② ④ Chọn em / GV chấm | gõ trong ô thường, danh sách gợi ý | ô chọn có tìm (gõ không dấu, nhóm liên quan trước, ✕ xoá) | lời 17 |
@@ -79,11 +81,11 @@ Không mất thao tác nào khác.
 
 ## 3. [XM]
 
-1. **[XM-⓪1] ④ chân Báo PH mất nút gộp "Lưu · việc tiếp ›".** `10` B chọn theo ⑤ D2 ("Đóng" + nút chính; lưu xong "✓ Đã lưu" + "Việc tiếp ›") → thêm một bấm cho TVV khi làm hàng loạt Báo PH. Hộp nhập điểm (⑤ E) vẫn giữ "Lưu · bài tiếp ›". PTA chọn: giữ D2 như đã sửa, hay cho panel có nút gộp "Lưu · việc tiếp ›" ở mọi panel (đổi D2)?
-2. **[XM-⓪2] Hộp "Tình hình học tập" ① K5c ↔ ⑤ F3.** ① K5c vẽ hộp đủ (chọn em + Nội dung + "Gửi TVV"); ⑤ F3 vẽ hộp chỉ chọn em + "Gửi tới" rồi "Tiếp" sang form khung phải. Đã đồng bộ ô chọn em (mẫu A) và chữ "Đóng"; chưa đổi chân vì hai mockup trả lời khác nhau "Nội dung nằm ở đâu". PTA chọn một (đề xuất: theo ① K5c — một hộp, ít bước hơn, đúng hộp v20 C đang có).
+1. **[XM-⓪1] ĐÃ CHỐT (PTA Overhaul, lời 36):** chân panel việc mở từ danh sách còn việc kế = "Đóng" · nút việc · "Lưu · việc tiếp ›" (chính); mở lẻ / hết việc kế = "Đóng" · nút việc (chính). Đã áp ①②③④⑤ (dòng 25, 26, 40c).
+2. **[XM-⓪2] ĐÃ CHỐT (PTA Overhaul):** theo ① K5c — một hộp; ⑤ F3 đã sửa theo (dòng 40d).
 3. **[XM-⓪3] (đã xong theo chủ SP, mục 0)** Thang cấp bậc không chữ trong thanh; tên bậc viết đủ ở aria-label / title / "Thang ▾".
-4. **[XM-⓪4] Số ở badge Chấm Speaking khung K6 (22/09)** — mockup cũ chỉ có số bài quá hạn (4); số bài tổng tự đặt "12" (dữ liệu bịa).
-5. **[XM-⓪5] Badge tab Ý thức ở hồ sơ lớp khi người xem không có việc Ý thức** — vẽ mờ "1" (đếm em cần xử lý, thay chấm vàng cũ). Đúng nghĩa "mờ = chỉ đếm"; số lấy cùng nguồn chấm cũ (không thêm request).
+4. **[XM-⓪4] (PTA đồng ý: dữ liệu mẫu)** Số ở badge Chấm Speaking khung K6 (22/09)** — mockup cũ chỉ có số bài quá hạn (4); số bài tổng tự đặt "12" (dữ liệu bịa).
+5. **[XM-⓪5] (PTA đồng ý)** Badge tab Ý thức ở hồ sơ lớp khi người xem không có việc Ý thức** — vẽ mờ "1" (đếm em cần xử lý, thay chấm vàng cũ). Đúng nghĩa "mờ = chỉ đếm"; số lấy cùng nguồn chấm cũ (không thêm request).
 
 Không [XM] nào đụng luật nghiệp vụ.
 
@@ -99,4 +101,5 @@ Không [XM] nào đụng luật nghiệp vụ.
 | R0.6 | Cập nhật năm tệp ghi chú: ① [XM-2], [XM-5], ⑤ [XM-15], bảng kê ⑤ mục 3 | Đạt (dòng 42); ③ ghi chú không có [XM] cũ trái lời chốt | các `-ghi-chu.md` |
 | R0.7 | Bảng "đã sửa gì" + ảnh cặp TRƯỚC │ SAU từng chỗ sửa; chỗ "chưa chắc" kiểm tận nơi | Đạt — bảng mục 1; ảnh `anh/dong-bo/`; dòng "chưa chắc" duy nhất (⑤ D1 thang WL) đã mở tệp kiểm: D1a / D1b chưa có thang → thêm | `anh/dong-bo/` |
 | G3 | Không chú thích tĩnh, không bước xác nhận mới, không thành phần ngoài đề bài | Đạt — thêm duy nhất H5 (R0.4 yêu cầu) và dòng Bàn giao ở ① K6 (để số đếm Vận hành khớp) | |
+| ✕ / ⋯ | Tâm lệch ≤ 1 px | Đạt — đo khung mực chữ của 151 nút ✕ / ⋯ trong năm tệp: không nút nào lệch > 1 px | |
 | Turso | Không thêm request | Đạt — badge / số đếm dùng số đã có (cùng nguồn chip, chấm cũ) | |

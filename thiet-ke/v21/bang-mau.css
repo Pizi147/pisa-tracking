@@ -156,4 +156,4 @@ table.mk .dai { color:#7a2b26; font-weight:700; }
 .ten-bac .mau-bac { display:flex; gap:6px; flex-wrap:wrap; }
 .ten-bac .tag.do { border-color:var(--bad-vien); background:var(--bad-nen); color:var(--bad); font-weight:700; }
 .ten-bac ul { margin:0; padding-left:18px; font-size:13px; color:var(--text); display:grid; gap:2px; }
-
+.san > .nhan-mk { font:600 12px 'Be Vietnam Pro'; color:var(--text-faint); margin-top:4px; }
