@@ -300,4 +300,26 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     }
     assert(loi.length === 0, `${loi.length} chỗ hạn còn ⚠ (V22: chỉ màu): ` + loi.slice(0, 6).join(' · '));
   });
+  /* PTA Plan rà #1649: V22 "không ⚠ hay biểu tượng nào kèm" — cả chấm "●" ở chip / badge báo hạn, quá hạn, việc chờ. Chấm "có việc mới" trên tab giữ. */
+  check('V22 · không chấm "●" ở chip hạn / quá hạn / việc chờ: Nhan late + soon, DongHan, BadgeViec qua + cho, .vh-qua, badge lớp; "●" chữ không đứng cạnh chữ hạn', () => {
+    const nhan = doc('web/src/ui/Nhan.tsx');
+    assert(/late: 'bg-late-bg text-late', soon: 'bg-soon-bg text-soon'/.test(nhan), 'Nhan: tông late / soon không được kèm CHAM');
+    assert(!/cham\(/.test(doc('web/src/ui/DongHan.tsx')), 'DongHan: chip hạn không chấm');
+    assert(/tong === 'qua' \|\| tong === 'cho' \? null/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), "BadgeViec: 'qua' / 'cho' không chấm");
+    assert(/\.vh-qua::before \{ content: none; \}/.test(doc('web/src/index.css')), '.vh-qua không chấm');
+    for (const f of ['web/src/modules/classes/DauTrangLop.tsx', 'web/src/modules/students/StudentsPage.tsx'])
+      assert(/tone=\{toneBadgeLop\(x\)\} cham=\{false\}/.test(doc(f)), `${f}: badge lớp (đếm việc chờ / quá hạn) cham={false}`);
+    const HAN = /quá hạn|hạn hôm nay|hạn \{|chờ chấm|còn \{n\} ngày/i;   // "● … chưa chốt / chưa lưu" là trạng thái lưu nháp — không phải hạn
+    const loi: string[] = [];
+    for (const f of tepNguon('web/src').filter((x) => x.endsWith('.tsx'))) {
+      doc(f).split('\n').forEach((dong, i) => {
+        if (/^\s*(\/\/|\*|\/\*)/.test(dong)) return;
+        for (const m of dong.matchAll(/●/g)) {
+          const quanh = dong.slice(Math.max(0, m.index! - 60), m.index! + 60);
+          if (HAN.test(quanh)) loi.push(`${f}:${i + 1}`);
+        }
+      });
+    }
+    assert(loi.length === 0, `${loi.length} chỗ "●" cạnh chữ hạn / việc chờ: ` + loi.slice(0, 6).join(' · '));
+  });
 }

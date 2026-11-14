@@ -210,8 +210,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
     const nhan = x.key === 'qua-han' ? `${x.nhan} ${t('của lớp')}` : x.nhan;
     /* G6: badge đổi trang có "›". */
     return bam
-      ? <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={bam}>{nhan} <span aria-hidden className="font-bold">›</span></Nhan>
-      : <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title}>{nhan}</Nhan>;
+      ? <Nhan key={x.key} tone={toneBadgeLop(x)} cham={false} title={x.title} onClick={bam}>{nhan} <span aria-hidden className="font-bold">›</span></Nhan>
+      : <Nhan key={x.key} tone={toneBadgeLop(x)} cham={false} title={x.title}>{nhan}</Nhan>;
   };
   /* MOCKUP-1111 màn 1: badge phạm vi lớp lên hàng tiêu đề (sau chip chương trình · HV · tuần), tách khỏi dải "Việc của tôi". */
   const badgeLopNode = (bConLai.hien.length > 0 || bConLai.an.length > 0) && (
@@ -262,14 +262,15 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
 
       {/* ④ số của lớp (badge đổi trang đã lên hàng ② — MOCKUP-1111). */}
       {/* GD-4 e (mockup v21 H3, ⓪ dòng 21): MỘT dải chỉ số cao 44 — Lượt mới nhất (chữ) · Đạt MT (ô số → panel em trong mẫu, tab Chưa đạt · Đạt) ·
-          SOS (ô số → panel em SOS, chip mức giữ sau). Panel dựng từ roster đã nạp, không request. "0 %" không bấm. Luật lời 40: ô chưa có dữ liệu không vẽ. */}
+          SOS (ô số → panel em SOS, chip mức giữ sau). Panel dựng từ roster đã nạp, không request. "0 %" có mẫu > 0 vẫn bấm ([XM-D2]). Luật lời 40: ô chưa có dữ liệu không vẽ. */}
       {(tomTat?.luot || tomTat?.dat || !!tomTat?.sos.length) && (
         <DaiChiSo nhan={t('Số của lớp')}>
           {tomTat.luot && <ODai nhan={t('Lượt mới nhất')}><SoTinh n={tomTat.luot} /></ODai>}
           {tomTat.dat && (
             <ODai nhan={tomTat.dat.nhan} phu={`${tomTat.dat.so}/${tomTat.dat.tong} HV`}
               luat={t('Em đạt kỳ vọng ở lượt gần nhất đã đủ điểm của từng em / số em có lượt đủ điểm. Cùng kết luận với cột Kết quả.')}>
-              {tomTat.dat.so > 0
+              {/* PTA Plan quyết [XM-D2]: 0 % mà mẫu số > 0 VẪN bấm (có danh sách em chưa đạt để xem); "0 không bấm" chỉ khi không có gì để mở. */}
+              {tomTat.dat.tong > 0
                 ? <OSo giaTri={tomTat.dat.tong} nhan={`${Math.round((tomTat.dat.so / tomTat.dat.tong) * 100)} %`} dong={tomTat.dat.dong} khoa={`lop-${data.id}-dat`} tieuDe={`${tomTat.dat.nhan} · ${data.code}`} />
                 : <SoTinh n="0 %" />}
             </ODai>

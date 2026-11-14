@@ -641,7 +641,7 @@
   .vh-cho::before { background: rgb(var(--muted-line-rgb)); }
   .vh-xong { color: rgb(var(--ok-rgb)); } .vh-xong::before { background: rgb(var(--ok-rgb)); }
   .vh-qua { background: rgb(var(--bad-bg-rgb)); color: rgb(var(--bad-rgb)); }
-  .vh-qua::before { background: currentColor; }   /* V22: quá hạn chỉ bằng màu — chấm đỏ như các mức khác */
+  .vh-qua::before { content: none; }   /* V22 (PTA rà #1649): quá hạn chỉ bằng màu — không chấm */
   tr.hang-dai > td { padding: 10px 12px 12px 24px; border-bottom: 1px solid var(--line); background: var(--surface-2); }
   tr.hang-khop > td { background: color-mix(in srgb, var(--hong) 7%, var(--surface)); }
   .khop-tim { color: var(--hong-chu); font-weight: 700; }   /* A3 (AUDIT-UI C10): --hong chữ ở sáng chỉ 2,9 : 1; --hong-chu 5,5 : 1 */

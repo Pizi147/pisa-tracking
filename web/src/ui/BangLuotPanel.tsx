@@ -519,7 +519,9 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                     /* Sổ nghĩa vụ: số tab = 3 số riêng (như ô bảng); bài S chéo chung ghi "+n" mờ riêng. */
                     const n = goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && (chiSc || !r.dongViec.sChung)).length;
                     const chung = chiSc ? 0 : goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && r.dongViec.sChung).length;
-                    return { key: k, label: nhanTabViec(k), so: n,
+                    /* PTA Plan quyết [XM-T2] (V22): tab "Chưa làm" có dòng quá hạn → badge ĐỎ (số = số dòng); không có → badge thường (mờ). */
+                    const q = k === 'chua' ? goc.filter((r) => r.dongViec && ttViec(r.dongViec) === 'chua' && (chiSc || !r.dongViec.sChung) && (r.dongViec.treNgay ?? 0) > 0).length : 0;
+                    return { key: k, label: nhanTabViec(k), ...(q > 0 ? { badge: { so: n, n, quaHan: q, homNay: 0 } } : { so: n }),
                       phu: chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}>+{chung}<span className="sr-only"> {t('S chéo chung')}</span></span> };
                   })} />
               )}

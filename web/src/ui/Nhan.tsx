@@ -81,11 +81,11 @@ export function NhanVienCase({ tt, title, children }: { tt: string; title?: stri
 
 export type ToneNhan = 'ok' | 'done' | 'bad' | 'late' | 'soon' | 'doing' | 'muted';
 
-/** Nhóm 3 (V5): viên nền xám nhạt + chấm màu đầu (`CHAM`); sắp hạn / quá hạn / lỗi: nền nhạt cùng họ (V22: quá hạn chỉ bằng màu, cùng chấm như các tông khác). */
+/** Nhóm 3 (V5): viên nền xám nhạt + chấm màu đầu (`CHAM`) cho TRẠNG THÁI. V22 (chủ SP 14/11, PTA rà #1649): tông báo hạn / việc chờ — `late` quá hạn, `soon` sắp hạn / chờ — CHỈ MÀU, không chấm, không biểu tượng. */
 const CHAM = "gap-1.5 before:h-[7px] before:w-[7px] before:shrink-0 before:rounded-full before:bg-current before:content-['']";
 const NHAN: Record<ToneNhan, string> = {
   ok: `bg-[color:var(--surface-2)] text-ok ${CHAM}`, done: `bg-[color:var(--surface-2)] text-dim ${CHAM}`, bad: `bg-bad-bg text-bad ${CHAM}`,
-  late: `bg-late-bg text-late ${CHAM}`, soon: `bg-soon-bg text-soon ${CHAM}`,
+  late: 'bg-late-bg text-late', soon: 'bg-soon-bg text-soon',
   doing: `bg-[color:var(--surface-2)] text-doing ${CHAM}`, muted: `bg-[color:var(--surface-2)] text-dim ${CHAM} before:!bg-slate-600`,
 };
 
@@ -99,10 +99,12 @@ export { TONE_TRANG_THAI };
  * xám = chưa bắt đầu, thông tin · xanh lá = ổn · đỏ = chỉ SOS 3 và "Chưa đạt" · đỏ cam = quá hạn (V22: chỉ màu + chữ, không biểu tượng) · viền đứt (`dut`) = số tạm.
  * Có `onClick` thì là nút (≥ 28px cao; điện thoại nới vùng bấm ẩn lên 44px — PR-HK1 K3); không thì chỉ là chữ.
  */
-export function Nhan({ tone, dut, title, onClick, children }: {
-  tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void; children: ReactNode;
+export function Nhan({ tone, dut, title, onClick, cham = true, children }: {
+  tone: ToneNhan; dut?: boolean; title?: string; onClick?: () => void;
+  /** V22 (PTA rà #1649): false = badge đếm việc chờ / hạn (vd badge lớp "21 bài chờ chấm") — chỉ màu, không chấm đầu. */ cham?: boolean;
+  children: ReactNode;
 }) {
-  const cls = `${CHIP_TRON} ${NHAN[tone]} ${dut ? 'bg-transparent border-dashed !border-current' : ''}`;
+  const cls = `${CHIP_TRON} ${NHAN[tone]} ${dut ? 'bg-transparent border-dashed !border-current' : ''} ${cham ? '' : 'before:!content-none'}`;
   if (onClick) {
     return (
       <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>
