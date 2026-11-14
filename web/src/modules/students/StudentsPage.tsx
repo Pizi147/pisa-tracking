@@ -9,7 +9,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { OChiNhanh, docChiNhanhDaNho, nhoChiNhanh, type Branch } from '../../ui/Filters.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
-import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, ChipBadgeLop, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { lamTaiCho } from '../congViec/lamTaiCho.ts';
@@ -665,7 +665,7 @@ function NhanLop({ lop, vai, soViecQuaHan, bo }: { lop: LopTrenTrang; vai: VaiXe
   if (!badge.length) return null;
   return (
     <span className="nhan-lop flex flex-wrap items-center gap-1.5 font-normal">
-      {badge.map((x) => { const den = denBadge(x); return <Nhan key={x.key} tone={toneBadgeLop(x)} cham={false} title={x.title} onClick={den ? () => navigate(den) : undefined}>{x.nhan}</Nhan>; })}
+      {badge.map((x) => { const den = denBadge(x); return <ChipBadgeLop key={x.key} x={x} onClick={den ? () => navigate(den) : undefined} />; })}
     </span>
   );
 }

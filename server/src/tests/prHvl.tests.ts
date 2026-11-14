@@ -69,11 +69,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([...ql.hien, ...ql.an].map((x: any) => x.key), ['cho-duyet', 'xep-lop', 'cham', 'qua-han'], 'Thứ tự Quản lý');
     eq([ql.hien.length, ql.an.length], [2, 2], 'Hiện 2, còn lại "+n"');
     const tat = [...ql.hien, ...ql.an];
-    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 việc quá hạn', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
+    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: 'Quá hạn · 4', so: 4, tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
     eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'muted', 'cho-duyet tone (OV-15a bỏ tím)');
-    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa chốt lộ trình', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
+    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, 'Chưa chốt lộ trình · 3', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });
-    eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, '5 HV cần xếp lớp tiếp', 'xep-lop khi hết khoá dùng canXepLop');
+    eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, 'Cần xếp lớp tiếp · 5', 'xep-lop khi hết khoá dùng canXepLop');
     assert(!JSON.stringify(tat).includes('"case"'), 'Còn badge case');
   });
 
@@ -423,7 +423,8 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const b = web('modules/classes/BangCanHoTro.tsx');
     const lt = web('modules/classes/BangDiemLopThuong.tsx');
     /* PR-S4F #5: hàng theo kỹ năng đi qua `locCanHoTro` (gọi `hangCanHoTro`). */
-    assert(/locCanHoTro\(/.test(lt) && /<DongCase /.test(lt) && /<NganCase /.test(lt) && /\/can-ho-tro/.test(lt), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ');
+    /* GD-6 (mockup ② mục 0): lớp thường cùng khung FT — tóm tắt môn lấy Case theo `locCanHoTro`, việc Case cùng hàm `viecCase` với `DongCase`. */
+    assert(/locCanHoTro\(/.test(lt) && /viecCase\(/.test(lt) && /export function viecCase/.test(b) && /<NganCase /.test(lt) && /\/can-ho-tro/.test(lt), 'thiếu hàng theo kỹ năng / Ngăn Case tại chỗ');
     assert(!/BangCanHoTro|can-ho-tro/.test(web('modules/classes/TabHocVienLop.tsx')), 'còn cách xem Cần hỗ trợ');
     assert(!/chonCaseChinh|viecTiepTheoCua|Chưa có PA học thuật|\/cases\?classId=/.test(b), 'còn luật/chữ cũ');
     assert(!/\u{1F512}/u.test(b), 'ổ khoá phải là SVG (KhoaQuyChe), không phải emoji');
@@ -548,7 +549,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   check('PR-HVL (7) · web đầu hồ sơ lớp: nút cố định Nhập điểm · + Case · ⋯ (menuHoSoLop), Thông tin lớp có phần Tuần khai giảng / Lịch Test, LT bọc abbr; không "Lộ trình lớp" / "Mở từng em rồi bấm"; ô Progress Test ẩn với Pre FOU', () => {
     const dau = web('modules/classes/DauTrangLop.tsx'); const pn = web('modules/classes/ClassProgressPanel.tsx'); const pg = web('modules/classes/ClassOverviewPage.tsx');
     const tt = web('modules/classes/ThongTinLopPanel.tsx');
-    assert(/menuHoSoLop\(/.test(dau) && /onViec\('case'\)/.test(dau) && /'Tuần khai giảng'/.test(tt) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{bConLai\.an\.length\}`\}/.test(dau), 'DauTrangLop');
+    assert(/menuHoSoLop\(/.test(dau) && /<NutTask noi="dau"/.test(dau) && /'Tuần khai giảng'/.test(tt) && /<MenuDong kieu="chip" bieuTuong=\{`\+\$\{bConLai\.an\.length\}`\}/.test(dau), 'DauTrangLop');
     assert(!/Lộ trình lớp/.test(dau + pn + pg) && !/Mở từng em rồi bấm/.test(pn), 'chữ cũ còn sót');
     assert(/data\.coGiuaKhoa &&/.test(pn) && /onChuyenTiep/.test(pn) && /tomTatMt/.test(pn) && /Đổi tuần khai giảng không dời lịch MT/.test(pn), 'ClassProgressPanel');
     assert(!/rgba\(242, 161, 161/.test(pn), 'khung hết khoá không còn tô đỏ');

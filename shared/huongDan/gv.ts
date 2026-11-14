@@ -52,7 +52,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'tao-case', ten: 'Tạo Case tay', nhom: 'case',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › + Case cho một kỹ năng' },
-      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Case ở đầu trang.',
+      loiTat: ['ho-so-lop'], tatThem: ['⋯ dòng em'], cung: 'có nút + Task › Case ở đầu trang.',
       buoc: ['Mở hồ sơ em, tab <b>Học thuật</b>; bấm ô kỹ năng.', 'Bấm <b>+ Case cho …</b> ở khối <b>Case & phương án</b> (hoặc <b>+ Task › Case</b> đầu hồ sơ).', 'Ghi mô tả, lưu.'],
       tuKhac: ['thêm Case', 'mở Case', 'new Case'],
     },

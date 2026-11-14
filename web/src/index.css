@@ -466,6 +466,15 @@
   details.ls > summary .ls-chev { width: 16px; height: 16px; flex: none; margin-left: auto; fill: none; stroke: var(--text-dim); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
   details.ls[open] > summary .ls-chev { transform: rotate(90deg); }
   details.ls[open] > summary { border-bottom: 1px solid var(--line); }
+  /* GD-6: `NutLichSuGap` — cùng dáng đầu gập, thân nằm chỗ khác (không viền dưới khi mở). */
+  .nut-ls { display: inline-flex; min-width: 200px; border: 1px solid var(--line); border-radius: 10px; background: var(--surface); overflow: clip; }
+  .nut-ls > button { all: unset; box-sizing: border-box; display: flex; align-items: center; gap: 8px; width: 100%; min-height: 36px; padding: 0 12px; font-size: 14px; font-weight: 600; color: var(--text-dim); cursor: pointer; }
+  .nut-ls > button:hover { color: var(--text); }
+  .nut-ls > button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .nut-ls .ls-ic { width: 16px; height: 16px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; color: var(--text-faint); }
+  .nut-ls .ls-chev { width: 16px; height: 16px; flex: none; margin-left: auto; fill: none; stroke: var(--text-dim); stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; transition: transform .15s; }
+  .nut-ls[data-mo] .ls-chev { transform: rotate(90deg); }
+  @media (max-width: 639px) { .nut-ls { display: flex; width: 100%; } .nut-ls > button { min-height: 44px; } }
   .ls-ds { list-style: none; margin: 0; padding: 4px 0; }
   .ls-ds > li { display: grid; grid-template-columns: 92px minmax(0, 1fr) auto; column-gap: 12px; padding: 8px 12px; font-size: 14px; align-items: baseline; color: var(--text-dim); }
   .ls-ds > li + li { border-top: 1px solid var(--line); }
@@ -1281,7 +1290,7 @@
   .dai-cs-o:first-child { padding-left: 12px; }
   .dai-cs-o:nth-child(even) { border-left: 1px solid var(--line); }
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }
-  .dai-cs-o:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .dai-cs-o:last-child:nth-child(odd), .dai-cs-o:nth-child(odd):not(:has(+ .dai-cs-o)) { grid-column: 1 / -1; }   /* GD-6: ô lẻ cuối (kể cả khi chip lớp đứng sau) chiếm hai cột */
 }
 /* PT-a (mockup v19 `.os`, chủ SP duyệt 12/11): Ô SỐ PHÂN TÍCH — vùng `.o-so-hop` (PhanTich.tsx). Số bấm được = hộp nhỏ (nhìn ra là nút, không gạch chân);
    màu chỉ cho ô cần làm: đỏ = quá hạn (`text-bad` / `text-late`; V22 không biểu tượng), vàng = đang chờ (`text-soon`); Vượt / Chưa đạt chỉ tô số (`text-kq-*`).
