@@ -9,6 +9,7 @@ import { Empty, ErrorState, OKck, Skeleton } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { IconKhoa } from '../../ui/BieuTuong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { DongQuyChe } from '../../ui/KhungPanel.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
@@ -23,7 +24,7 @@ import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, boMonLich, canLopDich, chuDaiKetQua,
   daysBetween, ghepMucTieu, khacGoiY, kiemDongLenh, laChuyenNgay, maHocLai, mocLoTrinh, mocThuong, nhanKetQuaThuong, shortDate, tachMucTieu, tacDongChot, coBaoPhKhiChot, conTrongCuoiKhoa, tenMonNgan,
-  thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
+  quyCheChotLoTrinh, thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -617,6 +618,11 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* N36: em có bậc > 0 sẽ mở lộ trình mới (Lên lớp / Học lại / Lên FT) ở lần chốt này → hiện ô chung. */
   const soBac = guiDuoc.filter((r) => r.lenh && (r.e.bacYThuc ?? 0) > 0 && ['len_lop', 'hoc_lai', 'fast_track'].includes(huongLenh(r.x) ?? '')).length;
 
+  /* QC-GAN (Q74 / Q75 / Q77): dòng quy chế ở đầu chân của QL — đổi theo lựa chọn đang sửa; không khi đang báo lỗi lưu. */
+  const qcChot = laQl && !(soLoi && ketQua) ? quyCheChotLoTrinh({
+    trungTam: dongs.some((r) => r.kv && r.x.kv && !r.x.kv.dat && r.x.kv.nn === 'trung_tam'), tutor: mocThuong().khongDatKyVong.tutor,
+    khacGoiY: dongs.some((r) => r.lenh && khacGoiY(huongLenh(r.x)!, r.e.cuoiKhoa?.goiY)), hanChot: moc?.hanChot ?? null, homNay: h,
+  }) : null;
   const chan = laQl ? (
     soLoi && ketQua ? (
       <>
@@ -825,7 +831,10 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           </>
         )}
         {chan && ds.length > 0 && (
-          <div className="sticky bottom-0 z-20 flex flex-wrap items-center gap-2.5 border-t px-4 py-3 shadow-xl max-sm:[&>span:first-child]:basis-full max-sm:[&>button]:flex-1" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>{chan}</div>
+          <div className="sticky bottom-0 z-20 border-t shadow-xl" style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+            {qcChot && <DongQuyChe qc={qcChot} vien={false} />}
+            <div className="flex flex-wrap items-center gap-2.5 px-4 py-3 max-sm:[&>span:first-child]:basis-full max-sm:[&>button]:flex-1">{chan}</div>
+          </div>
         )}
       </section>
 

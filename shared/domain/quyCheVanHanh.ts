@@ -7,6 +7,7 @@ import type { QuyChe } from './quyChe.ts';
 import type { LoaiYeuCau } from './yeuCauDuyet.ts';
 import { daysBetween, shortDate } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
+import { thuNgay } from './chuyenLop.ts';
 import { mondayOfDate } from './week.ts';
 import { laMtCuKyNang } from './vang.ts';
 
@@ -85,6 +86,28 @@ export const quyCheChuyenLop = (o: { deXuat: boolean; ngayNay: boolean; tuan: st
 
 /** Q76 Xét lại lộ trình (luat/4 L-14). */
 export const quyCheXetLai = (): QuyChe => ({ chu: t('Không làm gì = Tiếp tục · Tiếp tục khi Final < 50 cần lý do') });
+
+/**
+ * Q74 / Q75 / Q77 Chốt lộ trình · Kỳ vọng đầu ra — trang Cuối khoá (QC-GAN; luat/4 L-12, L-13, mục 5). Ưu tiên theo lựa chọn đang sửa:
+ * Kỳ vọng Không đạt do Trung tâm (Q77) › có dòng khác gợi ý (Q75) › mặc định (Q74). Q74 theo mã: hạn chốt lấy `mocLoTrinh` (cấu hình được, không cứng
+ * "thứ Năm"); lệnh thi hành vào Thứ Hai của TUẦN BẮT ĐẦU đã chọn (`lenhChuyen.ts`), không phải luôn "Thứ Hai sau" → câu nói đúng như vậy.
+ */
+export function quyCheChotLoTrinh(o: { trungTam: boolean; tutor: number; khacGoiY: boolean; hanChot: string | null; homNay: string | null }): QuyChe {
+  if (o.trungTam) return { chu: t('Do Trung tâm: Case + Tutor {n} buổi mỗi kỹ năng cho GV lớp FT', { n: o.tutor }) };
+  if (o.khacGoiY) return { chu: t('Khác gợi ý: cần lý do') };
+  return {
+    chu: o.hanChot && o.homNay ? t('Hạn {ngay} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp', { ngay: thuNgay(o.hanChot, o.homNay) })
+      : t('Tới Thứ Hai tuần bắt đầu máy tự chuyển lớp'),
+  };
+}
+
+/**
+ * Q83 Xuất báo cáo PH (luat/3 mục 3, `xuatBaoCaoPh.ts` `viecXuatBaoCaoPh`): việc Admin hiện 7 ngày từ ngày lớp đủ; đợt quá hạn còn thiếu em thì 7 ngày từ hạn.
+ * Nút Xuất không có panel → câu đặt trong ⓘ cạnh nút (luật ⓘ = giải thích), không thêm đoạn chú thích.
+ */
+export const quyCheXuatBaoCaoPh = (du: boolean): QuyChe => (du
+  ? { chu: t('Lớp đủ báo cáo · việc tự rời sau 7 ngày') }
+  : { chu: t('Đợt quá hạn còn thiếu em: việc Xuất hiện 7 ngày từ hạn') });
 
 /** Q81 Case chưa có người phụ trách (việc no_owner). */
 export const quyChePhanCong = (): QuyChe => ({ chu: t('Phân công xong, Case về người đó') });
