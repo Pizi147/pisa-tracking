@@ -30,7 +30,7 @@ export const VIEC_TVV: ViecHd[] = [
   },
   {
     id: 'xem-thi-thang', ten: 'Xem em thi tháng này', nhom: 'hv',
-    loiChinh: { man: 'cong-viec', chu: 'Công việc › Thi tháng này', duong: CV },
+    loiChinh: { man: 'cong-viec', chu: 'Công việc', duong: CV },
     loiTat: ['hoc-vien'], cung: 'mở cùng danh sách.',
     buoc: ['Dải số đầu <b>Công việc</b>: <b>Việc</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>.',
       'Bấm số: <b>Báo PH đúng hạn</b> mở panel tại trang; ba số HV mở <b>Học viên & Lớp</b> đúng nhóm em. Khung <b>HV của tôi</b> bên phải ghi tình trạng từng em.'],

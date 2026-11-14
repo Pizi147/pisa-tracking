@@ -2,7 +2,6 @@
 export const EN_GD8 = {
   'Chưa có học viên nào do bạn phụ trách.': 'No students assigned to you yet.',
   '{n} em khác': '{n} more students',
-  'Công việc › Thi tháng này': 'To do › Exams this month',
   'Dải số đầu <b>Công việc</b>: <b>Việc</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>.': 'Numbers strip at the top of <b>To do</b>: <b>Tasks</b> · <b>Parent reports on time</b> · <b>Exams this month ›</b> · <b>Awaiting results ›</b> · <b>Next route not set ›</b>.',
   'Bấm số: <b>Báo PH đúng hạn</b> mở panel tại trang; ba số HV mở <b>Học viên & Lớp</b> đúng nhóm em. Khung <b>HV của tôi</b> bên phải ghi tình trạng từng em.': 'Click a number: <b>Parent reports on time</b> opens a panel on the page; the three student numbers open <b>Students & Classes</b> on that group. The <b>My students</b> box on the right shows each student\'s status.',
   'Trang đầu của bạn: năm chỉ số, việc của bạn (Báo PH, sau thi, chốt ngày thi, bổ sung hồ sơ) và HV của tôi.': 'Your home page: five numbers, your tasks (parent reports, after the exam, exam dates, missing details) and My students.',
