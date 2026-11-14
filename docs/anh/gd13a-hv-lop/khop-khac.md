@@ -20,7 +20,7 @@ Nguồn: `12-plan-giao-dien-dot-3.md` dòng GD-13a · mockup `thiet-ke/v21/hoc-v
 | 11 | K1 | Một tên cột **Việc cần làm**: nút-chip "{loại} · {số}" mỗi loại, chỉ việc của người xem, không việc = ô trống | `OViecCan` = `chipViecEm` + `NutChipViec` (chip chuẩn GD-4b, dùng chung Công việc / hồ sơ lớp) | cap-k1 | KHỚP |
 | 12 | K3 | Đang SOS cột cuối "Việc cần làm" (thay "Việc tiếp") | cùng `OViecCan` | cap-k3 | KHỚP |
 | 13 | K1 | Bấm chip = panel việc tại trang, "Việc tiếp" đi hết loại | `PanelViec` + `onTiep` theo `ds` của chip; Case → panel một em (như cũ) | web-k1-panel-viec | KHỚP |
-| 14 | K1 | Đầu lớp: SOS + chip việc | `ChipBadgeLop` "Chờ chấm · 21 ›" của GD-6 (PTA: dùng lại, không dựng bản thứ hai) | cap-k1 | KHỚP (xem KHÁC 1) |
+| 14 | K1, K8a | Đầu lớp: SOS + **chip "Việc cần làm" của lớp** (việc CỦA TÔI ở lớp, loại + số, bấm làm tại trang); số không phải việc của tôi = thẻ đếm | `chipViecLop` + `NutChipViec` (cùng hồ sơ lớp GD-6) từ `/my-work` đã nạp; Nhập điểm → panel nhập điểm lớp tại trang, loại khác → panel việc ("Việc tiếp" theo loại); có chip Nhập điểm thì ẩn badge "Chờ chấm" trùng số; QL giữ `ChipBadgeLop` "Chờ chấm · n ›" | cap-k1, cap-k8a-gv, web-k1-nhap-diem-lop | KHỚP (PTA rà #1685 ý 1, 3) |
 | 15 | K1 | Dải 5 môn: MT · Hỗ trợ · **Ý thức** · "Việc cần làm · n" | thêm khối Ý thức (bậc viết đủ / "Chưa có vi phạm"); đổi tên khối việc | cap-k1 | KHỚP |
 | 16 | K1 | ⋯ em: nhóm **"+ Task"** (Case · Vi phạm / Nhắc nhở) rồi vạch, Nhập điểm · Xác nhận xử lý · Sửa thông tin · Đề xuất chuyển lớp | `useThaoTacDongHocVien.mucCua`: tiêu đề nhóm + tên như nút "+ Task" (cũng áp ở ⋯ dòng hồ sơ lớp — cùng thành phần) | web-k1-menu | KHỚP (xem KHÁC 2) |
 | 17 | K1 | Ô Lịch thi là chữ ("Chưa có lịch" dim · "Dự kiến 01/2027") | `.bang-hv` bỏ viên viền cho chưa có / dự kiến; lịch đã chốt / đã thi giữ chip | cap-k1 | KHỚP |
@@ -33,7 +33,8 @@ Nguồn: `12-plan-giao-dien-dot-3.md` dòng GD-13a · mockup `thiet-ke/v21/hoc-v
 
 ## 2. KHÁC (có lý do)
 
-1. **Đầu lớp**: mockup vẽ việc của người xem "Nhập điểm 21" và (QL) thẻ đếm "4 bài chờ chấm" không bấm; web giữ `ChipBadgeLop` "Chờ chấm · n ›" của GD-6 (PTA: dùng lại, không dựng bản thứ hai) — bấm sang Lịch Test như cũ.
+1. **Đầu lớp — QL**: mockup vẽ thẻ đếm "4 bài chờ chấm" không bấm; web giữ `ChipBadgeLop` "Chờ chấm · n ›" (GD-6) bấm sang Lịch Test — lối vào sẵn có, không bớt thao tác.
+8. **Ô hẹp không "…"** (PTA rà #1685 ý 2): Lộ trình em chưa có Target ghi "Target —" (không kèm KCK); ô Ý thức chỉ chip bậc ("REPORT 5"), mốc "+ MEETING …" ở hộp mở (dòng Mốc).
 2. **⋯ em — "Tình hình học tập"**: mockup có mục thứ ba trong "+ Task"; ⋯ dòng chưa có hộp Tình hình cho một em (hộp neo ở nút "+ Task" đầu trang / hồ sơ). Không thêm thao tác mới trong PR này — đã có ở "+ Task" trang đầu, hồ sơ lớp, hồ sơ HV. → backlog.
 3. **Ô Xem**: mockup ghi phụ "22 lớp · 214 HV" từng chi nhánh — web không có số theo chi nhánh trong dữ liệu đã nạp; thêm sẽ cần câu đọc mới (Turso) → không vẽ.
 4. **V22**: mockup vẽ "⚠ Nhập điểm 21", "⚠ Case 2" — web chỉ màu đỏ (luật V22, không ⚠).

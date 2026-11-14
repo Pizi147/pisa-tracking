@@ -12,6 +12,7 @@ import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { CHIP_SOS, ChipBadgeLop, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
+import { NutChipViec, chipViecLop, type ChipViec } from '../congViec/LopCuaToi.tsx';
 import { lamTaiCho } from '../congViec/lamTaiCho.ts';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
@@ -261,6 +262,12 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     return em;
   }, [viec]);
 
+  /* PTA rà #1685 (⑥ K1, K8a): chip "Việc cần làm" của LỚP ở hàng lớp — việc CỦA TÔI (lá `mine`, cả việc cấp lớp như Nhập điểm), cùng `chipViecLop`
+     của Công việc / hồ sơ lớp GD-6. Dữ liệu `/my-work` đã nạp, không request. */
+  const viecToi = useMemo(() => (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((x) => x.mine), [work.data]);
+  const [nhapDiemLop, setNhapDiemLop] = useState<{ id: number; code: string } | null>(null);
+  const bamChipLop = (c: ChipViec, l: { id: number; code: string }) => (c.tab === 'cham-diem' ? setNhapDiemLop(l) : moViec(c.dau, c.ds));
+
   /* Chương trình (Fast Track · Lớp thường) chỉ có nghĩa khi phạm vi có cả hai loại lớp. */
   const soLopTheoKhung = { ft: 0, thuong: 0 };
   for (const c of data?.rows ?? []) soLopTheoKhung[khungCua(c.scoringMode)] += 1;
@@ -429,7 +436,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     const l = lop.get(g.id);
     return {
       id: g.id, hv: g.hv, mo: moSet.has(g.id), onMo: () => doiMo(g.id), nhan: l?.code ?? t('Chưa xếp lớp'),
-      dau: <DauLop lop={l} hv={g.hv} vai={vai} dangLoc={dangLoc} cuaToi={pv?.dangDung === 'cua-toi'}
+      dau: <DauLop lop={l} hv={g.hv} vai={vai} dangLoc={dangLoc} cuaToi={pv?.dangDung === 'cua-toi'} chip={l ? chipViecLop(viecToi, l.id) : []} onChip={bamChipLop}
         onSos={(m) => setParam({ view: 'sos', classId: String(g.id), muc: String(m), mo: null })}
         dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} onThemHocVien={(x) => setThem(x)} />,
     };
@@ -647,6 +654,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           onTiep={viecMo.i + 1 < viecMo.ds.length ? () => setViecMo({ ...viecMo, i: viecMo.i + 1 }) : null}
           tenTiep={viecMo.ds[viecMo.i + 1]?.studentId != null ? viecMo.ds[viecMo.i + 1].studentName : null} />
       )}
+      {nhapDiemLop && <PanelNhapDiemLop classId={nhapDiemLop.id} classCode={nhapDiemLop.code} onDong={() => { setNhapDiemLop(null); lamMoi(); }} />}
       {panelEm && (
         <PanelMotEm key={panelEm.id} studentId={panelEm.id} caseMo={panelEm.caseMo} viecTrang={viecHien.get(panelEm.id)?.map((x) => x.it)} onClose={() => setPanelEm(null)}
           onDoi={lamMoi} />
@@ -748,9 +756,10 @@ function nhoKhung(k: 'ft' | 'thuong') { try { sessionStorage.setItem(KHOA_KHUNG,
 /** "Nguyễn Hoàng Dũng" → "N. H. Dũng" (hàng lớp 375). */
 const tenNgan = (ten: string) => { const w = ten.trim().split(/\s+/); return w.length < 2 ? ten : `${w.slice(0, -1).map((x) => `${x[0]}.`).join(' ')} ${w[w.length - 1]}`; };
 
-function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi }: {
+function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi, chip, onChip }: {
   lop: (LopGon & Partial<LopTrenTrang>) | undefined; hv: HvGon[]; vai: VaiXemHocVien | null;
   dsLop: NguCanhDs; onThemHocVien: (lop: { id: number; code: string }) => void; onSos: (muc: number) => void; dangLoc: boolean; cuaToi: boolean;
+  chip: ChipViec[]; onChip: (c: ChipViec, lop: { id: number; code: string }) => void;
 }) {
   const day = lop && 'needScores' in lop ? (lop as LopTrenTrang) : null;
   const sos = [1, 2, 3].map((m) => new Set(hv.filter((h) => h.hang?.hoTro.sos === m).map((h) => h.id)).size);
@@ -769,7 +778,11 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi }: 
       </>}</span>
       <span className="hl-o">{day && day.scoringMode !== 'ratio' && <OSosLop sos={sos} onSos={onSos} />}</span>
       {/* Quá hạn đã có chip "Có việc quá hạn" của dải lọc. "n bài chờ chấm" → Lịch Test, "chờ duyệt" → Công việc, lộ trình → Hồ sơ lớp. */}
-      <span className="hl-o">{day && <NhanLop lop={day} vai={vai} soViecQuaHan={0} bo={(k) => k === 'qua-han'} />}</span>
+      {/* ⑥ K1: badge tình trạng (không phải việc của tôi, vd QL "Chờ chấm · 4") rồi chip việc CỦA TÔI; có chip Nhập điểm thì bỏ "Chờ chấm" (cùng số, khỏi lặp). */}
+      <span className="hl-o flex flex-wrap items-center gap-1.5">
+        {day && <NhanLop lop={day} vai={vai} soViecQuaHan={0} bo={(k) => k === 'qua-han' || (k === 'cham' && chip.some((c) => c.tab === 'cham-diem'))} />}
+        {lop && chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={lop.code} doiTrang={false} onBam={() => onChip(c, { id: lop.id, code: lop.code })} />)}
+      </span>
       <span className="hl-o hl-nut">{day && <MenuLop lop={day} dsLop={dsLop} onThemHocVien={() => onThemHocVien({ id: day.id, code: day.code })} />}</span>
     </>
   );
