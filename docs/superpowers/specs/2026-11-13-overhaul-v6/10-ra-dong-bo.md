@@ -22,7 +22,7 @@ PTA quyết: hồ sơ HV giữ dòng việc không tiền tố "Lớp ·" (mocku
 
 ## B. Năm mockup v21 — cùng chức năng, khác dáng (theo mẫu ⑤ trừ khi ghi khác)
 
-- **Chân panel:** ④ có "Lưu" + "Lưu · việc tiếp ›"; ② "Việc tiếp ›" cạnh nút chính khi chưa lưu; ① ⑤ "Đóng" + nút chính → theo ⑤ D2.
+- **Chân panel:** ④ có "Lưu" + "Lưu · việc tiếp ›"; ② "Việc tiếp ›" cạnh nút chính khi chưa lưu; ① ⑤ "Đóng" + nút chính → ~~theo ⑤ D2~~ **lời 36: "Đóng" · "Lưu" · "Lưu · việc tiếp ›" khi còn việc kế** (giữ nút gộp của web).
 - **Câu quy chế** vẽ trong ③ (ho-so-hv:236, 250, 264, 281, 297, 310, 387), ④ (tvv:184, 196, 217, 246, 284), ② (:56) khác bảng câu ⑤ → theo bảng ⑤.
 - **Dải chỉ số:** ⑤ cao 44, số bấm được · ② cao 38, không bấm · ④ cao 58 có dòng phụ; nhãn "Chờ KQ" ↔ "Chờ KQ thi thật" → một dáng ⑤ H3.
 - **Badge tab:** ② tab Ý thức chỉ có chấm; tab Báo cáo PH mang chip → viên tròn đỏ / vàng / mờ ⑤ H1.
