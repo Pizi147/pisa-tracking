@@ -29,7 +29,7 @@ import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 
 /**
- * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`Menu`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
+ * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`MenuDong`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
  * `← Chọn việc khác`. Mỗi mục mở THẲNG panel của việc đó, một `KhungPanel` một lúc. `Lộ trình` (Fast Track) mở `StudentPlanPanel` như cũ
  * (nơi gọi lo). Nơi gọi: `mucQuanLyHocVien(...)` quyết mục nào hiện; `StudentManagePanel` vẽ đúng panel cho `viec`.
  *

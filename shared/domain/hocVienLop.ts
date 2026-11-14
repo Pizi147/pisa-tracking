@@ -249,7 +249,7 @@ export type KetQuaHien = {
   chinh: string;                 // "6.0" · "58%" · "3/4 môn đạt" · "—"
   lech: string | null;           // E7: "−0.5" (tooltip "Dưới kỳ vọng 0.5") — thay "Thiếu 0.5", tránh trùng "Thiếu 2 thông tin"
   dat: boolean; sos: string | null;
-  /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ⚠ (⚠ chỉ nghĩa quá hạn). */
+  /** Chỉ có (true) khi SOS mới chấm một phần, còn đổi được khi đủ điểm: vẽ viền nét đứt, không ký hiệu cảnh báo. */
   sosTamThoi?: boolean;
   /** OV-9: em KCK dưới kỳ vọng — chip trung tính "Dưới kỳ vọng · KCK", độ lệch không tô đỏ. */
   kckDuoi?: boolean;
@@ -376,7 +376,7 @@ export function badgeLop(c: {
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu {n} thông tin', { n: c.missingCount }), tone: 'warn' };
   if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('{n} chờ duyệt', { n: c.soChoDuyet }), tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
-  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: `⚠ ${t('{n} việc quá hạn', { n: c.soViecQuaHan })}`, tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
+  if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('{n} việc quá hạn', { n: c.soViecQuaHan }), tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
 }
@@ -481,7 +481,7 @@ export function lopMoSan(i: { thamSoOpen: number[] | null; lopHien: number[]; da
 
 /**
  * Một việc ở cột "Việc tiếp theo" (PR-UX3, B-2/B-3, mockup 17 #14–#15): `viec` là chữ chính (động từ + đối tượng), hạn là
- * mẩu riêng (`han` = "hết T2 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "⚠ quá hạn 3 ngày" đỏ hoặc "· hết T2 14/09" mờ
+ * mẩu riêng (`han` = "hết T2 14/09", `quaHanNgay` = số ngày trễ) — giao diện nối "quá hạn 3 ngày" đỏ hoặc "· hết T2 14/09" mờ
  * (PR-N1 A6: luôn đủ chữ "quá hạn"), không nhét hạn vào chữ việc.
  * `title` là câu đầy đủ cho tooltip.
  */

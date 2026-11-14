@@ -32,6 +32,7 @@ import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { DongThoiGianLuot } from './DongThoiGianLuot.tsx';
+import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { DemChu } from '../../ui/KhungPanel.tsx';
@@ -68,15 +69,14 @@ export type NguCanhHop = {
 function LichSuO({ attemptId, skill }: { attemptId: number; skill: string }) {
   const [mo, setMo] = useState(false);
   const { data, error } = useApi<{ scoreHistory: any[] }>(mo ? `/attempts/${attemptId}` : null);
+  const ds = data?.scoreHistory.filter((h) => h.skill === skill);
+  /* GD-4c (H4): một kiểu lịch sử — gập "Lịch sử" (số hiện khi đã đọc), bấm mới tải như cũ. */
   return (
-    <div className="text-[13px]">
-      <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-[13px]" aria-expanded={mo} onClick={() => setMo((v) => !v)}>
-        {mo ? t('Ẩn lịch sử') : t('Lịch sử')}
-      </button>
-      {mo && (error ? <p className="m-0 mt-1 text-bad">{error.message}</p>
-        : !data ? <p className="m-0 mt-1 text-slate-500">{t('Đang tải…')}</p>
-          : <div className="mt-1"><DongThoiGianLuot history={[]} scoreHistory={data.scoreHistory.filter((h) => h.skill === skill)} gioiHan={5} /></div>)}
-    </div>
+    <LichSuGap so={ds?.length || null} onMo={(m) => { if (m) setMo(true); }}>
+      {error ? <p className="ls-rong text-bad">{error.message}</p>
+        : !ds ? <p className="ls-rong">{t('Đang tải…')}</p>
+          : <DongThoiGianLuot history={[]} scoreHistory={ds} gioiHan={5} />}
+    </LichSuGap>
   );
 }
 

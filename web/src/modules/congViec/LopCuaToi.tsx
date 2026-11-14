@@ -72,7 +72,7 @@ const COT = 'grid grid-cols-[104px_150px_152px_minmax(0,1fr)] items-center gap-x
 
 /**
  * LỚP CỦA TÔI — khung phải trang Công việc khi chưa chọn việc (GD-1, mockup v21 ① K1 + `04-thiet-ke.md` mục 12, 13).
- * Cột: Lớp (link hồ sơ lớp) · Tôi dạy (chip kỹ năng; "chủ nhiệm") · Test (tình trạng + hạn) · Việc cần làm (nút-chip "{loại} · {số}", ⚠ khi quá hạn, "›" khi đổi trang — dòng 19).
+ * Cột: Lớp (link hồ sơ lớp) · Tôi dạy (chip kỹ năng; "chủ nhiệm") · Test (tình trạng + hạn) · Việc cần làm (nút-chip "{loại} · {số}", đỏ khi quá hạn (V22: chỉ màu), "›" khi đổi trang — dòng 19).
  * Bấm chip = việc đầu (hạn sớm nhất) của loại đó ở lớp đó: mở panel tại chỗ, hoặc sang trang khi việc không làm tại chỗ (`onMo`).
  * 375: mỗi lớp một thẻ, chip cao 44.
  */
@@ -127,7 +127,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
             className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
               ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`}
             style={c.quaHan ? undefined : { borderColor: 'var(--line-strong)' }}>
-            {c.quaHan && <span aria-hidden>⚠</span>}{c.nhan} · <span className="tabular-nums">{c.so}</span>{!lamTaiCho(c.dau) && <span aria-hidden> ›</span>}
+            {c.nhan} · <span className="tabular-nums">{c.so}</span>{!lamTaiCho(c.dau) && <span aria-hidden> ›</span>}
           </button>
         ))}
       </span>

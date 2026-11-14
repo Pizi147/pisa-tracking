@@ -116,7 +116,7 @@ function HopNho({ nut, nhan, nutLop, children, rong }: { nut: ReactNode; nhan: s
   );
 }
 
-/** Một việc của tôi: ô có khung — tên việc (bấm làm tại chỗ) + viên chấm màu + ngày hạn; quá hạn "⚠ 30/10" đỏ (vòng 2 chủ SP 03/11 khuya). */
+/** Một việc của tôi: ô có khung — tên việc (bấm làm tại chỗ) + viên chấm màu + ngày hạn; quá hạn "30/10" đỏ (vòng 2 chủ SP 03/11 khuya). */
 function OMotViec({ x, onMo }: { x: ViecEm; onMo: (it: WorkItem) => void }) {
   const { homNay } = useNgayNghiepVu();
   const nhan = dich(x.it.statusLabel);

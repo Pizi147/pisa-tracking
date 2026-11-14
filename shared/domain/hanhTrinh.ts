@@ -146,7 +146,7 @@ export function xepTang<T extends { id: number; tu: string; den: string | null; 
 // ====================================================================== nhãn khối PA (Q5, chú thích g8-133; PR-UX5 Q2/Q4/Q11)
 
 export type ToneKhoiPa = 'ok' | 'part' | 'bad' | 'run' | 'late' | 'done';
-export type NhanKhoiPa = { ten: string; dau: '✓' | '◐' | '✗' | '▶' | '⚠' | '■'; tone: ToneKhoiPa; day: string };
+export type NhanKhoiPa = { ten: string; dau: '✓' | '◐' | '✗' | '▶' | '■'; tone: ToneKhoiPa; day: string };
 
 /** Khối PA ngắn hơn ngưỡng này (px) thì chỉ vẽ dấu kết quả, không vẽ tên (Q3) — tên đủ nằm ở tooltip `day`. */
 export const KHOI_PA_CO_TEN = 130;
@@ -190,7 +190,7 @@ export function nhanKhoiPa(
   }
   if (pa.followupOverdue) {
     const quaHan = pa.soNgayQuaHan ? t('Quá hạn · {n} ngày', { n: pa.soNgayQuaHan }) : t('Quá hạn');
-    return { ten, dau: '⚠', tone: 'late', day: ghep(ten, t('▶ Đang thực hiện'), quaHan, khoang) };
+    return { ten, dau: '▶', tone: 'late', day: ghep(ten, t('▶ Đang thực hiện'), quaHan, khoang) };
   }
   return { ten, dau: '▶', tone: 'run', day: ghep(ten, t('▶ Đang thực hiện'), khoang) };
 }
@@ -218,7 +218,7 @@ export function trangThaiHop(
   const dung = (chu: string, tone: ToneHop, t: TrangThai): NonNullable<TrangThaiHop> => ({ chu, ngan: chu.split(' · ')[0], tone, t });
   if (i.caseMo.length > 0) {
     const qh = i.caseMo.find((c) => c.quaHan);
-    if (qh) return dung(qh.quaHan === 'xac-nhan-pa' ? t('Quá hạn · chờ xác nhận PA') : qh.choNhanXet ? t('Quá hạn · chờ mô tả Case') : t('Quá hạn · chờ xác nhận Case'), 'danger', 'qua-han');   // web thêm ⚠ (SVG)
+    if (qh) return dung(qh.quaHan === 'xac-nhan-pa' ? t('Quá hạn · chờ xác nhận PA') : qh.choNhanXet ? t('Quá hạn · chờ mô tả Case') : t('Quá hạn · chờ xác nhận Case'), 'danger', 'qua-han');   // web tô đỏ (V22: không biểu tượng)
     if (i.caseMo.some((c) => c.choNguyenNhan)) return dung(t('Cần làm · chờ xác nhận Case'), 'warn', 'can-lam');
     if (i.caseMo.some((c) => c.choNhanXet)) return dung(t('Cần làm · chờ mô tả Case'), 'warn', 'can-lam');
     if (i.caseMo.some((c) => c.choDuyet)) return dung(t('Chờ duyệt'), 'warn', 'cho-duyet');

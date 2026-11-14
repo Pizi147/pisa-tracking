@@ -212,7 +212,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
 
   check('NEN (7) · T14: ô chọn người mở danh sách ngay; trạng thái quy trình dùng NhanTrangThai', () => {
-    assert(/buocDanhSach\(/.test(doc('web/src/modules/congViec/ChonPhuTrach.tsx')), 'menu ChonPhuTrach chưa đi bằng mũi tên');
+    assert(/<MenuDong /.test(doc('web/src/modules/congViec/ChonPhuTrach.tsx')), 'menu ChonPhuTrach chưa đi bằng mũi tên (GD-4c: qua MenuDong)');
     assert(/<ChonNguoi/.test(doc('web/src/modules/yThuc/PhoiHopSosSection.tsx')), 'Phối hợp SOS chưa có ô người thực hiện');
     /* PR-Dọn (Q14): StudentsPage dùng NhanTrangThai chỉ trong WorkQueue (đã xoá — web không gọi) → bỏ khỏi danh sách. */
     for (const f of ['web/src/modules/yThuc/PhoiHopSosSection.tsx', 'web/src/modules/students/CotCaseHv.tsx' /* CASE-PA-UI: trạng thái Case ở dòng tóm tắt; PA = viên `.tt-pa` (v16) */])   // PR-Pb2-a: CaseBoardPage không còn danh sách
@@ -274,5 +274,52 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(!/idO \? 'div'/.test(khung) && (khung.match(/coOTuNhan\(children\)/g) ?? []).length === 2, 'khung Truong/Field còn đổi thẻ theo id ô báo lên');
     assert(!/loi \? <div/.test(doc('web/src/ui/KhungPanel.tsx')), 'Truong còn bọc/bỏ bọc ô theo loi (ô dựng lại, mất focus)');
     assert(/<button id=\{oId\}/.test(doc('web/src/ui/PeoplePicker.tsx')) && /const oId = id \?\? `\$\{uid\}-o`/.test(doc('web/src/ui/PeoplePicker.tsx')), 'ChonNguoi đang hiện tên: nhãn không trỏ vào nút Đổi');
+  });
+
+  /* V22 (chủ SP 14/11, DESIGN.md): hạn / số quá hạn chỉ bằng MÀU (đỏ quá · vàng gần · thường chưa tới), KHÔNG ⚠ / biểu tượng. ⚠ chỉ còn cho lỗi, chặn,
+     xác nhận. Chống tái phát: ⚠ (hay `<IconCanhBao`) đứng trong vài chục ký tự quanh chữ / khoá hạn trên CÙNG một dòng mã (bỏ chú thích) → lỗi;
+     CSS: `content: '⚠'` ở bộ chọn hạn / số xấu → lỗi. */
+  check('V22 · hạn chỉ bằng màu: không ⚠ / IconCanhBao cạnh chữ hạn (web .tsx, shared/domain) và không ::before ⚠ cho hạn / số xấu (index.css)', () => {
+    const boChuThich = (s: string) => s.replace(/\/\*[\s\S]*?\*\//g, (m) => m.replace(/[^\n]/g, ' ')).replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+    const HAN = /quá hạn|hạn hôm nay|hạn \{|hạn \$\{|còn \{n\} ngày|\{n\} ngày|quaHan|qua-han|'qua'|late:|overdue|treNgay|daysOverdue|ganHan|\bhan\b/i;
+    /* Ngoại lệ có lý do: [tệp, mẩu chữ của dòng]. */
+    const NGOAI_LE: [string, string][] = [
+    ];
+    const tep = [...tepNguon('web/src').filter((f) => f.endsWith('.tsx')), ...tepNguon('shared/domain')];
+    const loi: string[] = [];
+    for (const f of tep) {
+      boChuThich(doc(f)).split('\n').forEach((dong, i) => {
+        for (const m of dong.matchAll(/⚠|<IconCanhBao\b/g)) {
+          const quanh = dong.slice(Math.max(0, m.index! - 60), m.index! + 40);
+          if (HAN.test(quanh) && !NGOAI_LE.some(([nf, chu]) => nf === f && dong.includes(chu))) loi.push(`${f}:${i + 1}: ${quanh.trim()}`);
+        }
+      });
+    }
+    for (const m of boChuThich(doc('web/src/index.css')).matchAll(/([^{}]*)\{[^{}]*content:\s*["'][^"']*⚠/g)) {
+      if (/qua|han|late|tre|so-bam|dai-cs/i.test(m[1])) loi.push(`index.css: ${m[1].trim()}`);
+    }
+    assert(loi.length === 0, `${loi.length} chỗ hạn còn ⚠ (V22: chỉ màu): ` + loi.slice(0, 6).join(' · '));
+  });
+  /* PTA Plan rà #1649: V22 "không ⚠ hay biểu tượng nào kèm" — cả chấm "●" ở chip / badge báo hạn, quá hạn, việc chờ. Chấm "có việc mới" trên tab giữ. */
+  check('V22 · không chấm "●" ở chip hạn / quá hạn / việc chờ: Nhan late + soon, DongHan, BadgeViec qua + cho, .vh-qua, badge lớp; "●" chữ không đứng cạnh chữ hạn', () => {
+    const nhan = doc('web/src/ui/Nhan.tsx');
+    assert(/late: 'bg-late-bg text-late', soon: 'bg-soon-bg text-soon'/.test(nhan), 'Nhan: tông late / soon không được kèm CHAM');
+    assert(!/cham\(/.test(doc('web/src/ui/DongHan.tsx')), 'DongHan: chip hạn không chấm');
+    assert(/tong === 'qua' \|\| tong === 'cho' \? null/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), "BadgeViec: 'qua' / 'cho' không chấm");
+    assert(/\.vh-qua::before \{ content: none; \}/.test(doc('web/src/index.css')), '.vh-qua không chấm');
+    for (const f of ['web/src/modules/classes/DauTrangLop.tsx', 'web/src/modules/students/StudentsPage.tsx'])
+      assert(/tone=\{toneBadgeLop\(x\)\} cham=\{false\}/.test(doc(f)), `${f}: badge lớp (đếm việc chờ / quá hạn) cham={false}`);
+    const HAN = /quá hạn|hạn hôm nay|hạn \{|chờ chấm|còn \{n\} ngày/i;   // "● … chưa chốt / chưa lưu" là trạng thái lưu nháp — không phải hạn
+    const loi: string[] = [];
+    for (const f of tepNguon('web/src').filter((x) => x.endsWith('.tsx'))) {
+      doc(f).split('\n').forEach((dong, i) => {
+        if (/^\s*(\/\/|\*|\/\*)/.test(dong)) return;
+        for (const m of dong.matchAll(/●/g)) {
+          const quanh = dong.slice(Math.max(0, m.index! - 60), m.index! + 60);
+          if (HAN.test(quanh)) loi.push(`${f}:${i + 1}`);
+        }
+      });
+    }
+    assert(loi.length === 0, `${loi.length} chỗ "●" cạnh chữ hạn / việc chờ: ` + loi.slice(0, 6).join(' · '));
   });
 }

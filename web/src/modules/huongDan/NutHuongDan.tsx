@@ -1,7 +1,7 @@
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { KhungPanel, panelHdTren } from '../../ui/KhungPanel.tsx';
-import { phimHangTab } from '../../ui/HangTab.tsx';
+import { HangTab } from '../../ui/HangTab.tsx';
 import { ToKhop } from '../../ui/ToKhop.tsx';
 import { ChuDam } from '../../ui/ui.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
@@ -70,17 +70,8 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
           aria-label={t('Xoá chữ tìm')} onClick={() => setQ('')}>✕</button>}
       </label>
       {/* Hàng tab gạch chân (HangTab — cùng dáng, cùng phím ← →); đang tìm: không tab nào chọn, thân là một danh sách. */}
-      <div role="tablist" aria-label={t('Phần hướng dẫn')} onKeyDown={phimHangTab} className="-mx-4 flex gap-0.5 px-2 sm:-mx-5 sm:px-3.5">
-        {(Object.keys(TEN_TAB) as Tab[]).map((k) => {
-          const chon = !kq && tab === k;
-          return (
-            <button key={k} type="button" role="tab" aria-selected={chon} aria-controls={idThan} tabIndex={chon || (kq && k === tab) ? 0 : -1}
-              onClick={() => { setTab(k); setQ(''); }}
-              className={`-mb-px min-h-[44px] cursor-pointer appearance-none whitespace-nowrap border-0 border-b-2 bg-transparent px-2.5 text-[15px] max-sm:flex-1 sm:min-h-0 sm:px-3 sm:py-2.5 sm:text-sm ${chon
-                ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-100'}`}>{TEN_TAB[k]}</button>
-          );
-        })}
-      </div>
+      <HangTab<Tab | ''> ariaLabel={t('Phần hướng dẫn')} panelId={idThan} value={kq ? '' : tab} onChange={(k) => { if (k) { setTab(k); setQ(''); } }}
+        tabs={(Object.keys(TEN_TAB) as Tab[]).map((k) => ({ key: k, label: TEN_TAB[k] }))} />
     </div>
   );
 

@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { BoLocDoan, Empty, ErrorState, NhanTrangThai, SCORE_CHIP, Skeleton, type ScoreTone } from '../../ui/ui.tsx';
-import { IconCanhBao, IconDangLam, IconDat, IconKhong, IconMotPhan } from '../../ui/BieuTuong.tsx';
+import { IconDangLam, IconDat, IconKhong, IconMotPhan } from '../../ui/BieuTuong.tsx';
 import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
 import { NutLuat } from '../../ui/NutLuat.tsx';
@@ -86,7 +86,7 @@ const KHOI: Record<ToneKhoiPa, string> = {
 };
 const DAU_KHOI: Record<ToneKhoiPa, ReactNode> = {
   ok: <IconDat size={11} />, part: <IconMotPhan size={11} />, bad: <IconKhong size={11} />, run: <IconDangLam size={11} />,
-  late: <IconCanhBao size={11} />, done: <IconDat size={11} />,
+  late: <IconDangLam size={11} />, done: <IconDat size={11} />,
 };
 /** Khối "chờ" (mockup `.thanh.pa.cho`): viền đứt 1.5 px mờ — chờ xác nhận PA / chờ duyệt / chờ nguyên nhân / chưa có PA. */
 const KHOI_CHO = 'border-[1.5px] border-dashed border-[color:var(--text-faint)] text-dim';
@@ -464,9 +464,9 @@ function CotGhim({ hang, cotTen, nen = NEN_NHAN, className = '', children }: {
   );
 }
 
-/** Trạng thái của một Case ở cột nhãn (U07 #3): đang làm = chip · quá hạn = chữ đỏ ⚠ · huỷ = "– Huỷ W3 SEP" xám · xong = "✓ Xong W3 SEP". */
+/** Trạng thái của một Case ở cột nhãn (U07 #3): đang làm = chip · quá hạn = chữ đỏ (V22 không biểu tượng) · huỷ = "– Huỷ W3 SEP" xám · xong = "✓ Xong W3 SEP". */
 function TrangThaiCase({ s }: { s: NonNullable<TrangThaiHop> }) {
-  if (s.t === 'qua-han') return <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-bad"><IconCanhBao />{dich(s.chu)}</span>;
+  if (s.t === 'qua-han') return <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-bad">{dich(s.chu)}</span>;
   if (s.t === 'da-huy') return <span className="text-[13px] font-semibold text-faint">– {dich(s.chu)}</span>;
   if (s.t === 'xong') return <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-ok"><IconDat size={11} />{dich(s.chu)}</span>;
   /* Mockup `.trth .dang-lam`: viên 22 px nền trung tính, chấm xanh trước chữ. */

@@ -951,7 +951,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
     assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage && ids\.length/.test(s)
-      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ label: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
+      && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ key: 'cap-bac', nhan: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Ghi vi phạm/.test(s), '+ Ghi vi phạm');
   });
   check('YT4 (9) · Phối hợp (K3-38): "Meeting CX/GĐCN (sau Mock)" — nhãn một chỗ; UI-3 (mockup U10 K8) bỏ chữ phụ thừa, hàng 3 cột tên · hạn · nút', () => {

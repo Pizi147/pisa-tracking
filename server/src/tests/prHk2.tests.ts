@@ -219,13 +219,13 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     }
   });
 
-  check('C15a · ô Đạt / SOS 1–3 dùng CHIP_VUONG + tông dat/sos1-3; chú giải bỏ "Tạm thời / Chưa đủ điểm"; "16 ⚠1"; ⋯ gom Cột hiện + hai nút xuất; đầu cột whitespace-normal; bang-dinh', () => {
+  check('C15a · ô Đạt / SOS 1–3 dùng CHIP_VUONG + tông dat/sos1-3; chú giải bỏ "Tạm thời / Chưa đủ điểm"; "16 · 1" (V22: không ⚠); ⋯ gom Cột hiện + hai nút xuất; đầu cột whitespace-normal; bang-dinh', () => {
     const s = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
     assert(/CHIP_VUONG/.test(s) && /ui\/Nhan\.tsx/.test(s), 'chưa dùng CHIP_VUONG');
     const mau = /const MAU_O[^]*?\n\};/.exec(s)?.[0] ?? '';
     assert(/dat:/.test(mau) && /sos1:/.test(mau) && /sos2:/.test(mau) && /sos3:/.test(mau) && !/\btam:/.test(mau), `MAU_O thiếu tông hoặc còn tam: ${mau}`);
     assert(!/Tạm thời|Chưa đủ điểm|quá hạn\)/.test(s), 'còn "Tạm thời" / "Chưa đủ điểm" / "quá hạn)"');
-    assert(/⚠/.test(s) && /text-late/.test(s) && /quá hạn/.test(s), 'chưa có ⚠ text-late + title "n quá hạn"');
+    assert(!/⚠/.test(s) && /text-late/.test(s) && /quá hạn/.test(s), 'V22: số quá hạn chỉ text-late + title "n quá hạn", không ⚠');
     assert(/<MenuDong/.test(s) && /Cột hiện/.test(s) && /⤓ Xuất bảng này/.test(s) && /Xuất kết quả từng lượt/.test(s), 'chưa gom nút vào MenuDong');
     assert(!/Cột hiện ▾/.test(s) && !/className="btn btn-sm"/.test(s), 'còn nút ngoài');
     assert(/nav\?\.xuatMt/.test(s), 'mất điều kiện xuatMt');
@@ -295,7 +295,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
   });
 
   const tq: any = await import('../worklist/tongQuan.ts');
-  check('C20 · J3 (DB): tongQuan không còn chuỗi "quá hạn từ"; mọi dòng Cần xử lý quá hạn ghi "quá hạn n ngày"; web in "⚠" trước', () => {
+  check('C20 · J3 (DB): tongQuan không còn chuỗi "quá hạn từ"; mọi dòng Cần xử lý quá hạn ghi "quá hạn n ngày"; web tô đỏ (V22: không ⚠)', () => {
     assert(!/quá hạn từ/.test(doc('server/src/worklist/tongQuan.ts')), 'tongQuan.ts còn "quá hạn từ"');
     let soQuaHan = 0;
     for (const p of [P.mbManager, P.admin]) {
@@ -405,7 +405,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(/(^|\s)truncate(\s|$)/.test(m![1]) && /min-w-0/.test(m![1]), m![1]);
   });
 
-  check('C34 · CapNhatTuan: tên PA < 640 px xuống dòng, hạn + ⚠ xuống dòng dưới; KhungPanel ngCanh max-sm:whitespace-normal, giữ pb-2', () => {
+  check('C34 · CapNhatTuan: tên PA < 640 px xuống dòng, hạn xuống dòng dưới; KhungPanel ngCanh max-sm:whitespace-normal, giữ pb-2', () => {
     const s = doc('web/src/modules/cases/CapNhatTuan.tsx');
     /* OV-12e (mockup panel v3 §5): tên PA ở dòng 2 đầu panel (`dauViec` ngữ cảnh), hạn là chip ở dòng 1 — dòng 2 xuống dòng tự nhiên (flex-wrap, không cắt). */
     /* CV-LOI (CV-14): chip hạn là hạn Mini Test khi PA còn chờ Mini Test, không thì hạn cập nhật PA. */
@@ -432,12 +432,12 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     for (const lop of ['min-w-0', 'whitespace-normal', 'text-center', 'leading-tight']) assert(n.includes(lop), `mất ${lop}`);
   });
 
-  check('C37 · ViecTiep: ≥ 640 px tối đa 2 dòng (sm:line-clamp-2 ở khối ngoài, title câu đủ); quá hạn → "⚠" đứng ĐẦU khối; < 640 px không cắt', () => {
+  check('C37 · ViecTiep: ≥ 640 px tối đa 2 dòng (sm:line-clamp-2 ở khối ngoài, title câu đủ); quá hạn → "quá hạn n ngày" đứng ĐẦU khối; < 640 px không cắt', () => {
     const v = than(doc('web/src/ui/ViecTiep.tsx'), 'ViecTiep');
     const ngoai = /<span className="([^"]*)" title=\{v\.title\}>/.exec(v);
     assert(ngoai && /(^|\s)sm:line-clamp-2(\s|$)/.test(ngoai[1]) && !/(^|\s)line-clamp-2(\s|$)/.test(ngoai[1]), `khối ngoài: ${ngoai?.[1]}`);
     const qh = v.indexOf('<QuaHan'), viec = v.indexOf('{giuMaTuan(v.viec)}'), han = v.indexOf('{v.han}');   // OV-11g CA2-8: mã tuần không ngắt
-    assert(qh >= 0 && qh < viec, '⚠ quá hạn phải đứng trước chữ việc');
+    assert(qh >= 0 && qh < viec, 'quá hạn phải đứng trước chữ việc');
     assert(han > viec, 'hạn thường giữ sau chữ việc');
     assert(!/shrink-0/.test(v), 'cụm hạn còn shrink-0');
   });
@@ -635,13 +635,13 @@ export async function runPrHk2Tests(t: YThucTestKit) {
     assert(tachTienTo.length === 0, `đọc tên Case theo tiền tố: ${tachTienTo.join(', ')}`);
   });
 
-  check('C41 · audit: không còn chữ ghép hỏng "Testng" (đổi tên làm hỏng "khoảng"); HangTab đo bằng getBoundingClientRect; "⚠n" của Chờ nguyên nhân có chữ cho trình đọc màn hình', () => {
+  check('C41 · audit: không còn chữ ghép hỏng "Testng" (đổi tên làm hỏng "khoảng"); HangTab đo bằng getBoundingClientRect; số quá hạn của Chờ nguyên nhân có chữ cho trình đọc màn hình', () => {
     const hong = [...nguonTs('web/src'), ...nguonTs('shared'), ...nguonTs('server/src')].filter((f) => /(Final|Progress) Testng/.test(fs.readFileSync(path.join(ROOT, f), 'utf8')));
     assert(hong.length === 0, `chữ ghép hỏng: ${hong.join(', ')}`);
     const tab = doc('web/src/ui/HangTab.tsx');
     assert(/getBoundingClientRect/.test(tab) && !/offsetLeft/.test(tab), 'HangTab phải đo theo getBoundingClientRect');
     const th = doc('web/src/modules/phanTich/TongHopTestSos.tsx');
-    assert(/⚠\{quaHan\}<span className="sr-only">/.test(th), '⚠n thiếu chữ sr-only');
+    assert(/· \{quaHan\}<span className="sr-only">/.test(th), 'số quá hạn thiếu chữ sr-only');
   });
 
   console.log('\nPR-HK2 · rà độc lập (#235) · I1, I2, I3, J9, mục 7');

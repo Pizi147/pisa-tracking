@@ -48,13 +48,13 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc, onLuu, onTaiL
   };
   const moSua = () => { setNhap(han); setLoi(null); setSua(true); };
   const conNgay = daysBetween(hn, han);
-  /* Badge khung + chấm (mockup U10 `.bv`, chủ SP 03/11 U04): quá hạn ⚠ đỏ · ≤ 3 ngày vàng · xa xám (#814 hạn xa = viên xám). */
+  /* Badge khung + chấm (mockup U10 `.bv`, chủ SP 03/11 U04): quá hạn đỏ · ≤ 3 ngày vàng · xa xám (#814 hạn xa = viên xám). */
   const BV = 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-semibold';
-  const cham = (mau: string) => <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full" style={{ background: mau }} />;
+  /* V22 (PTA rà #1649): chip hạn chỉ màu — không chấm, không biểu tượng. */
   const tinh = xong || !hn ? null
-    : conNgay < 0 ? <span className={`${BV} border-late-line bg-late-bg text-late`}><span aria-hidden>⚠</span>{t('quá hạn {n} ngày', { n: -conNgay })}</span>
-    : conNgay <= HAN_GAN_NGAY ? <span className={`${BV} border-soon-line bg-soon-bg text-soon`}>{cham('currentColor')}{conNgay === 0 ? t('hôm nay') : t('còn {n} ngày', { n: conNgay })}</span>
-    : <span className={`${BV} text-slate-400`} style={{ borderColor: 'var(--line-strong)' }}>{cham('var(--text-faint)')}{t('còn {n} ngày', { n: conNgay })}</span>;
+    : conNgay < 0 ? <span className={`${BV} border-late-line bg-late-bg text-late`}>{t('quá hạn {n} ngày', { n: -conNgay })}</span>
+    : conNgay <= HAN_GAN_NGAY ? <span className={`${BV} border-soon-line bg-soon-bg text-soon`}>{conNgay === 0 ? t('hôm nay') : t('còn {n} ngày', { n: conNgay })}</span>
+    : <span className={`${BV} text-slate-400`} style={{ borderColor: 'var(--line-strong)' }}>{t('còn {n} ngày', { n: conNgay })}</span>;
   const nguon = <span className="text-xs text-slate-500">{hanChon ? t('đã chỉnh · mặc định {ngay}', { ngay: shortDate(hanMacDinh, hn) }) : t('mặc định')}</span>;
 
   const giaTri = sua ? (

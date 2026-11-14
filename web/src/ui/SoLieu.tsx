@@ -7,7 +7,7 @@ import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
 import { useSession } from '../lib/session.tsx';
 import { KhungPanel } from './KhungPanel.tsx';
-import { phimHangTab } from './HangTab.tsx';
+import { HangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { lopKq } from './BieuTuong.tsx';
 import { CHIP_VUONG, ChipHan, ChipSoQuaHan } from './Nhan.tsx';
@@ -141,11 +141,11 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   );
 }
 
-/** Hạn trong câu tình trạng của dòng: quá hạn "⚠ quá hạn n ngày" · còn ≤ 3 ngày vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
+/** Hạn trong câu tình trạng của dòng: quá hạn "quá hạn n ngày" đỏ · còn ≤ 3 ngày vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
 function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai ?? 'viec-van-hanh', due: han, today: homNay });
-  return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">⚠ {nhanQuaHan(v.daysOverdue)}</span>
+  return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">{nhanQuaHan(v.daysOverdue)}</span>
     : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
 
@@ -177,7 +177,7 @@ const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.ts
 
 
 /**
- * PANEL DANH SÁCH CỦA MỘT CON SỐ — hệ panel v3 (OV-12e, P12, mockup v3 §10). Đầu: tên số liệu + "⚠ n quá hạn" / "n Case · quá hạn lên đầu".
+ * PANEL DANH SÁCH CỦA MỘT CON SỐ — hệ panel v3 (OV-12e, P12, mockup v3 §10). Đầu: tên số liệu + "n quá hạn" / "n Case · quá hạn lên đầu".
  * Mỗi dòng = đầu thu gọn (việc + chip hạn / em · lớp · ngữ cảnh · người làm nếu không phải bạn). Bấm dòng → MỞ RỘNG TẠI CHỖ: người làm được thấy
  * khối Cần làm (Xác nhận PA làm ngay trong dòng; việc dài → THAY nội dung panel bằng panel làm việc sẵn có, "← Danh sách" về đúng dòng);
  * người khác thấy câu tình trạng. Link "Hồ sơ" cuối dòng tách khỏi nút làm. Số ở đầu = số dòng (cùng tập máy chủ trả; dòng vừa xong mà máy chủ không còn
@@ -537,15 +537,10 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         : (
           <>
             {coTab && (
-              <div role="tablist" aria-label={t('Kết quả')} onKeyDown={phimHangTab} className="-mx-4 mb-1 flex border-b px-4" style={{ borderColor: 'var(--line)' }}>
-                {/* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */}
-                {([['chua', t('Chưa đạt'), soChua, ''], ['dat', laThi ? t('Đạt Target') : t('Đạt'), soDat, ''], ...(soVuot ? [['vuot', t('Vượt'), soVuot, '★ '] as const] : [])] as const).map(([k, nhan, n, dau]) => (
-                  <button key={k} type="button" role="tab" aria-selected={tab === k} aria-controls={idPanel} tabIndex={tab === k ? 0 : -1} onClick={() => setTab(k)}
-                    className={`-mb-px min-h-[44px] border-b-2 px-3 text-sm ${tab === k ? 'border-[color:var(--accent)] font-semibold text-slate-100' : 'border-transparent font-medium text-slate-400 hover:text-slate-200'}`}>
-                    {dau}{nhan} <span className="tabular-nums">{n}</span>
-                  </button>
-                ))}
-              </div>
+              /* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */
+              <HangTab<'chua' | 'dat' | 'vuot'> ariaLabel={t('Kết quả')} panelId={idPanel} value={tab} onChange={setTab} className="mb-1"
+                tabs={[{ key: 'chua', label: t('Chưa đạt'), so: soChua }, { key: 'dat', label: laThi ? t('Đạt Target') : t('Đạt'), so: soDat },
+                  ...(soVuot ? [{ key: 'vuot' as const, label: `★ ${t('Vượt')}`, so: soVuot }] : [])]} />
             )}
             <div ref={ds} id={coTab ? idPanel : undefined} role={coTab ? 'tabpanel' : undefined} aria-label={coTab ? t('Kết quả') : undefined}>{nhomCase ? veNhom(xt.cat(hienTab)) : <ul className="-mx-4 m-0 list-none p-0">{xt.cat(hienTab).map(veDong)}</ul>}</div>
             <XemThem {...xt} donVi={dv ?? (nhomCase ? 'Case' : t('mục'))} />

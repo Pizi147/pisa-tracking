@@ -133,7 +133,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   } : {
     huy: null, daSua: !!chon || !!ghiChu.trim(), conThieu: lf.conThieu(loiB),
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" />
-      : <span className="inline-flex items-center gap-1.5 font-semibold text-soon"><span aria-hidden>●</span>{t('Bước tiếp chưa chốt')}</span>,
+      : <span className="font-semibold text-soon">{t('Bước tiếp chưa chốt')}</span>,
     chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chon === 'dung' ? (dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc) : t('Chốt bước tiếp')}</button>,
   };
   if (chon === 'lo_trinh_moi' && !khoaBuoc2) {
@@ -197,9 +197,8 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
         </Buoc>
 
         <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-          <button type="button" className="flex min-h-[44px] appearance-none items-center gap-1.5 border-0 bg-transparent p-0 text-sm font-semibold text-slate-400 sm:min-h-0" onClick={() => setLichSu(true)}>
-            <span aria-hidden>▸</span>{t('Lịch sử')}
-          </button>
+          {/* GD-4c: cùng link "Lịch sử" như Kết quả thi thật / Bước tiếp (mở panel Lịch sử thay nội dung) — bỏ "▸" giả gập. */}
+          <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
         </div>
       </div>
     </KhungPanel>

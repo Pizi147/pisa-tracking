@@ -42,7 +42,7 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, onBanGiaoGv
         </Dai>
       )}
       {lt && (
-        /* HL-5 · CA2-6: hạn chốt bằng `<Han>` (quá hạn có ⚠ + chữ, không chỉ màu) như dải Bàn giao. */
+        /* HL-5 · CA2-6: hạn chốt bằng `<Han>` (quá hạn có chữ, không chỉ màu) như dải Bàn giao. */
         <Dai nhan={t('Chốt lộ trình')} do={lt.do}
           nut={<button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={onChuyenTiep}>{t('Cuối khoá ›')}</button>}>
           <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: lt.daChot, b: lt.tong })}</b> {t('đã chốt')}{lt.hanChot && <> · <Han loai="viec-van-hanh" han={lt.hanChot} /></>}

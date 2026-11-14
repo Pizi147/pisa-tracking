@@ -113,7 +113,7 @@ export type MucHop = 'doi-tuan' | 'bao-vang' | 'bo-ky-nang' | 'doi-han' | 'huy-d
 /** Ba mục đầu là nút trên dòng; còn lại nằm trong ⋯. */
 export const NUT_HOP: readonly MucHop[] = ['doi-tuan', 'bao-vang', 'bo-ky-nang'];
 export const CHU_MUC_HOP: Record<MucHop, string> = {
-  'doi-tuan': t('Dời'), 'bao-vang': t('Vắng'), 'bo-ky-nang': t('Xoá'), 'doi-han': t('Dời hạn chấm'), 'huy-diem': t('Huỷ điểm'), 'nhat-ky': t('Nhật ký'),
+  'doi-tuan': t('Dời'), 'bao-vang': t('Vắng'), 'bo-ky-nang': t('Xoá'), 'doi-han': t('Dời hạn chấm'), 'huy-diem': t('Huỷ điểm'), 'nhat-ky': t('Lịch sử'),   // GD-4c (10-ra-dong-bo C2): lịch sử sửa của lượt = "Lịch sử", "Nhật ký" chỉ cho trang nhật ký chung
 };
 
 /** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */

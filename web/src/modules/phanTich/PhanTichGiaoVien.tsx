@@ -250,7 +250,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
             <DaiChiSo cot={4} ds={[
               { ten: t('Chấm Test đúng hạn'), ky: t('trong kỳ'), gt: pct(bai), mau: t('{a}/{b} bài', { a: bai.dung, b: bai.dung + bai.muon + bai.chua }) },
               { ten: t('Việc đúng hạn'), ky: t('trong kỳ'), gt: pct(viec), mau: t('{a}/{b} việc', { a: viec.dung, b: viec.dung + viec.muon + viec.chua }) },
-              { ten: t('Chưa làm'), ky: t('trong kỳ'), gt: <span className={bai.chua || viec.chua ? 'text-bad' : ''}>{bai.chua || viec.chua ? <span aria-hidden className="mr-1.5">⚠</span> : null}{bai.chua}<small className="mx-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('bài')}</small>{viec.chua}<small className="ml-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('việc')}</small></span>, mau: scTong ? t('đã qua hạn · + {n} bài S chéo chung', { n: scTong }) : t('đã qua hạn') },
+              { ten: t('Chưa làm'), ky: t('trong kỳ'), gt: <span className={bai.chua || viec.chua ? 'text-bad' : ''}>{bai.chua}<small className="mx-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('bài')}</small>{viec.chua}<small className="ml-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('việc')}</small></span>, mau: scTong ? t('đã qua hạn · + {n} bài S chéo chung', { n: scTong }) : t('đã qua hạn') },
               { ten: t('Chưa phân công'), ky: t('trong kỳ'), gt: cpc ? <OSo giaTri={cpc} nguon={nguonO(chuaPc!.h, 'cham-diem')} tieuDe={t('Chưa phân công')} vung="chi-so" /> : 0, nho: t('bài'), mau: t('chưa có GV') },
             ]} />
             <section className="card overflow-clip">

@@ -48,7 +48,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
         <ChiSo ten={ten(t('Lượt MT tuần này'), data.luotTuanNay.so)} ky={tuanLich(data.tuan, homNay)} giaTri={<So to={`/test/ke-hoach?tuan=${data.tuan}&loai=ft${cn}`} n={data.luotTuanNay.so} />}
           mau={t('{n} lớp', { n: data.luotTuanNay.soLop })} />
         <ChiSo ten={ten(t('Bài chưa nhập điểm'), data.oChuaNhap.so)} ky={t('hiện tại')} giaTri={<So to={`/cong-viec?nhom=cham-diem&nguoi=tat-ca&khung=tat-ca${cn}`} n={data.oChuaNhap.so} />}
-          mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">⚠ {t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
+          mau={data.oChuaNhap.quaHan ? <span className="font-semibold text-late">{t('{n} quá hạn', { n: data.oChuaNhap.quaHan })}</span> : t('không bài nào quá hạn')} />
         <ChiSo ten={ten(t('HV chưa đủ MT'), data.chuaXepLich)} ky={t('hiện tại')} giaTri={<So to={`/test/ke-hoach?loai=ft${cn}`} n={data.chuaXepLich} />}
           mau={t('đã thi hết lượt MT đã xếp')} />
       </div>
@@ -69,7 +69,7 @@ export function MockTestAdmin({ branchId }: { branchId: number | null }) {
               {data.gvQuaHan.map((g) => {
                 const n = soNgay(g.han);
                 /* S chấm chéo chưa ai nhận, chưa tới hạn — chờ chấm; quá hạn thì "quá hạn" như bài khác (rà 11/11 #2). */
-                const nhan = g.choCham ? <span className="text-slate-400">{t('chờ chấm')}</span> : <span className="font-semibold text-late">⚠ {n !== null ? nhanQuaHan(n) : t('quá hạn')}</span>;
+                const nhan = g.choCham ? <span className="text-slate-400">{t('chờ chấm')}</span> : <span className="font-semibold text-late">{n !== null ? nhanQuaHan(n) : t('quá hạn')}</span>;
                 return (
                   <li key={khoa(g)}
                     className="grid items-center gap-x-3 gap-y-0.5 border-t px-4 py-2.5 text-sm grid-cols-[minmax(0,1fr)] md:grid-cols-[180px_minmax(0,1fr)_72px_max-content]"

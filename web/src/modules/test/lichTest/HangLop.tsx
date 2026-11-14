@@ -56,7 +56,7 @@ const TienDo = ({ l }: { l: LopLichTest }) => (
   </span>
 );
 
-/** LT-GON: MỘT viên của hàng — ô chưa lưu (đỏ) > quá hạn của người xem (viên ⚠ như Công việc) > nhãn tiến độ (Đang chấm / Chờ bạn chấm…). */
+/** LT-GON: MỘT viên của hàng — ô chưa lưu (đỏ) > quá hạn của người xem (viên đỏ như Công việc) > nhãn tiến độ (Đang chấm / Chờ bạn chấm…). */
 const VienHang = ({ l, chuaLuu = 0 }: { l: LopLichTest; chuaLuu?: number }) => (chuaLuu === 0 && l.conBai > 0 && l.quaHan
   ? <ChipHan vien loai="nhap-diem" han={l.han} /> : <NhanLop l={l} chuaLuu={chuaLuu} />);
 
@@ -91,7 +91,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, hep, urlClass
   /* B8 (chủ SP 08/11): "x/y bài" + viên chung MỘT ô cuối, căn sát mép phải như mockup (trước: hai cột 110 + 170 → số lơ lửng giữa hàng khi không có viên). */
   const cot = hep ? [null, 132] : [174, null, ...(coChiNhanh ? [110] : []), 280];
   /* Tên bài ("Final Test") chỉ khi cùng lớp có hơn một hàng trong danh sách — để phân biệt hai hàng. */
-  const haiHang = new Set(lop.map((x) => x.classId).filter((id, i, a) => a.indexOf(id) !== i));   // U06 (mockup V11): x/y bài · hạn · MỘT badge (bỏ "phần của bạn / GV khác")   // hạn quá: "hạn 26/08 ⚠ quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
+  const haiHang = new Set(lop.map((x) => x.classId).filter((id, i, a) => a.indexOf(id) !== i));   // U06 (mockup V11): x/y bài · hạn · MỘT badge (bỏ "phần của bạn / GV khác")   // hạn quá: "hạn 26/08 · quá hạn n ngày" · 220: "P của bạn: còn n bài" một dòng (D8) · 375: hạn "hạn 23/09" 58 px + đệm → 82, nhường tên lớp ("MB Pre FOU 03" 107 px)
   const soCot = cot.length;
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem — cùng số "… của bạn: còn n bài" ở hàng lớp. */
   const onHet = (l: LopLichTest) => () => {

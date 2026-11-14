@@ -63,7 +63,7 @@ export async function runPrUiChungTests(t: any) {
     assert(/\.menu-nhom:not\(:first-child\)\s*\{[^}]*border-top:\s*1px solid var\(--line\)/.test(css), 'vạch trên mỗi nhóm trừ nhóm đầu');
     assert(/min-height:\s*36px/.test(luat('menu-muc')) && /@media \(max-width: 639px\)\s*\{\s*\.menu-muc\s*\{\s*min-height:\s*44px/.test(css), 'mục ≥ 36 px, ≥ 44 px ở 375');
     assert(/\.menu-muc-nguy\s*\{[^}]*border-top:\s*1px solid rgb\(var\(--bad-rgb\)\)/.test(css), 'mục nguy hiểm có vạch đỏ');
-    for (const f of ['web/src/ui/Menu.tsx', 'web/src/ui/MenuDong.tsx']) {
+    for (const f of ['web/src/ui/MenuDong.tsx']) {   // GD-4c: Menu.tsx gộp vào MenuDong
       const s = doc(f);
       assert(/role="presentation" className="menu-nhom/.test(s), `${f}: nhãn nhóm role=presentation + .menu-nhom`);
       assert(s.includes('menu-muc ') && s.includes('menu-muc-nguy'), `${f}: mục dùng .menu-muc + .menu-muc-nguy`);

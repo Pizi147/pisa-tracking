@@ -19,7 +19,7 @@ import {
  * V8-PT (khung B3): thẻ chỉ số đầu tab — HV cần chú ý đếm từ danh sách HV; Vi phạm · Chưa xử lý · Lớp có vi phạm CỘNG từ bảng Lớp (cùng số).
  * V8-PT-2: số thẻ bấm mở panel (`dong=tong` · `hv-can-chu-y`, chỉ gọi khi mở); 375: hai bảng thành thẻ `TheDong`, không cuộn ngang (mockup luật C1 — tab này không có khung 375).
  */
-/* AUDIT-UI B10 (chủ SP 08/11, G8 "báo cáo thuần"): không cột trạng thái "⚠ Quá hạn" / ô "n quá hạn" — việc quá hạn đã ở Công việc; số lần chưa xử lý ở cột "Chưa xử lý". */
+/* AUDIT-UI B10 (chủ SP 08/11, G8 "báo cáo thuần"): không cột trạng thái "Quá hạn" / ô "n quá hạn" — việc quá hạn đã ở Công việc; số lần chưa xử lý ở cột "Chưa xử lý". */
 
 export function YThucPhoiHop(props: PhamViPhanTich) {
   const demoDate = useNgayNghiepVu().homNay || null;
@@ -95,7 +95,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     </span>
   );
 
-  /* PT-b (mockup v19 khung 6a): Chưa xử lý = đang chờ → hộp vàng; có phần quá hạn → đỏ ⚠. Bậc hiện tại › kế gộp một ô (XM-4). */
+  /* PT-b (mockup v19 khung 6a): Chưa xử lý = đang chờ → hộp vàng; có phần quá hạn → đỏ (V22: chỉ màu). Bậc hiện tại › kế gộp một ô (XM-4). */
   const mauCx = (x: { chuaXuLy: number; quaHan?: number }) => (!x.chuaXuLy ? '' : x.quaHan ? 'text-bad' : 'text-soon');
   const bac = (x: DongHvCanChuY) => (
     <span className="text-[color:var(--text-dim)]">

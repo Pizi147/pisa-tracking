@@ -26,7 +26,8 @@ export async function runPrTabA11yTests(t: any) {
     assert(/export function phimHangTab/.test(s), 'thiếu phimHangTab');
     for (const k of ['ArrowLeft', 'ArrowRight', 'Home', 'End']) assert(s.includes(`'${k}'`), `thiếu ${k}`);
     assert(/onKeyDown=\{phimHangTab\}/.test(s), 'tablist chưa gắn phim');
-    assert(/tabIndex=\{active \? 0 : -1\}/.test(s), 'tab chưa tabIndex luân chuyển');
+    /* GD-4c: không tab nào chọn (Hướng dẫn đang tìm) → tab đầu nhận focus Tab. */
+    assert(/tabIndex=\{active \|\| \(i === 0 && !coChon\) \? 0 : -1\}/.test(s), 'tab chưa tabIndex luân chuyển');
     assert(/aria-controls=\{panelId\}/.test(s), 'tab chưa aria-controls');
   });
   check('TA-2 · mọi tablist trong web gắn phimHangTab; mọi role="tab" có tabIndex luân chuyển', () => {
@@ -39,7 +40,8 @@ export async function runPrTabA11yTests(t: any) {
   });
   check('TA-3 · SoLieu: tabpanel id khớp aria-controls; TheYeuCau: đóng ô trả focus nút còn trên trang', () => {
     const s = doc('web/src/ui/SoLieu.tsx');
-    assert(/aria-controls=\{idPanel\}/.test(s) && /id=\{coTab \? idPanel : undefined\} role=\{coTab \? 'tabpanel'/.test(s), 'SoLieu thiếu cặp tab/tabpanel');
+    /* GD-4c: tab Kết quả là `HangTab` — `panelId={idPanel}` → aria-controls. */
+    assert(/<HangTab\b[\s\S]{0,200}?panelId=\{idPanel\}/.test(s) && /id=\{coTab \? idPanel : undefined\} role=\{coTab \? 'tabpanel'/.test(s), 'SoLieu thiếu cặp tab/tabpanel');
     const y = doc('web/src/modules/duyet/TheYeuCau.tsx');
     assert(/const traFocus = /.test(y) && /isConnected/.test(y), 'TheYeuCau chưa có traFocus (nút gốc còn trên trang?)');
     assert(/nutChu\.current/.test(y), 'traFocus chưa tìm lại nút dựng lại ở chân panel (portal)');

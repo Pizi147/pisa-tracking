@@ -45,7 +45,7 @@ export const HD_ADMIN: HuongDan = {
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
       loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.',
-        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Nhật ký</b> · <b>Xóa lịch</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
+        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Lịch sử</b> · <b>Xóa lịch</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'schedule', 'reschedule'],
     },
     {
@@ -102,7 +102,7 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'chuong', ten: 'Xem việc cần làm ở chuông', nhom: 'khac',
       loiChinh: { chu: 'Chuông trên thanh trên' },
-      buoc: ['Bấm chuông cạnh <b>?</b>: khối <b>Việc cần làm</b> gom theo loại, ghi chi nhánh, ⚠ quá hạn, hôm nay; số trên chuông bằng số ở <b>Công việc</b>.', 'Khối <b>Cập nhật</b> là tin cần biết: <b>Xem tất cả</b>, <b>Đánh dấu đã đọc</b>.'],
+      buoc: ['Bấm chuông cạnh <b>?</b>: khối <b>Việc cần làm</b> gom theo loại, ghi chi nhánh, quá hạn tô đỏ, hôm nay tô vàng; số trên chuông bằng số ở <b>Công việc</b>.', 'Khối <b>Cập nhật</b> là tin cần biết: <b>Xem tất cả</b>, <b>Đánh dấu đã đọc</b>.'],
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell'],
     },
     {

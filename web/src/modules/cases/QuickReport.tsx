@@ -536,7 +536,7 @@ export function QuickReport({
       quyChe={mode === 'now' ? quyCheBaoCase(urgency === 'urgent', CHU_TOI_THIEU_CASE, TRAN_CHU.moTaCase) : null}
       vungTab={{ id: 'qr-vung', nhan: mode === 'now' ? t('Đang mở') : t('Đã xong từ trước') }}
       tabs={(
-        <HangTab cap="con" panelId="qr-vung" ariaLabel={t('Loại Case')} value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
+        <HangTab panelId="qr-vung" ariaLabel={t('Loại Case')} value={mode} onChange={(k) => { setMode(k); lf.datLai(); }}
           tabs={[{ key: 'now', label: t('Đang mở') }, { key: 'backfill', label: t('Đã xong từ trước') }]} />
       )}
       chan={{

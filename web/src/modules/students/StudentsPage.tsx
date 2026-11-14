@@ -446,7 +446,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       </div>
       {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:flex-1">{oXem}{chonKhung}</div>}
 
-      <HangTab v8 soMo panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
+      <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
         ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
@@ -665,7 +665,7 @@ function NhanLop({ lop, vai, soViecQuaHan, bo }: { lop: LopTrenTrang; vai: VaiXe
   if (!badge.length) return null;
   return (
     <span className="nhan-lop flex flex-wrap items-center gap-1.5 font-normal">
-      {badge.map((x) => { const den = denBadge(x); return <Nhan key={x.key} tone={toneBadgeLop(x)} title={x.title} onClick={den ? () => navigate(den) : undefined}>{x.nhan}</Nhan>; })}
+      {badge.map((x) => { const den = denBadge(x); return <Nhan key={x.key} tone={toneBadgeLop(x)} cham={false} title={x.title} onClick={den ? () => navigate(den) : undefined}>{x.nhan}</Nhan>; })}
     </span>
   );
 }

@@ -26,8 +26,7 @@ import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
 import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
 import { TomTatLuuTru } from './TomTatLuuTru.tsx';
-import { Menu } from '../../ui/Menu.tsx';
-import { NUT_BA_CHAM, NUT_DAU_HO_SO } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO } from '../../ui/MenuDong.tsx';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
@@ -140,7 +139,7 @@ export default function StudentDetailPage() {
     if (t === 'hoc-thuat') next.delete('tab'); else next.set('tab', t);
     setParams(next, { replace: true });
   };
-  /* A5 (PR-YT4): dấu ⚠ trên tab Ý thức = em Quá hạn hoặc Bắt buộc xử lý. CÙNG đường với tab bên trong (một cửa trạng thái). */
+  /* A5 (PR-YT4): dấu chấm trên tab Ý thức = em Quá hạn hoặc Bắt buộc xử lý. CÙNG đường với tab bên trong (một cửa trạng thái). */
   const yThuc = useApi<{ nhom: string | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
 
   /*
@@ -283,7 +282,7 @@ export default function StudentDetailPage() {
               {data.viewer.canReport && (
                 <button type="button" className={NUT_DAU_HO_SO} onClick={() => setReportOpen(true)}>+ Case</button>
               )}
-              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → Menu không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
+              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → MenuDong không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
               {(() => {
                 const muc = mucQuanLyHocVien({
                   canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, nhapThiThat: !!data.viewer.coTheNhapThiThat, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
@@ -298,8 +297,8 @@ export default function StudentDetailPage() {
                 return <>{nutQuayLai}{vaiXem ? conLai.map((m) => (
                   <button key={m.key} type="button" className={NUT_DAU_HO_SO} title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
                 )) : conLai.length > 0 && (
-                  <Menu label="⋯" ariaLabel={t('Thao tác khác')} className={NUT_BA_CHAM} items={conLai.map((m) => ({
-                    label: m.nhan, danger: m.nguyHiem, keTruoc: m.keTruoc, hint: m.phu, onClick: () => mo(m.key),
+                  <MenuDong lopNut={NUT_BA_CHAM} muc={conLai.map((m) => ({
+                    key: m.key, nhan: m.nhan, nguyHiem: m.nguyHiem, keTruoc: m.keTruoc, goi: m.phu, onChon: () => mo(m.key),
                   }))} />
                 )}</>;
               })()}

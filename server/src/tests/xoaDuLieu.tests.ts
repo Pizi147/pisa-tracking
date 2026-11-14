@@ -587,8 +587,8 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     assert(!/SectionNote|fmtDate\(|<Modal\b/.test(pn), 'panel xoá HV dùng thứ bị cấm');
     assert(/tabular-nums/.test(pn), 'cột số phải tabular-nums');
     const trang = docNguon('web/src/modules/students/StudentDetailPage.tsx');
-    assert(/coTheXoa: !!data\.viewer\.coTheXoa/.test(trang) && /danger: m\.nguyHiem, keTruoc: m\.keTruoc/.test(trang), 'Hồ sơ HV chưa nối cờ Xoá vào ⋮');
-    assert(/keTruoc\?: boolean/.test(docNguon('web/src/ui/Menu.tsx')), 'Menu thiếu keTruoc');
+    assert(/coTheXoa: !!data\.viewer\.coTheXoa/.test(trang) && /nguyHiem: m\.nguyHiem, keTruoc: m\.keTruoc/.test(trang), 'Hồ sơ HV chưa nối cờ Xoá vào ⋮');
+    assert(/keTruoc\?: boolean/.test(docNguon('web/src/ui/MenuDong.tsx')), 'MenuDong thiếu keTruoc');   // GD-4c: Menu gộp vào MenuDong
   });
 
   // ==================================================================== Task 4 — xoá tài khoản

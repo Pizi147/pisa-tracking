@@ -151,7 +151,7 @@ export function PanelChamSpeaking({ onDong, onDaLam, lopDau = null, onTiep = nul
   );
 }
 
-/** Một ngăn lớp × tuần: đầu ngăn (mã · n bài · ⚠ quá hạn) bấm gập / mở; thân = ô "GV chấm" + lưới FT bài chờ + ngăn con "Đã có điểm". */
+/** Một ngăn lớp × tuần: đầu ngăn (mã · n bài · quá hạn đỏ) bấm gập / mở; thân = ô "GV chấm" + lưới FT bài chờ + ngăn con "Đã có điểm". */
 function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay, gvChamCot }: {
   gvChamCot?: { chon: Record<string, NguoiChon | null>; macDinh: NguoiChon | null };
   n: Ngan; mo: boolean; onMo: (mo: boolean) => void; onDaLuu: () => void; onHet: () => { nhan: string; onClick: () => void } | null; homNay: string | null;

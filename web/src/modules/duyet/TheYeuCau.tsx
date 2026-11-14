@@ -316,7 +316,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 
         <div className={`flex flex-col gap-1.5 ${panel ? 'items-end border-t pt-3 text-right' : 'sm:items-end sm:text-right'}`} style={panel ? { borderColor: 'var(--line)' } : undefined}>
           {cho ? (
-            /* CD-GON (M10): hạn = MỘT viên theo mức (quá hạn đỏ ⚠ · hôm nay vàng ⚠ · còn hạn xám) như dòng Công việc — thay hai hàng "Quá hạn · 1 ngày" / "hạn 13/09". */
+            /* CD-GON (M10): hạn = MỘT viên theo mức (quá hạn đỏ · hôm nay vàng · còn hạn xám — V22 chỉ màu) như dòng Công việc — thay hai hàng "Quá hạn · 1 ngày" / "hạn 13/09". */
             yc.hanDuyet && !panel && <div><ChipHan vien loai="duyet" han={yc.hanDuyet} /></div>
           ) : (
             <div className="flex flex-wrap items-center gap-1.5 sm:justify-end">

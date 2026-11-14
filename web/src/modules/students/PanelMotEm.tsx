@@ -244,7 +244,7 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                         ))}
                         {!viec.length && c.viecTiep && (
                           <p className="m-0 text-xs text-slate-400">{t('Việc tiếp')}: <span className="text-slate-200">{dich(c.viecTiep.chu)}</span>
-                            {c.viecTiep.quaHan && <span className="font-semibold text-late"> · ⚠ {t('quá hạn')}</span>}</p>
+                            {c.viecTiep.quaHan && <span className="font-semibold text-late"> · {t('quá hạn')}</span>}</p>
                         )}
                         {/* Bối cảnh chung (`BoiCanh`, ≤ 3 dòng). */}
                         <BoiCanh dong={[

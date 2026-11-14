@@ -10,7 +10,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
-import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
+import { DsLichSu, LichSuGap, lucNgan } from '../../ui/LichSuThayDoi.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { KhungPanel, KhungTaiCho, boChuRoi } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -285,7 +285,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
       <section id="nhom-cho-duyet" className="card overflow-clip p-0" aria-label={t('Chờ bạn duyệt')}>
         <h3 className="m-0 flex min-h-[38px] items-center gap-2 px-4 py-[9px] text-[13px] font-bold" style={{ background: 'var(--surface-2)' }}>
           {t('{n} yêu cầu', { n: ds.length })}
-          {quaHanN > 0 && <span className="font-semibold text-late">{t('⚠ {quaHan} quá hạn', { quaHan: quaHanN })}</span>}
+          {quaHanN > 0 && <span className="font-semibold text-late">{t('{quaHan} quá hạn', { quaHan: quaHanN })}</span>}
           {choHangLoat && <NutLuat label={t('Duyệt nhiều')}>{t('Đánh dấu ô ở dòng để duyệt nhiều yêu cầu cùng loại một lần.')}</NutLuat>}
         </h3>
         {loading && !data && <div className="px-4 py-3"><Skeleton rows={4} /></div>}
@@ -448,28 +448,19 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
   );
 }
 
-/** DUYET-QL: "Lịch sử · n ▸" gập cuối thân panel duyệt — bấm mở tại chỗ, CHỈ khi mở mới gọi `/lich-su?loai=yeu-cau` (≤ 3 câu, ≤ 50 dòng).
+/** DUYET-QL: "Lịch sử · n" gập cuối thân panel duyệt — bấm mở tại chỗ, CHỈ khi mở mới gọi `/lich-su?loai=yeu-cau` (≤ 3 câu, ≤ 50 dòng).
  *  `n` đổi (quyết xong — số máy chủ trả kèm) mà danh sách đang mở → tải lại đúng phần lịch sử; đang gập thì không gọi gì. */
 function LichSuYeuCau({ id, n }: { id: number; n: number }) {
   const [mo, setMo] = useState(false);
   const { data, loading, error, reload } = useApi<{ dong: { luc: string; nguoi: string | null; chu: string }[] }>(mo ? `/lich-su?loai=yeu-cau&id=${id}` : null, [mo, id, n]);
   if (!n) return null;
+  /* GD-4c (H4): một kiểu lịch sử — `LichSuGap` "Lịch sử · n" (details: trạng thái mở có sẵn cho đọc màn hình). */
   return (
-    <div className="mt-4 grid gap-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
-      <button type="button" aria-expanded={mo} onClick={() => setMo(!mo)}
-        className="min-h-[44px] justify-self-start appearance-none border-0 bg-transparent p-0 text-left text-sm font-semibold text-dim hover:text-[color:var(--text)] sm:min-h-0 sm:py-1">
-        {t('Lịch sử · {n}', { n })} <span aria-hidden>{mo ? '▾' : '▸'}</span>
-      </button>
-      {mo && (error ? <ErrorState message={error.message} hint={error.hint} onRetry={reload} />
-        : loading && !data ? <Skeleton rows={2} />
-        : (
-          <ol className="m-0 grid list-none gap-1.5 p-0 text-[13px] text-dim">
-            {data?.dong.map((d, i) => (
-              <li key={i}><span className="mr-2 tabular-nums text-faint">{lucNgan(d.luc)}</span>{d.nguoi && <b className="font-semibold text-[color:var(--text)]">{d.nguoi}</b>} {dich(d.chu)}</li>
-            ))}
-          </ol>
-        ))}
-    </div>
+    <LichSuGap so={n} className="mt-4" onMo={setMo}>
+      {error ? <div className="ls-them"><ErrorState message={error.message} hint={error.hint} onRetry={reload} /></div>
+        : loading && !data ? <div className="ls-them"><Skeleton rows={2} /></div>
+        : <DsLichSu dong={(data?.dong ?? []).map((d, i) => ({ key: i, gio: lucNgan(d.luc), ai: d.nguoi, viec: dich(d.chu) }))} />}
+    </LichSuGap>
   );
 }
 
@@ -596,7 +587,7 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
 
 /**
  * TINH-HINH (mockup v20 E, chủ SP 12/11): thẻ Xử lý Ý thức khác mặc định (LG-10, 15/11: cả thẻ Thu hồi) — QL có 5 ngày, hết hạn TỰ CHỐT theo GVCN. Đếm ngược "Còn n ngày" + 5 vạch
- * (vạch đã qua tô) + "hết hạn: giữ quyết định GVCN"; ≤ 1 ngày: nền vàng ⚠ (không chỉ màu).
+ * (vạch đã qua tô) + "hết hạn: giữ quyết định GVCN"; ≤ 1 ngày: chữ vàng "Còn n ngày" (V22: chỉ màu, chữ nói hạn).
  */
 function DemNguocYThuc({ han }: { han: string }) {
   const { homNay } = useNgayNghiepVu();
@@ -605,7 +596,7 @@ function DemNguocYThuc({ han }: { han: string }) {
   return (
     <span className={`grid w-full gap-1 rounded-lg border px-2 py-1.5 ${gap ? 'border-soon-line bg-soon-bg' : ''}`} style={gap ? undefined : { borderColor: 'var(--line-strong)' }}
       title={t('Hết hạn: tự chốt theo GVCN')}>
-      <span className={`text-[13px] font-bold tabular-nums ${gap ? 'text-soon' : 'text-[color:var(--text)]'}`}>{gap ? '⚠ ' : ''}{con ? t('Còn {n} ngày', { n: con }) : t('Hết hôm nay')}</span>
+      <span className={`text-[13px] font-bold tabular-nums ${gap ? 'text-soon' : 'text-[color:var(--text)]'}`}>{con ? t('Còn {n} ngày', { n: con }) : t('Hết hôm nay')}</span>
       <span aria-hidden className="grid grid-cols-5 gap-[3px]">{[0, 1, 2, 3, 4].map((i) => <i key={i} className={`h-[4px] rounded-sm ${i < 5 - Math.min(5, con) ? (gap ? 'bg-soon' : 'bg-[color:var(--accent)]') : 'bg-[color:var(--line-strong)]'}`} />)}</span>
       <span className="text-xs leading-tight text-dim">{t('Hết hạn: giữ quyết định GVCN')}</span>
     </span>
