@@ -214,8 +214,10 @@ const chanViecTiep = (onTiep: (() => void) | null | undefined, xong: boolean) =>
 } : undefined);
 const hetViec = (onTiep: (() => void) | null | undefined) => () => (onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null);
 
-export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null, chiEmViec = false }: {
-  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu' | 'kns' | 'mine'>>;
+export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null, chiEmViec = false, nhapHo = false }: {
+  /** QC-Q82: "Bạn nhập hộ · " đầu dòng quy chế — nơi gọi không có dải "Bạn đang làm thay" (panel GV trễ chấm). */
+  nhapHo?: boolean;
+  it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu' | 'kns'>>;
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
   quayLai?: { nhan: string; onClick: () => void };
@@ -258,7 +260,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
         /* GD-4b Q1/Q2/Q5/Q6/Q7/Q9/Q58: MT0 (kể cả lớp thường `thuong:mt0`) theo luật vắng Mock (chủ SP 14/11, #1619); dữ liệu đã nạp, không request thêm. */
         thuong: data.mode === 'ratio' || data.luot.ma === 'thuong:mt0', mt0: data.luot.ma === 'thuong:mt0' || data.luot.ma === 'mt:0',
         tuanThi: data.luot.tuanStart, homNay, han: it.due ?? data.luot.quaHan ?? null, nguongDat: data.thuong?.passThreshold ?? null, mtCu: data.luot.lichSu,
-        nhapHo: it.mine === false,   // QC-Q82: việc của người khác (QL / Admin nhập hộ) — `mine` đã có trong việc, 0 câu thêm
+        nhapHo,   // QC-Q82: chỉ nơi KHÔNG có dải "Bạn đang làm thay" (panel GV trễ chấm) — Công việc đã có dải (PTA 15/11, [XM-Q82b])
       }) : null}
       chan={chanViecTiep(onTiep, !!data && !!homNay && conBaiLuoi(data, chiAttempt, kns, homNay) === 0)}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
@@ -340,7 +342,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     </LuoiTrongPanel>
   );
   return (
-    <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due, nhapHo: it.mine === false })}>
+    <KhungPanel hd="nhap-diem" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chanViecTiep(onTiep, false)} quyChe={quyCheNhapDiem({ thuong: it.khung === 'thuong', mt0: it.kind === 'mt0', tuanThi: it.tuanThi ?? null, homNay, han: it.due })}>
       {motLop ? luoiLop(lop[0], 'luoi-trong-panel -mx-4 px-5 pt-1') : (
       <ul className="-mx-4 m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>
         {lop.map((x) => {
