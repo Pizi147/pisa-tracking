@@ -58,7 +58,7 @@ export function kyNangSosMt0(bands: Partial<Record<AssessedSkill, number | null>
   if (target === null || target === undefined) return [];
   if (goiYKyVong(ct, bands, huy)?.dat) return [];
   return ASSESSED_SKILLS.flatMap((skill) => {
-    const band = bands[skill];
+    const band = huy.includes(skill) || (skill === 'writing' && (huy.includes('writing1') || huy.includes('writing2'))) ? null : bands[skill];   // kỹ năng Đã huỷ: không chip
     return band !== null && band !== undefined && band <= target - MT0_SOS_CACH ? [{ skill, band }] : [];
   });
 }

@@ -1,5 +1,5 @@
 import { db, tx } from '../db.ts';
-import { NGUONG_KY_VONG, tuDatKyVong, PERMISSIONS, CAU_LIEN_TUC, cungThangTarget, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0, type DongChuyenTiep, type Huong, type ProgrammeCode } from '../../../shared/domain/index.ts';
+import { NGUONG_KY_VONG, ketLuanKyVong, PERMISSIONS, CAU_LIEN_TUC, cungThangTarget, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0, type DongChuyenTiep, type Huong, type ProgrammeCode } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -142,10 +142,10 @@ export function transitionPlan(p: Principal, classId: number) {
         dat: !!r.kq_de_xuat_dat, nguyenNhan: r.kq_de_xuat_nguyen_nhan ?? null, mon: mang(r.kq_de_xuat_mon), ghiChu: r.kq_de_xuat_ghi_chu ?? null,
         boi: (r.de_xuat_ten ?? null) as string | null, luc: (r.kq_de_xuat_luc ?? null) as string | null,
       } : null,
-      /* KY-VONG-MT0 (chủ SP 14/11): MT0 đạt mốc, QL chưa chốt → tự Đạt (`tuDatKyVong`, cùng `emKyVong`). */
-      chot: r && r.ky_vong_dat !== null ? {
+      /* KY-VONG-MT0 (chủ SP 14/11): MT0 đạt mốc, QL chưa chốt → tự Đạt (`ketLuanKyVong`, cùng `emKyVong`). */
+      chot: ketLuanKyVong(r && r.ky_vong_dat !== null ? {
         dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: mang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null,
-      } : tuDatKyVong(m?.goiY),
+      } : null, m?.goiY),
     };
   };
 

@@ -1,5 +1,5 @@
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
-import { mocThuong, NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, kyNangHuy, kyNangLopDich, tuDatKyVong, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
+import { mocThuong, NGUONG_KY_VONG, PERMISSIONS, REGULAR_SKILLS, caseDedupKey, categoryOf, goiYKyVong, ketLuanKyVong, kyNangHuy, kyNangLopDich, programmeOf, tenMon, hanKyGhiKetQua, tuanMuonNhatMt0, type GoiYKyVong, type RegularSkill } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, chuTuDo, forbidden, notFound, nowIso, loi } from '../util.ts';
 import { can, classScopeSql, scopeFor, type Principal, type Scope } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -60,8 +60,8 @@ function emKyVong(o: { sc?: Scope; branchId?: number | null; classId?: number })
       id: r.student_id, ma: r.student_code, ten: r.full_name, lopId: r.lop_nguon_id, lopCode: r.code, ct: r.programme_code,
       daChuyen: r.trang_thai === 'da_chuyen', lopFtId: r.dich_id, lopFt: r.dich_code,
       mt0: goiY ? { ...bands, overall: goiY.overall } : null, goiY, moTay: !goiY && !!muonNhat && homNay > addDays(muonNhat, 6),
-      ketLuan: r.ky_vong_dat === null ? tuDatKyVong(goiY)
-        : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null },
+      ketLuan: ketLuanKyVong(r.ky_vong_dat === null ? null
+        : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon), ghiChu: r.ky_vong_ghi_chu ?? null }, goiY),
     };
   }).sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
 }
@@ -89,8 +89,10 @@ export function mt0TheoLop(ds: readonly { sid: number; lop: number; ct: string |
   });
   return new Map(ds.map((x) => {
     const m = mt0Cua.get(x.sid);
+    const huy = m ? huyCua.get(m)! : [];
     const bands = assessedBands((m ? diem.get(m) : null) ?? {}) as Record<RegularSkill, number | null>;
-    return [x.sid, { bands, goiY: goiYKyVong(x.ct, bands, m ? huyCua.get(m) : []) }];
+    for (const k of REGULAR_SKILLS) if (huy.includes(k)) bands[k] = null;   // kỹ năng Đã huỷ: không hiện band (MT0 ghi W một dòng `writing`)
+    return [x.sid, { bands, goiY: goiYKyVong(x.ct, bands, huy) }];
   }));
 }
 
@@ -343,7 +345,7 @@ export function kqdrLopFt(p: Principal, classId: number) {
       id: r.student_id, ten: r.full_name, lopCu: { id: r.lop_id, code: r.code },
       final: f?.tyLe ?? null, finalDat: f?.tyLe == null ? null : f.tyLe >= f.nguong,
       mt0: goiY ? { ...bands, overall: goiY.overall, dat: goiY.dat, monTruot: goiY.monTruot } : null,
-      kqdr: r.ky_vong_dat === null ? tuDatKyVong(goiY) : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon) },
+      kqdr: ketLuanKyVong(r.ky_vong_dat === null ? null : { dat: !!r.ky_vong_dat, nguyenNhan: r.ky_vong_nguyen_nhan ?? null, mon: jsonMang(r.ky_vong_mon) }, goiY),
       case: caseCua.get(r.student_id) ?? [], banGiao: r.ban_giao ?? null,
     }]);
   }

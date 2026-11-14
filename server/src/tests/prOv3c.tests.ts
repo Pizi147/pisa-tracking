@@ -88,13 +88,13 @@ export async function runPrOv3cTests(t: YThucTestKit) {
       .run(sid, TODAY, TODAY).lastInsertRowid);
     const mt0 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, status, created_at) VALUES (?,?, 0, 'mt0', ?, 'done', ?)`)
       .run(cyc, sid, BE04, TODAY).lastInsertRowid);
-    for (const [k, b] of [['listening', 3.5], ['reading', 5], ['writing1', 4.5], ['writing2', 4.5], ['speaking', 4.5]]) {
+    for (const [k, b] of [['listening', 3.5], ['reading', 3.5], ['writing1', 4], ['writing2', 4], ['speaking', 3.5]]) {   // KY-VONG-MT0: 3.625 → 3.5 < BE 4 (đạt = tự Đạt)
       conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band, entered_at) VALUES (?,?,?,?)').run(mt0, k, b, TODAY);
     }
     const r = kv.kqdrLopFt(P.mbManager, ft);
     const em = emCua(r).find((e: any) => e.id === sid);
     assert(em && em.kqdr === null, JSON.stringify(em));
-    assert(em.mt0?.listening === 3.5 && em.mt0.monTruot.includes('listening') && em.mt0.overall === 4.5, JSON.stringify(em.mt0));
+    assert(em.mt0?.listening === 3.5 && em.mt0.monTruot.includes('listening') && em.mt0.overall === 3.5 && em.mt0.dat === false, JSON.stringify(em.mt0));
     assert(!JSON.stringify(r).includes('DE-XUAT-BI-MAT') && !JSON.stringify(r).includes('hoc_sinh'), 'không lộ đề xuất GVCN');
     /* Bộ demo: Chu Nhật Minh BE 04 → FT 101 bằng `applyTransition` (không lệnh), QL chốt Không đạt · Trung tâm · R → Case. */
     const minh = emCua(kv.kqdrLopFt(P.mbManager, FT101)).find((e: any) => e.ten === 'Chu Nhật Minh');

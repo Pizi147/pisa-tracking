@@ -232,6 +232,13 @@ export function goiYKyVong(ct: string | null | undefined, bands: Partial<Record<
 export function tuDatKyVong(goiY: GoiYKyVong | null | undefined): { dat: true; nguyenNhan: null; mon: string[]; ghiChu: null; tuDong: true } | null {
   return goiY?.dat ? { dat: true, nguyenNhan: null, mon: [], ghiChu: null, tuDong: true } : null;
 }
+/**
+ * Kết luận hiệu lực: Đạt đã lưu giữ; MT0 đạt mốc → Đạt (kể cả "Không đạt" lưu trước khi điểm MT0 được sửa lên — "đạt rồi thì coi như đạt"); còn lại = đã lưu.
+ * ponytail: Case Tutor tạo TRƯỚC khi điểm sửa lên không tự đóng (migrate `prKyVongTuDat` chỉ một lần) — GV tự đóng; nối `suaKyVongTuDat` vào lưu điểm MT0 nếu hay gặp.
+ */
+export function ketLuanKyVong<T extends { dat: boolean | null }>(daLuu: T | null, goiY: GoiYKyVong | null | undefined): T | NonNullable<ReturnType<typeof tuDatKyVong>> | null {
+  return daLuu?.dat === true ? daLuu : tuDatKyVong(goiY) ?? daLuu;
+}
 
 /** FOU IELTS > 3.5 · BE IELTS 4.0 · ELE IELTS 4.5–5.0 (§6.4, OV-3b, quy chế lớp thường) — chỉ nhắc chữ, không lưu Placement. */
 export const KY_VONG_DAU_RA: Readonly<Record<string, string>> = { FOU: 'FOU IELTS > 3.5', BE: 'BE IELTS 4.0', ELE: 'ELE IELTS 4.5–5.0' };

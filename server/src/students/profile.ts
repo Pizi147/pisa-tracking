@@ -1,7 +1,7 @@
 import { db, theoLo } from '../db.ts';
 import { tachMaNhom } from '../cases/cases.ts';
 import { datNho } from '../platform/nguCanhRequest.ts';
-import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangHuy, kyNangSosMt0, tuDatKyVong, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKILLS, kyNangHuy, kyNangSosMt0, ketLuanKyVong, ASSESSED_SKILL_LABEL, INTERVENTION_KIND_LABEL, PERMISSIONS, caseHeadline, issueLabel, caseCategoryLabel, categoryOf, cauTomTat, ketQuaTestGanNhat, oHocThuat, oSapToi, oYThuc, trangThaiLichThi, tachNhanLichThi, bacHoacNgoaiThang, nhanLoaiXuLy, programmeOf, tenBacKe, tenMonNgan, mocKeTiep, LUOT_HUY_HET_SQL, studyWeekOf, tenMon, tuanHocTai, tuanLich, type AssessedSkill, type InterventionKind, kyNangXongThieu, kyThiCuaChuongTrinh, ketQuaKyThi, nhanBaiThuong, ATTEMPT_KIND_SHORT, laChuongTrinhGoc, laLienTuc, type ProgrammeCode, coONhapLienHe, docLayLai, duocDoiKck, chuMon, type LienHe, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
@@ -855,7 +855,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
       return {
       ...x, ct: r.programme_code ?? null, lop: r.code ?? null, daChuyen, kyVongMt0,
       /* KY-VONG-MT0 (chủ SP 14/11): MT0 đạt mốc, QL chưa chốt → hộp Kết luận khoá ghi "Đạt" (cùng `emKyVong`). */
-      ketLuanFt: x.ketLuanFt?.dat === true || x.ketLuanFt?.dat === false ? x.ketLuanFt : tuDatKyVong(kyVongMt0) ?? x.ketLuanFt,
+      ketLuanFt: ketLuanKyVong(x.ketLuanFt, kyVongMt0),
       /* OV-11d (HV-17): dòng Kết quả đầu ra chỉ cho em có lệnh / lộ trình Lên FT từ lớp này (cùng nguồn `ghiKetLuanFt`) — kể cả Final chưa có điểm. */
       lenFt: ['FOU', 'BE', 'ELE'].includes(r.programme_code) && emLenFtTu(studentId, r.class_id),
       };

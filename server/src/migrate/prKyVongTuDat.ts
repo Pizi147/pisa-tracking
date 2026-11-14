@@ -75,9 +75,11 @@ export function khoiPhucKyVongTuDat(conn: any): { em: number[]; caseMoLai: numbe
   for (const h of conn.prepare(`SELECT id AS id, entity_id AS sid, before_json AS cu FROM audit_logs
       WHERE action = 'cuoi_khoa.ky_vong_tu_dat' AND actor_user_id IS NULL AND json_valid(after_json) AND json_extract(after_json, '$.migrate') = ? ORDER BY id DESC`).all(DAU) as any[]) {
     const cu = JSON.parse(h.cu);
-    if (conn.prepare(`UPDATE lo_trinh_tiep_theo SET ky_vong_dat = 0, ky_vong_nguyen_nhan = ?, ky_vong_mon = ?, ky_vong_ghi_chu = ?, updated_by = ?, updated_at = ?
-        WHERE student_id = ? AND class_id = ? AND ky_vong_dat = 1 AND updated_by IS NULL`).run(cu.nguyenNhan, cu.mon, cu.ghiChu, cu.updatedBy, cu.updatedAt, h.sid, cu.classId).changes) em.push(h.sid);
-    if (cu.cases?.length) {
+    const tra = conn.prepare(`UPDATE lo_trinh_tiep_theo SET ky_vong_dat = 0, ky_vong_nguyen_nhan = ?, ky_vong_mon = ?, ky_vong_ghi_chu = ?, updated_by = ?, updated_at = ?
+        WHERE student_id = ? AND class_id = ? AND ky_vong_dat = 1 AND updated_by IS NULL`).run(cu.nguyenNhan, cu.mon, cu.ghiChu, cu.updatedBy, cu.updatedAt, h.sid, cu.classId).changes;
+    if (tra) em.push(h.sid);
+    /* Kết luận không trả được (đã có người ghi lại dòng) → Case giữ đóng, không để Case Tutor mở cạnh kết luận Đạt. */
+    if (tra && cu.cases?.length) {
       caseMoLai.push(...moLaiCaseHeThongDong({ actorUserId: null, studentId: h.sid, reason: 'overall_dat', chup: cu.cases, tinHieu: [], lyDo: 'Khôi phục KY-VONG-MT0' }).moLai);
     }
     conn.prepare(`UPDATE audit_logs SET action = 'cuoi_khoa.ky_vong_tu_dat_khoi_phuc' WHERE id = ?`).run(h.id);

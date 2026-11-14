@@ -71,7 +71,7 @@ export async function runPrKyVongMt0Tests(t: any, h: any) {
     assert(!get('SELECT 1 FROM lo_trinh_tiep_theo WHERE student_id = ? AND ky_vong_dat IS NOT NULL', A), 'tự Đạt không ghi DB');
     const v = viecKv(P.mbManager).filter((i: any) => i.tieuDe.includes(maFt));
     assert(v.length === 1 && v[0].count === 2 && v[0].classId === ft && v[0].href === `/hoc-vien/lop/${ft}?che-do=ket-qua` && v[0].actionLabel === 'Kết quả đầu ra ›', JSON.stringify(v));
-    assert(v[0].emIds.join() === [B, C].sort((x, y) => x - y).filter((x) => v[0].emIds.includes(x)).join() && !v[0].emIds.includes(A), `em đạt còn trong việc: ${v[0].emIds}`);
+    assert([...v[0].emIds].sort((x: number, y: number) => x - y).join() === [B, C].sort((x, y) => x - y).join(), `em trong việc: ${v[0].emIds}`);
     const ids = metrics.metricSet(P.mbManager, 'hv-len-ft-chua-ky-vong', {}).ids as number[];
     assert(!ids.includes(A) && ids.includes(B) && ids.includes(C), `chỉ số: ${ids}`);
     const bang = kv.kqdrLopFt(P.mbManager, ft).bang.flatMap((b: any) => b.dot.flatMap((x: any) => x.em));
@@ -143,6 +143,21 @@ export async function runPrKyVongMt0Tests(t: any, h: any) {
     assert(lt2.ky_vong_dat === 0 && lt2.ky_vong_nguyen_nhan === 'trung_tam' && lt2.ky_vong_mon === '["writing"]' && lt2.updated_by === P.mbManager.userId, JSON.stringify(lt2));
     assert(get('SELECT status FROM sos_cases WHERE id = ?', caseM.id).status === caseM.status && get('SELECT status FROM case_interventions WHERE id = ?', paM.id).status === 'started', 'Case / PA mở lại');
     assert(mig.khoiPhucKyVongTuDat(conn).em.length === 0, 'khôi phục hai lần');
+  });
+
+  check('KV-8 · "Không đạt" lưu trước, điểm MT0 sửa lên đạt rồi mới thi hành lệnh → hiện Đạt, KHÔNG Case / Tutor khi sang FT', () => {
+    const be5 = lopMoi('BE', false, 11), ft5 = lopMoi('FT', true, 1);
+    ganGv(ft5, GV[2], 'writing2');
+    const Z = hocVien(be5, 'BE');
+    lenFt(be5, [Z], ft5, false);
+    diemMt0(Z, { L: 4, R: 4, W: 3, S: 3.5 });
+    kv.luuKyVong(P.mbManager, be5, { dong: [{ sid: Z, dat: false, nguyenNhan: 'trung_tam', mon: ['writing'] }] });
+    const mt = get(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0'`, Z).id;
+    conn.prepare(`UPDATE assessment_scores SET band = 4.5 WHERE attempt_id = ? AND skill IN ('writing1', 'writing2')`).run(mt);
+    const e = kv.panelKyVong(P.mbManager, be5).em.find((x: any) => x.id === Z);
+    assert(e.ketLuan?.dat === true && e.ketLuan.tuDong === true, JSON.stringify(e.ketLuan));
+    h.thiHanh();
+    assert(caseKv(Z).length === 0, `Case Tutor cho em đã đạt: ${JSON.stringify(caseKv(Z))}`);
   });
 
   check('KV-7 · trần: kqdrLopFt / việc QL không thêm câu khi có em tự Đạt (kỹ năng huỷ đọc bằng câu con)', () => {
