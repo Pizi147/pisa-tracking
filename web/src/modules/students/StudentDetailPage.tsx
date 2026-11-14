@@ -89,6 +89,8 @@ export default function StudentDetailPage() {
   const q = p.loTrinh ? `?cycleId=${p.loTrinh}` : p.dot != null ? `?attemptId=${p.dot}` : '';
   const { data, loading, error, reload } = useApi<Profile>(id ? `/students/${id}${q}` : null, [p.loTrinh, p.dot]);
   const toast = useToast();
+  /* GD-7 (③ K8a): 375 mở Case bằng Ngăn Case toàn màn, không bung trong cột. */
+  const dienThoai = useDienThoai();
   const [viecQuanLy, setViecQuanLy] = useState<ViecQuanLy | null>(null);
   const [giaHan, setGiaHan] = useState(false);   // OV-13q
   const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
@@ -210,7 +212,7 @@ export default function StudentDetailPage() {
    */
   const moCase = (caseId: number, o?: { paId?: number; viec?: MoCot['viec'] }) => {
     const hang = tab === 'hoc-thuat' && cy ? (skillRows ?? []).find((r) => r.cases.some((c) => c.id === caseId)) : null;
-    if (!hang) { setOpenCase({ caseId, paId: o?.paId, viec: o?.viec }); return; }
+    if (!hang || dienThoai) { setOpenCase({ caseId, paId: o?.paId, viec: o?.viec }); return; }
     if (chon !== OVERALL && hang.category !== chon && !hang.tuLopTruoc) setChonTay(hang.category);
     else if (chon !== OVERALL && hang.tuLopTruoc) setChonTay(OVERALL);   // Case bàn giao chỉ nằm ở Overall
     setMoCot({ caseId, paId: o?.paId, viec: o?.viec, n: Date.now() });
@@ -425,7 +427,7 @@ export default function StudentDetailPage() {
               {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
                 : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
                 : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
-                  onReport={data.viewer.canReport ? baoCase : undefined}
+                  onReport={data.viewer.canReport ? baoCase : undefined} onMoNgan={(caseId) => setOpenCase({ caseId })}
                   onChanged={() => { board.reload(); reload(); }} />}
               </div>
             </div>
@@ -658,20 +660,30 @@ function IeltsAttempts({ attempts, dotId, homNay, onOpen, thi = null, cycleId, t
    * ĐIỆN THOẠI (PR-UXD Q9): mỗi lượt MỘT thẻ — đầu thẻ `MT2 · W3 SEP` + Kết quả bên phải (tầng 1), rồi Điểm L R W S · Overall · Kỳ vọng ·
    * Lớp (tầng 3, cuối). Cùng trường `a.*` và cùng link `attemptHref` / `duongDotTest` với bảng — đổi bảng thì đổi thẻ.
    */
-  /* U02 B1 (mockup `.mt-the`): điện thoại mỗi lượt MỘT dòng — MTn › · tuần · OVR · Kết quả; điểm từng kỹ năng ở hồ sơ lượt (link MTn ›). */
+  /*
+   * GD-7 (③ K8a `.mt-dong`): điện thoại mỗi lượt hai dòng — "MTn › · tuần" + Kết quả bên phải; dòng điểm từng kỹ năng đã có ("R ✓6.5 W1 ✓6.0 …") rồi
+   * OVR (chưa có OVR → "kỳ vọng 6.0"). Lượt chưa tới tuần: chỉ "kỳ vọng" bên phải, không dòng điểm. Cùng ô điểm / link với bảng 1440.
+   */
   if (dienThoai) {
+    const coDiem = (a: any, k: typeof KN_MOCK[number]) => (k === 'writing1' || k === 'writing2' ? a.bands?.writing != null || a.diemKn?.[k === 'writing1' ? 'w1' : 'w2'] != null : a.bands?.[k] != null);
     return (
       <div>
         {attempts.map((a) => (
-          <div key={a.id} id={`dot-${a.id}`} className={`grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-x-2.5 border-t px-3 py-2.5 text-[14px] first:border-t-0 ${a.id === dotId ? 'bg-[color:var(--accent-soft)]' : ''}`}
+          <div key={a.id} id={`dot-${a.id}`} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2.5 border-t px-3 py-1.5 text-[14px] first:border-t-0 ${a.id === dotId ? 'bg-[color:var(--accent-soft)]' : ''}`}
             style={{ borderColor: 'var(--line)' }}>
-            <span className="whitespace-nowrap"><Link to={attemptHref(a)} className="link inline-flex min-h-[44px] items-center font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} /></span>
-            <span className="min-w-0 tabular-nums text-slate-200">
-              {a.weekStart ? tuanLich(a.weekStart, homNay) : t('Chưa có tuần')}
-              {/* HSL-GON (chủ SP 05/11): lượt chưa tới tuần → chỉ "–" (tuần đã ghi ngay trước), không chữ "Chưa tới tuần". */}
-              {' · '}OVR {a.overall != null ? <DiemKq diem={a.overall} kyVong={a.expectation} /> : fmtBand(a.overall)}
-            </span>
-            <span className="justify-self-end">{chuaToi(a) ? null : <KetQuaMt a={a} gon />}</span>
+            <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><Link to={attemptHref(a)} className="link inline-flex min-h-[44px] items-center font-semibold tabular-nums">MT{a.attemptNo} ›</Link><NhanDot a={a} />
+              <span className="text-[13px] font-medium tabular-nums text-slate-400">{a.weekStart ? tuanLich(a.weekStart, homNay) : t('Chưa có tuần')}</span></span>
+            <span className="justify-self-end">{chuaToi(a)
+              ? <span className="text-[13px] tabular-nums text-faint">{t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) })}</span>
+              : <KetQuaMt a={a} gon />}</span>
+            {!chuaToi(a) && (
+              <span className="col-span-2 flex flex-wrap items-center gap-x-3 gap-y-1 pb-1.5 text-[13px] tabular-nums text-slate-400">
+                {KN_MOCK.filter((k) => coDiem(a, k)).map((k) => <span key={k} className="whitespace-nowrap">{CHU_KY_NANG[k]} {diemKyNang(a, k)}</span>)}
+                {a.overall != null
+                  ? <span className="whitespace-nowrap">OVR <DiemKq diem={a.overall} kyVong={a.expectation} /></span>
+                  : <span className="whitespace-nowrap">{t('kỳ vọng {kv}', { kv: fmtBand(a.expectation) })}</span>}
+              </span>
+            )}
           </div>
         ))}
         {thi && (
