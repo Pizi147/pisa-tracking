@@ -179,7 +179,8 @@ export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | nu
  * BADGE TAB — AUDIT-UI B3 (chủ SP 08/11, thay CV-TAB 06/11 "đỏ / vàng / trắng"): MỘT nghĩa như badge menu V13 — số dòng CẦN LÀM NGAY (quá hạn + hạn hôm nay);
  * đỏ khi có quá hạn, vàng khi chỉ có hạn hôm nay; 0 → không badge. Tổng dòng chỉ ở đầu trang. Nhận dòng nhìn thấy (`dongTab`); dữ liệu đã nạp, không gọi máy chủ.
  */
-export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number };
+/** `bai`: tab "Chấm Speaking" (chủ SP lời 33, `04-thiet-ke.md` mục 15) — badge MỜ đếm bài + ⚠ khi có bài quá hạn; không đỏ, không vào badge menu / chuông. */
+export type BadgeTab = { so: number; n: number; quaHan: number; homNay: number; bai?: { n: number; quaHan: number } };
 export function badgeTab(dong: readonly { urgency: string; key?: string }[]): BadgeTab {
   /* Rà 11/11 #2 (G5-02): S chấm chéo ghi "quá hạn" ở dòng nhưng KHÔNG đếm (T18 06/11) — tab không đỏ khi số đầu trang không có (cùng `demDongViec`). */
   const tinh = dong.filter((x) => !(x.key && laViecChamCheo({ key: x.key })));

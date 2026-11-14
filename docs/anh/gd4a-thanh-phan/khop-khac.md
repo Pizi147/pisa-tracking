@@ -13,6 +13,7 @@ Mockup ⑤ `thiet-ke/v21/bang-mau.html` khu B, C, F (lời 27 duyệt) · mockup
 | `cap-1440-task-chon-em.png` | ⑤ F2 | "+ Task" › Vi phạm / Nhắc nhở, gõ "tran" |
 | `cap-375-task-menu.png` | ⑤ F4 | Công việc 375, nút tròn "+ Task" → menu neo đáy |
 | `cap-1440-y-thuc-hv.png` | ③ K4a | hồ sơ HV › Ý thức & Phối hợp, "Thang" mở |
+| `cap-1440-tab-cham-speaking.png` | ⑤ H1 (badge `.bd.mo`) | Công việc › Chấm Speaking, vai 9 GV Speaking |
 
 Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục menu và `gõ:chữ`; `KEO_TRUOC=1` kéo dài khung nhìn trước khi bấm — menu thả đóng khi đổi cỡ màn).
 
@@ -34,10 +35,11 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 | 12 | Lời 28 ý 2 (f): "Xác nhận xử lý" là NÚT | hồ sơ HV (ô bước + dòng vi phạm) · tab Ý thức lớp (ô bước + dòng) · panel Xem vi phạm (chân) | y-thuc-hv | KHỚP |
 | 13 | Lời 28 ý 3 / ③ `.vach-bac b.wl` (f): WL 1, WL 2 nhãn đỏ nổi trên thanh (đã tới: đỏ đặc) | thang mini hồ sơ HV (`StudentYThucSection`) | y-thuc-hv | KHỚP |
 | 14 | (f) "mọi nơi hiện thang" | thang đầy đủ `ThangYThuc` (hồ sơ HV "Thang ▾", chip mốc tab lớp, panel Xử lý) — chip WL đỏ | y-thuc-hv | KHỚP |
+| 15a | Lời 33 / `04-thiet-ke.md` mục 15 (thắng hình ①, ⑤ H1 badge vàng / đỏ): badge tab "Chấm Speaking" MỜ đếm bài + ⚠ khi có bài quá hạn; không đỏ, không cộng badge menu / chuông | `BadgeTabSo` nhánh `bai` (`ui/Nhan.tsx`), `BadgeTab.bai` (`shared/domain/tongQuan.ts`), tính ở `HoTroHocVienTab` (cùng số đầu mục "22 bài · ⚠ 15 quá hạn"); badge menu / chuông vẫn `demDongViec` (không đếm chấm chéo) | tab-cham-speaking | KHỚP |
 | 15 | ⑤ B tên khung: dòng chuẩn ở "dải Việc cần làm hồ sơ lớp, thanh việc hồ sơ HV" | GIỮ ô việc hiện tại ở hai hồ sơ — đổi sang dòng chuẩn ở GD-6 / GD-7 (plan ghi rõ "dùng dòng việc chuẩn" trong dòng GD-7; một màn một PR) | — | GIỮ (chuyển GD-6/7) |
 | 16 | Chuông (a "một thành phần cho … chuông") | GIỮ dáng chuông v2 — [XM-1] ⑤ đã chốt: không dùng dòng việc chuẩn; đổi đích bấm ở GD-9 | — | GIỮ (theo [XM-1]) |
 
-**KHỚP 14 / 14 dòng thuộc PR = 100 %** (dòng 15, 16 là GIỮ có lý do, không tính).
+**KHỚP 15 / 15 dòng thuộc PR = 100 %** (dòng 15, 16 là GIỮ có lý do, không tính).
 
 ## 2. KHÁC (có lý do)
 - **KHÁC-1** Cột hạn của việc không hạn ghi chữ mờ "không hạn"; mockup ⑤ để trống khi đã có vạch "Không hạn". Giữ chữ: mục chỉ có việc không hạn thì không có vạch (một nhóm) → cột trống mất thông tin (thấy ở mục "Báo PH", ảnh case).
@@ -56,6 +58,7 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 | Không cần theo dõi… (Case SOS, form Xác nhận PA) | chữ link | nút mờ | ĐỔI dáng (lời 28) |
 | Xác nhận xử lý (ô bước, dòng vi phạm, panel Xem vi phạm) | chữ link | nút viền | ĐỔI dáng (lời 28) |
 | Đọc mốc WL trên thang | vạch / chip như Report | nhãn đỏ WL 1 / WL 2 | ĐỔI dáng (lời 28) |
+| Đọc badge tab Chấm Speaking | không có badge (bài chung không đếm) | viên mờ "⚠ 22" (số bài, ⚠ khi có bài quá hạn) | THÊM (lời 33) |
 | Đọc hạn trong mục việc | cột hạn từng dòng | + vạch nhóm hạn | THÊM |
 | Mọi thao tác dòng việc, "n em ▾", thang, panel, chip Việc cần làm | có | có | GIỮ |
 
