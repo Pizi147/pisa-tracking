@@ -26,7 +26,7 @@ import { OTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { createPortal } from 'react-dom';
 import {
   CAU_THIEU_NHAN_XET, CHU_O_THIEU, CHU_THAO_TAC, LOI_SO_CAU, LOI_SO_CAU_KHOANG, NHAN_XET_TOI_DA, TRAN_CHU, bandTuSoCau, caHaiKieu, canNhomNguyenNhan, criteriaPatchFrom, kiemTieuChi, LOI_MOT_KIEU,
-  chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, rawPatchFrom, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
+  chuDoiVang, demNguocSuaDau, laChamCheo, lyDoHuy, ngay, rawPatchFrom, roundToHalf, soKyVong, thieuNhanXetMt, tieuChiNganCua, tuanLich, type BangQuyDoi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { fmtBand, skillLabel } from '../../lib/format.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -37,6 +37,7 @@ import { useGiuFocus } from '../../ui/giuFocus.ts';
 import { DemChu } from '../../ui/KhungPanel.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DauKetQua, MuiTenKyVong, lopKq } from '../../ui/BieuTuong.tsx';
 import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
@@ -454,6 +455,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const tuan = cell.weekStart ? tuanLich(cell.weekStart, homNay) : null;
   const kvHien = !vang ? kv : null;   // OV-12b: "Kỳ vọng MT{n}" ở cả W1 / W2 / S
   const nTask = cell.skill === 'writing1' ? 1 : 2;
+  /* Cùng công thức `writingBand` máy chủ (W1 + W2 × 2) / 3, làm tròn 0.5 — chỉ để xem trước trong hộp. */
+  const wSau = laW && bandSau !== null && ctx.bandTaskKia != null
+    ? roundToHalf(nTask === 1 ? (bandSau + ctx.bandTaskKia * 2) / 3 : (ctx.bandTaskKia + bandSau * 2) / 3) : null;
 
   /* OV-14c: S đã có điểm của NGƯỜI KHÁC — nói ai / lúc nào trước khi ghi đè (hai GV cùng chấm chéo một em). */
   const nguoiKhac = laS && coDiemChinhThuc(cell) && !!cell.enteredByName && cell.enteredById != null && cell.enteredById !== session?.user?.id;
@@ -523,10 +527,16 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
             </span>
           </div>
           {haiKieu && <p id="hop-diem-hai-kieu" role="alert" className="mt-1 text-xs text-bad">{LOI_MOT_KIEU}</p>}
-          {!vang && <DongKyVong luot={ctx.luot} kv={kvHien} />}
+          {!vang && !laW && <DongKyVong luot={ctx.luot} kv={kvHien} />}
+          {/* GD-4d (dòng 40b, ⑤ E2): W chỉ một dòng xem trước "Task 1 6.0 → Writing 6.0 · kỳ vọng 5.5" — công thức vào ⓘ (bỏ chú thích tĩnh). */}
           {laW && !vang && (
-            <div className="mt-1.5 text-xs text-slate-500">
-              {ctx.bandTaskKia == null ? t('Task {x} chưa có · ', { x: 3 - nTask }) : ''}{t('Writing = (Task 1 + Task 2 × 2) / 3 khi đủ hai task')}
+            <div className="mt-1.5 flex items-center gap-1.5 text-xs tabular-nums text-slate-500">
+              <span className="inline-flex items-center gap-1">
+                {ctx.bandTaskKia == null ? t('Task {x} chưa có', { x: 3 - nTask })
+                  : `Task ${3 - nTask} ${fmtBand(ctx.bandTaskKia)} → Writing ${wSau === null ? '—' : fmtBand(wSau)}`}
+                {kvHien !== null && <>{' · '}{t('kỳ vọng {kv}', { kv: fmtBand(kvHien) })}{ctx.bandTaskKia != null && <MuiTenKyVong kq={soKyVong(wSau, kvHien)} />}</>}
+              </span>
+              <NutLuat label={t('Cách tính Writing')}>{t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.')}</NutLuat>
             </div>
           )}
         </div>

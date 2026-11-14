@@ -10,7 +10,7 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
+import { bacDu, hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -93,7 +93,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
     try {
       await api.post(`/y-thuc/xu-ly/${d.id}/chua-thuc-hien`);
       lamMoiYThuc(); onDone?.(); reload();
-      toast.push('ok', t('{nhan}: về Đã duyệt · chờ thực hiện', { nhan: d.nhan }));
+      toast.push('ok', t('{nhan}: về Đã duyệt · chờ thực hiện', { nhan: bacDu(dich(d.nhan)) }));
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
   const doi = (id: number) => setChon((c) => (c.includes(id) ? c.filter((x) => x !== id) : [...c, id]));
@@ -118,7 +118,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       if (rutDuoc) await api.post(`/yeu-cau/${the!.id}/rut`);
       else await api.post(`/discipline-measures/${d.id}/thu-hoi`, { lyDo: lyDo.trim(), ...(ql && d.daBaoPh ? { baoLai } : {}) });
       lamMoiYThuc(); invalidate('/yeu-cau');
-      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: d.nhan }) : ql ? t('Đã thu hồi {nhan}', { nhan: d.nhan }) : t('Đã gửi QL thu hồi {nhan}', { nhan: d.nhan }));
+      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: bacDu(dich(d.nhan)) }) : ql ? t('Đã thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }) : t('Đã gửi QL thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }));
       setHoiXoa(false); setDaBam(false); onDone?.();
       if (rutDuoc) dong(); else { setLyDo(''); reload(); }
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
@@ -129,18 +129,18 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
     try {
       await api.post(`/yeu-cau/${th.id}/rut`);
       invalidate('/yeu-cau'); onDone?.(); reload();
-      toast.push('ok', t('Đã rút yêu cầu thu hồi {nhan}', { nhan: d.nhan }));
+      toast.push('ok', t('Đã rút yêu cầu thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }));
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
   };
 
   /* Mọi vi phạm để chọn: đang gắn (đã chọn sẵn) + chưa xử lý của em, cũ trước mới sau. */
   const dsChon = d ? [...d.viPham, ...d.chuaXuLy].sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id) : [];
   const dangGan = new Set(d?.viPham.map((v) => v.id));
-  const bacVe = d?.bacVe ? nhanLoaiXuLy(kindCuaBac(d.bacVe)) : t('chưa có bậc');
+  const bacVe = d?.bacVe ? bacDu(dich(nhanLoaiXuLy(kindCuaBac(d.bacVe)))) : t('chưa có bậc');
 
   return (
     <>
-      <KhungPanel tieuDe={d ? dich(d.nhan) : t('Lần xử lý')} hocVien={d?.ten} onDong={dong}
+      <KhungPanel tieuDe={d ? bacDu(dich(d.nhan)) : t('Lần xử lý')} hocVien={d?.ten} onDong={dong}
         ngCanh={d ? <span className="truncate">{dich(d.statusLabel)}{d.bac ? t(' · bậc {bac} trên thang', { bac: d.bac }) : t(' · ngoài thang, không đổi bậc')}</span> : undefined}
         chan={{
           daSua: sua || !!tt,
@@ -243,7 +243,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
           confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} busyLabel={rutDuoc ? t('Đang rút…') : ql ? t('Đang thu hồi…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
           body={<>
             <p className="m-0">
-              {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: d.nhan, length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: d.nhan, length: d.viPham.length, bacVe })}
+              {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, bacVe })}
             </p>
             {!rutDuoc && (
               <div className="pt-3">

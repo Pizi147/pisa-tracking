@@ -6,12 +6,12 @@ import { BoLocDoan, Empty, ErrorState, LoiTaiNho, Skeleton } from '../../ui/ui.t
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
+import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, bacDu, bacNgan, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
-import { ThangYThuc } from './ThangYThuc.tsx';
+import { ThangVach, ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
 import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, chuMoc, type VpDong } from './BangLan.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
@@ -144,8 +144,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const choAi = (vai: string, ten: string | null) => <span className="text-[13px] text-slate-500">{t('Chờ {vai}', { vai })}{ten && <> <b className="whitespace-nowrap font-semibold text-slate-300">{ten}</b></>}</span>;
   const nutChinh = (chu: string, onClick: () => void, vien = false) => <button type="button" className={`btn w-full justify-center max-sm:h-11 ${vien ? '' : 'btn-primary'}`} onClick={onClick}>{chu}</button>;
   const oXl = (x: XuLyDong) => x.status === 'thu_hoi'
-    ? <OBuoc badge={<BadgeViec xuong tong="xam" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{t('Đã thu hồi')}</BadgeViec>} phu={[dich(x.nhan)]} />
-    : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{dich(x.nhan)} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[t('Đã xử lý'), x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
+    ? <OBuoc badge={<BadgeViec xuong tong="xam" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{t('Đã thu hồi')}</BadgeViec>} phu={[bacNgan(dich(x.nhan))]} />
+    : <OBuoc badge={<BadgeViec xuong tong="xong" title={t('Xem lần xử lý')} onClick={() => xemXl(x.id)}>{bacNgan(dich(x.nhan))} · {ngay(x.ngay, homNay)}</BadgeViec>} phu={[t('Đã xử lý'), x.soTep ? t('{soTep} tệp', { soTep: x.soTep }) : null]} />;
 
   /* ---------------- Cần làm (K3) ---------------- */
   /* P1 G3-1: chỉ quá hạn "xem" (không vi phạm bắt buộc) → như Mới (Đã xem), badge vẫn "Quá hạn n ngày". */
@@ -155,10 +155,10 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const nhomCho = batBuoc ? d.nhom : choGv.length ? (d.nhom === 'qua_han' ? 'qua_han' : 'moi') : null;
   const kCho = nhomCho ? khoi({
     key: 'cho', vp: choGv.map(vpDong), ph: null, moiIds: batBuoc ? undefined : xemIds,
-    gv: d.hang.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(d.hang.tuChoi!.id)}>{t('QL từ chối')}</BadgeViec>} phu={[dich(d.hang.tuChoi.nhan)]} /> : null,
+    gv: d.hang.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(d.hang.tuChoi!.id)}>{t('QL từ chối')}</BadgeViec>} phu={[bacNgan(dich(d.hang.tuChoi.nhan))]} /> : null,
     tiep: <>
       <span className="flex flex-col items-start gap-1.5"><CanLamEm x={{ ...d, nhom: nhomCho, deXuat: null }} homNay={homNay} hanDuoi />
-        {batBuoc && <span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{dich(d.keTiep.nhan)}</b></span>}</span>
+        {batBuoc && <span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{bacNgan(dich(d.keTiep.nhan))}</b></span>}</span>
       {!d.canManage || d.deXuat ? choAi('GVCN', d.gvcn)
       : batBuoc ? <>{nutChinh(t('Xác nhận xử lý'), () => mo({ loai: 'xu-ly', studentId }))}</>
       : <>
@@ -183,7 +183,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const xlDx = dx ? xlTheoId.get(dx.id) : undefined;
   const kDx = dx ? khoi({
     key: `dx${dx.id}`, vp: vpCua(xlDx?.viPhamIds ?? d.viPham.filter((v) => v.trangThai === 'cho_duyet').map((v) => v.id)), ph: ph(xlDx?.baoPh), b: xlDx?.baoPh,
-    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem đề xuất')} onClick={() => xemXl(dx.id)}>{dx.status === 'da_duyet' ? t('QL đã duyệt {nhan}', { nhan: dich(dx.nhan) }) : t('Đề xuất {nhan} · chờ QL', { nhan: dich(dx.nhan) })}</BadgeViec>}
+    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem đề xuất')} onClick={() => xemXl(dx.id)}>{dx.status === 'da_duyet' ? t('QL đã duyệt {nhan}', { nhan: bacNgan(dich(dx.nhan)) }) : t('Đề xuất {nhan} · chờ QL', { nhan: bacNgan(dich(dx.nhan)) })}</BadgeViec>}
       phu={[dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('QL trả lời trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null]} />,
     tiep: dx.status === 'da_duyet' && d.canManage ? nutChinh(t('Đánh dấu đã thực hiện'), () => mo({ loai: 'da-thuc-hien', id: dx.id }))
       : dx.status === 'da_duyet' ? choAi('GVCN', d.gvcn) : choAi('QL', null),
@@ -192,7 +192,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const xlTh = th ? xlTheoId.get(th.id) : undefined;
   const kTh = th ? khoi({
     key: `th${th.id}`, vp: vpCua(xlTh?.viPhamIds ?? []), ph: ph(xlTh?.baoPh), b: xlTh?.baoPh,
-    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem lần xử lý')} onClick={() => xemXl(th.id)}>{t('Xin thu hồi {nhan}', { nhan: dich(th.nhan) })}</BadgeViec>} phu={[t('chờ QL')]} />,
+    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem lần xử lý')} onClick={() => xemXl(th.id)}>{t('Xin thu hồi {nhan}', { nhan: bacNgan(dich(th.nhan)) })}</BadgeViec>} phu={[t('chờ QL')]} />,
     tiep: choAi('QL', null),
   }) : null;
   const choTvv = xls.filter((x) => x.status === 'done' && x.baoPh?.trangThai === 'mo' && x.id !== th?.id);
@@ -270,13 +270,10 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="flex flex-wrap items-baseline gap-x-2.5 text-sm text-slate-400">
                 <b className={`text-base ${d.bac > 0 ? 'font-bold text-slate-100' : 'font-medium text-slate-400'}`}>{chuMoc(d.bac, d.dongThoiGian.some((x) => x.loai === 'vi-pham' && !x.chiNhac))}</b>
-                {/* Mockup v20 A4: thang mini sáu vạch (vạch đã qua tô) — chỉ để nhìn, đủ tên ở "Thang ▾". */}
-                {/* GD-4a (chủ SP lời 28 ý 3; mockup ③ `.vach-bac b.wl`): bậc 3 = WL 1, bậc 6 = WL 2 — nhãn đỏ nổi trong thanh (đã tới: nền đỏ đặc), không chỉ là vạch. */}
-                <span aria-hidden className="inline-flex items-center gap-[3px] self-center">{[1, 2, 3, 4, 5, 6].map((b) => (b === 3 || b === 6
-                  ? <b key={b} className={`inline-flex h-5 items-center whitespace-nowrap rounded px-[7px] text-xs font-bold tabular-nums ${b <= d.bac ? 'bg-[rgb(var(--late-rgb))] text-[color:var(--surface)]' : 'border border-late-line bg-late-bg text-late'}`}>WL {b / 3}</b>
-                  : <i key={b} className={`h-1.5 w-[22px] rounded-full ${b <= d.bac ? 'bg-[color:var(--accent)]' : 'bg-[color:var(--line-strong)]'}`} />))}</span>
+                {/* GD-4d (chủ SP 15/11, ③ K1 / K4a): thang mini dạng vạch — mốc WL là vạch đỏ dày, không chữ trong thanh; đủ tên ở "Thang ▾". */}
+                <ThangVach dong={d.dongThang} />
                 {xuLyCuoi && <span className="tabular-nums">{ngay(xuLyCuoi.ngay, homNay)}</span>}
-                <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{dich(d.keTiep.nhan)}</b></span>
+                <span>{t('Bậc kế')} <b className="font-semibold text-slate-100">{bacDu(dich(d.keTiep.nhan))}</b></span>
                 <button type="button" aria-expanded={thang} className={LINK} onClick={() => setThang((x) => !x)}>{thang ? `${t('Thang')} ▴` : `${t('Thang')} ▾`}</button>
               </span>
               <span className="ml-auto flex flex-wrap items-center gap-2 max-sm:ml-0 max-sm:w-full">

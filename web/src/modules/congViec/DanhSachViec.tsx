@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
-  CHAM_CHEO, LOAI_HAN_CUA_VIEC, chiaVachHan, daysBetween, deadlineView, laViecChamCheo, nhanHan, shortDate, type BadgeTab, type MucTab,
+  CHAM_CHEO, LOAI_HAN_CUA_VIEC, bacNgan, chiaVachHan, daysBetween, deadlineView, laViecChamCheo, nhanHan, shortDate, type BadgeTab, type MucTab,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -325,7 +325,8 @@ export const tenBoEm = (it: WorkItem) => tenViec(tenBoEmGoc(it));
 /** GD-1b (chủ SP lời 24, `04-thiet-ke.md` mục 14; mockup ⑤ B): MỌI dòng việc một dạng "Lớp · tên việc ngắn" — kể cả việc của một em (tên em là thẻ phụ). */
 const voiLop = (it: WorkItem, ten: string) => (it.classCode && !ten.split(' · ').includes(it.classCode) ? `${it.classCode} · ${ten}` : ten);
 /** U01 #15: tên việc máy chủ đã ghép "{thao tác} · {kỹ năng}" (`mywork.ts sauCham`) — web chỉ dịch. */
-export const tenViec = (vi: string) => vi.split(' · ').map((x) => dich(x)).join(' · ');
+/* GD-4d (lời 35, ⑤ H5): tên bậc trong tên việc VIẾT HOA, dạng tắt (dòng việc là nơi chật) — "Báo PH · REPORT 1", "WL 1". */
+export const tenViec = (vi: string) => bacNgan(vi.split(' · ').map((x) => dich(x)).join(' · '));
 /**
  * AUDIT-UI B4 (CV1, chủ SP 08/11): ở DANH SÁCH, tên dòng = đối tượng ("Nhập điểm Listening, Reading" → "Listening, Reading") — động từ đã ở tên mục và ở nút.
  * Chỉ loại việc mà tên mục nói đúng động từ đó (Chấm điểm › Mock Test…, Phương án › Thêm PA, Mô tả Case, Kết quả PA). Panel, "Tiếp: …" giữ tên đủ (`tenBoEm`).
@@ -391,7 +392,8 @@ const DongPhu = ({ nguoi, ds, children }: { nguoi?: ReactNode; ds: readonly Reac
   <span onMouseEnter={(e) => { e.currentTarget.title = e.currentTarget.textContent ?? ''; }}
     className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px] ${coHuy ? '' : 'sm:h-5 sm:overflow-hidden'}`}>
     {nguoi && <span className="shrink-0 whitespace-nowrap sm:mr-1">{nguoi}{ds.length > 0 && <span aria-hidden className="sm:hidden"> ·</span>}</span>}
-    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{x}{cham(i)}</span>)}
+    {/* GD-4d (⑤ H5): thẻ phụ dòng việc (vd "bậc kế tiếp: Report 2") — tên bậc viết hoa, dạng tắt. */}
+    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{typeof x === 'string' ? bacNgan(x) : x}{cham(i)}</span>)}
     {children}
   </span>
 ) : null;
@@ -414,7 +416,7 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const muc = chipMuc(it, true);
   const bam = () => dong.onOpen(it);
   return (
-    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
+    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
       className={`${DONG} ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
       <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><AvViec it={it} />
       <span className="grid min-w-0 gap-0.5">
@@ -475,7 +477,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const muc = chipMuc(it, false);
   return (
     <div className={con && mo ? 'bg-[color:var(--bg)]' : ''}>
-      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={con ? undefined : dich(it.reason)}
+      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={con ? undefined : bacNgan(dich(it.reason))}
         className={`${DONG} ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
         <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><AvViec it={it} />
         <span className="grid min-w-0 gap-0.5">
@@ -539,7 +541,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const maDs = `con-${it.key}`;
   return (
     <div className={con && mo ? 'bg-[color:var(--bg)]' : ''}>
-      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
+      <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
         className={`${DONG} sm:min-h-16 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
         <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><AvViec it={it} />
         <span className="grid min-w-0 gap-[5px]">
@@ -581,7 +583,7 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
   const { daXong, dangChon, nut, nguoi } = useDong(it, dong);
   const bam = () => dong.onOpen(it);
   return (
-    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={dich(it.reason)}
+    <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}
       className={`${DONG} min-h-[48px] pl-8 max-sm:py-2 sm:pl-8 ${dangChon ? 'row-active' : daXong ? 'cursor-default' : 'bam'}`}>
       <span className="grid min-w-0 gap-0.5">
         <button type="button" disabled={daXong} onClick={(e) => { e.stopPropagation(); bam(); }} aria-current={dangChon ? 'true' : undefined}

@@ -376,8 +376,16 @@ export function macDinhTick(ds: readonly { id: number; t: TrangThaiVp; occurredO
 export function nhanMocViPham(bac: number, dichChu: (s: string) => string = (s) => s): string | null {
   return bac > 0 ? mocTuNhan(dichChu(nhanLoaiXuLy(kindCuaBac(bac)))) : null;
 }
-/** Nhãn bậc đã có (đã dịch) → mốc: "WL 1" → "WARNING LETTER 1", viết hoa. */
-export const mocTuNhan = (nhan: string): string => nhan.replace(/\bWL (\d+)/g, 'Warning Letter $1').toUpperCase();
+/**
+ * GD-4d (lời 35, ⑤ H5): TÊN BẬC LUÔN VIẾT HOA — một chỗ cho mọi màn. Nhãn máy chủ / dữ liệu giữ nguyên ("Report 2", `MEASURE_KIND_LABEL`, dòng
+ * `viec_bao_ph.nhan` cũ); web đổi lúc hiện. Chỉ phần tên bậc trong chuỗi đổi, chữ khác giữ ("Đã xử lý · Report 1" → "Đã xử lý · REPORT 1").
+ * `bacNgan` = viết tắt (nơi chật: chip, badge, ô số, cột bảng, dòng việc, 375): "WL 1" giữ · `bacDu` = viết đủ (nơi QUYẾT hoặc PHỤ HUYNH đọc):
+ * "WL 1" → "WARNING LETTER 1". Nhận chuỗi đã dịch (bản Anh "Report 4 + Meeting CX/BD" cũng khớp).
+ */
+export const bacNgan = (s: string): string => s.replace(/\bReport \d+(?: \+ Meeting \S+)?/g, (m) => m.toUpperCase());
+export const bacDu = (s: string): string => bacNgan(s).replace(/\bWL (\d+)/g, 'WARNING LETTER $1');
+/** Nhãn bậc đã có (đã dịch) → mốc: "WL 1" → "WARNING LETTER 1", viết hoa cả chuỗi. */
+export const mocTuNhan = (nhan: string): string => bacDu(nhan).toUpperCase();
 
 /**
  * MỘT DÒNG THANG: sáu bậc của mạch chính + Report 7 (luôn hiện, để thấy thang còn đi tiếp) và thêm một ô cho mỗi bậc em đã vượt

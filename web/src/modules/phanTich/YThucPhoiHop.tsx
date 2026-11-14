@@ -10,8 +10,7 @@ import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, NutXemToanBo, NutXuat, R
 import { dich, t } from '@shared/i18n/index.ts';
 import {
   COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
-  type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua,
-} from '@shared/domain/index.ts';
+  type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua, bacDu, bacNgan } from '@shared/domain/index.ts';
 
 /**
  * Ý THỨC (PR-UX4, mockup 16 §5; PR-YT4 K1-25) — HAI danh sách: "Học viên cần chú ý" (em Quá hạn · Bắt buộc xử lý · Chờ QL duyệt, kèm bậc
@@ -50,8 +49,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const hv: (string | number)[][] = [
       [t('Học viên cần chú ý · {moTa}', { moTa })], [],
       COT_XUAT_HV_CAN_CHU_Y.map((c) => dich(c)),
-      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', x.bac != null ? dich(x.bac) : t('Chưa xử lý lần nào'), x.bacKe != null ? dich(x.bacKe) : '', x.viPham, x.chuaXuLy,
-        `${x.bienPhapGanNhat != null ? dich(x.bienPhapGanNhat) : ''}${x.lanXuLyMoi ? ` ${t('(mới hơn: {ten} · {nhan})', { ten: dich(x.lanXuLyMoi.ten), nhan: dich(x.lanXuLyMoi.nhan) })}` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
+      ...data.hvCanChuY.map((x) => [x.ten, x.email ?? '', x.lop ?? '', x.bac != null ? bacDu(dich(x.bac)) : t('Chưa xử lý lần nào'), x.bacKe != null ? bacDu(dich(x.bacKe)) : '', x.viPham, x.chuaXuLy,
+        `${x.bienPhapGanNhat != null ? bacDu(dich(x.bienPhapGanNhat)) : ''}${x.lanXuLyMoi ? ` ${t('(mới hơn: {ten} · {nhan})', { ten: bacDu(dich(x.lanXuLyMoi.ten)), nhan: dich(x.lanXuLyMoi.nhan) })}` : ''}`, x.ngay ? ngay(x.ngay, demoDate) : '']),
     ];
     const dongLop = (x: DongLopViPham, thut: boolean): (string | number)[] => [
       `${thut ? '  ' : ''}${dich(x.nhan)}`, x.viPham, x.chuaXuLy, x.hvCoViPham, x.siSo ?? '', nhanSoVoiTruoc(x.soVoiTruoc).chu, x.gvcn ?? '',
@@ -65,7 +64,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const pa: (string | number)[][] = [
       [t('Xử lý đã xong trong kỳ theo loại · {moTa}', { moTa })], [],
       [t('Loại xử lý'), t('Xong')],
-      ...KHOA_LOAI_XU_LY.filter((k) => k !== 'loai-cu' || data.bienPhapTheoLoai[k]).map((k) => [nhanLoaiXuLy(k), data.bienPhapTheoLoai[k] ?? 0]),
+      ...KHOA_LOAI_XU_LY.filter((k) => k !== 'loai-cu' || data.bienPhapTheoLoai[k]).map((k) => [bacDu(nhanLoaiXuLy(k)), data.bienPhapTheoLoai[k] ?? 0]),
     ];
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(hv), t('HV cần chú ý'));
@@ -100,8 +99,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   const mauCx = (x: { chuaXuLy: number; quaHan?: number }) => (!x.chuaXuLy ? '' : x.quaHan ? 'text-bad' : 'text-soon');
   const bac = (x: DongHvCanChuY) => (
     <span className="text-[color:var(--text-dim)]">
-      {x.bac != null ? <b className="font-semibold text-slate-200">{dich(x.bac)}</b> : <span className="text-faint">{t('Chưa xử lý lần nào')}</span>}
-      {x.bacKe && <> › <span className="whitespace-nowrap">{dich(x.bacKe)}</span></>}
+      {x.bac != null ? <b className="font-semibold text-slate-200">{bacNgan(dich(x.bac))}</b> : <span className="text-faint">{t('Chưa xử lý lần nào')}</span>}
+      {x.bacKe && <> › <span className="whitespace-nowrap">{bacNgan(dich(x.bacKe))}</span></>}
     </span>
   );
 
@@ -114,8 +113,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
         { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /> },
         { nhan: t('Chưa xử lý'), noiDung: <OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} className={mauCx(x)} /> },
         { nhan: t('Bậc'), noiDung: bac(x) },
-        { nhan: t('Lần gần nhất'), noiDung: <>{x.bienPhapGanNhat ? `${dich(x.bienPhapGanNhat)}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
-          {x.lanXuLyMoi && <div className="text-muted">{dich(x.lanXuLyMoi.ten)} · {dich(x.lanXuLyMoi.nhan)}</div>}</> },
+        { nhan: t('Lần gần nhất'), noiDung: <>{x.bienPhapGanNhat ? `${bacNgan(dich(x.bienPhapGanNhat))}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
+          {x.lanXuLyMoi && <div className="text-muted">{bacNgan(dich(x.lanXuLyMoi.ten))} · {dich(x.lanXuLyMoi.nhan)}</div>}</> },
       ]} />
   );
   const theLop = (x: DongLopViPham) => {
@@ -160,8 +159,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
               <td className="td text-center tabular-nums"><OSo giaTri={x.chuaXuLy} nguon={nguon(`hv:${x.studentId}`, 'chua-xu-ly')} tieuDe={t('{ten} · chưa xử lý', { ten: x.ten })} className={mauCx(x)} /></td>
               <td className="td">{bac(x)}</td>
               <td className="td whitespace-normal text-slate-300">
-                {x.bienPhapGanNhat ? `${dich(x.bienPhapGanNhat)}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
-                {x.lanXuLyMoi && <div className={x.bienPhapGanNhat ? 'text-xs text-muted' : ''}>{dich(x.lanXuLyMoi.ten)} · {dich(x.lanXuLyMoi.nhan)}</div>}
+                {x.bienPhapGanNhat ? `${bacNgan(dich(x.bienPhapGanNhat))}${x.ngay ? ` · ${ngay(x.ngay, demoDate)}` : ''}` : !x.lanXuLyMoi && <span className="text-faint">—</span>}
+                {x.lanXuLyMoi && <div className={x.bienPhapGanNhat ? 'text-xs text-muted' : ''}>{bacNgan(dich(x.lanXuLyMoi.ten))} · {dich(x.lanXuLyMoi.nhan)}</div>}
               </td>
             </tr>
           ))}

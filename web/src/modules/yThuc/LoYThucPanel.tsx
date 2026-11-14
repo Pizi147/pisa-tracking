@@ -10,7 +10,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { NutChon, Skeleton } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon, bacDu, bacNgan } from '@shared/domain/index.ts';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
 import { KhaiBacLoPanel } from './KhaiBacLoPanel.tsx';
@@ -186,7 +186,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
                 onChange={() => doi(e.studentId)} aria-label={t('Chọn {ten}', { ten: e.ten })} />}
           <span className={`min-w-0 text-sm font-semibold ${xong ? 'text-slate-400' : 'text-slate-100'}`}>
             {e.ten}
-            {viec === 'xu-ly' && <span className="ml-1.5 font-bold text-[color:var(--accent)]">→ {dich(xong ? k!.nhan ?? '' : m.keTiep.nhan)}</span>}
+            {viec === 'xu-ly' && <span className="ml-1.5 font-bold text-[color:var(--accent)]">→ {bacNgan(dich(xong ? k!.nhan ?? '' : m.keTiep.nhan))}</span>}
           </span>
           {viec === 'xu-ly' && !xong && (
             <NutChu onClick={() => setMoRieng((x) => (x === e.studentId ? null : e.studentId))} mo={moRieng === e.studentId}>
@@ -222,7 +222,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
         </span>
         <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Cấp bậc của {ten}', { ten: e.ten })}>
           {CHIP_BAC.map((nhan, i) => (
-            <NutChon key={i} nho chon={dangChon === i} disabled={khoa} onClick={() => setBac((b) => ({ ...b, [e.studentId]: i }))}>{dich(nhan)}</NutChon>
+            <NutChon key={i} nho chon={dangChon === i} disabled={khoa} onClick={() => setBac((b) => ({ ...b, [e.studentId]: i }))}>{bacDu(dich(nhan))}</NutChon>
           ))}
         </div>
         {k && !k.ok && k.loi && <span role="alert" className="text-xs font-semibold text-bad">⚠ {dichChu(k.loi)}</span>}

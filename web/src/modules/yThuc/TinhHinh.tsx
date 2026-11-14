@@ -1,9 +1,9 @@
-import { useRef, useState, type ReactNode, type RefObject } from 'react';
+import { useRef, useState, type Dispatch, type ReactNode, type RefObject, type SetStateAction } from 'react';
 import { api } from '../../lib/api.ts';
 import { createPortal } from 'react-dom';
 import { HopNeo } from '../../ui/HopNeo.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { DongQuyChe, KhungPanel } from '../../ui/KhungPanel.tsx';
+import { DongQuyChe, KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -126,8 +126,12 @@ export function BuocTinhHinh({ x, homNay, tvv, gvcn, f }: { x: TinhHinhView; hom
   );
 }
 
+export type EmTinhHinh = { id: number; ten: string; tvv: string | null };
+/** GD-4d (dòng 40d, ⑤ F3 / ① K5c): ô chọn em do nơi mở vẽ ("+ Task" dùng ô tìm mẫu A) — hộp giữ danh sách em, gửi, Hoàn tác. */
+export type ChonEmTinhHinh = (p: { em: EmTinhHinh[]; setEm: Dispatch<SetStateAction<EmTinhHinh[]>>; luu: boolean }) => ReactNode;
+
 export type CheDoHop =
-  | { loai: 'bao'; em: { id: number; ten: string; tvv: string | null }[]; chonThem?: { id: number; ten: string; tvv: string | null }[] }
+  | { loai: 'bao'; em: EmTinhHinh[]; chonThem?: EmTinhHinh[]; chonEm?: ChonEmTinhHinh }
   | { loai: 'hoi'; em: { id: number; ten: string } | null; ds?: { id: number; ten: string }[]; gvcn: string | null }
   | { loai: 'sua'; x: TinhHinhView }
   | { loai: 'tra-loi'; x: TinhHinhView };
@@ -149,6 +153,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
   const [luu, setLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const daDoi = chu.trim() !== (che.loai === 'sua' ? che.x.noiDung : che.loai === 'tra-loi' ? che.x.traLoi ?? '' : '');
+  const chonEm = che.loai === 'bao' ? che.chonEm : undefined;
   const tieuDe = che.loai === 'bao' ? t('Báo tình hình học tập') : che.loai === 'hoi' ? t('Hỏi tình hình học tập')
     : che.loai === 'sua' ? (che.x.chieu === 'gv_tvv' ? t('Sửa tình hình học tập') : t('Sửa câu hỏi')) : t('Ghi kết quả tình hình học tập');
   const nhanO = che.loai === 'hoi' || (che.loai === 'sua' && che.x.chieu === 'tvv_gvcn') ? t('Câu hỏi') : che.loai === 'tra-loi' ? t('Kết quả') : t('Nội dung');
@@ -185,11 +190,25 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
   /* Không khai component trong lúc vẽ (vẽ lại là mất focus ô chữ) — dựng thân rồi bọc. */
   const than = (
     <>
+      {che.loai === 'bao' ? (
+        /* GD-4d (⑤ F3 / ① K5c `.h-dau`): "Tình hình học tập" + dòng phụ "Gửi TVV", ✕ cùng hàng tiêu đề. */
+        <div className="-mt-1 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
+          <b className="min-w-0 text-[15px] font-bold text-slate-100">{t('Tình hình học tập')}</b>
+          <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={ngoai}>✕</button>
+          <span className="text-[13px] text-dim">{t('Gửi TVV')}</span>
+        </div>
+      ) : (
       <div className="grid gap-0.5 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
         <b className="text-base font-bold text-slate-100">{tieuDe}</b>
         {(che.loai === 'tra-loi' || che.loai === 'sua') && <span className="text-[13px] text-slate-400">{che.x.chieu === 'tvv_gvcn' && che.loai === 'tra-loi' ? `“${che.x.noiDung}”` : null}</span>}
       </div>
-      {canEm && (chonThem || che.loai === 'bao') && (
+      )}
+      {chonEm ? (
+        <div className="grid gap-1.5">
+          <span className="text-sm font-bold text-slate-100">{t('Học viên')} <span className="text-bad">*</span></span>
+          {chonEm({ em, setEm, luu })}
+        </div>
+      ) : canEm && (chonThem || che.loai === 'bao') && (
         <div className="grid gap-1.5">
           <span className="text-sm font-bold text-slate-100">{t('Học viên')}</span>
           {/* GD-5 (R5.2 #56, mockup ⑤ A4 / F3): có danh sách em để thêm → ô chọn nhiều có tìm (chip ✕ + "n / trần" trong ô); không thì giữ chip. */}
@@ -210,7 +229,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           )}
         </div>
       )}
-      {(che.loai === 'bao' || che.loai === 'hoi') && (
+      {/* Lời 40: chưa chọn em thì "Gửi tới" / hạn chưa có nghĩa — ẩn. */}
+      {(che.loai === 'hoi' || (che.loai === 'bao' && em.length > 0)) && (
         <dl className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-1 text-[13px] text-slate-400">
           <dt>{t('Gửi tới')}</dt>
           <dd className="m-0">{che.loai === 'hoi'
@@ -218,7 +238,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
             : [...new Set(em.map((e) => e.tvv ?? ''))].map((tv) => (
               <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Quản lý chi nhánh')}</b> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</span>
             ))}</dd>
-          <dt>{t('Hạn')}</dt>
+          <dt>{che.loai === 'bao' ? t('Hạn TVV') : t('Hạn')}</dt>
           <dd className="m-0"><b className="font-semibold text-slate-100">{che.loai === 'hoi' ? t('3 ngày') : t('5 ngày')}</b> · {t('tới {ngay}', { ngay: ngay(che.loai === 'hoi' ? addDaysIso(homNay, 2) : hanBaoPh(homNay), homNay) })}</dd>
         </dl>
       )}
@@ -233,7 +253,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       {(che.loai === 'bao' || che.loai === 'hoi') && <DongQuyChe px="px-0" qc={che.loai === 'bao' ? quyCheBaoTinhHinh() : quyCheHoiTinhHinh()} />}
       <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={ngoai}>{t('Đóng')}</button>
-        <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}>
+        <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}
+          title={luu ? undefined : canEm && !em.length ? t('Chọn em trước') : ngan ? t('Cần ít nhất 10 ký tự') : dai ? t('Tối đa {n} ký tự', { n: TOI_DA }) : undefined}>
           {luu ? t('Đang gửi…') : che.loai === 'bao' ? t('Gửi TVV') : che.loai === 'hoi' ? t('Gửi GVCN') : che.loai === 'tra-loi' ? t('Lưu · gửi TVV') : t('Lưu')}
         </button>
       </div>

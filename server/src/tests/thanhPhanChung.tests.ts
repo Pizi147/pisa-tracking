@@ -228,6 +228,15 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
       assert(/<BoLocDoan\b/.test(doc(f)), `${f} chưa dùng BoLocDoan`);
   });
 
+  /* GD-4d (PTA Plan rà #1641): một chân panel việc chỉ MỘT nút "Đóng" — chân thường đã có "Đóng" mặc định (`huy`) thì `NutDongPanel` / `NutVaTiep`
+     không vẽ thêm; panel đặt "Đóng" sát nút (⑤ D1a) dùng `huy: null`. */
+  check('GD-4d · chân panel việc một nút "Đóng": KhungPanel chặn NutDongPanel khi chân đã có huy; Xác nhận xử lý huy: null', () => {
+    const khung = doc('web/src/ui/KhungPanel.tsx');
+    assert(/DongKhungPanel\.Provider value=\{trongCot \|\| \(chan && !chan\.v3 && huy\) \? null : dong\}/.test(khung), 'KhungPanel phải tắt DongKhungPanel khi chân đã có nút Đóng mặc định');
+    assert(/useContext\(DongKhungPanel\)/.test(doc('web/src/ui/KhuonViec.tsx')), 'NutDongPanel phải đọc DongKhungPanel');
+    assert(/huy: null, chinh: nutChinh/.test(doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx')), 'Xác nhận xử lý: huy: null (Đóng đi cùng NutVaTiep)');
+  });
+
   check('NEN (9) · E1: không còn Drawer; E3: Esc/mũi tên ở đầu trang, "Không tìm thấy học viên", "Bỏ qua tới nội dung"', () => {
     const sai = tepNguon('web/src').filter((f) => /<Drawer\b/.test(doc(f)));
     assert(sai.length === 0, sai.join(', '));

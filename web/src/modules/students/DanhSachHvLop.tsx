@@ -17,7 +17,7 @@ import { ChipLichThi, kqOverall } from './GocLichThi.tsx';
 import { ViecTiepDong, type DongSos } from './BangSos.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
-import { boTenEm, chuPhuHuynh, mocTuNhan, dongTieuChi, duongHoSoHocVien, maLoTrinhNgan, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
+import { bacDu, bacNgan, boTenEm, chuPhuHuynh, mocTuNhan, dongTieuChi, duongHoSoHocVien, maLoTrinhNgan, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
@@ -233,12 +233,13 @@ function OYThuc({ h, g, lop, onDoi }: { h: HvGon; g: HangHv; lop: LopGon | undef
   const [xuLy, setXuLy] = useState(false);
   const y = g.yThucHop;
   if (!g.yThuc) return trong;
-  if (!y) return <Nhan tone="doing">{mocTuNhan(dich(g.yThuc))}</Nhan>;
+  /* GD-4d (lời 35, ⑤ H5): chip ở cột bảng = viết tắt "WL 1" (nơi chật); hộp mở ra = viết đủ "WARNING LETTER 1". */
+  if (!y) return <Nhan tone="doing">{bacNgan(dich(g.yThuc)).toUpperCase()}</Nhan>;
   const cl = y.canLam;
   const tieu = t('Ý thức · {ten}', { ten: h.ten });
   return (
     <>
-      <HopNho nutLop="chip-bac" nhan={tieu} rong nut={mocTuNhan(dich(g.yThuc))}>
+      <HopNho nutLop="chip-bac" nhan={tieu} rong nut={bacNgan(dich(g.yThuc)).toUpperCase()}>
         <b className="block text-[14px]">{tieu}</b>
         <dl className="hop-dl">
           <dt>{t('Cần làm')}</dt>
@@ -247,7 +248,7 @@ function OYThuc({ h, g, lop, onDoi }: { h: HvGon; g: HangHv; lop: LopGon | undef
             : <span className="vh vh-dang">{cl.han ? t('hạn {ngay}', { ngay: shortDate(cl.han, homNay) }) : t('Bắt buộc xử lý')}</span>}</dd>
           <dt>{t('Vi phạm chờ')}</dt><dd className="tabular-nums">{y.viPhamCho}</dd>
           <dt>{t('Mốc')}</dt><dd>{mocTuNhan(dich(g.yThuc))}</dd>
-          <dt>{t('Lần này')}</dt><dd>{dich(y.lanNay)}</dd>
+          <dt>{t('Lần này')}</dt><dd>{bacDu(dich(y.lanNay))}</dd>
           {y.baoPh && <><dt>{t('Báo PH')}</dt><dd>{t('lần {lan}', { lan: dich(y.baoPh.lan) })} <span className={`vh ${y.baoPh.xong ? 'vh-xong' : 'vh-chua'}`}>
             {y.baoPh.xong ? (y.baoPh.ngay ? t('Đã báo {ngay}', { ngay: shortDate(y.baoPh.ngay, homNay) }) : t('Đã báo PH')) : t('Chưa báo')}</span></dd></>}
         </dl>

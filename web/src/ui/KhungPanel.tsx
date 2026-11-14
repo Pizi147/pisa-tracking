@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
-import { docNhap, docNhapChuyen, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
+import { bacDu, docNhap, docNhapChuyen, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { HopBoChu } from './Drawer.tsx';
 import { khoRoiNhap } from './chanRoiNhap.tsx';
@@ -158,7 +158,7 @@ export const HienLaiPanel = createContext<(() => void) | null>(null);
 /** HV-LOP-VIEC: nơi mở một panel việc THAY nội dung panel của mình (panel một em → PanelViec) cấp "← tên em" cho panel NGOÀI CÙNG bên trong
  *  (không phải sửa từng panel việc); prop `quayLai` riêng thắng; panel / hộp lồng trong không nhận lại. */
 /** GD-4b (lời 36, dòng 40c ⓪): hàm đóng của panel đang chứa (cùng đường ✕ / Esc — đang gõ dở thì hỏi "Bỏ chữ, đóng"). `NutVaTiep` đọc để vẽ nút "Đóng"
- *  trước nút việc; panel trong cột hồ sơ (`trongCot`, không có ✕) thì null. */
+ *  trước nút việc; null khi panel trong cột hồ sơ (`trongCot`, không có ✕) HOẶC chân thường đã có nút "Đóng" mặc định (`huy`) — một chân một nút "Đóng" (GD-4d). */
 export const DongKhungPanel = createContext<(() => void) | null>(null);
 export const QuayLaiPanel = createContext<{ nhan: string; onClick: () => void; xem?: boolean } | null>(null);
 
@@ -179,7 +179,7 @@ export const NUT_DONG = 'grid h-9 w-9 shrink-0 cursor-pointer place-items-center
 /** Bản nhỏ của `NUT_DONG` — ✕ xoá chữ TRONG ô gõ (mockup ⑤ `.oc .bo`: ô 28, ✕ 14; điện thoại 36 trong ô 44). Nơi đặt căn giữa theo chiều cao ô. */
 export const NUT_DONG_NHO = 'grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-sm leading-none text-dim hover:bg-[color:var(--accent-soft)] hover:text-[color:var(--text)] max-sm:h-9 max-sm:w-9';
 
-export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
+export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
@@ -236,6 +236,8 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const khung = useRef<HTMLDivElement>(null);
   const quayLaiNgoai = useContext(QuayLaiPanel);
   const quayLai = quayLaiRieng ?? quayLaiNgoai ?? undefined;
+  /* GD-4d (⑤ H5): tên bậc trong tiêu đề panel viết hoa, viết đủ (panel là nơi quyết) — chuỗi máy chủ "Báo PH · Report 1" → "REPORT 1". */
+  const tieuDe = bacDu(tieuDeGoc);
   const dongRef = useRef(onDong);
   dongRef.current = onDong;
   const trongThe = useContext(KhungTrongThe);
@@ -463,7 +465,7 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
         {hoi && <HopBoChu viec={tieuDe} nut={hoi.nut} onO={() => { setHoi(null); hoi.o?.(); }} onBo={boChu} />}
     </>
   );
-  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}><DongKhungPanel.Provider value={trongCot ? null : dong}>{x}</DongKhungPanel.Provider></QuayLaiPanel.Provider></TrongKhung.Provider>;
+  const voi = (x: ReactNode) => <TrongKhung.Provider value><QuayLaiPanel.Provider value={null}><DongKhungPanel.Provider value={trongCot || (chan && !chan.v3 && huy) ? null : dong}>{x}</DongKhungPanel.Provider></QuayLaiPanel.Provider></TrongKhung.Provider>;
   if (taiCho) {
     /* OV-14c: Esc từ hộp nằm trong portal (hộp nhập điểm) nổi bọt qua cây React — chỉ đóng panel khi Esc phát ra TRONG khung panel. */
     return (
