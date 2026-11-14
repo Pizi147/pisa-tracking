@@ -2,10 +2,13 @@ import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
-import { Card, ChonDangNut, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { Card, ErrorState, Skeleton } from '../../ui/ui.tsx';
+import { OChonThuong } from '../../ui/OChonThuong.tsx';
+import { BadgeMo } from '../../ui/Nhan.tsx';
+import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ChonLoc } from '../../ui/PeoplePicker.tsx';
-import { lucNgan } from '../../ui/LichSuThayDoi.tsx';
+import { DsLichSu, lucNgan, type DongLs } from '../../ui/LichSuThayDoi.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { nhanDoiTuongNhatKy, nhanHanhDongNhatKy } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -22,12 +25,10 @@ const TEN_MUC: Record<Muc, string> = {
 };
 
 /**
- * NHẬT KÝ CHUNG (QTV2-QUYEN) — mọi lần đổi tài khoản, quyền, cấu hình (`GET /admin/nhat-ky`), lọc Mục · Người · Từ tuần → Đến tuần, 50 dòng một lần
- * + "Xem thêm". Mục trên URL (`?muc=`): link "Nhật ký ›" ở các tab mở đúng mục. Mỗi dòng: lúc · ai · mục · việc · đối tượng; trường đổi "cũ → mới".
+ * GD-17a (mockup ⑩ K2–K8, R10.2): MỘT dáng nhật ký mọi tab — dòng kiểu ⑤ H4 (`DsLichSu`: giờ · NGƯỜI đậm · việc · cũ gạch → mới).
+ * `NhatKyDs` = phần lọc + danh sách dùng chung cho tab Nhật ký chung (Quản trị) và panel "Xem tất cả" của Quản lý (K8, không thêm tab — XM-1).
  */
-export function NhatKyChung() {
-  const [params, setParams] = useSearchParams();
-  const muc = (params.get('muc') ?? '') as Muc | '';
+function NhatKyDs({ muc, datMuc, dayDu }: { muc: Muc | ''; datMuc: (m: string) => void; /** Trang Quản trị: thêm lọc Từ / Đến. */ dayDu: boolean }) {
   const [nguoi, setNguoi] = useState('');
   const [tu, setTu] = useState<string | null>(null);
   const [den, setDen] = useState<string | null>(null);
@@ -47,88 +48,99 @@ export function NhatKyChung() {
       setThem((d) => ({ qs, dong: d.qs === qs ? [...d.dong, ...x.dong] : x.dong })); setTiep(x.tiep);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không tải thêm được')); } finally { setBusy(false); }
   };
-  const datMuc = (m: string) => { const n = new URLSearchParams(params); if (m) n.set('muc', m); else n.delete('muc'); setParams(n, { replace: true }); };
   const dong = [...(r.data?.dong ?? []), ...(them.qs === qs ? them.dong : [])];
 
   return (
-    <Card title={t('Nhật ký chung')} bodyClass="p-0">
+    <>
       <div className="flex flex-wrap items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
-        <ChonDangNut aria-label={t('Mục')} value={muc} onChange={(e) => datMuc(e.target.value)}>
+        {/* ⑤ A6: "Mục" = 8 mục cố định (tên tab) → ô chọn thường; "Người" = ô chọn có tìm (mẫu A, người có trong nhật ký đang xem — máy chủ đã trả). */}
+        <OChonThuong aria-label={t('Mục')} value={muc} onChange={(e) => datMuc(e.target.value)} dangLoc={!!muc} className="max-sm:w-full">
           <option value="">{t('Mục: Tất cả')}</option>
           {(r.data?.muc ?? []).map((m) => <option key={m} value={m}>{TEN_MUC[m]}</option>)}
-        </ChonDangNut>
-        {/* GD-5 (R5.2 #52): ô lọc có tìm — người có trong nhật ký đang xem (máy chủ đã trả, không gọi thêm). */}
-        <ChonLoc className="w-[220px] max-sm:w-full" ariaLabel={t('Người')} tatCa={t('Người: Tất cả')} placeholder={t('Gõ tên…')} value={nguoi} onChange={setNguoi}
-          ds={(r.data?.nguoi ?? []).map((n) => ({ gt: String(n.id), ten: n.ten }))} />
-        <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400">{t('Từ')}
-          <ONgay kieu="tuan" moc="dau" value={tu} onChange={setTu} ariaLabel={t('Từ tuần')} nutTrong /></span>
-        <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400">{t('Đến')}
-          <ONgay kieu="tuan" moc="cuoi" value={den} onChange={setDen} ariaLabel={t('Đến tuần')} nutTrong /></span>
-        {(muc || nguoi || tu || den) && <button type="button" className="btn btn-sm btn-ghost max-sm:min-h-[44px]" onClick={() => { datMuc(''); setNguoi(''); setTu(null); setDen(null); }}>{t('Xoá lọc')}</button>}
+        </OChonThuong>
+        <ChonLoc className="w-[240px] max-sm:w-full" ariaLabel={t('Người')} tatCa={t('Người: Tất cả')} placeholder={t('Gõ tên…')} value={nguoi} onChange={setNguoi}
+          ds={(r.data?.nguoi ?? []).map((n) => ({ gt: String(n.id), ten: n.ten, nhom: t('Có trong nhật ký') }))} />
+        {dayDu && <>
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400">{t('Từ')}
+            <ONgay kieu="tuan" moc="dau" value={tu} onChange={setTu} ariaLabel={t('Từ tuần')} nutTrong /></span>
+          <span className="inline-flex items-center gap-1.5 text-[13px] text-slate-400">{t('Đến')}
+            <ONgay kieu="tuan" moc="cuoi" value={den} onChange={setDen} ariaLabel={t('Đến tuần')} nutTrong /></span>
+        </>}
+        {(muc || nguoi || tu || den) && <button type="button" className="btn btn-sm max-sm:min-h-[44px]" onClick={() => { datMuc(''); setNguoi(''); setTu(null); setDen(null); }}>{t('Xoá lọc')}</button>}
       </div>
       {r.error ? <div className="p-4"><ErrorState message={r.error.message} hint={r.error.hint} status={r.error.status} onRetry={r.reload} /></div>
         : !r.data ? <div className="p-4"><Skeleton rows={6} /></div>
-        : dong.length === 0 ? <p className="m-0 px-4 py-4 text-sm text-slate-400">{t('Chưa có thay đổi nào khớp.')}</p>
-        : (
-          <ul className="m-0 list-none p-0">
-            {dong.map((d) => (
-              <li key={d.id} className="grid gap-1 border-t px-4 py-2.5 sm:grid-cols-[8.5rem_11rem_10rem_minmax(0,1fr)] sm:gap-3" style={{ borderColor: 'var(--line)' }}>
-                <span className="text-[13px] tabular-nums text-slate-400">{lucNgan(d.luc)}</span>
-                <span className="text-sm text-slate-300">{d.nguoi}</span>
-                <span className="text-sm text-slate-300">{TEN_MUC[d.muc]}</span>
-                <span className="min-w-0 text-sm text-slate-100">
-                  {dich(nhanHanhDongNhatKy(d.viec))}{d.doiTuong ? <span className="text-slate-400"> · {dich(nhanDoiTuongNhatKy(d.doiTuong))}</span> : null}
-                  {d.truong.length > 0 && (
-                    <span className="mt-0.5 block break-words text-[13px] text-slate-400">
-                      {d.truong.slice(0, 4).map((x, i) => (
-                        <span key={i}>{i > 0 && ' · '}{dich(x.ten)}: {x.cu !== null && <s className="text-slate-500">{ngan(x.cu)}</s>}{x.cu !== null && ' → '}{x.moi !== null ? ngan(x.moi) : <i>{t('trống')}</i>}</span>
-                      ))}
-                      {d.truong.length > 4 && ` · +${d.truong.length - 4}`}
-                    </span>
-                  )}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
+        : <DsLichSu dong={dong.map((d) => dongLs(d, true))} rong={t('Chưa có thay đổi nào khớp.')} />}
       {tiep && (
         <div className="border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
           <button type="button" className="btn btn-sm max-sm:min-h-[44px]" disabled={busy} onClick={() => void xemThem()}>{busy ? t('Đang tải…') : t('Xem thêm')}</button>
         </div>
       )}
+    </>
+  );
+}
+
+/** Một dòng nhật ký → `DongLs` (⑤ H4): [nhãn mục] NGƯỜI việc · đối tượng · trường cũ → mới. `coMuc` = nhãn mục (Nhật ký chung, panel). */
+function dongLs(d: Dong, coMuc: boolean): DongLs {
+  return {
+    key: d.id, gio: lucNgan(d.luc), ai: null,
+    viec: (
+      <span className="inline-flex flex-wrap items-baseline gap-x-1.5 gap-y-0.5">
+        {coMuc && <span className="rounded px-1.5 py-px text-xs font-medium text-dim surface-2">{TEN_MUC[d.muc]}</span>}
+        <b className="ai">{d.nguoi}</b>
+        <span>{dich(nhanHanhDongNhatKy(d.viec))}{d.doiTuong ? ` · ${dich(nhanDoiTuongNhatKy(d.doiTuong))}` : ''}</span>
+        {d.truong.slice(0, 4).map((x, i) => (
+          <span key={i} className="break-words">{dich(x.ten)}: {x.cu !== null && <><span className="cu">{ngan(x.cu)}</span> → </>}<span className="moi">{x.moi !== null ? ngan(x.moi) : t('trống')}</span></span>
+        ))}
+        {d.truong.length > 4 && <span>+{d.truong.length - 4}</span>}
+      </span>
+    ),
+  };
+}
+
+/**
+ * NHẬT KÝ CHUNG (QTV2-QUYEN) — mọi lần đổi tài khoản, quyền, cấu hình (`GET /admin/nhat-ky`), lọc Mục · Người · Từ tuần → Đến tuần, 50 dòng một lần
+ * + "Xem thêm". Mục trên URL (`?muc=`): link "Xem tất cả ›" ở các tab mở đúng mục.
+ */
+export function NhatKyChung() {
+  const [params, setParams] = useSearchParams();
+  const muc = (params.get('muc') ?? '') as Muc | '';
+  const datMuc = (m: string) => { const n = new URLSearchParams(params); if (m) n.set('muc', m); else n.delete('muc'); setParams(n, { replace: true }); };
+  return (
+    <Card title={t('Nhật ký chung')} bodyClass="p-0">
+      <NhatKyDs muc={muc} datMuc={datMuc} dayDu />
     </Card>
   );
 }
 
 /**
  * CỘT NHẬT KÝ của một tab cấu hình (mẫu chung QTV2, spec mục 5.0): 8 lần đổi gần nhất của mục đó (`/admin/nhat-ky?muc=`, cùng đường Nhật ký chung).
- * Quản trị: "Xem tất cả ›" mở Nhật ký chung lọc sẵn mục (tab Quyền & nhật ký). Quản lý: chỉ xem 8 dòng (tab Quyền & nhật ký là của Quản trị).
+ * GD-17a (K5, K8): đầu "Nhật ký · n"; Quản trị: "Xem tất cả ›" sang Nhật ký chung lọc sẵn mục; Quản lý: nút "Xem tất cả" mở PANEL nhật ký tại chỗ
+ * (không đổi trang, không tab mới — XM-1; `/admin/nhat-ky` chỉ trả 6 mục QL được xem, chỉ nạp khi bấm). Dòng ⑤ H4, cột hẹp: giờ trên dòng ([XM-7]).
  */
 export function NhatKyMuc({ muc, quanTri }: { muc: Muc; quanTri: boolean }) {
   const r = useApi<Trang>(`/admin/nhat-ky?muc=${muc}&gioi-han=8`);
   const dong = r.data?.dong ?? [];
+  const [moPanel, setMoPanel] = useState(false);
+  /* Mockup K8: panel mở "Mục: Tất cả" (mọi mục QL được xem); lọc lại tại panel. */
+  const [mucPanel, setMucPanel] = useState<string>('');
   return (
     <aside className="card min-w-0 self-start" aria-label={t('Nhật ký')}>
       <div className="flex items-center gap-2 border-b px-4 py-3" style={{ borderColor: 'var(--line)' }}>
         <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Nhật ký')}</h3>
-        {quanTri && <Link className="ml-auto text-[13px] font-semibold" to={`/quan-tri?tab=config&muc=${muc}`}>{t('Xem tất cả')} ›</Link>}
+        {dong.length > 0 && <BadgeMo so={dong.length} />}
+        {quanTri
+          ? <Link className="ml-auto text-[13px] font-semibold" to={`/quan-tri?tab=config&muc=${muc}`}>{t('Xem tất cả')} ›</Link>
+          : <button type="button" className="btn btn-sm ml-auto max-sm:min-h-[44px]" onClick={() => { setMucPanel(''); setMoPanel(true); }}>{t('Xem tất cả')}</button>}
       </div>
       {r.error ? <div className="p-3"><ErrorState message={r.error.message} hint={r.error.hint} status={r.error.status} onRetry={r.reload} /></div>
         : !r.data ? <div className="p-3"><Skeleton rows={3} /></div>
-        : dong.length === 0 ? <p className="m-0 px-4 py-3 text-sm text-slate-400">{t('Chưa đổi lần nào.')}</p>
-        : (
-          <ul className="m-0 list-none p-0">
-            {dong.map((d) => (
-              <li key={d.id} className="grid gap-0.5 border-t px-4 py-2.5 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-                <span className="text-xs font-semibold text-slate-400">{dich(nhanHanhDongNhatKy(d.viec))}{d.doiTuong ? ` · ${dich(nhanDoiTuongNhatKy(d.doiTuong))}` : ''}</span>
-                {d.truong.slice(0, 2).map((x, i) => (
-                  <span key={i} className="break-words text-sm text-slate-100">{dich(x.ten)}: {x.cu !== null && <s className="text-slate-500">{ngan(x.cu)}</s>}{x.cu !== null && ' → '}{x.moi !== null ? ngan(x.moi) : <i>{t('trống')}</i>}</span>
-                ))}
-                <span className="text-[13px] text-slate-400">{d.nguoi} · <span className="tabular-nums">{lucNgan(d.luc)}</span></span>
-              </li>
-            ))}
-          </ul>
-        )}
+        : <div className="ls-hep"><DsLichSu dong={dong.map((d) => dongLs(d, false))} rong={t('Chưa đổi lần nào.')} /></div>}
+      {moPanel && (
+        <KhungPanel tieuDe={t('Nhật ký cấu hình')} rong="rong" onDong={() => setMoPanel(false)} chan={{ huy: { nhan: t('Đóng'), onClick: () => setMoPanel(false) } }}>
+          <div className="-mx-4 sm:-mx-5"><NhatKyDs muc={mucPanel as Muc | ''} datMuc={setMucPanel} dayDu={false} /></div>
+        </KhungPanel>
+      )}
     </aside>
   );
 }

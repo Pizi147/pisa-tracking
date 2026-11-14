@@ -483,6 +483,9 @@
   .ls-ds .cu { color: var(--text-faint); text-decoration: line-through; }
   .ls-ds .moi { color: var(--text); font-weight: 600; }
   .ls-ds .phu { display: block; font-size: 12px; color: var(--text-faint); margin-top: 1px; }
+  /* GD-17a ([XM-7] mockup ⑩): cột Nhật ký hẹp (320 px) — giờ trên dòng, nội dung cả bề ngang. */
+  .ls-hep .ls-ds > li { grid-template-columns: minmax(0, 1fr) auto; }
+  .ls-hep .ls-ds time { grid-column: 1 / -1; }
   .ls-them, .ls-rong { margin: 0; padding: 8px 12px 10px; font-size: 13px; color: var(--text-faint); }
   @media (max-width: 639px) {
     .ls-ds > li { grid-template-columns: minmax(0, 1fr) auto; }

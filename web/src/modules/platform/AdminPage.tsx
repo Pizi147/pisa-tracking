@@ -14,6 +14,11 @@ import { QuyenTheoVai } from './QuyenTheoVai.tsx';
 import { NhatKyChung, NhatKyMuc } from './NhatKyChung.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { useSession } from '../../lib/session.tsx';
+import { DaiChiXem } from '../../ui/ui.tsx';
+
+const IconMat = () => (
+  <svg aria-hidden width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1.5 8S4 3.5 8 3.5 14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" /><circle cx="8" cy="8" r="2" /></svg>
+);
 
 /**
  * QUẢN TRỊ HỆ THỐNG — giữ vị trí cũ (menu tài khoản › `/quan-tri`, chủ SP 11/11: "vẫn ở vị trí cũ"), hàng tab trên URL (`?tab=`, OV-11b QT-10g).
@@ -50,7 +55,6 @@ export default function AdminPage() {
     <div className="page space-y-4">
       <div>
         <h1 className="text-xl font-bold text-slate-100">{quanTri ? t('Quản trị hệ thống') : t('Cấu hình hệ thống')}</h1>
-        {!quanTri && tab !== 'da-xoa' && <p className="text-xs text-slate-500 mt-0.5">{t('Quản trị hệ thống sửa; Quản lý xem.')}</p>}
       </div>
 
       {tabs.length > 1 && (
@@ -58,6 +62,11 @@ export default function AdminPage() {
           <HangTab panelId="qt-vung" ariaLabel={t('Quản trị hệ thống')} value={tab} onChange={setTab}
             tabs={tabs.map((x) => ({ key: x.key, label: x.label }))} />
         </div>
+      )}
+
+      {/* GD-17a (mockup ⑩ K5, R10.1): MỘT câu chỉ-xem, một chỗ — dải dưới hàng tab, mọi tab cấu hình Quản lý xem (thay câu dưới tiêu đề + câu lặp trong thẻ). */}
+      {!quanTri && tab !== 'da-xoa' && (
+        <DaiChiXem lon><span className="inline-flex items-center gap-2"><IconMat />{t('Chỉ xem')} · <b className="font-semibold text-[color:var(--text)]">{t('Quản trị hệ thống sửa')}</b></span></DaiChiXem>
       )}
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
