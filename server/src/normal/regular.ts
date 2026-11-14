@@ -838,7 +838,7 @@ export function reportRegularNoShow(
   p: Principal, attemptId: number, skill: string, bat: boolean, today: string = demoToday(),
   /** K4-32 (PR-XLMT): "Báo vắng" từ menu ⋯ ô lưới — có lý do (ghi vào nhật ký lịch). Gõ "-" trong ô thì không có. */
   lyDo?: string,
-): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean; khongDuThi?: boolean } {
+): { moved: boolean; tuanCu: string | null; tuanMoi: string | null; result: RegularResult; giuLich?: boolean; khongDuThi?: boolean; daCat?: boolean } {
   const conn = db();
   let a = conn.prepare('SELECT * FROM assessment_attempts WHERE id = ?').get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt đánh giá');
@@ -883,7 +883,7 @@ export function reportRegularNoShow(
     if (bat && coDiem) {
       /* NHAP-DIEM-a (thay hỏi RKC-B): cất điểm ("Khôi phục" một bấm) rồi ghi "-" — web báo kèm Hoàn tác. */
       saveRegularScore(p, attemptId, skill, { score: null, lyDo: 'Ghi vắng' }, today);
-      return reportRegularNoShow(p, attemptId, skill, bat, today, lyDo);
+      return { ...reportRegularNoShow(p, attemptId, skill, bat, today, lyDo), daCat: true };   // NHAP-DIEM-b: web — Hoàn tác = Khôi phục (điểm về)
     }
     const tuanCua = (id: number | null) =>
       (id ? (conn.prepare('SELECT code, week_start FROM report_periods WHERE id = ?').get(id) as any) : null);
@@ -1359,7 +1359,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
             /** OV-11a (Q1): "-" ở tuần thi đã qua ≥ 2 tuần — Không dự thi, không dời, không nợ (`regularSkillViews` đã bỏ khỏi việc). */
             khongDuThi: !scored && !!row?.no_show_cu && row.no_show_period_id === v.periodId,
             /** LG-9: môn GV đã Huỷ tay (⋯ › Huỷ môn) — web hiện "Khôi phục" một bấm. Cờ từ dòng lịch đã đọc, không thêm câu. */
-            huyTay: v.sitStatus === 'cancelled' && !!v.huyVang,
+            huyTay: v.sitStatus === 'cancelled' && (v.huyVang || v.huyTay),
             /** OV-4b: nhận xét của môn (nút "Nhận xét" cạnh ô). */
             nhanXet: (row?.comment ?? null) as string | null,
             /** HSL-MAY-CHU: người nhập điểm môn này (null = chưa có điểm). */

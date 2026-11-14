@@ -406,6 +406,8 @@ export type SkillScheduleView = {
   pendingMove: { id: number; decideBy: string; toWeek: string | null; moveNo: number } | null;
   /** T3 (PR-MTa): huỷ vì vắng 2 lần — Quản lý "Không mock lại". */
   huyVang: boolean;
+  /** NHAP-DIEM-b: "Đã huỷ" do Huỷ điểm tay (`huy_vang = 2`) — chữ không ghi "vắng". */
+  huyTay: boolean;
 };
 
 /**
@@ -500,7 +502,8 @@ export function viewSkill(input: {
     absenceMoveCount: row.absence_move_count,
     /** Đề nghị dời do vắng đang chờ Quản lý trả lời, nếu có. */
     pendingMove: input.pendingMove ?? null,
-    huyVang: !!row.huy_vang,
+    huyVang: row.huy_vang === 1,
+    huyTay: row.huy_vang === 2,
   };
 }
 

@@ -15,6 +15,7 @@ import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
+import { guiHuyDiem } from '../cham/huyDiem.ts';
 import { HopThaoTacMt } from './HopThaoTacMt.tsx';
 import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DongThoiGianLuot, dongLuot, type DongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
@@ -760,7 +761,8 @@ function thaoTacDong(d: Detail, k: string, homNay: string) {
     const chinh0 = c.khongHoc && tat.chinh === 'khoi-phuc-kn' ? null : ownsSchedule || laDiem(tat.chinh) ? tat.chinh : null;
     /* Nhập/Sửa điểm chỉ khi ô thật sự mở (không bị dấu "-" khoá, không vắng/huỷ). */
     const chinh = laDiem(chinh0) && !canScore ? null : chinh0;
-    const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem' || x === 'khoi-phuc-diem');
+    /* NHAP-DIEM-b (đặc tả 5.5): GV nhập được ô có Vắng · Huỷ điểm · Khôi phục như GVCN (máy chủ kiểm lại). */
+    const menu = ownsSchedule ? tat.menu : tat.menu.filter((x) => x === 'huy-diem' || x === 'khoi-phuc-diem' || x === 'bao-vang');
     return { c, chinh, menu, hasValue, canScore };
   });
   const lich = ws[0].chinh && !laDiem(ws[0].chinh) ? ws[0] : null;
@@ -829,17 +831,8 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
   const [hop, setHop] = useState<{ t: ThaoTac; r: SkillRow; c: Cell } | null>(null);
   const toast = useToast();
   const dangKhoiPhuc = useRef(false);   // chống bấm đúp
-  /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — máy chủ ghi lại điểm cất (mọi ô của kỹ năng) qua đúng đường lưu điểm. */
-  const khoiPhuc = async (skill: string) => {
-    try {
-      if (dangKhoiPhuc.current) return;
-      dangKhoiPhuc.current = true;
-      await api.post(`/attempts/${d.id}/skills/${skill}/khoi-phuc-diem`, {});
-      invalidate('/attempts'); invalidate('/classes'); invalidate('/students'); invalidate('/my-work');
-      toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: skillLabel(skill), x2: '' }));
-      onDone();
-    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
-  };
+  /* NHAP-DIEM-b: Huỷ điểm / Khôi phục MỘT kỹ năng — một bấm, Hoàn tác 10 s (cùng hàm với lưới lớp thường, hộp một đợt). */
+  const huyDiem = (skill: string, huy: boolean) => void guiHuyDiem(toast, { attemptId: d.id, skill, mon: skillLabel(skill), tenHv: d.student.name, huy, onDone });
   /* Chủ SP 06/11: môn đã xoá → "Khôi phục" một bấm (tuần cũ giữ; vướng thứ tự đợt thì về Chưa xếp — máy chủ). */
   const khoiPhucKn = async (skill: string) => {
     try {
@@ -856,9 +849,6 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
     cells: d.cells, lich: d.skillSchedule as LichKn[], result: d.result, lichSu: d.lichSu, homNay, mo: moO, onMo: onMoO, save,
     nguCanh: nguCanhChiTiet(d), emTiep, ve,
   });
-  /* Huỷ điểm Writing: hộp tích sẵn mọi ô W đang có điểm (dòng W gộp hai task). */
-  const oCoDiemCua = (c: Cell): string[] => (c.assessedSkill !== 'writing' ? [c.skill]
-    : d.cells.filter((x) => x.assessedSkill === 'writing' && coDiemO(x)).map((x) => x.skill));
 
   const dongKn = (k: KyNangLon) => {
     const td = thaoTacDong(d, k, homNay);
@@ -867,7 +857,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
     const mo = moKn === k;
     const chay = (t: ThaoTac, c: Cell) => {
       if (laDiem(t)) onMoO(c.skill);
-      else if (t === 'khoi-phuc-diem') void khoiPhuc(c.skill);
+      else if (t === 'huy-diem' || t === 'khoi-phuc-diem') huyDiem(r.skill, t === 'huy-diem');
       else if (t === 'khoi-phuc-kn') void khoiPhucKn(r.skill);
       else if (t === 'tra-loi-de-nghi') setDecideFor(r);
       else if ((t === 'doi-lich' || t === 'dat-lich') && d.classId !== null) onDoiLich(document.getElementById(`kn-${k}`)!, r.skill as KyNangKH);
@@ -1001,7 +991,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
       {hop && (
         <HopThaoTacMt key={`${hop.t}:${hop.c.skill}`} thaoTac={hop.t} attemptId={d.id} skill={hop.r.skill} ct={null} laThuong={false}
           quanLy={d.viewer.canPlanWeek} gvcn={d.viewer.laGvcn} row={{ periodId: hop.r.periodId, weekStart: hop.r.weekStart, deadline: hop.r.deadline }}
-          oCoDiem={oCoDiemCua(hop.c)} hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
+          hocVien={d.student.name} lop={d.classCode} onClose={() => setHop(null)} onDone={onDone} />
       )}
       {decideFor && <TraLoiDeNghiModal row={decideFor} detail={d} onClose={() => setDecideFor(null)} onDone={onDone} />}
     </section>

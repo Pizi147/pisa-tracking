@@ -5,7 +5,7 @@
  * ngang. Trên cùng là hàng chip chọn kỹ năng kèm "{đã nhập}/{tổng}"; dưới là danh sách học viên, mỗi em MỘT ô to.
  *
  * KHÔNG CÓ LUẬT THỨ HAI: ô điểm là chính các ô của lưới (`ODiemMt` → hộp nhập điểm, tấm trượt từ dưới; `ODiemThuong`) ở cỡ `lon`,
- * lưu bằng chính `useSaveScore` / `useLuuThuong`. Nên "-" = Vắng, ô đã có điểm thêm lý do tuỳ chọn (RB-5, T7), "Lưu · em tiếp ›"
+ * lưu bằng chính `useSaveScore` / `useLuuThuong`. Nên "-" = Vắng, ô đã có điểm sửa tại chỗ (lớp thường, NHAP-DIEM-b) / trong hộp (FT), "Lưu · em tiếp ›"
  * (FT) / Enter↓ (lớp thường) xuống em kế tiếp, Esc huỷ — y hệt trên máy tính.
  *
  * Kỹ năng mình được phân công đứng trước; kỹ năng khác vẫn chọn được để đối chiếu, nhưng ô chỉ đọc.
@@ -27,7 +27,7 @@ import { DongThi, nhanKyNangFt } from './DongThi.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, chiConHuy, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, tenDotFt, type FtSheet, type HangMo, type PhienO } from './LuoiFT.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import {
-  LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, type ThuongSheet,
+  LuoiThuong, ketQuaCua, lichCua, oThuong, tongPhoBien, useLuuThuong, useMenuOThuong, type ThuongSheet,
 } from './LuoiThuong.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -339,6 +339,8 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
 }) {
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const { s, canEdit, trong, dung, chuDung, quaHan, cell } = oThuong(row, k, sheet.today);
+  /* NHAP-DIEM-b: 375 có ⋯ (Vắng · Huỷ điểm / Khôi phục · Lịch sử…) như lưới — cùng hook. */
+  const { menuO, hopO, lichSuO } = useMenuOThuong(row, sheet, onReload);
   const tenMonO = tenMon(sheet.programme.code, k);
   /*
    * MỘT dòng phụ (G-3): ô mang "-" nói tuần mới (Q17: lớp thường không đếm ngược) → quá hạn chấm → chưa tới tuần thi
@@ -347,6 +349,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
    */
   const ketQua = datPhanTram(cell.ketQua, cell.tiLe);
   const phu = (cell.khongDuThi ? t('Vắng') : null)
+    ?? (dung && canEdit ? chuDung : null)
     ?? (cell.dau && cell.diem === null && cell.tuanHienTai ? t('Đã dời sang {tuanHienTai}', { tuanHienTai: cell.tuanHienTai }) : null)
     ?? quaHan
     ?? (cell.chuaToiTuan && cell.tuanHienTai ? t('Làm bài {tuan}', { tuan: cell.tuanHienTai }) : null)
@@ -361,7 +364,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
       <div className={`shrink-0 flex items-center justify-end gap-1 rounded-md ${o[k] === 'loi' ? VIEN_LOI : ''}`} data-kn={k}
         data-trong={trong ? '1' : undefined} data-luu={o[k]}>
         <DauO lon tt={o[k]} loi={loi[k]} onLuuLai={() => luuLai(k)} />
-        {dung || !s ? (
+        {(dung && !canEdit) || !s ? (
           <span className="inline-flex items-center gap-1">
             <span className="text-xs text-slate-500" title={`${tenMonO}: ${chuDung ?? t('không có lịch')}`}>
               {chuDung ?? '—'}
@@ -374,11 +377,16 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
             onSave={(p, o) => luu(k, p, o)} onDau={(bat, ht) => dau(k, bat, ht)} onLoiNhap={(x) => loiNhap(k, x)}
             inputRef={inputRef} onKeyDown={onKeyDown} />
         )}
-        {s && (s.nhanXetDuoc ?? canEdit) && !dung && (
-          <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
-            phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
-            nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: k }} onLuu={(v) => nhanXet(k, v)} />
-        )}
+        {/* NHAP-DIEM-b: Nhận xét + ⋯ thẳng hàng ô nhập (cao 44) — không theo giữa khối khi dưới ô có dòng "Đạt · %". */}
+        <span className="inline-flex min-h-11 items-center gap-1 self-start">
+          {s && (s.nhanXetDuoc ?? canEdit) && !dung && (
+            <NutNhanXet lon tenMon={tenMonO} giaTri={s.nhanXet ?? null}
+              phu={[row.studentName, sheet.class.code, s.weekStart ? tuanLich(s.weekStart) : null].filter(Boolean).join(' · ')}
+              nguon={{ bang: 'assessment_scores', id: row.attemptId, cot: 'comment', kyNang: k }} onLuu={(v) => nhanXet(k, v)} />
+          )}
+          {s && menuO(k, true)}
+        </span>
+        {hopO}{lichSuO}
       </div>
     </DongHv>
   );

@@ -44,7 +44,7 @@ import { useBaoHopLyDoMo } from '../../ui/SaveState.tsx';
 import { cungGvCham, gvChamPayload, gvChamThanhChon } from '../cham/GvCham.tsx';
 import { ChonNhom, viDuNhanXet } from './NhanXet.tsx';
 import {
-  bandBanDau, chanDau, coDiemChinhThuc, LY_DO_CHI_DOC, suaDuoc, type Cell, type SaveOpts, type SavePatch,
+  bandBanDau, chanDau, coDiemChinhThuc, lyDoChiDoc, suaDuoc, type Cell, type SaveOpts, type SavePatch,
 } from './ScoreEntry.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
@@ -231,7 +231,7 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
     return (
       <span className="inline-flex flex-col items-center">
         <span className={`inline-flex items-baseline gap-1 tabular-nums ${vang || h.kieu ? 'text-xs text-slate-500' : ''} ${lon ? 'text-base' : ''}`}
-          title={cell.noShow?.text ?? LY_DO_CHI_DOC}>
+          title={cell.noShow?.text ?? lyDoChiDoc(cell)}>
           {/* OV-15b: ô của người khác chưa có điểm = trống (không "—"). */}
           {vang ? t('Vắng') : h.kieu === 'trong' ? <span className="sr-only">{t('Chưa có')}</span> : <>{kyHieu}{so}</>}
         </span>
@@ -359,7 +359,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const daLuu = luuAnh === anh;
   const daGo = !daLuu && !ketThuc && (doiDiem || doiNx || doiGv || doiNhom || lyDo.trim() !== '');
   const hoiLyDo = !daLuu && coDiemChinhThuc(cell) && doiDiem && !!diem.patch && !('noShow' in diem.patch);
-  const nhanVang = nhapDuoc && !vang && !chanDau(cell) && !doiDiem;   // RKC: ô đã có điểm vẫn ghi vắng — máy chủ hỏi "huỷ điểm rồi ghi vắng?"
+  const nhanVang = nhapDuoc && !vang && !chanDau(cell) && !doiDiem;   // NHAP-DIEM-b: ô đã có điểm vẫn ghi vắng — máy chủ cất điểm (không hỏi), toast Hoàn tác = Khôi phục
   /* KIEM-TAY-1011 (3): ô "Không dự thi" (MT0 / MT cũ) — "Bỏ vắng" ở chân hộp như ô vắng đã chốt (cùng lệnh gỡ "-" của máy chủ). */
   const boKhongDuThi = nhapDuoc && !vang && cell.noShow?.state === 'khong-du-thi' && !doiDiem;
   /* Hộp có chữ đã gõ chưa gửi = một ô chưa lưu (bảng điểm theo lượt chặn đổi lượt — như hộp lý do cũ). */

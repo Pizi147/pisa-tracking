@@ -17,7 +17,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Info as Tag, Skeleton, Status } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
-import { guiHuyTay } from '../cham/huyTay.ts';
+import { guiHuyDiem } from '../cham/huyDiem.ts';
 import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
@@ -83,7 +83,6 @@ export default function LuotThuongPage() {
   const [ngan, setNgan] = useState<MoNgan | null>(null);
   const [hop, setHop] = useState<{ t: ThaoTac; k: string } | null>(null);
   const [lichSuMon, setLichSuMon] = useState<string | null>(null);
-  const dangKhoiPhuc = useRef(false);   // chống bấm đúp
   /* LUOT-KHOI-PHUC: đang gửi khôi phục lượt (khoá nút) · vừa khôi phục (dải "Đã khôi phục · Điểm trước khi huỷ xem ở Lịch sử"). */
   const [khoiPhucLuot, setKhoiPhucLuot] = useState<'dang' | 'xong' | null>(null);
   /* `?kn=` (hồ sơ HV › bảng Test, Công việc): mở sẵn dòng môn + cuộn tới, một lần khi dữ liệu có. Lượt không có môn đó → không cuộn, không lỗi. */
@@ -121,17 +120,8 @@ export default function LuotThuongPage() {
   const tuanThi = tuanLuot(r, ct, homNay);
   const nhapDiemLop = r.skillSchedule.some((s) => s.canEdit) && !huy
     ? duongNhapDiemCu(String(d.class.id), new URLSearchParams({ kind: r.kind }), moDiemLopCu(session?.nav ?? NAV_RONG)) : null;
-  /* LUAT-34 (T20b): "Khôi phục điểm" một bấm — như ⋯ ô của bảng điểm lớp (máy chủ ghi lại điểm cất qua đúng đường lưu điểm). */
-  const khoiPhuc = async (k: string) => {
-    if (dangKhoiPhuc.current) return;
-    dangKhoiPhuc.current = true;
-    try {
-      await api.post(`/attempts/${r.attemptId}/skills/${k}/khoi-phuc-diem`, {});
-      invalidate('/regular'); invalidate('/classes'); invalidate('/attempts'); invalidate('/students'); invalidate('/my-work');
-      toast.push('ok', t('Đã khôi phục điểm {x}{x2}', { x: tenMonNgan(ct, k), x2: ` · ${r.studentName}` }));
-      reload();
-    } catch (e: any) { toast.push('error', e.message); } finally { dangKhoiPhuc.current = false; }
-  };
+  /* NHAP-DIEM-b: Huỷ điểm / Khôi phục một bấm (Hoàn tác 10 s) — như ⋯ ô của bảng điểm lớp. */
+  const huyDiem = (k: string, huy: boolean) => void guiHuyDiem(toast, { attemptId: r.attemptId, skill: k, mon: tenMonNgan(ct, k), tenHv: r.studentName, huy, onDone: reload });
   /* LUOT-KHOI-PHUC: khôi phục cả lượt đã huỷ — cùng đường `reopenAttempt` với FT (quyền ATTEMPT_CANCEL); bị chặn → câu máy chủ (lý do + bước tiếp). */
   const khoiPhucCaLuot = async () => {
     if (khoiPhucLuot === 'dang') return;
@@ -258,9 +248,7 @@ export default function LuotThuongPage() {
             <DongMon key={k} d={d} k={k} homNay={homNay} chiDoc={chiDoc} hep={hep} luu={luu} mo={moKn === k} thaoTac={thaoTac(k)}
               caseChu={(() => { const c = r.cases.find((x) => x.skill === k); const the = c && theCase.get(c.id); return the ? dich(the.trangThaiV4.chu) : null; })()}
               onMo={() => setMoKn((x) => (x === k ? null : k))}
-              onThaoTac={(x) => (x === 'khoi-phuc-diem' ? void khoiPhuc(k)
-                : x === 'huy-tay' || x === 'bo-huy-tay' ? void guiHuyTay(toast, { attemptId: r.attemptId, skill: k, mon: tenMonNgan(ct, k), tenHv: r.studentName, huy: x === 'huy-tay', onDone: reload })
-                : setHop({ t: x, k }))}
+              onThaoTac={(x) => (x === 'huy-diem' || x === 'khoi-phuc-diem' ? huyDiem(k, x === 'huy-diem') : setHop({ t: x, k }))}
               onLichSu={() => setLichSuMon(k)}
               vungCase={(
                 <>
@@ -322,8 +310,7 @@ function thaoTacMon(d: ChiTiet, k: string, homNay: string, can: (p: string) => b
   const coDiem = (d.dong.result.skills.find((x) => x.skill === k)?.score ?? null) !== null;
   const tt = trangThaiTT({ batBuoc: true, tuanBatDau: s.weekStart ?? null, coDiem, sit: s.sitStatus ?? null, choDuyet: false, lichSu: false, homNay });
   const tat = thaoTacKyNang(tt, { nhapDiem: s.canEdit, quanLy: d.canPlan, gvcn: !!d.laGvcn, laFt: false, dotHoanTat: !!d.dong.hoanTat, doiLich: s.doiLich, quaTuan: tuanDaQua(s.weekStart, homNay),
-    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy,
-    khongTuHuy: true, vang: !!s.noShow && !s.khongDuThi, huyTay: !!s.huyTay });
+    huy: can(PERMISSIONS.ATTEMPT_SKIP_SKILL), han: can(PERMISSIONS.DEADLINE_OVERRIDE), diemHuy: !!s.diemHuy });
   const chinh = tat.chinh && THAO_TAC_CO_HOP.includes(tat.chinh) ? tat.chinh : null;
   return { chinh, menu: tat.menu };
 }
@@ -461,7 +448,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
               <span className="text-xs text-slate-500" title={t('Bạn không được phân công kỹ năng này')}>{t('Chỉ xem')}</span>
             )}
             <MenuDong nhan={t('Thao tác khác · {skillLabel}', { skillLabel: ten })} muc={[
-              ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' || x === 'huy-tay' })),
+              ...(chiDoc ? [] : thaoTac.menu).map((x) => ({ key: x, nhan: CHU_THAO_TAC[x], onChon: () => onThaoTac(x), nguyHiem: x === 'huy-diem' })),
               { key: 'lich-su', nhan: t('Lịch sử'), onChon: onLichSu, keTruoc: !chiDoc && thaoTac.menu.length > 0 },
             ]} />
           </div>
