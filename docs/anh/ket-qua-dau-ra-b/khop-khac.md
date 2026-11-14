@@ -59,11 +59,11 @@ BỎ: cột "Lớp cũ" riêng (gộp thành dòng phụ dưới tên — bảng
 Không mất thao tác nào.
 
 ## Sau lưu / sửa sai
-- Lưu chờ máy chủ; lỗi → ở lại hộp, giữ chữ, báo lỗi (`role="alert"`). Không đổi gì → Lưu chỉ đóng (V12 ③). Đã sửa mà bấm ngoài / Esc → hộp giữ (không mất chữ đang gõ); "Huỷ" mới bỏ. Bấm thử Playwright: Esc khi đã gõ giữ hộp · Lưu ghi DB, bảng cập nhật · em tự Đạt không có nút sửa · 0 lỗi console.
+- Lưu chờ máy chủ; lỗi → ở lại hộp, giữ chữ, báo lỗi (`role="alert"`). Không đổi gì → Lưu chỉ đóng (V12 ③). Đã sửa mà bấm ngoài / Esc → hộp giữ (không mất chữ đang gõ); "Đóng" mới bỏ. Bấm thử Playwright: Esc khi đã gõ giữ hộp · Lưu ghi DB, bảng cập nhật · em tự Đạt không có nút sửa · 0 lỗi console.
 - Sửa sai = bấm chip, chọn lại. Đổi từ Trung tâm sang khác: Case đã tạo giữ, toast nói rõ (máy chủ `luuY`).
 
 ## Đo
-- ✕ / ⋯: màn này **không có** ✕ / ⋯ (hộp dùng "Huỷ"; sửa bấm thẳng chip). Ô Kết quả lệch tâm dọc so với tên em cùng hàng: 1,3 · 1 · 1,5 · 1 · 1,3 · 0,5 · 1,3 px (cùng đường cơ sở hàng 64 px của `Bang`).
+- ✕ / ⋯: màn này **không có** ✕ / ⋯ (hộp dùng nút chữ "Đóng"; sửa bấm thẳng chip). Ô Kết quả lệch tâm dọc so với tên em cùng hàng: 1,3 · 1 · 1,5 · 1 · 1,3 · 0,5 · 1,3 px (cùng đường cơ sở hàng 64 px của `Bang`).
 - impeccable `detect`: 0 lỗi (1 gợi ý cỡ chữ 14 px → đã đổi 15 px). Web Interface Guidelines: sửa `name` / `autocomplete` ô phương án, rê chip, Lưu không tắt khi chưa đổi.
 - Turso bản chép thật 12/11 (QL chi nhánh 3): `/classes/12/ket-qua-dau-ra` trước 2 câu · 1 dòng (bảng rỗng, việc "Kỳ vọng · CP FT 141 · 6 em" là ngõ cụt) → sau 9 câu · 185 dòng (6 em chưa chốt). `/classes/94/ket-qua-dau-ra` 7 câu · 82 dòng trước = sau. Trần câu 23 giữ (KQDR-B1 khoá), trần dòng 64 (seed) giữ.
 

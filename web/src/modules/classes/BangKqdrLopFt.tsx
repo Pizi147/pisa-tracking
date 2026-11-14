@@ -188,7 +188,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       {xem && (
         <HopNeo neo={{ current: xem.neo }} nhan={t('Bàn giao từ GV cũ · {ten}', { ten: xem.em.ten })} rong={420} onNgoai={() => setXem(null)}>
           <b className="text-[15px] text-slate-100">{t('Bàn giao từ GV cũ')} · {xem.em.ten}</b>
-          <p className="m-0 max-h-[50vh] overflow-y-auto whitespace-pre-line break-words text-[15px] text-slate-300">{xem.em.banGiao}</p>
+          <p className="m-0 whitespace-pre-line break-words text-[15px] text-slate-300">{xem.em.banGiao}</p>
           <div className="flex justify-end"><button type="button" className="btn" onClick={() => setXem(null)}>{t('Đóng')}</button></div>
         </HopNeo>
       )}
@@ -201,7 +201,7 @@ type Chon = 'dat' | 'trung_tam' | 'hoc_sinh' | '';
 /**
  * HỘP CHỐT KẾT QUẢ ĐẦU RA (KET-QUA-DAU-RA-b) — neo ô Kết quả: Đạt · Không đạt · Trung tâm (kỹ năng, điền sẵn kỹ năng MT0 dưới mốc; mỗi kỹ năng một Case +
  * Tutor n buổi theo cấu hình) · Không đạt · Học viên (phương án, không Case — N17). MT0 đạt mốc → hai lựa chọn Không đạt tắt, có lý do (máy chủ cũng chặn).
- * Cùng đường hồ sơ HV (`ghiKetLuanFt`). Đã sửa mà bấm ngoài / Esc → giữ hộp (không mất chữ đang gõ); "Huỷ" mới bỏ.
+ * Cùng đường hồ sơ HV (`ghiKetLuanFt`). Đã sửa mà bấm ngoài / Esc → giữ hộp (không mất chữ đang gõ); "Đóng" mới bỏ.
  */
 function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTMLElement; onDong: () => void; onXong: () => void }) {
   const toast = useToast();
@@ -269,7 +269,7 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
       )}
       {loi && <span role="alert" className="text-[13px] text-late">{loi}</span>}
       <div className="flex justify-end gap-2">
-        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Huỷ')}</button>
+        <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={luu}>{busy ? t('Đang lưu…') : t('Lưu')}</button>
       </div>
     </HopNeo>
