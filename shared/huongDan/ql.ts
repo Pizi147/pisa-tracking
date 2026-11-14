@@ -129,7 +129,7 @@ export const HD_QL: HuongDan = {
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Tạm dừng/ Kết thúc học' },
       loiTat: ['ho-so-lop', 'luu-tru'], cung: 'mở cùng chỗ.',
       buoc: ['Em nghỉ học: <b>⋯ › Tạm dừng/ Kết thúc học</b> ở hồ sơ em; ô <b>Có thể quay lại học</b> bật là tạm dừng. Em vào Lưu trữ.', 'Nhiều em: hồ sơ lớp, <b>Chọn nhiều học viên</b> › <b>Tạm dừng/ Kết thúc học</b>.',
-        'Xem lại: <b>Học viên & Lớp › ⋯ › Lưu trữ</b>; mỗi em <b>Tổng kết</b> · <b>Quay lại học</b> (một hoặc nhiều em).'],
+        'Xem lại: <b>Học viên & Lớp › Lưu trữ ›</b> (đầu trang); mỗi em <b>Tổng kết</b> · <b>Quay lại học</b> (một hoặc nhiều em).'],
       tuKhac: ['cất', 'học lại', 'nghỉ học', 'archive', 'restore student'],
     },
     {
@@ -355,7 +355,7 @@ export const HD_QL: HuongDan = {
       muc: [
         mucGv('hoc-vien', 'hv-tim'), mucGv('hoc-vien', 'hv-goc'),
         { id: 'hvl-xem-case', viec: 'xem-case', ten: 'Xem mọi Case của em', buoc: ['Bấm dòng em: panel một em mở bên phải, không rời trang.', 'Khối <b>Case & phương án</b>: bấm Case để mở.'] },
-        { id: 'ql-hvl-pham-vi', ten: 'Xem, lọc và Lưu trữ', buoc: ['Ô <b>Xem</b>: lớp tôi dạy, chi nhánh hoặc mọi chi nhánh; <b>Fast Track</b> / <b>Lớp thường</b>.', 'Chip <b>Thi tháng này</b> · <b>Có việc quá hạn</b> · <b>Đã thi · chờ KQ</b>; <b>Bộ lọc thêm</b> (Thiếu thông tin…).', '<b>Thao tác trang</b> › <b>Lưu trữ</b>: lớp đã kết thúc, em đã lưu trữ.'],
+        { id: 'ql-hvl-pham-vi', ten: 'Xem, lọc và Lưu trữ', buoc: ['Ô <b>Xem</b>: lớp tôi dạy, chi nhánh hoặc mọi chi nhánh; <b>Fast Track</b> / <b>Lớp thường</b>.', 'Chip <b>Thi tháng này</b> · <b>Có việc quá hạn</b> · <b>Đã thi · chờ KQ</b>; <b>Bộ lọc thêm</b> (Thiếu thông tin…).', '<b>Lưu trữ ›</b> ở đầu trang: lớp đã kết thúc, em đã lưu trữ. Ô <b>Mọi lớp</b> · <b>Mọi TVV</b> gõ để tìm.'],
           chi: { hd: 'hvl-goc', duong: HV, chu: 'Tab và lọc của trang ở hàng này.' } },
       ],
     },
@@ -369,7 +369,7 @@ export const HD_QL: HuongDan = {
         { id: 'lop-tao-case', viec: 'tao-case', ten: 'Tạo Case tay', buoc: ['Ở dòng em bấm <b>⋯ › + Case</b>.', 'Ghi mô tả, lưu.'] },
         { id: 'lop-chuyen', viec: 'chuyen-lop', ten: 'Chuyển lớp một em', buoc: ['Ở dòng em bấm <b>⋯ › Chuyển lớp…</b>; nhiều em: <b>Chọn nhiều học viên</b> › <b>Chuyển lớp…</b>.', 'Chọn <b>Lớp chuyển đến</b>, <b>Tuần bắt đầu</b>, ghi <b>Lý do</b>.'] },
         { id: 'lop-sua', viec: 'sua-hv', ten: 'Sửa thông tin cả lớp', buoc: ['<b>⋯ › Sửa thông tin học viên</b>: bảng cả lớp, sửa nhiều em một lần.', 'Đổi Target nhiều em: một <b>Lý do đổi Target</b> chung.'] },
-        { id: 'lop-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc nhiều em', buoc: ['<b>Chọn nhiều học viên</b> › <b>Tạm dừng/ Kết thúc học</b>.', 'Xem lại ở <b>Học viên & Lớp</b> › <b>⋯ › Lưu trữ</b>.'] },
+        { id: 'lop-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc nhiều em', buoc: ['<b>Chọn nhiều học viên</b> › <b>Tạm dừng/ Kết thúc học</b>.', 'Xem lại ở <b>Học viên & Lớp</b> › <b>Lưu trữ ›</b> (đầu trang).'] },
         { id: 'lop-lich-su', viec: 'lich-su', ten: 'Xem Lịch sử', buoc: ['<b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công; <b>⋯ › Lịch sử góp ý tuần</b>: góp ý cũ.', 'Mỗi lần lưu một mục: ai · lúc · nguồn · lý do · trước → sau.'] },
         { id: 'lop-ky-vong', viec: 'ky-vong', ten: 'Kết quả đầu ra lên FT', buoc: ['Lớp FT › <b>Học viên</b> › <b>Kết quả đầu ra</b>: bấm <b>Chốt…</b> ở ô Kết quả đầu ra.', 'MT0 đạt mốc chương trình (FOU 4 · BE 4 · ELE 4.5) thì em <b>tự Đạt</b>, không cần chốt; Không đạt bị tắt.'] },
         { id: 'lop-chot', viec: 'chot-lo-trinh', ten: 'Cuối khoá lớp thường', buoc: ['<b>⋯ › Cuối khoá…</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…).', 'Lớp cũ có phiếu bàn giao; <b>⋯ › Kết thúc lớp</b> khi xong.'] },

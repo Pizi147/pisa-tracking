@@ -55,9 +55,11 @@ const keo = async () => { for (let i = 0; i < 5; i++) {   // kéo dài khung nh�
 // GD-4a: KEO_TRUOC=1 — kéo dài khung nhìn TRƯỚC khi bấm (menu thả đóng khi đổi cỡ màn).
 if (process.env.KEO_TRUOC) await keo();
 // DUYET-QL: BAM="Duyệt|Lịch sử" — bấm lần lượt các nút (tên đúng như trình đọc màn hình đọc, khớp đầu chữ) trước khi chụp — trạng thái sau thao tác.
-// GD-4a: "gõ:chữ" gõ vào ô đang focus (hộp chọn em); mục menu (`menuitem`) cũng bấm được.
+// GD-4a: "gõ:chữ" gõ vào ô đang focus (hộp chọn em); mục menu (`menuitem`) cũng bấm được. GD-13a: "css:bộ chọn".
 for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
   if (ten.startsWith('gõ:')) { await pw.keyboard.type(ten.slice(3), { delay: 40 }); await pw.waitForTimeout(1200); continue; }
+  /* GD-13a: "css:bộ chọn" bấm phần tử đầu khớp (ô MT mở dải, ⋯ dòng em). */
+  if (ten.startsWith('css:')) { await pw.locator(ten.slice(4)).first().click(); await pw.waitForTimeout(900); continue; }
   const tenRe = new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
   let nut = pw.getByRole('button', { name: tenRe }).filter({ visible: true });   // "+ Task" có hai nút (đầu trang / nổi 375), mỗi cỡ màn hiện một
   if (!(await nut.count())) nut = pw.getByRole('menuitem', { name: tenRe });

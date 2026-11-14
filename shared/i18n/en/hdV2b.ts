@@ -177,7 +177,7 @@ export const EN_HD_V2B = {
   'Ở dòng em bấm <b>⋯ › Chuyển lớp…</b>; nhiều em: <b>Chọn nhiều học viên</b> › <b>Chuyển lớp…</b>.': 'On a student row press <b>⋯ › Class transfer…</b>; several students: <b>Select several students</b> › <b>Class transfer…</b>.',
   'Lưu trữ nhiều em': 'Archive several students',
   '<b>Chọn nhiều học viên</b> › <b>Lưu trữ</b>.': '<b>Select several students</b> › <b>Archive</b>.',
-  'Xem lại ở <b>Học viên & Lớp</b> › <b>⋯ › Lưu trữ</b>.': 'Look again at <b>Students & Classes</b> › <b>⋯ › Archive</b>.',
+  'Xem lại ở <b>Học viên & Lớp</b> › <b>Lưu trữ ›</b> (đầu trang).': 'Look again at <b>Students & Classes</b> › <b>Archive ›</b> (top of the page).',
   '<b>⋯ › Lịch sử</b>: thông tin lớp, tiến độ, phân công; <b>⋯ › Lịch sử góp ý tuần</b>: góp ý cũ.': '<b>⋯ › History</b>: class details, progress, assignments; <b>⋯ › Weekly feedback history</b>: old feedback.',
   'Hồ sơ lớp › <b>Chốt lộ trình</b>: chọn hướng từng em (Lên lớp, Học lại, Lên FT…).': 'Class profile › <b>Set pathway</b>: choose a direction for each student (Move up, Study again, Move to FT…).',
   'Lớp cũ có phiếu bàn giao.': 'The old class has a handover form.',

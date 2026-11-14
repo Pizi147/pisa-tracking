@@ -14,7 +14,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { skillShort } from '../../lib/format.ts';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from '../classes/thaoTacDongHocVien.tsx';
 import { ChipLichThi, kqOverall } from './GocLichThi.tsx';
-import { ViecTiepDong, type DongSos } from './BangSos.tsx';
+import { type DongSos } from './BangSos.tsx';
+import { NutChipViec, chipViecEm } from '../congViec/LopCuaToi.tsx';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { NhanSauThi } from './HopGiaHan.tsx';
 import { bacDu, bacNgan, boTenEm, chuPhuHuynh, mocTuNhan, dongTieuChi, duongHoSoHocVien, maLoTrinhNgan, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
@@ -132,18 +133,19 @@ function OMotViec({ x, onMo }: { x: ViecEm; onMo: (it: WorkItem) => void }) {
 }
 
 /**
- * Ô Việc của tôi (U04-5, chủ SP 03/11 khuya): CHỈ việc của người đang xem (nơi gọi lọc `mine`). Một việc gấp nhất trong ô có khung; còn lại → ô số "+n việc"
- * mở dải dưới hàng (cùng dải ô Overall — không panel). Việc cấp lớp nằm ở hàng lớp (nơi gọi lọc), không lặp ở từng em.
+ * Ô "Việc cần làm" (GD-13a, ⑥ R6.3 — một tên cột ở Tất cả và Đang SOS): CHỈ việc của người đang xem (nơi gọi lọc `mine`), nút-chip chuẩn "{loại} · {số}"
+ * (đỏ khi có việc quá hạn — V22 chỉ màu). Bấm = việc gấp nhất của loại đó, làm tại trang; panel đi tiếp hết loại ("Việc tiếp"). Không việc = ô trống.
  */
-export function OViec({ v, onMo, onMoDai }: { v: ViecEm[] | undefined; onMo: (it: WorkItem) => void; onMoDai: () => void }) {
-  if (!v?.length) return trong;
+export function OViecCan({ v, tvv, onMo }: { v: ViecEm[] | undefined; tvv?: boolean; onMo: MoViec }) {
+  if (!v?.length) return null;   // ⑥ R6.3: không việc = ô trống (không "—")
   return (
-    <span className="grid min-w-0 justify-items-stretch gap-1">
-      <OMotViec x={v[0]} onMo={onMo} />
-      {v.length > 1 && <button type="button" className="viec-them justify-self-start" onClick={onMoDai}>{t('+{n} việc', { n: v.length - 1 })}</button>}
+    <span className="flex flex-wrap items-center gap-1.5">
+      {chipViecEm(v.map((x) => x.it), tvv).map((c) => <NutChipViec key={c.tab} c={c} doiTrang={false} onBam={() => onMo(c.dau, c.ds)} />)}
     </span>
   );
 }
+/** Mở một việc tại trang; `ds` = các việc cùng loại (panel có "Việc tiếp"). */
+export type MoViec = (it: WorkItem, ds?: WorkItem[]) => void;
 
 /** Hỗ trợ: chỉ chip SOS + môn (PTA 03/11: Case / PA xem ở dải dưới hàng hoặc hồ sơ — cùng mức hồ sơ lớp U03). */
 function OHoTro({ h }: { h: HangHv['hoTro'] }) {
@@ -198,9 +200,9 @@ function OKn({ k, g }: { k: (typeof KN5)[number]; g: HangHv }) {
 
 /**
  * DẢI DƯỚI HÀNG EM (U04 ý 2 + 25, chủ SP 03/11: rời hàng em, mở dưới hàng, KHÔNG panel trượt): điểm 5 môn của lượt (tiêu đề "MT2 · W4 SEP · kỳ vọng 7.0") ·
- * Hỗ trợ (Case · PA đang mở) · Việc của tôi (mọi việc, mỗi việc một ô). Dữ liệu đã nạp — không request.
+ * Hỗ trợ (Case · PA đang mở) · Ý thức · Việc cần làm (mọi việc, mỗi việc một ô). Dữ liệu đã nạp — không request.
  */
-function DaiEm({ g, v, onMoViec }: { g: HangHv | undefined; v: ViecEm[] | undefined; onMoViec: (it: WorkItem) => void }) {
+function DaiEm({ g, v, onMoViec }: { g: HangHv | undefined; v: ViecEm[] | undefined; onMoViec: MoViec }) {
   const { homNay } = useNgayNghiepVu();
   const m = g?.mtGan;
   return (
@@ -214,9 +216,11 @@ function DaiEm({ g, v, onMoViec }: { g: HangHv | undefined; v: ViecEm[] | undefi
       {g && g.hoTro.soCase > 0 && (
         <div className="hvl-dai-k"><span className="hvl-dai-t">{t('Hỗ trợ')}</span><span className="text-sm tabular-nums">{t('{c} Case · {p} PA', { c: g.hoTro.soCase, p: g.hoTro.soPa })}</span></div>
       )}
+      {/* GD-13a (⑥ K1): khối Ý thức trong dải — bậc viết đủ (ô Ý thức của hàng vẫn bấm được). */}
+      {g && <div className="hvl-dai-k"><span className="hvl-dai-t">{t('Ý thức')}</span><span className="text-sm">{g.yThuc ? bacDu(dich(g.yThuc)).toUpperCase() : t('Chưa có vi phạm')}</span></div>}
       {!!v?.length && (
         <div className="hvl-dai-k">
-          <span className="hvl-dai-t">{t('Việc của tôi')} · <span className="tabular-nums">{v.length}</span></span>
+          <span className="hvl-dai-t">{t('Việc cần làm')} · <span className="tabular-nums">{v.length}</span></span>
           <ul className="hvl-dai-v">{v.map((x) => <li key={x.it.key}><OMotViec x={x} onMo={onMoViec} /></li>)}</ul>
         </div>
       )}
@@ -264,7 +268,7 @@ function OYThuc({ h, g, lop, onDoi }: { h: HvGon; g: HangHv; lop: LopGon | undef
 
 /*
  * U04 cân đối cột (chủ SP 03/11 khuya: vừa màn 1280, không cuộn ngang): Học viên 190 · Lộ trình 96 · MT gần nhất 200 · Hỗ trợ 172 (chip "SOS 3 · L, R, W, S" đủ) · Ý thức 100 · Lịch thi 150 ·
- * Việc của tôi giãn · ⋯ cuối 48. Tổng cố định 956 + Việc ≥ 240 < bề ngang thẻ ở 1280.
+ * Việc cần làm giãn · ⋯ cuối 48. Tổng cố định 956 + Việc ≥ 240 < bề ngang thẻ ở 1280.
  */
 const COT_HV: CotBang[] = [
   { key: 'ten', nhan: t('Học viên'), kieu: 'ten', rong: 190 },
@@ -273,7 +277,7 @@ const COT_HV: CotBang[] = [
   { key: 'ho', nhan: t('Hỗ trợ'), kieu: 'chu', rong: 172 },
   { key: 'y', nhan: t('Ý thức'), kieu: 'chu', rong: 100 },
   { key: 'lich', nhan: t('Lịch thi'), kieu: 'chu', rong: 150 },
-  { key: 'viec', nhan: t('Việc của tôi'), kieu: 'viec' },
+  { key: 'viec', nhan: t('Việc cần làm'), kieu: 'viec' },
   { key: 'nut', nhan: '', kieu: 'nut', rong: 48 },
 ];
 /** CX (không có Công việc): cột Việc thành cột Phụ huynh giãn (SĐT bấm gọi). TVV: không cột Phụ huynh (chủ SP 27/10 — SĐT ở thẻ 375 và hồ sơ). */
@@ -297,8 +301,10 @@ function OLich({ h, ev, onMoEm }: { h: HvGon; ev?: EmVai; onMoEm?: (id: number) 
 /** Một lớp của danh sách theo lớp (HV-LOP-SUA): `dau` = các ô của hàng lớp (nơi gọi dựng, lưới thẳng cột — bài học UX-A); `hv` chỉ vẽ khi `mo`. */
 export type NhomLop = { id: number; nhan: string; dau: ReactNode; mo: boolean; onMo: () => void; hv: HvGon[] };
 type PropsBang = {
-  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; nguCanh: NguCanhDs; onMoViec: (it: WorkItem) => void;
+  nhom: NhomLop[]; lop: Map<number, LopGon>; viec: Map<number, ViecEm[]>; nguCanh: NguCanhDs; onMoViec: MoViec;
   onDoi: () => void; vai?: VaiBang;
+  /** Người xem là TVV — chip việc gom theo tab Công việc của TVV. */
+  tvv?: boolean;
   /** Chữ ô tìm (≥ 2 chữ) — tô hồng chữ khớp + nền dòng khớp. */
   tim?: string;
 };
@@ -322,9 +328,9 @@ function useDai() {
 
 /**
  * BẢNG "TẤT CẢ" THEO LỚP (V11 U04, chủ SP duyệt 03/11): hàng lớp rồi — chỉ lớp đang mở — bảng em có tiêu đề cột riêng (B10: lớp gập không có hàng tiêu đề).
- * Cột: Học viên · Lộ trình · MT gần nhất · Hỗ trợ · Ý thức · Lịch thi · Việc của tôi · ⋯. Bấm ô Overall / "+n việc" → dải dưới hàng em.
+ * Cột: Học viên · Lộ trình · MT gần nhất · Hỗ trợ · Ý thức · Lịch thi · Việc cần làm · ⋯. Bấm ô Overall → dải dưới hàng em.
  */
-export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim }: PropsBang) {
+export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim, tvv }: PropsBang) {
   const dai = useDai();
   const cot = cotHv(vai);
   const o = (h: HvGon, c: CotBang) => {
@@ -343,7 +349,7 @@ export function BangHvGon({ nhom, lop, viec, nguCanh, onMoViec, onDoi, vai, tim 
       case 'ho': return g ? <OHoTro h={g.hoTro} /> : trong;
       case 'y': return g ? <OYThuc h={h} g={g} lop={lop.get(h.classId)} onDoi={onDoi} /> : trong;
       case 'lich': return <OLich h={h} ev={ev} onMoEm={vai?.onMoEm} />;
-      case 'viec': return <OViec v={viec.get(h.id)} onMo={onMoViec} onMoDai={() => dai.doi(k)} />;
+      case 'viec': return <OViecCan v={viec.get(h.id)} tvv={tvv} onMo={onMoViec} />;
       case 'ph': return ev ? <span className="block text-sm"><OPhuHuynh l={ev.lienHe} /></span> : trong;
       default: return <MenuEm h={h} lop={lop.get(h.classId)} ev={ev} onDoi={onDoi} />;
     }
@@ -385,7 +391,7 @@ export function TheHvGon({ nhom, ...p }: PropsBang) {
   );
 }
 
-function TheEm({ h, mo, onMo, lop, viec, nguCanh, onMoViec, onDoi, vai, tim }: Omit<PropsBang, 'nhom'> & { h: HvGon; mo: boolean; onMo: () => void }) {
+function TheEm({ h, mo, onMo, lop, viec, nguCanh, onMoViec, onDoi, vai, tim, tvv }: Omit<PropsBang, 'nhom'> & { h: HvGon; mo: boolean; onMo: () => void }) {
   const g = h.hang;
   const v = viec.get(h.id);
   const ev = vai?.em.get(h.id);
@@ -414,7 +420,7 @@ function TheEm({ h, mo, onMo, lop, viec, nguCanh, onMoViec, onDoi, vai, tim }: O
           {ph && <span className="min-w-0 truncate text-slate-300">{ph}</span>}
           {ev.lienHe.parentPhone && <a href={`tel:${ev.lienHe.parentPhone.replace(/[^\d+]/g, '')}`} className="inline-flex min-h-[44px] items-center tabular-nums text-slate-300 no-underline">{ev.lienHe.parentPhone}</a>}
         </div>
-      )) : !!v?.length && <OViec v={v} onMo={onMoViec} onMoDai={onMo} />}
+      )) : !!v?.length && <OViecCan v={v} tvv={tvv} onMo={onMoViec} />}
       {mo && <DaiEm g={g} v={v} onMoViec={onMoViec} />}
     </article>
   );
@@ -435,13 +441,15 @@ const COT_SOS: CotBang[] = [
   { key: 'tu', nhan: t('Từ'), kieu: 'tuan' },
   { key: 'ovr', nhan: t('Overall / kỳ vọng'), kieu: 'chu', rong: 170 },
   { key: 'case', nhan: t('Case · PA'), kieu: 'chu', rong: 260 },
-  { key: 'viec', nhan: t('Việc tiếp'), kieu: 'viec' },
+  { key: 'viec', nhan: t('Việc cần làm'), kieu: 'viec' },
 ];
 
 /**
- * CHẾ ĐỘ ĐANG SOS (khu d — làm lại theo dõi SOS): Học viên · Mức · kỹ năng · Từ (tuần của lượt SOS) · Overall / kỳ vọng · Case · PA (bấm = panel một em, như nút "Mở" cũ) · Việc tiếp.
+ * CHẾ ĐỘ ĐANG SOS (khu d — làm lại theo dõi SOS): Học viên · Mức · kỹ năng · Từ (tuần của lượt SOS) · Overall / kỳ vọng · Case · PA (bấm = panel một em, như nút "Mở" cũ) · Việc cần làm (GD-13a: việc CỦA TÔI, như Tất cả).
  */
-export function BangSosGon({ rows, hang, nguCanh, onMo }: { rows: DongSos[]; hang: Map<number, HangHv | undefined>; nguCanh: NguCanhDs; onMo: (r: DongSos) => void }) {
+export function BangSosGon({ rows, hang, nguCanh, onMo, viec, tvv, onMoViec }: {
+  rows: DongSos[]; hang: Map<number, HangHv | undefined>; nguCanh: NguCanhDs; onMo: (r: DongSos) => void; viec: Map<number, ViecEm[]>; tvv?: boolean; onMoViec: MoViec;
+}) {
   const { homNay } = useNgayNghiepVu();
   const o = (r: DongSos, c: CotBang) => {
     switch (c.key) {
@@ -470,7 +478,7 @@ export function BangSosGon({ rows, hang, nguCanh, onMo }: { rows: DongSos[]; han
             <Nhan tone={tt.tone}>{tt.chu}</Nhan>
           </span>);
       }
-      default: return <ViecTiepDong r={r} />;
+      default: return <OViecCan v={viec.get(r.studentId)} tvv={tvv} onMo={onMoViec} />;
     }
   };
   return <Bang ten={t('Đang SOS')} cot={COT_SOS} hang={rows} khoa={(r) => r.attemptId} oCua={o} khung={false} dinh />;

@@ -5,7 +5,7 @@ import { Skeleton } from '../../ui/ui.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
 import { lamTaiCho } from './lamTaiCho.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { LOAI_HAN_CUA_VIEC, dongTab, laViecChamCheo, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** LG-8: "Test sắp tới" từng lớp GV đang dạy hôm nay (`/my-work`, chỉ vai GV) — cũng là danh sách lớp còn hiệu lực. */
@@ -78,6 +78,21 @@ export function chipViecLop(viec: readonly WorkItem[], classId: number, caDong: 
       : dongTab(cuaToi.filter((x) => tabCuaViec(x) === tab), caDong).filter((x) => cuaLop(x) || !!x.con?.some(cuaLop)).length;
     const doc = bai ? t('{n} bài chờ nhập điểm', { n: so }) : t('{n} việc', { n: so });
     return [{ tab, nhan, so, doc, quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab }];
+  });
+}
+
+/**
+ * GD-13a (⑥ R6.3): chip "Việc cần làm" của MỘT em (Học viên & Lớp) — việc (lá) CỦA TÔI gắn em, gom theo tab Công việc; số = số việc. Thứ tự như chip lớp,
+ * tab ngoài bốn loại (Chấm Speaking, tab TVV) theo sau với tên tab — không mất việc nào của ô "Việc của tôi" cũ. Dữ liệu đã nạp.
+ */
+export function chipViecEm(viec: readonly WorkItem[], tvv = false): ChipViec[] {
+  const m = new Map<string, WorkItem[]>();
+  for (const x of viec) { const k = tabCuaViec(x, tvv); m.set(k, [...(m.get(k) ?? []), x]); }
+  const thu = (k: string) => { const i = LOAI_CHIP.findIndex(([tab]) => tab === k); return i < 0 ? LOAI_CHIP.length : i; };
+  return [...m].sort(([a], [b]) => thu(a) - thu(b)).map(([tab, ds]) => {
+    const laTab = [...ds].sort(xepHan);
+    return { tab, nhan: LOAI_CHIP.find(([k]) => k === tab)?.[1] ?? nhanTabCv(tab, tvv), so: laTab.length, doc: t('{n} việc', { n: laTab.length }),
+      quaHan: laTab.some((x) => x.urgency === 'overdue'), dau: laTab[0], ds: laTab };
   });
 }
 

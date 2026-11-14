@@ -176,7 +176,7 @@ const IcXuong = () => (
 export function ChonNguoi({
   value, onChange, nhom, studentId, choToi = true, choNgoai = true, cungChiNhanh = false, chiNhanh = null,
   khongDoi, macDinhTrong, ariaLabel, disabled, tuMo, ds, choTrong, placeholder, id, onBlur, invalid, khongKhop, tutor, them,
-  tim, nhieu, xBo, gon, tinh, tieuDe, dau, onGo,
+  tim, nhieu, xBo, gon, tinh, tieuDe, dau, onGo, nhan,
 }: {
   value: NguoiChon | null;
   onChange: (v: NguoiChon | null, tutor?: TutorChon) => void;
@@ -220,6 +220,8 @@ export function ChonNguoi({
   tieuDe?: string;
   /** GD-12a: chữ đang gõ — ô "Tìm GV" của Phân tích lọc bảng theo chữ trong lúc gõ (chọn một người vẫn là `onChange`). */
   onGo?: (go: string) => void;
+  /** GD-13a (mockup ⑥ K2 `.oc .nh`): ô LUÔN có giá trị (ô "Xem") — nhãn mờ trước giá trị, ▾ thay ✕, không nền "đang lọc". */
+  nhan?: string;
 }) {
   const { session } = useSession();
   /* KIEM-TAY-1011: "Tôi" chỉ khi chính mình qua được `laNguoiHopLe` của máy chủ (vai GV / QL, đúng chi nhánh của việc, GV S có S) — Quản trị chỉ có
@@ -359,13 +361,14 @@ export function ChonNguoi({
 
     return (
       /* Mockup ⑤ A3 "đã chọn một": tên đậm · dòng phụ + ✕ (cùng cao ô gõ — lưới Tạo nhiều lớp); vùng bấm = cả ô. Chưa có giá trị: chữ mờ + ▾. */
-      <div className={`oc${gonLop}${gon && coGt ? ' dang' : ''}${invalid ? ' loi' : ''}${disabled ? ' oc-tat' : ' bam'}`} aria-disabled={disabled || undefined}
+      <div className={`oc${gonLop}${gon && coGt && !nhan ? ' dang' : ''}${invalid ? ' loi' : ''}${disabled ? ' oc-tat' : ' bam'}`} aria-disabled={disabled || undefined}
         onBlur={onBlur} onClick={disabled ? undefined : () => setEditing(true)}>
-        {coGt ? <span className="da"><b>{chinh}</b>{phu && <small>{phu}</small>}</span> : <span className="oc-goi">{chinh}</span>}
+        {nhan && <span className="nh">{nhan}</span>}
+        {coGt ? <span className="da"><b>{chinh}</b>{phu && !nhan && <small>{phu}</small>}</span> : <span className="oc-goi">{chinh}</span>}
         {/* Nhãn ô trỏ vào nút này (htmlFor): ✕ = Đổi (mở lại ô, giữ người cũ tới khi chọn người khác); `xBo` (ô lọc) = bỏ chọn. */}
-        {!disabled && <button id={oId} type="button" className={coGt ? 'oc-bo' : 'oc-bo mui-xuong'}
+        {!disabled && <button id={oId} type="button" className={coGt && !nhan ? 'oc-bo' : 'oc-bo mui-xuong'}
           aria-label={!coGt ? ariaLabel ?? t('Chọn') : xBo ? t('Bỏ chọn {ma} · {o}', { ma: chinh, o: ariaLabel ?? t('Chọn') }) : ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : t('Đổi')}
-          onClick={(e) => { e.stopPropagation(); if (coGt && xBo) onChange(null); else setEditing(true); }}>{coGt ? '✕' : <IcXuong />}</button>}
+          onClick={(e) => { e.stopPropagation(); if (coGt && xBo) onChange(null); else setEditing(true); }}>{coGt && !nhan ? '✕' : <IcXuong />}</button>}
       </div>
     );
   }
