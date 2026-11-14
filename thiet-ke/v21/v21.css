@@ -524,3 +524,12 @@ details.ls[open] > summary { border-bottom:1px solid var(--line); }
 .dt .ls-ds li { grid-template-columns:minmax(0,1fr) auto; }
 .dt .ls-ds time { grid-column:1 / -1; }
 .menu-tha .nguy { color:var(--bad) !important; }
+/* thang cấp bậc vi phạm (dời từ ho-so-hv.css — ③ và panel Xác nhận xử lý ⑤ dùng chung) */
+.vach-bac { display:inline-flex; align-items:center; gap:3px; }
+/* mốc WL nổi trên thang (lời 28) = vạch ĐỎ dày, dài hơn, KHÔNG chữ trong thanh (chủ SP 15/11 trong session ⓪); tên bậc ở aria-label / title và "Thang ▾" */
+.vach-bac i.wl { width:30px; height:9px; border-radius:3px; background:var(--bad); }
+.vach-bac i.wl.co { box-shadow:0 0 0 2px var(--bad-nen); }
+.dt .vach-bac i { width:14px; }
+.vach-bac i { width:22px; height:5px; border-radius:3px; background:var(--line-strong); }
+.vach-bac i.co { background:var(--accent); }
+.dt .vach-bac i.wl { width:20px; }
