@@ -65,7 +65,7 @@ const COT = 'grid grid-cols-[160px_84px_150px_minmax(0,1fr)] items-center gap-x-
 
 /**
  * HV CỦA TÔI — khung phải trang Công việc của TVV khi chưa chọn việc (GD-8, mockup v21 ④ K1, R4.3; cùng dáng "Lớp của tôi" của GV).
- * Cột: Học viên (link hồ sơ) · Lớp · Tình trạng · Việc cần làm (nút-chip "{nhóm} · {số}" không biểu tượng, đỏ khi quá hạn; "›" khi đổi trang).
+ * Cột: Học viên (link hồ sơ) · Lớp · Trạng thái (mockup "Tình trạng" — S3: một khái niệm một tên) · Việc cần làm (nút-chip "{nhóm} · {số}" không biểu tượng, đỏ khi quá hạn; "›" khi đổi trang).
  * Bấm chip = việc đầu (hạn sớm nhất) của nhóm đó của em: mở panel tại chỗ (`onMo`). Em không việc, không tình trạng gập "n em khác" ([XM-3]).
  * Ô "Tìm em": lọc tại máy trên danh sách đã nạp (cả nhóm gập). 375: mỗi em một thẻ, chip cao 44.
  */
@@ -105,7 +105,7 @@ export function HvCuaToi({ em, viec, onMo, dangTai, loi }: {
           : !em?.length ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{t('Chưa có học viên nào do bạn phụ trách.')}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint max-sm:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
-                <span>{t('Học viên')}</span><span>{t('Lớp')}</span><span>{t('Tình trạng')}</span><span>{t('Việc cần làm')}</span>
+                <span>{t('Học viên')}</span><span>{t('Lớp')}</span><span>{t('Trạng thái')}</span><span>{t('Việc cần làm')}</span>
               </div>
               {khop && !khop.length ? <p className="m-0 px-4 py-5 text-[15px] text-dim">{t('Không thấy em nào khớp.')}</p> : (
                 <ul className="m-0 list-none p-0">
@@ -134,7 +134,7 @@ function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: bo
   return (
     <li className={`${COT} min-h-[52px] py-[7px] ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-col max-sm:items-start max-sm:gap-1.5 max-sm:py-3`}
       style={{ borderColor: ranh ? 'var(--line-strong)' : 'var(--line)' }}>
-      <Link to={duongHoSoHocVien(e.id)} className={`min-w-0 max-w-full truncate text-[15px] leading-snug no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
+      <Link to={duongHoSoHocVien(e.id)} className={`min-w-0 max-w-full truncate text-[15px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
       <span className="truncate whitespace-nowrap text-[13px] text-dim">
         {e.lop.length ? e.lop.map((l, i) => <span key={l.id}>{i > 0 && ', '}<Link to={`/hoc-vien/lop/${l.id}`} className="!text-[color:var(--text-dim)] no-underline hover:underline">{l.ma}</Link></span>) : '—'}
       </span>

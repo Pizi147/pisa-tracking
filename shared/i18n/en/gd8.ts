@@ -1,7 +1,6 @@
 /** GD-8 (Overhaul V6, trang đầu TVV — mockup ④): chữ mới của khung HV của tôi. Khoá = chữ Việt trên web. */
 export const EN_GD8 = {
   'Chưa có học viên nào do bạn phụ trách.': 'No students assigned to you yet.',
-  'Tình trạng': 'Status',
   '{n} em khác': '{n} more students',
   'Công việc › Thi tháng này': 'To do › Exams this month',
   'Dải số đầu <b>Công việc</b>: <b>Việc</b> · <b>Báo PH đúng hạn</b> · <b>Thi tháng này ›</b> · <b>Chờ KQ ›</b> · <b>Chưa chốt lộ trình tiếp ›</b>.': 'Numbers strip at the top of <b>To do</b>: <b>Tasks</b> · <b>Parent reports on time</b> · <b>Exams this month ›</b> · <b>Awaiting results ›</b> · <b>Next route not set ›</b>.',

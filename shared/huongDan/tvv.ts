@@ -401,7 +401,7 @@ export const HD_TVV: HuongDan = {
   man: [
     {
       /* UI-CV-TVV (C05): TVV có Công việc — chỉ việc của mình. */
-      id: 'cong-viec', ten: 'Công việc', duong: [CV],
+      id: 'cong-viec', ten: 'Công việc', duong: [CV, '/'],   // `/` chuyển thẳng sang Công việc (GD-8, như GV GD-1)
       /* GD-8 (mockup v21 ④): trang đầu TVV — dải 5 chỉ số trên, việc trái, HV của tôi phải; "+ Task" = Hỏi tình hình học tập. */
       dangO: { cau: 'Trang đầu của bạn: năm chỉ số, việc của bạn (Báo PH, sau thi, chốt ngày thi, bổ sung hồ sơ) và HV của tôi.', sau: { chu: 'Học viên & Lớp', duong: HV } },
       khongLam: [KHONG_GV, KHONG_QL],

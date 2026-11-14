@@ -62,7 +62,8 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   const dsMuc = MUC.filter(([k]) => !chiMuc || chiMuc.includes(k)).map(([k, nhan]) => [k, k === 'tinh-hinh' && hoi ? t('Hỏi tình hình học tập') : nhan] as const);
   if (!dsMuc.length) return null;
   const mat = noi === 'dau'
-    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-8'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
+    /* GD-8: tổng chiều cao (mặt + viền 2 px) = nút cạnh — 32 như "Mọi hạn" / "Lọc thêm" ở Công việc, 36 như "⋯" ở đầu hồ sơ (đo ≤ 1 px). */
+    ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-[30px]'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
     : <span className="grid h-[60px] w-[60px] place-items-center text-sm font-bold">{t('+ Task')}</span>;
   return (
     <>
