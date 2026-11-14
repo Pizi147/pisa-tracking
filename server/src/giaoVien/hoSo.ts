@@ -316,6 +316,13 @@ export function oHoSoGv(p: Principal, gvId: number, q: ThamSoO): { n: number; ti
     }));
     return ket(rows, (n) => `${n} yêu cầu ${cot === 'yc-cho' ? 'đang chờ duyệt' : 'bị từ chối'}`);
   }
+  /* GD-14: Case chưa có PA của GV — Case đang mở (`caseMoCuaGv`) ∩ "Case chưa chốt PA" (`case-cho-xac-dinh-nguyen-nhan`) — cùng tập `caseCoPaTheoGv` (mo − coPa). */
+  if (cot === 'case-chua-pa') {
+    const cn = branchIds?.length === 1 ? branchIds[0] : null;
+    const chua = new Set((ct ? [ct] : (['ft', 'thuong'] as const)).flatMap((k) => metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', { branchId: cn, program: k }).ids));
+    const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => chua.has(c.id));
+    return ket(rowsFor('case', ds.map((c) => c.id), undefined, p), (n) => `${n} Case chưa có PA`, 'case');
+  }
   if (cot === 'case-mo' || cot === 'case-qua-han') {
     if (q.tt != null && !(TRANG_THAI as readonly string[]).includes(q.tt)) throw badRequest('Trạng thái không hợp lệ.');
     const ds = caseMoCuaGv(p, gvId, branchIds, ct).filter((c) => (cot === 'case-mo' || c.quaHan) && (!q.tt || c.trangThai.t === q.tt));

@@ -37,7 +37,7 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'xem-so-mt', ten: 'Xem số Mock Test của chi nhánh', nhom: 'lich',
       loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Mock Test', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Các số Mock Test của chi nhánh — bấm để mở.' } },
-      buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Lượt MT tuần này</b> · <b>Bài chưa nhập điểm</b> · <b>HV chưa đủ MT</b>; bấm số mở đúng chỗ.', '<b>Lịch sắp tới</b>: <b>Xem toàn bộ lịch ›</b> mở Kế hoạch Test.'],
+      buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Lượt MT tuần này ›</b> · <b>Bài chưa nhập điểm ›</b> · <b>HV chưa đủ MT ›</b> (ⓘ nói cách đếm); bấm số mở đúng chỗ.', '<b>Lịch sắp tới</b> (cột phải): <b>Kế hoạch Test ›</b> mở đúng tuần đang xem.'],
       tuKhac: ['số liệu', 'mock test', 'thống kê', 'numbers'],
     },
     {
@@ -133,7 +133,7 @@ export const HD_ADMIN: HuongDan = {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
       dangO: { cau: 'Số Mock Test của chi nhánh và GV chấm quá hạn.', sau: { chu: 'Công việc', duong: CV } },
       khongLam: [{ ten: 'Xếp, dời lịch Test', den: { chu: 'Kế hoạch Test', duong: KH } }, KHONG_QL],
-      muc: [{ id: 'ad-tq-gv', viec: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', buoc: ['Khối <b>GV chấm quá hạn</b>: bấm số GV mở panel, bấm dòng lớp.', 'Bấm <b>Nhập hộ</b>, gõ điểm em còn trống.'] }],
+      muc: [{ id: 'ad-tq-gv', viec: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', buoc: ['Khối <b>GV chấm quá hạn</b>: mỗi GV một dòng (kỹ năng · lớp · số bài · lâu nhất); bấm dòng mở panel của GV đó (lớp · lượt · kỹ năng), số GV ở đầu khối mở cả nhóm.', 'Bấm <b>Nhập hộ</b>, gõ điểm em còn trống.'] }],
     },
     {
       id: 'phan-tich', ten: 'Phân tích', duong: ['/phan-tich'],
@@ -167,7 +167,7 @@ export const HD_ADMIN: HuongDan = {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
       dangO: { cau: 'Lớp đã kết thúc và em đã lưu trữ (từ ô tìm “Tìm trong HV lưu trữ ›”); chỉ xem.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
       khongLam: [{ ten: 'Tạm dừng, kết thúc học, Quay lại học', cua: 'việc của QL' }],
-      muc: [{ id: 'ad-luu-tru', ten: 'Xem Lưu trữ', buoc: ['Hai tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b>.', 'Bấm tên em hoặc lớp mở hồ sơ.'] }],
+      muc: [{ id: 'ad-luu-tru', ten: 'Xem Lưu trữ', buoc: ['Ba tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b> · <b>Đã xoá</b>; chia theo chi nhánh, học viên theo lớp cuối.', 'Bấm tên em hoặc lớp mở hồ sơ.'] }],
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],

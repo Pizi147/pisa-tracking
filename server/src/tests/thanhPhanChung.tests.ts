@@ -377,4 +377,22 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(!/tvvChinh|t\('TVV \{ten\}', \{ ten: tvv \}\)/.test(yt) && /<NutLichSuGap /.test(yt), 'tab Ý thức: TVV dưới tên em / lịch sử chưa cùng dáng');
     assert(/demChotTheoLop\(\[classId\]\)/.test(doc('server/src/classes/daiChuyenLop.ts')), 'dải Chốt lộ trình cho mọi người xem lớp');
   });
+
+  console.log('\nGD-16 · Lưu trữ (mockup ⑩)');
+  check('GD-16 · Lưu trữ: 3 tab có số (Đã xoá đếm một câu khi mở trang, danh sách chỉ khi bấm tab); chia chi nhánh; học viên theo lớp cuối; câu 30 ngày vào ⓘ; thứ tự máy chủ giữ', () => {
+    const s = doc('web/src/modules/students/LuuTruPage.tsx');
+    assert(/key: 'xoa', label: t\('Đã xoá'\), so: demXoa\.data\?\.n/.test(s) && /useApi<\{ n: number \}>\('\/thung-rac\/dem\?loai=hoc_vien'\)/.test(s), 'tab Đã xoá có số từ /thung-rac/dem');
+    assert(/\{tab === 'xoa' && <DaXoaAdmin loai="hoc_vien"/.test(s), 'danh sách Đã xoá chỉ gắn ở tab Đã xoá (nạp khi bấm)');
+    assert(/theoChiNhanh\(data\?\.lop/.test(s) && /theoChiNhanh\(data\?\.hocVien/.test(s), 'chưa chia theo chi nhánh');
+    assert(/s\.lopCuoiId != null \? String\(s\.lopCuoiId\) : 'chua'/.test(s) && /'hang-nhom-lop'/.test(s), 'học viên chưa nhóm theo lớp cuối (dải trong bảng)');
+    assert(!/key: 'cn', nhan: t\('Chi nhánh'\)/.test(s), 'còn cột Chi nhánh ở hàng (đã ở dải)');
+    assert(!/\.sort\(/.test(s), 'trang không tự xếp lại — giữ thứ tự máy chủ (`soSanhLopLuuTru`)');
+    const dx = doc('web/src/modules/platform/DaXoaAdmin.tsx');
+    assert(/<NutLuat label=\{t\('Đã xoá'\)\}>\{t\('Giữ 30 ngày, sau đó xoá hẳn\.'\)\}<\/NutLuat>/.test(dx), 'câu 30 ngày phải vào ⓘ ở Lưu trữ');
+    assert(/useApi<MucRac\[\]>\(loai \? `\/thung-rac\?loai=\$\{loai\}` : '\/thung-rac'\)/.test(dx), 'một loại → máy chủ lọc loại');
+    const kp = doc('server/src/platform/khoiPhucRac.ts');
+    assert(/\$\{loai \? ' AND t\.loai = \?' : ''\}/.test(kp) && /export const demRac = \(p: Principal, loai: MucRac\['loai'\]\) => \(\{ n: danhSachRac\(p, loai\)\.length \}\)/.test(kp), 'đếm cùng tập danh sách (một câu, lọc loại trong SQL)');
+    const lt = doc('server/src/classes/luuTru.ts');
+    assert(/lopCuoiId: lopCuoiCua\.get\(s\.id\)\?\.id \?\? null/.test(lt) && /branchId: r\.branch_id/.test(lt), 'máy chủ trả branchId / lopCuoiId');
+  });
 }

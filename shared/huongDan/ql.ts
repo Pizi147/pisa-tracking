@@ -35,9 +35,9 @@ export const HD_QL: HuongDan = {
     /* ---------------------------------------------------------------- Điểm */
     {
       id: 'nhap-ho', ten: 'Nhập hộ bài quá hạn', nhom: 'diem',
-      loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Bài chấm quá hạn', duong: '/', chi: { hd: 'tq-gv-tre', duong: '/', chu: 'Bấm số ở cột <b>Bài chấm quá hạn</b> của GV.' } },
+      loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Bài quá hạn', duong: '/', chi: { hd: 'tq-gv-tre', duong: '/', chu: 'Bấm số ở cột <b>Bài quá hạn</b> (Tới hôm nay) của GV.' } },
       loiTat: ['cong-viec', 'p-nhap-diem'], tatThem: ['Công việc › Của GV › Chấm điểm'], cung: 'mở cùng lưới nhập.',
-      buoc: ['Ở <b>Tổng quan</b>, bảng <b>Giáo viên</b>: bấm số ở cột <b>Bài chấm quá hạn</b>.', 'Panel <b>Nhập hộ</b> theo môn: bấm dòng lớp · lượt · kỹ năng, xem em còn trống.',
+      buoc: ['Ở <b>Tổng quan</b>, bảng <b>Giáo viên</b>: bấm số ở cột <b>Bài quá hạn</b> (nhóm <b>Tới hôm nay</b>).', 'Panel <b>Nhập hộ</b> theo môn: bấm dòng lớp · lượt · kỹ năng, xem em còn trống.',
         'Bấm <b>Nhập hộ</b>, gõ điểm; em vắng gõ <b>-</b>, rồi lưu.'],
       tuKhac: ['chấm thay', 'nhập thay', 'quá hạn', 'điểm', 'nhập điểm', 'enter score', 'overdue'],
     },
@@ -317,11 +317,11 @@ export const HD_QL: HuongDan = {
       dangO: { cau: 'Số của chi nhánh, GV chấm quá hạn và việc chờ bạn duyệt.', sau: { chu: 'Công việc', duong: CV } },
       khongLam: [DEN_KH, { ten: 'Xem thống kê theo kỳ', den: { chu: 'Phân tích', duong: '/phan-tich' } }],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Đạt MT</b> · <b>Case có PA</b> · <b>Chờ duyệt</b> · <b>Thi tháng này</b>.', 'Bấm số mở danh sách ngay tại trang.'],
+        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Chờ duyệt ›</b> · <b>Đạt MT</b> · <b>Case chưa có PA</b> · <b>Thi tháng này</b>; số 0 không bấm.', 'Bấm số mở danh sách ngay tại trang; ô <b>Case chưa có PA</b>: số nhỏ "trong n Case đang mở" mở danh sách Case đang mở.'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
-        { id: 'tq-duyet', viec: 'duyet', ten: 'Chờ bạn duyệt', buoc: ['<b>Chờ bạn duyệt</b> (cột phải): bấm dòng mở panel <b>Duyệt / Từ chối</b>.', '<b>Hộp duyệt ›</b> xem hết.'],
+        { id: 'tq-duyet', viec: 'duyet', ten: 'Chờ duyệt', buoc: ['<b>Chờ duyệt</b> (cột phải): bấm dòng mở panel <b>Duyệt / Từ chối</b>.', '<b>+ n yêu cầu</b> mở thêm ngay tại chỗ; ô <b>Chờ duyệt ›</b> mở Công việc.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
-        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Giáo viên', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS hiện tại, Case chưa PA, Thi tháng này; 5 lớp cần chú ý nhất.', '<b>Giáo viên</b>: <b>Hành chính</b> / <b>Học thuật</b>; bấm số ở <b>Bài chấm quá hạn</b> để nhập hộ.'],
+        { id: 'ql-tq-so-lieu', ten: 'Lớp cần chú ý · Giáo viên', buoc: ['<b>Lớp cần chú ý</b>: Đạt MT, SOS hiện tại, Case chưa có PA, Thi tháng này; 5 lớp cần chú ý nhất. Số trong hộp viền bấm được.', '<b>Giáo viên</b> · <b>Hành chính</b>: <b>Việc</b> và <b>Chấm Test</b> (% đúng hạn · Chưa làm — bấm % xem Đúng hạn / Làm muộn) · <b>Tới hôm nay</b> (Bài quá hạn — bấm để nhập hộ); hàng cuối <b>S chéo chung</b>. <b>Học thuật</b>: Đạt kỳ vọng Test · Tiến bộ · Case chưa có PA.'],
           chi: { hd: 'tq-lop-chu-y', duong: '/', chu: 'Mỗi lớp một hàng; bấm số để xử lý.' } },
       ],
     },
@@ -386,12 +386,12 @@ export const HD_QL: HuongDan = {
     {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
       dangO: { cau: 'Lớp đã kết thúc và em đã lưu trữ.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
-      muc: [{ id: 'ql-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc học, xem Lưu trữ', buoc: ['Hai tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b>.', 'Mỗi em: <b>Tổng kết</b> · <b>Quay lại học</b>; chọn nhiều em để quay lại một lần.'] }],
+      muc: [{ id: 'ql-luu-tru', viec: 'luu-tru', ten: 'Tạm dừng, kết thúc học, xem Lưu trữ', buoc: ['Ba tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b> · <b>Đã xoá</b>; chia theo chi nhánh, học viên theo lớp cuối.', 'Mỗi em: <b>Tổng kết</b> · <b>Quay lại học</b>; chọn nhiều em để quay lại một lần.'] }],
     },
     {
       id: 'lich-test', ten: 'Lịch Test tuần', duong: ['/test', TEST],
       dangO: { cau: 'Test của một tuần cả chi nhánh: quá hạn chấm, lớp có Test.', truoc: { chu: 'Kế hoạch Test', duong: KH }, sau: { chu: 'Công việc', duong: CV } },
-      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài chấm quá hạn', duong: '/' } }],
+      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }],
       muc: [
         { id: 'lt-nhap-diem', viec: 'sua-diem', ten: 'Nhập điểm, sửa điểm một lớp', buoc: ['Chọn tuần ở <b>‹ W3 SEP ›</b> hoặc <b>Tuần này</b>.', 'Bấm dòng lớp: lưới điểm mở ngay dưới.', 'Gõ điểm; sửa điểm đã có: bấm ô, ghi <b>Lý do sửa</b>.'],
           chi: { hd: 'lich-test-tuan', duong: TEST, chu: 'Mỗi lớp một dòng — bấm dòng để mở lưới điểm.' } },
@@ -403,7 +403,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'ke-hoach', ten: 'Kế hoạch Test', duong: [KH],
       dangO: { cau: 'Xếp, dời lịch MT, Progress, Final các lớp; thi lại; S Ex.', sau: { chu: 'Lịch Test tuần', duong: TEST } },
-      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài chấm quá hạn', duong: '/' } }],
+      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }],
       muc: [
         { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Bỏ khỏi đợt</b>, rồi <b>Lưu</b>.', '<b>Dời</b> = chọn tuần = xếp lại từ đầu — cả môn vắng, huỷ vắng 2 lần, bỏ khỏi đợt.', '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b> · <b>Lịch sử</b>.'] },
         { id: 'ql-kh-luat', ten: 'Luật xếp lịch, tìm lớp', buoc: ['Link <b>Luật xếp lịch Test</b> trên hàng lọc.', 'Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>; chọn em: lớp mở, hàng em được đánh dấu.'] },
@@ -452,7 +452,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
       dangO: { cau: 'Một GV: lớp dạy, số theo khoảng tuần, việc đang tồn.', truoc: { chu: 'Phân tích', duong: '/phan-tich' } },
-      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài chấm quá hạn', duong: '/' } }, { ten: 'Phân công GV', den: { chu: 'Học viên & Lớp', duong: HV } }],
+      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }, { ten: 'Phân công GV', den: { chu: 'Học viên & Lớp', duong: HV } }],
       muc: [{ id: 'ql-hsgv', viec: 'xem-ho-so-gv', ten: 'Xem hồ sơ giáo viên', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b>: số đúng hạn, đạt kỳ vọng Test, Case có PA theo khoảng đó; bấm số mở danh sách.', 'Kỹ năng của GV: <b>Sửa</b> (QL, Quản trị).'] }],
     },
     {
@@ -566,7 +566,7 @@ export const HD_QL: HuongDan = {
     {
       id: 'p-xep-lich-mt', ten: 'Xếp lịch Test đang mở', duong: [], panel: 'xep-lich-mt',
       dangO: { cau: 'Xếp lịch MT cho một hay nhiều lớp.' },
-      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài chấm quá hạn', duong: '/' } }],
+      khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }],
       muc: [{ id: 'pxl-xep', viec: 'xep-lich', ten: 'Xếp, dời lịch Test nhiều lớp', buoc: ['Chọn lớp, tuần từng MT; hai đợt trùng tuần thì máy chặn, cách đúng một tuần thì hỏi lại.', 'Lưu: đợt về lịch mới; khoá cuối tuần T6–CN theo công tắc <b>Mở sửa lịch Test</b>.'] }],
     },
     {

@@ -313,7 +313,7 @@ export const HD_GV: HuongDan = {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
       dangO: { cau: 'Lớp đã kết thúc và em đã tạm dừng / kết thúc học — để xem lại.', truoc: { chu: 'Học viên & Lớp', duong: '/hoc-vien' } },
       khongLam: [{ ten: 'Khôi phục thứ đã xoá', cua: 'việc của QL' }],
-      muc: [{ id: 'lt-xem', ten: 'Xem lớp, em đã lưu trữ', buoc: ['Tab <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b>; chỉ lớp bạn từng dạy.', 'Bấm em mở hồ sơ; em tạm dừng quay lại: hồ sơ › <b>⋯ › Quay lại học</b> (GVCN).'] }],
+      muc: [{ id: 'lt-xem', ten: 'Xem lớp, em đã lưu trữ', buoc: ['Tab <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b> (theo lớp cuối); chỉ lớp bạn từng dạy.', 'Bấm em mở hồ sơ; em tạm dừng quay lại: hồ sơ › <b>⋯ › Quay lại học</b> (GVCN).'] }],
     },
     {
       id: 'ho-so-lop', ten: 'Hồ sơ lớp', duong: ['/hoc-vien/lop'],

@@ -13,7 +13,7 @@ export async function runPrS5fATests(t: YThucTestKit) {
 
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   /* PR-KV (§3): kỳ vọng đầu ra xét theo MT0 — điểm band MT0 (W ghi W1 = W2) của em ở lớp `lop`; MT0 tạo khi ra lệnh Lên FT. */
-  const diemMt0Kv = (sid: number, b: number[] = [4, 3.5, 4, 4]) => {
+  const diemMt0Kv = (sid: number, b: number[] = [4, 3.5, 3.5, 3.5]) => {   // KY-VONG-MT0: 3.625 → 3.5 < mốc BE 4 (đạt mốc thì không ghi Không đạt được)
     const a = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'mt0' AND status != 'cancelled' ORDER BY id DESC LIMIT 1`).get(sid) as any).id;
     for (const [k, v] of [['listening', b[0]], ['reading', b[1]], ['writing1', b[2]], ['writing2', b[2]], ['speaking', b[3]]] as const) {
       conn.prepare('INSERT INTO assessment_scores (attempt_id, skill, band) VALUES (?,?,?)').run(a, k, v);
