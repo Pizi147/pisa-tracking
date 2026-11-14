@@ -6,6 +6,15 @@ Không chạy web thật: mọi dáng đang có đọc từ mã `web/src` + mock
 
 Tờ này là nguồn dáng cho session code dựng MỘT bộ thành phần dùng chung (04 mục 5.3, 5.9, 12 mục 5.11). Mọi thành phần đã có ở mockup ① vẽ lại đúng dáng ①; chỉ thêm biến thể + trạng thái. Áp lời 20 (chủ SP 14/11 đêm): nút-chip không biểu tượng · "Lớp của tôi" không có Chấm Speaking · Báo cáo PH trong Vận hành · bấm việc = panel / đúng trang · "+ Task" · "Chấm Speaking".
 
+## 0. Lời chủ SP trong session này (PTA Overhaul chép vào `loi-chu-sp.md`)
+
+> "1. Kể cả những trường hợp chỉ có 1 học sinh, thì vẫn để mọi thứ đồng bộ theo form ở bảng công việc: Lớp - Tên công việc ngắn gọn như hiện tại.
+> 2. Không cần ghi là 'việc chung của nhóm GV Speaking' - Ghi là 'Chấm Speaking' là được rồi"
+
+Đã áp:
+1. **Dòng việc một em** = cùng dạng dòng gộp: ô vuông · "MB FT 101 · Reading" / "MB FOU 12 · Xác nhận xử lý" / "MB FT 101 · Phối hợp SOS" · thẻ phụ: tên em (link hồ sơ) + SOS / tuần / số bài · hạn · nút. Bỏ dạng "đầu em + cây việc" (B1, B2, G2). Dòng em con dưới "n em ▴" giữ tên em đứng đầu (đã ở trong dòng lớp). Áp cho mọi danh sách việc (Công việc, dải "Việc cần làm" hồ sơ lớp / HV) — mockup ① K1 còn dạng cũ: khi code theo dạng này [XM-15].
+2. Dải đầu tab / nhóm Speaking ghi **"Chấm Speaking"** (bỏ "Việc chung của nhóm GV Speaking"); câu quy chế Q10 đổi thành "Mọi GV Speaking chi nhánh chấm được · GV chấm mặc định là bạn". Thay lời 11 / 04 mục 5.5 ("Đầu tab ghi thẳng 'Việc chung của nhóm GV Speaking · n bài'").
+
 ## 1. Bảng kê R5.2 — mọi chỗ chọn người / lớp / học viên trong `web/src` (63 chỗ)
 
 Rà đủ (không lấy mẫu) trên `origin/main` fb9d62eb8: mọi `<select>`, `Menu`, `MenuDong`, `ChonNguoi`, `ChonLop`, ô gợi ý / combobox tự viết, `datalist`. Đường tệp tính từ `web/src/`.
@@ -127,8 +136,8 @@ Soạn từ mục "Người làm cần thấy gì" + bảng "Việc sinh ra" c�
 | Q7 | GV | Nhập điểm Progress / Final (lớp thường) | mặc định | Đạt từ 70 % · "-" = vắng: dời sang tuần sau, không huỷ | 54 | luat/1 T-10, T-17 |
 | Q8 | GV | Nhập điểm Progress / Final (lớp thường) | Progress môn dưới 70 % | Dưới 70 %: lưu xong có Case + PA Bổ trợ, bạn xác nhận trong 5 ngày | 66 | luat/2 C-06, việc cause |
 | Q9 | GV | Nhập điểm MT0 (L, R, W) | mặc định | MT0: "-" chỉ ghi dấu, không dời · hết tuần thành Không dự thi | 61 | luat/1 mục 4 ("-" MT0) |
-| Q10 | GV Speaking | Chấm Speaking (việc chung) | mặc định | Việc chung của nhóm GV Speaking · GV chấm mặc định là bạn | 57 | luat/1 T-09, mục 4; 04 mục 5.5 |
-| Q11 | GV Speaking | Chấm Speaking (việc chung) | có nhận xét, bạn không phụ trách S lớp này | Có nhận xét: GV Speaking của lớp {Lê Quang Vinh} xác nhận Case | 60 | luat/1 mục 2 (score cc); luat/2 C-08 |
+| Q10 | GV Speaking | Chấm Speaking | mặc định | Mọi GV Speaking chi nhánh chấm được · GV chấm mặc định là bạn | 61 | luat/1 T-09, mục 4; 04 mục 5.5 |
+| Q11 | GV Speaking | Chấm Speaking | có nhận xét, bạn không phụ trách S lớp này | Có nhận xét: GV Speaking của lớp {Lê Quang Vinh} xác nhận Case | 60 | luat/1 mục 2 (score cc); luat/2 C-08 |
 | Q12 | QL · Admin | Chấm Speaking — nhập hộ | người nhập không phải GV Speaking | Bạn nhập hộ: chọn GV chấm trước khi lưu | 39 | 04 mục 5.10 S4 (2.4) |
 | Q13 | GV | Mô tả Case | mặc định | Hạn {19/09} (5 ngày; SOS 3: 3) · lưu xong bạn xác nhận PA | 55 | luat/2 C-10, mục 2–3 |
 | Q14 | GV | Xác nhận PA | Xác nhận (mặc định) | PA quy chế chạy từ hôm nay · ghi kết quả 2 tuần một lần | 55 | luat/2 C-11, C-14, mục 4 |
@@ -217,7 +226,7 @@ Soạn từ mục "Người làm cần thấy gì" + bảng "Việc sinh ra" c�
 |---|---|---|---|---|---|
 | A1–A7 | Ô chọn có tìm (một / nhiều, nhóm liên quan, dòng phụ, tô khớp, phím, rỗng, tải, lỗi, tắt, 375 toàn màn) | lời 17 ý 5; 04 mục 12 (5.11) | `ChonNguoi` / `ChonLop` (47 chỗ, chưa nhóm, chưa chip nhiều), 9 `<select>`, 7 ô tự viết, ① K5b `.goi-y` | MỘT thành phần cho 63 chỗ; nhóm có nhãn + số; chip + "n / 8"; 375 toàn màn | ĐỔI / GỘP |
 | A6 | Ranh giới danh sách ngắn | lời 17 (PTA hiểu b) | chip / ô chọn thường | GIỮ (≤ 7 mục, không phải người / lớp) | GIỮ |
-| B1–B3 | Dòng việc: lớp × tuần · một em · gộp "n em ▾" (mở ▴) · việc chung · đổi trang "›" · quá hạn / hôm nay / còn hạn / không hạn · chọn · rê · focus · tải / hết / lỗi | 04 mục 5.3; N39; lời 11, 20 | v12 / v18 + ① | cùng dáng ①; thêm "hôm nay", "không hạn", focus | GIỮ + THÊM trạng thái |
+| B1–B3 | Dòng việc: lớp × tuần · một em (cùng dạng "Lớp · tên việc", tên em là thẻ phụ — chủ SP, mục 0) · gộp "n em ▾" (mở ▴) · việc chung · đổi trang "›" · quá hạn / hôm nay / còn hạn / không hạn · chọn · rê · focus · tải / hết / lỗi | 04 mục 5.3; N39; lời 11, 20 | v12 / v18 + ① | cùng dáng ①; thêm "hôm nay", "không hạn", focus | GIỮ + THÊM trạng thái |
 | C1–C2 | Nút-chip "Việc cần làm" | lời 17 ý 2; lời 20 ý 2; 04 mục 13 | ① `.vc` có biểu tượng | không biểu tượng; thứ tự Nhập điểm · Case · Ý thức · Vận hành; "›" chỉ khi đổi trang | ĐỔI (lời 20) |
 | D1–D4 | Panel việc: đầu · ngữ · thân · dòng quy chế · chân + trạng thái lưu (chưa lưu, đang lưu, đã lưu + Hoàn tác + Việc tiếp, lỗi giữ chữ, nháp, đã chốt + Sửa) · chỉ xem · tải · lỗi · 375 | 04 mục 5.3; lời 5; luat/5 mục 3 | `PanelViec` / `KhungPanel`, ① K2 K4 K5 | một mẫu cho mọi panel việc | GIỮ + THÊM trạng thái |
 | D5 | Bảng câu dòng quy chế (83 câu) | lời 5; luat/1–4 | mỗi panel một kiểu, có panel không có | câu trong `shared/`, đổi theo lựa chọn | THÊM |
@@ -261,6 +270,7 @@ Không thao tác nào bị mất.
 12. **[XM-12] Hành trình** (`students/HanhTrinh.tsx`) không phải lịch sử sửa → giữ dáng riêng.
 13. **[XM-13] Tab con** chữ 12 (`cap="con"`) bỏ — tab con cùng cỡ 14, phân biệt bằng chỗ đặt (trong khối).
 14. **[XM-14] Chưa gõ** — mỗi nhóm hiện tối đa ~5 mục + "Gõ để tìm thêm"; nhóm xa ("Chi nhánh khác") chỉ hiện khi gõ (đỡ dài, đỡ dòng đọc).
+15. **[XM-15] Dòng một em ở mockup ①–④** — chủ SP đổi sau khi ① duyệt: dòng một em theo dạng "Lớp · tên việc". ① K1 và các mockup ②–④ (đang chờ duyệt) còn dạng "đầu em + cây việc" → PTA Overhaul báo các session đó / ghi vào đề bài code. Luật không đổi (một dòng = 1 việc).
 
 ## 7. Tự rà R5.1–R5.9 + luật chung
 
