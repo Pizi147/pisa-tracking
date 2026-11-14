@@ -9,6 +9,8 @@ Bấm thử ở K1 (đã chạy thử, không lỗi JS): chip Việc cần làm 
 Màn hiện tại đã xem trên web chạy thật (seed 14/09, GVCN / GVBM / QL, FT + lớp thường, 1440 + 375).
 Dữ liệu bịa, cùng bộ với mockup ①: GVCN Đinh Thu Hằng chủ nhiệm MB FT 101, dạy L + R; "Việc cần làm · 5" ở K1 khớp dòng MB FT 101 của "Lớp của tôi" (①).
 
+**Chủ SP DUYỆT mockup ② (15/11):** "duyệt nhé" — sau các sửa XM-1, XM-2 (PTA 14/11) và phần mở rộng em + TVV (mục 0).
+
 ## 0. Chủ SP 15/11 — phần mở rộng một em + TVV (thiết kế ngắn, chủ SP duyệt "làm đi")
 
 > "Phần expand của một học sinh đơn lẻ cần giống kiểu như thế này, tôi thấy phần này khá ok … có thể nâng cấp dựa trên ý đồ của phần này" · "Phần đầu trang KHÔNG ĐỂ TVV, TVV nên để tên ở phần nào đó nho nhỏ khi expand học sinh thôi" · "Lớp thường cũng giống nhau đi, cần có sự đồng bộ nhé" · "nếu nâng cấp được dựa trên cái đó thì vẫn ok nhé, làm đi"
