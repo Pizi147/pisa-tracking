@@ -174,7 +174,8 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
     const thieu = bai.filter((c) => c.thieuNhanXet).map((c) => `${laW ? `${c.skill === 'writing1' ? 'W1' : 'W2'} ` : ''}${CHU_O_THIEU[c.thieuNhanXet!]}`);
     const vo = `flex min-w-0 flex-col rounded-lg border text-left ${gon ? 'w-fit justify-center px-2.5 py-1.5 max-sm:min-h-[44px] max-sm:min-w-[44px]' : 'px-3 py-2.5'} ${dangMo ? 'border-[color:var(--accent-strong)] bg-white/[0.04]' : ''}`;
     /* Ô gọn (bảng): chỉ ô bấm được / thiếu nhận xét có viền; dòng phụ (câu · W1 W2) dưới ô, chỉ khi có điểm hoặc là Writing. */
-    const vienGon = gon && !sua && !thieu.length;
+    /* GD-11c (mockup ⑦ C1 · C3): ô Writing luôn là ô có viền như L / R / S — "—" không lơ lửng trên đầu thẻ 375. */
+    const vienGon = gon && !sua && !thieu.length && !laW;
     const o = sua ? (
       <button key={k} type="button" aria-expanded={dangMo} aria-haspopup="dialog" ref={(el) => { neo.current[bai[0].skill] = el; }}
         title={[...thieu, nhapBoi, t('Bấm để nhập / sửa điểm tại chỗ.')].filter(Boolean).join('\n')}
@@ -188,7 +189,12 @@ export function useODiem({ cells, lich, result, lichSu, homNay, mo, onMo: onMoCh
       <div key={k} className={vienGon ? 'flex min-w-0 flex-col py-1.5' : vo} style={vienGon ? undefined : { borderColor: thieu.length ? 'rgb(var(--soon-rgb))' : 'var(--line)' }} title={[...thieu, nhapBoi].filter(Boolean).join('\n') || undefined}>{noiDung}</div>
     );
     /* 375: ô gọn chưa có gì để nói ("—") thì không vẽ — trông như nút thu ở góc thẻ. */
-    return gon ? <div key={k} className={`min-w-0 ${band === null && chuRong === '—' && !sua && !bai.some(suaDuoc) ? 'max-md:hidden' : ''}`}>{o}{(band !== null || (laW && (bai.some(suaDuoc) || bai.some(coDiem)))) && dongPhu}</div> : o;
+    /* GD-11c (PTA rà 375): Writing ở thẻ 375 — dòng "W1 · W2" đứng TRƯỚC ô cùng hàng tên (ô sát phải như L / R / S), không dạt xuống dưới. */
+    return gon ? (
+      <div key={k} className={`min-w-0 ${laW ? 'max-md:flex max-md:flex-row-reverse max-md:items-center max-md:gap-2 max-md:[&>span]:mt-0' : ''} ${band === null && chuRong === '—' && !sua && !bai.some(suaDuoc) && !laW ? 'max-md:hidden' : ''}`}>
+        {o}{(band !== null || (laW && (bai.some(suaDuoc) || bai.some(coDiem)))) && dongPhu}
+      </div>
+    ) : o;
   };
 
   const kqOverall = soKyVong(result.overall, result.expectation);

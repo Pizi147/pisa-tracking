@@ -141,7 +141,7 @@ type DotCuaHv = {
  * Lưới một dòng kỹ năng của bảng kết quả (khung M4-A): Kỹ năng · Lịch · Điểm · Trạng thái · Nhận xét · Case · thao tác. Dưới `md` mỗi kỹ năng là
  * một thẻ: tên + điểm, rồi lịch · trạng thái, nhận xét · Case, nút (các nhóm `md:contents` thành ô lưới ở màn rộng).
  */
-const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_7.5rem] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_150px_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
+const ROW_GRID = 'grid grid-cols-[minmax(0,1fr)_auto] gap-x-3 gap-y-1.5 md:grid-cols-[9rem_8.5rem_7.5rem_150px_minmax(8rem,1fr)_minmax(8rem,1fr)_12rem] md:items-center';
 
 export default function MockDetailPage() {
   const { id } = useParams();
@@ -491,8 +491,9 @@ function ODiemOverall({ band, kyVong }: { band: number; kyVong: number | null })
 
 /** "Còn lại" của tóm tắt lượt (khung M4-A ③): việc của người xem = nút (mở tại chỗ, G6 — không "›"); việc người khác chỉ đọc. FT + lớp thường dùng chung. */
 export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
+  /* GD-11c (PTA rà 375, lời 40): 375 không có khối "Còn lại" — mỗi việc đã là nút trong thẻ kỹ năng ngay dưới (mockup C3); 1440 giữ. */
   return (
-    <div className="min-w-0 max-sm:w-full sm:ml-auto sm:text-right">
+    <div className="min-w-0 max-sm:hidden sm:ml-auto sm:text-right">
       <span className="block text-xs font-medium text-slate-400">{conLai.length ? t('Còn lại') : t('Không còn việc')}</span>
       {conLai.length > 0 && (
         <ul className="m-0 mt-1 flex list-none flex-wrap gap-1.5 p-0 sm:justify-end">
@@ -937,7 +938,8 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
               )}
             </div>
           </div>
-          <div role="cell" className="col-span-2 flex flex-wrap items-center gap-1.5 md:col-span-1 md:col-start-7 md:row-start-1 md:justify-end">
+          {/* GD-11c (PTA rà 375): hàng nút cuối thẻ — ⋯ luôn sát phải (thẻ chỉ có "Chỉ xem" + ⋯ cũng thẳng ⋯ của thẻ khác). */}
+          <div role="cell" className="col-span-2 flex flex-wrap items-center justify-end gap-1.5 md:col-span-1 md:col-start-7 md:row-start-1">
             {chinh && (
               <button type="button" data-chinh className={`btn btn-sm min-h-[44px] max-md:flex-1 max-md:justify-center sm:min-h-0 ${nhanChinh === CHU_THAO_TAC['sua-diem'] ? '' : 'btn-primary'}`} onClick={() => chay(chinh, chinhO)}>{nhanChinh}</button>
             )}

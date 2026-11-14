@@ -60,3 +60,7 @@ GV `nd-luot` (⋯ Vắng · Huỷ điểm · Khôi phục, một khối Lịch s
 
 ## Đo
 ⋯ dòng kỹ năng so nút chính: 1440 lệch tâm 0 px (36×30 / 30), 375 lệch 0 px (44×44 / 44) — FT + lớp thường.
+
+## Sửa sau rà PTA (375)
+- Thẻ Writing 375 cùng dáng L / R: tên + ô điểm (ô "—" có viền như ô khác) cùng hàng, "W1 Nhập · W2 Nhập" đứng trước ô trên cùng hàng; lịch, trạng thái, người chấm dòng dưới; hàng nút cuối thẻ, ⋯ sát phải. `zoom-ba-cham-375.png`: mép phải ⋯ 4 thẻ (Mock) và 4 thẻ (lớp thường) cùng x = 346 px (lệch 0 px), 1440 cùng x = 1407 px.
+- Khối "Còn lại" ẩn ở 375 (lời 40 — mỗi việc đã là nút trong thẻ kỹ năng, mockup C3); 1440 giữ.
