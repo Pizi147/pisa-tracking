@@ -89,7 +89,7 @@ Không thao tác nào bị mất.
 7. **[XM-7] Bước chọn em của "+ Task" ở hồ sơ lớp** chỉ có nhóm "Lớp này" (điền sẵn lớp — R2.2); dòng phụ là tình trạng em (SOS / Đạt / Thiếu). Muốn ghi cho em lớp khác thì dùng "+ Task" ở trang Công việc.
 8. **[XM-8] GV cũ chỉ xem (R2.10)** vẽ hai nghĩa: (K7c) GV cũ sau đổi GV — dải "Chỉ xem · … còn xem tới …" đang có; (K7d) GV cũ dạy bổ trợ xem lớp MỚI của em (GV-CU-BO-TRO) — dải "Chỉ xem · Bạn dạy bổ trợ …" là chữ MỚI, cần PTA chốt. Cả hai: không Nhập điểm, không + Task, không ⋯ dòng.
 9. **[XM-9] Lớp đã kết thúc**: GVCN không có "+ Task" (không còn em đang học); QL vẫn sửa điểm như cũ (HL-10) — không vẽ khung QL.
-10. **[XM-10] Panel việc ở hồ sơ lớp** vẽ theo `KhungPanel` rộng 720 phủ trang (lớp mờ) như web hiện tại — khác khung phải cố định của ①; cùng thành phần panel + dòng quy chế.
+10. **[XM-10] Panel việc ở hồ sơ lớp** vẽ theo `KhungPanel` rộng 736 (mockup ⓪ 15/11: cùng bề rộng panel ①⑤) phủ trang (lớp mờ) như web hiện tại — khác khung phải cố định của ①; cùng thành phần panel + dòng quy chế.
 11. **[XM-11] Turso:** không thêm request. Chip Việc cần làm + panel việc đầu đọc từ `viec-theo-em?chi=toi` đã tải (`dongToi`); "bạn còn n / m em" tính từ dữ liệu tab Báo cáo PH đã nạp; khối "Đã chuyển · đang bổ trợ" cần máy chủ trả trong `/roster` (đã có cờ cho dòng hiện tại).
 
 ## 4. Tự rà R2.1–R2.10 + luật chung

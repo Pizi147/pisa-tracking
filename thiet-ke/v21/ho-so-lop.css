@@ -35,7 +35,7 @@
 .gv-du .f small { font:500 12px var(--phong); color:var(--soon); }
 
 /* ---------- dải số mỏng (Lượt mới nhất · Đạt · SOS │ badge phạm vi lớp "›") ---------- */
-.dai-so { display:flex; flex-wrap:wrap; align-items:center; row-gap:6px; min-height:38px; padding:5px 6px 5px 0; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
+.dai-so { display:flex; flex-wrap:wrap; align-items:center; row-gap:6px; min-height:44px; padding:6px 6px 6px 0; border:1px solid var(--line); border-radius:8px; background:var(--surface); }
 .dai-so .s { display:inline-flex; align-items:center; gap:6px; padding:0 14px; border-left:1px solid var(--line); font-size:13px; color:var(--text-dim); white-space:nowrap; min-height:22px; }
 .dai-so .s:first-child { border-left:0; }
 .dai-so .s b { font:600 14px var(--phong-so); color:var(--text); }
@@ -156,9 +156,9 @@ table.bc-t { width:100%; border-collapse:collapse; table-layout:fixed; font-size
 .ds-dot .mo3.sap { color:var(--soon); font-weight:600; }
 .ds-dot .chon-d { background:var(--accent-soft); }
 
-/* panel trượt phải (KhungPanel rộng 720) phủ trang + lớp phủ mờ */
+/* panel trượt phải (KhungPanel rộng 736 — cùng ①⑤) phủ trang + lớp phủ mờ */
 .phu-trang { position:absolute; inset:52px 0 0 0; background:var(--phu-hop); }
-.pn-truot { position:absolute; top:52px; right:0; bottom:0; width:720px; border-radius:0; border-width:0 0 0 1px; box-shadow:-12px 0 32px var(--bong); }
+.pn-truot { position:absolute; top:52px; right:0; bottom:0; width:736px; border-radius:0; border-width:0 0 0 1px; box-shadow:-12px 0 32px var(--bong); }
 .pn-truot .pn-than { flex:1; }
 
 /* tab Tổng kết (lớp đã kết thúc) — ô số + bảng (TabTongKetLop) */
@@ -292,3 +292,6 @@ table.mr-t { width:100%; border-collapse:collapse; table-layout:fixed; }
 .bhv-t .mr-t th { padding:6px 4px; }
 .bhv-t .mr-t th:first-child, .bhv-t .mr-t td:first-child { text-align:left; padding-left:0; }
 .mr-t.dai th:first-child, .mr-t.dai td:first-child { width:124px; }
+/* mockup ⓪: số đếm việc dạng ① · ô số trong dải (⑤ H3) */
+.vcl .nhan-vcl .qua { color:var(--bad); font-weight:600; }
+.dai-so .s .oso { font-size:14px; }
