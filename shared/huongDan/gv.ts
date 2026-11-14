@@ -84,9 +84,9 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'vi-pham', ten: 'Ghi vi phạm', nhom: 'hv',
-      loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ dòng em › + Ghi vi phạm' },
+      loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ dòng em › + Vi phạm / Nhắc nhở' },
       loiTat: ['ho-so-hv', 'p-vi-pham'], cung: 'mở cùng panel ghi vi phạm.',
-      buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Ghi vi phạm</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Ghi vi phạm</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn.', '<b>Lưu</b>. Ghi không có hạn; xử lý là việc của GVCN.'],
+      buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Vi phạm / Nhắc nhở</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn.', '<b>Lưu</b>. Ghi không có hạn; xử lý là việc của GVCN.'],
       tuKhac: ['ý thức', 'kỷ luật', 'vi phạm', 'violation'],
     },
     {
@@ -133,8 +133,8 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'tam-dung', ten: 'Tạm dừng, kết thúc học, quay lại học', nhom: 'hv', chiGvcn: true,
-      loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Tạm dừng/ Kết thúc học' },
-      buoc: ['Ở hồ sơ em, bấm <b>⋯ › Tạm dừng/ Kết thúc học</b>; tick “Có thể quay lại học” nếu em sẽ học lại.', 'Cả hai vào Lưu trữ; em tạm dừng giữ lớp và lộ trình.', 'Em quay lại: <b>⋯ › Quay lại học</b>.'],
+      loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Tạm dừng / Kết thúc học' },
+      buoc: ['Ở hồ sơ em, bấm <b>⋯ › Tạm dừng / Kết thúc học</b>; tick “Có thể quay lại học” nếu em sẽ học lại.', 'Cả hai vào Lưu trữ; em tạm dừng giữ lớp và lộ trình.', 'Em quay lại: <b>⋯ › Quay lại học</b>.'],
       tuKhac: ['nghỉ học', 'thôi học', 'tạm dừng', 'lưu trữ', 'pause'],
     },
     {
@@ -469,7 +469,7 @@ export const HD_GV: HuongDan = {
       id: 'p-sau-thi', ten: 'Kết quả thi thật đang mở', duong: [], panel: 'sau-thi',
       dangO: { cau: 'Điểm thi thật của một em và bước tiếp sau thi.' },
       khongLam: [{ ten: 'Chọn bước tiếp sau thi', cua: 'việc của TVV' }],
-      muc: [{ id: 'pkt-ghi', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Gõ điểm từng kỹ năng (KET / PET: điểm Cambridge), lưu.', 'Bước tiếp (Tạm dừng/ Kết thúc học, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.'] }],
+      muc: [{ id: 'pkt-ghi', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Gõ điểm từng kỹ năng (KET / PET: điểm Cambridge), lưu.', 'Bước tiếp (Tạm dừng / Kết thúc học, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.'] }],
     },
     {
       id: 'p-them-hv', ten: 'Thêm học viên đang mở', duong: [], panel: 'them-hv',

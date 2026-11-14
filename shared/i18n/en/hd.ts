@@ -39,7 +39,7 @@ export const EN_HD = {
   '2 tuần · hết Thứ Ba': '2 weeks · by Tuesday',
   'PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ.': 'Running PA: record every <b>2-week</b> period, due <b>Tuesday</b> after it.',
   'khi có': 'when needed',
-  'Mở hồ sơ lớp › tab <b>Học viên</b>; ở dòng em bấm <b>⋯ › + Ghi vi phạm</b>.': 'Open the class profile › <b>Students</b> tab; on the student row click <b>⋯ › + Log incident</b>.',
+  'Mở hồ sơ lớp › tab <b>Học viên</b>; ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b>.': 'Open the class profile › <b>Students</b> tab; on the student row click <b>⋯ › + Violation / Reminder</b>.',
   'Hạn xử lý <b>5 ngày</b>.': 'Handle within <b>5 days</b>.',
   'Bấm tên lớp → tab <b>Học viên</b> › <b>⋯</b> ở dòng em.': 'Click a class name → <b>Students</b> tab › <b>⋯</b> on the student row.',
   // ---------------------------------------------------------------- GV · theo màn

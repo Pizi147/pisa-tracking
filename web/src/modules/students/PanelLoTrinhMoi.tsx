@@ -24,7 +24,7 @@ function useChamLai<T>(v: T, ms = 400): T {
   return g;
 }
 
-/** Hộp "Tạm dừng/ Kết thúc học" ngay trong panel Bước tiếp / Sau thi (k4 b): ô "Có thể quay lại học" TẮT sẵn vì vừa có KQ thi thật. */
+/** Hộp "Tạm dừng / Kết thúc học" ngay trong panel Bước tiếp / Sau thi (k4 b): ô "Có thể quay lại học" TẮT sẵn vì vừa có KQ thi thật. */
 export type GiaTriDung = { ngay: string; lyDo: string; quayLai: boolean };
 export function KhoiDung({ v, onChange, loTrinh, disabled }: { v: GiaTriDung; onChange: (v: GiaTriDung) => void; loTrinh: string | null; disabled?: boolean }) {
   const { homNay } = useNgayNghiepVu();

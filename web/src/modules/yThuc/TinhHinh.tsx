@@ -7,7 +7,8 @@ import { DongQuyChe, KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { addDaysIso, dsLoi, hanBaoPh, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
+import { NutDongPanel } from '../../ui/KhuonViec.tsx';
+import { addDaysIso, dsLoi, hanBaoPh, luuRoiTiep, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { TheLoai } from './BangLan.tsx';
@@ -286,13 +287,13 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   const ngan = chu.trim().length < TOI_THIEU, dai = chu.length > TOI_DA;
   const lf = useLoiForm();
   const loiO = dsLoi([{ khoa: 'kq', nhan: t('Kết quả'), toiThieu: TOI_THIEU }], { kq: chu });
-  const gui = async () => {
+  const gui = async (): Promise<boolean> => {
     lf.bam();
-    if (ngan || dai) return;
+    if (ngan || dai) return false;
     setLuu(true); setLoi(null);
     const traLoi = chu.trim();
-    try { await api.post(`/tinh-hinh/${id}/tra-loi`, { traLoi }); setDaGui(traLoi); setXong(true); lamMoi(); onDaLam(); }
-    catch (e: any) { setLoi(e.message); } finally { setLuu(false); }
+    try { await api.post(`/tinh-hinh/${id}/tra-loi`, { traLoi }); setDaGui(traLoi); setXong(true); lamMoi(); onDaLam(); return true; }
+    catch (e: any) { setLoi(e.message); return false; } finally { setLuu(false); }
   };
   const hoanTac = async () => {
     try { await api.post(`/tinh-hinh/${id}/tra-loi/hoan-tac`, {}); setXong(false); lamMoi(); onDaLam(); } catch (e: any) { toast.push('error', e.message); }
@@ -302,8 +303,13 @@ export function PanelHoiTinhHinh({ id, ten, lop, cauHoi, han, onDong, onDaLam, o
   return (
     <KhungPanel tieuDe={t('Tình hình học tập · TVV hỏi')} hocVien={ten} lop={lop} onDong={() => { if (!luu) onDong(); }} daSua={!xong && !luu && !!chu.trim()}
       quyChe={xong ? null : quyCheTraLoiTinhHinh(han ? ngay(han, homNay) : null)}
-      chan={{ chinh: xong ? nutTiep ?? undefined : <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button>, conThieu: lf.conThieu(loiO),
-        phu: !xong ? nutTiep ?? undefined : undefined }}>
+      chan={{ conThieu: lf.conThieu(loiO),
+        /* GD-18 (lời 36, dòng 40c ⓪): còn việc kế → "Đóng" · "Lưu · gửi TVV" · "Lưu · việc tiếp ›" (chính); mở lẻ → "Lưu · gửi TVV" (chính). */
+        ...(xong ? { chinh: nutTiep ?? undefined }
+          : onTiep ? {
+            phu: <><NutDongPanel busy={luu} /><button type="button" className="btn max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button></>,
+            chinh: <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void luuRoiTiep(gui, onTiep)}>{t('Lưu · việc tiếp ›')}</button>,
+          } : { chinh: <button type="button" className="btn btn-primary max-sm:h-11" disabled={luu || dai} onClick={() => void gui()}>{luu ? t('Đang lưu…') : t('Lưu · gửi TVV')}</button> }) }}>
       <div className="flex flex-col gap-4 pt-4">
         <div className="grid gap-1.5 rounded-[10px] border px-4 py-3" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
           <span className="flex flex-wrap items-center gap-2"><TheLoai loai="hoi" />{han && <BadgeViec tong={han < homNay ? 'qua' : 'cho'}>{t('hạn {ngay}', { ngay: ngay(han, homNay) })}</BadgeViec>}</span>

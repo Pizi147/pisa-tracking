@@ -1,6 +1,6 @@
 /**
  * LÀM NHIỀU HỌC VIÊN MỘT LẦN (PR-LUI-b, chủ sản phẩm 06/10) — Tạm dừng (P7) · Kết thúc học · Lưu trữ · Bỏ lưu trữ · Học lại · Huỷ chuyển lớp · Khôi phục chuyển lớp · Xoá (OV-12a).
- * P7 (N11): web chỉ bày "Tạm dừng/ Kết thúc học" (`tam-dung` / `ket-thuc` theo ô "Có thể quay lại học"); Lưu trữ / Bỏ lưu trữ / Học lại giữ cho API cũ.
+ * P7 (N11): web chỉ bày "Tạm dừng / Kết thúc học" (`tam-dung` / `ket-thuc` theo ô "Có thể quay lại học"); Lưu trữ / Bỏ lưu trữ / Học lại giữ cho API cũ.
  * Chỉ Quản lý / Quản trị.
  * MỘT nguồn cho máy chủ (`students/hangLoat.ts`) và web (`XemTruocHangLoatPanel.tsx`): tên việc, nhãn, việc ngược của nút Hoàn tác, trần.
  */
@@ -28,7 +28,7 @@ export const VIEC_NGUOC: Record<Exclude<ViecHangLoat, 'xoa'>, ViecHangLoat> = {
 export const LO_HANG_LOAT_EM = 8;
 /** OV-12a: Xoá một em ~37 câu (~4 s trên Turso, `XOA_CAN_CON_MS`) — mỗi request MỘT em. */
 export const LO_XOA_EM = 1;
-/** Chữ xác nhận Xoá nhiều em; so khớp bỏ dấu, không phân biệt hoa thường ("XOÁ", "Xóa", "xoa" đều được). */
+/** Chữ xác nhận Xoá nhiều em; so khớp bỏ dấu, không phân biệt hoa thường ("XOÁ", "Xoá", "xoa" đều được). */
 export const CHU_XAC_NHAN_XOA = 'XOÁ';
 export const khopXacNhanXoa = (s: unknown): boolean =>
   String(s ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toUpperCase() === 'XOA';

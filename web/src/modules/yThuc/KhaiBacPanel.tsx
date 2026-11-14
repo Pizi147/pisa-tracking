@@ -103,7 +103,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
         </Truong>
         <Truong nhan={t('Ghi chú')} tuyChon>
           <textarea className="field w-full" rows={2} value={ghiChu} onChange={(e) => setGhiChu(e.target.value)}
-            placeholder={t('Ví dụ: Report 2 tháng 8, cô Hà gửi PH')} />
+            placeholder={t('Ví dụ: REPORT 2 tháng 8, cô Hà gửi PH')} />
         </Truong>
       </Khoi>
     </KhungPanel>

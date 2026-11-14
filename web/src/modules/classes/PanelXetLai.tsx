@@ -70,7 +70,7 @@ const loiChon = (e: EmXetLai, c: Chon): string | null =>
 /**
  * XÉT LẠI LỘ TRÌNH (P9a, N21 — mockup V6 `thiet-ke/v6/xet-lai-lo-trinh.html` khung 2–7) — MỘT panel, mở tại chỗ ở hồ sơ lớp em đang học (việc QL ·
  * thanh Việc cần làm · chip "Xét lại" trên dòng em) và hồ sơ HV (một em). Mỗi em một thẻ: lý do · Final từng môn · ai chốt · gợi ý · phụ huynh ·
- * bàn giao · bổ trợ; ba nút Tiếp tục {lớp} · Học lại {CT} (lớp + tuần mở trên thẻ, = đường Chuyển lớp) · Tạm dừng/ Kết thúc học. Chọn nhiều → Áp cho n em.
+ * bàn giao · bổ trợ; ba nút Tiếp tục {lớp} · Học lại {CT} (lớp + tuần mở trên thẻ, = đường Chuyển lớp) · Tạm dừng / Kết thúc học. Chọn nhiều → Áp cho n em.
  * Lưu theo lô (≤ 10 em / lời gọi), em lỗi giữ thẻ + lựa chọn; Hoàn tác 10 s; Sửa tới khi lệnh mới thi hành. GVCN lớp mới: chỉ xem + một nhận xét.
  */
 export function PanelXetLai({ classId, studentId = null, onClose, onDone }: { classId: number; studentId?: number | null; onClose: () => void; onDone?: () => void }) {
@@ -254,7 +254,7 @@ function ThanhAp({ n, mau, chonChung, onAp, onBo }: { n: number; mau: EmXetLai; 
       <span className="flex flex-wrap gap-1.5">
         <NutChon nho chon={q === 'tiep_tuc'} onClick={() => setQ('tiep_tuc')}>{tiepTucChu(mau)}</NutChon>
         <NutChon nho chon={q === 'hoc_lai'} onClick={() => setQ('hoc_lai')}>{chuyenChu(mau)}</NutChon>
-        <NutChon nho chon={q === 'dung'} onClick={() => setQ('dung')}>{t('Tạm dừng/ Kết thúc học')}</NutChon>
+        <NutChon nho chon={q === 'dung'} onClick={() => setQ('dung')}>{t('Tạm dừng / Kết thúc học')}</NutChon>
       </span>
       <span className="ml-auto flex gap-1.5">
         <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={!q} onClick={() => q && onAp(q)}>{t('Áp cho {n} em', { n })}</button>
@@ -351,7 +351,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
       <span className="flex flex-wrap gap-1.5 max-sm:flex-col">
         <NutChon chon={chon?.quyet === 'tiep_tuc'} disabled={busy} onClick={() => onNut('tiep_tuc')}>{tiepTucChu(e)}</NutChon>
         <NutChon chon={laChuyen(chon?.quyet)} disabled={busy} onClick={() => onNut(chuyenCua(e))}>{chuyenChu(e)}</NutChon>
-        <NutChon chon={chon?.quyet === 'dung'} disabled={busy} onClick={() => onNut('dung')}>{t('Tạm dừng/ Kết thúc học')}</NutChon>
+        <NutChon chon={chon?.quyet === 'dung'} disabled={busy} onClick={() => onNut('dung')}>{t('Tạm dừng / Kết thúc học')}</NutChon>
       </span>
       {laChuyen(chon?.quyet) && chon && (
         <div className="flex basis-full flex-col gap-2">

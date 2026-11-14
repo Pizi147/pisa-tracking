@@ -331,7 +331,7 @@ const EN_D_WEB = {
   'Lần xử lý kế tiếp của em: {nhanLoaiXuLy}.': 'Next action for this student: {nhanLoaiXuLy}.',
   'Chi tiết': 'Details',
   'Tháng xử lý': 'Month handled',
-  'Ví dụ: Report 2 tháng 8, cô Hà gửi PH': 'E.g. Report 2 in August, sent to parents by Ms Ha',
+  'Ví dụ: REPORT 2 tháng 8, cô Hà gửi PH': 'E.g. Report 2 in August, sent to parents by Ms Ha',
   'GVCN đã xem, không cần xử lý': 'Core teacher has seen it, no action needed',
 
   /* Phối hợp SOS */
@@ -480,7 +480,7 @@ const EN_D_WEB = {
   'Cũ hơn · Đã ghi nhận ({length})': 'Older · Noted ({length})',
   'Chọn ít nhất một vi phạm.': 'Pick at least one incident.',
   'Lý do đề xuất': 'Reason for proposal',
-  'Ví dụ: Đã đưa Report 1, nhắc em trước lớp': 'E.g. Gave Report 1, reminded the student in class',
+  'Ví dụ: Đã đưa REPORT 1, nhắc em trước lớp': 'E.g. Gave Report 1, reminded the student in class',
   'Ví dụ: Vi phạm lần 4 sau WL 2, đã báo PH': 'E.g. 4th incident after WL 2, parents informed',
   'Tệp hoặc liên kết (không bắt buộc) đính kèm sau khi lưu.': 'Files or links (optional) can be attached after saving.',
   'Chọn ngày thực hiện': 'Pick the date done',
