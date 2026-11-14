@@ -136,9 +136,19 @@ export function PhanTich() {
         {/* V8-PT (P2): MỘT hàng lọc, mọi ô cao 36 chữ 14 — [chương trình | ô đoạn đầu của tab] · [Toàn bộ | Chọn khoảng tuần] · tuần → tuần · Mọi lớp ▾ ·
             ô riêng tab · (phải) Xuất / In / ⋯. 375: ô đoạn và thời gian hết hàng, ô chọn hai cột. */}
         <div className="flex flex-wrap items-center gap-2 print:hidden" data-hd="pt-hang-loc">
-          {coCt && <span className={canhDoan ? LOP_DOAN : 'contents'}><ChonChuongTrinh value={ct} onChange={setCt} /></span>}
+          {/* GD-12a (⑨ L1, R9.3): MỘT thứ tự ô cố định ở 5 tab — ô không áp dụng vẫn đứng chỗ (mờ, viền đứt, `disabled`, lý do ở aria-label); 375 ẩn ô đó. */}
+          <span className={coCt ? (canhDoan ? LOP_DOAN : 'contents') : 'contents max-sm:[&>*]:hidden'}>
+            <ChonChuongTrinh value={coCt ? ct : goc === 'ket-qua-thi' ? 'ft' : null} onChange={setCt}
+              tat={coCt ? undefined : goc === 'ket-qua-thi' ? t('Chương trình: thi thật chỉ có ở Fast Track') : t('Chương trình: Ý thức gộp hai chương trình')} />
+          </span>
           <span ref={setDau} className={goc === 'ket-qua-thi' ? LOP_DOAN : 'contents'} />
           <BoChonThoiGian khoang={khoang} onChange={setKhoang} toanBo macDinh={mdPt} />
+          {!coLop && (
+            <div role="combobox" aria-disabled="true" aria-expanded="false" aria-label={t('Lớp — báo cáo này không lọc theo lớp')} className="oc gon oc-tat w-[200px] max-sm:hidden">
+              <span className="oc-goi">{t('Mọi lớp')}</span>
+              <svg aria-hidden className="ml-auto shrink-0" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4 4-4" /></svg>
+            </div>
+          )}
           {coLop && (
             /* GD-5 (R5.2 #51): ô lọc có tìm — lớp đang chạy → "Đã kết thúc" (nhóm sẵn có, lớp từ `/ref/classes` đã nạp). */
             <ChonLop className="w-[200px] max-sm:w-[calc(50%-4px)]" gon ariaLabel={t('Lớp')} macDinhTrong={t('Mọi lớp')} value={classId ? Number(classId) : null}

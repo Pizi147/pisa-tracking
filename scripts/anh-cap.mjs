@@ -61,6 +61,7 @@ for (const ten of (process.env.BAM ?? '').split('|').filter(Boolean)) {
   const tenRe = new RegExp(`^${ten.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`);
   let nut = pw.getByRole('button', { name: tenRe }).filter({ visible: true });   // "+ Task" có hai nút (đầu trang / nổi 375), mỗi cỡ màn hiện một
   if (!(await nut.count())) nut = pw.getByRole('menuitem', { name: tenRe });
+  if (!(await nut.count())) nut = pw.getByRole('tab', { name: tenRe });   // GD-12a: tab con trong panel
   await ((await nut.count()) ? nut : pw.getByRole('radio', { name: tenRe })).last().click();   // BAO-CAO-PH: lựa chọn dạng radio (ngăn Xuất › Mẫu)
   await pw.waitForTimeout(900);
 }

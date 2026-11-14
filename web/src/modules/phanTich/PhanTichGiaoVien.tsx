@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { rateView, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
+import { rateView, tuanLich, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { OSo } from '../../ui/OSo.tsx';
@@ -10,6 +10,9 @@ import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { gopKq, phuGv, tyLeGv } from '../worklist/TongQuanV5.tsx';
 import { DaiChiSo, DauThe, NutXuat, VaoHangLoc } from './dungChung.tsx';
+import { PanelChuaLam, type TabChuaLam } from './PanelChuaLam.tsx';
+import { ChonLoc } from '../../ui/PeoplePicker.tsx';
+import { LOP_OSO } from '../../ui/SoLieu.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { napDanhSach, ptX, sheetDanhSachHoacLoi, soX, xuatBaoCao } from './xuatV2.ts';
 import type { OXlsx } from '../../lib/xlsxDep.ts';
@@ -34,6 +37,9 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const khung: KhungPtGv = ct;
   const [params] = useSearchParams();
   const [tim, setTim] = useState('');
+  /* GD-12a (⑨ L3): Tìm GV = ô chọn có tìm — gõ lọc bảng theo chữ, chọn một GV → còn một dòng, ✕ bỏ. */
+  const [chonGv, setChonGv] = useState('');
+  const [moChuaLam, setMoChuaLam] = useState<TabChuaLam | null>(null);
   const [mo, setMo] = useState<Set<number>>(new Set());
   const dienThoai = useDienThoai();
   const { homNay } = useNgayNghiepVu();
@@ -41,9 +47,9 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const q = new URLSearchParams({ ct: khung, ...(branchId ? { cn: String(branchId) } : {}), kieu: khoang.kieu, tu: khoang.tu, den: khoang.den });
   const { data, loading, error, reload } = useApi<PhanTichGvKq>(`/phan-tich/giao-vien?${q}&v2=1`, [q.toString()]);
   const tong = !!data && data.cn == null;
-  const timCo = tim.trim();
-  const nguoi = (data?.hang ?? []).filter((h) => !timCo || boDau(h.ten).includes(boDau(timCo)));
-  const pt = usePhanTrang(nguoi.length, `${q}|${tim}`, t('giáo viên'));
+  const timCo = chonGv ? '' : tim.trim();
+  const nguoi = (data?.hang ?? []).filter((h) => (chonGv ? String(h.id) === chonGv : !timCo || boDau(h.ten).includes(boDau(timCo))));
+  const pt = usePhanTrang(nguoi.length, `${q}|${tim}|${chonGv}`, t('giáo viên'));
   const ft = khung === 'ft';
   const nguonO = (h: HangPtGv, cot: string, cn?: number) => `/phan-tich/giao-vien/o?${cn ? new URLSearchParams({ ...Object.fromEntries(q), cn: String(cn) }) : q}&gv=${h.id}&cot=${cot}`;
 
@@ -78,7 +84,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
   const nguonSc = (h: HangPtGv, cn?: number) => `${nguonO(h, 'cham-diem', cn)}&tt=chua&sc=1`;
   const soSc = (n: number, h: HangPtGv | null, cn?: { id: number; ten: string }) => (h
     ? <OSo giaTri={n} nguon={nguonSc(h, cn?.id)} tieuDe={cn ? `${t('S chéo chung')} · ${cn.ten}` : t('S chéo chung')} className="text-bad" />
-    : <span className="font-semibold tabular-nums text-bad" title={t('Bấm ▸ xem từng chi nhánh')}>{n}</span>);
+    : <span className="font-semibold tabular-nums text-bad">{n}</span>);
   const scO = () => (tong ? (scDs.length === 1 ? soSc(scDs[0].n, scDs[0].h, scDs[0]) : soSc(scTong, null)) : soSc(scTong, scMot?.h ?? null));
 
   const NHOM_CT = t('Chấm Test · bài'), NHOM_V = t('Việc');
@@ -129,7 +135,7 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
       /* PT-a: hộp % + phân số mờ cùng dòng (`.cap-so`: hộp căn phải, phân số căn trái — mọi dòng thẳng nhau). */
       return (
         <span className="cap-so">
-          {cnMo === null ? <span className="font-semibold tabular-nums" title={t('Bấm ▸ xem từng chi nhánh')}>{v.percent} %</span>
+          {cnMo === null ? <span className="font-semibold tabular-nums">{v.percent} %</span>
             : <OSo giaTri={x.mau} nhan={`${v.percent} %`} nguon={nguonO(h, ft ? 'dat-mt' : 'ket-qua', cnMo)} tieuDe={`${c.nhan} · ${d.cn ? `${h.ten} · ${d.cn.ten}` : h.ten}`} />}
           <span>{x.dat}/{x.mau}</span>
         </span>
@@ -233,6 +239,11 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
     } finally { setDangXuat(false); }
   }
   const lienKet = `?${new URLSearchParams({ ...Object.fromEntries(params), goc: 'ket-qua-thi' })}`;
+  /* Số Chưa làm của dải: 0 không bấm; > 0 = nút số đỏ (cùng dáng số bấm được) mở panel đúng tab. */
+  const soChuaLam = (n: number, tab: TabChuaLam) => (n
+    ? <button type="button" className={`${LOP_OSO} text-bad`} aria-haspopup="dialog" aria-expanded={moChuaLam === tab}
+        aria-label={t('{n} {dv} chưa làm — xem theo GV', { n, dv: tab === 'cham' ? t('bài') : t('việc') })} onClick={() => setMoChuaLam(tab)}>{n}</button>
+    : <span>0</span>);
 
   return (
     <div className="space-y-3">
@@ -240,9 +251,14 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
         <NutXuat nhan={t('Xuất Excel')} tat={!data || dangXuat} onClick={xuatExcel} />
       </VaoHangLoc>
       <VaoHangLoc>
-        <input type="search" name="tim-gv" autoComplete="off" placeholder={t('Tìm GV…')} aria-label={t('Tìm GV')} value={tim} onChange={(e) => setTim(e.target.value)}
-          className="h-9 w-[220px] rounded-lg border border-[color:var(--o-nhap-vien)] bg-[color:var(--o-nhap-nen)] px-3 text-sm text-[color:var(--text)] placeholder:text-[color:var(--text-faint)] max-sm:h-11 max-sm:w-[calc(100%-52px)]" />
+        <ChonLoc className="w-[220px] max-sm:w-[calc(100%-52px)]" ariaLabel={t('Tìm GV')} tatCa={t('Tìm GV')} placeholder={t('Tìm GV…')} value={chonGv} onChange={setChonGv} onGo={setTim}
+          ds={(data?.hang ?? []).map((h) => ({ gt: String(h.id), ten: h.ten, phu: h.mon || undefined }))} />
       </VaoHangLoc>
+      {moChuaLam && (
+        <PanelChuaLam nguon={`/phan-tich/giao-vien/danh-sach?${q}`} tab={moChuaLam} onDong={() => setMoChuaLam(null)}
+          tieuDe={`${t('Chưa làm')} · ${tuanLich(khoang.tu)} – ${tuanLich(khoang.den)}`}
+          ngCanh={[data?.cn == null ? t('Tất cả chi nhánh') : data.tenChiNhanh, ft ? 'Fast Track' : t('Lớp thường'), t('đã qua hạn')].filter(Boolean).join(' · ')} />
+      )}
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
         : loading || !data ? <Skeleton rows={6} />
         : (
@@ -250,7 +266,11 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
             <DaiChiSo cot={4} ds={[
               { ten: t('Chấm Test đúng hạn'), ky: t('trong kỳ'), gt: pct(bai), mau: t('{a}/{b} bài', { a: bai.dung, b: bai.dung + bai.muon + bai.chua }) },
               { ten: t('Việc đúng hạn'), ky: t('trong kỳ'), gt: pct(viec), mau: t('{a}/{b} việc', { a: viec.dung, b: viec.dung + viec.muon + viec.chua }) },
-              { ten: t('Chưa làm'), ky: t('trong kỳ'), gt: <span className={bai.chua || viec.chua ? 'text-bad' : ''}>{bai.chua}<small className="mx-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('bài')}</small>{viec.chua}<small className="ml-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('việc')}</small></span>, mau: scTong ? t('đã qua hạn · + {n} bài S chéo chung', { n: scTong }) : t('đã qua hạn') },
+              /* GD-12a (⑨ D1, R9.1): hai số Chưa làm bấm được → panel Chưa làm nhóm theo GV (tab Chấm Test / Việc); "+ n bài S chéo chung" bấm → panel S chéo chung (như hàng bảng). */
+              { ten: t('Chưa làm'), ky: t('trong kỳ'), gt: <span className="inline-flex flex-wrap items-baseline gap-x-1">
+                  {soChuaLam(bai.chua, 'cham')}<small className="mr-1 text-[13px] font-medium text-[color:var(--text-dim)]">{t('bài')}</small>
+                  {soChuaLam(viec.chua, 'viec')}<small className="text-[13px] font-medium text-[color:var(--text-dim)]">{t('việc')}</small></span>,
+                mau: scTong ? <>{t('đã qua hạn')} · + {scO()} {t('bài S chéo chung')}</> : t('đã qua hạn') },
               { ten: t('Chưa phân công'), ky: t('trong kỳ'), gt: cpc ? <OSo giaTri={cpc} nguon={nguonO(chuaPc!.h, 'cham-diem')} tieuDe={t('Chưa phân công')} vung="chi-so" /> : 0, nho: t('bài'), mau: t('chưa có GV') },
             ]} />
             <section className="card overflow-clip">
