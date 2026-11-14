@@ -24,7 +24,7 @@ import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
 import { PanelHoiTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
-import { LuoiChamLop, duongDiemTheoLuot, type BangTheoLuot } from '../cham/LuoiChamLop.tsx';
+import { LuoiChamLop, duongCham, duongDiemTheoLuot, type BangTheoLuot, type Cham } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { khopKn } from '../cham/LuoiFT.tsx';
 import { oThuong } from '../cham/LuoiThuong.tsx';
@@ -297,6 +297,18 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
   };
   /* GD-3 (mockup v21 K2): một lớp → tiêu đề = tên việc ("Nhập điểm Listening, Reading"), dòng 2 "lớp · tuần · n bài", lưới ngay dưới (không hàng gập lớp). */
   const motLop = lop.length === 1;
+  /* Mockup K2 dòng 2 "MB FT 104 · MT1 · W3 SEP · còn 4 / 10 bài": cùng URL lưới `LuoiNhung` đang đọc (`useApi` gộp GET đang bay / vừa xem) → 0 request thêm.
+     Bài = ô kỹ năng của việc ở tuần thi này, sửa được; còn = `conThieuFt`. MT ghi khi cả lớp cùng một lượt. */
+  const dsLop = useApi<Cham>(motLop && lop[0].classId ? duongCham(lop[0].classId, { periodId: lop[0].periodId ?? null, kind: lop[0].kind ?? null }) : null, [motLop]).data;
+  const demBai = useMemo(() => {
+    const x = lop[0]; const kns = x.kns ?? (x.kn ? [x.kn] : null);
+    if (!dsLop?.ft || !it.tuanThi) return null;
+    const o = dsLop.ft.rows.flatMap((r) => r.cells.filter((c) => c.canEdit && c.required && c.weekStart === it.tuanThi && (!kns || kns.some((k) => khopKn(c.skill, k))))
+      .map((c) => ({ c, mt: r.attemptNo })));
+    if (!o.length) return null;
+    const mt = new Set(o.map((v) => v.mt));
+    return { con: o.filter((v) => conThieuFt(v.c)).length, tong: o.length, mt: mt.size === 1 ? `MT${[...mt][0]}` : null };
+  }, [dsLop, it.tuanThi]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [tieuDe] = useState(() => (motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));
   const periodId = lop[0].periodId ?? null;
@@ -304,7 +316,7 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
     han: it.due ? <ChipHan loai={LOAI_HAN_CUA_VIEC.score ?? 'nhap-diem'} han={it.due} /> : null,
     ngCanh: (
       <Link className="link" to={duongLichTest({ periodId })}>
-        {motLop ? [lop[0].classCode, it.tuanThi ? tuanLich(it.tuanThi) : null].filter(Boolean).join(' · ') : t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
+        {motLop ? [lop[0].classCode, demBai?.mt, it.tuanThi ? tuanLich(it.tuanThi) : null].filter(Boolean).join(' · ') : t('{n} lớp', { n: new Set(lop.map((x) => x.classId)).size })} · {motLop && demBai ? t('còn {con} / {tong} bài', demBai) : t('{soBai} bài', { soBai: lop.reduce((n, x) => n + (x.soBai ?? 0), 0) })}
       </Link>
     ),
   });

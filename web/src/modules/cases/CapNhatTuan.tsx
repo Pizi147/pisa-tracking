@@ -9,7 +9,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam, NutChu, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
-import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
+import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { FormPa, KhoaNho, VachBuoi } from './FormPa.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
@@ -159,6 +159,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const [loiLuu, setLoiLuu] = useState<{ chu: string; thuLai: boolean } | null>(null);
   const [reason, setReason] = useState<string>(g?.decisionNote ?? '');
   const [on, setOn] = useState<string>(g?.observedOn ?? homNay);
+  const [moNgay, setMoNgay] = useState(false);
   const [endOn, setEndOn] = useState<string>(g?.completedOn ?? homNay);
   /* #3: ô "Hoàn thành Case" (mặc định tắt) · mức (null = theo Tiến triển) · kết luận (null = theo Nhận xét). */
   const [htCase, setHtCase] = useState(false);
@@ -585,18 +586,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           {!lanCuoi && (
             <div {...o('quyet-dinh')} tabIndex={-1} className="flex flex-col gap-2 outline-none">
               <span className="block text-[13px] font-semibold text-slate-300">{t('Quyết định')}</span>
-              {/* GD-3 (mockup v21 K4c): Quyết định là hàng chip tròn như Tiến triển (thay nút đoạn); lựa chọn theo luật (PA quy chế: Giữ nguyên · Điều chỉnh). */}
-              <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={t('Quyết định')}>
-                {dsTren.map((d) => {
-                  const chon = (trongDc ? 'adjust' : decision || '') === d;
-                  return (
-                    <button key={d} type="button" role="radio" aria-checked={chon} onClick={() => chonQd(d)}
-                      className={`btn btn-sm min-h-[44px] whitespace-nowrap rounded-full px-3 sm:min-h-[34px] ${chon ? '!border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : ''}`}>
-                      {dich(PLAN_DECISION_NGAN[d])}
-                    </button>
-                  );
-                })}
-              </div>
+              {/* Chủ SP 14/11 (rà #1563): Quyết định giữ dáng nút đoạn như cũ. */}
+              <BoLocDoan ariaLabel={t('Quyết định')} value={(trongDc ? 'adjust' : decision || '') as PlanDecision}
+                muc={dsTren.map((d) => ({ key: d, nhan: dich(PLAN_DECISION_NGAN[d]) }))} onChange={chonQd} />
               {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
               {pa.batBuoc && (
                 <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-400">
@@ -645,7 +637,13 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               )}
             </div>
           )}
-          <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong>
+          {/* Chủ SP 14/11 (rà #1563): Ngày ghi gọn — một dòng "Ghi ngày dd/mm · Đổi"; bấm Đổi mới mở ô ngày (ghi muộn). */}
+          {moNgay ? <Truong nhan={t('Ngày ghi')}><ONgay kieu="ngay" value={on} onChange={setOn} toiDa={homNay} disabled={khoaLuaChon} /></Truong> : (
+            <p className="m-0 flex items-center gap-1.5 text-[13px] text-slate-400">
+              <span>{t('Ghi ngày {ngay}', { ngay: ngan(on) })}</span>
+              {!khoaLuaChon && <><span aria-hidden>·</span><NutChu onClick={() => setMoNgay(true)}>{t('Đổi')}</NutChu></>}
+            </p>
+          )}
           {/* GD-3: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân. PA chờ Mini Test, Sửa: không có câu kỳ / hạn. */}
           {!sua && !pa.miniTestHan && <DongQuyChe px="px-0" qc={quyCheKetQuaPa(pa.actionDue ? ngan(pa.actionDue) : null)} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden">{nutNhap}{nut}</div>

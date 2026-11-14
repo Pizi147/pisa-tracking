@@ -317,7 +317,12 @@ export function KhungPanel({ tieuDe, hocVien, lop, rong: rongRieng, tabs, vungTa
   const cvNgoai = dauCv && !trongKhung ? dauCv : null;
   const dongLoai = loai === undefined ? (cvNgoai?.loai ?? dau?.loai ?? null) : loai;
   /* B11 (audit-ui 08/11): MỌI panel một dáng dòng loại — chữ thường 13 / 600 mờ, không vạch hồng (V2: hồng chỉ để nhận diện; G13 cấm in hoa). */
-  const vachLoai = dongLoai && !trongCot && <div className="mb-1 text-[13px] font-semibold text-dim">{dongLoai}</div>;
+  /* GD-3 (mockup v21 `.loai`): vạch nhấn hồng 14 × 3 trước dòng loại "Việc · …", chữ 12 / 700 màu mờ. */
+  const vachLoai = dongLoai && !trongCot && (
+    <div className="mb-1 flex items-center gap-1.5 text-[12px] font-bold tracking-[.02em] text-faint">
+      <span aria-hidden className="h-[3px] w-3.5 shrink-0 rounded-sm bg-[color:var(--hong)]" />{dongLoai}
+    </div>
+  );
   const ngu = [hocVien, lop].filter(Boolean).join(' · ');
   /* AUDIT-LOI (PTA 03/11): nút Đóng / Huỷ ở chân gọi đúng `onDong` (mặc định, hoặc nơi gọi truyền lại chính hàm đó) → đi đường `dong` như ✕ / Esc:
      đang có chữ thì hộp "Bỏ chữ, đóng". DON-CHU: gọi đúng hàm của ‹ Quay lại (vd Sửa công việc: Huỷ = về việc) → đi đường `veLai` như ‹.

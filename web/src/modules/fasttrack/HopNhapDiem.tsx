@@ -246,7 +246,8 @@ export function ODiemMt({ cell, lon = false, mo, onMo, dauKq = null, anVang = fa
       <span className="inline-flex max-w-full">
         <button ref={setNeo} type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={nhanO} title={tieuDeO} onClick={() => onMo(!mo)}
           className={`o-sua grid h-11 w-24 max-w-full place-content-center justify-items-center leading-[1.15] tabular-nums [&_[data-phu-odiem]]:!mx-0 ${h.kieu && h.kieu !== 'trong' ? KIEU_O[h.kieu] : ''} ${mo ? '!border-[color:var(--accent)] shadow-[0_0_0_3px_var(--accent-soft)]' : cell.thieuNhanXet ? VIEN_THIEU_NX : ''}`}>
-          <span className="inline-flex items-baseline">{kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}</span>
+          {/* Chủ SP 14/11: số CĂN GIỮA ô — không chừa chỗ ký hiệu khi ô không có ✓ / ✗. */}
+          <span className="inline-flex items-baseline">{kq && kyHieu}{h.kieu === 'trong' ? <span className="text-transparent" aria-hidden>0</span> : so}</span>
           {h.kieu === 'trong' ? null : phu}
         </button>
         {mo && neo && <HopNhapDiem cell={cell} anchor={neo} onDong={() => onMo(false)} {...hop} />}
@@ -585,9 +586,12 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     </>
   ) : vang ? (
     <>
+      {/* Chủ SP 14/11 (rà #1563): ô đang Vắng — cùng dáng chân: ⋯ (Bỏ vắng khi gỡ được) · nút chính "Lưu điểm · đóng". */}
       {cell.daChot!.goDuoc && (
-        <button type="button" className={nut} disabled={busy} onClick={() => void gui([{ noShow: false }], onDong, 'khac')}>{t('Bỏ vắng')}</button>
+        <MenuDong canhTrai lopNut={`${nut} w-9 justify-center px-0`}
+          muc={[{ key: 'bo-vang', nhan: t('Bỏ vắng'), tat: busy, title: busy ? dangLuuChu : undefined, onChon: () => void gui([{ noShow: false }], onDong, 'khac') }]} />
       )}
+      <span className="flex-1" />
       <LyDoThieu thieu={thieu} />
       {nhapDuoc && <button type="button" className={`${nut} btn-primary`} disabled={busy} onClick={() => luu(false)}>{busy ? dangLuuChu : t('Lưu điểm · đóng')}</button>}
     </>
