@@ -122,7 +122,8 @@ export function LichTestTab() {
     if (daKhoiTao.current === khoa) return;
     daKhoiTao.current = khoa;
     setNho(docMo(nguoiId, data.tuan.id));
-    const khoi = { k1: false, k3: true };
+    /* GD-11a (⑦ A1 / A6 mở, A3 thu — PTA rà #1705): người có phân công thấy sẵn bài quá hạn của mình; Quản lý / Quản trị thu như cũ. */
+    const khoi = { k1: data.no.some((d) => !!d.phan && (d.phan.toi?.con ?? 0) > 0), k3: true };
     const khopKn = (k: string) => !!urlKn && (k === urlKn || (urlKn === 'writing' && k.startsWith('writing')));
     /* LT-GON: khối Quá hạn một hàng một lớp — tự mở theo đường dẫn mở hàng LỚP (đã gộp). */
     const noGop = gopNoTheoLop(data.no, CHAM_CHEO);
@@ -268,7 +269,7 @@ export function LichTestTab() {
     <WeekPicker gon periodId={periodParam ?? data.tuan?.id ?? null} onPeriod={(id) => datThamSo({ periodId: id ? String(id) : null })} />
   );
   const congTacKhung = (dem.ft > 0 || dem.thuong > 0) && (
-    <CongTacKhung v8 trang="lich-test" value={loai ?? 'tat-ca'} coTatCa dem={dem}
+    <CongTacKhung v8 giuSo trang="lich-test" value={loai ?? 'tat-ca'} coTatCa dem={dem}
       onChange={(k) => datThamSo({ loai: k })} />
   );
   const nhomPhamVi = data.coPhamViRong && (
@@ -306,13 +307,16 @@ export function LichTestTab() {
       {data.nhacLichSu.map((n) => (
         <p key={n.classId} className="m-0 text-[13px] font-semibold tabular-nums text-[color:var(--accent)]">
           {/* AUDIT-UI T6: "MT cũ chưa nhập · MB FT 101: MT1 (4 em) ›, MT3 (1 em) ›" — không chuỗi "·" dài lẫn số em với lượt. */}
-          {t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}:
+          {/* GD-11a (PTA rà #1705): mỗi mục một khối liền (dấu phẩy đi theo mục), chỉ ngắt GIỮA các mục — không "," lẻ đầu dòng. */}
+          <span className="whitespace-nowrap">{t('MT cũ chưa nhập · {classCode}', { classCode: n.classCode })}:</span>
           {n.luot.map((x, i) => (
             <Fragment key={x.so}>
-              {i ? ', ' : ' '}
-              <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
-                MT{x.so} ({t('{n} em', { n: x.soEm })}) ›
-              </Link>
+              {' '}
+              <span className="inline-flex whitespace-nowrap">
+                <Link to={x.href} className="link inline-flex min-h-[44px] items-center sm:min-h-0" aria-label={t('Nhập MT{so} cũ lớp {classCode}', { so: x.so, classCode: n.classCode })}>
+                  MT{x.so} ({t('{n} em', { n: x.soEm })}) ›
+                </Link>{i < n.luot.length - 1 && <span className="self-center">,</span>}
+              </span>
             </Fragment>
           ))}
         </p>

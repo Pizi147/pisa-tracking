@@ -103,7 +103,7 @@ export async function runPrUxGTests(t: YThucTestKit) {
     const cuoi = Number(m?.[1].split(',').pop());
     assert(cuoi >= 110, `cột nút = ${cuoi}`);
     assert(/<ColLichTest \/>/.test(s) && /w-full justify-center/.test(s), 'hàng Quá hạn: bộ cột chung + nút hết bề rộng cột');
-    assert(/className="lt-gc" title=\{chuConChoDong/.test(s), 'ô còn chờ phải có title đủ chữ');
+    assert(/className="lt-gc" title=\{chuConChoDu/.test(s) && !/ellipsis/.test(doc('web/src/index.css').split('.lt-gc {')[1]?.split('}')[0] ?? ''), 'ô còn chờ: title đủ tên, không cắt (PTA rà #1705)');
   });
 
   // ------------------------------------------------------------------ G5 · 0 vi phạm: không hai nút chính, ô nói "Không có vi phạm"

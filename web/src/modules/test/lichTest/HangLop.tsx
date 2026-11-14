@@ -35,12 +35,18 @@ export const ChipMon = ({ ct, ds }: { ct: string | null; ds: readonly string[] }
   <span className="flex flex-wrap gap-1">{ds.map((k) => <ChipKy key={k} k={tenMonNgan(ct, k)} />)}</span>
 );
 
-/** "Đinh Thu Hằng (L R) · Phạm Thu Trang (W1 W2) · chấm chéo S" — ô còn chờ theo người (máy chủ `gvMon`, đã bỏ phần của người xem). */
-export function chuConCho(gvMon: Readonly<Record<string, readonly string[]>> | undefined, ct: string | null): string {
-  return Object.entries(gvMon ?? {}).map(([ten, kn]) => {
+/**
+ * "Đinh Thu Hằng (L R) · Phạm Thu Trang (W1 W2) · chấm chéo S" — ô còn chờ theo người (máy chủ `gvMon`, đã bỏ phần của người xem).
+ * PTA rà #1705 (chủ SP ghét chữ cắt "…"): tối đa `TOI_DA_CON_CHO` người, còn lại "+k"; `du` = đủ tên cho `title`. Ô xuống dòng (≤ 2 dòng ở 1440).
+ */
+const TOI_DA_CON_CHO = 3;
+export function chuConCho(gvMon: Readonly<Record<string, readonly string[]>> | undefined, ct: string | null): { chu: string; du: string } {
+  const ds = Object.entries(gvMon ?? {}).map(([ten, kn]) => {
     const mon = kn.map((k) => tenMonNgan(ct, k)).join(' ');
     return dich(ten) === CHAM_CHEO ? t('chấm chéo {mon}', { mon }) : `${dich(ten)} (${mon})`;
-  }).join(' · ');
+  });
+  const thua = ds.length - TOI_DA_CON_CHO;
+  return { chu: ds.slice(0, TOI_DA_CON_CHO).join(' · ') + (thua > 0 ? ` +${thua}` : ''), du: ds.join(' · ') };
 }
 
 /** Thẻ "n bài chờ duyệt dời" (⑦ A1 `.tag.doi`: vắng lần 2 chờ Quản lý duyệt dời). */
@@ -119,7 +125,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
         const mon = <ChipMon ct={l.chuongTrinh} ds={l.phan ? l.phan.toi?.kyNang ?? [] : monLuot} />;
         const dot = l.luot.map((x) => dich(x.dot)).join(' · ');
         const soEm = l.luot.map((x) => t('{n} em', { n: x.soHv })).join(' · ');
-        const conCho = l.phan ? '' : chuConCho(l.gvMon, l.chuongTrinh);
+        const { chu: conCho, du: conChoDu } = l.phan ? { chu: '', du: '' } : chuConCho(l.gvMon, l.chuongTrinh);
         const tienDo = <TienDo so={`${l.daCham} / ${l.tong}`} title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })} />;
         const maLop = (
           <span className="block min-w-0">
@@ -143,7 +149,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
                   <td><ODot dot={dot} phu={soEm} /></td>
                   <td>{mon}</td>
                   <td>{han}</td>
-                  <td className="lt-gc" title={conCho || undefined}><span className="inline-flex max-w-full items-center gap-2"><TheChoDoi n={l.choDuyetDoi} />{conCho && <span className="min-w-0 truncate">{conCho}</span>}</span></td>
+                  <td className="lt-gc" title={conChoDu || undefined}>{/* thẻ chạy cùng dòng chữ (không chiếm dòng riêng) — ≤ 2 dòng */}<TheChoDoi n={l.choDuyetDoi} />{l.choDuyetDoi > 0 && conCho ? ' ' : null}{conCho}</td>
                   <td className="text-right">{tienDo}</td>
                   <td className="text-right"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
                 </>

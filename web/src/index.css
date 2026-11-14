@@ -1732,11 +1732,12 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .lt-ma:hover { color: var(--accent); text-decoration: underline; }
   .lt-dot { display: grid; min-width: 0; font-size: 14px; font-weight: 600; white-space: nowrap; color: var(--text); }
   .lt-dot small { font-size: 12px; font-weight: 400; color: var(--text-faint); }
-  .lt-gc { font-size: 13px; color: var(--text-dim); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lt-gc { font-size: 13px; line-height: 1.35; color: var(--text-dim); white-space: normal; overflow-wrap: anywhere; }   /* PTA rà #1705: không cắt — xuống dòng, quá 3 người thì +k */
   .lt-td { font-size: 15px; font-weight: 600; color: var(--text); white-space: nowrap; font-variant-numeric: tabular-nums; }
   .lt-td small { font-size: 13px; font-weight: 500; color: var(--text-dim); }
   .lt-tag-doi { display: inline-flex; align-items: center; height: 22px; padding: 0 8px; border-radius: 6px; border: 1px solid rgb(var(--soon-line-rgb));
     background: rgb(var(--soon-bg-rgb)); color: rgb(var(--soon-rgb)); font-size: 12px; font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+  .lt-gc > .lt-tag-doi { vertical-align: middle; margin-right: 4px; }
   .lt-vien { display: inline-flex; align-items: center; gap: 5px; height: 24px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--line-strong);
     background: rgb(var(--muted-bg-rgb)); color: var(--text-dim); font-size: 12px; font-weight: 600; white-space: nowrap; }
   .lt-vien::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; flex-shrink: 0; }

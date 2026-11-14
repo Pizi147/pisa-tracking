@@ -30,7 +30,7 @@ Mockup `thiet-ke/v21/test.html` (⑦ khu A) + `test-ghi-chu.md` (A1–A6, [XM-6]
 | A3 | Ô "GV chấm S" | `NutGvCham oChon` = `ChonNguoi` (GD-5) tại chỗ 300 px, GV Speaking chi nhánh trước | a3 | KHỚP (mockup vẽ lúc đang gõ "Hà") |
 | A4 | "Nhập điểm lớp ›" → `/test/lich?classId&periodId&kn` | ĐỔI — trang lượt MT + `hrefDayDu` máy chủ (lưới theo tuần) trỏ thẳng; lượt lớp thường không theo tuần giữ panel Nhập điểm lớp | a4 | KHỚP |
 | A4 | Chip "Lớp: X ✕" | ĐỔI chữ — cùng dáng chip bỏ lọc ở Kế hoạch Test (`nut-loc nut-loc-dang`) | a4 | KHỚP |
-| A4 | Nhóm mở khi vào | web mở **Quá hạn chấm** khi lớp còn bài quá hạn của GV (luật lối vào cũ); mockup vẽ nhóm tuần mở | a4 | KHÁC — dữ liệu seed: MB FT 101 còn 11 bài quá hạn của GV, tuần W2 SEP phần GV đã xong → mở chỗ còn việc là hiển nhiên. [XM] ghi Việc để sau |
+| A4 | Nhóm mở khi vào | web mở **Quá hạn chấm** khi lớp còn bài quá hạn của GV (luật lối vào cũ); mockup vẽ nhóm tuần mở | a4 | KHÁC — [XM] **PTA chốt 15/11: GIỮ như web** (lớp còn bài quá hạn → mở nhóm Quá hạn) |
 | A5 | Rỗng một dòng · lỗi câu chuẩn trong thẻ ("Không tải được Lịch Test tuần." + "Dữ liệu đã lưu không mất." + Thử lại) · tải = xương | ĐỔI | a5 | KHỚP (lỗi + xương không chụp được trên seed — mã đã đọc) |
 | A6 | 375 mỗi lớp một thẻ; Quá hạn có nút "Nhập điểm" 44 hết bề ngang | ĐỔI (< 1024 px) | a6 | KHỚP |
 | A6 | Dải số 375 hai ô một hàng (không nhãn nhóm) | ĐỔI | a6 | KHỚP |
@@ -39,6 +39,17 @@ Mockup `thiet-ke/v21/test.html` (⑦ khu A) + `test-ghi-chu.md` (A1–A6, [XM-6]
 | A1 | Mũi tên mở hàng | ▸ đặc (`MuiTenMo` chung) — mockup "›" nét | a1 | KHÁC — thành phần chung, đổi ở GD-18 (bàn giao PTA 15/11) |
 | A1 | Dòng phụ đợt "dời vắng · 1 em" | web chỉ "1 em" | a1 | BỎ — máy chủ không trả cờ dời vắng cho hàng tuần (chỉ hàng Quá hạn); Việc để sau |
 | A6 | Thẻ Quá hạn 375: "còn chờ: …" | web giữ dòng chữ nhỏ (thông tin đang có); mockup không vẽ | a6 | GIỮ |
+
+### Vòng PTA rà #1705 (15/11)
+| Chỗ | Sửa | Ảnh |
+|---|---|---|
+| Cột "còn chờ" / "Còn chờ" bị cắt "…" | không cắt nữa: xuống dòng (≤ 2 dòng ở 1440), quá 3 người → "+k"; `title` đủ tên; thẻ "chờ duyệt dời" chạy cùng dòng chữ | a1, a3, a4 |
+| Nút hàng Quá hạn đang mở ghi "Thu" | "Thu gọn" (cùng chữ "Thu gọn tất cả" / mũi tên) | a4 |
+| 375 nhóm Quá hạn chấm mặc định đóng | người có phân công còn bài quá hạn → mở sẵn (A1, A6); QL / QT thu (A3) | a1, a6 |
+| 375 công tắc khung mất số | "Fast Track 1 · Lớp thường 4" (`CongTacKhung giuSo`) | a6 |
+| 375 "MT cũ chưa nhập" có "," lẻ đầu dòng | mỗi mục một khối liền, dấu phẩy theo mục | a6 |
+
+Đo lại trên mọi ảnh mới: không phần tử nào trong bảng Lịch Test bị cắt "…" (GV + QL, 1440 + 375); ✕ chip dy −0,8 px; ⋯ 375 dx 0 dy −0,5 px.
 
 **KHỚP 19 / 23 = 83 %; bỏ 3 dòng KHÁC theo luật / thành phần chung có lịch (V22 ×1, `MuiTenMo` GD-18, A4 luật lối vào cũ) → 19 / 20 = 95 %.**
 
@@ -79,7 +90,7 @@ Không thao tác nào bị bỏ.
 - Chip "Lớp: X ✕" 138×32 (375: 138×44): dy −0,8 px.
 - ⋯ đầu trang 375: 44×44, dx 0,0 · dy −0,5 px.
 - Chip "✓ Đã chấm": ✓ là `::before` trong chip (theo #1695), căn giữa flex.
-- Chữ "còn chờ" dài: cắt "…" có `title` đủ chữ; không hộp nào đè cột (cột cố định `COT_LICH_TEST`, "Còn chờ" giãn).
+- Chữ "còn chờ" dài: xuống dòng, quá 3 người "+k", `title` đủ tên — 0 chữ bị cắt "…"; không hộp nào đè cột (cột cố định `COT_LICH_TEST`, "Còn chờ" giãn).
 
 ## Rà trước PR
 - impeccable `audit`: detector 0 phát hiện; tự rà 18/20 (A11y 3 — mã lớp 375 là link chữ < 44 px như trước · Hiệu năng 4 · Responsive 3 · Theming 4 · Integrity 4).

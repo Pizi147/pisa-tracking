@@ -79,7 +79,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
                   aria-expanded={dangMo}
                   title={dangMo ? t('Thu lưới lại') : d.duocCham ? t('Mở lưới ngay dưới dòng, chỉ các em còn nợ') : t('Xem lưới (môn người khác dạy)')}
                   onClick={doi}>
-                  {dangMo ? t('Thu') : d.duocCham && !xong ? t('Nhập điểm') : t('Xem')}
+                  {dangMo ? t('Thu gọn') : d.duocCham && !xong ? t('Nhập điểm') : t('Xem')}
                 </button>
               );
               const so = xong ? <Vien muc="xong">{t('Đã chấm')}</Vien> : <TienDo so={conCua(d)} />;
@@ -87,7 +87,8 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
               const canhBao = loi > 0 && <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(loi)}</Nhan>;
               const mon = <ChipMon ct={d.chuongTrinh} ds={d.phan ? d.phan.toi?.kyNang ?? [] : d.kyNang} />;
               const conCho = chuConCho(d.gvMon, d.chuongTrinh);
-              const chuConChoDong = conCho && t('còn chờ: {ds}', { ds: conCho });
+              const chuConChoDong = conCho.chu && t('còn chờ: {ds}', { ds: conCho.chu });
+              const chuConChoDu = conCho.du && t('còn chờ: {ds}', { ds: conCho.du });
               const maLop = <Link to={`/hoc-vien/lop/${d.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link>;
               return (
                 <Fragment key={d.key}>
@@ -109,7 +110,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
                       <td><ODot dot={dich(d.dotLabel)} phu={t('{n} em', { n: d.soHv })} /></td>
                       <td>{mon}</td>
                       <td><span className="inline-flex items-center gap-2">{han}{canhBao}</span></td>
-                      <td className="lt-gc" title={chuConChoDong || undefined}>{chuConChoDong}</td>
+                      <td className="lt-gc" title={chuConChoDu || undefined}>{chuConChoDong}</td>
                       <td className="text-right">{so}</td>
                       <td>{nut}</td>
                     </HangNhom>
