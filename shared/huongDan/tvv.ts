@@ -110,7 +110,7 @@ export const VIEC_TVV: ViecHd[] = [
     loiChinh: { man: 'hoc-vien', chu: 'Học viên & Lớp › lọc', duong: HV, chi: { hd: 'hvl-goc', duong: HV, chu: 'Góc nhìn và lọc phụ ở hàng này.' } },
     buoc: ['Ô <b>Xem</b>: <b>HV của tôi</b> (mặc định, khi bạn có em được gán) hoặc một chi nhánh; đoạn <b>Tất cả</b> · <b>Đang SOS</b> · <b>Lịch thi</b>.',
       'Chip: <b>Thi tháng này</b> · <b>Tạm dừng</b> · <b>Sắp thi</b> · <b>Có việc quá hạn</b>; <b>Bộ lọc thêm</b> › <b>Theo vai</b>: <b>Thiếu thông tin</b> · <b>Chờ chọn bước tiếp</b>.',
-      'Bấm <b>tên</b> em mở hồ sơ; <b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'],
+      'Bấm <b>tên</b> em mở hồ sơ; <b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'],
     tuKhac: ['quá hạn', 'sos', 'hv của tôi', 'filter', 'chi nhánh'],
   },
   {
@@ -426,7 +426,7 @@ export const HD_TVV: HuongDan = {
       muc: [
         { id: 'hv-tim', ten: 'Tìm em, lớp', buoc: ['Bấm <b>/</b> hoặc <b>Ctrl K</b> (hoặc ô tìm trên thanh trên), gõ ít nhất 2 chữ.', 'Kết quả chia <b>Học viên · Lớp</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Không thấy: <b>Tìm trong HV lưu trữ ›</b>.'],
           chi: { hd: 'tim-hv', chu: 'Gõ tên, email em hoặc mã lớp.' } },
-        { id: 'tvv-hvl-cot', ten: 'Bảng và thao tác dòng', buoc: ['Cột <b>Việc cần làm</b>: chip việc của bạn với em đó, bấm để làm ngay tại trang; bấm <b>tên</b> em mở hồ sơ.', '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
+        { id: 'tvv-hvl-cot', ten: 'Bảng và thao tác dòng', buoc: ['Cột <b>Việc cần làm</b>: chip việc của bạn với em đó, bấm để làm ngay tại trang; bấm <b>tên</b> em mở hồ sơ.', '<b>⋯</b> cuối dòng (<b>Thao tác khác</b>): <b>Hỏi tình hình học tập</b> (gửi GVCN, em điền sẵn) · <b>Sửa thông tin</b> · <b>Tạm dừng/ Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Quay lại học</b> · <b>Mở hồ sơ</b>.'] },
         mucGv('hoc-vien', 'hv-lich-thi'),
       ],
     },

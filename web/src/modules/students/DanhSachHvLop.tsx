@@ -54,7 +54,7 @@ function MenuEm({ h, lop, ev, onDoi }: { h: HvGon; lop: LopGon | undefined; ev?:
     maLop: lop?.code ?? null, classId: lop?.id ?? null, onDone: onDoi });
   const nd = h.nhapDiem && lop ? nhapDiemCua(lop.id, thuong, [{ kind: h.nhapDiem.kind, kindLabel: h.nhapDiem.dot ?? h.nhapDiem.kind, myPending: ['*'], attemptNo: h.nhapDiem.attemptNo }]) : null;
   const muc = tt.mucCua({ id: h.id, ten: h.ten, dangHoc: true, nhapDiem: nd, status: ev?.status ?? 'active', ft: ev?.ft ?? !thuong, maLop: lop?.code ?? null,
-    xuLyYThuc: !!h.hang?.yThucHop?.canLam,
+    xuLyYThuc: !!h.hang?.yThucHop?.canLam, tvv: h.tvv ?? null,
     ...(ev ? { suaThongTin: ev.viewer.suaThongTin, suaThem: ev.viewer.suaThem, kyThi: !!ev.kyThi } : {}) });
   return <>{muc.length > 0 && <MenuDong muc={muc} nhan={t('Thao tác khác')} lopNut="ba-cham" />}{createPortal(tt.panels, document.body)}</>;
 }
