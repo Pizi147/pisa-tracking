@@ -69,11 +69,11 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([...ql.hien, ...ql.an].map((x: any) => x.key), ['cho-duyet', 'xep-lop', 'cham', 'qua-han'], 'Thứ tự Quản lý');
     eq([ql.hien.length, ql.an.length], [2, 2], 'Hiện 2, còn lại "+n"');
     const tat = [...ql.hien, ...ql.an];
-    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: '4 việc quá hạn', tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
+    eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: 'Quá hạn · 4', so: 4, tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
     eq(tat.find((x: any) => x.key === 'cho-duyet').tone, 'muted', 'cho-duyet tone (OV-15a bỏ tím)');
-    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, '3 HV chưa chốt lộ trình', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
+    eq(tat.find((x: any) => x.key === 'xep-lop').nhan, 'Chưa chốt lộ trình · 3', 'xep-lop khi lớp chưa hết khoá (PR-Dọn Câu 2 = B)');
     const het = d.badgeLop({ ...goc, vai: 'gv', needsPlacement: true, canXepLop: 5 });
-    eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, '5 HV cần xếp lớp tiếp', 'xep-lop khi hết khoá dùng canXepLop');
+    eq([...het.hien, ...het.an].find((x: any) => x.key === 'xep-lop').nhan, 'Cần xếp lớp tiếp · 5', 'xep-lop khi hết khoá dùng canXepLop');
     assert(!JSON.stringify(tat).includes('"case"'), 'Còn badge case');
   });
 

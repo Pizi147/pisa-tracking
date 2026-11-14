@@ -9,7 +9,7 @@ import { ChipLoc, KHOI, MUC_H, TenEm, bamHang } from './BangHoSoLop.tsx';
 import { viecCase, type CanHoTro, type CaseCua } from './BangCanHoTro.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { Empty, Skeleton, TargetText } from '../../ui/ui.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM } from '../../ui/MenuDong.tsx';
 import { Nhan, QuaHan } from '../../ui/Nhan.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -233,7 +233,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
           ];
           return (
             <TheDong key={s.id} onClick={bamHang(() => moTen(s.id))} className={`grid cursor-pointer gap-2 !px-3.5 !py-3 ${mo === s.id ? 'dang-mo' : ''} ${lopHang(s)}`}
-              dau={<span className="text-[15px]">{oTen(s)}</span>} hanhDong={menu(s, 'btn h-11 w-11 shrink-0 justify-center !px-0 text-[13px] font-bold tracking-wider')} dong={[]}>
+              dau={<span className="text-[15px]">{oTen(s)}</span>} hanhDong={menu(s, NUT_BA_CHAM)} dong={[]}>
               <div className={`grid items-center gap-y-1 rounded-lg px-2 py-1.5 text-center ${mo === s.id ? 'bg-[color:var(--surface)]' : 'bg-[color:var(--surface-2)]'}`} style={luoi}>
                 <span />{cotMon.map((k) => <abbr key={k} className="text-xs font-semibold text-faint no-underline" title={tenMon(chuongTrinh, k)}>{tenMonNgan(chuongTrinh, k)}</abbr>)}{coPt && <span className="text-xs font-semibold text-faint">%</span>}
                 {BAI.map((b) => {

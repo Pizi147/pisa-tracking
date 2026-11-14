@@ -7,14 +7,15 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { addDaysIso, bacNgan, laDongLs, ngay, quaHanChiXem, tvvChinhCuaLop, type NhomEm } from '@shared/domain/index.ts';
+import { addDaysIso, bacNgan, laDongLs, ngay, quaHanChiXem, type NhomEm } from '@shared/domain/index.ts';
 import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
 import { BangPhoiHopHoSo } from './BangPhoiHop.tsx';
 import { ThangVach, ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
-import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, ThanhLs, type VpDong } from './BangLan.tsx';
+import { BaoPhDu, ChipBac, DauCotEm, DongEmGon, DongLan, KhoiEm, KhungLs, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, type VpDong } from './BangLan.tsx';
+import { NutLichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { CO_LO, LoYThucPanel, guiTheoLo, type ViecLo } from './LoYThucPanel.tsx';
@@ -189,7 +190,6 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const moLichSu = (sid: number) => { setMoLs((c) => new Set(c).add(sid)); requestAnimationFrame(() => cuonToi(document.getElementById(`yt-em-${sid}`))); };
   const xemLai = (sid: number, ids: number[]) => { setLsVua(ids); moLichSu(sid); };
 
-  const tvvChinh = tvvChinhCuaLop((roster.data ?? []).filter((r: any) => !r.archived));
   const khongMo = new Set((roster.data ?? []).filter((r: any) => r.xemHoSo === false).map((r: any) => r.id as number));
   const emLop = new Map(d.emLop.map((e) => [e.studentId, e]));
   const vpCua = (ids: readonly number[], du?: DongEm['viPhamCho'], vpm: Map<number, VpDong> = tra.vp) => ids.map((id): VpDong => vpm.get(id)
@@ -203,7 +203,6 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const hvEm = (sid: number) => {
     const e = emLop.get(sid);
     const ten = e?.ten ?? tra.em.get(sid)?.ten ?? '';
-    const tvv = e?.tvv && e.tvv !== tvvChinh ? e.tvv : null;
     return (
       <span className="flex min-w-0 items-start gap-2">
         {chonN.bat && <OChon chon={chonN} id={sid} ten={ten} />}
@@ -215,7 +214,6 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
           <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1 text-xs text-slate-500">
             {/* Chủ SP 12/11: mốc viết hoa, không "Đã tới"; chưa có → "Chưa có vi phạm" — cùng `bac` với thang (TH-9). */}
             {e && (e.bac > 0 || e.soLs > 0 || theoEmCo(sid)) && <ChipBac bac={e.bac} ten={ten}>{(dong) => <ThangEm sid={sid} ten={ten} homNay={homNay} onKhai={() => { dong(); mo({ loai: 'khai', studentId: sid }); }} onLichSu={() => { dong(); moLichSu(sid); }} />}</ChipBac>}
-            {tvv && <span>{t('TVV {ten}', { ten: tvv })}</span>}
           </span>
         </span>
       </span>
@@ -450,7 +448,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   );
   const thanhLs = (sid: number) => {
     const ten = emLop.get(sid)?.ten ?? '';
-    return <ThanhLs so={thieuLs(sid) ? null : lsDaNap(sid).filter(hopPhamVi).length + thLs(sid).length} mo={moLs.has(sid)} ten={ten} onClick={() => batLs(sid)} />;
+    /* GD-6 (L1, H4): cùng dáng đầu gập "Lịch sử · n" (`NutLichSuGap`); thân mở dưới cả dòng em như cũ. */
+    return <NutLichSuGap so={thieuLs(sid) ? null : lsDaNap(sid).filter(hopPhamVi).length + thLs(sid).length} mo={moLs.has(sid)} nhan={ten} onClick={() => batLs(sid)} />;
   };
 
   /* ---------------- Danh sách: em còn bước (khối) rồi các em khác theo tên (dòng gọn) ---------------- */

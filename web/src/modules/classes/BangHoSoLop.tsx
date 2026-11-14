@@ -20,7 +20,7 @@ import { MissingBadge } from '../students/MissingBadge.tsx';
 import { OPhuHuynh } from '../students/HocVienTheoVai.tsx';
 import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
-import { MenuDong } from '../../ui/MenuDong.tsx';
+import { MenuDong, NUT_BA_CHAM } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
@@ -222,7 +222,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
             <span className="flex min-w-0 flex-col items-start"><TenEm s={r} mo={mo?.sid === r.id} onMo={() => moTen(r)} ds={ngCanh} />{ltKhac(r) && <span className="flex flex-wrap gap-1.5">{chuLt(r)}</span>}</span></span>
           {o(r, 'kq')}
           <MenuDong muc={r.archived ? [] : tt.mucCua({ id: r.id, ten: r.fullName, dangHoc: r.status === 'active', nhapDiem: nhapDiemCua(classId, false, r.timeline as any), status: r.status, xuLyYThuc: !!r.canhBaoYThuc })}
-            lopNut="btn h-11 w-11 shrink-0 !px-0 text-[13px] font-bold tracking-wider" />
+            lopNut={NUT_BA_CHAM} />
         </div>
         <ChipXetLaiDong sid={r.id} />
         {coNhan && <span className="flex flex-wrap items-center gap-1.5">{nhanPhu(r)}</span>}

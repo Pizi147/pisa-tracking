@@ -113,6 +113,18 @@ export function Nhan({ tone, dut, title, onClick, cham = true, children }: {
   return <span title={title} className={cls}>{children}</span>;
 }
 
+/**
+ * CHIP VIỆC CỦA LỚP (GD-6, lời 35, mockup ② `.b-lop`): MỘT thành phần cho đầu hồ sơ lớp và hộp lớp ở Học viên & Lớp — "loại · số", màu theo luật
+ * badge (`toneBadgeLop`), không chấm; bấm được thì "›" (đổi trang / mở việc). `nhan` thay chữ khi nơi vẽ cần nói rõ phạm vi ("Quá hạn của lớp · 15").
+ */
+export function ChipBadgeLop({ x, nhan, onClick }: { x: { key: string; nhan: string; title?: string; tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted' }; nhan?: string; onClick?: () => void }) {
+  return (
+    <Nhan tone={toneBadgeLop(x)} cham={false} title={x.title} onClick={onClick}>
+      {nhan ?? x.nhan}{onClick && <> <span aria-hidden className="font-bold">›</span></>}
+    </Nhan>
+  );
+}
+
 /** Badge hộp lớp → tone `Nhan`; "n việc quá hạn" là chữ cam (OV-15a; V22 không biểu tượng), không chip đỏ. */
 export function toneBadgeLop(x: { key: string; tone: 'danger' | 'warn' | 'info' | 'wait' | 'muted' }): ToneNhan {
   return x.key === 'qua-han' ? 'late' : toneNhanTuBadge(x.tone);

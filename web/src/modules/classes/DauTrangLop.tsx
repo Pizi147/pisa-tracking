@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
-import { CHIP_SOS, Nhan, lopSos, toneBadgeLop } from '../../ui/Nhan.tsx';
+import { CHIP_SOS, ChipBadgeLop, lopSos } from '../../ui/Nhan.tsx';
 import { DaiChiSo, ODai, SoTinh } from '../../ui/DaiChiSo.tsx';
 import { OSo } from '../../ui/OSo.tsx';
 import type { DongSoLieu } from '../../ui/SoLieu.tsx';
@@ -209,11 +209,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const nutBadge = (x: BadgeLop) => {
     const bam = bamBadge(x);
     /* MOCKUP-1111 màn 1: "n việc quá hạn của lớp" — phạm vi lớp, khỏi lẫn với "Việc của tôi · n" ngay dưới. */
-    const nhan = x.key === 'qua-han' ? `${x.nhan} ${t('của lớp')}` : x.nhan;
-    /* G6: badge đổi trang có "›". */
-    return bam
-      ? <Nhan key={x.key} tone={toneBadgeLop(x)} cham={false} title={x.title} onClick={bam}>{nhan} <span aria-hidden className="font-bold">›</span></Nhan>
-      : <Nhan key={x.key} tone={toneBadgeLop(x)} cham={false} title={x.title}>{nhan}</Nhan>;
+    return <ChipBadgeLop key={x.key} x={x} nhan={x.key === 'qua-han' ? t('Quá hạn của lớp · {n}', { n: x.so ?? 0 }) : undefined} onClick={bam ?? undefined} />;
   };
 
   /* GD-6 (mockup v21 ② K1, lời 25): GV một dòng gộp theo người — GVCN dạy luôn kỹ năng thì một nhãn "GVCN, L, R"; KHÔNG ô TVV (TVV ở phần mở rộng em). */

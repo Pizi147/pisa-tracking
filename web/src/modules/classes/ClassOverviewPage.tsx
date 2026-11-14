@@ -23,10 +23,10 @@ import { MuiTen } from '../cases/SkillBoard.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { PhanTichLopTab } from './PhanTichLopTab.tsx';
 import { TabBaoCaoPh } from './TabBaoCaoPh.tsx';
-import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
+import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabCuaViec, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
-import { ThanhViecLop, duongViecLop } from './ThanhViecLop.tsx';
+import { ThanhViecLop, duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
 import { CuoiKhoaLop } from './CuoiKhoaLop.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -70,6 +70,8 @@ export default function ClassOverviewPage() {
     taiTruoc(duongDiemTheoLuot(Number(classId)));
   }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
+  /* GD-6 (lời 35, V22): badge tab = SỐ, đỏ khi có việc quá hạn của tôi — đọc từ `viec-theo-em` mà dải Việc cần làm đã tải (cùng URL, không thêm lời gọi). */
+  const viecLop = useApi<ViecLop>(data && data.status !== 'finished' && params.get('xem') !== 'cuoi-khoa' ? duongViecLop(data.id) : null, [data?.id, data?.status, params.get('xem')]);
   /* P9a: em có dòng Xét lại → chip "Xét lại" trên dòng em — chỉ gọi khi người xem là QL (`coTheChuyenTiep` = cùng luật ra quyết định) hoặc GVCN lớp này. */
   const xemXl = !!data && (data.viewer.coTheChuyenTiep || data.viewer.isCoreTeacher);
   const xl = useApi<{ em: EmXetLai[] }>(classId && xemXl ? duongXetLai(Number(classId)) : null, [classId, xemXl]);
@@ -151,7 +153,12 @@ export default function ClassOverviewPage() {
   const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
   const dsTab = tabHienCuaLop(daKetThuc, !!bc);
   /* BAO-CAO-PH (mockup t0, e1): chip nhẹ trên tab — đợt đang mở "Tháng 11 · hạn 30/11", vừa quá hạn mà lớp chưa đủ "… · quá hạn 2 ngày" (đỏ, V22 không biểu tượng). Không chuông, không việc. */
-  const chipBc = bc?.nhan && !(bc.quaHan && bcDu === bc.dot) ? { chu: bc.quaHan ? t('{dot} · quá hạn {n} ngày', { dot: dich(bc.nhan), n: bc.quaHan }) : t('{dot} · hạn {ngay}', { dot: dich(bc.nhan), ngay: ngay(bc.han, homNay) }), xau: bc.quaHan > 0 } : null;
+  /* GD-6 (cấm chữ dài trong tiêu đề — lời 35): đợt + hạn Báo cáo PH ở đầu nội dung tab (TabBaoCaoPh), tab chỉ "Báo cáo PH" + số việc của tôi. */
+  const laViec = (viecLop.data?.cuaToi ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((x) => x.classId === data.id);
+  const soTab = (n: number, quaHan: number) => (n <= 0 ? {} : quaHan > 0 ? { badge: { so: n, n, quaHan, homNay: 0 } } : { so: n });
+  const vBc = bcDu && bcDu === bc?.dot ? [] : laViec.filter((x) => x.group === 'bao_cao_ph');
+  const badgeTabLop = (k: TabHoSoLop) => (k === 'y-thuc' ? soTab(data.canhBaoYThuc ?? 0, laViec.filter((x) => tabCuaViec(x) === 'y-thuc' && x.urgency === 'overdue').length)
+    : k === 'bao-cao-ph' ? soTab(vBc.length, vBc.filter((x) => x.urgency === 'overdue').length) : {});
   const dong = () => setViec(null);
   const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
@@ -179,7 +186,7 @@ export default function ClassOverviewPage() {
 
       <HangTab panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
         onChange={(k: TabHoSoLop) => doiThamSo({ tab: k === tabMacDinh ? null : k, 'che-do': null, dot: null })}
-        tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], canhBao: k === 'y-thuc' && data.canhBaoYThuc > 0, chip: k === 'bao-cao-ph' ? chipBc : null }))} />
+        tabs={dsTab.map((k) => ({ key: k, label: TAB_HO_SO_LOP_NHAN[k], ...badgeTabLop(k) }))} />
 
       <div id="ho-so-lop-vung" role="tabpanel" aria-label={TAB_HO_SO_LOP_NHAN[tab]} className="space-y-4 max-sm:space-y-3 empty:hidden">
       {tab === 'tong-ket' && <TabTongKetLop classId={data.id} />}
