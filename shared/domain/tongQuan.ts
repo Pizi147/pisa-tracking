@@ -39,9 +39,11 @@ export const NHOM_VIEC_LABEL: Record<NhomViec, string> = {
  */
 const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   score: 'cham-diem',
-  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', phoi_hop: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
+  cause: 'case-hoc-thuat', ghi_nhan_xet: 'case-hoc-thuat', xac_nhan_pa: 'case-hoc-thuat', xem_nx_s: 'case-hoc-thuat', mini_test: 'case-hoc-thuat', no_plan: 'case-hoc-thuat', ghi_ket_qua_pa: 'case-hoc-thuat',
   /* PHOI-HOP-V2 (mockup #1368): Phối hợp SOS sang tab "Ý thức & Phối hợp". */
   do_plan: 'case-hoc-thuat', no_owner: 'case-hoc-thuat', phoi_hop_sos: 'y-thuc', phoi_hop_tvv: 'y-thuc',
+  /* GD-4a (chủ SP 14/11 "tất nhiên nó phải ở ý thức phối hợp rồi"): "Báo PH kết quả Test" sang tab Ý thức & Phối hợp — badge tab, chip Ý thức, hồ sơ GV cùng hàm này. */
+  phoi_hop: 'y-thuc',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
   yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc', yt_hoi_tinh_hinh: 'y-thuc',
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn

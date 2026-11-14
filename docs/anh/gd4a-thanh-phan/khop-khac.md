@@ -15,6 +15,7 @@ Mockup ⑤ `thiet-ke/v21/bang-mau.html` khu B, C, F (lời 27 duyệt) · mockup
 | `cap-1440-y-thuc-hv.png` | ③ K4a | hồ sơ HV › Ý thức & Phối hợp, "Thang" mở |
 | `cap-1440-panel-viec.png` | ⑤ D1 | Công việc › Case › Xác nhận Case (panel mở) |
 | `zoom-x-ba-cham.png` | ⑤ F2, D1 · ③ K4a | góc ✕ / ⋯ phóng to: mockup · web 1440 tối · web 375 sáng |
+| `cap-1440-y-thuc-bao-ph.png` | ⑤ B1 (dáng dòng) | Công việc › Ý thức & Phối hợp — mục "Báo PH" (Báo PH kết quả Test) |
 | `cap-1440-tab-cham-speaking.png` | ⑤ H1 (badge `.bd.mo`) | Công việc › Chấm Speaking, vai 9 GV Speaking |
 
 Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục menu và `gõ:chữ`; `KEO_TRUOC=1` kéo dài khung nhìn trước khi bấm — menu thả đóng khi đổi cỡ màn).
@@ -39,10 +40,11 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 | 14b | ⑤ F2 / D1 `.x`: ✕ đầu hộp / panel một dáng, cùng hàng dòng loại hoặc tiêu đề | `NUT_DONG` + `KhungPanel` + hộp chọn em — mục 7 | zoom-x-ba-cham, panel-viec, task-chon-em | KHỚP |
 | 14 | (f) "mọi nơi hiện thang" | thang đầy đủ `ThangYThuc` (hồ sơ HV "Thang ▾", chip mốc tab lớp, panel Xử lý) — chip WL đỏ | y-thuc-hv | KHỚP |
 | 15a | Lời 33 / `04-thiet-ke.md` mục 15 (thắng hình ①, ⑤ H1 badge vàng / đỏ): badge tab "Chấm Speaking" MỜ đếm bài + ⚠ khi có bài quá hạn; không đỏ, không cộng badge menu / chuông | `BadgeTabSo` nhánh `bai` (`ui/Nhan.tsx`), `BadgeTab.bai` (`shared/domain/tongQuan.ts`), tính ở `HoTroHocVienTab` (cùng số đầu mục "22 bài · ⚠ 15 quá hạn"); badge menu / chuông vẫn `demDongViec` (không đếm chấm chéo) | tab-cham-speaking | KHỚP |
+| 15b | Chủ SP 14/11 ("tất nhiên nó phải ở ý thức phối hợp rồi", PTA Plan giao 15/11): việc "Báo PH kết quả Test" (`phoi_hop`) ở tab **Ý thức & Phối hợp**, không ở Case học thuật | `NHOM_CUA_LOAI.phoi_hop = 'y-thuc'` (`shared/domain/tongQuan.ts`) — badge tab, chip "Ý thức" Lớp của tôi, đếm nhóm hồ sơ GV cùng hàm `nhomViecCua` / `tabCuaViec`; mục trong tab vẫn "Báo PH"; Hướng dẫn `bao-ph-test` (+ EN); phép kiểm `prLt2a` (7) | y-thuc-bao-ph | KHỚP |
 | 15 | ⑤ B tên khung: dòng chuẩn ở "dải Việc cần làm hồ sơ lớp, thanh việc hồ sơ HV" | GIỮ ô việc hiện tại ở hai hồ sơ — đổi sang dòng chuẩn ở GD-6 / GD-7 (plan ghi rõ "dùng dòng việc chuẩn" trong dòng GD-7; một màn một PR) | — | GIỮ (chuyển GD-6/7) |
 | 16 | Chuông (a "một thành phần cho … chuông") | GIỮ dáng chuông v2 — [XM-1] ⑤ đã chốt: không dùng dòng việc chuẩn; đổi đích bấm ở GD-9 | — | GIỮ (theo [XM-1]) |
 
-**KHỚP 16 / 16 dòng thuộc PR = 100 %** (dòng 15, 16 là GIỮ có lý do, không tính).
+**KHỚP 17 / 17 dòng thuộc PR = 100 %** (dòng 15, 16 là GIỮ có lý do, không tính).
 
 ## 2. KHÁC (có lý do)
 - ~~KHÁC-1~~ (bỏ): "Không hạn" nay theo ⑤ B1 + `10-ra-dong-bo.md` mục B — cột hạn trống, vạch nhóm "Không hạn" kể cả khi mục chỉ có một nhóm.
@@ -62,6 +64,8 @@ Chụp bằng `scripts/anh-cap.mjs` (PR này thêm: `BAM` bấm được mục m
 | Xác nhận xử lý (ô bước, dòng vi phạm, panel Xem vi phạm) | chữ link | nút viền | ĐỔI dáng (lời 28) |
 | Đọc mốc WL trên thang | vạch / chip như Report | nhãn đỏ WL 1 / WL 2 | ĐỔI dáng (lời 28) |
 | Đọc badge tab Chấm Speaking | không có badge (bài chung không đếm) | viên mờ "⚠ 22" (số bài, ⚠ khi có bài quá hạn) | THÊM (lời 33) |
+| Tìm "Báo PH kết quả Test" ở Công việc | tab Case học thuật, mục Báo PH | tab Ý thức & Phối hợp, mục Báo PH (chip "Ý thức" ở Lớp của tôi) | ĐỔI chỗ (chủ SP 14/11) |
+| Xoá chữ đang gõ trong hộp chọn em | xoá tay | thêm ✕ xoá chữ (giữ focus) | THÊM (⑤ F2) |
 | Đọc hạn trong mục việc | cột hạn từng dòng | + vạch nhóm hạn | THÊM |
 | Mọi thao tác dòng việc, "n em ▾", thang, panel, chip Việc cần làm | có | có | GIỮ |
 
@@ -107,4 +111,4 @@ Bảng đo (`getBoundingClientRect` + `Range` chữ ✕; "lệch" = tâm chữ �
 "Giữa ô −0,5" = độ lệch của chính hình chữ ✕ trong phông (nửa điểm ảnh), không phải lề. Tất cả ≤ 1 px. View Case (hàng "‹ …" + ✕) cùng dạng `items-center`; seed vai 7 không có việc mở được "Xem Case" để đo.
 
 ## 6. Hướng dẫn "?"
-`shared/huongDan/gv.ts` mục `cv-task`: câu chọn em đổi theo nhóm lớp + nút tròn / menu đáy ở điện thoại (+ bản EN `shared/i18n/en/gd1.ts`).
+`shared/huongDan/gv.ts` mục `bao-ph-test`: lối chính + câu "ở tab Ý thức & Phối hợp" (+ EN `hdV3a.ts`). Mục `cv-task`: câu chọn em đổi theo nhóm lớp + nút tròn / menu đáy ở điện thoại (+ bản EN `shared/i18n/en/gd1.ts`).

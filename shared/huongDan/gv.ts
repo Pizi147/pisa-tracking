@@ -69,9 +69,9 @@ export const HD_GV: HuongDan = {
       tuKhac: ['phụ trách', 'giao Case', 'owner'],
     },
     {
-      id: 'bao-ph-test', ten: 'Báo PH kết quả Test', nhom: 'case', chiGvcn: true,
-      loiChinh: { man: 'cong-viec', chu: 'Công việc › Case học thuật › Báo PH', duong: CV },
-      buoc: ['Lớp thường sau Progress Test: dòng <b>Báo PH kết quả Test</b> ở tab <b>Case học thuật</b>, mục <b>Báo PH</b>.', 'Bấm <b>Phối hợp</b>, báo phụ huynh, rồi <b>Đánh dấu đã làm</b>; không tính hạn.'],
+      id: 'bao-ph-test', ten: 'Báo PH kết quả Test', nhom: 'hv', chiGvcn: true,
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Báo PH', duong: CV },
+      buoc: ['Lớp thường sau Progress Test: dòng <b>Báo PH kết quả Test</b> ở tab <b>Ý thức & Phối hợp</b>, mục <b>Báo PH</b>.', 'Bấm <b>Phối hợp</b>, báo phụ huynh, rồi <b>Đánh dấu đã làm</b>; không tính hạn.'],
       tuKhac: ['phụ huynh', 'báo ph', 'progress', 'parent'],
     },
     /* ---------------------------------------------------------------- Học viên và lớp */
