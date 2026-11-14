@@ -472,7 +472,7 @@ export const HD_QL: HuongDan = {
       id: 'quan-tri', ten: 'Cấu hình hệ thống', duong: ['/quan-tri'],
       dangO: { cau: 'Chương trình, chi nhánh, band & ngưỡng, hạn mặc định, Case & SOS (chỉ xem — Quản trị hệ thống sửa) và mục đã xoá.', truoc: { chu: 'Tổng quan', duong: '/' } },
       muc: [{ id: 'ql-da-xoa', viec: 'khoi-phuc', ten: 'Khôi phục thứ đã xoá', buoc: ['Tab <b>Đã xoá</b>: chọn mục đã xoá, bấm <b>Khôi phục</b>.', 'Mục khôi phục về đúng chỗ cũ; nhật ký ghi lại.'] },
-        { id: 'ql-cau-hinh', ten: 'Xem cấu hình hệ thống', buoc: ['Menu Tài khoản › <b>Cấu hình hệ thống</b>: tab <b>Chương trình</b> · <b>Chi nhánh</b> · <b>Band & ngưỡng</b> · <b>Hạn mặc định</b> · <b>Case & SOS</b> — chỉ xem.', 'Hạn mặc định cho biết hạn bạn trả lời thẻ duyệt; chương trình: môn học của KET / PET mặc định L+S · R+W.'],
+        { id: 'ql-cau-hinh', ten: 'Xem cấu hình hệ thống', buoc: ['Menu Tài khoản › <b>Cấu hình hệ thống</b>: tab <b>Chương trình</b> · <b>Chi nhánh</b> · <b>Band & ngưỡng</b> · <b>Hạn mặc định</b> · <b>Case & SOS</b> — chỉ xem.', 'Hạn mặc định cho biết hạn bạn trả lời thẻ duyệt; chương trình: môn học của KET / PET mặc định L+S · R+W.', 'Cột <b>Nhật ký</b> mỗi tab: <b>Xem tất cả</b> mở nhật ký cấu hình ngay tại trang (lọc Mục, Người).'],
           chi: { hd: 'qt-tab', duong: '/quan-tri', chu: 'Các tab của trang ở hàng này.' } }],
     },
     {
