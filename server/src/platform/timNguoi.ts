@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { normalizeName } from '../util.ts';
-import { bangLop, require_, scopeFor, sqlGvSpeaking, type Principal } from '../permissions.ts';
+import { bangLop, lopDayDu, require_, scopeFor, sqlGvSpeaking, type Principal } from '../permissions.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { PERMISSIONS, type NhomNguoi } from '../../../shared/domain/index.ts';
 
@@ -55,7 +55,9 @@ function dangDayLop(classId: number): HangDangDay[] {
 }
 
 /** GD-5: `cungCn` — có vai ở chi nhánh tham chiếu (chi nhánh lớp của em / của việc / phạm vi người xem); `null` khi không có chi nhánh tham chiếu (Quản trị). */
-type HangNguoi = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[]; cungCn: boolean | null };
+type HangNguoi = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[]; cungCn: boolean | null;
+  /** GD-5: mã lớp của em (`studentId`) và mã chi nhánh tham chiếu (khi chỉ một) cho nhãn nhóm "GV của lớp · MB FT 101" / "Cùng chi nhánh MB" — từ bảng nhớ, 0 câu thêm. */
+  lopMa: string | null; cnMa: string | null };
 
 type HangNguoiTho = { id: number; full_name: string; code: string; role: string | null; branches: string | null };
 
@@ -126,13 +128,16 @@ export function timNguoi(
   /* GD-5 (mockup ⑤ A5): nhóm "Cùng chi nhánh" → "Chi nhánh khác" — so chi nhánh của vai (đã đọc cùng câu, 0 câu thêm) với chi nhánh tham chiếu. */
   const cnLopEm = classId ? bang.get(classId)?.branchId ?? null : null;
   const cnThamChieu = new Set<number>(cnViec ? [cnViec] : cnLop ? [cnLop] : cnLopEm ? [cnLopEm] : cnPhamVi);
+  const lopMa: string | null = classId ? lopDayDu().get(classId)?.code ?? null : null;
+  let cnMa: string | null = null;   // mã chi nhánh tham chiếu — lấy từ chính các dòng đã đọc
   const build = (row: HangNguoiTho): HangNguoi => {
     const cn = (row.branches ? row.branches.split(',') : []).map((x) => { const [id, ...ma] = x.split('|'); return { id: Number(id), ma: ma.join('|') }; });
+    if (cnThamChieu.size === 1) cnMa ??= cn.find((x) => cnThamChieu.has(x.id))?.ma ?? null;
     return {
       id: row.id, name: row.full_name, role: row.role,
       branches: [...new Set(cn.map((x) => x.ma))].sort(),
       cungLop: cungLopIds.has(row.id), monDay: monDayOf.get(row.id) ?? [],
-      cungCn: cnThamChieu.size ? cn.some((x) => cnThamChieu.has(x.id)) : null,
+      cungCn: cnThamChieu.size ? cn.some((x) => cnThamChieu.has(x.id)) : null, lopMa, cnMa: null,
     };
   };
 
@@ -142,5 +147,6 @@ export function timNguoi(
     .filter((r) => !needle || normalizeName(r.full_name).includes(needle) || normalizeName(r.code).includes(needle))
     .map(build)
     .sort((a, b) => (a.cungLop !== b.cungLop ? (a.cungLop ? -1 : 1) : a.cungCn !== b.cungCn ? (a.cungCn ? -1 : 1) : a.name.localeCompare(b.name, 'vi') || a.id - b.id))
-    .slice(0, needle ? 12 : 20);
+    .slice(0, needle ? 12 : 20)
+    .map((r) => ({ ...r, cnMa }));
 }

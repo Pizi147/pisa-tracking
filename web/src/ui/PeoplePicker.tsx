@@ -14,7 +14,7 @@ export type Person = { id: number; name: string; title: string | null; role: str
 // =========================================================================== ChonNguoi (PR-Form F-2 · GD-5 ô chọn có tìm)
 
 /** `cungCn` (GD-5): có vai ở chi nhánh tham chiếu của lần tìm; `null` = không có chi nhánh tham chiếu (Quản trị). */
-type NguoiKetQua = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[]; cungCn?: boolean | null };
+type NguoiKetQua = { id: number; name: string; role: string | null; branches: string[]; cungLop: boolean; monDay: string[]; cungCn?: boolean | null; lopMa?: string | null; cnMa?: string | null };
 
 function useNguoiSearch(
   term: string, nhom: 'giao_vien' | 'nhan_vien' | 'gv_speaking', studentId: number | null | undefined, active: boolean,
@@ -125,8 +125,9 @@ function nguoiContextOf(r: NguoiKetQua): string {
 /** GD-5 (mockup ⑤ A2, A5): nhóm "liên quan trước" của `/ref/nguoi` — GV của lớp → cùng chi nhánh → chi nhánh khác (máy chủ đã xếp). */
 function nhomNguoiXa(r: NguoiKetQua, nhom: 'giao_vien' | 'nhan_vien' | 'gv_speaking'): string | undefined {
   const sp = nhom === 'gv_speaking';
-  if (r.cungLop) return sp ? t('GV Speaking của lớp') : t('GV của lớp');
-  if (r.cungCn === true) return sp ? t('GV Speaking chi nhánh') : t('Cùng chi nhánh');
+  const kem = (s: string, ma?: string | null, noi = ' · ') => (ma ? `${s}${noi}${ma}` : s);
+  if (r.cungLop) return kem(sp ? t('GV Speaking của lớp') : t('GV của lớp'), r.lopMa);
+  if (r.cungCn === true) return kem(sp ? t('GV Speaking chi nhánh') : t('Cùng chi nhánh'), r.cnMa, ' ');
   if (r.cungCn === false) return t('Chi nhánh khác');
   return undefined;
 }
@@ -360,7 +361,7 @@ export function ChonNguoi({
         {coGt ? <span className="da"><b>{chinh}</b>{phu && <small>{phu}</small>}</span> : <span className="goi">{chinh}</span>}
         {/* Nhãn ô trỏ vào nút này (htmlFor): ✕ = Đổi (mở lại ô, giữ người cũ tới khi chọn người khác); `xBo` (ô lọc) = bỏ chọn. */}
         {!disabled && <button id={oId} type="button" className={coGt ? 'bo' : 'bo mui-xuong'}
-          aria-label={coGt && xBo ? t('Bỏ chọn {ma} · {o}', { ma: chinh, o: ariaLabel ?? t('Chọn') }) : ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : t('Đổi')}
+          aria-label={!coGt ? ariaLabel ?? t('Chọn') : xBo ? t('Bỏ chọn {ma} · {o}', { ma: chinh, o: ariaLabel ?? t('Chọn') }) : ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : t('Đổi')}
           onClick={(e) => { e.stopPropagation(); if (coGt && xBo) onChange(null); else setEditing(true); }}>{coGt ? '✕' : <IcXuong />}</button>}
       </div>
     );
@@ -444,11 +445,12 @@ export function ChonNguoi({
           }
         }}
       />
+      {/* 375 toàn màn: số đếm ở đầu màn (mockup ⑤ A7), không lặp trong ô. ✕ xoá chữ luôn sát mép phải (#1602: lề 7, tâm = tâm ô). */}
+      {nhieu && !manMo && <span className={`dem-chon${day ? ' day' : ''}`}>{nhieu.chon.length} / {nhieu.toiDa}</span>}
       {term
         ? <button type="button" className="bo" aria-label={t('Xoá chữ')} onMouseDown={(e) => e.preventDefault()}
             onClick={(e) => { e.stopPropagation(); setTerm(''); setOpen(true); inputRef.current?.focus(); }}>✕</button>
         : !nhieu && <span className="mui-xuong" aria-hidden><IcXuong /></span>}
-      {nhieu && <span className={`dem-chon${day ? ' day' : ''}`}>{nhieu.chon.length} / {nhieu.toiDa}</span>}
     </div>
   );
 
