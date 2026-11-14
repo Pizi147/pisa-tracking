@@ -21,7 +21,10 @@ Nhánh chồng trên GD-13a (`claude/gd13a-hv-lop`, #1685) vì cùng `StudentsPa
 | 11 | K7 | CX chỉ xem: một câu chung trên bảng, ô không bấm | giữ; CX cũng vào thẳng chi nhánh | cap-k7-cx-1440 | KHỚP |
 | 12 | 375 | Thẻ lớp + Sửa, tổng hợp 6 dòng + "Xem đủ" | giữ; hàng lọc 375 cùng dáng (vạch ẩn) | cap-k6-ql-375 | KHỚP |
 
-**KHỚP 12 / 12 (100 %).**
+| 13 | K6 | Hộp chọn GV: vùng cuộn mờ đáy, **"Bỏ trống (Chưa có)" luôn ở chân hộp** (PTA rà #1690 ý 1) | dòng Bỏ trống `position: sticky` đáy + bóng mờ phía trên | cap-k6-ql-1440 | KHỚP |
+| 14 | 375 | Hàng tab thấy được tab đầu (PTA rà #1690 ý 2) | nhãn gọn 375 "SOS" · "Phân công"; `HangTab` (dùng chung) mờ MÉP TRÁI khi đã cuộn qua tab đầu (trước chỉ mờ mép phải) — tab "Tất cả 51" ló mờ bên trái; đệm phải 32 px chỉ khi còn tab bên phải. Bốn tab cần ~406 px > 343 nên vẫn cuộn | cap-k6-ql-375, cap-k6b-qt-375 | KHỚP |
+
+**KHỚP 14 / 14 (100 %).**
 
 ## 2. KHÁC (có lý do)
 

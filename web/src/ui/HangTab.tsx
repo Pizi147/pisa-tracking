@@ -6,7 +6,7 @@
  * Trên 375px hàng tab cuộn ngang BÊN TRONG chính nó (`overflow-x-auto`) — không đẩy cả trang cuộn ngang.
  * PR-KHUNG G5: dưới 640px mép phải mờ + đệm pr-8 (cùng mẫu bộ lọc Học viên & Lớp) — biết là còn tab để vuốt.
  */
-import { useEffect, useRef, type KeyboardEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { BadgeMo, BadgeTabSo, CHIP_TRON } from './Nhan.tsx';
 import type { BadgeTab } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -31,6 +31,9 @@ export function phimHangTab(e: KeyboardEvent<HTMLElement>) {
   ds[e.key === 'Home' ? 0 : e.key === 'End' ? ds.length - 1 : (i + (e.key === 'ArrowRight' ? 1 : -1) + ds.length) % ds.length].focus();
 }
 
+const matMep = (m: { t: boolean; p: boolean }) =>
+  `linear-gradient(to right, ${m.t ? 'transparent 0, #000 2rem' : '#000 0'}, ${m.p ? '#000 calc(100% - 2rem), transparent 100%' : '#000 100%'})`;
+
 export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, panelId, className = '' }: {
   /** TAB-A11Y: id của vùng nội dung (`role="tabpanel"`) mà hàng tab điều khiển → `aria-controls`. Không truyền = trang chưa có vùng riêng. */
   panelId?: string;
@@ -39,6 +42,15 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
   className?: string;
 }) {
   const hang = useRef<HTMLDivElement>(null);
+  /* PTA rà #1690: hàng tab tràn (375) mờ MÉP còn tab — trái khi đã cuộn qua tab đầu, phải khi còn tab sau — để không tưởng mất tab. Đệm phải 32 px
+     (chỗ cho vùng mờ phải) chỉ khi còn tab bên phải: cuộn tới cuối thì tab đầu còn ló dưới vùng mờ trái. */
+  const [mep, setMep] = useState({ t: false, p: false });
+  const doMep = () => {
+    const h = hang.current;
+    if (!h) return;
+    const t = h.scrollLeft > 1, p = h.scrollLeft + h.clientWidth < h.scrollWidth - 1;
+    setMep((m) => (m.t === t && m.p === p ? m : { t, p }));
+  };
   /* Không tab nào chọn (Hướng dẫn đang tìm): tab đầu nhận focus Tab — tablist luôn vào được bằng bàn phím. */
   const coChon = tabs.some((x) => x.key === value);
   /* Mở trang với tab ở cuối hàng (ví dụ `?tab=y-thuc`) thì tab đang chọn tự cuộn vào giữa hàng, không bị khuất. Chỉ đặt
@@ -50,10 +62,13 @@ export function HangTab<K extends string>({ tabs, value, onChange, ariaLabel, pa
     /* getBoundingClientRect, không `offsetLeft`: hàng tab không phải offsetParent của nút nên offsetLeft tính từ tổ tiên khác. */
     const lech = tab.getBoundingClientRect().left - h.getBoundingClientRect().left;
     h.scrollLeft = Math.max(0, h.scrollLeft + lech - (h.clientWidth - tab.offsetWidth) / 2);
+    doMep();
   }, [value, tabs.map((x) => `${x.key}${x.so ?? ''}${x.badge?.so ?? ''}`).join('|')]); // eslint-disable-line react-hooks/exhaustive-deps -- số tab về sau làm tab rộng ra → canh lại
   return (
     /* `relative`: chữ `sr-only` (absolute) của badge bám vào hàng tab, không kéo <main> trượt ngang ở 375 (RA-GD-0711). */
-    <div ref={hang} role="tablist" aria-label={ariaLabel} onKeyDown={phimHangTab} className={`relative flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] max-sm:pr-8 max-sm:[mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] ${className}`} style={{ borderColor: 'var(--line)' }}>
+    <div ref={hang} role="tablist" aria-label={ariaLabel} onKeyDown={phimHangTab} onScroll={doMep}
+      className={`relative flex gap-1 overflow-x-auto overflow-y-hidden border-b max-sm:[scrollbar-width:none] ${mep.p ? 'max-sm:pr-8' : ''} ${className}`}
+      style={{ borderColor: 'var(--line)', ...(mep.t || mep.p ? { maskImage: matMep(mep), WebkitMaskImage: matMep(mep) } : {}) }}>
       {tabs.map((t, i) => {
         const active = t.key === value;
         return (

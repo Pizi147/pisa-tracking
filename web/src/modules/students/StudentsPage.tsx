@@ -489,11 +489,12 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       </div>
       {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:flex-1">{oXem}{chonKhung}</div>}
 
+      {/* PTA rà #1690: 375 nhãn tab gọn (SOS · Phân công) để cả hàng tab thấy được, không cuộn mất "Tất cả". */}
       <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
-        ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
+        ...(admin ? [] : [{ key: 'sos' as const, label: dienThoai ? 'SOS' : t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
-        ...(coGocPc ? [{ key: 'phan-cong' as const, label: t('Phân công GV') }] : []),
+        ...(coGocPc ? [{ key: 'phan-cong' as const, label: dienThoai ? t('Phân công') : t('Phân công GV') }] : []),
       ]} />
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-3 của trang → khoảng cách không đổi. */}

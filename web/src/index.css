@@ -1194,7 +1194,9 @@
   .pc-hop.pc-chon { padding: 8px; display: block; overflow: auto; }
   .pc-hop.pc-chon [role="listbox"] { border: 0; background: transparent; max-height: 320px; }
   /* GD-13c: danh sách của ô chọn có tìm (GD-5 `.oc-ds` nổi absolute) nằm TRONG hộp chọn GV — không thì hộp `overflow:auto` cao 58 px cắt mất danh sách. */
-  .pc-hop.pc-chon .oc-ds { position: static; margin-top: 4px; box-shadow: none; }
+  .pc-hop.pc-chon .oc-ds { position: static; margin-top: 4px; box-shadow: none; padding-bottom: 0; }
+  /* PTA rà #1690: "Bỏ trống (Chưa có)" luôn ở chân hộp (không cuộn mất); danh sách cuộn phía trên mờ đáy báo còn dòng. */
+  .pc-hop.pc-chon .oc-ds .oc-them { position: sticky; bottom: 0; z-index: 1; background: var(--surface); border-top: 1px solid var(--line); box-shadow: 0 -14px 14px -6px var(--surface); }
   .pc-hop-dau { position: relative; flex: none; padding: 14px 52px 10px 18px; border-bottom: 1px solid var(--line); display: grid; gap: 2px; }
   .pc-hop-dau h3 { margin: 0; font-size: 17px; font-weight: 700; color: var(--text); }
   .pc-hop-dau .ng { font-size: 13px; color: var(--text-dim); }
