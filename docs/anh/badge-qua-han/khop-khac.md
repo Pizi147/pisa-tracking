@@ -32,6 +32,12 @@ Phép kiểm: `server/src/tests/thanhPhanChung.tests.ts` › "BADGE-QUA-HAN" —
 | 12 | Panel một em — "Việc tiếp: … · quá hạn" | `PanelMotEm` | chữ đỏ | **badge đỏ** |
 | 13 | Ô Sau thi (`NhanSauThi`) — "hạn 12/09 · quá hạn" | `HopGiaHan` | chữ đỏ | **badge đỏ** |
 | 14 | Ý thức — bảng Phối hợp, hạn dưới tên em (`HanEm`) | `BangPhoiHop` | chữ đỏ | **badge đỏ**; ≤ 3 ngày badge vàng |
+| 15 | Ý thức — nhãn vi phạm "Quá hạn n ngày" (`NhanViPham qua_han`) | XM-1 | badge góc 4 px có viền | **`BadgeHan`** (các trạng thái khác giữ dáng cũ) |
+| 16 | Ý thức — ô "Bước đang làm" / việc của em (`BadgeViec qua`, bấm được) | XM-1 | badge góc 6 px có viền, cao 24 | **dáng `lopBadgeHan('qua')`** (vẫn là nút khi bấm được; chữ dài xuống dòng) |
+| 17 | Viên trạng thái Case quá hạn (`NhanVienCase qua-han`) | XM-1 | viên cao 24, viền trong | **`BadgeHan`** |
+| 18 | Hồ sơ HV — cột hạn Case (`CotCaseHv`) | quét lại | chữ đỏ đậm `text-bad` | **badge đỏ**; gần hạn giữ chữ trắng đậm (luật OV12e-1b có phép kiểm) |
+| 19 | Kế hoạch Test — ô kỹ năng "Quá hạn chấm" (`ChipKyNang`) | quét lại | chữ đỏ `text-bad` | **badge đỏ** (viền ô đỏ giữ) |
+| 20 | Bảng lượt việc — "Chưa làm · quá n ngày" (`BangLuotPanel`) | quét lại | chữ đỏ `text-bad` | **badge đỏ** (việc còn mở) |
 
 ## 2. GIỮ chữ đỏ (không badge) — SỐ ĐẾM tổng (mục 4 của việc)
 
@@ -44,14 +50,17 @@ Phép kiểm: `server/src/tests/thanhPhanChung.tests.ts` › "BADGE-QUA-HAN" —
 | Bảng hồ sơ lớp / điểm lớp thường | tiêu đề cột kỹ năng tô đỏ (`BangHoSoLop`, `BangDiemLopThuong`) | tiêu đề bảng, không phải nhãn hạn |
 | Badge menu / tab / nút đếm (`App`, `BadgeTabSo`, `HangTab`, `ChipBadgeLop`, `HvCuaToi`, `LopCuaToi`, hồ sơ GV) | đã là badge đếm đỏ (V22) | không đổi |
 
-## 3. [XM] — chưa tự quyết, hỏi PTA Plan
+## 3. [XM] — PTA Plan đã chốt (15/11)
 
-| # | Chỗ | Hiện | Câu hỏi |
-|---|---|---|---|
-| XM-1 | `NhanViPham qua_han` (Ý thức — "Quá hạn n ngày"), `BadgeViec qua` (khối Ý thức), `NhanVienCase qua-han` (viên trạng thái Case) | đã là **badge đỏ** nhưng dáng họ trạng thái (góc 4 px / có viền; viên Case cao 24) | Đổi sang `BadgeHan` (viên tròn không viền) cho đồng nhất, hay giữ dáng họ trạng thái của từng khu? Giữ trong PR này. |
-| XM-2 | `BangLuotPanel` cột "Đúng hạn": "Trễ n ngày" / "Quá hạn" · "Làm muộn n ngày" | chữ đỏ | Đây là lịch sử đúng / trễ hạn của lần ghi (không phải hạn đang chờ) → giữ chữ. Đúng không? |
-| XM-3 | `ChipHan chuThuong` khi gần hạn | ngày chữ thường "16/09" (mockup `.fact`) | Dải sự kiện có nên badge vàng như nơi khác không? Giữ chữ thường theo mockup. |
-| XM-4 | `ChipHan vien` hạn chưa tới | viên xám (cột hạn thẳng hàng, mockup `.han-v`) | V22 "thường = chưa tới": giữ viên xám ở cột hạn, chỗ khác chữ thường. |
+| # | Chỗ | Chốt |
+|---|---|---|
+| XM-1 | `NhanViPham qua_han`, `BadgeViec qua`, `NhanVienCase qua-han` | **ĐỔI** sang `BadgeHan` — chỉ trạng thái quá hạn (bảng 1 dòng 15–17) |
+| XM-2 | `BangLuotPanel` "Trễ n ngày" / "Làm muộn n ngày" (lịch sử) | giữ chữ |
+| XM-3 | `ChipHan chuThuong` | gần hạn giữ chữ thường (mockup); đã quá hạn = badge đỏ (đã làm) |
+| XM-4 | `ChipHan vien` hạn chưa tới | giữ viên xám |
+| XM-5 (mới) | Lưới nhập điểm lớp thường — dòng phụ ô "… · quá hạn" (`LuoiThuong`, chữ `text-rose-300`) | dòng phụ một hàng cao 16 px, `truncate` trong ô lưới: badge 22 px làm cao ô / cắt chữ → giữ chữ, hỏi PTA |
+
+Quét lại sau khi gộp main 15/11 (lưới kết quả PA #1738, chuông #1739, Case GD-21 #1748 nếu đã merge): các nhãn hạn ở đó đi qua `ChipHan` → đã là badge; không còn dáng quá hạn tự dựng nào khác ngoài các dòng GIỮ ở mục 2 và XM-2 / XM-5.
 
 ## 4. Thao tác trước → sau
 
@@ -69,5 +78,6 @@ Tài khoản demo tên giả: GVCN Trần Ngọc Hà (7) · QL (2) · GV bộ m�
 | Hồ sơ HV Hà Gia Bình — Việc cần làm | `hv-*` | không đổi |
 | Tổng quan QL — Chờ duyệt | `tq-*` | không đổi |
 | Lịch Test GV — Quá hạn chấm | `test-*` | không đổi |
+| Hồ sơ lớp MB FT 101 — tab Ý thức, ô Bước đang làm "Quá hạn 1 ngày" (XM-1) | `lopyt-{1440,375}-{truoc,sau}[-zoom].png` | badge góc vuông có viền → viên tròn |
 
-Không có dữ liệu demo hiện ra ở trang đầu cho: Phân tích "Chưa làm", Bàn giao, Lượt Test thường quá hạn, Phối hợp Ý thức, Hành trình Case quá hạn — đã đổi trong mã cùng `BadgeHan`, phép kiểm + `tsc` giữ.
+Không có dữ liệu demo hiện ra ở trang đầu cho: viên Case quá hạn, cột hạn Case hồ sơ HV, nhãn vi phạm quá hạn, ô Kế hoạch Test quá hạn chấm, Phân tích "Chưa làm", Bàn giao, Lượt Test thường quá hạn, Phối hợp Ý thức, Hành trình Case quá hạn — đã đổi trong mã cùng `BadgeHan`, phép kiểm + `tsc` giữ.
