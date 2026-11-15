@@ -4,7 +4,7 @@ import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, caseTopicLabel, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
@@ -23,21 +23,6 @@ function phanRaCaseChuaChot(ids: number[], xl: ReturnType<typeof xuLyCaseMany>):
   return out;
 }
 /** Nhóm của từng Case chưa chốt PA (cùng luật phân rã) — Cần bạn quyết ghi nhãn dòng bằng hàm này. `xl` = `xuLyCaseMany` của chính các Case. */
-/**
- * GD-21 (chủ SP 15/11): đề mục Case chỉ hiện khi GV ĐÃ SỬA tên. Case SOS / Progress tự sinh lưu `title` = phần giữa mặc định (`{kỹ năng} không đạt`, tên môn dài / ngắn / theo chương trình)
- * hoặc để trống — khớp một trong các dạng mặc định đó (hoặc chính tên kỹ năng) thì KHÔNG phải tên riêng. Hàm thuần, 0 câu: dùng mã môn + chương trình đã có trong câu của dòng.
- */
-export function deMucRieng(c: { title?: string | null; mon?: string | null; topic?: string | null; ct?: string | null }): string | null {
-  const own = (c.title ?? '').trim();
-  if (!own) return null;
-  const mon = c.mon ?? c.topic ?? '';
-  const mac = new Set<string>();
-  for (const ct of [c.ct ?? null, null]) {
-    for (const ten of [tenMon(ct, mon), tenMonNgan(ct, mon), caseTopicLabel(mon, ct)]) { mac.add(ten); mac.add(`${ten} không đạt`); }
-  }
-  return mac.has(own) ? null : own;
-}
-
 export function nhomCaseChuaChot(ids: number[], xl: ReturnType<typeof xuLyCaseMany>): Map<number, NhomCaseChuaChot> {
   const coPa = ids.filter((id) => xl.get(id)?.k === 'dang-lam' && xl.get(id)!.coPa);
   const choDuyet = new Set<number>();

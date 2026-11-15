@@ -27,3 +27,8 @@ Số liệu seed khác mockup (vd Sắp tới "Test tuần tới 4", bước 27 
 
 ## ponytail:
 `SapToi.tsx` hộp PA chỉ số + kỳ (xem [XM] 2). Skill đã chạy: karpathy-guidelines, web-design-guidelines (không phát hiện lỗi ở tệp mới), ponytail-review (không có gì đáng cắt). `impeccable audit` chạy ở mức đọc tay (aria-label, tiêu điểm, 44 px 375, V22 không ⚠ ở hạn).
+
+## Đề mục Case chỉ khi GV sửa — kiểm trên BẢN CHÉP THẬT (`pisa-pisatracking-261107-…-2026-11-12-0112.sqlite`, chép ra thư mục tạm, chỉ đọc)
+`deMucRieng` (`shared/domain/deMucCase.ts`) so sau khi bỏ "[…]" (MTn · SOS n · KCK · Progress / Final Test), tiền tố "MTn - " / "Progress Test - ", đuôi "không đạt" / "chưa đạt" / "dưới kỳ vọng", với tên môn dài · ngắn · theo chương trình · nhãn nhóm.
+Kết quả: 892 Case, 329 có `title`, **83 coi là tên riêng**, TẤT CẢ là Case `teacher_report` (GV tự gõ; 0 Case `mock`). 246 `title` còn lại là tên tự sinh ("Listening không đạt", "G+V không đạt", "P không đạt"…) → ẩn.
+10 mẫu tên riêng: #4 "Vấn đề về phát triển nội dung" · #5 "Listening + Reading - Thiếu từ vựng, học lực yếu" · #6 "Học sinh biết cách làm bài nhưng khả năng đọc hiểu tổng thể…" · #7 "Cần hỗ trợ W2 đến lúc thi" · #8 "Học sinh mock" · #37 "Reading - làm passage 3 còn sai nhiều" · #379 "Listening and Speaking chưa theo được lớp" · #380 / #381 / #382 "Bổ trợ Lis".
