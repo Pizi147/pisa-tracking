@@ -65,7 +65,7 @@ export const HD_GV: HuongDan = {
       sai: 'Bấm <b>Hoàn tác</b> trong 10 giây.',
       khongDuoc: ['Em không cần theo dõi: <b>Không cần theo dõi…</b>, QL duyệt.', 'Không kịp: GVCN hoặc QL làm thay.'],
       sau: 'PA Bổ trợ chạy → người dạy ghi kết quả PA mỗi kỳ.',
-      tuKhac: ['nguyên nhân', 'progress', 'xác nhận case', 'confirm'],
+      tuKhac: ['nguyên nhân', 'progress', 'xác nhận Case', 'confirm'],
     },
     {
       id: 'mo-ta-case', ten: 'Mô tả Case', nhom: 'case', tab: 'case-hoc-thuat', viecWeb: ['ghi_nhan_xet'],
@@ -425,7 +425,7 @@ export const HD_GV: HuongDan = {
       may: ['Em tạm dừng: việc của em ẩn, hạn dừng; quay lại học thì hạn tính lại.', 'Tạm dừng và kết thúc học đều vào Lưu trữ; tạm dừng giữ lớp và lộ trình.'],
       ban: 'GVCN: hồ sơ em, <k>⋯</k> rồi <b>Tạm dừng / Kết thúc học</b>; em quay lại: <b>Quay lại học</b>.',
       ai: ['Không có việc bàn giao; em đã kết thúc học thì chỉ QL cho quay lại.'],
-      tuKhac: ['tạm dừng', 'nghỉ học', 'thôi học', 'bảo lưu', 'pause'],
+      tuKhac: ['tạm dừng', 'nghỉ học', 'thôi học', 'pause'],
     },
     {
       id: 'em-chuyen-lop', ten: 'Em chuyển lớp / lên lớp', the: 'ban-giao',
@@ -456,7 +456,7 @@ export const HD_GV: HuongDan = {
       tuKhac: ['quyền', 'không thấy', 'bị chặn', 'permission'],
     },
     {
-      id: 'luu-loi', ten: 'Lưu lỗi, mất mạng',
+      id: 'luu-loi', ten: 'Không lưu được, mất mạng',
       may: ['Ô tự lưu báo không lưu được, chữ vẫn giữ.', 'Panel giữ chữ đang gõ trên máy tới khi lưu hoặc bỏ.'],
       ban: 'Bấm <b>Thử lại</b>; đừng đóng trình duyệt khi chân panel báo chưa lưu.',
       tuKhac: ['lỗi', 'mất mạng', 'không lưu', 'offline', 'error'],

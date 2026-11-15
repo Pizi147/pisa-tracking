@@ -100,7 +100,7 @@ export const EN_HD3_GV = {
   'Kỳ này đã bấm Lưu (nháp chưa tính).': 'Saved for this period (a draft does not count).',
   'Làm nhiều em, lỗi một phần': 'Many students, partly failed',
   'Lưu là chốt; đổi bằng <b>Sửa kết quả</b> ở thẻ PA.': 'Saving is final; change it with <b>Edit result</b> on the PA card.',
-  'Lưu lỗi, mất mạng': 'Save error, offline',
+  'Không lưu được, mất mạng': 'Not saved, offline',
   'Lượt MT cũ hết ô trống.': 'No empty cells left in the old Mock.',
   'Lớp chưa có GVCN: QL nhận việc.': 'No core teacher: the manager gets the task.',
   'Lớp có lượt MT của tuần đã qua từ 2 tuần còn ô trống, cho GVCN.': 'The class has a Mock from 2+ weeks ago with empty cells, for the core teacher.',

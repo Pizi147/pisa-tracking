@@ -52,7 +52,7 @@ Viết tắt nguồn: `L1`…`L4` = `luat/1-test-nhap-diem.md` … `luat/4-lop-l
 | Đổi GV: nhận lớp mới / rời lớp | 58 | L4 L-03, L-04, L-18; qcV:84 |
 | Việc quá hạn | 66 | L4 §4 (Báo QL); `loaiYeuCau.ts:407-430, 588, 683, 796` |
 | Không thấy nút / không có quyền | 54 | mw:50-61; `TaiCho.tsx:165-178`; L1 T-08; L3 Y-01; L4 L-01 |
-| Lưu lỗi, mất mạng | 35 | `TaiCho.tsx:80-128`; `PanelViec.tsx` (NhapViec); `CapNhatTuan.tsx:513-523` |
+| Không lưu được, mất mạng | 35 | `TaiCho.tsx:80-128`; `PanelViec.tsx` (NhapViec); `CapNhatTuan.tsx:513-523` |
 | Nhập sai, muốn sửa / xoá / khôi phục | 51 | L1 T-16; L4 L-24 (thùng rác 30 ngày); L2 C-16; L3 Y-11 |
 | Chờ QL duyệt lâu | 47 | L4 §4; han `ql_duyet_pa`, `giu_pa_gv`; `server/src/duyet/yeuCau.ts:219, 247` |
 | Làm nhiều em, lỗi một phần | 18 | `XacNhanPaLo.tsx:109, 144`; `LuoiKetQuaPa.tsx:187, 200`; `KhaiBacLoPanel.tsx:214, 262` |
@@ -88,4 +88,4 @@ Không chữ bị cắt "…" trong thẻ (chữ xuống dòng). Turso: 0 câu �
 
 ## Kiểm
 
-`npm run check` đầy đủ: KẾT_QUẢ. `PISA_CHI_TEP=prHd`: 400 / 400 (HD-DU, HD-NHAN, HD-CAM, HD-HAN, HD-DAI xanh).
+`npm run check` đầy đủ: xanh — 5802 kiểm tra + 74 tốc độ. `PISA_CHI_TEP=prHd`: 400 / 400 (HD-DU, HD-NHAN, HD-CAM, HD-HAN, HD-DAI xanh).
