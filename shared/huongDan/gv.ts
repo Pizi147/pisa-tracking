@@ -46,7 +46,7 @@ export const HD_GV: HuongDan = {
       id: 'ket-qua-pa', ten: 'Ghi kết quả PA', nhom: 'case',
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Case học thuật › Kết quả PA', duong: CV },
       loiTat: ['ho-so-hv', 'p-case', 'p-ket-qua-pa'], cung: 'mở cùng Case.',
-      buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ. Bấm dòng <b>Ghi kết quả PA</b>.', 'Ghi <b>Tiến triển (2 tuần)</b>, <b>Nhận xét</b>, chọn <b>Quyết định</b>, rồi <b>Lưu kết quả</b>.', 'Chưa xong: <b>Lưu nháp</b> — ghi lại nhiều lần, chưa chốt; dòng việc có chip <b>Có nháp</b>.', 'Bấm Lưu là lưu (không Hoàn tác); cần đổi thì <b>Sửa kết quả</b> ở thẻ PA.'],
+      buoc: ['PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ. Bấm dòng <b>Ghi kết quả PA</b> — nhiều em cùng lớp, cùng kỳ mở <b>một lưới</b>.', 'Ghi <b>Tiến triển (2 tuần)</b>, <b>Nhận xét</b>, chọn <b>Quyết định</b>, rồi <b>Lưu kết quả</b>.', 'Chưa xong: <b>Lưu nháp</b> — ghi lại nhiều lần, chưa chốt; dòng việc có chip <b>Có nháp</b>.', 'Bấm Lưu là lưu (không Hoàn tác); cần đổi thì <b>Sửa kết quả</b> ở thẻ PA.'],
       tuKhac: ['kết quả', 'tiến triển', 'nháp', 'feedback', 'tutor', 'result', 'draft'],
     },
     {
@@ -388,6 +388,9 @@ export const HD_GV: HuongDan = {
       muc: [
         { id: 'pk-ghi', viec: 'ket-qua-pa', ten: 'Ghi kết quả PA',
           buoc: ['Ghi <b>Tiến triển (2 tuần)</b>, <b>Nhận xét</b>; chọn <b>Quyết định</b> (giữ, điều chỉnh, thay PA, kết thúc, cần QL).', '<b>Lưu nháp</b>: ghi tạm sau từng buổi, chưa chốt, không đổi hạn.', 'Nút lưu ở chân là chốt — không Hoàn tác; cần đổi: <b>Sửa kết quả</b> ở thẻ PA.'] },
+        /* GD-20c: lưới Ghi kết quả PA (cùng lớp + cùng kỳ). */
+        { id: 'pk-luoi', viec: 'ket-qua-pa', ten: 'Ghi nhiều em một lưới',
+          buoc: ['Mỗi dòng một PA: chọn <b>Tiến triển</b>, gõ <b>Nhận xét</b> (≥ 8 ký tự) — dòng đủ hiện <b>Sẵn lưu</b>.', 'Bấm <b>Lưu n dòng</b> (đủ hết: <b>Lưu · việc tiếp ›</b>): các dòng lưu <b>Giữ nguyên</b>; dòng lỗi báo tại dòng, chữ giữ, <b>Thử lại</b>.', 'Đổi quyết định, Kết quả cuối, PA theo buổi: <b>Mở đầy đủ</b>, xong bấm <b>‹ Lưới</b>.'] },
       ],
     },
     {

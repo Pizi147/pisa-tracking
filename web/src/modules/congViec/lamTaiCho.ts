@@ -47,4 +47,7 @@ export const laLo = (it: WorkItem) => !!it.con?.length && it.classId !== null &&
  */
 /* OV-13g: Speaking chấm chéo KHÔNG mở lưới cả tuần — bấm mở danh sách lớp, mỗi lớp "Chấm" → panel nhập điểm S (mockup OV-13 §3b). */
 export const moCaDong = (it: WorkItem): boolean => !!it.con?.length && !laViecChamCheo(it)
-  && (it.group === 'xac_nhan_pa' ? it.con.every((c) => !!c.paId) : it.group === 'score' && it.con.every((c) => !!c.periodId && c.classId !== null));
+  && (it.group === 'xac_nhan_pa' ? it.con.every((c) => !!c.paId)
+    /* GD-20c (mockup ⑫ C1–C2): Ghi kết quả PA cùng lớp + cùng kỳ — bấm dòng mở LƯỚI (mỗi dòng một PA), thay khay "n em ▾". */
+    : it.group === 'ghi_ket_qua_pa' ? it.con.every((c) => !!c.paId && c.caseId !== null)
+    : it.group === 'score' && it.con.every((c) => !!c.periodId && c.classId !== null));

@@ -33,7 +33,7 @@ export function NganCase(p: Parameters<typeof ThanNganCase>[0]) {
 
 function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, lop, onClose, onChanged, onDaXoa, veNguon, onTiep, kyNangTiep = null }: {
   /** U03 A2: Case kỹ năng kế của em — Ghi kết quả có "Lưu · kỹ năng tiếp ›". */
-  kyNangTiep?: { ten: string; di: () => void } | null;
+  kyNangTiep?: { ten: string; di: () => void; /** GD-20c: chữ nút gộp riêng ("Lưu · về lưới"), mặc định "Lưu · kỹ năng tiếp ›". */ chu?: string } | null;
   /** Giữ chữ ký cũ (nơi gọi chưa đổi) — nút việc ở dòng tóm tắt cột hồ sơ HV; panel v16 không còn nút việc riêng ở chân. */
   anViecChinh?: boolean;
   /** PA của việc đang mở (panel việc) — thẻ đó viền nhấn, mở sẵn. */

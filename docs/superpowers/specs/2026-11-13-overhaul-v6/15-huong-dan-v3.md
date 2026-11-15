@@ -32,14 +32,14 @@ Hiện trạng (rà mã 15/11): khung V2 dùng tốt (nút "?" cạnh chuông, p
 Nút "?" tròn cạnh chuông, 375 vùng bấm 44 · panel `KhungPanel` mở CHỒNG, không đóng panel đang làm, không mất chữ · ô tìm (bỏ dấu, từ đồng nghĩa, "việc của vai khác") · "Chỉ cho tôi" (khoanh `data-hd`) · QL có "Xem vai khác" · trang `/huong-dan` (có In) mở từ chân panel · chữ là khoá `t()` có bản Anh.
 
 ### 4.2 Ngữ cảnh ba tầng (mới)
-Bấm "?" → tab "Ở đây" chọn nội dung theo tầng SÂU NHẤT đang có:
+Bấm "?" → tab "Trang này" chọn nội dung theo tầng SÂU NHẤT đang có:
 1. **Việc đang mở** — panel việc (theo loại việc `WorkGroupKey` + `PANEL_HD`) hoặc dòng việc đang chọn ở Công việc → MỘT thẻ việc (4.4), đầu thẻ ghi "Bạn đang mở: {lớp · tên việc}" (chữ lấy từ dòng việc, không đọc thêm dữ liệu).
 2. **Tab đang đứng** — tab Công việc (`?nhom=`), tab hồ sơ lớp, tab Học viên & Lớp, tab Phân tích, tab Test → câu "Bạn đang ở" + các việc làm ở TAB đó (≤ 5 dòng, còn lại "+ n việc khác").
 3. **Màn** — như V2: "Bạn đang ở" + Trước / Sau + "Việc làm ở đây" + "Không làm ở đây".
 Đang ở tầng 1 có dòng "‹ Việc khác ở tab này" lên tầng 2.
 
 ### 4.3 Ba tab của panel
-**Ở đây** (thay "Màn này") · **Tôi muốn…** · **Khi gặp…** (mới). "Tuần của tôi" KHÔNG còn là tab: thành bộ lọc nhịp trong "Tôi muốn…" (Hằng ngày · Sau tuần Test · 2 tuần một lần · Hằng tháng · Khi có).
+**Trang này** (thay "Màn này") · **Tôi muốn…** · **Trường hợp** (mới). "Tuần của tôi" KHÔNG còn là tab: thành bộ lọc nhịp trong "Tôi muốn…" (Hằng ngày · Sau tuần Test · 2 tuần một lần · Hằng tháng · Khi có).
 
 ### 4.4 Thẻ việc — khuôn cố định (đơn vị nội dung chính)
 Mỗi dòng TỐI ĐA MỘT CÂU; dòng không áp dụng thì không hiện (lời 40); cả thẻ đọc trong ~10 giây, không cuộn ở 1440.
@@ -56,7 +56,7 @@ Mỗi dòng TỐI ĐA MỘT CÂU; dòng không áp dụng thì không hiện (l�
 
 Chân thẻ: **Chỉ cho tôi** · "Đi tới ›" (khi đang ở chỗ khác) · một dòng nhạt "Cũng mở được từ: …" (lối tắt).
 - **Hạn không gõ tay:** số ngày lấy từ cấu hình "Hạn mặc định" bằng mã chèn (dạng `{han:khoa.truong}` — khoá thật ở `shared/domain/hanMacDinh.ts`; mục 8), Quản trị đổi thì hướng dẫn tự đúng.
-- **Một thẻ cho một loại việc, dùng mọi nơi:** tab "Ở đây", "Tôi muốn…", kết quả tìm, và **ⓘ ở dòng quy chế của panel việc** mở đúng thẻ này (dòng quy chế = một câu; ⓘ = thẻ đầy đủ — một nguồn chữ).
+- **Một thẻ cho một loại việc, dùng mọi nơi:** tab "Trang này", "Tôi muốn…", kết quả tìm, và **ⓘ ở dòng quy chế của panel việc** mở đúng thẻ này (dòng quy chế = một câu; ⓘ = thẻ đầy đủ — một nguồn chữ).
 
 ### 4.5 Một việc, nhiều vai
 Thẻ viết MỘT lần theo người giữ việc. Vai khác thấy cùng thẻ với một dải đầu: **"Việc của {vai}. Bạn làm thay được."** (QL, Admin nhập hộ) hoặc **"Việc của {vai}. Bạn chỉ xem."** (TVV, CX) — dòng "Làm" ẩn với vai chỉ xem. GVCN / GV Speaking / TVV phụ trách: nhãn nhỏ "chỉ GVCN" … như V2 (`chiGvcn`, `chiS`).
@@ -64,7 +64,7 @@ Thẻ viết MỘT lần theo người giữ việc. Vai khác thấy cùng th�
 ### 4.6 Tab "Tôi muốn…"
 Nhóm theo ĐÚNG TÊN TAB Công việc của vai (GV: Chấm điểm · Chấm Speaking · Case học thuật · Ý thức & Phối hợp · Vận hành) + "Học viên & lớp" + "Khác" — thay nhóm cũ (Điểm · Case…) để một khái niệm một tên. Mỗi dòng: tên việc (động từ + đối tượng, đúng tên dòng việc) → mở thẻ. Bộ lọc nhịp ở đầu.
 
-### 4.7 Tab "Khi gặp…" (mới) — thẻ tình huống, ba dòng
+### 4.7 Tab "Trường hợp" (mới) — thẻ tình huống, ba dòng
 **Máy làm gì** (tự động) · **Bạn làm gì** · **Ai khác nhận việc**. Danh sách cố định theo vai (ẩn tình huống vai đó không gặp), khoảng 12:
 Em vắng Test · Em tạm dừng / kết thúc học · Em chuyển lớp / lên lớp · Đổi GV, tôi nhận lớp mới / rời lớp · Việc quá hạn · Không thấy nút / không có quyền · Lưu lỗi, mất mạng · Nhập sai, muốn sửa / xoá / khôi phục · Em chưa có TVV / thiếu Target · Chờ QL duyệt lâu · Làm nhiều em, lỗi một phần · Em thi thật xong.
 
@@ -96,24 +96,26 @@ Luật chung G1–G5 + G2 ở `11-de-bai-mockup-dot-2.md`, V22, lời 36, 40. N�
 - R14.3 Tầng 2: GV ở Công việc tab Case học thuật, chưa chọn việc → "Bạn đang ở" + ≤ 5 việc của tab + "Không làm ở đây".
 - R14.4 Tầng 3: một màn không có tab (vd Hồ sơ học viên) theo dáng V2 đã gọn.
 - R14.5 Tab "Tôi muốn…": nhóm theo tên tab Công việc + bộ lọc nhịp; mở một dòng ra thẻ; "Đi tới ›" + "Chỉ cho tôi".
-- R14.6 Tab "Khi gặp…": danh sách tình huống + một thẻ tình huống mở (Em vắng Test) ba dòng.
+- R14.6 Tab "Trường hợp": danh sách tình huống + một thẻ tình huống mở (Em vắng Test) ba dòng.
 - R14.7 Ô tìm: gõ "vang" → kết quả gồm thẻ việc, thẻ tình huống, "việc của vai khác"; không có kết quả.
 - R14.8 "Có gì mới": dải đầu panel + chấm trên "?"; trạng thái đã xem.
 - R14.9 ⓘ ở dòng quy chế của một panel việc mở đúng thẻ việc (cùng thành phần).
 - R14.10 "Chỉ cho tôi" đang khoanh (giữ dáng V2) · trang `/huong-dan` (một khung, In) · 375 (panel toàn màn, thẻ việc, tab).
 - R14.11 Chữ trong thẻ theo 4.10 — session viết THẬT nội dung cho các thẻ vẽ (đối chiếu `luat/0`–`4`, `13-thiet-ke-dot-4.md`), không chữ giả; đếm chữ từng thẻ trong ghi chú.
 
-## 6. Plan (gửi PTA Plan sau khi chủ SP duyệt mockup ⑭)
+## 6. Plan (gửi PTA Plan 15/11 — mockup ⑭ đã duyệt và merge, #1743, lời 56)
+
+**Tên tab (lời 56, THẮNG hình mockup):** "Trang này" · "Tôi muốn…" · "Trường hợp". Mockup `thiet-ke/v21/huong-dan.html` còn tên cũ "Ở đây", "Khi gặp…" — không vẽ lại; ảnh cặp ghi "KHÁC theo lời 56". Mục 8 (đọc soát + quyết định khi rà) thắng mục 4 khi khác. Luật mọi PR như `07` / `12` (ảnh cặp, soi ✕ ≤ 1 px, chủ SP duyệt ảnh cặp HD3-1 trước merge, V22, lời 36, 40).
 
 | Mã | Phạm vi | Model · effort (B) | Ghi chú |
 |---|---|---|---|
-| **HD-1** KHUNG | Kiểu dữ liệu thẻ việc + thẻ tình huống + biến thể vai + mã chèn hạn; ngữ cảnh ba tầng; ba tab; "Có gì mới"; ⓘ dòng quy chế mở thẻ; chuyển nội dung cũ sang kiểu mới ở mức chạy được | Opus 5.5 · high | theo mockup ⑭; 0 câu đọc |
-| **HD-2** NỘI DUNG GV + GVCN + GV Speaking + Head tutor | mọi thẻ việc + tình huống, VI + EN | Opus 5.5 · high | viết SAU khi các GD của GV đã merge (nhãn, `data-hd` khớp web mới) |
-| **HD-3** NỘI DUNG TVV + CX | như trên | Opus 5.5 · high (B: Sonnet 5.5 · high) | sau GD-8, GD-13b |
-| **HD-4** NỘI DUNG QL | như trên; dải "làm thay" dùng thẻ gốc | Opus 5.5 · high | sau GD-14, GD-21 |
-| **HD-5** NỘI DUNG Admin văn phòng | như trên | Sonnet 5.5 · high (B: Opus 5.5 · medium) | sau GD-11, GD-14 |
-| **HD-6** PHÉP KIỂM | HD-DU, HD-NHAN theo tệp, HD-CAM, HD-HAN, HD-DAI | Sonnet 5.5 · high | chạy cùng HD-1 hoặc ngay sau |
-Mỗi PR nội dung: PTA Overhaul rà từng thẻ theo `luat/0`–`4` + `loi-chu-sp.md` trước khi merge (độ chính xác là mục tiêu số một); chủ SP duyệt ảnh cặp của HD-1.
+| **HD3-1** KHUNG | Kiểu dữ liệu thẻ việc + thẻ tình huống + biến thể vai + mã chèn hạn; ngữ cảnh ba tầng; ba tab; "Có gì mới"; ⓘ dòng quy chế mở thẻ; chuyển nội dung cũ sang kiểu mới ở mức chạy được | Opus 5.5 · high | theo mockup ⑭; 0 câu đọc |
+| **HD3-2** NỘI DUNG GV + GVCN + GV Speaking + Head tutor | mọi thẻ việc + tình huống, VI + EN | Opus 5.5 · high | viết SAU khi các GD của GV đã merge (nhãn, `data-hd` khớp web mới) |
+| **HD3-3** NỘI DUNG TVV + CX | như trên | Opus 5.5 · high (B: Sonnet 5.5 · high) | sau GD-8, GD-13b |
+| **HD3-4** NỘI DUNG QL | như trên; dải "làm thay" dùng thẻ gốc | Opus 5.5 · high | sau GD-14, GD-21 |
+| **HD3-5** NỘI DUNG Admin văn phòng | như trên | Sonnet 5.5 · high (B: Opus 5.5 · medium) | sau GD-11, GD-14 |
+| **HD3-6** PHÉP KIỂM | HD-DU, HD-NHAN theo tệp, HD-CAM, HD-HAN, HD-DAI | Sonnet 5.5 · high | chạy cùng HD3-1 hoặc ngay sau |
+Mỗi PR nội dung: PTA Overhaul rà từng thẻ theo `luat/0`–`4` + `loi-chu-sp.md` trước khi merge (độ chính xác là mục tiêu số một); chủ SP duyệt ảnh cặp của HD3-1.
 
 ## 7. Để người làm quyết
 Tên biến, cách lưu phiên bản nội dung, cách lấy "việc đang mở" từ panel (prop hay context), thứ tự tình huống, câu chữ cụ thể (theo 4.10, PTA Overhaul rà).
