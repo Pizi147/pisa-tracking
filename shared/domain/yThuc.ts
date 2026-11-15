@@ -250,7 +250,7 @@ export type TrangThaiViPhamKq = {
  * TRẠNG THÁI MỘT VI PHẠM — ĐÚNG MỘT NHÃN (bảng §5.4). Thứ tự (M-10):
  *   da_xu_ly (trong lần xử lý done) › cho_duyet (cho_duyet: "Chờ QL duyệt"; da_duyet: "Đã duyệt · chờ thực hiện", hạn = ngày quyết + 4)
  *   › bắt buộc: hạn = hanTheoNgay(max(batBuoc, mocLop), 5) → qua_han ('xu-ly') khi hôm nay > hạn, còn lại can_xu_ly
- *   › chưa ghi nhận: hạn = hanTheoNgay(max(reportedOn, mocLop), 5) → qua_han ('xem', V4-5) / moi
+ *   › chưa ghi nhận: moi — KHÔNG hạn, không quá hạn (LG-11, chủ SP lời 47: bỏ việc "Đã xem"; GVCN chỉ nhận tin Cập nhật)
  *   › da_ghi_nhan.
  * Em Tạm dừng (T65): không bao giờ qua_han, không hạn.
  */
@@ -267,18 +267,18 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
       quaHanNgay: han && n.homNay > han ? ngayCach(han, n.homNay) : null, lyDoQuaHan: null,
     };
   }
-  const tinh = (k: 'can_xu_ly' | 'moi', batDau: string, lyDo: 'xu-ly' | 'xem'): TrangThaiViPhamKq => {
+  if (batBuoc) {
+    const k = 'can_xu_ly';
     if (n.tamDung) return { t: k, nhan: TRANG_THAI_VP_LABEL[k], han: null, quaHanNgay: null, lyDoQuaHan: null };
-    const moc = maxNgay(batDau, n.mocLop)!;
+    const moc = maxNgay(batBuoc, n.mocLop)!;
     const han = hanTheoNgay(moc, hanTai('xu_ly_vi_pham', moc).ngay);   // QTV2-HAN
     if (n.homNay > han) {
       const q = ngayCach(han, n.homNay);
-      return { t: 'qua_han', nhan: t('Quá hạn {q} ngày', { q }), han, quaHanNgay: q, lyDoQuaHan: lyDo };
+      return { t: 'qua_han', nhan: t('Quá hạn {q} ngày', { q }), han, quaHanNgay: q, lyDoQuaHan: 'xu-ly' };
     }
     return { t: k, nhan: TRANG_THAI_VP_LABEL[k], han, quaHanNgay: null, lyDoQuaHan: null };
-  };
-  if (batBuoc) return tinh('can_xu_ly', batBuoc, 'xu-ly');
-  if (!v.ghiNhanLuc) return tinh('moi', v.reportedOn, 'xem');
+  }
+  if (!v.ghiNhanLuc) return { t: 'moi', nhan: TRANG_THAI_VP_LABEL.moi, han: null, quaHanNgay: null, lyDoQuaHan: null };
   return { t: 'da_ghi_nhan', nhan: t('Đã xem'), han: null, quaHanNgay: null, lyDoQuaHan: null };
 }
 

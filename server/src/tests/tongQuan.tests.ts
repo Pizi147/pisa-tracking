@@ -87,7 +87,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     const v = (group: string, urgency: string, due: string | null) => ({ group, urgency, due });
     const nhom = d.gomNhomViec([
       v('ghi_ket_qua_pa', 'normal', '2026-09-20'), v('cause', 'overdue', '2026-09-10'), v('score', 'normal', null), v('mgmt', 'today', '2026-09-14'),
-      v('yt_xem', 'normal', '2026-09-18'), v('khai_bac', 'normal', null),
+      v('yt_xu_ly', 'normal', '2026-09-18'), v('khai_bac', 'normal', null),
     ]);
     eq(nhom.map((g: any) => g.key), ['cham-diem', 'case-hoc-thuat', 'y-thuc', 'van-hanh'], 'Thứ tự nhóm cố định');
     const kh = nhom.find((g: any) => g.key === 'case-hoc-thuat');

@@ -211,7 +211,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   quayLai?: { nhan: string; onClick: () => void; xem?: boolean };
   chan?: {
     /** `null` = không vẽ nút trái (panel tự có nút Đóng ở `chinh`, ví dụ ngăn Tổng kết lộ trình). */
-    huy?: { nhan?: string; onClick: () => void; disabled?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
+    huy?: { nhan?: string; onClick: () => void; disabled?: boolean; /** GD-20c ([XM-8] ⑫): 375 ẩn nút Đóng (✕ / ‹ ở đầu panel) — chân còn hai nút. */ an375?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
     /** NEN-PANEL (`.panel-chan .trai`): trạng thái lưu (`TrangThaiLuu` / `ChuLuu`) đầu hàng nút, trước Lưu / Lưu · việc tiếp ›. */
     trai?: ReactNode;
@@ -350,8 +350,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   const huy = !huyGoc ? huyGoc
     : huyGoc.onClick === onDong ? { ...huyGoc, onClick: dong }
     : lui && huyGoc.onClick === lui.onClick ? { ...huyGoc, onClick: veLai } : huyGoc;
-  const nutHuy = (huy: { nhan?: string; onClick: () => void; disabled?: boolean }, chan: { daSua?: boolean }) =>
-    <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>;
+  const nutHuy = (huy: { nhan?: string; onClick: () => void; disabled?: boolean; an375?: boolean }, chan: { daSua?: boolean }) =>
+    <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${huy.an375 ? 'max-sm:!hidden' : ''}`} onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>;
   useGiuFocus(khung, !taiCho);
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
@@ -518,9 +518,9 @@ export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string
   return (
     <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
-      {/* NT-SUA (nghiệm thu 375): ở 375 một dòng, cắt "…". HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên, đúng thẻ việc — thẻ có câu này đầy đủ
-          (375 ở đầu thẻ; có chi tiết thì mọi cỡ), không còn hộp chữ riêng. */}
-      <span className="min-w-0 flex-1 truncate" title={qc.chu}>{qc.chu}</span>
+      {/* GD-20c (PTA rà #1738): 375 câu xuống dòng đủ chữ, không "…"; ≥ 640 một dòng như mockup ⑤. HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên,
+          đúng thẻ việc (thẻ có câu này + chi tiết ở đầu) — không còn hộp chữ riêng. */}
+      <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
       <button type="button" className="-m-[15px] cursor-pointer border-0 bg-transparent p-[15px] text-sm font-normal leading-none text-slate-500 hover:text-slate-200 sm:m-0 sm:p-0"
         title={t('Hướng dẫn việc này')} aria-label={t('Hướng dẫn việc này')} onClick={moHuongDan}>ⓘ</button>
     </div>

@@ -30,6 +30,7 @@ import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
 import { khopKn } from '../cham/LuoiFT.tsx';
 import { oThuong } from '../cham/LuoiThuong.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
+import { LuoiKetQuaPa } from './LuoiKetQuaPa.tsx';
 import { tenBoEm } from './DanhSachViec.tsx';
 import { KHOA_CHAM_SPEAKING, conThieuFt, demBaiViec, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, tenMon, tuanLich, quyCheNhapDiem, quyChePhanCong, quyChePhoiHopSos, quyChePhoiHopTvv, quyCheBaoPhTest, shortDate } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
@@ -131,6 +132,8 @@ function PanelMotViec({ it, tuMo = false, onDong, onDaLam, onTiep, onMo, tenTiep
       if (it.con) return <XacNhanPaLo key={it.key} it={it} onDong={onDong} onDaLam={onDaLam} onMo={onMo} onTiep={onTiep} />;
       return <NganCase key={it.key} caseId={it.caseId!} paId={it.paId} viec="xac-nhan-pa" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'ghi_ket_qua_pa': case 'mini_test':
+      /* GD-20c (mockup ⑫ C2): dòng gộp cùng lớp + cùng kỳ → lưới, mỗi dòng một PA. */
+      if (it.con) return <LuoiKetQuaPa key={it.key} it={it} onDong={onDong} onDaLam={onDaLam} onTiep={onTiep} />;
       /* CASE-PA-UI b (v16 a · e1): mọi việc Kết quả PA mở CÙNG panel Case — thẻ PA đích mở sẵn form Ghi kết quả (thay panel ghi nhanh riêng). */
       return <NganCase key={it.key} caseId={it.caseId!} paId={it.paId} viec="ghi-ket-qua" hocVien={hv} lop={lop} onClose={onDong} onChanged={onDaLam} onTiep={onTiep} />;
     case 'no_plan':

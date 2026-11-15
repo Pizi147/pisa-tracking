@@ -62,6 +62,7 @@
  "web/src/modules/congViec/HoTroHocVienTab.tsx",
  "web/src/modules/congViec/HvCuaToi.tsx",
  "web/src/modules/congViec/LopCuaToi.tsx",
+ "web/src/modules/congViec/LuoiKetQuaPa.tsx",
  "web/src/modules/congViec/NutTask.tsx",
  "web/src/modules/congViec/PanelBaoPhTvv.tsx",
  "web/src/modules/congViec/PanelChamSpeaking.tsx",

@@ -23,7 +23,7 @@ import {
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
-import { notify, writeAudit } from '../platform/audit.ts';
+import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { KEY_TAKEN_MESSAGE, canManageDiscipline, requireManageDiscipline, requireViewStudent } from './access.ts';
 import { chotHanXuLy, ghiPhanHoi, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
@@ -513,24 +513,26 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
 // ---------------------------------------------------------------- thông báo khi ghi vi phạm (V4-2, V4-5) — gọi từ violations.ts
 
 /**
- * Sau khi ghi một vi phạm (TRONG giao dịch ghi): báo GVCN lớp đang học — trỏ tab Ý thức của em, `?mo=xu-ly`. Dedup theo em + ngày.
- *   · người khác ghi → "Vi phạm mới — {HV} ({nhóm}) · ghi nhận hoặc xử lý trước dd/mm" (V4-5)
- *   · lần ghi làm em thành bắt buộc → "{HV} có 3 vi phạm trong 2 tuần — cần xử lý trước dd/mm" (V4-2)
+ * Sau khi ghi vi phạm (TRONG giao dịch ghi) của MỘT em — gọi một lần cho cả lần lưu, `violationId` = dòng cuối:
+ *   · lần ghi làm em thành bắt buộc → GVCN: "Cần xử lý · {HV} · 3 vi phạm trong 2 tuần · trước dd/mm" (V4-2, việc `yt_xu_ly`). Dedup em + ngày.
+ *   · còn lại, người ghi không phải GVCN → MỘT tin Cập nhật (LG-11, lời 47 — thay việc "Đã xem"): GVCN lớp em đang học, không có GVCN → Quản lý
+ *     chi nhánh (trừ người ghi). Kể cả "Chỉ nhắc nhở". Không vào số việc (`discipline_de_biet` = Để biết); bấm / ✓ ghi `read_at`. Dedup theo vi phạm.
  */
-export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: number, category: string, truocBatBuoc: boolean, emSau?: EmYThuc) {
+export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: number, category: string, truocBatBuoc: boolean, emSau?: EmYThuc, chiNhac = false) {
   const em = emSau ?? emCua(studentId);
-  if (!em.gvcnId || em.tamDung || em.gvcnId === p.userId) return;
+  if (em.tamDung || em.gvcnId === p.userId) return;
   const hv = hocVien(studentId);
   const homNay = demoToday();
-  const t = em.viPham.get(violationId);
-  const sauBatBuoc = em.soBatBuoc > 0;
-  if (sauBatBuoc && !truocBatBuoc) {
+  if (em.gvcnId && em.soBatBuoc > 0 && !truocBatBuoc) {
     notify({ userId: em.gvcnId, kind: 'discipline', title: `Cần xử lý · ${hv.full_name} · 3 vi phạm trong 2 tuần · trước ${shortDate(em.han, homNay)}`,
       entityType: 'student', entityId: studentId, dedupKey: `yt-bat-buoc:${studentId}:${homNay}`, duong: duongXuLy(studentId) });
-  } else if (t?.t === 'moi') {
-    notify({ userId: em.gvcnId, kind: 'discipline',
-      title: `Vi phạm mới · ${hv.full_name} (${VIOLATION_CATEGORY_LABEL[category as ViolationCategory] ?? category}) · ghi nhận hoặc xử lý trước ${shortDate(t.han, homNay)}`,
-      entityType: 'student', entityId: studentId, dedupKey: `yt-moi:${studentId}:${homNay}`, duong: duongXuLy(studentId) });
+    return;
+  }
+  const nguoiNhan = em.gvcnId ? [em.gvcnId] : hv.branch_id ? quanLyCuaChiNhanh(hv.branch_id).filter((u) => u !== p.userId) : [];
+  const nhom = VIOLATION_CATEGORY_LABEL[category as ViolationCategory] ?? category;
+  for (const userId of nguoiNhan) {
+    notify({ userId, kind: 'discipline_de_biet', title: chiNhac ? `Nhắc nhở · ${hv.full_name} · ${nhom} · ${p.fullName} ghi` : `Vi phạm mới · ${hv.full_name} · ${nhom} · ${p.fullName} ghi`,
+      entityType: 'student', entityId: studentId, dedupKey: `yt-moi:${violationId}`, duong: duongHoSoHocVien(studentId, { tab: 'y-thuc' }) });
   }
 }
 

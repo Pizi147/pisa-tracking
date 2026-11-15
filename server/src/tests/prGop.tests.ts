@@ -43,8 +43,9 @@ export async function runPrGopTests(t: YThucTestKit) {
 
   check('GOP-1b · hạn = sớm nhất; có em quá hạn → dòng quá hạn, dòng phụ "n em quá hạn"; em quá hạn đứng đầu danh sách', () => {
     const ds = [
-      v({ key: 'action:2', group: 'ghi_ket_qua_pa', studentId: 2, studentName: 'Minh', due: TODAY, urgency: 'today', tieuDe: 'Kết quả PA Reading', phu: 'Reading', contextLabel: 'Case' }),
-      v({ key: 'action:1', group: 'ghi_ket_qua_pa', studentId: 1, studentName: 'Châu', due: '2026-09-07', urgency: 'overdue', tieuDe: 'Kết quả PA Reading', phu: 'Reading', contextLabel: 'MT2' }),
+      /* GD-20c: Ghi kết quả PA nay gộp theo CÙNG KỲ (hạn kỳ) — hai hạn khác nhau là hai dòng (prLuoiKq); luật hạn sớm nhất kiểm bằng Xác nhận Case. */
+      v({ key: 'action:2', group: 'cause', studentId: 2, studentName: 'Minh', due: TODAY, urgency: 'today', tieuDe: 'Xác nhận Case Reading', phu: 'Reading', contextLabel: 'Case' }),
+      v({ key: 'action:1', group: 'cause', studentId: 1, studentName: 'Châu', due: '2026-09-07', urgency: 'overdue', tieuDe: 'Xác nhận Case Reading', phu: 'Reading', contextLabel: 'MT2' }),
     ];
     const [g] = d.gopViecTheoLop(ds, nhan);
     assert(g.urgency === 'overdue' && g.due === '2026-09-07', `${g.urgency} ${g.due}`);

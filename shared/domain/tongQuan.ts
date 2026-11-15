@@ -45,7 +45,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   /* GD-4a (chủ SP 14/11 "tất nhiên nó phải ở ý thức phối hợp rồi"): "Báo PH kết quả Test" sang tab Ý thức & Phối hợp — badge tab, chip Ý thức, hồ sơ GV cùng hàm này. */
   phoi_hop: 'y-thuc',
   mgmt: 'van-hanh', missing_data: 'van-hanh', ky_vong_dau_ra: 'van-hanh', thi_that: 'van-hanh', buoc_tiep: 'van-hanh',
-  yt_xu_ly: 'y-thuc', yt_xem: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc', yt_hoi_tinh_hinh: 'y-thuc',
+  yt_xu_ly: 'y-thuc', yt_thuc_hien: 'y-thuc', khai_bac: 'y-thuc', yt_hoi_tinh_hinh: 'y-thuc',
   ban_giao: 'van-hanh',   // PR-CT (Q19): thuộc nhóm hiển thị Vận hành có sẵn
   chot_len_ft: 'van-hanh',   // PR-MT0 → PR-LCb: Chốt lộ trình
   xet_lai_lo_trinh: 'van-hanh',   // PR-CL: Xét lại lộ trình
@@ -73,7 +73,7 @@ export function demDongViec(ds: readonly DongDem[]): DemDongViec {
 /** Loại hạn của từng loại việc — để dòng việc hiện hạn qua `<Han>` (G-10). Loại không có ở đây: hạn là ngày trơn. */
 export const LOAI_HAN_CUA_VIEC: Partial<Record<string, DeadlineKind>> = {
   cause: 'xac-minh-sos', ghi_nhan_xet: 'xac-minh-sos', xac_nhan_pa: 'xac-minh-sos', mini_test: 'mini-test', no_plan: 'lap-pa', ghi_ket_qua_pa: 'cap-nhat-pa', score: 'nhap-diem',
-  yt_xu_ly: 'xu-ly-vi-pham', yt_xem: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
+  yt_xu_ly: 'xu-ly-vi-pham', yt_thuc_hien: 'xu-ly-vi-pham',
   ban_giao: 'viec-van-hanh', mgmt: 'viec-van-hanh', chot_len_ft: 'chot-len-ft', phoi_hop_sos: 'phoi-hop',
   thi_that: 'sau-thi', buoc_tiep: 'sau-thi',   // OV-13q
 };
@@ -148,7 +148,7 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
   no_plan: 'pa', xac_nhan_pa: 'pa', do_plan: 'pa', mini_test: 'pa',
   ghi_ket_qua_pa: 'kq-pa', phoi_hop_sos: 'phoi-hop', phoi_hop_tvv: 'phoi-hop', phoi_hop: 'bao-ph-test', bao_ph_yt: 'bao-ph', no_owner: 'phan-cong',
   /* PHOI-HOP-V2 (mockup #1368 K1): việc Ý thức chung MỘT mục "Vi phạm" — tên dòng nói loại việc, không lặp tên mục. */
-  yt_xu_ly: 'vi-pham', yt_xem: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham', yt_hoi_tinh_hinh: 'tinh-hinh',
+  yt_xu_ly: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham', yt_hoi_tinh_hinh: 'tinh-hinh',
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
   missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph', bao_cao_ph: 'bc-ph',
 };
