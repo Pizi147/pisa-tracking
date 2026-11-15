@@ -7,6 +7,11 @@ Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `
 
 (chưa có)
 
+## 0b. PTA Overhaul rà (15/11) — đã áp
+
+Rà cap-k1, k2d, k3, k6: **ĐẠT** (thẻ đọc nhanh, tầng 2 gọn, đúng hướng B). Quyết [XM]: 1 đồng ý ("?" nổi trên nền mờ — việc của PR khung HD3-1) · 2 đồng ý · 3 đồng ý (PTA thêm vào 4.10) · 4 giữ hai thẻ; trần máy kiểm HD-DAI = 90 chữ, mục tiêu viết ~80, dòng ≤ 1 câu · 5–8 đồng ý · 9 tên thẻ = "Nhập điểm" · 10 đúng, nội dung GV viết sau GD-19 · 11 đồng ý. Ba chỉnh chữ đã áp: (1) thẻ Em vắng Test viết lại đúng `luat/1` T-17 + bảng "-" ở §4 — xem [XM-12] · (2) Nhập điểm "Sau đó" → "Em dưới kỳ vọng → GV kỹ năng đó có việc Case." · (3) mọi chỗ gọi thẻ dùng "Nhập điểm". Rà nốt mọi thẻ theo "mỗi câu chỉ ra được dòng luật nguồn" → bảng mục 5 (cột nguồn luật); câu không có nguồn đã bỏ / sửa.
+Đã áp trước đó (PTA nhắn bổ sung theo `15` mục 8): thẻ = tên dòng việc · thẻ duyệt QL (K2f) · QL giữ việc TVV không dải (K2g) · ⓘ mở panel "?" chồng · 375 quy chế đầu thẻ · Head tutor / CX.
+
 ## 1. Khung
 
 | Khung | Nội dung | R |
@@ -37,7 +42,7 @@ Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `
 | K1 | Ô "Lối chính · Công việc › Chấm điểm · Đi tới ›" khi đang ở đúng chỗ | có | bỏ (đang ở đúng chỗ); lối tắt thành một dòng nhạt "Cũng mở được từ: …" | BỎ ô · GIỮ ý |
 | K1 | Lối lên | — | "‹ Việc khác ở tab này" (tầng 2) / "‹ Việc khác ở màn này" (tầng 3) | MỚI |
 | mọi | Đơn vị một thẻ | mỗi việc của `lam` (gộp: "Nhập điểm MT · Progress · Final", "Bàn giao khi em chuyển lớp", "Xác nhận Case, PA"…) | **tên dòng việc trên web**: Nhập điểm · Chấm Speaking · Xác nhận PA · Chọn PA · Bàn giao chuyển lớp · Bàn giao đổi GV… (15 mục 8.1) | ĐỔI |
-| K2f | Hộp duyệt QL | một mục "Lọc yêu cầu chờ duyệt" liệt kê cả tab | mỗi loại yêu cầu một thẻ (vẽ "Duyệt giữ PA của GV") | ĐỔI (8.1) |
+| K2f | Hộp duyệt QL | một mục "Lọc yêu cầu chờ duyệt" liệt kê cả tab | mỗi loại yêu cầu một thẻ (vẽ thẻ "PA khác quy chế") | ĐỔI (8.1) |
 | K2g | Việc TVV khi em chưa có TVV | QL thấy trong việc của mình, hướng dẫn viết cho TVV | QL là người giữ → cùng thẻ TVV, **không dải**; thẻ có "Em chưa có TVV: QL chi nhánh làm" | ĐỔI (8.1) |
 | K12a | Dòng quy chế ở 375 | bị cắt, phải bấm ⓘ để đọc | thẻ việc có dòng quy chế đầy đủ ở đầu | ĐỔI (8.1) |
 | K2d/e | Vai khác xem việc | QL thấy việc như của mình (nhãn "làm thay GVCN" trong tên) | cùng thẻ gốc + dải "Việc của {vai}. Bạn làm thay được / chỉ xem." | ĐỔI (4.5) |
@@ -83,40 +88,41 @@ Số ngày trong thẻ là bản luật hiện hành, **lấy từ cấu hình "
 | Ghi kết quả PA | Hết thứ Ba sau mỗi kỳ 2 tuần | `{han:ket_qua_pa}` | C4 |
 | Mô tả Case | 5 ngày (SOS 3: 3 ngày) | `{han:sos}` / `{han:sos_3}` | C4 |
 | Nhập điểm MT cũ | — (không hạn → không dòng Hạn) | — | T-20 |
-| Duyệt giữ PA của GV | 3 ngày từ khi GV gửi | `{han:giu_pa_gv}` | C5, bảng câu ⑤ |
+| PA khác quy chế (duyệt QL) | 3 ngày từ ngày gửi | `{han:giu_pa_gv}` | C-13, luat/4 §4 |
 "10 giây" Hoàn tác (Xử lý vi phạm) là hằng số giao diện, không phải hạn.
 
-## 5. Đếm chữ từng thẻ (đếm từ có chữ / số; dấu "-", "›", "→" không tính; ngưỡng 4.10: dòng ≤ ~16, thẻ ≤ ~80)
+## 5. Đếm chữ + nguồn luật từng câu (đếm từ có chữ / số; "-", "›", "→" không tính; mục tiêu ~80 chữ / thẻ, trần máy kiểm HD-DAI = 90 — PTA 15/11; mỗi dòng ≤ 1 câu, dòng có hai lý do / hai lối thì là danh sách hai mục)
 
-| Thẻ | Khi nào có | Làm | Xong khi | Hạn | Làm sai | Không làm được | Sau đó | Tổng | Dòng dài nhất |
+| Thẻ | Khi nào có | Làm | Xong khi | Hạn | Làm sai | Không làm được | Sau đó | Tổng | Nguồn luật từng dòng (theo thứ tự cột) |
 |---|---|---|---|---|---|---|---|---|---|
-| Nhập điểm (K1, K9, K12a) | 10 | 8+9+4 | 5 | 10 | 11 | 14 | 13 | **84** | 14 |
-| ↳ QL làm thay (K2d, ẩn Không làm được) | | | | | | — | | 70 | 13 |
-| Nhập điểm MT cũ (K2a) | 13 | 7+4+4 | 6 | — | 11 | 13 | 14 | 72 | 14 |
-| Xử lý vi phạm (K2b) | 16 | 13+8 (hai lối) | 6 | 15 | 12 | — | 15 | **85** | 16 |
-| Báo PH (K2c, K2g) | 15 | 7+7+4 | 5 | 11 | — | 12+7 (hai lý do) | 11 | 79 | 15 |
-| Duyệt giữ PA của GV (K2f) | 14 | 11+8 | 5 | 14 | 10 | — | 13 | 75 | 14 |
-| Ghi kết quả PA (đủ) | 16 | 6+11+7 | 5 | 8 | 6 | 11 | 9 | 79 | 16 |
-| ↳ CX chỉ xem (K2e) | 16 | — | 5 | 8 | — | — | 9 | 38 | 16 |
-| Mô tả Case (K5b, K12c) | 14 | 4+9+2 | 7 | 15 | — | 14 | 9 | 74 | 15 |
-| Chấm Speaking (K7a) | 15 | 9+3+4 | 10 | 12 | 11 | — | 16 | 80 | 16 |
-| Tình huống Em vắng Test (K6b) | Máy làm gì 16 · Bạn làm gì 13 · Ai khác nhận việc 14 | | | | | | | 43 | 16 |
-Hai thẻ vượt ~80 (84, 85) — [XM-4]. Đọc dò (nhãn trái → câu phải) trong ~10 giây; đọc hết từng chữ ~20 giây (critique A).
+| Nhập điểm (K1, K9, K12a) | 13 | 13+10+4 | 5 | 10 | 11 | 12 | 11 | **89** | B3, T-08 · T-10; T-17; mockup ① K2b "Lưu · bài tiếp ›" · luat/1 §2 `score` Xong khi · T-15 · B7, T-16, ① K2b menu ⋯ "Khôi phục điểm" · T-14 + luat/1 §4 ("GV: báo nhờ QL"), T-08 · luat/1 §2 `score` cột "Lưu xong" |
+| ↳ QL làm thay (K2d) | | | | | | — | | 77 | như trên; ẩn Không làm được [XM-3] |
+| Nhập điểm MT cũ (K2a) | 13 | 7+8+4 | 6 | — | 11 | 13 | 14 | 76 | T-20, luat/1 §2 `missing_data` · T-20; T-17 + §4 ("-" khi tuần cách ≥ 2 tuần = Không dự thi) · §2 Xong khi "hết ô trống" · không hạn: T-20 · T-16 · §2 Làm thay "GV đúng ô" · §2 "MT cũ thi trong 4 tuần … mới sinh Case" |
+| Xử lý vi phạm (K2b) | 14 | 13+8 (hai lối) | 6 | 15 | 6+11 | — | 15 | **90** | `13` mục 3 (3 VP / 2 tuần, Yêu cầu xử lý) · D3 (Nâng 1 bậc mặc định; Cách khác → QL), `13` mục 3 (Không xử lý + lý do) · ⑪ K6 · luat/3 §3 `yt_xu_ly` (ngày VP thứ 3 + 4), `13` mục 3 "quá hạn báo QL" · F7 (Hoàn tác 10 giây); lời 48 + D4 (đổi ý ở tab Ý thức; thu hồi QL duyệt) · D3 (TVV Báo PH), lời 48 (người ghi nhận tin) |
+| Báo PH (K2c, K2g) | 15 | 7+7+4 | 5 | 11 | — | 12+7 | 11 | 79 | luat/3 §3 `bao_ph_yt` · luat/3 §4 (liên hệ PH; Đã báo PH / Chưa liên hệ được; Nội dung), lời 36 chân panel · §3 Xong khi · §3 "ngày sinh + 4, sửa được" + §4 "Sửa hạn" · §4 "Chưa liên hệ được (việc còn mở)"; luat/4 §3 + `15` mục 8.1 (em chưa có TVV → QL) · D6 |
+| Ghi kết quả PA (K2e chỉ xem: 38) | 16 | 6+11+7 | 5 | 8 | 6 | 11 | 9 | 79 | luat/2 §3 `ghi_ket_qua_pa`, C4 · ⑫ lưới (Tiến triển, Nhận xét); bảng câu ⑤ (Giữ nguyên / Điều chỉnh / Thay PA cần lý do); C6 · C6 · C4 · bảng câu ⑤ "Lưu là chốt, đổi bằng Sửa" · bảng câu ⑤ "Xin hỗ trợ QL: PA vẫn chạy" · `13` H4 (Hoàn thành Case bật sẵn) |
+| Mô tả Case (K5b, K12c) | 14 | 4+3+2 | 7 | 10 | — | 14 | 9 | 63 | luat/2 §3 `ghi_nhan_xet` · luat/2 §3 "Có mô tả + nhóm" · §3 · C4 (5 ngày; SOS 3: 3) · A7, C3, E4 · §3 "Sang Xác nhận PA" + bảng câu ⑤ |
+| PA khác quy chế — thẻ duyệt QL (K2f) | 14 | 10+8 | 5 | 13 | 6+10 | — | 13 | 82 | C-13 · luat/4 §4 "QL cần thấy: PA quy chế ↔ PA của GV, lý do"; `ql.ts` (Duyệt / Từ chối…) · — · luat/4 §4 (ngày gửi + 3; quá hạn máy chốt theo PA của GV) · `ql.ts` (Hoàn tác; Đã xử lý › Huỷ quyết định) · C-13 (duyệt → theo GV; không duyệt → PA quy chế chạy ngay) |
+| Chấm Speaking (K7a) | 15 | 9+3+4 | 10 | 12 | 11 | — | 16 | 80 | B4, T-09, luat/1 §2 `score:cham-speaking` · T-10; T-17 · §2 Xong khi; B4 · T-15 + §2 "không đếm, không chuông" · T-16 · §2 cột "Lưu xong" |
+| Tình huống Em vắng Test (K6b) | Máy làm gì 12+10+13 · Bạn làm gì 13 · Ai khác nhận việc 16+15 | | | | | | | 79 | T-17 (Mock lần 1 dời, lần 2 huỷ; lớp thường dời, không huỷ; tuần cách ≥ 2 tuần Không dự thi) · T-19 + luat/1 §4 "Xoá '-': trả về tuần gốc" · luat/1 §4 bảng "-": "lần 1 (Mock) → chuông GVCN + GV kỹ năng đó", T-17 "lần 2 huỷ, không việc, không chuông", "'-' lớp thường: từ lần 2 chuông GVCN"; việc mới tuần dời: §2 `score` "Từ thứ Hai tuần Test" |
 
-**Chữ chưa chắc 100 % trên mã (HD-2 / HD-3 kiểm lại khi viết nội dung):** "Sửa hạn" (Báo PH — theo `luat/3` mục 4) · "Hiện từ Chủ nhật trước hạn" (Ghi kết quả PA — `luat/2` mục 3) · "Việc được giao" ở tab Vận hành (K11c) · thẻ Duyệt giữ PA của GV: nút "Từ chối…", tab "Đã xử lý" › "Huỷ quyết định" (lấy từ hướng dẫn QL đang có trên web, `ql.ts`). Dòng **Làm sai** của Báo PH và Mô tả Case **để ẩn** vì chưa thấy đường sửa rõ trên web — không đoán [XM-5].
+Đọc dò (nhãn trái → câu phải) ~10 giây; đọc hết từng chữ ~20 giây (critique A). Câu nào không chỉ ra được nguồn đã bỏ hoặc sửa: "Gõ mô tả: em sai ở đâu, vì sao" → "Gõ mô tả." · "quá hạn vẫn làm được" (Mô tả Case) → bỏ · "lần 1 dời, lần 2 huỷ" ở thẻ Nhập điểm → "Mock: …" (lớp thường không huỷ, T-17) · "gõ số câu đúng hoặc band" → thêm tiêu chí + lớp thường điểm đạt (T-10) · "MT cũ: gõ -" → "(ghi Không dự thi)" (T-17).
+
+**Chữ chưa chắc 100 % trên mã (HD3-2 … HD3-4 kiểm lại khi viết nội dung):** "Sửa hạn" (Báo PH — `luat/3` §4) · "hiện từ Chủ nhật trước hạn" (Ghi kết quả PA — `luat/2` §3) · "Việc được giao" ở tab Vận hành (K11c) · thẻ PA khác quy chế: "Từ chối…", "Hoàn tác", "Đã xử lý › Huỷ quyết định" lấy từ hướng dẫn QL đang có (`shared/huongDan/ql.ts:31, 448, 556`). Dòng **Làm sai** của Báo PH, Mô tả Case **để ẩn** — chưa thấy đường sửa trên mã [XM-5, PTA đồng ý].
 
 ## 6. [XM] cần PTA Overhaul quyết
 
 1. **[XM-1] "?" bị nền mờ che (web hiện tại).** Panel phủ nền đang mở (vd QL › Tổng quan › "Chấm quá hạn") thì nút "?" nằm dưới nền mờ, KHÔNG bấm được (`truoc/r2d-ql-lam-thay.png`; Playwright báo click bị chặn). Đặc tả 4.1 "mở chồng" đòi bấm được. Đề xuất HD-1: nút "?" của thanh trên nổi trên nền mờ KhungPanel (chỉ nút này), hoặc thêm "?" nhỏ ở đầu KhungPanel. Mockup vẽ K2d theo giả định đã bấm được.
 2. **[XM-2] Tầng 2 có số việc bạn đang có** ở mỗi dòng ("3 việc") và việc đang có lên trước — đề bài chỉ nói "≤ 5 việc của tab". Số lấy từ `/my-work` đã nạp (0 câu đọc). Giữ hay bỏ?
 3. **[XM-3] Làm thay → ẩn "Không làm được".** (Dải tính theo dòng việc đang mở — `mine` / `lamThay` — như 15 mục 8.1; QL giữ việc TVV khi em chưa có TVV thì không có dải, thấy đủ dòng — K2g.) Thẻ viết theo người giữ việc; dòng này là lý do của người đó ("không phải kỹ năng bạn → nhờ QL") — sai với QL. Builder ẩn cho vai làm thay (vai chỉ xem ẩn thêm Làm, Làm sai). Đồng thời đổi quy tắc viết: **Khi nào có / Sau đó viết theo vai (GV, GVCN, TVV), không dùng "bạn"** để vai khác đọc cùng thẻ không hiểu sai; "bạn" chỉ ở các dòng thao tác. Đề xuất ghi vào 15 mục 4.10.
-4. **[XM-4] Hai thẻ quá ~80 chữ:** Nhập điểm 84 (giữ đủ ba bước + luật "-"), Xử lý vi phạm 85 (hai lối). Cắt thêm sẽ mất thông tin "tính đến mọi trường hợp". Giữ hay nâng ngưỡng HD-DAI lên 90?
+4. **[XM-4] (PTA: giữ, trần 90)** Hai thẻ quá ~80 chữ sau khi sửa theo nguồn luật: Nhập điểm 89, Xử lý vi phạm 90. Cắt thêm sẽ mất thông tin "tính đến mọi trường hợp". Giữ hay nâng ngưỡng HD-DAI lên 90?
 5. **[XM-5] Dòng Làm sai ẩn ở Báo PH, Mô tả Case** (xem mục 5). HD-2/HD-3 kiểm mã: có đường sửa thì thêm.
 6. **[XM-6] Chấm trên "?"** đổi nghĩa: V2 = "chưa mở lần nào"; V3 = "có phiên bản nội dung chưa xem". Một cờ theo phiên bản (`daXemHuongDan` → số phiên bản); tài khoản mới chưa xem phiên bản nào nên vẫn có chấm như V2; người mới KHÔNG thấy dải Có gì mới (với họ chưa có gì "mới").
 7. **[XM-7] K9 tô bước khớp 2 giây** khi mở từ ⓘ — chi tiết nhỏ thêm ngoài đề bài.
 8. **[XM-8] Bộ lọc nhịp dính đầu** thân panel khi cuộn (thấy đang lọc gì); 375 một hàng vuốt ngang, mép phải mờ.
 9. **[XM-9] ĐÃ GIẢI (15 mục 8.1):** thẻ đặt theo tên dòng việc trên web → "Nhập điểm"; Tôi muốn… tách "Xác nhận PA" / "Chọn PA", "Bàn giao chuyển lớp" / "Bàn giao đổi GV".
 10. **[XM-10] Web hiện tại còn việc "Xem vi phạm mới"** (`truoc/r2b-xu-ly-vp.png`) — GD-19 (lời 47, ⑪) chưa lên web. Thẻ Xử lý vi phạm viết theo luật mới; HD-2 phải chờ GD-19 (15 mục 6 đã ghi).
+12. **[XM-12] Dòng "Ai khác nhận việc" của Em vắng Test — chỗ PTA cần xem lại.** Chỉnh chữ của PTA ghi "Mock lần 1 dời, lần 2 huỷ 'không việc, không chuông'". Nhưng bảng "-" ở `luat/1` §4 ghi rõ: **"-" lần 1 (Mock) → "Dời sang tuần sau; chuông GVCN + GV kỹ năng đó"**; "không việc, không chuông" là của **lần 2** (T-17). Thẻ đang viết theo bảng đó: "Mock lần 1: GVCN, GV kỹ năng đó nhận tin; tuần mới có việc nhập lại." · "Mock lần 2: không việc, không tin; lớp thường từ lần 2: GVCN nhận tin." Nếu mã thực tế không gửi chuông ở lần 1 thì sửa thành câu PTA đề xuất.
 11. **[XM-11] Tổng quan QL không có danh sách tab** → panel mở từ đó dùng lối "‹ Việc khác ở màn này" (tầng 3); hồ sơ HV cũng vậy (K2e). Tên lối thứ hai này là builder đặt.
 
 ## 7. `impeccable` — distill · layout · clarify, rồi critique
@@ -127,7 +133,7 @@ Critique (dual-agent: A = rà thiết kế, subagent riêng · B = detector + Pl
 
 | Vòng | Điểm | P0 / P1 | Đã sửa |
 |---|---|---|---|
-| 1 | **30/40** | P0 0 · P1 3 | P1 Xử lý vi phạm đánh số 1-2-3 cho hai lối loại trừ → hai dòng nhánh, không số · P1 "Hồ sơ học viên › Case & phương án" không phải tab → "Hồ sơ học viên › Học thuật" (mọi dòng "Cũng mở được từ") · P1 "⋯ › Khôi phục điểm" trông như "--- ›" cạnh dấu "-" → phím ⋯ có khung: "xoá nhầm: [⋯] rồi **Khôi phục điểm**" · P2 "bạn" trong thẻ khi QL / CX đọc → Khi nào có / Sau đó viết theo vai [XM-3] · P2 Hạn thiếu "quá hạn thì sao" → thêm ở Xử lý vi phạm, Mô tả Case · P2 QL / CX mất lối lên → "‹ Việc khác ở màn này" · P2 375 chip lọc 36 px, nút Có gì mới 40 px → 44 · P2 ký tự "⌄" trong dải Có gì mới → chữ · P3 K9 tô cả dòng Làm → chỉ bước "Em vắng" · P3 cột nhãn trong danh sách 96 → 108 · K5b thẻ mở bị cắt → thân tự cuộn vừa đủ + bộ lọc dính đầu |
+| 1 | **30/40** | P0 0 · P1 3 | P1 Xử lý vi phạm đánh số 1-2-3 cho hai lối loại trừ → hai dòng nhánh, không số · P1 "Hồ sơ học viên › Case & phương án" không phải tab → "Hồ sơ học viên › Học thuật" (mọi dòng "Cũng mở được từ") · P1 "⋯ › Khôi phục điểm" trông như "--- ›" cạnh dấu "-" → phím ⋯ có khung: "xoá nhầm: [⋯] rồi **Khôi phục điểm**" · P2 "bạn" trong thẻ khi QL / CX đọc → Khi nào có / Sau đó viết theo vai [XM-3] · P2 Hạn thiếu "quá hạn thì sao" → thêm ở Xử lý vi phạm (Mô tả Case: bỏ lại sau rà nguồn luật — 0b) · P2 QL / CX mất lối lên → "‹ Việc khác ở màn này" · P2 375 chip lọc 36 px, nút Có gì mới 40 px → 44 · P2 ký tự "⌄" trong dải Có gì mới → chữ · P3 K9 tô cả dòng Làm → chỉ bước "Em vắng" · P3 cột nhãn trong danh sách 96 → 108 · K5b thẻ mở bị cắt → thân tự cuộn vừa đủ + bộ lọc dính đầu |
 Cổng (luật 28/10): chạm 30, sau vòng sửa không còn P0 / P1 → dừng.
 Detector B: 57 phát hiện, KHÔNG có lỗi thật trong `huong-dan.css` — 38 tương phản = huy hiệu số chú thích mockup `.so-mk` (không lên web); phông Inter / Be Vietnam Pro, vạch trái 3 px mục đang chọn = hệ thiết kế đã duyệt; bo 10 px = dáng danh sách V2 đã duyệt (v14). Tương phản chữ nhạt thấp nhất 4,84 : 1 (nhãn dòng trên nền tô K9, Sáng) — đạt.
 P2 / P3 để lại (ghi để PTA biết): thẻ Báo PH chưa có Làm sai [XM-5] · 1440 sáu chip lọc xuống hai hàng (giữ chip — G2 "danh sách ngắn cố định giữ dáng chip") · dải Có gì mới mở thì thân cuộn (K8d — đóng dải là thẻ trọn; không thêm "›" vì "›" = đổi trang).
@@ -162,7 +168,7 @@ Tất cả ≤ 1 px.
 | R14.8 | Có gì mới: dải + chấm; đã xem | K8a–d, K12f | Đạt · [XM-6] |
 | R14.9 | ⓘ dòng quy chế mở đúng thẻ (cùng thành phần) | K9 | Đạt · [XM-7] |
 | R14.10 | Chỉ cho tôi khoanh (V2) · trang /huong-dan (In) · 375 panel toàn màn, thẻ, tab | K10a, K10b, K12a–f | Đạt |
-| R14.11 | Chữ thật theo 4.10, đếm chữ từng thẻ | mọi thẻ; mục 5 | Đạt — trừ 2 thẻ 84 / 85 chữ [XM-4] |
+| R14.11 | Chữ thật theo 4.10, đếm chữ từng thẻ | mọi thẻ; mục 5 | Đạt — mọi thẻ ≤ 90 chữ (trần PTA chốt), mỗi câu có nguồn luật (mục 5) |
 | G1 | Nâng cấp V2, giữ thao tác | mục 2, 3 | Đạt — không mất thao tác |
 | G2 | Đồng bộ thành phần (tab gạch chân, ô tìm, ✕, chip, ⓘ, "›" = đổi trang, câu lỗi chuẩn) | mọi khung | Đạt |
 | G3 | Không chú thích tĩnh / bước xác nhận / tab ngoài đề bài | — | Đạt (tab Khi gặp… là đề bài) |
