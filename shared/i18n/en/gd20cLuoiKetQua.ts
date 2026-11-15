@@ -47,4 +47,7 @@ export const EN_GD20C_LUOI_KET_QUA = {
     'Click <b>Save n rows</b> (all complete: <b>Save · next task ›</b>): rows save as <b>Keep</b>; a failed row says so in place, text kept, <b>Retry</b>.',
   'Đổi quyết định, Kết quả cuối, PA theo buổi: <b>Mở đầy đủ</b>, xong bấm <b>‹ Lưới</b>.':
     'To change the decision, final result or session-based plan: <b>Open in full</b>, then <b>‹ Grid</b>.',
+  '{n} PA ngoài quyền xem': '{n} plans outside your view',
+  'Chưa có dòng đủ: chọn Tiến triển và Nhận xét ≥ {n} ký tự': 'No complete row yet: pick Progress and a Comment ≥ {n} characters',
+  'Các dòng còn lại cần Mở đầy đủ': 'Remaining rows need Open in full',
 } as const;

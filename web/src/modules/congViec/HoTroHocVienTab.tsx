@@ -306,7 +306,8 @@ export function HoTroHocVienTab() {
     else {
       daDay.current = khongViec(params);
       const v = vungCuon();
-      if (v && window.matchMedia(MAN_HEP).matches) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
+      /* GD-20c ([XM-G1] PTA chốt): lưới Ghi kết quả PA ẩn danh sách cả ở máy tính — nhớ chỗ cuộn như điện thoại, Đóng về đúng dòng cũ. */
+      if (v && (window.matchMedia(MAN_HEP).matches || (it.group === 'ghi_ket_qua_pa' && moCaDong(it)))) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
       setParams(next);
     }
   };
@@ -319,10 +320,12 @@ export function HoTroHocVienTab() {
   /* Điện thoại: danh sách hiện lại (nút "‹ Công việc" hay nút Lùi) → về đúng chỗ cuộn cũ, SAU khi vẽ (trước đó cuộn neo theo nội dung panel). */
   const coChon = !!chon;
   const vuaCo = useRef(coChon);
+  const vuaRong = useRef(luoiRong);
   useLayoutEffect(() => {
-    if (vuaCo.current && !coChon && window.matchMedia(MAN_HEP).matches) vungCuon()?.scrollTo(0, cuon.current);
+    if (vuaCo.current && !coChon && (window.matchMedia(MAN_HEP).matches || vuaRong.current)) vungCuon()?.scrollTo(0, cuon.current);
     vuaCo.current = coChon;
-  }, [coChon]);
+    vuaRong.current = luoiRong;
+  }, [coChon, luoiRong]);
   /* ponytail: "đang hiện" đọc từ DOM — nhóm gập, việc sau "Xem thêm", em của dòng gộp chưa mở không được vẽ; nâng lên state nếu DanhSachViec đổi cách vẽ. */
   const dangHien = (k: string) => !!document.querySelector(`[data-khoa="${CSS.escape(k)}"]`);
   /* CONG-VIEC-2: việc tiếp đi hết nhóm (`viecKeTiepVong`). Hết nhóm → thẻ "Hết việc {nhóm}" + việc đầu nhóm sau (`xoay`: các nhóm sau trước, rồi vòng lên). */

@@ -79,3 +79,12 @@ Không mất thao tác nào.
 - `web-design-guidelines`: ô Nhận xét thêm `name` + `autocomplete="off"`; ngoặc kép cong ở câu xung đột; trạng thái chân `role="status"`, lỗi dòng `role="alert"`. Còn lại đạt.
 - `/ponytail-review`: không cắt thêm (helper `lucNhap` / `xungDotCua` nhỏ trùng ý `CapNhatTuan.tsx` — không xuất từ đó để khỏi đụng tệp GD-20d đang sửa). Lean.
 - `layout` / `polish` / `adapt` / `harden`: cột, khoảng cách, cỡ chữ theo `gv-viet-it.css .lkq`; 375 thẻ; lỗi từng dòng, chữ giữ (nháp trình duyệt `useNhap` — tải lại trang vẫn còn), xung đột nháp, kỳ đã chốt (409 daChot, không Thử lại).
+
+## 7. Vòng 2 (PTA rà #1738, 15/11) — [XM] đã chốt, sửa 4 chỗ
+
+PTA chốt: G1 (ẩn danh sách khi mở lưới; Đóng về đúng chỗ cuộn cũ — nhớ / trả vị trí cuộn như điện thoại), L1 để sau, L2 panel Case, bỏ Hoàn tác, "Không lưu được".
+1. Chưa dòng nào sẵn: nút chính "Lưu" mờ + `title` nói còn thiếu gì ("Chưa có dòng đủ: chọn Tiến triển và Nhận xét ≥ 8 ký tự" / "Các dòng còn lại cần Mở đầy đủ") — thay "Lưu 0 dòng".
+2. `DongQuyChe` (thành phần chung): 375 xuống dòng đủ chữ, không "…" (câu ≤ 90 ký tự → ≤ 2 dòng); ≥ 640 một dòng như cũ; ⓘ chỉ khi có chi tiết (bỏ ⓘ nhắc lại câu). Soi 375: lưới (2 dòng, không cắt), Ghi kết quả PA một em (2 dòng), việc Vận hành của QL (2 dòng) — `cap-e3`, `cap-qc-ket-qua-mot-pa`, `cap-qc-van-hanh`, số đo `so-375-vong2.json`.
+3. Ô Nhận xét → `textarea` tự giãn (`field-sizing: content`); 375 ô trống cao đủ hai dòng nên chữ gợi ý không bị cắt.
+4. PA máy chủ không trả (ngoài quyền xem) không tính vào đủ / xong → "Lưu · việc tiếp ›" đi được; dòng đếm thêm "· n PA ngoài quyền xem".
+`npm run check` lại: 5783 đạt, tốc độ đạt, css / esbuild / hook sạch.

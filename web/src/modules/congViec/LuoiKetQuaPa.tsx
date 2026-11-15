@@ -87,7 +87,10 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
     return nh && !sua[id] ? 'nhap' : 'thieu';
   };
   const du = (x: Em) => { const v = giaTri(x.paId!); const n = v.note.trim().length; return !phuc(x) && !!v.outcome && n >= CHU_TOI_THIEU_CASE && n <= TRAN_CHU.ketQuaPa; };
-  const conLai = ds.filter((x) => !da.has(x.paId!));
+  /* PA máy chủ không trả (ngoài quyền xem) không tính vào "đủ / xong" của lưới — không chặn "Lưu · việc tiếp ›"; báo một dòng (PTA rà #1738). */
+  const ngoai = data ? ds.filter((x) => !paCua.has(x.paId!)) : [];
+  const dsLam = ngoai.length ? ds.filter((x) => paCua.has(x.paId!)) : ds;
+  const conLai = dsLam.filter((x) => !da.has(x.paId!));
   const sanLuu = conLai.filter((x) => du(x) && !dang.has(x.paId!) && (!loi[x.paId!] || (loi[x.paId!].thuLai && !loi[x.paId!].xungDot)));   // xung đột nháp: chỉ nút của dòng (chọn bản), không lưu đè hàng loạt
   const coLoi = conLai.filter((x) => loi[x.paId!]);
   const tatCaDu = conLai.length > 0 && conLai.every((x) => du(x));
@@ -124,7 +127,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
     setDang(new Set()); setLoi(loiMoi); setDa(daMoi); boSua(ok); xepLai(loiMoi, daMoi);
     dangGui.current = false; setGui(null);
     if (ok.length) lamMoiNgoai();
-    if (diTiep && onTiep && ds.every((x) => daMoi.has(x.paId!))) onTiep();
+    if (diTiep && onTiep && dsLam.every((x) => daMoi.has(x.paId!))) onTiep();
   };
   /** Lưu nháp các dòng đã sửa (không kiểm đủ ô, không chốt; việc / hạn không đổi). */
   const luuNhap = async (ids: readonly number[]) => {
@@ -177,19 +180,21 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const hanKe = [...new Set(ds.filter((x) => !phuc(x)).map((x) => paCua.get(x.paId!)?.hanKe ?? null))];
 
   /* ─── chân BA nút (mockup ⑫ C3, [XM-8]): Đóng · Lưu nháp · nút chính đổi nhãn theo trạng thái; hết dòng → "✓ Đã lưu" + "Việc tiếp ›". */
-  const xongHet = ds.length > 0 && conLai.length === 0;
+  const xongHet = dsLam.length > 0 && conLai.length === 0;
   const nutChinh = xongHet
     ? (onTiep ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : null)
     : sanLuu.length && sanLuu.every((x) => loi[x.paId!])
       ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui || !sanLuu.length} onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{t('Thử lại {n} dòng', { n: sanLuu.length })}</button>
       : tatCaDu && onTiep
         ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui} aria-busy={gui === 'chot'} onClick={() => void luu(sanLuu.map((x) => x.paId!), true)}>{t('Lưu · việc tiếp ›')}</button>
-        : <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui || !sanLuu.length} aria-busy={gui === 'chot'} onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{t('Lưu {n} dòng', { n: sanLuu.length })}</button>;
+        : <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui || !sanLuu.length} aria-busy={gui === 'chot'}
+            title={sanLuu.length ? undefined : conLai.some((x) => !phuc(x)) ? t('Chưa có dòng đủ: chọn Tiến triển và Nhận xét ≥ {n} ký tự', { n: CHU_TOI_THIEU_CASE }) : t('Các dòng còn lại cần Mở đầy đủ')}
+            onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{sanLuu.length ? t('Lưu {n} dòng', { n: sanLuu.length }) : t('Lưu')}</button>;
   const coSoNhap = conLai.filter((x) => !phuc(x) && sua[x.paId!]);
   const nutNhap = !xongHet && data && conLai.some((x) => !phuc(x)) && (
     <button type="button" className="btn min-h-[44px] px-4 sm:min-h-[40px]" disabled={!!gui} onClick={() => void luuNhap(coSoNhap.map((x) => x.paId!))}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</button>
   );
-  const soDa = ds.length - conLai.length;
+  const soDa = dsLam.length - conLai.length;
   const trai: ReactNode = gui ? <span className="tt-luu dang" role="status">{gui === 'nhap' ? t('Đang lưu nháp…') : t('Đang lưu {n} dòng…', { n: sanLuu.length || 1 })}</span>
     : xongHet ? <span className="tt-luu da" role="status">✓ {t('Đã lưu')}</span>
     : coLoi.length ? <>{soDa > 0 && <span className="tt-luu da">✓ {t('Đã lưu {n}', { n: soDa })}</span>}<span className="tt-luu loi" role="status">⚠ {t('{n} dòng không lưu được ↑', { n: coLoi.length })}</span></>
@@ -199,7 +204,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
 
   const dau = { ...dauViec({ han: it.due && !xongHet ? <ChipHan vien loai="cap-nhat-pa" han={it.due} /> : null, ngCanh: null }),
     loai: t('Việc · Case học thuật'), dong2: [ky ? t('Kỳ {ky}', { ky }) : null, t('{n} PA · {m} em', { n: ds.length, m: soEm })] };
-  const demTt = (k: Tt[]) => ds.filter((x) => k.includes(trangThai(x))).length;
+  const demTt = (k: Tt[]) => dsLam.filter((x) => k.includes(trangThai(x))).length;
 
   const luoi = (
     <KhungPanel hd="ket-qua-pa" rong="bang" tieuDe={t('Ghi kết quả PA · {lop}', { lop: tenLop })} dau={dau} onDong={onDong}
@@ -210,7 +215,8 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
         : (
           <div className="flex flex-col gap-2.5 pt-3.5">
             <p className="m-0 text-[13px] text-dim">
-              <b className="font-bold tabular-nums text-[color:var(--text)]">{demTt(['da'])}</b> {t('đã lưu')} · <b className="font-bold tabular-nums text-[color:var(--text)]">{demTt(['san'])}</b> {t('sẵn lưu')} · <b className="font-bold tabular-nums text-[color:var(--text)]">{ds.length - demTt(['da', 'san'])}</b> {t('chưa xong')}
+              <b className="font-bold tabular-nums text-[color:var(--text)]">{demTt(['da'])}</b> {t('đã lưu')} · <b className="font-bold tabular-nums text-[color:var(--text)]">{demTt(['san'])}</b> {t('sẵn lưu')} · <b className="font-bold tabular-nums text-[color:var(--text)]">{dsLam.length - demTt(['da', 'san'])}</b> {t('chưa xong')}
+              {ngoai.length > 0 && <span className="text-faint"> · {t('{n} PA ngoài quyền xem', { n: ngoai.length })}</span>}
             </p>
             <div className="overflow-hidden rounded-[10px] border max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0" style={{ borderColor: 'var(--line)' }}>
               <div className="grid grid-cols-[186px_minmax(0,1fr)_124px] gap-x-3.5 border-b px-3.5 py-2 text-xs font-semibold text-faint max-sm:hidden" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
@@ -219,7 +225,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
                 <span>{t('Trạng thái')}</span>
               </div>
               <ul className="m-0 list-none p-0">
-                {thuTu.map((id, i) => {
+                {thuTu.filter((id) => !ngoai.some((x) => x.paId === id)).map((id, i) => {
                   const x = emCua.get(id)!;
                   return (
                     <li key={id} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
@@ -318,7 +324,8 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
               </button>
             ))}
           </div>
-          <input className="field min-h-[44px] w-full text-sm sm:min-h-9" name={`nhan-xet-${em.paId}`} autoComplete="off" value={v.note} readOnly={dang} placeholder={dich(GOI_Y_KET_QUA_PA)} aria-label={t('Nhận xét · {ten}', { ten: em.studentName })}
+          {/* Ô tự giãn theo chữ (mockup ⑫ `.o`): một dòng khi ngắn, xuống dòng khi dài; 375 chữ gợi ý hiện đủ (hai dòng). */}
+          <textarea rows={1} className="field min-h-[44px] w-full resize-none text-sm [field-sizing:content] sm:min-h-9 max-sm:placeholder-shown:min-h-[66px]" name={`nhan-xet-${em.paId}`} autoComplete="off" value={v.note} readOnly={dang} placeholder={dich(GOI_Y_KET_QUA_PA)} aria-label={t('Nhận xét · {ten}', { ten: em.studentName })}
             aria-invalid={tt === 'thieu' && n > 0 ? true : undefined} onChange={(e) => datO({ note: e.target.value })} />
           {/* Bộ đếm chỉ khi đang gõ mà chưa đủ / quá dài (mockup C2 "Nhận xét ≥ 8 ký tự · 7/8"). */}
           {n > 0 && (n < CHU_TOI_THIEU_CASE || n > TRAN_CHU.ketQuaPa) && (
