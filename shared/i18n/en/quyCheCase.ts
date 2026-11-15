@@ -15,6 +15,8 @@ export const EN_QUY_CHE_CASE = {
   'Kết quả cuối: lưu xong PA khép': 'Final result: the plan closes once saved',
   'Xin hỗ trợ QL: PA vẫn chạy · QL nhận thẻ': 'Ask manager: the plan keeps running · manager gets a card',
   'Chỉ kết thúc khi Tiến bộ rõ hoặc Tiến bộ một phần': 'End only on Clear progress or Some progress',
+  'Kết thúc PA · Case hoàn thành, mở lại được ở thẻ Case': 'End PA · Case completed, can be reopened on the Case card',
+  'Kết thúc PA · Case còn mở · không hạn': 'End PA · Case stays open · no deadline',
   'Điều chỉnh / Thay PA cần lý do': 'Adjust / Replace plan needs a reason',
   'PA quy chế: không thay, không kết thúc sớm': 'Rule plan: no replacing, no early end',
   'Hạn {han} (5 ngày) · lưu xong PA Bổ trợ chạy · quá hạn báo QL': 'Due {han} (5 days) · support plan runs once saved · overdue alerts manager',
