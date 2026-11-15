@@ -136,3 +136,14 @@ Tên biến, cách lưu phiên bản nội dung, cách lấy "việc đang mở"
 - **Phép kiểm:** HD-DU dựa bảng tay vai → tên dòng việc + export khoá của `GROUP_META`; HD-NHAN: mỗi thẻ khai `tep[]`, quét thêm `web/src/ui`, `shared/domain`, `mywork.ts`; HD-DAI: đếm "tiếng" (tách dấu cách, bỏ thẻ đậm), dòng Làm đếm số bước; HD-HAN: cấm số ngày / thứ gõ tay ở dòng Hạn và bỏ các mẫu '5 ngày', '3 ngày', 'Thứ Ba'… khỏi danh sách cho qua (`prHd.tests.ts:421`). Câu gợi ý `GROUP_META` cũng đang gõ cứng số (`mywork.ts:223…340`) → sửa cùng HD3-1.
 - **Bản Anh:** ước ~60 thẻ × ~6 khoá + tình huống + khung ≈ **500–550 khoá mới**, phần lớn khoá cũ bỏ được (đang ~1 700 dòng EN).
 
+### 8.3 PTA Overhaul chốt khi rà mockup ⑭ (15/11)
+- **Nút "?" nổi trên nền mờ:** bấm được cả khi một panel phủ nền đang mở (nay bị nền mờ che ở vài màn, vd panel số liệu Tổng quan QL) — làm trong HD3-1.
+- **Tầng 2 có số việc đang có** cạnh từng việc ("3 việc"), lấy từ `/my-work` đã nạp.
+- **Vai làm thay:** ẩn dòng "Không làm được"; các dòng "Khi nào có" / "Sau đó" viết theo TÊN VAI ("GV kỹ năng đó", "TVV của em"), không viết "bạn", để một thẻ dùng được cho mọi người xem (bổ sung 4.10).
+- **Độ dài:** mục tiêu viết ~80 chữ / thẻ; máy kiểm (HD-DAI) chặn ở 90; mỗi dòng vẫn ≤ 1 câu.
+- **Dòng "Làm sai" chỉ hiện khi đã kiểm trong mã là sửa / khôi phục được bằng cách đó** — chưa kiểm thì để trống, không đoán.
+- **Chấm trên "?"** = có phiên bản nội dung chưa xem; người mới có chấm, không có dải "Có gì mới".
+- **Tên thẻ = tên dòng việc trên web:** "Nhập điểm" (không "Nhập điểm MT · Progress · Final").
+- **Màn không có tab** (Tổng quan, hồ sơ HV): lối lên là "‹ Việc khác ở màn này".
+- **Mỗi câu trong thẻ phải chỉ ra được dòng luật nguồn** (`luat/0`–`4`, `plan.md` 1.6, lời chủ SP); bảng nội dung của mỗi PR HD3 có cột "nguồn luật" để PTA Overhaul rà.
+
