@@ -469,11 +469,11 @@ export const manHoSoVai = (cx: boolean): ManHd[] => [manHoSoLop(cx), manHoSoHv(c
 export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-target', ten: 'Đổi Target', buoc: ['TVV, CX, QL sửa thẳng; <b>Lý do đổi Target</b> bắt buộc.', 'Target mới tính từ hôm nay; kỳ vọng các lượt đã làm bài giữ nguyên.'] },
   { id: 'tvv-luat-tam-dung', ten: 'Tạm dừng', buoc: ['Em Tạm dừng: mọi hạn của em dừng, việc ẩn, không quá hạn.', 'Bấm nhầm: <b>Hoàn tác</b> ngay trên thông báo.'] },
-  { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>; QL hoặc TVV chọn. Hạn 7 ngày từ ngày có kết quả (hoặc ngày thi + 7 nếu muộn hơn), <b>Gia hạn</b> được.'] },
-  { id: 'tvv-luat-bao-ph', ten: 'Báo PH vi phạm', buoc: ['GVCN lưu xử lý vi phạm là có việc ngay cho TVV của em (kể cả khi chờ QL duyệt); hạn 5 ngày lịch, tính cả ngày lưu.',
+  { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>; QL hoặc TVV chọn. Hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (hoặc từ ngày thi nếu muộn hơn), <b>Gia hạn</b> được.'] },
+  { id: 'tvv-luat-bao-ph', ten: 'Báo PH vi phạm', buoc: ['GVCN lưu xử lý Nâng 1 bậc là có việc ngay cho TVV của em; cách khác có việc khi QL duyệt hoặc máy chốt; hạn {han:bao_ph_vi_pham}, tính cả ngày lưu.',
     'Chưa liên hệ được: việc vẫn mở, giữ hạn. Sửa hạn: TVV, GVCN lớp em, QL; không trần, không xin duyệt.', 'GVCN thu hồi lần xử lý: lần báo của bạn giữ trong lịch sử; QL nhờ báo lại thì có việc mới.'] },
   { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['Phối hợp SOS chỉ GVCN làm; QL theo dõi và làm thay. TVV, CX chỉ xem.',
-    'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì TVV báo PH, xếp họp, ghi kết quả; hạn 5 ngày. Em chưa có TVV: GVCN báo.'] },
+    'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì TVV báo PH, xếp họp, ghi kết quả; hạn theo cấu hình Case & SOS. Em chưa có TVV: GVCN báo.'] },
   { id: 'tvv-luat-lo-trinh', ten: 'Đổi lộ trình đang học', buoc: ['TVV, GVCN, QL đổi; CX không. MT đã có điểm giữ nguyên, MT chưa thi xếp lại theo lộ trình mới.', 'Có nhật ký ở <b>Lịch sử</b>.'] },
   { id: 'tvv-luat-hoc-thuat', ten: 'Học thuật', buoc: ['Điểm, Case, PA, Ý thức: GV và QL ghi; TVV xem.'] },
 ];

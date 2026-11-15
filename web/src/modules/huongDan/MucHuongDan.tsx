@@ -1,7 +1,7 @@
 import { useId, useState } from 'react';
 import { useSession } from '../../lib/session.tsx';
 import { ChuDam } from '../../ui/ui.tsx';
-import { HUONG_DAN, vaiCoNoiDung, vaiHdCua, type ChiChoToi, type MucHd } from '@shared/huongDan/index.ts';
+import { HUONG_DAN, chenHan, vaiCoNoiDung, vaiHdCua, type ChiChoToi, type MucHd } from '@shared/huongDan/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** Nút "Chỉ cho tôi" (mockup `.nut-chi`): viền nhấn, chữ nhấn; 44 px trên điện thoại. */
@@ -24,7 +24,7 @@ export function MucHuongDan({ muc, moSan = false, onChi }: { muc: MucHd; moSan?:
       </button>
       <div id={id} className={`flex flex-col gap-2.5 ${mo ? '' : 'hidden print:flex'}`}>
         <ol className="m-0 flex flex-col gap-1 pl-5 text-[14px] leading-normal text-slate-300 [&_strong]:font-semibold [&_strong]:text-slate-100">
-          {muc.buoc.map((b) => <li key={b}><ChuDam chu={t(b)} /></li>)}
+          {muc.buoc.map((b) => <li key={b}><ChuDam chu={chenHan(t(b))} /></li>)}
         </ol>
         {muc.chi && <div><button type="button" className={`${NUT_CHI} max-sm:w-full max-sm:justify-center`} onClick={() => onChi(muc.chi!)}>{t('Chỉ cho tôi')}</button></div>}
       </div>

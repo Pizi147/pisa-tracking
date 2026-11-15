@@ -102,7 +102,7 @@ export const HD_CX: HuongDan = {
   ],
   luat: [
     ...LUAT_TVV.filter((m) => m.id !== 'tvv-luat-thi-that' && m.id !== 'tvv-luat-bao-ph' && m.id !== 'tvv-luat-lo-trinh'),
-    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn, hạn 7 ngày từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.'] },
+    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.'] },
     { id: 'cx-luat-lo-trinh', ten: 'Lộ trình, môn học', buoc: ['TVV, GVCN, QL đổi Lộ trình đang học và Môn học; CX không.'] },
   ],
   tu: [

@@ -164,7 +164,7 @@ const TAB_CU: Record<string, string> = { diem: 'cham-diem', case: 'case-hoc-thua
 export const tabCuaThe = (v: ViecHd): string => v.tab ?? (v.chiS ? 'cham-cheo' : TAB_CU[v.nhom]);
 /** Thứ tự nhóm của Tôi muốn…: Chờ bạn duyệt · tab Công việc (GV rồi TVV) · Học viên & lớp · Khác (đặc tả 15 mục 4.6). */
 export const THU_TAB_HD: readonly string[] = ['duyet', ...TAB_CV, ...NHOM_CV_TVV, 'hv', 'khac'];
-export const tenTabHd = (k: string): string => (k === 'duyet' ? t('Chờ bạn duyệt') : k === 'hv' ? t('Học viên & lớp') : k === 'khac' ? t('Khác')
+export const tenTabHd = (k: string, hd?: HuongDan): string => (hd?.tenTab?.[k] ? t(hd.tenTab[k]!) : k === 'duyet' ? t('Chờ bạn duyệt') : k === 'hv' ? t('Học viên & lớp') : k === 'khac' ? t('Khác')
   : nhanTabCv(k, (NHOM_CV_TVV as readonly string[]).includes(k)));
 
 /**

@@ -43,11 +43,11 @@ function ChuThe({ chu }: { chu: Khoa }) {
 }
 
 /** Tầng 2: tab đang đứng — Công việc `?nhom=` (thiếu khi có `?loai=` → suy từ loại). ponytail: tab hồ sơ lớp / HV / Phân tích thêm khi HD3-2 viết nội dung tab. */
-function tabDangDung(man: ManHd | null, search: URLSearchParams, tvv: boolean): { k: string; ten: string; the: (hd: HuongDan) => ViecHd[] } | null {
+function tabDangDung(man: ManHd | null, search: URLSearchParams, tvv: boolean, hdVai?: HuongDan): { k: string; ten: string; the: (hd: HuongDan) => ViecHd[] } | null {
   if (man?.id !== 'cong-viec') return null;
   const loai = search.get('loai');
   const k = search.get('nhom') ?? (loai ? (tvv ? nhomViecTvvCua : nhomViecCua)(loai) : null);
-  return k ? { k, ten: tenTabHd(k), the: (hd) => (hd.lam ?? []).filter((v) => tabCuaThe(v) === k) } : null;
+  return k ? { k, ten: tenTabHd(k, hdVai), the: (hd) => (hd.lam ?? []).filter((v) => tabCuaThe(v) === k) } : null;
 }
 
 export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** Dòng việc `/my-work` thanh trên đã nạp — số việc ở tầng 2. */ dong?: readonly DongViecChuong[] }) {
@@ -66,7 +66,7 @@ export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** 
   const hd = useMemo(() => (vai === cuaToi ? locVai(HUONG_DAN[vai]!, { gvcn: !!session?.laGvcn, s: !!session?.coS }) : HUONG_DAN[vai]!), [vai, cuaToi, session?.laGvcn, session?.coS]);
   const manNen = manCuaDuong(hd, pathname);
   const manPanel = manCuaPanel(hd, panel);
-  const tab2 = useMemo(() => tabDangDung(manNen, new URLSearchParams(search), vai === 'tvv'), [manNen, search, vai]);
+  const tab2 = useMemo(() => tabDangDung(manNen, new URLSearchParams(search), vai === 'tvv', hd), [manNen, search, vai, hd]);
   /* Tầng 1: dòng việc đang mở → thẻ của loại việc (theo người giữ); không có dòng việc mà panel có thẻ (Case từ hồ sơ HV) → thẻ của panel. */
   const tang1 = useMemo(() => {
     if (viecMo) {
@@ -466,7 +466,7 @@ export function DsNhom({ viec, ctx, moDau = false, moId = null }: { viec: ViecHd
     <div className="grid gap-4">
       {THU_TAB_HD.map((k) => {
         const ds = viec.filter((v) => tabCuaThe(v) === k);
-        return ds.length ? <Nhom key={k} ten={tenTabHd(k)}><DsViec>{ds.map((v) => <DongCuaThe key={v.id} v={v} ctx={ctx} moSan={v.id === moId || (moDau && v === viec[0])} />)}</DsViec></Nhom> : null;
+        return ds.length ? <Nhom key={k} ten={tenTabHd(k, ctx.hd)}><DsViec>{ds.map((v) => <DongCuaThe key={v.id} v={v} ctx={ctx} moSan={v.id === moId || (moDau && v === viec[0])} />)}</DsViec></Nhom> : null;
       })}
     </div>
   );
@@ -480,8 +480,8 @@ export function LuoiThe({ viec, ctx }: { viec: ViecHd[]; ctx: Ctx }) {
         const ds = viec.filter((v) => tabCuaThe(v) === k);
         if (!ds.length) return null;
         return (
-          <section key={k} className="grid gap-2.5 break-inside-avoid-page" aria-label={tenTabHd(k)}>
-            <h2 className="m-0 text-sm font-semibold text-slate-300">{tenTabHd(k)}</h2>
+          <section key={k} className="grid gap-2.5 break-inside-avoid-page" aria-label={tenTabHd(k, ctx.hd)}>
+            <h2 className="m-0 text-sm font-semibold text-slate-300">{tenTabHd(k, ctx.hd)}</h2>
             <div className="grid items-start gap-3 xl:grid-cols-2">
               {ds.map((v) => {
                 const nhan = nhanVai(v);
