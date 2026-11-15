@@ -2,11 +2,13 @@
 export const EN_GD20C_LUOI_KET_QUA = {
   'Lưu = Giữ nguyên PA, kỳ sau hạn {han} · đổi quyết định: Mở đầy đủ': 'Save = keep the plan, next period due {han} · to change the decision: Open in full',
   'Lưu = Giữ nguyên PA · đổi quyết định: Mở đầy đủ': 'Save = keep the plan · to change the decision: Open in full',
-  'Có bản nháp mới hơn · {gio} · {ten}: "{chu}"': 'A newer draft exists · {gio} · {ten}: "{chu}"',
+  'Có bản nháp mới hơn · {gio} · {ten}: “{chu}”': 'A newer draft exists · {gio} · {ten}: “{chu}”',
   'Thử lại {n} dòng': 'Retry {n} rows',
   'Đang lưu {n} dòng…': 'Saving {n} rows…',
   'Đã lưu {n}': 'Saved {n}',
-  '{n} dòng chưa lưu được ↑': '{n} rows not saved ↑',
+  '{n} dòng không lưu được ↑': '{n} rows not saved ↑',
+  'Tối đa {n} PA một lưới.': 'At most {n} plans per grid.',
+  'Thiếu danh sách PA.': 'Plan list missing.',
   '{n} dòng chưa xong ↑': '{n} rows not done ↑',
   '{n} / {m} dòng đủ': '{n} / {m} rows complete',
   'Nháp · chưa lưu kết quả': 'Draft · result not saved',
@@ -26,7 +28,6 @@ export const EN_GD20C_LUOI_KET_QUA = {
   'Thiếu tiến triển': 'Progress missing',
   'Nhận xét quá dài': 'Comment too long',
   'Sẵn lưu': 'Ready to save',
-  'Chưa lưu được': 'Not saved',
   'Mở đầy đủ': 'Open in full',
   'Đã ghi ở panel đầy đủ': 'Recorded in the full panel',
   'Mở đầy đủ để ghi kết quả PA này': 'Open in full to record this plan',
@@ -37,4 +38,13 @@ export const EN_GD20C_LUOI_KET_QUA = {
   'Tiến triển · {ten}': 'Progress · {ten}',
   'Nhận xét ≥ {n} ký tự': 'Comment ≥ {n} characters',
   'nháp lưu {gio}': 'draft saved {gio}',
+  'PA đang chạy: ghi mỗi kỳ <b>2 tuần</b>, hạn <b>Thứ Ba</b> sau kỳ. Bấm dòng <b>Ghi kết quả PA</b> — nhiều em cùng lớp, cùng kỳ mở <b>một lưới</b>.':
+    'Running plan: record every <b>2-week</b> period, due the <b>Tuesday</b> after. Click the <b>Record plan results</b> row — several students of one class and period open <b>one grid</b>.',
+  'Ghi nhiều em một lưới': 'Record several students in one grid',
+  'Mỗi dòng một PA: chọn <b>Tiến triển</b>, gõ <b>Nhận xét</b> (≥ 8 ký tự) — dòng đủ hiện <b>Sẵn lưu</b>.':
+    'One row per plan: pick <b>Progress</b>, type a <b>Comment</b> (≥ 8 characters) — a complete row shows <b>Ready to save</b>.',
+  'Bấm <b>Lưu n dòng</b> (đủ hết: <b>Lưu · việc tiếp ›</b>): các dòng lưu <b>Giữ nguyên</b>; dòng lỗi báo tại dòng, chữ giữ, <b>Thử lại</b>.':
+    'Click <b>Save n rows</b> (all complete: <b>Save · next task ›</b>): rows save as <b>Keep</b>; a failed row says so in place, text kept, <b>Retry</b>.',
+  'Đổi quyết định, Kết quả cuối, PA theo buổi: <b>Mở đầy đủ</b>, xong bấm <b>‹ Lưới</b>.':
+    'To change the decision, final result or session-based plan: <b>Open in full</b>, then <b>‹ Grid</b>.',
 } as const;

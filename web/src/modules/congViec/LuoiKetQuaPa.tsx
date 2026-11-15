@@ -37,7 +37,7 @@ const loiCua = (e: any, kieu: Loi['kieu']): Loi => {
   if (e?.status === 409 && e.details?.daChot) return { chu: dich(e.message ?? ''), thuLai: false, kieu };
   const xd = xungDotCua(e);
   if (xd) {
-    return { chu: xd.moi ? t('Có bản nháp mới hơn · {gio} · {ten}: "{chu}"', { gio: lucNhap(xd.moi.luc), ten: xd.moi.boi, chu: xd.moi.note }) : t('Nháp vừa bị xoá ở phiên khác'), thuLai: true, kieu, xungDot: true };
+    return { chu: xd.moi ? t('Có bản nháp mới hơn · {gio} · {ten}: “{chu}”', { gio: lucNhap(xd.moi.luc), ten: xd.moi.boi, chu: xd.moi.note }) : t('Nháp vừa bị xoá ở phiên khác'), thuLai: true, kieu, xungDot: true };
   }
   return { chu: e?.message ? dich(e.message) : t('Không lưu được'), thuLai: true, kieu };
 };
@@ -173,25 +173,26 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const tenLop = it.classCode ?? '';
   const ky = it.due && homNay ? kyGhiKetQua(it.due, homNay) : null;
   const soEm = new Set(ds.map((x) => x.studentId)).size;
-  const hanKe = [...new Set((data?.ds ?? []).map((x) => x.hanKe))];
+  /* Dòng quy chế nói hạn kỳ sau của các dòng LƯU ĐƯỢC ở lưới (Giữ nguyên) — dòng Kết quả cuối / theo buổi đi panel đầy đủ. */
+  const hanKe = [...new Set(ds.filter((x) => !phuc(x)).map((x) => paCua.get(x.paId!)?.hanKe ?? null))];
 
   /* ─── chân BA nút (mockup ⑫ C3, [XM-8]): Đóng · Lưu nháp · nút chính đổi nhãn theo trạng thái; hết dòng → "✓ Đã lưu" + "Việc tiếp ›". */
   const xongHet = ds.length > 0 && conLai.length === 0;
   const nutChinh = xongHet
-    ? (onTiep ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" onClick={onTiep}>{t('Việc tiếp ›')}</button> : null)
+    ? (onTiep ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" onClick={onTiep}>{t('Việc tiếp ›')}</button> : null)
     : sanLuu.length && sanLuu.every((x) => loi[x.paId!])
-      ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui || !sanLuu.length} onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{t('Thử lại {n} dòng', { n: sanLuu.length })}</button>
+      ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui || !sanLuu.length} onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{t('Thử lại {n} dòng', { n: sanLuu.length })}</button>
       : tatCaDu && onTiep
-        ? <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui} aria-busy={gui === 'chot'} onClick={() => void luu(sanLuu.map((x) => x.paId!), true)}>{t('Lưu · việc tiếp ›')}</button>
-        : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui || !sanLuu.length} aria-busy={gui === 'chot'} onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{t('Lưu {n} dòng', { n: sanLuu.length })}</button>;
+        ? <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui} aria-busy={gui === 'chot'} onClick={() => void luu(sanLuu.map((x) => x.paId!), true)}>{t('Lưu · việc tiếp ›')}</button>
+        : <button type="button" className="btn btn-primary min-h-[44px] px-4 font-bold sm:min-h-[40px]" disabled={!!gui || !sanLuu.length} aria-busy={gui === 'chot'} onClick={() => void luu(sanLuu.map((x) => x.paId!))}>{t('Lưu {n} dòng', { n: sanLuu.length })}</button>;
   const coSoNhap = conLai.filter((x) => !phuc(x) && sua[x.paId!]);
   const nutNhap = !xongHet && data && conLai.some((x) => !phuc(x)) && (
-    <button type="button" className="btn min-h-[40px] px-4" disabled={!!gui} onClick={() => void luuNhap(coSoNhap.map((x) => x.paId!))}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</button>
+    <button type="button" className="btn min-h-[44px] px-4 sm:min-h-[40px]" disabled={!!gui} onClick={() => void luuNhap(coSoNhap.map((x) => x.paId!))}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</button>
   );
   const soDa = ds.length - conLai.length;
   const trai: ReactNode = gui ? <span className="tt-luu dang" role="status">{gui === 'nhap' ? t('Đang lưu nháp…') : t('Đang lưu {n} dòng…', { n: sanLuu.length || 1 })}</span>
     : xongHet ? <span className="tt-luu da" role="status">✓ {t('Đã lưu')}</span>
-    : coLoi.length ? <>{soDa > 0 && <span className="tt-luu da">✓ {t('Đã lưu {n}', { n: soDa })}</span>}<span className="tt-luu loi" role="status">⚠ {t('{n} dòng chưa lưu được ↑', { n: coLoi.length })}</span></>
+    : coLoi.length ? <>{soDa > 0 && <span className="tt-luu da">✓ {t('Đã lưu {n}', { n: soDa })}</span>}<span className="tt-luu loi" role="status">⚠ {t('{n} dòng không lưu được ↑', { n: coLoi.length })}</span></>
     : soDa > 0 ? <><span className="tt-luu da" role="status">✓ {t('Đã lưu {n}', { n: soDa })}</span><span className="tt-luu dang">· {t('{n} dòng chưa xong ↑', { n: conLai.length })}</span></>
     : tatCaDu ? <span className="tt-luu dang">{t('{n} / {m} dòng đủ', { n: conLai.length, m: conLai.length })}</span>
     : daSua ? <span className="tt-luu nhap">● {t('Nháp · chưa lưu kết quả')}</span> : null;
@@ -211,8 +212,8 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
             <p className="m-0 text-[13px] text-dim">
               <b className="font-bold tabular-nums text-[color:var(--text)]">{demTt(['da'])}</b> {t('đã lưu')} · <b className="font-bold tabular-nums text-[color:var(--text)]">{demTt(['san'])}</b> {t('sẵn lưu')} · <b className="font-bold tabular-nums text-[color:var(--text)]">{ds.length - demTt(['da', 'san'])}</b> {t('chưa xong')}
             </p>
-            <div className="overflow-hidden rounded-[10px] border max-sm:rounded-none max-sm:border-x-0" style={{ borderColor: 'var(--line)' }}>
-              <div className="grid grid-cols-[186px_minmax(0,1fr)_112px] gap-x-3.5 border-b px-3.5 py-2 text-xs font-semibold text-faint max-sm:hidden" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+            <div className="overflow-hidden rounded-[10px] border max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0" style={{ borderColor: 'var(--line)' }}>
+              <div className="grid grid-cols-[186px_minmax(0,1fr)_124px] gap-x-3.5 border-b px-3.5 py-2 text-xs font-semibold text-faint max-sm:hidden" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
                 <span>{t('Học viên · PA')}</span>
                 <span>{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span> · {t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span>
                 <span>{t('Trạng thái')}</span>
@@ -235,13 +236,15 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   );
   return (
     <>
-      <div hidden={!!day}>{luoi}</div>
+      <div hidden={day !== null}>{luoi}</div>
       {day && (
         /* "Mở đầy đủ" (mockup C4): panel Case đang có thay chỗ lưới (không lồng) — "‹ Lưới {lớp} · n PA" về đúng lưới; lưu ở panel → "Lưu · về lưới". */
+        <div className="lg:max-w-[720px]">{/* panel Case giữ bề rộng như web (720), không giãn theo lưới 1040 */}
         <NganCase caseId={day.em.caseId!} paId={day.em.paId} viec={day.xem ? undefined : 'ghi-ket-qua'} hocVien={day.em.studentName} lop={it.classCode}
           onClose={onDong} onChanged={() => { doiODay.current = true; onDaLam(); }}
           veNguon={{ nhan: t('Lưới {lop} · {n} PA', { lop: tenLop, n: ds.length }), onClick: veLuoi }}
           kyNangTiep={day.xem ? null : { ten: t('Lưới {lop}', { lop: tenLop }), di: veLuoi, chu: t('Lưu · về lưới') }} />
+        </div>
       )}
     </>
   );
@@ -251,7 +254,7 @@ const NUT_MA = 'btn btn-sm min-h-[44px] w-fit justify-self-start border-transpar
 const NUT_VIEN = 'btn btn-sm min-h-[44px] w-fit justify-self-start px-2.5 text-[13px] font-semibold sm:min-h-[30px]';
 /* Chữ qua `t` lúc vẽ (đổi ngôn ngữ không tải lại mô-đun). */
 const chuTt = (tt: Tt): string => ({
-  chua: t('Chưa ghi'), thieu: t('Thiếu nhận xét'), san: t('Sẵn lưu'), nhap: t('Nháp'), dang: t('Đang lưu…'), loi: `⚠ ${t('Chưa lưu được')}`, da: t('✓ Đã lưu'), phuc: t('Chưa ghi'),
+  chua: t('Chưa ghi'), thieu: t('Thiếu nhận xét'), san: t('Sẵn lưu'), nhap: t('Nháp'), dang: t('Đang lưu…'), loi: `⚠ ${t('Không lưu được')}`, da: t('✓ Đã lưu'), phuc: t('Chưa ghi'),
 })[tt];
 const MAU_TT: Partial<Record<Tt, string>> = { thieu: 'text-soon', nhap: 'text-soon', loi: 'text-bad', da: 'text-ok' };
 
@@ -278,12 +281,12 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
     : tt === 'phuc' || (tt === 'loi' && !loi?.thuLai) ? <button type="button" className={NUT_VIEN} disabled={khoa} onClick={() => moDay(false)}>{t('Mở đầy đủ')}</button>
     : <button type="button" className={NUT_MA} disabled={khoa} onClick={() => moDay(false)}>{t('Mở đầy đủ')}</button>;
   const hoSo = (
-    <Link to={duongHoSoHocVien(em.studentId!)} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline sm:text-sm">{em.studentName}</Link>
+    <Link to={duongHoSoHocVien(em.studentId!)} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-2.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center sm:text-sm">{em.studentName}</Link>
   );
   const phu = [kn && <b key="k" className="font-semibold text-dim">{kn}</b>, tenPa].filter(Boolean);
 
   return (
-    <div className={`grid gap-x-3.5 gap-y-2 px-4 py-3 sm:grid-cols-[186px_minmax(0,1fr)_112px] sm:px-3.5 sm:py-2.5 ${tt === 'loi' ? 'bg-bad-bg' : tt === 'da' ? 'max-sm:bg-ok-bg' : ''}`}>
+    <div className={`grid gap-x-3.5 gap-y-2 px-4 py-3 sm:grid-cols-[186px_minmax(0,1fr)_124px] sm:px-3.5 sm:py-2.5 ${tt === 'loi' ? 'bg-bad-bg' : tt === 'da' ? 'max-sm:bg-ok-bg' : ''}`}>
       {/* Em (link hồ sơ) · kỹ năng · PA · MT gần nhất — 375: tên + trạng thái một hàng, phụ một dòng. */}
       <div className="flex min-w-0 items-start justify-between gap-3 sm:block">
         <span className="grid min-w-0 gap-0.5">
@@ -295,7 +298,7 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
       </div>
 
       {tt === 'da' ? (
-        <p className="m-0 min-w-0 self-center text-[14px] leading-snug text-dim max-sm:hidden">
+        <p className="m-0 min-w-0 self-center text-sm leading-snug text-dim max-sm:hidden">
           {daLuu ? <><b className="mr-2 font-semibold text-[color:var(--text)]">{KY_HIEU_TIEN_TRIEN[daLuu.outcome as keyof typeof KY_HIEU_TIEN_TRIEN]} {dich(outcomeLabelFor(daLuu.outcome))}</b>{daLuu.note}</> : t('Đã ghi ở panel đầy đủ')}
         </p>
       ) : tt === 'phuc' || !pa ? (
@@ -310,12 +313,12 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
           <div role="group" aria-label={t('Tiến triển · {ten}', { ten: em.studentName })} className="flex flex-wrap gap-[5px]">
             {FOLLOWUP_OUTCOMES.map((o) => (
               <button key={o} type="button" aria-pressed={v.outcome === o} disabled={dang} onClick={() => datO({ outcome: v.outcome === o ? '' : o })}
-                className={`btn btn-sm min-h-[44px] whitespace-nowrap rounded-full px-[9px] text-[13px] sm:h-[30px] sm:min-h-[30px] ${v.outcome === o ? '!border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-[color:var(--text)]' : ''}`}>
-                <span aria-hidden className="mr-1">{KY_HIEU_TIEN_TRIEN[o]}</span>{dich(outcomeLabelFor(o))}
+                className={`btn btn-sm min-h-[44px] whitespace-nowrap gap-1 rounded-full px-[9px] text-[13px] sm:h-[30px] sm:min-h-[30px] ${v.outcome === o ? '!border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-[color:var(--text)]' : ''}`}>
+                <span aria-hidden>{KY_HIEU_TIEN_TRIEN[o]}</span>{dich(outcomeLabelFor(o))}
               </button>
             ))}
           </div>
-          <input className="field min-h-[44px] w-full text-sm sm:min-h-9" value={v.note} readOnly={dang} placeholder={dich(GOI_Y_KET_QUA_PA)} aria-label={t('Nhận xét · {ten}', { ten: em.studentName })}
+          <input className="field min-h-[44px] w-full text-sm sm:min-h-9" name={`nhan-xet-${em.paId}`} autoComplete="off" value={v.note} readOnly={dang} placeholder={dich(GOI_Y_KET_QUA_PA)} aria-label={t('Nhận xét · {ten}', { ten: em.studentName })}
             aria-invalid={tt === 'thieu' && n > 0 ? true : undefined} onChange={(e) => datO({ note: e.target.value })} />
           {/* Bộ đếm chỉ khi đang gõ mà chưa đủ / quá dài (mockup C2 "Nhận xét ≥ 8 ký tự · 7/8"). */}
           {n > 0 && (n < CHU_TOI_THIEU_CASE || n > TRAN_CHU.ketQuaPa) && (

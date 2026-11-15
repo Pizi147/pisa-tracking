@@ -9,7 +9,7 @@
 import { db } from '../db.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
-import { badRequest } from '../util.ts';
+import { badRequest, loi } from '../util.ts';
 import { PERMISSIONS, hanKe } from '../../../shared/domain/index.ts';
 import { docNhapKetQua } from './cases.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
@@ -31,7 +31,7 @@ export type DongLuoiKetQua = {
 export function docIdLuoi(v: unknown): number[] {
   const ids = [...new Set(String(v ?? '').split(',').map((x) => Number(x.trim())).filter((x) => Number.isInteger(x) && x > 0))];
   if (!ids.length) throw badRequest('Thiếu danh sách PA.');
-  if (ids.length > TRAN_PA_LUOI) throw badRequest(`Tối đa ${TRAN_PA_LUOI} PA một lưới.`);
+  if (ids.length > TRAN_PA_LUOI) throw loi(400, 'Tối đa {n} PA một lưới.', { n: TRAN_PA_LUOI });
   return ids;
 }
 

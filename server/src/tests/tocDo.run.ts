@@ -1307,6 +1307,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   /* PR-B (30/10): chụp lại GVBM toi · QL / QT tat-ca · QT tat-ca cn · GVS toi — đổi CÓ CHỦ Ý (luật chủ SP 30/10 "Cùng GV · không cần bàn giao"): seed kịch bản 6
      MB FOU 23 → lớp đích cùng GV mọi môn, nên mất các việc "Bàn giao môn …" của GVBM và chữ "chờ môn …" ở việc GVCN. So JSON origin/main ↔ nhánh: lệch CHỈ các dòng đó. */
   const ANH: Record<string, string> = {
+    /* GD-20c (15/11): chụp lại 7 băm (QL / QT toi, GVBM, ADMIN giữ) — đổi CÓ CHỦ Ý: Ghi kết quả PA gộp theo lớp + CÙNG KỲ (khoá dòng gộp thêm `:d{hạn kỳ}`), hai kỳ khác nhau là hai dòng. Trước: GVCN toi 2be2a58247c4c4e9, GVCN_THUONG toi 2be2a58247c4c4e9, QL tat-ca 57e114e2c2891f6a, QT tat-ca 4e54cccf94bb64fc, QT tat-ca cn b6d206fc33ba09f7, QL gvcn 464100c07359814a, GVS toi c0f71c10ba0f7d2d */
     /* RA-LUONG-1 K2/K3 (29/10): chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: dòng gộp Speaking chấm chéo (QL / QT "Tất cả", gom theo lớp)
        giữ đuôi `|cc` như việc lẻ (`khoaGopCua`). So JSON ×1 origin/main ↔ nhánh: lệch CHỈ khoá dòng `gop:score:3:u0` → `gop:score:3:u0|cc`; mọi dòng khác, `items`,
        `summary` trùng. Trước: QL tat-ca 28f8ecdd8a2ebf00, QT tat-ca e91857dde5acb3fe, QT tat-ca cn 9461a089ce103418 */
@@ -1402,9 +1403,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        và ở "Tất cả" của QL / QT (= "Của một GV", OV11c-3). So JSON ×1 origin/main ↔ nhánh (806 đường): lệch CHỈ /my-work GV · QL / QT tất cả · Của một GV — chỉ THÊM
        dòng `bc-ph:*` (GVCN +4, GVBM +6, QL tất cả +17, QT +20 — seed có mốc bật = ngày seed nên đợt hạn trước 14/09 không sinh việc), không mất / đổi dòng nào; số nhóm Vận hành hồ sơ GV 7 tăng theo. Admin, QL / QT "Của tôi" giữ.
        Trước (main sau L6 / 2.3 #1556 · #1564): GVCN toi a79c2967be82df5e, GVBM toi 77e235e4611522bc, GVCN_THUONG toi a79c2967be82df5e, QL tat-ca 29da5f0c277723a2, QT tat-ca 9dfb712f3d614d40, QT tat-ca cn 0252208bd2d3fcdc, QL gvcn 217ad0083cb42779, GVS toi dcacfa50220ee88d */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '2be2a58247c4c4e9', 'GVBM toi': '8c05c3e43fd827f4',
-    'GVCN_THUONG toi': '2be2a58247c4c4e9', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '57e114e2c2891f6a', 'QT tat-ca': '4e54cccf94bb64fc',
-    'QT tat-ca cn': 'b6d206fc33ba09f7', 'QL gvcn': '464100c07359814a', 'GVS toi': 'c0f71c10ba0f7d2d',
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '52f7a5ba99d7eccc', 'GVBM toi': '8c05c3e43fd827f4',
+    'GVCN_THUONG toi': '52f7a5ba99d7eccc', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'f7752b5bc691561a', 'QT tat-ca': '60e53e557d7832a5',
+    'QT tat-ca cn': '453a428b04f09064', 'QL gvcn': '9bab38ec2790df06', 'GVS toi': '20255e1f890bf1a5',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
