@@ -185,6 +185,9 @@ export const DUONG_DO: MucDo[] = [
   /* BAO-CAO-PH: tab Báo cáo PH (một lớp × một đợt) + panel một phần (em + bản ghi đợt này / đợt trước + điểm gốc một câu). */
   { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'ADMIN', 'TVV'], url: '/classes/{lopFT}/bao-cao-ph', maChuDich: { TVV: 403 } },   // TVV mẫu ở chi nhánh khác lớp
   { trang: 'Hồ sơ lớp FT', vai: MOI_VAI, url: '/classes/{lopFT}/bao-cao-ph/phan?phan=listening' },
+  /* LG-13 (H1, H2): "Bạn đã ghi" cả lớp — chỉ gọi khi mở panel viết Báo cáo PH / bàn giao (4 câu, theo em của lớp). */
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV'], url: '/classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28', maChuDich: { TVV: 403 } },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'GVCN_THUONG'], url: '/classes/{lopThuong}/chu-da-ghi?tu=2026-06-01&den=2026-09-28' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph' },
   /* BAO-CAO-PH b: Excel một lớp (GV không xuất → 403). */
   { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT', 'ADMIN', 'GVCN'], url: '/classes/{lopFT}/bao-cao-ph/xuat', maChuDich: { GVCN: 403 } },
@@ -691,9 +694,13 @@ export const TRAN: Record<string, number> = {
   // PR-VAI-a (Q7): đường /phan-tich/bo-quen đã gỡ cùng boQuen.ts.
   'QL /metrics/case-xac-dinh-nguyen-nhan-qua-han': 24,
   'QT /metrics/case-xac-dinh-nguyen-nhan-qua-han': 21,
-  'GVCN /my-work': 44,   // LG-3 (việc GV Báo cáo PH): đo 37 → 42 (+5 câu: tiến độ lớp, tuỳ chỉnh đợt, em, bản ghi đủ; +43 dòng ×1 · +101 ×3), trần đo + 2 · LG-8: đo 35 → 38 (+3 câu: FT 1 + tiến độ lớp thường 2; +64 dòng), trần giữ · TD4: đo 61 (trước 64), trần đo + 2; TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
-  'GVBM /my-work': 44,   // LG-3: đo 37 → 42 (+5 câu, +65 dòng ×1 · +147 ×3), trần đo + 2 · LG-8: đo 34 → 37 (+3 câu, +88 dòng), trần giữ · TD4: đo 61 (trước 64); TL-NEN: đo 45 (trước 60) · TL-VIEC: đo 32 (trước 45)
-  'GVCN_THUONG /my-work': 44,   // LG-3: đo 37 → 42 (+5 câu, +43 dòng), trần đo + 2 · LG-8: đo 34 → 37 (+3 câu, +64 dòng), trần giữ · TD4: đo 61 (trước 64); TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
+  /* LG-13 (H1, H2): "Bạn đã ghi" cả lớp — 4 câu (em · nhận xét · Case + kết quả PA · vi phạm + xử lý) + 2 câu phiên; bản chép 15/11: ≤ 210 dòng trả / lớp (CP FT 137). */
+  'QL /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVCN /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVBM /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8,
+  'GVCN_THUONG /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'QT /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'TVV /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 4,
+  'QL /classes/6/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVCN_THUONG /classes/6/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8,
+  'GVCN /my-work': 47,   // LG-13 (Sắp tới): +2 câu (PA tới kỳ đi từ em lớp GV · em đợt BC PH sắp mở — chỉ tuần trước ngày mở), +~50 dòng trả; trần đo + 2 · LG-3 (việc GV Báo cáo PH): đo 37 → 42 (+5 câu: tiến độ lớp, tuỳ chỉnh đợt, em, bản ghi đủ; +43 dòng ×1 · +101 ×3), trần đo + 2 · LG-8: đo 35 → 38 (+3 câu: FT 1 + tiến độ lớp thường 2; +64 dòng), trần giữ · TD4: đo 61 (trước 64), trần đo + 2; TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
+  'GVBM /my-work': 47,   // LG-13 (Sắp tới): +2 câu (PA tới kỳ đi từ em lớp GV · em đợt BC PH sắp mở — chỉ tuần trước ngày mở), +~50 dòng trả; trần đo + 2 · LG-3: đo 37 → 42 (+5 câu, +65 dòng ×1 · +147 ×3), trần đo + 2 · LG-8: đo 34 → 37 (+3 câu, +88 dòng), trần giữ · TD4: đo 61 (trước 64); TL-NEN: đo 45 (trước 60) · TL-VIEC: đo 32 (trước 45)
+  'GVCN_THUONG /my-work': 47,   // LG-13 (Sắp tới): +2 câu (PA tới kỳ đi từ em lớp GV · em đợt BC PH sắp mở — chỉ tuần trước ngày mở), +~50 dòng trả; trần đo + 2 · LG-3: đo 37 → 42 (+5 câu, +43 dòng), trần đo + 2 · LG-8: đo 34 → 37 (+3 câu, +64 dòng), trần giữ · TD4: đo 61 (trước 64); TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
   /* PR-Ra: trang "Công việc" dùng lại /my-work cho QL·QT, cộng chế độ nguoi=tat-ca/{gv} (Q1–Q2). */
   'ADMIN /my-work': 23,   // RA-DOC-0611: đường mới đo — đo 13 (gồm 4 câu việc Xuất báo cáo PH) → max(đo + 10, ⌈đo × 1,3⌉)
   'QL /my-work': 49,   // PC-GV-A +1 (quét lịch đổi phân công GV tới hạn — một câu rẻ trong `quetLenhDenHan`, mọi đường đọc có quét); SV-NX-CASE +1 (MT mới nhất của em, một câu / trang); TD4: đo 61 (trước 64); SV-YT-TVV +1 (việc Báo PH: một câu); SV-TVV-VIEC +1 (Chốt ngày thi + Bổ sung hồ sơ: một câu); SEED-UX +1 (em "Đã thi · chờ KQ" theo ngày → câu đọc việc Cập nhật KQ thi thật có dữ liệu); MAIN-DO +1 (SEED-UX BU_MT2: 4 em MT2 chưa đạt có Case → `napTruocPhamVi` nạp thêm một lô; ×1 = ×3); P9a XET-LAI +2 (tập Xét lại: Final + mốc + Mini Test + Báo PH một câu, quyết định, bổ trợ — thay 4 câu cũ; đo 70); TL-NEN: đo 54 (trước 69) · TL-VIEC: đo 39 (trước 54)

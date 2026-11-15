@@ -148,7 +148,7 @@ export type PaViecTiep = {
   /** PR-S5F-a: PA bổ trợ Giữa khoá của lớp CŨ (Case đã đi theo em sang lớp mới) — người dạy cũ ghi tiếp; việc tiếp ưu tiên PA ở lớp mới. */
   lopCu?: boolean;
 };
-export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: string | null; paId?: number };
+export type ViecTiepCase = { chu: string; loaiHan: DeadlineKind | null; han: string | null; paId?: number; /** LG-13: lần ghi cuối (Kết quả cuối). */ cuoi?: true };
 
 /**
  * VIỆC TIẾP của một Case (K3-07, thay `nextStepOf` và B1) — một việc. Không còn "Xác minh SOS", "Xác nhận PA gợi ý",
@@ -169,12 +169,28 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   const chay = chayTatCa.some((p) => !p.lopCu) ? chayTatCa.filter((p) => !p.lopCu) : chayTatCa;
   const cu = (p: PaViecTiep) => (p.lopCu ? t(' (lớp cũ)') : '');
   const cuoi = chay.find((p) => laLanGhiCuoi({ preset: p.batBuoc, followupDue: p.followupDue, actionDue: p.actionDue, mienPhi: p.mienPhi }, homNay));
-  if (cuoi) return { chu: t('Kết quả cuối {tenPaGon}{cu}', { tenPaGon: tenPaGon(cuoi.ten), cu: cu(cuoi) }), loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id };
+  if (cuoi) return { chu: t('Kết quả cuối {tenPaGon}{cu}', { tenPaGon: tenPaGon(cuoi.ten), cu: cu(cuoi) }), loaiHan: 'cap-nhat-pa', han: cuoi.actionDue, paId: cuoi.id, cuoi: true };
   const ganNhat = [...chay].sort((a, b) => (a.actionDue ?? '9999').localeCompare(b.actionDue ?? '9999'))[0];
   if (ganNhat) return { chu: t('Kết quả PA {tenPaGon}{cu}', { tenPaGon: tenPaGon(ganNhat.ten), cu: cu(ganNhat) }), loaiHan: 'cap-nhat-pa', han: ganNhat.actionDue, paId: ganNhat.id };
   if (!pas.length) return { chu: CHU_THEM_PA, loaiHan: 'lap-pa', han: hanLapPa };
   if (pas.every((p) => p.xong)) return { chu: t('Hoàn thành Case'), loaiHan: null, han: null };
   return null;   // chỉ còn PA chờ Quản lý duyệt — việc của Quản lý
+}
+
+/** LG-13 (H8, overhaul V6 đợt 4): bốn bước của panel "Case theo bước" — thứ tự dải bước. */
+export const BUOC_CASE = ['cho-mo-ta', 'cho-chon-pa', 'dang-chay', 'cho-ket-qua-cuoi'] as const;
+export type BuocCase = (typeof BUOC_CASE)[number];
+/**
+ * Bước của một Case từ trạng thái v4 + việc tiếp ĐÃ TÍNH (`viecTiepCuaCase`) — không đọc thêm. Case xong / huỷ / tạm / chờ duyệt không theo dõi → null.
+ * Chờ mô tả = Xác nhận / Mô tả Case · Chờ chọn PA = chưa PA, PA chờ xác nhận, chờ duyệt (đổi) PA · Chờ kết quả cuối = lần ghi cuối hoặc mọi PA xong (Hoàn thành Case).
+ */
+export function buocCase(k: TrangThaiCaseV4, v: ViecTiepCase | null): BuocCase | null {
+  if (k === 'cho-nguyen-nhan' || k === 'cho-nhan-xet') return 'cho-mo-ta';
+  if (k === 'cho-xac-nhan-pa' || k === 'cho-duyet-doi-pa') return 'cho-chon-pa';
+  if (k !== 'dang-lam') return null;
+  if (!v || v.loaiHan === 'lap-pa' || v.loaiHan === 'xac-minh-sos') return 'cho-chon-pa';   // null ở đây = chỉ còn PA chờ QL duyệt
+  if (v.loaiHan === 'cap-nhat-pa') return v.cuoi ? 'cho-ket-qua-cuoi' : 'dang-chay';
+  return 'cho-ket-qua-cuoi';   // Hoàn thành Case: mọi PA đã xong
 }
 
 /**

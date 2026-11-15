@@ -1598,7 +1598,7 @@ await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca
 });
 
 /* TURSO-1211 (đo bản chép bản chính, docs/superpowers/specs/2026-11-12-turso-toc-do/ra.md mục A): 7 câu trước quét cả bảng nay đi chỉ mục mới. */
-await checkAsync('TURSO-1211 (×3) · 8 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
+await checkAsync('TURSO-1211 (×3) · 9 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
   const { migratePrTurso1211 } = await import('../migrate/prTurso1211.ts');
   const lan: string[][] = [[], []];
   migratePrTurso1211(conn, lan[0]); migratePrTurso1211(conn, lan[1]);
@@ -1612,7 +1612,9 @@ await checkAsync('TURSO-1211 (×3) · 8 câu Công việc / Tổng quan / hồ s
   } finally { doQuet.ghi = null; }
   const loi: string[] = [];
   for (const [ten, re, chiMuc, scan] of [
-    ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?/, 'idx_iv_ghi_kq', /^SCAN iv$/],
+    ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?(?!\s*AND iv\.action_due > \?)/, 'idx_iv_ghi_kq', /^SCAN iv$/],
+    /* LG-13 "Sắp tới": cùng câu Ghi kết quả PA nhưng đi từ em lớp GV / chủ Case / người dạy nhóm (rowid IN), không quét PA tới hạn cả hệ thống. */
+    ['Sắp tới · PA tới kỳ', /AS cho_mini/, 'idx_intervention_case', /^SCAN (iv|sc|iv2|sc2|e2)$/],
     ['Xác nhận PA', /AS chon_pa/, 'idx_iv_cho_xac_nhan', /^SCAN iv$/],
     ['Mốc PA quy chế', /iv\.moc_quy_che IN \('until_next_mt', 'until_exam'\)/, 'idx_iv_moc_cho', /^SCAN iv$/],
     ['Chờ kết quả thi', /COALESCE\(c\.thi_that_ngay, c\.exam_date, c\.ended_at\) < \?/, 'idx_cycle_cho_kq_ngay', /^SCAN c\b/],

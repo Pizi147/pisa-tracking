@@ -7,7 +7,7 @@
 import { DS_JSON, chenNhieuDong, db, theoLoJson, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopDayDu, vaiTaiChiNhanh, type Principal } from '../permissions.ts';
-import { coNho } from '../platform/nguCanhRequest.ts';
+import { coNho, nho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
 import { notify, nguoiVaiCuaChiNhanh, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -57,6 +57,10 @@ export const laDotFt = (c: Pick<Lop, 'programme_code' | 'is_fast_track'>, d: Pic
  * Nơi đọc nhiều lớp gọi một lần rồi truyền vào `dotCuaLop` (không đọc từng lớp).
  */
 export function docTuyChinhDot(classIds: readonly number[]): Map<number, TuyChinhDot> {
+  /* LG-13: GET nhớ theo đúng danh sách lớp — việc Báo cáo PH và "Sắp tới" của `/my-work` cùng tập lớp, một câu. Kết quả chỉ đọc. */
+  return nho(`tuy-chinh-dot:${classIds.join(',')}`, () => tinhTuyChinhDot(classIds));
+}
+function tinhTuyChinhDot(classIds: readonly number[]): Map<number, TuyChinhDot> {
   const out = new Map<number, { bo: Set<string>; them: DotBc[] }>();
   theoLoJson([...new Set(classIds)], (json) => {
     for (const r of db().prepare(`SELECT id, class_id, ma, loai, ten, mo, han FROM bao_cao_ph_dot WHERE class_id IN (${DS_JSON}) AND xoa_luc IS NULL ORDER BY id`).all(json) as any[]) {
