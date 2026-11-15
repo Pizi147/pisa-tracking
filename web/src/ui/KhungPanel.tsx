@@ -427,7 +427,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
           {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
           {/* GD-20b (PTA rà #1745, chủ SP không nhận chữ cắt): < 640 px tiêu đề dài xuống dòng (không "…"), giữ cùng hàng với ✕ góc phải trên; ≥ 640 một dòng như cũ. */}
-          <h2 className={`m-0 min-w-0 font-bold text-slate-100 max-sm:flex-1 max-sm:break-words max-sm:leading-snug sm:truncate ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={tieuDe}>{tieuDe}</h2>
+          <h2 className={`m-0 min-w-0 font-bold text-slate-100 max-sm:flex-1 max-sm:break-words sm:truncate ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
           {!ngu && <span className="flex-1 max-sm:hidden" />}
           {nutXem}
