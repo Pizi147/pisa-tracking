@@ -60,6 +60,9 @@ export type ViecHd = {
   tab?: string;
   /** Loại DÒNG VIỆC trên web mở thẻ này ở tầng 1 (`maViec` của dòng: nhóm việc máy chủ, `cham_speaking`). */
   viecWeb?: string[];
+  /** HD3-6 (phép HD-NHAN theo tệp): tệp web của MÀN / PANEL làm việc này — chữ đậm của thẻ phải có trong các tệp này (+ `web/src/ui`, `shared/domain`,
+   *  `mywork.ts`). Thiếu: so cả nguồn như HD-V2 (HD3-2 … HD3-5 khai khi viết thẻ). */
+  tep?: string[];
 };
 /**
  * HD3-1 — THẺ TRƯỜNG HỢP (tab "Trường hợp", đặc tả 15 mục 4.7): Máy làm gì · Bạn làm gì · Ai khác nhận việc; `the` = thẻ việc liên quan (id trong `lam`).
