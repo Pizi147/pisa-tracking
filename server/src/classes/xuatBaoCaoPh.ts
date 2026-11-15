@@ -14,7 +14,7 @@ import { badRequest, forbidden, notFound } from '../util.ts';
 import { diemGoc, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
+  addDaysIso, boPhanBc, chuMucExcel, chuDiem, chuDiemPdf, nhanDotBc, soNgayQuaHan, type BanGhiBc, type BaoCaoPdf, type DiemGocBc, type DotBc, type MucBc, type PhanBc,
 } from '../../../shared/domain/index.ts';
 
 export type SheetXuat = { ten: string; aoa: (string | number | null)[][] };
@@ -320,7 +320,8 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
 export type ViecBcGv = { userId: number; classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; phan: string[] };
 /** Người giữ phần: GV (chính người xem) hoặc mọi GV trong phạm vi khi QL / QT xem "Tất cả" — cùng câu đọc cho cả nhóm. */
 export type NguoiBc = { userId: number; assignments: readonly Pick<Principal['assignments'][number], 'classId' | 'skill' | 'isCore' | 'effectiveFrom' | 'effectiveTo'>[] };
-export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu = ''): ViecBcGv[] {
+/** Lớp × phần người giữ phải viết theo phân công hôm nay (lớp có mẫu báo cáo) — `viecBaoCaoPhGv` và `dotBcSapMoGv` dùng chung. */
+function phanCuaNguoi(nguoi: readonly NguoiBc[], homNay: string) {
   const cuaToi = new Map<string, Set<string>>();   // "người|lớp" → phần
   for (const n of nguoi) for (const a of n.assignments) {
     const k = a.isCore ? 'chung' : a.skill;
@@ -330,16 +331,20 @@ export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu 
   }
   if (!cuaToi.size) return [];
   const lop = lopDayDu();
-  const can = [...cuaToi].flatMap(([khoa, k]) => {
+  return [...cuaToi].flatMap(([khoa, k]) => {
     const [userId, id] = khoa.split('|').map(Number);
     const c = lop.get(id) as LopBc | undefined;
     const phan = c?.status === 'active' ? boPhanBc(c.programme_code ?? c.kind)?.filter((x) => k.has(x.khoa)) ?? [] : [];
     return phan.length ? [{ userId, c: c!, phan }] : [];
   });
+}
+
+export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu = ''): ViecBcGv[] {
+  const can = phanCuaNguoi(nguoi, homNay);
   if (!can.length) return [];
   const ids = [...new Set(can.map((x) => x.c.id))];
   const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
-  const dotLop = new Map(ids.map((id) => [id, (dotCuaLop(lop.get(id) as LopBc, homNay, tienDo, tuyChinh)?.ds ?? [])
+  const dotLop = new Map(ids.map((id) => [id, (dotCuaLop(lopDayDu().get(id) as LopBc, homNay, tienDo, tuyChinh)?.ds ?? [])
     .filter((d) => soNgayQuaHan(d, homNay) <= 7 && d.han >= batTu)]));
   const cap = can.flatMap((x) => (dotLop.get(x.c.id) ?? []).map((d) => ({ ...x, d })));
   if (!cap.length) return [];
@@ -358,6 +363,27 @@ export function viecBaoCaoPhGv(nguoi: readonly NguoiBc[], homNay: string, batTu 
     if (thieu) out.push({ userId, classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu, phan: phan.map((ph) => ph.khoa) });
   }
   return out;
+}
+
+/**
+ * LG-13 (H7 "Sắp tới"): đợt Báo cáo PH của người giữ phần MỞ trong 7 ngày tới (mở > hôm nay, ≤ hôm nay + 7) — ngày đó `viecBaoCaoPhGv` sinh việc
+ * (cùng phân công, cùng `dotCuaLop`, cùng mốc bật `batTu`, lớp có em trong đợt). Turso: tiến độ + tuỳ chỉnh đợt cùng tập lớp với `viecBaoCaoPhGv` (nhớ theo request) → 0 câu;
+ * có đợt sắp mở thì + 1 câu em. ponytail: tính theo phân công + lịch HÔM NAY (đổi phân công / dời tuần thi trong tuần thì ngày đổi theo).
+ */
+export type DotBcSapMo = { classId: number; code: string; dot: string; nhanDot: string; mo: string };
+export function dotBcSapMoGv(n: NguoiBc, homNay: string, batTu = ''): DotBcSapMo[] {
+  const can = phanCuaNguoi([n], homNay);
+  if (!can.length) return [];
+  const ids = [...new Set(can.map((x) => x.c.id))];
+  const tienDo = classProgressMany(ids), tuyChinh = docTuyChinhDot(ids);
+  const den = addDaysIso(homNay, 7);
+  const cap = can.flatMap(({ c }) => (dotCuaLop(c, den, tienDo, tuyChinh)?.ds ?? []).filter((d) => d.mo > homNay && d.han >= batTu).map((d) => ({ c, d })));
+  if (!cap.length) return [];
+  /* Lớp không em nào trong đợt thì không sinh việc — một câu em, chỉ những ngày có đợt sắp mở. */
+  const emDot = emTheoLo(cap, den);
+  return cap.filter(({ c, d }) => emDot.get(`${c.id}|${d.ma}`)?.length)
+    .map(({ c, d }) => ({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), mo: d.mo }))
+    .sort((a, b) => a.mo.localeCompare(b.mo) || a.classId - b.classId);
 }
 
 /** Ngày (giờ VN) của một mốc ISO. */

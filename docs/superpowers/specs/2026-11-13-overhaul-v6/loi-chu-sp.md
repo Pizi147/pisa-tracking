@@ -571,3 +571,27 @@ Bối cảnh: chủ SP thấy ảnh web Tổng quan của Admin văn phòng có 
 > "ok rồi nhé"
 
 ĐÃ CHỐT: **mockup ⑬ "Theo dõi trực diện" ĐÃ DUYỆT** (`thiet-ke/v21/theo-doi.html`, PR #1728 đã merge) — dòng "Sắp tới" · panel Case theo bước (tiêu đề + số theo nguồn mở, số bước màu thường) · "Sao chép" là biểu tượng (lời 51). GD-21 giao được. Còn mockup ⑪ (#1726) chờ duyệt.
+
+## 15/11 — lời 53 (chủ SP nói trong session mockup ⑪; session đó chuyển lại): duyệt mockup ⑪
+
+> "ok nhé"
+
+ĐÃ CHỐT: **mockup ⑪ "Chuông + vi phạm" ĐÃ DUYỆT** (`thiet-ke/v21/chuong-vi-pham.html`, PR #1726 đã merge) — chuông theo tab Công việc (thanh = tab, "⌄" mở ≤ 3 việc, Cập nhật có ✓ không viền, vi phạm gom theo lớp) · form "Vi phạm / Nhắc nhở" có công tắc "Yêu cầu GVCN xử lý" · panel "Xử lý vi phạm" hai lối · sau "Không xử lý" em rời nhóm cần xử lý, vi phạm vẫn đếm và vẫn xác nhận xử lý được · tab Ý thức bỏ "Đã xem". GD-19 giao được (bật cùng LG-11, LG-12). **Cả ba mockup đợt 4 (⑪ ⑫ ⑬) đã duyệt và merge.**
+
+## 15/11 — lời 54 (kèm /superpowers:brainstorming): thiết kế lại hệ thống Hướng dẫn "?"
+
+> "sử dụng những skills thiết kế hợp lý và động não để thiết kế giúp tôi một phiên bản update hoặc kể cả overhaul lại toàn bộ hệ thống hướng dẫn, dấu '?' để nó trực diện hơn, cụ thể và chính xác hơn, tính đến mọi trường hợp và hướng dẫn tất cả mọi vai trừ 'quản trị' một cách chính xác, chi tiết nhưng rõ ràng ngắn gọn dễ hiểu."
+
+PTA Overhaul hiểu:
+- Việc mới: **thiết kế lại hệ thống Hướng dẫn (nút "?")** — được update hoặc làm lại toàn bộ.
+- Tiêu chí: trực diện hơn · cụ thể, chính xác hơn · **tính đến mọi trường hợp** · chi tiết nhưng rõ, ngắn, dễ hiểu.
+- Phạm vi vai: **mọi vai trừ Quản trị** (GV / GVCN, Head tutor, TVV, QL, Admin văn phòng, CX).
+- Dùng skill thiết kế; brainstorm trước, chủ SP chốt hướng rồi mới làm mockup / plan.
+
+## 15/11 — lời 55: Hướng dẫn làm theo hướng B
+
+Bối cảnh: PTA Overhaul rà hệ Hướng dẫn hiện tại và đưa ba hướng — A giữ khung, viết lại nội dung · B "?" trả lời đúng thứ đang mở (ngữ cảnh ba tầng, mỗi việc một thẻ khuôn cố định, tab "Khi gặp…", máy tự kiểm) · C AI hỏi đáp / tour tự chạy (không khuyên).
+
+> "Làm hướng B"
+
+ĐÃ CHỐT: Hướng dẫn V3 theo **hướng B**. Hai điểm PTA đề xuất kèm trong hướng B, chủ SP không phản đối → làm theo, duyệt lại ở mockup: tab "Tuần của tôi" gộp vào "Tôi muốn…" thành bộ lọc nhịp (nhường chỗ tab "Khi gặp…") · dải "Có gì mới" ở đầu panel. Thiết kế + đề bài mockup ⑭ + plan: `15-huong-dan-v3.md`.

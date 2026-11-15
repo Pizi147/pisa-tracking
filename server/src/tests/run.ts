@@ -9625,6 +9625,9 @@ await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== LG-8 (/my-work: Test sắp tới từng lớp của GV)
 const { runPrMyWorkTestSapToiTests } = bocTep('prMyWorkTestSapToi', await import('./prMyWorkTestSapToi.tests.ts'));
 await runPrMyWorkTestSapToiTests({ check, assert, conn, P } as any);
+// ==================================================================== LG-13 (gợi ý chữ · Sắp tới · Case theo bước)
+const { runPrLg13Tests } = bocTep('prLg13', await import('./prLg13.tests.ts'));
+await runPrLg13Tests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = bocTep('prSuaChamLai', await import('./prSuaChamLai.tests.ts'));
 await runPrSuaChamLaiTests({ check, assert } as any);
