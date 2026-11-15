@@ -3,6 +3,8 @@ export const EN_GD20 = {
   'Bạn đã ghi tháng này': 'Written this month',
   'Bạn đã ghi đợt này': 'Written this round',
   'Chèn': 'Insert',
+  'Hoàn tác chèn bàn giao môn': 'Undo inserted subject handover',
+  'Hoàn tác chèn góp ý bàn giao đổi GV': 'Undo inserted teacher-change handover note',
   'Đã chèn {n} em': 'Inserted for {n} students',
   'Chèn cho {n} em': 'Insert for {n} students',
   'Viết cho phụ huynh: tình hình chung, ý thức, điều gia đình cần phối hợp': 'Write for parents: overall progress, attitude, what the family can help with',

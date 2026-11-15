@@ -31,8 +31,8 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'bao_cao_ph.dot_bo': 'Bỏ đợt báo cáo PH', 'bao_cao_ph.dot_khoi_phuc': 'Khôi phục đợt báo cáo PH', 'bao_cao_ph.dot_them': 'Thêm đợt báo cáo PH',
   'bao_cao_ph.dot_xoa': 'Xoá đợt báo cáo PH', 'bao_cao_ph.dot_hoan_xoa': 'Khôi phục đợt báo cáo PH đã xoá', 'bao_cao_ph.dot_sua': 'Sửa đợt báo cáo PH', 'xet_lai.quyet': 'Xét lại lộ trình', 'xet_lai.hoan_tac': 'Hoàn tác xét lại lộ trình', 'xet_lai.nhan_xet': 'Nhận xét xét lại (GVCN lớp mới)',
   'lenh_chuyen.tao': 'Quyết định chuyển lớp', 'lenh_chuyen.sua': 'Sửa quyết định chuyển lớp', 'lenh_chuyen.huy': 'Huỷ quyết định chuyển lớp', 'lenh_chuyen.khoi_phuc': 'Khôi phục quyết định chuyển lớp',
-  'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận',
-  'ban_giao_gv.gop_y': 'Góp ý bàn giao đổi GV', 'ban_giao_gv.nhan_xet': 'Nhận xét chung bàn giao đổi GV', 'ban_giao_gv.xac_nhan': 'Xác nhận bàn giao đổi GV',
+  'lenh_chuyen.thi_hanh': 'Thi hành quyết định chuyển lớp', 'ban_giao.ghi_mon': 'Ghi bàn giao môn', 'ban_giao.xac_nhan': 'GVCN xác nhận bàn giao', 'ban_giao.sua': 'Sửa bàn giao đã xác nhận', 'ban_giao.go_chen': 'Hoàn tác chèn bàn giao môn',
+  'ban_giao_gv.gop_y': 'Góp ý bàn giao đổi GV', 'ban_giao_gv.nhan_xet': 'Nhận xét chung bàn giao đổi GV', 'ban_giao_gv.xac_nhan': 'Xác nhận bàn giao đổi GV', 'ban_giao_gv.go_chen': 'Hoàn tác chèn góp ý bàn giao đổi GV',
   'class.info': 'Sửa thông tin lớp', 'class.progress': 'Đổi tiến độ lớp', 'class.progress.doi_bai': 'Dời bài theo mốc lớp', 'class.transition': 'Chuyển tiếp lớp',
   'class.sua_ca_lop': 'Sửa thông tin cả lớp',   // OV-15i1: một mục cho cả lô (Lịch sử lớp)
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
