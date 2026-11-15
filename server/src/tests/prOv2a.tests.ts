@@ -24,6 +24,31 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
   };
 
+  check('GV-KIEM-ADMIN · tài khoản vừa Admin vừa GV KHÔNG mất việc phần GV (Case / Ý thức / Phối hợp…): /my-work của GV cộng vai Admin ⊇ của GV thuần, cả "Của tôi" lẫn "Tất cả"; nav vẫn có Yêu cầu của tôi', () => thu(() => {
+    /* GV có nhiều việc ngoài Chấm điểm nhất trong demo (GVCN / GVBM / vài GV khác). */
+    const ngoai = (u: any) => (mywork.myWork(loadPrincipal(u), {}).items ?? []).filter((i: any) => i.group !== 'score').length;
+    const ung = all(`SELECT user_id id FROM teacher_assignments WHERE status = 'active' GROUP BY user_id ORDER BY COUNT(*) DESC LIMIT 12`).map((r) => r.id as number);
+    const g = loadPrincipal(ung.sort((x: number, y: number) => ngoai(y) - ngoai(x))[0]);
+    const khoa = (w: any) => new Set<string>((w.items ?? []).map((i: any) => i.key));
+    const truoc = mywork.myWork(g, {});
+    const kTruoc = khoa(truoc);
+    const ngoaiScore = (truoc.items as any[]).filter((i) => i.group !== 'score').length;
+    assert(ngoaiScore > 0, 'GVCN demo không có việc ngoài Chấm điểm — phép kiểm không soi được gì');
+    const idAd = one(`SELECT id FROM roles WHERE key = 'office_admin'`).id;
+    for (const b of all(`SELECT DISTINCT branch_id b FROM user_roles WHERE user_id = ? AND status = 'active'`, g.userId)) {
+      conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, ?, ?, 'active', datetime('now'))`).run(g.userId, idAd, b.b);
+    }
+    xoaNho();
+    const hai = loadPrincipal(g.userId);
+    assert(hai.roleKeys.includes('office_admin') && hai.roleKeys.includes('teacher'), 'không dựng được tài khoản hai vai');
+    for (const nguoi of [undefined, 'tat-ca'] as const) {
+      const sau = khoa(mywork.myWork(hai, nguoi ? { nguoi } : {}));
+      const mat = [...kTruoc].filter((k) => !sau.has(k));
+      assert(mat.length === 0, `${nguoi ?? 'Của tôi'}: mất ${mat.length} việc phần GV: ${mat.slice(0, 3).join(' | ')}`);
+    }
+    assert(navOf(hai).workRequests, 'Admin kiêm GV mất "Yêu cầu của tôi"');
+  }));
+
   check('OV2a-0 · ROLES có ba vai mới, nhãn đúng; branch_admin vẫn chỉ là vai đã bỏ', () => {
     for (const [k, nhan] of [['consultant', 'Tư vấn viên'], ['cx', 'CX'], ['office_admin', 'Admin']]) {
       assert(dm.ROLES.includes(k) && dm.ROLE_LABEL[k] === nhan, `${k}: ${dm.ROLE_LABEL[k]}`);
