@@ -5,6 +5,8 @@
  *   HD-VIEC mỗi vai đúng 5 việc hằng tuần (chủ SP 15/10).
  *   HD-CHI  mỗi "Chỉ cho tôi" trỏ `data-hd` có thật trong mã web (quét nguồn) và mở trang có mục — đổi / xoá phần tử → đỏ;
  *           không trỏ phần tử màn đó không dựng cho vai (bảng CHI_VAI).
+ *   HD3-6   HD-DU (mỗi loại dòng việc / PANEL_HD có thẻ; danh sách chờ chỉ ngắn lại) · HD-NHAN theo tệp · HD-CAM (nhãn đã bỏ) · HD-HAN (hạn = mã chèn)
+ *           · HD-DAI (≤ 1 câu / dòng, Làm ≤ 3 bước, ≤ 90 chữ / thẻ).
  *   HD-NHO  phiên bản Hướng dẫn đã xem nhớ theo tài khoản (chấm trên "?", HD3-1 "Có gì mới"): PATCH /me/profile { daXemHuongDan: n } → /demo/session; giá trị lạ → 400;
  *           migrate prHd chạy lặp được.
  */
@@ -418,7 +420,7 @@ export async function runPrHdTests(t: any) {
    * Vai đã đối chiếu: B / C thêm vai của mình vào NHAN_VAI. MAU_CHU = chữ mẫu không phải nhãn (mã tuần, phím, số hạn).
    */
   const NHAN_VAI = ['gv', 'ql', 'admin', 'tvv', 'cx'];
-  const MAU_CHU = new Set(['-', '?', '/', 'Ctrl K', 'Enter', 'Esc', '‹ W3 SEP ›', 'W2 OCT', '2 tuần', '5 ngày', '3 ngày', '10', '8', 'Thứ Ba', 'Thứ Tư', '⋯']);
+  const MAU_CHU = new Set(['-', '?', '/', 'Ctrl K', 'Enter', 'Esc', '‹ W3 SEP ›', 'W2 OCT', '10', '8', '⋯']);   // HD3-6 (15 mục 8.2): bỏ '2 tuần', '5 ngày', '3 ngày', 'Thứ Ba', 'Thứ Tư' — hạn là mã chèn
   check('HD-NHAN · chữ đậm trong hướng dẫn (vai đã đối chiếu) là nhãn có thật trong nguồn web', () => {
     let nguon = '';
     const doc = (thuMuc: string) => {
@@ -433,7 +435,8 @@ export async function runPrHdTests(t: any) {
     const loi: string[] = [];
     for (const vai of NHAN_VAI) {
       const h = hd.HUONG_DAN[vai];
-      const chu = [...hd.moiMuc(h).flatMap((m: any) => [...m.buoc, m.chi?.chu]), ...(h.lam ?? []).map((v: any) => v.loiChinh.chi?.chu)].filter(Boolean).join('\n');
+      const chu = [...hd.moiMuc(h).flatMap((m: any) => [...m.buoc, m.chi?.chu]), ...(h.lam ?? []).flatMap((v: any) => [v.loiChinh.chi?.chu, v.khiCo, v.xong, v.han, v.sai, ...(v.khongDuoc ?? []), v.sau]),
+        ...(h.tinhHuong ?? []).flatMap((x: any) => [...(x.may ?? []), x.ban, ...(x.ai ?? [])])].filter(Boolean).join('\n');
       for (const m of chu.matchAll(/<b>([^<]+)<\/b>/g)) {
         const x = m[1].trim();
         if (MAU_CHU.has(x)) continue;
@@ -443,6 +446,135 @@ export async function runPrHdTests(t: any) {
       }
     }
     assert(!loi.length, `nhãn không có trong web: ${[...new Set(loi)].join(' · ')}`);
+  });
+
+  /* ================================================================ HD3-6 — phép kiểm Hướng dẫn V3 (đặc tả 15 mục 4.11, 6, 8.1, 8.2) */
+  const { NHOM_VIEC_MAY } = await import('../worklist/mywork.ts');
+  const VAI_THE = Object.keys(hd.HUONG_DAN).filter((v) => v !== 'qt');   // Quản trị: giữ nội dung cũ (15 mục 2 "Không làm")
+  const moiThe = () => VAI_THE.flatMap((vai) => (hd.HUONG_DAN[vai].lam ?? []).map((v: any) => ({ vai, v })));
+  /** Thẻ đã viết theo khuôn V3 (có ít nhất một dòng ngoài Làm) — HD-HAN / HD-DAI áp cho thẻ này; thẻ cũ (chỉ bước) chờ HD3-2 … HD3-5. */
+  const laTheV3 = (v: any) => !!(v.khiCo || v.xong || v.han || v.sai || v.khongDuoc?.length || v.sau);
+  const dongThe = (v: any): string[] => [v.khiCo, ...v.buoc, v.xong, v.han, v.sai, ...(v.khongDuoc ?? []), v.sau].filter(Boolean);
+  const dongTh = (x: any): string[] => [...(x.may ?? []), x.ban, ...(x.ai ?? [])].filter(Boolean);
+  const moiTinhHuong = () => VAI_THE.flatMap((vai) => (hd.HUONG_DAN[vai].tinhHuong ?? []).map((x: any) => ({ vai, x })));
+
+  /*
+   * HD-DU: mọi loại dòng việc máy chủ dựng (`NHOM_VIEC_MAY` + việc chung Chấm Speaking) có thẻ (`viecWeb`) ở một vai; mọi PANEL_HD có thẻ (`the` của mục
+   * panel). Chưa có thẻ → nằm ở danh sách CHỜ (nội dung HD3-2 … HD3-5); có thẻ rồi mà còn trong danh sách → đỏ (bỏ khỏi danh sách) — danh sách chỉ ngắn lại.
+   */
+  const CHO_DU_VIEC = new Set(['cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'phoi_hop_tvv', 'khai_bac', 'ky_vong_dau_ra', 'thi_that',
+    'buoc_tiep', 'bo_sung_ho_so', 'mini_test', 'no_plan', 'ghi_ket_qua_pa', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data', 'yt_xu_ly', 'bao_ph_yt',
+    'yt_hoi_tinh_hinh', 'yt_thuc_hien', 'ban_giao', 'xuat_bc_ph', 'bao_cao_ph', 'mgmt']);
+  const CHO_DU_PANEL = new Set(['ngan-case', 'ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh',
+    'duyet', 'sua-thong-tin', 'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'xep-lich-mt', 'them-hv', 'xuat-ds', 'bao-ph', 'xet-lai']);
+  check('HD-DU · mỗi loại dòng việc máy chủ và mỗi PANEL_HD có thẻ Hướng dẫn (hoặc đang trong danh sách chờ nội dung — chỉ ngắn lại)', () => {
+    const MA = new Set<string>([...NHOM_VIEC_MAY, 'cham_speaking']);
+    const loi: string[] = [];
+    const coThe = new Set<string>();
+    for (const { vai, v } of moiThe()) for (const k of v.viecWeb ?? []) { if (MA.has(k)) coThe.add(k); else loi.push(`${vai}/${v.id}: viecWeb "${k}" không phải loại việc của máy chủ`); }
+    for (const k of MA) {
+      if (!coThe.has(k) && !CHO_DU_VIEC.has(k)) loi.push(`loại việc "${k}" chưa có thẻ (viecWeb)`);
+      if (coThe.has(k) && CHO_DU_VIEC.has(k)) loi.push(`"${k}" đã có thẻ — bỏ khỏi CHO_DU_VIEC`);
+    }
+    for (const k of CHO_DU_VIEC) if (!MA.has(k)) loi.push(`CHO_DU_VIEC "${k}" không còn là loại việc — bỏ`);
+    for (const p of hd.PANEL_HD) {
+      let co = false;
+      for (const vai of VAI_THE) {
+        const m = hd.manCuaPanel(hd.HUONG_DAN[vai], p);
+        if (!m?.the) continue;
+        if (hd.HUONG_DAN[vai].lam?.some((v: any) => v.id === m.the)) co = true; else loi.push(`${vai}/${m.id}: the "${m.the}" không có trong lam`);
+      }
+      if (!co && !CHO_DU_PANEL.has(p)) loi.push(`panel "${p}" chưa có thẻ (the)`);
+      if (co && CHO_DU_PANEL.has(p)) loi.push(`panel "${p}" đã có thẻ — bỏ khỏi CHO_DU_PANEL`);
+    }
+    assert(!loi.length, loi.join(' · '));
+  });
+
+  /** Nguồn chữ (chuỗi + chữ JSX) của một tệp / thư mục. */
+  const chuNguon = (rel: string): string => {
+    const p = path.join(ROOT, rel);
+    if (!fs.existsSync(p)) return '';
+    if (fs.statSync(p).isDirectory()) return fs.readdirSync(p).map((f) => chuNguon(path.join(rel, f))).join('');
+    if (!/\.tsx?$/.test(p)) return '';
+    return [...fs.readFileSync(p, 'utf8').matchAll(/'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`[^`]*`|>([^<>{}]+)</g)].map((m) => `${m[0]}\n`).join('');
+  };
+  /** Chữ đậm của một câu → các nhãn cần có trên web (bỏ "…", " ›", tách " · " / " › "; chữ mẫu ở MAU_CHU). */
+  const nhanDam = (chu: string) => [...chu.matchAll(/<b>([^<]+)<\/b>/g)].flatMap((m) => {
+    const x = m[1].trim();
+    if (MAU_CHU.has(x)) return [];
+    return x.replace(/…$/, '').replace(/ ›$/, '').replace(/^⋯ › /, '').trim().split(/ · | › /).map((s) => s.trim()).filter((s) => s && !MAU_CHU.has(s) && !/^n \S+$/.test(s));
+  });
+  check('HD-NHAN theo tệp · thẻ khai `tep` chỉ dùng nhãn có trong tệp của màn đó (+ web/src/ui, shared/domain, mywork.ts); tệp khai phải có thật', () => {
+    const chung = chuNguon('web/src/ui') + chuNguon('shared/domain') + chuNguon('server/src/worklist/mywork.ts');
+    const loi: string[] = [];
+    let coTep = false;
+    for (const { vai, v } of moiThe()) {
+      if (!v.tep?.length) continue;
+      coTep = true;
+      for (const f of v.tep) if (!fs.existsSync(path.join(ROOT, f))) loi.push(`${vai}/${v.id}: tệp "${f}" không có`);
+      const nguon = chung + v.tep.map(chuNguon).join('');
+      for (const s of dongThe(v).flatMap(nhanDam)) if (!nguon.includes(s)) loi.push(`${vai}/${v.id}: "${s}"`);
+    }
+    assert(coTep, 'phải có ít nhất một thẻ khai tep');
+    assert(!loi.length, `nhãn không có trong tệp của màn: ${[...new Set(loi)].join(' · ')}`);
+  });
+
+  /*
+   * HD-CAM: nhãn đã bỏ trên web không được là chữ đậm trong Hướng dẫn. Bật từng nhãn khi GD tương ứng đã merge (15 mục 8.1; GD-19 đã merge → bật
+   * "Đánh dấu đã đọc", "Xem vi phạm mới"). CHO_CAM = chỗ còn sót ("vai: nhãn") chờ PR nội dung của vai đó — hết sót mà còn trong danh sách → đỏ.
+   */
+  const CAM = ['Speaking chấm chéo', '+ Ghi', 'Hộp duyệt', 'Đánh dấu đã đọc', 'Xem vi phạm mới'];
+  const CHO_CAM = new Set<string>(['ql: Đánh dấu đã đọc', 'admin: Đánh dấu đã đọc']);
+  check('HD-CAM · không chữ đậm nào là nhãn đã bỏ trên web ("Speaking chấm chéo", "+ Ghi", "Hộp duyệt", "Đánh dấu đã đọc", "Xem vi phạm mới")', () => {
+    const thay = new Set<string>();
+    for (const vai of VAI_THE) {
+      const h = hd.HUONG_DAN[vai];
+      const chu = [...hd.moiMuc(h).flatMap((m: any) => [...m.buoc, m.chi?.chu]), ...(h.lam ?? []).flatMap((v: any) => [...dongThe(v), v.loiChinh.chi?.chu]),
+        ...(h.tinhHuong ?? []).flatMap(dongTh)].filter(Boolean).join('\n');
+      for (const m of chu.matchAll(/<b>([^<]+)<\/b>/g)) for (const c of CAM) if (m[1].replace(/…$/, '').replace(/ ›$/, '').trim() === c) thay.add(`${vai}: ${c}`);   // đúng chữ: "+ Ghi chú" vẫn là nhãn thật
+    }
+    const sai = [...thay].filter((x) => !CHO_CAM.has(x));
+    const het = [...CHO_CAM].filter((x) => !thay.has(x));
+    assert(!sai.length && !het.length, [sai.length ? `nhãn đã bỏ: ${sai.join(' · ')}` : '', het.length ? `đã sửa — bỏ khỏi CHO_CAM: ${het.join(' · ')}` : ''].join(' '));
+  });
+
+  /* HD-HAN: dòng Hạn của thẻ không gõ tay số ngày / tuần / thứ — chỉ mã chèn `{han:…}` (15 mục 4.4); mọi mã chèn ở mọi dòng phải đọc được. */
+  const SO_TAY = /\d+\s*(ngày|tuần)|(thứ|Thứ)\s+(Hai|Ba|Tư|Năm|Sáu|Bảy)(?!\p{L})|Chủ nhật|hai tuần|ba ngày|năm ngày/u;
+  check('HD-HAN · dòng Hạn của thẻ không có số ngày / thứ gõ tay (dùng mã chèn {han:…}); mọi mã chèn có trong Hạn mặc định', () => {
+    const loi: string[] = [];
+    for (const { vai, v } of moiThe()) {
+      if (v.han && SO_TAY.test(v.han.replace(/\{han:[\w.]+\}/g, ''))) loi.push(`${vai}/${v.id}: Hạn gõ tay "${v.han}"`);
+      for (const d of dongThe(v)) if (hd.chenHan(d).includes('{han:')) loi.push(`${vai}/${v.id}: mã chèn sai "${d}"`);
+    }
+    for (const { vai, x } of moiTinhHuong()) for (const d of dongTh(x)) if (hd.chenHan(d).includes('{han:')) loi.push(`${vai}/${x.id}: mã chèn sai "${d}"`);
+    assert(SO_TAY.test('Hết thứ Tư tuần sau') && SO_TAY.test('5 ngày') && !SO_TAY.test('Hết {han:cham_test}'.replace(/\{han:[\w.]+\}/g, '')), 'mẫu SO_TAY');
+    assert(!loi.length, loi.join(' · '));
+  });
+
+  /*
+   * HD-DAI: thẻ V3 và thẻ trường hợp — mỗi dòng ≤ 1 câu, Làm ≤ 3 bước, cả thẻ ≤ 90 chữ (PTA 15/11: mục tiêu ~80, chặn 90). Đếm "tiếng": tách dấu cách sau
+   * khi bỏ thẻ <b>/<k> và chèn hạn; "-", "›", "→" không tính.
+   */
+  const TRAN_CHU = 90;
+  const sach = (s: string) => hd.chenHan(s).replace(/<\/?[bk]>/g, '');
+  const demChu = (s: string) => sach(s).split(/\s+/).filter((w: string) => /[\p{L}\p{N}]/u.test(w)).length;
+  const soCau = (s: string) => (sach(s).replace(/…/g, '').match(/[.!?](?=\s|$)/g) ?? []).length;
+  check(`HD-DAI · thẻ việc V3 + thẻ trường hợp: mỗi dòng ≤ 1 câu, Làm ≤ 3 bước, cả thẻ ≤ ${TRAN_CHU} chữ`, () => {
+    const loi: string[] = [];
+    const xet = (ten: string, dong: string[]) => {
+      for (const d of dong) if (soCau(d) > 1) loi.push(`${ten}: dòng nhiều câu "${d}"`);
+      const n = dong.reduce((a, d) => a + demChu(d), 0);
+      if (n > TRAN_CHU) loi.push(`${ten}: ${n} chữ`);
+    };
+    for (const { vai, v } of moiThe()) {
+      if (!laTheV3(v)) continue;
+      if (v.buoc.length > 3) loi.push(`${vai}/${v.id}: Làm ${v.buoc.length} bước`);
+      xet(`${vai}/${v.id}`, dongThe(v));
+    }
+    for (const { vai, x } of moiTinhHuong()) xet(`${vai}/${x.id}`, dongTh(x));
+    assert(soCau('Một câu. Hai câu.') === 2 && demChu('Bấm <b>Lưu · bài tiếp ›</b>.') === 4, 'bộ đếm');
+    assert(moiThe().some(({ v }) => laTheV3(v)), 'phải có ít nhất một thẻ V3 để phép này có nghĩa');
+    assert(!loi.length, loi.join(' · '));
   });
 
   await checkAsync('HD-CO · /demo/session có laGvcn / coS theo phân công còn hiệu lực (0 câu thêm — cùng principal)', async () => {
