@@ -62,7 +62,7 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
     for (const sid of [a, b, c]) {
       const vid = r.ok.find((o: any) => o.studentId === sid).ids[0];
       assert(hang("SELECT 1 FROM audit_logs WHERE action = 'violation.record' AND entity_id = ?", vid).length === 1, 'nhật ký em ' + sid);
-      const chuong = hang('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', gvcn.userId, `yt-moi:${sid}:${TODAY}`);
+      const chuong = hang('SELECT 1 FROM notifications WHERE user_id = ? AND dedup_key = ?', gvcn.userId, `yt-moi:${vid}`);   // LG-11: một tin mỗi vi phạm
       assert(chuong.length === 1, `chuông GVCN em ${sid}: ${chuong.length}`);
     }
   }));

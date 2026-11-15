@@ -1703,6 +1703,8 @@ const EN_B_MAY = {
   'Từ {code} · vào lớp từ {tuanLich}': 'From {code} · joins from {tuanLich}',
   'Từ {nguon_code}': 'From {nguon_code}',
   'Vi phạm mới · {full_name} ({x}) · ghi nhận hoặc xử lý trước {shortDate}': 'New incident · {full_name} ({x}) · note or act by {shortDate}',
+  'Vi phạm mới · {full_name} · {nhom} · {fullName} ghi': 'New incident · {full_name} · {nhom} · by {fullName}',
+  'Nhắc nhở · {full_name} · {nhom} · {fullName} ghi': 'Reminder · {full_name} · {nhom} · by {fullName}',
   'Xem lại Case {label} · {x}': 'Review case {label} · {x}',
   'Xem lại sau hỗ trợ{x}': 'Review after support{x}',
   'Xác nhận Case: {ten}': 'Confirm case: {ten}',

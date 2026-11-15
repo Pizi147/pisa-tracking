@@ -183,7 +183,7 @@ export type WorkGroupKey =
   /* OV-8a: Quản lý chọn bước tiếp sau khi lộ trình FT có kết quả thi thật (Kết thúc · Học tiếp lộ trình mới · Học lại). */
   | 'buoc_tiep'
   /* PR-YT4 (K5 §3 dòng 6–8): việc Ý thức THẬT có hạn — thay nhắc mềm W01–W06. */
-  | 'yt_xu_ly' | 'yt_xem' | 'yt_thuc_hien'
+  | 'yt_xu_ly' | 'yt_thuc_hien'   /* LG-11 (lời 47): bỏ `yt_xem` — vi phạm người khác ghi chỉ là tin Cập nhật */
   /* PR-CT (Q30-2): bàn giao khi có quyết định chuyển lớp — một việc mỗi lớp (GVCN), mỗi (lớp, môn) (GVBM). */
   | 'ban_giao'
   /* PR-MT0 (T5b) → PR-LCb: "Chốt lộ trình" — Quản lý xác nhận hướng + lớp chuyển đến cho mọi em lớp thường (khoá giữ tên cũ `chot_len_ft`). */
@@ -322,10 +322,6 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   yt_xu_ly: {
     label: 'Xử lý vi phạm',
     hint: 'Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong 5 ngày (tính cả ngày ghi). Quá hạn thì Quản lý được báo.',
-  },
-  yt_xem: {
-    label: 'Xem vi phạm mới',   // N34 ④ (chủ SP 03/11): "Ghi nhận" → "Đã xem"
-    hint: 'Vi phạm do người khác ghi mà bạn chưa xem. Đã xem (chưa cần xử lý) hoặc Xác nhận xử lý trong 5 ngày.',
   },
   bao_ph_yt: {
     label: 'Báo PH vi phạm',
@@ -992,7 +988,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
     )
     .all(p.userId) as any[];
-  const uv = co('khai_bac', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null }) : [];
+  const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null }) : [];
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
     .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
@@ -1540,7 +1536,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Một cửa trạng thái (`trangThaiYThuc`): quét Báo QL ở đầu request đã nạp các em này, nên ở đây không tốn thêm câu nào ngoài câu
    * ứng viên. Em Tạm dừng không sinh việc (T65). Dòng hết khi làm xong ở bất cứ đâu (Ghi nhận / Xác nhận xử lý / Đề xuất / Đã thực hiện).
    */
-  if (co('khai_bac', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien')) {
+  if (co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien')) {
     /*
      * PR-VAI-a (K1-15, Q15): KHAI BẬC Ý THỨC HS CŨ — em lớp mình chủ nhiệm có hồ sơ tạo trong 14 ngày gần nhất mà còn khai được
      * (`coTheKhai`: có chuỗi, chưa lần xử lý nào, chưa khai). Một câu ứng viên; trạng thái đọc CÙNG lượt `trangThaiYThuc` với việc Ý thức.
@@ -1593,11 +1589,6 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });
-      }
-      if (em.soMoi > 0) {
-        items.push({ ...chung, key: `yt_xem:${r.id}`, group: 'yt_xem', urgency: urgencyOf(em.hanXem, today),
-          reason: `${em.soMoi} vi phạm chưa xem`, tieuDe: `Xem ${em.soMoi} vi phạm mới · ${r.ten}`, phu: `${em.soMoi} vi phạm mới`, actionLabel: 'Đã xem',
-          href: duongLop(em.lopId, r.id, '&loc=moi'), due: em.hanXem, statusLabel: 'Mới' });
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
       for (const x of em.daDuyet) {
@@ -1677,7 +1668,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_xem', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv', 'khai_bac',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data', 'bo_sung_ho_so',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);

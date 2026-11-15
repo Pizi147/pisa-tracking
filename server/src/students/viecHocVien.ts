@@ -172,12 +172,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     ds.push({ key: `yt_xu_ly:${sid}`, loai: 'y-thuc', ...kem('Xác nhận xử lý Ý thức · {ke}', { ke }), kyNang: null, caseId: null, paId: null,
       han: em.han, tone: 'warn', nguoiId: em.gvcnId, nut: 'Xác nhận xử lý', mo: { loai: 'tab', tab: 'y-thuc' } });
   }
-  /* PR-S6F-b (Q5): hai việc Ý thức còn lại của GVCN — cùng khoá, chữ, hạn với `mywork.ts` 5b (`yt_xem`, `yt_thuc_hien`). */
+  /* PR-S6F-b (Q5): việc Ý thức còn lại của GVCN — cùng khoá, chữ, hạn với `mywork.ts` 5b (`yt_thuc_hien`; LG-11 bỏ `yt_xem`). */
   if (em && !em.tamDung && em.gvcnId) {
-    if (em.soMoi > 0) {
-      ds.push({ key: `yt_xem:${sid}`, loai: 'yt-xem', ...kem('Xem {n} vi phạm mới', { n: em.soMoi }), kyNang: null, caseId: null, paId: null,
-        han: em.hanXem, tone: 'warn', nguoiId: em.gvcnId, nut: 'Đã xem', mo: { loai: 'tab', tab: 'y-thuc' } });
-    }
     for (const x of em.daDuyet) {
       const nhan = nhanLoaiXuLy(x.kind, x.customName);
       ds.push({ key: `yt_thuc_hien:${x.id}`, loai: 'yt-thuc-hien', ...kem('Ghi "Đã thực hiện" {nhan}', { nhan }), kyNang: null, caseId: null, paId: null,

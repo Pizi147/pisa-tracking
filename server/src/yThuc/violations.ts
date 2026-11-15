@@ -298,7 +298,7 @@ export function recordViolation(p: Principal, input: {
 
   const id = tx(() => {
     const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(), { category, skill, occurredOn, ten, moTa, chiNhac: !!input.chiNhac }, key, laGvcn);
-    if (!input.chiNhac) baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);   // nhắc nhở: không việc, không chuông
+    baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc, undefined, !!input.chiNhac);   // LG-11: nhắc nhở cũng là tin (không việc)
     chotHanXuLy([input.studentId]);
     return newId;
   });
@@ -383,7 +383,7 @@ export function recordViolations(p: Principal, input: {
   if (viec.length) {
     xoaNho();
     const sau = trangThaiYThuc(viec.map((v) => v.sid));
-    if (!input.chiNhac) for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
+    for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid), !!input.chiNhac);
     chotHanXuLy(viec.map((v) => v.sid), { trang: sau });
   }
   return { ok, loi: hong };

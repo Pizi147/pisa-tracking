@@ -31,27 +31,22 @@ export async function runPrP1YThucTests(t: any) {
     assert(!d.quaHanChiXem('bat_buoc', { soBatBuoc: 0, deXuat: null }) && !d.quaHanChiXem('moi', { soBatBuoc: 0, deXuat: null }), 'nhóm khác');
   });
 
-  check('G3-1 · seed: em chỉ quá hạn xem = việc "Xem vi phạm mới" ở Công việc (không Xác nhận xử lý), Đã xem được; tab lớp + hồ sơ HV dùng quaHanChiXem', () => {
+  check('G3-1 → LG-11 · seed: vi phạm Mới không hạn, không quá hạn "xem" — em chỉ có vi phạm Mới không ở nhóm Quá hạn, không việc yt_xem; "Đã xem" vẫn chạy', () => {
     const lop = all(`SELECT DISTINCT e.class_id, e.student_id FROM enrollments e JOIN violations v ON v.student_id = e.student_id WHERE e.status = 'active'`);
     xoaNho();
     const tt = trangThaiYThuc([...new Set(lop.map((r) => r.student_id as number))]);
-    const em = [...tt.values()].filter((x: any) => x.nhom === 'qua_han' && x.soBatBuoc === 0 && !x.deXuat && x.gvcnId && !x.tamDung);
-    assert(em.length > 0, 'seed: có em chỉ quá hạn xem (vd Vũ Hải Đăng)');
+    assert(![...tt.values()].some((x: any) => [...x.viPham.values()].some((v: any) => v.lyDoQuaHan === 'xem')), 'không còn quá hạn lý do xem');
+    const em = [...tt.values()].filter((x: any) => x.soMoi > 0 && x.soBatBuoc === 0 && !x.deXuat && x.gvcnId && !x.tamDung);
+    assert(em.length > 0, 'seed: có em chỉ có vi phạm Mới');
     for (const x of em as any[]) {
+      assert(x.nhom === 'moi' && x.hanXem === null, `em ${x.studentId}: nhóm ${x.nhom}, hạn xem ${x.hanXem}`);
       const gvcn = loadPrincipal(x.gvcnId);
       xoaNho();
-      const keys = new Set<string>((myWork(gvcn, {}) as any).items.map((i: any) => String(i.key)));
-      assert(keys.has(`yt_xem:${x.studentId}`) && !keys.has(`yt_xu_ly:${x.studentId}`), `em ${x.studentId}: Công việc ${[...keys].filter((k) => k.endsWith(`:${x.studentId}`)).join(', ')}`);
-      const lopId = lop.find((r) => r.student_id === x.studentId).class_id;
-      xoaNho();
-      const b: any = bangYThucLop(gvcn, lopId);
-      assert(b.nhom.qua_han.some((r: any) => r.studentId === x.studentId && d.quaHanChiXem('qua_han', r)), `em ${x.studentId}: dòng lớp mang đủ trường cho quaHanChiXem`);
-      const ids = [...x.viPham].filter(([, v]: any) => v.lyDoQuaHan === 'xem').map(([id]: any) => id);
+      const keys = [...new Set<string>((myWork(gvcn, {}) as any).items.map((i: any) => String(i.key)))].filter((k) => k.endsWith(`:${x.studentId}`));
+      assert(!keys.some((k) => k.startsWith('yt_')), `em ${x.studentId}: Công việc ${keys.join(', ')}`);
+      const ids = [...x.viPham].filter(([, v]: any) => v.t === 'moi').map(([id]: any) => id);
       conn.exec('BEGIN IMMEDIATE');
       try { xoaNho(); assert(ghiNhan(gvcn, x.studentId, ids).soGhiNhan === ids.length, 'Đã xem được'); } finally { conn.exec('ROLLBACK'); xoaNho(); }
-    }
-    for (const f of ['web/src/modules/yThuc/ClassYThucCard.tsx', 'web/src/modules/yThuc/StudentYThucSection.tsx']) {
-      assert(/quaHanChiXem\(/.test(nguon(f)), `${f} dùng quaHanChiXem`);
     }
   });
 

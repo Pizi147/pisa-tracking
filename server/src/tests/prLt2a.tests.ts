@@ -335,7 +335,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(d.tabCuaViec({ group: 'phoi_hop', key: 'baoph:1' }, false) === 'y-thuc' && d.mucCuaViec({ group: 'phoi_hop', key: 'baoph:1' }) === 'bao-ph-test', 'Báo PH kết quả Test phải ở tab Ý thức & Phối hợp, mục Báo PH');
     /* GD-4b (PTA Plan 15/11): mục Báo PH (không hạn) sau Phối hợp SOS ở tab Ý thức của GV; TVV giữ Báo PH trước Phối hợp. */
     const thuTu = (ds: any[], tvv: boolean) => d.chiaMucTab(ds.map((x, i) => ({ ...x, key: `${x.group}:${i}`, urgency: 'normal', due: null, studentId: 1 })), tvv).map((m: any) => m.key).join(',');
-    assert(thuTu([{ group: 'phoi_hop' }, { group: 'phoi_hop_sos' }, { group: 'yt_xem' }], false) === 'vi-pham,phoi-hop,bao-ph-test', 'GV: mục Báo PH phải sau Vi phạm, Phối hợp SOS');
+    assert(thuTu([{ group: 'phoi_hop' }, { group: 'phoi_hop_sos' }, { group: 'yt_xu_ly' }], false) === 'vi-pham,phoi-hop,bao-ph-test', 'GV: mục Báo PH phải sau Vi phạm, Phối hợp SOS');
     assert(thuTu([{ group: 'phoi_hop_tvv' }, { group: 'bao_ph_yt' }], true) === 'bao-ph,phoi-hop', 'TVV: thứ tự Báo PH → Phối hợp không đổi');
     /* GD-4b Q9 (chủ SP 14/11, #1619): MT0 kể cả lớp thường = luật vắng Mock (lần 2 huỷ); Progress / Final lớp thường không tự huỷ. */
     const qc = (o: any) => d.quyCheNhapDiem(o).chu as string;

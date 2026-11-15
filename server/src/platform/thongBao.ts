@@ -109,14 +109,14 @@ export function thongBaoCua(userId: number) {
   /* SL1 (N1): hạn của dòng — lưu sẵn (tự động, Case giao) → hạn thẻ duyệt → hạn việc tiếp của Case (`xuLyCaseMany`, một câu mỗi lô). */
   const caseCan = [...new Set(rows.filter((r) => !r.han && r.entity_type === 'sos_case').map((r) => r.entity_id as number))];
   const xl = caseCan.length ? xuLyCaseMany(caseCan, demoToday()) : null;
-  /* SL1 (rà #502): "Cần xử lý / Vi phạm mới" (Ý thức) còn việc khi em còn vi phạm mới hoặc bắt buộc xử lý chưa gửi — CÙNG `trangThaiYThuc` của Công việc. */
+  /* SL1 (rà #502): "Cần xử lý" (Ý thức) còn việc khi em còn vi phạm bắt buộc xử lý chưa gửi — CÙNG `trangThaiYThuc` của Công việc. */
   const emYt = [...new Set(rows.filter((r) => r.kind === 'discipline' && r.entity_type === 'student').map((r) => r.entity_id as number))];
   const yt = emYt.length ? trangThaiYThuc(emYt, demoToday()) : null;
   for (const r of rows) {
     r.mon = r.mon_goc ? tenMon(r.ct ?? null, r.mon_goc) : null;
     if (yt && r.kind === 'discipline' && r.entity_type === 'student') {
       const em = yt.get(r.entity_id);
-      r.con_viec = em && !em.tamDung && ((em.soBatBuoc > 0 && !em.coChoDuyet) || em.soMoi > 0) ? 1 : 0;
+      r.con_viec = em && !em.tamDung && em.soBatBuoc > 0 && !em.coChoDuyet ? 1 : 0;   // LG-11: vi phạm mới chưa xem không còn là việc
     }
     r.han = r.han ?? r.han_the ?? (r.entity_type === 'sos_case' ? xl?.get(r.entity_id)?.han ?? null : null);
     delete r.mon_goc; delete r.ct; delete r.han_the;

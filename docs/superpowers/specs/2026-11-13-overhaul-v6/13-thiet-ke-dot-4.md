@@ -20,7 +20,7 @@ Chủ SP (lời 47 ý 6): **luôn dùng skill thiết kế để giao diện kh�
 | H6 | Vi phạm: bỏ "Đã xem", thêm "Yêu cầu xử lý" | Mục 3 (luật) + mục 4 (chuông) + form. | ⑪ |
 | H7 | Dòng "Sắp tới" ở trang đầu GV | MỘT dòng mảnh trên "Lớp của tôi": việc CHƯA sinh nhưng sắp tới trong 7 ngày — Test tuần tới (lớp · đợt) · kết quả PA tới hạn thứ Ba (số) · Báo cáo PH mở ngày (ngày). Mỗi cụm bấm ra đúng chỗ. Không có gì → không hiện dòng. Không tính vào số việc / badge. | ⑬ |
 | H8 | Case theo bước (QL) | Panel mở từ ô "Case chưa có PA" / số Case ở Tổng quan QL và Phân tích SOS: đầu panel có dải bước **Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối** (số, màu theo V22), bấm một bước lọc danh sách; dòng ghi GV phụ trách + hạn. Không thêm ô ở mặt trang. | ⑬ |
-| H9 | "Sao chép để nhắn" | Panel "Chưa làm" (Phân tích GV, mockup ⑨) và panel theo GV ở Tổng quan: đầu mỗi nhóm GV có biểu tượng hai tờ giấy (lời 51: chỉ biểu tượng, không nút chữ) → chữ thuần dán Zalo, KHÔNG có tên học viên: dòng đầu "{GV} · n việc quá hạn (tới dd/mm)", mỗi việc "• {lớp} · {việc} · {số bài / em} · quá hạn n ngày". Bấm xong nút đổi "✓ Đã chép" 2 giây. | ⑬ |
+| H9 | "Sao chép để nhắn" | Panel "Chưa làm" (Phân tích GV, mockup ⑨) và panel theo GV ở Tổng quan: đầu mỗi nhóm GV có nút "Sao chép" → chữ thuần dán Zalo, KHÔNG có tên học viên: dòng đầu "{GV} · n việc quá hạn (tới dd/mm)", mỗi việc "• {lớp} · {việc} · {số bài / em} · quá hạn n ngày". Bấm xong nút đổi "✓ Đã chép" 2 giây. | ⑬ |
 
 ## 3. Luật đổi (chủ SP chốt lời 47, 48) — thay D2 ở `luat/0`
 
