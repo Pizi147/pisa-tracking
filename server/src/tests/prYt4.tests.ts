@@ -688,6 +688,25 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert((conn.prepare('SELECT phan_hoi_ngay FROM violations WHERE id = ?').get(v.id) as any).phan_hoi_ngay === null, 'bỏ phản hồi');
     assert(conn.prepare(`SELECT 1 FROM violation_history WHERE violation_id = ? AND field = 'khong_xu_ly' AND new_value IS NULL`).get(v.id), 'lịch sử Hoàn tác');
     assert(loiCua(() => xuLy.hoanTacKhongXuLy(gvcn, v.id)).status === 409, 'lần hai');
+    /* Rà #1735 P1: Hoàn tác chỉ trong 60 giây — sau đó Xác nhận xử lý. */
+    xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' });
+    conn.prepare('UPDATE violations SET khong_xu_ly_luc = ? WHERE id = ?').run(new Date(Date.now() - 2 * 60_000).toISOString(), v.id);
+    const qua = loiCua(() => xuLy.hoanTacKhongXuLy(gvcn, v.id));
+    assert(qua.status === 409 && /Xác nhận xử lý/.test(qua.msg), JSON.stringify(qua));
+  });
+  check('LG-12 (8) · rà #1735 P1: lớp KHÔNG có GVCN — vi phạm được yêu cầu → việc yt_xu_ly của Quản lý chi nhánh (Của tôi) + tin "Yêu cầu xử lý" cho QL (trừ người ghi)', () => {
+    conn.exec('SAVEPOINT lg12b');
+    try {
+      const lop = lopMoi('MB FT LG12K');
+      conn.prepare('UPDATE teacher_assignments SET is_core = 0 WHERE class_id = ?').run(lop.id);
+      xoaNho();
+      const sid = hv(lop.id); const v = ghiYc(loadPrincipal(lop.gvcn.userId), sid);   // nạp lại: GV này giờ chỉ là GV bộ môn của lớp
+      assert(v.yeuCauXuLy, JSON.stringify(v));
+      const it = (myworkYt.myWork(loadPrincipal(P.mbManager.userId)).items as any[]).find((i) => i.key === `yt_xu_ly:${sid}`);
+      assert(it && it.mine && it.ownerId === null && it.due === addDays(TODAY, 4) && /được yêu cầu/.test(it.reason), JSON.stringify(it));
+      const tin = conn.prepare('SELECT user_id, kind, title FROM notifications WHERE dedup_key = ?').all(`yt-yc:${v.id}`) as any[];
+      assert(tin.some((x) => x.user_id === P.mbManager.userId && x.kind === 'discipline' && /trước \d\d\/\d\d$/.test(x.title)), JSON.stringify(tin));
+    } finally { conn.exec('ROLLBACK TO lg12b'); conn.exec('RELEASE lg12b'); xoaNho(); }
   });
   check('LG-12 (6) · đổi GVCN giữa chừng: việc sang GVCN mới (cùng hạn); GVCN cũ hết việc, "Không xử lý" → 403; GVCN mới làm được', () => {
     const lop = lopMoi('MB FT LG12');
