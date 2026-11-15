@@ -85,5 +85,5 @@ export function DanhSachNguon({ nguon, tieuDe, open, onClose }: { nguon: string;
   /* PANEL-V10: chỉ số theo một kỹ năng (`skill=` trong nguồn) → cột đó nền nhấn trong dòng điểm. */
   const kn = new URLSearchParams(nguon.split('?')[1] ?? '').get('skill');
   /* PANEL-RIENG (XM-1): đơn vị cạnh số ở dòng tiêu đề — `unit` máy chủ trả kèm (cùng nhãn `DanhSachSoLieu`). */
-  return <NganDanhSach tieuDe={tieuDe} dv={data?.unit ? METRIC_UNIT_LABEL[data.unit] ?? null : null} data={data} loading={loading} error={error} reload={reload} onDong={onClose} knNhan={kn ? tenMonNgan(null, kn) : null} />;
+  return <NganDanhSach nguon={nguon} tieuDe={tieuDe} dv={data?.unit ? METRIC_UNIT_LABEL[data.unit] ?? null : null} data={data} loading={loading} error={error} reload={reload} onDong={onClose} knNhan={kn ? tenMonNgan(null, kn) : null} />;
 }

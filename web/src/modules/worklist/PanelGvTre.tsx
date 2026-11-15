@@ -6,6 +6,7 @@ import { useSession } from '../../lib/session.tsx';
 import { XemCha, useThamSoUrl, useXem } from '../../lib/quayLai.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { NutSaoChep } from '../../ui/NutSaoChep.tsx';
 import { CHIP_VUONG, ChipHan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -32,6 +33,12 @@ export type CauHinhGvTre = {
 const tenNhom = (g: Pick<NhomGvTre, 'gvId' | 'ten'>) => (g.gvId === 0 ? t('Chưa có GV') : g.ten);
 const tenDong = (d: DongGvTre) => [d.lop, d.luotChu].filter(Boolean).join(' · ');
 const tieuDeDong = (d: DongGvTre) => `${tenDong(d)} · ${d.knChu}`;
+/** GD-21 (⑬ H9, XM-6): chữ thuần dán Zalo — không tên học viên: "{GV} · n bài quá hạn (tới dd/mm)" + mỗi dòng "• lớp · việc · n bài · quá hạn n ngày". Dữ liệu đã nạp. */
+function chuSaoChep(g: Pick<NhomGvTre, 'ten' | 'soBai' | 'dong'>, homNay: string, ngan: (d: string) => string): string {
+  const tre = (han: string | null) => (han && han < homNay ? Math.round((Date.parse(homNay) - Date.parse(han)) / 86_400_000) : 0);
+  return [t('{gv} · {n} bài quá hạn (tới {ngay})', { gv: g.ten, n: g.soBai, ngay: ngan(homNay) }),
+    ...g.dong.map((d) => `• ${[tenDong(d), d.knChu, t('{n} bài', { n: d.soBai }), tre(d.han) ? t('quá hạn {n} ngày', { n: tre(d.han) }) : null].filter(Boolean).join(' · ')}`)].join('\n');
+}
 
 /**
  * PANEL "GV CHẤM QUÁ HẠN" (M6 6b-4, mockup `thiet-ke/v7/panel-pilot.html` khu ③) — ai · lớp · bài · quá hạn bao lâu · ai xử lý. Ba view một chuỗi
@@ -87,6 +94,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
               <span className="min-w-0">{tieuDe}</span>
               {data && <span className="whitespace-nowrap"><span className="tabular-nums">{data.soBai}</span> <span className="text-sm font-medium text-slate-400">{t('bài')}</span></span>}
               <NutLuat label={t('Cách tính')}>{cauHinh.cachTinh} {homNay && t('Dữ liệu đến {ngay}.', { ngay: ngan(homNay) })}</NutLuat>
+              {motGv && motGv.gvId > 0 && homNay && !soDu && <NutSaoChep chu={chuSaoChep(motGv, homNay, ngan)} ten={motGv.ten} />}
             </>
           ),
           dong2: data ? [
@@ -100,7 +108,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
         {error ? <div className="pt-3"><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></div>
           : loading && !data ? <div className="pt-3"><Skeleton rows={5} /></div>
           : !nhom.length ? <Empty title={cauHinh.trong} />
-          : nhom.map((g) => <NhomGv key={g.gvId} g={g} mo={moKhoa} onMo={moDong} dai={!motGv} />)}
+          : nhom.map((g) => <NhomGv key={g.gvId} g={g} mo={moKhoa} onMo={moDong} dai={!motGv} chep={g.gvId > 0 && homNay && !g.dong.some((d) => d.du) ? <NutSaoChep chu={chuSaoChep(g, homNay, ngan)} ten={g.ten} /> : null} />)}
         {data && data.choCham > 0 && (
           <p className="m-0 mt-3 border-t pt-3 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }}>
             {t('Speaking chấm chéo chưa tới hạn: {n} bài — chờ chấm.', { n: data.choCham })}
@@ -114,7 +122,7 @@ export function PanelGvTre({ nguon, tieuDe, cauHinh, onDong }: { nguon: string; 
 }
 
 /** Dải nhóm một GV (V21: nền surface-2, vạch 3 px TRUNG TÍNH — nhóm theo người, không theo bước) + dòng lớp · lượt · kỹ năng. */
-function NhomGv({ g, mo, onMo, dai = true }: { g: NhomHien; mo: string; onMo: (k: string) => void; /** false: không vẽ dải tên (panel một GV). */ dai?: boolean }) {
+function NhomGv({ g, mo, onMo, dai = true, chep }: { g: NhomHien; mo: string; onMo: (k: string) => void; /** false: không vẽ dải tên (panel một GV). */ dai?: boolean; /** GD-21: biểu tượng sao chép cuối dải tên (không có ở "Chưa có GV"). */ chep?: ReactNode }) {
   const lopChuaGv = g.gvId === 0 ? [...new Map(g.dong.filter((d) => d.classId).map((d) => [d.classId!, d.lop])).entries()] : [];
   return (
     <section>
@@ -125,6 +133,7 @@ function NhomGv({ g, mo, onMo, dai = true }: { g: NhomHien; mo: string; onMo: (k
           : <span>{tenNhom(g)}</span>}
         <span className={`${CHIP_VUONG} text-slate-200`} style={{ borderColor: 'var(--line-strong)' }}>{t('{n} bài', { n: g.soBai })}</span>
         {g.gvId === 0 && <span className="text-[13px] font-medium text-slate-400">{t('lớp chưa phân công GV môn')}</span>}
+        {chep && <span className="-my-1 ml-auto">{chep}</span>}
       </h3>}
       <ul className="-mx-4 m-0 list-none p-0">
         {g.dong.map((d) => {

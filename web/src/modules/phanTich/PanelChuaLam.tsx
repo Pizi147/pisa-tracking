@@ -6,6 +6,8 @@ import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
+import { NutSaoChep } from '../../ui/NutSaoChep.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 
@@ -63,6 +65,7 @@ function DongChiDoc({ d, n }: Dong) {
 
 export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { nguon: string; tab: TabChuaLam; tieuDe: string; ngCanh: string; onDong: () => void }) {
   const { data, loading, error, reload } = useApi<{ rows: DongDs[] }>(nguon, [nguon]);
+  const { homNay, ngan } = useNgayNghiepVu();
   const [tab, setTab] = useState<TabChuaLam>(tabDau);
   const chua = (data?.rows ?? []).filter((r): r is DongDs & { dongViec: DongViecHan } => r.dongViec?.trangThai === 'chua');
   const theoTab = (k: TabChuaLam) => chua.filter((r) => (r.dongViec.tab === 'cham') === (k === 'cham'));
@@ -74,12 +77,19 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
   const sc = ds.filter((r) => r.dongViec.sChung).map((r) => r.dongViec);
   const soTab = (k: TabChuaLam) => rieng(theoTab(k)).length;
   const donVi = tab === 'cham' ? t('bài') : t('việc');
-  const khoi = (khoa: string, ten: ReactNode, n: number, dong: DongViecHan[], phu?: string) => (
+  /* GD-21 (⑬ H9, XM-6): chữ thuần theo tab đang xem — đơn vị theo badge ("n bài" ở Chấm Test, "n việc" ở Việc); không tên học viên. */
+  const chuChep = (ten: string, dong: DongViecHan[]) => [t('{gv} · {n} {dv} quá hạn (tới {ngay})', { gv: ten, n: dong.length, dv: donVi, ngay: ngan(homNay) }),
+    ...gopBai(dong).map(({ d, n }) => {
+      const cat = d.tab === 'cham' ? d.ten.indexOf(' · ') : -1;
+      return `• ${[d.lop?.ma, cat >= 0 ? `${d.ten.slice(0, cat)} · ${d.ten.slice(cat + 3)}` : d.ten, d.tab === 'cham' ? t('{n} bài', { n }) : null, d.treNgay ? t('quá hạn {n} ngày', { n: d.treNgay }) : null].filter(Boolean).join(' · ')}`;
+    })].join('\n');
+  const khoi = (khoa: string, ten: ReactNode, n: number, dong: DongViecHan[], phu?: string, tenChep?: string) => (
     <section key={khoa} className="overflow-clip rounded-lg border" style={{ borderColor: 'var(--line-strong)' }}>
       <h3 className="m-0 flex min-h-11 items-center gap-2 px-4 py-2 text-[15px] font-bold text-[color:var(--text)] shadow-[inset_3px_0_0_var(--hang-lon-vach)]" style={{ background: 'var(--hang-lon-bg)' }}>
         {ten}
         <span className="inline-flex h-[22px] min-w-[22px] items-center justify-center rounded border px-[7px] text-xs font-semibold tabular-nums" style={{ borderColor: 'var(--line-strong)' }}>{n}</span>
         {phu && <span className="text-[13px] font-normal text-[color:var(--text-dim)]">{phu}</span>}
+        {tenChep && homNay && <span className="-my-1 ml-auto"><NutSaoChep chu={chuChep(tenChep, dong)} ten={tenChep} /></span>}
       </h3>
       <ul className="m-0 list-none p-0 [&>li:first-child]:border-t-0">{gopBai(dong).map((x, i) => <DongChiDoc key={i} {...x} />)}</ul>
     </section>
@@ -101,7 +111,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
               <NutLuat label={t('Chưa làm')}>{t('Bài / việc có hạn trong kỳ đã qua hạn mà chưa làm, của từng người được phân công. S chéo chung (bài Speaking chấm chéo chưa ai nhận) để riêng cuối danh sách, không vào số và tỉ lệ của ai.')}</NutLuat>
             </p>
             {!nhomDs.length && !sc.length && <p className="m-0 text-sm text-[color:var(--text-dim)]">{tab === 'cham' ? t('Không còn bài nào quá hạn chưa chấm.') : t('Không còn việc nào quá hạn chưa làm.')}</p>}
-            {nhomDs.map(([id, g]) => khoi(`gv:${id}`, <Link to={`/giao-vien/${id}`} className="ten-ho-so">{g.ten}</Link>, g.ds.length, g.ds))}
+            {nhomDs.map(([id, g]) => khoi(`gv:${id}`, <Link to={`/giao-vien/${id}`} className="ten-ho-so">{g.ten}</Link>, g.ds.length, g.ds, undefined, g.ten))}
             {sc.length > 0 && khoi('s-chung', <i className="font-bold">{t('S chéo chung')}</i>, sc.length, sc, t('chưa ai nhận · không vào tỉ lệ'))}
           </div>
         )}
