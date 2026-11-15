@@ -11,8 +11,10 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { DsEmBanGiao, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu, type HangLuu } from '../../lib/luuChac.ts';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, mucDiem, deadlineView, luuRoiTiep, ngay, nhanDocDiem, quyCheBanGiao, shortDate, tuanLich, type KnDiem, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, mucDiem, deadlineView, luuRoiTiep, ngay, nhanDocDiem, quyCheBanGiao, shortDate, tuanLich, addDaysIso, cauBanGiao, chuCuaPhan, nguonChuDaGhi, type DiemHv, type DuLieuChuDaGhi, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { lopKq } from '../../ui/BieuTuong.tsx';
+import { DaiChenLo, DuoiOChu, KhoiDaGhi, useChen, useChenLo } from '../../ui/KhoiDaGhi.tsx';
+import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -116,6 +118,24 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
     }
     return o;
   };
+  /* GD-20b (H2, mockup ⑫ B3): "Bạn đã ghi" phần Chung (vi phạm · xử lý · tình hình) 30 ngày gần nhất — MỘT lần khi mở panel. Khối cạnh Nhận xét chung (nháp);
+     "Chèn cho n em" đầu danh sách cho em còn trống nhận xét (tự lưu nháp + Hoàn tác 10 giây); em được chèn mang chip "Đã chèn" tới khi GV mở em đó. Vẫn bấm Xác nhận. */
+  const toiId = useSession().session?.user?.id ?? null;
+  const daGhi = useApi<DuLieuChuDaGhi>(ghi ? `/classes/${dto.lop.id}/chu-da-ghi?tu=${addDaysIso(dto.homNay, -30)}&den=${dto.homNay}` : null, [dto.lop.id, ghi]);
+  const emDaGhi = (e: PhieuEm) => daGhi.data?.em.find((x) => x.id === e.studentId);
+  const datNx = (e: PhieuEm, v: string) => { setNhanXet((m) => ({ ...m, [e.lenhId]: v })); oCua(e).go(v); return oCua(e).luu(); };
+  const chenMot = useChen(nhap, (v) => { if (em) void datNx(em, v); }, homNay, toiId, em?.lenhId);
+  const [daChenEm, setDaChenEm] = useState<ReadonlySet<number>>(new Set());
+  useEffect(() => { if (chon != null) setDaChenEm((s) => { if (!s.has(chon)) return s; const m = new Set(s); m.delete(chon); return m; }); }, [chon]);
+  const loNx = useChenLo<{ e: PhieuEm; cau: string }>((c) => datNx(c.e, c.cau), async (c) => {
+    await oCua(c.e).luu();
+    if (oCua(c.e).nhap().trim() === c.cau.trim()) await datNx(c.e, '');
+  });
+  const choChenNx = !ghi ? [] : dto.ds.flatMap((e) => {
+    if (e.xacNhan || (nhanXet[e.lenhId] ?? e.nhanXetChung ?? '').trim()) return [];
+    const x = cauBanGiao(emDaGhi(e), 'chung');
+    return x ? [{ e, cau: x.chu }] : [];
+  });
   const luuNhapNx = () => {
     if (!em || em.xacNhan || !ghi || nhanXet[em.lenhId] === undefined) return;
     void oCua(em).luu();
@@ -198,7 +218,11 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
       {em && (
         <div className={`grid gap-4 pt-3 ${chiDoc ? '' : 'md:grid-cols-[280px_minmax(0,1fr)]'}`}>
           {!chiDoc && <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={dto.ds.map((e) => ({ ...e, id: e.lenhId }))} chon={em.lenhId} onChon={setChon}
-            trangThai={(e) => ({ khoa: e.phieu.khoa === 'da-xac-nhan' ? 'du' : e.phieu.khoa === 'mon' ? 'thieu' : 'muted', nhan: dich(e.phieu.nhan) })}
+            dau={loNx.vua ? <DaiChenLo n={loNx.vua.length} onHoanTac={() => { void loNx.hoanTac(); setDaChenEm(new Set()); }} />
+              : choChenNx.length >= 2 ? <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:min-h-0"
+                onClick={() => { void loNx.chenLo(choChenNx); setDaChenEm(new Set(choChenNx.map((c) => c.e.lenhId))); }}>{t('Chèn cho {n} em', { n: choChenNx.length })}</button> : undefined}
+            trangThai={(e) => daChenEm.has(e.lenhId) && !e.xacNhan ? { khoa: 'thieu', nhan: t('Đã chèn') }
+              : { khoa: e.phieu.khoa === 'da-xac-nhan' ? 'du' : e.phieu.khoa === 'mon' ? 'thieu' : 'muted', nhan: dich(e.phieu.nhan) }}
             phu={(e) => (
               <>
                 <span className="min-w-0 truncate">{e.lopDich ? `→ ${e.lopDich.code} · ${tuanLich(e.tuan, homNay)}` : e.huong === 'bao_luu' ? `${t('Tạm dừng học (bảo lưu)')}${e.ngayXemLai ? ` · ${t('xem lại {tuan}', { tuan: tuanLich(e.ngayXemLai, homNay) })}` : ''}` : tuanLich(e.tuan, homNay)}</span>
@@ -269,9 +293,17 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
 
             <Truong nhan={t('Nhận xét chung của GVCN')} batBuoc={canNx && ((ghi && !em.xacNhan) || suaPhieu)} dem={canNx && ((ghi && !em.xacNhan) || suaPhieu) ? { co: nhap.trim().length, can: NHAN_XET_TOI_THIEU } : undefined}
               loi={daBam && thieu && (ghi || suaPhieu) ? t('Cần ít nhất {n} ký tự', { n: NHAN_XET_TOI_THIEU }) : null}>
-              <textarea id="o-nhan-xet" className="field w-full" rows={3} readOnly={docThoi || (!!em.xacNhan && !suaPhieu)} aria-invalid={daBam && thieu && (ghi || suaPhieu)}
-                value={nhap} placeholder={docThoi ? undefined : t('Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.')}
-                onChange={(e) => { setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value })); oCua(em).go(e.target.value); }} onBlur={luuNhapNx} />
+              {/* GD-20b (B3): khối "Bạn đã ghi tháng này" bên phải ô (chỉ khi đang viết nháp); không có câu → ô rộng như cũ. */}
+              <div className={`viet-ghi${ghi && !em.xacNhan && chuCuaPhan(emDaGhi(em), 'chung').length ? '' : ' mot'}`}>
+                <div className="o-chu">
+                  <textarea id="o-nhan-xet" className="field w-full" rows={3} readOnly={docThoi || (!!em.xacNhan && !suaPhieu)} aria-invalid={daBam && thieu && (ghi || suaPhieu)}
+                    value={nhap} placeholder={docThoi ? undefined : t('Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.')}
+                    onChange={(e) => { setNhanXet((m) => ({ ...m, [em.lenhId]: e.target.value })); oCua(em).go(e.target.value); }} onBlur={luuNhapNx} />
+                  {ghi && !em.xacNhan && <DuoiOChu tai={daGhi.loading} loi={!!daGhi.error} onThuLai={daGhi.reload} chen={chenMot.gan} onHoanTac={chenMot.hoanTac} />}
+                </div>
+                {ghi && !em.xacNhan && <KhoiDaGhi nhan={t('Bạn đã ghi tháng này')} ds={chuCuaPhan(emDaGhi(em), 'chung')} toiId={toiId} homNay={dto.homNay}
+                  daChen={chenMot.daChen} onChen={chenMot.chen} gapDau={!!nhap.trim()} chu={nhap} key={em.lenhId} />}
+              </div>
             </Truong>
             {ghi && !em.xacNhan && (nxLuu !== 'yen' || !canNx) && (
               <p className="m-0 -mt-2 text-xs text-slate-500" aria-live="polite">
@@ -298,6 +330,35 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
 }
 
 // ==================================================================== G · GVBM
+
+/**
+ * Cột "Kết quả" của bảng GVBM (GD-20b, chủ SP duyệt #1745: "cho điểm xuống dòng và làm rõ"): dòng 1 lượt + tổng (Overall / %) đậm, ✓ / ✗ màu như ô điểm;
+ * dòng 2 điểm từng kỹ năng lưới hai cột, chữ số đều, kỹ năng đang bàn giao đậm hơn. Cùng nguồn `diemMon` (FT: kỹ năng bàn giao; lớp thường: mọi môn).
+ */
+function KetQuaBanGiao({ d, monBanGiao }: { d: DiemHv; monBanGiao: readonly string[] }) {
+  const pt = d.soVoi?.nhan === 'ngưỡng' || d.donVi === '%';
+  const datTong = d.overall === null || !d.soVoi ? null : d.overall >= d.soVoi.v;
+  const doc = [d.luot, d.overall === null ? null : `${dauDiem(datTong) ?? ''} ${chuDiem(d.overall, pt)}`.trim(), ...d.kn.map((kn) => nhanDocDiem(kn, d.soVoi))].filter(Boolean).join(' · ');
+  return (
+    <span className="grid gap-1" aria-label={doc}>
+      <span aria-hidden="true" className="text-[14px] font-semibold text-slate-100">
+        {d.luot}{d.tam ? ` · ${t('tạm')}` : ''}
+        {d.overall !== null && <> <b className={`tabular-nums ${datTong === null ? '' : lopKq(mucDiem(datTong, d.overall, d.soVoi?.v))}`}>{dauDiem(datTong) ? `${dauDiem(datTong)} ` : ''}{chuDiem(d.overall, pt)}</b></>}
+      </span>
+      <span aria-hidden="true" className="grid grid-cols-[repeat(2,max-content)] gap-x-4 gap-y-0.5 text-[13px] tabular-nums">
+        {d.kn.map((kn) => {
+          const dang = monBanGiao.includes(kn.k);
+          return (
+            <span key={kn.k} className={dang ? 'font-semibold text-slate-100' : 'text-slate-400'}>
+              {kn.k}{' '}
+              {kn.v === null ? '—' : <span className={kn.dat === null ? '' : lopKq(mucDiem(kn.dat, kn.v, d.soVoi?.v))}>{dauDiem(kn.dat) ? `${dauDiem(kn.dat)} ` : ''}{chuDiem(kn.v, pt)}</span>}
+            </span>
+          );
+        })}
+      </span>
+    </span>
+  );
+}
 
 /** Ô GVBM được mở cùng: GV dạy cả W1 + W2 → hai cột cùng bảng (chủ SP 03/11, mockup v11 đã duyệt); `mon` có thể là "writing1,writing2". */
 function monMo(mon: string | null | undefined, monToi: readonly string[]): string[] {
@@ -349,6 +410,37 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
   const dong = dongSauKhiLuu(hang, dongHan, baoChuaLuu);
   const idO = (lenh: number, m: string) => `o-bg-${lenh}-${m}`;
 
+  /* GD-20b (H2, mockup ⑫ B1 · B2): "Bạn đã ghi" 30 ngày gần nhất của lớp nguồn — MỘT lần khi mở bảng. Ô trống (không "Cùng GV", không khoá) có gợi ý → dòng
+     "nguồn · câu" + Chèn dưới ô; ≥ 2 ô như thế → "Chèn cho n em" (MT gần nhất, không có thì Case), tự lưu như gõ + Hoàn tác 10 giây. */
+  const toiId = useSession().session?.user?.id ?? null;
+  const daGhi = useApi<DuLieuChuDaGhi>(`/classes/${dto.lop.id}/chu-da-ghi?tu=${addDaysIso(dto.homNay, -30)}&den=${dto.homNay}`, [dto.lop.id]);
+  const goiY = (e: PhieuEm, m: string) => cauBanGiao(daGhi.data?.em.find((x) => x.id === e.studentId), m);
+  const oTrongChen = (e: PhieuEm, m: string) => {
+    const om = oMon(e, m);
+    return !!om && !(om.cungGv && !om.noiDung) && !(e.xacNhan && !e.suaDuoc) && !(chu[k(e, m)] ?? om.noiDung ?? '').trim();
+  };
+  const datO = (e: PhieuEm, m: string, v: string) => {
+    setChu((x) => ({ ...x, [k(e, m)]: v }));
+    oCua(e, m).go(v);
+    return oCua(e, m).luu();
+  };
+  /* Hoàn tác: chờ lần lưu, rồi gỡ câu nếu ô vẫn đúng câu vừa chèn (máy chủ không nhận câu rỗng — đường `go-chen`). */
+  const goO = async (e: PhieuEm, m: string, cau: string) => {
+    const o = oCua(e, m);
+    await o.luu();
+    if (o.nhap().trim() !== cau.trim()) return;
+    try {
+      const r = await api.post<{ ok: boolean }>(`/lenh-chuyen/${e.lenhId}/ban-giao-mon/go-chen`, { mon: m, noiDung: cau });
+      if (!r.ok) return;
+      o.nhanGoc('');
+      setChu((x) => ({ ...x, [k(e, m)]: '' }));
+      setTt((x) => ({ ...x, [k(e, m)]: { tt: 'idle' } }));
+    } catch (er: any) { toast.push('error', er?.message ?? t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.')); }
+  };
+  const lo = useChenLo<{ e: PhieuEm; m: string; cau: string }>((c) => datO(c.e, c.m, c.cau), (c) => goO(c.e, c.m, c.cau));
+  const choChen = dto.ds.flatMap((e) => mons.flatMap((m) => { const x = oTrongChen(e, m) ? goiY(e, m) : null; return x ? [{ e, m, cau: x.chu }] : []; }));
+  const hoanTacLo = async () => { await lo.hoanTac(); daDoiPhieu(); invalidateGop('/my-work', '/classes'); reload(); };
+
   useEffect(() => {
     if (lenhId == null) return;
     const el = document.getElementById(idO(lenhId, mons[0]));
@@ -374,7 +466,8 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
     for (const e of dto.ds) for (const m of mons) if (can(e, m) && !daCo(e, m)) { document.getElementById(idO(e.lenhId, m))?.focus(); return; }
   };
   const ngan = (m: string) => dto.lop.mon.find((y) => y.ma === m)?.ngan ?? m;
-  const cot = hai ? 'sm:grid-cols-[200px_150px_minmax(0,1fr)_minmax(0,1fr)]' : 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)_minmax(0,2fr)]';
+  /* GD-20b (chủ SP duyệt #1745): Kết quả gọn (hai dòng), Thông tin bàn giao đủ rộng. */
+  const cot = hai ? 'sm:grid-cols-[170px_150px_minmax(0,1fr)_minmax(0,1fr)]' : 'sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,2.2fr)]';
   const oTrong = (chuO: string) => (
     <span className="flex min-h-[44px] items-center rounded-lg border border-dashed px-2.5 text-[13px] text-slate-500 sm:min-h-[40px]" style={{ borderColor: 'var(--line-strong)' }}>{chuO}</span>
   );
@@ -388,8 +481,8 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
       chan={{
         daSua,
         huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, dongHan, baoChuaLuu, true) },
-        /* GD-4d: ô tự lưu khi rời ô — còn việc kế thì "Việc tiếp ›" (chờ ô đang lưu như Đóng); hết em thiếu → nút chính. */
-        chinh: onTiep ? <button type="button" className={`btn ${conThieu.length ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={dongSauKhiLuu(hang, () => { onDone(); onTiep(); }, baoChuaLuu, true)}>{t('Việc tiếp ›')}</button> : undefined,
+        /* GD-4d: ô tự lưu khi rời ô — còn việc kế thì "Việc tiếp ›" (chờ ô đang lưu như Đóng). GD-20b (mockup ⑫ B1 · E2, PTA rà #1745): luôn là nút chính, phải. */
+        chinh: onTiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={dongSauKhiLuu(hang, () => { onDone(); onTiep(); }, baoChuaLuu, true)}>{t('Việc tiếp ›')}</button> : undefined,
         trai: (
           <span className="flex flex-wrap items-center gap-x-3 text-[13px] text-slate-400">
             <span className="tabular-nums">{hai ? t('Tự lưu khi rời ô') : t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>
@@ -402,6 +495,18 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
           </span>
         ),
       }}>
+      {/* GD-20b (B1 · B2): dải trên bảng — số em đã có · "Chèn cho n em"; sau chèn: "✓ Đã chèn n em · Hoàn tác" (10 giây). */}
+      {(choChen.length >= 2 || lo.vua) && (
+        <div className="mt-3 grid gap-2">
+          {!lo.vua && (
+            <div className="flex items-center gap-2.5 text-[13px] text-slate-400">
+              {!hai && <span className="tabular-nums">{t('{a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>}
+              <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" onClick={() => void lo.chenLo(choChen)}>{t('Chèn cho {n} em', { n: choChen.length })}</button>
+            </div>
+          )}
+          {lo.vua && <DaiChenLo n={new Set(lo.vua.map((c) => c.e.lenhId)).size} onHoanTac={() => void hoanTacLo()} />}
+        </div>
+      )}
       <div className="surface-2 mt-3 divide-y rounded-lg" style={{ borderColor: 'var(--line)' }} role="table" aria-label={t('Bàn giao môn {mon}', { mon: mDs.map((x) => x.ngan).join(' · ') })}>
         <div role="row" className={`hidden gap-3.5 px-3.5 py-2 text-[12px] font-semibold text-slate-500 sm:grid ${cot}`}>
           <span role="columnheader">{t('Học viên')}</span><span role="columnheader">{t('Kết quả')}</span>
@@ -417,21 +522,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
                 {e.lopDich && <span className="block text-xs font-semibold text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
               <span role="cell" className="min-w-0 text-[13px] text-slate-400">
                 {/* Mockup v11: FT — lượt mới nhất + điểm từng cột của bảng (W1 · W2 riêng), ✓ / ✗ so kỳ vọng của lượt; không có thì câu tự điền như cũ. */}
-                {e.diemMon ? (
-                  <span className="tabular-nums" aria-label={[e.diemMon.luot, ...mDs.map((x) => e.diemMon!.kn.find((kn) => kn.k === x.ngan))
-                    .filter((kn): kn is KnDiem => !!kn).map((kn) => nhanDocDiem(kn, e.diemMon!.soVoi))].join(' · ')}>
-                    {e.diemMon.luot}{e.diemMon.tam ? ` · ${t('tạm')}` : ''}
-                    {mDs.map((x) => {
-                      const kn = e.diemMon!.kn.find((y) => y.k === x.ngan);
-                      if (!kn) return null;
-                      return (
-                        <span key={x.ma} aria-hidden="true"> · {kn.k}{' '}
-                          {kn.v === null ? '—' : <b className={kn.dat === null ? 'font-semibold text-slate-200' : lopKq(mucDiem(kn.dat, kn.v, e.diemMon!.soVoi?.v))}>{dauDiem(kn.dat) ? `${dauDiem(kn.dat)} ` : ''}{chuDiem(kn.v)}</b>}
-                        </span>
-                      );
-                    })}
-                  </span>
-                ) : e.tuDien?.ketQua ? dich(e.tuDien.ketQua) : '—'}
+                {e.diemMon ? <KetQuaBanGiao d={e.diemMon} monBanGiao={mDs.map((x) => x.ngan)} /> : e.tuDien?.ketQua ? dich(e.tuDien.ketQua) : '—'}
               </span>
               {mons.map((m, i) => {
                 const om = oMon(e, m);
@@ -442,7 +533,10 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
                     {hai && <span className="mb-1 flex items-center gap-1.5 text-[13px] font-bold text-slate-400 sm:hidden"><span className="rounded bg-[color:var(--accent-soft)] px-1.5 text-[12px] font-bold text-[color:var(--accent)]">{mDs[i].ngan}</span>{mDs[i].ten}</span>}
                     {!om ? oTrong(hai ? t('Không học {mon}', { mon: mDs[i].ngan }) : t('Không học {mon} · không cần bàn giao', { mon: mDs[i].ngan }))
                       : om.cungGv && !cu ? oTrong(t('Cùng GV · không cần bàn giao')) : <>
-                      <input id={idO(e.lenhId, m)} className="field w-full sm:h-10 sm:text-[15px]" maxLength={300} readOnly={khoa} autoComplete="off"
+                      {/* GD-20b (chủ SP duyệt #1745): ô tự giãn theo chữ, xuống dòng — không cắt câu. Một câu: Enter không xuống dòng. */}
+                      <textarea id={idO(e.lenhId, m)} rows={1} className="field block w-full resize-none overflow-hidden leading-normal sm:text-[15px]" maxLength={300} readOnly={khoa} autoComplete="off"
+                        ref={(el) => { if (el) { el.style.height = 'auto'; el.style.height = `${el.scrollHeight + 2}px`; } }}
+                        onKeyDown={(ev) => { if (ev.key === 'Enter') ev.preventDefault(); }}
                         aria-label={hai ? `${mDs[i].ngan} · ${e.ten}` : t('Bàn giao môn {mon} của {ten}', { mon: mDs[i].ngan, ten: e.ten })}
                         aria-invalid={s0?.tt === 'loi'} aria-describedby={s0?.tt === 'loi' ? `${idO(e.lenhId, m)}-loi` : undefined}
                         placeholder={t('Viết một câu…')} value={chu[k(e, m)] ?? cu}
@@ -452,6 +546,17 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
                           setTt((x) => ({ ...x, [k(e, m)]: { tt: x[k(e, m)]?.tt === 'dang' ? 'dang' : 'go' } }));
                         }}
                         onBlur={() => void ghi(e, m)} />
+                      {!khoa && oTrongChen(e, m) && (() => {
+                        const x = goiY(e, m);
+                        if (!x) return null;
+                        const n = nguonChuDaGhi(x, toiId, dto.homNay, m);
+                        return (
+                          <span className="goi-bg">
+                            <span className="t" title={x.chu}><b>{n.dau}</b> · {x.chu}</span>
+                            <button type="button" className="nut-chen" aria-label={t('Chèn câu {nguon}', { nguon: [n.dau, ...n.phu].join(' · ') })} onClick={() => void datO(e, m, x.chu)}>{t('Chèn')}</button>
+                          </span>
+                        );
+                      })()}
                       {e.writingCu && !cu && (
                         <span className="mt-0.5 block text-xs text-slate-500">
                           <b className="font-semibold text-slate-400">{t('Writing · cũ')}:</b> {e.writingCu.noiDung}{e.writingCu.nguoiGhi ? ` — ${e.writingCu.nguoiGhi}, ${ngay(e.writingCu.ghiLuc, homNay)}` : ''}

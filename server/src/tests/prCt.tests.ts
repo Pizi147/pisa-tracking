@@ -596,6 +596,15 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'QL ghi')) === 409, 'GV lớp chuyển đến 403; RKC-4b: QL (chưa quá hạn) được hỏi (409)');
     assert(maLoi(() => bg.ghiMon(gvcn5, lenhCua(em5[3]).id, monL, 'dừng học hẳn')) === 400, 'lệnh Dừng học hẳn không có phiếu');
   });
+  check('GD-20b · gỡ câu môn vừa chèn (Hoàn tác "Chèn cho n em"): khớp → xoá + nhật ký; đã sửa → giữ (false); GV lớp chuyển đến → 403', () => {
+    const l = lenhCua(em5[1]);
+    bg.ghiMon(gvbmL, l.id, monL, 'Câu vừa chèn từ nhận xét MT.');
+    assert(maLoi(() => bg.goMonVuaChen(gvDich, l.id, monL, 'Câu vừa chèn từ nhận xét MT.')) === 403, 'GV lớp chuyển đến 403');
+    assert(bg.goMonVuaChen(gvbmL, l.id, monL, 'Câu khác') === false, 'đã sửa → giữ');
+    assert(bg.goMonVuaChen(gvbmL, l.id, monL, ' Câu vừa chèn từ nhận xét MT. ') === true, 'khớp → gỡ');
+    assert(!get(`SELECT 1 x FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monL), 'dòng đã xoá');
+    assert(get(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'ban_giao.go_chen'`).n >= 1, 'có nhật ký');
+  });
   check('CT (5b) · đọc phiếu: GV lớp chuyển đến trước xác nhận → 403; QL đọc 200; QL chi nhánh khác / GV không dạy → 403; phiếu cả lớp trả 3 em (Dừng học hẳn không có phiếu)', () => {
     const lop = bg.phieuBanGiao(gvcn5, { lopNguonId: n5 });
     assert(lop.tong === 3 && lop.ds.length === 3 && lop.daXacNhan === 0 && lop.lop.mon.length === 4, JSON.stringify({ t: lop.tong, m: lop.lop.mon.length }));

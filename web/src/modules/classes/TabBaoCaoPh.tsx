@@ -20,9 +20,11 @@ import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
+import { DuoiOChu, KhoiDaGhi, useChen } from '../../ui/KhoiDaGhi.tsx';
+import { useSession } from '../../lib/session.tsx';
 import {
   MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, quyCheXuatBaoCaoPh, tieuChiPhan, tieuChiTrong, tuanLich,
-  type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
+  chuCuaPhan, type BanGhiBc, type ChuDaGhi, type DiemGocBc, type DuLieuChuDaGhi, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -493,6 +495,9 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
   const { data, loading, error, reload } = useApi<DuLieuPhan>(`/classes/${lopId}/bao-cao-ph/phan?dot=${encodeURIComponent(dot)}&phan=${phan.khoa}`, [lopId, dot, phan.khoa]);
+  /* GD-20a (H1): "Bạn đã ghi" — MỘT lần cho cả lớp × đợt khi mở panel (đổi em / đổi phần không gọi lại); lỗi không chặn viết. */
+  const daGhi = useApi<DuLieuChuDaGhi>(`/classes/${lopId}/chu-da-ghi?dot=${encodeURIComponent(dot)}`, [lopId, dot]);
+  const toiId = useSession().session?.user?.id ?? null;
   const [chon, setChon] = useState(emDau);
   const [xong, setXong] = useState(false);
   const [, ve] = useState(0);
@@ -563,7 +568,11 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
     huy: null, daSua: chuaLuu, tuHoi: false,
     trai: <span className="flex flex-wrap items-center gap-x-2 text-[13px] text-slate-400">{t('Tự lưu khi rời ô')}{tt && <ChuLuu tt={tt} loi={b?.loi} luc={gio} gon />}</span>,
     dongTren: keTiep && dt ? <span className="block px-4 text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span> : undefined,
-    phu: keTiep && !dt ? <span className="text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span> : undefined,
+    /* GD-20a (mockup A1, lời 36): chân chuẩn — "Tiếp: {em chưa đủ}" · Đóng · Lưu · em tiếp ›. */
+    phu: <>
+      {keTiep && !dt && <span className="text-[13px] text-slate-400">{t('Tiếp:')} <b className="text-slate-100">{keTiep.ten}</b></span>}
+      <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={dongNut}>{t('Đóng')}</button>
+    </>,
     chinh: <button type="button" className="btn btn-primary min-h-[44px] font-semibold max-sm:w-full sm:min-h-0" onClick={() => void luuTiep()}>
       {b?.tt === 'dang' ? t('Đang lưu…') : t('Lưu · em tiếp ›')}</button>,
   };
@@ -612,7 +621,10 @@ function PanelVietBc({ lopId, lopMa, dot, phan, emDau, onDoi, phanTiep, onPhanTi
               </ul>
             )}
             <FormEm key={em.id} em={em} phan={phan} form={b!.form} dotTruoc={data.dotTruoc && dich(data.dotTruoc)} thang={data.ft} homNay={homNay} du={duCua(em)} nhap={!!em.banGhi || !!b!.luc || b!.o.chuaLuu()}
-              onDoi={doiForm} onRoiChu={() => void b!.o.luu()} />
+              onDoi={doiForm} onRoiChu={() => void b!.o.luu()}
+              /* H1: Báo cáo PH lấy nhận xét Test + kết quả PA (phần Chung: vi phạm · xử lý · tình hình) — mô tả Case để cho bàn giao. */
+              daGhi={{ ds: chuCuaPhan(daGhi.data?.em.find((x) => x.id === em.id), phan.khoa).filter((x) => x.loai !== 'case'), tai: daGhi.loading, loi: !!daGhi.error, thuLai: daGhi.reload, toiId,
+                nhan: data.ft ? t('Bạn đã ghi tháng này') : t('Bạn đã ghi đợt này') }} />
           </div>
         )}
     </KhungPanel>
@@ -638,10 +650,13 @@ function HetEm({ lopMa, phan, dotNhan, so, phanTiep, onPhanTiep, onDong }: {
 }
 
 /** Form MỘT em: Điểm → tiêu chí → ô chữ (ghi chú mockup mục 5). */
-function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRoiChu }: {
+function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRoiChu, daGhi }: {
   em: EmPhan; phan: PhanBc; form: Form; dotTruoc: string | null; thang: boolean; homNay: string; du: boolean; nhap: boolean;
   onDoi: (doi: (f: Form) => Form, luuNgay: boolean) => void; onRoiChu: () => void;
+  daGhi: { ds: ChuDaGhi[]; tai: boolean; loi: boolean; thuLai: () => void; toiId: number | null; nhan: string };
 }) {
+  /* GD-20a (A2): Chèn = thêm câu vào cuối ô rồi lưu như gõ; Hoàn tác chèn 10 giây gỡ đúng đoạn đó. Ô KHÔNG tự điền (đặc tả §6). */
+  const chen = useChen(form.chu, (chu) => onDoi((f) => ({ ...f, chu }), true), homNay, daGhi.toiId);
   const chonMuc = (k: string, m: MucBc) => onDoi((f) => ({ ...f, muc: { ...f.muc, [k]: m }, datSan: f.datSan.filter((x) => x !== k) }), true);
   /* Chủ SP 15/11: "Cả n tiêu chí" — một bấm đặt mọi tiêu chí của em này một mức (một lần lưu), rồi sửa lẻ từng hàng như cũ.
      Ghi đè mức đã chọn khác → toast Hoàn tác trả đúng bản trước (`onDoi` giữ bản ghi của em này kể cả khi đã sang em khác). */
@@ -683,10 +698,19 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
           </div>
         );
       })}
-      <label className="mt-4 block">
-        <span className="mb-1.5 block text-[15px] font-bold text-slate-100">{nhanOChu(phan)}</span>
-        <textarea className="field w-full" rows={4} value={form.chu} onChange={(ev) => { const chu = ev.target.value; onDoi((f) => ({ ...f, chu }), false); }} onBlur={onRoiChu} />
-      </label>
+      <div className="mt-4">
+        <label htmlFor={`bc-chu-${em.id}`} className="mb-1.5 block text-[15px] font-bold text-slate-100">{nhanOChu(phan)}</label>
+        {/* GD-20a (A1 · A3 · A6): khối "Bạn đã ghi" bên phải ô; không có câu → ô rộng như cũ; ô đã có chữ / em đã đủ → khối gập. */}
+        <div className={`viet-ghi${daGhi.ds.length ? '' : ' mot'}`}>
+          <div className="o-chu">
+            <textarea id={`bc-chu-${em.id}`} className="field w-full" rows={4} value={form.chu}
+              placeholder={phan.khoa === 'chung' ? t('Viết cho phụ huynh: tình hình chung, ý thức, điều gia đình cần phối hợp') : t('Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào')} onChange={(ev) => { const chu = ev.target.value; onDoi((f) => ({ ...f, chu }), false); }} onBlur={onRoiChu} />
+            <DuoiOChu tai={daGhi.tai} loi={daGhi.loi} onThuLai={daGhi.thuLai} chen={chen.gan} onHoanTac={chen.hoanTac} />
+          </div>
+          <KhoiDaGhi nhan={daGhi.nhan} ds={daGhi.ds} toiId={daGhi.toiId} homNay={homNay} mon={phan.khoa === 'chung' ? null : phan.khoa}
+            daChen={chen.daChen} onChen={chen.chen} gapDau={!!form.chu.trim() || du} chu={form.chu} />
+        </div>
+      </div>
     </div>
   );
 }

@@ -1103,10 +1103,10 @@ api.get('/classes/:classId/diem-theo-luot/:luot', requireAuth, wrap((req) => {
   return diemTheoLuotSvc.bangTheoLuot(principalOf(req), pInt(req, 'classId'), String(req.params.luot));
 }));
 
-/** LG-13 (H1, H2): "Bạn đã ghi" của cả lớp trong `?tu=&den=` — web gọi khi mở panel viết Báo cáo PH / bàn giao, một lần cho lớp. */
+/** LG-13 (H1, H2): "Bạn đã ghi" của cả lớp — `?dot=` (Báo cáo PH) hoặc `?tu=&den=` (bàn giao); web gọi khi mở panel viết Báo cáo PH / bàn giao, một lần cho lớp. */
 api.get('/classes/:classId/chu-da-ghi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return chuDaGhiLop(principalOf(req), pInt(req, 'classId'), { tu: req.query.tu, den: req.query.den });
+  return chuDaGhiLop(principalOf(req), pInt(req, 'classId'), { tu: req.query.tu, den: req.query.den, dot: req.query.dot });
 }));
 /** BAO-CAO-PH: tab Báo cáo PH của hồ sơ lớp — bảng em × phần (một lớp × một đợt), panel một phần, lưu một (đợt, em, phần). */
 api.get('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
@@ -2077,6 +2077,11 @@ api.put('/lenh-chuyen/:id/ban-giao-mon', requireAuth, wrap((req) => {
   banGiaoSvc.ghiMon(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''), String(req.body?.noiDung ?? ''));
   return { ok: true };
 }));
+/** GD-20b: Hoàn tác "Chèn cho n em" — gỡ câu môn vừa chèn (chỉ khi câu còn đúng như vừa chèn). */
+api.post('/lenh-chuyen/:id/ban-giao-mon/go-chen', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return { ok: banGiaoSvc.goMonVuaChen(principalOf(req), pInt(req, 'id'), String(req.body?.mon ?? ''), String(req.body?.noiDung ?? '')) };
+}));
 api.post('/lenh-chuyen/:id/xac-nhan', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   banGiaoSvc.xacNhanBanGiao(principalOf(req), pInt(req, 'id'), String(req.body?.nhanXetChung ?? ''));
@@ -2099,6 +2104,11 @@ api.put('/lenh-chuyen/:id/nhan-xet-nhap', requireAuth, wrap((req) => {
 api.get('/ban-giao-gv/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   return banGiaoGvSvc.phieuBanGiaoGv(principalOf(req), pInt(req, 'id'));
+}));
+/** GD-20b: Hoàn tác "Chèn cho n em" — gỡ góp ý vừa chèn (chỉ khi góp ý còn đúng như vừa chèn). */
+api.post('/ban-giao-gv/:id/gop-y/go-chen', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return { ok: banGiaoGvSvc.goGopYVuaChen(principalOf(req), pInt(req, 'id'), req.body ?? {}) };
 }));
 api.put('/ban-giao-gv/:id/gop-y', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();

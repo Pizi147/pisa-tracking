@@ -62,6 +62,36 @@ export async function runPrLg13Tests(t: any) {
     if (khac) assert(/ngoài phạm vi/.test(loi(() => cd.chuDaGhiLop(p, khac.id, { tu: '2026-11-01', den: '2026-11-10' })) ?? ''), 'GV lớp khác phải 403');
   });
 
+  check('GD-20a · ?dot= (đợt Báo cáo PH): FT = từ ngày 1 tháng của đợt tới hạn · mọi câu có nguồn (người ghi, nx-mt có lượt + tuần) · đợt lạ → 404', () => {
+    const lop = conn.prepare(`SELECT ta.class_id c, ta.user_id u FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
+       WHERE ta.status = 'active' AND c.status = 'active' AND c.is_fast_track = 1 ORDER BY ta.class_id LIMIT 1`).get();
+    const p = perm.loadPrincipal(lop.u);
+    const r = cd.chuDaGhiLop(p, lop.c, { dot: 'thang:2026-08' });
+    assert(r.khoang.tu === '2026-08-01' && r.khoang.den === '2026-08-30', `khoảng FT: ${JSON.stringify(r.khoang)}`);
+    for (const e of r.em) for (const x of [...Object.values(e.kyNang).flat(), ...e.chung] as any[]) {
+      assert('nguoiId' in x && 'nguoi' in x, `thiếu người ghi: ${JSON.stringify(x)}`);
+      if (x.loai === 'nx-mt') assert(x.luot, `nx-mt thiếu lượt: ${JSON.stringify(x)}`);
+    }
+    assert(/Không tìm thấy|không có/.test(loi(() => cd.chuDaGhiLop(p, lop.c, { dot: 'thang:1999-01' })) ?? ''), 'đợt lạ phải 404');
+  });
+  check('GD-20a · chuCuaPhan / chenCau / goCau: writing gồm W1 + W2, trùng chữ một dòng; chèn cuối ô không đè; Hoàn tác gỡ đúng đoạn', () => {
+    const x = (chu: string, ngay: string) => ({ loai: 'nx-mt', ngay, chu, nguoiId: null, nguoi: null });
+    const em = { id: 1, kyNang: { writing1: [x('A', '2026-09-01')], writing2: [x('B', '2026-09-03'), x('A', '2026-08-01')] }, chung: [] };
+    assert(JSON.stringify(d.chuCuaPhan(em, 'writing').map((y: any) => y.chu)) === '["B","A"]', 'writing');
+    assert(d.chuCuaPhan(em, 'reading').length === 0 && d.chuCuaPhan(null, 'chung').length === 0, 'rỗng');
+    assert(d.chenCau('', 'Câu.') === 'Câu.' && d.chenCau('Có chữ', 'Câu.') === 'Có chữ Câu.' && d.chenCau('Có chữ\n', 'Câu.') === 'Có chữ\nCâu.', 'chenCau');
+    assert(d.goCau('Có chữ Câu.', 'Câu.') === 'Có chữ' && d.goCau('Câu.', 'Câu.') === '' && d.goCau('Câu. Gõ thêm', 'Câu.') === 'Gõ thêm', 'goCau');
+    assert(d.goCau('Đã sửa hết', 'Câu.') === 'Đã sửa hết', 'đã sửa mất đoạn → giữ');
+    /* GD-20b: "Chèn cho n em" lấy MT gần nhất, không có thì mô tả Case; phần Chung lấy câu mới nhất. */
+    const emBg = { id: 2, kyNang: { reading: [{ ...x('Case R', '2026-09-10'), loai: 'case' }, { ...x('MT cũ', '2026-08-01'), loai: 'kq-pa' }] }, chung: [x('Vi phạm mới', '2026-09-12')] };
+    assert(d.cauBanGiao(emBg, 'reading')?.chu === 'Case R', 'không có MT → Case');
+    assert(d.cauBanGiao({ ...emBg, kyNang: { reading: [...emBg.kyNang.reading, x('MT2 nx', '2026-09-01')] } }, 'reading')?.chu === 'MT2 nx', 'có MT → MT');
+    assert(d.cauBanGiao(emBg, 'chung')?.chu === 'Vi phạm mới' && d.cauBanGiao(emBg, 'listening') === null, 'chung / rỗng');
+    const n = d.nguonChuDaGhi({ ...x('A', '2026-09-14'), luot: 'MT2', diem: '5.5', nguoiId: 9, nguoi: 'Lan' }, 7, '2026-09-14', 'reading');
+    assert(n.dau === 'MT2' && n.phu.includes('R 5.5') && n.phu.some((s: string) => s.includes('Lan')), `nguồn: ${JSON.stringify(n)}`);
+    assert(!d.nguonChuDaGhi({ ...x('A', '2026-09-14'), nguoiId: 7, nguoi: 'Tôi' }, 7, '2026-09-14').phu.some((s: string) => s.includes('Tôi')), 'chính mình ghi → không tên');
+  });
+
   // ---------------------------------------------------------------- (b)
   check('LG-13b · mọi GV có phân công: số PA tới kỳ = việc "Ghi kết quả PA" của chính GV 7 ngày sau có hạn trong cửa sổ; đợt BC PH mở = việc BC PH 7 ngày sau', () => {
     const ids = conn.prepare(`SELECT DISTINCT user_id u FROM teacher_assignments WHERE status = 'active' ORDER BY u`).all().map((r: any) => r.u as number);
