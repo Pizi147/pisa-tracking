@@ -418,7 +418,7 @@
     font-size: 12px; font-weight: 600; white-space: nowrap; }
   .tt-pa::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--cham, var(--text-faint)); }
   .ds-pa { display: grid; gap: 10px; }
-  .the-pa { border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); }
+  .the-pa { border: 1px solid var(--line-strong); border-radius: 10px; background: var(--surface); min-width: 0; }   /* GD-20d: phần tử lưới `.ds-pa` — không giãn theo nội dung (375: lưới 4 chip mức tràn ngang) */
   .the-pa.mo { border-color: var(--o-nhap-vien); box-shadow: var(--bong-noi); }
   .the-pa.moi-doi { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
   .pa-dau { display: grid; grid-template-columns: minmax(0, 1fr) auto 36px; align-items: center; gap: 4px 10px; padding: 8px 8px 8px 14px; }
