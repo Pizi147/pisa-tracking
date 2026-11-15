@@ -186,7 +186,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   dich?: DichCase | null; bao?: BaoThanCase;
   /** Xoá Case xong (vào Thùng rác) — nơi gọi vẽ dải Hoàn tác thay thân Case. */
   onDaXoaCase: (x: { thungRacId: number | null; ten: string; soPa: number }) => void;
-  kyNangTiep?: { ten: string; di: () => void } | null;
+  kyNangTiep?: { ten: string; di: () => void; /** GD-20c: chữ nút gộp riêng ("Lưu · về lưới"), mặc định "Lưu · kỹ năng tiếp ›". */ chu?: string } | null;
 }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const toast = useToast();
@@ -723,7 +723,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   mo: boolean; setMo: (v: boolean) => void; form: FormThe | null; setForm: (f: FormThe | null) => void;
   dich: boolean; vua: VuaDoiPa | null; onHoanTac: () => void; onXongForm: (x?: DaLuuPanel) => void;
   onDoi: (d: CaseDetail) => void; lamMoi: () => void; onDaXoa: (x: { ten: string; thungRacId: number | null }) => void;
-  kyNangTiep: { ten: string; di: () => void } | null;
+  kyNangTiep: { ten: string; di: () => void; chu?: string } | null;
 }) {
   const toast = useToast();
   const bao = useContext(BaoLuuCase);
@@ -812,7 +812,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         : formHien === 'ghi' ? (
           <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove}
             hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null}
-            tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={t('Lưu · kỹ năng tiếp ›')}
+            tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={kyNangTiep?.chu ?? t('Lưu · kỹ năng tiếp ›')}
             boiCanh={[[t('Kết quả kỳ trước'), fGan ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(fGan.outcome))}</b> · {tuanLich(fGan.observedOn, homNay)}</> : t('chưa có')], [t('Điểm'), ketQuaGanNhat(data)]]}
             pa={{
               id: iv.id, kind: iv.kind, description: iv.description ?? null, performer: iv.performer ?? null, performerUserId: iv.performerUserId ?? null,

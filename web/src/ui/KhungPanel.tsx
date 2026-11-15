@@ -210,7 +210,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   quayLai?: { nhan: string; onClick: () => void; xem?: boolean };
   chan?: {
     /** `null` = không vẽ nút trái (panel tự có nút Đóng ở `chinh`, ví dụ ngăn Tổng kết lộ trình). */
-    huy?: { nhan?: string; onClick: () => void; disabled?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
+    huy?: { nhan?: string; onClick: () => void; disabled?: boolean; /** GD-20c ([XM-8] ⑫): 375 ẩn nút Đóng (✕ / ‹ ở đầu panel) — chân còn hai nút. */ an375?: boolean } | null; xoa?: { onClick: () => void; nhan?: string };
     phu?: ReactNode; chinh?: ReactNode; conThieu?: (string | MucThieu)[];
     /** NEN-PANEL (`.panel-chan .trai`): trạng thái lưu (`TrangThaiLuu` / `ChuLuu`) đầu hàng nút, trước Lưu / Lưu · việc tiếp ›. */
     trai?: ReactNode;
@@ -347,8 +347,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   const huy = !huyGoc ? huyGoc
     : huyGoc.onClick === onDong ? { ...huyGoc, onClick: dong }
     : lui && huyGoc.onClick === lui.onClick ? { ...huyGoc, onClick: veLai } : huyGoc;
-  const nutHuy = (huy: { nhan?: string; onClick: () => void; disabled?: boolean }, chan: { daSua?: boolean }) =>
-    <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>;
+  const nutHuy = (huy: { nhan?: string; onClick: () => void; disabled?: boolean; an375?: boolean }, chan: { daSua?: boolean }) =>
+    <button type="button" className={`btn min-h-[44px] sm:min-h-0 ${huy.an375 ? 'max-sm:!hidden' : ''}`} onClick={huy.onClick} disabled={huy.disabled}>{huy.nhan ?? (chan.daSua ? t('Huỷ thay đổi') : t('Đóng'))}</button>;
   useGiuFocus(khung, !taiCho);
   /* `!mt-0`: panel đứng trong trang có `space-y-*` thì bị cộng margin-top 12–16 px → lệch xuống, lộ dải demo bar/đầu trang (PR-DH, DH-13).
      Vẽ qua portal ra <body>: panel mở từ ô bảng (GV chấm ở tiêu đề cột dính, hộp bốn tiêu chí trong ô điểm) không bị kẹt dưới
@@ -507,10 +507,10 @@ export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string
   return (
     <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
-      {/* NT-SUA (nghiệm thu 375): ở 375 một dòng, cắt "…" — câu dài hơn 40 ký tự có ⓘ đọc đủ (chân không nở thành 3 dòng). 1440 giữ như mockup ⑤. */}
-      <span className="min-w-0 flex-1 truncate" title={qc.chu}>{qc.chu}</span>
-      {qc.chiTiet ? <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>
-        : qc.chu.length > 40 && <span className="sm:hidden"><NutLuat phai label={t('Chi tiết quy chế')}>{qc.chu}</NutLuat></span>}
+      {/* GD-20c (PTA rà #1738, thay NT-SUA "375 một dòng …"): 375 câu xuống dòng đủ chữ (câu quy chế ≤ 90 ký tự → tối đa 2 dòng), không "…";
+          ≥ 640 một dòng như mockup ⑤. ⓘ chỉ khi có chi tiết. */}
+      <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
+      {qc.chiTiet && <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>}
     </div>
   );
 }

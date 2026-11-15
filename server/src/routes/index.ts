@@ -29,6 +29,7 @@ import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
+import * as luoiKetQuaSvc from '../cases/luoiKetQua.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -2519,6 +2520,12 @@ api.post('/yeu-cau/:id/rut', requireAuth, wrap((req) => {
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-CT2: Người dạy tuần này không bắt buộc; dịch vụ chỉ kiểm định dạng khi có
+}));
+
+/** GD-20c: lưới Ghi kết quả PA của một dòng gộp Công việc (cùng lớp + cùng kỳ) — MỘT câu đọc các PA của dòng; lưu từng dòng qua `/interventions/:id/result`. */
+api.get('/interventions/luoi-ket-qua', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return luoiKetQuaSvc.luoiKetQua(principalOf(req), luoiKetQuaSvc.docIdLuoi(req.query.ids));
 }));
 
 /** NHAP-KQ-PA (chủ SP 13/11): lưu nháp kết quả PA của kỳ đang chạy — không chốt; cùng quyền Ghi kết quả. */
