@@ -47,7 +47,7 @@ B2 (dải sau "Chèn cho n em" ở bảng GVBM): seed chỉ có một ô GVBM kh
 ## Sửa sau rà PTA (#1745)
 - [XM-c] PTA đồng ý.
 - Chân bảng GVBM: mở từ Công việc (có việc kế) → "Việc tiếp ›" luôn là nút chính bên phải (trước: nút thường khi còn em thiếu); mở từ hồ sơ lớp → chỉ "Đóng". Chụp lại b1 + e2 từ Công việc.
-- Ghi nhận (ngoài PR): tiêu đề panel 375 "Bàn giao môn R · G+V · MB F…" bị cắt — tiêu đề `KhungPanel` có sẵn, chưa đổi ở PR này.
+- Tiêu đề panel 375 bị cắt "… MB F…" (PTA: sửa luôn): `KhungPanel` đầu panel dạng thường — < 640 px tiêu đề xuống dòng, không "…", ✕ cùng hàng góc phải trên; ≥ 640 một dòng như cũ. Soi 3 panel 375: Bàn giao môn R · G+V · MB FOU 22 (2 dòng) · Bàn giao MB FT 101 · R cho Phạm Thu Trang (2 dòng) · Báo cáo PH · MB FT 101 · Nhận xét chung (1 dòng, ✕ ở hàng "‹ Quay lại") — không panel nào còn cắt. Chụp lại e2.
 
 ## Máy chủ
 - `POST /lenh-chuyen/:id/ban-giao-mon/go-chen` · `POST /ban-giao-gv/:id/gop-y/go-chen`: Hoàn tác "Chèn cho n em" — máy chủ không nhận câu rỗng nên cần đường gỡ. Cùng quyền ghi; chỉ xoá khi câu đang lưu ĐÚNG bằng câu vừa chèn (đã sửa → giữ, `ok: false`); có nhật ký (`ban_giao.go_chen`, `ban_giao_gv.go_chen`). Nhận xét chung GVCN: dùng đường nháp sẵn có (nhận rỗng).
