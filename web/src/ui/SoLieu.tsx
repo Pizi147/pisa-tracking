@@ -59,6 +59,8 @@ export type DongSoLieu = {
   nhom?: NhomCaseChuaChot | null;
   /** GD-21 (LG-13): bước của Case — dải bước của panel Case. */
   buoc?: BuocCase | null;
+  /** GD-21: kỹ năng của Case (cột Case chỉ ghi kỹ năng). */
+  kyNang?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — mốc so, kết luận (tab Chưa đạt · Đạt · Vượt). Điểm từng kỹ năng nay ở `diemHv` (PANEL-MC). */
@@ -414,7 +416,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
       <span className="flex min-w-0 flex-col gap-0.5">
         <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
           {r.diemCase?.luot && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase.luot}</span>}
-          <span className="min-w-0">{r.title}</span>
+          <span className="min-w-0">{r.kyNang ?? r.title}</span>
           {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
           {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ QL duyệt')}>{t('chờ QL')}</span>}
         </span>
@@ -422,7 +424,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
       </span>
     );
     if (k === 'gv') return <span className="text-[13px]">{r.nguoiId != null && r.nguoiId === toi ? <b className="font-semibold">{t('Bạn')}</b> : r.nguoi ?? t('Chưa có người phụ trách')}</span>;
-    return !r.xong && v?.loaiHan && v.han ? <ChipHan loai={v.loaiHan} han={v.han} /> : null;
+    return !r.xong && v?.loaiHan && v.han ? <ChipHan vien loai={v.loaiHan} han={v.han} /> : null;
   };
 
   /* Khối làm tại chỗ của dòng đang mở (Xác nhận PA bấm thẳng · việc khác mở panel làm việc) — dùng chung cho dòng HV và dòng cũ. */

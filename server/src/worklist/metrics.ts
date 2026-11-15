@@ -140,6 +140,8 @@ export type MetricRow = {
   nhom?: NhomCaseChuaChot | null;
   /** LG-13 (H8): dòng Case — bước Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối (`buocCase`, từ dữ liệu đã đọc). null = Case xong / không còn bước. */
   buoc?: BuocCase | null;
+  /** GD-21: kỹ năng của Case (cột Case của panel theo bước chỉ ghi kỹ năng, không ghi cả tên Case). */
+  kyNang?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở mốc mở / lặp Case gần nhất (band, kỳ vọng lượt đó, "MT2" / "Progress Test"). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
@@ -277,7 +279,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
           viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null, buoc: v?.buoc ?? null,
-          sos: r.sos_level > 0 ? { muc: r.sos_level, tam: false } : null,
+          sos: r.sos_level > 0 ? { muc: r.sos_level, tam: false } : null, kyNang: r.mon ? tenMon(r.ct ?? null, r.mon) : null,
         });
       }
     } else if (unit === 'phuong-an') {
