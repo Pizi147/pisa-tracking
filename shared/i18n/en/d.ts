@@ -376,6 +376,8 @@ const EN_D_WEB = {
   'Đã lưu vi phạm': 'Incident saved',
   'Sửa vi phạm': 'Edit incident',
   'Ghi vi phạm': 'Log incident',
+  'Không xử lý vi phạm': 'Incident not handled',
+  'Hoàn tác Không xử lý': 'Undo not handled',
   'Đã ghi': 'Logged',
   'Đang lưu {x}/{x2}…': 'Saving {x}/{x2}…',
   'Đã lưu {length} học viên · {length2} học viên chưa lưu': 'Saved {length} · {length2} not saved',

@@ -1335,6 +1335,10 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** LG-12: POST /violations/:id/khong-xu-ly — đọc vi phạm + trạng thái Ý thức em (trước + sau, trong giao dịch) + ghi cột, phản hồi, hạn, lịch sử, nhật ký, tin; đo trong prYt4 LG-12 (3). */
+  khongXuLy: 37,   // đo 15/11 (seed, ngoài request — không bộ nhớ request): 27 câu → max(27 + 10, ⌈27 × 1,3⌉)
+  /** LG-12: POST /violations/:id/khong-xu-ly/hoan-tac — như trên, gỡ tin chưa đọc; đo trong prYt4 LG-12 (5). */
+  hoanTacKhongXuLy: 36,   // đo 15/11: 26 câu → max(26 + 10, ⌈26 × 1,3⌉)
   /** BAO-PH-DAT-NHANH: POST /classes/:id/bao-cao-ph/dat-nhanh — một phần × cả lớp một lần (MB FT 101): lớp, đợt, em, MỘT câu bản ghi, MỘT câu ghi nhiều dòng, MỘT câu nhật ký; đo trong prBaoCaoPh BC-23. */
   datNhanhBaoCaoPh: 24,   // đo 15/11: 14 câu, 50 dòng (33 em, gồm 2 câu báo Admin khi có em vừa đủ) → max(14 + 10, ⌈14 × 1,3⌉)
   /** NHAP-DIEM-a/b: POST /attempts/:id/skills/:skill/huy-diem { huy } (Huỷ điểm / Khôi phục một kỹ năng — Mock / MT0 / lớp thường). Trần = trần Huỷ môn cũ (LG-9: đo 46 câu → 60). */

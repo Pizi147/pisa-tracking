@@ -1580,8 +1580,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
     for (const r of uv) {
       const em = trang.get(r.id);
-      if (!em || em.tamDung || !em.gvcnId) continue;
-      const mine = em.gvcnId === p.userId;
+      if (!em || em.tamDung) continue;
+      /* LG-12 (rà #1735 P1): lớp KHÔNG có GVCN mà em có vi phạm được yêu cầu → việc `yt_xu_ly` của Quản lý chi nhánh (chưa ai giữ, QL làm được). Ngoài ra như cũ: không GVCN thì không việc. */
+      const choQl = !em.gvcnId && em.soYeuCau > 0 && can(p, PERMISSIONS.CASE_APPROVE, { classId: em.lopId, studentId: r.id });
+      if (!em.gvcnId && !choQl) continue;
+      const mine = choQl || em.gvcnId === p.userId;
       if (!mine && !(tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: em.lopId, studentId: r.id }))) continue;
       const chung = {
         studentId: r.id, studentName: r.ten, classId: em.lopId, classCode: r.lop,
@@ -1592,7 +1595,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       if (em.soBatBuoc > 0 && !em.coChoDuyet) {
         const ke = nhanLoaiXuLy(em.keTiep.kind);
         items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
-          reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
+          /* LG-12: bắt buộc chỉ vì được yêu cầu → nói rõ "được yêu cầu" (luật 3 thì giữ chữ cũ). */
+          reason: em.theoLuat ? `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý` : `${em.soBatBuoc} vi phạm được yêu cầu xử lý`,   // một số với tiêu đề (rà #1735 P2)
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });

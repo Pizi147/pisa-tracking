@@ -207,6 +207,8 @@ export const TRANG_THAI_VP_LABEL: Record<TrangThaiVp, string> = {
 
 export type ViPhamVao = {
   id: number; occurredOn: string; reportedOn: string; ghiNhanLuc: string | null;
+  /** LG-12: người ghi yêu cầu GVCN xử lý (`yeu_cau_xu_ly`) · ngày GVCN "Không xử lý" (null = chưa / đã Hoàn tác). */
+  yeuCau?: boolean; khongXuLy?: string | null;
   xuLy: { id: number; kind: string; status: MeasureStatus; performedOn: string | null; quyetLuc: string | null }[];
 };
 /** `mocLop` = max(ngày vào lớp đang học, ngày Quay lại học) — hạn đặt lại từ đây (M-08). `tamDung`: em đang Tạm dừng (T65). */
@@ -225,6 +227,7 @@ const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den.slic
  *   · Xét từng v theo `reportedOn` tăng dần: đếm vi phạm chưa xử lý có `occurredOn ∈ [Thứ Hai tuần của v.reportedOn − 7, v.reportedOn]`
  *     và `reportedOn ≤ v.reportedOn`. Đủ ≥ 3 thì mọi vi phạm đó nhận `min(hiện có, v.reportedOn)` — hạn tính từ NGÀY GHI (Q4).
  *   · Vi phạm nằm trong lần xử lý bị QL từ chối → `min(…, quyetLuc)` (V4-10: từ chối → về Cần xử lý).
+ *   · LG-12: vi phạm được YÊU CẦU xử lý, GVCN chưa "Không xử lý" → bắt buộc từ `reportedOn` (hạn như luật 3). Đã "Không xử lý" thì chỉ còn đếm luật 3.
  *   · Tính từ `reportedOn`, không đọc hôm nay, nên "dính" tự nhiên: tuần sau vẫn bắt buộc. Sửa/xoá vi phạm thì tự tính lại (Q1).
  */
 export function batBuocTu(ds: readonly ViPhamVao[]): Map<number, string> {
@@ -238,6 +241,7 @@ export function batBuocTu(ds: readonly ViPhamVao[]): Map<number, string> {
   }
   for (const v of chua) {
     for (const x of v.xuLy) if (x.status === 'tu_choi' && x.quyetLuc) dat(v.id, x.quyetLuc.slice(0, 10));
+    if (v.yeuCau && !v.khongXuLy) dat(v.id, v.reportedOn);
   }
   return out;
 }
@@ -278,6 +282,8 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
     }
     return { t: k, nhan: TRANG_THAI_VP_LABEL[k], han, quaHanNgay: null, lyDoQuaHan: null };
   }
+  /* LG-12: "Không xử lý" = việc xong (không hạn, không nhóm chờ); trạng thái trung tính như Đã xem, nhãn riêng. */
+  if (v.khongXuLy) return { t: 'da_ghi_nhan', nhan: t('Không xử lý'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   if (!v.ghiNhanLuc) return { t: 'moi', nhan: TRANG_THAI_VP_LABEL.moi, han: null, quaHanNgay: null, lyDoQuaHan: null };
   return { t: 'da_ghi_nhan', nhan: t('Đã xem'), han: null, quaHanNgay: null, lyDoQuaHan: null };
 }
