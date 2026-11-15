@@ -326,7 +326,7 @@ export const HD_QL: HuongDan = {
       dangO: { cau: 'Số của chi nhánh, GV chấm quá hạn và việc chờ bạn duyệt.', sau: { chu: 'Công việc', duong: CV } },
       khongLam: [DEN_KH, { ten: 'Xem thống kê theo kỳ', den: { chu: 'Phân tích', duong: '/phan-tich' } }],
       muc: [
-        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Chờ duyệt ›</b> · <b>Đạt MT</b> · <b>Case chưa có PA</b> · <b>Thi tháng này</b>; số 0 không bấm.', 'Bấm số mở danh sách ngay tại trang; ô <b>Case chưa có PA</b>: số nhỏ "trong n Case đang mở" mở danh sách Case đang mở.'],
+        { id: 'ql-tq-cho-duyet', ten: 'Chỉ số', buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Chờ duyệt ›</b> · <b>Đạt MT</b> · <b>Case chưa có PA</b> · <b>Thi tháng này</b>; số 0 không bấm.', 'Bấm số mở danh sách ngay tại trang; ô <b>Case chưa có PA</b>: số nhỏ "trong n Case đang mở" mở danh sách Case đang mở.', 'Panel Case có dải bốn bước (Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối): bấm bước để lọc, <b>Bỏ lọc bước</b> về bộ lọc ban đầu. Panel <b>Bài quá hạn</b> theo GV có biểu tượng hai tờ giấy: chép chữ nhắc GV để dán Zalo (không có tên học viên).'],
           chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Bấm một số để mở đúng danh sách.' } },
         { id: 'tq-duyet', viec: 'duyet', ten: 'Chờ duyệt', buoc: ['<b>Chờ duyệt</b> (cột phải): bấm dòng mở panel <b>Duyệt / Từ chối</b>.', '<b>+ n yêu cầu</b> mở thêm ngay tại chỗ; ô <b>Chờ duyệt ›</b> mở Công việc.'],
           chi: { hd: 'tq-can-xu-ly', duong: '/', chu: 'Chờ bạn duyệt — bấm dòng để duyệt.' } },
