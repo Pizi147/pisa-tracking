@@ -18,6 +18,12 @@ export const quyCheKetQuaPa = (han: string | null): QuyChe => ({
   chiTiet: t('Lưu nháp không chốt, việc và hạn không đổi. Đã lưu thì sửa ở thẻ PA › Sửa kết quả.'),
 });
 
+/** GD-20c (mockup ⑫ C2): lưới Ghi kết quả PA — mọi dòng lưu với Giữ nguyên; đổi quyết định ở panel đầy đủ. */
+export const quyCheLuoiKetQua = (hanKe: string | null): QuyChe => ({
+  chu: hanKe ? t('Lưu = Giữ nguyên PA, kỳ sau hạn {han} · đổi quyết định: Mở đầy đủ', { han: hanKe }) : t('Lưu = Giữ nguyên PA · đổi quyết định: Mở đầy đủ'),
+  chiTiet: t('Lưu nháp không chốt, việc và hạn không đổi. Đã lưu thì sửa ở thẻ PA › Sửa kết quả.'),
+});
+
 /** Ý thức D1–D2: vi phạm sinh việc xem cho GVCN, 3 vi phạm / 2 tuần phải xử lý; nhắc nhở không tính. */
 export const quyCheViPham = (chiNhac: boolean): QuyChe => chiNhac
   ? { chu: t('Không tính vào bậc, không sinh việc'), chiTiet: t('Không tính 3 vi phạm / 2 tuần · không lên bậc · không tạo việc') }
