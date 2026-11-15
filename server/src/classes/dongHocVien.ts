@@ -125,7 +125,7 @@ export function viecHocVienTheoLop(p: Principal, o: {
     const bac = bacHoacNgoaiThang(em.bac, em.xuLy);
     if (bac) {
       bacYThuc.set(id, bac);
-      yThucHop.set(id, { canLam: n, viPhamCho: em.soMoi + em.soBatBuoc, lanNay: nhanLoaiXuLy(em.keTiep.kind) });
+      yThucHop.set(id, { canLam: n, viPhamCho: em.soBatBuoc, lanNay: nhanLoaiXuLy(em.keTiep.kind) });
     }
   }
   /* PR-S4F #5: quét trước khi đếm, như mọi đường đọc hộp (K5-17) — không thì badge đếm thiếu thẻ Báo QL mà hộp (quét rồi) có. */

@@ -53,16 +53,20 @@ export type ViolationView = {
   createdAt: string; updatedAt: string | null;
   /** TINH-HINH: "Chỉ nhắc nhở" — ngoài luật 3 vi phạm / 2 tuần, bậc, việc; nhãn "Nhắc nhở", trạng thái trung tính `da_ghi_nhan` (không hạn). */
   chiNhac: boolean;
+  /** LG-12: người ghi yêu cầu GVCN xử lý · GVCN "Không xử lý" (null = chưa / đã Hoàn tác). */
+  yeuCauXuLy: boolean;
+  khongXuLy: { luc: string; lyDo: string; boiName: string | null } | null;
 };
 
 const SELECT = `
   SELECT v.*, s.full_name AS student_name, s.student_code, c.code AS class_code, c.programme_code AS class_ct,
-         ru.full_name AS reported_by_name, gu.full_name AS ghi_nhan_boi_name
+         ru.full_name AS reported_by_name, gu.full_name AS ghi_nhan_boi_name, ku.full_name AS khong_xu_ly_boi_name
     FROM violations v
     JOIN students s ON s.id = v.student_id
     LEFT JOIN classes c ON c.id = v.class_id
     LEFT JOIN users ru ON ru.id = v.reported_by
-    LEFT JOIN users gu ON gu.id = v.ghi_nhan_boi`;
+    LEFT JOIN users gu ON gu.id = v.ghi_nhan_boi
+    LEFT JOIN users ku ON ku.id = v.khong_xu_ly_boi`;
 
 /** `em`: trạng thái Ý thức của học viên đó (nơi gọi theo lô truyền vào); thiếu thì tự hỏi cửa trạng thái cho riêng em. */
 
@@ -97,6 +101,8 @@ export function shapeViolation(r: any, em?: EmYThuc): ViolationView {
     ghiNhanLuc: r.ghi_nhan_luc ?? null, ghiNhanBoiName: r.ghi_nhan_boi_name ?? null,
     createdAt: r.created_at, updatedAt: r.updated_at ?? null,
     chiNhac,
+    yeuCauXuLy: !!r.yeu_cau_xu_ly,
+    khongXuLy: r.khong_xu_ly_luc ? { luc: r.khong_xu_ly_luc, lyDo: r.khong_xu_ly_ly_do ?? '', boiName: r.khong_xu_ly_boi_name ?? null } : null,
   };
 }
 
@@ -207,6 +213,7 @@ export function batBuocChonMon(p: Principal, classId: number | null, today: stri
   return n >= 2 || (n === 0 && !p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
 }
 const THIEU_MON = 'Chọn môn của vi phạm.';
+const YC_NHAC = '"Chỉ nhắc nhở" không yêu cầu GVCN xử lý — bỏ một trong hai.';
 
 // ---------------------------------------------------------------- ghi (V01–V08)
 
@@ -224,7 +231,7 @@ export function similarViolations(
 }
 
 /** Một dòng vi phạm đã kiểm (dùng cho cả ghi một em và ghi nhiều em). */
-type DongDaKiem = { category: ViolationCategory; skill: string | null; occurredOn: string; ten: string; moTa: string; chiNhac?: boolean };
+type DongDaKiem = { category: ViolationCategory; skill: string | null; occurredOn: string; ten: string; moTa: string; chiNhac?: boolean; /** LG-12 */ yeuCau?: boolean };
 
 /**
  * Phần ghi của MỘT vi phạm — gọi TRONG `tx` của nơi gọi. KHÔNG báo GVCN / chốt hạn: nơi gọi làm MỘT lần cho cả em (sau mọi dòng) vì hai việc đó
@@ -234,10 +241,11 @@ function ghiMotViPham(p: Principal, student: any, classId: number, cycleId: numb
   const info = db()
     .prepare(
       `INSERT INTO violations (student_id, cycle_id, class_id, category, skill, occurred_on, reported_on, reported_by,
-                               ten, description, idempotency_key, created_at, chi_nhac)
-       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+                               ten, description, idempotency_key, created_at, chi_nhac, yeu_cau_xu_ly)
+       VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
     )
-    .run(student.id, cycleId, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso(), dong.chiNhac ? 1 : 0);
+    .run(student.id, cycleId, classId, dong.category, dong.skill, dong.occurredOn, today, p.userId, dong.ten, dong.moTa, key, nowIso(), dong.chiNhac ? 1 : 0,
+      dong.yeuCau && !dong.chiNhac && !laGvcn ? 1 : 0);   // LG-12: GVCN lớp tự ghi thì không có gì để yêu cầu
   const newId = Number(info.lastInsertRowid);
   /*
    * Q5 (Câu 1 = A): GVCN lớp đang học tự ghi → tự "Đã ghi nhận" (vẫn đếm vào luật ≥ 3). PR-S3F #6: LUÔN đặt dấu, kể cả khi chính lần ghi này là
@@ -249,7 +257,8 @@ function ghiMotViPham(p: Principal, student: any, classId: number, cycleId: numb
   writeAudit({
     actorUserId: p.userId, action: 'violation.record', entityType: 'violation', entityId: newId,
     entityLabel: `${student.student_code} · ${VIOLATION_CATEGORY_LABEL[dong.category]}`,
-    after: { category: dong.category, skill: dong.skill, occurredOn: dong.occurredOn, ten: dong.ten, description: dong.moTa, ...(dong.chiNhac ? { chiNhac: true } : {}) },
+    after: { category: dong.category, skill: dong.skill, occurredOn: dong.occurredOn, ten: dong.ten, description: dong.moTa, ...(dong.chiNhac ? { chiNhac: true } : {}),
+      ...(dong.yeuCau && !dong.chiNhac && !laGvcn ? { yeuCauXuLy: true } : {}) },
   });
   return newId;
 }
@@ -273,7 +282,10 @@ export function recordViolation(p: Principal, input: {
   idempotencyKey?: string | null;
   /** TINH-HINH: "Chỉ nhắc nhở". */
   chiNhac?: boolean;
+  /** LG-12: "Yêu cầu GVCN xử lý" — không đi cùng "Chỉ nhắc nhở"; người ghi là GVCN thì bỏ qua. */
+  yeuCauXuLy?: boolean;
 }): { violation: ViolationView; similar: ViolationView[] } {
+  if (input.yeuCauXuLy && input.chiNhac) throw badRequest(YC_NHAC);
   const student = loadStudent(input.studentId);
   requireRecordViolation(p, input.studentId);
   const classId = lopGhiViPham(input.studentId);
@@ -297,8 +309,10 @@ export function recordViolation(p: Principal, input: {
   const laGvcn = laGvcnDangHoc(p, input.studentId);
 
   const id = tx(() => {
-    const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(), { category, skill, occurredOn, ten, moTa, chiNhac: !!input.chiNhac }, key, laGvcn);
-    if (!input.chiNhac) baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc);   // nhắc nhở: không việc, không chuông
+    const newId = ghiMotViPham(p, student, classId, currentCycle(input.studentId)?.id ?? null, demoToday(),
+      { category, skill, occurredOn, ten, moTa, chiNhac: !!input.chiNhac, yeuCau: !!input.yeuCauXuLy }, key, laGvcn);
+    xoaNho();   // LG-12: cờ yêu cầu đổi trạng thái ngay — báo GVCN đọc trạng thái SAU khi ghi
+    baoKhiGhiViPham(p, input.studentId, newId, category, truocBatBuoc, undefined, { chiNhac: !!input.chiNhac, yeuCau: !!input.yeuCauXuLy && !laGvcn });   // LG-11: nhắc nhở cũng là tin
     chotHanXuLy([input.studentId]);
     return newId;
   });
@@ -317,6 +331,8 @@ export function recordViolations(p: Principal, input: {
   studentIds: number[]; lines: DongViPhamVao[]; moTaRieng?: Record<string, string> | null; idempotencyKey: string;
   /** TINH-HINH: "Chỉ nhắc nhở" — một lựa chọn cho cả lần lưu (mọi dòng, mọi em). */
   chiNhac?: boolean;
+  /** LG-12: "Yêu cầu GVCN xử lý" cho cả lần lưu; em mà người ghi là GVCN thì bỏ qua. */
+  yeuCauXuLy?: boolean;
 }): { ok: { studentId: number; ids: number[] }[]; loi: { studentId: number; loi: string; ma: number }[] } {
   const ids = Array.isArray(input.studentIds) ? input.studentIds : [];
   if (!ids.length || ids.length > LO_GHI_VI_PHAM || new Set(ids).size !== ids.length || !ids.every((x) => Number.isInteger(x) && x > 0)) {
@@ -328,6 +344,7 @@ export function recordViolations(p: Principal, input: {
   if (ids.length > 1 && lines.length > 1) throw badRequest('Chọn nhiều học viên thì ghi một vi phạm.');
   const key = String(input.idempotencyKey ?? '').trim();
   if (key.length < 8 || key.length > 80) throw badRequest('Thiếu khoá gửi (idempotencyKey).');
+  if (input.yeuCauXuLy && input.chiNhac) throw badRequest(YC_NHAC);
   const today = demoToday();
   const dong = lines.map((l) => ({
     category: checkCategory(l.category), occurredOn: checkOccurredOn(l.occurredOn, today),
@@ -354,7 +371,7 @@ export function recordViolations(p: Principal, input: {
 
   const ok: { studentId: number; ids: number[] }[] = [];
   const hong: { studentId: number; loi: string; ma: number }[] = [];
-  const viec: { sid: number; lastId: number; category: ViolationCategory; truocBatBuoc: boolean }[] = [];
+  const viec: { sid: number; lastId: number; category: ViolationCategory; truocBatBuoc: boolean; laGvcn: boolean }[] = [];
   for (const sid of ids) {
     try {
       const student = students.get(sid);
@@ -370,11 +387,11 @@ export function recordViolations(p: Principal, input: {
       if (dong.some((dg, i) => cu[i] === null && !monCua(dg)) && batBuocChonMon(p, classId, today)) throw badRequest(THIEU_MON);
       const moi = tx(() => dong.map((dg, i) => cu[i] ?? ghiMotViPham(p, student, classId, cycleId, today, {
         category: dg.category, occurredOn: dg.occurredOn, ten: dg.ten, moTa: moTaRieng.get(sid) ?? dg.moTa,
-        skill: monCua(dg), chiNhac: !!input.chiNhac,
+        skill: monCua(dg), chiNhac: !!input.chiNhac, yeuCau: !!input.yeuCauXuLy,
       }, khoa(sid, i), laGvcn)));
       ok.push({ studentId: sid, ids: moi });
       const dongMoi = cu.map((x, i) => (x === null ? i : -1)).filter((i) => i >= 0);
-      viec.push({ sid, lastId: moi[dongMoi[dongMoi.length - 1]], category: dong[dongMoi[dongMoi.length - 1]].category, truocBatBuoc: dangBatBuoc(sid, emT) });
+      viec.push({ sid, lastId: moi[dongMoi[dongMoi.length - 1]], category: dong[dongMoi[dongMoi.length - 1]].category, truocBatBuoc: dangBatBuoc(sid, emT), laGvcn });
     } catch (e: any) {
       hong.push({ studentId: sid, loi: String(e?.message ?? 'Không lưu được.'), ma: Number(e?.status) || 500 });
     }
@@ -383,7 +400,7 @@ export function recordViolations(p: Principal, input: {
   if (viec.length) {
     xoaNho();
     const sau = trangThaiYThuc(viec.map((v) => v.sid));
-    if (!input.chiNhac) for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid));
+    for (const v of viec) baoKhiGhiViPham(p, v.sid, v.lastId, v.category, v.truocBatBuoc, sau.get(v.sid), { chiNhac: !!input.chiNhac, yeuCau: !!input.yeuCauXuLy && !v.laGvcn });
     chotHanXuLy(viec.map((v) => v.sid), { trang: sau });
   }
   return { ok, loi: hong };
@@ -391,7 +408,7 @@ export function recordViolations(p: Principal, input: {
 
 // ---------------------------------------------------------------- sửa và xoá (V09–V10, V11′–V14′)
 
-function addHistory(violationId: number, field: string, oldValue: string | null, newValue: string | null,
+export function addHistory(violationId: number, field: string, oldValue: string | null, newValue: string | null,
   actor: number | null, reason: string | null = null) {
   db()
     .prepare(

@@ -128,9 +128,9 @@ export async function runYThucTests(t: YThucTestKit) {
   });
 
   /* Chủ SP 06/11: vi phạm chưa xem vẫn Quá hạn (việc Xem đỏ của GVCN) nhưng KHÔNG Báo QL — thẻ seed (nếu có) tự đóng ở lượt quét. */
-  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Quá hạn (lý do "chưa xem"), KHÔNG thẻ Báo QL đang chờ', () => {
+  check('YT4 (11) · DEMO (d) Vũ Hải Đăng: 1 vi phạm cô Trang ghi 04/09, chưa ai xem → Mới (LG-11: không hạn, không Quá hạn), KHÔNG thẻ Báo QL đang chờ', () => {
     const e = em('Vũ Hải Đăng');
-    assert(e.nhom === 'qua_han' && e.vp.length === 1 && e.vp[0].t === 'qua_han' && e.vp[0].lyDo === 'xem' && !e.vp[0].ghiNhan, JSON.stringify(e.vp));
+    assert(e.nhom === 'moi' && e.vp.length === 1 && e.vp[0].t === 'moi' && !e.vp[0].lyDo && !e.vp[0].han && !e.vp[0].ghiNhan, JSON.stringify(e.vp));
     assert(!the('bao_len_y_thuc', 'Vũ Hải Đăng').some((x) => x.trangThai === 'cho'), 'không thẻ Báo QL đang chờ');
   });
 
@@ -233,7 +233,8 @@ export async function runYThucTests(t: YThucTestKit) {
       'valid', 'invalid_reason', 'invalidated_by', 'invalidated_at', 'idempotency_key', 'created_at', 'updated_at',
       /* PR-YT4: Ghi nhận (V4-1) — trạng thái vẫn suy ra, không có cột status */ 'ghi_nhan_luc', 'ghi_nhan_boi',
       /* PR-Pb2-b (Q14): hạn xử lý chốt + ngày phản hồi — hai NGÀY, vẫn không có cột status */ 'han_xu_ly', 'phan_hoi_ngay',
-      /* TINH-HINH (chủ SP 12/11): "Chỉ nhắc nhở" — cờ, không phải trạng thái */ 'chi_nhac'];
+      /* TINH-HINH (chủ SP 12/11): "Chỉ nhắc nhở" — cờ, không phải trạng thái */ 'chi_nhac',
+      /* LG-12: cờ "Yêu cầu GVCN xử lý" + "Không xử lý" (ngày, người, lý do) — vẫn không có cột status */ 'yeu_cau_xu_ly', 'khong_xu_ly_luc', 'khong_xu_ly_boi', 'khong_xu_ly_ly_do'];
     assert(JSON.stringify(cols) === JSON.stringify(want), `Cột violations sai: ${cols.join(', ')}`);
     for (const banned of ['severity', 'status', 'due_date', 'episode_no', 'urgency']) {
       assert(!cols.includes(banned), `violations không được có cột ${banned} (quyết định của đặc tả §4.1, không phải thiếu sót)`);
@@ -443,7 +444,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(vid(record(gvbm, a.id, { idempotencyKey: 'pj-v07-scope' })) === vid(first), 'Người ghi gửi lại đúng khoá cho đúng em vẫn phải nhận lại bản cũ');
   });
 
-  check('PR-J · V08 (PR-YT4) Ghi vi phạm KHÔNG sinh biện pháp, case, tín hiệu, việc — chỉ MỘT thông báo cho GVCN mỗi ngày (V4-5)', () => {
+  check('PR-J · V08 (PR-YT4) Ghi vi phạm KHÔNG sinh biện pháp, case, tín hiệu, việc — LG-11: MỘT tin Cập nhật cho GVCN mỗi vi phạm', () => {
     const st = makeStudent('V08');
     const count = () => ['discipline_measures', 'measure_violations', 'sos_cases', 'case_signals', 'tasks', 'case_interventions']
       .map((tb) => `${tb}=${one(`SELECT COUNT(*) n FROM ${tb}`)}`).join(' ');
@@ -451,7 +452,7 @@ export async function runYThucTests(t: YThucTestKit) {
     record(gvbm, st.id, { occurredOn: addDays(TODAY, -8), description: 'Vi phạm cũ hơn năm ngày, vẫn không sinh gì' });
     record(gvbm, st.id, { category: 'attendance', description: 'Nghỉ không phép ba buổi liên tiếp' });
     assert(count() === before, `Ghi vi phạm đã sinh dữ liệu ở nơi khác:\n  trước: ${before}\n  sau:   ${count()}`);
-    assert(one(`SELECT COUNT(*) n FROM notifications WHERE dedup_key LIKE ?`, `yt-%:${st.id}:%`) === 1, 'Một thông báo "Vi phạm mới" cho GVCN, không đôi');
+    assert(one(`SELECT COUNT(*) n FROM notifications WHERE kind = 'discipline_de_biet' AND entity_id = ? AND dedup_key LIKE 'yt-moi:%'`, st.id) === 2, 'Mỗi vi phạm một tin "Vi phạm mới" cho GVCN');
   });
 
   console.log('\nPR-J · 4. Sửa vi phạm (V09–V10) — phần xoá (V11′–V14′) do PR-T thay, xem sosV3.tests.ts');
