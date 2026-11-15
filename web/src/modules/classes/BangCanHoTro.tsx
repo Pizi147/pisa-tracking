@@ -90,7 +90,7 @@ export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }
           title={c.tieuDe} onClick={() => onMo()}><TenCase c={{ title: c.tieuDe, tenSos: c.tenSos }} /></button>
         {!c.tenSos && c.sosLevel ? <ChipSos muc={c.sosLevel} tinh /> : null}
         {/* PTA 08/11: mức "Gấp" hiện ngay trên dòng; mức khác chỉ trong ⓘ của PA. */}
-        {gap && <span title={t('Mức: {m}', { m: dich(c.moTu) })} className="inline-flex min-h-5 max-w-full items-center rounded border px-1.5 py-px text-left text-xs font-bold leading-tight bg-late-bg text-late border-late-line">⚠ {dich(c.moTu) || t('Gấp')}</span>}
+        {gap && <span title={t('Mức: {m}', { m: dich(c.moTu) })} className="inline-flex h-5 shrink-0 items-center rounded border px-1.5 text-xs font-bold bg-late-bg text-late border-late-line">⚠ {dich(c.moTu) || t('Gấp')}</span>}
         {c.banGiaoTu && <span className="text-xs text-faint" title={t('Case bàn giao')}>{t('từ {lop}', { lop: c.banGiaoTu })}</span>}{lap}
       </span>
       {c.nguyenNhan && <span className="truncate text-xs font-medium text-faint">{dich(c.nguyenNhan)}</span>}

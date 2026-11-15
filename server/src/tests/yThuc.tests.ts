@@ -692,6 +692,14 @@ export async function runYThucTests(t: YThucTestKit) {
   const statCp = await call(P.cpManager, 'GET', `/metrics/vi-pham-tong?branchId=${mbId}`);
   const statGvbm = await call(gvbm, 'GET', '/metrics/vi-pham-tong?rows=1');
   const statMb = await call(P.mbManager, 'GET', `/metrics/vi-pham-tong?rows=1&branchId=${mbId}`);
+  /* MA-QL-VIEC: QL làm thay GVCN, cách khác Nâng 1 bậc → áp thẳng một bước (không thẻ Chờ duyệt). */
+  const hs6 = makeStudent('HTTP QL ap');
+  const hv6 = violations(hs6.id, 2);
+  const qlHv = await call(P.mbManager, 'GET', `/students/${hs6.id}/y-thuc`);
+  const gvcnHv = await call(gvcn, 'GET', `/students/${hs6.id}/y-thuc`);
+  const qlNhap = await call(P.mbManager, 'POST', `/students/${hs6.id}/y-thuc/de-xuat`, { kind: 'meeting_cx', violationIds: hv6, note: 'QL áp Meeting CX ngay, không qua thẻ duyệt' });
+  const qlLink = await call(P.mbManager, 'POST', '/attachments/link', { ownerType: 'discipline_measure', ownerId: qlNhap.json?.id, url: 'https://example.com/meeting', displayName: 'Biên bản' });
+  const qlGui = await call(P.mbManager, 'POST', `/y-thuc/xu-ly/${qlNhap.json?.id}/gui`);
   server.close();
 
   console.log('\nPR-J · 11. Gọi thẳng đường HTTP — máy chủ từ chối, không chỉ ẩn nút');
@@ -715,6 +723,16 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(wl3XuLy.status === 200 && wl3XuLy.json?.kind === 'report_7' && wl3XuLy.json?.status === 'done', `Sau WL 2 một bước: ${wl3XuLy.status} ${JSON.stringify(wl3XuLy.json)}`);
     assert(wl3Nhap.status === 200 && wl3GuiKhongTep.status === 400 && /đính kèm tệp hoặc liên kết/.test(wl3GuiKhongTep.json?.error ?? ''), `Gửi không tệp: ${wl3GuiKhongTep.status} ${wl3GuiKhongTep.json?.error}`);
     assert(wl3Link.status === 200 && wl3Gui.status === 200 && wl3Gui.json?.status === 'cho_duyet', `Có liên kết thì gửi được: ${wl3Gui.status} ${wl3Gui.json?.error}`);
+  });
+
+  check('MA-QL-VIEC · QL gửi cách khác Nâng 1 bậc → áp thẳng: da_duyet, không thẻ Chờ duyệt, có việc Báo PH, nhật ký "QL áp"; GVCN vẫn qua QL (qlApThang false)', () => {
+    assert(qlHv.json?.qlApThang === true && gvcnHv.json?.qlApThang === false, `qlApThang QL / GVCN: ${qlHv.json?.qlApThang} / ${gvcnHv.json?.qlApThang}`);
+    assert(qlNhap.status === 200 && qlLink.status === 200 && qlGui.status === 200 && qlGui.json?.status === 'da_duyet', `QL gửi: ${qlGui.status} ${JSON.stringify(qlGui.json)}`);
+    const id = qlNhap.json?.id;
+    assert(one("SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ?", id) === 0, 'QL áp thẳng không tạo thẻ Chờ duyệt');
+    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'discipline.apply' AND entity_id = ? AND entity_label LIKE '%QL áp%'", id) === 1, 'Nhật ký "QL áp"');
+    assert(one('SELECT COUNT(*) n FROM viec_bao_ph WHERE measure_id = ?', id) === 1, 'Áp thẳng sinh việc Báo PH như khi QL duyệt');
+    assert(wl3Gui.json?.status === 'cho_duyet', 'GVCN vẫn gửi QL duyệt');
   });
 
   check('PR-J · J8 Đường HTTP ghi vi phạm: gửi lại cùng khoá không tạo dòng thứ hai (V07); người ngoài lớp 403; đồng nghiệp sửa vi phạm của người khác 403; cảnh báo trùng trả bản đang có', () => {

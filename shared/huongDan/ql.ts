@@ -189,7 +189,7 @@ export const HD_QL: HuongDan = {
       id: 'xu-ly-vi-pham', ten: 'Xử lý vi phạm (làm thay GVCN)', nhom: 'hv', tab: 'y-thuc',
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Xử lý vi phạm', duong: CV },
       loiTat: ['ho-so-lop', 'p-xu-ly'], tatThem: ['⋯ dòng em › Xác nhận xử lý'], cung: 'mở cùng panel xử lý.',
-      buoc: ['Mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, dòng <b>Xử lý vi phạm</b>: cùng panel của GVCN.', 'Nâng 1 bậc: <b>Xác nhận xử lý</b>; cách khác: <b>Gửi Quản lý duyệt</b> rồi tự duyệt ở Chờ bạn duyệt.', 'Có yêu cầu mà không cần xử lý: <b>Không xử lý</b>, ghi <b>Lý do</b>, <b>Lưu không xử lý</b>.'],
+      buoc: ['Mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, dòng <b>Xử lý vi phạm</b>: cùng panel của GVCN.', 'Nâng 1 bậc: <b>Xác nhận xử lý</b>; cách khác (bạn là QL): <b>Lưu xử lý</b>, chốt ngay, không qua Chờ bạn duyệt.', 'Có yêu cầu mà không cần xử lý: <b>Không xử lý</b>, ghi <b>Lý do</b>, <b>Lưu không xử lý</b>.'],
       tuKhac: ['xử lý', 'bậc', 'wl', 'warning letter', 'report'],
     },
     {
@@ -234,7 +234,6 @@ export const HD_QL: HuongDan = {
       tuKhac: ['xét lại', 'final', 'mini test', 'học lại', 'review path'],
     },
     {
-      /* HD3-4 [XM]: dòng Kỳ vọng máy chủ để mine = false, không người giữ → nằm ở "Của GV"; "?" hiện dải "Chưa có người giữ. Bạn làm được." */
       id: 'ky-vong', ten: 'Chốt Kết quả đầu ra (lên FT)', nhom: 'hv', tab: 'van-hanh', viecWeb: ['ky_vong_dau_ra'],
       tep: ['web/src/modules/classes/BangKqdrLopFt.tsx', 'web/src/modules/classes/CuoiKhoaLop.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Kỳ vọng', duong: CV },
@@ -255,10 +254,10 @@ export const HD_QL: HuongDan = {
       tuKhac: ['ngày thi', 'tháng thi', 'chốt ngày', 'exam date'],
     },
     {
-      id: 'bao-ph', ten: 'Báo PH vi phạm (làm thay TVV)', nhom: 'hv', tab: 'van-hanh',
-      loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Báo PH', duong: CV },
+      id: 'bao-ph', ten: 'Báo PH vi phạm (làm thay TVV)', nhom: 'hv', tab: 'y-thuc',
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Báo PH', duong: CV },
       loiTat: ['p-bao-ph'], cung: 'mở cùng panel.',
-      buoc: ['Em chưa có TVV thì bạn giữ việc; chọn <b>Của GV</b> để thấy cả việc của TVV: mở <b>Công việc</b>, tab <b>Việc quản lý</b>, mục Báo PH.', 'Panel <b>Báo PH</b>: ghi <b>Kết quả</b>, <b>Nội dung</b> (báo PH gì, PH nói gì), <b>Lưu</b>; chưa liên hệ được: chọn <b>Chưa liên hệ được</b>, việc vẫn mở.', 'Không cần báo: <b>Bỏ việc…</b> chọn lý do; <b>Khôi phục</b> được.'],
+      buoc: ['Em chưa có TVV thì bạn giữ việc; chọn <b>Của GV</b> để thấy cả việc của TVV: mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, mục Báo PH.', 'Panel <b>Báo PH</b>: ghi <b>Kết quả</b>, <b>Nội dung</b> (báo PH gì, PH nói gì), <b>Lưu</b>; chưa liên hệ được: chọn <b>Chưa liên hệ được</b>, việc vẫn mở.', 'Không cần báo: <b>Bỏ việc…</b> chọn lý do; <b>Khôi phục</b> được.'],
       tuKhac: ['báo ph', 'gọi phụ huynh', 'phụ huynh', 'parent call'],
     },
     {
@@ -313,12 +312,11 @@ export const HD_QL: HuongDan = {
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell', 'vi phạm mới'],
     },
     {
-      /* HD3-4 [XM]: dòng Phân công máy chủ để mine = false, không người giữ → nằm ở "Của GV"; "?" hiện dải "Chưa có người giữ. Bạn làm được." */
       id: 'phan-cong', ten: 'Phân công người phụ trách Case', nhom: 'case', tab: 'case-hoc-thuat', viecWeb: ['no_owner'],
       tep: ['web/src/modules/congViec/PanelViec.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Case học thuật › Phân công', duong: CV },
       khiCo: 'Case mở mà lớp chưa có GV môn đó hoặc GVCN, hoặc Case còn trống người phụ trách.',
-      buoc: ['Tab <b>Case học thuật</b>, chọn <b>Tất cả</b> hoặc <b>Của GV</b>: dòng Phân công.', 'Bấm <b>Phân công</b> (lớp thiếu GV) hoặc <b>Chọn người phụ trách</b>.', 'Chọn GV ở <b>Chọn giáo viên</b>: lưu ngay.'],
+      buoc: ['Tab <b>Case học thuật</b>, mục Phân công (ở <b>Của tôi</b>, chuông).', 'Bấm <b>Phân công</b> (lớp thiếu GV) hoặc <b>Chọn người phụ trách</b>.', 'Chọn GV ở <b>Chọn giáo viên</b>: lưu ngay.'],
       xong: 'Case về người được chọn; dòng rời.',
       sai: 'Chọn nhầm: đổi ở ô người phụ trách trong Case.',
       khongDuoc: ['Em không có lớp: bấm <b>Hồ sơ em ›</b>, chọn ở đó.'],
@@ -395,15 +393,15 @@ export const HD_QL: HuongDan = {
     },
     {
       id: 'case-chua-nguoi', ten: 'Case chưa có người phụ trách', the: 'phan-cong',
-      may: ['Lớp thiếu GV môn hoặc GVCN: Case có dòng Phân công ở tab Case học thuật, nằm ở Của GV.'],
+      may: ['Lớp thiếu GV môn hoặc GVCN: Case có dòng Phân công ở tab Case học thuật, việc của bạn.'],
       ban: 'Bấm <b>Phân công</b> hoặc <b>Chọn người phụ trách</b>; cả lớp: tab <b>Phân công GV</b>.',
       ai: ['Người được chọn nhận việc Case.'],
       tuKhac: ['chưa có người', 'thiếu gv', 'phân công', 'assign'],
     },
     {
       id: 'em-chua-tvv', ten: 'Em chưa có TVV', the: 'chot-ngay-thi',
-      may: ['Việc của TVV (Chốt ngày thi, Báo PH, Sau thi, Bổ sung hồ sơ) về QL chi nhánh, ở tab Việc quản lý.'],
-      ban: 'Làm ngay ở tab <b>Việc quản lý</b>; em có TVV thì việc mới về TVV.',
+      may: ['Việc của TVV về QL chi nhánh: Báo PH ở tab Ý thức & Phối hợp; Chốt ngày thi, Sau thi, Bổ sung hồ sơ ở tab Việc quản lý.'],
+      ban: 'Làm ngay ở <b>Của tôi</b>; em có TVV thì việc mới về TVV.',
       ai: ['GVCN, GV vẫn làm việc của mình.'],
       tuKhac: ['không có tvv', 'chưa có tvv', 'tư vấn viên', 'consultant'],
     },
@@ -656,7 +654,7 @@ export const HD_QL: HuongDan = {
       id: 'p-xu-ly', ten: 'Xử lý vi phạm đang mở', duong: [], panel: 'xu-ly-vi-pham',
       dangO: { cau: 'Xử lý, xem vi phạm, ghi việc đã làm của em.' },
       khongLam: [{ ten: 'Báo PH vi phạm', cua: 'việc của TVV' }],
-      muc: [{ id: 'px-xl', viec: 'xu-ly-vi-pham', ten: 'Xử lý vi phạm', buoc: ['Đọc các vi phạm và bậc kế tiếp, chọn cách xử lý.', 'Nâng 1 bậc: <b>Xác nhận xử lý</b>; cách khác: <b>Gửi Quản lý duyệt</b>, rồi tự duyệt ở Chờ bạn duyệt. Không cần xử lý: <b>Lưu không xử lý</b> kèm lý do.', '<b>Lưu · Đã thực hiện</b>: ghi ngày, người làm việc QL đã duyệt.'] }],
+      muc: [{ id: 'px-xl', viec: 'xu-ly-vi-pham', ten: 'Xử lý vi phạm', buoc: ['Đọc các vi phạm và bậc kế tiếp, chọn cách xử lý.', 'Nâng 1 bậc: <b>Xác nhận xử lý</b>; cách khác: <b>Lưu xử lý</b>, chốt ngay (sai: <b>Thu hồi…</b> ở lần xử lý). Không cần xử lý: <b>Lưu không xử lý</b> kèm lý do.', '<b>Lưu · Đã thực hiện</b>: ghi ngày, người làm việc QL đã duyệt.'] }],
     },
     {
       id: 'p-ban-giao', ten: 'Bàn giao đang mở', duong: [], panel: 'ban-giao',

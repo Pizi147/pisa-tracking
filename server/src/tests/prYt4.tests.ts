@@ -817,11 +817,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY });
     assert(em(sid).bac === 6 && em(sid).keTiep.kind === 'report_7', `bậc ${em(sid).bac}`);
   });
-  check('YT4 (5) · QL tự gửi đề xuất → tự duyệt được, thẻ ghi "tự duyệt" (Q-D)', () => {
+  check('YT4 (5) · MA-QL-VIEC (PTA 16/11, thay Q-D): QL gửi đề xuất → áp thẳng một bước, không thẻ Chờ duyệt; đã duyệt, nhãn giữ', () => {
     const sid = hv();
     const m = deXuatGui(P.mbManager, sid, 'other', [ghiVp(gvbm, sid)], { customName: 'Gặp phụ huynh tại trung tâm' });
-    const kq = yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
-    assert(kq.tuDuyet === true && theCho('y_thuc', m.id).tu_duyet === 1 && xuLy.xemXuLy(P.mbManager, m.id).nhan === 'Gặp phụ huynh tại trung tâm', JSON.stringify(kq));
+    const v = xuLy.xemXuLy(P.mbManager, m.id);
+    assert(!theCho('y_thuc', m.id) && v.status === 'da_duyet' && v.nhan === 'Gặp phụ huynh tại trung tâm', JSON.stringify(v));
   });
   check('YT4 (5) · Báo QL: em Quá hạn → MỘT thẻ bao_len_y_thuc (không nút duyệt, GVCN là chủ việc); quét lần hai không thêm', () => {
     const sid = hv(); ba3(sid, addDays(TODAY, -12));

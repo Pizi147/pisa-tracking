@@ -453,6 +453,8 @@ export type YThucHocVien = {
   tinhHinh: TinhHinhView[]; tvv: string | null;
   /** TINH-HINH: "Báo tình hình" (quyền ghi vi phạm) · "Hỏi tình hình" (TVV của em / cùng chi nhánh / QL — `coTheGhi`). */
   coTheBao: boolean; coTheHoi: boolean;
+  /** MA-QL-VIEC (PTA 16/11): người xem xử lý được VÀ là người duyệt (QL / Quản trị) — cách khác Nâng 1 bậc lưu là chốt ngay ("Lưu xử lý"), không gửi rồi tự duyệt. */
+  qlApThang: boolean;
 };
 
 export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chuoi' | 'tat-ca' } = {}): YThucHocVien {
@@ -485,6 +487,7 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
     canManage, canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
     canSuaKhai: !!em.khai && (can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }) || (canManage && em.khai.coTheSua)),
     coTheKhai: canManage && khaiDuoc(em),
+    qlApThang: canManage && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
     keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac },
@@ -703,6 +706,25 @@ export function guiDeXuat(p: Principal, measureId: number) {
   if (m.status !== 'nhap') throw badRequest('Đề xuất này đã gửi rồi.');
   const tep = (db().prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ? ORDER BY id`).all(measureId) as any[]).map((r) => r.id as number);
   if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi QL.');
+  /* MA-QL-VIEC (PTA 16/11): người gửi là người duyệt (QL / Quản trị trong phạm vi em) → ÁP THẲNG một bước: không thẻ Chờ duyệt, chốt ngay như Duyệt
+     (`chotDeXuatYThuc`: da_duyet + việc Báo PH TVV + tin GVCN). GVCN vẫn gửi QL duyệt như cũ. Sai: Thu hồi ở lần xử lý (QL thu hồi ngay). */
+  if (can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id })) {
+    tx(() => {
+      const em = emCua(m.student_id);
+      const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ?').all(measureId) as any[]).map((r) => r.violation_id);
+      viPhamChon(em, vIds);
+      if (!deXuatHopLe(m.kind, em.bac)) throw badRequest('Bậc đã đổi — mở lại panel.');
+      const doi = db().prepare(`UPDATE discipline_measures SET status = 'cho_duyet', confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ? AND status = 'nhap'`)
+        .run(p.userId, nowIso(), nowIso(), measureId).changes;
+      if (!doi) throw conflict('Đề xuất này vừa được gửi — mở lại.');
+      ghiPhanHoi(vIds);
+      chotDeXuatYThuc(measureId, demoToday(), p.userId);
+      writeAudit({ actorUserId: p.userId, action: 'discipline.apply', entityType: 'discipline_measure', entityId: measureId,
+        entityLabel: `${hv.student_code} · QL áp ${nhanLoaiXuLy(m.kind, m.custom_name)}`,
+        after: { kind: m.kind, cach: cachDeXuat(m.kind, em.bac), violations: vIds, bangChung: tep } });
+    });
+    return xemXuLy(p, measureId);
+  }
   tx(() => {
     const em = emCua(m.student_id);
     const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ?').all(measureId) as any[]).map((r) => r.violation_id);

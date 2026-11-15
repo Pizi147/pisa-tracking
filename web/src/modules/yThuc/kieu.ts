@@ -54,6 +54,8 @@ export type BaoPhLan = {
 export type YThucHocVien = {
   studentId: number; ten: string; maHv: string; homNay: string;
   canManage: boolean; canRecord: boolean; canSuaKhai: boolean; coTheKhai: boolean;
+  /** MA-QL-VIEC: QL / Quản trị áp thẳng cách khác Nâng 1 bậc (máy chủ `yThucHocVien`). */
+  qlApThang?: boolean;
   chuoi: { nhan: string; cycleIds: number[]; soXuLy: number };
   bac: number; bacNhan: string | null; keTiep: { kind: string; nhan: string; bac: number };
   dongThang: BacThangDong[];
