@@ -40,7 +40,7 @@ export async function runPrChuThiTests(t: any) {
       const src = fs.readFileSync(path.join(GOC, f), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '').replace(/(^|[^:\\])\/\/.*$/gm, '$1');
       for (const m of src.matchAll(reT)) if (CU.test(m[2]) && !GIU.test(m[2])) ra.push({ file: f, line: src.slice(0, m.index).split('\n').length, text: m[2] });
     }
-    const sot = ra.filter((r) => CU.test(r.text));
+    const sot = ra.filter((r) => CU.test(r.text) && !GIU.test(r.text));   // HD3-1: nhãn trạng thái "Không dự thi" (GIU) ngoài t() cũng được giữ
     assert(sot.length === 0, `${sot.length} chỗ: ` + sot.slice(0, 8).map((r) => `${r.file}:${r.line} "${r.text.slice(0, 60)}"`).join(' · '));
   });
 }

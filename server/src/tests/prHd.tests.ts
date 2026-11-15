@@ -5,7 +5,7 @@
  *   HD-VIEC mỗi vai đúng 5 việc hằng tuần (chủ SP 15/10).
  *   HD-CHI  mỗi "Chỉ cho tôi" trỏ `data-hd` có thật trong mã web (quét nguồn) và mở trang có mục — đổi / xoá phần tử → đỏ;
  *           không trỏ phần tử màn đó không dựng cho vai (bảng CHI_VAI).
- *   HD-NHO  "đã mở Hướng dẫn" nhớ theo tài khoản (chấm trên nút "?"): PATCH /me/profile { daXemHuongDan: true } → /demo/session; giá trị lạ → 400;
+ *   HD-NHO  phiên bản Hướng dẫn đã xem nhớ theo tài khoản (chấm trên "?", HD3-1 "Có gì mới"): PATCH /me/profile { daXemHuongDan: n } → /demo/session; giá trị lạ → 400;
  *           migrate prHd chạy lặp được.
  */
 import fs from 'node:fs';
@@ -463,6 +463,22 @@ export async function runPrHdTests(t: any) {
     } finally { may.close(); }
   });
 
+  /* ---------------------------------------------------------------- HD3-1 khung */
+  await checkAsync('HD3-1 · mã chèn hạn = chữ của bản Hạn mặc định đang hiệu lực; mã sai giữ nguyên; dòng việc → thẻ theo người giữ', async () => {
+    /* Không đặt lại nguồn Hạn mặc định ở đây (phép QTV2 dùng nguồn chung): so với chữ dựng từ `hanTai` đang hiệu lực. */
+    const han: any = await import('../../../shared/domain/hanMacDinh.ts');
+    const thu = ['', '', 'thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy', 'Chủ nhật'];
+    const ct = han.hanTai('cham_test');
+    assert(ct.tuanLech !== 1 || hd.chenHan('Hết {han:cham_test}.') === `Hết ${thu[ct.thu]} tuần sau.`, hd.chenHan('Hết {han:cham_test}.'));
+    assert(hd.chenHan('{han:xac_nhan_case.ngayGap}') === `${han.hanTai('xac_nhan_case').ngayGap} ngày`, hd.chenHan('{han:xac_nhan_case.ngayGap}'));
+    assert(hd.chenHan('{han:ghi_kq_pa}') === `${han.hanTai('ghi_kq_pa').kyTuan} tuần`, hd.chenHan('{han:ghi_kq_pa}'));
+    assert(hd.chenHan('{han:khong_co} {han:cham_test.ngay}') === '{han:khong_co} {han:cham_test.ngay}', 'mã / trường lạ giữ nguyên cho HD-HAN bắt');
+    const cua = hd.theCuaViec('gv', 'score', true);
+    assert(cua?.the.id === 'nhap-diem' && cua.vai === 'gv', 'GV mở Nhập điểm → thẻ Nhập điểm của GV');
+    assert(hd.theCuaViec('ql', 'score', false)?.vai === 'gv', 'QL mở việc Nhập điểm của GV → thẻ gốc của GV (dải làm thay)');
+    assert(hd.maViec({ group: 'score', key: 'score:cham-speaking|cc' }) === 'cham_speaking', 'việc chung Chấm Speaking có loại riêng');
+  });
+
   /* ---------------------------------------------------------------- HD-NHO */
   const GV = P.subjectTeacher.userId as number;
   const cot = () => (conn.prepare('SELECT da_xem_huong_dan FROM users WHERE id = ?').get(GV) as any).da_xem_huong_dan;
@@ -474,20 +490,21 @@ export async function runPrHdTests(t: any) {
     assert(cot() === null, 'tài khoản demo chưa mở hướng dẫn');
   });
 
-  await checkAsync('HD-NHO · PATCH /me/profile { daXemHuongDan: true } nhớ theo tài khoản; /demo/session trả lại; giá trị khác → 400', async () => {
+  await checkAsync('HD-NHO · HD3-1: PATCH /me/profile { daXemHuongDan: số phiên bản } nhớ theo tài khoản, không lùi; true cũ = 1; /demo/session trả số; giá trị khác → 400', async () => {
     const may = createApp().listen(0);
     const cong = (may.address() as any).port as number;
     try {
       const s = await fetch(`http://127.0.0.1:${cong}/api/demo/session`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ userId: GV }) });
       const cookie = (s.headers.get('set-cookie') ?? '').split(';')[0];
       const goi = (url: string, init: RequestInit = {}) => fetch(`http://127.0.0.1:${cong}/api${url}`, { ...init, headers: { 'content-type': 'application/json', cookie } });
-      assert(((await (await goi('/demo/session')).json()) as any).daXemHuongDan === false, 'chưa mở → false');
-      const sai = await goi('/me/profile', { method: 'PATCH', body: JSON.stringify({ daXemHuongDan: 'co' }) });
-      assert(sai.status === 400, `giá trị lạ phải 400 (${sai.status})`);
-      const r = await goi('/me/profile', { method: 'PATCH', body: JSON.stringify({ daXemHuongDan: true }) });
-      assert(r.ok, `PATCH ${r.status}`);
-      assert(cot() === 1, `cột = ${cot()}`);
-      assert(((await (await goi('/demo/session')).json()) as any).daXemHuongDan === true, 'đã mở → true');
+      const phien = async () => ((await (await goi('/demo/session')).json()) as any).daXemHuongDan;
+      const vua = async (v: unknown) => goi('/me/profile', { method: 'PATCH', body: JSON.stringify({ daXemHuongDan: v }) });
+      assert(await phien() === 0, 'chưa mở → 0');
+      for (const sai of ['co', 0, 1.5, 1000, false]) { const r = await vua(sai); assert(r.status === 400, `${JSON.stringify(sai)} phải 400 (${r.status})`); }
+      assert((await vua(true)).ok && cot() === 1, `true cũ → 1 (${cot()})`);
+      assert((await vua(hd.PHIEN_BAN_HD)).ok && cot() === hd.PHIEN_BAN_HD, `phiên bản hiện tại (${cot()})`);
+      assert((await vua(1)).ok && cot() === hd.PHIEN_BAN_HD, `không lùi phiên bản (${cot()})`);
+      assert(await phien() === hd.PHIEN_BAN_HD, 'phiên trả số phiên bản');
     } finally {
       may.close();
       conn.prepare('UPDATE users SET da_xem_huong_dan = NULL WHERE id = ?').run(GV);

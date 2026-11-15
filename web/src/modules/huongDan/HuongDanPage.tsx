@@ -1,25 +1,24 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChuDam, Empty } from '../../ui/ui.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { HUONG_DAN, TEN_VAI_HD, VAI_CO_NOI_DUNG, coXemVaiKhac, locHd, locVai, timHd, type HuongDan, type VaiHd } from '@shared/huongDan/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { chiChoToi } from './chiChoToi.tsx';
 import { MucHuongDan, useVaiHd } from './MucHuongDan.tsx';
 import { useDaXemHd } from './daXemHd.ts';
-import { DsNhom, KetQuaTim, TabTuan, TheoMan, type Ctx } from './NutHuongDan.tsx';
+import { KetQuaTim, LuoiThe, TabTruongHop, type Ctx } from './NutHuongDan.tsx';
 
 /**
- * HD-V2 (c) — TRANG HƯỚNG DẪN (đặc tả 3.7): CÙNG nội dung và cùng khối với panel "?", ba phần như ba tab — Tôi muốn… · Tuần của tôi · Theo màn
- * (mọi màn: Bạn đang ở, Việc làm ở đây, Không làm ở đây) — thêm Luật và hạn, Thuật ngữ (đọc tra, panel không có). Không nội dung riêng của trang.
- * Phần + vai trên URL (`?phan=`, `?vai=`) — Quay lại về đúng chỗ. In: mọi phần, mọi việc mở (`print:`), không thanh trên. Đọc dữ liệu tĩnh: 0 câu Turso.
+ * HD3-1 — TRANG HƯỚNG DẪN (đặc tả 15 mục 4.9, mockup ⑭ K10b): CÙNG dữ liệu, cùng thẻ với panel "?" — Thẻ việc · Trường hợp · Luật và hạn · Thuật ngữ.
+ * "Theo màn" bỏ (nội dung theo màn ở tầng 3 của panel), "Tuần của tôi" thành bộ lọc nhịp của panel. Phần + vai trên URL (`?phan=`, `?vai=`).
+ * In: mọi phần, mọi thẻ đủ dòng (`print:`), không thanh trên. Dữ liệu tĩnh: 0 câu Turso.
  */
-const PHAN = ['lam', 'tuan', 'man', 'luat', 'tu'] as const;
+const PHAN = ['lam', 'gap', 'luat', 'tu'] as const;
 type Phan = (typeof PHAN)[number];
-const TEN_PHAN: Record<Phan, string> = { lam: t('Tôi muốn…'), tuan: t('Tuần của tôi'), man: t('Theo màn'), luat: t('Luật và hạn'), tu: t('Thuật ngữ') };
-const demPhan = (h: HuongDan): Record<Phan, number> => ({
-  lam: h.lam?.length ?? 0, tuan: h.tuan?.reduce((n, x) => n + x.viec.length, 0) ?? 0, man: h.man.filter((m) => !m.panel).length, luat: h.luat.length, tu: h.tu.length,
-});
+const TEN_PHAN: Record<Phan, string> = { lam: t('Thẻ việc'), gap: t('Trường hợp'), luat: t('Luật và hạn'), tu: t('Thuật ngữ') };
+const demPhan = (h: HuongDan): Record<Phan, number> => ({ lam: h.lam?.length ?? 0, gap: h.tinhHuong?.length ?? 0, luat: h.luat.length, tu: h.tu.length });
 
 export default function HuongDanPage() {
   const [params, setParams] = useSearchParams();
@@ -60,13 +59,12 @@ export default function HuongDanPage() {
   )] : []);
 
   const than: Record<Phan, ReactNode> = {
-    lam: <DsNhom viec={hd.lam ?? []} ctx={ctx} moDau />,
-    tuan: <TabTuan hd={hd} ctx={ctx} />,
-    man: <TheoMan hd={hd} ctx={ctx} />,
+    lam: <LuoiThe viec={hd.lam ?? []} ctx={ctx} />,
+    gap: <TabTruongHop hd={hd} ctx={ctx} moDau={false} />,
     luat: luat(hd.luat, true),
     tu: tu(hd.tu),
   };
-  const nKq = kq ? kq.viec.length + kq.muc.length + kq.vaiKhac.length + loc.luat.length + loc.tu.length : 0;
+  const nKq = kq ? kq.viec.length + kq.muc.length + kq.tinhHuong.length + kq.vaiKhac.length + loc.luat.length + loc.tu.length : 0;
 
   return (
     <div className="page hd-in">
@@ -80,9 +78,13 @@ export default function HuongDanPage() {
             </button>
           ))}
         </nav>
-        <div className="flex min-w-0 max-w-[760px] flex-col gap-4 print:max-w-none">
+        <div className="flex min-w-0 flex-col gap-4 print:max-w-none">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="m-0 flex-1 text-xl font-bold text-slate-100">{t('Hướng dẫn')}</h1>
+            {/* HD3-1 (mockup ⑭ K10b): một hàng — Hướng dẫn · vai · ô tìm · In. */}
+            <h1 className="m-0 text-xl font-bold text-slate-100">{t('Hướng dẫn')}</h1>
+            {!xemKhac && <span className={`${CHIP_TRON} px-2.5 text-slate-400`} style={{ background: 'var(--surface-2)' }}>{TEN_VAI_HD[vai]}</span>}
+            <input type="search" name="tim-huong-dan" autoComplete="off" className="field order-last basis-full print:hidden md:order-none md:ml-auto md:w-60 md:basis-auto" value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder={t('Tìm: "kết quả PA", "SOS", "hạn"…')} aria-label={t('Tìm trong hướng dẫn')} />
             {xemKhac && VAI_CO_NOI_DUNG.length > 1 && (
               <label className="flex items-center gap-2 text-[13px] text-slate-400 print:hidden">
                 {t('Xem vai')}
@@ -93,8 +95,6 @@ export default function HuongDanPage() {
             )}
             <button type="button" className="btn btn-sm print:hidden" onClick={() => window.print()}>{t('In')}</button>
           </div>
-          <input type="search" name="tim-huong-dan" autoComplete="off" className="field print:hidden" value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder={t('Tìm: "kết quả PA", "SOS", "hạn"…')} aria-label={t('Tìm trong hướng dẫn')} />
           {/* 375: các phần thành hàng chip cuộn ngang (mockup `.hd-tab`). */}
           <div role="group" aria-label={t('Phần hướng dẫn')} className="flex gap-1.5 overflow-x-auto pr-8 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:hidden print:hidden">
             {PHAN.map((p) => (
@@ -110,7 +110,7 @@ export default function HuongDanPage() {
           {/* Đang tìm: một danh sách (như ô tìm của panel) + luật, thuật ngữ khớp. */}
           {tim && kq && (
             <div className="flex flex-col gap-3 print:hidden">
-              {kq.viec.length + kq.muc.length + kq.vaiKhac.length > 0 && <KetQuaTim kq={kq} q={q} ctx={ctx} onXemHet={() => setQ('')} />}
+              {kq.viec.length + kq.muc.length + kq.tinhHuong.length + kq.vaiKhac.length > 0 && <KetQuaTim kq={kq} q={q} ctx={ctx} onXemHet={() => setQ('')} />}
               {loc.luat.length > 0 && <div className="flex flex-col gap-3"><h2 className="m-0 text-base font-semibold text-slate-100">{TEN_PHAN.luat}</h2>{luat(loc.luat, false)}</div>}
               {loc.tu.length > 0 && <div className="flex flex-col gap-3"><h2 className="m-0 text-base font-semibold text-slate-100">{TEN_PHAN.tu}</h2>{tu(loc.tu)}</div>}
               {nKq === 0 && <div className="card"><Empty title={t('Không có mục nào khớp')} action={<button type="button" className="btn btn-sm" onClick={() => setQ('')}>{t('Xoá tìm')}</button>} /></div>}

@@ -31,7 +31,8 @@ export type Session = {
   /** PR-EN: ngôn ngữ của tài khoản ('vi' | 'en'; null = chưa chọn). */
   ngonNgu?: string | null;
   /** HD-a: đã mở Hướng dẫn — nhớ theo tài khoản (HD-V2: chấm trên nút "?"). */
-  daXemHuongDan?: boolean;
+  /** HD3-1: số phiên bản Hướng dẫn đã xem (0 = chưa mở lần nào). */
+  daXemHuongDan?: number;
   /** HD-V2: GV chủ nhiệm ít nhất một lớp · GV Speaking (phần riêng của Hướng dẫn). */
   laGvcn?: boolean; coS?: boolean;
   /** L4 / 2.4: GV Speaking chấm chéo đúng luật quyền (`laGvSpeaking`, N7) — "Tôi" là người chấm S chéo được. */

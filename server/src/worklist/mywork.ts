@@ -1,6 +1,6 @@
 import { phamViXemViec } from './xemViec.ts';
 import { t } from '../../../shared/i18n/index.ts';
-import { hanTai } from '../../../shared/domain/index.ts';
+import { chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, tx } from '../db.ts';
@@ -219,8 +219,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
    */
   cause: {
     label: 'Xác nhận Case',
-    hint: 'Progress Test đã tự tạo Case cho môn này. Chọn nhóm nguyên nhân, ghi mô tả ngắn, xem PA Bổ trợ rồi Xác nhận Case — '
-      + 'hoặc Không cần theo dõi (gửi Quản lý duyệt). Hạn 5 ngày, tính cả ngày Case ra đời.',
+    /* HD3-1 (15 mục 8.2): số ngày / thứ lấy từ Hạn mặc định (`chenHan`) — Quản trị đổi hạn thì câu tự đúng. */
+    get hint() {
+      return chenHan('Progress Test đã tự tạo Case cho môn này. Chọn nhóm nguyên nhân, ghi mô tả ngắn, xem PA Bổ trợ rồi Xác nhận Case — '
+        + 'hoặc Không cần theo dõi (gửi Quản lý duyệt). Hạn {han:xac_nhan_case}, tính cả ngày Case ra đời.');
+    },
   },
   /* MO-TA-CASE (N8, chủ SP 27/10): nhận xét bài không bắt buộc — Case MT chưa có mô tả thì GV phụ trách kỹ năng ghi Mô tả + nhóm ở Case, Case sang Xác nhận PA. */
   ghi_nhan_xet: {
@@ -297,7 +300,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   ghi_ket_qua_pa: {
     label: 'Kết quả PA',
-    hint: 'Kết quả PA ghi hai tuần một lần, xong trước hết Thứ Ba sau kỳ (kỳ tính từ ngày bắt đầu PA). Kỳ chạm mốc PA là Kết quả cuối: kết luận PA.',
+    /* HD3-1: kỳ chèn từ Hạn mặc định; bản gốc (2) giữ đúng chữ cũ "hai tuần" (ảnh chụp JSON TD4). */
+    get hint() { const k = hanTai('ghi_kq_pa').kyTuan; return `Kết quả PA ghi ${k === 2 ? 'hai' : k} tuần một lần, xong trước hết Thứ Ba sau kỳ (kỳ tính từ ngày bắt đầu PA). Kỳ chạm mốc PA là Kết quả cuối: kết luận PA.`; },
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
@@ -308,7 +312,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LCb: khoá `chot_len_ft` = "Chốt lộ trình" (giữ tên để không chạm drilldown, nhắc việc, phép kiểm cũ). */
   chot_len_ft: {
     label: 'Chốt lộ trình',
-    hint: 'Quản lý chốt hướng và lớp chuyển đến cho mọi em, hạn thứ Năm tuần trước tuần Final Test. Quá hạn vẫn làm được.',
+    get hint() { return chenHan('Quản lý chốt hướng và lớp chuyển đến cho mọi em, hạn {han:chot_lo_trinh} tuần Final Test. Quá hạn vẫn làm được.'); },
   },
   xet_lai_lo_trinh: {
     label: 'Xét lại lộ trình',
@@ -321,11 +325,11 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* ---------------------------------------------------- Ý thức (PR-YT4, V4-2…V4-5, K3-37) — người nhận = GVCN lớp đang học */
   yt_xu_ly: {
     label: 'Xử lý vi phạm',
-    hint: 'Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong 5 ngày (tính cả ngày ghi). Quá hạn thì Quản lý được báo.',
+    get hint() { return chenHan('Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong {han:xu_ly_vi_pham} (tính cả ngày ghi). Quá hạn thì Quản lý được báo.'); },
   },
   bao_ph_yt: {
     label: 'Báo PH vi phạm',
-    hint: 'Em vừa được lưu xử lý vi phạm — báo phụ huynh rồi ghi kết quả (Đã báo PH / Chưa liên hệ được). Hạn 5 ngày, tính cả ngày lưu.',
+    get hint() { return chenHan('Em vừa được lưu xử lý vi phạm — báo phụ huynh rồi ghi kết quả (Đã báo PH / Chưa liên hệ được). Hạn {han:bao_ph_vi_pham}, tính cả ngày lưu.'); },
   },
   yt_hoi_tinh_hinh: {
     label: 'Tình hình học tập',

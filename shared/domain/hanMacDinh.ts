@@ -7,6 +7,7 @@
  * Nguồn danh sách bản: máy chủ (`platform/cauHinh.ts`, nhớ theo tiến trình) và web (phiên đăng nhập) gọi `datNguonHan`. Chưa đặt → bản gốc.
  */
 import { banTaiMoc, type BanPhienBan } from './phienBan.ts';
+import { t, type Khoa } from '../i18n/index.ts';
 
 export const HAN_MAC_DINH_GOC = {
   /** Chấm Mock / Test lớp thường: thứ `thu` (2 = T2 … 8 = CN) của tuần lệch `tuanLech` so với tuần thi (T19: T4 tuần sau). */
@@ -89,3 +90,23 @@ export function kiemHanMacDinh(v: unknown): { ma: MaHan | null; loi: string } | 
   if ((o.xac_nhan_case.ngayGap as number) > (o.xac_nhan_case.ngay as number)) return { ma: 'xac_nhan_case', loi: 'Hạn Case gấp không dài hơn hạn thường.' };
   return null;
 }
+
+/* ---------------------------------------------------------------- HD3-1: hạn thành chữ (Hướng dẫn + câu gợi ý nhóm việc) */
+const THU_HD: Record<number, Khoa> = { 2: 'thứ Hai', 3: 'thứ Ba', 4: 'thứ Tư', 5: 'thứ Năm', 6: 'thứ Sáu', 7: 'thứ Bảy', 8: 'Chủ nhật' };
+const TUAN_HD: Record<number, Khoa> = { [-2]: '2 tuần trước', [-1]: 'tuần trước', 0: 'cùng tuần', 1: 'tuần sau', 2: '2 tuần sau' };
+const DON_VI: Record<string, 'ngay' | 'tuan'> = { ngay: 'ngay', ngayGap: 'ngay', xemNgay: 'ngay', kyTuan: 'tuan' };
+const soVoi = (n: number, dv: 'ngay' | 'tuan') => (dv === 'tuan' ? t('{n} tuần', { n }) : t('{n} ngày', { n }));
+/** Một giá trị hạn thành chữ: `{ngay}` "5 ngày" · `{tuanLech, thu}` "thứ Tư tuần sau" · `{kyTuan}` "2 tuần". Mã / trường lạ → null. */
+function chuHan(ma: string, truong?: string): string | null {
+  if (!(MA_HAN as string[]).includes(ma)) return null;
+  const v = hanTai(ma as MaHan) as Record<string, number>;
+  if (truong) return truong in v && DON_VI[truong] ? soVoi(v[truong], DON_VI[truong]) : null;
+  if ('tuanLech' in v) return THU_HD[v.thu] && TUAN_HD[v.tuanLech] !== undefined ? t('{thu} {tuan}', { thu: t(THU_HD[v.thu]), tuan: t(TUAN_HD[v.tuanLech]) }) : null;
+  if ('kyTuan' in v) return soVoi(v.kyTuan, 'tuan');
+  return 'ngay' in v ? soVoi(v.ngay, 'ngay') : null;
+}
+/**
+ * MÃ CHÈN HẠN (đặc tả 15 mục 4.4): `{han:ma}` / `{han:ma.truong}` trong chữ thẻ (sau `t()`) → số của bản Hạn mặc định đang hiệu lực (phiên đã nạp —
+ * 0 câu đọc thêm). Quản trị đổi hạn thì hướng dẫn tự đúng. Mã sai giữ nguyên để phép HD-HAN bắt.
+ */
+export const chenHan = (s: string): string => s.replace(/\{han:(\w+)(?:\.(\w+))?\}/g, (m, ma: string, truong?: string) => chuHan(ma, truong) ?? m);
