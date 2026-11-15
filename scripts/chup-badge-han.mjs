@@ -31,7 +31,7 @@ for (const rong of [1440, 375]) {
       /* Nhãn có nền (badge) trước, rồi chữ ngắn nhất. */
       .sort((a, b) => Number(getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)') - Number(getComputedStyle(a).backgroundColor !== 'rgba(0, 0, 0, 0)') || a.textContent.length - b.textContent.length)[0];
     /* Ưu tiên nhãn hạn ("quá hạn 5 ngày"), không phải số đếm ("3 quá hạn"). */
-    const e = tim(/quá hạn( ·)? ?\d+ ngày/i) ?? tim(/^quá hạn/i) ?? tim(/^hạn hôm nay|^hôm nay$/i);
+    const e = tim(/quá hạn( ·)? ?\d+ ngày/i) ?? tim(/^quá hạn|· quá hạn$/i) ?? tim(/^hạn hôm nay|^hôm nay$/i);
     if (!e) return null;
     e.scrollIntoView({ block: 'center' });
     const r = e.getBoundingClientRect();

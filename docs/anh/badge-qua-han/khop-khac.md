@@ -35,7 +35,7 @@ Phép kiểm: `server/src/tests/thanhPhanChung.tests.ts` › "BADGE-QUA-HAN" —
 | 15 | Ý thức — nhãn vi phạm "Quá hạn n ngày" (`NhanViPham qua_han`) | XM-1 | badge góc 4 px có viền | **`BadgeHan`** (các trạng thái khác giữ dáng cũ) |
 | 16 | Ý thức — ô "Bước đang làm" / việc của em (`BadgeViec qua`, bấm được) | XM-1 | badge góc 6 px có viền, cao 24 | **dáng `lopBadgeHan('qua')`** (vẫn là nút khi bấm được; chữ dài xuống dòng) |
 | 17 | Viên trạng thái Case quá hạn (`NhanVienCase qua-han`) | XM-1 | viên cao 24, viền trong | **`BadgeHan`** |
-| 18 | Hồ sơ HV — cột hạn Case (`CotCaseHv`) | quét lại | chữ đỏ đậm `text-bad` | **badge đỏ**; gần hạn giữ chữ trắng đậm (luật OV12e-1b có phép kiểm) |
+| 18 | Hồ sơ HV — cột hạn Case (`CotCaseHv`) | quét lại | chữ đỏ đậm `text-bad`; gần hạn chữ trắng đậm | **badge đỏ**; gần hạn **badge vàng** (PTA 15/11: V22 + lời chủ SP mới nhất thắng luật cũ OV12e-1b — đã sửa phép kiểm OV12e-1b theo, ngưỡng vẫn `deadlineView.ganHan`) |
 | 19 | Kế hoạch Test — ô kỹ năng "Quá hạn chấm" (`ChipKyNang`) | quét lại | chữ đỏ `text-bad` | **badge đỏ** (viền ô đỏ giữ) |
 | 20 | Bảng lượt việc — "Chưa làm · quá n ngày" (`BangLuotPanel`) | quét lại | chữ đỏ `text-bad` | **badge đỏ** (việc còn mở) |
 
@@ -58,7 +58,7 @@ Phép kiểm: `server/src/tests/thanhPhanChung.tests.ts` › "BADGE-QUA-HAN" —
 | XM-2 | `BangLuotPanel` "Trễ n ngày" / "Làm muộn n ngày" (lịch sử) | giữ chữ |
 | XM-3 | `ChipHan chuThuong` | gần hạn giữ chữ thường (mockup); đã quá hạn = badge đỏ (đã làm) |
 | XM-4 | `ChipHan vien` hạn chưa tới | giữ viên xám |
-| XM-5 (mới) | Lưới nhập điểm lớp thường — dòng phụ ô "… · quá hạn" (`LuoiThuong`, chữ `text-rose-300`) | dòng phụ một hàng cao 16 px, `truncate` trong ô lưới: badge 22 px làm cao ô / cắt chữ → giữ chữ, hỏi PTA |
+| XM-5 | Lưới nhập điểm lớp thường — dòng phụ ô "… · quá hạn" (`LuoiThuong`) | PTA chốt: giữ CHỮ ĐỎ (ô nhỏ) nhưng không cắt — dòng phụ quá hạn xuống dòng (`break-words` thay `truncate`) |
 
 Quét lại sau khi gộp main 15/11 (lưới kết quả PA #1738, chuông #1739, Case GD-21 #1748 nếu đã merge): các nhãn hạn ở đó đi qua `ChipHan` → đã là badge; không còn dáng quá hạn tự dựng nào khác ngoài các dòng GIỮ ở mục 2 và XM-2 / XM-5.
 

@@ -583,7 +583,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
     doi.set(t, [...(doi.get(t) ?? []), s.skill]);
   }
   const doiDau = [...doi.entries()][0];
-  const phu: { chu: string; tone: string; title: string } | null = doiDau
+  const phu: { chu: string; tone: string; title: string; xuong?: boolean } | null = doiDau
     ? {
       chu: t('{x} dời sang {x2}', { x: doiDau[1].map(ngan).join(', '), x2: doiDau[0] }), tone: 'text-slate-400',
       title: t('{x}: em không làm bài, môn đã dời sang {x2}.', { x: doiDau[1].map(du).join(', '), x2: doiDau[0] }),
@@ -594,7 +594,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
       ? { chu: dich(row.goiY.nhanNgan), tone: 'text-slate-500', title: `${nhanGoiY(row.goiY)}${kq.phu ? ` — ${kq.phu}` : ''}` }
     : kq.phu && !row.chip
       ? {
-        chu: `${kq.phu}${row.overdue ? t(' · quá hạn') : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500',
+        chu: `${kq.phu}${row.overdue ? t(' · quá hạn') : ''}`, tone: row.overdue ? 'text-rose-300' : 'text-slate-500', xuong: row.overdue,
         title: `${kq.phu}${row.overdue ? t(' — có môn đã quá hạn chấm') : ''}`,
       }
       : null;
@@ -633,7 +633,8 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
         {nhanCase}
       </div>
       {/* OV-11e (CA3-11): dòng phụ xuống dòng, không cắt. */}
-      {phu && <span className={`block max-w-full truncate text-xs leading-4 ${phu.tone}`} data-phu-odiem="" title={phu.title}>{dich(phu.chu)}</span>}
+      {/* BADGE-QUA-HAN XM-5 (PTA 15/11): dòng phụ quá hạn giữ chữ đỏ (ô nhỏ, không badge) nhưng xuống dòng, không cắt "…". */}
+      {phu && <span className={`block max-w-full ${phu.xuong ? 'break-words' : 'truncate'} text-xs leading-4 ${phu.tone}`} data-phu-odiem="" title={phu.title}>{dich(phu.chu)}</span>}
     </div>
   );
 }
