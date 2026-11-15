@@ -96,6 +96,16 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
     assert(/caseTiep\(/.test(sl) && /Case tiếp ›/.test(docSach('web/src/modules/students/NganCase.tsx')), 'không có Case tiếp ›');
   });
 
+  check('GD-21 · đề mục Case chỉ khi GV đã sửa tên: tên mặc định (kỹ năng / "{kỹ năng} không đạt", dài · ngắn) → null; tên riêng → hiện; dòng Case có mô tả + kỹ năng + lượt', async () => {
+    const { deMucRieng, rowsFor } = await import('../worklist/metrics.ts') as any;
+    assert(deMucRieng({ title: null, mon: 'writing', ct: 'ft' }) === null, 'trống phải là null');
+    assert(deMucRieng({ title: 'Writing Task 2 không đạt', mon: 'writing', ct: 'ft' }) === null, 'mặc định dài bị coi là tên riêng');
+    assert(deMucRieng({ title: 'Writing Task 2', mon: 'writing', ct: 'ft' }) === null, 'tên kỹ năng bị coi là tên riêng');
+    assert(deMucRieng({ title: 'Reading: chưa xử lý được dạng True/False/Not Given', mon: 'reading', ct: 'ft' }) === 'Reading: chưa xử lý được dạng True/False/Not Given', 'tên riêng không hiện');
+    const o = oTong(P.mbManager);
+    assert(o.rows.every((x: any) => 'moTa' in x && 'kyNang' in x && 'luot' in x && 'deMuc' in x), 'dòng Case thiếu moTa / kyNang / luot / deMuc');
+  });
+
   check('6b-2 · DESIGN.md: V11 bản M6 + luật Quay lại + luật chữ đầu mục (G14 sửa: vạch nhóm theo bước)', () => {
     const ds = docSach('DESIGN.md');
     assert(/V11[^\n]*M6/.test(ds), 'V11 chưa ghi bản M6');

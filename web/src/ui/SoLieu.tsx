@@ -63,6 +63,7 @@ export type DongSoLieu = {
   kyNang?: string | null;
   luot?: string | null;
   moTa?: string | null;
+  deMuc?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — mốc so, kết luận (tab Chưa đạt · Đạt · Vượt). Điểm từng kỹ năng nay ở `diemHv` (PANEL-MC). */
@@ -427,6 +428,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     );
     if (k === 'case') return (
       <span className="flex min-w-0 flex-col items-start gap-0.5">
+        {r.deMuc && <span className="text-[15px] font-bold leading-snug text-slate-100">{r.deMuc}</span>}
         <span className="flex min-w-0 max-w-full flex-nowrap items-center gap-x-2">
           {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
           <span className="min-w-0" title={r.title}>{r.kyNang ?? r.title}</span>
