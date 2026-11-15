@@ -12,13 +12,19 @@ Nền: ① `trang-dau-gv.html` (Lớp của tôi) · ⑧ `tong-quan.html` (panel
 
 PTA Overhaul đã ghi thành lời 49 và chuyển PTA Plan. Session hiểu như sau: chữ "Mock Test" ở dòng phạm vi đầu trang Tổng quan của **Admin văn phòng** (web `worklist/MockTestAdmin.tsx`; mockup ⑧ T5 "Monbay · Mock Test · W3 SEP"; dòng loại panel "Số liệu · Mock Test") → bỏ, đầu trang còn "Monbay · W3 SEP" như QL. Chỗ này ngoài phạm vi ⑬ (tệp ⑧ + mã web) nên đã chuyển PTA Overhaul (SendMessage 15/11). Trong ⑬, panel "GV chấm quá hạn" của Admin (C4) dùng dòng loại "Số liệu · Tổng quan".
 
+15/11 — sau khi xem ảnh ⑬ (PTA Overhaul gửi):
+
+> "sao chép để mỗi hình icon 2 tờ giấy là ok rồi, không cần hẳn 1 nút đâu"
+
+Đã sửa trong lượt: nút chữ "Sao chép" → **biểu tượng sao chép (hai tờ giấy)**, nút vuông trong suốt 36 px (375: 44 px) như ✕ / ⓘ, có `aria-label` "Sao chép việc quá hạn của {GV} để nhắn"; chép xong đổi ✓ màu xanh 2 giây + vùng `aria-live` "Đã chép". Chụp lại ảnh cặp C1–C6. Đã chuyển PTA Overhaul.
+
 ## 1. Ba chỗ đổi, mỗi chỗ một câu
 
 | Hạng mục | Đổi gì | Không làm |
 |---|---|---|
 | H7 Sắp tới (GV) | Một dòng mảnh trên "Lớp của tôi", dáng **dải chỉ số mỏng chuẩn** (cao 44, ⑤ H3). Có ba cụm: Test tuần tới · Ghi kết quả PA tới kỳ thứ Ba · Báo cáo PH mở ngày. Bấm số → hộp nhỏ tại chỗ. Ở 375 gọn thành MỘT hàng 44, bấm "⌄" để mở. | Không vào số việc / badge / chuông. Không màu hạn (việc chưa tới = thường, V22). Không có gì thì không hiện dòng. |
 | H8 Case theo bước (QL) | Mọi số Case mở **một thành phần panel**, **tiêu đề + số theo nguồn mở** (số trên ô = số dòng panel): ô 38 → "Case chưa có PA · Monbay · 38", hai bước đầu bật sẵn; số 45 / bảng SOS → "Case đang mở · …", không bước nào bật. Đầu panel có **dải bước** Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối (số màu thường), thêm **ngoặc "Chưa có PA"** trùm bước 1 + 2. Bấm để lọc: tiêu đề giữ, dòng dưới ghi "Đang lọc: … · n". Danh sách nhóm theo bước, mỗi dòng có GV phụ trách + hạn. | Không thêm ô ở mặt trang Tổng quan / Phân tích. |
-| H9 Sao chép (QL / Admin) | Nút "Sao chép" ở cuối dải tên mỗi GV (panel một GV: ở hàng tiêu đề). Chép ra chữ thuần, không tên học viên. Bấm xong hiện "✓ Đã chép" trong 2 giây. | Nhóm "S chéo chung" và "Chưa có GV" không có nút. Không thêm kênh gửi (Zalo / email). |
+| H9 Sao chép (QL / Admin) | **Biểu tượng sao chép (hai tờ giấy)** ở cuối dải tên mỗi GV (panel một GV: ở hàng tiêu đề) — chủ SP 15/11. Chép ra chữ thuần, không tên học viên. Bấm xong biểu tượng đổi ✓ màu xanh trong 2 giây. | Nhóm "S chéo chung" và "Chưa có GV" không có biểu tượng. Không thêm kênh gửi (Zalo / email). |
 
 ## 2. Bảng truy vết khung → thành phần → TRƯỚC → SAU
 
@@ -38,12 +44,12 @@ PTA Overhaul đã ghi thành lời 49 và chuyển PTA Plan. Session hiểu như
 | B4 | Lọc lớp (cột "Case chưa có PA" của bảng lớp) | ⑧ T2 "Lớp: MB FT 101 ✕" | tiêu đề "Case chưa có PA · MB FT 103 · 1" (số = ô vừa bấm) + GIỮ chip "Lớp: … ✕"; bước 0 mờ, không bấm | GIỮ |
 | B5 | Đang tải · lỗi · rỗng | web Skeleton · ErrorState · Empty | khung xương cả dải bước · "⚠ Không tải được danh sách Case · Thử lại" (G2) · "Không còn Case đang mở" | GIỮ dáng chuẩn |
 | B6 | 375 | web: thẻ dòng | bước 2 × 2, ngoặc trùm hàng đầu (vùng chạm 44); Case thành thẻ: em + chip hạn · lớp, lượt, kỹ năng, SOS · GV | ĐỔI |
-| C1 / C2 | Panel "Chưa làm" (⑨ D5 / D6) | ⑨ đã duyệt, web chưa code | GIỮ toàn bộ; thêm "Sao chép" ở cuối dải tên GV; nhóm "S chéo chung" không có nút | THÊM |
+| C1 / C2 | Panel "Chưa làm" (⑨ D5 / D6) | ⑨ đã duyệt, web chưa code | GIỮ toàn bộ; thêm biểu tượng sao chép ở cuối dải tên GV; nhóm "S chéo chung" không có nút | THÊM |
 | C1 | Khối chữ dán ra | — | khối trắng NGOÀI khung web = chữ đúng như dán ra | THÊM (chỉ cho người duyệt) |
-| C3 | Panel GV trễ chấm, một GV (QL bấm "Bài quá hạn") | web `PanelGvTre` | GIỮ; "Sao chép" ở hàng tiêu đề (panel một GV không có dải tên) | THÊM |
+| C3 | Panel GV trễ chấm, một GV (QL bấm "Bài quá hạn") | web `PanelGvTre` | GIỮ; biểu tượng sao chép ở hàng tiêu đề (panel một GV không có dải tên) | THÊM |
 | C4 | Panel GV trễ chấm nhiều GV (Admin VP) | web: dải tên + chip "12 bài" | GIỮ; nút ở mỗi dải; badge tròn chỉ số (một kiểu với ⑨, lời 35); "Chưa có GV" không có nút; dòng loại "Số liệu · Tổng quan" (mục 0) | THÊM / ĐỔI nhỏ |
 | C5 | Trình duyệt chặn chép · panel rỗng | — | hộp nhỏ ⚠ (lỗi, V22 cho phép): chữ bôi đen sẵn, hướng dẫn "Ctrl + C (máy tính) hoặc giữ ngón tay (điện thoại)" · panel rỗng không có nút | THÊM |
-| C6 | 375 | ⑨ D7 | nút cao 44 ở cuối dải tên | THÊM |
+| C6 | 375 | ⑨ D7 | biểu tượng vùng chạm 44 ở cuối dải tên | THÊM |
 
 **Chữ dán ra** (chép đúng tab đang xem; dòng của một em ghi "1 bài" / "1 em", không tên):
 ```
@@ -69,7 +75,7 @@ Trần Ngọc Hà · 2 việc quá hạn (tới 14/09)
 | QL bấm số lớp ở bảng "Lớp cần chú ý" | panel lọc lớp | GIỮ: chip "Lớp: … ✕" | không |
 | QL mở Case | link "Hồ sơ" cuối dòng | tên HV (link) hoặc cả dòng → hồ sơ HV mở sẵn Case | không (đổi chỗ bấm) |
 | Phân tích › SOS bấm số Case / "Chưa chốt PA" | danh sách phẳng | cùng panel bước (tiêu đề + bộ lọc theo số vừa bấm) | không |
-| QL / Admin nhắc GV quá hạn | chụp màn hoặc gõ tay | "Sao chép" → dán Zalo | — |
+| QL / Admin nhắc GV quá hạn | chụp màn hoặc gõ tay | bấm biểu tượng sao chép → dán Zalo | — |
 | Panel GV trễ chấm: bấm dòng → em còn trống → Nhập hộ | có | GIỮ y nguyên (không vẽ lại) | không |
 | Panel Chưa làm: tab Chấm Test / Việc, link tên GV, Đóng | có | GIỮ | không |
 
@@ -101,6 +107,7 @@ Trần Ngọc Hà · 2 việc quá hạn (tới 14/09)
 | ✕ chip lọc 22 × 22 | 1 | 0,5 px | 0,25 px |
 | ⓘ 28 × 28 | 17 | ≤ 0,25 px | ≤ 0,75 px |
 | ⓘ 36 × 36 (375) | 2 | 0 | ≤ 0,75 px |
+| biểu tượng sao chép 36 × 36 / 44 × 44 (cả ✓ sau khi chép) | 14 | ≤ 0,5 px | ≤ 0,5 px |
 
 Mọi nút đạt ≤ 1 px (đo lại sau hai chỉnh của PTA 15/11). Không có "⋯" mới.
 

@@ -119,8 +119,11 @@
 .ng-dau a.ten-gv:hover { color:var(--accent) !important; text-decoration:underline; }
 .ng-dau .phu-d { font:400 13px var(--phong); color:var(--text-dim); }
 .ng-dau .nut-chep { margin-left:auto; }
-.nut-chep { min-width:96px; }
-.nut-chep.da { color:var(--ok); border-color:var(--ok-vien); background:var(--ok-nen); }
+/* chủ SP 15/11: chỉ biểu tượng hai tờ giấy (nút vuông trong suốt 36, như ✕ / ⓘ); chép xong ✓ màu ok 2 giây */
+.nut-chep { width:36px; height:36px; padding:0; border:0; border-radius:8px; background:transparent; color:var(--text-dim); display:inline-grid; place-items:center; flex:none; }
+.nut-chep:hover { background:var(--accent-soft); color:var(--text); }
+.nut-chep svg { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.5; stroke-linecap:round; stroke-linejoin:round; }
+.nut-chep.da, .nut-chep.da:hover { color:var(--ok); background:var(--ok-nen); }
 .dv { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:12px; align-items:center; min-height:56px; padding:8px 20px; }
 .dv + .dv { border-top:1px solid var(--line); }
 .dv .dv-ten { font:500 15px var(--phong); color:var(--text); }
@@ -149,7 +152,7 @@
 .hop-chep .o-chu mark { background:var(--nc-nen); color:var(--nc-chu); }
 .hop-chep .hc-chan { display:flex; justify-content:flex-end; padding:8px 16px 12px; }
 .dt .ng-dau { padding:0 16px 0 13px; }
-.dt .nut-chep { height:44px; }
+.dt .nut-chep { width:44px; height:44px; }
 .dt .dv { padding:8px 16px; grid-template-columns:minmax(0,1fr); row-gap:4px; }
 .dt .dv .han-v { justify-self:start; }
 .dt .pn-tab { padding:0 16px; } .dt .tom-pn { padding:0 16px; }
