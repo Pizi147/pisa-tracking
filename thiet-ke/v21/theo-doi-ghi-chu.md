@@ -18,6 +18,12 @@ PTA Overhaul đã ghi thành lời 49 và chuyển PTA Plan. Session hiểu như
 
 Đã sửa trong lượt: nút chữ "Sao chép" → **biểu tượng sao chép (hai tờ giấy)**, nút vuông trong suốt 36 px (375: 44 px) như ✕ / ⓘ, có `aria-label` "Sao chép việc quá hạn của {GV} để nhắn"; chép xong đổi ✓ màu xanh 2 giây + vùng `aria-live` "Đã chép". Chụp lại ảnh cặp C1–C6. Đã chuyển PTA Overhaul.
 
+15/11 — sau khi xem bản đã đổi biểu tượng sao chép:
+
+> "ok rồi nhé"
+
+Session hiểu: **chủ SP duyệt mockup ⑬** (bản có biểu tượng sao chép, commit c394d76c3). Đã chuyển PTA Overhaul; session không merge (PTA Overhaul merge).
+
 ## 1. Ba chỗ đổi, mỗi chỗ một câu
 
 | Hạng mục | Đổi gì | Không làm |
