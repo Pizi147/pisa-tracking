@@ -384,6 +384,8 @@ export function nhanMocViPham(bac: number, dichChu: (s: string) => string = (s) 
  */
 export const bacNgan = (s: string): string => s.replace(/\bReport \d+(?: \+ Meeting \S+)?/g, (m) => m.toUpperCase());
 export const bacDu = (s: string): string => bacNgan(s).replace(/\bWL (\d+)/g, 'WARNING LETTER $1');
+/** NT-SUA: chỗ HIỂN THỊ — dính "REPORT 1" / "WARNING LETTER 2" bằng khoảng trắng không ngắt để không xuống dòng giữa tên và số (không đổi chuỗi dữ liệu / `bacNgan`). */
+export const bacKhongNgat = (s: string): string => s.replace(/\b(REPORT|WARNING LETTER|WL) (\d+)/g, '$1\u00A0$2');
 /** Nhãn bậc đã có (đã dịch) → mốc: "WL 1" → "WARNING LETTER 1", viết hoa cả chuỗi. */
 export const mocTuNhan = (nhan: string): string => bacDu(nhan).toUpperCase();
 

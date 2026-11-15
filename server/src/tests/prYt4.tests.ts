@@ -936,7 +936,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (8) · + Vi phạm / Nhắc nhở (T31): tiêu đề "Ghi vi phạm", KHÔNG chọn sẵn nhóm (K3-35), nhóm bắt buộc chọn', () => {
     const s = docW(`${YT}/RecordViolationPanel.tsx`);
-    assert(/'Ghi vi phạm'/.test(s) && /nhom: ''/.test(s) && /dsLoiGhiViPham/.test(s), 'panel ghi (nhóm không chọn sẵn, bắt buộc chọn — luật ở dsLoiGhiViPham)');
+    assert(/'Vi phạm \/ Nhắc nhở'/.test(s) && /nhom: ''/.test(s) && /dsLoiGhiViPham/.test(s), 'panel ghi (nhóm không chọn sẵn, bắt buộc chọn — luật ở dsLoiGhiViPham)');
     assert(!/Ghi nhận vi phạm/.test(boChuThich(s)), 'chữ cũ');
   });
   /* UI-Y-THUC-LOP (mockup V5): hai khung M6 thay bằng bảng theo HV — nhóm em (NhomHang), bốn khối nghĩa, chi tiết mở dưới hàng. */

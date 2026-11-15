@@ -1,3 +1,4 @@
+import { MuiChev } from '../../ui/HangNhom.tsx';
 import { Children, type ReactNode, useState } from 'react';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
@@ -116,7 +117,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
         const d = chung ? { n: m.items.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: m.items.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } : dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
           <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
-            <h2 className="sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
+            <h2 className="sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
               style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: chung ? 'var(--text-faint)' : 'var(--accent)' }}>
               <span className="min-w-0 text-[color:var(--text)] max-sm:flex-1">{m.label}</span>
               <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
@@ -168,7 +169,7 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false 
     /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · số quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
        CV6 (mockup v18, chủ SP 10/11): chevron 16 px NGAY SAU tên (sau chip), xoay khi mở; CẢ DẢI là một nút (lớp phủ `after:`) — rê / focus cả dải;
        ⓘ và phần phụ nằm trên lớp phủ (`relative z-[1]`) nên vẫn bấm riêng. */
-    <h2 className={`sticky top-0 z-[3] m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
+    <h2 className={`sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-x-2 border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)] hover:bg-[color:var(--accent-soft)] has-[:focus-visible]:shadow-[inset_0_0_0_2px_var(--accent)] max-sm:gap-x-1.5 max-sm:pr-1 ${mo ? 'border-b' : ''}`}
       style={{ borderBottomColor: 'var(--line)', borderLeftColor: trungTinh ? 'var(--text-faint)' : 'var(--accent)' }}>
       <button type="button" aria-expanded={mo} onClick={onMo}
         className="group flex min-h-[44px] min-w-0 appearance-none items-center gap-2 border-0 bg-transparent py-2.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none">
@@ -275,7 +276,7 @@ function CotNut({ it, nut, daXong, mo, trieu, nhanNut, onBam, nutPhu }: {
         {nut && (
           <button type="button" className={`btn btn-sm min-h-[44px] justify-center whitespace-nowrap px-2.5 text-[13px] font-semibold sm:h-[30px] sm:min-h-[30px] ${an375 ? 'max-sm:hidden' : ''}`} onClick={onBam}
             aria-label={nhanNut} aria-expanded={it.con?.length && mo !== undefined ? mo : undefined}>
-            {nut}{coTrieu && <span aria-hidden className="ml-1">▾</span>}
+            {nut}{coTrieu && <MuiChev mo cl="ml-1 inline-block !h-3 !w-3 align-[-2px]" />}
           </button>
         )}
         {nutPhu}
@@ -532,7 +533,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
         {/* 375: dòng gộp — chạm cả dòng mở khay, "▾" mờ thay nút (nút chiếm chỗ làm chip tên xuống dòng). */}
         {con ? (
           <>
-            <span aria-hidden className={`self-start text-[15px] leading-snug text-faint max-sm:col-start-2 max-sm:row-start-1 sm:hidden ${mo ? 'rotate-180' : ''}`}>▾</span>
+            <span aria-hidden className="self-start text-faint max-sm:col-start-2 max-sm:row-start-1 sm:hidden"><MuiChev mo={mo} /></span>
             <span className="contents max-sm:[&>*]:hidden"><CotNut it={it} nut={nut} daXong={daXong} mo={mo} onBam={bam} nutPhu={dong.nutPhu?.(it)} /></span>
           </>
         ) : <CotNut it={it} nut={nut} daXong={daXong} onBam={bam} nutPhu={dong.nutPhu?.(it)} />}

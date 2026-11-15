@@ -1,5 +1,6 @@
 import type { TrangThaiVp } from '@shared/domain/index.ts';
 import { CHIP_VUONG } from '../../ui/Nhan.tsx';
+import { MuiChev } from '../../ui/HangNhom.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 /** Dấu tích mảnh 12 px, nét 1.5 — không dùng ký tự ✓ (Inter cỡ nhỏ vẽ thành chấm, memory "bẫy ký tự nhỏ"). */
@@ -15,10 +16,8 @@ export function DauTich({ className = '' }: { className?: string }) {
 /** Mũi tên mở/gập 12 px — tam giác đặc ▸ khi gập, ▾ khi mở (RA-UI-6: "›" nét là dấu đổi trang — G6). */
 export function MuiTenGap({ mo }: { mo: boolean }) {
   return (
-    <svg viewBox="0 0 12 12" width="12" height="12" aria-hidden="true" className={`inline-block shrink-0 transition-transform motion-reduce:transition-none ${mo ? 'rotate-90' : ''}`}
-      fill="currentColor">
-      <path d="M4 2.5 8.5 6 4 9.5z" />
-    </svg>
+    /* NT-SUA / GD-18: chevron nét như mọi mũi mở (thay tam giác đặc). */
+    <MuiChev mo={mo} cl="inline-block !h-3 !w-3" />
   );
 }
 

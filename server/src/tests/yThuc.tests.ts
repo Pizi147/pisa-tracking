@@ -411,6 +411,17 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((viol.similarViolations(gvbm, { studentId: st.id, category: 'homework', occurredOn: TODAY }) as any[]).length === 0, 'Vi phạm đã xoá không tính là trùng');
   });
 
+  check('NT-SUA · Hoàn tác ghi vi phạm: người vừa ghi xoá được ngay bản vừa tạo (thùng rác 30 ngày), số vi phạm của em trở lại như trước; GV khác không xoá được', () => {
+    const st = makeStudent('NT-SUA');
+    const truoc = one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id);
+    const v = vid(record(gvbm, st.id, { description: 'Vi phạm vừa ghi, bấm Hoàn tác trong toast' }));
+    assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === truoc + 1, 'đã ghi');
+    assertThrows(() => viol.deleteViolation(gvbm2, v), /không có quyền|người ghi|chủ nhiệm/, 'Hoàn tác chỉ của người ghi / GVCN / QL');
+    const kq = viol.deleteViolation(gvbm, v);
+    assert(kq.ok && kq.thungRacId > 0, `Hoàn tác = xoá vào thùng rác (khôi phục được): ${JSON.stringify(kq)}`);
+    assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === truoc, 'Hoàn tác trả số vi phạm về như trước');
+  });
+
   check('PR-J · V07 Gửi lại cùng một request (idempotency_key) không tạo dòng thứ hai', () => {
     const st = makeStudent('V07');
     const a = record(gvbm, st.id, { idempotencyKey: 'pj-v07-key' });
