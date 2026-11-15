@@ -52,8 +52,8 @@ export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision 
  * GD-20d (⑫ D1–D3): ô "Hoàn thành Case" BẬT SẴN khi đủ ba — Kết thúc PA (hoặc kết quả cuối) · PA cuối còn chạy của Case · kỳ này đạt:
  * Tiến triển "Tiến bộ rõ" (`improved`); Bổ trợ miễn phí: Mini Test ≥ `nguongMiniTest` (ngưỡng chung, theo ngày làm). Thiếu một → tắt sẵn. Không máy tự đóng Case.
  */
-export const hoanThanhCaseBatSan = (x: { ketThuc: boolean; paCuoi: boolean; outcome: string; boTroMienPhi: boolean; mtTyLe: number | null; mtNgay: string | null }): boolean => {
-  if (!x.ketThuc || !x.paCuoi) return false;
+export const hoanThanhCaseBatSan = (x: { ketThuc: boolean; outcome: string; boTroMienPhi: boolean; mtTyLe: number | null; mtNgay: string | null }): boolean => {
+  if (!x.ketThuc) return false;   // "PA cuối còn chạy" do nơi gọi chặn (`hoanThanhCase` chỉ có khi PA là PA cuối)
   if (x.boTroMienPhi) return x.mtTyLe != null && Number.isFinite(x.mtTyLe) && x.mtTyLe >= nguongMiniTest(x.mtNgay);
   return x.outcome === 'improved';
 };

@@ -290,7 +290,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   /* #3: hiện ô khi lần ghi này kết thúc PA (Kết thúc PA / Kết quả cuối của PA quy chế) — không ở Sửa kết quả. */
   const ketThucPa = !sua && (lanCuoi || decision === 'end');
   /* GD-20d: bật sẵn khi kết thúc PA cuối + kỳ này đạt (Tiến bộ rõ; Bổ trợ miễn phí: Mini Test ≥ ngưỡng chung). Tay GV thắng. */
-  const batSan = !!hoanThanhCase && hoanThanhCaseBatSan({ ketThuc: ketThucPa, paCuoi: true, outcome, boTroMienPhi: coMiniTest, mtTyLe: mtTyLe.trim() === '' ? null : Number(mtTyLe.replace(',', '.')) / 100, mtNgay: mtNgay || null });
+  const batSan = !!hoanThanhCase && hoanThanhCaseBatSan({ ketThuc: ketThucPa,outcome, boTroMienPhi: coMiniTest, mtTyLe: mtTyLe.trim() === '' ? null : Number(mtTyLe.replace(',', '.')) / 100, mtNgay: mtNgay || null });
   const htCase = htTay ?? batSan;
   const coHt = !!hoanThanhCase && ketThucPa && htCase;
   const mucHt = htMuc ?? CASE_OUTCOMES.find((x) => CASE_OUTCOME_LABEL[x] === outcomeLabelFor(outcome)) ?? '';
@@ -620,13 +620,14 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           )}
           {hoanThanhCase && ketThucPa && (
             /* #3 (G2-05, G2-07): PA cuối của Case — tick là hoàn thành Case luôn; mức theo Tiến triển, kết luận = Nhận xét (sửa được). */
-            <div className="flex flex-col gap-2.5">
-              <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-200 sm:min-h-0">
+            /* GD-20d (mockup ⑫ `.ht-case`): thẻ có viền — bật viền đậm, tắt viền nhạt; phần con thụt 28 px ở 1440, sát lề ở 375. */
+            <div className="flex flex-col gap-3 rounded-[10px] border px-3.5 py-3" style={{ borderColor: htCase ? 'var(--line-strong)' : 'var(--line)' }}>
+              <label className="flex min-h-[44px] cursor-pointer items-center gap-2.5 text-sm font-bold text-slate-200 sm:min-h-0">
                 <input type="checkbox" className="h-4 w-4" checked={htCase} disabled={busy} onChange={(e) => setHtTay(e.target.checked)} />
                 {t('Hoàn thành Case')}
               </label>
               {htCase && (
-                <div className="ml-1 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
+                <div className="space-y-3 sm:pl-7">
                   <Truong nhan={t('Sau cả đợt hỗ trợ, em tiến bộ đến đâu?')} batBuoc as="div" loi={loiCua('ht-muc')}>
                     <div className="grid grid-cols-2 gap-2 outline-none sm:grid-cols-4" role="group" {...o('ht-muc')} tabIndex={-1}>
                       {CASE_OUTCOMES.map((x) => (
