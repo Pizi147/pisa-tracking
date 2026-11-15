@@ -759,6 +759,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (scope.none && !lopFtChoGvSpeaking(p, today).length && !lopMt0ChoGvSpeaking(p, today).length) return { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
+  const chiNhomGoc = f.chiNhom;   // GV-KIEM-ADMIN: nơi gọi muốn tập nhóm nào thì phần GV cũng chỉ tập đó (chuông nhẹ, tab, Admin xem một GV)
   if (xemViec === 'cham-diem') f = { ...f, chiNhom: new Set<WorkGroupKey>([...(f.chiNhom ?? ['score', 'xuat_bc_ph'])].filter((g) => g === 'score' || g === 'xuat_bc_ph')) };
 
   const conn = db();
@@ -1705,10 +1706,11 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* GV-KIEM-ADMIN: phần GV = ĐÚNG như GV thuần (một lượt myWork với vai GV thuần; thay dòng trùng khoá bằng bản của GV, thêm dòng GV thấy mà Admin lens không có). Đặt SAU lọc "Của tôi" của Admin
      để không mất việc người khác giữ mà GV vẫn thấy (làm thay / chưa giữ). Admin thuần không có vai GV nên không tốn gì. Chuông / badge / Tổng quan / trang Công việc cùng thấy. */
   if (xemViec === 'cham-diem' && p.roleKeys.includes('teacher')) {
-    const phanGv = myWork(boVaiAdmin(p), { branchId: f.branchId, cnCheo: f.cnCheo }) as any;
+    /* Truyền đủ phạm vi của nơi gọi (`chiNhom` gốc, `classIds`, `tachCuaToi`); lọc lại theo `chiNhomGoc` sau khi gộp (nhóm dựng kèm vì phụ thuộc có thể lọt). */
+    const phanGv = myWork(boVaiAdmin(p), { branchId: f.branchId, cnCheo: f.cnCheo, classIds: f.classIds, tachCuaToi: f.tachCuaToi, ...(chiNhomGoc ? { chiNhom: chiNhomGoc } : {}) }) as any;
     const theoKhoa = new Map<string, WorkItem>((phanGv.items ?? []).map((it: WorkItem) => [it.key, it]));
     for (let i = 0; i < items.length; i++) { const g = theoKhoa.get(items[i].key); if (g) { items[i] = g; theoKhoa.delete(items[i].key); } }
-    items.push(...theoKhoa.values());
+    items.push(...[...theoKhoa.values()].filter((it) => !chiNhomGoc || chiNhomGoc.has(it.group)));
   }
   const order: WorkGroupKey[] = [
     'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv', 'khai_bac',

@@ -432,6 +432,12 @@ export function HoTroHocVienTab() {
   /* CV-TAB (mockup v17 `.tom`): đầu trang "n việc · m quá hạn" — đếm dòng (`demDongViec`), cùng phạm vi lọc người / khung với badge tab. */
   /* GD-9 ([XM-9a]): GV / TVV — "n việc" đếm DÒNG CỦA TÔI (`dongCuaToi`, cùng hàm chuông / Tổng quan); việc làm thay vẫn trong danh sách, ghi riêng "· n làm thay". */
   const tong = useMemo(() => demDongViec(laQuanLy ? items : dongCuaToi(items)), [items, laQuanLy]);
+  /* GD-ADMIN-HAI-SO (PTA 15/11, D.V13): Admin xem "Tất cả" — đầu trang tách hai số cùng hàm `demDongViec`: "Việc của tôi" (= số chuông / badge: `dongCuaToi`) · "Việc của GV" (phần còn lại). */
+  const haiSo = useMemo(() => {
+    if (!chiChamDiem || nguoi !== 'tat-ca') return null;
+    const cua = dongCuaToi(items), khoa = new Set(cua.map((x) => x.key));
+    return { ban: demDongViec(cua), gv: demDongViec(items.filter((x) => !khoa.has(x.key))) };
+  }, [items, chiChamDiem, nguoi]);
   const soLamThay = useMemo(() => (laQuanLy ? 0 : demDongViec(items).n - tong.n), [items, laQuanLy, tong]);
   /* Rà 11/11 G5-09: tab Chấm điểm ghi thêm số BÀI (đơn vị của ô "Bài chưa nhập điểm" ở Tổng quan) — người bấm ô thấy lại đúng số vừa bấm. Dữ liệu đã nạp. */
   const soBaiCham = useMemo(() => items.filter((it) => it.group === 'score').reduce((n, it) => n + (it.soBai ?? 0), 0), [items]);
@@ -491,8 +497,15 @@ export function HoTroHocVienTab() {
               {/* GD-8 ([XM-1]): TVV — số việc ở ô "Việc" của dải chỉ số, đầu trang chỉ còn chi nhánh (khỏi lặp). */}
               {laTvv ? tenCn : <>
               {[tenGvChon, tenCn].filter(Boolean).map((x) => <span key={x}>{x} · </span>)}
+              {haiSo ? <>
+                {t('Việc của tôi')} <b className="font-bold tabular-nums text-[color:var(--text)]" data-hd="cv-so-toi">{haiSo.ban.n}</b>
+                {haiSo.ban.quaHan > 0 && <> ({haiSo.ban.quaHan} {t('quá hạn')})</>}
+                {' · '}{t('Việc của GV')} <b className="font-bold tabular-nums text-[color:var(--text)]">{haiSo.gv.n}</b>
+                {haiSo.gv.quaHan > 0 && <> (<b className="font-bold tabular-nums text-late">{haiSo.gv.quaHan}</b> {t('quá hạn')})</>}
+              </> : <>
               <b className="font-bold tabular-nums text-[color:var(--text)]">{tong.n}</b> {xemMotGv && tenCnXem ? t('việc ở {cn}', { cn: tenCnXem }) : t('việc')}
               {tong.quaHan > 0 && <> · <b className="font-bold tabular-nums text-late">{tong.quaHan}</b> {t('quá hạn')}</>}
+              </>}
               {soLamThay > 0 && <> · <span title={t('Việc của GV khác mà bạn làm thay được — có trong danh sách, không tính vào việc của bạn.')}>{t('{n} làm thay', { n: soLamThay })}</span></>}
               </>}
               {tab === 'cham-diem' && soBaiCham > 0 && <> · <b className="font-bold tabular-nums text-[color:var(--text)]">{soBaiCham}</b> {t('bài')}</>}
