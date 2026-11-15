@@ -533,3 +533,15 @@ Bối cảnh: PTA Overhaul đưa 9 đề xuất (lời 46): 1 Báo cáo PH gợi
 - **Thiết kế lại chuông:** đẹp, trực diện, chính xác, không dàn trải; theo từng tab của Công việc; bấm thanh → ra trang chứa các đầu việc đó; nút ở cuối thanh → mở rộng xem tóm tắt đầu việc. (Chủ SP hỏi ý PTA.)
 - **Luật làm việc:** luôn dùng skill thiết kế để giao diện không dày, trực diện, sạch, đẹp, gọn.
 CÒN HỎI (chủ SP hỏi, PTA Overhaul trả lời bằng đề xuất — chờ chốt): gợi ý sẵn là AI hay khung (mục 1, 2) · dán ra trông thế nào (mục 7) · cách bày chuông · sau "đề xuất không xử lý" thì GV ghi vi phạm có quyền nói lại không.
+
+## 15/11 — lời 48: "Không xử lý" — báo lại là xong
+
+Bối cảnh: PTA Overhaul trả lời năm điểm của lời 47 (gợi ý sẵn = KHUNG ghép chữ GV đã ghi, có nút "Chèn", không AI · mẫu chữ dán ra · chuông theo tab, mở rộng bằng "⌄" · luồng "Yêu cầu xử lý" · rút đề xuất 4 vì web đã có · đề xuất 9 đổi thành ô "Hoàn thành Case" bật sẵn) và hỏi: GVCN chọn "Không xử lý" thì báo lại là xong, hay GV ghi được yêu cầu lại.
+
+> "Báo lại là xong, GVBM kia sẽ được thông báo từ chối xử lý, nhưng vẫn để lại vi phạm và theo đúng luật 3 vi phạm trong 2 tuần phải xử lý. Còn nếu GVBM kia có ý kiến thì tự trao đổi bên ngoài với nhau không qua website, nếu GVCN đổi ý thì vẫn luôn có thể xác nhận xử lý ở trong trang ý thức. Ok không?"
+
+ĐÃ CHỐT (PTA Overhaul: đồng ý, khớp đề xuất):
+- GVCN "Không xử lý" (lý do bắt buộc) → **báo lại là xong**: GV ghi vi phạm nhận thông báo từ chối xử lý; không có vòng trao đổi trên web.
+- **Vi phạm vẫn để lại** và **vẫn tính vào luật 3 vi phạm trong 2 tuần** (đủ 3 thì buộc xử lý như cũ).
+- GVCN đổi ý → **luôn xác nhận xử lý được ở trang Ý thức**.
+- Các điểm PTA trả lời ở trên chủ SP không phản đối → làm theo: thiết kế + đề bài mockup ⑪ ⑫ ⑬ + việc máy chủ LG-11 … LG-13 ở `13-thiet-ke-dot-4.md`.
