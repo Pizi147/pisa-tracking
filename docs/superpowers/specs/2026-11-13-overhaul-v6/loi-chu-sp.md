@@ -559,3 +559,9 @@ Bối cảnh: chủ SP thấy ảnh web Tổng quan của Admin văn phòng có 
 > "ok duyệt"
 
 ĐÃ CHỐT: **mockup ⑫ "GV gõ ít hơn" ĐÃ DUYỆT** (`thiet-ke/v21/gv-viet-it.html`, PR #1727 đã merge) — bản đã áp hai chỉnh lưới và các [XM] PTA chốt: khối "Bạn đã ghi tháng này" + "Chèn" ở Báo cáo PH; "Chèn" + "Chèn cho n em" ở bàn giao; lưới Ghi kết quả PA theo lớp (chân ba nút); "Hoàn thành Case" bật sẵn khi kết thúc PA cuối với "Tiến bộ rõ". Plan code: `14-plan-giao-dien-dot-4.md` (GD-20a … GD-20d), gửi PTA Plan. Mockup ⑪ (#1726), ⑬ (#1728) còn chờ duyệt.
+
+## 15/11 — lời 51 (chủ SP nói trong session mockup ⑬; session đó chuyển lại nguyên văn): "Sao chép" chỉ là biểu tượng
+
+> "sao chép để mỗi hình icon 2 tờ giấy là ok rồi, không cần hẳn 1 nút đâu"
+
+ĐÃ CHỐT: nút "Sao chép để nhắn" (H9) là **một biểu tượng hai tờ giấy**, không có chữ, không khung nút (cỡ và dáng như ✕ / ⓘ; 375 vùng chạm 44); chép xong biểu tượng đổi ✓ trong 2 giây. Nhãn đọc màn hình vẫn có. Mockup ⑬ đã sửa (PR #1728, còn chờ duyệt cả mockup).
