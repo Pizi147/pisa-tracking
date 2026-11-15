@@ -7,9 +7,9 @@ Seed demo 14/09, QL Nguyễn Khánh Vy (vai 2), Công việc › Tất cả › 
 
 | Ảnh | Nội dung |
 |---|---|
-| `cap-nhap-ho-1440-toi.png` | TRƯỚC │ SAU — "Nhập hộ" MB FT 101 Listening, Reading (việc của GV Trần Ngọc Hà): dòng quy chế thêm "Bạn nhập hộ · …" |
-| `cap-nhap-ho-375-sang.png` | như trên, 375: câu xuống dòng trong chân, không cắt chữ |
-| `web-nhap-ho-ca-lop-1440-toi.png` | SAU — việc "Cả lớp · 4 lớp W3 SEP" (panel nhiều lớp): "Bạn nhập hộ · "-" = vắng: dời sang tuần sau, không tự huỷ" |
+| `cap-nhap-ho-1440-toi.png` | TRƯỚC │ SAU — Công việc › Chấm điểm › "Nhập hộ" (đã có dải vàng "Bạn đang làm thay Trần Ngọc Hà"): dòng quy chế KHÔNG thêm đầu câu (PTA 15/11, [XM-Q82b]) |
+| `cap-gv-tre-1440-toi.png` | TRƯỚC │ SAU — Tổng quan › số "Chấm quá hạn" › dòng MB FT 101 MT1 L, R › Nhập hộ (panel KHÔNG có dải làm thay): "Bạn nhập hộ · "-" lúc này = Không dự thi, không dời" |
+| `cap-gv-tre-375-sang.png` | như trên, 375: câu xuống dòng trong chân, không cắt chữ |
 
 Không ✕ / ⋯ nào đổi. Demo 14/09 đang ở tuần W3 SEP nên không có việc "trước tuần Test" để chụp; biến thể đó có trong phép kiểm.
 
@@ -17,12 +17,12 @@ Không ✕ / ⋯ nào đổi. Demo 14/09 đang ở tuần W3 SEP nên không có
 
 | Mục | Theo mã | Chỗ | Kết quả |
 |---|---|---|---|
-| Ai là "nhập hộ" | `WorkItem.mine === false` (máy chủ đã trả trong việc) · panel GV trễ chấm: `gvId !== người xem` | `PanelNhapDiem` + panel nhiều lớp (`PanelViec.tsx`) · `PanelGvTre.tsx` | 0 câu thêm |
+| Ai là "nhập hộ" | panel GV trễ chấm: `gvId !== người xem` → prop `nhapHo` của `PanelNhapDiem` | `PanelGvTre.tsx` | 0 câu thêm |
 | Q82 | "Bạn nhập hộ · {câu của lượt}" — đứng đầu MỌI biến thể của `quyCheNhapDiem`; câu sau giữ luật của lượt (vắng / quá hạn / MT cũ / chưa tới tuần) | dòng quy chế panel Nhập điểm | KHỚP |
 | Q82 "trước tuần Test" **[XM-Q82]** | Bảng: "hỏi dời về tuần này rồi lưu". Mã NHAP-DIEM-a (chủ SP 14/11, `doiVeTuanNayNeuChua`): lưu điểm trước tuần Test thì máy **tự dời về tuần này, không hỏi, không cần QL** → câu: "Chưa tới tuần Test {tuần} · lưu điểm thì máy dời về tuần này" | như trên | SỬA CÂU THEO MÃ |
 | Q5 (chưa tới tuần Test, mọi người) | câu cũ "em làm sớm thì nhờ QL dời lịch" là luật trước NHAP-DIEM-a → cùng câu mới ở trên (một luật một câu) | như trên | SỬA CÂU THEO MÃ |
 | `LamDongSoLieu` (mở Nhập điểm từ panel số liệu) | dòng số liệu không mang `mine` → không ghi "Bạn nhập hộ" (không đoán) | — | GIỮ |
-| [XM-Q82b] | Panel làm thay đã có dải vàng "Bạn đang làm thay {GV}". "Bạn nhập hộ · " trong dòng quy chế là theo bảng Q82; nếu PTA thấy trùng thì chỉ cần bỏ đầu câu (một dòng ở `quyCheNhapDiem`) | — | HỎI PTA |
+| [XM-Q82b] | PTA 15/11 CHỐT: nơi có dải "Bạn đang làm thay {GV}" (Công việc — việc điểm của người khác chỉ có hai trạng thái: dải làm thay, hoặc chỉ xem) thì KHÔNG thêm đầu câu; chỉ panel GV trễ chấm (không có dải) giữ "Bạn nhập hộ · " | `PanelViec.tsx` không truyền cờ | ĐÃ SỬA |
 
 ## 2. Bảng thao tác TRƯỚC → SAU
 
