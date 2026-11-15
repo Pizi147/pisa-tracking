@@ -587,3 +587,11 @@ PTA Overhaul hiểu:
 - Tiêu chí: trực diện hơn · cụ thể, chính xác hơn · **tính đến mọi trường hợp** · chi tiết nhưng rõ, ngắn, dễ hiểu.
 - Phạm vi vai: **mọi vai trừ Quản trị** (GV / GVCN, Head tutor, TVV, QL, Admin văn phòng, CX).
 - Dùng skill thiết kế; brainstorm trước, chủ SP chốt hướng rồi mới làm mockup / plan.
+
+## 15/11 — lời 55: Hướng dẫn làm theo hướng B
+
+Bối cảnh: PTA Overhaul rà hệ Hướng dẫn hiện tại và đưa ba hướng — A giữ khung, viết lại nội dung · B "?" trả lời đúng thứ đang mở (ngữ cảnh ba tầng, mỗi việc một thẻ khuôn cố định, tab "Khi gặp…", máy tự kiểm) · C AI hỏi đáp / tour tự chạy (không khuyên).
+
+> "Làm hướng B"
+
+ĐÃ CHỐT: Hướng dẫn V3 theo **hướng B**. Hai điểm PTA đề xuất kèm trong hướng B, chủ SP không phản đối → làm theo, duyệt lại ở mockup: tab "Tuần của tôi" gộp vào "Tôi muốn…" thành bộ lọc nhịp (nhường chỗ tab "Khi gặp…") · dải "Có gì mới" ở đầu panel. Thiết kế + đề bài mockup ⑭ + plan: `15-huong-dan-v3.md`.
