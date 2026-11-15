@@ -6,7 +6,7 @@ import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, ExamPlanText, Info as Tag, Skeleton, Status, TargetText } from '../../ui/ui.tsx';
-import { Nhan, NhanKq, O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
+import { BadgeHan, Nhan, NhanKq, O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import type { ExamPlan } from '../../../../shared/domain/index.ts';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -503,7 +503,7 @@ export function ConLaiLuot({ ds: conLai }: { ds: ViecConLai[] }) {
                 /* GD-11c (mockup ⑦ C1): nút-chip chuẩn "Nhập điểm L" — việc trước, kỹ năng sau, cùng màu chữ nút. */
                 <button type="button" className="btn btn-sm min-h-[44px] max-w-full sm:min-h-0" onClick={v.mo}>
                   <span className="min-w-0 max-w-[16rem] truncate" title={v.viec}>{v.viec}</span><span>{v.nhan}</span>
-                  {v.quaHan && <span className="ml-1.5 whitespace-nowrap text-late">{v.quaHan}</span>}
+                  {v.quaHan && <span className="ml-1.5"><BadgeHan muc="qua">{v.quaHan}</BadgeHan></span>}
                 </button>
               ) : (
                 /* Khung `.viec.khac`: cao 30, nền surface, viền đứt mảnh, khoảng 6, chữ 13 / 500 màu text-dim, nhãn môn màu nhấn. Quá hạn của người

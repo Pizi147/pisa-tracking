@@ -4,6 +4,7 @@ import { ONgay } from './ONgay.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { HAN_GAN_NGAY, daysBetween, shortDate } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+import { BadgeHan } from './Nhan.tsx';
 
 /**
  * DÒNG HẠN + SỬA HẠN TẠI CHỖ (HAN-BAO-PH, chủ SP 03/11 N34; mockup `thiet-ke/audit-0311/u10-y-thuc.html` K5 · K8) — dùng chung việc Báo PH và Meeting CX.
@@ -48,13 +49,11 @@ export function DongHan({ han, hanMacDinh, hanChon, xong, suaDuoc, onLuu, onTaiL
   };
   const moSua = () => { setNhap(han); setLoi(null); setSua(true); };
   const conNgay = daysBetween(hn, han);
-  /* Badge khung + chấm (mockup U10 `.bv`, chủ SP 03/11 U04): quá hạn đỏ · ≤ 3 ngày vàng · xa xám (#814 hạn xa = viên xám). */
-  const BV = 'inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-md border px-2 text-xs font-semibold';
-  /* V22 (PTA rà #1649): chip hạn chỉ màu — không chấm, không biểu tượng. */
+  /* BADGE-QUA-HAN (chủ SP 15/11): quá hạn badge đỏ · ≤ 3 ngày badge vàng (`BadgeHan`) · xa chữ thường (V22). */
   const tinh = xong || !hn ? null
-    : conNgay < 0 ? <span className={`${BV} border-late-line bg-late-bg text-late`}>{t('quá hạn {n} ngày', { n: -conNgay })}</span>
-    : conNgay <= HAN_GAN_NGAY ? <span className={`${BV} border-soon-line bg-soon-bg text-soon`}>{conNgay === 0 ? t('hôm nay') : t('còn {n} ngày', { n: conNgay })}</span>
-    : <span className={`${BV} text-slate-400`} style={{ borderColor: 'var(--line-strong)' }}>{t('còn {n} ngày', { n: conNgay })}</span>;
+    : conNgay < 0 ? <BadgeHan muc="qua">{t('quá hạn {n} ngày', { n: -conNgay })}</BadgeHan>
+    : conNgay <= HAN_GAN_NGAY ? <BadgeHan muc="gan">{conNgay === 0 ? t('hôm nay') : t('còn {n} ngày', { n: conNgay })}</BadgeHan>
+    : <span className="whitespace-nowrap text-xs text-slate-400">{t('còn {n} ngày', { n: conNgay })}</span>;
   const nguon = <span className="text-xs text-slate-500">{hanChon ? t('đã chỉnh · mặc định {ngay}', { ngay: shortDate(hanMacDinh, hn) }) : t('mặc định')}</span>;
 
   const giaTri = sua ? (

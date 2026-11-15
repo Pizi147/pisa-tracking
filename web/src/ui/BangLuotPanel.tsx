@@ -9,6 +9,7 @@ import { OTuanDay } from './TuanDayGv.tsx';
 import { HangTab } from './HangTab.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { ErrorState, Skeleton } from './ui.tsx';
+import { BadgeHan } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { useSession } from '../lib/session.tsx';
 import { fmtBand } from '../lib/format.ts';
@@ -448,7 +449,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     const k = ttViec(h);
     return k === 'dung' ? <span className="font-semibold text-ok">✓ {t('Đúng hạn')}</span>
       : k === 'muon' ? <span className="font-semibold text-late">{t('Làm muộn {n} ngày', { n: h.treNgay ?? 0 })}</span>
-      : <span className="font-semibold text-bad">{t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</span>;
+      : <BadgeHan muc="qua">{t('Chưa làm · quá {n} ngày', { n: h.treNgay ?? 0 })}</BadgeHan>;
   };
   const ngayLam = (h: HVc) => (h.ngayXong ? (laBai ? t('nhập {ngay}', { ngay: ddmm(h.ngayXong) }) : t('đã làm {ngay}', { ngay: ddmm(h.ngayXong) })) : null);
   const oVc = (h: HVc, c: DinhNghiaCot): ReactNode => {

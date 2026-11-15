@@ -1,5 +1,5 @@
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
-import { QuaHan } from './Nhan.tsx';
+import { BadgeHan, QuaHan } from './Nhan.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -14,8 +14,8 @@ import { t } from '@shared/i18n/index.ts';
  * Mini Test) là một đồng hồ riêng trong rule book; ngày trần ("30/08") không nói được người đọc đang trễ việc gì.
  *
  * PR-UX0 (B-2/B-3): việc là TIÊU ĐỀ DÒNG ở chỗ gọi, nên hạn chỉ là chữ mờ "hạn hết T2 31/08"; quá hạn nối
- * ngay sau BẰNG CHỮ ("quá hạn 15 ngày", đỏ cam, không nền, không khung); đúng hạn hôm nay là "hôm nay"
- * (vàng; V22: hạn chỉ bằng màu, không biểu tượng). Chỗ không có tiêu đề nói việc thì truyền `coViec` để hiện lại tên việc. Bản đầy đủ nằm ở tooltip.
+ * ngay sau bằng badge đỏ ("quá hạn 15 ngày", `BadgeHan` — BADGE-QUA-HAN 15/11); đúng hạn hôm nay là badge vàng "hôm nay"
+ * ( V22: hạn chỉ bằng màu, không biểu tượng). Chỗ không có tiêu đề nói việc thì truyền `coViec` để hiện lại tên việc. Bản đầy đủ nằm ở tooltip.
  *
  * `du-kien-ket-thuc` KHÔNG PHẢI HẠN: luôn trung tính, không bao giờ quá hạn, không bao giờ đỏ.
  *
@@ -49,15 +49,15 @@ export function Han({ loai, han, hanGoc, hen, tienTo, ghiChu, coViec, haiDong, b
   const tinHieu = (
     <>
       {v.tone === 'overdue' && <QuaHan ngay={v.daysOverdue} mo={mo} />}
-      {v.homNay && <span className="font-semibold text-soon">{t('hôm nay')}</span>}
+      {v.homNay && (mo ? <span className="text-slate-400">{t('hôm nay')}</span> : <BadgeHan muc="gan">{t('hôm nay')}</BadgeHan>)}
     </>
   );
   const coTinHieu = !boTinHieu && (v.tone === 'overdue' || v.homNay);
   return (
     <span title={title} className="text-xs tabular-nums text-slate-500">
       {[tienTo, coViec && loai !== 'du-kien-ket-thuc' ? v.viec : null].filter(Boolean).map((x) => `${x} · `).join('')}
-      {/* OV-12e: còn ≤ 3 ngày (chưa tới hôm nay) — chữ hạn vàng, cùng ngưỡng chip hạn (`deadlineView.ganHan`). */}
-      {v.ganHan && !v.homNay && !boTinHieu ? <span className="font-semibold text-soon">{v.han}</span> : v.han}
+      {/* OV-12e → BADGE-QUA-HAN: còn ≤ 3 ngày (chưa tới hôm nay) — badge vàng, cùng ngưỡng chip hạn (`deadlineView.ganHan`). */}
+      {v.ganHan && !v.homNay && !boTinHieu && !mo ? <BadgeHan muc="gan">{v.han}</BadgeHan> : v.han}
       {coTinHieu && (haiDong ? <span className="block">{tinHieu}</span> : <> {tinHieu}</>)}
       {v.hen && <> · {v.hen}</>}
       {ghiChu && <> · {ghiChu}</>}

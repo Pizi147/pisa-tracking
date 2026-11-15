@@ -7,7 +7,7 @@ import { ONgay } from '../../ui/ONgay.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { addDaysStr } from '../../lib/format.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
-import { CHIP_TRON, Nhan } from '../../ui/Nhan.tsx';
+import { BadgeHan, CHIP_TRON, Nhan } from '../../ui/Nhan.tsx';
 import { chipSauThi, chuSauThi, ngay, type GiaiDoanSauThi } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -74,11 +74,11 @@ export function NhanSauThi({ s, gon }: { s: { giaiDoan: GiaiDoanSauThi; han: str
   const chu = chuSauThi(s);
   if (!chu) return null;
   const tone = s.quaHan ? 'late' : s.giaiDoan === 'cho_buoc_tiep' ? 'ok' : 'soon';
-  const han = s.han ? (
-    <span className={`text-xs tabular-nums ${s.quaHan ? 'font-semibold text-late' : 'text-slate-400'}`}>
-      {[t('hạn {ngay}', { ngay: ngay(s.han, homNay) }), s.quaHan ? t('quá hạn') : s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
+  const han = !s.han ? null : s.quaHan ? <BadgeHan muc="qua">{t('hạn {ngay}', { ngay: ngay(s.han, homNay) })} · {t('quá hạn')}</BadgeHan> : (
+    <span className="text-xs tabular-nums text-slate-400">
+      {[t('hạn {ngay}', { ngay: ngay(s.han, homNay) }), s.daGiaHan ? t('đã gia hạn') : null].filter(Boolean).join(' · ')}
     </span>
-  ) : null;
+  );
   /* OV-15a: ô bảng — chip viền xanh "Đã thi · chờ KQ" / "Có KQ · chờ bước tiếp" (hàng tô nền đã thi ở chỗ gọi), trễ: chip viền đỏ + chữ sr-only "quá hạn" (V22: không biểu tượng). */
   if (gon) return (
     <span className="block text-xs leading-snug">

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+import { lopBadgeHan } from '../../ui/Nhan.tsx';
 import type { YThucHocVien } from './kieu.ts';
 
 /**
@@ -15,7 +16,7 @@ export const TAG = 'inline-flex h-[22px] items-center whitespace-nowrap rounded-
 export type TongBv = 'cho' | 'qua' | 'dang' | 'xong' | 'xem' | 'xam';
 const LOP_BV: Record<TongBv, string> = {
   cho: 'border-soon-line bg-soon-bg text-soon',
-  qua: 'border-late-line bg-late-bg text-late',
+  qua: '',   // BADGE-QUA-HAN XM-1: dáng `lopBadgeHan('qua')`
   dang: 'border-[color:var(--accent)] text-doing',
   xong: 'border-ok-line text-ok',
   xem: 'border-dashed border-[color:var(--accent)] text-doing',
@@ -31,7 +32,9 @@ export function BadgeViec({ tong, children, onClick, title, xuong = false, duong
   const dau = tong === 'qua' || tong === 'cho' ? null
     : tong === 'xong' ? <span aria-hidden className="text-xs">✓</span>
     : <span aria-hidden className="h-[7px] w-[7px] shrink-0 rounded-full bg-current" />;
-  const lop = `inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-semibold ${xuong ? 'min-h-6 py-[3px] text-left leading-snug' : 'h-6 whitespace-nowrap'} ${LOP_BV[tong]}${duong === 'dut' ? ' border-dashed' : ''}`;
+  const lop = tong === 'qua'
+    ? `${lopBadgeHan('qua')} max-w-full ${xuong ? '!h-auto min-h-[22px] !whitespace-normal rounded-[11px] py-[3px] text-left !leading-snug' : ''}`
+    : `inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 text-xs font-semibold ${xuong ? 'min-h-6 py-[3px] text-left leading-snug' : 'h-6 whitespace-nowrap'} ${LOP_BV[tong]}${duong === 'dut' ? ' border-dashed' : ''}`;
   if (onClick) return <button type="button" title={title} className={`${lop} cursor-pointer appearance-none hover:brightness-110 max-sm:min-h-[44px]`} onClick={onClick}>{title && <span className="sr-only">{title}: </span>}{dau}{children} <span aria-hidden>›</span></button>;
   return <span title={title} className={lop}>{dau}{children}</span>;
 }
