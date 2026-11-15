@@ -146,14 +146,16 @@ export { chenHan };
 
 /**
  * Loại dòng việc trên web (khớp `viecWeb` của thẻ) = nhóm máy chủ; HD3-2 tách các dòng cùng nhóm mà là việc khác nhau (15 mục 8.1 "đơn vị một thẻ = tên
- * dòng việc"): Chấm Speaking chung · Chọn PA (`chonPa`) · Bàn giao đổi GV (`ban_giao_gv:`) · Nhập điểm MT cũ (`missing_data` `lich-su:`).
+ * dòng việc"): Chấm Speaking chung · Chọn PA (`chonPa`) · Bàn giao đổi GV (`ban_giao_gv:`) · Nhập điểm MT cũ (`missing_data` `lich-su:`) · Chốt ngày thi
+ * (`missing_data` `chot-ngay-thi:`, HD3-3).
  */
-export const MA_VIEC_TACH = ['cham_speaking', 'chon_pa', 'ban_giao_gv', 'mt_cu'] as const;
+export const MA_VIEC_TACH = ['cham_speaking', 'chon_pa', 'ban_giao_gv', 'mt_cu', 'chot_ngay_thi'] as const;
 export function maViec(it: { group: string; key: string; chonPa?: boolean }): string {
   if (it.key === KHOA_CHAM_SPEAKING) return 'cham_speaking';
   if (it.group === 'xac_nhan_pa' && it.chonPa) return 'chon_pa';
   if (it.group === 'ban_giao' && it.key.startsWith('ban_giao_gv:')) return 'ban_giao_gv';
   if (it.group === 'missing_data' && it.key.startsWith('lich-su:')) return 'mt_cu';
+  if (it.group === 'missing_data' && it.key.startsWith('chot-ngay-thi:')) return 'chot_ngay_thi';
   return it.group;
 }
 
