@@ -496,7 +496,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
         {/* HD3-1 (15 mục 8.3): "?" nổi trên nền mờ, sát mép trái panel, cùng dáng "?" thanh trên — "?" thanh trên bị panel che. ≥ 640 px (375 panel phủ hết). */}
         {nutHd && rong !== 'toan' && (
           <button type="button" onClick={moHuongDan} aria-label={t('Hướng dẫn')} title={t('Hướng dẫn')} data-hd="nut-hd-noi"
-            className="absolute -left-12 top-2.5 grid h-9 w-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-white hover:bg-white/15 max-sm:hidden">
+            className="absolute -left-12 top-2.5 grid h-9 w-9 cursor-pointer place-items-center bam rounded-full border-0 bg-transparent text-white max-sm:hidden">
             <span aria-hidden className="grid h-[22px] w-[22px] place-items-center rounded-full border-[1.5px] border-current text-[13px] font-bold leading-none">?</span>
           </button>
         )}
@@ -512,6 +512,11 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
  * DÒNG QUY CHẾ (GD-3, mockup v21 `.quy-che`): "Quy chế" · một câu · ⓘ chi tiết. `KhungPanel` vẽ ngay trên chân (`quyChe`); panel có chân v3 (nút nằm
  * trong thân) vẽ trực tiếp ngay trên hàng nút với `px="px-0"`.
  */
+/** HD3-1: ⓘ dòng quy chế = mở panel "?" đúng thẻ việc (thẻ có câu quy chế + chi tiết ở đầu). Dáng ⓘ như `NutLuat`. */
+const NutHdQuyChe = () => (
+  <button type="button" className="-m-[15px] cursor-pointer border-0 bg-transparent p-[15px] text-sm font-normal leading-none text-slate-500 hover:text-slate-200 sm:m-0 sm:p-0"
+    title={t('Hướng dẫn việc này')} aria-label={t('Hướng dẫn việc này')} onClick={moHuongDan}>ⓘ</button>
+);
 export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string; chiTiet?: string }; px?: string; /** false: đứng đầu chân (chân đã có vạch trên) — vạch DƯỚI tách khỏi hàng nút. */ vien?: boolean }) {
   /* HD3-1: "?" đọc câu quy chế đang hiện (dòng gắn sau cùng) cho đầu thẻ việc. */
   useEffect(() => ghiQuyCheMo({ chu: qc.chu, chiTiet: qc.chiTiet }), [qc.chu, qc.chiTiet]);
@@ -519,10 +524,9 @@ export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string
     <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
       {/* GD-20c (PTA rà #1738): 375 câu xuống dòng đủ chữ, không "…"; ≥ 640 một dòng như mockup ⑤. HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên,
-          đúng thẻ việc (thẻ có câu này + chi tiết ở đầu) — không còn hộp chữ riêng. */}
+          đúng thẻ việc (thẻ có câu này + chi tiết ở đầu) — không còn hộp chữ riêng; ⓘ vẫn chỉ khi có chi tiết. */}
       <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
-      <button type="button" className="-m-[15px] cursor-pointer border-0 bg-transparent p-[15px] text-sm font-normal leading-none text-slate-500 hover:text-slate-200 sm:m-0 sm:p-0"
-        title={t('Hướng dẫn việc này')} aria-label={t('Hướng dẫn việc này')} onClick={moHuongDan}>ⓘ</button>
+      {qc.chiTiet && <NutHdQuyChe />}
     </div>
   );
 }

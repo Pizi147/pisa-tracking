@@ -42,19 +42,12 @@ function ChuThe({ chu }: { chu: Khoa }) {
   })}</>;
 }
 
-/** Tầng 2: tab đang đứng — Công việc `?nhom=` (thiếu khi có `?loai=` → suy từ loại); màn khai `tabs` → tham số `q` của URL. */
-function tabDangDung(man: ManHd | null, search: URLSearchParams, tvv: boolean): { k: string; ten: string; cau?: Khoa; the: (hd: HuongDan) => ViecHd[] } | null {
-  if (!man) return null;
-  if (man.id === 'cong-viec') {
-    const loai = search.get('loai');
-    const k = search.get('nhom') ?? (loai ? (tvv ? nhomViecTvvCua : nhomViecCua)(loai) : null);
-    if (!k || k === 'duyet' && !search.get('nhom')) return null;
-    return { k, ten: tenTabHd(k), cau: man.tabs?.ds[k]?.cau, the: (hd) => (hd.lam ?? []).filter((v) => tabCuaThe(v) === k) };
-  }
-  if (!man.tabs) return null;
-  const k = search.get(man.tabs.q) ?? man.tabs.mac;
-  const x = k ? man.tabs.ds[k] : undefined;
-  return x && k ? { k, ten: t(x.ten), cau: x.cau, the: (hd) => x.the.map((id) => hd.lam?.find((v) => v.id === id)).filter((v): v is ViecHd => !!v) } : null;
+/** Tầng 2: tab đang đứng — Công việc `?nhom=` (thiếu khi có `?loai=` → suy từ loại). ponytail: tab hồ sơ lớp / HV / Phân tích thêm khi HD3-2 viết nội dung tab. */
+function tabDangDung(man: ManHd | null, search: URLSearchParams, tvv: boolean): { k: string; ten: string; the: (hd: HuongDan) => ViecHd[] } | null {
+  if (man?.id !== 'cong-viec') return null;
+  const loai = search.get('loai');
+  const k = search.get('nhom') ?? (loai ? (tvv ? nhomViecTvvCua : nhomViecCua)(loai) : null);
+  return k ? { k, ten: tenTabHd(k), the: (hd) => (hd.lam ?? []).filter((v) => tabCuaThe(v) === k) } : null;
 }
 
 export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** Dòng việc `/my-work` thanh trên đã nạp — số việc ở tầng 2. */ dong?: readonly DongViecChuong[] }) {
@@ -255,12 +248,12 @@ const ChipVai = ({ chu }: { chu: string }) => <span className="mt-px whitespace-
 
 type DongThe = { k: string; nhan: string; nd: ReactNode };
 /**
- * THẺ VIỆC (15 mục 4.4, mockup ⑭ K1 · K2): bảy dòng khuôn cố định, dòng không có thì không hiện. Cột nhãn 108 (trong danh sách 96), 375 nhãn trên.
+ * THẺ VIỆC (15 mục 4.4, mockup ⑭ K1 · K2): bảy dòng khuôn cố định, dòng không có thì không hiện. Cột nhãn 108, 375 nhãn trên.
  * `dai`: dòng việc của người khác — "Việc của {vai}. Bạn làm thay được." (ẩn Không làm được) / "Bạn chỉ xem." (ẩn Làm, Làm sai, Không làm được) — 4.5, 8.3.
  * `qc`: câu quy chế của panel đang mở — 375 luôn ở đầu thẻ (câu bị cắt ở chân panel); có chi tiết thì hiện mọi cỡ (ⓘ không còn hộp chữ riêng).
  * `dangODung`: đang ở đúng chỗ làm → không "Đi tới ›".
  */
-function TheViec({ v, ctx, dangMo, dai, qc, gon = false, dangODung = false, hdThe }: { v: ViecHd; ctx: Ctx; dangMo?: string; dai?: { vai: VaiHd; xem: boolean }; qc?: QuyCheMo | null; gon?: boolean; dangODung?: boolean; /** thẻ của vai khác: lối tắt tra màn của vai đó */ hdThe?: HuongDan }) {
+function TheViec({ v, ctx, dangMo, dai, qc, dangODung = false, hdThe }: { v: ViecHd; ctx: Ctx; dangMo?: string; dai?: { vai: VaiHd; xem: boolean }; qc?: QuyCheMo | null; dangODung?: boolean; /** thẻ của vai khác: lối tắt tra màn của vai đó */ hdThe?: HuongDan }) {
   const an = new Set(dai?.xem ? ['lam', 'sai', 'khong'] : dai ? ['khong'] : []);
   const ds = ([
     v.khiCo && { k: 'khi', nhan: t('Khi nào có'), nd: <ChuThe chu={v.khiCo} /> },
@@ -306,7 +299,7 @@ function TheViec({ v, ctx, dangMo, dai, qc, gon = false, dangODung = false, hdTh
       )}
       <dl className="m-0 grid gap-2.5 max-sm:gap-3">
         {ds.map((d) => (
-          <div key={d.k} className={`grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] ${gon ? 'sm:grid-cols-[96px_minmax(0,1fr)]' : 'sm:grid-cols-[108px_minmax(0,1fr)]'}`}>
+          <div key={d.k} className={`grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] sm:grid-cols-[108px_minmax(0,1fr)]`}>
             <dt className="text-[13px] font-semibold leading-[1.6] text-slate-500">{d.nhan}</dt>
             <dd className="m-0 min-w-0 text-slate-100">{d.nd}</dd>
           </div>
@@ -342,7 +335,7 @@ function DongGap({ id, ten, phai, moSan = false, ctx, children }: { id: string; 
   const [mo, setMo] = useState(moSan);
   const idThan = useId();
   return (
-    <div className={mo ? 'bg-[color:var(--surface-2)]' : ''} data-muc={id}>
+    <div className={`scroll-mt-14 ${mo ? 'bg-[color:var(--surface-2)]' : ''}`} data-muc={id}>
       <button type="button" aria-expanded={mo} aria-controls={idThan} onClick={() => setMo(!mo)}
         className="grid min-h-[44px] w-full cursor-pointer appearance-none grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 border-0 bg-transparent px-3 py-[9px] text-left text-slate-100 hover:bg-[color:var(--accent-soft)]">
         <svg aria-hidden viewBox="0 0 16 16" className={`mt-[3px] h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${mo ? '' : '-rotate-90'}`} fill="none" stroke="var(--text-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
@@ -359,7 +352,7 @@ const DongCuaThe = ({ v, ctx, n = 0, moSan }: { v: ViecHd; ctx: Ctx; n?: number;
   return (
     <DongGap id={v.id} ten={t(v.ten)} moSan={moSan} ctx={ctx}
       phai={<>{nhan && <ChipVai chu={nhan} />}{n > 0 && <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-400">{t('{n} việc', { n })}</span>}</>}>
-      <TheViec v={v} ctx={ctx} gon />
+      <TheViec v={v} ctx={ctx} />
     </DongGap>
   );
 };
@@ -367,7 +360,7 @@ const DongCuaThe = ({ v, ctx, n = 0, moSan }: { v: ViecHd; ctx: Ctx; n?: number;
 const DongMuc = ({ m, ctx, moSan }: { m: MucHd; ctx: Ctx; moSan?: boolean }) => (
   <DongGap id={m.id} ten={t(m.ten)} moSan={moSan} ctx={ctx}>
     <div className="grid gap-2.5">
-      <TheViec v={{ id: m.id, ten: m.ten, nhom: 'khac', loiChinh: { chu: m.ten }, buoc: m.buoc }} ctx={ctx} gon />
+      <TheViec v={{ id: m.id, ten: m.ten, nhom: 'khac', loiChinh: { chu: m.ten }, buoc: m.buoc }} ctx={ctx} />
       {m.chi && <div><button type="button" className={NUT_CHI} onClick={() => ctx.onChi(m.chi!)}><IcChi />{t('Chỉ cho tôi')}</button></div>}
     </div>
   </DongGap>
@@ -377,24 +370,29 @@ const DongCuaDong = ({ d, ctx }: { d: DongHd; ctx: Ctx }) => (d.viec ? <DongCuaT
 /* ---------------------------------------------------------------- tab Trang này */
 
 const TOI_DA_TANG_2 = 5;
-/** Tầng 2 (mockup ⑭ K3): Bạn đang ở {màn} · {tab} + ≤ 5 việc của tab (việc đang có lên trước, số việc) + "+ n việc khác" + Không làm ở đây. */
-function Tang2({ hd, manNen, tab2, soViec, ctx }: { hd: HuongDan; manNen: ManHd; tab2: NonNullable<ReturnType<typeof tabDangDung>>; soViec: (v: ViecHd) => number; ctx: Ctx }) {
+/** Danh sách dòng tầng 2 / 3 (mockup ⑭ K3, K4): ≤ 5 dòng, còn lại "+ n việc khác" mở hết tại chỗ. */
+function DsGioiHan({ ds }: { ds: ReactNode[] }) {
   const [het, setHet] = useState(false);
-  const ds = tab2.the(hd).map((v) => ({ v, n: soViec(v) })).sort((a, b) => Number(b.n > 0) - Number(a.n > 0));
   const hien = het ? ds : ds.slice(0, TOI_DA_TANG_2);
   return (
+    <DsViec>
+      {hien}
+      {ds.length > hien.length && (
+        <button type="button" className="flex min-h-10 w-full cursor-pointer items-center border-0 bg-transparent px-3 text-left text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)] max-sm:min-h-[44px]" onClick={() => setHet(true)}>
+          {t('+ {n} việc khác', { n: ds.length - hien.length })}
+        </button>
+      )}
+    </DsViec>
+  );
+}
+/** Tầng 2 (mockup ⑭ K3): Bạn đang ở {màn} · {tab} + ≤ 5 việc của tab (việc đang có lên trước, số việc) + "+ n việc khác" + Không làm ở đây. */
+function Tang2({ hd, manNen, tab2, soViec, ctx }: { hd: HuongDan; manNen: ManHd; tab2: NonNullable<ReturnType<typeof tabDangDung>>; soViec: (v: ViecHd) => number; ctx: Ctx }) {
+  const ds = tab2.the(hd).map((v) => ({ v, n: soViec(v) })).sort((a, b) => Number(b.n > 0) - Number(a.n > 0));
+  return (
     <>
-      <BanDangO man={manNen} tenRieng={`${t(manNen.ten)} · ${tab2.ten}`} cau={tab2.cau ?? null} ctx={ctx} />
-      {ds.length > 0 ? (
-        <DsViec>
-          {hien.map(({ v, n }) => <DongCuaThe key={v.id} v={v} n={n} ctx={ctx} />)}
-          {ds.length > hien.length && (
-            <button type="button" className="flex min-h-10 w-full cursor-pointer items-center border-0 bg-transparent px-3 text-left text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)] max-sm:min-h-[44px]" onClick={() => setHet(true)}>
-              {t('+ {n} việc khác', { n: ds.length - hien.length })}
-            </button>
-          )}
-        </DsViec>
-      ) : <p className="m-0 text-sm text-slate-400">{t('Tab này chưa có thẻ việc.')}</p>}
+      <BanDangO man={manNen} tenRieng={`${t(manNen.ten)} · ${tab2.ten}`} cau={null} ctx={ctx} />
+      {ds.length > 0 ? <DsGioiHan ds={ds.map(({ v, n }) => <DongCuaThe key={v.id} v={v} n={n} ctx={ctx} />)} />
+        : <p className="m-0 text-sm text-slate-400">{t('Tab này chưa có thẻ việc.')}</p>}
       <KhongLam man={manNen} ctx={ctx} />
     </>
   );
@@ -425,7 +423,7 @@ function TrangNay({ tang, hd, manNen, manPanel, tab2, soViec, ctx }: { tang: 2 |
   return (
     <>
       <BanDangO man={manNen} ctx={ctx} />
-      {dsNen.length > 0 && <KhoiHd ten={t('Việc làm ở đây')}><DsViec>{dsNen.map((d) => <DongCuaDong key={d.muc.id} d={d} ctx={ctx} />)}</DsViec></KhoiHd>}
+      {dsNen.length > 0 && <KhoiHd ten={t('Việc làm ở đây')}><DsGioiHan ds={dsNen.map((d) => <DongCuaDong key={d.muc.id} d={d} ctx={ctx} />)} /></KhoiHd>}
       <KhongLam man={manNen} ctx={ctx} />
     </>
   );
@@ -447,11 +445,11 @@ function TabToiMuon({ hd, manNen, moThe, ctx }: { hd: HuongDan; manNen: ManHd | 
       {!manNen && <BanDangO man={null} tenRieng={tenVung(ctx.pathname ?? '')} ctx={ctx} />}
       {!!hd.tuan?.length && (
         /* Dính đầu thân khi cuộn (thấy đang lọc gì); 375 một hàng vuốt ngang (mockup `.loc-nhip`). */
-        <div role="group" aria-label={t('Lọc theo nhịp')} className="sticky -top-4 z-[2] -mx-5 -mt-4 flex flex-wrap gap-1.5 border-b px-5 pb-2.5 pt-3 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none]"
+        <div role="group" aria-label={t('Lọc theo nhịp')} className="loc-hvl sticky -top-4 z-[2] -mx-5 -mt-4 flex flex-wrap gap-1.5 border-b px-5 pb-2.5 pt-3 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none]"
           style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
           {[null, ...hd.tuan.map((n) => n.nhip)].map((n) => (
             <button key={n ?? ''} type="button" aria-pressed={nhip === n} onClick={() => setNhip(n)}
-              className={`h-7 shrink-0 cursor-pointer whitespace-nowrap rounded-full border px-2.5 text-[13px] max-sm:h-11 ${nhip === n ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : 'border-[color:var(--line-strong)] bg-transparent font-medium text-slate-400'}`}>
+              className="nut-loc h-7 shrink-0 text-[13px] max-sm:h-11">
               {n ? t(n as Khoa) : t('Tất cả')}
             </button>
           ))}
@@ -472,6 +470,34 @@ export function DsNhom({ viec, ctx, moDau = false, moId = null }: { viec: ViecHd
   );
 }
 
+/** Trang Hướng dẫn · Thẻ việc (mockup ⑭ K10b): thẻ MỞ SẴN theo nhóm tab, lưới hai cột ở màn rộng — in ra đủ dòng. */
+export function LuoiThe({ viec, ctx }: { viec: ViecHd[]; ctx: Ctx }) {
+  return (
+    <div className="grid gap-5">
+      {THU_TAB_HD.map((k) => {
+        const ds = viec.filter((v) => tabCuaThe(v) === k);
+        if (!ds.length) return null;
+        return (
+          <section key={k} className="grid gap-2.5 break-inside-avoid-page" aria-label={tenTabHd(k)}>
+            <h2 className="m-0 text-sm font-semibold text-slate-300">{tenTabHd(k)}</h2>
+            <div className="grid items-start gap-3 xl:grid-cols-2">
+              {ds.map((v) => {
+                const nhan = nhanVai(v);
+                return (
+                  <div key={v.id} className="card grid gap-3 px-4 py-3.5 break-inside-avoid" data-muc={v.id}>
+                    <h3 className="m-0 flex flex-wrap items-center gap-2 text-[15px] font-bold text-slate-100">{t(v.ten)}{nhan && <ChipVai chu={nhan} />}</h3>
+                    <TheViec v={v} ctx={ctx} />
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
 /** Thẻ trường hợp (15 mục 4.7, mockup ⑭ K6b): Máy làm gì · Bạn làm gì · Ai khác nhận việc + link sang thẻ việc (một nguồn chữ). */
 function TheTinhHuong({ x, hd, onThe }: { x: TinhHuongHd; hd: HuongDan; onThe?: (id: string) => void }) {
   const the = x.the ? hd.lam?.find((v) => v.id === x.the) : undefined;
@@ -484,7 +510,7 @@ function TheTinhHuong({ x, hd, onThe }: { x: TinhHuongHd; hd: HuongDan; onThe?: 
     <article className="grid gap-3.5" aria-label={t('Trường hợp {ten}', { ten: t(x.ten) })}>
       <dl className="m-0 grid gap-2.5 max-sm:gap-3">
         {ds.map((d) => (
-          <div key={d.k} className="grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] sm:grid-cols-[96px_minmax(0,1fr)]">
+          <div key={d.k} className="grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] sm:grid-cols-[108px_minmax(0,1fr)]">
             <dt className="text-[13px] font-semibold leading-[1.6] text-slate-500">{d.nhan}</dt>
             <dd className="m-0 min-w-0 text-slate-100">{d.nd}</dd>
           </div>

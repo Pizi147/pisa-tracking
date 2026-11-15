@@ -29,9 +29,6 @@ export type ManHd = {
   panel?: PanelHd;
   /** HD3-1: panel mở NGOÀI dòng việc (Case từ hồ sơ HV, form Vi phạm) → thẻ việc của panel (id trong `lam`) — "?" mở thẳng tầng 1. */
   the?: string;
-  /** HD3-1 tầng 2: tab của màn đọc ở tham số `q` của URL (`?tab=`); `mac` = tab khi URL không ghi; mỗi tab: tên + một câu + id thẻ làm ở tab đó.
-   *  Công việc không khai ở đây: tab = `tab` của thẻ (`?nhom=`). */
-  tabs?: { q: string; mac?: string; ds: Record<string, { ten: Khoa; cau?: Khoa; the: string[] }> };
 };
 /** HD-V3: panel LÀM VIỆC có mục riêng (`KhungPanel hd=…`); mảng để phép HD-PANEL duyệt. Panel không có ở đây: "?" mở Màn nền. */
 export const PANEL_HD = [

@@ -464,17 +464,15 @@ export async function runPrHdTests(t: any) {
   });
 
   /* ---------------------------------------------------------------- HD3-1 khung */
-  await checkAsync('HD3-1 · mã chèn hạn lấy từ Hạn mặc định (đổi cấu hình → chữ đổi); mã sai giữ nguyên; dòng việc → thẻ theo người giữ', async () => {
+  await checkAsync('HD3-1 · mã chèn hạn = chữ của bản Hạn mặc định đang hiệu lực; mã sai giữ nguyên; dòng việc → thẻ theo người giữ', async () => {
+    /* Không đặt lại nguồn Hạn mặc định ở đây (phép QTV2 dùng nguồn chung): so với chữ dựng từ `hanTai` đang hiệu lực. */
     const han: any = await import('../../../shared/domain/hanMacDinh.ts');
-    try {
-      assert(hd.chenHan('Hết {han:cham_test}.') === 'Hết thứ Tư tuần sau.', hd.chenHan('Hết {han:cham_test}.'));
-      assert(hd.chenHan('{han:xac_nhan_case.ngayGap} · {han:ghi_kq_pa}') === '3 ngày · 2 tuần', hd.chenHan('{han:xac_nhan_case.ngayGap} · {han:ghi_kq_pa}'));
-      assert(hd.chenHan('{han:khong_co} {han:cham_test.ngay}') === '{han:khong_co} {han:cham_test.ngay}', 'mã / trường lạ giữ nguyên cho HD-HAN bắt');
-      const v = JSON.parse(JSON.stringify(han.HAN_MAC_DINH_GOC));
-      v.cham_test = { tuanLech: 2, thu: 3 }; v.xu_ly_vi_pham.ngay = 7;
-      han.datNguonHan(() => [{ id: 0, tu: '', v: han.HAN_MAC_DINH_GOC }, { id: 1, tu: '2000-01-01', v }]);
-      assert(hd.chenHan('{han:cham_test} · {han:xu_ly_vi_pham}') === 'thứ Ba 2 tuần sau · 7 ngày', hd.chenHan('{han:cham_test} · {han:xu_ly_vi_pham}'));
-    } finally { han.datNguonHan(null); }
+    const thu = ['', '', 'thứ Hai', 'thứ Ba', 'thứ Tư', 'thứ Năm', 'thứ Sáu', 'thứ Bảy', 'Chủ nhật'];
+    const ct = han.hanTai('cham_test');
+    assert(ct.tuanLech !== 1 || hd.chenHan('Hết {han:cham_test}.') === `Hết ${thu[ct.thu]} tuần sau.`, hd.chenHan('Hết {han:cham_test}.'));
+    assert(hd.chenHan('{han:xac_nhan_case.ngayGap}') === `${han.hanTai('xac_nhan_case').ngayGap} ngày`, hd.chenHan('{han:xac_nhan_case.ngayGap}'));
+    assert(hd.chenHan('{han:ghi_kq_pa}') === `${han.hanTai('ghi_kq_pa').kyTuan} tuần`, hd.chenHan('{han:ghi_kq_pa}'));
+    assert(hd.chenHan('{han:khong_co} {han:cham_test.ngay}') === '{han:khong_co} {han:cham_test.ngay}', 'mã / trường lạ giữ nguyên cho HD-HAN bắt');
     const cua = hd.theCuaViec('gv', 'score', true);
     assert(cua?.the.id === 'nhap-diem' && cua.vai === 'gv', 'GV mở Nhập điểm → thẻ Nhập điểm của GV');
     assert(hd.theCuaViec('ql', 'score', false)?.vai === 'gv', 'QL mở việc Nhập điểm của GV → thẻ gốc của GV (dải làm thay)');

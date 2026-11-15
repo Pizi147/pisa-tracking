@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ChuDam, Empty } from '../../ui/ui.tsx';
+import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { HUONG_DAN, TEN_VAI_HD, VAI_CO_NOI_DUNG, coXemVaiKhac, locHd, locVai, timHd, type HuongDan, type VaiHd } from '@shared/huongDan/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { chiChoToi } from './chiChoToi.tsx';
 import { MucHuongDan, useVaiHd } from './MucHuongDan.tsx';
 import { useDaXemHd } from './daXemHd.ts';
-import { DsNhom, KetQuaTim, TabTruongHop, type Ctx } from './NutHuongDan.tsx';
+import { KetQuaTim, LuoiThe, TabTruongHop, type Ctx } from './NutHuongDan.tsx';
 
 /**
  * HD3-1 — TRANG HƯỚNG DẪN (đặc tả 15 mục 4.9, mockup ⑭ K10b): CÙNG dữ liệu, cùng thẻ với panel "?" — Thẻ việc · Trường hợp · Luật và hạn · Thuật ngữ.
@@ -58,7 +59,7 @@ export default function HuongDanPage() {
   )] : []);
 
   const than: Record<Phan, ReactNode> = {
-    lam: <DsNhom viec={hd.lam ?? []} ctx={ctx} moDau />,
+    lam: <LuoiThe viec={hd.lam ?? []} ctx={ctx} />,
     gap: <TabTruongHop hd={hd} ctx={ctx} moDau={false} />,
     luat: luat(hd.luat, true),
     tu: tu(hd.tu),
@@ -77,9 +78,13 @@ export default function HuongDanPage() {
             </button>
           ))}
         </nav>
-        <div className="flex min-w-0 max-w-[760px] flex-col gap-4 print:max-w-none">
+        <div className="flex min-w-0 flex-col gap-4 print:max-w-none">
           <div className="flex flex-wrap items-center gap-2.5">
-            <h1 className="m-0 flex-1 text-xl font-bold text-slate-100">{t('Hướng dẫn')}</h1>
+            {/* HD3-1 (mockup ⑭ K10b): một hàng — Hướng dẫn · vai · ô tìm · In. */}
+            <h1 className="m-0 text-xl font-bold text-slate-100">{t('Hướng dẫn')}</h1>
+            {!xemKhac && <span className={`${CHIP_TRON} px-2.5 text-slate-400`} style={{ background: 'var(--surface-2)' }}>{TEN_VAI_HD[vai]}</span>}
+            <input type="search" name="tim-huong-dan" autoComplete="off" className="field order-last basis-full print:hidden md:order-none md:ml-auto md:w-60 md:basis-auto" value={q} onChange={(e) => setQ(e.target.value)}
+              placeholder={t('Tìm: "kết quả PA", "SOS", "hạn"…')} aria-label={t('Tìm trong hướng dẫn')} />
             {xemKhac && VAI_CO_NOI_DUNG.length > 1 && (
               <label className="flex items-center gap-2 text-[13px] text-slate-400 print:hidden">
                 {t('Xem vai')}
@@ -90,8 +95,6 @@ export default function HuongDanPage() {
             )}
             <button type="button" className="btn btn-sm print:hidden" onClick={() => window.print()}>{t('In')}</button>
           </div>
-          <input type="search" name="tim-huong-dan" autoComplete="off" className="field print:hidden" value={q} onChange={(e) => setQ(e.target.value)}
-            placeholder={t('Tìm: "kết quả PA", "SOS", "hạn"…')} aria-label={t('Tìm trong hướng dẫn')} />
           {/* 375: các phần thành hàng chip cuộn ngang (mockup `.hd-tab`). */}
           <div role="group" aria-label={t('Phần hướng dẫn')} className="flex gap-1.5 overflow-x-auto pr-8 [scrollbar-width:none] [mask-image:linear-gradient(to_right,#000_calc(100%-2rem),transparent)] md:hidden print:hidden">
             {PHAN.map((p) => (

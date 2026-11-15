@@ -300,7 +300,8 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   ghi_ket_qua_pa: {
     label: 'Kết quả PA',
-    get hint() { return chenHan('Kết quả PA ghi {han:ghi_kq_pa} một lần, xong trước hết Thứ Ba sau kỳ (kỳ tính từ ngày bắt đầu PA). Kỳ chạm mốc PA là Kết quả cuối: kết luận PA.'); },
+    /* HD3-1: kỳ chèn từ Hạn mặc định; bản gốc (2) giữ đúng chữ cũ "hai tuần" (ảnh chụp JSON TD4). */
+    get hint() { const k = hanTai('ghi_kq_pa').kyTuan; return `Kết quả PA ghi ${k === 2 ? 'hai' : k} tuần một lần, xong trước hết Thứ Ba sau kỳ (kỳ tính từ ngày bắt đầu PA). Kỳ chạm mốc PA là Kết quả cuối: kết luận PA.`; },
   },
 
   /* --------------------------------------------- những nghĩa vụ khác, vẫn phải thấy được */
