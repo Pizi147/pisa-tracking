@@ -95,7 +95,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
     assert(d.gopViecTheoLop([v({ key: 'ghi_nhan_xet:1', group: 'ghi_nhan_xet', khung: 'ft', sos: 1 }), v({ key: 'ghi_nhan_xet:2', group: 'ghi_nhan_xet', khung: 'ft', studentId: 2, sos: 2 })], nhan).length === 2, 'Ghi nhận xét khác mức SOS bị gộp (OV-13c)');
     assert(d.gopViecTheoLop([v({ key: 'xnpa:1', group: 'xac_nhan_pa', khung: 'ft', sos: 1 }), v({ key: 'xnpa:2', group: 'xac_nhan_pa', khung: 'ft', studentId: 2, sos: 2 })], nhan).length === 2, 'Xác nhận PA FT khác mức SOS: từng dòng (OV-13c)');
     const g = d.gopViecTheoLop([v({ key: 'action:1', group: 'ghi_ket_qua_pa', caseSos: false }), v({ key: 'action:2', group: 'ghi_ket_qua_pa', caseSos: false, studentId: 2 })], nhan);
-    assert(g.length === 1 && g[0].key === 'gop:ghi_ket_qua_pa:10:u9' && g[0].con.length === 2, `việc khác gộp: ${JSON.stringify(g.map((x: any) => x.key))}`);
+    assert(g.length === 1 && g[0].key === 'gop:ghi_ket_qua_pa:10:u9:d' &&   /* GD-20c: khoá mang hạn kỳ (ở đây không hạn) */
+       g[0].con.length === 2, `việc khác gộp: ${JSON.stringify(g.map((x: any) => x.key))}`);
   });
 
   /* OV-11c (CV-1): dòng gom sẵn mang id em (`emIds`) — đếm em KHÁC NHAU, không cộng dồn số em. */

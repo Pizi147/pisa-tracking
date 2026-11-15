@@ -1,0 +1,26 @@
+{
+  "x375": {
+    "nut": [
+      44,
+      44
+    ],
+    "lechNgang": -0.01,
+    "lechDoc": -0.5
+  },
+  "vung375": [],
+  "tran375": 0,
+  "x1440": {
+    "nut": [
+      36,
+      36
+    ],
+    "lechNgang": -0.01,
+    "lechDoc": -0.5
+  },
+  "chip": {
+    "trongVien": true,
+    "cao": 30
+  },
+  "catChu": [],
+  "chuNho": []
+}

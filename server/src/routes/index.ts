@@ -29,6 +29,7 @@ import * as tinhHinhSvc from '../yThuc/tinhHinh.ts';
 import * as xetLaiSvc from '../normal/xetLai.ts';
 import * as sosAutoSvc from '../cases/sosAuto.ts';
 import * as doiPaSvc from '../cases/doiPa.ts';
+import * as luoiKetQuaSvc from '../cases/luoiKetQua.ts';
 import { bangYThucLop } from '../yThuc/board.ts';
 import { maybeSimulateReadError, maybeSimulateSaveFailure, pInt, qInt, qStr, wrap } from './helpers.ts';
 
@@ -68,6 +69,7 @@ import * as phanCongGvSvc from '../classes/phanCongGv.ts';
 import * as banGiaoSvc from '../classes/banGiao.ts';
 import * as banGiaoGvSvc from '../classes/banGiaoGv.ts';
 import * as baoCaoPhSvc from '../classes/baoCaoPh.ts';
+import { chuDaGhiLop } from '../classes/chuDaGhi.ts';
 import * as xuatBaoCaoPhSvc from '../classes/xuatBaoCaoPh.ts';
 import { doiDotBaoCaoPh } from '../classes/dotBaoCaoPh.ts';
 import * as dichSvc from '../dich/dich.ts';
@@ -560,9 +562,15 @@ api.get('/ref/teachers', requireAuth, wrap((req) =>
  */
 /* PR-VN3 (GOP): web chỉ đọc `dong` + `summary` — bỏ `items` / `groups` khỏi JSON (nặng ~3 lần); hàm giữ nguyên cho Nhắc và hồ sơ GV. */
 const nheMyWork = ({ items: _items, groups: _groups, ...con }: any) => con;
-/** LG-8: "Test sắp tới" từng lớp (khối "Lớp của tôi" trang đầu) — CHỈ vai GV / Head tutor, vai khác JSON và số câu không đổi. */
-const kemTestSapToi = (p: Principal, kq: any) =>
-  p.roleKeys.some((k) => k === 'teacher' || k === 'head_tutor') ? { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p) } : kq;
+/**
+ * LG-8: "Test sắp tới" từng lớp (khối "Lớp của tôi" trang đầu) — CHỈ vai GV / Head tutor, vai khác JSON và số câu không đổi.
+ * LG-13 (H7): `sapToi` 7 ngày (số PA tới kỳ + đợt Báo cáo PH mở) — cùng vai; không có gì thì không có khoá.
+ */
+const kemTestSapToi = (p: Principal, kq: any) => {
+  if (!p.roleKeys.some((k) => k === 'teacher' || k === 'head_tutor')) return kq;
+  const sapToi = tongQuanSvc.sapToiCuaGv(p);
+  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}) };
+};
 /**
  * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·
  * một ID giáo viên cụ thể (Q2, "Chọn giáo viên…"). Chuỗi lạ bị `thamSoNguoi` bỏ qua, coi như
@@ -1095,6 +1103,11 @@ api.get('/classes/:classId/diem-theo-luot/:luot', requireAuth, wrap((req) => {
   return diemTheoLuotSvc.bangTheoLuot(principalOf(req), pInt(req, 'classId'), String(req.params.luot));
 }));
 
+/** LG-13 (H1, H2): "Bạn đã ghi" của cả lớp trong `?tu=&den=` — web gọi khi mở panel viết Báo cáo PH / bàn giao, một lần cho lớp. */
+api.get('/classes/:classId/chu-da-ghi', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return chuDaGhiLop(principalOf(req), pInt(req, 'classId'), { tu: req.query.tu, den: req.query.den });
+}));
 /** BAO-CAO-PH: tab Báo cáo PH của hồ sơ lớp — bảng em × phần (một lớp × một đợt), panel một phần, lưu một (đợt, em, phần). */
 api.get('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2497,6 +2510,12 @@ api.post('/yeu-cau/:id/rut', requireAuth, wrap((req) => {
 api.post('/interventions/:id/result', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return caseSvc.updateResult(principalOf(req), pInt(req, 'id'), req.body ?? {});   // PR-CT2: Người dạy tuần này không bắt buộc; dịch vụ chỉ kiểm định dạng khi có
+}));
+
+/** GD-20c: lưới Ghi kết quả PA của một dòng gộp Công việc (cùng lớp + cùng kỳ) — MỘT câu đọc các PA của dòng; lưu từng dòng qua `/interventions/:id/result`. */
+api.get('/interventions/luoi-ket-qua', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  return luoiKetQuaSvc.luoiKetQua(principalOf(req), luoiKetQuaSvc.docIdLuoi(req.query.ids));
 }));
 
 /** NHAP-KQ-PA (chủ SP 13/11): lưu nháp kết quả PA của kỳ đang chạy — không chốt; cùng quyền Ghi kết quả. */

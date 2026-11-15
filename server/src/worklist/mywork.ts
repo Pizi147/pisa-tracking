@@ -706,6 +706,33 @@ export function viecNhapDiemCuaEm(p: Principal, studentId: number, today: string
  * `chiNhom` (PR-NV, NV-2): chỉ dựng các nhóm trong tập — Admin (`cham-diem`) chỉ nhóm Chấm điểm.
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
+/**
+ * Câu đọc PA "Ghi kết quả PA" (mục 2b) — `them`: điều kiện thêm sau `action_due <= ?` (LG-13 "Sắp tới": cửa sổ 7 ngày tới + phạm vi GV). Một câu cho cả hai nơi
+ * để "Sắp tới" cùng luật với việc sinh ra tuần sau.
+ */
+export const cauPaGhiKetQua = (them = '') =>
+  `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi, iv.nhap_ket_qua IS NOT NULL AS co_nhap,
+              iv.performer_user_id, iv.performer_name, sc.owner_user_id,
+              sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
+              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
+              COALESCE(cur.class_id, a.class_id) AS eff_class_id,   -- PR-PA (§8): lớp HIỆN TẠI trước, như LOP_CUA_CASE
+              COALESCE(cc.branch_id, ac.branch_id) AS eff_branch_id,
+              COALESCE(cc.code, ac.code) AS class_code,
+              s.full_name, a.attempt_no, a.kind AS attempt_kind
+         FROM case_interventions iv
+         JOIN sos_cases sc ON sc.id = iv.case_id
+         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
+         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
+         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
+         LEFT JOIN classes ac ON ac.id = a.class_id
+         LEFT JOIN classes cc ON cc.id = cur.class_id
+        WHERE iv.status IN ('planned', 'started')
+          AND iv.action_due IS NOT NULL AND iv.action_due <= ?${them}
+          AND sc.status != 'done'
+          AND COALESCE(iv.approval_state, '') != 'pending'
+          AND ${NOT_UNCONFIRMED_PRESET('iv')}
+          AND ${HV_DANG_HOC_SQL('s')}`;
+
 /** "Ghi kết quả PA" thành việc từ hạn − 2: PA có `action_due` ≤ ngày này. Công việc và hồ sơ HV (`viecHocVien.ts`) dùng chung (P1 G2-03). */
 export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
 
@@ -899,27 +926,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const reviewedCases = new Set<number>();
   const ghiKetQua = !co('ghi_ket_qua_pa', 'no_plan') ? [] : conn   // `reviewedCases` của 2b loại Case khỏi `no_plan`
     .prepare(
-      `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi, iv.nhap_ket_qua IS NOT NULL AS co_nhap,
-              iv.performer_user_id, iv.performer_name, sc.owner_user_id,
-              sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
-              COALESCE(sc.student_id, a.student_id) AS eff_student_id,
-              COALESCE(cur.class_id, a.class_id) AS eff_class_id,   -- PR-PA (§8): lớp HIỆN TẠI trước, như LOP_CUA_CASE
-              COALESCE(cc.branch_id, ac.branch_id) AS eff_branch_id,
-              COALESCE(cc.code, ac.code) AS class_code,
-              s.full_name, a.attempt_no, a.kind AS attempt_kind
-         FROM case_interventions iv
-         JOIN sos_cases sc ON sc.id = iv.case_id
-         LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
-         LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-         LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
-         LEFT JOIN classes ac ON ac.id = a.class_id
-         LEFT JOIN classes cc ON cc.id = cur.class_id
-        WHERE iv.status IN ('planned', 'started')
-          AND iv.action_due IS NOT NULL AND iv.action_due <= ?
-          AND sc.status != 'done'
-          AND COALESCE(iv.approval_state, '') != 'pending'
-          AND ${NOT_UNCONFIRMED_PRESET('iv')}
-          AND ${HV_DANG_HOC_SQL('s')}`,   /* K3-41: em Tạm dừng dừng hạn */
+      cauPaGhiKetQua(),   /* K3-41: em Tạm dừng dừng hạn */
     )
     .all(hanGhiKetQuaToi(today)) as any[];
   /* TURSO-1211: câu đi chỉ mục hạn (`idx_iv_ghi_kq`) — xếp lại theo PA (sort ổn định) như thứ tự cũ (SCAN theo rowid), JSON không đổi. */
