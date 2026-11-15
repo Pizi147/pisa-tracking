@@ -1377,6 +1377,8 @@ api.get('/violations/similar', requireAuth, wrap((req) => {
     batBuocMon: violationSvc.batBuocChonMon(p, lop),
     /* K5-47: form chọn môn theo chương trình lớp em đang học (`monViPham`). */
     chuongTrinh: lop ? regularSvc.programmeOfClass(lop)?.code ?? null : null,
+    /* GD-19: công tắc "Yêu cầu GVCN xử lý" — tên GVCN, người ghi là GVCN (ẩn), hạn nếu bật. */
+    ...violationSvc.gvcnChoForm(p, lop),
   };
 }));
 api.post('/violations', requireAuth, wrap((req) => {
@@ -3009,6 +3011,8 @@ api.get('/notifications', requireAuth, wrap((req) => {
 api.post('/notifications/doc-het', requireAuth, wrap((req) => ({ daDoc: docHet(principalOf(req).userId, demoToday()) })));
 /** DON-LUONG A6: đánh dấu đã đọc nhiều dòng một lệnh — ≤ 200 id nguyên dương, chỉ dòng của người gọi. */
 api.post('/notifications/doc-nhieu', requireAuth, wrap((req) => ({ daDoc: docNhieu(principalOf(req).userId, req.body?.ids, demoToday()) })));
+/** GD-19: Hoàn tác "Đã xem hết" — bỏ đọc đúng các dòng vừa đánh dấu (≤ 200, chỉ của người gọi). */
+api.post('/notifications/bo-doc', requireAuth, wrap((req) => ({ boDoc: docNhieu(principalOf(req).userId, req.body?.ids, null) })));
 
 api.post('/notifications/:id/read', requireAuth, wrap((req) => {
   const p = principalOf(req);

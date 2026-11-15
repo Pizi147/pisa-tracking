@@ -25,6 +25,10 @@ export const quyCheLuoiKetQua = (hanKe: string | null): QuyChe => ({
 });
 
 /** Ý thức D1–D2: vi phạm sinh việc xem cho GVCN, 3 vi phạm / 2 tuần phải xử lý; nhắc nhở không tính. */
-export const quyCheViPham = (chiNhac: boolean): QuyChe => chiNhac
-  ? { chu: t('Không tính vào bậc, không sinh việc'), chiTiet: t('Không tính 3 vi phạm / 2 tuần · không lên bậc · không tạo việc') }
-  : { chu: t('GVCN nhận việc xem · đủ 3 trong 2 tuần thì phải xử lý'), chiTiet: t('Đủ 3 vi phạm trong 2 tuần: GVCN phải xử lý theo bậc.') };
+/** GD-19 (mockup ⑪ K6, lời 48): lối "Không xử lý" của panel Xử lý vi phạm. */
+export const QUY_CHE_KHONG_XU_LY: QuyChe = { chu: t('Người ghi nhận lý do · vi phạm vẫn tính vào luật 3 vi phạm / 2 tuần'), chiTiet: t('GVCN đổi ý thì vẫn Xác nhận xử lý được ở tab Ý thức.') };
+/* GD-19 (mockup ⑪ K5, lời 47): GVCN nhận TIN (không còn việc "xem"); bật "Yêu cầu GVCN xử lý" → GVCN có việc Xử lý vi phạm, hạn như luật 3. */
+export const quyCheViPham = (chiNhac: boolean, yc?: { gvcn: string; han: string } | null): QuyChe => chiNhac
+  ? { chu: t('Không tính vào bậc · GVCN nhận tin ở chuông'), chiTiet: t('Không tính 3 vi phạm / 2 tuần · không lên bậc · không tạo việc') }
+  : yc ? { chu: t('GVCN {gvcn} có việc Xử lý vi phạm, hạn {han}', yc), chiTiet: t('GVCN xác nhận xử lý, hoặc ghi "Không xử lý" kèm lý do — bạn nhận tin. Vi phạm vẫn tính vào 3 vi phạm / 2 tuần.') }
+  : { chu: t('GVCN nhận tin ở chuông · đủ 3 trong 2 tuần thì phải xử lý'), chiTiet: t('Đủ 3 vi phạm trong 2 tuần: GVCN phải xử lý theo bậc.') };

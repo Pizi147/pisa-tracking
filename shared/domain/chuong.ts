@@ -5,7 +5,7 @@
  * Số trên chuông = badge Công việc (`summary.canLamNgay`) — "Dùng số chung".
  */
 import { t } from '../i18n/index.ts';
-import { dongNhinThay, type DongDem } from './tongQuan.ts';
+import { dongNhinThay, tabCuaViec, nhanTabCv, TAB_CV, NHOM_CV_TVV, type DongDem } from './tongQuan.ts';
 import { laViecChamCheo } from './gopViec.ts';
 import { ngayTheoGioVN } from './display.ts';
 import { mondayOfDate } from './week.ts';
@@ -44,6 +44,52 @@ export function gomViecChuong<T extends DongViecChuong>(dong: readonly T[], cuaT
     ra.set(x.group, g);
   }
   return xepLoaiViec([...ra.values()]);
+}
+
+/**
+ * GD-19 (mockup ⑪ K1, lời 47 ý 4): việc của tôi gom theo TAB Công việc — cùng tên, thứ tự, đếm với hàng tab (`tabCuaViec`, `TAB_CV` / `NHOM_CV_TVV`).
+ * Cùng tập với `gomViecChuong` (tổng n = số chuông); tab rỗng không có; không có thanh Chấm Speaking. `gap`: TỪNG việc (dòng gộp trải `con`), xếp quá hạn → hôm nay → hạn sớm.
+ */
+export type TabViecChuong<T> = { tab: string; ten: string; n: number; quaHan: number; homNay: number; gap: T[] };
+export function gomViecTheoTab<T extends DongViecChuong & { due?: string | null }>(dong: readonly T[], o: { tvv?: boolean; viecQuanLy?: boolean } = {},
+  cuaToi: (d: T) => boolean = (d) => d.mine): TabViecChuong<T>[] {
+  const ra = new Map<string, TabViecChuong<T>>();
+  for (const x of dongNhinThay(dongCuaToi(dong, cuaToi)) as T[]) {
+    if (laViecChamCheo(x)) continue;
+    const k = tabCuaViec(x, !!o.tvv);
+    const g = ra.get(k) ?? { tab: k, ten: k === 'van-hanh' && o.viecQuanLy ? t('Việc quản lý') : nhanTabCv(k, !!o.tvv), n: 0, quaHan: 0, homNay: 0, gap: [] };
+    g.n++;
+    if (x.urgency === 'overdue') g.quaHan++;
+    else if (x.urgency === 'today') g.homNay++;
+    /* Phần mở hiện TỪNG việc (mockup ⑪ K1b: "Lớp · việc" + em): dòng gộp theo lớp trải `con` ra. */
+    const con = (x as { con?: readonly T[] | null }).con;
+    g.gap.push(...(con?.length ? con : [x]));
+    ra.set(k, g);
+  }
+  const w = (u: string) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
+  for (const g of ra.values()) g.gap.sort((a, b) => w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999'));
+  const thuTu: readonly string[] = o.tvv ? NHOM_CV_TVV : TAB_CV;
+  return [...ra.values()].sort((a, b) => thuTu.indexOf(a.tab) - thuTu.indexOf(b.tab));
+}
+
+/**
+ * GD-19 (mockup ⑪ K3): tin "Vi phạm mới" chưa xem của CÙNG lớp — ≥ 2 tin thì gom một dòng ("3 vi phạm mới · MB FT 101"). Tin khác giữ nguyên chỗ.
+ * Trả danh sách mục theo thứ tự tin gốc: tin lẻ hoặc nhóm (đứng ở chỗ tin đầu tiên của nhóm).
+ */
+export type MucTin<N> = { tin: N } | { lop: string; ds: N[] };
+export const laTinViPhamMoi = (n: { kind: string | null; title?: string | null }) => n.kind === 'discipline_de_biet' && /^Vi phạm mới · /.test(n.title ?? '');
+export function gomTinViPham<N extends { kind: string | null; title?: string | null; read_at?: string | null; lop?: string | null }>(ds: readonly N[]): MucTin<N>[] {
+  const theoLop = new Map<string, N[]>();
+  for (const n of ds) if (!n.read_at && n.lop && laTinViPhamMoi(n)) theoLop.set(n.lop, [...(theoLop.get(n.lop) ?? []), n]);
+  const ra: MucTin<N>[] = [];
+  const daGom = new Set<string>();
+  for (const n of ds) {
+    const nhom = !n.read_at && n.lop && laTinViPhamMoi(n) ? theoLop.get(n.lop)! : null;
+    if (nhom && nhom.length >= 2) {
+      if (!daGom.has(n.lop!)) { daGom.add(n.lop!); ra.push({ lop: n.lop!, ds: nhom }); }
+    } else ra.push({ tin: n });
+  }
+  return ra;
 }
 
 /**

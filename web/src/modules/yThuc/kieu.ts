@@ -14,6 +14,8 @@ export type ViPhamV4 = {
   ten: string; moTa: string; description: string;
   trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; quaHanNgay: number | null; lyDoQuaHan: 'xu-ly' | 'xem' | null;
   ghiNhanLuc: string | null; ghiNhanBoiName: string | null;
+  /** LG-12 / GD-19: người ghi yêu cầu GVCN xử lý · GVCN "Không xử lý" (null = chưa / đã Hoàn tác). Máy chủ cũ không trả → undefined. */
+  yeuCauXuLy?: boolean; khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
   /** UI-3: số tệp bằng chứng (chỉ tab HV — `yThucHocVien`). */
   soTep?: number;
 };
@@ -28,6 +30,8 @@ export type DongThoiGianYt =
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
       /** UI-2 (mockup K6): ai / lúc "Đã xem". */
       xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
+      /** LG-12 / GD-19: "Không xử lý" (ngày, lý do, người). */
+      khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
       /** Y-THUC-V2: mã môn (chip) + mô tả cắt ngắn (hộp rê). */
       skill: string | null; moTa: string;
       /** TINH-HINH: "Chỉ nhắc nhở" (ngoài luật, không việc). */
@@ -104,7 +108,7 @@ export type DongEm = {
   xuLyGanNhat: { id: number; nhan: string; ngay: string } | null;
   tuChoi: { id: number; nhan: string } | null;
   /** UI-Y-THUC-LOP — khớp `DongEm` ở `server/src/yThuc/board.ts`. */
-  viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp }[];
+  viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp; /** GD-19: được yêu cầu xử lý (chưa "Không xử lý") — người ghi. */ yeuCau?: string | null }[];
   thuHoi: { id: number; nhan: string; cho: boolean } | null;
   baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
   /** UI-2: TVV của em (chỉ bảng lớp). */

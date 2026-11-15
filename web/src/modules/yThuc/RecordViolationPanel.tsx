@@ -16,6 +16,7 @@ import {
   VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
   quyCheViPham,
+  shortDate,
 } from '@shared/domain/index.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -71,6 +72,9 @@ export function RecordViolationPanel({
   /** TINH-HINH (mockup v20 B): "Chỉ nhắc nhở" — một lựa chọn cho cả lần lưu; ngoài luật 3 vi phạm / 2 tuần, bậc, việc. Sửa đổi được hai chiều. */
   const [chiNhac, setChiNhac] = useState(false);
   useEffect(() => { if (open) setChiNhac(!!violation?.chiNhac); }, [open, violation?.id]);   // eslint-disable-line react-hooks/exhaustive-deps
+  /** GD-19 (mockup ⑪ K5): "Yêu cầu GVCN xử lý" — mặc định tắt, mỗi lần mở form tắt lại. */
+  const [yeuCau, setYeuCau] = useState(false);
+  useEffect(() => { if (open) setYeuCau(false); }, [open]);
 
   const idempotencyKey = useMemo(() => `violation:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`, [open]);
 
@@ -92,12 +96,15 @@ export function RecordViolationPanel({
 
   /* Môn tự điền (V04) + danh sách môn theo chương trình lớp (K5-47): hỏi theo em ĐẦU TIÊN (cả lớp cùng chương trình). */
   const sid0 = hocVien[0] ?? 0;
-  const similar = useApi<{ defaultSkill: string | null; chuongTrinh: string | null; batBuocMon?: boolean }>(
+  const similar = useApi<{ defaultSkill: string | null; chuongTrinh: string | null; batBuocMon?: boolean; gvcn?: { id: number; ten: string } | null; laGvcn?: boolean; hanYeuCau?: string }>(
     open && sid0 ? `/violations/similar?studentId=${sid0}&category=${dong[0]?.nhom || 'attendance'}` : null, [sid0, dong[0]?.nhom, open]);
   const defaultSkill = editing ? null : (similar.data?.defaultSkill ?? null);
   const ct = similar.data?.chuongTrinh ?? null;
   /* G3-19: dạy từ 2 môn → Môn bắt buộc (chỉ khi ghi mới, lớp có chia môn). Ô trống = chưa chọn và không có môn tự điền. */
   const batBuocMon = !editing && !!similar.data?.batBuocMon && monViPham(ct).length > 0;
+  /* Công tắc chỉ khi có ý nghĩa (lời 40): ghi mới · Vi phạm (không Chỉ nhắc nhở) · lớp có GVCN · người ghi không phải GVCN. */
+  const coCongTac = !editing && !chiNhac && !!similar.data?.gvcn && !similar.data?.laGvcn;
+  const guiYeuCau = coCongTac && yeuCau;
 
   const loi: LoiTruong[] = [
     ...dsLoiGhiViPham({ hocVien, dong: dong.map((d) => ({ ...d, mon: d.daChonMon ? d.mon : (defaultSkill ?? d.mon) })), batBuocMon }),
@@ -142,7 +149,7 @@ export function RecordViolationPanel({
     const con = hocVien.filter((s) => !daXong.includes(s));
     if (hocVien.length === 1 && lines.length === 1) {
       const { moTa, ...l } = lines[0];
-      const res = await api.post<{ violation: { id: number } }>('/violations', { studentId: con[0], ...l, description: moTa, idempotencyKey, chiNhac });
+      const res = await api.post<{ violation: { id: number } }>('/violations', { studentId: con[0], ...l, description: moTa, idempotencyKey, chiNhac, yeuCauXuLy: guiYeuCau });
       return { daXong: [con[0]], ids: [res.violation.id], loi: {} };
     }
     let loiChung: string | null = null;
@@ -150,7 +157,7 @@ export function RecordViolationPanel({
       setLuu({ daXong, ids, loi: {}, tien: [daXong.length, hocVien.length] });
       try {
         const r = await api.post<{ ok: { studentId: number; ids: number[] }[]; loi: { studentId: number; loi: string }[] }>('/violations/nhieu', {
-          studentIds: lo, lines, idempotencyKey, chiNhac,
+          studentIds: lo, lines, idempotencyKey, chiNhac, yeuCauXuLy: guiYeuCau,
           moTaRieng: Object.fromEntries(lo.filter((s) => moTaRieng[s]?.trim()).map((s) => [s, moTaRieng[s].trim()])),
         });
         for (const o of r.ok) { daXong.push(o.studentId); ids.push(...o.ids); }
@@ -223,7 +230,7 @@ export function RecordViolationPanel({
 
   return (
     /* GD-3 (mockup v21 K5d / K5e): bỏ dòng "* = bắt buộc" (mockup không có — dấu * đỏ ở nhãn đã đủ), thân phẳng không tiêu đề khối, chân "Chưa lưu" · Đóng · Lưu vi phạm. */
-    <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={dongPanel} quyChe={quyCheViPham(chiNhac)}
+    <KhungPanel hd="vi-pham" tieuDe={tieuDe} dau={dau} onDong={dongPanel} quyChe={quyCheViPham(chiNhac, guiYeuCau ? { gvcn: similar.data!.gvcn!.ten, han: shortDate(similar.data!.hanYeuCau!, today) } : null)}
       chan={{
         /* Sửa: chân trái là `Xoá vi phạm` (viền đỏ). Nơi gọi tự đóng form này và quyết định lúc nào mở lại panel trước đó. */
         xoa: editing && violation && onDelete ? { nhan: t('Xoá vi phạm'), onClick: () => onDelete(violation.id) } : undefined,
@@ -277,6 +284,15 @@ export function RecordViolationPanel({
             <div className="min-w-0 flex-1"><TepCho value={tep} onChange={setTep} /></div>
           </div>
         ))}
+        {/* GD-19 (mockup ⑪ K5b): một dòng công tắc nổi bật ngay trên quy chế — bật = viền + nền nhấn; tên GVCN cuối dòng. */}
+        {coCongTac && !luu && (
+          <label className={`vp-yc${yeuCau ? ' vp-yc-bat' : ''}`}>
+            <input type="checkbox" role="switch" className="vp-yc-o" checked={yeuCau} onChange={(e) => setYeuCau(e.target.checked)} />
+            <span aria-hidden className="vp-yc-cong"><i /></span>
+            <span className="vp-yc-chu">{t('Yêu cầu GVCN xử lý')}</span>
+            <span className="vp-yc-gv">{t('GVCN')} <b>{similar.data!.gvcn!.ten}</b></span>
+          </label>
+        )}
       </fieldset>
     </KhungPanel>
   );
@@ -331,7 +347,7 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon,
       <Hang2>
         {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}
         {dsMon.length > 0 && (
-          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)} phu={!d.daChonMon && defaultSkill ? t('Tự điền môn bạn dạy lớp này') : undefined}>
+          <Truong nhan={t('Môn')} batBuoc={batBuocMon} loi={lf.loiCua(loi, `mon-${n}`)}>
             <select className="field w-full" {...lf.o(loi, `mon-${n}`)} value={displaySkill} onChange={(e) => onSua({ mon: e.target.value, daChonMon: true })}>
               <option value="">{t('Chưa chọn')}</option>
               {dsMon.map((s) => <option key={s} value={s}>{tenMon(ct, s)}</option>)}
