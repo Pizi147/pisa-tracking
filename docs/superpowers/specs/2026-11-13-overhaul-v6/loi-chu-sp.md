@@ -565,3 +565,9 @@ Bối cảnh: chủ SP thấy ảnh web Tổng quan của Admin văn phòng có 
 > "sao chép để mỗi hình icon 2 tờ giấy là ok rồi, không cần hẳn 1 nút đâu"
 
 ĐÃ CHỐT: nút "Sao chép để nhắn" (H9) là **một biểu tượng hai tờ giấy**, không có chữ, không khung nút (cỡ và dáng như ✕ / ⓘ; 375 vùng chạm 44); chép xong biểu tượng đổi ✓ trong 2 giây. Nhãn đọc màn hình vẫn có. Mockup ⑬ đã sửa (PR #1728, còn chờ duyệt cả mockup).
+
+## 15/11 — lời 52 (chủ SP nói trong session mockup ⑬; session đó chuyển lại): duyệt mockup ⑬
+
+> "ok rồi nhé"
+
+ĐÃ CHỐT: **mockup ⑬ "Theo dõi trực diện" ĐÃ DUYỆT** (`thiet-ke/v21/theo-doi.html`, PR #1728 đã merge) — dòng "Sắp tới" · panel Case theo bước (tiêu đề + số theo nguồn mở, số bước màu thường) · "Sao chép" là biểu tượng (lời 51). GD-21 giao được. Còn mockup ⑪ (#1726) chờ duyệt.
