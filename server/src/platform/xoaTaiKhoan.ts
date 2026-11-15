@@ -77,7 +77,7 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('user_permissions', 'granted_by', DV, 'duyệt, cấp quyền'), c('users', 'approved_by', DV, 'duyệt, cấp quyền'),
   c('yeu_cau_duyet', 'nguoi_xin', DV, 'yêu cầu duyệt'), c('yeu_cau_duyet', 'nguoi_duyet', DV, 'yêu cầu duyệt'),
   c('violation_history', 'actor_user_id', DV, 'vi phạm'), c('violations', 'reported_by', DV, 'vi phạm'), c('violations', 'invalidated_by', DV, 'vi phạm'),
-  c('violations', 'ghi_nhan_boi', DV, 'vi phạm'),
+  c('violations', 'ghi_nhan_boi', DV, 'vi phạm'), c('violations', 'khong_xu_ly_boi', DV, 'vi phạm'),   // LG-12: ai "Không xử lý"
   c('y_thuc_khai_bac', 'khai_boi', DV, 'xác nhận cấp bậc vi phạm'), c('y_thuc_khai_bac', 'sua_boi', DV, 'xác nhận cấp bậc vi phạm'),
   c('lenh_chuyen_lop', 'nguoi_ra_lenh', DV, 'quyết định chuyển lớp'), c('lenh_chuyen_lop', 'huy_boi', DV, 'quyết định chuyển lớp'),
   c('lenh_chuyen_lop', 'xac_nhan_boi', DV, 'bàn giao'), c('ban_giao_mon', 'nguoi_ghi', DV, 'bàn giao'),

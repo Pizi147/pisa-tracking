@@ -1377,6 +1377,8 @@ api.get('/violations/similar', requireAuth, wrap((req) => {
     batBuocMon: violationSvc.batBuocChonMon(p, lop),
     /* K5-47: form chọn môn theo chương trình lớp em đang học (`monViPham`). */
     chuongTrinh: lop ? regularSvc.programmeOfClass(lop)?.code ?? null : null,
+    /* GD-19: công tắc "Yêu cầu GVCN xử lý" — tên GVCN, người ghi là GVCN (ẩn), hạn nếu bật. */
+    ...violationSvc.gvcnChoForm(p, lop),
   };
 }));
 api.post('/violations', requireAuth, wrap((req) => {
@@ -1384,7 +1386,7 @@ api.post('/violations', requireAuth, wrap((req) => {
   const b = yThucBody(req);
   return violationSvc.recordViolation(principalOf(req), {
     studentId: toInt(b.studentId) ?? 0, category: b.category, ten: b.ten ?? null, description: b.description, occurredOn: b.occurredOn ?? null,
-    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null, chiNhac: b.chiNhac === true,
+    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null, chiNhac: b.chiNhac === true, yeuCauXuLy: b.yeuCauXuLy === true,
   });
 }));
 /** PR-LUI-a1: một vi phạm cho nhiều học viên (≤ 8 mỗi lô) HOẶC nhiều vi phạm cho một học viên. Mỗi em một giao dịch; lỗi từng em trả về `loi`. */
@@ -1394,7 +1396,17 @@ api.post('/violations/nhieu', requireAuth, wrap((req) => {
   return violationSvc.recordViolations(principalOf(req), {
     studentIds: Array.isArray(b.studentIds) ? b.studentIds.map((x: unknown) => toInt(x) ?? 0) : [],
     lines: Array.isArray(b.lines) ? b.lines : [], moTaRieng: b.moTaRieng ?? null, idempotencyKey: String(b.idempotencyKey ?? ''), chiNhac: b.chiNhac === true,
+    yeuCauXuLy: b.yeuCauXuLy === true,
   });
+}));
+/** LG-12: GVCN "Không xử lý" vi phạm được yêu cầu (lý do ≥ 8 ký tự, gửi người ghi) · Hoàn tác. Quyền như Xác nhận xử lý. */
+api.post('/violations/:id/khong-xu-ly', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.khongXuLy(principalOf(req), pInt(req, 'id'), { lyDo: yThucBody(req).lyDo });
+}));
+api.post('/violations/:id/khong-xu-ly/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.hoanTacKhongXuLy(principalOf(req), pInt(req, 'id'));
 }));
 api.get('/violations/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();
@@ -2999,6 +3011,8 @@ api.get('/notifications', requireAuth, wrap((req) => {
 api.post('/notifications/doc-het', requireAuth, wrap((req) => ({ daDoc: docHet(principalOf(req).userId, demoToday()) })));
 /** DON-LUONG A6: đánh dấu đã đọc nhiều dòng một lệnh — ≤ 200 id nguyên dương, chỉ dòng của người gọi. */
 api.post('/notifications/doc-nhieu', requireAuth, wrap((req) => ({ daDoc: docNhieu(principalOf(req).userId, req.body?.ids, demoToday()) })));
+/** GD-19: Hoàn tác "Đã xem hết" — bỏ đọc đúng các dòng vừa đánh dấu (≤ 200, chỉ của người gọi). */
+api.post('/notifications/bo-doc', requireAuth, wrap((req) => ({ boDoc: docNhieu(principalOf(req).userId, req.body?.ids, null) })));
 
 api.post('/notifications/:id/read', requireAuth, wrap((req) => {
   const p = principalOf(req);

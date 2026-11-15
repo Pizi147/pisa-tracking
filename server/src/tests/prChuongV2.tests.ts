@@ -100,8 +100,12 @@ export async function runPrChuongV2Tests(t: any) {
     assert(/demDongViec\(laQuanLy \? items : dongCuaToi\(items\)\)/.test(nguon('web/src/modules/congViec/HoTroHocVienTab.tsx')), '[XM-9a] đầu Công việc GV phải đếm dongCuaToi (cùng chuông)');
     const hop = nguon('web/src/modules/platform/HopChuong.tsx');
     assert(/chv-con-duoi/.test(hop) && /\.chv-con-duoi \{ -webkit-mask-image/.test(nguon('web/src/index.css')), 'vùng cuộn chuông: lớp mờ đáy khi còn dòng (375)');
-    assert(/new URLSearchParams\(\{ nhom: tabCua\(l\.loai\) \}\)/.test(hop) && !/new URLSearchParams\(\{ loai: l\.loai \}\)/.test(hop), 'chuông chưa mở đúng tab (còn ?loai= lọc riêng loại)');
-    assert(/const tabCua = !laQl && nav\?\.hvCuaToi \? nhomViecTvvCua : nhomViecCua;/.test(hop), 'TVV dùng tab của TVV — cùng hàm trang Công việc');
+    /* GD-19 (mockup ⑪ K1): một thanh mỗi TAB (`gomViecTheoTab` — cùng `tabCuaViec` trang Công việc), bấm thanh → `?nhom=<tab>`, TVV theo nhóm TVV. */
+    assert(/new URLSearchParams\(\{ nhom: tab \}\)/.test(hop) && !/new URLSearchParams\(\{ loai: /.test(hop), 'chuông chưa mở đúng tab (còn ?loai= lọc riêng loại)');
+    assert(/gomViecTheoTab\(.*\{ tvv: !laQl && !!nav\?\.hvCuaToi/.test(hop), 'TVV dùng tab của TVV — cùng hàm trang Công việc');
+    const tabs = d.gomViecTheoTab([{ key: 'a', group: 'score', urgency: 'overdue', mine: true, studentId: 1, con: null }, { key: 'b', group: 'yt_xu_ly', urgency: 'today', mine: true, studentId: 2, con: null },
+      { key: 'c', group: 'ban_giao', urgency: 'normal', mine: true, studentId: null, con: null }, { key: 'score:9|cc', group: 'score', urgency: 'overdue', mine: true, studentId: null, con: null }] as any);
+    assert(tabs.map((x: any) => `${x.tab}:${x.n}:${x.quaHan}:${x.homNay}`).join() === 'cham-diem:1:1:0,y-thuc:1:0:1,van-hanh:1:0:0', JSON.stringify(tabs.map((x: any) => [x.tab, x.n])));
     const cheo = d.gomViecChuong([{ key: 'score:1|cc', group: 'score', urgency: 'overdue', mine: true, studentId: null, con: null }] as any);
     assert(!cheo.length, 'chuông không có dòng Chấm Speaking (việc chung)');
   });

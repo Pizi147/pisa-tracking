@@ -156,12 +156,15 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const { migratePrYt4 } = await import('../migrate/prYt4.ts');
   const { migratePrPb2b } = await import('../migrate/prPb2b.ts');
   const { migratePrTinhHinh } = await import('../migrate/prTinhHinh.ts');
+  const { migratePrYeuCauXuLy: migLg12 } = await import('../migrate/prYeuCauXuLy.ts');
   const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
   const SCHEMA = fs.readFileSync(path.join(REPO, 'server/src/schema.sql'), 'utf8');
   const cot = (db: any, bang: string) => (db.prepare(`PRAGMA table_info(${bang})`).all() as any[]).map((c) => `${c.name}:${c.type}:${c.notnull}:${c.pk}`);
   /* DB thời trước YT4: cắt phần YT4 khỏi CHỮ schema.sql (libsql lỗi "incomplete input" khi DROP COLUMN trên bảng có chú thích). */
   const truocYt4 = () => {
     const cat = SCHEMA.replace(/\r\n/g, '\n')
+      /* LG-12: bốn cột thêm SAU TINH-HINH — cắt trước nhất; so cột chạy lại migratePrYeuCauXuLy sau cùng. */
+      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_ly_do TEXT\n\);/, '\n);')
       /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; so cột chạy lại migratePrTinhHinh sau. */
       .replace(/,\n  -- TINH-HINH \(chủ SP 12\/11\)[^\n]*\n  chi_nhac INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')
       /* PR-Pb2-b thêm hai cột SAU ghi_nhan_boi → cắt trước; (2b) chạy lại migratePrPb2b theo đúng thứ tự migrate.ts. */
@@ -169,7 +172,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       .replace(/,\n  -- PR-YT4 \(§5\.4[\s\S]*?ghi_nhan_boi INTEGER REFERENCES users\(id\)\n\);/, '\n);')
       .replace(/,\n  -- PR-YT4: ngày QL duyệt[^\n]*\n  quyet_luc TEXT\n\);/, '\n);')
       .replace(/CREATE TABLE y_thuc_khai_bac \([\s\S]*?\n\);/, '');
-    if (/ghi_nhan_luc|\n  quyet_luc TEXT\n\)|y_thuc_khai_bac \(/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm YT4 (2)');
+    if (/ghi_nhan_luc|yeu_cau_xu_ly|\n  quyet_luc TEXT\n\)|y_thuc_khai_bac \(/.test(cat)) throw new Error('schema.sql đổi khuôn — sửa bộ cắt của phép kiểm YT4 (2)');
     const m = new SqliteDb(':memory:');
     m.exec(cat);
     return m;
@@ -188,6 +191,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     migratePrYt4(m, []);
     migratePrPb2b(m, []);
     migratePrTinhHinh(m, []);
+    migLg12(m, []);
     const moi = new SqliteDb(':memory:');
     moi.exec(SCHEMA);
     for (const b of ['violations', 'discipline_measures', 'y_thuc_khai_bac']) {
@@ -621,6 +625,104 @@ export async function runPrYt4Tests(t: YThucTestKit) {
       assert(!conn.prepare(`SELECT 1 FROM notifications WHERE dedup_key = ? AND user_id = ?`).get(`yt-moi:${v2}`, P.mbManager.userId), 'QL tự ghi không tự nhận');
     } finally { conn.exec('ROLLBACK TO lg11'); conn.exec('RELEASE lg11'); xoaNho(); }
   });
+  /* ---------------------------------------------------------------- LG-12 VI-PHAM-YEU-CAU-XU-LY (chủ SP lời 47, 48) */
+  const { TRAN_GHI_LO: TRAN_LG12 } = await import('./tocDoDuong.ts');
+  const { migratePrYeuCauXuLy } = await import('../migrate/prYeuCauXuLy.ts');
+  const ghiYc = (who: any, sid: number, o: Record<string, unknown> = {}) =>
+    (viol.recordViolation(who, { studentId: sid, category: 'homework', description: 'Không làm bài, cần GVCN xử lý', skill: 'writing1', yeuCauXuLy: true, ...o }) as any).violation;
+  const viecYt = (who: any, sid: number) => (myworkYt.myWork(loadPrincipal(who.userId)).items as any[]).find((i) => i.key === `yt_xu_ly:${sid}`);
+  check('LG-12 (1) · GVBM tick "Yêu cầu GVCN xử lý" → GVCN có việc Xử lý vi phạm NGAY, hạn như luật 3 (ngày ghi + 4), tin "Yêu cầu xử lý" (Cần làm), không tin "Vi phạm mới"', () => {
+    const sid = hv(); const v = ghiYc(gvbm, sid);
+    assert(v.yeuCauXuLy === true && v.khongXuLy === null && v.trangThai === 'can_xu_ly' && v.han === addDays(TODAY, 4), JSON.stringify(v));
+    const it = viecYt(gvcn, sid);
+    assert(it && it.mine && it.due === addDays(TODAY, 4) && it.reason === '1 vi phạm được yêu cầu xử lý', JSON.stringify(it));
+    const tin = thongBao(gvcn.userId, `yt-yc:${v.id}`);
+    assert(tin.length === 1 && tin[0].kind === 'discipline' && tin[0].title.startsWith(`Yêu cầu xử lý · ${hocVienTen(sid)} · BTVN · ${gvbm.fullName} ghi · trước `)
+      && !thongBao(gvcn.userId, `yt-moi:${v.id}`).length, JSON.stringify(tin));
+    assert((conn.prepare('SELECT han_xu_ly FROM violations WHERE id = ?').get(v.id) as any).han_xu_ly === addDays(TODAY, 4), 'chốt hạn xử lý (Phân tích GV)');
+  });
+  check('LG-12 (2) · GVCN tự ghi: cờ bỏ qua (không việc); "Chỉ nhắc nhở" + yêu cầu → 400; ghi nhiều em có cờ → mỗi em một việc', () => {
+    const sid = hv(); const v = ghiYc(gvcn, sid);
+    assert(v.yeuCauXuLy === false && !viecYt(gvcn, sid), 'GVCN tự ghi');
+    assert(loiCua(() => ghiYc(gvbm, hv(), { chiNhac: true })).status === 400, 'nhắc nhở + yêu cầu');
+    const a = hv(), b = hv();
+    const r = viol.recordViolations(gvbm, { studentIds: [a, b], lines: [{ category: 'homework', ten: 'Không nộp bài', skill: 'writing1' }], idempotencyKey: `lg12-lo-${a}`, yeuCauXuLy: true });
+    assert(r.loi.length === 0 && viecYt(gvcn, a) && viecYt(gvcn, b), JSON.stringify(r));
+  });
+  check('LG-12 (3) · "Không xử lý": lý do < 8 ký tự → 400; xong → việc hết, vi phạm GIỮ ("Không xử lý"), người ghi nhận MỘT tin kèm lý do, lịch sử + nhật ký; lần hai → 409; GVBM → 403; Xác nhận xử lý sau vẫn được', () => {
+    const sid = hv(); const v = ghiYc(gvbm, sid);
+    assert(loiCua(() => xuLy.khongXuLy(gvcn, v.id, { lyDo: 'ngắn' })).status === 400, 'lý do ngắn');
+    assert(loiCua(() => xuLy.khongXuLy(gvbm, v.id, { lyDo: 'Em đã nộp bù rồi ạ' })).status === 403, 'GVBM không có quyền');
+    const truoc = soCauSql();
+    const r = xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' });
+    const cau = soCauSql() - truoc;
+    assert(cau <= TRAN_LG12.khongXuLy, `${cau} câu > ${TRAN_LG12.khongXuLy}`);
+    assert(r.violation.trangThai === 'da_ghi_nhan' && r.violation.nhanTrangThai === 'Không xử lý' && r.violation.khongXuLy?.lyDo === 'Em đã nộp bù rồi ạ' && r.violation.han === null, JSON.stringify(r.violation));
+    assert(!viecYt(gvcn, sid), 'việc xong');
+    const tin = thongBao(gvbm.userId, `yt-khong:${v.id}:%`);
+    assert(tin.length === 1 && tin[0].kind === 'discipline_de_biet' && tin[0].body === 'Em đã nộp bù rồi ạ' && tin[0].title.startsWith('Không xử lý vi phạm · '), JSON.stringify(tin));
+    assert(conn.prepare(`SELECT 1 FROM violation_history WHERE violation_id = ? AND field = 'khong_xu_ly' AND new_value = ?`).get(v.id, 'Em đã nộp bù rồi ạ'), 'lịch sử');
+    assert(conn.prepare(`SELECT 1 FROM audit_logs WHERE action = 'violation.khong_xu_ly' AND entity_id = ?`).get(v.id), 'nhật ký');
+    assert(loiCua(() => xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' })).status === 409, 'lần hai');
+    assert(xl(gvcn, sid, [v.id]).kind === 'report_1', 'Xác nhận xử lý sau vẫn được');
+  });
+  check('LG-12 (4) · sau "Không xử lý" vi phạm VẪN đếm luật 3 / 2 tuần: thêm 2 vi phạm → bắt buộc lại cả 3; em đang đủ 3 thì "Không xử lý" → 400, không đổi gì', () => {
+    const sid = hv(); const v = ghiYc(gvbm, sid);
+    xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Đã nhắc riêng em trên lớp' });
+    ghiVp(gvbm, sid); ghiVp(gvbm, sid);
+    const it = viecYt(gvcn, sid);
+    assert(it && /^3 vi phạm trong 2 tuần/.test(it.reason) && em(sid).viPham.get(v.id).t === 'can_xu_ly', JSON.stringify(it));
+    const s2 = hv(); ghiVp(gvbm, s2); ghiVp(gvbm, s2); const v2 = ghiYc(gvbm, s2);
+    assert(loiCua(() => xuLy.khongXuLy(gvcn, v2.id, { lyDo: 'Đã nhắc riêng em trên lớp' })).status === 400, 'đủ 3 → phải xử lý');
+    assert(!(conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc && viecYt(gvcn, s2), 'không đổi gì');
+  });
+  check('LG-12 (5) · Hoàn tác "Không xử lý": việc quay lại (hạn cũ), tin chưa đọc của người ghi bị gỡ, phản hồi bỏ, lịch sử ghi; Hoàn tác lần hai → 409', () => {
+    const sid = hv(); const v = ghiYc(gvbm, sid);
+    xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' });
+    const truoc = soCauSql();
+    const r = xuLy.hoanTacKhongXuLy(gvcn, v.id);
+    const cau = soCauSql() - truoc;
+    assert(cau <= TRAN_LG12.hoanTacKhongXuLy, `${cau} câu > ${TRAN_LG12.hoanTacKhongXuLy}`);
+    assert(r.violation.khongXuLy === null && r.violation.trangThai === 'can_xu_ly' && viecYt(gvcn, sid)?.due === addDays(TODAY, 4), JSON.stringify(r.violation));
+    assert(!thongBao(gvbm.userId, `yt-khong:${v.id}:%`).length, 'tin chưa đọc gỡ');
+    assert((conn.prepare('SELECT phan_hoi_ngay FROM violations WHERE id = ?').get(v.id) as any).phan_hoi_ngay === null, 'bỏ phản hồi');
+    assert(conn.prepare(`SELECT 1 FROM violation_history WHERE violation_id = ? AND field = 'khong_xu_ly' AND new_value IS NULL`).get(v.id), 'lịch sử Hoàn tác');
+    assert(loiCua(() => xuLy.hoanTacKhongXuLy(gvcn, v.id)).status === 409, 'lần hai');
+    /* Rà #1735 P1: Hoàn tác chỉ trong 60 giây — sau đó Xác nhận xử lý. */
+    xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' });
+    conn.prepare('UPDATE violations SET khong_xu_ly_luc = ? WHERE id = ?').run(new Date(Date.now() - 2 * 60_000).toISOString(), v.id);
+    const qua = loiCua(() => xuLy.hoanTacKhongXuLy(gvcn, v.id));
+    assert(qua.status === 409 && /Xác nhận xử lý/.test(qua.msg), JSON.stringify(qua));
+  });
+  check('LG-12 (8) · rà #1735 P1: lớp KHÔNG có GVCN — vi phạm được yêu cầu → việc yt_xu_ly của Quản lý chi nhánh (Của tôi) + tin "Yêu cầu xử lý" cho QL (trừ người ghi)', () => {
+    conn.exec('SAVEPOINT lg12b');
+    try {
+      const lop = lopMoi('MB FT LG12K');
+      conn.prepare('UPDATE teacher_assignments SET is_core = 0 WHERE class_id = ?').run(lop.id);
+      xoaNho();
+      const sid = hv(lop.id); const v = ghiYc(loadPrincipal(lop.gvcn.userId), sid);   // nạp lại: GV này giờ chỉ là GV bộ môn của lớp
+      assert(v.yeuCauXuLy, JSON.stringify(v));
+      const it = (myworkYt.myWork(loadPrincipal(P.mbManager.userId)).items as any[]).find((i) => i.key === `yt_xu_ly:${sid}`);
+      assert(it && it.mine && it.ownerId === null && it.due === addDays(TODAY, 4) && /được yêu cầu/.test(it.reason), JSON.stringify(it));
+      const tin = conn.prepare('SELECT user_id, kind, title FROM notifications WHERE dedup_key = ?').all(`yt-yc:${v.id}`) as any[];
+      assert(tin.some((x) => x.user_id === P.mbManager.userId && x.kind === 'discipline' && /trước \d\d\/\d\d$/.test(x.title)), JSON.stringify(tin));
+    } finally { conn.exec('ROLLBACK TO lg12b'); conn.exec('RELEASE lg12b'); xoaNho(); }
+  });
+  check('LG-12 (6) · đổi GVCN giữa chừng: việc sang GVCN mới (cùng hạn); GVCN cũ hết việc, "Không xử lý" → 403; GVCN mới làm được', () => {
+    const lop = lopMoi('MB FT LG12');
+    const sid = hv(lop.id); const v = ghiYc(P.mbManager, sid);
+    assert(viecYt(lop.gvcn, sid), 'GVCN cũ có việc');
+    conn.prepare('UPDATE teacher_assignments SET user_id = ? WHERE class_id = ? AND is_core = 1').run(P.coreTeacher.userId, lop.id);
+    xoaNho();
+    const moi = loadPrincipal(P.coreTeacher.userId), cu = loadPrincipal(lop.gvcn.userId);
+    assert(!viecYt(cu, sid) && viecYt(moi, sid)?.due === addDays(TODAY, 4), 'việc sang GVCN mới');
+    assert(loiCua(() => xuLy.khongXuLy(cu, v.id, { lyDo: 'Không phải lớp tôi nữa' })).status === 403, 'GVCN cũ');
+    assert(xuLy.khongXuLy(moi, v.id, { lyDo: 'Đã trao đổi với em' }).ok, 'GVCN mới');
+  });
+  check('LG-12 (7) · migrate prYeuCauXuLy chạy 2 lần không đổi (cột đã có)', () => {
+    const a: string[] = []; migratePrYeuCauXuLy(conn, a); migratePrYeuCauXuLy(conn, a);
+    assert(a.length === 0, a.join(' | '));
+  });
   check('YT4 (4) · QL "để biết" khi WL 1 / Report 4 + Meeting / WL 2 (K5-16); Report 1, 2 không báo; không còn câu "không cần duyệt"', () => {
     const sid = hv();
     const r1 = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
@@ -971,7 +1073,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Vi phạm / Nhắc nhở (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
-    assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage && ids\.length/.test(s)
+    assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage \? nutChinh\(t\('Xác nhận xử lý'\)/.test(s)   /* GD-19: \"Đã xem\" bỏ; vi phạm không việc — nút Xác nhận xử lý theo canManage */
       && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ key: 'cap-bac', nhan: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Vi phạm \/ Nhắc nhở/.test(s), '+ Vi phạm / Nhắc nhở');
   });

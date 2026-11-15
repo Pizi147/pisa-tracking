@@ -1582,10 +1582,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     }
     const duongLop = (lopId: number | null, sid: number, them: string) =>
       lopId ? `/hoc-vien/lop/${lopId}?tab=y-thuc&hv=${sid}${them}` : duongHoSoHocVien(sid, { tab: 'y-thuc' });
+    /* GD-19 (mockup ⑪ K2a): việc bắt buộc CHỈ vì được yêu cầu → thẻ phụ "{người ghi} yêu cầu". Một câu, chỉ khi có việc loại này (thường 0). */
+    const yeuCauCan: { it: WorkItem; sid: number; ke: string }[] = [];
     for (const r of uv) {
       const em = trang.get(r.id);
-      if (!em || em.tamDung || !em.gvcnId) continue;
-      const mine = em.gvcnId === p.userId;
+      if (!em || em.tamDung) continue;
+      /* LG-12 (rà #1735 P1): lớp KHÔNG có GVCN mà em có vi phạm được yêu cầu → việc `yt_xu_ly` của Quản lý chi nhánh (chưa ai giữ, QL làm được). Ngoài ra như cũ: không GVCN thì không việc. */
+      const choQl = !em.gvcnId && em.soYeuCau > 0 && can(p, PERMISSIONS.CASE_APPROVE, { classId: em.lopId, studentId: r.id });
+      if (!em.gvcnId && !choQl) continue;
+      const mine = choQl || em.gvcnId === p.userId;
       if (!mine && !(tatCa && can(p, PERMISSIONS.CASE_APPROVE, { classId: em.lopId, studentId: r.id }))) continue;
       const chung = {
         studentId: r.id, studentName: r.ten, classId: em.lopId, classCode: r.lop,
@@ -1596,10 +1601,12 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       if (em.soBatBuoc > 0 && !em.coChoDuyet) {
         const ke = nhanLoaiXuLy(em.keTiep.kind);
         items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
-          reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
+          /* LG-12: bắt buộc chỉ vì được yêu cầu → nói rõ "được yêu cầu" (luật 3 thì giữ chữ cũ). */
+          reason: em.theoLuat ? `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý` : `${em.soBatBuoc} vi phạm được yêu cầu xử lý`,   // một số với tiêu đề (rà #1735 P2)
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });
+        if (!em.theoLuat) yeuCauCan.push({ it: items[items.length - 1], sid: r.id, ke });
       }
       /* PR-S3F #7: MỘT việc cho MỖI lần xử lý đã duyệt (khoá theo id lần xử lý) — hai đề xuất cùng lúc không che nhau. */
       for (const x of em.daDuyet) {
@@ -1608,6 +1615,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           reason: `QL đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, phu: nhan, actionLabel: 'Đã thực hiện',
           href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${x.id}`), due: x.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
       }
+    }
+    if (yeuCauCan.length) {
+      const ten = new Map<number, string[]>();
+      for (const v of conn.prepare(`SELECT v.student_id, u.full_name FROM violations v JOIN users u ON u.id = v.reported_by
+          WHERE v.student_id IN (${DS_JSON}) AND v.yeu_cau_xu_ly = 1 AND v.khong_xu_ly_luc IS NULL ORDER BY v.id`).all(JSON.stringify(yeuCauCan.map((x) => x.sid))) as any[]) {
+        const a = ten.get(v.student_id) ?? []; if (!a.includes(v.full_name)) a.push(v.full_name); ten.set(v.student_id, a);
+      }
+      for (const x of yeuCauCan) if (ten.get(x.sid)?.length) x.it.phu = `${ten.get(x.sid)!.join(', ')} yêu cầu · bậc kế tiếp: ${x.ke}`;
     }
   }
 

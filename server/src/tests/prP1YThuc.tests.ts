@@ -78,7 +78,7 @@ export async function runPrP1YThucTests(t: any) {
       const ids = emCuaLop(l.id);
       assert(b.emLop.length === ids.length && b.emLop.every((e: any) => ids.includes(e.studentId)), `lớp ${l.id}: emLop đủ ${ids.length} em`);
       for (let i = 1; i < b.emLop.length; i++) assert(d.soTenVi(b.emLop[i - 1].ten, b.emLop[i].ten) <= 0, `lớp ${l.id}: emLop theo tên`);
-      const laLs = (x: any) => (x.loai === 'xu-ly' ? x.status === 'done' || x.status === 'thu_hoi' : x.trangThai === 'da_ghi_nhan');
+      const laLs = d.laDongLs;   // GD-19: vi phạm Mới (không việc) cũng ở Lịch sử — cùng hàm máy chủ đếm soLs
       if (!b.catLs) for (const e of b.emLop) {
         const n = b.dongThoiGian.filter((x: any) => x.studentId === e.studentId && laLs(x)).length;
         assert(e.soLs === n, `lớp ${l.id} em ${e.studentId}: soLs ${e.soLs} = ${n} dòng lịch sử đã nạp`);

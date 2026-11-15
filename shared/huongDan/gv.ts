@@ -93,14 +93,14 @@ export const HD_GV: HuongDan = {
       id: 'vi-pham', ten: 'Ghi vi phạm', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ dòng em › + Vi phạm / Nhắc nhở' },
       loiTat: ['ho-so-hv', 'p-vi-pham'], cung: 'mở cùng panel ghi vi phạm.',
-      buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Vi phạm / Nhắc nhở</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn.', '<b>Lưu</b>. Ghi không có hạn; xử lý là việc của GVCN.'],
+      buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Vi phạm / Nhắc nhở</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn. Cần GVCN xử lý ngay thì bật <b>Yêu cầu GVCN xử lý</b>: GVCN có việc, hạn 5 ngày; GVCN không xử lý thì bạn nhận tin kèm lý do.', '<b>Lưu</b>. GVCN nhận tin ở chuông; đủ 3 vi phạm trong 2 tuần thì GVCN phải xử lý.'],
       tuKhac: ['ý thức', 'kỷ luật', 'vi phạm', 'violation'],
     },
     {
       id: 'xu-ly-vi-pham', ten: 'Xử lý vi phạm', nhom: 'hv', chiGvcn: true,
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Ý thức & Phối hợp › Vi phạm', duong: CV },
       loiTat: ['ho-so-lop', 'p-xu-ly'], tatThem: ['⋯ dòng em › Xác nhận xử lý'], cung: 'mở cùng panel xử lý.',
-      buoc: ['Mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, mục <b>Vi phạm</b>.', '<b>Xử lý vi phạm</b> (em có từ 3 vi phạm trong tuần này + tuần trước): <b>Xác nhận xử lý</b>; bậc cần QL thì <b>Gửi Quản lý duyệt</b>.', '<b>Xem vi phạm mới</b>: <b>Đã xem</b>. QL đã duyệt đề xuất xử lý: <b>Lưu · Đã thực hiện</b>.', 'Em mới vào lớp: <b>Xác nhận cấp bậc</b> vi phạm cũ. Hạn 5 ngày, tính cả ngày ghi.'],
+      buoc: ['Mở <b>Công việc</b>, tab <b>Ý thức & Phối hợp</b>, mục <b>Vi phạm</b>.', '<b>Xử lý vi phạm</b> (em có từ 3 vi phạm trong tuần này + tuần trước): <b>Xác nhận xử lý</b>; bậc cần QL thì <b>Gửi Quản lý duyệt</b>.', 'Vi phạm <b>được yêu cầu xử lý</b>: <b>Xác nhận xử lý</b>, hoặc <b>Không xử lý</b> kèm lý do (người ghi nhận tin; vi phạm vẫn tính vào 3 vi phạm / 2 tuần). QL đã duyệt đề xuất xử lý: <b>Lưu · Đã thực hiện</b>.', 'Em mới vào lớp: <b>Xác nhận cấp bậc</b> vi phạm cũ. Hạn 5 ngày, tính cả ngày ghi.'],
       tuKhac: ['xử lý', 'cấp bậc', 'kỷ luật', 'discipline'],
     },
     {
@@ -206,7 +206,7 @@ export const HD_GV: HuongDan = {
     {
       id: 'xem-chuong', ten: 'Xem chuông thông báo', nhom: 'khac',
       loiChinh: { chu: 'Chuông trên thanh trên' },
-      buoc: ['Bấm chuông: <b>Việc cần làm</b> — mỗi loại việc một dòng, số mới, quá hạn tô đỏ; bấm dòng mở <b>Công việc</b> đúng tab của loại đó.', '<b>Cập nhật</b>: báo một chiều; <b>Đánh dấu đã đọc</b>, <b>Xem tất cả</b>.'],
+      buoc: ['Bấm chuông: <b>Việc cần làm</b> — mỗi tab Công việc một thanh, số việc, quá hạn tô đỏ; bấm thanh mở <b>Công việc</b> đúng tab.', 'Bấm <b>⌄</b> cuối thanh: 3 việc gấp nhất hiện tại chỗ, bấm một việc mở thẳng việc đó.', '<b>Cập nhật</b>: tin một chiều (vi phạm mới, nhắc nhở…); <b>✓</b> = đã xem, <b>Đã xem hết</b> (Hoàn tác 10 giây), <b>Xem tất cả</b>.'],
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell'],
     },
     {
