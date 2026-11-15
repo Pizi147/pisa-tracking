@@ -5,7 +5,10 @@ Mockup: `thiet-ke/v21/chuong-vi-pham.html` + `chuong-vi-pham.css` (token, thành
 
 ## 0. Lời chủ SP trong session này
 
-(chưa có)
+- 15/11, sau khi PTA Overhaul gửi ảnh cặp và session đã áp 4 chỉnh (commit 722f2f949):
+  > "ok nhé"
+
+  Session hiểu: chủ SP duyệt mockup ⑪ như bản hiện tại trên PR #1726. Đã chuyển lại PTA Overhaul; PR không tự merge.
 
 ## 0b. PTA Overhaul rà (15/11) — đã áp
 
