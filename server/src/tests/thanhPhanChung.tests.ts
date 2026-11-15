@@ -21,6 +21,20 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   console.log('\nPR-NEN · Thành phần chung');
   const H = '2026-09-28'; // Thứ Hai
 
+  check('QC-Q82 · Nhập hộ điểm: "Bạn nhập hộ · " đứng đầu câu khi việc không phải của mình; trước tuần Test = máy tự dời về tuần này (NHAP-DIEM-a, không hỏi, không nhờ QL)', () => {
+    const q = (o: any) => d.quyCheNhapDiem({ thuong: false, homNay: H, ...o }).chu as string;
+    const truoc = q({ tuanThi: '2026-10-12', nhapHo: true });
+    assert(truoc === `Bạn nhập hộ · Chưa tới tuần Test ${d.tuanLich('2026-10-12', H)} · lưu điểm thì máy dời về tuần này`, truoc);
+    assert(!/nhờ QL|hỏi dời/.test(truoc + q({ tuanThi: '2026-10-12' })), 'không còn câu "nhờ QL dời lịch" / "hỏi dời"');
+    assert(q({ tuanThi: '2026-10-12' }).startsWith('Chưa tới tuần Test'), 'việc của mình: không "Bạn nhập hộ"');
+    assert(q({ nhapHo: true }) === `Bạn nhập hộ · ${q({})}`, 'mặc định: thêm đầu câu, giữ luật của lượt');
+    assert(/TỰ DỜI kỹ năng đó[\s\S]*VỀ TUẦN NÀY, không hỏi, không cần Quản lý/.test(doc('server/src/fasttrack/skillSchedule.ts')), 'câu neo vào luật doiVeTuanNayNeuChua');
+    /* [XM-Q82b] PTA 15/11: Công việc đã có dải "Bạn đang làm thay {GV}" → không lặp đầu câu; chỉ panel GV trễ chấm (không có dải) truyền cờ. */
+    const pv = doc('web/src/modules/congViec/PanelViec.tsx');
+    assert(!/it\.mine === false/.test(pv) && /nhapHo = false/.test(pv) && /nhapHo=\{g\.gvId !== toi\}/.test(doc('web/src/modules/worklist/PanelGvTre.tsx')), 'cờ nhập hộ chỉ từ panel GV trễ chấm');
+    assert(!/DaiLamThay|Bạn đang làm thay/.test(doc('web/src/modules/worklist/PanelGvTre.tsx')), 'panel GV trễ chấm không có dải làm thay');
+  });
+
   check('QC-GAN · Q74 / Q75 / Q77 Cuối khoá + Q83 Xuất báo cáo PH: câu khớp mã (hạn chốt từ mocLoTrinh, Tutor từ mocThuong, 7 ngày của việc Admin) và gắn đúng chỗ', () => {
     const q = (o: any) => d.quyCheChotLoTrinh({ trungTam: false, khacGoiY: false, tutor: 10, hanChot: null, homNay: H, ...o }).chu as string;
     const moc = d.mocLoTrinh('2026-10-05');
