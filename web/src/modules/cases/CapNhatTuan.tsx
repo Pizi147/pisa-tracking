@@ -22,7 +22,7 @@ import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoi, coSoBuoiKy, demSauKetQua, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay, quyCheGhiKetQua } from '@shared/domain/index.ts';
+import { hanDuyetNgay, hoanThanhCaseBatSan, quyCheGhiKetQua } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
@@ -161,8 +161,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const [on, setOn] = useState<string>(g?.observedOn ?? homNay);
   const [moNgay, setMoNgay] = useState(false);
   const [endOn, setEndOn] = useState<string>(g?.completedOn ?? homNay);
-  /* #3: ô "Hoàn thành Case" (mặc định tắt) · mức (null = theo Tiến triển) · kết luận (null = theo Nhận xét). */
-  const [htCase, setHtCase] = useState(false);
+  /* #3: ô "Hoàn thành Case" · mức (null = theo Tiến triển) · kết luận (null = theo Nhận xét). GD-20d: `htTay` null = bật sẵn theo `hoanThanhCaseBatSan`; GV bấm thì theo GV. */
+  const [htTay, setHtTay] = useState<boolean | null>(null);
   const [htMuc, setHtMuc] = useState<string | null>(null);
   const [htNote, setHtNote] = useState<string | null>(null);
   /* Điều chỉnh: cùng form PA (Nội dung · Số buổi · Người dạy), giá trị đầu = bản hiện tại (sửa: bản trước lần ghi); gửi ô đã đổi như Sửa PA (`thanSuaPa`). */
@@ -289,6 +289,9 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   }
   /* #3: hiện ô khi lần ghi này kết thúc PA (Kết thúc PA / Kết quả cuối của PA quy chế) — không ở Sửa kết quả. */
   const ketThucPa = !sua && (lanCuoi || decision === 'end');
+  /* GD-20d: bật sẵn khi kết thúc PA cuối + kỳ này đạt (Tiến bộ rõ; Bổ trợ miễn phí: Mini Test ≥ ngưỡng chung). Tay GV thắng. */
+  const batSan = !!hoanThanhCase && hoanThanhCaseBatSan({ ketThuc: ketThucPa, paCuoi: true, outcome, boTroMienPhi: coMiniTest, mtTyLe: mtTyLe.trim() === '' ? null : Number(mtTyLe.replace(',', '.')) / 100, mtNgay: mtNgay || null });
+  const htCase = htTay ?? batSan;
   const coHt = !!hoanThanhCase && ketThucPa && htCase;
   const mucHt = htMuc ?? CASE_OUTCOMES.find((x) => CASE_OUTCOME_LABEL[x] === outcomeLabelFor(outcome)) ?? '';
   const noteHt = htNote ?? (nhanXetTheoBuoi ? ghepBuoi : progress);
@@ -330,7 +333,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       /* #3: kết quả đã lưu → hoàn thành Case cùng lần bấm. Lỗi ở bước này không mất kết quả: nói rõ "chưa hoàn thành Case", nút Hoàn thành Case vẫn ở Case. */
       let daHt = false;
       let loiHt: string | null = null;
-      if (coHt && hoanThanhCase) {
+      if (coMiniTest && batSan) daHt = true;   // GD-20d: Mini Test đạt → máy chủ đã hoàn thành Case khi lưu (PR-LT2b) — không gọi lần hai
+      else if (coHt && hoanThanhCase) {
         try { await api.post(`/cases/${hoanThanhCase.caseId}/outcome`, { outcome: mucHt, note: noteHt.trim(), closedOn: (decision === 'end' ? endOn : on) || undefined }); daHt = true; }
         catch (e: any) { loiHt = e?.message ?? t('Không lưu được'); }
       }
@@ -618,7 +622,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             /* #3 (G2-05, G2-07): PA cuối của Case — tick là hoàn thành Case luôn; mức theo Tiến triển, kết luận = Nhận xét (sửa được). */
             <div className="flex flex-col gap-2.5">
               <label className="flex min-h-[44px] cursor-pointer items-center gap-2 text-[13px] font-semibold text-slate-200 sm:min-h-0">
-                <input type="checkbox" className="h-4 w-4" checked={htCase} disabled={busy} onChange={(e) => setHtCase(e.target.checked)} />
+                <input type="checkbox" className="h-4 w-4" checked={htCase} disabled={busy} onChange={(e) => setHtTay(e.target.checked)} />
                 {t('Hoàn thành Case')}
               </label>
               {htCase && (
@@ -646,7 +650,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           )}
           {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
           {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
-            lanCuoi, batBuoc: !!pa.batBuoc, miniTest: coMiniTest || !!pa.miniTestHan })} />}
+            lanCuoi, batBuoc: !!pa.batBuoc, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined })} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden"><NutDongPanel busy={busy} />{nutNhap}{nut}</div>
         </CanLam>
       </div>

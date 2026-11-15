@@ -6,6 +6,7 @@ import { t } from '../i18n/index.ts';
 import type { QuyChe } from './quyChe.ts';
 import { quyCheKetQuaPa } from './quyChe.ts';
 import type { PlanDecision } from './cases.ts';
+import { nguongMiniTest } from './bandNguong.ts';
 
 /** Q13 Mô tả Case (luat/2 C-10, mục 2–3): hạn 5 ngày, SOS 3 là 3 ngày; lưu mô tả xong là việc Xác nhận PA. */
 export const quyCheMoTaCase = (han: string | null): QuyChe => ({
@@ -35,14 +36,26 @@ export const quyCheThemPa = (deXuat: boolean, han?: string | null): QuyChe => de
  * Q20–Q26 Ghi kết quả PA theo lựa chọn đang chọn (luat/2 C-14 – C-17, C-20). Thứ tự: Mini Test (Q26) · kỳ cuối (Q25) · Xin hỗ trợ QL (Q23) · Kết thúc (Q22)
  * · Điều chỉnh / Thay / Đề xuất PA khác (Q21) · PA quy chế giữ nguyên (Q24, câu Q20 vào ⓘ) · mặc định (Q20).
  */
-export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean }): QuyChe => {
+export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean; htCase?: boolean }): QuyChe => {
   if (x.miniTest) return { chu: t('Từ 70 %: Case tự hoàn thành · dưới 70 %: QL quyết') };
   if (x.lanCuoi) return { chu: t('Kết quả cuối: lưu xong PA khép') };
   if (x.decision === 'ask_manager') return { chu: t('Xin hỗ trợ QL: PA vẫn chạy · QL nhận thẻ') };
+  /* GD-20d (⑫ D2): form có ô "Hoàn thành Case" (`htCase` ≠ undefined) → câu theo ô tick. */
+  if (x.decision === 'end' && x.htCase !== undefined) return { chu: x.htCase ? t('Kết thúc PA · Case hoàn thành, mở lại được ở thẻ Case') : t('Kết thúc PA · Case còn mở · không hạn') };
   if (x.decision === 'end') return { chu: t('Chỉ kết thúc khi Tiến bộ rõ hoặc Tiến bộ một phần') };
   if (x.deXuat || x.decision === 'adjust' || x.decision === 'replace') return { chu: t('Điều chỉnh / Thay PA cần lý do') };
   if (x.batBuoc) return { chu: t('PA quy chế: không thay, không kết thúc sớm'), chiTiet: quyCheKetQuaPa(x.han).chu };
   return quyCheKetQuaPa(x.han);
+};
+
+/**
+ * GD-20d (⑫ D1–D3): ô "Hoàn thành Case" BẬT SẴN khi đủ ba — Kết thúc PA (hoặc kết quả cuối) · PA cuối còn chạy của Case · kỳ này đạt:
+ * Tiến triển "Tiến bộ rõ" (`improved`); Bổ trợ miễn phí: Mini Test ≥ `nguongMiniTest` (ngưỡng chung, theo ngày làm). Thiếu một → tắt sẵn. Không máy tự đóng Case.
+ */
+export const hoanThanhCaseBatSan = (x: { ketThuc: boolean; paCuoi: boolean; outcome: string; boTroMienPhi: boolean; mtTyLe: number | null; mtNgay: string | null }): boolean => {
+  if (!x.ketThuc || !x.paCuoi) return false;
+  if (x.boTroMienPhi) return x.mtTyLe != null && Number.isFinite(x.mtTyLe) && x.mtTyLe >= nguongMiniTest(x.mtNgay);
+  return x.outcome === 'improved';
 };
 
 /**
