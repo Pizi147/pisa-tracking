@@ -542,10 +542,11 @@ export function updateProfile(p: Principal, input: {
       if (!laNgonNgu(input.ngonNgu)) throw badRequest('Ngôn ngữ không hợp lệ.');
       conn.prepare('UPDATE users SET ngon_ngu = ? WHERE id = ?').run(input.ngonNgu, p.userId);
     }
-    /* HD-a: chỉ ghi "đã xem" (không có đường bỏ — dải đã ẩn thì vẫn mở Hướng dẫn qua nút "?"). */
+    /* HD-a → HD3-1 ("Có gì mới", 15 mục 8.2): ghi SỐ PHIÊN BẢN nội dung đã xem (cột cũ: 1 = đã mở bản V2); `true` cũ = 1. Không lùi phiên bản. */
     if (input.daXemHuongDan !== undefined) {
-      if (input.daXemHuongDan !== true) throw badRequest('Trạng thái Hướng dẫn không hợp lệ.');
-      conn.prepare('UPDATE users SET da_xem_huong_dan = 1 WHERE id = ?').run(p.userId);
+      const v = input.daXemHuongDan === true ? 1 : input.daXemHuongDan;
+      if (typeof v !== 'number' || !Number.isInteger(v) || v < 1 || v > 999) throw badRequest('Trạng thái Hướng dẫn không hợp lệ.');
+      conn.prepare('UPDATE users SET da_xem_huong_dan = MAX(COALESCE(da_xem_huong_dan, 0), ?) WHERE id = ?').run(v, p.userId);
     }
     if (input.fullName !== undefined) {
       const name = chuTuDo(input.fullName, 'Họ tên', 100);   // PR-Dọn (quét #23)

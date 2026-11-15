@@ -37,7 +37,7 @@ export async function runPrTd2dTests(t: YThucTestKit) {
       id: a.id, classId: a.class_id, skill: a.skill, isCore: a.is_core === 1, effectiveFrom: a.effective_from, effectiveTo: a.effective_to,
     }));
     return {
-      userId: user.id, code: user.code, fullName: user.full_name, title: user.title, ngonNgu: user.ngon_ngu ?? null, daXemHuongDan: user.da_xem_huong_dan === 1,
+      userId: user.id, code: user.code, fullName: user.full_name, title: user.title, ngonNgu: user.ngon_ngu ?? null, daXemHuongDan: Number(user.da_xem_huong_dan) || 0,
       kyNang: (conn.prepare('SELECT skill FROM user_skills WHERE user_id = ?').all(userId) as any[]).map((r) => r.skill),   // OV-14c
       /* PC-GV-A: lớp GV cũ chỉ xem (lần đổi A → B đã áp, còn `xem_den`). */
       xemTam: (conn.prepare(`SELECT class_id, hieu_luc, xem_den, id FROM doi_phan_cong WHERE nguoi_cu = ? AND trang_thai = 'da_ap' AND xem_den IS NOT NULL ORDER BY id`)

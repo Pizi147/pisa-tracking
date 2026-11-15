@@ -1,16 +1,21 @@
 import { useCallback } from 'react';
 import { useSession } from '../../lib/session.tsx';
 import { api } from '../../lib/api.ts';
+import { PHIEN_BAN_HD } from '@shared/huongDan/kieu.ts';
 
 /* TAI-NHANH-0611: tệp riêng (không nằm cạnh nội dung Hướng dẫn) — thanh trên cần chấm "chưa xem" mà không kéo ~90 KB chữ hướng dẫn vào gói chính. */
-/** Ghi "đã mở Hướng dẫn" một lần cho tài khoản (hết chấm trên nút "?"). Trả false khi lưu lỗi. */
+/**
+ * HD3-1 "Có gì mới" (15 mục 4.8, [XM-6]): tài khoản nhớ SỐ PHIÊN BẢN nội dung đã xem (0 = chưa mở lần nào). Nhỏ hơn `PHIEN_BAN_HD` → chấm trên "?".
+ * `ghi` lưu phiên bản hiện tại (hết chấm). Trả false khi lưu lỗi.
+ */
 export function useDaXemHd() {
   const { session, reload } = useSession();
-  const chuaXem = !!session?.authenticated && session.daXemHuongDan === false;
+  const daXem = session?.daXemHuongDan ?? 0;
   return {
-    chuaXem,
+    daXem,
+    chuaXem: !!session?.authenticated && daXem < PHIEN_BAN_HD,
     ghi: useCallback(async () => {
-      try { await api.patch('/me/profile', { daXemHuongDan: true }); await reload(); return true; } catch { return false; }
+      try { await api.patch('/me/profile', { daXemHuongDan: PHIEN_BAN_HD }); await reload(); return true; } catch { return false; }
     }, [reload]),
   };
 }

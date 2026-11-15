@@ -14,10 +14,17 @@ export const HD_GV: HuongDan = {
   lam: [
     /* ---------------------------------------------------------------- Điểm */
     {
-      id: 'nhap-diem', ten: 'Nhập điểm MT · Progress · Final', nhom: 'diem',
+      /* HD3-1: thẻ mẫu khuôn bảy dòng — chữ của mockup ⑭ K1 (PTA Overhaul rà nguồn luật: ghi chú mockup mục 5). HD3-2 viết lại mọi thẻ GV. */
+      id: 'nhap-diem', ten: 'Nhập điểm', nhom: 'diem', tab: 'cham-diem', viecWeb: ['score'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm điểm', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Nhập điểm</b> ở tab <b>Chấm điểm</b> — bấm để gõ điểm.' } },
       loiTat: ['lich-test', 'diem-lop', 'ho-so-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ dòng em'], cung: 'mở cùng ô điểm.',
-      buoc: ['Mở <b>Công việc</b>, tab <b>Chấm điểm</b> (mục Mock Test · Progress / Final Test · Checkpoint).', 'Bấm <b>Nhập điểm</b> ở dòng lớp.', 'Gõ điểm; em vắng gõ <b>-</b>; <b>Lưu · bài tiếp ›</b>, hết lớp: <b>Lớp tiếp</b>.'],
+      khiCo: 'Từ thứ Hai tuần Test, cho GV dạy kỹ năng đó ở lớp.',
+      buoc: ['Bấm ô, gõ số câu, tiêu chí hoặc band (lớp thường: điểm đạt).', 'Em vắng: gõ <b>-</b> (Mock: lần 1 dời, lần 2 huỷ).', 'Bấm <b>Lưu · bài tiếp ›</b>.'],
+      xong: 'Mọi ô có điểm hoặc "-".',
+      han: 'Hết {han:cham_test}; quá hạn vẫn nhập được.',
+      sai: 'Bấm lại ô để sửa; xoá nhầm: <k>⋯</k> rồi <b>Khôi phục điểm</b>.',
+      khongDuoc: ['Chưa tới tuần Test, hoặc không phải kỹ năng bạn: nhờ QL.'],
+      sau: 'Em dưới kỳ vọng → GV kỹ năng đó có việc Case.',
       tuKhac: ['chấm', 'chấm bài', 'điểm', 'sửa điểm', 'mock test', 'progress test', 'final test', 'score', 'grade', 'marks'],
     },
     {
@@ -28,7 +35,7 @@ export const HD_GV: HuongDan = {
       tuKhac: ['mt cu', 'điểm cũ', 'old mock'],
     },
     {
-      id: 'cham-s', ten: 'Chấm Speaking chéo', nhom: 'diem', chiS: true,
+      id: 'cham-s', ten: 'Chấm Speaking chéo', nhom: 'diem', chiS: true, viecWeb: ['cham_speaking'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Speaking', duong: CV },
       loiTat: ['lich-test', 'p-nhap-diem'], cung: 'mở cùng ô điểm.',
       buoc: ['Mở <b>Công việc</b>, tab <b>Chấm Speaking</b>, bấm dòng <b>Chấm Speaking · n bài</b>.', 'Tìm em (tên, email), lọc lớp, bấm ô S để chấm.', '<b>Lưu · bài tiếp ›</b> sang em chưa chấm kế; không tính quá hạn.'],
@@ -230,6 +237,16 @@ export const HD_GV: HuongDan = {
     { nhip: 'Theo đợt', viec: ['bao-cao-ph', 'xuat-excel'] },
     { nhip: 'Cuối khoá', viec: ['cuoi-khoa', 'ghi-mini-test', 'thi-that'] },
   ],
+  /* HD3-1: tình huống mẫu — chữ của mockup ⑭ K6b (nguồn `luat/1` T-17, T-19, §4 bảng "-"). HD3-2 viết đủ danh sách (15 mục 4.7). */
+  tinhHuong: [
+    {
+      id: 'em-vang-test', ten: 'Em vắng Test', the: 'nhap-diem',
+      may: ['Mock: lần 1 dời sang tuần sau, lần 2 huỷ kỹ năng.', 'Lớp thường: dời sang tuần sau, không bao giờ huỷ.', 'Tuần Test đã qua từ 2 tuần: ghi Không dự thi, không dời.'],
+      ban: 'Gõ <b>-</b> vào ô của em; ghi nhầm thì xoá "-", em về tuần cũ.',
+      ai: ['Mock lần 1: GVCN, GV kỹ năng đó nhận tin; tuần mới có việc nhập lại.', 'Mock lần 2: không việc, không tin; lớp thường từ lần 2: GVCN nhận tin.'],
+      tuKhac: ['vang', 'vắng', 'nghỉ', 'absent', 'dời'],
+    },
+  ],
   vaiKhac: [
     { ...KHONG_XEP_MT, tuKhac: ['dời lịch', 'lịch mt', 'reschedule'] },
     { ten: 'Duyệt yêu cầu, đề xuất PA', cua: 'việc của QL', tuKhac: ['duyệt', 'approve'] },
@@ -373,7 +390,7 @@ export const HD_GV: HuongDan = {
       muc: [],
     },
     {
-      id: 'p-nhap-diem', ten: 'Nhập điểm đang mở', duong: [], panel: 'nhap-diem',
+      id: 'p-nhap-diem', ten: 'Nhập điểm đang mở', duong: [], panel: 'nhap-diem', the: 'nhap-diem',
       dangO: { cau: 'Gõ điểm từng em cho một lượt Test.' },
       khongLam: [KHONG_XEP_MT],
       muc: [

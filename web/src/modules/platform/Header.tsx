@@ -8,6 +8,7 @@ import { CongTacGiaoDien } from '../../ui/CongTacGiaoDien.tsx';
 import { NutNgonNgu } from '../../ui/NutNgonNgu.tsx';
 import { lazyTai } from '../../lib/taiLaiManh.ts';
 import { useDaXemHd } from '../huongDan/daXemHd.ts';
+import { MO_HD } from '../../lib/hdNgCanh.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { buocDanhSach, chuanHoaMaLop, ngayTheoGioVN, nhanPhamVi, type DemYeuCau } from '@shared/domain/index.ts';
 import { HopChuong, type ViecChuong } from './HopChuong.tsx';
@@ -59,6 +60,12 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
   /* KHUNG-LOI (A1-05, 04 "Thanh trên"): dưới 1 440 px ô tìm cũng thu thành nút kính lúp — nhường chỗ cho 6 mục menu. */
   const timGon = useManHinh('(max-width: 1439px)');
   const [moTimDt, setMoTimDt] = useState(false);
+  /* HD3-1: ⓘ dòng quy chế, "?" nổi trên nền mờ của panel → mở cùng panel Hướng dẫn (đọc ngữ cảnh lúc mở). */
+  useEffect(() => {
+    const mo = () => { setOpenMenu(null); setMoTimDt(false); setMoHd(true); };
+    window.addEventListener(MO_HD, mo);
+    return () => window.removeEventListener(MO_HD, mo);
+  }, []);
   const nutTim = useRef<HTMLButtonElement>(null);
   const boxRef = useRef<HTMLDivElement>(null);
   const oTim = useRef<HTMLInputElement>(null);
@@ -260,8 +267,8 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
         <div className="relative w-52 lg:w-64 shrink" data-hd="tim-hv">{oTimVaKetQua}</div>
       )}
 
-      {/* HD-V2 (đặc tả 3.1, mockup v14 F0): "?" cạnh chuông, mọi trang mọi vai — chấm trắng tới lần mở đầu (không tự mở, không phím tắt). */}
-      <button type="button" data-hd="nut-hd" title={t('Hướng dẫn')} aria-label={chuaXemHd ? t('Hướng dẫn, chưa mở lần nào') : t('Hướng dẫn')} aria-expanded={moHd}
+      {/* HD-V2 (đặc tả 3.1, mockup v14 F0): "?" cạnh chuông, mọi trang mọi vai. HD3-1: chấm trắng khi còn phiên bản nội dung chưa xem (không tự mở). */}
+      <button type="button" data-hd="nut-hd" title={t('Hướng dẫn')} aria-label={chuaXemHd ? t('Hướng dẫn, có nội dung mới') : t('Hướng dẫn')} aria-expanded={moHd}
         onClick={() => { setOpenMenu(null); setMoTimDt(false); setMoHd(true); }}
         className="btn btn-sm relative min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent sm:min-h-[36px] sm:min-w-[36px] aria-expanded:bg-white/15">
         <span aria-hidden className="grid h-[22px] w-[22px] place-items-center rounded-full border-[1.5px] border-current text-[13px] font-bold leading-none">?</span>
@@ -377,7 +384,7 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
           </div>
         )}
       </div>
-      {moHd && <Suspense fallback={null}><PanelHuongDanManNay onDong={() => setMoHd(false)} /></Suspense>}
+      {moHd && <Suspense fallback={null}><PanelHuongDanManNay onDong={() => setMoHd(false)} dong={viec?.dong} /></Suspense>}
     </div>
   );
 }
