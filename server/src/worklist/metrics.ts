@@ -4,7 +4,7 @@ import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
@@ -138,6 +138,8 @@ export type MetricRow = {
   em?: { id: number; ten: string } | null; lop?: string | null; ngCanh?: string | null; nguoiId?: number | null;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ (`nhomCaseChuaChot`). */
   nhom?: NhomCaseChuaChot | null;
+  /** LG-13 (H8): dòng Case — bước Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối (`buocCase`, từ dữ liệu đã đọc). null = Case xong / không còn bước. */
+  buoc?: BuocCase | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở mốc mở / lặp Case gần nhất (band, kỳ vọng lượt đó, "MT2" / "Progress Test"). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
@@ -172,7 +174,7 @@ const ctxCase = (r: { lop_id: number | null; sid: number | null; topic: string |
  * VIỆC TIẾP của các Case theo lô — CÙNG luật `chiTietCaseMo` (trạng thái v4 + `viecTiepCuaCase`), không hỏi DB từng Case. `p` có thì tính `lam`.
  * Trả theo id Case: việc (null = Case xong / huỷ) + câu trạng thái.
  */
-function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec: ViecDong | null; tinhTrang: string | null }> {
+function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec: ViecDong | null; tinhTrang: string | null; buoc: BuocCase | null }> {
   const gia = rows.map((r) => ({
     id: r.id, studentId: r.sid, status: r.status, detectedAt: r.detected_at, urgency: r.urgency, sosLevel: r.sos_level, kck: !!r.kck,
     originKind: r.origin_kind, classKind: 'normal', attemptNo: r.attempt_no ?? null, topic: r.topic, category: r.category, categoryLabel: null,
@@ -184,18 +186,19 @@ function viecCuaCase(rows: any[], p: Principal | undefined): Map<number, { viec:
     id, kind: pa.kind, performer_user_id: pa.performerUserId, case_id: r.id, nhom_bo_tro: pa.nhomBoTro,
     topic: r.topic ?? null, class_id: r.lop_id ?? null, eff_student_id: r.sid ?? null, owner_user_id: r.owner_user_id ?? null,
   })))) : new Map<number, boolean>();
-  const out = new Map<number, { viec: ViecDong | null; tinhTrang: string | null }>();
+  const out = new Map<number, { viec: ViecDong | null; tinhTrang: string | null; buoc: BuocCase | null }>();
   for (const r of rows) {
     const c = ct.get(r.id);
     const v = c?.viecTiep ?? null;
+    const buoc = c ? buocCase(c.trangThai.k, v) : null;
     const loai: ViecDong['loai'] | null = !v ? null : v.chu === 'Xác nhận Case' ? 'xac-nhan' : v.chu === 'Mô tả Case' ? 'ghi-nhan-xet'
       : v.chu.startsWith('Xác nhận PA') ? 'xac-nhan-pa' : v.loaiHan === 'cap-nhat-pa' ? 'ghi-ket-qua' : v.chu === CHU_THEM_PA ? 'them-pa'
         : v.chu === 'Hoàn thành Case' ? 'hoan-thanh' : null;
-    if (!v || !loai) { out.set(r.id, { viec: null, tinhTrang: v?.chu ?? c?.trangThai.chu ?? null }); continue; }
+    if (!v || !loai) { out.set(r.id, { viec: null, tinhTrang: v?.chu ?? c?.trangThai.chu ?? null, buoc }); continue; }
     const sua = !!p && can(p, PERMISSIONS.SOS_EDIT, ctxCase(r));
     const pa = v.paId ? r.pas?.get(v.paId) : null;
     out.set(r.id, {
-      tinhTrang: c!.trangThai.chu,
+      tinhTrang: c!.trangThai.chu, buoc,
       viec: {
         chu: loai === 'ghi-ket-qua' ? (v.chu.startsWith('Kết quả cuối') ? t('Kết quả cuối') : t('Kết quả PA')) : loai === 'xac-nhan-pa' ? t('Xác nhận PA') : v.chu,
         loai, loaiHan: v.loaiHan, han: v.han, caseId: r.id, paId: v.paId,
@@ -273,7 +276,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           /* OV-12e (đặc tả mục 1, nghi lỗi): hạn = hạn của VIỆC TIẾP — Case xong / không còn việc thì không còn hạn (trước: luôn `han_xac_nhan`). */
           href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
-          viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null,
+          viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null, buoc: v?.buoc ?? null,
         });
       }
     } else if (unit === 'phuong-an') {

@@ -1,0 +1,42 @@
+{
+  "e3QuyChe": [
+    {
+      "chu": "Lưu = Giữ nguyên PA, kỳ sau hạn 06/10 · đổi quyết định: Mở đầy đủ",
+      "cat": false,
+      "dong": 2
+    }
+  ],
+  "e3GoiY": [
+    {
+      "ten": "Nhận xét · Lý Minh Châu",
+      "cao": 44,
+      "tran": false
+    },
+    {
+      "ten": "Nhận xét · Nguyễn Minh An",
+      "cao": 66,
+      "tran": false
+    }
+  ],
+  "e3NutChinh": {
+    "chu": "Lưu",
+    "title": "Chưa có dòng đủ: chọn Tiến triển và Nhận xét ≥ 8 ký tự",
+    "tat": true
+  },
+  "vung375": [],
+  "tran375": 0,
+  "qc-ket-qua-mot-pa": [
+    {
+      "chu": "Kỳ 2 tuần · hạn 22/09 · Lưu là chốt, đổi bằng Sửa",
+      "cat": false,
+      "dong": 2
+    }
+  ],
+  "qc-van-hanh": [
+    {
+      "chu": "Hạn T5 20/08 · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp",
+      "cat": false,
+      "dong": 2
+    }
+  ]
+}

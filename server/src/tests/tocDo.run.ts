@@ -206,6 +206,11 @@ const PA_TUTOR = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos
     JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
    WHERE iv.kind = 'tutor' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(LOP_FT) as any)?.id as number;
 assert(PA_TUTOR, 'Seed thiếu PA Tutor đang chạy ở MB FT 101');
+/** GD-20c: PA đang chạy của MB FT 101 (≤ 20) — đường `/interventions/luoi-ket-qua?ids={paLuoi}` (lưới Ghi kết quả PA một dòng gộp). */
+const PA_LUOI = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+    JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
+   WHERE iv.status IN ('planned', 'started') ORDER BY iv.id LIMIT 20`).all(LOP_FT) as any[]).map((r) => r.id).join(',');
+assert(PA_LUOI, 'Seed thiếu PA đang chạy ở MB FT 101');
 assert(KASE, `Seed thiếu Case cho HV mẫu (id ${HV}) ở lớp MB FT 101 — DUONG_DO cần một Case thật`);
 
 const USER: Record<Vai, number> = {
@@ -259,6 +264,7 @@ function urlFor(mau: string): string {
     .replace('{lopKetThuc}', String(LOP_KET_THUC))
     .replace('{case}', String(KASE))
     .replace('{paTutor}', String(PA_TUTOR))
+    .replace('{paLuoi}', PA_LUOI)
     .replace('{ycPa}', String(YC_PA))
     .replace('{bgGv}', String(BG_GV))
     .replace('{lenhBg}', String(LENH_BG))
@@ -1301,6 +1307,7 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   /* PR-B (30/10): chụp lại GVBM toi · QL / QT tat-ca · QT tat-ca cn · GVS toi — đổi CÓ CHỦ Ý (luật chủ SP 30/10 "Cùng GV · không cần bàn giao"): seed kịch bản 6
      MB FOU 23 → lớp đích cùng GV mọi môn, nên mất các việc "Bàn giao môn …" của GVBM và chữ "chờ môn …" ở việc GVCN. So JSON origin/main ↔ nhánh: lệch CHỈ các dòng đó. */
   const ANH: Record<string, string> = {
+    /* GD-20c (15/11): chụp lại 7 băm (QL / QT toi, GVBM, ADMIN giữ) — đổi CÓ CHỦ Ý: Ghi kết quả PA gộp theo lớp + CÙNG KỲ (khoá dòng gộp thêm `:d{hạn kỳ}`), hai kỳ khác nhau là hai dòng. Trước: GVCN toi 2be2a58247c4c4e9, GVCN_THUONG toi 2be2a58247c4c4e9, QL tat-ca 57e114e2c2891f6a, QT tat-ca 4e54cccf94bb64fc, QT tat-ca cn b6d206fc33ba09f7, QL gvcn 464100c07359814a, GVS toi c0f71c10ba0f7d2d */
     /* RA-LUONG-1 K2/K3 (29/10): chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: dòng gộp Speaking chấm chéo (QL / QT "Tất cả", gom theo lớp)
        giữ đuôi `|cc` như việc lẻ (`khoaGopCua`). So JSON ×1 origin/main ↔ nhánh: lệch CHỈ khoá dòng `gop:score:3:u0` → `gop:score:3:u0|cc`; mọi dòng khác, `items`,
        `summary` trùng. Trước: QL tat-ca 28f8ecdd8a2ebf00, QT tat-ca e91857dde5acb3fe, QT tat-ca cn 9461a089ce103418 */
@@ -1398,10 +1405,10 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        Trước (main sau L6 / 2.3 #1556 · #1564): GVCN toi a79c2967be82df5e, GVBM toi 77e235e4611522bc, GVCN_THUONG toi a79c2967be82df5e, QL tat-ca 29da5f0c277723a2, QT tat-ca 9dfb712f3d614d40, QT tat-ca cn 0252208bd2d3fcdc, QL gvcn 217ad0083cb42779, GVS toi dcacfa50220ee88d */
     /* LG-11 VI-PHAM-BO-DA-XEM (chủ SP lời 47, 15/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý CHỈ bỏ việc
        `yt_xem` (vi phạm người khác ghi thành tin Cập nhật). Đã so trên bản chép thật 12/11 (33 GV + QL 5 chi nhánh): /my-work lệch CHỈ mất dòng `yt_xem` (30 dòng), câu · dòng đọc giữ.
-       QL / QT / GVBM toi, ADMIN, GVS giữ. Trước: GVCN toi 2be2a58247c4c4e9, GVCN_THUONG toi 2be2a58247c4c4e9, QL tat-ca 57e114e2c2891f6a, QT tat-ca 4e54cccf94bb64fc, QT tat-ca cn b6d206fc33ba09f7, QL gvcn 464100c07359814a */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '204119aa29e73e9d', 'GVBM toi': '8c05c3e43fd827f4',
-    'GVCN_THUONG toi': '204119aa29e73e9d', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'ab1a23b895cd7c46', 'QT tat-ca': 'd13a22cffff10b24',
-    'QT tat-ca cn': '236dfd8fc2da92c5', 'QL gvcn': '06fe1745a2524eea', 'GVS toi': 'c0f71c10ba0f7d2d',
+       QL / QT / GVBM toi, ADMIN, GVS giữ. Trước (main sau #1738): GVCN toi 52f7a5ba99d7eccc, GVCN_THUONG toi 52f7a5ba99d7eccc, QL tat-ca f7752b5bc691561a, QT tat-ca 60e53e557d7832a5, QT tat-ca cn 453a428b04f09064, QL gvcn 9bab38ec2790df06 */
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '0e244af2868788f4', 'GVBM toi': '8c05c3e43fd827f4',
+    'GVCN_THUONG toi': '0e244af2868788f4', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '7de18f10f09e3ba7', 'QT tat-ca': 'ada320e08f4702f9',
+    'QT tat-ca cn': '87f85b45dd8e4ec9', 'QL gvcn': '80509247fdf10e9e', 'GVS toi': '20255e1f890bf1a5',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [
@@ -1601,7 +1608,7 @@ await checkAsync('GIAM-DOC-0611c (×3) · việc Báo PH đang chờ đi idx_sca
 });
 
 /* TURSO-1211 (đo bản chép bản chính, docs/superpowers/specs/2026-11-12-turso-toc-do/ra.md mục A): 7 câu trước quét cả bảng nay đi chỉ mục mới. */
-await checkAsync('TURSO-1211 (×3) · 8 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
+await checkAsync('TURSO-1211 (×3) · 9 câu Công việc / Tổng quan / hồ sơ HV đi chỉ mục mới, không SCAN; migrate chạy lặp được', async () => {
   const { migratePrTurso1211 } = await import('../migrate/prTurso1211.ts');
   const lan: string[][] = [[], []];
   migratePrTurso1211(conn, lan[0]); migratePrTurso1211(conn, lan[1]);
@@ -1615,7 +1622,9 @@ await checkAsync('TURSO-1211 (×3) · 8 câu Công việc / Tổng quan / hồ s
   } finally { doQuet.ghi = null; }
   const loi: string[] = [];
   for (const [ten, re, chiMuc, scan] of [
-    ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?/, 'idx_iv_ghi_kq', /^SCAN iv$/],
+    ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?(?!\s*AND iv\.action_due > \?)/, 'idx_iv_ghi_kq', /^SCAN iv$/],
+    /* LG-13 "Sắp tới": cùng câu Ghi kết quả PA nhưng đi từ em lớp GV / chủ Case / người dạy nhóm (rowid IN), không quét PA tới hạn cả hệ thống. */
+    ['Sắp tới · PA tới kỳ', /AND iv\.id IN \(\s*SELECT iv2\.id AS id/, 'idx_intervention_case', /^SCAN (iv|sc|iv2|sc2|e2)$/],
     ['Xác nhận PA', /AS chon_pa/, 'idx_iv_cho_xac_nhan', /^SCAN iv$/],
     ['Mốc PA quy chế', /iv\.moc_quy_che IN \('until_next_mt', 'until_exam'\)/, 'idx_iv_moc_cho', /^SCAN iv$/],
     ['Chờ kết quả thi', /COALESCE\(c\.thi_that_ngay, c\.exam_date, c\.ended_at\) < \?/, 'idx_cycle_cho_kq_ngay', /^SCAN c\b/],
