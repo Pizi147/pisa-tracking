@@ -48,7 +48,8 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
     const han = ngan(sapToi.paToiKy.han);
     cum.push({ khoa: 'pa', ten: t('Ghi kết quả PA · {ngay}', { ngay: han }), tom: t('Kết quả PA'), so: sapToi.paToiKy.so,
       nhan: t('{n} PA tới kỳ ghi kết quả {ngay}', { n: sapToi.paToiKy.so, ngay: han }), hop: t('Ghi kết quả PA · {ngay}', { ngay: han }),
-      dong: [<span key="pa" className="text-dim">{t('{n} PA tới kỳ — việc hiện trong Công việc từ 2 ngày trước hạn', { n: sapToi.paToiKy.so })}</span>] });
+      dong: [<span key="pa">{t('{n} PA tới kỳ ghi kết quả {ngay}', { n: sapToi.paToiKy.so, ngay: han })}</span>],
+      chan: <Link className="link" to="/cong-viec?nhom=case-hoc-thuat">{t('Công việc ›')}</Link> });
   }
   if (sapToi?.baoCaoPh.length) {
     const ds = sapToi.baoCaoPh;

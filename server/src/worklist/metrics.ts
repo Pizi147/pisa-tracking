@@ -277,6 +277,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
           viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null, buoc: v?.buoc ?? null,
+          sos: r.sos_level > 0 ? { muc: r.sos_level, tam: false } : null,
         });
       }
     } else if (unit === 'phuong-an') {

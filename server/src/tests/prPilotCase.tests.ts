@@ -92,7 +92,7 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
 
   check('6b-2 · panel số: dòng có nhóm → dải nhóm dính + bấm dòng mở view Case trong CÙNG panel; Case tiếp ›', () => {
     const sl = docSach('web/src/ui/SoLieu.tsx');
-    assert(/BUOC_CASE\.map\(/.test(sl) && /sticky/.test(sl), 'không vẽ dải nhóm dính');
+    assert(/BUOC_CASE\.map\(/.test(sl) && /nhom-b/.test(sl) && /<Bang</.test(sl), 'không vẽ bảng Case theo bước');
     assert(/caseTiep\(/.test(sl) && /Case tiếp ›/.test(docSach('web/src/modules/students/NganCase.tsx')), 'không có Case tiếp ›');
   });
 

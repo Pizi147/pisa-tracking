@@ -1,5 +1,8 @@
 /** GD-21 (Overhaul V6 đợt 4, mockup ⑬ Theo dõi trực diện): dải bước panel Case · dòng Sắp tới · Sao chép. Khoá = chữ Việt trên web. */
 export const EN_GD21 = {
+  'Case theo bước': 'Cases by step',
+  'Case theo bước xử lý — số = số Case ở bước đó. Chưa có PA = Chờ mô tả + Chờ chọn PA. Bấm bước để lọc, bấm lại để bỏ.': 'Cases by handling step — the number is the Cases at that step. No PA yet = Awaiting description + Awaiting PA choice. Click a step to filter, click again to clear.',
+  'Đề xuất đổi PA chờ QL duyệt': 'PA change proposal awaiting manager approval',
   'Chờ mô tả': 'Awaiting description',
   'Chờ kết quả cuối': 'Awaiting final result',
   'Bỏ lọc bước': 'Clear step filter',
@@ -11,7 +14,7 @@ export const EN_GD21 = {
   'Lịch Test ›': 'Test schedule ›',
   'Ghi kết quả PA · {ngay}': 'Record PA result · {ngay}',
   '{n} PA tới kỳ ghi kết quả {ngay}': '{n} PA due for a result on {ngay}',
-  '{n} PA tới kỳ — việc hiện trong Công việc từ 2 ngày trước hạn': '{n} PA due — the task shows in Work from 2 days before the deadline',
+  'Công việc ›': 'Work ›',
   'Báo cáo PH · mở {ngay}': 'Parent report · opens {ngay}',
   'Báo cáo PH': 'Parent report',
   'Kết quả PA': 'PA result',
