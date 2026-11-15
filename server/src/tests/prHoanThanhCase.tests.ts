@@ -63,4 +63,20 @@ export async function runPrHoanThanhCaseTests(t: YThucTestKit) {
     assert(/\{t\('Hoàn thành Case'\)\}/.test(k) && /const noteHt = htNote \?\? lyDo/.test(k), 'ô tick + kết luận = lý do');
     assert(k.indexOf('/ket-thuc`') < k.indexOf('/outcome`') && k.indexOf('/mo-lai`') < k.indexOf('/hoan-tac-ket-thuc`'), 'thứ tự gọi: kết thúc PA → hoàn thành; Hoàn tác: mở lại Case → mở lại PA');
   });
+  check('HTC-5 · GD-20d: ô "Hoàn thành Case" bật sẵn chỉ khi đủ ba (Kết thúc PA · PA cuối · Tiến bộ rõ; Bổ trợ miễn phí: Mini Test ≥ ngưỡng chung); tay GV thắng; dòng quy chế theo ô tick', () => {
+    const bs = d.hoanThanhCaseBatSan;
+    const mt = d.nguongMiniTest(null);
+    const co = { ketThuc: true, outcome: 'improved', boTroMienPhi: false, mtTyLe: null, mtNgay: null };
+    assert(bs(co) === true, 'đủ ba → bật');
+    assert(bs({ ...co, ketThuc: false }) === false, 'không kết thúc PA → tắt');
+    for (const o of ['partial', 'unchanged', 'worse', 'insufficient', '']) assert(bs({ ...co, outcome: o }) === false, `Tiến triển ${o} → tắt`);
+    const bt = { ...co, outcome: 'partial', boTroMienPhi: true, mtNgay: null };
+    assert(bs({ ...bt, mtTyLe: mt }) === true && bs({ ...bt, mtTyLe: 1 }) === true, 'Bổ trợ miễn phí: Mini Test ≥ ngưỡng → bật (không xét Tiến triển)');
+    assert(bs({ ...bt, mtTyLe: mt - 0.01 }) === false && bs({ ...bt, mtTyLe: null }) === false && bs({ ...bt, mtTyLe: NaN }) === false, 'dưới ngưỡng / chưa nhập → tắt');
+    assert(/const batSan = !!hoanThanhCase && hoanThanhCaseBatSan\(/.test(web('cases/CapNhatTuan.tsx')), 'PA cuối: chỉ bật sẵn khi form có `hoanThanhCase` (paCuoiHoanThanh)');
+    const qc = (htCase?: boolean) => d.quyCheGhiKetQua({ han: null, decision: 'end', deXuat: false, lanCuoi: false, batBuoc: false, miniTest: false, htCase }).chu;
+    assert(/còn mở · không hạn/.test(qc(false)) && /mở lại được ở thẻ Case/.test(qc(true)), 'dòng quy chế theo ô tick');
+    const c = web('cases/CapNhatTuan.tsx');
+    assert(/const htCase = htTay \?\? batSan/.test(c) && !/setHtCase/.test(c), 'tay GV thắng bật sẵn');
+  });
 }
