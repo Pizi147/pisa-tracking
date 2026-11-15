@@ -1,7 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode, type SetStateAction } from 'react';
 import { createPortal } from 'react-dom';
 import { bacDu, docNhap, docNhapChuyen, ghiNhap, taoKhoPanel, xoaNhapViec, type KhoNhap } from '@shared/domain/index.ts';
-import { NutLuat } from './NutLuat.tsx';
 import { HopBoChu } from './Drawer.tsx';
 import { khoRoiNhap } from './chanRoiNhap.tsx';
 import { DongCanSua, useNoiLoi, type MucThieu } from './loiForm.tsx';
@@ -10,6 +9,8 @@ import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { XemCha } from '../lib/quayLai.ts';
 import { t } from '@shared/i18n/index.ts';
 import type { PanelHd } from '@shared/huongDan/kieu.ts';
+import { ghiQuyCheMo, moHuongDan } from '../lib/hdNgCanh.ts';
+import { NutLuat } from './NutLuat.tsx';
 
 /** Kho dùng chung toàn web: mở panel này thì panel đang mở phải đóng (G-8, N-4). */
 export const khoPanelChung = taoKhoPanel();
@@ -181,7 +182,7 @@ export const NUT_DONG = 'grid h-9 w-9 shrink-0 cursor-pointer place-items-center
 /** Bản nhỏ của `NUT_DONG` — ✕ xoá chữ TRONG ô gõ (mockup ⑤ `.oc .bo`: ô 28, ✕ 14; điện thoại 36 trong ô 44). Nơi đặt căn giữa theo chiều cao ô. */
 export const NUT_DONG_NHO = 'grid h-7 w-7 shrink-0 cursor-pointer place-items-center rounded-md border-0 bg-transparent p-0 text-sm leading-none text-dim hover:bg-[color:var(--accent-soft)] hover:text-[color:var(--text)] max-sm:h-9 max-sm:w-9';
 
-export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, onDong, children }: {
+export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, tabs, vungTab, ngCanh, quayLai: quayLaiRieng, chan, quyChe, daSua: daSuaRieng, longTrong, z = 'z-50', dau, loai, anDau = false, hd, nutHd = true, onDong, children }: {
   tieuDe: string;
   /** U02: khung trong cột đã có dòng đầu riêng (dòng tóm tắt Case) — không vẽ đầu panel khi không có "‹ view trước". */
   anDau?: boolean; hocVien?: string | null; lop?: string | null;
@@ -232,6 +233,8 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   daSua?: boolean;
   /** HD-V2: panel Case (`ngan-case`) / Nhập điểm — bấm "?" khi panel này mở thì tab Màn này đưa mục của panel lên trước (kể cả panel trong cột hồ sơ). */
   hd?: PanelHd;
+  /** HD3-1 (15 mục 8.3): panel nổi có nút "?" nổi trên nền mờ, sát mép trái panel — "?" thanh trên bị panel che. `false`: chính panel Hướng dẫn. */
+  nutHd?: boolean;
   onDong: () => void; children: ReactNode;
 }) {
   const id = useId();
@@ -490,6 +493,13 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
       <div className="absolute inset-0 bg-black/60" onClick={dong} />
       <div ref={khung} tabIndex={-1} className={`relative flex h-full w-full flex-col rounded-none border-l shadow-2xl -outline-offset-2 ${rong === 'toan' ? 'max-w-[1440px]' : rong === 'vua' ? 'max-w-[1180px]' : rong === 'rong' ? 'sm:w-[720px]' : rong === 'bang' ? 'sm:w-[1040px] sm:max-w-full' : rong === 'so' ? 'sm:w-[640px]' : 'sm:w-[480px]'}`}
         style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>
+        {/* HD3-1 (15 mục 8.3): "?" nổi trên nền mờ, sát mép trái panel, cùng dáng "?" thanh trên — "?" thanh trên bị panel che. ≥ 640 px (375 panel phủ hết). */}
+        {nutHd && rong !== 'toan' && (
+          <button type="button" onClick={moHuongDan} aria-label={t('Hướng dẫn')} title={t('Hướng dẫn')} data-hd="nut-hd-noi"
+            className="absolute -left-12 top-2.5 grid h-9 w-9 cursor-pointer place-items-center rounded-full border-0 bg-transparent text-white hover:bg-white/15 max-sm:hidden">
+            <span aria-hidden className="grid h-[22px] w-[22px] place-items-center rounded-full border-[1.5px] border-current text-[13px] font-bold leading-none">?</span>
+          </button>
+        )}
         {voi(than)}
       </div>
     </div>,
@@ -503,13 +513,16 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
  * trong thân) vẽ trực tiếp ngay trên hàng nút với `px="px-0"`.
  */
 export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string; chiTiet?: string }; px?: string; /** false: đứng đầu chân (chân đã có vạch trên) — vạch DƯỚI tách khỏi hàng nút. */ vien?: boolean }) {
+  /* HD3-1: "?" đọc câu quy chế đang hiện (dòng gắn sau cùng) cho đầu thẻ việc. */
+  useEffect(() => ghiQuyCheMo({ chu: qc.chu, chiTiet: qc.chiTiet }), [qc.chu, qc.chiTiet]);
   return (
     <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
-      {/* NT-SUA (nghiệm thu 375): ở 375 một dòng, cắt "…" — câu dài hơn 40 ký tự có ⓘ đọc đủ (chân không nở thành 3 dòng). 1440 giữ như mockup ⑤. */}
+      {/* NT-SUA (nghiệm thu 375): ở 375 một dòng, cắt "…". HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên, đúng thẻ việc — thẻ có câu này đầy đủ
+          (375 ở đầu thẻ; có chi tiết thì mọi cỡ), không còn hộp chữ riêng. */}
       <span className="min-w-0 flex-1 truncate" title={qc.chu}>{qc.chu}</span>
-      {qc.chiTiet ? <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>
-        : qc.chu.length > 40 && <span className="sm:hidden"><NutLuat phai label={t('Chi tiết quy chế')}>{qc.chu}</NutLuat></span>}
+      <button type="button" className="-m-[15px] cursor-pointer border-0 bg-transparent p-[15px] text-sm font-normal leading-none text-slate-500 hover:text-slate-200 sm:m-0 sm:p-0"
+        title={t('Hướng dẫn việc này')} aria-label={t('Hướng dẫn việc này')} onClick={moHuongDan}>ⓘ</button>
     </div>
   );
 }

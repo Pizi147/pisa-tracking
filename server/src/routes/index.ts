@@ -241,8 +241,8 @@ api.get('/demo/session', wrap((req) => {
     user: { id: p.userId, code: p.code, fullName: p.fullName, title: p.title },
     /* PR-EN: ngôn ngữ của tài khoản (null = chưa chọn) — web đồng bộ với máy (`web/src/lib/session.tsx`). */
     ngonNgu: p.ngonNgu ?? null,
-    /* HD-a / HD-V2: false → chấm trên nút "?" (dải "Mới dùng PISA?" đã bỏ). */
-    daXemHuongDan: !!p.daXemHuongDan,
+    /* HD3-1: số phiên bản Hướng dẫn đã xem — nhỏ hơn phiên bản nội dung → chấm trên nút "?" + dải "Có gì mới". */
+    daXemHuongDan: p.daXemHuongDan ?? 0,
     /* HD-V2 (đặc tả 9.3): phần "Chỉ GVCN" / "GV Speaking" của Hướng dẫn — tính từ principal đã nạp, 0 câu thêm. */
     laGvcn: p.assignments.some((a) => a.isCore && activeAt(a, demoToday())),
     coS: laGvSpeaking(p) || p.assignments.some((a) => a.skill === 'speaking' && activeAt(a, demoToday())),

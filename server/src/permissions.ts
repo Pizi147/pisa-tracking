@@ -44,8 +44,8 @@ export type Principal = {
   vaiGoc?: string[];
   /** PR-EN: ngôn ngữ đã chọn của tài khoản ('vi' | 'en'; null = chưa chọn). Đọc cùng câu phiên — không thêm lượt hỏi. */
   ngonNgu?: string | null;
-  /** HD-a: đã mở Hướng dẫn / bấm Ẩn dải "Mới dùng PISA?" (`users.da_xem_huong_dan`). Đọc cùng câu phiên. */
-  daXemHuongDan?: boolean;
+  /** HD-a → HD3-1: số phiên bản Hướng dẫn đã xem (`users.da_xem_huong_dan`, NULL = 0 = chưa mở). Đọc cùng câu phiên. */
+  daXemHuongDan?: number;
   /** OV-14c: kỹ năng khai ở hồ sơ (`user_skills`, Quản trị › Kỹ năng) — `speaking` = GV Speaking chấm chéo. Đọc cùng câu phiên. */
   kyNang?: string[];
   /** PC-GV-A: lớp vừa bị ĐỔI khỏi (A → B; bỏ người không có) — CHỈ XEM (`ATTEMPT_VIEW`, `STUDENT_VIEW`) từ hiệu lực tới `den`. Đọc cùng câu phiên. */
@@ -137,7 +137,7 @@ export function principalTuDong(row: any): Principal {
     fullName: row.u_full_name,
     title: row.u_title,
     ngonNgu: row.u_ngon_ngu ?? null,
-    daXemHuongDan: row.u_da_xem_hd === 1,
+    daXemHuongDan: Number(row.u_da_xem_hd) || 0,
     kyNang: row.u_ky_nang ? JSON.parse(row.u_ky_nang) : [],
     xemTam: (row.u_xem_tam ? JSON.parse(row.u_xem_tam) as any[][] : []).map(([classId, tu, den, doiId]) => ({ classId, tu, den, doiId })),
     boTro: (row.u_bo_tro ? JSON.parse(row.u_bo_tro) as any[][] : []).map(([studentId, classId]) => ({ studentId, classId: classId ?? null })),

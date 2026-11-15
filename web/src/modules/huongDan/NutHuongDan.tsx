@@ -3,64 +3,114 @@ import { Link, useLocation } from 'react-router-dom';
 import { KhungPanel, panelHdTren } from '../../ui/KhungPanel.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { ToKhop } from '../../ui/ToKhop.tsx';
-import { ChuDam } from '../../ui/ui.tsx';
 import { CHIP_TRON } from '../../ui/Nhan.tsx';
 import { useSession } from '../../lib/session.tsx';
+import { quyCheTren, viecMoTren, type QuyCheMo } from '../../lib/hdNgCanh.ts';
 import {
-  HUONG_DAN, TEN_VAI_HD, VAI_CO_NOI_DUNG, coXemVaiKhac, locVai, manCuaDuong, manCuaPanel, manTheoId, mucCuaViec, timHd, viecOManNay,
-  type ChiChoToi, type DongHd, type HuongDan, type ManHd, type MucHd, type NhomHd, type VaiHd, type ViecHd, type ViecVaiKhac,
+  CO_GI_MOI, HUONG_DAN, PHIEN_BAN_HD, TEN_VAI_HD, THU_TAB_HD, VAI_CO_NOI_DUNG, chenHan, coXemVaiKhac, locVai, maViec, manCuaDuong, manCuaPanel, manTheoId,
+  tabCuaThe, tenTabHd, theCuaViec, timHd, viecOManNay,
+  type ChiChoToi, type DongHd, type HuongDan, type ManHd, type MucHd, type TinhHuongHd, type VaiHd, type ViecHd, type ViecVaiKhac,
 } from '@shared/huongDan/index.ts';
 import { KHU_VUC } from '@shared/domain/dieuHuong.ts';
-import { t, type Khoa } from '@shared/i18n/index.ts';
+import { nhomViecCua, nhomViecTvvCua } from '@shared/domain/tongQuan.ts';
+import type { DongViecChuong } from '@shared/domain/chuong.ts';
+import { dich, t, type Khoa } from '@shared/i18n/index.ts';
 import { chiChoToi } from './chiChoToi.tsx';
 import { useVaiHd } from './MucHuongDan.tsx';
 import { useDaXemHd } from './daXemHd.ts';
 
 /**
- * HD-V2 — PANEL HƯỚNG DẪN (đặc tả `2026-11-05-huong-dan-v2/de-xuat.md` mục 3, 8, 10; mockup `thiet-ke/v14/huong-dan.html`): mở từ nút "?" trên thanh trên.
- * Ba tab Màn này · Tôi muốn… · Tuần của tôi + ô tìm (lọc cả ba thành một danh sách). `longTrong`: KHÔNG đóng panel đang làm (Case, Nhập điểm) —
- * hướng dẫn mở chồng, Esc / ✕ chỉ đóng hướng dẫn, chữ đang gõ còn nguyên. Nội dung là dữ liệu tĩnh: mở panel không gọi API (trừ ghi "đã xem" lần đầu).
+ * HD3-1 — PANEL HƯỚNG DẪN V3 (đặc tả `2026-11-13-overhaul-v6/15-huong-dan-v3.md` mục 4 + 8; mockup ⑭ `thiet-ke/v21/huong-dan.html`; tên tab theo lời 56):
+ * ba tab **Trang này · Tôi muốn… · Trường hợp** + ô tìm + dải "Có gì mới". Trang này chọn TẦNG SÂU NHẤT lúc bấm "?": (1) việc đang mở → MỘT thẻ việc ·
+ * (2) tab đang đứng → ≤ 5 việc của tab · (3) màn → Bạn đang ở / Việc làm ở đây / Không làm ở đây (V2). `longTrong`: KHÔNG đóng panel đang làm —
+ * mở chồng, Esc / ✕ chỉ đóng hướng dẫn. Nội dung tĩnh: 0 câu đọc (số việc tầng 2 từ `/my-work` thanh trên đã nạp; hạn từ phiên).
  */
-type Tab = 'man' | 'lam' | 'tuan';
-const TEN_TAB: Record<Tab, string> = { man: t('Màn này'), lam: t('Tôi muốn…'), tuan: t('Tuần của tôi') };
-const TEN_NHOM: Record<NhomHd, string> = { diem: t('Điểm'), case: t('Case và PA'), hv: t('Học viên và lớp'), lich: t('Lịch Test'), duyet: t('Duyệt'), khac: t('Khác') };
-const NHOM: NhomHd[] = ['diem', 'case', 'hv', 'lich', 'duyet', 'khac'];
+type Tab = 'man' | 'lam' | 'gap';
+const TEN_TAB: Record<Tab, string> = { man: t('Trang này'), lam: t('Tôi muốn…'), gap: t('Trường hợp') };
 
 /** Tên vùng trang khi màn chưa có mục riêng (khớp thanh điều hướng — "Phân tích"). */
 const tenVung = (p: string) => KHU_VUC.filter((k) => k.to !== '/' && (p === k.to || p.startsWith(`${k.to}/`)))[0]?.label ?? null;
 
-export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
-  const { pathname } = useLocation();
+/** Chữ thẻ: `t()` → mã chèn hạn → `<b>` đậm, `<k>` phím (⋯ có khung, mockup `.phim`). */
+function ChuThe({ chu }: { chu: Khoa }) {
+  return <>{chenHan(t(chu)).split(/<(b|k)>(.*?)<\/\1>/).map((x, i, ds) => {
+    if (i % 3 === 0) return x;
+    if (i % 3 === 1) return null;
+    return ds[i - 1] === 'k'
+      ? <kbd key={i} className="mx-px inline-flex h-5 min-w-[22px] items-center justify-center rounded border px-1 align-[1px] font-sans text-[13px] font-bold leading-none text-[color:var(--text)]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>{x}</kbd>
+      : <strong key={i} className="font-semibold text-[color:var(--text)]">{x}</strong>;
+  })}</>;
+}
+
+/** Tầng 2: tab đang đứng — Công việc `?nhom=` (thiếu khi có `?loai=` → suy từ loại); màn khai `tabs` → tham số `q` của URL. */
+function tabDangDung(man: ManHd | null, search: URLSearchParams, tvv: boolean): { k: string; ten: string; cau?: Khoa; the: (hd: HuongDan) => ViecHd[] } | null {
+  if (!man) return null;
+  if (man.id === 'cong-viec') {
+    const loai = search.get('loai');
+    const k = search.get('nhom') ?? (loai ? (tvv ? nhomViecTvvCua : nhomViecCua)(loai) : null);
+    if (!k || k === 'duyet' && !search.get('nhom')) return null;
+    return { k, ten: tenTabHd(k), cau: man.tabs?.ds[k]?.cau, the: (hd) => (hd.lam ?? []).filter((v) => tabCuaThe(v) === k) };
+  }
+  if (!man.tabs) return null;
+  const k = search.get(man.tabs.q) ?? man.tabs.mac;
+  const x = k ? man.tabs.ds[k] : undefined;
+  return x && k ? { k, ten: t(x.ten), cau: x.cau, the: (hd) => x.the.map((id) => hd.lam?.find((v) => v.id === id)).filter((v): v is ViecHd => !!v) } : null;
+}
+
+export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** Dòng việc `/my-work` thanh trên đã nạp — số việc ở tầng 2. */ dong?: readonly DongViecChuong[] }) {
+  const { pathname, search } = useLocation();
   const { session } = useSession();
   const { cuaToi, macDinh } = useVaiHd();
-  const { chuaXem, ghi } = useDaXemHd();
-  useEffect(() => { if (chuaXem) void ghi(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps -- ghi "đã xem" một lần khi mở
+  const { daXem, ghi } = useDaXemHd();
+  /* Có gì mới (15 mục 4.8): tài khoản đã xem phiên bản cũ hơn → dải (giữ suốt lần mở này); người mới (0) chỉ có chấm, không dải. */
+  const [coMoi] = useState(() => daXem > 0 && daXem < PHIEN_BAN_HD);
+  useEffect(() => { if (daXem < PHIEN_BAN_HD) void ghi(); }, []);   // eslint-disable-line react-hooks/exhaustive-deps -- ghi "đã xem phiên bản" một lần khi mở
   const [vai, setVai] = useState<VaiHd>(macDinh);
-  /* Panel làm việc trên cùng LÚC BẤM "?" (Case / Nhập điểm) — đọc một lần. */
+  /* Ngữ cảnh LÚC BẤM "?" — đọc một lần: panel làm việc trên cùng, dòng việc đang mở, câu quy chế đang hiện. */
   const [panel] = useState(panelHdTren);
-  /* Đặc tả 3.6: phần Chỉ GVCN / GV Speaking theo cờ phiên; xem vai khác (QL xem GV) thấy đủ, có nhãn. */
+  const [viecMo] = useState(viecMoTren);
+  const [qc] = useState(quyCheTren);
   const hd = useMemo(() => (vai === cuaToi ? locVai(HUONG_DAN[vai]!, { gvcn: !!session?.laGvcn, s: !!session?.coS }) : HUONG_DAN[vai]!), [vai, cuaToi, session?.laGvcn, session?.coS]);
   const manNen = manCuaDuong(hd, pathname);
   const manPanel = manCuaPanel(hd, panel);
-  const [tab, setTab] = useState<Tab>(manNen || manPanel ? 'man' : 'lam');
+  const tab2 = useMemo(() => tabDangDung(manNen, new URLSearchParams(search), vai === 'tvv'), [manNen, search, vai]);
+  /* Tầng 1: dòng việc đang mở → thẻ của loại việc (theo người giữ); không có dòng việc mà panel có thẻ (Case từ hồ sơ HV) → thẻ của panel. */
+  const tang1 = useMemo(() => {
+    if (viecMo) {
+      const x = theCuaViec(vai, maViec(viecMo), viecMo.mine);
+      return { ...x, viecMo };
+    }
+    const the = manPanel?.the ? hd.lam?.find((v) => v.id === manPanel.the) : undefined;
+    return the ? { the, vai, viecMo: null } : null;
+  }, [viecMo, manPanel, hd, vai]);
+  const [tang, setTang] = useState<1 | 2 | 3>(tang1 ? 1 : tab2 ? 2 : 3);
+  const [tab, setTab] = useState<Tab>(manNen || manPanel || tang1 || tab2 ? 'man' : 'lam');
+  const [moThe, setMoThe] = useState<string | null>(null);
   const [q, setQ] = useState('');
   const kq = useMemo(() => timHd(hd, q, t, manNen?.id), [hd, q, manNen]);
   const onChi = (c: ChiChoToi) => { onDong(); chiChoToi(c); };
   const idThan = useId();
+  const soViec = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const d of dong ?? []) if (d.mine) { const k = maViec(d); m.set(k, (m.get(k) ?? 0) + 1); }
+    return (v: ViecHd) => (v.viecWeb ?? []).reduce((n, k) => n + (m.get(k) ?? 0), 0);
+  }, [dong]);
+  const ctx: Ctx = { hd, q: kq ? q : '', onChi, onDong, pathname };
+  const moTheViec = (id: string) => { setQ(''); setTab('lam'); setMoThe(id); };
 
   const dau = (
     <div className="flex flex-col gap-3 pt-3 max-sm:gap-2.5 max-sm:pt-1.5 sm:px-1">
       <div className="flex min-h-9 items-center gap-2.5">
         <h2 className="m-0 whitespace-nowrap text-[17px] font-bold text-slate-100">{t('Hướng dẫn')}</h2>
         {coXemVaiKhac(cuaToi) && VAI_CO_NOI_DUNG.length > 1 ? (
-          /* Một ô vừa nói vai đang xem vừa đổi được (ghi chú v14 mục 4). */
           <select className="field o-chon-vai h-[30px] w-auto py-0 pl-2.5 pr-7 text-[13px] max-sm:h-11 max-sm:text-[15px]" aria-label={t('Xem vai khác')} title={t('Xem vai khác')}
-            value={vai} onChange={(e) => { setVai(e.target.value as VaiHd); setQ(''); }}>
+            value={vai} onChange={(e) => { setVai(e.target.value as VaiHd); setQ(''); setTang(tab2 ? 2 : 3); }}>
             {VAI_CO_NOI_DUNG.map((v) => <option key={v} value={v}>{t('Vai: {vai}', { vai: TEN_VAI_HD[v] })}</option>)}
           </select>
         ) : <span className={`${CHIP_TRON} px-2.5 text-slate-400`} style={{ background: 'var(--surface-2)' }}>{TEN_VAI_HD[vai]}</span>}
         <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] min-w-[44px] justify-center sm:min-h-[32px] sm:min-w-[32px]" onClick={onDong} aria-label={t('Đóng')}>✕</button>
       </div>
+      {coMoi && <CoGiMoi onThe={moTheViec} />}
       <label className="relative block">
         <svg aria-hidden viewBox="0 0 16 16" className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round">
           <circle cx="7" cy="7" r="4.5" /><path d="m10.5 10.5 3 3" /></svg>
@@ -69,32 +119,45 @@ export function PanelHuongDanManNay({ onDong }: { onDong: () => void }) {
         {q && <button type="button" className="absolute right-0 top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-md border-0 bg-transparent text-[15px] text-slate-400 sm:right-1 sm:h-8 sm:w-8"
           aria-label={t('Xoá chữ tìm')} onClick={() => setQ('')}>✕</button>}
       </label>
-      {/* Hàng tab gạch chân (HangTab — cùng dáng, cùng phím ← →); đang tìm: không tab nào chọn, thân là một danh sách. */}
-      <HangTab<Tab | ''> ariaLabel={t('Phần hướng dẫn')} panelId={idThan} value={kq ? '' : tab} onChange={(k) => { if (k) { setTab(k); setQ(''); } }}
+      <HangTab<Tab | ''> ariaLabel={t('Phần hướng dẫn')} panelId={idThan} value={kq ? '' : tab} onChange={(k) => { if (k) { setTab(k); setQ(''); setMoThe(null); } }}
         tabs={(Object.keys(TEN_TAB) as Tab[]).map((k) => ({ key: k, label: TEN_TAB[k] }))} />
     </div>
   );
 
-  const ctx: Ctx = { hd, q: kq ? q : '', onChi, onDong };
   let than: ReactNode;
-  if (kq) than = <KetQuaTim kq={kq} q={q} ctx={ctx} onXemHet={() => { setQ(''); setTab('lam'); }} />;
-  else if (tab === 'man') than = <TabManNay hd={hd} manNen={manNen} manPanel={manPanel} pathname={pathname} ctx={ctx} />;
-  else if (tab === 'lam') than = <TabToiMuon hd={hd} manNen={manNen} pathname={pathname} ctx={ctx} />;
-  else than = <TabTuan hd={hd} ctx={ctx} />;
+  if (kq) than = <KetQuaTim kq={kq} q={q} ctx={ctx} onXemHet={() => { setQ(''); setTab('lam'); }} onThe={moTheViec} />;
+  else if (tab === 'lam') than = <TabToiMuon hd={hd} manNen={manNen} moThe={moThe} ctx={ctx} />;
+  else if (tab === 'gap') than = <TabTruongHop hd={hd} ctx={ctx} onThe={moTheViec} />;
+  else if (tang === 1 && tang1) {
+    const lenTang = tab2 ? 2 : 3;
+    const len = <button type="button" className={NUT_LEN} onClick={() => setTang(lenTang)}>{lenTang === 2 ? t('‹ Việc khác ở tab này') : t('‹ Việc khác ở màn này')}</button>;
+    const tenMo = tang1.viecMo ? [tang1.viecMo.lop, dich(tang1.viecMo.tieuDe)].filter(Boolean).join(' · ') : t(tang1.the!.ten);
+    than = tang1.the ? (
+      <>{len}<TheViec v={tang1.the} ctx={ctx} dangMo={tenMo} qc={qc} dangODung hdThe={HUONG_DAN[tang1.vai!]}
+        dai={tang1.viecMo && !tang1.viecMo.mine ? { vai: tang1.vai!, xem: !['ql', 'qt', 'admin'].includes(cuaToi) } : undefined} /></>
+    ) : (
+      /* K11c: việc chưa có thẻ (lưới an toàn) — một câu, rồi việc khác ở tab / màn. */
+      <>
+        <p className="m-0 text-sm text-slate-400">{t('Việc <b>{viec}</b> chưa có thẻ riêng. Việc khác ở đây:', { viec: tenMo }).split(/<b>(.*?)<\/b>/).map((x, i) => (i % 2 ? <b key={i} className="font-semibold text-slate-100">{x}</b> : x))}</p>
+        <TrangNay tang={lenTang} hd={hd} manNen={manNen} manPanel={manPanel} tab2={tab2} soViec={soViec} ctx={ctx} />
+      </>
+    );
+  } else than = <TrangNay tang={tang === 1 ? 3 : tang} hd={hd} manNen={manNen} manPanel={manPanel} tab2={tab2} soViec={soViec} ctx={ctx} />;
 
   return (
-    <KhungPanel tieuDe={t('Hướng dẫn')} anDau longTrong tabs={dau} vungTab={{ id: idThan, nhan: kq ? t('Tìm trong hướng dẫn') : TEN_TAB[tab] }} onDong={onDong}
+    <KhungPanel tieuDe={t('Hướng dẫn')} anDau longTrong nutHd={false} tabs={dau} vungTab={{ id: idThan, nhan: kq ? t('Tìm trong hướng dẫn') : TEN_TAB[tab] }} onDong={onDong}
       chan={{ huy: null, trai: <Link to="/huong-dan" className="link inline-flex min-h-[44px] items-center text-[13px] font-semibold max-sm:text-sm sm:min-h-6" onClick={onDong}>{t('Mở trang Hướng dẫn ›')}</Link> }}>
-      <div key={`${vai}-${tab}-${kq ? 'tim' : ''}`} className="flex flex-col gap-[18px] pb-1 pt-4 max-sm:gap-[22px] sm:px-1">{than}</div>
+      <div key={`${vai}-${tab}-${tang}-${kq ? 'tim' : ''}`} className="flex flex-col gap-[18px] pb-1 pt-4 max-sm:gap-[22px] sm:px-1">{than}</div>
     </KhungPanel>
   );
 }
 
-/** `inDuoc`: trang Hướng dẫn — thân mỗi việc luôn có trong cây (ẩn khi gập), để in cả trang (`print:`). */
-export type Ctx = { hd: HuongDan; q: string; onChi: (c: ChiChoToi) => void; onDong: () => void; inDuoc?: boolean };
+/** `inDuoc`: trang Hướng dẫn — thân mỗi việc luôn có trong cây (ẩn khi gập), để in cả trang (`print:`). `pathname`: "Đi tới ›" chỉ khi đang ở chỗ khác. */
+export type Ctx = { hd: HuongDan; q: string; onChi: (c: ChiChoToi) => void; onDong: () => void; inDuoc?: boolean; pathname?: string };
 
 /* ---------------------------------------------------------------- khối dùng chung */
 
+const NUT_LEN = '-my-1 -ml-1.5 inline-flex min-h-7 items-center gap-1 self-start rounded-md border-0 bg-transparent px-1.5 text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)] max-sm:-my-2.5 max-sm:min-h-[44px]';
 const H3 = 'm-0 flex items-center gap-2 text-[15px] font-bold leading-tight text-slate-100 before:h-[18px] before:w-[3px] before:shrink-0 before:rounded-sm before:bg-[color:var(--accent)]';
 export function KhoiHd({ ten, children }: { ten: string; children: ReactNode }) {
   return <section className="flex flex-col gap-2"><h3 className={H3}>{ten}</h3>{children}</section>;
@@ -106,10 +169,36 @@ export const DsViec = ({ children }: { children: ReactNode }) => (
   <div className="overflow-hidden rounded-[10px] border [&>*+*]:border-t" style={{ borderColor: 'var(--line)' }}>{children}</div>
 );
 
-/** Khối 1 · Bạn đang ở: tên màn + một câu + Trước / Sau (bấm được, đổi trang). Panel đang mở: "trên {màn nền}", không Trước / Sau. */
-export function BanDangO({ man, tenRieng, tren, trang = false, ctx }: { man: ManHd | null; tenRieng?: string | null; tren?: string; /** trang Hướng dẫn: chỉ tên màn, không chữ "Bạn đang ở" */ trang?: boolean; ctx: Ctx }) {
-  const ten = man ? t(man.ten) : tenRieng;
-  const d = man?.dangO;
+/** Có gì mới (mockup ⑭ K8): dải mảnh gập sẵn, mở ra ≤ 5 dòng; dòng có thẻ thì bấm mở thẻ. */
+function CoGiMoi({ onThe }: { onThe: (id: string) => void }) {
+  const [mo, setMo] = useState(false);
+  const id = useId();
+  return (
+    <div className="rounded-[10px] border" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+      <button type="button" aria-expanded={mo} aria-controls={id} onClick={() => setMo(!mo)}
+        className="flex min-h-10 w-full cursor-pointer appearance-none items-center gap-2 border-0 bg-transparent py-0 pl-3 pr-2 text-left text-sm font-semibold text-slate-100 max-sm:min-h-[44px]">
+        <span aria-hidden className="h-2 w-2 shrink-0 rounded-full bg-[color:var(--accent)]" />{t('Có gì mới')}
+        <span className="text-[13px] font-normal text-slate-500">{t('· {n} thay đổi', { n: CO_GI_MOI.length })}</span>
+        <svg aria-hidden viewBox="0 0 16 16" className={`ml-auto h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${mo ? 'rotate-180' : ''}`} fill="none" stroke="var(--text-dim)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
+      </button>
+      {mo && (
+        <ul id={id} className="m-0 list-none border-t p-0 pb-1.5" style={{ borderColor: 'var(--line)' }}>
+          {CO_GI_MOI.map((m) => (
+            <li key={m.chu}>
+              {m.the ? <button type="button" onClick={() => onThe(m.the!)} className="block min-h-9 w-full cursor-pointer border-0 bg-transparent px-3 py-[7px] text-left text-sm leading-[1.45] text-slate-200 hover:bg-[color:var(--accent-soft)] max-sm:min-h-[44px]"><ChuThe chu={m.chu} /></button>
+                : <p className="m-0 px-3 py-[7px] text-sm leading-[1.45] text-slate-200"><ChuThe chu={m.chu} /></p>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+/** Khối 1 · Bạn đang ở: tên màn (· tab) + một câu + Trước / Sau. Panel đang mở: "trên {màn nền}", không Trước / Sau. */
+export function BanDangO({ man, tenRieng, tren, trang = false, cau, ctx }: { man: ManHd | null; tenRieng?: string | null; tren?: string; trang?: boolean; /** tầng 2: câu của tab thay câu của màn */ cau?: Khoa | null; ctx: Ctx }) {
+  const ten = tenRieng ?? (man ? t(man.ten) : null);
+  const d = cau === undefined ? man?.dangO : undefined;
   const luong = d && [d.truoc && { nhan: t('Trước'), ...d.truoc }, d.sau && { nhan: t('Sau'), ...d.sau }].filter(Boolean) as { nhan: string; chu: Khoa; duong: string }[] | undefined;
   return (
     <div className="flex flex-col gap-1">
@@ -118,7 +207,8 @@ export function BanDangO({ man, tenRieng, tren, trang = false, ctx }: { man: Man
         {ten && <h3 className="m-0 text-[17px] font-bold text-slate-100">{ten}</h3>}
         {tren && <span className="text-[13px] font-medium text-slate-400">{t('trên {man}', { man: tren })}</span>}
       </div>
-      {(d || !man) && <p className="m-0 text-sm text-slate-400">{d ? t(d.cau) : t('Màn này chưa có hướng dẫn riêng.')}</p>}
+      {cau ? <p className="m-0 text-sm text-slate-400">{t(cau)}</p>
+        : cau === undefined && (d || !man) && <p className="m-0 text-sm text-slate-400">{d ? t(d.cau) : t('Màn này chưa có hướng dẫn riêng.')}</p>}
       {!!luong?.length && (
         <div className={`mt-1.5 grid rounded-[10px] border ${luong.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`} style={{ borderColor: 'var(--line)' }}>
           {luong.map((x, i) => (
@@ -133,11 +223,12 @@ export function BanDangO({ man, tenRieng, tren, trang = false, ctx }: { man: Man
   );
 }
 
-/** Khối 3 · Không làm ở đây: đích đúng chỗ (link) hoặc chữ nhạt "việc của QL". */
+/** Khối · Không làm ở đây: đích đúng chỗ (link) hoặc chữ nhạt "việc của QL". */
 export function KhongLam({ man, ctx }: { man: ManHd; ctx: Ctx }) {
   if (!man.khongLam?.length) return null;
   return (
-    <KhoiHd ten={t('Không làm ở đây')}>
+    <section className="flex flex-col gap-1.5">
+      <h3 className="m-0 text-[15px] font-bold text-slate-100">{t('Không làm ở đây')}</h3>
       <div className="grid">
         {man.khongLam.map((k, i) => (
           <div key={k.ten} className={`grid gap-x-3 gap-y-1 text-sm sm:grid-cols-[minmax(0,1fr)_auto] sm:items-baseline ${i ? 'border-t py-2.5 sm:py-[9px]' : 'pb-2.5 pt-0.5 sm:pb-[9px]'}`} style={{ borderColor: 'var(--line)' }}>
@@ -147,163 +238,285 @@ export function KhongLam({ man, ctx }: { man: ManHd; ctx: Ctx }) {
           </div>
         ))}
       </div>
-    </KhoiHd>
+    </section>
   );
 }
 
 const NUT_CHI = 'btn btn-sm min-h-[44px] gap-1.5 sm:min-h-[32px] print:hidden';
+const IcChi = () => <svg aria-hidden viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="5.5" /><circle cx="8" cy="8" r="2" /><path d="M8 1v2M8 13v2M1 8h2M13 8h2" /></svg>;
 const tenLoiTat = (hd: HuongDan, v: ViecHd) => [
   ...(v.loiTat ?? []).map((id) => manTheoId(hd, id)).filter((m): m is ManHd => !!m && !m.panel).map((m) => t(m.ten)),
   ...(v.tatThem ?? []).map((x) => t(x)),
 ];
+const nhanVai = (v: ViecHd) => (v.chiGvcn ? t('Chỉ GVCN') : v.chiS ? t('GV Speaking') : null);
+const ChipVai = ({ chu }: { chu: string }) => <span className="mt-px whitespace-nowrap rounded-md border px-1.5 py-px text-xs font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>{chu}</span>;
 
+/* ---------------------------------------------------------------- thẻ việc (một thành phần: tầng 1, dòng mở, tìm, trang) */
+
+type DongThe = { k: string; nhan: string; nd: ReactNode };
 /**
- * Một dòng việc gập / mở — MỘT kiểu ở cả ba tab (G4). Gập: tên + dòng nhạt = đường lối chính (khi màn này không phải lối chính) + nhãn vai.
- * Mở: ô Lối chính (Đi tới ›) · bước · Lối tắt · Chỉ cho tôi. `kieu = 'man'`: ô Lối chính chỉ khi màn này là lối tắt, kèm "Ở đây mở cùng …".
+ * THẺ VIỆC (15 mục 4.4, mockup ⑭ K1 · K2): bảy dòng khuôn cố định, dòng không có thì không hiện. Cột nhãn 108 (trong danh sách 96), 375 nhãn trên.
+ * `dai`: dòng việc của người khác — "Việc của {vai}. Bạn làm thay được." (ẩn Không làm được) / "Bạn chỉ xem." (ẩn Làm, Làm sai, Không làm được) — 4.5, 8.3.
+ * `qc`: câu quy chế của panel đang mở — 375 luôn ở đầu thẻ (câu bị cắt ở chân panel); có chi tiết thì hiện mọi cỡ (ⓘ không còn hộp chữ riêng).
+ * `dangODung`: đang ở đúng chỗ làm → không "Đi tới ›".
  */
-function DongViec({ muc, viec, kieu, tat = false, moSan = false, ctx }: { muc: MucHd; viec?: ViecHd; kieu: 'man' | 'lam'; tat?: boolean; moSan?: boolean; ctx: Ctx }) {
-  const [mo, setMo] = useState(moSan);
-  const id = useId();
-  const coO = !!viec && (kieu === 'lam' || tat);
-  const nho = viec && (kieu === 'lam' || tat) ? t(viec.loiChinh.chu) : null;
-  const nhan = viec?.chiGvcn ? t('Chỉ GVCN') : viec?.chiS ? t('GV Speaking') : null;
-  const tatDs = viec && kieu === 'lam' ? tenLoiTat(ctx.hd, viec) : [];
+function TheViec({ v, ctx, dangMo, dai, qc, gon = false, dangODung = false, hdThe }: { v: ViecHd; ctx: Ctx; dangMo?: string; dai?: { vai: VaiHd; xem: boolean }; qc?: QuyCheMo | null; gon?: boolean; dangODung?: boolean; /** thẻ của vai khác: lối tắt tra màn của vai đó */ hdThe?: HuongDan }) {
+  const an = new Set(dai?.xem ? ['lam', 'sai', 'khong'] : dai ? ['khong'] : []);
+  const ds = ([
+    v.khiCo && { k: 'khi', nhan: t('Khi nào có'), nd: <ChuThe chu={v.khiCo} /> },
+    v.buoc.length > 0 && { k: 'lam', nhan: t('Làm'), nd: (
+      <ol className="m-0 grid list-none gap-1 p-0 [counter-reset:b]">
+        {v.buoc.map((b) => (
+          <li key={b} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2 [counter-increment:b] before:mt-px before:h-5 before:w-5 before:rounded-[50%] before:bg-doing-bg before:text-center before:text-xs before:font-bold before:leading-5 before:text-doing before:content-[counter(b)]">
+            <span><ChuThe chu={b} /></span>
+          </li>
+        ))}
+      </ol>
+    ) },
+    v.xong && { k: 'xong', nhan: t('Xong khi'), nd: <ChuThe chu={v.xong} /> },
+    v.han && { k: 'han', nhan: t('Hạn'), nd: <ChuThe chu={v.han} /> },
+    v.sai && { k: 'sai', nhan: t('Làm sai'), nd: <ChuThe chu={v.sai} /> },
+    v.khongDuoc?.length && { k: 'khong', nhan: t('Không làm được'), nd: <DsCham ds={v.khongDuoc} /> },
+    v.sau && { k: 'sau', nhan: t('Sau đó'), nd: <ChuThe chu={v.sau} /> },
+  ].filter(Boolean) as DongThe[]).filter((d) => !an.has(d.k));
+  const tat = tenLoiTat(hdThe ?? ctx.hd, v);
+  const coDi = !!v.loiChinh.duong && !dangODung && ctx.pathname !== v.loiChinh.duong;
+  const chi = v.loiChinh.chi;
+  const nhan = nhanVai(v);
   return (
-    <div className={mo ? 'bg-[color:var(--surface-2)]' : ''} data-muc={muc.id}>
-      <button type="button" aria-expanded={mo} aria-controls={id} onClick={() => setMo(!mo)}
-        className="grid min-h-[44px] w-full cursor-pointer appearance-none grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 border-0 bg-transparent px-3 py-[9px] text-left text-slate-100 hover:bg-[color:var(--accent-soft)]">
-        <svg aria-hidden viewBox="0 0 16 16" className={`mt-[3px] h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${mo ? '' : '-rotate-90'}`} fill="none" stroke="var(--text-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
-        <span className="grid min-w-0 gap-px">
-          <b className="text-[15px] font-semibold leading-snug">{ctx.q ? <ToKhop chu={t(muc.ten)} q={ctx.q} /> : t(muc.ten)}</b>
-          {nho && !mo && <small className="text-[13px] leading-snug text-slate-500">{nho}</small>}
-        </span>
-        {nhan ? <span className="mt-px whitespace-nowrap rounded-md border px-1.5 py-px text-xs font-semibold text-slate-400" style={{ borderColor: 'var(--line-strong)' }}>{nhan}</span> : <span />}
-      </button>
-      {(mo || ctx.inDuoc) && (
-        <div id={id} className={`gap-2.5 pb-3 pl-9 pr-3.5 ${mo ? 'grid' : 'hidden print:grid'}`}>
-          {coO && viec && (
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border px-2.5 py-2" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>
-              <span className="basis-full text-xs font-medium text-slate-500">{t('Lối chính')}</span>
-              <b className="text-sm font-semibold text-slate-100">{t(viec.loiChinh.chu)}</b>
-              {viec.loiChinh.duong && <Link to={viec.loiChinh.duong} onClick={ctx.onDong} className="link -my-2.5 ml-auto inline-flex min-h-[44px] items-center whitespace-nowrap px-1 text-[13px] font-semibold sm:my-0 sm:min-h-6 sm:px-0">{t('Đi tới ›')}</Link>}
-              {kieu === 'man' && <span className="basis-full text-[13px] text-slate-400">{t('Ở đây {cung}', { cung: t(viec.cung ?? 'mở cùng chỗ.') })}</span>}
-            </div>
-          )}
-          {/* Vòng số bước (như `Khoi` của KhungPanel) — không phải chip. */}
-          <ol className="m-0 grid list-none gap-1.5 p-0 [counter-reset:b]">
-            {muc.buoc.map((b) => (
-              <li key={b} className="grid grid-cols-[20px_minmax(0,1fr)] gap-2 text-sm leading-normal text-slate-300 [counter-increment:b] before:mt-px before:h-5 before:w-5 before:rounded-[50%] before:bg-doing-bg before:text-center before:text-xs before:font-bold before:leading-5 before:text-doing before:content-[counter(b)] [&_strong]:font-semibold [&_strong]:text-slate-100">
-                <span><ChuDam chu={t(b)} /></span>
-              </li>
-            ))}
-          </ol>
-          {tatDs.length > 0 && viec && <p className="m-0 text-[13px] leading-snug text-slate-500">{t('Lối tắt: {ds} — {cung}', { ds: tatDs.join(', '), cung: t(viec.cung ?? 'mở cùng chỗ.') })}</p>}
-          {muc.chi && (
-            <div><button type="button" className={NUT_CHI} onClick={() => ctx.onChi(muc.chi!)}>
-              <svg aria-hidden viewBox="0 0 16 16" className="h-[15px] w-[15px]" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="8" r="5.5" /><circle cx="8" cy="8" r="2" /><path d="M8 1v2M8 13v2M1 8h2M13 8h2" /></svg>
-              {t('Chỉ cho tôi')}</button></div>
-          )}
+    <article className="grid gap-3.5" aria-label={t('Thẻ việc {ten}', { ten: t(v.ten) })} data-the={v.id}>
+      {dangMo && (
+        <div className="grid gap-0.5">
+          <span className="text-xs font-medium text-slate-500">{t('Bạn đang mở')}</span>
+          <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-base font-bold leading-[1.35] text-slate-100">{dangMo}{nhan && <ChipVai chu={nhan} />}</span>
         </div>
       )}
+      {dai && (
+        <div className="flex items-center gap-2 rounded-lg border px-3 py-[7px] text-[13px] leading-[1.4] text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+          <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="5.5" r="2.5" /><path d="M3 13.5c.6-2.4 2.6-3.5 5-3.5s4.4 1.1 5 3.5" /></svg>
+          <span><b className="font-semibold text-slate-100">{t('Việc của {vai}.', { vai: TEN_VAI_HD[dai.vai] })}</b> {dai.xem ? t('Bạn chỉ xem.') : t('Bạn làm thay được.')}</span>
+        </div>
+      )}
+      {qc && (
+        <div className={`grid gap-0.5 rounded-lg border px-3 py-2 text-sm leading-snug text-slate-200 ${qc.chiTiet ? '' : 'sm:hidden'}`} style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
+          <span className="text-xs font-semibold text-slate-500">{t('Quy chế')}</span>
+          <span>{qc.chu}</span>
+          {qc.chiTiet && <span className="text-[13px] text-slate-400">{qc.chiTiet}</span>}
+        </div>
+      )}
+      <dl className="m-0 grid gap-2.5 max-sm:gap-3">
+        {ds.map((d) => (
+          <div key={d.k} className={`grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] ${gon ? 'sm:grid-cols-[96px_minmax(0,1fr)]' : 'sm:grid-cols-[108px_minmax(0,1fr)]'}`}>
+            <dt className="text-[13px] font-semibold leading-[1.6] text-slate-500">{d.nhan}</dt>
+            <dd className="m-0 min-w-0 text-slate-100">{d.nd}</dd>
+          </div>
+        ))}
+      </dl>
+      {!dai?.xem ? (chi || coDi || tat.length > 0) && (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+          {chi && <button type="button" className={NUT_CHI} onClick={() => ctx.onChi(chi)}><IcChi />{t('Chỉ cho tôi')}</button>}
+          {coDi && <Link to={v.loiChinh.duong!} onClick={ctx.onDong} className="link inline-flex min-h-[44px] items-center text-[13px] font-semibold sm:min-h-[30px]">{t('Đi tới ›')}</Link>}
+          {tat.length > 0 && <span className="basis-full text-[13px] text-slate-500">{t('Cũng mở được từ: {ds}', { ds: tat.join(', ') })}</span>}
+        </div>
+      ) : coDi && (
+        <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+          <Link to={v.loiChinh.duong!} onClick={ctx.onDong} className="link inline-flex min-h-[44px] items-center text-[13px] font-semibold sm:min-h-[30px]">{t('Đi tới ›')}</Link>
+        </div>
+      )}
+    </article>
+  );
+}
+
+/** Dòng có hai lý do / hai lối: danh sách chấm (mockup `.nhanh-hd`); một mục thì là câu. */
+function DsCham({ ds }: { ds: readonly Khoa[] }) {
+  if (ds.length === 1) return <ChuThe chu={ds[0]} />;
+  return (
+    <ul className="m-0 grid list-none gap-1 p-0">
+      {ds.map((x) => <li key={x} className="relative pl-3 before:absolute before:left-0 before:top-[.6em] before:h-[5px] before:w-[5px] before:rounded-full before:bg-doing"><ChuThe chu={x} /></li>)}
+    </ul>
+  );
+}
+
+/** Một dòng gập / mở — MỘT kiểu ở mọi tab (G4): gập = tên (+ nhãn vai, số việc); mở = thẻ việc (hoặc bước của mục riêng màn). */
+function DongGap({ id, ten, phai, moSan = false, ctx, children }: { id: string; ten: string; phai?: ReactNode; moSan?: boolean; ctx: Ctx; children: ReactNode }) {
+  const [mo, setMo] = useState(moSan);
+  const idThan = useId();
+  return (
+    <div className={mo ? 'bg-[color:var(--surface-2)]' : ''} data-muc={id}>
+      <button type="button" aria-expanded={mo} aria-controls={idThan} onClick={() => setMo(!mo)}
+        className="grid min-h-[44px] w-full cursor-pointer appearance-none grid-cols-[16px_minmax(0,1fr)_auto] items-start gap-x-2 border-0 bg-transparent px-3 py-[9px] text-left text-slate-100 hover:bg-[color:var(--accent-soft)]">
+        <svg aria-hidden viewBox="0 0 16 16" className={`mt-[3px] h-4 w-4 transition-transform duration-150 motion-reduce:transition-none ${mo ? '' : '-rotate-90'}`} fill="none" stroke="var(--text-faint)" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6l4 4 4-4" /></svg>
+        <b className="min-w-0 text-[15px] font-semibold leading-snug">{ctx.q ? <ToKhop chu={ten} q={ctx.q} /> : ten}</b>
+        <span className="flex items-center gap-2">{phai}</span>
+      </button>
+      {(mo || ctx.inDuoc) && <div id={idThan} className={`pb-3.5 pl-9 pr-3.5 ${mo ? 'block' : 'hidden print:block'}`}>{children}</div>}
     </div>
   );
 }
 
-const DongCuaDong = ({ d, i, ctx }: { d: DongHd; i: number; ctx: Ctx }) => <DongViec muc={d.muc} viec={d.viec} kieu="man" tat={d.tat} moSan={i === 0} ctx={ctx} />;
+const DongCuaThe = ({ v, ctx, n = 0, moSan }: { v: ViecHd; ctx: Ctx; n?: number; moSan?: boolean }) => {
+  const nhan = nhanVai(v);
+  return (
+    <DongGap id={v.id} ten={t(v.ten)} moSan={moSan} ctx={ctx}
+      phai={<>{nhan && <ChipVai chu={nhan} />}{n > 0 && <span className="whitespace-nowrap text-[13px] tabular-nums text-slate-400">{t('{n} việc', { n })}</span>}</>}>
+      <TheViec v={v} ctx={ctx} gon />
+    </DongGap>
+  );
+};
+/** Mục riêng của màn (không phải việc): bước + Chỉ cho tôi (dáng V2). */
+const DongMuc = ({ m, ctx, moSan }: { m: MucHd; ctx: Ctx; moSan?: boolean }) => (
+  <DongGap id={m.id} ten={t(m.ten)} moSan={moSan} ctx={ctx}>
+    <div className="grid gap-2.5">
+      <TheViec v={{ id: m.id, ten: m.ten, nhom: 'khac', loiChinh: { chu: m.ten }, buoc: m.buoc }} ctx={ctx} gon />
+      {m.chi && <div><button type="button" className={NUT_CHI} onClick={() => ctx.onChi(m.chi!)}><IcChi />{t('Chỉ cho tôi')}</button></div>}
+    </div>
+  </DongGap>
+);
+const DongCuaDong = ({ d, ctx }: { d: DongHd; ctx: Ctx }) => (d.viec ? <DongCuaThe v={d.viec} ctx={ctx} /> : <DongMuc m={d.muc} ctx={ctx} />);
 
-/* ---------------------------------------------------------------- tab */
+/* ---------------------------------------------------------------- tab Trang này */
 
-/** Màn này: Bạn đang ở · Việc làm ở đây (việc đầu mở) · Không làm ở đây. Panel đang mở: mục panel lên trước, rồi màn nền (đặc tả 8, 10.1). */
-function TabManNay({ hd, manNen, manPanel, pathname, ctx }: { hd: HuongDan; manNen: ManHd | null; manPanel: ManHd | null; pathname: string; ctx: Ctx }) {
+const TOI_DA_TANG_2 = 5;
+/** Tầng 2 (mockup ⑭ K3): Bạn đang ở {màn} · {tab} + ≤ 5 việc của tab (việc đang có lên trước, số việc) + "+ n việc khác" + Không làm ở đây. */
+function Tang2({ hd, manNen, tab2, soViec, ctx }: { hd: HuongDan; manNen: ManHd; tab2: NonNullable<ReturnType<typeof tabDangDung>>; soViec: (v: ViecHd) => number; ctx: Ctx }) {
+  const [het, setHet] = useState(false);
+  const ds = tab2.the(hd).map((v) => ({ v, n: soViec(v) })).sort((a, b) => Number(b.n > 0) - Number(a.n > 0));
+  const hien = het ? ds : ds.slice(0, TOI_DA_TANG_2);
+  return (
+    <>
+      <BanDangO man={manNen} tenRieng={`${t(manNen.ten)} · ${tab2.ten}`} cau={tab2.cau ?? null} ctx={ctx} />
+      {ds.length > 0 ? (
+        <DsViec>
+          {hien.map(({ v, n }) => <DongCuaThe key={v.id} v={v} n={n} ctx={ctx} />)}
+          {ds.length > hien.length && (
+            <button type="button" className="flex min-h-10 w-full cursor-pointer items-center border-0 bg-transparent px-3 text-left text-[13px] font-semibold text-[color:var(--accent)] hover:bg-[color:var(--accent-soft)] max-sm:min-h-[44px]" onClick={() => setHet(true)}>
+              {t('+ {n} việc khác', { n: ds.length - hien.length })}
+            </button>
+          )}
+        </DsViec>
+      ) : <p className="m-0 text-sm text-slate-400">{t('Tab này chưa có thẻ việc.')}</p>}
+      <KhongLam man={manNen} ctx={ctx} />
+    </>
+  );
+}
+
+/** Trang này ở tầng 2 / 3. Tầng 3 = màn (V2): Bạn đang ở · Việc làm ở đây · Không làm ở đây; panel đang mở chưa có thẻ: mục panel lên trước (V2 đặc tả 8, 10.1). */
+function TrangNay({ tang, hd, manNen, manPanel, tab2, soViec, ctx }: { tang: 2 | 3; hd: HuongDan; manNen: ManHd | null; manPanel: ManHd | null; tab2: ReturnType<typeof tabDangDung>; soViec: (v: ViecHd) => number; ctx: Ctx }) {
+  if (tang === 2 && tab2 && manNen) return <Tang2 hd={hd} manNen={manNen} tab2={tab2} soViec={soViec} ctx={ctx} />;
   const dsNen = manNen ? viecOManNay(hd, manNen.id) : [];
-  if (manPanel) {
+  if (manPanel && !manPanel.the) {
     const dsPanel = viecOManNay(hd, manPanel.id);
     const coRoi = new Set(dsPanel.map((d) => d.viec?.id).filter(Boolean));
-    const nen = dsNen.filter((d) => !d.viec || !coRoi.has(d.viec.id));   // việc đã có ở panel không lặp ở màn nền
+    const nen = dsNen.filter((d) => !d.viec || !coRoi.has(d.viec.id));
     return (
       <>
         <BanDangO man={manPanel} tren={manNen ? t(manNen.ten) : undefined} ctx={ctx} />
         <KhoiHd ten={t('Việc làm ở đây')}>
           <div className="flex flex-col gap-3">
-            {dsPanel.length > 0 && <Nhom ten={t(manPanel.ten)}><DsViec>{dsPanel.map((d, i) => <DongCuaDong key={d.muc.id} d={d} i={i} ctx={ctx} />)}</DsViec></Nhom>}
-            {manNen && nen.length > 0 && <Nhom ten={t(manNen.ten)}><DsViec>{nen.map((d) => <DongCuaDong key={d.muc.id} d={d} i={1} ctx={ctx} />)}</DsViec></Nhom>}
+            {dsPanel.length > 0 && <Nhom ten={t(manPanel.ten)}><DsViec>{dsPanel.map((d) => <DongCuaDong key={d.muc.id} d={d} ctx={ctx} />)}</DsViec></Nhom>}
+            {manNen && nen.length > 0 && <Nhom ten={t(manNen.ten)}><DsViec>{nen.map((d) => <DongCuaDong key={d.muc.id} d={d} ctx={ctx} />)}</DsViec></Nhom>}
           </div>
         </KhoiHd>
         <KhongLam man={manPanel} ctx={ctx} />
       </>
     );
   }
-  if (!manNen) return <BanDangO man={null} tenRieng={tenVung(pathname)} ctx={ctx} />;
+  if (!manNen) return <BanDangO man={null} tenRieng={tenVung(ctx.pathname ?? '')} ctx={ctx} />;
   return (
     <>
       <BanDangO man={manNen} ctx={ctx} />
-      {dsNen.length > 0 && <KhoiHd ten={t('Việc làm ở đây')}><DsViec>{dsNen.map((d, i) => <DongCuaDong key={d.muc.id} d={d} i={i} ctx={ctx} />)}</DsViec></KhoiHd>}
+      {dsNen.length > 0 && <KhoiHd ten={t('Việc làm ở đây')}><DsViec>{dsNen.map((d) => <DongCuaDong key={d.muc.id} d={d} ctx={ctx} />)}</DsViec></KhoiHd>}
       <KhongLam man={manNen} ctx={ctx} />
     </>
   );
 }
 
-/** Trang Hướng dẫn · Theo màn: mọi màn của vai (Bạn đang ở · Việc làm ở đây · Không làm ở đây), cùng khối với tab Màn này của panel. */
-export function TheoMan({ hd, ctx }: { hd: HuongDan; ctx: Ctx }) {
-  return (
-    <div className="grid gap-7">
-      {hd.man.filter((m) => !m.panel).map((m) => {
-        const ds = viecOManNay(hd, m.id);
-        return (
-          <section key={m.id} aria-label={t(m.ten)} className="grid gap-[18px] break-inside-avoid-page">
-            <BanDangO man={m} trang ctx={ctx} />
-            {ds.length > 0 && <KhoiHd ten={t('Việc làm ở đây')}><DsViec>{ds.map((d) => <DongViec key={d.muc.id} muc={d.muc} viec={d.viec} kieu="man" tat={d.tat} ctx={ctx} />)}</DsViec></KhoiHd>}
-            <KhongLam man={m} ctx={ctx} />
-          </section>
-        );
-      })}
-    </div>
-  );
-}
+/* ---------------------------------------------------------------- tab Tôi muốn… · Trường hợp */
 
-/** Tôi muốn…: việc theo nhóm cố định, nhóm trống ẩn. Màn chưa có mục riêng: dòng "Bạn đang ở" trên đầu (mockup E). Vai chưa chuyển: việc hằng tuần cũ. */
-function TabToiMuon({ hd, manNen, pathname, ctx }: { hd: HuongDan; manNen: ManHd | null; pathname: string; ctx: Ctx }) {
+/**
+ * Tôi muốn… (15 mục 4.6, mockup ⑭ K5): bộ lọc nhịp dính đầu (Tất cả + nhịp của vai — thay tab "Tuần của tôi", lời 55) rồi việc theo nhóm = tên tab
+ * Công việc + Học viên & lớp + Khác. `moThe`: mở sẵn một thẻ (từ Trường hợp / Có gì mới / tìm) và cuộn tới.
+ */
+function TabToiMuon({ hd, manNen, moThe, ctx }: { hd: HuongDan; manNen: ManHd | null; moThe: string | null; ctx: Ctx }) {
+  const [nhip, setNhip] = useState<string | null>(null);
+  useEffect(() => { if (moThe) document.querySelector(`[data-muc="${moThe}"]`)?.scrollIntoView({ block: 'nearest' }); }, [moThe]);
+  const ids = nhip ? new Set(hd.tuan?.find((n) => n.nhip === nhip)?.viec) : null;
+  const viec = (hd.lam ?? []).filter((v) => !ids || ids.has(v.id));
   return (
     <>
-      {!manNen && <BanDangO man={null} tenRieng={tenVung(pathname)} ctx={ctx} />}
-      {hd.lam ? <DsNhom viec={hd.lam} ctx={ctx} /> : <DsViec>{hd.viec.map((m, i) => <DongViec key={m.id} muc={m} kieu="lam" moSan={i === 0} ctx={ctx} />)}</DsViec>}
+      {!manNen && <BanDangO man={null} tenRieng={tenVung(ctx.pathname ?? '')} ctx={ctx} />}
+      {!!hd.tuan?.length && (
+        /* Dính đầu thân khi cuộn (thấy đang lọc gì); 375 một hàng vuốt ngang (mockup `.loc-nhip`). */
+        <div role="group" aria-label={t('Lọc theo nhịp')} className="sticky -top-4 z-[2] -mx-5 -mt-4 flex flex-wrap gap-1.5 border-b px-5 pb-2.5 pt-3 max-sm:-mx-4 max-sm:flex-nowrap max-sm:overflow-x-auto max-sm:px-4 max-sm:[scrollbar-width:none]"
+          style={{ background: 'var(--surface)', borderColor: 'var(--line)' }}>
+          {[null, ...hd.tuan.map((n) => n.nhip)].map((n) => (
+            <button key={n ?? ''} type="button" aria-pressed={nhip === n} onClick={() => setNhip(n)}
+              className={`h-7 shrink-0 cursor-pointer whitespace-nowrap rounded-full border px-2.5 text-[13px] max-sm:h-11 ${nhip === n ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] font-semibold text-slate-100' : 'border-[color:var(--line-strong)] bg-transparent font-medium text-slate-400'}`}>
+              {n ? t(n as Khoa) : t('Tất cả')}
+            </button>
+          ))}
+        </div>
+      )}
+      <DsNhom viec={viec} ctx={ctx} moId={moThe} />
     </>
   );
 }
-export function DsNhom({ viec, ctx, moDau = false }: { viec: ViecHd[]; ctx: Ctx; moDau?: boolean }) {
+export function DsNhom({ viec, ctx, moDau = false, moId = null }: { viec: ViecHd[]; ctx: Ctx; moDau?: boolean; moId?: string | null }) {
   return (
     <div className="grid gap-4">
-      {NHOM.map((n) => {
-        const ds = viec.filter((v) => v.nhom === n);
-        return ds.length ? <Nhom key={n} ten={TEN_NHOM[n]}><DsViec>{ds.map((v) => <DongViec key={v.id} muc={mucCuaViec(v)} viec={v} kieu="lam" moSan={moDau && v === viec[0]} ctx={ctx} />)}</DsViec></Nhom> : null;
+      {THU_TAB_HD.map((k) => {
+        const ds = viec.filter((v) => tabCuaThe(v) === k);
+        return ds.length ? <Nhom key={k} ten={tenTabHd(k)}><DsViec>{ds.map((v) => <DongCuaThe key={v.id} v={v} ctx={ctx} moSan={v.id === moId || (moDau && v === viec[0])} />)}</DsViec></Nhom> : null;
       })}
     </div>
   );
 }
 
-/** Tuần của tôi: nhóm theo nhịp, mỗi việc gập / mở TẠI CHỖ (Lối chính + bước — 10.3). Vai chưa chuyển: việc hằng tuần cũ, "khi" là nhịp. */
-export function TabTuan({ hd, ctx }: { hd: HuongDan; ctx: Ctx }) {
-  if (!hd.lam || !hd.tuan) return <DsViec>{hd.viec.map((m) => <DongViec key={m.id} muc={m} kieu="lam" ctx={ctx} />)}</DsViec>;
+/** Thẻ trường hợp (15 mục 4.7, mockup ⑭ K6b): Máy làm gì · Bạn làm gì · Ai khác nhận việc + link sang thẻ việc (một nguồn chữ). */
+function TheTinhHuong({ x, hd, onThe }: { x: TinhHuongHd; hd: HuongDan; onThe?: (id: string) => void }) {
+  const the = x.the ? hd.lam?.find((v) => v.id === x.the) : undefined;
+  const ds = [
+    x.may?.length && { k: 'may', nhan: t('Máy làm gì'), nd: <DsCham ds={x.may} /> },
+    x.ban && { k: 'ban', nhan: t('Bạn làm gì'), nd: <ChuThe chu={x.ban} /> },
+    x.ai?.length && { k: 'ai', nhan: t('Ai khác nhận việc'), nd: <DsCham ds={x.ai} /> },
+  ].filter(Boolean) as DongThe[];
   return (
-    <div className="grid gap-4">
-      {hd.tuan.map((n) => (
-        <Nhom key={n.nhip} ten={t(n.nhip)}>
-          <DsViec>{n.viec.map((id) => hd.lam!.find((v) => v.id === id)).filter((v): v is ViecHd => !!v).map((v) => <DongViec key={v.id} muc={mucCuaViec(v)} viec={v} kieu="lam" ctx={ctx} />)}</DsViec>
-        </Nhom>
-      ))}
-    </div>
+    <article className="grid gap-3.5" aria-label={t('Trường hợp {ten}', { ten: t(x.ten) })}>
+      <dl className="m-0 grid gap-2.5 max-sm:gap-3">
+        {ds.map((d) => (
+          <div key={d.k} className="grid gap-x-3 text-sm leading-normal max-sm:grid-cols-1 max-sm:gap-y-px max-sm:text-[15px] sm:grid-cols-[96px_minmax(0,1fr)]">
+            <dt className="text-[13px] font-semibold leading-[1.6] text-slate-500">{d.nhan}</dt>
+            <dd className="m-0 min-w-0 text-slate-100">{d.nd}</dd>
+          </div>
+        ))}
+      </dl>
+      {the && onThe && (
+        <div className="border-t pt-3" style={{ borderColor: 'var(--line)' }}>
+          <button type="button" className="link inline-flex min-h-[44px] cursor-pointer items-center border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-[30px]" onClick={() => onThe(the.id)}>{t('Thẻ việc: {ten}', { ten: t(the.ten) })}</button>
+        </div>
+      )}
+    </article>
   );
 }
+export function TabTruongHop({ hd, ctx, onThe, moDau = true }: { hd: HuongDan; ctx: Ctx; onThe?: (id: string) => void; moDau?: boolean }) {
+  if (!hd.tinhHuong?.length) return <p className="m-0 text-sm text-slate-400">{t('Vai này chưa có trường hợp nào.')}</p>;
+  return <DsViec>{hd.tinhHuong.map((x, i) => <DongGap key={x.id} id={x.id} ten={t(x.ten)} moSan={moDau && i === 0} ctx={ctx}><TheTinhHuong x={x} hd={hd} onThe={onThe} /></DongGap>)}</DsViec>;
+}
 
-/** Đang gõ ô tìm: một danh sách (gộp ba tab, bỏ trùng), có nhóm; việc vai khác một dòng "… — việc của QL"; không có gì của mình → câu + Xem mọi việc. */
-export function KetQuaTim({ kq, q, ctx, onXemHet }: { kq: { viec: ViecHd[]; muc: MucHd[]; vaiKhac: ViecVaiKhac[] }; q: string; ctx: Ctx; onXemHet: () => void }) {
-  const n = kq.viec.length + kq.muc.length;
+/** Đang gõ ô tìm (mockup ⑭ K7): một danh sách — việc (theo nhóm) · Màn này · Trường hợp · việc của vai khác; không có gì → câu + Xem mọi việc. */
+export function KetQuaTim({ kq, q, ctx, onXemHet, onThe }: { kq: { viec: ViecHd[]; muc: MucHd[]; tinhHuong: TinhHuongHd[]; vaiKhac: ViecVaiKhac[] }; q: string; ctx: Ctx; onXemHet: () => void; onThe?: (id: string) => void }) {
+  const n = kq.viec.length + kq.muc.length + kq.tinhHuong.length;
   return (
     <>
-      {n > 0 ? <p className="m-0 text-[13px] font-medium text-slate-400" aria-live="polite">{t('{n} việc khớp', { n })}</p>
+      {n > 0 ? <p className="m-0 text-[13px] font-medium text-slate-400" aria-live="polite">{t('{n} mục khớp', { n })}</p>
         : <p className="m-0 text-[15px] text-slate-400" aria-live="polite">{t('Không có việc của bạn khớp “{q}”.', { q: q.trim() })}</p>}
       {kq.viec.length > 0 && <DsNhom viec={kq.viec} ctx={ctx} moDau />}
-      {kq.muc.length > 0 && <Nhom ten={t('Màn này')}><DsViec>{kq.muc.map((m, i) => <DongViec key={m.id} muc={m} kieu="man" moSan={!kq.viec.length && i === 0} ctx={ctx} />)}</DsViec></Nhom>}
+      {kq.muc.length > 0 && <Nhom ten={t('Màn này')}><DsViec>{kq.muc.map((m, i) => <DongMuc key={m.id} m={m} ctx={ctx} moSan={!kq.viec.length && i === 0} />)}</DsViec></Nhom>}
+      {kq.tinhHuong.length > 0 && (
+        <Nhom ten={t('Trường hợp')}>
+          <DsViec>{kq.tinhHuong.map((x) => <DongGap key={x.id} id={x.id} ten={t(x.ten)} ctx={ctx}><TheTinhHuong x={x} hd={ctx.hd} onThe={onThe} /></DongGap>)}</DsViec>
+        </Nhom>
+      )}
       {kq.vaiKhac.length > 0 && (
         <Nhom ten={t('Việc của vai khác')}>
           <div className="rounded-[10px] border px-3" style={{ borderColor: 'var(--line)' }}>

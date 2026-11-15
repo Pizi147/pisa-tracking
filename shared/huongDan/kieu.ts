@@ -27,6 +27,11 @@ export type ManHd = {
   dangO?: { cau: Khoa; truoc?: DichHd; sau?: DichHd };
   khongLam?: { ten: Khoa; den?: DichHd; cua?: Khoa }[];
   panel?: PanelHd;
+  /** HD3-1: panel mở NGOÀI dòng việc (Case từ hồ sơ HV, form Vi phạm) → thẻ việc của panel (id trong `lam`) — "?" mở thẳng tầng 1. */
+  the?: string;
+  /** HD3-1 tầng 2: tab của màn đọc ở tham số `q` của URL (`?tab=`); `mac` = tab khi URL không ghi; mỗi tab: tên + một câu + id thẻ làm ở tab đó.
+   *  Công việc không khai ở đây: tab = `tab` của thẻ (`?nhom=`). */
+  tabs?: { q: string; mac?: string; ds: Record<string, { ten: Khoa; cau?: Khoa; the: string[] }> };
 };
 /** HD-V3: panel LÀM VIỆC có mục riêng (`KhungPanel hd=…`); mảng để phép HD-PANEL duyệt. Panel không có ở đây: "?" mở Màn nền. */
 export const PANEL_HD = [
@@ -48,7 +53,21 @@ export type ViecHd = {
   loiChinh: { man?: string; chu: Khoa; duong?: string; chi?: ChiChoToi };
   loiTat?: string[]; tatThem?: Khoa[]; cung?: Khoa;
   buoc: Khoa[]; tuKhac?: string[]; chiGvcn?: true; chiS?: true;
+  /**
+   * HD3-1 — THẺ VIỆC khuôn cố định (đặc tả 15 mục 4.4): Khi nào có · Làm (= `buoc`) · Xong khi · Hạn · Làm sai · Không làm được · Sau đó.
+   * Dòng không có thì không hiện; mỗi dòng ≤ 1 câu. Hạn viết bằng mã chèn `{han:ma}` / `{han:ma.truong}` (`chenHan` — số lấy từ Hạn mặc định).
+   * `khiCo` / `sau` viết theo TÊN VAI ("GV kỹ năng đó"), không "bạn" — vai làm thay / chỉ xem đọc cùng thẻ (15 mục 8.3).
+   */
+  khiCo?: Khoa; xong?: Khoa; han?: Khoa; sai?: Khoa; khongDuoc?: Khoa[]; sau?: Khoa;
+  /** Nhóm Tôi muốn… + tầng 2 Công việc: khoá tab Công việc (`TAB_CV`, TVV `NHOM_CV_TVV`) hoặc `duyet` · `hv` · `khac`. Thiếu: suy từ `nhom`. */
+  tab?: string;
+  /** Loại DÒNG VIỆC trên web mở thẻ này ở tầng 1 (`maViec` của dòng: nhóm việc máy chủ, `cham_speaking`). */
+  viecWeb?: string[];
 };
+/**
+ * HD3-1 — THẺ TRƯỜNG HỢP (tab "Trường hợp", đặc tả 15 mục 4.7): Máy làm gì · Bạn làm gì · Ai khác nhận việc; `the` = thẻ việc liên quan (id trong `lam`).
+ */
+export type TinhHuongHd = { id: string; ten: Khoa; may?: Khoa[]; ban?: Khoa; ai?: Khoa[]; the?: string; tuKhac?: string[] };
 /** Việc của vai khác — chỉ hiện trong kết quả tìm, một dòng "… — việc của QL". */
 export type ViecVaiKhac = { ten: Khoa; cua: Khoa; tuKhac?: string[] };
 
@@ -59,5 +78,13 @@ export type ViecVaiKhac = { ten: Khoa; cua: Khoa; tuKhac?: string[] };
 export type HuongDan = {
   viec: MucHd[]; man: ManHd[]; luat: MucHd[]; tu: TuHd[];
   lam?: ViecHd[]; tuan?: { nhip: Khoa; viec: string[] }[]; vaiKhac?: ViecVaiKhac[];
+  /** HD3-1: tab "Trường hợp" (ẩn tình huống vai không gặp = không viết ở vai đó). */
+  tinhHuong?: TinhHuongHd[];
 };
+
+/**
+ * HD3-1 "Có gì mới" (đặc tả 15 mục 4.8): số phiên bản nội dung Hướng dẫn — tăng sau mỗi đợt đổi lớn (kèm dòng ở `CO_GI_MOI`). Tài khoản lưu số
+ * phiên bản đã xem (`users.da_xem_huong_dan`); nhỏ hơn số này → chấm trên "?". Ở đây (không ở `index.ts`): thanh trên đọc mà không kéo nội dung.
+ */
+export const PHIEN_BAN_HD = 3;
 export type PhanHd = 'viec' | 'man' | 'luat' | 'tu';
