@@ -124,10 +124,10 @@ export const cungGvTheoLo = (lenh: readonly { id: number; lop_nguon_id: number; 
  * PR-S5F-a (T58): dòng "Kết quả" của phiếu. Lớp thường: % Cuối khoá (`chuCuoiKhoaLo` — đọc được cả sau khi em đã chuyển đi); chưa có bài Cuối khoá
  * thì dòng kết quả gần nhất KHÔNG kèm nhãn SOS (lớp thường không dùng mức SOS). FT: dòng kết quả như cũ.
  */
-function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly number[], giu?: Map<number, Standing>): Map<number, string> {
+function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly number[], giu?: Map<number, Standing>, giuDiem?: Map<number, DiemHv>): Map<number, string> {
   const out = new Map<number, string>();
   const thuong = !!programmeOf(nguon.ct) && programmeOf(nguon.ct) !== 'FT';
-  const ck = thuong ? chuCuoiKhoaLo(nguon.id, sids) : new Map<number, string>();
+  const ck = thuong ? chuCuoiKhoaLo(nguon.id, sids, giuDiem) : new Map<number, string>();
   const con = sids.filter((s) => !ck.has(s));
   const standing = con.length ? standingFor([...con]) : new Map<number, Standing>();
   for (const [k, v] of standing) giu?.set(k, v);
@@ -141,12 +141,14 @@ function ketQuaTheoLo(nguon: { id: number; ct: string | null }, sids: readonly n
 /** Kết quả gần nhất · Case đang mở + người nhận gợi ý · Ý thức · việc còn dở của MỌI em một lần (không hỏi lại theo em). Mọi lệnh cùng MỘT lớp nguồn. */
 export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id: number; student_id: number; lop_dich_id: number | null }[],
   /** Nơi gọi cần lại `standing` vừa tính (điểm từng môn của phiếu) — giữ vào đây, không tính lại. */
-  giuStanding?: Map<number, Standing>): Map<number, TuDien> {
+  giuStanding?: Map<number, Standing>,
+  /** GD-20b: điểm Cuối khoá có cấu trúc (lớp thường đã thi Final) — cột Kết quả bảng GVBM. */
+  giuDiem?: Map<number, DiemHv>): Map<number, TuDien> {
   const out = new Map<number, TuDien>();
   if (!ds.length) return out;
   const conn = db();
   const sids = [...new Set(ds.map((l) => l.student_id))];
-  const ketQua = ketQuaTheoLo(nguon, sids, giuStanding);
+  const ketQua = ketQuaTheoLo(nguon, sids, giuStanding, giuDiem);
   const yt = trangThaiYThuc(sids);
   const cases: { id: number; student_id: number; title: string | null; category: string | null; owner: string | null }[] = [];
   theoLo(sids, (lo, ph) => {
@@ -263,7 +265,8 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
   const cung = cungGvTheoLo(thay);
   const chuaXacNhan = thay.filter((r) => !r.xac_nhan_luc);
   const stEm = new Map<number, Standing>();
-  const tuDien = tuDienTheoLo({ id: lopId, ct }, chuaXacNhan, stEm);
+  const diemCk = new Map<number, DiemHv>();
+  const tuDien = tuDienTheoLo({ id: lopId, ct }, chuaXacNhan, stEm, diemCk);
   /*
    * Cột "Kết quả" của bảng GVBM (mockup v11, chủ SP duyệt 03/11): FT — điểm TỪNG môn (W1 · W2 riêng) của lượt mới nhất có điểm, ✓ / ✗ so kỳ vọng của
    * chính lượt đó. `standing` đã tính ở phần tự điền; thêm MỘT câu đọc điểm các lượt đó cho cả phiếu. Phiếu đã xác nhận đọc bản chụp → không có.
@@ -272,6 +275,9 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
   const diemLuot = luotSt.length ? diemCuaLuot(luotSt) : new Map<number, { skill: string; band: number | null }[]>();
   const diemMonCua = (sid: number, mons: readonly string[]): DiemHv | null => {
     const st = stEm.get(sid);
+    /* GD-20b (chủ SP duyệt #1745: "cho điểm xuống dòng, làm rõ"): lớp thường — lượt + % tổng + % từng môn, ✓ / ✗ theo ngưỡng; từ `standing` đã tính (0 câu thêm). */
+    if (diemCk.has(sid)) return diemCk.get(sid)!;   // đã thi Cuối khoá: lượt Final, % tổng + từng môn, ✓ / ✗ theo ngưỡng
+    if (st?.mode === 'ratio') return diemTuStanding(st);
     const goc = st && st.mode === 'ielts_band' ? diemTuStanding(st) : null;
     if (!st || !goc) return null;
     const kv = st.expectation;
@@ -389,6 +395,26 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
     }
     writeAudit({ actorUserId: p.userId, action: 'ban_giao.ghi_mon', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name,
       before: cu ? { lenhId, mon, noiDung: cu.noi_dung } : undefined, after: { lenhId, mon, noiDung: text, dienThay: !q.gvbmDungMon } });
+  });
+}
+
+/**
+ * GD-20b (mockup ⑫ B2): "Hoàn tác" 10 giây sau "Chèn cho n em" — gỡ câu môn VỪA chèn (máy chủ không nhận câu rỗng). Cùng quyền `ghiMon`; chỉ xoá khi câu đang lưu
+ * đúng bằng `noiDung` (người khác / chính GV đã sửa → giữ, trả false). Có nhật ký; "GVBM chưa bàn giao" của phiếu đã chụp đếm lại.
+ */
+export function goMonVuaChen(p: Principal, lenhId: number, mon: string, noiDung: string): boolean {
+  const l = docLenhPhieu(lenhId);
+  const q = quyenBanGiao(p, l, mon, { ct: l.ct });
+  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(p, l.lop_nguon_id);
+  if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
+  if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
+  const text = String(noiDung ?? '').trim();
+  return tx(() => {
+    if (!text || !db().prepare('DELETE FROM ban_giao_mon WHERE lenh_id = ? AND mon = ? AND noi_dung = ?').run(lenhId, mon, text).changes) return false;
+    const tuDien = (db().prepare('SELECT tu_dien FROM lenh_chuyen_lop WHERE id = ?').get(lenhId) as any).tu_dien as string | null;
+    if (tuDien) db().prepare('UPDATE lenh_chuyen_lop SET tu_dien = ?, sua_luc = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(tuDien), gvbmChuaBanGiao: chuaBanGiaoCua(l) }), mocNghiepVu(), lenhId);
+    writeAudit({ actorUserId: p.userId, action: 'ban_giao.go_chen', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, before: { lenhId, mon, noiDung: text } });
+    return true;
   });
 }
 
