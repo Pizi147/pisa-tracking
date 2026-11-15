@@ -68,4 +68,4 @@ Không chữ bị cắt "…" trong thẻ. Turso: 0 câu đọc thêm.
 
 ## Kiểm
 
-`npm run check` đầy đủ: KẾT_QUẢ. `PISA_CHI_TEP=prHd`: 400 / 400.
+`npm run check` đầy đủ: xanh — 5802 kiểm tra + 74 tốc độ. `PISA_CHI_TEP=prHd`: 400 / 400.
