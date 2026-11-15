@@ -7,7 +7,7 @@ Seed demo 14/09, QL Nguyễn Khánh Vy (vai 2), Công việc › Việc quản l
 
 | Ảnh | Nội dung |
 |---|---|
-| `cap-giao-viec-1440-toi.png` | TRƯỚC: Tôi → danh sách chi nhánh phẳng · SAU: Tôi → **Gần đây 2** (người vừa chọn, gần nhất trước, ✓ ở người đang chọn) → Cùng chi nhánh MB 9 |
+| `cap-giao-viec-1440-toi.png` | TRƯỚC: Tôi → danh sách chi nhánh phẳng · SAU: Tôi → **Gần đây 1** (Lê Thanh Bình; đã chọn cả Nguyễn Khánh Vy = chính mình nhưng không đưa lên vì đã có dòng "Tôi" — [XM-1712]) → Cùng chi nhánh MB 10 |
 | `cap-giao-viec-375-sang.png` | như trên, màn chọn toàn màn 375 (⑤ A7): dòng cao 52 px (≥ 44), nhãn nhóm đúng |
 
 Không ✕ / ⋯ nào đổi; chữ không bị cắt.
@@ -18,7 +18,8 @@ Không ✕ / ⋯ nào đổi; chữ không bị cắt.
 |---|---|---|---|
 | Nhóm "Gần đây" ở đầu, có số | ⑤ A5 | `ChonNguoi` (`ui/PeoplePicker.tsx`) — MỘT chỗ cho mọi ô chọn chung (ChonNguoi, `ChonLoc`, `ChonLop`… đều đi qua đây); hàm thuần `xepGanDay` (`shared/domain/ganDay.ts`) | KHỚP |
 | Thứ tự "Tôi → Gần đây → Chi nhánh" | bảng kê dòng 24 | "Tôi" (dòng riêng) giữ trước, "Gần đây" sau | KHỚP |
-| Không nhân đôi | — | mục gần đây DỜI lên (rời nhóm cũ) → ↑ ↓ Enter đi qua mỗi người một lần, đúng thứ tự hiện | KHỚP (đo: 4 lần ↓ = Tôi · Nguyễn Khánh Vy · Lê Thanh Bình · Cao Khánh Linh) |
+| Không nhân đôi | — | mục gần đây DỜI lên (rời nhóm cũ) → ↑ ↓ Enter đi qua mỗi người một lần, đúng thứ tự hiện | KHỚP (đo 1440: 4 lần ↓ = Tôi · Lê Thanh Bình · Cao Khánh Linh · Đỗ Thu Hương) |
+| **[XM-1712]** chính mình hiện hai lần ("Tôi · Nguyễn Khánh Vy" + "Gần đây · Nguyễn Khánh Vy") | PTA 15/11 | ô có dòng "Tôi" → `xepGanDay(…, boId = người dùng)` không đưa chính mình lên Gần đây; vẫn ghi nhớ (ô không có "Tôi" vẫn đưa lên) | ĐÃ SỬA |
 | Chỉ khi chưa gõ | — | đang gõ → danh sách theo chữ như cũ | KHỚP |
 | Danh sách ngắn | ⑤ A6 (≤ 7 mục giữ dáng cũ) | < 8 mục → không nhóm | KHỚP |
 | Lưu ở đâu | [XM-4] | `localStorage` khoá `pisa-gan-day:{người dùng}:{nhóm}:{nguồn}:{tên ô}`, tối đa 3; đọc / ghi bọc try/catch, hỏng / bị chặn → không nhóm, ô chạy như cũ; 0 request | KHỚP |

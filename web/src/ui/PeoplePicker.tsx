@@ -271,7 +271,9 @@ export function ChonNguoi({
     setGanDay(moi);
     try { localStorage.setItem(khoaGanDay, JSON.stringify(moi)); } catch { /* chế độ riêng tư / đầy bộ nhớ: chỉ nhớ trong phiên */ }
   };
-  const rowsHien = useMemo(() => (term.trim() ? rows : xepGanDay(rows, ganDay, { ganDay: t('Gần đây'), khac: t('Khác') })), [rows, ganDay, term]);
+  const coToi = choToi && toiHopLe && !nhieu;   // ô có dòng "Tôi" → người dùng hiện tại không vào Gần đây (khỏi hiện hai lần)
+  const rowsHien = useMemo(() => (term.trim() ? rows : xepGanDay(rows, ganDay, { ganDay: t('Gần đây'), khac: t('Khác') }, coToi ? session?.user?.id : undefined)),
+    [rows, ganDay, term, coToi, session?.user?.id]);
   const loading = (!ds && !chiTutor && (tim ? tx.loading : xa.loading)) || (!!tutor && tt.loading && !tt.kq);
   const loiTai = ds || chiTutor ? null : tim ? tx.loi : xa.loi;
   const oId = id ?? `${uid}-o`;
@@ -310,12 +312,12 @@ export function ChonNguoi({
     const out: ChonNguoiOption[] = [];
     if (choTrong && !term.trim()) out.push({ kind: 'trong' });
     if (dau && !term.trim()) out.push({ kind: 'dau' });   // đang gõ tên → ↓ Enter chọn người khớp đầu, không phải dòng trống
-    if (choToi && toiHopLe && !nhieu) out.push({ kind: 'toi' });
+    if (coToi) out.push({ kind: 'toi' });
     for (const r of rowsHien) out.push({ kind: 'nguoi', row: r });
     if (choNgoai && !nhieu) out.push({ kind: 'ngoai', text: term.trim() });
     if (them) out.push({ kind: 'them' });
     return out;
-  }, [choTrong, choToi, toiHopLe, rowsHien, choNgoai, term, them, nhieu, dau]);
+  }, [choTrong, coToi, rowsHien, choNgoai, term, them, nhieu, dau]);
   /** Dòng "tên ngoài" chưa đủ 2 ký tự / dòng nơi gọi tắt (`row.tat`) / tới trần chọn nhiều: hiện mờ, bấm không làm gì, mũi tên bỏ qua. */
   const tat = (opt: ChonNguoiOption) => (opt.kind === 'ngoai' && opt.text.length < 2)
     || (opt.kind === 'nguoi' && (!!opt.row.tat || (day && !daChonIds.has(opt.row.id))));

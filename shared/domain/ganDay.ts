@@ -11,11 +11,12 @@ export type MucGanDay = { id: number; ten: string };
 /**
  * Dời (không nhân đôi) các mục gần đây CÓ trong danh sách hiện tại lên đầu, nhãn nhóm `nhan.ganDay`, gần nhất trước. Mục còn lại giữ nhóm và thứ tự;
  * mục không nhóm nhận `nhan.khac` để danh sách có ≥ 2 nhóm (nhãn hiện). Khớp theo id + tên (ô `ds` của nơi gọi có thể đánh id theo vị trí).
- * Mục tắt (`tat`) không đưa lên. Ít hơn `GAN_DAY_TU` mục hoặc không mục gần đây nào có mặt → giữ nguyên.
+ * Mục tắt (`tat`) không đưa lên. `boId` (người dùng hiện tại khi ô đã có dòng "Tôi") không đưa lên — vẫn nhớ, chỉ không hiện hai lần.
+ * Ít hơn `GAN_DAY_TU` mục hoặc không mục gần đây nào có mặt → giữ nguyên.
  */
-export function xepGanDay<T extends MucGanDay & { nhom?: string; tat?: unknown }>(rows: readonly T[], ganDay: readonly MucGanDay[], nhan: { ganDay: string; khac: string }): T[] {
+export function xepGanDay<T extends MucGanDay & { nhom?: string; tat?: unknown }>(rows: readonly T[], ganDay: readonly MucGanDay[], nhan: { ganDay: string; khac: string }, boId?: number): T[] {
   if (rows.length < GAN_DAY_TU || !ganDay.length) return [...rows];
-  const len = ganDay.flatMap((g) => rows.filter((r) => r.id === g.id && r.ten === g.ten && !r.tat).slice(0, 1));
+  const len = ganDay.filter((g) => g.id !== boId).flatMap((g) => rows.filter((r) => r.id === g.id && r.ten === g.ten && !r.tat).slice(0, 1));
   if (!len.length) return [...rows];
   const da = new Set(len);
   return [...len.map((r) => ({ ...r, nhom: nhan.ganDay })), ...rows.filter((r) => !da.has(r)).map((r) => (r.nhom ? r : { ...r, nhom: nhan.khac }))];

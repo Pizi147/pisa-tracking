@@ -30,6 +30,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(d.xepGanDay(rows.slice(0, 7), [{ id: 2, ten: 'Người 2' }], N).map((r: any) => r.id).join() === '1,2,3,4,5,6,7', '≤ 7 mục (⑤ A6): giữ nguyên');
     assert(d.xepGanDay(rows, [{ id: 2, ten: 'Tên khác' }], N)[0].id === 1, 'khớp id + tên (ô ds đánh id theo vị trí)');
     assert(d.xepGanDay(rows.map((r: any) => (r.id === 2 ? { ...r, tat: 'đã đủ' } : r)), [{ id: 2, ten: 'Người 2' }], N)[0].id === 1, 'mục tắt không đưa lên');
+    const boToi = d.xepGanDay(rows, [{ id: 5, ten: 'Người 5' }, { id: 2, ten: 'Người 2' }], N, 5);
+    assert(boToi[0].id === 2 && boToi.filter((r: any) => r.nhom === 'Gần đây').length === 1 && boToi.filter((r: any) => r.id === 5).length === 1, 'có dòng "Tôi": người dùng hiện tại không lên Gần đây, vẫn còn một lần trong danh sách');
     let g: any[] = [];
     for (const id of [1, 2, 3, 2, 4]) g = d.themGanDay(g, { id, ten: `Người ${id}` });
     assert(g.map((m) => m.id).join() === '4,2,3', `gần nhất trước, không trùng, tối đa ${d.GAN_DAY_TOI_DA}: ${JSON.stringify(g)}`);
@@ -38,6 +40,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/for \(const r of rowsHien\) out\.push/.test(pp) && /term\.trim\(\) \? rows : xepGanDay\(/.test(pp), 'phím ↑ ↓ Enter đi theo `options` dựng từ danh sách đã xếp; đang gõ → không nhóm Gần đây');
     assert((pp.match(/localStorage\.(get|set)Item/g) ?? []).length === 2 && /try \{ return khoaGanDay \?/.test(pp) && /try \{ localStorage\.setItem/.test(pp), 'localStorage bọc try/catch');
     assert(/pisa-gan-day:\$\{session\.user\.id\}/.test(pp) && !/api\.(get|post)\([^)]*gan/.test(pp), 'theo người dùng, không gọi máy chủ');
+    assert(/coToi \? session\?\.user\?\.id : undefined/.test(pp) && /if \(coToi\) out\.push\(\{ kind: 'toi' \}\)/.test(pp), 'bỏ chính mình khỏi Gần đây đúng khi ô có dòng "Tôi"');
   });
 
   check('QC-GAN · Q74 / Q75 / Q77 Cuối khoá + Q83 Xuất báo cáo PH: câu khớp mã (hạn chốt từ mocLoTrinh, Tutor từ mocThuong, 7 ngày của việc Admin) và gắn đúng chỗ', () => {
