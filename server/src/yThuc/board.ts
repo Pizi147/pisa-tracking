@@ -43,7 +43,7 @@ export type DongEm = {
    *  · `thuHoi`: lần xử lý đang xin thu hồi (`cho`, chờ QL) hoặc lần đã thu hồi mới hơn lần xử lý gần nhất (luật 5 — giữ dòng, lịch sử).
    *  · `baoPh`: việc Báo PH mới nhất của em (TVV) — trạng thái đọc cùng tên với panel (`nhanTrangThaiBaoPh`).
    */
-  viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp }[];
+  viPhamCho: { id: number; ngay: string; ten: string; trangThai: TrangThaiVp; /** GD-19: được yêu cầu xử lý (chưa "Không xử lý") — người ghi. */ yeuCau?: string | null }[];
   thuHoi: { id: number; nhan: string; cho: boolean } | null;
   /** UI-2: `daChinh` = hạn đã sửa (mockup K1 "hạn 10/11 · đã chỉnh"). */
   baoPh: { id: number; nhan: string; han: string; trangThai: 'mo' | 'xong' | 'bo'; nhanTrangThai: string; quaHan: boolean; ngayXong: string | null; coTheGhi: boolean; daChinh: boolean } | null;
@@ -59,6 +59,8 @@ export type DongThoiGianYt =
       viPham: string; trangThai: TrangThaiVp; nhanTrangThai: string; han: string | null; nguoiGhi: string | null;
       /** UI-2 (mockup K6 "Ai · lúc nào" của dòng Đã xem). */
       xemBoi: string | null; xemLuc: string | null; trongChuoi?: boolean;
+      /** LG-12 / GD-19: "Không xử lý" (ngày, lý do, người) — dòng Lịch sử ghi trạng thái + lý do. */
+      khongXuLy?: { luc: string; lyDo: string; boiName: string | null } | null;
       /** Y-THUC-V2 (mockup 11/11): mã môn (chip) + mô tả cắt ngắn cho hộp rê — từ chính câu đã đọc, không thêm câu. */
       skill: string | null; moTa: string;
       /** TINH-HINH: "Chỉ nhắc nhở" — ngoài luật, không việc (dòng "Nhắc nhở"). */
@@ -169,7 +171,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
       loai: 'vi-pham', id: v.id, studentId: v.studentId, ten: v.studentName, ngay: v.occurredOn, nhom: v.categoryLabel, category: v.category,
       mon: v.skillLabel, viPham: v.ten, trangThai: v.trangThai, nhanTrangThai: v.nhanTrangThai, han: v.han, nguoiGhi: v.reportedByName,
       xemBoi: v.ghiNhanBoiName, xemLuc: v.ghiNhanLuc, ...dau(v.studentId, v.cycleId),
-      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}),
+      skill: v.skill, moTa: (v.moTa ?? '').slice(0, 240), ...(v.chiNhac ? { chiNhac: true } : {}), ...(v.khongXuLy ? { khongXuLy: v.khongXuLy } : {}),
     });
   }
   /* LUAT-5: lần "Đã thu hồi" vẫn hiện (giữ dòng + lịch sử) — chỉ ở đây, không vào số nào. */
@@ -278,7 +280,8 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     if (cuaLanXin.get(v.studentId)?.has(v.id)) { dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai }); continue; }
     /* UI-2 (mockup K1 / K4): cả vi phạm đang trong đề xuất chờ QL — hàng "Chờ QL duyệt" liệt kê vi phạm của lần. */
     if (v.trangThai === 'moi' || v.trangThai === 'can_xu_ly' || v.trangThai === 'qua_han' || v.trangThai === 'cho_duyet') {
-      dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai });
+      dongCuaEm.get(v.studentId)?.viPhamCho.push({ id: v.id, ngay: v.occurredOn, ten: v.ten, trangThai: v.trangThai,
+        ...(v.yeuCauXuLy && !v.khongXuLy ? { yeuCau: v.reportedByName ?? '' } : {}) });
     }
   }
   const dong = dongThoiGian(ids, trang, { danhDauChuoi: true, p, homNay });

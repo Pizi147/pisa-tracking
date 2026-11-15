@@ -1710,6 +1710,7 @@ const EN_B_MAY = {
   'GVCN không xử lý · {full_name} · {ten}': 'Homeroom teacher declined · {full_name} · {ten}',
   '{soBatBuoc} vi phạm được yêu cầu xử lý': (b) => `${b.soBatBuoc} incident(s) flagged for action`,
   'Không xử lý': 'Not handled',
+  '{x} yêu cầu · bậc kế tiếp: {ke}': 'requested by {x} · next level: {ke}',
   'Xem lại Case {label} · {x}': 'Review case {label} · {x}',
   'Xem lại sau hỗ trợ{x}': 'Review after support{x}',
   'Xác nhận Case: {ten}': 'Confirm case: {ten}',
