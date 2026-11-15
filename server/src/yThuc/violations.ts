@@ -5,6 +5,7 @@ import {
   type ViolationCategory, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { chotHanXuLy, trangThaiYThuc, type EmYThuc } from './trangThai.ts';
+import { hanTai, hanTheoNgay } from '../../../shared/domain/index.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { baoKhiGhiViPham, dangBatBuoc, laGvcnDangHoc } from './xuLy.ts';
 import type { Principal } from '../permissions.ts';
@@ -213,6 +214,18 @@ export function batBuocChonMon(p: Principal, classId: number | null, today: stri
   return n >= 2 || (n === 0 && !p.roleKeys.some((k) => k === 'manager' || k === 'system_admin'));
 }
 const THIEU_MON = 'Chọn môn của vi phạm.';
+
+/**
+ * GD-19 (mockup ⑪ K5): dòng công tắc "Yêu cầu GVCN xử lý" — GVCN đang hiệu lực của lớp em (tên cuối dòng), người ghi có phải GVCN (ẩn công tắc),
+ * hạn nếu bật (= hạn luật 3 tính từ hôm nay, cùng hàm `hanTai`). MỘT câu, đi cùng request `/violations/similar` form đã gọi.
+ */
+export function gvcnChoForm(p: Principal, classId: number | null, today: string = demoToday()): { gvcn: { id: number; ten: string } | null; laGvcn: boolean; hanYeuCau: string } {
+  const r = classId ? db().prepare(
+    `SELECT u.id, u.full_name FROM teacher_assignments ta JOIN users u ON u.id = ta.user_id
+      WHERE ta.class_id = ? AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1`,
+  ).get(classId, today, today) as any : null;
+  return { gvcn: r ? { id: r.id, ten: r.full_name } : null, laGvcn: !!r && r.id === p.userId, hanYeuCau: hanTheoNgay(today, hanTai('xu_ly_vi_pham', today).ngay) };
+}
 const YC_NHAC = '"Chỉ nhắc nhở" không yêu cầu GVCN xử lý — bỏ một trong hai.';
 
 // ---------------------------------------------------------------- ghi (V01–V08)

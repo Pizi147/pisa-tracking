@@ -417,7 +417,8 @@ export function dongThang(bac: number, khai: { bac: number } | null): {
  * Dòng KHÔNG phải việc của người xem bị bỏ khi em đã có dòng là việc của người xem; dòng Xong bị bỏ khi em còn dòng ở nhóm khác.
  */
 /** YT-a — dòng thuộc Lịch sử Ý thức: vi phạm đã xem · lần xử lý xong / đã thu hồi (máy chủ đếm `soLs`, web vẽ — một cửa). */
-export const laDongLs = (x: { loai: string; status?: string; trangThai?: string }) => (x.loai === 'xu-ly' ? x.status === 'done' || x.status === 'thu_hoi' : x.trangThai === 'da_ghi_nhan');
+/* GD-19 (mockup ⑪ K7, PTA quyết XM-2): vi phạm KHÔNG việc (Mới — bỏ "Đã xem", LG-11 · "Không xử lý" — LG-12 · Đã xem cũ) nằm ở Lịch sử, nút Xác nhận xử lý tại dòng. */
+export const laDongLs = (x: { loai: string; status?: string; trangThai?: string }) => (x.loai === 'xu-ly' ? x.status === 'done' || x.status === 'thu_hoi' : x.trangThai === 'da_ghi_nhan' || x.trangThai === 'moi');
 
 export function locCanLam<T extends { sid: number; cuaToi: boolean }, X extends { sid: number }>(nhom: T[][], xong: X[]): { nhom: T[][]; xong: X[]; soEm: number } {
   const cuaToi = new Set(nhom.flat().filter((x) => x.cuaToi).map((x) => x.sid));

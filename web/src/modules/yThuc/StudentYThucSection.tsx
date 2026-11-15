@@ -155,7 +155,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const batBuoc = (d.nhom === 'bat_buoc' || d.nhom === 'qua_han') && !quaHanChiXem(d.nhom, d);
   const choGv = d.viPham.filter((v) => CHO_GV.has(v.trangThai)).sort((a, b) => a.occurredOn.localeCompare(b.occurredOn) || a.id - b.id);
   const xemIds = choGv.filter((v) => v.trangThai === 'moi' || (v.trangThai === 'qua_han' && v.lyDoQuaHan === 'xem')).map((v) => v.id);
-  const nhomCho = batBuoc ? d.nhom : choGv.length ? (d.nhom === 'qua_han' ? 'qua_han' : 'moi') : null;
+  /* GD-19 (mockup ⑪ K7b): "Đang chờ" chỉ khi có VIỆC (bắt buộc / được yêu cầu); vi phạm Mới không việc nằm ở Lịch sử (`laDongLs`), nút Xác nhận xử lý tại dòng. */
+  const nhomCho = batBuoc ? d.nhom : null;
   const kCho = nhomCho ? khoi({
     key: 'cho', vp: choGv.map(vpDong), ph: null, moiIds: batBuoc ? undefined : xemIds,
     gv: d.hang.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(d.hang.tuChoi!.id)}>{t('QL từ chối')}</BadgeViec>} phu={[bacNgan(dich(d.hang.tuChoi.nhan))]} /> : null,
@@ -233,12 +234,14 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
       if (x.loai === 'vi-pham') {
         return { ngay: x.ngay, node: khoi({
           key: `ls-v${x.id}`, vp: vpCua([x.id]), nen: lsVua.includes(x.id) ? 'vua' : undefined, ph: null, ls: true,
-          gv: <OBuoc badge={<BadgeViec tong="xam">{t('Đã xem')}</BadgeViec>} phu={[x.xemLuc && x.xemBoi ? `${lucVn(x.xemLuc)} · ${x.xemBoi}` : x.xemBoi]} />,
-          /* Rà 11/11 G3-6: vi phạm đã xem vẫn xử lý ngay được. */
+          /* GD-19 (mockup ⑪ K7b): "Không xử lý · dd/mm" + lý do · Mới: không nhãn bước (bỏ "Đã xem") · Đã xem: dữ liệu trước LG-11. */
+          gv: x.khongXuLy ? <OBuoc badge={<BadgeViec tong="xam" duong="dut">{t('Không xử lý · {ngay}', { ngay: ngay(x.khongXuLy.luc.slice(0, 10), homNay) })}</BadgeViec>} phu={[`«${x.khongXuLy.lyDo}»`, x.khongXuLy.boiName]} />
+            : x.trangThai === 'moi' ? null
+            : <OBuoc badge={<BadgeViec tong="xam">{t('Đã xem')}</BadgeViec>} phu={[x.xemLuc && x.xemBoi ? `${lucVn(x.xemLuc)} · ${x.xemBoi}` : x.xemBoi]} />,
+          /* Rà 11/11 G3-6: vi phạm không việc vẫn xử lý ngay được. */
           tiep: d.canManage ? (
             <span className="flex flex-wrap gap-x-3">
               {x.trongChuoi !== false && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[30px]" aria-label={`${t('Xác nhận xử lý')} · ${x.viPham}`} onClick={() => mo({ loai: 'xu-ly', studentId, tick: [x.id] })}>{t('Xác nhận xử lý')}</button>}
-              <button type="button" className={LINK} disabled={dangGhi} aria-label={`${t('Bỏ xem')} · ${x.viPham}`} onClick={() => void daXem([x.id], true)}>{t('Bỏ xem')}</button>
             </span>
           ) : <span className="text-slate-500">—</span>,
         }) };

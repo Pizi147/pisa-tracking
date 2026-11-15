@@ -126,12 +126,13 @@ export function thongBaoCua(userId: number) {
 
 /** DON-LUONG A6: "Đánh dấu đã đọc" nhiều dòng — MỘT câu `json_each`, chỉ dòng của CHÍNH người gọi (id người khác bỏ qua, không báo lỗi lộ). */
 export const DOC_NHIEU_TOI_DA = 200;
-export function docNhieu(userId: number, vao: unknown, ngay: string): number {
+export function docNhieu(userId: number, vao: unknown, ngay: string | null): number {
   const ids = Array.isArray(vao) ? vao.map(Number) : null;
   if (!ids?.length || ids.length > DOC_NHIEU_TOI_DA || ids.some((n) => !Number.isInteger(n) || n <= 0)) {
     throw loi(400, 'Danh sách thông báo không hợp lệ (tối đa {n} dòng).', { n: DOC_NHIEU_TOI_DA });
   }
-  return Number(db().prepare(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS NULL AND id IN (SELECT value FROM json_each(?))`)
+  /* GD-19: `ngay` null = BỎ đọc (Hoàn tác "Đã xem hết" 10 giây) — cùng một câu, chỉ dòng của người gọi. */
+  return Number(db().prepare(`UPDATE notifications SET read_at = ? WHERE user_id = ? AND read_at IS ${ngay ? 'NULL' : 'NOT NULL'} AND id IN (SELECT value FROM json_each(?))`)
     .run(ngay, userId, JSON.stringify(ids)).changes ?? 0);
 }
 

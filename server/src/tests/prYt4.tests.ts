@@ -1054,7 +1054,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (9) · GVBM (canManage = false) không thấy Ghi nhận / Xác nhận xử lý / Xác nhận cấp bậc trên tab lớp; vẫn có + Vi phạm / Nhắc nhở (canRecord)', () => {
     const s = docW(`${YT}/ClassYThucCard.tsx`);
     /* Y-THUC-V2: Bước tiếp — Xác nhận xử lý / Đề xuất / Đã xem chỉ khi canManage; Khai bậc trong hộp thang theo hv.canManage. */
-    assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage && ids\.length/.test(s)
+    assert(/d\.canManage && !x\.deXuat/.test(s) && /d\.canManage \? nutChinh\(t\('Xác nhận xử lý'\)/.test(s)   /* GD-19: \"Đã xem\" bỏ; vi phạm không việc — nút Xác nhận xử lý theo canManage */
       && /const coNut = d\.canManage/.test(docW(`${YT}/ThangYThuc.tsx`)) && /hv\?\.canManage && <button/.test(s) && /\.\.\.\(d\.canManage \? \[\{ key: 'cap-bac', nhan: t\('Khai \/ sửa cấp bậc'\)/.test(s), 'ẩn theo quyền');   // TINH-HINH (mockup v20): Khai / Chọn nhiều trong ⋯, chỉ khi canManage
     assert(/d\.canRecord && <button[\s\S]{0,200}?\+ Vi phạm \/ Nhắc nhở/.test(s), '+ Vi phạm / Nhắc nhở');
   });
