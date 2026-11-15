@@ -525,10 +525,15 @@ export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: nu
   const hv = hocVien(studentId);
   const homNay = demoToday();
   const nhom = VIOLATION_CATEGORY_LABEL[category as ViolationCategory] ?? category;
-  /* LG-12: người ghi yêu cầu xử lý → GVCN có việc `yt_xu_ly` ngay; tin "Cần làm" (`discipline`, còn việc tới khi hết bắt buộc). Dedup theo vi phạm. */
-  if (em.gvcnId && o.yeuCau) {
-    notify({ userId: em.gvcnId, kind: 'discipline', title: `Yêu cầu xử lý · ${hv.full_name} · ${nhom} · ${p.fullName} ghi · trước ${shortDate(em.viPham.get(violationId)?.han ?? em.han, homNay)}`,
-      entityType: 'student', entityId: studentId, dedupKey: `yt-yc:${violationId}`, duong: duongXuLy(studentId) });
+  /* LG-12: người ghi yêu cầu xử lý → GVCN (lớp không GVCN: Quản lý chi nhánh, trừ người ghi) có việc `yt_xu_ly` ngay; tin "Cần làm" (`discipline`,
+     còn việc tới khi hết bắt buộc). Dedup theo vi phạm. Không tìm được hạn (em Tạm dừng…) thì bỏ vế "trước". */
+  if (o.yeuCau) {
+    const han = em.viPham.get(violationId)?.han ?? em.han;
+    const nhan = em.gvcnId ? [em.gvcnId] : hv.branch_id ? quanLyCuaChiNhanh(hv.branch_id).filter((u) => u !== p.userId) : [];
+    for (const userId of nhan) {
+      notify({ userId, kind: 'discipline', title: han ? `Yêu cầu xử lý · ${hv.full_name} · ${nhom} · ${p.fullName} ghi · trước ${shortDate(han, homNay)}` : `Yêu cầu xử lý · ${hv.full_name} · ${nhom} · ${p.fullName} ghi`,
+        entityType: 'student', entityId: studentId, dedupKey: `yt-yc:${violationId}`, duong: duongXuLy(studentId) });
+    }
     return;
   }
   if (em.gvcnId && em.soBatBuoc > 0 && !truocBatBuoc) {
@@ -546,14 +551,17 @@ export function baoKhiGhiViPham(p: Principal, studentId: number, violationId: nu
 // ---------------------------------------------------------------- "Không xử lý" vi phạm được yêu cầu (LG-12, chủ SP lời 47, 48)
 
 const DONG_KX = `SELECT id, student_id, reported_by, ten, category, yeu_cau_xu_ly, khong_xu_ly_luc, khong_xu_ly_ly_do FROM violations WHERE id = ?`;
-function viPhamYeuCau(p: Principal, violationId: number): any {
+function viPhamYeuCau(p: Principal, violationId: number): { r: any; em: EmYThuc } {
   const r = db().prepare(DONG_KX).get(violationId) as any;
   if (!r) throw notFound('Không tìm thấy vi phạm');
   requireManageDiscipline(p, r.student_id, MANAGE_MESSAGE);
-  const t = emCua(r.student_id).viPham.get(r.id);
+  const em = emCua(r.student_id);
+  const t = em.viPham.get(r.id);
   if (t?.t === 'da_xu_ly' || t?.t === 'cho_duyet') throw conflict('Vi phạm này đã được xử lý hoặc đang chờ QL duyệt — mở lại panel.');
-  return r;
+  return { r, em };
 }
+/** LG-12 (rà #1735 P1): Hoàn tác "Không xử lý" chỉ trong 60 giây — sau đó đổi ý thì Xác nhận xử lý (lời 48). */
+export const HOAN_TAC_KHONG_XU_LY_MS = 60_000;
 
 /**
  * GVCN (hoặc QL) "Không xử lý" một vi phạm ĐƯỢC YÊU CẦU, lý do ≥ 8 ký tự → việc `yt_xu_ly` do yêu cầu xong; người ghi nhận MỘT tin (lời 48: báo lại là xong).
@@ -561,24 +569,21 @@ function viPhamYeuCau(p: Principal, violationId: number): any {
  * Tính là phản hồi (`phan_hoi_ngay`) cho Phân tích "Xử lý vi phạm đúng hạn". Lịch sử: `violation_history` + nhật ký.
  */
 export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown }): { ok: true; violation: ViolationView } {
-  const r = viPhamYeuCau(p, violationId);
+  const { r, em: em0 } = viPhamYeuCau(p, violationId);
   if (!r.yeu_cau_xu_ly) throw badRequest('Vi phạm này không có yêu cầu xử lý.');
   if (r.khong_xu_ly_luc) throw conflict('Vi phạm này đã ghi "Không xử lý" — mở lại panel.');
   const lyDo = String(v.lyDo ?? '').trim();
   if (lyDo.length < 8) throw badRequest('Lý do không xử lý: ít nhất 8 ký tự (gửi cho người ghi vi phạm).');
   const lyDoLuu = chuTuDo(lyDo, 'Lý do', 500)!;
+  /* Rà #1735 P2: vi phạm đang bắt buộc THEO LUẬT 3 (không chỉ vì yêu cầu) → chặn trước khi ghi, trạng thái đã nạp. */
+  if (em0.batBuocLuat.has(r.id)) throw badRequest('Em đang có 3 vi phạm trong 2 tuần — phải Xác nhận xử lý theo luật, không ghi "Không xử lý" được.');
   const hv = hocVien(r.student_id);
   const luc = nowIso();
   tx(() => {
     db().prepare('UPDATE violations SET khong_xu_ly_luc = ?, khong_xu_ly_boi = ?, khong_xu_ly_ly_do = ? WHERE id = ?').run(luc, p.userId, lyDoLuu, r.id);
-    xoaNho();
-    const em = emCua(r.student_id);
-    const sau = em.viPham.get(r.id);
-    if (sau && (sau.t === 'can_xu_ly' || sau.lyDoQuaHan === 'xu-ly')) {
-      throw badRequest('Em đang có 3 vi phạm trong 2 tuần — phải Xác nhận xử lý theo luật, không ghi "Không xử lý" được.');
-    }
     ghiPhanHoi([r.id]);
-    chotHanXuLy([r.student_id], { trang: new Map([[r.student_id, em]]) });
+    xoaNho();
+    chotHanXuLy([r.student_id]);
     addHistory(r.id, 'khong_xu_ly', null, lyDoLuu, p.userId, lyDoLuu);
     writeAudit({ actorUserId: p.userId, action: 'violation.khong_xu_ly', entityType: 'violation', entityId: r.id,
       entityLabel: `${hv.student_code} · Không xử lý`, after: { lyDo: lyDoLuu } });
@@ -594,8 +599,11 @@ export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown
 
 /** Hoàn tác "Không xử lý": vi phạm về được yêu cầu (việc `yt_xu_ly` lại có, hạn cũ); tin chưa đọc của người ghi bị gỡ; lịch sử + nhật ký. */
 export function hoanTacKhongXuLy(p: Principal, violationId: number): { ok: true; violation: ViolationView } {
-  const r = viPhamYeuCau(p, violationId);
+  const { r } = viPhamYeuCau(p, violationId);
   if (!r.khong_xu_ly_luc) throw conflict('Vi phạm này chưa ghi "Không xử lý" — mở lại panel.');
+  if (Date.now() - Date.parse(r.khong_xu_ly_luc) > HOAN_TAC_KHONG_XU_LY_MS) {
+    throw conflict('Quá thời gian Hoàn tác — muốn xử lý thì bấm Xác nhận xử lý.');
+  }
   const hv = hocVien(r.student_id);
   tx(() => {
     db().prepare('UPDATE violations SET khong_xu_ly_luc = NULL, khong_xu_ly_boi = NULL, khong_xu_ly_ly_do = NULL WHERE id = ?').run(r.id);

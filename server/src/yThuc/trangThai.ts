@@ -44,6 +44,8 @@ export type EmYThuc = {
   soMoi: number; soBatBuoc: number;
   /** LG-12: số vi phạm bắt buộc vì được YÊU CẦU (chưa "Không xử lý") · em có bắt buộc theo luật 3 vi phạm / 2 tuần không (chữ việc `yt_xu_ly`). */
   soYeuCau: number; theoLuat: boolean;
+  /** LG-12: vi phạm bắt buộc THEO LUẬT 3 vi phạm / 2 tuần (bỏ phần "được yêu cầu") — `khongXuLy` chặn trước khi ghi. */
+  batBuocLuat: ReadonlySet<number>;
   /** Hạn sớm nhất trong các vi phạm Mới chưa ai Ghi nhận (V4-5). */
   hanXem: string | null;
   /**
@@ -198,8 +200,10 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     const batBuoc = [...viPham.values()].filter((x) => x.t === 'can_xu_ly' || x.lyDoQuaHan === 'xu-ly');
     const moi = [...viPham.values()].filter((x) => x.t === 'moi' || x.lyDoQuaHan === 'xem');
     const dangBb = (id: number) => { const x = viPham.get(id); return !!x && (x.t === 'can_xu_ly' || x.lyDoQuaHan === 'xu-ly'); };
+    /* LG-12: bản đồ luật 3 (bỏ cờ yêu cầu) — tính MỘT lần, chỉ khi em có vi phạm còn được yêu cầu; không có thì chính là `bb`. */
+    const luat = vao.some((v) => v.yeuCau && !v.khongXuLy) ? batBuocTu(vao.map((v) => ({ ...v, yeuCau: false }))) : bb;
     const soYeuCau = vao.filter((v) => v.yeuCau && !v.khongXuLy && dangBb(v.id)).length;
-    const theoLuat = soYeuCau > 0 && [...batBuocTu(vao.map((v) => ({ ...v, yeuCau: false }))).keys()].some(dangBb);
+    const theoLuat = [...luat.keys()].some(dangBb);
     const minHan = (a: TrangThaiViPhamKq[]) => a.map((x) => x.han).filter((h): h is string => !!h).sort()[0] ?? null;
     const route = hienTai?.route ?? null;
 
@@ -217,7 +221,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       soXuLyChuoi: xongChuoi.length,
       viPham, dsViPham: dsVp, xuLy: dsXl, thuHoi: tatCaXl.filter((m) => m.status === 'thu_hoi'),
       nhom: nhomEm({ ds, coDeXuatCho: !!dx, xuLyGanNhat: xong }, homNay),
-      han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi), soYeuCau, theoLuat: soYeuCau === 0 ? batBuoc.length > 0 : theoLuat,
+      han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi), soYeuCau, theoLuat, batBuocLuat: new Set(luat.keys()),
       deXuat: dx ? { id: dx.id, kind: dx.kind, customName: dx.customName, status: dx.status, han: hanDx, quaHan: dxQuaHan } : null,
       daDuyet, coChoDuyet: !!choDuyet,
       xuLyGanNhat: xong,
