@@ -179,3 +179,5 @@ figure:has(> .dt) figcaption { white-space:normal; }
 
 .an { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
 .b:disabled[aria-pressed="true"] { background:none; box-shadow:none; }
+.pn-ngu .dang-loc { color:var(--accent); font-weight:600; }
+.pn-ngu .dang-loc b { font-family:var(--phong-so); }
