@@ -49,6 +49,13 @@ B2 (dải sau "Chèn cho n em" ở bảng GVBM): seed chỉ có một ô GVBM kh
 - Chân bảng GVBM: mở từ Công việc (có việc kế) → "Việc tiếp ›" luôn là nút chính bên phải (trước: nút thường khi còn em thiếu); mở từ hồ sơ lớp → chỉ "Đóng". Chụp lại b1 + e2 từ Công việc.
 - Tiêu đề panel 375 bị cắt "… MB F…" (PTA: sửa luôn): `KhungPanel` đầu panel dạng thường — < 640 px tiêu đề xuống dòng, không "…", ✕ cùng hàng góc phải trên; ≥ 640 một dòng như cũ. Soi 3 panel 375: Bàn giao môn R · G+V · MB FOU 22 (2 dòng) · Bàn giao MB FT 101 · R cho Phạm Thu Trang (2 dòng) · Báo cáo PH · MB FT 101 · Nhận xét chung (1 dòng, ✕ ở hàng "‹ Quay lại") — không panel nào còn cắt. Chụp lại e2.
 
+## Sửa theo chủ SP (duyệt #1745: "cho điểm xuống dòng và làm rõ")
+- Cột Kết quả bảng GVBM: dòng 1 lượt + tổng đậm, ✓ / ✗ màu như ô điểm ("Final Test ✗ 66 %"); dòng 2 điểm từng môn lưới hai cột, chữ số đều, môn đang bàn giao đậm (`KetQuaBanGiao`). Lớp thường: máy chủ trả điểm có cấu trúc (`diemMon`) — đã thi Cuối khoá lấy từ chính dữ liệu `chuCuoiKhoaLo` vừa đọc, chưa thi lấy `standing` đã tính → 0 câu thêm. FT giữ kỹ năng bàn giao, thêm Overall ở dòng 1.
+- Độ rộng cột: Kết quả bớt (một cột: 1 · 1 · 2,2 phần; hai cột: 170 · 150 · còn lại), Thông tin bàn giao rộng hơn.
+- Ô bàn giao thành ô tự giãn (textarea một dòng tự cao theo chữ), không cắt câu; Enter không xuống dòng (một câu).
+- Panel GVCN / đổi GV: Kết quả nằm trong "Tự điền · chỉ đọc" (thành phần khác, câu chữ) — không đổi ở PR này.
+- Chụp lại b1 + e2.
+
 ## Máy chủ
 - `POST /lenh-chuyen/:id/ban-giao-mon/go-chen` · `POST /ban-giao-gv/:id/gop-y/go-chen`: Hoàn tác "Chèn cho n em" — máy chủ không nhận câu rỗng nên cần đường gỡ. Cùng quyền ghi; chỉ xoá khi câu đang lưu ĐÚNG bằng câu vừa chèn (đã sửa → giữ, `ok: false`); có nhật ký (`ban_giao.go_chen`, `ban_giao_gv.go_chen`). Nhận xét chung GVCN: dùng đường nháp sẵn có (nhận rỗng).
 
