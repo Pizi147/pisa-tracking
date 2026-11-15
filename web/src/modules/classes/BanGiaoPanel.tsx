@@ -451,8 +451,8 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
       chan={{
         daSua,
         huy: { nhan: t('Đóng'), onClick: dongSauKhiLuu(hang, dongHan, baoChuaLuu, true) },
-        /* GD-4d: ô tự lưu khi rời ô — còn việc kế thì "Việc tiếp ›" (chờ ô đang lưu như Đóng); hết em thiếu → nút chính. */
-        chinh: onTiep ? <button type="button" className={`btn ${conThieu.length ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={dongSauKhiLuu(hang, () => { onDone(); onTiep(); }, baoChuaLuu, true)}>{t('Việc tiếp ›')}</button> : undefined,
+        /* GD-4d: ô tự lưu khi rời ô — còn việc kế thì "Việc tiếp ›" (chờ ô đang lưu như Đóng). GD-20b (mockup ⑫ B1 · E2, PTA rà #1745): luôn là nút chính, phải. */
+        chinh: onTiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={dongSauKhiLuu(hang, () => { onDone(); onTiep(); }, baoChuaLuu, true)}>{t('Việc tiếp ›')}</button> : undefined,
         trai: (
           <span className="flex flex-wrap items-center gap-x-3 text-[13px] text-slate-400">
             <span className="tabular-nums">{hai ? t('Tự lưu khi rời ô') : t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>

@@ -6,10 +6,10 @@ Dùng chung thành phần của GD-20a (`web/src/ui/KhoiDaGhi.tsx`: `KhoiDaGhi` 
 Seed không có đủ ca → thêm vào DB demo CỤC BỘ (không commit, như session mockup): mô tả Case R / W2 cho vài em MB FOU 22 · MB FT 103, Tình hình học tập 2 em MB FT 103, một việc bàn giao đổi GV (MB FT 101 · R: GV 7 → GV 9); xoá câu R seed sẵn của phiếu MB FOU 22.
 | Ảnh | Khung | Web |
 |---|---|---|
-| `cap-1440-toi-b1.png` | B1 | GV 8 · Bàn giao môn R (MB FOU 22): ô trống có dòng "Mô tả Case · câu" + Chèn; "Cùng GV" không có dòng |
+| `cap-1440-toi-b1.png` | B1 | GV 8 · mở từ Công việc › Vận hành › Bàn giao môn R · G+V (MB FOU 22, bảng hai cột vì GV dạy cả R và G+V): ô trống có dòng "Mô tả Case · câu" + Chèn; "Cùng GV" không dòng; chân Đóng · Việc tiếp › (nút chính) |
 | `cap-1440-toi-b3.png` | B3 | GV 10 (GVCN MB FT 103): "Chèn cho 2 em" đầu danh sách, khối "Bạn đã ghi tháng này" cạnh Nhận xét chung, nút "GVCN xác nhận bàn giao" giữ |
 | `cap-1440-toi-b4.png` | B4 | GV 7 · đổi GV MB FT 101 · R sau "Chèn cho 9 em": dải "✓ Đã chèn 9 em · Hoàn tác", chip "Đã chèn", khối cạnh ô góp ý, "Xác nhận bàn giao" giữ |
-| `cap-375-sang-e2.png` | E2 | 375 sáng · thẻ từng em, Chèn 44 px |
+| `cap-375-sang-e2.png` | E2 | 375 sáng · mở từ Công việc · thẻ từng em, Chèn 44 px, chân Đóng · Việc tiếp › |
 
 B2 (dải sau "Chèn cho n em" ở bảng GVBM): seed chỉ có một ô GVBM không "Cùng GV" nên nút không hiện (cần ≥ 2); cùng `useChenLo` + `DaiChenLo` với B4 (ảnh b4) — bấm thử ở mục "Bấm thử".
 
@@ -43,6 +43,11 @@ B2 (dải sau "Chèn cho n em" ở bảng GVBM): seed chỉ có một ô GVBM kh
 | GVCN viết Nhận xét chung (nháp), Viết / Điền thay câu GVBM, Xác nhận từng em, Sửa → Huỷ thay đổi / Lưu, ↑↓ | có | có + **Chèn** cạnh ô, **Chèn cho n em** + Hoàn tác | MỚI |
 | Đổi GV: góp ý từng em, Nhận xét chung cả lớp, Em tiếp ↓, Xác nhận bàn giao, Xác nhận · việc tiếp › | có | có + **Chèn** cạnh ô, **Chèn cho n em** + Hoàn tác, chip "Đã chèn" | MỚI |
 | Tự điền · chỉ đọc (`TuDien`) | có | có | GIỮ |
+
+## Sửa sau rà PTA (#1745)
+- [XM-c] PTA đồng ý.
+- Chân bảng GVBM: mở từ Công việc (có việc kế) → "Việc tiếp ›" luôn là nút chính bên phải (trước: nút thường khi còn em thiếu); mở từ hồ sơ lớp → chỉ "Đóng". Chụp lại b1 + e2 từ Công việc.
+- Ghi nhận (ngoài PR): tiêu đề panel 375 "Bàn giao môn R · G+V · MB F…" bị cắt — tiêu đề `KhungPanel` có sẵn, chưa đổi ở PR này.
 
 ## Máy chủ
 - `POST /lenh-chuyen/:id/ban-giao-mon/go-chen` · `POST /ban-giao-gv/:id/gop-y/go-chen`: Hoàn tác "Chèn cho n em" — máy chủ không nhận câu rỗng nên cần đường gỡ. Cùng quyền ghi; chỉ xoá khi câu đang lưu ĐÚNG bằng câu vừa chèn (đã sửa → giữ, `ok: false`); có nhật ký (`ban_giao.go_chen`, `ban_giao_gv.go_chen`). Nhận xét chung GVCN: dùng đường nháp sẵn có (nhận rỗng).
