@@ -1371,7 +1371,7 @@ api.post('/violations', requireAuth, wrap((req) => {
   const b = yThucBody(req);
   return violationSvc.recordViolation(principalOf(req), {
     studentId: toInt(b.studentId) ?? 0, category: b.category, ten: b.ten ?? null, description: b.description, occurredOn: b.occurredOn ?? null,
-    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null, chiNhac: b.chiNhac === true,
+    skill: 'skill' in b ? (b.skill ?? null) : undefined, idempotencyKey: b.idempotencyKey ?? null, chiNhac: b.chiNhac === true, yeuCauXuLy: b.yeuCauXuLy === true,
   });
 }));
 /** PR-LUI-a1: một vi phạm cho nhiều học viên (≤ 8 mỗi lô) HOẶC nhiều vi phạm cho một học viên. Mỗi em một giao dịch; lỗi từng em trả về `loi`. */
@@ -1381,7 +1381,17 @@ api.post('/violations/nhieu', requireAuth, wrap((req) => {
   return violationSvc.recordViolations(principalOf(req), {
     studentIds: Array.isArray(b.studentIds) ? b.studentIds.map((x: unknown) => toInt(x) ?? 0) : [],
     lines: Array.isArray(b.lines) ? b.lines : [], moTaRieng: b.moTaRieng ?? null, idempotencyKey: String(b.idempotencyKey ?? ''), chiNhac: b.chiNhac === true,
+    yeuCauXuLy: b.yeuCauXuLy === true,
   });
+}));
+/** LG-12: GVCN "Không xử lý" vi phạm được yêu cầu (lý do ≥ 8 ký tự, gửi người ghi) · Hoàn tác. Quyền như Xác nhận xử lý. */
+api.post('/violations/:id/khong-xu-ly', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.khongXuLy(principalOf(req), pInt(req, 'id'), { lyDo: yThucBody(req).lyDo });
+}));
+api.post('/violations/:id/khong-xu-ly/hoan-tac', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return xuLySvc.hoanTacKhongXuLy(principalOf(req), pInt(req, 'id'));
 }));
 api.get('/violations/:id', requireAuth, wrap((req) => {
   maybeSimulateReadError();

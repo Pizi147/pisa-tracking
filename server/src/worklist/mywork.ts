@@ -1585,7 +1585,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       if (em.soBatBuoc > 0 && !em.coChoDuyet) {
         const ke = nhanLoaiXuLy(em.keTiep.kind);
         items.push({ ...chung, key: `yt_xu_ly:${r.id}`, group: 'yt_xu_ly', urgency: urgencyOf(em.han, today),
-          reason: `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý`,
+          /* LG-12: bắt buộc chỉ vì được yêu cầu → nói rõ "được yêu cầu" (luật 3 thì giữ chữ cũ). */
+          reason: em.theoLuat ? `${em.soBatBuoc} vi phạm trong 2 tuần — bắt buộc xử lý` : `${em.soYeuCau} vi phạm được yêu cầu xử lý`,
           tieuDe: `Xử lý vi phạm · ${r.ten} (${em.soBatBuoc}) · bậc kế tiếp: ${ke}`, phu: `${em.soBatBuoc} vi phạm · bậc kế tiếp: ${ke}`, actionLabel: 'Xác nhận xử lý',
           href: duongLop(em.lopId, r.id, '&mo=xu-ly'), due: em.han,
           statusLabel: quaHan.some((x) => x.lyDoQuaHan === 'xu-ly') ? 'Quá hạn' : 'Bắt buộc xử lý' });

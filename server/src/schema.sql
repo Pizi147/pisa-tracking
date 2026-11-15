@@ -1902,7 +1902,13 @@ CREATE TABLE violations (
   -- PR-Pb2-b (Q14): ngày nghiệp vụ lần đầu GVCN xác nhận xử lý hoặc gửi đề xuất có vi phạm này. Đúng hạn ⇔ phan_hoi_ngay ≤ han_xu_ly.
   phan_hoi_ngay TEXT,
   -- TINH-HINH (chủ SP 12/11): 1 = "Chỉ nhắc nhở" — không vào luật 3 vi phạm / 2 tuần, bậc, việc GVCN / TVV, số vi phạm Phân tích / Excel.
-  chi_nhac INTEGER NOT NULL DEFAULT 0
+  chi_nhac INTEGER NOT NULL DEFAULT 0,
+  -- LG-12 (chủ SP lời 47, 48): 1 = người ghi (không phải GVCN) yêu cầu GVCN xử lý → bắt buộc xử lý ngay (hạn như luật 3 vi phạm). Không áp "Chỉ nhắc nhở".
+  yeu_cau_xu_ly INTEGER NOT NULL DEFAULT 0,
+  -- LG-12: GVCN "Không xử lý" + lý do (≥ 8 ký tự) → hết bắt buộc DO yêu cầu; vi phạm vẫn đếm luật 3 / 2 tuần. NULL = chưa / đã Hoàn tác (lịch sử: violation_history).
+  khong_xu_ly_luc TEXT,
+  khong_xu_ly_boi INTEGER REFERENCES users(id),
+  khong_xu_ly_ly_do TEXT
 );
 CREATE INDEX idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX idx_violation_class ON violations(class_id, occurred_on);

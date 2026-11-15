@@ -18,7 +18,8 @@ export type XuLyEm = {
   id: number; kind: string; customName: string | null; status: MeasureStatus; performedOn: string | null; quyetLuc: string | null;
   cycleId: number | null; createdAt: string; violationIds: number[]; hanDuyet: string | null;
 };
-export type ViPhamEm = { id: number; category: string; occurredOn: string; reportedOn: string; ghiNhanLuc: string | null; cycleId: number | null; classId: number | null };
+export type ViPhamEm = { id: number; category: string; occurredOn: string; reportedOn: string; ghiNhanLuc: string | null; cycleId: number | null; classId: number | null;
+  /** LG-12 */ yeuCau: boolean; khongXuLy: string | null };
 
 export type EmYThuc = {
   studentId: number; lopId: number | null; gvcnId: number | null; tamDung: boolean;
@@ -41,6 +42,8 @@ export type EmYThuc = {
   /** Hạn sớm nhất trong các vi phạm bắt buộc (Cần xử lý / Quá hạn vì chưa xử lý). */
   han: string | null;
   soMoi: number; soBatBuoc: number;
+  /** LG-12: số vi phạm bắt buộc vì được YÊU CẦU (chưa "Không xử lý") · em có bắt buộc theo luật 3 vi phạm / 2 tuần không (chữ việc `yt_xu_ly`). */
+  soYeuCau: number; theoLuat: boolean;
   /** Hạn sớm nhất trong các vi phạm Mới chưa ai Ghi nhận (V4-5). */
   hanXem: string | null;
   /**
@@ -85,7 +88,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   /*
    * Vi phạm (`loai` 0) và lần xử lý + liên kết (`loai` 1) chung MỘT câu UNION ALL — mỗi câu trên Turso ~20–50 ms. Cột chung đặt tên
    * trung tính; ý nghĩa theo `loai` ghi ngay dưới.
-   *   loai 0: a = category · b = occurred_on · c = reported_on · d = ghi_nhan_luc · e = class_id
+   *   loai 0: a = category · b = occurred_on · c = reported_on · d = ghi_nhan_luc · e = class_id · f = yeu_cau_xu_ly · g = khong_xu_ly_luc (LG-12)
    *   loai 1: a = kind · b = status · c = performed_on · d = quyet_luc · e = violation_id · f = custom_name · g = created_at · h = hạn thẻ chờ
    */
   const vp = new Map<number, ViPhamEm[]>();
@@ -93,7 +96,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   for (const r of conn.prepare(
     /* VIEC-NHO 2: MỌI cột vế đầu có AS (cả cột trần `id`) — Turso đặt tên cột khác libsql file (như `scoreHistoryOf` #256; DTL1). */
     `SELECT 0 AS loai, id AS id, student_id AS student_id, cycle_id AS cycle_id,
-            category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e, NULL AS f, NULL AS g, NULL AS h
+            category AS a, occurred_on AS b, reported_on AS c, ghi_nhan_luc AS d, class_id AS e, yeu_cau_xu_ly AS f, khong_xu_ly_luc AS g, NULL AS h
        FROM violations WHERE student_id IN (${ph}) AND chi_nhac = 0   /* TINH-HINH: nhắc nhở ngoài luật, bậc, việc */
      UNION ALL
      SELECT 1, m.id, m.student_id, m.cycle_id, m.kind, m.status, m.performed_on, m.quyet_luc, mv.violation_id, m.custom_name, m.created_at,
@@ -104,7 +107,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
      ORDER BY 1, 6, 2`).all(json, json) as any[]) {
     if (r.loai === 0) {
       const a = vp.get(r.student_id) ?? []; vp.set(r.student_id, a);
-      a.push({ id: r.id, category: r.a, occurredOn: r.b, reportedOn: r.c, ghiNhanLuc: r.d ?? null, cycleId: r.cycle_id ?? null, classId: r.e ?? null });
+      a.push({ id: r.id, category: r.a, occurredOn: r.b, reportedOn: r.c, ghiNhanLuc: r.d ?? null, cycleId: r.cycle_id ?? null, classId: r.e ?? null, yeuCau: !!r.f, khongXuLy: r.g ?? null });
       continue;
     }
     const theoEm = xl.get(r.student_id) ?? new Map<number, XuLyEm>(); xl.set(r.student_id, theoEm);
@@ -159,7 +162,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
         a.push({ id: m.id, kind: m.kind, status: m.status, performedOn: m.performedOn, quyetLuc: m.quyetLuc });
       }
     }
-    const vao: ViPhamVao[] = dsVp.map((v) => ({ id: v.id, occurredOn: v.occurredOn, reportedOn: v.reportedOn, ghiNhanLuc: v.ghiNhanLuc, xuLy: theoVp.get(v.id) ?? [] }));
+    const vao: ViPhamVao[] = dsVp.map((v) => ({ id: v.id, occurredOn: v.occurredOn, reportedOn: v.reportedOn, ghiNhanLuc: v.ghiNhanLuc, yeuCau: v.yeuCau, khongXuLy: v.khongXuLy, xuLy: theoVp.get(v.id) ?? [] }));
     const bb = batBuocTu(vao);
     const mocLop = [g.batDau?.slice(0, 10), quayLai.get(sid)?.slice(0, 10)].filter((x): x is string => !!x).sort().pop() ?? null;
     const n = { homNay, mocLop, tamDung: g.tamDung };
@@ -194,6 +197,9 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
     const xong = dsXl.filter((m) => m.status === 'done' && m.performedOn).map((m) => m.performedOn!).sort().pop() ?? null;
     const batBuoc = [...viPham.values()].filter((x) => x.t === 'can_xu_ly' || x.lyDoQuaHan === 'xu-ly');
     const moi = [...viPham.values()].filter((x) => x.t === 'moi' || x.lyDoQuaHan === 'xem');
+    const dangBb = (id: number) => { const x = viPham.get(id); return !!x && (x.t === 'can_xu_ly' || x.lyDoQuaHan === 'xu-ly'); };
+    const soYeuCau = vao.filter((v) => v.yeuCau && !v.khongXuLy && dangBb(v.id)).length;
+    const theoLuat = soYeuCau > 0 && [...batBuocTu(vao.map((v) => ({ ...v, yeuCau: false }))).keys()].some(dangBb);
     const minHan = (a: TrangThaiViPhamKq[]) => a.map((x) => x.han).filter((h): h is string => !!h).sort()[0] ?? null;
     const route = hienTai?.route ?? null;
 
@@ -211,7 +217,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       soXuLyChuoi: xongChuoi.length,
       viPham, dsViPham: dsVp, xuLy: dsXl, thuHoi: tatCaXl.filter((m) => m.status === 'thu_hoi'),
       nhom: nhomEm({ ds, coDeXuatCho: !!dx, xuLyGanNhat: xong }, homNay),
-      han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi),
+      han: minHan(batBuoc), soMoi: moi.length, soBatBuoc: batBuoc.length, hanXem: minHan(moi), soYeuCau, theoLuat: soYeuCau === 0 ? batBuoc.length > 0 : theoLuat,
       deXuat: dx ? { id: dx.id, kind: dx.kind, customName: dx.customName, status: dx.status, han: hanDx, quaHan: dxQuaHan } : null,
       daDuyet, coChoDuyet: !!choDuyet,
       xuLyGanNhat: xong,
