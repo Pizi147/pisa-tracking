@@ -567,6 +567,22 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/luuRoiTiep\(chot, onTiep\)/.test(st) && /luuRoiTiep\(luu, onTiep\)/.test(st) && /luuRoiTiep\(gui, onTiep\)/.test(th), 'chân panel việc (lời 36): "{việc} · việc tiếp ›" ở Sau thi · Chốt ngày thi · Trả lời tình hình');
   });
 
+  check('BADGE-QUA-HAN · hạn đã qua = MỘT badge đỏ chung (`BadgeHan`); không chữ đỏ / chip tự dựng cạnh "quá hạn n ngày" (chủ SP 15/11)', () => {
+    const nh = doc('web/src/ui/Nhan.tsx');
+    assert(/export function BadgeHan/.test(nh) && /<BadgeHan muc="qua">\{chu\}<\/BadgeHan>/.test(nh) && /<BadgeHan muc="qua" title=\{v\.text\}>/.test(nh), 'QuaHan + ChipHan vẽ qua BadgeHan');
+    assert(/if \(t === 'qua-han'\) return <BadgeHan muc="qua"/.test(doc('web/src/ui/ui.tsx')), 'NhanTrangThai quá hạn = BadgeHan');
+    assert(/if \(tt === 'qua-han'\) return <BadgeHan/.test(nh) && /if \(tt === 'qua_han'\) return <BadgeHan/.test(doc('web/src/modules/yThuc/NhanViPham.tsx'))
+      && /tong === 'qua'\s*\? `\$\{lopBadgeHan\('qua'\)\}/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), 'XM-1: quá hạn của Case / vi phạm / việc Ý thức = BadgeHan');
+    const loi: string[] = [];
+    for (const f of tepNguon('web/src')) {
+      if (f.endsWith('/ui/Nhan.tsx') || f.includes('/modules/dev/')) continue;
+      doc(f).split('\n').forEach((dong, i) => {
+        if (/quá hạn \{n\} ngày|Quá hạn · \{n\} ngày|nhanQuaHan\(/.test(dong) && /text-late|bg-late-bg|text-bad|CHIP_TRON/.test(dong) && !/BadgeHan/.test(dong)) loi.push(`${f}:${i + 1}`);
+      });
+    }
+    assert(!loi.length, `dáng quá hạn tự dựng — dùng BadgeHan / QuaHan / ChipHan: ${loi.slice(0, 5).join(' | ')}`);
+  });
+
   check('KHONG-TRAN-CHU · chip chữ dài (mốc vi phạm "REPORT 4 + MEETING CX/GĐCN", mức Cần hỗ trợ) xuống dòng TRONG khung: không cao cố định, ▾ giữ cuối; có công cụ quét DOM (chủ SP 15/11)', () => {
     const bl = doc('web/src/modules/yThuc/BangLan.tsx');
     const dauChip = bl.indexOf('export function ChipBac'); const chip = bl.slice(dauChip, bl.indexOf('{mo && (', dauChip));

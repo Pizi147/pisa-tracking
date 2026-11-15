@@ -49,7 +49,7 @@ export function navOf(p: Principal): NavQuyen {
     work,
     workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
-    workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && !chamDiem,
+    workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && (!chamDiem || p.roleKeys.includes('teacher')),   // Admin kiêm GV vẫn gửi Yêu cầu của tôi (phần GV)
     workChamDiem: support && chamDiem,
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
     tutor,

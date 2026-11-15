@@ -464,9 +464,8 @@ function CotGhim({ hang, cotTen, nen = NEN_NHAN, className = '', children }: {
   );
 }
 
-/** Trạng thái của một Case ở cột nhãn (U07 #3): đang làm = chip · quá hạn = chữ đỏ (V22 không biểu tượng) · huỷ = "– Huỷ W3 SEP" xám · xong = "✓ Xong W3 SEP". */
+/** Trạng thái của một Case ở cột nhãn (U07 #3): đang làm = chip · quá hạn = badge đỏ (`BadgeHan`, 15/11) · huỷ = "– Huỷ W3 SEP" xám · xong = "✓ Xong W3 SEP". */
 function TrangThaiCase({ s }: { s: NonNullable<TrangThaiHop> }) {
-  if (s.t === 'qua-han') return <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-bad">{dich(s.chu)}</span>;
   if (s.t === 'da-huy') return <span className="text-[13px] font-semibold text-faint">– {dich(s.chu)}</span>;
   if (s.t === 'xong') return <span className="inline-flex items-center gap-1 text-[13px] font-semibold text-ok"><IconDat size={11} />{dich(s.chu)}</span>;
   /* Mockup `.trth .dang-lam`: viên 22 px nền trung tính, chấm xanh trước chữ. */

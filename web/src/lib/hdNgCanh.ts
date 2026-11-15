@@ -3,7 +3,9 @@
  * nội dung): panel việc ghi DÒNG VIỆC đang mở, dòng quy chế ghi câu đang hiện; ⓘ quy chế và "?" nổi trên nền mờ gọi `moHuongDan`.
  * "?" đọc một lần lúc mở. Chữ lấy từ dòng việc đã nạp — 0 câu đọc thêm.
  */
-export type ViecMo = { group: string; key: string; tieuDe: string; lop: string | null; mine: boolean; chonPa?: boolean };
+export type ViecMo = { group: string; key: string; tieuDe: string; lop: string | null; mine: boolean; chonPa?: boolean;
+  /** Dòng chưa có người giữ (chưa phân công) — dải trung tính thay "Việc của {vai}" (PTA Overhaul rà #1761). */
+  chuaGiu?: boolean };
 export type QuyCheMo = { chu: string; chiTiet?: string };
 
 /** Ngăn ghi theo thứ tự gắn: mục gắn sau = trên cùng. Trả hàm gỡ (dùng làm cleanup của effect). */

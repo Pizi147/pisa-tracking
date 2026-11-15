@@ -22,7 +22,7 @@ import { DuongVe } from '../../ui/ThanhTruocSau.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
-import { O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
+import { BadgeHan, O_CHIP_XUONG_DONG } from '../../ui/Nhan.tsx';
 import { NhanGt } from '../classes/DauTrangLop.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
 import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
@@ -416,7 +416,7 @@ function DongMon({ d, k, homNay, chiDoc, hep, luu, mo, thaoTac, caseChu, onMo, o
           <div role="cell" aria-colindex={4} className={`min-w-0 max-md:flex max-md:flex-wrap max-md:items-center max-md:gap-x-2 max-md:gap-y-1 md:col-start-4 md:row-start-1 md:space-y-1 ${O_CHIP_XUONG_DONG}`}>
             <Status kind={tt.kind}>{tt.chu}</Status>
             {/* Quá hạn: đỏ khi là việc của người xem; việc người khác chữ mờ (cùng màu chip "Còn lại" của người khác). */}
-            {han && <div className={`text-xs ${quaHan && canEdit && !chiDoc ? 'text-late' : 'text-slate-400'}`}>{han}</div>}
+            {han && (quaHan && canEdit && !chiDoc ? <div><BadgeHan muc="qua">{han}</BadgeHan></div> : <div className="text-xs text-slate-400">{han}</div>)}
             {/* LUOT-TEN-GV: môn còn nợ mà người xem không nhập được — tên GV môn (khung "Chờ điểm · hạn …" + tên). */}
             {!coDiem && !dung && !s.khongDuThi && !huy && !(canEdit && !chiDoc) && <div className="text-xs text-slate-500">{tenNguoiLam(d.nguoiLam, [k])}</div>}
           </div>

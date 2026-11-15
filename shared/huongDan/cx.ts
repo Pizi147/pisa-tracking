@@ -4,7 +4,7 @@
  * thi thật ở Hồ sơ HV (nút trên đầu hồ sơ). CX giữ quyền sửa thông tin, Target, Tạm dừng, thi thật; chỉ XEM Case, điểm, Ý thức, Phối hợp SOS. Việc, màn, luật
  * dùng lại của `tvv.ts` (`lam` là MỘT nguồn — xem `ql.ts`).
  */
-import { HD_TVV, LUAT_TVV, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
+import { HD_TVV, LUAT_TVV, TINH_HUONG_CX, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
 import type { HuongDan, ViecHd } from './kieu.ts';
 
 const HV = '/hoc-vien';
@@ -61,12 +61,12 @@ export const HD_CX: HuongDan = {
   viec: [],
   lam: THU_TU.map((id) => [...VIEC_CX, ...VIEC_TVV].find((v) => v.id === id)!),
   tuan: [
-    { nhip: 'Mỗi sáng', viec: ['xem-so', 'loc-hv'] },
-    { nhip: 'Khi có', viec: ['sua-hv', 'xem-case', 'meeting', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
-    { nhip: 'Khi gia đình báo', viec: ['tam-dung'] },
-    { nhip: 'Sau khi em thi', viec: ['thi-that'] },
-    { nhip: 'Mỗi kỳ', viec: ['phan-tich', 'xuat-ds'] },
+    { nhip: 'Hằng ngày', viec: ['xem-so', 'loc-hv'] },
+    { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds'] },
+    { nhip: 'Khi có', viec: ['sua-hv', 'xem-case', 'meeting', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru', 'tam-dung', 'thi-that'] },
   ],
+  /* HD3-3: CX không có Công việc — chỉ trường hợp CX gặp (nguồn: `docs/anh/hd3-3-tvv-cx/khop-khac.md`). */
+  tinhHuong: TINH_HUONG_CX,
   vaiKhac: [
     ...VAI_KHAC_TVV,
     { ten: 'Báo PH vi phạm, chốt ngày thi', cua: 'việc của TVV', tuKhac: ['phụ huynh', 'gọi', 'ngày thi', 'parent', 'exam date'] },
@@ -102,7 +102,7 @@ export const HD_CX: HuongDan = {
   ],
   luat: [
     ...LUAT_TVV.filter((m) => m.id !== 'tvv-luat-thi-that' && m.id !== 'tvv-luat-bao-ph' && m.id !== 'tvv-luat-lo-trinh'),
-    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn, hạn 7 ngày từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.'] },
+    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.'] },
     { id: 'cx-luat-lo-trinh', ten: 'Lộ trình, môn học', buoc: ['TVV, GVCN, QL đổi Lộ trình đang học và Môn học; CX không.'] },
   ],
   tu: [

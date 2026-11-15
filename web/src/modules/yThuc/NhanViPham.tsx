@@ -1,5 +1,5 @@
 import type { TrangThaiVp } from '@shared/domain/index.ts';
-import { CHIP_VUONG } from '../../ui/Nhan.tsx';
+import { BadgeHan, CHIP_VUONG } from '../../ui/Nhan.tsx';
 import { MuiChev } from '../../ui/HangNhom.tsx';
 import { t } from '@shared/i18n/index.ts';
 
@@ -26,7 +26,7 @@ const LOP: Record<TrangThaiVp, string> = {
   moi: 'border-[color:var(--line-strong)] text-slate-200',
   da_ghi_nhan: 'border-transparent px-0 text-slate-400 font-medium',
   can_xu_ly: 'border-soon-line bg-soon-bg text-soon',
-  qua_han: 'border-late-line bg-late-bg text-late',
+  qua_han: '',   // BADGE-QUA-HAN XM-1: vẽ bằng `BadgeHan`
   cho_duyet: 'border-muted-line bg-muted-bg text-muted',
   da_xu_ly: 'border-transparent bg-white/[.08] text-slate-200',
 };
@@ -38,6 +38,7 @@ const LOP: Record<TrangThaiVp, string> = {
  */
 export function NhanViPham({ t: tt, nhan, title }: { t: TrangThaiVp; nhan: string; title?: string }) {
   const chu = tt === 'da_ghi_nhan' ? t('Đã ghi nhận') : nhan;
+  if (tt === 'qua_han') return <BadgeHan muc="qua" title={title}>{chu}</BadgeHan>;
   return (
     <span title={title ?? (tt === 'da_ghi_nhan' ? t('GVCN đã xem, không cần xử lý') : undefined)}
       className={`${CHIP_VUONG} gap-1 ${LOP[tt]}`}>

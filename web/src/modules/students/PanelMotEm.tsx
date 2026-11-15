@@ -5,7 +5,7 @@ import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel, QuayLaiPanel } from '../../ui/KhungPanel.tsx';
-import { ChipHan, Nhan } from '../../ui/Nhan.tsx';
+import { BadgeHan, ChipHan, Nhan } from '../../ui/Nhan.tsx';
 import { BoiCanh, CanLam } from '../../ui/KhuonViec.tsx';
 import { skillShort } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
@@ -244,7 +244,7 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                         ))}
                         {!viec.length && c.viecTiep && (
                           <p className="m-0 text-xs text-slate-400">{t('Việc tiếp')}: <span className="text-slate-200">{dich(c.viecTiep.chu)}</span>
-                            {c.viecTiep.quaHan && <span className="font-semibold text-late"> · {t('quá hạn')}</span>}</p>
+                            {c.viecTiep.quaHan && <> <BadgeHan muc="qua">{t('quá hạn')}</BadgeHan></>}</p>
                         )}
                         {/* Bối cảnh chung (`BoiCanh`, ≤ 3 dòng). */}
                         <BoiCanh dong={[

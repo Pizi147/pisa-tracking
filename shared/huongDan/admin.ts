@@ -1,6 +1,6 @@
 /**
- * Hướng dẫn ADMIN — HD-V2 (b), HD-V3-B (13/11, đối chiếu `docs/superpowers/specs/2026-11-13-huong-dan-v3/doi-chieu-ql-admin.md`). Admin chi nhánh lo Mock Test: Tổng quan "Mock Test", Test đủ hai tab,
- * Công việc chỉ nhóm Chấm điểm + Xuất báo cáo PH. Không huỷ / khôi phục lượt, không đổi Target / môn học, Case / Ý thức chỉ xem; ĐƯỢC đổi lộ trình (chủ SP 11/11) và sửa lịch lớp thường
+ * Hướng dẫn ADMIN — HD-V2 (b), HD-V3-B (13/11), HD3-5 (15/11: thẻ Xuất báo cáo PH / Nhập hộ, sửa theo GD-14 · GD-19 · lời 49). Admin chi nhánh lo lịch và điểm Test: Tổng quan (không chữ "Mock Test"), Test đủ hai tab,
+ * Công việc chỉ nhóm Chấm điểm + Xuất báo cáo PH (tab "Việc quản lý"). Không dời hạn chấm, không đổi Target / môn học, Case / Ý thức chỉ xem; ĐƯỢC đổi lộ trình (chủ SP 11/11), xoá / khôi phục MT, sửa lịch lớp thường
  * (seed/data.ts `office_admin`, `monDangKy.ts`, `permissions.ts`). `lam` là MỘT nguồn (xem `ql.ts`); mục chung của màn GV lấy qua `mucGv`.
  */
 import { HD_GV } from './gv.ts';
@@ -11,7 +11,7 @@ const CV = '/cong-viec';
 const HV = '/hoc-vien';
 const TEST = '/test/lich';
 const KH = '/test/ke-hoach';
-const KHONG_QL = { ten: 'Dời hạn chấm, huỷ lượt', cua: 'việc của QL' } as const;
+const KHONG_QL = { ten: 'Dời hạn chấm, chuyển lớp', cua: 'việc của QL' } as const;
 
 const mucGv = (man: string, id: string): MucHd => HD_GV.man.find((m) => m.id === man)!.muc.find((m) => m.id === id)!;
 
@@ -20,32 +20,39 @@ export const HD_ADMIN: HuongDan = {
   lam: [
     /* ---------------------------------------------------------------- Điểm */
     {
-      id: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', nhom: 'diem',
+      /* HD3-5: dòng Nhập hộ là việc của GV (mine = false) → "?" ở dòng mở thẻ GV + dải "làm thay"; thẻ này cho Tôi muốn…, tìm, panel ở Lịch Test. */
+      id: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', nhom: 'diem', tab: 'cham-diem',
+      tep: ['web/src/modules/congViec/HoTroHocVienTab.tsx', 'web/src/modules/congViec/DanhSachViec.tsx', 'web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/congViec/PanelViec.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm điểm', duong: CV, chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc bài chấm theo một GV ở đây.' } },
       loiTat: ['tong-quan', 'lich-test', 'diem-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ hàng lớp › Nhập điểm'], cung: 'mở cùng lưới nhập.',
-      buoc: ['Mở <b>Công việc</b> (tab <b>Chấm điểm</b> của chi nhánh): bài GV chưa nhập; ô <b>▾</b> chọn một GV.', 'Bấm <b>Nhập hộ</b> ở dòng, gõ điểm; em vắng gõ <b>-</b>.',
-        'Nhập bù hoặc sửa ô ngoài phân công: ghi <b>Lý do sửa</b> (tuỳ chọn); nhật ký ghi lại người sửa.'],
+      khiCo: 'Bài trong chi nhánh chưa có điểm, từ thứ Hai tuần Test.',
+      buoc: ['Ở tab Chấm điểm; một GV: <b>Lọc thêm</b> rồi chọn GV.', 'Bấm <b>Nhập hộ</b> ở dòng, gõ điểm; em vắng: gõ <b>-</b>.', 'Bấm <b>Lưu · bài tiếp ›</b>.'],
+      xong: 'Mọi ô có điểm hoặc "-"; dòng rời ở cả hai bên.',
+      han: 'Theo hạn GV: {han:cham_test}; Admin không dời hạn.',
+      sai: 'Bấm lại ô, ghi <b>Lý do sửa</b> nếu cần; nhật ký ghi người sửa.',
+      khongDuoc: ['Ô Speaking: chọn <b>GV chấm</b> trước khi lưu.'],
+      sau: 'Lượt chốt → Case, PA về GV, GVCN như thường.',
       tuKhac: ['nhập bù', 'chấm thay', 'sửa điểm', 'điểm', 'enter score', 'grade'],
     },
     {
       id: 'xem-gv-tre', ten: 'Xem GV nào còn nợ điểm', nhom: 'diem',
       loiChinh: { man: 'tong-quan', chu: 'Tổng quan › GV chấm quá hạn', duong: '/' },
-      buoc: ['Ở <b>Tổng quan</b>, khối <b>GV chấm quá hạn</b>: ai còn bài quá hạn, bao lâu.', 'Bấm số GV mở panel; bấm dòng lớp để xem em còn trống rồi <b>Nhập hộ</b>.', 'GV quá hạn tự nhận thông báo; việc tự hết khi GV nhập đủ điểm.'],
+      buoc: ['Ở <b>Tổng quan</b>, khối <b>GV chấm quá hạn</b>: mỗi GV một dòng (kỹ năng · lớp · số bài · lâu nhất).', 'Bấm dòng GV mở panel của GV đó, rồi <b>Nhập hộ</b>; việc tự hết khi đủ điểm.'],
       tuKhac: ['quá hạn', 'nợ điểm', 'chấm trễ', 'overdue', 'late'],
     },
     /* ---------------------------------------------------------------- Lịch Test */
     {
-      id: 'xem-so-mt', ten: 'Xem số Mock Test của chi nhánh', nhom: 'lich',
-      loiChinh: { man: 'tong-quan', chu: 'Tổng quan › Mock Test', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Các số Mock Test của chi nhánh — bấm để mở.' } },
-      buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Lượt MT tuần này ›</b> · <b>Bài chưa nhập điểm ›</b> · <b>HV chưa đủ MT ›</b> (ⓘ nói cách đếm); bấm số mở đúng chỗ.', '<b>Lịch sắp tới</b> (cột phải): <b>Kế hoạch Test ›</b> mở đúng tuần đang xem.'],
-      tuKhac: ['số liệu', 'mock test', 'thống kê', 'numbers'],
+      id: 'xem-so-mt', ten: 'Xem số của chi nhánh', nhom: 'lich',
+      loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/', chi: { hd: 'tq-tom-tat', duong: '/', chu: 'Các số của chi nhánh — bấm để mở.' } },
+      buoc: ['Dải đầu trang: <b>Việc của tôi ›</b> · <b>Lượt MT tuần này ›</b> · <b>Bài chưa nhập điểm ›</b> · <b>HV chưa đủ MT ›</b> (ⓘ nói cách đếm); bấm số mở đúng chỗ.', '<b>Lịch tuần ›</b> cạnh tiêu đề; <b>Lịch sắp tới</b> (cột phải): <b>Kế hoạch Test ›</b> mở đúng tuần đang xem.'],
+      tuKhac: ['số liệu', 'mock test', 'tổng quan', 'thống kê', 'numbers'],
     },
     {
       id: 'xep-lich', ten: 'Xếp, dời lịch MT', nhom: 'lich',
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
       loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.',
-        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b> môn: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b>; mọi thay đổi ở khối <b>Lịch sử · n</b> trong hộp; mục ghi "Chỉ Quản lý" thì nhờ QL.'],
+        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b> môn: <b>Huỷ điểm</b>, <b>Lịch sử</b>; <b>Dời hạn chấm</b> mờ, ghi "Chỉ Quản lý". FT xoá cả lượt: <b>⋯</b> đầu hộp, có Hoàn tác.', 'Thứ Sáu tới Chủ nhật máy hỏi trước khi đổi: bấm <b>Vẫn đổi lịch</b>.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'schedule', 'reschedule'],
     },
     {
@@ -65,11 +72,17 @@ export const HD_ADMIN: HuongDan = {
     },
     /* ---------------------------------------------------------------- Học viên và lớp */
     {
-      id: 'xuat-bc-ph', ten: 'Xuất báo cáo PH của lớp', nhom: 'hv',
-      loiChinh: { man: 'cong-viec', chu: 'Công việc › Vận hành › Báo cáo PH', duong: CV },
-      loiTat: ['ho-so-lop'], cung: 'mở cùng danh sách báo cáo.',
-      buoc: ['Lớp đã đủ báo cáo: mở <b>Công việc</b>, tab <b>Vận hành</b>, mục <b>Báo cáo PH</b>, dòng <b>Xuất báo cáo PH</b> (hiện 7 ngày kể từ ngày lớp đủ; đợt quá hạn còn thiếu em cũng hiện 7 ngày).',
-        'Bấm <b>Xuất PDF lớp</b> hoặc <b>Xuất Excel lớp</b>: file tải ngay, không chuyển trang.', 'Thêm hoặc bỏ đợt: hồ sơ lớp, tab <b>Báo cáo PH</b> › <b>+ Đợt báo cáo</b> · <b>Không báo cáo đợt này</b>; viết hộ là việc của QL.'],
+      id: 'xuat-bc-ph', ten: 'Xuất báo cáo PH', nhom: 'hv', tab: 'van-hanh', viecWeb: ['xuat_bc_ph'],
+      tep: ['web/src/modules/classes/TabBaoCaoPh.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx', 'web/src/modules/congViec/DanhSachViec.tsx'],
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Báo cáo PH', duong: CV },
+      loiTat: ['ho-so-lop'], cung: 'mở tab Báo cáo PH của lớp.',
+      khiCo: 'Lớp đủ báo cáo PH của đợt, hoặc đợt quá hạn còn thiếu em.',
+      buoc: ['Lớp đủ: bấm <b>Xuất Excel lớp</b> hoặc <b>Xuất PDF lớp</b> ở dòng.', 'Lớp còn thiếu: <b>Báo cáo PH ›</b> mở tab của lớp, xem em thiếu.'],
+      xong: 'Không cần đánh dấu đã xuất; dòng tự rời.',
+      han: 'Dòng còn thiếu tính quá hạn từ hạn đợt.',
+      sai: 'Xuất lại được; đợt không cần: <b>Không báo cáo đợt này</b>.',
+      khongDuoc: ['Viết hộ báo cáo là việc của QL.'],
+      sau: 'Gửi tệp cho phụ huynh ngoài web.',
       tuKhac: ['báo cáo ph', 'phụ huynh', 'pdf', 'parent report', 'export'],
     },
     {
@@ -102,27 +115,83 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'chuong', ten: 'Xem việc cần làm ở chuông', nhom: 'khac',
       loiChinh: { chu: 'Chuông trên thanh trên' },
-      buoc: ['Bấm chuông cạnh <b>?</b>: khối <b>Việc cần làm</b> gom theo loại, ghi chi nhánh, quá hạn tô đỏ, hôm nay tô vàng; số trên chuông bằng số ở <b>Công việc</b>.', 'Khối <b>Cập nhật</b> là tin cần biết: <b>Xem tất cả</b>, <b>Đánh dấu đã đọc</b>.'],
+      buoc: ['Bấm chuông cạnh <b>?</b>: khối <b>Việc cần làm</b> — mỗi tab Công việc một thanh, chỉ việc của bạn (Xuất báo cáo PH); bấm thanh mở đúng tab.', 'Khối <b>Cập nhật</b>: dấu ✓ từng tin, <b>Đã xem hết</b> (Hoàn tác 10 giây), <b>Xem tất cả</b>.'],
       tuKhac: ['thông báo', 'chuông', 'notification', 'bell'],
     },
     {
       id: 'phan-tich', ten: 'Xem thống kê theo kỳ, xuất Excel', nhom: 'khac',
       loiChinh: { man: 'phan-tich', chu: 'Phân tích', duong: '/phan-tich', chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } },
-      buoc: ['Mở <b>Phân tích</b>, chọn tab: <b>Chi nhánh</b> (mặc định một tháng) · <b>SOS</b> · <b>Thi thật</b> · <b>Giáo viên</b> (mặc định 2 tuần); bạn không có tab Ý thức.',
+      buoc: ['Mở <b>Phân tích</b>, chọn tab: <b>Chi nhánh</b> (mặc định một tháng) · <b>Thi thật</b> · <b>SOS</b> · <b>Giáo viên</b> (mặc định 2 tuần); bạn không có tab Ý thức.',
         'Đổi khoảng bằng <b>Từ tuần</b> → <b>Đến tuần</b>, <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; bấm một số là mở danh sách ngay tại trang.', '<b>Xuất Excel</b> ở mọi tab; <b>In</b> ra A4 ngang ở tab Chi nhánh.'],
       tuKhac: ['thống kê', 'báo cáo', 'excel', 'analytics', 'report'],
     },
   ],
   tuan: [
-    { nhip: 'Mỗi sáng', viec: ['xem-so-mt', 'xem-gv-tre', 'chuong'] },
-    { nhip: 'Sau mỗi tuần Test', viec: ['nhap-ho', 'xem-lich-test'] },
-    { nhip: 'Mỗi tuần', viec: ['xep-lich', 'xuat-test', 'xuat-bc-ph'] },
-    { nhip: 'Khi có', viec: ['sua-hv', 'sua-lich-lop', 'lich-thi', 'tim-kiem'] },
-    { nhip: 'Mỗi kỳ', viec: ['phan-tich'] },
+    { nhip: 'Hằng ngày', viec: ['xem-so-mt', 'xem-gv-tre', 'chuong'] },
+    { nhip: 'Sau tuần Test', viec: ['nhap-ho', 'xem-lich-test'] },
+    { nhip: 'Hằng tháng', viec: ['xuat-bc-ph', 'phan-tich'] },
+    { nhip: 'Khi có', viec: ['xep-lich', 'xuat-test', 'sua-hv', 'sua-lich-lop', 'lich-thi', 'tim-kiem'] },
+  ],
+  /* HD3-5: tab Công việc "Vận hành" của Admin (và QL) tên "Việc quản lý" (`HoTroHocVienTab.tsx` tenTab). */
+  tenTab: { 'van-hanh': 'Việc quản lý' },
+  /* HD3-5: tab "Trường hợp" của Admin — nguồn từng câu ở `docs/anh/hd3-5-admin/khop-khac.md`. */
+  tinhHuong: [
+    {
+      id: 'bc-ph-chua-du', ten: 'Báo cáo PH lớp chưa đủ / đợt quá hạn', the: 'xuat-bc-ph',
+      may: ['Hết hạn đợt còn em thiếu: dòng Xuất báo cáo PH đỏ, ghi số em thiếu.', 'Lớp viết đủ sau đó: dòng thành lớp đủ, bạn nhận tin Báo cáo PH đủ.'],
+      ban: 'Bấm <b>Báo cáo PH ›</b> xem phần thiếu; đợt không cần: <b>Không báo cáo đợt này</b>.',
+      ai: ['GV có phần thiếu vẫn có việc Viết Báo cáo PH; viết hộ là việc của QL.'],
+      tuKhac: ['báo cáo ph', 'thiếu', 'quá hạn', 'parent report'],
+    },
+    {
+      id: 'nhap-ho-gv', ten: 'Nhập điểm hộ GV', the: 'nhap-ho',
+      may: ['Bài GV chưa nhập hiện cho bạn ngay, không chờ quá hạn; lưu xong dòng rời ở cả hai bên.'],
+      ban: 'Bấm <b>Nhập hộ</b> ở Công việc, Tổng quan hoặc Lịch Test tuần.',
+      ai: ['Lượt chốt: GV, GVCN nhận việc Case, PA như thường.'],
+      tuKhac: ['nhập hộ', 'chấm thay', 'nhập bù'],
+    },
+    {
+      id: 'khong-thay-nut', ten: 'Không thấy nút / không có quyền',
+      may: ['Bạn chỉ có việc Chấm điểm và Xuất báo cáo PH.', 'Mục không làm được hiện mờ kèm lý do, như Dời hạn chấm: Chỉ Quản lý.'],
+      ban: 'Nhờ QL: dời hạn chấm, Target, môn học, chuyển lớp, viết hộ báo cáo PH.',
+      tuKhac: ['quyền', 'không thấy', 'chỉ quản lý', 'permission'],
+    },
+    {
+      id: 'luu-loi', ten: 'Không lưu được, mất mạng',
+      may: ['Ô điểm lưu hỏng viền đỏ, giá trị vẫn trong ô.'],
+      ban: 'Bấm <b>Lưu lại</b> ở ô đó; xuất lỗi thì bấm lại nút xuất.',
+      tuKhac: ['lỗi', 'mất mạng', 'không lưu', 'offline'],
+    },
+    {
+      id: 'nhap-sai', ten: 'Nhập sai, muốn sửa',
+      may: ['Điểm sửa được mọi lúc, có lịch sử; điểm đã huỷ được cất lại.'],
+      ban: 'Bấm lại ô; điểm đã huỷ: <k>⋯</k> rồi <b>Khôi phục</b>; vắng nhầm: <b>Hoàn tác</b> hoặc xoá "-".',
+      tuKhac: ['sửa', 'khôi phục', 'hoàn tác', 'undo'],
+    },
+    {
+      id: 'doi-lich-vang', ten: 'Lịch Test đổi / em vắng',
+      may: ['Mock: "-" lần 1 dời sang tuần sau, lần 2 huỷ; lớp thường dời, không tự huỷ.', 'Gõ điểm trước tuần Test: máy tự dời kỹ năng về tuần này.'],
+      ban: 'Kế hoạch Test, hộp một đợt: <b>Dời</b> hoặc <b>Vắng</b>; cuối tuần: <b>Vẫn đổi lịch</b>.',
+      ai: ['Mock lần 1: GVCN, GV kỹ năng đó nhận tin.'],
+      tuKhac: ['dời lịch', 'vắng', 'lịch test', 'reschedule'],
+    },
+    {
+      id: 'em-chuyen-lop', ten: 'Em chuyển lớp',
+      may: ['Việc theo phân công ở lớp em đang học; lượt có điểm đứng yên.'],
+      ban: 'Chuyển lớp là việc của QL; bạn đổi được lộ trình của em nếu cần.',
+      ai: ['GV bộ môn, GVCN lớp cũ làm Bàn giao.'],
+      tuKhac: ['chuyển lớp', 'đổi lớp', 'transfer'],
+    },
+    {
+      id: 'em-tam-dung', ten: 'Em tạm dừng / kết thúc học',
+      may: ['Em tạm dừng hoặc kết thúc học thì không sinh việc nhập điểm.'],
+      ban: 'Đổi trạng thái em là việc của QL, GVCN, TVV.',
+      tuKhac: ['tạm dừng', 'nghỉ học', 'pause'],
+    },
   ],
   vaiKhac: [
     { ten: 'Duyệt yêu cầu, đề xuất PA', cua: 'việc của QL', tuKhac: ['duyệt', 'approve'] },
-    { ten: 'Dời hạn chấm, huỷ lượt', cua: 'việc của QL', tuKhac: ['dời hạn', 'huỷ điểm', 'reschedule'] },
+    { ten: 'Dời hạn chấm', cua: 'việc của QL', tuKhac: ['dời hạn', 'reschedule'] },
     { ten: 'Đổi Target, môn học', cua: 'việc của QL', tuKhac: ['target', 'môn học', 'tutor'] },
     { ten: 'Chuyển lớp', cua: 'việc của QL', tuKhac: ['đổi lớp', 'chuyển lớp', 'change class', 'transfer'] },
     { ten: 'Viết hộ báo cáo PH', cua: 'việc của QL', tuKhac: ['viết hộ', 'báo cáo ph'] },
@@ -131,7 +200,7 @@ export const HD_ADMIN: HuongDan = {
   man: [
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      dangO: { cau: 'Số Mock Test của chi nhánh và GV chấm quá hạn.', sau: { chu: 'Công việc', duong: CV } },
+      dangO: { cau: 'Số của chi nhánh và GV chấm quá hạn.', sau: { chu: 'Công việc', duong: CV } },
       khongLam: [{ ten: 'Xếp, dời lịch Test', den: { chu: 'Kế hoạch Test', duong: KH } }, KHONG_QL],
       muc: [{ id: 'ad-tq-gv', viec: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', buoc: ['Khối <b>GV chấm quá hạn</b>: mỗi GV một dòng (kỹ năng · lớp · số bài · lâu nhất); bấm dòng mở panel của GV đó (lớp · lượt · kỹ năng), số GV ở đầu khối mở cả nhóm.', 'Bấm <b>Nhập hộ</b>, gõ điểm em còn trống.'] }],
     },
@@ -191,7 +260,7 @@ export const HD_ADMIN: HuongDan = {
       khongLam: [KHONG_QL],
       muc: [
         { id: 'ad-kh-xoa', ten: 'Xoá lịch, ghi chú', buoc: ['Lớp thường: <b>Xoá lịch</b> ở đầu hộp → đợt về <b>Chưa xếp</b> (đã có điểm / đã làm bài: nút mờ). FT: <b>Xoá MTn</b>.', 'Ô <b>Ghi chú lịch Test</b> trong hộp; <b>+ Ghi chú lớp</b> dưới bảng.'] },
-        { id: 'ad-kh-tim', ten: 'Tìm lớp, học viên', buoc: ['Gõ vào <b>Tìm lớp, học viên hoặc email…</b>: chọn em → lớp mở, hàng em được đánh dấu.'] },
+        { id: 'ad-kh-tim', ten: 'Tìm lớp, học viên', buoc: ['Gõ vào <b>Tìm lớp, học viên hoặc email</b>: chọn em → lớp mở, hàng em được đánh dấu.'] },
         { id: 'ad-kh-xuat', viec: 'xuat-test', ten: 'Xuất Excel kế hoạch, điểm Test', buoc: ['<b>Xuất Excel…</b> cạnh <b>Xếp nhiều MT…</b>: tab <b>Lịch Test</b> mở sẵn.'] },
       ],
     },
@@ -207,11 +276,11 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'cong-viec', ten: 'Công việc', duong: [CV],
-      dangO: { cau: 'Bài chấm của GV trong chi nhánh (tab Chấm điểm) và việc Xuất báo cáo PH (tab Vận hành).', truoc: { chu: 'Tổng quan', duong: '/' } },
+      dangO: { cau: 'Bài chấm của GV trong chi nhánh (tab Chấm điểm, Chấm Speaking) và việc Xuất báo cáo PH (tab Việc quản lý).', truoc: { chu: 'Tổng quan', duong: '/' } },
       khongLam: [KHONG_QL, { ten: 'Xác nhận Case, PA', cua: 'việc của GV' }],
       muc: [
-        { id: 'ad-cv', ten: 'Lọc bài chấm', buoc: ['Ô <b>Mọi hạn</b> › <b>Quá hạn</b>; ô <b>▾</b> chọn một GV.'] },
-        { id: 'ad-cv-bc-ph', viec: 'xuat-bc-ph', ten: 'Xuất báo cáo PH', buoc: ['Tab <b>Vận hành</b>, mục <b>Báo cáo PH</b>: dòng <b>Xuất báo cáo PH</b> của lớp đã đủ.', 'Bấm <b>Xuất PDF lớp</b> hoặc <b>Xuất Excel lớp</b>.'] },
+        { id: 'ad-cv', ten: 'Lọc bài chấm', buoc: ['Ô <b>Mọi hạn</b> › <b>Quá hạn</b>; một GV: <b>Lọc thêm</b> rồi chọn GV.'] },
+        { id: 'ad-cv-bc-ph', viec: 'xuat-bc-ph', ten: 'Xuất báo cáo PH', buoc: ['Tab <b>Việc quản lý</b>, mục <b>Báo cáo PH</b>: dòng <b>Xuất báo cáo PH</b>.', 'Lớp đủ: <b>Xuất Excel lớp</b> · <b>Xuất PDF lớp</b>; còn thiếu: <b>Báo cáo PH ›</b>.'] },
       ],
     },
     {
@@ -226,31 +295,31 @@ export const HD_ADMIN: HuongDan = {
     },
     /* ---------------------------------------------------------------- panel đang mở */
     {
-      id: 'p-nhap-diem', ten: 'Nhập điểm đang mở', duong: [], panel: 'nhap-diem',
+      id: 'p-nhap-diem', ten: 'Nhập điểm đang mở', duong: [], panel: 'nhap-diem', the: 'nhap-ho',
       dangO: { cau: 'Gõ điểm từng em cho một lượt Test.' },
       khongLam: [KHONG_QL],
       muc: [{ id: 'pn-go', viec: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', buoc: ['Gõ điểm em còn trống; Enter sang ô kế (lớp thường: ô môn hai tầng, kết quả dưới tên).', 'Em vắng: gõ <b>-</b>.', 'Xong: <b>Lớp tiếp</b> / <b>Việc tiếp</b>.'] }],
     },
     {
-      id: 'p-xep-lich-mt', ten: 'Xếp lịch Test đang mở', duong: [], panel: 'xep-lich-mt',
+      id: 'p-xep-lich-mt', ten: 'Xếp lịch Test đang mở', duong: [], panel: 'xep-lich-mt', the: 'xep-lich',
       dangO: { cau: 'Xếp lịch MT cho một hay nhiều lớp.' },
       khongLam: [KHONG_QL],
-      muc: [{ id: 'pxl-xep', viec: 'xep-lich', ten: 'Xếp, dời lịch MT', buoc: ['Chọn lớp, tuần từng MT; hai đợt trùng tuần thì máy chặn, cách đúng một tuần thì hỏi lại.', 'Lưu: đợt về lịch mới; khoá cuối tuần T6–CN theo công tắc <b>Mở sửa lịch Test</b>.'] }],
+      muc: [{ id: 'pxl-xep', viec: 'xep-lich', ten: 'Xếp, dời lịch MT', buoc: ['Chọn lớp, tuần từng MT; hai đợt trùng tuần thì máy chặn, cách đúng một tuần thì hỏi lại.', 'Lưu: đợt về lịch mới; Thứ Sáu tới Chủ nhật máy hỏi trước, bấm <b>Vẫn đổi lịch</b> để đổi.'] }],
     },
     {
-      id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin',
+      id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin', the: 'sua-hv',
       dangO: { cau: 'Sửa thông tin và lộ trình của một em.' },
       khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của QL' }],
       muc: [{ id: 'pst-sua', viec: 'sua-hv', ten: 'Sửa thông tin học viên, đổi lộ trình', buoc: ['Sửa họ tên, ngày sinh, liên hệ; <b>Lộ trình đang học</b> đổi được (LT1 · LT2 · RF).', 'Target, môn học: nhờ Quản lý / TVV; <b>Lưu</b>.'] }],
     },
     {
-      id: 'p-xuat-ds', ten: 'Xuất Excel học viên đang mở', duong: [], panel: 'xuat-ds',
+      id: 'p-xuat-ds', ten: 'Xuất Excel học viên đang mở', duong: [], panel: 'xuat-ds', the: 'lich-thi',
       dangO: { cau: 'Xuất danh sách hoặc báo cáo PH của học viên theo bộ lọc.' },
       khongLam: [{ ten: 'Xuất điểm Test', den: { chu: 'Test › Kế hoạch Test › Xuất Excel…', duong: KH } }],
       muc: [{ id: 'pxd-xuat', viec: 'lich-thi', ten: 'Xem lịch thi, xuất Excel', buoc: ['Chọn <b>Mẫu</b>: <b>Danh sách</b> hoặc <b>Báo cáo PH</b> (chọn <b>Tháng</b>); <b>Phạm vi</b> theo bộ lọc hay cả chi nhánh.', 'Bấm nút xuất ở chân panel: tệp tải về máy, nhật ký ghi lại.'] }],
     },
     {
-      id: 'p-xuat', ten: 'Xuất Excel đang mở', duong: [], panel: 'xuat-excel',
+      id: 'p-xuat', ten: 'Xuất Excel đang mở', duong: [], panel: 'xuat-excel', the: 'xuat-test',
       dangO: { cau: 'Xuất điểm Test hoặc lịch Test các lớp trong chi nhánh của bạn.' },
       khongLam: [{ ten: 'Xếp, dời lịch Test', den: { chu: 'Kế hoạch Test', duong: KH } }],
       muc: [{ id: 'px-xuat', viec: 'xuat-test', ten: 'Xuất Excel điểm Test, lịch Test', buoc: ['Tab <b>Điểm Test</b> hoặc <b>Lịch Test</b>; chọn khung lớp, chi nhánh, lớp, thời gian.', 'Bấm <b>Xuất Excel</b> ở chân panel: tệp tải về máy, nhật ký ghi lại.'] }],
@@ -258,7 +327,7 @@ export const HD_ADMIN: HuongDan = {
   ],
   luat: [
     ...luatGv('han-cham', 'dau-gach'),
-    { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch Test, nhập bù / sửa điểm, sửa thông tin HV, đổi lộ trình, sửa lịch lớp thường, xuất Excel và báo cáo PH.', 'Chỉ Quản lý: dời hạn chấm, huỷ / khôi phục lượt, Target, môn học.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
+    { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch Test, xoá / khôi phục MT, nhập bù / sửa điểm, sửa thông tin HV, đổi lộ trình, sửa lịch lớp thường, xuất Excel và báo cáo PH.', 'Huỷ / khôi phục lượt: khi công tắc <b>Mở sửa lịch Test</b> bật.', 'Chỉ Quản lý: dời hạn chấm, Target, môn học, chuyển lớp, viết hộ báo cáo PH.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
   ],
   tu: HD_GV.tu.filter((x) => ['MT (Mock Test)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Chấm Speaking', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
 };

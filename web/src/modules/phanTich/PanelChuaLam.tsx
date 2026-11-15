@@ -9,7 +9,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { NutSaoChep } from '../../ui/NutSaoChep.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { CHIP_TRON } from '../../ui/Nhan.tsx';
+import { BadgeHan } from '../../ui/Nhan.tsx';
 
 /**
  * PANEL "CHƯA LÀM" — tab Giáo viên (GD-12a, mockup ⑨ D5 / D6 / D7, R9.1): bấm số bài / việc Chưa làm của dải → mọi bài / việc ĐÃ QUA HẠN chưa làm trong kỳ,
@@ -57,7 +57,7 @@ function DongChiDoc({ d, n }: Dong) {
       </span>
       {/* V22: quá hạn chỉ bằng màu (không ⚠). */}
       {d.treNgay != null && d.treNgay > 0
-        ? <span className={`${CHIP_TRON} bg-late-bg text-late`}>{t('quá hạn {n} ngày', { n: d.treNgay })}</span>
+        ? <BadgeHan muc="qua">{t('quá hạn {n} ngày', { n: d.treNgay })}</BadgeHan>
         : <span />}
     </li>
   );

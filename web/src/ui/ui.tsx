@@ -6,7 +6,7 @@ import { useSession } from '../lib/session.tsx';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
-import { CHIP_TRON, CHIP_VUONG, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
+import { BadgeHan, CHIP_TRON, CHIP_VUONG, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
@@ -578,7 +578,7 @@ export function BoLocDoan<K extends string>({ muc, value, onChange, ariaLabel, t
 /** NHÃN TRẠNG THÁI CHÍNH (§7.3, brainstorm C.2) — một dòng một nhãn; màu điểm/SOS không dùng ở đây. */
 const NHAN_LOP: Record<TrangThai, string> = {
   'can-lam': 'border-[color:var(--line-strong)] text-slate-200', 'dang-lam': 'border-transparent bg-white/[.06] text-slate-200',
-  'cho-duyet': 'border-muted-line bg-muted-bg text-muted', 'qua-han': 'border-transparent !px-0 font-bold text-late',   // OV-15a: quá hạn chỉ chữ cam, không chip (V22: không biểu tượng)
+  'cho-duyet': 'border-muted-line bg-muted-bg text-muted', 'qua-han': '',   // BADGE-QUA-HAN (chủ SP 15/11): quá hạn = `BadgeHan` đỏ (vẽ ở `NhanTrangThai`)
   xong: 'border-transparent text-done', 'da-huy': 'border-transparent text-slate-500 line-through decoration-1',
 };
 export function NhanTrangThai({ t, soNgay, title, chu }: {
@@ -587,6 +587,7 @@ export function NhanTrangThai({ t, soNgay, title, chu }: {
   chu?: string;
 }) {
   const chuHien = chu ?? chuTrangThai(t, soNgay);
+  if (t === 'qua-han') return <BadgeHan muc="qua" title={title}>{chuHien}</BadgeHan>;
   return <span title={title} className={`${CHIP_VUONG} ${NHAN_LOP[t]}`}>
     {chuHien}</span>;
 }

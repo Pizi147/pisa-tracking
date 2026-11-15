@@ -6,7 +6,7 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
-import { Nhan } from '../../ui/Nhan.tsx';
+import { BadgeHan, Nhan } from '../../ui/Nhan.tsx';
 import { DongHan } from '../../ui/DongHan.tsx';
 import { AddCoordinationForm } from './PhoiHopSosSection.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
@@ -112,17 +112,15 @@ const HANG = 'grid grid-cols-[32%_23%_minmax(0,1fr)_40px] max-sm:grid-cols-[minm
 const HANG_GOP = 'grid grid-cols-[minmax(0,1fr)_240px_40px] max-sm:grid-cols-[minmax(0,1fr)_44px]';
 const O = 'min-w-0 px-2.5 py-2.5 max-sm:col-span-2 max-sm:px-0 max-sm:py-1';
 
-/** Hạn dưới tên em: quá hạn đỏ + ngày (V22: chỉ màu); còn ≤ 3 ngày vàng; xa mờ. */
+/** Hạn dưới tên em: quá hạn badge đỏ + ngày (`BadgeHan`, 15/11); còn ≤ 3 ngày badge vàng; xa mờ. */
 function HanEm({ han }: { han: string }) {
   const { homNay } = useNgayNghiepVu();
   if (!homNay) return null;
   const qua = han < homNay;
   const gan = !qua && daysBetween(homNay, han) <= 3;
-  return (
-    <span className={`mt-1 block whitespace-nowrap text-[13px] tabular-nums ${qua ? 'font-bold text-late' : gan ? 'font-semibold text-soon' : 'text-dim'}`}>
-      {qua ? <><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: daysBetween(han, homNay) })} · {shortDate(han, homNay)}</> : nhanHan(han, homNay)}
-    </span>
-  );
+  if (qua) return <span className="mt-1 block"><BadgeHan muc="qua"><span className="sr-only">{t('quá hạn')}</span>{t('{n} ngày', { n: daysBetween(han, homNay) })} · {shortDate(han, homNay)}</BadgeHan></span>;
+  if (gan) return <span className="mt-1 block"><BadgeHan muc="gan">{nhanHan(han, homNay)}</BadgeHan></span>;
+  return <span className="mt-1 block whitespace-nowrap text-[13px] tabular-nums text-dim">{nhanHan(han, homNay)}</span>;
 }
 
 function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop = false }: {

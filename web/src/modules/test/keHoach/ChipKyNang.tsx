@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { O_KE_HOACH, nhanTuanKhoa, tenMonNgan, type KyNangKH, type MonGon, type OGon, type OKyNang } from '@shared/domain/index.ts';
 import { ODiem } from '../../../ui/ODiem.tsx';
+import { BadgeHan } from '../../../ui/Nhan.tsx';
 import { kqOverall } from '../../students/GocLichThi.tsx';
 import { fmtBand } from '../../../lib/format.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -74,7 +75,7 @@ export function ODotGon({ o, kn, ct = null, nhan, ketQua, khoa, chon, onMo, href
         <span className="o-kh-tt">
           {nhanKhoa && <span className="text-xs font-normal tabular-nums text-faint">{nhanKhoa}</span>}
           {kq ? <ODiem so={fmtBand(kq.ovr)} kq={kq.kyVong == null ? null : kqOverall(kq.ovr, kq.kyVong)} nhan="Overall" />
-            : tt && <span className={tt.lop}>{tt.chu}</span>}
+            : tt && (o.tt?.loai === 'tre' ? <BadgeHan muc="qua">{tt.chu}</BadgeHan> : <span className={tt.lop}>{tt.chu}</span>)}
         </span>
       )}
     </>

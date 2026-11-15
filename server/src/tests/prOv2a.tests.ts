@@ -1,5 +1,6 @@
 /** PHÉP KIỂM PR-OV2a — vai TVV / CX / Admin: ma trận quyền (đặc tả OV mục 2), máy chủ chặn 403, sửa thông tin giới hạn, đổi góc nhìn, migrate. */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { docSach } from './panelUx3.tests.ts';
 
 export async function runPrOv2aTests(t: YThucTestKit) {
   const { check, checkAsync, assert, conn, P } = t;
@@ -23,6 +24,58 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     conn.exec('BEGIN IMMEDIATE');
     try { return fn(); } finally { conn.exec('ROLLBACK'); xoaNho(); }
   };
+
+  check('GV-KIEM-ADMIN · tài khoản vừa Admin vừa GV KHÔNG mất việc phần GV (Case / Ý thức / Phối hợp…): /my-work của GV cộng vai Admin ⊇ của GV thuần, cả "Của tôi" lẫn "Tất cả"; nav vẫn có Yêu cầu của tôi', () => thu(() => {
+    /* GV có nhiều việc ngoài Chấm điểm nhất trong demo (GVCN / GVBM / vài GV khác). */
+    const ngoai = (u: any) => (mywork.myWork(loadPrincipal(u), {}).items ?? []).filter((i: any) => i.group !== 'score').length;
+    /* GV ở chi nhánh có một Admin THUẦN (để phần (b) có người xem đúng quyền). */
+    const ung = all(`SELECT ta.user_id id FROM teacher_assignments ta WHERE ta.status = 'active'
+      AND ta.user_id IN (SELECT t.user_id FROM user_roles t WHERE t.status = 'active' AND t.branch_id IN (SELECT ur.branch_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' AND ur.status = 'active'
+        AND ur.user_id NOT IN (SELECT ur2.user_id FROM user_roles ur2 JOIN roles r2 ON r2.id = ur2.role_id WHERE r2.key != 'office_admin')))
+      GROUP BY ta.user_id ORDER BY COUNT(*) DESC LIMIT 12`).map((r) => r.id as number);
+    assert(ung.length > 0, 'demo không có GV cùng chi nhánh với Admin thuần');
+    const g = loadPrincipal(ung.sort((x: number, y: number) => ngoai(y) - ngoai(x))[0]);
+    const khoa = (w: any) => new Set<string>((w.items ?? []).map((i: any) => i.key));
+    const truoc = mywork.myWork(g, {});
+    const kTruoc = khoa(truoc);
+    const ngoaiScore = (truoc.items as any[]).filter((i) => i.group !== 'score').length;
+    assert(ngoaiScore > 0, 'GVCN demo không có việc ngoài Chấm điểm — phép kiểm không soi được gì');
+    const idAd = one(`SELECT id FROM roles WHERE key = 'office_admin'`).id;
+    for (const b of all(`SELECT DISTINCT branch_id b FROM user_roles WHERE user_id = ? AND status = 'active'`, g.userId)) {
+      conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?, ?, ?, 'active', datetime('now'))`).run(g.userId, idAd, b.b);
+    }
+    xoaNho();
+    const hai = loadPrincipal(g.userId);
+    assert(hai.roleKeys.includes('office_admin') && hai.roleKeys.includes('teacher'), 'không dựng được tài khoản hai vai');
+    for (const nguoi of [undefined, 'tat-ca'] as const) {
+      const sau = khoa(mywork.myWork(hai, nguoi ? { nguoi } : {}));
+      const mat = [...kTruoc].filter((k) => !sau.has(k));
+      assert(mat.length === 0, `${nguoi ?? 'Của tôi'}: mất ${mat.length} việc phần GV: ${mat.slice(0, 3).join(' | ')}`);
+    }
+    assert(navOf(hai).workRequests, 'Admin kiêm GV mất "Yêu cầu của tôi"');
+    /* (a) phạm vi của nơi gọi: chỉ nhóm Chấm điểm → phần GV cũng chỉ Chấm điểm; một tập lớp → không lọt lớp khác. */
+    const chiScore = (mywork.myWork(hai, { chiNhom: new Set(['score']) }).items ?? []) as any[];
+    assert(chiScore.every((i) => i.group === 'score'), 'chiNhom=score nhưng phần GV kiêm Admin vẫn lọt nhóm khác: ' + [...new Set(chiScore.map((i) => i.group))].join(','));
+    const tapLop = new Set<number>(((truoc.items ?? []) as any[]).map((i) => i.classId).filter((x: any) => x != null)).values().next().value;
+    if (tapLop != null) {
+      const mot = (mywork.myWork(hai, { classIds: [tapLop] }).items ?? []) as any[];
+      const goc = (mywork.myWork(g, { classIds: [tapLop] }).items ?? []) as any[];
+      assert(mot.length >= goc.length, 'classIds: phần GV kiêm Admin ít hơn GV thuần');
+    }
+    /* (b) Admin THUẦN xem GV kiêm Admin: chỉ nhóm Chấm điểm — không lộ việc Case / Ý thức… của GV đó. */
+    const idAdThuan = one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'office_admin' AND ur.status = 'active' AND ur.user_id != ? AND ur.branch_id IN (SELECT value FROM json_each(?))
+      AND ur.user_id NOT IN (SELECT ur2.user_id FROM user_roles ur2 JOIN roles r2 ON r2.id = ur2.role_id WHERE r2.key != 'office_admin') LIMIT 1`, g.userId, JSON.stringify(all(`SELECT DISTINCT branch_id b FROM user_roles WHERE user_id = ? AND status = 'active'`, g.userId).map((r) => r.b)))?.id;
+    assert(idAdThuan, 'demo không có Admin thuần');
+    const vc = mywork.viecCuaNguoi(loadPrincipal(idAdThuan), g.userId);
+    const nhom = new Set<string>(((vc.items ?? vc.dong ?? []) as any[]).map((i) => i.group));
+    assert([...nhom].every((k) => k === 'score'), 'Admin xem GV kiêm Admin thấy nhóm ngoài Chấm điểm: ' + [...nhom].join(','));
+    /* (c) "Việc của tôi" ở đầu trang Admin = cùng hàm với chuông / badge (`dongCuaToi` + `demDongViec`). */
+    const w = mywork.myWork(hai, {});
+    const dm2: any = dm;
+    assert(dm2.demDongViec(dm2.dongCuaToi(w.dong)).n === w.summary.viec, `Việc của tôi ${dm2.demDongViec(dm2.dongCuaToi(w.dong)).n} ≠ summary.viec ${w.summary.viec}`);
+    const web = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx').replace(/\r\n/g, '\n');
+    assert(/haiSo[\s\S]{0,260}dongCuaToi\(items\)/.test(web) && /Việc của tôi/.test(web) && /Việc của GV/.test(web), 'đầu trang Admin chưa tách "Việc của tôi" / "Việc của GV" bằng dongCuaToi');
+  }));
 
   check('OV2a-0 · ROLES có ba vai mới, nhãn đúng; branch_admin vẫn chỉ là vai đã bỏ', () => {
     for (const [k, nhan] of [['consultant', 'Tư vấn viên'], ['cx', 'CX'], ['office_admin', 'Admin']]) {
