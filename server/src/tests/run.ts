@@ -9625,6 +9625,9 @@ await runPrSvTqGvTests({ check, assert, conn, P } as any);
 // ==================================================================== LG-8 (/my-work: Test sắp tới từng lớp của GV)
 const { runPrMyWorkTestSapToiTests } = bocTep('prMyWorkTestSapToi', await import('./prMyWorkTestSapToi.tests.ts'));
 await runPrMyWorkTestSapToiTests({ check, assert, conn, P } as any);
+// ==================================================================== LG-13 (gợi ý chữ · Sắp tới · Case theo bước)
+const { runPrLg13Tests } = bocTep('prLg13', await import('./prLg13.tests.ts'));
+await runPrLg13Tests({ check, assert, conn, P } as any);
 // ==================================================================== SUA-CHAM-LAI (Đ4 lý do Chưa đủ dữ liệu)
 const { runPrSuaChamLaiTests } = bocTep('prSuaChamLai', await import('./prSuaChamLai.tests.ts'));
 await runPrSuaChamLaiTests({ check, assert } as any);
@@ -9997,6 +10000,8 @@ await runPrQtv2BandTests({ check, assert, assertThrows, conn, P } as any);
 // ==================================================================== NHAP-KQ-PA (chủ SP 13/11: GV lưu nháp kết quả PA trên máy chủ)
 const { runPrNhapKqTests } = bocTep('prNhapKq', await import('./prNhapKq.tests.ts'));
 await runPrNhapKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
+const { runPrLuoiKqTests } = bocTep('prLuoiKq', await import('./prLuoiKq.tests.ts'));
+await runPrLuoiKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
 // ==================================================================== OV6-DOC-CHON (14/11: ô chọn / ô tìm đọc ít — LIMIT, /classes gọn)
 const { runPrOv6DocChonTests } = bocTep('prOv6DocChon', await import('./prOv6DocChon.tests.ts'));
 await runPrOv6DocChonTests({ check, assert, conn, P } as any);

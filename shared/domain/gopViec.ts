@@ -10,6 +10,7 @@
  * OV-12c: bỏ gom Xác nhận nguyên nhân theo kỹ năng + lượt (OV-5a) — Case MT lấy nguyên nhân từ nhận xét (không còn việc đó).
  * OV-13c (chủ SP 15/10, Q4): Case SOS FT — Xác nhận PA, Mô tả Case — gộp theo lớp + TUẦN THI + MỨC SOS (không cần cùng MT); Thêm PA vẫn từng
  * dòng. Nhập điểm gộp theo TUẦN THI qua mọi lớp của cùng người giữ việc (lưới Lịch Test) — mỗi em con là một lớp của tuần đó.
+ * GD-20c: Ghi kết quả PA gộp theo lớp + kỳ (hạn kỳ) — dòng gộp mở lưới (`moCaDong` ở web).
  */
 import { tuanLich } from './hienThiNgay.ts';
 import { dich, t } from '../i18n/index.ts';
@@ -73,6 +74,8 @@ export function khoaGopCua(it: ViecGopDuoc): string | null {
   const k = khoaDongGop(it.group, it.classId!, it.ownerId);
   /* RA-LUONG-1: dòng gộp chấm chéo (QL "Tất cả", gom theo lớp) giữ đuôi `|cc` như việc lẻ — không thì nó lọt vào Chấm điểm (không đếm) và mở panel Nhập điểm cả dòng. */
   if (laViecChamCheo(it)) return `${k}|cc`;
+  /* GD-20c ([XM-6] mockup ⑫ C1): Ghi kết quả PA gộp theo lớp + CÙNG KỲ (cùng hạn kỳ `action_due`) — hai kỳ khác nhau là hai dòng, mỗi dòng mở một lưới. */
+  if (it.group === 'ghi_ket_qua_pa') return `${k}:d${it.due ?? ''}`;
   return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
 }
 const nang = (u: ViecGopDuoc['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
