@@ -22,7 +22,7 @@ Số ngày là bản gốc; Quản trị đổi được ở Hạn mặc định
 |---|---|
 | B1 | "Thi" = thi thật. "Test" = Mock Test (MT), MT0, Progress, Final, Checkpoint. |
 | B2 | Lớp FT: MT xếp **theo từng em** — tuần học 6 · 12 · 16 (RF: 4 · 8). Lớp thường: theo tuần của lớp — FOU 4 · 8, BE / ELE 5 · 10, Pre FOU 5. |
-| B3 | Nhập điểm là việc của **GV được phân công đúng kỹ năng ở đúng lớp**. Việc sinh từ **thứ Hai tuần Test**; hạn **hết thứ Tư tuần sau**. Chưa tới tuần Test thì GV chưa nhập được. |
+| B3 | Nhập điểm là việc của **GV được phân công đúng kỹ năng ở đúng lớp**. Việc sinh từ **thứ Hai tuần Test**; hạn **hết thứ Tư tuần sau**. ~~Chưa tới tuần Test thì GV chưa nhập được.~~ **[đã thay 14/11 — mã NHAP-DIEM-a, `doiVeTuanNayNeuChua` ở `server/src/fasttrack/skillSchedule.ts`: lưu điểm trước tuần Test thì máy TỰ dời kỹ năng về tuần này, không hỏi, không cần QL; PTA Overhaul đối chiếu mã 15/11 khi rà HD3-2]** |
 | B4 | Speaking của Mock / MT0 = **chấm chéo**: một việc chung cho mọi GV Speaking của chi nhánh. |
 | B5 | Kỳ vọng: MT1 = Target − 1.0 · MT2 = Target − 0.5 · MT3 trở đi và RF = Target. Lớp thường: đạt từ 70 %. |
 | B6 | "-" = vắng, có tác dụng ngay: Mock lần 1 dời sang tuần sau, lần 2 huỷ; lớp thường dời, không huỷ. |
