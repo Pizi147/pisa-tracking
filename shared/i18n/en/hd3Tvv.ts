@@ -32,7 +32,7 @@ export const EN_HD3_TVV = {
   'Danh sách chỉ có việc bạn giữ, không làm thay.': 'The list holds only your own tasks, no doing for others.',
   'Dòng việc đỏ, lên đầu mục; vẫn làm được; không có thẻ Báo QL.': 'The row turns red and goes to the top; you can still do it; no manager alert card.',
   'Em FT có kết quả thi thật mà chưa chọn bước tiếp.': 'An FT student has a real exam result but no next step yet.',
-  'Em FT tới tháng dự kiến thi mà chưa có ngày thi.': 'An FT student reached the expected exam month without an exam date.',
+  'Em FT đã tới tháng Dự kiến thi mà chưa có ngày thi.': 'An FT student reached the expected exam month without an exam date.',
   'Em chuyển lớp': 'Student changes class',
   'Em chưa có TVV / đổi TVV': 'No consultant / consultant change',
   'Em chưa có TVV: GVCN lớp em báo, lớp chưa có GVCN thì QL.': 'No consultant: the core teacher calls, or the manager if there is none.',

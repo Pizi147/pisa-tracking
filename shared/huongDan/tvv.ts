@@ -171,7 +171,7 @@ const VIEC_RIENG_TVV: ViecHd[] = [
     tep: ['web/src/modules/congViec/PanelSauThi.tsx', 'server/src/worklist/viecTvv.ts'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Chốt ngày thi', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Bấm dòng em ở nhóm <b>Chốt ngày thi</b>.' } },
     loiTat: ['p-chot-ngay-thi'], cung: 'mở cùng panel.',
-    khiCo: 'Em FT tới tháng dự kiến thi mà chưa có ngày thi.',
+    khiCo: 'Em FT đã tới tháng Dự kiến thi mà chưa có ngày thi.',
     buoc: ['Bấm <b>Chốt ngày</b> ở dòng.', 'Chọn <b>Ngày thi</b>, hoặc <b>Dời tháng dự kiến</b>.', 'Bấm <b>Chốt ngày</b>.'],
     xong: 'Có ngày thi, hoặc đã dời sang tháng mới.',
     sai: 'Sửa ngày ở Học viên & Lớp, góc Lịch thi.',
