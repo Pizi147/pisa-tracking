@@ -506,3 +506,9 @@ Câu hỏi của PTA Plan: tab Chấm Speaking có bài quá hạn thì badge c�
 > "Có, đỏ như mọi nơi"
 
 ĐÃ CHỐT (thay phần "mờ, không đỏ" của lời 33 và `04-thiet-ke.md` mục 15): tab "Chấm Speaking" có bài quá hạn → **badge ĐỎ như mọi tab khác, không ⚠** (V22). Vẫn GIỮ: không cộng vào badge menu / chuông (bài chung của nhóm GV Speaking).
+
+## 15/11 — lời 46 (câu hỏi, kèm /superpowers:brainstorming): còn chỗ nào nâng cấp / giảm tải / theo dõi trực diện hơn?
+
+> "Ngoài các phần đã làm, bạn có thấy chỗ nào nên nâng cấp nữa không? chỗ nào cải thiện giảm tải workflow nữa không? chỗ nào có thể khiến cho quá trình theo dõi thông tin trực diện hơn nữa không?"
+
+PTA Overhaul hiểu: chủ SP muốn ĐỀ XUẤT mới ngoài phạm vi 11 mockup đã duyệt, theo ba hướng — nâng cấp · giảm thao tác cho người làm · thấy thông tin thẳng hơn. Trả lời bằng danh sách đề xuất chia "Nên có" / "Đụng luật" (lời 3); CHƯA cái nào được duyệt — chủ SP chọn rồi mới kiểm mã, viết thiết kế.
