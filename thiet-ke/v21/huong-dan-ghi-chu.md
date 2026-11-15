@@ -1,7 +1,7 @@
 # Mockup v21 ⑭ · Hướng dẫn V3 — ghi chú
 
-Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `v21.css` chỉ đọc). Đề bài: `docs/superpowers/specs/2026-11-13-overhaul-v6/15-huong-dan-v3.md` mục 1, 2, 4, 5 (R14.1–R14.11) · lời chủ SP 36, 40, 43–55 · luật chung G1–G5 (`11-de-bai-mockup-dot-2.md`) · V22. Nền đã duyệt: HD-V2 `thiet-ke/v14/huong-dan.html` + ghi chú, đặc tả `2026-11-05-huong-dan-v2/de-xuat.md`. Chữ thẻ đối chiếu: `luat/0`–`4` (mục "Việc sinh ra"), `13-thiet-ke-dot-4.md` mục 3, bảng câu quy chế ⑤ (`bang-mau.html`), mockup đã duyệt ① ② ⑪ ⑫ (nhãn nút).
-Ảnh: `thiet-ke/v21/anh/huong-dan/` — `{khung}-{toi|sang}.png` (1440 Tối + Sáng; K12 = 375 Sáng), `truoc/` = web hiện tại (seed, ngày demo 14/09/2026, dev cổng 4614/5614 — đã tắt), `cap-*.png` = 18 ảnh cặp TRƯỚC │ SAU kèm một câu "đổi gì". Chụp bằng chrome-headless-shell có sẵn; `document.fonts.check` Be Vietnam Pro + Inter = true. Soát tự động mọi khung: không lỗi console, không chữ < 12 px, không thẻ việc nào bị cắt / phải cuộn ở 1440 (chỉ danh sách K5a, K6b, K8d cuộn — có chủ ý).
+Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `v21.css` chỉ đọc). Đề bài: `docs/superpowers/specs/2026-11-13-overhaul-v6/15-huong-dan-v3.md` mục 1, 2, 4, 5 (R14.1–R14.11) + **mục 8** (đọc soát so mã, PR #1741 — thắng mục 4 khi khác; PTA Overhaul nhắn bổ sung 15/11) · lời chủ SP 36, 40, 43–55 · luật chung G1–G5 (`11-de-bai-mockup-dot-2.md`) · V22. Nền đã duyệt: HD-V2 `thiet-ke/v14/huong-dan.html` + ghi chú, đặc tả `2026-11-05-huong-dan-v2/de-xuat.md`. Chữ thẻ đối chiếu: `luat/0`–`4` (mục "Việc sinh ra"), `13-thiet-ke-dot-4.md` mục 3, bảng câu quy chế ⑤ (`bang-mau.html`), mockup đã duyệt ① ② ⑪ ⑫ (nhãn nút).
+Ảnh: `thiet-ke/v21/anh/huong-dan/` — `{khung}-{toi|sang}.png` (1440 Tối + Sáng; K12 = 375 Sáng), `truoc/` = web hiện tại (seed, ngày demo 14/09/2026, dev cổng 4614/5614 — đã tắt), `cap-*.png` = 20 ảnh cặp TRƯỚC │ SAU kèm một câu "đổi gì". Chụp bằng chrome-headless-shell có sẵn; `document.fonts.check` Be Vietnam Pro + Inter = true. Soát tự động mọi khung: không lỗi console, không chữ < 12 px, không thẻ việc nào bị cắt / phải cuộn ở 1440 (chỉ danh sách K5a, K6b, K8d cuộn — có chủ ý).
 
 ## 0. Lời chủ SP trong session này
 
@@ -12,7 +12,7 @@ Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `
 | Khung | Nội dung | R |
 |---|---|---|
 | K1 | GV mở panel Nhập điểm (MB FT 104), bấm "?" → tab Ở đây = MỘT thẻ việc đủ bảy dòng, chồng lên panel việc (panel việc còn dưới nền mờ) · "‹ Việc khác ở tab này" | R14.1 |
-| K2a–e | Biến thể dòng: MT cũ (không hạn → không dòng Hạn) · Xử lý vi phạm (hai lối) · TVV Báo PH · QL làm thay (dải "Việc của GV. Bạn làm thay được.") · CX chỉ xem (dải "Bạn chỉ xem", ẩn Làm / Làm sai / Không làm được) | R14.2 |
+| K2a–g | Biến thể dòng: MT cũ (không hạn → không dòng Hạn) · Xử lý vi phạm (hai lối) · TVV Báo PH · QL làm thay (dải "Việc của GV. Bạn làm thay được.") · CX chỉ xem (dải "Bạn chỉ xem", ẩn Làm / Làm sai / Không làm được) · **QL hộp duyệt: một thẻ cho một loại yêu cầu** · **QL giữ việc TVV khi em chưa có TVV: không dải** | R14.2, 15 mục 8.1 |
 | K3 | Tầng 2: Công việc · tab Case học thuật, chưa chọn việc — ≤ 5 việc của tab + "+ 3 việc khác" + Không làm ở đây | R14.3 |
 | K4 | Tầng 3: Hồ sơ học viên — dáng V2 gọn (Bạn đang ở · Trước · Việc làm ở đây · Không làm ở đây) | R14.4 |
 | K5a / K5b | Tôi muốn…: nhóm theo tên tab Công việc + bộ lọc nhịp (dính đầu khi cuộn) · lọc "Sau tuần Test", mở "Mô tả Case" → thẻ có Đi tới › + Chỉ cho tôi | R14.5 |
@@ -22,7 +22,7 @@ Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `
 | K9 | ⓘ ở dòng quy chế panel Nhập điểm → cùng panel, cùng thẻ K1; bước khớp quy chế tô nền 2 giây | R14.9 |
 | K10a / K10b | Chỉ cho tôi (khoanh ô điểm + một dòng, dáng V2) · trang /huong-dan (Thẻ việc · Khi gặp… · Luật và hạn · Thuật ngữ, nút In) | R14.10 |
 | K11a–c | Trạng thái: hạn đang nạp · nạp hạn lỗi ("⚠ Không tải được hạn · Thử lại") · việc chưa có thẻ (lưới an toàn) | G4 "đủ trạng thái" |
-| K12a–f | 375 Sáng: tầng 1 · tầng 2 · Tôi muốn… · Khi gặp… · tìm · Có gì mới | R14.10 |
+| K12a–f | 375 Sáng: tầng 1 (dòng quy chế đầy đủ ở đầu thẻ) · tầng 2 · Tôi muốn… · Khi gặp… · tìm · Có gì mới | R14.10, 15 mục 8.1 |
 
 ## 2. Bảng truy vết so V2 (khung → thành phần → TRƯỚC → SAU)
 
@@ -36,6 +36,10 @@ Mockup: `thiet-ke/v21/huong-dan.html` + `huong-dan.css` (token, thành phần: `
 | K1, K2 | Nội dung khi đang mở panel việc | mục "{panel} đang mở" (ô Lối chính + 3 bước) rồi MỌI việc của trang (18 dòng, phải cuộn) | **MỘT thẻ việc** khuôn bảy dòng, đầu thẻ "Bạn đang mở: lớp · việc" | ĐỔI (tầng 1) |
 | K1 | Ô "Lối chính · Công việc › Chấm điểm · Đi tới ›" khi đang ở đúng chỗ | có | bỏ (đang ở đúng chỗ); lối tắt thành một dòng nhạt "Cũng mở được từ: …" | BỎ ô · GIỮ ý |
 | K1 | Lối lên | — | "‹ Việc khác ở tab này" (tầng 2) / "‹ Việc khác ở màn này" (tầng 3) | MỚI |
+| mọi | Đơn vị một thẻ | mỗi việc của `lam` (gộp: "Nhập điểm MT · Progress · Final", "Bàn giao khi em chuyển lớp", "Xác nhận Case, PA"…) | **tên dòng việc trên web**: Nhập điểm · Chấm Speaking · Xác nhận PA · Chọn PA · Bàn giao chuyển lớp · Bàn giao đổi GV… (15 mục 8.1) | ĐỔI |
+| K2f | Hộp duyệt QL | một mục "Lọc yêu cầu chờ duyệt" liệt kê cả tab | mỗi loại yêu cầu một thẻ (vẽ "Duyệt giữ PA của GV") | ĐỔI (8.1) |
+| K2g | Việc TVV khi em chưa có TVV | QL thấy trong việc của mình, hướng dẫn viết cho TVV | QL là người giữ → cùng thẻ TVV, **không dải**; thẻ có "Em chưa có TVV: QL chi nhánh làm" | ĐỔI (8.1) |
+| K12a | Dòng quy chế ở 375 | bị cắt, phải bấm ⓘ để đọc | thẻ việc có dòng quy chế đầy đủ ở đầu | ĐỔI (8.1) |
 | K2d/e | Vai khác xem việc | QL thấy việc như của mình (nhãn "làm thay GVCN" trong tên) | cùng thẻ gốc + dải "Việc của {vai}. Bạn làm thay được / chỉ xem." | ĐỔI (4.5) |
 | K3 | Tầng 2 (tab đang đứng) | không có — "?" ở tab nào cũng 18 dòng | "Bạn đang ở Công việc · Case học thuật" + ≤ 5 việc của TAB + số việc bạn đang có | MỚI |
 | K4 | Tầng 3 (màn): Bạn đang ở · Trước / Sau · Việc làm ở đây · Không làm ở đây | dòng đầu mở sẵn, ô Lối chính trong từng dòng | như cũ, mọi dòng đóng, mở ra là thẻ việc | GIỮ dáng · ĐỔI nội dung dòng |
@@ -79,37 +83,39 @@ Số ngày trong thẻ là bản luật hiện hành, **lấy từ cấu hình "
 | Ghi kết quả PA | Hết thứ Ba sau mỗi kỳ 2 tuần | `{han:ket_qua_pa}` | C4 |
 | Mô tả Case | 5 ngày (SOS 3: 3 ngày) | `{han:sos}` / `{han:sos_3}` | C4 |
 | Nhập điểm MT cũ | — (không hạn → không dòng Hạn) | — | T-20 |
+| Duyệt giữ PA của GV | 3 ngày từ khi GV gửi | `{han:giu_pa_gv}` | C5, bảng câu ⑤ |
 "10 giây" Hoàn tác (Xử lý vi phạm) là hằng số giao diện, không phải hạn.
 
 ## 5. Đếm chữ từng thẻ (đếm từ có chữ / số; dấu "-", "›", "→" không tính; ngưỡng 4.10: dòng ≤ ~16, thẻ ≤ ~80)
 
 | Thẻ | Khi nào có | Làm | Xong khi | Hạn | Làm sai | Không làm được | Sau đó | Tổng | Dòng dài nhất |
 |---|---|---|---|---|---|---|---|---|---|
-| Nhập điểm MT · Progress · Final (K1, K9, K12a) | 10 | 8+9+4 | 5 | 10 | 11 | 14 | 13 | **84** | 14 |
+| Nhập điểm (K1, K9, K12a) | 10 | 8+9+4 | 5 | 10 | 11 | 14 | 13 | **84** | 14 |
 | ↳ QL làm thay (K2d, ẩn Không làm được) | | | | | | — | | 70 | 13 |
 | Nhập điểm MT cũ (K2a) | 13 | 7+4+4 | 6 | — | 11 | 13 | 14 | 72 | 14 |
 | Xử lý vi phạm (K2b) | 16 | 13+8 (hai lối) | 6 | 15 | 12 | — | 15 | **85** | 16 |
-| Báo PH (K2c) | 15 | 7+7+4 | 5 | 11 | — | 14 | 11 | 74 | 15 |
+| Báo PH (K2c, K2g) | 15 | 7+7+4 | 5 | 11 | — | 12+7 (hai lý do) | 11 | 79 | 15 |
+| Duyệt giữ PA của GV (K2f) | 14 | 11+8 | 5 | 14 | 10 | — | 13 | 75 | 14 |
 | Ghi kết quả PA (đủ) | 16 | 6+11+7 | 5 | 8 | 6 | 11 | 9 | 79 | 16 |
 | ↳ CX chỉ xem (K2e) | 16 | — | 5 | 8 | — | — | 9 | 38 | 16 |
 | Mô tả Case (K5b, K12c) | 14 | 4+9+2 | 7 | 15 | — | 14 | 9 | 74 | 15 |
 | Chấm Speaking (K7a) | 15 | 9+3+4 | 10 | 12 | 11 | — | 16 | 80 | 16 |
-| Tình huống Em vắng Test (K6b) | Máy làm gì 16 · Bạn làm gì 13 · Ai khác nhận việc 16 | | | | | | | 45 | 16 |
+| Tình huống Em vắng Test (K6b) | Máy làm gì 16 · Bạn làm gì 13 · Ai khác nhận việc 14 | | | | | | | 43 | 16 |
 Hai thẻ vượt ~80 (84, 85) — [XM-4]. Đọc dò (nhãn trái → câu phải) trong ~10 giây; đọc hết từng chữ ~20 giây (critique A).
 
-**Chữ chưa chắc 100 % trên mã (HD-2 / HD-3 kiểm lại khi viết nội dung):** "Sửa hạn" (Báo PH — theo `luat/3` mục 4) · "Hiện từ Chủ nhật trước hạn" (Ghi kết quả PA — `luat/2` mục 3) · "Việc được giao" ở tab Vận hành (K11c). Dòng **Làm sai** của Báo PH và Mô tả Case **để ẩn** vì chưa thấy đường sửa rõ trên web — không đoán [XM-5].
+**Chữ chưa chắc 100 % trên mã (HD-2 / HD-3 kiểm lại khi viết nội dung):** "Sửa hạn" (Báo PH — theo `luat/3` mục 4) · "Hiện từ Chủ nhật trước hạn" (Ghi kết quả PA — `luat/2` mục 3) · "Việc được giao" ở tab Vận hành (K11c) · thẻ Duyệt giữ PA của GV: nút "Từ chối…", tab "Đã xử lý" › "Huỷ quyết định" (lấy từ hướng dẫn QL đang có trên web, `ql.ts`). Dòng **Làm sai** của Báo PH và Mô tả Case **để ẩn** vì chưa thấy đường sửa rõ trên web — không đoán [XM-5].
 
 ## 6. [XM] cần PTA Overhaul quyết
 
 1. **[XM-1] "?" bị nền mờ che (web hiện tại).** Panel phủ nền đang mở (vd QL › Tổng quan › "Chấm quá hạn") thì nút "?" nằm dưới nền mờ, KHÔNG bấm được (`truoc/r2d-ql-lam-thay.png`; Playwright báo click bị chặn). Đặc tả 4.1 "mở chồng" đòi bấm được. Đề xuất HD-1: nút "?" của thanh trên nổi trên nền mờ KhungPanel (chỉ nút này), hoặc thêm "?" nhỏ ở đầu KhungPanel. Mockup vẽ K2d theo giả định đã bấm được.
 2. **[XM-2] Tầng 2 có số việc bạn đang có** ở mỗi dòng ("3 việc") và việc đang có lên trước — đề bài chỉ nói "≤ 5 việc của tab". Số lấy từ `/my-work` đã nạp (0 câu đọc). Giữ hay bỏ?
-3. **[XM-3] Làm thay → ẩn "Không làm được".** Thẻ viết theo người giữ việc; dòng này là lý do của người đó ("không phải kỹ năng bạn → nhờ QL") — sai với QL. Builder ẩn cho vai làm thay (vai chỉ xem ẩn thêm Làm, Làm sai). Đồng thời đổi quy tắc viết: **Khi nào có / Sau đó viết theo vai (GV, GVCN, TVV), không dùng "bạn"** để vai khác đọc cùng thẻ không hiểu sai; "bạn" chỉ ở các dòng thao tác. Đề xuất ghi vào 15 mục 4.10.
+3. **[XM-3] Làm thay → ẩn "Không làm được".** (Dải tính theo dòng việc đang mở — `mine` / `lamThay` — như 15 mục 8.1; QL giữ việc TVV khi em chưa có TVV thì không có dải, thấy đủ dòng — K2g.) Thẻ viết theo người giữ việc; dòng này là lý do của người đó ("không phải kỹ năng bạn → nhờ QL") — sai với QL. Builder ẩn cho vai làm thay (vai chỉ xem ẩn thêm Làm, Làm sai). Đồng thời đổi quy tắc viết: **Khi nào có / Sau đó viết theo vai (GV, GVCN, TVV), không dùng "bạn"** để vai khác đọc cùng thẻ không hiểu sai; "bạn" chỉ ở các dòng thao tác. Đề xuất ghi vào 15 mục 4.10.
 4. **[XM-4] Hai thẻ quá ~80 chữ:** Nhập điểm 84 (giữ đủ ba bước + luật "-"), Xử lý vi phạm 85 (hai lối). Cắt thêm sẽ mất thông tin "tính đến mọi trường hợp". Giữ hay nâng ngưỡng HD-DAI lên 90?
 5. **[XM-5] Dòng Làm sai ẩn ở Báo PH, Mô tả Case** (xem mục 5). HD-2/HD-3 kiểm mã: có đường sửa thì thêm.
 6. **[XM-6] Chấm trên "?"** đổi nghĩa: V2 = "chưa mở lần nào"; V3 = "có phiên bản nội dung chưa xem". Một cờ theo phiên bản (`daXemHuongDan` → số phiên bản); tài khoản mới chưa xem phiên bản nào nên vẫn có chấm như V2; người mới KHÔNG thấy dải Có gì mới (với họ chưa có gì "mới").
 7. **[XM-7] K9 tô bước khớp 2 giây** khi mở từ ⓘ — chi tiết nhỏ thêm ngoài đề bài.
 8. **[XM-8] Bộ lọc nhịp dính đầu** thân panel khi cuộn (thấy đang lọc gì); 375 một hàng vuốt ngang, mép phải mờ.
-9. **[XM-9] Tên việc "Nhập điểm MT · Progress · Final"** giữ tên V2 (`gv.ts`); critique gợi ý "Nhập điểm Test" (dấu "·" trùng dấu tách lớp · việc). PTA chọn.
+9. **[XM-9] ĐÃ GIẢI (15 mục 8.1):** thẻ đặt theo tên dòng việc trên web → "Nhập điểm"; Tôi muốn… tách "Xác nhận PA" / "Chọn PA", "Bàn giao chuyển lớp" / "Bàn giao đổi GV".
 10. **[XM-10] Web hiện tại còn việc "Xem vi phạm mới"** (`truoc/r2b-xu-ly-vp.png`) — GD-19 (lời 47, ⑪) chưa lên web. Thẻ Xử lý vi phạm viết theo luật mới; HD-2 phải chờ GD-19 (15 mục 6 đã ghi).
 11. **[XM-11] Tổng quan QL không có danh sách tab** → panel mở từ đó dùng lối "‹ Việc khác ở màn này" (tầng 3); hồ sơ HV cũng vậy (K2e). Tên lối thứ hai này là builder đặt.
 
@@ -146,7 +152,8 @@ Tất cả ≤ 1 px.
 | R | Yêu cầu | Khung | Đạt? |
 |---|---|---|---|
 | R14.1 | Tầng 1: GV mở Nhập điểm bấm "?" → thẻ đủ bảy dòng, chồng lên panel, không cuộn 1440; "‹ Việc khác ở tab này" | K1 (+ K12a 375) | Đạt — panel việc còn dưới nền mờ (thấy tiêu đề, cột học viên) |
-| R14.2 | Biến thể: không hạn · Xử lý vi phạm hai lối · TVV Báo PH · QL "làm thay được" · TVV / CX "chỉ xem" không dòng Làm | K2a–e | Đạt (K2e vẽ CX; TVV cùng dáng) · kèm [XM-3] |
+| R14.2 | Biến thể: không hạn · Xử lý vi phạm hai lối · TVV Báo PH · QL "làm thay được" · TVV / CX "chỉ xem" không dòng Làm | K2a–g | Đạt (K2e vẽ CX; TVV cùng dáng) · kèm [XM-3] |
+| 15 mục 8.1 | thẻ = tên dòng việc · hộp duyệt một thẻ / loại · dải theo dòng việc (QL giữ việc TVV: không dải) · ⓘ mở panel "?" chồng, đúng thẻ · 375 dòng quy chế đầu thẻ · Head tutor dùng thẻ GV · CX chỉ tầng 2, 3 + thẻ chỉ xem | K1, K2f, K2g, K2e, K9, K12a, K5 | Đạt |
 | R14.3 | Tầng 2: Công việc tab Case học thuật, chưa chọn việc → Bạn đang ở + ≤ 5 việc + Không làm ở đây | K3, K12b | Đạt · [XM-2] |
 | R14.4 | Tầng 3: màn không tab (Hồ sơ HV) dáng V2 gọn | K4 | Đạt |
 | R14.5 | Tôi muốn…: nhóm theo tab + bộ lọc nhịp; mở dòng ra thẻ; Đi tới › + Chỉ cho tôi | K5a, K5b, K12c | Đạt |
@@ -167,4 +174,4 @@ Tất cả ≤ 1 px.
 
 ## 11. Ảnh cặp (TRƯỚC web │ SAU mockup)
 
-`cap-k1-tang-1` · `cap-k2a-khong-han` · `cap-k2b-xu-ly-vp` · `cap-k2c-tvv-bao-ph` · `cap-k2d-ql-lam-thay` · `cap-k2e-cx-chi-xem` · `cap-k3-tang-2` · `cap-k4-tang-3` · `cap-k5-toi-muon` · `cap-k6-khi-gap` · `cap-k7a-tim` · `cap-k7b-tim-rong` · `cap-k8-co-gi-moi` · `cap-k9-nut-i` · `cap-k10a-chi-cho-toi` · `cap-k10b-trang` · `cap-k12a-375` · `cap-k12c-375-toi-muon`. Với khung chỉ vẽ panel (K2, K5–K7), ảnh TRƯỚC cắt đúng panel 480 px bên phải. K2a: web không có việc MT cũ trong seed GV → TRƯỚC dùng panel Phối hợp SOS (việc không hạn gần nhất).
+`cap-k1-tang-1` · `cap-k2a-khong-han` · `cap-k2b-xu-ly-vp` · `cap-k2c-tvv-bao-ph` · `cap-k2d-ql-lam-thay` · `cap-k2e-cx-chi-xem` · `cap-k2f-ql-duyet` · `cap-k2g-ql-giu-viec-tvv` (TRƯỚC: QL tab Ý thức & Phối hợp — seed không có em thiếu TVV) · `cap-k3-tang-2` · `cap-k4-tang-3` · `cap-k5-toi-muon` · `cap-k6-khi-gap` · `cap-k7a-tim` · `cap-k7b-tim-rong` · `cap-k8-co-gi-moi` · `cap-k9-nut-i` · `cap-k10a-chi-cho-toi` · `cap-k10b-trang` · `cap-k12a-375` · `cap-k12c-375-toi-muon`. Với khung chỉ vẽ panel (K2, K5–K7), ảnh TRƯỚC cắt đúng panel 480 px bên phải. K2a: web không có việc MT cũ trong seed GV → TRƯỚC dùng panel Phối hợp SOS (việc không hạn gần nhất).
