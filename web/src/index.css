@@ -1760,8 +1760,9 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .duoi-o .da { color: var(--ok); font-weight: 600; }
   .da-ghi { border: 1px solid var(--line); border-radius: 8px; background: var(--surface-2); display: grid; align-content: start; min-width: 0; }
   .da-ghi .dg-dau { display: flex; align-items: baseline; gap: 4px; padding: 8px 12px 6px; font-size: 13px; font-weight: 600; color: var(--text-dim); }
-  .da-ghi .muc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding: 7px 12px 8px; border-top: 1px solid var(--line); align-items: center; }
-  .da-ghi .nguon { grid-column: 1; font-size: 12px; font-weight: 500; line-height: 1.4; color: var(--text-faint); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .da-ghi .muc { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1px 10px; padding: 7px 12px 8px; border-top: 1px solid var(--line); align-items: start; }
+  /* PTA rà #1742: nguồn không cắt "…" — xuống tối đa 2 dòng, Chèn giữ góc phải trên. */
+  .da-ghi .nguon { grid-column: 1; font-size: 12px; font-weight: 500; line-height: 1.45; color: var(--text-faint); min-width: 0; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow-wrap: anywhere; padding-top: 3px; }
   .da-ghi .nguon b { font-weight: 600; color: var(--text-dim); }
   .da-ghi .cau { grid-column: 1 / -1; font-size: 13px; line-height: 1.45; color: var(--text-dim); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
   .da-ghi .nut-chen, .da-ghi .mo { grid-column: 2; grid-row: 1; height: 26px; padding: 0 10px; border-radius: 6px; border: 1px solid var(--line-strong); background: var(--surface); font-size: 13px; font-weight: 600; color: var(--text); cursor: pointer; }

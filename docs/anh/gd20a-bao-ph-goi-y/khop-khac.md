@@ -3,10 +3,10 @@
 ## Ảnh cặp (trái mockup │ phải web; demo 14/09, GV 7 Trần Ngọc Hà, MB FT 101 · Tháng 8; `scripts/anh-cap.mjs`, Edge headless 1:1, phông Be Vietnam Pro đã nạp)
 | Ảnh | Khung | Trạng thái web |
 |---|---|---|
-| `cap-1440-toi-a1.png` | A1 | Reading · Lê Quang Huy · ô trống, khối mở, một câu kết quả PA + Chèn |
+| `cap-1440-toi-a1.png` | A1 | Listening · Lê Quang Huy · ô trống, khối mở, câu kết quả PA (nguồn dài, xuống 2 dòng — không cắt) + Chèn |
 | `cap-1440-toi-a5.png` | A5 | Nhận xét chung · Phạm Bảo Ngọc · xử lý Report 1 + 3 vi phạm (người khác ghi có "· {tên} ghi") |
 | `cap-1440-toi-a6.png` | A6 | Listening · Lê Quang Huy · ô đã có chữ → khối gập "Bạn đã ghi tháng này · 1 · Xem" |
-| `cap-375-sang-e1.png` | E1 | 375 sáng · Reading · khối dưới ô, Chèn 44 px, chân Đóng · Lưu · em tiếp › |
+| `cap-375-sang-e1.png` | E1 | 375 sáng · Listening · Lê Quang Huy · khối dưới ô, nguồn đủ chữ, Chèn 44 px, chân Đóng · Lưu · em tiếp › |
 
 A2 (sau Chèn), A3 (không có câu), A4 (đang tải / lỗi) bấm thử trên trình duyệt (mục "Bấm thử"), không chụp riêng vì cùng thành phần.
 
@@ -32,11 +32,16 @@ A2 (sau Chèn), A3 (không có câu), A4 (đang tải / lỗi) bấm thử trên
 KHỚP 13 / 14 dòng (dòng 14 là thành phần cũ giữ nguyên, chủ SP duyệt GD-5). Cổng ≥ 90 % đạt khi tính dòng GIỮ là khớp chức năng.
 
 ## KHÁC (có lý do)
-1. **Câu vừa chèn không tô nhẹ trong ô.** Ô là `textarea` gốc — không tô được một đoạn; đổi sang ô rich text là đổi thành phần ô của cả Báo cáo PH (ngoài phạm vi). Phản hồi thay: dòng "✓ Đã chèn câu … · Hoàn tác chèn" dưới ô + "✓ Đã chèn" ở khối. [XM-a] hỏi PTA Plan nếu cần tô.
-2. **Nguồn MT chỉ có band, không "/ kỳ vọng"** (mockup "R 5.5 / 6.0"). Kỳ vọng của lượt cần đọc thêm (lộ trình + bảng kỳ vọng) — đường này giữ 4 câu theo trần LG-13. Điểm + ✓ / ✗ kỳ vọng đã có ở dòng "Điểm" ngay trên. [XM-b].
+1. **[XM-a] PTA chốt: đồng ý.** **Câu vừa chèn không tô nhẹ trong ô.** Ô là `textarea` gốc — không tô được một đoạn; đổi sang ô rich text là đổi thành phần ô của cả Báo cáo PH (ngoài phạm vi). Phản hồi thay: dòng "✓ Đã chèn câu … · Hoàn tác chèn" dưới ô + "✓ Đã chèn" ở khối. [XM-a] hỏi PTA Plan nếu cần tô.
+2. **[XM-b] PTA: thêm nếu 0 câu — không lấy được nên giữ.** **Nguồn MT chỉ có band, không "/ kỳ vọng"** (mockup "R 5.5 / 6.0"): kỳ vọng không phải cột của ô điểm — tính từ lộ trình + bảng kỳ vọng theo lượt (`ketLuanKyVong`), phải đọc thêm. Kỳ vọng của lượt cần đọc thêm (lộ trình + bảng kỳ vọng) — đường này giữ 4 câu theo trần LG-13. Điểm + ✓ / ✗ kỳ vọng đã có ở dòng "Điểm" ngay trên. [XM-b].
 3. **375 chọn em = ô chọn có tìm + ‹ ›** (GD-5, R5.2 #48 đã duyệt) thay nút "Em khác ▾" của mockup — giữ thao tác cũ.
 4. **Nguồn vi phạm không ghi bậc ("REPORT 1"), tình hình không ghi "· đã gửi TVV".** Bậc nằm ở dòng xử lý riêng ("Report 1 · W1 AUG"); tình hình ghi người gửi — đủ để GV biết nguồn, không thêm câu đọc.
 5. Chữ gợi ý trong ô không kết thúc "…" (web-design-guidelines khuyên) — giữ đúng chữ mockup đã duyệt.
+
+## Sửa sau rà PTA (#1742)
+- Dòng nguồn không cắt "…": xuống tối đa 2 dòng, nút Chèn / "✓ Đã chèn" giữ góc phải trên (`.da-ghi .muc` canh trên). Chụp lại a1 + e1.
+- Dòng quy chế 375 còn "…": chờ #1738 (`DongQuyChe`) merge rồi gộp main — không sửa ở PR này.
+- Ảnh a1 / e1 dùng phần L: dữ liệu demo cục bộ của GD-20b (việc đổi GV) chuyển R của MB FT 101 sang GV 9.
 
 ## Thao tác TRƯỚC → SAU (không mất thao tác)
 | Thao tác | TRƯỚC (#1719) | SAU | Ghi chú |
