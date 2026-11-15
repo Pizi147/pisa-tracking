@@ -218,7 +218,7 @@ export const HD_GV: HuongDan = {
       id: 'bao-cao-ph', ten: 'Viết Báo cáo PH', nhom: 'khac',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › Báo cáo PH' },
       loiTat: ['p-bao-cao-ph'],
-      buoc: ['Hồ sơ lớp, tab <b>Báo cáo PH</b>: chọn đợt.', 'Bấm <b>Viết …</b> ở cột phần của bạn (GV môn viết môn mình, GVCN viết phần Chung).', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế. Admin xuất gửi phụ huynh.'],
+      buoc: ['Hồ sơ lớp, tab <b>Báo cáo PH</b>: chọn đợt.', 'Bấm <b>Viết …</b> ở cột phần của bạn (GV môn viết môn mình, GVCN viết phần Chung).', '<b>Đặt nhanh</b> (thanh trên bảng): chọn phần + mức → <b>Áp cho n ô trống</b> — chỉ điền tiêu chí còn trống, ô đã chấm giữ; nhận xét vẫn viết từng em; <b>Hoàn tác</b> ở thông báo.', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế. Admin xuất gửi phụ huynh.'],
       tuKhac: ['báo cáo', 'phụ huynh', 'nhận xét', 'report', 'parent'],
     },
   ],

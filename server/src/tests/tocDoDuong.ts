@@ -1326,6 +1326,8 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /** BAO-PH-DAT-NHANH: POST /classes/:id/bao-cao-ph/dat-nhanh — một phần × cả lớp một lần (MB FT 101): lớp, đợt, em, MỘT câu bản ghi, MỘT câu ghi nhiều dòng, MỘT câu nhật ký; đo trong prBaoCaoPh BC-23. */
+  datNhanhBaoCaoPh: 24,   // đo 15/11: 14 câu, 50 dòng (33 em, gồm 2 câu báo Admin khi có em vừa đủ) → max(14 + 10, ⌈14 × 1,3⌉)
   /** NHAP-DIEM-a/b: POST /attempts/:id/skills/:skill/huy-diem { huy } (Huỷ điểm / Khôi phục một kỹ năng — Mock / MT0 / lớp thường). Trần = trần Huỷ môn cũ (LG-9: đo 46 câu → 60). */
   huyDiem: 60,
   /** #8 (bản rà 11/11): POST /students/:id/transfer tuần = hôm nay (FT → FT) — ra lệnh + thi hành ngay + ghi_dao 21 bảng của MỘT em (thao tác hiếm). */

@@ -4,17 +4,17 @@
  * Đợt TÍNH KHI ĐỌC từ lịch lớp (`dsDotLop`) — không lưu sẵn. Em trong đợt = em đang học lớp lúc hạn (đợt còn mở: hôm nay), còn đang học (`HV_DANG_HOC_SQL`).
  * Turso: mở tab ≈ 6 câu (lớp đã nhớ, tiến độ, phân công, em, bản ghi đợt); mở panel ≈ 5 câu (+ điểm gốc một câu); lưu một ô = 1 ghi + 1 nhật ký.
  */
-import { DS_JSON, db, theoLoJson } from '../db.ts';
+import { DS_JSON, chenNhieuDong, db, theoLoJson, tx } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopDayDu, vaiTaiChiNhanh, type Principal } from '../permissions.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { kyVongCuaLuot } from '../fasttrack/attempts.ts';
-import { notify, nguoiVaiCuaChiNhanh, writeAudit } from '../platform/audit.ts';
+import { notify, nguoiVaiCuaChiNhanh, writeAudit, writeAuditLo } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, chuTuDo, forbidden, notFound, nowIso, toInt } from '../util.ts';
 import { classProgressMany } from './schedule.ts';
 import {
-  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docDiemSua, dotMacDinh, dotTruoc, dsDotLop, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan,
+  MUC_BC, RATIO_PASS_THRESHOLD, VAI_XUAT_BC, boPhanBc, docDiemSua, dotMacDinh, dotTruoc, dsDotLop, nhanDotBc, phanDu, soNgayQuaHan, tieuChiPhan, tieuChiTrong,
   type BanGhiBc, type DiemGocBc, type DotBc, type MucBc, type PhanBc, type TuyChinhDot,
 } from '../../../shared/domain/index.ts';
 
@@ -296,6 +296,93 @@ export function luuBaoCaoPh(p: Principal, classId: number, body: any) {
     after: { dot: d.ma, phan: ph.khoa, du: !!du, vietHo: !q.cuaToi.has(ph.khoa) } });
   if (du) baoAdminLopDu(c, d, d0.bo, emDot, homNay);
   return { du: !!du, suaLuc: luc };
+}
+
+/**
+ * POST /classes/:id/bao-cao-ph/dat-nhanh { dot, phan, muc, o: { [em]: tiêu chí[] }, hoanTac?, moi? } — BAO-PH-DAT-NHANH (chủ SP 15/11).
+ * Đặt: điền `muc` vào đúng các ô hộp đã cho xem là TRỐNG (`tieuChiTrong`); ô đã có mức lúc lưu (người khác vừa chấm) bỏ qua — không đè. Ô chữ, điểm giữ.
+ * Hoàn tác (`hoanTac`): trả về trống đúng các ô đó nếu còn đúng mức vừa đặt (ai sửa sau thì giữ); em `moi` (chưa có bản ghi trước khi đặt) còn rỗng thì xoá dòng.
+ * Quyền như lưu một ô (GV đúng phần / QL viết hộ), kiểm từng em có trong đợt. MỘT giao dịch, MỘT câu ghi nhiều dòng + MỘT câu nhật ký nhiều dòng.
+ * Turso: lớp (nhớ) + đợt (tiến độ, tuỳ chỉnh) + em + MỘT câu bản ghi (đợt này + đợt trước, phần này) ≈ 6 câu, ≤ 3 × em dòng; + 2 câu khi lớp vừa đủ.
+ */
+export function datNhanhBaoCaoPh(p: Principal, classId: number, body: any) {
+  const c = docLop(classId);
+  const homNay = demoToday();
+  const d0 = dotCuaLop(c, homNay);
+  if (!d0) throw badRequest('Chương trình của lớp chưa có mẫu báo cáo PH');
+  const d = d0.ds.find((x) => x.ma === String(body?.dot ?? ''));
+  if (!d) throw badRequest('Đợt báo cáo chưa mở hoặc không có ở lớp này');
+  const ph = d0.bo.find((x) => x.khoa === body?.phan);
+  if (!ph) throw badRequest('Phần báo cáo không hợp lệ');
+  const q = quyenBc(p, c, homNay);
+  if (!q.cuaToi.has(ph.khoa) && !q.vietHo) throw forbidden('Bạn không được phân công viết phần này.');
+  const muc = body?.muc as MucBc;
+  if (!(MUC_BC as readonly unknown[]).includes(muc)) throw badRequest('Mức tiêu chí không hợp lệ');
+  const khoaTc = new Set(tieuChiPhan(ph).map((x) => x.khoa));
+  const o = new Map<number, string[]>();
+  for (const [k, v] of Object.entries(body?.o && typeof body.o === 'object' ? body.o : {})) {
+    const sid = toInt(k);
+    if (!sid || !Array.isArray(v) || !v.length || v.some((x) => !khoaTc.has(x))) throw badRequest('Danh sách ô không hợp lệ');
+    o.set(sid, [...new Set(v as string[])]);
+  }
+  if (!o.size) throw badRequest('Chưa có ô nào để đặt');
+  if (o.size > 500) throw badRequest('Quá nhiều học viên một lần');
+  const hoanTac = body?.hoanTac === true;
+  const moi = new Set((Array.isArray(body?.moi) ? body.moi : []).map(toInt));
+
+  const emDot = new Map(emCuaDot(classId, d, homNay).map((e) => [e.id, e]));
+  const truoc = hoanTac ? null : dotTruoc(d, d0.ds);
+  const ids = [...o.keys()].filter((sid) => emDot.has(sid));
+  const bg = new Map<string, any>();
+  if (ids.length) {
+    for (const r of db().prepare(`SELECT dot, student_id, muc, dat_san, chu, diem_sua FROM bao_cao_ph WHERE phan = ? AND dot IN (?, ?) AND student_id IN (${DS_JSON})`)
+      .all(ph.khoa, d.ma, truoc?.ma ?? '', JSON.stringify(ids)) as any[]) bg.set(`${r.dot}:${r.student_id}`, r);
+  }
+  const luc = nowIso();
+  const ghi: unknown[][] = [];
+  const xoa: number[] = [];
+  const ket: { studentId: number; khoa: string[]; o: 'du' | 'nhap' | null; moi: boolean }[] = [];
+  const loi: { studentId: number; lyDo: string }[] = [];
+  let boQua = 0, thieuChu = 0;
+  for (const [sid, ds] of o) {
+    if (!emDot.has(sid)) { loi.push({ studentId: sid, lyDo: 'Học viên không có trong đợt báo cáo này' }); continue; }
+    const r = bg.get(`${d.ma}:${sid}`);
+    /* Chưa có bản ghi: mức đợt trước = đặt sẵn (như panel viết `formDau`). */
+    const rt = truoc && bg.get(`${truoc.ma}:${sid}`);
+    const mt = rt ? docBanGhi(rt).muc : {};
+    const b: BanGhiBc = r ? docBanGhi(r) : { muc: { ...mt }, datSan: Object.keys(mt), chu: '', diemSua: null };
+    let doi: string[];
+    if (hoanTac) {
+      doi = ds.filter((k) => b.muc[k] === muc && !b.datSan.includes(k));
+      for (const k of doi) delete b.muc[k];
+    } else {
+      const trong = new Set(tieuChiTrong(ph, b, null));
+      doi = ds.filter((k) => trong.has(k));
+      for (const k of doi) b.muc[k] = muc;
+    }
+    boQua += ds.length - doi.length;
+    if (!doi.length) continue;
+    const du = phanDu(ph, b);
+    if (!du && !b.chu.trim()) thieuChu++;
+    /* Hoàn tác em vừa có dòng mới: chỉ còn mức đặt sẵn, không chữ, không điểm → xoá dòng (như trước khi đặt). */
+    if (hoanTac && moi.has(sid) && r && !b.chu.trim() && b.diemSua == null && Object.keys(b.muc).every((k) => b.datSan.includes(k))) {
+      xoa.push(sid); ket.push({ studentId: sid, khoa: doi, o: null, moi: false }); continue;
+    }
+    ghi.push([classId, d.ma, sid, ph.khoa, JSON.stringify(b.muc), JSON.stringify(b.datSan), b.chu, b.diemSua, du ? 1 : 0, p.userId, luc]);
+    ket.push({ studentId: sid, khoa: doi, o: du ? 'du' : 'nhap', moi: !r });
+  }
+  if (ghi.length || xoa.length) {
+    tx(() => {
+      chenNhieuDong('INSERT INTO bao_cao_ph (class_id, dot, student_id, phan, muc, dat_san, chu, diem_sua, du, sua_boi, sua_luc)', ghi,
+        ` ON CONFLICT (dot, student_id, phan) DO UPDATE SET class_id = excluded.class_id, muc = excluded.muc, dat_san = excluded.dat_san,
+          du = excluded.du, sua_boi = excluded.sua_boi, sua_luc = excluded.sua_luc`);
+      if (xoa.length) db().prepare(`DELETE FROM bao_cao_ph WHERE dot = ? AND phan = ? AND student_id IN (${DS_JSON})`).run(d.ma, ph.khoa, JSON.stringify(xoa));
+      writeAuditLo(ket.map((k) => ({ actorUserId: p.userId, action: hoanTac ? 'bao_cao_ph.hoan_dat_nhanh' : 'bao_cao_ph.dat_nhanh', entityType: 'student', entityId: k.studentId,
+        entityLabel: c.code, after: { dot: d.ma, phan: ph.khoa, muc, o: k.khoa, du: k.o === 'du', vietHo: !q.cuaToi.has(ph.khoa) } })));
+    });
+    if (ket.some((k) => k.o === 'du')) baoAdminLopDu(c, d, d0.bo, [...emDot.values()], homNay);
+  }
+  return { o: ket, soO: ket.reduce((n, k) => n + k.khoa.length, 0), boQua, loi, thieuChu, suaLuc: luc };
 }
 
 /**
