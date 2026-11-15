@@ -462,10 +462,9 @@ export async function runPrHdTests(t: any) {
    * HD-DU: mọi loại dòng việc máy chủ dựng (`NHOM_VIEC_MAY` + việc chung Chấm Speaking) có thẻ (`viecWeb`) ở một vai; mọi PANEL_HD có thẻ (`the` của mục
    * panel). Chưa có thẻ → nằm ở danh sách CHỜ (nội dung HD3-2 … HD3-5); có thẻ rồi mà còn trong danh sách → đỏ (bỏ khỏi danh sách) — danh sách chỉ ngắn lại.
    */
-  const CHO_DU_VIEC = new Set(['phoi_hop_tvv', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data',
-    'bao_ph_yt', 'xuat_bc_ph']);   // HD3-2 đã viết thẻ mọi việc của GV
+  const CHO_DU_VIEC = new Set(['ky_vong_dau_ra', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data', 'xuat_bc_ph']);   // HD3-2 GV · HD3-3 TVV đã có thẻ
   /* `ngan-case`: một panel cho nhiều loại việc — "?" lấy thẻ theo dòng việc đang mở; Case mở từ hồ sơ (không dòng việc) chưa có thẻ riêng. */
-  const CHO_DU_PANEL = new Set(['ngan-case', 'lo-trinh', 'duyet', 'chot-ngay-thi', 'xep-lich-mt', 'bao-ph', 'xet-lai']);
+  const CHO_DU_PANEL = new Set(['ngan-case', 'duyet', 'xep-lich-mt', 'xet-lai']);
   check('HD-DU · mỗi loại dòng việc máy chủ và mỗi PANEL_HD có thẻ Hướng dẫn (hoặc đang trong danh sách chờ nội dung — chỉ ngắn lại)', () => {
     const MA = new Set<string>([...NHOM_VIEC_MAY, ...hd.MA_VIEC_TACH]);
     const loi: string[] = [];

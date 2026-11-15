@@ -7,7 +7,7 @@
  * (`cx.ts`, CX KHÔNG đổi Lộ trình / Môn học, không Báo cáo PH), Head tutor lấy Hồ sơ cá nhân (`headTutor.ts`).
  */
 import { HD_GV } from './gv.ts';
-import type { HuongDan, ManHd, MucHd, TuHd, ViecHd, ViecVaiKhac } from './kieu.ts';
+import type { HuongDan, ManHd, MucHd, TinhHuongHd, TuHd, ViecHd, ViecVaiKhac } from './kieu.ts';
 
 const CV = '/cong-viec';
 const HV = '/hoc-vien';
@@ -37,23 +37,33 @@ export const VIEC_TVV: ViecHd[] = [
     tuKhac: ['sắp thi', 'ngày thi', 'exam month', 'thi', 'chờ kết quả'],
   },
   {
-    id: 'bao-ph', ten: 'Báo PH vi phạm', nhom: 'hv',
+    /* HD3-3: một thẻ cho dòng "Báo PH" (vi phạm · báo lại sau thu hồi · tình hình học tập — cùng panel, nút, hạn). Sửa câu cũ "có việc ngay kể cả khi Chờ QL
+       duyệt": chỉ Nâng 1 bậc có việc ngay, cách khác khi QL duyệt / máy chốt (`xuLy.ts:206, 1086`). */
+    id: 'bao-ph', ten: 'Báo PH', nhom: 'hv', tab: 'bao-ph', viecWeb: ['bao_ph_yt'],
+    tep: ['web/src/modules/congViec/PanelBaoPhTvv.tsx', 'web/src/ui/DongHan.tsx', 'server/src/worklist/mywork.ts', 'server/src/yThuc/baoPhTvv.ts'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Báo PH', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Bấm dòng em ở nhóm <b>Báo PH</b> để báo.' } },
     loiTat: ['p-bao-ph'], cung: 'mở cùng panel.',
-    buoc: ['GVCN lưu xử lý vi phạm là có việc ngay, kể cả khi <b>Chờ QL duyệt</b>; hạn 5 ngày lịch, tính cả ngày lưu.',
-      'Mở <b>Công việc</b>, nhóm <b>Báo PH</b>, bấm dòng em (nút <b>Ghi báo PH</b>); gọi PH theo số trong panel.',
-      'Chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, chọn <b>Ngày</b>, gõ <b>Nội dung</b> (bắt buộc: báo gì, PH nói gì, hẹn gì).',
-      '<b>Lưu · việc tiếp ›</b>; chưa liên hệ được thì việc vẫn mở, giữ hạn.'],
-    tuKhac: ['báo phụ huynh', 'phụ huynh', 'gọi', 'vi phạm', 'ý thức', 'parent', 'call', 'thu hồi'],
+    khiCo: 'GVCN xử lý vi phạm, thu hồi cần báo lại, hoặc GV báo tình hình.',
+    buoc: ['Gọi số phụ huynh trong panel.', 'Chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, gõ <b>Nội dung</b>.', 'Bấm <b>Lưu · việc tiếp ›</b>.'],
+    xong: 'Đã lưu Đã báo PH.',
+    han: '{han:bao_ph_vi_pham} tính cả ngày có việc; đổi ở <b>Sửa hạn</b>.',
+    sai: 'Vừa lưu: <b>Sửa</b>; bỏ nhầm: <b>Khôi phục</b>.',
+    khongDuoc: ['Chưa gọi được: <b>Chưa liên hệ được</b>, việc mở.', 'Em chưa có TVV: QL chi nhánh; TVV cùng chi nhánh ghi được.'],
+    sau: 'GVCN hoặc người báo tình hình nhận tin.',
+    tuKhac: ['báo phụ huynh', 'phụ huynh', 'gọi', 'vi phạm', 'ý thức', 'tình hình', 'parent', 'call', 'thu hồi'],
   },
   {
-    id: 'bao-ph-meeting', ten: 'Báo PH sau meeting CX/GĐCN', nhom: 'hv',
+    id: 'bao-ph-meeting', ten: 'Báo PH · Meeting CX/GĐCN', nhom: 'hv', tab: 'bao-ph', viecWeb: ['phoi_hop_tvv'],
+    tep: ['web/src/modules/yThuc/BangPhoiHop.tsx', 'server/src/worklist/mywork.ts', 'server/src/yThuc/baoPhTvv.ts'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Báo PH', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Báo PH · Meeting CX/GĐCN</b> ở nhóm <b>Báo PH</b>.' } },
     loiTat: ['p-phoi-hop'], cung: 'mở cùng bảng.',
-    buoc: ['GVCN xác nhận xong meeting CX/GĐCN thì TVV của em có việc báo gia đình, xếp họp, báo lại kết quả; hạn 5 ngày. Em chưa có TVV: GVCN báo.',
-      'Mở <b>Công việc</b>, nhóm <b>Báo PH</b>, bấm dòng <b>Báo PH · Meeting CX/GĐCN</b> (nút <b>Ghi KQ</b>).',
-      'Cột <b>Báo PH · kết quả</b>: bấm <b>Ghi kết quả</b> ở em chờ bạn; chọn <b>Đã báo PH</b> / <b>Chưa liên hệ được</b>, <b>Ngày</b>, <b>Nội dung</b>, lưu.',
-      'Ghi nhầm: bấm <b>Sửa</b> ở ô kết quả.'],
+    khiCo: 'GVCN xác nhận Meeting CX/GĐCN của em sau lượt Mock có SOS.',
+    buoc: ['Bấm <b>Ghi KQ</b> ở dòng.', 'Ở em chờ bạn: <b>Ghi kết quả</b>, chọn <b>Đã báo PH</b> hoặc <b>Chưa liên hệ được</b>, gõ <b>Nội dung</b>.', 'Bấm <b>Lưu</b>.'],
+    xong: 'Đã báo PH, Nội dung từ 10 ký tự.',
+    han: 'Theo cấu hình Case & SOS, tính từ ngày GVCN xác nhận.',
+    sai: 'Bấm <b>Sửa</b> ở ô kết quả.',
+    khongDuoc: ['Em chưa có TVV: GVCN lớp em báo, lớp chưa có GVCN thì QL.'],
+    sau: 'Kết quả hiện ở Phối hợp SOS, GV đọc được Nội dung.',
     tuKhac: ['meeting', 'gđcn', 'cx', 'họp', 'sos 3', 'phối hợp sos', 'báo phụ huynh'],
   },
   {
@@ -65,13 +75,15 @@ export const VIEC_TVV: ViecHd[] = [
     tuKhac: ['hạn', 'gia hạn', 'bỏ việc', 'deadline', 'extend'],
   },
   {
-    id: 'bo-sung', ten: 'Bổ sung hồ sơ thiếu', nhom: 'hv',
+    id: 'bo-sung', ten: 'Bổ sung hồ sơ thiếu', nhom: 'hv', tab: 'bo-sung', viecWeb: ['bo_sung_ho_so'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Bổ sung hồ sơ', duong: CV },
     loiTat: ['hoc-vien', 'p-sua-thong-tin'], cung: 'mở cùng chỗ.',
-    buoc: ['Mở <b>Công việc</b>, nhóm <b>Bổ sung hồ sơ</b>, bấm dòng (nút <b>Bổ sung</b>): panel mở lần lượt từng em thiếu.',
-      'Điền ngày sinh, email, Tuần bắt đầu, Target; <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b> sang em khác.',
-      'Đổi <b>Tuần bắt đầu</b>: MT chưa thi dời theo, MT đã có điểm giữ nguyên.',
-      'Xem cả nhóm: <b>Học viên & Lớp</b> › <b>Bộ lọc thêm</b> › <b>Theo vai</b> › <b>Thiếu thông tin</b>.'],
+    khiCo: 'Em của TVV thiếu Ngày sinh, Email, Tuần bắt đầu hoặc Target (FT).',
+    buoc: ['Bấm <b>Bổ sung</b> ở dòng: mở lần lượt từng em.', 'Điền ô thiếu; đổi Target cần lý do.', 'Bấm <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b>.'],
+    xong: 'Mọi em đủ bốn thông tin.',
+    sai: 'Bấm <b>Hoàn tác</b> sau khi lưu; về sau sửa lại, xem <b>Lịch sử</b>.',
+    khongDuoc: ['Em chưa có TVV: QL chi nhánh làm.'],
+    sau: 'Có Target thì máy tính được kỳ vọng MT của em.',
     tuKhac: ['thiếu', 'hồ sơ', 'missing', 'profile'],
   },
   {
@@ -155,28 +167,41 @@ export const VIEC_TVV: ViecHd[] = [
 /** Việc chỉ của TVV: nằm ở Công việc (CX không có Công việc) hoặc quyền riêng của TVV. */
 const VIEC_RIENG_TVV: ViecHd[] = [
   {
-    id: 'chot-ngay-thi', ten: 'Chốt ngày thi', nhom: 'hv',
+    id: 'chot-ngay-thi', ten: 'Chốt ngày thi', nhom: 'hv', tab: 'chot-ngay-thi', viecWeb: ['chot_ngay_thi'],
+    tep: ['web/src/modules/congViec/PanelSauThi.tsx', 'server/src/worklist/viecTvv.ts'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Chốt ngày thi', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Bấm dòng em ở nhóm <b>Chốt ngày thi</b>.' } },
     loiTat: ['p-chot-ngay-thi'], cung: 'mở cùng panel.',
-    buoc: ['Mở <b>Công việc</b>, nhóm <b>Chốt ngày thi</b>, bấm dòng em (nút <b>Chốt ngày</b>).', 'Ô <b>Chốt</b>: <b>Ngày thi</b> (chọn ngày) hoặc <b>Dời tháng dự kiến</b> (chọn <b>Tháng thi</b>).',
-      '<b>Chốt ngày</b> ở chân panel; việc tự hết, không tính hạn.'],
+    khiCo: 'Em FT đã tới tháng Dự kiến thi mà chưa có ngày thi.',
+    buoc: ['Bấm <b>Chốt ngày</b> ở dòng.', 'Chọn <b>Ngày thi</b>, hoặc <b>Dời tháng dự kiến</b>.', 'Bấm <b>Chốt ngày</b>.'],
+    xong: 'Có ngày thi, hoặc đã dời sang tháng mới.',
+    sai: 'Sửa ngày ở Học viên & Lớp, góc Lịch thi.',
+    khongDuoc: ['Em chưa có TVV: QL chi nhánh làm.'],
+    sau: 'Hôm sau ngày thi → việc Cập nhật kết quả thi thật.',
     tuKhac: ['ngày thi', 'lịch thi', 'dời tháng', 'exam date'],
   },
   {
-    id: 'thi-that', ten: 'Cập nhật kết quả thi thật', nhom: 'hv',
+    id: 'thi-that', ten: 'Cập nhật kết quả thi thật', nhom: 'hv', tab: 'sau-thi', viecWeb: ['thi_that'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Sau thi', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Cập nhật kết quả thi thật</b> ở nhóm <b>Sau thi</b>.' } },
     loiTat: ['ho-so-hv', 'hoc-vien', 'p-sau-thi'], tatThem: ['⋯ dòng em'], cung: 'mở cùng chỗ.',
-    buoc: ['Mở <b>Công việc</b>, nhóm <b>Sau thi</b>, bấm dòng <b>Cập nhật kết quả thi thật</b> (nút <b>Nhập KQ thi</b>); không tính hạn.',
-      'Gõ điểm L R W S (máy tính Overall), bấm <b>Lưu điểm</b>; em không thi: <b>Không thi</b>.', 'Lưu xong, bước <b>Bước tiếp</b> mở ngay trong panel.'],
+    khiCo: 'Hôm sau ngày thi của em FT, khi chưa đủ kết quả.',
+    buoc: ['Bấm <b>Nhập KQ thi</b> ở dòng.', 'Gõ L R W S rồi <b>Lưu điểm</b>; em không thi: <b>Không thi</b>.'],
+    xong: 'Đủ bốn kỹ năng, hoặc đã ghi Không thi.',
+    sai: 'Bấm <b>Sửa điểm</b>; panel ở hồ sơ em có <b>Hoàn tác</b>.',
+    khongDuoc: ['Em chưa có TVV: QL chi nhánh làm; TVV khác, GVCN, CX nhập được từ hồ sơ em.'],
+    sau: 'Bước <b>Bước tiếp</b> mở ngay trong panel.',
     tuKhac: ['ielts', 'điểm thi', 'kết quả thi', 'exam result', 'ket', 'pet'],
   },
   {
-    id: 'buoc-tiep', ten: 'Chọn bước tiếp sau thi', nhom: 'hv',
+    id: 'buoc-tiep', ten: 'Chọn bước tiếp', nhom: 'hv', tab: 'sau-thi', viecWeb: ['buoc_tiep'],
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Sau thi', duong: CV },
     loiTat: ['ho-so-hv', 'p-sau-thi', 'p-lo-trinh'], cung: 'mở cùng chỗ.',
-    buoc: ['Lưu điểm xong, <b>Bước tiếp</b> mở ngay trong panel. Hạn 7 ngày từ ngày có kết quả; <b>Gia hạn</b> ở dòng việc.',
-      'Chọn <b>Tạm dừng / Kết thúc học</b> (ô <b>Có thể quay lại học</b>: bật là Tạm dừng) hoặc <b>Lộ trình mới</b>; ghi chú, lưu.',
-      'Làm sau: dòng <b>Chọn bước tiếp</b> ở Công việc, hoặc <b>Chọn bước tiếp ›</b> ở đầu hồ sơ em.'],
+    khiCo: 'Em FT có kết quả thi thật mà chưa chọn bước tiếp.',
+    buoc: ['Chọn <b>Tạm dừng / Kết thúc học</b> hoặc <b>Lộ trình mới</b>.', 'Tạm dừng: bật <b>Có thể quay lại học</b>; ghi chú.', 'Bấm nút lưu ở chân panel.'],
+    xong: 'Đã chọn một bước tiếp.',
+    han: '{han:buoc_tiep_sau_thi} từ ngày có kết quả; <b>Gia hạn</b> ở dòng.',
+    sai: 'Vừa chốt: <b>Hoàn tác</b>; về sau: hồ sơ em, <b>Đổi</b>.',
+    khongDuoc: ['Em chưa có TVV: QL; TVV khác cùng chi nhánh chọn được ở hồ sơ em.'],
+    sau: 'Tạm dừng, kết thúc: em vào Lưu trữ.',
     tuKhac: ['lộ trình mới', 'thi thật', 'next step', 'sau thi', 'gia hạn'],
   },
   {
@@ -287,6 +312,86 @@ const MAN_HUONG_DAN: ManHd = {
   muc: [mucGv('huong-dan', 'hd-dung')],
 };
 
+/** HD3-3 — Trường hợp của TVV (Máy làm gì · Bạn làm gì · Ai khác nhận việc). */
+const TINH_HUONG_TVV: TinhHuongHd[] = [
+  {
+    id: 'em-chua-co-tvv', ten: 'Em chưa có TVV / đổi TVV',
+    may: ['Em chưa có TVV: QL chi nhánh giữ việc của TVV; Báo PH sau Meeting về GVCN lớp em.', 'Đổi TVV: việc đang mở sang TVV mới, hạn giữ nguyên.'],
+    ban: 'Gán TVV ở <b>Sửa thông tin</b> của em.',
+    tuKhac: ['chưa có tvv', 'đổi tvv', 'gán tvv'],
+  },
+  {
+    id: 'ph-khong-nghe', ten: 'Phụ huynh không nghe máy', the: 'bao-ph',
+    may: ['Chưa liên hệ được là một lần thử: việc vẫn mở, giữ hạn, dòng đếm số lần.'],
+    ban: 'Chọn <b>Chưa liên hệ được</b>, ghi Nội dung, gọi lại trước hạn; cần thêm ngày: <b>Sửa hạn</b>.',
+    tuKhac: ['không nghe máy', 'không liên lạc', 'gọi lại', 'no answer'],
+  },
+  {
+    id: 'em-thi-that', ten: 'Em thi thật xong', the: 'thi-that',
+    may: ['Hôm sau ngày thi có việc Cập nhật kết quả thi thật, không hạn.', 'Có kết quả → Chọn bước tiếp trong {han:buoc_tiep_sau_thi}; thi thật không tự kết thúc lộ trình.'],
+    ban: 'Nhập điểm hoặc Không thi, rồi chọn bước tiếp ngay trong panel.',
+    ai: ['Em chưa có TVV: QL; GVCN lớp cuối cũng nhập được kết quả.'],
+    tuKhac: ['thi thật', 'ielts', 'kết quả thi', 'exam'],
+  },
+  {
+    id: 'em-tam-dung', ten: 'Em tạm dừng / kết thúc học', the: 'tam-dung',
+    may: ['Em vào Lưu trữ: Báo PH ẩn, hạn dừng; Chốt ngày thi, Bổ sung hồ sơ hết.', 'Vẫn còn: Cập nhật kết quả thi thật, và Chọn bước tiếp khi em tạm dừng.'],
+    ban: 'Hồ sơ em: <b>Tạm dừng / Kết thúc học</b>; em quay lại: <b>Quay lại học</b>.',
+    ai: ['Em đã kết thúc học thì QL mở lại.'],
+    tuKhac: ['tạm dừng', 'nghỉ học', 'thôi học', 'pause'],
+  },
+  {
+    id: 'viec-qua-han', ten: 'Việc quá hạn',
+    may: ['Dòng việc đỏ, lên đầu mục; vẫn làm được; không có thẻ Báo QL.'],
+    ban: 'Mở dòng làm như thường; Báo PH: <b>Sửa hạn</b>; Bước tiếp: <b>Gia hạn</b>.',
+    ai: ['QL thấy việc quá hạn ở Công việc.'],
+    tuKhac: ['quá hạn', 'trễ', 'overdue'],
+  },
+  {
+    id: 'khong-thay-nut', ten: 'Không thấy nút / không có quyền',
+    may: ['Danh sách chỉ có việc bạn giữ; việc của TVV khác cùng chi nhánh làm thay được từ hồ sơ em.', 'Case, điểm, Ý thức, Phối hợp SOS: bạn chỉ xem, trừ ghi Báo PH.'],
+    ban: 'Không phải việc của bạn thì nhờ đúng người.',
+    ai: ['Chuyển lớp, lịch Test: QL; điểm, Case: GV; vi phạm, Phối hợp: GVCN.'],
+    tuKhac: ['quyền', 'không thấy', 'permission'],
+  },
+  {
+    id: 'luu-loi', ten: 'Không lưu được, mất mạng',
+    may: ['Chân panel báo không lưu được, chữ đang gõ vẫn giữ.', 'Báo PH bấm lưu lại không ghi đôi.'],
+    ban: 'Bấm <b>Thử lại</b>; đừng đóng trình duyệt khi còn chưa lưu.',
+    tuKhac: ['lỗi', 'mất mạng', 'không lưu', 'offline'],
+  },
+  {
+    id: 'xu-ly-thu-hoi', ten: 'GVCN thu hồi / QL từ chối xử lý', the: 'bao-ph',
+    may: ['Việc chưa báo thành Đã bỏ, kèm lý do; việc đã báo giữ nguyên, bạn nhận tin.', 'Thu hồi có nhờ báo lại → việc mới Báo PH đã thu hồi.'],
+    ban: 'Việc đã bỏ không cần làm; báo lại khi có việc mới.',
+    tuKhac: ['thu hồi', 'từ chối', 'đã bỏ', 'revoke'],
+  },
+  {
+    id: 'em-chuyen-lop', ten: 'Em chuyển lớp',
+    may: ['Việc theo em, không theo lớp: dòng ghi lớp em đang học.', 'Tình hình học tập hỏi trước đó → GVCN lớp mới trả lời.'],
+    ban: 'Không cần làm gì thêm; chuyển lớp là việc của QL.',
+    tuKhac: ['chuyển lớp', 'đổi lớp', 'transfer'],
+  },
+];
+/** HD3-3 — Trường hợp CX gặp (CX không Công việc; chỉ xem phần lớn). */
+export const TINH_HUONG_CX: TinhHuongHd[] = [
+  {
+    id: 'cx-chi-xem', ten: 'Không thấy nút / chỉ xem',
+    may: ['CX không có Công việc; Case, điểm, Ý thức, Phối hợp SOS chỉ xem.'],
+    ban: 'Việc của người khác thì nhờ TVV, GV, GVCN hoặc QL.',
+    ai: ['Chọn bước tiếp sau thi: QL hoặc TVV.'],
+    tuKhac: ['quyền', 'chỉ xem', 'permission'],
+  },
+  {
+    id: 'cx-thi-that', ten: 'Em thi thật xong', the: 'thi-that',
+    may: ['Thi thật không tự kết thúc lộ trình.'],
+    ban: 'Hồ sơ em: <b>Kết quả thi thật</b>, gõ ngày thi và điểm, bấm <b>Lưu</b>; được cả khi em đã Lưu trữ.',
+    ai: ['QL hoặc TVV chọn bước tiếp.'],
+    tuKhac: ['thi thật', 'ielts', 'kết quả thi', 'exam'],
+  },
+  TINH_HUONG_TVV[6],
+];
+
 /** Panel làm việc đang mở (`KhungPanel hd=…`). `cx` = CX chỉ có các panel CX mở được; mục bước riêng (`viec`) chỉ cho việc vai đó có. */
 export const manPanelTvvCx = (cx: boolean): ManHd[] => [
   {
@@ -297,27 +402,27 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
   },
   ...chiTvvMan(cx, [
     {
-      id: 'p-bao-ph', ten: 'Báo PH vi phạm đang mở', duong: [], panel: 'bao-ph',
+      id: 'p-bao-ph', ten: 'Báo PH vi phạm đang mở', duong: [], panel: 'bao-ph', the: 'bao-ph',
       dangO: { cau: 'Một lần xử lý vi phạm của một em cần bạn báo PH.' },
       khongLam: [KHONG_VI_PHAM],
       muc: [{ id: 'pbp-ghi', viec: 'bao-ph', ten: 'Ghi kết quả báo PH', buoc: ['Chọn <b>Kết quả</b>, <b>Ngày</b>, gõ <b>Nội dung</b> (bắt buộc).', '<b>Lưu · việc tiếp ›</b>; <b>Chưa liên hệ được</b>: việc vẫn mở, giữ hạn.'] },
         { id: 'pbp-han', viec: 'han-bao-ph', ten: 'Sửa hạn, bỏ việc', buoc: ['<b>Sửa hạn</b> › <b>Hạn mới</b> › <b>Lưu hạn</b>; <b>Về mặc định</b> được.', '<b>Thao tác phụ</b> › <b>Bỏ việc…</b>; <b>Khôi phục</b> được.'] }],
     },
     {
-      id: 'p-phoi-hop', ten: 'Phối hợp SOS đang mở', duong: [], panel: 'phoi-hop-sos',
+      id: 'p-phoi-hop', ten: 'Phối hợp SOS đang mở', duong: [], panel: 'phoi-hop-sos', the: 'bao-ph-meeting',
       dangO: { cau: 'Bảng Phối hợp SOS của một lớp: bạn chỉ ghi kết quả báo PH sau meeting CX/GĐCN.' },
       khongLam: [{ ten: 'Thêm việc, đánh dấu đã làm, xác nhận meeting', cua: 'việc của GVCN' }],
       muc: [{ id: 'pph-ghi', viec: 'bao-ph-meeting', ten: 'Ghi kết quả báo PH', buoc: ['Cột <b>Báo PH · kết quả</b>: <b>Ghi kết quả</b> ở em chờ bạn.', 'Chọn <b>Đã báo PH</b> / <b>Chưa liên hệ được</b>, <b>Ngày</b>, <b>Nội dung</b>; <b>Lưu</b>.'] }],
     },
     {
-      id: 'p-chot-ngay-thi', ten: 'Chốt ngày thi đang mở', duong: [], panel: 'chot-ngay-thi',
+      id: 'p-chot-ngay-thi', ten: 'Chốt ngày thi đang mở', duong: [], panel: 'chot-ngay-thi', the: 'chot-ngay-thi',
       dangO: { cau: 'Chốt ngày thi hoặc dời tháng dự kiến cho một em.' },
       khongLam: [KHONG_QL],
       muc: [{ id: 'pct-chot', viec: 'chot-ngay-thi', ten: 'Chốt ngày thi', buoc: ['Ô <b>Chốt</b>: <b>Ngày thi</b> hoặc <b>Dời tháng dự kiến</b>.', '<b>Chốt ngày</b>; việc tự hết.'] }],
     },
   ]),
   {
-    id: 'p-sau-thi', ten: cx ? 'Kết quả thi thật đang mở' : 'Sau thi đang mở', duong: [], panel: 'sau-thi',
+    id: 'p-sau-thi', ten: cx ? 'Kết quả thi thật đang mở' : 'Sau thi đang mở', duong: [], panel: 'sau-thi', the: 'thi-that',
     dangO: { cau: cx ? 'Ghi kết quả thi thật của một em; bước tiếp do QL hoặc TVV chọn.' : 'Kết quả thi thật rồi tới bước tiếp của một em, trong cùng panel.' },
     khongLam: [KHONG_QL],
     muc: cx ? [{ id: 'pst-kq', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['<b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), <b>Lưu</b>.', 'Bước tiếp: bạn chỉ xem.'] }]
@@ -325,13 +430,13 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
         { id: 'pst-tiep', viec: 'buoc-tiep', ten: 'Chọn bước tiếp', buoc: ['<b>Tạm dừng / Kết thúc học</b> (ô <b>Có thể quay lại học</b>) hoặc <b>Lộ trình mới</b>.', 'Hạn 7 ngày từ ngày có kết quả; <b>Gia hạn</b> ở dòng việc.'] }],
   },
   ...chiTvvMan(cx, [{
-    id: 'p-lo-trinh', ten: 'Lộ trình mới đang mở', duong: [], panel: 'lo-trinh',
+    id: 'p-lo-trinh', ten: 'Lộ trình mới đang mở', duong: [], panel: 'lo-trinh', the: 'buoc-tiep',
     dangO: { cau: 'Chọn lộ trình học tiếp cho em sau kỳ thi thật.' },
     khongLam: [KHONG_QL],
     muc: [{ id: 'plt-chon', viec: 'buoc-tiep', ten: 'Chọn lộ trình mới', buoc: ['Chọn lộ trình; môn học và Target giữ, sửa được.', 'Đầu vào là kết quả thi thật gần nhất.'] }],
   }]),
   {
-    id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin',
+    id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin', the: 'sua-hv',
     dangO: { cau: cx ? 'Sửa thông tin một em: liên hệ, Dự kiến thi, Target.' : 'Sửa thông tin một em: liên hệ, Dự kiến thi, Target, lộ trình đang học.' },
     khongLam: [KHONG_GV],
     muc: [{ id: 'pst-sua', viec: 'sua-hv', ten: 'Sửa thông tin, đổi Target', buoc: ['Sửa ô cần đổi; đổi Target thì ghi <b>Lý do đổi Target</b>.', '<b>Lưu</b>; hộp ghi <b>Lịch sử</b>.'] },
@@ -339,19 +444,19 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
         { id: 'pst-bs', viec: 'bo-sung', ten: 'Bổ sung hồ sơ thiếu', buoc: ['Điền phần còn thiếu, <b>Lưu · em tiếp ›</b> hoặc <b>Bỏ qua ›</b>.', 'Đổi <b>Tuần bắt đầu</b>: MT chưa thi dời theo, MT đã có điểm giữ nguyên.'] }])],
   },
   {
-    id: 'p-sua-ca-lop', ten: 'Sửa thông tin cả lớp đang mở', duong: [], panel: 'sua-ca-lop',
+    id: 'p-sua-ca-lop', ten: 'Sửa thông tin cả lớp đang mở', duong: [], panel: 'sua-ca-lop', the: 'sua-hv',
     dangO: { cau: cx ? 'Bảng cả lớp: sửa nhiều em một lần (Target).' : 'Bảng cả lớp: sửa nhiều em một lần (Target, môn học, Tuần bắt đầu).' },
     khongLam: [KHONG_GV],
     muc: [{ id: 'pcl-sua', viec: 'sua-hv', ten: 'Sửa nhiều em một lần', buoc: ['Sửa ô trong bảng; đổi <b>Tuần bắt đầu</b> thì MT chưa thi dời theo.', 'Đổi Target nhiều em: một <b>Lý do đổi Target</b> chung; <b>Lưu</b>.'] }],
   },
   {
-    id: 'p-them-hv', ten: 'Thêm học viên đang mở', duong: [], panel: 'them-hv',
+    id: 'p-them-hv', ten: 'Thêm học viên đang mở', duong: [], panel: 'them-hv', the: 'them-hv',
     dangO: { cau: 'Thêm một hoặc nhiều học viên vào lớp.' },
     khongLam: [{ ten: 'Phân công giáo viên', cua: 'việc của QL' }],
     muc: [{ id: 'pth-them', viec: 'them-hv', ten: 'Thêm học viên', buoc: ['Chọn <b>Thêm vào lớp</b>, gõ từng em hoặc <b>Dán vùng bảng từ Excel / Google Sheets</b> › <b>Đọc nội dung đã dán</b>.', 'Kiểm lại dòng đỏ, bấm nút <b>Thêm học viên</b>.'] }],
   },
   {
-    id: 'p-xuat-ds', ten: 'Xuất Excel đang mở', duong: [], panel: 'xuat-ds',
+    id: 'p-xuat-ds', ten: 'Xuất Excel đang mở', duong: [], panel: 'xuat-ds', the: 'xuat-ds',
     dangO: { cau: cx ? 'Xuất danh sách học viên đang lọc.' : 'Xuất danh sách học viên hoặc báo cáo PH theo tháng.' },
     khongLam: [{ ten: 'Viết báo cáo PH', cua: 'việc của GV' }],
     muc: [{ id: 'pxd-xuat', viec: 'xuat-ds', ten: 'Xuất Excel', buoc: cx ? ['Ngăn xuất đúng danh sách đang lọc.', 'Bấm nút xuất.'] : ['Khối <b>Mẫu</b>: <b>Danh sách</b> hoặc <b>Báo cáo PH</b> (chọn <b>Tháng</b>).', 'Bấm nút xuất.'] }],
@@ -390,13 +495,12 @@ export const HD_TVV: HuongDan = {
   viec: [],
   lam: THU_TU.map((id) => [...VIEC_TVV, ...VIEC_RIENG_TVV].find((v) => v.id === id)!),
   tuan: [
-    { nhip: 'Mỗi sáng', viec: ['xem-viec', 'xem-thi-thang', 'loc-hv'] },
-    { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'han-bao-ph', 'bo-sung', 'sua-hv', 'doi-lo-trinh', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
-    { nhip: 'Khi gia đình báo', viec: ['tam-dung'] },
-    { nhip: 'Trước khi em thi', viec: ['chot-ngay-thi'] },
-    { nhip: 'Sau khi em thi', viec: ['thi-that', 'buoc-tiep'] },
-    { nhip: 'Mỗi kỳ', viec: ['phan-tich', 'xuat-ds', 'bao-cao-ph-lop'] },
+    { nhip: 'Hằng ngày', viec: ['xem-viec', 'xem-thi-thang', 'loc-hv'] },
+    { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds', 'bao-cao-ph-lop'] },
+    { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'han-bao-ph', 'bo-sung', 'chot-ngay-thi', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
   ],
+  /* HD3-3: tab "Trường hợp" của TVV (15 mục 4.7) — nguồn từng câu ở `docs/anh/hd3-3-tvv-cx/khop-khac.md`. */
+  tinhHuong: TINH_HUONG_TVV,
   vaiKhac: VAI_KHAC_TVV,
   man: [
     {
