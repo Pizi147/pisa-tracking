@@ -357,6 +357,9 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     hint: 'Công việc quản lý hoặc việc con được giao cho bạn ở bảng Tiến độ công việc.',
   },
 };
+/** HD3-6 (phép HD-DU): mọi loại dòng việc máy chủ dựng — mỗi loại phải có thẻ Hướng dẫn (`viecWeb`). */
+export const NHOM_VIEC_MAY = Object.keys(GROUP_META) as WorkGroupKey[];
+
 
 /**
  * Hạn xử lý một vấn đề suy thẳng từ mức độ ưu tiên: 7 · 5 · 3 ngày (owner chốt 10/09/2026).

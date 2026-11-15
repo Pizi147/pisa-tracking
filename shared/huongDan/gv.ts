@@ -16,6 +16,7 @@ export const HD_GV: HuongDan = {
     {
       /* HD3-1: thẻ mẫu khuôn bảy dòng — chữ của mockup ⑭ K1 (PTA Overhaul rà nguồn luật: ghi chú mockup mục 5). HD3-2 viết lại mọi thẻ GV. */
       id: 'nhap-diem', ten: 'Nhập điểm', nhom: 'diem', tab: 'cham-diem', viecWeb: ['score'],
+      tep: ['web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/congViec/PanelViec.tsx', 'web/src/modules/cham/MotKyNang.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm điểm', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Nhập điểm</b> ở tab <b>Chấm điểm</b> — bấm để gõ điểm.' } },
       loiTat: ['lich-test', 'diem-lop', 'ho-so-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ dòng em'], cung: 'mở cùng ô điểm.',
       khiCo: 'Từ thứ Hai tuần Test, cho GV dạy kỹ năng đó ở lớp.',
