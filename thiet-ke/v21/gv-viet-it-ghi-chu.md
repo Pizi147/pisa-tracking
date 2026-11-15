@@ -25,7 +25,7 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026; vai GV 7 Trần Ng
 | B4 | Bàn giao đổi GV: sau chèn hàng loạt, chip "Đã chèn", khối cạnh ô góp ý, "Nhận xét chung cả lớp", "Em tiếp ↓", "Xác nhận bàn giao" giữ | R12.2 |
 | C1 | Công việc · tab Case học thuật: dòng gộp "MB FT 101 · Ghi kết quả PA · 6 em · Kỳ W1–W2 OCT" | R12.3 |
 | C2 | Lưới Ghi kết quả PA: lỗi · nháp có quyết định Điều chỉnh · đang gõ thiếu (7/8) · sẵn lưu · chưa ghi · Kết quả cuối có Mini Test ("Mở đầy đủ") · đã lưu (gập) | R12.3 |
-| C3 | Chân lưới theo trạng thái (đang lưu · dòng dở thành nháp · lưu một phần · đủ) · đang tải · lỗi tải | R12.3 |
+| C3 | Chân lưới theo trạng thái (đang lưu · còn dòng chưa xong "Lưu n dòng" · đã lưu một phần · mọi dòng đủ "Lưu · việc tiếp ›" · lỗi một dòng · lưu hết) · đang tải · lỗi tải | R12.3 |
 | C4 | "Mở đầy đủ" → panel Ghi kết quả PA (dáng ① K4c, đủ ô web) thay chỗ lưới, "‹ Lưới MB FT 101 · 7 PA" | R12.3 |
 | D1 | Kết thúc PA cuối (form như web: Quyết định · Ngày kết thúc · Kết luận có bộ đếm · Ghi ngày · Đổi): "Hoàn thành Case" bật sẵn | R12.4 |
 | D2 · D3 | Bỏ tick → "Case còn mở · không hạn" · kết quả chưa đạt → tắt sẵn | R12.4 |
@@ -57,7 +57,8 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026; vai GV 7 Trần Ng
 | C2 | Nháp đã chọn quyết định khác | — | nhãn "Điều chỉnh" + "nháp lưu 10:12 · Sửa PA này", không có ô; "Lưu" lưới KHÔNG đè | MỚI |
 | C2 | Quyết định | segmented "Giữ nguyên · Điều chỉnh · Kết thúc PA" trong panel | lưới mặc định Giữ nguyên, nói ở dòng quy chế; đổi → "Mở đầy đủ" | ĐỔI chỗ (giữ đủ ở panel đầy đủ) |
 | C2 | Dòng phức tạp (Kết quả cuối, Mini Test, PA Tutor theo buổi) | panel | không có ô trong lưới — một câu "cần gì" + "Mở đầy đủ" | MỚI |
-| C2 · C3 | Lưu | "Lưu nháp" · "Lưu" từng PA | "Lưu nháp" (cả lưới) · "Lưu n dòng" (dòng Sẵn lưu) · "Lưu · việc tiếp ›" (lưu dòng sẵn + tự lưu nháp dòng dở; còn dòng dở thì ở lại lưới); lỗi báo tại dòng + "Thử lại"; chân "● Nháp · chưa lưu kết quả" như web | ĐỔI |
+| C2 · C3 | Lưu | "Lưu nháp" · "Lưu" từng PA | chân BA nút: "Đóng" · "Lưu nháp" (cả lưới) · nút chính "Lưu n dòng" (còn dòng chưa xong, ở lại lưới) / "Lưu · việc tiếp ›" (mọi dòng đủ); lưu hết "✓ Đã lưu" + "Việc tiếp ›"; lỗi báo tại dòng + "Thử lại"; chân "● Nháp · chưa lưu kết quả" như web | ĐỔI |
+| C2 | Nút cột Trạng thái | — | "Mở đầy đủ" / "Sửa" không viền (viền khi rê / focus); nháp Điều chỉnh, Mini Test, PA Tutor theo buổi giữ nút có viền | MỚI |
 | C4 | Panel đầy đủ | `GhiKetQuaPanel` | dáng ① K4c (đã duyệt), giữ đủ ô web: Kết quả kỳ trước, Điểm ✓/✗, bộ đếm Nhận xét, Quyết định, Cách điều chỉnh + Lý do, Ghi ngày · Đổi; thêm "‹ Lưới MB FT 101 · 7 PA" (thay chỗ lưới, không lồng); nút chính "Lưu … · về lưới" | GIỮ + nút quay về |
 | D1 | Quyết định "Kết thúc PA", Ngày kết thúc (ô gõ + nút lịch), bộ đếm, Ghi ngày · Đổi | có | như web | GIỮ |
 | D1 | Ô tick "Hoàn thành Case" + "Sau cả đợt hỗ trợ, em tiến bộ đến đâu?" + "Kết luận" | có (`CapNhatTuan.tsx:617`), mặc định TẮT | mặc định BẬT khi PA cuối + đóng được + kết quả đạt; mức, kết luận điền sẵn | ĐỔI mặc định (H4) |
@@ -86,26 +87,32 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026; vai GV 7 Trần Ng
 
 Không thao tác nào bị bỏ.
 
-## 4. [XM] cần PTA Overhaul chốt
+## 4. [XM] — PTA Overhaul đã chốt (rà #1727, 15/11)
+
+PTA Overhaul rà qua cap-a1, b1, c2, d1: ĐẠT. Chốt: [XM-1], 2, 4, 5, 6, 7, 8 **đồng ý**; [XM-3] **chốt lại** như dưới. Thêm 2 chỉnh lưới (đã áp, ảnh `c2`, `c3`, `e3` + cặp đã chụp lại):
+- **Chân lưới chỉ BA nút**, nút chính đổi nhãn theo trạng thái, không bao giờ hai nút lưu chốt cùng lúc: "Đóng" · "Lưu nháp" · "Lưu n dòng" (còn dòng chưa xong — lưu dòng đã đủ, ở lại lưới) HOẶC "Lưu · việc tiếp ›" (mọi dòng đã đủ). Lưu hết: "✓ Đã lưu" + "Việc tiếp ›". (Thay ý cũ "Lưu · việc tiếp › tự lưu nháp dòng dở".)
+- **Cột Trạng thái:** "Mở đầy đủ" / "Sửa" là nút không viền (viền khi rê / focus); dòng BẮT BUỘC mở đầy đủ (nháp Điều chỉnh, kỳ cuối cần Mini Test, PA Tutor theo buổi) giữ nút có viền.
+
+Nội dung [XM] lúc gửi:
 
 - **[XM-1] Bàn giao môn của GVBM không có nút Xác nhận** (tự lưu khi rời ô). R12.2 viết "rồi GV rà (vẫn phải bấm Xác nhận như nay)" — đúng cho panel GVCN và panel đổi GV (nút giữ, B3 · B4). Ở bảng GVBM (B1 · B2) mockup cho "Chèn cho n em" **tự lưu như gõ** + dải "Đã chèn n em · Hoàn tác" 10 giây; không thêm bước xác nhận (luật 08/10). Chữ bàn giao là nội bộ, không gửi PH.
 - **[XM-2] Chip "Đã chèn" ở panel đổi GV / GVCN** chỉ để GV biết em nào mới có chữ chèn, KHÔNG chặn Xác nhận; chip tự mất khi GV mở em đó hoặc sửa ô. Không thêm trạng thái máy chủ (chỉ ở giao diện, trong phiên). "Chèn cho n em" chèn dòng đầu của khối (MT gần nhất; không có thì Case).
-- **[XM-3] "Kết quả cuối đạt" để bật sẵn Hoàn thành Case:** mockup dùng Tiến triển "Tiến bộ rõ" (PA có Mini Test: ≥ 70 %). "Tiến bộ một phần" → tắt sẵn. Cần PTA chốt (hoặc dùng điểm MT ≥ kỳ vọng).
+- **[XM-3] ĐÃ CHỐT:** "Hoàn thành Case" BẬT sẵn khi đủ cả ba — quyết định là "Kết thúc PA" (hoặc lượt Kết quả cuối) · đây là PA cuối còn chạy của Case · tiến triển kỳ này "Tiến bộ rõ" (Bổ trợ miễn phí: Mini Test ≥ 70 %); trường hợp khác tắt sẵn (D3).
 - **[XM-4] Nhãn khối:** giữ chữ đề bài "Bạn đã ghi tháng này" (FT) dù vài nguồn do người khác ghi — nguồn đó thêm "· cô Lan ghi". Lớp thường = "Bạn đã ghi đợt này" (từ đợt trước). Bàn giao: 30 ngày gần nhất, nhãn giữ "tháng này". Critique gợi ý đổi thành "Đã ghi" — chưa đổi vì là chữ chủ SP đã nghe ở lời 48.
 - **[XM-5] Chèn đưa vào ô CHỈ câu đã ghi**, không kèm nguồn (lượt, điểm) — điểm đã có dòng "Điểm" của báo cáo. Hai nguồn trùng câu → khối hiện một dòng.
 - **[XM-6] Gộp lưới theo "cùng lớp, cùng kỳ":** hai kỳ khác nhau → hai dòng gộp. PA của GV khác không vào lưới của tôi. PA Tutor / Mini Test / Kết quả cuối vào lưới nhưng chỉ có "Mở đầy đủ".
 - **[XM-7] Lượt đọc (LG-13a):** khối A / B gọi MỘT đường "chữ đã ghi" theo lớp khi mở panel (ước 3–4 câu, ≤ ~500 dòng); lưới C dùng dữ liệu `/my-work` + một câu đọc PA của lớp × kỳ (≈ số PA dòng) — thêm trần ở `tocDoDuong.ts`.
-- **[XM-8] 375 lưới:** chân chỉ hai nút "Lưu nháp" · "Lưu · việc tiếp ›" (bỏ "Lưu n dòng" vì ba nút 44 px không vừa 343 px); "Lưu · việc tiếp ›" đã lưu dòng sẵn + nháp dòng dở, nên không mất thao tác.
+- **[XM-8] 375 lưới:** chân hai nút "Lưu nháp" · nút chính theo trạng thái ("Lưu n dòng" / "Lưu · việc tiếp ›"); "Đóng" = ✕ / "‹ Quay lại" ở đầu panel (ba nút 44 px không vừa 343 px).
 
 ## 4b. Critique (impeccable, 15/11) — hai đánh giá tách riêng
 
 - **B · máy dò** (`impeccable detect`): 81 dấu, đều là giả (chú thích vàng `.so-mk`, token v21 máy dò không đọc được, nhóm nút 4 mức) hoặc thừa kế `v21.css` (`.dai-nhom`, `.viec.chon`). Đo trình duyệt: 0 chữ < 12 px, 0 tràn; tương phản chữ phụ ≥ 4,8 : 1 cả sáng / tối; vùng bấm 375 < 44 px → **đã sửa** (mọi nút, chip, Chèn, link 375 ≥ 44 px).
-- **A · rà thiết kế** (Nielsen 27 / 40, không P0). **P1 đã sửa hết:** (1) form Kết thúc PA mất ô đang có → vẽ lại đủ Quyết định · Ngày kết thúc · bộ đếm · Ghi ngày · Đổi; (2) dòng lưới thiếu bị bỏ qua im lặng → trạng thái "Thiếu nhận xét 7/8", "Lưu · việc tiếp ›" tự lưu nháp dòng dở; (3) nút "Chèn cho n em" mất viền ở danh sách em → sửa CSS, rút chữ; (4) panel đầy đủ vẽ thiếu → vẽ theo ① K4c + đủ ô web. **P2 / P3 đã sửa:** khối nhẹ hơn (nguồn một dòng, câu chữ phụ, 280 px), tác giả khác "· cô Lan ghi", khối gập theo trạng thái (A6) + biến thể "đợt này", đang tải không giữ chỗ, tiêu chí đặt sẵn viền đứt, bảng GVBM 720 + "Cùng GV" + "Còn n em ↑", panel GVCN giữ Môn n/n · Chưa làm · ↑↓ · 0/15 · nút mờ, đã lưu gập + bỏ nền xanh 1440, nháp Điều chỉnh không bị đè, nút là nút, "● Nháp · chưa lưu kết quả", bỏ câu giải thích trong dải, bỏ nhãn "Mặc định", E1 vẽ đủ tiêu chí, "Tiếp:" về em chưa xong, E3 đủ trạng thái.
+- **A · rà thiết kế** (Nielsen 27 / 40, không P0). **P1 đã sửa hết:** (1) form Kết thúc PA mất ô đang có → vẽ lại đủ Quyết định · Ngày kết thúc · bộ đếm · Ghi ngày · Đổi; (2) dòng lưới thiếu bị bỏ qua im lặng → trạng thái "Thiếu nhận xét 7/8" + bộ đếm (chân lưới sau đó chốt lại theo PTA, mục 4); (3) nút "Chèn cho n em" mất viền ở danh sách em → sửa CSS, rút chữ; (4) panel đầy đủ vẽ thiếu → vẽ theo ① K4c + đủ ô web. **P2 / P3 đã sửa:** khối nhẹ hơn (nguồn một dòng, câu chữ phụ, 280 px), tác giả khác "· cô Lan ghi", khối gập theo trạng thái (A6) + biến thể "đợt này", đang tải không giữ chỗ, tiêu chí đặt sẵn viền đứt, bảng GVBM 720 + "Cùng GV" + "Còn n em ↑", panel GVCN giữ Môn n/n · Chưa làm · ↑↓ · 0/15 · nút mờ, đã lưu gập + bỏ nền xanh 1440, nháp Điều chỉnh không bị đè, nút là nút, "● Nháp · chưa lưu kết quả", bỏ câu giải thích trong dải, bỏ nhãn "Mặc định", E1 vẽ đủ tiêu chí, "Tiếp:" về em chưa xong, E3 đủ trạng thái.
 - **Giữ, có lý do:** nhãn khối ([XM-4]); 375 lưới hai nút ([XM-8]).
 
 ## 5. Soi ✕ / ⋯ (lệch tâm ≤ 1 px)
 
-Đo bằng Playwright: tâm hộp chữ "✕" so tâm nút `.x` ở 12 khung có ✕ (a1, a5, b1, b3, b4, c2, c4, d1, e1–e4): **ngang 0 px · dọc −0,3 px** ở mọi khung. Không có "⋯" trong mockup này (không thêm menu).
+Đo bằng Playwright: tâm hộp chữ "✕" so tâm nút `.x` ở 12 khung có ✕ (a1, a5, b1, b3, b4, c2, c4, d1, e1–e4): **ngang 0 px · dọc −0,3 px** ở mọi khung (đo lại sau chỉnh lưới của PTA: không đổi). Không có "⋯" trong mockup này (không thêm menu).
 
 ## 6. Bảng tự rà từng dòng R
 
