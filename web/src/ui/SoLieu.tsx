@@ -1,7 +1,7 @@
 import { Fragment, Suspense, useEffect, useId, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { OTuanDay, type KnHop } from './TuanDayGv.tsx';
 import { Link } from 'react-router-dom';
-import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, mucDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, xepNhomCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
+import { INTERVENTION_KIND_LABEL, METRIC_UNIT_LABEL, caseTiep, chuDiem, dauDiem, mucDiem, deadlineView, duongHoSoHocVien, maView, metricById, nhanDocDiem, nhanQuaHan, tenMonNgan, thamSoCt, tuanLich, BUOC_CASE, NHAN_BUOC_CASE, buocCuaDong, type BuocCase, type ChiSo, type ChuongTrinh, type DeadlineKind, type DiemHv, type NhomCaseChuaChot } from '@shared/domain/index.ts';
 import { useApi } from '../lib/useApi.ts';
 import { XemCha, useThamSoUrl, useXem } from '../lib/quayLai.ts';
 import { api, invalidate, type ApiError } from '../lib/api.ts';
@@ -56,6 +56,8 @@ export type DongSoLieu = {
   chuaPhanCong?: true;
   /** M6 6b-2 (Q3): dòng "Case chưa chốt PA" — nhóm phân rã máy chủ; có nhóm thì panel vẽ dải nhóm và dòng mở view Case trong cùng panel. */
   nhom?: NhomCaseChuaChot | null;
+  /** GD-21 (LG-13): bước của Case — dải bước của panel Case. */
+  buoc?: BuocCase | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — mốc so, kết luận (tab Chưa đạt · Đạt · Vượt). Điểm từng kỹ năng nay ở `diemHv` (PANEL-MC). */
@@ -151,6 +153,45 @@ function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
     : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
 
+/**
+ * GD-21 (mockup ⑬ B1): DẢI BƯỚC của panel Case — bốn bước (tên trên, số dưới, màu thường — chủ SP 15/11: không tô số) + ngoặc "Chưa có PA" trùm hai bước đầu.
+ * Bấm bước để bật / tắt lọc (nhiều bước cùng lúc); "Bỏ lọc bước" trả về bộ lọc của nguồn mở. Số = số Case còn chờ ở bước đó, tính trên dữ liệu đã nạp (0 request).
+ */
+function DaiBuoc({ hien, loc, macDinh, khacNguon, soLoc, datLoc }: {
+  hien: (DongSoLieu & { xong?: string })[]; loc: BuocCase[]; macDinh: BuocCase[]; khacNguon: boolean; soLoc: number; datLoc: (b: BuocCase[] | null) => void;
+}) {
+  const so = (b: BuocCase) => hien.filter((r) => !r.xong && buocCuaDong(r) === b).length;
+  const bat = (b: BuocCase) => loc.includes(b);
+  const bam = (b: BuocCase) => datLoc(bat(b) ? loc.filter((x) => x !== b) : [...loc, b]);
+  const dauHai = BUOC_CASE.slice(0, 2);
+  const chuaPa = dauHai.every(bat) && loc.length === 2;
+  const nut = 'flex min-h-[44px] min-w-0 appearance-none flex-col items-start justify-center gap-0.5 rounded-md border px-3 py-1.5 text-left sm:min-h-[52px]';
+  return (
+    <div className="mb-3">
+      <div className="mb-1.5 flex min-h-[28px] flex-wrap items-center gap-2 text-[13px]">
+        <button type="button" aria-pressed={chuaPa} onClick={() => datLoc(chuaPa ? [] : [...dauHai])}
+          className={`inline-flex min-h-[28px] appearance-none items-center gap-1 rounded-md border px-2 font-semibold max-sm:min-h-[44px] ${chuaPa ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)]' : ''}`}
+          style={chuaPa ? undefined : { borderColor: 'var(--line-strong)', background: 'transparent' }}>
+          {t('Chưa có PA')} · <span className="tabular-nums">{so(dauHai[0]) + so(dauHai[1])}</span>
+        </button>
+        {khacNguon && <button type="button" className="link appearance-none border-0 bg-transparent p-0 max-sm:min-h-[44px]" onClick={() => datLoc(null)}>{t('Bỏ lọc bước')}</button>}
+      </div>
+      <div role="group" aria-label={t('Lọc theo bước')} className="grid grid-cols-2 gap-1.5 sm:grid-cols-4">
+        {BUOC_CASE.map((b) => (
+          <button key={b} type="button" aria-pressed={bat(b)} disabled={!so(b)} onClick={() => bam(b)} className={`${nut} disabled:opacity-50`}
+            style={bat(b) ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--line-strong)', background: 'transparent' }}>
+            <span className="text-[13px] font-medium leading-tight text-slate-300">{NHAN_BUOC_CASE[b]}</span>
+            <span className="text-[15px] font-bold tabular-nums text-slate-100">{so(b)}</span>
+          </button>
+        ))}
+      </div>
+      {khacNguon && loc.length > 0 && (
+        <p className="m-0 mt-1.5 text-[13px] text-slate-400" role="status">{t('Đang lọc: {buoc} · {n}', { buoc: loc.map((b) => NHAN_BUOC_CASE[b]).join(' · '), n: soLoc })}</p>
+      )}
+    </div>
+  );
+}
+
 /** 6c-2 (critique 375): các đoạn ngăn "·", mỗi đoạn không ngắt giữa — xuống dòng chỉ ở giữa hai đoạn (không tách "MB / FT 101", "Chưa / đạt"). */
 function Doan({ ds }: { ds: ReactNode[] }) {
   /* `<wbr />` sau "·": chỗ ngắt dòng duy nhất (đoạn nowrap sát nhau không tự ngắt) — "·" ở cuối dòng trên, không mồ côi đầu dòng. */
@@ -168,11 +209,6 @@ const doanDiem = (d: NonNullable<DongSoLieu['diemCase']>): ReactNode[] => [
   d.kyVong != null && d.so < d.kyVong && t('thiếu {n}', { n: (d.kyVong - d.so).toFixed(1) }),
 ];
 
-/** M6 6b-2 (luật chữ đầu mục): vạch 3 px của dải nhóm theo BƯỚC — token sẵn có, màu luôn đi kèm tên nhóm (G14 sửa, chủ SP 27/10). */
-const VACH_NHOM: Record<NhomCaseChuaChot, string> = {
-  trongPa: 'rgb(var(--bad-rgb))', choNhanXet: 'rgb(var(--soon-rgb))', choXacNhanPa: 'rgb(var(--doing-rgb))', choDuyetPa: 'var(--hong)',
-  paXong: 'rgb(var(--ok-rgb))', khongTheoDoi: 'rgb(var(--text-faint-rgb))',
-};
 
 /* Việc dài của dòng (Ngăn Case, Nhập điểm, Vận hành) chỉ tải khi bấm — trang có ô số không kéo cả cây panel làm việc vào lần tải đầu. */
 const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
@@ -185,8 +221,9 @@ const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.ts
  * người khác thấy câu tình trạng. Link "Hồ sơ" cuối dòng tách khỏi nút làm. Số ở đầu = số dòng (cùng tập máy chủ trả; dòng vừa xong mà máy chủ không còn
  * trả vẫn giữ chỗ cũ với "✓", không đếm). "Cách tính" ở cuối danh sách.
  */
-export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong, cachTinh, trong, knNhan }: {
+export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, onDong, cachTinh, trong, knNhan }: {
   tieuDe: string; dv?: string | null;
+  /** GD-21: đường nguồn — `cot=caseChuaChot` / `case-chua-pa` = mở từ ô "Case chưa có PA" (hai bước đầu bật sẵn). */ nguon?: string;
   /** PANEL-V10: kỹ năng của chỉ số ("R" ở Dưới kỳ vọng · R) — cột đó trong dòng điểm có nền nhấn (cột lý do). */
   knNhan?: string | null;
   data: { n: number; rows: DongSoLieu[] } | null; loading: boolean; error: ApiError | null; reload: () => void; onDong: () => void;
@@ -215,13 +252,20 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
   const tre = (r: DongSoLieu) => { const h = hanCua(r); return !!h && deadlineView({ kind: r.viec?.loaiHan ?? 'viec-van-hanh', due: h, today: homNay }).tone === 'overdue'; };
   const goc = data?.rows ?? [];
   /* M6 6b-2: dòng có nhóm (ô "Case chưa chốt PA") → danh sách theo nhóm, bấm dòng mở view Case; dòng vừa xử lý GIỮ nhóm gốc (không nhảy mắt). */
-  const nhomCase = goc.some((r) => r.nhom);
+  const nhomCase = goc.some((r) => r.nhom || r.buoc);
+  /* GD-21 (⑬ H8): dải bước — nguồn "chưa có PA" bật sẵn hai bước đầu (chỉ khi đúng mọi dòng của nguồn); nguồn khác không bước nào. */
+  const chuaPa = /[?&]cot=(caseChuaChot|case-chua-pa)(&|$)/.test(nguon ?? '');
+  const macDinh: BuocCase[] = chuaPa && goc.length > 0 && goc.every((r) => ['cho-mo-ta', 'cho-chon-pa'].includes(buocCuaDong(r))) ? ['cho-mo-ta', 'cho-chon-pa'] : [];
+  const [locChon, datLoc] = useState<BuocCase[] | null>(null);
+  const loc = locChon ?? macDinh;
+  const khacNguon = loc.length !== macDinh.length || loc.some((b) => !macDinh.includes(b));
   const xep = [...goc.filter(tre), ...goc.filter((r) => !tre(r))];   // quá hạn lên đầu, giữ thứ tự máy chủ trong từng nhóm
   const hien: (DongSoLieu & { xong?: string })[] = nhomCase
     ? xep.map((r) => { const g = giu.get(r.id); return g ? { ...r, nhom: g.dong.nhom, xong: g.chu } : r; })
     : [...xep];
   for (const [id, g] of giu) if (!xep.some((r) => r.id === id)) hien.splice(Math.min(g.i, hien.length), 0, { ...g.dong, xong: g.chu });
-  const nhom = nhomCase ? xepNhomCase(hien, (r) => !r.xong && tre(r)) : null;
+  const hienLoc = loc.length ? hien.filter((r) => loc.includes(buocCuaDong(r))) : hien;
+  const nhom = nhomCase ? BUOC_CASE.map((b) => { const cua = hienLoc.filter((r) => buocCuaDong(r) === b); return { buoc: b, ten: NHAN_BUOC_CASE[b], dong: [...cua.filter((r) => !r.xong && tre(r)), ...cua.filter((r) => r.xong || !tre(r))] }; }).filter((g) => g.dong.length > 0) : null;
   const thuTu = nhom ? nhom.flatMap((g) => g.dong) : hien;
   /* Việc của dòng `?dong=` khi chuỗi có view. Đang làm thì giữ dòng đã mở (`giuLam`): lưu xong máy chủ trả dòng không còn việc / bỏ dòng → panel làm việc
      không tắt giữa "✓ Đã lưu". Mở lại từ URL (F5, Forward) chỉ với dòng còn việc, chưa xong. 6b-2: dòng Case có nhóm mở được cả khi chỉ xem / đã xử lý. */
@@ -346,15 +390,17 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
     );
   };
   /* Dải nhóm (luật chữ đầu mục): nền surface-2, vạch 3 px theo bước, 15 / 700, chip đếm Case còn chờ (hết → ✓), dính khi cuộn. */
-  const veNhom = (dong: (DongSoLieu & { xong?: string })[]) => xepNhomCase(dong, () => false).map((g) => {
-    const conCho = nhom?.find((x) => x.nhom === g.nhom)?.dong.filter((r) => !r.xong).length ?? 0;
+  const veNhom = (dong: (DongSoLieu & { xong?: string })[]) => (nhom ?? []).map((g0) => ({ ...g0, dong: g0.dong.filter((r) => dong.includes(r)) })).filter((g) => g.dong.length > 0).map((g) => {
+    const conCho = g.dong.filter((r) => !r.xong).length;
+    const treNhom = g.dong.filter((r) => !r.xong && tre(r)).length;
     return (
-      <section key={g.nhom}>
+      <section key={g.buoc}>
         <h3 className="sticky top-0 z-[1] -mx-4 m-0 flex min-h-[40px] items-center gap-2 px-4 py-2 text-[15px] font-bold leading-[1.35] text-slate-100"
-          style={{ background: 'var(--surface-2)', boxShadow: `inset 3px 0 0 ${VACH_NHOM[g.nhom]}` }}>
-          <span className="min-w-0">{dich(g.ten)}</span>
+          style={{ background: 'var(--surface-2)', boxShadow: 'inset 3px 0 0 var(--line-strong)' }}>
+          <span className="min-w-0">{g.ten}</span>
           <span className={`${CHIP_VUONG} ${conCho ? 'text-slate-200' : 'text-ok'}`} style={{ borderColor: 'var(--line-strong)' }}
             title={conCho ? t('{n} Case còn chờ', { n: conCho }) : t('Đã xử lý hết')}>{conCho || '✓'}</span>
+          {treNhom > 0 && <span className="text-[13px] font-medium text-late">{t('{n} quá hạn', { n: treNhom })}</span>}
         </h3>
         <ul className="-mx-4 m-0 list-none p-0">{g.dong.map(veDongCase)}</ul>
       </section>
@@ -539,6 +585,7 @@ export function NganDanhSach({ tieuDe, dv, data, loading, error, reload, onDong,
         : !hien.length ? <Empty title={trong ?? t('Không có mục nào')} />
         : (
           <>
+            {nhomCase && <DaiBuoc hien={hien} loc={loc} macDinh={macDinh} khacNguon={khacNguon} soLoc={hienLoc.length} datLoc={datLoc} />}
             {coTab && (
               /* Thi thật (mốc so = Target): Fail · Pass · Exceed; Test: Chưa đạt · Đạt (chủ SP 23/10 — thi thật khác phạm trù Test). PANEL-V10: tab không ▲ ▼ (▲ ▼ chỉ cho tiến độ). */
               <HangTab<'chua' | 'dat' | 'vuot'> ariaLabel={t('Kết quả')} panelId={idPanel} value={tab} onChange={setTab} className="mb-1"

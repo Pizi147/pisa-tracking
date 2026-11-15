@@ -180,6 +180,13 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
 /** LG-13 (H8, overhaul V6 đợt 4): bốn bước của panel "Case theo bước" — thứ tự dải bước. */
 export const BUOC_CASE = ['cho-mo-ta', 'cho-chon-pa', 'dang-chay', 'cho-ket-qua-cuoi'] as const;
 export type BuocCase = (typeof BUOC_CASE)[number];
+export const NHAN_BUOC_CASE: Record<BuocCase, string> = {
+  'cho-mo-ta': t('Chờ mô tả'), 'cho-chon-pa': t('Chờ chọn PA'), 'dang-chay': t('Đang chạy'), 'cho-ket-qua-cuoi': t('Chờ kết quả cuối'),
+};
+/** Bước của một dòng panel: `buoc` máy chủ; dòng cũ chỉ có `nhom` (Case chưa chốt PA) thì suy từ nhóm. Không rõ → Chờ chọn PA (việc của QL). */
+export function buocCuaDong(r: { buoc?: BuocCase | null; nhom?: string | null }): BuocCase {
+  return r.buoc ?? (r.nhom === 'choNhanXet' ? 'cho-mo-ta' : r.nhom === 'paXong' ? 'cho-ket-qua-cuoi' : 'cho-chon-pa');
+}
 /**
  * Bước của một Case từ trạng thái v4 + việc tiếp ĐÃ TÍNH (`viecTiepCuaCase`) — không đọc thêm. Case xong / huỷ / tạm / chờ duyệt không theo dõi → null.
  * Chờ mô tả = Xác nhận / Mô tả Case · Chờ chọn PA = chưa PA, PA chờ xác nhận, chờ duyệt (đổi) PA · Chờ kết quả cuối = lần ghi cuối hoặc mọi PA xong (Hoàn thành Case).

@@ -68,6 +68,7 @@
  "web/src/modules/congViec/PanelSauThi.tsx",
  "web/src/modules/congViec/PanelViec.tsx",
  "web/src/modules/congViec/PanelViecLuoi.tsx",
+ "web/src/modules/congViec/SapToi.tsx",
  "web/src/modules/congViec/XacNhanPaLo.tsx",
  "web/src/modules/congViec/lamTaiCho.ts",
  "web/src/modules/duyet/DeXuatSuaPanel.tsx",
