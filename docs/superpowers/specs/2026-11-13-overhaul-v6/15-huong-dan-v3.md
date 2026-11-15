@@ -55,7 +55,7 @@ Mỗi dòng TỐI ĐA MỘT CÂU; dòng không áp dụng thì không hiện (l�
 | **Sau đó** (khi có) | lưu xong ai nhận gì | Dưới kỳ vọng → bạn có việc Mô tả Case |
 
 Chân thẻ: **Chỉ cho tôi** · "Đi tới ›" (khi đang ở chỗ khác) · một dòng nhạt "Cũng mở được từ: …" (lối tắt).
-- **Hạn không gõ tay:** số ngày lấy từ cấu hình "Hạn mặc định" bằng mã chèn (vd `{han:xac_nhan_pa}`), Quản trị đổi thì hướng dẫn tự đúng.
+- **Hạn không gõ tay:** số ngày lấy từ cấu hình "Hạn mặc định" bằng mã chèn (dạng `{han:khoa.truong}` — khoá thật ở `shared/domain/hanMacDinh.ts`; mục 8), Quản trị đổi thì hướng dẫn tự đúng.
 - **Một thẻ cho một loại việc, dùng mọi nơi:** tab "Ở đây", "Tôi muốn…", kết quả tìm, và **ⓘ ở dòng quy chế của panel việc** mở đúng thẻ này (dòng quy chế = một câu; ⓘ = thẻ đầy đủ — một nguồn chữ).
 
 ### 4.5 Một việc, nhiều vai
@@ -86,7 +86,7 @@ Câu bắt đầu bằng động từ · nhãn nút / tab in đậm, ĐÚNG ch�
 - Giữ: HD-NAV, HD-ROUTE, HD-CHI, HD-LOI, bản Anh đủ.
 
 ### 4.12 Lượt đọc
-0 câu thêm: nội dung tĩnh trong mã. Hạn lấy từ cấu hình web đã nạp; nếu chưa nạp sẵn ở vai đó thì nạp MỘT lần khi mở "?" lần đầu trong phiên (đo và ghi trần).
+0 câu thêm: nội dung tĩnh trong mã; cấu hình hạn mọi vai đã nạp sẵn trong `/demo/session` (`hanMacDinh`, `session.tsx:99`).
 
 ## 5. Đề bài mockup ⑭ — `thiet-ke/v21/huong-dan.html` (một session Opus 5.5 · high)
 
@@ -117,3 +117,22 @@ Mỗi PR nội dung: PTA Overhaul rà từng thẻ theo `luat/0`–`4` + `loi-ch
 
 ## 7. Để người làm quyết
 Tên biến, cách lưu phiên bản nội dung, cách lấy "việc đang mở" từ panel (prop hay context), thứ tự tình huống, câu chữ cụ thể (theo 4.10, PTA Overhaul rà).
+
+## 8. Kết quả đọc soát 15/11 (agent đóng vai người code, đối chiếu mã) — bổ sung và THẮNG mục 4 khi khác
+
+### 8.1 PTA Overhaul chốt (không cần hỏi chủ SP — chủ SP xem ở mockup ⑭)
+- **Đơn vị một thẻ = TÊN DÒNG VIỆC người dùng thấy trên web**, không phải `WorkGroupKey` (29 khoá, nhiều khoá gộp việc khác hẳn nhau): tách `missing_data` (Nhập điểm MT cũ · Xếp lịch MT · Nhập dự kiến thi · Chốt ngày thi · Sửa Target), `score` (Nhập điểm · Chấm Speaking), `ban_giao` (chuyển lớp · đổi GV), `no_owner` (hai panel), `xac_nhan_pa` (Xác nhận PA · Chọn PA). **Hộp duyệt của QL: mỗi loại yêu cầu một thẻ** (không có `WorkGroupKey`).
+- **Dải vai tính theo DÒNG VIỆC ĐANG MỞ, không theo vai chung:** dùng `mine` / `lamThay` của `WorkItem`. Việc vốn của TVV mà em chưa có TVV → QL chi nhánh (hoặc GVCN với `phoi_hop_tvv`) là NGƯỜI GIỮ, không hiện "làm thay"; thẻ gốc có dòng trong "Không làm được" / "Sau đó": "Em chưa có TVV: QL chi nhánh làm".
+- **ⓘ ở dòng quy chế mở panel "?" chồng lên, đúng tầng 1** (không popover riêng). 22 câu `chiTiet` đang có ở `quyChe*.ts` gộp vào dòng Hạn / Sau đó của thẻ; ở 375 thẻ có dòng quy chế đầy đủ ở đầu (thay việc dùng ⓘ để đọc câu bị cắt).
+- **Head tutor:** không có loại việc riêng (0 `WorkGroupKey`) → dùng thẻ của GV khi có phân công dạy + vài thẻ màn riêng. **CX:** không có Công việc → chỉ tầng 2, 3 + thẻ "chỉ xem".
+- **HD-CAM** chỉ so CHỮ ĐẬM, bật từng nhãn sau khi GD tương ứng merge ("Đã xem" còn là nhãn trạng thái ở vài chỗ; "Đánh dấu đã đọc" còn ở chuông cũ cho tới GD-19).
+- **Tên mã:** "HD-V3" đã dùng trong mã (`hdV3a-c.ts`) → PR và phép kiểm đợt này dùng tiền tố **HD3-**.
+
+### 8.2 Từ mã (để người làm dùng ngay)
+- **Việc đang mở:** `PanelViec` có `it: WorkItem` (`PanelViec.tsx:52`) nhưng chưa đưa ra ngoài; "?" chỉ đọc `panelHdTren()` (`KhungPanel.tsx:24`). Mọi việc Case mở chung `ngan-case` → cần một sổ ghi / context trong `PanelViec` {group, key, tieuDe, lớp, mine, lamThay}; `NganCase` ghi thêm loại việc. `PanelViec` mở từ 5 nơi (`HoTroHocVienTab`, `ThanhViecLop`, `PanelMotEm`, `StudentDetailPage`, `StudentsPage`). Panel mở ngoài việc (Case từ hồ sơ HV, form Vi phạm) → tra bảng `PanelHd` → thẻ.
+- **Tab đang đứng:** Công việc `?nhom=` (thiếu khi có `?loai=` / `?the=` → suy từ loại); hồ sơ lớp `?tab=`; hồ sơ HV `?tab=` (tab mặc định không có trên URL); Phân tích `?goc=`; Test theo đường `/test/:tab`; Học viên & Lớp chỉ có `?view=` / `?loc=`. Bảng việc → tab: `tabCuaViec` / `TAB_CV` (`shared/domain/tongQuan.ts:125`), TVV `NHOM_CV_TVV_LABEL` (`:87`). "?" phải đọc cả `location.search` (nay bỏ query — `index.ts:39`).
+- **Hạn:** 14 khoá ở `hanMacDinh.ts:11-36`, ba dạng giá trị (`ngay` · `{tuanLech, thu}` · `kyTuan`), có trường phụ `ngayGap`, `xemNgay` → một hàm định dạng cho từng dạng. **Hạn NGOÀI cấu hình** (chèn từ hằng số export, vẫn một nguồn): Tình hình học tập 3 ngày (`server/src/yThuc/tinhHinh.ts:28`) · Khai bậc 14 ngày (`quyCheYThuc.ts:52`) · Báo cáo PH (theo đợt + 7 ngày, `mywork.ts:349`) → thẻ ghi "theo hạn đợt" · Phối hợp / Meeting CX thuộc cấu hình Case & SOS (`sos.ts:170`). `t()` chỉ thay `{\w+}` nên `{han:x}` đi qua, xử lý sau được.
+- **"Có gì mới":** cột `users.da_xem_huong_dan` (NULL / 1) — không cần cột mới, lưu số phiên bản; sửa `accounts.ts:546`, `permissions.ts:140`, `routes/index.ts:245`, `session.tsx:34`, `daXemHd.ts`, phép HD-NHO (`prHd.tests.ts:477`), `prTd2d.tests.ts:40`. Tài khoản chưa mở lần nào chỉ thấy chấm như V2.
+- **Phép kiểm:** HD-DU dựa bảng tay vai → tên dòng việc + export khoá của `GROUP_META`; HD-NHAN: mỗi thẻ khai `tep[]`, quét thêm `web/src/ui`, `shared/domain`, `mywork.ts`; HD-DAI: đếm "tiếng" (tách dấu cách, bỏ thẻ đậm), dòng Làm đếm số bước; HD-HAN: cấm số ngày / thứ gõ tay ở dòng Hạn và bỏ các mẫu '5 ngày', '3 ngày', 'Thứ Ba'… khỏi danh sách cho qua (`prHd.tests.ts:421`). Câu gợi ý `GROUP_META` cũng đang gõ cứng số (`mywork.ts:223…340`) → sửa cùng HD3-1.
+- **Bản Anh:** ước ~60 thẻ × ~6 khoá + tình huống + khung ≈ **500–550 khoá mới**, phần lớn khoá cũ bỏ được (đang ~1 700 dòng EN).
+
