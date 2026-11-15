@@ -604,3 +604,9 @@ Bối cảnh: mockup ⑭ Hướng dẫn V3 (PR #1743) đã rà xong, chờ chủ
 
 ĐÃ CHỐT: ba tab của panel "?" tên là **"Trang này" · "Tôi muốn…" · "Trường hợp"** (thay "Ở đây" và "Khi gặp…"). **Không vẽ lại mockup** — hình mockup ⑭ còn tên cũ, code theo lời này (ảnh cặp ghi "KHÁC theo lời 56").
 PTA Overhaul hiểu (chủ SP sửa nếu sai): chủ SP chỉ nêu hai tên tab và bảo không cần mockup lại → **mockup ⑭ coi là ĐÃ DUYỆT kèm hai đổi tên**; đã merge #1743 (`thiet-ke/v21/huong-dan.html`) và gửi plan HD3-1 … HD3-6 cho PTA Plan.
+
+## 15/11 — lời 57 (chủ SP nói ở session PTA Plan, PTA Plan chuyển lại): session code gửi PTA Plan rà
+
+> "Bảo các session con nhắn session này rà, chứ không phải PTA Overhaul"
+
+ĐÃ CHỐT (thay phần "PTA Overhaul rà từng thẻ trước khi merge" ở `15-huong-dan-v3.md` mục 6 và lời dặn tương tự trong các plan): **session code (kể cả Hướng dẫn HD3-4) chỉ gửi PTA Plan rà; PTA Plan tự rà nội dung.** PTA Overhaul vẫn gửi plan / mockup / lời chủ SP cho PTA Plan như cũ, và trả lời câu hỏi thiết kế khi PTA Plan hỏi. Đã rà trước lời này: #1756 (GV), #1758 (TVV + CX), #1761 (Admin) — đều đạt sau sửa.

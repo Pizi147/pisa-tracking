@@ -149,3 +149,4 @@ Tên biến, cách lưu phiên bản nội dung, cách lấy "việc đang mở"
 - **Màn không có tab** (Tổng quan, hồ sơ HV): lối lên là "‹ Việc khác ở màn này".
 - **Mỗi câu trong thẻ phải chỉ ra được dòng luật nguồn** (`luat/0`–`4`, `plan.md` 1.6, lời chủ SP); bảng nội dung của mỗi PR HD3 có cột "nguồn luật" để PTA Overhaul rà.
 
+**15/11 (lời 57):** PR nội dung Hướng dẫn và mọi PR code do **PTA Plan** rà (không gửi PTA Overhaul); tiêu chí rà giữ nguyên: mỗi câu chỉ ra được dòng luật nguồn, nhãn đúng chữ trên web, hạn bằng mã chèn.
