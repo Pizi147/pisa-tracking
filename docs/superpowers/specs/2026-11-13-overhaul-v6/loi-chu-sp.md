@@ -512,3 +512,24 @@ Câu hỏi của PTA Plan: tab Chấm Speaking có bài quá hạn thì badge c�
 > "Ngoài các phần đã làm, bạn có thấy chỗ nào nên nâng cấp nữa không? chỗ nào cải thiện giảm tải workflow nữa không? chỗ nào có thể khiến cho quá trình theo dõi thông tin trực diện hơn nữa không?"
 
 PTA Overhaul hiểu: chủ SP muốn ĐỀ XUẤT mới ngoài phạm vi 11 mockup đã duyệt, theo ba hướng — nâng cấp · giảm thao tác cho người làm · thấy thông tin thẳng hơn. Trả lời bằng danh sách đề xuất chia "Nên có" / "Đụng luật" (lời 3); CHƯA cái nào được duyệt — chủ SP chọn rồi mới kiểm mã, viết thiết kế.
+
+## 15/11 — lời 47 (kèm /superpowers:brainstorming): làm cả 9 đề xuất, kèm lưu ý + thiết kế lại chuông + "Yêu cầu xử lý"
+
+Bối cảnh: PTA Overhaul đưa 9 đề xuất (lời 46): 1 Báo cáo PH gợi ý nhận xét · 2 bàn giao gợi ý sẵn · 3 ghi kết quả PA theo lớp dạng lưới · 4 xác nhận nhiều Case theo quy chế · 5 dòng "Sắp tới" trang đầu GV · 6 Case theo bước cho QL · 7 "Sao chép để nhắn" · 8 (đụng luật) bỏ việc "Đã xem" vi phạm · 9 (đụng luật) Case tự hoàn thành.
+
+> "làm cả 9 nhưng cần lưu ý một số thứ như sau:
+>
+> 1. Những gợi ý sẵn (mục 1, 2): đây là AI generate hay là web sẽ tạo sẵn theo khung, và nếu là tạo sẵn theo khung thì sẽ như thế nào
+> 2. Mục 7: Trông phần dán ra sẽ như thế nào?
+> 3. Mục 8: Ok. Và phần chuông đã xem cần thiết kế lại một chút cho đẹp và rõ rang nhưng không bị quá nhiều thông tin, GV sẽ có thể 'xem' thông báo về việc có vi phạm ở đây.
+> 4. Và tôi nghĩ đồng thời cần phải thiết kế lại phần chuông cho đẹp mắt và nhìn trực diện chính xác hơn, vẫn không dàn trải, có thể kiểu khi bấm vào nút '>' ở cuối thanh nó sẽ expand việc ra để nhìn được thông tin tóm tắt của đầu việc. Còn nếu bấm vào thanh đó thì ra trang chứa các đầu việc đó luôn? Này chắc làm theo từng tab của công việc? bạn thấy sao?
+> 5. Để mục 8 thực hiện tốt, tôi nghĩ khi ghi vi phạm thì các GVBM cũng có thể tick thêm một chỗ khá dễ nhìn và nổi bật là 'yêu cầu xử lý' thì lúc này GVCN sẽ cần phải xử lý luôn, hoặc đề xuất không xử lý với tin nhắn gửi lại cho GVBM ghi vi phạm.
+> 6. Còn lại thì làm nhé, nhưng luôn luôn lưu ý dùng các skills thiết kế hợp lý để làm cho giao diện không bị dày, trực diện thông tin cần thiết và hợp lý, sạch sẽ, đẹp, gọn gàng."
+
+ĐÃ CHỐT:
+- **Làm cả 9 đề xuất.** Mục 3, 4, 5, 6, 9 "làm nhé" (9 = đụng luật C4: Case tự hoàn thành khi mọi PA có kết quả cuối đạt, có Hoàn tác, mở lại được).
+- **Mục 8 OK (đụng luật D2):** bỏ việc "Đã xem" vi phạm lẻ của GVCN; GVCN "xem" thông báo vi phạm ở CHUÔNG.
+- **Thêm ô "Yêu cầu xử lý" khi ghi vi phạm** (chủ SP đề ra): GV bộ môn tick (dễ nhìn, nổi bật) → GVCN PHẢI xử lý luôn, hoặc "đề xuất không xử lý" kèm tin nhắn gửi lại GV ghi vi phạm.
+- **Thiết kế lại chuông:** đẹp, trực diện, chính xác, không dàn trải; theo từng tab của Công việc; bấm thanh → ra trang chứa các đầu việc đó; nút ở cuối thanh → mở rộng xem tóm tắt đầu việc. (Chủ SP hỏi ý PTA.)
+- **Luật làm việc:** luôn dùng skill thiết kế để giao diện không dày, trực diện, sạch, đẹp, gọn.
+CÒN HỎI (chủ SP hỏi, PTA Overhaul trả lời bằng đề xuất — chờ chốt): gợi ý sẵn là AI hay khung (mục 1, 2) · dán ra trông thế nào (mục 7) · cách bày chuông · sau "đề xuất không xử lý" thì GV ghi vi phạm có quyền nói lại không.
