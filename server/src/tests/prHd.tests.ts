@@ -462,9 +462,9 @@ export async function runPrHdTests(t: any) {
    * HD-DU: mọi loại dòng việc máy chủ dựng (`NHOM_VIEC_MAY` + việc chung Chấm Speaking) có thẻ (`viecWeb`) ở một vai; mọi PANEL_HD có thẻ (`the` của mục
    * panel). Chưa có thẻ → nằm ở danh sách CHỜ (nội dung HD3-2 … HD3-5); có thẻ rồi mà còn trong danh sách → đỏ (bỏ khỏi danh sách) — danh sách chỉ ngắn lại.
    */
-  const CHO_DU_VIEC = new Set(['ky_vong_dau_ra', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data']);   // HD3-2 GV · HD3-3 TVV · HD3-5 Admin đã có thẻ; còn việc QL (HD3-4)
+  const CHO_DU_VIEC = new Set<string>([]);   // HD3-2 GV · HD3-3 TVV · HD3-5 Admin · HD3-4 QL đã có thẻ — loại việc mới phải có thẻ ngay
   /* `ngan-case`: một panel cho nhiều loại việc — "?" lấy thẻ theo dòng việc đang mở; Case mở từ hồ sơ (không dòng việc) chưa có thẻ riêng. */
-  const CHO_DU_PANEL = new Set(['ngan-case', 'duyet', 'xet-lai']);
+  const CHO_DU_PANEL = new Set<string>([]);
   check('HD-DU · mỗi loại dòng việc máy chủ và mỗi PANEL_HD có thẻ Hướng dẫn (hoặc đang trong danh sách chờ nội dung — chỉ ngắn lại)', () => {
     const MA = new Set<string>([...NHOM_VIEC_MAY, ...hd.MA_VIEC_TACH]);
     const loi: string[] = [];
@@ -522,7 +522,7 @@ export async function runPrHdTests(t: any) {
    * "Đánh dấu đã đọc", "Xem vi phạm mới"). CHO_CAM = chỗ còn sót ("vai: nhãn") chờ PR nội dung của vai đó — hết sót mà còn trong danh sách → đỏ.
    */
   const CAM = ['Speaking chấm chéo', '+ Ghi', 'Hộp duyệt', 'Đánh dấu đã đọc', 'Xem vi phạm mới'];
-  const CHO_CAM = new Set<string>(['ql: Đánh dấu đã đọc']);
+  const CHO_CAM = new Set<string>([]);
   check('HD-CAM · không chữ đậm nào là nhãn đã bỏ trên web ("Speaking chấm chéo", "+ Ghi", "Hộp duyệt", "Đánh dấu đã đọc", "Xem vi phạm mới")', () => {
     const thay = new Set<string>();
     for (const vai of VAI_THE) {
