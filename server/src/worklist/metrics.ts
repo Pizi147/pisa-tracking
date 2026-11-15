@@ -4,7 +4,7 @@ import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
-import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
+import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
 import { bangLop, can, classScopeSql, isCoreTeacherOf, scopeFor, type Principal, type Scope } from '../permissions.ts';
@@ -140,6 +140,14 @@ export type MetricRow = {
   nhom?: NhomCaseChuaChot | null;
   /** LG-13 (H8): dòng Case — bước Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối (`buocCase`, từ dữ liệu đã đọc). null = Case xong / không còn bước. */
   buoc?: BuocCase | null;
+  /** GD-21: kỹ năng của Case (cột Case của panel theo bước chỉ ghi kỹ năng, không ghi cả tên Case). */
+  kyNang?: string | null;
+  /** GD-21: lượt của Case (MT2…) — khi chưa có mốc điểm. */
+  luot?: string | null;
+  /** GD-21: mô tả Case (`sos_cases.summary`, đã nạp cùng câu) — hàng Case ghi dưới khuôn MTn · kỹ năng · SOS. */
+  moTa?: string | null;
+  /** GD-21: đề mục Case — chỉ có khi GV đã sửa tên (`deMucRieng`). */
+  deMuc?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở mốc mở / lặp Case gần nhất (band, kỳ vọng lượt đó, "MT2" / "Progress Test"). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
@@ -236,8 +244,8 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
       }
     } else if (unit === 'case') {
       const ds = conn.prepare(
-        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, sc.category, sc.topic, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code,
-                sc.status, sc.detected_at, sc.urgency, sc.sos_level, sc.kck, sc.origin_kind, a.attempt_no, u.full_name AS nguoi, sc.owner_user_id,
+        `SELECT sc.id, sc.title, sc.summary, COALESCE(sc.category, sc.topic) AS mon, sc.category, sc.topic, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code,
+                sc.status, sc.detected_at, sc.urgency, sc.sos_level, sc.kck, sc.origin_kind, a.attempt_no, a.kind AS attempt_kind, u.full_name AS nguoi, sc.owner_user_id,
                 COALESCE(cur.class_id, a.class_id) AS lop_id, lc.code AS lop
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            LEFT JOIN learning_cycles cy ON cy.id = sc.cycle_id
@@ -277,6 +285,10 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           href: duongCase(r.sid, r.id), nguoi: r.nguoi ?? null, han: v?.viec?.han ?? null, nguoiId: r.owner_user_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
           viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null, buoc: v?.buoc ?? null,
+          sos: r.sos_level > 0 ? { muc: r.sos_level, tam: false } : null, kyNang: r.mon ? tenMon(r.ct ?? null, r.mon).replace(' Task', '') : null,
+          deMuc: deMucRieng({ title: r.title, mon: r.mon, topic: r.topic, ct: r.ct }),
+          moTa: r.summary ? String(r.summary) : null,
+          luot: r.attempt_kind ? nhanDot(r.attempt_kind, r.attempt_no ?? null) : null,
         });
       }
     } else if (unit === 'phuong-an') {
