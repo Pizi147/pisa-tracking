@@ -558,8 +558,9 @@ export async function runPhanTichTests(t: YThucTestKit) {
     // PR-YT4 (K1-25): nhóm em của CỬA TRẠNG THÁI thay "bước tiếp theo · Thư CC".
     // a: 3 vi phạm trong 2 tuần, chưa xử lý → Bắt buộc xử lý, bậc kế Report 1
     yt.vp(a, CID_FT, cong(TODAY, -3)); yt.vp(a, CID_FT, cong(TODAY, -2)); yt.vp(a, CID_FT, cong(TODAY, -1));
-    // b: đã Report 1, rồi một vi phạm Mới quá 5 ngày chưa ai xem → Quá hạn, bậc Report 1, bậc kế Report 2
-    const b1 = yt.vp(b, CID_FT, cong(TODAY, -25)); yt.bp(b, CID_FT, 'report_1', cong(TODAY, -20), [b1]); yt.vp(b, CID_FT, cong(TODAY, -10));
+    // b: đã Report 1, rồi 3 vi phạm trong 2 tuần chưa xử lý quá hạn → Quá hạn, bậc Report 1, bậc kế Report 2 (LG-11: Mới không còn quá hạn)
+    const b1 = yt.vp(b, CID_FT, cong(TODAY, -25)); yt.bp(b, CID_FT, 'report_1', cong(TODAY, -20), [b1]);
+    yt.vp(b, CID_FT, cong(TODAY, -14)); yt.vp(b, CID_FT, cong(TODAY, -13)); yt.vp(b, CID_FT, cong(TODAY, -12));
     // c: 2 vi phạm mới → Mới, không vào danh sách
     yt.vp(c, CID_FT, cong(TODAY, -3)); yt.vp(c, CID_FT, cong(TODAY, -2));
     // d: 3 vi phạm đã xử lý hết → Đã xử lý, không vào danh sách
@@ -578,7 +579,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       const dong = (id: number) => kq.hvCanChuY.find((x: any) => x.studentId === id);
       eq([dong(m.a)?.nhom, dong(m.a)?.bac, dong(m.a)?.bacKe], ['bat_buoc', null, 'Report 1'], 'a: bắt buộc, chưa bậc nào');
       eq([dong(m.a)?.viPham, dong(m.a)?.chuaXuLy], [3, 3], 'a: 3 vi phạm, 3 chưa xử lý');
-      eq([dong(m.b)?.nhom, dong(m.b)?.bac, dong(m.b)?.bacKe], ['qua_han', 'Report 1', 'Report 2'], 'b: quá hạn (Mới chưa ai xem)');
+      eq([dong(m.b)?.nhom, dong(m.b)?.bac, dong(m.b)?.bacKe], ['qua_han', 'Report 1', 'Report 2'], 'b: quá hạn (bắt buộc xử lý)');
       eq([dong(m.b)?.bienPhapGanNhat, dong(m.b)?.ngay], ['Report 1', cong(TODAY, -20)], 'b: xử lý gần nhất');
       eq(dong(m.e)?.nhom, 'cho_duyet', 'e: đề xuất chờ QL');
       assert(!dong(m.c) && !dong(m.dd), 'c (Mới) và d (đã xử lý hết) không vào danh sách');

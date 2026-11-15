@@ -261,7 +261,7 @@ export async function runPrEnTests(t: any) {
    * hàm máy chủ sinh ra nó (chữ tiêu đề / nội dung là chữ thật của máy chủ), TRƯỚC `duLieu` (tên em / lớp / lý do mới là dữ liệu).
    * EN-TB soi thông báo của GVCN, GVBM + mỗi loại một người nhận; EN-TB-LOAI giữ tập loại không teo lại.
    */
-  const LOAI_TB_GV = ['doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline'];
+  const LOAI_TB_GV = ['doi_lich_thuong', 'huy_lenh', 'lam_lai_ban_giao', 'phan_cong_moi', 'discipline_de_biet'];
   const loiDung: string[] = [];
   {
     const TODAY = t.TODAY;
@@ -331,7 +331,7 @@ export async function runPrEnTests(t: any) {
         ORDER BY ur.user_id LIMIT 1`, MB, cu).id;
       pc.luuPhanCong(QL, { lop: [{ classId: FT101, slots: slots.filter((x) => x.skill !== 'listening').concat([{ userId: moi, skill: 'listening', isCore: false }]) }] });
     });
-    /* discipline: QL ghi vi phạm cho em MB FT 101 → GVCN lớp. */
+    /* discipline_de_biet (LG-11): QL ghi vi phạm cho em MB FT 101 → tin Cập nhật cho GVCN lớp. */
     thu('discipline', () => {
       const em = get(`SELECT e.student_id id FROM enrollments e JOIN students s ON s.id = e.student_id WHERE e.class_id = ? AND e.status = 'active'
         AND s.status = 'active' ORDER BY e.student_id LIMIT 1`, FT101).id;

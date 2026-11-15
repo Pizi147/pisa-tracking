@@ -1403,9 +1403,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        và ở "Tất cả" của QL / QT (= "Của một GV", OV11c-3). So JSON ×1 origin/main ↔ nhánh (806 đường): lệch CHỈ /my-work GV · QL / QT tất cả · Của một GV — chỉ THÊM
        dòng `bc-ph:*` (GVCN +4, GVBM +6, QL tất cả +17, QT +20 — seed có mốc bật = ngày seed nên đợt hạn trước 14/09 không sinh việc), không mất / đổi dòng nào; số nhóm Vận hành hồ sơ GV 7 tăng theo. Admin, QL / QT "Của tôi" giữ.
        Trước (main sau L6 / 2.3 #1556 · #1564): GVCN toi a79c2967be82df5e, GVBM toi 77e235e4611522bc, GVCN_THUONG toi a79c2967be82df5e, QL tat-ca 29da5f0c277723a2, QT tat-ca 9dfb712f3d614d40, QT tat-ca cn 0252208bd2d3fcdc, QL gvcn 217ad0083cb42779, GVS toi dcacfa50220ee88d */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '52f7a5ba99d7eccc', 'GVBM toi': '8c05c3e43fd827f4',
-    'GVCN_THUONG toi': '52f7a5ba99d7eccc', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': 'f7752b5bc691561a', 'QT tat-ca': '60e53e557d7832a5',
-    'QT tat-ca cn': '453a428b04f09064', 'QL gvcn': '9bab38ec2790df06', 'GVS toi': '20255e1f890bf1a5',
+    /* LG-11 VI-PHAM-BO-DA-XEM (chủ SP lời 47, 15/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý CHỈ bỏ việc
+       `yt_xem` (vi phạm người khác ghi thành tin Cập nhật). Đã so trên bản chép thật 12/11 (33 GV + QL 5 chi nhánh): /my-work lệch CHỈ mất dòng `yt_xem` (30 dòng), câu · dòng đọc giữ.
+       QL / QT / GVBM toi, ADMIN, GVS giữ. Trước (main sau #1738): GVCN toi 52f7a5ba99d7eccc, GVCN_THUONG toi 52f7a5ba99d7eccc, QL tat-ca f7752b5bc691561a, QT tat-ca 60e53e557d7832a5, QT tat-ca cn 453a428b04f09064, QL gvcn 9bab38ec2790df06 */
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '0e244af2868788f4', 'GVBM toi': '8c05c3e43fd827f4',
+    'GVCN_THUONG toi': '0e244af2868788f4', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '7de18f10f09e3ba7', 'QT tat-ca': 'ada320e08f4702f9',
+    'QT tat-ca cn': '87f85b45dd8e4ec9', 'QL gvcn': '80509247fdf10e9e', 'GVS toi': '20255e1f890bf1a5',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

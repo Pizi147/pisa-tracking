@@ -299,18 +299,18 @@ async function runTask8(t: YThucTestKit, d: any) {
     conn.prepare(`UPDATE sos_cases SET status = 'done' WHERE id = ?`).run(caseId);
   });
 
-  check('S6F-b (8) · HAI ĐƯỜNG Ý thức (Q5): việc "Ghi nhận vi phạm mới" (yt_xem) và "Ghi Đã thực hiện" (yt_thuc_hien) của GVCN ở Công việc = ở hồ sơ em (cùng khoá, cùng người làm, cùng hạn)', () => {
+  check('S6F-b (8) · HAI ĐƯỜNG Ý thức (Q5): việc "Xử lý vi phạm" (yt_xu_ly) và "Ghi Đã thực hiện" (yt_thuc_hien; LG-11 bỏ yt_xem) của GVCN ở Công việc = ở hồ sơ em (cùng khoá, cùng người làm, cùng hạn)', () => {
     let so = 0;
     const gvcns = all(`SELECT DISTINCT user_id id FROM teacher_assignments WHERE is_core = 1 AND status = 'active' ORDER BY user_id`).map((r) => r.id as number);
     for (const g of gvcns) {
       const p = loadPrincipal(g);
-      for (const it of (myWork(p, {}) as any).items.filter((i: any) => i.mine && (i.group === 'yt_xem' || i.group === 'yt_thuc_hien'))) {
+      for (const it of (myWork(p, {}) as any).items.filter((i: any) => i.mine && (i.group === 'yt_xu_ly' || i.group === 'yt_thuc_hien'))) {
         const x = viecCua(p, it.studentId).cuaBan.find((y) => y.key === it.key);
         assert(x && x.nguoi.id === it.ownerId && x.han === it.due, `GV ${g} ${it.key}: hồ sơ ${JSON.stringify(x && { id: x.nguoi.id, han: x.han })} ≠ Công việc ${it.ownerId}/${it.due}`);
         so++;
       }
     }
-    assert(so > 0, 'bộ demo phải có việc yt_xem / yt_thuc_hien của GVCN');
+    assert(so > 0, 'bộ demo phải có việc yt_xu_ly / yt_thuc_hien của GVCN');
   });
 
   check('S6F-b (8) · Mini Test: người làm ở hồ sơ = Công việc (PR-CT2: người giữ việc `nguoiGiuMiniTest` — GVCN lớp đang học / chủ Case, không còn Người dạy)', () => {

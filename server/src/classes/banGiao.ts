@@ -182,7 +182,7 @@ export function tuDienTheoLo(nguon: { id: number; ct: string | null }, ds: { id:
     const em = yt.get(l.student_id);
     const goiY = l.lop_dich_id ? goiYTheoDich.get(l.lop_dich_id) : undefined;
     const bacTen = em && em.bac > 0 ? `Đã qua ${nhanLoaiXuLy(kindCuaBac(em.bac))}` : 'Chưa có xử lý';
-    const cho = em ? em.soBatBuoc + em.soMoi : 0;
+    const cho = em ? em.soBatBuoc : 0;   // LG-11: vi phạm mới chưa xem không phải "chờ xử lý"
     const n = baiChuaLam.get(l.student_id) ?? 0;
     out.set(l.id, {
       ketQua: ketQua.get(l.student_id) ?? 'Chưa có kết quả',

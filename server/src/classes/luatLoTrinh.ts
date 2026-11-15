@@ -205,7 +205,7 @@ export function thongBaoChuyenVao(i: {
     .all(branchDest?.branch_id ?? i.denLop.branchId) as any[];
   /* K5-18 (PR-YT4): GVCN mới biết ngay em mang theo việc Ý thức (hạn đặt lại từ ngày chuyển — M-08). */
   const yt = trangThaiYThuc([i.sid]).get(i.sid);
-  const soYt = (yt?.soBatBuoc ?? 0) + (yt?.soMoi ?? 0);
+  const soYt = yt?.soBatBuoc ?? 0;   // LG-11: chỉ vi phạm bắt buộc xử lý
   const body = `Từ ${i.tuMa} (${i.tuChiNhanh})${i.lyDo ? ` · ${i.lyDo}` : ''}${soYt > 0 ? ` · đang có ${soYt} vi phạm cần xử lý` : ''}`;
   for (const userId of nguoiNhan.keys()) {
     if (userId === i.actorUserId) continue;
