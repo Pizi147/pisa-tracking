@@ -206,6 +206,11 @@ const PA_TUTOR = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos
     JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
    WHERE iv.kind = 'tutor' AND iv.status = 'started' ORDER BY iv.id LIMIT 1`).get(LOP_FT) as any)?.id as number;
 assert(PA_TUTOR, 'Seed thiếu PA Tutor đang chạy ở MB FT 101');
+/** GD-20c: PA đang chạy của MB FT 101 (≤ 20) — đường `/interventions/luoi-ket-qua?ids={paLuoi}` (lưới Ghi kết quả PA một dòng gộp). */
+const PA_LUOI = (conn.prepare(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
+    JOIN enrollments e ON e.student_id = sc.student_id AND e.status = 'active' AND e.class_id = ?
+   WHERE iv.status IN ('planned', 'started') ORDER BY iv.id LIMIT 20`).all(LOP_FT) as any[]).map((r) => r.id).join(',');
+assert(PA_LUOI, 'Seed thiếu PA đang chạy ở MB FT 101');
 assert(KASE, `Seed thiếu Case cho HV mẫu (id ${HV}) ở lớp MB FT 101 — DUONG_DO cần một Case thật`);
 
 const USER: Record<Vai, number> = {
@@ -259,6 +264,7 @@ function urlFor(mau: string): string {
     .replace('{lopKetThuc}', String(LOP_KET_THUC))
     .replace('{case}', String(KASE))
     .replace('{paTutor}', String(PA_TUTOR))
+    .replace('{paLuoi}', PA_LUOI)
     .replace('{ycPa}', String(YC_PA))
     .replace('{bgGv}', String(BG_GV))
     .replace('{lenhBg}', String(LENH_BG))
