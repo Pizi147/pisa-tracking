@@ -566,4 +566,12 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const st = doc('web/src/modules/congViec/PanelSauThi.tsx'), th = doc('web/src/modules/yThuc/TinhHinh.tsx');
     assert(/luuRoiTiep\(chot, onTiep\)/.test(st) && /luuRoiTiep\(luu, onTiep\)/.test(st) && /luuRoiTiep\(gui, onTiep\)/.test(th), 'chân panel việc (lời 36): "{việc} · việc tiếp ›" ở Sau thi · Chốt ngày thi · Trả lời tình hình');
   });
+
+  check('KHONG-TRAN-CHU · chip chữ dài (mốc vi phạm "REPORT 4 + MEETING CX/GĐCN", mức Cần hỗ trợ) xuống dòng TRONG khung: không cao cố định, ▾ giữ cuối; có công cụ quét DOM (chủ SP 15/11)', () => {
+    const bl = doc('web/src/modules/yThuc/BangLan.tsx');
+    const chip = bl.slice(bl.indexOf('export function ChipBac'), bl.indexOf('{mo && ('));
+    assert(/inline-flex min-h-6 max-w-full/.test(chip) && !/\bh-6\b|max-sm:h-11/.test(chip) && /shrink-0 text-xs text-slate-500">▾/.test(chip), 'ChipBac: min-h, không h-6, ▾ shrink-0');
+    assert(/inline-flex min-h-5 max-w-full items-center rounded border px-1\.5 py-px/.test(doc('web/src/modules/classes/BangCanHoTro.tsx')), 'chip mức Cần hỗ trợ: min-h, xuống dòng');
+    assert(/KEO_DAI/.test(doc('scripts/kiem-tran-chu.mjs')) && /getClientRects/.test(doc('scripts/kiem-tran-chu.mjs')), 'scripts/kiem-tran-chu.mjs: đo khung chữ thật + chế độ ép chữ dài');
+  });
 }
