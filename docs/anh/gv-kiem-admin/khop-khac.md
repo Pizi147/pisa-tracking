@@ -1,0 +1,3 @@
+# Đầu trang Công việc của Admin — TRƯỚC │ SAU (bản chép thật 12/11 đã migrate, Admin id 67)
+TRƯỚC (`truoc-1440-toi.png`, `truoc-375-sang.png`): "98 việc · 56 quá hạn · 837 bài" — chuông / badge = 2, đầu trang = 98 (khác tập đếm: đầu trang đếm "Tất cả", chuông đếm việc của mình).
+SAU (`sau-1440-toi.png`, `sau-375-sang.png`): "Việc của tôi 2 (2 quá hạn) · Việc của GV 96 (54 quá hạn) · 837 bài" — "Việc của tôi" = đúng số chuông / badge (`dongCuaToi` + `demDongViec`); lăng kính mặc định "Tất cả" giữ nguyên (PTA chốt). Tên "Việc của tôi" thay "Việc của bạn" vì luật thuật ngữ `prS3Chu` cấm "Việc của bạn".
