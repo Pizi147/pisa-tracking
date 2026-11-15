@@ -4,7 +4,7 @@ PTA Overhaul · 15/11. Thiết kế + luật đổi + việc máy chủ LG-11 �
 Mockup (`thiet-ke/v21/`, mỗi tệp có `-ghi-chu.md` + ảnh cặp TRƯỚC web │ SAU ở `anh/<tên>/`):
 - ⑫ `gv-viet-it.html` — **ĐÃ DUYỆT, đã merge (#1727, lời 50)** → GD-20 giao được.
 - ⑬ `theo-doi.html` — **ĐÃ DUYỆT, đã merge (#1728, lời 51, 52)** → GD-21 giao được.
-- ⑪ `chuong-vi-pham.html` (#1726) — chờ chủ SP duyệt; **chỉ giao GD-19 khi PTA Overhaul báo mockup đã merge.**
+- ⑪ `chuong-vi-pham.html` — **ĐÃ DUYỆT, đã merge (#1726, lời 53)** → GD-19 giao được (bật cho người dùng cùng lúc LG-11, LG-12).
 
 Luật mọi PR như `07` và `12` (ponytail lite · karpathy-guidelines · impeccable `distill` + `layout` + `polish`, `audit` + web-design-guidelines · bảng truy vết + thao tác TRƯỚC → SAU · ảnh cặp ≥ 90 % KHỚP, soi ✕ / ⋯ ≤ 1 px · chủ SP duyệt ảnh cặp trước merge · Hướng dẫn "?" cùng PR · đo Turso + trần ở `tocDoDuong.ts`). Luật V22 (hạn chỉ màu), lời 36 (chân panel), lời 40 (theo trạng thái) áp nguyên. Chủ SP (lời 47): giao diện **không dày, trực diện, sạch, gọn** — PR nào làm panel dày hơn mockup là chưa đạt.
 
