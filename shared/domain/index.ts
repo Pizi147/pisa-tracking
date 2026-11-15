@@ -122,3 +122,4 @@ export * from './quyCheCase.ts';
 export * from './quyCheYThuc.ts';
 export * from './quyCheVanHanh.ts';
 export * from './ganDay.ts';
+export * from './chuDaGhi.ts';

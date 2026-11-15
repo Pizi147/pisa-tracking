@@ -188,6 +188,8 @@ export const DUONG_DO: MucDo[] = [
   /* LG-13 (H1, H2): "Bạn đã ghi" cả lớp — chỉ gọi khi mở panel viết Báo cáo PH / bàn giao (4 câu, theo em của lớp). */
   { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV'], url: '/classes/{lopFT}/chu-da-ghi?tu=2026-06-01&den=2026-09-28', maChuDich: { TVV: 403 } },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'GVCN_THUONG'], url: '/classes/{lopThuong}/chu-da-ghi?tu=2026-06-01&den=2026-09-28' },
+  /* GD-20a: panel viết Báo cáo PH gọi theo đợt (`?dot=`) — máy chủ tự tính "tháng này" / "đợt này". */
+  { trang: 'Hồ sơ lớp FT', vai: ['QL', 'GVCN', 'GVBM'], url: '/classes/{lopFT}/chu-da-ghi?dot=thang:2026-08' },
   { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/bao-cao-ph' },
   /* BAO-CAO-PH b: Excel một lớp (GV không xuất → 403). */
   { trang: 'Hồ sơ lớp FT', vai: ['QL', 'QT', 'ADMIN', 'GVCN'], url: '/classes/{lopFT}/bao-cao-ph/xuat', maChuDich: { GVCN: 403 } },
@@ -698,6 +700,8 @@ export const TRAN: Record<string, number> = {
   'QL /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVCN /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVBM /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8,
   'GVCN_THUONG /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'QT /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'TVV /classes/3/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 4,
   'QL /classes/6/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8, 'GVCN_THUONG /classes/6/chu-da-ghi?tu=2026-06-01&den=2026-09-28': 8,
+  /* GD-20a: `?dot=` +3 câu (tiến độ lớp, tuỳ chỉnh đợt — tính "tháng này" / "đợt này") = 9; trần đo + 2. */
+  'QL /classes/3/chu-da-ghi?dot=thang:2026-08': 11, 'GVCN /classes/3/chu-da-ghi?dot=thang:2026-08': 11, 'GVBM /classes/3/chu-da-ghi?dot=thang:2026-08': 11,
   'GVCN /my-work': 47,   // LG-13 (Sắp tới): +2 câu (PA tới kỳ đi từ em lớp GV · em đợt BC PH sắp mở — chỉ tuần trước ngày mở), +~50 dòng trả; trần đo + 2 · LG-3 (việc GV Báo cáo PH): đo 37 → 42 (+5 câu: tiến độ lớp, tuỳ chỉnh đợt, em, bản ghi đủ; +43 dòng ×1 · +101 ×3), trần đo + 2 · LG-8: đo 35 → 38 (+3 câu: FT 1 + tiến độ lớp thường 2; +64 dòng), trần giữ · TD4: đo 61 (trước 64), trần đo + 2; TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
   'GVBM /my-work': 47,   // LG-13 (Sắp tới): +2 câu (PA tới kỳ đi từ em lớp GV · em đợt BC PH sắp mở — chỉ tuần trước ngày mở), +~50 dòng trả; trần đo + 2 · LG-3: đo 37 → 42 (+5 câu, +65 dòng ×1 · +147 ×3), trần đo + 2 · LG-8: đo 34 → 37 (+3 câu, +88 dòng), trần giữ · TD4: đo 61 (trước 64); TL-NEN: đo 45 (trước 60) · TL-VIEC: đo 32 (trước 45)
   'GVCN_THUONG /my-work': 47,   // LG-13 (Sắp tới): +2 câu (PA tới kỳ đi từ em lớp GV · em đợt BC PH sắp mở — chỉ tuần trước ngày mở), +~50 dòng trả; trần đo + 2 · LG-3: đo 37 → 42 (+5 câu, +43 dòng), trần đo + 2 · LG-8: đo 34 → 37 (+3 câu, +64 dòng), trần giữ · TD4: đo 61 (trước 64); TL-NEN: đo 46 (trước 61) · TL-VIEC: đo 33 (trước 46)
