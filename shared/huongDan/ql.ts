@@ -340,13 +340,13 @@ export const HD_QL: HuongDan = {
     {
       id: 'van-hanh', ten: 'Giao việc, theo dõi vận hành', nhom: 'khac',
       loiChinh: { man: 'van-hanh', chu: 'Công việc › Việc quản lý › Vận hành ›', duong: '/cong-viec/van-hanh', chi: { hd: 'vh-so', duong: '/cong-viec/van-hanh', chu: 'Bấm một số để lọc việc.' } },
-      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Vận hành ›</b>.', 'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có người phụ trách, hạn.'],
+      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Vận hành ›</b>.', 'Bốn số lọc: <b>Quá hạn</b> · <b>Chờ người khác</b> · <b>Cần quyết định</b> · <b>Vừa hoàn thành (7 ngày)</b>.', '<b>+ Giao việc</b>: việc ngoài học viên (giáo trình, tutor…), có <b>Người phụ trách</b>, <b>Hạn</b>; <b>Giao GV theo lớp + kỹ năng</b> hiện ở hồ sơ từng em lớp đó.', 'Bấm dòng mở chi tiết: <b>Cập nhật tiến độ</b>, <b>+ Việc con</b>; dời hạn ghi <b>Lý do dời hạn</b>, hạn cũ còn ở <b>Lịch sử hạn</b>.'],
       tuKhac: ['giao việc', 'giáo trình', 'tutor', 'task', 'operations'],
     },
     {
       id: 'bao-cao-tuan', ten: 'Báo cáo họp đơn vị', nhom: 'khac',
       loiChinh: { man: 'bao-cao', chu: 'Công việc › Việc quản lý › Họp đơn vị', duong: '/cong-viec/bao-cao' },
-      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Họp đơn vị ›</b>; chọn <b>Tuần</b> / <b>Tháng</b>, ‹ › đổi kỳ.', 'Bảng <b>Tình hình đơn vị</b>: đơn vị nào đã nộp, đang nhập, chưa báo cáo; nộp muộn gắn "nộp muộn".'],
+      buoc: ['Mở <b>Công việc</b>, tab <b>Việc quản lý</b>, bấm <b>Họp đơn vị ›</b>; chọn <b>Tuần</b> / <b>Tháng</b> và kỳ (Tháng chỉ để đọc).', 'Bảng <b>Tình hình đơn vị</b>: đơn vị nào đã nộp, đang nhập, chưa báo cáo; quá hạn vẫn nộp được, gắn "nộp muộn".', 'Bấm tên đơn vị mở ô báo cáo: chọn mức, ghi <b>Bằng chứng</b>, <b>Lưu nháp</b> hoặc <b>Nộp</b>; <b>+ Tạo việc từ mục này</b> giao việc sang Vận hành.'],
       tuKhac: ['họp', 'báo cáo', 'meeting', 'report'],
     },
     {
@@ -490,7 +490,7 @@ export const HD_QL: HuongDan = {
         { id: 'hvl-xem-case', viec: 'xem-case', ten: 'Xem mọi Case của em', buoc: ['Bấm dòng em: panel một em mở bên phải, không rời trang.', 'Khối <b>Case & phương án</b>: bấm Case để mở.'] },
         { id: 'ql-hvl-pham-vi', ten: 'Xem, lọc và Lưu trữ', buoc: ['Ô <b>Xem</b>: lớp tôi dạy, chi nhánh hoặc mọi chi nhánh; <b>Fast Track</b> / <b>Lớp thường</b>.', 'Chip <b>Thi tháng này</b> · <b>Có việc quá hạn</b> · <b>Đã thi · chờ KQ</b>; <b>Bộ lọc thêm</b> (Thiếu thông tin…).', '<b>Lưu trữ ›</b> ở đầu trang: lớp đã kết thúc, em đã lưu trữ. Ô <b>Mọi lớp</b> · <b>Mọi TVV</b> gõ để tìm.'],
           chi: { hd: 'hvl-goc', duong: HV, chu: 'Tab và lọc của trang ở hàng này.' } },
-        { id: 'ql-hvl-phan-cong', ten: 'Phân công GV', buoc: ['Tab <b>Phân công GV</b>: một bảng cả chi nhánh; vai xem nhiều chi nhánh vào thẳng chi nhánh gần nhất, đổi ở ô <b>Xem</b>.', 'Bấm ô GV, gõ tên: GV đang dạy lớp lên trước, <b>Bỏ trống (Chưa có)</b> cuối. <b>Lưu</b> cuối dòng hỏi hiệu lực <b>Ngay hôm nay</b> / <b>Từ tuần</b> (gõ W4 SEP hoặc bấm lịch).'] },
+        { id: 'ql-hvl-phan-cong', ten: 'Phân công GV', buoc: ['Tab <b>Phân công GV</b>: một bảng một chi nhánh; vai xem nhiều chi nhánh vào thẳng chi nhánh gần nhất, đổi ở ô <b>Xem</b>. Bảng tổng hợp: bấm tên GV để tô các ô của GV đó.', 'Bấm ô, gõ tên GV: GV đang dạy lớp lên trước, <b>Bỏ trống (Chưa có)</b> cuối. Ô <b>Chưa có</b> + ô của GV đã nghỉ đếm ở chip <b>Thiếu GV</b>.', '<b>Lưu</b> cuối dòng (nhiều lớp: <b>Lưu cả n lớp…</b>): đổi GV A sang B thì hỏi <b>Hiệu lực</b> <b>Ngay hôm nay</b> / <b>Từ tuần</b> và tạo việc bàn giao; chỉ thêm hoặc bỏ người thì lưu ngay. Ô <b>Chờ đổi</b>: bấm để <b>Đổi mốc…</b> hoặc huỷ lịch đổi.'] },
       ],
     },
     {
@@ -526,7 +526,7 @@ export const HD_QL: HuongDan = {
         { id: 'hv-buoc-tiep', viec: 'buoc-tiep', ten: 'Chọn bước tiếp sau thi', buoc: ['Thanh <b>Việc cần làm</b>: dòng <b>Chọn bước tiếp ›</b>; hoặc <b>⋯ › Bước tiếp…</b>.', 'Chọn Lộ trình mới hoặc Tạm dừng / Kết thúc học, lưu.'] },
         { id: 'hv-vi-pham', viec: 'vi-pham', ten: 'Ghi vi phạm', buoc: ['Tab <b>Ý thức & Phối hợp</b>: ghi vi phạm của em này.', 'Chọn dòng, <b>Lưu</b>.'] },
         { id: 'hv-phoi-hop', viec: 'phoi-hop-sos', ten: 'Phối hợp SOS của em', buoc: ['Tab <b>Ý thức & Phối hợp</b>: việc phối hợp theo mức SOS của em.', 'Bấm <b>Xác nhận</b> ở dòng, ghi nội dung, <b>Lưu</b>; kết quả TVV báo hiện ở dòng đó.'] },
-        { id: 'ql-hv-menu', ten: 'Thao tác với em', buoc: ['<b>⋯</b> trên đầu hồ sơ: <b>Sửa thông tin</b> · <b>Chuyển lớp…</b> · <b>Tạm dừng / Kết thúc học</b>; rồi <b>Cuối khoá…</b> · <b>Bước tiếp…</b> · <b>Lịch MT</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>.'] },
+        { id: 'ql-hv-menu', ten: 'Thao tác với em', buoc: ['<b>⋯</b> trên đầu hồ sơ: <b>Sửa thông tin</b> · <b>Chuyển lớp…</b> · <b>Tạm dừng / Kết thúc học</b>; dưới vạch: <b>Cuối khoá…</b> · <b>Bước tiếp…</b> (khi đã chọn) · <b>Lịch MT</b> (Fast Track) · <b>Kết quả thi thật</b> · <b>Quay lại học</b> (em tạm dừng, đã kết thúc) · <b>Lịch sử</b>.', 'Mục chỉ hiện khi làm được; em ở Lưu trữ: <b>Quay lại học</b> là nút đầu hồ sơ. Cạnh ⋯: <b>+ Task</b> (Case, vi phạm, tình hình học tập).'] },
         mucGv('ho-so-hv', 'hv-y-thuc'), mucGv('ho-so-hv', 'hv-hanh-trinh'),
       ],
     },

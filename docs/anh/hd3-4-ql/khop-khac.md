@@ -118,7 +118,23 @@ Viết tắt:
 5. **Chờ bạn duyệt**: 15 mục 8.1 ghi "mỗi loại yêu cầu một thẻ" (10 loại). PR viết ba thẻ theo cách quyết, vì các loại khác nhau chủ yếu ở Hạn và ở chỗ quá hạn tự chốt hay không; viết 10 thẻ thì gần như chép lại nhau.
    - Panel duyệt mở thẻ chung, chưa chọn thẻ theo loại của yêu cầu đang mở. Muốn chọn theo loại thì cần `HopChoDuyet` ghi loại vào ngữ cảnh "?" (việc mã nhỏ).
 6. **Chốt lộ trình, Xét lại, Kết quả đầu ra** không có panel ở Công việc: nút đổi trang. "?" sau khi đổi trang ra màn hồ sơ lớp (mục `lop-chot`, `lop-ky-vong`). Trang Cuối khoá chưa có `data-hd` riêng.
-7. **Chưa soát kỹ**: menu ⋯ ở hồ sơ HV (`ql-hv-menu`), tab Phân công GV, trang Vận hành / Họp đơn vị. Giữ nguyên câu cũ.
+7. ~~Chưa soát kỹ~~ — **ĐÃ SOÁT** (PTA Plan rà #1766), xem mục "Soát thêm" dưới.
+
+## Soát thêm (PTA Plan rà #1766: [XM]7)
+
+| Chỗ | Câu (sau sửa) | Nguồn |
+|---|---|---|
+| `ql-hv-menu` | ⋯: Sửa thông tin · Chuyển lớp… · Tạm dừng / Kết thúc học; dưới vạch: Cuối khoá… · Bước tiếp… (khi đã chọn) · Lịch MT (Fast Track) · Kết quả thi thật · Quay lại học (em tạm dừng, đã kết thúc) · Lịch sử | `shared/domain/quanLyHocVien.ts:12-25, 53-105` (`mucQuanLyHocVien`: `dau` / `sau`, vạch `keTruoc: 'dam'`, `buocTiep`, `cycle && !ratio`, `quayLai` / `hocLai`) |
+| · | Mục chỉ hiện khi làm được; Lưu trữ: Quay lại học là nút đầu hồ sơ; cạnh ⋯: + Task | `StudentDetailPage.tsx:305-330` (`nutQuayLai`, `nutTask`); `thaoTacDongHocVien.tsx:94` |
+| `ql-hvl-phan-cong` | Một bảng một chi nhánh; vai nhiều chi nhánh vào chi nhánh gần nhất, đổi ở Xem; bấm tên GV để tô | `StudentsPage.tsx:355-388, 497`; `GocPhanCongGv.tsx` ('Bấm tên GV ở bảng tổng hợp để tô các ô của GV đó.') — GD-13c #1690 |
+| · | Bỏ trống (Chưa có) cuối; Chưa có + GV đã nghỉ đếm ở chip Thiếu GV | `phanCongGv/OGv.tsx` ('Bỏ trống (Chưa có)'); `GocPhanCongGv.tsx` ('Thiếu GV · {n} ô', 'Ô Chưa có + ô của GV đã nghỉ') |
+| · | Lưu cuối dòng / Lưu cả n lớp…; đổi A sang B hỏi Hiệu lực Ngay hôm nay / Từ tuần + tạo việc bàn giao; chỉ thêm / bỏ người lưu ngay; Chờ đổi → Đổi mốc… / huỷ | `classes/HopLuuPhanCong.tsx:72-75` (`luuThang`: "Lưu không cặp A → B … hôm nay, không hộp"), 98-101, chuỗi 'Tạo việc bàn giao', 'Đổi mốc…', 'Huỷ lịch đổi ({mon})'; `phanCongGv/ThanhLuuPc.tsx` ('Lưu cả {n} lớp…') |
+| `van-hanh` | Bốn số lọc; + Giao việc có Người phụ trách, Hạn; Giao GV theo lớp + kỹ năng hiện ở hồ sơ em | `shared/domain/congViec.ts:130-152`; `worklist/MgmtTasksPage.tsx` ('+ Giao việc', 'Người phụ trách', 'Giao GV theo lớp + kỹ năng', 'Hiện ở hồ sơ {n} em lớp {lop}…') |
+| · | Bấm dòng: Cập nhật tiến độ, + Việc con; dời hạn ghi Lý do dời hạn; Lịch sử hạn | `MgmtTasksPage.tsx` ('Bấm một dòng để mở chi tiết…', 'Cập nhật tiến độ', '+ Việc con', 'Lý do dời hạn', 'Lịch sử hạn') |
+| `bao-cao-tuan` | Tuần / Tháng (Tháng chỉ để đọc); Tình hình đơn vị; quá hạn vẫn nộp, "nộp muộn" | `worklist/MeetingPage.tsx` ('Tuần', 'Tháng', 'kỳ tháng chỉ để đọc', 'Tình hình đơn vị', 'Quá hạn (hết {ngay}) — vẫn nộp được, ghi "nộp muộn".') |
+| · | Bấm tên đơn vị: chọn mức, Bằng chứng, Lưu nháp / Nộp; + Tạo việc từ mục này | `MeetingPage.tsx` ('Bấm tên đơn vị để mở ô báo cáo.', 'Chọn mức trước khi nộp.', 'Bằng chứng', 'Lưu nháp', 'Nộp', '+ Tạo việc từ mục này') |
+
+Câu cũ đã sửa: menu ⋯ thiếu Quay lại học, chưa ghi điều kiện của Bước tiếp… / Lịch MT · Phân công GV ghi "Lưu luôn hỏi hiệu lực" (sai: chỉ khi đổi A sang B), thiếu chip Thiếu GV, ô Chờ đổi, bảng tổng hợp · Vận hành thiếu chi tiết việc (tiến độ, việc con, dời hạn) · Họp đơn vị ghi "‹ › đổi kỳ" (không thấy trong mã), thiếu cách nộp.
 
 ## Ảnh (tài khoản demo QL Nguyễn Khánh Vy; ngày demo 14/09/2026; phông đã kiểm)
 
