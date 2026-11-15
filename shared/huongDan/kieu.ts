@@ -80,6 +80,8 @@ export type HuongDan = {
   lam?: ViecHd[]; tuan?: { nhip: Khoa; viec: string[] }[]; vaiKhac?: ViecVaiKhac[];
   /** HD3-1: tab "Trường hợp" (ẩn tình huống vai không gặp = không viết ở vai đó). */
   tinhHuong?: TinhHuongHd[];
+  /** HD3-5: tên tab Công việc riêng của vai (Admin / QL: "van-hanh" = "Việc quản lý") — Hướng dẫn gọi đúng tên trên trang. */
+  tenTab?: Partial<Record<string, Khoa>>;
 };
 
 /**
