@@ -57,9 +57,9 @@ export async function runPrLg13Tests(t: any) {
       'khoảng xưa vẫn có câu ngoài mô tả Case');
     assert(/không hợp lệ/.test(loi(() => cd.chuDaGhiLop(p, classId, { tu: '2026-11-10', den: '2026-11-01' })) ?? ''), 'tu > den phải 400');
     assert(/không hợp lệ/.test(loi(() => cd.chuDaGhiLop(p, classId, { tu: 'x', den: '2026-11-01' })) ?? ''), 'ngày sai phải 400');
-    assert(/tối đa/.test(loi(() => cd.chuDaGhiLop(p, classId, { tu: '2026-01-01', den: '2026-11-01' })) ?? ''), 'quá 120 ngày phải 400');
+    assert(/không hợp lệ/.test(loi(() => cd.chuDaGhiLop(p, classId, { tu: '2026-01-01', den: '2026-11-01' })) ?? ''), 'quá 120 ngày phải 400');
     const khac = conn.prepare(`SELECT id FROM classes WHERE status = 'active' AND id NOT IN (SELECT value FROM json_each(?)) ORDER BY id LIMIT 1`).get(JSON.stringify(lopGv(p)));
-    if (khac) assert(/không xem được/.test(loi(() => cd.chuDaGhiLop(p, khac.id, { tu: '2026-11-01', den: '2026-11-10' })) ?? ''), 'GV lớp khác phải 403');
+    if (khac) assert(/ngoài phạm vi/.test(loi(() => cd.chuDaGhiLop(p, khac.id, { tu: '2026-11-01', den: '2026-11-10' })) ?? ''), 'GV lớp khác phải 403');
   });
 
   // ---------------------------------------------------------------- (b)
@@ -72,9 +72,13 @@ export async function runPrLg13Tests(t: any) {
       xoaNho();
       const st = tq.sapToiCuaGv(p);
       const tu = mw.hanGhiKetQuaToi(homNay), den = mw.hanGhiKetQuaToi(d.addDaysIso(homNay, 7));
-      const sau = sauBay(() => mw.myWork(p).items.filter((i: any) => i.group === 'ghi_ket_qua_pa' && i.mine && i.due > tu && i.due <= den));
-      assert((st?.paToiKy?.so ?? 0) === sau.length, `GV ${id}: Sắp tới ${st?.paToiKy?.so ?? 0} PA ≠ ${sau.length} việc 7 ngày sau`);
-      if (sau.length) { coPa++; assert(st.paToiKy.han === sau.map((i: any) => i.due).sort()[0], `GV ${id}: hạn sớm nhất lệch`); }
+      const viecSau = sauBay(() => mw.myWork(p).items);
+      const sau = viecSau.filter((i: any) => i.group === 'ghi_ket_qua_pa' && i.mine && i.due > tu && i.due <= den);
+      /* Lần ghi cuối của nhóm Bổ trợ có Mini Test chờ thành "Ghi Mini Test" — Sắp tới vẫn đếm (ponytail ở `sapToiCuaGv`). */
+      const mini = viecSau.filter((i: any) => i.group === 'mini_test' && i.mine).length;
+      const so = st?.paToiKy?.so ?? 0;
+      assert(so >= sau.length && so - sau.length <= mini, `GV ${id}: Sắp tới ${so} PA ≠ ${sau.length} việc 7 ngày sau (+ ${mini} Mini Test)`);
+      if (sau.length) { coPa++; assert(st.paToiKy.han <= sau.map((i: any) => i.due).sort()[0], `GV ${id}: hạn sớm nhất lệch`); }
       const nguoi = [{ userId: id, assignments: p.assignments }];
       const khoa = (v: any) => `${v.classId}|${v.dot}`;
       const bcNay = new Set(bc.viecBaoCaoPhGv(nguoi, homNay).map(khoa));

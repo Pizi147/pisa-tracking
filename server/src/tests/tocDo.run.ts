@@ -1614,7 +1614,7 @@ await checkAsync('TURSO-1211 (×3) · 9 câu Công việc / Tổng quan / hồ s
   for (const [ten, re, chiMuc, scan] of [
     ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?(?!\s*AND iv\.action_due > \?)/, 'idx_iv_ghi_kq', /^SCAN iv$/],
     /* LG-13 "Sắp tới": cùng câu Ghi kết quả PA nhưng đi từ em lớp GV / chủ Case / người dạy nhóm (rowid IN), không quét PA tới hạn cả hệ thống. */
-    ['Sắp tới · PA tới kỳ', /AS cho_mini/, 'idx_intervention_case', /^SCAN (iv|sc|iv2|sc2|e2)$/],
+    ['Sắp tới · PA tới kỳ', /AND iv\.id IN \(\s*SELECT iv2\.id AS id/, 'idx_intervention_case', /^SCAN (iv|sc|iv2|sc2|e2)$/],
     ['Xác nhận PA', /AS chon_pa/, 'idx_iv_cho_xac_nhan', /^SCAN iv$/],
     ['Mốc PA quy chế', /iv\.moc_quy_che IN \('until_next_mt', 'until_exam'\)/, 'idx_iv_moc_cho', /^SCAN iv$/],
     ['Chờ kết quả thi', /COALESCE\(c\.thi_that_ngay, c\.exam_date, c\.ended_at\) < \?/, 'idx_cycle_cho_kq_ngay', /^SCAN c\b/],

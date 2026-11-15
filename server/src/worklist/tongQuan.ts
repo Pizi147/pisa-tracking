@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, daiDienNhomBoTro, laLanGhiCuoi, laPaBoTro, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, daiDienNhomBoTro, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
@@ -362,7 +362,7 @@ export function testSapToiCuaGv(p: Principal) {
  * LG-13 (H7, overhaul V6 đợt 4): "Sắp tới" 7 ngày của GV — việc CHƯA sinh: số PA tới kỳ ghi kết quả (việc "Ghi kết quả PA" của chính GV hiện từ hạn − 2, nên PA
  * có hạn trong (hạn tới hôm nay, hạn tới hôm nay + 7] — cùng câu `cauPaGhiKetQua`, cùng người giữ `nguoiGiuKetQua`, cùng đại diện nhóm bổ trợ) · đợt Báo cáo PH mở
  * trong 7 ngày (`dotBcSapMoGv`). Không có gì → null (web không hiện dòng). Không vào số việc / badge.
- * Turso: 1 câu PA (đi `idx_iv_ghi_kq`, chỉ lớp GV đang dạy + Case GV chủ + nhóm Bổ trợ miễn phí; người dạy nhóm + Mini Test chờ là câu con) — phân công đã nạp ở
+ * Turso: 1 câu PA (đi từ em lớp GV / Case GV chủ / nhóm GV là Người dạy — `PA_CUA_GV_SQL`; người dạy nhóm là câu con) + Mini Test chờ khi có PA Bổ trợ — phân công đã nạp ở
  * Công việc. Báo cáo PH: 0 câu (cùng tập lớp với việc Báo cáo PH), + 1 câu em chỉ khi có đợt sắp mở.
  * ponytail: người giữ tính theo phân công HÔM NAY — đổi phân công trong tuần thì số đổi theo; PA mới tạo trong tuần chưa tính.
  */
@@ -371,7 +371,7 @@ export function testSapToiCuaGv(p: Principal) {
  * Bổ trợ miễn phí GV là Người dạy. Đi từ em / chủ / người dạy (chỉ mục), không quét mọi PA tới hạn của cả hệ thống. Tham số: lớp (JSON), người, người.
  */
 const PA_CUA_GV_SQL = `
-          SELECT iv2.id FROM enrollments e2 JOIN sos_cases sc2 ON sc2.student_id = e2.student_id JOIN case_interventions iv2 ON iv2.case_id = sc2.id
+          SELECT iv2.id AS id FROM enrollments e2 JOIN sos_cases sc2 ON sc2.student_id = e2.student_id JOIN case_interventions iv2 ON iv2.case_id = sc2.id
            WHERE e2.class_id IN (SELECT value FROM json_each(?)) AND e2.status = 'active'
           UNION SELECT iv2.id FROM sos_cases sc2 JOIN case_interventions iv2 ON iv2.case_id = sc2.id WHERE sc2.owner_user_id = ? AND sc2.status != 'done'
           UNION SELECT iv2.id FROM case_interventions iv2 WHERE iv2.nhom_bo_tro IN (SELECT nhom_bo_tro FROM case_interventions WHERE performer_user_id = ?
@@ -379,9 +379,8 @@ const PA_CUA_GV_SQL = `
 export function sapToiCuaGv(p: Principal): { paToiKy: { so: number; han: string } | null; baoCaoPh: DotBcSapMo[] } | null {
   const today = demoToday(), den = addDays(today, 7);
   const lop = [...new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId))];
-  /* Người dạy nhóm `mt:` + "nhóm có Mini Test chờ" đọc trong cùng câu (khỏi `nguoiDayNhom` / `boKetQuaChoMiniTest` mỗi câu một lần). */
-  const rows = db().prepare(`SELECT x.*, ${NGUOI_DAY_NHOM('x.nhom_bo_tro')} AS nguoi_day,
-      x.nhom_bo_tro IN (SELECT nhom_bo_tro FROM mini_test WHERE ty_le IS NULL) AS cho_mini   -- một lần (chỉ mục Mini Test chờ), không theo từng dòng
+  /* Người dạy nhóm `mt:` đọc trong cùng câu (khỏi `nguoiDayNhom`). */
+  const rows = db().prepare(`SELECT x.*, ${NGUOI_DAY_NHOM('x.nhom_bo_tro')} AS nguoi_day
     FROM (${cauPaGhiKetQua(`
           AND iv.action_due > ?
           AND iv.id IN (${PA_CUA_GV_SQL})`)}) x`)
@@ -389,10 +388,8 @@ export function sapToiCuaGv(p: Principal): { paToiKy: { so: number; han: string 
   rows.sort((a, b) => a.id - b.id);   // chỉ mục hạn không giữ thứ tự id — khoá như Công việc
   const giu = rows.length ? nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null,
     ownerUserId: r.owner_user_id ?? null, nguoiDay: r.nhom_bo_tro?.startsWith('mt:') ? r.nguoi_day ?? null : null })), today) : new Map();
-  /* Cùng luật `boKetQuaChoMiniTest` (lần ghi cuối của PA đại diện nhóm có Mini Test chờ → việc là "Ghi Mini Test"), xét ở ngày cuối cửa sổ. */
-  const choMini = (r: any) => laPaBoTro(r.kind) && !!r.cho_mini
-    && laLanGhiCuoi({ preset: true, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null, mienPhi: r.kind === 'bo_tro_mien_phi' }, den);
-  const cua = daiDienNhomBoTro(rows, choMini).filter((r) => giu.get(r.id) === p.userId);
+  /* ponytail: nhóm Bổ trợ có Mini Test chờ ở lần ghi cuối vẫn đếm (tuần đó việc là "Ghi Mini Test", vẫn là việc của GV) — khỏi câu `mini_test` quét chỉ mục chờ. */
+  const cua = daiDienNhomBoTro(rows.filter((r) => giu.get(r.id) === p.userId));
   const baoCaoPh = dotBcSapMoGv({ userId: p.userId, assignments: p.assignments }, today, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today);
   if (!cua.length && !baoCaoPh.length) return null;
   return { paToiKy: cua.length ? { so: cua.length, han: cua.map((r) => r.action_due as string).sort()[0] } : null, baoCaoPh };

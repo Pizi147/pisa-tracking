@@ -20,10 +20,9 @@ const TOI_DA_NGAY = 120;
  */
 export function chuDaGhiLop(p: Principal, classId: number, q: { tu?: unknown; den?: unknown }): { em: ChuDaGhiEm[] } {
   const c = docLop(classId);
-  if (!quyenBc(p, c).xem) throw forbidden('Bạn không xem được lớp này.');
+  if (!quyenBc(p, c).xem) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');
   const { tu, den } = q;
-  if (!isIsoDate(tu) || !isIsoDate(den) || tu > den) throw badRequest('Khoảng ngày không hợp lệ.');
-  if (den > addDaysIso(tu, TOI_DA_NGAY)) throw badRequest(`Khoảng ngày tối đa ${TOI_DA_NGAY} ngày.`);
+  if (!isIsoDate(tu) || !isIsoDate(den) || tu > den || den > addDaysIso(tu, TOI_DA_NGAY)) throw badRequest('Khoảng ngày không hợp lệ.');
   const conn = db();
   const ids = (conn.prepare(`SELECT DISTINCT student_id FROM enrollments WHERE class_id = ? AND status = 'active' ORDER BY student_id`).all(classId) as any[]).map((r) => r.student_id as number);
   if (!ids.length) return { em: [] };
@@ -48,7 +47,7 @@ export function chuDaGhiLop(p: Principal, classId: number, q: { tu?: unknown; de
 
   /* Mô tả Case đang mở (bàn giao cần dù viết từ trước khoảng) + Tiến triển của lần ghi kết quả PA trong khoảng — một câu. */
   for (const r of conn.prepare(
-    `SELECT sc.student_id, sc.topic, 'case' AS loai, substr(COALESCE(sc.detected_at, sc.created_at), 1, 10) AS ngay, sc.summary AS chu, sc.id AS k
+    `SELECT sc.student_id AS student_id, sc.topic AS topic, 'case' AS loai, substr(COALESCE(sc.detected_at, sc.created_at), 1, 10) AS ngay, sc.summary AS chu, sc.id AS k
        FROM sos_cases sc WHERE sc.student_id IN (${DS_JSON}) AND sc.status != 'done' AND sc.tam = 0 AND NULLIF(TRIM(sc.summary), '') IS NOT NULL
      UNION ALL
      SELECT sc.student_id, sc.topic, 'kq-pa', f.observed_on, f.note, f.id
@@ -59,7 +58,7 @@ export function chuDaGhiLop(p: Principal, classId: number, q: { tu?: unknown; de
 
   /* Phần Chung: vi phạm (kể cả "Chỉ nhắc nhở") + lần xử lý đã thực hiện trong khoảng — một câu. */
   for (const r of conn.prepare(
-    `SELECT student_id, 'vi-pham' AS loai, occurred_on AS ngay, ten, description AS chu, NULL AS kind, id AS k FROM violations
+    `SELECT student_id AS student_id, 'vi-pham' AS loai, occurred_on AS ngay, ten AS ten, description AS chu, NULL AS kind, id AS k FROM violations
       WHERE student_id IN (${DS_JSON}) AND occurred_on BETWEEN ? AND ?
      UNION ALL
      SELECT student_id, 'xu-ly', performed_on, custom_name, note, kind, id FROM discipline_measures
