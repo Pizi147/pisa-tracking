@@ -553,3 +553,9 @@ Bối cảnh: chủ SP thấy ảnh web Tổng quan của Admin văn phòng có 
 > "tại sao trang tổng quan mà lại có chữ Mocktest ở trên đầu trang? có liên quan gì không? xóa đi"
 
 ĐÃ CHỐT: đầu trang Tổng quan của Admin văn phòng **bỏ chữ "Mock Test"** → dòng phạm vi như QL ("Monbay · W3 SEP"); dòng loại ở đầu panel "Số liệu · Mock Test" → "Số liệu · Tổng quan". Mockup ⑧ KHÔNG vẽ lại (theo lời 39, 44) — code theo lời này, ảnh cặp ghi "KHÁC theo lời 49". Vào GD-14.
+
+## 15/11 — lời 50 (chủ SP nói trong session mockup ⑫; session đó chuyển lại): duyệt mockup ⑫
+
+> "ok duyệt"
+
+ĐÃ CHỐT: **mockup ⑫ "GV gõ ít hơn" ĐÃ DUYỆT** (`thiet-ke/v21/gv-viet-it.html`, PR #1727 đã merge) — bản đã áp hai chỉnh lưới và các [XM] PTA chốt: khối "Bạn đã ghi tháng này" + "Chèn" ở Báo cáo PH; "Chèn" + "Chèn cho n em" ở bàn giao; lưới Ghi kết quả PA theo lớp (chân ba nút); "Hoàn thành Case" bật sẵn khi kết thúc PA cuối với "Tiến bộ rõ". Plan code: `14-plan-giao-dien-dot-4.md` (GD-20a … GD-20d), gửi PTA Plan. Mockup ⑪ (#1726), ⑬ (#1728) còn chờ duyệt.
