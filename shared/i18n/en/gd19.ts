@@ -17,6 +17,7 @@ export const EN_GD19 = {
   'gửi {x}': 'sent to {x}',
   'người ghi': 'the recorder',
   'Không xử lý · {ngay}': 'Not handled · {ngay}',
+  '{n} vi phạm trong 2 tuần': (b) => `${b.n} incident(s) in 2 weeks`,
   /* Hướng dẫn "?" (GV). */
   'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn. Cần GVCN xử lý ngay thì bật <b>Yêu cầu GVCN xử lý</b>: GVCN có việc, hạn 5 ngày; GVCN không xử lý thì bạn nhận tin kèm lý do.': '<b>Subject</b>: filled in if you teach one subject in the class; choose if you teach 2 or more. Need the homeroom teacher to act now? Turn on <b>Ask homeroom teacher to handle</b>: they get a task due in 5 days; if they decline, you get an update with the reason.',
   '<b>Lưu</b>. GVCN nhận tin ở chuông; đủ 3 vi phạm trong 2 tuần thì GVCN phải xử lý.': '<b>Save</b>. The homeroom teacher gets an update; 3 incidents within 2 weeks must be handled.',

@@ -539,10 +539,12 @@ export function DemChu({ n, toiDa }: { n: number; toiDa: number }) {
  * Có `loi` → ô viền đỏ + lý do dưới ô (YC-12.5.2; người gọi đặt `aria-invalid` lên ô). `dem` = bộ đếm ký tự `8/15` bên phải (chưa đủ tối thiểu);
  * `dem.toiDa` (N35): từ 80 % trần hiện `212 / 200`, quá trần chữ đỏ.
  */
-export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'label', children }: {
+export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, phuNhan, loi, dem, as = 'label', children }: {
   /** OV-13f: ô bắt buộc mà trống vẫn lưu được (Email) — chữ "Thiếu" cam cạnh nhãn. */
   thieu?: boolean;
   nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can?: number; toiDa?: number };
+  /** GD-19 (mockup ⑪ K6a "Lý do * gửi Vũ Thu Lan"): chữ mờ CẠNH nhãn (khác `phu` — dưới ô). */
+  phuNhan?: string;
   as?: 'label' | 'div'; children: ReactNode;
 }) {
   /* Ô ngày / ô chọn người bên trong báo id → nhãn `<label htmlFor>`, không bọc nút lịch (`BaoOTrongNhan`). Thẻ khung chỉ theo props. */
@@ -559,6 +561,7 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, loi, dem, as = 'lab
     <span className="min-w-0 flex-1">
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
       {tuyChon && !dam && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
+      {phuNhan && <span className="font-normal text-slate-400"> {phuNhan}</span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
     {dem?.can && dem.co < dem.can ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>

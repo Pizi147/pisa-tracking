@@ -285,7 +285,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
         <div className="flex flex-col gap-4 pt-4">
           {khoiYc}
           <div>{chonLoi}</div>
-          <Truong nhan={t('Lý do')} phu={t('gửi {x}', { x: nguoiYc || t('người ghi') })} batBuoc loi={lf.loiCua(loiKx, 'ly-do')}>
+          <Truong nhan={t('Lý do')} phuNhan={t('gửi {x}', { x: nguoiYc || t('người ghi') })} batBuoc loi={lf.loiCua(loiKx, 'ly-do')}>
             <textarea className="field w-full" {...lf.o(loiKx, 'ly-do')} rows={3} value={lyDo} readOnly={busy} maxLength={500} onChange={(e) => setLyDo(e.target.value)} />
           </Truong>
         </div>

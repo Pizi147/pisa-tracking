@@ -29,6 +29,20 @@ type DongViec = DongViecChuong & { due?: string | null; classCode?: string | nul
 type ThanhTab = TabViecChuong<DongViec> & { den: string };
 /** Số dòng mở tại chỗ dưới một thanh (mockup ⑪ K1b). */
 const SO_GAP = 3;
+/*
+ * Dòng phụ NGẮN (mockup ⑪ K1b, chủ SP ghét chữ cắt): Xử lý vi phạm → "n vi phạm trong 2 tuần" / "{người} yêu cầu" — bậc kế tiếp chỉ ở panel.
+ * Việc khác: chữ phụ máy chủ (dịch) — xuống tối đa hai dòng, không cắt.
+ */
+function phuNgan(x: DongViec): string | null {
+  const p = x.phu ?? x.reason ?? null;
+  if (!p) return null;
+  if (x.group === 'yt_xu_ly') {
+    const truoc = p.split(' · bậc kế tiếp')[0];
+    const so = /^(\d+) vi phạm$/.exec(truoc);
+    return so ? t('{n} vi phạm trong 2 tuần', { n: Number(so[1]) }) : /^(.*) yêu cầu$/.test(truoc) ? t('{x} yêu cầu', { x: truoc.replace(/ yêu cầu$/, '') }) : dich(truoc);
+  }
+  return dich(p);
+}
 
 const Mui = () => (
   <svg aria-hidden className="chv-mui" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="m6 3.5 4.5 4.5L6 12.5" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -214,11 +228,11 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
           <div className="chv-t-mo" id={`chv-mo-${g.tab}`}>
             {g.gap.slice(0, SO_GAP).map((x) => {
               const lop = x.classCode ?? x.studentName ?? '';
-              const phu = [x.studentId != null && x.classCode ? x.studentName : null, x.phu ?? x.reason].filter(Boolean).join(' · ');
+              const phu = [x.studentId != null && x.classCode ? x.studentName : null, phuNgan(x)].filter(Boolean).join(' · ');
               return (
                 <button key={x.key} type="button" className="chv-vh" onClick={() => { navigate(duongTab(g.tab, x.key)); onDong(); }}>
                   <span className="chv-v1"><b>{lop}</b>{lop ? ' · ' : ''}{dich(NHAN_LOAI_VIEC[x.group] ?? x.group)}</span>
-                  {phu && <span className="chv-v2">{dich(phu)}</span>}
+                  {phu && <span className="chv-v2">{phu}</span>}
                   {x.due && <span className="chv-v-han"><ChipHan loai={LOAI_HAN_CUA_VIEC[x.group] ?? 'viec-van-hanh'} han={x.due} vien /></span>}
                 </button>
               );
