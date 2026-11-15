@@ -23,7 +23,7 @@ export const HD_HT: HuongDan = {
     },
   ],
   tuan: [
-    { nhip: 'Mỗi sáng', viec: ['xem-tong-quan'] },
+    { nhip: 'Hằng ngày', viec: ['xem-tong-quan'] },
     { nhip: 'Khi có', viec: ['sua-ho-so'] },
   ],
   vaiKhac: [

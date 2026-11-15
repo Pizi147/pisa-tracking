@@ -462,13 +462,12 @@ export async function runPrHdTests(t: any) {
    * HD-DU: mọi loại dòng việc máy chủ dựng (`NHOM_VIEC_MAY` + việc chung Chấm Speaking) có thẻ (`viecWeb`) ở một vai; mọi PANEL_HD có thẻ (`the` của mục
    * panel). Chưa có thẻ → nằm ở danh sách CHỜ (nội dung HD3-2 … HD3-5); có thẻ rồi mà còn trong danh sách → đỏ (bỏ khỏi danh sách) — danh sách chỉ ngắn lại.
    */
-  const CHO_DU_VIEC = new Set(['cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'phoi_hop_tvv', 'khai_bac', 'ky_vong_dau_ra', 'thi_that',
-    'buoc_tiep', 'bo_sung_ho_so', 'mini_test', 'no_plan', 'ghi_ket_qua_pa', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data', 'yt_xu_ly', 'bao_ph_yt',
-    'yt_hoi_tinh_hinh', 'yt_thuc_hien', 'ban_giao', 'xuat_bc_ph', 'bao_cao_ph', 'mgmt']);
-  const CHO_DU_PANEL = new Set(['ngan-case', 'ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh',
-    'duyet', 'sua-thong-tin', 'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'xep-lich-mt', 'them-hv', 'xuat-ds', 'bao-ph', 'xet-lai']);
+  const CHO_DU_VIEC = new Set(['phoi_hop_tvv', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data',
+    'bao_ph_yt', 'xuat_bc_ph']);   // HD3-2 đã viết thẻ mọi việc của GV
+  /* `ngan-case`: một panel cho nhiều loại việc — "?" lấy thẻ theo dòng việc đang mở; Case mở từ hồ sơ (không dòng việc) chưa có thẻ riêng. */
+  const CHO_DU_PANEL = new Set(['ngan-case', 'lo-trinh', 'duyet', 'chot-ngay-thi', 'xep-lich-mt', 'bao-ph', 'xet-lai']);
   check('HD-DU · mỗi loại dòng việc máy chủ và mỗi PANEL_HD có thẻ Hướng dẫn (hoặc đang trong danh sách chờ nội dung — chỉ ngắn lại)', () => {
-    const MA = new Set<string>([...NHOM_VIEC_MAY, 'cham_speaking']);
+    const MA = new Set<string>([...NHOM_VIEC_MAY, ...hd.MA_VIEC_TACH]);
     const loi: string[] = [];
     const coThe = new Set<string>();
     for (const { vai, v } of moiThe()) for (const k of v.viecWeb ?? []) { if (MA.has(k)) coThe.add(k); else loi.push(`${vai}/${v.id}: viecWeb "${k}" không phải loại việc của máy chủ`); }
@@ -543,10 +542,10 @@ export async function runPrHdTests(t: any) {
   check('HD-HAN · dòng Hạn của thẻ không có số ngày / thứ gõ tay (dùng mã chèn {han:…}); mọi mã chèn có trong Hạn mặc định', () => {
     const loi: string[] = [];
     for (const { vai, v } of moiThe()) {
-      if (v.han && SO_TAY.test(v.han.replace(/\{han:[\w.]+\}/g, ''))) loi.push(`${vai}/${v.id}: Hạn gõ tay "${v.han}"`);
-      for (const d of dongThe(v)) if (hd.chenHan(d).includes('{han:')) loi.push(`${vai}/${v.id}: mã chèn sai "${d}"`);
+      if (v.han && SO_TAY.test(v.han.replace(/\{hang?:[\w.]+\}/g, ''))) loi.push(`${vai}/${v.id}: Hạn gõ tay "${v.han}"`);
+      for (const d of dongThe(v)) if (/\{hang?:/.test(hd.chenHan(d))) loi.push(`${vai}/${v.id}: mã chèn sai "${d}"`);
     }
-    for (const { vai, x } of moiTinhHuong()) for (const d of dongTh(x)) if (hd.chenHan(d).includes('{han:')) loi.push(`${vai}/${x.id}: mã chèn sai "${d}"`);
+    for (const { vai, x } of moiTinhHuong()) for (const d of dongTh(x)) if (/\{hang?:/.test(hd.chenHan(d))) loi.push(`${vai}/${x.id}: mã chèn sai "${d}"`);
     assert(SO_TAY.test('Hết thứ Tư tuần sau') && SO_TAY.test('5 ngày') && !SO_TAY.test('Hết {han:cham_test}'.replace(/\{han:[\w.]+\}/g, '')), 'mẫu SO_TAY');
     assert(!loi.length, loi.join(' · '));
   });
@@ -605,6 +604,7 @@ export async function runPrHdTests(t: any) {
     assert(hd.chenHan('{han:xac_nhan_case.ngayGap}') === `${han.hanTai('xac_nhan_case').ngayGap} ngày`, hd.chenHan('{han:xac_nhan_case.ngayGap}'));
     assert(hd.chenHan('{han:ghi_kq_pa}') === `${han.hanTai('ghi_kq_pa').kyTuan} tuần`, hd.chenHan('{han:ghi_kq_pa}'));
     assert(hd.chenHan('{han:khong_co} {han:cham_test.ngay}') === '{han:khong_co} {han:cham_test.ngay}', 'mã / trường lạ giữ nguyên cho HD-HAN bắt');
+    assert(hd.chenHan('{hang:tinh_hinh} · {hang:khong_co}') === `${han.HAN_HANG.tinh_hinh} ngày · {hang:khong_co}`, 'mã chèn hằng ngoài cấu hình (15 mục 8.2)');
     const cua = hd.theCuaViec('gv', 'score', true);
     assert(cua?.the.id === 'nhap-diem' && cua.vai === 'gv', 'GV mở Nhập điểm → thẻ Nhập điểm của GV');
     assert(hd.theCuaViec('ql', 'score', false)?.vai === 'gv', 'QL mở việc Nhập điểm của GV → thẻ gốc của GV (dải làm thay)');

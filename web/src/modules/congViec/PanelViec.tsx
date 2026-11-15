@@ -70,8 +70,8 @@ type PropsViec = {
 export function PanelViec(p: PropsViec) {
   const xem = useXem({ url: p.xemUrl, dau: ['viec'] });
   /* HD3-1 (15 mục 8.2): "?" đọc DÒNG VIỆC đang mở → tầng 1 = thẻ của loại việc; dải "làm thay / chỉ xem" theo `mine` của dòng. */
-  const { group, key, tieuDe, classCode, mine } = p.it;
-  useEffect(() => ghiViecMo({ group, key, tieuDe, lop: classCode, mine }), [group, key, tieuDe, classCode, mine]);
+  const { group, key, tieuDe, classCode, mine, chonPa } = p.it;
+  useEffect(() => ghiViecMo({ group, key, tieuDe, lop: classCode, mine, chonPa }), [group, key, tieuDe, classCode, mine, chonPa]);
   const caseId = p.it.con?.length ? null : p.it.caseId ?? null;
   const dangXemCase = caseId !== null && xem.ds[xem.ds.length - 1] === 'case';
   /* Nút vừa bấm ("Xem Case" / ‹) ẩn theo lớp của nó — focus sang lớp vừa hiện, người dùng bàn phím không mất chỗ. */

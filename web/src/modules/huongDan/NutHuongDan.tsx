@@ -124,7 +124,9 @@ export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** 
   else if (tang === 1 && tang1) {
     const lenTang = tab2 ? 2 : 3;
     const len = <button type="button" className={NUT_LEN} onClick={() => setTang(lenTang)}>{lenTang === 2 ? t('‹ Việc khác ở tab này') : t('‹ Việc khác ở màn này')}</button>;
-    const tenMo = tang1.viecMo ? [tang1.viecMo.lop, dich(tang1.viecMo.tieuDe)].filter(Boolean).join(' · ') : t(tang1.the!.ten);
+    /* Tiêu đề dòng gộp đã có mã lớp ("MB FT 101 · Xử lý vi phạm · 3 em") — không thêm lần hai. */
+    const tdMo = tang1.viecMo ? dich(tang1.viecMo.tieuDe) : '';
+    const tenMo = tang1.viecMo ? (tang1.viecMo.lop && !tdMo.includes(tang1.viecMo.lop) ? `${tang1.viecMo.lop} · ${tdMo}` : tdMo) : t(tang1.the!.ten);
     than = tang1.the ? (
       <>{len}<TheViec v={tang1.the} ctx={ctx} dangMo={tenMo} qc={qc} dangODung hdThe={HUONG_DAN[tang1.vai!]}
         dai={tang1.viecMo && !tang1.viecMo.mine ? { vai: tang1.vai!, xem: !['ql', 'qt', 'admin'].includes(cuaToi) } : undefined} /></>

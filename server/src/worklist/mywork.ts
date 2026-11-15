@@ -1,6 +1,6 @@
 import { phamViXemViec } from './xemViec.ts';
 import { t } from '../../../shared/i18n/index.ts';
-import { chenHan, hanTai } from '../../../shared/domain/index.ts';
+import { HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, tx } from '../db.ts';
@@ -259,7 +259,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
     label: 'Xác nhận cấp bậc vi phạm HV cũ',
-    hint: 'Em đã học ở trung tâm trước khi có web — xác nhận cấp bậc vi phạm đã có để thang tính tiếp đúng. Không có hạn; qua 14 ngày thì thôi nhắc.',
+    get hint() { return chenHan('Em đã học ở trung tâm trước khi có web — xác nhận cấp bậc vi phạm đã có để thang tính tiếp đúng. Không có hạn; qua {hang:khai_bac} thì thôi nhắc.'); },
   },
   /* PR-VAI-a (K5-11): em BE/ELE lên Fast Track — Quản lý đánh dấu Đạt / Không đạt kỳ vọng đầu ra. */
   /* N22 ② (P9b): tên "Kỳ vọng" (Kết quả đầu ra lớp thường là cột máy ghi ở trang Cuối khoá). Tiêu đề Case "Kỳ vọng đầu ra…" giữ (chống trùng `LIKE`). */
@@ -1562,7 +1562,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          JOIN classes c ON c.id = e.class_id
         WHERE e.status = 'active' AND e.class_id IN (${DS_JSON}) AND substr(s.created_at, 1, 10) BETWEEN ? AND ?
         ORDER BY s.full_name`,
-    ).all(JSON.stringify(lopCn), addDays(today, -13), today) as any[] : [];
+    ).all(JSON.stringify(lopCn), addDays(today, -(HAN_HANG.khai_bac - 1)), today) as any[] : [];   // HAN_HANG: cùng số Hướng dẫn chèn
     const trang = trangThaiYThuc([...new Set([...uv.map((r) => r.id), ...emMoi.map((r) => r.id as number)])], today);
     const khaiTheoLop = new Map<number, any[]>();
     for (const r of emMoi) {

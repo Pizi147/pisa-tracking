@@ -92,6 +92,11 @@ export function kiemHanMacDinh(v: unknown): { ma: MaHan | null; loi: string } | 
 }
 
 /* ---------------------------------------------------------------- HD3-1: hạn thành chữ (Hướng dẫn + câu gợi ý nhóm việc) */
+/**
+ * HD3-2 (15 mục 8.2): hạn NGOÀI Hạn mặc định (Quản trị chưa sửa được) — MỘT nguồn cho mã tính hạn và chữ Hướng dẫn (mã chèn `{hang:ma}`):
+ * Tình hình học tập (GVCN trả lời, tính cả ngày hỏi) · Khai bậc HV cũ (việc tự hết sau n ngày từ khi tạo hồ sơ) · Mini Test (n ngày LỊCH sau ngày Mini Test).
+ */
+export const HAN_HANG = { tinh_hinh: 3, khai_bac: 14, mini_test: 2 } as const;
 const THU_HD: Record<number, Khoa> = { 2: 'thứ Hai', 3: 'thứ Ba', 4: 'thứ Tư', 5: 'thứ Năm', 6: 'thứ Sáu', 7: 'thứ Bảy', 8: 'Chủ nhật' };
 const TUAN_HD: Record<number, Khoa> = { [-2]: '2 tuần trước', [-1]: 'tuần trước', 0: 'cùng tuần', 1: 'tuần sau', 2: '2 tuần sau' };
 const DON_VI: Record<string, 'ngay' | 'tuan'> = { ngay: 'ngay', ngayGap: 'ngay', xemNgay: 'ngay', kyTuan: 'tuan' };
@@ -109,4 +114,5 @@ function chuHan(ma: string, truong?: string): string | null {
  * MÃ CHÈN HẠN (đặc tả 15 mục 4.4): `{han:ma}` / `{han:ma.truong}` trong chữ thẻ (sau `t()`) → số của bản Hạn mặc định đang hiệu lực (phiên đã nạp —
  * 0 câu đọc thêm). Quản trị đổi hạn thì hướng dẫn tự đúng. Mã sai giữ nguyên để phép HD-HAN bắt.
  */
-export const chenHan = (s: string): string => s.replace(/\{han:(\w+)(?:\.(\w+))?\}/g, (m, ma: string, truong?: string) => chuHan(ma, truong) ?? m);
+export const chenHan = (s: string): string => s.replace(/\{han:(\w+)(?:\.(\w+))?\}/g, (m, ma: string, truong?: string) => chuHan(ma, truong) ?? m)
+  .replace(/\{hang:(\w+)\}/g, (m, ma: string) => (Object.hasOwn(HAN_HANG, ma) ? soVoi(HAN_HANG[ma as keyof typeof HAN_HANG], 'ngay') : m));

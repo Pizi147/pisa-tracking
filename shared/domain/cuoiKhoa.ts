@@ -9,7 +9,7 @@
  * Hướng gợi ý KHÔNG lưu (sửa điểm thì gợi ý đổi theo); Quản lý quyết ở màn Chuyển lớp (Q30-3: không còn thẻ duyệt).
  */
 import { mocThuong } from './sos.ts';
-import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
+import { HAN_HANG, hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { CHUONG_TRINH_KHONG_CHIA_MON, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, laChuongTrinhGoc, programmeOf, tenMonNgan, type RegularSkill } from './normal.ts';
 import { roundToHalf } from './tongKetLoTrinh.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
@@ -200,7 +200,7 @@ export function tacDongChot(ds: readonly DongTacDong[]): { caseBoTro: number; ba
 export function lichBoTro(x: { batDau: string; soTuan: number }): { ngayMiniTest: string; hanMiniTest: string } {
   const cong = (d: string, n: number) => new Date(Date.parse(`${d.slice(0, 10)}T00:00:00Z`) + n * 86_400_000).toISOString().slice(0, 10);
   const ngayMiniTest = cong(x.batDau, 7 * x.soTuan - 1);
-  return { ngayMiniTest, hanMiniTest: cong(ngayMiniTest, 2) };
+  return { ngayMiniTest, hanMiniTest: cong(ngayMiniTest, HAN_HANG.mini_test) };
 }
 
 /** M-21: lên FT thì Writing của lớp thường → Writing 2 (FT tách W1/W2); các ô khác giữ, `tong_hop` giữ. */
