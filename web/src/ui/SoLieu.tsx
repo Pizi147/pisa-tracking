@@ -61,6 +61,7 @@ export type DongSoLieu = {
   buoc?: BuocCase | null;
   /** GD-21: kỹ năng của Case (cột Case chỉ ghi kỹ năng). */
   kyNang?: string | null;
+  luot?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — mốc so, kết luận (tab Chưa đạt · Đạt · Vượt). Điểm từng kỹ năng nay ở `diemHv` (PANEL-MC). */
@@ -221,8 +222,8 @@ const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.ts
 /** GD-21: hàng của bảng Case theo bước — dải nhóm (bước) hoặc một Case. */
 type HangCase = { k: string; ten: string; conCho: number; tre: number } | { k: string; r: DongSoLieu & { xong?: string } } | { k: string; them: number; nhom: string };
 const COT_CASE: readonly CotBang[] = [
-  { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 196 }, { key: 'case', nhan: t('Case'), kieu: 'chu', linhHoat: true },
-  { key: 'gv', nhan: t('Phụ trách'), kieu: 'chu', rong: 150 }, { key: 'han', nhan: t('Hạn'), kieu: 'chip', rong: 148 },
+  { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 200 }, { key: 'case', nhan: t('Case'), kieu: 'chu', linhHoat: true },
+  { key: 'gv', nhan: t('Phụ trách'), kieu: 'chu', rong: 180 }, { key: 'han', nhan: t('Hạn'), kieu: 'chip', rong: 150 },
 ];
 
 /**
@@ -413,10 +414,10 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
       </span>
     );
     if (k === 'case') return (
-      <span className="flex min-w-0 flex-col gap-0.5">
-        <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-          {r.diemCase?.luot && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase.luot}</span>}
-          <span className="min-w-0">{r.kyNang ?? r.title}</span>
+      <span className="flex min-w-0 flex-col items-start gap-0.5">
+        <span className="flex min-w-0 max-w-full flex-nowrap items-center gap-x-2">
+          {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
+          <span className="min-w-0" title={r.title}>{r.kyNang ?? r.title}</span>
           {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
           {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ QL duyệt')}>{t('chờ QL')}</span>}
         </span>
@@ -581,7 +582,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
   };
 
   return (
-    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase || goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
+    <KhungPanel tieuDe={tieuDe} onDong={onDong} rong={nhomCase ? 'bang' : goc.some((r) => r.diemHv || r.xuHuong) ? 'rong' : 'hep'}
       /* NEN-PANEL: không dòng nào làm được ở đây = panel báo cáo (07 mục 3). */
       loai={nhomCase ? t('Số liệu · Tổng quan') : hien.some((r) => r.viec?.lam) ? t('Việc') : t('Báo cáo · chỉ đọc')}
       dau={{
