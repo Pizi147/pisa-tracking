@@ -571,3 +571,9 @@ Bối cảnh: chủ SP thấy ảnh web Tổng quan của Admin văn phòng có 
 > "ok rồi nhé"
 
 ĐÃ CHỐT: **mockup ⑬ "Theo dõi trực diện" ĐÃ DUYỆT** (`thiet-ke/v21/theo-doi.html`, PR #1728 đã merge) — dòng "Sắp tới" · panel Case theo bước (tiêu đề + số theo nguồn mở, số bước màu thường) · "Sao chép" là biểu tượng (lời 51). GD-21 giao được. Còn mockup ⑪ (#1726) chờ duyệt.
+
+## 15/11 — lời 53 (chủ SP nói trong session mockup ⑪; session đó chuyển lại): duyệt mockup ⑪
+
+> "ok nhé"
+
+ĐÃ CHỐT: **mockup ⑪ "Chuông + vi phạm" ĐÃ DUYỆT** (`thiet-ke/v21/chuong-vi-pham.html`, PR #1726 đã merge) — chuông theo tab Công việc (thanh = tab, "⌄" mở ≤ 3 việc, Cập nhật có ✓ không viền, vi phạm gom theo lớp) · form "Vi phạm / Nhắc nhở" có công tắc "Yêu cầu GVCN xử lý" · panel "Xử lý vi phạm" hai lối · sau "Không xử lý" em rời nhóm cần xử lý, vi phạm vẫn đếm và vẫn xác nhận xử lý được · tab Ý thức bỏ "Đã xem". GD-19 giao được (bật cùng LG-11, LG-12). **Cả ba mockup đợt 4 (⑪ ⑫ ⑬) đã duyệt và merge.**
