@@ -54,6 +54,13 @@ Viết tắt: `L3`, `L4` = `luat/3-y-thuc-phoi-hop-tvv.md`, `luat/4-lop-lo-trinh
 3. Panel TVV không có nút **Sửa hạn** cho Meeting CX/GĐCN dù máy chủ cho phép — ghi để PR giao diện xem.
 4. Chữ ⓘ tab Báo PH viết cứng "ngày lưu xử lý + 4" (`HoTroHocVienTab.tsx:853`) — không theo Hạn mặc định (PR giao diện).
 
+## Sửa theo rà PTA Overhaul (15/11)
+
+| # | Sửa | Nguồn |
+|---|---|---|
+| 1 | TVV cùng chi nhánh **làm thay** được Báo PH, Chọn bước tiếp, Cập nhật kết quả thi thật (từ hồ sơ em; người GIỮ việc vẫn một). Thẻ Báo PH, Chọn bước tiếp, Kết quả thi thật thêm ý; trường hợp "Không thấy nút" sửa "không làm thay" | `server/src/yThuc/baoPhTvv.ts:135-141` (`coTheGhi` → `coQuyenBuocTiep`); `server/src/permissions.ts:810-816`; `server/src/loTrinh/thiThat.ts:43-51`; lời 32 |
+| 2 | Hạn Báo PH tình hình học tập: cùng khoá `bao_ph_vi_pham` — `tinhHinh.ts:99` gọi `hanBaoPh(homNay)` (`shared/domain/baoPhTvv.ts:15`, cộng `ngayCongBaoPh` của Hạn mặc định) → giữ một mã chèn | `tinhHinh.ts:99`; `shared/domain/baoPhTvv.ts:15-20` |
+
 ## Ảnh (tài khoản demo TVV Phan Mai / Nguyễn Thu Hương, CX Vũ Thanh Tâm; ngày demo 14/09/2026; phông đã kiểm)
 
 | Ảnh | Nội dung |
