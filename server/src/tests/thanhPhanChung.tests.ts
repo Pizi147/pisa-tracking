@@ -486,6 +486,12 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
 
   console.log('\nNT-SUA · nghiệm thu V6');
+  check('NT-SUA · Hoàn tác lần ghi vi phạm im lặng (chỉ "Đã hoàn tác", không toast xoá thứ hai); quy chế câu dài chỉ gọn + ⓘ ở 375', () => {
+    const xoa = doc('web/src/modules/yThuc/DeleteViolationConfirm.tsx'); const ghi = doc('web/src/modules/yThuc/RecordViolationPanel.tsx'); const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/imLang = false/.test(xoa) && /if \(!imLang\) hoanTacXoa\(/.test(xoa), 'xoaViPham có cờ imLang bỏ toast xoá');
+    assert(/xoaViPham\(toast, id, true\)/.test(ghi) && /t\('Đã hoàn tác'\)/.test(ghi), 'Hoàn tác ghi vi phạm gọi im lặng + báo "Đã hoàn tác"');
+    assert(/className="sm:hidden"><NutLuat[^>]*>\{qc\.chu\}/.test(kp) && /qc\.chiTiet \? <NutLuat/.test(kp), 'ⓘ câu dài chỉ ở 375 (sm:hidden); ⓘ chiTiet giữ mọi cỡ');
+  });
   check('NT-SUA P1-2 · đếm bài của việc Nhập điểm: dòng việc "n bài" = đầu panel "còn n / m" (em ngoài dòng việc / ngừng học không vào)', () => {
     const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'due' : 'scored' });
     const cells = (b: number | null) => [{ skill: 'listening', weekStart: '2026-07-06', ...o(b) }, { skill: 'reading', weekStart: '2026-07-06', ...o(b) }];

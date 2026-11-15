@@ -57,12 +57,12 @@ Không có P0 (chặn).
 | P1-2 số bài lệch | Sửa. | **Đã sửa.** Gốc: đầu panel đếm ô của CẢ LỚP (em ngoài dòng việc, em ngừng học) còn lưới chỉ vẽ em của việc → "còn 6 / 6" khi dòng việc ghi 4. Hàm chung `demBaiViec` (`shared/domain/baiKeTiep.ts`) cùng bộ lọc với lưới; phép kiểm ở `thanhPhanChung.tests.ts`. Sau: "còn 4 / 4 bài". Turso 0. |
 | P1-3 Mô tả bắt buộc | GIỮ ≥ 10 (ghi nhận việc đã làm = đầu ra); ô phải nói lý do ngay tại ô, không điền sẵn chữ mẫu. | **Đã sửa.** Placeholder "Ghi việc đã làm, vd đã nhắc em trước lớp, đã báo PH" + bộ đếm ký tự (đã có). |
 | P1-4 Báo cáo PH nhiều bấm | KHÔNG làm — chủ SP quyết cách chấm. | Không sửa. |
-| P2-1 Hoàn tác vi phạm | Làm (luật 21/10 thắng). | **Đã sửa.** Toast "Đã ghi vi phạm … · Hoàn tác" → `DELETE /violations/:id` từng bản vừa tạo (thùng rác 30 ngày); phép kiểm `yThuc.tests.ts` (người ghi xoá được ngay, GV khác không). |
+| P2-1 Hoàn tác vi phạm | Làm (luật 21/10 thắng). | **Đã sửa.** Toast "Đã ghi vi phạm … · Hoàn tác" → `DELETE /violations/:id` từng bản vừa tạo (thùng rác 30 ngày); phép kiểm `yThuc.tests.ts` (người ghi xoá được ngay, GV khác không). **PTA rà #1716:** Hoàn tác của lần TẠO chỉ báo "Đã hoàn tác" (cờ `imLang` của `xoaViPham`, không toast xoá thứ hai) — đã bấm thử: `POST` → `DELETE /violations/:id`, một toast duy nhất. Ảnh `hoan-tac-chi-mot-toast-1440`. |
 | P2-2 tiêu đề dính đè chữ | Làm. | **Đã sửa.** Gốc: `top-0` tính từ mép trong padding của vùng cuộn (16 / 20 px) nên chữ lọt qua khe trên tiêu đề; nay `-top-4 md:-top-5` (dính sát thanh trên). |
 | P2-3 "REPORT / 1" | nowrap ở chỗ hiển thị, không đổi hàm tên bậc. | **Đã sửa.** `bacKhongNgat` (khoảng trắng không ngắt) ở thẻ "Cách xử lý". |
 | P2-4 mũi ▾▴ sót | `MuiChev`. | **Đã sửa.** Dòng việc gộp (nút "n ▾" + 375), `MuiTenGap` (accordion Chấm Speaking, Phối hợp SOS, Xác nhận xử lý, Gv chấm). |
 | P2-5 375 hồ sơ lớp FAB | Chừa đáy. | **Đã sửa.** `max-sm:pb-[100px]` ở trang hồ sơ lớp. |
-| P2-6 375 panel Chấm Speaking | Chân + quy chế gọn, ⓘ nếu dài. | **Đã sửa.** `DongQuyChe` một dòng cắt "…", câu > 40 ký tự có ⓘ đọc đủ (cho mọi panel). |
+| P2-6 375 panel Chấm Speaking | Chân + quy chế gọn, ⓘ nếu dài. | **Đã sửa.** `DongQuyChe` một dòng cắt "…", câu > 40 ký tự có ⓘ đọc đủ — **chỉ ở 375** (`sm:hidden`); 1440 giữ như mockup ⑤ (ảnh `quy-che-sau-1440-toi`: một dòng đủ chữ, ⓘ chỉ khi có chi tiết). |
 | P2-7 Báo cáo PH 8 PUT | BỎ QUA (ghi, để sau). | Không sửa. |
 | P2-8 tiêu đề panel vi phạm | Đổi cho cùng tên. | **Đã sửa.** Ghi mới: "Vi phạm / Nhắc nhở"; sửa giữ "Sửa vi phạm" / "Sửa nhắc nhở". |
 

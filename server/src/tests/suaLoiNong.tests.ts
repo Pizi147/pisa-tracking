@@ -268,7 +268,7 @@ export async function runSuaLoiNongTests(t: YThucTestKit) {
     for (const [con, giay] of ca) assert(d.giayHoanTacConLai(1_000_000 + con, 1_000_000) === giay, `${con} → ${d.giayHoanTacConLai(1_000_000 + con, 1_000_000)}`);
     const src = docSach('web/src/modules/yThuc/RecordViolationPanel.tsx');
     /* PR-LUI-a1 bỏ Hoàn tác ở Ghi vi phạm; NT-SUA (PTA chốt, luật chủ SP 21/10 "luôn Hoàn tác ngắn") đưa lại — nhưng chỉ qua `xoaViPham` + `toast.hoanTac` chung, không tự dựng đếm ngược. */
-    assert(/toast\.hoanTac\(/.test(src) && /xoaViPham\(toast, id\)/.test(src) && !/ms: 10000/.test(src) && !/api\.del/.test(src), 'Ghi vi phạm: Hoàn tác qua xoaViPham + toast chung, không tự dựng');
+    assert(/toast\.hoanTac\(/.test(src) && /xoaViPham\(toast, id, true\)/.test(src) && !/ms: 10000/.test(src) && !/api\.del/.test(src), 'Ghi vi phạm: Hoàn tác qua xoaViPham (im lặng: chỉ "Đã hoàn tác", không toast xoá thứ hai) + toast chung, không tự dựng');
   });
 
   // ==================================================================== 11. Tên PISA Tracking (PR-HK2: viết hoa PISA), chữ máy lọt ra màn hình (YC-6, A7)

@@ -114,12 +114,12 @@ export function RecordViolationPanel({
   const suaDong = (key: number, v: Partial<Dong>) => setDong((ds) => ds.map((d) => (d.key === key ? { ...d, ...v } : d)));
   const themDong = () => setDong((ds) => [...ds, moiDong(Math.max(...ds.map((d) => d.key)) + 1, ds[ds.length - 1].ngay)]);
 
-  /** NT-SUA (luật chủ SP 21/10 "luôn Hoàn tác ngắn"): Hoàn tác = xoá đúng các vi phạm vừa tạo bằng MỘT đường xoá chung (`xoaViPham`: người ghi xoá được, thùng rác 30 ngày, toast "Đã xoá vi phạm · Hoàn tác" khôi phục). */
+  /** NT-SUA (luật chủ SP 21/10 "luôn Hoàn tác ngắn"): Hoàn tác = xoá đúng các vi phạm vừa tạo bằng MỘT đường xoá chung (`xoaViPham`: người ghi xoá được, thùng rác 30 ngày, chỉ báo "Đã hoàn tác", không toast xoá thứ hai). */
   const hoanTacGhi = async (ids: number[]) => {
     let hong = 0;
-    for (const id of ids) { try { await xoaViPham(toast, id); } catch { hong++; } }
+    for (const id of ids) { try { await xoaViPham(toast, id, true); } catch { hong++; } }
     onDone?.();
-    if (hong) toast.push('error', t('Chưa rút được {n} vi phạm', { n: hong }));
+    toast.push(hong ? 'error' : 'ok', hong ? t('Chưa rút được {n} vi phạm', { n: hong }) : t('Đã hoàn tác'), { key: 'ghi-vi-pham' });
   };
   const xongHan = (cau: string, ids: number[]) => {
     lamMoiCache(); reset(); onClose(); onDone?.();
