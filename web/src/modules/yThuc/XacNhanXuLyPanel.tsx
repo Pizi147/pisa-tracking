@@ -223,7 +223,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       await api.post(`/y-thuc/xu-ly/${m.id}/gui`);
       nhapDo.current = null;
       xoaNhap(); setMoTa(''); lamMoi(); onDone?.();
-      toast.push('ok', t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.', { nhan: bacDu(dich(m.nhan)), ten: d.ten, n: hanDuyetNgay(homNay) }));
+      /* MA-QL-VIEC: QL / Quản trị áp thẳng (máy chủ chốt ngay) — sai thì Thu hồi ở lần xử lý. */
+      toast.push('ok', d.qlApThang ? cauXong(m.nhan) : t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.', { nhan: bacDu(dich(m.nhan)), ten: d.ten, n: hanDuyetNgay(homNay) }));
       if (!diTiep) setTimeout(onClose, 0);
       return true;
     } catch (e: any) { setLoiLuu(e.message); return false; } finally { setBusy(false); }
@@ -316,7 +317,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const hanh = (diTiep: boolean) => (cheDo === 'xu-ly' ? luuXuLy(diTiep) : guiDeXuat(diTiep));
   const luu = (diTiep: boolean) => { setBam(diTiep ? 'tiep' : 'luu'); void (diTiep && onTiep ? luuRoiTiep(() => hanh(true), onTiep) : hanh(false)); };
   const nutChinh = <NutVaTiep busy={busy} bam={bam} luu={luu} tiep={onTiep ? { ten: null, lam: () => {} } : undefined} chuTiep={t('Lưu · việc tiếp ›')}
-    chu={cheDo === 'xu-ly' ? (bacKe ? t('Xác nhận · {nhan}', { nhan: bacDu(dich(bacKe.nhan)) }) : t('Xác nhận xử lý')) : t('Gửi Quản lý duyệt')} />;
+    chu={cheDo === 'xu-ly' ? (bacKe ? t('Xác nhận · {nhan}', { nhan: bacDu(dich(bacKe.nhan)) }) : t('Xác nhận xử lý')) : d.qlApThang ? t('Lưu xử lý') : t('Gửi Quản lý duyệt')} />;
   /* Lựa chọn bậc của từng cách (máy chủ kiểm lại `deXuatHopLe`). */
   const bacGiu = THANG.slice(0, Math.min(d.bac, THANG.length)).reverse() as string[];
   const bacVuot = THANG.slice(Math.min(d.bac + 1, THANG.length)) as string[];
@@ -337,7 +338,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   return (
     <KhungPanel hd="xu-ly-vi-pham" rong="rong" tieuDe={yc.length ? t('Xử lý vi phạm') : tieuDe} hocVien={d.ten} onDong={onDong}
       dau={yc.length && nguoiYc ? { ...dau(true), dong2: [...dau(true).dong2, t('{x} yêu cầu', { x: nguoiYc })] } : dau(cheDo === 'xu-ly')}
-      quyChe={quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl })}
+      quyChe={quyCheXuLy(cach, { tvv: d.tvv ?? null, han: ngay(hanBaoPh(homNay), homNay), soNgay: soNgayQl, qlAp: d.qlApThang })}
       chan={{
         /* Mockup v20 D1 · ⑤ D1a: chân lưu chung — trái trạng thái lưu, phải "Đóng" (NutVaTiep) + nút việc + "Lưu · việc tiếp ›". `huy: null`: không vẽ "Đóng" thứ hai. */
         huy: null, chinh: nutChinh, daSua: !!moTa.trim(),

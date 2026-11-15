@@ -108,6 +108,8 @@ Viết tắt:
 
 ## [XM] cho PTA
 
+> MA-QL-VIEC (16/11) đã làm [XM]1, 2, 4 bằng mã: `ky_vong_dau_ra` / `no_owner` `mine = true`; `bao_ph_yt` ở tab Ý thức & Phối hợp; QL áp thẳng xử lý vi phạm ("Lưu xử lý"). Thẻ đã sửa theo.
+
 1. **Kỳ vọng (`ky_vong_dau_ra`) và Phân công (`no_owner`)**: máy chủ để `mine: false`, `ownerId null` (`mw:1643, 1546`), dù chỉ QL làm được.
    - Hệ quả: dòng nằm ở **Của GV**, không vào **Của tôi** và không vào chuông.
    - Thẻ viết như việc của QL. "?" hiện dải trung tính "Chưa có người giữ. Bạn làm được." (dải của HD3-5).

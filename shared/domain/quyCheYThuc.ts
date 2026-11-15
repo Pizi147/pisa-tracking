@@ -24,7 +24,8 @@ export const quyCheXemViPham = (): QuyChe => ({ chu: t('Đã xem vẫn đếm ·
  * Q45 / Q46 / Q47 (luat/3 Y-06…Y-10, Y-14): Xác nhận xử lý theo cách đang chọn. `soNgay` = Hạn mặc định QL duyệt (`hanDuyetNgay`) — máy chủ quá hạn
  * tự chốt theo GVCN (`quetYThucHetHan`). Lô (nhiều em, nhiều TVV): `tvv` = null.
  */
-export const quyCheXuLy = (cach: 'nang' | 'giu' | 'vuot' | 'ngoai', o: { tvv: string | null; han: string; soNgay: number }): QuyChe => {
+export const quyCheXuLy = (cach: 'nang' | 'giu' | 'vuot' | 'ngoai', o: { tvv: string | null; han: string; soNgay: number; /** MA-QL-VIEC: QL / Quản trị áp thẳng. */ qlAp?: boolean }): QuyChe => {
+  if (cach !== 'nang' && o.qlAp) return { chu: cach === 'ngoai' ? t('Ngoài thang: cần tệp bằng chứng · bạn là QL, lưu là chốt ngay') : t('Bạn là QL: lưu là chốt ngay · TVV báo PH, hạn {han}', { han: o.han }) };
   if (cach === 'nang') return { chu: o.tvv ? t('Nâng 1 bậc: xong ngay · TVV {tvv} báo PH, hạn {han}', { tvv: o.tvv, han: o.han }) : t('Nâng 1 bậc: xong ngay · TVV báo PH, hạn {han}', { han: o.han }) };
   const chiTiet = t('Quá {n} ngày QL chưa duyệt: giữ quyết định của bạn. TVV nhận việc báo PH sau khi chốt.', { n: o.soNgay });
   return cach === 'ngoai'

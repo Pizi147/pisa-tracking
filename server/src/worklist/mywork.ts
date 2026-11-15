@@ -1547,7 +1547,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: chon ? 'Chọn người phụ trách' : tenMon ? `Phân công GV ${tenMon}` : 'Phân công GVCN',
       actionLabel: chon ? 'Chọn người phụ trách' : 'Phân công',
       href: chon ? duongHoSoHocVien(c.eff_student_id, { caseId: c.id }) : `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong`,
-      ownerId: null, owner: null, mine: false,
+      /* MA-QL-VIEC (PTA 16/11): việc CỦA người xem như Chốt lộ trình — `caseChuaCoNguoi` chỉ trả Case người xem phân công được (`class.assign` /
+         `case.approve`), nên vào "Của tôi", chuông, badge (cùng hàm đếm). */
+      ownerId: null, owner: null, mine: true,
       due: null, statusLabel: 'Chưa có người phụ trách', ...(chon ? {} : { thieuNguoi: { mon: c.mon } }),
     });
   }
@@ -1648,7 +1650,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: n, emIds: x.chua,
       reason: chu,
       tieuDe: `Kỳ vọng · ${x.code} · ${n} em`, actionLabel: x.ftDangHoc ? 'Kết quả đầu ra ›' : 'Cuối khoá ›',
-      href: `/hoc-vien/lop/${x.classId}?${x.ftDangHoc ? 'che-do=ket-qua' : 'xem=cuoi-khoa'}`, ownerId: null, owner: null, mine: false, due: null, statusLabel: 'Chưa có hạn',
+      href: `/hoc-vien/lop/${x.classId}?${x.ftDangHoc ? 'che-do=ket-qua' : 'xem=cuoi-khoa'}`, ownerId: null, owner: null, mine: true, due: null, statusLabel: 'Chưa có hạn',   // MA-QL-VIEC: việc của người xem (phạm vi `request.approve`) — vào Của tôi, chuông
     });
   }
 
