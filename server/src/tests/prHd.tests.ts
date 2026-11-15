@@ -462,13 +462,12 @@ export async function runPrHdTests(t: any) {
    * HD-DU: mọi loại dòng việc máy chủ dựng (`NHOM_VIEC_MAY` + việc chung Chấm Speaking) có thẻ (`viecWeb`) ở một vai; mọi PANEL_HD có thẻ (`the` của mục
    * panel). Chưa có thẻ → nằm ở danh sách CHỜ (nội dung HD3-2 … HD3-5); có thẻ rồi mà còn trong danh sách → đỏ (bỏ khỏi danh sách) — danh sách chỉ ngắn lại.
    */
-  const CHO_DU_VIEC = new Set(['cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'phoi_hop_tvv', 'khai_bac', 'ky_vong_dau_ra', 'thi_that',
-    'buoc_tiep', 'bo_sung_ho_so', 'mini_test', 'no_plan', 'ghi_ket_qua_pa', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data', 'yt_xu_ly', 'bao_ph_yt',
-    'yt_hoi_tinh_hinh', 'yt_thuc_hien', 'ban_giao', 'xuat_bc_ph', 'bao_cao_ph', 'mgmt']);
-  const CHO_DU_PANEL = new Set(['ngan-case', 'ket-qua-pa', 'phoi-hop-sos', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph', 'chuyen-lop', 'xuat-excel', 'lo-trinh',
-    'duyet', 'sua-thong-tin', 'sua-ca-lop', 'sau-thi', 'chot-ngay-thi', 'xep-lich-mt', 'them-hv', 'xuat-ds', 'bao-ph', 'xet-lai']);
+  const CHO_DU_VIEC = new Set(['phoi_hop_tvv', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'bo_sung_ho_so', 'no_owner', 'chot_len_ft', 'xet_lai_lo_trinh', 'missing_data',
+    'bao_ph_yt', 'xuat_bc_ph']);   // HD3-2 đã viết thẻ mọi việc của GV
+  /* `ngan-case`: một panel cho nhiều loại việc — "?" lấy thẻ theo dòng việc đang mở; Case mở từ hồ sơ (không dòng việc) chưa có thẻ riêng. */
+  const CHO_DU_PANEL = new Set(['ngan-case', 'lo-trinh', 'duyet', 'chot-ngay-thi', 'xep-lich-mt', 'bao-ph', 'xet-lai']);
   check('HD-DU · mỗi loại dòng việc máy chủ và mỗi PANEL_HD có thẻ Hướng dẫn (hoặc đang trong danh sách chờ nội dung — chỉ ngắn lại)', () => {
-    const MA = new Set<string>([...NHOM_VIEC_MAY, 'cham_speaking']);
+    const MA = new Set<string>([...NHOM_VIEC_MAY, ...hd.MA_VIEC_TACH]);
     const loi: string[] = [];
     const coThe = new Set<string>();
     for (const { vai, v } of moiThe()) for (const k of v.viecWeb ?? []) { if (MA.has(k)) coThe.add(k); else loi.push(`${vai}/${v.id}: viecWeb "${k}" không phải loại việc của máy chủ`); }

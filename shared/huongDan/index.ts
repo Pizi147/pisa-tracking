@@ -144,8 +144,18 @@ export function timHd(hd: HuongDan, q: string, chu: (k: Khoa) => string, manId?:
 /** Mã chèn hạn `{han:ma}` (15 mục 4.4) — hàm ở `domain/hanMacDinh.ts` (câu gợi ý nhóm việc của máy chủ dùng chung). */
 export { chenHan };
 
-/** Loại dòng việc của một việc trên web (khớp `viecWeb` của thẻ): nhóm máy chủ; việc chung Chấm Speaking riêng. */
-export const maViec = (it: { group: string; key: string }): string => (it.key === KHOA_CHAM_SPEAKING ? 'cham_speaking' : it.group);
+/**
+ * Loại dòng việc trên web (khớp `viecWeb` của thẻ) = nhóm máy chủ; HD3-2 tách các dòng cùng nhóm mà là việc khác nhau (15 mục 8.1 "đơn vị một thẻ = tên
+ * dòng việc"): Chấm Speaking chung · Chọn PA (`chonPa`) · Bàn giao đổi GV (`ban_giao_gv:`) · Nhập điểm MT cũ (`missing_data` `lich-su:`).
+ */
+export const MA_VIEC_TACH = ['cham_speaking', 'chon_pa', 'ban_giao_gv', 'mt_cu'] as const;
+export function maViec(it: { group: string; key: string; chonPa?: boolean }): string {
+  if (it.key === KHOA_CHAM_SPEAKING) return 'cham_speaking';
+  if (it.group === 'xac_nhan_pa' && it.chonPa) return 'chon_pa';
+  if (it.group === 'ban_giao' && it.key.startsWith('ban_giao_gv:')) return 'ban_giao_gv';
+  if (it.group === 'missing_data' && it.key.startsWith('lich-su:')) return 'mt_cu';
+  return it.group;
+}
 
 /** Nhóm cũ (HD-V2) → tab: dùng tới khi thẻ khai `tab` (HD3-2 … HD3-5). */
 const TAB_CU: Record<string, string> = { diem: 'cham-diem', case: 'case-hoc-thuat', hv: 'hv', lich: 'khac', duyet: 'duyet', khac: 'khac' };
