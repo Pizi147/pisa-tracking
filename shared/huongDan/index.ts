@@ -10,10 +10,13 @@ import { HD_TVV } from './tvv.ts';
 import { HD_CX } from './cx.ts';
 import { HD_ADMIN } from './admin.ts';
 import { HD_HT } from './headTutor.ts';
-import { boDau, PANEL_HD, type HuongDan, type ManHd, type MucHd, type TuHd, type VaiHd, type ViecHd, type ViecVaiKhac } from './kieu.ts';
+import { boDau, PANEL_HD, PHIEN_BAN_HD, type HuongDan, type ManHd, type MucHd, type TinhHuongHd, type TuHd, type VaiHd, type ViecHd, type ViecVaiKhac } from './kieu.ts';
+import { chenHan } from '../domain/hanMacDinh.ts';
+import { KHOA_CHAM_SPEAKING } from '../domain/gopViec.ts';
+import { NHOM_CV_TVV, TAB_CV, nhanTabCv } from '../domain/tongQuan.ts';
 
-export { PANEL_HD };
-export type { ChiChoToi, DichHd, HuongDan, ManHd, MucHd, NhomHd, PanelHd, PhanHd, TuHd, VaiHd, ViecHd, ViecVaiKhac } from './kieu.ts';
+export { PANEL_HD, PHIEN_BAN_HD };
+export type { ChiChoToi, DichHd, HuongDan, ManHd, MucHd, NhomHd, PanelHd, PhanHd, TinhHuongHd, TuHd, VaiHd, ViecHd, ViecVaiKhac } from './kieu.ts';
 
 export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV, ql: HD_QL, qt: HD_QT, tvv: HD_TVV, cx: HD_CX, admin: HD_ADMIN, ht: HD_HT };
 
@@ -121,16 +124,56 @@ export function viecOManNay(hd: HuongDan, manId: string): DongHd[] {
  * Ô tìm của panel (đặc tả 3.2 + 10.2): việc của vai (tên, lối chính, bước, từ đồng nghĩa) + mục riêng của màn đang đứng + việc vai khác.
  * Vai cũ (không `lam`): mọi mục khớp như trước. Chữ rỗng → null.
  */
-export function timHd(hd: HuongDan, q: string, chu: (k: Khoa) => string, manId?: string | null): { viec: ViecHd[]; muc: MucHd[]; vaiKhac: ViecVaiKhac[] } | null {
+export function timHd(hd: HuongDan, q: string, chu: (k: Khoa) => string, manId?: string | null): { viec: ViecHd[]; muc: MucHd[]; tinhHuong: TinhHuongHd[]; vaiKhac: ViecVaiKhac[] } | null {
   const so = boSo(q);
   const soKhongDau = boSo(q, true);
   if (!so || !soKhongDau) return null;
   const co = (...xs: (Khoa | undefined)[]) => so(xs.filter((x): x is Khoa => !!x).map((x) => chu(x)).join(' '));
   const dongNghia = (tu?: string[]) => !!tu?.some((x) => soKhongDau(x));
-  if (!hd.lam) return { viec: [], muc: moiMuc(locHd(hd, q, chu)), vaiKhac: [] };
+  if (!hd.lam) return { viec: [], muc: moiMuc(locHd(hd, q, chu)), tinhHuong: [], vaiKhac: [] };
   return {
-    viec: hd.lam.filter((v) => co(v.ten, v.loiChinh.chu, ...v.buoc) || dongNghia(v.tuKhac)),
+    viec: hd.lam.filter((v) => co(v.ten, v.loiChinh.chu, ...v.buoc, v.khiCo, v.xong, v.sai, v.sau, ...(v.khongDuoc ?? [])) || dongNghia(v.tuKhac)),
     muc: (manTheoId(hd, manId)?.muc ?? []).filter((m) => !m.viec && co(m.ten, ...m.buoc)),
+    tinhHuong: (hd.tinhHuong ?? []).filter((x) => co(x.ten, ...(x.may ?? []), x.ban, ...(x.ai ?? [])) || dongNghia(x.tuKhac)),
     vaiKhac: (hd.vaiKhac ?? []).filter((v) => co(v.ten) || dongNghia(v.tuKhac)),
   };
 }
+
+/* ================================================================ HD3-1 (đặc tả `2026-11-13-overhaul-v6/15-huong-dan-v3.md`) */
+
+/** Mã chèn hạn `{han:ma}` (15 mục 4.4) — hàm ở `domain/hanMacDinh.ts` (câu gợi ý nhóm việc của máy chủ dùng chung). */
+export { chenHan };
+
+/** Loại dòng việc của một việc trên web (khớp `viecWeb` của thẻ): nhóm máy chủ; việc chung Chấm Speaking riêng. */
+export const maViec = (it: { group: string; key: string }): string => (it.key === KHOA_CHAM_SPEAKING ? 'cham_speaking' : it.group);
+
+/** Nhóm cũ (HD-V2) → tab: dùng tới khi thẻ khai `tab` (HD3-2 … HD3-5). */
+const TAB_CU: Record<string, string> = { diem: 'cham-diem', case: 'case-hoc-thuat', hv: 'hv', lich: 'khac', duyet: 'duyet', khac: 'khac' };
+export const tabCuaThe = (v: ViecHd): string => v.tab ?? (v.chiS ? 'cham-cheo' : TAB_CU[v.nhom]);
+/** Thứ tự nhóm của Tôi muốn…: Chờ bạn duyệt · tab Công việc (GV rồi TVV) · Học viên & lớp · Khác (đặc tả 15 mục 4.6). */
+export const THU_TAB_HD: readonly string[] = ['duyet', ...TAB_CV, ...NHOM_CV_TVV, 'hv', 'khac'];
+export const tenTabHd = (k: string): string => (k === 'duyet' ? t('Chờ bạn duyệt') : k === 'hv' ? t('Học viên & lớp') : k === 'khac' ? t('Khác')
+  : nhanTabCv(k, (NHOM_CV_TVV as readonly string[]).includes(k)));
+
+/**
+ * Thẻ của DÒNG VIỆC đang mở (tầng 1). Thẻ viết MỘT lần theo người giữ việc (15 mục 4.5): việc của mình → tìm ở vai mình trước; việc của người
+ * khác (QL làm thay, CX chỉ xem) → tìm ở vai khác trước. `vai` = vai có thẻ (dải "Việc của {vai}").
+ */
+export function theCuaViec(vaiXem: VaiHd, ma: string, mine: boolean): { the: ViecHd; vai: VaiHd } | null {
+  const thu = (Object.keys(HUONG_DAN) as VaiHd[]).filter((v) => v !== 'qt');
+  const ds = mine ? [vaiXem, ...thu.filter((v) => v !== vaiXem)] : [...thu.filter((v) => v !== vaiXem), vaiXem];
+  for (const vai of ds) {
+    const the = HUONG_DAN[vai]?.lam?.find((v) => v.viecWeb?.includes(ma));
+    if (the) return { the, vai };
+  }
+  return null;
+}
+
+/** "Có gì mới" của phiên bản `PHIEN_BAN_HD` — ≤ 5 dòng, chung mọi vai; `the` = id thẻ mở khi bấm (không có: dòng chữ). */
+export const CO_GI_MOI: { chu: Khoa; the?: string }[] = [
+  { chu: 'Đang mở một việc, bấm "?" là thấy thẻ của đúng việc đó.' },
+  { chu: 'Mỗi thẻ việc trả lời: khi nào có, làm gì, hạn, làm sai thì sửa ở đâu.' },
+  { chu: 'Tab <b>Trường hợp</b>: tra khi em vắng, chuyển lớp, lưu lỗi…' },
+  { chu: '<b>Tuần của tôi</b> thành bộ lọc nhịp ở tab <b>Tôi muốn…</b>.' },
+  { chu: 'ⓘ ở dòng <b>Quy chế</b> mở thẻ việc của panel đang làm.' },
+];

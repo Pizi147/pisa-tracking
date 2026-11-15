@@ -44,6 +44,7 @@ import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { ghiViecMo } from '../../lib/hdNgCanh.ts';
 
 /**
  * PANEL PHẢI CỦA MỘT VIỆC — dùng lại đúng panel sẵn có (không viết lại): `NganCase` đúng việc, `BanGiaoPanel`, form Ý thức, `NganViecVanHanh`,
@@ -68,6 +69,9 @@ type PropsViec = {
  */
 export function PanelViec(p: PropsViec) {
   const xem = useXem({ url: p.xemUrl, dau: ['viec'] });
+  /* HD3-1 (15 mục 8.2): "?" đọc DÒNG VIỆC đang mở → tầng 1 = thẻ của loại việc; dải "làm thay / chỉ xem" theo `mine` của dòng. */
+  const { group, key, tieuDe, classCode, mine } = p.it;
+  useEffect(() => ghiViecMo({ group, key, tieuDe, lop: classCode, mine }), [group, key, tieuDe, classCode, mine]);
   const caseId = p.it.con?.length ? null : p.it.caseId ?? null;
   const dangXemCase = caseId !== null && xem.ds[xem.ds.length - 1] === 'case';
   /* Nút vừa bấm ("Xem Case" / ‹) ẩn theo lớp của nó — focus sang lớp vừa hiện, người dùng bàn phím không mất chỗ. */
