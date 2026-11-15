@@ -7,10 +7,12 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Han } from '../../ui/Han.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { mondayOfDate, ngay, quyCheBanGiaoGv, shortDate, trangThaiEmBg, tuanLich, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
+import { addDaysIso, cauBanGiao, chuCuaPhan, mondayOfDate, ngay, quyCheBanGiaoGv, shortDate, trangThaiEmBg, tuanLich, type DuLieuChuDaGhi, type GopYGv, type PhieuBanGiaoGvDto } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { DsEmBanGiao, OGopY, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu } from '../../lib/luuChac.ts';
+import { DaiChenLo, useChenLo } from '../../ui/KhoiDaGhi.tsx';
+import { useSession } from '../../lib/session.tsx';
 
 /**
  * BÀN GIAO KHI ĐỔI GV (PR-B, mockup `thiet-ke/v9/phan-cong-gv.html` khu 6 + 9) — panel mẫu F của bàn giao chuyển lớp, nhiều cột:
@@ -49,11 +51,14 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
     const cu = dto.em.find((e) => e.studentId === sid)?.gopY[m] ?? null;
     return moi !== undefined ? { noiDung: moi, nguoiGhi: cu?.nguoiGhi ?? '', ghiLuc: cu?.ghiLuc ?? '', dienThay: dto.nguoiXem.thay } : cu;
   };
+  const [daChenEm, setDaChenEm] = useState<ReadonlySet<number>>(new Set());
   const tt = (sid: number) => {
     const x = trangThaiEmBg(cot, Object.fromEntries(cot.map((m) => [m, gopY(sid, m)])), nhanCot);
     const thieuCot = cot.filter((m) => !gopY(sid, m)).map(nhanCot).join(', ');
     return { khoa: x.khoa, nhan: x.khoa === 'du' ? t('Đủ') : x.khoa === 'chua' ? t('Chưa có') : t('Thiếu {ds}', { ds: thieuCot }) };
   };
+  /* GD-20b ([XM-2]): em vừa "Chèn cho n em" mang chip "Đã chèn" (chỉ hiển thị, không vào số đủ / thiếu) tới khi GV mở em đó — không chặn Xác nhận. */
+  const ttHien = (sid: number) => (daChenEm.has(sid) ? { khoa: 'thieu' as const, nhan: t('Đã chèn') } : tt(sid));
   const ds = dto.em.map((e) => ({ ...e, id: e.studentId }));
   const du = ds.filter((e) => tt(e.id).khoa === 'du').length;
   const thieu = ds.filter((e) => tt(e.id).khoa !== 'du');
@@ -75,6 +80,26 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
   const hang = useHangLuu();
   const luuGop = (sid: number, m: string) => (chu: string) => api.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu })
     .then(() => { setDaLuu((x) => ({ ...x, [`${sid}|${m}`]: chu })); invalidate('/my-work'); });
+  /* GD-20b (H2, mockup ⑫ B4): "Bạn đã ghi" 30 ngày gần nhất của lớp — MỘT lần khi mở phiếu đang mở. Khối cạnh ô góp ý (cột GVCN: phần Chung); "Chèn cho n em"
+     chèn câu đầu (MT gần nhất, không có thì Case) vào mọi ô trống, tự lưu + Hoàn tác 10 giây; vẫn bấm Xác nhận bàn giao như nay. */
+  const toiId = useSession().session?.user?.id ?? null;
+  const coGoiY = viet && cho;
+  const daGhi = useApi<DuLieuChuDaGhi>(coGoiY ? `/classes/${dto.lop.id}/chu-da-ghi?tu=${addDaysIso(h, -30)}&den=${h}` : null, [dto.lop.id, coGoiY]);
+  const emDaGhi = (sid: number) => daGhi.data?.em.find((x) => x.id === sid);
+  const khoaGoiY = (m: string) => (m === 'gvcn' ? 'chung' : m);
+  const goGop = async (sid: number, m: string, cau: string) => {
+    const r = await api.post<{ ok: boolean }>(`/ban-giao-gv/${dto.id}/gop-y/go-chen`, { studentId: sid, mon: m, noiDung: cau })
+      .catch((e: any) => { toast.push('error', e.message); return { ok: false }; });
+    if (r.ok) { setDaLuu((x) => { const { [`${sid}|${m}`]: _, ...con } = x; return con; }); invalidate('/my-work'); }
+    return r.ok;
+  };
+  const choChen = coGoiY ? ds.flatMap((e) => cot.flatMap((m) => {
+    if (gopY(e.id, m)) return [];
+    const x = cauBanGiao(emDaGhi(e.id), khoaGoiY(m));
+    return x ? [{ sid: e.id, m, cau: x.chu }] : [];
+  })) : [];
+  const soEmChen = new Set(choChen.map((c) => c.sid)).size;
+  const lo = useChenLo<{ sid: number; m: string; cau: string }>((c) => luuGop(c.sid, c.m)(c.cau).catch((e: any) => toast.push('error', e.message)), (c) => goGop(c.sid, c.m, c.cau));
   const denEm = (sid: number) => { setChon(sid); requestAnimationFrame(() => document.getElementById(`bg-gv-em-${sid}`)?.focus()); };
   const denThieu = () => { const e = thieu[0]; if (e) denEm(e.id); };
   const baoChuaLuu = (n: number) => {
@@ -148,8 +173,12 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
 
         {!em ? <p className="m-0 text-sm text-slate-400">{t('Lớp không còn em nào đang học.')}</p> : (
           <div className="grid gap-4 md:grid-cols-[280px_minmax(0,1fr)]">
-            <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={ds} chon={em.id} onChon={setChon}
-              trangThai={docThoi && !cho ? undefined : (e) => tt(e.id)}
+            <DsEmBanGiao nhan={t('Học viên cần bàn giao')} ds={ds} chon={em.id}
+              onChon={(id) => { setChon(id); setDaChenEm((s) => { if (!s.has(id)) return s; const m = new Set(s); m.delete(id); return m; }); }}
+              dau={lo.vua ? <DaiChenLo n={new Set(lo.vua.map((c) => c.sid)).size} onHoanTac={() => { void lo.hoanTac(); setDaChenEm(new Set()); }} />
+                : soEmChen >= 2 ? <button type="button" className="btn btn-sm min-h-[44px] justify-center sm:min-h-0"
+                  onClick={() => { void lo.chenLo(choChen); setDaChenEm(new Set(choChen.map((c) => c.sid))); }}>{t('Chèn cho {n} em', { n: soEmChen })}</button> : undefined}
+              trangThai={docThoi && !cho ? undefined : (e) => ttHien(e.id)}
               phu={(e) => (
                 <span className="min-w-0 truncate">
                   {cot.map((m, k) => {
@@ -162,7 +191,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
             <div className="min-w-0 space-y-4">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 id={`bg-gv-em-${em.id}`} tabIndex={-1} className="m-0 text-base font-semibold text-slate-100 outline-none">{em.ten}</h3>
-                {cho && (() => { const x = tt(em.id); return <Nhan tone={x.khoa === 'du' ? 'ok' : x.khoa === 'thieu' ? 'soon' : 'muted'}>{x.nhan}</Nhan>; })()}
+                {cho && (() => { const x = ttHien(em.id); return <Nhan tone={x.khoa === 'du' ? 'ok' : x.khoa === 'thieu' ? 'soon' : 'muted'}>{x.nhan}</Nhan>; })()}
                 <span className="text-xs tabular-nums text-slate-500">{t('em {a}/{b}', { a: i + 1, b: ds.length })}</span>
                 {tiep && <button type="button" className="btn btn-sm ml-auto max-md:hidden" onClick={() => setChon(tiep.id)}>{t('Em tiếp: {ten} ↓', { ten: tiep.ten })}</button>}
               </div>
@@ -174,7 +203,9 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
                     <OGopY key={`${em.id}|${c.mon}`} nhan={c.ten} ky={c.nhan} batBuoc docThoi={docThoi} giaTri={g?.noiDung ?? ''}
                       aiGhi={g?.nguoiGhi ? `${g.nguoiGhi}${g.ghiLuc ? `, ${ngay(g.ghiLuc, h)}` : ''}${g.dienThay ? ` ${t('(điền thay)')}` : ''}` : null}
                       placeholder={c.mon === 'gvcn' ? t('Tình hình chung, phụ huynh, ý thức…') : undefined}
-                      hang={hang} khoa={`${em.id}|${c.mon}`} onLuu={luuGop(em.id, c.mon)} />
+                      hang={hang} khoa={`${em.id}|${c.mon}`} onLuu={luuGop(em.id, c.mon)}
+                      goiY={coGoiY ? { ds: chuCuaPhan(emDaGhi(em.id), khoaGoiY(c.mon)), nhan: t('Bạn đã ghi tháng này'), toiId, homNay: h, mon: c.mon === 'gvcn' ? null : c.mon,
+                        tai: daGhi.loading, loi: !!daGhi.error, thuLai: daGhi.reload, onGoRong: (cau) => goGop(em.id, c.mon, cau) } : undefined} />
                   );
                 })}
               </div>
