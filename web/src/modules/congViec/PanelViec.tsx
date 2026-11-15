@@ -31,7 +31,7 @@ import { khopKn } from '../cham/LuoiFT.tsx';
 import { oThuong } from '../cham/LuoiThuong.tsx';
 import { XacNhanPaLo } from './XacNhanPaLo.tsx';
 import { tenBoEm } from './DanhSachViec.tsx';
-import { KHOA_CHAM_SPEAKING, conThieuFt, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, tenMon, tuanLich, quyCheNhapDiem, quyChePhanCong, quyChePhoiHopSos, quyChePhoiHopTvv, quyCheBaoPhTest, shortDate } from '@shared/domain/index.ts';
+import { KHOA_CHAM_SPEAKING, conThieuFt, demBaiViec, LOAI_HAN_CUA_VIEC, duongLichTest, emCuaViec, laViecChamCheo, tenMon, tuanLich, quyCheNhapDiem, quyChePhanCong, quyChePhoiHopSos, quyChePhoiHopTvv, quyCheBaoPhTest, shortDate } from '@shared/domain/index.ts';
 import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { laLo, soCuaKhoa } from './lamTaiCho.ts';
@@ -214,7 +214,9 @@ const chanViecTiep = (onTiep: (() => void) | null | undefined, xong: boolean) =>
 } : undefined);
 const hetViec = (onTiep: (() => void) | null | undefined) => () => (onTiep ? { nhan: t('Việc tiếp ›'), onClick: onTiep } : null);
 
-export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null, chiEmViec = false }: {
+export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTiep = null, chiEmViec = false, nhapHo = false }: {
+  /** QC-Q82: "Bạn nhập hộ · " đầu dòng quy chế — nơi gọi không có dải "Bạn đang làm thay" (panel GV trễ chấm). */
+  nhapHo?: boolean;
   it: Pick<WorkItem, 'classId' | 'luot' | 'kn' | 'studentId' | 'emIds' | 'tieuDe' | 'classCode' | 'contextLabel' | 'due'> & Partial<Pick<WorkItem, 'key' | 'phu' | 'kns'>>;
   onDong: () => void; onDaLam: () => void;
   /** OV-12e: mở từ panel số liệu — "← Danh sách". */
@@ -258,6 +260,7 @@ export function PanelNhapDiem({ it, onDong, onDaLam, quayLai, tuMo = false, onTi
         /* GD-4b Q1/Q2/Q5/Q6/Q7/Q9/Q58: MT0 (kể cả lớp thường `thuong:mt0`) theo luật vắng Mock (chủ SP 14/11, #1619); dữ liệu đã nạp, không request thêm. */
         thuong: data.mode === 'ratio' || data.luot.ma === 'thuong:mt0', mt0: data.luot.ma === 'thuong:mt0' || data.luot.ma === 'mt:0',
         tuanThi: data.luot.tuanStart, homNay, han: it.due ?? data.luot.quaHan ?? null, nguongDat: data.thuong?.passThreshold ?? null, mtCu: data.luot.lichSu,
+        nhapHo,   // QC-Q82: chỉ nơi KHÔNG có dải "Bạn đang làm thay" (panel GV trễ chấm) — Công việc đã có dải (PTA 15/11, [XM-Q82b])
       }) : null}
       chan={chanViecTiep(onTiep, !!data && !!homNay && conBaiLuoi(data, chiAttempt, kns, homNay) === 0)}>
       {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
@@ -312,11 +315,10 @@ function PanelNhapDiemTuan({ it, tuMo, onDong, onDaLam, onTiep }: { it: WorkItem
   const demBai = useMemo(() => {
     const x = lop[0]; const kns = x.kns ?? (x.kn ? [x.kn] : null);
     if (!dsLop?.ft || !it.tuanThi) return null;
-    const o = dsLop.ft.rows.flatMap((r) => r.cells.filter((c) => c.canEdit && c.required && c.weekStart === it.tuanThi && (!kns || kns.some((k) => khopKn(c.skill, k))))
-      .map((c) => ({ c, mt: r.attemptNo })));
-    if (!o.length) return null;
-    const mt = new Set(o.map((v) => v.mt));
-    return { con: o.filter((v) => conThieuFt(v.c)).length, tong: o.length, mt: mt.size === 1 ? `MT${[...mt][0]}` : null };
+    /* NT-SUA: `demBaiViec` — cùng bộ lọc với lưới (em của việc, không ngừng học) → "còn n / m" khớp dòng việc "n bài". */
+    const o = demBaiViec(dsLop.ft.rows, { em: emCuaViec(x), tuan: it.tuanThi, cot: (s) => !kns || kns.some((k) => khopKn(s, k)) });
+    if (!o.tong) return null;
+    return { con: o.con, tong: o.tong, mt: o.mt.length === 1 ? `MT${o.mt[0]}` : null };
   }, [dsLop, it.tuanThi]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [tieuDe] = useState(() => (motLop && it.tieuDe ? dich(it.tieuDe) : t('Nhập điểm · {tuan}', { tuan: it.tuanThi ? tuanLich(it.tuanThi) : '' })));
   const [mo, setMo] = useState<ReadonlySet<string>>(() => new Set([lop[0].key]));

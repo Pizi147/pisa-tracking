@@ -43,6 +43,20 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/coToi \? session\?\.user\?\.id : undefined/.test(pp) && /if \(coToi\) out\.push\(\{ kind: 'toi' \}\)/.test(pp), 'bỏ chính mình khỏi Gần đây đúng khi ô có dòng "Tôi"');
   });
 
+  check('QC-Q82 · Nhập hộ điểm: "Bạn nhập hộ · " đứng đầu câu khi việc không phải của mình; trước tuần Test = máy tự dời về tuần này (NHAP-DIEM-a, không hỏi, không nhờ QL)', () => {
+    const q = (o: any) => d.quyCheNhapDiem({ thuong: false, homNay: H, ...o }).chu as string;
+    const truoc = q({ tuanThi: '2026-10-12', nhapHo: true });
+    assert(truoc === `Bạn nhập hộ · Chưa tới tuần Test ${d.tuanLich('2026-10-12', H)} · lưu điểm thì máy dời về tuần này`, truoc);
+    assert(!/nhờ QL|hỏi dời/.test(truoc + q({ tuanThi: '2026-10-12' })), 'không còn câu "nhờ QL dời lịch" / "hỏi dời"');
+    assert(q({ tuanThi: '2026-10-12' }).startsWith('Chưa tới tuần Test'), 'việc của mình: không "Bạn nhập hộ"');
+    assert(q({ nhapHo: true }) === `Bạn nhập hộ · ${q({})}`, 'mặc định: thêm đầu câu, giữ luật của lượt');
+    assert(/TỰ DỜI kỹ năng đó[\s\S]*VỀ TUẦN NÀY, không hỏi, không cần Quản lý/.test(doc('server/src/fasttrack/skillSchedule.ts')), 'câu neo vào luật doiVeTuanNayNeuChua');
+    /* [XM-Q82b] PTA 15/11: Công việc đã có dải "Bạn đang làm thay {GV}" → không lặp đầu câu; chỉ panel GV trễ chấm (không có dải) truyền cờ. */
+    const pv = doc('web/src/modules/congViec/PanelViec.tsx');
+    assert(!/it\.mine === false/.test(pv) && /nhapHo = false/.test(pv) && /nhapHo=\{g\.gvId !== toi\}/.test(doc('web/src/modules/worklist/PanelGvTre.tsx')), 'cờ nhập hộ chỉ từ panel GV trễ chấm');
+    assert(!/DaiLamThay|Bạn đang làm thay/.test(doc('web/src/modules/worklist/PanelGvTre.tsx')), 'panel GV trễ chấm không có dải làm thay');
+  });
+
   check('QC-GAN · Q74 / Q75 / Q77 Cuối khoá + Q83 Xuất báo cáo PH: câu khớp mã (hạn chốt từ mocLoTrinh, Tutor từ mocThuong, 7 ngày của việc Admin) và gắn đúng chỗ', () => {
     const q = (o: any) => d.quyCheChotLoTrinh({ trungTam: false, khacGoiY: false, tutor: 10, hanChot: null, homNay: H, ...o }).chu as string;
     const moc = d.mocLoTrinh('2026-10-05');
@@ -505,5 +519,50 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const ng = doc('web/src/modules/test/keHoach/NganXepLichMt.tsx');
     assert(/tieuDe=\{t\('Xếp nhiều MT'\)\}/.test(ng) && /<HangTab<'ft' \| 'thuong'>/.test(ng), 'ngăn: tên = nút, khung = thanh tab');
     assert(/className="btn btn-sm max-sm:min-h-\[44px\]" aria-pressed=\{moHet\}/.test(doc('web/src/modules/test/KeHoachTestTab.tsx')), 'Mở tất cả lớp là nút');
+  });
+
+  console.log('\nNT-SUA · nghiệm thu V6');
+  check('NT-SUA · Hoàn tác lần ghi vi phạm im lặng (chỉ "Đã hoàn tác", không toast xoá thứ hai); quy chế câu dài chỉ gọn + ⓘ ở 375', () => {
+    const xoa = doc('web/src/modules/yThuc/DeleteViolationConfirm.tsx'); const ghi = doc('web/src/modules/yThuc/RecordViolationPanel.tsx'); const kp = doc('web/src/ui/KhungPanel.tsx');
+    assert(/imLang = false/.test(xoa) && /if \(!imLang\) hoanTacXoa\(/.test(xoa), 'xoaViPham có cờ imLang bỏ toast xoá');
+    assert(/xoaViPham\(toast, id, true\)/.test(ghi) && /t\('Đã hoàn tác'\)/.test(ghi), 'Hoàn tác ghi vi phạm gọi im lặng + báo "Đã hoàn tác"');
+    assert(/className="sm:hidden"><NutLuat[^>]*>\{qc\.chu\}/.test(kp) && /qc\.chiTiet \? <NutLuat/.test(kp), 'ⓘ câu dài chỉ ở 375 (sm:hidden); ⓘ chiTiet giữ mọi cỡ');
+  });
+  check('NT-SUA P1-2 · đếm bài của việc Nhập điểm: dòng việc "n bài" = đầu panel "còn n / m" (em ngoài dòng việc / ngừng học không vào)', () => {
+    const o = (band: number | null) => ({ required: true, canEdit: true, band, noShow: null, progress: band === null ? 'due' : 'scored' });
+    const cells = (b: number | null) => [{ skill: 'listening', weekStart: '2026-07-06', ...o(b) }, { skill: 'reading', weekStart: '2026-07-06', ...o(b) }];
+    const rows = [
+      { studentId: 1, attemptNo: 1, cells: cells(null) }, { studentId: 2, attemptNo: 1, cells: cells(null) },   // 2 em của dòng việc × L, R = 4 ô
+      { studentId: 3, attemptNo: 1, cells: cells(null) },                                                       // em khác trong lớp (ngoài dòng việc)
+      { studentId: 4, attemptNo: 1, ngungHoc: 'tam_dung', cells: cells(null) },                                  // em ngừng học
+    ];
+    const cot = (s: string) => s === 'listening' || s === 'reading';
+    const viec = d.demBaiViec(rows as any, { em: [1, 2], tuan: '2026-07-06', cot });
+    assert(viec.con === 4 && viec.tong === 4, `dòng việc 2 em × L, R: ${JSON.stringify(viec)}`);
+    const caLop = d.demBaiViec(rows as any, { em: null, tuan: '2026-07-06', cot });
+    assert(caLop.con === 6 && caLop.tong === 6, `việc cả lớp bỏ em ngừng học: ${JSON.stringify(caLop)}`);
+    const sau = d.demBaiViec([{ ...rows[0], cells: cells(6.5) }, rows[1]] as any, { em: [1, 2], tuan: '2026-07-06', cot });
+    assert(sau.con === 2 && sau.tong === 4, `nhập xong một em: còn 2 / 4: ${JSON.stringify(sau)}`);
+    assert(/demBaiViec\(dsLop\.ft\.rows, \{ em: emCuaViec\(x\)/.test(doc('web/src/modules/congViec/PanelViec.tsx')), 'đầu panel dùng demBaiViec với em của việc');
+  });
+
+  console.log('\nGD-18 · Chữ đồng bộ toàn web');
+  check('GD-18 · một chính tả: "Xoá" · "Tạm dừng / Kết thúc học" · "Vi phạm / Nhắc nhở"; mũi mở là chevron, không tam giác ▸ ▾ tự gõ', () => {
+    const tep = [...tepNguon('web/src'), ...tepNguon('shared/domain'), ...tepNguon('shared/huongDan')];
+    const loi: string[] = [];
+    for (const f of tep) {
+      const s = doc(f);
+      if (/[Xx]óa/.test(s)) loi.push(`${f}: "Xóa" — dùng "Xoá"`);
+      if (/Tạm dừng\/ Kết thúc học/.test(s)) loi.push(`${f}: "Tạm dừng/ Kết thúc học" — dùng "Tạm dừng / Kết thúc học"`);
+      if (/\+ Ghi vi phạm/.test(s)) loi.push(`${f}: "+ Ghi vi phạm" — dùng "+ Vi phạm / Nhắc nhở"`);
+    }
+    assert(!loi.length, loi.slice(0, 5).join(' | '));
+    const hn = doc('web/src/ui/HangNhom.tsx');
+    assert(/export function MuiChev/.test(hn) && /<MuiChev mo=\{mo\} \/>/.test(hn) && !/M2 1 6\.5 4 2 7z/.test(hn), 'MuiTenMo vẽ chevron nét (›/⌄), không tam giác đặc');
+    for (const f of ['web/src/modules/classes/BanGiaoGvPanel.tsx', 'web/src/modules/classes/TeacherAssignPanel.tsx', 'web/src/modules/test/keHoach/NganXepLichMt.tsx', 'web/src/modules/phanTich/PhanTichGiaoVien.tsx']) {
+      assert(/<MuiChev /.test(doc(f)) && !/['"`{][▸▾]/.test(doc(f)) && !/[▸▾]\}/.test(doc(f)) && !/\?\s*['"][▸▾]/.test(doc(f)), `${f}: mũi mở dùng MuiChev`);
+    }
+    const st = doc('web/src/modules/congViec/PanelSauThi.tsx'), th = doc('web/src/modules/yThuc/TinhHinh.tsx');
+    assert(/luuRoiTiep\(chot, onTiep\)/.test(st) && /luuRoiTiep\(luu, onTiep\)/.test(st) && /luuRoiTiep\(gui, onTiep\)/.test(th), 'chân panel việc (lời 36): "{việc} · việc tiếp ›" ở Sau thi · Chốt ngày thi · Trả lời tình hình');
   });
 }

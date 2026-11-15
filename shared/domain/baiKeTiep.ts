@@ -30,3 +30,18 @@ export function baiKeTiep(thuTu: readonly number[], conThieu: (v: ViTriO) => boo
   }
   return null;
 }
+
+/**
+ * NT-SUA (P1-2, nghiệm thu V6): MỘT cách đếm bài của việc Nhập điểm cho dòng việc ("W1 JUL · n bài" = ô còn thiếu của các em trên dòng) và đầu panel
+ * ("còn n / m bài"). Gốc lệch: đầu panel đếm ô của CẢ LỚP (kể cả em ngoài dòng việc và em ngừng học) còn lưới chỉ vẽ em của việc (`emCuaViec`) → "còn 6 / 6"
+ * trong khi dòng việc ghi 4. Nay cùng bộ lọc với lưới: em của việc · không ngừng học · ô bắt buộc sửa được · đúng tuần · đúng cột; `con` dùng `conThieuFt`.
+ */
+export type HangDemBai = {
+  studentId: number; attemptNo: number; ngungHoc?: unknown;
+  cells: readonly (ODiemConThieu & { skill: string; weekStart?: string | null })[];
+};
+export function demBaiViec(rows: readonly HangDemBai[], o: { em: readonly number[] | null; tuan?: string | null; cot: (skill: string) => boolean }): { con: number; tong: number; mt: number[] } {
+  const ds = rows.filter((r) => !r.ngungHoc && (!o.em || o.em.includes(r.studentId)))
+    .flatMap((r) => r.cells.filter((c) => c.required && c.canEdit && (o.tuan == null || c.weekStart === o.tuan) && o.cot(c.skill)).map((c) => ({ c, mt: r.attemptNo })));
+  return { con: ds.filter((x) => conThieuFt(x.c)).length, tong: ds.length, mt: [...new Set(ds.map((x) => x.mt))] };
+}

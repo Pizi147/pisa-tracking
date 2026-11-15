@@ -1,3 +1,4 @@
+import { useThamSoUrl } from '../../lib/quayLai.ts';
 import { Fragment, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -78,7 +79,7 @@ const bodyHoanTac = (r: HangHien, da: LuuBody): LuuBody => {
   if (!da.ketLuan && !da.boLich) return { ghiChu: r.luu?.ghiChu ?? '' };   // chỉ sửa ghi chú → chỉ trả ghi chú cũ, không đụng lịch
   const lich: LuuBody = r.coNgay && r.lichThi.ngay ? { ketLuan: 'chot-ngay', ngay: r.lichThi.ngay }
     : r.lichThi.thang ? { ketLuan: 'chuyen-thang', thang: r.lichThi.thang } : { boLich: true };
-  return da.ghiChu !== undefined ? { ...lich, ghiChu: r.luu?.ghiChu ?? '' } : lich;
+  return { ...lich, ...(da.ghiChu !== undefined ? { ghiChu: r.luu?.ghiChu ?? '' } : {}), ...(da.noiThi !== undefined ? { noiThi: r.noiThi ?? '' } : {}) };   // LICH-THI-NOI-THI: Hoàn tác trả cả nơi thi cũ
 };
 
 /**
@@ -115,9 +116,12 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
   const [mo, setMo] = useState<Set<number>>(new Set());
   const [hop, setHop] = useState<Hanh['hop']>(null);
   const [panel, setPanel] = useState<{ id: number; cycleId: number; ten: string; lop: string; nut: ThaoTacLichThi } | null>(null);
-  const [locThi, setLocThi] = useState<LocThi | null>(null);
+  /* LICH-THI-NOI-THI (Việc để sau GD-13b): lọc trạng thái thi + Mọi TVV trên URL (replace) — Quay lại / F5 giữ bộ lọc; `tvv` cùng khoá với tab Tất cả. */
+  const [locThiUrl, datLocThi] = useThamSoUrl('locThi', '');
+  const locThi: LocThi | null = (['chua-chot', 'da-chot', 'cho-kq', 'co-kq'] as const).find((k) => k === locThiUrl) ?? null;
+  const setLocThi = (k: LocThi | null) => datLocThi(k ?? '');
   const [suaGhi, setSuaGhi] = useState<number | null>(null);
-  const [tvv, setTvv] = useState('');
+  const [tvv, setTvv] = useThamSoUrl('tvv', '');
   const [moLoc, setMoLoc] = useState(false);
   const hen = useRef(new Set<ReturnType<typeof setTimeout>>());
   useEffect(() => () => { hen.current.forEach(clearTimeout); }, []);

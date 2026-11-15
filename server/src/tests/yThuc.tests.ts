@@ -411,6 +411,17 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((viol.similarViolations(gvbm, { studentId: st.id, category: 'homework', occurredOn: TODAY }) as any[]).length === 0, 'Vi phạm đã xoá không tính là trùng');
   });
 
+  check('NT-SUA · Hoàn tác ghi vi phạm: người vừa ghi xoá được ngay bản vừa tạo (thùng rác 30 ngày), số vi phạm của em trở lại như trước; GV khác không xoá được', () => {
+    const st = makeStudent('NT-SUA');
+    const truoc = one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id);
+    const v = vid(record(gvbm, st.id, { description: 'Vi phạm vừa ghi, bấm Hoàn tác trong toast' }));
+    assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === truoc + 1, 'đã ghi');
+    assertThrows(() => viol.deleteViolation(gvbm2, v), /không có quyền|người ghi|chủ nhiệm/, 'Hoàn tác chỉ của người ghi / GVCN / QL');
+    const kq = viol.deleteViolation(gvbm, v);
+    assert(kq.ok && kq.thungRacId > 0, `Hoàn tác = xoá vào thùng rác (khôi phục được): ${JSON.stringify(kq)}`);
+    assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === truoc, 'Hoàn tác trả số vi phạm về như trước');
+  });
+
   check('PR-J · V07 Gửi lại cùng một request (idempotency_key) không tạo dòng thứ hai', () => {
     const st = makeStudent('V07');
     const a = record(gvbm, st.id, { idempotencyKey: 'pj-v07-key' });
@@ -965,20 +976,20 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n === before, 'Báo bị từ chối mà vẫn để lại một case');
   });
 
-  check('PR-J · J9 Hằng số C03 và C04 CÒN nguyên giá trị nhưng ghi rõ HẾT HIỆU LỰC 21/09/2026 kèm lý do — không xóa, không rải luật ở chỗ khác', () => {
+  check('PR-J · J9 Hằng số C03 và C04 CÒN nguyên giá trị nhưng ghi rõ HẾT HIỆU LỰC 21/09/2026 kèm lý do — không xoá, không rải luật ở chỗ khác', () => {
     const src = fsMod.readFileSync(pathMod.join(REPO, 'shared/domain/policy.ts'), 'utf8');
     for (const name of ['C03_CUA_SO_GOP_CASE_Y_THUC_NGAY', 'C04_BAO_CAO_MOI_SAU_KHI_DONG']) {
       const at = src.indexOf(`export const ${name}`);
-      assert(at > 0, `Đã xóa hằng số ${name}`);
+      assert(at > 0, `Đã xoá hằng số ${name}`);
       const before = src.slice(Math.max(0, at - 900), at);
       assert(/HẾT HIỆU LỰC 21\/09\/2026/.test(before) && /LÝ DO HẾT HIỆU LỰC/.test(before), `${name} phải có chú thích "HẾT HIỆU LỰC 21/09/2026" kèm lý do ngay phía trên`);
     }
     assert((domain as any).C03_CUA_SO_GOP_CASE_Y_THUC_NGAY === 3 && (domain as any).C04_BAO_CAO_MOI_SAU_KHI_DONG === 'doi-moi-lien-ket', 'Giá trị hằng số đã bị đổi');
-    /* C02 vẫn CÒN hiệu lực và KHÔNG áp cho Ý thức — kiểm ở phần quyền, ở đây chỉ chắn việc bị xóa nhầm. */
+    /* C02 vẫn CÒN hiệu lực và KHÔNG áp cho Ý thức — kiểm ở phần quyền, ở đây chỉ chắn việc bị xoá nhầm. */
     assert((domain as any).C02_GVCN_XU_LY_CASE_TRAI_MON === 'gvcn-dung-mon', 'C02 phải còn nguyên');
   });
 
-  check('PR-J · J11 Bảng `sos_cases`, `case_interventions` còn nguyên (không đổi tên, không xóa); `violations` KHÔNG bị gộp vào `sos_cases`', () => {
+  check('PR-J · J11 Bảng `sos_cases`, `case_interventions` còn nguyên (không đổi tên, không xoá); `violations` KHÔNG bị gộp vào `sos_cases`', () => {
     for (const tb of ['sos_cases', 'case_interventions', 'violations', 'discipline_measures', 'measure_violations', 'violation_history', 'attachments']) {
       assert(conn.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name = ?").get(tb), `Thiếu bảng ${tb}`);
     }

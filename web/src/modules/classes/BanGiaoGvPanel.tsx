@@ -1,3 +1,4 @@
+import { MuiChev } from '../../ui/HangNhom.tsx';
 import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -134,7 +135,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
         {dto.nguoiXem.thay && cho && <p className="m-0 text-xs text-slate-400">{t('Quản lý điền thay — góp ý ghi là điền thay.')}</p>}
         <section className="rounded-lg border" style={{ borderColor: 'var(--line)' }}>
           <button type="button" className="flex w-full items-center gap-2 border-0 bg-transparent px-3 py-2 text-left text-sm font-semibold text-slate-200" aria-expanded={moChung} onClick={() => setMoChung((x) => !x)}>
-            <span aria-hidden="true">{moChung ? '▾' : '▸'}</span>
+            <MuiChev mo={moChung} />
             <span>{t('Nhận xét chung cả lớp')} <span className="font-normal text-slate-500">{t('· tuỳ chọn')}{!dto.nhanXetChung && !moChung ? ` ${t('· chưa viết')}` : ''}</span></span>
           </button>
           {moChung && (

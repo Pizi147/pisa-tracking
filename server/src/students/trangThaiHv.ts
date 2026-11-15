@@ -1,5 +1,5 @@
 /**
- * P7 SV-LO-TRINH (plan.md 1.6 N11, N22 ⑤) — "Tạm dừng/ Kết thúc học" và "Quay lại học", phần không nằm trong hàm một em sẵn có:
+ * P7 SV-LO-TRINH (plan.md 1.6 N11, N22 ⑤) — "Tạm dừng / Kết thúc học" và "Quay lại học", phần không nằm trong hàm một em sẵn có:
  *  · `tomTatTrangThai` — khối "Khi lưu, web sẽ" (một em / hàng loạt), đọc CÙNG luật lúc thi hành (Case mở như `closeCasesBySystem`);
  *  · quyết định chuyển lớp chờ khi Tạm dừng / Kết thúc học — RKC: huỷ luôn cùng giao dịch (`doiTrangThai`); hàng loạt vẫn bỏ em đó kèm câu (`cauLenhCho`);
  *  · `thongTinQuayLai` / `quayLaiHoc` — Quay lại học từ Lưu trữ: lớp cũ còn chạy → một bấm; lớp cũ đã kết thúc → chọn lớp (gợi ý cùng chương trình, cùng chi nhánh);
@@ -37,7 +37,7 @@ export const cauLenhCho = (tuanBatDau: string): string =>
   `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — Quản lý lớp huỷ quyết định (Chuyển lớp…) hoặc làm việc này, rồi làm lại.`;
 
 /**
- * "Khi lưu, web sẽ" của hộp Tạm dừng/ Kết thúc học (k2, k3). `ketThuc` = ô "Có thể quay lại học" tắt. Em đã kết thúc / không tìm thấy không tính.
+ * "Khi lưu, web sẽ" của hộp Tạm dừng / Kết thúc học (k2, k3). `ketThuc` = ô "Có thể quay lại học" tắt. Em đã kết thúc / không tìm thấy không tính.
  * Số Case = Case chưa xong của em (cùng cách chọn của `closeCasesBySystem`); tạm dừng thì Case dừng hạn (`HV_DANG_HOC_SQL`), kết thúc thì đóng + PA đang chạy huỷ.
  */
 export function tomTatTrangThai(ids: readonly number[], ketThuc: boolean): { dong: string[]; soCase: number; soPa: number } {

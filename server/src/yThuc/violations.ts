@@ -562,7 +562,7 @@ export function listViolations(p: Principal, f: ViolationFilter): { rows: Violat
 export type ViolationDetail = ViolationView & {
   attachmentCount: number;
   canEdit: boolean;
-  /** Các biện pháp liên quan (nguồn mục 32) — "Đã xử lý" KHÔNG có nghĩa là xóa hay ẩn khỏi lịch sử. */
+  /** Các biện pháp liên quan (nguồn mục 32) — "Đã xử lý" KHÔNG có nghĩa là xoá hay ẩn khỏi lịch sử. */
   measures: Array<{
     id: number; kind: string; kindLabel: string; status: string; statusLabel: string;
     performedOn: string | null; createdAt: string;

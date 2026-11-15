@@ -1,5 +1,5 @@
 /**
- * PHÉP KIỂM OV-15c (kế hoạch 2026-10-19-ov15-overhaul-6-pr.md mục OV-15c) — Kế hoạch Test: Xóa = bỏ tuần, bỏ Huỷ MT trên web, vắng 2 lần
+ * PHÉP KIỂM OV-15c (kế hoạch 2026-10-19-ov15-overhaul-6-pr.md mục OV-15c) — Kế hoạch Test: Xoá = bỏ tuần, bỏ Huỷ MT trên web, vắng 2 lần
  * chọn tuần = xếp lại (N38 thay Khôi phục → Chưa xếp / Giữ huỷ), tuần kèm năm, tìm lớp / học viên / email, ghi chú lịch thi (bảng mới), Xuất Excel 13 cột + Xuất điểm Test.
  * Gọi QUA HTTP theo vai (QL, Admin, GV) như bản chính; mỗi mục dựng lớp / em riêng; chạy cuối `run.ts`.
  */
@@ -20,7 +20,7 @@ export async function runPrOv15cTests(t: YThucTestKit) {
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const { createApp } = await import('../app.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
-  console.log('\nOV-15c · Kế hoạch Test: Xóa, năm, tìm, ghi chú, xuất (qua HTTP)');
+  console.log('\nOV-15c · Kế hoạch Test: Xoá, năm, tìm, ghi chú, xuất (qua HTTP)');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const one = (sql: string, ...a: unknown[]) => all(sql, ...a)[0];
@@ -77,7 +77,7 @@ export async function runPrOv15cTests(t: YThucTestKit) {
   })))).id as number;
 
   // ------------------------------------------------------------------ 1 · hàm thuần
-  check('C15-1 · tuanNam "W4 AUG/2026" (năm của tháng sở hữu tuần) · ô lịch xuất: cùng tuần / L/R; W/S / Chưa xếp / Đã huỷ / Vắng · chuỗi lớp · lý do không Xóa', () => {
+  check('C15-1 · tuanNam "W4 AUG/2026" (năm của tháng sở hữu tuần) · ô lịch xuất: cùng tuần / L/R; W/S / Chưa xếp / Đã huỷ / Vắng · chuỗi lớp · lý do không Xoá', () => {
     assert(d.tuanNam('2026-08-24') === 'W4 AUG/2026', d.tuanNam('2026-08-24'));
     assert(d.tuanNam('2026-08-27') === 'W4 AUG/2026', 'ngày giữa tuần → thứ Hai');
     assert(d.tuanNam('2026-12-28') === `${d.tuanLich('2026-12-28')}/${d.owningMonthOf('2026-12-28').year}`, 'tuần vắt năm theo tháng sở hữu');
@@ -87,12 +87,12 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     assert(d.oLichXuat({ kn: ['listening', 'reading', 'writing', 'speaking'].map((s) => k(s, '2026-08-24')) }) === 'W4 AUG/2026', 'cùng tuần');
     assert(d.oLichXuat({ kn: [k('speaking', '2026-08-31'), k('listening', '2026-08-24'), k('reading', '2026-08-24'), k('writing', '2026-08-31')] })
       === 'L/R: W4 AUG/2026; W/S: W1 SEP/2026', d.oLichXuat({ kn: [k('speaking', '2026-08-31'), k('listening', '2026-08-24'), k('reading', '2026-08-24'), k('writing', '2026-08-31')] }));
-    assert(d.oLichXuat({ kn: ['listening', 'reading', 'writing', 'speaking'].map((s) => k(s, null)) }) === 'Chưa xếp', 'đã Xóa → Chưa xếp');
+    assert(d.oLichXuat({ kn: ['listening', 'reading', 'writing', 'speaking'].map((s) => k(s, null)) }) === 'Chưa xếp', 'đã Xoá → Chưa xếp');
     assert(d.oLichXuat({ kn: [k('listening', '2026-08-24', 'absent')] }) === 'Vắng' && d.oLichXuat({ kn: [k('listening', '2026-08-24', 'cancelled')] }) === 'Đã huỷ', 'vắng / huỷ phần');
     assert(d.chuoiLop(['MB FT 101', 'MB FT 101', 'MB FT 105']) === 'MB FT 101 → MB FT 105', 'hai lớp một hàng');
     const kn = (o: any) => ({ listening: { batBuoc: true, tuan: '2026-08-24', sit: 'scheduled', khoa: null, ...o } });
-    assert(d.lyDoKhongXoa(kn({})) === null, 'được xóa');
-    /* RKC: kỹ năng có điểm / đã làm bài không phải lý do chặn — Xóa lịch bỏ phần chưa thi; chỉ còn phần đó thì "Chưa xếp lịch" (không có gì để xoá). */
+    assert(d.lyDoKhongXoa(kn({})) === null, 'được xoá');
+    /* RKC: kỹ năng có điểm / đã làm bài không phải lý do chặn — Xoá lịch bỏ phần chưa thi; chỉ còn phần đó thì "Chưa xếp lịch" (không có gì để xoá). */
     assert(d.lyDoKhongXoa(kn({ khoa: 'đã có điểm' })) === 'Chưa xếp lịch', 'có điểm');
     assert(d.lyDoKhongXoa({ ...kn({ khoa: 'đã có điểm' }), reading: { batBuoc: true, tuan: '2026-08-24', sit: 'scheduled', khoa: null } }) === null, 'có điểm một phần → được xoá');
     assert(d.lyDoKhongXoa(kn({ tuan: null })) === 'Chưa xếp lịch', 'chưa xếp');
@@ -100,23 +100,23 @@ export async function runPrOv15cTests(t: YThucTestKit) {
     assert(d.ketQuaLuot(dd) === 'Đạt' && d.ketQuaLuot({ ...dd, ovr: 6 }) === 'Chưa đạt' && d.ketQuaLuot({ ...dd, danhGiaDuoc: false }) === 'Chưa đủ điểm', 'kết quả');
   });
 
-  // ------------------------------------------------------------------ 2 · Xóa = bỏ tuần
-  await checkAsync('C15-2 · Xóa (bo-tuan): QL và Admin được, GV 403; lượt về Chưa xếp (planned, tuần NULL), lịch sử giữ; RKC: đã có điểm một phần → bỏ tuần phần chưa thi, ô có điểm giữ tuần', async () => {
+  // ------------------------------------------------------------------ 2 · Xoá = bỏ tuần
+  await checkAsync('C15-2 · Xoá (bo-tuan): QL và Admin được, GV 403; lượt về Chưa xếp (planned, tuần NULL), lịch sử giữ; RKC: đã có điểm một phần → bỏ tuần phần chưa thi, ô có điểm giữ tuần', async () => {
     const l = lop();
     const a = em(l, 'Đỗ Trọng Tiến', 'tien.dotrong@gmail.com'), b = em(l, 'Lê Bảo Trâm', null), c = em(l, 'Hoàng Khánh Ngân', null);
     await voiMayChu(async (goi) => {
       const ida = await xep(goi, a.sid, 1, addDays(T2, 14));
       const idb = await xep(goi, b.sid, 1, addDays(T2, 14));
       const idc = await xep(goi, c.sid, 1, addDays(T2, -7));
-      assert((await goi(GV, `/attempts/${ida}/bo-tuan`, post({}))).status === 403, 'GV không xóa được');
+      assert((await goi(GV, `/attempts/${ida}/bo-tuan`, post({}))).status === 403, 'GV không xoá được');
       await json(await goi(QL, `/attempts/${ida}/bo-tuan`, post({})));
       const s = one(`SELECT status FROM assessment_attempts WHERE id = ?`, ida);
       const k = all(`SELECT planned_period_id, sit_status FROM attempt_skills WHERE attempt_id = ? AND required = 1`, ida);
       assert(s.status === 'planned' && k.length === 4 && k.every((x) => x.planned_period_id === null && x.sit_status === 'scheduled'), JSON.stringify({ s, k }));
       assert(all(`SELECT 1 FROM attempt_schedule_history WHERE attempt_id = ? AND action = 'skill_unscheduled'`, ida).length === 4, 'lịch sử ghi 4 kỹ năng');
-      /* Hoàn tác (web): đặt lại đúng tuần cũ qua /ke-hoach-test/dot — lượt có lịch lại như trước khi Xóa. */
+      /* Hoàn tác (web): đặt lại đúng tuần cũ qua /ke-hoach-test/dot — lượt có lịch lại như trước khi Xoá. */
       const cu = tuan(addDays(T2, 14));
-      await json(await goi(QL, '/ke-hoach-test/dot', post({ attemptId: ida, kyNang: ['listening', 'reading', 'writing', 'speaking'].map((skill) => ({ skill, periodId: cu })), reason: 'Hoàn tác xóa lịch', force: true })));
+      await json(await goi(QL, '/ke-hoach-test/dot', post({ attemptId: ida, kyNang: ['listening', 'reading', 'writing', 'speaking'].map((skill) => ({ skill, periodId: cu })), reason: 'Hoàn tác xoá lịch', force: true })));
       const sau = all(`SELECT planned_period_id FROM attempt_skills WHERE attempt_id = ? AND required = 1`, ida);
       assert(sau.length === 4 && sau.every((x) => x.planned_period_id === cu), `hoàn tác: ${JSON.stringify(sau)}`);
       await json(await goi(QL, `/attempts/${ida}/bo-tuan`, post({})));
@@ -125,7 +125,7 @@ export async function runPrOv15cTests(t: YThucTestKit) {
       await json(await goi(QL, `/attempts/${idc}/bo-tuan`, post({})));
       const lc = all(`SELECT skill, planned_period_id FROM attempt_skills WHERE attempt_id = ? AND required = 1`, idc);
       assert(lc.find((x) => x.skill === 'listening')?.planned_period_id && lc.filter((x) => x.skill !== 'listening').every((x) => x.planned_period_id === null), JSON.stringify(lc));
-      /* Ô lưới: lượt đã Xóa → mọi kỹ năng chưa xếp; lyDoKhongXoa → "Chưa xếp lịch" (nút mờ). */
+      /* Ô lưới: lượt đã Xoá → mọi kỹ năng chưa xếp; lyDoKhongXoa → "Chưa xếp lịch" (nút mờ). */
       const g = await json(await goi(QL, `/ke-hoach-test/ft/${l}`));
       const o = g.hang.find((h: any) => h.studentId === a.sid).dot[1];
       assert(o.attemptId === ida && Object.values(o.kn).every((x: any) => x.tuan === null) && d.lyDoKhongXoa(o.kn) === 'Chưa xếp lịch', JSON.stringify(o));

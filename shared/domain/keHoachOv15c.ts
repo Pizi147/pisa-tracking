@@ -1,6 +1,6 @@
 /**
  * OV-15c — LUẬT THUẦN CỦA KẾ HOẠCH TEST mới (kế hoạch `docs/superpowers/plans/2026-10-19-ov15-overhaul-6-pr.md` mục OV-15c, mockup 4 + 6):
- * tuần kèm năm (C20), ô lịch của tệp Kế hoạch Test 13 cột (C17), bảng Xuất điểm Test (mockup 6 khung 9), nút Xóa (mục 6). Không đọc DB.
+ * tuần kèm năm (C20), ô lịch của tệp Kế hoạch Test 13 cột (C17), bảng Xuất điểm Test (mockup 6 khung 9), nút Xoá (mục 6). Không đọc DB.
  */
 import { ngayTheoGioVN } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
@@ -17,18 +17,18 @@ export function tuanNam(d: string | null | undefined): string {
 /** UI-CHAM-TEST (mockup V5 khu a, 08 mục 6): trên MÀN Kế hoạch Test ghi `W3 SEP 2026` (khoảng trắng); `tuanNam` "/" giữ cho tệp Excel (C17). */
 export const tuanNamChu = (d: string | null | undefined): string => tuanNam(d).replace('/', ' ');
 
-// ------------------------------------------------------------------ Xóa lịch (mục 6)
+// ------------------------------------------------------------------ Xoá lịch (mục 6)
 
-/** Một kỹ năng của đợt đủ để quyết nút Xóa: bắt buộc, tuần, đã thi, có điểm (`khoa` của ô Kế hoạch Test). */
+/** Một kỹ năng của đợt đủ để quyết nút Xoá: bắt buộc, tuần, đã thi, có điểm (`khoa` của ô Kế hoạch Test). */
 export type KnXoa = { batBuoc: boolean; tuan: string | null; sit: string | null; khoa: string | null };
 
 /**
- * Nút Xóa ở chân hộp lịch = bỏ tuần (`boTuanLuot`): mờ + lý do khi đợt đã có điểm / đã thi một phần (máy chủ chặn cùng luật),
- * khi chưa xếp tuần nào (không có gì để xóa). `null` = bấm được.
+ * Nút Xoá ở chân hộp lịch = bỏ tuần (`boTuanLuot`): mờ + lý do khi đợt đã có điểm / đã thi một phần (máy chủ chặn cùng luật),
+ * khi chưa xếp tuần nào (không có gì để xoá). `null` = bấm được.
  */
 export function lyDoKhongXoa(kn: Partial<Record<string, KnXoa | undefined>>): string | null {
   const ds = Object.values(kn).filter((o): o is KnXoa => !!o && o.batBuoc);
-  /* RKC: có điểm / đã làm bài một phần vẫn Xóa lịch phần chưa thi (máy chủ `boTuanLuot`). */
+  /* RKC: có điểm / đã làm bài một phần vẫn Xoá lịch phần chưa thi (máy chủ `boTuanLuot`). */
   if (!ds.some((o) => o.tuan && o.sit === 'scheduled' && o.khoa !== 'đã có điểm' && o.khoa !== 'đã làm bài')) return t('Chưa xếp lịch');
   return null;
 }

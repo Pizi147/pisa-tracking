@@ -51,7 +51,7 @@ type KeHoach = {
   coTheRaLenh: boolean; laGvcn: boolean; coTheChotKq: boolean;
 };
 
-/** Một lựa chọn ở ô Hướng. `dung` = "Tạm dừng/ Kết thúc học" (N11) — `bao_luu` khi tích "Có thể quay lại học", không thì `dung_hoc`. */
+/** Một lựa chọn ở ô Hướng. `dung` = "Tạm dừng / Kết thúc học" (N11) — `bao_luu` khi tích "Có thể quay lại học", không thì `dung_hoc`. */
 type ChonHuong = '' | 'len_lop' | 'fast_track' | 'hoc_lai' | 'dung';
 type KySua = { dat: boolean; nn: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; phuongAn: string };
 /** Phần QL đã đổi trên dòng (chưa lưu). Khoá vắng = lấy theo lệnh / nháp / gợi ý máy. */
@@ -209,7 +209,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* ------------------------------------------------------------------ nhóm chọn + thanh áp */
   const NHOM: { k: ChonHuong; nhan: string }[] = [
     ...(ke && ke !== 'FT' ? [{ k: 'len_lop' as const, nhan: t('Lên {ke}', { ke: tenKe ?? '' }) }] : []), { k: 'fast_track', nhan: t('Lên FT') },
-    { k: 'hoc_lai', nhan: t('Học lại') }, { k: 'dung', nhan: t('Tạm dừng/ Kết thúc học') }, { k: '', nhan: t('Chưa có hướng') },
+    { k: 'hoc_lai', nhan: t('Học lại') }, { k: 'dung', nhan: t('Tạm dừng / Kết thúc học') }, { k: '', nhan: t('Chưa có hướng') },
   ];
   const demNhom = NHOM.map((n) => ({ ...n, so: dongs.filter((r) => r.x.huong === n.k).length })).filter((n) => n.so);
   const chonNhom = (k: ChonHuong) => setChon(new Set(dongs.filter((r) => r.x.huong === k && chonDuoc(r.e)).map((r) => r.e.id)));
@@ -450,7 +450,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const chuHuong = (e: Em) => {
     const l = e.lenh!;
     return l.huong === 'fast_track' ? t('Lên FT') : l.huong === 'len_lop' ? t('Lên {ke}', { ke: tenKe ?? '' }) : l.huong === 'hoc_lai' ? t('Học lại')
-      : l.huong === 'chuyen_lop' ? t('Chuyển lớp') : t('Tạm dừng/ Kết thúc học');
+      : l.huong === 'chuyen_lop' ? t('Chuyển lớp') : t('Tạm dừng / Kết thúc học');
   };
   /** Bước tiếp: 4 chip một bấm, gợi ý theo Final viền đứt khi chưa chọn; bấm chip đang chọn = bỏ hướng. Đã chốt → khoá + "Sửa" (QL). */
   const oHuong = (e: Em, x: Dong) => {
@@ -592,7 +592,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const theoLop = new Map<string, number>();
     for (const r of lenh) {
       const hl = huongLenh(r.x)!;
-      const k = canLopDich(hl) ? lopCua.get(r.x.lop!)?.code ?? '—' : t('Tạm dừng/ Kết thúc học');
+      const k = canLopDich(hl) ? lopCua.get(r.x.lop!)?.code ?? '—' : t('Tạm dừng / Kết thúc học');
       theoLop.set(k, (theoLop.get(k) ?? 0) + 1);
     }
     const tuan = [...new Set(lenh.map((r) => r.x.tuan))];

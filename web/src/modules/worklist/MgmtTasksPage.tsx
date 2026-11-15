@@ -382,7 +382,7 @@ export function NganViecVanHanh({ taskId, onClose, onDone, quayLai }: {
 
           {/* ─────────────────────────────────────────── lịch sử cập nhật */}
           <section>
-            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">{t('Lịch sử')}</h3>
+            <h3 className="text-sm font-semibold text-slate-200 mt-0 mb-2">{t('Lịch sử')}{data.updates.length > 0 && ` · ${data.updates.length}`}</h3>
             {data.updates.length === 0 ? (
               <p className="text-xs text-slate-500 m-0">{t('Chưa có cập nhật nào.')}</p>
             ) : (

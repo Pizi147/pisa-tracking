@@ -57,7 +57,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     v: all('SELECT * FROM violations WHERE student_id = ? ORDER BY id', sid),
   });
 
-  check('OV11d-1 → P7 · HV-10: GVCN Tạm dừng em lớp mình → em vào Lưu trữ: chỉ sửa thông tin liên hệ ([ĐX]), xử lý Ý thức, Quay lại học (GVCN lớp khác 403); ⋯ một mục "Tạm dừng/ Kết thúc học"', () => thu(() => {
+  check('OV11d-1 → P7 · HV-10: GVCN Tạm dừng em lớp mình → em vào Lưu trữ: chỉ sửa thông tin liên hệ ([ĐX]), xử lý Ý thức, Quay lại học (GVCN lớp khác 403); ⋯ một mục "Tạm dừng / Kết thúc học"', () => thu(() => {
     const sid = emFt();
     students.setStudentStatus(GVCN, sid, 'inactive', TODAY, 'Thử Tạm dừng OV11d');
     xoaNho();
@@ -72,7 +72,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     const hs = profile.studentProfile(GVCN, sid);
     assert(hs.viewer.canEdit && hs.lopHoc.quyen.quayLai && hs.lopHoc.quyen.ketThuc, `cờ quyền: ${JSON.stringify({ e: hs.viewer.canEdit, q: hs.lopHoc.quyen })}`);
     const muc = d.mucQuanLyHocVien({ canEdit: true, lopHoc: hs.lopHoc, cycle: hs.cycle, status: hs.status });
-    assert(muc.find((m: any) => m.key === 'tam-dung-ket-thuc')?.nhan === 'Tạm dừng/ Kết thúc học' && muc.some((m: any) => m.key === 'quay-lai'), JSON.stringify(muc.map((m: any) => m.nhan)));
+    assert(muc.find((m: any) => m.key === 'tam-dung-ket-thuc')?.nhan === 'Tạm dừng / Kết thúc học' && muc.some((m: any) => m.key === 'quay-lai'), JSON.stringify(muc.map((m: any) => m.nhan)));
     assert(loi(() => students.updateStudent(GVCN_KHAC, sid, { note: 'x' }))?.status === 403, 'GVCN lớp khác phải 403');
     assert(!yThuc.canManageDiscipline(GVCN_KHAC, sid), 'GVCN lớp khác không xử lý Ý thức');
     /* rà bảo mật: em Tạm dừng không đi nhánh "xếp lớp lần đầu" — GVCN gọi thẳng API chuyển em sang lớp khác mình chủ nhiệm → 403 */

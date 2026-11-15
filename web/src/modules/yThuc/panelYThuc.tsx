@@ -21,14 +21,14 @@ export type PanelYThuc =
   | null;
 
 /**
- * MỘT PANEL MỘT LÚC (PR-YT4) — `RecordViolationPanel` (+ Ghi vi phạm / Sửa) · `XacNhanXuLyPanel` (Xác nhận xử lý + Đề xuất QL duyệt) ·
+ * MỘT PANEL MỘT LÚC (PR-YT4) — `RecordViolationPanel` (+ Vi phạm / Nhắc nhở / Sửa) · `XacNhanXuLyPanel` (Xác nhận xử lý + Đề xuất QL duyệt) ·
  * `KhaiBacPanel` · `DaThucHienPanel` · `XemXuLyPanel` (chỉ đọc) · `DeleteViolationConfirm`.
  */
 export function usePanelYThuc({ onDone, roster, maLop }: {
   onDone: () => void;
   /** Mã lớp hiện ở đầu các ngăn (`Ghi vi phạm · Tên HV · MB FOU 12`). */
   maLop?: string | null;
-  /** Mở `+ Ghi vi phạm` từ trang lớp: cho chọn học viên ngay trong form (không chọn sẵn). */
+  /** Mở `+ Vi phạm / Nhắc nhở` từ trang lớp: cho chọn học viên ngay trong form (không chọn sẵn). */
   roster?: { id: number; name: string; code?: string | null }[];
 }): { mo: (p: PanelYThuc) => void; panel: PanelYThuc; panels: ReactNode } {
   const [panel, setPanel] = useState<PanelYThuc>(null);

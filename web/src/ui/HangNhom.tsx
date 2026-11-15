@@ -8,6 +8,15 @@ import { t } from '@shared/i18n/index.ts';
  * `<details>` nhỏ trong panel KHÔNG dùng thứ này — nó không phải hàng.
  */
 
+/** GD-18 (mockup ⑥ `.mui`, ⑤ H4): mũi mở = chevron nét — "›" khi gập, "⌄" khi mở (xoay 90°); thay tam giác ▸ ▾. `currentColor`, `aria-hidden`. */
+export function MuiChev({ mo, cl = '' }: { mo: boolean; cl?: string }) {
+  return (
+    <svg aria-hidden viewBox="0 0 16 16" width="16" height="16" className={`shrink-0 fill-none stroke-current transition-transform motion-reduce:transition-none ${mo ? 'rotate-90' : ''} ${cl}`} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M6 3.5 10.5 8 6 12.5" />
+    </svg>
+  );
+}
+
 /** Nút mũi tên 16px: aria-expanded, tooltip "Mở"/"Thu gọn". */
 export function MuiTenMo({ mo, onMo, nhan }: { mo: boolean; onMo: () => void; nhan: string }) {
   const chu = mo ? t('Thu gọn') : t('Mở');
@@ -15,10 +24,8 @@ export function MuiTenMo({ mo, onMo, nhan }: { mo: boolean; onMo: () => void; nh
     <button type="button" title={chu} aria-label={`${chu} ${nhan}`} aria-expanded={mo}
       onClick={(e) => { e.stopPropagation(); onMo(); }}
       className="max-sm:relative max-sm:before:absolute max-sm:before:-inset-3.5 max-sm:before:content-[''] inline-flex h-4 w-4 shrink-0 appearance-none items-center justify-center border-0 bg-transparent p-0 leading-none text-slate-400 hover:text-slate-100">
-      {/* PR-S4F #13: SVG 8 px — ký tự ▸/▾ ở cỡ nhỏ (Be Vietnam Pro/Inter) chỉ còn như một dấu chấm. RA-UI-7: tam giác ĐẶC (mở tại chỗ), không "›" nét (= đổi trang, G6). */}
-      <svg aria-hidden viewBox="0 0 8 8" width="8" height="8" className={`transition-transform ${mo ? 'rotate-90' : ''}`}>
-        <path d="M2 1 6.5 4 2 7z" fill="currentColor" />
-      </svg>
+      {/* GD-18: chevron nét như mockup (›/⌄) — mockup ⑥ đã duyệt (thay tam giác đặc RA-UI-7). */}
+      <MuiChev mo={mo} />
     </button>
   );
 }

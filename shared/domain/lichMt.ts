@@ -210,7 +210,7 @@ export function demMtHocVien(ds: readonly LuotDem[]): { xong: number; tong: numb
 }
 /**
  * NHẮC XẾP MT CHỈ KHI THIẾU (chủ SP 07/11): MT ĐÃ CÓ của lộ trình = MỌI lượt Mock đã tạo — đã thi, có tuần, chưa tuần (máy đã tự xếp),
- * QL chủ động xoá (Xoá MT / Xóa lịch / bỏ hết môn) hay Huỷ MTn: đều đã xử lý, không nhắc xếp lại. MT0 không tính. Alias `a` = assessment_attempts.
+ * QL chủ động xoá (Xoá MT / Xoá lịch / bỏ hết môn) hay Huỷ MTn: đều đã xử lý, không nhắc xếp lại. MT0 không tính. Alias `a` = assessment_attempts.
  */
 export const LUOT_MT_DA_CO_SQL = (a: string) => `${a}.kind = 'mock'`;
 /**

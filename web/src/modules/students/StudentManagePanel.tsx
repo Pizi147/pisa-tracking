@@ -52,7 +52,7 @@ export function StudentManagePanel({ viec, onClose, student, lop, cycle, attempt
   soViPhamMo?: number;
   /** Quyền người xem (từ `viewer` của hồ sơ) — Sửa thông tin khoá / mở từng ô theo đó; máy chủ kiểm lại. */
   quyen: QuyenSua;
-  /** P7: quyền theo lớp — hộp Tạm dừng/ Kết thúc học: ô "Có thể quay lại học" bật được khi em đang học (`coTheTamDungKetThuc`). */
+  /** P7: quyền theo lớp — hộp Tạm dừng / Kết thúc học: ô "Có thể quay lại học" bật được khi em đang học (`coTheTamDungKetThuc`). */
   lopHoc?: { quyen: LopHocQuyen } | null;
   onDeXuatSua?: () => void;
   /** P7: hộp bị chặn vì quyết định chuyển lớp chờ → "Chuyển lớp…" mở đúng việc đó (nơi gọi đổi việc). */

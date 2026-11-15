@@ -180,7 +180,7 @@ export async function runPrOv12aTests(t: any) {
     for (const [ten, p] of [['GV', P.coreTeacher], ['TVV', TVV], ['CX', CX]] as const) {
       assert(maLoi(() => hangLoat.chay(p, { viec: 'xoa', studentIds: [a], xacNhan: 'XOÁ' })) === 403, `${ten} phải 403`);
     }
-    const kq = hangLoat.chay(QL, { viec: 'xoa', studentIds: [a, cp], xacNhan: 'Xóa' });
+    const kq = hangLoat.chay(QL, { viec: 'xoa', studentIds: [a, cp], xacNhan: 'Xoá' });
     assert(kq.ok.join() === String(a) && kq.failed.length === 1 && kq.failed[0].studentId === cp && kq.failed[0].message === 'Ngoài phạm vi của bạn.', JSON.stringify(kq));
     assert(!get('SELECT 1 x FROM students WHERE id = ?', a) && get('SELECT 1 x FROM students WHERE id = ?', cp), 'xoá sai em');
     assert(maLoi(() => hangLoat.chay(QL, { viec: 'xoa', studentIds: [a], xacNhan: 'XOÁ' })) === 404, 'xoá lại em đã xoá → 404');

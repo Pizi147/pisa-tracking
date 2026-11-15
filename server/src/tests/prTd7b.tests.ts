@@ -149,9 +149,9 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     doiCo('đưa S lại vào phạm vi', aid, () => skillSch.setSkillScope(QL, aid, 'speaking', true, 'Đưa S lại'));
   }));
 
-  check('TD7b-6 · Xóa lịch (boTuanLuot), xếp lại tuần, huỷ lượt (ẩn điểm) và khôi phục lượt: cờ theo kịp', () => thu(() => {
+  check('TD7b-6 · Xoá lịch (boTuanLuot), xếp lại tuần, huỷ lượt (ẩn điểm) và khôi phục lượt: cờ theo kịp', () => thu(() => {
     const a1 = emMoi('MB FT 101', 'XoaLich');
-    doiCo('Xóa lịch', a1, () => skillSch.boTuanLuot(QL, a1, { lyDo: 'Em xin nghỉ' }));
+    doiCo('Xoá lịch', a1, () => skillSch.boTuanLuot(QL, a1, { lyDo: 'Em xin nghỉ' }));
     assert(co(a1) === null, 'mất hết tuần: không còn ô chờ');
     doiCo('xếp lại tuần cho từng kỹ năng', a1, () => { for (const k of ['listening', 'reading', 'writing', 'speaking']) skillSch.setSkillWeek(QL, a1, k, week.ensurePeriod(tuanNay).id, { force: true }); });
     const a2 = emMoi('MB FT 101', 'HuyLuot');

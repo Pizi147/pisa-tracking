@@ -59,7 +59,7 @@ export async function runPrOv8aTests(t: YThucTestKit) {
   const NHAP4 = { ngayThi: NGAY, l: 7, r: 6.5, w: 6, s: 6.5 };   // OVR 6.5
   const chon = (pr: any, cy: number, o: any) => buocTiepSvc.chonBuocTiep(pr, cy, o);
 
-  check('OV8a → P7 · gợi ý: Đạt Target → Tạm dừng/ Kết thúc học; chưa đạt / Không thi → Lộ trình mới (E9); không có Target → không gợi ý', () => {
+  check('OV8a → P7 · gợi ý: Đạt Target → Tạm dừng / Kết thúc học; chưa đạt / Không thi → Lộ trình mới (E9); không có Target → không gợi ý', () => {
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'reached' }) === 'dung', 'đạt');
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'not_reached' }) === 'lo_trinh_moi', 'chưa đạt');
     assert(d.goiYSauThi({ khongThi: true, ketLuan: 'unknown' }) === 'lo_trinh_moi', 'không thi');

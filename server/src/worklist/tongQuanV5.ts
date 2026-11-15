@@ -24,7 +24,9 @@ export type DongLopV5 = {
 };
 export type DongCnV5 = {
   id: number; khoa: string; ten: string; datMt: TyLeV5 | null; casePa: { coPa: number; mo: number };
-  thiThat: TyLeV5 | null; thiThangNay: number; sos23: number; caseChuaPa: number;
+  thiThat: TyLeV5 | null; thiThangNay: number; sos23: number;
+  /** TQ-SOS-CN: id em của ô SOS 2–3 (panel đọc đúng các em này khi bấm). */
+  sos23Ids: number[]; caseChuaPa: number;
 };
 export type TongQuanV5 = {
   homNay: string; ky: { tu: string; den: string }; ct: ChuongTrinh; branchId: number | null; tenChiNhanh: string | null;
@@ -86,7 +88,7 @@ export function tongQuanV5(p: Principal, f: { branchId?: number | null; ct: Chuo
       id: h.id, khoa: h.khoa, ten: h.nhan, datMt: s.datMt(h.id),
       casePa: { coPa: Math.max(0, h.o.caseMo.n - h.o.caseChuaChot.n), mo: h.o.caseMo.n },
       thiThat: tt ? { dat: ttDat.get(h.id) ?? 0, mau: ttMau.get(h.id) ?? 0 } : null,
-      thiThangNay: s.thi(h.id), sos23: h.o.sos2.n + h.o.sos3.n, caseChuaPa: h.o.caseChuaChot.n,
+      thiThangNay: s.thi(h.id), sos23: h.o.sos2.n + h.o.sos3.n, sos23Ids: h.sos23 ?? [], caseChuaPa: h.o.caseChuaChot.n,
     }));
   }
   const mo = bang.tong.caseMo.n, chuaPa = bang.tong.caseChuaChot.n;

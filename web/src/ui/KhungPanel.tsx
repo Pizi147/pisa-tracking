@@ -506,8 +506,10 @@ export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string
   return (
     <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
-      <span className="min-w-0 flex-1 sm:truncate" title={qc.chu}>{qc.chu}</span>
-      {qc.chiTiet && <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>}
+      {/* NT-SUA (nghiệm thu 375): ở 375 một dòng, cắt "…" — câu dài hơn 40 ký tự có ⓘ đọc đủ (chân không nở thành 3 dòng). 1440 giữ như mockup ⑤. */}
+      <span className="min-w-0 flex-1 truncate" title={qc.chu}>{qc.chu}</span>
+      {qc.chiTiet ? <NutLuat phai label={t('Chi tiết quy chế')}>{qc.chiTiet}</NutLuat>
+        : qc.chu.length > 40 && <span className="sm:hidden"><NutLuat phai label={t('Chi tiết quy chế')}>{qc.chu}</NutLuat></span>}
     </div>
   );
 }

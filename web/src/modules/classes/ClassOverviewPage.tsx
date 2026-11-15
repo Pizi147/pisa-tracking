@@ -180,7 +180,7 @@ export default function ClassOverviewPage() {
 
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
-    <div className="page space-y-4 max-sm:space-y-3">
+    <div className="page space-y-4 max-sm:space-y-3 max-sm:pb-[100px]">
       <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 

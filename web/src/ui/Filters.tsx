@@ -260,13 +260,15 @@ export function useChiNhanhMacDinh(o?: { cuoi?: number | null }): number | null 
  * Chỉ chọn chi nhánh, không có tuần — dùng ở những màn nói về TÌNH TRẠNG HIỆN TẠI
  * chứ không phải kết quả của một tuần. Vẫn tự ẩn khi tài khoản chỉ có một chi nhánh.
  */
-export function BranchFilter({ branchId, onBranch }: {
+export function BranchFilter({ branchId, onBranch, hetHang = false }: {
   branchId: number | null; onBranch: (id: number | null) => void;
+  /** Tổng quan (PTA rà #1710, mockup ⑧ T7): 375 ô rộng cả hàng, mũi tên nét mảnh như ô chọn chung (`OChonThuong`). */
+  hetHang?: boolean;
 }) {
   const branches = useApi<Branch[]>('/ref/branches');
   const { session, branchCount } = useSession();
   if ((branches.data?.length ?? 0) <= 1 || branchCount <= 1) return null;
-  return <OChiNhanh branches={branches.data ?? []} branchId={branchId}
+  return <OChiNhanh branches={branches.data ?? []} branchId={branchId} hetHang={hetHang}
     onBranch={(id) => { nhoChiNhanh(session?.user?.id, id); onBranch(id); }} />;
 }
 
@@ -274,19 +276,22 @@ export function BranchFilter({ branchId, onBranch }: {
  * D3 CHON-CHI-NHANH (chủ SP 27/10): ô chọn chi nhánh gọn — nhãn nằm TRONG ô bên trái, cao 32 (điện thoại 44) bằng nút lọc / công tắc
  * cùng hàng, chữ 13 / 600. Một mẫu cho mọi trang (không nhãn chồng trên ô như `.label` + `.field` cũ).
  */
-export function OChiNhanh({ branches, branchId, onBranch, tatCa = true }: {
+export function OChiNhanh({ branches, branchId, onBranch, tatCa = true, hetHang = false }: {
   branches: Branch[]; branchId: number | null; onBranch: (id: number | null) => void;
+  hetHang?: boolean;
   /** HV & Lớp: phạm vi "Tất cả" nằm ở ô Phạm vi riêng — ô này chỉ chọn một chi nhánh. */
   tatCa?: boolean;
 }) {
   return (
-    <label className="inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-[var(--o-nhap-vien)] bg-[var(--o-nhap-nen)] text-[13px] font-semibold focus-within:border-[var(--accent)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] max-sm:min-h-[44px]">
+    <label className={`inline-flex h-8 shrink-0 cursor-pointer items-center rounded-lg border border-[var(--o-nhap-vien)] bg-[var(--o-nhap-nen)] text-[13px] font-semibold focus-within:border-[var(--accent)] has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-[var(--accent)] max-sm:min-h-[44px] ${hetHang ? 'relative max-sm:w-full' : ''}`}>
       <span className="whitespace-nowrap pl-2.5 pr-1.5 text-slate-400">{t('Chi nhánh')}</span>
-      <select className="min-w-0 cursor-pointer self-stretch rounded-r-lg border-0 bg-[var(--o-nhap-nen)] py-0 pl-1 pr-2 font-semibold text-slate-100 outline-none"
+      <select className={`min-w-0 cursor-pointer self-stretch rounded-r-lg border-0 bg-[var(--o-nhap-nen)] py-0 pl-1 font-semibold text-slate-100 outline-none ${hetHang ? 'flex-1 appearance-none pr-8' : 'pr-2'}`}
         value={branchId ?? ''} onChange={(e) => onBranch(e.target.value ? Number(e.target.value) : null)}>
         {tatCa && <option value="">{t('Tất cả')}</option>}
         {branches.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
       </select>
+      {/* hetHang: mũi tên nét mảnh như `OChonThuong` (⑤ A6) thay mũi tên gốc của trình duyệt. */}
+      {hetHang && <svg aria-hidden className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[color:var(--text-faint)]" width="10" height="6" viewBox="0 0 10 6" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l4 4 4-4" /></svg>}
     </label>
   );
 }

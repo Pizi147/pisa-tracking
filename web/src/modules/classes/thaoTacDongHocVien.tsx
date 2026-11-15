@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QuickReport } from '../cases/QuickReport.tsx';
 import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
@@ -7,15 +7,18 @@ import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { HocLaiPanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { invalidate } from '../../lib/api.ts';
+import { HopTinhHinh } from '../yThuc/TinhHinh.tsx';
+import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { MucMenu } from '../../ui/MenuDong.tsx';
 import {
-  DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type ViecQuanLy,
+  DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type MucMenuDong, type ViecQuanLy,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** GD-13a: mục thuộc nhóm "+ Task" của ⋯ dòng — tên như menu nút "+ Task" (chủ SP 14/11, lời 17). */
-const LA_TASK = new Set<string>(['case', 'vi-pham']);
-const TEN_TASK: Partial<Record<string, string>> = { case: t('Case'), 'vi-pham': t('Vi phạm / Nhắc nhở') };
+const LA_TASK = new Set<string>(['case', 'vi-pham', 'tinh-hinh']);
+const HIEM: readonly string[] = MUC_MENU_DONG_HIEM;
+const TEN_TASK: Partial<Record<string, string>> = { case: t('Case'), 'vi-pham': t('Vi phạm / Nhắc nhở'), 'tinh-hinh': t('Tình hình học tập') };
 
 /**
  * `coTheChuyenTiep` = `class.edit` ở lớp (Quản lý — ra quyết định chuyển lớp); người chỉ có `coTheSuaHocVien` (GVCN) thì Đề xuất chuyển lớp.
@@ -36,6 +39,8 @@ export type DongChoMenu = {
   kyThi?: boolean;
   /** OV-12e: em đang cần xử lý Ý thức (cờ `canhBaoYThuc` của dòng) — ⋯ có "Xác nhận xử lý". */
   xuLyYThuc?: boolean;
+  /** HVL-TINH-HINH: TVV của em (khối "Gửi tới" của hộp Báo tình hình) — không gửi thì hộp ghi "TVV của em" theo máy chủ. */
+  tvv?: string | null;
 };
 
 /** "Nhập điểm MT3" / "Nhập điểm Giữa khoá" khi em còn kỹ năng người xem phải chấm; không có thì không có mục (g3-072). */
@@ -71,36 +76,50 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
 }): { mucCua: (d: DongChoMenu) => MucMenu[]; panels: ReactNode; moCase: (id: number, ten: string) => void } {
   const navigate = useNavigate();
   const [mo, setMo] = useState<{
-    viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai' | 'nhap-diem'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
+    viec: 'case' | 'vi-pham' | 'xu-ly-y-thuc' | 'sua-thong-tin' | 'chuyen-lop' | 'de-xuat-chuyen-lop' | 'hoc-lai' | 'nhap-diem' | 'tinh-hinh'; id: number; ten: string; quanLy?: ViecQuanLy; lop?: string | null;
     nhap?: { classId: number; luot: string | null };
+    /** Tình hình học tập: GV / QL báo TVV (`bao`) · TVV hỏi GVCN (`hoi`). */ th?: { hoi: boolean; tvv: string | null };
   } | null>(null);
+  /* HVL-TINH-HINH: hộp Tình hình neo nút ⋯ vừa bấm (MenuDong trả focus về nút trước khi gọi `onChon`); 375 hộp là tấm dưới. */
+  const neoTh = useRef<HTMLElement | null>(null);
+  const { homNay } = useNgayNghiepVu();
+  const moTinhHinh = (d: DongChoMenu, hoi: boolean) => { neoTh.current = document.activeElement as HTMLElement | null; setMo({ viec: 'tinh-hinh', id: d.id, ten: d.ten, th: { hoi, tvv: d.tvv ?? null } }); };
   const daDoi = (id: number) => { invalidate('/hoc-vien-lop'); invalidate(`/students/${id}`); onDone(); };
   const mucCua = (d: DongChoMenu): MucMenu[] => d.status === 'finished' && !quyen.theoVai && quyen.coTheChuyenTiep ? [
     /* OV-11g (HL-19) → P7: em Kết thúc học chưa Lưu trữ (dòng mờ cuối lớp, FT chờ KQ thi thật) — Quay lại học (đường Học lại, Quản lý). Lưu trữ tay bỏ: Bước tiếp lưu trữ. */
     { key: 'quay-lai', nhan: t('Quay lại học'), onChon: () => setMo({ viec: 'hoc-lai', id: d.id, ten: d.ten }) },
   ] : quyen.theoVai ? [
+    /* HVL-TINH-HINH (mockup ⑥ ⋯ "+ Task"): TVV HỎI GVCN — quyền như máy chủ `coTheGhi` (TVV của em / `student.edit_more` vai TVV) ≈ cờ `suaThem` đã nạp, 0 câu đọc trước. */
+    ...((d.suaThem ?? !!quyen.coTheSuaThem) && (d.status ?? 'active') === 'active' ? [
+      { key: 'nhom-task', nhan: t('+ Task'), tieuDe: true, keTruoc: false, onChon: () => undefined },
+      { key: 'tinh-hinh', nhan: t('Hỏi tình hình học tập'), onChon: () => moTinhHinh(d, true) },
+    ] : []),
     ...mucDongTheoVai({
       suaThongTin: d.suaThongTin ?? !!quyen.coTheSuaThongTin, suaThem: d.suaThem ?? !!quyen.coTheSuaThem,
       ft: d.ft ?? !laLopThuong, status: d.status ?? (d.dangHoc ? 'active' : 'finished'), kyThi: d.kyThi,
-    }).map((m): MucMenu => ({ key: m.key, nhan: m.nhan, onChon: () => setMo({ viec: 'sua-thong-tin', id: d.id, ten: d.ten, quanLy: m.key, lop: d.maLop }) })),
+    }).map((m, i): MucMenu => ({ key: m.key, nhan: m.nhan, keTruoc: i === 0 && (d.suaThem ?? !!quyen.coTheSuaThem) && (d.status ?? 'active') === 'active', onChon: () => setMo({ viec: 'sua-thong-tin', id: d.id, ten: d.ten, quanLy: m.key, lop: d.maLop }) })),
     { key: 'ho-so', nhan: t('Mở hồ sơ'), keTruoc: true, onChon: () => navigate(duongHoSoHocVien(d.id)) },
   ] : mucMenuDongHocVien({
     laLopThuong, dangHoc: d.dangHoc,
     coTheGhiViPham: quyen.coTheGhiViPham, coTheBaoCase: quyen.coTheBaoCase, coTheXuLyYThuc: (quyen.coTheXuLyYThuc ?? quyen.coTheGhiViPham) && !!d.xuLyYThuc,
     coTheNhapDiem: quyen.coTheNhapDiem && d.nhapDiem !== null,
     coTheSuaHocVien: quyen.coTheSuaHocVien, coTheChuyenLop: !!quyen.coTheChuyenTiep, coTheDeXuatChuyenLop: quyen.coTheSuaHocVien && !quyen.coTheChuyenTiep,
-  }).filter((k) => k !== 'lo-trinh-tiep' || !!classId).flatMap((k, i, ds): MucMenu[] => [
+  }).filter((k) => k !== 'lo-trinh-tiep' || !!classId)
+    /* HVL-TINH-HINH: GV / QL BÁO TVV — cùng quyền ghi vi phạm (máy chủ `quyenGui` gv_tvv = `violation.record`), ngay sau Vi phạm trong nhóm "+ Task". */
+    .flatMap((k) => (k === 'vi-pham' && d.dangHoc ? [k, 'tinh-hinh' as const] : [k]))
+    .flatMap((k, i, ds): MucMenu[] => [
     /* GD-13a (mockup ⑥ K1, ⑤ H2): Case · Vi phạm / Nhắc nhở dưới tiêu đề nhóm "+ Task" (cùng tên mục nút + Task); mục sau nhóm kẻ vạch. */
     ...(i === 0 && LA_TASK.has(k) ? [{ key: 'nhom-task', nhan: t('+ Task'), tieuDe: true, keTruoc: false, onChon: () => undefined }] : []),
     {
     key: k,
-    nhan: k === 'nhap-diem' && d.nhapDiem ? d.nhapDiem.nhan : TEN_TASK[k] ?? MUC_MENU_DONG_NHAN[k],
+    nhan: k === 'nhap-diem' && d.nhapDiem ? d.nhapDiem.nhan : TEN_TASK[k] ?? MUC_MENU_DONG_NHAN[k as MucMenuDong],
     /* K2-30: vạch ngăn trước việc hiếm đầu tiên (khi phía trên còn việc hằng ngày). */
-    keTruoc: (MUC_MENU_DONG_HIEM.includes(k) && i > 0 && !MUC_MENU_DONG_HIEM.includes(ds[i - 1])) || (i > 0 && LA_TASK.has(ds[i - 1]) && !LA_TASK.has(k)),
+    keTruoc: (HIEM.includes(k) && i > 0 && !HIEM.includes(ds[i - 1])) || (i > 0 && LA_TASK.has(ds[i - 1]) && !LA_TASK.has(k)),
     onChon: () => {
       /* OV-15b: Nhập điểm mở panel lớp tại chỗ (đúng lượt), không chuyển trang. */
       if (k === 'nhap-diem') { if (d.nhapDiem) setMo({ viec: 'nhap-diem', id: d.id, ten: d.ten, lop: d.maLop, nhap: { classId: d.nhapDiem.classId, luot: d.nhapDiem.luot } }); }
       else if (k === 'lo-trinh-tiep') navigate(duongLoTrinhLop(classId!, d.id));
+      else if (k === 'tinh-hinh') moTinhHinh(d, false);
       else setMo({ viec: k, id: d.id, ten: d.ten });
     },
   }]);
@@ -119,6 +138,11 @@ export function useThaoTacDongHocVien({ laLopThuong, quyen, onDone, maLop, class
       {mo?.viec === 'hoc-lai' && <HocLaiPanel studentId={mo.id} studentName={mo.ten} lop={maLop} onClose={() => setMo(null)} onDone={() => daDoi(mo.id)} />}
       {mo?.viec === 'nhap-diem' && mo.nhap && (
         <PanelNhapDiemLop classId={mo.nhap.classId} classCode={mo.lop ?? maLop} luot={mo.nhap.luot} onDong={xong} />
+      )}
+      {/* HVL-TINH-HINH: DÙNG LẠI hộp Tình hình học tập (prTinhHinh, như "+ Task" hồ sơ HV) — em điền sẵn; gửi xong toast Hoàn tác, Đóng về đúng nút ⋯. */}
+      {mo?.viec === 'tinh-hinh' && mo.th && (
+        <HopTinhHinh neo={neoTh} homNay={homNay} onDong={() => setMo(null)} onXong={() => { invalidate('/my-work'); onDone(); }}
+          che={mo.th.hoi ? { loai: 'hoi', em: { id: mo.id, ten: mo.ten }, gvcn: null } : { loai: 'bao', em: [{ id: mo.id, ten: mo.ten, tvv: mo.th.tvv }] }} />
       )}
       {mo?.viec === 'sua-thong-tin' && <SuaThongTinMotEm viec={mo.quanLy} studentId={mo.id} studentName={mo.ten} lop={mo.lop ?? maLop} onClose={() => setMo(null)} onDone={xong} />}
     </>

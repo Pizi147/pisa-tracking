@@ -208,7 +208,7 @@ export function BangDiemLopThuong({ classId, maLop, quyen, onDoi, chuongTrinh = 
   );
   const menu = (s: DongThuong, lopNut?: string) => (
     /* GV-CU-BO-TRO: em đã chuyển (dòng "Đã chuyển · đang bổ trợ ›") không còn thao tác ở lớp cũ — chỉ lối vào hồ sơ HV. */
-    <MenuDong lopNut={lopNut} muc={s.archived || s.dangBoTro ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc })} />
+    <MenuDong lopNut={lopNut} muc={s.archived || s.dangBoTro ? [] : tt.mucCua({ id: s.id, ten: s.fullName, dangHoc: s.status === 'active', nhapDiem: nhapDiemCua(classId, true, s.timeline), status: s.status, xuLyYThuc: !!s.canhBaoYThuc, tvv: s.tvv ?? null })} />
   );
   const lopHang = (s: DongThuong) => `${s.status !== 'active' || s.dangBoTro ? 'row-muted' : ''} ${chon?.chon.has(s.id) ? 'bg-[color:var(--accent-soft)]' : ''}`;
 

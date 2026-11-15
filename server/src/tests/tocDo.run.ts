@@ -37,7 +37,8 @@ const { standingFor } = await import('../students/standing.ts');   // RA-DOC-061
 const { chiSoHoSoGv, phanTichGiaoVien } = await import('../phanTich/giaoVien.ts');   // RA-DOC-0611 · GIAM-DOC-0711a
 const { myWork, caseMoTapChaKhiKiem } = await import('../worklist/mywork.ts');   // RA-DOC-0611b
 const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/hocVienLop.ts');   // GIAM-DOC-0611
-const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');   // GIAM-DOC-0611f
+const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
+const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
@@ -221,6 +222,9 @@ const USER: Record<Vai, number> = {
   TVV: userByRole('consultant', 'CP'),
   CX: userByRole('cx', null),
 };
+/** TQ-SOS-CN: `{sos23}` = id em SOS 2–3 của chi nhánh `{cn}` (chính `sos23Ids` của bảng Tổng quan) — tính lại sau khi nhân dữ liệu. */
+const tinhSos23 = () => ((bangChiNhanh(loadPrincipal(USER.QT), { ct: 'ft', chuY: true }).hang.find((h: any) => h.id === CN)?.sos23 ?? []) as number[]).join(',');
+let SOS23 = tinhSos23();
 /** Quản lý chi nhánh CP — dùng riêng ở Task 2 phép kiểm (c)/(e) (chi nhánh KHÁC với MB của mọi vai trên). */
 const QL_CP = userByRole('manager', 'CP');
 /** PR-B: một việc bàn giao đổi GV ĐÃ XÁC NHẬN ở MB FT 101 (GVBM → GVCN môn L, chưa chụp tự điền) — đường `/ban-giao-gv/{bgGv}`. Đã xác nhận nên
@@ -259,6 +263,7 @@ function urlFor(mau: string): string {
     .replace('{bgGv}', String(BG_GV))
     .replace('{lenhBg}', String(LENH_BG))
     .replace('{cn}', String(CN))
+    .replace('{sos23}', SOS23)
     .replace('{gv}', String(USER.GVCN));
 }
 /* PANEL-MC: khoá trần được viết bằng chỗ thay như URL (`{ycPa}`…) — id lấy từ dữ liệu lúc chạy, không viết cứng. Khoá đã là id thật giữ nguyên. */
@@ -1026,6 +1031,7 @@ function nhanDuLieu(n: number): { hvTruoc: number; hvSau: number; caseTruoc: num
 }
 
 const soNhanDuLieu = nhanDuLieu(3);
+SOS23 = tinhSos23();   // TQ-SOS-CN: id em SOS 2–3 của chi nhánh đo sau khi nhân dữ liệu (panel đọc theo số em)
 const dongSauNhan = new Map<string, number>();
 doTurso.bat = true;   // PR-DEPLOY (Q7): từ đây ghi mọi câu SQL — mọi (đường × vai) sau nhân dữ liệu + mọi đường ghi lô
 /*

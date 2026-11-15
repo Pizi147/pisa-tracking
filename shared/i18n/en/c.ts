@@ -131,7 +131,7 @@ export const EN_C = {
   'Kết quả {ky} (ghi bù {soKy} kỳ)': 'Result {ky} (catching up {soKy} periods)',
   'kỳ {ky}': 'period {ky}',
   'Hoàn thành Case': 'Close case',
-  '+ Ghi vi phạm': '+ Log incident',
+  '+ Vi phạm / Nhắc nhở': '+ Violation / Reminder',
   'Chuyển lớp': 'Class transfer',
   'Đề xuất chuyển lớp…': 'Propose transfer…',
   'Chuyển tiếp lớp': 'Class progression',

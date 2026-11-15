@@ -57,8 +57,8 @@ export const EN_TL_V5 = {
   'Kết quả chia <b>Học viên · Lớp · GV</b>, chỉ người bạn được xem; ↑ ↓ Enter để mở. Gõ "ft101" ra lớp MB FT 101.':
     'Results are grouped <b>Students · Classes · Teachers</b>, only people you may view; ↑ ↓ Enter to open. Typing "ft101" finds class MB FT 101.',
   'Đầu trang: thanh <b>Việc cần làm</b> của lớp — bấm việc làm ngay tại trang.': 'Page top: the class <b>To do</b> bar — click a task to do it right on the page.',
-  'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới hàng; <b>⋯</b> ở dòng em: + Ghi vi phạm, + Case, Nhập điểm.':
-    'Student table: W1 · W2 separate, click a W / S score to see its parts; Case + PA open under the row; <b>⋯</b> on a student row: + Log incident, + Case, Enter scores.',
+  'Bảng em: W1 · W2 riêng, bấm điểm W / S xem điểm thành phần; Case + PA mở dưới hàng; <b>⋯</b> ở dòng em: + Vi phạm / Nhắc nhở, + Case, Nhập điểm.':
+    'Student table: W1 · W2 separate, click a W / S score to see its parts; Case + PA open under the row; <b>⋯</b> on a student row: + Violation / Reminder, + Case, Enter scores.',
   'Cuối trang: <b>Điểm Mock Test của lớp</b> (lớp thường: <b>Điểm Test của lớp</b>). Lớp thường có thêm tab <b>Đánh giá đầu ra</b>.':
     'Page bottom: <b>Class Mock Test scores</b> (regular classes: <b>Class Test scores</b>). Regular classes also have an <b>End-of-course review</b> tab.',
   'Thanh <b>Việc cần làm</b> dưới đầu trang: việc của bạn với em, bấm là mở chỗ làm ngay trên trang.':

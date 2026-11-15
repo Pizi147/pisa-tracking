@@ -18,7 +18,7 @@ import { trangThaiYThuc } from '../yThuc/trangThai.ts';
 
 /**
  * XÉT LẠI LỘ TRÌNH (P9a, N21) — MỘT CỬA phía máy chủ: tập em (`tapXetLai`, cùng hàm cho việc QL, GET panel, quét hết hạn), quyết định theo lô
- * (Tiếp tục · Học lại · Tạm dừng/ Kết thúc học), Hoàn tác / Sửa tới khi lệnh mới thi hành, nhận xét GVCN lớp mới. Luật thuần: `lyDoXetLai`,
+ * (Tiếp tục · Học lại · Tạm dừng / Kết thúc học), Hoàn tác / Sửa tới khi lệnh mới thi hành, nhận xét GVCN lớp mới. Luật thuần: `lyDoXetLai`,
  * `hanXetLai` (shared). Học lại / Lên (dòng (c)) = đúng đường Chuyển lớp (`huongChuyenMotEm` + `raLenh`, như POST /students/:id/transfer): em đã thi
  * hành → lệnh mới ở lớp đang học; lệnh chưa thi hành → SỬA lệnh đó (upsert theo em) — trước khi sửa chụp nguyên dòng lệnh + phiếu bàn giao + Lộ trình
  * tiếp theo để Hoàn tác / Sửa trả lại ĐÚNG như trước (`khoiPhucLenh`, không đi qua `raLenh`).
@@ -292,7 +292,7 @@ export const LO_XET_LAI = 10;   // một lời gọi ≤ 10 em (web chia lô —
 function docMuc(x: any): MucXetLai {
   const sid = Number(x?.studentId);
   if (!Number.isInteger(sid) || sid <= 0) throw badRequest('Học viên không hợp lệ.');
-  if (!['tiep_tuc', 'hoc_lai', 'len', 'dung'].includes(x?.quyetDinh)) throw badRequest('Chọn Tiếp tục, Học lại hoặc Tạm dừng/ Kết thúc học.');
+  if (!['tiep_tuc', 'hoc_lai', 'len', 'dung'].includes(x?.quyetDinh)) throw badRequest('Chọn Tiếp tục, Học lại hoặc Tạm dừng / Kết thúc học.');
   const so = (v: unknown, ten: string) => {
     if (v == null) return null;
     if (typeof v !== 'number' || !Number.isInteger(v) || v <= 0) throw loi(400, '{ten} không hợp lệ.', { ten });
@@ -532,7 +532,7 @@ export function ghiNhanXetGvcnMoi(p: Principal, classId: number, studentId: numb
     ).get(studentId, classId) as { quyet_dinh: string; luc: string } | undefined;
     if (q) {
       throw loi(409, 'QL đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.', {
-        buoc: ({ tiep_tuc: 'Tiếp tục', hoc_lai: 'Học lại', len: 'Lên lớp', dung: 'Tạm dừng/ Kết thúc học' } as Record<string, string>)[q.quyet_dinh] ?? q.quyet_dinh,
+        buoc: ({ tiep_tuc: 'Tiếp tục', hoc_lai: 'Học lại', len: 'Lên lớp', dung: 'Tạm dừng / Kết thúc học' } as Record<string, string>)[q.quyet_dinh] ?? q.quyet_dinh,
         ngay: ((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`)(todayInBusinessTz(new Date(q.luc))),   // ngày VN (rà sâu #742: `luc` UTC)
       });
     }

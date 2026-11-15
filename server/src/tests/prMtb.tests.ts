@@ -415,7 +415,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T3) · quét nguồn: panel Xếp lịch Mock Test vẽ theo mockup phần 1, không còn giao diện cũ', () => {
     const p = nguon('web/src/modules/test/keHoach/NganXepLichMt.tsx');
-    for (const c of ['MT mới', 'Lịch riêng ▸', 'Tuần và kỹ năng', "t('Sẽ xếp')", "t('Cần xem')", "t('Không xếp được')", '⇆ cuộn ngang', 'Chọn tất cả',
+    for (const c of ['MT mới', 'Lịch riêng', 'Tuần và kỹ năng', "t('Sẽ xếp')", "t('Cần xem')", "t('Không xếp được')", '⇆ cuộn ngang', 'Chọn tất cả',
       'kyNang', 'attemptNo: dot', '<OMt', 'nhanSeXep(', 'demSeXep(', 'aria-pressed', 'min-w-[960px]', 'indeterminate', 'Tuần đã qua',
       'force: true']) {
       assert(p.includes(c), `NganXepLichMt thiếu ${c}`);

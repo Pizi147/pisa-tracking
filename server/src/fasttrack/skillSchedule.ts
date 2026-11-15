@@ -575,7 +575,7 @@ export function recomputeCompletionWeek(attemptId: number, actorUserId: number |
     reason: 'Tính lại theo tuần muộn nhất của các kỹ năng bắt buộc',
     actor: actorUserId,
   });
-  /* TD7b: MỌI đổi lịch kỹ năng (đổi tuần, phạm vi, xác nhận vắng / huỷ phần thi, Xóa lịch, khôi phục…) kết thúc ở đây → cờ "còn ô chờ" cập nhật ở cuối. */
+  /* TD7b: MỌI đổi lịch kỹ năng (đổi tuần, phạm vi, xác nhận vắng / huỷ phần thi, Xoá lịch, khôi phục…) kết thúc ở đây → cờ "còn ô chờ" cập nhật ở cuối. */
   capNhatConOCho([attemptId]);
   return cw;
 }

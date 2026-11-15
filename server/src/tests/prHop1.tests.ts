@@ -46,8 +46,8 @@ export async function runPrHop1Tests(t: YThucTestKit) {
     assert(hop.includes("api.post('/ke-hoach-test/dot'"), 'HopKyNang không lưu qua /dot');
     /* GD-11b (mockup ⑦ B2): "Nhật ký" → khối "Lịch sử · n" trong hộp; "Mở hồ sơ MT ›" gộp vào tên lượt (link). */
     assert(hop.includes('<LichSuGap ') && hop.includes('<span aria-hidden>›</span>'), 'hộp: khối Lịch sử + tên lượt là link hồ sơ MT');
-    /* OV-15c (mục 6): "Huỷ MT{n}" bỏ khỏi ⋯ đầu hộp — thay bằng Xóa (bỏ tuần) ở chân hộp. */
-    assert(!hop.includes('`Huỷ MT${dot.attemptNo}`') && !/HopHuyMt/.test(hop) && hop.includes('/bo-tuan'), 'hộp còn Huỷ MT / thiếu Xóa');
+    /* OV-15c (mục 6): "Huỷ MT{n}" bỏ khỏi ⋯ đầu hộp — thay bằng Xoá (bỏ tuần) ở chân hộp. */
+    assert(!hop.includes('`Huỷ MT${dot.attemptNo}`') && !/HopHuyMt/.test(hop) && hop.includes('/bo-tuan'), 'hộp còn Huỷ MT / thiếu Xoá');
     const goi = fs.readdirSync(path.join(ROOT, 'web/src'), { recursive: true }).filter((f) => /\.tsx?$/.test(String(f)))
       .filter((f) => /attempts\/\$\{[^}]+\}\/week/.test(nguon(path.join('web/src', String(f)))));
     assert(goi.length === 0, `còn gọi POST /attempts/:id/week: ${goi.join(', ')}`);

@@ -1,3 +1,4 @@
+import { MuiChev } from '../../../ui/HangNhom.tsx';
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../../lib/api.ts';
 import { useApi } from '../../../lib/useApi.ts';
@@ -301,7 +302,7 @@ function XepTheoTuan({ chiNhanhDau, lopDs, lopMoSan, onClose, onDone, tabs }: Ng
             })}
           </div>
           <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" aria-expanded={moRieng} onClick={() => setMoRieng((v) => !v)}>
-            {moRieng ? t('Lịch riêng ▾') : t('Lịch riêng ▸')}
+            {t('Lịch riêng')} <MuiChev mo={moRieng} cl="inline-block align-[-3px]" />
           </button>
         </div>
         {moRieng && (

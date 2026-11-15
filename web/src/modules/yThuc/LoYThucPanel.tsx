@@ -200,7 +200,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
           <div className="mt-2 pl-[26px]">
             <Truong nhan={t('Mô tả riêng')}>
               <textarea className="field w-full" rows={2} value={rieng[e.studentId] ?? ''} autoFocus
-                onChange={(ev) => setRieng((r) => ({ ...r, [e.studentId]: ev.target.value }))} placeholder={moTa || t('Ví dụ: Đã đưa Report 1, nhắc em trước lớp')} />
+                onChange={(ev) => setRieng((r) => ({ ...r, [e.studentId]: ev.target.value }))} placeholder={moTa || t('Ví dụ: Đã đưa REPORT 1, nhắc em trước lớp')} />
             </Truong>
           </div>
         )}
@@ -261,7 +261,7 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
               </Hang2>
               <Truong nhan={t('Mô tả chung')} batBuoc={canChung} loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
                 <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(ev) => setMoTa(ev.target.value)}
-                  placeholder={t('Ví dụ: Đã đưa Report 1, nhắc em trước lớp')} />
+                  placeholder={t('Ví dụ: Đã đưa REPORT 1, nhắc em trước lớp')} />
               </Truong>
             </>
           )}

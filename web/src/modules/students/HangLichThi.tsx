@@ -29,13 +29,15 @@ export type KqThiThat = {
   kn: { L: number | null; R: number | null; W: number | null; S: number | null } | null; ngayKq: string | null;
 };
 export type CaseMoHang = { id: number; kyNang: string | null; sos: number | null; soPa: number };
-export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null; kq?: string | null };
+export type DongLichSu = { luc: string; ai: string | null; ketLuan: string | null; ngay: string | null; ghiChu: string | null; kq?: string | null; noiThi?: string | null };
 export type Hang = {
   studentId: number; cycleId: number | null; ten: string; ma: string; classId: number; classCode: string; thuong: boolean; gvcn: string | null; tvv: string | null;
   target: number | null; kck: boolean; standing: KetQuaVao | null;
   duKien: ExamPlan; coNgay: boolean; thangDuKien: string | null; chuaCo: boolean; ketLuan: KetLuanLichThi | null; luu: Luu | null; coTheSua: boolean;
   lichThi: LichThi; buoc: BuocLichThi; sauThi: TrangThaiSauThi; kq: KqThiThat | null; buocTiep: string | null;
   chot: { luc: string; ai: string | null } | null;
+  /** LICH-THI-NOI-THI (⑥ K4): nơi thi thật, chữ ngắn; null = chưa ghi. */
+  noiThi: string | null;
   chiTiet: {
     kn: Kn | null; mtTuan: string | null; truoc: { nhan: string; ovr: number | null; kn: Kn } | null;
     sapToi: { luot: string; tuan: string } | null; caseMo: CaseMoHang[]; lichSu: DongLichSu[]; soLichSu: number;
@@ -48,7 +50,9 @@ export type HangHien = Hang & {
   /** Vừa lưu tại chỗ: nhật ký có dòng mới → "Lịch sử" chưa biết số, mở thì đọc đủ (một lần). */
   lsCu?: boolean;
 };
-export type LuuBody = { ketLuan?: KetLuanLichThi; ngay?: string; thang?: string; ghiChu?: string; boLich?: boolean };
+export type LuuBody = { ketLuan?: KetLuanLichThi; ngay?: string; thang?: string; ghiChu?: string; boLich?: boolean; noiThi?: string };
+/** Nơi thi: chữ ngắn — cùng trần máy chủ `NOI_THI_TOI_DA`. */
+export const NOI_THI_TOI_DA = 40;
 
 /** Việc đang làm tại chỗ + hành động của hàng (nơi gọi — `GocLichThi` — giữ trạng thái). */
 export type Hanh = {
@@ -197,8 +201,10 @@ export function HopLich({ r, nut, onHuy, onLuu, the }: { r: HangHien; nut: ThaoT
   const [ngay, setNgay] = useState<string | null>(r.lichThi.ngay);
   const [thang, setThang] = useState<string | null>(thangKeTiep(`${r.lichThi.thang ?? homNay.slice(0, 7)}-01`));
   const [ghiChu, setGhiChu] = useState(r.luu?.ghiChu ?? '');
+  const [noiThi, setNoiThi] = useState(r.noiThi ?? '');
   const khoa = r.tt?.kieu === 'luu';
-  const gc = ghiChu.trim() !== (r.luu?.ghiChu ?? '') ? { ghiChu: ghiChu.trim() } : {};
+  const gc = { ...(ghiChu.trim() !== (r.luu?.ghiChu ?? '') ? { ghiChu: ghiChu.trim() } : {}),
+    /* LICH-THI-NOI-THI: nơi thi đi cùng Ngày thi (chỉ gửi khi đổi). */ ...(ngayKieu && noiThi.trim() !== (r.noiThi ?? '') ? { noiThi: noiThi.trim() } : {}) };
   const duoc = ngayKieu ? !!ngay : !!thang;
   const gui = () => {
     if (!duoc || khoa) return;
@@ -212,10 +218,18 @@ export function HopLich({ r, nut, onHuy, onLuu, the }: { r: HangHien; nut: ThaoT
       <button type="button" aria-pressed={ngayKieu} onClick={() => setNgayKieu(true)}>{t('Ngày thi')}</button>
     </span>
   );
+  /* PTA rà #1714: `key` riêng — đổi đoạn Tháng dự kiến ↔ Ngày thi là ô MỚI (trước React dùng lại một ô `ONgay`, chữ "12/2026" của ô tháng còn trong ô ngày).
+     Ô ngày: ngày đang có, không có thì rỗng (dd/mm/yyyy); "Chốt ngày" chỉ bật khi ngày hợp lệ (`duoc`). */
   const o = ngayKieu
-    ? <ONgay kieu="ngay" gon value={ngay} ariaLabel={nhan} onChange={setNgay} />
-    : <ONgay kieu="thang" gon value={thang} ariaLabel={nhan} toiThieu={homNay.slice(0, 7)} onChange={setThang} />;
+    ? <ONgay key="ngay" kieu="ngay" gon value={ngay} ariaLabel={nhan} onChange={setNgay} />
+    : <ONgay key="thang" kieu="thang" gon value={thang} ariaLabel={nhan} toiThieu={homNay.slice(0, 7)} onChange={setThang} />;
   const truoc = !ngayKieu && r.lichThi.thang ? t('trước: {thang}', { thang: nhanThang(r.lichThi.thang) }) : null;
+  /* LICH-THI-NOI-THI (⑥ K4 "Nơi thi IDP / BC"): ô chữ ngắn cạnh Ngày thi — tuỳ chọn, Enter lưu như ô Ghi chú. */
+  const oNoiThi = ngayKieu && (
+    <span className="lt-hop-noi"><span className="lt-hop-nh">{t('Nơi thi')}</span>
+      <input className="field w-full" maxLength={NOI_THI_TOI_DA} placeholder="IDP / BC" aria-label={t('Nơi thi')} value={noiThi} autoComplete="off"
+        onChange={(e) => setNoiThi(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') gui(); }} /></span>
+  );
   const oGhi = <input className="field w-full" maxLength={300} placeholder={the ? t('Ghi chú (tuỳ chọn)') : t('Tuỳ chọn')} aria-label={t('Ghi chú')} value={ghiChu}
     onChange={(e) => setGhiChu(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter') gui(); }} />;
   const loi = r.tt?.kieu === 'loi' && (
@@ -226,6 +240,7 @@ export function HopLich({ r, nut, onHuy, onLuu, the }: { r: HangHien; nut: ThaoT
       {doan || <span className="lt-hop-nh">{nhan}</span>}
       <span className="lt-hop-o">{o}</span>
       {truoc && <span className="lt-hop-truoc">{truoc}</span>}
+      {oNoiThi}
       {!the && <span className="lt-hop-nh lt-hop-nh-ghi">{t('Ghi chú')}</span>}
       <span className="lt-hop-ghi">{oGhi}</span>
       <span className="lt-hop-chan">
@@ -329,7 +344,8 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
   };
   const khoiKyThi = () => (
     <Khoi tieuDe={t('Kỳ thi')}>
-      <Cap ds={[[t('Ngày thi'), ngayThi ? shortDate(ngayThi, homNay) : '—'], ...(gd === 'co-kq' && r.kq?.ngayKq ? [[t('Ghi KQ'), shortDate(r.kq.ngayKq, homNay)] as [string, ReactNode]] : [])]} />
+      <Cap ds={[[t('Ngày thi'), ngayThi ? shortDate(ngayThi, homNay) : '—'], ...(r.noiThi ? [[t('Nơi thi'), r.noiThi] as [string, ReactNode]] : []),
+        ...(gd === 'co-kq' && r.kq?.ngayKq ? [[t('Ghi KQ'), shortDate(r.kq.ngayKq, homNay)] as [string, ReactNode]] : [])]} />
     </Khoi>
   );
   const khoiHoTro = () => (
@@ -366,7 +382,7 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
           <DsLichSu dong={ls.map((x, i) => ({
             key: i, gio: lucNgan(x.luc), ai: x.ai,
             viec: x.ketLuan ? CHU_KET_LUAN[x.ketLuan] ?? x.ketLuan : t('đổi lịch'), moi: x.kq ?? mocLs(x, homNay),
-            phu: [x.ghiChu ? `“${x.ghiChu}”` : null],
+            phu: [x.noiThi !== undefined ? (x.noiThi ? t('nơi thi {noi}', { noi: x.noiThi }) : t('bỏ nơi thi')) : null, x.ghiChu ? `“${x.ghiChu}”` : null],
           }))} />
         )}
       </LichSuGap>

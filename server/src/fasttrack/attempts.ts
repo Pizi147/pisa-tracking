@@ -1318,7 +1318,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
       /** PR-XLMT (T38): GVCN của lớp — Báo vắng / Xếp lại bài vắng theo bảng thao tác `thaoTacKyNang`. */
       laGvcn: !!a.class_id && isCoreTeacherOf(p, a.class_id),
       canCancel: choHuyKhoiPhucLichTest(p, { classId: a.class_id }),
-      /* OV-15i2: bỏ `huyLuot` (hệ quả huỷ) — web không còn hộp huỷ đọc nó (OV-15c: Mock / MT0 Xóa = về Chưa xếp); `heQuaHuyLuot` vẫn dùng khi huỷ. */
+      /* OV-15i2: bỏ `huyLuot` (hệ quả huỷ) — web không còn hộp huỷ đọc nó (OV-15c: Mock / MT0 Xoá = về Chưa xếp); `heQuaHuyLuot` vẫn dùng khi huỷ. */
       /** Xử lý vắng (dời lần đầu / xin duyệt) — GVCN của lớp và Quản lý; giáo viên bộ môn thì không. */
       canHandleAbsence: canRequestAbsence(p, a),
       canSkipSkill: can(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id }),
@@ -1625,8 +1625,8 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
 }
 
 /**
- * XOÁ MT (chủ SP 06/11 — MỘT thao tác "Xoá" ở Kế hoạch Test và hồ sơ MT, thay "Xóa lịch" về Chưa xếp + "Bỏ khỏi đợt" cả 4 kỹ năng): mọi kỹ năng
- * bắt buộc ra khỏi đợt (`required = 0`, tuần GIỮ để Khôi phục), MỘT tx. Quyền như "Xóa lịch" cũ (`requireSuaLichTest`: QL / Admin / Quản trị,
+ * XOÁ MT (chủ SP 06/11 — MỘT thao tác "Xoá" ở Kế hoạch Test và hồ sơ MT, thay "Xoá lịch" về Chưa xếp + "Bỏ khỏi đợt" cả 4 kỹ năng): mọi kỹ năng
+ * bắt buộc ra khỏi đợt (`required = 0`, tuần GIỮ để Khôi phục), MỘT tx. Quyền như "Xoá lịch" cũ (`requireSuaLichTest`: QL / Admin / Quản trị,
  * GVCN khi công tắc #1064 bật); khoá cuối tuần N15 qua `setSkillScope`. RKC (chủ SP 07/11): đã có điểm → HỎI rồi huỷ điểm (cất — "Khôi phục điểm"
  * ở ô) và xoá; đã làm bài mà chưa có điểm → xoá thẳng (không mất gì).
  * Ô hiện "Đã xoá" + Khôi phục (`duaLaiCaLuot`); Hoàn tác = Khôi phục đúng các kỹ năng vừa xoá.
@@ -1781,7 +1781,7 @@ export function caseSinhRieng(attemptId: number): number[] {
  * còn chờ, tín hiệu còn chờ của lượt và ghi danh sách đóng vào bản cất để Khôi phục mở lại đúng. MỘT giao dịch. Bài lớp thường: điểm xoá theo
  * lô như cũ (`xoaDiemLuot`, PR-VN5) — không cất.
  */
-/** OV-15c (mục 6): loại lượt KHÔNG còn huỷ từ web — Kế hoạch Test chỉ có Xóa (bỏ tuần, về Chưa xếp). Huỷ do hệ thống (MT0, vắng 2 lần) giữ. */
+/** OV-15c (mục 6): loại lượt KHÔNG còn huỷ từ web — Kế hoạch Test chỉ có Xoá (bỏ tuần, về Chưa xếp). Huỷ do hệ thống (MT0, vắng 2 lần) giữ. */
 const HUY_MT_DA_BO = ['mock', 'mt0'];
 
 export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string | null; quaWeb?: boolean }) {
@@ -1790,7 +1790,7 @@ export function huyLuot(p: Principal, attemptId: number, input: { lyDo?: string 
     require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id, studentId: a.student_id }, 'Bạn không có quyền huỷ lượt Mock.');
   }
   if (input.quaWeb && HUY_MT_DA_BO.includes(a.kind)) {
-    throw loi(400, 'Không còn huỷ MT{attempt_no} — dùng Xóa ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.', { attempt_no: a.attempt_no });
+    throw loi(400, 'Không còn huỷ MT{attempt_no} — dùng Xoá ở hộp lịch (Kế hoạch Test): đợt về Chưa xếp, lịch sử giữ.', { attempt_no: a.attempt_no });
   }
   const lyDo = String(input.lyDo ?? '').trim() || `Huỷ MT${a.attempt_no}`;   // rà #282: lý do tuỳ chọn
   const hq = heQuaHuyLuot(attemptId);

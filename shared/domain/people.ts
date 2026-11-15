@@ -133,7 +133,7 @@ export const PERMISSIONS = {
    */
   VIOLATION_RECORD: 'violation.record',
   /**
-   * XỬ LÝ Ý THỨC — sửa/hủy vi phạm của NGƯỜI KHÁC, và tạo · sửa · xác nhận · xóa biện pháp (V10, B01). Giáo viên chỉ có khi là
+   * XỬ LÝ Ý THỨC — sửa/hủy vi phạm của NGƯỜI KHÁC, và tạo · sửa · xác nhận · xoá biện pháp (V10, B01). Giáo viên chỉ có khi là
    * GVCN của chính lớp đó; GVBM đọc được nhưng không tạo biện pháp. Không có cửa Quản lý duyệt (Y01).
    */
   DISCIPLINE_MANAGE: 'discipline.manage',

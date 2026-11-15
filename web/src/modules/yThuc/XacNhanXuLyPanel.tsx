@@ -14,7 +14,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, bacDu, luuRoiTiep, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
+  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, bacDu, bacKhongNgat, luuRoiTiep, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
@@ -313,7 +313,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
                   <span className="flex items-center gap-2 text-sm font-semibold text-slate-100">
                     <span aria-hidden className={`h-3.5 w-3.5 shrink-0 rounded-full border-[1.5px] ${cach === c.k ? 'border-[4px] border-[color:var(--accent)]' : 'border-[color:var(--o-vien,var(--line-strong))]'}`} />{c.ten}
                   </span>
-                  <span className="pl-[22px] text-[13px] leading-snug text-slate-400">{c.phu}</span>
+                  <span className="pl-[22px] text-[13px] leading-snug text-slate-400">{bacKhongNgat(c.phu)}</span>
                   {c.k === 'nang' && <span className="ml-[22px] mt-1 justify-self-start rounded border px-[5px] text-xs font-semibold leading-4 text-slate-500" style={{ borderColor: 'var(--line-strong)' }}>{t('Mặc định')}</span>}
                 </button>
               ))}
@@ -358,7 +358,9 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
           )}
           <div className="grid gap-1">
             <Truong nhan={cheDo === 'xu-ly' ? t('Mô tả') : t('Lý do')} batBuoc loi={lf.loiCua(loi, 'mo-ta')}>
-              <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(e) => setMoTa(e.target.value)} />
+              {/* NT-SUA P1-3 (PTA chốt): Mô tả = ghi nhận việc đã làm (đầu ra của xử lý) → nói lý do ngay tại ô, không điền sẵn chữ mẫu. */}
+              <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(e) => setMoTa(e.target.value)}
+                placeholder={cheDo === 'xu-ly' ? t('Ghi việc đã làm, vd đã nhắc em trước lớp, đã báo PH') : undefined} />
             </Truong>
             <span className={`justify-self-end text-xs tabular-nums ${moTa.trim().length > MO_TA_TOI_DA ? 'font-semibold text-bad' : 'text-slate-500'}`} aria-live="polite">{moTa.trim().length} / {MO_TA_TOI_DA}</span>
           </div>

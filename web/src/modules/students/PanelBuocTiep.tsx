@@ -16,7 +16,7 @@ import { HopGiaHan } from './HopGiaHan.tsx';
 /** `GET /cycles/:id/buoc-tiep` (máy chủ `trangThaiBuocTiep`). */
 export type TrangThaiBuocTiep = {
   chon: LuaChonSauThi | null; luc: string | null; boi: string | null; coTheChon: boolean;
-  /** P7: gợi ý hướng (Đạt Target → Tạm dừng/ Kết thúc học; chưa đạt / Không thi → Lộ trình mới). */
+  /** P7: gợi ý hướng (Đạt Target → Tạm dừng / Kết thúc học; chưa đạt / Không thi → Lộ trình mới). */
   goiY?: HuongSauThi | null;
   daXong: string; han: string; hen: string | null; henLop: string | null; lopNay: { id: number; code: string } | null; target: string; ngayThi: string | null;
   studentId: number; cycleId: number; ketLuan: string | null; hoanTacDuoc: boolean;
@@ -48,7 +48,7 @@ export function useKhoiPhucThiThat(cycleId: number, sau?: () => void) {
 
 /**
  * BƯỚC TIẾP SAU THI (OV-13m, mockup `mockup-ov13-buoc-tiep-2026-10-15.html` §1–3) — panel v3: đầu "Bước tiếp · Hạn …", kết quả thi một dòng "✓ Đã xong · OVR … · Sửa",
- * P7 (N12, mockup V6 `trang-thai-hv.html` k4): HAI nút lớn không chọn sẵn — "Tạm dừng/ Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
+ * P7 (N12, mockup V6 `trang-thai-hv.html` k4): HAI nút lớn không chọn sẵn — "Tạm dừng / Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
  * tắt sẵn) · "Lộ trình mới" (nội dung panel đổi thành `PanelLoTrinhMoi`, ‹ Bước tiếp). Gia hạn 1 tuần, Lịch sử, Hoàn tác, Huỷ hẹn giữ. Đã chọn → khối trạng thái + Huỷ hẹn / Hoàn tác (Tạm dừng: Quay lại học = Lộ trình mới). GVCN / người
  * không chọn được: chỉ đọc. Dùng ở panel Kết quả thi thật (đổi tại chỗ), ngăn Tổng kết, hồ sơ (`?buoc-tiep=`), Công việc.
  */
@@ -100,7 +100,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   /* SUA-LUU-TRU (việc 3): đang chọn lại (đã có lựa chọn) — chữ "Đã đổi sang …"; Hoàn tác (máy chủ) về đúng lựa chọn cũ. */
   const daChonTruoc = !!bt.chon;
   const boChon = () => api.del(`/cycles/${cycleId}/buoc-tiep`).then(() => { lamMoi(); reload(); onDone?.(); });
-  /* "Tạm dừng/ Kết thúc học": ô bật → `tam_dung`, tắt → `ket_thuc` (máy chủ ghi như cũ), ngày + lý do của hộp. */
+  /* "Tạm dừng / Kết thúc học": ô bật → `tam_dung`, tắt → `ket_thuc` (máy chủ ghi như cũ), ngày + lý do của hộp. */
   const luuDung = () => {
     const chonMay: LuaChonSauThi = dung.quayLai ? 'tam_dung' : 'ket_thuc';
     void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: chonMay, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined }),

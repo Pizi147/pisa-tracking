@@ -466,11 +466,11 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     assert(dau(a, 'listening').raw_score === null && k.planned_period_id === W1 && k.sit_status === 'scheduled' && !banCat(a).length, JSON.stringify(k));
   }));
 
-  check('T24 · Xóa lịch (QL): RKC: có điểm một phần → bỏ tuần phần chưa thi, điểm giữ; không điểm → mọi kỹ năng Chưa xếp', () => thu(() => {
+  check('T24 · Xoá lịch (QL): RKC: có điểm một phần → bỏ tuần phần chưa thi, điểm giữ; không điểm → mọi kỹ năng Chưa xếp', () => thu(() => {
     const [a, b] = luot;
     dung(a);
     attempts.saveScore(gvL, a, 'listening', { rawScore: 30 }, TRONG);
-    assert(loi(() => skillSchedule.boTuanLuot(QL, a, {})) === null, 'RKC: có điểm một phần vẫn Xóa lịch phần chưa thi');
+    assert(loi(() => skillSchedule.boTuanLuot(QL, a, {})) === null, 'RKC: có điểm một phần vẫn Xoá lịch phần chưa thi');
     assert(one(`SELECT raw_score FROM assessment_scores WHERE attempt_id = ? AND skill = 'listening'`, a)?.raw_score === 30, 'điểm L giữ');
     dung(b);
     skillSchedule.boTuanLuot(QL, b, {});

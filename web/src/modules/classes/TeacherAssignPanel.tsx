@@ -1,3 +1,4 @@
+import { MuiChev } from '../../ui/HangNhom.tsx';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { ApiError, api, invalidateGop } from '../../lib/api.ts';
@@ -218,7 +219,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
             <div>
               <button type="button" className="link appearance-none border-0 bg-transparent p-0 text-xs" aria-expanded={moDaDay}
                 onClick={() => setMoDaDay((v) => !v)}>
-                {moDaDay ? '▾' : '▸'} {t('Đã từng dạy lớp này ({n})', { n: data.past.length })}
+                <MuiChev mo={moDaDay} cl="mr-0.5 inline-block align-[-3px]" /> {t('Đã từng dạy lớp này ({n})', { n: data.past.length })}
               </button>
               {moDaDay && (
                 <ul className="m-0 mt-1.5 list-none space-y-1 p-0">

@@ -2,7 +2,7 @@ import { useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
-import { ChuLuu, LOP_DA_LUU, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
+import { ChuLuu, LOP_DA_LUU, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { Nhan, NhanKq, NhanLich } from '../../ui/Nhan.tsx';
@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { laBand } from '../students/StudentPlanPanel.tsx';
 import type { TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
-import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, type HuongSauThi } from '@shared/domain/index.ts';
+import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, luuRoiTiep, type HuongSauThi } from '@shared/domain/index.ts';
 import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { LuaChonRadio, gioVnNay } from './PanelBaoPhTvv.tsx';
@@ -26,7 +26,7 @@ type Chon = HuongSauThi;
 /**
  * SAU THI (UI-CV-TVV, mockup `thiet-ke/v5/tvv.html` panelSau; C16, T09, N6) — MỘT panel hai bước cho việc "Cập nhật KQ thi thật" và "Chọn bước tiếp":
  *  ① Kết quả thi thật L R W S (Overall máy tính) LƯU RIÊNG — chưa cần chọn bước tiếp; "Không thi" vẫn có (đường sẵn có).
- *  ② Bước tiếp mở sau khi có điểm; hạn = ngày có KQ + 7 (máy chủ). P7 (N12): hai hướng — Tạm dừng/ Kết thúc học (hộp N11 tại chỗ, ô "Có thể quay lại học" tắt sẵn) ·
+ *  ② Bước tiếp mở sau khi có điểm; hạn = ngày có KQ + 7 (máy chủ). P7 (N12): hai hướng — Tạm dừng / Kết thúc học (hộp N11 tại chỗ, ô "Có thể quay lại học" tắt sẵn) ·
  *     Lộ trình mới (nội dung panel đổi thành `PanelLoTrinhMoi`, ‹ Sau thi).
  * Cùng API với `KetQuaThiThatPanel` / `PanelBuocTiep` (máy chủ kiểm quyền, luật); Lịch sử thay nội dung panel (← Sau thi).
  */
@@ -104,16 +104,17 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const daChonTruoc = !!b.chon;
   const khoaBuoc2 = !coKq || moDiem || !b.coTheChon || daChonTruoc || !!daChot;
   const loiB = !chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : [];
-  const chot = async () => {
+  const chot = async (): Promise<boolean> => {
     lf.bam();
-    if (loiB.length) return;
+    if (loiB.length) return false;
     setTt('dang'); setLoi(null);
     try {
-      /* "Tạm dừng/ Kết thúc học": ô bật → `tam_dung`, tắt → `ket_thuc` (máy chủ ghi như cũ). */
+      /* "Tạm dừng / Kết thúc học": ô bật → `tam_dung`, tắt → `ket_thuc` (máy chủ ghi như cũ). */
       await api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: dung.quayLai ? 'tam_dung' : 'ket_thuc', ghiChu: ghiChu.trim() || null, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined });
       LAM_MOI.forEach((k) => invalidate(k));
       setTt(null); setDaChot(gioVnNay()); bt.reload(); onDaLam();
-    } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
+      return true;
+    } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); return false; }
   };
   const hoanTac = async () => {
     setTt('dang'); setLoi(null);
@@ -121,6 +122,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
     catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
+  const chuChot = chon === 'dung' ? (dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc) : t('Chốt bước tiếp');
   const chan = daChot ? {
     huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: daChot })}</span>,
     phu: (b.hen || b.hoanTacDuoc) ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button> : null,
@@ -134,7 +136,13 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
     huy: null, daSua: !!chon || !!ghiChu.trim(), conThieu: lf.conThieu(loiB),
     trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" />
       : <span className="font-semibold text-soon">{t('Bước tiếp chưa chốt')}</span>,
-    chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chon === 'dung' ? (dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc) : t('Chốt bước tiếp')}</button>,
+    /* GD-18 (lời 36, dòng 40c ⓪): mở từ danh sách còn việc kế → "Đóng" · nút việc · "{việc} · việc tiếp ›" (chính); mở lẻ → nút việc (chính). */
+    ...(onTiep ? {
+      phu: <><NutDongPanel busy={tt === 'dang'} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chuChot}</button></>,
+      chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luuRoiTiep(chot, onTiep)}>{t('{viec} · việc tiếp ›', { viec: chuChot })}</button>,
+    } : {
+      chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chuChot}</button>,
+    }),
   };
   if (chon === 'lo_trinh_moi' && !khoaBuoc2) {
     return (
@@ -237,15 +245,16 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   const lfC = useLoiForm();
   const gia = kieu === 'ngay' ? ngayThi : thang;
   const loiC = gia ? [] : [{ khoa: kieu, nhan: kieu === 'ngay' ? t('Ngày thi') : t('Tháng thi'), lyDo: kieu === 'ngay' ? t('Chọn ngày thi') : t('Chọn tháng thi') }];
-  const luu = async () => {
+  const luu = async (): Promise<boolean> => {
     lfC.bam();
-    if (loiC.length) return;
+    if (loiC.length) return false;
     setTt('dang'); setLoi(null);
     try {
       await api.put(`/hoc-vien-lop/lich-thi/${cycleId}`, kieu === 'ngay' ? { ketLuan: 'chot-ngay', ngay: ngayThi } : { ketLuan: 'chuyen-thang', thang });
       LAM_MOI.forEach((k) => invalidate(k));
       setTt(null); setXong(gioVnNay()); onDaLam();
-    } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
+      return true;
+    } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); return false; }
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
   return (
@@ -254,7 +263,13 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
       chan={xong ? { huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
         chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> }
         : { huy: null, daSua: !!gia, conThieu: lfC.conThieu(loiC), trai: <ChuLuu tt={tt ?? 'nhap'} loi={loi} />,
-          chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{tt === 'loi' ? t('Thử lại') : t('Chốt ngày')}</button> }}>
+          /* GD-18 (lời 36): còn việc kế → "Đóng" · Chốt ngày · "Chốt ngày · việc tiếp ›" (chính). */
+          ...(onTiep && tt !== 'loi' ? {
+            phu: <><NutDongPanel busy={tt === 'dang'} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Chốt ngày')}</button></>,
+            chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luuRoiTiep(luu, onTiep)}>{t('Chốt ngày · việc tiếp ›')}</button>,
+          } : {
+            chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{tt === 'loi' ? t('Thử lại') : t('Chốt ngày')}</button>,
+          }) }}>
       <div className="flex flex-col gap-4 pt-4">
         <Truong nhan={t('Chốt')} as="div">
           <LuaChonRadio ten={`chot-${cycleId}`} nhan={t('Chốt')} value={kieu} disabled={!!xong} onChange={setKieu}

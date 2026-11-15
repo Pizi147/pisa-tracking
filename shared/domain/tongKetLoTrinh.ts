@@ -31,7 +31,7 @@ export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk 
 }
 
 /**
- * BƯỚC TIẾP SAU THI — OV-13m; P7 SV-LO-TRINH (N12): web còn HAI hướng (`HUONG_SAU_THI`): "Tạm dừng/ Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
+ * BƯỚC TIẾP SAU THI — OV-13m; P7 SV-LO-TRINH (N12): web còn HAI hướng (`HUONG_SAU_THI`): "Tạm dừng / Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
  * tắt sẵn → máy chủ ghi `tam_dung` hoặc `ket_thuc` theo ô) · "Lộ trình mới". `LUA_CHON_SAU_THI` = khoá máy chủ nhận. `hoc_tiep` / `hoc_lai` (OV-8a) còn trong
  * dữ liệu cũ + API cũ — đọc, hoàn tác được, web không bày.
  */
@@ -43,7 +43,7 @@ export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = {
 };
 export const HUONG_SAU_THI = ['dung', 'lo_trinh_moi'] as const;
 export type HuongSauThi = (typeof HUONG_SAU_THI)[number];
-export const NHAN_HUONG_SAU_THI: Record<HuongSauThi, string> = { dung: t('Tạm dừng/ Kết thúc học'), lo_trinh_moi: t('Lộ trình mới') };
+export const NHAN_HUONG_SAU_THI: Record<HuongSauThi, string> = { dung: t('Tạm dừng / Kết thúc học'), lo_trinh_moi: t('Lộ trình mới') };
 /** "Đã xong · OVR 6.5 · Đạt Target" — MỘT hàm nhãn cho Các lộ trình, đầu hồ sơ, panel Bước tiếp và dòng Công việc (OV-13m). */
 /* Mockup bước tiếp chủ SP duyệt 15/10 dùng đúng chữ "Đã xong" cho lộ trình có kết quả thi (khác trạng thái việc "Xong" của S3) — chỉ ở file này. */
 export const CHU_DA_XONG = t('Đã xong');
@@ -53,7 +53,7 @@ export function nhanDaXong(k: { khongThi: boolean; ovr: number | null; ketLuan: 
   const ds = k.khongThi ? [t('Không thi')] : [k.ovr !== null ? `OVR ${k.ovr.toFixed(1)}` : null, kl].filter((x): x is string => !!x);
   return (ngan ? ds : [CHU_DA_XONG, ...ds]).join(' · ');
 }
-/** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Tạm dừng/ Kết thúc học; chưa đạt / Không thi → Lộ trình mới (P7, sửa E9 — không trả `hoc_lai`); không có Target → không gợi ý. */
+/** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Tạm dừng / Kết thúc học; chưa đạt / Không thi → Lộ trình mới (P7, sửa E9 — không trả `hoc_lai`); không có Target → không gợi ý. */
 export function goiYSauThi(o: { khongThi: boolean; ketLuan: string | null }): HuongSauThi | null {
   if (o.khongThi || o.ketLuan === 'not_reached') return 'lo_trinh_moi';
   return o.ketLuan === 'reached' ? 'dung' : null;
