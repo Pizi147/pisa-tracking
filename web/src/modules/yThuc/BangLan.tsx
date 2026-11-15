@@ -263,10 +263,11 @@ export function ChipBac({ bac, ten, children }: { bac: number; ten: string; chil
     return () => window.removeEventListener('keydown', esc);
   }, [mo]);
   return (
-    <span ref={hop} className="relative inline-block">
+    <span ref={hop} className="relative inline-block max-w-full">
       <button type="button" aria-expanded={mo} aria-haspopup="dialog" aria-label={`${t('Thang xử lý vi phạm')} · ${ten} · ${nhan}`} onClick={() => setMo((x) => !x)}
-        className={`inline-flex h-6 items-center gap-1 rounded-md border bg-transparent px-2 text-xs appearance-none max-sm:h-11 ${bac > 0 ? 'font-semibold text-slate-100' : 'font-medium text-slate-400'}`} style={{ borderColor: 'var(--line-strong)' }}>
-        {nhan}<span aria-hidden className="text-xs text-slate-500">▾</span>
+        /* KHONG-TRAN-CHU (chủ SP 15/11): mốc dài ("REPORT 4 + MEETING CX/GĐCN") xuống dòng TRONG khung — cao tự giãn, căn trái, ▾ giữ cuối; không cao cố định. */
+        className={`inline-flex min-h-6 max-w-full items-center gap-1 rounded-md border bg-transparent px-2 py-[3px] text-left text-xs leading-snug appearance-none max-sm:min-h-11 ${bac > 0 ? 'font-semibold text-slate-100' : 'font-medium text-slate-400'}`} style={{ borderColor: 'var(--line-strong)' }}>
+        <span className="min-w-0">{nhan}</span><span aria-hidden className="shrink-0 text-xs text-slate-500">▾</span>
       </button>
       {mo && (
         <span role="dialog" aria-label={t('Thang xử lý vi phạm')} className="absolute left-0 top-full z-40 mt-2 grid w-[min(460px,85vw)] gap-2.5 rounded-[10px] border px-3.5 py-3 shadow-xl"
