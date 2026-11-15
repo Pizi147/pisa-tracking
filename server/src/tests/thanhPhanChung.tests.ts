@@ -21,6 +21,28 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   console.log('\nPR-NEN · Thành phần chung');
   const H = '2026-09-28'; // Thứ Hai
 
+  check('OCHON-GAN-DAY · nhóm "Gần đây": dời (không nhân đôi) mục vừa chọn lên đầu, gần nhất trước, tối đa 3; danh sách ngắn / đang gõ / hỏng localStorage → như cũ', () => {
+    const N = { ganDay: 'Gần đây', khac: 'Khác' };
+    const rows = Array.from({ length: 10 }, (_, i) => ({ id: i + 1, ten: `Người ${i + 1}`, ...(i < 3 ? { nhom: 'GV của lớp' } : {}) }));
+    const x = d.xepGanDay(rows, [{ id: 7, ten: 'Người 7' }, { id: 2, ten: 'Người 2' }, { id: 99, ten: 'Vắng' }], N);
+    assert(x.length === 10 && x.map((r: any) => r.id).join() === '7,2,1,3,4,5,6,8,9,10', x.map((r: any) => r.id).join());
+    assert(x[0].nhom === 'Gần đây' && x[1].nhom === 'Gần đây' && x[2].nhom === 'GV của lớp' && x[5].nhom === 'Khác', 'nhóm: Gần đây → nhóm cũ → Khác (≥ 2 nhóm để có nhãn)');
+    assert(d.xepGanDay(rows.slice(0, 7), [{ id: 2, ten: 'Người 2' }], N).map((r: any) => r.id).join() === '1,2,3,4,5,6,7', '≤ 7 mục (⑤ A6): giữ nguyên');
+    assert(d.xepGanDay(rows, [{ id: 2, ten: 'Tên khác' }], N)[0].id === 1, 'khớp id + tên (ô ds đánh id theo vị trí)');
+    assert(d.xepGanDay(rows.map((r: any) => (r.id === 2 ? { ...r, tat: 'đã đủ' } : r)), [{ id: 2, ten: 'Người 2' }], N)[0].id === 1, 'mục tắt không đưa lên');
+    const boToi = d.xepGanDay(rows, [{ id: 5, ten: 'Người 5' }, { id: 2, ten: 'Người 2' }], N, 5);
+    assert(boToi[0].id === 2 && boToi.filter((r: any) => r.nhom === 'Gần đây').length === 1 && boToi.filter((r: any) => r.id === 5).length === 1, 'có dòng "Tôi": người dùng hiện tại không lên Gần đây, vẫn còn một lần trong danh sách');
+    let g: any[] = [];
+    for (const id of [1, 2, 3, 2, 4]) g = d.themGanDay(g, { id, ten: `Người ${id}` });
+    assert(g.map((m) => m.id).join() === '4,2,3', `gần nhất trước, không trùng, tối đa ${d.GAN_DAY_TOI_DA}: ${JSON.stringify(g)}`);
+    for (const bad of [null, '', '{', '"x"', '[{"id":"1","ten":2}]']) assert(JSON.stringify(d.docChuoiGanDay(bad)) === '[]', `hỏng → rỗng: ${bad}`);
+    const pp = doc('web/src/ui/PeoplePicker.tsx');
+    assert(/for \(const r of rowsHien\) out\.push/.test(pp) && /term\.trim\(\) \? rows : xepGanDay\(/.test(pp), 'phím ↑ ↓ Enter đi theo `options` dựng từ danh sách đã xếp; đang gõ → không nhóm Gần đây');
+    assert((pp.match(/localStorage\.(get|set)Item/g) ?? []).length === 2 && /try \{ return khoaGanDay \?/.test(pp) && /try \{ localStorage\.setItem/.test(pp), 'localStorage bọc try/catch');
+    assert(/pisa-gan-day:\$\{session\.user\.id\}/.test(pp) && !/api\.(get|post)\([^)]*gan/.test(pp), 'theo người dùng, không gọi máy chủ');
+    assert(/coToi \? session\?\.user\?\.id : undefined/.test(pp) && /if \(coToi\) out\.push\(\{ kind: 'toi' \}\)/.test(pp), 'bỏ chính mình khỏi Gần đây đúng khi ô có dòng "Tôi"');
+  });
+
   check('QC-Q82 · Nhập hộ điểm: "Bạn nhập hộ · " đứng đầu câu khi việc không phải của mình; trước tuần Test = máy tự dời về tuần này (NHAP-DIEM-a, không hỏi, không nhờ QL)', () => {
     const q = (o: any) => d.quyCheNhapDiem({ thuong: false, homNay: H, ...o }).chu as string;
     const truoc = q({ tuanThi: '2026-10-12', nhapHo: true });
