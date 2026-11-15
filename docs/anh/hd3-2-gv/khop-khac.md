@@ -10,7 +10,7 @@ Viết tắt nguồn: `L1`…`L4` = `luat/1-test-nhap-diem.md` … `luat/4-lop-l
 
 - **21 thẻ việc theo đúng tên dòng việc trên web** (15 mục 8.1), mỗi thẻ khai `viecWeb` → "?" ở dòng việc mở đúng thẻ; mỗi thẻ ≤ 90 chữ (HD-DAI), hạn bằng mã chèn (HD-HAN).
 - `maViec` tách ba cặp cùng nhóm máy chủ: **Chọn PA** (`chonPa`) · **Bàn giao đổi GV** (`ban_giao_gv:`) · **Nhập điểm MT cũ** (`lich-su:`).
-- **11 trường hợp** (15 mục 4.7), mỗi câu có nguồn; trường hợp có thẻ liên quan thì có link "Thẻ việc: …".
+- **12 trường hợp** (15 mục 4.7), mỗi câu có nguồn; trường hợp có thẻ liên quan thì có link "Thẻ việc: …".
 - Panel GV mở được có `the` (13 panel) → "?" ở panel đó mở thẳng thẻ.
 - Nhịp Tôi muốn… đổi đúng 4.3: Hằng ngày · Sau tuần Test · 2 tuần một lần · Hằng tháng · Khi có (cả Head tutor).
 - Danh sách chờ (phép HD-DU): bỏ 16 loại việc + 13 panel đã có thẻ. Còn chờ: việc của TVV, QL, Admin (HD3-3 … HD3-5) và `ngan-case` (một panel nhiều loại việc).
@@ -73,6 +73,18 @@ Viết tắt nguồn: `L1`…`L4` = `luat/1-test-nhap-diem.md` … `luat/4-lop-l
 2. **"Chỉ cho tôi"** chỉ có `data-hd="cv-dong"` dùng chung cho mọi dòng việc → chỉ thẻ Nhập điểm giữ nút; thêm `data-hd` theo loại dòng / tab Công việc là việc của PR giao diện.
 3. **Thẻ không phải việc** (Ghi vi phạm, Tạo Case tay, Đề xuất chuyển lớp, Sửa thông tin, Thêm học viên, Lịch thi…) giữ chữ đã đối chiếu 13/11 (chỉ dòng Làm); chưa đổi sang khuôn bảy dòng vì không có dòng việc / hạn. Nói nếu cần.
 4. Head tutor chỉ-vai: không Công việc (`nav.ts:16-37`) → giữ 2 thẻ màn; dạy lớp thì có vai Giáo viên và đọc thẻ GV (lời 16).
+
+## Sửa theo rà PTA Overhaul (15/11)
+
+| # | Sửa | Nguồn |
+|---|---|---|
+| 1 | **Ghi kết quả PA** viết theo LƯỚI (GD-20c): mỗi dòng **Tiến triển (2 tuần)** + **Nhận xét**; điều chỉnh / kỳ cuối / học theo buổi: **Mở đầy đủ**; **Lưu · việc tiếp ›**, **Lưu nháp**; Làm sai: dòng đã lưu **Sửa**; Khi nào có: nhiều em gộp một lưới (một em: form trong Case). Thêm `tep` LuoiKetQuaPa.tsx, CapNhatTuan.tsx, CasePanel.tsx | `LuoiKetQuaPa.tsx:185-288`; `gopViec.ts:78`; `PanelViec.tsx:134-138` |
+| 2 | **Viết Báo cáo PH**: lối chính Công việc › Vận hành; Hồ sơ lớp › Báo cáo PH thành lối tắt | lời 20; `mywork.ts:1437-1465` |
+| 3 | **Xử lý vi phạm**: một em chọn Cách xử lý, nhiều em (lô) chỉ Nâng 1 bậc; Không xử lý ghi lý do; Sau đó hai ý (TVV báo PH · người ghi nhận lý do, vi phạm vẫn tính); đổi ý ở tab Ý thức | lời 48; `luat/3` mục 6 #10; `XacNhanXuLyPanel.tsx`, `LoYThucPanel.tsx` |
+| 4 | Hạn ngoài cấu hình: hằng một nguồn `HAN_HANG` (`shared/domain/hanMacDinh.ts`) + mã chèn `{hang:…}`: Tình hình học tập 3 ngày (`tinhHinh.ts` dùng hằng), Khai bậc 14 ngày (`mywork.ts` SQL + câu gợi ý + `quyCheKhaiBac` dùng hằng — hết "14 ngày" gõ tay), Mini Test 2 ngày (`cuoiKhoa.ts lichBoTro` dùng hằng). Phép HD-HAN soát cả `{hang:…}` | 15 mục 8.2 |
+| 5 | **Bàn giao chuyển lớp**: nhắc **Chèn** câu đã ghi (GD-20b) | `BanGiaoPanel.tsx:223` |
+| 6 | Trường hợp **Nhập sai**: thùng rác — QL hoặc người xoá được thì khôi phục được | `server/src/platform/khoiPhucRac.ts:26-40`; luat/4 L-24 |
+| 7 | Trường hợp 12 **Em chưa có TVV / thiếu Target**: ô Target "Chưa có" + **Đề xuất sửa** (GD-7, đã merge); việc TVV về QL chi nhánh; TVV bổ sung Target ở Bổ sung hồ sơ thiếu | `DauHoSo.tsx:47-56`; `viecTvv.ts:18-23, 121-144` |
 
 ## Ảnh (tài khoản demo GV Trần Ngọc Hà, ngày demo 14/09/2026, phông Be Vietnam Pro đã kiểm)
 

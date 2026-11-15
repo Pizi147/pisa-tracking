@@ -9,7 +9,7 @@
  * Sửa / Rút khi chưa có kết quả (người gửi, QL); Hoàn tác ngay sau gửi (≤ 2 phút, chưa có kết quả) xoá hẳn. Mọi đổi ghi `writeAudit`.
  */
 import { DS_JSON, db, tx } from '../db.ts';
-import { PERMISSIONS, addDaysIso, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc } from '../../../shared/domain/index.ts';
+import { HAN_HANG, PERMISSIONS, addDaysIso, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -24,8 +24,8 @@ export type ChieuTinhHinh = (typeof CHIEU_TINH_HINH)[number];
 export const NHAN_VIEC_TINH_HINH = 'Tình hình học tập';
 /** Ô chữ 10–500 ký tự (như N35: có bộ đếm ở web, quá thì không lưu). */
 const TOI_THIEU = 10, TOI_DA = 500;
-/** Hạn câu hỏi TVV → GVCN: 3 ngày tính cả ngày hỏi (hỏi T2 → hết T4). */
-export const hanHoiTinhHinh = (homNay: string): string => addDaysIso(homNay, 2);
+/** Hạn câu hỏi TVV → GVCN: `HAN_HANG.tinh_hinh` (3) ngày tính cả ngày hỏi (hỏi T2 → hết T4) — cùng số Hướng dẫn chèn (`{hang:tinh_hinh}`). */
+export const hanHoiTinhHinh = (homNay: string): string => addDaysIso(homNay, HAN_HANG.tinh_hinh - 1);
 /** Hoàn tác ngay sau gửi / trả lời: trong 2 phút, chưa ai làm bước sau. */
 const HOAN_TAC_MS = 2 * 60_000;
 const LO_EM = 8;

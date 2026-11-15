@@ -541,10 +541,10 @@ export async function runPrHdTests(t: any) {
   check('HD-HAN · dòng Hạn của thẻ không có số ngày / thứ gõ tay (dùng mã chèn {han:…}); mọi mã chèn có trong Hạn mặc định', () => {
     const loi: string[] = [];
     for (const { vai, v } of moiThe()) {
-      if (v.han && SO_TAY.test(v.han.replace(/\{han:[\w.]+\}/g, ''))) loi.push(`${vai}/${v.id}: Hạn gõ tay "${v.han}"`);
-      for (const d of dongThe(v)) if (hd.chenHan(d).includes('{han:')) loi.push(`${vai}/${v.id}: mã chèn sai "${d}"`);
+      if (v.han && SO_TAY.test(v.han.replace(/\{hang?:[\w.]+\}/g, ''))) loi.push(`${vai}/${v.id}: Hạn gõ tay "${v.han}"`);
+      for (const d of dongThe(v)) if (/\{hang?:/.test(hd.chenHan(d))) loi.push(`${vai}/${v.id}: mã chèn sai "${d}"`);
     }
-    for (const { vai, x } of moiTinhHuong()) for (const d of dongTh(x)) if (hd.chenHan(d).includes('{han:')) loi.push(`${vai}/${x.id}: mã chèn sai "${d}"`);
+    for (const { vai, x } of moiTinhHuong()) for (const d of dongTh(x)) if (/\{hang?:/.test(hd.chenHan(d))) loi.push(`${vai}/${x.id}: mã chèn sai "${d}"`);
     assert(SO_TAY.test('Hết thứ Tư tuần sau') && SO_TAY.test('5 ngày') && !SO_TAY.test('Hết {han:cham_test}'.replace(/\{han:[\w.]+\}/g, '')), 'mẫu SO_TAY');
     assert(!loi.length, loi.join(' · '));
   });
@@ -603,6 +603,7 @@ export async function runPrHdTests(t: any) {
     assert(hd.chenHan('{han:xac_nhan_case.ngayGap}') === `${han.hanTai('xac_nhan_case').ngayGap} ngày`, hd.chenHan('{han:xac_nhan_case.ngayGap}'));
     assert(hd.chenHan('{han:ghi_kq_pa}') === `${han.hanTai('ghi_kq_pa').kyTuan} tuần`, hd.chenHan('{han:ghi_kq_pa}'));
     assert(hd.chenHan('{han:khong_co} {han:cham_test.ngay}') === '{han:khong_co} {han:cham_test.ngay}', 'mã / trường lạ giữ nguyên cho HD-HAN bắt');
+    assert(hd.chenHan('{hang:tinh_hinh} · {hang:khong_co}') === `${han.HAN_HANG.tinh_hinh} ngày · {hang:khong_co}`, 'mã chèn hằng ngoài cấu hình (15 mục 8.2)');
     const cua = hd.theCuaViec('gv', 'score', true);
     assert(cua?.the.id === 'nhap-diem' && cua.vai === 'gv', 'GV mở Nhập điểm → thẻ Nhập điểm của GV');
     assert(hd.theCuaViec('ql', 'score', false)?.vai === 'gv', 'QL mở việc Nhập điểm của GV → thẻ gốc của GV (dải làm thay)');
