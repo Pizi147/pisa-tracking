@@ -25,10 +25,11 @@ for (const rong of [1440, 375]) {
   const phong = await p.evaluate(() => document.fonts.check('600 14px "Be Vietnam Pro"'));
   /* Nhãn hạn nhỏ nhất có chữ "quá hạn n ngày" / "Quá hạn · n ngày" / "hôm nay" (đang hiện) — vùng phóng to quanh nó. */
   const vung = await p.evaluate(() => {
-    const re = /quá hạn( ·)? ?\d+ ngày|quá hạn$|hạn hôm nay|^hôm nay$/i;
-    const ds = [...document.querySelectorAll('main span, main b, main div, aside span, [role=dialog] span')]
-      .filter((e) => re.test(e.textContent.trim()) && e.textContent.trim().length < 40 && e.getBoundingClientRect().width > 0);
-    const e = ds.sort((a, b) => a.textContent.length - b.textContent.length)[0];
+    const tim = (re) => [...document.querySelectorAll('main span, main b, main div, aside span, [role=dialog] span')]
+      .filter((e) => re.test(e.textContent.trim()) && e.textContent.trim().length < 40 && e.getBoundingClientRect().width > 0)
+      .sort((a, b) => a.textContent.length - b.textContent.length)[0];
+    /* Ưu tiên nhãn hạn ("quá hạn 5 ngày"), không phải số đếm ("3 quá hạn"). */
+    const e = tim(/quá hạn( ·)? ?\d+ ngày/i) ?? tim(/^hạn hôm nay|^hôm nay$/i);
     if (!e) return null;
     e.scrollIntoView({ block: 'center' });
     const r = e.getBoundingClientRect();
