@@ -62,6 +62,7 @@ export type DongSoLieu = {
   /** GD-21: kỹ năng của Case (cột Case chỉ ghi kỹ năng). */
   kyNang?: string | null;
   luot?: string | null;
+  moTa?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở lượt mở Case (máy chủ `rowsFor('case')`). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** UI-HO-SO-GV: dòng kết quả — mốc so, kết luận (tab Chưa đạt · Đạt · Vượt). Điểm từng kỹ năng nay ở `diemHv` (PANEL-MC). */
@@ -173,12 +174,16 @@ function DaiBuoc({ hien, loc, soLoc, datLoc }: {
   return (
     <div className="mb-3">
       {/* Ngoặc "Chưa có PA" trùm hai bước đầu (⑬ B1): viền mảnh, chữ giữa đường viền trên; "Bỏ lọc bước" ở hàng ngoặc, chỉ khi đang lọc. */}
-      <div className="relative mx-2 mb-0 mt-3 h-[18px] w-[calc(50%-0.5rem)] rounded-t-md border border-b-0" style={{ borderColor: chuaPa ? 'var(--accent)' : 'var(--line-strong)' }}>
-        <button type="button" aria-pressed={chuaPa} onClick={() => datLoc(chuaPa ? [] : [...dauHai])}
-          className={`absolute left-1/2 top-0 inline-flex min-h-[28px] -translate-x-1/2 -translate-y-1/2 appearance-none items-center whitespace-nowrap border-0 bg-[color:var(--surface)] px-2 text-[13px] font-semibold max-sm:min-h-[44px] ${chuaPa ? 'text-[color:var(--accent)]' : 'text-slate-300'}`}>
-          {t('Chưa có PA')} · <span className="ml-1 tabular-nums">{tong}</span>
-        </button>
-        {loc.length > 0 && <button type="button" className="link absolute left-[calc(200%+0.5rem)] top-0 -translate-y-1/2 appearance-none whitespace-nowrap border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" onClick={() => datLoc(null)}>{t('Bỏ lọc bước')}</button>}
+      {/* Ngoặc "Chưa có PA" (⑬ B1): trùm đúng hai ô đầu — mép trái ô 1 tới mép phải ô 2 (cùng lưới 4 cột + 1 px viền của dải), viền màu nhấn, chữ đậm, số nổi. */}
+      <div className="grid grid-cols-4 px-px max-sm:grid-cols-2">
+        <div className="relative col-span-2 mt-3 h-[18px] rounded-t-md border-x border-t-2" style={{ borderColor: 'var(--accent)' }}>
+          <button type="button" aria-pressed={chuaPa} onClick={() => datLoc(chuaPa ? [] : [...dauHai])}
+            className="absolute left-1/2 top-0 inline-flex min-h-[28px] -translate-x-1/2 -translate-y-1/2 appearance-none items-center gap-1.5 whitespace-nowrap rounded-md border-0 bg-[color:var(--surface)] px-2.5 text-[14px] font-bold text-[color:var(--accent)] max-sm:min-h-[44px]"
+            style={chuaPa ? { background: 'var(--accent-soft)' } : undefined}>
+            {t('Chưa có PA')} · <span className="text-[17px] tabular-nums">{tong}</span>
+          </button>
+        </div>
+        {loc.length > 0 && <button type="button" className="link col-span-2 mt-3 self-start justify-self-end appearance-none whitespace-nowrap border-0 bg-transparent p-0 text-[13px] max-sm:min-h-[44px]" onClick={() => datLoc(null)}>{t('Bỏ lọc bước')}</button>}
       </div>
       <div role="group" aria-label={t('Lọc theo bước')} className="grid grid-cols-2 overflow-hidden rounded-lg border sm:grid-cols-4" style={{ borderColor: 'var(--line-strong)' }}>
         {BUOC_CASE.map((b, i) => (
@@ -219,6 +224,13 @@ const doanDiem = (d: NonNullable<DongSoLieu['diemCase']>): ReactNode[] => [
 const LamDongSoLieu = lazyTai(() => import('../modules/worklist/LamDongSoLieu.tsx').then((m) => ({ default: m.LamDongSoLieu })));
 
 
+/** GD-21 (chủ SP 15/11): mô tả Case cắt THEO CÂU — lấy câu đầu (nguyên), thêm câu sau chừng nào còn vừa ~170 ký tự; không "…" giữa chữ. */
+function catCau(s: string, toiDa = 170): string {
+  const cau = s.replace(/[ \t\r\n]+/g, ' ').trim().match(/[^.!?;]+[.!?;]?/g) ?? [s];
+  let out = '';
+  for (const c of cau) { if (out && (out + c).length > toiDa) break; out += c; }
+  return out.trim();
+}
 /** GD-21: hàng của bảng Case theo bước — dải nhóm (bước) hoặc một Case. */
 type HangCase = { k: string; ten: string; conCho: number; tre: number } | { k: string; r: DongSoLieu & { xong?: string } } | { k: string; them: number; nhom: string };
 const COT_CASE: readonly CotBang[] = [
@@ -422,6 +434,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ QL duyệt')}>{t('chờ QL')}</span>}
         </span>
         <span className="whitespace-nowrap text-[13px] text-slate-400">{r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b> : r.diemCase && <Doan ds={[r.diemCase.so.toFixed(1), r.diemCase.kyVong != null && t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })]} />}</span>
+        {r.moTa ? <span className="max-w-[68ch] text-[13px] leading-snug text-slate-300 [text-wrap:pretty]">{catCau(r.moTa)}</span> : <span className="text-[13px] italic text-slate-500">{t('Chưa có mô tả')}</span>}
       </span>
     );
     if (k === 'gv') return <span className="text-[13px]">{r.nguoiId != null && r.nguoiId === toi ? <b className="font-semibold">{t('Bạn')}</b> : r.nguoi ?? t('Chưa có người phụ trách')}</span>;

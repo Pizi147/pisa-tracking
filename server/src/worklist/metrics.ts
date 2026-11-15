@@ -144,6 +144,8 @@ export type MetricRow = {
   kyNang?: string | null;
   /** GD-21: lượt của Case (MT2…) — khi chưa có mốc điểm. */
   luot?: string | null;
+  /** GD-21: mô tả Case (`sos_cases.summary`, đã nạp cùng câu) — hàng Case ghi dưới khuôn MTn · kỹ năng · SOS. */
+  moTa?: string | null;
   /** 6c-2 (#632 XM-1): dòng Case — điểm kỹ năng ở mốc mở / lặp Case gần nhất (band, kỳ vọng lượt đó, "MT2" / "Progress Test"). */
   diemCase?: { so: number; kyVong: number | null; luot: string | null; nhan?: string | null } | null;
   /** R1-EN-2: dòng thi thật — ngày dd/mm; web ghép "Thi thật {ngay}" bằng t() thay `ngCanh`. */
@@ -240,7 +242,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
       }
     } else if (unit === 'case') {
       const ds = conn.prepare(
-        `SELECT sc.id, sc.title, COALESCE(sc.category, sc.topic) AS mon, sc.category, sc.topic, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code,
+        `SELECT sc.id, sc.title, sc.summary, COALESCE(sc.category, sc.topic) AS mon, sc.category, sc.topic, cy.programme_code AS ct, s.id AS sid, s.full_name, s.student_code,
                 sc.status, sc.detected_at, sc.urgency, sc.sos_level, sc.kck, sc.origin_kind, a.attempt_no, a.kind AS attempt_kind, u.full_name AS nguoi, sc.owner_user_id,
                 COALESCE(cur.class_id, a.class_id) AS lop_id, lc.code AS lop
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
@@ -282,6 +284,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: ten,
           viec: v?.viec ?? null, tinhTrang: v?.tinhTrang ?? null, diemCase: diemCase.get(r.id) ?? null, buoc: v?.buoc ?? null,
           sos: r.sos_level > 0 ? { muc: r.sos_level, tam: false } : null, kyNang: r.mon ? tenMon(r.ct ?? null, r.mon).replace(' Task', '') : null,
+          moTa: r.summary ? String(r.summary) : null,
           luot: r.attempt_kind ? nhanDot(r.attempt_kind, r.attempt_no ?? null) : null,
         });
       }
