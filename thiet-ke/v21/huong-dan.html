@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Hướng dẫn V3 · v21 ⑭</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v21.css">
+<link rel="stylesheet" href="huong-dan.css">
+<style>/* V22 (lời 43): hạn chỉ bằng màu — tắt ⚠ của v21.css trong mockup này */ .han-v.qua::before, .han-v.nay::before { content:none; }</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-cham" viewBox="0 0 16 16"><path d="M3 13l2-5 6-6 3 3-6 6z"/></symbol>
+  <symbol id="i-gop" viewBox="0 0 16 16"><path d="M2 3h12v10H2zM2 7h12M6 3v10"/></symbol>
+  <symbol id="i-lop" viewBox="0 0 16 16"><rect x="2.5" y="2.5" width="11" height="8" rx="1"/><path d="M5 13.5l3-3 3 3M5.5 5.5h5M5.5 7.8h3"/></symbol>
+  <symbol id="i-xuong" viewBox="0 0 16 16"><path d="M4 6l4 4 4-4"/></symbol>
+  <symbol id="i-tim" viewBox="0 0 16 16"><circle cx="7" cy="7" r="4.5"/><path d="M10.5 10.5L14 14"/></symbol>
+  <symbol id="i-chuong" viewBox="0 0 16 16"><path d="M4 11V7a4 4 0 0 1 8 0v4l1.5 1.5h-11zM6.5 14a1.5 1.5 0 0 0 3 0"/></symbol>
+  <symbol id="i-chi" viewBox="0 0 16 16"><circle cx="8" cy="8" r="5.5"/><circle cx="8" cy="8" r="1.5"/><path d="M8 1v2.5M8 12.5V15M1 8h2.5M12.5 8H15"/></symbol>
+  <symbol id="i-nguoi" viewBox="0 0 16 16"><circle cx="8" cy="5.5" r="2.5"/><path d="M3 14c.5-3 2.5-4.5 5-4.5s4.5 1.5 5 4.5"/></symbol>
+  <symbol id="i-in" viewBox="0 0 16 16"><path d="M4.5 6V2.5h7V6M4.5 11.5h-2v-5h11v5h-2M4.5 9.5h7v4h-7z"/></symbol>
+  <symbol id="i-case" viewBox="0 0 16 16"><path d="M4 14V2m0 1h8l-2 3 2 3H4"/></symbol>
+</svg>
+
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v21 ⑭ · Hướng dẫn V3 — nút "?" trả lời đúng thứ đang mở</h1>
+    <p>Đề bài <code>docs/superpowers/specs/2026-11-13-overhaul-v6/15-huong-dan-v3.md</code> mục 5 (R14.1–R14.11), hướng B (lời 54, 55). Nền đã duyệt: HD-V2 <code>thiet-ke/v14/huong-dan.html</code> (nút "?", KhungPanel 480 phủ nền, ô tìm, tab gạch chân, danh sách gập / mở, "Chỉ cho tôi"). Token + thành phần: <code>v21.css</code> (chỉ đọc) + <code>huong-dan.css</code>. V22: hạn chỉ bằng màu.</p>
+    <p>Dữ liệu bịa, cùng bộ ①: GV <b>Đinh Thu Hằng</b> (chủ nhiệm MB FT 101, MB FOU 12; dạy Listening, Reading; Speaking ở MB FT 108) · TVV <b>Đặng Hải Yến</b> · QL <b>Phan Hữu Toàn</b> · CX <b>Lý Thu Trang</b>. Hôm nay thứ Hai <b>14/09/2026 · W3 SEP</b>. Chữ trong mọi thẻ là chữ THẬT theo <code>luat/0</code>–<code>4</code>, bảng câu quy chế ⑤ và lời 12–53; số ngày ở dòng <b>Hạn</b> lấy từ cấu hình "Hạn mặc định" (ghi chú mục 4). Nền vàng viền đứt = chú thích cho người duyệt, không lên web.</p>
+    <p><b>Bấm thử:</b> dòng gập / mở ở mọi danh sách · bộ lọc nhịp (K5) · dải "Có gì mới" (K8b) · nút Tối / Sáng.</p>
+    <nav class="muc-mk" aria-label="Mục lục">
+      <a href="#k1">K1 · Tầng 1</a><a href="#k2">K2 · Biến thể</a><a href="#k3">K3 · Tầng 2</a><a href="#k4">K4 · Tầng 3</a><a href="#k5">K5 · Tôi muốn…</a><a href="#k6">K6 · Khi gặp…</a><a href="#k7">K7 · Tìm</a><a href="#k8">K8 · Có gì mới</a><a href="#k9">K9 · ⓘ quy chế</a><a href="#k10">K10 · Chỉ cho tôi · trang</a><a href="#k11">K11 · Trạng thái</a><a href="#k12">K12 · 375</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu cả trang"><button type="button" data-che="toi" aria-pressed="true">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <section class="khu" id="k1">
+    <h2>K1 · Tầng 1 — GV đang mở panel Nhập điểm, bấm "?" → thẻ việc đủ bảy dòng, chồng lên panel (R14.1)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Panel việc <b>vẫn mở bên dưới</b> (nền mờ, chữ đang gõ còn nguyên — KhungPanel như V2); Esc / ✕ chỉ đóng Hướng dẫn · <span class="so-mk">2</span>tab <b>Ở đây</b> chọn tầng SÂU NHẤT: việc đang mở → MỘT thẻ, đầu thẻ "Bạn đang mở: MB FT 104 · Nhập điểm Listening, Reading" (chữ lấy từ dòng việc, 0 câu đọc) · <span class="so-mk">3</span>bảy dòng khuôn cố định, mỗi dòng một câu, nhãn web in đậm; đọc ~10 giây, không cuộn ở 1440 · <span class="so-mk">4</span><b>‹ Việc khác ở tab này</b> = lên tầng 2 (K3) · <span class="so-mk">5</span>chân thẻ: <b>Chỉ cho tôi</b> (khoanh ô điểm — K10a) · không có "Đi tới ›" vì đang ở đúng chỗ · "Cũng mở được từ" = lối tắt.</p>
+    <div class="hang-khung"><figure><figcaption>K1 · 1440</figcaption><div data-khung="k1"></div></figure></div>
+  </section>
+
+  <section class="khu" id="k2">
+    <h2>K2 · Tầng 1 — dòng ẩn / hiện theo việc và vai (R14.2)</h2>
+    <p class="ghi"><span class="so-mk">a</span>việc <b>không hạn</b> → không có dòng Hạn (lời 40) · <span class="so-mk">b</span>GVCN "Xử lý vi phạm": dòng Làm là <b>hai lối</b>, không đánh số (chọn một); không có dòng "Không làm được" (không có lý do thường gặp) · <span class="so-mk">c</span>TVV "Báo PH": dòng "Không làm được" = <b>Chưa liên hệ được</b> · <span class="so-mk">d</span>QL mở việc của GV (làm thay từ Tổng quan › Chấm quá hạn): <b>cùng thẻ</b> + dải "Việc của GV. Bạn làm thay được.", ô "Vai: Quản lý ▾" (Xem vai khác); ẩn "Không làm được" (lý do của người giữ việc — "nhờ QL" không hợp với QL) <span class="xm">XM-3</span> · lối lên là "‹ Việc khác ở màn này" (Tổng quan không có danh sách tab → tầng 3) · <span class="so-mk">e</span>CX (TVV cùng dáng) mở Case ở hồ sơ HV: dải "Việc của GV. Bạn chỉ xem." — <b>ẩn Làm, Làm sai, Không làm được</b>; còn Khi nào có · Xong khi · Hạn · Sau đó. Thẻ viết MỘT lần theo người giữ việc (15 mục 4.5).</p>
+    <div class="hang-khung">
+      <figure><figcaption>K2a · GVCN · Nhập điểm MT cũ — không hạn</figcaption><div data-khung="k2a"></div></figure>
+      <figure><figcaption>K2b · GVCN · Xử lý vi phạm — hai lối</figcaption><div data-khung="k2b"></div></figure>
+      <figure><figcaption>K2c · TVV · Báo PH</figcaption><div data-khung="k2c"></div></figure>
+      <figure><figcaption>K2d · QL · việc của GV — làm thay được</figcaption><div data-khung="k2d"></div></figure>
+      <figure><figcaption>K2e · CX · việc của GV — chỉ xem</figcaption><div data-khung="k2e"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k3">
+    <h2>K3 · Tầng 2 — GV ở Công việc tab Case học thuật, chưa chọn việc (R14.3)</h2>
+    <p class="ghi"><span class="so-mk">1</span>"Bạn đang ở <b>Công việc · Case học thuật</b>" + một câu · <span class="so-mk">2</span>≤ 5 việc của TAB này (đúng tên dòng việc), số bên phải = số việc bạn đang có (lấy từ <code>/my-work</code> đã nạp, 0 câu đọc); việc bạn đang có lên trước · "+ 3 việc khác" mở nốt · <span class="so-mk">3</span>bấm dòng = mở thẻ tại chỗ (cùng thành phần K1) · <span class="so-mk">4</span>"Không làm ở đây": đích đúng chỗ (link) hoặc "việc của QL" (chữ nhạt, không link) · không có Trước / Sau (đó là việc của màn — tầng 3).</p>
+    <div class="hang-khung"><figure><figcaption>K3 · 1440</figcaption><div data-khung="k3"></div></figure></div>
+  </section>
+
+  <section class="khu" id="k4">
+    <h2>K4 · Tầng 3 — màn không thuộc danh sách tab: Hồ sơ học viên (R14.4)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Dáng V2 đã gọn: Bạn đang ở + một câu + Trước · Việc làm ở đây · Không làm ở đây · <span class="so-mk">2</span>việc chỉ GVCN có nhãn "Chỉ GVCN" (chỉ hiện với GVCN của em, hoặc QL xem vai GV) · <span class="so-mk">3</span>đóng hết dòng — tầng 3 là tổng quan; mở một dòng ra thẻ việc như K1.</p>
+    <div class="hang-khung"><figure><figcaption>K4 · 1440</figcaption><div data-khung="k4"></div></figure></div>
+  </section>
+
+  <section class="khu" id="k5">
+    <h2>K5 · Tab "Tôi muốn…" — nhóm theo đúng tên tab Công việc + bộ lọc nhịp (R14.5)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Nhóm = <b>tên tab Công việc của vai</b> (GV: Chấm điểm · Chấm Speaking · Case học thuật · Ý thức &amp; Phối hợp · Vận hành) + Học viên &amp; lớp + Khác; nhóm trống ẩn · <span class="so-mk">2</span>"Tuần của tôi" thôi là tab → <b>bộ lọc nhịp</b> ở đầu: Tất cả · Hằng ngày · Sau tuần Test · 2 tuần một lần · Hằng tháng · Khi có (ĐỔI có chủ ý — lời 55) · <span class="so-mk">3</span>mở một dòng ra thẻ việc — thân panel tự cuộn để thẻ nằm trọn (K5b đã cuộn vừa đủ); đang đứng ở màn khác nên chân thẻ có <b>Đi tới ›</b> + <b>Chỉ cho tôi</b>.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K5a · Tất cả (danh sách cuộn được — thẻ thì không)</figcaption><div data-khung="k5a"></div></figure>
+      <figure><figcaption>K5b · lọc "Sau tuần Test" · mở "Mô tả Case" (GV đang ở Hồ sơ lớp)</figcaption><div data-khung="k5b"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k6">
+    <h2>K6 · Tab "Khi gặp…" — thẻ tình huống ba dòng (R14.6)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Danh sách cố định theo vai, ẩn tình huống vai đó không gặp (GV: ẩn "Em chưa có TVV / thiếu Target" — việc của TVV, QL) · <span class="so-mk">2</span>thẻ tình huống: <b>Máy làm gì · Bạn làm gì · Ai khác nhận việc</b> · <span class="so-mk">3</span>chân: link sang thẻ việc liên quan (một nguồn chữ, không chép lại bước).</p>
+    <div class="hang-khung">
+      <figure><figcaption>K6a · danh sách</figcaption><div data-khung="k6a"></div></figure>
+      <figure><figcaption>K6b · mở "Em vắng Test"</figcaption><div data-khung="k6b"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k7">
+    <h2>K7 · Ô tìm — gõ "vang" (R14.7)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Gõ bỏ dấu; kết quả gộp ba nguồn: <b>Việc</b> (thẻ việc, dòng nhạt = câu khớp) · <b>Khi gặp…</b> (thẻ tình huống) · <b>Việc của vai khác</b> (chữ nhạt "việc của QL", không mở bước) · hàng tab giữ, không tab nào chọn · <span class="so-mk">2</span>chữ khớp tô hồng như ô tìm thanh trên; khớp qua từ đồng nghĩa không tô · <span class="so-mk">3</span>không có kết quả: một câu + "Xem mọi việc của bạn".</p>
+    <div class="hang-khung">
+      <figure><figcaption>K7a · "vang" — 4 kết quả</figcaption><div data-khung="k7a"></div></figure>
+      <figure><figcaption>K7b · không có kết quả</figcaption><div data-khung="k7b"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k8">
+    <h2>K8 · "Có gì mới" — chấm trên "?" + dải đầu panel · đã xem (R14.8)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Nội dung có phiên bản mới (sau một đợt đổi lớn) → <b>chấm trắng</b> trên "?" (dáng V2), không tự mở panel · <span class="so-mk">2</span>mở panel: dải mảnh "Có gì mới · 5 thay đổi" đầu panel, mở ra ≤ 5 dòng, mỗi dòng mở đúng thẻ việc · <span class="so-mk">3</span>đóng panel là đã xem (cờ theo phiên bản nội dung, lưu như <code>daXemHuongDan</code>) → lần sau không còn chấm, không còn dải.</p>
+    <div class="hang-khung" style="flex-direction:column">
+      <figure><figcaption>K8a · thanh trên — "?" có chấm</figcaption><div data-khung="k8a"></div></figure>
+      <div class="hang-khung">
+        <figure><figcaption>K8b · mở "?" lần đầu sau đợt đổi — dải gập, thẻ trọn (bấm thử)</figcaption><div data-khung="k8b"></div></figure>
+        <figure><figcaption>K8d · dải mở — ≤ 5 dòng, thân cuộn tới khi gập lại</figcaption><div data-khung="k8d"></div></figure>
+        <figure><figcaption>K8c · đã xem — hết dải, hết chấm</figcaption><div data-khung="k8c"></div></figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="khu" id="k9">
+    <h2>K9 · ⓘ ở dòng quy chế của panel việc → mở đúng thẻ việc (R14.9)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Dòng quy chế giữ MỘT câu (bảng câu ⑤); <b>ⓘ = thẻ đầy đủ</b>, không còn chữ nổi riêng (web hiện tại: hộp chữ "Tuần Test đã qua 2 tuần…") — một nguồn chữ · <span class="so-mk">2</span>cùng panel Hướng dẫn, cùng thẻ như K1; bước khớp câu quy chế ("Em vắng: gõ -") được tô nền nhạt 2 giây để mắt thấy ngay.</p>
+    <div class="hang-khung"><figure><figcaption>K9 · 1440 — sau khi bấm ⓘ "Quy chế"</figcaption><div data-khung="k9"></div></figure></div>
+  </section>
+
+  <section class="khu" id="k10">
+    <h2>K10 · "Chỉ cho tôi" · trang /huong-dan (R14.10; 375 ở K12)</h2>
+    <p class="ghi"><span class="so-mk">1</span>"Chỉ cho tôi" giữ dáng V2: đóng Hướng dẫn, khoanh đúng chỗ (<code>data-hd</code>) + một dòng chú thích, Esc / bấm ra ngoài là thôi · <span class="so-mk">2</span>trang /huong-dan (mở từ chân panel) dùng chung dữ liệu: Thẻ việc · Khi gặp… · Luật và hạn · Thuật ngữ; thẻ in đủ dòng, nút <b>In</b>.</p>
+    <div class="hang-khung" style="flex-direction:column">
+      <figure><figcaption>K10a · bấm "Chỉ cho tôi" ở thẻ Nhập điểm</figcaption><div data-khung="k10a"></div></figure>
+      <figure><figcaption>K10b · trang /huong-dan</figcaption><div data-khung="k10b"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k11">
+    <h2>K11 · Trạng thái — hạn đang nạp · nạp lỗi · việc chưa có thẻ</h2>
+    <p class="ghi"><span class="so-mk">a</span>vai chưa nạp sẵn cấu hình hạn: nạp MỘT lần khi mở "?" lần đầu trong phiên — chỉ dòng Hạn chờ (vạch xám), các dòng khác hiện ngay · <span class="so-mk">b</span>nạp lỗi: dòng Hạn "⚠ Không tải được hạn · Thử lại" (câu lỗi chuẩn G2); hạn của việc này vẫn ở đầu panel việc · <span class="so-mk">c</span>việc chưa có thẻ (phép HD-DU sẽ chặn, đây là lưới an toàn): một câu + tầng 2 của tab.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K11a · hạn đang nạp</figcaption><div data-khung="k11a"></div></figure>
+      <figure><figcaption>K11b · nạp hạn lỗi</figcaption><div data-khung="k11b"></div></figure>
+      <figure><figcaption>K11c · việc chưa có thẻ</figcaption><div data-khung="k11c"></div></figure>
+    </div>
+  </section>
+
+  <section class="khu" id="k12">
+    <h2>K12 · 375 Sáng — panel toàn màn (R14.10)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Panel phủ toàn màn, ✕ và tab cao 44 · <span class="so-mk">2</span>thẻ việc: nhãn đứng TRÊN chữ (bề ngang hẹp), cùng bảy dòng; ở 375 được cuộn · <span class="so-mk">3</span>bộ lọc nhịp một hàng vuốt ngang.</p>
+    <div class="hang-khung">
+      <figure><figcaption>K12a · tầng 1 · Nhập điểm</figcaption><div data-khung="k12a"></div></figure>
+      <figure><figcaption>K12b · tầng 2 · tab Case học thuật</figcaption><div data-khung="k12b"></div></figure>
+      <figure><figcaption>K12c · Tôi muốn… · Sau tuần Test</figcaption><div data-khung="k12c"></div></figure>
+      <figure><figcaption>K12d · Khi gặp… · Em vắng Test</figcaption><div data-khung="k12d"></div></figure>
+      <figure><figcaption>K12e · tìm "vang"</figcaption><div data-khung="k12e"></div></figure>
+      <figure><figcaption>K12f · Có gì mới</figcaption><div data-khung="k12f"></div></figure>
+    </div>
+  </section>
+</div>
+
+<script>
+const ic = (id, c = 'ic') => `<svg class="${c}" aria-hidden="true"><use href="#${id}"/></svg>`;
+
+/* ===================== DỮ LIỆU — chữ thật (đếm chữ: ghi chú mục 5) =====================
+   Mỗi thẻ việc viết MỘT lần theo người giữ việc. han = câu đã chèn số ngày từ cấu hình "Hạn mặc định" (mã chèn ghi ở hanMa). */
+/*DU-LIEU*/
+const THE = {
+  nhapDiem: { ten: 'Nhập điểm MT · Progress · Final', giu: 'GV', hanMa: 'han:cham_diem',
+    khi: 'Từ thứ Hai tuần Test, cho GV được phân công.',
+    lam: ['Bấm ô, gõ số câu đúng hoặc band.', 'Em vắng: gõ <b>-</b> (lần 1 dời, lần 2 huỷ).', 'Bấm <b>Lưu · bài tiếp ›</b>.'],
+    xong: 'Mọi ô có điểm hoặc "-".',
+    han: 'Hết thứ Tư tuần sau; quá hạn vẫn nhập được.',
+    sai: 'Bấm lại ô để sửa; xoá nhầm: <kbd class="phim" aria-label="nút thao tác khác">⋯</kbd> rồi <b>Khôi phục điểm</b>.',
+    khong: 'Ô khoá: chưa tới tuần Test, hoặc không phải kỹ năng bạn → nhờ QL.',
+    sau: 'Em dưới kỳ vọng → GV kỹ năng đó có việc Mô tả Case.',
+    di: 'Công việc › Chấm điểm', tat: 'Lớp của tôi, Test › Lịch Test tuần, Hồ sơ lớp' },
+  mtCu: { ten: 'Nhập điểm MT cũ', giu: 'GVCN', chi: 'Chỉ GVCN',
+    khi: 'Lớp có MT của tuần đã qua từ 2 tuần còn ô trống.',
+    lam: ['Bấm ô, gõ điểm em đã thi.', 'Em không thi: gõ <b>-</b>.', 'Bấm <b>Lưu · bài tiếp ›</b>.'],
+    xong: 'Lượt MT cũ hết ô trống.',
+    sai: 'Bấm lại ô để sửa; xoá nhầm: <kbd class="phim" aria-label="nút thao tác khác">⋯</kbd> rồi <b>Khôi phục điểm</b>.',
+    khong: 'Không rõ điểm: GV bộ môn cũng nhập được ô kỹ năng mình.',
+    sau: 'MT thi trong 4 tuần gần nhất vẫn sinh Case nếu dưới kỳ vọng.',
+    di: 'Công việc › Vận hành', tat: 'Test › Lịch Test tuần' },
+  xuLyVp: { ten: 'Xử lý vi phạm', giu: 'GVCN', chi: 'Chỉ GVCN', hanMa: 'han:y_thuc_xu_ly',
+    khi: 'Em đủ 3 vi phạm trong 2 tuần, hoặc GV bật "Yêu cầu GVCN xử lý".',
+    lamNhanh: [['Xác nhận xử lý', 'giữ <b>Nâng 1 bậc</b>; <b>Cách khác</b> cần QL duyệt.'], ['Không xử lý', 'ghi lý do, bấm <b>Lưu</b>.']],
+    xong: 'Đã lưu một trong hai lối.',
+    han: '5 ngày từ vi phạm thứ 3 hoặc từ yêu cầu; quá hạn báo QL.',
+    sai: 'Bấm <b>Hoàn tác</b> trong 10 giây; đổi ý ở tab Ý thức.',
+    sau: 'Nâng 1 bậc: TVV có việc Báo PH; Không xử lý: người ghi nhận tin.',
+    di: 'Công việc › Ý thức &amp; Phối hợp', tat: 'Chuông, Hồ sơ lớp › Ý thức' },
+  baoPh: { ten: 'Báo PH', giu: 'TVV', hanMa: 'han:bao_ph',
+    khi: 'GVCN xử lý vi phạm xong, hoặc GV gửi tình hình học tập của em.',
+    lam: ['Gọi phụ huynh theo số trong panel.', 'Chọn <b>Đã báo PH</b>, gõ Nội dung.', 'Bấm <b>Lưu · việc tiếp ›</b>.'],
+    xong: 'Đã lưu "Đã báo PH".',
+    han: '5 ngày từ khi có việc; đổi được ở <b>Sửa hạn</b>.',
+    khong: 'Chưa gọi được: chọn <b>Chưa liên hệ được</b>, việc vẫn mở để gọi lại.',
+    sau: 'GVCN và GV của lớp đọc được Nội dung bạn ghi.',
+    di: 'Công việc › Báo PH', tat: 'Hồ sơ học viên › Ý thức &amp; Phối hợp' },
+  ketQuaPa: { ten: 'Ghi kết quả PA', giu: 'GV', hanMa: 'han:ket_qua_pa',
+    khi: 'PA đang chạy tới kỳ ghi, 2 tuần một lần; hiện từ Chủ nhật trước hạn.',
+    lam: ['Chọn Tiến triển, gõ Nhận xét.', 'Giữ <b>Giữ nguyên</b>, hoặc <b>Điều chỉnh</b> / <b>Thay PA</b> kèm lý do.', 'Bấm <b>Lưu</b>; <b>Lưu nháp</b> chưa tính xong.'],
+    xong: 'Kỳ này đã bấm <b>Lưu</b>.',
+    han: 'Hết thứ Ba sau mỗi kỳ 2 tuần.',
+    sai: 'Lưu là chốt; đổi bằng <b>Sửa</b>.',
+    khong: 'Cần QL giúp: chọn <b>Xin hỗ trợ QL</b>, PA vẫn chạy.',
+    sau: 'PA cuối đạt: ô <b>Hoàn thành Case</b> bật sẵn.',
+    di: 'Công việc › Case học thuật', tat: 'Lớp của tôi, Hồ sơ học viên › Học thuật' },
+  moTaCase: { ten: 'Mô tả Case', giu: 'GV', hanMa: 'han:sos',
+    khi: 'MT chốt, em dưới kỳ vọng, ô kỹ năng đó chưa có nhận xét.',
+    lam: ['Chọn nhóm nguyên nhân.', 'Gõ mô tả: em sai ở đâu, vì sao.', 'Bấm <b>Lưu</b>.'],
+    xong: 'Có nhóm nguyên nhân và mô tả.',
+    han: '5 ngày từ khi MT chốt (SOS 3: 3 ngày); quá hạn vẫn làm được.',
+    khong: 'Không thấy việc: em đã đổi GV hoặc chuyển lớp, Case sang GV mới.',
+    sau: 'GV làm tiếp bước Xác nhận PA của em.',
+    di: 'Công việc › Case học thuật', tat: 'Hồ sơ học viên › Học thuật' },
+  chamS: { ten: 'Chấm Speaking', giu: 'GV Speaking', chi: 'GV Speaking', hanMa: 'han:cham_diem',
+    khi: 'Từ thứ Hai tuần Test, ô Speaking của Mock, MT0 mọi lớp FT chi nhánh.',
+    lam: ['Bấm ô, gõ 4 tiêu chí hoặc chỉ Band.', 'Em vắng: gõ <b>-</b>.', 'Bấm <b>Lưu · bài tiếp ›</b>.'],
+    xong: 'Ô có band hoặc "-"; ai trong nhóm chấm cũng được.',
+    han: 'Hết thứ Tư tuần sau; không cộng vào số việc của ai.',
+    sai: 'Bấm lại ô để sửa; xoá nhầm: <kbd class="phim" aria-label="nút thao tác khác">⋯</kbd> rồi <b>Khôi phục điểm</b>.',
+    sau: 'Có nhận xét mà bạn không dạy S lớp đó → GV Speaking lớp xác nhận Case.',
+    di: 'Công việc › Chấm Speaking' },
+};
+const NHAN = { khi: 'Khi nào có', lam: 'Làm', xong: 'Xong khi', han: 'Hạn', sai: 'Làm sai', khong: 'Không làm được', sau: 'Sau đó' };
+
+const GAP = [
+  'Em vắng Test', 'Em tạm dừng / kết thúc học', 'Em chuyển lớp / lên lớp', 'Đổi GV: tôi nhận lớp mới / rời lớp', 'Việc quá hạn',
+  'Không thấy nút / không có quyền', 'Lưu lỗi, mất mạng', 'Nhập sai, muốn sửa / xoá / khôi phục', 'Chờ QL duyệt lâu', 'Làm nhiều em, lỗi một phần', 'Em thi thật xong',
+];
+const VANG = {
+  may: 'Mock: lần 1 dời kỹ năng sang tuần sau, lần 2 huỷ; lớp thường chỉ dời.',
+  ban: 'Gõ <b>-</b> vào ô của em; ghi nhầm thì xoá "-", em về tuần cũ.',
+  ai: 'GVCN và GV kỹ năng đó nhận tin; tuần dời tới bạn có việc nhập lại.',
+};
+const MOI = [
+  'Bỏ việc "Xem vi phạm mới": vi phạm mới báo ở chuông.',
+  'Ghi vi phạm có công tắc "Yêu cầu GVCN xử lý".',
+  'Chuông chia theo tab Công việc, mở rộng để xem nhanh việc.',
+  'Ghi kết quả PA theo lớp, dạng lưới.',
+  'Báo cáo PH: nút "Chèn" dùng lại chữ bạn đã ghi.',
+];
+/*HET*/
+
+/* ===================== THÀNH PHẦN ===================== */
+const tag = (t) => t ? `<span class="tag vai-tag">${t}</span>` : '';
+function dongHd(k, the, o) {
+  const v = the[k];
+  if (k === 'han' && o.han === 'nap') return `<div class="dong-hd"><dt>${NHAN.han}</dt><dd><div class="xuong" aria-label="Đang tải hạn"></div></dd></div>`;
+  if (k === 'han' && o.han === 'loi') return `<div class="dong-hd"><dt>${NHAN.han}</dt><dd><span class="loi-han">⚠ Không tải được hạn · <a href="#">Thử lại</a></span></dd></div>`;
+  if (k === 'lam' && the.lamNhanh) return `<div class="dong-hd"><dt>${NHAN.lam}</dt><dd><ul class="nhanh-hd">${the.lamNhanh.map(([n, c]) => `<li><b>${n}</b>: ${c}</li>`).join('')}</ul></dd></div>`;
+  if (!v) return '';
+  const [qk, qb] = (o.qc ?? '').split(':');
+  const nd = k === 'lam' ? `<ol class="buoc-hd">${v.map((b, i) => `<li${qk === k && Number(qb) === i + 1 ? ' class="qc"' : ''}><span>${b}</span></li>`).join('')}</ol>` : v;
+  return `<div class="dong-hd${qk === k && !qb ? ' qc' : ''}"><dt>${NHAN[k]}</dt><dd>${nd}</dd></div>`;
+}
+/* Thẻ việc: o.dangMo (tầng 1) · o.dai {vai, kieu:'thay'|'xem'} · o.an [dòng ẩn] · o.di (hiện Đi tới ›) · o.qc (dòng tô — K9) · o.han 'nap'|'loi' */
+function theHd(key, o = {}) {
+  const the = THE[key];
+  const xem = o.dai?.kieu === 'xem';
+  /* vai khác: chỉ xem → ẩn Làm, Làm sai, Không làm được; làm thay → ẩn Không làm được (lý do của người giữ việc, vd "nhờ QL") */
+  const an = new Set([...(o.an ?? []), ...(xem ? ['lam', 'sai', 'khong'] : o.dai ? ['khong'] : [])]);
+  const dau = o.dangMo ? `<div class="mo-dau"><span class="nhan-nho">Bạn đang mở</span><span class="ten-mo">${o.dangMo}${tag(the.chi)}</span></div>` : '';
+  const dai = o.dai ? `<div class="dai-vai">${ic('i-nguoi')}<span><b>Việc của ${o.dai.vai}.</b> ${xem ? 'Bạn chỉ xem.' : 'Bạn làm thay được.'}</span></div>` : '';
+  const dong = ['khi', 'lam', 'xong', 'han', 'sai', 'khong', 'sau'].filter((k) => !an.has(k)).map((k) => dongHd(k, the, o)).join('');
+  const chan = xem ? (o.di ? `<div class="chan-the"><a class="di-toi" href="#">Đi tới ›</a></div>` : '')
+    : `<div class="chan-the"><button type="button" class="nut nut-nho">${ic('i-chi')}Chỉ cho tôi</button>${o.di ? `<a class="di-toi" href="#">Đi tới ›</a>` : ''}${the.tat ? `<span class="cung">Cũng mở được từ: ${the.tat}</span>` : ''}</div>`;
+  return `<article class="the-hd" aria-label="Thẻ việc ${the.ten}">${dau}${dai}<dl class="dong-hd-ds">${dong}</dl>${chan}</article>`;
+}
+function theGap(o = {}) {
+  return `<article class="the-hd" aria-label="Tình huống Em vắng Test"><dl class="dong-hd-ds">
+    <div class="dong-hd"><dt>Máy làm gì</dt><dd>${VANG.may}</dd></div>
+    <div class="dong-hd"><dt>Bạn làm gì</dt><dd>${VANG.ban}</dd></div>
+    <div class="dong-hd"><dt>Ai khác nhận việc</dt><dd>${VANG.ai}</dd></div></dl>
+    <div class="chan-the"><a class="di-toi" href="#">Thẻ việc: Nhập điểm MT · Progress · Final</a></div></article>`;
+}
+/* dòng gập / mở: mo = nội dung thẻ khi mở */
+const dongM = (ten, { phai = '', nho = '', mo = '', chi = '' } = {}) =>
+  `<div class="mhd${mo ? ' mo' : ''}"><button type="button" class="dau-m" aria-expanded="${!!mo}">${ic('i-xuong')}<span class="ten-m"><b>${ten}</b>${nho ? `<small>${nho}</small>` : ''}</span><span class="phai-m">${tag(chi)}${phai}</span></button>${mo ? `<div class="than-m">${mo}</div>` : ''}</div>`;
+
+/* panel Hướng dẫn */
+function hd({ vai = 'Giáo viên', sel = false, tab = 'o', q = '', moi = '', than = '', le = false } = {}) {
+  const tabs = [['o', 'Ở đây'], ['m', 'Tôi muốn…'], ['g', 'Khi gặp…']].map(([k, t]) => `<button type="button" role="tab" aria-selected="${!q && tab === k}">${t}</button>`).join('');
+  const dauVai = sel ? `<span class="o-chon" aria-label="Xem vai khác">Vai: ${vai}</span>` : `<span class="chip-vai">${vai}</span>`;
+  const bMoi = moi ? `<div class="moi-hd"${moi === 'mo' ? ' data-mo' : ''}><button type="button" aria-expanded="${moi === 'mo'}"><i class="cham-moi"></i>Có gì mới<span class="phu">· 5 thay đổi</span>${ic('i-xuong')}</button>${moi === 'mo' ? `<ul>${MOI.map((m) => `<li><button type="button">${m}</button></li>`).join('')}</ul>` : ''}</div>` : '';
+  return `<aside class="hd${le ? ' le' : ''}" role="dialog" aria-label="Hướng dẫn">
+    <div class="hd-dau">
+      <div class="hd-h1"><h2>Hướng dẫn</h2>${dauVai}<button type="button" class="x" aria-label="Đóng hướng dẫn">✕</button></div>
+      ${bMoi}
+      <label class="o-tim">${ic('i-tim')}<span class="o${q ? ' go' : ''}">${q ? `${q}<span class="con"></span>` : '<span class="mo3">Tìm trong hướng dẫn</span>'}</span>${q ? '<button type="button" class="xoa-tim" aria-label="Xoá chữ tìm">✕</button>' : ''}</label>
+      <div class="hd-tabs" role="tablist" aria-label="Phần hướng dẫn">${tabs}</div>
+    </div>
+    <div class="hd-than">${than}</div>
+    <div class="hd-chan"><a href="#">Mở trang Hướng dẫn ›</a></div>
+  </aside>`;
+}
+const quay = '<button type="button" class="quay-tang">‹ Việc khác ở tab này</button>';
+const quayMan = '<button type="button" class="quay-tang">‹ Việc khác ở màn này</button>';
+
+/* ===================== NỘI DUNG CÁC TAB ===================== */
+const TANG2_CASE = `
+  <div class="dang-o"><div class="d1"><span class="nhan-nho">Bạn đang ở</span><h3>Công việc · Case học thuật</h3></div><p>Case và PA của em bạn dạy; việc gấp nhất ở trên.</p></div>
+  <div class="khoi-hd"><div class="ds-hd">
+    ${dongM('Mô tả Case', { phai: '3 việc' })}${dongM('Xác nhận PA', { phai: '2 việc' })}${dongM('Ghi kết quả PA', { phai: '1 việc' })}${dongM('Thêm PA', { phai: '1 việc' })}${dongM('Xác nhận Case Speaking', { chi: 'GV Speaking' })}
+    <a class="con-n" href="#">+ 3 việc khác</a>
+  </div></div>
+  <div class="khoi-hd"><h3 class="muc-h">Không làm ở đây</h3><div class="khong-lam">
+    <div><span>Xem mọi Case của một em</span><a href="#">Hồ sơ học viên ›</a></div>
+    <div><span>Duyệt PA khác quy chế</span><span class="cua-ai">việc của QL</span></div>
+  </div></div>`;
+const TANG3_HS = `
+  <div class="dang-o"><div class="d1"><span class="nhan-nho">Bạn đang ở</span><h3>Hồ sơ học viên</h3></div><p>Mọi thứ của một em: điểm, Case, Ý thức, lộ trình.</p>
+    <div class="luong"><a href="#"><span>Trước</span><b>Học viên &amp; Lớp ›</b></a></div></div>
+  <div class="khoi-hd"><h3 class="muc-h">Việc làm ở đây</h3><div class="ds-hd">
+    ${dongM('Ghi vi phạm / nhắc nhở')}${dongM('Báo tình hình học tập cho TVV')}${dongM('Ghi kết quả PA')}${dongM('Sửa thông tin', { chi: 'Chỉ GVCN' })}${dongM('Đề xuất chuyển lớp', { chi: 'Chỉ GVCN' })}
+    <a class="con-n" href="#">+ 2 việc khác</a>
+  </div></div>
+  <div class="khoi-hd"><h3 class="muc-h">Không làm ở đây</h3><div class="khong-lam">
+    <div><span>Nhập điểm Test</span><a href="#">Công việc ›</a></div>
+    <div><span>Chuyển lớp</span><span class="cua-ai">việc của QL</span></div>
+  </div></div>`;
+const NHIP = ['Tất cả', 'Hằng ngày', 'Sau tuần Test', '2 tuần một lần', 'Hằng tháng', 'Khi có'];
+const locNhip = (chon) => `<div class="loc-nhip" role="group" aria-label="Lọc theo nhịp">${NHIP.map((n) => `<button type="button" aria-pressed="${n === chon}">${n}</button>`).join('')}</div>`;
+const nhom = (ten, rows) => `<div><h3 class="nhom-hd">${ten}</h3><div class="ds-hd">${rows}</div></div>`;
+const MUON_TAT = locNhip('Tất cả') + `<div class="ds-nhom">
+  ${nhom('Chấm điểm', dongM('Nhập điểm MT · Progress · Final') + dongM('Nhập điểm MT cũ', { chi: 'Chỉ GVCN' }))}
+  ${nhom('Chấm Speaking', dongM('Chấm Speaking', { chi: 'GV Speaking' }))}
+  ${nhom('Case học thuật', dongM('Mô tả Case') + dongM('Xác nhận PA') + dongM('Ghi kết quả PA') + dongM('Thêm PA') + dongM('Xác nhận Case Speaking', { chi: 'GV Speaking' }) + dongM('Ghi Mini Test') + dongM('Hoàn thành Case'))}
+  ${nhom('Ý thức &amp; Phối hợp', dongM('Ghi vi phạm / nhắc nhở') + dongM('Xử lý vi phạm', { chi: 'Chỉ GVCN' }) + dongM('Phối hợp SOS', { chi: 'Chỉ GVCN' }) + dongM('Trả lời tình hình học tập', { chi: 'Chỉ GVCN' }) + dongM('Báo tình hình học tập cho TVV') + dongM('Báo PH kết quả Test', { chi: 'Chỉ GVCN' }))}
+  ${nhom('Vận hành', dongM('Viết Báo cáo PH') + dongM('Bàn giao khi em chuyển lớp') + dongM('Việc được giao'))}
+  ${nhom('Học viên &amp; lớp', dongM('Sửa thông tin', { chi: 'Chỉ GVCN' }) + dongM('Đề xuất chuyển lớp', { chi: 'Chỉ GVCN' }) + dongM('Tạm dừng / Kết thúc học', { chi: 'Chỉ GVCN' }) + dongM('Xem lịch thi'))}
+  ${nhom('Khác', dongM('Xem việc của bạn') + dongM('Xem chuông') + dongM('Theo dõi yêu cầu đã gửi'))}
+</div>`;
+const muonSau = (dt) => locNhip('Sau tuần Test') + `<div class="ds-nhom">
+  ${nhom('Chấm điểm', dongM('Nhập điểm MT · Progress · Final'))}
+  ${nhom('Chấm Speaking', dongM('Chấm Speaking', { chi: 'GV Speaking' }))}
+  ${nhom('Case học thuật', dongM('Mô tả Case', { mo: theHd('moTaCase', { di: true }) }) + dongM('Xác nhận PA') + dongM('Xác nhận Case Speaking', { chi: 'GV Speaking' }))}
+  ${nhom('Ý thức &amp; Phối hợp', dongM('Phối hợp SOS', { chi: 'Chỉ GVCN' }) + dongM('Báo PH kết quả Test', { chi: 'Chỉ GVCN' }))}
+</div>`;
+const gapDs = (moDau) => `<div class="ds-hd">${GAP.map((g, i) => dongM(g, { mo: moDau && i === 0 ? theGap() : '' })).join('')}</div>`;
+const TIM_VANG = `<p class="dem-kq" aria-live="polite">4 kết quả</p><div class="ds-nhom">
+  ${nhom('Việc', dongM('Nhập điểm MT · Progress · Final', { nho: 'Em <mark>vắng</mark>: gõ - (lần 1 dời, lần 2 huỷ).' }) + dongM('Chấm Speaking', { nho: 'Em <mark>vắng</mark>: gõ -.', chi: 'GV Speaking' }))}
+  ${nhom('Khi gặp…', dongM('Em <mark>vắng</mark> Test', { nho: 'Mock: lần 1 dời kỹ năng sang tuần sau, lần 2 huỷ…' }))}
+  <div><h3 class="nhom-hd">Việc của vai khác</h3><div class="khong-lam" style="border:1px solid var(--line);border-radius:10px;padding:0 12px"><div style="padding:10px 0"><span>Xếp, dời lịch Test</span><span class="cua-ai">việc của QL</span></div></div></div>
+</div>`;
+const TIM_RONG = `<div class="rong-tim"><p aria-live="polite">Không có việc nào khớp “<b>hoc phi</b>”.</p><button type="button" class="nut nut-nho">Xem mọi việc của bạn</button></div>`;
+
+/* ===================== NỀN (web sau overhaul, mờ dưới panel) ===================== */
+function tt({ vai = 'gv', moi = false, mo = false } = {}) {
+  const menu = { gv: '<span class="m dang">Công việc <span class="so-nav do">9</span></span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span>',
+    ql: '<span class="m dang">Tổng quan</span><span class="m">Học viên &amp; Lớp</span><span class="m">Test</span><span class="m">Công việc <span class="so-nav do">6</span></span><span class="m">Phân tích</span>' }[vai];
+  const ten = { gv: ['TH', 'Đinh Thu Hằng'], ql: ['HT', 'Phan Hữu Toàn'] }[vai];
+  return `<div class="tt"><span class="logo"><b>PISA</b><span>TRACKING</span></span>${menu}<span class="phai"><span class="tim-tt">${ic('i-tim')}Tìm học viên, lớp</span><span class="nut-tt nut-hd${moi ? ' moi' : ''}" role="button" aria-label="Hướng dẫn${moi ? ', có nội dung mới' : ''}" aria-expanded="${mo}"><span class="vong">?</span></span><span class="nut-tt">${ic('i-chuong')}<i class="cham"></i></span><span class="ten-tt"><span class="av-tt">${ten[0]}</span>${ten[1]}</span></span></div>`;
+}
+const viecND = (lop, mon, phu, han, cls, chon) => `<div class="khoi"><div class="viec dt-lop${chon ? ' chon' : ''}"><span class="av vuong">${ic('i-gop')}</span><span class="tv"><span class="t1"><span><span class="lop-gop">${lop}</span> · ${mon}</span></span><span class="the-phu">${phu.map((p) => `<span class="tag nhat">${p}</span>`).join('')}</span></span><span class="h"><span class="han-v ${cls}">${han}</span></span><span class="n"><button type="button" class="nut nut-nho">Nhập điểm</button></span></div></div>`;
+function nenCv({ panel = 'nhap', khoanh = false, chuChi = false } = {}) {
+  const tabs = `<div class="tabs" role="tablist"><button class="tab" aria-selected="${panel !== 'case'}">Chấm điểm <span class="bd do">2</span></button><button class="tab" aria-selected="false">Chấm Speaking <span class="bd do">18</span></button><button class="tab" aria-selected="${panel === 'case'}">Case học thuật <span class="bd do">3</span></button><button class="tab" aria-selected="false">Ý thức &amp; Phối hợp <span class="bd do">2</span></button><button class="tab" aria-selected="false">Vận hành <span class="bd do">2</span></button></div>`;
+  const dsCham = `<section class="nhom"><div class="dai-nhom">${ic('i-cham')}<span>Mock Test</span><span class="sau-ten"><span class="dem">4 việc</span><span class="bao-qua">2 quá hạn</span></span></div>
+    <div class="vach-han">Quá hạn</div>${viecND('MB FT 101', 'Listening, Reading', ['W1 SEP', '5 bài'], 'quá hạn 5 ngày', 'qua')}${viecND('MB FT 101', 'Reading', ['Âu Nhật Nam', 'W1 SEP', '1 bài'], 'quá hạn 5 ngày', 'qua')}
+    <div class="vach-han">Hạn đến 20/09</div>${viecND('MB FT 112', 'Listening, Reading', ['W2 SEP', '3 bài'], 'hạn 16/09', 'xa')}
+    <div class="vach-han">Hạn sau 20/09</div>${viecND('MB FT 104', 'Listening, Reading', ['W3 SEP', '10 bài'], 'hạn 23/09', 'xa', true)}</section>
+    <section class="nhom"><div class="dai-nhom">${ic('i-cham')}<span>Progress / Final Test</span><span class="sau-ten"><span class="dem">1 việc</span></span></div>${viecND('MB FOU 15', 'Reading', ['Progress', 'W3 SEP', '12 bài'], 'hạn 23/09', 'xa')}</section>`;
+  const vc = (lop, viec, phu, han, cls, nut) => `<div class="khoi"><div class="viec dt-lop"><span class="av vuong">${ic('i-case')}</span><span class="tv"><span class="t1"><span><span class="lop-gop">${lop}</span> · ${viec}</span></span><span class="the-phu">${phu.map((p) => `<span class="tag nhat">${p}</span>`).join('')}</span></span><span class="h">${han ? `<span class="han-v ${cls}">${han}</span>` : ''}</span><span class="n"><button type="button" class="nut nut-nho">${nut}</button></span></div></div>`;
+  const dsCase = `<section class="nhom"><div class="dai-nhom">${ic('i-case')}<span>Case học thuật</span><span class="sau-ten"><span class="dem">7 việc</span><span class="bao-qua">3 quá hạn</span></span></div>
+    <div class="vach-han">Quá hạn</div>${vc('MB FT 112', 'Mô tả Case', ['3 em', 'W2 SEP'], 'quá hạn 2 ngày', 'qua', 'Mô tả Case')}${vc('MB FT 101', 'Xác nhận PA · Listening', ['Vũ Ngọc Lan'], 'quá hạn 1 ngày', 'qua', 'Xác nhận PA')}${vc('MB FOU 12', 'Thêm PA · Reading', ['Dương Ngọc Ánh'], 'quá hạn 1 ngày', 'qua', 'Thêm PA')}
+    <div class="vach-han">Hạn đến 20/09</div>${vc('MB FT 104', 'Mô tả Case', ['2 em', 'W3 SEP'], 'hạn 19/09', 'xa', 'Mô tả Case')}${vc('MB FT 101', 'Xác nhận PA · Reading', ['Trịnh Bảo Ngọc'], 'hạn 18/09', 'xa', 'Xác nhận PA')}
+    <div class="vach-han">Hạn sau 20/09</div>${vc('MB FT 101', 'Ghi kết quả PA · Reading', ['Tạ Minh Khoa'], 'hạn 22/09', 'xa', 'Ghi kết quả')}${vc('MB FT 112', 'Mô tả Case', ['1 em', 'W3 SEP'], 'hạn 23/09', 'xa', 'Mô tả Case')}</section>`;
+  const o = (v, s, cls = '') => `<span class="od${cls ? ' ' + cls : ''}"${v ? '' : ' aria-label="Chưa có"'}>${v ? `<b>${v}</b><small>${s}</small>` : ''}</span>`;
+  const panelNhap = `<aside class="pn" aria-label="Nhập điểm Listening, Reading">
+    <div class="pn-dau"><div class="pn-h1"><span class="loai">Việc · Chấm điểm</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+      <div class="pn-tieu"><h2>Nhập điểm Listening, Reading</h2><span class="han-v xa">hạn 23/09</span></div>
+      <div class="pn-ngu"><span><a href="#">MB FT 104</a></span><span>MT1</span><span>W3 SEP</span><span>còn 4 / 10 bài</span></div></div>
+    <div class="pn-than" style="padding-top:4px"><table class="luoi"><colgroup><col class="c-hv"><col class="c-o"><col class="c-o"><col class="c-kq"></colgroup>
+      <thead><tr><th>Học viên</th><th>Listening</th><th>Reading</th><th>Kết quả</th></tr></thead><tbody>
+      <tr><td><span class="hv"><a href="#">Trần Bảo An</a></span></td><td>${o('6.5', '27 câu')}</td><td><span class="${khoanh ? 'khoanh' : ''}" style="display:inline-block">${o('', '')}</span></td><td><span class="kq cho">Chờ R</span></td></tr>
+      <tr><td><span class="hv"><a href="#">Đỗ Minh Khôi</a></span></td><td>${o('', '')}</td><td>${o('', '')}</td><td><span class="kq cho">Chờ L, R</span></td></tr>
+      <tr><td><span class="hv"><a href="#">Lê Gia Hân</a></span></td><td>${o('7.0', '30 câu')}</td><td>${o('6.5', '29 câu')}</td><td><span class="kq dat">✓ Đạt</span></td></tr>
+      <tr><td><span class="hv"><a href="#">Phạm Ngọc Diệp</a></span></td><td>${o('Vắng', '→ W4 SEP', 'vang')}</td><td>${o('5.0', '18 câu')}</td><td><span class="kq cho">Chờ L</span></td></tr>
+      <tr><td><span class="hv"><a href="#">Vũ Hoàng Long</a></span></td><td>${o('5.5', '22 câu')}</td><td>${o('', '')}</td><td><span class="kq cho">Chờ R</span></td></tr>
+      </tbody></table>${chuChi ? `<div class="chu-chi" style="left:300px;top:96px">Bấm ô để gõ điểm; em vắng gõ "-".<kbd>Esc</kbd></div>` : ''}</div>
+    <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>"-" = vắng: lần 1 dời sang tuần sau · lần 2 huỷ</span><button type="button" class="nut-i" aria-label="Hướng dẫn việc Nhập điểm">ⓘ</button></div>
+    <div class="pn-chan"><span class="tt-luu da">✓ Đã lưu</span><span class="phai"><button type="button" class="nut">Việc tiếp ›</button></span></div></aside>`;
+  const lopToi = `<section class="nhom lt" aria-label="Lớp của tôi"><div class="dai-nhom">${ic('i-lop')}<span>Lớp của tôi</span><span class="sau-ten"><span class="dem">8 lớp</span></span></div>
+    <div class="lt-cot"><span>Lớp</span><span>Tôi dạy</span><span>Test</span><span>Việc cần làm</span></div>
+    <div class="lt-dong"><a class="ma" href="#">MB FT 101</a><span class="day"><span class="ky">L</span><span class="ky">R</span><span class="cn-t">chủ nhiệm</span></span><span class="test"><span class="t">MT · W1 SEP</span></span><span class="viec-lam"><button class="vc qua">Nhập điểm · 6</button><button class="vc qua">Case · 2</button></span></div>
+    <div class="lt-dong"><a class="ma" href="#">MB FT 112</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t">MT · W2 SEP</span></span><span class="viec-lam"><button class="vc">Nhập điểm · 3</button><button class="vc qua">Case · 1</button></span></div>
+    <div class="lt-dong"><a class="ma" href="#">MB FT 104</a><span class="day"><span class="ky">L</span><span class="ky">R</span></span><span class="test"><span class="t">MT · W3 SEP</span></span><span class="viec-lam"><button class="vc">Nhập điểm · 10</button></span></div></section>`;
+  return `<div class="noi-dung"><div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">9 quá hạn</span></span><span class="phai"><span class="o-chon">Mọi hạn</span><button type="button" class="nut nut-chinh">+ Task</button></span></div>${tabs}
+    <div class="than"><div class="cot-ds">${panel === 'case' ? dsCase : dsCham}</div><div class="cot-pn">${panel === 'case' ? lopToi : panelNhap}</div></div></div>`;
+}
+function nenHs() {
+  return `<div class="noi-dung"><div class="hs-dau"><a href="#" style="font:600 13px var(--phong)">‹ Học viên &amp; Lớp</a><h1>Vũ Ngọc Lan <span class="sos m2">SOS 2</span></h1>
+    <div class="hs-ngu"><span>Lớp<b>MB FT 101</b></span><span>Lộ trình<b>LT1</b></span><span>Target<b>7.0</b></span><span>Tuần học<b>9</b></span><span>GVCN<b>Đinh Thu Hằng</b></span><span>TVV<b>Đặng Hải Yến</b></span></div>
+    <div class="o-diem"><span>Overall<b>5.5</b></span><span>Listening<b>5.0</b></span><span>Reading<b>5.0</b></span><span>Writing<b>6.0</b></span><span>Speaking<b>6.0</b></span></div></div>
+    <div class="tabs"><button class="tab" aria-selected="true">Học thuật</button><button class="tab" aria-selected="false">Ý thức &amp; Phối hợp</button><button class="tab" aria-selected="false">Lộ trình &amp; lớp</button></div>
+    <div class="hs-hai"><div class="khoi-nen"><h3>Mock Test</h3><div class="hang-nen"><b>MT1</b> W4 AUG · L 5.0 · R 5.0 · W 6.0 · S 6.0</div><div class="hang-nen"><b>MT2</b> W2 OCT · chưa thi</div><div class="hang-nen"><b>MT3</b> W1 NOV · chưa thi</div></div>
+    <div class="khoi-nen"><h3>Case &amp; phương án</h3><div class="hang-nen"><span class="ky">R</span>Reading · PA Tutor · đang chạy</div><div class="hang-nen"><span class="ky">L</span>Listening · chờ xác nhận PA</div></div></div></div>`;
+}
+const man = (nen, tren = '', o = {}) => `<div class="man cao toi" data-web>${tt(o)}${nen}${tren}</div>`;
+const le = (html, o = {}) => `<div class="toi" data-web style="width:${o.w ?? 480}px;background:var(--bg);border-radius:6px;overflow:hidden">${html}</div>`;
+const dt = (html) => `<div class="dt cao sang" data-co-dinh>${html}</div>`;
+
+/* ===================== KHUNG ===================== */
+const K = {
+  k1: man(nenCv(), '<div class="phu-nen"></div>' + hd({ than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading' }) })),
+  k2a: le(hd({ le: true, than: quay + theHd('mtCu', { dangMo: 'MB FT 101 · Nhập điểm MT cũ' }) })),
+  k2b: le(hd({ le: true, than: quay + theHd('xuLyVp', { dangMo: 'MB FT 101 · Xử lý vi phạm' }) })),
+  k2c: le(hd({ le: true, vai: 'Tư vấn viên', than: quay + theHd('baoPh', { dangMo: 'CP FT 110 · Báo PH · REPORT 1' }) })),
+  k2d: le(hd({ le: true, vai: 'Quản lý', sel: true, than: quayMan + theHd('nhapDiem', { dangMo: 'MB FT 101 · Nhập điểm Listening, Reading', dai: { vai: 'GV', kieu: 'thay' } }) })),
+  k2e: le(hd({ le: true, vai: 'CX', than: quayMan + theHd('ketQuaPa', { dangMo: 'MB FT 101 · Case Reading · Ghi kết quả PA', dai: { vai: 'GV', kieu: 'xem' } }) })),
+  k3: man(nenCv({ panel: 'case' }), '<div class="phu-nen"></div>' + hd({ than: TANG2_CASE })),
+  k4: man(nenHs(), '<div class="phu-nen"></div>' + hd({ than: TANG3_HS })),
+  k5a: le(hd({ le: true, tab: 'm', than: MUON_TAT })),
+  k5b: le(hd({ le: true, tab: 'm', than: muonSau() })),
+  k6a: le(hd({ le: true, tab: 'g', than: gapDs(false) })),
+  k6b: le(hd({ le: true, tab: 'g', than: gapDs(true) })),
+  k7a: le(hd({ le: true, q: 'vang', than: TIM_VANG })),
+  k7b: le(hd({ le: true, q: 'hoc phi', than: TIM_RONG })),
+  k8a: `<div class="man toi" data-web style="height:150px">${tt({ moi: true })}<div class="noi-dung"><div class="dau-trang"><h1>Công việc</h1><span class="dem-tong"><b>14</b> việc · <span class="qua">9 quá hạn</span></span></div></div></div>`,
+  k8b: le(hd({ le: true, moi: 'dong', than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading' }) })),
+  k8d: le(hd({ le: true, moi: 'mo', than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading' }) })),
+  k8c: le(hd({ le: true, than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading' }) })),
+  k9: man(nenCv(), '<div class="phu-nen"></div>' + hd({ than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading', qc: 'lam:2' }) })),
+  k10a: man(nenCv({ khoanh: true, chuChi: true })).replace('class="man cao toi"', 'class="man cao toi chi-toi"'),
+  k10b: `<div class="man cao toi" data-web>${tt()}<div class="trang-hd"><nav aria-label="Phần hướng dẫn"><a class="dang" href="#">Thẻ việc <span class="so">29</span></a><a href="#">Khi gặp… <span class="so">11</span></a><a href="#">Luật và hạn <span class="so">11</span></a><a href="#">Thuật ngữ <span class="so">17</span></a></nav>
+    <div class="noi"><div class="dau-th"><h1>Hướng dẫn</h1><span class="chip-vai">Giáo viên</span><span class="phai"><label class="o-tim" style="width:300px">${ic('i-tim')}<span class="o"><span class="mo3">Tìm trong hướng dẫn</span></span></label><button type="button" class="nut">${ic('i-in')}In</button></span></div>
+    <div class="luoi-the"><h2 class="nhom-in">Chấm điểm</h2>
+      <div class="the-in"><h3>Nhập điểm MT · Progress · Final</h3>${theHd('nhapDiem')}</div>
+      <div class="the-in"><h3>Nhập điểm MT cũ ${tag('Chỉ GVCN')}</h3>${theHd('mtCu')}</div>
+    </div></div></div></div>`,
+  k11a: le(hd({ le: true, than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading', han: 'nap' }) })),
+  k11b: le(hd({ le: true, than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading', han: 'loi' }) })),
+  k11c: le(hd({ le: true, than: `<p class="ghi-rong">Việc <b style="color:var(--text)">MB FT 101 · Việc được giao</b> chưa có thẻ riêng. Việc khác ở tab này:</p>` + TANG2_CASE.replace('Công việc · Case học thuật', 'Công việc · Vận hành').replace('Case và PA của em bạn dạy; việc gấp nhất ở trên.', 'Báo cáo PH, bàn giao, việc được giao.') })),
+  k12a: dt(hd({ than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading' }) })),
+  k12b: dt(hd({ than: TANG2_CASE })),
+  k12c: dt(hd({ tab: 'm', than: muonSau() })),
+  k12d: dt(hd({ tab: 'g', than: gapDs(true) })),
+  k12e: dt(hd({ q: 'vang', than: TIM_VANG })),
+  k12f: dt(hd({ moi: 'mo', than: quay + theHd('nhapDiem', { dangMo: 'MB FT 104 · Nhập điểm Listening, Reading' }) })),
+};
+document.querySelectorAll('[data-khung]').forEach((el) => { el.innerHTML = K[el.dataset.khung] ?? ''; });
+/* K11c: bản sao tầng 2 đổi tên tab → bỏ nội dung Case không hợp với Vận hành */
+/* K5b, K12c: mở một dòng → thân panel tự cuộn để thẻ nằm trọn (hành vi thật, scrollIntoView block:nearest) */
+requestAnimationFrame(() => document.querySelectorAll('[data-khung="k5b"] .hd-than, [data-khung="k12c"] .hd-than').forEach((t) => { const m = t.querySelector('.mhd.mo').getBoundingClientRect(), s = t.querySelector('.loc-nhip').getBoundingClientRect(); t.scrollTop = Math.max(0, Math.min(m.bottom - t.getBoundingClientRect().bottom + 8, m.top - s.bottom - 4)); }));
+document.querySelectorAll('[data-khung="k11c"] .ds-hd').forEach((d) => { d.innerHTML = dongM('Viết Báo cáo PH', { phai: '1 việc' }) + dongM('Bàn giao khi em chuyển lớp', { phai: '1 việc' }) + dongM('Nhập điểm MT cũ', { chi: 'Chỉ GVCN' }); });
+document.querySelectorAll('[data-khung="k11c"] .khong-lam').forEach((d) => { d.innerHTML = '<div><span>Xuất Báo cáo PH</span><span class="cua-ai">việc của Admin</span></div>'; });
+
+/* ===================== bấm thử ===================== */
+document.addEventListener('click', (e) => {
+  const d = e.target.closest('.dau-m');
+  if (d) { const m = d.parentElement; if (m.querySelector('.than-m')) { const mo = !m.classList.contains('mo'); m.classList.toggle('mo', mo); m.querySelector('.than-m').hidden = !mo; d.setAttribute('aria-expanded', mo); } return; }
+  const n = e.target.closest('.loc-nhip button');
+  if (n) { n.parentElement.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', b === n)); return; }
+  const mb = e.target.closest('.moi-hd > button');
+  if (mb) { const w = mb.parentElement; const mo = !w.hasAttribute('data-mo'); w.toggleAttribute('data-mo', mo); mb.setAttribute('aria-expanded', mo);
+    let ul = w.querySelector('ul'); if (mo && !ul) { w.insertAdjacentHTML('beforeend', `<ul>${MOI.map((m) => `<li><button type="button">${m}</button></li>`).join('')}</ul>`); } else if (ul) ul.hidden = !mo; return; }
+  const c = e.target.closest('[data-che]');
+  if (c) { const s = c.dataset.che; document.querySelectorAll('[data-che]').forEach((b) => b.setAttribute('aria-pressed', b === c));
+    document.querySelectorAll('[data-web]').forEach((w) => { w.classList.toggle('toi', s === 'toi'); w.classList.toggle('sang', s === 'sang'); }); }
+});
+if (new URLSearchParams(location.search).get('n') === 'sang') document.querySelector('[data-che="sang"]').click();
+</script>
+</body>
+</html>
