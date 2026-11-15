@@ -10,7 +10,7 @@ import { KhungPanel } from './KhungPanel.tsx';
 import { HangTab } from './HangTab.tsx';
 import { CanLam, DiemKq, NutChu, NutHoanTac } from './KhuonViec.tsx';
 import { lopKq } from './BieuTuong.tsx';
-import { CHIP_SOS, CHIP_VUONG, ChipHan, ChipSoQuaHan, lopSos } from './Nhan.tsx';
+import { BadgeHan, CHIP_SOS, CHIP_VUONG, ChipHan, ChipSoQuaHan, lopSos } from './Nhan.tsx';
 import { XemThem, useXemThem } from './PhanTrang.tsx';
 import { Empty, ErrorState, Skeleton } from './ui.tsx';
 import { useNgayNghiepVu } from './ngayNghiepVu.ts';
@@ -143,12 +143,12 @@ function CachTinh({ cs }: { cs: ChiSo }) {
   );
 }
 
-/** Hạn trong câu tình trạng của dòng: quá hạn "quá hạn n ngày" đỏ · còn ≤ 3 ngày vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
+/** Hạn trong câu tình trạng của dòng: quá hạn badge đỏ "quá hạn n ngày" · còn ≤ 3 ngày badge vàng · xa hơn thường — ngưỡng từ `deadlineView` (một chỗ). */
 function HanDong({ han, loai }: { han: string; loai?: DeadlineKind | null }) {
   const { homNay, ngan } = useNgayNghiepVu();
   const v = deadlineView({ kind: loai ?? 'viec-van-hanh', due: han, today: homNay });
-  return v.tone === 'overdue' ? <span className="font-semibold tabular-nums text-late">{nhanQuaHan(v.daysOverdue)}</span>
-    : <span className={`tabular-nums ${v.ganHan ? 'font-semibold text-soon' : ''}`}>{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
+  return v.tone === 'overdue' ? <BadgeHan muc="qua">{nhanQuaHan(v.daysOverdue)}</BadgeHan>
+    : v.ganHan ? <BadgeHan muc="gan">{t('hạn {ngay}', { ngay: ngan(han) })}</BadgeHan> : <span className="tabular-nums">{t('hạn {ngay}', { ngay: ngan(han) })}</span>;
 }
 
 /** 6c-2 (critique 375): các đoạn ngăn "·", mỗi đoạn không ngắt giữa — xuống dòng chỉ ở giữa hai đoạn (không tách "MB / FT 101", "Chưa / đạt"). */
