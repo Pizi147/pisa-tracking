@@ -46,9 +46,13 @@ Bảng sự thật (tệp:dòng): ghi chú nhóm session `hd3-5-su-that-admin.md
 | Em chuyển lớp | L0 A7, E3; L4 L-06, L-15 |
 | Em tạm dừng / kết thúc học | L1 §3; L4 |
 
+## Sửa sau rà PTA Overhaul
+
+- Thẻ Nhập hộ: thêm "Không làm được: Ô Speaking: chọn **GV chấm** trước khi lưu." — nguồn lời 13 (2.4, LG-5) · `quyCheVanHanh.ts:63` ("Bạn nhập hộ: chọn GV chấm trước khi lưu"), `gvChamCot` ("Bạn không phải GV Speaking — chọn GV chấm khác."). Rút gọn bốn dòng cho ≤ 90 chữ.
+
 ## [XM] cho PTA
 
-1. Dòng **chưa phân công** / **S chấm chéo** (chưa ai giữ, `mine = false`) cũng ra thẻ GV + dải "Việc của Giáo viên. Bạn làm thay được." — chữ dải chưa đúng hẳn khi chưa ai giữ; đổi dải theo `ownerId` là việc khung nhỏ (nói nếu cần).
+1. ~~Dòng chưa phân công / S chấm chéo ra dải "Việc của Giáo viên. Bạn làm thay được."~~ — **ĐÃ SỬA** (PTA Overhaul rà #1761, 15 mục 8.1): `PanelViec` ghi `chuaGiu = ownerId == null`; dải trung tính "Chưa có người giữ. Bạn làm được." · Chấm Speaking chung (`cham_speaking` + việc lẻ `…|cc`, `laViecChamCheo`): "Việc chung của GV Speaking. Bạn nhập hộ được." — ảnh `ad-schung-1440-toi.png`; người chỉ xem (CX) giữ "Bạn chỉ xem.".
 2. Chuông Admin chỉ đếm việc `mine` còn đầu trang Công việc đếm mọi dòng — hai số khác nhau là mã hiện hành; thẻ không còn câu "bằng nhau".
 3. Tài khoản vừa Admin vừa GV: `phamViXemViec` = `'cham-diem'` có thể cắt việc Case / Ý thức (chưa thử trên dữ liệu) — ghi để PR mã xem.
 

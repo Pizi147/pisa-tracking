@@ -1,3 +1,4 @@
+import { laViecChamCheo } from '@shared/domain/gopViec.ts';
 import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { KhungPanel, panelHdTren } from '../../ui/KhungPanel.tsx';
@@ -129,7 +130,8 @@ export function PanelHuongDanManNay({ onDong, dong }: { onDong: () => void; /** 
     const tenMo = tang1.viecMo ? (tang1.viecMo.lop && !tdMo.includes(tang1.viecMo.lop) ? `${tang1.viecMo.lop} · ${tdMo}` : tdMo) : t(tang1.the!.ten);
     than = tang1.the ? (
       <>{len}<TheViec v={tang1.the} ctx={ctx} dangMo={tenMo} qc={qc} dangODung hdThe={HUONG_DAN[tang1.vai!]}
-        dai={tang1.viecMo && !tang1.viecMo.mine ? { vai: tang1.vai!, xem: !['ql', 'qt', 'admin'].includes(cuaToi) } : undefined} /></>
+        dai={tang1.viecMo && !tang1.viecMo.mine ? { vai: tang1.vai!, xem: !['ql', 'qt', 'admin'].includes(cuaToi),
+          kieu: maViec(tang1.viecMo) === 'cham_speaking' || laViecChamCheo(tang1.viecMo) ? 'chung' : tang1.viecMo.chuaGiu ? 'chua' : undefined } : undefined} /></>
     ) : (
       /* K11c: việc chưa có thẻ (lưới an toàn) — một câu, rồi việc khác ở tab / màn. */
       <>
@@ -255,7 +257,7 @@ type DongThe = { k: string; nhan: string; nd: ReactNode };
  * `qc`: câu quy chế của panel đang mở — 375 luôn ở đầu thẻ (câu bị cắt ở chân panel); có chi tiết thì hiện mọi cỡ (ⓘ không còn hộp chữ riêng).
  * `dangODung`: đang ở đúng chỗ làm → không "Đi tới ›".
  */
-function TheViec({ v, ctx, dangMo, dai, qc, dangODung = false, hdThe }: { v: ViecHd; ctx: Ctx; dangMo?: string; dai?: { vai: VaiHd; xem: boolean }; qc?: QuyCheMo | null; dangODung?: boolean; /** thẻ của vai khác: lối tắt tra màn của vai đó */ hdThe?: HuongDan }) {
+function TheViec({ v, ctx, dangMo, dai, qc, dangODung = false, hdThe }: { v: ViecHd; ctx: Ctx; dangMo?: string; dai?: { vai: VaiHd; xem: boolean; kieu?: 'chua' | 'chung' }; qc?: QuyCheMo | null; dangODung?: boolean; /** thẻ của vai khác: lối tắt tra màn của vai đó */ hdThe?: HuongDan }) {
   const an = new Set(dai?.xem ? ['lam', 'sai', 'khong'] : dai ? ['khong'] : []);
   const ds = ([
     v.khiCo && { k: 'khi', nhan: t('Khi nào có'), nd: <ChuThe chu={v.khiCo} /> },
@@ -289,7 +291,10 @@ function TheViec({ v, ctx, dangMo, dai, qc, dangODung = false, hdThe }: { v: Vie
       {dai && (
         <div className="flex items-center gap-2 rounded-lg border px-3 py-[7px] text-[13px] leading-[1.4] text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
           <svg aria-hidden viewBox="0 0 16 16" className="h-4 w-4 shrink-0" fill="none" stroke="var(--text-faint)" strokeWidth="1.5" strokeLinecap="round"><circle cx="8" cy="5.5" r="2.5" /><path d="M3 13.5c.6-2.4 2.6-3.5 5-3.5s4.4 1.1 5 3.5" /></svg>
-          <span><b className="font-semibold text-slate-100">{t('Việc của {vai}.', { vai: TEN_VAI_HD[dai.vai] })}</b> {dai.xem ? t('Bạn chỉ xem.') : t('Bạn làm thay được.')}</span>
+          {/* Dòng chưa ai giữ / Chấm Speaking chung: dải trung tính (15 mục 8.1 — dải theo dòng đang mở); người chỉ xem vẫn "Việc của {vai}. Bạn chỉ xem.". */}
+          {dai.kieu === 'chung' && !dai.xem ? <span><b className="font-semibold text-slate-100">{t('Việc chung của GV Speaking.')}</b> {t('Bạn nhập hộ được.')}</span>
+            : dai.kieu === 'chua' && !dai.xem ? <span><b className="font-semibold text-slate-100">{t('Chưa có người giữ.')}</b> {t('Bạn làm được.')}</span>
+            : <span><b className="font-semibold text-slate-100">{t('Việc của {vai}.', { vai: TEN_VAI_HD[dai.vai] })}</b> {dai.xem ? t('Bạn chỉ xem.') : t('Bạn làm thay được.')}</span>}
         </div>
       )}
       {qc && (
