@@ -267,3 +267,10 @@ details.ls > summary::-webkit-details-marker { display:none; }
 .thanh > .mo-rong[aria-expanded="true"], .tin.gom .mo-rong[aria-expanded="true"] { background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); }
 .t-bd .bd { min-width:24px; }
 .dt .o.lon { min-height:96px; }
+
+/* PTA Overhaul chỉnh 3: ✓ và ⌄ của dòng tin không viền lúc nghỉ — viền chỉ khi rê / focus (hộp nhẹ) */
+.xem { border-color:transparent; background:transparent; color:var(--text-faint); }
+.xem:hover, .xem:focus-visible, .xem.re-mk { border-color:var(--ok-vien); }
+.tin.gom .mo-rong { background:transparent; box-shadow:none; color:var(--text-faint); }
+.tin.gom .mo-rong:hover, .tin.gom .mo-rong:focus-visible { background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--line-strong); color:var(--text); }
+.tin.gom .mo-rong[aria-expanded="true"] { background:transparent; box-shadow:none; color:var(--accent); }

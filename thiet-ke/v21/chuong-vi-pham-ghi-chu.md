@@ -7,6 +7,14 @@ Mockup: `thiet-ke/v21/chuong-vi-pham.html` + `chuong-vi-pham.css` (token, thành
 
 (chưa có)
 
+## 0b. PTA Overhaul rà (15/11) — đã áp
+
+PTA Overhaul rà qua cap-k1, k3, k5, k6: **ĐẠT hướng**. Quyết [XM]: 1 đồng ý (việc + panel tên "Xử lý vi phạm"; nút vẫn "Xác nhận xử lý") · 2 KHÔNG (→ chỉnh 2) · 3–9 đồng ý. Bốn chỉnh, đã sửa:
+1. Form giữ tiêu đề **"Vi phạm / Nhắc nhở"** (lời 17, web đang dùng) ở mọi khung — K5a–d, K8c.
+2. "Không xử lý" = việc XONG → em **không** còn ở "Chưa xong"; xuống "Các em khác", khối em vẫn hiện vi phạm + "Không xử lý · «lý do»", đếm "n / 3 trong 2 tuần", nút "Xác nhận xử lý" tại đó; đủ 3 → lên lại nhóm cần xử lý như luật cũ. Hồ sơ HV **không** thêm nhóm: vi phạm ở Lịch sử, nút tại dòng — K7a, K7b.
+3. Cập nhật: ✓ và ⌄ của tin gom **không viền lúc nghỉ**, viền khi rê / focus; 375 vùng chạm vẫn 44 — K1, K3, K4, K8.
+4. `cap-k1-chuong.png` SAU = trạng thái mặc định (mọi thanh đóng, gom đóng); mở một thanh + mở tin gom ở ảnh cặp riêng `cap-k1b-mo-thanh.png`.
+
 ## 1. Khung
 
 | Khung | Nội dung | R |
@@ -15,7 +23,7 @@ Mockup: `thiet-ke/v21/chuong-vi-pham.html` + `chuong-vi-pham.css` (token, thành
 | K2a / K2b | Bấm thanh → Công việc tab Ý thức & Phối hợp · bấm việc trong phần mở → cùng trang, dòng đang chọn + panel Xử lý vi phạm | R11.2, R11.5 |
 | K3a–c | Cập nhật: GV bộ môn nhận "GVCN không xử lý · lý do" · vừa "Đã xem hết" (Hoàn tác 10 giây) · Xem tất cả | R11.3 |
 | K4a–g | Trạng thái chuông: hết việc · chỉ có Cập nhật · rỗng · đang tải · lỗi; vai TVV, QL | R11.1 |
-| K5a–d | Form Ghi vi phạm: công tắc tắt · bật · Chỉ nhắc nhở (ẩn) · GVCN tự ghi (ẩn) — bấm thử ở K5a | R11.4 |
+| K5a–d | Form "Vi phạm / Nhắc nhở": công tắc tắt · bật · Chỉ nhắc nhở (ẩn) · GVCN tự ghi (ẩn) — bấm thử ở K5a | R11.4 |
 | K6a–c | Panel Xử lý vi phạm lối Không xử lý: đang gõ · lý do trống báo lỗi · lưu xong + Hoàn tác (bấm thử hai lối ở K6a) | R11.5 |
 | K7a / K7b | Tab Ý thức hồ sơ lớp (dáng web hiện tại) + hồ sơ HV (③) | R11.6 |
 | K8a–d | 375 Sáng: chuông toàn màn đóng · một thanh mở · form công tắc bật · panel Không xử lý | R11.7 |
@@ -31,22 +39,22 @@ Mockup: `thiet-ke/v21/chuong-vi-pham.html` + `chuong-vi-pham.css` (token, thành
 | K1 | Nút ⌄ cuối thanh | — | mở tại chỗ ≤ 3 việc gấp nhất: "Lớp · việc" + thẻ phụ (em, nguồn) + hạn; "+ n việc ›" → tab; một lúc một thanh | MỚI |
 | K1 | Dòng Chấm Speaking | không có | không có (việc chung, không đếm — giữ) | GIỮ |
 | K1 | "● n mới" của loại việc | có (localStorage) | bỏ khỏi thanh (thanh theo tab; việc mới đã nằm trong phần mở theo hạn) — [XM-3] | BỎ (hỏi) |
-| K3 | Khối Cập nhật | hai hàng (loại · giờ / nội dung) + "›"; "n chưa đọc"; "Xem tất cả ›" | giữ hai hàng + lớp ở hàng trên; "›" → **✓ đã xem**; "n mới"; **"Đã xem hết"** (Hoàn tác 10 giây); "Xem tất cả ›" | GIỮ dáng · ĐỔI cuối tin |
+| K3 | Khối Cập nhật | hai hàng (loại · giờ / nội dung) + "›"; "n chưa đọc"; "Xem tất cả ›" | giữ hai hàng + lớp ở hàng trên; "›" → **✓ đã xem** (không viền lúc nghỉ); "n mới"; **"Đã xem hết"** (Hoàn tác 10 giây); "Xem tất cả ›" | GIỮ dáng · ĐỔI cuối tin |
 | K3 | Tin vi phạm | việc "Xem vi phạm mới" ở khối việc | tin "Vi phạm mới" / "Nhắc nhở" (chữ loại tin màu đỏ cho vi phạm); ≥ 2 tin vi phạm cùng lớp chưa xem → gom "3 vi phạm mới · MB FT 101": ⌄ = mở từng em (cùng luật ⌄ với thanh), bấm dòng = tab Ý thức của lớp, ✓ từng em / cả nhóm | ĐỔI (luật D2 mới) |
 | K3 | Tin "GVCN không xử lý" | — | cho người ghi: "Vi phạm · MB FT 101" / "GVCN không xử lý · em · «lý do»" — hai hàng, không cắt lý do | MỚI (lời 48) |
 | K3 | Tin TVV đã báo PH | có | giữ | GIỮ |
 | K4 | Hết việc / rỗng / tải / lỗi | v2 B4, B7 | giữ dáng; câu lỗi chuẩn "⚠ Không tải được … · Thử lại" | GIỮ |
 | K4 | TVV, QL | dòng theo loại; QL có Chờ duyệt | thanh theo tab của vai; QL giữ "Chờ bạn duyệt"; vi phạm ở lớp chưa có GVCN → tin tới QL | ĐỔI theo K1 |
 | K2a | Công việc tab Ý thức & Phối hợp | "Xem vi phạm mới · 3 em ▾" (Đã xem từng em) + "Xử lý vi phạm · 3 em ▾" | bỏ "Xem vi phạm mới"; "Xử lý vi phạm" giữ; việc do được yêu cầu có thẻ phụ "Vũ Thu Lan yêu cầu", hạn 5 ngày | BỎ / MỚI |
-| K5 | Form Ghi vi phạm | Vi phạm │ Chỉ nhắc nhở · Học viên · Nhóm · Vi phạm 0/60 · Môn · Ngày · Mô tả · + Thêm vi phạm · Bằng chứng · quy chế "GVCN nhận việc xem…" | giữ hết; thêm **một dòng công tắc "Yêu cầu GVCN xử lý"** ngay trên dòng quy chế (tên GVCN cuối dòng); quy chế đổi theo công tắc | GIỮ + MỚI |
+| K5 | Form "Vi phạm / Nhắc nhở" (tiêu đề giữ) | Vi phạm │ Chỉ nhắc nhở · Học viên · Nhóm · Vi phạm 0/60 · Môn · Ngày · Mô tả · + Thêm vi phạm · Bằng chứng · quy chế "GVCN nhận việc xem…" | giữ hết; thêm **một dòng công tắc "Yêu cầu GVCN xử lý"** ngay trên dòng quy chế (tên GVCN cuối dòng); quy chế đổi theo công tắc | GIỮ + MỚI |
 | K5 | Gợi ý "Tự điền môn bạn dạy lớp này" | có (chữ dưới ô Môn) | bỏ chữ (bỏ chú thích tĩnh — ① K5d); môn vẫn tự điền | BỎ chữ, GIỮ hành vi |
 | K6 | Panel việc vi phạm | "Xem vi phạm mới" (Đã xem · 1, Đã xem · việc tiếp ›, Xác nhận xử lý) · "Xác nhận xử lý" (Vi phạm đưa vào, 4 cách, Ngày, Người thực hiện) | panel **"Xử lý vi phạm"**: khối vi phạm được yêu cầu (người ghi, ngày, môn, mô tả, đếm 1 / 3) + hai lối **Xác nhận xử lý │ Không xử lý**; lối Xác nhận = panel đang có (mockup vẽ rút gọn như ⑤ D1a) | BỎ "Xem" · MỚI lối |
 | K6 | Lý do Không xử lý | — | ô "Lý do *" (gửi người ghi), ≥ 8 ký tự, báo tại ô; lưu xong "✓ Đã lưu · Không xử lý" + Hoàn tác 10 giây + Việc tiếp › | MỚI |
 | K7a | Tab Ý thức lớp — cột Bước | "Chưa xem · hạn" + "Đã xem · 1" + "Xác nhận xử lý" | bỏ "Chưa xem", "Đã xem · n"; vi phạm lẻ: "Trong 2 tuần: 1 / 3" + "Xác nhận xử lý"; được yêu cầu: viên "Vũ Thu Lan yêu cầu · hạn 19/09" + "Xử lý" | BỎ / ĐỔI |
 | K7a | Cột Đã xử lý | — / biện pháp | thêm trạng thái "Không xử lý · 11/09" (viên viền đứt) + lý do; cột Bước vẫn "Xác nhận xử lý" | MỚI |
-| K7a | Nhóm "Chưa xong" (em chưa xử lý lên đầu) | có | giữ | GIỮ |
+| K7a | Nhóm "Chưa xong" (em chưa xử lý lên đầu) | em có việc Chưa xem / bắt buộc / … | chỉ em **có việc đang chờ** (bắt buộc, được yêu cầu); em đã "Không xử lý" hoặc chỉ có vi phạm lẻ không việc → "Các em khác" (khối em vẫn hiện vi phạm, trạng thái, nút); đủ 3 → lên lại (PTA quyết XM-2) | ĐỔI |
 | K7b | Hồ sơ HV — Việc cần làm "Xem 1 vi phạm mới · Đã xem" | có | bỏ | BỎ |
-| K7b | Khối Ý thức của em | "Đang chờ" (Chưa xem · Đã xem · 1) | "Đang chờ" chỉ còn dòng có việc; thêm nhóm **"Chưa xử lý · n vi phạm · trong 2 tuần 2 / 3"** cho vi phạm không còn việc (mới, Không xử lý); Lịch sử giữ | ĐỔI |
+| K7b | Khối Ý thức của em | "Đang chờ" (Chưa xem · Đã xem · 1) | không thêm nhóm: "Đang chờ" chỉ khi có việc; vi phạm không việc (mới, Không xử lý) nằm ở **Lịch sử** với trạng thái + lý do + "Xác nhận xử lý" tại dòng; "Trong 2 tuần: 2 / 3 vi phạm" cạnh thang | ĐỔI |
 | K8 | 375 | chuông neo hộp 70 vh; form panel toàn màn | chuông **toàn màn** dưới thanh trên ("Thông báo" + ✕ dính); thanh 52, ⌄ / ✓ 44; form công tắc hai hàng | ĐỔI (R11.7) |
 
 ## 3. Bảng thao tác TRƯỚC → SAU
@@ -70,8 +78,10 @@ Không mất thao tác nào khác.
 
 ## 4. [XM] — cần PTA Overhaul / chủ SP quyết
 
+PTA Overhaul đã quyết (15/11): XM-1 đồng ý · XM-2 KHÔNG (xem mục 0b chỉnh 2) · XM-3 … XM-9 đồng ý.
+
 - **[XM-1] Tên việc / panel "Xử lý vi phạm" vs "Xác nhận xử lý".** Web: loại việc `yt_xu_ly` = "Xử lý vi phạm", panel = "Xác nhận xử lý"; bảng mẫu ⑤ G2 viết dòng việc "Xác nhận xử lý". Mockup: dòng việc + tiêu đề panel = **"Xử lý vi phạm"** (khớp đề bài + chuông), hai lối bên trong = "Xác nhận xử lý" │ "Không xử lý". Đề xuất dùng một tên "Xử lý vi phạm" cho việc ở mọi nơi.
-- **[XM-2] Vi phạm "Không xử lý" ở tab Ý thức lớp nằm nhóm nào.** Mockup: em vẫn ở nhóm "Chưa xong" (vi phạm chưa có biện pháp, vẫn tính luật) cho tới khi GVCN xác nhận xử lý hoặc vi phạm ra khỏi cửa sổ 2 tuần; không có hạn, không vạch màu. Hồ sơ HV: nhóm mới "Chưa xử lý". Cần PTA chốt (LG-12 cần biết khi nào em rời nhóm).
+- **[XM-2] Vi phạm "Không xử lý" ở tab Ý thức lớp nằm nhóm nào.** ~~Đề xuất: ở lại "Chưa xong"; hồ sơ HV nhóm mới "Chưa xử lý".~~ **PTA quyết: KHÔNG** — việc đã xong thì không nơi nào báo chờ: em xuống "Các em khác", vi phạm vẫn hiện + đếm luật + nút Xác nhận xử lý; hồ sơ HV dùng nhóm đang có (Lịch sử). Đã sửa.
 - **[XM-3] "● n mới" của chuông v2.** Thanh theo tab không còn chỗ cho "● n mới" theo loại (mới chỉ ở localStorage). Mockup bỏ; việc mới vẫn thấy trong phần mở (xếp theo hạn). Muốn giữ: chấm nhỏ cạnh tên tab khi tab có việc mới.
 - **[XM-4] "›" trên thanh.** Phác chữ lời 47 vẽ thanh không "›"; critique chỉ ra người dùng (nhất là 375, không có rê chuột) không biết bấm thanh là đổi trang. Mockup: "›" mờ NGAY SAU tên tab (G2: "›" = đổi trang), cách xa ô ⌄ (ô ⌄ tách bằng vạch dọc, có nền nghỉ). Chủ SP muốn bỏ "›" thì chỉ xoá một ký tự.
 - **[XM-8] Bấm dòng tin gom → đâu.** Mockup: dòng "3 vi phạm mới · MB FT 101" = mở tab Ý thức của lớp đó (như tin đơn mở đúng em); ⌄ = xem từng em tại chỗ. Đề bài ghi "bấm mở ra" — đã đổi để "⌄ = mở" một nghĩa trong cả hộp.
@@ -92,16 +102,16 @@ Không mất thao tác nào khác.
 | R11.3 | Tin vi phạm đơn + gom lớp; "GVCN không xử lý · lý do"; TVV đã báo PH; ✓ / Đã xem hết / Xem tất cả | K1b, K3a, K3b, K3c | Đạt |
 | R11.4 | Công tắc "Yêu cầu GVCN xử lý" một dòng, nổi bật; quy chế đổi (bật "GVCN có việc Xử lý vi phạm, hạn 19/09" · tắt "GVCN nhận tin ở chuông"); ẩn khi Chỉ nhắc nhở / người ghi là GVCN | K5a–d, K8c | Đạt |
 | R11.5 | Dòng việc ghi nguồn "Vũ Thu Lan yêu cầu"; panel hai lối; lý do bắt buộc; câu quy chế "Người ghi nhận lý do · vi phạm vẫn tính vào luật 3 vi phạm / 2 tuần" | K2a, K2b, K6a–c, K8d | Đạt |
-| R11.6 | Tab Ý thức lớp + hồ sơ HV: không "Đã xem"; "Không xử lý" có trạng thái + lý do + "Xác nhận xử lý"; em chưa xử lý lên đầu | K7a, K7b | Đạt ([XM-2]) |
+| R11.6 | Tab Ý thức lớp + hồ sơ HV: không "Đã xem"; "Không xử lý" có trạng thái + lý do + "Xác nhận xử lý"; em chưa xử lý lên đầu | K7a, K7b | Đạt (theo PTA quyết XM-2: em có việc chờ lên đầu; Không xử lý = xong, xuống Các em khác) |
 | R11.7 | 375 chuông toàn màn + form | K8a–d | Đạt |
 | V22 | Hạn chỉ màu, không ⚠ ở chip / badge / số hạn | mọi khung (⚠ chỉ ở câu lỗi K4e, K6b) | Đạt |
 | G2 | Dùng lại thành phần chuẩn: dòng việc, panel + dòng quy chế + chân "Lưu · việc tiếp ›", công tắc đoạn, hộp chuông v2, khối Ý thức ③ | mọi khung | Đạt |
 | G3 | Không chú thích tĩnh, không bước xác nhận cho thao tác thường | — | Đạt (Đã xem hết dùng Hoàn tác, không hỏi) |
-| Lời 40 | Thông tin theo trạng thái: công tắc chỉ khi có ý nghĩa; tin đã xem không có ✓; chỉ có tin → chỉ chấm; Không xử lý không hạn | K4, K5c/d, K7 | Đạt |
+| Lời 40 | Thông tin theo trạng thái: công tắc chỉ khi có ý nghĩa; tin đã xem không có ✓; chỉ có tin → chỉ chấm; Không xử lý = xong, không hạn, không ở nhóm chờ | K4, K5c/d, K7 | Đạt |
 
 ## 6. Số đo ✕ / ⌄ / ✓ (tâm nét so với tâm nút)
 
-Đo bằng script trên trang (getBoundingClientRect, 1600 × 1000, cả 1440 và 375): ⌄ 33 nút — lệch tối đa **0,00 px** · ✓ 27 nút — **0,00 px** · ✕ 12 nút — **0,33 px**. ⌄ và ✓ là SVG 16 × 16 (nét đối xứng quanh (8, 8) trong viewBox) đặt `place-items:center` trong nút vuông 36 / 32 (375: 44); ✕ là chữ trong nút 36 / 44 như v21. Mọi giá trị ≤ 1 px.
+Đo bằng script trên trang (getBoundingClientRect, 1600 × 1000, cả 1440 và 375; đo lại sau chỉnh PTA): ⌄ 34 nút — lệch tối đa **0,00 px** · ✓ 27 nút — **0,00 px** · ✕ 12 nút — **0,33 px**. ⌄ và ✓ là SVG 16 × 16 (nét đối xứng quanh (8, 8) trong viewBox) đặt `place-items:center` trong nút vuông 36 / 32 (375: 44); ✕ là chữ trong nút 36 / 44 như v21. Mọi giá trị ≤ 1 px.
 
 ## 7. Dòng đọc Turso
 
