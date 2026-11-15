@@ -545,3 +545,11 @@ Bối cảnh: PTA Overhaul trả lời năm điểm của lời 47 (gợi ý s�
 - **Vi phạm vẫn để lại** và **vẫn tính vào luật 3 vi phạm trong 2 tuần** (đủ 3 thì buộc xử lý như cũ).
 - GVCN đổi ý → **luôn xác nhận xử lý được ở trang Ý thức**.
 - Các điểm PTA trả lời ở trên chủ SP không phản đối → làm theo: thiết kế + đề bài mockup ⑪ ⑫ ⑬ + việc máy chủ LG-11 … LG-13 ở `13-thiet-ke-dot-4.md`.
+
+## 15/11 — lời 49 (chủ SP nói trong session mockup ⑬; session đó chuyển lại nguyên văn): Tổng quan Admin bỏ chữ "Mock Test" ở đầu trang
+
+Bối cảnh: chủ SP thấy ảnh web Tổng quan của Admin văn phòng có dòng phạm vi "Tổng quan · Mock Test · W3 SEP" (web `worklist/MockTestAdmin.tsx`; mockup ⑧ khung T5 ghi "Monbay · Mock Test · W3 SEP").
+
+> "tại sao trang tổng quan mà lại có chữ Mocktest ở trên đầu trang? có liên quan gì không? xóa đi"
+
+ĐÃ CHỐT: đầu trang Tổng quan của Admin văn phòng **bỏ chữ "Mock Test"** → dòng phạm vi như QL ("Monbay · W3 SEP"); dòng loại ở đầu panel "Số liệu · Mock Test" → "Số liệu · Tổng quan". Mockup ⑧ KHÔNG vẽ lại (theo lời 39, 44) — code theo lời này, ảnh cặp ghi "KHÁC theo lời 49". Vào GD-14.
