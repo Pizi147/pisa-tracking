@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GV gõ ít hơn · v21 ⑫</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="v21.css">
+<link rel="stylesheet" href="gv-viet-it.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-case" viewBox="0 0 16 16"><path d="M4 14V2m0 1h8l-2 3 2 3H4"/></symbol>
+  <symbol id="i-gop" viewBox="0 0 16 16"><path d="M2 3h12v10H2zM2 7h12M6 3v10"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 16 16"><path d="M6 3.5L10.5 8 6 12.5"/></symbol>
+  <symbol id="i-tick" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></symbol>
+  <symbol id="i-lich" viewBox="0 0 16 16"><rect x="2.5" y="3.5" width="11" height="10" rx="1"/><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3"/></symbol>
+</svg>
+
+<div class="trang">
+  <header class="dau-mk">
+    <h1>v21 ⑫ · GV gõ ít hơn — dùng lại chữ đã ghi · lưới Ghi kết quả PA · Hoàn thành Case bật sẵn</h1>
+    <p>Đề bài <code>docs/superpowers/specs/2026-11-13-overhaul-v6/13-thiet-ke-dot-4.md</code> mục 2 (H1–H4) + mục 5 "⑫" (R12.1–R12.5), luật chung G1–G5 (<code>11-de-bai-mockup-dot-2.md</code>), V22, lời 36, 40, 47, 48. Nền: web hiện tại (ảnh TRƯỚC) + <code>v15/bao-cao-ph.html</code>, <code>v11/ban-giao-w1w2.html</code>, <code>v16/case-pa.html</code>, mockup ① K4c. Thành phần lấy từ <code>v21.css</code> (chỉ đọc); phần mới ở <code>gv-viet-it.css</code>. Ghi chú, [XM], tự rà: <code>gv-viet-it-ghi-chu.md</code>.</p>
+    <p><b>Một ý xuyên suốt:</b> gợi ý là KHUNG ghép từ chữ đã ghi trên web (nhận xét MT, kết quả PA, vi phạm, tình hình học tập) — <b>không AI</b>, không tự điền ô. GV bấm "Chèn" mới vào ô; chữ gửi PH luôn do GV đọc và chốt. Không có gì để gợi ý → không có khối. Nền vàng viền đứt = chú thích cho người duyệt. Tên người: bịa.</p>
+    <nav class="muc-mk" aria-label="Mục lục">
+      <a href="#a">A · Báo cáo PH (R12.1)</a><a href="#b">B · Bàn giao (R12.2)</a><a href="#c">C · Lưới Ghi kết quả PA (R12.3)</a><a href="#d">D · Hoàn thành Case (R12.4)</a><a href="#e">E · 375 (R12.5)</a>
+      <span class="che-mk" role="group" aria-label="Chế độ màu khung 1440"><button type="button" data-che="toi" aria-pressed="true">Tối</button><button type="button" data-che="sang" aria-pressed="false">Sáng</button></span>
+    </nav>
+  </header>
+
+  <!-- =============================================== A · BÁO CÁO PH =============================================== -->
+  <section class="khu" id="a">
+    <h2>A · Báo cáo PH — khối "Bạn đã ghi tháng này" cạnh ô chữ (R12.1 · H1)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Panel viết giữ nguyên (danh sách em · Điểm · Cả n tiêu chí · tiêu chí đặt sẵn viền đứt như web · ô chữ · tự lưu · "Lưu · em tiếp ›") · <span class="so-mk">2</span>khối mới bên phải ô chữ, rộng 260, nền lặng: mỗi dòng = <b>nguồn</b> một dòng (lượt · tuần · điểm / kỳ PA · Tiến triển; người khác ghi thì thêm "· cô Lan ghi") + <b>câu đã ghi</b> (≤ 2 dòng, chữ phụ) + <b>Chèn</b> · <span class="so-mk">3</span>Chèn = thêm câu vào CUỐI ô (không đè), câu vừa chèn tô nhẹ tới khi gõ; dưới ô "Hoàn tác chèn" 10 giây (chỉ gỡ đúng đoạn đã chèn) · <span class="so-mk">4</span><b>theo trạng thái</b>: ô đã có chữ / em đã đủ → khối gập một dòng (A6); chưa có nguồn → không khối (A3); đang tải → không giữ chỗ (A4) · <span class="so-mk">5</span>FT: "tháng này" (tháng của đợt); lớp thường: "đợt này" (từ đợt trước) · <span class="so-mk">6</span>dữ liệu nạp MỘT lần theo lớp khi mở panel (LG-13a), đổi em không gọi thêm.</p>
+    <div class="hang-khung">
+      <figure><figcaption>A1 · Reading (FT) · có gợi ý — mặc định khi mở</figcaption>
+        <aside class="pn pn-rong toi" data-web data-k="a1">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Báo cáo PH · viết</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Báo cáo PH · MB FT 101 · Reading</h2></div>
+            <div class="pn-ngu"><span>Tháng 10</span><span><b class="so">3</b> / 8 em đủ</span><span>hạn 30/10</span></div>
+          </div>
+          <div class="pn-2cot">
+            <nav class="ds-em" aria-label="Học viên">
+              <span class="dau">8 em</span>
+              <button type="button"><span>Hà Gia Bình</span><small class="ok">✓ đủ</small></button>
+              <button type="button"><span>Đỗ Minh Khôi</span><small class="ok">✓ đủ</small></button>
+              <button type="button" class="chon" aria-current="true"><span>Lý Minh Châu</span><small class="nhap">nháp</small></button>
+              <button type="button"><span>Vũ Ngọc Lan</span><small class="ok">✓ đủ</small></button>
+              <button type="button"><span>Trịnh Bảo Ngọc</span></button>
+              <button type="button"><span>Phạm Bảo Ngọc</span></button>
+              <button type="button"><span>Lê Quang Huy</span></button>
+              <button type="button"><span>Bùi Thảo Vy</span></button>
+            </nav>
+            <div class="form-em">
+              <h3>Lý Minh Châu <span class="tag nhat">Nháp</span></h3>
+              <div class="dong-diem"><span class="lb">Điểm</span><span><b class="so">5.5</b> · MT2 · W3 OCT</span><button type="button" class="link-nho">Sửa</button></div>
+              <div class="tieu-chi">
+                <div class="ca"><span>Cả 4 tiêu chí</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span>Khá</span><span>Yếu</span></span></div>
+                <div class="nhom-tc">Tiêu chí <span class="tag nhat" style="margin-left:6px">Đặt sẵn như Tháng 9</span></div>
+                <div class="dong"><span class="ten">Đọc hiểu ý chính trong bài, nắm bắt suy luận và ý nghĩa ngụ ý</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span class="on dat-san">Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Định vị từ khoá trong bài và câu hỏi</span><span class="thang4"><span>Xuất sắc</span><span class="on">Tốt</span><span>Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Từ vựng và ngữ pháp</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span class="on dat-san">Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Kĩ năng làm bài</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span>Khá</span><span class="on dat-san">Yếu</span></span></div>
+              </div>
+              <div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+                <div class="viet">
+                  <div class="o-chu"><div class="o lon"><span class="mo3">Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào</span></div></div>
+                  <section class="da-ghi" aria-label="Bạn đã ghi tháng này">
+                    <div class="dg-dau">Bạn đã ghi tháng này</div>
+                    <div class="muc"><span class="nguon"><b>MT2</b> · W3 OCT · R <span class="so">5.5</span> / <span class="so">6.0</span></span><button type="button" class="nut-chen">Chèn</button>
+                      <span class="cau">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given ở cuối bài.</span></div>
+                    <div class="muc"><span class="nguon"><b>PA Bổ trợ Reading</b> · W4 OCT · Tiến bộ một phần</span><button type="button" class="nut-chen">Chèn</button>
+                      <span class="cau">Đúng 24 / 40 câu ở bài luyện, đã làm hết bài trong 60 phút.</span></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Tháng 10 · hạn 30/10</span></div>
+          <div class="pn-chan"><span class="tt-luu">Tự lưu khi rời ô</span><span class="phai"><span class="tt-luu">Tiếp: <b style="color:var(--text)">Trịnh Bảo Ngọc</b></span><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Lưu · em tiếp ›</button></span></div>
+        </aside>
+      </figure>
+    </div>
+
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>A2 · bấm "Chèn" dòng MT2 → câu vào cuối ô (tô nhẹ), dòng đó "✓ Đã chèn", dưới ô "Hoàn tác chèn" 10 giây · GV gõ tiếp</figcaption>
+        <div class="pn toi" data-web data-k="a2" style="width:800px;padding:14px 20px 16px">
+          <div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+            <div class="viet">
+              <div class="o-chu"><div class="o lon go"><span class="chen-moi">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given ở cuối bài.</span> Ở nhà nhờ gia đình nhắc em làm 2 bài đọc mỗi tuần, bấm giờ 20 phút<span class="con"></span></div>
+                <div class="duoi"><span class="da">✓ Đã chèn câu MT2</span><button type="button" class="link-nho">Hoàn tác chèn</button></div></div>
+              <section class="da-ghi" aria-label="Bạn đã ghi tháng này">
+                <div class="dg-dau">Bạn đã ghi tháng này</div>
+                <div class="muc da-chen"><span class="nguon"><b>MT2</b> · W3 OCT · R <span class="so">5.5</span> / <span class="so">6.0</span></span><span class="dau-chen">✓ Đã chèn</span>
+                  <span class="cau">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given ở cuối bài.</span></div>
+                <div class="muc"><span class="nguon"><b>PA Bổ trợ Reading</b> · W4 OCT · Tiến bộ một phần</span><button type="button" class="nut-chen">Chèn</button>
+                  <span class="cau">Đúng 24 / 40 câu ở bài luyện, đã làm hết bài trong 60 phút.</span></div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </figure>
+      <figure><figcaption>A3 · em chưa có gì để gợi ý → không có khối, ô chữ rộng như hiện nay</figcaption>
+        <div class="pn toi" data-web data-k="a3" style="width:800px;padding:14px 20px 16px">
+          <div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+            <div class="viet mot"><div class="o-chu"><div class="o lon" style="min-height:104px"><span class="mo3">Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào</span></div></div></div>
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>A4 · đang tải (không giữ chỗ, ô gõ được ngay) · tải lỗi (một dòng dưới ô, không chặn viết)</figcaption>
+        <div class="toi san" data-web data-k="a4" style="display:flex;gap:16px;background:var(--bg);padding:14px;border-radius:6px">
+          <div class="pn" style="width:560px;padding:14px 20px 16px"><div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+            <div class="o-chu"><div class="o lon" style="min-height:104px"><span class="mo3">Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào</span></div><div class="duoi"><span>Đang tải chữ đã ghi…</span></div></div></div></div>
+          <div class="pn" style="width:560px;padding:14px 20px 16px"><div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+            <div class="o-chu"><div class="o lon" style="min-height:104px"><span class="mo3">Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào</span></div><div class="duoi"><span class="loi">⚠ Không tải được chữ đã ghi</span><button type="button" class="link-nho">Thử lại</button></div></div></div></div>
+        </div>
+      </figure>
+      <figure><figcaption>A6 · lớp thường · em đã đủ (ô có chữ) → khối gập một dòng "Bạn đã ghi đợt này · 2", bấm "Xem" mở lại</figcaption>
+        <div class="pn toi" data-web data-k="a6" style="width:800px;padding:14px 20px 16px">
+          <div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+            <div class="viet">
+              <div class="o-chu"><div class="o lon" style="min-height:96px">Em đọc chắc hơn, còn chậm ở dạng điền từ. Ở nhà nên đọc thêm 15 phút mỗi tối.</div></div>
+              <section class="da-ghi gap" aria-label="Bạn đã ghi đợt này"><div class="dg-dau">Bạn đã ghi đợt này · <span class="so">2</span></div><button type="button" class="mo" aria-expanded="false">Xem</button></section>
+            </div>
+          </div>
+        </div>
+      </figure>
+    </div>
+
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>A5 · phần Chung của GVCN — nguồn: vi phạm + xử lý, Tình hình học tập trong tháng</figcaption>
+        <aside class="pn pn-rong toi" data-web data-k="a5">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Báo cáo PH · viết</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Báo cáo PH · MB FT 101 · Nhận xét chung</h2></div>
+            <div class="pn-ngu"><span>Tháng 10</span><span><b class="so">2</b> / 8 em đủ</span><span>hạn 30/10</span></div>
+          </div>
+          <div class="pn-2cot">
+            <nav class="ds-em" aria-label="Học viên">
+              <span class="dau">8 em</span>
+              <button type="button"><span>Hà Gia Bình</span><small class="ok">✓ đủ</small></button>
+              <button type="button"><span>Đỗ Minh Khôi</span><small class="ok">✓ đủ</small></button>
+              <button type="button"><span>Lý Minh Châu</span></button>
+              <button type="button" class="chon" aria-current="true"><span>Vũ Ngọc Lan</span><small class="nhap">nháp</small></button>
+              <button type="button"><span>Trịnh Bảo Ngọc</span></button>
+              <button type="button"><span>Phạm Bảo Ngọc</span></button>
+              <button type="button"><span>Lê Quang Huy</span></button>
+              <button type="button"><span>Bùi Thảo Vy</span></button>
+            </nav>
+            <div class="form-em">
+              <h3>Vũ Ngọc Lan <span class="tag nhat">Nháp</span></h3>
+              <div class="tieu-chi">
+                <div class="ca"><span>Cả 7 tiêu chí</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span>Khá</span><span>Yếu</span></span></div>
+                <div class="nhom-tc">Trách nhiệm học tập</div>
+                <div class="dong"><span class="ten">Chuyên cần &amp; Đúng giờ</span><span class="thang4"><span>Xuất sắc</span><span class="on">Tốt</span><span>Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Chuẩn bị trước khi đến lớp</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span class="on">Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Hoàn thành bài tập về nhà</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span>Khá</span><span class="on">Yếu</span></span></div>
+                <div class="gon-tc">Thái độ học tập · 4 tiêu chí như web (cắt cho gọn khung, không đổi)</div>
+              </div>
+              <div class="o-truong"><span class="lb">Nhận xét chung</span>
+                <div class="viet">
+                  <div class="o-chu"><div class="o lon"><span class="mo3">Viết cho phụ huynh: tình hình chung, ý thức, điều gia đình cần phối hợp</span></div></div>
+                  <section class="da-ghi" aria-label="Bạn đã ghi tháng này">
+                    <div class="dg-dau">Bạn đã ghi tháng này</div>
+                    <div class="muc"><span class="nguon"><b>Vi phạm</b> · W2 OCT · REPORT 1 · cô Lan ghi</span><button type="button" class="nut-chen">Chèn</button>
+                      <span class="cau">Hai buổi liền không nộp bài Writing. Đã nhắc, em hứa nộp bù trước thứ Sáu.</span></div>
+                    <div class="muc"><span class="nguon"><b>Tình hình học tập</b> · W3 OCT · đã gửi TVV</span><button type="button" class="nut-chen">Chèn</button>
+                      <span class="cau">Em đi học đủ, tập trung hơn sau buổi gặp phụ huynh.</span></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Bạn viết phần Chung · GV kỹ năng viết phần môn mình</span></div>
+          <div class="pn-chan"><span class="tt-luu da">✓ Đã lưu</span><span class="phai"><span class="tt-luu">Tiếp: <b style="color:var(--text)">Lý Minh Châu</b></span><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Lưu · em tiếp ›</button></span></div>
+        </aside>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =============================================== B · BÀN GIAO =============================================== -->
+  <section class="khu" id="b">
+    <h2>B · Bàn giao chuyển lớp + đổi GV — "Chèn" từng ô · "Chèn cho n em" (R12.2 · H2)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Cùng thành phần A; nguồn = nhận xét MT gần nhất của em ở môn đó + Case đang mở của môn · <span class="so-mk">2</span>bảng GVBM (rộng 720 như web): dưới ô trống MỘT dòng mờ "nguồn · câu" + Chèn; ô đã có câu, "Cùng GV", em không có nguồn → không có dòng · <span class="so-mk">3</span>"<b>Chèn cho n em</b>" (chỉ hiện khi ≥ 2 ô trống có gợi ý) chèn dòng đầu (MT gần nhất, không có thì Case); xong có dải "Đã chèn n em · Hoàn tác" 10 giây · <span class="so-mk">4</span>panel GVCN + đổi GV: khối cạnh ô nhận xét như A; em được chèn mang chip "Đã chèn" (mất khi GV mở em đó / sửa ô; KHÔNG chặn Xác nhận); nút xác nhận giữ · <span class="so-mk">5</span>Tự điền · chỉ đọc giữ.</p>
+    <div class="hang-khung">
+      <figure><figcaption>B1 · GVBM · "Bàn giao môn R" (chuyển lớp) · dòng gợi ý + Chèn dưới ô trống</figcaption>
+        <aside class="pn pn-vua2 toi" data-web data-k="b1">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Bàn giao</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Bàn giao môn R (Reading)</h2></div>
+            <div class="pn-ngu"><span>MB FT 101 · 5 em</span><span>hạn 19/10</span><span>mỗi em một câu</span></div>
+          </div>
+          <div class="bg-tren"><span><b class="so" style="color:var(--text)">1</b> / 4 em đã có</span><span class="phai"><button type="button" class="nut nut-nho">Chèn cho 2 em</button></span></div>
+          <div class="bg-luoi">
+            <div class="h"><span>Học viên</span><span>Kết quả</span><span>Thông tin bàn giao</span></div>
+            <div class="r"><span class="hv">Lý Minh Châu<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · R <span class="so">5.5</span> · kỳ vọng <span class="so">6.0</span></span>
+              <span class="bg-o"><span class="o"><span class="mo3">Viết một câu…</span></span><span class="goi"><span class="t"><b>MT2</b> · Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given.</span><button type="button" class="nut-chen">Chèn</button></span></span></div>
+            <div class="r"><span class="hv">Hà Gia Bình<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · R <span class="so">6.5</span> · kỳ vọng <span class="so">6.0</span></span>
+              <span class="bg-o"><span class="o da-luu">Đọc tốt, cần luyện dạng Matching Headings.</span><span class="trt"><span class="ok">✓ Đã lưu</span></span></span></div>
+            <div class="r"><span class="hv">Đỗ Minh Khôi<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · R <span class="so">5.0</span> · kỳ vọng <span class="so">6.0</span></span>
+              <span class="bg-o"><span class="o"><span class="mo3">Viết một câu…</span></span><span class="goi"><span class="t"><b>Case R</b> · Hiểu bài nhưng làm chậm, chưa kịp giờ.</span><button type="button" class="nut-chen">Chèn</button></span></span></div>
+            <div class="r"><span class="hv">Vũ Ngọc Lan<small>→ MB FT 106 · W4 OCT</small></span><span class="ket">MT2 · R <span class="so">6.0</span> · kỳ vọng <span class="so">6.0</span></span>
+              <span class="bg-o"><span class="o cung">Cùng GV · không cần bàn giao</span></span></div>
+            <div class="r"><span class="hv">Trịnh Bảo Ngọc<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · chưa có điểm R</span>
+              <span class="bg-o"><span class="o go"><span class="mo3">Viết một câu…</span><span class="con"></span></span><span class="trt">● Đang gõ · lưu khi rời ô</span></span></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Một câu mỗi em · hạn 19/10 · quá hạn em vẫn chuyển</span></div>
+          <div class="pn-chan"><span class="tt-luu">Tự lưu khi rời ô · 1 / 4 em đã có</span><button type="button" class="link-nho" style="color:var(--soon)">Còn 3 em ↑</button><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Việc tiếp ›</button></span></div>
+        </aside>
+      </figure>
+      <figure><figcaption>B2 · sau "Chèn cho 2 em": ô có chữ, tự lưu như gõ; dải "Đã chèn 2 em · Hoàn tác" 10 giây; GV sửa tại ô</figcaption>
+        <div class="pn pn-vua2 toi" data-web data-k="b2" style="padding-bottom:4px">
+          <div class="bg-tren"><span><b class="so" style="color:var(--text)">3</b> / 4 em đã có</span></div>
+          <div class="bao-chen"><span><b>✓ Đã chèn 2 em</b></span><button type="button" class="link-nho">Hoàn tác</button></div>
+          <div class="bg-luoi">
+            <div class="h"><span>Học viên</span><span>Kết quả</span><span>Thông tin bàn giao</span></div>
+            <div class="r"><span class="hv">Lý Minh Châu<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · R <span class="so">5.5</span> · kỳ vọng <span class="so">6.0</span></span>
+              <span class="bg-o"><span class="o da-luu">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given.</span><span class="trt"><span class="ok">✓ Đã lưu</span></span></span></div>
+            <div class="r"><span class="hv">Đỗ Minh Khôi<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · R <span class="so">5.0</span> · kỳ vọng <span class="so">6.0</span></span>
+              <span class="bg-o"><span class="o go">Hiểu bài nhưng làm chậm, chưa kịp giờ. Lớp mới nên cho làm đề bấm giờ<span class="con"></span></span><span class="trt">● Đang gõ · lưu khi rời ô</span></span></div>
+            <div class="r"><span class="hv">Trịnh Bảo Ngọc<small>→ MB FT 105 · W4 OCT</small></span><span class="ket">MT2 · chưa có điểm R</span>
+              <span class="bg-o"><span class="o"><span class="mo3">Viết một câu…</span></span></span></div>
+          </div>
+        </div>
+      </figure>
+    </div>
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>B3 · GVCN · bàn giao chuyển lớp — khối cạnh "Nhận xét chung của GVCN" · "Chèn cho 3 em" đầu danh sách · vẫn "GVCN xác nhận bàn giao" từng em</figcaption>
+        <aside class="pn pn-rong toi" data-web data-k="b3">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Bàn giao</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Bàn giao · MB FT 101</h2></div>
+            <div class="pn-ngu"><span>5 em</span><span>1 / 5 đã xác nhận</span><span>hạn sớm nhất 19/10</span></div>
+          </div>
+          <div class="pn-2cot">
+            <nav class="ds-em" aria-label="Học viên">
+              <span class="dau"><span>5 em</span><span>↑ ↓ đi từng em</span></span>
+              <button type="button" class="nut-lo">Chèn cho 3 em</button>
+              <button type="button" class="chon" aria-current="true"><span class="dong2"><span>Lý Minh Châu</span><span class="chip-m">Môn 2/3</span></span><small>→ MB FT 105 · W4 OCT</small></button>
+              <button type="button"><span class="dong2"><span>Hà Gia Bình</span><span class="chip-m" style="color:var(--ok)">✓</span></span><small class="ok">Đã xác nhận</small></button>
+              <button type="button"><span class="dong2"><span>Đỗ Minh Khôi</span><span class="chip-m">Môn 3/3</span></span><small>→ MB FT 105 · W4 OCT</small></button>
+              <button type="button"><span class="dong2"><span>Vũ Ngọc Lan</span><span class="chip-m">Môn 3/3</span></span><small>→ MB FT 106 · W4 OCT</small></button>
+              <button type="button"><span class="dong2"><span>Trịnh Bảo Ngọc</span><span class="chip-m" style="color:var(--text-faint)">Chưa làm</span></span><small>Tạm dừng học (bảo lưu) · xem lại W1 NOV</small></button>
+            </nav>
+            <div class="form-em">
+              <h3>Lý Minh Châu → MB FT 105 <span style="font:500 14px var(--phong);color:var(--text-dim)">từ W4 OCT</span><span class="tag nhat">Chờ môn W</span><span class="han-v xa">hạn 19/10</span></h3>
+              <div class="tu-dien"><span class="t0">Tự điền · chỉ đọc</span><span>Kết quả</span><b>MT2 · Overall 5.5 (L 6.5 · R 5.5 · W 5.0 · S 5.5)</b><span>Case đang mở</span><b>Reading · Xếp tự học · người nhận gợi ý: Lê Minh Khoa</b><span>Ý thức</span><b>REPORT 1 · không có vi phạm chờ xử lý</b><span>Việc còn dở</span><b>Không có</b></div>
+              <div class="o-truong"><span class="lb" style="font-size:13px;color:var(--text-dim)">Bàn giao của GVBM · mỗi môn một câu</span>
+                <div class="mon-cau"><span class="m">L</span><span>Nghe ý chính tốt, còn yếu dạng điền bản đồ. <span class="ai">— Trần Ngọc Hà, 14/10 ✓</span></span><span class="m">R</span><span>Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given. <span class="ai">— Trần Ngọc Hà, 14/10 ✓</span></span><span class="m">W</span><span class="ai">Chưa có · Lê Minh Khoa, hạn 19/10 <button type="button" class="link-nho" style="margin-left:6px">Điền thay</button></span></div></div>
+              <div class="o-truong"><span class="lb co-dem">Nhận xét chung của GVCN <span class="sao">*</span><span class="dem-ket">0/15</span></span>
+                <div class="viet">
+                  <div class="o-chu"><div class="o lon" style="min-height:112px"><span class="mo3">Ví dụ: Em chăm, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.</span></div></div>
+                  <section class="da-ghi" aria-label="Bạn đã ghi tháng này">
+                    <div class="dg-dau">Bạn đã ghi tháng này</div>
+                    <div class="muc"><span class="nguon"><b>Tình hình học tập</b> · W3 OCT · đã gửi TVV</span><button type="button" class="nut-chen">Chèn</button>
+                      <span class="cau">Em đi học đủ, ngại nói trước lớp. Mẹ theo sát, liên hệ qua Zalo.</span></div>
+                    <div class="muc"><span class="nguon"><b>Vi phạm</b> · W1 OCT · Đi muộn · đã xử lý</span><button type="button" class="nut-chen">Chèn</button>
+                      <span class="cau">Đi muộn 2 buổi đầu tháng, đã nhắc, từ W2 đi đúng giờ.</span></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Nhận xét chung + Xác nhận · hạn 19/10 · quá hạn em vẫn chuyển</span></div>
+          <div class="pn-chan"><span class="tt-luu">Tự lưu khi rời ô · môn còn trống sẽ ghi “GVBM chưa bàn giao”</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh" disabled style="opacity:.55">GVCN xác nhận bàn giao</button></span></div>
+        </aside>
+      </figure>
+    </div>
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>B4 · bàn giao đổi GV — sau "Chèn cho 3 em": em chip "Đã chèn" · khối cạnh ô góp ý · "Xác nhận bàn giao" giữ (mờ khi còn em thiếu)</figcaption>
+        <aside class="pn pn-rong toi" data-web data-k="b4">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Bàn giao</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Bàn giao MB FT 101 · R cho Phạm Thu Trang</h2><span class="han-v nay">hạn hôm nay</span></div>
+            <div class="pn-ngu"><span>6 em</span><span>5 / 6 em đủ góp ý</span><span>hiệu lực W4 OCT</span></div>
+          </div>
+          <div class="gap-chung"><svg class="ic"><use href="#i-chev"/></svg><b>Nhận xét chung cả lớp</b><span>· tuỳ chọn · chưa viết</span></div>
+          <div class="bao-chen" style="margin-top:8px"><span><b>✓ Đã chèn 3 em</b></span><button type="button" class="link-nho">Hoàn tác</button></div>
+          <div class="pn-2cot" style="margin-top:8px">
+            <nav class="ds-em" aria-label="Học viên">
+              <span class="dau"><span>6 em</span><span>↑ ↓ đi từng em</span></span>
+              <button type="button" class="chon" aria-current="true"><span>Lý Minh Châu</span><small class="nhap">Đã chèn</small></button>
+              <button type="button"><span>Hà Gia Bình</span><small class="ok">Đủ</small></button>
+              <button type="button"><span>Đỗ Minh Khôi</span><small class="nhap">Đã chèn</small></button>
+              <button type="button"><span>Vũ Ngọc Lan</span><small class="ok">Đủ</small></button>
+              <button type="button"><span>Trịnh Bảo Ngọc</span><small>Chưa có</small></button>
+              <button type="button"><span>Lê Quang Huy</span><small class="nhap">Đã chèn</small></button>
+            </nav>
+            <div class="form-em">
+              <h3>Lý Minh Châu <span class="tag nhat">Đã chèn</span><span style="margin-left:auto"><button type="button" class="nut nut-nho">Em tiếp: Đỗ Minh Khôi ↓</button></span></h3>
+              <div class="tu-dien"><span class="t0">Tự điền · chỉ đọc</span><span>Kết quả</span><b>MT2 · R 5.5 · kỳ vọng 6.0</b><span>Case đang mở</span><b>Reading · Xếp tự học · người nhận gợi ý: Phạm Thu Trang</b><span>Ý thức</span><b>Chưa có xử lý · không có vi phạm chờ xử lý</b><span>Việc còn dở</span><b>Không có</b></div>
+              <div class="o-truong"><span class="lb">R · Reading <span class="sao">*</span> <span class="tc">bắt buộc</span></span>
+                <div class="viet">
+                  <div class="o-chu"><div class="o lon" style="min-height:112px"><span class="chen-moi">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given ở cuối bài.</span></div></div>
+                  <section class="da-ghi" aria-label="Bạn đã ghi tháng này">
+                    <div class="dg-dau">Bạn đã ghi tháng này</div>
+                    <div class="muc da-chen"><span class="nguon"><b>MT2</b> · W3 OCT · R <span class="so">5.5</span> / <span class="so">6.0</span></span><span class="dau-chen">✓ Đã chèn</span><span class="cau">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given ở cuối bài.</span></div>
+                    <div class="muc"><span class="nguon"><b>Case R</b> · Xếp tự học · Tiến bộ một phần</span><button type="button" class="nut-chen">Chèn</button><span class="cau">Đúng 24 / 40 câu ở bài luyện, đã làm hết bài trong 60 phút.</span></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Hạn 5 ngày · xác nhận xong GV mới nhận tin</span></div>
+          <div class="pn-chan"><span class="tt-luu">Tự lưu khi rời ô</span><button type="button" class="link-nho" style="color:var(--soon)">Còn 1 em thiếu góp ý ↑</button><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh" disabled style="opacity:.55">Xác nhận bàn giao</button></span></div>
+        </aside>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =============================================== C · LƯỚI GHI KẾT QUẢ PA =============================================== -->
+  <section class="khu" id="c">
+    <h2>C · Ghi kết quả PA theo lớp — dòng gộp ở Công việc → lưới (R12.3 · H3)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Công việc: việc "Ghi kết quả PA" <b>cùng lớp, cùng kỳ</b> (≥ 2 em) gộp MỘT dòng "Lớp · Ghi kết quả PA" + "n em" + kỳ; nút "Ghi kết quả" mở lưới (thay khay "n em ▾"); 1 em giữ dòng lẻ như nay · <span class="so-mk">2</span>lưới = một dòng một PA: em (link) · kỹ năng · PA · MT gần nhất │ 5 chip Tiến triển (đúng chữ web) + Nhận xét (≥ 8 ký tự, có bộ đếm khi đang gõ) │ trạng thái + nút · <span class="so-mk">3</span>thứ tự dòng: lỗi → chưa xong → đã lưu (đã lưu gập một dòng + "Sửa") · <span class="so-mk">4</span>Quyết định mặc định <b>Giữ nguyên</b>, nói ở dòng quy chế; nháp đã chọn quyết định khác (Điều chỉnh…) hiện nhãn và KHÔNG bị "Lưu" lưới đè · <span class="so-mk">5</span>dòng cần nhiều hơn (Kết quả cuối, Mini Test, PA Tutor theo buổi) chỉ có một câu "cần gì" + "Mở đầy đủ" · <span class="so-mk">6</span>chân chỉ BA nút: Đóng · Lưu nháp · nút chính đổi theo trạng thái — "<b>Lưu n dòng</b>" khi còn dòng chưa xong (lưu dòng đã đủ, ở lại lưới) hoặc "<b>Lưu · việc tiếp ›</b>" khi mọi dòng đã đủ (lời 36); lưu hết → "✓ Đã lưu" + "Việc tiếp ›"; lỗi báo tại dòng + "Thử lại" · <span class="so-mk">7</span>cột Trạng thái: "Mở đầy đủ" / "Sửa" là nút không viền (viền khi rê / focus); dòng BẮT BUỘC mở đầy đủ (nháp Điều chỉnh, Mini Test, PA Tutor theo buổi) giữ nút có viền.</p>
+    <div class="hang-khung">
+      <figure><figcaption>C1 · Công việc · tab Case học thuật · dòng gộp (cắt cột danh sách)</figcaption>
+        <section class="nhom cv-cat toi" data-web data-k="c1">
+          <div class="dai-nhom"><svg class="ic"><use href="#i-case"/></svg><span>Case học thuật</span><span class="sau-ten"><span class="dem">5 việc</span><span class="bao-qua" style="color:var(--bad)">2 quá hạn</span></span></div>
+          <div class="khoi dau-tien"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 101</span> · Ghi kết quả PA</span></span><span class="the-phu"><span class="tag nhat">6 em</span><span class="tag nhat">Kỳ W1–W2 OCT</span></span></span><span class="h"><span class="han-v qua">quá hạn 1 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Ghi kết quả</button></span></div></div>
+          <div class="khoi"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FOU 12</span> · Ghi kết quả PA · Speaking</span></span><span class="the-phu"><a class="tag nhat" href="#">Hồ Diệu Linh</a><span class="sos m2">SOS 2</span><span class="tag nhat">Kỳ 2</span></span></span><span class="h"><span class="han-v qua">quá hạn 1 ngày</span></span><span class="n"><button type="button" class="nut nut-nho">Ghi kết quả</button></span></div></div>
+          <div class="khoi"><div class="viec dt-lop"><span class="av vuong"><svg class="ic"><use href="#i-gop"/></svg></span><span class="tv"><span class="t1"><span><span class="lop-gop">MB FT 101</span> · Chọn PA · Reading</span></span><span class="the-phu"><a class="tag nhat" href="#">Vũ Ngọc Lan</a><span class="sos m1">SOS 1</span></span></span><span class="h"><span class="han-v xa">hạn 16/10</span></span><span class="n"><button type="button" class="nut nut-nho">Chọn PA</button></span></div></div>
+        </section>
+      </figure>
+    </div>
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>C2 · lưới · đủ trạng thái dòng: lỗi · nháp có quyết định khác · đang gõ thiếu · sẵn lưu · chưa ghi · cần "Mở đầy đủ" · đã lưu (gập)</figcaption>
+        <aside class="pn pn-rong toi" data-web data-k="c2">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Case học thuật</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Ghi kết quả PA · MB FT 101</h2><span class="han-v qua">quá hạn 1 ngày</span></div>
+            <div class="pn-ngu"><span>Kỳ W1–W2 OCT</span><span>7 PA · 6 em</span><span>hạn thứ Ba 13/10</span></div>
+          </div>
+          <div class="lkq-tren"><span><b class="so">1</b> đã lưu · <b class="so">1</b> sẵn lưu · <b class="so">5</b> chưa xong</span></div>
+          <div class="lkq">
+            <div class="h"><span>Học viên · PA</span><span>Tiến triển (2 tuần) <span style="color:var(--bad)">*</span> · Nhận xét <span style="color:var(--bad)">*</span></span><span>Trạng thái</span></div>
+            <div class="r loi"><span class="em"><a href="#">Vũ Ngọc Lan</a><small><b>Listening</b> · Bổ trợ Listening</small><small>MT2 L <span class="so">5.5</span> · kỳ vọng <span class="so">6.5</span></small></span>
+              <span class="ghi-o"><span class="chip5"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon">↗ Tiến bộ một phần</button><button type="button" class="nut-chon on" aria-pressed="true">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></span>
+                <span class="o">Vẫn sai dạng Map, cần đổi cách luyện.</span></span>
+              <span class="ben"><span class="trt loi">⚠ Chưa lưu được</span><button type="button" class="nut nut-nho">Thử lại</button></span></div>
+            <div class="r"><span class="em"><a href="#">Lý Minh Châu</a><small><b>Reading</b> · Bổ trợ Reading</small><small>MT2 R <span class="so">5.5</span> · kỳ vọng <span class="so">6.0</span></small></span>
+              <span class="phuc" style="min-height:40px"><span class="nhan">Điều chỉnh</span><span>nháp lưu 10:12 · <b>Sửa PA này</b> · ghi tiếp ở panel đầy đủ</span></span>
+              <span class="ben"><span class="trt nhap">Nháp</span><button type="button" class="nut nut-nho">Mở đầy đủ</button></span></div>
+            <div class="r"><span class="em"><a href="#">Đỗ Minh Khôi</a><small><b>Reading</b> · Xếp tự học</small><small>MT2 R <span class="so">5.0</span> · kỳ vọng <span class="so">6.0</span></small></span>
+              <span class="ghi-o"><span class="chip5"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon on" aria-pressed="true">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></span>
+                <span class="o go">Kịp giờ<span class="con"></span></span><span class="dem-o"><span class="thieu">Nhận xét ≥ 8 ký tự</span><span class="so">7/8</span></span></span>
+              <span class="ben"><span class="trt thieu">Thiếu nhận xét</span><button type="button" class="nut nut-nho nut-ma">Mở đầy đủ</button></span></div>
+            <div class="r"><span class="em"><a href="#">Phạm Bảo Ngọc</a><small><b>Listening</b> · Xếp tự học</small><small>MT2 L <span class="so">6.0</span> · kỳ vọng <span class="so">6.5</span></small></span>
+              <span class="ghi-o"><span class="chip5"><button type="button" class="nut-chon on" aria-pressed="true">✓ Tiến bộ rõ</button><button type="button" class="nut-chon">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></span>
+                <span class="o">Nghe được ý chính Part 3, đúng 8 / 10 câu.</span></span>
+              <span class="ben"><span class="trt">Sẵn lưu</span><button type="button" class="nut nut-nho nut-ma">Mở đầy đủ</button></span></div>
+            <div class="r"><span class="em"><a href="#">Lê Quang Huy</a><small><b>Reading</b> · Xếp tự học</small><small>MT2 R <span class="so">5.5</span> · kỳ vọng <span class="so">6.0</span></small></span>
+              <span class="ghi-o"><span class="chip5"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></span>
+                <span class="o"><span class="mo3">Đã cải thiện ở phần nào, như thế nào, kết quả cụ thể</span></span></span>
+              <span class="ben"><span class="trt">Chưa ghi</span><button type="button" class="nut nut-nho nut-ma">Mở đầy đủ</button></span></div>
+            <div class="r"><span class="em"><a href="#">Trịnh Bảo Ngọc</a><small><b>Reading</b> · Bổ trợ miễn phí</small><small>Kỳ cuối · Mini Test</small></span>
+              <span class="phuc"><span><b>Kết quả cuối</b> · cần Mini Test (%) và ngày làm</span></span>
+              <span class="ben"><span class="trt">Chưa ghi</span><button type="button" class="nut nut-nho">Mở đầy đủ</button></span></div>
+            <div class="r gon-r"><span class="em"><a href="#">Hà Gia Bình</a><small><b>Listening</b> · Xếp tự học</small></span>
+              <span class="gon"><b>✓ Tiến bộ rõ</b><span>Nghe hết bài Part 4, không bỏ câu điền từ.</span></span>
+              <span class="ben"><span class="trt da">✓ Đã lưu</span><button type="button" class="nut nut-nho nut-ma">Sửa</button></span></div>
+          </div>
+          <div class="quy-che" style="margin-top:14px"><span class="qc-nhan">Quy chế</span><span>Lưu = Giữ nguyên PA, kỳ sau hạn thứ Ba 27/10 · đổi quyết định: Mở đầy đủ</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu cham">Nháp · chưa lưu kết quả</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh">Lưu 1 dòng</button></span></div>
+        </aside>
+      </figure>
+    </div>
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>C3 · chân lưới theo trạng thái · đang tải · lỗi tải</figcaption>
+        <div class="toi san" data-web data-k="c3" style="width:1040px;gap:10px;display:grid;background:var(--bg);padding:14px;border-radius:6px">
+          <span class="nhan-mk">đang lưu (từng dòng)</span>
+          <div class="pn"><div class="pn-chan"><span class="tt-luu">Đang lưu 2 dòng…</span><span class="phai"><button type="button" class="nut" disabled style="opacity:.5">Đóng</button><button type="button" class="nut nut-chinh" disabled aria-busy="true" style="opacity:.6">Lưu · việc tiếp ›</button></span></div></div>
+          <span class="nhan-mk">còn dòng chưa xong — nút chính "Lưu n dòng" (lưu dòng đã đủ, ở lại lưới)</span>
+          <div class="pn"><div class="pn-chan"><span class="tt-luu cham">Nháp · chưa lưu kết quả</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh">Lưu 2 dòng</button></span></div></div>
+          <span class="nhan-mk">đã lưu dòng đủ, còn dòng chưa xong — chưa có dòng nào để lưu thì nút chính mờ</span>
+          <div class="pn"><div class="pn-chan"><span class="tt-luu da">✓ Đã lưu 2</span><span class="tt-luu">· 3 dòng chưa xong ↑</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh" disabled style="opacity:.55">Lưu 0 dòng</button></span></div></div>
+          <span class="nhan-mk">mọi dòng đã đủ — nút chính "Lưu · việc tiếp ›"</span>
+          <div class="pn"><div class="pn-chan"><span class="tt-luu">7 / 7 dòng đủ</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh">Lưu · việc tiếp ›</button></span></div></div>
+          <span class="nhan-mk">lưu xong một phần — dòng lỗi ở lại</span>
+          <div class="pn"><div class="pn-chan"><span class="tt-luu da">✓ Đã lưu 3</span><span class="tt-luu" style="color:var(--bad)">⚠ 1 dòng chưa lưu được ↑</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Thử lại 1 dòng</button></span></div></div>
+          <span class="nhan-mk">lưu hết</span>
+          <div class="pn"><div class="pn-chan"><span class="tt-luu da">✓ Đã lưu</span><button type="button" class="link-nho">Hoàn tác</button><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Việc tiếp ›</button></span></div></div>
+          <span class="nhan-mk">đang tải · lỗi tải</span>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div class="pn" aria-busy="true"><div class="xuong-dong"><span class="xuong" style="width:180px"></span><span class="xuong" style="flex:1"></span></div><div class="xuong-dong"><span class="xuong" style="width:150px"></span><span class="xuong" style="flex:1"></span></div><div class="xuong-dong"><span class="xuong" style="width:170px"></span><span class="xuong" style="flex:1"></span></div></div>
+            <div class="pn"><div class="bao-loi"><span><b>⚠ Không tải được lưới</b> · mất kết nối</span><button type="button" class="nut nut-nho">Thử lại</button></div></div>
+          </div>
+        </div>
+      </figure>
+    </div>
+    <div class="hang-khung" style="margin-top:20px">
+      <figure><figcaption>C4 · "Mở đầy đủ" (Lý Minh Châu) → panel Ghi kết quả PA đang có (dáng ① K4c, đủ ô web) thay chỗ lưới, không lồng · "‹ Lưới MB FT 101" về đúng dòng, nháp giữ</figcaption>
+        <aside class="pn vua toi" data-web data-k="c4">
+          <div class="pn-dau">
+            <div class="pn-h1"><button type="button" class="ve-luoi">‹ Lưới MB FT 101 · 7 PA</button><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Kết quả PA · W1–W2 OCT</h2><span class="han-v qua">quá hạn 1 ngày</span></div>
+            <div class="pn-ngu"><span><a href="#">Lý Minh Châu</a></span><span><a href="#">MB FT 101</a></span><span><span class="sos m1">SOS 1</span></span><span>Bổ trợ Reading</span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <div class="boi-canh"><span>Kết quả kỳ trước <b>chưa có</b></span><span>Điểm <b>MT2 · R <span style="color:var(--bad)">✗ 5.5</span> · kỳ vọng 6.0</b></span><span>Người dạy <b>Trần Ngọc Hà</b></span></div>
+            <div class="o-truong"><span class="lb">Tiến triển (2 tuần) <span class="sao">*</span></span>
+              <div class="chon-hang"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon on" aria-pressed="true">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></div></div>
+            <div class="o-truong"><span class="lb co-dem">Nhận xét <span class="sao">*</span><span class="dem-ket">58/8</span></span><div class="o lon">Đúng 24 / 40 câu ở bài luyện, đã làm hết bài trong 60 phút.</div></div>
+            <div class="o-truong"><span class="lb">Quyết định</span>
+              <div class="doan" role="radiogroup" aria-label="Quyết định"><button type="button">Giữ nguyên</button><button type="button" class="on">Điều chỉnh</button><button type="button">Kết thúc PA</button></div></div>
+            <div class="o-truong"><span class="lb">Cách điều chỉnh</span><div class="chon-hang"><button type="button" class="nut-chon on" aria-pressed="true">Sửa PA này</button><button type="button" class="nut-chon">Thay PA</button><button type="button" class="nut-chon">Xin hỗ trợ QL</button><button type="button" class="nut-chon">Đề xuất PA khác…</button></div></div>
+            <div class="o-truong"><span class="lb">Lý do điều chỉnh <span class="sao">*</span></span><div class="o"><span class="mo3">Vì sao cần sửa PA</span></div></div>
+            <div class="ghi-ngay"><span>Ghi ngày 14/10</span><span aria-hidden="true">·</span><button type="button" class="link-nho">Đổi</button></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Sửa PA này: kỳ mới 2 tuần · hạn thứ Ba 27/10</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu cham">Nháp · chưa lưu kết quả</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh">Lưu điều chỉnh · về lưới</button></span></div>
+        </aside>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =============================================== D · HOÀN THÀNH CASE =============================================== -->
+  <section class="khu" id="d">
+    <h2>D · Kết thúc PA cuối — "Hoàn thành Case" bật sẵn (R12.4 · H4)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Form như web: Quyết định "Kết thúc PA" (hoặc lượt Kết quả cuối) → Ngày kết thúc → ô tick "Hoàn thành Case" (<code>CapNhatTuan.tsx:617</code>, chỉ khi đây là PA cuối đang chạy và người ghi đóng được Case) · <span class="so-mk">2</span>chỉ đổi MỘT điều: ô tick <b>bật sẵn</b> khi kết quả cuối <b>đạt</b> (Tiến triển "Tiến bộ rõ"; PA có Mini Test: ≥ 70 %) — [XM-3] · <span class="so-mk">3</span>mức tiến bộ điền sẵn theo Tiến triển, Kết luận điền sẵn bằng Nhận xét (bộ đếm giữ) — GV sửa được, vẫn bắt buộc · <span class="so-mk">4</span>dòng quy chế đổi theo ô tick: bật → "Case hoàn thành, mở lại được ở thẻ Case"; tắt → "<b>Case còn mở · không hạn</b>" · <span class="so-mk">5</span>chưa đạt → tắt sẵn (D3) · không có máy tự đóng Case.</p>
+    <div class="hang-khung">
+      <figure><figcaption>D1 · Kết thúc PA · bật sẵn (kết quả đạt)</figcaption>
+        <aside class="pn vua toi" data-web data-k="d1">
+          <div class="pn-dau">
+            <div class="pn-h1"><span class="loai">Việc · Case học thuật</span><button type="button" class="x" aria-label="Đóng">✕</button></div>
+            <div class="pn-tieu"><h2>Kết quả PA · W3–W4 OCT</h2><span class="han-v xa">hạn 27/10</span></div>
+            <div class="pn-ngu"><span><a href="#">Hà Gia Bình</a></span><span><a href="#">MB FT 101</a></span><span><span class="sos m1">SOS 1</span></span><span>Bổ trợ Listening · PA cuối của Case</span></div>
+          </div>
+          <div class="pn-than" style="padding-top:14px">
+            <div class="boi-canh"><span>Kết quả kỳ trước <b>↗ Tiến bộ một phần</b></span><span>Điểm <b>MT3 · L <span style="color:var(--ok)">✓ 6.5</span> · kỳ vọng 6.5</b></span></div>
+            <div class="o-truong"><span class="lb">Tiến triển (2 tuần) <span class="sao">*</span></span>
+              <div class="chon-hang"><button type="button" class="nut-chon on" aria-pressed="true">✓ Tiến bộ rõ</button><button type="button" class="nut-chon">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></div></div>
+            <div class="o-truong"><span class="lb co-dem">Nhận xét <span class="sao">*</span><span class="dem-ket">58/8</span></span><div class="o" style="min-height:52px;align-items:flex-start">Nghe hết bài Part 4, không bỏ câu điền từ. MT3 đạt kỳ vọng.</div></div>
+            <div class="o-truong"><span class="lb">Quyết định</span>
+              <div class="doan" role="radiogroup" aria-label="Quyết định"><button type="button">Giữ nguyên</button><button type="button">Điều chỉnh</button><button type="button" class="on">Kết thúc PA</button></div></div>
+            <div class="o-truong" style="padding-left:12px;border-left:2px solid var(--line-strong)"><span class="lb">Ngày kết thúc</span><div class="o-ngay2"><span class="o">27/10/2026</span><button type="button" class="nut" aria-label="Chọn ngày"><svg class="ic"><use href="#i-lich"/></svg></button></div></div>
+            <div class="ht-case">
+              <label class="tick"><span class="hop-tick on" role="checkbox" aria-checked="true"><svg viewBox="0 0 16 16"><use href="#i-tick"/></svg></span>Hoàn thành Case</label>
+              <div class="con">
+                <div class="o-truong"><span class="lb">Sau cả đợt hỗ trợ, em tiến bộ đến đâu? <span class="sao">*</span></span>
+                  <div class="chip4"><button type="button" class="nut-chon on" aria-pressed="true">Tiến bộ rõ</button><button type="button" class="nut-chon">Tiến bộ một phần</button><button type="button" class="nut-chon">Không tiến bộ</button><button type="button" class="nut-chon">Kém hơn</button></div></div>
+                <div class="o-truong"><span class="lb co-dem">Kết luận <span class="sao">*</span><span class="dem-ket">58/8</span></span><div class="o" style="min-height:52px;align-items:flex-start">Nghe hết bài Part 4, không bỏ câu điền từ. MT3 đạt kỳ vọng.</div></div>
+              </div>
+            </div>
+            <div class="ghi-ngay"><span>Ghi ngày 27/10</span><span aria-hidden="true">·</span><button type="button" class="link-nho">Đổi</button></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Kết thúc PA · Case hoàn thành, mở lại được ở thẻ Case</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu">Chưa lưu</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Kết thúc PA</button><button type="button" class="nut nut-chinh">Lưu · việc tiếp ›</button></span></div>
+        </aside>
+      </figure>
+      <figure><figcaption>D2 · GV bỏ tick → khối gập, dòng quy chế "Case còn mở · không hạn"</figcaption>
+        <div class="pn vua toi" data-web data-k="d2">
+          <div class="pn-than" style="padding-top:14px">
+            <div class="ht-case tat"><label class="tick"><span class="hop-tick" role="checkbox" aria-checked="false"></span>Hoàn thành Case</label></div>
+            <div class="ghi-ngay"><span>Ghi ngày 27/10</span><span aria-hidden="true">·</span><button type="button" class="link-nho">Đổi</button></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Kết thúc PA · Case còn mở · không hạn</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế">ⓘ</button></div>
+          <div class="pn-chan"><span class="tt-luu">Chưa lưu</span><span class="phai"><button type="button" class="nut">Đóng</button><button type="button" class="nut">Kết thúc PA</button><button type="button" class="nut nut-chinh">Lưu · việc tiếp ›</button></span></div>
+        </div>
+        <figcaption style="margin-top:14px">D3 · kết quả chưa đạt ("Tiến bộ một phần") → ô tick tắt sẵn, GV tự bật được</figcaption>
+        <div class="pn vua toi" data-web data-k="d3">
+          <div class="pn-than" style="padding-top:14px">
+            <div class="o-truong"><span class="lb">Tiến triển (2 tuần) <span class="sao">*</span></span>
+              <div class="chon-hang"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon on" aria-pressed="true">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></div></div>
+            <div class="ht-case tat"><label class="tick"><span class="hop-tick" role="checkbox" aria-checked="false"></span>Hoàn thành Case</label></div>
+          </div>
+          <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Kết thúc PA · Case còn mở · không hạn</span><button type="button" class="nut-i" aria-label="Chi tiết quy chế">ⓘ</button></div>
+        </div>
+      </figure>
+    </div>
+  </section>
+
+  <!-- =============================================== E · 375 =============================================== -->
+  <section class="khu" id="e">
+    <h2>E · 375 sáng — panel toàn màn, lưới thành thẻ (R12.5 + 375 của R12.1–R12.4)</h2>
+    <p class="ghi"><span class="so-mk">1</span>Báo cáo PH: khối xuống DƯỚI ô chữ (ô viết luôn ở trên) · <span class="so-mk">2</span>bàn giao GVBM: mỗi em một thẻ · <span class="so-mk">3</span>lưới Ghi kết quả PA: mỗi PA một thẻ, cùng thứ tự với 1440 (lỗi → chưa xong → đã lưu gập); chân 375 hai nút "Lưu nháp" · nút chính theo trạng thái ("Lưu n dòng" / "Lưu · việc tiếp ›"); Đóng = ✕ / Quay lại · <span class="so-mk">4</span>mọi vùng bấm ≥ 44 px; 4 mức Hoàn thành Case thành 2 × 2.</p>
+    <div class="hang-khung">
+      <figure><figcaption>E1 · Báo cáo PH · Reading</figcaption>
+        <div class="dt sang" data-web data-sang data-k="e1" style="height:1320px">
+          <aside class="pn" style="height:100%">
+            <div class="pn-dau"><div class="pn-h1"><button type="button" class="quay">‹ Quay lại</button><button type="button" class="x" aria-label="Đóng">✕</button></div>
+              <span class="loai">Báo cáo PH · viết</span>
+              <div class="pn-tieu"><h2>MB FT 101 · Reading</h2></div>
+              <div class="pn-ngu"><span>Tháng 10</span><span>3 / 8 em đủ</span><span>hạn 30/10</span></div></div>
+            <div class="em-chuyen"><b>Lý Minh Châu</b><span>3 / 8</span><button type="button" class="nut nut-nho">Em khác ▾</button></div>
+            <div class="form-em" style="flex:1">
+              <div class="dong-diem"><span class="lb">Điểm</span><span><b class="so">5.5</b> · MT2 · W3 OCT</span><button type="button" class="link-nho">Sửa</button></div>
+              <div class="tieu-chi">
+                <div class="ca" style="display:block"><span>Cả 4 tiêu chí</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span>Khá</span><span>Yếu</span></span></div>
+                <div class="nhom-tc">Tiêu chí · đặt sẵn như Tháng 9</div>
+                <div class="dong"><span class="ten">Đọc hiểu ý chính, nắm bắt suy luận và ý nghĩa ngụ ý</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span class="on dat-san">Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Định vị từ khoá trong bài và câu hỏi</span><span class="thang4"><span>Xuất sắc</span><span class="on">Tốt</span><span>Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Từ vựng và ngữ pháp</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span class="on dat-san">Khá</span><span>Yếu</span></span></div>
+                <div class="dong"><span class="ten">Kĩ năng làm bài</span><span class="thang4"><span>Xuất sắc</span><span>Tốt</span><span>Khá</span><span class="on dat-san">Yếu</span></span></div>
+              </div>
+              <div class="o-truong"><span class="lb">Đề xuất cải thiện</span>
+                <div class="viet">
+                  <div class="o-chu"><div class="o lon"><span class="mo3">Viết cho phụ huynh: em cần cải thiện gì, ở nhà giúp thế nào</span></div></div>
+                  <section class="da-ghi" aria-label="Bạn đã ghi tháng này">
+                    <div class="dg-dau">Bạn đã ghi tháng này</div>
+                    <div class="muc"><span class="nguon"><b>MT2</b> · W3 OCT · R <span class="so">5.5</span> / <span class="so">6.0</span></span><button type="button" class="nut-chen">Chèn</button><span class="cau">Đọc lướt còn chậm, hay bỏ trống câu True / False / Not Given ở cuối bài.</span></div>
+                    <div class="muc"><span class="nguon"><b>PA Bổ trợ Reading</b> · W4 OCT · Tiến bộ một phần</span><button type="button" class="nut-chen">Chèn</button><span class="cau">Đúng 24 / 40 câu ở bài luyện, đã làm hết bài trong 60 phút.</span></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+            <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Tháng 10 · hạn 30/10</span></div>
+            <div class="pn-chan"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Lưu · em tiếp ›</button></div>
+          </aside>
+        </div>
+      </figure>
+      <figure><figcaption>E2 · Bàn giao môn R · thẻ từng em</figcaption>
+        <div class="dt sang" data-web data-sang data-k="e2" style="height:1320px">
+          <aside class="pn" style="height:100%">
+            <div class="pn-dau"><div class="pn-h1"><button type="button" class="quay">‹ Quay lại</button><button type="button" class="x" aria-label="Đóng">✕</button></div>
+              <span class="loai">Việc · Bàn giao</span>
+              <div class="pn-tieu"><h2>Bàn giao môn R (Reading)</h2></div>
+              <div class="pn-ngu"><span>MB FT 101</span><span>5 em</span><span>hạn 19/10</span></div></div>
+            <div class="bg-tren" style="padding:10px 16px 8px"><span><b class="so" style="color:var(--text)">1</b> / 4 đã có</span><span class="phai"><button type="button" class="nut nut-nho">Chèn cho 2 em</button></span></div>
+            <div style="flex:1">
+              <div class="the-bg"><span class="t1">Lý Minh Châu<small>→ MB FT 105</small></span><span class="ket">MT2 · R 5.5 · kỳ vọng 6.0</span>
+                <span class="bg-o"><span class="o"><span class="mo3">Viết một câu…</span></span><span class="goi"><span class="t"><b>MT2</b> · Đọc lướt còn chậm, hay bỏ trống câu True / False…</span><button type="button" class="nut-chen">Chèn</button></span></span></div>
+              <div class="the-bg"><span class="t1">Hà Gia Bình<small>→ MB FT 105</small></span><span class="ket">MT2 · R 6.5 · kỳ vọng 6.0</span>
+                <span class="bg-o"><span class="o da-luu">Đọc tốt, cần luyện dạng Matching Headings.</span><span class="trt"><span class="ok">✓ Đã lưu</span></span></span></div>
+              <div class="the-bg"><span class="t1">Đỗ Minh Khôi<small>→ MB FT 105</small></span><span class="ket">MT2 · R 5.0 · kỳ vọng 6.0</span>
+                <span class="bg-o"><span class="o"><span class="mo3">Viết một câu…</span></span><span class="goi"><span class="t"><b>Case R</b> · Hiểu bài nhưng làm chậm, chưa kịp giờ.</span><button type="button" class="nut-chen">Chèn</button></span></span></div>
+              <div class="the-bg"><span class="t1">Vũ Ngọc Lan<small>→ MB FT 106</small></span><span class="ket">MT2 · R 6.0 · kỳ vọng 6.0</span>
+                <span class="bg-o"><span class="o cung">Cùng GV · không cần bàn giao</span></span></div>
+              <div class="the-bg"><span class="t1">Trịnh Bảo Ngọc<small>→ MB FT 105</small></span><span class="ket">MT2 · chưa có điểm R</span>
+                <span class="bg-o"><span class="o"><span class="mo3">Viết một câu…</span></span></span></div>
+            </div>
+            <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Một câu mỗi em · hạn 19/10 · quá hạn em vẫn chuyển</span></div>
+            <div class="pn-chan"><button type="button" class="nut">Đóng</button><button type="button" class="nut nut-chinh">Việc tiếp ›</button></div>
+          </aside>
+        </div>
+      </figure>
+      <figure><figcaption>E3 · Lưới Ghi kết quả PA → thẻ (R12.5)</figcaption>
+        <div class="dt sang" data-web data-sang data-k="e3" style="height:1320px">
+          <aside class="pn" style="height:100%">
+            <div class="pn-dau"><div class="pn-h1"><button type="button" class="quay">‹ Quay lại</button><button type="button" class="x" aria-label="Đóng">✕</button></div>
+              <span class="loai">Việc · Case học thuật</span>
+              <div class="pn-tieu"><h2>Ghi kết quả PA · MB FT 101</h2><span class="han-v qua">quá hạn 1 ngày</span></div>
+              <div class="pn-ngu"><span>Kỳ W1–W2 OCT</span><span>7 PA · 6 em</span></div></div>
+            <div style="flex:1">
+              <div class="the-kq loi"><span class="t1"><a href="#">Vũ Ngọc Lan</a><span class="trt loi">⚠ Chưa lưu được</span></span><small>Listening · Bổ trợ Listening · MT2 L 5.5 / 6.5</small>
+                <span class="chip5"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon">↗ Tiến bộ một phần</button><button type="button" class="nut-chon on" aria-pressed="true">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></span>
+                <span class="o">Vẫn sai dạng Map, cần đổi cách luyện.</span><button type="button" class="nut nut-nho" style="justify-self:start">Thử lại</button></div>
+              <div class="the-kq"><span class="t1"><a href="#">Lý Minh Châu</a><span class="trt nhap">Nháp · Điều chỉnh</span></span><small>Reading · Bổ trợ Reading · MT2 R 5.5 / 6.0</small>
+                <span class="phuc"><span>Sửa PA này · ghi tiếp ở panel đầy đủ</span><button type="button" class="nut nut-nho">Mở đầy đủ</button></span></div>
+              <div class="the-kq"><span class="t1"><a href="#">Đỗ Minh Khôi</a><span class="trt nhap">Thiếu nhận xét</span></span><small>Reading · Xếp tự học · MT2 R 5.0 / 6.0</small>
+                <span class="chip5"><button type="button" class="nut-chon">✓ Tiến bộ rõ</button><button type="button" class="nut-chon on" aria-pressed="true">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></span>
+                <span class="o go">Kịp giờ<span class="con"></span></span><small style="justify-self:end">7/8</small></div>
+              <div class="the-kq"><span class="t1"><a href="#">Trịnh Bảo Ngọc</a><span class="trt">Chưa ghi</span></span><small>Reading · Bổ trợ miễn phí · kỳ cuối</small>
+                <span class="phuc"><span><b style="color:var(--text)">Kết quả cuối</b> · cần Mini Test (%) và ngày làm</span><button type="button" class="nut nut-nho">Mở đầy đủ</button></span></div>
+              <div class="the-kq"><span class="t1"><a href="#">Phạm Bảo Ngọc · Lê Quang Huy</a><span class="trt">+ 2 thẻ</span></span><small>như trên (sẵn lưu · chưa ghi) — cắt cho gọn khung</small></div>
+              <div class="the-kq xong"><span class="t1"><a href="#">Hà Gia Bình</a><span class="trt da">✓ Đã lưu</span></span><small>Listening · Xếp tự học · ✓ Tiến bộ rõ</small></div>
+            </div>
+            <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Lưu = Giữ nguyên PA · kỳ sau hạn thứ Ba 27/10</span></div>
+            <div class="pn-chan"><button type="button" class="nut">Lưu nháp</button><button type="button" class="nut nut-chinh">Lưu 1 dòng</button></div>
+          </aside>
+        </div>
+      </figure>
+      <figure><figcaption>E4 · Kết thúc PA cuối · Hoàn thành Case bật sẵn</figcaption>
+        <div class="dt sang" data-web data-sang data-k="e4" style="height:1320px">
+          <aside class="pn" style="height:100%">
+            <div class="pn-dau"><div class="pn-h1"><button type="button" class="quay">‹ Quay lại</button><button type="button" class="x" aria-label="Đóng">✕</button></div>
+              <span class="loai">Việc · Case học thuật</span>
+              <div class="pn-tieu"><h2>Kết quả PA · W3–W4 OCT</h2><span class="han-v xa">hạn 27/10</span></div>
+              <div class="pn-ngu"><span><a href="#">Hà Gia Bình</a></span><span><a href="#">MB FT 101</a></span><span><span class="sos m1">SOS 1</span></span></div></div>
+            <div class="pn-than" style="padding-top:14px;flex:1">
+              <div class="o-truong"><span class="lb">Tiến triển (2 tuần) <span class="sao">*</span></span>
+                <div class="chon-hang"><button type="button" class="nut-chon on" aria-pressed="true">✓ Tiến bộ rõ</button><button type="button" class="nut-chon">↗ Tiến bộ một phần</button><button type="button" class="nut-chon">– Không tiến bộ</button><button type="button" class="nut-chon">↓ Kém hơn</button><button type="button" class="nut-chon">? Chưa đủ dữ liệu</button></div></div>
+              <div class="o-truong"><span class="lb co-dem">Nhận xét <span class="sao">*</span><span class="dem-ket">58/8</span></span><div class="o lon">Nghe hết bài Part 4, không bỏ câu điền từ. MT3 đạt kỳ vọng.</div></div>
+              <div class="o-truong"><span class="lb">Quyết định</span><div class="doan"><button type="button">Giữ nguyên</button><button type="button">Điều chỉnh</button><button type="button" class="on">Kết thúc PA</button></div></div>
+              <div class="o-truong"><span class="lb">Ngày kết thúc</span><div class="o-ngay2"><span class="o">27/10/2026</span><button type="button" class="nut" aria-label="Chọn ngày" style="width:44px;height:44px"><svg class="ic"><use href="#i-lich"/></svg></button></div></div>
+              <div class="ht-case">
+                <label class="tick" style="min-height:44px"><span class="hop-tick on" role="checkbox" aria-checked="true"><svg viewBox="0 0 16 16"><use href="#i-tick"/></svg></span>Hoàn thành Case</label>
+                <div class="con">
+                  <div class="o-truong"><span class="lb">Sau cả đợt hỗ trợ, em tiến bộ đến đâu? <span class="sao">*</span></span>
+                    <div class="chip4"><button type="button" class="nut-chon on" aria-pressed="true">Tiến bộ rõ</button><button type="button" class="nut-chon">Tiến bộ một phần</button><button type="button" class="nut-chon">Không tiến bộ</button><button type="button" class="nut-chon">Kém hơn</button></div></div>
+                  <div class="o-truong"><span class="lb co-dem">Kết luận <span class="sao">*</span><span class="dem-ket">58/8</span></span><div class="o" style="align-items:flex-start;min-height:64px">Nghe hết bài Part 4, không bỏ câu điền từ. MT3 đạt kỳ vọng.</div></div>
+                </div>
+              </div>
+              <div class="ghi-ngay"><span>Ghi ngày 27/10</span><span aria-hidden="true">·</span><button type="button" class="link-nho">Đổi</button></div>
+            </div>
+            <div class="quy-che"><span class="qc-nhan">Quy chế</span><span>Kết thúc PA · Case hoàn thành, mở lại được ở thẻ Case</span></div>
+            <div class="pn-chan"><button type="button" class="nut">Kết thúc PA</button><button type="button" class="nut nut-chinh">Lưu · việc tiếp ›</button></div>
+          </aside>
+        </div>
+      </figure>
+    </div>
+  </section>
+</div>
+
+<script>
+/* JS tối thiểu: công tắc Sáng / Tối cho khung 1440 (khung 375 luôn sáng) · bấm Chèn ở A1 chạy thử. */
+(function () {
+  'use strict';
+  var khung = document.querySelectorAll('[data-web]:not([data-sang])');
+  document.querySelectorAll('[data-che]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      khung.forEach(function (k) { k.classList.remove('toi', 'sang'); k.classList.add(b.dataset.che); });
+      document.querySelectorAll('[data-che]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+    });
+  });
+  var a1 = document.querySelector('[data-k="a1"]');
+  var o = a1.querySelector('.o-chu .o');
+  a1.querySelectorAll('.nut-chen').forEach(function (n) {
+    n.addEventListener('click', function () {
+      var muc = n.closest('.muc'), cau = muc.querySelector('.cau').textContent;
+      var mo = o.querySelector('.mo3'); if (mo) mo.remove();
+      var s = document.createElement('span'); s.className = 'chen-moi'; s.textContent = cau + ' ';
+      o.appendChild(s); o.classList.add('go');
+      var d = document.createElement('span'); d.className = 'dau-chen'; d.textContent = '✓ Đã chèn';
+      muc.classList.add('da-chen'); n.replaceWith(d);
+    });
+  });
+})();
+</script>
+</body>
+</html>
