@@ -35,6 +35,8 @@ export default function OverviewPage() {
     : !nav?.analysis ? (nav?.work ? 'gv' : nav?.students ? 'khac' : 'ht')
       : laVaiQuanLy(session?.roles) ? 'ql' : nav?.workChamDiem ? 'admin' : session?.roles?.includes('cx') ? 'cx' : 'ql';
   const v5 = useApi<TongQuanV5Data>(vai === 'ql' || vai === 'cx' ? `/tong-quan/v5?${thamSoTq(branchId, khung)}` : null, [branchId, khung, vai]);
+  /* Lời 49 (chủ SP 15/11): đầu trang Admin là phạm vi như QL ("Monbay · W3 SEP"), không "Mock Test". `/ref/branches` là đường tĩnh có bản nhớ (BranchFilter dùng chung) — 0 request thêm. */
+  const dsCn = useApi<{ id: number; name: string }[]>(vai === 'admin' ? '/ref/branches' : null).data;
 
   if (vai === 'khac') return <Navigate to="/hoc-vien" replace />;
   /* GD-1 (Overhaul V6, mockup v21 ①): trang đầu GV = Công việc (việc bên trái + "Lớp của tôi" bên phải); số liệu GV sang Hồ sơ GV. Giữ tham số (`cn`…). */
@@ -56,7 +58,8 @@ export default function OverviewPage() {
   if (vai === 'ht') return trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} />);
   if (vai === 'admin') {
     /* GD-14 (⑧ T5): Lịch sắp tới sang cột phải 400 (khối phụ mọi vai cùng một chỗ). */
-    return trang(t('Mock Test'), <MockTestAdmin branchId={branchId} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
+    const cn = branchId ? dsCn?.find((b) => b.id === branchId) : dsCn?.length === 1 ? dsCn[0] : null;
+    return trang(cn?.name ?? (dsCn && dsCn.length > 1 ? t('Tất cả chi nhánh') : ''), <MockTestAdmin branchId={branchId} lich={<LichSapToi branchId={branchId} ct={null} />} />, chiNhanh);
   }
   const d = v5.data;
   const phamVi = d?.tenChiNhanh ?? t('Tất cả chi nhánh');
