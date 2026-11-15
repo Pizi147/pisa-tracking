@@ -21,6 +21,7 @@ import { CreateTask } from '../worklist/MgmtTasksPage.tsx';
 import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
+import { SapToi, type SapToiGv } from './SapToi.tsx';
 import { NutTask } from './NutTask.tsx';
 import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
 import { DaiChiSoTvv, type ChiSoTvv } from '../worklist/TongQuanV5.tsx';
@@ -57,6 +58,8 @@ type Work = {
   cnAn?: string[];
   /** LG-8: "Test sắp tới" từng lớp GV đang dạy (chỉ vai GV) — cột Test của "Lớp của tôi". */
   testSapToi?: TestSapToi[];
+  /** GD-21 (LG-13 H7): việc CHƯA sinh trong 7 ngày (PA tới kỳ · đợt Báo cáo PH sắp mở) — dòng "Sắp tới"; không có thì không có khoá. */
+  sapToi?: SapToiGv;
 };
 type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
@@ -672,8 +675,11 @@ export function HoTroHocVienTab() {
             </>
           ) : laGv && tab !== 'duyet' && !data?.scopeEmpty ? (
             /* GD-1 (mockup v21 ① K1, K7): GV chưa chọn việc → "Lớp của tôi" (thay ô "Chọn một việc"); cả khi tab hết việc, GV chưa có lớp, đang tải, lỗi. */
-            <LopCuaToi dong={dongLop} dangTai={!error && !data} onMo={(x) => boChuRoi(() => mo(x))}
-              loi={error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : null} />
+            <>
+              {!error && data && <SapToi sapToi={data.sapToi} testSapToi={data.testSapToi} tenLop={(id) => session?.assignments?.find((a) => a.classId === id)?.classCode ?? undefined} />}
+              <LopCuaToi dong={dongLop} dangTai={!error && !data} onMo={(x) => boChuRoi(() => mo(x))}
+                loi={error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /> : null} />
+            </>
           ) : laTvv && tab !== 'duyet' && !data?.scopeEmpty ? (
             /* GD-8 (mockup v21 ④ K1, R4.3): TVV chưa chọn việc → "HV của tôi" (em · lớp · tình trạng · chip Việc cần làm) thay ô "Chọn một việc". */
             <HvCuaToi em={hvTvv.data?.em} viec={dsGoc} dangTai={!hvTvv.error && !hvTvv.data} onMo={(x) => boChuRoi(() => mo(x))}

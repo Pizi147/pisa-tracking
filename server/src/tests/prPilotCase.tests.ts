@@ -92,8 +92,23 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
 
   check('6b-2 · panel số: dòng có nhóm → dải nhóm dính + bấm dòng mở view Case trong CÙNG panel; Case tiếp ›', () => {
     const sl = docSach('web/src/ui/SoLieu.tsx');
-    assert(/xepNhomCase\(/.test(sl) && /sticky/.test(sl), 'không vẽ dải nhóm dính');
+    assert(/BUOC_CASE\.map\(/.test(sl) && /nhom-b/.test(sl) && /<Bang</.test(sl), 'không vẽ bảng Case theo bước');
     assert(/caseTiep\(/.test(sl) && /Case tiếp ›/.test(docSach('web/src/modules/students/NganCase.tsx')), 'không có Case tiếp ›');
+  });
+
+  check('GD-21 · đề mục Case chỉ khi GV đã sửa tên: tên mặc định (kỹ năng / "{kỹ năng} không đạt", dài · ngắn) → null; tên riêng → hiện; dòng Case có mô tả + kỹ năng + lượt', async () => {
+    const { deMucRieng } = d;
+    assert(deMucRieng({ title: null, mon: 'writing', ct: 'ft' }) === null, 'trống phải là null');
+    assert(deMucRieng({ title: 'Writing Task 2 không đạt', mon: 'writing', ct: 'ft' }) === null, 'mặc định dài bị coi là tên riêng');
+    assert(deMucRieng({ title: 'Writing Task 2', mon: 'writing', ct: 'ft' }) === null, 'tên kỹ năng bị coi là tên riêng');
+    assert(deMucRieng({ title: '[MT2] Reading không đạt [SOS 3]', mon: 'reading', ct: 'ft' }) === null, 'dạng [MT2] … [SOS n] bị coi là tên riêng');
+    assert(deMucRieng({ title: '[Progress Test] Writing Progress Test chưa đạt [SOS 3]', mon: 'writing', ct: 'ft' }) === null, 'dạng [Progress Test] … bị coi là tên riêng');
+    assert(deMucRieng({ title: 'P không đạt', mon: 'speaking', ct: 'be' }) === null, 'mã môn một chữ cái bị coi là tên riêng');
+    assert(deMucRieng({ title: 'G+V không đạt', mon: 'writing', ct: 'be' }) === null, 'G+V không đạt bị coi là tên riêng');
+    assert(deMucRieng({ title: 'MT2 - Reading dưới kỳ vọng', mon: 'reading', ct: 'ft' }) === null, 'dạng caseTitle bị coi là tên riêng');
+    assert(deMucRieng({ title: 'Reading: chưa xử lý được dạng True/False/Not Given', mon: 'reading', ct: 'ft' }) === 'Reading: chưa xử lý được dạng True/False/Not Given', 'tên riêng không hiện');
+    const o = oTong(P.mbManager);
+    assert(o.rows.every((x: any) => 'moTa' in x && 'kyNang' in x && 'luot' in x && 'deMuc' in x), 'dòng Case thiếu moTa / kyNang / luot / deMuc');
   });
 
   check('6b-2 · DESIGN.md: V11 bản M6 + luật Quay lại + luật chữ đầu mục (G14 sửa: vạch nhóm theo bước)', () => {
