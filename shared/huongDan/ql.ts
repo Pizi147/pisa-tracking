@@ -171,7 +171,7 @@ export const HD_QL: HuongDan = {
       id: 'bao-cao-ph', ten: 'Báo cáo PH: viết hộ, thêm / bỏ đợt, xuất', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › Báo cáo PH' },
       loiTat: ['p-bao-cao-ph'], cung: 'mở cùng panel viết.',
-      buoc: ['Mở hồ sơ lớp, tab <b>Báo cáo PH</b> (chương trình có mẫu); chọn <b>Đợt báo cáo</b>.', 'Phần còn thiếu của GV: bạn viết hộ — nút <b>Viết …</b> từng phần; chữ tự lưu khi rời ô.',
+      buoc: ['Mở hồ sơ lớp, tab <b>Báo cáo PH</b> (chương trình có mẫu); chọn <b>Đợt báo cáo</b>.', 'Phần còn thiếu của GV: bạn viết hộ — nút <b>Viết …</b> từng phần (chữ tự lưu khi rời ô), hoặc <b>Đặt nhanh</b> một mức cho mọi ô trống của một phần; trong panel một em <b>Cả n tiêu chí</b> rồi sửa lẻ (<b>Hoàn tác</b> ở thông báo).',
         '<b>+ Đợt báo cáo</b> thêm đợt; <b>Không báo cáo đợt này</b> bỏ đợt (<b>Khôi phục</b> được).', '<b>Xuất PDF lớp</b> · <b>Xuất Excel lớp</b>, hoặc PDF / Excel từng em ở cột <b>Xuất</b>.'],
       tuKhac: ['phụ huynh', 'báo cáo ph', 'parent report', 'đợt', 'pdf'],
     },

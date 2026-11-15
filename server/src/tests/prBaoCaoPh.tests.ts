@@ -176,6 +176,8 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
   }));
 
   const dq: any = await import('../classes/dotBaoCaoPh.ts');
+  const nc: any = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO }: any = await import('./tocDoDuong.ts');
   check('BC-13 · BC-DOT-QL: QL / Admin bỏ đợt → mất chip, việc Admin, Excel tháng; bài giữ nguyên; khôi phục hiện lại; GV / TVV 403; nhiều lớp', () => thu(() => {
     const tr = bc.trangBaoCaoPh(P.mbManager, lop, null);
     const dot0 = tr.dot;
@@ -502,5 +504,62 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     mg.migratePrBcPhViecGv(conn, ap);
     const v2 = (conn.prepare('SELECT value FROM demo_config WHERE key = ?').get(mg.KHOA_MOC_BC_PH_VIEC_GV) as any)?.value;
     assert(v2 === v1 && ap.length === 1, 'chạy lặp không đổi mốc');
+  }));
+
+  /* ------------------------------------------------------------ BAO-PH-DAT-NHANH (chủ SP 15/11) */
+  check('BC-23 · Đặt nhanh: chỉ ô trống (ô có mức / đặt sẵn giữ, chữ giữ) · quyền như lưu một ô · lỗi một phần · Hoàn tác đúng ô (ô sửa sau giữ, dòng mới rỗng xoá) · trần câu', () => thu(() => {
+    const { soCauSql, soDongSql } = nc;
+    const r0 = dq.doiDotBaoCaoPh(P.mbManager, { viec: 'them', classIds: [lop], ten: 'Đợt đặt nhanh', mo: TODAY, han: d.addDaysIso(TODAY, 6) });
+    const ma = r0.ma[0].ma;
+    xoaNho();
+    const tr = bc.trangBaoCaoPh(P.lrTeacher, lop, ma);
+    const [e0, e1] = tr.em;
+    assert(e0 && e1, 'tiền đề: lớp có ≥ 2 em');
+    bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', studentId: e0.id, muc: { c1: 'kha' }, chu: 'Nghe ổn' });
+    xoaNho();
+    const L = d.boPhanBc('FT')[1];
+    const ph = bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening');
+    const o = Object.fromEntries(ph.em.map((e: any) => [e.id, d.tieuChiTrong(L, e.banGhi, e.mucTruoc)]).filter(([, k]: any) => k.length));
+    assert(o[e0.id]?.join() === 'c2,c3,c4', 'em 0: c1 đã có → chỉ c2..c4 trống: ' + JSON.stringify(o[e0.id]));
+    /* quyền: Admin không viết; GV L không đặt phần không phải của mình */
+    if (admin) assertThrows(() => bc.datNhanhBaoCaoPh(admin, lop, { dot: ma, phan: 'listening', muc: 'tot', o }), /phân công/, 'Admin');
+    if (!P.lrTeacher.assignments.some((a: any) => a.classId === lop && a.skill === 'speaking')) {
+      assertThrows(() => bc.datNhanhBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'speaking', muc: 'tot', o: { [e0.id]: ['c1'] } }), /phân công/, 'GV L đặt S');
+    }
+    assertThrows(() => bc.datNhanhBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', muc: 'gioi', o }), /Mức/, 'mức lạ');
+    assertThrows(() => bc.datNhanhBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', muc: 'tot', o: { [e0.id]: ['i1'] } }), /ô/, 'tiêu chí phần khác');
+    /* đặt: c1 của em 0 gửi kèm (đã có) → bỏ qua, không đè; em lạ → lỗi riêng, em khác vẫn lưu */
+    xoaNho();
+    const c0 = soCauSql(), r0d = soDongSql();
+    const r = bc.datNhanhBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', muc: 'tot', o: { ...o, [e0.id]: ['c1', ...o[e0.id]], 99999999: ['c1'] } });
+    const cau = soCauSql() - c0, dong = soDongSql() - r0d;
+    console.log(`    đo đặt nhanh ${Object.keys(o).length} em: ${cau} câu, ${dong} dòng`);
+    assert(cau <= TRAN_GHI_LO.datNhanhBaoCaoPh, `${cau} câu > ${TRAN_GHI_LO.datNhanhBaoCaoPh}`);
+    assert(r.boQua === 1 && r.loi.length === 1 && r.loi[0].studentId === 99999999, JSON.stringify(r));
+    assert(r.soO === Object.values(o).reduce((n: number, k: any) => n + k.length, 0), 'đặt đúng số ô hộp đếm');
+    xoaNho();
+    const sau = bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening');
+    const b0 = sau.em.find((e: any) => e.id === e0.id).banGhi;
+    assert(b0.muc.c1 === 'kha' && b0.muc.c2 === 'tot' && b0.chu === 'Nghe ổn' && sau.em.find((e: any) => e.id === e0.id).du, 'em 0: c1 giữ, chữ giữ → đủ');
+    assert(r.o.find((x: any) => x.studentId === e0.id).o === 'du' && r.thieuChu === r.o.filter((x: any) => x.o !== 'du').length, 'em thiếu nhận xét đếm đúng');
+    const b1 = sau.em.find((e: any) => e.id === e1.id).banGhi;
+    assert(b1 && d.tieuChiPhan(L).every((x: any) => b1.muc[x.khoa]) && !sau.em.find((e: any) => e.id === e1.id).du, 'em 1: đủ mức, chưa nhận xét → nháp');
+    /* đặt lại: không còn ô trống → không ghi gì */
+    assert(bc.datNhanhBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', muc: 'yeu', o }).soO === 0, 'lần hai không đè');
+    /* người khác sửa c2 em 1 sau khi đặt → Hoàn tác giữ ô đó */
+    bc.luuBaoCaoPh(P.mbManager, lop, { dot: ma, phan: 'listening', studentId: e1.id, ...b1, muc: { ...b1.muc, c2: 'yeu' } });
+    const kq = Object.fromEntries(r.o.map((x: any) => [x.studentId, x.khoa]));
+    const h = bc.datNhanhBaoCaoPh(P.lrTeacher, lop, { dot: ma, phan: 'listening', muc: 'tot', hoanTac: true, o: kq, moi: r.o.filter((x: any) => x.moi).map((x: any) => x.studentId) });
+    assert(h.boQua === 1, 'Hoàn tác bỏ qua ô đã sửa: ' + JSON.stringify(h));
+    xoaNho();
+    const ht = bc.phanBaoCaoPh(P.lrTeacher, lop, ma, 'listening');
+    const h0 = ht.em.find((e: any) => e.id === e0.id).banGhi, h1 = ht.em.find((e: any) => e.id === e1.id).banGhi;
+    assert(h0.muc.c1 === 'kha' && !h0.muc.c2 && h0.chu === 'Nghe ổn', 'em 0 về như trước: ' + JSON.stringify(h0));
+    assert(h1 && h1.muc.c2 === 'yeu' && !h1.muc.c1, 'em 1: còn ô người khác sửa: ' + JSON.stringify(h1));
+    const conDong = ht.em.filter((e: any) => !o[e.id] || e.id === e0.id || e.id === e1.id ? false : e.banGhi);
+    assert(!conDong.length, 'em mới khác: dòng rỗng đã xoá: ' + JSON.stringify(conDong.map((e: any) => e.banGhi)));
+    assert(bc.trangBaoCaoPh(P.lrTeacher, lop, ma).em.filter((e: any) => e.o.listening).length === 2, 'tab: chỉ em 0, em 1 còn bản ghi');
+    const nk = conn.prepare("SELECT COUNT(*) n FROM audit_logs WHERE action IN ('bao_cao_ph.dat_nhanh', 'bao_cao_ph.hoan_dat_nhanh')").get() as any;
+    assert(nk.n >= r.o.length + h.o.length, 'nhật ký từng em');
   }));
 }

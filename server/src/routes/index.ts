@@ -1114,6 +1114,11 @@ api.put('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return baoCaoPhSvc.luuBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
 }));
+/** BAO-PH-DAT-NHANH: đặt một mức cho các ô còn trống của một phần (cả lớp, một lần) · Hoàn tác (`hoanTac`). */
+api.post('/classes/:classId/bao-cao-ph/dat-nhanh', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return baoCaoPhSvc.datNhanhBaoCaoPh(principalOf(req), pInt(req, 'classId'), req.body ?? {});
+}));
 
 
 /**

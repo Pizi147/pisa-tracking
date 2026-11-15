@@ -125,6 +125,14 @@ export function phanDu(p: PhanBc, b: Pick<BanGhiBc, 'muc' | 'chu'> | null | unde
   if (!b || !b.chu.trim()) return false;
   return tieuChiPhan(p).every((x) => MUC_BC.includes(b.muc[x.khoa]));
 }
+/**
+ * BAO-PH-DAT-NHANH (chủ SP 15/11): tiêu chí còn TRỐNG của một em ở một phần — bản đã lưu, chưa có thì mức đặt sẵn như đợt trước (như panel viết:
+ * đặt sẵn tính là có mức). Một hàm cho hộp "Đặt nhanh" (đếm ô) và máy chủ (điền đúng ô đó, không đè ô đã có).
+ */
+export function tieuChiTrong(p: PhanBc, banGhi: Pick<BanGhiBc, 'muc'> | null | undefined, mucTruoc: Record<string, MucBc> | null | undefined): string[] {
+  const co = banGhi?.muc ?? mucTruoc ?? {};
+  return tieuChiPhan(p).map((x) => x.khoa).filter((k) => !MUC_BC.includes(co[k]));
+}
 
 // ---------------------------------------------------------------- đợt
 

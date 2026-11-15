@@ -1,4 +1,5 @@
-import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode, type RefObject } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { api } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -9,7 +10,8 @@ import { taoHangLuu, dongSauKhiLuu, type TrangThaiO } from '../../lib/luuChac.ts
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { ChonDangNut } from '../../ui/ui.tsx';
-import { KhungPanel } from '../../ui/KhungPanel.tsx';
+import { KhungPanel, NUT_DONG } from '../../ui/KhungPanel.tsx';
+import { HopNeo } from '../../ui/HopNeo.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ChuLuu, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { ODiem } from '../../ui/ODiem.tsx';
@@ -19,7 +21,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, quyCheXuatBaoCaoPh, tieuChiPhan, tuanLich,
+  MUC_BC, DIEM_CHU_TOI_DA, boPhanBc, chuBc, docDiemSua, kqDiemBc, nhanMucBc, nhanOChu, ngay, phanDu, quyCheBaoCaoPh, quyCheXuatBaoCaoPh, tieuChiPhan, tieuChiTrong, tuanLich,
   type BanGhiBc, type DiemGocBc, type MucBc, type PhanBc,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -65,6 +67,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
   }, [data, doi]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [them, setThem] = useState(false);
   const [hop, setHop] = useState<'bo' | 'them' | 'sua' | null>(null);
+  const [datNhanh, setDatNhanh] = useState(false);
+  const nutDatNhanh = useRef<HTMLButtonElement>(null);
   const { homNay } = useNgayNghiepVu();
   const dt = useDienThoai();
   const bo = useMemo(() => boPhanBc(ct), [ct]);
@@ -121,6 +125,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
     } catch (e) { loiToast(e); }
   };
   const nutDot = 'btn btn-sm min-h-[44px] font-semibold sm:min-h-0';
+  /* Phần người xem đặt nhanh được = phần viết được (GV đúng phần · QL viết hộ — như quyền máy chủ) có tiêu chí. */
+  const phanDat = data.dot && em.length ? data.phan.filter((p) => (p.cuaToi || data.vietHo) && tieuChiPhan(bo.find((x) => x.khoa === p.khoa)!).length) : [];
   const congCu = (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-2 pb-3">
       <ChonDangNut aria-label={t('Đợt báo cáo')} value={data.dot ?? data.daBo?.ma ?? data.sapMo?.ma ?? ''} onChange={(ev) => onDot(ev.target.value || null)}>
@@ -139,6 +145,8 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
       )}
       <span className="flex-1" />
       {data.dot && <span className="text-[13px] text-dim">{t('Cả lớp đủ')} <b className="text-[15px] tabular-nums text-slate-100">{soDu}</b> / {em.length} {t('em')}</span>}
+      {/* BAO-PH-DAT-NHANH (chủ SP 15/11): thanh công cụ của tab, không trong tiêu đề bảng (V5). Chỉ khi người xem viết được một phần có tiêu chí. */}
+      {phanDat.length > 0 && <button ref={nutDatNhanh} type="button" className={nutDot} aria-expanded={datNhanh} onClick={() => { setMo(null); setDatNhanh((x) => !x); }}>{t('Đặt nhanh')}</button>}
       {data.quyetDot && (data.sapMo || (data.dot && dotHien?.them)) && <>
         <button type="button" className={nutDot} onClick={() => setHop('sua')}>{t('Sửa đợt')}</button>
         <button type="button" className={nutDot} onClick={() => void xoaDotThem()}>{t('Xoá đợt')}</button>
@@ -159,7 +167,11 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
       dot={hop === 'bo' && dotHien ? { ma: dotHien.ma, nhan: dotHien.nhan } : undefined}
       sua={hop === 'sua' ? data.sapMo ?? (dotHien?.them ? { ...dotHien, id: Number(dotHien.ma.slice(5)) } : undefined) : undefined}
       onClose={() => setHop(null)} onDone={sauDoi} />
-  );
+  ) || (datNhanh && data.dot && (
+    <HopDatNhanh neo={nutDatNhanh} lopId={lopId} lopMa={data.lop.ma} dot={data.dot} bo={bo}
+      phan={phanDat.map((p) => ({ khoa: p.khoa, ngan: p.ngan, ten: p.khoa === 'chung' ? t('Nhận xét chung') : p.ten, vietHo: !p.cuaToi, conThieu: em.some((e) => e.o[p.khoa] !== 'du') }))}
+      onDoi={(ds) => setDoi((x) => ({ ...x, ...ds }))} onDong={() => setDatNhanh(false)} />
+  ));
   if (!data.dot) {
     return (
       <section className="card p-4">
@@ -293,6 +305,131 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
       {panel}
       {hopDot}
     </section>
+  );
+}
+
+type KqDatNhanh = { o: { studentId: number; khoa: string[]; o: OBc; moi: boolean }[]; soO: number; boQua: number; loi: { studentId: number; lyDo: string }[]; thieuChu: number };
+
+/**
+ * BAO-PH-DAT-NHANH (chủ SP 15/11, nghiệm thu P1-4): hộp nhỏ neo nút "Đặt nhanh" — chọn phần (phần người xem viết được) + mức → "Áp cho n ô trống".
+ * Chỉ điền tiêu chí còn trống của em chưa đủ (`tieuChiTrong`, cùng hàm máy chủ); ô đã có mức / đặt sẵn giữ; ô chữ không đụng (nói số em còn thiếu).
+ * Lưu MỘT request; xong đóng hộp, ô bảng đổi tại chỗ, toast Hoàn tác trả về trống đúng các ô vừa đặt. Đếm ô từ đường GET panel một phần (sẵn có).
+ */
+function HopDatNhanh({ neo, lopId, lopMa, dot, bo, phan, onDoi, onDong }: {
+  neo: RefObject<HTMLButtonElement | null>; lopId: number; lopMa: string; dot: string; bo: readonly PhanBc[];
+  phan: { khoa: string; ngan: string; ten: string; vietHo: boolean; conThieu: boolean }[];
+  onDoi: (ds: Record<string, OBc>) => void; onDong: () => void;
+}) {
+  const toast = useToast();
+  const [khoa, setKhoa] = useState((phan.find((p) => !p.vietHo && p.conThieu) ?? phan.find((p) => p.conThieu) ?? phan[0]).khoa);
+  const [muc, setMuc] = useState<MucBc>('tot');
+  const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const ph = bo.find((x) => x.khoa === khoa)!;
+  const duong = `/classes/${lopId}/bao-cao-ph`;
+  const { data: dl, loading, error, reload } = useApi<DuLieuPhan>(`${duong}/phan?dot=${encodeURIComponent(dot)}&phan=${khoa}`, [lopId, dot, khoa]);
+  /* harden: vừa đổi phần mà bản phần cũ còn trên tay → coi như đang tải (không đếm / gửi ô của phần cũ). */
+  const data = dl?.phan === khoa ? dl : null;
+  /* Ô trống từng em (em đủ thì không còn ô trống — `phanDu` cần mọi tiêu chí). */
+  const o = useMemo(() => Object.fromEntries((data?.em ?? []).map((e) => [e.id, tieuChiTrong(ph, e.banGhi, e.mucTruoc)] as const).filter(([, k]) => k.length)), [data, ph]);
+  const soEm = Object.keys(o).length;
+  const soO = Object.values(o).reduce((n, k) => n + k.length, 0);
+  const thieuChu = (data?.em ?? []).filter((e) => o[e.id] && !e.banGhi?.chu.trim()).length;
+  const ten = (sid: number) => data?.em.find((e) => e.id === sid)?.ten ?? `#${sid}`;
+  const tenPhan = phan.find((p) => p.khoa === khoa)!.ten;
+  const oChu = nhanOChu(ph).toLowerCase();
+  const nhan = (r: KqDatNhanh) => Object.fromEntries(r.o.map((x) => [`${x.studentId}:${khoa}`, x.o]));
+
+  const ap = async () => {
+    setBusy(true); setLoi(null);
+    try {
+      const r = await api.post<KqDatNhanh>(`${duong}/dat-nhanh`, { dot, phan: khoa, muc, o });
+      quenBanXem(duong);
+      onDoi(nhan(r));
+      const phu = [r.thieuChu ? t('{n} em còn thiếu {o}', { n: r.thieuChu, o: oChu }) : null,
+        r.boQua ? t('{n} ô vừa có người chấm — giữ nguyên', { n: r.boQua }) : null].filter(Boolean).join(' · ');
+      const kq = Object.fromEntries(r.o.map((x) => [x.studentId, x.khoa]));
+      const moi = r.o.filter((x) => x.moi).map((x) => x.studentId);
+      if (r.soO) {
+        /* Phần Chung: ô chữ đã mang tên phần ("nhận xét chung") — không nhắc tên phần hai lần. */
+        toast.hoanTac([t('Đã đặt {muc} cho {n} ô', { muc: nhanMucBc(muc), n: r.soO }), khoa === 'chung' ? null : tenPhan, phu || null].filter(Boolean).join(' · '), async () => {
+          try {
+            const h = await api.post<KqDatNhanh>(`${duong}/dat-nhanh`, { dot, phan: khoa, muc, o: kq, moi, hoanTac: true });
+            quenBanXem(duong);
+            onDoi(nhan(h));
+            toast.push('ok', h.boQua ? `${t('Đã hoàn tác')} · ${t('{n} ô đã có người sửa — giữ nguyên', { n: h.boQua })}` : t('Đã hoàn tác'));
+          } catch (e: any) { toast.push('error', e?.message ?? t('Không lưu được')); }
+        }, { key: `bc-dat-nhanh:${lopId}` });
+      } else if (phu) toast.push('info', phu);
+      if (r.loi.length) toast.push('error', t('Chưa đặt được: {ds}', { ds: r.loi.map((x) => `${ten(x.studentId)} (${dich(x.lyDo)})`).join(', ') }));
+      onDong();
+    } catch (e: any) {
+      setLoi(e?.message ?? t('Không lưu được'));   // một giao dịch: không ô nào được lưu — ở lại hộp, bấm lại được
+    } finally { setBusy(false); }
+  };
+
+  /* Đang lưu thì chưa đóng (kết quả về sẽ đóng hộp). Không có chữ gõ dở nên không hỏi. */
+  const ngoai = () => { if (!busy) onDong(); };
+  /* PTA rà #1719: hai lựa chọn + một nút = HỘP NHỎ neo nút (không panel). 375 → tấm dưới (như hộp Tình hình học tập). */
+  const hep = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
+  const nhanPhan = (p: (typeof phan)[number]) => `${p.ten}${p.vietHo ? ` · ${t('viết hộ')}` : ''}`;
+  const than = (
+    <>
+      <div className="-mt-1 flex items-center gap-2 border-b pb-2.5" style={{ borderColor: 'var(--line)' }}>
+        <b className="min-w-0 flex-1 truncate text-[15px] font-bold text-slate-100">{t('Đặt nhanh')} <span className="text-[13px] font-medium text-dim">· {lopMa}</span></b>
+        <button type="button" className={`${NUT_DONG} -mr-1`} aria-label={t('Đóng')} onClick={ngoai}>✕</button>
+      </div>
+      {/* Cùng dáng hàng Mức (`HangThang`): nhãn trái · dải phải; 375 xếp dọc, dải rộng hết. */}
+      <div className="grid items-center gap-x-3.5 gap-y-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+        <span id="dn-phan" className="text-sm leading-[1.45] text-slate-100">{t('Phần')}</span>
+        {phan.length === 1 ? <b className="text-sm font-semibold text-slate-100">{nhanPhan(phan[0])}</b>
+          : phan.length <= 4 ? <DaiChon nhan="dn-phan" ds={phan.map((p) => ({ k: p.khoa, chu: p.ngan, ten: nhanPhan(p) }))} chon={khoa} onChon={setKhoa} />
+          : <ChonNguoi key={khoa} value={{ kieu: 'tai_khoan', id: phan.findIndex((p) => p.khoa === khoa) + 1, ten: nhanPhan(phan.find((p) => p.khoa === khoa)!) }}
+              nhom="nhan_vien" choToi={false} choNgoai={false} ariaLabel={t('Phần')} ds={phan.map((p, k) => ({ id: k + 1, ten: nhanPhan(p) }))}
+              onChange={(v) => { if (v?.kieu === 'tai_khoan' && phan[v.id - 1]) setKhoa(phan[v.id - 1].khoa); }} />}
+      </div>
+      <HangThang ten={t('Mức')} muc={muc} san={false} dotTruoc={null} onChon={setMuc} />
+      <div aria-live="polite" className="border-t pt-2.5 text-sm" style={{ borderColor: 'var(--line)' }}>
+        {error ? <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />
+          : loading || !data ? <Skeleton rows={2} />
+          : soO ? <>
+            <p className="m-0 text-slate-100"><b className="tabular-nums">{soO}</b> {t('ô trống')} · <b className="tabular-nums">{soEm}</b> {t('em chưa đủ')}</p>
+            <p className="m-0 mt-1 text-slate-400">{t('Ô đã chấm giữ nguyên.')}</p>
+            {thieuChu > 0 && <p className="m-0 mt-1 font-semibold text-soon">{t('{n} em còn thiếu {o} — viết từng em sau', { n: thieuChu, o: oChu })}</p>}
+          </> : <p className="m-0 text-slate-400">{t('Mọi em đã có mức ở phần này.')}</p>}
+        {loi && <p role="alert" className="m-0 mt-2 font-semibold text-bad">{loi} · {t('Chưa ô nào được lưu.')}</p>}
+      </div>
+      <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
+        <button type="button" className="btn max-sm:h-11 max-sm:flex-1" disabled={busy} onClick={ngoai}>{t('Đóng')}</button>
+        <button type="button" className="btn btn-primary font-semibold max-sm:h-11 max-sm:flex-1" disabled={busy || !data || !soO} onClick={() => void ap()}>
+          {busy ? t('Đang lưu…') : soO ? t('Áp cho {n} ô trống', { n: soO }) : t('Không còn ô trống')}</button>
+      </div>
+    </>
+  );
+  return hep
+    ? createPortal(
+      <div className="fixed inset-0 z-[60] flex flex-col justify-end bg-black/60" onClick={(e) => { if (e.target === e.currentTarget) ngoai(); }} onKeyDown={(e) => { if (e.key === 'Escape') ngoai(); }}>
+        <div role="dialog" aria-label={t('Đặt nhanh')} className="grid gap-3 rounded-t-[14px] border-t p-4 pb-5" style={{ background: 'var(--surface)', borderColor: 'var(--line-strong)' }}>{than}</div>
+      </div>, document.body)
+    : <HopNeo neo={neo} nhan={t('Đặt nhanh')} rong={440} onNgoai={ngoai}>{than}</HopNeo>;
+}
+
+/** Dải nút chọn một (cùng dáng hàng Mức `.thang-bc`): radio, roving tabindex, ← → chuyển. Phần ở hộp Đặt nhanh (≤ 4) · "Cả n tiêu chí" ở panel một em. */
+function DaiChon({ nhan, ds, chon, onChon }: { nhan: string; ds: { k: string; chu: string; ten: string }[]; chon: string; onChon: (k: string) => void }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  const phim = (ev: KeyboardEvent<HTMLSpanElement>) => {
+    const i = ds.findIndex((x) => x.k === chon);
+    const j = i < 0 && /^Arrow/.test(ev.key) ? 0 : ev.key === 'ArrowRight' || ev.key === 'ArrowDown' ? Math.min(ds.length - 1, i + 1) : ev.key === 'ArrowLeft' || ev.key === 'ArrowUp' ? Math.max(0, i - 1) : null;
+    if (j === null) return;
+    ev.preventDefault(); onChon(ds[j].k);
+    ref.current?.querySelectorAll<HTMLElement>('[role="radio"]')[j]?.focus();
+  };
+  return (
+    <span ref={ref} role="radiogroup" aria-labelledby={nhan} onKeyDown={phim} className="thang-bc">
+      {ds.map((x) => (
+        <button key={x.k} type="button" role="radio" aria-checked={x.k === chon} tabIndex={x.k === chon || (!chon && x.k === ds[0].k) ? 0 : -1} title={x.ten} aria-label={x.ten} onClick={() => onChon(x.k)}>{x.chu}</button>
+      ))}
+    </span>
   );
 }
 
@@ -506,6 +643,19 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
   onDoi: (doi: (f: Form) => Form, luuNgay: boolean) => void; onRoiChu: () => void;
 }) {
   const chonMuc = (k: string, m: MucBc) => onDoi((f) => ({ ...f, muc: { ...f.muc, [k]: m }, datSan: f.datSan.filter((x) => x !== k) }), true);
+  /* Chủ SP 15/11: "Cả n tiêu chí" — một bấm đặt mọi tiêu chí của em này một mức (một lần lưu), rồi sửa lẻ từng hàng như cũ.
+     Ghi đè mức đã chọn khác → toast Hoàn tác trả đúng bản trước (`onDoi` giữ bản ghi của em này kể cả khi đã sang em khác). */
+  const toast = useToast();
+  const tc = tieuChiPhan(phan);
+  const mot = tc.length && tc.every((x) => form.muc[x.khoa] === form.muc[tc[0].khoa]) ? form.muc[tc[0].khoa] ?? '' : '';
+  const datCa = (m: MucBc) => {
+    const truoc = { muc: form.muc, datSan: form.datSan };
+    onDoi((f) => ({ ...f, muc: Object.fromEntries(tc.map((x) => [x.khoa, m])), datSan: [] }), true);
+    if (tc.some((x) => truoc.muc[x.khoa] && truoc.muc[x.khoa] !== m)) {
+      toast.hoanTac(t('Đã đặt cả {n} tiêu chí {muc} · {ten}', { n: tc.length, muc: nhanMucBc(m), ten: em.ten }),
+        () => onDoi((f) => ({ ...f, muc: truoc.muc, datSan: truoc.datSan }), true), { key: `bc-ca-em:${em.id}` });
+    }
+  };
   return (
     <div className="min-w-0 sm:px-6 sm:py-4">
       <div className="mb-3 flex items-center gap-2">
@@ -513,6 +663,12 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
         {du ? <Nhan tone="done">{t('Đủ')}</Nhan> : nhap ? <Nhan tone="soon">{t('Nháp')}</Nhan> : null}
       </div>
       {phan.coDiem && <DongDiem goc={em.goc} thang={thang} diemSua={form.diemSua} homNay={homNay} onDoi={(v) => onDoi((f) => ({ ...f, diemSua: v }), true)} />}
+      {tc.length > 1 && (
+        <div className="-mx-3 mt-3 grid items-center gap-x-3.5 gap-y-2 rounded-lg surface-2 px-3 py-2 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <span id={`ca-em-${em.id}`} className="text-sm font-semibold text-slate-100">{t('Cả {n} tiêu chí', { n: tc.length })}</span>
+          <DaiChon nhan={`ca-em-${em.id}`} ds={MUC_BC.map((m) => ({ k: m, chu: nhanMucBc(m), ten: nhanMucBc(m) }))} chon={mot} onChon={(k) => datCa(k as MucBc)} />
+        </div>
+      )}
       {phan.nhom.map((n, gi) => {
         const san = n.ds.some((x) => form.datSan.includes(x.khoa));
         return (
