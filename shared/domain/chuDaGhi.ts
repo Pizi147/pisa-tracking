@@ -31,6 +31,12 @@ export function chuCuaPhan(em: ChuDaGhiEm | null | undefined, khoa: string): Chu
   return [...ds].sort((a, b) => b.ngay.localeCompare(a.ngay)).filter((x) => !da.has(x.chu) && !!da.add(x.chu));
 }
 
+/** "Chèn cho n em" ở bàn giao (H2, [XM-2]): câu đầu của ô — nhận xét Test gần nhất, không có thì mô tả Case; phần Chung (`chung`): câu mới nhất. Không có → null. */
+export function cauBanGiao(em: ChuDaGhiEm | null | undefined, khoa: string): ChuDaGhi | null {
+  const ds = chuCuaPhan(em, khoa);
+  return khoa === 'chung' ? ds[0] ?? null : ds.find((x) => x.loai === 'nx-mt') ?? ds.find((x) => x.loai === 'case') ?? null;
+}
+
 /** Dòng nguồn: phần đậm (lượt / tên PA / loại) + phần phụ (tuần · điểm / Tiến triển / người khác ghi). `toiId`: người đang xem — chính mình ghi thì không ghi tên. */
 export function nguonChuDaGhi(x: ChuDaGhi, toiId: number | null, homNay: string, mon?: string | null): { dau: string; phu: string[] } {
   const tuan = tuanLich(x.tuan ?? x.ngay, homNay);

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { useBaoDangSua } from '../../ui/KhungPanel.tsx';
-import type { TuDien } from '@shared/domain/index.ts';
+import type { ChuDaGhi, TuDien } from '@shared/domain/index.ts';
+import { DuoiOChu, KhoiDaGhi, useChen } from '../../ui/KhoiDaGhi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { taoHangLuu, type HangLuu, type TrangThaiO } from '../../lib/luuChac.ts';
 
@@ -13,10 +14,12 @@ import { taoHangLuu, type HangLuu, type TrangThaiO } from '../../lib/luuChac.ts'
 const TONE: Record<'du' | 'thieu' | 'chua' | 'muted', ToneNhan> = { du: 'ok', thieu: 'soon', chua: 'muted', muted: 'muted' };
 
 /** Danh sách em bên trái: chip trạng thái (chữ, không chỉ màu) + dòng phụ; ↑ / ↓ đi từng em, focus theo em đang chọn. */
-export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, onChon, trangThai, phu, nhan }: {
+export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, onChon, trangThai, phu, nhan, dau }: {
   ds: T[]; chon: number; onChon: (id: number) => void;
   trangThai?: (e: T) => { khoa: 'du' | 'thieu' | 'chua' | 'muted'; nhan: string } | null;
   phu?: (e: T) => ReactNode; nhan: string;
+  /** GD-20b (mockup ⑫ B3): nút / dải ngay trên danh sách ("Chèn cho n em", "✓ Đã chèn n em · Hoàn tác"). */
+  dau?: ReactNode;
 }) {
   const ref = useRef<HTMLUListElement>(null);
   const phim = (ev: KeyboardEvent<HTMLUListElement>) => {
@@ -33,6 +36,7 @@ export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, o
         <span className="tabular-nums">{t('Học viên · {n} em', { n: ds.length })}</span>
         <span className="font-normal max-md:hidden"><kbd>↑</kbd> <kbd>↓</kbd> {t('đi từng em')}</span>
       </div>
+      {dau && <div className="mb-2 grid gap-2">{dau}</div>}
       <ul ref={ref} role="listbox" aria-label={nhan} onKeyDown={phim}
         className="m-0 list-none divide-y rounded-lg p-0 surface-2" style={{ borderColor: 'var(--line)' }}>
         {ds.map((e) => {
@@ -87,10 +91,15 @@ const LOI_LUU = () => t('Không lưu được — chữ vẫn giữ, thử lại
  * F01: lưu xếp lượt theo ô (`taoOLuu`) — gõ tiếp khi đang lưu thì phản hồi bản cũ KHÔNG báo "Đã lưu" cho chữ mới; rời ô lần nữa lưu tiếp bản mới.
  * `hang` + `khoa`: ô thuộc phiếu nhiều ô (xem `useHangLuu`). `docThoi`: chỉ đọc (chữ + "— người, ngày"). Ô 44 px chữ 16 ở 375 do `.field` chung (index.css OV-14b).
  */
-export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placeholder, rows = 5, hang, khoa = '', onLuu }: {
+export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placeholder, rows = 5, hang, khoa = '', onLuu, goiY }: {
   id?: string; nhan: string; ky?: string; batBuoc: boolean; giaTri: string; docThoi?: boolean; aiGhi?: string | null; placeholder?: string; rows?: number;
   hang?: HangLuu; khoa?: string;
   onLuu: (chu: string) => Promise<void>;
+  /**
+   * GD-20b (mockup ⑫ B4): khối "Bạn đã ghi" bên phải ô + Chèn (tự lưu như gõ) / Hoàn tác chèn. `onGoRong`: Hoàn tác đưa ô về rỗng — máy chủ không nhận góp ý
+   * rỗng nên nơi gọi gỡ câu vừa chèn bằng đường riêng (true = đã gỡ).
+   */
+  goiY?: { ds: readonly ChuDaGhi[]; nhan: string; toiId: number | null; homNay: string; mon?: string | null; tai: boolean; loi: boolean; thuLai: () => void; onGoRong: (cau: string) => Promise<boolean> };
 }) {
   const rieng = useHangLuu();
   const h = hang ?? rieng;
@@ -116,6 +125,14 @@ export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placehold
   const chuaLuu = o.chuaLuu() || (tt === 'loi');
   useBaoDangSua(tt !== 'dang' && chuaLuu);
   const go = (v: string) => { setChu(v); o.go(v); };
+  const chen = useChen(chu, (v, cauHoanTac) => {
+    if (cauHoanTac !== undefined && !v.trim() && goiY) {
+      void (async () => { await o.luu(); if (await goiY.onGoRong(cauHoanTac)) { o.nhanGoc(''); setChu(''); setTt('idle'); } })();
+      return;
+    }
+    go(v);
+    void o.luu();
+  }, goiY?.homNay ?? '', goiY?.toiId ?? null);
   const luu = () => {
     if (batBuoc && !chu.trim() && o.chuaLuu()) { setTt('loi'); setLoi(t('Viết góp ý cho em này.')); return; }
     void o.luu();
@@ -137,7 +154,7 @@ export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placehold
       </div>
     );
   }
-  return (
+  const oChu = (
     <label className="block min-w-0">
       {nhanEl}
       <textarea id={id} className="field w-full" rows={rows} value={chu} placeholder={placeholder}
@@ -150,5 +167,16 @@ export function OGopY({ id, nhan, ky, batBuoc, giaTri, docThoi, aiGhi, placehold
         {aiGhi && hienTt !== 'go' && <span className="text-slate-500">— {aiGhi}</span>}
       </span>
     </label>
+  );
+  if (!goiY) return oChu;
+  /* GD-20b (B4): ô + khối cạnh nhau (khối ngoài <label> — nút không lồng trong nhãn ô); không có câu → ô rộng như cũ. */
+  return (
+    <div className={`viet-ghi${goiY.ds.length ? '' : ' mot'}`}>
+      <div className="o-chu">
+        {oChu}
+        <DuoiOChu tai={goiY.tai} loi={goiY.loi} onThuLai={goiY.thuLai} chen={chen.gan} onHoanTac={chen.hoanTac} />
+      </div>
+      <KhoiDaGhi nhan={goiY.nhan} ds={goiY.ds} toiId={goiY.toiId} homNay={goiY.homNay} mon={goiY.mon} daChen={chen.daChen} onChen={chen.chen} gapDau={!!chu.trim()} chu={chu} />
+    </div>
   );
 }

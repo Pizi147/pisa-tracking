@@ -429,12 +429,13 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
         <header className={`flex shrink-0 items-center gap-2 border-b px-4 ${lui ? 'flex-wrap pb-2.5 pt-1.5' : vachLoai || cvNgoai?.them ? 'flex-wrap pb-2.5 pt-3' : 'h-[52px]'}`} style={{ borderColor: 'var(--line)' }}>
           {hangLui}
           {vachLoai && <div className="-mb-1 w-full">{vachLoai}</div>}
-          <h2 className={`m-0 min-w-0 truncate font-bold text-slate-100 ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={tieuDe}>{tieuDe}</h2>
+          {/* GD-20b (PTA rà #1745, chủ SP không nhận chữ cắt): < 640 px tiêu đề dài xuống dòng (không "…"), giữ cùng hàng với ✕ góc phải trên; ≥ 640 một dòng như cũ. */}
+          <h2 className={`m-0 min-w-0 font-bold text-slate-100 max-sm:flex-1 max-sm:break-words sm:truncate ${cvNgoai ? 'text-[22px]' : 'text-[17px]'}`} title={tieuDe}>{tieuDe}</h2>
           {ngu && <span className="min-w-0 flex-1 truncate text-xs text-slate-400" title={ngu}>{ngu}</span>}
-          {!ngu && <span className="flex-1" />}
+          {!ngu && <span className="flex-1 max-sm:hidden" />}
           {nutXem}
           {/* Rà #530: ✕ ở mọi cỡ như mockup V5 (375 có thêm "‹ Công việc" của nơi gọi — cùng đường đóng). */}
-          {!lui && nutDong}
+          {!lui && <span className="flex shrink-0 max-sm:self-start">{nutDong}</span>}
           {cvNgoai?.them && <div className="w-full pb-1">{cvNgoai.them}</div>}
         </header>
         )}

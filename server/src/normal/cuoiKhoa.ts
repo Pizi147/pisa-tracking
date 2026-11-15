@@ -1,7 +1,7 @@
 import { DS_JSON, THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, theoLoJson, tx } from '../db.ts';
 import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { LUOT_LO_TRINH_CUOI_SQL } from '../students/tamDung.ts';
-import { cauHinh, viecKhiChot, CASE_OUTCOME_LABEL, nguongMiniTest, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
+import { nhanDot, tenMonNgan, type DiemHv, cauHinh, viecKhiChot, CASE_OUTCOME_LABEL, nguongMiniTest, PERMISSIONS, tuanMuonNhatMt0, laLanGhiCuoi, laPaBoTro, caseDedupKey, categoryOf, chuHopKetLuan, coBaoPhKhiChot, coBoTroKhiChot, chuMonTruot, goiYCuoiKhoa, kyHieuLop, kyNangLopDich, lichBoTro, ngay, tenMon, hanKyGhiKetQua, type BoTroMienPhi, type GoiYCuoiKhoa, type RegularSkill, MON_GOP, boMonTheoLuot, daGhiLuot } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowIso, loi } from '../util.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -104,7 +104,9 @@ function tinhTyLeTongLo(attemptIds: readonly number[]): Map<number, TyLeLuot> {
  * PR-S5F-a (T58): chữ kết quả Cuối khoá — `Cuối khoá 66% (L 70 · R 58 · G+V 66 · P 62)` — của nhiều em ở MỘT lớp thường, KỂ CẢ em đã chuyển đi
  * (phiếu bàn giao đọc sau khi chuyển, thẻ kết quả ở hồ sơ). Cùng hàm chữ với hộp Kết luận khoá. Em chưa có bài Cuối khoá → không có trong kết quả.
  */
-export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<number, string> {
+export function chuCuoiKhoaLo(classId: number, sids: readonly number[],
+  /** GD-20b (chủ SP duyệt #1745): điểm có cấu trúc của cùng lượt Final (cột Kết quả bảng bàn giao) — từ dữ liệu vừa đọc, 0 câu thêm. */
+  giuDiem?: Map<number, DiemHv>): Map<number, string> {
   const out = new Map<number, string>();
   const luot = new Map<number, number>();
   theoLo([...new Set(sids)], (lo, ph) => {
@@ -122,6 +124,12 @@ export function chuCuoiKhoaLo(classId: number, sids: readonly number[]): Map<num
       goiY: goiYCuoiKhoa({ ct: x.ct, tyLe: x.tyLe, monTruot: x.monTruot, nguong: x.nguong, moc: x.mocNguong }), quyetDinh: null, ketLuanFt: null,
     });
     out.set(sid, h.phu ? `${h.chinh} (${h.phu})` : h.chinh);
+    giuDiem?.set(sid, {
+      luot: nhanDot('final', null), tuan: null, tam: false, donVi: '%',
+      overall: x.tyLe === null ? null : Math.round(x.tyLe * 100),
+      soVoi: { nhan: 'ngưỡng', v: Math.round(x.nguong * 100) },
+      kn: x.mon.map((m) => ({ k: tenMonNgan(x.ct, m.skill), v: m.ratio === null ? null : Math.round(m.ratio * 100), dat: m.ratio === null ? null : !x.monTruot.includes(m.skill) })),
+    });
   }
   return out;
 }

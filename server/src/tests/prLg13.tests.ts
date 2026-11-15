@@ -82,6 +82,11 @@ export async function runPrLg13Tests(t: any) {
     assert(d.chenCau('', 'Câu.') === 'Câu.' && d.chenCau('Có chữ', 'Câu.') === 'Có chữ Câu.' && d.chenCau('Có chữ\n', 'Câu.') === 'Có chữ\nCâu.', 'chenCau');
     assert(d.goCau('Có chữ Câu.', 'Câu.') === 'Có chữ' && d.goCau('Câu.', 'Câu.') === '' && d.goCau('Câu. Gõ thêm', 'Câu.') === 'Gõ thêm', 'goCau');
     assert(d.goCau('Đã sửa hết', 'Câu.') === 'Đã sửa hết', 'đã sửa mất đoạn → giữ');
+    /* GD-20b: "Chèn cho n em" lấy MT gần nhất, không có thì mô tả Case; phần Chung lấy câu mới nhất. */
+    const emBg = { id: 2, kyNang: { reading: [{ ...x('Case R', '2026-09-10'), loai: 'case' }, { ...x('MT cũ', '2026-08-01'), loai: 'kq-pa' }] }, chung: [x('Vi phạm mới', '2026-09-12')] };
+    assert(d.cauBanGiao(emBg, 'reading')?.chu === 'Case R', 'không có MT → Case');
+    assert(d.cauBanGiao({ ...emBg, kyNang: { reading: [...emBg.kyNang.reading, x('MT2 nx', '2026-09-01')] } }, 'reading')?.chu === 'MT2 nx', 'có MT → MT');
+    assert(d.cauBanGiao(emBg, 'chung')?.chu === 'Vi phạm mới' && d.cauBanGiao(emBg, 'listening') === null, 'chung / rỗng');
     const n = d.nguonChuDaGhi({ ...x('A', '2026-09-14'), luot: 'MT2', diem: '5.5', nguoiId: 9, nguoi: 'Lan' }, 7, '2026-09-14', 'reading');
     assert(n.dau === 'MT2' && n.phu.includes('R 5.5') && n.phu.some((s: string) => s.includes('Lan')), `nguồn: ${JSON.stringify(n)}`);
     assert(!d.nguonChuDaGhi({ ...x('A', '2026-09-14'), nguoiId: 7, nguoi: 'Tôi' }, 7, '2026-09-14').phu.some((s: string) => s.includes('Tôi')), 'chính mình ghi → không tên');

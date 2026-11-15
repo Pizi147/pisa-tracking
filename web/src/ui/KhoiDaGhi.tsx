@@ -7,9 +7,11 @@ import { t } from '@shared/i18n/index.ts';
  * [XM-5]). Không AI, không tự điền ô. Không có câu → không vẽ (A3). `gap` (ô đã có chữ / em đã đủ — A6): một dòng "… · n" + "Xem".
  * Dùng chung: Báo cáo PH (GD-20a) và bàn giao (GD-20b) — không dựng bản thứ hai.
  */
-export function KhoiDaGhi({ nhan, ds, toiId, homNay, mon, daChen, onChen, gapDau = false }: {
+export function KhoiDaGhi({ nhan, ds, toiId, homNay, mon, daChen, onChen, gapDau = false, chu = '' }: {
   nhan: string; ds: readonly ChuDaGhi[]; toiId: number | null; homNay: string; mon?: string | null;
   daChen: ReadonlySet<string>; onChen: (x: ChuDaGhi) => void; gapDau?: boolean;
+  /** Chữ đang có trong ô: câu đã nằm trong ô (chèn hàng loạt, chèn trước đó) cũng hiện "✓ Đã chèn" — không chèn trùng. */
+  chu?: string;
 }) {
   const [gap, setGap] = useState(gapDau);
   if (!ds.length) return null;
@@ -26,7 +28,7 @@ export function KhoiDaGhi({ nhan, ds, toiId, homNay, mon, daChen, onChen, gapDau
       <div className="dg-dau">{nhan}</div>
       {ds.map((x, i) => {
         const n = nguonChuDaGhi(x, toiId, homNay, mon);
-        const da = daChen.has(x.chu);
+        const da = daChen.has(x.chu) || (!!chu && chu.includes(x.chu));
         return (
           <div key={i} className={`muc${da ? ' da-chen' : ''}`}>
             <span className="nguon" title={[n.dau, ...n.phu].join(' · ')}><b>{n.dau}</b>{n.phu.map((s) => ` · ${s}`).join('')}</span>
@@ -51,14 +53,16 @@ export function DuoiOChu({ tai, loi, onThuLai, chen, onHoanTac }: {
 }
 
 /**
- * Chèn + Hoàn tác chèn cho MỘT ô: `datChu` ghi chữ mới (nơi gọi tự lưu như gõ). Hoàn tác trong 10 giây gỡ đúng đoạn vừa chèn (`goCau`); "✓ Đã chèn" ở khối chỉ ở giao
+ * Chèn + Hoàn tác chèn cho MỘT ô: `datChu` ghi chữ mới (nơi gọi tự lưu như gõ; lần Hoàn tác có thêm câu vừa gỡ). Hoàn tác trong 10 giây gỡ đúng đoạn vừa chèn (`goCau`); "✓ Đã chèn" ở khối chỉ ở giao
  * diện, trong phiên (đổi em / mở lại panel thì mất — [XM-2]).
  */
-export function useChen(chu: string, datChu: (chu: string) => void, homNay: string, toiId: number | null) {
+export function useChen(chu: string, datChu: (chu: string, hoanTacCau?: string) => void, homNay: string, toiId: number | null, khoa?: unknown) {
   const [daChen, setDaChen] = useState<ReadonlySet<string>>(new Set());
   const [gan, setGan] = useState<{ dau: string; cau: string } | null>(null);
   const hen = useRef<ReturnType<typeof setTimeout>>();
   useEffect(() => () => clearTimeout(hen.current), []);
+  /* `khoa` (em đang mở ở panel không dựng lại theo em): đổi em → quên "Đã chèn" + Hoàn tác của em trước. */
+  useEffect(() => { clearTimeout(hen.current); setDaChen(new Set()); setGan(null); }, [khoa]);
   const chen = (x: ChuDaGhi) => {
     datChu(chenCau(chu, x.chu));
     setDaChen((s) => new Set(s).add(x.chu));
@@ -68,9 +72,44 @@ export function useChen(chu: string, datChu: (chu: string) => void, homNay: stri
   };
   const hoanTac = () => {
     if (!gan) return;
-    datChu(goCau(chu, gan.cau));
+    datChu(goCau(chu, gan.cau), gan.cau);   // `hoanTacCau`: ô về rỗng mà máy chủ không nhận chữ rỗng (bàn giao) → nơi gọi gỡ câu bằng đường riêng
     setDaChen((s) => { const m = new Set(s); m.delete(gan.cau); return m; });
     setGan(null);
   };
   return { daChen, chen, gan, hoanTac };
+}
+
+/**
+ * "CHÈN CHO N EM" (GD-20b, mockup ⑫ B1 · B2 · B3 · B4): chèn một lần câu đầu (`cauBanGiao`) cho mọi ô còn trống, tự lưu như gõ; dải "✓ Đã chèn n em · Hoàn tác"
+ * 10 giây — Hoàn tác gỡ đúng các câu vừa chèn (ô đã sửa thì giữ). `chen` / `go`: nơi gọi lưu / gỡ một ô (bảng GVBM, panel GVCN, panel đổi GV mỗi nơi một cách lưu).
+ */
+export function useChenLo<T>(chen: (c: T) => Promise<unknown> | void, go: (c: T) => Promise<unknown> | void) {
+  const [vua, setVua] = useState<T[] | null>(null);
+  const hen = useRef<ReturnType<typeof setTimeout>>();
+  useEffect(() => () => clearTimeout(hen.current), []);
+  const chenLo = async (ds: T[]) => {
+    if (!ds.length) return;
+    setVua(ds);
+    clearTimeout(hen.current);
+    hen.current = setTimeout(() => setVua(null), 10_000);
+    await Promise.all(ds.map((c) => chen(c)));
+  };
+  const hoanTac = async () => {
+    const ds = vua;
+    if (!ds) return;
+    clearTimeout(hen.current);
+    setVua(null);
+    await Promise.all(ds.map((c) => go(c)));
+  };
+  return { vua, chenLo, hoanTac };
+}
+
+/** Dải sau "Chèn cho n em": "✓ Đã chèn n em" + Hoàn tác (10 giây). */
+export function DaiChenLo({ n, onHoanTac }: { n: number; onHoanTac: () => void }) {
+  return (
+    <div className="bao-chen" role="status">
+      <b>✓ {t('Đã chèn {n} em', { n })}</b>
+      <button type="button" className="link-nho" onClick={onHoanTac}>{t('Hoàn tác')}</button>
+    </div>
+  );
 }

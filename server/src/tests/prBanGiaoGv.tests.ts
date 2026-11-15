@@ -221,6 +221,18 @@ export async function runPrBanGiaoGvTests(t: YThucTestKit) {
     assert(one(`SELECT trang_thai FROM ban_giao_gv WHERE id = ?`, v.id).trang_thai === 'huy', 'việc huỷ');
     assert(maLoi(() => bg.phieuBanGiaoGv(loadPrincipal(gA), v.id))?.status === 403, 'rà sâu #731: GV cũ đọc việc đã huỷ → 403');
   }));
+  check('GD-20b · gỡ góp ý vừa chèn (Hoàn tác): khớp câu → xoá + nhật ký; đã sửa → giữ (false); GVBM khác → 403', () => thu(() => {
+    luu(X, { listening: gB });
+    const v = viecCua(X)[0];
+    const a = loadPrincipal(gA);
+    bg.ghiGopYGv(a, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'Câu vừa chèn' });
+    assert(maLoi(() => bg.goGopYVuaChen(loadPrincipal(gC), v.id, { studentId: emX[0], mon: 'listening', noiDung: 'Câu vừa chèn' }))?.status === 403, 'GVBM khác 403');
+    assert(bg.goGopYVuaChen(a, v.id, { studentId: emX[0], mon: 'listening', noiDung: 'Câu khác' }) === false, 'câu đã sửa → giữ');
+    assert(bg.goGopYVuaChen(a, v.id, { studentId: emX[0], mon: 'listening', noiDung: ' Câu vừa chèn ' }) === true, 'khớp → gỡ');
+    assert(bg.phieuBanGiaoGv(a, v.id).em.find((e: any) => e.studentId === emX[0]).gopY.listening == null, 'góp ý đã gỡ');
+    assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'ban_giao_gv.go_chen'`).n >= 1, 'có nhật ký');
+  }));
+
   check('B2 · xác nhận thiếu 1 em → 400 "Còn 1 em thiếu góp ý."; đủ → xong, B nhận đúng 1 thông báo, B đọc được, tự điền chụp', () => thu(() => {
     luu(X, { listening: gB });
     const v = viecCua(X)[0];
