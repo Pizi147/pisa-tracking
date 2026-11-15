@@ -259,6 +259,7 @@ export function HoTroHocVienTab() {
     const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? null : null;
     return x && lamTaiCho(x) ? x : null;
   }, [viec, hienThi, giu, dsGoc]);
+  const luoiRong = !!chon && chon.group === 'ghi_ket_qua_pa' && moCaDong(chon);
   /*
    * Danh sách vẽ: cùng bộ lọc, cộng dòng đã làm giữ chỗ. OV-11c (CV-3): đang mở panel thì GIỮ THỨ TỰ lúc mở — dòng xong / làm một phần (hạn đổi) đứng
    * đúng chỗ cũ, không sắp lại theo hạn mới, không rơi sau "Xem thêm"; việc mới (không có ở lần vẽ trước) xuống cuối nhóm. Đóng panel / đổi lọc thì sắp lại.
@@ -305,7 +306,8 @@ export function HoTroHocVienTab() {
     else {
       daDay.current = khongViec(params);
       const v = vungCuon();
-      if (v && window.matchMedia(MAN_HEP).matches) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
+      /* GD-20c ([XM-G1] PTA chốt): lưới Ghi kết quả PA ẩn danh sách cả ở máy tính — nhớ chỗ cuộn như điện thoại, Đóng về đúng dòng cũ. */
+      if (v && (window.matchMedia(MAN_HEP).matches || (it.group === 'ghi_ket_qua_pa' && moCaDong(it)))) { cuon.current = v.scrollTop; v.scrollTo(0, 0); }
       setParams(next);
     }
   };
@@ -318,10 +320,12 @@ export function HoTroHocVienTab() {
   /* Điện thoại: danh sách hiện lại (nút "‹ Công việc" hay nút Lùi) → về đúng chỗ cuộn cũ, SAU khi vẽ (trước đó cuộn neo theo nội dung panel). */
   const coChon = !!chon;
   const vuaCo = useRef(coChon);
+  const vuaRong = useRef(luoiRong);
   useLayoutEffect(() => {
-    if (vuaCo.current && !coChon && window.matchMedia(MAN_HEP).matches) vungCuon()?.scrollTo(0, cuon.current);
+    if (vuaCo.current && !coChon && (window.matchMedia(MAN_HEP).matches || vuaRong.current)) vungCuon()?.scrollTo(0, cuon.current);
     vuaCo.current = coChon;
-  }, [coChon]);
+    vuaRong.current = luoiRong;
+  }, [coChon, luoiRong]);
   /* ponytail: "đang hiện" đọc từ DOM — nhóm gập, việc sau "Xem thêm", em của dòng gộp chưa mở không được vẽ; nâng lên state nếu DanhSachViec đổi cách vẽ. */
   const dangHien = (k: string) => !!document.querySelector(`[data-khoa="${CSS.escape(k)}"]`);
   /* CONG-VIEC-2: việc tiếp đi hết nhóm (`viecKeTiepVong`). Hết nhóm → thẻ "Hết việc {nhóm}" + việc đầu nhóm sau (`xoay`: các nhóm sau trước, rồi vòng lên). */
@@ -579,8 +583,9 @@ export function HoTroHocVienTab() {
 
       {/* ───────────────────────────────────────────────── danh sách trái 540 px · panel phải dính (mockup `.bo-cuc`) */}
       {/* CV-TAB (chủ SP 06/11 "panel rộng hơn, cân đối, không nhảy chữ"): danh sách 640 px · panel phần còn lại (~740 px ở 1440). */}
-      <div className="lg:grid lg:grid-cols-[520px_minmax(0,1fr)] lg:items-start lg:gap-4 xl:grid-cols-[640px_minmax(0,1fr)]">
-        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
+      {/* GD-20c ([XM-G1], mockup ⑫ C2 `.pn-rong` 1040): lưới Ghi kết quả PA cần cả bề ngang — khi lưới mở, danh sách ẩn, panel rộng tối đa 1040; ✕ / Đóng về danh sách. */}
+      <div className={`lg:grid lg:items-start lg:gap-4 ${luoiRong ? 'lg:grid-cols-[minmax(0,1040px)]' : 'lg:grid-cols-[520px_minmax(0,1fr)] xl:grid-cols-[640px_minmax(0,1fr)]'}`}>
+        <div id="cv-tab-than" role={tab ? 'tabpanel' : undefined} aria-label={tab ? tenTab(tab) : undefined} className={`${anTrenDienThoai} ${xemLopHep ? 'max-lg:hidden' : ''} ${luoiRong ? 'lg:hidden' : ''} ${cu ? 'dang-tai-lai' : ''}`} aria-busy={cu || undefined}>
           {/* U01 #7 (khung A5): lọc "Đã xong hôm nay" — chỉ việc vừa xong trong phiên này, bấm dòng = Xem lại ở panel. */}
           {xemXong && dsXong.length > 0 && (
             <DanhSachViec muc={dsXong} dem={new Map(dsXong.map((m) => [m.key, { n: m.items.length, quaHan: 0 }]))} soHien={10}

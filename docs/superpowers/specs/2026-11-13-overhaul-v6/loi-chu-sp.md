@@ -595,3 +595,12 @@ Bối cảnh: PTA Overhaul rà hệ Hướng dẫn hiện tại và đưa ba hư
 > "Làm hướng B"
 
 ĐÃ CHỐT: Hướng dẫn V3 theo **hướng B**. Hai điểm PTA đề xuất kèm trong hướng B, chủ SP không phản đối → làm theo, duyệt lại ở mockup: tab "Tuần của tôi" gộp vào "Tôi muốn…" thành bộ lọc nhịp (nhường chỗ tab "Khi gặp…") · dải "Có gì mới" ở đầu panel. Thiết kế + đề bài mockup ⑭ + plan: `15-huong-dan-v3.md`.
+
+## 15/11 — lời 56: đổi tên hai tab của Hướng dẫn, không mockup lại
+
+Bối cảnh: mockup ⑭ Hướng dẫn V3 (PR #1743) đã rà xong, chờ chủ SP duyệt.
+
+> "đổi 'khi gặp' -> 'Trường hợp' và 'Ở đây' -> 'Trang này' không cần mockup lại nhé"
+
+ĐÃ CHỐT: ba tab của panel "?" tên là **"Trang này" · "Tôi muốn…" · "Trường hợp"** (thay "Ở đây" và "Khi gặp…"). **Không vẽ lại mockup** — hình mockup ⑭ còn tên cũ, code theo lời này (ảnh cặp ghi "KHÁC theo lời 56").
+PTA Overhaul hiểu (chủ SP sửa nếu sai): chủ SP chỉ nêu hai tên tab và bảo không cần mockup lại → **mockup ⑭ coi là ĐÃ DUYỆT kèm hai đổi tên**; đã merge #1743 (`thiet-ke/v21/huong-dan.html`) và gửi plan HD3-1 … HD3-6 cho PTA Plan.

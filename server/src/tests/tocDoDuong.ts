@@ -64,6 +64,8 @@ export const DUONG_DO: MucDo[] = [
   /* GD-8a: trang đầu TVV MỘT GET — em của TVV (HV của tôi) + chỉ số; thay `/tong-quan/tvv` + `/tong-quan/hoc-vien` khi GD-8 giao diện merge. */
   { trang: 'Trang đầu TVV', vai: ['TVV', 'QL', 'GVCN'], url: '/tong-quan/tvv/em', maChuDich: { QL: 400, GVCN: 400 } },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/yeu-cau/dem?branchId={cn}' },
+  /* GD-20c: lưới Ghi kết quả PA (một dòng gộp lớp × kỳ) — MỘT câu đọc các PA của dòng khi mở lưới. */
+  { trang: 'Công việc · lưới Kết quả PA', vai: ['QL', 'GVCN', 'GVBM'], url: '/interventions/luoi-ket-qua?ids={paLuoi}' },
   /* PR-S6F-b (UXF-a P1): Báo cáo đơn vị — tín hiệu đọc sổ chỉ số MỘT lần mỗi chỉ số (không theo chi nhánh). */
   { trang: 'Báo cáo đơn vị', vai: ['QL', 'QT'], url: '/signals' },
   { trang: 'Tổng quan QL', vai: ['QL', 'QT'], url: '/metrics/case-mo' },
@@ -1395,6 +1397,8 @@ export const TRAN_GHI_LO = {
   /** BO-QUA-XEP-MT: POST /my-work/bo-qua — đọc lại MỘT PA (câu `moc:` + id), kiểm quyền, ghi 3 cột + nhật ký trong một giao dịch. */
   boQuaViec: 20,   // trần đặt trước khi đo — sửa theo số đo
   /** NHAP-KQ-PA: PUT /interventions/:id/nhap — đọc PA + Case (quyền), một UPDATE, một nhật ký; không trả Case. */
+  /** GD-20c: GET /interventions/luoi-ket-qua — lưới Ghi kết quả PA một dòng gộp (lớp × kỳ): MỘT câu đọc PA + nháp + MT gần nhất, một câu phạm vi em cho cả lưới. */
+  luoiKetQua: 6,   // đo 4 câu (1 câu PA + 1 câu phạm vi em + 2 câu quyền), 1 PA = 3 PA — trần nhỏ: thêm câu theo PA là lỗi
   luuNhapKetQua: 18,   // đo 8 câu → max(8 + 10, ⌈8 × 1,3⌉)
   /** HAN-BAO-PH (UI-1): POST /y-thuc/bao-ph/:id/han — đọc việc + quyền + Tạm dừng, so-và-đổi `han_chon`, lịch sử, nhật ký, trả `xemViecBaoPh`. */
   suaHanBaoPh: 22,   // đo 12 câu → max(12 + 10, ⌈12 × 1,3⌉)
