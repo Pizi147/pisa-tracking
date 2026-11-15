@@ -423,7 +423,7 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Duyệt / chuyển lớp', cua: 'việc của QL' }],
       muc: [
         { id: 'pb-viet', viec: 'ban-giao', ten: 'Bàn giao khi em chuyển lớp',
-          buoc: ['Mỗi em một dòng; ô môn của bạn: một câu, rời ô là lưu.', 'GVCN: <b>Nhận xét chung của GVCN</b>, rồi xác nhận; ô của GV khác: <b>Điền thay</b> khi cần.', 'Bàn giao do đổi GV: <b>Xác nhận bàn giao</b>.'] },
+          buoc: ['Mỗi em một dòng; ô môn của bạn: một câu, rời ô là lưu.', 'GVCN: <b>Nhận xét chung của GVCN</b>, rồi xác nhận; ô của GV khác: <b>Điền thay</b> khi cần.', 'Bàn giao do đổi GV: <b>Xác nhận bàn giao</b>.', 'Ô trống có câu đã ghi (nhận xét Test gần nhất, mô tả Case, vi phạm): <b>Chèn</b> từng ô hoặc <b>Chèn cho n em</b> một lần — tự lưu, <b>Hoàn tác</b> trong 10 giây; vẫn xác nhận như cũ.'] },
       ],
     },
     {

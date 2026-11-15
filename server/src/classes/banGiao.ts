@@ -392,6 +392,26 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
   });
 }
 
+/**
+ * GD-20b (mockup ⑫ B2): "Hoàn tác" 10 giây sau "Chèn cho n em" — gỡ câu môn VỪA chèn (máy chủ không nhận câu rỗng). Cùng quyền `ghiMon`; chỉ xoá khi câu đang lưu
+ * đúng bằng `noiDung` (người khác / chính GV đã sửa → giữ, trả false). Có nhật ký; "GVBM chưa bàn giao" của phiếu đã chụp đếm lại.
+ */
+export function goMonVuaChen(p: Principal, lenhId: number, mon: string, noiDung: string): boolean {
+  const l = docLenhPhieu(lenhId);
+  const q = quyenBanGiao(p, l, mon, { ct: l.ct });
+  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(p, l.lop_nguon_id);
+  if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
+  if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
+  const text = String(noiDung ?? '').trim();
+  return tx(() => {
+    if (!text || !db().prepare('DELETE FROM ban_giao_mon WHERE lenh_id = ? AND mon = ? AND noi_dung = ?').run(lenhId, mon, text).changes) return false;
+    const tuDien = (db().prepare('SELECT tu_dien FROM lenh_chuyen_lop WHERE id = ?').get(lenhId) as any).tu_dien as string | null;
+    if (tuDien) db().prepare('UPDATE lenh_chuyen_lop SET tu_dien = ?, sua_luc = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(tuDien), gvbmChuaBanGiao: chuaBanGiaoCua(l) }), mocNghiepVu(), lenhId);
+    writeAudit({ actorUserId: p.userId, action: 'ban_giao.go_chen', entityType: 'student', entityId: l.student_id, entityLabel: l.full_name, before: { lenhId, mon, noiDung: text } });
+    return true;
+  });
+}
+
 /** GVCN lớp nguồn (hoặc Quản lý xác nhận thay) chốt phiếu: nhận xét chung ≥ 15 ký tự, chụp phần tự điền, một sự kiện Hành trình. Được cả SAU khi lệnh đã chuyển. */
 export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: string): void {
   const l = docLenhPhieu(lenhId);

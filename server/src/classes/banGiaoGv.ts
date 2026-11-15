@@ -240,6 +240,22 @@ export function phieuBanGiaoGv(p: Principal, id: number): PhieuBanGiaoGvDto {
 }
 
 /** GÓP Ý một em một cột (`PUT /ban-giao-gv/:id/gop-y`) — lưu khi rời ô; không để trống (không độ dài tối thiểu), ≤ 1000 ký tự. */
+/**
+ * GD-20b (mockup ⑫ B4): "Hoàn tác" 10 giây sau "Chèn cho n em" — gỡ góp ý VỪA chèn (máy chủ không nhận góp ý rỗng). Cùng quyền `ghiGopYGv`; chỉ xoá khi góp ý
+ * đang lưu đúng bằng `noiDung` (đã sửa → giữ, trả false). Có nhật ký.
+ */
+export function goGopYVuaChen(p: Principal, id: number, body: { studentId?: unknown; mon?: unknown; noiDung?: unknown }): boolean {
+  const b = docViec(id);
+  const q = quyenViec(p, b);
+  if (!q.viet) throw forbidden(b.trang_thai === 'huy' ? 'Việc bàn giao đã huỷ.' : 'Chỉ người được giao viết bàn giao (Quản lý điền thay khi quá hạn).');
+  const mon = String(body?.mon ?? ''), sid = Number(body?.studentId), chu = String(body?.noiDung ?? '').trim();
+  return tx(() => {
+    if (!chu || !db().prepare('DELETE FROM ban_giao_gv_em WHERE ban_giao_id = ? AND student_id = ? AND mon = ? AND noi_dung = ?').run(id, sid, mon, chu).changes) return false;
+    writeAudit({ actorUserId: p.userId, action: 'ban_giao_gv.go_chen', entityType: 'student', entityId: sid, before: { banGiaoId: id, mon, noiDung: chu } });
+    return true;
+  });
+}
+
 export function ghiGopYGv(p: Principal, id: number, body: { studentId?: unknown; mon?: unknown; noiDung?: unknown }): void {
   const b = docViec(id);
   const q = quyenViec(p, b);

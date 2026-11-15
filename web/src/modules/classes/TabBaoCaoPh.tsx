@@ -708,7 +708,7 @@ function FormEm({ em, phan, form, dotTruoc, thang, homNay, du, nhap, onDoi, onRo
             <DuoiOChu tai={daGhi.tai} loi={daGhi.loi} onThuLai={daGhi.thuLai} chen={chen.gan} onHoanTac={chen.hoanTac} />
           </div>
           <KhoiDaGhi nhan={daGhi.nhan} ds={daGhi.ds} toiId={daGhi.toiId} homNay={homNay} mon={phan.khoa === 'chung' ? null : phan.khoa}
-            daChen={chen.daChen} onChen={chen.chen} gapDau={!!form.chu.trim() || du} />
+            daChen={chen.daChen} onChen={chen.chen} gapDau={!!form.chu.trim() || du} chu={form.chu} />
         </div>
       </div>
     </div>
