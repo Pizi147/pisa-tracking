@@ -225,7 +225,7 @@ export const HD_GV: HuongDan = {
       id: 'bao-cao-ph', ten: 'Viết Báo cáo PH', nhom: 'khac',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › Báo cáo PH' },
       loiTat: ['p-bao-cao-ph'],
-      buoc: ['Hồ sơ lớp, tab <b>Báo cáo PH</b>: chọn đợt.', 'Bấm <b>Viết …</b> ở cột phần của bạn (GV môn viết môn mình, GVCN viết phần Chung).', '<b>Đặt nhanh</b> (thanh trên bảng): chọn phần + mức → <b>Áp cho n ô trống</b> — chỉ điền ô trống, ô đã chấm giữ. Trong panel một em: <b>Cả n tiêu chí</b> đặt mọi tiêu chí một mức rồi sửa lẻ. <b>Hoàn tác</b> ở thông báo.', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế. Admin xuất gửi phụ huynh.'],
+      buoc: ['Hồ sơ lớp, tab <b>Báo cáo PH</b>: chọn đợt.', 'Bấm <b>Viết …</b> ở cột phần của bạn (GV môn viết môn mình, GVCN viết phần Chung).', '<b>Đặt nhanh</b> (thanh trên bảng): chọn phần + mức → <b>Áp cho n ô trống</b> — chỉ điền ô trống, ô đã chấm giữ. Trong panel một em: <b>Cả n tiêu chí</b> đặt mọi tiêu chí một mức rồi sửa lẻ. <b>Hoàn tác</b> ở thông báo.', 'Cạnh ô chữ: <b>Bạn đã ghi tháng này</b> (lớp thường: đợt này) — nhận xét Test, kết quả PA, vi phạm bạn và GV khác đã ghi. <b>Chèn</b> đưa câu vào cuối ô rồi sửa; <b>Hoàn tác chèn</b> trong 10 giây. Ô không tự điền. Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế. Admin xuất gửi phụ huynh.'],
       tuKhac: ['báo cáo', 'phụ huynh', 'nhận xét', 'report', 'parent'],
     },
   ],
@@ -452,7 +452,7 @@ export const HD_GV: HuongDan = {
       khongLam: [{ ten: 'Xuất báo cáo PH', cua: 'việc của Admin' }],
       muc: [
         { id: 'pbc-viet', viec: 'bao-cao-ph', ten: 'Viết Báo cáo PH',
-          buoc: ['Điểm tự điền từ lượt Test; bạn ghi nhận xét theo tiêu chí.', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế.'] },
+          buoc: ['Điểm tự điền từ lượt Test; bạn ghi nhận xét theo tiêu chí.', 'Cạnh ô chữ: <b>Bạn đã ghi tháng này</b> (lớp thường: đợt này) — nhận xét Test, kết quả PA, vi phạm bạn và GV khác đã ghi. <b>Chèn</b> đưa câu vào cuối ô rồi sửa; <b>Hoàn tác chèn</b> trong 10 giây. Ô không tự điền.', 'Chữ tự lưu khi rời ô; <b>Lưu · em tiếp ›</b> sang em kế.'] },
       ],
     },
     {

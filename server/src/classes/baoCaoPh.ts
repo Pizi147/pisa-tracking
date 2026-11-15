@@ -142,13 +142,13 @@ const docBanGhi = (r: any): BanGhiBc => ({
   muc: r.muc ? JSON.parse(r.muc) : {}, datSan: r.dat_san ? JSON.parse(r.dat_san) : [], chu: r.chu ?? '', diemSua: r.diem_sua ?? null,
 });
 
-function chonDot(ds: readonly DotBc[], ma: string | null | undefined, homNay: string): DotBc {
+export function chonDot(ds: readonly DotBc[], ma: string | null | undefined, homNay: string): DotBc {
   const d = ma ? ds.find((x) => x.ma === ma) : dotMacDinh(ds, homNay);
   if (!d) throw notFound('Đợt báo cáo không có ở lớp này');
   return d;
 }
 
-function napChung(p: Principal, classId: number) {
+export function napChung(p: Principal, classId: number) {
   const c = docLop(classId);
   const q = quyenBc(p, c);
   if (!q.xem) throw forbidden('Lớp này nằm ngoài phạm vi bạn được xem.');

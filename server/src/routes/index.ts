@@ -1103,10 +1103,10 @@ api.get('/classes/:classId/diem-theo-luot/:luot', requireAuth, wrap((req) => {
   return diemTheoLuotSvc.bangTheoLuot(principalOf(req), pInt(req, 'classId'), String(req.params.luot));
 }));
 
-/** LG-13 (H1, H2): "Bạn đã ghi" của cả lớp trong `?tu=&den=` — web gọi khi mở panel viết Báo cáo PH / bàn giao, một lần cho lớp. */
+/** LG-13 (H1, H2): "Bạn đã ghi" của cả lớp — `?dot=` (Báo cáo PH) hoặc `?tu=&den=` (bàn giao); web gọi khi mở panel viết Báo cáo PH / bàn giao, một lần cho lớp. */
 api.get('/classes/:classId/chu-da-ghi', requireAuth, wrap((req) => {
   maybeSimulateReadError();
-  return chuDaGhiLop(principalOf(req), pInt(req, 'classId'), { tu: req.query.tu, den: req.query.den });
+  return chuDaGhiLop(principalOf(req), pInt(req, 'classId'), { tu: req.query.tu, den: req.query.den, dot: req.query.dot });
 }));
 /** BAO-CAO-PH: tab Báo cáo PH của hồ sơ lớp — bảng em × phần (một lớp × một đợt), panel một phần, lưu một (đợt, em, phần). */
 api.get('/classes/:classId/bao-cao-ph', requireAuth, wrap((req) => {
