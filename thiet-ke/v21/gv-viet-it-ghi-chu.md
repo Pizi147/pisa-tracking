@@ -7,7 +7,11 @@ TRƯỚC chụp từ web thật (seed, ngày demo 14/09/2026; vai GV 7 Trần Ng
 
 ## 0. Lời chủ SP trong session này
 
-(chưa có)
+**15/11** (sau khi PTA Overhaul rà ĐẠT và mockup đã áp 2 chỉnh lưới của PTA — commit `eab3926c1`):
+
+> "ok duyệt"
+
+→ **Mockup ⑫ ĐÃ DUYỆT** (bản trên PR #1727, gồm các [XM] PTA chốt ở mục 4). Chuyển lại PTA Overhaul.
 
 ## 1. Khung
 
