@@ -19,6 +19,7 @@ for (const rong of [1440, 375]) {
   await p.waitForTimeout(800);
   for (const b of bam.split('|').filter(Boolean)) {
     if (b.startsWith('css:')) await p.locator(b.slice(4)).first().click();
+    else if (b.startsWith('tab:')) await p.getByRole('tab', { name: new RegExp(`^${b.slice(4)}`) }).filter({ visible: true }).first().click();
     else await p.getByRole('button', { name: new RegExp(`^${b}`) }).filter({ visible: true }).first().click();
     await p.waitForTimeout(1200);
   }
@@ -27,9 +28,10 @@ for (const rong of [1440, 375]) {
   const vung = await p.evaluate(() => {
     const tim = (re) => [...document.querySelectorAll('main span, main b, main div, aside span, [role=dialog] span')]
       .filter((e) => re.test(e.textContent.trim()) && e.textContent.trim().length < 40 && e.getBoundingClientRect().width > 0)
-      .sort((a, b) => a.textContent.length - b.textContent.length)[0];
+      /* Nhãn có nền (badge) trước, rồi chữ ngắn nhất. */
+      .sort((a, b) => Number(getComputedStyle(b).backgroundColor !== 'rgba(0, 0, 0, 0)') - Number(getComputedStyle(a).backgroundColor !== 'rgba(0, 0, 0, 0)') || a.textContent.length - b.textContent.length)[0];
     /* Ưu tiên nhãn hạn ("quá hạn 5 ngày"), không phải số đếm ("3 quá hạn"). */
-    const e = tim(/quá hạn( ·)? ?\d+ ngày/i) ?? tim(/^hạn hôm nay|^hôm nay$/i);
+    const e = tim(/quá hạn( ·)? ?\d+ ngày/i) ?? tim(/^quá hạn/i) ?? tim(/^hạn hôm nay|^hôm nay$/i);
     if (!e) return null;
     e.scrollIntoView({ block: 'center' });
     const r = e.getBoundingClientRect();

@@ -571,6 +571,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const nh = doc('web/src/ui/Nhan.tsx');
     assert(/export function BadgeHan/.test(nh) && /<BadgeHan muc="qua">\{chu\}<\/BadgeHan>/.test(nh) && /<BadgeHan muc="qua" title=\{v\.text\}>/.test(nh), 'QuaHan + ChipHan vẽ qua BadgeHan');
     assert(/if \(t === 'qua-han'\) return <BadgeHan muc="qua"/.test(doc('web/src/ui/ui.tsx')), 'NhanTrangThai quá hạn = BadgeHan');
+    assert(/if \(tt === 'qua-han'\) return <BadgeHan/.test(nh) && /if \(tt === 'qua_han'\) return <BadgeHan/.test(doc('web/src/modules/yThuc/NhanViPham.tsx'))
+      && /tong === 'qua'\s*\? `\$\{lopBadgeHan\('qua'\)\}/.test(doc('web/src/modules/yThuc/khoiYThuc.tsx')), 'XM-1: quá hạn của Case / vi phạm / việc Ý thức = BadgeHan');
     const loi: string[] = [];
     for (const f of tepNguon('web/src')) {
       if (f.endsWith('/ui/Nhan.tsx') || f.includes('/modules/dev/')) continue;

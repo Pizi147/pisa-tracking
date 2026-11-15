@@ -11,8 +11,10 @@ import { t } from '@shared/i18n/index.ts';
  */
 const BADGE_HAN = 'inline-flex h-[22px] shrink-0 items-center gap-1 whitespace-nowrap rounded-full px-[9px] text-xs font-semibold leading-none tabular-nums';
 const MUC_BADGE_HAN = { qua: 'bg-late-bg text-late', gan: 'bg-soon-bg text-soon shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]' } as const;
+/** Lớp của badge hạn — cho chỗ cần dáng này trên phần tử khác `span` (badge bấm được `BadgeViec`). */
+export const lopBadgeHan = (muc: keyof typeof MUC_BADGE_HAN) => `${BADGE_HAN} ${MUC_BADGE_HAN[muc]}`;
 export function BadgeHan({ muc, title, children }: { muc: keyof typeof MUC_BADGE_HAN; title?: string; children: ReactNode }) {
-  return <span title={title} className={`${BADGE_HAN} ${MUC_BADGE_HAN[muc]}`}>{children}</span>;
+  return <span title={title} className={lopBadgeHan(muc)}>{children}</span>;
 }
 
 /**
@@ -84,9 +86,9 @@ export function NhanKetPa({ tone, children }: { tone: string; children: ReactNod
 const VIEN_CASE: Record<string, string> = {
   'dang-lam': 'bg-[rgb(var(--doing-bg-rgb))] text-doing shadow-[inset_0_0_0_1px_color-mix(in_srgb,currentColor_35%,transparent)]',
   'can-lam': 'bg-soon-bg text-soon shadow-[inset_0_0_0_1px_rgb(var(--soon-line-rgb))]',
-  'qua-han': 'bg-late-bg text-late shadow-[inset_0_0_0_1px_color-mix(in_srgb,currentColor_40%,transparent)]',
 };
 export function NhanVienCase({ tt, title, children }: { tt: string; title?: string; children: ReactNode }) {
+  if (tt === 'qua-han') return <BadgeHan muc="qua" title={title}>{children}</BadgeHan>;   // BADGE-QUA-HAN XM-1 (PTA 15/11)
   return <span title={title} className={`inline-flex h-6 items-center justify-self-start whitespace-nowrap rounded-full px-2.5 text-[13px] font-semibold ${VIEN_CASE[tt] ?? 'bg-muted-bg text-dim shadow-[inset_0_0_0_1px_var(--line-strong)]'}`}>{children}</span>;
 }
 
