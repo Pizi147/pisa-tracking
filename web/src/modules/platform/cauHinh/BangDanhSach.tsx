@@ -1,6 +1,6 @@
 import { useState, type ReactNode, type KeyboardEvent } from 'react';
 import { t } from '@shared/i18n/index.ts';
-import { laKhac, soOMocCuaPa, type MocSos, type MucNguyenNhan, type MucPa, type NguyenNhan, type NhanhNN, type Viec } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU, laKhac, soOMocCuaPa, type MocSos, type MucNguyenNhan, type MucPa, type NguyenNhan, type NhanhNN, type Viec } from '@shared/domain/index.ts';
 import type { DuLieuCauHinh, LuuDs } from '../CauHinhCaseSos.tsx';
 import { Bang, OBang, type CotBang } from '../../../ui/Bang.tsx';
 
@@ -283,7 +283,7 @@ export function DanhMucViec({ duLieu, chiXem, luuDs }: ChungProps) {
               {v.ghiChu === 'bat_buoc' && <><span>≥</span><input className="field w-16 text-center" inputMode="numeric" value={v.toiThieu ?? ''} onChange={(e) => dat({ ...v, toiThieu: Number(e.target.value) || undefined })} /></>}
             </span></label>
           <label className="inline-flex min-h-[44px] items-center gap-2 text-sm text-slate-200 sm:col-span-2 sm:min-h-0">
-            <input type="checkbox" checked={!!v.buocTvv} onChange={(e) => dat({ ...v, buocTvv: e.target.checked ? { hanNgay: 5, toiThieu: 10 } : undefined })} />
+            <input type="checkbox" checked={!!v.buocTvv} onChange={(e) => dat({ ...v, buocTvv: e.target.checked ? { hanNgay: 5, toiThieu: CHU_TOI_THIEU } : undefined })} />
             {t('Sau xác nhận: sinh việc TVV báo gia đình')}
             {v.buocTvv && <>
               <span className="text-slate-400">· {t('hạn')}</span><input className="field w-16 text-center" inputMode="numeric" value={v.buocTvv.hanNgay} onChange={(e) => dat({ ...v, buocTvv: { ...v.buocTvv!, hanNgay: Number(e.target.value) } })} />

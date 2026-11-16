@@ -228,7 +228,7 @@ export function BaoPhDu({ id, homNay, onSuaHan }: { id: number; homNay: string; 
 export function TienTrinh({ buoc, nay }: { buoc: [ReactNode, ReactNode?][]; nay: number | null }) {
   const ten = [t('Vi phạm'), t('GVCN xử lý'), t('TVV báo PH')];
   /* 375 (mockup K8c / K8d): nhãn ngắn để cột nhãn không xuống ba dòng. */
-  const ngan = [t('Vi phạm'), 'GVCN', t('Báo PH')];
+  const ngan = [t('Vi phạm'), t('GVCN'), t('Báo PH')];
   return (
     <ol aria-label={t('Tiến trình xử lý')} className="m-0 grid list-none overflow-hidden rounded-[10px] border p-0 sm:grid-cols-3" style={{ borderColor: 'var(--line)' }}>
       {buoc.map(([gt, ph], i) => (

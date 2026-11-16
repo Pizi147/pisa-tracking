@@ -17,7 +17,7 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
-import { t } from '@shared/i18n/index.ts';
+import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
 /** `GET /y-thuc/bao-ph/:id` (máy chủ `xemViecBaoPh`). */
@@ -180,8 +180,8 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
             ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
-            : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && `GVCN ${v.boiCanh.nguoiLuu}`, v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
-          [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{v.nhanTrangThai}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
+            : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && t('GVCN {ten}', { ten: v.boiCanh.nguoiLuu }), v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
+          [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{dich(v.nhanTrangThai)}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />}
         <DongHan han={v.han} hanMacDinh={v.hanMacDinh} hanChon={v.hanChon} xong={v.trangThai !== 'mo' || xong} suaDuoc={v.coTheSuaHan && !daLuu} onLuu={suaHan} onTaiLai={reload} />
         {/* UI-1 (mockup U10 K5): mỗi trường một hàng — không nối "a · b · c". */}
@@ -207,7 +207,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
         {sua && !bo && (
           <>
             <Truong nhan={t('Kết quả')} as="div" loi={lf.loiCua(loiO, 'kq')}>
-              <div {...lf.o(loiO, 'kq')} tabIndex={-1} className="outline-none"><LuaChonRadio ten={`bao-ph-kq-${v.id}`} nhan={t('Kết quả')} value={kq || null} muc={[['da_bao', t('Đã báo PH')], ['chua_lien_he', t('Chưa liên hệ được')]]}
+              <div {...lf.o(loiO, 'kq')} data-hd="p-bao-ph-kq" tabIndex={-1} className="outline-none"><LuaChonRadio ten={`bao-ph-kq-${v.id}`} nhan={t('Kết quả')} value={kq || null} muc={[['da_bao', t('Đã báo PH')], ['chua_lien_he', t('Chưa liên hệ được')]]}
                 onChange={(k) => { setKq(k); if (tt === 'loi') setTt(null); }} /></div>
             </Truong>
             <Truong nhan={t('Ngày')}><div className="max-w-[220px]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={hn} /></div></Truong>

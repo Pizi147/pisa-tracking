@@ -518,6 +518,8 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
 export type ViecBanGiao =
   | { loai: 'gvcn'; userId: number; lopId: number; code: string; n: number; daXacNhan: number; chua: string[]; han: string; motEm: { ten: string; lopDich: string | null } | null; emIds: number[] }
   | { loai: 'gvbm'; userId: number; lopId: number; code: string; mon: string; monNgan: string; daGhi: number; n: number; han: string; emIds: number[];
+      /** AUDIT-1611 B3-09: còn đúng một em → tên em + lớp đến (như dòng GVCN). */
+      motEm: { ten: string; lopDich: string | null } | null;
       /** Việc gộp nhiều môn của cùng GV (W1 · W2, L · R…): số em từng môn. */
       tung?: { mon: string; monNgan: string; daGhi: number; n: number }[] };
 
@@ -607,6 +609,7 @@ function viecBanGiaoGoc(userId: number | null, branchId?: number | null): ViecBa
         loai: 'gvbm', userId: x.userId, lopId, code: x.code, mon: m, monNgan: tenMonNgan(x.ct, m), daGhi: canGhi.length - chua.length, n: canGhi.length,
         han: chua.map((l) => l.han_gvbm as string).filter(Boolean).sort()[0] ?? '',
         emIds: chua.map((l) => l.student_id as number),
+        motEm: chua.length === 1 ? { ten: chua[0].full_name, lopDich: chua[0].dich ?? null } : null,
       });
     }
   }
@@ -628,6 +631,7 @@ function gopViecMon(ds: ViecBanGiao[]): ViecBanGiao[] {
       daGhi: cap.daGhi + v.daGhi, n: cap.n + v.n,
       han: [cap.han, v.han].filter(Boolean).sort()[0] ?? '', emIds: [...new Set([...cap.emIds, ...v.emIds])], tung,
     });
+    if (cap.emIds.length !== 1) cap.motEm = null; else cap.motEm ??= v.motEm;
   }
   return out;
 }

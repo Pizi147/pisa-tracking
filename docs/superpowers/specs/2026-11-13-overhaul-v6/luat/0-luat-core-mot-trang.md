@@ -48,7 +48,7 @@ Số ngày là bản gốc; Quản trị đổi được ở Hạn mặc định
 | # | Luật core |
 |---|---|
 | D1 | Mọi GV dạy lớp ghi vi phạm. **"Chỉ nhắc nhở"** không tính vào luật, bậc, việc. |
-| D2 | GVCN "Đã xem" hoặc xử lý trong 5 ngày. **3 vi phạm trong 2 tuần → buộc xử lý.** |
+| D2 | GVCN xử lý trong 5 ngày (bỏ "Đã xem" — LG-11, lời 47 mục 8). **3 vi phạm trong 2 tuần → buộc xử lý.** |
 | D3 | Thang: Report 1 → Report 2 → WL 1 → Report 4 + Meeting → Report 5 → WL 2 → Report 7… Mặc định **nâng 1 bậc** → xong ngay, TVV nhận việc Báo PH (5 ngày). Cách khác → QL duyệt 5 ngày, hết hạn giữ quyết định của GVCN. |
 | D4 | Thu hồi lần xử lý: GVCN gửi QL duyệt, có lý do. |
 | D5 | Tình hình học tập: GV → TVV (báo PH, 5 ngày, ≤ 8 em một lần) · TVV → GVCN (trả lời, 3 ngày). |

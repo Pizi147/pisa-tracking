@@ -8,7 +8,7 @@ export const EN_CAU_HINH_CASE_SOS = {
   'Bổ trợ đến Cuối khoá': 'Support until end of course',
   'Bổ trợ, Bổ trợ miễn phí — số buổi ở Mốc SOS › Lớp thường.': 'Support, Free support — session counts under SOS milestones › Regular classes.',
   'Case mỗi kỹ năng': 'One Case per skill',
-  'Case mỗi môn trượt · xác nhận 5 ngày': 'One Case per failed subject · confirm in 5 days',
+  'Case mỗi môn trượt · xác nhận {han:xac_nhan_case}': 'One Case per failed subject · confirm in {han:xac_nhan_case}',
   'Case mỗi môn trượt': 'One Case per failed subject',
   'Case đã gắn các mục này giữ nguyên. Khôi phục là một lần đổi mới — Hoàn tác được.': 'Cases already using these items keep them. Restoring is a new change — it can be undone.',
   'Chưa dùng': 'Not used',

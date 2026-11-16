@@ -7,7 +7,7 @@ import { MenuDong } from '../../ui/MenuDong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { addDaysIso, bacNgan, laDongLs, mondayOfDate, ngay, quaHanChiXem, type NhomEm } from '@shared/domain/index.ts';
+import { addDaysIso, bacNgan, chenHan, laDongLs, mondayOfDate, ngay, quaHanChiXem, type NhomEm } from '@shared/domain/index.ts';
 import { usePanelYThuc, type PanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
@@ -373,7 +373,7 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
     if (ds) ds.push(dongLan({ key: `nn${x.id}`, sid: x.studentId, ten: x.ten, vp: vpCua([x.id]), gv: null, ph: null, the: <TheLoai loai="nn" />,
       tiep: <span className="text-xs text-slate-500">{t('Không cần làm gì')}</span> }));
   }
-  const iBaoPh = <NutLuat label={t('Đã xử lý là gì')}>{t('GVCN: lần xử lý (bậc, ngày) hoặc Đã xem. TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn 5 ngày.')}</NutLuat>;
+  const iBaoPh = <NutLuat label={t('Đã xử lý là gì')}>{chenHan(t('GVCN: lần xử lý (bậc, ngày). TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn {han:bao_ph_vi_pham}.'))}</NutLuat>;
 
   /* ---------------- Lịch sử của em — mở tại chỗ (K6 cũ, cùng kiểu dòng) ---------------- */
   const hopPhamVi = (x: DongThoiGianYt) => phamVi === 'tat-ca' || x.trongChuoi !== false;
