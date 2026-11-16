@@ -41,6 +41,8 @@ export const thamChieuDayDuKhiKiem = { bat: false };
 
 /** Theo KẾT NỐI (như db.ts): phép kiểm đổi kết nối / DB chép lại không thấy nhớ của kết nối cũ. */
 const theoKetNoi = new WeakMap<object, Map<string, { so: number; giaTri: unknown }>>();
+/** N49: kho riêng của `nhoTheoGhi` (khoá theo lần ghi, không theo bảng tham chiếu). */
+const theoGhi = new WeakMap<object, Map<string, { so: string; giaTri: unknown }>>();
 
 /**
  * Bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB. Chỉ dùng khi đang trong request GET có phiên, request chưa ghi gì, cờ kiểm tắt;
@@ -61,12 +63,33 @@ export function nhoThamChieu<T>(khoa: string, tinh: () => T): T {
   });
 }
 
+/**
+ * N49 (AU-VIEC): như `nhoThamChieu` nhưng khoá bằng bộ đếm GHI qua API (`so-viec`, đọc kèm câu phiên) + ngày nghiệp vụ — giá trị suy từ dữ liệu
+ * thường (bản ghi, ghi danh…) dùng lại giữa các request tới lần ghi kế tiếp ở bất cứ đâu. Không mốc / request có ghi / phép kiểm "đầy đủ" → tính như cũ.
+ */
+export function nhoTheoGhi<T>(khoa: string, ngay: string, tinh: () => T): T {
+  return nho(khoa, () => {
+    const ghi = (layMoc() as MocHeThong | undefined)?.soViec.ghi;
+    if (ghi == null || thamChieuDayDuKhiKiem.bat || !coNho() || coGhiTrongRequest()) return tinh();
+    const conn = db();
+    let m = theoGhi.get(conn);
+    if (!m) theoGhi.set(conn, m = new Map());
+    const so = `${ghi}:${ngay}`;
+    const cu = m.get(khoa);
+    if (cu && cu.so === so) return cu.giaTri as T;
+    const giaTri = tinh();
+    m.set(khoa, { so, giaTri });
+    return giaTri;
+  });
+}
+
 /** Phép kiểm (TL-NEN N1-e): nhớ tiến trình của kết nối hiện tại. */
 export const nhoThamChieuHienTai = () => theoKetNoi.get(db());
 
 /** Bỏ mọi nhớ tiến trình của kết nối hiện tại (tests/dbGoc.ts, `clearScoringModeCache`). */
 export function xoaNhoThamChieu(): void {
   theoKetNoi.delete(db());
+  theoGhi.delete(db());
 }
 
 export const QUET_DOC_MS = 60_000;

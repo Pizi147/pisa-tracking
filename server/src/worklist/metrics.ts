@@ -3,7 +3,7 @@ import { nho } from '../platform/nguCanhRequest.ts';
 import { t } from '../../../shared/i18n/index.ts';
 /** dd/mm — hạn cụ thể trên dòng panel. */
 const ngayNgan = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`;
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, addDaysIso, khoaBai, nhanBai,chuViecChotLoTrinh, daiDienNhomBoTro, baiId, duongCase, duongDotTest, nhanLoaiXuLy, nhanTuanGhiKetQua, PERMISSIONS, VIOLATION_CATEGORY_LABEL, tachTenMoTa, metricById, nhanDot, tachBaiId, tenMon, tenMonNgan, tuanLich, vietMaLuot, CHU_THEM_PA, deMucRieng, NHOM_CASE_CHUA_CHOT, buocCase, type BuocCase, type NhomCaseChuaChot, type AttemptKind, type DeadlineKind, type ChiSo, type ChuongTrinh, type DiemHv } from '../../../shared/domain/index.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { KHOA_PR_RESET_HAN_CASE } from '../migrate/prResetHanCase.ts';
@@ -706,7 +706,7 @@ function overdueUpdatePlans(caseIds: number[], today: string): { ids: number[]; 
            JOIN sos_cases sc ON sc.id = iv.case_id
            LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id) AND ${HV_DANG_HOC_SQL('s')}
-          WHERE iv.case_id IN (${chunk.map(() => '?').join(',')})
+          WHERE iv.case_id IN (${chunk.map(() => '?').join(',')}) AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}   /* N46: như Công việc 2b */
             AND iv.status IN ${RUNNING}
             AND COALESCE(iv.approval_state, '') != 'pending'
             AND ${NOT_UNCONFIRMED_PRESET('iv')}

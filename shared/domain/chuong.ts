@@ -20,7 +20,7 @@ export const NHAN_LOAI_VIEC: Record<string, string> = {
   score: t('Nhập điểm'), no_plan: t('Thiếu PA học thuật'), ghi_ket_qua_pa: t('Kết quả PA'), no_owner: t('Chưa có người phụ trách'),
   chot_len_ft: t('Chốt lộ trình'), xet_lai_lo_trinh: t('Xét lại lộ trình'), missing_data: t('Thiếu dữ liệu đánh giá'), yt_xu_ly: t('Xử lý vi phạm'),
   bao_ph_yt: t('Báo PH vi phạm'), yt_hoi_tinh_hinh: t('Tình hình học tập'), yt_thuc_hien: t('Ghi "Đã thực hiện"'), ban_giao: t('Bàn giao'),
-  xuat_bc_ph: t('Xuất báo cáo PH'), bao_cao_ph: t('Viết Báo cáo PH'), mgmt: t('Việc được giao'),
+  xuat_bc_ph: t('Xuất báo cáo PH'), bao_cao_ph: t('Viết Báo cáo PH'), bc_ph_qua_han: t('Báo cáo PH quá hạn'), mgmt: t('Việc được giao'),
 };
 
 export type DongViecChuong = DongDem & { group: string; mine: boolean; cn?: number | null };
