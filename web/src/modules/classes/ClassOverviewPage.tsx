@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useParams, useSearchParams } from 'react-router-dom';
-import { taiTruoc, useApi } from '../../lib/useApi.ts';
+import { taiTruocGop, useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -69,12 +69,15 @@ export default function ClassOverviewPage() {
   /*
    * PR-TD2-c: tab Học viên (mặc định của lớp đang chạy) cần roster + danh sách lượt điểm — bắt đầu tải CÙNG LÚC với `/overview`
    * thay vì chờ nó xong mới gắn bảng (bớt một tầng chờ). Khối con dùng lại bản tải trước (`useApi`: dangBay / bản vừa xem).
+   * TD-QUET (đề xuất 2): ba đường đi MỘT lời gọi `/classes/:id/ho-so` (máy chủ đọc lượt / điểm / lịch của lớp một lần) — khối con vẫn đọc đúng URL lẻ.
    */
   const tabUrl = params.get('tab');
   useEffect(() => {
-    if (!classId || (tabUrl && tabUrl !== 'hoc-vien')) return;
-    taiTruoc(`/classes/${classId}/roster`);
-    taiTruoc(duongDiemTheoLuot(Number(classId)));
+    if (!classId) return;
+    taiTruocGop(`/classes/${classId}/ho-so`, {
+      overview: `/classes/${classId}/overview`,
+      ...(tabUrl && tabUrl !== 'hoc-vien' ? {} : { roster: `/classes/${classId}/roster`, diemTheoLuot: duongDiemTheoLuot(Number(classId)) }),
+    });
   }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
   /* GD-6 (lời 35, V22): badge tab = SỐ, đỏ khi có việc quá hạn của tôi — đọc từ `viec-theo-em` mà dải Việc cần làm đã tải (cùng URL, không thêm lời gọi). */
@@ -152,10 +155,13 @@ export default function ClassOverviewPage() {
   if (daGoiSom.current !== data.id && String(data.id) === classId) {
     daGoiSom.current = data.id;
     const trangChinh = !(params.get('xem') === 'cuoi-khoa' && thuong && !data.lienTuc);   // trang con Cuối khoá không gắn đầu trang / bảng
-    if (xemXl) taiTruoc(duongXetLai(data.id));
-    if (trangChinh && !daKetThuc && !laGvThuan(session?.roles)) taiTruoc(duongViecLop(data.id));   // AUDIT-1611 gói 13: GV thuần dựng từ /my-work đã nạp
-    if (trangChinh && (data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop)) taiTruoc(`/classes/${data.id}/xoa-ket-thuc`);
-    if (trangChinh && !thuong && tab === 'hoc-vien' && cheDo === 'diem') taiTruoc(`/cases?classId=${data.id}`);
+    /* TD-QUET (đề xuất 2): các đường này đi MỘT lời gọi `/classes/:id/ho-so` (cùng điều kiện, cùng URL lẻ cho khối con). */
+    taiTruocGop(`/classes/${data.id}/ho-so`, {
+      ...(xemXl ? { xetLai: duongXetLai(data.id) } : {}),
+      ...(trangChinh && !daKetThuc && !laGvThuan(session?.roles) ? { viecCuaToi: duongViecLop(data.id) } : {}),   // AUDIT-1611 gói 13: GV thuần dựng từ /my-work đã nạp
+      ...(trangChinh && (data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop) ? { xoaKetThuc: `/classes/${data.id}/xoa-ket-thuc` } : {}),
+      ...(trangChinh && !thuong && tab === 'hoc-vien' && cheDo === 'diem' ? { cases: `/cases?classId=${data.id}` } : {}),
+    });
   }
   const tabMacDinh = tabMacDinhLop(null, daKetThuc, !!bc);
   const dsTab = tabHienCuaLop(daKetThuc, !!bc);

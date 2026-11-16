@@ -58,7 +58,9 @@ export async function runPrTd2bcTests(t: YThucTestKit) {
 
   check('TD2-c · web: tải trước song song ở hồ sơ lớp; skill-board không chờ hồ sơ HV; /ref tĩnh dùng cachedGet; useApi dùng lại bản vừa tải', () => {
     const lop = nguon('web/src/modules/classes/ClassOverviewPage.tsx');
-    assert(/taiTruoc\(`\/classes\/\$\{classId\}\/roster`\)/.test(lop) && /taiTruoc\(duongDiemTheoLuot\(/.test(lop), 'ClassOverviewPage chưa tải trước roster + diem-theo-luot');
+    /* TD-QUET (đề xuất 2): roster + diem-theo-luot tải trước CÙNG overview qua một lời gọi gộp `/classes/:id/ho-so` (`taiTruocGop`). */
+    assert(/taiTruocGop\(`\/classes\/\$\{classId\}\/ho-so`/.test(lop) && /roster: `\/classes\/\$\{classId\}\/roster`/.test(lop) && /diemTheoLuot: duongDiemTheoLuot\(/.test(lop),
+      'ClassOverviewPage chưa tải trước roster + diem-theo-luot');
     const hv = nguon('web/src/modules/students/StudentDetailPage.tsx');
     assert(hv.includes('`/students/${id}/skill-board`'), 'skill-board vẫn phải chờ /students/:id');
     const ua = nguon('web/src/lib/useApi.ts');
