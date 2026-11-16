@@ -639,7 +639,9 @@ export async function runLenLopTests(t: YThucTestKit) {
      * một chi nhánh KHÔNG đủ; chỉ vai phạm vi toàn hệ thống mới thấy ngay. Dùng admin xác nhận dữ liệu đúng.
      */
     assert(profileSvc.studentProfile(P.admin, sid).currentClass?.id === to, 'Hồ sơ phải phản ánh lớp CP mới ngay sau khi chuyển');
-    assertThrows(() => profileSvc.studentProfile(gvcnFrom, sid), /phạm vi/, 'GVCN MB (lớp cũ) phải mất quyền xem sau khi chuyển');
+    /* N48 (chủ SP 16/11, AU-VIEC-3): GVCN lớp cũ KHÔNG còn quyền làm gì nhưng XEM CHỈ ĐỌC hồ sơ em 30 ngày từ ngày chuyển (nhãn "Lớp cũ · chỉ xem", mọi cờ ghi tắt). */
+    const hsCu = profileSvc.studentProfile(gvcnFrom, sid) as any;
+    assert(hsCu.viewer.lopCu && !Object.entries(hsCu.viewer).some(([k, v]) => k !== 'lopCu' && v === true), `GVCN MB (lớp cũ) chỉ xem: ${JSON.stringify(hsCu.viewer)}`);
   });
 
   check('PR-LT (4) · GET /chuyen-lop/lop-dich: có lớp CP, JSON KHÔNG có khoá nào về học viên lớp khác', () => {
