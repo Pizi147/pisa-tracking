@@ -1307,6 +1307,10 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
   /* PR-B (30/10): chụp lại GVBM toi · QL / QT tat-ca · QT tat-ca cn · GVS toi — đổi CÓ CHỦ Ý (luật chủ SP 30/10 "Cùng GV · không cần bàn giao"): seed kịch bản 6
      MB FOU 23 → lớp đích cùng GV mọi môn, nên mất các việc "Bàn giao môn …" của GVBM và chữ "chờ môn …" ở việc GVCN. So JSON origin/main ↔ nhánh: lệch CHỈ các dòng đó. */
   const ANH: Record<string, string> = {
+    /* AUDIT-1611 P1-02 / P1-03 (16/11): chụp lại 8 băm (QL / QT toi, ADMIN giữ) — đổi CÓ CHỦ Ý: dòng gộp Nhập điểm mang TỔNG `soBai` / `baiQuaHan` của lớp con
+       (trước: số của việc đầu), `viecCuaNguoi` thêm `cuaGv`. Đã kiểm: đảo ngược ba trường đó (soBai / baiQuaHan = việc đầu của dòng, bỏ cuaGv) trước khi băm →
+       cả 11 băm trùng ảnh cũ. Trước: GVCN toi a97ea30c5dded10a, GVBM toi 8c05c3e43fd827f4, GVCN_THUONG toi a97ea30c5dded10a, QL tat-ca 619c2dd041fb9ab6,
+       QT tat-ca 65ba288685cafd3f, QT tat-ca cn 7e86d8e45cedaebe, QL gvcn e9919e64771e0a57, GVS toi 20255e1f890bf1a5 */
     /* GD-20c (15/11): chụp lại 7 băm (QL / QT toi, GVBM, ADMIN giữ) — đổi CÓ CHỦ Ý: Ghi kết quả PA gộp theo lớp + CÙNG KỲ (khoá dòng gộp thêm `:d{hạn kỳ}`), hai kỳ khác nhau là hai dòng. Trước: GVCN toi 2be2a58247c4c4e9, GVCN_THUONG toi 2be2a58247c4c4e9, QL tat-ca 57e114e2c2891f6a, QT tat-ca 4e54cccf94bb64fc, QT tat-ca cn b6d206fc33ba09f7, QL gvcn 464100c07359814a, GVS toi c0f71c10ba0f7d2d */
     /* RA-LUONG-1 K2/K3 (29/10): chụp lại 'QL tat-ca' / 'QT tat-ca' / 'QT tat-ca cn' — đổi CÓ CHỦ Ý: dòng gộp Speaking chấm chéo (QL / QT "Tất cả", gom theo lớp)
        giữ đuôi `|cc` như việc lẻ (`khoaGopCua`). So JSON ×1 origin/main ↔ nhánh: lệch CHỈ khoá dòng `gop:score:3:u0` → `gop:score:3:u0|cc`; mọi dòng khác, `items`,
@@ -1409,9 +1413,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* XEP-CHAM-TEST (chủ SP 16/11): chụp lại 6 băm — đổi CÓ CHỦ Ý: lớp con (`con`) của dòng gộp Nhập điểm theo thứ tự chấm (`soSanhViecCham`); đã kiểm: trả thứ tự con về
        `sapViec` thì băm khớp bản cũ (lệch CHỈ thứ tự con). Trước: GVCN toi 0e244af2868788f4, GVCN_THUONG toi 0e244af2868788f4, QL tat-ca 7de18f10f09e3ba7, QT tat-ca ada320e08f4702f9,
        QT tat-ca cn 87f85b45dd8e4ec9, QL gvcn 80509247fdf10e9e */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'a97ea30c5dded10a', 'GVBM toi': '8c05c3e43fd827f4',
-    'GVCN_THUONG toi': 'a97ea30c5dded10a', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '619c2dd041fb9ab6', 'QT tat-ca': '65ba288685cafd3f',
-    'QT tat-ca cn': '7e86d8e45cedaebe', 'QL gvcn': 'e9919e64771e0a57', 'GVS toi': '20255e1f890bf1a5',
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '5b567fb9fc7aa168', 'GVBM toi': '9dc4aef5f266094a',
+    'GVCN_THUONG toi': '5b567fb9fc7aa168', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '7441e526cfa9d8c7', 'QT tat-ca': '41c9031fd1f7f54f',
+    'QT tat-ca cn': '218778b5e821a297', 'QL gvcn': 'ff446108d217da2d', 'GVS toi': '7a4bed4a0aeddaec',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

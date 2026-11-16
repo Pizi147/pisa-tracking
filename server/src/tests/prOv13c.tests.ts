@@ -56,6 +56,10 @@ export async function runPrOv13cTests(t: YThucTestKit) {
       tieuDe: 'Nhập điểm Reading', phu: 'Reading', contextLabel: 'MT3 W2 SEP', soBai: 4, count: 4, ...o });
     const g = d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'CP FT 140', soBai: 5 })], nhan);
     assert(g.length === 1 && g[0].tieuDe === 'Nhập điểm · W2 SEP · 9 bài' && g[0].contextLabel === '2 lớp' && g[0].classId === null, `dòng tuần: ${JSON.stringify(g.map((x: any) => [x.tieuDe, x.contextLabel, x.classId]))}`);
+    /* AUDIT-1611 P1-02: dòng gộp mang TỔNG bài của lớp con (không giữ 4 của lớp đầu); bài quá hạn cũng tổng. */
+    assert(g[0].soBai === 9 && g[0].baiQuaHan === 0, `soBai dòng gộp: ${g[0].soBai} / quá hạn ${g[0].baiQuaHan}`);
+    const q = d.gopViecTheoLop([s({ urgency: 'overdue' }), s({ key: 'score:11|mock|p1|u7', classId: 11, classCode: 'CP FT 140', soBai: 5 })], nhan);
+    assert(q[0].soBai === 9 && q[0].baiQuaHan === 4 && d.demBai(q).quaHan === 4, `bài quá hạn dòng gộp: ${q[0].baiQuaHan}`);
     assert(g[0].con.length === 2 && g[0].con.every((c: any) => c.conTen.startsWith(c.classCode)), `con theo lớp: ${g[0].con.map((c: any) => c.conTen)}`);
     assert(d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p2|u7', classId: 11, tuanThi: '2026-09-14' })], nhan).length === 2, 'khác tuần: hai dòng');
     assert(d.gopViecTheoLop([s({}), s({ key: 'score:11|mock|p1|u7', classId: 11, ownerId: 9 })], nhan).length === 2, 'khác người giữ: hai dòng');
@@ -87,7 +91,12 @@ export async function runPrOv13cTests(t: YThucTestKit) {
     assert(diem.length > 0 && diem.every((x) => /\|p\d+\|/.test(x.key) && x.contextLabel.endsWith(d.tuanLich(x.tuanThi))), `Nhập điểm theo tuần: ${diem.slice(0, 3).map((x) => `${x.key} ${x.contextLabel}`)}`);
     for (const r of (w.dong as any[]).filter((x) => x.con && x.group === 'score' && x.key.startsWith('gop:score:t'))) {
       const bai = r.con.reduce((n: number, c: any) => n + (c.soBai ?? 0), 0);
-      assert(r.actionLabel === `${bai} bài`, `dòng ${r.key}: ${r.actionLabel} ≠ ${bai} bài`);
+      assert(r.actionLabel === `${bai} bài` && r.soBai === bai, `dòng ${r.key}: ${r.actionLabel} / soBai ${r.soBai} ≠ ${bai} bài`);
+    }
+    /* AUDIT-1611 P1-02: TỔNG DÒNG = TỔNG LÁ — Σ soBai trên dòng hiển thị = Σ soBai trên việc lẻ (QL Tất cả + GVCN, mọi khung). */
+    for (const [ten, x] of [['QL tất cả', w], ['GVCN', mywork.myWork(P.coreTeacher, {})]] as const) {
+      const sum = (ds: any[]) => ds.filter((it) => it.group === 'score').reduce((n, it) => n + (it.soBai ?? 0), 0);
+      assert(sum(x.dong) === sum(x.items) && sum(x.items) > 0, `${ten}: Σ bài dòng ${sum(x.dong)} ≠ Σ bài lá ${sum(x.items)}`);
     }
     /* Hai PA chờ xác nhận cùng lớp + tuần thi: đặt cùng mức SOS → một dòng gộp. */
     const pa = phang.filter((x) => x.group === 'xac_nhan_pa' && x.tuanThi && x.ownerId !== null);

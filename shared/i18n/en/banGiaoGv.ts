@@ -59,6 +59,7 @@ export const EN_BAN_GIAO_GV = {
   '· tuỳ chọn': '· optional',
   '· chưa viết': '· not written',
   'Tự lưu khi rời ô': 'Saves when you leave a box',
+  'Tới em còn thiếu': 'Go to the next missing student',
   'Còn {n} em thiếu góp ý ↑': (b) => `${b.n} ${Number(b.n) === 1 ? 'student' : 'students'} missing notes ↑`,
   'Còn {n} em thiếu góp ý': (b) => `${b.n} ${Number(b.n) === 1 ? 'student' : 'students'} missing notes`,
   '✓ Đủ {a}/{b} em': '✓ Complete {a}/{b}',
