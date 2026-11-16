@@ -92,6 +92,49 @@ Cộng: ~ **270 K dòng đọc Turso / ngày** (≈ 8 triệu / tháng), ~ 900 l
 - 25 GET chưa có trong `DUONG_DO` thêm vào bảng đo (seed).
 - Mọi (vai × đường) của `DUONG_DO` chưa có trần (145 câu · 622 dòng): thêm `TRAN` = max(đo + 10, ⌈đo × 1,3⌉) và `TRAN_DONG` = max(đo + 50, ⌈đo × 1,3⌉) theo số đo seed — khoá không cho tăng.
 
+## 7. Đo lại sau đợt (17/11, main `fbda9ad31` — sau #1809–#1817)
+
+Cùng bản chép 12/11, cùng 10 vai × đường + 15 đường ghi, cùng log 24 h. **Trước** = main `f45622918` (lượt đo mục 6, trước #1809). So trên khoá (vai × url)
+có ở cả hai lượt, mã 200. Bảng đủ từng đường: [`do-lai-sau-dot.md`](do-lai-sau-dot.md) (`scripts/do-toan-bo-dot.py`).
+
+| | trước | sau | Δ |
+|---|---:|---:|---:|
+| Dòng trả / ngày (ước, 95 đường có trong log) | 3 737 000 | 3 186 000 | **−15 %** |
+| Bước VM / ngày (≈ dòng Turso đọc qua chỉ mục, `do-it.py`) | 349 triệu | 284 triệu | **−18 %** |
+| Dòng QUÉT cả bảng / ngày | 1 131 000 | 718 000 | **−37 %** |
+| Bản chính (log 16/11, mã 12/11) để đối chiếu | 3 929 000 dòng trả | | |
+
+| Khu | dòng / ngày trước → sau | Δ | bước VM / ngày trước → sau | Δ |
+|---|---|---:|---|---:|
+| TD-VIEC (`/my-work*`) | 1 361 K → 1 147 K | −16 % | 147 M → 120 M | −18 % |
+| TD-HVL | 977 K → 927 K | −5 % | 81 M → 75 M | −7 % |
+| TD-CHAM | 709 K → 456 K | −36 % | 70 M → 40 M | −43 % |
+| TD-QUET | 690 K → 656 K | −5 % | 52 M → 49 M | −4 % |
+
+Ngoài bảng: khởi nguội (TD-NGUOI) không đo ở đây; đường ghi đo lại không đổi (55–183 câu — xem mục 4); `/cases/:id` và `xoa-ket-thuc` giảm ở cột QUÉT (chỉ mục).
+
+**10 đường nặng nhất còn lại** (bước VM / ngày sau đợt):
+
+| # | Đường | lần / 24 h | dòng TB | bước VM TB | bước VM / ngày |
+|---:|---|---:|---:|---:|---:|
+| 1 | `GET /my-work` | 422 | 2 712 | 284 K | 120 M (42 %) |
+| 2 | `GET /hoc-vien-lop` | 75 | 5 733 | 514 K | 39 M |
+| 3 | `GET /tong-quan/v5` | 22 | 11 949 | 833 K | 18 M |
+| 4 | `GET /classes/:id/viec-theo-em` | 194 | 548 | 69 K | 13 M |
+| 5 | `GET /cham/lich-test/qua-han` | 121 | 1 827 | 111 K | 13 M |
+| 6 | `GET /cham/lich-test` | 96 | 1 274 | 129 K | 12 M |
+| 7 | `GET /tong-quan/lop-toi-day/hai-khoi` | 57 | 2 712 | 204 K | 12 M |
+| 8 | `GET /classes/:id/roster` | 249 | 438 | 33 K | 8 M |
+| 9 | `GET /classes/:id/cham` | 287 | 343 | 25 K | 7 M |
+| 10 | `GET /phan-tich/giao-vien` | 24 | 3 299 | 274 K | 7 M |
+
+**Đề xuất bước tiếp (chưa làm, chờ PTA Plan / chủ SP):**
+1. `/my-work` vẫn 42 % bước: QL 5 CN / QT "Tất cả" ~950 K bước / lần. Đề xuất nhớ KẾT QUẢ `/my-work` theo người bằng `nhoTheoGhi` (khoá = bộ đếm ghi + ngày, đã có từ N49): mở lại trang khi chưa ai ghi → 0 câu. Cần phép kiểm "giống hệt" + đo tỉ lệ trúng trên log (bao nhiêu GET liền nhau không có ghi xen giữa).
+2. Hồ sơ lớp mở 5 GET (`overview`, `roster`, `cham`, `diem-theo-luot/:luot`, `viec-theo-em`) cùng đọc lượt + điểm + lịch của lớp (~2 100 dòng / lần mở): gộp một GET hồ sơ lớp, hoặc nhớ "bó lượt của lớp" (`loadBundle` theo lớp) bằng `nhoTheoGhi`. Đổi luồng web → cần mockup? (không đổi bố cục, chỉ đổi cách tải).
+3. `/hoc-vien-lop` (CX `kem=sos` 27 K dòng, 2,6 M bước): tải cột SOS / lịch thi khi mở cột, không cùng lượt đầu.
+4. Đường ghi (backlog PTA 17/11): nhớ RIÊNG từng tra cứu không bị chính request ghi (route lộ trình, chương trình, phân công) — có phép kiểm; ước lưu điểm 62 → ~45 câu, lưu tạo Case 183 → ~140.
+5. Phân tích / Tổng quan cũ QL 5 CN 10–21 K dòng / lần (0 lần / 24 h) — để nguyên tới khi có người dùng; trần đã khoá.
+
 ## 6. Bảng đường (xếp theo dòng / ngày, rồi dòng max)
 
 Cột: lượt đo (số vai × biến thể url ra 200) · câu max · dòng max · dòng TB · quét cả bảng max (`do-it.py`) · vai · url có dòng max · lần / 24 h (log) ·
