@@ -61,8 +61,10 @@ export function DongChoDoi({ cho, ct, homNay, className = '' }: { cho: ChoDoiLop
   );
 }
 
-export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
+export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone, oMo = null }: {
   lop: HoSoLop; suaDuoc: boolean; moSua?: boolean; onDone: () => void;
+  /** AUDIT-1611 B3-11: "gvcn" hoặc mã kỹ năng bấm "Đổi" ở dải GV — ô đó (kể cả ô gộp FOU chứa kỹ năng) mở sẵn danh sách chọn. */
+  oMo?: string | null;
 }) {
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
@@ -206,6 +208,7 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone }: {
           )}
           {oSua.length > 0 && (
             <LuoiPhanCong oList={oSua} chon={chon} nguoi={nguoi} loi={loiO} oId={lf.oId} chiXem={!suaMay} chuongTrinh={data.programmeCode}
+              oMo={oMo ? oSua.find((o) => (oMo === 'gvcn' ? o.laGvcn : o.khoa === oMo || o.skill === oMo || o.gop?.includes(oMo)))?.khoa ?? null : null}
               nhanTrong={(k) => nhieuNguoi[k]?.join(' · ')}
               onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
           )}

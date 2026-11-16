@@ -94,7 +94,7 @@ export type ViecDauTrang = ViecMenuLop | 'chuyen-tiep' | 'ban-giao' | 'phan-cong
  *   dòng 4  tối đa 2 badge theo vai, phần còn lại "+n" (menu)
  * Mỗi nút chỉ hiện khi người xem làm được (Q9).
  */
-export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, thanhViec }: {
+export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, thanhViec, onDoiGv }: {
   data: HoSoLop; onViec: (v: ViecDauTrang) => void;
   /** V8-HSL hàng ⑤: thanh "Việc của tôi" (ThanhViecLop) nằm trong đầu trang, sau dải lớp chuyển. */
   thanhViec?: ReactNode;
@@ -102,6 +102,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   onBanGiao: (o: { lop?: number; mon?: string }) => void;
   /** PR-B: mở panel bàn giao khi đổi GV (id việc). */
   onBanGiaoGv?: (id: number) => void;
+  /** AUDIT-1611 B3-11: bấm "Đổi" ở thẻ GV đầu trang → panel Phân công mở sẵn ô đó ("gvcn" | mã kỹ năng). */
+  onDoiGv?: (khoa: string) => void;
 }) {
   /*
    * RKC-4b (PTA 07/11): thao tác VÒNG ĐỜI ở lớp đã kết thúc (+ Học viên, Cuối khoá, Chuyển tiếp) — máy chủ hỏi "Mở lại lớp để …?" (`deViec`), đồng ý thì
@@ -269,7 +271,8 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
       )}
 
       {/* ② GV theo kỹ năng MỘT dòng (bấm mở bản đủ — tên GV ở bản đủ là link hồ sơ GV). */}
-      <DongGiaoVien gon={nhomGon} du={nhomDu} />
+      <DongGiaoVien gon={nhomGon} du={nhomDu}
+        onDoi={onDoiGv && (data.viewer.canAssign || data.viewer.canAssignSubject) ? onDoiGv : undefined} doiGvcn={!!data.viewer.canAssign} />
       <DongChoDoi cho={data.phanCongCho ?? []} ct={data.programme?.code ?? null} homNay={homNay} />
 
             {/* GD-4 e (mockup v21 H3, ⓪ dòng 21): MỘT dải chỉ số cao 44 — Lượt mới nhất (chữ) · Đạt MT (ô số → panel em trong mẫu, tab Chưa đạt · Đạt) ·
@@ -363,7 +366,11 @@ function useTomTatLop(data: HoSoLop, homNay: string | null) {
  * GV THEO KỸ NĂNG MỘT DÒNG (GD-6, mockup v21 ② `.gv-dong` / `.gv-du`): cả dòng là MỘT nút — "GVCN, L, R Đinh Thu Hằng │ S … │ W1 …" 13 px, không
  * xuống hàng; bấm mở bản đủ (ô nhãn trên – tên dưới, tên là link hồ sơ GV — XM-3). 375: hai người đầu + "+n người". Chưa phân công: tên màu sắp hạn.
  */
-function DongGiaoVien({ gon, du }: { gon: NhomGiaoVien[]; du: NhomGiaoVien[] }) {
+/**
+ * AUDIT-1611 B3-11 (thang G5 bậc 2): QL đổi GV một kỹ năng từ thẻ GV — nút "Đổi" cạnh từng người (nút làm việc tách link hồ sơ GV) mở panel Phân công
+ * ĐANG SỬA, ô đó mở sẵn danh sách chọn: chọn người → Lưu phân công → hộp hiệu lực + bàn giao (giữ nguyên). 8 bấm → 5. GVCN chỉ đổi ô bộ môn.
+ */
+function DongGiaoVien({ gon, du, onDoi, doiGvcn }: { gon: NhomGiaoVien[]; du: NhomGiaoVien[]; onDoi?: (khoa: string) => void; doiGvcn?: boolean }) {
   const [mo, setMo] = useState(false);
   if (!gon.length) return null;
   return (
@@ -385,7 +392,13 @@ function DongGiaoVien({ gon, du }: { gon: NhomGiaoVien[]; du: NhomGiaoVien[] }) 
           {du.map((g, i) => (
             <span key={`${g.nhan}-${i}`} className={FACT} style={{ borderColor: 'var(--line)' }}>
               <abbr className="text-xs font-medium leading-[1.3] text-faint no-underline" title={g.title}>{g.nhan}</abbr>
-              <span className="text-sm font-semibold leading-[1.35] text-slate-100">{g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-soon">{g.ten}</span>}</span>
+              <span className="inline-flex items-center gap-2 text-sm font-semibold leading-[1.35] text-slate-100">
+                {g.id !== null ? <TenGiaoVien id={g.id} ten={g.ten} /> : <span className="text-soon">{g.ten}</span>}
+                {onDoi && (g.kyNang.length ? true : doiGvcn) && (
+                  <button type="button" className="btn btn-sm min-h-[44px] px-2 text-xs sm:min-h-0" aria-label={t('Đổi giáo viên {nhan}', { nhan: g.nhan })}
+                    onClick={() => onDoi(g.kyNang[0] ?? 'gvcn')}>{t('Đổi')}</button>
+                )}
+              </span>
             </span>
           ))}
         </div>

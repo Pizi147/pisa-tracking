@@ -89,7 +89,8 @@ export async function runPrChuongV2Tests(t: any) {
     assert(!hd.includes("'/notifications'") && !hd.includes("'/my-work'"), 'Header không tự GET /notifications hay /my-work');
     assert(/openMenu === 'notif' && <HopChuong /.test(hd), 'hộp (và GET /notifications) chỉ gắn khi chuông mở');
     assert(!hop.includes("'/my-work'") && hop.includes("useApi<any[]>('/notifications')"), 'HopChuong không GET /my-work');
-    assert(/<Header viec=\{viecGv\} dem=\{dem\} so=\{so\} \/>/.test(app), 'App truyền bản badge (viecGv, dem, so)');
+    /* AUDIT-1611 BADGE-NHE: + `onMoChuong` (mở chuông → bản ≥ 60 s thì tải lại một lần). */
+    assert(/<Header viec=\{viecGv\} dem=\{dem\} so=\{so\} onMoChuong=\{/.test(app), 'App truyền bản badge (viecGv, dem, so)');
     const ls = [...hop.matchAll(/localStorage\.\w+\(/g)].length, tc = [...hop.matchAll(/try \{ [^\n]*localStorage/g)].length;
     assert(ls >= 2 && ls === tc, `localStorage ${ls} lần, trong try ${tc}`);
   });

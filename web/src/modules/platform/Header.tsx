@@ -38,7 +38,8 @@ type LopRef = { id: number; code: string; student_count: number };
 
 /** Thanh phải: tìm học viên + lớp (K1-43), thông báo, tài khoản. Không lặp lại điều hướng chính. */
 
-export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined; dem: DemYeuCau | null | undefined; so: { n: number; quaHan: boolean; sr: string } | null }) {
+export function Header({ viec, dem, so, onMoChuong }: { viec: ViecChuong | null | undefined; dem: DemYeuCau | null | undefined; so: { n: number; quaHan: boolean; sr: string } | null;
+  /** AUDIT-1611 BADGE-NHE: mở chuông → danh sách đã ≥ 60 s thì tải lại (một lần). */ onMoChuong?: () => void }) {
   const { session, signOut, doiGocNhin } = useSession();
   const toast = useToast();
   const navigate = useNavigate();
@@ -277,7 +278,7 @@ export function Header({ viec, dem, so }: { viec: ViecChuong | null | undefined;
 
       <div className="sm:relative">
         <button ref={nutThongBao} className="btn btn-sm relative min-h-[44px] min-w-[44px] justify-center border-0 bg-transparent sm:min-h-[36px] sm:min-w-[36px]"
-          onClick={() => { setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
+          onClick={() => { if (openMenu !== 'notif') onMoChuong?.(); setOpenMenu(openMenu === 'notif' ? null : 'notif'); setMoTimDt(false); }}
           aria-label={t('Thông báo') + (so ? `, ${so.sr}` : '')} aria-expanded={openMenu === 'notif'}>
           {/* UI-CON-LAI k4: chuông nét mảnh mọi bề rộng. */}
           <svg aria-hidden width="20" height="20" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">

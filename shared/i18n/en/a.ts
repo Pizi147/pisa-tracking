@@ -309,6 +309,7 @@ export const EN_A = {
   'đang chọn': 'selected',
   'Gõ tên để tìm…': 'Type a name…',
   'Đổi': 'Change',
+  'Đổi giáo viên {nhan}': 'Change teacher {nhan}',
   'Bỏ': 'Remove',
   'Đang tìm…': 'Searching…',
   'Không tìm thấy ai khớp.': 'No match.',
