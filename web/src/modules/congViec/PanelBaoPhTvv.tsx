@@ -81,7 +81,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
   const khoa = useRef<{ nd: string; k: string } | null>(null);
 
   const em = { id: it.studentId!, ten: it.studentName };
-  const tieuDe = t('Báo PH · {ten}', { ten: it.studentName });
+  const tieuDe = it.contextLabel ? t('Báo PH · {bac}', { bac: it.contextLabel }) : t('Báo PH');
   const xong = v?.trangThai === 'xong' || daLuu?.kq === 'da_bao';
   /* UI-1 (mockup U10 K5): hạn là trường riêng đầu thân panel (DongHan) — đầu panel chỉ còn em · lớp. */
   const dau = dauViec({
@@ -131,7 +131,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
     chinh: nutTiep || (daLuu.kq === 'da_bao' ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> : null),
   } : sua ? {
     huy: null, daSua: daGo, conThieu: lf.conThieu(loiO),
-    trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" /> : daGo ? <ChuLuu tt="nhap" /> : null,   /* AUDIT-1611 A3-22 */
+    trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : tt === 'dang' ? <ChuLuu tt="dang" /> : daGo ? <ChuLuu tt="nhap" /> : null,
     /* Việc cuối (không còn việc kế): chỉ "Lưu" là nút chính. */
     /* GD-4b (lời 36, dòng 40c ⓪): "Đóng" · Lưu · "Lưu · việc tiếp ›"; 375 giữ "Lưu · Lưu · việc tiếp ›" (Đóng qua ✕ / ‹). Đóng đi đường ✕ (gõ dở thì hỏi bỏ chữ). */
     phu: <><NutDongPanel busy={tt === 'dang'} />{tt === 'loi' || !onTiep ? null : <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Lưu')}</button>}</>,
