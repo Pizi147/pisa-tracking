@@ -145,6 +145,9 @@ export type ViewCase = { loai: 'case' } | { loai: 'ghi-ket-qua'; paId: number } 
   | { loai: 'sua-ket-qua'; followupId: number };
 
 /** "Case Listening" — tên ngắn của Case cho tiêu đề ngăn và dòng "← Case Listening". */
+/** Bằng chứng của Case — `ThanCase` đọc; Ngăn Case gọi sớm cùng `/cases/:id` (TD-NGUOI). */
+export const duongBangChungCase = (caseId: number) => `/attachments?ownerType=sos_case&ownerId=${caseId}`;
+
 export function tenNganCase(d: { categoryLabel: string | null; category: string | null; chuongTrinh?: string | null }): string {
   /* MH2: máy chủ đã gửi `categoryLabel` theo chương trình ("Case G+V" đọc là "Case Grammar + Vocabulary"). */
   const kn = d.categoryLabel ?? (d.category ? tenMon(d.chuongTrinh ?? null, d.category) : null);
@@ -200,7 +203,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   const dsPa = [...(data.interventions ?? [])].filter((x) => !(x.laPaDoi && (x.approvalState === 'pending' || x.approvalState === 'declined'))).sort((a, b) =>
     Number(daBatDau(b)) - Number(daBatDau(a)) || (b.id as number) - (a.id as number));
   const lichSu = buildLichSu(data, ngan);
-  const bc = useApi<{ rows: unknown[] }>(`/attachments?ownerType=sos_case&ownerId=${data.id}`, [data.id]);
+  const bc = useApi<{ rows: unknown[] }>(duongBangChungCase(data.id), [data.id]);
   const box = useRef<HTMLDivElement>(null);
 
   /* Thẻ mở · form trong thẻ · thẻ vừa đổi (viền nhấn + "✓ … · Hoàn tác" 10 giây) · dải đã xoá PA. Đích mở sẵn theo lối vào. */

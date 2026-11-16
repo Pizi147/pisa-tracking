@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { taiTruoc, useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { ThanhTruocSau } from '../../ui/ThanhTruocSau.tsx';
 import { Card, DaiChiXem, Empty, ErrorState, Info, Level, Outcome, Skeleton, TargetText, Th} from '../../ui/ui.tsx';
@@ -143,6 +143,8 @@ export default function StudentDetailPage() {
     setParams(next, { replace: true });
   };
   /* A5 (PR-YT4) · GD-7: đường Ý thức của em — CÙNG đường với tab bên trong; nay còn cho quyền "+ Task" (Vi phạm / Nhắc nhở · Báo / Hỏi tình hình), không thêm request. */
+  /* TD-NGUOI: Tiến độ trên lớp (tab Học thuật, `TienDoTrenLop`) gọi CÙNG LÚC hồ sơ — trước: chờ hồ sơ về mới gọi, thêm một lượt mạng. */
+  useEffect(() => { if (id && tab === 'hoc-thuat') taiTruoc(`/students/${id}/bai-tren-lop`); }, [id, tab]);
   const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
   /* GD-7 (③ R3.2): việc đang mở ở panel việc tại chỗ + danh sách lúc mở (để "Việc tiếp ›" đi đúng thứ tự khi việc vừa xong rời danh sách). */
   const [viecMo, setViecMo] = useState<{ it: WorkItem; ds: Viec[] } | null>(null);
