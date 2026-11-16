@@ -66,47 +66,30 @@ const PhanTichPage = lazyTai(() => import('./modules/phanTich/PhanTichPage.tsx')
  * Test, Công việc, Quản trị — cùng điều kiện các `<Route>` dưới) chỉ nạp khi vai mở được: GV 619 KB, TVV 620, CX 602, Admin VP 655; QL / QT không đổi.
  * Đã có cache (tệp `/assets` immutable 1 năm) thì 0 byte cả trước lẫn sau. PDF / Excel vẫn nạp lười, không vào đây.
  */
-const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean)?][] = [
-  [() => import('./modules/worklist/OverviewPage.tsx')],
-  [() => import('./modules/fasttrack/MockDetailPage.tsx')],
-  [() => import('./modules/students/StudentsPage.tsx')],
-  [() => import('./modules/classes/ClassOverviewPage.tsx')],
-  [() => import('./modules/students/StudentDetailPage.tsx')],
-  [() => import('./modules/students/LuuTruPage.tsx')],
-  [() => import('./modules/cases/CaseBoardPage.tsx')],
-  [() => import('./modules/test/TestPage.tsx'), (n) => n.test],
-  [() => import('./modules/congViec/CongViecPage.tsx'), (n) => n.work],
-  [() => import('./modules/platform/AdminPage.tsx'), (n) => n.admin || !!n.bangQuyDoi],
-  [() => import('./modules/platform/ProfilePage.tsx')],
-  [() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')],
-  [() => import('./modules/huongDan/HuongDanPage.tsx')],
-  [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis],
-  [() => import('./modules/congViec/PanelViec.tsx')],
-];
 /*
- * TD-NGUOI (đo 17/11, bản build, Fast 3G): mở link / tải lại trang thì mảnh JS của trang chỉ bắt đầu tải SAU khi `/demo/session` về — thêm trọn một lượt
- * mạng trước khi trang gọi được dữ liệu. Nay tải mảnh của đúng trang đang mở ngay khi gói đầu chạy, song song với phiên (`lazy` dùng lại cùng `import()`).
- * Thứ tự như `<Routes>` dưới; đường không khớp (đường cũ, trang lạ) thì thôi — như trước.
+ * TD-NGUOI (đo 17/11, bản build, Fast 3G): mở link / tải lại trang thì mảnh JS của trang chỉ bắt đầu tải SAU khi `/demo/session` về — thêm trọn một lượt mạng
+ * trước khi trang gọi được dữ liệu. Nay tải mảnh của trang đang mở (`re`, khớp như `<Routes>` dưới) ngay khi gói đầu chạy, song song với phiên (`lazy` dùng lại
+ * cùng `import()`); đường không khớp thì thôi — như trước.
  */
-const NAP_THEO_DUONG: [RegExp, () => Promise<unknown>][] = [
-  [/^\/$/, () => import('./modules/worklist/OverviewPage.tsx')],
-  [/^\/phan-tich$/, () => import('./modules/phanTich/PhanTichPage.tsx')],
-  [/^\/hoc-vien$/, () => import('./modules/students/StudentsPage.tsx')],
-  [/^\/hoc-vien\/lop\/[^/]+$/, () => import('./modules/classes/ClassOverviewPage.tsx')],
-  [/^\/hoc-vien\/luu-tru$/, () => import('./modules/students/LuuTruPage.tsx')],
-  [/^\/hoc-vien\/[^/]+$/, () => import('./modules/students/StudentDetailPage.tsx')],
-  [/^\/hoc-thuat\/case\/[^/]+$/, () => import('./modules/cases/CaseBoardPage.tsx')],
-  [/^\/test(\/[^/]+)?$/, () => import('./modules/test/TestPage.tsx')],
-  [/^\/mock-test\/[^/]+$/, () => import('./modules/fasttrack/MockDetailPage.tsx')],
-  [/^\/luot-test\/[^/]+$/, () => import('./modules/fasttrack/LuotThuongPage.tsx')],
-  [/^\/cong-viec(\/[^/]+)?$/, () => import('./modules/congViec/CongViecPage.tsx')],
-  [/^\/quan-tri$/, () => import('./modules/platform/AdminPage.tsx')],
-  [/^\/ho-so-ca-nhan$/, () => import('./modules/platform/ProfilePage.tsx')],
-  [/^\/giao-vien\/[^/]+$/, () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')],
-  [/^\/huong-dan$/, () => import('./modules/huongDan/HuongDanPage.tsx')],
+const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean) | null, RegExp?][] = [
+  [() => import('./modules/worklist/OverviewPage.tsx'), null, /^\/$/],
+  [() => import('./modules/fasttrack/MockDetailPage.tsx'), null, /^\/mock-test\/[^/]+$/],
+  [() => import('./modules/students/StudentsPage.tsx'), null, /^\/hoc-vien$/],
+  [() => import('./modules/classes/ClassOverviewPage.tsx'), null, /^\/hoc-vien\/lop\/[^/]+$/],
+  [() => import('./modules/students/StudentDetailPage.tsx'), null, /^\/hoc-vien\/(?!luu-tru$)[^/]+$/],
+  [() => import('./modules/students/LuuTruPage.tsx'), null, /^\/hoc-vien\/luu-tru$/],
+  [() => import('./modules/cases/CaseBoardPage.tsx'), null, /^\/hoc-thuat\/case\/[^/]+$/],
+  [() => import('./modules/test/TestPage.tsx'), (n) => n.test, /^\/test(\/[^/]+)?$/],
+  [() => import('./modules/congViec/CongViecPage.tsx'), (n) => n.work, /^\/cong-viec(\/[^/]+)?$/],
+  [() => import('./modules/platform/AdminPage.tsx'), (n) => n.admin || !!n.bangQuyDoi, /^\/quan-tri$/],
+  [() => import('./modules/platform/ProfilePage.tsx'), null, /^\/ho-so-ca-nhan$/],
+  [() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), null, /^\/giao-vien\/[^/]+$/],
+  [() => import('./modules/huongDan/HuongDanPage.tsx'), null, /^\/huong-dan$/],
+  [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis, /^\/phan-tich$/],
+  [() => import('./modules/congViec/PanelViec.tsx'), null],
 ];
 /* Lỗi tải mảnh (vừa deploy) để `lazyTai` của trang tự xử lý như cũ — ở đây bỏ qua. */
-NAP_THEO_DUONG.find(([re]) => re.test(window.location.pathname))?.[1]().catch(() => {});
+NAP_SAN.find(([, , re]) => re?.test(window.location.pathname))?.[0]().catch(() => {});
 /*
  * TD-NGUOI: NẠP SẴN chờ MẠNG YÊN — 1,5 s liền không thêm tài nguyên nào tải xong (mảnh + dữ liệu của trang đang mở đã về), tối đa ~15 s. Trước: cố định 1,5 s
  * sau đăng nhập — mạng chậm (Fast 3G, chưa cache) ~700 KB nạp sẵn tranh băng thông với chính trang đang mở: API trang lớp bắt đầu 8,3 s thay vì ~6 s.
