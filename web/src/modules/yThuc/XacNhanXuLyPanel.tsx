@@ -14,7 +14,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { BoLocDoan, ErrorState, NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import {
-  KHAC_TOI_THIEU, MEASURE_KIND_LABEL, addDaysIso, mondayOfDate, QUY_CHE_KHONG_XU_LY, bacDu, bacKhongNgat, luuRoiTiep, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
+  CHU_TOI_THIEU, KHAC_TOI_THIEU, MEASURE_KIND_LABEL, addDaysIso, mondayOfDate, QUY_CHE_KHONG_XU_LY, bacDu, bacKhongNgat, luuRoiTiep, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
@@ -27,7 +27,7 @@ const MO_TA_MIN = 10;
 const MO_TA_TOI_DA = 300;
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 /** LG-12: lý do "Không xử lý" — cùng ngưỡng máy chủ (`khongXuLy`). */
-const LY_DO_KHONG_TOI_THIEU = 8;
+const LY_DO_KHONG_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6), cùng máy chủ
 
 /** Loại cần QL duyệt (V4-9): WL 3 chỉ khi là bậc kế (Q11) — thứ tự bày theo độ nặng. */
 const LOAI_DE_XUAT = ['wl_3', 'meeting_cx', 'suspension', 'other'] as const;

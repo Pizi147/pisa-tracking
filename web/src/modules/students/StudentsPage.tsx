@@ -791,7 +791,7 @@ function DauLop({ lop, hv, vai, dsLop, onThemHocVien, onSos, dangLoc, cuaToi, ch
       {/* ⑥ K1: badge tình trạng (không phải việc của tôi, vd QL "Chờ chấm · 4") rồi chip việc CỦA TÔI; có chip Nhập điểm thì bỏ "Chờ chấm" (cùng số, khỏi lặp). */}
       <span className="hl-o flex flex-wrap items-center gap-1.5">
         {day && <NhanLop lop={day} vai={vai} soViecQuaHan={0} bo={(k) => k === 'qua-han' || (k === 'cham' && chip.some((c) => c.tab === 'cham-diem'))} />}
-        {lop && chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={lop.code} doiTrang={false} onBam={() => onChip(c, { id: lop.id, code: lop.code })} />)}
+        {lop && chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={lop.code} onBam={() => onChip(c, { id: lop.id, code: lop.code })} />)}
       </span>
       <span className="hl-o hl-nut">{day && <MenuLop lop={day} dsLop={dsLop} onThemHocVien={() => onThemHocVien({ id: day.id, code: day.code })} />}</span>
     </>

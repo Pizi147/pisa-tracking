@@ -554,15 +554,17 @@ export function DemChu({ n, toiDa }: { n: number; toiDa: number }) {
 
 /**
  * Một TRƯỜNG: nhãn ở TRÊN ô, `*` khi bắt buộc, chữ phụ ≤ 1 dòng, `loi` chỉ khi người gọi truyền (sau khi bấm Lưu / rời ô).
- * Có `loi` → ô viền đỏ + lý do dưới ô (YC-12.5.2; người gọi đặt `aria-invalid` lên ô). `dem` = bộ đếm ký tự `8/15` bên phải (chưa đủ tối thiểu);
- * `dem.toiDa` (N35): từ 80 % trần hiện `212 / 200`, quá trần chữ đỏ.
+ * Có `loi` → ô viền đỏ + lý do dưới ô (YC-12.5.2; người gọi đặt `aria-invalid` lên ô). `dem.toiDa` (N35): từ 80 % trần hiện `212 / 200`, quá trần chữ đỏ;
+ * `dem.can` (tối thiểu) không vẽ — kiểm khi lưu (AUDIT-1611 A1-19). `tuyChon`: chỉ đánh dấu ở nơi gọi, không vẽ "(không bắt buộc)" — ô bắt buộc đã có * (A3-20).
  */
-export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, phuNhan, loi, dem, as = 'label', children }: {
+export function Truong({ nhan, batBuoc, thieu, phu, phuNhan, luat, loi, dem, as = 'label', children }: {
   /** OV-13f: ô bắt buộc mà trống vẫn lưu được (Email) — chữ "Thiếu" cam cạnh nhãn. */
   thieu?: boolean;
   nhan: string; batBuoc?: boolean; tuyChon?: boolean; phu?: string; loi?: string | null; dem?: { co: number; can?: number; toiDa?: number };
   /** GD-19 (mockup ⑪ K6a "Lý do * gửi Vũ Thu Lan"): chữ mờ CẠNH nhãn (khác `phu` — dưới ô). */
   phuNhan?: string;
+  /** AUDIT-1611 A3-20: giải thích tĩnh (luật nhập) → ⓘ cạnh nhãn, không chữ dưới ô. */
+  luat?: ReactNode;
   as?: 'label' | 'div'; children: ReactNode;
 }) {
   /* Ô ngày / ô chọn người bên trong báo id → nhãn `<label htmlFor>`, không bọc nút lịch (`BaoOTrongNhan`). Thẻ khung chỉ theo props. */
@@ -571,19 +573,17 @@ export function Truong({ nhan, batBuoc, tuyChon, thieu, phu, phuNhan, loi, dem, 
   /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
   const idNhan = useId();
   const dam = useContext(NhanTruongDam);   // UI-CONG-VIEC: ô không bắt buộc không ghi "(không bắt buộc)" — ô bắt buộc đã có *
-  /* UI-CONG-VIEC (mockup `.dem-chu` "0 / 200"): panel Công việc — ô có trần chỉ hiện bộ đếm trần (tối thiểu vẫn kiểm khi lưu). */
-  if (dam && dem?.toiDa) dem = { co: dem.co, toiDa: dem.toiDa };
+  /* UI-CONG-VIEC → AUDIT-1611 A1-19 (mọi nơi): MỘT bộ đếm "n / trần"; mức tối thiểu không vào bộ đếm — báo lỗi khi lưu. */
   const troO = Vo === 'div' ? idO : null;
   const nhom = Vo === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>
     <span className="min-w-0 flex-1">
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
-      {tuyChon && !dam && <span className="font-normal text-slate-500"> {t('(không bắt buộc)')}</span>}
       {phuNhan && <span className="font-normal text-slate-400"> {phuNhan}</span>}
+      {luat && <span className="ml-1 inline-flex align-middle font-normal"><NutLuat label={nhan}>{luat}</NutLuat></span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
-    {dem?.can && dem.co < dem.can ? <span className="text-xs font-normal tabular-nums text-slate-500">{dem.co}/{dem.can}</span>
-      : dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
+    {dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
   </>;
   const lopNhan = dam ? 'mb-2 flex items-baseline gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]'
     : 'mb-1 flex items-baseline gap-2 text-[12px] font-medium text-slate-200';   // D10: nhãn trường 500 (luật chữ: nhãn 500)

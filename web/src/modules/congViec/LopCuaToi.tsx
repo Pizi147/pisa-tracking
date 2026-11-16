@@ -3,7 +3,6 @@ import { useSession, type Assignment } from '../../lib/session.tsx';
 import { ChipHan, ChipKy } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
-import { lamTaiCho } from './lamTaiCho.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { LOAI_HAN_CUA_VIEC, dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -97,14 +96,15 @@ export function chipViecEm(viec: readonly WorkItem[], tvv = false): ChipViec[] {
 }
 
 /** Nút-chip "{loại} · {số}" (GD-4b, ⑤ C): đỏ khi có việc quá hạn (V22 chỉ màu), "›" khi bấm là đổi trang. `ngu` = lớp cho trình đọc màn. */
-export function NutChipViec({ c, ngu, doiTrang, onBam }: { c: ChipViec; ngu?: string; doiTrang: boolean; onBam: () => void }) {
+/** AUDIT-1611 A1-06 (mockup ① XM-5): nút-chip không có "›" — bấm mở việc đầu, việc đó tự đổi trang nếu cần. */
+export function NutChipViec({ c, ngu, onBam }: { c: ChipViec; ngu?: string; onBam: () => void }) {
   return (
     <button type="button" onClick={onBam}
       title={c.doc} aria-label={[`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so}`, ngu, c.doc].filter(Boolean).join(' · ')}
       className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
         ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`}
       style={c.quaHan ? undefined : { borderColor: 'var(--line-strong)' }}>
-      {c.nhan} · <span className="tabular-nums">{c.so}</span>{doiTrang && <span aria-hidden> ›</span>}
+      {c.nhan} · <span className="tabular-nums">{c.so}</span>
     </button>
   );
 }
@@ -162,7 +162,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
         {d.test?.han?.due && <ChipHan vien loai={LOAI_HAN_CUA_VIEC[d.test.han.group] ?? 'nhap-diem'} han={d.test.han.due} />}
       </span>
       <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
-        {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} doiTrang={!lamTaiCho(c.dau)} onBam={() => onMo(c.dau)} />)}
+        {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} onBam={() => onMo(c.dau)} />)}
       </span>
     </li>
   );

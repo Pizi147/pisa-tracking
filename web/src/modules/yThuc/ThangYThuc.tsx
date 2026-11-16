@@ -7,7 +7,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 /**
  * THANG XỬ LÝ VI PHẠM — khối riêng có viền, nổi bật (chủ sản phẩm 02/10): tiêu đề nhỏ · thang MỘT dòng · hai nút lớn.
- * `✓ Report 1 › [Report 2 · lần này] › WL 1 › Report 4 + Meeting CX/GĐCN › Report 5 › WL 2 › Report 7` (V4-8, Q27-11, mockup M6). Sau WL 2 thang
+ * `✓ Report 1 → [Report 2 · lần này] → WL 1 → Report 4 + Meeting CX/GĐCN → Report 5 → WL 2 → Report 7` (V4-8, Q27-11, mockup M6). Sau WL 2 thang
  * tăng mãi (Report 7, 8…); WL 3 và phương án khác ở NGOÀI thang — chỉ qua nút Đề xuất QL duyệt.
  *
  * Bậc đã qua có dấu tích; bậc xác nhận từ trước (trước khi dùng web) mờ hơn + `title` "xác nhận dd/mm · người"; bậc kế tô nhấn;
@@ -72,7 +72,7 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
         )}
         {hien.map((b, i) => (
           <Fragment key={b.kind}>
-            {(i > 0 || rutGon) && <li aria-hidden className="shrink-0 text-slate-600">›</li>}
+            {(i > 0 || rutGon) && <li aria-hidden className="shrink-0 text-slate-600">→</li>}
             {b.trangThai === 'lan-nay' && deXuatTrenThang ? <ChipDeXuat d={d} /> : <BacO b={b} title={b.trangThai === 'khai' ? khaiTitle : undefined} coDeXuat={!!d.deXuat} />}
           </Fragment>
         ))}
@@ -80,7 +80,7 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
             đề xuất ngoài thang (WL 3, phương án khác) nối ở cuối; bậc kế tiếp không còn "lần này". */}
         {d.deXuat && !deXuatTrenThang && (
           <>
-            <li aria-hidden className="shrink-0 text-slate-600">›</li>
+            <li aria-hidden className="shrink-0 text-slate-600">→</li>
             <ChipDeXuat d={d} />
           </>
         )}

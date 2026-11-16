@@ -2,6 +2,7 @@
 
 import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { ENTRY_SKILLS } from './skills.ts';
+import { CHU_TOI_THIEU } from './khac.ts';
 import { CHUONG_TRINH_LIEN_TUC_CO_SAN, REGULAR_SKILLS, programmeOf, tenMon } from './normal.ts';
 import { t } from '../i18n/index.ts';
 import { benCua, cauHinh, cauHinhPb, tenHien, type MucNguyenNhan, type NhanhNN } from './cauHinhCaseSos.ts';
@@ -535,7 +536,7 @@ export const ISSUE_ROLES = ['primary', 'secondary'] as const;
  * #4 bản rà 11/11 (G2-11, chủ SP "Theo hết 10 đề xuất"): MỘT ngưỡng chữ tối thiểu cho Mô tả Case · Nội dung PA (cả Xác nhận PA quy chế) · Nhận xét kết quả PA ·
  * Kết luận Hoàn thành Case / Nhập bù. Trước: 15 · 8 / 15 · 8 · 10 — mỗi nơi một số, bị chặn vô cớ. Web + máy chủ dùng chung.
  */
-export const CHU_TOI_THIEU_CASE = 8;
+export const CHU_TOI_THIEU_CASE = CHU_TOI_THIEU;   // N50 (6)
 export const URGENCY_LEVELS = ['attention', 'urgent'] as const;
 export type UrgencyLevel = (typeof URGENCY_LEVELS)[number];
 

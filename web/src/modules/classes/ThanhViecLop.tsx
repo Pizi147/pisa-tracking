@@ -44,7 +44,7 @@ export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; c
             {quaHan > 0 && <> · <b className="tabular-nums text-late">{t('{n} quá hạn', { n: quaHan })}</b></>}
           </span>
           {chip.map((c) => (
-            <NutChipViec key={c.tab} c={c} doiTrang={false}
+            <NutChipViec key={c.tab} c={c}
               onBam={() => (c.tab === 'cham-diem' ? setNhapDiem(true) : setMo({ ds: c.ds, i: 0, nhan: t('Việc {loai} của bạn ở lớp này', { loai: c.nhan }) }))} />
           ))}
         </section>

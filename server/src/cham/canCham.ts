@@ -189,7 +189,7 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
   }
   return [...theoLop].map(([classId, l]) => {
     const luot = [...l.luot].sort((a, b) => a[0] - b[0])
-      .map(([so, em]) => ({ so, soEm: em.size, href: `/test/diem-lop?lop=${classId}&luot=mt:${so}&trong=cu` }));
+      .map(([so, em]) => ({ so, soEm: em.size, href: `/test/diem-lop?lop=${classId}&luot=mt:${so}&trong=cu&ma=${encodeURIComponent(l.classCode)}` }));   // AUDIT-1611 A1-05: `ma` = tiêu đề trang có mã lớp, 0 câu đọc thêm
     return { classId, classCode: l.classCode, soEm: l.em.size, emIds: [...l.em], href: luot[0].href, luot };
   }).sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode }));   // PR-UXF-a U1
 }

@@ -42,7 +42,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   }, [studentId, sua, d?.khai?.bac]);
 
   if (!studentId) return null;
-  const tieuDe = sua ? t('Sửa cấp bậc vi phạm') : t('Xác nhận cấp bậc vi phạm');
+  const tieuDe = t('Khai / sửa cấp bậc vi phạm');   // AUDIT-1611 A1-21: tên panel = tên mục "Khai / sửa cấp bậc" (như panel cả lớp)
   if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 

@@ -91,7 +91,7 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     const ds = cham.mtLichSuChuaNhap(QL, { classIds: [FT101] });
     assert(ds.length === 1, `MB FT 101 phải có dòng MT cũ: ${JSON.stringify(ds)}`);
     const n = ds[0];
-    assert(n.luot.length >= 1 && n.luot.every((l: any) => l.href === `/test/diem-lop?lop=${FT101}&luot=mt:${l.so}&trong=cu` && l.soEm > 0), `lượt: ${JSON.stringify(n.luot)}`);
+    assert(n.luot.length >= 1 && n.luot.every((l: any) => l.href === `/test/diem-lop?lop=${FT101}&luot=mt:${l.so}&trong=cu&ma=${encodeURIComponent(n.classCode)}` && l.soEm > 0), `lượt: ${JSON.stringify(n.luot)}`);
     assert(n.href === n.luot[0].href, `href dòng = lượt đầu: ${n.href}`);
     for (const l of n.luot) {
       /* Cùng bộ lọc với web (`DiemTheoLop`, `trong=cu`): hàng MT cũ (`lichSu`) còn ô trống (`oTrongLuotFt`). */

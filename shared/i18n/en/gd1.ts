@@ -1,7 +1,7 @@
 /** GD-1 (Overhaul V6, trang đầu GV): "Lớp của tôi", "+ Task", tab Chấm Speaking. Khoá = chữ Việt trên web. */
 export const EN_GD1 = {
   '+ Task': '+ New task',
-  'Task: Case, vi phạm / nhắc nhở, tình hình học tập': 'Task: case, violation / reminder, learning update',
+  'Task: {ds}': 'Task: {ds}',
   'Vi phạm / Nhắc nhở': 'Violation / Reminder',
   'Gõ tên em': 'Type a student name',
   'Gõ tên em…': 'Type a student name…',

@@ -8,6 +8,7 @@ import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
 import { BadgeHan, CHIP_TRON, CHIP_VUONG, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { NutLuat } from './NutLuat.tsx';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
   title?: ReactNode; action?: ReactNode; children: ReactNode; className?: string; bodyClass?: string;
@@ -360,8 +361,10 @@ export function NhanGiaTri({ hang, className = '' }: { hang: ReadonlyArray<reado
  * chuyển cú bấm vào chữ sang nút ĐẦU TIÊN — với bộ chọn tuần đó là "Tuần trước", nên bấm vào
  * nhãn thì tuần nhảy lùi.
  */
-export function Field({ label, children, hint, required, loi, as = 'label' }: {
+export function Field({ label, children, hint, required, luat, loi, as = 'label' }: {
   label: string; children: ReactNode; hint?: string; required?: boolean; as?: 'label' | 'div';
+  /** AUDIT-1611 A2-19: giải thích tĩnh → ⓘ cạnh nhãn (như `Truong.luat`). */
+  luat?: ReactNode;
   /** Lý do lỗi dưới ô (`useLoiForm().loiCua`) — viền ô đỏ như `Truong`. */
   loi?: string | null;
 }) {
@@ -371,7 +374,7 @@ export function Field({ label, children, hint, required, loi, as = 'label' }: {
   const idNhan = useId();
   const troO = Wrap === 'div' ? idO : null;
   const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
-  const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}</>;
+  const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}{luat && <span className="ml-1 inline-flex align-middle font-normal"><NutLuat label={label}>{luat}</NutLuat></span>}</>;
   const noi = useNoiLoi(loi);
   return (
     <BaoOTrongNhan.Provider value={setIdO}>

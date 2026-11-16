@@ -7,6 +7,7 @@
  */
 import { hanTai, lechTuThuHai } from './hanMacDinh.ts';
 import { hanTheoNgay } from './cases.ts';
+import { CHU_TOI_THIEU } from './khac.ts';
 import type { HuongGoiY } from './cuoiKhoa.ts';
 import { NORMAL_LADDER } from './fasttrack.ts';
 import type { Huong } from './lenLop.ts';
@@ -39,7 +40,7 @@ export const CHU_CHUYEN_LOP = {
 
 export const HUONG_LENH = ['len_lop', 'hoc_lai', 'fast_track', 'chuyen_lop', 'bao_luu', 'dung_hoc'] as const;
 export type HuongLenh = (typeof HUONG_LENH)[number];
-export const NHAN_XET_TOI_THIEU = 15;
+export const NHAN_XET_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6): bàn giao 15 → 8
 
 const ISO = /^\d{4}-\d{2}-\d{2}$/;
 const congNgay = (iso: string, n: number) => {

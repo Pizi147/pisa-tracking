@@ -1,4 +1,5 @@
 import { issuesForTopic, maNhomHopLe } from './cases.ts';
+import { CHU_TOI_THIEU } from './khac.ts';
 import { t } from '../i18n/index.ts';
 
 /** Nhận xét (OV-4b: mọi bài nhập L/R/W1/W2/S; MT nên có — `thieuNhanXetMt`, chỉ nhắc) + GV chấm Speaking (YC-13.5, T39) — luật một chỗ cho máy chủ, lưới, hồ sơ Mock và xuất Excel (PR-XUAT). */
@@ -30,7 +31,7 @@ export function kiemNhanXet(s: unknown, toiDa: number = NHAN_XET_TOI_DA, cu?: ()
  * `lich_su`) có điểm mà thiếu nhận xét ≥ 10 ký tự, hoặc band của CHÍNH ô (W1, W2 theo từng task) dưới kỳ vọng mà chưa có nhóm nguyên nhân → chỉ NHẮC
  * (ô vàng + chữ). Không 400, không tắt nút Lưu, không thành việc / nợ, dán Excel không báo lỗi dòng. Ô xong = có band (`oXongCua`).
  */
-export const NHAN_XET_MT_TOI_THIEU = 10;
+export const NHAN_XET_MT_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6)
 export type ThieuNhanXet = 'ghi-nhan-xet' | 'nhan-xet-ngan' | 'chon-nhom';
 /** Dòng nhắc ngay trên nút Lưu (hộp chấm) — nút vẫn bấm được. */
 export const CAU_THIEU_NHAN_XET: Record<ThieuNhanXet, string> = {

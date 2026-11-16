@@ -259,10 +259,10 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
   return (
     <KhungPanel hd="chot-ngay-thi" tieuDe={t('Chốt ngày thi · {ten}', { ten: em.ten })} onDong={onDong} quyChe={xong ? null : quyCheChotNgayThi(kieu === 'thang')}
-      dau={dauViec({ em, lop, ngCanh: duKien ? <span className="inline-flex items-center gap-1.5">{t('hiện')} <NhanLich loai="du-kien">{duKien}</NhanLich></span> : null })}
+      dau={dauViec({ em, lop, ngCanh: duKien ? <NhanLich loai="du-kien">{duKien}</NhanLich> : null })}
       chan={xong ? { huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
         chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> }
-        : { huy: null, daSua: !!gia, conThieu: lfC.conThieu(loiC), trai: <ChuLuu tt={tt ?? 'nhap'} loi={loi} />,
+        : { huy: null, daSua: !!gia, conThieu: lfC.conThieu(loiC), trai: tt ? <ChuLuu tt={tt} loi={loi} /> : gia ? <ChuLuu tt="nhap" /> : null,   /* AUDIT-1611 A3-22: "Chưa lưu" chỉ khi đã đổi */
           /* GD-18 (lời 36): còn việc kế → "Đóng" · Chốt ngày · "Chốt ngày · việc tiếp ›" (chính). */
           ...(onTiep && tt !== 'loi' ? {
             phu: <><NutDongPanel busy={tt === 'dang'} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Chốt ngày')}</button></>,

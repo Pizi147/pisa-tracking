@@ -20,7 +20,7 @@ export const EN_SOS_TAM_PA = {
   'Case không có PA của GV khác PA quy chế — Xác nhận PA quy chế.': 'The case has no teacher PA different from the rule-based PA — confirm the rule-based PA.',
   'Đã gửi Quản lý duyệt rồi.': 'Already sent to the manager.',
   'Case có PA của GV khác PA quy chế — mở "Chọn PA" cho em này.': 'The case has a teacher PA different from the rule-based PA — open "Choose PA" for this student.',
-  'Giữ {gv} · quá 3 ngày chưa trả lời: chốt theo PA của bạn': (b) => `Keep ${b.gv} · no answer after 3 days: your PA is kept`,
+  'Giữ {gv} · quá {han:giu_pa_gv} chưa trả lời: chốt theo PA của bạn': (b) => `Keep ${b.gv} · no answer after {han:giu_pa_gv}: your PA is kept`,
   'Chờ QL duyệt PA của GV': 'Awaiting manager · teacher’s PA',
   'PA của GV vẫn chạy': 'teacher’s PA still running',
   'quá {ngay} tự chốt theo GV': (b) => `after ${b.ngay} kept automatically`,

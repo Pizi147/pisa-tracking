@@ -40,7 +40,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
-  NHAN_LOAI_VIEC,
+  NHAN_LOAI_VIEC, chenHan,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -870,7 +870,7 @@ function LoiVanHanh({ cn, baoCao, onGiao }: { cn: number | null; baoCao: boolean
 
 /** UI-CV-TVV (P1): luật hạn của nhóm việc TVV — ⓘ cạnh số đầu nhóm (mockup ghi thành chữ "· hạn 23:59 ngày lưu + 4"). */
 const luatNhomTvv = (k: string) => (k === 'bao-ph' ? <NutLuat label={t('Hạn Báo PH')}>{t('Hạn 23:59 ngày lưu xử lý + 4 (tính cả T7, CN). Chưa liên hệ được: việc vẫn mở, giữ hạn.')}</NutLuat>
-  : k === 'sau-thi' ? <NutLuat label={t('Sau thi')}>{t('Lưu điểm thi thật trước; bước tiếp hạn 7 ngày từ ngày có kết quả.')}</NutLuat> : null);
+  : k === 'sau-thi' ? <NutLuat label={t('Sau thi')}>{chenHan(t('Lưu điểm thi thật trước; bước tiếp hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả.'))}</NutLuat> : null);
 
 /** UI-CV-TVV (mockup "3 việc · 3 HV · Cẩm Phả"): tên chi nhánh khi người xem chỉ thuộc MỘT chi nhánh. */
 function useTenChiNhanh(bat: boolean): string | null {
