@@ -297,8 +297,9 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
 /** Hàng 7 chip một bấm (MOCKUP-1111 màn 2): chưa chọn = chữ (viền khi rê / focus dòng, 375 luôn viền mảnh) · bậc đang có = nền nhạt · vừa chọn = nền đặc.
  *  Bấm lại chip đang chọn = bỏ đổi. Tên đủ ở `title` + tên đọc màn. */
 export function ChipBac({ chon, cu, onPick, nhan, lon = false }: { chon: number | undefined | null; cu: number | null; onPick: (b: number) => void; nhan: string; lon?: boolean }) {
+  /* A1-21 (lời 36): panel một em (`lon`) — chip ghi tên bậc ĐỦ (REPORT 1 · WARNING LETTER 1), xuống dòng được; bảng cả lớp giữ tên ngắn (MOCKUP-1111 màn 2). */
   return (
-    <span role="group" aria-label={nhan} className={`grid grid-cols-[1.25fr_repeat(6,minmax(0,1fr))] gap-1.5 sm:inline-flex sm:gap-1 ${lon ? 'sm:gap-1.5' : ''}`}>
+    <span role="group" aria-label={nhan} className={lon ? 'flex flex-wrap gap-1.5' : 'grid grid-cols-[1.25fr_repeat(6,minmax(0,1fr))] gap-1.5 sm:inline-flex sm:gap-1'}>
       {BAC.map((b, i) => {
         const dang = chon === i;
         return (
@@ -307,7 +308,7 @@ export function ChipBac({ chon, cu, onPick, nhan, lon = false }: { chon: number 
               dang ? 'btn-primary'   /* nền đặc = nút chính (token `--nut-chinh-*`) */
                 : cu === i ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]'
                 : `border-[color:var(--line)] text-slate-300 hover:border-[color:var(--accent)] ${lon ? '' : 'sm:border-transparent sm:group-hover/dong:border-[color:var(--line-strong)] sm:group-focus-within/dong:border-[color:var(--line-strong)]'}`}`}>
-            {nganBac(i)}
+            {lon ? bacDu(dich(b)) : nganBac(i)}
           </button>
         );
       })}

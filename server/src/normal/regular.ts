@@ -6,7 +6,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
+import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -709,8 +709,7 @@ export function saveRegularScore(
   const hoanTat = dotHoanTat(attemptId, today);
   let path = duongGhiLuot(p, a, skill);
   if (!path) {
-    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
-      'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
+    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill }, CHU_CHAN_NHAP_DIEM(p));
   }
   if (lopKetThuc) path = 'override';
 
@@ -1435,7 +1434,7 @@ export function regularAttemptDetail(p: Principal, attemptId: number) {
     huy: huyCua(rows[0].status, history),
     canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
     /** LUOT-KHOI-PHUC: lượt đã huỷ — `chan` = câu lý do + bước tiếp khi không khôi phục được (cùng hàm `reopenAttempt` chặn); null = lượt chưa huỷ. */
-    khoiPhuc: rows[0].status === 'cancelled' ? { chan: chanKhoiPhucThuong(a, rows[0].kindLabel) } : null,
+    khoiPhuc: rows[0].status === 'cancelled' ? { chan: chanKhoiPhucThuong(a, rows[0].kindLabel, p) } : null,
     history,
     scoreHistory: scoreHistoryOf(attemptId),
   };

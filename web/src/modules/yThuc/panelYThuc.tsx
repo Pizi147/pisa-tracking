@@ -4,7 +4,8 @@ import { XacNhanXuLyPanel } from './XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from './DaThucHienPanel.tsx';
 import { KhaiBacPanel } from './KhaiBacPanel.tsx';
 import { XemXuLyPanel } from './XemXuLyPanel.tsx';
-import { DeleteViolationConfirm } from './DeleteViolationConfirm.tsx';
+import { xoaViPham } from './DeleteViolationConfirm.tsx';
+import { useToast } from '../../ui/Toast.tsx';
 import type { ViolationDetail } from './ChiTietViPham.tsx';
 
 export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'category' | 'skill' | 'occurredOn' | 'ten' | 'moTa' | 'chiNhac'>;
@@ -22,7 +23,7 @@ export type PanelYThuc =
 
 /**
  * MỘT PANEL MỘT LÚC (PR-YT4) — `RecordViolationPanel` (+ Vi phạm / Nhắc nhở / Sửa) · `XacNhanXuLyPanel` (Xác nhận xử lý + Đề xuất QL duyệt) ·
- * `KhaiBacPanel` · `DaThucHienPanel` · `XemXuLyPanel` (chỉ đọc) · `DeleteViolationConfirm`.
+ * `KhaiBacPanel` · `DaThucHienPanel` · `XemXuLyPanel` (chỉ đọc). Xoá vi phạm: xoá thẳng + Hoàn tác (`xoaViPham`, B1-10).
  */
 export function usePanelYThuc({ onDone, roster, maLop }: {
   onDone: (x?: { ids: number[]; chiNhac: boolean }) => void;
@@ -32,7 +33,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
   roster?: { id: number; name: string; code?: string | null }[];
 }): { mo: (p: PanelYThuc) => void; panel: PanelYThuc; panels: ReactNode } {
   const [panel, setPanel] = useState<PanelYThuc>(null);
-  const [deleteId, setDeleteId] = useState<number | null>(null);
+  const toast = useToast();
   const mo = (p: PanelYThuc) => setPanel(p);
   const dong = () => setPanel(null);
   const xong = (x?: { ids: number[]; chiNhac: boolean }) => { dong(); onDone(x); };
@@ -54,7 +55,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         /* OV-11d (HV-22): tiêu đề "Sửa vi phạm · {tên em}" — tên từ nơi mở, không thì từ danh sách lớp. */
         studentName={panel?.loai === 'sua' ? panel.studentName ?? roster?.find((r) => r.id === panel.v.studentId)?.name : undefined}
         onDone={onDone}
-        onDelete={(id) => { dong(); setDeleteId(id); }}
+        onDelete={(id) => { dong(); xoaViPham(toast, id).then(() => onDone(), (e: any) => toast.push('error', e.message)); }}
       />
       {panel?.loai === 'xu-ly' && (
         <XacNhanXuLyPanel key={panel.tick?.join(',')} studentId={panel.studentId} cheDo={panel.cheDo} tickThem={panel.tick} lop={maLop} onClose={dong} onDone={onDone}
@@ -63,7 +64,6 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
       {panel?.loai === 'khai' && <KhaiBacPanel studentId={panel.studentId} sua={panel.sua} onClose={dong} onDone={onDone} />}
       {panel?.loai === 'da-thuc-hien' && <DaThucHienPanel measureId={panel.id} onClose={dong} onDone={onDone} />}
       <XemXuLyPanel measureId={panel?.loai === 'xem' ? panel.id : null} onClose={dong} onDone={onDone} onDaThucHien={(id) => mo({ loai: 'da-thuc-hien', id })} />
-      <DeleteViolationConfirm violationId={deleteId} onClose={() => setDeleteId(null)} onDone={onDone} />
     </>
   );
 

@@ -9,7 +9,7 @@ import { FormPa, NgayKhoa } from '../cases/FormPa.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BoiCanh, CanLam, DiemKq, DongTiep, MucH, NUT_MO, NutChu, NutVaTiep, TheMuc, TrangThaiLuu, Trich, TruongDoc, type DaLuuPanel, type TiepViec } from '../../ui/KhuonViec.tsx';
+import { CanLam, DiemKq, DongTiep, MucH, NUT_MO, NutChu, NutVaTiep, TheMuc, TrangThaiLuu, Trich, TruongDoc, type DaLuuPanel, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { FormDoiPa, useDoiPa } from '../cases/DoiPa.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
@@ -196,7 +196,6 @@ export function XacNhanCasePanel({ data, onXong, tiep, ...chung }: ChungPanel & 
           <div className="flex flex-wrap items-center gap-1.5 pt-0.5 max-sm:hidden">{nut}</div>
           <DongTiep tiep={tiep} />
         </CanLam>
-        <BoiCanh dong={[['SOS', data.sosLevel ? t('SOS {sosLevel} · theo số môn trượt của Progress Test', { sosLevel: data.sosLevel }) : null]]} />
       </div>
     </KhungPanel>
   );

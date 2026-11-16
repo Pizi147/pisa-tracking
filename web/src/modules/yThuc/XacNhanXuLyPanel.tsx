@@ -440,7 +440,15 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
               <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(e) => setMoTa(e.target.value)}
                 placeholder={cheDo === 'xu-ly' ? t('Ghi việc đã làm, vd đã nhắc em trước lớp, đã báo PH') : undefined} />
             </Truong>
-            <span className={`justify-self-end text-xs tabular-nums ${moTa.trim().length > MO_TA_TOI_DA ? 'font-semibold text-bad' : 'text-slate-500'}`} aria-live="polite">{moTa.trim().length} / {MO_TA_TOI_DA}</span>
+            <span className="flex items-center gap-2">
+              {/* AUDIT-1611 B3-06: "Chèn" (cùng kiểu bàn giao, lời 47–48) — điền bậc + các vi phạm đang chọn vào ô, sửa được; không điền sẵn (NT-SUA P1-3 giữ). */}
+              {cheDo === 'xu-ly' && chon.size > 0 && !busy && (
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={t('Chèn bậc và vi phạm vào Mô tả')}
+                  onClick={() => { const cau = [bacKe ? bacDu(dich(bacKe.nhan)) : null, [...chon].map((id) => theoId.get(id)?.ten).filter(Boolean).join(', ')].filter(Boolean).join(' · '); setMoTa(moTa.trim() ? `${moTa.trimEnd()} ${cau}` : cau); }}>
+                  {t('Chèn')}</button>
+              )}
+              <span className={`ml-auto text-xs tabular-nums ${moTa.trim().length > MO_TA_TOI_DA ? 'font-semibold text-bad' : 'text-slate-500'}`} aria-live="polite">{moTa.trim().length} / {MO_TA_TOI_DA}</span>
+            </span>
           </div>
           {/* [XM 5] / #6: bằng chứng chọn NGAY trong form — tải sau khi lưu / khi Gửi. Đề xuất loại ngoài thang: bắt buộc. */}
           <Truong nhan={t('Bằng chứng')} batBuoc={cheDo === 'de-xuat' && canTep(loai)} tuyChon={!(cheDo === 'de-xuat' && canTep(loai))} as="div" loi={lf.loiCua(loi, 'tep')}>

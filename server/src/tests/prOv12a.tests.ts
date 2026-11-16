@@ -159,10 +159,10 @@ export async function runPrOv12aTests(t: any) {
     const lop = intake.createClass(P.admin, { code: ma, branchId: MB, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' }).id as number;
     assert(xoaKetThuc.xemXoaKetThuc(QL, lop).coTheXoa === true, 'QL phải thấy Xoá lớp trống');
     for (const [ten, p] of [['GV', P.coreTeacher], ['TVV', TVV], ['CX', CX], ['QL CP', P.cpManager]] as const) {
-      assert(maLoi(() => xoaKetThuc.xoaLop(p, lop, { maLop: ma })) === 403, `${ten} xoá phải 403`);
+      assert(maLoi(() => xoaKetThuc.xoaLop(p, lop)) === 403, `${ten} xoá phải 403`);
     }
-    assert(maLoi(() => xoaKetThuc.xoaLop(QL, LOP, { maLop: 'MB FT 101' })) === 400, 'lớp có dữ liệu phải 400');
-    assert(xoaKetThuc.xoaLop(QL, lop, { maLop: ma }).ok === true && !get('SELECT 1 x FROM classes WHERE id = ?', lop), 'QL xoá lớp trống');
+    assert(maLoi(() => xoaKetThuc.xoaLop(QL, LOP)) === 400, 'lớp có dữ liệu phải 400');
+    assert(xoaKetThuc.xoaLop(QL, lop).ok === true && !get('SELECT 1 x FROM classes WHERE id = ?', lop), 'QL xoá lớp trống');
   }));
 
   // ------------------------------------------------------------------ (5) QL xoá nhiều HV

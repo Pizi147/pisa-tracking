@@ -433,7 +433,7 @@ export const manPanelTvvCx = (cx: boolean): ManHd[] => [
     id: 'p-lo-trinh', ten: 'Lộ trình mới đang mở', duong: [], panel: 'lo-trinh', the: 'buoc-tiep',
     dangO: { cau: 'Chọn lộ trình học tiếp cho em sau kỳ thi thật.' },
     khongLam: [KHONG_QL],
-    muc: [{ id: 'plt-chon', viec: 'buoc-tiep', ten: 'Chọn lộ trình mới', buoc: ['Chọn lộ trình; môn học và Target giữ, sửa được.', 'Đầu vào là kết quả thi thật gần nhất.'] }],
+    muc: [{ id: 'plt-chon', viec: 'buoc-tiep', ten: 'Chọn lộ trình mới', buoc: ['Chọn lộ trình; môn học và Target giữ (đã đạt: gợi ý +1.0), sửa được.', 'Đầu vào là kết quả thi thật gần nhất.'] }],
   }]),
   {
     id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin', the: 'sua-hv',

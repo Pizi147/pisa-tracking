@@ -24,6 +24,8 @@ export type TrangThaiBuocTiep = {
   daGiaHan: boolean; coTheGiaHan: boolean;
   /** SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — dòng nhắc nhẹ. */
   kqDaDoi?: boolean;
+  /** N50 (12): đã đạt Target → Target gợi ý (+1.0) cho Lộ trình mới; null = giữ Target. */
+  targetGoiY?: string | null;
 };
 type Chon = HuongSauThi;
 

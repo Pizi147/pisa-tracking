@@ -1467,7 +1467,9 @@ export function suaCase(p: Principal, caseId: number, input: {
   let khoaMoi: string | null = c.dedup_key ?? null;
   if (doiKyNang) {
     if (c.origin_kind === 'mock') throw badRequest('Case từ kết quả Test — không đổi kỹ năng.');
-    if (conn.prepare('SELECT 1 FROM case_interventions WHERE case_id = ? LIMIT 1').get(caseId)) throw badRequest('Case đã có PA — không đổi kỹ năng.');
+    /* DUONG-LUI-2 (B1-07): Case đã có PA vẫn đổi được kỹ năng — PA đi theo Case (PA không mang kỹ năng riêng), hỏi một câu nêu số PA; lịch sử `topic`. */
+    const soPa = (conn.prepare('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?').get(caseId) as { n: number }).n;
+    if (soPa) canXacNhan('Case có {n} PA — PA đi theo Case sang kỹ năng mới. Đổi kỹ năng?', { n: soPa }, 'Đổi kỹ năng');
     const cycle = c.eff_cycle_id ? conn.prepare('SELECT * FROM learning_cycles WHERE id = ?').get(c.eff_cycle_id) as any : null;
     if (!(caseTopicsFor(!!cycle && isRatioCycle(cycle), ct, programmeByCode(ct)?.skills) as readonly string[]).includes(topic)) throw loi(400, 'Chủ đề không hợp lệ: {topic}', { topic });
     khoaMoi = c.parallel ? null : caseDedupKey({ category: categoryOf(topic), studentId: c.eff_student_id, cycleId: c.eff_cycle_id });
@@ -1509,6 +1511,27 @@ export function suaCase(p: Principal, caseId: number, input: {
     const ls = conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)`);
     for (const k of doi) ls.run(caseId, k, truoc[k] == null ? null : String(truoc[k]), sau[k] == null ? null : String(sau[k]), p.userId, nowIso());
     if (theoNhanXet && doiMoTa) ls.run(caseId, 'mo_ta_nguon', 'nhan_xet', 'sua_rieng', p.userId, nowIso());   // SV-NX-CASE: từ nay tách khỏi nhận xét
+    /* DUONG-LUI-2 (B1-07, rà PTA ⑩): đổi kỹ năng Case đang mở → người phụ trách theo GV kỹ năng mới ở lớp em (luật tạo Case — `suggestCaseOwner`); PA chưa
+       khép do người phụ trách cũ làm đi theo người mới. Lịch sử `owner_user_id` / `pa_performer` + báo người mới. Lớp chưa ai dạy kỹ năng mới (→ GVCN) / trùng người: giữ. */
+    if (doiKyNang && !daXong) {
+      const cu = (c.owner_user_id ?? null) as number | null;
+      const moi = suggestCaseOwner({ classId: c.class_id ?? null, category: categoryOf(topic) });
+      if (moi && moi !== cu) {
+        const luc = nowIso();
+        conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?').run(moi, luc, caseId);
+        ls.run(caseId, 'owner_user_id', cu === null ? null : String(cu), String(moi), p.userId, luc);
+        const soPa = cu === null ? 0 : conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ?
+            WHERE case_id = ? AND status IN ('planned', 'started') AND closed_reason IS NULL AND performer_user_id = ?`).run(moi, luc, caseId, cu).changes as number;
+        if (soPa) {
+          const ten = (id: number) => (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(id) as any)?.full_name ?? '—';
+          ls.run(caseId, 'pa_performer', ten(cu!), `${ten(cu!)} → ${ten(moi)} (đổi kỹ năng Case · ${soPa} PA)`, p.userId, luc);
+        }
+        if (moi !== p.userId) {
+          notify({ userId: moi, kind: 'case_giao', title: `Phụ trách Case ${caseTopicLabel(topic, ct)} · ${(conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name ?? ''}`,
+            entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}` });
+        }
+      }
+    }
     if (!chinh && nd.primaryCode) dongBoTrangThaiCase(caseId);
     writeAudit({ actorUserId: p.userId, action: 'case.edit', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf({ ...c, title: nd.tenGiua }),
       before: Object.fromEntries(doi.map((k) => [k, truoc[k]])), after: Object.fromEntries(doi.map((k) => [k, sau[k]])) });
@@ -2732,7 +2755,7 @@ export function caseDetail(p: Principal, caseId: number) {
         const y = theCase.find((x) => x.loai === 'xin_xoa');
         return y && y.trangThai === 'tu_choi' ? { lyDo: y.lyDoTuChoi ?? null, luc: y.xuLyLuc ?? null } : null;
       })(),
-      khoaKyNang: c.origin_kind === 'mock' || interventions.length > 0,
+      khoaKyNang: c.origin_kind === 'mock',   // B1-07: có PA vẫn đổi được (máy chủ hỏi một câu)
     },
   };
 }
@@ -4707,7 +4730,7 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   }
   if (x.quyetDinh === null && chinh.outcome === 'insufficient' && !decisionNote) throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do.');
   if (chinh.next_step === 'ask_manager' && !x.the && x.chanDoi && decisionNote !== chinh.decision_note) {
-    throw badRequest('Quản lý đã trả lời câu hỏi Xin hỗ trợ — không sửa được câu hỏi.');
+    throw badRequest('Quản lý đã trả lời câu hỏi Xin hỗ trợ — muốn hỏi thêm: gửi Xin hỗ trợ mới.');
   }
   const cu = chinh.so_buoi == null;   // OV-12h: lần ghi cũ (không số buổi) giữ như trước
   const t = chuKetQuaTuan(p, iv, x.c, vao, cu);

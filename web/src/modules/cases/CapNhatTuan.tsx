@@ -482,7 +482,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const daSua = sua ? chupSua !== gocSua : (!trungNhap && !!(outcome || progress.trim())) || ngoaiNhap;
   /* Form nằm trong panel việc / Ngăn Case: ✕ · Đóng · "‹ Công việc" là của panel ngoài — báo lên để panel hỏi trước khi bỏ chữ / Quyết định / Lý do (chỉ ở state). */
   useBaoDangSua(daSua);
-  const tieuDe = sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : lanCuoi ? t('Kết quả cuối') : tuanGhi.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
+  /* AUDIT-1611 A1-13: mở từ nút "Ghi Mini Test" → tên form cùng động từ của nút. */
+  const tieuDe = sua ? (lanCuoi ? t('Sửa kết quả cuối') : t('Sửa kết quả')) : coMiniTest || pa.miniTestHan ? t('Ghi Mini Test') : lanCuoi ? t('Kết quả cuối') : tuanGhi.replace(/\b(W\d) ([A-Z]{3})\b/g, '$1\u00a0$2');   // mã tuần không tách dòng
 
   return (
     <KhungPanel hd="ket-qua-pa" tieuDe={tieuDe} hocVien={hocVien} lop={lop} quayLai={quayLai} onDong={onClose}

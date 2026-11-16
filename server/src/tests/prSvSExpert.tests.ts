@@ -74,7 +74,7 @@ export async function runPrSvSExpertTests(t: any) {
     }
     const sai: [string, Record<string, unknown>][] = [
       ['thiếu ngày', {}], ['ngày sai', { tuan: '14/09' }], ['band 9.5', { tuan, diem: 9.5 }], ['band 6.3', { tuan, diem: 6.3 }],
-      ['điểm tuần tới', { tuan: addDays(tuan, 7), diem: 6 }], ['nhận xét 1001', { tuan, nhanXet: 'x'.repeat(1001) }],
+      ['nhận xét 1001', { tuan, nhanXet: 'x'.repeat(1001) }],   // B1-05: điểm tuần tới không còn 400 — tự dời (SSEX-14)
     ];
     for (const [ten, o] of sai) assert(maLoi(() => sex.themSEx(P.mbManager, { studentId: sid, ...o })) === 400, `${ten} → 400`);
     assert(maLoi(() => sex.themSEx(P.mbManager, { studentId: 987654, tuan })) === 404, 'không có HV → 404');
@@ -248,5 +248,22 @@ export async function runPrSvSExpertTests(t: any) {
     assert(get('SELECT cham_boi FROM s_expert WHERE id = ?', id).cham_boi === gvCp.userId, 'GV S CP chấm');
     assert(maLoi(() => sex.suaSEx(P.cpManager, id, { diem: 6 })) === 'không ném', 'QL CP nhập hộ (lớp đang học)');
     assert(maLoi(() => sex.suaSEx(P.mbManager, id, { diem: 7 })) === 403, 'QL MB (chi nhánh cũ) → 403');
+  }));
+
+  check('SSEX-14 · B1-05: điểm trước tuần của lượt (không gửi ngày mới) → máy dời lượt về tuần này (như Mock), có nhật ký `tuDoi`; GV S chấm được (không cần quyền lịch); chọn ngày tương lai kèm điểm → 400 (rà PTA ⑦)', () => thu(() => {
+    const sid = em();
+    const sau = addDays(tuan, 14);
+    const { id } = sex.themSEx(P.mbManager, { studentId: sid, ngay: addDays(sau, 2) });
+    const r = sex.suaSEx(P.sTeacher, id, { diem: 6 });
+    const d = get('SELECT tuan, ngay, diem FROM s_expert WHERE id = ?', id);
+    assert(r.tuan === tuan && d.tuan === tuan && d.ngay === null && d.diem === 6, `dời về tuần này: ${JSON.stringify({ r, d })}`);
+    const au = get(`SELECT after_json a FROM audit_logs WHERE action = 's_expert.sua' AND entity_id = ? ORDER BY id DESC LIMIT 1`, sid);
+    assert(au && JSON.parse(au.a).tuDoi === 'diem', `nhật ký tuDoi: ${JSON.stringify(au)}`);
+    /* Rà PTA ⑦: chủ động chọn ngày / tuần tương lai kèm điểm → 400 giữ ý người dùng (không ghi đè ngày); gửi lại đúng lịch đang có → vẫn tự dời. */
+    assert(maLoi(() => sex.themSEx(P.mbManager, { studentId: sid, tuan: sau, diem: 7 })) === 400, 'thêm kèm điểm tuần sau → 400');
+    const id2 = sex.themSEx(P.mbManager, { studentId: sid, ngay: addDays(sau, 1) }).id;
+    assert(maLoi(() => sex.suaSEx(P.mbManager, id2, { ngay: addDays(sau, 2), diem: 6 })) === 400 && get('SELECT ngay FROM s_expert WHERE id = ?', id2).ngay === addDays(sau, 1), 'đổi sang ngày tương lai khác kèm điểm → 400, ngày giữ');
+    const r2 = sex.suaSEx(P.mbManager, id2, { ngay: addDays(sau, 1), diem: 6 });
+    assert(r2.tuan === tuan, `gửi lại đúng ngày đang có kèm điểm → tự dời: ${JSON.stringify(r2)}`);
   }));
 }

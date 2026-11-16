@@ -8,7 +8,7 @@ export async function runPrLuotKhoiPhucTests(t: any) {
   const { check, assert, conn, P, classId, TODAY } = t;
   const attempts: any = await import('../fasttrack/attempts.ts');
   const regular: any = await import('../normal/regular.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   console.log('\nLUOT-KHOI-PHUC · khôi phục lượt Test lớp thường đã huỷ');
 
   const thu = <T>(fn: () => T): T => {
@@ -81,7 +81,7 @@ export async function runPrLuotKhoiPhucTests(t: any) {
     assert(e.status === 400 && e.msg.includes('đã có Progress Test khác'), `câu chặn: ${e.status} ${e.msg}`);
   }));
 
-  check('LKP-5 · lớp đã kết thúc → 400 "đã kết thúc"; khôi phục hai lần → lần sau 400 (không ghi lịch sử thứ hai)', () => thu(() => {
+  check('LKP-5 · lớp đã kết thúc → 409 hỏi "Mở lại lớp để khôi phục?" (B1-06), đồng ý → lớp mở lại + lượt về; khôi phục hai lần → lần sau 400 (không ghi lịch sử thứ hai)', () => thu(() => {
     const l = luotHuy();
     attempts.reopenAttempt(P.mbManager, l.id);
     xoaNho();
@@ -91,8 +91,16 @@ export async function runPrLuotKhoiPhucTests(t: any) {
     attempts.huyLuot(P.mbManager, l.id, { lyDo: 'Huỷ lại' });
     conn.prepare(`UPDATE classes SET status = 'finished' WHERE id = ?`).run(LOP);
     xoaNho();
+    /* Rà PTA ⑤: người không mở được lớp (GVCN) — câu chặn nói ai làm, không hỏi "Mở lại lớp?". */
+    const chanGv = attempts.chanKhoiPhucThuong(get('SELECT * FROM assessment_attempts WHERE id = ?', l.id), 'Progress Test', P.coreTeacher);
+    assert(/nhờ Quản lý lớp mở lại lớp/.test(chanGv ?? ''), `GVCN: ${chanGv}`);
+    assert(attempts.chanKhoiPhucThuong(get('SELECT * FROM assessment_attempts WHERE id = ?', l.id), 'Progress Test', P.mbManager) === null, 'QL: không chặn (hỏi Mở lại lớp)');
     const e = loi(() => attempts.reopenAttempt(P.mbManager, l.id));
-    assert(e.status === 400 && e.msg.includes('đã kết thúc'), `lớp kết thúc: ${e.status} ${e.msg}`);
+    assert(e.status === 409 && e.msg.includes('Mở lại lớp để khôi phục'), `lớp kết thúc: ${e.status} ${e.msg}`);
+    assert(get('SELECT status FROM classes WHERE id = ?', LOP).status === 'finished', 'chưa đồng ý thì lớp giữ kết thúc');
+    voiXacNhan(() => attempts.reopenAttempt(P.mbManager, l.id));
+    xoaNho();
+    assert(get('SELECT status FROM classes WHERE id = ?', LOP).status === 'active' && get('SELECT status FROM assessment_attempts WHERE id = ?', l.id).status !== 'cancelled', 'đồng ý → lớp mở lại, lượt về');
   }));
 
   check('LKP-6 · em đã lưu trữ / kết thúc học → 400 "bỏ lưu trữ trước"; khoiPhuc.chan cùng câu; em Tạm dừng (chưa lưu trữ) vẫn khôi phục được', () => {

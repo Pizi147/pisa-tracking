@@ -4,8 +4,9 @@
  * (giáo viên gọi API đều nhận 403, không chỉ bị ẩn nút).
  *
  *   Xoá lớp      chỉ lớp CHƯA có dữ liệu nào: chưa học viên nào từng ghi danh, chưa lượt Test / điểm, chưa vi phạm hay phương án xử lý,
- *                chưa công việc, tín hiệu, ước lượng, lộ trình tiếp theo gắn lớp, và không lớp nào học tiếp từ nó. Xoá hẳn trong MỘT
- *                giao dịch (phân công GV, kỹ năng lớp, dòng lớp) + `audit_logs`. Phải gõ lại đúng mã lớp.
+ *                chưa công việc, tín hiệu, ước lượng, lộ trình tiếp theo gắn lớp, và không lớp nào học tiếp từ nó. Xoá trong MỘT
+ *                giao dịch (phân công GV, kỹ năng lớp, dòng lớp) + `audit_logs`. DUONG-LUI-2 (B1-02, lời 32): đi qua Thùng rác 30 ngày
+ *                (Hoàn tác / Khôi phục ở Đã xoá), không bắt gõ lại mã lớp.
  *   Kết thúc lớp cho lớp đã có dữ liệu: còn học viên đang học thì CHẶN; không còn ai thì `status = 'finished'`, `finished_at` = hôm nay
  *                (cùng luật lớp tự kết thúc của PR-LT), lớp vào khu Lưu trữ (chỉ xem) + `audit_logs`.
  */
@@ -18,6 +19,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { emChuaCoLenh, huyNhieuLenh } from './lenhChuyen.ts';
 import { doiTrangThai } from '../students/trangThaiHv.ts';
 import { quetMoiNgay } from '../platform/mocHeThong.ts';
+import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 
 const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
 
@@ -29,9 +31,9 @@ const BANG_DU_LIEU: [string, string][] = [
 
 function docLop(classId: number) {
   const c = db().prepare(
-    `SELECT c.id, c.code, c.status, c.finished_at, c.is_fast_track, b.name AS branch_name
+    `SELECT c.id, c.code, c.status, c.finished_at, c.is_fast_track, c.branch_id, b.name AS branch_name
        FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?`,
-  ).get(classId) as { id: number; code: string; status: string; finished_at: string | null; is_fast_track: number; branch_name: string } | undefined;
+  ).get(classId) as { id: number; code: string; status: string; finished_at: string | null; is_fast_track: number; branch_id: number; branch_name: string } | undefined;
   if (!c) throw notFound('Không tìm thấy lớp');
   return c;
 }
@@ -97,31 +99,32 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
   };
 }
 
-/** POST /classes/:id/xoa { maLop } — xoá hẳn lớp còn trống. Quản lý của lớp hoặc Quản trị (OV-12a). */
-export function xoaLop(p: Principal, classId: number, input: { maLop?: unknown }) {
+/** POST /classes/:id/xoa — xoá lớp còn trống vào Thùng rác (trả `thungRacId` để Hoàn tác). Quản lý của lớp hoặc Quản trị (OV-12a). */
+export function xoaLop(p: Principal, classId: number) {
   require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới xoá được lớp.');
   const c = docLop(classId);
   const t = tinhTrangLop(classId);
   if (t.coDuLieu) throw badRequest('Lớp đã có dữ liệu — dùng Kết thúc lớp.');
-  if (String(input.maLop ?? '').trim() !== c.code) throw badRequest('Gõ lại đúng mã lớp để xác nhận xoá.');
   const conn = db();
-  tx(() => {
+  return tx(() => {
+    const chup = new BoChup(conn);
     /* PR-B: việc bàn giao đổi GV của lớp trống (trỏ `doi_phan_cong`) — xoá trước. */
-    conn.prepare('DELETE FROM ban_giao_gv_em WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)').run(classId);
-    conn.prepare('DELETE FROM ban_giao_gv_mon WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)').run(classId);
-    conn.prepare('DELETE FROM ban_giao_gv WHERE class_id = ?').run(classId);
-    conn.prepare('DELETE FROM doi_phan_cong WHERE class_id = ?').run(classId);   // PC-GV-A: lịch / lần đổi phân công của lớp trống
-    conn.prepare('DELETE FROM teacher_assignments WHERE class_id = ?').run(classId);
-    conn.prepare('DELETE FROM class_skills WHERE class_id = ?').run(classId);
-    conn.prepare('DELETE FROM ghi_chu_lich_thi WHERE class_id = ?').run(classId);   // OV-15c: ghi chú lớp của lớp trống
-    conn.prepare('DELETE FROM bao_cao_ph_dot WHERE class_id = ?').run(classId);   // BC-DOT-QL: đợt báo cáo PH bỏ / thêm của lớp trống (cấu hình)
-    conn.prepare('DELETE FROM classes WHERE id = ?').run(classId);
+    chup.chay('DELETE FROM ban_giao_gv_em WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)', classId);
+    chup.chay('DELETE FROM ban_giao_gv_mon WHERE ban_giao_id IN (SELECT id FROM ban_giao_gv WHERE class_id = ?)', classId);
+    chup.chay('DELETE FROM ban_giao_gv WHERE class_id = ?', classId);
+    chup.chay('DELETE FROM doi_phan_cong WHERE class_id = ?', classId);   // PC-GV-A: lịch / lần đổi phân công của lớp trống
+    chup.chay('DELETE FROM teacher_assignments WHERE class_id = ?', classId);
+    chup.chay('DELETE FROM class_skills WHERE class_id = ?', classId);
+    chup.chay('DELETE FROM ghi_chu_lich_thi WHERE class_id = ?', classId);   // OV-15c: ghi chú lớp của lớp trống
+    chup.chay('DELETE FROM bao_cao_ph_dot WHERE class_id = ?', classId);   // BC-DOT-QL: đợt báo cáo PH bỏ / thêm của lớp trống (cấu hình)
+    chup.chay('DELETE FROM classes WHERE id = ?', classId);
+    const thungRacId = ghiThungRac(conn, { loai: 'lop', doiTuongId: classId, nhan: `${c.code} · ${c.branch_name}`, branchId: c.branch_id, nguoi: p.userId, chup });
     writeAudit({
       actorUserId: p.userId, action: 'class.delete', entityType: 'class', entityId: classId, entityLabel: c.code,
-      before: { code: c.code, branch: c.branch_name, status: c.status }, after: null,
+      before: { code: c.code, branch: c.branch_name, status: c.status }, after: { thungRacId },
     });
+    return { ok: true, ma: c.code, thungRacId };
   });
-  return { ok: true, ma: c.code };
 }
 
 /**

@@ -246,18 +246,18 @@ export function luuKhai(p: Principal, hv: { student_code: string }, studentId: n
 }
 
 /**
- * OV-7a: GVCN (người khai) sửa bậc đã khai khi chuỗi chưa có lần xử lý; Quản lý (`request.approve` trong phạm vi em) sửa cả sau khi đã có lần xử lý
- * trên web — bậc / thang tính lại từ bậc mới (`bacHienTai` = max bậc lần xử lý, bậc khai).
+ * OV-7a + N50 (8) (chủ SP 16/11): GVCN / Quản lý sửa bậc đã khai mọi lúc, kể cả sau khi đã có lần xử lý trên web — bậc / thang tính lại từ bậc mới
+ * (`bacHienTai` = max bậc lần xử lý, bậc khai). Lịch sử: nhật ký `discipline.declare_level_edit` (trước → sau).
  */
 export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const hv = hocVien(studentId);
   const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId });
   if (!ql) requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
-  return luuSuaKhai(p, hv, studentId, kiemKhai(v), ql, demoToday());
+  return luuSuaKhai(p, hv, studentId, kiemKhai(v), demoToday());
 }
 
-/** Phần GHI của Sửa cấp bậc (đã kiểm quyền; `ql` = người sửa là Quản lý trong phạm vi em) — OV-13d lô gọi thẳng. */
-export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, ql: boolean, homNay: string,
+/** Phần GHI của Sửa cấp bậc (đã kiểm quyền) — OV-13d lô gọi thẳng. */
+export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId: number, k: ReturnType<typeof kiemKhai>, homNay: string,
   /** KHAI-BAC-LO Hoàn tác: `bacCu` = bậc phải còn nguyên (so TRONG giao dịch — lần sửa xen giữa không bị đè); `hoanTac` ghi nhật ký loại hoàn tác. */
   o: { bacCu?: number; hoanTac?: (em: EmYThuc) => void } = {}) {
   const { bac, thang, ghiChu } = k;
@@ -266,7 +266,6 @@ export function luuSuaKhai(p: Principal, hv: { student_code: string }, studentId
     if (!em.khai) throw badRequest('Chuỗi này chưa xác nhận cấp bậc vi phạm.');
     if (o.bacCu !== undefined && em.khai.bac !== o.bacCu) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
     o.hoanTac?.(em);
-    if (!ql && em.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
     db().prepare(`UPDATE y_thuc_khai_bac SET bac = ?, thang = ?, ghi_chu = ?, sua_boi = ?, sua_luc = ? WHERE student_id = ? AND chuoi_cycle_id = ?`)
       .run(bac, thang, ghiChu, p.userId, homNay, studentId, em.khai.cycleId);
     writeAudit({ actorUserId: p.userId, action: o.hoanTac ? 'discipline.declare_level_undo' : 'discipline.declare_level_edit', entityType: 'student', entityId: studentId,
@@ -568,7 +567,8 @@ export const HOAN_TAC_KHONG_XU_LY_MS = 60_000;
 
 /**
  * GVCN (hoặc QL) "Không xử lý" một vi phạm ĐƯỢC YÊU CẦU, lý do ≥ 8 ký tự → việc `yt_xu_ly` do yêu cầu xong; người ghi nhận MỘT tin (lời 48: báo lại là xong).
- * Vi phạm GIỮ, vẫn đếm luật 3 / 2 tuần; Xác nhận xử lý sau vẫn được. Em đang đủ 3 vi phạm / 2 tuần (bắt buộc theo luật) → 400, không đổi gì.
+ * Vi phạm GIỮ, vẫn đếm luật 3 / 2 tuần; Xác nhận xử lý sau vẫn được. Em đang đủ 3 vi phạm / 2 tuần (bắt buộc theo luật): GVCN → 400, không đổi gì;
+ * N50 (5) (chủ SP 16/11, B1-12): Quản lý vượt được sau một câu hỏi nêu luật — như Ghi nhận (RKC-3a), nhật ký ghi `vuotLuat`.
  * Tính là phản hồi (`phan_hoi_ngay`) cho Phân tích "Xử lý vi phạm đúng hạn". Lịch sử: `violation_history` + nhật ký.
  */
 export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown }): { ok: true; violation: ViolationView } {
@@ -579,17 +579,23 @@ export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown
   if (lyDo.length < CHU_TOI_THIEU) throw badRequest(`Lý do không xử lý: ít nhất ${CHU_TOI_THIEU} ký tự (gửi cho người ghi vi phạm).`);
   const lyDoLuu = chuTuDo(lyDo, 'Lý do', 500)!;
   /* Rà #1735 P2: vi phạm đang bắt buộc THEO LUẬT 3 (không chỉ vì yêu cầu) → chặn trước khi ghi, trạng thái đã nạp. */
-  if (em0.batBuocLuat.has(r.id)) throw badRequest('Em đang có 3 vi phạm trong 2 tuần — phải Xác nhận xử lý theo luật, không ghi "Không xử lý" được.');
+  const vuotLuat = em0.batBuocLuat.has(r.id);
+  if (vuotLuat) {
+    if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: r.student_id })) {
+      throw badRequest('Em đang có 3 vi phạm trong 2 tuần — phải Xác nhận xử lý theo luật, không ghi "Không xử lý" được (Quản lý vượt được).');
+    }
+    canXacNhan('Em đang có 3 vi phạm trong 2 tuần — vẫn "Không xử lý" (bỏ qua luật xử lý)?', undefined, 'Vẫn không xử lý');
+  }
   const hv = hocVien(r.student_id);
   const luc = nowIso();
   tx(() => {
-    db().prepare('UPDATE violations SET khong_xu_ly_luc = ?, khong_xu_ly_boi = ?, khong_xu_ly_ly_do = ? WHERE id = ?').run(luc, p.userId, lyDoLuu, r.id);
+    db().prepare('UPDATE violations SET khong_xu_ly_luc = ?, khong_xu_ly_boi = ?, khong_xu_ly_ly_do = ?, khong_xu_ly_vuot = ? WHERE id = ?').run(luc, p.userId, lyDoLuu, vuotLuat ? 1 : 0, r.id);
     ghiPhanHoi([r.id]);
     xoaNho();
     chotHanXuLy([r.student_id]);
     addHistory(r.id, 'khong_xu_ly', null, lyDoLuu, p.userId, lyDoLuu);
     writeAudit({ actorUserId: p.userId, action: 'violation.khong_xu_ly', entityType: 'violation', entityId: r.id,
-      entityLabel: `${hv.student_code} · Không xử lý`, after: { lyDo: lyDoLuu } });
+      entityLabel: `${hv.student_code} · Không xử lý`, after: { lyDo: lyDoLuu, ...(vuotLuat ? { vuotLuat: true } : {}) } });
     if (r.reported_by !== p.userId) {
       const ten = r.ten || (VIOLATION_CATEGORY_LABEL[r.category as ViolationCategory] ?? r.category);
       notify({ userId: r.reported_by, kind: 'discipline_de_biet', title: `Không xử lý vi phạm · ${hv.full_name} · ${ten} · ${p.fullName}`, body: lyDoLuu.slice(0, 120),
@@ -609,7 +615,7 @@ export function hoanTacKhongXuLy(p: Principal, violationId: number): { ok: true;
   }
   const hv = hocVien(r.student_id);
   tx(() => {
-    db().prepare('UPDATE violations SET khong_xu_ly_luc = NULL, khong_xu_ly_boi = NULL, khong_xu_ly_ly_do = NULL WHERE id = ?').run(r.id);
+    db().prepare('UPDATE violations SET khong_xu_ly_luc = NULL, khong_xu_ly_boi = NULL, khong_xu_ly_ly_do = NULL, khong_xu_ly_vuot = 0 WHERE id = ?').run(r.id);
     /* Phản hồi do chính "Không xử lý" ghi (vi phạm chưa nằm trong lần xử lý nào) → bỏ, để Phân tích đo lại theo lần phản hồi thật. */
     db().prepare(`UPDATE violations SET phan_hoi_ngay = NULL WHERE id = ? AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = violations.id)`).run(r.id);
     xoaNho();
