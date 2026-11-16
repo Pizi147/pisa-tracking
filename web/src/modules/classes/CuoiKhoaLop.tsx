@@ -590,9 +590,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* ------------------------------------------------------------------ đầu, công cụ, chân */
   const quaHan = laQl && moc && daChot < ds.length && h > moc.hanChot ? daysBetween(moc.hanChot, h) : 0;
   const chipHan = laQl && moc && daChot < ds.length && (
-    quaHan ? <Nhan tone="late">{t('Quá hạn {n} ngày · hạn {ngay}', { n: quaHan, ngay: thuNgay(moc.hanChot, h) })}</Nhan>
+    quaHan ? <Nhan tone="late">{t('Quá hạn {n} ngày · hạn {ngay}', { n: quaHan, ngay: shortDate(moc.hanChot, h) })}</Nhan>
       : h === moc.hanChot ? <Nhan tone="soon">{t('Hạn hôm nay')}</Nhan>
-        : h >= moc.nhacTu ? <Nhan tone="muted">{t('hạn {ngay}', { ngay: thuNgay(moc.hanChot, h) })}</Nhan> : null);
+        : h >= moc.nhacTu ? <Nhan tone="muted">{t('hạn {ngay}', { ngay: shortDate(moc.hanChot, h) })}</Nhan> : null);
   const nxDoi = ds.filter((e) => nhanXet[e.id] !== undefined && (nhanXet[e.id].trim() || null) !== (e.nhanXet ?? null)).length;
 
   const tomTat = (() => {

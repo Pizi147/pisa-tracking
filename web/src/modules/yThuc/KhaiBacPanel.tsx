@@ -20,7 +20,7 @@ const tenBac = (b: number) => BAC_KHAI[b] ?? '';
 /**
  * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web.
  * Sửa (`sua`, OV-7a + N50 câu 8): GVCN / QL sửa mọi lúc, có lịch sử (máy chủ quyết — `canSuaKhai`). Bậc kế tiếp của em đi tiếp từ bậc khai.
- * DUONG-LUI-2 (A1-21): tiêu đề = tên mục "Khai / sửa cấp bậc"; đầu panel theo khuôn chung (dòng loại · tên em · thang); chip bậc viết đủ (lời 36).
+ * DUONG-LUI-2 (A1-21): tiêu đề như panel cả lớp "Khai / sửa cấp bậc vi phạm"; đầu panel theo khuôn chung (dòng loại · tên em · thang); chip bậc viết đủ (lời 36).
  */
 export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }: {
   studentId: number | null; sua?: boolean; onClose: () => void; onDone?: () => void;
@@ -43,7 +43,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   }, [studentId, sua, d?.khai?.bac]);
 
   if (!studentId) return null;
-  const tieuDe = t('Khai / sửa cấp bậc');
+  const tieuDe = t('Khai / sửa cấp bậc vi phạm');   // AUDIT-1611 A1-21: tên panel = tên mục "Khai / sửa cấp bậc" (như panel cả lớp)
   if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 

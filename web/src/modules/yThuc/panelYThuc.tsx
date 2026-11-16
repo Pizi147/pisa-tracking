@@ -26,7 +26,7 @@ export type PanelYThuc =
  * `KhaiBacPanel` · `DaThucHienPanel` · `XemXuLyPanel` (chỉ đọc). Xoá vi phạm: xoá thẳng + Hoàn tác (`xoaViPham`, B1-10).
  */
 export function usePanelYThuc({ onDone, roster, maLop }: {
-  onDone: () => void;
+  onDone: (x?: { ids: number[]; chiNhac: boolean }) => void;
   /** Mã lớp hiện ở đầu các ngăn (`Ghi vi phạm · Tên HV · MB FOU 12`). */
   maLop?: string | null;
   /** Mở `+ Vi phạm / Nhắc nhở` từ trang lớp: cho chọn học viên ngay trong form (không chọn sẵn). */
@@ -36,7 +36,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
   const toast = useToast();
   const mo = (p: PanelYThuc) => setPanel(p);
   const dong = () => setPanel(null);
-  const xong = () => { dong(); onDone(); };
+  const xong = (x?: { ids: number[]; chiNhac: boolean }) => { dong(); onDone(x); };
 
   const panels = (
     <>

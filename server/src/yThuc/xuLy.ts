@@ -18,7 +18,7 @@ import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
-  type MeasureKind, type TheYeuCauDto, type ViolationCategory,
+  CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -35,7 +35,7 @@ import { tinhHinhCuaEm, type TinhHinhView } from './tinhHinh.ts';
 import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Quản lý trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
-export const MO_TA_MIN = 10;
+export const MO_TA_MIN = CHU_TOI_THIEU;   // N50 (6)
 export const MO_TA_TOI_DA = 300;
 
 const duongXuLy = (sid: number) => `${duongHoSoHocVien(sid, { tab: 'y-thuc' })}&mo=xu-ly`;
@@ -576,7 +576,7 @@ export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown
   if (!r.yeu_cau_xu_ly) throw badRequest('Vi phạm này không có yêu cầu xử lý.');
   if (r.khong_xu_ly_luc) throw conflict('Vi phạm này đã ghi "Không xử lý" — mở lại panel.');
   const lyDo = String(v.lyDo ?? '').trim();
-  if (lyDo.length < 8) throw badRequest('Lý do không xử lý: ít nhất 8 ký tự (gửi cho người ghi vi phạm).');
+  if (lyDo.length < CHU_TOI_THIEU) throw badRequest(`Lý do không xử lý: ít nhất ${CHU_TOI_THIEU} ký tự (gửi cho người ghi vi phạm).`);
   const lyDoLuu = chuTuDo(lyDo, 'Lý do', 500)!;
   /* Rà #1735 P2: vi phạm đang bắt buộc THEO LUẬT 3 (không chỉ vì yêu cầu) → chặn trước khi ghi, trạng thái đã nạp. */
   const vuotLuat = em0.batBuocLuat.has(r.id);

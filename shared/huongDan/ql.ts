@@ -575,10 +575,10 @@ export const HD_QL: HuongDan = {
       khongLam: [DEN_KH, { ten: 'Tạo, sửa, xoá tài khoản', cua: 'việc của Quản trị' }],
       muc: [
         /* AUDIT-UI B6 (chủ SP 08/11): Hộp duyệt = tab "Chờ bạn duyệt" có hàng lọc — trang Chờ duyệt riêng đã bỏ. */
-        { id: 'ql-cd-loc', viec: 'duyet', ten: 'Lọc yêu cầu chờ duyệt', buoc: ['Tab <b>Chờ bạn duyệt</b>, hàng lọc: <b>Tất cả · Học thuật · Ý thức · Dời lịch Test · Thông tin HV</b> · <b>Báo QL</b> (để biết) · <b>Đã xử lý · 30 ngày</b> · <b>Lớp ▾</b>.',
+        { id: 'ql-cd-loc', viec: 'duyet', ten: 'Lọc yêu cầu chờ duyệt', buoc: ['Tab <b>Chờ bạn duyệt</b>, hàng lọc: <b>Tất cả · Học thuật · Ý thức · Thông tin HV</b> · <b>Báo QL</b> (để biết) · <b>Đã xử lý · 30 ngày</b> · <b>Lớp ▾</b>.',
           '<b>Duyệt</b> / <b>Duyệt…</b> · <b>Từ chối…</b> (lý do bắt buộc) · <b>Mở</b>; <b>Xin ý kiến</b>: <b>Trả lời…</b> hoặc <b>+ Thêm PA</b>.', 'Đã xử lý: bấm dòng › <b>Huỷ quyết định</b> · <b>Sửa trả lời…</b>.'],
           chi: { hd: 'cd-loc', duong: DUYET, chu: 'Chọn loại yêu cầu, Báo QL, Đã xử lý ở đây.' } },
-        { id: 'ql-cd-nhieu', ten: 'Duyệt nhiều', buoc: ['Đề xuất PA, Dời lịch Test lần 2: đánh dấu ô ở thẻ cùng loại.', '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.'] },
+        { id: 'ql-cd-nhieu', ten: 'Duyệt nhiều', buoc: ['Đề xuất PA: đánh dấu ô ở các thẻ cùng loại.', '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.'] },
         { id: 'ql-cv-cua-gv', ten: 'Việc của GV', buoc: ['<b>Của tôi · Của GV · Tất cả</b>; một GV: <b>Lọc thêm</b>.', 'Tab <b>Việc quản lý</b> (cuối) có <b>+ Giao việc</b>, <b>Vận hành ›</b>, <b>Họp đơn vị ›</b>.'],
           chi: { hd: 'cv-loc-them', duong: CV, chu: 'Chọn việc của ai, lọc quá hạn ở đây.' } },
         { id: 'cv-nhap-ho', viec: 'nhap-ho', ten: 'Nhập hộ bài quá hạn', buoc: ['Chọn <b>Của GV</b>, tab <b>Chấm điểm</b>: dòng quá hạn tô đỏ.', 'Bấm <b>Nhập hộ</b>, gõ điểm; em vắng gõ <b>-</b>.'] },
@@ -749,7 +749,7 @@ export const HD_QL: HuongDan = {
   ],
   luat: [
     ...luatGv('han-cham', 'han-xac-nhan', 'han-ket-qua', 'han-vi-pham', 'dau-gach', 'sos-case', 'nhan-xet'),
-    { id: 'ql-han-duyet', ten: 'Hạn trả lời thẻ', buoc: ['Hạn lấy từ Cấu hình hệ thống › <b>Hạn mặc định</b> ({han:ql_duyet_pa}, tính cả ngày gửi): đề xuất PA, xin ý kiến, sửa thông tin, Ý thức, thu hồi xử lý Ý thức, xin xoá, không cần theo dõi, đề xuất chuyển lớp. Dời lịch Test lần 2: không hạn.', 'Thẻ <b>PA khác quy chế</b>: {han:giu_pa_gv}; quá hạn máy chốt theo PA của GV. Ý thức, thu hồi quá hạn: máy chốt theo GVCN; loại khác vẫn chờ.', '<b>Báo QL</b>: không hạn, tự đóng khi việc gốc xong.'] },
+    { id: 'ql-han-duyet', ten: 'Hạn trả lời thẻ', buoc: ['Hạn lấy từ Cấu hình hệ thống › <b>Hạn mặc định</b> ({han:ql_duyet_pa}, tính cả ngày gửi): đề xuất PA, xin ý kiến, sửa thông tin, Ý thức, thu hồi xử lý Ý thức, xin xoá, không cần theo dõi, đề xuất chuyển lớp.', 'Thẻ <b>PA khác quy chế</b>: {han:giu_pa_gv}; quá hạn máy chốt theo PA của GV. Ý thức, thu hồi quá hạn: máy chốt theo GVCN; loại khác vẫn chờ.', '<b>Báo QL</b>: không hạn, tự đóng khi việc gốc xong.'] },
     { id: 'ql-tu-choi', ten: 'Từ chối', buoc: ['Lý do bắt buộc; người gửi đọc được.', 'Từ chối đề xuất PA: việc cũ của GV quay lại kèm lý do.', 'Từ chối Ý thức: vi phạm về <b>Cần làm</b>, bậc giữ nguyên.'] },
     { id: 'ql-de-xuat-pa', ten: 'Đề xuất PA khác', buoc: ['GV gửi khi Xác nhận PA hoặc khi PA đang chạy; Case "Chờ duyệt đổi PA".', 'Duyệt: PA mới chạy từ ngày duyệt.', '<b>Xin ý kiến</b>: chỉ trả lời, PA vẫn chạy; câu trả lời ghi vào lịch sử em.'] },
     { id: 'ql-tu-duyet', ten: 'QL tự gửi', buoc: ['Thẻ bạn tự gửi: "Bạn tự gửi · tự duyệt được".', 'Có nhật ký, báo Quản trị.'] },

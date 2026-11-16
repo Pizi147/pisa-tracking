@@ -81,7 +81,10 @@ export function HoSoGiaoVienPage() {
   const [tabUrl, setTab] = useThamSoUrl('tab', 'lop');
   const tab: TabHs = tabUrl === 'hoc-thuat' || tabUrl === 'viec' ? tabUrl : 'lop';
   const kyLoi = tu > den ? t('Tuần đầu phải trước tuần cuối.') : null;
-  const ky = `tu=${tu}&den=${den}`;
+  /* AUDIT-1611 P1-05: `ct` từ Tổng quan / Phân tích GV — dải Việc · Chấm chỉ lớp khung đó (= dòng bảng GV vừa bấm); chip ✕ bỏ lọc. */
+  const [ctUrl, setCt] = useThamSoUrl('ct', '');
+  const ct = ctUrl === 'ft' || ctUrl === 'thuong' ? ctUrl : '';
+  const ky = `tu=${tu}&den=${den}${ct ? `&ct=${ct}` : ''}`;
   const cs = useApi<ChiSoHoSoGv>(id && !kyLoi ? `/giao-vien/${id}/chi-so?${ky}` : null, [id, ky]);
   const viec = useApi<{ viec: NhomSo[] }>(`/giao-vien/${id}/viec`, [id]);
   /* XM-5: lớp chủ nhiệm + dòng phụ "Test kế tiếp" chỉ khi xem hồ sơ của chính mình (đường chỉ đọc phân công người gọi — QL xem không thêm câu đọc). */
@@ -115,6 +118,11 @@ export function HoSoGiaoVienPage() {
               <span aria-hidden className="text-slate-400 sm:hidden">–</span>
               <span className="w-[8.75rem]"><ONgay kieu="tuan" gon value={den} ariaLabel={t('Đến tuần')} onChange={(v) => v && setDen(mondayOfDate(v))} invalid={!!kyLoi} /></span>
             </span>
+            {ct && (
+              <button type="button" className="nut-loc" aria-pressed onClick={() => setCt('')} title={t('Bỏ lọc chương trình')}>
+                {ct === 'ft' ? 'Fast Track' : t('Lớp thường')} <span aria-hidden>✕</span>
+              </button>
+            )}
             <NutLuat label={t('Kỳ xem')} phai>
               {t('Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. % đúng hạn · Chưa làm: việc / bài Test có hạn trong kỳ (bấm % xem Đúng hạn · Làm muộn · Chưa làm). Tab Học thuật cũng theo kỳ.')}
               {!gv.laChinhMinh && data.phamVi.chiNhanh && <> {t('Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}', { cn: data.phamVi.chiNhanh.join(', ') })}.</>}

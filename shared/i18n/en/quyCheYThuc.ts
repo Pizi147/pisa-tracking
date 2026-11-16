@@ -2,10 +2,10 @@
 import type { Dich } from '../en.ts';
 
 export const EN_QUY_CHE_YTHUC = {
-  'TVV báo PH trong 5 ngày · kết quả về chuông của bạn': 'Counsellor informs parents within 5 days · result comes to your bell',
-  'GVCN trả lời trong 3 ngày · kết quả về chuông của bạn': 'Homeroom replies within 3 days · result comes to your bell',
-  'Hạn {han} (3 ngày) · lưu xong TVV nhận chuông': (b) => `Due ${b.han} (3 days) · once saved the counsellor is notified`,
-  'Trả lời trong 3 ngày · lưu xong TVV nhận chuông': 'Reply within 3 days · once saved the counsellor is notified',
+  'TVV báo PH trong {han:bao_ph_vi_pham} · kết quả về chuông của bạn': 'Counsellor informs parents within {han:bao_ph_vi_pham} · result comes to your bell',
+  'GVCN trả lời trong {hang:tinh_hinh} · kết quả về chuông của bạn': 'Homeroom replies within {hang:tinh_hinh} · result comes to your bell',
+  'Hạn {han} ({hang:tinh_hinh}) · lưu xong TVV nhận chuông': (b) => `Due ${b.han} ({hang:tinh_hinh}) · once saved the counsellor is notified`,
+  'Trả lời trong {hang:tinh_hinh} · lưu xong TVV nhận chuông': 'Reply within {hang:tinh_hinh} · once saved the counsellor is notified',
   'Đã xem vẫn đếm · đủ 3 trong 2 tuần thì phải xử lý': 'Seen still counts · 3 within 2 weeks must be handled',
   'Nâng 1 bậc: xong ngay · TVV {tvv} báo PH, hạn {han}': (b) => `Up 1 level: done now · counsellor ${b.tvv} informs parents, due ${b.han}`,
   'Nâng 1 bậc: xong ngay · TVV báo PH, hạn {han}': (b) => `Up 1 level: done now · counsellor informs parents, due ${b.han}`,
@@ -26,8 +26,8 @@ export const EN_QUY_CHE_YTHUC = {
   'Meeting: hạn {han} · xác nhận xong TVV nhận việc báo PH': (b) => `Meeting: due ${b.han} · once confirmed the counsellor gets the parent task`,
   'Meeting: xác nhận xong TVV nhận việc báo PH': 'Meeting: once confirmed the counsellor gets the parent task',
   'Ghi ngày làm + nội dung · em rời dòng': 'Record date + content · student leaves the list',
-  'Hạn {han} (5 ngày từ ngày GVCN xác nhận) · GV đọc được nội dung': (b) => `Due ${b.han} (5 days from homeroom confirmation) · teachers can read it`,
-  'Hạn 5 ngày từ ngày GVCN xác nhận · GV đọc được nội dung': 'Due 5 days from homeroom confirmation · teachers can read it',
+  'Hạn {han} ({han:bao_ph_vi_pham} từ ngày GVCN xác nhận) · GV đọc được nội dung': (b) => `Due ${b.han} ({han:bao_ph_vi_pham} from homeroom confirmation) · teachers can read it`,
+  'Hạn {han:bao_ph_vi_pham} từ ngày GVCN xác nhận · GV đọc được nội dung': 'Due {han:bao_ph_vi_pham} from homeroom confirmation · teachers can read it',
   'Không hạn · đánh dấu khi đã báo PH': 'No due date · mark once parents are informed',
   'Chưa liên hệ được: việc còn mở · thử lại trước {han}': (b) => `Not reached: task stays open · try again before ${b.han}`,
   'Chưa liên hệ được: việc còn mở, hạn giữ': 'Not reached: task stays open, due date kept',

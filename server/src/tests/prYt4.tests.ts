@@ -490,11 +490,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(l.status === 409 && /Bậc đã đổi/.test(l.msg), `${l.status} ${l.msg}`);
     assert((conn.prepare('SELECT COUNT(*) n FROM discipline_measures WHERE student_id = ?').get(sid) as any).n === truoc, 'không ghi');
   });
-  check('YT4 (4) · Kiểm dữ liệu: mô tả < 10 ký tự, ngày tương lai, không chọn vi phạm, vi phạm em khác, vi phạm đã xử lý → 400', () => {
+  check('YT4 (4) · Kiểm dữ liệu: mô tả < 8 ký tự (N50-6), ngày tương lai, không chọn vi phạm, vi phạm em khác, vi phạm đã xử lý → 400', () => {
     const sid = hv(); const khac = hv();
     const v = ghiVp(gvbm, sid); const vk = ghiVp(gvbm, khac);
     for (const [ten, extra, re] of [
-      ['mô tả ngắn', { note: 'ngắn' }, /ít nhất 10 ký tự/], ['ngày tương lai', { performedOn: addDays(TODAY, 1) }, /tương lai/],
+      ['mô tả ngắn', { note: 'ngắn' }, /ít nhất 8 ký tự/], ['ngày tương lai', { performedOn: addDays(TODAY, 1) }, /tương lai/],
       ['không vi phạm', { violationIds: [] }, /ít nhất một vi phạm/], ['em khác', { violationIds: [vk] }, /không thuộc học viên này/],
     ] as const) {
       const l = loiCua(() => xuLy.xacNhanXuLy(gvcn, sid, { ...{ violationIds: [v], performedOn: TODAY, note: 'Đã trao đổi với em và gia đình' }, ...(extra as Record<string, unknown>) }));

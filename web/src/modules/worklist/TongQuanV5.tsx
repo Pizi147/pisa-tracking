@@ -16,7 +16,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
-import { rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
+import { duongHoSoGv, rateView, thamSoCt, tuanLich, type ChuongTrinh, type PhanTichGvKq, type OPtGv, type TheYeuCauDto } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -349,7 +349,8 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
       if (c.key === 'tre') return treSc ? <OSo giaTri={treSc} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: t('S chéo chung') })} nguon={nguonTre(ID_S_CHUNG)} gvTre={GV_TRE_QL} /> : GACH;
       return GACH;
     }
-    if (c.key === 'gv') return <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>;
+    /* AUDIT-1611 P1-05: hồ sơ GV mở đúng kỳ của Tổng quan (số % = số dòng này). */
+    if (c.key === 'gv') return <Link to={duongHoSoGv(h.id, d.ky, d.ct)} className="ten-ho-so font-semibold">{h.ten}</Link>;
     if (c.key === 'tre') {
       const n = tre.get(h.id) ?? 0;
       return n ? <OSo giaTri={n} className="text-bad" tieuDe={t('Chấm quá hạn · {ten}', { ten: h.ten })} nguon={nguonTre(h.id)} gvTre={GV_TRE_QL} /> : <span className="tabular-nums text-faint">0</span>;
@@ -622,7 +623,7 @@ export function DaiChiSoTvv({ chiSo, em }: { chiSo: ChiSoTvv | undefined; em: re
       </ODai>
       <ODai nhan={t('Thi tháng này')} luat={LUAT_THI}>{chiSo ? <SoDenDai n={chiSo.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" /> : <SoTinh n="…" />}</ODai>
       <ODai nhan={t('Chờ KQ')} title={t('Chờ KQ thi thật')}>{em ? <SoDenDai n={choKq} to={den('da-thi')} /> : <SoTinh n="…" />}</ODai>
-      <ODai nhan={<><span className="max-sm:hidden">{t('Chưa chốt lộ trình tiếp')}</span><span className="sm:hidden">{t('Chưa chốt')}</span></>} title={t('Chưa chốt lộ trình tiếp')}>
+      <ODai nhan={<><span className="max-sm:hidden">{t('Chưa chốt lộ trình tiếp')}</span><span className="sm:hidden">{t('Chưa chốt bước tiếp')}</span></>} title={t('Chưa chốt lộ trình tiếp')}>
         {em ? <SoDenDai n={buoc} to={den('cho-buoc-tiep')} /> : <SoTinh n="…" />}
       </ODai>
     </DaiChiSoMong>
