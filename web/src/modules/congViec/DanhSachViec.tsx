@@ -302,7 +302,9 @@ export const tenViec = (vi: string) => bacNgan(vi.split(' · ').map((x) => dich(
  * AUDIT-UI B4 (CV1, chủ SP 08/11): ở DANH SÁCH, tên dòng = đối tượng ("Nhập điểm Listening, Reading" → "Listening, Reading") — động từ đã ở tên mục và ở nút.
  * Chỉ loại việc mà tên mục nói đúng động từ đó (Chấm điểm › Mock Test…, Phương án › Thêm PA, Mô tả Case, Kết quả PA). Panel, "Tiếp: …" giữ tên đủ (`tenBoEm`).
  */
-const DONG_TU: Partial<Record<string, RegExp>> = { score: /^Nhập điểm /, no_plan: /^Thêm (?=PA )/, ghi_nhan_xet: /^Mô tả Case · /, ghi_ket_qua_pa: /^Ghi kết quả PA · / };
+/* AUDIT-1611 A1-13: tab Case một khuôn "Lớp · Kỹ năng · Lượt" — bỏ cả động từ của Xác nhận Case / Xác nhận PA / Chọn PA (động từ ở nút). */
+const DONG_TU: Partial<Record<string, RegExp>> = { score: /^Nhập điểm /, no_plan: /^Thêm (?=PA )/, ghi_nhan_xet: /^Mô tả Case · /, ghi_ket_qua_pa: /^Ghi kết quả PA · /,
+  cause: /^Xác nhận Case · /, xem_nx_s: /^Xác nhận Case · /, xac_nhan_pa: /^(Xác nhận|Chọn) PA · / };
 const boDongTu = (group: string, vi: string) => { const r = DONG_TU[group]; return (r && vi.replace(r, '')) || vi; };
 /* U01 #18: chip mức Case báo tay chỉ hiện "Gấp" (tông `danger`, `levelOf`) — "Bình thường" (tông `neutral`) không mang tin. */
 const chipMuc = (it: WorkItem, boSos: boolean) => (!it.level ? null : mucSosTheoNhan(it.level.text)

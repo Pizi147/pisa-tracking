@@ -14,7 +14,7 @@ import { BaoLuuCase, DaiDaXoa, GiaTriSua, gioLuu, type TtLuuCase } from '../case
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
 import { ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
-import { t } from '@shared/i18n/index.ts';
+import { dich as dichChu, t } from '@shared/i18n/index.ts';
 
 export type { ViewCase };
 
@@ -98,7 +98,12 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const vw = data.viewer;
   const canDong = data.status !== 'done';
   const em = data.student ? { id: data.student.id, ten: data.student.name } : null;
-  const tenCase = data.tenSos ? [tenNganCase(data), data.tenSos.mt ? `MT${data.tenSos.mt}` : null].filter(Boolean).join(' · ') : (data.title ?? tenNganCase(data));
+  /* AUDIT-1611 A1-04: Case lớp thường tự sinh ("[Progress Test] L không đạt [SOS 1]") → cùng khuôn "Case Listening · Progress Test" (SOS đã ở chip); tên GV tự đặt giữ nguyên. */
+  const bai = data.title ? /^\[([^\]]+)\]/.exec(data.title)?.[1] : null;
+  const tenCase = data.tenSos ? [tenNganCase(data), data.tenSos.mt ? `MT${data.tenSos.mt}` : null].filter(Boolean).join(' · ')
+    : bai ? `${tenNganCase(data)} · ${dichChu(bai)}` : (data.title ?? tenNganCase(data));
+  /* A1-04: Case còn chờ xác nhận → nút chính là "Xác nhận Case" trong thân; "Việc tiếp ›" ở chân thành nút viền. */
+  const choXn = data.trangThaiV4?.k === 'cho-nguyen-nhan' && !!vw.coTheXacNhanCase && canDong;
   const v = data.viecTiep ?? null;
   const sua = !!vw.coTheSua;   // RKC-2a: sửa tên / kỹ năng cả khi Case đã hoàn thành
   const bao: BaoThanCase = { formMo: setFormMo, daLuu: (x) => { setDaLuu(x); setLuu({ tt: 'da', luc: gioLuu() }); } };
@@ -133,7 +138,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     : luu?.tt === 'da' ? <span className="tt-luu da">✓ {t('Đã lưu')} {luu.luc}</span>
     : canDong && (vw.canEdit || vw.coTheSua) ? <span className="text-faint">{t('Tự lưu')}</span> : null;
   const nutTiep = onTiep
-    ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={() => { if (daLuu) cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
+    ? <button type="button" className={`btn ${formMo || choXn ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={() => { if (daLuu) cv?.bao(daLuu); onTiep(); }}>{t('Việc tiếp ›')}</button>
     : tiepCase?.di ? <button type="button" className={`btn ${formMo ? '' : 'btn-primary'} min-h-[44px] sm:min-h-0`} onClick={tiepCase.di}>{t('Case tiếp ›')}</button>
     : tiepCase ? <span className="text-[13px] text-slate-400">{t('Hết Case chờ trong danh sách')}</span> : null;
   const chan = trongCot ? undefined : {

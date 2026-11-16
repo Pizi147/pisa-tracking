@@ -40,6 +40,14 @@ export const VIOLATION_CATEGORY_LABEL: Record<ViolationCategory, string> = {
   classroom: t('Kỷ luật lớp học'),
   other: t('Khác'),
 };
+/** AUDIT-1611 B3-07: 2–3 câu hay dùng theo Nhóm — chip bấm là điền ô "Vi phạm" (sửa được). "Khác" không gợi ý. Chữ Việt; web dịch lúc vẽ. */
+export const GOI_Y_VI_PHAM: Record<ViolationCategory, readonly string[]> = {
+  attendance: ['Đi muộn', 'Nghỉ không phép', 'Về sớm'],
+  homework: ['Không nộp BTVN', 'Nộp thiếu BTVN', 'Nộp BTVN muộn'],
+  conduct: ['Dùng điện thoại trong giờ', 'Nói chuyện riêng', 'Thái độ chưa đúng mực'],
+  classroom: ['Không mang tài liệu', 'Làm việc riêng', 'Không tham gia hoạt động'],
+  other: [],
+};
 
 /** Đổi nhóm của dữ liệu cũ: `Tham gia trên lớp` (participation) đã bỏ, đổi sang `Thái độ / hành vi` (Y04). */
 export function legacyTopicToViolationCategory(topic: string | null | undefined): ViolationCategory {

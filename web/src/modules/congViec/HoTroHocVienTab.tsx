@@ -476,7 +476,7 @@ export function HoTroHocVienTab() {
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-slate-400">
         <span>{t('Em này còn:')}</span>
         {emNayCon.map((x) => (
-          <button key={x.key} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={() => boChuRoi(() => mo(x))}>
+          <button key={x.key} type="button" className="btn btn-sm min-h-[44px] max-w-full whitespace-normal text-left sm:min-h-[28px]" onClick={() => boChuRoi(() => mo(x))}>
             {dich(x.group === 'bao_ph_yt' && x.phu ? x.phu : x.tieuDe)}{x.due ? ` · ${t('hạn {ngan}', { ngan: shortDate(x.due, homNay) })}` : ''}
           </button>
         ))}
