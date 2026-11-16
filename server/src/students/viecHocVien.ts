@@ -10,6 +10,8 @@ import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
 import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
+import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
+import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { kem, type Bien } from '../../../shared/i18n/index.ts';
 
 /** Độ gấp của hạn (V22) — MỘT hàm cho mọi dòng việc của hồ sơ; `quaHan` ép đỏ khi nguồn đã có cờ quá hạn riêng (ô Nhập điểm). */
@@ -20,7 +22,9 @@ export type ViecHocVien = {
   /** Đúng khoá của `myWork` (Q2) — phép kiểm so hai đường theo khoá. Việc "chờ Quản lý duyệt" không có ở Công việc → khoá `cho-duyet:…`. */
   key: string;
   loai: 'nguyen-nhan' | 'de-ra-pa' | 'xac-nhan-pa' | 'ghi-ket-qua' | 'cho-duyet' | 'bao-ph' | 'mini-test' | 'y-thuc' | 'yt-xem' | 'yt-thuc-hien'
-    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep' | 'thi-that' | 'nhap-diem' | 'tinh-hinh';
+    | 'ban-giao' | 'ban-giao-mon' | 'buoc-tiep' | 'thi-that' | 'nhap-diem' | 'tinh-hinh'
+    /* P1-04 (B2-06, B2-07): cùng nhóm Công việc `phoi_hop_sos` · `phoi_hop_tvv` · `bao_ph_yt` · `bo_sung_ho_so`. */
+    | 'phoi-hop-sos' | 'phoi-hop-tvv' | 'bao-ph-yt' | 'bo-sung';
   /** "Kết quả W3–W4 SEP · PA Tăng cường bài tập Writing Task 2" — động từ đầu câu. */
   chu: string;
   /** PR-EN-c: khoá + biến của `chu` (câu có biến) — web dịch bằng `dichChu`. Câu không biến dịch theo chính `chu`. */
@@ -28,6 +32,8 @@ export type ViecHocVien = {
   /** U02 (mockup `audit-0311/u02` dòng 3): thẻ phụ dưới tên việc — "Kỳ W5 OCT – W1 NOV" · "PA Học Tutor" (chữ, tên PA giữ nguyên). */
   the?: { chu: string; khoa?: string; bien?: Bien }[];
   kyNang: string | null; caseId: number | null; paId: number | null;
+  /** P1-04: id việc Báo PH (`viec_bao_ph`) — panel Ghi báo PH của Công việc ghi đúng việc. */
+  viecId?: number;
   han: string | null; quaHanNgay: number | null;
   /** GD-7a (luật hạn V22): độ gấp để web tô màu — đỏ quá hạn · vàng gần tới hạn (≤ `HAN_GAN_NGAY`) · thường chưa tới · null không hạn. KHÔNG chuỗi ⚠. */
   gap: 'qua-han' | 'gan' | 'chua' | null;
@@ -56,6 +62,10 @@ type Nguon = {
   /** `gv` = người dạy bổ trợ có tài khoản đầu tiên của nhóm (cùng câu `myWork`), null → GVCN. */
   miniTest: { id: number; han: string | null; tyLe: number | null; nhom: string; caseId: number | null; paId: number | null; gv: number | null } | null;
   dai: DaiHocVien | null;
+  /** N46: lộ trình của bảng kỹ năng đã có KQ thi thật (`daThiThat`) — việc Case / PA của nó ẩn như Công việc (`CASE_SAU_THI_SQL`). */
+  caseSauThi?: boolean;
+  /** P1-04: TVV của em + các trường hồ sơ còn thiếu (cùng `missingForStudent` của việc "Bổ sung hồ sơ thiếu", `viecHoSoTvv`) — hồ sơ đã nạp, 0 câu. */
+  boSung?: { tvv: number | null; thieu: string[] } | null;
 };
 
 /**
@@ -91,7 +101,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay' | 'gap'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean; quaHan?: boolean };
   const ds: Nhap[] = [];
 
-  const cases = board.rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done').map((c: any) => ({ r, c })));
+  const cases = n.caseSauThi ? [] : board.rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done').map((c: any) => ({ r, c })));
   /* Nhóm PA bổ trợ chung: MỘT dòng mỗi nhóm (id nhỏ nhất) như Công việc (`mywork.ts` 2b, 3c). */
   const minNhom = (loc: (pl: any) => boolean) => {
     const m = new Map<string, number>();
@@ -156,6 +166,28 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Quản lý' : undefined,
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
+  }
+  /* P1-04 (B2-06): Phối hợp SOS của em — CÙNG hàm, khoá với dòng Công việc (`phoi_hop_sos:{lớp}:{việc}`), GVCN lớp em đang học giữ. Lượt của lộ trình đã thi
+     thật không vào (N46, trong câu). +1 câu. */
+  if (n.lopId) {
+    for (const l of dongPhoiHopTheoViec([n.lopId], sid)) {
+      ds.push({ key: `phoi_hop_sos:${l.classId}:${l.khoa}`, loai: 'phoi-hop-sos', chu: l.ten, kyNang: null, caseId: null, paId: null,
+        han: l.han, tone: 'info', nguoiId: -1, nut: 'Xác nhận', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
+    }
+  }
+  /* P1-04 (B2-07): Báo PH vi phạm / tình hình / sau Meeting CX — CÙNG hàm Công việc (`viecBaoPhCuaToi`: người giữ TVV của em → GVCN / QL), khoá `bao-ph:{id}`.
+     `tatCa`: QL thấy cả việc TVV giữ (dòng "người khác"). Người xem không giữ được việc này (GV) → 0 câu; còn lại +1 câu. */
+  for (const v of viecBaoPhCuaToi(p, { today, tatCa: true, branchId: null, studentId: sid })) {
+    const tvv = v.group === 'phoi_hop_tvv';
+    ds.push({ key: v.key, loai: tvv ? 'phoi-hop-tvv' : 'bao-ph-yt', chu: tvv ? 'Báo PH · Meeting CX/GĐCN' : v.phu ?? v.tieuDe, kyNang: null, caseId: null, paId: null,
+      viecId: v.viecId ?? undefined, han: v.due, tone: 'info', nguoiId: v.ownerId, nut: tvv ? 'Ghi KQ' : 'Ghi báo PH',
+      mo: { loai: 'tab', tab: 'y-thuc', ...(tvv ? { sub: 'phoi-hop' as const } : {}) } });
+  }
+  /* P1-04 (B2-07): Bổ sung hồ sơ thiếu — người giữ như Công việc (`chuViecTvv`: TVV của em, chưa có TVV → QL), khoá dòng tổng của người giữ (`bo-sung-ho-so:{người}`). */
+  const chuBs = n.boSung?.thieu.length ? chuViecTvv(p, sid, n.boSung.tvv, true) : null;
+  if (chuBs) {
+    ds.push({ key: `bo-sung-ho-so:${chuBs.ownerId}`, loai: 'bo-sung', chu: 'Bổ sung hồ sơ', the: n.boSung!.thieu.map((chu) => ({ chu })), kyNang: null, caseId: null, paId: null,
+      han: null, tone: 'info', nguoiId: chuBs.ownerId, nut: 'Bổ sung hồ sơ', mo: { loai: 'duong', href: duongHoSoHocVien(sid) } });
   }
   /* Mini Test — người giữ việc (`emConMiniTest().gv` = `nguoiGiuMiniTest`, cùng `mywork.ts`), không có thì GVCN. */
   const mt = n.miniTest;

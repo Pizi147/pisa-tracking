@@ -42,6 +42,8 @@ const CO_KET_QUA = CO_KET_QUA_THI_SQL('c');
 /** Cùng nghĩa `CO_KET_QUA` trên một dòng `learning_cycles` đã nạp — hồ sơ hỏi trước khi chạy câu Bước tiếp (trần câu SQL của `GET /students/:id`). */
 export const coKetQuaThi = (c: any): boolean => !!c && (!!c.thi_that_khong_thi || [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((x) => x !== null && x !== undefined)
   || (c.outcome_score ?? null) !== null || (!!c.outcome && c.outcome !== 'unknown'));
+/** N46: cùng nghĩa `DA_THI_THAT_SQL` trên một dòng `learning_cycles` đã nạp — lộ trình FT có KQ thi thật, bước tiếp chưa chọn / dừng / lộ trình mới. */
+export const daThiThat = (c: any): boolean => !!c?.route && coKetQuaThi(c) && (!c.buoc_tiep || (LUA_CHON_SAU_THI as readonly string[]).includes(c.buoc_tiep));
 const BAN_CHUP_CUOI = 'b.cycle_id = c.id AND b.lan = (SELECT MAX(lan) FROM ban_chup_lo_trinh WHERE cycle_id = c.id)';
 /** Ghi danh đang giữ của em (đang học / tạm dừng) — lớp "Lớp này" và lớp nguồn của Chuyển lớp. */
 const GHI_DANH = `(SELECT e.id FROM enrollments e WHERE e.student_id = c.student_id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1)`;

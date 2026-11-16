@@ -30,7 +30,7 @@ import { duocDoiLoTrinh, duocDoiMon } from '../fasttrack/monDangKy.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
-import { coKetQuaThi, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
+import { coKetQuaThi, daThiThat, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 import { coTheNhapThiThat, sauThiCuaEm } from '../loTrinh/thiThat.ts';
 import { thiThatCuaCycle } from '../loTrinh/banChup.ts';
 import { dsTvv } from './students.ts';
@@ -559,7 +559,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   // — tránh gọi riêng `classProgressMany`/`isRatioClass` (bốn câu SQL cho một lớp) ở khối "khoa" dưới.
   const enrollments = conn
     .prepare(
-      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, c.lich_mt, c.route, b.name AS branch_name,
+      `SELECT e.*, c.code AS class_code, c.kind AS class_kind, c.lich_mt, c.route, c.status AS class_status, c.is_fast_track, b.name AS branch_name,
               rp.week_start AS class_start_week
          FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
          LEFT JOIN report_periods rp ON rp.id = c.start_period_id
@@ -831,8 +831,15 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   const coTheDaThi = !!cuoiFt && !cuoiFt.buoc_tiep && !s.archived_at && (coKetQuaThi(cuoiFt)
     || (cuoiFt.thi_that_ngay ?? cuoiFt.exam_date ?? cuoiFt.ended_at ?? '9999') < today);   // LT-SV: tuần / tháng không phải ngày thi
   const sauThi = coTheDaThi ? sauThiCuaEm(p, studentId, today) : null;
+  /* P1-04: "Bổ sung hồ sơ thiếu" — cùng điều kiện `viecHoSoTvv` (em chưa lưu trữ, lớp đang học còn mở; lộ trình đang chạy; 4 trường) từ dòng đã nạp, 0 câu. */
+  const cyChay = allCycles.find((c: any) => c.status === 'active') ?? null;
+  const thieuHs = !s.archived_at && current?.class_status === 'active' ? missingForStudent({
+    cycle: cyChay ? { start_period_id: cyChay.start_period_id, target_score: cyChay.target_score } : null,
+    student: { dob: s.dob, email: s.email }, isFastTrack: !!current.is_fast_track,
+  }).map((m) => m.label) : [];
   const viec = viecCuaHocVien(p, studentId, board, {
     choBuocTiep: !!cuoiFt && !cuoiFt.buoc_tiep && coKetQuaThi(cuoiFt), sauThi,
+    caseSauThi: daThiThat(selected), boSung: { tvv: s.consultant_user_id ?? null, thieu: thieuHs },
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
   const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null /* = nhánh dangHoc của loTrinhTinhTuan (Q11); không có lộ trình chạy thì không có dòng tuần học */, today,

@@ -9,6 +9,7 @@ import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopDayDu, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { diemGoc, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
@@ -269,45 +270,77 @@ export function xuatBaoCaoPhNhieu(p: Principal, body: { ids?: unknown; thang?: u
  * Turso: chỉ lớp có đợt trong cửa sổ (mở ≤ hôm nay ≤ hạn + 30) — một câu ghi danh + một câu đếm bản ghi cho mọi lớp đó (+ tiến độ lớp thường).
  */
 export type ViecXuatBc = { classId: number; code: string; dot: string; nhanDot: string; han: string; soEm: number; thieu: number; duLuc: string | null; quaHan: number };
+/**
+ * Đợt của các lớp trong cửa sổ đọc (mở ≤ hôm nay ≤ hạn + 30) kèm số em còn thiếu — MỘT nguồn cho việc Admin "Xuất báo cáo PH" và việc QL "Báo cáo PH quá hạn" (N49).
+ * Turso: một câu ghi danh + một câu đếm bản ghi cho mọi lớp đó (+ tiến độ lớp thường); nhớ theo request (Admin kiêm QL cùng chi nhánh đọc một lần).
+ */
+/* `qhTu` / `batTu` (việc QL): chỉ đợt quá hạn ≥ `qhTu` ngày, hạn ≥ ngày bật — lọc TRƯỚC câu em / bản ghi (đợt chưa tới lúc thì 0 câu đó). */
+function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, homNay: string, qhTu = -Infinity, batTu = '') {
+  return nho(`bc-ph-cua-so:${[...cn].join(',')}:${branchId ?? ''}:${qhTu}:${batTu}`, () => {
+    const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
+    const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
+      && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
+    const tienDo = classProgressMany(lop.map((c) => c.id));   // một lô cho mọi lớp (FT: tuần khai giảng — BC-PH-MOC)
+    const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt bỏ không thành việc, không tính "thiếu n em"; đợt thêm như đợt thường
+    for (const c of lop) {
+      const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
+      /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". RA-LOI-0711e: lọc theo cửa sổ, không lấy "2 đợt mới
+         nhất" — đợt QL thêm (BC-DOT-QL) mở sau đợt tháng từng đẩy đợt tháng ra khỏi 2 đợt đầu, mất việc của nó. */
+      for (const d of dl?.ds ?? []) if (soNgayQuaHan(d, homNay) <= 30 && soNgayQuaHan(d, homNay) >= qhTu && d.han >= batTu && dl) cap.push({ c, d, bo: dl.bo });
+    }
+    if (!cap.length) return [];
+    const emDot = emTheoLo(cap, homNay);
+    const sids = [...new Set([...emDot.values()].flatMap((ds) => ds.map((e) => e.id)))];
+    const dem = new Map<string, { du: number; luc: string }>();
+    theoLoJson(sids, (json) => {
+      for (const r of db().prepare(`SELECT dot, student_id, SUM(du) du, MAX(sua_luc) luc FROM bao_cao_ph WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`)
+        .all(json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))])) as any[]) dem.set(`${r.dot}|${r.student_id}`, { du: r.du, luc: r.luc });
+    });
+    return cap.flatMap(({ c, d, bo }) => {
+      const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
+      if (!em.length) return [];
+      const thieu = em.filter((e) => (dem.get(`${d.ma}|${e.id}`)?.du ?? 0) < bo.length).length;
+      const luc = thieu ? null : em.map((e) => dem.get(`${d.ma}|${e.id}`)?.luc ?? '').sort().at(-1)!;
+      return [{ c, d, soEm: em.length, thieu, luc, qh: soNgayQuaHan(d, homNay) }];
+    });
+  });
+}
+
+/**
+ * VIỆC ADMIN "Xuất báo cáo PH · {lớp} · {đợt}" (đặc tả §12, ghi chú mockup mục 7 k1): chỉ người có vai Admin (`office_admin`) ở chi nhánh lớp — QL không nhận.
+ *   · lớp ĐỦ (mọi em đủ mọi phần) → hiện 7 ngày từ ngày lớp đủ, nút Xuất lớp;
+ *   · đợt đã quá hạn mà chưa đủ → hiện từ ngày hạn, 7 ngày, "thiếu n em" (PTA quyết).
+ * ponytail: "ngày lớp đủ" = lần lưu cuối của đợt khi lớp đã đủ (không lưu cột riêng) — sửa lại sau khi đủ thì ngày dời theo; thêm cột khi cần mốc cố định.
+ */
 export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXuatBc[] {
   const cn = new Set(p.grants.filter((g) => g.roleKey === 'office_admin').map((g) => g.branchId));
   if (!cn.size) return [];
   const homNay = demoToday();
-  const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
-  const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
-    && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
-  const tienDo = classProgressMany(lop.map((c) => c.id));   // một lô cho mọi lớp (FT: tuần khai giảng — BC-PH-MOC)
-  const tuyChinh = docTuyChinhDot(lop.map((c) => c.id));   // BC-DOT-QL: đợt bỏ không thành việc, không tính "thiếu n em"; đợt thêm như đợt thường
-  for (const c of lop) {
-    const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
-    /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". RA-LOI-0711e: lọc theo cửa sổ, không lấy "2 đợt mới
-       nhất" — đợt QL thêm (BC-DOT-QL) mở sau đợt tháng từng đẩy đợt tháng ra khỏi 2 đợt đầu, mất việc của nó. */
-    for (const d of dl?.ds ?? []) if (soNgayQuaHan(d, homNay) <= 30 && dl) cap.push({ c, d, bo: dl.bo });
-  }
-  if (!cap.length) return [];
-  const emDot = emTheoLo(cap, homNay);
-  const sids = [...new Set([...emDot.values()].flatMap((ds) => ds.map((e) => e.id)))];
-  const dem = new Map<string, { du: number; luc: string }>();
-  theoLoJson(sids, (json) => {
-    for (const r of db().prepare(`SELECT dot, student_id, SUM(du) du, MAX(sua_luc) luc FROM bao_cao_ph WHERE student_id IN (${DS_JSON}) AND dot IN (SELECT value FROM json_each(?)) GROUP BY dot, student_id`)
-      .all(json, JSON.stringify([...new Set(cap.map((x) => x.d.ma))])) as any[]) dem.set(`${r.dot}|${r.student_id}`, { du: r.du, luc: r.luc });
-  });
   const out: ViecXuatBc[] = [];
-  for (const { c, d, bo } of cap) {
-    const em = emDot.get(`${c.id}|${d.ma}`) ?? [];
-    if (!em.length) continue;
-    const thieu = em.filter((e) => (dem.get(`${d.ma}|${e.id}`)?.du ?? 0) < bo.length).length;
-    const qh = soNgayQuaHan(d, homNay);
+  for (const { c, d, soEm, thieu, luc, qh } of dotBcCuaSo(cn, branchId, homNay)) {
     if (thieu === 0) {
-      const luc = em.map((e) => dem.get(`${d.ma}|${e.id}`)?.luc ?? '').sort().at(-1)!;
-      const duNgay = [ngayVn(luc), homNay].sort()[0];   // ngày demo / đồng hồ lệch: không sau hôm nay
+      const duNgay = [ngayVn(luc!), homNay].sort()[0];   // ngày demo / đồng hồ lệch: không sau hôm nay
       if (soNgayQuaHan({ han: duNgay }, homNay) > 7) continue;
-      out.push({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu: 0, duLuc: duNgay, quaHan: 0 });
+      out.push({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm, thieu: 0, duLuc: duNgay, quaHan: 0 });
     } else if (qh > 0 && qh <= 7) {
-      out.push({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm: em.length, thieu, duLuc: null, quaHan: qh });
+      out.push({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm, thieu, duLuc: null, quaHan: qh });
     }
   }
   return out;
+}
+
+/**
+ * N49 (chủ SP 16/11, audit câu 4): Báo cáo PH quá hạn > 7 ngày (đã rời Công việc của GV, `viecBaoCaoPhGv`) mà lớp còn em chưa đủ → MỘT việc mỗi lớp × đợt
+ * cho QL / Quản trị của chi nhánh lớp (tab "Việc quản lý"). Cùng cửa sổ + câu đọc với việc Admin (`dotBcCuaSo`). Lớp đủ thì hết việc. `batTu`: như việc GV — đợt
+ * có hạn trước ngày bật không sinh việc (GV chưa từng có việc đó).
+ * ponytail: rời sau hạn + 30 ngày (cửa sổ đọc chung) — nới cửa sổ nếu QL cần nhắc lâu hơn.
+ */
+export function viecBcPhQuaHanQl(p: Principal, branchId: number | null, batTu = ''): ViecXuatBc[] {
+  const cn = new Set(p.grants.filter((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin').map((g) => g.branchId));
+  if (!cn.size) return [];
+  const homNay = demoToday();
+  return dotBcCuaSo(cn, branchId, homNay, 8, batTu).filter((x) => x.thieu > 0)
+    .map(({ c, d, soEm, thieu, qh }) => ({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm, thieu, duLuc: null, quaHan: qh }));
 }
 /**
  * LG-3 VIỆC GV "Báo cáo PH" (chủ SP 13–14/11 — lời 12, 13, 16): mỗi lớp × đợt một việc cho người có phần phải viết theo phân công HÔM NAY

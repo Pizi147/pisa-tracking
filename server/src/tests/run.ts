@@ -9806,6 +9806,9 @@ await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODA
 // ==================================================================== P1-CONG-VIEC (rà toàn bộ 11/11: một tập việc, một hàm đếm)
 const { runPrP1CongViecTests } = bocTep('prP1CongViec', await import('./prP1CongViec.tests.ts'));
 await runPrP1CongViecTests({ check, assert, conn, P } as any);
+// ==================================================================== AU-VIEC (audit 16/11: N46 việc sau thi thật · P1-04 thanh việc hồ sơ HV · N49 Báo cáo PH quá hạn cho QL)
+const { runPrAuViecTests } = bocTep('prAuViec', await import('./prAuViec.tests.ts'));
+await runPrAuViecTests({ check, assert, conn, P, TODAY } as any);
 // ==================================================================== VIEC-CUA-TOI (rà 11/11 đề xuất #1: một hàm việc của tôi cho mọi nơi)
 const { runPrViecCuaToiTests } = bocTep('prViecCuaToi', await import('./prViecCuaToi.tests.ts'));
 await runPrViecCuaToiTests({ check, assert, conn } as any);

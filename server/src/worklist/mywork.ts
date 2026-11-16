@@ -4,7 +4,7 @@ import { HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, tx } from '../db.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { ATTEMPT_KIND_SHORT, CHAM_CHEO, KHOA_CHAM_SPEAKING, VIEC_CHAM_CHEO, chuViecChotLoTrinh, daiDienNhomBoTro, canChamCheo, laChamCheo, laViecChamCheo, mondayOfDate, INTERVENTION_KIND_LABEL, PERMISSIONS, SOS_LABEL, URGENCY_LABEL, URGENCY_TONE, caseHeadline, caseTopicLabel, duongCaseRieng, duongHoSoHocVien, duongLichTest, nhanDotNgan, hanThemPa, khungCua, laLanGhiCuoi, ghiNhanhDuoc, tenMon, tenNhomMon, MON_CHON, nhanLoaiXuLy, soSanhLop, type Khung, type AttemptKind, type InterventionKind, nhanBaiThuong, chuTyLeXetLai, gopViecTheoLop, tuanLich, demDongViec, nhomViecCua, type ConGop, LUOT_HUY_HET_SQL, LUOT_MT_DA_CO_SQL, thieuMt } from '../../../shared/domain/index.ts';
 import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
@@ -16,7 +16,7 @@ import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
 import { viecBanGiao } from '../classes/banGiao.ts';
 import { viecBanGiaoGv } from '../classes/banGiaoGv.ts';
-import { viecBaoCaoPhGv, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
+import { viecBaoCaoPhGv, viecBcPhQuaHanQl, viecXuatBaoCaoPh } from '../classes/xuatBaoCaoPh.ts';
 import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { canSeeBoard, myMgmtTasks } from './mgmttasks.ts';
@@ -201,7 +201,9 @@ export type WorkGroupKey =
   /* BAO-CAO-PH b: Admin xuất báo cáo PH của lớp đã đủ (7 ngày) / đợt quá hạn chưa đủ (7 ngày từ hạn). QL không nhận. */
   | 'xuat_bc_ph'
   /* LG-3 (chủ SP 13–14/11): GV viết Báo cáo PH — mỗi lớp × đợt một việc, hạn theo đợt (tab Vận hành, mục "Báo cáo PH"). */
-  | 'bao_cao_ph';
+  | 'bao_cao_ph'
+  /* N49 (chủ SP 16/11): Báo cáo PH quá hạn > 7 ngày (đã rời việc GV) mà lớp còn thiếu em — một việc mỗi lớp × đợt cho QL (tab "Việc quản lý"). */
+  | 'bc_ph_qua_han';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -356,6 +358,10 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     label: 'Việc được giao',
     hint: 'Công việc quản lý hoặc việc con được giao cho bạn ở bảng Tiến độ công việc.',
   },
+  bc_ph_qua_han: {
+    label: 'Báo cáo PH quá hạn',
+    hint: 'Đợt báo cáo phụ huynh quá hạn hơn 7 ngày mà lớp còn em chưa đủ — việc của GV đã rời. Nhắc GV hoặc viết hộ ở tab Báo cáo PH của lớp. Hết khi lớp đủ.',
+  },
 };
 /** HD3-6 (phép HD-DU): mọi loại dòng việc máy chủ dựng — mỗi loại phải có thẻ Hướng dẫn (`viecWeb`). */
 export const NHOM_VIEC_MAY = Object.keys(GROUP_META) as WorkGroupKey[];
@@ -459,7 +465,8 @@ function napCaseMo(loc: LocCaseMo = null): any[] {
               AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')) AS la_cause,
             ${CHUA_CO_NGUOI} AS chua_co_nguoi,
             CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GV_MON} END AS thieu_gv_mon,
-            CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn
+            CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn,
+            ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi
        FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done'${!lop ? '' : `
         AND sc.id IN (SELECT x.id FROM enrollments e JOIN sos_cases x ON x.student_id = e.student_id WHERE e.class_id IN (${ph})
                       UNION SELECT x.id FROM assessment_attempts a2 JOIN sos_cases x ON x.attempt_id = a2.id WHERE a2.class_id IN (${ph})
@@ -483,7 +490,9 @@ const CASE_MO_DA_NAP = 'case-mo:da-nap';
 function lopHienTai(ds: any[]): any[] {
   const moiNhat = new Map<number, { eid: number; lop: number }>();
   for (const x of ds) if (x.cur_eid != null && (moiNhat.get(x.id)?.eid ?? -1) < x.cur_eid) moiNhat.set(x.id, { eid: x.cur_eid, lop: x.lop_dang_hoc });
-  return ds.map(({ cur_eid: _, ...r }) => ({ ...r, current_class_id: moiNhat.get(r.id)?.lop ?? null }));
+  /* N46: Case của lộ trình đã có KQ thi thật — không sinh việc nào (Thêm PA · Mô tả / Xác nhận Case · Chưa có người), như em Tạm dừng; cột tính một lần. */
+  return ds.map(({ cur_eid: _, sau_thi: st, ...r }) => ({ ...r, current_class_id: moiNhat.get(r.id)?.lop ?? null,
+    ...(st ? { la_no_plan: 0, la_cause: 0, chua_co_nguoi: 0 } : {}) }));
 }
 
 /**
@@ -518,7 +527,8 @@ const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_i
               COALESCE(a.class_id, cur.class_id) AS class_id, COALESCE(ac.code, cc.code) AS class_code,
               COALESCE(ac.branch_id, cc.branch_id) AS branch_id, a.attempt_no, iv.bo_qua_moc, iv.bo_qua_luc, ub.full_name AS bo_qua_ten,
               cc.lich_mt AS lop_lich_mt, cc.route AS lop_route, lc.route,   -- XEP-MT-NHAC: thieuMt (lịch lớp đang học, như danhSachLop)
-              (SELECT COUNT(*) FROM assessment_attempts x WHERE x.cycle_id = lc.id AND ${LUOT_MT_DA_CO_SQL('x')}) AS so_mt_co
+              (SELECT COUNT(*) FROM assessment_attempts x WHERE x.cycle_id = lc.id AND ${LUOT_MT_DA_CO_SQL('x')}) AS so_mt_co,
+              ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi   -- N46: không thành việc; vẫn điền mốc (dienMocQuyChe đọc cùng câu)
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
          LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
          LEFT JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
@@ -738,7 +748,7 @@ export const cauPaGhiKetQua = (them = '') =>
           AND sc.status != 'done'
           AND COALESCE(iv.approval_state, '') != 'pending'
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
-          AND ${HV_DANG_HOC_SQL('s')}`;
+          AND ${HV_DANG_HOC_SQL('s')} AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}`;   /* N46: lộ trình đã có KQ thi thật — như Tạm dừng */
 
 /** "Ghi kết quả PA" thành việc từ hạn − 2: PA có `action_due` ≤ ngày này. Công việc và hồ sơ HV (`viecHocVien.ts`) dùng chung (P1 G2-03). */
 export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
@@ -961,7 +971,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
               COALESCE(pu.full_name, iv.performer_name) AS iv_nguoi,
               EXISTS (SELECT 1 FROM case_interventions g WHERE g.case_id = sc.id AND ${PA_GV_MO('g')} AND g.kind != iv.kind) AS chon_pa   /* SOS-TAM-PA: "Chọn PA" */
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${NOI_CASE} LEFT JOIN users pu ON pu.id = iv.performer_user_id
-        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
+        WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')} AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}   /* N46 · PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
           AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */`,
     )
@@ -980,7 +990,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
        FROM assessment_scores s CROSS JOIN assessment_attempts a ON a.id = s.attempt_id AND a.kind = 'mock' AND a.status != 'cancelled'
        JOIN students st ON st.id = a.student_id AND ${HV_DANG_HOC_SQL('st')}
        JOIN classes c ON c.id = a.class_id
-       JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')}
+       JOIN sos_cases sc ON sc.attempt_id = a.id AND sc.topic = 'speaking' AND sc.status != 'done' AND ${CASE_THAT('sc')} AND NOT ${CASE_SAU_THI_SQL('sc', 'st.id')}   /* N46 */
       WHERE s.skill = 'speaking' AND s.cho_phu_trach_xem = 1${locNxS.map((x) => ` AND ${x}`).join('')}`,
   ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
   const baoPh = !co('phoi_hop') ? [] : conn
@@ -1469,6 +1479,17 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       });
     }
   }
+  /* N49 (chủ SP 16/11): Báo cáo PH quá hạn > 7 ngày còn thiếu em — việc của QL / Quản trị chi nhánh lớp; cùng câu đọc với việc Admin (`dotBcCuaSo`). */
+  for (const v of co('bc_ph_qua_han') ? viecBcPhQuaHanQl(p, f.branchId ?? null, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today) : []) {
+    items.push({
+      key: `bc-ph-qh:${v.classId}:${v.dot}`, group: 'bc_ph_qua_han', urgency: 'overdue',
+      studentId: null, studentName: `Lớp ${v.code}`, classId: v.classId, classCode: v.code, attemptId: null, attemptNo: null, caseId: null, level: null,
+      reason: `Đợt đã quá hạn, còn thiếu ${v.thieu} em`, actionLabel: 'Báo cáo PH ›', tieuDe: 'Báo cáo PH quá hạn',
+      href: `/hoc-vien/lop/${v.classId}?tab=bao-cao-ph&dot=${encodeURIComponent(v.dot)}`,
+      ownerId: p.userId, owner: null, mine: true, due: v.han, statusLabel: `thiếu ${v.thieu} em`,
+      contextLabel: `${v.nhanDot} · thiếu ${v.thieu} em`, count: null,
+    });
+  }
   items.push(...viecHoSoTvv(p, { today, tatCa, branchId: f.branchId ?? null, chot: co('missing_data'), boSung: co('bo_sung_ho_so') }));
 
   /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
@@ -1496,7 +1517,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       napTruocPhamVi(sau.map((r) => r.sid));   // PR-S3F #4: `can()` từng dòng đọc bộ nhớ, không N+1
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
-        if (!can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;
+        if (r.sau_thi || !can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;   // N46: lộ trình đã có KQ thi thật
         const v = viecMoc(r);
         /* XEP-MT-NHAC (chủ SP 07/11): "Xếp lịch MTn" chỉ khi lộ trình thiếu MT — đủ 3 (RF 2) MT đã có thì không nhắc. */
         if (!v.thi && !thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lop_lich_mt, route: r.lop_route }, r.route).length)) continue;
