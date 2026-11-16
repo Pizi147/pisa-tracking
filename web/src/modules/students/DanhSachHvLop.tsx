@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { Bang, OBang, type CotBang } from '../../ui/Bang.tsx';
 import { MuiTenMo, boQuaNutCon } from '../../ui/HangNhom.tsx';
 import { useBamNgoai } from '../../ui/useBamNgoai.ts';
-import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -21,6 +21,8 @@ import { NhanSauThi } from './HopGiaHan.tsx';
 import { bacDu, bacNgan, boTenEm, chuPhuHuynh, mocTuNhan, dongTieuChi, duongHoSoHocVien, maLoTrinhNgan, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const XacNhanXuLyPanel = lazyHop(() => import('../yThuc/XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
 
 /** Một em của danh sách gọn (`GET /hoc-vien-lop` → `hocVien`, SV-SO3 `hang` + UI-HV-LOP `tvv` / `lich`). */
 export type HvGon = {

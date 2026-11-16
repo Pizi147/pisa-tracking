@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Navigate } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
+import { thongTinEmCua } from './thongTinEm.ts';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import {
@@ -18,15 +20,16 @@ import { hoanTacHangLoat } from './hangLoatEm.ts';
 import { HopTamDungKetThuc, KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { QuayLaiTuMenu } from './QuayLaiHoc.tsx';
-import { ChuyenLopPanel } from './ChuyenLopPanel.tsx';
 import { XoaHocVienPanel } from './XoaHocVienPanel.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { DeXuatSuaPanel } from '../duyet/DeXuatSuaPanel.tsx';
 import { laBand } from './StudentPlanPanel.tsx';
-import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { ErrorState, NutChon, OKck, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const ChuyenLopPanel = lazyHop(() => import('./ChuyenLopPanel.tsx').then((x) => x.ChuyenLopPanel));
+const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
 
 /**
  * QUẢN LÝ HỌC VIÊN Ở HỒ SƠ (PR-UX3, Q10) — dấu ⋮ mở MENU THẢ (`MenuDong`) chứ không còn ngăn "Quản lý học viên" với danh sách việc rồi
@@ -131,15 +134,6 @@ export function SuaThongTinMotEm({ viec = 'info', studentId, studentName, lop, o
       student={thongTinEmCua(data)} quyen={data.viewer} lopHoc={data.lopHoc ?? null} soViPhamMo={data.dauHoSo?.soViPhamMo ?? 0}
       onDeXuatSua={() => setDeXuat(true)} tiep={tiep} />
   );
-}
-
-/** Hồ sơ (`/students/:id`) → dữ liệu Sửa thông tin. Chung cho hồ sơ HV và ⋯ dòng. */
-export function thongTinEmCua(d: any): ThongTinEm {
-  return {
-    id: d.id, name: d.fullName, classId: d.currentClass?.id ?? null, dob: d.dob ?? null, email: d.email ?? null,
-    consultantName: d.consultantName ?? null, note: d.note ?? null, status: d.status, tvv: d.tvv ?? null, tvvChon: d.tvvChon ?? null,
-    lienHe: d.lienHe ?? null, deXuatTarget: d.deXuatTarget ?? null,
-  };
 }
 
 // ==================================================================== các panel

@@ -18,6 +18,7 @@ import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, bacNgan, kiemGhiRoKhac, luuRoiTiep, quyCheBaoPhTvv, reasonNeedsText, shortDate, type KetQuaBaoPh,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { gioVnNay, lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
 /** `GET /y-thuc/bao-ph/:id` (máy chủ `xemViecBaoPh`). */
@@ -39,13 +40,6 @@ type ViecBaoPh = {
   lichSuHan: { cu: string | null; moi: string; macDinh: boolean; nguoi: string | null; luc: string }[];
 };
 
-/** "14/09 15:30" giờ Việt Nam từ ISO UTC của máy chủ. */
-export const lucVn = (iso: string) => {
-  const d = new Date(Date.parse(iso) + 7 * 3_600_000).toISOString();
-  return `${d.slice(8, 10)}/${d.slice(5, 7)} ${d.slice(11, 16)}`;
-};
-/** "15:30" giờ Việt Nam lúc này — chân "✓ Đã lưu" cùng giờ với Lịch sử. */
-export const gioVnNay = () => lucVn(new Date().toISOString()).slice(6);
 /** "0912 345 678" — chỉ để đọc; `tel:` giữ số gốc. */
 const sdtDoc = (s: string) => s.replace(/\D/g, '').replace(/^(\d{4})(\d{3})(\d+)$/, '$1 $2 $3');
 const KHOA_BAO_PH = ['/my-work', '/tong-quan', '/students', '/y-thuc', '/classes'];

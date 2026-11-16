@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -16,10 +17,11 @@ import { ThangVach, ThangYThuc } from './ThangYThuc.tsx';
 import { BadgeViec, CanLamEm, ChipLoc } from './khoiYThuc.tsx';
 import { BaoPhDu, DauCotEm, DongLan, OBaoPh, OBuoc, ODaXuLy, TabNho, TheLoai, chuMoc, type VpDong } from './BangLan.tsx';
 import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh, type CheDoHop, type ThaoTacTh } from './TinhHinh.tsx';
-import { PanelBaoPhTvv, gioVnNay, lucVn } from '../congViec/PanelBaoPhTvv.tsx';
+import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type BaoPhLan, type DongThoiGianYt, type TinhHinhView, type ViPhamV4, type YThucHocVien } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+const PanelBaoPhTvv = lazyHop(() => import('../congViec/PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
 
 /** TINH-HINH (mockup v20 A4): lọc "Cả quá trình" theo loại — Vi phạm (đã xem, lần xử lý, thu hồi) · Nhắc nhở · Tình hình học tập. */
 type LocLs = 'tat-ca' | 'vi-pham' | 'nhac-nho' | 'tinh-hinh';

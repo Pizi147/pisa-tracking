@@ -41,3 +41,17 @@ export function OTuan({ tuanChon, value, onChange, ariaLabel, chuaChon, rong }: 
   return <ONgay kieu="tuan" moc="dau" value={value} onChange={onChange} toiThieu={tuanChon[0] ?? null} toiDa={rong ? null : tuanChon[tuanChon.length - 1] ?? null}
     ariaLabel={ariaLabel} goiY={chuaChon} />;
 }
+
+/**
+ * N36 (chủ SP 05/11): ô "Reset bậc vi phạm" lúc chuyển từ lớp thường sang lộ trình mới (lớp thường / FT) — mặc định TẮT = giữ bậc, chuỗi đếm thang nối tiếp.
+ * GVCN chọn (Đề xuất chuyển lớp) hoặc Quản lý (ra lệnh / duyệt — thấy sẵn lựa chọn của GVCN, đổi được).
+ * Nơi gọi chỉ hiện khi em đang có bậc > 0 và lần chuyển mở lộ trình mới. Cùng kiểu ô tích "Theo luồng chuyển tiếp lộ trình".
+ */
+export function OResetBac({ checked, onChange, phu, disabled }: { checked: boolean; onChange: (v: boolean) => void; phu: string; disabled?: boolean }) {
+  return (
+    <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
+      <input type="checkbox" className="mt-0.5 h-4 w-4" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
+      <span>{t('Reset bậc vi phạm')}<span className="block text-xs text-slate-500">{phu}</span></span>
+    </label>
+  );
+}

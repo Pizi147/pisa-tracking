@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -8,9 +9,10 @@ import { NHAN_SAU_THI, chuGradeKyThi, diemW12, duongHoSoHocVien, hienTargetKck, 
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { toneHuong } from './CacLoTrinh.tsx';
 import { OTuanDay } from '../../ui/TuanDayGv.tsx';
-import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep, type TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
 
 type KyNang = { k: string; nhan: string; diem: number | null; tong: number | null; dat: boolean | null };
 type Luot = {

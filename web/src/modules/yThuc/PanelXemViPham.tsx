@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -12,9 +13,10 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import { ChipMon, TienTrinh, chuMoc } from './BangLan.tsx';
 import { CanLamEm } from './khoiYThuc.tsx';
-import { XacNhanXuLyPanel } from './XacNhanXuLyPanel.tsx';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { DUONG_LAM_MOI_Y_THUC, type YThucHocVien } from './kieu.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const XacNhanXuLyPanel = lazyHop(() => import('./XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
 
 /**
  * PANEL "XEM VI PHẠM MỚI" ở trang Công việc (Y-THUC-V2, mockup K8b) — thay việc nhét cả tab Ý thức hồ sơ HV vào panel.

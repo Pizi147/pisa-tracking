@@ -1,13 +1,15 @@
 import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { LichTestTab } from './LichTestTab.tsx';
 import { KeHoachTestTab } from './KeHoachTestTab.tsx';
-import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import {
   DUONG_CHAM_CU, DUONG_TAB_TEST, NAV_RONG, TAB_TEST_LABEL, locTuThamSoTrong, moDiemLopCu, tabTestHienThi, tabTestMacDinh, tabTestTuDuong, type TabTest,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /**
  * TEST — khu vực (O2; PR-UX1 bỏ Cần chấm): Lịch Test · Kế hoạch Test, mỗi tab một đường dẫn (OV-15b bỏ tab Điểm theo lớp: link cũ

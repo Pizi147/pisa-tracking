@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -8,13 +9,14 @@ import { ConfirmDialog } from '../../ui/Drawer.tsx';
 import { MenuDong, type MucMenu } from '../../ui/MenuDong.tsx';
 import { ErrorState, Skeleton, Status } from '../../ui/ui.tsx';
 import { OMt } from '../../ui/OMt.tsx';
-import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HopKhoiPhucKetQua, HopKhoiPhucMt } from '../test/keHoach/HopKhoiPhucKetQua.tsx';
 import { DaiODiemLon, type LichKn } from '../fasttrack/ODiemLon.tsx';
 import { nguCanhChiTiet } from '../fasttrack/HopNhapDiem.tsx';
 import { useSaveScore } from '../fasttrack/ScoreEntry.tsx';
 import { duongDotTest, ngay, tuanLich, type KetQuaHuy, type KyNangKH, type OKyNang } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
 
 /** Một hàng của bảng lịch MT — khớp `HangLichMt` của `server/src/keHoach/keHoachTest.ts` (`GET /cycles/:id/suggested-mocks`). */
 export type HangMt = {

@@ -10,7 +10,7 @@ import { ChonLop, type LopChon } from '../../ui/ChonLop.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { KHOI_VANG, NutHomNay, OTuan } from '../classes/chuyenLopChung.tsx';
+import { KHOI_VANG, NutHomNay, OResetBac, OTuan } from '../classes/chuyenLopChung.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
 import { chayHangLoat, hoanTacHangLoat } from './hangLoatEm.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
@@ -49,20 +49,6 @@ const khoiVang = KHOI_VANG;
 
 /** Tên bậc vi phạm (1 = Report 1 …) — chữ dưới ô Reset bậc. */
 export const tenBac = (bac: number) => bacDu(nhanLoaiXuLy(kindCuaBac(bac)));
-
-/**
- * N36 (chủ SP 05/11): ô "Reset bậc vi phạm" lúc chuyển từ lớp thường sang lộ trình mới (lớp thường / FT) — mặc định TẮT = giữ bậc, chuỗi đếm thang nối tiếp.
- * GVCN chọn (Đề xuất chuyển lớp) hoặc Quản lý (ra lệnh / duyệt — thấy sẵn lựa chọn của GVCN, đổi được).
- * Nơi gọi chỉ hiện khi em đang có bậc > 0 và lần chuyển mở lộ trình mới. Cùng kiểu ô tích "Theo luồng chuyển tiếp lộ trình".
- */
-export function OResetBac({ checked, onChange, phu, disabled }: { checked: boolean; onChange: (v: boolean) => void; phu: string; disabled?: boolean }) {
-  return (
-    <label className="flex min-h-[44px] cursor-pointer items-start gap-2 text-[13px] text-slate-300 sm:min-h-0">
-      <input type="checkbox" className="mt-0.5 h-4 w-4" checked={checked} disabled={disabled} onChange={(e) => onChange(e.target.checked)} />
-      <span>{t('Reset bậc vi phạm')}<span className="block text-xs text-slate-500">{phu}</span></span>
-    </label>
-  );
-}
 
 /** Target + ô tích KCK (§7: chỉ khi em chưa có Target nào) — panel một em và hàng nhiều em. OV-9: giá trị chữ "6.5" · "6.5 KCK" · "KCK". */
 export function OTarget({ value, onChange, ariaLabel, oProps, disabled }: {

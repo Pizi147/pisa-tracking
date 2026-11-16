@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { Nhan } from '../../ui/Nhan.tsx';
@@ -8,14 +9,15 @@ import { BangHoSoLop } from './BangHoSoLop.tsx';
 import { BangDiemLopThuong } from './BangDiemLopThuong.tsx';
 import { BangKqdrLopFt } from './BangKqdrLopFt.tsx';
 import { ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
-import { XemTruocHangLoatPanel } from '../students/XemTruocHangLoatPanel.tsx';
 import { HopTamDungKetThuc } from '../students/HopTamDungKetThuc.tsx';
-import { ChuyenLopNhieuEm } from '../students/ChuyenLopPanel.tsx';
 import type { HoSoLop } from './DauTrangLop.tsx';
 import type { QuyenDong } from './thaoTacDongHocVien.tsx';
 import { PERMISSIONS, vaiXemHocVien, type ViecHangLoat } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const ChuyenLopNhieuEm = lazyHop(() => import('../students/ChuyenLopPanel.tsx').then((x) => x.ChuyenLopNhieuEm));
+const XemTruocHangLoatPanel = lazyHop(() => import('../students/XemTruocHangLoatPanel.tsx').then((x) => x.XemTruocHangLoatPanel));
 
 /**
  * TAB HỌC VIÊN CỦA HỒ SƠ LỚP (đặc tả §3.7): hai chế độ.

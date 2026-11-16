@@ -1,13 +1,15 @@
 import { useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { Empty, ErrorState, SectionNote, Skeleton, Th } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { HangLichMt, type BangLichMt } from './HangLichMt.tsx';
 import { t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
 
 /** Band 0–9, bước 0.5 — cùng luật máy chủ (máy chủ vẫn kiểm lại). */
 export const laBand = (s: string) => s.trim() !== '' && Number.isFinite(Number(s)) && Number(s) >= 0 && Number(s) <= 9 && Number(s) * 2 === Math.round(Number(s) * 2);

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -17,11 +18,12 @@ import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, duongHoSoHocVien, shortDate, tachNhanLichThi, vaiXemHocVien, type DiemHv, type GiaiDoanSauThi, type LichThi, type LienHe } from '@shared/domain/index.ts';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
-import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
 
 /** `GET /hoc-vien-lop/em/:id` (server/src/classes/hocVienSos.ts → panelMotEm). */
 type DuLieuEm = {

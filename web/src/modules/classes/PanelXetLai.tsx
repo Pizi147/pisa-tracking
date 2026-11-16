@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { api, invalidate } from '../../lib/api.ts';
@@ -11,8 +11,9 @@ import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { Modal } from '../../ui/Drawer.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { OResetBac, OTarget, OTuanBatDau, tenBac, type XemChuyenLopData } from '../students/ChuyenLopPanel.tsx';
-import { KHOI_VANG } from './chuyenLopChung.tsx';
+import { OTarget, OTuanBatDau, tenBac, type XemChuyenLopData } from '../students/ChuyenLopPanel.tsx';
+import { KHOI_VANG, OResetBac } from './chuyenLopChung.tsx';
+import { ChipXetLai, duongXetLai } from './xetLaiChung.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { DongDiem } from '../../ui/SoLieu.tsx';
 import { RATIO_PASS_THRESHOLD, canHoiTarget, chuTyLeXetLai, docOTarget, kyHieuLop, laChuyenNgay, ngay, quyCheXetLai, tenBacKe, tuanChonDuoc, tuanLich, type DiemHv, type ProgrammeCode } from '@shared/domain/index.ts';
@@ -35,14 +36,13 @@ export type EmXetLai = {
   quyetDinh: { id: number; quyetDinh: Quyet; lopDich: string | null; tuan: string | null; luc: string; nguoi: string | null } | null;
   /** N36: bậc vi phạm hiện tại (chỉ Quản lý; em đang học lớp thường). */ bacYThuc?: number;
 };
-type DuLieu = { lop: { id: number; code: string; ft: boolean }; chiXem: boolean; han: string | null; nguon: { code: string } | null; em: EmXetLai[]; lopHocLai: Record<string, LopMo[]>; lopLen: Record<string, LopMo[]> };
+export type DuLieu = { lop: { id: number; code: string; ft: boolean }; chiXem: boolean; han: string | null; nguon: { code: string } | null; em: EmXetLai[]; lopHocLai: Record<string, LopMo[]>; lopLen: Record<string, LopMo[]> };
 type LopMo = { id: number; code: string; phu: string; ft?: boolean };
 /** Lựa chọn đang soạn của một em (chưa lưu). `hoiTarget`: Lên FT mà em chưa có Target (xem trước `/chuyen-lop`, như panel Chuyển lớp) → ô Target tại thẻ. */
 type Chon = { quyet: Quyet; lop: number | null; tuan: string; lyDo: string; trangThai: 'inactive' | 'finished'; hoiTarget?: boolean; mucTieu?: string; resetBac?: boolean };
 /** Kết quả đã lưu trong lần mở panel này (Hoàn tác / Sửa). */
 type DaLuu = { id: number; chu: string; daChuyen: boolean };
 
-export const duongXetLai = (classId: number, studentId?: number | null) => `/classes/${classId}/xet-lai${studentId ? `?studentId=${studentId}` : ''}`;
 const LO = 10;   // = LO_XET_LAI máy chủ
 const HOAN_TAC_XET_LAI_MS = 10_000;   // mockup khung 4: Hoàn tác 10 s
 const lamMoi = () => { for (const k of ['/classes', '/students', '/my-work', '/hoc-vien-lop', '/lenh-chuyen', '/cases']) invalidate(k); };
@@ -440,37 +440,5 @@ function NhanXetGvcn({ e, classId }: { e: EmXetLai; classId: number }) {
           : typeof luu === 'object' ? <span className="text-late">{luu.loi} <button type="button" className="link border-0 bg-transparent p-0" onClick={ghi}>{t('Thử lại')}</button></span> : null}
       </span>
     </div>
-  );
-}
-
-/** Chip vàng "Xét lại" (mockup `.chip-xl`) — chip nhà `Nhan`. */
-export function ChipXetLai({ onClick }: { onClick?: () => void }) {
-  return <Nhan tone="soon" onClick={onClick}>{t('Xét lại')}</Nhan>;
-}
-
-/** Hồ sơ lớp: em nào đang có dòng Xét lại (chip trên dòng em) — cùng dữ liệu panel; bấm chip mở panel một em. */
-export const XetLaiCtx = createContext<{ co: ReadonlySet<number>; mo: (sid: number) => void } | null>(null);
-export function ChipXetLaiDong({ sid }: { sid: number }) {
-  const c = useContext(XetLaiCtx);
-  if (!c?.co.has(sid)) return null;
-  return <ChipXetLai onClick={() => c.mo(sid)} />;
-}
-
-/** Hồ sơ HV (mockup khung 1c): dải vàng "Xét lại lộ trình · {lý do} · hạn …  Xét lại ›" — bấm mở panel đúng em đó tại trang. */
-export function DaiXetLai({ classId, studentId }: { classId: number; studentId: number }) {
-  const { data, reload } = useApi<DuLieu>(duongXetLai(classId, studentId), [classId, studentId]);
-  const [mo, setMo] = useState(false);
-  const e = data?.em.find((x) => x.studentId === studentId && !x.quyetDinh);
-  if (!e) return null;
-  return (
-    <>
-      <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-lg border px-3 py-2 text-sm" style={KHOI_VANG}>
-        <b className="shrink-0 text-slate-100">{t('Xét lại lộ trình')}</b>
-        <span className="min-w-0 text-slate-300 max-sm:basis-full">{e.lyDo.chu}{e.daChot.chu ? ` · ${e.daChot.chu}` : ''}</span>
-        <ChipHan loai="viec-van-hanh" han={e.han} />
-        <button type="button" className="btn btn-sm ml-auto min-h-[44px] sm:min-h-0" onClick={() => setMo(true)}>{data!.chiXem ? t('Xem') : t('Xét lại')}</button>
-      </div>
-      {mo && <PanelXetLai classId={classId} studentId={studentId} onClose={() => { setMo(false); reload(); }} />}
-    </>
   );
 }

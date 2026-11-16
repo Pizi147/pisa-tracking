@@ -14,7 +14,8 @@ import type { TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
 import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, luuRoiTiep, type HuongSauThi } from '@shared/domain/index.ts';
 import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
-import { LuaChonRadio, gioVnNay } from './PanelBaoPhTvv.tsx';
+import { LuaChonRadio } from './PanelBaoPhTvv.tsx';
+import { gioVnNay } from './gioVn.ts';
 import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from '../students/diemLanTruoc.tsx';
 
 const KN = ['l', 'r', 'w', 's'] as const;

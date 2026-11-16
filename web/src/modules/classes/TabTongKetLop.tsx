@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
-import { NganTongKet } from '../students/NganTongKet.tsx';
 import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { toneHuong } from '../students/CacLoTrinh.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const NganTongKet = lazyHop(() => import('../students/NganTongKet.tsx').then((x) => x.NganTongKet));
 
 type Dong = {
   studentId: number; ten: string; loTrinhId: number | null; roiSom: boolean; dauVao: number | null; target: number | null; soLuot: number;

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { cuonOnDinh } from '../../lib/cuonOnDinh.ts';
 import { Link, Navigate, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useChongVe, useVe } from '../../lib/quayLai.ts';
@@ -17,7 +18,6 @@ import { useLoiForm } from '../../ui/loiForm.tsx';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { guiHuyDiem } from '../cham/huyDiem.ts';
 import { HopThaoTacMt } from './HopThaoTacMt.tsx';
-import { HopKyNang } from '../test/keHoach/HopKyNang.tsx';
 import { DongThoiGianLuot, dongLuot, type DongLuot, type LichSuCase } from './DongThoiGianLuot.tsx';
 import {
   DeadlinePill, coDiemChinhThuc, lyDoChiDoc, useSaveScore, type Cell, type SaveOpts, type SavePatch,
@@ -47,11 +47,13 @@ import { khoiPhucMt, xoaMt } from '../test/keHoach/xoaMt.ts';
 import { TenCase, type CaseCard, type SkillBoardRow } from '../cases/SkillBoard.tsx';
 import type { CaseCua } from '../classes/BangCanHoTro.tsx';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
-import { NhanGt } from '../classes/DauTrangLop.tsx';
+import { NhanGt } from '../../ui/NhanGt.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { LichSuGap, LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { ChuDich } from '../../ui/ChuDich.tsx';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const HopKyNang = lazyHop(() => import('../test/keHoach/HopKyNang.tsx').then((x) => x.HopKyNang));
 
 type Detail = {
   id: number;

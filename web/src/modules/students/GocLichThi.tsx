@@ -1,4 +1,5 @@
 import { useThamSoUrl } from '../../lib/quayLai.ts';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Fragment, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
@@ -10,7 +11,6 @@ import { ChonLoc } from '../../ui/PeoplePicker.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { PanelSauThi } from '../congViec/PanelSauThi.tsx';
 import {
   CotGhi, CotLich, CotMt, CotSos, CotTarget, ChuLop, DaiMo, HopLich, NutMo, TenEm, laHop, locThiCua,
   type Hanh, type Hang, type HangHien, type LocThi, type LuuBody,
@@ -20,6 +20,7 @@ import {
   type NguCanhDs, type ThaoTacLichThi, type LichThi,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+const PanelSauThi = lazyHop(() => import('../congViec/PanelSauThi.tsx').then((x) => x.PanelSauThi));
 
 type Trang = { thang: string[]; rows: Hang[] };
 

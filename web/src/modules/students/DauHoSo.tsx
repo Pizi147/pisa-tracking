@@ -5,7 +5,7 @@ import { IconNhom, ThePhu, thePhu } from '../congViec/DanhSachViec.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { LoiTaiNho, TargetText } from '../../ui/ui.tsx';
 import { ChipHan, NhanLich } from '../../ui/Nhan.tsx';
-import { NhanGt } from '../classes/DauTrangLop.tsx';
+import { NhanGt } from '../../ui/NhanGt.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { TheYeuCau } from '../duyet/TheYeuCau.tsx';
 import { IconGap, IconTamDung } from '../../ui/BieuTuong.tsx';

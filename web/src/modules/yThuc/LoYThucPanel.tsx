@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
@@ -13,7 +14,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon, bacDu, bacNgan } from '@shared/domain/index.ts';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
-import { KhaiBacLoPanel } from './KhaiBacLoPanel.tsx';
+const KhaiBacLoPanel = lazyHop(() => import('./KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
 
 export type ViecLo = 'xu-ly' | 'ghi-nhan' | 'cap-bac';
 const MO_TA_MIN = 10;

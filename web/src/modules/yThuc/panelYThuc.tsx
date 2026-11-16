@@ -1,12 +1,14 @@
 import { useState, type ReactNode } from 'react';
-import { RecordViolationPanel } from './RecordViolationPanel.tsx';
-import { XacNhanXuLyPanel } from './XacNhanXuLyPanel.tsx';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { DaThucHienPanel } from './DaThucHienPanel.tsx';
-import { KhaiBacPanel } from './KhaiBacPanel.tsx';
-import { XemXuLyPanel } from './XemXuLyPanel.tsx';
 import { xoaViPham } from './DeleteViolationConfirm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import type { ViolationDetail } from './ChiTietViPham.tsx';
+const XemXuLyPanel = lazyHop(() => import('./XemXuLyPanel.tsx').then((x) => x.XemXuLyPanel), (p) => p.measureId == null);
+const KhaiBacPanel = lazyHop(() => import('./KhaiBacPanel.tsx').then((x) => x.KhaiBacPanel));
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const XacNhanXuLyPanel = lazyHop(() => import('./XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
+const RecordViolationPanel = lazyHop(() => import('./RecordViolationPanel.tsx').then((x) => x.RecordViolationPanel));
 
 export type ViolationChoSua = Pick<ViolationDetail, 'id' | 'studentId' | 'category' | 'skill' | 'occurredOn' | 'ten' | 'moTa' | 'chiNhac'>;
 
