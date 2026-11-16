@@ -16,8 +16,8 @@ export const EN_TINH_HINH_UI = {
     'Students with an open step (homeroom teacher, manager or consultant), including pending learning updates. Order: required / overdue, new, awaiting manager, awaiting consultant, updates. Other students by name.',
   'GVCN lớp em': "Student's homeroom teacher",
   'GVCN trả lời · hạn {ngay}': 'Homeroom replies · due {ngay}',
-  'GVCN: lần xử lý (bậc, ngày) hoặc Đã xem. TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn 5 ngày.':
-    'Homeroom: the action (level, date) or Seen. Consultant: parent-report result and the Content written. The parent-report task appears when the homeroom teacher saves an action, or when the manager approves / it auto-finalises; due in 5 days.',
+  'GVCN: lần xử lý (bậc, ngày). TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn {han:bao_ph_vi_pham}.':
+    'Homeroom: the action (level, date). Consultant: parent-report result and the Content written. The parent-report task appears when the homeroom teacher saves an action, or when the manager approves / it auto-finalises; due in {han:bao_ph_vi_pham}.',
   'Ghi kết quả tình hình học tập': 'Record learning update reply',
   'Gửi GVCN': 'Send to homeroom',
   'Gửi TVV': 'Send to consultant',

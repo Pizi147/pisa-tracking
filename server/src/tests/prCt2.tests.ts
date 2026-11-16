@@ -71,9 +71,10 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(c.length === 0 && !!get("SELECT 1 FROM demo_config WHERE key = 'pr_ct2_dien_buoi'"), `DB thật: ${c.join('; ')}`);
   });
 
-  check('CT2-0c · Truong: bộ đếm co/can chỉ hiện khi co < can', () => {
+  /* AUDIT-1611 A1-19: một dáng bộ đếm "n / trần" (DemChu) mọi nơi — mức tối thiểu (`dem.can`) không vẽ, kiểm khi lưu. */
+  check('CT2-0c · Truong: chỉ bộ đếm trần DemChu, không bộ đếm co/can', () => {
     const khung = fs.readFileSync(path.join(REPO, 'web/src/ui/KhungPanel.tsx'), 'utf8');
-    assert(/\{dem\?\.can && dem\.co < dem\.can \? <span/.test(khung), 'Truong còn hiện bộ đếm khi đã đạt');   // N35: nhánh sau là bộ đếm trần `DemChu`
+    assert(!/dem\.co < dem\.can/.test(khung) && /dem\?\.toiDa \? <DemChu/.test(khung), 'Truong còn bộ đếm tối thiểu');
   });
 
   check('CT2-1 · số buổi bổ trợ theo dải × chương trình; ELE không bổ trợ; coBoTroFinal', () => {

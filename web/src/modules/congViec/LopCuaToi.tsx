@@ -117,8 +117,10 @@ const COT = 'grid grid-cols-[104px_150px_152px_minmax(0,1fr)] items-center gap-x
  * Bấm chip = việc đầu (hạn sớm nhất) của loại đó ở lớp đó: mở panel tại chỗ, hoặc sang trang khi việc không làm tại chỗ (`onMo`).
  * 375: mỗi lớp một thẻ, chip cao 44.
  */
-export function LopCuaToi({ dong, onMo, dangTai, loi }: {
+export function LopCuaToi({ dong, onMo, dangTai, loi, chuRong }: {
   dong: Dong[]; onMo: (x: WorkItem) => void; dangTai: boolean; loi: React.ReactNode;
+  /** Câu rỗng riêng của nơi gọi (Head tutor chưa có vai GV — luật N50 (9)). */
+  chuRong?: string;
 }) {
   const { session } = useSession();
   const chuaPhanCong = !dangTai && !loi && !dong.length;
@@ -133,7 +135,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
       </h2>
       {loi ? <div className="p-4">{loi}</div>
         : dangTai ? <div className="p-4"><Skeleton rows={4} /></div>
-          : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
+          : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{chuRong ?? (session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào'))}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint max-sm:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
                 <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test')}</span><span>{t('Việc cần làm')}</span>

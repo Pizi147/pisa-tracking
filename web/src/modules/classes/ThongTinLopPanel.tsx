@@ -173,7 +173,7 @@ function PhanLop({ lop, suaDuoc, onDone }: {
           ) : (
             <div>
               <Truong nhan={t('Số lớp')} batBuoc luat={t('1–4 chữ số, được thêm một chữ cái cuối (101A)')} loi={loiSoHien}>
-                <input className="field w-28 tabular-nums" {...lf.o(loi, 'so')} aria-invalid={!!loiSoHien} inputMode="numeric" autoComplete="off"
+                <input className="field w-28 tabular-nums" aria-label={t('Số lớp')} {...lf.o(loi, 'so')} aria-invalid={!!loiSoHien} inputMode="numeric" autoComplete="off"
                   value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
               </Truong>
               <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">

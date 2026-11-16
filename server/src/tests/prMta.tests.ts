@@ -195,7 +195,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
       ['server/src/duyet/deXuatSua.ts', /LY_DO_TOI_THIEU/], ['server/src/duyet/yeuCau.ts', /DO_DAI_LY_DO/],
       ['server/src/classes/lenhChuyen.ts', /why\.length < 3|lyDo\.length < NHAN_XET_TOI_THIEU/], ['server/src/routes/index.ts', /lyDoTuDo\.length < 3/],
       ['server/src/classes/suaCaLop.ts', /LY_DO_TOI_THIEU/], ['shared/domain/chuyenLop.ts', /LY_DO_LENH_TOI_THIEU/],
-      ['web/src/modules/duyet/TheYeuCau.tsx', /TOI_THIEU/], ['web/src/modules/duyet/DeXuatSuaPanel.tsx', /LY_DO_TOI_THIEU/],
+      ['web/src/modules/duyet/TheYeuCau.tsx', /(?<!CHU_)TOI_THIEU/],   // CHU_TOI_THIEU (N50-6) = mô tả khi QL sửa Case, không phải lý do đề xuất ['web/src/modules/duyet/DeXuatSuaPanel.tsx', /LY_DO_TOI_THIEU/],
     ] as const) assert(!cam.test(nguon(f)), `${f} còn tối thiểu ký tự`);
     const yc: any = d;
     assert(yc.kiemDongLenh({ huong: 'chuyen_lop', lopDichId: 1, lopDichFt: false, nguonFt: false, tuan: t.addDays(tuanNay, 7), homNay: TODAY, lyDo: 'x', khacGoiY: false, mucTieu: null, ngayXemLai: null }) === null, 'lý do 1 ký tự');

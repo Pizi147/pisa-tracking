@@ -237,7 +237,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     assert(/^đến lúc thi/.test(chu), `chữ mốc theo ngày thi: ${chu}`);
   }));
 
-  check('OV13a-8 · C: GVCN / QL "Kết thúc PA" quy chế đang chạy, lý do ≥ 10 ký tự, nhật ký lý do + người; GV khác 403; PA chờ xác nhận 400', () => thu(() => {
+  check('OV13a-8 · C: GVCN / QL "Kết thúc PA" quy chế đang chạy, lý do ≥ 8 ký tự (N50-6), nhật ký lý do + người; GV khác 403; PA chờ xác nhận 400', () => thu(() => {
     dung(luot);
     chotSos2(luot);
     const cL = caseKn(luot, 'listening'), cS = caseKn(luot, 'speaking');
@@ -246,8 +246,8 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     assert(cases.caseDetail(gvKhac, cL.id).viewer.coTheKetThucPa === false, 'GV khác không thấy Kết thúc PA');
     const e403 = loiCua(() => cases.ketThucPaQuyChe(gvKhac, pa.id, { lyDo: 'Em chuyển lịch học, ngừng Tutor.' }));
     assert(e403?.status === 403, `GV khác → 403: ${e403?.status} ${e403?.message}`);
-    const e400 = loiCua(() => cases.ketThucPaQuyChe(GVCN, pa.id, { lyDo: 'ngắn quá' }));
-    assert(e400?.status === 400, `lý do < 10 ký tự → 400: ${e400?.status}`);
+    const e400 = loiCua(() => cases.ketThucPaQuyChe(GVCN, pa.id, { lyDo: 'ngắn' }));
+    assert(e400?.status === 400, `lý do < 8 ký tự → 400: ${e400?.status}`);
     const paS = paCua(cS.id).find((x) => x.preset === 1);
     assert(loiCua(() => cases.ketThucPaQuyChe(QL, paS.id, { lyDo: 'Kết thúc PA chưa xác nhận.' }))?.status === 400, 'PA chờ xác nhận → 400');
     const LY = 'Em chuyển sang lịch học khác, ngừng Tutor.';

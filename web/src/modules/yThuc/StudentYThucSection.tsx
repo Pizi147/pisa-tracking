@@ -7,7 +7,7 @@ import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, bacDu, bacNgan, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
+import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, bacDu, bacNgan, chenHan, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
@@ -220,7 +220,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   };
   const kThMo = d.tinhHinh.filter((x) => x.trangThai === 'mo').map((x) => dongTh(x));
   const soCanLam = (kCho ? 1 : 0) + (dx ? 1 : 0) + (th ? 1 : 0) + choTvv.length + kThMo.length;
-  const iBaoPh = <NutLuat label={t('Báo PH sinh khi nào')}>{t('GVCN: lần xử lý (bậc, ngày) hoặc Đã xem. TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn 5 ngày.')}</NutLuat>;
+  const iBaoPh = <NutLuat label={t('Báo PH sinh khi nào')}>{chenHan(t('GVCN: lần xử lý (bậc, ngày). TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn {han:bao_ph_vi_pham}.'))}</NutLuat>;
 
   /* ---------------- Cả quá trình (mockup v20 A4) ---------------- */
   const loaiCua = (x: DongThoiGianYt): Exclude<LocLs, 'tat-ca' | 'tinh-hinh'> => (x.loai === 'vi-pham' && x.chiNhac ? 'nhac-nho' : 'vi-pham');

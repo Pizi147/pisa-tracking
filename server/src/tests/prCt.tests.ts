@@ -626,9 +626,9 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(maLoi(() => bg.phieuBanGiao(P.cpManager, { lopNguonId: n5 })) === 403, 'QL chi nhánh khác → 403');
     assert(maLoi(() => bg.phieuBanGiao(loadPrincipal(GV[4].userId), { lopNguonId: n5 })) === 403, 'GV không dạy lớp → 403');
   });
-  check('CT (5c) · xác nhận: nhận xét 14 ký tự → 400; đủ → chụp phần tự điền, "GVBM chưa bàn giao", Hành trình; xác nhận hai lần → 409; GVBM / GV lớp chuyển đến → 403', () => {
+  check('CT (5c) · xác nhận: nhận xét 7 ký tự → 400 (N50-6: 15 → 8); đủ → chụp phần tự điền, "GVBM chưa bàn giao", Hành trình; xác nhận hai lần → 409; GVBM / GV lớp chuyển đến → 403', () => {
     const l = lenhCua(em5[0]);
-    assert(maLoi(() => bg.xacNhanBanGiao(gvcn5, l.id, 'a'.repeat(14))) === 400, '14 ký tự');
+    assert(maLoi(() => bg.xacNhanBanGiao(gvcn5, l.id, 'a'.repeat(7))) === 400, '7 ký tự');
     assert(maLoi(() => bg.xacNhanBanGiao(gvbmL, l.id, 'Em chăm, ngại nói trước lớp.')) === 403 && maLoi(() => bg.xacNhanBanGiao(gvDich, l.id, 'Em chăm, ngại nói trước lớp.')) === 403, 'GVBM / GV đích 403');
     bg.xacNhanBanGiao(gvcn5, l.id, 'Em chăm, ngại nói trước lớp. Mẹ theo sát.');
     const sau = lenhCua(em5[0]);

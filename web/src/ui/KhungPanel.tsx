@@ -569,7 +569,8 @@ export function Truong({ nhan, batBuoc, thieu, phu, phuNhan, luat, loi, dem, as 
 }) {
   /* Ô ngày / ô chọn người bên trong báo id → nhãn `<label htmlFor>`, không bọc nút lịch (`BaoOTrongNhan`). Thẻ khung chỉ theo props. */
   const [idO, setIdO] = useState<string | null>(null);
-  const Vo = as === 'div' || coOTuNhan(children) ? 'div' : 'label';
+  /* AUDIT-1611 A3-20: có ⓘ (`luat`) thì khung là div — nút trong <label> sẽ thành ô được nhãn trỏ tới (ô nhập mất tên). */
+  const Vo = as === 'div' || luat || coOTuNhan(children) ? 'div' : 'label';
   /* `as="div"` không có ô để nhãn trỏ vào (nhóm NutChon…) → nhóm mang tên của nhãn, trình đọc màn hình đọc "Mức độ, nhóm". */
   const idNhan = useId();
   const dam = useContext(NhanTruongDam);   // UI-CONG-VIEC: ô không bắt buộc không ghi "(không bắt buộc)" — ô bắt buộc đã có *
@@ -580,7 +581,6 @@ export function Truong({ nhan, batBuoc, thieu, phu, phuNhan, luat, loi, dem, as 
     <span className="min-w-0 flex-1">
       {nhan}{batBuoc && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
       {phuNhan && <span className="font-normal text-slate-400"> {phuNhan}</span>}
-      {luat && <span className="ml-1 inline-flex align-middle font-normal"><NutLuat label={nhan}>{luat}</NutLuat></span>}
       {thieu && <span className="ml-1.5 text-xs font-semibold text-late">{t('Thiếu')}</span>}
     </span>
     {dem?.toiDa ? <DemChu n={dem.co} toiDa={dem.toiDa} /> : null}
@@ -591,7 +591,10 @@ export function Truong({ nhan, batBuoc, thieu, phu, phuNhan, luat, loi, dem, as 
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Vo className="block min-w-0" {...nhom}>
-        {troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>}
+        {(() => {
+          const the = troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>;
+          return luat ? <span className="flex items-baseline gap-1">{the}<NutLuat label={nhan}>{luat}</NutLuat></span> : the;
+        })()}
         {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {phu && <span className="mt-1 block truncate text-xs text-slate-500">{phu}</span>}
