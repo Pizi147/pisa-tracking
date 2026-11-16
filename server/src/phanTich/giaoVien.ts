@@ -1036,7 +1036,14 @@ const xemChiNhanh = (cn: number): Principal => ({
 });
 
 
-function nguCanhCuaGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null }) {
+/** AUDIT-1611 P1-05: `ct` (ft / thuong) — số Việc · Chấm (sổ) chỉ của lớp khung đó (+ việc không gắn lớp), như dòng bảng GV Tổng quan / Phân tích mở sang. */
+type QHoSoGv = { tu?: string | null; den?: string | null; ct?: string | null };
+const ctHoSoGv = (ct: string | null | undefined): KhungPtGv | null => {
+  if (!ct) return null;
+  if (ct !== 'ft' && ct !== 'thuong') throw badRequest('Chương trình không hợp lệ.');
+  return ct;
+};
+function nguCanhCuaGv(p: Principal, gvId: number, q: QHoSoGv) {
   const { branchIds } = phamViHoSoGv(p, gvId);
   const homNay = demoToday();
   const k = khoangPtGv(q, homNay);
@@ -1051,7 +1058,7 @@ function nguCanhCuaGv(p: Principal, gvId: number, q: { tu?: string | null; den?:
         WHERE ta.user_id = ? AND ta.status IN ('active', 'ended') AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)
           ${branchIds ? `AND c.branch_id IN (${cho(branchIds.length)})` : ''}
         ORDER BY c.branch_id, c.is_fast_track DESC`).all(gvId, addDays(k.den, 6), k.tu, ...(branchIds ?? [])) as any[];
-    return ketNguCanhGv(branchIds, homNay, k, ck.map((r) => nguCanhCn(r.branch_id, { ct: r.is_fast_track ? 'ft' : 'thuong', tu: k.tu, den: k.den })));
+    return ketNguCanhGv(branchIds, homNay, k, ctHoSoGv(q.ct), ck.map((r) => nguCanhCn(r.branch_id, { ct: r.is_fast_track ? 'ft' : 'thuong', tu: k.tu, den: k.den })));
   }
   const rows = db().prepare(
     `WITH ck AS (SELECT DISTINCT c.branch_id, c.is_fast_track FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
@@ -1062,16 +1069,16 @@ function nguCanhCuaGv(p: Principal, gvId: number, q: { tu?: string | null; den?:
        ${TU_LOP_PC.replace(/^FROM classes c /, '')}`).all(gvId, addDays(k.den, 6), k.tu, ...(branchIds ?? [])) as any[];
   const nhom = new Map<string, any[]>();
   for (const r of rows) (nhom.get(`${r.ck_cn}|${r.ck_ft}`) ?? nhom.set(`${r.ck_cn}|${r.ck_ft}`, []).get(`${r.ck_cn}|${r.ck_ft}`)!).push(r);
-  return ketNguCanhGv(branchIds, homNay, k, [...nhom.values()].sort((a, b) => a[0].ck_cn - b[0].ck_cn || b[0].ck_ft - a[0].ck_ft)
+  return ketNguCanhGv(branchIds, homNay, k, ctHoSoGv(q.ct), [...nhom.values()].sort((a, b) => a[0].ck_cn - b[0].ck_cn || b[0].ck_ft - a[0].ck_ft)
     .map((g) => dungNguCanh(g[0].ck_cn, g[0].ck_ten, g[0].ck_ft ? 'ft' : 'thuong', k, null, homNay, g)));
 }
-function ketNguCanhGv(branchIds: number[] | null, homNay: string, k: { tu: string; den: string }, ds: NguCanhPtGv[]) {
+function ketNguCanhGv(branchIds: number[] | null, homNay: string, k: { tu: string; den: string }, khung: KhungPtGv | null, ds: NguCanhPtGv[]) {
   /*
    * Sổ nghĩa vụ (PR-2): Chấm Test · Việc của hồ sơ = dòng sổ của GV trong phạm vi người xem (`branchIds`, null = mọi chi nhánh), kỳ theo hạn. Ghi lại sổ việc
    * (`lamMoiViec`) chỉ ở chi nhánh GV dạy trong kỳ (phạm vi rộng: GV tự xem).
    * ponytail: việc GV giữ ở chi nhánh không dạy trong kỳ đọc sổ đã ghi (≤ lần ghi sổ kế / đêm) — thêm chi nhánh theo vai nếu chủ SP báo lệch.
    */
-  const so: PhamViSo = { cn: branchIds, tu: k.tu, cuoi: addDays(k.den, 6), homNay };
+  const so: PhamViSo = { cn: branchIds, tu: k.tu, cuoi: addDays(k.den, 6), homNay, khung };
   const lamMoi = () => lamMoiViec(branchIds ?? [...new Set(ds.map((c) => c.cn))], homNay);
   return { tu: k.tu, den: k.den, homNay, ds, so, lamMoi, nhieuCn: branchIds == null ? new Set(ds.map((c) => c.cn)).size > 1 : branchIds.length > 1 };
 }
@@ -1080,7 +1087,7 @@ function ketNguCanhGv(branchIds: number[] | null, homNay: string, k: { tu: strin
  * RA-DOC-0611: `chiHocThuat` — Tổng quan GV chỉ đọc `tu`, `den`, `ketQua`, `tienBo`, `hocThuatTheoLop`: bỏ ba tập Chấm điểm đúng hạn, Ghi KQ PA
  * (`dung-han-cap-nhat` cả chi nhánh), PA hiệu quả (`paCoKetQua` cả chi nhánh) — các trường đó khi ấy là tập rỗng, người gọi không được đọc.
  */
-export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null }, chiHocThuat = false): ChiSoHoSoGv {
+export function chiSoHoSoGv(p: Principal, gvId: number, q: QHoSoGv, chiHocThuat = false): ChiSoHoSoGv {
   const g = nguCanhCuaGv(p, gvId, q);
   if (!chiHocThuat) g.lamMoi();
   const so = chiHocThuat ? null : soCuaKy(g.so, gvId);
@@ -1158,7 +1165,7 @@ export function chiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null;
 }
 
 /** Panel chỉ đọc của một số ở hồ sơ GV theo kỳ — CÙNG `oChiSoCua` qua mọi ngữ cảnh của `chiSoHoSoGv` (số = số dòng). `cot` thêm `ket-qua:<khung>:<kỹ năng>[:<lớp>]`. */
-export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; loc?: string | null; /** 6C-NHO: Phân tích GV — chỉ chi nhánh đang chọn. */ cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
+export function oChiSoHoSoGv(p: Principal, gvId: number, q: QHoSoGv & { cot: string; loc?: string | null; /** 6C-NHO: Phân tích GV — chỉ chi nhánh đang chọn. */ cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
   if (q.loc != null && q.loc !== 'dat' && q.loc !== 'chua' && q.loc !== 'vuot') throw badRequest('Lọc phải là "dat", "chua" hoặc "vuot".');
   const r = oChiSoHoSoGvDu(p, gvId, q);
   /*
@@ -1174,7 +1181,7 @@ export function oChiSoHoSoGv(p: Principal, gvId: number, q: { tu?: string | null
   return { n: rows.length, tieuDe: r.tieuDe, rows, ...(tienBo ? kieuBang(rows, CACH_TINH_GV['tien-bo']) : viec ? kieuBang(rows, CACH_TINH_GV[q.cot]) : {}) };
 }
 
-function oChiSoHoSoGvDu(p: Principal, gvId: number, q: { tu?: string | null; den?: string | null; cot: string; cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
+function oChiSoHoSoGvDu(p: Principal, gvId: number, q: QHoSoGv & { cot: string; cn?: number | null }): { n: number; tieuDe: string; rows: MetricRow[] } {
   const g = nguCanhCuaGv(p, gvId, q);
   const kyChu = `${tuanLichNgan(g.tu)} – ${tuanLichNgan(g.den)}`;
   if (q.cot === 'cham-diem' || q.cot === 'viec-dung-han') {

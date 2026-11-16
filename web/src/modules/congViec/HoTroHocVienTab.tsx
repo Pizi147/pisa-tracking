@@ -114,6 +114,8 @@ export function HoTroHocVienTab() {
   /* OV-11f (TQ-2): `loai=` (từ Tổng quan, vd "PA chưa có Kết quả") lọc ĐÚNG loại việc — số ở ô = số việc nơi mở; đổi nhóm / Xoá lọc thì bỏ. */
   const loai = !params.get('nhom') && params.get('loai') ? params.get('loai') : null;
   const viec = params.get('viec');
+  /* AUDIT-1611 P1-07: `lop=` (từ ô "Quá hạn của lớp" / "Chờ chấm" ở hồ sơ lớp của QL) — chỉ việc của lớp đó (dòng gộp nhiều lớp giữ khi có lớp đó); chip ✕ bỏ. */
+  const lopLoc = Number(params.get('lop')) || null;
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
@@ -204,8 +206,9 @@ export function HoTroHocVienTab() {
     return [...ds, ...le];
   }, [tatCaViec, giu, xong]);
 
-  const theoKhung = (ds: WorkItem[]) => ds.filter((it) => (khung === 'tat-ca' || !it.khung || it.khung === khung) && (!loai || it.group === loai));
-  const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung, loai]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const cuaLopLoc = (it: WorkItem) => !lopLoc || it.classId === lopLoc || !!it.con?.some((c) => c.classId === lopLoc);
+  const theoKhung = (ds: WorkItem[]) => ds.filter((it) => (khung === 'tat-ca' || !it.khung || it.khung === khung) && (!loai || it.group === loai) && cuaLopLoc(it));
+  const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung, loai, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
 
   /*
@@ -242,7 +245,7 @@ export function HoTroHocVienTab() {
     /* AUDIT-UI B3: badge = yêu cầu cần làm ngay (quá hạn) — 0 thì không vẽ (`BadgeTabSo`); tổng ở đầu tab "n yêu cầu". */
     const bd: BadgeTab | null = cho ? { so: q, n: cho, quaHan: q, homNay: 0 } : null;
     return [{ key: 'duyet', nhan: tenTab('duyet'), badge: bd }, ...ds];
-  }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Mở trang: tab đầu có việc quá hạn, không có thì tab đầu (`tabMacDinh`); panel duyệt đang mở → tab Chờ bạn duyệt. */
   /* RA-LOI-0711d: mở từ link `?viec=` (chuông, Tổng quan, Giao việc) không kèm `nhom` → tab của chính việc đó, danh sách + Quay lại đúng chỗ. */
   const tabViec = !tabUrl && viec ? (() => { const x = phang(dsGoc).find((y) => y.key === viec); return x ? tabCua(x) : null; })() : null;
@@ -283,7 +286,7 @@ export function HoTroHocVienTab() {
     /* Plan mục 4: em cuối của dòng gộp vừa xong (dòng tan thành việc lẻ, hoặc biến mất) đứng ở chỗ của dòng gộp cũ, không rơi xuống cuối mục. */
     const vt = (x: WorkItem) => cu.vt.get(x.key) ?? cu.vt.get(khoaGopCua(x as any) ?? '') ?? Number.MAX_SAFE_INTEGER;
     return new Map([...out].map(([k, ds]) => [k, ds.map((m) => ({ ...m, items: [...m.items].sort((a, b) => vt(a) - vt(b)) }))]));
-  }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const mucs = (tab && mucTheoTab.get(tab)) || [];
   /* Số đầu mục chỉ từ máy chủ (`locItems`) — dòng giữ chỗ vừa xong chỉ để vẽ. */
   const demMuc = useMemo(() => {
@@ -517,6 +520,11 @@ export function HoTroHocVienTab() {
             </span>
           )}
           {/* U01 #7: việc vừa xong trong phiên → chip bấm được, lọc "Đã xong hôm nay" (tìm lại không dò từ đầu). */}
+          {lopLoc && tab !== 'duyet' && (
+            <button type="button" className="nut-loc nut-loc-dang" title={t('Bỏ lọc lớp')} onClick={() => setParam('lop', null)}>
+              {phang(tatCaViec).find((x) => x.classId === lopLoc)?.classCode ?? t('Lớp')} <span aria-hidden>✕</span>
+            </button>
+          )}
           {xong.size > 0 && (
             <button type="button" className="nut-loc text-ok" aria-pressed={xemXong} onClick={() => setXemXong((x) => !x)}>
               {xemXong ? <>{t('✓ Xong hôm nay · {n}', { n: xong.size })} <span aria-hidden>✕</span></> : t('✓ {n} xong hôm nay', { n: xong.size })}

@@ -12,6 +12,7 @@ import { demoToday } from '../demoConfig.ts';
 import { coKhoa, nho } from '../platform/nguCanhRequest.ts';
 import { mondayOf } from '../platform/week.ts';
 import { metricSet, overdueScoreBai, rowsFor, type MetricRow } from '../worklist/metrics.ts';
+import { tapCaseQl } from '../worklist/bangChiNhanh.ts';
 import { phamViPhanTich } from './phamVi.ts';
 import { ganLuotDiem, luotTrongKhoang, tenChiNhanh } from './tongHop.ts';
 import { bangPa, dongPa } from './hieuQuaPa.ts';
@@ -291,15 +292,14 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
   /* Tại lúc xem — chỉ số trong sổ, cùng phạm vi Tổng quan (chi nhánh + khung). */
   const loc = { branchId: f.branchId ?? null, program: f.ct };
   const chuaDiem = metricSet(p, 'bai-qua-han-nhap-diem', loc).ids;
-  const caseChua = metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', loc).ids;
+  /* AUDIT-1611 P1-06: cùng tập Case với Tổng quan (`tapCaseQl`: em đang học, bỏ "Chờ kết quả cuối"). */
+  const tapCase = tapCaseQl(metricSet(p, 'case-mo', loc).ids, metricSet(p, 'case-cho-xac-dinh-nguyen-nhan', loc));
+  const caseChua = tapCase.chotIds;
   const hvBai = new Set<number>();
   theoLo([...new Set(chuaDiem.map((b) => tachBaiId(b).attemptId))], (lo, ph) => {
     for (const x of conn.prepare(`SELECT student_id FROM assessment_attempts WHERE id IN (${ph})`).all(...lo) as any[]) hvBai.add(x.student_id);
   });
-  const hvCase = new Set<number>();
-  theoLo(caseChua, (lo, ph) => {
-    for (const x of conn.prepare(`SELECT student_id FROM sos_cases WHERE id IN (${ph})`).all(...lo) as any[]) if (x.student_id) hvCase.add(x.student_id);
-  });
+  const hvCase = new Set(caseChua.map((id) => tapCase.emCase.get(id)).filter((x): x is number => !!x));
 
   return {
     tu: f.tu, den: f.den, ct: f.ct, homNay: r.homNay,
@@ -314,7 +314,7 @@ export function baoCao(p: Principal, f: LocBaoCao): BaoCaoKq {
       chuaDiemHv: hvBai.size, chuaDiemBai: chuaDiem.length, caseChuaChotHv: hvCase.size, caseChuaChot: caseChua.length,
     },
     casePa: {
-      caseMo: metricSet(p, 'case-mo', loc).n,
+      caseMo: tapCase.caseMoIds.length,
       ...(({ n, numeratorIds }) => ({ paKetQua: n, paCaiThien: numeratorIds?.length ?? 0 }))(metricSet(p, 'pa-co-ket-qua', { ...loc, from: f.tu, to: f.den })),
       quaHanChotPa: metricSet(p, 'case-xac-dinh-nguyen-nhan-qua-han', loc).n,
       quaHanKetQuaPa: metricSet(p, 'pa-can-cap-nhat', loc).n,

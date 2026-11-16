@@ -1,7 +1,7 @@
 import { MuiChev } from '../../ui/HangNhom.tsx';
 import { useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
-import { rateView, tuanLich, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
+import { duongHoSoGv, rateView, tuanLich, type ChuongTrinh, type HangPtGv, type KhoangNgay, type KhungPtGv, type OPtGv, type PhanTichGvKq } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { OSo } from '../../ui/OSo.tsx';
@@ -108,7 +108,8 @@ export function PhanTichGiaoVien({ branchId, ct, khoang }: { branchId: number | 
       return (
         <span className="inline-flex items-center gap-1.5">
           {tong && nCn > 1 && nutMo(h.id, h.ten, nCn)}
-          <Link to={`/giao-vien/${h.id}`} className="ten-ho-so font-semibold">{h.ten}</Link>
+          {/* AUDIT-1611 P1-05: hồ sơ GV mở đúng kỳ đang xem. */}
+          <Link to={duongHoSoGv(h.id, khoang, khung)} className="ten-ho-so font-semibold">{h.ten}</Link>
         </span>
       );
     }

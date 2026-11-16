@@ -54,8 +54,10 @@ export async function runPrOv15dTests(t: YThucTestKit) {
     const ql = P.mbManager;
     const mb = (conn.prepare(`SELECT id FROM branches WHERE code = 'MB'`).get() as any).id;
     const r = bang.bangChiNhanh(ql, { branchId: mb, ct: 'ft' });
-    const m = metrics.metricSet(ql, 'case-cho-xac-dinh-nguyen-nhan', { branchId: mb, program: 'ft' });
-    assert(r.tong.caseChuaChot.n === m.n, `tổng Case ${r.tong.caseChuaChot.n} ≠ ô số ${m.n}`);
+    /* AUDIT-1611 P1-06: tập = `tapCaseQl` (chỉ số `case-cho-xac-dinh-nguyen-nhan` bỏ "Chờ kết quả cuối" + em không đang học) — cùng hàm Báo cáo Phân tích. */
+    const loc = { branchId: mb, program: 'ft' };
+    const m = { ids: bang.tapCaseQl(metrics.metricSet(ql, 'case-mo', loc).ids, metrics.metricSet(ql, 'case-cho-xac-dinh-nguyen-nhan', loc)).chotIds as number[] };
+    assert(r.tong.caseChuaChot.n === m.ids.length, `tổng Case ${r.tong.caseChuaChot.n} ≠ ô số ${m.ids.length}`);
     const hv = new Set((conn.prepare(`SELECT DISTINCT student_id FROM sos_cases WHERE id IN (${m.ids.map(() => '?').join(',') || 'NULL'})`).all(...m.ids) as any[]).map((x) => x.student_id));
     assert(r.tong.caseChuaChotHv.n === hv.size, `tổng HV ${r.tong.caseChuaChotHv.n} ≠ ${hv.size}`);
     const sigma = r.hang.reduce((s: number, h: any) => s + h.o.caseChuaChot.n, 0) + (r.conLai?.o.caseChuaChot.n ?? 0);
