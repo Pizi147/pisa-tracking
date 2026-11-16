@@ -1536,6 +1536,7 @@ CREATE INDEX idx_signal_student ON case_signals(student_id);
 CREATE INDEX idx_signal_status ON case_signals(status);
 CREATE INDEX idx_signal_owner ON case_signals(owner_user_id);
 CREATE INDEX idx_signal_attempt ON case_signals(attempt_id);
+CREATE INDEX IF NOT EXISTS idx_signal_class ON case_signals(class_id);   -- TD-QUET
 
 CREATE TABLE case_milestones (
   id INTEGER PRIMARY KEY,
@@ -1567,6 +1568,7 @@ CREATE TABLE sos_case_history (
   actor_user_id INTEGER REFERENCES users(id),
   created_at TEXT NOT NULL
 );
+CREATE INDEX IF NOT EXISTS idx_case_history_case ON sos_case_history(case_id);   -- TD-QUET
 
 -- ===================== HỌP TUẦN =====================
 CREATE TABLE unit_reports (
