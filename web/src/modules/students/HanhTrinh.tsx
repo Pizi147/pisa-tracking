@@ -493,9 +493,9 @@ function VanDeHang({ v, vi, truc, boCuc, rongTuan, homNay, mo, onOpenCase, onMoH
     <>
       <CotGhim hang={vi.khung} cotTen={boCuc.cotTen} className="min-w-0 flex-col justify-center gap-[3px] px-3.5 py-2">
         <button type="button" onClick={() => onOpenCase(v.caseId)} title={dich(v.ten)} className="group min-w-0 appearance-none border-0 bg-transparent p-0 text-left">
-          <span className="flex min-w-0 items-center gap-1.5 whitespace-nowrap text-[13px] text-[var(--text)]">
+          <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[13px] text-[var(--text)]">   {/* AU-GON A3-23: tên Case xuống dòng, không cắt "…" */}
             <NhanLoai loai="Case" />
-            {!boCuc.xuongDong ? <span className="min-w-0 truncate group-hover:underline">{tenCaseNgan(v)}</span>
+            {!boCuc.xuongDong ? <span className="min-w-0 break-words group-hover:underline">{tenCaseNgan(v)}</span>
               : v.attemptNo != null && <span className="tabular-nums">MT{v.attemptNo}</span>}
             {v.sos && !v.huy ? <ChipSos muc={v.sos} tinh /> : null}
           </span>

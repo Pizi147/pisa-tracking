@@ -202,8 +202,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
         </>}
 
         <div>
-          <Truong nhan={t('Số lớp')} batBuoc phu={t('1–4 chữ số, được thêm một chữ cái cuối (101A)')} loi={loiHien('so')}>
-            <input className="field w-28 tabular-nums" {...o('so')} inputMode="numeric" autoComplete="off"
+          <Truong nhan={t('Số lớp')} batBuoc luat={t('1–4 chữ số, được thêm một chữ cái cuối (101A)')} loi={loiHien('so')}>
+            <input className="field w-28 tabular-nums" aria-label={t('Số lớp')} {...o('so')} inputMode="numeric" autoComplete="off"
               value={so} onChange={(e) => setSo(locSoLop(e.target.value))} />
           </Truong>
           <p className="m-0 mt-2 text-sm tabular-nums" aria-live="polite">
@@ -219,15 +219,12 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
         {lopSeCo && <p className="m-0 text-xs text-slate-400 tabular-nums">{t('Lớp này sẽ có: {x}', { x: lopSeCo })}</p>}
       </div>
 
-      {ganDuoc && <Khoi tieuDe={t('Phân công')}>
+      {ganDuoc && <Khoi tieuDe={t('Phân công')} luat={oList.length === 1 ? undefined : t('Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.')}>
         <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
           onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
         <NutTachFou fou={fou} />
-        <p className="m-0 text-xs text-slate-500">
-          {oList.length === 1
-            ? t('Lớp Pre FOU không chia môn — GVCN dạy luôn.')
-            : t('Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.')}
-        </p>
+        {/* AUDIT-1611 A2-27: câu luật vào ⓘ của khối; chỉ giữ câu trạng thái Pre FOU. */}
+        {oList.length === 1 && <p className="m-0 text-xs text-slate-500">{t('Lớp Pre FOU không chia môn — GVCN dạy luôn.')}</p>}
       </Khoi>}
     </KhungPanel>
   );

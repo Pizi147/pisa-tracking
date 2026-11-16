@@ -204,7 +204,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
               ds={(classes.data ?? []).map((c: any) => ({ id: c.id, ma: c.code,
                 phu: phuLop({ ct: c.programme_name, cn: motCn ? null : c.branch_code, siSo: c.student_count, tuan: tuanHoc(c.start_date, homNay) }) }))} />
           </Field>
-          <Field label={t('Tuần bắt đầu học (mặc định cho mọi dòng)')} hint={goiYTuan ?? undefined}>
+          <Field label={t('Tuần bắt đầu học')} luat={t('Mặc định cho mọi dòng; cột tuần dán từ Excel vẫn thắng.')} hint={goiYTuan ?? undefined}>
             <ONgay kieu="tuan" value={tuanChung} onChange={(v) => { setStartWeek(v); setPreview(null); }} />
           </Field>
         </div>

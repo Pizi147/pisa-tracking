@@ -15,7 +15,7 @@ import { lamTaiCho } from '../congViec/lamTaiCho.ts';
 import { OPhuHuynh } from './HocVienTheoVai.tsx';
 import { chuChuaNguyenNhan, type CaseTomTat } from './BangSos.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
-import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, duongHoSoHocVien, tachNhanLichThi, thuNgay, vaiXemHocVien, type DiemHv, type GiaiDoanSauThi, type LichThi, type LienHe } from '@shared/domain/index.ts';
+import { LOAI_HAN_CUA_VIEC, NHAN_NHOM_XU_LY, duongHoSoHocVien, shortDate, tachNhanLichThi, vaiXemHocVien, type DiemHv, type GiaiDoanSauThi, type LichThi, type LienHe } from '@shared/domain/index.ts';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { KetQuaThiThatPanel } from './KetQuaThiThatPanel.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
@@ -168,7 +168,7 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="min-w-0 flex-1 max-sm:basis-full">
                       <NhanSauThi s={data.sauThi} />
-                      {data.sauThi.ngayThi && <span className="mt-1 block text-xs text-slate-400">{t('Đã thi {ngay}', { ngay: thuNgay(data.sauThi.ngayThi, homNay) })}</span>}
+                      {data.sauThi.ngayThi && <span className="mt-1 block text-xs text-slate-400">{t('Đã thi {ngay}', { ngay: shortDate(data.sauThi.ngayThi, homNay) })}</span>}
                     </span>
                     {data.sauThi.coTheGiaHan && <button type="button" className="btn min-h-[44px] max-sm:flex-1 sm:min-h-[36px]" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
                     {data.sauThi.giaiDoan === 'da_thi_cho_kq' && data.sauThi.coTheNhap && (

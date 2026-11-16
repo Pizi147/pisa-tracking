@@ -536,13 +536,14 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
               <ONgay kieu="tuan" id={lf.oId('tuan')} onBlur={lf.roi('tuan')} invalid={!!lf.loiCua(loi, 'tuan')} value={tuan} onChange={setTuan} />
             </Truong>
           )}
-          <Truong nhan={t('Dự kiến thi')} tuyChon loi={lf.loiCua(loi, 'thi')} phu={t('dd/mm/yyyy hoặc mm/yyyy')}>
+          <Truong nhan={t('Dự kiến thi')} tuyChon loi={lf.loiCua(loi, 'thi')}>
             <ONgay kieu="ngay-hoac-thang" id={lf.oId('thi')} value={thi} goiY={t('dd/mm/yyyy hoặc mm/yyyy')} onChange={sua(setThi)} />
           </Truong>
           {(targetThang || targetDeXuat) && !(targetDeXuat && dx) ? (
             <Truong nhan={kt ? `Target (${kt.ten} ${kt.min}–${kt.max})` : 'Target'} tuyChon as="div" loi={lf.loiCua(loi, 'target')}
-              phu={[targetDeXuat ? t('Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.') : kt ? t('Số nguyên. Bỏ trống = chưa có Target.') : `${t('Band 0–9, bước 0,5.')}${oKck ? ` KCK: ${dichChu(GIAI_THICH_KCK)}.` : ''}`,
-                dx ? t('Chờ duyệt: {x}', { x: kt ? dx.moi : chuDeXuat(dx.moi) }) : null].filter(Boolean).join(' · ')}>
+              luat={kt ? t('Số nguyên. Bỏ trống = chưa có Target.') : `${t('Band 0–9, bước 0,5.')}${oKck ? ` KCK: ${dichChu(GIAI_THICH_KCK)}.` : ''}`}
+              phu={[targetDeXuat ? t('Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.') : null,
+                dx ? t('Chờ duyệt: {x}', { x: kt ? dx.moi : chuDeXuat(dx.moi) }) : null].filter(Boolean).join(' · ') || undefined}>
               <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode={kt ? 'numeric' : 'decimal'} step={kt ? 1 : 0.5} min={kt?.min ?? 0} max={kt?.max ?? 9} aria-label="Target"
                   {...lf.o(loi, 'target')} value={target} onChange={(e) => sua(setTarget)(e.target.value)} />
@@ -576,8 +577,8 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           )}
           {doiMon && monTom && <KhoiKhiLuu dong={monTom.dong} vang />}
           {coDauVao && (
-            <Truong as="div" nhan={t('Điểm đầu vào')} tuyChon loi={lf.loiCua(loi, 'dau-vao')}
-              phu={bl?.attemptId ? t('Đang lấy từ MT{n} · gõ tay thì thay', { n: bl.attemptNo ?? '' }) : t('Đủ L R W S thì Overall tự tính')}>
+            <Truong as="div" nhan={t('Điểm đầu vào')} tuyChon loi={lf.loiCua(loi, 'dau-vao')} luat={t('Đủ L R W S thì Overall tự tính')}
+              phu={bl?.attemptId ? t('Đang lấy từ MT{n} · gõ tay thì thay', { n: bl.attemptNo ?? '' }) : undefined}>
               <span className="flex flex-wrap items-center gap-2" id={lf.oId('dau-vao')} onBlur={lf.roi('dau-vao')}>
                 {(['l', 'r', 'w', 's'] as const).map((k) => (
                   <label key={k} className="flex items-center gap-1 text-xs text-slate-400">

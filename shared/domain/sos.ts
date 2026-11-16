@@ -10,6 +10,7 @@
  * Lớp thường không có gì trong file này (Q-V3-1): Normal giữ mô hình tín hiệu cũ.
  */
 import { hanTai } from './hanMacDinh.ts';
+import { CHU_TOI_THIEU } from './khac.ts';
 import type { InterventionKind } from './cases.ts';
 import { ngayTheoGioVN } from './display.ts';
 import { dich, t } from '../i18n/index.ts';
@@ -164,7 +165,7 @@ export const toiThieuGhiChu = (kind: string, pb?: number | null): number => {
  * quá hạn khi hôm nay > hạn. Xác nhận cần Ghi chú ≥ 10 ký tự. Việc phối hợp khác giữ không hạn (P10).
  */
 export const HAN_MEETING_CX_NGAY = 5;
-export const GHI_CHU_MEETING_TOI_THIEU = 10;
+export const GHI_CHU_MEETING_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6)
 export const laMeetingCx = (kind: string): boolean => kind === 'cx_meeting_student' || kind === 'cx_meeting_family';
 /** HAN-BAO-PH (chủ SP 03/11, 17.2): `hanChon` (cột `han_chon`) thắng hạn mặc định — chỉ việc meeting CX (việc khác không hạn, P10). */
 export const hanPhoiHop = (kind: string, taoLuc: string | null | undefined, hanChon?: string | null, pb?: number | null): string | null => {

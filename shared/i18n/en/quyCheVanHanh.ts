@@ -21,7 +21,7 @@ export const EN_QUY_CHE_VANHANH = {
   'Nhận xét chung + Xác nhận': 'General comment + Confirm',
   'Một câu mỗi em': 'One line per student',
   'quá hạn em vẫn chuyển': 'overdue, the student still moves',
-  'Hạn 5 ngày · xác nhận xong GV mới nhận tin': '5-day deadline · the new teacher is notified on confirm',
+  'Hạn {han:ban_giao_doi_gv} · xác nhận xong GV mới nhận tin': 'Due in {han:ban_giao_doi_gv} · the new teacher is notified on confirm',
   'Hạn do QL đặt · ghi Hoàn thành khi xong': 'Deadline set by the manager · mark Done when finished',
   'QL lớp nguồn quyết định · duyệt xong bạn nhận việc bàn giao': 'Source-class manager decides · once approved you get a handover task',
   'Ngay hôm nay: em sang lớp mới từ hôm nay': 'Today: the student joins the new class today',

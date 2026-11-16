@@ -1,7 +1,7 @@
 /** GD-1 (Overhaul V6, trang đầu GV): "Lớp của tôi", "+ Task", tab Chấm Speaking. Khoá = chữ Việt trên web. */
 export const EN_GD1 = {
   '+ Task': '+ New task',
-  'Task: Case, vi phạm / nhắc nhở, tình hình học tập': 'Task: case, violation / reminder, learning update',
+  'Task: {ds}': 'New task: {ds}',
   'Vi phạm / Nhắc nhở': 'Violation / Reminder',
   'Gõ tên em': 'Type a student name',
   'Gõ tên em…': 'Type a student name…',
@@ -9,6 +9,7 @@ export const EN_GD1 = {
   'Không tìm được — thử lại.': 'Search failed — try again.',
   'Tiếp ›': 'Next ›',
   'Chưa được phân công lớp nào': 'No classes assigned yet',
+  'Chưa được phân công lớp — nhờ Quản trị cấp thêm vai Giáo viên.': 'No classes assigned — ask the system admin to add the Teacher role.',
   'Không có lớp nào đang mở.': 'No open classes.',
   'chủ nhiệm': 'homeroom',
   '{n} bài chờ nhập điểm': '{n} tests awaiting scores',

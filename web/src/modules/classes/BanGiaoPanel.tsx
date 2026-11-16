@@ -11,7 +11,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { ChuDich } from '../../ui/ChuDich.tsx';
 import { DsEmBanGiao, TuDienEm, useHangLuu } from './banGiaoChung.tsx';
 import { dongSauKhiLuu, type HangLuu } from '../../lib/luuChac.ts';
-import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chuDiem, dauDiem, mucDiem, deadlineView, luuRoiTiep, ngay, nhanDocDiem, quyCheBanGiao, shortDate, tuanLich, addDaysIso, cauBanGiao, chuCuaPhan, nguonChuDaGhi, type DiemHv, type DuLieuChuDaGhi, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
+import { CHU_CHUYEN_LOP, NHAN_XET_TOI_THIEU, chenHan, chuDiem, dauDiem, mucDiem, deadlineView, luuRoiTiep, ngay, nhanDocDiem, quyCheBanGiao, shortDate, tuanLich, addDaysIso, cauBanGiao, chuCuaPhan, nguonChuDaGhi, type DiemHv, type DuLieuChuDaGhi, type PhieuBanGiaoDto, type PhieuEm } from '@shared/domain/index.ts';
 import { lopKq } from '../../ui/BieuTuong.tsx';
 import { DaiChenLo, DuoiOChu, KhoiDaGhi, useChen, useChenLo } from '../../ui/KhoiDaGhi.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -320,7 +320,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
                 {t('Xác nhận bởi {ai}', { ai: em.xacNhan.boi ?? t('GVCN') })}{em.xacNhan.thay ? ` ${t('(Quản lý xác nhận thay)')}` : ''} · {ngay(em.xacNhan.luc, homNay)}
               </p>
             )}
-            {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">{t('GVCN lớp cũ xác nhận; Quản lý xác nhận thay khi lớp chưa có GVCN hoặc quá hạn 3 ngày.')}</p>}
+            {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">{chenHan(t('GVCN lớp cũ xác nhận · hạn {han:ban_giao_chuyen_lop} · Quản lý xác nhận thay được'))}</p>}
           </div>
         </div>
       )}
