@@ -44,6 +44,19 @@ export const CO_KET_QUA_THI_SQL = (c: string) => `(${c}.thi_that_khong_thi = 1 O
  *  là kế hoạch (`LUA_CHON_SAU_THI`: ket_thuc / tam_dung / lo_trinh_moi). Bước tiếp cũ học tiếp (`hoc_tiep`, `hoc_lai`) giữ MT. Không tự đóng lộ trình, không huỷ lượt. `cy` bí danh `learning_cycles`. */
 export const DA_THI_THAT_SQL = (cy: string) =>
   `(${cy}.route IS NOT NULL AND ${CO_KET_QUA_THI_SQL(cy)} AND (${cy}.buoc_tiep IS NULL OR ${cy}.buoc_tiep IN (${LUA_CHON_SAU_THI.map((x) => `'${x}'`).join(', ')})))`;
+/**
+ * N46 (chủ SP 16/11, audit câu 1): việc Case / PA / Phối hợp SOS của lộ trình FT ĐÃ CÓ KQ thi thật (`DA_THI_THAT_SQL`) ẩn khỏi Công việc mọi vai — như em
+ * Tạm dừng, không xoá, không đóng Case. Lộ trình mới: lộ trình cũ vẫn "đã thi thật" → việc cũ không hiện lại. Dời lịch thi (chưa có KQ) → việc giữ nguyên.
+ * MỘT điều kiện cho Công việc, hồ sơ HV, Tổng quan (cùng câu). Lộ trình của Case: `sc.cycle_id` → lộ trình của lượt (`sc.attempt_id`) → lộ trình FT của em
+ * ĐANG CHẠY lúc tạo Case (seq lớn nhất bắt đầu trước ngày tạo) — KHÔNG lấy "lộ trình mới nhất" (sau Lộ trình mới đó là lộ trình chưa thi → Case cũ hiện lại, rà #1788).
+ * Lớp thường song song (lộ trình `route IS NULL`) không bị ẩn. `sc` bí danh `sos_cases`, `sid` cột id em.
+ */
+export const CASE_SAU_THI_SQL = (sc: string, sid: string) => `EXISTS (SELECT 1 FROM learning_cycles cyx WHERE ${DA_THI_THAT_SQL('cyx')} AND cyx.id = COALESCE(${sc}.cycle_id,
+  (SELECT ax.cycle_id FROM assessment_attempts ax WHERE ax.id = ${sc}.attempt_id),
+  (SELECT cyz.id FROM learning_cycles cyz WHERE cyz.student_id = ${sid} AND cyz.route IS NOT NULL AND substr(cyz.started_at, 1, 10) <= substr(${sc}.created_at, 1, 10)
+    ORDER BY cyz.seq DESC LIMIT 1)))`;
+/** N46: như `CASE_SAU_THI_SQL` cho việc gắn LƯỢT (Phối hợp SOS) — lộ trình của lượt đã có KQ thi thật. `a` bí danh `assessment_attempts`. */
+export const LUOT_SAU_THI_SQL = (a: string) => `EXISTS (SELECT 1 FROM learning_cycles cyx WHERE cyx.id = ${a}.cycle_id AND ${DA_THI_THAT_SQL('cyx')})`;
 /** NGHI-HOC-LUU-TRU (chủ SP 05/11): lượt vào tệp Excel — lượt CHƯA THI (planned, chưa có điểm) chỉ của em đang học (như màn Kế hoạch Test);
  *  lượt đã thi luôn giữ (lịch sử thật). Một nguồn cho Xuất điểm Test và Xuất kết quả Test. `a` bí danh `assessment_attempts`, `s` bí danh `students`. */
 export const LUOT_XUAT_SQL = (a: string, s: string) => `(${a}.status != 'planned' OR ${CO_DIEM_SQL(a)} OR (${HV_DANG_HOC_SQL(s)}))`;

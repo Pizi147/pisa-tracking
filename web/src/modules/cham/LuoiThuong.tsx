@@ -96,6 +96,8 @@ export type ThuongSheet = {
   laGvcn?: boolean;
   passThreshold: number;
   rows: Row[];
+  /** AUDIT-1611 P1-10 (web): mọi hàng của lượt trước khi lọc theo việc — tổng số câu mặc định tính trên cả lớp (mở việc một em không trống ô tổng). */
+  rowsTong?: Row[];
   today: string;
 };
 
@@ -256,8 +258,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const [busy, setBusy] = useState(false);
 
   const tongMacDinh = useMemo(
-    () => Object.fromEntries(skills.map((k) => [k, tongPhoBien(data.rows, k)])) as Record<string, number | null>,
-    [data.rows, skills],
+    () => Object.fromEntries(skills.map((k) => [k, tongPhoBien(data.rowsTong ?? data.rows, k)])) as Record<string, number | null>,
+    [data.rows, data.rowsTong, skills],
   );
   const chuTong = (k: string) => tongGo[k] ?? (tongMacDinh[k] === null ? '' : String(tongMacDinh[k]));
   const soTong = (k: string) => (/^\d+$/.test(chuTong(k).trim()) && Number(chuTong(k)) > 0 ? Number(chuTong(k)) : null);
@@ -316,6 +318,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON_GON : 104, sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
     })),
+    /* AUDIT-1611 A1-14: cột đệm cuối nhận phần thừa — tên giữ 200 px, ô điểm ngay sau tên (như lưới FT), không dồn mép phải. */
+    { key: 'du', nhan: '', kieu: 'chu', linhHoat: true },
   ] : [
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 230, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8: như lưới FT — tên gốc 230, cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
@@ -547,6 +551,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
           {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
         </OBang>
       )}
+      {gon && <td aria-hidden />}
       {!gon && (
         <OBang c={cc.kq}>
           <KetQua row={row} sheet={sheet} />
@@ -566,7 +571,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
  * huống thường gặp — nếu Case đứng cuối hàng ưu tiên thì nó biến mất đúng lúc cần thấy. Nên Case là một nhãn trạng thái
  * nhỏ đứng CẠNH dòng chính ("Case L"), màu theo Case đại diện (đang mở trước — `cases[0]`), tooltip ghi đủ từng Case.
  */
-export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean }) {
+/** `anTyLe` (AUDIT-1611 A2-09, trang lượt): % tổng đã là số to ngay cạnh → không lặp chip "52%", giữ dòng gợi ý ("→ QL cân nhắc"). */
+export function KetQua({ row, sheet, anCase = false, anTyLe = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean; anTyLe?: boolean }) {
   const r = row.result;
   const ngan = (k: string) => tenMonNgan(sheet.programme.code, k);
   const du = (k: string) => tenMon(sheet.programme.code, k);
@@ -609,7 +615,9 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
   /* OV-15a: màu SOS chỉ ở chip SOS (viền) — kết quả lớp thường: Đạt xanh lá · có môn trượt đỏ (chưa đạt) · chưa đủ điểm xám. */
   const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
     : truot ? 'danger' : r.complete ? 'ok' : 'muted';
-  const chinh = row.chip
+  const laTyLe = row.kind === 'final' && r.tyLeTong != null && !khongChiaMon;
+  /* Pre FOU (không chia môn): kết quả chính cũng là % tổng. */
+  const chinh = anTyLe && r.tyLeTong != null && (laTyLe || khongChiaMon) && !row.chip ? null : row.chip
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
     ? <Level tone={row.chip.dat ? 'info' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
@@ -617,7 +625,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
     : (
       <Level tone={tone} title={chiTiet}>
         {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}
-        {row.kind === 'final' && r.tyLeTong != null && !khongChiaMon ? `${Math.round(r.tyLeTong * 100)}%` : kq.chinh}
+        {laTyLe ? `${Math.round(r.tyLeTong! * 100)}%` : kq.chinh}
       </Level>
     );
 

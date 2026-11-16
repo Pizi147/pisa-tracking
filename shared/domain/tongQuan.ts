@@ -52,6 +52,7 @@ const NHOM_CUA_LOAI: Record<string, NhomViec> = {
   chot_len_ft: 'van-hanh',   // PR-MT0 → PR-LCb: Chốt lộ trình
   xet_lai_lo_trinh: 'van-hanh',   // PR-CL: Xét lại lộ trình
   xuat_bc_ph: 'van-hanh',   // BAO-CAO-PH b: Admin xuất báo cáo PH
+  bc_ph_qua_han: 'van-hanh',   // N49: QL — Báo cáo PH quá hạn > 7 ngày (tab "Việc quản lý")
   bao_cao_ph: 'van-hanh',   // LG-3 (chủ SP 20 ý 4): GV viết Báo cáo PH — tab Vận hành, mục "Báo cáo PH"
 };
 export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai] ?? 'van-hanh'; }
@@ -152,7 +153,7 @@ const MUC_CUA_LOAI: Record<string, MaMuc> = {
   /* PHOI-HOP-V2 (mockup #1368 K1): việc Ý thức chung MỘT mục "Vi phạm" — tên dòng nói loại việc, không lặp tên mục. */
   yt_xu_ly: 'vi-pham', yt_thuc_hien: 'vi-pham', khai_bac: 'vi-pham', yt_hoi_tinh_hinh: 'tinh-hinh',
   ban_giao: 'ban-giao', thi_that: 'sau-thi', buoc_tiep: 'sau-thi', chot_len_ft: 'lo-trinh', xet_lai_lo_trinh: 'lo-trinh', ky_vong_dau_ra: 'lo-trinh',
-  missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph', bao_cao_ph: 'bc-ph',
+  missing_data: 'thieu', bo_sung_ho_so: 'bo-sung', mgmt: 'giao', xuat_bc_ph: 'bc-ph', bao_cao_ph: 'bc-ph', bc_ph_qua_han: 'bc-ph',
 };
 /** Mã mục của một việc (`MUC_CV`). */
 export function mucCuaViec(it: { group: string; key: string; kind?: string | null }, tvv = false): MaMuc {
@@ -202,8 +203,14 @@ export function badgeTab(dong: readonly { urgency: string; key?: string }[]): Ba
   const quaHan = tinh.filter((x) => x.urgency === 'overdue').length, homNay = tinh.filter((x) => x.urgency === 'today').length;
   return { so: quaHan + homNay, n: dong.length, quaHan, homNay };
 }
-/** Mở trang (chưa chọn tab): tab đầu tiên có việc quá hạn, không có thì tab đầu. */
-export const tabMacDinh = (ds: readonly { key: string; badge: BadgeTab | null }[]): string | null => (ds.find((x) => (x.badge?.quaHan ?? 0) > 0) ?? ds[0])?.key ?? null;
+/**
+ * Mở trang (chưa chọn tab): tab có NHIỀU việc quá hạn nhất của người xem (bằng nhau → tab đứng trước), không có thì tab đầu. AUDIT-1611 A2-11: QL mở
+ * Công việc từng rơi vào "Chờ bạn duyệt" (1 quá hạn) khi "Việc quản lý" có 6.
+ */
+export const tabMacDinh = (ds: readonly { key: string; badge: BadgeTab | null }[]): string | null => {
+  const max = Math.max(0, ...ds.map((x) => x.badge?.quaHan ?? 0));
+  return (max ? ds.find((x) => (x.badge?.quaHan ?? 0) === max) : ds[0])?.key ?? null;
+};
 
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =

@@ -142,14 +142,15 @@ export function PhuSo3({ o }: { o: OPtGv | undefined }) {
 export const mauDatMt = (x: (TyLeV5 & { chuaDu: number }) | null) => (!x || !x.chuaDu ? null : t('{n} HV chưa đủ dữ liệu', { n: x.chuaDu }));
 
 /**
- * Bố cục B: trái (tình hình) · phải 400 (Chờ bạn duyệt — AUDIT-UI B1: bỏ thẻ "Điều hướng", mockup B1 cột phải 400); < 1280 một cột, cột phải lên trước.
+ * Bố cục B: trái (tình hình) · phải 400 (Chờ bạn duyệt — AUDIT-UI B1: bỏ thẻ "Điều hướng", mockup B1 cột phải 400); < 1400 một cột, cột phải lên trước
+ * (AUDIT-1611 P1-12: laptop QL 1280–1366 — hai cột thì bảng "Lớp cần chú ý" giấu cột / cắt tên GVCN).
  * Không có gì cho cột phải → bảng rộng hết trang.
  */
 export function BoCuc({ trai, phai }: { trai: ReactNode; phai?: ReactNode }) {
   if (phai === undefined) return <div className="flex min-w-0 flex-col gap-4">{trai}</div>;
   return (
-    <div className="grid items-start gap-4 min-[1280px]:grid-cols-[minmax(0,1fr)_400px]">
-      <div className="flex min-w-0 flex-col gap-4 max-[1279px]:order-2">{trai}</div>
+    <div className="grid items-start gap-4 min-[1400px]:grid-cols-[minmax(0,1fr)_400px]">
+      <div className="flex min-w-0 flex-col gap-4 max-[1399px]:order-2">{trai}</div>
       <div className="flex min-w-0 flex-col gap-4">{phai}</div>
     </div>
   );
@@ -222,10 +223,11 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
               * Lớp · lượt · người gửi không thành dòng thứ hai: rê chuột (`title`) hoặc bấm dòng → panel duyệt đủ chữ.
               */}
             <button type="button" onClick={() => setMo(y)} title={[y.lop, y.phu && dich(y.phu), y.nguoiXin && t('gửi bởi {ten}', { ten: y.vaiNguoiXin ? `${y.nguoiXin} (${t(y.vaiNguoiXin)})` : y.nguoiXin })].filter(Boolean).join(' · ') || undefined}
-              className={`bam grid min-h-[44px] w-full grid-cols-[96px_minmax(0,1fr)_auto] items-center gap-x-2.5 gap-y-1 px-4 py-2 text-left leading-[1.45] max-sm:grid-cols-[auto_minmax(0,1fr)] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
+              className={`bam grid min-h-[44px] w-full grid-cols-[116px_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1 px-4 py-2 text-left leading-[1.45] max-sm:grid-cols-[auto_minmax(0,1fr)] ${mo?.id === y.id ? 'dang-mo' : ''}`}>
               {/* RA-GD-0711c: tên em giữ một dòng — thiếu chỗ thì chữ chip xuống dòng trong chip (không cắt "…"). NHAN-MOT-DONG (audit C5): tên loại
                 * ngắn + chip rộng tối thiểu bằng tên loại thường gặp ("Xử lý Ý thức") → chip một dòng, tên em thẳng cột (khối hẹp 360 px ở 1440 cũng vậy). */}
-              {/* AUDIT-UI B1 (chủ SP 08/11): cột loại cố định 96 px; "Không cần theo dõi" quá dài → nhãn ngắn, tên đủ khi rê. */}
+              {/* AUDIT-UI B1 (chủ SP 08/11): cột loại cố định; "Không cần theo dõi" quá dài → nhãn ngắn, tên đủ khi rê. AUDIT-1611 A2-20: 96 → 116 px + khoảng 12
+                * ("Không theo dõi" rộng 104 px từng sát tên em 2 px; mockup T1 cách ~20 px). */}
               <span className="justify-self-start whitespace-nowrap rounded-md border px-1.5 py-px text-xs font-medium leading-4 text-dim" style={{ borderColor: 'var(--line-strong)' }}
                 title={y.loai === 'khong_theo_doi' ? dich(y.nhanLoai) : undefined}>{y.loai === 'khong_theo_doi' ? <><span aria-hidden>{t('Không theo dõi')}</span><span className="sr-only">{dich(y.nhanLoai)}</span></> : dich(y.nhanLoai)}</span>
               {/* PTA rà #1710 (⑧ T7 "Chờ bạn duyệt 375 hai hàng"): tên em KHÔNG cắt "…" — xuống dòng; 375: hàng 1 loại · hạn, hàng 2 tên em đủ chữ. */}
@@ -256,8 +258,8 @@ function ChoDuyetGon({ hop, onXong }: { hop: Hop; onXong: () => void }) {
 /* ───────────── QL (một chi nhánh) ───────────── */
 
 const COT_LOP: readonly CotBang[] = [
-  /* V8: SOS 340 căn trái một dòng (chip + số ngoài chip); 375 thẻ lưới — SOS (`chu`) hàng riêng dưới. */
-  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'dat', nhan: t('Đạt MT'), dv: t('HV'), kieu: 'phan-tram', rong: 120 }, { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 340 },
+  /* V8: SOS căn trái một dòng (chip + số ngoài chip); 375 thẻ lưới — SOS (`chu`) hàng riêng dưới. AUDIT-1611 P1-12: 340 → 372 (ba cặp chip + số cần 368, ô "5" SOS 3 bị xén). */
+  { key: 'lop', nhan: t('Lớp'), kieu: 'ten', linhHoat: true }, { key: 'dat', nhan: t('Đạt MT'), dv: t('HV'), kieu: 'phan-tram', rong: 120 }, { key: 'sos', nhan: t('SOS hiện tại'), dv: t('HV'), kieu: 'chu', rong: 372 },
   { key: 'case', nhan: t('Case chưa có PA'), kieu: 'so', rong: 150 }, { key: 'thi', nhan: t('Thi tháng này'), dv: t('HV'), kieu: 'so', rong: 150 },
 ];
 const coVanDe = (l: DongLop) => l.sos.some((n) => n > 0) || l.caseChuaPa > 0 || l.thiThangNay > 0 || (!!l.datMt && l.datMt.dat < l.datMt.mau);
@@ -283,7 +285,8 @@ function LopCanChuY({ d }: { d: TongQuanV5Data }) {
   const phuCua = (l: DongLop, c: CotBang) => (c.key === 'lop' ? [t('{n} HV', { n: l.hv }), l.gvcn].filter(Boolean).join(' · ') : null);
   return (
     <Card bodyClass="p-0" title={<>{t('Lớp cần chú ý')}{ds.length > 0 && <DemDau n={ds.length} />}</>}>
-      <div data-hd="tq-lop-chu-y">
+      {/* AUDIT-1611 A2-07 (mockup ⑧ `.cap .n` 12 px): 375 nhãn thẻ 12 px — "Case chưa có PA" một dòng, số thẳng hàng. */}
+      <div data-hd="tq-lop-chu-y" className="max-sm:[&_.luoi-n]:text-xs">
         <Bang ten={t('Lớp cần chú ý')} cot={COT_LOP} hang={ds} khoa={(l) => l.id} oCua={oCua} phuCua={phuCua} khung={false} theLuoi
           rong={{ tieuDe: t('Không lớp nào cần chú ý'), goiY: t('Không SOS, không Case chưa có PA, không HV thi tháng này.'), nut: <Link to="/hoc-vien" className="link">{t('Học viên & Lớp ›')}</Link> }} />
       </div>
@@ -389,7 +392,8 @@ function GvCanChuY({ d }: { d: TongQuanV5Data }) {
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-2 text-[15px]">{oCua(h, COT_GV_HC[0])}<span className="text-[13px] text-dim">{phuCua(h, COT_GV_HC[0])}</span></div>
       <div className="grid grid-cols-3 gap-x-2 gap-y-2.5">
         {COT_THE.map(([k, nhan]) => (
-          <div key={k} className="grid content-start justify-items-start gap-1"><span className="text-xs leading-tight text-dim">{nhan}</span>
+          /* AUDIT-1611 A2-07 (mockup ⑧ `.cap > span { align-content:end }`): nhãn hai dòng thì số vẫn thẳng hàng — căn theo đáy. */
+          <div key={k} className="grid content-end justify-items-start gap-1"><span className="text-xs leading-tight text-dim">{nhan}</span>
             <span className="inline-flex min-h-9 items-center">{oCua(h, COT_GV_HC.find((c) => c.key === k)!)}</span></div>
         ))}
       </div>

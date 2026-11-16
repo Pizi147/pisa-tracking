@@ -84,6 +84,9 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       }
     }
     if (o.branchId != null) { dk.push('COALESCE(c.branch_id, s.branch_id) = ?'); thamSo.push(o.branchId); }
+    /* AUDIT-1611 PR 5: QL "Của tôi" — `giu` chỉ nhận em mình là TVV hoặc em CHƯA có TVV (`nguoiGiuTvv`, không `tatCa`) → lọc ngay trong SQL, không đọc
+       mọi em của các chi nhánh (QL 5 chi nhánh: ~820 dòng / lần). Kết quả không đổi. */
+    if (ql && !o.tatCa) { dk.push('(s.consultant_user_id = ? OR s.consultant_user_id IS NULL OR s.consultant_user_id = 0)'); thamSo.push(p.userId); }
   }
   const ds = db().prepare(
     `SELECT s.id, s.full_name, s.dob, s.email, s.status, s.consultant_user_id AS tvv, e.class_id, c.code AS class_code, COALESCE(c.branch_id, s.branch_id) AS branch_id, c.is_fast_track,

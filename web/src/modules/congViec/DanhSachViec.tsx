@@ -77,7 +77,7 @@ export const IconNhom = ({ k }: { k: string }) => (
  * GD-4a (mockup ⑤ B, `.av.vuong`): ô vuông 28 px biểu tượng đầu MỌI dòng việc (không có ở em trong khay) — dòng lớp / gộp: ô bảng; Chấm Speaking: micro;
  * Báo cáo PH: tờ giấy. Trang trí — trình đọc màn hình bỏ qua.
  */
-const icDong = (it: WorkItem) => (laViecChamCheo(it) ? 'cham-cheo' : it.group === 'bao_cao_ph' || it.group === 'xuat_bc_ph' ? 'bo-sung' : 'ca-lop');
+const icDong = (it: WorkItem) => (laViecChamCheo(it) ? 'cham-cheo' : it.group === 'bao_cao_ph' || it.group === 'xuat_bc_ph' || it.group === 'bc_ph_qua_han' ? 'bo-sung' : 'ca-lop');
 const AvViec = ({ it }: { it: WorkItem }) => (
   <span aria-hidden className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[color:var(--accent-soft)] text-[color:var(--accent)]"><IconNhom k={icDong(it)} /></span>
 );
