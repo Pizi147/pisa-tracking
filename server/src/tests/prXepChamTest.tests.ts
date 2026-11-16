@@ -22,10 +22,13 @@ export async function runPrXepChamTestTests(t: YThucTestKit) {
     assert(ds.join() === 'fou,gop,101-moi,101-cu,105', `thứ tự: ${ds}`);
   });
 
-  check('XCT-2 · chiaMucTab: mục Mock theo lớp → tuần (không theo hạn); mục khác giữ quá hạn trước', () => {
-    const quaHan = { ...V('105-qh', 'MB FT 105', 'ft', '2026-08-31'), urgency: 'overdue', due: '2026-09-01' };
-    const muc = d.chiaMucTab([quaHan, V('101', 'MB FT 101', 'ft', '2026-09-14')]).find((m: any) => m.key === 'mock');
-    assert(muc.items.map((x: any) => x.key).join() === '101,105-qh', `mục Mock: ${muc.items.map((x: any) => x.key)}`);
+  check('XCT-2 · chiaMucTab: vạch hạn giữ (Quá hạn · Hạn đến CN · Hạn sau CN); TRONG vạch lớp → tuần; mục khác giữ quá hạn trước', () => {
+    const qh = (key: string, lop: string) => ({ ...V(key, lop, 'ft', '2026-08-31'), urgency: 'overdue', due: '2026-09-01' });
+    const han = (key: string, lop: string, due: string) => ({ ...V(key, lop, 'ft', '2026-09-07'), due });
+    /* homNay T2 14/09 → CN 20/09: 16/09 "Hạn đến", 23/09 "Hạn sau". */
+    const ds = [han('sau-101', 'MB FT 101', '2026-09-23'), qh('qh-105', 'MB FT 105'), han('den-105', 'MB FT 105', '2026-09-16'), qh('qh-9', 'MB FT 9'), han('den-101', 'MB FT 101', '2026-09-16')];
+    const muc = d.chiaMucTab(ds, false, '2026-09-14').find((m: any) => m.key === 'mock');
+    assert(muc.items.map((x: any) => x.key).join() === 'qh-9,qh-105,den-101,den-105,sau-101', `mục Mock: ${muc.items.map((x: any) => x.key)}`);
     const pa = (key: string, urgency: string, due: string) => ({ key, group: 'no_plan', urgency, due, studentId: 1, kind: null });
     const p = d.chiaMucTab([pa('sau', 'normal', '2026-09-30'), pa('qh', 'overdue', '2026-09-01')]).find((m: any) => m.key === 'pa');
     assert(p.items[0].key === 'qh', 'mục PA mất thứ tự quá hạn trước');
@@ -35,6 +38,11 @@ export async function runPrXepChamTestTests(t: YThucTestKit) {
     const ds = [V('c105', 'MB FT 105', 'ft', '2026-09-14'), V('c9', 'MB FT 9', 'ft', '2026-09-14'), V('c101', 'MB FT 101', 'ft', '2026-09-14')];
     const dong = d.gopViecTheoLop(ds, () => 'Nhập điểm').find((x: any) => x.con?.length);
     assert(dong && dong.con.map((x: any) => x.key).join() === 'c9,c101,c105', `lớp con: ${dong?.con?.map((x: any) => x.key)}`);
+  });
+
+  check('XCT-5 · web: Công việc truyền homNay vào chiaMucTab (vạch hạn khớp DanhSachViec)', () => {
+    const f = docSach('web/src/modules/congViec/HoTroHocVienTab.tsx');
+    assert((f.match(/chiaMucTab\(dongCuaTab\([^)]*\), laTvv, homNay\)/g) ?? []).length === 2, 'chiaMucTab thiếu homNay');
   });
 
   check('XCT-4 · Test › Chấm Test: ba danh sách (nợ chấm, bảng lớp, chấm tuần này) dùng xepLopCham (soSanhLopCham + khungDong)', () => {

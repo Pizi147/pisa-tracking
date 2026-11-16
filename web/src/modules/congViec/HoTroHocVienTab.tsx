@@ -273,7 +273,7 @@ export function HoTroHocVienTab() {
   /* Mục của MỌI tab (thứ tự "việc tiếp" đi tiếp sang tab sau) — dòng vẽ = máy chủ + dòng giữ chỗ, cùng lọc hạn. */
   const mucTheoTab = useMemo(() => {
     const hien = theoKhung(hienThi).filter((it) => khopLocNhanh(it, loc, homNay));
-    const out = new Map(thuTuTab.map((k) => [k, chiaMucTab(dongCuaTab(hien, k), laTvv)]));
+    const out = new Map(thuTuTab.map((k) => [k, chiaMucTab(dongCuaTab(hien, k), laTvv, homNay)]));
     const cu = thuTuCu.current;
     if (!chon || !cu || cu.khoa !== khoaLoc) {
       thuTuCu.current = { khoa: khoaLoc, vt: new Map([...out.values()].flat().flatMap((m) => m.items).map((x, i) => [x.key, i])) };
@@ -285,7 +285,7 @@ export function HoTroHocVienTab() {
   }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   const mucs = (tab && mucTheoTab.get(tab)) || [];
   /* Số đầu mục chỉ từ máy chủ (`locItems`) — dòng giữ chỗ vừa xong chỉ để vẽ. */
-  const demMuc = useMemo(() => new Map(tab ? chiaMucTab(dongCuaTab(locItems, tab), laTvv).map((m) => [m.key, { n: m.items.length, quaHan: m.quaHan }] as const) : []),
+  const demMuc = useMemo(() => new Map(tab ? chiaMucTab(dongCuaTab(locItems, tab), laTvv, homNay).map((m) => [m.key, { n: m.items.length, quaHan: m.quaHan }] as const) : []),
     [locItems, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
