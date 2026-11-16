@@ -6,7 +6,7 @@ import { nhanMocViPham, ngay, bacDu } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { lucVn } from '../congViec/PanelBaoPhTvv.tsx';
+import { lucVn } from '../congViec/gioVn.ts';
 import type { BaoPhLan } from './kieu.ts';
 
 /**

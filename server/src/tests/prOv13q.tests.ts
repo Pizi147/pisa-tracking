@@ -148,6 +148,13 @@ export async function runPrOv13qTests(t: YThucTestKit) {
       assert(r?.sauThi?.giaiDoan === 'da_thi_cho_kq' && r.sauThi.han === null && cl.viec.ketQuaThi[x.sid]?.han === null, JSON.stringify([r?.sauThi, cl.viec.ketQuaThi[x.sid]]));
       const cx = await json(await goi(CX, '/hoc-vien-lop/theo-vai'));
       assert(cx.rows.find((h: any) => h.id === x.sid)?.sauThi?.han === null, 'CX cùng không hạn');
+      /* TD-NGUOI: `theoTrang=1` (trang gọi song song) = cách cũ — đọc phạm vi của `/hoc-vien-lop` rồi mới gọi theo vai. */
+      for (const [ai, ts] of [[TVV, ''], [TVV, 'phamVi=chi-nhanh'], [CX, ''], [CX, 'phamVi=chi-nhanh'], [CX, 'phamVi=chi-nhanh&branchId=2']] as const) {
+        const pv = (await json(await goi(ai, `/hoc-vien-lop?${ts}`))).phamVi;
+        const cu = await json(await goi(ai, `/hoc-vien-lop/theo-vai${pv.dangDung === 'chi-nhanh' && pv.chiNhanh ? `?phamVi=chi-nhanh&branchId=${pv.chiNhanh}` : ''}`));
+        const moi = await json(await goi(ai, `/hoc-vien-lop/theo-vai?theoTrang=1${ts ? `&${ts}` : ''}`));
+        assert(JSON.stringify(moi) === JSON.stringify(cu), `theoTrang=1 ${ai} ${ts}: ${JSON.stringify(pv)}`);
+      }
       const pm = await json(await goi(x.gvcn, `/hoc-vien-lop/em/${x.sid}`));
       assert(pm.sauThi?.han === null && pm.sauThi.coTheNhap && !pm.sauThi.coTheGiaHan && !pm.sauThi.coTheChon, JSON.stringify(pm.sauThi));
       const hs = await json(await goi(TVV, `/students/${x.sid}`));

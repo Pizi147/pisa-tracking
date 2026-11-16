@@ -1,15 +1,17 @@
 import { useMemo, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { DemViecPanel } from '../../ui/KhungPanel.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { NutChipViec, chipViecLop } from '../congViec/LopCuaToi.tsx';
-import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NHAN_LOAI_VIEC, laViecChamCheo, viecLopTuDong } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { moCaDong } from '../congViec/lamTaiCho.ts';
 import { t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
  * P1 G2-03: `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (dòng gộp "Cả lớp" = 1, không kèm `con`) — dải vẽ ô + đếm từ đây, cùng số `demDongViec`.

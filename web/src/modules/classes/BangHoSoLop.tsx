@@ -1,4 +1,4 @@
-import { ChipXetLaiDong } from './PanelXetLai.tsx';
+import { ChipXetLaiDong } from './xetLaiChung.tsx';
 import { Fragment, useState, type CSSProperties, type MouseEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';

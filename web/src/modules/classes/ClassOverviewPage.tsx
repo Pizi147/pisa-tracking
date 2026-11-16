@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useParams, useSearchParams } from 'react-router-dom';
 import { taiTruoc, useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
@@ -7,12 +8,9 @@ import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { usePeriods } from '../../ui/Filters.tsx';
 import { ClassYThucCard } from '../yThuc/ClassYThucCard.tsx';
-import { IntakePanel } from '../students/IntakePanel.tsx';
-import { SuaCaLopPanel } from '../students/SuaCaLopPanel.tsx';
 import { KetThucLopPanel, MoLaiLopPanel, XoaLopPanel } from './XoaKetThucLopPanel.tsx';
-import { BanGiaoPanel } from './BanGiaoPanel.tsx';
-import { BanGiaoGvPanel } from './BanGiaoGvPanel.tsx';
-import { PanelXetLai, XetLaiCtx, duongXetLai, type EmXetLai } from './PanelXetLai.tsx';
+import { XetLaiCtx, duongXetLai } from './xetLaiChung.tsx';
+import type { EmXetLai } from './PanelXetLai.tsx';
 import { DauTrangLop, type HoSoLop, type ViecDauTrang } from './DauTrangLop.tsx';
 import { ThongTinLopPanel } from './ThongTinLopPanel.tsx';
 import { NganXuatTest } from '../test/NganXuatTest.tsx';
@@ -30,6 +28,12 @@ import { ThanhViecLop, duongViecLop, laGvThuan, useViecLop } from './ThanhViecLo
 import { CuoiKhoaLop } from './CuoiKhoaLop.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const BanGiaoPanel = lazyHop(() => import('./BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
+const SuaCaLopPanel = lazyHop(() => import('../students/SuaCaLopPanel.tsx').then((x) => x.SuaCaLopPanel));
+const IntakePanel = lazyHop(() => import('../students/IntakePanel.tsx').then((x) => x.IntakePanel));
+const PanelXetLai = lazyHop(() => import('./PanelXetLai.tsx').then((x) => x.PanelXetLai));
+const BanGiaoGvPanel = lazyHop(() => import('./BanGiaoGvPanel.tsx').then((x) => x.BanGiaoGvPanel));
 
 /**
  * HỒ SƠ LỚP (đặc tả §3.7; mockup 06 menu dòng A, 06c §1, 10b; OV M2 §1–3) — đầu trang nút cố định + ⋯, ba tab

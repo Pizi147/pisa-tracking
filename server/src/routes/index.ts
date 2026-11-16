@@ -1717,7 +1717,14 @@ api.get('/hoc-vien-lop/phan-cong', requireAuth, wrap((req) => {
 /** Trước/Sau của hồ sơ lớp mở bằng link (PR-TD2-b): id + cách chấm của `/hoc-vien-lop` mặc định, không nạp lượt. */
 api.get('/hoc-vien-lop/ids', requireAuth, wrap((req) => hocVienLopSvc.idsHocVienLop(principalOf(req))));
 /* OV-10b: Học viên & Lớp của TVV / CX — mỗi em một dòng theo việc của vai, chip = `chipHocVien` (cùng ô Tổng quan). */
-api.get('/hoc-vien-lop/theo-vai', requireAuth, wrap((req) => hocVienTheoVai(principalOf(req), { phamVi: qStr(req, 'phamVi'), branchId: qInt(req, 'branchId') })));
+api.get('/hoc-vien-lop/theo-vai', requireAuth, wrap((req) => {
+  const p = principalOf(req);
+  if (qStr(req, 'theoTrang') !== '1') return hocVienTheoVai(p, { phamVi: qStr(req, 'phamVi'), branchId: qInt(req, 'branchId') });
+  /* TD-NGUOI: trang Học viên gửi CÙNG tham số phạm vi của `/hoc-vien-lop` → chọn phạm vi bằng chính `phamViTrang` (như trang trả về), để web gọi song song
+     thay vì chờ `/hoc-vien-lop` về rồi mới gọi (bớt một lượt mạng). Kết quả như cũ: chi nhánh đang xem → `chi-nhanh`, còn lại mặc định của vai. */
+  const { dangDung, chiNhanh } = hocVienLopSvc.phamViTrang(p, { phamVi: qStr(req, 'phamVi') ?? null, branchId: qInt(req, 'branchId') ?? null, cnNho: qInt(req, 'cnNho') ?? null }, demoToday());
+  return hocVienTheoVai(p, dangDung === 'chi-nhanh' && chiNhanh ? { phamVi: 'chi-nhanh', branchId: chiNhanh } : {});
+}));
 
 /** OV-15f: Học viên & Lớp › Lịch thi — rà soát lịch thi thật theo tháng dự kiến (mockup 5); lưu một kết luận / ghi chú họp qua `updateCycle` + nhật ký. */
 api.get('/hoc-vien-lop/lich-thi', requireAuth, wrap((req) => {

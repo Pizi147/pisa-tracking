@@ -1,11 +1,6 @@
 import { useRef, useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useNavigate } from 'react-router-dom';
-import { QuickReport } from '../cases/QuickReport.tsx';
-import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
-import { ChuyenLopPanel } from '../students/ChuyenLopPanel.tsx';
-import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
-import { HocLaiPanel, SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
-import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { HopTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
@@ -14,6 +9,14 @@ import {
   DUONG_TAB_TEST, khoaBai, nhanBai, vietMaLuot, type MaLuot, MUC_MENU_DONG_HIEM, MUC_MENU_DONG_NHAN, duongHoSoHocVien, duongLoTrinhLop, mucDongTheoVai, mucMenuDongHocVien, type MucMenuDong, type ViecQuanLy,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+const HocLaiPanel = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.HocLaiPanel));
+const SuaThongTinMotEm = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const ChuyenLopPanel = lazyHop(() => import('../students/ChuyenLopPanel.tsx').then((x) => x.ChuyenLopPanel));
+const QuickReport = lazyHop(() => import('../cases/QuickReport.tsx').then((x) => x.QuickReport));
+const XacNhanXuLyPanel = lazyHop(() => import('../yThuc/XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
+const RecordViolationPanel = lazyHop(() => import('../yThuc/RecordViolationPanel.tsx').then((x) => x.RecordViolationPanel));
+const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /** GD-13a: mục thuộc nhóm "+ Task" của ⋯ dòng — tên như menu nút "+ Task" (chủ SP 14/11, lời 17). */
 const LA_TASK = new Set<string>(['case', 'vi-pham', 'tinh-hinh']);

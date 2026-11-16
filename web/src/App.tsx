@@ -23,6 +23,7 @@ import { NGON_NGU, t } from '@shared/i18n/index.ts';
 /* Khoá 'Thêm' của từ điển là "Add" (thêm mới); nút gom menu là "More". */
 const THEM = NGON_NGU === 'en' ? 'More' : 'Thêm';
 import { lazyTai } from './lib/taiLaiManh.ts';
+import { napHopSan } from './ui/lazyHop.tsx';
 
 /**
  * Hotfix 15/10 (L4): lỗi render bất kỳ trong trang → câu lỗi + Tải lại thay vì màn tối; console ghi mã để đối chiếu khi chủ SP gửi ảnh.
@@ -340,7 +341,7 @@ export default function App() {
   const navNap = session?.nav ?? NAV_RONG;
   useEffect(() => {
     if (!daDangNhap) return;
-    return khiMangYen(() => NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }));
+    return khiMangYen(() => { NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }); napHopSan(); });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ 4 cờ quyết định trang được nạp
   }, [daDangNhap, navNap.analysis, navNap.test, navNap.work, navNap.admin, navNap.bangQuyDoi]);
 

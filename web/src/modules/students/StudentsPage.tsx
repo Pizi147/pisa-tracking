@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -14,10 +15,8 @@ import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { NutChipViec, chipViecLop, type ChipViec } from '../congViec/LopCuaToi.tsx';
 import { lamTaiCho, moCaDong } from '../congViec/lamTaiCho.ts';
-import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
-import { IntakePanel } from './IntakePanel.tsx';
 import { ChonLop, nhomLopToi, phuLop } from '../../ui/ChonLop.tsx';
 import { ChonLoc, ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
@@ -36,6 +35,9 @@ import {
   type ChipVai, dongCuaToi,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const IntakePanel = lazyHop(() => import('./IntakePanel.tsx').then((x) => x.IntakePanel));
+const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /** Ô chọn gọn của dải lọc: cùng cao 32 px với chip (điện thoại 44 px). */
 const SELECT_GON = 'field h-8 w-auto !py-0 text-sm max-sm:min-h-[44px] max-sm:w-full';
@@ -203,9 +205,11 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const duongViec = '/my-work';
   const coViec = !!session?.nav?.workSupport;   // AU-GON B2-08: cùng cờ badge Công việc — CX / Head tutor không có Công việc thì không gọi `/my-work` (trước: 403 + chip "!")
   const work = useApi<{ dong: WorkItem[] }>('chuyenDen' in doc || !data || !coViec ? null : duongViec, [duongViec]);
-  /* TVV / CX: tập chip + dòng theo vai — CÙNG phạm vi trang vừa nhận (máy chủ chọn mặc định), nên gọi sau `/hoc-vien-lop`. */
-  const duongVai = !laVai || !data ? null
-    : `/hoc-vien-lop/theo-vai${data.phamVi.dangDung === 'chi-nhanh' && data.phamVi.chiNhanh ? `?phamVi=chi-nhanh&branchId=${data.phamVi.chiNhanh}` : ''}`;
+  /* TVV / CX: tập chip + dòng theo vai — CÙNG phạm vi trang: gửi đúng tham số phạm vi của `qs`, máy chủ chọn bằng cùng hàm (`theoTrang=1`), nên gọi SONG SONG
+     với `/hoc-vien-lop` (TD-NGUOI; trước: chờ trang về). Không gửi `q` / `them`: gõ tìm không tải lại danh sách theo vai. */
+  const thamSoTrang = new URLSearchParams(qs.slice(qs.indexOf('?') + 1));
+  const duongVai = !laVai || 'chuyenDen' in doc ? null : `/hoc-vien-lop/theo-vai?${new URLSearchParams([['theoTrang', '1'],
+    ...['phamVi', 'branchId', 'cnNho'].flatMap((k) => (thamSoTrang.get(k) ? [[k, thamSoTrang.get(k)!]] : []))])}`;
   const theoVai = useApi<TrangVai>(duongVai, [duongVai]);
   const [panelEm, setPanelEm] = useState<{ id: number; caseMo: number | null } | null>(null);
   const [viecMo, setViecMo] = useState<{ ds: WorkItem[]; i: number } | null>(null);

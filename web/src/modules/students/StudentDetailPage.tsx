@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { taiTruoc, useApi } from '../../lib/useApi.ts';
@@ -14,11 +15,10 @@ import { TienDoTrenLop } from './TienDoTrenLop.tsx';
 import { CotCaseHv, type MoCot } from './CotCaseHv.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { CacLoTrinh } from './CacLoTrinh.tsx';
-import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan, NhanLich } from '../../ui/Nhan.tsx';
-import { CHU_DA_XONG, bacNgan, diemW12 } from '@shared/domain/index.ts';
+import { CHU_DA_XONG, bacNgan, diemW12, mucQuanLyHocVien } from '@shared/domain/index.ts';
 import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, viecSangPanel, type Viec } from './DauHoSo.tsx';
 import { NutTask } from '../congViec/NutTask.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
@@ -26,10 +26,10 @@ import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NganCase } from './NganCaseLuoi.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
-import { StudentManagePanel, mucQuanLyHocVien, thongTinEmCua, type ViecQuanLy } from './StudentManagePanel.tsx';
+import type { ViecQuanLy } from './StudentManagePanel.tsx';
+import { thongTinEmCua } from './thongTinEm.ts';
 import { TomTatLuuTru } from './TomTatLuuTru.tsx';
 import { MenuDong, NUT_BA_CHAM, NUT_DAU_HO_SO } from '../../ui/MenuDong.tsx';
-import { QuickReport } from '../cases/QuickReport.tsx';
 import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
 import {
@@ -43,11 +43,14 @@ import { DiemKq } from '../../ui/KhuonViec.tsx';
 import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { TheDong, useDienThoai } from '../../ui/TheDong.tsx';
 import { DaiHocVienChuyen } from '../classes/DaiChuyenLop.tsx';
-import { huyQuyetDinhNgay } from './ChuyenLopPanel.tsx';
 import { useToast } from '../../ui/Toast.tsx';
-import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
-import { DaiXetLai } from '../classes/PanelXetLai.tsx';
+import { DaiXetLai } from '../classes/xetLaiChung.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+const StudentManagePanel = lazyHop(() => import('./StudentManagePanel.tsx').then((x) => x.StudentManagePanel), (p) => p.viec == null);
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const BanGiaoPanel = lazyHop(() => import('../classes/BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
+const QuickReport = lazyHop(() => import('../cases/QuickReport.tsx').then((x) => x.QuickReport));
+const NganTongKet = lazyHop(() => import('./NganTongKet.tsx').then((x) => x.NganTongKet));
 
 type OpenCase = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa' } | null;
 
@@ -355,7 +358,7 @@ export default function StudentDetailPage() {
         onLam={(k) => {
           const d = data.dai;
           /* #8 (G4-08): huỷ thẳng tại dải + Hoàn tác — không mở lại panel, không hỏi lý do. */
-          if (k === 'huy-lenh') { huyQuyetDinhNgay(toast, d.lenhId, data.id, reload).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được — thử lại.'))); return; }
+          if (k === 'huy-lenh') { import('./ChuyenLopPanel.tsx').then((x) => x.huyQuyetDinhNgay(toast, d.lenhId, data.id, reload)).catch((e: any) => toast.push('error', e?.message ?? t('Không lưu được — thử lại.'))); return; }
           /* BAN-GIAO-NHAN (chủ SP 05/11): đọc phiếu tại hồ sơ — trang lớp cũ 403 với GV lớp mới không dạy lớp cũ. */
           if (k === 'doc-ban-giao') { const n = new URLSearchParams(params); n.set('ban-giao', String(d.lenhId)); setParams(n, { replace: true }); return; }
           navigate(`/hoc-vien/lop/${d.lopNguon.id}?viec=ban-giao&lenh=${d.lenhId}${k === 'ban-giao-mon' && d.mon ? `&mon=${d.mon.ma}` : ''}`);

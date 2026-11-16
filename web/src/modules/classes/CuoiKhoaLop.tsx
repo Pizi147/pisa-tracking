@@ -1,4 +1,5 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
@@ -15,11 +16,9 @@ import { Bang, type CotBang } from '../../ui/Bang.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { chayHangLoat, hoanTacHangLoat } from '../students/hangLoatEm.ts';
-import { BanGiaoPanel } from './BanGiaoPanel.tsx';
 import { ClassCreatePanel } from './ClassCreatePanel.tsx';
-import { KHOI_VANG, NutHomNay, OTuan, guiTheoLo } from './chuyenLopChung.tsx';
-import { ChipXetLaiDong, XetLaiCtx } from './PanelXetLai.tsx';
-import { OResetBac } from '../students/ChuyenLopPanel.tsx';
+import { KHOI_VANG, NutHomNay, OResetBac, OTuan, guiTheoLo } from './chuyenLopChung.tsx';
+import { ChipXetLaiDong, XetLaiCtx } from './xetLaiChung.tsx';
 import { useChanRoiNhap } from '../../ui/chanRoiNhap.tsx';
 import {
   CHUONG_TRINH_KHONG_CHIA_MON, KY_VONG_DAU_RA, LO_CHUYEN_NGAY_THUONG, NORMAL_LADDER, RATIO_PASS_THRESHOLD, REGULAR_SKILLS, addDaysIso, boMonLich, canLopDich, chuDaiKetQua,
@@ -27,6 +26,8 @@ import {
   quyCheChotLoTrinh, thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const BanGiaoPanel = lazyHop(() => import('./BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
 
 type Lenh = {
   id: number; huong: HuongLenh; lopDichId: number | null; lopDichMa: string | null; tuan: string; mucTieu: MucTieuLenh | null;

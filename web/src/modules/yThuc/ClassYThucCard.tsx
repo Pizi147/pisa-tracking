@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -20,11 +21,12 @@ import { BuocTinhHinh, HopTinhHinh, NoiDungTinhHinh, TheTinhHinh, daXuLyTinhHinh
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type BangYThucLop, type BaoPhLan, type DongEm, type DongThoiGianYt, type KqEm, type TinhHinhView, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { CO_LO, LoYThucPanel, guiTheoLo, type ViecLo } from './LoYThucPanel.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from '../students/chonNhieuHocVien.tsx';
-import { PanelBaoPhTvv, gioVnNay, lucVn } from '../congViec/PanelBaoPhTvv.tsx';
-import { PanelDuyet } from '../duyet/HopChoDuyet.tsx';
+import { gioVnNay, lucVn } from '../congViec/gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { NutChu } from '../../ui/KhuonViec.tsx';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
+const PanelDuyet = lazyHop(() => import('../duyet/HopChoDuyet.tsx').then((x) => x.PanelDuyet));
+const PanelBaoPhTvv = lazyHop(() => import('../congViec/PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
 
 /**
  * TAB `Ý THỨC & PHỐI HỢP` CỦA HỒ SƠ LỚP — YT-a (mockup `thiet-ke/v19/y-thuc.html` A1–A6, chủ SP duyệt #1482 kể cả XM-2 XM-3; nền Y-THUC-V2).

@@ -1,4 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { NhanGt } from '../../ui/NhanGt.tsx';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { DaiChiXem } from '../../ui/ui.tsx';
 import { CHIP_SOS, ChipBadgeLop, lopSos } from '../../ui/Nhan.tsx';
@@ -20,10 +22,11 @@ import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { duongViecLop, useViecLop } from './ThanhViecLop.tsx';
-import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { NutTask, type EmLop, type LoaiTask } from '../congViec/NutTask.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
 import type { RosterRow } from '../students/ClassRoster.tsx';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /** `GET /classes/:id/overview` (server/src/classes/classes.ts → classOverview). */
 export type HoSoLop = {
@@ -320,16 +323,6 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
 
 /** U03 (mockup `.fact`): ô nhãn 12 mờ trên – giá trị 15/600 dưới, vạch ngăn trái 1 px (ô đầu không vạch) — hàng GV. */
 const FACT = 'flex min-w-0 flex-col gap-0.5 whitespace-nowrap border-l px-[18px] py-0.5 first:border-l-0 first:pl-0 max-sm:px-3';
-
-/** Nhãn nhỏ xám trên, giá trị đậm dưới (mockup `.nhan-gt`, P2) — hồ sơ lớp + hồ sơ HV. */
-export function NhanGt({ n, g }: { n: ReactNode; g: ReactNode }) {
-  return (
-    <span className="flex min-w-0 flex-col gap-px">
-      <span className="text-xs font-medium text-slate-500">{n}</span>
-      <span className="text-[15px] font-bold text-slate-100">{g}</span>
-    </span>
-  );
-}
 
 /**
  * SỐ ĐẦU TRANG (khu b): Lượt gần nhất = lượt của lớp có tuần thi gần nhất đã tới (không lượt lịch sử) · Đạt = em đạt kỳ vọng ở LƯỢT GẦN NHẤT ĐÃ

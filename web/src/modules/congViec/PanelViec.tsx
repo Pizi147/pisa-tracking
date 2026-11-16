@@ -1,7 +1,6 @@
-import { PanelXetLai } from '../classes/PanelXetLai.tsx';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { useApi } from '../../lib/useApi.ts';
 import { LuoiTrongPanel } from '../../ui/LuoiTrongPanel.tsx';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
@@ -17,13 +16,8 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NganCase } from '../students/NganCase.tsx';
 import { tenNganCase, type CaseDetail } from '../cases/CasePanel.tsx';
 import { DoiNguoiPhuTrach } from '../cases/DoiNguoiPhuTrach.tsx';
-import { BanGiaoPanel } from '../classes/BanGiaoPanel.tsx';
-import { BanGiaoGvPanel } from '../classes/BanGiaoGvPanel.tsx';
-import { XacNhanXuLyPanel } from '../yThuc/XacNhanXuLyPanel.tsx';
 import { DaThucHienPanel } from '../yThuc/DaThucHienPanel.tsx';
 import { PanelHoiTinhHinh } from '../yThuc/TinhHinh.tsx';
-import { KhaiBacPanel } from '../yThuc/KhaiBacPanel.tsx';
-import { KhaiBacLoPanel } from '../yThuc/KhaiBacLoPanel.tsx';
 import { NganViecVanHanh } from '../worklist/MgmtTasksPage.tsx';
 import { LuoiChamLop, duongCham, duongDiemTheoLuot, type BangTheoLuot, type Cham } from '../cham/LuoiChamLop.tsx';
 import { LuoiNhung } from '../test/lichTest/LuoiNhung.tsx';
@@ -37,14 +31,23 @@ import { PanelChamSpeaking } from './PanelChamSpeaking.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { laLo, soCuaKhoa } from './lamTaiCho.ts';
 import { LoYThucPanel } from '../yThuc/LoYThucPanel.tsx';
-import { PanelChotNgayThi, PanelSauThi } from './PanelSauThi.tsx';
-import { PanelBaoPhTvv } from './PanelBaoPhTvv.tsx';
 import { PanelXemViPham } from '../yThuc/PanelXemViPham.tsx';
-import { SuaThongTinMotEm } from '../students/StudentManagePanel.tsx';
 import { PhoiHopSosSection, type CoordTurn } from '../yThuc/PhoiHopSosSection.tsx';
 import { BangPhoiHop } from '../yThuc/BangPhoiHop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ghiViecMo } from '../../lib/hdNgCanh.ts';
+const PanelChotNgayThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelChotNgayThi));
+const PanelSauThi = lazyHop(() => import('./PanelSauThi.tsx').then((x) => x.PanelSauThi));
+const PanelBaoPhTvv = lazyHop(() => import('./PanelBaoPhTvv.tsx').then((x) => x.PanelBaoPhTvv));
+const KhaiBacLoPanel = lazyHop(() => import('../yThuc/KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
+const KhaiBacPanel = lazyHop(() => import('../yThuc/KhaiBacPanel.tsx').then((x) => x.KhaiBacPanel));
+const SuaThongTinMotEm = lazyHop(() => import('../students/StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const PanelXetLai = lazyHop(() => import('../classes/PanelXetLai.tsx').then((x) => x.PanelXetLai));
+const BanGiaoPanel = lazyHop(() => import('../classes/BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
+const XacNhanXuLyPanel = lazyHop(() => import('../yThuc/XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
+const BanGiaoGvPanel = lazyHop(() => import('../classes/BanGiaoGvPanel.tsx').then((x) => x.BanGiaoGvPanel));
+const PanelNhapDiemLop = lazyHop(() => import('../cham/PanelNhapDiemLop.tsx').then((x) => x.PanelNhapDiemLop));
 
 /**
  * PANEL PHẢI CỦA MỘT VIỆC — dùng lại đúng panel sẵn có (không viết lại): `NganCase` đúng việc, `BanGiaoPanel`, form Ý thức, `NganViecVanHanh`,

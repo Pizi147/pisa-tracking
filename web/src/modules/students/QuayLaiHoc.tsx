@@ -1,13 +1,14 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { Modal } from '../../ui/Drawer.tsx';
 import { Truong } from '../../ui/KhungPanel.tsx';
 import { ChonLop } from '../../ui/ChonLop.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { t } from '@shared/i18n/index.ts';
-import { HocLaiPanel } from './StudentManagePanel.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
+const HocLaiPanel = lazyHop(() => import('./StudentManagePanel.tsx').then((x) => x.HocLaiPanel));
 
 type LopDich = { id: number; code: string; ft: boolean; route: string | null; tenChuongTrinh: string | null; branchCode: string; siSo?: number };
 type ThongTin = {

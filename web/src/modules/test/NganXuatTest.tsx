@@ -1,9 +1,10 @@
 import { useState, type ComponentProps } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
-import { NganXuatMt } from './NganXuatMt.tsx';
 import { NganXuatKeHoach } from './keHoach/NganXuatKeHoach.tsx';
 import { t } from '@shared/i18n/index.ts';
+const NganXuatMt = lazyHop(() => import('./NganXuatMt.tsx').then((x) => x.NganXuatMt));
 
 type Tab = 'diem' | 'lich';
 

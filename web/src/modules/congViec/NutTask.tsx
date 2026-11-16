@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { api, invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { MenuDong } from '../../ui/MenuDong.tsx';
@@ -6,12 +7,13 @@ import { HopNeo } from '../../ui/HopNeo.tsx';
 import { NUT_DONG } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi, type TimXa } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { QuickReport } from '../cases/QuickReport.tsx';
-import { RecordViolationPanel } from '../yThuc/RecordViolationPanel.tsx';
 import { HopTinhHinh, type ChonEmTinhHinh } from '../yThuc/TinhHinh.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
 import { boDau } from '@shared/huongDan/kieu.ts';
 import { t } from '@shared/i18n/index.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const QuickReport = lazyHop(() => import('../cases/QuickReport.tsx').then((x) => x.QuickReport));
+const RecordViolationPanel = lazyHop(() => import('../yThuc/RecordViolationPanel.tsx').then((x) => x.RecordViolationPanel));
 
 export type EmTask = { id: number; ten: string; lopId: number; lop: string; tvv: string | null };
 type Em = EmTask;

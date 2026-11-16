@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -13,10 +14,10 @@ import { MoLaiLopPanel } from '../classes/XoaKetThucLopPanel.tsx';
 import { DaXoaAdmin } from '../platform/DaXoaAdmin.tsx';
 import { OChon, ThanhChonNhieu, useChonNhieu } from './chonNhieuHocVien.tsx';
 import { useQuayLaiHoc } from './QuayLaiHoc.tsx';
-import { SuaThongTinMotEm } from './StudentManagePanel.tsx';
 import { danhDauXong, quayLaiLo, type KetQuaEm } from './quayLaiLo.ts';
 import { NHAN_VIEC_QUAN_LY, duongHoSoHocVien, ngay } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+const SuaThongTinMotEm = lazyHop(() => import('./StudentManagePanel.tsx').then((x) => x.SuaThongTinMotEm));
 
 type LopLuuTru = {
   id: number; code: string; ma: string | null; tenChuongTrinh: string | null;

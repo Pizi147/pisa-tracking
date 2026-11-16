@@ -1,4 +1,4 @@
-import { ChipXetLaiDong } from './PanelXetLai.tsx';
+import { ChipXetLaiDong } from './xetLaiChung.tsx';
 import type { NguCanhDs, NhanYThucEm } from '@shared/domain/index.ts';
 import { Fragment, useState, type CSSProperties, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';

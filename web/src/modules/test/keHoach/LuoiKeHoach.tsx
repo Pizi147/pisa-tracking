@@ -1,4 +1,5 @@
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
+import { lazyHop } from '../../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
 import { Empty } from '../../../ui/ui.tsx';
 import { duongDotTest, duongHoSoHocVien, type KyNangKH } from '@shared/domain/index.ts';
@@ -8,7 +9,6 @@ import { fmtDateTime } from '../../../lib/format.ts';
 import { NutXepO, ODaXoa, ODotGon, OHuy, OTrong } from './ChipKyNang.tsx';
 import { khoiPhucMt } from './xoaMt.ts';
 import { useToast } from '../../../ui/Toast.tsx';
-import { HopKyNang } from './HopKyNang.tsx';
 import { HopKhoiPhucMt } from './HopKhoiPhucKetQua.tsx';
 import { GhiChuTaiCho } from './GhiChuLichThi.tsx';
 import { HopSEx } from './HopSEx.tsx';
@@ -20,6 +20,8 @@ import {
   dotCuaEm, emXongDot, khoaBaiThuong, khoaDot, nhanDot,
   type DongSEx, type DotChon, type DotFT, type HangFT, type HangThuong, type KnO, type LuoiFTData, type LuoiThuongData,
 } from './kieu.ts';
+/* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
+const HopKyNang = lazyHop(() => import('./HopKyNang.tsx').then((x) => x.HopKyNang));
 
 type Cot = { key: string; dot: DotChon; tieu: string; phu: string | null; deXuat: string | null; nhanDeXuat: string | null };
 type Hop = { anchor: HTMLElement; hang: HangFT | HangThuong; cot: Cot; kyNangDau: KyNangKH | null };
