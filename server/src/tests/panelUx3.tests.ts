@@ -473,6 +473,16 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
     const kp = rac.khoiPhucRac(t.P.admin, thungRacId);
     assert(kp.doiTuongId === l.id && demLop(l.id) === 1 && dem('teacher_assignments') === 1, `khôi phục: ${JSON.stringify(kp)}`);
     t.assertThrows(() => rac.khoiPhucRac(t.P.admin, thungRacId), /đã được khôi phục/, 'khôi phục lần hai');
+    /* Rà PTA ⑥: id cũ đã có lớp mới dùng → khôi phục mang id MỚI, trả về cho web; mã đã có lớp khác → 409 nói "lớp mã …". */
+    const l2 = taoLopTrong();
+    const x2 = xoaKetThuc.xoaLop(t.P.admin, l2.id).thungRacId;
+    const chiemId = intakeSvc.createClass(t.P.admin, { code: `${l2.ma} B`, branchId: mbId, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' }) as { id: number };
+    const kp2 = rac.khoiPhucRac(t.P.admin, x2);
+    assert((conn.prepare('SELECT code FROM classes WHERE id = ?').get(kp2.doiTuongId) as any)?.code === l2.ma, `id trả về đúng lớp khôi phục (${kp2.doiTuongId}, lớp chiếm ${chiemId.id})`);
+    const l3 = taoLopTrong();
+    const x3 = xoaKetThuc.xoaLop(t.P.admin, l3.id).thungRacId;
+    intakeSvc.createClass(t.P.admin, { code: l3.ma, branchId: mbId, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' });
+    t.assertThrows(() => rac.khoiPhucRac(t.P.admin, x3), /đã có lớp mã/, 'mã đã có lớp khác');
   });
 
   check('UX3 (11) · Xoá lớp có dữ liệu → 400 "dùng Kết thúc lớp": lớp có HV từng học; lớp có lượt Test', () => {

@@ -589,7 +589,7 @@ export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown
   const hv = hocVien(r.student_id);
   const luc = nowIso();
   tx(() => {
-    db().prepare('UPDATE violations SET khong_xu_ly_luc = ?, khong_xu_ly_boi = ?, khong_xu_ly_ly_do = ? WHERE id = ?').run(luc, p.userId, lyDoLuu, r.id);
+    db().prepare('UPDATE violations SET khong_xu_ly_luc = ?, khong_xu_ly_boi = ?, khong_xu_ly_ly_do = ?, khong_xu_ly_vuot = ? WHERE id = ?').run(luc, p.userId, lyDoLuu, vuotLuat ? 1 : 0, r.id);
     ghiPhanHoi([r.id]);
     xoaNho();
     chotHanXuLy([r.student_id]);
@@ -615,7 +615,7 @@ export function hoanTacKhongXuLy(p: Principal, violationId: number): { ok: true;
   }
   const hv = hocVien(r.student_id);
   tx(() => {
-    db().prepare('UPDATE violations SET khong_xu_ly_luc = NULL, khong_xu_ly_boi = NULL, khong_xu_ly_ly_do = NULL WHERE id = ?').run(r.id);
+    db().prepare('UPDATE violations SET khong_xu_ly_luc = NULL, khong_xu_ly_boi = NULL, khong_xu_ly_ly_do = NULL, khong_xu_ly_vuot = 0 WHERE id = ?').run(r.id);
     /* Phản hồi do chính "Không xử lý" ghi (vi phạm chưa nằm trong lần xử lý nào) → bỏ, để Phân tích đo lại theo lần phản hồi thật. */
     db().prepare(`UPDATE violations SET phan_hoi_ngay = NULL WHERE id = ? AND NOT EXISTS (SELECT 1 FROM measure_violations mv WHERE mv.violation_id = violations.id)`).run(r.id);
     xoaNho();

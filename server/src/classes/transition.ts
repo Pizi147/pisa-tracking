@@ -1,6 +1,6 @@
 import { db, tx } from '../db.ts';
 import { NGUONG_KY_VONG, ketLuanKyVong, PERMISSIONS, CAU_LIEN_TUC, cungThangTarget, ghepMucTieu, laLienTuc, PROGRAMME_TEMPLATES, boMonLich, chuanHoaHuong, maHocLai, tenMonNgan, dienSanChuyenTiep, kiemDongChuyenTiep, tuanChonDuoc, kyHieuLop, soSanhLop, tachSoLop, nextStepsAfter, programmeOf, tuanHocTai, tuanKhoa, tuanMuonNhatMt0, type DongChuyenTiep, type Huong, type ProgrammeCode } from '../../../shared/domain/index.ts';
-import { addDays, badRequest, isIsoDate, notFound } from '../util.ts';
+import { addDays, badRequest, forbidden, isIsoDate, notFound } from '../util.ts';
 import { can, require_, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -36,6 +36,62 @@ export function soGoiY(branchCode: string, ct: string, route: string | null): st
   const so = rows.filter((r) => kyHieuLop(r.programme_code, r.route) === kh)
     .map((r) => parseInt(tachSoLop(r.code, branchCode) ?? '', 10)).filter((n) => Number.isInteger(n));
   return String(Math.max(0, ...so) + 1);
+}
+
+/**
+ * LỚP ĐÍCH GỢI Ý của trang Cuối khoá / Chuyển tiếp: đúng MỘT TRONG các chương trình `optionCodes` (bậc kế, FT, hoặc cùng / thấp hơn để học lại), còn đang
+ * chạy và (lớp thường) chưa học quá nửa chương trình. `khac` = false: cùng chi nhánh `branchId` (N17); true: chi nhánh khác (N50 câu 7 — chỉ tải khi cần).
+ * `classProgressMany` MỘT LẦN cho cả danh sách ứng viên — không classProgress trong vòng lặp (N+1).
+ */
+function ungVienLop(classId: number, branchId: number, optionCodes: readonly string[], ft: boolean, khac: boolean) {
+  const rows = (db()
+    .prepare(
+      `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route, c.branch_id, b.code AS branch_code,
+              (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS n
+         FROM classes c JOIN branches b ON b.id = c.branch_id
+        WHERE c.status = 'active' AND c.id != ? AND c.branch_id ${khac ? '!=' : '='} ?
+          AND c.programme_code IN (${optionCodes.map(() => '?').join(',')})
+        ORDER BY c.code`,
+    )
+    .all(classId, branchId, ...optionCodes) as any[])
+    .sort((a, b) => soSanhLop({ code: a.code }, { code: b.code }));
+  const tienDo = classProgressMany(rows.map((c) => c.id));
+  return rows
+    .filter((c) => {
+      const pr = tienDo.get(c.id);
+      return ft || !pr || pr.totalWeeks === null || pr.currentWeek === null || pr.currentWeek <= Math.ceil(pr.totalWeeks / 2);
+    })
+    .map((c) => {
+      const pr = tienDo.get(c.id);
+      return {
+        id: c.id, code: c.code, programmeCode: c.programme_code as ProgrammeCode | null,
+        programmeName: c.programme_code ? PROGRAMME_TEMPLATES[c.programme_code as ProgrammeCode]?.name ?? null : null,
+        ft: !!c.is_fast_track, route: (c.route ?? null) as string | null,
+        branchId: c.branch_id as number, branchCode: c.branch_code as string,
+        tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? tuanKhoa(pr.currentWeek, pr.totalWeeks) : null,
+        studentCount: c.n as number,
+      };
+    });
+}
+
+/** Chương trình lớp đích hợp lệ của lớp nguồn (bậc kế + FT + học lại cùng / thấp hơn; lớp FT: FT). */
+function maUngVien(cls: any): { from: ProgrammeCode | null; steps: ProgrammeCode[]; optionCodes: string[] } {
+  const from = programmeOf(cls.programme_code ?? cls.kind) as ProgrammeCode | null;
+  const steps = from ? nextStepsAfter(from) : [];
+  return { from, steps, optionCodes: cls.is_fast_track ? ['FT'] : [...new Set([...(from ? [from] : []), ...steps, ...maHocLai(from)])] };
+}
+
+/**
+ * GET /classes/:id/transition/lop-khac — N50 (7) (chủ SP 16/11, rà PTA ⑨): lớp thường Cuối khoá, lớp đích ở CHI NHÁNH KHÁC cho ô lớp của MỘT em — chỉ tải
+ * khi QL mở ô đó (trang Cuối khoá không đọc lớp + tiến độ mọi chi nhánh mỗi lần mở). Chỉ người ra lệnh được (`coTheRaLenh`); lớp FT: rỗng (R-B3).
+ */
+export function lopKhacChiNhanh(p: Principal, classId: number) {
+  const cls = db().prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
+  if (!cls) throw notFound('Không tìm thấy lớp');
+  if (!coTheRaLenh(p, classId)) throw forbidden('Chỉ Quản lý của lớp này xem được lớp chuyển đến.');
+  if (cls.is_fast_track) return [];
+  const { optionCodes } = maUngVien(cls);
+  return optionCodes.length ? ungVienLop(classId, cls.branch_id, optionCodes, false, true) : [];
 }
 
 export function transitionPlan(p: Principal, classId: number) {
@@ -187,43 +243,8 @@ export function transitionPlan(p: Principal, classId: number) {
     : [];
   const baiChuaLamByCycle = new Map(baiChuaLamRows.map((r) => [r.cycle_id, r.n as number]));
 
-  /*
-   * LỚP ĐÍCH GỢI Ý: cùng chi nhánh lớp nguồn TRƯỚC, rồi chi nhánh khác — N50 (7) (chủ SP 16/11, B1-08): Cuối khoá MỘT em được chọn lớp chi nhánh khác
-   * (hiếm) ở ô lớp của dòng; ô áp chung / nhóm (cả lớp) web chỉ đưa lớp cùng chi nhánh. Lớp FT R-B3 (chỉ cùng chi nhánh, như cũ);
-   * đúng MỘT TRONG các chương trình ở `options` (bậc kế,
-   * FT, hoặc cùng chương trình để học lại), còn đang chạy và chưa học quá nửa chương trình.
-   * `classProgressMany` MỘT LẦN cho cả danh sách ứng viên — không classProgress trong vòng lặp (N+1).
-   */
-  const candidateRows = raLenhDuoc && optionCodes.length
-    ? (conn
-      .prepare(
-        `SELECT c.id, c.code, c.programme_code, c.is_fast_track, c.route, c.branch_id, b.code AS branch_code,
-                (SELECT COUNT(*) FROM enrollments e WHERE e.class_id = c.id AND e.status='active') AS n
-           FROM classes c JOIN branches b ON b.id = c.branch_id
-          WHERE c.status = 'active' AND c.id != ?${ft ? ' AND c.branch_id = ?' : ''}
-            AND c.programme_code IN (${optionCodes.map(() => '?').join(',')})
-          ORDER BY c.code`,
-      )
-      .all(classId, ...(ft ? [cls.branch_id] : []), ...optionCodes) as any[])
-      .sort((a, b) => Number(a.branch_id !== cls.branch_id) - Number(b.branch_id !== cls.branch_id) || soSanhLop({ code: a.code }, { code: b.code }))
-    : [];
-  const candidateProgress = classProgressMany(candidateRows.map((c) => c.id));
-  const candidates = candidateRows
-    .filter((c) => {
-      const pr = candidateProgress.get(c.id);
-      return ft || !pr || pr.totalWeeks === null || pr.currentWeek === null || pr.currentWeek <= Math.ceil(pr.totalWeeks / 2);
-    })
-    .map((c) => {
-      const pr = candidateProgress.get(c.id);
-      return {
-        id: c.id, code: c.code, programmeCode: c.programme_code as ProgrammeCode | null,
-        programmeName: c.programme_code ? PROGRAMME_TEMPLATES[c.programme_code as ProgrammeCode]?.name ?? null : null,
-        ft: !!c.is_fast_track, route: (c.route ?? null) as string | null,
-        branchId: c.branch_id as number, branchCode: c.branch_code as string,
-        tuan: pr?.currentWeek && pr.totalWeeks && pr.currentWeek >= 1 ? tuanKhoa(pr.currentWeek, pr.totalWeeks) : null,
-        studentCount: c.n as number,
-      };
-    });
+  /* LỚP ĐÍCH GỢI Ý: CÙNG chi nhánh lớp nguồn (`ungVienLop`). N50 (7) (rà PTA ⑨): lớp chi nhánh khác chỉ tải khi QL mở ô lớp của MỘT em (`lopKhacChiNhanh`). */
+  const candidates = raLenhDuoc && optionCodes.length ? ungVienLop(classId, cls.branch_id, optionCodes, ft, false) : [];
 
   /* "+ Mở lớp mới" (K2-16) mở panel Tạo lớp điền sẵn các giá trị này; panel tự nạp giáo viên. Tuần khai giảng = tuần sau ngày chuyển. */
   const loTrinhGoiY = defaultProgramme === 'FT' ? 'LT1' : null;

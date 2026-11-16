@@ -1511,6 +1511,27 @@ export function suaCase(p: Principal, caseId: number, input: {
     const ls = conn.prepare(`INSERT INTO sos_case_history (case_id, field, old_value, new_value, actor_user_id, created_at) VALUES (?,?,?,?,?,?)`);
     for (const k of doi) ls.run(caseId, k, truoc[k] == null ? null : String(truoc[k]), sau[k] == null ? null : String(sau[k]), p.userId, nowIso());
     if (theoNhanXet && doiMoTa) ls.run(caseId, 'mo_ta_nguon', 'nhan_xet', 'sua_rieng', p.userId, nowIso());   // SV-NX-CASE: từ nay tách khỏi nhận xét
+    /* DUONG-LUI-2 (B1-07, rà PTA ⑩): đổi kỹ năng Case đang mở → người phụ trách theo GV kỹ năng mới ở lớp em (luật tạo Case — `suggestCaseOwner`); PA chưa
+       khép do người phụ trách cũ làm đi theo người mới. Lịch sử `owner_user_id` / `pa_performer` + báo người mới. Lớp chưa ai dạy kỹ năng mới (→ GVCN) / trùng người: giữ. */
+    if (doiKyNang && !daXong) {
+      const cu = (c.owner_user_id ?? null) as number | null;
+      const moi = suggestCaseOwner({ classId: c.class_id ?? null, category: categoryOf(topic) });
+      if (moi && moi !== cu) {
+        const luc = nowIso();
+        conn.prepare('UPDATE sos_cases SET owner_user_id = ?, updated_at = ? WHERE id = ?').run(moi, luc, caseId);
+        ls.run(caseId, 'owner_user_id', cu === null ? null : String(cu), String(moi), p.userId, luc);
+        const soPa = cu === null ? 0 : conn.prepare(`UPDATE case_interventions SET performer_user_id = ?, performer_name = NULL, updated_at = ?
+            WHERE case_id = ? AND status IN ('planned', 'started') AND closed_reason IS NULL AND performer_user_id = ?`).run(moi, luc, caseId, cu).changes as number;
+        if (soPa) {
+          const ten = (id: number) => (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(id) as any)?.full_name ?? '—';
+          ls.run(caseId, 'pa_performer', ten(cu!), `${ten(cu!)} → ${ten(moi)} (đổi kỹ năng Case · ${soPa} PA)`, p.userId, luc);
+        }
+        if (moi !== p.userId) {
+          notify({ userId: moi, kind: 'case_giao', title: `Phụ trách Case ${caseTopicLabel(topic, ct)} · ${(conn.prepare('SELECT full_name FROM students WHERE id = ?').get(c.eff_student_id) as any)?.full_name ?? ''}`,
+            entityType: 'sos_case', entityId: caseId, dedupKey: `case_giao:${caseId}` });
+        }
+      }
+    }
     if (!chinh && nd.primaryCode) dongBoTrangThaiCase(caseId);
     writeAudit({ actorUserId: p.userId, action: 'case.edit', entityType: 'sos_case', entityId: caseId, entityLabel: caseTitleOf({ ...c, title: nd.tenGiua }),
       before: Object.fromEntries(doi.map((k) => [k, truoc[k]])), after: Object.fromEntries(doi.map((k) => [k, sau[k]])) });

@@ -215,6 +215,10 @@ function traLai(conn: any, ban: Ban[]): Map<string, Map<unknown, unknown>> {
         try { r = chen(); } catch (e: any) {
           /* Hành trình / chuông: khoá chống lặp (thường kèm id của bản ghi) đã có dòng mới cùng khoá (bản ghi mới nhận lại id) → giữ dòng cũ với khoá riêng. */
           const trung = /UNIQUE/i.test(String(e?.message));
+          if (trung && b.bang === 'classes') {
+            /* DUONG-LUI-2 (rà PTA ⑥): khôi phục lớp mà mã đã có lớp mới dùng — nói đúng ngữ cảnh. */
+            throw conflict(`Không khôi phục được: đã có lớp mã ${dong.code ?? ''} — đổi mã lớp đó rồi khôi phục.`);
+          }
           if (trung && !(LA_DEDUP.has(b.bang) && typeof dong.dedup_key === 'string')) {
             throw conflict(`Không khôi phục được: đã có dữ liệu mới trùng với mục này (${b.bang} — vd Case đang mở cùng kỹ năng). Xử lý mục mới trước.`);
           }

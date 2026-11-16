@@ -9,7 +9,7 @@
  *   giữ       nhật ký (`audit_logs`) — Lịch sử sửa thấy cả lần chuyển lẫn lần Hoàn tác.
  */
 import { chayHenNgay, db, tx } from '../db.ts';
-import { forbidden, notFound } from '../util.ts';
+import { badRequest, forbidden, notFound } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -17,6 +17,7 @@ import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import type { DongDao } from '../duyet/loaiYeuCau.ts';
 import { demoToday } from '../demoConfig.ts';
 import { boiCanhTheoLop, dongTuBody, raLenh } from './lenhChuyen.ts';
+import { luuKyVong } from '../normal/kyVong.ts';
 
 const LOAI = 'lenh.chuyen_ngay';
 const q = (n: number) => Array.from({ length: n }, () => '?').join(',');
@@ -87,37 +88,54 @@ export function chuyenNgayCoHoanTac<T>(p: Principal, sids: number | readonly num
 /**
  * POST /classes/:id/transition — chốt cả lớp (trang Cuối khoá). DUONG-LUI-2 (P1-09): có dòng "Ngay hôm nay" → chụp cả lô để Hoàn tác (như Chuyển lớp
  * một em #8), web không hỏi lại trước khi chốt; chỉ tuần sau → lệnh chờ như cũ (Huỷ quyết định).
+ * Rà PTA ②: `kyVong` (dòng Kỳ vọng FT của các em chuyển ngay) lưu TRONG cùng giao dịch + ảnh chụp — Hoàn tác đảo cả Case Kỳ vọng trên lộ trình FT mới.
  */
-export function chotCaLop(p: Principal, lopId: number, b: { tuanChung?: string | null; dongs?: unknown }) {
+export function chotCaLop(p: Principal, lopId: number, b: { tuanChung?: string | null; dongs?: unknown; kyVong?: unknown }) {
   const dongs = Array.isArray(b.dongs) ? b.dongs.map(dongTuBody) : [];
-  const ra = () => raLenh(p, { lopNguonId: lopId, boiCanh: boiCanhTheoLop(lopId), tuanChung: b.tuanChung ?? null, caLop: true, dongs });
+  const kyVong = Array.isArray(b.kyVong) ? b.kyVong : [];
+  const ra = () => {
+    const kq = raLenh(p, { lopNguonId: lopId, boiCanh: boiCanhTheoLop(lopId), tuanChung: b.tuanChung ?? null, caLop: true, dongs });
+    const kv = kyVong.filter((x: any) => kq.ok.includes(Number(x?.sid)));
+    if (kv.length) luuKyVong(p, lopId, { dong: kv });
+    return kq;
+  };
   const homNay = demoToday();
   if (!dongs.some((d) => (d.tuan ?? b.tuanChung) === homNay)) return ra();
+  const sids = dongs.map((d) => d.studentId).filter(Number.isInteger);
+  if (!sids.length) throw badRequest('Chưa chọn học viên nào để chuyển.');
   const lopIds = [lopId, ...dongs.map((d) => d.toClassId).filter((x): x is number => Number.isInteger(x) && x! > 0)];
-  return chuyenNgayCoHoanTac(p, dongs.map((d) => d.studentId).filter(Number.isInteger), lopIds, ra, (x) => x.daChuyen.length > 0, { bang: 'classes', id: lopId });
+  return chuyenNgayCoHoanTac(p, sids, lopIds, ra, (x) => x.daChuyen.length > 0, { bang: 'classes', id: lopId });
 }
 
 /**
- * POST /students/:id/hoan-tac-chuyen-ngay { dao } (một em) · POST /classes/:id/hoan-tac-chuyen-ngay { dao } (chốt Cuối khoá cả lớp) — trả em về lớp cũ y như
- * trước lần chuyển ngay. Quyền: `class.edit` lớp nguồn (lớp ghi danh trước đó).
+ * POST /students/:id/hoan-tac-chuyen-ngay { dao } (một em) · POST /classes/:id/hoan-tac-chuyen-ngay { dao: id | id[] } (chốt Cuối khoá cả lớp: mọi lô
+ * của lần chốt, đảo lô sau trước trong MỘT giao dịch — tất cả hoặc không, rà PTA ③) — trả em về lớp cũ y như trước lần chuyển ngay.
+ * Quyền: `class.edit` lớp nguồn (lớp ghi danh trước đó).
  */
-export function hoanTacChuyenNgay(p: Principal, sid: number, daoId: unknown, bang: DoiTuong['bang'] = 'students'): { lopId: number | null } {
+export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, bang: DoiTuong['bang'] = 'students'): { lopId: number | null } {
   const conn = db();
-  const g = conn.prepare(`SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = ? AND doi_tuong_id = ?`).get(Number(daoId), LOAI, bang, sid) as BanGhiDao | undefined;
-  if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
-  /* Lớp nguồn = ghi danh bị đóng ("transferred") trong bản chụp — quyền kiểm theo lớp em học TRƯỚC lần chuyển. */
-  const muc = JSON.parse(g.du_lieu) as { bang: string; truoc: any[] }[];
-  const ghiDanh = (muc.find((m) => m.bang === 'enrollments')?.truoc ?? []).filter((e) => e.status === 'active');
-  const lopNguon = ghiDanh[0]?.class_id as number | undefined;
-  if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Quản lý lớp cũ của em hoàn tác được lần chuyển này.');
+  const ids = [...new Set((Array.isArray(daoVao) ? daoVao : [daoVao]).map(Number))];
+  if (!ids.length || ids.length > 500 || ids.some((x) => !Number.isInteger(x) || x <= 0)) throw badRequest('Danh sách hoàn tác không hợp lệ.');
+  const ds = ids.map((id) => {
+    const g = conn.prepare(`SELECT * FROM ghi_dao WHERE id = ? AND loai = ? AND bang = ? AND doi_tuong_id = ?`).get(id, LOAI, bang, sid) as BanGhiDao | undefined;
+    if (!g) throw notFound('Không còn bản ghi để hoàn tác.');
+    /* Lớp nguồn = ghi danh bị đóng ("transferred") trong bản chụp — quyền kiểm theo lớp em học TRƯỚC lần chuyển. */
+    const muc = JSON.parse(g.du_lieu) as { bang: string; truoc: any[] }[];
+    const ghiDanh = (muc.find((m) => m.bang === 'enrollments')?.truoc ?? []).filter((e) => e.status === 'active');
+    const lopNguon = ghiDanh[0]?.class_id as number | undefined;
+    if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Quản lý lớp cũ của em hoàn tác được lần chuyển này.');
+    return { g, ghiDanh, lopNguon };
+  });
   return tx(() => {
     /* Dòng thêm (lộ trình mới, lượt MT…) xoá trước, dòng sửa (ghi danh cũ, lượt đổi lớp…) trả sau — khoá ngoại kiểm lúc chốt giao dịch. */
     conn.pragma('defer_foreign_keys = ON');
-    daoLai(conn, g, p.userId);
-    /* Lịch sử sửa của TỪNG em thấy lần Hoàn tác (cả lô Cuối khoá). */
-    for (const em of new Set(ghiDanh.map((e) => e.student_id as number))) {
-      writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: em, after: { classId: lopNguon, _hoan: true, _nguon: 'Hoàn tác chuyển ngay' } });
+    for (const x of [...ds].sort((a, b) => b.g.id - a.g.id)) {
+      daoLai(conn, x.g, p.userId);
+      /* Lịch sử sửa của TỪNG em thấy lần Hoàn tác. */
+      for (const em of new Set(x.ghiDanh.map((e) => e.student_id as number))) {
+        writeAudit({ actorUserId: p.userId, action: 'student.transfer', entityType: 'student', entityId: em, after: { classId: x.lopNguon, _hoan: true, _nguon: 'Hoàn tác chuyển ngay' } });
+      }
     }
-    return { lopId: lopNguon };
+    return { lopId: ds[0].lopNguon };
   });
 }

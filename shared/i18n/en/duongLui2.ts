@@ -27,4 +27,9 @@ export const EN_DUONG_LUI_2 = {
   '<b>Chuyển ngay</b> có Hoàn tác; ô <b>Reset bậc vi phạm</b> khi cần.': '<b>Move now</b> can be undone; the <b>Reset discipline level</b> box when needed.',
   '<b>Ngay hôm nay</b>: chuyển ngay, có Hoàn tác.': '<b>Today</b>: moves at once, with Undo.',
   'Khi chuyển, web sẽ — chuyển ngay (có Hoàn tác)': 'On move, the web will — move now (with Undo)',
+  'Cả lớp chỉ chuyển trong chi nhánh — lớp chi nhánh khác chọn ở ô lớp của từng em (chốt riêng em đó).': "A whole class moves only within its branch — pick another branch's class in that student's own class box (confirm that student alone).",
+  'Lớp dự kiến ở chi nhánh khác — cần Quản lý chi nhánh đó hoặc Quản trị.': "The planned class is in another branch — that branch's manager or an administrator is needed.",
+  'Chưa tới tuần của lượt S Expert — chọn ngày từ tuần này trở về trước, hoặc lưu điểm giữ nguyên ngày để máy dời về tuần này.': "The Expert S week has not started — pick a date this week or earlier, or save the score keeping the date and it moves to this week.",
+  'Chỉ Quản lý của lớp này xem được lớp chuyển đến.': "Only this class's manager can see the destination classes.",
+  'Danh sách hoàn tác không hợp lệ.': 'Invalid undo list.',
 } satisfies Record<string, Dich>;

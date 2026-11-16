@@ -37,9 +37,10 @@ export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; 
       lamMoi();
       toast.hoanTac(t('Đã xoá lớp {classCode}', { classCode }), async () => {
         try {
-          await api.post(`/thung-rac/${r.thungRacId}/khoi-phuc`, {});
+          /* Rà PTA ⑥: id cũ đã có lớp mới dùng thì lớp khôi phục mang id MỚI — mở theo id máy chủ trả. */
+          const kp = await api.post<{ doiTuongId: number }>(`/thung-rac/${r.thungRacId}/khoi-phuc`, {});
           lamMoi(); toast.push('ok', t('Đã khôi phục {x}', { x: classCode }));
-          navigate(`/hoc-vien/lop/${classId}`);
+          navigate(`/hoc-vien/lop/${kp?.doiTuongId ?? classId}`);
         } catch (e: any) { toast.push('error', e.message); }
       }, { key: `xoa-lop:${classId}` });
       onClose();

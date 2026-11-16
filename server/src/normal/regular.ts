@@ -1434,7 +1434,7 @@ export function regularAttemptDetail(p: Principal, attemptId: number) {
     huy: huyCua(rows[0].status, history),
     canCancel: can(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: a.class_id }),
     /** LUOT-KHOI-PHUC: lượt đã huỷ — `chan` = câu lý do + bước tiếp khi không khôi phục được (cùng hàm `reopenAttempt` chặn); null = lượt chưa huỷ. */
-    khoiPhuc: rows[0].status === 'cancelled' ? { chan: chanKhoiPhucThuong(a, rows[0].kindLabel) } : null,
+    khoiPhuc: rows[0].status === 'cancelled' ? { chan: chanKhoiPhucThuong(a, rows[0].kindLabel, p) } : null,
     history,
     scoreHistory: scoreHistoryOf(attemptId),
   };

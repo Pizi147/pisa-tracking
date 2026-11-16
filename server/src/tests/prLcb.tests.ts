@@ -258,22 +258,22 @@ export async function runPrLcbTests(t: YThucTestKit) {
   };
 
   // ------------------------------------------------------------------ (h) transitionPlan: lớp chuyển đến mọi chi nhánh, mã lớp + ngày ra lệnh
-  check('LCb-h · transitionPlan: lenh.lopDichMa + ngayRaLenh; N50 (7): candidates cùng chi nhánh TRƯỚC rồi chi nhánh khác, một em sang chi nhánh khác được; GVCN không candidates; dienSan lớp cùng chi nhánh', () => {
+  check('LCb-h · transitionPlan: lenh.lopDichMa + ngayRaLenh; N50 (7): candidates cùng chi nhánh (chi nhánh khác tải riêng), dòng không đánh dấu sang chi nhánh khác lỗi; GVCN không candidates; dienSan lớp cùng chi nhánh', () => {
     const cn = chiNhanh('LCBH');
     const l = taoLop('FOU', 8, 1, cn);
     const BE_CN = lopMB('LCBH BE 01', 'BE', false, cn);
     loTrinh.ghiLoTrinhTiep(P.admin, l.sids[0], { huong: 'len_lop' });   // chưa lớp dự kiến
     const r = transition.transitionPlan(P.admin, l.classId);
     const cand = r.candidates as any[];
-    const dau = cand.findIndex((c) => c.branchCode !== 'LCBH');
-    assert(dau > 0 && cand.slice(dau).every((c) => c.branchCode !== 'LCBH') && cand.some((c) => c.id === BE_DICH), `cùng chi nhánh trước: ${cand.map((c) => c.code).join()}`);
+    assert(!cand.some((c) => c.id === BE_DICH) && cand.every((c) => c.branchCode === 'LCBH'), `ứng viên chi nhánh khác: ${cand.map((c) => c.code).join()}`);
+    assert((transition.lopKhacChiNhanh(P.admin, l.classId) as any[]).some((c) => c.id === BE_DICH), 'lớp chi nhánh khác tải riêng (rà PTA ⑨)');
     assert(cand.find((c) => c.id === BE_CN)?.branchCode === 'LCBH', `ứng viên cùng chi nhánh: ${JSON.stringify(cand.find((c) => c.id === BE_CN))}`);
     assert(r.students[0]?.dienSan?.lopDichId === BE_CN, `dienSan cùng chi nhánh: ${JSON.stringify(r.students[0]?.dienSan)}`);
 
-    /* Lớp MB: trang Cuối khoá, một em sang lớp chi nhánh khác → được (N50 câu 7); sang lớp MB → GVCN (không ứng viên) vẫn đọc mã lớp chuyển đến + ngày ra lệnh. */
+    /* Lớp MB: trang Cuối khoá, dòng không đánh dấu `khacChiNhanh` sang lớp chi nhánh khác → lỗi (N50 câu 7, rà PTA ①); sang lớp MB → GVCN (không ứng viên) vẫn đọc mã lớp chuyển đến + ngày ra lệnh. */
     const m = taoLop('FOU', 8, 1);
     const khac = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, caLop: true, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_CN }] });
-    assert(khac.ok.length === 1, `một em sang chi nhánh khác: ${JSON.stringify(khac)}`);
+    assert(!khac.ok.length && /Cả lớp chỉ chuyển trong chi nhánh/.test(khac.failed[0]?.message ?? ''), `dòng không đánh dấu sang chi nhánh khác phải lỗi: ${JSON.stringify(khac)}`);
     const r0 = lenh.raLenh(QL, { lopNguonId: m.classId, boiCanh: 'cuoi-khoa', tuanChung: THU_HAI, dongs: [{ studentId: m.sids[0], huong: 'len_lop', toClassId: BE_DICH }] });
     assert(!r0.failed.length, `tiền đề: lệnh sang lớp MB — ${JSON.stringify(r0.failed)}`);
     const gvcn = ganGv(m.classId, 9, null, true);
@@ -403,16 +403,15 @@ export async function runPrLcbTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (o) panel FT giữ lớp chuyển đến CÙNG chi nhánh — R-B3
-  check('LCb-o · transitionPlan lớp FT: ứng viên chỉ cùng chi nhánh (như cũ); lớp thường: cùng chi nhánh trước, chi nhánh khác sau (N50 câu 7)', () => {
+  check('LCb-o · transitionPlan lớp FT: ứng viên chỉ cùng chi nhánh (như cũ); lớp thường: chỉ cùng chi nhánh, chi nhánh khác tải riêng khi cần (N50 câu 7, rà PTA ⑨)', () => {
     const cn = chiNhanh('LCBO');
     const ftNguon = lopMB('LCBO FT 01', 'FT', true, cn);
     const ftCung = lopMB('LCBO FT 02', 'FT', true, cn);
     const c = transition.transitionPlan(P.admin, ftNguon).candidates as any[];
     assert(c.some((x) => x.id === ftCung) && c.every((x) => x.branchCode === 'LCBO'), `FT: ${c.map((x) => x.code).join()}`);
     const thuong = taoLop('FOU', 8, 1, cn);
-    const ct = transition.transitionPlan(P.admin, thuong.classId).candidates as any[];
-    const i = ct.findIndex((x) => x.branchCode !== 'LCBO');
-    assert(i === -1 || ct.slice(i).every((x) => x.branchCode !== 'LCBO'), `lớp thường: cùng chi nhánh trước — ${ct.map((x) => x.code).join()}`);
+    assert(!(transition.transitionPlan(P.admin, thuong.classId).candidates as any[]).some((x) => x.id === FT_DICH), 'lớp thường thấy lớp FT chi nhánh khác');
+    assert((transition.lopKhacChiNhanh(P.admin, ftNguon) as any[]).length === 0, 'lớp FT: không có lớp chi nhánh khác');
   });
 
   // ------------------------------------------------------------------ (p) lớp cũ programme_code NULL (chương trình theo kind) vẫn có "Chốt lộ trình"

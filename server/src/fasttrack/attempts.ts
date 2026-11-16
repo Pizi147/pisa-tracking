@@ -1862,9 +1862,11 @@ const LOAI_THUONG: readonly string[] = ['progress', 'final', 'checkpoint'];
  * DUONG-LUI-2 (B1-06): lớp đã kết thúc không còn chặn — `reopenAttempt` hỏi "Mở lại lớp để khôi phục?" rồi mở lại (như Phân công / Kết thúc lớp).
  * Một hàm cho hộp (`GET /regular/attempts/:id` → `khoiPhuc.chan`) và `reopenAttempt` (400).
  */
-export function chanKhoiPhucThuong(a: any, nhan: string): string | null {
+export function chanKhoiPhucThuong(a: any, nhan: string, p?: Principal): string | null {
   const conn = db();
   const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
+  /* Rà PTA ⑤: lớp đã kết thúc chỉ Quản lý lớp (`class.edit`) mở lại được — người khác không được hỏi "Mở lại lớp?" rồi 403: nói lý do + ai làm. */
+  if (p && laLopKetThuc(a.class_id) && !can(p, PERMISSIONS.CLASS_EDIT, { classId: a.class_id })) return `Lớp ${lop} đã kết thúc — nhờ Quản lý lớp mở lại lớp rồi khôi phục ${nhan}.`;
   /* Em lưu trữ / kết thúc học: lượt khôi phục sẽ bị mọi danh sách hiện tại ẩn. Tạm dừng (chưa lưu trữ) vẫn khôi phục được. */
   if (!conn.prepare(`SELECT 1 FROM students s WHERE s.id = ? AND (${HV_DANG_HOC_SQL('s')} OR (s.status = 'inactive' AND s.archived_at IS NULL))`).get(a.student_id)) {
     return `Em đã lưu trữ / kết thúc học — bỏ lưu trữ trước rồi khôi phục ${nhan}.`;
@@ -1920,7 +1922,7 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
         ? `${nhan} đã khôi phục.` : `${nhan} chưa huỷ.`);
     }
     if (thuong) {
-      const chan = chanKhoiPhucThuong(a, nhan);
+      const chan = chanKhoiPhucThuong(a, nhan, p);
       if (chan) throw badRequest(chan);
       /* B1-06: lớp đã kết thúc → hỏi một câu rồi Mở lại lớp (có nhật ký; Kết thúc lại được) cùng giao dịch. */
       if (laLopKetThuc(a.class_id)) {

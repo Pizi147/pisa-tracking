@@ -105,6 +105,8 @@ type DongGhi = {
   thangThi: string | null; ghiChu: string | null; ngayXemLai: string | null;
 };
 const GHI_CHU_TOI_DA = 500;
+/** N50 (7): cả lớp / lô giữ cùng chi nhánh — câu báo nói đường làm (dùng chung `raLenh` trang Cuối khoá). */
+export const LOI_KHAC_CHI_NHANH = 'Cả lớp chỉ chuyển trong chi nhánh — lớp chi nhánh khác chọn ở ô lớp của từng em (chốt riêng em đó).';
 
 /** Lớp dự kiến theo id — MỘT câu cho cả lô. */
 function docLopDuKien(ids: readonly (number | null | undefined)[]): Map<number, any> {
@@ -119,7 +121,7 @@ function docLopDuKien(ids: readonly (number | null | undefined)[]): Map<number, 
  * KIỂM một dòng (PR-K26) — không đọc DB: lớp dự kiến đã đọc sẵn (`lopDuKien`). `ngayCu`: ngày xem lại đang lưu — giữ nguyên thì được
  * dù đã qua (dữ liệu cũ), đổi sang ngày mới thì phải từ hôm nay trở đi. Ghi một em và ghi cả lớp dùng chung.
  */
-function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Map<number, any>, ngayCu: string | null): DongGhi {
+function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Map<number, any>, ngayCu: string | null, lopCu: number | null, motEm: boolean): DongGhi {
   /* Form cũ đang mở còn gửi `chua_ro`/`xep_sau` → `chua_quyet`, không báo lỗi. */
   const huong = chuanHoaHuong(String(input.huong ?? ''));
   if (!huong) throw badRequest('Hướng không hợp lệ.');
@@ -136,9 +138,10 @@ function kiemDong(studentId: number, enr: LopNguon, input: GhiVao, lopDuKien: Ma
   const lopDuKienId = input.lopDuKienId || null;
   if (lopDuKienId) {
     const lop = lopDuKien.get(lopDuKienId);
-    /* N50 (7) (B1-08): MỘT em được chọn lớp dự kiến chi nhánh khác (trước: "Không tìm thấy lớp dự kiến." — sai nghĩa). Bảng cả lớp không gửi lớp dự kiến
-       (giữ lớp đã lưu), nên "cả lớp giữ cùng chi nhánh" nằm ở ô áp chung của trang Cuối khoá. */
     if (!lop) throw badRequest('Không tìm thấy lớp dự kiến.');
+    /* N50 (7) (B1-08, rà PTA ①): cả lớp giữ cùng chi nhánh (lớp đang lưu giữ nguyên thì không kiểm); MỘT em được chọn lớp chi nhánh khác — quyền lớp đích
+       kiểm ở `ghiLoTrinhTiep`. Trước: "Không tìm thấy lớp dự kiến." — sai nghĩa. */
+    if (!motEm && lop.branch_id !== enr.branch_id && lopDuKienId !== lopCu) throw badRequest(LOI_KHAC_CHI_NHANH);
     const maKe = NORMAL_LADDER[(enr.programme_code ?? null) as ProgrammeCode] ?? null;
     if (huong === 'len_lop' && (lop.is_fast_track || lop.programme_code !== maKe)) throw badRequest('Lớp dự kiến phải là chương trình kế tiếp.');
     if (huong === 'hoc_lai' && (lop.is_fast_track || !maHocLai(enr.programme_code as ProgrammeCode).includes(lop.programme_code))) {
@@ -243,7 +246,12 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   if (enr.is_fast_track) throw badRequest('Lộ trình tiếp theo chỉ áp dụng cho lớp thường.');
   if (laLienTuc(enr)) throw badRequest(CAU_LIEN_TUC.loTrinhTiep);
   const cu = conn.prepare('SELECT ngay_xem_lai, lop_du_kien_id FROM lo_trinh_tiep_theo WHERE student_id = ? AND class_id = ?').get(studentId, enr.class_id) as any;
-  const dong = kiemDong(studentId, enr, input, docLopDuKien([input.lopDuKienId]), cu?.ngay_xem_lai ?? null);
+  const lopDk = docLopDuKien([input.lopDuKienId]);
+  const dk = input.lopDuKienId ? lopDk.get(input.lopDuKienId) : null;
+  if (dk && dk.branch_id !== enr.branch_id && dk.id !== cu?.lop_du_kien_id && !can(p, PERMISSIONS.CLASS_EDIT, { classId: dk.id })) {
+    throw forbidden('Lớp dự kiến ở chi nhánh khác — cần Quản lý chi nhánh đó hoặc Quản trị.');
+  }
+  const dong = kiemDong(studentId, enr, input, lopDk, cu?.ngay_xem_lai ?? null, cu?.lop_du_kien_id ?? null, true);
   tx(() => { chanQlDaQuyet(enr.class_id, [dong]); ghiCacDong(p, [dong]); });
   return layLoTrinhTiep(p, studentId);
 }
@@ -331,7 +339,7 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
   const lopDuKien = docLopDuKien(vao.map((v) => v.input.lopDuKienId));
   /* Kiểm HẾT trước khi ghi: một dòng sai → 400 có tên em + `studentId`, không câu ghi nào chạy. */
   const dongs = vao.map(({ sid, cu, input }) => {
-    try { return kiemDong(sid, em.get(sid), input, lopDuKien, cu?.ngayXemLai ?? null); }
+    try { return kiemDong(sid, em.get(sid), input, lopDuKien, cu?.ngayXemLai ?? null, cu?.lopDuKienId ?? null, false); }
     catch (e: any) { throw badRequest(`${em.get(sid).full_name}: ${e.message}`, { studentId: sid }); }
   });
   tx(() => { chanQlDaQuyet(classId, dongs, (sid) => em.get(sid).full_name); ghiCacDong(p, dongs); });

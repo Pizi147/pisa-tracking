@@ -164,7 +164,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const truocYt4 = () => {
     const cat = SCHEMA.replace(/\r\n/g, '\n')
       /* LG-12: bốn cột thêm SAU TINH-HINH — cắt trước nhất; so cột chạy lại migratePrYeuCauXuLy sau cùng. */
-      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_ly_do TEXT\n\);/, '\n);')
+      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_vuot INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')   // + DUONG-LUI-2 khong_xu_ly_vuot (cùng migratePrYeuCauXuLy)
       /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; so cột chạy lại migratePrTinhHinh sau. */
       .replace(/,\n  -- TINH-HINH \(chủ SP 12\/11\)[^\n]*\n  chi_nhac INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')
       /* PR-Pb2-b thêm hai cột SAU ghi_nhan_boi → cắt trước; (2b) chạy lại migratePrPb2b theo đúng thứ tự migrate.ts. */
@@ -680,6 +680,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert((conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc, 'QL vượt → đã ghi');
     const au = conn.prepare(`SELECT after_json a FROM audit_logs WHERE action = 'violation.khong_xu_ly' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(v2.id) as any;
     assert(JSON.parse(au.a).vuotLuat === true, `nhật ký vuotLuat: ${au?.a}`);
+    /* Rà PTA ④: vượt xong thì vi phạm ra khỏi luật 3 / 2 tuần — việc xử lý của GVCN hết, em hết bắt buộc. */
+    assert(!viecYt(gvcn, s2) && em(s2).soBatBuoc === 0, `vượt xong việc phải hết: ${JSON.stringify(viecYt(gvcn, s2))} · ${em(s2).soBatBuoc}`);
   });
   check('LG-12 (5) · Hoàn tác "Không xử lý": việc quay lại (hạn cũ), tin chưa đọc của người ghi bị gỡ, phản hồi bỏ, lịch sử ghi; Hoàn tác lần hai → 409', () => {
     const sid = hv(); const v = ghiYc(gvbm, sid);

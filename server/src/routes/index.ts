@@ -2009,6 +2009,8 @@ api.get('/classes/:id/progress', requireAuth, wrap((req) => {
  * KẾ HOẠCH CHUYỂN TIẾP khi lớp học hết chương trình (mục 6.1) — chỉ đọc.
  * Trả về chương trình kế tiếp theo luồng mặc định, lớp chuyển đến đang có, và danh sách học viên.
  */
+/** N50 (7) (rà PTA ⑨): lớp đích chi nhánh khác cho ô lớp của MỘT em ở trang Cuối khoá — chỉ tải khi QL mở ô đó. */
+api.get('/classes/:id/transition/lop-khac', requireAuth, wrap((req) => transitionSvc.lopKhacChiNhanh(principalOf(req), pInt(req, 'id'))));
 api.get('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();

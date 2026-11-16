@@ -11,13 +11,13 @@ import { t } from '@shared/i18n/index.ts';
  * các lô sau vẫn gửi. `onTienDo([đã gửi, tổng])`. `dao` = bản ghi Hoàn tác của từng lô đã chuyển ngay (P1-09).
  */
 export async function guiTheoLo(url: string, tuanChung: string | null, lo: number, onTienDo: (x: [number, number]) => void,
-  dongs: { studentId: number }[]): Promise<{ ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[]; dao: number[] }> {
+  dongs: { studentId: number }[], them?: (phan: { studentId: number }[]) => Record<string, unknown>): Promise<{ ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[]; dao: number[] }> {
   const kq = { ok: [] as number[], failed: [] as { studentId: number; message: string }[], daChuyen: [] as number[], dao: [] as number[] };
   for (let i = 0; i < dongs.length; i += lo) {
     onTienDo([i, dongs.length]);
     const phan = dongs.slice(i, i + lo);
     try {
-      const r = await api.post<any>(url, { tuanChung, dongs: phan });
+      const r = await api.post<any>(url, { tuanChung, dongs: phan, ...them?.(phan) });
       kq.ok.push(...r.ok); kq.failed.push(...r.failed); kq.daChuyen.push(...(r.daChuyen ?? []));
       if (r.dao) kq.dao.push(r.dao);
     } catch (e: any) { kq.failed.push(...phan.map((d) => ({ studentId: d.studentId, message: e.message as string }))); }
