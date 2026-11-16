@@ -7,6 +7,7 @@ import { NutChipViec, chipViecLop } from '../congViec/LopCuaToi.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { laViecChamCheo } from '@shared/domain/index.ts';
+import { moCaDong } from '../congViec/lamTaiCho.ts';
 import { t } from '@shared/i18n/index.ts';
 
 /** `GET /classes/:id/viec-theo-em` (SV-LOP + UI-HO-SO-LOP): việc theo em (cột Case + PA đọc lại) + `cuaToi` = việc của người xem ở lớp.
@@ -26,9 +27,10 @@ export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; c
   /* `ds` chụp lúc bấm chip: việc vừa xong rời danh sách vẫn đếm đúng "i / n" và tìm được việc kế (R1-LUU-TIEP). */
   const [mo, setMo] = useState<{ ds: WorkItem[]; i: number; nhan: string } | null>(null);
   const [nhapDiem, setNhapDiem] = useState(false);
-  const chip = chipViecLop(data?.cuaToi ?? [], classId);
+  /* AUDIT-1611 P1-01: chip đếm trên DÒNG (`dongToi`, giữ `con`) như "Lớp của tôi" — cùng số ở Công việc, hồ sơ lớp, HV & Lớp. */
+  const chip = chipViecLop(data?.dongToi ?? [], classId, moCaDong);
   const daLam = () => { invalidate('/my-work'); reload(); onDoi(); };
-  const conKhoa = new Set((data?.cuaToi ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).map((x) => x.key));
+  const conKhoa = new Set((data?.cuaToi ?? []).map((x) => x.key));
   const keTiep = mo ? mo.ds.findIndex((x, k) => k > mo.i && conKhoa.has(x.key)) : -1;
   const viecMo = mo?.ds[mo.i];
   /* Cùng phạm vi với chip: bỏ việc Chấm Speaking chéo (chỉ ở tab của nó — lời 20). */

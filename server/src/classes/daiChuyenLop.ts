@@ -231,9 +231,10 @@ function deXuatDangCho(conn: ReturnType<typeof db>, studentId: number): DaiHocVi
   };
 }
 
-/** #8 (G4-06): nhiều dải môn của CÙNG người xem → một dải ("L · R", số em cộng, hạn sớm nhất). Một môn / không môn giữ nguyên. */
+/** #8 (G4-06): nhiều dải môn của CÙNG người xem → một dải ("L · R", hạn sớm nhất); AUDIT-1611 A1-22: số từng môn ở `tung` (như dòng Công việc `mywork.ts`). */
 function gopMonDai<T extends { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }>(ds: T[]): T[] {
   if (ds.length < 2) return ds;
   return [{ ...ds[0], mon: ds.map((x) => x.mon).join(','), monNgan: ds.map((x) => x.monNgan).join(' · '),
-    daGhi: ds.reduce((a, x) => a + x.daGhi, 0), tong: ds.reduce((a, x) => a + x.tong, 0), han: ds.map((x) => x.han).filter((x): x is string => !!x).sort()[0] ?? null }];
+    daGhi: ds.reduce((a, x) => a + x.daGhi, 0), tong: ds.reduce((a, x) => a + x.tong, 0), han: ds.map((x) => x.han).filter((x): x is string => !!x).sort()[0] ?? null,
+    tung: ds.map((x) => ({ monNgan: x.monNgan, daGhi: x.daGhi, tong: x.tong })) }];
 }

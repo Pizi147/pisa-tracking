@@ -5,7 +5,7 @@
  * Không xếp hạng, không so sánh giữa người (Q30-5): chỉ số của MỘT người, hoặc bảng sắp theo tên.
  */
 import {
-  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC, PERMISSIONS, TRANG_THAI, baiId, dongNhinThay, laViecChamCheo, nhomViecCua, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
+  ENTRY_SKILLS, ENTRY_SKILL_SHORT, NHOM_VIEC, PERMISSIONS, TRANG_THAI, baiId, dongCuaToi, dongNhinThay, laViecChamCheo, nhomViecCua, chuongTrinhTuThamSo, ctTuyChon, demViecTheoNhom, duongThe, laCotOGv, nhanVaiLop, roleLabel, soSanhLop, tenMonNgan,
   type ChipBanGiao, type ChuongTrinh, type CotOGv, type NhomViec,
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
@@ -38,8 +38,15 @@ export function viecCuaGv(p: Principal, gvId: number): { nhom: NhomViec; n: numb
   const chiChamDiem = p.userId !== gvId && phamViXemViec(p) === 'cham-diem';
   return demViecTheoNhom(dongViecGv(p, gvId)).filter((x) => !chiChamDiem || x.nhom === 'cham-diem');
 }
-/** S11 (chủ SP 05/11): DÒNG việc như đầu nhóm Công việc (`dong`, dòng gộp "Cả lớp" = 1) — một nguồn cho số đếm (`viecCuaGv`) và panel (`cot=viec`). */
-const dongViecGv = (p: Principal, gvId: number) => (p.userId === gvId ? myWork(p).dong : viecCuaNguoi(p, gvId).dong) ?? [];
+/**
+ * S11 (chủ SP 05/11): DÒNG việc như đầu nhóm Công việc (`dong`, dòng gộp "Cả lớp" = 1) — một nguồn cho số đếm (`viecCuaGv`) và panel (`cot=viec`).
+ * AUDIT-1611 P1-03: chỉ việc CỦA GV đó (như badge / chuông, `dongCuaToi`) — dòng làm thay (việc của GV khác) không vào hồ sơ.
+ */
+const dongViecGv = (p: Principal, gvId: number) => {
+  if (p.userId === gvId) return dongCuaToi(myWork(p).dong ?? []);
+  const w = viecCuaNguoi(p, gvId);
+  return dongCuaToi(w.dong ?? [], (d) => w.cuaGv.has(d.key));
+};
 
 // ------------------------------------------------------------------ các hàm tập — MỘT nguồn cho số ở ô và danh sách khi bấm
 
