@@ -123,4 +123,8 @@ export const EN_BAO_CAO_PH = {
   'Đợt báo cáo phụ huynh quá hạn hơn 7 ngày mà lớp còn em chưa đủ — việc của GV đã rời. Nhắc GV hoặc viết hộ ở tab Báo cáo PH của lớp. Hết khi lớp đủ.':
     'The parent report round is more than 7 days overdue and some students are still missing — the teachers’ task has left their list. Remind the teachers or write on their behalf in the class Parent report tab. Ends when the class is complete.',
   'Đợt quá hạn hơn 7 ngày, lớp còn em chưa đủ.': 'The round is more than 7 days overdue and some students are still missing.',
+  'Bấm <b>Báo cáo PH ›</b> ở dòng.': 'Press <b>Parent report ›</b> on the row.',
+  'Nhắc GV còn thiếu, hoặc viết hộ.': 'Remind the teachers still missing, or write on their behalf.',
+  'Mọi em đủ báo cáo; dòng tự rời.': 'Every student has a complete report; the row leaves by itself.',
+  'Đợt không cần: <b>Không báo cáo đợt này</b>.': 'Round not needed: <b>No report this round</b>.',
 } satisfies Record<string, Dich>;

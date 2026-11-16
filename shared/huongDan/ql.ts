@@ -200,14 +200,25 @@ export const HD_QL: HuongDan = {
       tuKhac: ['bàn giao', 'chuyển lớp', 'handover'],
     },
     {
-      id: 'bao-cao-ph', ten: 'Báo cáo PH: viết hộ, thêm / bỏ đợt, xuất', nhom: 'hv', tab: 'van-hanh', viecWeb: ['bc_ph_qua_han'],
+      id: 'bao-cao-ph', ten: 'Báo cáo PH: viết hộ, thêm / bỏ đợt, xuất', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › Báo cáo PH' },
-      /* N49: đợt quá hạn > 7 ngày còn thiếu em → việc "Báo cáo PH quá hạn" ở Công việc › Việc quản lý (dòng mở tab Báo cáo PH của lớp). */
-      khiCo: 'Đợt quá hạn hơn 7 ngày, lớp còn em chưa đủ.',
       loiTat: ['p-bao-cao-ph'], cung: 'mở cùng panel viết.',
       buoc: ['Mở hồ sơ lớp, tab <b>Báo cáo PH</b> (chương trình có mẫu); chọn <b>Đợt báo cáo</b>.', 'Phần còn thiếu của GV: bạn viết hộ — nút <b>Viết …</b> từng phần (chữ tự lưu khi rời ô), hoặc <b>Đặt nhanh</b> một mức cho mọi ô trống của một phần; trong panel một em <b>Cả n tiêu chí</b> rồi sửa lẻ (<b>Hoàn tác</b> ở thông báo).',
         '<b>+ Đợt báo cáo</b> thêm đợt; <b>Không báo cáo đợt này</b> bỏ đợt (<b>Khôi phục</b> được).', '<b>Xuất PDF lớp</b> · <b>Xuất Excel lớp</b>, hoặc PDF / Excel từng em ở cột <b>Xuất</b>.'],
       tuKhac: ['phụ huynh', 'báo cáo ph', 'parent report', 'đợt', 'pdf'],
+    },
+    {
+      /* N49 (chủ SP 16/11): việc QL "Báo cáo PH quá hạn" — đợt quá hạn > 7 ngày (việc GV đã rời) còn em chưa đủ. */
+      id: 'bc-ph-qua-han', ten: 'Báo cáo PH quá hạn', nhom: 'hv', tab: 'van-hanh', viecWeb: ['bc_ph_qua_han'],
+      tep: ['web/src/modules/classes/TabBaoCaoPh.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx'],
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Báo cáo PH', duong: CV },
+      loiTat: ['ho-so-lop'], cung: 'mở tab Báo cáo PH của lớp.',
+      khiCo: 'Đợt quá hạn hơn 7 ngày, lớp còn em chưa đủ.',
+      buoc: ['Bấm <b>Báo cáo PH ›</b> ở dòng.', 'Nhắc GV còn thiếu, hoặc viết hộ.'],
+      xong: 'Mọi em đủ báo cáo; dòng tự rời.',
+      han: 'Dòng còn thiếu tính quá hạn từ hạn đợt.',
+      sai: 'Đợt không cần: <b>Không báo cáo đợt này</b>.',
+      tuKhac: ['báo cáo ph', 'quá hạn', 'parent report'],
     },
     {
       id: 'chot-lo-trinh', ten: 'Cuối khoá lớp thường: chốt lộ trình', nhom: 'hv', tab: 'van-hanh', viecWeb: ['chot_len_ft'],
