@@ -1671,6 +1671,22 @@ await checkAsync('TURSO-1211 (×3) · Học viên & Lớp kem=sos: trang + Đang
   assert(!loi.length, loi.join(' · '));
 });
 
+/* TD-QUET (17/11): `kem=sos-dem` = trang y hệt + số tab Đang SOS = chiếu (em · lớp · FT · TVV) của đúng các dòng bảng `goc=sos` (cùng thứ tự tập em); Admin null. */
+await checkAsync('TD-QUET (×3) · Học viên & Lớp kem=sos-dem: trang y hệt, sosDem = chiếu dòng Đang SOS (mọi vai), Admin null', async () => {
+  const loi: string[] = [];
+  for (const vai of [...MOI_VAI, 'TVV', 'CX', 'ADMIN'] as Vai[]) {
+    const dem = await doSql(vai, 'GET', '/hoc-vien-lop?kem=sos-dem');
+    const trang = await doSql(vai, 'GET', '/hoc-vien-lop');
+    const sos = await doSql(vai, 'GET', '/hoc-vien-lop?goc=sos');
+    const { sosDem, ...phanTrang } = dem.json as any;
+    if (dem.status !== 200 || JSON.stringify(phanTrang) !== JSON.stringify(trang.json)) loi.push(`${vai}: phần trang khác`);
+    if (vai === 'ADMIN') { if (sosDem !== null) loi.push('ADMIN: sosDem phải null'); continue; }
+    const tap = (rows: any[]) => JSON.stringify(rows.map((r) => [r.studentId, r.classId, r.ft, r.tvv]).sort());
+    if (!sosDem || tap(sosDem.rows) !== tap((sos.json as any).rows)) loi.push(`${vai}: sosDem khác dòng Đang SOS`);
+  }
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');

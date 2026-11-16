@@ -187,12 +187,20 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const canNhan = moLocThem || locThemBat(locThem);
   const qs = useMemo(() => duongHocVienLop(params, { tuLienKet, daNho }), [q, phamViUrl, branchId, daNho, tuLienKet, canNhan]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* giuCu (HV-LOC): gõ tìm / bật lọc đổi `qs` — giữ trang cũ tới khi bản mới về, không gỡ ô tìm đang gõ. */
-  /* Đang SOS: cùng phạm vi trang (`qs`), số trên tab cần nguồn này nên tải luôn (Admin không có chế độ này). TURSO-1211: đi CÙNG request trang (`kem=sos`) —
-     máy chủ dùng lại lượt / điểm vừa nạp cho trang; `sos: null` = không xem được Case. */
-  const trang = useApi<TrangHocVienLop & { sos?: TrangSos | null }>('chuyenDen' in doc ? null : admin ? qs : `${qs}&kem=sos`, [], { giuCu: true });
+  /* Đang SOS (Admin không có chế độ này). Vào trang ĐÃ ở tab SOS (link Tổng quan / hồ sơ lớp): bảng đi CÙNG request trang (`kem=sos`, TURSO-1211 — máy chủ
+     dùng lại lượt / điểm vừa nạp). Vào tab khác: chỉ SỐ trên tab (`kem=sos-dem` — em · lớp · FT · TVV, cùng tập dòng bảng); bảng tải riêng `goc=sos` khi
+     chuyển sang tab (TD-QUET: trang không mở tab bớt QL ~1,3 K · CX ~2,7 K dòng). `null` = không xem được Case. */
+  const vaoTabSos = useState(goc === 'sos')[0];
+  type DongDem = Pick<DongSos, 'studentId' | 'classId' | 'ft' | 'tvv'>;
+  const trang = useApi<TrangHocVienLop & { sos?: TrangSos | null; sosDem?: { rows: DongDem[] } | null }>(
+    'chuyenDen' in doc ? null : admin ? qs : `${qs}&kem=${vaoTabSos ? 'sos' : 'sos-dem'}`, [], { giuCu: true });
   const branches = useApi<Branch[]>('/ref/branches');
   const data = trang.data;
-  const sos = { data: trang.data?.sos ?? null, cu: trang.cu, khongXem: trang.data?.sos === null };   // lỗi tải: báo một lần ở đầu trang (`trang.error`)
+  const khongXemSos = data?.sos === null || data?.sosDem === null;
+  const bangSos = useApi<TrangSos>(vaoTabSos || goc !== 'sos' || admin || 'chuyenDen' in doc || !data || khongXemSos ? null : `${qs}&goc=sos`, [], { giuCu: true });
+  const sos = vaoTabSos ? { data: data?.sos ?? null, cu: trang.cu, khongXem: khongXemSos }
+    : { data: bangSos.data ?? null, cu: bangSos.cu, khongXem: khongXemSos };   // lỗi tải trang: báo một lần ở đầu trang (`trang.error`)
+  const demSos: readonly DongDem[] | null = data?.sos ? data.sos.rows : data?.sosDem ? data.sosDem.rows : null;
   /* Cột "Việc của tôi" + chip "Có việc quá hạn" (U04-5, chủ SP 03/11 khuya): CHỈ việc của người đang xem — cùng nguồn badge Công việc (`/my-work`). Chờ trang tải xong mới gọi. */
   const duongViec = '/my-work';
   const coViec = !!session?.nav?.workSupport;   // AU-GON B2-08: cùng cờ badge Công việc — CX / Head tutor không có Công việc thì không gọi `/my-work` (trước: 403 + chip "!")
@@ -302,6 +310,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
   const trongLoc = (classId: number, ft: boolean) => (!chiLop || classId === chiLop) && (khung === 'tat-ca' || (ft ? 'ft' : 'thuong') === khung);
   const sosTat = (sos.data?.rows ?? []).filter((r) => trongLoc(r.classId, r.ft) && khopTvv(r.tvv));
+  const soSos = demSos ? soEm(demSos.filter((r) => trongLoc(r.classId, r.ft) && khopTvv(r.tvv)).map((r) => ({ id: r.studentId }))) : null;
   const sosRows = sosTat.filter((r) => (mucSos === 'pa' ? coPaQuaHan(r) : mucSos === '23' ? (r.sosLevel ?? 0) >= 2 : mucSos ? r.sosLevel === Number(mucSos) : true));
   const hangTheoEm = useMemo(() => new Map((data?.hocVien ?? []).map((h) => [h.id, h.hang])), [data]);
 
@@ -499,7 +508,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
       {/* PTA rà #1690: 375 nhãn "Phân công" gọn. PTA rà #1704: "Đang SOS" một tên ở mọi cỡ màn (mockup K8b "Đang SOS 10"); hàng tab cuộn ngang khi chật. */}
       <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[
         { key: 'tat-ca', label: t('Tất cả'), so: data && (!laVai || vaiTrang) ? soEm(goc0) : null },
-        ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: sos.data ? soEm(sosTat.map((r) => ({ id: r.studentId }))) : null }]),
+        ...(admin ? [] : [{ key: 'sos' as const, label: t('Đang SOS'), so: soSos }]),
         { key: 'lich-thi', label: t('Lịch thi'), so: data ? demLich : null },
         ...(coGocPc ? [{ key: 'phan-cong' as const, label: dienThoai ? t('Phân công') : t('Phân công GV') }] : []),
       ]} />

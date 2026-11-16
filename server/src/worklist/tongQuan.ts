@@ -320,13 +320,18 @@ function tinhLopToiDay(p: Principal, ct: 'ft' | 'thuong', chiKhiChuNhiem = false
 function keTiepFt(classIds: number[], today: string) {
   const keTiep = new Map<number, string>();
   if (!classIds.length) return keTiep;
+  /* TD-QUET: chỉ lượt ĐẦU mỗi lớp — câu con LIMIT 1 đi tuần tăng dần (`CROSS JOIN` giữ `report_periods` ngoài: chỉ mục `week_start` → `idx_attempt_lop_tuan`),
+     dừng ở lượt đầu qua lọc. Trước đọc mọi MT sắp tới × mọi em rồi lấy dòng đầu trong JS (GV 4 lớp: ~100 dòng, ~12 K bước → 4 dòng, ~3 K). Cùng thứ tự, cùng lọc. */
   for (const r of db().prepare(
-    `SELECT a.class_id, a.attempt_no, rp.week_start FROM assessment_attempts a JOIN report_periods rp ON rp.id = a.planned_period_id
+    `SELECT j.value AS class_id, (SELECT json_array(a.attempt_no, rp.week_start) FROM report_periods rp CROSS JOIN assessment_attempts a
+         ON a.class_id = j.value AND a.planned_period_id = rp.id
        JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
-      WHERE a.kind = 'mock' AND a.class_id IN (${classIds.map(() => '?').join(',')}) AND ${MOC_KE_TIEP_SQL('a', 'rp')}
-      ORDER BY rp.week_start, a.attempt_no`,
-  ).all(...classIds, mondayOf(today)) as any[]) {
-    if (!keTiep.has(r.class_id)) keTiep.set(r.class_id, `MT${r.attempt_no} · ${tuanLich(r.week_start, today)}`);
+      WHERE a.kind = 'mock' AND ${MOC_KE_TIEP_SQL('a', 'rp').replace(/\?$/, '?1')}
+      ORDER BY rp.week_start, a.attempt_no LIMIT 1) AS dau FROM json_each(?2) j`,
+  ).all(mondayOf(today), JSON.stringify(classIds)) as any[]) {
+    if (!r.dau) continue;
+    const [no, tuan] = JSON.parse(r.dau) as [number, string];
+    keTiep.set(r.class_id, `MT${no} · ${tuanLich(tuan, today)}`);
   }
   return keTiep;
 }
