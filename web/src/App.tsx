@@ -3,7 +3,7 @@ import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
 import { DemYeuCauCtx, ViecCuaToiCtx, type SoViecCuaToi } from './lib/viecCuaToi.ts';
-import { henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
+import { MOI_MY_WORK_MS, henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
 import { ChanRoiNhapGoc } from './ui/chanRoiNhap.tsx';
@@ -247,7 +247,8 @@ export default function App() {
    * hoặc khi bản đang hiện đã ≥ 60 s và tab đang hiện (`henTaiLaiKhiCu`). Trang Công việc / Tổng quan đang mở tự tải lại như cũ và badge nhận luôn bản đó (`chiNghe`).
    */
   const [lanViec, setLanViec] = useState(0);
-  const [henViec] = useState(() => henTaiLaiKhiCu(() => setLanViec((n) => n + 1)));
+  /* AUDIT-1611 BADGE-NHE (PTA 17/11): + tải lại khi đổi trang / quay lại tab sau ≥ 5 phút (`MOI_MY_WORK_MS`, cùng hạn bản dùng lại của `/my-work`). */
+  const [henViec] = useState(() => henTaiLaiKhiCu(() => setLanViec((n) => n + 1), 60_000, MOI_MY_WORK_MS));
   /* Vô hiệu TOÀN BỘ (đổi tài khoản / góc nhìn) → tải lại ngay: không giữ số của người trước dù vẫn đứng cùng trang. */
   useEffect(() => onInvalidate((p) => { if (p === null) henViec.ngay(); else if ('/my-work'.startsWith(p)) henViec.cu(); }), [henViec]);
   useEffect(() => () => henViec.huy(), [henViec]);
@@ -365,7 +366,7 @@ export default function App() {
           <ThanhTren items={items} dangO={dangO} so={so} />
           <div className="flex-1 min-w-0 md:hidden" />
           {/* CHUONG-V2: chuông dùng CHÍNH bản `/my-work` + `/yeu-cau/dem` của badge (0 request thêm); số chuông = `so` của badge Công việc. */}
-          <Header viec={viecGv} dem={dem} so={so} />
+          <Header viec={viecGv} dem={dem} so={so} onMoChuong={() => henViec.moiNeuCu(60_000)} />
         </div>
       </header>
       {/* PR-OV2a (mockup overhaul-3 §2): đang ở một góc nhìn → dải mỏng luôn nói vai + phạm vi, có lối về vai gốc. */}
