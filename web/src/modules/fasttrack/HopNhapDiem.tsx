@@ -60,6 +60,8 @@ export type NguCanhHop = {
   attemptId?: number;
   /** L4 (13/11): lượt KHÔNG chấm chéo (Progress / Final…) — "Người chấm" S chọn được mọi nhân viên. Mặc định (lưới FT: Mock, MT0) = chấm chéo, chỉ GV có kỹ năng S — cùng nhóm máy chủ (`gvChamHopLe`) và nút "GV chấm S" đầu cột. */
   khongCheo?: boolean;
+  /** AUDIT-1611 A1-16: lượt MT cũ — GVCN / QL nhập được mọi kỹ năng (T22); ô không phải kỹ năng mình dạy thì hộp ghi "Bạn nhập hộ". */
+  mtCu?: boolean;
 };
 
 /**
@@ -111,6 +113,8 @@ type HopProps = {
   tuanXem?: string | null;
 };
 
+/** AUDIT-1611 B3-08: chỉ số lỗi của ô Người chấm (khác ô điểm 0–4). */
+const O_NGUOI_CHAM = 9;
 const laLR = (s: string) => s === 'listening' || s === 'reading';
 /** "18/10 14:05" — ngày (như `ngay`) + giờ máy người xem. */
 const lucNgan = (iso: string, homNay: string) => `${ngay(iso, homNay)} ${new Date(iso).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
@@ -308,6 +312,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   const busy = dangLuu !== null;
   const dangGui = useRef(false);
   const [loi, setLoi] = useState<{ cau: string; o: number | null } | null>(null);
+  const oNguoiChamRef = useRef<HTMLDivElement>(null);
   const luoiRef = useRef<HTMLDivElement>(null);
   /* V12: "Lưu" ở lại — ảnh chữ lúc lưu xong; chữ còn y nguyên = "✓ Đã lưu" (gõ tiếp là chưa lưu). */
   const [luuAnh, setLuuAnh] = useState<string | null>(null);
@@ -366,8 +371,16 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   useBaoHopLyDoMo(busy, daGo);
   /* Luật 2: lỗi → focus ô sai (lỗi máy chủ không chỉ ô: ô điểm đầu). */
   useEffect(() => {
+    if (loi?.o === O_NGUOI_CHAM) { oNguoiChamRef.current?.querySelector<HTMLElement>('input, button')?.focus(); return; }
     if (loi) loiRef.current?.closest('[role="dialog"]')?.querySelector<HTMLElement>('[aria-invalid="true"], input:not([disabled]), textarea:not([disabled])')?.focus();
   }, [loi]);
+  /* AUDIT-1611 B3-08: QL / Admin nhập hộ S chấm chéo, chưa có GV chấm → mở hộp là con trỏ ở ô Người chấm (luật 2.4 giữ nguyên, chỉ chỉ đường sớm). */
+  const canChonGv = laS && !ctx.khongCheo && !session?.gvS && (!gv || gv.kieu === 'toi');
+  useEffect(() => {
+    if (!canChonGv || !nhapDuoc) return undefined;
+    const id = requestAnimationFrame(() => oNguoiChamRef.current?.querySelector<HTMLElement>('input, button')?.focus());
+    return () => cancelAnimationFrame(id);
+  }, []);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Vừa lưu / hết: nút chính nhận focus — Enter đi tiếp (nút cũ vừa biến mất, focus không rơi ra ngoài hộp). */
   useEffect(() => { if (ketThuc || daLuu) nutHetRef.current?.focus(); }, [!!ketThuc, daLuu]);   // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -405,8 +418,8 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     if (doiNhom) them.nhomNguyenNhan = nhom;
     const coDiemMoi = doiDiem && !!diem.patch && ('criteria' in diem.patch || 'band' in diem.patch || 'rawScore' in diem.patch);
     /* 2.4: S chấm chéo có điểm mới mà chưa có GV chấm hợp lệ — người không phải GV Speaking phải chọn (máy chủ cũng chặn); chữ giữ. */
-    if (laS && !ctx.khongCheo && coDiemMoi && !session?.gvS && (!gv || gv.kieu === 'toi')) {
-      setLoi({ cau: t('Chọn "GV chấm" trước khi lưu — bạn không phải GV Speaking nên không ghi bạn là người chấm.'), o: null }); return;
+    if (coDiemMoi && canChonGv) {
+      setLoi({ cau: t('Chọn "GV chấm" trước khi lưu — bạn không phải GV Speaking nên không ghi bạn là người chấm.'), o: O_NGUOI_CHAM }); return;
     }
     if (laS && (doiGv || (coDiemMoi && !cungGvCham(gv, gvCu, session?.user?.id)))) them.gvCham = gvChamPayload(gv);
     const lenh: SavePatch[] = [];
@@ -542,9 +555,9 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
         </div>
       ))}
       {laS && !vang && nhapDuoc && (
-        <div className="flex items-center gap-2" data-chon-nguoi>
-          <span className="shrink-0 text-xs font-medium text-slate-300">{t('Người chấm')}</span>
-          <div className="min-w-0 flex-1">
+        <div className="flex items-center gap-2" data-chon-nguoi ref={oNguoiChamRef}>
+          <span className="shrink-0 text-xs font-medium text-slate-300">{t('Người chấm')}{canChonGv && <span aria-hidden className="text-bad"> *</span>}</span>
+          <div className="min-w-0 flex-1 rounded-md" style={stSai(loi?.o === O_NGUOI_CHAM)}>
             <ChonNguoi value={gv} onChange={setGv} nhom={ctx.khongCheo ? 'nhan_vien' : 'gv_speaking'} choNgoai macDinhTrong={t('Chưa chọn')} ariaLabel={t('Người chấm Speaking')} disabled={busy} />
           </div>
         </div>
@@ -642,8 +655,10 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
   );
 
   const ten = `${skillLabel(cell.skill)} · ${ctx.luot}`;
+  /* QC-Q82 ở MT cũ: phân công đã có trong phiên (0 request); tên GV phụ trách ô không có ở lưới → chỉ nói "Bạn nhập hộ". */
+  const nhapHo = !!ctx.mtCu && !session?.assignments?.some((a) => a.classCode === ctx.lop && (a.skill === cell.skill || a.skill === cell.assessedSkill));
   return (
-    <KhungHop anchor={anchor} ten={ten} phu={<>{[ctx.tenHv, ctx.lop].filter(Boolean).join(' · ')}{tuan && <> · <span className="tabular-nums">{tuan}</span></>}</>}
+    <KhungHop anchor={anchor} ten={ten} phu={<>{[ctx.tenHv, ctx.lop].filter(Boolean).join(' · ')}{tuan && <> · <span className="tabular-nums">{tuan}</span></>}{nhapHo && <> · <b className="font-semibold text-soon">{t('Bạn nhập hộ')}</b></>}</>}
       nhanHop={`${ten} · ${ctx.tenHv}`} daGo={daGo} cauBo={t('Bỏ điểm {skillLabel} · {tenHv}?', { skillLabel: skillLabel(cell.skill), tenHv: ctx.tenHv })} onDong={dong} onKeyDown={phim} chan={chan}>
       {ketThuc
         ? <p role="status" className="m-0 text-sm text-slate-200">{t('Đã xong phần của bạn · {phamVi}: đã lưu {n} bài', { phamVi: ketThuc.phamVi, n: ketThuc.daLuu })}</p>

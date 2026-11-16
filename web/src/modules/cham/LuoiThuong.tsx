@@ -96,6 +96,8 @@ export type ThuongSheet = {
   laGvcn?: boolean;
   passThreshold: number;
   rows: Row[];
+  /** AUDIT-1611 P1-10 (web): mọi hàng của lượt trước khi lọc theo việc — tổng số câu mặc định tính trên cả lớp (mở việc một em không trống ô tổng). */
+  rowsTong?: Row[];
   today: string;
 };
 
@@ -256,8 +258,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
   const [busy, setBusy] = useState(false);
 
   const tongMacDinh = useMemo(
-    () => Object.fromEntries(skills.map((k) => [k, tongPhoBien(data.rows, k)])) as Record<string, number | null>,
-    [data.rows, skills],
+    () => Object.fromEntries(skills.map((k) => [k, tongPhoBien(data.rowsTong ?? data.rows, k)])) as Record<string, number | null>,
+    [data.rows, data.rowsTong, skills],
   );
   const chuTong = (k: string) => tongGo[k] ?? (tongMacDinh[k] === null ? '' : String(tongMacDinh[k]));
   const soTong = (k: string) => (/^\d+$/.test(chuTong(k).trim()) && Number(chuTong(k)) > 0 ? Number(chuTong(k)) : null);
@@ -316,6 +318,8 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
       key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON_GON : 104, sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
     })),
+    /* AUDIT-1611 A1-14: cột đệm cuối nhận phần thừa — tên giữ 200 px, ô điểm ngay sau tên (như lưới FT), không dồn mép phải. */
+    { key: 'du', nhan: '', kieu: 'chu', linhHoat: true },
   ] : [
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 230, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8: như lưới FT — tên gốc 230, cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
@@ -547,6 +551,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
           {row.result.tyLeTong != null ? `${Math.round(row.result.tyLeTong * 100)}%` : '—'}
         </OBang>
       )}
+      {gon && <td aria-hidden />}
       {!gon && (
         <OBang c={cc.kq}>
           <KetQua row={row} sheet={sheet} />

@@ -120,7 +120,7 @@ export function LuoiChamLop({
   );
   const thuong = useMemo<ThuongSheet | null>(() => {
     const t = thuongTheoBai(data.thuong, kind);
-    const loc = t && locLuot ? { ...t, rows: t.rows.filter((r) => locLuot.has(r.attemptId)) } : t;
+    const loc = t && locLuot ? { ...t, rows: t.rows.filter((r) => locLuot.has(r.attemptId)), rowsTong: t.rows } : t;
     /* Cột của việc: lưới lớp thường vẽ cột theo `programme.skills` — bớt môn ở đó (kết quả vẫn của máy chủ). */
     return loc && cotHien ? { ...loc, programme: { ...loc.programme, skills: loc.programme.skills.filter((k) => cotHien.includes(k)) } } : loc;
   }, [data.thuong, kind, locLuot, cotHien]);
