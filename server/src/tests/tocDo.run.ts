@@ -1694,6 +1694,19 @@ await checkAsync('TD-QUET (×3) · Hồ sơ lớp một GET: mỗi phần trùng
     }
   }
   if ((await doSql('QL', 'GET', `/classes/${LOP_FT}/ho-so?phan=overview,la`)).status !== 400) loi.push('phần lạ không 400');
+/* TD-QUET (17/11): `kem=sos-dem` = trang y hệt + số tab Đang SOS = chiếu (em · lớp · FT · TVV) của đúng các dòng bảng `goc=sos` (cùng thứ tự tập em); Admin null. */
+await checkAsync('TD-QUET (×3) · Học viên & Lớp kem=sos-dem: trang y hệt, sosDem = chiếu dòng Đang SOS (mọi vai), Admin null', async () => {
+  const loi: string[] = [];
+  for (const vai of [...MOI_VAI, 'TVV', 'CX', 'ADMIN'] as Vai[]) {
+    const dem = await doSql(vai, 'GET', '/hoc-vien-lop?kem=sos-dem');
+    const trang = await doSql(vai, 'GET', '/hoc-vien-lop');
+    const sos = await doSql(vai, 'GET', '/hoc-vien-lop?goc=sos');
+    const { sosDem, ...phanTrang } = dem.json as any;
+    if (dem.status !== 200 || JSON.stringify(phanTrang) !== JSON.stringify(trang.json)) loi.push(`${vai}: phần trang khác`);
+    if (vai === 'ADMIN') { if (sosDem !== null) loi.push('ADMIN: sosDem phải null'); continue; }
+    const tap = (rows: any[]) => JSON.stringify(rows.map((r) => [r.studentId, r.classId, r.ft, r.tvv]).sort());
+    if (!sosDem || tap(sosDem.rows) !== tap((sos.json as any).rows)) loi.push(`${vai}: sosDem khác dòng Đang SOS`);
+  }
   assert(!loi.length, loi.join(' · '));
 });
 

@@ -161,6 +161,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Học viên & Lớp · Đang SOS', vai: ['ADMIN'], url: '/hoc-vien-lop?goc=sos', maChuDich: { ADMIN: 403 } },
   /* TURSO-1211: trang Học viên & Lớp mở = danh sách + Đang SOS CÙNG request (`kem=sos`); Admin: `sos: null`. */
   { trang: 'Học viên & Lớp', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/hoc-vien-lop?kem=sos' },
+  /* TD-QUET (17/11): trang mở = danh sách + SỐ tab Đang SOS (`kem=sos-dem`); bảng SOS `goc=sos` chỉ khi mở tab. */
+  { trang: 'Học viên & Lớp', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/hoc-vien-lop?kem=sos-dem' },
   { trang: 'Học viên & Lớp · panel một em', vai: MOI_VAI, url: '/hoc-vien-lop/em/{hv}' },
   { trang: 'Hồ sơ HV CX / Admin', vai: ['CX', 'ADMIN'], url: '/students/{hv}' },
   { trang: 'Học viên & Lớp', vai: MOI_VAI, url: '/hoc-vien-lop/luu-tru' },
@@ -1326,6 +1328,15 @@ export const TRAN: Record<string, number> = {
   'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 72,   // đo 55
   'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 85,   // đo 65
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 124,   // đo 95
+  /* TD-QUET (17/11): Học viên & Lớp mở với số tab Đang SOS (`kem=sos-dem`) — max(đo + 10, ⌈đo × 1,3⌉). */
+  'QL /hoc-vien-lop?kem=sos-dem': 75,   // đo 57
+  'GVCN /hoc-vien-lop?kem=sos-dem': 77,   // đo 59
+  'GVBM /hoc-vien-lop?kem=sos-dem': 77,   // đo 59
+  'GVCN_THUONG /hoc-vien-lop?kem=sos-dem': 77,   // đo 59
+  'QT /hoc-vien-lop?kem=sos-dem': 76,   // đo 58
+  'TVV /hoc-vien-lop?kem=sos-dem': 65,   // đo 50
+  'CX /hoc-vien-lop?kem=sos-dem': 82,   // đo 63
+  'ADMIN /hoc-vien-lop?kem=sos-dem': 68,   // đo 52
 };
 
 /**
@@ -2165,6 +2176,15 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 952,   // đo 732
   'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 959,   // đo 737
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 740,   // đo 569
+  /* TD-QUET (17/11): `kem=sos-dem` — max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /hoc-vien-lop?kem=sos-dem': 3778,   // đo 2906
+  'GVCN /hoc-vien-lop?kem=sos-dem': 2781,   // đo 2139
+  'GVBM /hoc-vien-lop?kem=sos-dem': 3209,   // đo 2468
+  'GVCN_THUONG /hoc-vien-lop?kem=sos-dem': 2781,   // đo 2139
+  'QT /hoc-vien-lop?kem=sos-dem': 3725,   // đo 2865
+  'TVV /hoc-vien-lop?kem=sos-dem': 357,   // đo 274
+  'CX /hoc-vien-lop?kem=sos-dem': 5145,   // đo 3957
+  'ADMIN /hoc-vien-lop?kem=sos-dem': 3406,   // đo 2620
 };
 
 export const TRAN_GHI_LO = {

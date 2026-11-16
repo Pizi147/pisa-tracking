@@ -1702,7 +1702,11 @@ api.get('/hoc-vien-lop', requireAuth, wrap((req) => {
   });
   /* TURSO-1211: `kem=sos` — "Đang SOS" (số trên tab + góc) trong CÙNG request: lượt / điểm / Case đã nạp cho trang dùng lại (bản chép thật: SOS thêm ~50 %
      thay 100 % của request riêng). Không xem được Case → `sos: null` (trước: request riêng 403). */
-  return qStr(req, 'kem') === 'sos' ? { ...trang, sos: hocVienSosSvc.xemDuocSos(p) ? hocVienSosSvc.dangSos(p, fSos) : null } : trang;
+  const kem = qStr(req, 'kem');
+  if (kem === 'sos') return { ...trang, sos: hocVienSosSvc.xemDuocSos(p) ? hocVienSosSvc.dangSos(p, fSos) : null };
+  /* TD-QUET: `kem=sos-dem` — chỉ số trên tab "Đang SOS" (em · lớp · FT · TVV, cùng tập dòng `dangSos`), không Case / PA; bảng tải `goc=sos` khi mở tab. */
+  if (kem === 'sos-dem') return { ...trang, sosDem: hocVienSosSvc.xemDuocSos(p) ? hocVienSosSvc.demSos(p, fSos) : null };
+  return trang;
 }));
 
 /** PC-GV-A: góc Phân công GV — cả chi nhánh một lần (QL / Quản trị sửa, CX xem; GV / TVV 403). */
