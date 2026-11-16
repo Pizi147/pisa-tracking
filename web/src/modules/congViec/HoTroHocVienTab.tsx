@@ -305,7 +305,7 @@ export function HoTroHocVienTab() {
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); x.delete('panel'); return x.toString(); };
   const cuon = useRef(0);
   const mo = (it: WorkItem) => {
-    if (!lamTaiCho(it)) { navigate(it.href); return; }
+    if (!lamTaiCho(it)) { navigate(it.group === 'bao_cao_ph' ? `${it.href}&viet=1` : it.href); return; }   /* AU-GON B3-10: "Viết ›" mở thẳng panel viết (`?viet=1`, TabBaoCaoPh) */
     const next = new URLSearchParams(params);
     next.set('viec', it.key);
     if (tabCua(it) !== tab && !params.get('loai')) next.set('nhom', tabCua(it));   // CV-TAB: việc của tab khác (Việc tiếp, Em này còn) → danh sách sang tab đó

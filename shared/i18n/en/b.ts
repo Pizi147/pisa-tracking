@@ -359,6 +359,7 @@ const EN_B_WEB = {
   'Mọi học viên đều đã có đủ bài kiểm tra.': 'Every student already has all tests.',
   'Đang tạo…': 'Creating…',
   'Tạo bài kiểm tra theo chương trình': 'Create tests from the programme',
+  'Tạo bài còn thiếu': 'Create missing tests',
   'Lớp này chưa có bài kiểm tra nào': 'This class has no tests yet',
   'Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài Progress Test và Final Test theo đúng mốc tuần học.': 'Click "Create tests from the programme" to add the Progress Test and Final Test at the right study weeks.',
   'Quản lý cần tạo kế hoạch kiểm tra cho lớp này.': 'A manager needs to create a test plan for this class.',
