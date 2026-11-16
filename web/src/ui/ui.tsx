@@ -6,7 +6,7 @@ import { useSession } from '../lib/session.tsx';
 import { useChongVe, useVe } from '../lib/quayLai.ts';
 import { BaoOTrongNhan, coOTuNhan } from './ONgay.tsx';
 import { useNoiLoi } from './loiForm.tsx';
-import { BadgeHan, CHIP_TRON, CHIP_VUONG, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
+import { BadgeHan, CHIP_TRON, CHIP_VUONG, ChipCham, Nhan, lopSos, type ToneNhan } from './Nhan.tsx';
 import { t } from '@shared/i18n/index.ts';
 
 export function Card({ title, action, children, className = '', bodyClass = 'p-4' }: {
@@ -581,12 +581,15 @@ const NHAN_LOP: Record<TrangThai, string> = {
   'cho-duyet': 'border-muted-line bg-muted-bg text-muted', 'qua-han': '',   // BADGE-QUA-HAN (chủ SP 15/11): quá hạn = `BadgeHan` đỏ (vẽ ở `NhanTrangThai`)
   xong: 'border-transparent text-done', 'da-huy': 'border-transparent text-slate-500 line-through decoration-1',
 };
-export function NhanTrangThai({ t, soNgay, title, chu }: {
+export function NhanTrangThai({ t, soNgay, title, chu, cham = false }: {
   t: TrangThai; soNgay?: number | null; title?: string;
   /** Chữ riêng của một loại việc (Vận hành: THUAT_NGU C-069…C-073) — kiểu nhãn vẫn theo `t`. */
   chu?: string;
+  /** ③ K9e (A3-09): dáng chip chấm màu theo trạng thái (hàng Case hồ sơ HV) — quá hạn cũng vàng "chờ", đỏ chỉ ở cột hạn. */
+  cham?: boolean;
 }) {
   const chuHien = chu ?? chuTrangThai(t, soNgay);
+  if (cham) return <ChipCham title={title} tone={t === 'dang-lam' ? 'doing' : t === 'xong' ? 'ok' : t === 'cho-duyet' || t === 'da-huy' ? 'muted' : 'soon'}>{chuHien}</ChipCham>;
   if (t === 'qua-han') return <BadgeHan muc="qua" title={title}>{chuHien}</BadgeHan>;
   return <span title={title} className={`${CHIP_VUONG} ${NHAN_LOP[t]}`}>
     {chuHien}</span>;

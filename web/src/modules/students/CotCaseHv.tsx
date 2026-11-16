@@ -5,6 +5,7 @@ import { NganCase, type DaXoaCase } from './NganCase.tsx';
 import { DaiDaXoa } from '../cases/TaiCho.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
+import { NhanTrangThai } from '../../ui/ui.tsx';
 import { BadgeHan } from '../../ui/Nhan.tsx';
 import { IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -12,19 +13,6 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-
-/** ③ K9e `.trang-pa`: chip trạng thái Case — chấm màu theo TRẠNG THÁI (vàng chờ · xanh dương đang làm · xanh lá ✓ xong · xám chờ duyệt / huỷ); đỏ chỉ cho hạn quá hạn (cột hạn). */
-const MAU_TT: Record<string, string> = {
-  'can-lam': 'bg-soon-bg text-soon', 'qua-han': 'bg-soon-bg text-soon', 'dang-lam': 'bg-doing-bg text-doing',
-  xong: 'bg-ok-bg text-ok', 'cho-duyet': 'bg-muted-bg text-muted', 'da-huy': 'bg-muted-bg text-muted line-through',
-};
-function ChipTrangThai({ t: tt, chu }: { t: string; chu: string }) {
-  return (
-    <span className={`inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold ${MAU_TT[tt] ?? MAU_TT['can-lam']}`}>
-      {tt === 'xong' ? <span aria-hidden>✓</span> : <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />}{chu}
-    </span>
-  );
-}
 
 /** Mở một Case trong cột (Việc của tôi, chart): `n` đổi → khối Case dựng lại đúng view (`viec`) / cuộn tới PA (`paId`). */
 export type MoCot = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa'; n: number };
@@ -97,7 +85,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
             <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100 [@container(min-width:640px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
             {/* A3-09 (③ K9e): ≥ 640 cột cố định trạng thái │ PA │ người (PA dài xuống dòng trong cột); 375 trạng thái + PA một hàng. */}
             <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:640px)]:contents">
-              <span className="shrink-0"><ChipTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
+              <span className="shrink-0"><NhanTrangThai cham t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
               <span className="min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : undefined}>{chuPa}</span>
             </span>
             <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim">{nguoi && <><IconNguoi /><span className="min-w-0">{nguoi}</span></>}</span>

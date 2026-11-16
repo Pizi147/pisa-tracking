@@ -39,6 +39,16 @@ export const CHIP_TRON = 'inline-flex h-[22px] items-center whitespace-nowrap ro
 export const O_CHIP_XUONG_DONG = 'md:[&>span]:h-auto md:[&>span]:min-h-[22px] md:[&>span]:whitespace-normal md:[&>span]:rounded-[11px] md:[&>span]:py-[3px] md:[&>span]:leading-tight md:[&>span]:[text-wrap:balance]';
 export const CHIP_VUONG = 'inline-flex h-[22px] items-center whitespace-nowrap rounded border px-2 text-xs font-semibold leading-none tabular-nums';
 
+/** ③ K9e `.trang-pa` (A3-09): chip trạng thái có chấm màu theo TRẠNG THÁI — vàng chờ · xanh dương đang làm · xanh lá ✓ xong · xám; đỏ chỉ dành cho hạn. */
+const MAU_CHAM = { soon: 'bg-soon-bg text-soon', doing: 'bg-doing-bg text-doing', ok: 'bg-ok-bg text-ok', muted: 'bg-muted-bg text-muted' } as const;
+export function ChipCham({ tone, title, children }: { tone: keyof typeof MAU_CHAM; title?: string; children: ReactNode }) {
+  return (
+    <span title={title} className={`inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold ${MAU_CHAM[tone]}`}>
+      {tone === 'ok' ? <span aria-hidden>✓</span> : <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />}{children}
+    </span>
+  );
+}
+
 /**
  * DÁNG CHIP SOS — MỘT CHỖ (C23 + MAU-MUC chủ SP 28/10): vàng → cam → ĐỎ (không hồng); ba mức tách bằng ĐỘ ĐẶC nền, đọc được cả khi không phân biệt màu:
  * SOS 1 rỗng (viền mảnh trên nền thẻ) · SOS 2 nền cam vừa · SOS 3 nền đỏ đặc chữ trắng; cùng viền 1 px, cùng chữ 600.
