@@ -284,7 +284,7 @@ export function ungVienVaThe(f: { branchId?: number | null; lopIds?: readonly nu
   const args: unknown[] = [];
   if (f.lopIds) {
     /* Vài lớp GVCN → `IN (?,…)` (như `dsCho` của Công việc): ứng viên vẫn đi từ `violations` (TD6). */
-    loc.push(`EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.class_id IN (${cho(f.lopIds.length)}) AND e.status IN ('active', 'paused'))`);
+    loc.push(`s.id IN (SELECT e.student_id FROM enrollments e WHERE e.class_id IN (${cho(f.lopIds.length)}) AND e.status IN ('active', 'paused'))`);
     args.push(...f.lopIds);
   }
   if (f.branchId) {

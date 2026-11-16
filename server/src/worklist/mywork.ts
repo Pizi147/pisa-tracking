@@ -789,7 +789,11 @@ const boVaiAdmin = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.fi
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
   /** CHUONG-NHE: chỉ đọc lượt của các lớp này (+ lớp FT chấm S chéo `lopCheo`; [] → không đọc lượt). Không truyền = như cũ. */ classIds?: readonly number[];
   /** SUA-LOI-CV: việc Chấm Speaking chỉ tính lớp FT ở các chi nhánh này (QL xem việc GV — phạm vi người xem); null / không truyền = mọi chi nhánh. */ cnCheo?: readonly number[] | null;
-  /** SUA-LOI-CV: "Tất cả" của trang Công việc — web tách Của tôi / Của GV tại máy, nên dựng cả việc Chấm Speaking của người xem. Nơi khác giữ như cũ. */ tachCuaToi?: boolean } = {}) {
+  /** SUA-LOI-CV: "Tất cả" của trang Công việc — web tách Của tôi / Của GV tại máy, nên dựng cả việc Chấm Speaking của người xem. Nơi khác giữ như cũ. */ tachCuaToi?: boolean;
+  /**
+   * TD-VIEC (hồ sơ lớp `viecTheoEmCuaLop`): nơi gọi CHỈ dùng việc gắn lớp này (`classId` = lớp) hoặc việc không lớp của em ghi danh lớp này — các khối Case mở,
+   * Xác nhận PA, Ý thức, hồ sơ TVV, MT cũ, Bàn giao chỉ đọc tập cha theo lớp đó (trước đọc cả chi nhánh). Việc của lớp trả về y hệt; việc lớp khác có thể thiếu.
+   */ chiLop?: number } = {}) {
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
@@ -995,7 +999,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const locCm = locCaseMo(p, f.branchId, tatCa);
   const toi = xemNguoiKhac && !tatCa && !caseMoTapChaKhiKiem.tat ? p.userId : null;   // TD-VIEC: "Của tôi" của QL / Quản trị — xem `napCaseMo`
-  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(locCm, toi) : [];
+  const locLop: LocCaseMo = f.chiLop ? { lop: [f.chiLop] } : locCm;   // TD-VIEC `chiLop`: tập cha theo lớp (Case của em ghi danh lớp / lượt của lớp) thay tập cha quyền
+  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(locLop, toi) : [];
   /* Một dòng mỗi Case (em hai ghi danh `active` có hai dòng ở `caseMo`). */
   const caseRows = !co('no_plan') ? [] : [...new Map(caseMo.filter((c) => c.la_no_plan).map((c) => [c.id, c])).values()];
   /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */
@@ -1004,8 +1009,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TD-VIEC (Turso 16/11: câu này 492 lần · 3,8 K dòng / lần): Xác nhận PA lọc ĐÚNG tập cha của `napCaseMo` (`locCaseMo`) — dòng chỉ thành việc qua
    * `dongCase` (`can` SOS_EDIT / CASE_APPROVE, cùng luật khối Xác nhận Case), trước đọc PA chờ xác nhận cả hệ thống cho mọi người xem.
    */
-  const locPa = sqlLocCaseMo(locCm);
-  const xacNhanPa = !co('xac_nhan_pa') || (locCm && ('lop' in locCm ? !locCm.lop.length : !locCm.cn.length)) ? [] : conn
+  const locPa = sqlLocCaseMo(locLop);
+  const xacNhanPa = !co('xac_nhan_pa') || (locLop && ('lop' in locLop ? !locLop.lop.length : !locLop.cn.length)) ? [] : conn
     .prepare(
       `SELECT sc.id, sc.topic, sc.summary, sc.origin_kind, sc.sos_level, sc.urgency, sc.owner_user_id, sc.attempt_id, sc.kck,
               ${COT_CASE}, iv.id AS iv_id, iv.kind AS iv_kind, iv.description AS iv_mo_ta, iv.performer_user_id AS iv_nguoi_id, iv.so_buoi AS iv_so_buoi,
@@ -1068,8 +1073,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * `case.approve` chỉ đọc em ở lớp mình chủ nhiệm (mọi phân công GVCN `active`, tập cha của GVCN hiệu lực hôm nay); trước đọc mọi em có vi phạm cả hệ thống.
    * Góc nhìn khác Giáo viên bỏ phân công khỏi Principal (`apGocNhin`) nhưng `gvcnId` vẫn theo DB → đọc như cũ.
    */
-  const lopYt = caseMoTapChaKhiKiem.tat || p.grants.some((g) => g.permissions.has(PERMISSIONS.CASE_APPROVE)) || (p.gocNhin && p.gocNhin !== 'teacher') ? null
+  const lopYtQuyen = caseMoTapChaKhiKiem.tat || p.grants.some((g) => g.permissions.has(PERMISSIONS.CASE_APPROVE)) || (p.gocNhin && p.gocNhin !== 'teacher') ? null
     : [...new Set(p.assignments.filter((x) => x.isCore).map((x) => x.classId))];
+  /* `chiLop`: việc Ý thức mang `classId` = lớp đang học của em → em ghi danh (đang học / tạm dừng) lớp đó; giao với tập cha quyền. */
+  const lopYt = !f.chiLop ? lopYtQuyen : lopYtQuyen ? lopYtQuyen.filter((x) => x === f.chiLop) : [f.chiLop];
   const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null, lopIds: lopYt }) : [];
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
     .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
@@ -1170,8 +1177,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   // ------------------------------------------------- 2e. bàn giao (PR-CT, Q30-2): GVCN một việc mỗi lớp nguồn, GVBM một việc mỗi (lớp, môn)
   /* OV-11c (CV-8, Q6): "Của GV" có Bàn giao của MỌI GV trong phạm vi — cùng hàm với "Của một GV" (`viecBanGiao` một lần cho mọi người). */
   for (const v of !co('ban_giao') ? [] : tatCa
-    ? viecBanGiao(null, f.branchId).filter((v) => v.userId === p.userId || can(p, PERMISSIONS.CASE_APPROVE, { classId: v.lopId }))
-    : viecBanGiao(p.userId, f.branchId)) {
+    ? viecBanGiao(null, f.branchId, f.chiLop).filter((v) => v.userId === p.userId || can(p, PERMISSIONS.CASE_APPROVE, { classId: v.lopId }))
+    : viecBanGiao(p.userId, f.branchId, f.chiLop)) {
     const han = v.han || null;
     const chung = {
       group: 'ban_giao' as const, urgency: urgencyOf(han, today), studentId: null, studentName: `Lớp ${v.code}`, classId: v.lopId, classCode: v.code,
@@ -1541,10 +1548,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       contextLabel: `${v.nhanDot} · thiếu ${v.thieu} em`, count: null,
     });
   }
-  items.push(...viecHoSoTvv(p, { today, tatCa, branchId: f.branchId ?? null, chot: co('missing_data'), boSung: co('bo_sung_ho_so') }));
+  /* `chiLop`: chỉ việc Chốt ngày thi (mang lớp đang học) có thể gắn lớp; Bổ sung hồ sơ không lớp, không em → nơi gọi bỏ — khỏi dựng. */
+  items.push(...viecHoSoTvv(p, { today, tatCa, branchId: f.branchId ?? null, chot: co('missing_data'), boSung: co('bo_sung_ho_so') && !f.chiLop, lop: f.chiLop ?? null }));
 
   /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
-  for (const l of co('missing_data') ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null }) : []) {
+  /* `chiLop`: chỉ lớp đó — và chỉ khi người xem được nhắc lớp đó (đúng điều kiện `duoc` của `mtLichSuChuaNhap`), khỏi đọc lượt rồi bỏ. */
+  const mtCu = co('missing_data') && (!f.chiLop || isCoreTeacherOf(p, f.chiLop) || can(p, PERMISSIONS.PLAN_WEEK, { classId: f.chiLop }));
+  for (const l of mtCu ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null, ...(f.chiLop ? { classIds: [f.chiLop] } : {}) }) : []) {
     items.push({
       key: `lich-su:${l.classId}`, group: 'missing_data', urgency: 'normal',
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
@@ -1781,7 +1791,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
      để không mất việc người khác giữ mà GV vẫn thấy (làm thay / chưa giữ). Admin thuần không có vai GV nên không tốn gì. Chuông / badge / Tổng quan / trang Công việc cùng thấy. */
   if (xemViec === 'cham-diem' && p.roleKeys.includes('teacher')) {
     /* Truyền đủ phạm vi của nơi gọi (`chiNhom` gốc, `classIds`, `tachCuaToi`); lọc lại theo `chiNhomGoc` sau khi gộp (nhóm dựng kèm vì phụ thuộc có thể lọt). */
-    const phanGv = myWork(boVaiAdmin(p), { branchId: f.branchId, cnCheo: f.cnCheo, classIds: f.classIds, tachCuaToi: f.tachCuaToi, ...(chiNhomGoc ? { chiNhom: chiNhomGoc } : {}) }) as any;
+    const phanGv = myWork(boVaiAdmin(p), { branchId: f.branchId, cnCheo: f.cnCheo, classIds: f.classIds, chiLop: f.chiLop, tachCuaToi: f.tachCuaToi, ...(chiNhomGoc ? { chiNhom: chiNhomGoc } : {}) }) as any;
     const theoKhoa = new Map<string, WorkItem>((phanGv.items ?? []).map((it: WorkItem) => [it.key, it]));
     for (let i = 0; i < items.length; i++) { const g = theoKhoa.get(items[i].key); if (g) { items[i] = g; theoKhoa.delete(items[i].key); } }
     items.push(...[...theoKhoa.values()].filter((it) => !chiNhomGoc || chiNhomGoc.has(it.group)));
