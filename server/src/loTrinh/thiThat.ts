@@ -248,9 +248,9 @@ export function loTrinhChoKetQuaThi(today: string): { c: any; s: TrangThaiSauThi
     return ds.map((c) => ({ c, s: trangThaiSauThi(c, today) })).filter((x) => x.s.giaiDoan === 'da_thi_cho_kq');
   });
 }
-/** "Đã thi T7 10/10 · hạn 17/10 · đã gia hạn" — dòng phụ việc Công việc (OV-13q). */
+/** "Thi 10/10 · hạn 17/10 · đã gia hạn" — dòng phụ việc Công việc (OV-13q). */
 export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
-  [s.ngayThi ? `Đã thi ${thuNgay(s.ngayThi, today)}` : null, s.han ? `hạn ${ngay(s.han, today)}` : null, s.daGiaHan ? 'đã gia hạn' : null].filter(Boolean).join(' · ');
+  [s.ngayThi ? `Thi ${ngay(s.ngayThi, today)}` : null, s.han ? `hạn ${ngay(s.han, today)}` : null, s.daGiaHan ? 'đã gia hạn' : null].filter(Boolean).join(' · ');
 
 /**
  * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua ngày thi (OV-13q: từ HÔM SAU ngày thi).

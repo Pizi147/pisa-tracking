@@ -401,7 +401,6 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           ...phu,
         ]}>
           {tvv && !daXong && <span className="min-w-0 max-w-full empty:hidden [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
-          {tvv && !daXong && <ConNgay it={it} />}
         </DongPhu>
       </span></span>
       <CotHan it={it} daXong={daXong} />
@@ -572,17 +571,10 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
   && (it.group === 'bao_ph_yt' || it.group === 'thi_that' || it.group === 'buoc_tiep' || it.key.startsWith('chot-ngay-thi:'));
 
-/** Báo PH hạn xa "còn n ngày" ở dòng phụ của việc (mockup `v7/cong-viec-2.html` `t2`), cột hạn một dòng. Quá hạn / sắp hạn đã có tín hiệu của `ChipHan`. */
-function ConNgay({ it }: { it: WorkItem }) {
-  const { homNay } = useNgayNghiepVu();
-  if (it.group !== 'bao_ph_yt' || it.urgency !== 'normal' || !it.due || !homNay) return null;
-  return <span>{t('còn {n} ngày', { n: daysBetween(homNay, it.due) })}</span>;
-}
-
-/** Badge trạng thái của việc TVV (mockup): "⚠ Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
+/** Badge trạng thái của việc TVV (mockup): "Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
 function BadgeViecTvv({ it }: { it: WorkItem }) {
   if (it.group === 'bao_ph_yt' && it.soLanThu) {
-    return <span className={`${CHIP_TRON} gap-1 bg-soon-bg text-soon`}><span aria-hidden>⚠</span>{t('Chưa liên hệ được · lần {n}', { n: it.soLanThu })}</span>;
+    return <span className={`${CHIP_TRON} bg-soon-bg text-soon`}>{t('Chưa liên hệ được · lần {n}', { n: it.soLanThu })}</span>;
   }
   if (it.group === 'buoc_tiep') return <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan>;
   if (it.group === 'thi_that') return <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>;
