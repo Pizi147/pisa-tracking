@@ -88,7 +88,7 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     assert(!(mywork.myWork(p).dong as any[]).some((x) => d.laViecChamCheo(x) && x.key !== d.KHOA_CHAM_SPEAKING), 'còn dòng chấm chéo cũ');
   });
 
-  check('OV14c-4 · GV Speaking nhập được S Mock lớp FT MB; KHÔNG L/R/W; KHÔNG lớp FT chi nhánh khác', () => thu(() => {
+  check('OV14c-4 · GV Speaking nhập được S Mock lớp FT MB; KHÔNG L/R/W; S-CHEO-CN (16/11): S lớp FT chi nhánh khác nhập được, L vẫn không', () => thu(() => {
     const p = gvS();
     const truoc = svc.baiChamSpeaking(p, TODAY);
     const tuanTruoc = d.addDaysIso(d.mondayOfDate(TODAY), -7);
@@ -111,7 +111,8 @@ export async function runPrOv14cTests(t: YThucTestKit) {
     const ngoai = one(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
         WHERE c.is_fast_track = 1 AND c.branch_id != ? AND a.kind = 'mock' AND a.status != 'cancelled' ORDER BY a.id LIMIT 1`, MB);
     assert(ngoai, 'dữ liệu: cần lượt Mock ở chi nhánh khác');
-    assertThrows(() => svc.saveScore(gvS(), ngoai.id, 'speaking', { criteria: [6, 6, 6, 6] }, TODAY), /./, 'GV Speaking MB nhập S lớp chi nhánh khác');
+    svc.saveScore(gvS(), ngoai.id, 'speaking', { criteria: [9, 9, 9, 9], nhanXet: 'Fluent, good range of vocabulary.', gvCham: { performerSelf: true } }, TODAY);
+    assertThrows(() => svc.saveScore(gvS(), ngoai.id, 'listening', { rawScore: 30 }, TODAY), /./, 'GV Speaking MB nhập L lớp chi nhánh khác');
   }));
 
   check('OV14c-5 · GV không có kỹ năng S: không hàng đợi, không việc Chấm Speaking, không nhập S Mock lớp FT không dạy', () => {

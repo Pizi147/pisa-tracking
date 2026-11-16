@@ -116,6 +116,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
   /* OV-14c: hàng đợi Chấm Speaking (panel của việc) — GV Speaking: mọi lớp FT chi nhánh; GV khác: rỗng. */
   { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking' },
+  /* S-CHEO-CN (16/11): mục "Chi nhánh khác" của panel Chấm Speaking — chỉ tải khi mở; GV Speaking đo ở prSCheoCn (`TRAN_CHAM_SPEAKING_CN_KHAC`). */
+  { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking?cn=khac' },
   /* PR-DUYET: hộp Chờ duyệt (GV 403), Yêu cầu của tôi, số đếm cho badge/dải Tổng quan. */
   { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?hop=cho-duyet', maChuDich: { GVCN: 403 } },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/yeu-cau?hop=cho-duyet&xem=da-xu-ly' },
@@ -718,6 +720,7 @@ export const TRAN: Record<string, number> = {
   'QL /my-work?nguoi=7': 48,   // P13 KET-PET +1: dữ liệu demo MB PET 01 tách 4 môn (GV 7 dạy L và S thay L+S) — mã P13 trên dữ liệu main đo 68, trên dữ liệu mới 69; TL-NEN: đo 52 (trước 67) · TL-VIEC: đo 38 (trước 52)
   /* OV-14c: GV không phải GV Speaking — rỗng (đo 4); GV Speaking đo ở prOv14c (`TRAN_CHAM_SPEAKING`, đo 14). */
   'GVCN /my-work/cham-speaking': 14, 'GVBM /my-work/cham-speaking': 14, 'QL /my-work/cham-speaking': 14,   // TD4: đo 66 (trước 70)
+  'GVCN /my-work/cham-speaking?cn=khac': 14, 'GVBM /my-work/cham-speaking?cn=khac': 14, 'QL /my-work/cham-speaking?cn=khac': 14,   // S-CHEO-CN: cùng trần đường chính (GV không S rỗng)
   /* PR-DUYET: đo khi hộp đã có thẻ thật (Task 4) — trần max(sau+10, ⌈sau×1,3⌉). */
   'QL /yeu-cau?hop=cho-duyet': 26,   // PR-CT gộp LT2b: 34 → 38   // PR-LT2a (11): demo G1–G5 có thẻ ke_hoach_bo_tro → loại thẻ thêm câu nạp (đo 32, MỘT lần mỗi loại, không theo số thẻ); PR-YT4 sau khi gộp PR-SOS: thẻ khong_theo_doi + bao_len_y_thuc cùng nạp (đo 29, +3,6%); PR-HVL (10): demo H1 thêm một thẻ "không theo dõi" chờ duyệt → đo 30   // PR-LT2b: hai loại thẻ Báo QL mới (+1–2 câu nap); TL-NEN: đo 16 (trước 27)
   'QT /yeu-cau?hop=cho-duyet': 26,   // PR-CT gộp LT2b: 33 → 37; TL-NEN: đo 16 (trước 26)

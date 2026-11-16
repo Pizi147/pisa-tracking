@@ -41,8 +41,8 @@ export function ghiGvChamCot(p: Principal, b: { classId?: unknown; dot?: unknown
   const classId = Number(b.classId);
   const dot = String(b.dot ?? '');
   if (!Number.isInteger(classId) || classId <= 0 || !DOT.test(dot)) throw badRequest('Lớp hoặc đợt không hợp lệ.');
-  /* Cùng quyền ô S của lớp: nhập được Speaking (Mock FT, hoặc MT0 lớp thường). */
-  if (!editableSkills(p, classId, ['speaking']).length && !editableSkills(p, classId, ['speaking'], { lich_su: 0, kind: 'mt0' }).length) {
+  /* Cùng quyền ô S của lớp: nhập được Speaking (Mock FT, hoặc MT0 lớp thường — S-CHEO-CN: cả chi nhánh khác, cần biết loại lượt). */
+  if (!editableSkills(p, classId, ['speaking'], { lich_su: 0, kind: 'mock' }).length && !editableSkills(p, classId, ['speaking'], { lich_su: 0, kind: 'mt0' }).length) {
     throw forbidden('Bạn không nhập điểm Speaking ở lớp này.');
   }
   const g = b.gv as any;

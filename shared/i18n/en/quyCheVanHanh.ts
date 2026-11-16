@@ -13,7 +13,7 @@ export const EN_QUY_CHE_VANHANH = {
   '"-" = vắng: dời sang tuần sau, không tự huỷ': '"-" = absent: moves to next week, not cancelled automatically',
   'Cần thì ⋯ › Huỷ điểm.': 'If needed: ⋯ › Cancel score.',
   'Bạn nhập hộ: chọn GV chấm trước khi lưu': 'Entering on behalf: pick the marking teacher before saving',
-  'Mọi GV Speaking chi nhánh chấm được · GV chấm mặc định là bạn': 'Any branch Speaking teacher can mark · marker defaults to you',
+  'Mọi GV Speaking chấm được (cả chi nhánh khác) · GV chấm mặc định là bạn': 'Any Speaking teacher can mark (other branches too) · marker defaults to you',
   'Quá hạn vẫn viết được · việc rời sau 7 ngày': 'Still writable when overdue · task leaves after 7 days',
   'Bạn viết phần Chung · GV kỹ năng viết phần môn mình': 'You write the General part · skill teachers write their subject',
   '{dot} · hạn {ngay} · bạn viết phần mình cho mọi em': (b) => `${b.dot} · due ${b.ngay} · write your part for every student`,

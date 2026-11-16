@@ -8,7 +8,7 @@ import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -2801,10 +2801,12 @@ const TUAN_S_SQL = `COALESCE((SELECT kp.week_start FROM attempt_skills k JOIN re
  */
 export function baiChamSpeaking(p: Principal, today = demoToday(),
   /** CV-SUA-1011: QL theo dõi việc GV `ai` ("Của GV") — hàng đợi của GV đó, chỉ lớp ở chi nhánh `cn` của người xem (như `viecCuaNguoi`); ô (quyền sửa) theo người xem. */
-  xem?: { ai: Principal; cn: readonly number[] | null }) {
+  xem?: { ai: Principal; cn: readonly number[] | null } | null,
+  /** S-CHEO-CN (chủ SP 16/11): mục "Chi nhánh khác" — lớp chi nhánh ngoài grant GV (`lopSChiNhanhKhac`); chỉ tải khi mở, không vào số việc / chuông. */
+  cnKhac = false) {
   /* LOP-THUONG-QUYEN (chủ SP 08/11): + S MT0 các lớp thường cùng chi nhánh — SQL dưới chỉ lấy lượt `mt0` ở các lớp này. */
   const ai = xem?.ai ?? p;
-  const lopS = [...lopFtChoGvSpeaking(ai, today), ...lopMt0ChoGvSpeaking(ai, today)]
+  const lopS = (cnKhac ? lopSChiNhanhKhac(ai, today) : [...lopFtChoGvSpeaking(ai, today), ...lopMt0ChoGvSpeaking(ai, today)])
     .filter((id) => !xem?.cn || xem.cn.includes(bangLop().get(id)?.branchId ?? -1));
   /* CV-SUA-1011 (chủ SP 10/11, thay T18 06/11 phần GVCN): GVCN không là GV Speaking không còn hàng đợi này. */
   const lop = lopS;
@@ -2843,10 +2845,19 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
       attemptId: a.id as number, studentId: a.student_id as number, studentName: a.full_name as string, studentEmail: (a.student_email ?? null) as string | null,
       studentCode: a.student_code as string, status: a.status as string,
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
+      /* S-CHEO-CN: lớp thường có bài lên đầu panel (`soSanhLopCham`) — từ `bangLop` đã nạp, không thêm câu. */
+      laThuong: !bangLop().get(a.class_id)?.isFastTrack,
       weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell, cells, result,
       ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null, a.programme_code, kyNangHuy(skillRows)) } : {}),
     }];
   }).sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode }) || x.studentName.localeCompare(y.studentName, 'vi') || x.attemptNo - y.attemptNo);
+  /* S-CHEO-CN: tên chi nhánh cho đầu nhóm "Chi nhánh khác" — một câu theo lô id. */
+  if (cnKhac && rows.length) {
+    const ids = [...new Set(rows.map((r) => bangLop().get(r.classId)?.branchId ?? -1))];
+    const ten = new Map((conn.prepare(`SELECT id, name FROM branches WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((b) => [b.id as number, b.name as string]));
+    /* `xemHoSo: false` (mẫu GV-CU-BO-TRO): chỉ mở quyền SỬA ô S, không mở hồ sơ em / lượt chi nhánh khác — tên + MTn chữ thường, không link dẫn tới 403. */
+    for (const r of rows as any[]) { const b = bangLop().get(r.classId)?.branchId ?? -1; r.branchId = b; r.branchName = ten.get(b) ?? ''; r.xemHoSo = false; }
+  }
   /* GD-2: ô "GV chấm" đầu ngăn lớp × tuần — lựa chọn của NGƯỜI XEM (người lưu), một câu theo lô. */
   return { rows, soBai: rows.filter((r) => r.cho).length, gvChamCot: docGvChamCotLo(p, rows.map((r) => r.classId)) };
 }

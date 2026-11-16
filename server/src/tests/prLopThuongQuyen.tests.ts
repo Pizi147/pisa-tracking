@@ -83,17 +83,19 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
     assert(d.laChamCheo('mt0', 'speaking') && !d.laChamCheo('final', 'speaking'), 'cờ chấm chéo');
   }));
 
-  check('LTQ-3 · GV S lưu ô S MT0 được; L MT0 và S Final lớp thường bị chặn; GV chi nhánh khác bị chặn', () => thu(() => {
+  check('LTQ-3 · GV S lưu ô S MT0 được; L MT0 và S Final lớp thường bị chặn; S-CHEO-CN: GV S chi nhánh khác lưu S MT0 được, L MT0 không', () => thu(() => {
     const e = emMt0();
     svc.saveScore(gvS(), e.mt0, 'speaking', { band: 6 }, TODAY);
     assert(one(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0)?.band === 6, 'ô S MT0 phải lưu');
     assertThrows(() => svc.saveScore(gvS(), e.mt0, 'listening', { band: 6 }, TODAY), /./, 'GV S nhập L MT0');
     assertThrows(() => regular.saveRegularScore(gvS(), e.fin, 'speaking', { score: 10, total: 20 }), /./, 'GV S nhập S Final lớp thường');
-    assertThrows(() => svc.saveScore(perm.loadPrincipal(idKhac), e.mt0, 'speaking', { band: 5 }, TODAY), /./, 'GV S chi nhánh khác');
+    svc.saveScore(perm.loadPrincipal(idKhac), e.mt0, 'speaking', { band: 5 }, TODAY);
+    assert(one(`SELECT band FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0)?.band === 5, 'GV S chi nhánh khác lưu S MT0');
+    assertThrows(() => svc.saveScore(perm.loadPrincipal(idKhac), e.mt0, 'listening', { band: 6 }, TODAY), /./, 'GV S chi nhánh khác nhập L MT0');
   }));
 
-  /* B' 6a (chủ SP 10/11 tối): GV S chéo gỡ được "-" đã chốt ở MT0 S (Bỏ vắng) — như GV chấm ô đó; L MT0 và chi nhánh khác vẫn không. */
-  check('LTQ-4 · GV S chéo "Bỏ vắng" ở MT0 S: "-" đã chốt gỡ được (ô mở lại); GV chi nhánh khác bị chặn', () => thu(() => {
+  /* B' 6a (chủ SP 10/11 tối): GV S chéo gỡ được "-" đã chốt ở MT0 S (Bỏ vắng) — như GV chấm ô đó; GV không S vẫn không (S-CHEO-CN 16/11: GV S chi nhánh khác = GV chấm ô đó). */
+  check('LTQ-4 · GV S chéo "Bỏ vắng" ở MT0 S: "-" đã chốt gỡ được (ô mở lại); GV không S bị chặn', () => thu(() => {
     const e = emMt0();
     const tuan = one(`SELECT planned_period_id p FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0).p;
     const chot = () => {
@@ -103,7 +105,7 @@ export async function runPrLopThuongQuyenTests(t: YThucTestKit) {
       xoaNho();
     };
     chot();
-    assertThrows(() => svc.saveScore(perm.loadPrincipal(idKhac), e.mt0, 'speaking', { noShow: false }, TODAY), /./, 'GV S chi nhánh khác gỡ');
+    assertThrows(() => svc.saveScore(P.w1Teacher, e.mt0, 'speaking', { noShow: false }, TODAY), /./, 'GV không S gỡ');
     svc.saveScore(gvS(), e.mt0, 'speaking', { noShow: false }, TODAY);
     const sc = one(`SELECT no_show_period_id FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0);
     const k = one(`SELECT sit_status FROM attempt_skills WHERE attempt_id = ? AND skill = 'speaking'`, e.mt0);

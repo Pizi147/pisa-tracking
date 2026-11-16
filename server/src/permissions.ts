@@ -379,6 +379,29 @@ export function sqlGvSpeaking(u: string, ngay = demoToday()): string {
 /** Lớp FT: mọi lượt (chỉ có Mock). Lớp thường: chỉ khi biết lượt là MT0 (`kind`) — không biết thì đóng. */
 const laGvSpeakingLop = (p: Principal, classId: number, date?: string, kind?: string | null) =>
   lopFtChoGvSpeaking(p, date).includes(classId) || (kind === 'mt0' && lopMt0ChoGvSpeaking(p, date).includes(classId));
+/**
+ * S-CHEO-CN (chủ SP 16/11, N7): lớp chi nhánh KHÁC (ngoài grant vai GV) mà GV Speaking chấm S khi cần — FT mọi lớp, lớp thường đang chạy (MT0).
+ * Chỉ cho hàng đợi "Chi nhánh khác" (`baiChamSpeaking(…, { cnKhac })`) và quyền SỬA ô S (`laGvSpeakingSua`); KHÔNG mở xem lớp / Lịch Test / Kế hoạch Test.
+ */
+export function lopSChiNhanhKhac(p: Principal, date = demoToday()): number[] {
+  if (!laGvSpeaking(p, date)) return [];
+  const gv = grantGvNhapDiem(p);
+  if (gv.some((g) => g.branchId === null)) return [];
+  const cn = new Set(gv.map((g) => g.branchId));
+  const ds = lopDayDu();
+  return [...bangLop()].filter(([id, l]) => l.branchId != null && !cn.has(l.branchId) && (l.isFastTrack || ds.get(id)?.status === 'active')).map(([id]) => id);
+}
+/**
+ * Quyền SỬA ô S chấm chéo (`editableSkills`, `scoreEditPath`): chi nhánh mình (`laGvSpeakingLop`) + S-CHEO-CN chi nhánh khác — CHỈ khi biết lượt là
+ * Mock (lớp FT) hoặc MT0 (lớp thường đang chạy). Nơi không gửi loại lượt (S Ex `chamDuoc`, ô "GV chấm" không rõ đợt) giữ cùng chi nhánh (N10 không đổi).
+ */
+const laGvSpeakingSua = (p: Principal, classId: number, date?: string, kind?: string | null) => {
+  if (laGvSpeakingLop(p, classId, date, kind)) return true;
+  if (kind !== 'mock' && kind !== 'mt0') return false;
+  const l = bangLop().get(classId);
+  return !!l && l.branchId != null && laGvSpeaking(p, date)
+    && (kind === 'mock' ? l.isFastTrack : !l.isFastTrack && lopDayDu().get(classId)?.status === 'active');
+};
 
 /** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo (lớp FT; lớp thường khi lượt MT0 — `kind`). Chỉ dùng ở đường chấm. */
 export function coTheXemLuotCham(p: Principal, ctx: Ctx & { kind?: string | null }): boolean {
@@ -720,8 +743,8 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
       || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })
       /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý sửa/xoá điểm có lý do (RB-5) ở MỌI lúc, không chỉ sau hoàn tất. */
       || (!chiViec && can(p, PERMISSIONS.PLAN_WEEK, { classId }))
-      /* PR-HSM (chủ sản phẩm 30/09): GV Speaking chấm S chéo lớp FT cùng chi nhánh — quyền, không phải việc. */
-      || (!chiViec && skill === 'speaking' && laGvSpeakingLop(p, classId, luot?.today, luot?.kind)),
+      /* PR-HSM (chủ sản phẩm 30/09): GV Speaking chấm S chéo lớp FT — quyền, không phải việc. S-CHEO-CN (16/11): cả chi nhánh khác. */
+      || (!chiViec && skill === 'speaking' && laGvSpeakingSua(p, classId, luot?.today, luot?.kind)),
   );
 }
 
@@ -772,7 +795,7 @@ export function scoreEditPath(p: Principal, classId: number, skill: string,
   attempt?: { lich_su: number; kind?: string | null }): 'assigned' | 'lich_su' | 'override' | null {
   if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
   /* PR-HSM: GV Speaking chấm S chéo lớp FT cùng chi nhánh — nhật ký như nhập điểm thường (`score.edit`), tên GV chấm ghi ở ô. */
-  if (skill === 'speaking' && laGvSpeakingLop(p, classId, undefined, attempt?.kind)) return 'assigned';
+  if (skill === 'speaking' && laGvSpeakingSua(p, classId, undefined, attempt?.kind)) return 'assigned';
   if (attempt?.lich_su === 1 && (can(p, PERMISSIONS.PLAN_WEEK, { classId }) || isCoreTeacherOf(p, classId))) return 'lich_su';
   /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý (xếp lịch được lớp đó) sửa điểm qua đường `override` ở mọi lúc — RB-5 vẫn đòi lý do. */
   if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId })) return 'override';

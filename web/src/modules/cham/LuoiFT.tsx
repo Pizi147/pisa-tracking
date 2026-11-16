@@ -105,8 +105,10 @@ const W_HINT = t('Band Writing = (Task 1 + Task 2 × 2) / 3, khi đủ hai task.
  * Lịch Test (PR-UX1 Q10): `gon` bỏ cột Trạng thái và Hạn (hàng lớp đã nói), bỏ cột MT khi cả lưới cùng một lượt;
  * `tuanDangXem` làm mờ ô thi tuần khác (`khacTuanFt`).
  */
-export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, gvCham }: {
+export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuanDangXem = null, hangMo = [], chiCot = null, anKetQua = false, sEx, the = false, onHet, gvCham, hienTuan = false }: {
   data: FtSheet; onReload: () => void; kn?: string | null; hv?: number | null;
+  /** S-CHEO-CN: lưới nhiều tuần (panel Chấm Speaking) — tuần thi dưới tên em cả khi không vắng (`DongVang`). */
+  hienTuan?: boolean;
   gon?: boolean; tuanDangXem?: string | null;
   /** PR-DL: em chưa có lịch lượt này — hàng mờ cuối bảng. */
   hangMo?: HangMo[];
@@ -138,6 +140,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     ovr: !chiCot,
     kq: !anKetQua,
     chiKq: !!chiCot,
+    tuan: hienTuan,
   };
   const rawCot = RAW_SKILLS.filter(hien), wCot = W_SKILLS.filter(hien);
   /* P8 (mockup k6): chú giải ở hàng công cụ + cột Overall đủ chỗ cho "Không đủ bộ môn" chỉ khi lưới có ô "Không học". */
@@ -346,12 +349,31 @@ function DeadlineSummary({ cells }: { cells: Cell[] }) {
   );
 }
 
+/** Tuần thi của các ô (một tuần chung) — null khi lệch tuần / không tuần. */
+const tuanThiCua = (cells: readonly { weekStart?: string | null }[], homNay: string | null) => {
+  const w = [...new Set(cells.map((c) => c.weekStart?.slice(0, 10)).filter(Boolean))] as string[];
+  return w.length === 1 ? tuanLich(w[0], homNay) : null;
+};
+/**
+ * #1774 (chủ SP 16/11): MỘT dòng vắng / tuần dưới tên em ở mọi `LuoiFT` (Nhập điểm, Chấm Speaking, thẻ 375) — "vắng W2 SEP → W3 SEP":
+ * phần vắng chữ phụ mờ, tuần thi thật chữ chính đậm; không vắng → chỉ tuần (khi lưới `hienTuan`). Xuống dòng được, không cắt.
+ */
+function DongVang({ vang, tuan }: { vang: string | null; tuan: string | null }) {
+  if (!vang && !tuan) return null;
+  return (
+    <span className="min-w-0 whitespace-normal tabular-nums">
+      {vang && <span className="whitespace-nowrap text-slate-500">{vang}</span>}{vang && tuan && <span className="text-slate-500"> → </span>}
+      {tuan && <span className="whitespace-nowrap font-semibold" style={{ color: 'var(--text)' }}>{tuan}</span>}
+    </span>
+  );
+}
+
 /** Chân hộp của ô đang mở trong phiên chấm (chỉ hàng đang mở nhận). */
 export type PhienO = { nhanTiep: string | null; ketThuc: KetThucHop | null };
 
 function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onReload, gvMacDinh, moS, hop, dsLuot, onMo, onTiep, sEx, cotDs, lich = false }: {
   row: FtSheet['rows'][number]; lop: string; active: boolean;
-  cot: { trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean; chiKq: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
+  cot: { trangThai: boolean; han: boolean; kyVong: boolean; w: boolean; ovr: boolean; kq: boolean; chiKq: boolean; tuan: boolean }; cc: Record<string, DinhNghiaCot>; hien: (s: string) => boolean;
   tuanDangXem: string | null; tuanXem: string | null;
   onReload: () => void;
   gvMacDinh: NguoiChon | null;
@@ -371,9 +393,12 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   /* OV-15b (6b): ✓ / ✗ so kỳ vọng ở ô L · R · S khi lưới có cột Kỳ vọng; W1 / W2 là ô nhập thường (✓ / ✗ ở cột W). */
   const kyVong = cot.kyVong ? row.result.expectation ?? null : null;
   const { homNay } = useNgayNghiepVu();
-  const chuVang = row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay));
+  const oHien = row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem));
+  const chuVang = oHien.map((c) => chuVangO(c, tuanXem, homNay));
   /* V6 K3: lưới một cột (Chấm Speaking) — "vắng W2 SEP" dưới tên như mockup, ô không lặp. */
   const vangHang = gopVangHang(chuVang) ?? (cot.chiKq && chuVang.length === 1 ? chuVang[0] : null);
+  /* #1774: tuần thi thật sau "→" (ô đang vắng); lưới hiện tuần (`hienTuan`) mà em không vắng → chỉ tuần thi. */
+  const tuanThi = vangHang || cot.tuan ? tuanThiCua(vangHang ? oHien.filter((c, i) => chuVang[i]) : oHien, homNay) : null;
   const oDiem = (s: string, cell: Cell) => (
     <ODiemMt cell={cell} anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d, v) => onTiep(s, d, v)} tuanXem={tuanXem}
       {...(moS === s ? hop : null)} dauKq={soKyVong(cell.band, kyVong)}
@@ -397,18 +422,19 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
     <tr className={`do-hang ${row.ngungHoc ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`} data-hv={row.studentId}>
       {/* Tên một dòng (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
-        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
+        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline max-sm:block ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
           {/* TEN-HV-LINK (chủ SP 07/11): tên = hồ sơ HV; lượt mở qua "MTn ›". */}
+          {/* S-CHEO-CN (chủ SP: "web không bị clipped"): 375 tên dài XUỐNG DÒNG thay vì cắt (`truncate` trên inline-flex mất "…"). */}
           {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`): tên + MTn chữ thường (hồ sơ / lượt của em đó 403). */}
           {(row as { xemHoSo?: boolean }).xemHoSo === false
-            ? <><span className="min-w-0 truncate font-semibold" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span><span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400">MT{row.attemptNo}</span></>
+            ? <><span className="min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span><span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400 max-sm:ml-1.5">MT{row.attemptNo}</span></>
             : <>
-              <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
-              <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
+              <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
+              <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:ml-1.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
             </>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
-          {vangHang && <span className="whitespace-nowrap">{vangHang}</span>}
+          <DongVang vang={vangHang} tuan={tuanThi} />
           {row.phu && <span className="min-w-0 truncate" title={row.phu}>{row.phu}</span>}
           <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
             .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
@@ -556,7 +582,9 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
   const cellOf = (skill: string) => { const c = row.cells.find((x) => x.skill === skill); return c && apDiemVuaLuu(c, vuaLuu[skill]); };
   const kyVong = row.result.expectation ?? null;
   const { homNay } = useNgayNghiepVu();
-  const vangHang = gopVangHang(row.cells.filter((c) => c.required && !khacTuanFt(c, tuanDangXem)).map((c) => chuVangO(c, tuanXem, homNay)));
+  const oThe = row.cells.filter((c) => c.required && !khacTuanFt(c, tuanDangXem));
+  const chuVangThe = oThe.map((c) => chuVangO(c, tuanXem, homNay));
+  const vangHang = gopVangHang(chuVangThe);
   const ketQua = row.ngungHoc ? <Level tone="muted">{dich(row.ngungHoc)}</Level>
     : row.result.kckDuoi ? <ChipDuoiKck />
     : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
@@ -573,7 +601,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
           : <Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
-      {vangHang && <span className="-mt-2 text-xs text-slate-400">{vangHang}</span>}
+      {vangHang && <span className="-mt-2 text-xs"><DongVang vang={vangHang} tuan={tuanThiCua(oThe.filter((c, i) => chuVangThe[i]), homNay)} /></span>}
       <div className="grid grid-cols-5 gap-1.5 text-center">
         {(['listening', 'reading', 'writing1', 'writing2', 'speaking'] as const).map((s) => {
           const cell = cellOf(s);

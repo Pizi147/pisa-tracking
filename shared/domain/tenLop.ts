@@ -70,6 +70,12 @@ export function soSanhLop(a: LopSapXep, b: LopSapXep, soGiam = false): number {
   const so = soGiam ? y.so - x.so || y.chu.localeCompare(x.chu) : x.so - y.so || x.chu.localeCompare(y.chu);
   return x.cn.localeCompare(y.cn) || x.bac - y.bac || (x.kh ?? '').localeCompare(y.kh ?? '') || so || a.code.localeCompare(b.code);
 }
+/**
+ * S-CHEO-CN · XEP-CHAM-TEST (chủ SP 16/11): thứ tự LỚP ở danh sách chấm Test — lớp thường (không FT) CÓ bài chờ lên đầu, rồi mã lớp số nhỏ trước
+ * (`soSanhLop`). "Gần nhất lên đầu" chỉ áp cho tuần TRONG mỗi lớp (nơi gọi xếp).
+ */
+export const soSanhLopCham = (a: LopSapXep & { thuong: boolean; coBai: boolean }, b: LopSapXep & { thuong: boolean; coBai: boolean }): number =>
+  Number(b.thuong && b.coBai) - Number(a.thuong && a.coBai) || soSanhLop(a, b);
 /** LƯU TRỮ (chủ SP 12/11): nhóm Fast Track trước Lớp thường; trong nhóm số lớp lớn nhất đứng đầu. Cùng thứ tự cho bảng lớp + học viên (theo lớp cuối). */
 export const soSanhLopLuuTru = (a: LopSapXep & { ft: boolean }, b: LopSapXep & { ft: boolean }): number =>
   Number(b.ft) - Number(a.ft) || soSanhLop(a, b, true);
