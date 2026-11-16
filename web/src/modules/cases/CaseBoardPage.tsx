@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Navigate, useParams, useSearchParams } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { taiTruoc, useApi } from '../../lib/useApi.ts';
+import { duongBangChungCase } from './CasePanel.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { docThamSoHoSo, duongHoSoHocVien } from '@shared/domain/index.ts';
 import { useChongVe, useVe } from '../../lib/quayLai.ts';
@@ -19,6 +21,8 @@ export function CaseRoutePage() {
   const { paId, viec } = docThamSoHoSo((k) => sp.get(k));
   const rieng = viec === 'ghi-ket-qua' && !!id;
   const ca = useApi<{ student: { id: number } | null }>(id && !rieng ? `/cases/${id}` : null);
+  /* TD-NGUOI: hồ sơ HV mở Ngăn Case này — bằng chứng gọi ngay, song song với Case (trước: sau Case → hồ sơ → Ngăn Case). */
+  useEffect(() => { if (id && !rieng) taiTruoc(duongBangChungCase(Number(id))); }, [id, rieng]);
   if (rieng) return <NganCase caseId={Number(id)} paId={paId ?? null} viec="ghi-ket-qua" onClose={() => ve(chong[0]?.url ?? '/cong-viec', !chong.length)} />;
   if (ca.data?.student) return <Navigate replace to={duongHoSoHocVien(ca.data.student.id, { caseId: Number(id) })} />;
   if (ca.error) return <ErrorState message={ca.error.message} status={ca.error.status} onRetry={ca.reload} />;

@@ -83,6 +83,46 @@ const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean)?][] = 
   [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis],
   [() => import('./modules/congViec/PanelViec.tsx')],
 ];
+/*
+ * TD-NGUOI (đo 17/11, bản build, Fast 3G): mở link / tải lại trang thì mảnh JS của trang chỉ bắt đầu tải SAU khi `/demo/session` về — thêm trọn một lượt
+ * mạng trước khi trang gọi được dữ liệu. Nay tải mảnh của đúng trang đang mở ngay khi gói đầu chạy, song song với phiên (`lazy` dùng lại cùng `import()`).
+ * Thứ tự như `<Routes>` dưới; đường không khớp (đường cũ, trang lạ) thì thôi — như trước.
+ */
+const NAP_THEO_DUONG: [RegExp, () => Promise<unknown>][] = [
+  [/^\/$/, () => import('./modules/worklist/OverviewPage.tsx')],
+  [/^\/phan-tich$/, () => import('./modules/phanTich/PhanTichPage.tsx')],
+  [/^\/hoc-vien$/, () => import('./modules/students/StudentsPage.tsx')],
+  [/^\/hoc-vien\/lop\/[^/]+$/, () => import('./modules/classes/ClassOverviewPage.tsx')],
+  [/^\/hoc-vien\/luu-tru$/, () => import('./modules/students/LuuTruPage.tsx')],
+  [/^\/hoc-vien\/[^/]+$/, () => import('./modules/students/StudentDetailPage.tsx')],
+  [/^\/hoc-thuat\/case\/[^/]+$/, () => import('./modules/cases/CaseBoardPage.tsx')],
+  [/^\/test(\/[^/]+)?$/, () => import('./modules/test/TestPage.tsx')],
+  [/^\/mock-test\/[^/]+$/, () => import('./modules/fasttrack/MockDetailPage.tsx')],
+  [/^\/luot-test\/[^/]+$/, () => import('./modules/fasttrack/LuotThuongPage.tsx')],
+  [/^\/cong-viec(\/[^/]+)?$/, () => import('./modules/congViec/CongViecPage.tsx')],
+  [/^\/quan-tri$/, () => import('./modules/platform/AdminPage.tsx')],
+  [/^\/ho-so-ca-nhan$/, () => import('./modules/platform/ProfilePage.tsx')],
+  [/^\/giao-vien\/[^/]+$/, () => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')],
+  [/^\/huong-dan$/, () => import('./modules/huongDan/HuongDanPage.tsx')],
+];
+/* Lỗi tải mảnh (vừa deploy) để `lazyTai` của trang tự xử lý như cũ — ở đây bỏ qua. */
+NAP_THEO_DUONG.find(([re]) => re.test(window.location.pathname))?.[1]().catch(() => {});
+/*
+ * TD-NGUOI: NẠP SẴN chờ MẠNG YÊN — 1,5 s liền không thêm tài nguyên nào tải xong (mảnh + dữ liệu của trang đang mở đã về), tối đa ~15 s. Trước: cố định 1,5 s
+ * sau đăng nhập — mạng chậm (Fast 3G, chưa cache) ~700 KB nạp sẵn tranh băng thông với chính trang đang mở: API trang lớp bắt đầu 8,3 s thay vì ~6 s.
+ */
+function khiMangYen(lam: () => void): () => void {
+  let n = -1, lan = 0;
+  let hen: ReturnType<typeof setTimeout>;
+  const xem = () => {
+    const m = performance.getEntriesByType('resource').length;
+    if (m === n || ++lan >= 10) { lam(); return; }
+    n = m;
+    hen = setTimeout(xem, 1500);
+  };
+  hen = setTimeout(xem, 1500);
+  return () => clearTimeout(hen);
+}
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -316,8 +356,7 @@ export default function App() {
   const navNap = session?.nav ?? NAV_RONG;
   useEffect(() => {
     if (!daDangNhap) return;
-    const t = setTimeout(() => NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }), 1500);
-    return () => clearTimeout(t);
+    return khiMangYen(() => NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ 4 cờ quyết định trang được nạp
   }, [daDangNhap, navNap.analysis, navNap.test, navNap.work, navNap.admin, navNap.bangQuyDoi]);
 
