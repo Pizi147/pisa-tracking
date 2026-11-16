@@ -403,7 +403,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
     <ODiemMt cell={cell} anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d, v) => onTiep(s, d, v)} tuanXem={tuanXem}
       {...(moS === s ? hop : null)} dauKq={soKyVong(cell.band, kyVong)}
       onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
-      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos,
+      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong: row.result.expectation ?? null, mt0: !!row.mt0Sos, mtCu: !!row.lichSu,
         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
   );
   /* OV-1b: mọi phần thi đã huỷ / bỏ khỏi đợt — lượt không còn "Đã lên lịch". */
@@ -615,7 +615,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
                   <>
                     <ODiemMt cell={cell} lon anVang={!!vangHang} mo={moS === s} onMo={(m) => onMo(m ? s : null)} onTiep={(d, v) => onTiep(s, d, v)} tuanXem={tuanXem} {...(moS === s ? hop : null)}
                       dauKq={soKyVong(cell.band, kyVong)} onSave={(p, x) => save(s, p, x)} gvMacDinh={s === 'speaking' ? gvMacDinh : null}
-                      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong, mt0: !!row.mt0Sos,
+                      ctx={{ tenHv: row.studentName, lop, luot: `MT${row.attemptNo}`, attemptId: row.attemptId, kyVong, mt0: !!row.mt0Sos, mtCu: !!row.lichSu,
                         bandTaskKia: s === 'writing1' ? cellOf('writing2')?.band ?? null : s === 'writing2' ? cellOf('writing1')?.band ?? null : undefined }} />
                     <DauO tt={o[s]} loi={loi[s]} onLuuLai={() => luuLai(s)} lon />
                   </>
