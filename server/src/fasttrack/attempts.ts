@@ -18,7 +18,7 @@ import {
   boTaskTrong, oNhapHoc, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, weekInfo } from '../platform/week.ts';
-import { datNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
@@ -771,8 +771,8 @@ export function nguoiLamCuaLuot(classId: number | null, skills: readonly string[
 /** QUET-THEO-KY Q1: CHỈ phép kiểm bật — `listAttempts` `kemChuaTuan` đi câu `OR` cũ để so với `UNION ALL`. */
 export const listAttemptsOrKhiKiem = { bat: false };
 
-const chonLuot = (them = '') => `
-  SELECT a.*, ${them} s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
+const ATTEMPT_SELECT = `
+  SELECT a.*,  s.full_name, s.student_code, s.email AS student_email, s.status AS student_status, s.archived_at AS student_archived_at,
          cy.route, cy.target_score, cy.khong_cam_ket, cy.programme_code AS cy_programme_code, cy.exam_month, cy.exam_period_id, cy.exam_date, cy.seq AS cycle_seq,
          c.code AS class_code, c.programme_code, c.lich_mt AS lop_lich_mt, c.route AS lop_route, c.branch_id, b.name AS branch_name, b.code AS branch_code,
          pr.code AS period_code, pr.week_start AS period_start, pr.week_end AS period_end
@@ -782,7 +782,6 @@ const chonLuot = (them = '') => `
     LEFT JOIN classes c ON c.id = a.class_id
     LEFT JOIN branches b ON b.id = c.branch_id
     LEFT JOIN report_periods pr ON pr.id = a.planned_period_id`;
-const ATTEMPT_SELECT = chonLuot();
 
 export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   const scope = f.phamViCham ? scopeXemLuotCham(p) : scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
@@ -840,8 +839,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
   }
 
   const w = where.join(' AND ');
-  /* TL-VIEC: danh sách còn ô chờ (Công việc) đọc luôn "MT mới nhất" trong câu lượt — `nhacNhanXetCua` khỏi một câu riêng; trang khác giữ hỏi lười (xuất Excel không tốn). */
-  const CHON = chonLuot(conO ? `(${LA_MT_MOI_NHAT_SQL}) AS la_mt_moi,` : '');
+  /* TD-QUET: dòng danh sách không có cờ nhắc nhận xét (ô dựng `chiDem` bên dưới) → không đọc "MT mới nhất" (trước: câu con mỗi dòng ~100 bước, TL-VIEC). */
+  const CHON = ATTEMPT_SELECT;
   /* `a.id` phá hoà: trùng tuần + tên thì thứ tự không còn tuỳ SQLite. Câu ghép: ORDER BY theo tên cột kết quả. */
   const rows = (tachHaiVe
     ? conn.prepare(`${CHON} WHERE ${w} AND ${CON_O_SQL}
@@ -849,7 +848,6 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
         ORDER BY period_start DESC, full_name, id`).all(...params, today, ...params, today)
     : conn.prepare(`${CHON} WHERE ${w} ORDER BY pr.week_start DESC, s.full_name, a.id`).all(...params)) as any[];
 
-  if (conO) for (const r of rows) datNho(`mt-moi-nhat:${r.id}`, r.la_mt_moi ? [{ attempt_id: r.id as number }] : []);
   const bundle = loadBundle(rows.map((r) => r.id));
   /* Tập bài cần chấm THEO PHẠM VI ĐANG XEM — cùng hàm với badge ở danh sách lớp. */
   const workScope: WorkScope = f.scope ?? defaultWorkScope(p);
@@ -970,7 +968,8 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 
     const result = resultOf(a, scores, skips, bundle.skillRows.get(a.id) ?? []);
     /* Không truyền `hoanTat` (R11) có chủ ý: dòng này chỉ đọc band/noShow/mine/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
-    const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id));
+    /* TD-QUET: `chiDem` — dòng chỉ đọc band / noShow / mine / lịch / hạn; cờ nhắc nhận xét (`nenCoNhanXet`, `thieuNhanXet`) không vào dòng trả về. */
+    const cells = skillCells(p, a, scores, skips, today, bundle.skillRows.get(a.id), undefined, undefined, true);
     const active = cells.filter((c) => c.required);
     const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
     return {
