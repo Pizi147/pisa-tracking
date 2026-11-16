@@ -813,7 +813,7 @@ function locKhung(id: string, r: MetricResult, program: ChuongTrinh | null): Met
  * giữ ô khi lớp thuộc chi nhánh được cấp HOẶC là lớp mình dạy. Người vừa dạy lớp vừa có quyền chi nhánh không được nới thành
  * cả chi nhánh của lớp mình chỉ dạy.
  */
-export function overdueScoreBai(p: Principal, branchId: number | null, today: string): {
+export function overdueScoreBai(p: Principal, branchId: number | null, today: string, chiLop?: readonly number[]): {
   ids: number[]; chiTiet: NonNullable<MetricResult['chiTiet']>;
   /** UX-2 (1): lớp của từng bài — Lịch Test "Quá hạn chấm" lọc theo lớp đang xem trên CHÍNH tập này. */
   lopCua: Map<number, number>;
@@ -833,7 +833,8 @@ export function overdueScoreBai(p: Principal, branchId: number | null, today: st
     }
     branches = [...set];
   }
-  const cells = scoreDebtCells(p, today, branches).filter((x) => x.overdue);
+  /* TD-CHAM: `chiLop` — nơi gọi chỉ cần các lớp này (Lịch Test "Quá hạn chấm"): lọc ngay trong câu nợ điểm, phạm vi quyền dưới giữ nguyên. */
+  const cells = scoreDebtCells(p, today, branches, chiLop).filter((x) => x.overdue);
   const ids = new Set<number>();
   /* PR-VAI-a (Q24): người phụ trách và hạn của từng ô đã giữ — cột "Người giữ việc", "Hạn" của Cần xử lý. */
   /* PR-UXF-a Q7: khoá theo BÀI (`baiId`) — mỗi bài một người (môn chưa phân công: không có người, Q8) và một hạn. */

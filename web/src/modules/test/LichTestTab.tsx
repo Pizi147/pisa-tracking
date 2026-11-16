@@ -229,7 +229,8 @@ export function LichTestTab() {
    */
   const qsQuaHan = new URLSearchParams([...qs].filter(([k]) => k !== 'periodId'));
   if (loai) qsQuaHan.set('khung', loai);
-  const oQuaHan = useApi<{ n: number; lop: number; khac: number }>(`/cham/lich-test/qua-han?${qsQuaHan}`);
+  /* TD-CHAM (Turso): chờ `data` — khung (`loai`) chỉ biết sau khi Lịch Test về; gọi sớm là một lượt không khung bỏ đi (log 24 h: 121 lần, ~½ là lượt này). */
+  const oQuaHan = useApi<{ n: number; lop: number; khac: number }>(data ? `/cham/lich-test/qua-han?${qsQuaHan}` : null);
   const quaHan = oQuaHan.data;
   /*
    * Q14 — lưu một ô: gộp 1,5 s sau lần lưu cuối rồi mới tải lại dải số + nhãn. GIAM-COMPUTE (PTA 11/11): + ô "bài quá hạn" cùng nhịp — trước đó chấm hết
