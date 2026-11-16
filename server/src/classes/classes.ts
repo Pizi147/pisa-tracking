@@ -275,7 +275,7 @@ function listClassSummariesThat(p: Principal, f: { branchId?: number; classId?: 
     }
 
     /* Không truyền `hoanTat` (R11) có chủ ý: chỉ đếm ô chưa có điểm theo band/noShow/mine, không đọc canEdit/khoa — đỡ 3 câu SQL. */
-    const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id));
+    const cells = skillCells(p, a, bundle.scores.get(a.id) ?? [], bundle.skips.get(a.id) ?? [], today, bundle.skillRows.get(a.id), undefined, undefined, true);
     const pending = pendingSkillsOf(pendingInputOf(cells), workScope);
     if (pending.length) bump(needScores, a.class_id, pending.length);
   }

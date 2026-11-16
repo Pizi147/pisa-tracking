@@ -1208,7 +1208,7 @@ export const TRAN_DONG: Record<string, number> = {
   /* O-TQ-BAM: panel Đạt Target thi thật (chỉ khi bấm) — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 kỳ 6 tháng: 1 259 · 1 259 · 691. */
   'QT /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'CX /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 1637, 'QL /phan-tich/bao-cao/o?ct=ft&kieu=tuan&tu=2026-03-02&den=2026-09-20&o=dat-target-thi': 899,
   /* GIAM-DOC-TQGV: Tổng quan GV — max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1 (GVCN 1 839, GVBM 2 101; hai vai đều có lớp chủ nhiệm nên số không đổi — GV không chủ nhiệm khoá ở prSvTqGv). */
-  'GVCN /tong-quan/lop-toi-day/hai-khoi': 2391, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 2732, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 2391,
+  'GVCN /tong-quan/lop-toi-day/hai-khoi': 2269, 'GVBM /tong-quan/lop-toi-day/hai-khoi': 2606, 'GVCN_THUONG /tong-quan/lop-toi-day/hai-khoi': 2269,   // TD-HVL: đo 1745 · 2004 · 1745 → max(đo + 50, ⌈đo × 1,3⌉)
   /* GIAM-DOC-0711a: napCaseMo tập cha theo chi nhánh (QL "Tất cả", lọc chi nhánh, Phân tích GV / hồ sơ GV — DEM-QUA-HAN) — trần dòng mới = max(đo + 50, ⌈đo × 1,3⌉), đo 07/11 ×1. */
   'QL /my-work?nguoi=7': 848, 'QL /my-work?nguoi=tat-ca&branchId=1': 1226, 'QT /my-work?nguoi=tat-ca&branchId=1': 1233,   /* GIAM-DOC-1011 (12b): phân công nhớ theo tiến trình — đo 652 · 943 · 948 (trước 818 · 1 109 · 1 114) */
   /* GIAM-DOC-HSGV: đường hồ sơ GV = min(trần cũ, max(đo + 50, ⌈đo × 1,3⌉)), đo 09/11 ×1 — chỉ số 1 267–1 885, việc 651–652, `/giao-vien/9/chi-so` QL 1 332 · QT 1 431
@@ -1331,7 +1331,7 @@ export const TRAN_DONG: Record<string, number> = {
   'GVCN_THUONG /tong-quan/lop-toi-day?ct=ft': 1827,   // đo 2079 · DOC-IT-3: đo 1405
   'QL /metrics/hv-duoi-ky-vong-mon': 2093,   // đo 1610
   'QT /metrics/hv-duoi-ky-vong-mon': 3040,   // đo 2338
-  'QL /hoc-vien-lop?kem=sos': 4604,   // TURSO-1211: đo 3541 (riêng: 2636 + 1864 = 4500) → max(đo + 50, ⌈đo × 1,3⌉)
+  'QL /hoc-vien-lop?kem=sos': 4428,   // TD-HVL: đo 3406 (lượt nhớ theo em — Đang SOS không đọc lại) · TURSO-1211: đo 3541 (riêng: 2636 + 1864 = 4500) → max(đo + 50, ⌈đo × 1,3⌉)
   'QL /hoc-vien-lop': 3374,   // TD3-b: đo 2627 (68 câu); TL-HVL: đo 2595 (trước 2648)
   /* DOC-IT-4: lọc phạm vi trong SQL — đo 23 · 11 · 18 · 11 · 33 (trước 33 mọi vai) → ⌈đo × 1,3⌉. */
   'QL /ref/classes': 30, 'GVCN /ref/classes': 15, 'GVBM /ref/classes': 24, 'GVCN_THUONG /ref/classes': 15, 'QT /ref/classes': 43, 'QL /ref/classes?branchId={cn}': 30,
@@ -1347,11 +1347,11 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /classes/6/overview': 283,   // TD3-b: đo 616 (68 câu); TL-HVL: đo 221 (trước 230); RA-DOC-0611: đo 217
   'QT /classes/6/overview': 279,   // TD3-b: đo 581 (65 câu); TL-HVL: đo 218 (trước 227); RA-DOC-0611: đo 214
   'GVCN_THUONG /classes/6/overview': 296,   // TD3-b: đo 630 (72 câu); TL-HVL: đo 229 (trước 241); RA-DOC-0611: đo 227
-  'QL /tong-quan/v5?ct=ft': 2951,   // DOC-PT: đo 2270 (trước 2449)
-  'QT /tong-quan/v5?ct=ft': 4199,   // TL-TQ: đo 3230 (trước 3381)
+  'QL /tong-quan/v5?ct=ft': 2905,   // TD-HVL: đo 2234 (nợ điểm chỉ đếm — bỏ câu "MT mới nhất") · DOC-PT: đo 2270 (trước 2449)
+  'QT /tong-quan/v5?ct=ft': 4128,   // TD-HVL: đo 3175 · TL-TQ: đo 3230 (trước 3381)
   'GVCN /my-work?nguoi=tat-ca': 51,   // TL-NEN: đo 1 (trước 3)
-  'QL /tong-quan/v5?ct=thuong': 2520,   // DOC-PT: đo 1938 (trước 2061)
-  'QT /tong-quan/v5?ct=thuong': 3479,   // TL-TQ: đo 2676 (trước 2659)
+  'QL /tong-quan/v5?ct=thuong': 2486,   // TD-HVL: đo 1912 · DOC-PT: đo 1938 (trước 2061)
+  'QT /tong-quan/v5?ct=thuong': 3435,   // TD-HVL: đo 2642 · TL-TQ: đo 2676 (trước 2659)
   'QT /tong-quan/v5?ct=ft&branchId={cn}': 2884,   // DOC-PT: đo 2218 (trước 2397)
   'CX /tong-quan/v5?ct=ft': 4098,   // TL-TQ: đo 3152 (trước 3303)
   'QL /tong-quan/chi-nhanh/o?cot=caseMo&khoa=tong': 2728,   // TL-TQ: đo 2098 (trước 2076)

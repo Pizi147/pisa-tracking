@@ -445,6 +445,9 @@ export function skillCells(
   hoanTat: { hoanTat: boolean; chuNhatCuoi: string | null } = { hoanTat: false, chuNhatCuoi: null },
   /** NEN-SUA: `tuanVangCu` của các màn vẽ ô điểm (ô có điểm ghi "vắng W3 SEP"); nơi chỉ đếm việc không truyền — không thêm câu đọc. */
   vangCu?: Map<string, string>,
+  /** TD-HVL: nơi chỉ ĐẾM ô (nợ điểm, số cần chấm — đọc required / xong / progress / noShow / hạn) — không tính cờ nhắc nhận xét
+      (`nenCoNhanXet` false, `thieuNhanXet` null), nên không hỏi "MT mới nhất" (`laMtMoiNhatCuaEm`: câu con quét mọi MT của em, ~800 dòng ở Tổng quan). */
+  chiDem = false,
 ): SkillCell[] {
   const editable = attempt.class_id ? editableSkills(p, attempt.class_id, ENTRY_SKILLS, luotQuyen(attempt, today)) : [];
   /* PR-XLMT (rà #126): "việc nhập điểm" không tính vế Quản lý sửa mọi lúc. */
@@ -458,7 +461,7 @@ export function skillCells(
   const suaSauHoanTat = hoanTat.hoanTat && attempt.class_id ? quyenSuaSauHoanTat(p, attempt.class_id, !!attempt.lich_su) : false;
   /* SV-NX-CASE: cờ nhắc chỉ cần khi người xem sửa được ô (nhắc chỉ hiện ở ô sửa được, cả hộp đang gõ điểm đầu) — quét nền / người chỉ xem không tốn câu;
      trang GET gộp một câu cho cả trang (`loadBundle`). */
-  const nhacNx = editable.length > 0 && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
+  const nhacNx = !chiDem && editable.length > 0 && nhacNhanXetCua(attempt);   // LUAT-NX-MT: chỉ nhắc, không bắt buộc
   const kyVong = kyVongCuaLuot(attempt);
 
   const { thieuNx: thieuNxCua, xong: xongO } = oXongCua(attempt, rows);
@@ -603,7 +606,7 @@ export function skillCells(
       coNhom: nenCoNhanXetMt({ kind: attempt.kind, lichSu: false }),
       kyVong,
       /* LUAT-NX-MT: chỉ NHẮC (ô vàng "Nên có nhận xét") ở ô người xem sửa được — không chặn, không thành việc. */
-      thieuNhanXet: !canEdit ? null : thieuNxCua(skill),
+      thieuNhanXet: !canEdit || chiDem ? null : thieuNxCua(skill),
       xong: cellScored,
       gvCham: skill === 'speaking' && row && (row.examiner_user_id || row.examiner_name)
         ? { userId: row.examiner_user_id ?? null, ten: tenGvCham({ examinerUserName: row.examiner_user_name, examinerName: row.examiner_name }) ?? '' }
