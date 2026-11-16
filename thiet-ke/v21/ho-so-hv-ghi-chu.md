@@ -109,3 +109,28 @@ Không thao tác nào bị mất.
 | Chung: ô chọn người / lớp / em theo "ô chọn có tìm" | Không áp — màn này không có ô chọn người (em điền sẵn) | — |
 
 Đã dùng impeccable (layout, clarify) trong phạm vi; chưa chạy critique chấm điểm.
+
+## 5. Bổ sung 16/11 — K9 hồ sơ theo trạng thái (audit gói 14, PR AU-MOCKUP)
+
+Nguồn: `docs/superpowers/specs/2026-11-16-audit-toan-bo/bao-cao.md` (A3-21, A3-11, A3-12, A3-09) + `plan.md` 1.6 N46, N48. Giữ nguyên K1–K8; THÊM `#k9` (6 khung × 1440 + 375, tối). Ảnh: `anh/ho-so-hv/k9{a…f}-toi.png`, `k9{a…f}-375-toi.png`.
+
+| Khung | Ý audit / luật | Thành phần (dùng lại) | Trước | Sau | Loại |
+|---|---|---|---|---|---|
+| K9a | A3-21 + N46 em đã có KQ thi thật | o-tin, Việc cần làm, bảng MT, `.mot-cau`, hàng Case | MT4 sắp tới vẫn hiện; việc Case / PA vẫn ở Việc cần làm | MT chưa điểm sau ngày thi ẩn; Việc cần làm chỉ còn việc sau thi (Chọn bước tiếp, TVV); Case giữ, cột hạn "—", một câu "việc Case / PA tạm ẩn"; ngày thi chỉ ở ô "Thi thật" | ĐỔI |
+| K9b | A3-21 em đã lưu trữ | chip trạng thái, o-tin | (K7b) dải "đã lưu trữ 20/08" + chip + ô "Kết thúc học" | ngày kết thúc MỘT lần ở chip; MT chưa điểm sau ngày kết thúc ẩn; Tiến độ rỗng ẩn; 375 vẽ em nghỉ giữa chừng (chưa thi): không ô "Thi thật", Case "Dừng · kết thúc học" | ĐỔI (thay K7b) |
+| K9c | A3-11 chưa có điểm MT | `.diem-mot` (dòng nguồn + khung thẻ ô điểm) | (K7c) 6 ô "—" | một dòng "Chưa có điểm Mock Test · MT1 W4 SEP" (lượt kế tiếp); có ≥ 1 điểm giữ 6 ô | ĐỔI (thay K7c) |
+| K9d | A3-12 ô Ý thức | ô o-tin; WL đỏ như thang | không có | ô "Ý thức" cuối dòng thông tin khi bậc ≥ REPORT 1 hoặc có việc Ý thức chờ: "WL 2 · chờ QL" / "REPORT 1"; bấm = tab Ý thức; dữ liệu Ý thức đã nạp (0 câu thêm) | THÊM |
+| K9e | A3-09 Case lưới cố định | hàng Case `.cs` + `.trang-pa` | hai nhịp, nhãn trạng thái lúc trên lúc cạnh | lưới 6 cột cố định: kỹ năng · tên + SOS · trạng thái + PA một dòng (cắt "…", rê hiện đủ) · người · hạn; 375: 3 dòng cố định | ĐỔI (áp K1, K6a khi code) |
+| K9f | N48 GV lớp cũ chỉ xem 30 ngày | chip `.chip-tt.xam`, `.dai-cx`, `.mot-cau` | web chặn | chip "Lớp cũ · chỉ xem"; một câu "Em chuyển sang MB FT 115 từ 07/09 · bạn xem được tới 07/10 · việc của em do …"; không "+ Task", "⋯", "+ Ghi tiến độ", Case chữ thường; hết hạn → chặn như GV không dạy em | THÊM |
+
+Thao tác: không mất thao tác nào. Em lưu trữ giữ "Quay lại học" (chính) · "+ Task" · "⋯" (375: "+ Task" nút tròn). GV lớp cũ: không ghi gì (đúng N48 chỉ đọc).
+
+[XM]
+- **[XM-11] K9a TVV "Chọn bước tiếp"** là việc duy nhất còn ở Việc cần làm (việc sau thi, không phải Case / PA / MT). Việc Ý thức (vi phạm chờ xem…) của em đã thi vẫn hiện nếu có — N46 chỉ ẩn Case / PA / MT.
+- **[XM-12] Case của em đã thi** vẫn hiện ở hồ sơ (N46 "không xoá dữ liệu"), trạng thái PA giữ, cột hạn "—"; không thêm nhãn trạng thái mới.
+- **[XM-13] Ngày lưu trữ** (20/08) bỏ khỏi đầu hồ sơ — xem ở "⋯ › Lịch sử"; nút "‹ Lưu trữ" đã nói em đang ở lưu trữ.
+- **[XM-14] "chờ QL"** chữ thường mờ, không vàng (V22: vàng chỉ cho gần hạn). WL đỏ như nhãn WL trong thang (lời 25).
+- **[XM-15] K6b (GV không dạy em) lệch N48** (web chặn, N48 giữ chặn): AU-VIEC sửa ghi chú khung K6b; K9f là ngoại lệ lớp cũ.
+- **[XM-16] Turso**: K9a/K9b ẩn MT lọc trên dữ liệu đã nạp; K9d dùng `/y-thuc` đã nạp; K9f cần máy chủ kiểm "lớp cũ ≤ 30 ngày" (đọc lịch sử chuyển lớp của đúng một em, +1 câu).
+
+Kiểm K9: impeccable critique hai lượt riêng (A thiết kế · B detector) — vòng 1 29/40, vòng 2 **33/40, không P0/P1** (còn P3: chữ PA cắt "…" ở 375 — đã có rê hiện đủ). Detector: 209 cảnh báo cả tệp, phần lớn ở thành phần chung `v21.css` / chú thích vàng người duyệt (dương tính giả: Inter cho chữ số, `.so-mk`). Soát tự động K9: không tràn ngang, không chữ cắt (trừ `.tpa` cố ý), không chữ < 12 px; phông Be Vietnam Pro + Inter nạp (`document.fonts.check` = true).

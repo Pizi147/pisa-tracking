@@ -318,3 +318,31 @@ details.ls[open] > summary { border-bottom:1px solid var(--line); }
 .dt .the-dau { padding:8px 12px; }
 .dt .td-dong { padding:12px; }
 .dt .tabs .tab { font-size:14px; }
+
+/* ---------- v21-③ K9 (audit 16/11, gói 14): hồ sơ theo trạng thái — chỉ ghép thành phần sẵn có ---------- */
+.k9 .han-v.qua::before, .k9 .han-v.nay::before { content:none; } /* V22: hạn chỉ bằng màu */
+/* A3-12: ô Ý thức ở dòng thông tin — giá trị là nút mở tab Ý thức */
+.o-tin .g .yt-o { border:0; background:none; padding:0; font:inherit; color:var(--text); cursor:pointer; }
+.o-tin .g .yt-o:hover { color:var(--accent); }
+.o-tin .g .yt-o .wl { color:var(--bad); }
+.o-tin .g .yt-o .cho { font-weight:500; color:var(--text-dim); }
+/* A3-11: một dòng thay hàng 6 ô rỗng */
+.diem-mot { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:14px; color:var(--text-dim); padding:10px 14px; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.diem-mot b { font:600 14px var(--phong-so); color:var(--text); }
+/* A3-09: hàng Case lưới cố định — ký năng · tên + SOS · trạng thái + PA một dòng · người · hạn */
+.cs.luoi { grid-template-columns:34px 168px minmax(0,1fr) 128px 116px 20px; min-height:52px; padding:10px 16px; }
+.cs.luoi .ten { flex-wrap:nowrap; white-space:nowrap; }
+.cs.luoi .pa1 { display:flex; align-items:center; gap:8px; min-width:0; font-size:13px; color:var(--text-dim); }
+.cs.luoi .pa1 .trang-pa { flex:none; }
+.cs.luoi .pa1 .tpa { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+.cs.luoi .ng { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.cs.luoi .hn { justify-self:start; }
+.trang-pa.xam { background:var(--muted-nen); color:var(--text-dim); }
+.dt .cs.luoi { grid-template-columns:30px minmax(0,1fr) 16px; gap:4px 10px; padding:12px; }
+.dt .cs.luoi .ky { grid-row:1 / span 3; align-self:start; }
+.dt .cs.luoi .ten { grid-column:2; }
+.dt .cs.luoi .chev { grid-column:3; grid-row:1; }
+.dt .cs.luoi .pa1 { grid-column:2; }
+.dt .cs.luoi .duoi { grid-column:2; display:flex; gap:10px; align-items:center; }
+.cs.luoi .duoi { display:contents; }
+.dt .hang-375 { display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
