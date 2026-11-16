@@ -75,7 +75,16 @@ export type TrangThaiBuocTiep = {
   daGiaHan: boolean; coTheGiaHan: boolean;
   /** SUA-LUU-TRU (việc 5): đã chọn mà kết quả thi thật đổi sau đó — dòng nhắc nhẹ, không chặn. Lựa chọn cũ (trước PR) không có dấu → false. */
   kqDaDoi: boolean;
+  /** N50 (12) — chủ SP 16/11: KQ thi thật ≥ Target → Lộ trình mới gợi ý Target cũ + 1.0 band (tối đa 9.0), ô Target mở sẵn, sửa được; chưa đạt / Không thi → null (giữ). */
+  targetGoiY: string | null;
 };
+/** N50 (12): Target gợi ý cho Lộ trình mới khi em đã đạt Target — +1.0 band, trần 9.0. Không có Target số / chưa đạt → null. */
+export function targetGoiYSauDat(c: { target_score?: number | null; outcome_score?: number | null; thi_that_khong_thi?: number | null }, ketLuan: string | null): string | null {
+  const tg = c.target_score ?? null;
+  if (tg === null || c.thi_that_khong_thi) return null;
+  const dat = ketLuan === 'reached' || (c.outcome_score != null && c.outcome_score >= tg);
+  return dat ? Math.min(9, tg + 1).toFixed(1) : null;
+}
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
 export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocTiep | null {
@@ -94,6 +103,7 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
     hoanTacDuoc: !daChuyen,
     kqDaDoi: !!c.buoc_tiep && g.kq !== undefined && g.kq !== dauKq(c),
+    targetGoiY: targetGoiYSauDat(c, ketLuanCua(c)),
   };
 }
 /** HOTFIX-MO-KHOA: Hoàn tác không trả đúng như trước được (em đã đổi sau đó, lộ trình mới đã có điểm, lệnh chuyển lớp đã chạy) — một câu ngắn, đường làm thay là "Đổi". */

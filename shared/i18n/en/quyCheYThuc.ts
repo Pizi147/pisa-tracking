@@ -36,7 +36,7 @@ export const EN_QUY_CHE_YTHUC = {
   'Không hạn · lưu xong lịch thi giữ Dự kiến tháng mới': 'No due date · once saved the exam stays Planned for the new month',
   'Không hạn · lưu xong lịch thi thành Đã chốt ngày': 'No due date · once saved the exam becomes Date fixed',
   'Đủ 4 kỹ năng hoặc Không thi · lưu xong bạn chọn Bước tiếp': 'All 4 skills or Did not sit · then you choose the Next step',
-  'Lộ trình mới: Target giữ, đầu vào = KQ thi thật, Case cũ đóng': 'New route: Target kept, entry = real exam result, old Case closes',
+  'Lộ trình mới: Target giữ (đã đạt: gợi ý +1.0), đầu vào = KQ thi thật, Case cũ đóng': 'New route: Target kept (reached: suggested +1.0), entry = real exam result, old Case closes',
   'Em vào Lưu trữ · hạn {han}': (b) => `Student moves to Archive · due ${b.han}`,
   'Không hạn · đủ Ngày sinh, Email, Tuần bắt đầu, Target là xong': 'No due date · done when Birth date, Email, Start week, Target are filled',
 } satisfies Record<string, Dich>;
