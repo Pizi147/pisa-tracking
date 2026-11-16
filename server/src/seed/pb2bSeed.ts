@@ -8,7 +8,7 @@ import { loadPrincipal } from '../permissions.ts';
 import { padCode } from '../util.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
-import { commitIntake, createClass } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang, createClass } from '../classes/intake.ts';
 import { createAttempt, saveScore } from '../fasttrack/attempts.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
@@ -16,7 +16,7 @@ import { recordViolation } from '../yThuc/violations.ts';
 import { xacNhanXuLy } from '../yThuc/xuLy.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
-import { emailThu, tuanKhaiGiang } from './emailThu.ts';
+import { emailThu } from './emailThu.ts';
 import { idTutor } from './tuSeed.ts';
 
 /**

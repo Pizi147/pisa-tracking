@@ -1,7 +1,7 @@
 import { loadPrincipal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { commitIntake, createClass } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang, createClass } from '../classes/intake.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { reportIssue } from '../cases/cases.ts';
 import { quetYeuCau } from '../duyet/yeuCau.ts';
@@ -10,7 +10,7 @@ import { guiDeXuatChuyenLop, raLenh, thiHanhLenhDenHan, type DongLenhVao } from 
 import { issuesForTopic, tuanChonDuoc, hanBanGiao } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
-import { emailThu, tuanKhaiGiang } from './emailThu.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO PR-CT (kế hoạch Task 12) — chuyển lớp do Quản lý quyết + bàn giao, dựng qua CHÍNH các hàm nghiệp vụ như `hvlSeed.ts`, sau ngày demo

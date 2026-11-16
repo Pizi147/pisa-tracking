@@ -433,6 +433,9 @@ export type IntakeResult = {
   mt: { soEm: number; soLuotLichSu: number; soEmCoLichSu: number; luotLichSuDau: number | null };
 };
 
+/** N47 (chủ SP 16/11): mặc định của `commitIntake` cho lớp đã chạy là TUẦN NÀY — seed demo giữ tuần khai giảng như dữ liệu demo cũ (phép kiểm dựa vào). */
+export const tuanKhaiGiang = (classId: number): string | null => (db().prepare('SELECT start_date FROM classes WHERE id = ?').get(classId) as any)?.start_date ?? null;
+
 export function commitIntake(
   p: Principal,
   input: {

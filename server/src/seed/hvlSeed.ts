@@ -2,7 +2,7 @@ import { loadPrincipal, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 import { mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
-import { commitIntake } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { reportIssue } from '../cases/cases.ts';
@@ -10,7 +10,7 @@ import { guiKhongTheoDoi } from '../cases/sosAuto.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
-import { emailThu, tuanKhaiGiang } from './emailThu.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO PR-HVL (planning đặt H1–H4, Q18) — đi qua CHÍNH các hàm nghiệp vụ như `xlmtSeed.ts`, dựng sau ngày demo. Nằm ở: Học viên & Lớp ·

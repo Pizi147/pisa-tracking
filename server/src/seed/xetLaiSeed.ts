@@ -1,13 +1,13 @@
 import { loadPrincipal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { commitIntake, createClass } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang, createClass } from '../classes/intake.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { raLenh, thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
 import { tuanChonDuoc } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
-import { emailThu, tuanKhaiGiang } from './emailThu.ts';
+import { emailThu } from './emailThu.ts';
 
 /**
  * BỘ DEMO P9a XET-LAI (mockup `thiet-ke/v6/xet-lai-lo-trinh.html`) — dựng qua hàm nghiệp vụ, mốc ngày chỉnh bằng SQL. Chỉ máy dev.

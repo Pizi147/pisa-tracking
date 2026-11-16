@@ -11,7 +11,7 @@
  */
 import { loadPrincipal, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
-import { commitIntake } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { setStudentStatus } from '../students/students.ts';
@@ -20,7 +20,7 @@ import { duyetYeuCau, quetYeuCau, tuChoiYeuCau } from '../duyet/yeuCau.ts';
 import { issuesForTopic } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
-import { emailThu, tuanKhaiGiang } from './emailThu.ts';
+import { emailThu } from './emailThu.ts';
 
 export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
   const { conn } = ctx;

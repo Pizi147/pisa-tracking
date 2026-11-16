@@ -11,12 +11,12 @@
  *  D13  BE 04  · hai em 75% lên Fast Track: Chu Nhật Minh "Không đạt · Trung tâm (Reading)" → Case FT + PA Tutor 10 buổi; Kiều Thảo Nhi "Không đạt · Học sinh" → không Case.
  */
 import { loadPrincipal } from '../permissions.ts';
-import { commitIntake } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { applyTransition } from '../classes/transition.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { updateResult } from '../cases/cases.ts';
 import type { BuildCtx } from './build.ts';
-import { emailThu, tuanKhaiGiang } from './emailThu.ts';
+import { emailThu } from './emailThu.ts';
 
 export function buildLt2bDemo(ctx: BuildCtx): { em: number } {
   const { conn } = ctx;
