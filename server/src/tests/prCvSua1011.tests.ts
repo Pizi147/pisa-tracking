@@ -227,6 +227,6 @@ export async function runPrCvSua1011Tests(t: YThucTestKit) {
     assert(/const moThang = theoDoiChon && chon\.group === 'score';/.test(tab), 'thiếu mở thẳng việc Nhập điểm');
     assert(/const khoaPanel = theoDoiChon && !moThang && /.test(tab), 'việc Nhập điểm theo dõi vẫn ra tóm tắt');
     assert(/nguoi=\{it\.mine \? null : it\.ownerId\}/.test(docSach('web/src/modules/congViec/PanelViec.tsx')), 'Chấm Speaking theo dõi đọc hàng đợi người xem');
-    assert(/cham-speaking\$\{nguoi \? `\?nguoi=\$\{nguoi\}` : ''\}/.test(docSach('web/src/modules/congViec/PanelChamSpeaking.tsx')), 'panel không gửi nguoi=');
+    assert(/nguoi \? `nguoi=\$\{nguoi\}` : ''/.test(docSach('web/src/modules/congViec/PanelChamSpeaking.tsx')), 'panel không gửi nguoi=');
   });
 }

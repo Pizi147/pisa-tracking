@@ -606,9 +606,11 @@ api.get('/my-work/cham-speaking', requireAuth, wrap((req) => {
   const p = principalOf(req);
   /* CV-SUA-1011: `nguoi` = QL theo dõi việc GV đó (dòng "Theo dõi · Chấm Speaking" mở thẳng hàng đợi của GV, không panel trống). */
   const nguoi = qInt(req, 'nguoi');
-  if (!nguoi || nguoi === p.userId) return attemptSvc.baiChamSpeaking(p);
+  /* S-CHEO-CN (chủ SP 16/11): `cn=khac` = mục "Chi nhánh khác" (chỉ tải khi mở). Theo dõi GV khác vẫn lọc theo chi nhánh người xem (`pv.branchIds`). */
+  const cnKhac = req.query.cn === 'khac';
+  if (!nguoi || nguoi === p.userId) return attemptSvc.baiChamSpeaking(p, undefined, null, cnKhac);
   const { pv, x } = gvDangXem(p, nguoi);
-  return attemptSvc.baiChamSpeaking(p, undefined, { ai: x, cn: pv.branchIds });
+  return attemptSvc.baiChamSpeaking(p, undefined, { ai: x, cn: pv.branchIds }, cnKhac);
 }));
 
 /* OV-12h (chủ SP 14/10): bỏ hẳn Nhắc — `/my-work/nhac`, `/my-work/nhac-nhieu`, `/yeu-cau/nhac-nhieu`, `/lenh-chuyen/:id/nhac` (404). */

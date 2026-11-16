@@ -72,7 +72,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   congViec: 900, prS4f: 900, prOv13h: 900, prOv13p: 900, prOv15c: 900, prOv15h1: 900, prSvTvvViec: 900, prLt2a: 800, prPb2a: 800, prMta: 800,
   prThungRac: 800, prCt2: 800, prOv8b: 800, prOv10b: 800, prOv11g: 800, prOv15f: 800, prSl1: 800, prSl2: 800, prSvNxCase: 800, prHoanTacXn: 800, prChanRoiNhap: 100,
   nenGiaoDien: 700, prUxG: 700, prOv11c: 600, panelUx3: 600, suaLoiNong: 600, prMon: 600, prXuat: 600, prMtb: 600, prBv: 600,
-  prKv: 600, prOv12f: 600, prOv13o: 600, prOv14c: 600, prOv15g: 600, prOv15i1: 600, prBaoCaoLichSu: 600, prChiNhanhLienHe: 100, prBaoCaoPhPdf: 600, prPhanCongGv: 600, prDuyet: 500,
+  prKv: 600, prOv12f: 600, prOv13o: 600, prOv14c: 600, prSCheoCn: 600, prOv15g: 600, prOv15i1: 600, prBaoCaoLichSu: 600, prChiNhanhLienHe: 100, prBaoCaoPhPdf: 600, prPhanCongGv: 600, prDuyet: 500,
   prXlmt: 500, prSl: 500, prQrl2cPa: 500, prQtTk: 500, prLc: 500, prOv4a: 500, prOv10c: 500, prOv12a: 500, prOv13b: 500, prOv13i: 500, prOv13g: 500,
   prPtGvOverall: 500, prSvSo1: 500, prSvLop: 500, prUiHoSoLop: 500, prKetPet: 500, prTlNen: 500, prTlViec: 600, prTlHvl: 600, dieuChinhPa: 400, form: 400, prS3f: 400,
   prS5fA: 400, prLuiA2: 400, prOv5a: 400, prOv8a: 400, prUx2: 400, prOv13f: 400, prOv15h2: 400, prLtSv: 400, prCvLoi: 400, prUiCvTvv: 400,
@@ -9458,6 +9458,9 @@ await runPrOv14aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P,
 // ==================================================================== OV-14c (Chấm Speaking: GV Speaking theo kỹ năng hồ sơ, chi nhánh grant, từ thứ Hai tuần thi)
 const { runPrOv14cTests } = bocTep('prOv14c', await import('./prOv14c.tests.ts'));
 await runPrOv14cTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
+// ==================================================================== S-CHEO-CN (chủ SP 16/11: Chấm Speaking lớp → tuần + mục "Chi nhánh khác")
+const { runPrSCheoCnTests } = bocTep('prSCheoCn', await import('./prSCheoCn.tests.ts'));
+await runPrSCheoCnTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
 // ==================================================================== OV-15a (nền: token màu, chip SOS, ký hiệu, giao diện theo máy, hạn chỉ ngày)
 const { runPrOv15aTests } = bocTep('prOv15a', await import('./prOv15a.tests.ts'));
 await runPrOv15aTests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId, seedMax: SEED_MAX } as any);
