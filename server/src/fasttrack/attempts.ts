@@ -2845,6 +2845,8 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
       attemptId: a.id as number, studentId: a.student_id as number, studentName: a.full_name as string, studentEmail: (a.student_email ?? null) as string | null,
       studentCode: a.student_code as string, status: a.status as string,
       classId: a.class_id as number, classCode: a.class_code as string, attemptNo: a.attempt_no as number,
+      /* S-CHEO-CN: lớp thường có bài lên đầu panel (`soSanhLopCham`) — từ `bangLop` đã nạp, không thêm câu. */
+      laThuong: !bangLop().get(a.class_id)?.isFastTrack,
       weekStart: cell.weekStart, kyVong: kyVongCuaLuot(a), cho, cell, cells, result,
       ...(laMt0(a) ? { mt0Sos: kyNangSosMt0(result.bands, a.target_at_attempt ?? null, a.programme_code, kyNangHuy(skillRows)) } : {}),
     }];
@@ -2853,7 +2855,8 @@ export function baiChamSpeaking(p: Principal, today = demoToday(),
   if (cnKhac && rows.length) {
     const ids = [...new Set(rows.map((r) => bangLop().get(r.classId)?.branchId ?? -1))];
     const ten = new Map((conn.prepare(`SELECT id, name FROM branches WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((b) => [b.id as number, b.name as string]));
-    for (const r of rows as any[]) { const b = bangLop().get(r.classId)?.branchId ?? -1; r.branchId = b; r.branchName = ten.get(b) ?? ''; }
+    /* `xemHoSo: false` (mẫu GV-CU-BO-TRO): chỉ mở quyền SỬA ô S, không mở hồ sơ em / lượt chi nhánh khác — tên + MTn chữ thường, không link dẫn tới 403. */
+    for (const r of rows as any[]) { const b = bangLop().get(r.classId)?.branchId ?? -1; r.branchId = b; r.branchName = ten.get(b) ?? ''; r.xemHoSo = false; }
   }
   /* GD-2: ô "GV chấm" đầu ngăn lớp × tuần — lựa chọn của NGƯỜI XEM (người lưu), một câu theo lô. */
   return { rows, soBai: rows.filter((r) => r.cho).length, gvChamCot: docGvChamCotLo(p, rows.map((r) => r.classId)) };

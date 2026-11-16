@@ -391,10 +391,16 @@ export function lopSChiNhanhKhac(p: Principal, date = demoToday()): number[] {
   const ds = lopDayDu();
   return [...bangLop()].filter(([id, l]) => l.branchId != null && !cn.has(l.branchId) && (l.isFastTrack || ds.get(id)?.status === 'active')).map(([id]) => id);
 }
-/** Quyền SỬA ô S chấm chéo (`editableSkills`, `scoreEditPath`) — S-CHEO-CN: lớp MỌI chi nhánh (= `laGvSpeakingLop` ∪ `lopSChiNhanhKhac`), cùng luật FT / MT0. */
+/**
+ * Quyền SỬA ô S chấm chéo (`editableSkills`, `scoreEditPath`): chi nhánh mình (`laGvSpeakingLop`) + S-CHEO-CN chi nhánh khác — CHỈ khi biết lượt là
+ * Mock (lớp FT) hoặc MT0 (lớp thường đang chạy). Nơi không gửi loại lượt (S Ex `chamDuoc`, ô "GV chấm" không rõ đợt) giữ cùng chi nhánh (N10 không đổi).
+ */
 const laGvSpeakingSua = (p: Principal, classId: number, date?: string, kind?: string | null) => {
+  if (laGvSpeakingLop(p, classId, date, kind)) return true;
+  if (kind !== 'mock' && kind !== 'mt0') return false;
   const l = bangLop().get(classId);
-  return !!l && l.branchId != null && laGvSpeaking(p, date) && (l.isFastTrack || (kind === 'mt0' && lopDayDu().get(classId)?.status === 'active'));
+  return !!l && l.branchId != null && laGvSpeaking(p, date)
+    && (kind === 'mock' ? l.isFastTrack : !l.isFastTrack && lopDayDu().get(classId)?.status === 'active');
 };
 
 /** PR-S4F: xem lượt MT để CHẤM — `ATTEMPT_VIEW` hoặc GV Speaking chấm S chéo (lớp FT; lớp thường khi lượt MT0 — `kind`). Chỉ dùng ở đường chấm. */

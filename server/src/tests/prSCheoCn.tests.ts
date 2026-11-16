@@ -44,15 +44,18 @@ export async function runPrSCheoCnTests(t: YThucTestKit) {
     assert(!perm.lopSChiNhanhKhac(perm.loadPrincipal(idW), TODAY).length, 'GV Writing có lớp chi nhánh khác');
     /* Quyền XEM giữ nguyên: Lịch Test / bảng chấm vẫn chỉ chi nhánh mình. */
     assert(!perm.coTheXemLuotCham(gvS(), { classId: ftNgoai[0] }) && !perm.lopFtChoGvSpeaking(gvS(), TODAY).includes(ftNgoai[0]), 'mở xem lớp chi nhánh khác');
-    assert(perm.editableSkills(gvS(), ftNgoai[0], ['speaking', 'listening', 'writing1']).join() === 'speaking', 'sửa được: chỉ ô S');
-    assert(perm.scoreEditPath(gvS(), ftNgoai[0], 'speaking') === 'assigned', 'đường ghi S');
+    const mock = { lich_su: 0, kind: 'mock' };
+    assert(perm.editableSkills(gvS(), ftNgoai[0], ['speaking', 'listening', 'writing1'], mock).join() === 'speaking', 'sửa được: chỉ ô S');
+    assert(perm.scoreEditPath(gvS(), ftNgoai[0], 'speaking', mock) === 'assigned', 'đường ghi S');
+    /* Không rõ loại lượt (S Ex `chamDuoc`, N10 cùng chi nhánh) → không mở chi nhánh khác. */
+    assert(!perm.editableSkills(gvS(), ftNgoai[0], ['speaking']).length && perm.scoreEditPath(gvS(), ftNgoai[0], 'speaking') === null, 'mở chi nhánh khác khi không rõ lượt');
   });
 
   check('SCN-2 · hàng đợi `cnKhac`: chỉ lớp chi nhánh khác, có tên chi nhánh; hàng đợi chính + việc Công việc KHÔNG cộng phần này', () => {
     const p = gvS();
     const chinh = svc.baiChamSpeaking(p, TODAY), khac = svc.baiChamSpeaking(p, TODAY, null, true);
     assert(khac.soBai > 0, 'dữ liệu demo: cần bài S chờ chấm ở chi nhánh khác');
-    assert(khac.rows.every((r: any) => cnCua(r.classId) !== MB && r.branchName && r.cell.skill === 'speaking'), 'dòng chi nhánh khác sai');
+    assert(khac.rows.every((r: any) => cnCua(r.classId) !== MB && r.branchName && r.cell.skill === 'speaking' && r.xemHoSo === false), 'dòng chi nhánh khác sai (cần tên chi nhánh, xemHoSo false — hồ sơ em 403)');
     assert(khac.rows.filter((r: any) => r.cho).every((r: any) => r.cell.canEdit), 'bài chờ chi nhánh khác không sửa được');
     assert(chinh.rows.every((r: any) => cnCua(r.classId) === MB), 'hàng đợi chính lọt chi nhánh khác');
     const viec = ((mywork.myWork(p).dong ?? []) as any[]).find((x) => x.key === d.KHOA_CHAM_SPEAKING);
@@ -109,7 +112,19 @@ export async function runPrSCheoCnTests(t: YThucTestKit) {
     assert(/useApi<DuLieu>\(moKhac \? duong\(true\) : null/.test(f), 'Chi nhánh khác tải lúc mở panel');
     assert(/cnKhac \? 'cn=khac'/.test(f), 'thiếu tham số cn=khac');
     assert(/const daLuuKhac = \(\) => \{ setSoLuu\(\(n\) => n \+ 1\); khac\.reload\(\); \};/.test(f), 'lưu chi nhánh khác gọi onDaLam');
-    assert(/b\.moiNhat\.localeCompare\(a\.moiNhat\) \|\| soSanhLop/.test(f), 'lớp không xếp theo tuần gần nhất');
-    assert(!/Tuần cũ hơn/.test(f), 'còn "Tuần cũ hơn" (đã bỏ — mỗi tuần là ngăn gập trong lớp)');
+    assert(/sort\(\(a, b\) => soSanhLopCham\(/.test(f), 'lớp không xếp bằng soSanhLopCham');
+    assert(/\(b\.weekStart \?\? ''\)\.localeCompare\(a\.weekStart \?\? ''\)/.test(f), 'trong lớp: tuần gần nhất chưa lên đầu');
+    assert(!/Tuần cũ hơn/.test(f), 'còn "Tuần cũ hơn" (đã bỏ — tuần ghi dưới tên em)');
+  });
+
+  check('SCN-6 · thứ tự lớp (chủ SP 16/11): lớp thường CÓ bài lên đầu, rồi mã lớp số nhỏ trước; lớp thường hết bài về chỗ theo mã; hàng đợi có cờ laThuong', () => {
+    const L = (code: string, thuong = false, coBai = true) => ({ code, thuong, coBai });
+    const ds = [L('MB FT 105'), L('MB FT 12'), L('MB FOU 30', true, false), L('MB FT 101'), L('MB FOU 21', true)].sort(d.soSanhLopCham).map((x) => x.code);
+    assert(ds[0] === 'MB FOU 21', `lớp thường có bài phải đầu: ${ds}`);
+    assert(ds.indexOf('MB FT 12') < ds.indexOf('MB FT 101') && ds.indexOf('MB FT 101') < ds.indexOf('MB FT 105'), `mã số nhỏ trước: ${ds}`);
+    const kq = [L('MB FOU 30', true, false), L('MB FT 101')].sort(d.soSanhLopCham).map((x) => x.code).join();
+    assert(kq === [L('MB FOU 30'), L('MB FT 101')].sort(d.soSanhLop).map((x) => x.code).join(), `lớp thường hết bài theo soSanhLop: ${kq}`);
+    const rows = svc.baiChamSpeaking(gvS(), TODAY).rows as any[];
+    assert(rows.every((r) => r.laThuong === !perm.bangLop().get(r.classId)?.isFastTrack), 'cờ laThuong sai');
   });
 }
