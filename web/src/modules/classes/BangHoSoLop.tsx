@@ -22,7 +22,7 @@ import { CanhBaoYThuc } from './CanhBaoYThuc.tsx';
 import { nhapDiemCua, useThaoTacDongHocVien, type QuyenDong } from './thaoTacDongHocVien.tsx';
 import { MenuDong, NUT_BA_CHAM } from '../../ui/MenuDong.tsx';
 import { useDienThoai } from '../../ui/TheDong.tsx';
-import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
+import { useViecLop } from './ThanhViecLop.tsx';
 import type { CaseDetail } from '../cases/CasePanel.tsx';
 import {
   CASE_CATEGORY_LABEL, GIAI_THICH_KCK, INTERVENTION_KIND_LABEL, KCK, OUTCOME_TONE, chipSosTuKetQua, dangChay, dongTieuChi, duongDotTest, duongHoSoHocVien, ketQuaGanNhat,
@@ -108,7 +108,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
   const roster = useApi<Hang[]>(`/classes/${classId}/roster`, [classId]);
   const cases = useApi<{ rows: CaseLop[] }>(`/cases?classId=${classId}`, [classId]);
   /* GD-6 (mockup ② mục 0 ý 3): thẻ kỹ năng có việc QUÁ HẠN của người xem tô màu quá hạn (V22) — dùng chung lời gọi `viec-theo-em` của đầu trang (không thêm request). */
-  const viec = useApi<ViecLop>(duongViecLop(classId), [classId]);
+  const viec = useViecLop(classId);
   const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { roster.reload(); onDoi(); } });
   const COT = cotCua(!!quyen.theoVai);
   /* Chip lọc nằm trên URL (`?loc=`) — sang hồ sơ em rồi Quay lại / F5 vẫn đúng lọc (luật Quay lại về đúng nguồn). */

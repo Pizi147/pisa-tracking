@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -1192,7 +1192,14 @@ api.put('/classes/:id/danh-gia-dau-ra/:studentId', requireAuth, wrap((req) => {
 api.get('/classes/:id/roster', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   if (qStr(req, 'chiId') === '1') return classSvc.rosterIds(principalOf(req), pInt(req, 'id'));   // id + tên cho Trước/Sau (PR-TD2-b)
-  return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+  const rows = classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+  /*
+   * AUDIT-1611 gói 13 (B2-15, Turso — dữ liệu gửi): lớp FT — web chỉ đọc `timeline` để biết mục "Nhập điểm" của menu ⋯ (`nhapDiemCua`: lượt ĐẦU còn ô của
+   * người xem) → trả đúng lượt đó, bốn trường (~30 % JSON / lần mở hồ sơ lớp). Lớp thường giữ đủ (bảng điểm lớp thường đọc cả tiến trình). 0 câu thêm.
+   */
+  if (!bangLop().get(pInt(req, 'id'))?.isFastTrack) return rows;
+  return rows.map((r: any) => ({ ...r, timeline: r.timeline.filter((x: any) => x.myPending?.length).slice(0, 1)
+    .map((x: any) => ({ kind: x.kind, kindLabel: x.kindLabel, attemptNo: x.attemptNo, myPending: x.myPending })) }));
 }));
 
 /*

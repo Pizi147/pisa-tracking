@@ -26,7 +26,7 @@ import { TabBaoCaoPh } from './TabBaoCaoPh.tsx';
 import { DOT_XUAT_FT, DOT_XUAT_THUONG, TAB_HO_SO_LOP_NHAN, ngay, tabCuaViec, tabHienCuaLop, tabMacDinhLop, vaiXemHocVien, type TabHoSoLop } from '@shared/domain/index.ts';
 import { useSession } from '../../lib/session.tsx';
 import { TabTongKetLop } from './TabTongKetLop.tsx';
-import { ThanhViecLop, duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
+import { ThanhViecLop, duongViecLop, laGvThuan, useViecLop } from './ThanhViecLop.tsx';
 import { CuoiKhoaLop } from './CuoiKhoaLop.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -42,7 +42,8 @@ export default function ClassOverviewPage() {
   const [params, setParams] = useSearchParams();
   const cheDoUrl = params.get('che-do');
   const cheDo: CheDoHocVien = cheDoUrl === 'ket-qua' || cheDoUrl === 'thong-tin' ? cheDoUrl : 'diem';
-  const vai = vaiXemHocVien(useSession().session?.roles);
+  const { session } = useSession();
+  const vai = vaiXemHocVien(session?.roles);
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
@@ -73,7 +74,7 @@ export default function ClassOverviewPage() {
   }, [classId]); // eslint-disable-line react-hooks/exhaustive-deps
   const { data, loading, error, reload } = useApi<HoSoLop>(classId ? `/classes/${classId}/overview` : null);
   /* GD-6 (lời 35, V22): badge tab = SỐ, đỏ khi có việc quá hạn của tôi — đọc từ `viec-theo-em` mà dải Việc cần làm đã tải (cùng URL, không thêm lời gọi). */
-  const viecLop = useApi<ViecLop>(data && data.status !== 'finished' && params.get('xem') !== 'cuoi-khoa' ? duongViecLop(data.id) : null, [data?.id, data?.status, params.get('xem')]);
+  const viecLop = useViecLop(data?.id ?? null, !!data && data.status !== 'finished' && params.get('xem') !== 'cuoi-khoa');
   /* P9a: em có dòng Xét lại → chip "Xét lại" trên dòng em — chỉ gọi khi người xem là QL (`coTheChuyenTiep` = cùng luật ra quyết định) hoặc GVCN lớp này. */
   const xemXl = !!data && (data.viewer.coTheChuyenTiep || data.viewer.isCoreTeacher);
   const xl = useApi<{ em: EmXetLai[] }>(classId && xemXl ? duongXetLai(Number(classId)) : null, [classId, xemXl]);
@@ -148,7 +149,7 @@ export default function ClassOverviewPage() {
     daGoiSom.current = data.id;
     const trangChinh = !(params.get('xem') === 'cuoi-khoa' && thuong && !data.lienTuc);   // trang con Cuối khoá không gắn đầu trang / bảng
     if (xemXl) taiTruoc(duongXetLai(data.id));
-    if (trangChinh && !daKetThuc) taiTruoc(duongViecLop(data.id));
+    if (trangChinh && !daKetThuc && !laGvThuan(session?.roles)) taiTruoc(duongViecLop(data.id));   // AUDIT-1611 gói 13: GV thuần dựng từ /my-work đã nạp
     if (trangChinh && (data.viewer.coTheXoaKetThuc || data.viewer.coTheKetThucLop)) taiTruoc(`/classes/${data.id}/xoa-ket-thuc`);
     if (trangChinh && !thuong && tab === 'hoc-vien' && cheDo === 'diem') taiTruoc(`/cases?classId=${data.id}`);
   }

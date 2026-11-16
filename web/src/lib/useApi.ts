@@ -238,6 +238,11 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
    * thì nhận luôn bản mới đó (số không lệch với trang đang mở, không thêm lời gọi).
    */
   chiNghe?: boolean;
+  /**
+   * AUDIT-1611 gói 13: có bản đã nạp (bất kể cũ mới — vd `/my-work` của badge App) thì DÙNG LUÔN, không gọi máy chủ khi gắn; bản mới tới qua `chiNghe`
+   * (App tải lại theo lịch của nó). `reload()` vẫn tải thật. Chưa có bản nào → tải như thường (GET đang bay được gộp).
+   */
+  dungBanLuu?: boolean;
 } = {}): ApiState<T> {
   const [data, setDataState] = useState<T | null>(() => (path ? (daXem.get(path)?.d as T | undefined) ?? null : null));
   const [fetching, setFetching] = useState(!!path);
@@ -265,6 +270,10 @@ export function useApi<T>(path: string | null, deps: unknown[] = [], opts: {
   }, [path, opts.chiNghe]);
 
   useEffect(() => {
+    if (opts.dungBanLuu && path && tick === 0 && daXem.has(path)) {
+      currentPath.current = path; setDataState(daXem.get(path)!.d as T); setFetching(false); setError(null);
+      return;
+    }
     batDauTai<T>(path, { latest, currentPath, coDuLieu, setData: setDataState, setFetching, setError, reload, giuCu: opts.giuCu, setCu, banTu });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [path, tick, ...deps]);
