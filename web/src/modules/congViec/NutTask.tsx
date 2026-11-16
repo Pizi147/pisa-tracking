@@ -70,10 +70,10 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   const mat = noi === 'dau'
     /* GD-8: tổng chiều cao (mặt + viền 2 px) = nút cạnh — 32 như "Mọi hạn" / "Lọc thêm" ở Công việc, 36 như "⋯" ở đầu hồ sơ (đo ≤ 1 px). */
     ? <span className={`inline-flex ${dauHoSo ? 'h-[34px]' : 'h-[30px]'} items-center px-3 text-[13px] font-semibold`}>{t('+ Task')}</span>
-    : <span className="grid h-[60px] w-[60px] place-items-center text-sm font-bold">{t('+ Task')}</span>;
+    : <span className="grid h-[60px] min-w-[60px] place-items-center whitespace-nowrap px-2 text-sm font-bold">   {/* AU-GON A3-05: chữ dài (EN) nới nút, không cắt */}{t('+ Task')}</span>;
   return (
     <>
-      <span ref={neo} className={noi === 'noi' ? 'fixed bottom-[80px] right-4 z-[35] sm:hidden' : 'max-sm:hidden'}>
+      <span ref={neo} className={noi === 'noi' ? 'fixed bottom-[80px] right-4 z-[35] sm:hidden' : 'max-sm:hidden'} data-fab-task={noi === 'noi' ? '' : undefined}>
         <MenuDong nhan={t('Task: Case, vi phạm / nhắc nhở, tình hình học tập')} mat={mat} tieuDeDay={t('+ Task')}
           lopNut={noi === 'dau' ? `btn ${phu ? '' : 'btn-primary '}!p-0` : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
           muc={dsMuc.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />

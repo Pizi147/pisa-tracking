@@ -166,7 +166,7 @@ function DongViecHs({ x, onLam, dangMo }: { x: Viec; onLam: (x: Viec) => void; d
           ? <button type="button" aria-label={[ten, ...the].join(', ')} aria-expanded={dangMo} onClick={(e) => { e.stopPropagation(); bam(); }}
               className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</button>
           : <span className="text-[15px] font-semibold leading-snug text-[color:var(--text)]">{ten}</span>}
-        <ThePhu ds={the} />
+        <ThePhu ds={the.slice(0, 2)} xuong />
         <span className="mt-0.5 sm:hidden"><HanGap x={x} /></span>
       </span>
       <span className="max-sm:hidden"><HanGap x={x} /></span>

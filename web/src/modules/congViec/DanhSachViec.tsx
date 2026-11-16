@@ -90,7 +90,7 @@ export const chuDau = (ten: string) => {
 /**
  * DANH SÁCH MỘT TAB — AUDIT-UI B4 (chủ SP 08/11, mockup `thiet-ke/2026-11-08-audit-ui-mockup.html` khu B4; thay CV-TAB "một thẻ, mục Quá hạn trên cùng"):
  * MỖI MỤC LOẠI VIỆC MỘT THẺ (`chiaMucTab`, mục rỗng ẩn), quá hạn lên đầu mục. Đầu thẻ = dải nhóm (`.dai-nhom`: nền `--surface-2`, vạch trái 3 px nhấn, 15 / 700)
- * · chip "n việc" · "n quá hạn" đỏ (375: "n" + chữ sr-only). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
+ * · chip "n việc" · "n quá hạn" đỏ (375 cũng ghi đủ chữ — AU-GON A1-11). Dòng: tên = đối tượng 15 / 500 + thẻ phụ | hạn một dòng | nút. Dòng gộp giữ "n em ▾" + khay em.
  * Số đầu mục chỉ từ việc máy chủ trả (`dem`; dòng giữ chỗ vừa xong không đếm). Mỗi mục 10 dòng đầu + "Xem thêm".
  */
 export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDong & {
@@ -121,9 +121,9 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
               style={{ background: 'var(--surface-2)', borderBottomColor: 'var(--line)', borderLeftColor: chung ? 'var(--text-faint)' : 'var(--accent)' }}>
               <span className="min-w-0 text-[color:var(--text)] max-sm:flex-1">{m.label}</span>
               <span className="inline-flex h-[22px] min-w-[22px] shrink-0 items-center justify-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
-                style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span className="max-sm:sr-only">&nbsp;{chung ? t('bài') : t('việc')}</span></span>
+                style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{d.n}<span>&nbsp;{chung ? t('bài') : t('việc')}</span></span>
               {d.quaHan > 0 && (
-                <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{d.quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>
+                <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{d.quaHan}<span> {t('quá hạn')}</span></span>
               )}
               {i === 0 && luat}
             </h2>
@@ -326,11 +326,11 @@ export const thePhu = (ds: readonly (string | null | undefined)[]) => ds.filter(
  * Thẻ phụ — v12 S2: MỘT hàng, thiếu chỗ thì cắt "…" (rê chuột thấy đủ, `title`); S1: chữ 500 mờ; S13: lượt / tuần / số = chip NỀN NHẠT góc 6,
  * loại việc (`vien`, Chờ bạn duyệt) = chip VIỀN — hai dáng, không ghép thành chuỗi "a · b · c".
  */
-export function ThePhu({ ds, vien = [] }: { ds: readonly string[]; vien?: readonly string[] }) {
+export function ThePhu({ ds, vien = [], xuong = false }: { ds: readonly string[]; vien?: readonly string[]; /** AU-GON A1-20: thẻ xuống dòng, không cắt "…" (dải việc hồ sơ HV). */ xuong?: boolean }) {
   if (!ds.length && !vien.length) return null;
-  const the = 'h-5 min-w-0 shrink truncate rounded-md px-1.5 text-xs font-medium leading-5 text-dim';
+  const the = `min-w-0 shrink rounded-md px-1.5 text-xs font-medium leading-5 text-dim ${xuong ? 'break-words' : 'h-5 truncate'}`;
   return (
-    <span className="mt-[3px] flex min-w-0 flex-nowrap items-center gap-[3px] overflow-hidden">
+    <span className={`mt-[3px] flex min-w-0 items-center gap-[3px] ${xuong ? 'flex-wrap' : 'flex-nowrap overflow-hidden'}`}>
       {vien.map((x, i) => <span key={`v${i}`} title={x} className={`${the} border leading-[18px]`} style={{ borderColor: 'var(--line-strong)' }}>{x}</span>)}
       {ds.map((x, i) => <span key={i} title={x} className={the} style={{ background: 'var(--surface-2)' }}>{x}</span>)}
     </span>

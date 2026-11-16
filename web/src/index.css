@@ -660,6 +660,8 @@
   @media (max-width: 639.98px) { .btn.nut-nho, .lk-trang { min-height: 44px; } .btn.nut-nho { height: auto; } }
   .o-so { appearance: none; border: 0; background: none; padding: 0 2px; border-radius: 4px; color: var(--accent); font-weight: 700; font-size: 15px;
     font-variant-numeric: tabular-nums; cursor: pointer; text-decoration: underline 1px var(--accent-line); text-underline-offset: 3px; }
+  /* AU-GON A2-06: số bấm được `.o-so` (SOS 1 / 2 / 3 ở hàng lớp…) — vùng chạm 44 × 44 ở 375 bằng ::after, không đổi hình. */
+  @media (max-width: 639.98px) { .o-so { position: relative; } .o-so::after { content: ''; position: absolute; left: 50%; top: 50%; width: 40px; height: 44px; transform: translate(-50%, -50%); } }
   .dong2 { display: block; margin-top: 2px; font-size: 13px; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .o-ovr { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 6px; margin-left: -6px; border: 1px solid var(--line); border-radius: 4px;
     background: none; color: inherit; cursor: pointer; }
@@ -767,7 +769,11 @@
     .chan-dinh-375 { position: sticky; z-index: 20; bottom: calc(env(safe-area-inset-bottom) - 23px); }
     html[data-ban-phim] .chan-dinh-375 { bottom: calc(var(--ban-phim) - 80px); }
   }
+  /* AU-GON A1-10 / B3-21: nút nổi "+ Task" (60 px, cách đáy 80) không che hàng cuối danh sách — đệm đáy main = 80 + 60 + 16. */
+  @media not all and (min-width: 640px) { html:has([data-fab-task]) #noi-dung { padding-bottom: 9.75rem; scroll-padding-bottom: 9.75rem; } }
   html[data-ban-phim] [data-thanh-duoi] { display: none; }
+  /* AU-GON B3-20: bàn phím ảo mở → dòng Quy chế của chân panel ẩn (còn lại: trạng thái lưu + nút) để thấy ô đang gõ. */
+  @media not all and (min-width: 640px) { html[data-ban-phim] [data-quy-che] { display: none; } }
   .label { display: block; font-size: 13px; color: var(--text-dim); margin-bottom: 0.25rem; font-weight: 500; }   /* D10: nhãn ô form 13 / 500 (luật chữ: nhãn 500) */
 
   .th {
@@ -1391,7 +1397,9 @@
 .dai-cs .dai-cs-phu .so-bam:not(.decoration-dotted) { font-size: inherit; font-weight: 500; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 @media (max-width: 639px) {
   .dai-cs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; }
-  .dai-cs-o { padding: 10px 12px; border-left: 0; min-height: 44px; align-items: center; flex-wrap: wrap; white-space: normal; }
+  .dai-cs-o { padding: 10px 12px; border-left: 0; min-height: 44px; align-items: center; flex-wrap: nowrap; white-space: normal; }   /* AU-GON A3-14: nhãn dài tự xuống dòng TRONG nhãn, số + ⓘ luôn cùng hàng */
+  .dai-cs-o > span:first-child { min-width: 0; }
+  .dai-cs-o > :not(:first-child) { flex: none; }
   .dai-cs-o:first-child { padding-left: 12px; }
   .dai-cs-o:nth-child(even) { border-left: 1px solid var(--line); }
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }

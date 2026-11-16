@@ -373,7 +373,7 @@ export default function StudentDetailPage() {
           { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
           /* GD-7 (③ K1 / K4, V22): bỏ chấm cảnh báo ở tab — việc Ý thức của người xem đã ở "Việc cần làm" (đỏ khi quá hạn). */
           { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'] },
-          { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
+          { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'], ngan: t('Lộ trình') },   /* AU-GON A3-13: 375 ba tab vừa hàng, không cắt mép phải */
         ]} />
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}

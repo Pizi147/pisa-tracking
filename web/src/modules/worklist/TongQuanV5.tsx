@@ -622,7 +622,7 @@ export function DaiChiSoTvv({ chiSo, em }: { chiSo: ChiSoTvv | undefined; em: re
       </ODai>
       <ODai nhan={t('Thi tháng này')} luat={LUAT_THI}>{chiSo ? <SoDenDai n={chiSo.thiThangNay} to="/hoc-vien?phamVi=cua-toi&thi=1" /> : <SoTinh n="…" />}</ODai>
       <ODai nhan={t('Chờ KQ')} title={t('Chờ KQ thi thật')}>{em ? <SoDenDai n={choKq} to={den('da-thi')} /> : <SoTinh n="…" />}</ODai>
-      <ODai nhan={<><span className="max-sm:hidden">{t('Chưa chốt lộ trình tiếp')}</span><span className="sm:hidden">{t('Chưa chốt')}</span></>} title={t('Chưa chốt lộ trình tiếp')}>
+      <ODai nhan={<><span className="max-sm:hidden">{t('Chưa chốt lộ trình tiếp')}</span><span className="sm:hidden">{t('Chưa chốt bước tiếp')}</span></>} title={t('Chưa chốt lộ trình tiếp')}>
         {em ? <SoDenDai n={buoc} to={den('cho-buoc-tiep')} /> : <SoTinh n="…" />}
       </ODai>
     </DaiChiSoMong>
