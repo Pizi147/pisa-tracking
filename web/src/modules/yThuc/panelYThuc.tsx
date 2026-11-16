@@ -55,7 +55,7 @@ export function usePanelYThuc({ onDone, roster, maLop }: {
         /* OV-11d (HV-22): tiêu đề "Sửa vi phạm · {tên em}" — tên từ nơi mở, không thì từ danh sách lớp. */
         studentName={panel?.loai === 'sua' ? panel.studentName ?? roster?.find((r) => r.id === panel.v.studentId)?.name : undefined}
         onDone={onDone}
-        onDelete={(id) => { dong(); xoaViPham(toast, id).then(onDone, (e: any) => toast.push('error', e.message)); }}
+        onDelete={(id) => { dong(); xoaViPham(toast, id).then(() => onDone(), (e: any) => toast.push('error', e.message)); }}
       />
       {panel?.loai === 'xu-ly' && (
         <XacNhanXuLyPanel key={panel.tick?.join(',')} studentId={panel.studentId} cheDo={panel.cheDo} tickThem={panel.tick} lop={maLop} onClose={dong} onDone={onDone}
