@@ -75,7 +75,8 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   const coDiem = !!a || ds.some((r) => r.band !== null);
   const lech = (v: number, tg: number) => (v > tg ? `+${fmtBand(v - tg)}` : v < tg ? `−${fmtBand(tg - v)}` : '=');
   const oDau = daThi ? (
-    <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.layLai ? `${daThi.nhan} · ${t('thi lại {kn}', { kn: kyNangThiLai(daThi.layLai).map((k) => k.toUpperCase()).join(' · ') })}` : daThi.nhan} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
+    /* A3-21 (③ K9a): ngày thi đã ở ô "Thi thật" dòng thông tin — góc ô không ghi lại ngày. */
+    <ODiemTo key="thi" nhan={t('Thi thật IELTS')} goc={daThi.layLai ? t('thi lại {kn}', { kn: kyNangThiLai(daThi.layLai).map((k) => k.toUpperCase()).join(' · ') }) : undefined} chon={chon === OVERALL} onClick={() => onChon(OVERALL)} thi
       phu={daThi.loai === 'kq' && daThi.diem.ovr != null && daThi.target != null ? `Target ${fmtBand(daThi.target)} · ${lech(daThi.diem.ovr, daThi.target)}` : null}>
       {daThi.loai === 'kq'
         ? <ODiem kieu="lon" so={daThi.diem.ovr != null ? fmtBand(daThi.diem.ovr) : null} kq={soKyVong(daThi.diem.ovr, daThi.target)} nhan={t('Thi thật')} kyVong={daThi.target != null ? `Target ${fmtBand(daThi.target)}` : undefined} />
@@ -93,6 +94,16 @@ export function DiemDau({ rows, attempts, ketQuaId, chon, onChon, homNay, mon = 
   /* Đã có KQ thi thật: W một ô (thi thật W một số) — bấm vào ô Writing đang có (W2 trước). */
   const coKq = daThi?.loai === 'kq';
   const dsO = coKq ? ds.filter((r) => r.category !== 'writing1' || !ds.some((x) => x.category === 'writing2')) : ds;
+  /* A3-11 (③ K9c): FT chưa có điểm nào → MỘT dòng "Chưa có điểm Mock Test · MT1 W4 SEP" (lượt kế tiếp) thay hàng ô "—". */
+  if (ft && !coDiem) {
+    const ke = luot.find((x) => !homNay || x.weekStart! >= mondayOfDate(homNay)) ?? luot[0];
+    return (
+      <p className="m-0 flex flex-wrap items-baseline gap-x-2 rounded-[10px] border px-3.5 py-2.5 text-[14px] text-slate-400" style={{ borderColor: 'var(--line)', background: 'var(--surface)' }}>
+        {t('Chưa có điểm Mock Test')}
+        {ke && <><span aria-hidden>·</span><b className="font-semibold tabular-nums text-slate-100">{`${tenLuot(ke)} ${tuanLich(ke.weekStart!)}`}</b></>}
+      </p>
+    );
+  }
   return (
     <div className="grid gap-2">
     {ft && (nguon || !coDiem) && (

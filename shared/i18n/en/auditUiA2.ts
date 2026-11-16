@@ -7,4 +7,7 @@ export const EN_AUDIT_UI_A2 = {
   'Mock Test gần nhất': 'Latest Mock Test',
   'Chưa có điểm Mock Test': 'No Mock Test scores yet',
   'từ {mt}': 'from {mt}',
+  /* AUDIT-1611 gói 14 (③ K9): ô Ý thức đầu hồ sơ · câu Case khi em đã có KQ thi thật. */
+  'mở tab Ý thức & Phối hợp': 'open Conduct & SOS tab',
+  'Đã có KQ thi thật · không còn việc Case / PA': 'Real exam result in · no more Case / PA tasks',
 };

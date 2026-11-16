@@ -18,7 +18,7 @@ import { NganTongKet } from './NganTongKet.tsx';
 import { PanelBuocTiep } from './PanelBuocTiep.tsx';
 import { HopGiaHan, NhanSauThi } from './HopGiaHan.tsx';
 import { Nhan, NhanLich } from '../../ui/Nhan.tsx';
-import { CHU_DA_XONG, diemW12 } from '@shared/domain/index.ts';
+import { CHU_DA_XONG, bacNgan, diemW12 } from '@shared/domain/index.ts';
 import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, viecSangPanel, type Viec } from './DauHoSo.tsx';
 import { NutTask } from '../congViec/NutTask.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
@@ -143,7 +143,7 @@ export default function StudentDetailPage() {
     setParams(next, { replace: true });
   };
   /* A5 (PR-YT4) · GD-7: đường Ý thức của em — CÙNG đường với tab bên trong; nay còn cho quyền "+ Task" (Vi phạm / Nhắc nhở · Báo / Hỏi tình hình), không thêm request. */
-  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
+  const yThuc = useApi<{ canRecord?: boolean; coTheBao?: boolean; coTheHoi?: boolean; gvcn?: string | null; bac?: number; bacNhan?: string | null; deXuat?: { status: string } | null }>(id ? `/students/${id}/y-thuc` : null, [id]);
   /* GD-7 (③ R3.2): việc đang mở ở panel việc tại chỗ + danh sách lúc mở (để "Việc tiếp ›" đi đúng thứ tự khi việc vừa xong rời danh sách). */
   const [viecMo, setViecMo] = useState<{ it: WorkItem; ds: Viec[] } | null>(null);
 
@@ -235,6 +235,9 @@ export default function StudentDetailPage() {
   /* "Việc tiếp ›": việc kế sau việc đang mở trong danh sách lúc mở, còn trong danh sách mới và mở được tại panel. */
   const keTiep = viecMo ? viecMo.ds.slice(viecMo.ds.findIndex((x) => x.key === viecMo.it.key) + 1)
     .find((x) => dsViec.some((y) => y.key === x.key) && viecSangPanel(x, emHs)) ?? null : null;
+  /* A3-12 (③ K9d): ô "Ý thức" đầu hồ sơ khi em có bậc hoặc đề xuất chờ QL duyệt — đọc `/y-thuc` đã nạp, không thêm câu. */
+  const yt = yThuc.data, choQl = yt?.deXuat?.status === 'cho_duyet', bacYt = yt?.bacNhan ? bacNgan(dich(yt.bacNhan)) : null;
+  const oYThuc = yt && ((yt.bac ?? 0) > 0 || choQl) ? { bac: bacYt, wl: !!bacYt?.startsWith('WL'), choQl } : null;
   const daLamViec = () => { invalidate('/my-work'); invalidate(`/students/${data.id}/y-thuc`); reload(); board.reload(); yThuc.reload(); };
   /* "+ Task" (③ R3.1, K6): mục theo quyền máy chủ — Case `canReport` · Vi phạm `canRecord` · Tình hình `coTheBao` (GV báo TVV) / `coTheHoi` (TVV hỏi GVCN). */
   const mucTask = [
@@ -272,7 +275,8 @@ export default function StudentDetailPage() {
             if (!ds.some((x) => x.id === data.id)) ds.push({ id: data.id, fullName: data.fullName, archived: false });
             return { ids: ds.sort((a, b) => a.fullName.localeCompare(b.fullName, 'vi')).map((x) => x.id), nhan: t('Lớp {lop}', { lop: lopTruocSau.code }) };
           } : undefined} />
-        {data.lopHoc?.chiXem && (
+        {/* A3-21 (③ K9b): em Kết thúc học — ngày ở chip cạnh tên, không dải "đã lưu trữ" trùng ngày; "‹ Lưu trữ" / chip đã nói em ở lưu trữ. */}
+        {data.lopHoc?.chiXem && !(data.status === 'finished' && data.finishedAt) && (
           <DaiChiXem>{data.status === 'inactive'
             ? t('Tạm dừng · ở Lưu trữ')
             : t('Học viên đã lưu trữ{ngay}', { ngay: data.archivedAt ? ` ${ngay(data.archivedAt, homNay)}` : '' })}</DaiChiXem>
@@ -323,10 +327,11 @@ export default function StudentDetailPage() {
               })()}
             </div>
           </div>
-          {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.finishedAt ?? null} />
+          {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.status === 'finished' ? null : data.finishedAt ?? null} />
             : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} mon={cy?.monHoc ?? null}
               /* L6 / 2.3 (chủ SP 13/11) · ③ K5: GV lớp (không sửa thẳng Target) — nhắc + "Đề xuất sửa" ở ô Target, thay việc "Điền Target" (không vào số việc). */
-              deXuatTarget={data.viewer.coTheDeXuatSua && data.missing?.some((m: { key: string }) => m.key === 'target') ? () => setViecQuanLy('de-xuat-sua') : undefined} />}
+              deXuatTarget={data.viewer.coTheDeXuatSua && data.missing?.some((m: { key: string }) => m.key === 'target') ? () => setViecQuanLy('de-xuat-sua') : undefined}
+              yThuc={oYThuc} onYThuc={() => setTab('y-thuc')} />}
           <DongLienHe l={data.lienHe} email={data.email} dob={data.dob} />
         </header>
       </div>
@@ -403,7 +408,7 @@ export default function StudentDetailPage() {
                     <h2 className="m-0 text-[17px] font-bold text-slate-100">Mock Test</h2>
                     <NutLuat label={t('Cách đọc bảng Mock Test')}>{t('Điểm tô theo kỳ vọng của chính lượt · hàng cuối là thi thật — kết quả cuối của lộ trình, so Target.')}</NutLuat>
                   </div>
-                  <KhoiMockTest cy={cy} ten={data.fullName} attempts={data.attempts} dotId={p.dot} homNay={homNay} onOpen={(a) => navigate(attemptHref(a))} />
+                  <KhoiMockTest cy={cy} ten={data.fullName} attempts={data.attempts} dotId={p.dot} homNay={homNay} ketThuc={data.status === 'finished' ? data.finishedAt ?? null : null} onOpen={(a) => navigate(attemptHref(a))} />
                 </>
               ) : board.error ? <div className="p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
                 : !skillRows ? <div className="p-4"><Skeleton rows={4} /></div>
@@ -415,15 +420,16 @@ export default function StudentDetailPage() {
               HAI CỘT DƯỚI HÀNH TRÌNH (UI-HO-SO-HV-2, mockup M5): trái Tiến độ trên lớp (form ghi / sửa / xoá trong cột, Hoàn tác, góp ý tuần khoá đọc) · phải
               Case & PA của kỹ năng đang chọn (Overall: mọi Case) — khối Case A của M6, form tại chỗ. 375: xếp dọc. Bỏ panel Ghi tiến độ cũ.
             */}
-            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+            <div className="grid items-start gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:has-[>div:empty]:grid-cols-1">
               {/* U02 dòng 16: 375 xếp dọc — Case trước (việc trước), Tiến độ sau; ≥ 1024 hai cột trái Tiến độ | phải Case. */}
-              {homNay && <div className="order-2 min-w-0 lg:order-1"><TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan}
-                kns={rowsFt.map((r) => r.category)} tenKn={tenChon} /></div>}
+              {homNay && <div className="order-2 min-w-0 empty:hidden lg:order-1"><TienDoTrenLop studentId={data.id} lopNay={data.currentClass?.id ?? null} chon={chon} ct={cy.programmeCode ?? null} homNay={homNay} onRe={setToTuan}
+                kns={rowsFt.map((r) => r.category)} tenKn={tenChon} anKhiRong={!!data.archivedAt} /></div>}
               <div className="order-1 min-w-0 lg:order-2">
               {board.error ? <div className="card p-4"><ErrorState message={board.error.message} hint={board.error.hint} status={board.error.status} onRetry={board.reload} /></div>
                 : !skillRows ? <div className="card p-4"><Skeleton rows={4} /></div>
                 : <CotCaseHv rows={hangChon ? [hangChon] : skillRows} tenKn={tenChon} mo={moCot} hocVien={data.fullName} lop={data.currentClass?.code}
                   onReport={data.viewer.canReport ? baoCase : undefined} onMoNgan={(caseId) => setOpenCase({ caseId })}
+                  daThi={!!homNay && !cy.ratio && (thiThatCua(cy as LoTrinhD, homNay) as ThiThatD | null)?.loai === 'kq'}
                   onChanged={() => { board.reload(); reload(); }} />}
               </div>
             </div>
@@ -551,8 +557,11 @@ function NhanDot({ a, ct = null }: {
  * KHỐI MOCK TEST KHI CHỌN OVERALL (UI-CHART-D, chủ SP 27/10): bảng Mock Test như web đang có, đặt chỗ chart, + hàng Thi thật cuối, nổi nhất
  * (kết quả cuối của lộ trình, so Target). Ghi chú Target đã đổi / kết luận / đầu vào giữ dưới bảng.
  */
-function KhoiMockTest({ cy, ten, attempts, dotId, homNay, onOpen }: { cy: any; ten: string; attempts: any[]; dotId?: number; homNay: string | null; onOpen: (a: any) => void }) {
+function KhoiMockTest({ cy, ten, attempts: tatCa, dotId, homNay, ketThuc, onOpen }: { cy: any; ten: string; attempts: any[]; dotId?: number; homNay: string | null; ketThuc: string | null; onOpen: (a: any) => void }) {
   const th = homNay ? thiThatCua(cy as LoTrinhD, homNay) : null;
+  /* A3-21 (③ K9a / K9b): em đã thi thật / đã kết thúc học — lượt chưa có điểm từ ngày thi / ngày kết thúc trở đi không còn là Test sắp tới → không hiện (lọc dữ liệu đã nạp). */
+  const moc = cy.thiThat?.ngay ?? ketThuc;
+  const attempts = moc ? tatCa.filter((a) => a.scored || !a.weekStart || a.weekStart < moc) : tatCa;
   return (
     <>
       {attempts.length === 0 && !th ? <div className="p-4"><Empty title={t('Chưa có lượt đánh giá nào trong lộ trình này')} /></div> : <>

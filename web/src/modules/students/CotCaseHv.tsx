@@ -27,11 +27,13 @@ const dong = (c: CaseCard) => c.status === 'done' || c.trangThaiV4.t === 'da-huy
  * mở sẵn, bấm dòng mở / gập, mở nhiều được; Case đã đóng / huỷ gập "n Case đã đóng". Case mở = Ngăn Case đặt THẲNG trong cột (`KhungTrongCot`, giữ mọi thao tác)
  * — chỉ Case đang mở mới gọi `/cases/:id`. Nút việc của người xem ở dòng tóm tắt (một việc một chỗ).
  */
-export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, onMoNgan }: {
+export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, onMoNgan, daThi = false }: {
   rows: SkillBoardRow[]; tenKn: string; mo: MoCot | null; hocVien: string; lop?: string | null;
   onReport?: (category: string) => void; onChanged: () => void;
   /** GD-7 (③ K8a): điện thoại — bấm dòng Case mở Ngăn Case toàn màn (nơi gọi), không bung Case trong trang. */
   onMoNgan?: (caseId: number) => void;
+  /** A3-21 · N46 (③ K9a): em đã có KQ thi thật — việc Case / PA không còn (máy chủ ẩn): một câu đầu cột, ô hạn trống; Case vẫn hiện (dữ liệu giữ). */
+  daThi?: boolean;
 }) {
   const toi = useSession().session?.user?.id ?? null;
   const { homNay } = useNgayNghiepVu();
@@ -63,31 +65,30 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
     const ep = yeuCau?.caseId === c.id && daDong[c.id] !== yeuCau.n ? yeuCau : null;
     const moRa = !ngan && (!!ep || (tay[c.id] ?? (!dong(c) && moSan(c))));
     const v = c.viecTiep;
-    const han = !dong(c) && v?.han && v.loaiHan && homNay ? deadlineView({ kind: v.loaiHan as DeadlineKind, due: v.han, today: homNay }) : null;
+    const han = !daThi && !dong(c) && v?.han && v.loaiHan && homNay ? deadlineView({ kind: v.loaiHan as DeadlineKind, due: v.han, today: homNay }) : null;
     const pa = c.plans.find((x) => x.status === 'started' || x.status === 'planned') ?? null;
     const bat = () => (ngan ? onMoNgan!(c.id) : setTay((x) => ({ ...x, [c.id]: !moRa })));
     /* B12 (mockup audit-ui 08/11, M10): tách trường — trạng thái = viên · PA = chữ mờ · người = chữ mờ + biểu tượng · hạn = cột phải. Bỏ tình trạng PA
        ("đã lên kế hoạch") vì trạng thái Case đã nói (rê chuột vẫn đọc được). Khung ≥ 640 px: mỗi trường một cột; hẹp hơn: dòng 2 gói lại. */
     const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
-    const chuHan = dong(c) ? <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />
+    const chuHan = dong(c) ? null
       : han?.quaHan || han?.ganHan ? <BadgeHan muc={han.quaHan ? 'qua' : 'gan'} title={han.text}>{han.han}</BadgeHan>   // BADGE-QUA-HAN 15/11 (V22: gần hạn = badge vàng)
       : han ? <span title={han.text} className="inline-flex items-center whitespace-nowrap text-[13px] tabular-nums text-slate-400">{han.han}</span> : null;
     /* #3 (G2-04): mọi PA đã khép mà Case chưa xong → "n PA xong · chờ Hoàn thành" (không phải "Chưa có PA"). */
     const chuPa = pa ? `PA ${pa.name}` : dong(c) ? null : c.plans.length ? t('{n} PA xong · chờ Hoàn thành', { n: c.plans.length }) : t('Chưa có PA');
     return (
       <div key={c.id} id={`case-${c.id}`} className="border-t px-4 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_140px_minmax(0,1fr)_150px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
-          <span className="the-kn">{r.short}</span>
+        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_172px_128px_minmax(0,1fr)_140px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
+          <span className="the-kn dac self-start mt-[3px] [@container(min-width:640px)]:mt-0 [@container(min-width:640px)]:self-center">{r.short}</span>
           <button type="button" aria-expanded={ngan ? undefined : moRa} onClick={bat}
-            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-3 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
-            <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
-            {(!dong(c) || chuPa) && (
-              <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
-                {!dong(c) && <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />}
-                {chuPa && <span className="min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : undefined}>{chuPa}</span>}
-              </span>
-            )}
-            {nguoi && <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim"><IconNguoi /><span className="truncate" title={nguoi}>{nguoi}</span></span>}
+            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-4 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
+            <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100 [@container(min-width:640px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
+            {/* A3-09 (③ K9e): ≥ 640 cột cố định trạng thái │ PA │ người (PA dài xuống dòng trong cột); 375 trạng thái + PA một hàng. */}
+            <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:640px)]:contents">
+              <span className="shrink-0"><NhanTrangThai cham t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
+              <span className="line-clamp-2 min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : chuPa ?? undefined}>{chuPa}</span>
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim">{nguoi && <><IconNguoi /><span className="min-w-0">{nguoi}</span></>}</span>
             {/* Khung hẹp (375): hạn đi cùng dòng chi tiết để tên + SOS có đủ chỗ; khung rộng: cột hạn riêng bên phải. */}
             {chuHan && <span className="[@container(min-width:640px)]:hidden">{chuHan}</span>}
           </button>
@@ -125,6 +126,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
         <h2 className="m-0 text-[17px] font-bold text-slate-100">{mot ? t('Case & phương án · {kn}', { kn: tenKn }) : t('Case & phương án')}</h2>
         {dangMo.length > 0 && <span className="the-phu"><b>{dangMo.length}</b> {t('đang mở')}</span>}
       </div>
+      {daThi && dangMo.length > 0 && <p className="m-0 border-b px-4 py-2.5 text-[13px] text-dim" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>{t('Đã có KQ thi thật · không còn việc Case / PA')}</p>}
       {!dangMo.length && vuaXoa.length > 0 && <div>{vuaXoa.map(daiXoa)}</div>}
       {!dangMo.length && !daDongDs.length ? (
         <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-4 text-[14px] text-slate-400">

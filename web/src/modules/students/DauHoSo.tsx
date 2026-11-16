@@ -43,9 +43,11 @@ const nutViec = (x: Viec) => dich(x.nut);
  *   lớp thường  Lớp MB FOU 15 · Chương trình FOU · Tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS 06/2027 · GVCN · TVV
  */
 /** P8 (mockup k7): `mon` = "L · R · W2 · S" — chỉ khi em không học đủ 5 môn (null = đủ, không hiện). */
-export function DongThongTin({ tt, tvv, mon, deXuatTarget }: { tt: any; tvv?: string | null; mon?: string | null;
+export function DongThongTin({ tt, tvv, mon, deXuatTarget, yThuc, onYThuc }: { tt: any; tvv?: string | null; mon?: string | null;
   /** GD-7 (③ K5, R3.6 · L6 / 2.3): GV lớp, em chưa có Target — ô Target "Chưa có" màu nhắc + "Đề xuất sửa" tại chỗ (không thành việc). */
-  deXuatTarget?: () => void }) {
+  deXuatTarget?: () => void;
+  /** A3-12 (③ K9d): ô "Ý thức" cuối dòng — bậc đã tới ("WL 2" đỏ, "REPORT 1") + "chờ QL" khi có đề xuất chờ duyệt; dữ liệu `/y-thuc` đã nạp. null = không ô. */
+  yThuc?: { bac: string | null; wl: boolean; choQl: boolean } | null; onYThuc?: () => void }) {
   if (!tt?.lop) return <p className="m-0 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
   const target = ((tt.target !== null && tt.target !== undefined) || (tt.kck && !tt.kyThi))   // OV-9: "6.5 · KCK" · "— · KCK"; P13: KET / PET số nguyên
     ? <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} kyThi={tt.kyThi} /></span>} />
@@ -73,6 +75,13 @@ export function DongThongTin({ tt, tvv, mon, deXuatTarget }: { tt: any; tvv?: st
     tt.thiIelts && <NhanGt key="ielts" n={t('Thi IELTS dự kiến')} g={<span className="tabular-nums">{tt.thiIelts}</span>} />,
     tt.gvcn && <NhanGt key="gv" n={t('GVCN')} g={tt.gvcn} />,
     tvv && <NhanGt key="tvv" n={t('TVV')} g={tvv} />,
+    yThuc && <NhanGt key="yt" n={t('Ý thức')} g={
+      <button type="button" onClick={onYThuc} className="min-h-[44px] min-w-[44px] appearance-none border-0 bg-transparent p-0 text-left font-[inherit] text-[color:var(--text)] hover:text-[color:var(--accent)] sm:min-h-0 sm:min-w-0"
+        aria-label={[t('Ý thức'), yThuc.bac, yThuc.choQl ? t('chờ QL') : null, t('mở tab Ý thức & Phối hợp')].filter(Boolean).join(', ')}>
+        {yThuc.bac && <span className={yThuc.wl ? 'text-bad' : undefined}>{yThuc.bac}</span>}
+        {yThuc.bac && yThuc.choQl && <span className="text-dim"> · </span>}
+        {yThuc.choQl && <span className="font-medium text-dim">{t('chờ QL')}</span>}
+      </button>} />,
   ].filter(Boolean);
   /* U02 dòng 1 (mockup `.facts`): ô nhãn trên – giá trị dưới, vạch dọc ngăn ô. */
   return <div className="o-tin items-start">{muc}</div>;
