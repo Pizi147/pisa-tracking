@@ -5,7 +5,6 @@ import { NganCase, type DaXoaCase } from './NganCase.tsx';
 import { DaiDaXoa } from '../cases/TaiCho.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
-import { NhanTrangThai } from '../../ui/ui.tsx';
 import { BadgeHan } from '../../ui/Nhan.tsx';
 import { IconGap, IconNguoi } from '../../ui/BieuTuong.tsx';
 import { useSession } from '../../lib/session.tsx';
@@ -13,6 +12,19 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { deadlineView, type DeadlineKind } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+
+/** ③ K9e `.trang-pa`: chip trạng thái Case — chấm màu theo TRẠNG THÁI (vàng chờ · xanh dương đang làm · xanh lá ✓ xong · xám chờ duyệt / huỷ); đỏ chỉ cho hạn quá hạn (cột hạn). */
+const MAU_TT: Record<string, string> = {
+  'can-lam': 'bg-soon-bg text-soon', 'qua-han': 'bg-soon-bg text-soon', 'dang-lam': 'bg-doing-bg text-doing',
+  xong: 'bg-ok-bg text-ok', 'cho-duyet': 'bg-muted-bg text-muted', 'da-huy': 'bg-muted-bg text-muted line-through',
+};
+function ChipTrangThai({ t: tt, chu }: { t: string; chu: string }) {
+  return (
+    <span className={`inline-flex h-6 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 text-[12px] font-semibold ${MAU_TT[tt] ?? MAU_TT['can-lam']}`}>
+      {tt === 'xong' ? <span aria-hidden>✓</span> : <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-current" />}{chu}
+    </span>
+  );
+}
 
 /** Mở một Case trong cột (Việc của tôi, chart): `n` đổi → khối Case dựng lại đúng view (`viec`) / cuộn tới PA (`paId`). */
 export type MoCot = { caseId: number; paId?: number; viec?: 'ghi-ket-qua' | 'them-pa' | 'xac-nhan' | 'xac-nhan-pa'; n: number };
@@ -71,25 +83,24 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
     /* B12 (mockup audit-ui 08/11, M10): tách trường — trạng thái = viên · PA = chữ mờ · người = chữ mờ + biểu tượng · hạn = cột phải. Bỏ tình trạng PA
        ("đã lên kế hoạch") vì trạng thái Case đã nói (rê chuột vẫn đọc được). Khung ≥ 640 px: mỗi trường một cột; hẹp hơn: dòng 2 gói lại. */
     const nguoi = !dong(c) && c.nguoiLam?.ten ? (c.nguoiLam.id && c.nguoiLam.id === toi ? t('bạn') : c.nguoiLam.id ? c.nguoiLam.ten : dich(c.nguoiLam.ten)) : null;
-    const chuHan = dong(c) ? <NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} />
+    const chuHan = dong(c) ? null
       : han?.quaHan || han?.ganHan ? <BadgeHan muc={han.quaHan ? 'qua' : 'gan'} title={han.text}>{han.han}</BadgeHan>   // BADGE-QUA-HAN 15/11 (V22: gần hạn = badge vàng)
       : han ? <span title={han.text} className="inline-flex items-center whitespace-nowrap text-[13px] tabular-nums text-slate-400">{han.han}</span> : null;
     /* #3 (G2-04): mọi PA đã khép mà Case chưa xong → "n PA xong · chờ Hoàn thành" (không phải "Chưa có PA"). */
     const chuPa = pa ? `PA ${pa.name}` : dong(c) ? null : c.plans.length ? t('{n} PA xong · chờ Hoàn thành', { n: c.plans.length }) : t('Chưa có PA');
     return (
       <div key={c.id} id={`case-${c.id}`} className="border-t px-4 first:border-t-0" style={{ borderColor: 'var(--line)' }}>
-        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_176px_minmax(0,1fr)_150px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
-          <span className="the-kn">{r.short}</span>
+        <div className={`grid min-h-[52px] grid-cols-[40px_minmax(0,1fr)_auto] items-center gap-x-2.5 py-1.5 [@container(min-width:640px)]:grid-cols-[34px_172px_128px_minmax(0,1fr)_140px_76px_24px] [@container(min-width:640px)]:gap-x-3 ${dong(c) ? 'opacity-[.85]' : ''}`}>
+          <span className="the-kn dac self-start mt-[3px] [@container(min-width:640px)]:mt-0 [@container(min-width:640px)]:self-center">{r.short}</span>
           <button type="button" aria-expanded={ngan ? undefined : moRa} onClick={bat}
-            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-3 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
+            className={`flex min-h-[44px] min-w-0 appearance-none flex-wrap items-center gap-x-2 gap-y-0.5 border-0 bg-transparent p-0 text-left [@container(min-width:640px)]:col-span-4 [@container(min-width:640px)]:grid [@container(min-width:640px)]:grid-cols-subgrid`}>
             <b className="flex basis-full flex-wrap items-center gap-2 text-[15px] font-semibold text-slate-100 [@container(min-width:640px)]:flex-nowrap">{c.tenSos ? dich(r.label) : c.title}{c.sosLevel ? <ChipSos muc={c.sosLevel} hienKyNang={false} tinh /> : null}</b>
-            {(!dong(c) || chuPa) && (
-              <span className="flex min-w-0 items-center gap-x-2">
-                {!dong(c) && <span className="shrink-0"><NhanTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>}
-                {chuPa && <span className="min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : undefined}>{chuPa}</span>}
-              </span>
-            )}
-            {nguoi && <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim"><IconNguoi /><span className="min-w-0">{nguoi}</span></span>}
+            {/* A3-09 (③ K9e): ≥ 640 cột cố định trạng thái │ PA │ người (PA dài xuống dòng trong cột); 375 trạng thái + PA một hàng. */}
+            <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:640px)]:contents">
+              <span className="shrink-0"><ChipTrangThai t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
+              <span className="min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : undefined}>{chuPa}</span>
+            </span>
+            <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim">{nguoi && <><IconNguoi /><span className="min-w-0">{nguoi}</span></>}</span>
             {/* Khung hẹp (375): hạn đi cùng dòng chi tiết để tên + SOS có đủ chỗ; khung rộng: cột hạn riêng bên phải. */}
             {chuHan && <span className="[@container(min-width:640px)]:hidden">{chuHan}</span>}
           </button>

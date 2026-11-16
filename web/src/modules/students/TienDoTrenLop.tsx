@@ -113,7 +113,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
                 return (
                   <li key={k} className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-3 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}
                     onMouseEnter={d ? () => onRe?.(d.tuan) : undefined} onMouseLeave={d ? () => onRe?.(null) : undefined}>
-                    <span className="the-kn">{tenMonNgan(ct, k)}</span>
+                    <span className="the-kn dac">{tenMonNgan(ct, k)}</span>
                     {d ? (
                       <span className="flex min-w-0 flex-col gap-1">
                         <span className="flex flex-wrap gap-1.5"><span className="the-phu nhat tabular-nums">{d.tuanMa}</span></span>

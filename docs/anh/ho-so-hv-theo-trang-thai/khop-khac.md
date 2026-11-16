@@ -22,7 +22,7 @@ K9f (GV lớp cũ chỉ xem, N48) KHÔNG trong PR này — AU-VIEC làm quyền 
 | K9b | dòng tóm tắt lưu trữ (Lộ trình gần nhất · Target · nhãn KQ) | `TomTatLuuTru` | KHÁC (GIỮ) | dáng P7 đã duyệt; mockup vẽ o-tin |
 | K9c | A3-11 · một dòng "Chưa có điểm Mock Test · MT1 W4 SEP" thay 6 ô "—" | `DiemDau` | KHỚP | có ≥ 1 điểm thì giữ 6 ô |
 | K9d | A3-12 · ô "Ý thức: WL 2 · chờ QL" / "REPORT 1" cuối dòng thông tin, bấm = tab Ý thức | `DongThongTin` (`DauHoSo.tsx`) | KHỚP | WL đỏ; "chờ QL" chữ mờ; 375 vùng chạm 44 |
-| K9e | A3-09 · hàng Case lưới cố định: tên + SOS một dòng · trạng thái + PA một hàng, PA dài xuống dòng (không cắt) · người · hạn | `CotCaseHv.tsx` | KHỚP | cột tên 140 → 176 px; tên người bỏ cắt "…" |
+| K9e | A3-09 · hàng Case lưới cố định: kỹ năng · tên + SOS · trạng thái · PA (dài xuống dòng trong cột, không cắt) · người · hạn — thẳng cột | `CotCaseHv.tsx` | KHỚP | cột 34 · 172 · 128 · 1fr · 140 · 76 · 24; chip trạng thái chấm màu theo trạng thái (vàng chờ · xanh dương Đang làm · xanh lá ✓ xong), đỏ chỉ ở hạn quá hạn; chip kỹ năng nền đặc (`.the-kn.dac`, cả dòng Tiến độ); 375 chip kỹ năng căn đầu hàng |
 
 Khớp: 11 / 12 dòng có mockup (2 dòng KHÁC là GIỮ tính năng đã duyệt) → ≥ 90 %.
 
