@@ -30,7 +30,7 @@ import { duocDoiLoTrinh, duocDoiMon } from '../fasttrack/monDangKy.ts';
 import { activeClassOf, canManageDiscipline } from '../yThuc/access.ts';
 import { dongHocVien, khoangTamDung } from './tamDung.ts';
 import { viecCuaHocVien } from './viecHocVien.ts';
-import { coKetQuaThi, daThiThat, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
+import { coKetQuaThi, trangThaiBuocTiep } from '../loTrinh/buocTiep.ts';
 import { coTheNhapThiThat, sauThiCuaEm } from '../loTrinh/thiThat.ts';
 import { thiThatCuaCycle } from '../loTrinh/banChup.ts';
 import { dsTvv } from './students.ts';
@@ -839,7 +839,7 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
   }).map((m) => m.label) : [];
   const viec = viecCuaHocVien(p, studentId, board, {
     choBuocTiep: !!cuoiFt && !cuoiFt.buoc_tiep && coKetQuaThi(cuoiFt), sauThi,
-    caseSauThi: daThiThat(selected), boSung: { tvv: s.consultant_user_id ?? null, thieu: thieuHs },
+    boSung: { tvv: s.consultant_user_id ?? null, thieu: thieuHs },
     trangThaiEm: s.status, lopId: current?.class_id ?? null, chuongTrinh: board.chuongTrinh, yThuc: yThucEm, miniTest, dai,
   });
   const thongTin = dongThongTin({ keSel: selected ? { cycleId: selected.id, ke: examPlan } : null, startWeekSel: selected ? { cycleId: selected.id, weekStart: startWeekSel?.week_start ?? null } : null, s, current: lopDangGiu, khoa: khoaHienTai, gvcn: gvcnHienTai, dangChay: allCycles.find((c) => c.status === 'active') ?? null /* = nhánh dangHoc của loTrinhTinhTuan (Q11); không có lộ trình chạy thì không có dòng tuần học */, today,

@@ -1016,7 +1016,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
                   AND iv.status IN ('planned', 'started') AND iv.performer_user_id = ? ORDER BY iv.id LIMIT 1) AS pa_toi_day
          FROM mini_test m JOIN students s ON s.id = m.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active' JOIN classes c ON c.id = cur.class_id
-        WHERE m.ty_le IS NULL ORDER BY m.han, m.id`,
+        WHERE m.ty_le IS NULL
+          AND NOT EXISTS (SELECT 1 FROM case_interventions ivs JOIN sos_cases sc ON sc.id = ivs.case_id WHERE ivs.nhom_bo_tro = m.nhom_bo_tro AND ${CASE_SAU_THI_SQL('sc', 's.id')})   -- N46
+        ORDER BY m.han, m.id`,
     )
     .all(p.userId) as any[];
   const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null }) : [];

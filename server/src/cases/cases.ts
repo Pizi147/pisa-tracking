@@ -30,7 +30,7 @@ import { coNho, nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts
 import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { currentCycle, cyclesOf } from '../fasttrack/cycles.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
-import { dongHocVien, khoangTamDung } from '../students/tamDung.ts';
+import { CASE_SAU_THI_SQL, dongHocVien, khoangTamDung } from '../students/tamDung.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { isRatioCycle, nguongDatLop, programmeByCode, programmeCodeOfCycle } from '../normal/regular.ts';
 import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
@@ -3317,7 +3317,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
               (SELECT cl.code FROM classes cl WHERE cl.id = sos_cases.goc_class_id) AS lop_attempt,
               (SELECT a.class_id FROM assessment_attempts a WHERE a.id = sos_cases.attempt_id) AS attempt_class_id,
               (${LUOT_CASE_SQL}) AS luot_json,
-              (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name FROM sos_cases
+              (SELECT u.full_name FROM users u WHERE u.id = sos_cases.owner_user_id) AS owner_name,
+              ${CASE_SAU_THI_SQL('sos_cases', 'sos_cases.student_id')} AS sau_thi FROM sos_cases
         WHERE student_id = ?
           AND (COALESCE(cycle_id, 0) = ? OR status != 'done')
         ORDER BY carried_over, (status = 'done'), parallel, id DESC`,
@@ -3543,6 +3544,8 @@ export function skillSupportBoard(p: Principal, studentId: number, cycleId?: num
           urgency: c.urgency ?? null,
           sosLevel: c.sos_level ?? null,
           carriedOver: !!c.carried_over,
+          /* N46: Case của lộ trình đã có KQ thi thật — thanh việc hồ sơ HV bỏ việc của nó (cùng `CASE_SAU_THI_SQL` với Công việc). Chỉ gửi khi đúng. */
+          ...(c.sau_thi ? { sauThi: true } : {}),
           parallel: !!c.parallel,
           openedOn: c.detected_at ?? null,
           touchedOn: lastTouch(c.id) ?? c.detected_at ?? null,

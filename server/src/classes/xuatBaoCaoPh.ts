@@ -10,6 +10,7 @@ import { demoToday } from '../demoConfig.ts';
 import { activeAt, lopDayDu, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
+import { nhoTheoGhi } from '../platform/mocHeThong.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { diemGoc, docTuyChinhDot, dotCuaLop, lopFt, quyenBc, type LopBc } from './baoCaoPh.ts';
@@ -274,9 +275,9 @@ export type ViecXuatBc = { classId: number; code: string; dot: string; nhanDot: 
  * Đợt của các lớp trong cửa sổ đọc (mở ≤ hôm nay ≤ hạn + 30) kèm số em còn thiếu — MỘT nguồn cho việc Admin "Xuất báo cáo PH" và việc QL "Báo cáo PH quá hạn" (N49).
  * Turso: một câu ghi danh + một câu đếm bản ghi cho mọi lớp đó (+ tiến độ lớp thường); nhớ theo request (Admin kiêm QL cùng chi nhánh đọc một lần).
  */
-/* `qhTu` / `batTu` (việc QL): chỉ đợt quá hạn ≥ `qhTu` ngày, hạn ≥ ngày bật — lọc TRƯỚC câu em / bản ghi (đợt chưa tới lúc thì 0 câu đó). */
-function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, homNay: string, qhTu = -Infinity, batTu = '') {
-  return nho(`bc-ph-cua-so:${[...cn].join(',')}:${branchId ?? ''}:${qhTu}:${batTu}`, () => {
+/* `ql` (việc QL, N49): chỉ đợt quá hạn > 7 ngày, hạn ≥ ngày bật, KHÔNG trần 30 ngày (giữ tới khi lớp đủ / bỏ đợt / lớp kết thúc) — lọc TRƯỚC câu em / bản ghi. */
+function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, homNay: string, ql: { batTu: string } | null = null) {
+  return nho(`bc-ph-cua-so:${[...cn].join(',')}:${branchId ?? ''}:${ql ? ql.batTu : ''}`, () => {
     const cap: { c: LopBc; d: DotBc; bo: readonly PhanBc[] }[] = [];
     const lop = [...lopDayDu().values() as Iterable<LopBc>].filter((c) => c.status === 'active' && (cn.has(null) || cn.has(c.branch_id))
       && (branchId == null || c.branch_id === branchId) && boPhanBc(c.programme_code ?? c.kind));
@@ -286,7 +287,10 @@ function dotBcCuaSo(cn: ReadonlySet<number | null>, branchId: number | null, hom
       const dl = dotCuaLop(c, homNay, tienDo, tuyChinh);
       /* Đợt quá hạn tới 30 ngày vẫn đọc: lớp viết đủ muộn (sau hạn + 7) vẫn có 7 ngày việc "đủ". RA-LOI-0711e: lọc theo cửa sổ, không lấy "2 đợt mới
          nhất" — đợt QL thêm (BC-DOT-QL) mở sau đợt tháng từng đẩy đợt tháng ra khỏi 2 đợt đầu, mất việc của nó. */
-      for (const d of dl?.ds ?? []) if (soNgayQuaHan(d, homNay) <= 30 && soNgayQuaHan(d, homNay) >= qhTu && d.han >= batTu && dl) cap.push({ c, d, bo: dl.bo });
+      for (const d of dl?.ds ?? []) {
+        const qh = soNgayQuaHan(d, homNay);
+        if (dl && (ql ? qh > 7 && d.han >= ql.batTu : qh <= 30)) cap.push({ c, d, bo: dl.bo });
+      }
     }
     if (!cap.length) return [];
     const emDot = emTheoLo(cap, homNay);
@@ -331,15 +335,16 @@ export function viecXuatBaoCaoPh(p: Principal, branchId: number | null): ViecXua
 
 /**
  * N49 (chủ SP 16/11, audit câu 4): Báo cáo PH quá hạn > 7 ngày (đã rời Công việc của GV, `viecBaoCaoPhGv`) mà lớp còn em chưa đủ → MỘT việc mỗi lớp × đợt
- * cho QL / Quản trị của chi nhánh lớp (tab "Việc quản lý"). Cùng cửa sổ + câu đọc với việc Admin (`dotBcCuaSo`). Lớp đủ thì hết việc. `batTu`: như việc GV — đợt
- * có hạn trước ngày bật không sinh việc (GV chưa từng có việc đó).
- * ponytail: rời sau hạn + 30 ngày (cửa sổ đọc chung) — nới cửa sổ nếu QL cần nhắc lâu hơn.
+ * cho QL / Quản trị của chi nhánh lớp (tab "Việc quản lý"). Giữ tới khi lớp đủ, QL / Admin chọn "Không báo cáo đợt này" (`docTuyChinhDot`), hoặc lớp kết thúc
+ * (rà #1788: không trần 30 ngày). `batTu`: như việc GV — đợt có hạn trước ngày bật không sinh việc (GV chưa từng có việc đó).
+ * Turso: tiến độ lớp + tuỳ chỉnh đợt (lớp của chi nhánh), rồi em + bản ghi CHỈ của đợt quá hạn > 7 ngày; nhớ theo tiến trình tới lần ghi kế tiếp
+ * (`nhoTheoGhi`) → badge QL mở lại khi chưa ai ghi gì: 0 câu.
  */
 export function viecBcPhQuaHanQl(p: Principal, branchId: number | null, batTu = ''): ViecXuatBc[] {
   const cn = new Set(p.grants.filter((g) => g.roleKey === 'manager' || g.roleKey === 'system_admin').map((g) => g.branchId));
   if (!cn.size) return [];
   const homNay = demoToday();
-  return dotBcCuaSo(cn, branchId, homNay, 8, batTu).filter((x) => x.thieu > 0)
+  return nhoTheoGhi(`bc-ph-qh:${[...cn].join(',')}:${branchId ?? ''}:${batTu}`, homNay, () => dotBcCuaSo(cn, branchId, homNay, { batTu }).filter((x) => x.thieu > 0))
     .map(({ c, d, soEm, thieu, qh }) => ({ classId: c.id, code: c.code, dot: d.ma, nhanDot: nhanDotBc(d, homNay), han: d.han, soEm, thieu, duLuc: null, quaHan: qh }));
 }
 /**

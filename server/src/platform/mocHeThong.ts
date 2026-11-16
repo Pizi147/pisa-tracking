@@ -40,7 +40,7 @@ export function docMoc(json: string | null | undefined): MocHeThong {
 export const thamChieuDayDuKhiKiem = { bat: false };
 
 /** Theo KẾT NỐI (như db.ts): phép kiểm đổi kết nối / DB chép lại không thấy nhớ của kết nối cũ. */
-const theoKetNoi = new WeakMap<object, Map<string, { so: number; giaTri: unknown }>>();
+const theoKetNoi = new WeakMap<object, Map<string, { so: number | string; giaTri: unknown }>>();
 
 /**
  * Bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB. Chỉ dùng khi đang trong request GET có phiên, request chưa ghi gì, cờ kiểm tắt;
@@ -53,6 +53,26 @@ export function nhoThamChieu<T>(khoa: string, tinh: () => T): T {
     const conn = db();
     let m = theoKetNoi.get(conn);
     if (!m) theoKetNoi.set(conn, m = new Map());
+    const cu = m.get(khoa);
+    if (cu && cu.so === so) return cu.giaTri as T;
+    const giaTri = tinh();
+    m.set(khoa, { so, giaTri });
+    return giaTri;
+  });
+}
+
+/**
+ * N49 (AU-VIEC): như `nhoThamChieu` nhưng khoá bằng bộ đếm GHI qua API (`so-viec`, đọc kèm câu phiên) + ngày nghiệp vụ — giá trị suy từ dữ liệu
+ * thường (bản ghi, ghi danh…) dùng lại giữa các request tới lần ghi kế tiếp ở bất cứ đâu. Không mốc / request có ghi / phép kiểm "đầy đủ" → tính như cũ.
+ */
+export function nhoTheoGhi<T>(khoa: string, ngay: string, tinh: () => T): T {
+  return nho(khoa, () => {
+    const ghi = (layMoc() as MocHeThong | undefined)?.soViec.ghi;
+    if (ghi == null || thamChieuDayDuKhiKiem.bat || !coNho() || coGhiTrongRequest()) return tinh();
+    const conn = db();
+    let m = theoKetNoi.get(conn);
+    if (!m) theoKetNoi.set(conn, m = new Map());
+    const so = `ghi:${ghi}:${ngay}`;
     const cu = m.get(khoa);
     if (cu && cu.so === so) return cu.giaTri as T;
     const giaTri = tinh();

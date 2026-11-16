@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import { CHU_DA_XONG, CHU_THEM_PA, HAN_GAN_NGAY, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
@@ -62,8 +62,6 @@ type Nguon = {
   /** `gv` = người dạy bổ trợ có tài khoản đầu tiên của nhóm (cùng câu `myWork`), null → GVCN. */
   miniTest: { id: number; han: string | null; tyLe: number | null; nhom: string; caseId: number | null; paId: number | null; gv: number | null } | null;
   dai: DaiHocVien | null;
-  /** N46: lộ trình của bảng kỹ năng đã có KQ thi thật (`daThiThat`) — việc Case / PA của nó ẩn như Công việc (`CASE_SAU_THI_SQL`). */
-  caseSauThi?: boolean;
   /** P1-04: TVV của em + các trường hồ sơ còn thiếu (cùng `missingForStudent` của việc "Bổ sung hồ sơ thiếu", `viecHoSoTvv`) — hồ sơ đã nạp, 0 câu. */
   boSung?: { tvv: number | null; thieu: string[] } | null;
 };
@@ -101,7 +99,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay' | 'gap'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean; quaHan?: boolean };
   const ds: Nhap[] = [];
 
-  const cases = n.caseSauThi ? [] : board.rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done').map((c: any) => ({ r, c })));
+  /* N46: Case của lộ trình đã có KQ thi thật (`sauThi`, cùng `CASE_SAU_THI_SQL` với Công việc) không sinh việc. */
+  const cases = board.rows.flatMap((r) => r.cases.filter((c: any) => c.status !== 'done' && !c.sauThi).map((c: any) => ({ r, c })));
   /* Nhóm PA bổ trợ chung: MỘT dòng mỗi nhóm (id nhỏ nhất) như Công việc (`mywork.ts` 2b, 3c). */
   const minNhom = (loc: (pl: any) => boolean) => {
     const m = new Map<string, number>();
@@ -169,10 +168,12 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   }
   /* P1-04 (B2-06): Phối hợp SOS của em — CÙNG hàm, khoá với dòng Công việc (`phoi_hop_sos:{lớp}:{việc}`), GVCN lớp em đang học giữ. Lượt của lộ trình đã thi
      thật không vào (N46, trong câu). +1 câu. */
-  if (n.lopId) {
+  /* Rà #1788: chỉ người giữ được (GVCN hiệu lực của lớp · QL lớp — "Của GV" / nhận thay khi lớp chưa có GVCN) mới đọc — vai khác 0 câu. Người giữ như Công việc:
+     GVCN hiệu lực (`-2`), lớp chưa có GVCN → người xem (QL). */
+  if (n.lopId && (isCoreTeacherOf(p, n.lopId, today) || can(p, PERMISSIONS.CASE_APPROVE, { classId: n.lopId }))) {
     for (const l of dongPhoiHopTheoViec([n.lopId], sid)) {
       ds.push({ key: `phoi_hop_sos:${l.classId}:${l.khoa}`, loai: 'phoi-hop-sos', chu: l.ten, kyNang: null, caseId: null, paId: null,
-        han: l.han, tone: 'info', nguoiId: -1, nut: 'Xác nhận', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
+        han: l.han, tone: 'info', nguoiId: -2, nut: 'Xác nhận', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
     }
   }
   /* P1-04 (B2-07): Báo PH vi phạm / tình hình / sau Meeting CX — CÙNG hàm Công việc (`viecBaoPhCuaToi`: người giữ TVV của em → GVCN / QL), khoá `bao-ph:{id}`.
@@ -191,7 +192,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   }
   /* Mini Test — người giữ việc (`emConMiniTest().gv` = `nguoiGiuMiniTest`, cùng `mywork.ts`), không có thì GVCN. */
   const mt = n.miniTest;
-  if (mt && mt.tyLe === null) {
+  /* N46: Case của nhóm bổ trợ thuộc lộ trình đã có KQ thi thật → không việc Ghi Mini Test (như Công việc). */
+  if (mt && mt.tyLe === null && !board.rows.some((r) => r.cases.some((c: any) => c.id === mt.caseId && c.sauThi))) {
     const gv = mt.gv ?? -1;
     ds.push({ key: `minitest:${mt.id}`, loai: 'mini-test', chu: 'Ghi Mini Test · bổ trợ miễn phí', kyNang: null, caseId: mt.caseId, paId: mt.paId,
       han: mt.han, tone: 'info', nguoiId: gv, nut: 'Ghi Mini Test',
@@ -252,9 +254,10 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   for (const u of conn.prepare(
     `SELECT u.id, u.full_name, ta.is_core, ta.skill FROM users u
        LEFT JOIN teacher_assignments ta ON ta.user_id = u.id AND ta.class_id = ? AND ta.status = 'active'
+        AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?)   -- rà #1788: phân công còn hiệu lực (GVCN như Công việc)
       WHERE u.id IN (${ids.map(() => '?').join(',') || 'NULL'}) OR (ta.is_core = 1)
       ORDER BY u.id, ta.is_core DESC, ta.id`,
-  ).all(n.lopId ?? -1, ...ids) as any[]) {
+  ).all(n.lopId ?? -1, today, today, ...ids) as any[]) {
     const x = nguoi.get(u.id) ?? { ten: u.full_name as string, gvcn: false, mon: [] as string[] };
     if (u.is_core) { x.gvcn = true; gvcnId ??= u.id; }
     if (u.skill) x.mon.push(u.skill);
@@ -270,7 +273,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   };
 
   const ra: ViecHocVien[] = ds.map(({ nguoiId, vaiChu, cuaBanTheoVai, quaHan, ...x }) => {
-    const id = nguoiId === -1 ? gvcnId : nguoiId;
+    const id = nguoiId === -1 ? gvcnId : nguoiId === -2 ? gvcnId ?? p.userId : nguoiId;
     const quaHanNgay = x.han && x.han < today ? diffDays(today, x.han) : null;
     return {
       ...x, quaHanNgay, gap: gapCua(x.han, today, quaHan), tone: quaHanNgay !== null || quaHan ? 'danger' : x.tone,
