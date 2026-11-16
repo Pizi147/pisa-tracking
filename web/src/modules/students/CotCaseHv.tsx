@@ -86,7 +86,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
             {/* A3-09 (③ K9e): ≥ 640 cột cố định trạng thái │ PA │ người (PA dài xuống dòng trong cột); 375 trạng thái + PA một hàng. */}
             <span className="flex min-w-0 items-center gap-x-2 [@container(min-width:640px)]:contents">
               <span className="shrink-0"><NhanTrangThai cham t={c.trangThaiV4.t} chu={dich(c.trangThaiV4.chu)} /></span>
-              <span className="min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : undefined}>{chuPa}</span>
+              <span className="line-clamp-2 min-w-0 text-[13px] text-dim" title={pa ? `PA ${pa.name} · ${dich(pa.statusLabel).toLowerCase()}` : chuPa ?? undefined}>{chuPa}</span>
             </span>
             <span className="inline-flex min-w-0 items-center gap-1 text-[13px] text-dim">{nguoi && <><IconNguoi /><span className="min-w-0">{nguoi}</span></>}</span>
             {/* Khung hẹp (375): hạn đi cùng dòng chi tiết để tên + SOS có đủ chỗ; khung rộng: cột hạn riêng bên phải. */}
