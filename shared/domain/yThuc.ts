@@ -40,12 +40,12 @@ export const VIOLATION_CATEGORY_LABEL: Record<ViolationCategory, string> = {
   classroom: t('Kỷ luật lớp học'),
   other: t('Khác'),
 };
-/** AUDIT-1611 B3-07: 2–3 câu hay dùng theo Nhóm — chip bấm là điền ô "Vi phạm" (sửa được). "Khác" không gợi ý. Chữ Việt; web dịch lúc vẽ. */
+/** AUDIT-1611 B3-07: 2–3 câu hay dùng theo Nhóm — chip bấm là điền ô "Vi phạm" (sửa được). "Khác" không gợi ý. Web dịch lúc vẽ (`dich`). */
 export const GOI_Y_VI_PHAM: Record<ViolationCategory, readonly string[]> = {
-  attendance: ['Đi muộn', 'Nghỉ không phép', 'Về sớm'],
-  homework: ['Không nộp BTVN', 'Nộp thiếu BTVN', 'Nộp BTVN muộn'],
-  conduct: ['Dùng điện thoại trong giờ', 'Nói chuyện riêng', 'Thái độ chưa đúng mực'],
-  classroom: ['Không mang tài liệu', 'Làm việc riêng', 'Không tham gia hoạt động'],
+  attendance: [t('Đi muộn'), t('Nghỉ không phép'), t('Về sớm')],
+  homework: [t('Không nộp BTVN'), t('Nộp thiếu BTVN'), t('Nộp BTVN muộn')],
+  conduct: [t('Dùng điện thoại trong giờ'), t('Nói chuyện riêng'), t('Thái độ chưa đúng mực')],
+  classroom: [t('Không mang tài liệu'), t('Làm việc riêng'), t('Không tham gia hoạt động')],
   other: [],
 };
 

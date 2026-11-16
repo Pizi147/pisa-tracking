@@ -5,8 +5,6 @@ export const EN_GD20 = {
   'Chèn': 'Insert',
   'Chèn bậc và vi phạm vào Mô tả': 'Insert level and incidents into Description',
   'Xác nhận {n} em ▾': 'Confirm {n} students ▾',
-  'Xác nhận {n} em': 'Confirm {n} students',
-  'Đã xác nhận {n} em': 'Confirmed {n} students',
   '{n} em chưa lưu được — {cau}': '{n} not saved — {cau}',
   'Nội dung chung': 'Shared content',
   'Hoàn tác chèn bàn giao môn': 'Undo inserted subject handover',
