@@ -17,6 +17,7 @@ import type { TrangThai } from './trangThai.ts';
 import { ngay, tuanLich } from './hienThiNgay.ts';
 import { mocChuBoTro } from './lopThuong.ts';
 import { t } from '../i18n/index.ts';
+import { CHU_TOI_THIEU } from './khac.ts';
 
 /** Hạn Xác nhận PA (MT) / Xác nhận Case (Progress): 5 ngày ('2026-09-14' → '2026-09-18'); MT Gấp / SOS 3: 3 ngày (→ '2026-09-16'); Progress luôn 5. */
 export const hanXacNhan = (ngay: string, muc: { sosLevel?: number | null; urgency?: string | null; thuong?: boolean } = {}) => hanTheoNgay(ngay, soNgayHanXacNhan({ ...muc, moc: ngay }));
@@ -32,7 +33,7 @@ export function mocQuyChe(span: AcademicSupportSpan, ctx: { ngayXacNhan: string;
 /** OV-13a (A): loại mốc của PA quy chế khi kỹ năng đã đạt kỳ vọng (lượt MT sau / Overall đạt) — `followup_due` = ngày đạt, lần ghi tới là Kết quả cuối. */
 export const MOC_DAT_KY_VONG = 'dat_ky_vong';
 /** OV-13a (C): lý do "Kết thúc PA" quy chế sớm (GVCN / QL) — tối thiểu ký tự. */
-export const LY_DO_KET_THUC_PA_TOI_THIEU = 10;
+export const LY_DO_KET_THUC_PA_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6)
 
 /**
  * CHỮ MỐC của PA quy chế: `đến MT2 · W2 OCT` · `1 tháng · đến W3 OCT` · `đến lúc thi · chưa có ngày thi`. PA chưa xác nhận: chỉ phần đầu
@@ -130,7 +131,7 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
 export const LOAI_PA_DOI = ['self_study', 'tutor', 'teaching_adjust', 'extra_homework'] as const;
 /** CAU-HINH-CASE-SOS: loại đổi được = PA "GV tự làm" chưa ẩn của cấu hình (bản gốc = `LOAI_PA_DOI`). */
 export const loaiPaDoi = (): readonly string[] => interventionKindsFor().selfServe;
-export const DOI_PA_TOI_THIEU = 10;
+export const DOI_PA_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6)
 export const laPaMacDinh = (pa: { preset?: boolean | number | null; kind: string }) => pa.preset === true || pa.preset === 1 || pa.kind === 'bo_tro';
 
 /** OV-13b: GHI NHANH trên dòng (Tiến triển + Nhận xét, Quyết định mặc định Giữ nguyên) — cùng thân `POST /interventions/:id/result` với panel. */

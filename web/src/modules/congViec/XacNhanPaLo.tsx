@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, quyCheXacNhanPa, soBuoiTu, type LoiTruong, type NguoiChon,
+  CHU_TOI_THIEU, GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, quyCheXacNhanPa, soBuoiTu, type LoiTruong, type NguoiChon,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -17,7 +17,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 type Em = NonNullable<WorkItem['con']>[number];
 type Rieng = { mo: boolean; moTa: string; batDau: string; nguoi: NguoiChon | null };
 /** Cùng ngưỡng máy chủ (`xacNhanPaQuyChe`: mô tả ≥ 15 ký tự). */
-const TOI_THIEU = 15;
+const TOI_THIEU = CHU_TOI_THIEU;   // N50 (6)
 const RIENG_TRONG: Rieng = { mo: false, moTa: '', batDau: '', nguoi: null };
 /** Rà #412: ~40 câu SQL / PA, Netlify cắt lời gọi sau 10 s → gửi tuần tự từng lô ≤ 3 PA. */
 const LO = 3;

@@ -3,7 +3,6 @@ import { useSession, type Assignment } from '../../lib/session.tsx';
 import { ChipHan, ChipKy } from '../../ui/Nhan.tsx';
 import { Skeleton } from '../../ui/ui.tsx';
 import { IconNhom } from './DanhSachViec.tsx';
-import { lamTaiCho } from './lamTaiCho.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { LOAI_HAN_CUA_VIEC, dongTab, laViecChamCheo, nhanTabCv, tabCuaViec, tuanLich } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
@@ -97,14 +96,15 @@ export function chipViecEm(viec: readonly WorkItem[], tvv = false): ChipViec[] {
 }
 
 /** Nút-chip "{loại} · {số}" (GD-4b, ⑤ C): đỏ khi có việc quá hạn (V22 chỉ màu), "›" khi bấm là đổi trang. `ngu` = lớp cho trình đọc màn. */
-export function NutChipViec({ c, ngu, doiTrang, onBam }: { c: ChipViec; ngu?: string; doiTrang: boolean; onBam: () => void }) {
+/** AUDIT-1611 A1-06 (mockup ① XM-5): nút-chip không có "›" — bấm mở việc đầu, việc đó tự đổi trang nếu cần. */
+export function NutChipViec({ c, ngu, onBam }: { c: ChipViec; ngu?: string; onBam: () => void }) {
   return (
     <button type="button" onClick={onBam}
       title={c.doc} aria-label={[`${c.quaHan ? `${t('Quá hạn')}: ` : ''}${c.nhan} · ${c.so}`, ngu, c.doc].filter(Boolean).join(' · ')}
       className={`inline-flex h-7 items-center gap-1.5 whitespace-nowrap rounded-md border px-2.5 text-[13px] font-semibold max-sm:h-11 max-sm:px-3 max-sm:text-sm ${c.quaHan
         ? 'border-late-line bg-late-bg text-late hover:brightness-110' : 'surface-2 text-[color:var(--text)] hover:border-[color:var(--accent)] hover:bg-[color:var(--accent-soft)]'}`}
       style={c.quaHan ? undefined : { borderColor: 'var(--line-strong)' }}>
-      {c.nhan} · <span className="tabular-nums">{c.so}</span>{doiTrang && <span aria-hidden> ›</span>}
+      {c.nhan} · <span className="tabular-nums">{c.so}</span>
     </button>
   );
 }
@@ -117,8 +117,10 @@ const COT = 'grid grid-cols-[104px_150px_152px_minmax(0,1fr)] items-center gap-x
  * Bấm chip = việc đầu (hạn sớm nhất) của loại đó ở lớp đó: mở panel tại chỗ, hoặc sang trang khi việc không làm tại chỗ (`onMo`).
  * 375: mỗi lớp một thẻ, chip cao 44.
  */
-export function LopCuaToi({ dong, onMo, dangTai, loi }: {
+export function LopCuaToi({ dong, onMo, dangTai, loi, chuRong }: {
   dong: Dong[]; onMo: (x: WorkItem) => void; dangTai: boolean; loi: React.ReactNode;
+  /** Câu rỗng riêng của nơi gọi (Head tutor chưa có vai GV — luật N50 (9)). */
+  chuRong?: string;
 }) {
   const { session } = useSession();
   const chuaPhanCong = !dangTai && !loi && !dong.length;
@@ -133,7 +135,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
       </h2>
       {loi ? <div className="p-4">{loi}</div>
         : dangTai ? <div className="p-4"><Skeleton rows={4} /></div>
-          : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
+          : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{chuRong ?? (session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào'))}</p>
             : <>
               <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint max-sm:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
                 <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test')}</span><span>{t('Việc cần làm')}</span>
@@ -162,7 +164,7 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
         {d.test?.han?.due && <ChipHan vien loai={LOAI_HAN_CUA_VIEC[d.test.han.group] ?? 'nhap-diem'} han={d.test.han.due} />}
       </span>
       <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
-        {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} doiTrang={!lamTaiCho(c.dau)} onBam={() => onMo(c.dau)} />)}
+        {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} onBam={() => onMo(c.dau)} />)}
       </span>
     </li>
   );

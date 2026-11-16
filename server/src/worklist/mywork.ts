@@ -649,6 +649,8 @@ export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: num
    * người nhập mở lưới điểm của tuần đó và gõ mọi cột, mọi lượt. Khác người phụ trách thì KHÔNG gộp. Môn chưa có tuần giữ khoá lượt + hạn cũ.
    */
   const byTest = new Map<string, ScoreBucket[]>();
+  const THU_TU_MON = ['listening', 'reading', 'writing', 'writing1', 'writing2', 'speaking', 'listening_speaking', 'reading_writing'];
+  const thuMon = (s: string) => { const i = THU_TU_MON.indexOf(s); return i < 0 ? THU_TU_MON.length : i; };
   for (const b of buckets.values()) {
     const lich = b.periodId ? `p${b.periodId}` : `${b.attemptNo ?? 0}|${b.due ?? ''}${b.quaHan ? '|q' : ''}`;
     const k = `${b.classId ?? 0}|${b.kind ?? 'mock'}|${lich}|u${b.ownerId ?? 0}${laChamCheo(b.kind, b.skill) ? '|cc' : ''}`;
@@ -657,7 +659,8 @@ export function gomBaiNhapDiem(p: Principal, today: string, ctCua: (classId: num
   const out: WorkItem[] = [];
   for (const [k, list] of byTest) {
     const first = list[0];
-    const skills = [...new Set(list.map((b) => b.skillLabel))].join(', ');
+    /* AUDIT-1611 B3-18: nối kỹ năng theo thứ tự L · R · W · S (không theo thứ tự gặp trong dữ liệu) — cùng lớp cùng hai kỹ năng một tên. */
+    const skills = [...new Map(list.map((b) => [b.skillLabel, b.skill]))].sort((a, b) => thuMon(a[1]) - thuMon(b[1])).map(([nhan]) => nhan).join(', ');
     const due = list.map((b) => b.due).filter((x): x is string => !!x).sort()[0] ?? null;
     const luotCua = [...new Set(list.map((b) => b.testLabel))].sort().join(', ');
     const students = new Map<number, string>();
@@ -1142,7 +1145,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
         contextLabel: `GVBM · ${v.tung ? v.tung.map((x) => `${x.monNgan} ${x.daGhi}/${x.n} em`).join(' · ') : `${v.daGhi}/${v.n} em`}`,
         /* #8: việc gộp nhiều môn — số EM còn thiếu ít nhất một môn (số từng môn ở contextLabel), cùng mẫu câu một môn. */
         reason: `${v.tung ? v.emIds.length : v.n - v.daGhi} em chưa có câu bàn giao môn ${v.monNgan}`,
-        tieuDe: `Bàn giao môn ${v.monNgan} · ${v.code}`, actionLabel: `Bàn giao môn ${v.monNgan}`,
+        tieuDe: v.motEm ? `Bàn giao môn ${v.monNgan} · ${v.motEm.ten}${v.motEm.lopDich ? ` → ${v.motEm.lopDich}` : ''}` : `Bàn giao môn ${v.monNgan} · ${v.code}`, actionLabel: `Bàn giao môn ${v.monNgan}`,
         href: `/hoc-vien/lop/${v.lopId}?viec=ban-giao&mon=${v.mon}`, statusLabel: 'Chờ bàn giao',
       });
     }
@@ -1502,7 +1505,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: l.soEm, emIds: l.emIds,
       /* OV-11e (TE-8): số theo lượt — link mở lượt đầu, số đầu = số hàng ở đó. */
       reason: `Nhập MT cũ · ${l.luot.map((x) => `MT${x.so} · ${x.soEm} em`).join(' · ')} · không tính hạn`,
-      tieuDe: 'Nhập điểm MT cũ', actionLabel: 'Nhập điểm', href: l.href,
+      tieuDe: 'Nhập điểm MT cũ', actionLabel: 'Nhập điểm ›', href: l.href,   // AUDIT-1611 A1-05: đổi trang → "›" (như "Viết ›")
       ownerId: gvcnLop().get(l.classId) ?? p.userId, owner: null, mine: true, due: null, statusLabel: 'Không tính hạn',   // BADGE-CUA-TOI: cùng chủ ở mọi góc (`mine` tính lại theo `ownerId` cuối hàm)
     });
   }

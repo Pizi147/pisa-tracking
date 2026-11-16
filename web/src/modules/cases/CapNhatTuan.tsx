@@ -99,12 +99,14 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: t('Đã gửi Quản lý — PA vẫn chạy'),
 };
 
-export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat, hoanThanhCase }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat, ketThucSom, hoanThanhCase }: {
   /**
    * #3 bản rà 11/11 (G2-05, chủ SP "chỉ để 'Hoàn thành Case', không có dấu '?'"): PA này là PA CUỐI còn chạy của Case và người xem hoàn thành được Case → kết thúc PA
    * (Kết thúc PA / Kết quả cuối) có ô tick "Hoàn thành Case" ngay trong form: mức theo Tiến triển, kết luận điền sẵn Nhận xét (sửa được).
    */
   hoanThanhCase?: { caseId: number } | null;
+  /** AUDIT-1611 P1-13: người xem là GVCN lớp em / QL (`viewer.coTheKetThucPa`) → dòng quy chế PA quy chế nói "kết thúc sớm ở thẻ PA". */
+  ketThucSom?: boolean;
   /** RKC-2c: người xem là Quản lý trong phạm vi Case — hiện đủ lựa chọn (máy chủ hỏi xác nhận nêu luật bị vượt). */
   vuotLuat?: boolean;
   /** U03 (mockup A2 chân): "Lưu · kỹ năng tiếp ›" — lưu xong sang Case kỹ năng kế của em (nơi mở quyết việc kế). */
@@ -594,12 +596,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
               <BoLocDoan ariaLabel={t('Quyết định')} value={(trongDc ? 'adjust' : decision || '') as PlanDecision}
                 muc={dsTren.map((d) => ({ key: d, nhan: dich(PLAN_DECISION_NGAN[d]) }))} onChange={chonQd} />
               {chanQd && <p className="m-0 text-xs text-late" role="alert">{chanQd}</p>}
-              {pa.batBuoc && (
-                <p className="m-0 flex flex-wrap items-center gap-x-1.5 text-xs text-slate-400">
-                  {t('PA theo quy chế — không thay; GVCN / QL kết thúc sớm bằng "Kết thúc sớm…" ở thẻ PA. Cần thêm hỗ trợ?')}
-                  {onThemPa && <NutChu onClick={onThemPa}>{t('+ Thêm PA')}</NutChu>}
-                </p>
-              )}
+              {/* AUDIT-1611 P1-13: bỏ câu tĩnh trái dòng quy chế; giữ lối "+ Thêm PA" (T63, K3-12). */}
+              {pa.batBuoc && onThemPa && <span><NutChu onClick={onThemPa}>{t('+ Thêm PA')}</NutChu></span>}
               {(deXuat || (decision && decision !== 'keep')) && (trongDc ? dsDc.length + Number(coDoi) > 1 || khoiCon(decision as PlanDecision) : khoiCon(decision as PlanDecision)) && (
                 <div className="ml-1 space-y-3 border-l-2 pl-3" style={{ borderColor: 'var(--accent-line)' }}>
                   {trongDc && dsDc.length + Number(coDoi) > 1 && (
@@ -651,7 +649,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           )}
           {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
           {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
-            lanCuoi, batBuoc: !!pa.batBuoc, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined })} />}
+            lanCuoi, batBuoc: !!pa.batBuoc, ketThucSom, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined })} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden"><NutDongPanel busy={busy} />{nutNhap}{nut}</div>
         </CanLam>
       </div>

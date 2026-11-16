@@ -82,7 +82,7 @@ export const EN_HD3_TVV = {
   '{han:bao_ph_vi_pham} tính cả ngày có việc; đổi được ở <b>Sửa hạn</b>.': '{han:bao_ph_vi_pham} counting the day the task starts; change it in <b>Edit deadline</b>.',
   '{han:buoc_tiep_sau_thi} từ ngày có kết quả; cần thêm ngày: <b>Gia hạn</b> ở dòng.': '{han:buoc_tiep_sau_thi} from the result date; need more days: <b>Extend</b> on the row.',
   'Điền ô thiếu; đổi Target cần lý do.': 'Fill the missing fields; changing Target needs a reason.',
-  'Đã báo PH, Nội dung từ 10 ký tự.': 'Parent informed, content of 10+ characters.',
+  'Đã lưu Đã báo PH kèm Nội dung.': 'Saved Parent informed with content.',
   'Đã chọn một bước tiếp.': 'A next step is chosen.',
   'Đã lưu Đã báo PH.': 'Parent informed is saved.',
   'Đổi TVV: việc đang mở sang TVV mới, hạn giữ nguyên.': 'Consultant change: open tasks move to the new consultant, deadlines kept.',

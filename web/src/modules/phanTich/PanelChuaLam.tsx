@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import type { DongViecHan } from '@shared/domain/index.ts';
+import { duongHoSoGv, type DongViecHan } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -64,6 +64,9 @@ function DongChiDoc({ d, n }: Dong) {
 }
 
 export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { nguon: string; tab: TabChuaLam; tieuDe: string; ngCanh: string; onDong: () => void }) {
+  /* AUDIT-1611 P1-05: tên GV → hồ sơ GV cùng kỳ của panel (`tu` / `den` trong `nguon`). */
+  const qNguon = new URLSearchParams(nguon.split('?')[1] ?? '');
+  const kyNguon = qNguon.get('tu') && qNguon.get('den') ? { tu: qNguon.get('tu')!, den: qNguon.get('den')! } : null;
   const { data, loading, error, reload } = useApi<{ rows: DongDs[] }>(nguon, [nguon]);
   const { homNay, ngan } = useNgayNghiepVu();
   const [tab, setTab] = useState<TabChuaLam>(tabDau);
@@ -111,7 +114,7 @@ export function PanelChuaLam({ nguon, tab: tabDau, tieuDe, ngCanh, onDong }: { n
               <NutLuat label={t('Chưa làm')}>{t('Bài / việc có hạn trong kỳ đã qua hạn mà chưa làm, của từng người được phân công. S chéo chung (bài Speaking chấm chéo chưa ai nhận) để riêng cuối danh sách, không vào số và tỉ lệ của ai.')}</NutLuat>
             </p>
             {!nhomDs.length && !sc.length && <p className="m-0 text-sm text-[color:var(--text-dim)]">{tab === 'cham' ? t('Không còn bài nào quá hạn chưa chấm.') : t('Không còn việc nào quá hạn chưa làm.')}</p>}
-            {nhomDs.map(([id, g]) => khoi(`gv:${id}`, <Link to={`/giao-vien/${id}`} className="ten-ho-so">{g.ten}</Link>, g.ds.length, g.ds, undefined, g.ten))}
+            {nhomDs.map(([id, g]) => khoi(`gv:${id}`, <Link to={duongHoSoGv(id, kyNguon, qNguon.get('ct'))} className="ten-ho-so">{g.ten}</Link>, g.ds.length, g.ds, undefined, g.ten))}
             {sc.length > 0 && khoi('s-chung', <i className="font-bold">{t('S chéo chung')}</i>, sc.length, sc, t('chưa ai nhận · không vào tỉ lệ'))}
           </div>
         )}

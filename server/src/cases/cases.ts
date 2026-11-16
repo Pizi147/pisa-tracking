@@ -4098,7 +4098,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');   // T7 (PR-MTa): không tối thiểu ký tự
   }
   /* PR-DUYET (T64): câu hỏi gửi Quản lý là nội dung của thẻ Xin ý kiến — bắt buộc. */
-  if (nextStep === 'ask_manager' && (decisionNote ?? '').length < 8) {
+  if (nextStep === 'ask_manager' && (decisionNote ?? '').length < CHU_TOI_THIEU_CASE) {
     throw badRequest('Xin hỗ trợ Quản lý thì ghi rõ cần Quản lý giúp gì, ít nhất 8 ký tự.');
   }
   /* T13: thay sang PA đề xuất "Khác" — báo thiếu Ghi rõ TRƯỚC khi ghi gì (`recordIntervention` kiểm lại lần nữa). */
@@ -4702,7 +4702,7 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa, chinh.note)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });   // N35
   const decisionNote = String(vao.decisionNote ?? '').trim() || null;
   if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');
-  if (chinh.next_step === 'ask_manager' && (decisionNote ?? '').length < 8) {
+  if (chinh.next_step === 'ask_manager' && (decisionNote ?? '').length < CHU_TOI_THIEU_CASE) {
     throw badRequest('Xin hỗ trợ Quản lý thì ghi rõ cần Quản lý giúp gì, ít nhất 8 ký tự.');
   }
   if (x.quyetDinh === null && chinh.outcome === 'insufficient' && !decisionNote) throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do.');

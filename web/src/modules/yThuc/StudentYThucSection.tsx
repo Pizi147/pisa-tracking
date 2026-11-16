@@ -7,7 +7,7 @@ import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, bacDu, bacNgan, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
+import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, bacDu, bacNgan, chenHan, ngay, quaHanChiXem, type ViolationCategory } from '@shared/domain/index.ts';
 import { usePanelYThuc } from './panelYThuc.tsx';
 import { ChiTietViPham } from './ChiTietViPham.tsx';
 import type { CoordTurn } from './PhoiHopSosSection.tsx';
@@ -70,7 +70,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const [hop, setHop] = useState<{ che: CheDoHop; neo: RefObject<HTMLElement | null> } | null>(null);
   const neoBao = useRef<HTMLButtonElement>(null);
   const neoHoi = useRef<HTMLButtonElement>(null);
-  const { mo, panels } = usePanelYThuc({ onDone: () => { setVuaXem(null); reload(); } });
+  /* AUDIT-1611 A1-17: vừa ghi nhắc nhở → mở sẵn Lịch sử, nền "vừa" ở dòng mới (cùng cơ chế "Xem lại"). */
+  const { mo, panels } = usePanelYThuc({ onDone: (x) => { setVuaXem(null); reload(); if (x?.chiNhac && x.ids.length) { setLoc('tat-ca'); setLsVua(x.ids); setMoLs(true); } } });
 
   useEffect(() => {
     const moGi = params.get('mo');
@@ -215,11 +216,11 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const dongTh = (x: TinhHinhView, ls = false) => {
     const dx = daXuLyTinhHinh(x, homNay);
     return khoi({ key: `th-${x.id}`, vp: [], gv: null, ph: null, ls, moc: x.taoLuc.slice(0, 10), the: <TheTinhHinh x={x} homNay={homNay} />, vanDe: <NoiDungTinhHinh chu={x.noiDung} />,
-      dx: dx.gv || dx.tvv ? <ODaXuLy gv={dx.gv} tvv={dx.tvv} /> : null, tiep: <BuocTinhHinh x={x} homNay={homNay} tvv={null} gvcn={d.gvcn} f={fTh} /> });
+      dx: dx.gv || dx.tvv ? <ODaXuLy gv={dx.gv} tvv={dx.tvv} /> : null, tiep: <BuocTinhHinh x={x} homNay={homNay} tvv={d.tvv} gvcn={d.gvcn} f={fTh} /> });
   };
   const kThMo = d.tinhHinh.filter((x) => x.trangThai === 'mo').map((x) => dongTh(x));
   const soCanLam = (kCho ? 1 : 0) + (dx ? 1 : 0) + (th ? 1 : 0) + choTvv.length + kThMo.length;
-  const iBaoPh = <NutLuat label={t('Báo PH sinh khi nào')}>{t('GVCN: lần xử lý (bậc, ngày) hoặc Đã xem. TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn 5 ngày.')}</NutLuat>;
+  const iBaoPh = <NutLuat label={t('Báo PH sinh khi nào')}>{chenHan(t('GVCN: lần xử lý (bậc, ngày). TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn {han:bao_ph_vi_pham}.'))}</NutLuat>;
 
   /* ---------------- Cả quá trình (mockup v20 A4) ---------------- */
   const loaiCua = (x: DongThoiGianYt): Exclude<LocLs, 'tat-ca' | 'tinh-hinh'> => (x.loai === 'vi-pham' && x.chiNhac ? 'nhac-nho' : 'vi-pham');
@@ -292,7 +293,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
                 {d.coTheHoi && <button ref={neoHoi} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
                   onClick={() => setHop({ neo: neoHoi, che: { loai: 'hoi', em: { id: studentId, ten: d.ten }, gvcn: d.gvcn } })}>{t('Hỏi tình hình')}</button>}
                 {d.coTheBao && <button ref={neoBao} type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1"
-                  onClick={() => setHop({ neo: neoBao, che: { loai: 'bao', em: [{ id: studentId, ten: d.ten, tvv: null }] } })}>{t('Báo tình hình')}</button>}
+                  onClick={() => setHop({ neo: neoBao, che: { loai: 'bao', em: [{ id: studentId, ten: d.ten, tvv: d.tvv }] } })}>{t('Báo tình hình')}</button>}
                 {/* ③ K4a: cùng tên mục "+ Task" — "+ Vi phạm / Nhắc nhở" (form có Nhắc nhở), nút viền như hai nút cạnh. */}
                 {d.canRecord && <button type="button" className="btn h-9 max-sm:h-11 max-sm:flex-1" onClick={() => mo({ loai: 'ghi', studentId, studentName: d.ten })}>{t('+ Vi phạm / Nhắc nhở')}</button>}
               </span>

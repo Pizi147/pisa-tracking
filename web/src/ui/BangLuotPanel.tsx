@@ -15,7 +15,7 @@ import { useSession } from '../lib/session.tsx';
 import { fmtBand } from '../lib/format.ts';
 import type { ApiError } from '../lib/api.ts';
 import {
-  KN_LUOT_BANG, NHAN_KN_LUOT, OUTCOME_MARK, TAB_VIEC_HAN, TAB_VIEC_HAN_LABEL, OUTCOME_TONE, dongTieuChi, duongDotTest, duongHoSoHocVien, ngay, outcomeLabelFor, tuanLich,
+  KN_LUOT_BANG, bacNgan, NHAN_KN_LUOT, OUTCOME_MARK, TAB_VIEC_HAN, TAB_VIEC_HAN_LABEL, OUTCOME_TONE, dongTieuChi, duongDotTest, duongHoSoHocVien, ngay, outcomeLabelFor, tuanLich,
   type DinhNghiaCot, type DongBaiThuong, type DongPa, type DongViecHan, type TabViecHan, type DongViPham, type DongViPhamEm, type DongViPhamLop, type TrangThaiVp, type DongLuotDiem, type DongTangGiam, type DongThiThatBang, type KnThiBang, type EntrySkill, type KieuBangLuot, type KnLuot, type ODiemLuot,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -381,8 +381,8 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
     if (c.key === 'lop') return h.lop ?? mo('—');
     if (c.key === 'vp') return <span className="tabular-nums">{h.viPham}</span>;
     if (c.key === 'chua') return <span className={`tabular-nums ${h.chuaXuLy ? 'font-semibold text-bad' : 'text-faint'}`}>{h.chuaXuLy}</span>;
-    if (c.key === 'bac') return h.bac ? dich(h.bac) : mo(t('Chưa xử lý lần nào'));
-    return h.lanXuLy ? dich(h.lanXuLy) : mo('—');
+    if (c.key === 'bac') return h.bac ? bacNgan(dich(h.bac)) : mo(t('Chưa xử lý lần nào'));
+    return h.lanXuLy ? bacNgan(dich(h.lanXuLy)) : mo('—');
   };
   const cotVl: DinhNghiaCot[] = [
     { key: 'lop', nhan: t('Lớp'), kieu: 'ten', rong: 150 }, { key: 'gvcn', nhan: 'GVCN', kieu: 'chu', linhHoat: true },
@@ -522,7 +522,7 @@ export function BangLuotPanel({ tieuDe, loai = t('Số · Test + SOS'), data, lo
                     const chung = chiSc ? 0 : goc.filter((r) => r.dongViec && ttViec(r.dongViec) === k && r.dongViec.sChung).length;
                     /* PTA Plan quyết [XM-T2] (V22): tab "Chưa làm" có dòng quá hạn → badge ĐỎ (số = số dòng); không có → badge thường (mờ). */
                     const q = k === 'chua' ? goc.filter((r) => r.dongViec && ttViec(r.dongViec) === 'chua' && (chiSc || !r.dongViec.sChung) && (r.dongViec.treNgay ?? 0) > 0).length : 0;
-                    return { key: k, label: nhanTabViec(k), ...(q > 0 ? { badge: { so: n, n, quaHan: q, homNay: 0 } } : { so: n }),
+                    return { key: k, label: nhanTabViec(k), ...(q > 0 ? { badge: { so: n, n, quaHan: q, homNay: 0, ...(chiSc || laBai ? { bai: { n, quaHan: q } } : {}) } } : { so: n }),   /* AUDIT-1611 A2-16: S chéo / Chấm Test đếm "bài" */
                       phu: chung > 0 && <span className="tabular-nums font-normal text-dim" title={t('+ {n} S chéo chung', { n: chung })}>+{chung}<span className="sr-only"> {t('S chéo chung')}</span></span> };
                   })} />
               )}

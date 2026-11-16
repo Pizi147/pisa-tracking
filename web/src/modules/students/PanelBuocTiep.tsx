@@ -9,7 +9,7 @@ import { CanLam, KhoiDaLuu, NutChu, TrangThaiLuu, dauViec, type DaLuuPanel } fro
 import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from './PanelLoTrinhMoi.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { CHU_DA_XONG, HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ngay, thuNgay, tuanLich, type HuongSauThi, type LuaChonSauThi } from '@shared/domain/index.ts';
+import { CHU_DA_XONG, HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ngay, shortDate, tuanLich, type HuongSauThi, type LuaChonSauThi } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { HopGiaHan } from './HopGiaHan.tsx';
 
@@ -113,7 +113,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const dongKetQua = (
     <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 pt-3 text-[14px]">
       <span className="font-semibold text-slate-100"><span className="text-ok">✓</span> {dich(bt.daXong)}</span>
-      {bt.ngayThi && <span className="text-slate-400">· {t('thi {ngay}', { ngay: thuNgay(bt.ngayThi, hn) })}</span>}
+      {bt.ngayThi && <span className="text-slate-400">· {t('thi {ngay}', { ngay: shortDate(bt.ngayThi, hn) })}</span>}
       {!bt.chon && bt.daGiaHan && <span className="text-slate-400">· {t('đã gia hạn')}</span>}
       <span className="flex-1" />
       {/* OV-13q: Gia hạn — hộp nhỏ đè panel này (không đóng panel). */}

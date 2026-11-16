@@ -160,7 +160,8 @@ export async function runPrS4fTests(t: YThucTestKit) {
     assert(d.docThamSoLoc('qua-han').hasOwnProperty('loc') && (d.docThamSoLoc('qua-han') as any).loc === 'qua-han', 'view=qua-han');
     assert(!d.chipHienLoc('qua-han', 'tat-ca') && d.chipHienLoc('qua-han', 'qua-han') && d.chipHienLoc('can-lam', null), 'chip qua-han chỉ hiện khi đang lọc');
     assert(docWeb('modules/students/StudentsPage.tsx').includes("x.key === 'qua-han' ? `/hoc-vien?view=qua-han&classId=${lop.id}`"), 'badge hộp lớp');
-    assert(docWeb('modules/classes/DauTrangLop.tsx').includes("x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)"), 'badge đầu hồ sơ lớp');
+    /* AUDIT-1611 P1-07: GV giữ HV & Lớp lọc em quá hạn; QL (ô đếm việc mọi người) → Công việc › Tất cả lọc lớp. */
+    assert(docWeb('modules/classes/DauTrangLop.tsx').includes(": `/hoc-vien?view=qua-han&classId=${data.id}`)"), 'badge đầu hồ sơ lớp');
   });
 
   // ------------------------------------------------------------------ 5 · Cần hỗ trợ "Chỉ kỹ năng tôi dạy" + badge chờ duyệt lọc đúng lớp

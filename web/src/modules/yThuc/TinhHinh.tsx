@@ -8,7 +8,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { NutDongPanel } from '../../ui/KhuonViec.tsx';
-import { addDaysIso, dsLoi, hanBaoPh, luuRoiTiep, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU, HAN_HANG, addDaysIso, chenHan, dsLoi, hanBaoPh, luuRoiTiep, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
 import { TheLoai } from './BangLan.tsx';
@@ -21,7 +21,7 @@ import { hoanTacLo } from './hoanTacLo.ts';
  *   `gv_tvv`: GV báo tình hình cho TVV, nội dung tự do (KHÔNG phân loại); TVV ghi "Đã báo PH" qua panel Báo PH sẵn có.
  *   `tvv_gvcn`: TVV hỏi GVCN, hạn 3 ngày tính cả hôm nay; GVCN ghi kết quả. Chữ ngắn: không "TVV {tên}" (tên TVV đã ở dưới tên em — chủ SP 12/11).
  */
-const TOI_DA = 500, TOI_THIEU = 10;
+const TOI_DA = 500, TOI_THIEU = CHU_TOI_THIEU;   // N50 (6), cùng máy chủ
 const LINK = 'link min-h-[30px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold max-sm:min-h-[44px]';
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((x) => invalidate(x));
 
@@ -240,7 +240,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
               <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Quản lý chi nhánh')}</b>{/* PTA rà #1708: một em → chỉ người nhận (tên em đã ở dòng Học viên); nhiều em → em nào gửi ai */}{em.length > 1 && <> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</>}</span>
             ))}</dd>
           <dt>{che.loai === 'bao' ? t('Hạn TVV') : t('Hạn')}</dt>
-          <dd className="m-0"><b className="font-semibold text-slate-100">{che.loai === 'hoi' ? t('3 ngày') : t('5 ngày')}</b> · {t('tới {ngay}', { ngay: ngay(che.loai === 'hoi' ? addDaysIso(homNay, 2) : hanBaoPh(homNay), homNay) })}</dd>
+          <dd className="m-0"><b className="font-semibold text-slate-100">{chenHan(che.loai === 'hoi' ? '{hang:tinh_hinh}' : '{han:bao_ph_vi_pham}')}</b> · {t('tới {ngay}', { ngay: ngay(che.loai === 'hoi' ? addDaysIso(homNay, HAN_HANG.tinh_hinh - 1) : hanBaoPh(homNay), homNay) })}</dd>
         </dl>
       )}
       <label className="grid gap-1.5">
@@ -255,7 +255,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
       <div className="flex justify-end gap-2 border-t pt-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn max-sm:h-11 max-sm:flex-1" onClick={ngoai}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary max-sm:h-11 max-sm:flex-1" disabled={luu || ngan || dai || (canEm && !em.length)} onClick={() => void gui()}
-          title={luu ? undefined : canEm && !em.length ? t('Chọn em trước') : ngan ? t('Cần ít nhất 10 ký tự') : dai ? t('Tối đa {n} ký tự', { n: TOI_DA }) : undefined}>
+          title={luu ? undefined : canEm && !em.length ? t('Chọn em trước') : ngan ? t('Cần ít nhất {n} ký tự', { n: TOI_THIEU }) : dai ? t('Tối đa {n} ký tự', { n: TOI_DA }) : undefined}>
           {luu ? t('Đang gửi…') : che.loai === 'bao' ? t('Gửi TVV') : che.loai === 'hoi' ? t('Gửi GVCN') : che.loai === 'tra-loi' ? t('Lưu · gửi TVV') : t('Lưu')}
         </button>
       </div>

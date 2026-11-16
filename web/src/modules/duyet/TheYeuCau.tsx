@@ -14,7 +14,7 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useSession } from '../../lib/session.tsx';
 import {
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanTrangThaiYc, reasonNeedsText,
+  CASE_DISMISS_REASONS, CHU_TOI_THIEU, bacDu, CASE_DISMISS_REASON_LABEL, LOAI_NGUOI_XIN_SUA, deadlineView, kiemGhiRoKhac, laVaiQuanLy, nhanTrangThaiYc, reasonNeedsText,
   type TheYeuCauDto, type TruongDeXuat,
   kyThiCuaChuongTrinh, laDaXuLy,
 } from '@shared/domain/index.ts';
@@ -221,7 +221,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const loiChu = !daBam || !o || o.loai === 'tuan' || o.loai === 'rut' ? null
     : suaKtd ? (!lyDoKtd ? t('Chọn một lý do') : reasonNeedsText(lyDoKtd) ? kiemGhiRoKhac(chu) : null)
     : !chu.trim() ? t('Chưa điền')   // T7 (PR-MTa): không tối thiểu ký tự
-    : o.loai === 'sua' && !thuHoi && chu.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : null;
+    : o.loai === 'sua' && !thuHoi && chu.trim().length < CHU_TOI_THIEU ? t('Mô tả cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null;
   /* DUYET-QL: ở chân panel thứ tự như mockup (Từ chối… · Duyệt chính bên phải); thẻ tự vẽ giữ Duyệt trước. */
   const btnChan = chanEl !== undefined ? 'btn min-h-[44px] sm:min-h-0' : 'btn btn-sm min-h-[44px] sm:min-h-0';
   const nutDuyet = (
@@ -281,7 +281,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
           {/* CD-GON (M4): thẻ ngoài panel — lý do MỘT dòng + "Xem thêm" cùng hàng (mở: đủ lý do + "Nếu duyệt", "Thu gọn" cuối). */}
           <div className={`mt-1 text-[13px] leading-snug text-slate-300 ${panel ? '' : 'flex flex-wrap items-start gap-x-2'}`}>
             <div ref={khungDong} className={panel ? 'rounded-lg bg-[color:var(--surface-2)] px-3 py-2.5' : moHet ? 'basis-full' : 'line-clamp-1 min-w-0'}>
-              {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
+              {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{bacDu(dich(d))}</p>)}
               {/* DUYET-QL: điểm lượt làm em vào SOS (`diemHv` máy chủ đã gắn — 0 câu thêm), cùng mẫu dòng điểm mọi panel. */}
               {panel && yc.diemHv && (
                 <dl className="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
@@ -296,7 +296,8 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
               <button type="button" className="order-last shrink-0 min-h-[44px] text-[12px] text-[color:var(--accent-strong)] hover:underline sm:min-h-0" onClick={() => setMoHet(!moHet)}
                 aria-expanded={moHet}>{moHet ? t('Thu gọn') : t('Xem thêm')}</button>
             )}
-            {yc.neuDuyet && cho && (panel ? (
+            {/* AUDIT-1611 A2-25: đang soạn Từ chối → không hiện "Sau khi duyệt". */}
+            {yc.neuDuyet && cho && o?.loai !== 'tu-choi' && (panel ? (
               /* k3: hậu quả nêu TRƯỚC khi bấm — khối vàng như mockup. */
               <div className="mt-3 rounded-lg border px-3 py-2.5 text-[13px]" style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
                 <b className="block font-semibold" style={{ color: 'rgb(var(--soon-rgb))' }}>{t('Sau khi duyệt:')}</b>

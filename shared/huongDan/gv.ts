@@ -186,7 +186,7 @@ export const HD_GV: HuongDan = {
       id: 'vi-pham', ten: 'Ghi vi phạm', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ dòng em › + Vi phạm / Nhắc nhở' },
       loiTat: ['ho-so-hv', 'p-vi-pham'], cung: 'mở cùng panel ghi vi phạm.',
-      buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Vi phạm / Nhắc nhở</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn. Cần GVCN xử lý ngay thì bật <b>Yêu cầu GVCN xử lý</b>: GVCN có việc, hạn 5 ngày; GVCN không xử lý thì bạn nhận tin kèm lý do.', '<b>Lưu</b>. GVCN nhận tin ở chuông; đủ 3 vi phạm trong 2 tuần thì GVCN phải xử lý.'],
+      buoc: ['Hồ sơ lớp, ở dòng em bấm <b>⋯ › + Vi phạm / Nhắc nhở</b> (hoặc tab <b>Ý thức & Phối hợp</b> › <b>+ Vi phạm / Nhắc nhở</b>).', 'Chọn <b>Ngày</b>, <b>Nhóm</b>, ghi <b>Vi phạm</b>; <b>+ Thêm vi phạm</b> nếu nhiều.', 'Ô <b>Môn</b>: dạy một môn ở lớp thì tự điền; dạy từ 2 môn thì phải chọn. Cần GVCN xử lý ngay thì bật <b>Yêu cầu GVCN xử lý</b>: GVCN có việc, hạn {han:xu_ly_vi_pham}; GVCN không xử lý thì bạn nhận tin kèm lý do.', '<b>Lưu</b>. GVCN nhận tin ở chuông; đủ 3 vi phạm trong 2 tuần thì GVCN phải xử lý.'],
       tuKhac: ['ý thức', 'kỷ luật', 'vi phạm', 'violation'],
     },
     {
