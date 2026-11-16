@@ -483,7 +483,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
     return (
       /* 375 toàn màn (08 NEN-PANEL, `.dt-toan`): `-mx-4` bù đệm `p-4` của <main> — thẻ tràn sát hai mép, không bo góc. */
       <section ref={khung} tabIndex={-1} aria-label={tieuDe} onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented && khung.current?.contains(e.target as Node) && !khung.current.querySelector('[aria-modal="true"]')) dong(); }}
-        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 ${cvNgoai ? 'lg:min-h-[560px]' : ''} max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 lg:max-h-[calc(100dvh-8rem)] ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
+        className={trongCot ? 'flex min-w-0 flex-col -outline-offset-2' : `card flex flex-col -outline-offset-2 ${cvNgoai ? 'lg:min-h-[480px]' : ''} max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0 ${cvNgoai ? 'lg:max-h-[calc(100dvh-18rem)]' : 'lg:max-h-[calc(100dvh-8rem)]'} ${chan ? 'max-sm:overflow-visible sm:overflow-hidden' : 'overflow-hidden'}`}>
         <KhungTrongThe.Provider value={trongThe}><KhungTrongCot.Provider value={false}><KhungTaiCho.Provider value={false}><ThanTrongCot.Provider value={trongCot && !trongThe}>{voi(than)}</ThanTrongCot.Provider></KhungTaiCho.Provider></KhungTrongCot.Provider></KhungTrongThe.Provider>
       </section>
     );
