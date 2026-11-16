@@ -45,7 +45,8 @@ export function RecordViolationPanel({
   studentId: number; studentName?: string;
   /** Mã lớp hiện ở đầu ngăn (`Ghi vi phạm · Tên HV · MB FOU 12`). */
   lop?: string | null;
-  onDone?: () => void;
+  /** AUDIT-1611 A1-17: lần ghi mới → `ids` + `chiNhac` để nơi mở mở sẵn Lịch sử, đánh dấu dòng vừa thêm (nhắc nhở không ở Cần làm). */
+  onDone?: (x?: { ids: number[]; chiNhac: boolean }) => void;
   /** Mở từ trang lớp: danh sách lớp — chọn một hoặc nhiều học viên ngay trong form. Không truyền = một học viên (`studentId`). */
   students?: NguoiChon[];
   /** Có giá trị = đang SỬA vi phạm này, không phải ghi mới. */
@@ -115,8 +116,9 @@ export function RecordViolationPanel({
   const tenChon = hocVien.length === 1 ? tenCua(hocVien[0]) : hocVien.length > 1 ? t('{length} học viên', { length: hocVien.length }) : undefined;
   const nDong = dong.length;
   const tomTat = hocVien.length === 1
-    ? t('Đã ghi {x} cho {tenCua}', { x: nDong > 1 ? t('{nDong} vi phạm', { nDong }) : t('vi phạm'), tenCua: tenCua(hocVien[0]) })
-    : t('Đã ghi vi phạm cho {length} học viên', { length: hocVien.length });
+    /* AUDIT-1611 A1-17: chữ theo công tắc — nhắc nhở không tính bậc, không gọi là "vi phạm". */
+    ? t('Đã ghi {x} cho {tenCua}', { x: chiNhac ? (nDong > 1 ? t('{nDong} nhắc nhở', { nDong }) : t('nhắc nhở')) : nDong > 1 ? t('{nDong} vi phạm', { nDong }) : t('vi phạm'), tenCua: tenCua(hocVien[0]) })
+    : chiNhac ? t('Đã ghi nhắc nhở cho {length} học viên', { length: hocVien.length }) : t('Đã ghi vi phạm cho {length} học viên', { length: hocVien.length });
 
   const suaDong = (key: number, v: Partial<Dong>) => setDong((ds) => ds.map((d) => (d.key === key ? { ...d, ...v } : d)));
   const themDong = () => setDong((ds) => [...ds, moiDong(Math.max(...ds.map((d) => d.key)) + 1, ds[ds.length - 1].ngay)]);
@@ -129,7 +131,7 @@ export function RecordViolationPanel({
     toast.push(hong ? 'error' : 'ok', hong ? t('Chưa rút được {n} vi phạm', { n: hong }) : t('Đã hoàn tác'), { key: 'ghi-vi-pham' });
   };
   const xongHan = (cau: string, ids: number[]) => {
-    lamMoiCache(); reset(); onClose(); onDone?.();
+    lamMoiCache(); reset(); onClose(); onDone?.({ ids, chiNhac });
     toast.hoanTac(cau, () => void hoanTacGhi(ids), { key: 'ghi-vi-pham' });
   };
 
@@ -199,7 +201,7 @@ export function RecordViolationPanel({
 
   /* ✕ / Esc / nền / `Xong`: đã lưu (dở hoặc tệp lỗi) thì làm mới danh sách; đã ghi mà tệp lỗi thì báo kết quả. */
   const dongPanel = () => {
-    if (daGhi) { lamMoiCache(); toast.hoanTac(daGhi.cau, () => void hoanTacGhi(daGhi.ids), { key: 'ghi-vi-pham' }); onClose(); onDone?.(); return; }
+    if (daGhi) { lamMoiCache(); toast.hoanTac(daGhi.cau, () => void hoanTacGhi(daGhi.ids), { key: 'ghi-vi-pham' }); onClose(); onDone?.({ ids: daGhi.ids, chiNhac }); return; }
     if (luu?.daXong.length) { lamMoiCache(); onClose(); onDone?.(); return; }
     onClose();
   };
@@ -271,7 +273,7 @@ export function RecordViolationPanel({
               onXoa={() => setDong((ds) => ds.filter((x) => x.key !== d.key))} />
           ))}
           {!editing && hocVien.length <= 1 && nDong < VI_PHAM_TOI_DA_DONG && (
-            <button type="button" className="btn btn-sm btn-ghost self-start" onClick={themDong}>{t('+ Thêm vi phạm')}</button>
+            <button type="button" className="btn btn-sm btn-ghost self-start" onClick={themDong}>{chiNhac ? t('+ Thêm nhắc nhở') : t('+ Thêm vi phạm')}</button>
           )}
         </div>
 

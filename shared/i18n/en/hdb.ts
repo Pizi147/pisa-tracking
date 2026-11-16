@@ -78,7 +78,7 @@ export const EN_HDB = {
   '<b>Xin ý kiến</b>: <b>Trả lời…</b> hoặc <b>+ Thêm PA</b>.': '<b>Ask manager</b>: <b>Reply…</b> or <b>+ Add PA</b>.',
   'Đã xử lý: <b>Huỷ quyết định</b> · <b>Sửa trả lời…</b>.': 'Handled: <b>Cancel decision</b> · <b>Edit reply…</b>.',
   'Duyệt nhiều': 'Approving many',
-  'Đề xuất PA, Dời lịch Test lần 2: đánh dấu ô ở thẻ cùng loại.': 'PA proposals, 2nd test moves: tick cards of the same type.',
+  'Đề xuất PA: đánh dấu ô ở các thẻ cùng loại.': 'PA proposals: tick cards of the same type.',
   '<b>Duyệt n yêu cầu</b> hoặc <b>Từ chối n…</b>.': '<b>Approve n requests</b> or <b>Decline n…</b>.',
   'Việc của GV': 'Teachers\' tasks',
   'Việc vận hành': 'Operations tasks',

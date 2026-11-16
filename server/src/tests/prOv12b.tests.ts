@@ -55,7 +55,7 @@ export async function runPrOv12bTests(t: any) {
   check('OV12b-1 · luật chung: thiếu / ngắn / thiếu nhóm khi dưới kỳ vọng; miễn ô không điểm, MT cũ, MT0', () => {
     const o = (x: any) => d.thieuNhanXetMt({ nenCo: true, coDiem: true, band: 6, kyVong: 5.5, nhanXet: NX, nhom: [], ...x });
     assert(o({ nhanXet: null }) === 'ghi-nhan-xet' && o({ nhanXet: '   ' }) === 'ghi-nhan-xet', 'trống');
-    assert(o({ nhanXet: 'Làm tốt' }) === 'nhan-xet-ngan' && o({ nhanXet: '123456789' }) === 'nhan-xet-ngan' && o({ nhanXet: '1234567890' }) === null, 'ngưỡng 10');
+    assert(o({ nhanXet: 'Làm tốt' }) === 'nhan-xet-ngan' && o({ nhanXet: '1234567' }) === 'nhan-xet-ngan' && o({ nhanXet: '12345678' }) === null, 'ngưỡng 8 (N50-6)');
     assert(o({ band: 4.5 }) === 'chon-nhom' && o({ band: 4.5, nhom: [R[1]] }) === null && o({ band: 4.5, kyVong: null }) === null, 'nhóm khi dưới kỳ vọng');
     assert(o({ coDiem: false, nhanXet: null }) === null && o({ nenCo: false, nhanXet: null }) === null, 'miễn');
     assert(d.nenCoNhanXetMt({ kind: 'mock', lichSu: false }) && !d.nenCoNhanXetMt({ kind: 'mock', lichSu: true })

@@ -14,6 +14,7 @@ import { locTheoChuongTrinh, lopCuaTap } from './chuongTrinh.ts';
 import { metricSet, nhomCaseChuaChot, rowsFor, type MetricRow } from './metrics.ts';
 import { diemTuEval } from './diemDong.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
+import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 
 /**
  * BẢNG "THEO CHI NHÁNH" (§3.2, mockup 02 phương án A; kiểm kê P5) — Học viên · Dưới kỳ vọng · SOS · Case mở · Thiếu PA học
@@ -52,7 +53,7 @@ const soCua = (t: Tap): Record<CotBang, OBang> => {
 };
 const NHAN_COT: Record<CotBang, string> = {
   hocVien: 'Học viên', duoiKyVong: 'Dưới kỳ vọng', sos: 'SOS hiện tại', caseMo: 'Case đang mở', thieuPa: 'Case chưa có PA', duDuLieu: 'Tỷ lệ đủ dữ liệu',
-  caseChuaChotHv: 'HV có Case chưa chốt PA', caseChuaChot: 'Case chưa chốt PA',
+  caseChuaChotHv: 'HV có Case chưa có PA', caseChuaChot: 'Case chưa có PA',
   chuaDiem: 'chưa điểm', sos1: 'SOS 1', sos2: 'SOS 2', sos3: 'SOS 3', daThiChoKq: 'Đã thi · chờ KQ',
 };
 
@@ -122,14 +123,11 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
       if (sMau.has(sid)) t.duDuLieuMau.add(sid);
     }
   }
+  const { emCase, caseMoIds, chotIds } = tapCaseQl(caseMo.ids, chot);
   const lopCuaCase = lopCuaTap('case', [...new Set([...caseMo.ids, ...thieu.ids, ...chot.ids])]);
-  for (const id of caseMo.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
+  for (const id of caseMoIds) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
   for (const id of thieu.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
-  const emCase = new Map<number, number>();
-  theoLoJson(chot.ids, (json) => {
-    for (const r of conn.prepare(`SELECT id, student_id FROM sos_cases WHERE id IN (${DS_JSON})`).all(json) as any[]) emCase.set(r.id, r.student_id);
-  });
-  for (const id of chot.ids) {
+  for (const id of chotIds) {
     const l = lopCuaCase.get(id)?.classId;
     if (!l || !tapLop.has(l)) continue;
     tapLop.get(l)!.caseChuaChot.add(id);
@@ -140,9 +138,9 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   const danSo = new Set(locTheoChuongTrinh('hoc-vien', studentsInScope(p, branchId), f.ct));
   danSo.forEach((x) => tongTap.hocVien.add(x));
   sDuoi.forEach((x) => tongTap.duoiKyVong.add(x)); sSos.forEach((x) => tongTap.sos.add(x));
-  caseMo.ids.forEach((x) => tongTap.caseMo.add(x)); thieu.ids.forEach((x) => tongTap.thieuPa.add(x));
+  caseMoIds.forEach((x) => tongTap.caseMo.add(x)); thieu.ids.forEach((x) => tongTap.thieuPa.add(x));
   sDu.forEach((x) => tongTap.duDuLieu.add(x)); sMau.forEach((x) => tongTap.duDuLieuMau.add(x));
-  chot.ids.forEach((x) => { tongTap.caseChuaChot.add(x); if (emCase.get(x)) tongTap.caseChuaChotHv.add(emCase.get(x)!); });
+  chotIds.forEach((x) => { tongTap.caseChuaChot.add(x); if (emCase.get(x)) tongTap.caseChuaChotHv.add(emCase.get(x)!); });
   if (f.chuY) chiaCotChuY(p, base, f.ct === 'ft', tapLop, tongTap, sSos, today);
 
   /* UX-1: phần của tập gốc không rơi vào hàng lớp nào (Case / em của lớp đã kết thúc) gom vào MỘT hàng — Σ hàng = hàng tổng. */
@@ -179,8 +177,25 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   }
   const tenChiNhanh = branchId ? (lop[0]?.branch_name ?? (conn.prepare('SELECT name FROM branches WHERE id = ?').get(branchId) as any)?.name ?? null) : null;
   /* OV-15h1 (C23): phân rã Case chưa chốt PA của hàng tổng — cùng tập `chot` (nhóm của chỉ số, đã lọc khung). */
-  const phanRa = f.chuY ? Object.fromEntries(Object.entries(chot.byKind ?? {}).map(([k, v]) => [k, v.length])) : null;
+  const giu = new Set(chotIds);
+  const phanRa = f.chuY ? Object.fromEntries(Object.entries(chot.byKind ?? {}).map(([k, v]) => [k, v.filter((x) => giu.has(x)).length])) : null;
   return { cheDo, hang, hangConLai, tongTap, tenChiNhanh, branchId, phanRa };
+}
+
+/*
+ * AUDIT-1611 P1-06 (+ B2-14): "Case chưa có PA" = ngoặc "Chưa có PA" của panel (Chờ mô tả + Chờ chọn PA — bỏ nhóm `paXong` "Chờ kết quả cuối", cùng
+ * `buocCuaDong`), chỉ em ĐANG HỌC (em Tạm dừng: Case giữ nguyên nhưng không đếm — như SOS, HV & Lớp, Công việc). "Case đang mở" cùng lọc em đang học.
+ * MỘT hàm cho Tổng quan (bảng chi nhánh / lớp) và Báo cáo Phân tích. Một câu: em của Case + trạng thái em.
+ */
+export function tapCaseQl(caseMo: readonly number[], chot: { ids: number[]; byKind?: Record<string, number[]> }) {
+  const emCase = new Map<number, number>();
+  const khongHoc = new Set<number>();
+  theoLoJson([...new Set([...caseMo, ...chot.ids])], (json) => {
+    for (const r of db().prepare(`SELECT sc.id, sc.student_id, (${HV_DANG_HOC_SQL('s')}) AS hoc FROM sos_cases sc JOIN students s ON s.id = sc.student_id WHERE sc.id IN (${DS_JSON})`)
+      .all(json) as any[]) { emCase.set(r.id, r.student_id); if (!r.hoc) khongHoc.add(r.id); }
+  });
+  const paXong = new Set(chot.byKind?.paXong ?? []);
+  return { emCase, caseMoIds: caseMo.filter((id) => !khongHoc.has(id)), chotIds: chot.ids.filter((id) => !khongHoc.has(id) && !paXong.has(id)) };
 }
 
 /** `branchId` là chi nhánh ĐÃ GIẢI (đã chọn, hoặc QL một chi nhánh được server tự khoanh) — web dùng nó cho bảng Theo giáo viên. */

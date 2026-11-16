@@ -1413,9 +1413,13 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* XEP-CHAM-TEST (chủ SP 16/11): chụp lại 6 băm — đổi CÓ CHỦ Ý: lớp con (`con`) của dòng gộp Nhập điểm theo thứ tự chấm (`soSanhViecCham`); đã kiểm: trả thứ tự con về
        `sapViec` thì băm khớp bản cũ (lệch CHỈ thứ tự con). Trước: GVCN toi 0e244af2868788f4, GVCN_THUONG toi 0e244af2868788f4, QL tat-ca 7de18f10f09e3ba7, QT tat-ca ada320e08f4702f9,
        QT tat-ca cn 87f85b45dd8e4ec9, QL gvcn 80509247fdf10e9e */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '5b567fb9fc7aa168', 'GVBM toi': '9dc4aef5f266094a',
-    'GVCN_THUONG toi': '5b567fb9fc7aa168', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '7441e526cfa9d8c7', 'QT tat-ca': '41c9031fd1f7f54f',
-    'QT tat-ca cn': '218778b5e821a297', 'QL gvcn': 'ff446108d217da2d', 'GVS toi': '7a4bed4a0aeddaec',
+    /* AUDIT-1611 CHU-DUNG-LUAT (16/11): chụp lại 9 băm — đổi CÓ CHỦ Ý ở `mywork.ts` / `canCham.ts` / `banGiao.ts`: B3-18 kỹ năng dòng Chấm nối theo L·R·W·S;
+       A1-05 việc "Nhập điểm MT cũ" nút "Nhập điểm ›" + link `&ma=` (tiêu đề trang có mã lớp); B3-09 Bàn giao môn một em ghi tên em → lớp đến. ADMIN, QL toi giữ.
+       Trước (main 16/11 sau AU-SO): QT toi 11db1ca94e232a13, GVCN toi 5b567fb9fc7aa168, GVBM toi 9dc4aef5f266094a, GVCN_THUONG toi 5b567fb9fc7aa168, QL tat-ca 7441e526cfa9d8c7,
+       QT tat-ca 41c9031fd1f7f54f, QT tat-ca cn 218778b5e821a297, QL gvcn ff446108d217da2d, GVS toi 7a4bed4a0aeddaec */
+    'QL toi': '09c37684928d6602', 'QT toi': '6749974fbb534de7', 'GVCN toi': 'cb7ba93cdce874b0', 'GVBM toi': 'dea23f4bd557d1c7',
+    'GVCN_THUONG toi': 'cb7ba93cdce874b0', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '99ec209105649976', 'QT tat-ca': 'dc386f02aa5bc3ac',
+    'QT tat-ca cn': '352e3d0da47441d2', 'QL gvcn': '85de014ca21d027c', 'GVS toi': 'dd037332ce5913ce',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

@@ -22,7 +22,7 @@ import { CHU_TOI_THIEU_CASE,
   datLaiNguoi, khacNguoi, loiFormPa, nguoiCuaPa, nguoiMacDinh, paMoi, paPayload, type GiaTriPa,
   type CaseDismissReason,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay, quyCheChonPa, quyCheKhongTheoDoi, quyCheXacNhanCase, quyCheXacNhanPa } from '@shared/domain/index.ts';
+import { chenHan, hanDuyetNgay, quyCheChonPa, quyCheKhongTheoDoi, quyCheXacNhanCase, quyCheXacNhanPa } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
 
@@ -244,7 +244,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
       const yc = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.doiPa?.yeuCauId ?? null;
       onXong({
         chu: t('Đã gửi Quản lý duyệt'),
-        phu: t('Giữ {gv} · quá 3 ngày chưa trả lời: chốt theo PA của bạn', { gv: tenGv }),
+        phu: chenHan(t('Giữ {gv} · quá {han:giu_pa_gv} chưa trả lời: chốt theo PA của bạn', { gv: tenGv })),
         hoanTac: yc ? async () => { await api.post(`/yeu-cau/${yc}/rut`); invalidateCases(); } : undefined,
       });
     } catch (e: any) { setLoiLuu(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }

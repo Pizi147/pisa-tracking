@@ -1,6 +1,11 @@
 import { t } from '../i18n/index.ts';
 /** "KHÁC" (T13, YC-8): chọn Khác → ô chữ nhỏ ngay dưới, bắt buộc ≥ 3 ký tự. Thay luật cũ "Khác thì mô tả ≥ 30 ký tự" (V05, cases.ts). */
 export const KHAC_TOI_THIEU = 3;
+/**
+ * AUDIT-1611 · luật N50 (6) (chủ SP 16/11): MỌI ô lý do / nhận xét / mô tả bắt buộc dùng MỘT ngưỡng — 8 ký tự (trước rải 8 / 10 / 15; bàn giao 15 → 8).
+ * Các hằng theo việc (`CHU_TOI_THIEU_CASE`, `NHAN_XET_TOI_THIEU`…) chỉ là tên gọi của số này. Ô tên ngắn ("Khác", tên vi phạm) giữ 3.
+ */
+export const CHU_TOI_THIEU = 8;
 const MA_KHAC = new Set(['other', 'khac', 'other_proposal']);
 export function laKhac(ma: string | null | undefined): boolean { return !!ma && (MA_KHAC.has(ma) || ma.endsWith('.other')); }
 export function kiemGhiRoKhac(text: unknown): string | null {

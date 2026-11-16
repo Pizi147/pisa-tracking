@@ -59,5 +59,5 @@ export const EN_UI_CV_TVV = {
   'Việc cần làm': 'To do',
   'Hạn Báo PH': 'Parent call due date',
   'Hạn 23:59 ngày lưu xử lý + 4 (tính cả T7, CN). Chưa liên hệ được: việc vẫn mở, giữ hạn.': 'Due 23:59 on the measure save date + 4 (weekends count). Could not reach: the task stays open, same due date.',
-  'Lưu điểm thi thật trước; bước tiếp hạn 7 ngày từ ngày có kết quả.': 'Save the real exam scores first; the next step is due 7 days after the result.',
+  'Lưu điểm thi thật trước; bước tiếp hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả.': 'Save the real exam scores first; the next step is due {han:buoc_tiep_sau_thi} after the result.',
 } satisfies Record<string, Dich>;

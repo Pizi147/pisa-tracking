@@ -10,7 +10,7 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { ChonNgayGan } from '../../ui/ChonNgay.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { bacDu, hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU, bacDu, hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -73,7 +73,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
     setTt({ ngay: d.performedOn ?? '', moTa: d.note ?? '', nguoi: d.nguoiNgoai ? { kieu: 'ngoai', ten: d.nguoiNgoai } : d.nguoiId ? { kieu: 'tai_khoan', id: d.nguoiId, ten: d.nguoi ?? '' } : null });
   };
   const dong = () => { setSua(false); setTt(null); setHoiXoa(false); setLyDo(''); setLoiMay(null); onClose(); };
-  const loiTt = tt ? (tt.moTa.trim().length < 10 ? t('Mô tả cần ít nhất 10 ký tự') : d?.status === 'done' && !tt.ngay ? t('Chọn ngày thực hiện') : d?.status === 'done' ? nguoiThieu(tt.nguoi, true) : null) : null;
+  const loiTt = tt ? (tt.moTa.trim().length < CHU_TOI_THIEU ? t('Mô tả cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : d?.status === 'done' && !tt.ngay ? t('Chọn ngày thực hiện') : d?.status === 'done' ? nguoiThieu(tt.nguoi, true) : null) : null;
 
   const luuTt = async () => {
     setDaBam(true);
@@ -171,7 +171,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                     <ChonNguoi nhom="nhan_vien" value={tt.nguoi} onChange={(v) => setTt({ ...tt, nguoi: v })} studentId={d.studentId} />
                   </Truong>
                 </Hang2>
-                <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < 10 ? t('Cần ít nhất 10 ký tự') : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
+                <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
                   <textarea className="field w-full" rows={3} value={tt.moTa} onChange={(e) => setTt({ ...tt, moTa: e.target.value })} />
                 </Truong>
                 {loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
@@ -190,7 +190,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
               <Khoi tieuDe={t('Đề xuất QL duyệt')}>
                 {rutDuoc && !tt && !sua && <button type="button" className="btn btn-sm min-h-[44px] self-start sm:min-h-0" onClick={moSuaTt}>{t('Sửa')}</button>}
                 {tt ? (
-                  <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < 10 ? t('Cần ít nhất 10 ký tự') : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
+                  <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
                     <textarea className="field w-full" rows={3} value={tt.moTa} onChange={(e) => setTt({ ...tt, moTa: e.target.value })} />
                   </Truong>
                 ) : <p className="m-0 whitespace-pre-wrap break-words text-sm text-slate-200">{d.note ?? '—'}</p>}

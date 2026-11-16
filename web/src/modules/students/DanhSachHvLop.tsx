@@ -140,7 +140,7 @@ export function OViecCan({ v, tvv, onMo }: { v: ViecEm[] | undefined; tvv?: bool
   if (!v?.length) return null;   // ⑥ R6.3: không việc = ô trống (không "—")
   return (
     <span className="flex flex-wrap items-center gap-1.5">
-      {chipViecEm(v.map((x) => x.it), tvv).map((c) => <NutChipViec key={c.tab} c={c} doiTrang={false} onBam={() => onMo(c.dau, c.ds)} />)}
+      {chipViecEm(v.map((x) => x.it), tvv).map((c) => <NutChipViec key={c.tab} c={c} onBam={() => onMo(c.dau, c.ds)} />)}
     </span>
   );
 }

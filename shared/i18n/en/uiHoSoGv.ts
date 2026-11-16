@@ -31,6 +31,7 @@ export const EN_UI_HO_SO_GV = {
   'thiếu {n}': 'short by {n}',
   'vượt {n}': 'above by {n}',
   'Kỳ xem': 'Period',
+  'Bỏ lọc chương trình': 'Clear programme filter',
   'PA cải thiện': 'Plans improved',
   'Tuần đầu phải trước tuần cuối.': 'The first week must be before the last week.',
   'Vai': 'Role',

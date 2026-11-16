@@ -60,7 +60,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   check('QC-GAN · Q74 / Q75 / Q77 Cuối khoá + Q83 Xuất báo cáo PH: câu khớp mã (hạn chốt từ mocLoTrinh, Tutor từ mocThuong, 7 ngày của việc Admin) và gắn đúng chỗ', () => {
     const q = (o: any) => d.quyCheChotLoTrinh({ trungTam: false, khacGoiY: false, tutor: 10, hanChot: null, homNay: H, ...o }).chu as string;
     const moc = d.mocLoTrinh('2026-10-05');
-    assert(q({ hanChot: moc.hanChot }) === `Hạn ${d.thuNgay(moc.hanChot, H)} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp`, q({ hanChot: moc.hanChot }));
+    assert(q({ hanChot: moc.hanChot }) === `Hạn ${d.shortDate(moc.hanChot, H)} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp`, q({ hanChot: moc.hanChot }));
     assert(!/thứ Năm/i.test(q({ hanChot: moc.hanChot })), 'không cứng "thứ Năm" — hạn chốt cấu hình được');
     assert(q({ khacGoiY: true }) === 'Khác gợi ý: cần lý do', 'Q75');
     const n = d.mocThuong().khongDatKyVong.tutor;

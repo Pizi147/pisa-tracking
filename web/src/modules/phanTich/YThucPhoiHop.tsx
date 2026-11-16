@@ -204,7 +204,8 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
       <DaiChiSo ds={[
         { ten: t('HV cần chú ý'), ky: t('hôm nay'), gt: <OSo giaTri={d.hvCanChuY.length} nguon={nguon('hv-can-chu-y', 'hv')} tieuDe={t('HV cần chú ý')} vung="chi-so" />, mau: nhom || undefined },
         { ten: t('Vi phạm'), ky: t('trong kỳ'), gt: <OSo giaTri={viPham} nguon={nguon('tong', 'vi-pham')} tieuDe={t('Vi phạm')} vung="chi-so" />, mau: `${nhanSoVoiTruoc(d.soVoiTruoc).chu} ${t('so kỳ trước')}` },
-        { ten: t('Chưa xử lý'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" />, mau: t('vi phạm') },   // PT-GON (M3): "trên n vi phạm" = ô Vi phạm ngay cạnh; B10 mockup: dòng phụ đơn vị
+        /* AUDIT-1611 P1-08: "Chưa xử lý" = hiện tại (mọi vi phạm còn mở, như Công việc) — cùng tập bảng lớp + bảng học viên; "trong kỳ" chỉ cho Vi phạm. */
+        { ten: t('Chưa xử lý'), ky: t('hiện tại'), gt: <OSo giaTri={cong('chuaXuLy')} nguon={nguon('tong', 'chua-xu-ly')} tieuDe={t('Chưa xử lý')} vung="chi-so" />, mau: t('vi phạm') },   // PT-GON (M3): "trên n vi phạm" = ô Vi phạm ngay cạnh; B10 mockup: dòng phụ đơn vị
         { ten: t('Lớp có vi phạm'), gt: <OSo giaTri={lop.length} nguon={nguon('tong', 'lop')} tieuDe={t('Lớp có vi phạm')} vung="chi-so" />, mau: siSo ? `${hv}/${siSo} HV` : hv ? t('{n} HV', { n: hv }) : undefined },
       ]} />
     );

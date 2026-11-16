@@ -4,7 +4,7 @@
  * Mỗi lần lưu: làm mới bản chụp mới nhất (lộ trình đã đóng) + nhật ký. OV-8a: KHÔNG tự Lưu trữ nữa — có kết quả thì Quản lý chọn Bước tiếp (`buocTiep.ts`).
  */
 import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
-import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, thuNgay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, lopDayDu, type Principal } from '../permissions.ts';
@@ -250,7 +250,7 @@ export function loTrinhChoKetQuaThi(today: string): { c: any; s: TrangThaiSauThi
 }
 /** "Đã thi T7 10/10 · hạn 17/10 · đã gia hạn" — dòng phụ việc Công việc (OV-13q). */
 export const chuDaThi = (s: TrangThaiSauThi, today: string): string =>
-  [s.ngayThi ? `Đã thi ${thuNgay(s.ngayThi, today)}` : null, s.han ? `hạn ${ngay(s.han, today)}` : null, s.daGiaHan ? 'đã gia hạn' : null].filter(Boolean).join(' · ');
+  [s.ngayThi ? `Đã thi ${ngay(s.ngayThi, today)}` : null, s.han ? `hạn ${ngay(s.han, today)}` : null, s.daGiaHan ? 'đã gia hạn' : null].filter(Boolean).join(' · ');
 
 /**
  * Một dòng việc cho mỗi lộ trình FT chưa có kết quả thi thật (chưa đủ 4 kỹ năng, không "Không thi") mà đã qua ngày thi (OV-13q: từ HÔM SAU ngày thi).

@@ -60,7 +60,7 @@ Trên hàng: session đề xuất ô MT gần nhất của em đã thi ghi "—"
 
 | Khung | Thành phần (nguồn chuẩn) | TRƯỚC (web) | SAU (mockup) | GIỮ / ĐỔI / BỎ |
 |---|---|---|---|---|
-| mọi | Đầu trang | tên · Xem (`<select>`) · FT/LT · Xuất Excel · + Thêm học viên · ⋯ (+ Lớp mới · Lưu trữ) | như cũ + **"Lưu trữ ›"** link có số cho vai đã có quyền (R6.7, cả 375; TVV / CX không có); ⋯ còn + Lớp mới | GIỮ + đưa link ra ngoài ⋯ |
+| mọi | Đầu trang | tên · Xem (`<select>`) · FT/LT · Xuất Excel · + Thêm học viên · **+ Lớp** (QL / Quản trị; 16/11 thay ⋯ một mục — AUDIT A2-18; 375 giữ ⋯ có Xuất · Thêm · + Lớp mới) | như cũ + **"Lưu trữ ›"** link có số cho vai đã có quyền (R6.7, cả 375; TVV / CX không có); ⋯ còn + Lớp mới | GIỮ + đưa link ra ngoài ⋯ |
 | mọi | Thanh tab (⑤ H1) | `HangTab v8 soMo`, số trong viên xám | `.tabs` chuẩn, badge **mờ** (chỉ đếm) · Lịch thi không mang số việc (lời 35) | ĐỔI dáng |
 | mọi | Ô "Xem" (⑤ A, dáng gọn) | `<select>` "Xem HV của tôi ▾" | ô chọn có tìm cùng cỡ ô lọc, nhóm Chi nhánh · Khác, có số lớp / HV | ĐỔI dáng, GIỮ URL `phamVi`/`cn` |
 | Tất cả · SOS · Lịch thi | Hàng lọc | Tất cả: Tìm + chip; SOS / Lịch thi: Tìm + `<select>` Mọi lớp (+ Mọi TVV ở Lịch thi) — mỗi tab một thứ tự | MỘT thứ tự, cùng chỗ: Tìm · **Mọi lớp** · **Mọi TVV** (ô chọn có tìm, "Lớp của tôi" / "Tôi" trước) · lọc riêng của tab · phải (R6.2) | ĐỔI |
@@ -94,7 +94,7 @@ Trên hàng: session đề xuất ô MT gần nhất của em đã thi ghi "—"
 |---|---|---|---|---|
 | 1 | Xuất Excel | mọi vai | đầu trang (giữ); 375 trong ⋯ | |
 | 2 | + Thêm học viên | vai có quyền | đầu trang (giữ); 375 trong ⋯ | |
-| 3 | + Lớp mới | QL / Quản trị | ⋯ đầu trang (giữ) · rỗng Phân công | |
+| 3 | + Lớp | QL / Quản trị | nút "+ Lớp" cạnh + Thêm học viên (1440, 16/11); 375 trong ⋯ · rỗng Phân công | |
 | 4 | Lưu trữ | GV / QL / Quản trị / Admin (trong ⋯) | **link "Lưu trữ ›"** đầu trang cho đúng các vai đó (cả 375, cạnh ⋯); TVV / CX không có lối Lưu trữ như nay — không vẽ | R6.7, [XM-2] đã quyết |
 | 5 | Xem (chi nhánh / phạm vi) | nhiều phạm vi | ô Xem (ô chọn có tìm) | |
 | 6 | Fast Track / Lớp thường | mọi vai | đoạn đầu trang (giữ) | |

@@ -38,7 +38,8 @@ export function KhoanhPhanTu() {
     let lan = 0;
     let truoc = NaN;
     const id = window.setInterval(() => {
-      const x = [...document.querySelectorAll([chi.hd].flat().map((h) => `[data-hd="${h}"]`).join(','))].find(thay);
+      /* AUDIT-1611 A3-10: `hd` là danh sách theo THỨ TỰ ƯU TIÊN — ô trong panel đang mở trước, dòng danh sách sau. */
+      const x = [chi.hd].flat().map((h) => [...document.querySelectorAll(`[data-hd="${h}"]`)].find(thay)).find(Boolean);
       /* HD-CHI: đợi phần tử đứng yên một nhịp — khối phía trên còn tải (Yêu cầu của tôi trên "Lớp tôi dạy") sẽ đẩy nó ra ngoài màn sau khi cuộn. */
       const top = x ? x.getBoundingClientRect().top : NaN;
       const yen = top === truoc;

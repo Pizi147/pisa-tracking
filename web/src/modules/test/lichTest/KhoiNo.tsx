@@ -35,6 +35,8 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
   baoChuaLuu: (khoa: string, n: number) => void;
 }) {
   const soBai = no.reduce((n, d) => n + conCua(d), 0);
+  /* AUDIT-1611 B2-09: "n lớp" chỉ đếm lớp có bài (của người xem) — hàng S chéo 0 bài vẫn hiện, không vào số đầu khối ("1 lớp · 0 bài" sai). */
+  const soLop = no.filter((d) => conCua(d) > 0).length;
 
   /* Hàng đang mở mà máy chủ không còn trả thì chèn lại đúng chỗ cũ. */
   const ds = useMemo(() => {
@@ -64,7 +66,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
 
   return (
     <div id="lich-test-no">
-      <NhomDau id="lich-test-no-than" qua={soBai > 0} mo={mo} onMo={onMo} tieuDe={tieuDe} phu={t('{soLop} lớp · {n} bài', { soLop: no.length, n: soBai })}>
+      <NhomDau id="lich-test-no-than" qua={soBai > 0} mo={mo} onMo={onMo} tieuDe={tieuDe} phu={t('{soLop} lớp · {n} bài', { soLop, n: soBai })}>
         {/* GD-11a (⑦ A1): hàng Quá hạn cùng bộ cột với hàng lớp (Lớp · Đợt · Môn · Hạn · còn chờ · số bài · nút) — các bảng thẳng cột. */}
         <table className="lt-bang w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
           {gon ? <colgroup><col /></colgroup> : <ColLichTest />}

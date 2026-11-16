@@ -202,7 +202,7 @@ export default function ClassOverviewPage() {
         } : undefined} />
       )}
       {tab === 'phan-tich' && <PhanTichLopTab classId={data.id} />}
-      {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })}
+      {tab === 'bao-cao-ph' && <TabBaoCaoPh lopId={data.id} ct={data.programme?.code ?? data.kind} dot={params.get('dot')} onDot={(ma) => doiThamSo({ dot: ma })} viet={params.get('viet') === '1'} onViet={() => doiThamSo({ viet: null })}
         onDuHet={(ma, du) => setBcDu((x) => (du ? ma : x === ma ? null : x))} onDoiDot={() => { invalidate('/classes'); reload(); }} />}
       </div>
 

@@ -63,7 +63,7 @@ export async function runCauHinhCaseSosTests(t: YThucTestKit) {
     /* PHOI-HOP-V2 XM-1: Nội dung bắt buộc (≥ 1) khi GVCN xác nhận; Meeting CX: gửi TVV tuỳ chọn + bước TVV 5 ngày, ≥ 10 ký tự; lớp thường Báo PH kết quả Test: không. */
     assert(dm.toiThieuGhiChu('cx_meeting_family') === 0 && dm.toiThieuGhiChu('talk_student') === 1 && dm.toiThieuGhiChu('bao_ph_tvv') === 0, 'ghi chú tối thiểu');
     const goc = dm.buocTvvViec({ kind: 'cx_meeting_student', pb_moc: null });
-    assert(goc?.hanNgay === 5 && goc?.toiThieu === 10 && dm.buocTvvViec({ kind: 'talk_family', pb_moc: null }) === null, `bước TVV bản gốc: ${JSON.stringify(goc)}`);
+    assert(goc?.hanNgay === 5 && goc?.toiThieu === 8 &&   /* N50-6: 10 → 8 */ dm.buocTvvViec({ kind: 'talk_family', pb_moc: null }) === null, `bước TVV bản gốc: ${JSON.stringify(goc)}`);
     for (const l of dm.LOAI_CAU_HINH) assert(dm.kiemCauHinh(l, dm.cauHinhGoc()[l]).length === 0, `bản gốc ${l} hợp lệ: ${JSON.stringify(dm.kiemCauHinh(l, dm.cauHinhGoc()[l]))}`);
     assert(dm.benCua(null) === 'ft' && dm.benCua('FT') === 'ft' && dm.benCua('FOU') === 'thuong' && dm.benCua('KET') === 'thuong', 'benCua');
   });

@@ -4,6 +4,7 @@
  */
 import { DUONG_TAB_CONG_VIEC } from './dieuHuong.ts';
 import { NHOM_VIEC, demDongViec, nhomViecCua, type DongDem, type NhomViec } from './tongQuan.ts';
+import { mondayOfDate } from './week.ts';
 
 /** Ô bấm được ở hồ sơ GV / bảng GV chi nhánh (Q2, Q11). Mỗi ô một hàm tập ở server/src/giaoVien/hoSo.ts. */
 /* GD-15: `viec` — dòng việc của GV (nhóm `nhom`, `qh=1` chỉ quá hạn): panel "Việc đang tồn" tại chỗ (cùng `dong` + `demViecTheoNhom`). */
@@ -35,6 +36,15 @@ export function demViecTheoNhom(dong: readonly (DongDem & { group: string })[]):
  * Đường tới Công việc đã lọc đúng người + nhóm (Q4). `khung=tat-ca` để lựa chọn khung đã nhớ không làm lệch số.
  * Tab Việc học viên là `/cong-viec` (không có đoạn `/ho-tro` — đoạn đó bị trang chuyển về `/cong-viec` và mất bộ lọc).
  */
+/**
+ * AUDIT-1611 P1-05 (mockup hồ sơ GV H4 "kỳ đi theo trang nguồn"): link tên GV mang kỳ + khung (`ct`) của trang đang xem → hồ sơ GV mở đúng kỳ đó (ô tuần =
+ * thứ Hai), dải Việc · Chấm chỉ lớp khung đó — số % ở hồ sơ = số dòng vừa thấy. Không kỳ → hồ sơ dùng mặc định của nó.
+ */
+export function duongHoSoGv(gvId: number, ky?: { tu: string; den: string } | null, ct?: string | null): string {
+  const q = [...(ky ? [`tu=${mondayOfDate(ky.tu)}`, `den=${mondayOfDate(ky.den)}`] : []), ...(ct === 'ft' || ct === 'thuong' ? [`ct=${ct}`] : [])];
+  return `/giao-vien/${gvId}${q.length ? `?${q.join('&')}` : ''}`;
+}
+
 export function duongViecCuaGv(gvId: number, nguoiXem: { userId: number; laQuanLy: boolean }, nhom: NhomViec | null, chiQuaHan = false): string {
   const q = new URLSearchParams();
   if (nguoiXem.laQuanLy) q.set('nguoi', gvId === nguoiXem.userId ? 'toi' : String(gvId));

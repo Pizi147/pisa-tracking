@@ -20,7 +20,7 @@ import { useSession } from '../../lib/session.tsx';
 import { BAC_1, IconNhom, KeBac2, NET_CAY, NguoiGiu, ThePhu, chuDau } from '../congViec/DanhSachViec.tsx';
 import { TheYeuCau } from './TheYeuCau.tsx';
 import {
-  LOAI_YC_META, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy, hanDuyetNgay, quyCheDuyet,
+  LOAI_YC_META, bacDu, PHAN_LOAI_CAN_QUYET, PHAN_LOAI_LABEL, TRAN_HANG_LOAT, chiaLo, chonHet, chonMot, laPhanLoai, nhanTrangThaiYc, tomTatKetQuaHangLoat, laDaXuLy, hanDuyetNgay, quyCheDuyet,
   type KhoaChip, type LoaiYeuCau, type TheYeuCauDto,
 } from '@shared/domain/index.ts';
 
@@ -433,7 +433,7 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
         {/* Mockup #cv nth=1: bối cảnh vẫn đọc được sau khi quyết (bản chụp thẻ lúc quyết — chỉ đọc). */}
         {xong && (
           <div className="mt-3 rounded-lg bg-[color:var(--surface-2)] px-3 py-2.5 text-[13px] leading-snug text-slate-300">
-            {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{dich(d)}</p>)}
+            {yc.dong.map((d, i) => <p key={i} className="m-0 whitespace-pre-line">{bacDu(dich(d))}</p>)}
             {yc.diemHv && (
               <dl className="m-0 mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-start gap-x-3 border-t pt-2" style={{ borderColor: 'var(--line)' }}>
                 <dt className="pt-1.5 text-[13px] text-dim">{t('Điểm')}</dt><dd className="m-0 min-w-0"><DongDiem d={yc.diemHv} /></dd>
