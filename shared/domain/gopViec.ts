@@ -13,6 +13,7 @@
  * GD-20c: Ghi kết quả PA gộp theo lớp + kỳ (hạn kỳ) — dòng gộp mở lưới (`moCaDong` ở web).
  */
 import { tuanLich } from './hienThiNgay.ts';
+import { soSanhLopCham } from './tenLop.ts';
 import { dich, t } from '../i18n/index.ts';
 
 
@@ -82,6 +83,16 @@ const nang = (u: ViecGopDuoc['urgency']) => (u === 'overdue' ? 0 : u === 'today'
 const sapViec = (a: ViecGopDuoc, b: ViecGopDuoc) =>
   nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.studentName.localeCompare(b.studentName, 'vi');
 
+/**
+ * XEP-CHAM-TEST (chủ SP 16/11, plan.md #1771): MỌI danh sách chấm Test cùng luật với Chấm Speaking — lớp thường có bài lên đầu → mã lớp số nhỏ trước
+ * (`soSanhLopCham`) → trong lớp tuần gần nhất lên đầu. Dòng gộp nhiều lớp (Nhập điểm theo tuần, OV-13c) đứng theo lớp đầu của nó.
+ */
+type ViecCham = { classCode?: string | null; khung?: string | null; tuanThi?: string | null; con?: readonly ViecCham[] | null };
+const lopCham = (x: ViecCham) => ({ code: x.classCode ?? '', thuong: x.khung === 'thuong', coBai: true });
+const lopDauCham = (x: ViecCham) => (x.con?.length ? x.con.map(lopCham).sort(soSanhLopCham)[0] : lopCham(x));
+export const soSanhViecCham = (a: ViecCham, b: ViecCham): number =>
+  soSanhLopCham(lopDauCham(a), lopDauCham(b)) || (b.tuanThi ?? '').localeCompare(a.tuanThi ?? '');
+
 function conCua<T extends ViecGopDuoc>(it: T): ConGop<T> {
   const rieng = it.phu ?? '';
   if (it.studentId !== null) {
@@ -113,7 +124,8 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     if (daDat.has(k)) continue;
     daDat.add(k);
     const nhanLoai = nhan(it.group);
-    const con = [...nhom].sort(sapViec).map((x) => conCua(x));
+    /* XEP-CHAM-TEST: lớp con của dòng Nhập điểm theo thứ tự chấm (panel nhiều lớp + "Lớp tiếp" đi theo); việc khác theo hạn. */
+    const con = [...nhom].sort(it.group === 'score' ? soSanhViecCham : sapViec).map((x) => conCua(x));
     const dau = con[0];
     /*
      * OV-11c (TE-4, CV-17): MỘT đơn vị mỗi dòng — Nhập điểm đếm "bài" (kỹ năng × em); việc theo em đếm em KHÁC NHAU (một em hai PA vẫn "1 em");

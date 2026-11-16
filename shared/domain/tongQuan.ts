@@ -7,7 +7,7 @@
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
-import { KHOA_CHAM_SPEAKING, laViecChamCheo } from './gopViec.ts';
+import { KHOA_CHAM_SPEAKING, laViecChamCheo, soSanhViecCham } from './gopViec.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
@@ -168,13 +168,14 @@ export function dongTab<T extends { studentId: number | null; con?: readonly T[]
   return ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? [...it.con] : [it]));
 }
 export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "n quá hạn"). */ quaHan: number };
-/** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4). */
+/** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4) — trừ mục chấm Test (XEP-CHAM-TEST: lớp → tuần). */
 export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false): MucTab<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
   const xep = (a: T, b: T) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING) || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999');
   const out: MucTab<T>[] = [];
   for (const [m, nhan] of MUC_CV) {
-    const ds = dong.filter((x) => mucCuaViec(x, tvv) === m).sort(xep);
+    /* XEP-CHAM-TEST (chủ SP 16/11): mục chấm Test (Mock · Progress / Final · Checkpoint) theo lớp → tuần gần nhất (`soSanhViecCham`), không theo hạn. */
+    const ds = dong.filter((x) => mucCuaViec(x, tvv) === m).sort(m === 'mock' || m === 'pf' || m === 'cp' ? (a, b) => soSanhViecCham(a as never, b as never) : xep);
     if (ds.length) out.push({ key: m, label: nhan, items: ds, quaHan: ds.filter((x) => x.urgency === 'overdue').length });
   }
   return out;
