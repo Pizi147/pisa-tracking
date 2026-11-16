@@ -143,6 +143,36 @@ export async function runPrCacheTests(t: YThucTestKit) {
       } finally { (globalThis as any).document = goc; h.huy(); }
     });
 
+    await checkAsync('AUDIT-1611 BADGE-NHE · henTaiLaiKhiCu hetMs: đổi trang khi bản ≥ hạn → tải; quay lại tab sau ≥ hạn ẩn → tải; chuông mở (moiNeuCu) khi bản ≥ ms → tải', async () => {
+      const ngu = (ms: number) => new Promise((r) => setTimeout(r, ms));
+      const goc = (globalThis as any).document;
+      const nghe = new Set<() => void>();
+      const docGia = { hidden: false, addEventListener: (_: string, f: () => void) => nghe.add(f), removeEventListener: (_: string, f: () => void) => nghe.delete(f) };
+      (globalThis as any).document = docGia;
+      let n = 0;
+      const h = ua.henTaiLaiKhiCu(() => { n += 1; }, 1000, 40);
+      try {
+        h.doiTrang();
+        assert(n === 0, 'bản mới mà đổi trang vẫn tải');
+        await ngu(60);
+        h.doiTrang();
+        assert(n === 1, `bản ≥ hạn, đổi trang không tải (${n})`);
+        h.coBan();
+        h.moiNeuCu(10_000);
+        assert(n === 1, 'chuông mở khi bản còn mới vẫn tải');
+        await ngu(20); h.moiNeuCu(10);
+        assert(n === 2, `chuông mở khi bản ≥ ms không tải (${n})`);
+        h.coBan();
+        docGia.hidden = true; [...nghe].forEach((f) => f());
+        await ngu(60);
+        docGia.hidden = false; [...nghe].forEach((f) => f());
+        assert(n === 3, `quay lại tab sau ≥ hạn ẩn không tải (${n})`);
+        docGia.hidden = true; [...nghe].forEach((f) => f()); docGia.hidden = false; [...nghe].forEach((f) => f());
+        assert(n === 3, 'ẩn rất ngắn mà vẫn tải');
+      } finally { h.huy(); assert(nghe.size === 0, 'huy() không gỡ người nghe visibilitychange'); (globalThis as any).document = goc; }
+      assert(ua.MOI_MY_WORK_MS === 5 * 60_000, 'hạn dùng lại /my-work phải 5 phút');
+    });
+
     await checkAsync('PR-CACHE · hai hook cùng đường dùng chung MỘT lời gọi, cả hai nhận dữ liệu; vào lại thì dùng bản vừa xem', async () => {
       batDau();
       const h1 = ua.taiVaNho('/cache/chung');
