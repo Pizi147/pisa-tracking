@@ -51,8 +51,10 @@ const emDuHet = (o: Record<string, OBc>, ds: readonly PhanCot[]) => ds.every((p)
  * Ô phần của mình (GV) / mọi ô (QL viết hộ) có viền khi còn thiếu; bấm ô phần của mình → panel viết; ô khác → panel đọc (QL: Viết hộ).
  * Đợt nằm trên URL (`?dot=`) — Quay lại về đúng đợt. Mở tab = một lớp × một đợt (đặc tả §7). Lưu trong panel cập nhật ô tại chỗ, không tải lại bảng.
  */
-export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
+export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, onViet }: {
   lopId: number; ct: string | null; dot: string | null; onDot: (ma: string | null) => void;
+  /** AU-GON B3-10: tới từ việc "Viết ›" (`?viet=1`) → tự mở panel viết phần của mình ở em đầu còn thiếu, rồi gỡ tham số. */
+  viet?: boolean; onViet?: () => void;
   /** BC-DOT-QL: đợt vừa bỏ / thêm / khôi phục — chip trên tab (ở trang lớp) đọc lại. */
   onDoiDot?: () => void;
   /** RA-LOI-0611 (PTA 06/11): đợt đang xem đủ mọi em mọi phần? — tính từ bảng đã nạp + ô vừa lưu, không thêm request (chip "quá hạn" trên tab tắt tại chỗ). */
@@ -67,6 +69,13 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot }: {
     if (!data?.dot || !onDuHet) return;
     onDuHet(data.dot, data.em.length > 0 && data.em.every((e) => data.phan.every((p) => (doi[`${e.id}:${p.khoa}`] ?? e.o[p.khoa]) === 'du')));
   }, [data, doi]);   // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (!viet || !data?.dot) return;
+    const ph = data.phan.find((p) => p.cuaToi);
+    const e = ph && data.em.find((x) => x.o[ph.khoa] !== 'du');
+    if (ph && e) setMo({ phan: ph.khoa, em: e.id, kieu: 'viet' });
+    onViet?.();
+  }, [viet, data]);   // eslint-disable-line react-hooks/exhaustive-deps
   const [them, setThem] = useState(false);
   const [hop, setHop] = useState<'bo' | 'them' | 'sua' | null>(null);
   const [datNhanh, setDatNhanh] = useState(false);

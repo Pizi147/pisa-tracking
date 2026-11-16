@@ -193,7 +193,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const sos = { data: trang.data?.sos ?? null, cu: trang.cu, khongXem: trang.data?.sos === null };   // lỗi tải: báo một lần ở đầu trang (`trang.error`)
   /* Cột "Việc của tôi" + chip "Có việc quá hạn" (U04-5, chủ SP 03/11 khuya): CHỈ việc của người đang xem — cùng nguồn badge Công việc (`/my-work`). Chờ trang tải xong mới gọi. */
   const duongViec = '/my-work';
-  const coViec = vai !== 'cx';   // CX không có Công việc (Tổng quan CX: "không có việc trên trang này")
+  const coViec = !!session?.nav?.workSupport;   // AU-GON B2-08: cùng cờ badge Công việc — CX / Head tutor không có Công việc thì không gọi `/my-work` (trước: 403 + chip "!")
   const work = useApi<{ dong: WorkItem[] }>('chuyenDen' in doc || !data || !coViec ? null : duongViec, [duongViec]);
   /* TVV / CX: tập chip + dòng theo vai — CÙNG phạm vi trang vừa nhận (máy chủ chọn mặc định), nên gọi sau `/hoc-vien-lop`. */
   const duongVai = !laVai || !data ? null
@@ -462,7 +462,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const menuTrang: MucMenu[] = [
     ...(dienThoai ? [{ key: 'xuat', nhan: t('Xuất Excel'), tat: !idsXuat.length, onChon: () => setXuat(true) }] : []),
     ...(dienThoai && data?.coTheThemHocVien ? [{ key: 'hoc-vien-moi', nhan: t('+ Thêm học viên'), onChon: () => setThem(null) }] : []),
-    ...(data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: t('+ Lớp mới'), keTruoc: dienThoai, onChon: () => setTaoLop(true) }] : []),
+    /* AU-GON A2-18: máy tính — "+ Lớp" là nút cạnh "+ Thêm học viên" (⋯ một mục = bấm thêm một lần); điện thoại giữ trong ⋯ cùng Xuất / Thêm. */
+    ...(dienThoai && data?.coTheTaoLop ? [{ key: 'lop-moi', nhan: t('+ Lớp mới'), keTruoc: dienThoai, onChon: () => setTaoLop(true) }] : []),
   ];
   /* GD-13a (⑥ R6.7, [XM-2]): "Lưu trữ n ›" ra đầu trang (cả 375, cạnh ⋯) — CHỈ vai đã vào được Lưu trữ (TVV / CX không có, như cũ); số = lớp + HV lưu trữ. */
   const soLuuTru = (data?.demLuuTru.lop ?? 0) + (data?.demLuuTru.hv ?? 0);
@@ -485,7 +486,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           {lkLuuTru}
           {!dienThoai && <button type="button" className="btn h-9 whitespace-nowrap text-sm font-semibold" data-hd="hvl-xuat" disabled={!idsXuat.length} aria-expanded={xuat} onClick={() => setXuat(true)}>{t('Xuất Excel')}</button>}
           {!dienThoai && data?.coTheThemHocVien && <button type="button" className="btn btn-primary h-9 text-sm max-sm:hidden" onClick={() => setThem(null)}>{t('+ Thêm học viên')}</button>}
-          {nutMenuTrang}
+          {!dienThoai && data?.coTheTaoLop && <button type="button" className="btn h-9 whitespace-nowrap text-sm font-semibold" onClick={() => setTaoLop(true)}>{t('+ Lớp')}</button>}
+          {menuTrang.length > 0 && nutMenuTrang}
         </div>
       </div>
       {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:flex-1">{oXem}{chonKhung}</div>}
