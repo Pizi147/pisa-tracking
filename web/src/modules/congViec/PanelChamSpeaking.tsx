@@ -5,7 +5,7 @@ import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan, ChipSoQuaHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { dotGvCham, ngay, quyCheChamSpeaking, soSanhLopCham, tuanLich } from '@shared/domain/index.ts';
+import { dotGvCham, ngay, quyCheChamSpeaking, soSanhLopCham } from '@shared/domain/index.ts';
 import { suaDuoc, type Cell } from '../fasttrack/ScoreEntry.tsx';
 import { LuoiFT, type FtSheet } from '../cham/LuoiFT.tsx';
 import { NutGvCham, useGvChamCot } from '../cham/GvCham.tsx';
@@ -169,12 +169,12 @@ function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay, gvChamCot }: {
   /* Ảnh chụp tập bài chờ lúc mở ngăn: bài vừa chấm đứng nguyên trong lưới (không nhảy sang "Đã có điểm" giữa phiên chấm). */
   const [choLucMo, setChoLucMo] = useState<ReadonlySet<number>>(() => new Set(n.rows.filter((r) => r.cho).map((r) => r.attemptId)));
   useEffect(() => { if (mo) setChoLucMo(new Set(n.rows.filter((r) => r.cho).map((r) => r.attemptId))); }, [mo]);   // eslint-disable-line react-hooks/exhaustive-deps -- chỉ chụp lúc mở
-  const tuan = (r: Dong) => (r.weekStart ? tuanLich(r.weekStart, homNay) : r.cell.periodCode ?? '');
-  const cho = n.rows.filter((r) => r.cho || choLucMo.has(r.attemptId)).map((r) => ({ ...r, phu: tuan(r) || null }));
+  /* Tuần dưới tên em: `LuoiFT hienTuan` (`DongVang` — "vắng W2 SEP → W3 SEP" / chỉ tuần), không ghép vào `phu`. */
+  const cho = n.rows.filter((r) => r.cho || choLucMo.has(r.attemptId));
   const daCo = n.rows.filter((r) => !r.cho && !choLucMo.has(r.attemptId))
     .map((r) => {
       const ten = r.cell.gvCham?.ten ?? r.cell.enteredByName;
-      return { ...r, phu: [tuan(r), ten ? `${t('GV chấm: {ten}', { ten })}${r.cell.enteredAt ? ` · ${ngay(r.cell.enteredAt, homNay)}` : ''}` : ''].filter(Boolean).join(' · ') || null };
+      return { ...r, phu: ten ? `${t('GV chấm: {ten}', { ten })}${r.cell.enteredAt ? ` · ${ngay(r.cell.enteredAt, homNay)}` : ''}` : null };
     });
   const sua = n.rows.some((r) => suaDuoc(r.cell));
   const sheet = (rs: Dong[]): FtSheet => ({
@@ -197,13 +197,13 @@ function NganLop({ n, mo, onMo, onDaLuu, onHet, homNay, gvChamCot }: {
       {mo && (
         <div className="border-t pb-1" style={{ borderColor: 'var(--line)' }}>
           {sua && dot && cho.length > 0 && <div className="max-w-[420px] pt-2"><NutGvCham hang nhan={t('GV chấm')} value={gv} onChange={setGv} /></div>}
-          {cho.length > 0 && <LuoiFT data={sheet(cho)} onReload={onDaLuu} chiCot={['speaking']} gon gvCham={gv} onHet={onHet} />}
+          {cho.length > 0 && <LuoiFT data={sheet(cho)} onReload={onDaLuu} chiCot={['speaking']} gon hienTuan gvCham={gv} onHet={onHet} />}
           {daCo.length > 0 && (
             <details className="group/da mt-1" open={!cho.length || undefined}>
               <summary className="flex min-h-[44px] cursor-pointer list-none sm:min-h-[40px] items-center gap-2 px-3 text-[13px] font-semibold text-slate-400">
                 {t('Đã có điểm · {n} bài', { n: daCo.length })}<span aria-hidden className="group-open/da:rotate-90"><MuiTenGap mo={false} /></span>
               </summary>
-              <LuoiFT data={sheet(daCo)} onReload={onDaLuu} chiCot={['speaking']} gon gvCham={gv} />
+              <LuoiFT data={sheet(daCo)} onReload={onDaLuu} chiCot={['speaking']} gon hienTuan gvCham={gv} />
             </details>
           )}
         </div>

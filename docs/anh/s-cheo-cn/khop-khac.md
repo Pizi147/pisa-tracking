@@ -20,6 +20,9 @@ Chủ SP 16/11 (nói thêm giữa phiên): "không chỉ là thứ tự… hiệ
 | "Đã có điểm · n bài" | có, dòng phụ "GV chấm: … · dd/mm" | GIỮ, dòng phụ thêm tuần trước | |
 | "Lớp tiếp: {mã} ›" / "Việc tiếp ›" | có | GIỮ | |
 | "✓ Đã lưu n bài" | có | GIỮ (đếm cả lưu ở chi nhánh khác) | |
+| Dòng dưới tên em | "vắng W2 SEP" | "vắng W2 SEP → **W3 SEP**" (vắng mờ, tuần thi đậm; không vắng → chỉ tuần) — `DongVang` dùng ở MỌI `LuoiFT` (cả Nhập điểm, thẻ 375) | chủ SP 16/11 (plan.md #1774) |
+| Tên em dài ở 375 | cắt mất chữ, không "…" | xuống dòng; "MTn ›" xuống dòng khi không vừa | chủ SP: web không bị clipped |
+| Dòng quy chế | "Mọi GV Speaking chi nhánh chấm được" | "Mọi GV Speaking chấm được (cả chi nhánh khác)" | [XM1] PTA |
 | Chip quá hạn | đầu tuần + ngăn | đầu ngăn lớp (không quá hạn thì chip hạn) | |
 | "Tuần cũ hơn" gập | có | **BỎ** | tuần đã ghi dưới tên em, em tuần cũ nằm dưới cùng ngăn lớp — thêm một tầng gập là thừa |
 | "Chi nhánh khác" | — | **MỚI**: gập cuối, chỉ tải khi mở (`?cn=khac`), chi nhánh → lớp | lời chủ SP 16/11 |
@@ -29,6 +32,6 @@ Chủ SP 16/11 (nói thêm giữa phiên): "không chỉ là thứ tự… hiệ
 - KHÔNG mở xem: Lịch Test, Kế hoạch Test, bảng chấm lớp, hồ sơ lượt / em chi nhánh khác vẫn 403 → dòng chi nhánh khác `xemHoSo: false` (tên + MTn chữ thường, mẫu GV-CU-BO-TRO).
 - Chi nhánh khác KHÔNG vào số việc / chuông / quá hạn của GV (hàng đợi chính và `myWork` không đổi).
 
-## [XM] để PTA Plan quyết
-1. Dòng quy chế vẫn ghi "Mọi GV Speaking chi nhánh chấm được" (`quyCheChamSpeaking`, chung) — giữ hay đổi chữ?
-2. 375: tên em dài bị cắt KHÔNG có "…" ("Lê Quang Hu|y MT3 ›") — lỗi sẵn có của `LuoiFT` (Link `max-sm:inline-flex` làm `truncate` mất hiệu lực), có cả trước PR; sửa ở lưới chung = PR riêng.
+## [XM] đã xử lý (PTA Plan 16/11)
+1. Dòng quy chế: đổi chữ (vi + en).
+2. 375 tên dài: sửa trong `LuoiFT` (xuống dòng).

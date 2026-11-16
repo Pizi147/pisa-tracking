@@ -60,7 +60,7 @@ function quyCheNhapDiemGoc(o: Parameters<typeof quyCheNhapDiem>[0]): QuyChe {
 
 /** Q10 Chấm Speaking (lời 20 / bảng ⑤ mục 0 ý 2); Q12 khi người xem nhập hộ hàng đợi của GV khác (QL / Admin). Q11 là câu theo ô có nhận xét — không ở dòng panel. */
 export const quyCheChamSpeaking = (nhapHo: boolean): QuyChe => ({
-  chu: nhapHo ? t('Bạn nhập hộ: chọn GV chấm trước khi lưu') : t('Mọi GV Speaking chi nhánh chấm được · GV chấm mặc định là bạn'),
+  chu: nhapHo ? t('Bạn nhập hộ: chọn GV chấm trước khi lưu') : t('Mọi GV Speaking chấm được (cả chi nhánh khác) · GV chấm mặc định là bạn'),
 });
 
 /** Q37–Q40 Viết Báo cáo PH (luat/3 Y-21; lời 12–16): quá hạn › phần Chung (GVCN) › FT › lớp thường. */
