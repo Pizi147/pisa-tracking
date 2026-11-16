@@ -101,7 +101,10 @@ export const sosCuaLuot = (a: AttemptEval) => ({
 /* Admin chỉ hai góc Tất cả · Cần làm (mockup 3 v2 §9 — Admin không làm Case): máy chủ chặn cùng giao diện. */
 export const xemDuocSos = (p: Principal): boolean => vaiXemHocVien(p.roleKeys) !== 'admin' && can(p, PERMISSIONS.CASE_VIEW, { anyScope: true });
 
-export function dangSos(p: Principal, f: { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null } = {}): TrangSos {
+type LocSos = { phamVi?: string | null; branchId?: number | null; cnNho?: number | null; q?: string | null };
+
+/** Tập em "Đang SOS" của trang (phạm vi, ô tìm) + lượt SOS từng em — phần chung của bảng (`dangSos`) và số trên tab (`demSos`). */
+function tapSos(p: Principal, f: LocSos) {
   const vai = vaiXemHocVien(p.roleKeys);
   if (!xemDuocSos(p)) throw forbidden('Đang SOS dành cho người theo dõi Case.');
   const homNay = demoToday();
@@ -128,6 +131,23 @@ export function dangSos(p: Principal, f: { phamVi?: string | null; branchId?: nu
     || (!!qMa && chuanHoaMaLop(lop.get(id)?.code ?? '').includes(qMa)));
   /* Lượt của dòng = CHÍNH lượt hàm SOS đã chọn (đợt mới nhất hợp lệ, nhớ trong request). */
   const luot = latestAttempts(ids, 'valid', homNay);
+  return { dangDung, sos, lop, ids, em, luot };
+}
+
+/**
+ * TD-QUET (17/11): số trên tab "Đang SOS" của Học viên & Lớp — cùng tập dòng với `dangSos` (em có lượt SOS + lớp đang học), chỉ bốn trường web lọc / đếm
+ * (lớp, FT, TVV). Không đọc Case / PA / liên hệ (`listCases` từng chi nhánh — phần nặng); bảng SOS tải riêng khi mở tab (`goc=sos`).
+ */
+export function demSos(p: Principal, f: LocSos = {}): { phamVi: PhamVi; rows: Pick<DongSos, 'studentId' | 'classId' | 'ft' | 'tvv'>[] } {
+  const { dangDung, lop, ids, em, luot } = tapSos(p, f);
+  return { phamVi: dangDung, rows: ids.flatMap((id) => {
+    const l = lop.get(id);
+    return luot.get(id) && l?.classId ? [{ studentId: id, classId: l.classId, ft: !!l.isFt, tvv: em.get(id)?.tvv ?? null }] : [];
+  }) };
+}
+
+export function dangSos(p: Principal, f: LocSos = {}): TrangSos {
+  const { dangDung, sos, lop, ids, em, luot } = tapSos(p, f);
   const tam = new Set(sos.splits?.tamThoi ?? []);
   const lopIds = [...new Set(ids.map((id) => lop.get(id)?.classId).filter((x): x is number => !!x))];
   const cn = new Map<number, { branchId: number; ten: string | null }>();
