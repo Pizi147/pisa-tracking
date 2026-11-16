@@ -20,6 +20,15 @@ const BAI_CUA = `SELECT ${COT} FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 
  * TD-CHAM (17/11, Turso): trước đây bài của MỌI chi nhánh mỗi lần → 5 × 5 lượt bài một đêm (UPDATE "da-xoa" ~10 K dòng đọc mỗi chi nhánh, log 24 h: 29 lần);
  * tính lại lần hai cùng đêm không đổi sổ (cùng dữ liệu gốc) nên mỗi chi nhánh một lần là đủ. Lần đêm lỗi → đêm sau bắt lại (khung 8 tuần).
  */
+/** Số lần hàm đêm chạy (`netlify.toml`: 19:20 – 23:20 UTC). */
+export const SO_LUOT_DEM = 5;
+/**
+ * Chi nhánh của lượt đêm thứ `luot` (0 … SO_LUOT_DEM − 1): mỗi lượt một chi nhánh, lượt CUỐI nhận mọi chi nhánh còn lại — có hơn 5 chi nhánh thì chi nhánh
+ * thứ 6+ vẫn được đối chiếu mỗi đêm (PTA 17/11). Ngoài khung giờ → [].
+ */
+export const cnCuaLuot = (cns: readonly number[], luot: number): number[] =>
+  luot < 0 || luot >= SO_LUOT_DEM ? [] : cns.slice(luot, luot === SO_LUOT_DEM - 1 ? undefined : luot + 1);
+
 export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { cn: number; bai: number; lechBai: number; doiViec: number } {
   const conn = db();
   xoaNhoHan();   // QTV2-HAN: hạn mặc định đọc lại một lần mỗi lượt (lambda ấm giữ bản cũ)
