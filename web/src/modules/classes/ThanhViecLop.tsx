@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useApi } from '../../lib/useApi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { DemViecPanel } from '../../ui/KhungPanel.tsx';
@@ -6,7 +6,8 @@ import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { NutChipViec, chipViecLop } from '../congViec/LopCuaToi.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { laViecChamCheo } from '@shared/domain/index.ts';
+import { NHAN_LOAI_VIEC, laViecChamCheo, viecLopTuDong } from '@shared/domain/index.ts';
+import { useSession } from '../../lib/session.tsx';
 import { moCaDong } from '../congViec/lamTaiCho.ts';
 import { t } from '@shared/i18n/index.ts';
 
@@ -16,6 +17,27 @@ import { t } from '@shared/i18n/index.ts';
 export type ViecLop = { theoEm: Record<number, WorkItem[]>; cuaToi: WorkItem[]; dongToi: WorkItem[]; soQuaHanLop: number | null };
 export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-em?chi=toi`;
 
+/** Tài khoản CHỈ là GV (GV / Head tutor, không kiêm QL, Quản trị, Admin, TVV, CX) — máy chủ đi nhánh "việc của mình" (`viecTheoEmCuaLop`). */
+const VAI_KHAC_GV = new Set(['manager', 'system_admin', 'office_admin', 'consultant', 'cx']);
+export const laGvThuan = (roles: readonly string[] | null | undefined) =>
+  !!roles?.some((r) => r === 'teacher' || r === 'head_tutor') && !roles.some((r) => VAI_KHAC_GV.has(r));
+
+/**
+ * AUDIT-1611 gói 13 (Turso, báo cáo mục 8): việc của tôi ở hồ sơ lớp. GV thuần dựng từ `/my-work` mà badge menu ĐÃ NẠP (`chiNghe`: nhận bản của App, không gọi
+ * thêm; `viecLopTuDong` — cùng tập máy chủ, phép kiểm L4) → bớt `viec-theo-em` (~35–39 câu / ~550–700 dòng mỗi lần mở hồ sơ lớp). Vai khác giữ đường máy chủ
+ * (QL / Quản trị xem việc mọi người; badge "Quá hạn của lớp"). Cùng một hook cho đầu trang, dải Việc cần làm, bảng HV, badge tab.
+ */
+export function useViecLop(classId: number | null, bat = true): { data: ViecLop | null; reload: () => void } {
+  const { session } = useSession();
+  const gv = laGvThuan(session?.roles) && !!session?.nav?.workSupport;
+  const w = useApi<{ dong?: WorkItem[] }>(bat && gv && classId ? '/my-work' : null, [], { chiNghe: true, dungBanLuu: true });
+  const s = useApi<ViecLop>(bat && !gv && classId ? duongViecLop(classId) : null, [classId]);
+  const dong = w.data?.dong;
+  const tuDong = useMemo(() => (gv && classId && dong ? { theoEm: {}, ...viecLopTuDong(dong, classId, (g) => NHAN_LOAI_VIEC[g] ?? g), soQuaHanLop: null } : null),
+    [gv, classId, dong]);
+  return gv ? { data: tuDong, reload: w.reload } : { data: s.data, reload: s.reload };
+}
+
 /**
  * DẢI "VIỆC CẦN LÀM" ĐẦU HỒ SƠ LỚP (GD-6, mockup v21 ② K1 ④ / K2, R2.3 — thay "Việc của tôi" 3 ô): nút-chip theo LOẠI (`chipViecLop`, cùng chip "Lớp của tôi"):
  * Nhập điểm · Case · Ý thức · Vận hành, không biểu tượng, đỏ khi có việc quá hạn (V22 chỉ màu). Bấm chip mở THẲNG panel việc đầu (quá hạn trước) tại trang —
@@ -23,7 +45,7 @@ export const duongViecLop = (classId: number) => `/classes/${classId}/viec-theo-
  * Dữ liệu: `viec-theo-em?chi=toi` đã tải ([XM-11]) — không request thêm. Không có việc → không vẽ dải.
  */
 export function ThanhViecLop({ classId, classCode, onDoi }: { classId: number; classCode: string; onDoi: () => void }) {
-  const { data, reload } = useApi<ViecLop>(duongViecLop(classId), [classId]);
+  const { data, reload } = useViecLop(classId);
   /* `ds` chụp lúc bấm chip: việc vừa xong rời danh sách vẫn đếm đúng "i / n" và tìm được việc kế (R1-LUU-TIEP). */
   const [mo, setMo] = useState<{ ds: WorkItem[]; i: number; nhan: string } | null>(null);
   const [nhapDiem, setNhapDiem] = useState(false);
