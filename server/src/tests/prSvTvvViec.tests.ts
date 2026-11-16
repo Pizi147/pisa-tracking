@@ -31,7 +31,7 @@ export async function runPrSvTvvViecTests(t: YThucTestKit) {
   };
   const moiEm = (tvv: any | null, hoSo: { email?: string | null; dob?: string | null } = {}): { sid: number; cy: number } => {
     const ten = `SVTV em ${++dem}-${Math.random().toString(36).slice(2, 6)}`;
-    intake.commitIntake(P.admin, { classId: classId(LOP), rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `svtv-${ten}` } as any);
+    intake.commitIntake(P.admin, { classId: classId(LOP), defaultStartWeek: intake.tuanKhaiGiang(classId(LOP)), rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `svtv-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare("SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'").get(st.id) as any;
     boLichTuTao(conn, cy.id);

@@ -13,7 +13,7 @@
  */
 import { loadPrincipal, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
-import { commitIntake } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { updateResult } from '../cases/cases.ts';
 import { guiKhongTheoDoi, xacNhanCase } from '../cases/sosAuto.ts';
@@ -42,7 +42,7 @@ export function buildLt2aDemo(ctx: BuildCtx): { em: number } {
   });
   /** Thêm em vào lớp, xếp bài Giữa khoá (đã qua tuần → đường Quản lý), nhập điểm /20 theo môn. */
   const dung = (classId: number, ten: string, diem: Record<string, number>) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `lt2a-demo-${ten}` } as any);
+    commitIntake(admin, { classId, defaultStartWeek: tuanKhaiGiang(classId), rows: [{ fullName: ten, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `lt2a-demo-${ten}` } as any);
     const sid = (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
     planRegularTests(ql, classId, { studentIds: [sid], kinds: ['progress'] });
     const pt = (conn.prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND kind = 'progress' ORDER BY id DESC LIMIT 1`).get(sid) as any).id as number;

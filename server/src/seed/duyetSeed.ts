@@ -11,7 +11,7 @@
  */
 import { loadPrincipal, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
-import { commitIntake } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { recordIntervention, reportIssue, updateResult } from '../cases/cases.ts';
 import { reviseTarget } from '../fasttrack/cycles.ts';
 import { setStudentStatus } from '../students/students.ts';
@@ -110,7 +110,7 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
     .get(classId) as any;
   if (lr) {
     const ten = 'Ngô Thanh Tùng';
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `duyet-demo-${ten}` } as any);
+    commitIntake(admin, { classId, defaultStartWeek: tuanKhaiGiang(classId), rows: [{ fullName: ten, target: 6.5, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `duyet-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const gv = loadPrincipal(lr.id);
     const c = reportIssue(gv, { studentId: st.id, topic: 'listening', title: 'Nghe sót chi tiết số', summary: 'Em nghe sót số và tên riêng ở Part 1–2.',

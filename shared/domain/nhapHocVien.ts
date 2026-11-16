@@ -200,13 +200,14 @@ const NHAN_KHAC: Record<string, string> = { classCode: 'Lớp', route: 'Lộ tr�
 export const nhanCotNhap = (field: string) => cotLuoiNhap(false).find((c) => c.key === field)?.nhan ?? NHAN_KHAC[field] ?? field;
 
 /**
- * Tuần bắt đầu mặc định cho cả lô (YC-5.4). Planning chốt 29/09 (câu hỏi 1 của PR-MT, thay K2-19): mọi lớp lấy TUẦN KHAI GIẢNG —
- * em vào muộn thì xem trước báo "n MT sẽ là MT lịch sử" để người nhập đổi tuần nếu cần. Lớp FT chưa có ngày khai giảng → tuần này.
- * Trả Thứ Hai ISO; `null` = lớp thường chưa có ngày khai giảng.
+ * Tuần bắt đầu mặc định cho cả lô (YC-5.4). N47 (chủ SP 16/11, thay chốt 29/09 "mọi lớp lấy tuần khai giảng"): em mới vào lớp ĐÃ CHẠY → TUẦN NÀY (lịch MT
+ * xếp từ tuần đó, không sinh MT cũ trước tuần em vào); lớp chưa khai giảng → tuần khai giảng. Người nhập vẫn đổi được; cột tuần dán từ Excel thắng.
+ * Lớp FT chưa có ngày khai giảng → tuần này. Trả Thứ Hai ISO; `null` = lớp thường chưa có ngày khai giảng.
  */
 export function tuanBatDauMacDinh(lop: { lopThuong: boolean; khaiGiang: string | null }, homNay: string): string | null {
-  if (lop.khaiGiang) return mondayOfDate(lop.khaiGiang);
-  return lop.lopThuong ? null : mondayOfDate(homNay);
+  const nay = mondayOfDate(homNay);
+  if (lop.khaiGiang) { const kg = mondayOfDate(lop.khaiGiang); return kg > nay ? kg : nay; }
+  return lop.lopThuong ? null : nay;
 }
 
 /**

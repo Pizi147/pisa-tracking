@@ -8,7 +8,7 @@ import { loadPrincipal } from '../permissions.ts';
 import { padCode } from '../util.ts';
 import { ensurePeriod } from '../platform/week.ts';
 import { DEFAULT_ADMIN_PASSWORD, EMAIL_SUFFIX } from '../platform/accounts.ts';
-import { commitIntake, createClass } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang, createClass } from '../classes/intake.ts';
 import { createAttempt, saveScore } from '../fasttrack/attempts.ts';
 import { expectationFor } from '../fasttrack/scoring.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
@@ -109,7 +109,7 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
     return r.id as number;
   };
   const hv = (classId: number, ten: string, target: number) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `pb2b-demo-${ten}` } as any);
+    commitIntake(admin, { classId, defaultStartWeek: tuanKhaiGiang(classId), rows: [{ fullName: ten, target, email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `pb2b-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy?.id as number };

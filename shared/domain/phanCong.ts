@@ -53,6 +53,23 @@ export function nhanDayDuoc(chuongTrinh: string | null, o: OPhanCong, kyNangKhai
     .map((k) => tenMonNgan(chuongTrinh, k));
 }
 
+/**
+ * AUDIT-1611 B3-17: chọn GVCN → điền sẵn các ô môn CÒN TRỐNG mà người đó dạy được hết (hồ sơ kỹ năng, cùng luật gợi ý `nhanDayDuoc`) — sửa được;
+ * ô đã chọn người khác giữ nguyên. Trước: chặn "GVCN phải dạy ít nhất một kỹ năng" dù máy biết người đó dạy được.
+ */
+export function dienTheoGvcn(oList: readonly OPhanCong[], chon: Record<string, number | ''>, khoa: string, v: number | '',
+  nguoi: readonly { id: number; skills?: readonly string[] }[], ct: string | null): Record<string, number | ''> {
+  const gv = v ? nguoi.find((x) => x.id === v) : null;
+  if (!gv || !oList.find((o) => o.khoa === khoa)?.laGvcn) return chon;
+  const c = { ...chon };
+  for (const o of oList) {
+    if (o.laGvcn || c[o.khoa]) continue;
+    const can = o.gop ?? (o.skill ? [o.skill] : []);
+    if (can.length && nhanDayDuoc(ct, o, gv.skills ?? []).length === can.length) c[o.khoa] = gv.id;
+  }
+  return c;
+}
+
 /** Đổi lưới gộp ↔ tách mà giữ người đã chọn: tách → mỗi môn nhận người của ô gộp; gộp → ô gộp nhận người của môn đầu tiên đã chọn. */
 export function chonKhiDoiTach(chon: Record<string, number | ''>, gop: readonly string[], tach: boolean): Record<string, number | ''> {
   const c = { ...chon };

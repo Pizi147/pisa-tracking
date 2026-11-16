@@ -154,6 +154,17 @@ export async function runPrLopTests(t: YThucTestKit) {
     assertThrows(() => ttl.capNhatThongTinLop(P.admin, lop.id, { so: '1O1' }), /Chỉ gõ số/, 'số sai');
   });
 
+  check('LOP (8b) · AUDIT-1611 B3-17: chọn GVCN điền sẵn ô môn CÒN TRỐNG người đó dạy được hết; ô đã chọn giữ; chọn ô môn không điền gì; P1-16 form hết "đang sửa" sau khi tạo', () => {
+    const o = d.oPhanCong('BE', ['listening', 'reading', 'writing', 'speaking']);
+    const nguoi = [{ id: 7, skills: ['listening', 'reading'] }, { id: 9, skills: ['speaking'] }];
+    const c = d.dienTheoGvcn(o, { gvcn: 7, speaking: 9 }, 'gvcn', 7, nguoi, 'BE');
+    assert(c.listening === 7 && c.reading === 7 && !c.writing && c.speaking === 9, JSON.stringify(c));
+    const m = d.dienTheoGvcn(o, { listening: 9 }, 'listening', 9, nguoi, 'BE');
+    assert(JSON.stringify(m) === JSON.stringify({ listening: 9 }), 'chọn ô môn không điền ô khác');
+    const src = docSach('web/src/modules/classes/ClassCreatePanel.tsx');
+    assert(/flushSync\(\(\) => setDaTao\(true\)\)/.test(src) && /const trung = !daTao/.test(src), 'P1-16: đánh dấu đã tạo trước khi chuyển trang');
+  });
+
   check('LOP (8) · panel Tạo lớp: một lệnh, ô số, xem trước, một người mỗi ô, không câu sai (YC-1, YC-2, YC-4)', () => {
     const src = docSach('web/src/modules/classes/ClassCreatePanel.tsx');
     assert(!/\/teachers`|api\.put\(/.test(src), 'còn gọi lệnh phân công thứ hai');

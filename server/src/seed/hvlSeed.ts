@@ -2,7 +2,7 @@ import { loadPrincipal, type Principal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 import { mondayOf } from '../platform/week.ts';
 import { LISTENING_BY_RAW, READING_BY_RAW } from '../fasttrack/scoring.ts';
-import { commitIntake } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang } from '../classes/intake.ts';
 import { saveScore } from '../fasttrack/attempts.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { reportIssue } from '../cases/cases.ts';
@@ -36,7 +36,7 @@ export function buildHvlDemo(ctx: BuildCtx): { students: number } {
     return r ? loadPrincipal((r as any).id) : admin;
   };
   const them = (classId: number, ten: string, startWeek: string | null, target: number | string = 6.5) => {
-    commitIntake(admin, { classId, rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `hvl-demo-${ten}` } as any);
+    commitIntake(admin, { classId, defaultStartWeek: tuanKhaiGiang(classId), rows: [{ fullName: ten, target, ...(startWeek ? { startWeek } : {}), email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `hvl-demo-${ten}` } as any);
     const st = conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any;
     const cy = conn.prepare(`SELECT id FROM learning_cycles WHERE student_id = ? AND status = 'active'`).get(st.id) as any;
     return { id: st.id as number, cycleId: cy.id as number };

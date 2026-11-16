@@ -107,7 +107,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const [resetBac, setResetBac] = useState(false);
   const [tienDo, setTienDo] = useState<[number, number] | null>(null);
   const [tam, setTam] = useState(false);
-  const [moLop, setMoLop] = useState<{ huong: ChonHuong; ganCho: 'thanh' | number } | null>(null);
+  /* AUDIT-1611 B3-13: mở lớp mới từ ô nào điền vào ô đó — thanh áp chung · một em · ô "Lớp cho cả nhóm" (`nhom`). */
+  const [moLop, setMoLop] = useState<{ huong: ChonHuong; ganCho: 'thanh' | number | { nhom: string } } | null>(null);
   const [huy, setHuy] = useState<{ em: Em; lyDo: string } | null>(null);
   const [banGiao, setBanGiao] = useState<number | null>(null);
   const [nhanXet, setNhanXet] = useState<Record<number, string>>({});
@@ -353,7 +354,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const soNhom = (k: KhoaNhom) => dongs.filter((r) => nhomCua(r.e) === k).length;
   /* Chủ SP 11/11: dải chỉ khi nhóm có gợi ý bước tiếp thật (Lên … / Học lại …) — không dải "Chờ Final" / "Quản lý cân nhắc". */
   const coDai = (k: KhoaNhom) => soNhom(k) >= 2 && (k === 'len' || k === 'lai');
-  const dongNhomHuong = (k: KhoaNhom) => dongs.filter((r) => nhomCua(r.e) === k && !khoa(r.e) && !!HUONG_NHOM[k] && r.x.huong === HUONG_NHOM[k]);
+  /* AUDIT-1611 B3-14: ô của dải áp cho MỌI em đang chọn đúng bước của dải (cả em QL bấm tay ngoài nhóm gợi ý) — dòng không nhảy chỗ. */
+  const dongNhomHuong = (k: KhoaNhom) => dongs.filter((r) => !khoa(r.e) && !!HUONG_NHOM[k] && r.x.huong === HUONG_NHOM[k]);
   const lopCuaNhom = (k: KhoaNhom): number | null => {
     if (lopNhom[k] !== undefined) return lopNhom[k] ?? null;
     const ds2 = dongNhomHuong(k); const l = ds2[0]?.x.lop ?? null;
@@ -777,7 +779,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         {coO && (
           <span className="flex flex-wrap items-center gap-2 max-xl:[grid-column:1/-1] xl:[grid-column:5]" title={t('Lớp cho cả nhóm')}>
             <span className="min-w-[150px] flex-1"><ChonLop ds={dsLop} value={lopCuaNhom(k)} onChange={(id) => chonLopNhom(k, id)} ariaLabel={t('Lớp cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })}
-              moLopMoi={() => setMoLop({ huong, ganCho: 'thanh' })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} /></span>
+              maCu={lopCua.get(lopCuaNhom(k) ?? 0)?.code} moLopMoi={() => setMoLop({ huong, ganCho: { nhom: k } })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} /></span>
             <span className="w-36"><OTuan tuanChon={d.tuanChon} value={tuanNhom(k)} onChange={(v) => chonTuanNhom(k, v)} ariaLabel={t('Tuần cho cả nhóm {nhom}', { nhom: TEN_NHOM[k] })} chuaChon={tuanLich(tuanChung, h)} /></span>
           </span>
         )}
@@ -877,13 +879,15 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         </Modal>
       )}
       {moLop && (
-        <ClassCreatePanel moHoSo={false} khoa={t('cho {n} em · {lop}', { n: moLop.ganCho === 'thanh' ? chon.size : 1, lop: d.from.code })}
+        <ClassCreatePanel moHoSo={false} khoa={t('cho {n} em · {lop}', { lop: d.from.code, n: typeof moLop.ganCho === 'object'
+          ? dongNhomHuong(moLop.ganCho.nhom as KhoaNhom).filter((r) => !doiLopRieng.has(r.e.id)).length : moLop.ganCho === 'thanh' ? chon.size : 1 })}
           macDinh={{ branchId: d.from.branchId, chuongTrinh: moLop.huong === 'fast_track' ? 'FT' : moLop.huong === 'hoc_lai' ? ma ?? undefined : ke ?? undefined,
             loTrinh: moLop.huong === 'fast_track' ? 'LT1' : null, startPeriodId: d.goiYLopMoi?.startPeriodId ?? null, previousClassId: d.from.id }}
           onClose={() => setMoLop(null)}
           onDone={(lop) => {
             /* Lớp mới điền vào thanh / dòng, em đang chọn giữ nguyên (mockup k5). */
-            if (moLop.ganCho === 'thanh') setAp((a) => ({ ...a, lop: lop.id })); else doi(moLop.ganCho, { lop: lop.id });
+            const g = moLop.ganCho;
+            if (typeof g === 'object') chonLopNhom(g.nhom as KhoaNhom, lop.id); else if (g === 'thanh') setAp((a) => ({ ...a, lop: lop.id })); else doi(g, { lop: lop.id });
             setMoLop(null); kh.reload();
             toast.push('ok', t('Đã mở {lop}', { lop: lop.code }));
           }} />

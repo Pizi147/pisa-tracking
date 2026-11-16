@@ -1,7 +1,7 @@
 import { loadPrincipal } from '../permissions.ts';
 import { addDays } from '../util.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
-import { commitIntake, createClass } from '../classes/intake.ts';
+import { commitIntake, tuanKhaiGiang, createClass } from '../classes/intake.ts';
 import { planRegularTests, saveRegularScore } from '../normal/regular.ts';
 import { raLenh, thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
 import { tuanChonDuoc } from '../../../shared/domain/index.ts';
@@ -31,7 +31,7 @@ export function buildXetLaiDemo(ctx: BuildCtx): void {
   const fou25 = lop('MB FOU 25', 'FOU', addDays(mondayOf(DEMO_DATE), -56), 'T_KHOA');   // tuần 8 (Final) = tuần trước ngày demo
   const be05 = lop('MB BE 05', 'BE', DEMO_DATE, 'T_TRANG');
   const hv = (ten: string) => {
-    commitIntake(admin, { classId: fou25, rows: [{ fullName: ten, target: '-', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `xl-demo-${ten}` } as any);
+    commitIntake(admin, { classId: fou25, defaultStartWeek: tuanKhaiGiang(fou25), rows: [{ fullName: ten, target: '-', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `xl-demo-${ten}` } as any);
     return (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
   };
   const NGAY_FINAL = addDays(DEMO_DATE, -4);   // T5 tuần Final

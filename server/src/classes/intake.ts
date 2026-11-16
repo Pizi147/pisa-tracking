@@ -223,15 +223,17 @@ export function previewIntake(
   const kyThi = laLienTuc(cls) ? kyThiCuaChuongTrinh(cls.programme_code) : null;
 
   /*
-   * TUẦN BẮT ĐẦU CẢ LÔ (YC-5.4, K2-19): gửi lên thì đọc; không gửi thì mặc định (lớp thường: tuần khai giảng; FT vào muộn: tuần này).
+   * TUẦN BẮT ĐẦU CẢ LÔ (YC-5.4, K2-19): gửi lên thì đọc; không gửi thì mặc định (N47: lớp đã chạy → tuần này; lớp chưa khai giảng → tuần khai giảng).
    * Gửi mà sai → báo ở cả lô và KHÔNG lặng lẽ thay bằng mặc định (dòng không tự ghi tuần sẽ báo thiếu).
    */
   const homNay = demoToday();
   const tuanMacDinh = tuanBatDauMacDinh({ lopThuong: ratio, khaiGiang: cls.start_date ?? null }, homNay);
-  /* PR-Dọn (Q17, VN21): cận năm chỉ áp khi tuần KHÁC mặc định của lớp — lớp khai giảng đã lâu vẫn thêm HV với tuần khai giảng. */
+  /* PR-Dọn (Q17, VN21): cận năm chỉ áp khi tuần KHÁC mặc định của lớp và khác tuần khai giảng — lớp khai giảng đã lâu vẫn thêm HV với tuần khai giảng
+     (N47: mặc định nay là tuần này cho lớp đã chạy). */
+  const tuanKg = cls.start_date ? mondayOf(cls.start_date) : null;
   const docTuan = (v: string) => {
     const w = docNgayNhap(v, homNay);
-    return w.iso && mondayOf(w.iso) !== tuanMacDinh ? docNgayNhap(v, homNay, canNamGan(homNay)) : w;
+    return w.iso && mondayOf(w.iso) !== tuanMacDinh && mondayOf(w.iso) !== tuanKg ? docNgayNhap(v, homNay, canNamGan(homNay)) : w;
   };
   const w0 = input.defaultStartWeek ? docTuan(input.defaultStartWeek) : null;
   if (w0?.loi) issues.push({ row: 0, field: 'startWeek', message: w0.loi, muc: 'loi' });
@@ -430,6 +432,9 @@ export type IntakeResult = {
   added: number; skipped: number; failed: RowIssue[]; studentIds: number[]; hangDaThem: number[];
   mt: { soEm: number; soLuotLichSu: number; soEmCoLichSu: number; luotLichSuDau: number | null };
 };
+
+/** N47 (chủ SP 16/11): mặc định của `commitIntake` cho lớp đã chạy là TUẦN NÀY — seed demo giữ tuần khai giảng như dữ liệu demo cũ (phép kiểm dựa vào). */
+export const tuanKhaiGiang = (classId: number): string | null => (db().prepare('SELECT start_date FROM classes WHERE id = ?').get(classId) as any)?.start_date ?? null;
 
 export function commitIntake(
   p: Principal,

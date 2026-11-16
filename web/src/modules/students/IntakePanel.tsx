@@ -157,7 +157,7 @@ export function IntakePanel({ defaultClass, onClose, onDone }: {
       doiLuoi((rs) => { const con = rs.filter((x) => !daThem.has(x)); return con.length ? con : [{}]; });
       setMoDong(null);
       setKetQua(r);
-      if (r.added > 0) { onDone(); setDaDan(null); }
+      if (r.added > 0) { onDone(); setDaDan(null); classes.reload(); }   // A2-22: chip lớp đếm lại số em sau khi thêm
       else toast.push('info', t('Chưa thêm được dòng nào — xem cột Trạng thái.'));
     } catch (e: any) {
       toast.push('error', e.message);        // giữ nguyên lưới đang nhập để thử lại
