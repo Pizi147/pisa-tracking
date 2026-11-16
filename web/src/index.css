@@ -1397,9 +1397,7 @@
 .dai-cs .dai-cs-phu .so-bam:not(.decoration-dotted) { font-size: inherit; font-weight: 500; text-decoration-thickness: 1px; text-underline-offset: 3px; }
 @media (max-width: 639px) {
   .dai-cs { display: grid; grid-template-columns: 1fr 1fr; gap: 0; padding: 0; }
-  .dai-cs-o { padding: 10px 12px; border-left: 0; min-height: 44px; align-items: center; flex-wrap: nowrap; white-space: normal; }   /* AU-GON A3-14: nhãn dài tự xuống dòng TRONG nhãn, số + ⓘ luôn cùng hàng */
-  .dai-cs-o > span:first-child { min-width: 0; }
-  .dai-cs-o > :not(:first-child) { flex: none; }
+  .dai-cs-o { padding: 10px 12px; border-left: 0; min-height: 44px; align-items: center; flex-wrap: wrap; white-space: normal; }
   .dai-cs-o:first-child { padding-left: 12px; }
   .dai-cs-o:nth-child(even) { border-left: 1px solid var(--line); }
   .dai-cs-o:nth-child(n+3) { border-top: 1px solid var(--line); }
