@@ -61,8 +61,9 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
   const hn = homNay ?? '';
   const [route, setRoute] = useState<string | null>(null);   // null = lộ trình gợi ý của máy chủ
   const [ten, setTen] = useState('');
-  const [suaTg, setSuaTg] = useState(false);
-  const [tg, setTg] = useState('');
+  /* N50 (12): em đã đạt Target → ô Target mở sẵn, điền gợi ý +1.0 (sửa được, không chặn); chưa đạt → giữ Target như luật. */
+  const [suaTg, setSuaTg] = useState(!!bt.targetGoiY);
+  const [tg, setTg] = useState(bt.targetGoiY ?? '');
   const [boTarget, setBoTarget] = useState(false);
   /* P8: undefined = môn của lộ trình cũ (máy chủ trả ở xem trước); chỉ gửi khi người dùng đổi. */
   const [mon, setMon] = useState<string[] | null | undefined>(undefined);
@@ -154,6 +155,7 @@ export function PanelLoTrinhMoi({ bt, hocVien, lop, quayLai, dau, onClose, onSav
               ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={tg} onChange={(e) => setTg(e.target.value)} />
               : <b className="tabular-nums text-slate-100">{boTarget ? '—' : bt.target || '—'}</b>}
             {!suaTg && !boTarget && bt.target && <span className="text-sm text-slate-500">{t('giữ')}</span>}
+            {suaTg && bt.targetGoiY && tg.trim() === bt.targetGoiY && <span className="text-sm text-slate-500">{t('đã đạt {tg} · gợi ý +1.0', { tg: bt.target })}</span>}
             {!suaTg && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => { setSuaTg(true); setBoTarget(false); setTg(bt.target); }}>{t('Sửa')}</button>}
             {khac && !boTarget && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => { setBoTarget(true); setSuaTg(false); }}>{t('Bỏ Target')}</button>}
           </div>

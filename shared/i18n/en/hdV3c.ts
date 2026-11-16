@@ -163,7 +163,7 @@ export const EN_HD_V3C = {
   'Chọn <b>Đã báo PH</b> / <b>Chưa liên hệ được</b>, <b>Ngày</b>, <b>Nội dung</b>; <b>Lưu</b>.': 'Choose <b>Parent informed</b> / <b>Could not reach</b>, <b>Date</b>, <b>Content</b>; <b>Save</b>.',
   'Ô <b>Chốt</b>: <b>Ngày thi</b> hoặc <b>Dời tháng dự kiến</b>.': 'The <b>Set</b> box: <b>Exam date</b> or <b>Move expected month</b>.',
   '<b>Chốt ngày</b>; việc tự hết.': '<b>Set date</b>; the task clears itself.',
-  'Chọn lộ trình; môn học và Target giữ, sửa được.': 'Choose a pathway; subjects and Target are kept and can be edited.',
+  'Chọn lộ trình; môn học và Target giữ (đã đạt: gợi ý +1.0), sửa được.': 'Choose a pathway; subjects and Target are kept (reached: suggested +1.0) and can be edited.',
   'Đầu vào là kết quả thi thật gần nhất.': 'The entry score is the latest real exam result.',
   'Sửa ô cần đổi; đổi Target thì ghi <b>Lý do đổi Target</b>.': 'Edit the box you need; changing Target needs a <b>Reason for Target change</b>.',
   '<b>Lưu</b>; hộp ghi <b>Lịch sử</b>.': '<b>Save</b>; the change is recorded in <b>History</b>.',

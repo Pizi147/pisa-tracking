@@ -621,6 +621,7 @@ const EN_B_WEB = {
   'Đã chốt — cần Quản lý hiệu chỉnh': 'Confirmed — needs a manager correction',
   'Đã bỏ vắng {x}{x2} · {x3} {tuanVe}': 'Absence removed {x}{x2} · {x3} {tuanVe}',
   'giữ': 'kept',
+  'đã đạt {tg} · gợi ý +1.0': 'reached {tg} · suggested +1.0',   // N50 (12): Lộ trình mới sau khi đạt Target
   'về': 'back to',
   'Vắng — {title}': 'Absent — {title}',
   'Đã nhập': 'Entered',
