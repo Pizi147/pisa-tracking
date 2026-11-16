@@ -79,6 +79,14 @@ typography:
     fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
     fontSize: "28px"
     fontWeight: 700
+  stat-xl:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "40px"
+    fontWeight: 700
+  stat-2xl:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "48px"
+    fontWeight: 700
   scale:
     note: "Thang chữ V5 (G13, tailwind fontSize): 12 · 13 · 14 · 15 · 17 · 22 · 28 px — 14 lưới dày, 17 tiêu đề khối / panel, 28 số lớn đều trong thang"
 rounded:
