@@ -116,7 +116,8 @@ export async function runPrOv5aTests(t: YThucTestKit) {
   check('OV5a-8 · Hồ sơ GV › Việc đang tồn = số việc đầu nhóm Công việc (S11: `demDongViec` trên dòng): GV tự xem, QL xem GV', () => thu(() => {
     bonEm();
     const tong = (v: any[]) => v.reduce((n, x) => n + x.n, 0);
-    const viec = (w: any) => d.demDongViec(w.dong ?? []).n;
+    /* AUDIT-1611 P1-03: việc CỦA GV đó (= `summary.viec`, đầu trang / badge) — dòng làm thay không vào hồ sơ. */
+    const viec = (w: any) => w.summary.viec;
     assert(tong(hoSo.viecCuaGv(GV_R, GV_R.userId)) === viec(mywork.myWork(GV_R)), 'GV tự xem');
     assert(tong(hoSo.viecCuaGv(P.mbManager, GV_R.userId)) === viec(mywork.viecCuaNguoi(P.mbManager, GV_R.userId)), 'QL xem GV');
   }));

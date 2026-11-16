@@ -39,7 +39,8 @@ export async function runPrBadgeCuaToiTests(t: { check: any; assert: any; P: any
       assert(s.viec === dauNhom, `${p.userId}: summary.viec ${s.viec} ≠ tổng đầu nhóm ${dauNhom}`);
       xoaNho();
       const hs = hoSo.viecCuaGv(p, p.userId).reduce((n: number, x: any) => n + x.n, 0);
-      assert(hs === demDongViec(w.dong).n, `${p.userId}: hồ sơ GV ${hs} ≠ Công việc ${demDongViec(w.dong).n}`);
+      /* AUDIT-1611 P1-03: hồ sơ GV = việc CỦA TÔI (đầu trang, badge) — dòng làm thay không vào. */
+      assert(hs === s.viec, `${p.userId}: hồ sơ GV ${hs} ≠ Công việc (của tôi) ${s.viec}`);
       if (s.canLamNgay > 0) coBadge++;
     }
     assert(coBadge > 0, 'seed phải có GV có việc cần làm ngay');
@@ -47,6 +48,6 @@ export async function runPrBadgeCuaToiTests(t: { check: any; assert: any; P: any
     assert(/summary\?\.canLamNgay/.test(doc('web/src/App.tsx')), 'badge App đọc summary.canLamNgay');
     assert(/soCuaToi\(dsGoc\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /k === 'toi' && hienSoToi \? soToi : null/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'ô Của tôi = soCuaToi, Của GV / Tất cả không số');
     /* CV-TAB: đầu trang đếm demDongViec(items); badge tab đếm dòng nhìn thấy (badgeTab ∘ dongTab — CVT-2 so tổng với demDongViec). */
-    assert(/demDongViec\(items\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /badgeTab\(dongCuaTab\(items, k\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'đầu nhóm đếm demDongViec');
+    assert(/demDongViec\(items\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /badgeTab\(dongCuaTab\(cuaBan\(items\), k\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'đầu nhóm đếm demDongViec');
   });
 }
