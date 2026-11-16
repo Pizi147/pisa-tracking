@@ -59,6 +59,7 @@ của `/attachments/:id/download` — không đổi ở mã sửa).
 | Quét Checkpoint dừng trước giao dịch khi lớp không liên tục (`quetCheckpoint`, bảng lớp đã nhớ) | `GET /classes/:id/diem-theo-luot` | 8 → 6 câu (+ bỏ `BEGIN IMMEDIATE` / `COMMIT` — khoá ghi Turso trong một GET) · 416 → 312 dòng · quét 226 → 124 | 209 | ~22 K dòng · ~840 lượt khứ hồi |
 | như trên | `GET /ke-hoach-test/thuong/:id` | 19 → 17 câu · 445 → 341 dòng | hiếm | |
 | Bản huỷ điểm còn mở lọc theo lượt của bảng (`diemHuyMo(attemptIds)`, chỉ mục `idx_ket_qua_huy_attempt`) | lưới lớp thường `GET /classes/:id/cham`, `/regular/classes/:id/sheet`, `/regular/attempts/:id` | 392 → 345 dòng · quét 83 → 10 (trước đọc MỌI bản mở cả hệ thống — tăng theo thời gian) | ≤ 287 | ≤ 13 K dòng |
+| `attemptDetail` truyền lịch đã đọc (`ensureSkillRows`) cho `dotHoanTat` — phép kiểm TD2-a "không đọc lặp" bắt được khi thêm đường vào bảng đo | `GET /attempts/:id` | 26 → 24 câu · 42 → 37 dòng | 24 | |
 | Tên Case của thẻ Chờ duyệt nạp một câu (`napTenCase`) | `GET /yeu-cau?hop=cho-duyet&xem=da-xu-ly` | 31–32 → 22–23 câu | ≤ 41 | ~ −9 câu / lần |
 | Ô tìm thanh trên: lớp + Case mở của mọi em một câu mỗi loại | `GET /students?q=…&gioiHan=6&gon=1` | 14 → 4 câu | 12 | −120 câu |
 | Chỉ mục `sos_case_history(case_id)` | `GET /cases/:id` (+ câu con `caseDongDoXoaSql`) | quét cả bảng 1 103 → 10 | 168 | **~184 K dòng quét** |
@@ -89,7 +90,7 @@ Cộng: ~ **270 K dòng đọc Turso / ngày** (≈ 8 triệu / tháng), ~ 900 l
 ## 5. Trần mới (`server/src/tests/tocDoDuong.ts`)
 
 - 25 GET chưa có trong `DUONG_DO` thêm vào bảng đo (seed).
-- Mọi (vai × đường) của `DUONG_DO` chưa có trần: thêm `TRAN` = max(đo + 10, ⌈đo × 1,3⌉) và `TRAN_DONG` = max(đo + 50, ⌈đo × 1,3⌉) theo số đo seed — khoá không cho tăng.
+- Mọi (vai × đường) của `DUONG_DO` chưa có trần (145 câu · 622 dòng): thêm `TRAN` = max(đo + 10, ⌈đo × 1,3⌉) và `TRAN_DONG` = max(đo + 50, ⌈đo × 1,3⌉) theo số đo seed — khoá không cho tăng.
 
 ## 6. Bảng đường (xếp theo dòng / ngày, rồi dòng max)
 
