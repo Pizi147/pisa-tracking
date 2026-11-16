@@ -34,6 +34,7 @@ export const EN_UI_CV_TVV = {
   'Lần báo PH của bạn vẫn giữ trong lịch sử. Bạn không cần làm gì.': 'Your parent call stays in the history. Nothing to do.',
   'Lịch sử ({n})': 'History ({n})',
   'Nội dung GVCN': 'Homeroom teacher note',
+  'Chưa chốt bước tiếp': 'Next step pending',
   'Overall tự tính': 'Overall (calculated)',
   'PH nói gì, hẹn gì': 'What the parent said or promised',
   'Sau thi': 'After exam',

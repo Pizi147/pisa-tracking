@@ -522,7 +522,7 @@ export function DongQuyChe({ qc, px = 'px-4', vien = true }: { qc: { chu: string
   /* HD3-1: "?" đọc câu quy chế đang hiện (dòng gắn sau cùng) cho đầu thẻ việc. */
   useEffect(() => ghiQuyCheMo({ chu: qc.chu, chiTiet: qc.chiTiet }), [qc.chu, qc.chiTiet]);
   return (
-    <div className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
+    <div data-quy-che className={`flex min-h-9 shrink-0 items-center gap-2 ${vien ? 'border-t' : 'border-b'} ${px} py-1.5 text-[13px] leading-snug text-dim`} style={{ borderColor: 'var(--line)' }}>
       <span className="shrink-0 text-xs font-semibold text-faint">{t('Quy chế')}</span>
       {/* GD-20c (PTA rà #1738): 375 câu xuống dòng đủ chữ, không "…"; ≥ 640 một dòng như mockup ⑤. HD3-1 (15 mục 8.1): ⓘ mở panel "?" chồng lên,
           đúng thẻ việc (thẻ có câu này + chi tiết ở đầu) — không còn hộp chữ riêng; ⓘ vẫn chỉ khi có chi tiết. */}

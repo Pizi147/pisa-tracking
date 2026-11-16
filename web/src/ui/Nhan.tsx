@@ -120,7 +120,7 @@ export function Nhan({ tone, dut, title, onClick, cham = true, children }: {
   const cls = `${CHIP_TRON} ${NHAN[tone]} ${dut ? 'bg-transparent border-dashed !border-current' : ''} ${cham ? '' : 'before:!content-none'}`;
   if (onClick) {
     return (
-      <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-2 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>
+      <button type="button" title={title} onClick={onClick} className={`${cls} relative min-h-[28px] hover:brightness-125 max-sm:after:absolute max-sm:after:-inset-y-3 max-sm:after:inset-x-0 max-sm:after:content-['']`}>{children}</button>
     );
   }
   return <span title={title} className={cls}>{children}</span>;
