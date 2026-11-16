@@ -1226,8 +1226,8 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /classes/3/issue-board/o?category=overall&cot=overall&kind=mt1': 360,
   /* LOP-1-LOP: hồ sơ lớp chỉ đọc lượt của lớp (`myWork({ classIds })`) — đo QL / QT 1 278 (trước 1 448), GVCN / GVCN_THUONG 854 (trước 935), GVBM 850 (trước 958);
      badge quá hạn nay trong cùng đường (trước thêm `/my-work` QL 1 414 · GV 921–944 dòng). Trần = max(đo + 50, ⌈đo × 1,3⌉). */
-  'QL /classes/3/viec-theo-em?chi=toi': 1304, 'QT /classes/3/viec-theo-em?chi=toi': 1304,   // TL-NEN: đo 1155 · 1155 (trước 1245 · 1245); TL-VIEC: đo 1003 · 1003 (trước 1155 · 1155)
-  'GVCN /classes/3/viec-theo-em?chi=toi': 930, 'GVBM /classes/3/viec-theo-em?chi=toi': 920, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 930,   // TL-NEN: đo 731 (trước 821); TL-VIEC: đo 759 · 745 · 759 (trước 731 · 727 · 731 — nạp mọi phân công đổi lấy −13 câu; ×3 giảm 1601 → 1537)   // RA-DOC-0611b: đo 715 · 707 · 715 (trước 779 · 765 · 779)
+  'QL /classes/3/viec-theo-em?chi=toi': 891, 'QT /classes/3/viec-theo-em?chi=toi': 891,   // TD-VIEC `chiLop`: đo 680 · 685 → ⌈đo × 1,3⌉ · TL-NEN: đo 1155 · 1155 (trước 1245 · 1245); TL-VIEC: đo 1003 · 1003 (trước 1155 · 1155)
+  'GVCN /classes/3/viec-theo-em?chi=toi': 652, 'GVBM /classes/3/viec-theo-em?chi=toi': 522, 'GVCN_THUONG /classes/3/viec-theo-em?chi=toi': 652,   // TD-VIEC `chiLop`: đo 501 · 401 · 501 → ⌈đo × 1,3⌉ · TL-NEN: đo 731 (trước 821); TL-VIEC: đo 759 · 745 · 759 (trước 731 · 727 · 731 — nạp mọi phân công đổi lấy −13 câu; ×3 giảm 1601 → 1537)   // RA-DOC-0611b: đo 715 · 707 · 715 (trước 779 · 765 · 779)
   /* CHUONG-V2 (XM-3): không đồng bộ, không đọc thông báo tự động cũ — trần = max(đo+50, ⌈đo×1,3⌉), đo 12/11 QL 19 · GVCN 39 · GVBM 10 · GVCN_THUONG 39 · QT 18 (trước 25 · 45 · 14 · 45 · 26; QT đồng bộ khi vừa ghi ~241). */
   'QL /notifications': 69, 'GVCN /notifications': 89, 'GVBM /notifications': 60, 'GVCN_THUONG /notifications': 89, 'QT /notifications': 68,
   /* QUET-THEO-KY Q3: Báo cáo HV một GET — trần = max(đo+50, ⌈đo×1,3⌉), đo 30/10 (trước hai GET: QL ft 2 629 + 2 443, QT 3 419 + 3 310 dòng). */

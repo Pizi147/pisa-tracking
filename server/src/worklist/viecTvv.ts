@@ -60,7 +60,7 @@ export const coTheGiuViecTvv = (p: Principal) => p.roleKeys.includes('consultant
  *  · "Bổ sung hồ sơ thiếu" (Q-D4 ①): MỘT dòng tổng mỗi người giữ — em thiếu một trong 4 trường (`missingForStudent`: Ngày sinh · Email · Tuần bắt đầu ·
  *    Target FT). Tập em = tập chip "Thiếu thông tin" (`danhSachHocVienLop`: em có lớp đang học) — số trên việc = số dòng danh sách khi mở link.
  */
-export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null; chot: boolean; boSung: boolean }): WorkItem[] {
+export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null; chot: boolean; boSung: boolean; /** TD-VIEC: chỉ em đang học lớp này */ lop?: number | null }): WorkItem[] {
   if ((!o.chot && !o.boSung) || !coTheGiuViecTvv(p)) return [];
   const ql = laQl(p);
   const giu = nguoiGiuTvv(p, o.today);
@@ -84,6 +84,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       }
     }
     if (o.branchId != null) { dk.push('COALESCE(c.branch_id, s.branch_id) = ?'); thamSo.push(o.branchId); }
+    if (o.lop) { dk.push('e.class_id = ?'); thamSo.push(o.lop); }
     /* AUDIT-1611 PR 5: QL "Của tôi" — `giu` chỉ nhận em mình là TVV hoặc em CHƯA có TVV (`nguoiGiuTvv`, không `tatCa`) → lọc ngay trong SQL, không đọc
        mọi em của các chi nhánh (QL 5 chi nhánh: ~820 dòng / lần). Kết quả không đổi. */
     if (ql && !o.tatCa) { dk.push('(s.consultant_user_id = ? OR s.consultant_user_id IS NULL OR s.consultant_user_id = 0)'); thamSo.push(p.userId); }
