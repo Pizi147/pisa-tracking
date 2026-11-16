@@ -13,7 +13,7 @@ import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import {
-  VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
+  GOI_Y_VI_PHAM, VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, VI_PHAM_TEN_TOI_DA, VI_PHAM_TOI_DA_DONG, LO_GHI_VI_PHAM, TOI_DA_EM_GHI_VI_PHAM,
   monViPham, tenMon, cauCanhBaoTrung, chiaLo, dsLoiGhiViPham, type LoiTruong, type ViolationCategory,
   quyCheViPham,
   shortDate,
@@ -341,10 +341,18 @@ function DongViPham({ d, k, nhieu, today, ct, defaultSkill, editing, batBuocMon,
         </div>
       </Truong>
 
-      <Truong nhan={chiNhac ? t('Nhắc nhở') : t('Vi phạm')} batBuoc loi={lf.loiCua(loi, `ten-${n}`)} dem={{ co: d.ten.trim().length, can: VI_PHAM_TEN_TOI_DA }}>
+      <Truong nhan={chiNhac ? t('Nhắc nhở') : t('Vi phạm')} batBuoc loi={lf.loiCua(loi, `ten-${n}`)} dem={{ co: d.ten.trim().length, toiDa: VI_PHAM_TEN_TOI_DA }}>
         <input className="field w-full" {...lf.o(loi, `ten-${n}`)} maxLength={VI_PHAM_TEN_TOI_DA} value={d.ten} onChange={(e) => onSua({ ten: e.target.value })}
           placeholder={t('Ví dụ: Không nộp BTVN Reading')} />
       </Truong>
+      {/* AUDIT-1611 B3-07: chọn Nhóm → câu hay dùng; bấm là điền ô trên (sửa được). */}
+      {!!GOI_Y_VI_PHAM[d.nhom as ViolationCategory]?.length && (
+        <div className="-mt-2 flex flex-wrap gap-1.5" role="group" aria-label={t('Câu hay dùng')}>
+          {GOI_Y_VI_PHAM[d.nhom as ViolationCategory].map((c) => (
+            <button key={c} type="button" className="btn btn-sm min-h-[44px] rounded-full px-3 sm:min-h-0" onClick={() => onSua({ ten: dich(c) })}>{dich(c)}</button>
+          ))}
+        </div>
+      )}
 
       <Hang2>
         {/* Pre FOU không chia môn → ẩn ô Môn (K5-47). */}

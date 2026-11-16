@@ -91,8 +91,13 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop }: {
       </div>
     );
   }
+  /* AUDIT-1611 B3-22: ≥ 2 em cùng việc chờ xác nhận → một lần "Xác nhận n em" (ngày hôm nay, MỘT nội dung chung); từng em vẫn Xác nhận / Sửa riêng ở dòng. */
+  const choLo = tvv ? [] : can.filter((d) => d.a.status === 'pending' && !vuaLuu.has(d.a.id) && d.luot.canAct);
+  const daLuuLo = (ids: number[]) => setVuaLuu((x) => new Set([...x, ...ids]));
   /* GVCN: hai cột Học viên · Cần làm (Nội dung ghi ngay trong form Xác nhận — mockup B1). TVV: Học viên · GVCN gửi · Báo PH (B2). */
   return (
+    <>
+    {choLo.length >= 2 && <LoXacNhan ds={choLo} onXong={(ids) => { daLuuLo(ids); invalidate('/classes'); invalidate('/students'); invalidate('/my-work'); onChanged(); }} />}
     <div role="table" className="text-sm" aria-label={tvv ? t('Báo PH · kết quả') : t('Cần làm')}>
       <div role="row" className={`${tvv ? HANG : HANG_GOP} h-10 items-center border-b text-[13px] font-semibold text-dim max-sm:hidden`} style={{ borderColor: 'var(--line)' }}>
         <span role="columnheader" className="pr-2.5">{t('Học viên')}</span>
@@ -102,6 +107,69 @@ export function BangPhoiHop({ turns, che, onChanged, chiEm, lop }: {
       </div>
       {can.map((d) => <DongPhoiHop key={d.a.id} d={d} tvv={tvv} gop={!tvv} noi={d.luot.studentId === chiEm} vua={vuaLuu.has(d.a.id)} onChanged={onChanged}
         onVua={(co) => setVuaLuu((x) => { const n = new Set(x); if (co) n.add(d.a.id); else n.delete(d.a.id); return n; })} />)}
+    </div>
+    </>
+  );
+}
+
+/**
+ * AUDIT-1611 B3-22: xác nhận nhiều em một lần — chọn em (mặc định tất cả), Ngày (hôm nay), Nội dung chung; gọi đường xác nhận sẵn có từng em.
+ * Lô lỗi một phần: em lưu được rời danh sách, em lỗi giữ nguyên chọn + câu lỗi (chữ giữ).
+ */
+function LoXacNhan({ ds, onXong }: { ds: Dong[]; onXong: (ids: number[]) => void }) {
+  const toast = useToast();
+  const { homNay } = useNgayNghiepVu();
+  const [mo, setMo] = useState(false);
+  const [chon, setChon] = useState<ReadonlySet<number>>(() => new Set(ds.map((d) => d.a.id)));
+  const [ngay, setNgay] = useState(homNay);
+  const [nd, setNd] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [loi, setLoi] = useState<string | null>(null);
+  const dsChon = ds.filter((d) => chon.has(d.a.id));
+  const toiThieu = Math.max(0, ...dsChon.map((d) => d.a.toiThieuGhiChu ?? (laMeetingCx(d.a.kind) ? 0 : 1)));
+  const thieu = toiThieu > 0 && nd.trim().length < toiThieu;
+  const luu = async () => {
+    if (!dsChon.length || !ngay) return;
+    if (thieu) { setLoi(toiThieu > 1 ? t('Nội dung ít nhất {n} ký tự.', { n: toiThieu }) : t('Ghi Nội dung: đã làm gì, em / gia đình phản hồi gì.')); return; }
+    setBusy(true); setLoi(null);
+    const xong: number[] = []; let hong = 0; let cau = '';
+    for (const d of dsChon) {
+      try { await api.post(`/phoi-hop-sos/${d.a.id}/confirm`, { performedOn: ngay, note: nd.trim() || undefined }); xong.push(d.a.id); }
+      catch (e: any) { hong++; cau = e?.message ?? ''; }
+    }
+    setBusy(false);
+    if (xong.length) { onXong(xong); toast.push('ok', t('Đã xác nhận {n} em', { n: xong.length })); }
+    if (hong) setLoi(t('{n} em chưa lưu được — {cau}', { n: hong, cau })); else setMo(false);
+    setChon(new Set([...chon].filter((id) => !xong.includes(id))));
+  };
+  if (!mo) {
+    return (
+      <div className="mb-2 flex justify-end">
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-expanded={false} onClick={() => setMo(true)}>{t('Xác nhận {n} em ▾', { n: ds.length })}</button>
+      </div>
+    );
+  }
+  return (
+    <div className="mb-3 grid gap-2.5 rounded-[10px] border p-3 text-sm" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
+      <div className="flex flex-wrap gap-1.5" role="group" aria-label={t('Học viên')}>
+        {ds.map((d) => (
+          <NutChon key={d.a.id} nho chon={chon.has(d.a.id)} onClick={() => setChon((x) => { const n = new Set(x); if (n.has(d.a.id)) n.delete(d.a.id); else n.add(d.a.id); return n; })}>
+            {d.luot.studentName}
+          </NutChon>
+        ))}
+      </div>
+      <span className="flex flex-wrap items-center gap-x-3 gap-y-2"><span className="font-bold">{t('Ngày')} <span className="text-late">*</span></span>
+        <span className="block w-[11.5rem]"><ONgay kieu="ngay" value={ngay} onChange={setNgay} toiDa={homNay} ariaLabel={t('Ngày')} /></span></span>
+      <label className="grid gap-1.5 font-bold">
+        <span>{t('Nội dung chung')}{toiThieu > 0 && <span className="text-late"> *</span>}</span>
+        <textarea className="field min-h-[60px] w-full font-normal" rows={2} value={nd} onChange={(e) => { setNd(e.target.value); setLoi(null); }} aria-invalid={!!loi} />
+      </label>
+      {loi && <p role="alert" className="m-0 text-[13px] text-bad">{loi}</p>}
+      <span className="flex flex-wrap justify-end gap-2">
+        <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => setMo(false)}>{t('Đóng')}</button>
+        <button type="button" className="btn btn-primary btn-sm min-h-[44px] sm:min-h-0" disabled={busy || !dsChon.length} onClick={() => void luu()}>
+          {busy ? t('Đang lưu…') : t('Xác nhận {n} em', { n: dsChon.length })}</button>
+      </span>
     </div>
   );
 }
