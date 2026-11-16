@@ -9,7 +9,7 @@ Mockup tham chiếu: ④ (#k1 dòng việc, #k2 panel) và ③ (#k6 đầu hồ 
 | A3-02 | Tiêu đề panel: "Báo PH · REPORT 1" / "Sau thi" / "Chốt ngày thi" (tên em chỉ ở dòng dưới) | KHỚP ④ #k2 |
 | A3-16 | Panel Công việc ≥ 1024: khung cao ≤ 100dvh − 18rem → chân (Đóng · Lưu · Lưu · việc tiếp) luôn trong màn 1440 × 900 (trước: dưới mép, y ≈ 1049) | KHỚP (chân dính đáy như 375) |
 | A3-18 | Chốt ngày thi: bỏ chữ "hiện" trơ | — |
-| A3-19 | Dòng Sau thi: "Thi 05/09" (bỏ thứ, bỏ "Đã thi" lặp); bỏ ⚠ trước "Chưa liên hệ được" | KHỚP ④ #k1 |
+| A3-19 | Dòng Sau thi (đổi ở web, không đổi JSON máy chủ): "Thi 05/09" (bỏ thứ, bỏ "Đã thi" lặp); bỏ ⚠ trước "Chưa liên hệ được" | KHỚP ④ #k1 |
 | A3-22 | Chân panel việc TVV: chỉ hiện "● Chưa lưu" khi form khác lúc mở | — |
 | P1-14 | Hồ sơ HV TVV / CX / Admin: một dáng "+ Task" + "⋯" (375: bớt ~3 hàng nút) | KHỚP ③ #k6 |
 
@@ -22,4 +22,4 @@ Mockup tham chiếu: ④ (#k1 dòng việc, #k2 panel) và ③ (#k6 đầu hồ 
 Không mất thao tác nào.
 
 ## Dòng đọc Turso
-Không đổi (chỉ chữ + class; B1-09 không thuộc PR này). Server chỉ đổi chuỗi `chuDaThi` (một chuỗi trong câu có sẵn).
+Không đổi (chỉ chữ + class; B1-09 không thuộc PR này). Máy chủ không đổi.
