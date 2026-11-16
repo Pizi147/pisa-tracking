@@ -42,18 +42,31 @@ await new Promise((r) => server.once('listening', r));
 const port = server.address().port;
 const ds = JSON.parse(fs.readFileSync(dsPath, 'utf8'));
 const kq = {};
+/* TD-QUET: lượt khởi động (không ghi) — quét nền đầu ngày + nhớ bảng tham chiếu theo tiến trình, như hàm Netlify đã ấm. */
+if (ds[0]) {
+  const t0 = createSession(ds[0].user);
+  await (await fetch(`http://127.0.0.1:${port}/api/my-work`, { headers: { cookie: `${SESSION_COOKIE}=${t0}` } })).text();
+}
+const homNay = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
 for (const muc of ds) {
   const token = createSession(muc.user);
   if (muc.goc) datGocNhin(token, muc.goc);   // tài khoản nhiều vai: góc nhìn đang đo (manager, system_admin…)
   const cookie = `${SESSION_COOKIE}=${token}`;
   if (muc.quet) conn.prepare("UPDATE moc_he_thong SET luc = NULL, ngay = NULL WHERE khoa LIKE 'quet:%'").run();
-  for (const url of muc.urls) {
+  /* Mục url: chuỗi (GET) hoặc { m, url, body } (đường ghi — chỉ chạy trên bản chép tạm). */
+  for (const muc1 of muc.urls) {
+    const { m = 'GET', url, body: than } = typeof muc1 === 'string' ? { url: muc1 } : muc1;
+    /* TD-QUET: mốc quét CÒN HẠN trước mỗi lượt (như tocDo.run) — lượt quét nền 60 s không lẫn vào số của đường đang đo. */
+    if (!muc.quet) conn.prepare("UPDATE moc_he_thong SET luc = ?, ngay = ? WHERE khoa LIKE 'quet:%'").run(new Date().toISOString(), homNay);
     ghi.cau = []; ghi.bat = true;
     const t = Date.now();
-    const res = await fetch(`http://127.0.0.1:${port}/api${url}`, { headers: { cookie } });
+    const res = await fetch(`http://127.0.0.1:${port}/api${url}`, {
+      method: m, headers: { cookie, ...(than === undefined ? {} : { 'content-type': 'application/json' }) },
+      ...(than === undefined ? {} : { body: JSON.stringify(than) }),
+    });
     const body = await res.text();
     ghi.bat = false;
-    const khoa = `${muc.ten} · ${url}`;
+    const khoa = `${muc.ten} · ${m === 'GET' ? '' : `${m} `}${url}`;
     kq[khoa] = { status: res.status, ms: Date.now() - t, kb: Math.round(body.length / 1024), n: ghi.cau.length,
       dong: ghi.cau.reduce((s, c) => s + c.dong, 0), cau: ghi.cau, ...(process.env.PISA_IN_JSON ? { body } : {}) };   // PISA_IN_JSON=1: giữ JSON trả về để so trước / sau
     console.log(`${res.status} ${String(kq[khoa].n).padStart(5)} câu ${String(kq[khoa].dong).padStart(6)} dòng ${String(kq[khoa].ms).padStart(5)} ms ${String(kq[khoa].kb).padStart(5)} KB  ${khoa}${res.ok ? '' : ` — ${body.slice(0, 120)}`}`);

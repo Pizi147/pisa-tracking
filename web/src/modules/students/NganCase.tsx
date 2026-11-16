@@ -1,6 +1,6 @@
-import { useContext, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
+import { taiTruoc, useApi } from '../../lib/useApi.ts';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ApiError, api, invalidate } from '../../lib/api.ts';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { URGENCY_LABEL, URGENCY_LEVELS, caseTopicsFor, chuPhuHuynh, duongHoSoHocVien, tenMon, tenMonNgan, tuanLich, viewTuMa, type DeadlineKind } from '@shared/domain/index.ts';
 import { XemCha, useXem } from '../../lib/quayLai.ts';
 import { useSession } from '../../lib/session.tsx';
-import { ThanCase, tenNganCase, type BaoThanCase, type CaseDetail, type DichCase, type ViewCase } from '../cases/CasePanel.tsx';
+import { ThanCase, duongBangChungCase, tenNganCase, type BaoThanCase, type CaseDetail, type DichCase, type ViewCase } from '../cases/CasePanel.tsx';
 import { BaoLuuCase, DaiDaXoa, GiaTriSua, gioLuu, type TtLuuCase } from '../cases/TaiCho.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { NhanTamDung } from '../cases/SkillBoard.tsx';
@@ -53,6 +53,8 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
   const { homNay } = useNgayNghiepVu();
   const vai = useSession().session?.roles ?? [];
   const { data, error, reload, setData } = useApi<CaseDetail>(`/cases/${caseId}`);
+  /* TD-NGUOI: bằng chứng của Case (`ThanCase` đọc khi có Case) gọi CÙNG LÚC với Case — trước: chờ Case về mới gọi, thêm một lượt mạng. */
+  useEffect(() => { taiTruoc(duongBangChungCase(caseId)); }, [caseId]);
   const trongCot = useContext(KhungTrongCot);
   const dauCv = useContext(DauViecCongViec);
   const chuoi = useContext(XemCha);

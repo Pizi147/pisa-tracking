@@ -7,7 +7,7 @@
  * Mọi màn đọc `assessment_scores` (SOS, báo cáo, Phân tích, Xuất Excel, Điểm theo lớp) vì thế tự không tính điểm đã cất mà không phải sửa;
  * xếp lại lượt (`hoiSinhLuot`) KHÔNG bỏ bản cất.
  */
-import { db, theoLo, tx } from '../db.ts';
+import { db, theoLo, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, nhanDot, tenMon, type KetQuaHuy } from '../../../shared/domain/index.ts';
 import type { ChupCaseDong } from '../cases/systemClose.ts';
 import { badRequest, canXacNhan, notFound, nowIso, loi } from '../util.ts';
@@ -18,7 +18,6 @@ import { writeAudit } from '../platform/audit.ts';
 import { assessedSkillOf } from './scoring.ts';
 import { moLaiLuotNeuHuy, refreshOutcome, saveScore } from './attempts.ts';
 import { chanCuoiTuan, checkSkillWeekMove, ensureSkillRows, logSchedule, recomputeCompletionWeek, tinhLaiMtCu } from './skillSchedule.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
 
 /*
  * LUAT-34 (Luật 3 — T20, T20b, T18): loại bản cất thứ ba 'huy_diem' — MỘT Ô vừa mất hết điểm (Huỷ điểm, xoá tay, Bỏ khỏi đợt; Thi lại thì không):
@@ -44,10 +43,15 @@ export function dongBanCat(conn: any, attemptId: number, skill: string, lyDo: st
   }
 }
 
-/** Ô còn bản cất mở (`${attemptId}:${ô}`) — một câu cho cả request (bảng điểm vẽ nhiều ô). */
-export function diemHuyMo(): Set<string> {
-  return nho('diem-huy-mo', () => new Set((db().prepare(`SELECT attempt_id, diem_json FROM ket_qua_huy WHERE loai = 'huy_diem' AND khoi_phuc_luc IS NULL`)
-    .all() as any[]).map((k) => `${k.attempt_id}:${(JSON.parse(k.diem_json) as any[])[0]?.skill}`)));
+/** Ô còn bản cất mở (`${attemptId}:${ô}`) của các lượt `attemptIds` — một câu cho cả bảng (bảng điểm vẽ nhiều ô).
+ *  TD-QUET: lọc theo lượt (chỉ mục `idx_ket_qua_huy_attempt`) — trước đọc mọi bản mở của cả hệ thống mỗi lần mở lưới lớp thường. */
+export function diemHuyMo(attemptIds: readonly number[]): Set<string> {
+  const out = new Set<string>();
+  theoLoJson(attemptIds, (json) => {
+    for (const k of db().prepare(`SELECT attempt_id, diem_json FROM ket_qua_huy WHERE loai = 'huy_diem' AND khoi_phuc_luc IS NULL
+        AND attempt_id IN (SELECT value FROM json_each(?))`).all(json) as any[]) out.add(`${k.attempt_id}:${(JSON.parse(k.diem_json) as any[])[0]?.skill}`);
+  });
+  return out;
 }
 
 /**

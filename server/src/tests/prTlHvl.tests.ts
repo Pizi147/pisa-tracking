@@ -77,7 +77,7 @@ export async function runPrTlHvlTests(t: any) {
     const { cau } = await doGet(P.mbManager.userId, `/classes/${lopFt}/roster`);
     const lap = [dem(cau, /^SELECT [^()]*FROM classes WHERE id = \?/), dem(cau, /FROM assessment_scores WHERE attempt_id IN/), dem(cau, /^SELECT (sc\.)?student_id, .*FROM sos_cases sc/) - 1];
     assert(lap.every((n) => n <= 0), `đọc lại: lớp ${lap[0]} · điểm ${lap[1]} · Case mở ${lap[2]}`);
-    assert(cau.length <= 23, `${cau.length} câu`);   // GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): 22 → 23
+    assert(cau.length <= 24, `${cau.length} câu`);   // TD-HVL-2: `standingFor` đọc lượt từ nguồn chung `attemptsNewestFirst` + một câu nhỏ `huyHet` cho lượt có thể là mốc (thay câu lượt riêng có câu con trên mọi dòng): 23 → 24, dòng ≈ · GIAM-DOC-0611g: + câu tuần của lịch kỹ năng (thay JOIN report_periods từng dòng lịch — bớt dòng đọc Turso): 22 → 23
   });
 
   await checkAsync('H2 · /hoc-vien-lop QL: Case chi tiết + Ý thức + tiến độ lớp mỗi thứ một lượt, câu ≤ 48 (them=1 ≤ 49)', async () => {

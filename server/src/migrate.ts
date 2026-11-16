@@ -90,6 +90,7 @@ import { migratePrGiamDoc0611 } from './migrate/prGiamDoc0611.ts';
 import { migratePrGvCuBoTro } from './migrate/prGvCuBoTro.ts';
 import { migratePrBcPhViecGv } from './migrate/prBcPhViecGv.ts';
 import { migratePrKyVongTuDat } from './migrate/prKyVongTuDat.ts';
+import { migratePrTdQuet } from './migrate/prTdQuet.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
@@ -541,6 +542,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   /* KY-VONG-MT0 (chủ SP 14/11): Kết quả đầu ra "Không đạt" mà MT0 đạt mốc chương trình → Đạt, Case Kỳ vọng + PA Tutor đóng; nhật ký audit giữ bản cũ,
      khôi phục `khoiPhucKyVongTuDat` (đổi dữ liệu MỘT lần, khoá demo_config). */
   buoc(() => migratePrKyVongTuDat(conn, applied));
+  /* TD-QUET (17/11): chỉ mục sos_case_history(case_id) + case_signals(class_id) — Lịch sử Case / "lớp đã có dữ liệu" hết quét cả bảng (chỉ thêm chỉ mục). */
+  buoc(() => migratePrTdQuet(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

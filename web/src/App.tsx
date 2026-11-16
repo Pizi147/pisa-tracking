@@ -66,23 +66,46 @@ const PhanTichPage = lazyTai(() => import('./modules/phanTich/PhanTichPage.tsx')
  * Test, Công việc, Quản trị — cùng điều kiện các `<Route>` dưới) chỉ nạp khi vai mở được: GV 619 KB, TVV 620, CX 602, Admin VP 655; QL / QT không đổi.
  * Đã có cache (tệp `/assets` immutable 1 năm) thì 0 byte cả trước lẫn sau. PDF / Excel vẫn nạp lười, không vào đây.
  */
-const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean)?][] = [
-  [() => import('./modules/worklist/OverviewPage.tsx')],
-  [() => import('./modules/fasttrack/MockDetailPage.tsx')],
-  [() => import('./modules/students/StudentsPage.tsx')],
-  [() => import('./modules/classes/ClassOverviewPage.tsx')],
-  [() => import('./modules/students/StudentDetailPage.tsx')],
-  [() => import('./modules/students/LuuTruPage.tsx')],
-  [() => import('./modules/cases/CaseBoardPage.tsx')],
-  [() => import('./modules/test/TestPage.tsx'), (n) => n.test],
-  [() => import('./modules/congViec/CongViecPage.tsx'), (n) => n.work],
-  [() => import('./modules/platform/AdminPage.tsx'), (n) => n.admin || !!n.bangQuyDoi],
-  [() => import('./modules/platform/ProfilePage.tsx')],
-  [() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx')],
-  [() => import('./modules/huongDan/HuongDanPage.tsx')],
-  [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis],
-  [() => import('./modules/congViec/PanelViec.tsx')],
+/*
+ * TD-NGUOI (đo 17/11, bản build, Fast 3G): mở link / tải lại trang thì mảnh JS của trang chỉ bắt đầu tải SAU khi `/demo/session` về — thêm trọn một lượt mạng
+ * trước khi trang gọi được dữ liệu. Nay tải mảnh của trang đang mở (`re`, khớp như `<Routes>` dưới) ngay khi gói đầu chạy, song song với phiên (`lazy` dùng lại
+ * cùng `import()`); đường không khớp thì thôi — như trước.
+ */
+const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean) | null, RegExp?][] = [
+  [() => import('./modules/worklist/OverviewPage.tsx'), null, /^\/$/],
+  [() => import('./modules/fasttrack/MockDetailPage.tsx'), null, /^\/mock-test\/[^/]+$/],
+  [() => import('./modules/students/StudentsPage.tsx'), null, /^\/hoc-vien$/],
+  [() => import('./modules/classes/ClassOverviewPage.tsx'), null, /^\/hoc-vien\/lop\/[^/]+$/],
+  [() => import('./modules/students/StudentDetailPage.tsx'), null, /^\/hoc-vien\/(?!luu-tru$)[^/]+$/],
+  [() => import('./modules/students/LuuTruPage.tsx'), null, /^\/hoc-vien\/luu-tru$/],
+  [() => import('./modules/cases/CaseBoardPage.tsx'), null, /^\/hoc-thuat\/case\/[^/]+$/],
+  [() => import('./modules/test/TestPage.tsx'), (n) => n.test, /^\/test(\/[^/]+)?$/],
+  [() => import('./modules/congViec/CongViecPage.tsx'), (n) => n.work, /^\/cong-viec(\/[^/]+)?$/],
+  [() => import('./modules/platform/AdminPage.tsx'), (n) => n.admin || !!n.bangQuyDoi, /^\/quan-tri$/],
+  [() => import('./modules/platform/ProfilePage.tsx'), null, /^\/ho-so-ca-nhan$/],
+  [() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), null, /^\/giao-vien\/[^/]+$/],
+  [() => import('./modules/huongDan/HuongDanPage.tsx'), null, /^\/huong-dan$/],
+  [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis, /^\/phan-tich$/],
+  [() => import('./modules/congViec/PanelViec.tsx'), null],
 ];
+/* Lỗi tải mảnh (vừa deploy) để `lazyTai` của trang tự xử lý như cũ — ở đây bỏ qua. */
+NAP_SAN.find(([, , re]) => re?.test(window.location.pathname))?.[0]().catch(() => {});
+/*
+ * TD-NGUOI: NẠP SẴN chờ MẠNG YÊN — 1,5 s liền không thêm tài nguyên nào tải xong (mảnh + dữ liệu của trang đang mở đã về), tối đa ~15 s. Trước: cố định 1,5 s
+ * sau đăng nhập — mạng chậm (Fast 3G, chưa cache) ~700 KB nạp sẵn tranh băng thông với chính trang đang mở: API trang lớp bắt đầu 8,3 s thay vì ~6 s.
+ */
+function khiMangYen(lam: () => void): () => void {
+  let n = -1, lan = 0;
+  let hen: ReturnType<typeof setTimeout>;
+  const xem = () => {
+    const m = performance.getEntriesByType('resource').length;
+    if (m === n || ++lan >= 10) { lam(); return; }
+    n = m;
+    hen = setTimeout(xem, 1500);
+  };
+  hen = setTimeout(xem, 1500);
+  return () => clearTimeout(hen);
+}
 
 /**
  * Trang thử thành phần dùng chung (PR-E Step 9) — CHỈ có khi chạy `npm run dev`. Điều kiện đứng
@@ -317,8 +340,7 @@ export default function App() {
   const navNap = session?.nav ?? NAV_RONG;
   useEffect(() => {
     if (!daDangNhap) return;
-    const t = setTimeout(() => NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }), 1500);
-    return () => clearTimeout(t);
+    return khiMangYen(() => NAP_SAN.forEach(([nap, duoc]) => { if (!duoc || duoc(navNap)) nap().catch(() => {}); }));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- chỉ 4 cờ quyết định trang được nạp
   }, [daDangNhap, navNap.analysis, navNap.test, navNap.work, navNap.admin, navNap.bangQuyDoi]);
 

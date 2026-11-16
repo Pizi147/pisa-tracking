@@ -2,11 +2,11 @@ import { DS_JSON, db, theoLoJson } from '../db.ts';
 import { coKhoa, coNho, datNho, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { CASE_THAT } from '../cases/sosState.ts';
 import { demoToday } from '../demoConfig.ts';
-import { ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, CHUONG_TRINH_KHONG_CHIA_MON, PROGRAMME_TEMPLATES, SOS_LABEL, DUOI_KY_VONG_KCK, boMonLich, mocKeTiep, mondayOfDate, LUOT_HUY_HET_SQL, kyNangXongThieu, moiNhatTruoc, nhanBaiThuong, boMonTheoLuot, daGhiLuot, boMonDaBo, kyNangDaBo } from '../../../shared/domain/index.ts';
 import { entryBandsOf, kckCuaLuot, loadBundle } from '../fasttrack/attempts.ts';
 import { evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop } from '../normal/regular.ts';
-import { type SkillEval } from '../worklist/danhGia.ts';
+import { attemptsNewestFirst, type SkillEval } from '../worklist/danhGia.ts';
 
 /**
  * TÌNH TRẠNG HỌC THUẬT HIỆN TẠI CỦA MỘT HỌC VIÊN — MỘT định nghĩa cho cả hệ thống.
@@ -146,6 +146,9 @@ const EMPTY = (studentId: number, cycleId: number | null): Standing => ({
 const labelOf = (kind: string | null, no: number | null) =>
   kind === 'final' || kind === 'progress' ? nhanBaiThuong(kind) : `MT${no ?? '?'}`;
 
+/** TD-HVL-2: CHỈ phép kiểm bật — đọc lượt bằng câu riêng cũ (theo lộ trình) để so với đường đọc chung `attemptsNewestFirst`. */
+export const standingDuongCuKhiKiem = { bat: false };
+
 /** S2: CHỈ phép kiểm bật — `standingFor` nạp bundle mọi lượt có điểm một lần (đường cũ) để so với đường nạp theo vòng. */
 export const standingNapDuKhiKiem = { bat: false };
 
@@ -186,6 +189,56 @@ export function standingFor(studentIds: number[], lopKetThuc?: number): Map<numb
   return new Map(thuTu.map((id) => [id, structuredClone(nho(tien + id, () => tinhStanding([id], lopKetThuc).get(id)!))]));
 }
 
+/**
+ * TD-HVL-2: lượt (không huỷ, không MT0) của lộ trình đã chọn từng em — đọc từ NGUỒN CHUNG `attemptsNewestFirst` (nhớ theo em trong request: Học viên & Lớp
+ * kèm Đang SOS, Tổng quan… đọc lượt của em MỘT lần cho cả `standingFor` và `latestAttempts`). Cùng tập, cùng thứ tự, cùng giá trị cột với câu cũ
+ * (`luotTheoLoTrinhCu`, phép kiểm so hai đường):
+ *   · tập: `attemptsNewestFirst` = mọi lượt không huỷ của em → lọc `cycle_id` = lộ trình đã chọn, `kind != 'mt0'`, lớp đã kết thúc thì `class_id`.
+ *   · thứ tự: `UNIQUE (cycle_id, attempt_no)` → `ORDER BY a.attempt_no` cũ là thứ tự toàn phần; xếp lại đúng như vậy.
+ *   · cột: `weekStart` = `period_start` (cùng `report_periods`); `route` = lộ trình của lượt = lộ trình đã chọn (câu cũ không có cột này → `?? cycle.route` ra cùng giá trị).
+ *   · `_co_diem`: nguồn chung = có ô band / điểm thô (`CO_DIEM_SQL`), câu cũ = có dòng điểm bất kỳ. Chỉ là lọc ứng viên: lượt không band / điểm thô
+ *     luôn `scored = 0` → `xet` trả false (TD7, như `latestAttempts`) — cùng lượt được chọn, bớt nạp bundle lượt chỉ có nhận xét / dấu vắng.
+ *   · `huyHet` (mốc kế tiếp): chỉ hỏi cho lượt có thể là mốc (planned, không lịch sử, tuần ≥ tuần này) — một câu nhỏ thay câu con trên MỌI lượt.
+ */
+function luotTuNguonChung(studentIds: number[], cycleOf: Map<number, any>, lopKetThuc?: number): any[] {
+  const out: any[] = [];
+  const theoEm = attemptsNewestFirst([...new Set(studentIds)].sort((x, y) => x - y));
+  for (const [sid, cycle] of cycleOf) {
+    for (const a of theoEm.get(sid) ?? []) {
+      if (a.cycle_id !== cycle.id || a.kind === 'mt0' || (lopKetThuc && a.class_id !== lopKetThuc)) continue;
+      out.push({ ...a, weekStart: a.period_start ?? null, huyHet: 0 });
+    }
+  }
+  out.sort((x, y) => x.attempt_no - y.attempt_no);
+  const tuanNay = mondayOfDate(demoToday());
+  const coTheLaMoc = out.filter((a) => a.status === 'planned' && !a.lich_su && !!a.weekStart && a.weekStart.slice(0, 10) >= tuanNay);
+  if (coTheLaMoc.length) {
+    const huy = new Set<number>();
+    theoLoJson(coTheLaMoc.map((a) => a.id), (json) => {
+      for (const r of db().prepare(`SELECT a.id FROM assessment_attempts a WHERE a.id IN (${DS_JSON}) AND ${LUOT_HUY_HET_SQL('a')}`).all(json) as any[]) huy.add(r.id);
+    });
+    for (const a of coTheLaMoc) if (huy.has(a.id)) a.huyHet = 1;
+  }
+  return out;
+}
+
+/** Câu riêng cũ (trước TD-HVL-2) — chỉ `standingDuongCuKhiKiem` (phép kiểm so hai đường). */
+function luotTheoLoTrinhCu(cycleIds: number[], lopKetThuc?: number): any[] {
+  const cph = cycleIds.map(() => '?').join(',');
+  return db()
+    .prepare(
+      `SELECT a.*, lop.programme_code, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end, ${LUOT_HUY_HET_SQL('a')} AS huyHet,
+              EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS _co_diem
+         FROM assessment_attempts a
+         LEFT JOIN classes lop ON lop.id = a.class_id
+         LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
+        WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không vào nhãn / kết quả gần nhất */
+          ${lopKetThuc ? 'AND a.class_id = ?' : ''}
+        ORDER BY a.attempt_no`,
+    )
+    .all(...cycleIds, ...(lopKetThuc ? [lopKetThuc] : [])) as any[];
+}
+
 function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, Standing> {
   const out = new Map<number, Standing>();
   if (!studentIds.length) return out;
@@ -221,19 +274,7 @@ function tinhStanding(studentIds: number[], lopKetThuc?: number): Map<number, St
    * Lấy cả lượt chưa có điểm, vì "đang chờ kết quả MT3" cũng là một thông tin phải nói ra —
    * im lặng thì người đọc tưởng em chưa được xếp lịch.
    */
-  const cph = cycleIds.map(() => '?').join(',');
-  const attempts = conn
-    .prepare(
-      `SELECT a.*, lop.programme_code, pr.code AS period_code, pr.week_start AS weekStart, pr.week_end AS period_end, ${LUOT_HUY_HET_SQL('a')} AS huyHet,
-              EXISTS (SELECT 1 FROM assessment_scores sc WHERE sc.attempt_id = a.id) AS _co_diem
-         FROM assessment_attempts a
-         LEFT JOIN classes lop ON lop.id = a.class_id
-         LEFT JOIN report_periods pr ON pr.id = a.planned_period_id
-        WHERE a.cycle_id IN (${cph}) AND a.status != 'cancelled' AND a.kind != 'mt0'   /* PR-MT0: MT0 không vào nhãn / kết quả gần nhất */
-          ${lopKetThuc ? 'AND a.class_id = ?' : ''}
-        ORDER BY a.attempt_no`,
-    )
-    .all(...cycleIds, ...(lopKetThuc ? [lopKetThuc] : [])) as any[];
+  const attempts = standingDuongCuKhiKiem.bat ? luotTheoLoTrinhCu(cycleIds, lopKetThuc) : luotTuNguonChung(studentIds, cycleOf, lopKetThuc);
   /*
    * TD3-b: chỉ lượt có dòng điểm mới được đọc bundle (vòng dưới bỏ qua lượt `!scores.length`) — không nạp lịch + điểm lượt chưa thi.
    * S2 (giảm dòng đọc Turso): nạp THEO VÒNG — vòng 1 chỉ ứng viên mới nhất của mỗi em; em nào ứng viên bị loại (chưa kỹ năng nào đủ điểm) thì

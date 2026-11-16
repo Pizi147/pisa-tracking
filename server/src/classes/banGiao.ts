@@ -529,18 +529,20 @@ export type ViecBanGiao =
  * OV-11c (CV-8): `userId` null = việc của MỌI người được phân công (Công việc › Của GV) — vẫn ba câu, không hỏi lại theo người.
  */
 /** MON-CT-1311 PR 2: một bộ nhớ cho cả lượt gọi (cả NGOÀI request) — bộ môn chương trình (`boMonCt`) đọc một lần, không một câu mỗi lệnh / em. */
-export function viecBanGiao(userId: number | null, branchId?: number | null): ViecBanGiao[] { return trongBoNho(() => viecBanGiaoGoc(userId, branchId)); }
-function viecBanGiaoGoc(userId: number | null, branchId?: number | null): ViecBanGiao[] {
+/** `lopId` (TD-VIEC, hồ sơ lớp): chỉ việc của lớp nguồn này — việc tính theo từng (người, lớp), lớp khác không ảnh hưởng. */
+export function viecBanGiao(userId: number | null, branchId?: number | null, lopId?: number | null): ViecBanGiao[] { return trongBoNho(() => viecBanGiaoGoc(userId, branchId, lopId)); }
+function viecBanGiaoGoc(userId: number | null, branchId?: number | null, lopId?: number | null): ViecBanGiao[] {
   const conn = db();
   const dk = [`ta.status = 'active'`, ...(userId !== null ? ['ta.user_id = ?'] : []), ...(branchId ? ['c.branch_id = ?'] : [])];
   const da = phanCongDaNap();   // TL-VIEC: Công việc đã nạp mọi phân công một câu — lọc đúng WHERE dưới
-  const pc = da
+  let pc = da
     ? da.filter((r) => (userId === null || r.userId === userId) && (!branchId || r.branchId === branchId))
       .map((r) => ({ user_id: r.userId, class_id: r.classId, is_core: r.isCore ? 1 : 0, skill: r.skill, code: r.code, ct: r.ct }))
     : conn.prepare(
       `SELECT ta.user_id, ta.class_id, ta.is_core, ta.skill, c.code, c.programme_code AS ct FROM teacher_assignments ta JOIN classes c ON c.id = ta.class_id
         WHERE ${dk.join(' AND ')}`,
     ).all(...[userId, branchId].filter((x) => x !== null && x !== undefined)) as any[];
+  if (lopId) pc = pc.filter((r) => r.class_id === lopId);
   if (!pc.length) return [];
   /* Khoá (người, lớp). */
   const lop = new Map<string, { userId: number; lopId: number; code: string; ct: string | null; gvcn: boolean; kyNang: Set<string> }>();
