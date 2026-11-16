@@ -30,13 +30,13 @@ export function lazyHop<C extends ComponentType<any>>(nap: () => Promise<C>, don
   return VoHop as unknown as C;
 }
 
-/** Đang tải mảnh hộp: lớp phủ trong suốt chặn bấm đúp; quá 300 ms mới hiện "Đang tải…" (mạng nhanh không nháy). */
+/** Đang tải mảnh hộp: lớp phủ trong suốt chặn bấm đúp; quá 300 ms mới hiện thẻ "Đang tải…" (mạng nhanh không nháy). */
 function ChoHop() {
   const [hien, setHien] = useState(false);
   useEffect(() => { const h = setTimeout(() => setHien(true), 300); return () => clearTimeout(h); }, []);
   return (
     <div className="fixed inset-0 z-[80] cursor-progress" role="status" aria-busy="true" aria-label={t('Đang tải')}>
-      {hien && <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+      {hien && <div className="absolute inset-0 flex items-center justify-center">
         <div className="card px-4 py-3 text-sm text-slate-300">{t('Đang tải…')}</div>
       </div>}
     </div>
