@@ -296,7 +296,7 @@ export async function runPrLuiBTests(t: YThucTestKit) {
     assert(cls.classOverview(P.mbManager, lop).viewer.coTheMoLaiLop === true && cls.classOverview(P.normalCoreTeacher, lop).viewer.coTheMoLaiLop === false, 'coTheMoLaiLop');
     xk.moLaiLop(P.mbManager, lop);
     assert(cls.classOverview(P.mbManager, lop).viewer.coTheKetThucLop === true, 'coTheKetThucLop');
-    assert(maLoi(() => xk.xoaLop(P.mbManager, lop, { maLop: 'MB FOU 12' })) === 400, 'Xoá lớp có dữ liệu phải 400 (OV-12a: QL xoá được lớp trống)');
+    assert(maLoi(() => xk.xoaLop(P.mbManager, lop)) === 400, 'Xoá lớp có dữ liệu phải 400 (OV-12a: QL xoá được lớp trống)');
   }));
 
   // ---------------------------------------------------------------- Task 7 · web Mở lại lớp

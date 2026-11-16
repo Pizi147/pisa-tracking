@@ -46,8 +46,9 @@ export function HopSEx({ studentId, ten, dong, onDong, onXong }: {
         await api.post('/s-expert', { studentId, ngay });
         xong(t('Đã thêm S Ex · {ten}', { ten }));
       } else {
-        await api.put(`/s-expert/${dong.id}`, { ...(suaLich ? { ngay } : {}), ...(cham ? { diem: band, nhanXet: nhanXet.trim() || null } : {}) });
-        xong(t('Đã lưu S Ex · {ten}', { ten }));
+        const r = await api.put<{ tuan?: string }>(`/s-expert/${dong.id}`, { ...(suaLich ? { ngay } : {}), ...(cham ? { diem: band, nhanXet: nhanXet.trim() || null } : {}) });
+        /* B1-05: có điểm trước tuần của lượt → máy chủ dời lượt về tuần này (như Mock). */
+        xong(r?.tuan ? t('Đã lưu S Ex · {ten} · dời về tuần này', { ten }) : t('Đã lưu S Ex · {ten}', { ten }));
       }
     } catch (e: any) { setLoi(e.message); } finally { setBusy(false); }
   };

@@ -228,7 +228,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
   const myworkYt: any = await import('../worklist/mywork.ts');
-  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { soCauSql, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const mbId = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
   const LOP = t.classId('MB FT 101');
   const gvbm = P.w1Teacher;
@@ -666,7 +666,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(loiCua(() => xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' })).status === 409, 'lần hai');
     assert(xl(gvcn, sid, [v.id]).kind === 'report_1', 'Xác nhận xử lý sau vẫn được');
   });
-  check('LG-12 (4) · sau "Không xử lý" vi phạm VẪN đếm luật 3 / 2 tuần: thêm 2 vi phạm → bắt buộc lại cả 3; em đang đủ 3 thì "Không xử lý" → 400, không đổi gì', () => {
+  check('LG-12 (4) · sau "Không xử lý" vi phạm VẪN đếm luật 3 / 2 tuần: thêm 2 vi phạm → bắt buộc lại cả 3; em đang đủ 3 thì GVCN "Không xử lý" → 400, không đổi gì; QL → 409 hỏi nêu luật, đồng ý → ghi + nhật ký vuotLuat (N50 câu 5)', () => {
     const sid = hv(); const v = ghiYc(gvbm, sid);
     xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Đã nhắc riêng em trên lớp' });
     ghiVp(gvbm, sid); ghiVp(gvbm, sid);
@@ -675,6 +675,11 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s2 = hv(); ghiVp(gvbm, s2); ghiVp(gvbm, s2); const v2 = ghiYc(gvbm, s2);
     assert(loiCua(() => xuLy.khongXuLy(gvcn, v2.id, { lyDo: 'Đã nhắc riêng em trên lớp' })).status === 400, 'đủ 3 → phải xử lý');
     assert(!(conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc && viecYt(gvcn, s2), 'không đổi gì');
+    assert(loiCua(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'QL đã gặp phụ huynh' })).status === 409, 'QL → hỏi');
+    voiXacNhan(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'QL đã gặp phụ huynh' }));
+    assert((conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc, 'QL vượt → đã ghi');
+    const au = conn.prepare(`SELECT after_json a FROM audit_logs WHERE action = 'violation.khong_xu_ly' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(v2.id) as any;
+    assert(JSON.parse(au.a).vuotLuat === true, `nhật ký vuotLuat: ${au?.a}`);
   });
   check('LG-12 (5) · Hoàn tác "Không xử lý": việc quay lại (hạn cũ), tin chưa đọc của người ghi bị gỡ, phản hồi bỏ, lịch sử ghi; Hoàn tác lần hai → 409', () => {
     const sid = hv(); const v = ghiYc(gvbm, sid);

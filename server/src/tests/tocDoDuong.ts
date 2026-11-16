@@ -1352,7 +1352,9 @@ export const TRAN_GHI_LO = {
   huyDiem: 60,
   /** #8 (bản rà 11/11): POST /students/:id/transfer tuần = hôm nay (FT → FT) — ra lệnh + thi hành ngay + ghi_dao 21 bảng của MỘT em (thao tác hiếm). */
   chuyenNgay: 201,   // đo 154 câu, 471 dòng (không chụp: xem CLSS-6) → max(154 + 10, ⌈154 × 1,3⌉)
-  /** #8: POST /students/:id/hoan-tac-chuyen-ngay — daoLai một bản ghi + nhật ký. */
+  /** DUONG-LUI-2 (P1-09): POST /classes/:id/transition "Ngay hôm nay" một em (web gửi một em một lời gọi) — ra lệnh Cuối khoá + thi hành + ghi_dao 22 bảng; đo trong prCuoiKhoa CK-7. */
+  chotCaLopNgay: 255,   // đo 196 câu, 217 dòng (không chụp 115 câu, 140 dòng — thao tác hiếm) → max(196 + 10, ⌈196 × 1,3⌉)
+  /** #8: POST /students/:id/hoan-tac-chuyen-ngay — daoLai một bản ghi + nhật ký (cùng trần cho POST /classes/:id/hoan-tac-chuyen-ngay, CK-7). */
   hoanTacChuyenNgay: 37,   // đo 27 câu, 19 dòng → max(27 + 10, ⌈27 × 1,3⌉)
   /** LO-TRINH-THEO-HV: POST /cycles/:id/lo-trinh (LT1 → RF, 3 MT: 1 có điểm giữ, 1 dời, 1 huỷ) — quyền, ghi_dao các bảng của MỘT lộ trình, lõi lịch MT, mốc Case, Hành trình, nhật ký. */
   doiLoTrinh: 93,   // đo 71 câu, 148 dòng (thao tác ghi hiếm: ghi_dao 6 bảng + lõi lịch MT từng lượt) → max(71 + 10, ⌈71 × 1,3⌉)

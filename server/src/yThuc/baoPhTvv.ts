@@ -339,7 +339,7 @@ export function khoiPhucViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const x = loadViec(id);
   requireGhi(p, x);
   if (x.trang_thai !== 'bo') throw conflict('Việc Báo PH này không ở trạng thái Đã bỏ — không có gì để khôi phục.');
-  if (!laLyDoNguoiDung(x.bo_ly_do)) throw conflict('Việc này do hệ thống đóng theo lần xử lý — không khôi phục tay được.');
+  if (!laLyDoNguoiDung(x.bo_ly_do)) throw conflict('Việc này do hệ thống đóng theo lần xử lý — muốn mở lại: Thu hồi lần xử lý ở tab Ý thức của em.');
   const xl = xuLyCon(x);
   if (xl !== 'con') throw conflict(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — không khôi phục việc Báo PH được.`);
   tx(() => {

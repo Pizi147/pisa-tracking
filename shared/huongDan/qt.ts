@@ -49,7 +49,7 @@ const VIEC_QT: ViecHd[] = [
   {
     id: 'xoa-lop', ten: 'Xoá lớp', nhom: 'hv',
     loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ › Xoá lớp' },
-    buoc: ['Mở hồ sơ lớp, bấm <b>⋯</b> đầu trang › <b>Xoá lớp</b>.', 'Gõ lại mã lớp để xác nhận, bấm <b>Xoá lớp</b> — xoá hẳn, không hoàn tác. Lớp đã có dữ liệu: dùng Kết thúc lớp.'],
+    buoc: ['Mở hồ sơ lớp, bấm <b>⋯</b> đầu trang › <b>Xoá lớp</b>.', 'Bấm <b>Xoá lớp</b> — lớp vào Đã xoá, Hoàn tác ngay hoặc Khôi phục trong 30 ngày. Lớp đã có dữ liệu: dùng Kết thúc lớp.'],
     tuKhac: ['xoá lớp', 'delete class'],
   },
   {

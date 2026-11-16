@@ -19,24 +19,29 @@ export type TinhTrangXoaKetThuc = {
 };
 
 /**
- * ⋮ HỒ SƠ LỚP › XOÁ LỚP (PR-UX3; OV-12a: Quản lý của lớp hoặc Quản trị; máy chủ kiểm quyền và kiểm lớp còn trống). Panel nêu mã lớp + chi nhánh +
- * "Không hoàn tác được"; chỉ khi GÕ LẠI ĐÚNG MÃ LỚP thì nút đỏ "Xoá lớp" mới bật.
+ * ⋮ HỒ SƠ LỚP › XOÁ LỚP (PR-UX3; OV-12a: Quản lý của lớp hoặc Quản trị; máy chủ kiểm quyền và kiểm lớp còn trống). DUONG-LUI-2 (B1-02): lớp vào
+ * Thùng rác 30 ngày — toast Hoàn tác, Khôi phục ở Đã xoá; không bắt gõ lại mã lớp (như Xoá học viên, G5-12).
  */
 export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; classCode: string; onClose: () => void }) {
   const toast = useToast();
   const navigate = useNavigate();
   const tt = useApi<TinhTrangXoaKetThuc>(`/classes/${classId}/xoa-ket-thuc`, [classId]);
-  const [go, setGo] = useState('');
   const [busy, setBusy] = useState(false);
-  const khop = go.trim() === classCode;
   const chan = tt.data && !tt.data.coTheXoa;
+  const lamMoi = () => { invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan'); invalidate('/thung-rac'); };
 
   const xoa = async () => {
     setBusy(true);
     try {
-      await api.post(`/classes/${classId}/xoa`, { maLop: go.trim() });
-      invalidate('/classes'); invalidate('/hoc-vien-lop'); invalidate('/tong-quan');
-      toast.push('ok', t('Đã xoá lớp {classCode}', { classCode }));
+      const r = await api.post<{ thungRacId: number }>(`/classes/${classId}/xoa`, {});
+      lamMoi();
+      toast.hoanTac(t('Đã xoá lớp {classCode}', { classCode }), async () => {
+        try {
+          await api.post(`/thung-rac/${r.thungRacId}/khoi-phuc`, {});
+          lamMoi(); toast.push('ok', t('Đã khôi phục {x}', { x: classCode }));
+          navigate(`/hoc-vien/lop/${classId}`);
+        } catch (e: any) { toast.push('error', e.message); }
+      }, { key: `xoa-lop:${classId}` });
       onClose();
       navigate('/hoc-vien', { replace: true });
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
@@ -45,21 +50,16 @@ export function XoaLopPanel({ classId, classCode, onClose }: { classId: number; 
   return (
     <KhungPanel tieuDe={t('Xoá lớp')} lop={classCode} onDong={onClose}
       chan={{
-        chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !khop || !!chan} onClick={xoa}>{t('Xoá lớp')}</button>,
+        chinh: <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy || !tt.data || !!chan} onClick={xoa}>{t('Xoá lớp')}</button>,
       }}>
       {tt.error ? <div className="pt-3"><ErrorState message={tt.error.message} hint={tt.error.hint} status={tt.error.status} onRetry={tt.reload} /></div>
         : !tt.data ? <div className="pt-3"><Skeleton rows={3} /></div> : (
           <Khoi tieuDe={t('Xác nhận xoá')}>
             <p className="m-0 text-sm text-slate-200">
-              {t('Lớp')} <strong>{tt.data.ma}</strong> · {tt.data.chiNhanh} {t('sẽ bị xoá hẳn cùng phân công giáo viên và kỹ năng lớp.')}
-              <span className="text-soon"> {t('Không hoàn tác được.')}</span>
+              {t('Lớp')} <strong>{tt.data.ma}</strong> · {tt.data.chiNhanh} {t('bị xoá cùng phân công giáo viên và kỹ năng lớp — khôi phục được trong 30 ngày ở Đã xoá.')}
             </p>
-            {chan ? (
+            {chan && (
               <p className="m-0 text-xs text-late">{t('Lớp đã có dữ liệu ({ds}). Dùng Kết thúc lớp.', { ds: tt.data.dangGan.map((x) => dich(x)).join(', ') || t('{n} học viên từng ghi danh', { n: tt.data.soTungGhiDanh }) })}</p>
-            ) : (
-              <Truong nhan={t('Gõ lại mã lớp để xác nhận')} batBuoc phu={t('Mã lớp: {ma}', { ma: tt.data.ma })}>
-                <input className="field w-full" value={go} onChange={(e) => setGo(e.target.value)} autoComplete="off" />
-              </Truong>
             )}
           </Khoi>
         )}

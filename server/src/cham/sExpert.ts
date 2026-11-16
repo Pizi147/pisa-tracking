@@ -96,6 +96,8 @@ export function sExTuan(p: Principal, weekStart: string, o: { branchId?: number 
 // ------------------------------------------------------------------ ghi
 
 type Than = { tuan: string; ngay: string | null; diem: number | null; nhanXet: string | null };
+/** `tuDoi`: điểm nhập trước tuần của lượt → máy dời lượt về tuần này (B1-05, như Mock / MT0 — `doiVeTuanNayNeuChua`). Không lưu vào bảng. */
+type ThanDoc = Than & { tuDoi: boolean };
 
 function docLich(body: Record<string, unknown>): Pick<Than, 'tuan' | 'ngay'> {
   if (body.ngay != null) {
@@ -107,7 +109,7 @@ function docLich(body: Record<string, unknown>): Pick<Than, 'tuan' | 'ngay'> {
 }
 
 /** Thân yêu cầu gộp lên bản cũ: khoá có mặt mới đổi. Band 0..9 bậc 0.5 — không suy luật điểm nào khác (XM-1 đóng: không tính). */
-function docThan(body: Record<string, unknown>, cu: Than | null, today: string): Than {
+function docThan(body: Record<string, unknown>, cu: Than | null, today: string): ThanDoc {
   const lich = cu && !('ngay' in body) && !('tuan' in body) ? { tuan: cu.tuan, ngay: cu.ngay } : docLich(body);
   let diem = cu?.diem ?? null;
   if ('diem' in body) {
@@ -115,11 +117,15 @@ function docThan(body: Record<string, unknown>, cu: Than | null, today: string):
     diem = body.diem as number | null;
   }
   const nhanXet = 'nhanXet' in body ? chuTuDo(body.nhanXet, 'Nhận xét', NHAN_XET_TOI_DA) : cu?.nhanXet ?? null;
-  if (diem !== null && lich.tuan > mondayOf(today)) throw badRequest('Chưa tới tuần của lượt S Expert — chưa nhập điểm được.');
-  return { ...lich, diem, nhanXet };
+  /* DUONG-LUI-2 (B1-05): điểm trước tuần → tự dời lượt về tuần này (chỉ tuần, bỏ ngày tương lai), nhật ký ghi `tuDoi`; trước 14/11 là chặn 400. */
+  if (diem !== null && lich.tuan > mondayOf(today)) return { tuan: mondayOf(today), ngay: null, diem, nhanXet, tuDoi: true };
+  return { ...lich, diem, nhanXet, tuDoi: false };
 }
 
-const anh = (id: number, t: Than) => ({ id, ...t });
+const anh = (id: number, t: Than | ThanDoc) => {
+  const { tuDoi, ...x } = t as ThanDoc;
+  return { id, ...x, ...(tuDoi ? { tuDoi: 'diem' } : {}) };
+};
 const nhan = (studentId: number, tuan: string, today: string) => {
   const s = db().prepare('SELECT student_code AS ma FROM students WHERE id = ?').get(studentId) as { ma: string };
   return `${s.ma} · ${tuanLich(tuan, today)} · S Expert`;
@@ -143,7 +149,7 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
       'INSERT INTO s_expert (student_id, tuan, ngay, diem, nhan_xet, cham_boi, cham_luc, them_boi, them_luc) VALUES (?,?,?,?,?,?,?,?,?)',
     ).run(studentId, t.tuan, t.ngay, t.diem, t.nhanXet, chamBoi, chamBoi ? luc : null, p.userId, luc).lastInsertRowid);
     writeAudit({ actorUserId: p.userId, action: 's_expert.them', entityType: 'student', entityId: studentId, entityLabel: nhan(studentId, t.tuan, today), before: null, after: anh(id, t) });
-    return { id, themBoi: p.fullName, themLuc: luc };
+    return { id, themBoi: p.fullName, themLuc: luc, ...(t.tuDoi ? { tuan: t.tuan } : {}) };
   });
 }
 
@@ -174,8 +180,11 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
     const doiLich = t.tuan !== cu.tuan || t.ngay !== cu.ngay;
     const doiDiem = t.diem !== cu.diem || t.nhanXet !== cu.nhanXet;
     if (!doiLich && !doiDiem) return { id, doi: false };
-    if (doiLich) requireSuaLichTest(p, { studentId }, QL_MSG);
-    if (doiLich) chanCuoiTuan(p, { ...SEX, student_id: studentId }, [cu.tuan, t.tuan]);
+    /* B1-05: lịch đổi CHỈ vì máy tự dời theo điểm (ngày / tuần gửi lên y như cũ) → như Mock: không cần quyền sửa lịch, không khoá cuối tuần. */
+    const xin = 'ngay' in body || 'tuan' in body ? docLich(body) : null;
+    const xinDoiLich = doiLich && (!t.tuDoi || (!!xin && (xin.tuan !== cu.tuan || xin.ngay !== cu.ngay)));
+    if (xinDoiLich) requireSuaLichTest(p, { studentId }, QL_MSG);
+    if (xinDoiLich) chanCuoiTuan(p, { ...SEX, student_id: studentId }, [cu.tuan, t.tuan]);
     if (doiDiem && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     const luc = nowIso();
     motDong(db().prepare(`UPDATE s_expert SET tuan = ?, ngay = ?, diem = ?, nhan_xet = ?, sua_boi = ?, sua_luc = ?
@@ -185,7 +194,7 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
       actorUserId: p.userId, action: doiLich ? 's_expert.sua' : 's_expert.cham', entityType: 'student', entityId: studentId,
       entityLabel: nhan(studentId, t.tuan, today), before: anh(id, cu), after: anh(id, t),
     });
-    return { id, doi: true, suaBoi: p.fullName, suaLuc: luc };
+    return { id, doi: true, suaBoi: p.fullName, suaLuc: luc, ...(t.tuDoi ? { tuan: t.tuan } : {}) };
   });
 }
 

@@ -8,23 +8,24 @@ import { t } from '@shared/i18n/index.ts';
  * Phần dùng chung của các màn chuyển lớp (R5.3: dời từ `TransitionPanel` cũ khi gỡ "Chuyển tiếp lớp" lớp FT) — trang Cuối khoá, Chuyển lớp một / nhiều em.
  *
  * GỬI THEO LÔ: `lo` em một lời gọi (chuyển ngay chạy trong lời gọi — Netlify 10 s), tuần tự. Lô lỗi cả lời gọi → mọi em của lô vào `failed` với chữ lỗi,
- * các lô sau vẫn gửi. `onTienDo([đã gửi, tổng])`.
+ * các lô sau vẫn gửi. `onTienDo([đã gửi, tổng])`. `dao` = bản ghi Hoàn tác của từng lô đã chuyển ngay (P1-09).
  */
 export async function guiTheoLo(url: string, tuanChung: string | null, lo: number, onTienDo: (x: [number, number]) => void,
-  dongs: { studentId: number }[]): Promise<{ ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[] }> {
-  const kq = { ok: [] as number[], failed: [] as { studentId: number; message: string }[], daChuyen: [] as number[] };
+  dongs: { studentId: number }[]): Promise<{ ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[]; dao: number[] }> {
+  const kq = { ok: [] as number[], failed: [] as { studentId: number; message: string }[], daChuyen: [] as number[], dao: [] as number[] };
   for (let i = 0; i < dongs.length; i += lo) {
     onTienDo([i, dongs.length]);
     const phan = dongs.slice(i, i + lo);
     try {
       const r = await api.post<any>(url, { tuanChung, dongs: phan });
       kq.ok.push(...r.ok); kq.failed.push(...r.failed); kq.daChuyen.push(...(r.daChuyen ?? []));
+      if (r.dao) kq.dao.push(r.dao);
     } catch (e: any) { kq.failed.push(...phan.map((d) => ({ studentId: d.studentId, message: e.message as string }))); }
   }
   return kq;
 }
 
-/** Khung vàng "chuyển ngay, không hoàn tác" / FT → Thường — cùng màu ở mọi panel chuyển lớp. */
+/** Khung vàng "chuyển ngay" / FT → Thường — cùng màu ở mọi panel chuyển lớp. */
 export const KHOI_VANG = { borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' };
 
 /** OV-13l (mockup bước tiếp mục 4): lựa chọn ĐẦU của ô Tuần bắt đầu — "Ngay hôm nay · T5 15/10" = chuyển ngay khi lưu, không hoàn tác. */

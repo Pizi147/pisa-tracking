@@ -467,7 +467,7 @@ export function editViolation(p: Principal, id: number, patch: {
   const chiNhac = patch.chiNhac === undefined ? !!row.chi_nhac : !!patch.chiNhac;
   if (chiNhac && !row.chi_nhac && db().prepare(
     `SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id WHERE mv.violation_id = ? AND m.status IN ('done', 'cho_duyet', 'da_duyet', 'nhap')`,
-  ).get(id)) throw badRequest('Vi phạm đã nằm trong một lần xử lý — không đổi thành nhắc nhở được.');
+  ).get(id)) throw badRequest('Vi phạm đã nằm trong một lần xử lý — muốn đổi thành nhắc nhở: Thu hồi lần xử lý đó trước (tab Ý thức).');
 
   const changes: Array<[string, string | null, string | null]> = [];
   if (ten !== (row.ten ?? null)) changes.push(['ten', row.ten ?? cur.ten, ten]);

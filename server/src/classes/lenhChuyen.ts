@@ -41,7 +41,6 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
 };
 
 const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra quyết định chuyển lớp.';
-export const LOI_KHAC_CHI_NHANH = 'Lớp chuyển đến phải cùng chi nhánh với lớp này.';
 
 /** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
@@ -74,7 +73,7 @@ export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly 
  */
 export function raLenh(p: Principal, v: {
   lopNguonId: number; boiCanh: BoiCanhLenh; tuanChung: string | null; dongs: DongLenhVao[]; tuYeuCauId?: number | null;
-  /** N17: chuyển CẢ LỚP ở trang Cuối khoá (POST /classes/:id/transition) — chỉ sang lớp cùng chi nhánh. */
+  /** N17: chuyển CẢ LỚP ở trang Cuối khoá (POST /classes/:id/transition). N50 (7): dòng một em được sang lớp chi nhánh khác (ô áp chung web giữ cùng chi nhánh). */
   caLop?: boolean;
 }): { ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[] } {
   const conn = db();
@@ -153,9 +152,7 @@ export function raLenh(p: Principal, v: {
       if (canDich && d.toClassId && !lopDich) { loi('Lớp chuyển đến không hợp lệ.'); continue; }
       const tuan = d.tuan ?? v.tuanChung;
       const cu = daCo.get(d.studentId);
-      /* N17 (chủ SP 24/10, thay Rulebook §20.6–20.7): chuyển CẢ LỚP (trang Cuối khoá) chỉ sang lớp cùng chi nhánh; chuyển MỘT em, sửa lệnh (`suaLenh`)
-         và lệnh cũ giữ nguyên lớp đến (chỉ đổi tuần) vẫn được. */
-      if (v.caLop && lopDich && lopDich.branch_id !== nguon.branch_id && cu?.lop_dich_id !== lopDich.id) { loi(LOI_KHAC_CHI_NHANH); continue; }
+      /* N17 → N50 (7) (chủ SP 16/11): trang Cuối khoá — lớp chi nhánh khác chọn được ở ô lớp của MỘT em (hiếm); ô áp chung / nhóm chỉ đưa cùng chi nhánh (web). */
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới: hôm nay hoặc từ tuần sau (`kiemDongLenh`). */
       if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có quyết định chuyển lớp ở lớp khác.'); continue; }
       const khac = khacGoiY(d.huong, ck?.get(d.studentId)?.goiY);
@@ -485,7 +482,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
       l = docLenh(id);
       if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }
       if (l.trang_thai === 'cho') throw conflict('Quyết định đã ở trạng thái chờ.');
-      if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — không khôi phục được.');
+      if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — em đã sang lớp mới. Muốn đổi: Chuyển lớp lại từ lớp hiện tại của em.');
       const doiTuan = l.tuan_bat_dau <= homNay ? tuanSau : null;   // đã hỏi ở trên
       tx(() => {
         if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(l.student_id)) throw conflict('Học viên đã có quyết định chuyển lớp khác.');

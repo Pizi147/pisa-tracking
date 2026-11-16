@@ -215,7 +215,8 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
       bac, keTiep: bacKeTiep(bac),
       khai: khaiRow ? {
         bac: khaiRow.bac, thang: khaiRow.thang ?? null, ghiChu: khaiRow.ghi_chu, boi: khaiRow.boi ?? null, luc: khaiRow.khai_luc,
-        coTheSua: xongChuoi.length === 0, cycleId: khaiRow.chuoi_cycle_id,
+        /* N50 (8) (chủ SP 16/11, A1-21): GVCN tự sửa bậc đã khai mọi lúc (lịch sử ở nhật ký) — thay "chỉ QL sửa sau khi có lần xử lý trên web". */
+        coTheSua: true, cycleId: khaiRow.chuoi_cycle_id,
       } : null,
       tungKhai: (kb.get(sid) ?? []).length > 0,
       soXuLyChuoi: xongChuoi.length,

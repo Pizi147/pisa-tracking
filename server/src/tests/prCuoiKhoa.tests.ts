@@ -55,7 +55,8 @@ export async function runPrCuoiKhoaTests(t: any) {
   const ss: any = await import('../fasttrack/skillSchedule.ts');
   const { myWork } = await import('../worklist/mywork.ts');
   const { loadPrincipal } = await import('../permissions.ts');
-  const { xoaNho } = await import('../platform/nguCanhRequest.ts');
+  const { xoaNho, soCauSql, soDongSql } = await import('../platform/nguCanhRequest.ts');
+  const { TRAN_GHI_LO } = await import('./tocDoDuong.ts');
   const { getConfig, setConfig } = await import('../demoConfig.ts');
   const get = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -144,14 +145,17 @@ export async function runPrCuoiKhoaTests(t: any) {
     assert(mt0(sid2).status === 'cancelled', 'MT0 chưa huỷ khi sửa sang Lên ELE thứ Sáu');
   }));
 
-  check('CK-3a · N17: lớp đích gợi ý chỉ cùng chi nhánh; CẢ LỚP sang lớp khác chi nhánh → dòng lỗi; một em, lệnh cũ chỉ đổi tuần, suaLenh vẫn được', () => thu(() => {
+  check('CK-3a · N50 (7) thay N17: lớp đích gợi ý cùng chi nhánh TRƯỚC rồi chi nhánh khác; trang Cuối khoá (caLop) một em sang lớp khác chi nhánh được; lệnh cũ chỉ đổi tuần, suaLenh vẫn được', () => thu(() => {
     const be = lop('BE', '2026-07-20'), ele = lop('ELE', '2026-09-28'), eleKhac = lop('ELE', '2026-09-28', { cn: KHAC }), beKhac = lop('BE', '2026-08-24', { cn: KHAC });
     const [a, b] = [hocVien(be, 'BE'), hocVien(be, 'BE')];
     datNgay('2026-09-17');
     const ung = tr.transitionPlan(P.admin, be).candidates as any[];
-    assert(ung.some((c) => c.id === ele) && ung.every((c) => c.branchId === MB), `ứng viên khác chi nhánh: ${JSON.stringify(ung.filter((c) => c.branchId !== MB).map((c) => c.code))}`);
+    const dauKhac = ung.findIndex((c) => c.branchId !== MB);
+    assert(ung.some((c) => c.id === ele) && ung.some((c) => c.id === eleKhac) && dauKhac > 0 && ung.slice(dauKhac).every((c) => c.branchId !== MB),
+      `cùng chi nhánh trước: ${JSON.stringify(ung.map((c) => [c.code, c.branchId]))}`);
     const r = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [{ studentId: a, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28' }] });
-    assert(!r.ok.length && /cùng chi nhánh/.test(r.failed[0]?.message ?? ''), JSON.stringify(r));
+    assert(r.ok.includes(a), `trang Cuối khoá, một em khác chi nhánh: ${JSON.stringify(r)}`);
+    lenh.huyLenh(P.admin, get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, a).id);
     /* Một em (hồ sơ HV / duyệt yêu cầu — không `caLop`) sang lớp khác chi nhánh: được. */
     const motEm = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [{ studentId: b, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28' }] });
     assert(motEm.ok.includes(b), `một em khác chi nhánh: ${JSON.stringify(motEm)}`);
@@ -231,10 +235,64 @@ export async function runPrCuoiKhoaTests(t: any) {
     assert(viec.every((x) => x.tieuDe.startsWith('Kỳ vọng · ') && x.href.endsWith('?xem=cuoi-khoa')), JSON.stringify(viec.map((x) => [x.tieuDe, x.href])));
   }));
 
-  /* Trang Cuối khoá (web): kiểm nguồn — hộp "Chuyển ngay hôm nay?" giữ lô đang chốt (Thử lại n em), Kỳ vọng gửi từng em, Học viên không bắt kỹ năng. */
-  check('CK-6 · CuoiKhoaLop: xác nhận Ngay hôm nay giữ chiEm; Kỳ vọng từng em; kvLoi giống máy chủ; chân chỉ tính dòng có lệnh', () => {
+  /* DUONG-LUI-2 (P1-09): chốt cả lớp "Ngay hôm nay" có Hoàn tác → không còn hộp "Chuyển ngay hôm nay?"; đảo lô sau trước. */
+  const htcn: any = await import('../classes/hoanTacChuyenNgay.ts');
+  /* `moc_he_thong`: bộ đếm làm mới bộ nhớ đệm (trigger khi lớp đổi trạng thái) — chỉ tăng, không phải dữ liệu nghiệp vụ. */
+  const BO = new Set(['audit_logs', 'ghi_dao', 'notifications', 'moc_he_thong']);
+  const bang = all(`SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'`).map((r) => r.name as string).filter((b) => !BO.has(b));
+  const chup = () => new Map(bang.map((b) => [b, JSON.stringify(all(`SELECT rowid AS __r, * FROM "${b}" ORDER BY rowid`))]));
+  check('CK-7 · P1-09: chốt cả lớp "Ngay hôm nay" (2 em, mỗi em một lời gọi như web) → em sang lớp mới + `dao`; Hoàn tác (lô sau trước) → mọi bảng y như trước; lần hai 409; GVCN / QL chi nhánh khác 403; tuần sau không chụp', () => thu(() => {
+    const be = lop('BE', '2026-07-20'), ele = lop('ELE', '2026-09-28');
+    ganGv(be, GV[0]); ganGv(ele, GV[1] ?? GV[0]);
+    const [a, b] = [hocVien(be, 'BE'), hocVien(be, 'BE')];   // cả lớp đi hết → lớp thường tự kết thúc, Hoàn tác mở lại
+    datNgay('2026-09-24');
+    const homNay = '2026-09-24';
+    xoaNho();
+    const truoc = chup();
+    const dao: number[] = [];
+    const do_: string[] = [];
+    for (const sid of [a, b]) {
+      const c0 = soCauSql(), r0 = soDongSql();
+      const r = htcn.chotCaLop(QL, be, { tuanChung: null, dongs: [{ studentId: sid, huong: 'len_lop', toClassId: ele, tuan: homNay, lyDo: 'CK-7' }] });
+      const n = soCauSql() - c0;
+      do_.push(`${n} câu ${soDongSql() - r0} dòng`);
+      assert(n <= TRAN_GHI_LO.chotCaLopNgay, `chốt một em có chụp: ${n} câu > trần ${TRAN_GHI_LO.chotCaLopNgay}`);
+      assert(r.daChuyen.includes(sid) && r.dao, `chốt ${sid}: ${JSON.stringify(r)}`);
+      dao.push(r.dao);
+      xoaNho();
+    }
+    assert(get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a).class_id === ele, 'a đã sang ELE');
+    const ttLop = get('SELECT status FROM classes WHERE id = ?', be).status;
+    assert(loi(() => htcn.hoanTacChuyenNgay(P.coreTeacher, be, dao[1], 'classes'))?.status === 403, 'GVCN 403');
+    assert(loi(() => htcn.hoanTacChuyenNgay(P.cpManager, be, dao[1], 'classes'))?.status === 403, 'QL chi nhánh khác 403');
+    assert(loi(() => htcn.hoanTacChuyenNgay(QL, be, dao[1]))?.status === 404, 'bản ghi lớp không mở được qua đường một em');
+    for (const id of [...dao].reverse()) {
+      const c0 = soCauSql(), r0 = soDongSql();
+      htcn.hoanTacChuyenNgay(QL, be, id, 'classes');
+      const n = soCauSql() - c0;
+      do_.push(`Hoàn tác ${n} câu ${soDongSql() - r0} dòng`);
+      assert(n <= TRAN_GHI_LO.hoanTacChuyenNgay, `Hoàn tác: ${n} câu > trần ${TRAN_GHI_LO.hoanTacChuyenNgay}`);
+      xoaNho();
+    }
+    console.log(`    (đo: ${do_.join(' · ')})`);
+    const sau = chup();
+    const khac = bang.filter((x) => truoc.get(x) !== sau.get(x));
+    assert(!khac.length, `còn khác sau Hoàn tác: ${khac.join(', ')}`);
+    assert(loi(() => htcn.hoanTacChuyenNgay(QL, be, dao[0], 'classes'))?.status === 409, 'Hoàn tác lần hai phải 409');
+    console.log(`    (lớp nguồn sau khi chuyển hết: ${ttLop} → sau Hoàn tác: ${get('SELECT status FROM classes WHERE id = ?', be).status})`);
+    const c = hocVien(be, 'BE');
+    const tuanSau = htcn.chotCaLop(QL, be, { tuanChung: null, dongs: [{ studentId: c, huong: 'len_lop', toClassId: ele, tuan: '2026-09-28', lyDo: 'CK-7' }] });
+    assert(tuanSau.ok.includes(c) && !tuanSau.dao, `tuần sau không chụp: ${JSON.stringify(tuanSau)}`);
+    /* Đo đối chứng: cùng thao tác KHÔNG chụp (đường cũ) — em a lần nữa. */
+    xoaNho(); const c0 = soCauSql(), r0 = soDongSql();
+    lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [{ studentId: a, huong: 'len_lop', toClassId: ele, tuan: homNay, lyDo: 'CK-7' }] });
+    console.log(`    (đo: không chụp ${soCauSql() - c0} câu ${soDongSql() - r0} dòng)`);
+  }));
+
+  /* Trang Cuối khoá (web): kiểm nguồn — chốt "Ngay hôm nay" không hỏi lại, có toast Hoàn tác; Kỳ vọng gửi từng em, Học viên không bắt kỹ năng. */
+  check('CK-6 · CuoiKhoaLop: Ngay hôm nay không hộp xác nhận + toast Hoàn tác; Kỳ vọng từng em; kvLoi giống máy chủ; chân chỉ tính dòng có lệnh', () => {
     const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/classes/CuoiKhoaLop.tsx'), 'utf8') as string;
-    assert(/setHoiNgay\(\{ ten: [^}]*chiEm \}\)/.test(src) && src.includes('chot(hoiNgay.chiEm, true)'), 'hộp Ngay hôm nay không giữ chiEm');
+    assert(!src.includes('setHoiNgay') && src.includes('toast.hoanTac(') && src.includes('/hoan-tac-chuyen-ngay'), 'chốt Ngay hôm nay phải có Hoàn tác, không hộp hỏi');
     assert(src.includes("dong: [{ sid: r.e.id"), 'Kỳ vọng phải gửi từng em');
     assert(!/hoc_sinh' && !x\.kv\.mon/.test(src), 'kvLoi bắt kỹ năng cho Học viên');
     assert(src.includes('coBaoPhKhiChot(huongLenh(r.x)!'), 'danh sách Báo PH phải dùng coBaoPhKhiChot');

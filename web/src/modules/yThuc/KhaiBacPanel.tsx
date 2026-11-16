@@ -3,7 +3,7 @@ import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Khoi, KhungPanel, KhungTaiCho, Truong } from '../../ui/KhungPanel.tsx';
-import { NutDongPanel } from '../../ui/KhuonViec.tsx';
+import { NutDongPanel, dauViec } from '../../ui/KhuonViec.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState } from '../../ui/ui.tsx';
@@ -19,7 +19,8 @@ const tenBac = (b: number) => BAC_KHAI[b] ?? '';
 
 /**
  * KHAI BẬC — "em đã bị xử lý trước khi dùng web" (H5, T27). Một lần cho mỗi chuỗi thang, chỉ khi chuỗi chưa có lần xử lý nào trên web.
- * Sửa (`sua`, OV-7a): GVCN khi chuỗi chưa có lần xử lý; QL cả sau đó (máy chủ quyết — `canSuaKhai`). Bậc kế tiếp của em đi tiếp từ bậc khai.
+ * Sửa (`sua`, OV-7a + N50 câu 8): GVCN / QL sửa mọi lúc, có lịch sử (máy chủ quyết — `canSuaKhai`). Bậc kế tiếp của em đi tiếp từ bậc khai.
+ * DUONG-LUI-2 (A1-21): tiêu đề = tên mục "Khai / sửa cấp bậc"; đầu panel theo khuôn chung (dòng loại · tên em · thang); chip bậc viết đủ (lời 36).
  */
 export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }: {
   studentId: number | null; sua?: boolean; onClose: () => void; onDone?: () => void;
@@ -42,13 +43,15 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   }, [studentId, sua, d?.khai?.bac]);
 
   if (!studentId) return null;
-  const tieuDe = sua ? t('Sửa cấp bậc vi phạm') : t('Xác nhận cấp bậc vi phạm');
+  const tieuDe = t('Khai / sửa cấp bậc');
   if (loiTai) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} /></KhungPanel>;
   if (!d) return <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} onDong={onClose}><p className="mt-3 text-sm text-slate-400">{t('Đang tải…')}</p></KhungPanel>;
 
+  const dau = { ...dauViec({ em: { id: studentId, ten: d.ten }, ngCanh: t('Thang {x}', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan }) }),
+    loai: t('Việc · Ý thức & Phối hợp') };
   if (daLuu) {
     return (
-      <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={onClose}
+      <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} dau={dau} onDong={onClose}
         chan={{ huy: null, chinh: onTiep
           ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
           : <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button> }}>
@@ -76,8 +79,7 @@ export function KhaiBacPanel({ studentId, sua, onClose, onDone, onTiep = null }:
   };
 
   return (
-    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} onDong={onClose} quyChe={sua ? null : quyCheKhaiBac()}
-      ngCanh={<span className="truncate">{t('Thang {x} · xác nhận một lần, chỉ QL sửa sau', { x: d.chuoi.nhan === 'lớp thường' ? t('lớp thường') : d.chuoi.nhan })}</span>}
+    <KhungPanel hd="xu-ly-vi-pham" tieuDe={tieuDe} hocVien={d.ten} dau={dau} onDong={onClose} quyChe={sua ? null : quyCheKhaiBac()}
       chan={{
         daSua: !daLuu && (bac !== (sua && d.khai ? d.khai.bac : null) || thang !== (sua && d.khai?.thang ? d.khai.thang : '') || ghiChu !== (sua && d.khai ? d.khai.ghiChu : '')),
         conThieu: lf.conThieu(loi),

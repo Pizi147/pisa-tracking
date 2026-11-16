@@ -231,6 +231,7 @@ function Buoc({ so, tieuDe, phu, xong, mo = true, children }: { so: string; tieu
 /**
  * CHỐT NGÀY THI (UI-CV-TVV, mockup `tvv.html` panelChot; N6 — không hạn): em đã tới tháng dự kiến mà chưa có ngày thi. Chốt = Ngày thi (ngày đã qua chọn
  * được — em đã thi) hoặc Dời tháng dự kiến. Cùng đường lưu với Học viên & Lớp › Lịch thi (`PUT /hoc-vien-lop/lich-thi/:cycleId`, máy chủ kiểm quyền + ghi nhật ký).
+ * DUONG-LUI-2 (B1-09): lưu xong ô vẫn sửa được — đổi ô thì chân về "Chốt ngày" (lưu lại = sửa, có lịch sử ở Lịch thi), không phải sang trang khác.
  */
 export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, onTiep, tenTiep }: {
   cycleId: number; em: { id: number; ten: string }; lop: string | null; duKien: string | null;
@@ -241,9 +242,11 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   const [thang, setThang] = useState('');
   const [tt, setTt] = useState<TtLuu | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
-  const [xong, setXong] = useState<string | null>(null);
+  const [daLuu, setDaLuu] = useState<{ gio: string; kieu: 'ngay' | 'thang'; gia: string } | null>(null);
   const lfC = useLoiForm();
   const gia = kieu === 'ngay' ? ngayThi : thang;
+  /* Đang hiện "Đã lưu" khi ô còn y như lần lưu; sửa ô → về trạng thái lưu. */
+  const xong = daLuu && daLuu.kieu === kieu && daLuu.gia === gia ? daLuu.gio : null;
   const loiC = gia ? [] : [{ khoa: kieu, nhan: kieu === 'ngay' ? t('Ngày thi') : t('Tháng thi'), lyDo: kieu === 'ngay' ? t('Chọn ngày thi') : t('Chọn tháng thi') }];
   const luu = async (): Promise<boolean> => {
     lfC.bam();
@@ -252,7 +255,7 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
     try {
       await api.put(`/hoc-vien-lop/lich-thi/${cycleId}`, kieu === 'ngay' ? { ketLuan: 'chot-ngay', ngay: ngayThi } : { ketLuan: 'chuyen-thang', thang });
       LAM_MOI.forEach((k) => invalidate(k));
-      setTt(null); setXong(gioVnNay()); onDaLam();
+      setTt(null); setDaLuu({ gio: gioVnNay(), kieu, gia }); onDaLam();
       return true;
     } catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); return false; }
   };
@@ -272,12 +275,12 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
           }) }}>
       <div className="flex flex-col gap-4 pt-4">
         <Truong nhan={t('Chốt')} as="div">
-          <LuaChonRadio ten={`chot-${cycleId}`} nhan={t('Chốt')} value={kieu} disabled={!!xong} onChange={setKieu}
+          <LuaChonRadio ten={`chot-${cycleId}`} nhan={t('Chốt')} value={kieu} disabled={tt === 'dang'} onChange={setKieu}
             muc={[['ngay', t('Ngày thi')], ['thang', t('Dời tháng dự kiến')]]} />
         </Truong>
         {kieu === 'ngay'
-          ? <Truong nhan={t('Ngày thi')} loi={lfC.loiCua(loiC, 'ngay')}><div className="max-w-[220px]"><ONgay kieu="ngay" id={lfC.oId('ngay')} invalid={!!lfC.loiCua(loiC, 'ngay')} value={ngayThi} onChange={setNgayThi} disabled={!!xong} /></div></Truong>
-          : <Truong nhan={t('Tháng thi')} loi={lfC.loiCua(loiC, 'thang')}><div className="max-w-[220px]"><ONgay kieu="thang" id={lfC.oId('thang')} invalid={!!lfC.loiCua(loiC, 'thang')} value={thang} onChange={setThang} disabled={!!xong} /></div></Truong>}
+          ? <Truong nhan={t('Ngày thi')} loi={lfC.loiCua(loiC, 'ngay')}><div className="max-w-[220px]"><ONgay kieu="ngay" id={lfC.oId('ngay')} invalid={!!lfC.loiCua(loiC, 'ngay')} value={ngayThi} onChange={setNgayThi} disabled={tt === 'dang'} /></div></Truong>
+          : <Truong nhan={t('Tháng thi')} loi={lfC.loiCua(loiC, 'thang')}><div className="max-w-[220px]"><ONgay kieu="thang" id={lfC.oId('thang')} invalid={!!lfC.loiCua(loiC, 'thang')} value={thang} onChange={setThang} disabled={tt === 'dang'} /></div></Truong>}
       </div>
     </KhungPanel>
   );

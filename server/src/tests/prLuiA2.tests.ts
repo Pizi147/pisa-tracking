@@ -7,7 +7,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
   const cases: any = await import('../cases/cases.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
   const { can } = await import('../permissions.ts');
-  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { soCauSql, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const sosAutoMod: any = await import('../cases/sosAuto.ts');
   const { tx } = await import('../db.ts');
   const effMod: any = await import('../cases/effectiveness.ts');
@@ -291,7 +291,7 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     assert(sc2.status === 'done' && sc2.urgency === 'urgent', 'Case done: sửa được, vẫn hoàn thành');
   }));
 
-  check('LUIa2-13 · Sửa Case đổi kỹ năng: chưa có PA → đổi topic + khoá; có PA → 400; trùng Case đang mở → 400', () => thu(() => {
+  check('LUIa2-13 · Sửa Case đổi kỹ năng: chưa có PA → đổi topic + khoá; có PA → 409 hỏi nêu số PA, đồng ý → đổi, PA đi theo (B1-07); trùng Case đang mở → 400', () => thu(() => {
     const sid = moiEm();
     const caseId = taoCase(sid);
     cases.suaCase(QL, caseId, { topic: 'reading', primaryCode: d.issuesForTopic('reading')[0].code });
@@ -300,8 +300,12 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
     const khac = taoCase(sid, P.lrTeacher, 'listening');
     assert(chuLoi(() => cases.suaCase(QL, khac, { topic: 'reading', primaryCode: d.issuesForTopic('reading')[0].code })) === 'Đã có Case Reading đang mở.', 'trùng');
     themPa(khac);
-    assert(chuLoi(() => cases.suaCase(QL, khac, { topic: 'speaking', primaryCode: d.issuesForTopic('speaking')[0].code })) === 'Case đã có PA — không đổi kỹ năng.', 'có PA');
-    assert(cases.caseDetail(QL, khac).viewer.khoaKyNang === true && cases.caseDetail(QL, caseId).viewer.khoaKyNang === false, 'khoaKyNang');
+    const doiS = { topic: 'speaking', primaryCode: d.issuesForTopic('speaking')[0].code };
+    assert(chuLoi(() => cases.suaCase(QL, khac, doiS)) === 'Case có 1 PA — PA đi theo Case sang kỹ năng mới. Đổi kỹ năng?', 'có PA → hỏi');
+    assert(cases.caseDetail(QL, khac).viewer.khoaKyNang === false && cases.caseDetail(QL, caseId).viewer.khoaKyNang === false, 'khoaKyNang chỉ Case MT');
+    voiXacNhan(() => cases.suaCase(QL, khac, doiS));
+    assert(mot('SELECT topic FROM sos_cases WHERE id = ?', khac).topic === 'speaking' && mot('SELECT COUNT(*) n FROM case_interventions WHERE case_id = ?', khac).n === 1, 'đổi xong, PA đi theo');
+    assert(mot(`SELECT new_value v FROM sos_case_history WHERE case_id = ? AND field = 'topic' ORDER BY id DESC LIMIT 1`, khac).v === 'speaking', 'lịch sử topic');
   }));
 
   /** Mọi cột trỏ Case / PA ở mọi bảng (quét pragma — bảng PR sau thêm cũng bị soi). */

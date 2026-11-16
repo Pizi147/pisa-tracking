@@ -5,7 +5,7 @@
  *   Xác nhận xử lý chung   ngày · người · mô tả chung (sửa riêng từng em được); mỗi em tự lấy bậc kế (máy chủ tính). Em chưa bắt buộc / có đề
  *                          xuất chờ QL bị loại kèm lý do — cùng luật việc `yt_xu_ly` ở Công việc (`soBatBuoc > 0 && !coChoDuyet`).
  *   Ghi nhận               mọi vi phạm Mới (kể cả Mới quá hạn) của em; em đang bắt buộc xử lý không Ghi nhận được (V4-2).
- *   Xác nhận cấp bậc       bậc 0 "Chưa có xử lý vi phạm" … WL 2; em đã có lần xử lý trên web khoá (chỉ QL sửa bậc đã khai — giữ luật).
+ *   Xác nhận cấp bậc       bậc 0 "Chưa có xử lý vi phạm" … WL 2; bậc đã khai GVCN sửa được mọi lúc (N50 câu 8, có nhật ký).
  *
  * Mỗi em đi qua ĐÚNG phần ghi của hàm một em (`luuXuLy` · `luuGhiNhan` · `luuKhai` / `luuSuaKhai`): mỗi em một giao dịch, luật tính lại trong
  * giao dịch, giữ khoá chống gửi trùng (khoá lô + `:{em}`) và `bacDaThay`; lỗi em nào báo riêng em đó, em khác vẫn lưu.
@@ -79,7 +79,7 @@ function lyDoGhiNhan(em: EmYThuc, vuot = false): ChuKhoa | null {
 }
 function lyDoCapBac(em: EmYThuc, laQl: boolean): ChuKhoa | null {
   if (!em.chuoi.length) return kem('chưa có lộ trình');
-  if (em.khai) return laQl || em.khai.coTheSua ? null : kem('đã có xử lý · chỉ QL sửa');
+  if (em.khai) return null;   // N50 (8): GVCN sửa bậc đã khai mọi lúc
   if (em.soXuLyChuoi > 0) return laQl ? null : kem('đã có xử lý trên web · nhờ QL');   // RKC-3b: QL vượt (lô hỏi một câu)
   return null;   // RKC-3a: em Tạm dừng khai được (như `khaiDuoc`)
 }
@@ -235,7 +235,7 @@ export function loCapBac(p: Principal, classId: number, v: { em?: unknown; thang
         ghiChu: chung.ghiChu || (em.khai ? em.khai.ghiChu : `Xác nhận theo lớp ${c.cls.code}`),
       });
       const truoc: BacKhai | null = em.khai ? { bac: em.khai.bac, thang: em.khai.thang, ghiChu: em.khai.ghiChu } : null;
-      if (em.khai) luuSuaKhai(p, hv, sid, k, c.laQl, c.homNay);
+      if (em.khai) luuSuaKhai(p, hv, sid, k, c.homNay);
       else luuKhai(p, hv, sid, k, c.homNay, c.laQl);
       return { nhan: k.bac > 0 ? nhanLoaiXuLy(kindCuaBac(k.bac)) : BAC_0_NHAN, truoc, bac: k.bac };
     }),
@@ -268,7 +268,7 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
       if (!em.khai || em.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
       const tr = x.truoc && typeof x.truoc === 'object' ? x.truoc as Record<string, unknown> : null;
       if (tr) {
-        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.laQl, c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
+        luuSuaKhai(p, hv, sid, kiemKhai(tr), c.homNay, { bacCu: sau, hoanTac: (e) => chiLanCuaMinh(p, sid, e, c.homNay) });
         return { nhan: Number(tr.bac) > 0 ? nhanLoaiXuLy(kindCuaBac(Number(tr.bac))) : BAC_0_NHAN };
       }
       tx(() => {

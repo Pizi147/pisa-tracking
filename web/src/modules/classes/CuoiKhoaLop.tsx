@@ -44,7 +44,7 @@ type Em = {
   kqdr: { goiY: { overall: number | null; dat: boolean; monTruot: RegularSkill[] } | null; mt0: { overall: number | null } | null; moTay: boolean;
     bands: Record<RegularSkill, number | null> | null; chot: KetLuanKv | null } | null;
 };
-type Lop = { id: number; code: string; ft: boolean; programmeCode: ProgrammeCode | null; studentCount: number };
+type Lop = { id: number; code: string; ft: boolean; programmeCode: ProgrammeCode | null; studentCount: number; branchId: number; branchCode: string };
 type KeHoach = {
   from: { id: number; code: string; programmeCode: ProgrammeCode | null; branchId: number; branchCode: string; programmeName: string | null };
   candidates: Lop[]; tuanChon: string[]; tuanCuoiKhoa: string | null; students: Em[]; gvcn: string | null; goiYLopMoi: { startPeriodId: number } | null;
@@ -98,7 +98,6 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   /* N36: một ô chung "Reset bậc vi phạm" cho lần chốt — mặc định tắt (giữ bậc, chuỗi đếm thang nối tiếp). */
   const [resetBac, setResetBac] = useState(false);
   const [tienDo, setTienDo] = useState<[number, number] | null>(null);
-  const [hoiNgay, setHoiNgay] = useState<{ ten: string[]; chiEm?: number[] } | null>(null);
   const [tam, setTam] = useState(false);
   const [moLop, setMoLop] = useState<{ huong: ChonHuong; ganCho: 'thanh' | number } | null>(null);
   const [huy, setHuy] = useState<{ em: Em; lyDo: string } | null>(null);
@@ -231,7 +230,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     }
     setTam(false);
   };
-  const lopAp = lopTheoHuong(d.candidates, ap.huong || (dsChon[0]?.x.huong ?? ''), ma, ke);
+  /* N50 (7): ô áp chung / nhóm (cả lớp) chỉ lớp cùng chi nhánh; ô lớp của từng em có thêm chi nhánh khác (cuối danh sách). */
+  const cungCn = d.candidates.filter((c) => c.branchId === d.from.branchId);
+  const lopAp = lopTheoHuong(cungCn, ap.huong || (dsChon[0]?.x.huong ?? ''), ma, ke);
 
   /* ------------------------------------------------------------------ lưu */
   const ketThuc = (ok: number[], failed: { studentId: number; message: string }[]) => {
@@ -242,13 +243,19 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     if (failed.length) setLoc('loi');
     lamMoi();
   };
-  const chot = async (chiEm?: number[], daHoi = false) => {
+  /* DUONG-LUI-2 (P1-09): chốt "Ngay hôm nay" có Hoàn tác (mỗi lô một bản ghi — đảo lô sau trước) → không hỏi lại trước khi chốt. */
+  const hoanTacChuyenNgay = async (dao: number[]) => {
+    setBusy(true);
+    try {
+      for (const id of [...dao].reverse()) await api.post(`/classes/${classId}/hoan-tac-chuyen-ngay`, { dao: id });
+      toast.push('ok', t('Đã hoàn tác — em về lại {lop}', { lop: d.from.code }));
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); setKetQua(null); lamMoi(); }
+  };
+  const chot = async (chiEm?: number[]) => {
     const nhom = guiDuoc.filter((r) => !chiEm || chiEm.includes(r.e.id));
     if (!nhom.length) return;
     const ngay = nhom.filter((r) => r.lenh && laChuyenNgay(r.x.tuan, h));
-    /* N22 ③: chốt "Ngay hôm nay" không hoàn tác → một hộp xác nhận nêu tên em; tuần thường không hỏi. */
-    if (ngay.length && !daHoi) { setHoiNgay({ ten: ngay.map((r) => r.e.fullName), chiEm }); return; }   // giữ lô đang chốt (vd Thử lại n em)
-    setHoiNgay(null); setBusy(true);
+    setBusy(true);
     try {
       const lenh = nhom.filter((r) => r.lenh).map((r) => ({
         studentId: r.e.id, huong: huongLenh(r.x), toClassId: canLopDich(huongLenh(r.x)!) ? r.x.lop : null, tuan: r.x.tuan || null,
@@ -258,7 +265,8 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       }));
       const kq = lenh.length
         ? await guiTheoLo(`/classes/${classId}/transition`, null, ngay.length ? LO_CHUYEN_NGAY_THUONG : lenh.length, setTienDo, lenh)
-        : { ok: [] as number[], failed: [] as { studentId: number; message: string }[] };
+        : { ok: [] as number[], failed: [] as { studentId: number; message: string }[], daChuyen: [] as number[], dao: [] as number[] };
+      if (kq.dao.length) toast.hoanTac(t('Đã chuyển {n} em sang lớp mới', { n: kq.daChuyen.length }), () => hoanTacChuyenNgay(kq.dao), { key: `chuyen-ngay-${classId}` });
       const kv = nhom.filter((r) => r.kv && !kq.failed.some((f) => f.studentId === r.e.id));
       const ok = [...kq.ok], failed = [...kq.failed];
       /* Kỳ vọng từng em (máy chủ chốt cả lô trong một tx — một em lỗi không được làm hỏng em khác). */
@@ -545,11 +553,11 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       return <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] xl:invisible xl:group-hover/hang:visible xl:group-focus-within/hang:visible sm:min-h-0"
         onClick={() => setDoiLopRieng((s) => new Set(s).add(e.id))}>{t('Đổi lớp')}</button>;
     }
-    const dsLop = lopTheoHuong(d.candidates, x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` }));
+    const dsLop = lopTheoHuong(d.candidates, x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${c.branchCode} · ${c.studentCount} em` }));
     return (
       <span className="block">
         <ChonLop ds={dsLop} value={x.lop} onChange={(id) => doi(e.id, { lop: id })} ariaLabel={t('Lớp · {ten}', { ten: e.fullName })}
-          maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} />
+          maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chi nhánh {cn} trước, chi nhánh khác sau', { cn: d.from.branchCode })} />
         {x.lop !== null && tuan}
       </span>
     );
@@ -685,7 +693,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           ))}
         </span>
       )}
-      {laChuyenNgay(ap.tuan, h) && <span role="note" className="rounded-lg border px-2 py-1 text-[12px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay, không hoàn tác')}</span>}
+      {laChuyenNgay(ap.tuan, h) && <span role="note" className="rounded-lg border px-2 py-1 text-[12px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay khi chốt')}</span>}
     </>
   );
 
@@ -736,7 +744,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const tatCa = idsChon.length > 0 && idsChon.every((id) => chon.has(id));
     const huong = HUONG_NHOM[k];
     const coO = laQl && !!huong && dongNhomHuong(k).length > 0;
-    const dsLop = coO ? lopTheoHuong(d.candidates, huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` })) : [];
+    const dsLop = coO ? lopTheoHuong(cungCn, huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` })) : [];
     const mauVach = k === 'len' ? 'rgb(var(--ok-rgb))' : k === 'lai' ? 'rgb(var(--bad-rgb))' : k === 'cn' ? 'rgb(var(--soon-rgb))' : 'var(--text-faint)';
     return (
       <div className={`grid min-h-[44px] grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 border-b px-4 py-2 pl-[13px] ${LUOI}`}
@@ -838,16 +846,6 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         )}
       </section>
 
-      {hoiNgay && (
-        <Modal open onClose={() => setHoiNgay(null)} width="max-w-md" title={t('Chuyển ngay hôm nay?')}
-          footer={<>
-            <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setHoiNgay(null)}>{t('Quay lại')}</button>
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => chot(hoiNgay.chiEm, true)}>{t('Chuyển ngay · {n} em', { n: hoiNgay.ten.length })}</button>
-          </>}>
-          <p className="m-0 rounded-lg border px-3 py-2 text-[13px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay, không hoàn tác')}</p>
-          <p className="mb-0 mt-2 text-sm text-slate-200">{hoiNgay.ten.join(', ')}</p>
-        </Modal>
-      )}
       {huy && (
         <Modal open onClose={() => setHuy(null)} width="max-w-md" title={t('Huỷ quyết định · {ten}', { ten: huy.em.fullName })}
           footer={<>

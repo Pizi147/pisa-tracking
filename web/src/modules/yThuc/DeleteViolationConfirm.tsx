@@ -1,46 +1,16 @@
-import { useState } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { hoanTacXoa } from '../../lib/thungRac.ts';
-import { useApi } from '../../lib/useApi.ts';
-import { useToast } from '../../ui/Toast.tsx';
-import { ConfirmDialog } from '../../ui/Drawer.tsx';
+import type { useToast } from '../../ui/Toast.tsx';
 import { t } from '@shared/i18n/index.ts';
 
-/** Xoá vi phạm + làm mới + toast Hoàn tác — MỘT đường cho hộp xác nhận (DeleteViolationConfirm) và Chi tiết (ChiTietViPham). Lỗi để nơi gọi xử lý. `imLang`: Hoàn tác của lần TẠO (RecordViolationPanel) — không toast xoá thứ hai, nơi gọi tự báo "Đã hoàn tác". */
+/**
+ * XOÁ VI PHẠM — MỘT đường cho mọi nơi (Sửa vi phạm › Xoá, Chi tiết vi phạm): xoá thẳng + làm mới + toast Hoàn tác (Thùng rác 30 ngày). DUONG-LUI-2 (B1-10):
+ * bỏ hộp "Xoá vi phạm này?" — đã có Hoàn tác (như Xoá Case / PA); hậu quả với lần xử lý (PR-YT4 V4-12: lần xử lý vẫn giữ, bậc không lùi) nói trong toast.
+ * Lỗi để nơi gọi xử lý. `imLang`: Hoàn tác của lần TẠO (RecordViolationPanel) — không toast xoá thứ hai, nơi gọi tự báo "Đã hoàn tác".
+ */
 export async function xoaViPham(toast: ReturnType<typeof useToast>, violationId: number, imLang = false): Promise<void> {
-  const r = await api.del<{ thungRacId?: number }>(`/violations/${violationId}`);
+  const r = await api.del<{ thungRacId?: number; removedFromMeasures?: number }>(`/violations/${violationId}`);
   const lamMoi = () => { invalidate('/violations'); invalidate('/measures'); invalidate('/classes'); invalidate('/students'); invalidate('/y-thuc'); };
   lamMoi();
-  if (!imLang) hoanTacXoa(toast, r?.thungRacId, t('Đã xoá vi phạm'), lamMoi);
-}
-
-/**
- * XOÁ VI PHẠM — hộp xác nhận MỘT DÒNG (rulebook v3, V11′–V14′): không lý do, không gõ chữ.
- * PR-YT4 (V4-12): vi phạm nằm trong lần xử lý đã xong thì lần xử lý vẫn giữ, bậc không lùi.
- */
-export function DeleteViolationConfirm({ violationId, onClose, onDone }: {
-  violationId: number | null; onClose: () => void; onDone?: () => void;
-}) {
-  const toast = useToast();
-  const [busy, setBusy] = useState(false);
-  const { data } = useApi<{ measures: any[]; ten?: string | null }>(violationId ? `/violations/${violationId}` : null, [violationId]);
-  const n = data?.measures?.length ?? 0;
-
-  const confirm = async () => {
-    if (!violationId) return;
-    setBusy(true);
-    try {
-      await xoaViPham(toast, violationId);
-      onClose(); onDone?.();
-    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
-  };
-
-  /* 6c-2 (lỗi 9): mở từ danh sách vi phạm có thể nằm trong panel khác → hộp nhỏ lớp z trên, không ngăn 480 đè panel. */
-  return (
-    <ConfirmDialog open={violationId !== null} onClose={onClose} onConfirm={() => void confirm()} title={t('Xoá vi phạm này?')} danger busy={busy} z="z-[60]"
-      confirmLabel={t('Xoá vi phạm')} busyLabel={t('Đang xoá…')}
-      /* 6c-2 (bấm thử): nêu đúng vi phạm bị xoá (tên) rồi hậu quả với lần xử lý. */
-      body={<>{data?.ten && <p className="m-0 font-semibold text-slate-100">{data.ten}</p>}
-        <p className="m-0">{n > 0 ? t('Vi phạm nằm trong {n} lần xử lý — lần xử lý vẫn giữ, bậc không lùi.', { n }) : t('Vi phạm chưa nằm trong lần xử lý nào.')}</p></>} />
-  );
+  if (!imLang) hoanTacXoa(toast, r?.thungRacId, r?.removedFromMeasures ? t('Đã xoá vi phạm · lần xử lý vẫn giữ, bậc không lùi') : t('Đã xoá vi phạm'), lamMoi);
 }
