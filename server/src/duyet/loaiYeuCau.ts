@@ -14,7 +14,7 @@ import {
   type InterventionKind, type LoaiYeuCau, type TrangThaiYc,
   type TruongDeXuat,
 } from '../../../shared/domain/index.ts';
-import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, moLaiCase, respondToPlan } from '../cases/cases.ts';
+import { apDungXinXoa, caseTitleOf, huyQuyetDinhPa, moLaiCase, napTenCase, respondToPlan } from '../cases/cases.ts';
 import { khoiPhucRac } from '../platform/khoiPhucRac.ts';
 import { apDungDoiPa, doiPaHuyDuoc, duLieuDoiPa, rutDoiPa, tenLoaiPa } from '../cases/doiPa.ts';
 import { apDungGiuPaGv, apDungKhongTheoDoi, quetGiuPaGv, rutKhongTheoDoi, suaKhongTheoDoi, tuChoiKhongTheoDoi } from '../cases/sosAuto.ts';
@@ -499,8 +499,12 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
     },
     /* S4-7: Case đóng vì lý do khác (điểm sửa thành đạt, lượt huỷ, đổi chương trình) → thẻ tự đóng. */
     chet: { sql: `NOT EXISTS (SELECT 1 FROM sos_cases sc WHERE sc.id = y.doi_tuong_id AND sc.status != 'done')`, lyDo: 'Case đã đóng' },
-    nap: (conn, ds) => napTheoDoiTuong(conn, ds,
-      `SELECT sc.id, sc.topic, sc.category, sc.title, sc.origin_kind, sc.sos_level, sc.student_id, sc.cycle_id FROM sos_cases sc WHERE sc.id IN (?)`),
+    nap: (conn, ds) => {
+      const m = napTheoDoiTuong(conn, ds,
+        `SELECT sc.id, sc.topic, sc.category, sc.title, sc.origin_kind, sc.sos_level, sc.student_id, sc.cycle_id FROM sos_cases sc WHERE sc.id IN (?)`);
+      napTenCase(m.values());   // TD-QUET: tên Case của mọi thẻ một câu (trước: một câu mỗi thẻ ở `caseTitleOf`)
+      return m;
+    },
     moTa: (yc, ngu) => {
       const x = ngu.them.get(yc.id);
       return {

@@ -419,7 +419,17 @@ export function oQuaHanCham(
   const coPhanCong = defaultWorkScope(p) === 'mine';
   const cuaToi = coPhanCong && (o.phamVi ?? 'cua-toi') === 'cua-toi';
   const lopCuaToi = new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId));
-  const r = overdueScoreBai(p, o.branchId ?? null, today);
+  /*
+   * TD-CHAM (Turso, log 24 h: 121 lần · ~1,8 K dòng): chỉ nạp nợ điểm của lớp vòng lặp dưới còn giữ — lớp đang lọc / "Lớp tôi dạy" / lớp FT khi xem khung FT
+   * (ô FT chỉ ở lớp FT — `khungDong`; khung "Lớp thường" còn MT0 của lớp FT nên không thu hẹp). Tập trả về không đổi: vòng lặp vẫn lọc như cũ.
+   */
+  let chiLop: number[] | undefined = o.classId ? [o.classId] : cuaToi ? [...lopCuaToi] : undefined;
+  if (o.khung === 'ft') {
+    const bl = bangLop();
+    chiLop = (chiLop ?? [...bl.keys()]).filter((id) => cheDoCua(bl.get(id)?.ct) === 'ielts_band');
+  }
+  if (chiLop && !chiLop.length) return { ids: [], khac: [], lop: 0 };
+  const r = overdueScoreBai(p, o.branchId ?? null, today, chiLop);
   /* OV-14b: khung đang xem (công tắc FT / Lớp thường) — cùng luật `khungDong` của các khối (MT0 thuộc Lớp thường); FT + thường = cả hai. */
   const khungLuot = new Map<number, Khung>();
   if (o.khung) {
@@ -574,12 +584,14 @@ function hangLopTuan(
   ctx: {
     cs: { sql: string; params: unknown[] }; branchId?: number | null; today: string; coPhanCong: boolean;
     lopCuaToi: ReadonlySet<number>; giuLop: (classId: number) => boolean;
+    /** TD-CHAM: đúng tập lớp `giuLop` giữ (null = mọi lớp trong phạm vi) — lọc ngay trong câu, không nạp lớp ngoài "Lớp tôi dạy" / lớp đang lọc. */
+    chiLop: ReadonlySet<number> | null;
   },
   tuan: { id: number; week_start: string; week_end: string },
   /** Khối 2 hạn riêng: chỉ các ô `${attemptId}:${ô nhập}` này. */
   loc?: ReadonlySet<string>,
 ): LopLichTest[] {
-  const { cs, branchId, today, coPhanCong, lopCuaToi, giuLop } = ctx;
+  const { cs, branchId, today, coPhanCong, lopCuaToi, giuLop, chiLop } = ctx;
   const conn = db();
   const periodId = tuan.id;
   /* Tuần đang xem còn ở phía trước thì chưa ai nợ bài nào. */
@@ -588,6 +600,7 @@ function hangLopTuan(
   /* PR-MT (M3, K4-01): MT lịch sử không vào tổng / còn bài / quá hạn / tự mở / dải số — nhắc riêng một dòng mờ (`mtLichSuChuaNhap`). */
   let where = `${cs.sql} AND a.status != 'cancelled' AND ${LUOT_TINH_NO_SQL('a')} AND ask.required = 1 AND ask.planned_period_id = ?`;
   if (branchId) { where += ' AND c.branch_id = ?'; params.push(branchId); }
+  if (chiLop) { where += ` AND a.class_id IN (${DS_JSON})`; params.push(JSON.stringify([...chiLop])); }
   const rows = conn
     .prepare(
       `SELECT a.id, a.kind, a.attempt_no, a.class_id, a.student_id, a.deadline_override AS han_dot,
@@ -822,14 +835,14 @@ export function lichTest(
   const cs0 = classScopeSql(scope);
   const cs = lopMt0.length
     ? { sql: `(${cs0.sql} OR (c.id IN (${lopMt0.map(() => '?').join(',')}) AND a.kind = 'mt0'))`, params: [...cs0.params, ...lopMt0] } : cs0;
-  const ctx = { cs, branchId, today, coPhanCong, lopCuaToi, giuLop };
-
-  const lop = hangLopTuan(p, ctx, tuan);
-
-  /* Khối 1 (và ô hạn riêng của khối 2): cùng bộ lọc lớp với danh sách (phạm vi + lớp đang lọc). */
+  /* Khối 1 (và ô hạn riêng của khối 2): cùng bộ lọc lớp với danh sách (phạm vi + lớp đang lọc) — đúng tập `giuLop` giữ. */
   const lopNo: Set<number> | null = phamVi === 'cua-toi'
     ? new Set([...lopCuaToi].filter((id) => !o.classId || id === o.classId))
     : o.classId ? new Set([o.classId]) : null;
+  const ctx = { cs, branchId, today, coPhanCong, lopCuaToi, giuLop, chiLop: lopNo };
+
+  const lop = hangLopTuan(p, ctx, tuan);
+
   const no = noQuaHan(p, { branchId, classIds: lopNo, lopCuaToi, coPhanCong }, today);
 
   let chamTuanNay: LopLichTest[] | null = null;

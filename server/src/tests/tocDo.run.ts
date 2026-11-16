@@ -1637,7 +1637,8 @@ await checkAsync('TURSO-1211 (×3) · 9 câu Công việc / Tổng quan / hồ s
     ['Ghi kết quả PA', /iv\.action_due IS NOT NULL AND iv\.action_due <= \?(?!\s*AND iv\.action_due > \?)/, 'idx_iv_ghi_kq', /^SCAN iv$/],
     /* LG-13 "Sắp tới": cùng câu Ghi kết quả PA nhưng đi từ em lớp GV / chủ Case / người dạy nhóm (rowid IN), không quét PA tới hạn cả hệ thống. */
     ['Sắp tới · PA tới kỳ', /AND iv\.id IN \(\s*SELECT iv2\.id AS id/, 'idx_intervention_case', /^SCAN (iv|sc|iv2|sc2|e2)$/],
-    ['Xác nhận PA', /AS chon_pa/, 'idx_iv_cho_xac_nhan', /^SCAN iv$/],
+    /* TD-VIEC: Xác nhận PA lọc tập cha `locCaseMo` — GV đi danh sách Case của lớp (idx_case_student), QL "Của tôi" đi idx_case_owner; "Tất cả" toàn hệ thống giữ idx_iv_cho_xac_nhan. */
+    ['Xác nhận PA', /AS chon_pa/, 'idx_iv_cho_xac_nhan|idx_case_owner|idx_case_student', /^SCAN (iv|sc)$/],
     ['Mốc PA quy chế', /iv\.moc_quy_che IN \('until_next_mt', 'until_exam'\)/, 'idx_iv_moc_cho', /^SCAN iv$/],
     ['Chờ kết quả thi', /COALESCE\(c\.thi_that_ngay, c\.exam_date, c\.ended_at\) < \?/, 'idx_cycle_cho_kq_ngay', /^SCAN c\b/],
     ['WL2 thi thật', /FROM discipline_measures dm WHERE dm\.cycle_id = c\.id/, 'idx_dm_cycle', /^SCAN dm$/],
@@ -1649,7 +1650,7 @@ await checkAsync('TURSO-1211 (×3) · 9 câu Công việc / Tổng quan / hồ s
     if (!cau.length) { loi.push(`không bắt được câu "${ten}"`); continue; }
     for (const { sql, args } of cau) {
       const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
-      if (!plan.some((d) => d.includes(chiMuc)) || plan.some((d) => scan.test(d))) loi.push(`${ten}: ${plan.join(' | ')}`);
+      if (!plan.some((d) => chiMuc.split('|').some((c) => d.includes(c))) || plan.some((d) => scan.test(d))) loi.push(`${ten}: ${plan.join(' | ')}`);
     }
   }
   assert(!loi.length, loi.join(' · '));

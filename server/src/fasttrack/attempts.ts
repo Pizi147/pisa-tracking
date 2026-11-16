@@ -1202,7 +1202,7 @@ export function attemptDetail(p: Principal, attemptId: number) {
   const result = resultOf(a, scores, skips, skillRows);
   const today = demoToday();
   /* R11 (Z2c-c, A3): đợt đã hoàn tất thì ô chỉ sửa được bởi Quản lý — thiếu dòng này GVBM thấy nút "Sửa điểm" rồi bị máy chủ chặn. */
-  const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today), tuanVangCu([attemptId]));
+  const cells = skillCells(p, a, scores, skips, today, skillRows, dotHoanTat(attemptId, today, skillRows), tuanVangCu([attemptId]));   // TD-QUET: lịch đã đọc ở trên
   const mode = scoringModeOf(a);
   const completion = completionWeekOf(skillRows);
   /* FIX-DTL: bài lớp thường bộ môn khác (PREFOU `tong_hop`) không có dòng L/R/W/S — bỏ qua thay vì 500, để màn nhận `kind` rồi chuyển trang. */

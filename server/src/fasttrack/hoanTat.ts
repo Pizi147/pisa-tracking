@@ -11,7 +11,7 @@ import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
 import { coNho } from '../platform/nguCanhRequest.ts';
 import { diemCuaLuot } from './attempts.ts';
-import { loadSkillRows, scoringModeOf } from './skillSchedule.ts';
+import { loadSkillRows, scoringModeOf, type SkillRow } from './skillSchedule.ts';
 
 export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
 
@@ -22,7 +22,7 @@ export type HoanTatInfo = { hoanTat: boolean; chuNhatCuoi: string | null };
  *   3. Điểm (`assessment_scores`): band / raw_score / dấu "-" theo TỪNG Ô NHẬP (writing tách writing1, writing2
  *      ở lớp FT; lớp thường thì 'writing' là một ô).
  */
-export function dotHoanTatMany(attemptIds: number[], today: string): Map<number, HoanTatInfo> {
+export function dotHoanTatMany(attemptIds: number[], today: string, lichDaNap?: ReadonlyMap<number, readonly SkillRow[]>): Map<number, HoanTatInfo> {
   const out = new Map<number, HoanTatInfo>();
   if (!attemptIds.length) return out;
   const conn = db();
@@ -53,8 +53,9 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
   }
 
   const skillsOf = new Map<number, Array<{ skill: string; batBuoc: boolean; huy: boolean; sitAbsent: boolean; weekEnd: string | null; periodId: number | null; boTask?: string | null }>>();
-  /* TD2-a: lịch kỹ năng qua `loadSkillRows` (nhớ theo lượt trong request) — bảng điểm lớp đã đọc đúng các lượt này ngay trước. */
-  for (const r of [...loadSkillRows(attemptIds).values()].flat()) {
+  /* TD2-a: lịch kỹ năng qua `loadSkillRows` (nhớ theo lượt trong request) — bảng điểm lớp đã đọc đúng các lượt này ngay trước.
+     TD-QUET: nơi gọi đã có dòng lịch (`ensureSkillRows` của màn chi tiết lượt) truyền `lichDaNap` — không đọc lại. */
+  for (const r of [...(lichDaNap ?? loadSkillRows(attemptIds)).values()].flat()) {
     if (!skillsOf.has(r.attempt_id)) skillsOf.set(r.attempt_id, []);
     skillsOf.get(r.attempt_id)!.push({
       skill: r.skill, batBuoc: r.required === 1, huy: r.sit_status === 'cancelled',
@@ -106,8 +107,8 @@ export function dotHoanTatMany(attemptIds: number[], today: string): Map<number,
 }
 
 /** Bản một phần tử của `dotHoanTatMany` — dùng ở các đường ghi điểm (một đợt một lần). */
-export function dotHoanTat(attemptId: number, today: string): HoanTatInfo {
-  return dotHoanTatMany([attemptId], today).get(attemptId) ?? { hoanTat: false, chuNhatCuoi: null };
+export function dotHoanTat(attemptId: number, today: string, lichDaNap?: readonly SkillRow[]): HoanTatInfo {
+  return dotHoanTatMany([attemptId], today, lichDaNap && new Map([[attemptId, lichDaNap]])).get(attemptId) ?? { hoanTat: false, chuNhatCuoi: null };
 }
 
 /** R11: ai sửa được điểm của một đợt ĐÃ HOÀN TẤT — Quản lý/Quản trị (`PLAN_WEEK`) hoặc người nhập bù (`SCORE_OVERRIDE`). */

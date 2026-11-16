@@ -58,20 +58,20 @@ export function listStudents(p: Principal, f: { q?: string; branchId?: number; c
   const gioiHan = f.gioiHan && !f.needAttention ? f.gioiHan : null;
   const rows = conn.prepare(`SELECT s.* FROM students s WHERE ${where.join(' AND ')} ORDER BY s.archived_at IS NOT NULL, s.full_name${gioiHan ? ' LIMIT ?' : ''}`)
     .all(...params, ...(gioiHan ? [gioiHan] : [])) as any[];
-  const mapped = rows.map((s) => {
-    const cur = conn
-      .prepare(
-        `SELECT c.id, c.code, c.branch_id, b.name AS branch_name FROM enrollments e
+  /* TD-QUET: lớp đang học + Case mở của MỌI em một câu mỗi loại (trước: hai câu mỗi em). Dòng đầu mỗi em theo cùng thứ tự `id DESC` = `LIMIT 1` cũ. */
+  const dauMoiEm = (sql: string) => {
+    const m = new Map<number, any>();
+    if (rows.length) for (const { sid, ...r } of conn.prepare(sql).all(JSON.stringify(rows.map((s) => s.id))) as any[]) if (!m.has(sid)) m.set(sid, r);
+    return m;
+  };
+  const curCua = dauMoiEm(`SELECT e.student_id AS sid, c.id, c.code, c.branch_id, b.name AS branch_name FROM enrollments e
            JOIN classes c ON c.id = e.class_id JOIN branches b ON b.id = c.branch_id
-          WHERE e.student_id = ? AND e.status = 'active' ORDER BY e.id DESC LIMIT 1`,
-      )
-      .get(s.id) as any;
-    const openCase = conn
-      .prepare(
-        `SELECT sc.id, sc.sos_level, sc.status FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
-          WHERE a.student_id = ? AND sc.sos_level > 0 AND sc.status != 'done' AND ${CASE_THAT('sc')} ORDER BY sc.id DESC LIMIT 1`,
-      )
-      .get(s.id) as any;
+          WHERE e.student_id IN (SELECT value FROM json_each(?)) AND e.status = 'active' ORDER BY e.id DESC`);
+  const caseCua = dauMoiEm(`SELECT a.student_id AS sid, sc.id, sc.sos_level, sc.status FROM sos_cases sc JOIN assessment_attempts a ON a.id = sc.attempt_id
+          WHERE a.student_id IN (SELECT value FROM json_each(?)) AND sc.sos_level > 0 AND sc.status != 'done' AND ${CASE_THAT('sc')} ORDER BY sc.id DESC`);
+  const mapped = rows.map((s) => {
+    const cur = curCua.get(s.id);
+    const openCase = caseCua.get(s.id);
     const goc = {
       id: s.id, studentCode: s.student_code, fullName: s.full_name, email: s.email ?? null, status: s.status, archived: !!s.archived_at,
       classId: cur?.id ?? null, classCode: cur?.code ?? null, branchName: cur?.branch_name ?? null, openCase: openCase ?? null,

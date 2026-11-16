@@ -167,7 +167,8 @@ function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
       .prepare(
         /* S3: lộ trình của lượt nối một lần (trước: hai câu con cùng dòng), lộ trình FT đang chạy đọc một lần mỗi EM (trước: câu con theo từng lượt). */
         /* PANEL-MC: `lop_nguong_dat` — ngưỡng lớp đi cùng câu lượt, `evaluateAttemptRow` không hỏi riêng bảng lớp (`nguongDatLop`). */
-        `SELECT a.*, c.programme_code, c.nguong_dat AS lop_nguong_dat, pr.week_start AS period_start, pr.week_end AS period_end,
+        /* TD-HVL-2: `period_code` cho `standingFor` (đọc lượt từ đây — cùng phép nối tuần, không thêm dòng đọc). */
+        `SELECT a.*, c.programme_code, c.nguong_dat AS lop_nguong_dat, pr.week_start AS period_start, pr.week_end AS period_end, pr.code AS period_code,
                 cy.route AS route, cy.khong_cam_ket AS cy_kck, cy.programme_code AS cy_programme_code,
                 /* OV-11f (PT-3): lộ trình FAST TRACK đang chạy của em (nếu có) — SOS / dưới kỳ vọng chỉ đọc lượt của lộ trình này, không rơi về Final lớp thường cũ. */
                 ft.id AS cy_ft_dang_chay,

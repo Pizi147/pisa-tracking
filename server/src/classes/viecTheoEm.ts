@@ -42,7 +42,7 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   const ql = laVaiQuanLy(p.roleKeys), coBadge = ql || vaiXemHocVien(p.roleKeys) === null;
   /* Lớp không em vẫn có badge (việc cấp lớp) — trước PR web đọc `/my-work` bất kể sĩ số. */
   if (!lop || (!em.size && !coBadge)) return { theoEm, cuaToi: [], dongToi: [], soQuaHanLop: coBadge ? 0 : null };
-  const f = { branchId: lop.branch_id ?? undefined, ...(viecLopDayDuKhiKiem.bat ? {} : { classIds: [classId] }) };
+  const f = { branchId: lop.branch_id ?? undefined, ...(viecLopDayDuKhiKiem.bat ? {} : { classIds: [classId], chiLop: classId }) };   // TD-VIEC: `chiLop` — các khối khác cũng đọc một lớp
   const cuaLop = (it: WorkItem) => it.studentId !== null && em.has(it.studentId) && (it.classId === null || it.classId === classId);
   /* P1 G5-01: "Chốt lộ trình" (việc QL) đã có dải riêng ở đầu hồ sơ lớp (`DaiChuyenLop`, nút Cuối khoá ›) — không thêm ô trùng ở "Việc của tôi". */
   const capLop = (it: WorkItem) => it.studentId === null && it.classId === classId && it.mine && it.group !== 'chot_len_ft';

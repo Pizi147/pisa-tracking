@@ -245,7 +245,7 @@ export async function runPrS3CauConTests(t: any) {
       const ids = tatCa.slice(i, i + 400);
       for (const r of all(
         /* PANEL-MC: `lop_nguong_dat` — câu mới mang thêm ngưỡng lớp (cột của `classes` đã nối), câu cũ dựng lại cùng cột để so. */
-        `SELECT a.*, c.programme_code, c.nguong_dat AS lop_nguong_dat, pr.week_start AS period_start, pr.week_end AS period_end,
+        `SELECT a.*, c.programme_code, c.nguong_dat AS lop_nguong_dat, pr.week_start AS period_start, pr.week_end AS period_end, pr.code AS period_code,   /* TD-HVL-2: cột mới (cùng phép nối), dựng lại để so */
                 (SELECT cy.route FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS route, (SELECT cy.khong_cam_ket FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_kck,
                 (SELECT cy.programme_code FROM learning_cycles cy WHERE cy.id = a.cycle_id) AS cy_programme_code,   /* LECH-KHONG-LOP: cột mới, dựng lại để so */
                 (SELECT cy2.id FROM learning_cycles cy2 WHERE cy2.student_id = a.student_id AND cy2.status = 'active' AND cy2.route IS NOT NULL ORDER BY cy2.id DESC LIMIT 1) AS cy_ft_dang_chay,

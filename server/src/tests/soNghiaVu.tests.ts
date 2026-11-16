@@ -554,7 +554,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ Task 6 · nạp cũ + đối chiếu đêm
   const { napSoNghiaVu } = await import('../migrate/prNghiaVuNap.ts');
-  const { doiChieuSo } = await import('../ops/doiChieuSo.ts');
+  const { doiChieuSo, cnCuaLuot } = await import('../ops/doiChieuSo.ts');
   const chup = () => new Map((conn.prepare(`SELECT * FROM nghia_vu ORDER BY khoa`).all() as any[]).map(({ id: _i, cap_nhat: _c, ...r }) => [r.khoa, JSON.stringify(r)]));
 
   check('NV-NAP · seed → nạp → sổ = ghi từng lượt + từng chi nhánh (so toàn bộ); nạp lần hai không nhân đôi, không đổi', () => thu(() => {
@@ -584,6 +584,29 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(so(r.khoa).nguoi === r.nguoi, `chưa sửa: ${JSON.stringify(so(r.khoa))}`);
     const l = conn.prepare(`SELECT * FROM nghia_vu_lech WHERE khoa = ?`).all(r.khoa) as any[];
     assert(l.length === 1 && /-12345/.test(l[0].truoc) && l[0].sau.includes(String(r.nguoi)) && kq.lechBai >= 1, `nhật ký lệch: ${JSON.stringify(l)} · ${JSON.stringify(kq)}`);
+  }));
+
+  check('NV-DOI-CHIEU · cnCuaLuot: 5 lượt đêm phủ MỌI chi nhánh đúng một lần (lượt cuối nhận phần còn lại), ngoài giờ rỗng', () => {
+    for (const cns of [[1, 2, 3], [1, 2, 3, 4, 5], [1, 2, 3, 4, 5, 6, 7]]) {
+      const ds = [0, 1, 2, 3, 4].flatMap((l) => cnCuaLuot(cns, l));
+      assert(JSON.stringify(ds) === JSON.stringify(cns), `${cns.length} chi nhánh → ${JSON.stringify(ds)}`);
+    }
+    assert(JSON.stringify(cnCuaLuot([1, 2, 3, 4, 5, 6, 7], 4)) === '[5,6,7]', 'lượt cuối phải nhận chi nhánh 5, 6, 7');
+    assert(!cnCuaLuot([1, 2, 3], -1).length && !cnCuaLuot([1, 2, 3], 5).length, 'ngoài khung giờ phải rỗng');
+  });
+
+  /* TD-CHAM (17/11): hàm đêm chạy 5 lần, mỗi lần MỘT chi nhánh — bài cũng chỉ của chi nhánh đó (trước: bài mọi chi nhánh mỗi lần). */
+  check('NV-DOI-CHIEU · doiChieuSo(ngày, [cn]) chỉ sửa bài của chi nhánh cn — chi nhánh khác để lượt của nó', () => thu(() => {
+    conn.exec('DELETE FROM nghia_vu');
+    napSoNghiaVu();
+    const r = get(`SELECT khoa, nguoi, chi_nhanh FROM nghia_vu WHERE loai = 'bai' AND nguoi IS NOT NULL AND han >= date(?, '-50 day') ORDER BY han DESC LIMIT 1`, TODAY);
+    assert(r, 'seed phải có bài hạn trong 8 tuần gần nhất');
+    const khac = get(`SELECT id FROM branches WHERE id != ? ORDER BY id LIMIT 1`, r.chi_nhanh).id;
+    conn.prepare(`UPDATE nghia_vu SET nguoi = -12345 WHERE khoa = ?`).run(r.khoa);
+    const kq = doiChieuSo(TODAY, [khac]);
+    assert(kq.cn === 1 && so(r.khoa).nguoi === -12345, `lượt chi nhánh ${khac} sửa bài chi nhánh ${r.chi_nhanh}: ${JSON.stringify(kq)}`);
+    doiChieuSo(TODAY, [r.chi_nhanh]);
+    assert(so(r.khoa).nguoi === r.nguoi, `lượt chi nhánh ${r.chi_nhanh} chưa sửa: ${JSON.stringify(so(r.khoa))}`);
   }));
 
   // ------------------------------------------------------------------ Chủ SP 10/11 · em chuyển lớp (spec 1.2 b)

@@ -76,7 +76,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prXlmt: 500, prSl: 500, prQrl2cPa: 500, prQtTk: 500, prLc: 500, prOv4a: 500, prOv10c: 500, prOv12a: 500, prOv13b: 500, prOv13i: 500, prOv13g: 500,
   prPtGvOverall: 500, prSvSo1: 500, prSvLop: 500, prUiHoSoLop: 500, prKetPet: 500, prTlNen: 500, prTlViec: 600, prTlHvl: 600, dieuChinhPa: 400, form: 400, prS3f: 400,
   prS5fA: 400, prLuiA2: 400, prOv5a: 400, prOv8a: 400, prUx2: 400, prOv13f: 400, prOv15h2: 400, prLtSv: 400, prCvLoi: 400, prUiCvTvv: 400,
-  prUiHvLop: 400, prViecDungVai: 400, prS2LichKyNang: 400, prOv11f: 300, prHsm: 300, prUxfB: 300, prDonB: 300, prQu: 300, prGva: 300, prK26: 300,
+  prUiHvLop: 400, prViecDungVai: 400, prS2LichKyNang: 400, prTdHvl2: 400, prOv11f: 300, prHsm: 300, prUxfB: 300, prDonB: 300, prQu: 300, prGva: 300, prK26: 300,
   fixChotLenFt: 300, prMtGon: 300, prVn3: 300, prVn4: 300, prOv3a: 300, prOv7b: 300, prOv11e: 300, prOv11b: 300, prOv11d: 300, prOv12h: 300,
   prOv13e: 300, prHf: 300, prOv13d: 300, prOv13c: 300, prOv13l: 300, prOv15d: 300, prTu: 300, mtTrangThai: 300, prNenTypoMau: 300, prChuThi: 300,
   prUiTongQuan: 300, prCuoiKhoa: 300, prMonDangKy: 300, prPilotCase: 300, prRaLuong: 300, yThucGon: 200, prLop: 200, thanhPhanChung: 200,
@@ -10028,6 +10028,9 @@ await runPrOv6DocChonTests({ check, assert, conn, P } as any);
 // ==================================================================== TIM-HV-LOP-TOI (GD-4a [XM-A]: "+ Task" chỉ em lớp của tôi)
 const { runPrTimHvLopToiTests } = bocTep('prTimHvLopToi', await import('./prTimHvLopToi.tests.ts'));
 await runPrTimHvLopToiTests({ check, assert, P } as any);
+// ==================================================================== TD-HVL-2 (TOC-DO-1711: standingFor đọc lượt từ nguồn chung)
+const { runPrTdHvl2Tests } = bocTep('prTdHvl2', await import('./prTdHvl2.tests.ts'));
+await runPrTdHvl2Tests({ check, assert, conn } as any);
 // ==================================================================== NHAP-DIEM-a (chủ SP 14/11: Huỷ điểm một kỹ năng = "Đã huỷ" mọi nơi · nhập / vắng tự do)
 const { runPrNhapDiemTuDoTests } = bocTep('prNhapDiemTuDo', await import('./prNhapDiemTuDo.tests.ts'));
 await runPrNhapDiemTuDoTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);

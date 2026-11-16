@@ -15,9 +15,20 @@ const COT = 'khoa, loai, kieu, chi_nhanh, lop, hoc_vien, nguoi, s_cheo, pc_nhap_
 const BAI_CUA = `SELECT ${COT} FROM json_each(?) j JOIN nghia_vu n ON n.khoa >= 'bai:' || j.value || ':' AND n.khoa < 'bai:' || j.value || ';'`;
 
 /**
- * `viecCn`: chi nhánh được tính lại VIỆC lần này (mặc định: mọi chi nhánh). Việc mỗi chi nhánh = một lượt Công việc "Tất cả" (bản chép 07/11: 140 – 1 330 câu) —
- * hàm định kỳ (`netlify/functions/doi-chieu-so.ts`) chạy 5 lần mỗi đêm, mỗi lần việc của MỘT chi nhánh, để không quá giờ hàm.
+ * `viecCn`: chi nhánh được tính lại lần này (mặc định: mọi chi nhánh) — cả BÀI lẫn VIỆC. Việc mỗi chi nhánh = một lượt Công việc "Tất cả" (bản chép 07/11: 140 – 1 330 câu) —
+ * hàm định kỳ (`netlify/functions/doi-chieu-so.ts`) chạy 5 lần mỗi đêm, mỗi lần MỘT chi nhánh, để không quá giờ hàm.
+ * TD-CHAM (17/11, Turso): trước đây bài của MỌI chi nhánh mỗi lần → 5 × 5 lượt bài một đêm (UPDATE "da-xoa" ~10 K dòng đọc mỗi chi nhánh, log 24 h: 29 lần);
+ * tính lại lần hai cùng đêm không đổi sổ (cùng dữ liệu gốc) nên mỗi chi nhánh một lần là đủ. Lần đêm lỗi → đêm sau bắt lại (khung 8 tuần).
  */
+/** Số lần hàm đêm chạy (`netlify.toml`: 19:20 – 23:20 UTC). */
+export const SO_LUOT_DEM = 5;
+/**
+ * Chi nhánh của lượt đêm thứ `luot` (0 … SO_LUOT_DEM − 1): mỗi lượt một chi nhánh, lượt CUỐI nhận mọi chi nhánh còn lại — có hơn 5 chi nhánh thì chi nhánh
+ * thứ 6+ vẫn được đối chiếu mỗi đêm (PTA 17/11). Ngoài khung giờ → [].
+ */
+export const cnCuaLuot = (cns: readonly number[], luot: number): number[] =>
+  luot < 0 || luot >= SO_LUOT_DEM ? [] : cns.slice(luot, luot === SO_LUOT_DEM - 1 ? undefined : luot + 1);
+
 export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { cn: number; bai: number; lechBai: number; doiViec: number } {
   const conn = db();
   xoaNhoHan();   // QTV2-HAN: hạn mặc định đọc lại một lần mỗi lượt (lambda ấm giữ bản cũ)
@@ -25,6 +36,7 @@ export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { 
   const tu = addDays(homNay, -56);
   let bai = 0, lechBai = 0, doiViec = 0, cn = 0;
   for (const b of conn.prepare(`SELECT id FROM branches ORDER BY id`).all() as any[]) {
+    if (viecCn && !viecCn.includes(b.id)) continue;
     cn += 1;
     const ids = (conn.prepare(`SELECT a.id AS id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id LEFT JOIN report_periods rp ON rp.id = a.planned_period_id
         WHERE c.branch_id = ? AND (rp.week_start >= ? OR EXISTS (SELECT 1 FROM attempt_skills k JOIN report_periods r2 ON r2.id = k.planned_period_id
@@ -36,8 +48,7 @@ export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { 
     const truoc = chup(BAI_CUA, JSON.stringify(ids));
     const viecTruoc = chup(`SELECT ${COT} FROM nghia_vu WHERE loai = 'viec' AND chi_nhanh = ?`, b.id);
     ghiSoLuot(ids);
-    const coViec = !viecCn || viecCn.includes(b.id);
-    if (coViec) ghiSoViecChiNhanh(b.id);
+    ghiSoViecChiNhanh(b.id);
     const sau = chup(BAI_CUA, JSON.stringify(ids));
     const luc = new Date().toISOString();
     for (const [k, v] of sau) {
@@ -45,7 +56,7 @@ export function doiChieuSo(homNay = demoToday(), viecCn?: readonly number[]): { 
       lechBai += 1;
       conn.prepare(`INSERT INTO nghia_vu_lech (khoa, truoc, sau, luc) VALUES (?, ?, ?, ?)`).run(k, truoc.get(k) ?? null, v, luc);
     }
-    if (coViec) for (const [k, v] of chup(`SELECT ${COT} FROM nghia_vu WHERE loai = 'viec' AND chi_nhanh = ?`, b.id)) if (viecTruoc.get(k) !== v) doiViec += 1;
+    for (const [k, v] of chup(`SELECT ${COT} FROM nghia_vu WHERE loai = 'viec' AND chi_nhanh = ?`, b.id)) if (viecTruoc.get(k) !== v) doiViec += 1;
   }
   return { cn, bai, lechBai, doiViec };
 }

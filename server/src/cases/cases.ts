@@ -94,6 +94,13 @@ const NAP_CASE = {
         ORDER BY m.attempt_no`],
 } as const;
 
+/** TD-QUET: nạp trước câu tên (`NAP_CASE.ten`) cho nhiều Case MỘT câu — `caseTitleOf` từng Case sau đó đọc nhớ (trước: một câu mỗi thẻ Chờ duyệt). Chỉ GET. */
+export function napTenCase(rows: Iterable<{ id: number; title?: string | null; origin_kind?: string | null } | undefined>): void {
+  if (!coNho()) return;
+  const ids = [...rows].filter((c): c is NonNullable<typeof c> => !!c && !((c.title ?? '').trim() && c.origin_kind !== 'mock')).map((c) => c.id);
+  if (ids.length) docNhoTheoId(NAP_CASE.ten[0], ids, NAP_CASE.ten[1]);
+}
+
 // ---------------------------------------------------------------- quyền
 
 /** Người đang xem có được đóng Case này không: GVCN của lớp, hoặc Quản lý trong phạm vi. */

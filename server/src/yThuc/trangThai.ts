@@ -277,12 +277,15 @@ export function ghiPhanHoi(violationIds: readonly number[], homNay = demoToday()
 /**
  * Như `ungVienYThuc` + em đang có thẻ Báo QL Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.
  */
-export function ungVienVaThe(f: { branchId?: number | null; classId?: number | null; kemThe?: boolean } = {}): { id: number; coThe: boolean; ten: string; lop: string | null }[] {
+export function ungVienVaThe(f: { branchId?: number | null; lopIds?: readonly number[] | null; kemThe?: boolean } = {}): { id: number; coThe: boolean; ten: string; lop: string | null }[] {
+  /* TD-VIEC: `lopIds` = chỉ em đang học / tạm dừng ở các lớp này (tập cha do nơi gọi chọn); [] → không em nào. */
+  if (f.lopIds && !f.lopIds.length) return [];
   const loc: string[] = [];
   const args: unknown[] = [];
-  if (f.classId) {
-    loc.push(`EXISTS (SELECT 1 FROM enrollments e WHERE e.student_id = s.id AND e.class_id = ? AND e.status IN ('active', 'paused'))`);
-    args.push(f.classId);
+  if (f.lopIds) {
+    /* Vài lớp GVCN → `IN (?,…)` (như `dsCho` của Công việc): ứng viên vẫn đi từ `violations` (TD6). */
+    loc.push(`s.id IN (SELECT e.student_id FROM enrollments e WHERE e.class_id IN (${cho(f.lopIds.length)}) AND e.status IN ('active', 'paused'))`);
+    args.push(...f.lopIds);
   }
   if (f.branchId) {
     loc.push(`COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id
