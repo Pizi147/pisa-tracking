@@ -296,11 +296,12 @@ export default function App() {
     return () => { window.removeEventListener('beforeprint', truoc); window.removeEventListener('afterprint', sau); };
   }, []);
   /*
-   * Chỉ người duyệt được (Q10). PR-TD2-c (chủ sản phẩm 07/10): đổi trang chỉ hỏi lại khi lần trước đã quá 60 s — huy hiệu trễ tối đa 60 s
-   * khi NGƯỜI KHÁC gửi yêu cầu; việc của chính mình gọi `invalidate('/yeu-cau')` nên cập nhật ngay. Không hỏi lặp theo giờ.
+   * Chỉ người duyệt được (Q10). PR-TD2-c (chủ sản phẩm 07/10): đổi trang chỉ hỏi lại khi lần trước đã quá MOI_MY_WORK_MS — huy hiệu trễ tối đa 5 phút
+   * khi NGƯỜI KHÁC gửi yêu cầu (TD-CHAM 17/11: cùng nhịp badge `/my-work` của BADGE-NHE, trước 60 s — log 24 h 104 lần); việc của chính mình gọi
+   * `invalidate('/yeu-cau')` nên cập nhật ngay. Không hỏi lặp theo giờ.
    */
   const [lanDem, setLanDem] = useState(() => Date.now());
-  useEffect(() => { if (Date.now() - lanDem > 60_000) setLanDem(Date.now()); }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (Date.now() - lanDem > MOI_MY_WORK_MS) setLanDem(Date.now()); }, [location.pathname]); // eslint-disable-line react-hooks/exhaustive-deps
   const dem = useApi<DemYeuCau>(session?.authenticated && session.nav?.workApprove ? '/yeu-cau/dem' : null, [lanDem]).data;
   /*
    * Q16: giáo viên đọc MỘT lần — tải lại khi đổi trang sau một lần vô hiệu `/my-work` (`lanViec`, GIAM-COMPUTE ở trên). D14: chính `/my-work` (Tổng quan,
