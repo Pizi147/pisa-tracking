@@ -1694,6 +1694,9 @@ await checkAsync('TD-QUET (×3) · Hồ sơ lớp một GET: mỗi phần trùng
     }
   }
   if ((await doSql('QL', 'GET', `/classes/${LOP_FT}/ho-so?phan=overview,la`)).status !== 400) loi.push('phần lạ không 400');
+  assert(!loi.length, loi.join(' · '));
+});
+
 /* TD-QUET (17/11): `kem=sos-dem` = trang y hệt + số tab Đang SOS = chiếu (em · lớp · FT · TVV) của đúng các dòng bảng `goc=sos` (cùng thứ tự tập em); Admin null. */
 await checkAsync('TD-QUET (×3) · Học viên & Lớp kem=sos-dem: trang y hệt, sosDem = chiếu dòng Đang SOS (mọi vai), Admin null', async () => {
   const loi: string[] = [];
