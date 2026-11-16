@@ -219,4 +219,24 @@ export async function runPrLop1LopTests(t: any) {
     }
     assert(soLop > 0 && coCon > 0, `seed phải có dòng gộp ở hồ sơ lớp (lớp ${soLop}, dòng có con ${coCon})`);
   });
+
+  /* AUDIT-1611 gói 13: web GV dựng việc hồ sơ lớp từ `/my-work` đã nạp (`viecLopTuDong`) — phải TRÙNG đường máy chủ `viec-theo-em?chi=toi` (cuaToi, dongToi). */
+  check('L4 · gói 13: viecLopTuDong(/my-work) = viec-theo-em?chi=toi — mọi GV × lớp đang dạy (khoá cuaToi, khoá + số con dongToi)', () => {
+    const { viecLopTuDong, NHAN_LOAI_VIEC } = d;
+    let so = 0;
+    for (const p of [P.coreTeacher, P.subjectTeacher, P.lrTeacher, P.w1Teacher, P.sTeacher, P.normalCoreTeacher].filter(Boolean)) {
+      xoaNho();
+      const dong = myWork(p).dong as any[];
+      for (const lop of [...new Set(p.assignments.map((a: any) => a.classId))] as number[]) {
+        const r = chay(p, lop, false, { chiToi: true }).r;
+        if (!r) continue;
+        const c = viecLopTuDong(dong, lop, (g: string) => NHAN_LOAI_VIEC[g] ?? g);
+        const k = (ds: any[]) => ds.map((x) => `${x.key}:${x.con?.length ?? 0}`).sort().join('|');
+        assert(k(c.cuaToi) === k(r.cuaToi), `GV ${p.userId} lớp ${lop} cuaToi: web ${k(c.cuaToi)} ≠ máy chủ ${k(r.cuaToi)}`);
+        assert(k(c.dongToi) === k(r.dongToi), `GV ${p.userId} lớp ${lop} dongToi: web ${k(c.dongToi)} ≠ máy chủ ${k(r.dongToi)}`);
+        so += c.cuaToi.length;
+      }
+    }
+    assert(so > 0, 'seed phải có việc ở hồ sơ lớp của GV');
+  });
 }
