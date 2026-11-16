@@ -391,7 +391,8 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
   });
   check('GD-6 · "Việc cần làm": chip theo loại dùng chung với "Lớp của tôi", mở thẳng panel "i / n" + "Việc tiếp ›"; bỏ "+n việc ở Công việc"', () => {
     const s = doc('web/src/modules/classes/ThanhViecLop.tsx');
-    assert(/chipViecLop\(data\?\.cuaToi \?\? \[\], classId\)/.test(s), 'dải không dùng chipViecLop chung');
+    /* AUDIT-1611 P1-01: dải đếm trên DÒNG (`dongToi` giữ `con`) như "Lớp của tôi". */
+    assert(/chipViecLop\(data\?\.dongToi \?\? \[\], classId, moCaDong\)/.test(s), 'dải không dùng chipViecLop chung');
     assert(/<NutChipViec /.test(s) && /NutChipViec key=\{c\.tab\}/.test(doc('web/src/modules/congViec/LopCuaToi.tsx')), 'chip không dùng chung một nút');
     assert(/<DemViecPanel\.Provider value=\{\{ i: mo\.i \+ 1, n: mo\.ds\.length/.test(s), 'thiếu "i / n" ở đầu panel');
     assert(/c\.tab === 'cham-diem' \? setNhapDiem\(true\)/.test(s) && /<PanelNhapDiemLop /.test(s), 'chip Nhập điểm phải mở panel nhập điểm của lớp');

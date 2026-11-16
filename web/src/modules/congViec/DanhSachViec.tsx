@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
-  CHAM_CHEO, LOAI_HAN_CUA_VIEC, bacNgan, chiaVachHan, daysBetween, deadlineView, kyGhiKetQua, laViecChamCheo, shortDate, type MucTab,
+  CHAM_CHEO, LOAI_HAN_CUA_VIEC, demBai, bacNgan, chiaVachHan, daysBetween, deadlineView, kyGhiKetQua, laViecChamCheo, shortDate, type MucTab,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -95,7 +95,8 @@ export const chuDau = (ten: string) => {
  */
 export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDong & {
   muc: readonly MucTab<WorkItem>[];
-  dem: ReadonlyMap<string, { n: number; quaHan: number }>;
+  /** `lamThay` (AUDIT-1611 P1-03): dòng làm thay trong mục — vẽ nhưng không vào `n`. */
+  dem: ReadonlyMap<string, { n: number; quaHan: number; lamThay?: number }>;
   soHien: number;
   /** Cuối thẻ cuối (QL "Việc quản lý": + Giao việc · Vận hành ›). */
   cuoi?: ReactNode;
@@ -114,7 +115,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
         const n = soHien + (them[m.key] ?? 0);
         /* GD-1 (lời 11, 19) · GD-1b (lời 24: tên mục "Chấm Speaking"): mục Chấm Speaking là việc chung của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
         const chung = m.key === 'cham-cheo';
-        const d = chung ? { n: m.items.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: m.items.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } : dem.get(m.key) ?? { n: 0, quaHan: 0 };
+        const d: { n: number; quaHan: number; lamThay?: number } = chung ? demBai(m.items) : dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
           <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
             <h2 className="sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
@@ -125,6 +126,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
               {d.quaHan > 0 && (
                 <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{d.quaHan}<span className="max-sm:sr-only"> {t('quá hạn')}</span></span>
               )}
+              {!!d.lamThay && <span className="whitespace-nowrap text-[13px] font-medium text-slate-400">· {t('{n} làm thay', { n: d.lamThay })}</span>}
               {i === 0 && luat}
             </h2>
             <ul className="m-0 list-none p-0">
@@ -380,7 +382,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const ten = voiLop(it, tenViec(boDongTu(it.group, tenBoEmGoc(it))));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). GD-1b: lớp đã ở tên dòng. */
-  const phu = [...thePhu([sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
+  const phu = [...thePhu([sos ? `SOS ${sos}` : null, tvv && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : it.contextLabel ?? it.phu,   /* AU-GON A3-01: bậc đã ở tên dòng + tiêu đề panel */
+     it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
     .filter((x) => !ten.includes(x)), ...(it.coNhap ? [t('Có nháp')] : [])];
   const muc = chipMuc(it, true);
   const bam = () => dong.onOpen(it);
@@ -401,7 +404,6 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           ...phu,
         ]}>
           {tvv && !daXong && <span className="min-w-0 max-w-full empty:hidden [&>span]:h-auto [&>span]:min-h-[22px] [&>span]:whitespace-normal [&>span]:py-0.5 [&>span]:leading-snug"><BadgeViecTvv it={it} /></span>}
-          {tvv && !daXong && <ConNgay it={it} />}
         </DongPhu>
       </span></span>
       <CotHan it={it} daXong={daXong} />
@@ -572,17 +574,10 @@ function DongCon({ it, ...dong }: ChungDong & { it: WorkItem & { conTen: string;
 const laViecTvvTheoEm = (it: WorkItem) => it.studentId !== null && !it.con?.length
   && (it.group === 'bao_ph_yt' || it.group === 'thi_that' || it.group === 'buoc_tiep' || it.key.startsWith('chot-ngay-thi:'));
 
-/** Báo PH hạn xa "còn n ngày" ở dòng phụ của việc (mockup `v7/cong-viec-2.html` `t2`), cột hạn một dòng. Quá hạn / sắp hạn đã có tín hiệu của `ChipHan`. */
-function ConNgay({ it }: { it: WorkItem }) {
-  const { homNay } = useNgayNghiepVu();
-  if (it.group !== 'bao_ph_yt' || it.urgency !== 'normal' || !it.due || !homNay) return null;
-  return <span>{t('còn {n} ngày', { n: daysBetween(homNay, it.due) })}</span>;
-}
-
-/** Badge trạng thái của việc TVV (mockup): "⚠ Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
+/** Badge trạng thái của việc TVV (mockup): "Chưa liên hệ được · lần n" (sắp hạn) · "Đã có kết quả · Chưa chốt bước tiếp" (tiến độ) · "Đã thi · chờ KQ" (lịch thi). */
 function BadgeViecTvv({ it }: { it: WorkItem }) {
   if (it.group === 'bao_ph_yt' && it.soLanThu) {
-    return <span className={`${CHIP_TRON} gap-1 bg-soon-bg text-soon`}><span aria-hidden>⚠</span>{t('Chưa liên hệ được · lần {n}', { n: it.soLanThu })}</span>;
+    return <span className={`${CHIP_TRON} bg-soon-bg text-soon`}>{t('Chưa liên hệ được · lần {n}', { n: it.soLanThu })}</span>;
   }
   if (it.group === 'buoc_tiep') return <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan>;
   if (it.group === 'thi_that') return <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>;

@@ -1914,7 +1914,8 @@ export function viecCuaNguoi(p: Principal, nguoi: number, branchId?: number | nu
     }));
   const dong = dungDong(items);
   /* V5 SV-SO1 (brief 7): xem việc người khác = chế độ theo dõi (`chiXem`); dòng nào người xem làm thay được thì `lamThay` (quyền máy chủ thật). */
-  return { summary: { ...demSo(dong, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true, cnAn };
+  /* AUDIT-1611 P1-03: `cuaGv` (khoá việc CỦA GV đó, không gồm làm thay) — hồ sơ GV đếm như badge; route bỏ trước khi trả (`nheMyWork`). */
+  return { summary: { ...demSo(dong, (i) => cuaGv.has(i.key)), mine: 0 }, items, dong, groups, scopeEmpty: false, xemNguoiKhac: true, chiXem: true, cnAn, cuaGv };
 }
 
 /** Người xem (QL / QT / Admin) theo dõi việc của GV `nguoi` — quyền như hồ sơ GV (`phamViHoSoGv`). Dùng chung `viecCuaNguoi` và hàng đợi Chấm Speaking của GV đó (CV-SUA-1011). */
