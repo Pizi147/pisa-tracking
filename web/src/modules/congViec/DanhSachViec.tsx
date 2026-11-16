@@ -380,7 +380,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const ten = voiLop(it, tenViec(boDongTu(it.group, tenBoEmGoc(it))));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). GD-1b: lớp đã ở tên dòng. */
-  const phu = [...thePhu([sos ? `SOS ${sos}` : null, it.contextLabel ?? it.phu, it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
+  const phu = [...thePhu([sos ? `SOS ${sos}` : null, tvv && it.group === 'bao_ph_yt' ? null : it.contextLabel ?? it.phu,   /* AU-GON A3-01: bậc đã ở tên dòng + tiêu đề panel */
+     it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
     .filter((x) => !ten.includes(x)), ...(it.coNhap ? [t('Có nháp')] : [])];
   const muc = chipMuc(it, true);
   const bam = () => dong.onOpen(it);
