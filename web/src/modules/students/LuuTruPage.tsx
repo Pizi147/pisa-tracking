@@ -236,7 +236,8 @@ export default function LuuTruPage() {
   return (
     <div className="page space-y-3">
       <div>
-        <button className="btn btn-sm btn-ghost max-sm:min-h-[44px]" onClick={() => navigate('/hoc-vien')}>‹ {t('Học viên & Lớp')}</button>
+        {/* AUDIT-1611 A2-17 (mockup ⑩ L1): cùng dáng nút "‹ nguồn" có viền (`nut-ve`) như hồ sơ GV / HV. */}
+        <button type="button" className="nut-ve" onClick={() => navigate('/hoc-vien')}><span aria-hidden>‹</span><span>{t('Học viên & Lớp')}</span></button>
       </div>
       {/* GD-16 (mockup ⑩ L1): một hàng — "Lưu trữ" · Xem (ô chi nhánh; tự ẩn khi chỉ một chi nhánh) · ô tìm bên phải; 375 một cột. */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
