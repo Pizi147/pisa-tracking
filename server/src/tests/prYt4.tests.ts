@@ -164,7 +164,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const truocYt4 = () => {
     const cat = SCHEMA.replace(/\r\n/g, '\n')
       /* LG-12: bốn cột thêm SAU TINH-HINH — cắt trước nhất; so cột chạy lại migratePrYeuCauXuLy sau cùng. */
-      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_ly_do TEXT\n\);/, '\n);')
+      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_vuot INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')   // + DUONG-LUI-2 khong_xu_ly_vuot (cùng migratePrYeuCauXuLy)
       /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; so cột chạy lại migratePrTinhHinh sau. */
       .replace(/,\n  -- TINH-HINH \(chủ SP 12\/11\)[^\n]*\n  chi_nhac INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')
       /* PR-Pb2-b thêm hai cột SAU ghi_nhan_boi → cắt trước; (2b) chạy lại migratePrPb2b theo đúng thứ tự migrate.ts. */
@@ -228,7 +228,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   const metricsSvc: any = await import('../worklist/metrics.ts');
   const tongQuanSvc: any = await import('../worklist/tongQuan.ts');
   const myworkYt: any = await import('../worklist/mywork.ts');
-  const { soCauSql } = await import('../platform/nguCanhRequest.ts');
+  const { soCauSql, voiXacNhan } = await import('../platform/nguCanhRequest.ts');
   const mbId = (conn.prepare("SELECT id FROM branches WHERE code = 'MB'").get() as any).id as number;
   const LOP = t.classId('MB FT 101');
   const gvbm = P.w1Teacher;
@@ -532,7 +532,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(l.status === 400 && /đã xác nhận cấp bậc vi phạm/.test(l.msg), l.msg);
   });
   /* OV-7a (chủ SP 13/10) thay "GVCN 403 · QL 400 sau lần xử lý": GVCN sửa bậc mình khai khi chuỗi chưa có lần xử lý; QL sửa cả sau lần xử lý (prOv7a 2c). */
-  check('YT4 (4) · Sửa khai: GVCN + QL sửa được khi chuỗi chưa có lần xử lý; sau lần xử lý đầu GVCN → 400, QL vẫn sửa; khai lại → 400', () => {
+  check('YT4 (4) · Sửa khai: GVCN + QL sửa được; N50 (8): sau lần xử lý đầu GVCN VẪN sửa (nhật ký), QL vẫn sửa; khai lại (chưa khai) sau lần xử lý → 400', () => {
     const sid = hv();
     xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Report 1 tháng 8' });
     xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'GVCN tự sửa' });
@@ -540,8 +540,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa theo hồ sơ giấy' });
     assert(em(sid).bac === 2, 'QL sửa');
     xl(gvcn, sid, [ghiVp(gvbm, sid)]);
-    const l = loiCua(() => xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' }));
-    assert(l.status === 400 && /đã có lần xử lý/.test(l.msg), l.msg);
+    xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' });
+    assert((conn.prepare(`SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?`).get(sid) as any).bac === 1, 'N50 (8): GVCN sửa sau lần xử lý');
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa sau khi đã xử lý' });
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
     assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
@@ -666,7 +666,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(loiCua(() => xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Em đã nộp bù rồi ạ' })).status === 409, 'lần hai');
     assert(xl(gvcn, sid, [v.id]).kind === 'report_1', 'Xác nhận xử lý sau vẫn được');
   });
-  check('LG-12 (4) · sau "Không xử lý" vi phạm VẪN đếm luật 3 / 2 tuần: thêm 2 vi phạm → bắt buộc lại cả 3; em đang đủ 3 thì "Không xử lý" → 400, không đổi gì', () => {
+  check('LG-12 (4) · sau "Không xử lý" vi phạm VẪN đếm luật 3 / 2 tuần: thêm 2 vi phạm → bắt buộc lại cả 3; em đang đủ 3 thì GVCN "Không xử lý" → 400, không đổi gì; QL → 409 hỏi nêu luật, đồng ý → ghi + nhật ký vuotLuat (N50 câu 5)', () => {
     const sid = hv(); const v = ghiYc(gvbm, sid);
     xuLy.khongXuLy(gvcn, v.id, { lyDo: 'Đã nhắc riêng em trên lớp' });
     ghiVp(gvbm, sid); ghiVp(gvbm, sid);
@@ -675,6 +675,13 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s2 = hv(); ghiVp(gvbm, s2); ghiVp(gvbm, s2); const v2 = ghiYc(gvbm, s2);
     assert(loiCua(() => xuLy.khongXuLy(gvcn, v2.id, { lyDo: 'Đã nhắc riêng em trên lớp' })).status === 400, 'đủ 3 → phải xử lý');
     assert(!(conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc && viecYt(gvcn, s2), 'không đổi gì');
+    assert(loiCua(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'QL đã gặp phụ huynh' })).status === 409, 'QL → hỏi');
+    voiXacNhan(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'QL đã gặp phụ huynh' }));
+    assert((conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc, 'QL vượt → đã ghi');
+    const au = conn.prepare(`SELECT after_json a FROM audit_logs WHERE action = 'violation.khong_xu_ly' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(v2.id) as any;
+    assert(JSON.parse(au.a).vuotLuat === true, `nhật ký vuotLuat: ${au?.a}`);
+    /* Rà PTA ④: vượt xong thì vi phạm ra khỏi luật 3 / 2 tuần — việc xử lý của GVCN hết, em hết bắt buộc. */
+    assert(!viecYt(gvcn, s2) && em(s2).soBatBuoc === 0, `vượt xong việc phải hết: ${JSON.stringify(viecYt(gvcn, s2))} · ${em(s2).soBatBuoc}`);
   });
   check('LG-12 (5) · Hoàn tác "Không xử lý": việc quay lại (hạn cũ), tin chưa đọc của người ghi bị gỡ, phản hồi bỏ, lịch sử ghi; Hoàn tác lần hai → 409', () => {
     const sid = hv(); const v = ghiYc(gvbm, sid);

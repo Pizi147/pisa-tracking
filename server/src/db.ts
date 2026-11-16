@@ -356,6 +356,13 @@ export function henTruocCommit(khoa: string, fn: () => void): boolean {
   henCommit.set(khoa, fn);
   return true;
 }
+/**
+ * Chạy NGAY các việc đã hẹn trước COMMIT (vẫn trong giao dịch). DUONG-LUI-2 (bản chép thật 16/11): thao tác chụp để Hoàn tác (`GhiDao`) phải thấy cả dòng sổ
+ * nghĩa vụ ghi lúc COMMIT — không thì Hoàn tác trả em về mà sổ còn dòng của lần chuyển.
+ */
+export function chayHenNgay(): void {
+  while (henCommit?.size) { const ds = [...henCommit.values()]; henCommit.clear(); for (const f of ds) f(); }
+}
 
 /**
  * Sau fn() mà kết nối không còn trong giao dịch = giao dịch đã MẤT giữa chừng (phần ghi trước bị bỏ, phần sau có thể đã ghi lẻ).

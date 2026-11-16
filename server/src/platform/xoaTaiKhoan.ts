@@ -118,7 +118,7 @@ export type XemXoaTaiKhoan = {
   soDauVet: number;
   /** Gộp theo nhãn, chỉ nhãn > 0, giảm dần. */
   chiTiet: { nhan: string; so: number }[];
-  cach: 'mem'; chan: string | null; canhBao: string[]; goLai: 'email' | 'ho-ten' | null;
+  cach: 'mem'; chan: string | null; canhBao: string[];
 };
 
 type Nguoi = {
@@ -157,7 +157,6 @@ function lyDoChan(p: Principal, u: Nguoi): string | null {
 /** Lớp người này đang là GVCN (lớp còn hoạt động), sắp theo mã (PR-UXF-a U1: group_concat không hứa thứ tự). */
 const lopGvcnCua = (u: Nguoi): string | null => (u.lop_gvcn ? u.lop_gvcn.split(', ').sort((a, b) => soSanhLop({ code: a }, { code: b })).join(', ') : null);
 /** Chữ phải gõ lại để xác nhận xoá: email, chưa có email thì họ tên. */
-const chuXacNhan = (u: Nguoi): string => u.email ?? u.full_name;
 
 function demDauVet(userId: number): { tong: number; theoCot: Map<string, number> } {
   const rows = CAU_DAU_VET.flatMap((cau) => db().prepare(cau).all(userId) as { k: string; n: number }[]);
@@ -210,13 +209,14 @@ export function xemXoaTaiKhoan(p: Principal, userId: number): XemXoaTaiKhoan {
     soDauVet: dv.tong,
     chiTiet: [...gop].map(([nhan, so]) => ({ nhan, so })).sort((a, b) => b.so - a.so),
     cach: 'mem' as const, chan: lyDoChan(p, u), canhBao,
-    /** RKC-6: chữ gõ lại để xác nhận — `email` hoặc `ho-ten` (chưa có email); G5-10: chưa có dấu vết → không gõ (`null`). */
-    goLai: dv.tong === 0 ? null : u.email ? 'email' : 'ho-ten',
   };
 }
 
-/** POST /admin/accounts/:id/xoa { emailXacNhan } — xoá mềm (G5-10), trong MỘT giao dịch; có dấu vết thì phải gõ lại email / họ tên. */
-export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?: unknown }): { ok: true; cach: 'mem' } {
+/**
+ * POST /admin/accounts/:id/xoa — xoá mềm (G5-10), trong MỘT giao dịch. DUONG-LUI-2 (B1-11): không bắt gõ lại email / họ tên — xoá mềm có Hoàn tác +
+ * Khôi phục ở Đã xoá (như Xoá học viên G5-12); panel vẫn nêu hậu quả (dấu vết, lớp thiếu GVCN — hỏi một câu).
+ */
+export function xoaTaiKhoan(p: Principal, userId: number): { ok: true; cach: 'mem' } {
   require_(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }, CHI_ADMIN);
   const homNay = demoToday();
   const u = docNguoi(userId, homNay);
@@ -226,12 +226,7 @@ export function xoaTaiKhoan(p: Principal, userId: number, input: { emailXacNhan?
   if (lopGvcnCua(u)) canXacNhan('Người này đang là GVCN lớp {ds} — vẫn xoá? Lớp sẽ thiếu GVCN.', { ds: lopGvcnCua(u)! }, 'Vẫn xoá');
   return tx(() => {
     const conn = db();
-    /* Tính lại TRONG giao dịch: hai Quản trị bấm cùng lúc, hoặc người này vừa ghi gì đó. */
-    const soDauVet = demDauVet(userId).tong;
-    /* G5-10: có dấu vết mới phải gõ lại — kiểm trong giao dịch (một lần đếm dấu vết), trước mọi lệnh ghi. */
-    if (soDauVet > 0 && String(input.emailXacNhan ?? '').trim().toLowerCase() !== chuXacNhan(u).trim().toLowerCase()) {
-      throw badRequest(u.email ? 'Gõ lại đúng email để xác nhận xoá.' : 'Gõ lại đúng họ tên để xác nhận xoá.');
-    }
+    const soDauVet = demDauVet(userId).tong;   // tính lại TRONG giao dịch (nhật ký): hai Quản trị bấm cùng lúc, hoặc người này vừa ghi gì đó
     const cach = 'mem' as const;   // G5-10: luôn xoá mềm (khôi phục được)
     /*
      * G5-10 (rà PTA #1418): Hoàn tác / Khôi phục phải trả ĐỦ — chụp vào nhật ký (`before`) các dòng sắp bỏ: email phụ, quyền riêng, phân công đang chạy.

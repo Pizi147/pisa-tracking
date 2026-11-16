@@ -8,7 +8,7 @@ import { docGvChamCot, docGvChamCotLo } from '../cham/gvChamCot.ts';
 import { badRequest, canXacNhan, chuTuDo, forbidden, isIsoDate, loi, notFound, nowIso } from '../util.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from './hoanTat.ts';
 import {
-  bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
+  CHU_CHAN_NHAP_DIEM, bangLop, can, classScopeSql, coTheXemLuotCham, emChiXemBoTro, xemLuotQuaLopDangHoc, defaultWorkScope, editableSkills, isCoreTeacherOf, laGvSpeaking, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, lopSChiNhanhKhac, mySkills, require_, requireXemLuotCham, scopeFor, scopeXemLuotCham, scoreEditPath, type LuotQuyen,
   type Principal,
 } from '../permissions.ts';
 import { choHuyKhoiPhucLichTest, choSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
@@ -43,6 +43,7 @@ import { HV_DANG_HOC_SQL, LOP_CON_VIEC_SQL, LUOT_HIEN_TAI_SQL } from '../student
 import { lamMoiDiemBanChup } from '../loTrinh/banChup.ts';
 import { dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
 import { lichMtCua } from '../classes/schedule.ts';
+import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
 import { MT0_THEO_EM_SQL } from './mt0.ts';
 
@@ -1856,14 +1857,16 @@ export function khoiPhucCua(a: any): { ban: BanHuyLuot[]; chan: string | null } 
 const LOAI_THUONG: readonly string[] = ['progress', 'final', 'checkpoint'];
 
 /**
- * LUOT-KHOI-PHUC (luật "không khoá cứng"): lượt lớp thường đã huỷ KHÔNG khôi phục được khi — lớp đã kết thúc · em không còn học lớp đó ·
+ * LUOT-KHOI-PHUC (luật "không khoá cứng"): lượt lớp thường đã huỷ KHÔNG khôi phục được khi — em không còn học lớp đó ·
  * em đã có bài cùng loại khác chưa huỷ (cùng lộ trình; Checkpoint cùng số). Trả câu lý do + bước tiếp; null = khôi phục được.
+ * DUONG-LUI-2 (B1-06): lớp đã kết thúc không còn chặn — `reopenAttempt` hỏi "Mở lại lớp để khôi phục?" rồi mở lại (như Phân công / Kết thúc lớp).
  * Một hàm cho hộp (`GET /regular/attempts/:id` → `khoiPhuc.chan`) và `reopenAttempt` (400).
  */
-export function chanKhoiPhucThuong(a: any, nhan: string): string | null {
+export function chanKhoiPhucThuong(a: any, nhan: string, p?: Principal): string | null {
   const conn = db();
   const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
-  if (laLopKetThuc(a.class_id)) return `Lớp ${lop} đã kết thúc — không khôi phục được ${nhan}. Điểm trước khi huỷ xem ở Lịch sử.`;
+  /* Rà PTA ⑤: lớp đã kết thúc chỉ Quản lý lớp (`class.edit`) mở lại được — người khác không được hỏi "Mở lại lớp?" rồi 403: nói lý do + ai làm. */
+  if (p && laLopKetThuc(a.class_id) && !can(p, PERMISSIONS.CLASS_EDIT, { classId: a.class_id })) return `Lớp ${lop} đã kết thúc — nhờ Quản lý lớp mở lại lớp rồi khôi phục ${nhan}.`;
   /* Em lưu trữ / kết thúc học: lượt khôi phục sẽ bị mọi danh sách hiện tại ẩn. Tạm dừng (chưa lưu trữ) vẫn khôi phục được. */
   if (!conn.prepare(`SELECT 1 FROM students s WHERE s.id = ? AND (${HV_DANG_HOC_SQL('s')} OR (s.status = 'inactive' AND s.archived_at IS NULL))`).get(a.student_id)) {
     return `Em đã lưu trữ / kết thúc học — bỏ lưu trữ trước rồi khôi phục ${nhan}.`;
@@ -1919,8 +1922,14 @@ export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: numb
         ? `${nhan} đã khôi phục.` : `${nhan} chưa huỷ.`);
     }
     if (thuong) {
-      const chan = chanKhoiPhucThuong(a, nhan);
+      const chan = chanKhoiPhucThuong(a, nhan, p);
       if (chan) throw badRequest(chan);
+      /* B1-06: lớp đã kết thúc → hỏi một câu rồi Mở lại lớp (có nhật ký; Kết thúc lại được) cùng giao dịch. */
+      if (laLopKetThuc(a.class_id)) {
+        const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
+        canXacNhan('Lớp {lop} đã kết thúc — Mở lại lớp để khôi phục {nhan}?', { lop, nhan }, 'Mở lại lớp');
+        moLaiLop(p, a.class_id);
+      }
     }
     const banId = o.banId ?? banHuyLuotCua(attemptId)[0]?.id ?? null;
     const cau: string[] = [];
@@ -2287,8 +2296,7 @@ export function saveScore(
   const hoanTat = dotHoanTat(attemptId, today);
   let path = a.class_id ? scoreEditPath(p, a.class_id, skill, { lich_su: a.lich_su ?? 0, kind: a.kind }) : null;
   if (!path && !nxMoiLuc) {
-    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill },
-      'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
+    require_(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill }, CHU_CHAN_NHAP_DIEM(p));
   }
   if (lopKetThuc) path = 'override';
   const assessed = assessedSkillOf(skill);

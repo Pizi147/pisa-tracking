@@ -15,7 +15,7 @@ import { applyTransition } from './transition.ts';
 import { apDungMotDong, dongLopNeuHet, huongChuyenMotEm, lopDichHopLe, nguoiNhanGoiY } from './luatLoTrinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { cuoiKhoaTheoHocVien, dongBoCheTaiFinal } from '../normal/cuoiKhoa.ts';
-import { dongBoTuLenh } from './loTrinhTiep.ts';
+import { LOI_KHAC_CHI_NHANH, dongBoTuLenh } from './loTrinhTiep.ts';
 import { batDauHenDenHan } from '../loTrinh/buocTiep.ts';
 import { quetLopTrong } from './xoaKetThucLop.ts';
 import { dongBoMt0 } from '../fasttrack/mt0.ts';
@@ -31,7 +31,9 @@ export type DongLenhVao = {
   studentId: number; huong: HuongLenh; toClassId?: number | null; tuan?: string | null;
   mucTieu?: MucTieuLenh | null; ngayThi?: string | null; lyDo?: string | null; ngayXemLai?: string | null;
   /** N36: "Reset bậc vi phạm" — GVCN chọn (đề xuất) hoặc Quản lý (ra lệnh / duyệt) — lộ trình mới mở chuỗi đếm thang mới (mặc định giữ bậc). */ resetBac?: boolean;
+  /** N50 (7): trang Cuối khoá (`caLop`) — MỘT em sang lớp chi nhánh khác, web đánh dấu rõ và gửi riêng em đó (lời gọi chỉ một dòng). */ khacChiNhanh?: boolean;
 };
+
 export type BoiCanhLenh = 'cuoi-khoa' | 'giua-khoa';
 
 /** Hướng nào dùng được ở bối cảnh nào (Q3, Q4): hết khoá lớp thường dùng len_lop/hoc_lai; giữa khoá (một em, FT) dùng chuyen_lop. */
@@ -41,7 +43,6 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
 };
 
 const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra quyết định chuyển lớp.';
-export const LOI_KHAC_CHI_NHANH = 'Lớp chuyển đến phải cùng chi nhánh với lớp này.';
 
 /** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
@@ -74,7 +75,7 @@ export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly 
  */
 export function raLenh(p: Principal, v: {
   lopNguonId: number; boiCanh: BoiCanhLenh; tuanChung: string | null; dongs: DongLenhVao[]; tuYeuCauId?: number | null;
-  /** N17: chuyển CẢ LỚP ở trang Cuối khoá (POST /classes/:id/transition) — chỉ sang lớp cùng chi nhánh. */
+  /** N17: chuyển CẢ LỚP ở trang Cuối khoá (POST /classes/:id/transition). N50 (7): dòng một em được sang lớp chi nhánh khác (ô áp chung web giữ cùng chi nhánh). */
   caLop?: boolean;
 }): { ok: number[]; failed: { studentId: number; message: string }[]; daChuyen: number[] } {
   const conn = db();
@@ -153,9 +154,12 @@ export function raLenh(p: Principal, v: {
       if (canDich && d.toClassId && !lopDich) { loi('Lớp chuyển đến không hợp lệ.'); continue; }
       const tuan = d.tuan ?? v.tuanChung;
       const cu = daCo.get(d.studentId);
-      /* N17 (chủ SP 24/10, thay Rulebook §20.6–20.7): chuyển CẢ LỚP (trang Cuối khoá) chỉ sang lớp cùng chi nhánh; chuyển MỘT em, sửa lệnh (`suaLenh`)
-         và lệnh cũ giữ nguyên lớp đến (chỉ đổi tuần) vẫn được. */
-      if (v.caLop && lopDich && lopDich.branch_id !== nguon.branch_id && cu?.lop_dich_id !== lopDich.id) { loi(LOI_KHAC_CHI_NHANH); continue; }
+      /* N17 → N50 (7) (chủ SP 16/11): trang Cuối khoá (`caLop`) — cả lớp / lô giữ cùng chi nhánh; MỘT em (dòng đánh dấu `khacChiNhanh`, lời gọi chỉ một dòng)
+         sang lớp chi nhánh khác được nếu người ra lệnh có quyền ở lớp đích. Lệnh cũ giữ nguyên lớp đến (chỉ đổi tuần) vẫn được. */
+      if (v.caLop && lopDich && lopDich.branch_id !== nguon.branch_id && cu?.lop_dich_id !== lopDich.id) {
+        if (!d.khacChiNhanh || dongs.length !== 1) { loi(LOI_KHAC_CHI_NHANH); continue; }
+        if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: lopDich.id })) { loi(`Lớp ${lopDich.code} ở chi nhánh khác — cần Quản lý chi nhánh đó hoặc Quản trị chốt em này.`); continue; }
+      }
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới: hôm nay hoặc từ tuần sau (`kiemDongLenh`). */
       if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có quyết định chuyển lớp ở lớp khác.'); continue; }
       const khac = khacGoiY(d.huong, ck?.get(d.studentId)?.goiY);
@@ -239,7 +243,9 @@ export function raLenh(p: Principal, v: {
          Mọi bối cảnh: lệnh Giữa khoá ghi đè lệnh Cuối khoá đang chờ cũng phải huỷ bộ sinh sớm (hàm tự lọc lệnh `cuoi-khoa`). */
       if (!nguonFt) dongBoCheTaiFinal(p, v.lopNguonId, hang.map((h) => h[0] as number));
       /* OV-13l: "Ngay hôm nay" → thi hành NGAY trong cùng giao dịch (cùng đường cron); lỗi thì cả request cuộn lại — "chưa chuyển". */
-      if (hang.some((h) => h[5] === homNay)) daChuyen.push(...thiHanhNgay(v.lopNguonId, v.boiCanh, homNay));
+      /* DUONG-LUI-2 (rà PTA ③): chỉ thi hành lệnh "Ngay hôm nay" của ĐÚNG các em lần lưu này (lệnh cũ cùng tuần của em khác giữ cho lượt quét). */
+      const ngayEm = hang.filter((h) => h[5] === homNay).map((h) => h[0] as number);
+      if (ngayEm.length) daChuyen.push(...thiHanhNgay(v.lopNguonId, v.boiCanh, homNay, ngayEm));
       thongBaoSapNhan(p, nguon, [...new Set(hang.map((h) => h[2]).filter(Boolean))] as number[], dich, homNay);
     }
     return { ok: hang.map((h) => h[0] as number), failed, daChuyen };
@@ -250,8 +256,8 @@ export function raLenh(p: Principal, v: {
 export const CON_TOI_THIEU_CHUYEN_NGAY_MS = 4_000;
 
 /** Thi hành ngay các lệnh "Ngay hôm nay" vừa lưu của lớp nguồn (trong tx của `raLenh`). Em không chuyển được → ném lỗi (cuộn lại cả lần lưu). */
-function thiHanhNgay(lopNguonId: number, boiCanh: BoiCanhLenh, homNay: string): number[] {
-  const r = thiHanhMotNhom({ lop_nguon_id: lopNguonId, tuan_bat_dau: homNay, boi_canh: boiCanh }, homNay);
+function thiHanhNgay(lopNguonId: number, boiCanh: BoiCanhLenh, homNay: string, sids: readonly number[]): number[] {
+  const r = thiHanhMotNhom({ lop_nguon_id: lopNguonId, tuan_bat_dau: homNay, boi_canh: boiCanh }, homNay, sids);
   const hong = [...r.mat.map((l) => ({ l, msg: 'Em không còn học lớp nguồn' })), ...r.loiDong.map((x) => ({ l: r.con.find((c) => c.id === x.id)!, msg: x.loi }))];
   if (hong.length) {
     const ten = (db().prepare('SELECT full_name FROM students WHERE id = ?').get(hong[0].l.student_id) as any)?.full_name ?? 'Học viên';
@@ -485,7 +491,7 @@ export function khoiPhucLenh(p: Principal, ids: unknown): KetQuaLenhNhieu {
       l = docLenh(id);
       if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: l.lop_nguon_id })) { ngoaiQuyen += 1; throw forbidden(CUNG_LOP_CHI_NHANH); }
       if (l.trang_thai === 'cho') throw conflict('Quyết định đã ở trạng thái chờ.');
-      if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — không khôi phục được.');
+      if (l.trang_thai !== 'huy') throw conflict('Quyết định đã thi hành — em đã sang lớp mới. Muốn đổi: Chuyển lớp lại từ lớp hiện tại của em.');
       const doiTuan = l.tuan_bat_dau <= homNay ? tuanSau : null;   // đã hỏi ở trên
       tx(() => {
         if (conn.prepare(`SELECT 1 FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`).get(l.student_id)) throw conflict('Học viên đã có quyết định chuyển lớp khác.');
@@ -549,6 +555,7 @@ export function dongTuBody(x: any): DongLenhVao {
     studentId: Number(x?.studentId), huong: String(x?.huong ?? '') as HuongLenh, toClassId: x?.toClassId ? Number(x.toClassId) : null,
     tuan: x?.tuan ?? null, mucTieu: soHoacKck(x?.mucTieu), ngayThi: x?.ngayThi ?? x?.thangThi ?? null,
     lyDo: x?.lyDo ?? null, ngayXemLai: x?.ngayXemLai ?? null, resetBac: typeof x?.resetBac === 'boolean' ? x.resetBac : undefined,
+    ...(x?.khacChiNhanh === true ? { khacChiNhanh: true } : {}),
   };
 }
 
@@ -615,13 +622,14 @@ export function thiHanhLenhDenHan(homNay = demoToday()): KetQuaThiHanh {
  * Đọc lại lệnh trong tx (lượt song song đã làm xong → 0 dòng), huỷ lệnh em đã rời lớp nguồn, đánh dấu `da_chuyen` TRƯỚC khi chuyển. Ngày hiệu
  * lực = `tuan_bat_dau` của lệnh (Thứ Hai, hoặc chính hôm nay khi chuyển ngay). Lệnh bị luật từ chối trả về `loiDong` — nơi gọi quyết.
  */
-function thiHanhMotNhom(g: { lop_nguon_id: number; tuan_bat_dau: string; boi_canh: string }, homNay: string): { mat: any[]; con: any[]; loiDong: { id: number; loi: string }[] } {
+function thiHanhMotNhom(g: { lop_nguon_id: number; tuan_bat_dau: string; boi_canh: string }, homNay: string, sids?: readonly number[]): { mat: any[]; con: any[]; loiDong: { id: number; loi: string }[] } {
   const conn = db();
   const ds = conn.prepare(
     `SELECT l.*, e.id AS enr_id FROM lenh_chuyen_lop l
        LEFT JOIN enrollments e ON e.student_id = l.student_id AND e.class_id = l.lop_nguon_id AND e.status = 'active'
-      WHERE l.trang_thai = 'cho' AND l.lop_nguon_id = ? AND l.tuan_bat_dau = ? AND l.boi_canh = ? AND (l.thu_ngay IS NULL OR l.thu_ngay < ?)`,
-  ).all(g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh, homNay) as any[];
+      WHERE l.trang_thai = 'cho' AND l.lop_nguon_id = ? AND l.tuan_bat_dau = ? AND l.boi_canh = ? AND (l.thu_ngay IS NULL OR l.thu_ngay < ?)
+        ${sids ? `AND l.student_id IN (SELECT value FROM json_each(?))` : ''}`,
+  ).all(g.lop_nguon_id, g.tuan_bat_dau, g.boi_canh, homNay, ...(sids ? [JSON.stringify(sids)] : [])) as any[];
   const mat = ds.filter((l) => !l.enr_id), con = ds.filter((l) => l.enr_id);
   if (mat.length) huyHeThong(mat, 'Em không còn học lớp nguồn lúc thi hành');   // Q8
   if (!con.length) return { mat, con, loiDong: [] };
