@@ -87,9 +87,23 @@ function tinh(p: Principal, f: FilterYThuc) {
     const l = lopMuc.get(k) ?? mucMoi(); lopMuc.set(k, l);
     const c = conMuc.get(keCon) ?? mucMoi(); conMuc.set(keCon, c);
     if (r.occurred_on < f.from) { l.truoc += 1; c.truoc += 1; continue; }
-    const tt = trangVp.get(r.student_id)?.viPham.get(r.id)?.t ?? '';
-    const chua = MO.has(tt);
-    for (const m of [l, c]) { m.vp.add(r.id); m.hv.add(r.student_id); if (chua) m.chua.add(r.id); if (tt === 'qua_han') m.qua.add(r.id); }
+    for (const m of [l, c]) { m.vp.add(r.id); m.hv.add(r.student_id); }
+  }
+  /*
+   * AUDIT-1611 P1-08: "Chưa xử lý" = HIỆN TẠI (như Công việc) ở thẻ, bảng lớp và bảng học viên — mọi vi phạm còn mở của em (cửa trạng thái đã nạp), không
+   * chỉ vi phạm xảy ra trong kỳ; "trong kỳ" chỉ cho cột Vi phạm. Lớp = lớp ghi vi phạm, trong phạm vi lọc (lớp đang học của phạm vi / lớp có vi phạm trong kỳ).
+   * ponytail: vi phạm còn mở ghi ở lớp đã kết thúc, ngoài kỳ — không có hàng lớp nên không đếm (cả ba chỗ cùng bỏ); thêm hàng "Lớp đã kết thúc" nếu chủ SP cần.
+   */
+  const lopHopLe = new Set(maLop.keys());
+  const chuaCuaEm = (em: NonNullable<ReturnType<typeof trangVp.get>>) =>
+    em.dsViPham.filter((v) => MO.has(em.viPham.get(v.id)?.t ?? '') && lopHopLe.has(v.classId ?? 0));
+  for (const em of trangVp.values()) {
+    for (const v of chuaCuaEm(em)) {
+      const k = v.classId ?? 0, keCon = `${k}|${v.category}`;
+      const l = lopMuc.get(k) ?? mucMoi(); lopMuc.set(k, l);
+      const c = conMuc.get(keCon) ?? mucMoi(); conMuc.set(keCon, c);
+      for (const m of [l, c]) { m.chua.add(v.id); if (em.viPham.get(v.id)?.t === 'qua_han') m.qua.add(v.id); }
+    }
   }
 
 
@@ -123,7 +137,7 @@ function tinh(p: Principal, f: FilterYThuc) {
     const em = trangHv.get(sid);
     if (!em || (em.nhom !== 'qua_han' && em.nhom !== 'bat_buoc' && em.nhom !== 'cho_duyet')) continue;
     const trongKy = em.dsViPham.filter((v) => v.occurredOn >= f.from && v.occurredOn <= f.to);
-    const chua = em.dsViPham.filter((v) => MO.has(em.viPham.get(v.id)?.t ?? ''));
+    const chua = chuaCuaEm(em);
     const gan = em.xuLy.filter((m) => m.status === 'done' && m.performedOn).sort((a, c) => (c.performedOn ?? '').localeCompare(a.performedOn ?? ''))[0] ?? null;
     const ngayLan = (m: { performedOn: string | null; quyetLuc: string | null }) => m.performedOn ?? m.quyetLuc?.slice(0, 10) ?? '';
     const moiHon = em.xuLy.filter((m) => m.status !== 'done' && m.status !== 'nhap' && ngayLan(m) >= (gan?.performedOn ?? ''))
@@ -145,11 +159,13 @@ function tinh(p: Principal, f: FilterYThuc) {
 
 type Tinh = ReturnType<typeof tinh>;
 const laHienRo = (m: Muc) => m.vp.size >= 3 || m.chua.size > 0;
+/** AUDIT-1611 P1-08: hàng có số — vi phạm trong kỳ HOẶC vi phạm còn mở (chưa xử lý hiện tại). */
+const coSo = (m: Muc) => m.vp.size > 0 || m.chua.size > 0;
 
 function dongLop(r: Tinh, k: number): DongLopViPham {
   const m = r.lopMuc.get(k)!;
   const con = VIOLATION_CATEGORIES.map((cat) => ({ cat, m: r.conMuc.get(`${k}|${cat}`) }))
-    .filter((x) => x.m && x.m.vp.size > 0)
+    .filter((x) => x.m && coSo(x.m))
     .map((x): DongLopViPham => ({
       khoa: `lop:${k}|${x.cat}`, classId: k || null, nhan: VIOLATION_CATEGORY_LABEL[x.cat as ViolationCategory],
       viPham: x.m!.vp.size, chuaXuLy: x.m!.chua.size, quaHan: x.m!.qua.size, hvCoViPham: x.m!.hv.size, siSo: null,
@@ -164,7 +180,8 @@ function dongLop(r: Tinh, k: number): DongLopViPham {
 
 export function yThucPhanTich(p: Principal, f: FilterYThuc): YThucPhanTichKetQua {
   const r = tinh(p, f);
-  const coDuLieu = [...r.lopMuc.entries()].filter(([, m]) => m.vp.size > 0).map(([k]) => k);
+  /* AUDIT-1611 P1-08: lớp chỉ còn vi phạm CŨ chưa xử lý (không vi phạm trong kỳ) vẫn có hàng — Σ cột Chưa xử lý = thẻ. */
+  const coDuLieu = [...r.lopMuc.entries()].filter(([, m]) => coSo(m)).map(([k]) => k);
   const hien = coDuLieu.filter((k) => laHienRo(r.lopMuc.get(k)!)).map((k) => dongLop(r, k));
   hien.sort((a, b) => b.chuaXuLy - a.chuaXuLy || b.viPham - a.viPham || a.nhan.localeCompare(b.nhan));
   const gomRows = coDuLieu.filter((k) => !laHienRo(r.lopMuc.get(k)!)).map((k) => dongLop(r, k))
@@ -191,7 +208,7 @@ export function oYThucPhanTich(p: Principal, f: FilterYThuc & { dong: string; co
     return ra(ids.length, `${ids.length} HV cần chú ý`, em(ids));
   }
   if (f.dong === 'tong' && f.cot === 'lop') {
-    const k = [...r.lopMuc].filter(([, m]) => m.vp.size > 0).map(([id]) => id)
+    const k = [...r.lopMuc].filter(([, m]) => coSo(m)).map(([id]) => id)
       .sort((a, b) => r.lopMuc.get(b)!.chua.size - r.lopMuc.get(a)!.chua.size || r.lopMuc.get(b)!.vp.size - r.lopMuc.get(a)!.vp.size || a - b);
     return ra(k.length, `${k.length} lớp có vi phạm`, k.map((id) => {
       const d = dongLop(r, id);
@@ -210,14 +227,14 @@ export function oYThucPhanTich(p: Principal, f: FilterYThuc & { dong: string; co
   }
   let mucs: Muc[]; let nhan: string;
   if (f.dong === 'gom') {
-    mucs = [...r.lopMuc.values()].filter((m) => m.vp.size > 0 && !laHienRo(m));
+    mucs = [...r.lopMuc.values()].filter((m) => coSo(m) && !laHienRo(m));
     nhan = `${mucs.length} lớp khác`;
   } else if (f.dong === 'tong') {
-    mucs = [...r.lopMuc.values()].filter((m) => m.vp.size > 0);
+    mucs = [...r.lopMuc.values()].filter((m) => coSo(m));
     nhan = 'Tổng';
   } else if (f.dong.startsWith('lop:')) {
     const m = f.dong.includes('|') ? r.conMuc.get(f.dong.slice(4)) : r.lopMuc.get(Number(f.dong.slice(4)));
-    if (!m || m.vp.size === 0) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
+    if (!m || !coSo(m)) throw badRequest('Không tìm thấy dòng này trong bảng — có thể bộ lọc vừa đổi.');
     mucs = [m];
     const [k, cat] = f.dong.slice(4).split('|');
     nhan = `${r.maLop.get(Number(k)) ?? 'Không rõ lớp'}${cat ? ` · ${VIOLATION_CATEGORY_LABEL[cat as ViolationCategory] ?? cat}` : ''}`;

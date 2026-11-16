@@ -62,7 +62,7 @@ const docLapCua = (ten: string) => (DOC_LAP_ENV ? DOC_LAP_ENV.includes(ten) : !G
  */
 const CHUOI_MS = 76000;
 const THOI_GIAN_MS: Record<string, number> = {
-  prLop1Lop: 7500,
+  prLop1Lop: 7500, prAuSoQl: 1500,
   banChinh: 36200, tongQuan: 33000, prDeploy: 10600, prTd7b: 7200, prSvTqGv: 6800, prW1GopTaiLai: 4000, prOv13q: 3800, prMt: 3500, yThuc: 3400,
   prQuetTheoKy: 3400, prGv: 3200, prPb2b: 3000, prS6fA: 2900, prEn: 2600, prOv13k: 2400, prVaiA: 2300, prTd3: 2300, prOv13m: 2300, prCt: 2100,
   luatMayChu: 2000, prHk2: 2000, prDonA: 1900, prNv: 1800, prTk: 1800, hocVienLop: 1700, prS6fB: 1700, prOv15e: 1700, prUiPhanTich: 1600,
@@ -9800,6 +9800,9 @@ await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as an
 // ==================================================================== SUA-NHO-QUYEN (Chưa có kỹ năng tính người đang dạy · Sửa thông tin em tạm dừng ở Lưu trữ)
 const { runPrSuaNhoQuyenTests } = bocTep('prSuaNhoQuyen', await import('./prSuaNhoQuyen.tests.ts'));
 await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== AU-SO gói 2 SO-QL (AUDIT-1611: số của QL cùng nguồn)
+const { runPrAuSoQlTests } = bocTep('prAuSoQl', await import('./prAuSoQl.tests.ts'));
+await runPrAuSoQlTests({ check, assert, assertThrows, conn, P } as any);
 // ==================================================================== LOP-1-LOP (hồ sơ lớp đọc lượt một lớp; badge quá hạn từ viec-theo-em — giảm dòng đọc Turso)
 const { runPrLop1LopTests } = bocTep('prLop1Lop', await import('./prLop1Lop.tests.ts'));
 await runPrLop1LopTests({ check, checkAsync, assert, assertThrows, conn, P, TODAY } as any);

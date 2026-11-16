@@ -810,7 +810,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     <KhungTrongThe.Provider value>
       {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} onGhiKetQua={iv.kind === 'tutor' && iv.soBuoi == null ? undefined : () => setForm('ghi')} />   /* RKC-2b ③: Tutor chưa có Số buổi — xác nhận ở form (máy chủ đòi Số buổi) */
         : formHien === 'ghi' ? (
-          <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove}
+          <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove} ketThucSom={!!vw.coTheKetThucPa}
             hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null}
             tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={kyNangTiep?.chu ?? t('Lưu · kỹ năng tiếp ›')}
             boiCanh={[[t('Kết quả kỳ trước'), fGan ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(fGan.outcome))}</b> · {tuanLich(fGan.observedOn, homNay)}</> : t('chưa có')], [t('Điểm'), ketQuaGanNhat(data)]]}

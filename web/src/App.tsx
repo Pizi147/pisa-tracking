@@ -217,6 +217,23 @@ function NutDay({ muc, active, so }: { muc: KhuVucMuc; active: boolean; so: SoBa
     </Link>
   );
 }
+
+/**
+ * AU-GON A3-07 (V11): đường lạ / vai không có quyền → MỘT màn nói rõ + "Về trang đầu ›" (trước: về trang đầu im lặng, người theo link cũ không biết vì sao).
+ * `ai` = vai mở được trang này; không truyền = đường không có trang nào. Cùng dáng dải trung tính của `ErrorState` 403 / 404.
+ */
+function KhongCoTrang({ ai }: { ai?: string }) {
+  return (
+    <div role="alert" className="surface-2 mx-auto flex max-w-3xl flex-wrap items-start gap-2.5 rounded-lg border px-3.5 py-3 text-sm text-slate-100" style={{ borderColor: 'var(--line-strong)' }}>
+      <div className="min-w-0 flex-1 basis-48 break-words leading-5">
+        <b className="mr-1.5 font-semibold">{ai ? t('Không có quyền') : t('Không thấy')}</b>
+        <span>{ai ? t('Trang này dành cho: {ai}.', { ai }) : t('Địa chỉ này không có trang nào.')}</span>
+      </div>
+      <Link to="/" replace className="btn btn-sm ml-auto shrink-0 max-sm:min-h-[44px] max-sm:basis-full max-sm:justify-center">{t('Về trang đầu ›')}</Link>
+    </div>
+  );
+}
+
 export default function App() {
   const { session, loading, reload, doiGocNhin } = useSession();
   const toast = useToast();
@@ -380,27 +397,27 @@ export default function App() {
           <Route path="/" element={<OverviewPage />} />
           {/* AN-TUTOR (chủ SP 22/10): trang Tutor ẩn — link cũ về trang đầu. */}
           <Route path="/tutor/*" element={<Navigate to="/" replace />} />
-          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <Navigate to="/" replace />} />
+          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Quản lý, Admin, TVV và CX')} />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/luu-tru" element={<LuuTruPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
           {/* Trang riêng của một Case — máy chủ sinh link này trong thông báo và Việc cần làm, nên phải giữ. */}
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
-          <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <Navigate to="/" replace />} />
+          <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <KhongCoTrang ai={t('Giáo viên, Quản lý và Admin')} />} />
           {/* Một trang lưới cho cả hai loại lớp — máy chủ trả `mode`, trang chọn lưới đúng (đặc tả §3.5, §6). */}
           {/* OV-11i (TE-12): TVV / CX (không `nav.test`) mở thẳng lưới nhập điểm → Tổng quan, như `/test`. */}
           {/* UI-LICH-TUAN: lưới cũ thành chuyển hướng về Lịch tuần / panel Nhập điểm lớp (`duongNhapDiemCu`). */}
-          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <Navigate to="/" replace />} />
-          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <Navigate to="/" replace />} />
+          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Quản lý và Admin')} />} />
+          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Quản lý và Admin')} />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/luot-test/:id" element={<LuotThuongPage />} />
-          <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <Navigate to="/" replace />} />
+          <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <KhongCoTrang ai={t('Giáo viên, Quản lý, Admin và TVV')} />} />
           {/*
             MÀN QUẢN TRỊ CHỈ GẮN VÀO KHI NGƯỜI XEM CÓ QUYỀN. Máy chủ vẫn chặn API; không có quyền thì đưa thẳng về
             Tổng quan thay vì để trang tải rồi báo 403.
           */}
-          <Route path="/quan-tri" element={nav.admin || nav.bangQuyDoi ? <AdminPage /> : <Navigate to="/" replace />} />
+          <Route path="/quan-tri" element={nav.admin || nav.bangQuyDoi ? <AdminPage /> : <KhongCoTrang ai={t('Quản trị hệ thống')} />} />
           <Route path="/ho-so-ca-nhan" element={<ProfilePage />} />
           <Route path="/giao-vien/:id" element={<HoSoGiaoVienPage />} />
           <Route path="/huong-dan" element={<HuongDanPage />} />
@@ -408,7 +425,7 @@ export default function App() {
             <Route path="/dev/thanh-phan"
               element={<Suspense fallback={<Skeleton rows={6} />}><ThanhPhanDemo /></Suspense>} />
           )}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<KhongCoTrang />} />
         </Routes>
         </Suspense>
         </BatLoiTrang>

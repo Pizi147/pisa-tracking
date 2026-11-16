@@ -4,17 +4,17 @@
  */
 import { t } from '../i18n/index.ts';
 import type { QuyChe } from './quyChe.ts';
-import { HAN_HANG } from './hanMacDinh.ts';
+import { HAN_HANG, chenHan } from './hanMacDinh.ts';
 
 /** Q36 (luat/3 Y-17): GV › Báo tình hình học tập. */
-export const quyCheBaoTinhHinh = (): QuyChe => ({ chu: t('TVV báo PH trong 5 ngày · kết quả về chuông của bạn') });
+export const quyCheBaoTinhHinh = (): QuyChe => ({ chu: chenHan(t('TVV báo PH trong {han:bao_ph_vi_pham} · kết quả về chuông của bạn')) });
 
 /** Q63 (luat/3 Y-18): TVV › Hỏi tình hình học tập. */
-export const quyCheHoiTinhHinh = (): QuyChe => ({ chu: t('GVCN trả lời trong 3 ngày · kết quả về chuông của bạn') });
+export const quyCheHoiTinhHinh = (): QuyChe => ({ chu: chenHan(t('GVCN trả lời trong {hang:tinh_hinh} · kết quả về chuông của bạn')) });
 
 /** Q52 (luat/3 Y-18): GVCN ghi kết quả tình hình TVV hỏi — hạn thật của việc. */
 export const quyCheTraLoiTinhHinh = (han: string | null): QuyChe => ({
-  chu: han ? t('Hạn {han} (3 ngày) · lưu xong TVV nhận chuông', { han }) : t('Trả lời trong 3 ngày · lưu xong TVV nhận chuông'),
+  chu: chenHan(han ? t('Hạn {han} ({hang:tinh_hinh}) · lưu xong TVV nhận chuông', { han }) : t('Trả lời trong {hang:tinh_hinh} · lưu xong TVV nhận chuông')),
 });
 
 /** Q44 (luat/3 Y-04, Y-05): GVCN › Xem vi phạm mới; cũng cho lô Ghi nhận. */
@@ -62,7 +62,7 @@ export const quyChePhoiHopSos = (chon: 'xac-nhan' | 'meeting' | 'bo', han: strin
 
 /** Q62 (luat/2 việc phoi_hop_tvv): TVV › Báo PH sau Meeting CX/GĐCN. */
 export const quyChePhoiHopTvv = (han: string | null): QuyChe => ({
-  chu: han ? t('Hạn {han} (5 ngày từ ngày GVCN xác nhận) · GV đọc được nội dung', { han }) : t('Hạn 5 ngày từ ngày GVCN xác nhận · GV đọc được nội dung'),
+  chu: chenHan(han ? t('Hạn {han} ({han:bao_ph_vi_pham} từ ngày GVCN xác nhận) · GV đọc được nội dung', { han }) : t('Hạn {han:bao_ph_vi_pham} từ ngày GVCN xác nhận · GV đọc được nội dung')),
 });
 
 /** Q56 (luat/3 Y-20): GVCN › Báo PH kết quả Test (lớp thường). */

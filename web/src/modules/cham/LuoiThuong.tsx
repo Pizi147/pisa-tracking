@@ -275,9 +275,15 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
   /* OV-6b2: lớp liên tục (chương trình không có mốc cố định) — Checkpoint tự sinh, không nút tạo bài. */
-  const nutTao = data.canPlan && !anNutTao && data.programme.checkpoints.length > 0 && (
+  /* AU-GON A2-13: nút chỉ hiện khi còn em thiếu bài (đếm từ `rows` đã nạp: em có ít dòng hơn số mốc của chương trình); lớp đủ bài thì không — thao tác thừa.
+     ponytail: em chưa có dòng nào không đếm được ở đây (em mới vào đã tự có bài mặc định — `taoBaiThuongMacDinh`). */
+  const soMoc = data.programme.checkpoints.length;
+  const dem = new Map<number, number>();
+  for (const r of data.rows) dem.set(r.studentId, (dem.get(r.studentId) ?? 0) + 1);
+  const conThieuBai = [...dem.values()].some((n) => n < soMoc);
+  const nutTao = data.canPlan && !anNutTao && soMoc > 0 && (data.rows.length === 0 || conThieuBai) && (
     <button className="btn btn-sm" onClick={plan} disabled={busy}>
-      {busy ? t('Đang tạo…') : t('Tạo bài kiểm tra theo chương trình')}
+      {busy ? t('Đang tạo…') : data.rows.length === 0 ? t('Tạo bài kiểm tra theo chương trình') : t('Tạo bài còn thiếu')}
     </button>
   );
 

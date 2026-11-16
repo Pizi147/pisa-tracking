@@ -55,7 +55,8 @@ export default function OverviewPage() {
 
   /* LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): không quyền Công việc (Head tutor, GV chưa phân công) → khung "Lớp của tôi" của trang đầu GV,
      rỗng đúng chữ ("Chưa được phân công lớp nào"), không request. Head tutor dạy lớp = có thêm vai Giáo viên → vai 'gv' ở trên. */
-  if (vai === 'ht') return trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} />);
+  /* AUDIT-1611 A3-17 · luật N50 (9): Head tutor bản chính luôn kèm vai GV → tài khoản chỉ có Head tutor là thiếu cấp vai — câu nói bước tiếp. */
+  if (vai === 'ht') return trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} chuRong={t('Chưa được phân công lớp — nhờ Quản trị cấp thêm vai Giáo viên.')} />);
   if (vai === 'admin') {
     /* GD-14 (⑧ T5): Lịch sắp tới sang cột phải 400 (khối phụ mọi vai cùng một chỗ). */
     const cn = branchId ? dsCn?.find((b) => b.id === branchId) : dsCn?.length === 1 ? dsCn[0] : null;

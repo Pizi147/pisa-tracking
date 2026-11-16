@@ -86,7 +86,7 @@ export function NutTask({ noi, lopId, em: emSan, muc: chiMuc, hoi, onXong, cycle
   return (
     <>
       <span ref={neo} className={noi === 'noi' ? `fixed bottom-[80px] right-4 z-[35] sm:hidden${daCuon ? '' : ' !hidden'}` : 'max-sm:hidden'} data-fab-task={noi === 'noi' && daCuon ? '' : undefined}>
-        <MenuDong nhan={t('Task: Case, vi phạm / nhắc nhở, tình hình học tập')} mat={mat} tieuDeDay={t('+ Task')}
+        <MenuDong nhan={t('Task: {ds}', { ds: dsMuc.map(([, nhan]) => nhan).join(', ') })} mat={mat}   /* AUDIT-1611 A3-04: tên đọc màn = đúng các mục đang có */ tieuDeDay={t('+ Task')}
           lopNut={noi === 'dau' ? `btn ${phu ? '' : 'btn-primary '}!p-0` : 'btn btn-primary !rounded-full !p-0 shadow-lg'}
           muc={dsMuc.map(([k, nhan]) => ({ key: k, nhan, bieuTuong: <IconNhom k={IC[k]} />, onChon: () => { setEm(emSan ? [emSan] : k === 'tinh-hinh' ? [] : null); setLoai(k); } }))} />
       </span>

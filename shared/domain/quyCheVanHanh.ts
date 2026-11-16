@@ -3,11 +3,11 @@
  * Giá trị `{…}` lấy từ dữ liệu panel đã nạp (không thêm request); thiếu thì dùng câu không có giá trị đó.
  */
 import { t } from '../i18n/index.ts';
+import { chenHan } from './hanMacDinh.ts';
 import type { QuyChe } from './quyChe.ts';
 import type { LoaiYeuCau } from './yeuCauDuyet.ts';
 import { daysBetween, shortDate } from './display.ts';
 import { tuanLich } from './hienThiNgay.ts';
-import { thuNgay } from './chuyenLop.ts';
 import { mondayOfDate } from './week.ts';
 import { laMtCuKyNang } from './vang.ts';
 
@@ -81,7 +81,7 @@ export const quyCheBanGiao = (gvcn: boolean, han: string | null, homNay: string 
 };
 
 /** Q42 Bàn giao khi đổi GV (luat/4 L-18). */
-export const quyCheBanGiaoGv = (): QuyChe => ({ chu: t('Hạn 5 ngày · xác nhận xong GV mới nhận tin') });
+export const quyCheBanGiaoGv = (): QuyChe => ({ chu: chenHan(t('Hạn {han:ban_giao_doi_gv} · xác nhận xong GV mới nhận tin')) });
 
 /** Q43 Việc được giao (việc mgmt). */
 export const quyCheViecGiao = (): QuyChe => ({ chu: t('Hạn do QL đặt · ghi Hoàn thành khi xong') });
@@ -105,7 +105,7 @@ export function quyCheChotLoTrinh(o: { trungTam: boolean; tutor: number; khacGoi
   if (o.trungTam) return { chu: t('Do Trung tâm: Case + Tutor {n} buổi mỗi kỹ năng cho GV lớp FT', { n: o.tutor }) };
   if (o.khacGoiY) return { chu: t('Khác gợi ý: cần lý do') };
   return {
-    chu: o.hanChot && o.homNay ? t('Hạn {ngay} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp', { ngay: thuNgay(o.hanChot, o.homNay) })
+    chu: o.hanChot && o.homNay ? t('Hạn {ngay} · tới Thứ Hai tuần bắt đầu máy tự chuyển lớp', { ngay: shortDate(o.hanChot, o.homNay) })
       : t('Tới Thứ Hai tuần bắt đầu máy tự chuyển lớp'),
   };
 }

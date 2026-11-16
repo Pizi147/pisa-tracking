@@ -15,7 +15,7 @@
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { db, tx } from '../db.ts';
 import {
-  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, thuNgay, trangThaiSauThi, tuanHopLe, tuanLich,
+  LOI_TUAN_BAT_DAU, LUA_CHON_SAU_THI, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ghepMucTieu, kiemLopLoTrinhMoi, routeGoiYLoTrinhMoi, tenRoute, tenMonNgan, ngay, LUA_CHON_SAU_THI_CU, NHAN_SAU_THI, PERMISSIONS, chuTargetKck, duongHoSoHocVien, goiYSauThi, huongTiep, nhanDaXong, trangThaiSauThi, tuanHopLe, tuanLich,
   type DongSauThi, type HuongSauThi, type LuaChonSauThi,
   chuMon, luuMon, type MonVao,
 } from '../../../shared/domain/index.ts';
@@ -560,7 +560,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
     const han = st.han ?? f.today;
     const kq = daXongCua({ ...c, bc_ket_luan: c.ket_luan });
     const ketQua = nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: c.ket_luan ?? c.outcome ?? null }, true);
-    const thi = c.thi_that_ngay ? `đã thi ${thuNgay(c.thi_that_ngay, f.today)}` : null;
+    const thi = c.thi_that_ngay ? `đã thi ${ngay(c.thi_that_ngay, f.today)}` : null;
     out.push({
       key: `buoc_tiep:${c.id}`, group: 'buoc_tiep', urgency: f.today > han ? 'overdue' : 'normal', cycleId: c.id, daGiaHan: st.daGiaHan,
       studentId: c.student_id, studentName: c.ten, classId: c.class_id ?? null, classCode: c.class_code ?? null,

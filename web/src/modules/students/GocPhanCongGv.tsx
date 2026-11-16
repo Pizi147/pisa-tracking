@@ -222,9 +222,16 @@ export function GocPhanCongGv({ branchId, khung, q, onQ, coTheTaoLop, onTaoLop, 
       duoc(g).length ? t('dạy được {ds}', { ds: duoc(g).join(', ') }) : ''].filter(Boolean).join(' · ');
     const xep = (ds: GvPc[]) => [...ds].sort((x, y) => Number(c[khoa] === y.id) - Number(c[khoa] === x.id) || Number(duoc(y).length > 0) - Number(duoc(x).length > 0));
     const a = xep(ung.filter((g) => oLop(g).length));
+    /* AU-GON A2-26: người chưa có kỹ năng của ô tách khỏi người dạy được — nhóm "Dạy được {môn}" trước, "Chưa có kỹ năng {môn}" sau (không còn trộn trong "GV khác").
+       ponytail: tài khoản không có vai GV (QL) vẫn nằm trong danh sách — máy chủ `teacherCandidatesBranch` cho QL kiêm GVCN; chỉ rơi xuống nhóm "Chưa có kỹ năng". */
+    const khac = xep(ung.filter((g) => !oLop(g).length));
+    if (!o) return [...a.map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), nhom: t('Đang dạy lớp này') })), ...khac.map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), ...(a.length ? { nhom: t('GV khác · {cn}', { cn: tenCn }) } : {}) }))];
+    const mon = tenMonNgan(l.ct, khoa);
+    const coKn = khac.filter((g) => duoc(g).length), chuaKn = khac.filter((g) => !duoc(g).length);
     return [
       ...a.map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), nhom: t('Đang dạy lớp này') })),
-      ...xep(ung.filter((g) => !oLop(g).length)).map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), ...(a.length ? { nhom: t('GV khác · {cn}', { cn: tenCn }) } : {}) })),
+      ...coKn.map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), ...(a.length || chuaKn.length ? { nhom: t('Dạy được {mon} · {cn}', { mon, cn: tenCn }) } : {}) })),
+      ...chuaKn.map((g) => ({ id: g.id, ten: g.ten, phu: phu(g), ...(a.length || coKn.length ? { nhom: t('Chưa có kỹ năng {mon}', { mon }) } : {}) })),
     ];
   };
   const oCua = (l: LopPc, khoa: string, h?: number, c?: number) => {

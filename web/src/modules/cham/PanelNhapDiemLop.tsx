@@ -24,7 +24,7 @@ export function PanelNhapDiemLop({ classId, classCode, luot, loc, onDong, quayLa
     ),
   });
   return (
-    <KhungPanel hd="nhap-diem" tieuDe={classCode ? t('Nhập điểm · {lop}', { lop: classCode }) : t('Nhập điểm')} dau={dau} rong="toan" quayLai={quayLai} onDong={onDong}
+    <KhungPanel hd="nhap-diem" tieuDe={classCode ? (loc === 'cu' ? t('Nhập điểm MT cũ · {lop}', { lop: classCode }) : t('Nhập điểm · {lop}', { lop: classCode })) : t('Nhập điểm')} dau={dau} rong="toan" quayLai={quayLai} onDong={onDong}
       /* GD-4b Q58: link `?trong=cu` (nhập MT cũ). Lượt / vai nằm trong `DiemTheoLop` — câu theo lượt (Q1, Q82) không vẽ ở đây. */
       quyChe={loc === 'cu' ? quyCheNhapDiem({ thuong: false, mtCu: true }) : null}>
       <div className="pt-3">

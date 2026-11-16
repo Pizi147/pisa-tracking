@@ -50,7 +50,7 @@ export default function TestPage() {
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
       <div id="test-vung" role="tabpanel" aria-label={TAB_TEST_LABEL[lopCu ? 'lich' : tab]} className="space-y-4">
         {(tab === 'lich' || lopCu) && <LichTestTab />}
-        {lopCu && <PanelNhapDiemLop classId={lopCu} luot={params.get('luot')} loc={locTuThamSoTrong(params.get('trong'))} onDong={dongLopCu} />}
+        {lopCu && <PanelNhapDiemLop classId={lopCu} classCode={params.get('ma')} luot={params.get('luot')} loc={locTuThamSoTrong(params.get('trong'))} onDong={dongLopCu} />}
         {tab === 'ke-hoach' && <KeHoachTestTab />}
       </div>
     </div>

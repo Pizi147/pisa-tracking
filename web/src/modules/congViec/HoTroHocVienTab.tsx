@@ -40,7 +40,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
-  NHAN_LOAI_VIEC, demBai,
+  NHAN_LOAI_VIEC, chenHan, demBai,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -114,6 +114,8 @@ export function HoTroHocVienTab() {
   /* OV-11f (TQ-2): `loai=` (từ Tổng quan, vd "PA chưa có Kết quả") lọc ĐÚNG loại việc — số ở ô = số việc nơi mở; đổi nhóm / Xoá lọc thì bỏ. */
   const loai = !params.get('nhom') && params.get('loai') ? params.get('loai') : null;
   const viec = params.get('viec');
+  /* AUDIT-1611 P1-07: `lop=` (từ ô "Quá hạn của lớp" / "Chờ chấm" ở hồ sơ lớp của QL) — chỉ việc của lớp đó (dòng gộp nhiều lớp giữ khi có lớp đó); chip ✕ bỏ. */
+  const lopLoc = Number(params.get('lop')) || null;
 
   const setParam = (k: string, v: string | null) => {
     const next = new URLSearchParams(params);
@@ -204,8 +206,9 @@ export function HoTroHocVienTab() {
     return [...ds, ...le];
   }, [tatCaViec, giu, xong]);
 
-  const theoKhung = (ds: WorkItem[]) => ds.filter((it) => (khung === 'tat-ca' || !it.khung || it.khung === khung) && (!loai || it.group === loai));
-  const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung, loai]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const cuaLopLoc = (it: WorkItem) => !lopLoc || it.classId === lopLoc || !!it.con?.some((c) => c.classId === lopLoc);
+  const theoKhung = (ds: WorkItem[]) => ds.filter((it) => (khung === 'tat-ca' || !it.khung || it.khung === khung) && (!loai || it.group === loai) && cuaLopLoc(it));
+  const items = useMemo(() => theoKhung(tatCaViec), [tatCaViec, khung, loai, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const locItems = useMemo(() => items.filter((it) => khopLocNhanh(it, loc, homNay)), [items, loc, homNay]);
 
   /*
@@ -242,7 +245,7 @@ export function HoTroHocVienTab() {
     /* AUDIT-UI B3: badge = yêu cầu cần làm ngay (quá hạn) — 0 thì không vẽ (`BadgeTabSo`); tổng ở đầu tab "n yêu cầu". */
     const bd: BadgeTab | null = cho ? { so: q, n: cho, quaHan: q, homNay: 0 } : null;
     return [{ key: 'duyet', nhan: tenTab('duyet'), badge: bd }, ...ds];
-  }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Mở trang: tab đầu có việc quá hạn, không có thì tab đầu (`tabMacDinh`); panel duyệt đang mở → tab Chờ bạn duyệt. */
   /* RA-LOI-0711d: mở từ link `?viec=` (chuông, Tổng quan, Giao việc) không kèm `nhom` → tab của chính việc đó, danh sách + Quay lại đúng chỗ. */
   const tabViec = !tabUrl && viec ? (() => { const x = phang(dsGoc).find((y) => y.key === viec); return x ? tabCua(x) : null; })() : null;
@@ -283,7 +286,7 @@ export function HoTroHocVienTab() {
     /* Plan mục 4: em cuối của dòng gộp vừa xong (dòng tan thành việc lẻ, hoặc biến mất) đứng ở chỗ của dòng gộp cũ, không rơi xuống cuối mục. */
     const vt = (x: WorkItem) => cu.vt.get(x.key) ?? cu.vt.get(khoaGopCua(x as any) ?? '') ?? Number.MAX_SAFE_INTEGER;
     return new Map([...out].map(([k, ds]) => [k, ds.map((m) => ({ ...m, items: [...m.items].sort((a, b) => vt(a) - vt(b)) }))]));
-  }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const mucs = (tab && mucTheoTab.get(tab)) || [];
   /* Số đầu mục chỉ từ máy chủ (`locItems`) — dòng giữ chỗ vừa xong chỉ để vẽ. */
   const demMuc = useMemo(() => {
@@ -305,7 +308,7 @@ export function HoTroHocVienTab() {
   const khongViec = (p: URLSearchParams) => { const x = new URLSearchParams(p); x.delete('viec'); x.delete('panel'); return x.toString(); };
   const cuon = useRef(0);
   const mo = (it: WorkItem) => {
-    if (!lamTaiCho(it)) { navigate(it.href); return; }
+    if (!lamTaiCho(it)) { navigate(it.group === 'bao_cao_ph' ? `${it.href}&viet=1` : it.href); return; }   /* AU-GON B3-10: "Viết ›" mở thẳng panel viết (`?viet=1`, TabBaoCaoPh) */
     const next = new URLSearchParams(params);
     next.set('viec', it.key);
     if (tabCua(it) !== tab && !params.get('loai')) next.set('nhom', tabCua(it));   // CV-TAB: việc của tab khác (Việc tiếp, Em này còn) → danh sách sang tab đó
@@ -517,6 +520,11 @@ export function HoTroHocVienTab() {
             </span>
           )}
           {/* U01 #7: việc vừa xong trong phiên → chip bấm được, lọc "Đã xong hôm nay" (tìm lại không dò từ đầu). */}
+          {lopLoc && tab !== 'duyet' && (
+            <button type="button" className="nut-loc nut-loc-dang" title={t('Bỏ lọc lớp')} onClick={() => setParam('lop', null)}>
+              {phang(tatCaViec).find((x) => x.classId === lopLoc)?.classCode ?? t('Lớp')} <span aria-hidden>✕</span>
+            </button>
+          )}
           {xong.size > 0 && (
             <button type="button" className="nut-loc text-ok" aria-pressed={xemXong} onClick={() => setXemXong((x) => !x)}>
               {xemXong ? <>{t('✓ Xong hôm nay · {n}', { n: xong.size })} <span aria-hidden>✕</span></> : t('✓ {n} xong hôm nay', { n: xong.size })}
@@ -875,7 +883,7 @@ function LoiVanHanh({ cn, baoCao, onGiao }: { cn: number | null; baoCao: boolean
 
 /** UI-CV-TVV (P1): luật hạn của nhóm việc TVV — ⓘ cạnh số đầu nhóm (mockup ghi thành chữ "· hạn 23:59 ngày lưu + 4"). */
 const luatNhomTvv = (k: string) => (k === 'bao-ph' ? <NutLuat label={t('Hạn Báo PH')}>{t('Hạn 23:59 ngày lưu xử lý + 4 (tính cả T7, CN). Chưa liên hệ được: việc vẫn mở, giữ hạn.')}</NutLuat>
-  : k === 'sau-thi' ? <NutLuat label={t('Sau thi')}>{t('Lưu điểm thi thật trước; bước tiếp hạn 7 ngày từ ngày có kết quả.')}</NutLuat> : null);
+  : k === 'sau-thi' ? <NutLuat label={t('Sau thi')}>{chenHan(t('Lưu điểm thi thật trước; bước tiếp hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả.'))}</NutLuat> : null);
 
 /** UI-CV-TVV (mockup "3 việc · 3 HV · Cẩm Phả"): tên chi nhánh khi người xem chỉ thuộc MỘT chi nhánh. */
 function useTenChiNhanh(bat: boolean): string | null {

@@ -18,6 +18,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
   const d: any = await import('../../../shared/domain/index.ts');
   const tongHop: any = await import('../phanTich/tongHop.ts');
   const baoCao: any = await import('../phanTich/baoCao.ts');
+  const bangCn: any = await import('../worklist/bangChiNhanh.ts');
   const kqt: any = await import('../phanTich/ketQuaThi.ts');
   const gvPt: any = await import('../phanTich/giaoVien.ts');
   const metrics: any = await import('../worklist/metrics.ts');
@@ -130,7 +131,9 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     for (const m of [1, 2, 3]) assert(o(`sos:tong:${m}`).n === bc.sos.tong[`sos${m}`], `SOS ${m} tổng`);
     const mk = kqt.ketQuaMockKq(QL, { branchId: MB, ...RONG });
     assert(bc.mock.dat === mk.tong.dat && bc.mock.chuaDat === mk.tong.chuaDat && bc.mock.chuaDu === mk.tong.chuaDu, 'Mock = tab Kết quả thi');
-    assert(bc.chuY.caseChuaChot === metrics.metricSet(QL, 'case-cho-xac-dinh-nguyen-nhan', { branchId: MB, program: 'ft' }).n, 'Case chưa chốt PA = chỉ số Tổng quan');
+    /* AUDIT-1611 P1-06: "Case chưa có PA" = ô Tổng quan (`bangChiNhanh` → `tapCaseQl`), không còn chỉ số thô. */
+    const tqBang = bangCn.bangChiNhanh(QL, { branchId: MB, ct: 'ft' });
+    assert(bc.chuY.caseChuaChot === tqBang.tong.caseChuaChot.n && bc.casePa.caseMo === tqBang.tong.caseMo.n, 'Case chưa có PA / Case mở = ô Tổng quan');
     assert(d.chuSoTruoc(3, 1) === 'Tăng 2 HV' && d.chuSoTruoc(1, 2) === 'Giảm 1 HV' && d.chuSoTruoc(2, 2) === 'Không đổi', 'chữ so kỳ trước');
     const thuong = baoCao.baoCao(QL, { ...f, ct: 'thuong' });
     assert(thuong.sos === null && thuong.mock === null, 'lớp thường: không SOS / Mock');

@@ -9,7 +9,7 @@
  * Sửa / Rút khi chưa có kết quả (người gửi, QL); Hoàn tác ngay sau gửi (≤ 2 phút, chưa có kết quả) xoá hẳn. Mọi đổi ghi `writeAudit`.
  */
 import { DS_JSON, db, tx } from '../db.ts';
-import { HAN_HANG, PERMISSIONS, addDaysIso, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU, HAN_HANG, PERMISSIONS, addDaysIso, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc } from '../../../shared/domain/index.ts';
 import { can, type Principal } from '../permissions.ts';
 import { badRequest, conflict, forbidden, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -22,8 +22,8 @@ import type { WorkItem } from '../worklist/mywork.ts';
 export const CHIEU_TINH_HINH = ['gv_tvv', 'tvv_gvcn'] as const;
 export type ChieuTinhHinh = (typeof CHIEU_TINH_HINH)[number];
 export const NHAN_VIEC_TINH_HINH = 'Tình hình học tập';
-/** Ô chữ 10–500 ký tự (như N35: có bộ đếm ở web, quá thì không lưu). */
-const TOI_THIEU = 10, TOI_DA = 500;
+/** Ô chữ 8–500 ký tự (như N35: có bộ đếm ở web, quá thì không lưu). */
+const TOI_THIEU = CHU_TOI_THIEU, TOI_DA = 500;   // N50 (6)
 /** Hạn câu hỏi TVV → GVCN: `HAN_HANG.tinh_hinh` (3) ngày tính cả ngày hỏi (hỏi T2 → hết T4) — cùng số Hướng dẫn chèn (`{hang:tinh_hinh}`). */
 export const hanHoiTinhHinh = (homNay: string): string => addDaysIso(homNay, HAN_HANG.tinh_hinh - 1);
 /** Hoàn tác ngay sau gửi / trả lời: trong 2 phút, chưa ai làm bước sau. */
