@@ -112,6 +112,26 @@ export function taiTruoc(path: string): void {
 }
 
 /**
+ * TD-QUET (đề xuất 2): tải trước NHIỀU đường bằng MỘT lời gọi gộp (`goc?phan=k1,k2…` — vd `/classes/:id/ho-so`, máy chủ đọc chung trong một request). Mỗi đường
+ * lẻ nhận phần `data` của nó như một lời gọi đang bay → khối gắn sau dùng lại / bản vừa xem như `taiTruoc`; tải lại sau thao tác vẫn gọi đường lẻ (chỉ phần đổi).
+ * Phần lỗi (403 / 404…) hoặc lời gọi gộp lỗi → đường đó tự gọi lẻ, lỗi hiện tại khối như cũ. Đường đã có bản mới / đang bay: không vào bó.
+ */
+export function taiTruocGop(goc: string, phan: Record<string, string>): void {
+  const can = Object.entries(phan).filter(([, path]) => !conMoi(path) && !dangBay.has(path));
+  if (!can.length) return;
+  const bo = api.get<Record<string, { status: number; data?: unknown }>>(`${goc}${goc.includes('?') ? '&' : '?'}phan=${can.map(([k]) => k).join(',')}`);
+  const luc = Date.now();
+  for (const [k, path] of can) {
+    const p = bo.then((r) => (r[k]?.status === 200 ? r[k].data : api.get(path)), () => api.get(path));
+    dangBay.set(path, p);
+    batDauGoi.set(path, luc);
+    const xong = () => { if (dangBay.get(path) === p) { dangBay.delete(path); batDauGoi.delete(path); } };
+    p.then(xong, xong);
+    taiVaNho(path).catch(() => { /* lỗi để khối gắn sau tự gọi lại và báo */ });
+  }
+}
+
+/**
  * Tải (dùng chung lời gọi đang bay) rồi nhớ bản vừa xem. `null` = có lần xoá trúng đường này sau khi bắt đầu (đổi tài khoản / ghi):
  * bỏ phản hồi, không ghi `daXem` — hook đang gắn đã được `onInvalidate` cho tải lại (PR-CACHE F01, F04).
  */

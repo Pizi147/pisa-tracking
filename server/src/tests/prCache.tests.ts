@@ -205,6 +205,20 @@ export async function runPrCacheTests(t: YThucTestKit) {
       tra('/ref/periods', ['moi']);
       await q;
     });
+    await checkAsync('TD-QUET · taiTruocGop: một lời gọi gộp cho nhiều đường; phần 200 → bản vừa xem của đường lẻ (0 lời gọi lẻ), phần lỗi → đường đó tự gọi lẻ; đường còn mới không vào bó', async () => {
+      batDau();
+      ua.taiTruocGop('/classes/7/ho-so', { overview: '/classes/7/overview', roster: '/classes/7/roster' });
+      assert(soGoi('/classes/7/ho-so?phan=overview,roster') === 1 && soGoi('/classes/7/overview') === 0 && soGoi('/classes/7/roster') === 0, 'không gộp đúng một lời gọi');
+      const dauOv = ua.taiVaNho('/classes/7/overview');   // khối gắn trong lúc bó đang bay: dùng chung lời gọi
+      tra('/classes/7/ho-so?phan=overview,roster', { overview: { status: 200, data: { a: 1 } }, roster: { status: 403, error: 'Không có quyền' } });
+      assert(JSON.stringify(await dauOv) === JSON.stringify({ d: { a: 1 } }), 'đường lẻ không nhận phần của nó');
+      await xong();
+      assert(soGoi('/classes/7/roster') === 1, 'phần lỗi phải tự gọi đường lẻ (lỗi hiện như cũ)');
+      tra('/classes/7/roster', [{ id: 1 }]);
+      assert(JSON.stringify(await ua.taiVaNho('/classes/7/roster')) === JSON.stringify({ d: [{ id: 1 }] }), 'đường lẻ của phần lỗi không nhận bản gọi lẻ');
+      ua.taiTruocGop('/classes/7/ho-so', { overview: '/classes/7/overview' });
+      assert(soGoi('/classes/7/ho-so?phan=overview') === 0 && soGoi('/classes/7/overview') === 0, 'đường còn mới vẫn vào bó / gọi lại');
+    });
     await checkAsync('HOTFIX-3 (4, 5) · lỗi thân HTML (504 Netlify) → "Lỗi 504 — thử lại", không in HTML; đã có dữ liệu mà tải lại lỗi → giữ dữ liệu, không ErrorState', async () => {
       globalThis.fetch = (async () => ({ ok: false, status: 504, text: async () => '<!doctype html><html><body>Gateway Timeout</body></html>' } as Response)) as typeof fetch;
       let e: any = null;
