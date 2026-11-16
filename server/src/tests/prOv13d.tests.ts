@@ -107,7 +107,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(get('SELECT ghi_nhan_luc FROM violations WHERE id = ?', vHuy[0]).ghi_nhan_luc === null, 'Hoàn tác');
   }));
 
-  await checkAsync('OV13d-5 · Xác nhận cấp bậc lô: bậc 0 "Chưa có xử lý vi phạm" lưu được và em thoát việc 14 ngày; em đã có xử lý trên web khoá (QL sửa được bậc đã khai)', () => thu(() => {
+  await checkAsync('OV13d-5 · Xác nhận cấp bậc lô: bậc 0 "Chưa có xử lý vi phạm" lưu được và em thoát việc 14 ngày; em đã có xử lý trên web chưa khai thì khoá với GVCN; N50 (8): bậc đã khai GVCN sửa được', () => thu(() => {
     const moi = moiEm(), cu = moiEm(), daXl = moiEm(), ql = moiEm();
     conn.prepare('UPDATE students SET created_at = ? WHERE id IN (?, ?, ?, ?)').run(`${addDays(TODAY, -2)}T08:00:00.000Z`, moi, cu, daXl, ql);
     const viec = () => (mywork.myWork(gvcn).items as any[]).find((i) => i.group === 'khai_bac' && i.classId === cid);
@@ -120,7 +120,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     const bang = lo.loYThucLop(gvcn, cid);
     const dong = (sid: number) => bang.em.find((x: any) => x.studentId === sid);
     assert(dong(moi).capBac.duoc && dong(moi).capBac.khai === null, JSON.stringify(dong(moi)));
-    assert(!dong(daXl).capBac.duoc && !dong(ql).capBac.duoc && /QL/.test(dong(ql).capBac.lyDo.chu), 'GVCN: em đã xử lý trên web khoá');
+    assert(!dong(daXl).capBac.duoc && dong(ql).capBac.duoc, 'GVCN: em đã xử lý trên web (chưa khai) khoá; em đã khai mở (N50 câu 8)');
     assert(lo.loYThucLop(P.mbManager, cid).em.find((x: any) => x.studentId === ql).capBac.duoc, 'QL thấy mở (em đã khai)');
 
     const r = lo.loCapBac(gvcn, cid, { em: [{ studentId: moi, bac: 0 }, { studentId: cu, bac: 3 }, { studentId: daXl, bac: 1 }] });
@@ -128,7 +128,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', moi).bac === 0 && xu.yThucHocVien(gvcn, cu).keTiep.nhan === 'Report 4 + Meeting CX/GĐCN', 'bậc 0 / bậc 3 lưu');
     assert(!viec()?.emIds?.includes(moi) && !viec()?.emIds?.includes(cu), 'sau: hai em thoát việc 14 ngày');
     assert(xu.yThucHocVien(gvcn, moi).keTiep.nhan === 'Report 1', 'bậc 0 → lần kế Report 1');
-    assert(!kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok, 'GVCN không sửa em đã xử lý');
+    assert(kq(lo.loCapBac(gvcn, cid, { em: [{ studentId: ql, bac: 3 }] }), ql).ok && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 3, 'N50 (8): GVCN sửa bậc đã khai của em đã xử lý');
     assert(kq(lo.loCapBac(P.mbManager, cid, { em: [{ studentId: ql, bac: 4 }] }), ql).ok && get('SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?', ql).bac === 4, 'QL sửa được');
     /* RKC-3a (thay rà #408 (4)): em Tạm dừng khai được (không ảnh hưởng đầu ra). */
     const td = moiEm();

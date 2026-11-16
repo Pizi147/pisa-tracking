@@ -8,7 +8,7 @@
  *   quyền     như ra lệnh: `class.edit` ở lớp nguồn (lớp em học trước khi chuyển).
  *   giữ       nhật ký (`audit_logs`) — Lịch sử sửa thấy cả lần chuyển lẫn lần Hoàn tác.
  */
-import { db, tx } from '../db.ts';
+import { chayHenNgay, db, tx } from '../db.ts';
 import { forbidden, notFound } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
 import { GhiDao, daoLai, luuGhiDao, type BanGhiDao } from '../platform/ghiDao.ts';
@@ -75,7 +75,9 @@ export function chuyenNgayCoHoanTac<T>(p: Principal, sids: number | readonly num
     const g = new GhiDao(conn);
     const ds = dongDaoChuyenNgay(sids, [...new Set(lopIds)]);
     for (const d of ds) if (d.k !== 'them') g.sua(d.bang, d.dk, ...d.args);
-    const kq = ds.filter((d) => d.k !== 'sua').reduce<() => T>((f, d) => () => g.theoDoi(d.bang, d.dk, d.args, f), fn)();
+    /* Sổ nghĩa vụ ghi lúc COMMIT (`henTruocCommit`) — chạy ngay trong vùng theo dõi để dòng sổ của lần chuyển cũng được chụp (bản chép thật 16/11). */
+    const fnDu = () => { const r = fn(); chayHenNgay(); return r; };
+    const kq = ds.filter((d) => d.k !== 'sua').reduce<() => T>((f, d) => () => g.theoDoi(d.bang, d.dk, d.args, f), fnDu)();
     if (!daChuyen(kq)) return kq as T & { dao?: number };
     for (const d of ds) if (d.k !== 'them') g.boKhongDoi(d.bang);
     return { ...kq, dao: luuGhiDao(conn, { loai: LOAI, bang: doi.bang, id: doi.id, nguoi: p.userId, ghi: g }) };

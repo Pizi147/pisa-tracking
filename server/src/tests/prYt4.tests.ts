@@ -532,7 +532,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(l.status === 400 && /đã xác nhận cấp bậc vi phạm/.test(l.msg), l.msg);
   });
   /* OV-7a (chủ SP 13/10) thay "GVCN 403 · QL 400 sau lần xử lý": GVCN sửa bậc mình khai khi chuỗi chưa có lần xử lý; QL sửa cả sau lần xử lý (prOv7a 2c). */
-  check('YT4 (4) · Sửa khai: GVCN + QL sửa được khi chuỗi chưa có lần xử lý; sau lần xử lý đầu GVCN → 400, QL vẫn sửa; khai lại → 400', () => {
+  check('YT4 (4) · Sửa khai: GVCN + QL sửa được; N50 (8): sau lần xử lý đầu GVCN VẪN sửa (nhật ký), QL vẫn sửa; khai lại (chưa khai) sau lần xử lý → 400', () => {
     const sid = hv();
     xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Report 1 tháng 8' });
     xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'GVCN tự sửa' });
@@ -540,8 +540,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa theo hồ sơ giấy' });
     assert(em(sid).bac === 2, 'QL sửa');
     xl(gvcn, sid, [ghiVp(gvbm, sid)]);
-    const l = loiCua(() => xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' }));
-    assert(l.status === 400 && /đã có lần xử lý/.test(l.msg), l.msg);
+    xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' });
+    assert((conn.prepare(`SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?`).get(sid) as any).bac === 1, 'N50 (8): GVCN sửa sau lần xử lý');
     xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa sau khi đã xử lý' });
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
     assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
