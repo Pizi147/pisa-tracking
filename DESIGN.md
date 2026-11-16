@@ -67,6 +67,18 @@ typography:
     fontSize: "12px"
     fontWeight: 600
     lineHeight: "22px"
+  dense-cell:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "14px"
+    fontWeight: 400
+  block-title:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "17px"
+    fontWeight: 700
+  big-number:
+    fontFamily: "'Be Vietnam Pro', system-ui, sans-serif"
+    fontSize: "28px"
+    fontWeight: 700
   scale:
     note: "Thang chữ V5 (G13, tailwind fontSize): 12 · 13 · 14 · 15 · 17 · 22 · 28 px — 14 lưới dày, 17 tiêu đề khối / panel, 28 số lớn đều trong thang"
 rounded:
