@@ -19,7 +19,7 @@ Bản chính: mốc = ngày deploy LG-3 (16/11) → chỉ đợt có hạn từ 
 | GV / QL Công việc: việc Case / PA / Phối hợp SOS của em đã có KQ thi thật | còn (vd 5 GV bị đòi Mô tả Case) | ẩn (như em Tạm dừng; dữ liệu giữ) — N46 | ĐỔI theo luật |
 | Lộ trình mới sau thi | việc cũ đóng (Case đóng sẵn) | như cũ, không hiện lại | GIỮ |
 | Dời lịch thi (chưa có KQ) | việc giữ | việc giữ | GIỮ |
-| Hồ sơ HV · Phối hợp SOS | chỉ ở tab Ý thức & Phối hợp | + dòng ở "Việc cần làm", bấm mở panel Phối hợp của Công việc (em này lên đầu, tô nhấn) | THÊM |
+| Hồ sơ HV · Phối hợp SOS (GVCN hiệu lực / QL lớp) | chỉ ở tab Ý thức & Phối hợp | + dòng ở "Việc cần làm", bấm mở panel Phối hợp của Công việc (em này lên đầu, tô nhấn) | THÊM |
 | Hồ sơ HV · Báo PH vi phạm / Meeting CX (TVV, QL khi em chưa có TVV, GVCN khi em chưa có TVV sau Meeting) | chỉ ở Công việc / tab Ý thức | + dòng, bấm mở panel Ghi báo PH / Phối hợp tại hồ sơ | THÊM |
 | Hồ sơ HV · Bổ sung hồ sơ thiếu (TVV / QL) | chỉ ở Công việc (dòng tổng) | + dòng "Bổ sung hồ sơ · Ngày sinh…", bấm mở Sửa thông tin của em | THÊM |
 | QL · Báo cáo PH quá hạn > 7 ngày | không còn số nào nhắc (chỉ chữ đỏ ở tab lớp) | dòng ở Việc quản lý, "Báo cáo PH ›" mở tab Báo cáo PH đúng đợt; hết khi lớp đủ | THÊM — N49 |
@@ -27,4 +27,4 @@ Bản chính: mốc = ngày deploy LG-3 (16/11) → chỉ đợt có hạn từ 
 
 ## KHÁC (có lý do)
 - **KHÁC-1** Panel Phối hợp SOS mở từ hồ sơ là panel CHUNG của Công việc (cả lớp, em đang xem lên đầu, tô nhấn) — không làm panel riêng cho một em (một kiểu mở, một panel).
-- **KHÁC-2** Dòng "Báo cáo PH quá hạn" rời sau hạn + 30 ngày (cửa sổ đọc chung với việc Admin "Xuất báo cáo PH") — nới nếu chủ SP muốn nhắc lâu hơn.
+- **KHÁC-2** Dòng "Báo cáo PH quá hạn" giữ tới khi lớp đủ, QL / Admin chọn "Không báo cáo đợt này", hoặc lớp kết thúc (rà #1788 — không trần ngày).
