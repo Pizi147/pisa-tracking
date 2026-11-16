@@ -28,7 +28,14 @@ onInvalidate((prefix) => {
   for (const k of [...dangBay.keys()]) if (prefix === null || k.startsWith(prefix)) dangBay.delete(k);
   for (const k of [...daXem.keys()]) if (prefix === null || k.startsWith(prefix)) daXem.delete(k);
 });
-const conMoi = (path: string) => { const x = daXem.get(path); return !!x && Date.now() - x.luc < MOI_MS; };
+/**
+ * AUDIT-1611 BADGE-NHE (PTA 17/11, phương án C): `/my-work` (badge, Công việc, HV & Lớp, trang đầu GV, hồ sơ lớp) — bản đã nạp dùng lại 5 phút ở mọi khối
+ * mới gắn (trước 10 s: mỗi lần mở trang một lần dựng đủ việc; QL nhiều chi nhánh ~4–5 nghìn dòng / lần). Thao tác của chính mình vẫn vô hiệu NGAY (bản bị xoá,
+ * khối đang mở tải lại); việc người khác vừa giao hiện chậm tối đa 5 phút (badge còn tải lại khi đổi trang / quay lại tab sau ≥ 5 phút — `henTaiLaiKhiCu`).
+ */
+export const MOI_MY_WORK_MS = 5 * 60_000;
+const laMyWork = (path: string) => path === '/my-work' || path.startsWith('/my-work?');
+const conMoi = (path: string) => { const x = daXem.get(path); return !!x && Date.now() - x.luc < (laMyWork(path) ? MOI_MY_WORK_MS : MOI_MS); };
 /** GIAM-COMPUTE: hook `chiNghe` nhận mọi bản mới của đường mình — khối khác tải cùng đường thì hook này có luôn, không gọi thêm. */
 const ngheBan = new Map<string, Set<(d: unknown) => void>>();
 function nhoBanXem(path: string, d: unknown) {
@@ -47,9 +54,11 @@ export function ngheBanMoi(path: string, f: (d: unknown) => void): () => void {
  * GIAM-COMPUTE (badge `/my-work`, chủ SP duyệt 11/11 #1320): `cu()` đánh dấu bản đang hiện đã cũ → `taiLai` MỘT lần khi `doiTrang()`, hoặc khi bản đã
  * ≥ `choMs` (tính từ `coBan()` gần nhất) VÀ tab đang hiện (tab ẩn → chờ tới lúc hiện). `coBan()`: bản mới đã về → hết cũ, bỏ hẹn. `ngay()`: tải lại ngay.
  */
-export function henTaiLaiKhiCu(taiLai: () => void, choMs = 60_000) {
+export function henTaiLaiKhiCu(taiLai: () => void, choMs = 60_000, hetMs = Number.POSITIVE_INFINITY) {
   let cu = false;
   let luc = Date.now();
+  /* BADGE-NHE: bản đã ≥ `hetMs` thì đổi trang / quay lại tab (ẩn ≥ `hetMs`) cũng tải lại — người để máy lâu vẫn thấy việc mới người khác giao. */
+  let anLuc: number | null = null;
   let hen: ReturnType<typeof setTimeout> | null = null;
   let choHien = false;
   /* Qua `globalThis`: tệp này còn được dựng cho phép kiểm máy chủ (không có kiểu DOM, không có `document`). */
@@ -60,6 +69,12 @@ export function henTaiLaiKhiCu(taiLai: () => void, choMs = 60_000) {
   const boChoHien = () => { if (choHien) { layDoc()?.removeEventListener('visibilitychange', khiHien); choHien = false; } };
   const bo = () => { if (hen) { clearTimeout(hen); hen = null; } boChoHien(); };
   const chay = () => { cu = false; bo(); taiLai(); };
+  const doiHien = () => {
+    if (an()) { anLuc = Date.now(); return; }
+    if (anLuc !== null && Date.now() - anLuc >= hetMs) chay();
+    anLuc = null;
+  };
+  if (Number.isFinite(hetMs)) layDoc()?.addEventListener('visibilitychange', doiHien);
   const toiHen = () => {
     hen = null;
     if (!cu) return;
@@ -68,10 +83,12 @@ export function henTaiLaiKhiCu(taiLai: () => void, choMs = 60_000) {
   };
   return {
     cu() { cu = true; if (!hen && !choHien) hen = setTimeout(toiHen, Math.max(0, luc + choMs - Date.now())); },
-    doiTrang() { if (cu) chay(); },
+    doiTrang() { if (cu || Date.now() - luc >= hetMs) chay(); },
     coBan() { cu = false; luc = Date.now(); bo(); },
     ngay: chay,
-    huy: bo,
+    /** BADGE-NHE: chuông mở — bản đã ≥ `ms` thì tải danh sách mới (số trên chuông vẫn là bản đang có tới khi bản mới về). */
+    moiNeuCu(ms: number) { if (Date.now() - luc >= ms) chay(); },
+    huy() { bo(); layDoc()?.removeEventListener('visibilitychange', doiHien); },
   };
 }
 

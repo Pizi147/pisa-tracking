@@ -104,7 +104,7 @@ export async function runPrCt2Tests(t: YThucTestKit) {
   const sosAuto: any = await import('../cases/sosAuto.ts');
   const mywork: any = await import('../worklist/mywork.ts');
   const yc: any = await import('../duyet/yeuCau.ts');
-  const { loadPrincipal } = await import('../permissions.ts');
+  const { loadPrincipal, lopCuXem } = await import('../permissions.ts');
   const { createApp } = await import('../app.ts');
   /** Thêm em vào lớp thường, xếp bài, nhập điểm Progress Test /20 → id em. */
   const emTruot = (ten: string, lop: string, diem: Record<string, number>) => {
@@ -566,13 +566,15 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     const plan = all(`EXPLAIN QUERY PLAN SELECT ${perm.COT_PRINCIPAL} FROM users u WHERE u.id = ?`, GV[1]).map((r) => r.detail).join(' | ');
     assert(/idx_iv_nguoi_day_bo_tro/.test(plan), `câu phiên không đi chỉ mục: ${plan}`);
   });
-  check('GVCU-4 · hết PA (ghi Mini Test) → hết quyền tạm: Case + hồ sơ lớp mới 403', () => {
+  check('GVCU-4 · hết PA (ghi Mini Test) → hết quyền tạm: hồ sơ lớp mới 403; Case chỉ còn xem theo N48 (GV lớp cũ, ≤ 30 ngày từ ngày chuyển)', () => {
     const f = daChuyen();
     vao(f.mt.ngay_du_kien, () => {
       assert(ma(() => ck.ghiMiniTest(loadPrincipal(GV[1]), f.mt.id, { tyLe: 80, ngay: f.mt.ngay_du_kien })) === 200, 'GV cũ ghi Mini Test');
       const gv = loadPrincipal(GV[1]);
       assert(!gv.boTro?.some((b: any) => b.studentId === f.sid), `còn quyền tạm: ${JSON.stringify(gv.boTro)}`);
-      assert(ma(() => cases.caseDetail(gv, f.w.case_id)) === 403 && ma(() => classesSvc.classOverview(gv, f.dich)) === 403, 'hết PA vẫn xem');
+      /* N48 (AU-VIEC-3): GV lớp cũ xem chỉ đọc hồ sơ / Case của em 30 ngày từ ngày chuyển — ngoài khoảng đó, hết PA là hết xem như trước. */
+      const lopCu = !!lopCuXem(gv, f.sid);
+      assert(ma(() => cases.caseDetail(gv, f.w.case_id)) === (lopCu ? 200 : 403) && ma(() => classesSvc.classOverview(gv, f.dich)) === 403, `hết PA: Case ${lopCu ? 'chỉ xem (N48)' : '403'}, lớp mới 403`);
     });
   });
 

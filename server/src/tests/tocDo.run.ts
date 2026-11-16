@@ -29,7 +29,7 @@ const { createSession } = await import('../auth.ts');
 const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, soDongSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
-const { loadPrincipal, can, napTruocPhamVi, scopeFor } = await import('../permissions.ts');
+const { loadPrincipal, can, napTruocPhamVi, scopeFor, boLopCu } = await import('../permissions.ts');
 const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
@@ -561,7 +561,8 @@ function thamChieuCaseIds(
     .all(...params) as any[];
   const ids = new Set<number>();
   for (const r of rows) {
-    if (can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id })) ids.add(r.id as number);
+    /* N48 (AU-VIEC-3): danh sách Case không gồm em lớp cũ (quyền tạm chỉ mở hồ sơ một em) — cùng luật `listCases` (`boLopCu`). */
+    if (can(boLopCu(p), PERMISSIONS.ATTEMPT_VIEW, { classId: r.eff_class_id, studentId: r.eff_student_id })) ids.add(r.id as number);
   }
   return ids;
 }

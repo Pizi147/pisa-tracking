@@ -5,7 +5,7 @@ import { ASSESSED_SKILLS, BASELINE_SOURCE_LABEL, CYCLE_OUTCOME_LABEL, ENTRY_SKIL
 import { outcomeGroup } from '../cases/effectiveness.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays, notFound } from '../util.ts';
-import { can, require_, vaiVoiEm, type Principal } from '../permissions.ts';
+import { can, chiXemLopCu, require_, vaiVoiEm, type Principal } from '../permissions.ts';
 import { diemCuaLuot, entryBandsOf, kckCuaLuot, routeCuaLuot, scoresOf, skipsOf, tuanVangCu } from '../fasttrack/attempts.ts';
 import { assessedBands, boTaskTrong, evaluateAttempt, expectationFor } from '../fasttrack/scoring.ts';
 import { evaluateRegular, isRatioClass, nguongDatLop, isRatioCycle, programmeByCode, programmeCodeOfCycle, programmeOfClass } from '../normal/regular.ts';
@@ -1106,6 +1106,14 @@ export function studentProfile(p: Principal, studentId: number, wantCycleId?: nu
         coTheKetLuan: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
         /* PR-VAI-b (V1/K3-47): dải "n yêu cầu chờ bạn duyệt" — cùng quyền hộp Chờ duyệt (`P_DUYET` = `request.approve`); web chỉ gọi `/yeu-cau?studentId=` khi có. */
         coTheDuyet: can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
+        /* N48 (③ K9f): người xem vào CHỈ nhờ ngoại lệ GV / GVCN lớp cũ (30 ngày từ ngày rời) — nhãn "Lớp cũ · chỉ xem" + dải "tới bao giờ · ai làm"; mọi quyền ghi đã tắt
+           theo lớp đang học (máy chủ). Lấy từ ghi danh đã đọc (0 câu, trừ một câu `lopCuXem` khi quyền thật không cho). */
+        lopCu: (() => {
+          const x = chiXemLopCu(p, studentId, lopDangHoc);
+          if (!x) return null;
+          const cu = enrollments.find((e) => e.class_id === x.lopId && (e.status === 'transferred' || e.status === 'completed'));
+          return { den: x.den, lopCu: cu?.class_code ?? null, tu: cu?.ended_at ? String(cu.ended_at).slice(0, 10) : null, lopMoi: current?.class_code ?? null, gvcn: gvcnHienTai };
+        })(),
       };
     })(),
     /** PR-VAI-b: đầu hồ sơ "hiểu trong 30 giây" (mockup 24) — em là ai · em đang thế nào · bốn ô · việc của bạn. */

@@ -47,6 +47,8 @@ export default function ClassOverviewPage() {
   const periods = usePeriods();
   const [periodId, setPeriodId] = useState<number | null>(null);
   const [viec, setViec] = useState<ViecDauTrang | null>(null);
+  /** AUDIT-1611 B3-11: ô phân công mở sẵn khi bấm "Đổi" ở dải GV đầu trang. */
+  const [oPc, setOPc] = useState<string | null>(null);
   /** P9a: panel Xét lại lộ trình — `studentId` null = cả lớp (việc), số = một em (chip trên dòng). */
   const [xetLai, setXetLai] = useState<{ studentId: number | null } | null>(null);
   const [moChon, setMoChon] = useState(false);
@@ -160,7 +162,7 @@ export default function ClassOverviewPage() {
   const vBc = bcDu && bcDu === bc?.dot ? [] : laViec.filter((x) => x.group === 'bao_cao_ph');
   const badgeTabLop = (k: TabHoSoLop) => (k === 'y-thuc' ? soTab(data.canhBaoYThuc ?? 0, laViec.filter((x) => tabCuaViec(x) === 'y-thuc' && x.urgency === 'overdue').length)
     : k === 'bao-cao-ph' ? soTab(vBc.length, vBc.filter((x) => x.urgency === 'overdue').length) : {});
-  const dong = () => setViec(null);
+  const dong = () => { setViec(null); setOPc(null); };
   const bgLenh = Number(params.get('ban-giao')) || 0;
   /* P9b: lớp thường — ⋯ Cuối khoá… / dải nhắc / việc mở trang con Cuối khoá (G5: bảng rộng nhiều cột), không panel. FT không còn Chuyển tiếp lớp (R5.3). */
   const moViec = (v: ViecDauTrang) => {
@@ -182,7 +184,7 @@ export default function ClassOverviewPage() {
   return (
     <XetLaiCtx.Provider value={ctxXetLai}>
     <div className="page space-y-4 max-sm:space-y-3 max-sm:pb-[100px]">
-      <DauTrangLop data={data} onViec={moViec} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
+      <DauTrangLop data={data} onViec={moViec} onDoiGv={(k) => { setOPc(k); moViec('phan-cong'); }} thanhViec={!daKetThuc && <ThanhViecLop classId={data.id} classCode={data.code} onDoi={xong} />}
         onBanGiao={(o) => { setBg({ mon: o.mon ?? null, lenhId: null, lop: o.lop ?? null }); setViec('ban-giao'); }} onBanGiaoGv={setBgGv} />
 
       <HangTab panelId="ho-so-lop-vung" ariaLabel={t('Hồ sơ lớp')} value={tab}
@@ -217,7 +219,7 @@ export default function ClassOverviewPage() {
       {bgLenh > 0 && <BanGiaoPanel docLenh={bgLenh} onClose={() => doiThamSo({ 'ban-giao': null })} onDone={() => {}} />}
       {bgGv !== null && <BanGiaoGvPanel id={bgGv} onClose={() => setBgGv(null)} onDone={xong} />}
       {(viec === 'thong-tin' || viec === 'phan-cong') && (
-        <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong}
+        <ThongTinLopPanel lop={data} phan={viec === 'phan-cong' ? 'phan-cong' : null} onClose={dong} onDone={xong} oMo={viec === 'phan-cong' ? oPc : null}
           onChuyenTiep={thuong && data.viewer.coTheChuyenTiep ? () => moViec('chuyen-tiep') : undefined} />
       )}
       {viec === 'xuat-mt' && (

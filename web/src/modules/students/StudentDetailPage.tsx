@@ -217,6 +217,8 @@ export default function StudentDetailPage() {
     if (!o?.paId || o.viec) cuonOnDinh(() => document.getElementById(`case-${caseId}`), null);
   };
 
+  /** N48: người xem vào hồ sơ CHỈ nhờ ngoại lệ lớp cũ (máy chủ `chiXemLopCu`) — nhãn + dải chỉ xem; quyền ghi máy chủ đã tắt. */
+  const lopCu = data.viewer?.lopCu as { den: string; lopCu: string | null; tu: string | null; lopMoi: string | null; gvcn: string | null } | null | undefined;
   /* GD-7: em của hồ sơ — điền sẵn cho "+ Task" và panel việc. */
   const emHs = { id: data.id, ten: data.fullName, lopId: data.currentClass?.id ?? tt?.lopId ?? null, lop: data.currentClass?.code ?? tt?.lop ?? null };
   const dsViec: Viec[] = data.dauHoSo?.viec?.cuaBan ?? [];
@@ -296,6 +298,8 @@ export default function StudentDetailPage() {
                 : data.status === 'finished' && data.finishedAt ? <Info>{t('Kết thúc học {ngay}', { ngay: ngay(data.finishedAt, homNay) })}</Info>
                   : data.status !== 'active' && <Info>{studentStatusLabel(data.status)}</Info>}
               {data.archivedAt && data.status === 'active' && <Info>{t('Đã lưu trữ')}</Info>}
+              {/* N48 (③ K9f): GV / GVCN lớp cũ xem chỉ đọc 30 ngày từ ngày em rời lớp. */}
+              {lopCu && <Info>{t('Lớp cũ · chỉ xem')}</Info>}
               {/* OV-13q: "Đã thi · chờ kết quả · hạn …" / "Đã xong · chờ bước tiếp · hạn …" thay nhãn "Đã xong" khi còn việc sau thi. */}
               {data.sauThi ? <NhanSauThi s={data.sauThi} /> : bt && (!bt.chon || bt.hen) && <Nhan tone="ok">{CHU_DA_XONG}</Nhan>}
               {data.sauThi?.coTheGiaHan && (
@@ -327,6 +331,9 @@ export default function StudentDetailPage() {
               })()}
             </div>
           </div>
+          {lopCu && <DaiChiXem>{lopCu.gvcn
+            ? t('Em chuyển sang {lop} từ {tu} · bạn xem được tới {den} · việc của em do GV lớp {lop} và GVCN {gvcn} làm', { lop: lopCu.lopMoi ?? '—', tu: lopCu.tu ? ngay(lopCu.tu, homNay) : '—', den: ngay(lopCu.den, homNay), gvcn: lopCu.gvcn })
+            : t('Em chuyển sang {lop} từ {tu} · bạn xem được tới {den} · việc của em do GV lớp {lop} làm', { lop: lopCu.lopMoi ?? '—', tu: lopCu.tu ? ngay(lopCu.tu, homNay) : '—', den: ngay(lopCu.den, homNay) })}</DaiChiXem>}
           {data.archivedAt ? <TomTatLuuTru studentId={data.id} target={cy?.target ?? null} kck={!!cy?.khongCamKet} ketThuc={data.status === 'finished' ? null : data.finishedAt ?? null} />
             : <DongThongTin tt={data.dauHoSo.thongTin} tvv={data.tvv?.ten ?? data.consultantName} mon={cy?.monHoc ?? null}
               /* L6 / 2.3 (chủ SP 13/11) · ③ K5: GV lớp (không sửa thẳng Target) — nhắc + "Đề xuất sửa" ở ô Target, thay việc "Điền Target" (không vào số việc). */

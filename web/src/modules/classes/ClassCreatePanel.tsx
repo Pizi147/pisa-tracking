@@ -277,12 +277,14 @@ export function NutTachFou({ fou, chiXem }: { fou: ReturnType<typeof useTachFou>
  * lỗi một dòng dưới ô. `nhanTrong` thay chữ mục rỗng (dữ liệu cũ nhiều người một ô hiện cả tên).
  * PR-O-CHON (chủ sản phẩm 07/10): ô là `ChonNguoi` kiểu `ds` — gõ tên rồi chọn ở danh sách bên dưới, đúng danh sách `nguoi`.
  */
-export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, chiXem, chuongTrinh = null }: {
+export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, chiXem, chuongTrinh = null, oMo = null }: {
   oList: OPhanCong[]; chon: Record<string, number | ''>; onChon: (khoa: string, v: number | '') => void; oId: (khoa: string) => string;
   nguoi: { id: number; name: string; classCount: number; skills?: string[] }[];
   loi: (khoa: string) => string | null; nhanTrong?: (khoa: string) => string | undefined; chiXem?: boolean;
   /** Mã chương trình lớp — gợi ý theo `kyNangGoiY` (ô W/G+V → người khai W1/W2; ô P → S). */
   chuongTrinh?: string | null;
+  /** AUDIT-1611 B3-11: ô vừa bấm "Đổi" ở dải GV hồ sơ lớp — focus + mở danh sách chọn ngay. */
+  oMo?: string | null;
 }) {
   /* MH6, T55, Q7: GỢI Ý = người khai kỹ năng hợp ô đứng trước + dòng phụ "dạy được …"; KHÔNG tự điền. Ô GVCN không gợi ý. */
   const hop = (o: OPhanCong, t: { skills?: string[] }) => {
@@ -298,7 +300,7 @@ export function LuoiPhanCong({ oList, chon, onChon, nguoi, loi, oId, nhanTrong, 
         return (
           <div key={o.khoa} className="contents">
             <label htmlFor={oId(o.khoa)} className="pt-3 text-xs font-bold text-slate-200 max-sm:pt-4">{o.nhan}</label>
-            <ChonNguoi id={oId(o.khoa)} nhom="giao_vien" choToi={false} choNgoai={false} disabled={chiXem} invalid={!!l}
+            <ChonNguoi id={oId(o.khoa)} nhom="giao_vien" choToi={false} choNgoai={false} disabled={chiXem} invalid={!!l} tuMo={!chiXem && o.khoa === oMo}
               ariaLabel={t('{nhan}: chọn giáo viên', { nhan: o.nhan })} choTrong={t('— Chưa chọn —')} macDinhTrong={nhanTrong?.(o.khoa)}
               ds={xep(o).map((t) => ({ id: t.id, ten: t.name, phu: phuGv(t, nhanDayDuoc(chuongTrinh, o, t.skills ?? [])) }))}
               value={chonNguoi(chon[o.khoa], nguoi, (t) => phuGv(t, nhanDayDuoc(chuongTrinh, o, t.skills ?? [])))}
