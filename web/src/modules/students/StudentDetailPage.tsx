@@ -364,12 +364,12 @@ export default function StudentDetailPage() {
         Tab nhớ qua địa chỉ `?tab=` (A6) để Việc cần làm / hồ sơ lớp mở thẳng đúng tab — không nhớ bằng localStorage.
         Không có lộ trình thì chỉ tab Học thuật trống; tab Ý thức và Hành trình vẫn mở được (J8).
       */}
-      <HangTab panelId="hshv-vung" ariaLabel={t('Nội dung hồ sơ học viên')} value={tab} onChange={setTab}
+      <HangTab className="max-sm:[&>[role=tab]]:!shrink max-sm:[&>[role=tab]]:flex-1 max-sm:[&>[role=tab]]:justify-center max-sm:[&>[role=tab]]:!whitespace-normal max-sm:[&>[role=tab]]:text-center" panelId="hshv-vung" ariaLabel={t('Nội dung hồ sơ học viên')} value={tab} onChange={setTab}
         tabs={[
           { key: 'hoc-thuat', label: HO_SO_TAB_LABEL['hoc-thuat'] },
           /* GD-7 (③ K1 / K4, V22): bỏ chấm cảnh báo ở tab — việc Ý thức của người xem đã ở "Việc cần làm" (đỏ khi quá hạn). */
           { key: 'y-thuc', label: HO_SO_TAB_LABEL['y-thuc'] },
-          { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'], ngan: t('Lộ trình') },   /* AU-GON A3-13: 375 ba tab vừa hàng, không cắt mép phải */
+          { key: 'hanh-trinh', label: HO_SO_TAB_LABEL['hanh-trinh'] },
         ]} />
 
       {/* DON-NHO-3 (TAB-A11Y): vùng tab cùng space-y-4 của trang → khoảng cách không đổi. */}
