@@ -29,7 +29,7 @@ export const viecLopDayDuKhiKiem = { bat: false };
  * `cuaLop` không mất việc nào; mọi khối khác của `myWork` y như cũ. `chiToi` (`?chi=toi`, web chỉ đọc `cuaToi`) → `theoEm = {}`.
  * `soQuaHanLop` = badge "n việc quá hạn" đầu hồ sơ lớp — dòng việc quá hạn gắn lớp (`demDongViec`, S11), trên `items` của `myWork` trước lọc;
  * GV chỉ `mine`); vai không có badge `qua-han` (TVV / CX / Admin — `badgeHienTheoVai`) → `null`.
- * P1 G2-03 (rà 11/11): `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (`gopViecTheoLop` → `dongNhinThay`, bỏ chấm chéo; dòng gộp không kèm `con`) —
+ * P1 G2-03 (rà 11/11): `dongToi` = DÒNG hiển thị của `cuaToi` như Công việc (`gopViecTheoLop` → `dongNhinThay`, bỏ chấm chéo; dòng gộp kèm `con` — AUDIT-1611 P1-01) —
  * dải "Việc của tôi" vẽ ô + đếm từ đây nên số = `demDongViec` ("Cả lớp" = 1), không lớn hơn số tổng của Công việc. Không thêm câu.
  */
 export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: boolean } = {}):
@@ -62,7 +62,9 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
   const gon = ({ con: _c, emIds: _e, ...it }: WorkItem): ViecEmLop => it;
   if (!o.chiToi) for (const it of items) (theoEm[it.studentId!] ??= []).push(gon(it));
   const toi = [...lopToi, ...items.filter((it) => it.mine)].sort((a, b) => hang(a) - hang(b) || (a.due ?? '9').localeCompare(b.due ?? '9'));
-  const dongToi = dongNhinThay(gopViecTheoLop(toi, nhanNhomViec)).filter((d) => !laViecChamCheo(d)).map((d) => gon(d as WorkItem));
+  /* AUDIT-1611 P1-01: dòng gộp GIỮ `con` (lá đã gọn) — chip dải đếm DÒNG như "Lớp của tôi" (`chipViecLop` trên dòng), panel vẫn đi từng em "i / n". */
+  const dongToi = dongNhinThay(gopViecTheoLop(toi, nhanNhomViec)).filter((d) => !laViecChamCheo(d))
+    .map((d) => { const { emIds: _e, con, ...x } = d as WorkItem; return (con?.length ? { ...x, con: con.map(gon) } : x) as ViecEmLop; });
   return { theoEm, cuaToi: toi.map(gon), dongToi, soQuaHanLop };
 }
 
