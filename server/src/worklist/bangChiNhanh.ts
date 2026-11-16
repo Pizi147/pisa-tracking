@@ -123,20 +123,7 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
       if (sMau.has(sid)) t.duDuLieuMau.add(sid);
     }
   }
-  /*
-   * AUDIT-1611 P1-06 (+ B2-14): "Case chưa có PA" = ngoặc "Chưa có PA" của panel (Chờ mô tả + Chờ chọn PA — bỏ nhóm `paXong` "Chờ kết quả cuối", cùng
-   * `buocCuaDong`), chỉ em ĐANG HỌC (em Tạm dừng: Case giữ nguyên nhưng không đếm — như SOS, HV & Lớp, Công việc). "Case đang mở" cùng lọc em đang học.
-   * Trạng thái em đọc chung câu em-của-Case đã có (thêm Case đang mở vào cùng câu).
-   */
-  const emCase = new Map<number, number>();
-  const khongHoc = new Set<number>();
-  theoLoJson([...new Set([...caseMo.ids, ...chot.ids])], (json) => {
-    for (const r of conn.prepare(`SELECT sc.id, sc.student_id, (${HV_DANG_HOC_SQL('s')}) AS hoc FROM sos_cases sc JOIN students s ON s.id = sc.student_id WHERE sc.id IN (${DS_JSON})`)
-      .all(json) as any[]) { emCase.set(r.id, r.student_id); if (!r.hoc) khongHoc.add(r.id); }
-  });
-  const paXong = new Set(chot.byKind?.paXong ?? []);
-  const caseMoIds = caseMo.ids.filter((id) => !khongHoc.has(id));
-  const chotIds = chot.ids.filter((id) => !khongHoc.has(id) && !paXong.has(id));
+  const { emCase, caseMoIds, chotIds } = tapCaseQl(caseMo.ids, chot);
   const lopCuaCase = lopCuaTap('case', [...new Set([...caseMo.ids, ...thieu.ids, ...chot.ids])]);
   for (const id of caseMoIds) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.caseMo.add(id); }
   for (const id of thieu.ids) { const l = lopCuaCase.get(id)?.classId; if (l && tapLop.has(l)) tapLop.get(l)!.thieuPa.add(id); }
@@ -193,6 +180,22 @@ function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY
   const giu = new Set(chotIds);
   const phanRa = f.chuY ? Object.fromEntries(Object.entries(chot.byKind ?? {}).map(([k, v]) => [k, v.filter((x) => giu.has(x)).length])) : null;
   return { cheDo, hang, hangConLai, tongTap, tenChiNhanh, branchId, phanRa };
+}
+
+/*
+ * AUDIT-1611 P1-06 (+ B2-14): "Case chưa có PA" = ngoặc "Chưa có PA" của panel (Chờ mô tả + Chờ chọn PA — bỏ nhóm `paXong` "Chờ kết quả cuối", cùng
+ * `buocCuaDong`), chỉ em ĐANG HỌC (em Tạm dừng: Case giữ nguyên nhưng không đếm — như SOS, HV & Lớp, Công việc). "Case đang mở" cùng lọc em đang học.
+ * MỘT hàm cho Tổng quan (bảng chi nhánh / lớp) và Báo cáo Phân tích. Một câu: em của Case + trạng thái em.
+ */
+export function tapCaseQl(caseMo: readonly number[], chot: { ids: number[]; byKind?: Record<string, number[]> }) {
+  const emCase = new Map<number, number>();
+  const khongHoc = new Set<number>();
+  theoLoJson([...new Set([...caseMo, ...chot.ids])], (json) => {
+    for (const r of db().prepare(`SELECT sc.id, sc.student_id, (${HV_DANG_HOC_SQL('s')}) AS hoc FROM sos_cases sc JOIN students s ON s.id = sc.student_id WHERE sc.id IN (${DS_JSON})`)
+      .all(json) as any[]) { emCase.set(r.id, r.student_id); if (!r.hoc) khongHoc.add(r.id); }
+  });
+  const paXong = new Set(chot.byKind?.paXong ?? []);
+  return { emCase, caseMoIds: caseMo.filter((id) => !khongHoc.has(id)), chotIds: chot.ids.filter((id) => !khongHoc.has(id) && !paXong.has(id)) };
 }
 
 /** `branchId` là chi nhánh ĐÃ GIẢI (đã chọn, hoặc QL một chi nhánh được server tự khoanh) — web dùng nó cho bảng Theo giáo viên. */
