@@ -19,6 +19,8 @@ import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
 /** Việc của em theo người — cùng kiểu `ViecHocVien` ở `server/src/students/viecHocVien.ts`. */
 export type Viec = {
   key: string; loai: string; chu: string; khoa?: string; bien?: Bien; kyNang: string | null; caseId: number | null; paId: number | null;
+  /** P1-04: id việc Báo PH — panel Ghi báo PH. */
+  viecId?: number;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
   /** GD-7a (V22): độ gấp của hạn — màu viên hạn. */
   gap: 'qua-han' | 'gan' | 'chua' | null;
@@ -193,6 +195,8 @@ const NHOM_PANEL: Partial<Record<string, string>> = {
   'de-ra-pa': 'no_plan', 'xac-nhan-pa': 'xac_nhan_pa', 'ghi-ket-qua': 'ghi_ket_qua_pa', 'mini-test': 'mini_test',
   'y-thuc': 'yt_xu_ly', 'yt-xem': 'yt_xem', 'yt-thuc-hien': 'yt_thuc_hien', 'nhap-diem': 'score', 'tinh-hinh': 'yt_hoi_tinh_hinh',
   'buoc-tiep': 'buoc_tiep', 'thi-that': 'thi_that',
+  /* P1-04: Phối hợp SOS · Báo PH (vi phạm / sau Meeting CX) · Bổ sung hồ sơ — cùng panel Công việc, chỉ em này. */
+  'phoi-hop-sos': 'phoi_hop_sos', 'phoi-hop-tvv': 'phoi_hop_tvv', 'bao-ph-yt': 'bao_ph_yt', 'bo-sung': 'bo_sung_ho_so',
 };
 
 /**
@@ -212,7 +216,10 @@ export function viecSangPanel(x: Viec, em: { id: number; ten: string; lopId: num
     tieuDe: chuViec(x), ownerId: x.nguoi.id, owner: x.nguoi.ten, mine: x.cuaBan, due: x.han, statusLabel: '',
     contextLabel: null, count: null,
     ...(nd ? { luot: nd.luot, kn: nd.kns[0], kns: nd.kns, tuanThi: nd.tuanThi, periodId: nd.periodId, kind: nd.kind, soBai: nd.soBai ?? undefined, emIds: [em.id] } : {}),
-    ...(m.loai === 'tinh-hinh' ? { viecId: m.viecId } : {}),
+    ...(m.loai === 'tinh-hinh' ? { viecId: m.viecId } : x.viecId ? { viecId: x.viecId } : {}),
+    /* P1-04: Phối hợp SOS — khoá việc nằm trong khoá dòng (`phoi_hop_sos:{lớp}:{việc}`); Bổ sung hồ sơ — panel lần lượt chỉ em này. */
+    ...(group === 'phoi_hop_sos' ? { phoiHop: { kind: '', khoa: x.key.split(':').slice(2).join(':') } } : {}),
+    ...(group === 'bo_sung_ho_so' ? { emIds: [em.id] } : {}),
   };
 }
 
