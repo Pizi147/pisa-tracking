@@ -20,4 +20,13 @@ Không mockup mới (audit: "không cần mockup"); ảnh cặp **trước (main
 
 ## Ảnh
 
-`cap-*.png` — trước (main) | sau (PR). Xem bảng ảnh ở mô tả PR.
+Trước (main 3f33ad1b6) | sau (PR), demo, tối:
+
+| Ảnh | Nội dung |
+|---|---|
+| `cap-themhv-1440.png` · `cap-themhv-375.png` | N47: + Học viên lớp MB FT 105 (tuần 8) — mặc định W5 JUL (khai giảng) → W3 SEP (tuần này) |
+| `cap-lopmoi-1440.png` · `cap-lopmoi-375.png` | B3-17: + Lớp mới, chọn GVCN → ô L / R / W2 GV dạy được điền sẵn (trước: chặn "GVCN phải dạy ít nhất một kỹ năng") |
+| `cap-ck-molop-1440.png` · `cap-ck-molop-375.png` | B3-13: Cuối khoá MB FOU 21, nhóm Lên BE › + Mở lớp mới… — "cho 0 em" → "cho 3 em" |
+| `cap-suacalop-1440.png` · `cap-suacalop-375.png` | B3-16: Sửa thông tin học viên — thanh áp chung thêm TVV + Target |
+
+P1-16 (đóng hộp sau khi tạo) là luồng — phủ bằng phép kiểm LOP (8b), không chụp.
