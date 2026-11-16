@@ -138,8 +138,9 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
       else if (x === '/my-work' && !vuaTai) invalidate(duong);
     });
   }, [data.id]);
+  const laQl = laVaiQuanLy(session?.roles);
   const bGoc = badgeLop({
-    vai: laVaiQuanLy(session?.roles) ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
+    vai: laQl ? 'ql' : 'gv', needsPlacement: !!s?.needsPlacement, canXepLop: s?.canXepLop ?? 0, missingSkills: s?.missingSkills ?? [],
     soBaiChoCham: s?.needScores ?? 0,
     needScoresTitle: s && s.needScores > 0 ? needScoresText(s.workScope, s.needScores) : null,
     /* GD-6 (XM-2, PTA 14/11): GV không có badge "n việc quá hạn của lớp" — máy chủ đếm việc của chính GV, trùng chip đỏ của Việc cần làm; QL giữ (cả lớp). */
@@ -160,7 +161,10 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const b = { hien: [...b0.hien, ...b0.an.filter((x) => x.key === 'chang')], an: b0.an.filter((x) => x.key !== 'chang') };
   const bamBadge = (x: BadgeLop): (() => void) | null =>
     /* PR-S4F #4: cùng đích với hộp lớp ở Học viên & Lớp — số trên badge = số dòng. */
-    x.key === 'qua-han' ? () => navigate(`/hoc-vien?view=qua-han&classId=${data.id}`)
+    /* AUDIT-1611 P1-07: ô của QL đếm việc của MỌI người ở lớp → đích = Công việc › Tất cả lọc lớp (cùng tập `soQuaHanLop` / `needScores` = bài chờ
+       nhập của lớp ở "Tất cả"); GV giữ đích cũ (việc của mình). */
+    x.key === 'qua-han' ? () => navigate(laQl ? `/cong-viec?nguoi=tat-ca&khung=tat-ca&loc=qua-han&lop=${data.id}` : `/hoc-vien?view=qua-han&classId=${data.id}`)
+      : x.key === 'cham' && laQl && session?.nav?.work ? () => navigate(`/cong-viec?nguoi=tat-ca&khung=tat-ca&nhom=cham-diem&lop=${data.id}`)
       : x.key === 'cham' && session?.nav?.test ? () => navigate(duongLichTest({ classId: data.id }))
       : x.key === 'xep-lop' && data.viewer.coTheChuyenTiep ? () => onViec('chuyen-tiep')
       : x.key === 'cho-duyet' && session?.nav?.workApprove ? () => navigate(`/cong-viec?nhom=duyet&lop=${data.id}`)
