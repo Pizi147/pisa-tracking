@@ -1406,9 +1406,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* LG-11 VI-PHAM-BO-DA-XEM (chủ SP lời 47, 15/11): chụp lại 6 băm (GVCN / GVCN_THUONG toi, QL / QT tat-ca, QT tat-ca cn, QL gvcn) — đổi CÓ CHỦ Ý CHỈ bỏ việc
        `yt_xem` (vi phạm người khác ghi thành tin Cập nhật). Đã so trên bản chép thật 12/11 (33 GV + QL 5 chi nhánh): /my-work lệch CHỈ mất dòng `yt_xem` (30 dòng), câu · dòng đọc giữ.
        QL / QT / GVBM toi, ADMIN, GVS giữ. Trước (main sau #1738): GVCN toi 52f7a5ba99d7eccc, GVCN_THUONG toi 52f7a5ba99d7eccc, QL tat-ca f7752b5bc691561a, QT tat-ca 60e53e557d7832a5, QT tat-ca cn 453a428b04f09064, QL gvcn 9bab38ec2790df06 */
-    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': '0e244af2868788f4', 'GVBM toi': '8c05c3e43fd827f4',
-    'GVCN_THUONG toi': '0e244af2868788f4', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '7de18f10f09e3ba7', 'QT tat-ca': 'ada320e08f4702f9',
-    'QT tat-ca cn': '87f85b45dd8e4ec9', 'QL gvcn': '80509247fdf10e9e', 'GVS toi': '20255e1f890bf1a5',
+    /* XEP-CHAM-TEST (chủ SP 16/11): chụp lại 6 băm — đổi CÓ CHỦ Ý: lớp con (`con`) của dòng gộp Nhập điểm theo thứ tự chấm (`soSanhViecCham`); đã kiểm: trả thứ tự con về
+       `sapViec` thì băm khớp bản cũ (lệch CHỈ thứ tự con). Trước: GVCN toi 0e244af2868788f4, GVCN_THUONG toi 0e244af2868788f4, QL tat-ca 7de18f10f09e3ba7, QT tat-ca ada320e08f4702f9,
+       QT tat-ca cn 87f85b45dd8e4ec9, QL gvcn 80509247fdf10e9e */
+    'QL toi': '09c37684928d6602', 'QT toi': '11db1ca94e232a13', 'GVCN toi': 'a97ea30c5dded10a', 'GVBM toi': '8c05c3e43fd827f4',
+    'GVCN_THUONG toi': 'a97ea30c5dded10a', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '619c2dd041fb9ab6', 'QT tat-ca': '65ba288685cafd3f',
+    'QT tat-ca cn': '7e86d8e45cedaebe', 'QL gvcn': 'e9919e64771e0a57', 'GVS toi': '20255e1f890bf1a5',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

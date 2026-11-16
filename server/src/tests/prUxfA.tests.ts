@@ -375,7 +375,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(no && no.quaHan, `dòng Nợ của X quá hạn: ${JSON.stringify(no)}`);
   });
 
-  check('UXF-a (6) · Nợ: lớp FT có MT3 ở hai tuần thi → hai dòng, chữ Đợt khác nhau (tuần thi); dòng nhóm theo lớp (soSanhLop); conBai = số bài', () => {
+  check('UXF-a (6) · Nợ: lớp FT có MT3 ở hai tuần thi → hai dòng, chữ Đợt khác nhau (tuần thi); dòng nhóm theo lớp (soSanhLopCham); conBai = số bài', () => {
     const tuanA = tuanTruoc(3), tuanB = tuanTruoc(2);   // PR-LT3: khối 1 nhận ô thi từ hai tuần trước (tuần trước ở khối 2)
     const em = [taoHv(LOP_FT, true), taoHv(LOP_FT, true)];
     const luot = [themLuot({ ...em[0], cid: LOP_FT, no: 3, kind: 'mock', tuan: tuanA }), themLuot({ ...em[1], cid: LOP_FT, no: 3, kind: 'mock', tuan: tuanB })];
@@ -386,7 +386,9 @@ export async function runPrUxfATests(t: YThucTestKit) {
     assert(chu[0] !== chu[1] && chu.every((c) => /^MT3 · W\d [A-Z]{3}$/.test(c)), `chữ Đợt: ${chu.join(' | ')}`);
     const soO = (debt.scoreDebtCells(P.admin, TODAY, [MB]) as any[]).filter((c) => luot.includes(c.attemptId)).length;   // rà 11/11 #2: S chéo vào khối 1
     assert(cuaFt.reduce((n, x) => n + x.conBai, 0) === soO, `conBai ${cuaFt.reduce((n, x) => n + x.conBai, 0)} ≠ số bài ${soO}`);
-    for (let i = 1; i < no.length; i++) assert(d.soSanhLop({ code: no[i - 1].classCode }, { code: no[i].classCode }) <= 0, `Nợ không nhóm theo lớp: ${no[i - 1].classCode} › ${no[i].classCode}`);
+    /* XEP-CHAM-TEST (chủ SP 16/11, thay soSanhLop): lớp thường có bài lên đầu → mã lớp số nhỏ trước (`soSanhLopCham`). */
+    const lc = (x: any) => ({ code: x.classCode, thuong: x.kind === 'mt0' || x.mode !== 'ielts_band', coBai: (x.conBai ?? 1) > 0 });
+    for (let i = 1; i < no.length; i++) assert(d.soSanhLopCham(lc(no[i - 1]), lc(no[i])) <= 0, `Nợ không nhóm theo lớp: ${no[i - 1].classCode} › ${no[i].classCode}`);
   });
 
   // ==================================================================== Task 7 · Báo cáo đơn vị: tín hiệu từ sổ chỉ số, đếm đơn vị, tuần đã nộp

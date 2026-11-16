@@ -126,7 +126,8 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
     const nhanLoai = nhan(it.group);
     /* XEP-CHAM-TEST: lớp con của dòng Nhập điểm theo thứ tự chấm (panel nhiều lớp + "Lớp tiếp" đi theo); việc khác theo hạn. */
     const con = [...nhom].sort(it.group === 'score' ? soSanhViecCham : sapViec).map((x) => conCua(x));
-    const dau = con[0];
+    /* Mức gấp của dòng = việc gấp nhất (theo hạn) — không theo việc đứng đầu khi con xếp theo lớp (XEP-CHAM-TEST). */
+    const dau = [...nhom].sort(sapViec)[0];
     /*
      * OV-11c (TE-4, CV-17): MỘT đơn vị mỗi dòng — Nhập điểm đếm "bài" (kỹ năng × em); việc theo em đếm em KHÁC NHAU (một em hai PA vẫn "1 em");
      * còn lại (dòng đã gom sẵn) "việc".
