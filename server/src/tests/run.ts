@@ -9800,6 +9800,9 @@ await runPrQuetTheoKyTests({ check, checkAsync, assert, conn, P, classId } as an
 // ==================================================================== SUA-NHO-QUYEN (Chưa có kỹ năng tính người đang dạy · Sửa thông tin em tạm dừng ở Lưu trữ)
 const { runPrSuaNhoQuyenTests } = bocTep('prSuaNhoQuyen', await import('./prSuaNhoQuyen.tests.ts'));
 await runPrSuaNhoQuyenTests({ check, assert, conn, P, TODAY } as any);
+// ==================================================================== AU-VIEC-3 (N48: GV / GVCN lớp cũ xem hồ sơ chỉ đọc 30 ngày)
+const { runPrAuViecLopCuTests } = bocTep('prAuViecLopCu', await import('./prAuViecLopCu.tests.ts'));
+await runPrAuViecLopCuTests({ check, assert, assertThrows, conn, P, TODAY } as any);
 // ==================================================================== AU-SO gói 2 SO-QL (AUDIT-1611: số của QL cùng nguồn)
 const { runPrAuSoQlTests } = bocTep('prAuSoQl', await import('./prAuSoQl.tests.ts'));
 await runPrAuSoQlTests({ check, assert, assertThrows, conn, P } as any);

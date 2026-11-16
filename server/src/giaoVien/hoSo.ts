@@ -10,7 +10,7 @@ import {
 } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { bangLop, can, loadPrincipal, lopDayDu, scopeFor, type Principal } from '../permissions.ts';
+import { bangLop, boLopCu, can, loadPrincipal, lopDayDu, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { xuLyCaseMany } from '../cases/sosState.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
@@ -210,7 +210,7 @@ export function emBoTroCuaGv(p: Principal, gvId: number): HoSoGv['boTro'] {
       WHERE iv.performer_user_id = ? AND iv.kind = 'bo_tro_mien_phi' AND iv.status IN ('planned', 'started') AND sc.status != 'done'
       ORDER BY s.full_name, iv.id`).all(gvId) as any[];
   const daCo = new Set<number>();
-  return rows.filter((r) => !daCo.has(r.student_id) && daCo.add(r.student_id) && can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }))
+  return rows.filter((r) => !daCo.has(r.student_id) && daCo.add(r.student_id) && can(boLopCu(p), PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }))   // N48: lớp cũ không vào danh sách
     .map((r) => ({ hvId: r.student_id, ten: r.full_name, lopId: r.lop ?? null, lopMa: r.lop ? lopDayDu().get(r.lop)?.code ?? null : null, daDay: r.da_day ?? 0, soBuoi: r.so_buoi ?? null,
       hanMiniTest: r.han_mt ?? null, caseId: r.case_id, paId: r.pa_id }));
 }

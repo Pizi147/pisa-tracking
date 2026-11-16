@@ -1,6 +1,6 @@
 import { db, theoLo } from '../db.ts';
 import { PERMISSIONS, chuanHoaMaLop, soSanhLopLuuTru, tenRoute, type ProgrammeCode } from '../../../shared/domain/index.ts';
-import { can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
+import { boLopCu, can, classScopeSql, napTruocPhamVi, scopeFor, type Principal } from '../permissions.ts';
 
 /**
  * KHU LƯU TRỮ (PR-LT, Q16/Q22 — chủ sản phẩm 23/09) — lớp đã kết thúc · học viên đã lưu trữ,
@@ -117,7 +117,7 @@ export function danhSachLuuTru(p: Principal, f: { branchId?: number | null; q?: 
     /* Chủ SP 12/11: theo lớp học cuối (cùng thứ tự bảng lớp), trong lớp theo tên; em chưa từng học lớp nào cuối cùng. Khoá id để thứ tự ổn định. */
     const lopA = (s: any) => { const l = lopCuoiCua.get(s.id); return l ? sapLop(l) : null; };
     hocVien = archived
-      .filter((s) => can(p, PERMISSIONS.STUDENT_VIEW, { studentId: s.id }))
+      .filter((s) => can(boLopCu(p), PERMISSIONS.STUDENT_VIEW, { studentId: s.id }))   // N48: lớp cũ không vào danh sách Lưu trữ
       .sort((a, b) => {
         const x = lopA(a); const y = lopA(b);
         return (x && y ? soSanhLopLuuTru(x, y) : Number(!x) - Number(!y)) || String(a.full_name).localeCompare(String(b.full_name), 'vi') || a.id - b.id;
