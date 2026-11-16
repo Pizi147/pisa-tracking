@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -11,7 +12,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { LuoiTaoLop, chuongTrinhThuong, dongMoi, type TrangThaiLuoi } from './LuoiTaoLop.tsx';
 import {
   CHO_TAO_PRE_FOU, ENTRY_SKILLS, PROGRAMME_TEMPLATES,
-  chonKhiDoiTach, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
+  chonKhiDoiTach, dienTheoGvcn, chuanHoaMaLop, dsLoi, ghepMaLop, kiemPhanCong, kiemSoLop, kyHieuLop, kyNangGoiY, locSoLop, nhanDayDuoc, oPhanCong, slotsTuO,
   type LoiPhanCong, type LoiTruong, type NguoiChon, type OPhanCong,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -59,6 +60,8 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
   const [cheDo, setCheDo] = useState<'mot' | 'nhieu'>('mot');
   /* Lưới giữ ở đây: đổi qua lại Một lớp / Nhiều lớp không mất dòng đang soạn. */
   const [luoi, setLuoi] = useState<TrangThaiLuoi | null>(null);
+  /* AUDIT-1611 P1-16: máy chủ đã tạo lớp → form hết "đang sửa", không so "trùng" với chính lớp vừa tạo (trước: hộp "Bỏ chữ đang gõ?" chặn chuyển trang). */
+  const [daTao, setDaTao] = useState(false);
 
   const lopDaCo = useApi<{ code: string }[]>(branchId ? `/ref/classes?branchId=${branchId}` : null, [branchId]);
 
@@ -86,7 +89,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
   const slots = ganDuoc ? slotsTuO(oList, chon) : [];
 
   const ma = branch && !kiemSoLop(so) ? ghepMaLop(branch.code, ct, lt, so) : null;
-  const trung = !!ma && (lopDaCo.data ?? []).some((l) => chuanHoaMaLop(l.code) === chuanHoaMaLop(ma));
+  const trung = !daTao && !!ma && (lopDaCo.data ?? []).some((l) => chuanHoaMaLop(l.code) === chuanHoaMaLop(ma));
   const loiPc = kiemPhanCong(ct, kyNang, slots);
   const loiPcO = (khoa: string) => loiTaiO(loiPc, oList, khoa);
 
@@ -120,6 +123,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
       const r = await api.post<{ id: number; code: string }>('/classes', {
         branchId, chuongTrinh: ct, loTrinh: lt, so, startPeriodId, slots, previousClassId: macDinh?.previousClassId,
       });
+      flushSync(() => setDaTao(true));   // P1-16: đánh dấu đã lưu NGAY khi máy chủ trả về, rồi mới tải lại danh sách / đóng / chuyển trang
       invalidate('/classes'); invalidate('/ref/classes'); invalidate('/hoc-vien-lop'); invalidate('/my-work');
       toast.push('ok', t('Đã tạo lớp {code}', { code: r.code }));
       onDone?.(r);
@@ -151,7 +155,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
     <KhungPanel tieuDe={khoa ? t('Mở lớp mới') : t('Tạo lớp mới')} ngCanh={khoa} longTrong={!!khoa} onDong={onClose}
       chan={{
         /* 6c (lỗi 5): số lớp đã gõ hoặc GV đã chọn chưa tạo lớp → ✕ hỏi. */
-        daSua: so !== locSoLop(macDinh?.so ?? '') || Object.values(chon).some((v) => v !== ''),
+        daSua: !daTao && (so !== locSoLop(macDinh?.so ?? '') || Object.values(chon).some((v) => v !== '')),
         chinh: (
           <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={tao}
             disabled={busy || loiPc.length > 0} title={loiPcDau}>{khoa ? t('Mở lớp') : t('Tạo lớp')}</button>
@@ -221,7 +225,7 @@ export function ClassCreatePanel({ onClose, onDone, macDinh, moHoSo, khoa }: {
 
       {ganDuoc && <Khoi tieuDe={t('Phân công')} luat={oList.length === 1 ? undefined : t('Mỗi ô một người. Một người nhận nhiều ô được. Thiếu ô nào vẫn tạo được lớp — bổ sung ở hồ sơ lớp.')}>
         <LuoiPhanCong oList={oList} chon={chon} nguoi={teachers.data ?? []} loi={loiPcO} oId={lf.oId} chuongTrinh={ct}
-          onChon={(khoa, v) => setChon((c) => ({ ...c, [khoa]: v }))} />
+          onChon={(khoa, v) => setChon((c) => dienTheoGvcn(oList, { ...c, [khoa]: v }, khoa, v, teachers.data ?? [], ct))} />
         <NutTachFou fou={fou} />
         {/* AUDIT-1611 A2-27: câu luật vào ⓘ của khối; chỉ giữ câu trạng thái Pre FOU. */}
         {oList.length === 1 && <p className="m-0 text-xs text-slate-500">{t('Lớp Pre FOU không chia môn — GVCN dạy luôn.')}</p>}

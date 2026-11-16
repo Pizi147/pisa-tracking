@@ -84,14 +84,20 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const [luuRoi, setLuuRoi] = useState<Record<number, Partial<Record<Cot, string>>>>({});
   const [luuDo, setLuuDo] = useState<{ cau: string; lyDo: string } | null>(null);
   const [hoiDong, setHoiDong] = useState(false);
-  /* P8 (mockup k5): chọn em → "Áp cho n em" một bộ môn (chỉ em lộ trình FT); ô từng em vẫn bật / tắt riêng. */
+  /* P8 (mockup k5): chọn em → "Áp cho n em" một bộ môn (chỉ em lộ trình FT); ô từng em vẫn bật / tắt riêng.
+     AUDIT-1611 B3-16: cùng thanh có TVV (mọi em) và Target (em có lộ trình, khi được đổi Target) — mỗi ô một nút "Áp cho n em". */
   const [chon, setChon] = useState<Set<number>>(new Set());
   const [apMon, setApMon] = useState<string[] | null>(null);
+  const [apTvv, setApTvv] = useState<number | null>(null);
+  const [apTarget, setApTarget] = useState('');
   const lf = useLoiForm();
   const khoa = useRef(moiKhoa());
   const batLuotXem = useRef(taoLuot()).current;
 
   const d = du.data;
+  const coMon = !!d?.coMonHoc && !!d?.coTheDoiMon;
+  const chonFt = (d?.rows ?? []).filter((r) => chon.has(r.studentId) && r.laFt);
+  const chonLoTrinh = (d?.rows ?? []).filter((r) => chon.has(r.studentId) && r.coLoTrinh);
   const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.coMonHoc || c.key !== 'monDangKy') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
   /** Cả cột khoá theo vai — máy chủ kiểm lại (`duocDoiTarget`, `CHI_SUA_THONG_TIN`). */
@@ -224,30 +230,49 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                 </Truong>
               </div>
             )}
-            {d.coMonHoc && d.coTheDoiMon && (
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }} role="group" aria-label={t('Áp môn học cho em đã chọn')}>
-                <span className="text-sm font-semibold tabular-nums text-slate-200">{t('{n} em đã chọn', { n: chon.size })}</span>
-                <NutChon nho chon={chon.size > 0 && chon.size === d.rows.filter((r) => r.laFt).length}
-                  onClick={() => setChon(chon.size === d.rows.filter((r) => r.laFt).length ? new Set() : new Set(d.rows.filter((r) => r.laFt).map((r) => r.studentId)))}>
-                  {t('Chọn tất cả · {n}', { n: d.rows.filter((r) => r.laFt).length })}
-                </NutChon>
-                <span className="flex flex-wrap items-center gap-2"><span className="text-xs text-slate-400">{t('Môn học')}</span><NutMon nho ariaLabel={t('Môn học áp cho em đã chọn')} value={apMon} onChange={setApMon} /></span>
-                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chon.size || apMon?.length === 0}
-                  onClick={() => { for (const sid of chon) datO(sid, 'monDangKy', chuMonO(apMon)); }}>{t('Áp cho {n} em', { n: chon.size })}</button>
-                {chon.size > 0 && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setChon(new Set())}>{t('Bỏ chọn')}</button>}
-              </div>
-            )}
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }} role="group" aria-label={t('Áp chung cho em đã chọn')}>
+              <span className="text-sm font-semibold tabular-nums text-slate-200">{t('{n} em đã chọn', { n: chon.size })}</span>
+              <NutChon nho chon={chon.size > 0 && chon.size === d.rows.length}
+                onClick={() => setChon(chon.size === d.rows.length ? new Set() : new Set(d.rows.map((r) => r.studentId)))}>
+                {t('Chọn tất cả · {n}', { n: d.rows.length })}
+              </NutChon>
+              {coMon && (
+                <span className="flex flex-wrap items-center gap-2" role="group" aria-label={t('Môn học')}>
+                  <span className="text-xs text-slate-400">{t('Môn học')}</span><NutMon nho ariaLabel={t('Môn học áp cho em đã chọn')} value={apMon} onChange={setApMon} />
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chonFt.length || apMon?.length === 0} aria-label={t('Áp môn học cho {n} em', { n: chonFt.length })}
+                    onClick={() => { for (const r of chonFt) datO(r.studentId, 'monDangKy', chuMonO(apMon)); }}>{t('Áp cho {n} em', { n: chonFt.length })}</button>
+                </span>
+              )}
+              <span className="flex flex-wrap items-center gap-2" role="group" aria-label="TVV">
+                <span className="text-xs text-slate-400">TVV</span>
+                <span className="w-44"><ChonNguoi nhom="nhan_vien" choToi={false} choNgoai={false} ds={d.tvv} placeholder={t('Chọn')} ariaLabel={t('TVV áp cho em đã chọn')}
+                  value={apTvv ? { kieu: 'tai_khoan', id: apTvv, ten: d.tvv.find((x) => x.id === apTvv)?.ten ?? `#${apTvv}` } : null}
+                  onChange={(x) => setApTvv(x?.kieu === 'tai_khoan' ? x.id : null)} /></span>
+                <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chon.size || !apTvv} aria-label={t('Áp TVV cho {n} em', { n: chon.size })}
+                  onClick={() => { for (const sid of chon) datO(sid, 'consultantUserId', String(apTvv)); }}>{t('Áp cho {n} em', { n: chon.size })}</button>
+              </span>
+              {d.coTheSuaTarget && (
+                <span className="flex flex-wrap items-center gap-2" role="group" aria-label="Target">
+                  <span className="text-xs text-slate-400">Target</span>
+                  <input className="field w-24 tabular-nums" aria-label={t('Target áp cho em đã chọn')} value={apTarget} autoComplete="off"
+                    onChange={(e) => setApTarget(e.target.value)} onBlur={(e) => setApTarget(chuanOTarget(e.target.value))} />
+                  <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" disabled={!chonLoTrinh.length || !apTarget.trim()} aria-label={t('Áp Target cho {n} em', { n: chonLoTrinh.length })}
+                    onClick={() => { const v = chuanOTarget(apTarget); for (const r of chonLoTrinh) datO(r.studentId, 'target', v); }}>{t('Áp cho {n} em', { n: chonLoTrinh.length })}</button>
+                </span>
+              )}
+              {chon.size > 0 && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0" onClick={() => setChon(new Set())}>{t('Bỏ chọn')}</button>}
+            </div>
             {d.nhapLienHe && <datalist id="quan-he-goi-y-lop">{QUAN_HE_GOI_Y.map((x) => <option key={x} value={x} />)}</datalist>}
             <div className="overflow-x-auto">
               <table className="w-full table-fixed text-sm" style={{ minWidth: cot.reduce((n, c) => n + c.rong, 0) + RONG_LUU_Y }}>
                 <colgroup>
-                  {d.coMonHoc && d.coTheDoiMon && <col style={{ width: 44 }} />}
+                  <col style={{ width: 44 }} />
                   {cot.map((c) => <col key={c.key} style={{ width: c.rong }} />)}
                   <col style={{ width: RONG_LUU_Y }} />
                 </colgroup>
                 <thead>
                   <tr>
-                    {d.coMonHoc && d.coTheDoiMon && <Th><span className="sr-only">{t('Chọn')}</span></Th>}
+                    <Th><span className="sr-only">{t('Chọn')}</span></Th>
                     {cot.map((c) => (
                       <Th key={c.key} align={c.so ? 'right' : 'left'}
                         className={c.key === 'fullName' ? 'sticky-col' : ''}
@@ -265,12 +290,10 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                     const monTom = xem?.monHoc?.find((x) => x.studentId === r.studentId)?.dong ?? [];
                     return (
                       <tr key={r.studentId} style={chon.has(r.studentId) ? { background: 'var(--accent-soft)', boxShadow: 'inset 3px 0 0 var(--accent)' } : undefined}>
-                        {d.coMonHoc && d.coTheDoiMon && (
-                          <td className="td px-1.5 py-1.5 align-top">
-                            <input type="checkbox" className="h-4 w-4 sm:mt-1.5" aria-label={t('Chọn {ten}', { ten: r.fullName })} disabled={!r.laFt} checked={chon.has(r.studentId)}
-                              onChange={(e) => setChon((s) => { const n = new Set(s); if (e.target.checked) n.add(r.studentId); else n.delete(r.studentId); return n; })} />
-                          </td>
-                        )}
+                        <td className="td px-1.5 py-1.5 align-top">
+                          <input type="checkbox" className="h-4 w-4 sm:mt-1.5" aria-label={t('Chọn {ten}', { ten: r.fullName })} checked={chon.has(r.studentId)}
+                            onChange={(e) => setChon((s) => { const n = new Set(s); if (e.target.checked) n.add(r.studentId); else n.delete(r.studentId); return n; })} />
+                        </td>
                         {cot.map((c) => {
                           const v = sua[r.studentId]?.[c.key] ?? nen(r, c.key);
                           const daSuaO = doi[c.key] !== undefined;

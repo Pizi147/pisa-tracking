@@ -1700,10 +1700,12 @@ check('Nhập ngoài phạm vi quyền bị chặn ở server', () => {
   assert(!conn.prepare("SELECT id FROM students WHERE full_name = 'Ngoài Phạm Vi 2'").get(),
     'Học viên ngoài phạm vi quyền vẫn bị ghi vào database');
 });
+/* N47 (chủ SP 16/11): mặc định tuần bắt đầu của lớp đã chạy nay là tuần này — các phép kiểm chuỗi dưới đây ghi tuần khai giảng tường minh (dữ liệu sau dựa vào). */
+const kgMb101 = (conn.prepare('SELECT start_date FROM classes WHERE id = ?').get(classId('MB FT 101')) as any).start_date as string;
 check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng lỗi', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   const r = intake.commitIntake(P.admin, {
-    classId: classId('MB FT 101'),
+    classId: classId('MB FT 101'), defaultStartWeek: kgMb101,
     rows: [
       { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009', email: emailThu(),
         entryListening: 5, entryReading: '5.5', entryWriting: '-', baselineScore: '5.0' },
@@ -1740,7 +1742,7 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
   assert(cyc.baseline_score === 5, `OVR phải giữ nguyên 5.0, đang là ${cyc.baseline_score}`);
 
   const warn = intake.previewIntake(P.admin, {
-    classId: classId('MB FT 101'),
+    classId: classId('MB FT 101'), defaultStartWeek: kgMb101,
     rows: [{ fullName: 'Học Viên Nhập Hai' }],
   });
   assert(warn.rows[0].issues.some((i) => i.field === 'target' && /Chưa có/.test(i.message) && i.muc === 'luu_y'),
@@ -1749,7 +1751,7 @@ check('Ghi thật: tạo học viên, enrollment và lộ trình; bỏ qua dòng
 check('Bấm hai lần hoặc thử lại không tạo học viên trùng', () => {
   const before = (conn.prepare('SELECT COUNT(*) n FROM students').get() as any).n;
   const again = intake.commitIntake(P.admin, {
-    classId: classId('MB FT 101'),
+    classId: classId('MB FT 101'), defaultStartWeek: kgMb101,
     rows: [
       { fullName: 'Học Viên Nhập Một', target: 6.5, dob: '01/02/2009', email: emailThu() },
       { fullName: '' },
@@ -1768,7 +1770,7 @@ check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do 
    * đến từ file, nên vẫn không có lối vòng nào. Quản lý xếp lại ở Kế hoạch Test.
    */
   const r = intake.commitIntake(P.coreTeacher, {
-    classId: classId('MB FT 101'),
+    classId: classId('MB FT 101'), defaultStartWeek: kgMb101,
     rows: [{ fullName: 'Học Viên Không Quyền Tuần', target: 6, email: emailThu(), dob: '2010-01-01' }],
     idempotencyKey: 'test-intake-2',
   });
@@ -1778,7 +1780,7 @@ check('[12.1 → PR-MT M1] Nhập hàng loạt tạo lịch MT MẶC ĐỊNH do 
     'Nhập hàng loạt phải tạo đúng 3 lượt MT mặc định do hệ thống xếp');
 
   const r2 = intake.commitIntake(P.mbManager, {
-    classId: classId('MB FT 101'),
+    classId: classId('MB FT 101'), defaultStartWeek: kgMb101,
     rows: [{ fullName: 'Học Viên Có Quyền Tuần', target: 6, email: emailThu(), dob: '2010-01-01' }],
     idempotencyKey: 'test-intake-3',
   });

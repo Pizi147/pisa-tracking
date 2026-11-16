@@ -7,7 +7,7 @@ import { raLenh, thiHanhLenhDenHan } from '../classes/lenhChuyen.ts';
 import { tuanChonDuoc } from '../../../shared/domain/index.ts';
 import type { BuildCtx } from './build.ts';
 import { DEMO_DATE } from './journeys.ts';
-import { emailThu } from './emailThu.ts';
+import { emailThu, tuanKhaiGiang } from './emailThu.ts';
 
 /**
  * BỘ DEMO P9a XET-LAI (mockup `thiet-ke/v6/xet-lai-lo-trinh.html`) — dựng qua hàm nghiệp vụ, mốc ngày chỉnh bằng SQL. Chỉ máy dev.
@@ -31,7 +31,7 @@ export function buildXetLaiDemo(ctx: BuildCtx): void {
   const fou25 = lop('MB FOU 25', 'FOU', addDays(mondayOf(DEMO_DATE), -56), 'T_KHOA');   // tuần 8 (Final) = tuần trước ngày demo
   const be05 = lop('MB BE 05', 'BE', DEMO_DATE, 'T_TRANG');
   const hv = (ten: string) => {
-    commitIntake(admin, { classId: fou25, rows: [{ fullName: ten, target: '-', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `xl-demo-${ten}` } as any);
+    commitIntake(admin, { classId: fou25, defaultStartWeek: tuanKhaiGiang(fou25), rows: [{ fullName: ten, target: '-', email: emailThu(), dob: '2010-01-01' }], idempotencyKey: `xl-demo-${ten}` } as any);
     return (conn.prepare('SELECT id FROM students WHERE full_name = ?').get(ten) as any).id as number;
   };
   const NGAY_FINAL = addDays(DEMO_DATE, -4);   // T5 tuần Final
