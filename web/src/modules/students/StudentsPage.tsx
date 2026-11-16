@@ -13,7 +13,7 @@ import { CHIP_SOS, ChipBadgeLop, Nhan, lopSos } from '../../ui/Nhan.tsx';
 import { BoChonThoiGian } from '../phanTich/BoChonThoiGian.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import { NutChipViec, chipViecLop, type ChipViec } from '../congViec/LopCuaToi.tsx';
-import { lamTaiCho } from '../congViec/lamTaiCho.ts';
+import { lamTaiCho, moCaDong } from '../congViec/lamTaiCho.ts';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { TenGiaoVien } from '../classes/TenGiaoVien.tsx';
 import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
@@ -33,7 +33,7 @@ import {
   khoangMacDinh, khopLocThem, locThemBat, nhanKhoang, needScoresText, type BadgeLop, type KieuKhoang,
   PHAM_VI_NHAN, coDichLienKet, laVaiQuanLy, docGoc, docThamSoLoc, duongHocVienLop, khungCua, vaiXemHocVien,
   type HangHv, type KhoaCotXuatDs, type LichThi, type LocHocVien, type NguCanhDs, type PhamVi, type ThemEm, type WorkScope, type VaiXemHocVien,
-  type ChipVai,
+  type ChipVai, dongCuaToi,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -264,7 +264,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
 
   /* PTA rà #1685 (⑥ K1, K8a): chip "Việc cần làm" của LỚP ở hàng lớp — việc CỦA TÔI (lá `mine`, cả việc cấp lớp như Nhập điểm), cùng `chipViecLop`
      của Công việc / hồ sơ lớp GD-6. Dữ liệu `/my-work` đã nạp, không request. */
-  const viecToi = useMemo(() => (work.data?.dong ?? []).flatMap((x) => (x.con?.length ? x.con : [x])).filter((x) => x.mine), [work.data]);
+  /* AUDIT-1611 P1-01: truyền DÒNG của tôi (giữ `con`) như "Lớp của tôi" — chip đếm dòng gộp, không đếm từng em. */
+  const viecToi = useMemo(() => dongCuaToi(work.data?.dong ?? []), [work.data]);
   const [nhapDiemLop, setNhapDiemLop] = useState<{ id: number; code: string } | null>(null);
   const bamChipLop = (c: ChipViec, l: { id: number; code: string }) => (c.tab === 'cham-diem' ? setNhapDiemLop(l) : moViec(c.dau, c.ds));
 
@@ -444,7 +445,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     const l = lop.get(g.id);
     return {
       id: g.id, hv: g.hv, mo: moSet.has(g.id), onMo: () => doiMo(g.id), nhan: l?.code ?? t('Chưa xếp lớp'),
-      dau: <DauLop lop={l} hv={g.hv} vai={vai} dangLoc={dangLoc} cuaToi={pv?.dangDung === 'cua-toi'} chip={l ? chipViecLop(viecToi, l.id) : []} onChip={bamChipLop}
+      dau: <DauLop lop={l} hv={g.hv} vai={vai} dangLoc={dangLoc} cuaToi={pv?.dangDung === 'cua-toi'} chip={l ? chipViecLop(viecToi, l.id, moCaDong) : []} onChip={bamChipLop}
         onSos={(m) => setParam({ view: 'sos', classId: String(g.id), muc: String(m), mo: null })}
         dsLop={{ loai: 'lop', nhan: t('Lớp'), ids: (data?.rows ?? []).map((c) => c.id) }} onThemHocVien={(x) => setThem(x)} />,
     };

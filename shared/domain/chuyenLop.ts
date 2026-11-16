@@ -269,7 +269,8 @@ export type DaiLop = {
   /** Phía lớp NGUỒN (A). OV-3b `loTrinh`: lớp thường từ thứ Hai tuần trước Final (N20) còn em chưa chốt (chỉ Quản lý) — `do` = quá hạn chốt. */
   loTrinh: { hanChot: string | null; tong: number; daChot: number; do: boolean } | null;
   banGiao: { daXacNhan: number; tong: number; hanGvcn: string | null } | null;
-  banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null }[];
+  /** AUDIT-1611 A1-22: dải gộp nhiều môn giữ số từng môn (`tung`) — "R 4/5 em · G+V 4/5 em" như dòng Công việc, không cộng ô thành "em". */
+  banGiaoMon: { mon: string; monNgan: string; daGhi: number; tong: number; han: string | null; tung?: { monNgan: string; daGhi: number; tong: number }[] }[];
   /** BAN-GIAO-2: lệnh đã chuyển ≤ 14 ngày, phiếu xác nhận đủ (dải Bàn giao đã hết) — người viết vẫn mở / sửa phiếu. */
   daChuyen: { daXacNhan: number; tong: number } | null;
   /** Phía lớp ĐÍCH (H). */

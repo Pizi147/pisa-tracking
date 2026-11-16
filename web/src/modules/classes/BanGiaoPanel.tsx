@@ -379,8 +379,9 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
   const [chu, setChu] = useState<Record<string, string>>({});
   const [tt, setTt] = useState<Record<string, { tt: TtO; loi?: string }>>({});
   const oMon = (e: PhieuEm, m: string) => e.mon.find((x) => x.ma === m);
-  /* Em không học môn (N13) không có dòng môn đó; "Cùng GV" chưa ai viết → không cần câu. */
-  const can = (e: PhieuEm, m: string) => !!oMon(e, m) && !(oMon(e, m)!.cungGv && !oMon(e, m)!.noiDung);
+  /* Em không học môn (N13) không có dòng môn đó; "Cùng GV" → không cần câu (chủ SP 30/10). AUDIT-1611 A1-22: cùng tập với dải hồ sơ lớp và việc
+     "Bàn giao môn" (`viecBanGiao`, `daiLop`: bỏ em cùng GV) — một số ở ba nơi. Ô của em cùng GV vẫn vẽ, vẫn sửa được. */
+  const can = (e: PhieuEm, m: string) => !!oMon(e, m) && !oMon(e, m)!.cungGv;
   const daCo = (e: PhieuEm, m: string) => (!!oMon(e, m)?.noiDung && !oMon(e, m)?.lamLai) || tt[k(e, m)]?.tt === 'xong';
   const dem = mons.map((m) => ({ m, can: dto.ds.filter((e) => can(e, m)).length, da: dto.ds.filter((e) => can(e, m) && daCo(e, m)).length }));
   const han = useMemo(() => mons.map((m) => dto.theoMon.find((x) => x.ma === m)?.han).filter((x): x is string => !!x).sort()[0] ?? null, [dto, mons]);
@@ -487,7 +488,8 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
           <span className="flex flex-wrap items-center gap-x-3 text-[13px] text-slate-400">
             <span className="tabular-nums">{hai ? t('Tự lưu khi rời ô') : t('Tự lưu khi rời ô · {a}/{b} em đã có', { a: dem[0].da, b: dem[0].can })}</span>
             {conThieu.length > 0 && (
-              <button type="button" className="min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold text-soon hover:underline sm:min-h-0" onClick={denThieu}>
+              <button type="button" className="min-h-[44px] border-0 bg-transparent p-0 text-[13px] font-semibold text-soon hover:underline sm:min-h-0" onClick={denThieu}
+                title={t('Tới em còn thiếu')}>
                 {hai ? t('Còn {ds} ↑', { ds: conThieu.map((x) => t('{mon}: {n} em', { mon: ngan(x.m), n: x.can - x.da })).join(' · ') })
                   : t('Còn {n} em ↑', { n: conThieu[0].can - conThieu[0].da })}
               </button>

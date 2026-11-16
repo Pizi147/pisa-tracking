@@ -40,7 +40,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
-  NHAN_LOAI_VIEC, chenHan,
+  NHAN_LOAI_VIEC, chenHan, demBai,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -222,16 +222,17 @@ export function HoTroHocVienTab() {
   const thuTuTab: readonly string[] = laTvv ? NHOM_CV_TVV : TAB_CV;
   const tabCua = (it: WorkItem) => tabCuaViec(it, laTvv);
   const dongCuaTab = (ds: readonly WorkItem[], k: string) => dongTab(ds.filter((x) => tabCua(x) === k), moCaDong);
+  /* AUDIT-1611 P1-03: số tab / đầu mục của GV, TVV đếm việc CỦA TÔI (như đầu trang, chuông) — dòng làm thay vẫn vẽ, ghi riêng "· n làm thay". */
+  const cuaBan = (ds: readonly WorkItem[]) => (laQuanLy ? ds : dongCuaToi(ds));
   const tenTab = (k: string) => (k === 'duyet' ? t('Chờ bạn duyệt') : k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : nhanTabCv(k, laTvv));
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
     /* GD-1 (lời 19): tab "Chấm Speaking" — đủ ngắn, 375 giữ nguyên tên (mockup v21 K8a). */
     /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục); V22: có bài quá hạn → badge đỏ. */
     const badgeCua = (k: string): BadgeTab => {
-      const b = badgeTab(dongCuaTab(items, k));
+      const b = badgeTab(dongCuaTab(cuaBan(items), k));
       if (k !== 'cham-cheo') return b;
-      const ds = dongCuaTab(items, k);
-      return { ...b, bai: { n: ds.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: ds.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } };
+      return { ...b, bai: demBai(dongCuaTab(items, k)) };
     };
     const ds = thuTuTab.map((k) => ({ key: k, nhan: tenTab(k), badge: badgeCua(k) as BadgeTab | null }))
       .filter((x) => x.badge!.n > 0 || conGiu.has(x.key) || (x.key === 'van-hanh' && (coVanHanh || !!data?.daBoQua?.length)))
@@ -285,8 +286,14 @@ export function HoTroHocVienTab() {
   }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   const mucs = (tab && mucTheoTab.get(tab)) || [];
   /* Số đầu mục chỉ từ máy chủ (`locItems`) — dòng giữ chỗ vừa xong chỉ để vẽ. */
-  const demMuc = useMemo(() => new Map(tab ? chiaMucTab(dongCuaTab(locItems, tab), laTvv, homNay).map((m) => [m.key, { n: m.items.length, quaHan: m.quaHan }] as const) : []),
-    [locItems, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
+  const demMuc = useMemo(() => {
+    if (!tab) return new Map<string, { n: number; quaHan: number; lamThay: number }>();
+    const toi = new Map(chiaMucTab(dongCuaTab(cuaBan(locItems), tab), laTvv, homNay).map((m) => [m.key, m] as const));
+    return new Map(chiaMucTab(dongCuaTab(locItems, tab), laTvv, homNay).map((m) => {
+      const x = toi.get(m.key);
+      return [m.key, { n: x?.items.length ?? 0, quaHan: x?.quaHan ?? 0, lamThay: m.items.length - (x?.items.length ?? 0) }] as const;
+    }));
+  }, [locItems, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
 
   // ------------------------------------------------------------------ việc đang mở ở panel (URL `viec`)
   /* Thứ tự "việc tiếp": đúng thứ tự đang vẽ; dòng gộp thường đi vào từng em; bỏ việc mở trang. `nhom` = nhóm đang vẽ (CV-05: việc kế cùng nhóm). */
@@ -439,8 +446,6 @@ export function HoTroHocVienTab() {
     return { ban: demDongViec(cua), gv: demDongViec(items.filter((x) => !khoa.has(x.key))) };
   }, [items, chiChamDiem, nguoi]);
   const soLamThay = useMemo(() => (laQuanLy ? 0 : demDongViec(items).n - tong.n), [items, laQuanLy, tong]);
-  /* Rà 11/11 G5-09: tab Chấm điểm ghi thêm số BÀI (đơn vị của ô "Bài chưa nhập điểm" ở Tổng quan) — người bấm ô thấy lại đúng số vừa bấm. Dữ liệu đã nạp. */
-  const soBaiCham = useMemo(() => items.filter((it) => it.group === 'score').reduce((n, it) => n + (it.soBai ?? 0), 0), [items]);
   const conViec = useMemo(() => demDongViec(tatCaViec).n > 0, [tatCaViec]);
   const chiCc = !conViec && tatCaViec.some(laViecChamCheo);
   /* brief 7: việc của người khác (QL xem GV / Tất cả) = theo dõi; `chiXem` = đang xem đúng một GV. Việc chưa có người (Phân công…) không phải của ai — làm được. */
@@ -508,7 +513,7 @@ export function HoTroHocVienTab() {
               </>}
               {soLamThay > 0 && <> · <span title={t('Việc của GV khác mà bạn làm thay được — có trong danh sách, không tính vào việc của bạn.')}>{t('{n} làm thay', { n: soLamThay })}</span></>}
               </>}
-              {tab === 'cham-diem' && soBaiCham > 0 && <> · <b className="font-bold tabular-nums text-[color:var(--text)]">{soBaiCham}</b> {t('bài')}</>}
+              {/* AUDIT-1611 P1-02 · N50 (11): bỏ "· n bài" ở đầu trang (mọi phạm vi) — mockup ① chỉ "n việc · m quá hạn"; số bài ở từng dòng. */}
             </span>
           )}
           {/* U01 #7: việc vừa xong trong phiên → chip bấm được, lọc "Đã xong hôm nay" (tìm lại không dò từ đầu). */}
