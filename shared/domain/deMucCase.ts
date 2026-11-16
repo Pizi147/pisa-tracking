@@ -22,7 +22,9 @@ export function deMucRieng(c: { title?: string | null; mon?: string | null; topi
   const mon = c.mon ?? c.topic ?? '';
   /* Tên môn ngắn của lớp thường (FOU "G+V", Pre FOU "Tổng hợp"): Case Progress gắn mã môn khác (dữ liệu thật có `writing` ↔ "G+V không đạt"). */
   const mac = new Set<string>(['g+v', 'grammar + vocabulary', 'tổng hợp']);
-  for (const ct of [c.ct ?? null, null]) for (const ten of [tenMon(ct, mon), tenMonNgan(ct, mon), caseTopicLabel(mon, ct), caseCategoryLabel(mon)]) mac.add(chuan(ten));
+  /* Case Writing chung: tên tự sinh có thể mang tên task ("Writing Task 2 không đạt") — phép kiểm GD-21 (prPilotCase) đòi null. */
+  const mons = mon === 'writing' ? ['writing', 'writing1', 'writing2'] : [mon];
+  for (const ct of [c.ct ?? null, null]) for (const m of mons) for (const ten of [tenMon(ct, m), tenMonNgan(ct, m), caseTopicLabel(m, ct), caseCategoryLabel(m)]) mac.add(chuan(ten));
   const g = chuan(own);
   /* một chữ cái = mã kỹ năng ngắn ("P không đạt" — Case Progress lớp BE, dữ liệu thật) */
   return !g || g.length === 1 || mac.has(g) ? null : own;
