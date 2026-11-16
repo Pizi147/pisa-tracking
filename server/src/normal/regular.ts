@@ -6,7 +6,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
+import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, lopDayDu, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -633,10 +633,14 @@ export function sinhCheckpointKeTiep(classIds: readonly number[] | null, homNay:
 
 /**
  * Quét khi đọc một lớp (như `quetLenhDenHan`): Điểm theo lớp / Kế hoạch Test của lớp liên tục sinh Checkpoint kế cho em đã qua tuần thi — lưới an toàn
- * cạnh lượt quét thứ Hai. Một lần mỗi request; lớp không liên tục chỉ tốn 1 câu. Lỗi không làm hỏng trang đang đọc.
+ * cạnh lượt quét thứ Hai. Một lần mỗi request. Lỗi không làm hỏng trang đang đọc.
+ * TD-QUET: lớp không liên tục / đã đóng / tắt tự sinh → dừng TRƯỚC giao dịch (bảng lớp đã nhớ, 0 câu). Trước đây mọi GET Điểm theo lớp mở
+ * BEGIN IMMEDIATE … COMMIT (khoá ghi Turso) và bị coi là "đã ghi" → đọc lại cả bảng lớp + chương trình (~104 dòng, 4 câu) dù không sinh gì.
  */
 export function quetCheckpoint(classId: number, homNay = demoToday()): void {
   nho(`checkpoint:${classId}:${homNay}`, () => {
+    const lop = lopDayDu().get(classId);
+    if (!CONG_TAC_CP.tuSinh || !lop || lop.moc_lap == null || lop.status !== 'active') return true;   // = điều kiện câu lớp của sinhCheckpointKeTiep
     try { tx(() => sinhCheckpointKeTiep([classId], homNay)); } catch (e) { console.error('[checkpoint] quét khi đọc', e); }
     return true;
   });
@@ -1275,7 +1279,7 @@ export function regularSheet(p: Principal, classId: number, kind?: string, today
   const suaSauHoanTat = quyenSuaSauHoanTat(p, classId);
   /* OV-11g (HL-10, Q4): lớp đã kết thúc — mọi bài như đã hoàn tất: Quản lý sửa qua hộp lý do, GV chỉ đọc (cùng `kiemLopKetThuc`). */
   const ketThuc = cls.status === 'finished';
-  const diemHuy = diemHuyMo();   // LUAT-34: một câu cho cả bảng
+  const diemHuy = diemHuyMo(attempts.map((a) => a.id));   // LUAT-34: một câu cho cả bảng
   const editable = editableSkills(p, classId, prog.skills);   // OV-13h: lớp kết thúc — cờ từng ô quyết
   /* Quyền sửa ô tính MỘT lần cho mỗi môn — cùng cửa với `saveRegularScore`, không hỏi lại theo từng dòng. */
   const nhapSkill = new Map(prog.skills.map((k) => [k, scoreEditPath(p, classId, k) !== null]));
