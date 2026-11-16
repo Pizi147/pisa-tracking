@@ -13,7 +13,7 @@ import { CASE_THAT } from '../cases/sosState.ts';
 import { db } from '../db.ts';
 import { PERMISSIONS, VIOLATION_CATEGORY_LABEL, thangKeTiep } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { boLopCu, can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { standingFor } from '../students/standing.ts';
 import { thieuThongTinHocVien } from '../classes/hocVienLop.ts';
@@ -66,7 +66,7 @@ export function chipHocVien(p: Principal, f: { branchId?: number | null; phamVi?
   const em = new Map<number, any>();
   for (const r of rows) {
     if (em.has(r.id) || (!tvv && f.branchId && r.branch_id !== f.branchId)) continue;
-    if (can(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) em.set(r.id, r);
+    if (can(boLopCu(p), PERMISSIONS.STUDENT_VIEW, { studentId: r.id })) em.set(r.id, r);   // N48: lớp cũ chỉ xem hồ sơ, không vào danh sách / số
   }
   const dangHoc = [...em.values()].filter((r) => r.status === 'active');
   const ids = Object.fromEntries(CHIP_HOC_VIEN.map((k) => [k, [] as number[]])) as Record<ChipHocVien, number[]>;

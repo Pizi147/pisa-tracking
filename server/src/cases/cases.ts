@@ -24,7 +24,7 @@ import { mucPaCua, maNhomHopLe, cauHinh,
   type CaseOutcome, type FollowUpOutcome, type InterventionKind,
 } from '../../../shared/domain/index.ts';
 import { HttpError, addDays, badRequest, canXacNhan, conflict, loi, chuTuDo, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
-import { can, isCoreTeacherOf, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
+import { boLopCu, can, isCoreTeacherOf, khongQuyenTam, napTruocPhamVi, require_, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { coNho, nho, nhoTheoId, trongBoNho } from '../platform/nguCanhRequest.ts';
 import { addJourney, notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -1342,8 +1342,8 @@ function coTheSuaCase(p: Principal, c: any): boolean {
 }
 /** `coTheSuaCase` không xét trạng thái — N37: người xoá được Case (cả Case đã hoàn thành). */
 function nguoiSuaCase(p: Principal, c: any): boolean {
-  /* GV-CU-BO-TRO: quyền xem TẠM của người dạy bổ trợ (`boTroTamCo`) không mở lại quyền sửa Case mình từng báo — chỉ xem quyền xem thật. */
-  const xem = can({ ...p, boTro: [] }, PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id });
+  /* GV-CU-BO-TRO + N48: quyền xem TẠM (người dạy bổ trợ, GV lớp cũ) không mở lại quyền sửa Case mình từng báo — chỉ xem quyền xem thật. */
+  const xem = can(khongQuyenTam(p), PERMISSIONS.ATTEMPT_VIEW, { classId: c.class_id, studentId: c.eff_student_id });
   return can(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c)) || (xem && c.reported_by === p.userId)
     || can(p, PERMISSIONS.SOS_EDIT, { classId: c.class_id, studentId: c.eff_student_id });
 }
@@ -3037,7 +3037,7 @@ function caseTrongPhamVi(p: Principal, f: CaseFilters): MappedCase[] {
   const dau = p.grants.find((g) => g.permissions.has(PERMISSIONS.ATTEMPT_VIEW));
   if (!(dau && dau.branchId === null && dau.roleKey !== 'teacher')) napTruocPhamVi(rows.map((r) => r.eff_student_id));
 
-  const thay = rows.filter((r) => can(p, PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }));
+  const thay = rows.filter((r) => can(boLopCu(p), PERMISSIONS.ATTEMPT_VIEW, { classId: r.lop_quyen_id, studentId: r.eff_student_id }));   // N48: danh sách Case không gồm em lớp cũ
   const { latestAttemptByCase, planOf, lastResultOf } = phuDsCase(thay.map((r) => r.id as number));
   const all: MappedCase[] = thay
     .map((r) => ({
