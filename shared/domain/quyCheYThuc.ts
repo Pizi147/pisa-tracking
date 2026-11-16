@@ -82,7 +82,8 @@ export const quyCheChotNgayThi = (doiThang: boolean): QuyChe => ({
 export const quyCheKqThiThat = (): QuyChe => ({ chu: t('Đủ 4 kỹ năng hoặc Không thi · lưu xong bạn chọn Bước tiếp') });
 
 /** Q66 (luat/4 L-21): Chọn bước tiếp › Lộ trình mới. */
-export const quyCheLoTrinhMoi = (): QuyChe => ({ chu: t('Lộ trình mới: Target giữ (đã đạt: gợi ý +1.0), đầu vào = KQ thi thật, Case cũ đóng') });
+/* N50 (12): câu MỘT dòng, bỏ tiền tố "Lộ trình mới:" (trùng tiêu đề panel) để 1440 không cắt khi có ⓘ; gợi ý +1.0 khi đã đạt Target nằm ở ⓘ — ô Target đã ghi "đã đạt · gợi ý +1.0". */
+export const quyCheLoTrinhMoi = (): QuyChe => ({ chu: t('Target giữ, đầu vào = KQ thi thật, Case cũ đóng'), chiTiet: t('Em đã đạt Target: gợi ý Target cũ + 1.0, sửa được.') });
 
 /** Q67 (luat/4 L-09, L-21): Chọn bước tiếp › Tạm dừng / Kết thúc học — hạn của việc Bước tiếp. */
 export const quyCheDungHoc = (han: string | null): QuyChe => ({ chu: han ? t('Em vào Lưu trữ · hạn {han}', { han }) : t('Em vào Lưu trữ') });

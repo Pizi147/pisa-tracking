@@ -12,5 +12,5 @@ panel Bước tiếp › Lộ trình mới — `lo-trinh-moi-dat-target-1440.png
 | Lộ trình mới, em CHƯA đạt / Không thi | "Target giữ · Sửa" | như cũ | GIỮ |
 | Gợi ý vượt 9.0 | — | trần 9.0 | THÊM |
 | Lộ trình "Khác" · Bỏ Target | có | có | GIỮ |
-| Dòng quy chế cuối panel | "Target giữ" | "Target giữ (đã đạt: gợi ý +1.0)" | ĐỔI chữ cho khớp luật |
+| Dòng quy chế cuối panel | "Lộ trình mới: Target giữ, đầu vào = KQ thi thật, Case cũ đóng" | "Target giữ, đầu vào = KQ thi thật, Case cũ đóng" + ⓘ "Em đã đạt Target: gợi ý Target cũ + 1.0, sửa được." (bỏ tiền tố trùng tiêu đề panel để một dòng không cắt ở 1440 — rà #1798) | ĐỔI chữ |
 | Hướng dẫn TVV "Chọn lộ trình mới" | "Target giữ, sửa được" | "Target giữ (đã đạt: gợi ý +1.0), sửa được" | ĐỔI chữ |
