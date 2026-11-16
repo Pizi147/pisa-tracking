@@ -352,4 +352,4 @@ Mọi trang đều trả thêm `/my-work` (39–57 câu, 745–1 093 dòng) cho 
 - Máy chủ bản chép được ghi đã bị các nhóm thử đổi dữ liệu (thêm HV thử, chốt cuối khoá một em, xử lý vi phạm…) — chỉ là DB thử trong worktree `audit-toan-bo-1611`, không đụng `data/` của thư mục chung. Dọn worktree sau khi PR này merge.
 - Thư mục chung `D:\Github\Pisa-tracking` đang ở `main` cũ (#1590) — session mới nên tạo worktree từ `origin/main`.
 - Khi rà sâu gói 4 (đường lui, máy chủ): dùng `/code-review high`.
-- Ảnh thô (544 tệp) không commit; ảnh đã chọn ở `anh/` (55 ảnh cắt, ~2 MB).
+- Ảnh thô (544 tệp) không commit; ảnh đã chọn ở `anh/` (61 ảnh cắt, ~2,4 MB).
