@@ -1,6 +1,6 @@
 import { phamViXemViec } from './xemViec.ts';
 import { t } from '../../../shared/i18n/index.ts';
-import { HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
 import { COT_THIEU_GVCN, COT_THIEU_GV_MON, caseChuaCoNguoi } from '../cases/owner.ts';
 import { DS_JSON, db, tx } from '../db.ts';
@@ -760,6 +760,11 @@ export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
  * GV-KIEM-ADMIN (PTA 15/11): tài khoản vừa Admin (`cham-diem`) vừa GV — phần Admin chỉ nhóm Chấm điểm (`phamViXemViec`), phần GV phải ĐỦ như GV thuần. Principal chỉ còn vai GV (bỏ grant Admin;
  * quyền cấp riêng giữ) để mọi `scopeFor` / `can` phía sau ra đúng phạm vi của GV, không rộng theo Admin.
  */
+/** Lớp người xem nhập điểm được ít nhất một kỹ năng (`can` SCORE_EDIT — cùng luật `mySkills` sinh ô "mine"), đọc bộ nhớ (`bangLop`, grants), 0 câu. */
+function lopNhapDiemDuoc(p: Principal): number[] {
+  const kn = [...new Set([...ENTRY_SKILLS, ...[...allProgrammes().values()].flatMap((x) => x.skills)])];
+  return [...bangLop().keys()].filter((id) => kn.some((skill) => can(p, PERMISSIONS.SCORE_EDIT, { classId: id, skill })));
+}
 const boVaiAdmin = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'office_admin'), grants: p.grants.filter((g) => g.roleKey !== 'office_admin') });
 
 export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi' | 'tat-ca'; chiNhom?: ReadonlySet<WorkGroupKey>;
@@ -822,10 +827,16 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const tuanHomNay = mondayOfDate(today);
   /** Ô S Mock vào việc Chấm Speaking của người xem: lớp `lopCheo`, từ thứ Hai tuần thi (`canChamCheo`). */
   const vaoChamS = (a: any, c: any) => lopCheo.has(a.classId) && canChamCheo(laChamCheo(a.kind, c.skill), c.weekStart, tuanHomNay);
+  /*
+   * AUDIT-1611 PR 5 (Turso, QL nhiều chi nhánh): không "Tất cả" thì `attempts` chỉ phục vụ ô CỦA MÌNH (`myPendingDetail` — `mySkills` = SCORE_EDIT theo lớp ×
+   * kỹ năng) + lớp chấm chéo (`lopCheo`) → đọc lượt đúng các lớp đó, không cả phạm vi xem (QL 5 chi nhánh: ~6 000 dòng / lần → vài trăm). Lớp không có
+   * kỹ năng nào của mình không sinh ô "mine" nên kết quả không đổi (TD4-a băm giữ nguyên).
+   */
+  const lopCuaMinh = !tatCa && !f.classIds && co('score') ? lopNhapDiemDuoc(p) : null;
   const attempts = !co('score', 'missing_data') ? [] : listAttempts(p, {
     branchId: f.branchId ?? undefined, chiDangHoc: true, chiConO: true,
     ...((tatCa && co('score')) || lopCheo.size ? { scope: 'managed' as const } : {}), ...(lopCheo.size ? { phamViCham: true, chiSCheoNgoai: true } : {}),
-    ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo])] } : {}),
+    ...(f.classIds ? { classIds: [...new Set([...f.classIds, ...lopCheo])] } : lopCuaMinh ? { classIds: [...new Set([...lopCuaMinh, ...lopCheo])] } : {}),
   }).rows.filter((a: any) => a.status !== 'cancelled');
   /*
    * OV-11c (CV-8, Q6): "Của GV" có cả việc của GVCN (Phối hợp SOS, Điền Target, Nhập điểm MT cũ) — như "Của một GV" (`viecCuaNguoi`). GVCN đang hiệu lực
