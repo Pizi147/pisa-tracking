@@ -23,7 +23,6 @@ import { DaiChoDuyet, DaiTamDung, DongLienHe, DongThongTin, ThanhViec, viecSangP
 import { NutTask } from '../congViec/NutTask.tsx';
 import { PanelViec } from '../congViec/PanelViecLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
-import { useSession } from '../../lib/session.tsx';
 import { NganCase } from './NganCaseLuoi.tsx';
 import { MissingBadge } from './MissingBadge.tsx';
 import { StudentPlanPanel } from './StudentPlanPanel.tsx';
@@ -35,7 +34,7 @@ import { StudentYThucSection } from '../yThuc/StudentYThucSection.tsx';
 import { attemptHref, fmtBand, skillLabel, sosTone, studentStatusLabel } from '../../lib/format.ts';
 import {
   HO_SO_TAB_LABEL, duongDotTest, caseCategoriesFor, tenMonNgan, docThamSoHoSo, duongHoSoHocVien,
-  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, trangCha, vaiXemHocVien, type HoSoTab,
+  nhanKetQuaThuong, tenBaiThuong, CHUONG_TRINH_KHONG_CHIA_MON, ngay, tuanLich, trangCha, type HoSoTab,
 } from '@shared/domain/index.ts';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KetQuaDot } from '../../ui/KetQuaDot.tsx';
@@ -95,7 +94,6 @@ export default function StudentDetailPage() {
   const [giaHan, setGiaHan] = useState(false);   // OV-13q
   const [quayLaiBt, setQuayLaiBt] = useState(false);   // OV-13m: Quay lại học sau Tạm dừng sau thi = panel Bước tiếp mở sẵn Lộ trình mới
   /* OV-10b (mockup vai mục 3): TVV / CX / Admin — nút việc của vai hiện thẳng (không ⋯), khối Đang xử lý. QL / GV không đổi. */
-  const vaiXem = vaiXemHocVien(useSession().session?.roles);
   const [planOpen, setPlanOpen] = useState(false);
   const dongPlan = () => {
     setPlanOpen(false);
@@ -305,7 +303,7 @@ export default function StudentDetailPage() {
               {/* GD-7 (③ R3.1, [XM-2]): "+ Task" (Case · Vi phạm / Nhắc nhở · Tình hình học tập) thay "+ Case" — em điền sẵn, không bước chọn em.
                   RKC (mở Q-B1): em Lưu trữ vẫn có (nút thường — [XM-5]). 375: nút tròn nổi (K8). */}
               {nutTask('dau')}
-              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → MenuDong không vẽ gì. OV-10b: TVV / CX / Admin — cùng các mục thành nút. */}
+              {/* ⋮ = MENU THẢ; mỗi mục mở THẲNG panel của việc đó (Q10). Không có quyền nào → MenuDong không vẽ gì. OV-10b: AU-GON P1-14: mọi vai một dáng "+ Task" + "⋯" (TVV / CX / Admin trước đây hàng nút rời), giữ đủ mục. */}
               {(() => {
                 const muc = mucQuanLyHocVien({
                   canEdit: data.viewer.canEdit, suaThongTin: !!data.viewer.coTheSuaThongTin, suaThem: !!data.viewer.coTheSuaThem, nhapThiThat: !!data.viewer.coTheNhapThiThat, lopHoc: data.lopHoc ?? null, cycle: cy, status: data.status, coTheXoa: !!data.viewer.coTheXoa,
@@ -317,9 +315,7 @@ export default function StudentDetailPage() {
                 const nutQuayLai = data.lopHoc?.chiXem && muc.some((m) => m.key === 'quay-lai')
                   ? <button type="button" className={`${NUT_DAU_HO_SO} btn-primary`} onClick={() => mo('quay-lai')}>{t('Quay lại học')}</button> : null;
                 const conLai = nutQuayLai ? muc.filter((m) => m.key !== 'quay-lai') : muc;
-                return <>{nutQuayLai}{vaiXem ? conLai.map((m) => (
-                  <button key={m.key} type="button" className={NUT_DAU_HO_SO} title={m.phu} onClick={() => mo(m.key)}>{m.nhan}</button>
-                )) : conLai.length > 0 && (
+                return <>{nutQuayLai}{conLai.length > 0 && (
                   <MenuDong lopNut={NUT_BA_CHAM} muc={conLai.map((m) => ({
                     key: m.key, nhan: m.nhan, nguyHiem: m.nguyHiem, keTruoc: m.keTruoc, goi: m.phu, onChon: () => mo(m.key),
                   }))} />
