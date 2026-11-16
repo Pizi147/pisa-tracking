@@ -202,8 +202,14 @@ export function badgeTab(dong: readonly { urgency: string; key?: string }[]): Ba
   const quaHan = tinh.filter((x) => x.urgency === 'overdue').length, homNay = tinh.filter((x) => x.urgency === 'today').length;
   return { so: quaHan + homNay, n: dong.length, quaHan, homNay };
 }
-/** Mở trang (chưa chọn tab): tab đầu tiên có việc quá hạn, không có thì tab đầu. */
-export const tabMacDinh = (ds: readonly { key: string; badge: BadgeTab | null }[]): string | null => (ds.find((x) => (x.badge?.quaHan ?? 0) > 0) ?? ds[0])?.key ?? null;
+/**
+ * Mở trang (chưa chọn tab): tab có NHIỀU việc quá hạn nhất của người xem (bằng nhau → tab đứng trước), không có thì tab đầu. AUDIT-1611 A2-11: QL mở
+ * Công việc từng rơi vào "Chờ bạn duyệt" (1 quá hạn) khi "Việc quản lý" có 6.
+ */
+export const tabMacDinh = (ds: readonly { key: string; badge: BadgeTab | null }[]): string | null => {
+  const max = Math.max(0, ...ds.map((x) => x.badge?.quaHan ?? 0));
+  return (max ? ds.find((x) => (x.badge?.quaHan ?? 0) === max) : ds[0])?.key ?? null;
+};
 
 // ------------------------------------------------------------------ Cần xử lý (Quản lý)
 export type MaCanXuLy =

@@ -29,6 +29,9 @@ export async function runPrCvTabTests(t: { check: any; assert: any; P: any; TODA
     const sc = d.chiaMucTab([v('s1', 'score', 'normal', '2026-11-20', 'mock'), v('s2', 'score', 'normal', '2026-11-20', 'final'), v('s3', 'score', 'normal', '2026-11-20', 'checkpoint')]);
     assert(sc.map((m: any) => m.label).join('|') === 'Mock Test|Progress / Final Test|Checkpoint', 'mục Chấm điểm theo loại bài');
     assert(d.tabMacDinh([{ key: 'x', badge: null }, { key: 'y', badge: { quaHan: 2 } }]) === 'y' && d.tabMacDinh([{ key: 'x', badge: null }]) === 'x', 'tab mặc định');
+    /* AUDIT-1611 A2-11: nhiều quá hạn nhất thắng; bằng nhau → tab đứng trước. */
+    assert(d.tabMacDinh([{ key: 'duyet', badge: { quaHan: 1 } }, { key: 'cham', badge: { quaHan: 0 } }, { key: 'van-hanh', badge: { quaHan: 6 } }]) === 'van-hanh'
+      && d.tabMacDinh([{ key: 'a', badge: { quaHan: 2 } }, { key: 'b', badge: { quaHan: 2 } }]) === 'a', 'tab nhiều quá hạn nhất');
     assert(d.tabCuaViec({ group: 'score', key: d.KHOA_CHAM_SPEAKING }) === 'cham-cheo' && d.tabCuaViec({ group: 'ban_giao', key: 'k' }) === 'van-hanh', 'tab chấm chéo / bàn giao');
   });
 

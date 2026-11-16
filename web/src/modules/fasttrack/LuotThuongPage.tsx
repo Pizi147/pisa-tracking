@@ -214,7 +214,9 @@ export default function LuotThuongPage() {
           {/* Chỉ khi đủ môn (`tyLeTong`); chưa đủ → "chờ G+V, P" (khung) thay dấu "—" to. */}
           <span className="mt-1 block">
             {r.result.tyLeTong != null
-              ? <span className="text-xl font-bold leading-none tabular-nums text-slate-100">{Math.round(r.result.tyLeTong * 100)}%</span>
+              /* AUDIT-1611 A2-09 (G12): màu kết quả tô chính con số, "✗" trước số khi có môn chưa đạt — không lặp chip "52%" bên cạnh. */
+              ? <span className={`text-xl font-bold leading-none tabular-nums ${(r.result.failedCount ?? 0) > 0 ? 'text-kq-duoi' : 'text-slate-100'}`}>
+                {(r.result.failedCount ?? 0) > 0 && <span aria-label={t('Chưa đạt')}>✗ </span>}{Math.round(r.result.tyLeTong * 100)}%</span>
               : <span className="text-sm text-slate-400">{huy ? '—' : r.result.required === 0 && r.result.daHuy?.length ? t('đã huỷ')
                 : t('chờ {x}', { x: r.result.skills.filter((x) => x.outcome === 'missing').map((x) => tenMonNgan(ct, x.skill)).join(', ') })}</span>}
           </span>
@@ -226,7 +228,7 @@ export default function LuotThuongPage() {
           )}
         </div>
         <div className="min-w-0 sm:pt-4">
-          {huy ? <Status kind="idle">{t('Đã huỷ')}</Status> : <KetQua row={r} sheet={{ ...d, rows: [r] }} anCase />}
+          {huy ? <Status kind="idle">{t('Đã huỷ')}</Status> : <KetQua row={r} sheet={{ ...d, rows: [r] }} anCase anTyLe />}
         </div>
         <ConLaiLuot ds={conLai} />
       </section>

@@ -566,7 +566,8 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
  * huống thường gặp — nếu Case đứng cuối hàng ưu tiên thì nó biến mất đúng lúc cần thấy. Nên Case là một nhãn trạng thái
  * nhỏ đứng CẠNH dòng chính ("Case L"), màu theo Case đại diện (đang mở trước — `cases[0]`), tooltip ghi đủ từng Case.
  */
-export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean }) {
+/** `anTyLe` (AUDIT-1611 A2-09, trang lượt): % tổng đã là số to ngay cạnh → không lặp chip "52%", giữ dòng gợi ý ("→ QL cân nhắc"). */
+export function KetQua({ row, sheet, anCase = false, anTyLe = false }: { row: Row; sheet: ThuongSheet; anCase?: boolean; anTyLe?: boolean }) {
   const r = row.result;
   const ngan = (k: string) => tenMonNgan(sheet.programme.code, k);
   const du = (k: string) => tenMon(sheet.programme.code, k);
@@ -609,7 +610,9 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
   /* OV-15a: màu SOS chỉ ở chip SOS (viền) — kết quả lớp thường: Đạt xanh lá · có môn trượt đỏ (chưa đạt) · chưa đủ điểm xám. */
   const tone = khongChiaMon ? (truot ? 'warn' : r.complete ? 'ok' : 'muted')
     : truot ? 'danger' : r.complete ? 'ok' : 'muted';
-  const chinh = row.chip
+  const laTyLe = row.kind === 'final' && r.tyLeTong != null && !khongChiaMon;
+  /* Pre FOU (không chia môn): kết quả chính cũng là % tổng. */
+  const chinh = anTyLe && r.tyLeTong != null && (laTyLe || khongChiaMon) && !row.chip ? null : row.chip
     /* OV-6b2: Checkpoint đủ điểm — chip "Đạt" / "SOS · L+S" (chưa đạt chỉ chip, không Case). Chữ nói kết quả, màu chỉ đi kèm. */
     ? <Level tone={row.chip.dat ? 'info' : 'danger'} title={chiTiet}>{dich(row.chip.chu)}</Level>
     : r.scored === 0
@@ -617,7 +620,7 @@ export function KetQua({ row, sheet, anCase = false }: { row: Row; sheet: Thuong
     : (
       <Level tone={tone} title={chiTiet}>
         {/* PR-LT2b: Cuối khoá đủ điểm → tầng 1 là % tổng (hướng gợi ý ở dòng phụ); Giữa khoá giữ `n/4 môn đạt`. */}
-        {row.kind === 'final' && r.tyLeTong != null && !khongChiaMon ? `${Math.round(r.tyLeTong * 100)}%` : kq.chinh}
+        {laTyLe ? `${Math.round(r.tyLeTong! * 100)}%` : kq.chinh}
       </Level>
     );
 

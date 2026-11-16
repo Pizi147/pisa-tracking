@@ -537,8 +537,9 @@ function DongDuyet({ y, em = false, dang, dangGui, toi, chon, onMo, onDuyet, onH
   const neuDuyet = y.neuDuyet ? t('Nếu duyệt: {neuDuyet}', { neuDuyet: dich(y.neuDuyet) }) : undefined;
   const dungLai = (e: { stopPropagation: () => void }) => e.stopPropagation();
   return (
+    /* AUDIT-1611 A2-28: cột hạn · người gửi 170 → 190 px — "Hoàng Quang Dũng · GVBM" (≈ 182 px) một dòng, hàng không cao lệch (không cắt "…" — RA-GD-0711). */
     <div data-hd="cd-dong" onClick={() => onMo(y)} title={neuDuyet}
-      className={`grid min-h-[56px] cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 py-2 pr-3 sm:grid-cols-[auto_minmax(0,1fr)_170px_118px] sm:pr-4 ${
+      className={`grid min-h-[56px] cursor-pointer grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1.5 py-2 pr-3 sm:grid-cols-[auto_minmax(0,1fr)_190px_118px] sm:pr-4 ${
         em ? 'pl-[40px] sm:pl-[44px]' : 'pl-3 sm:pl-4'} ${dang === y.id ? 'row-active' : 'bam'}`}>
       {em ? (
         <span className="relative mt-2.5 inline-flex w-5 justify-center self-start" onClick={dungLai}>

@@ -250,7 +250,9 @@ export function HoTroHocVienTab() {
   /* RA-LOI-0711d: mở từ link `?viec=` (chuông, Tổng quan, Giao việc) không kèm `nhom` → tab của chính việc đó, danh sách + Quay lại đúng chỗ. */
   const tabViec = !tabUrl && viec ? (() => { const x = phang(dsGoc).find((y) => y.key === viec); return x ? tabCua(x) : null; })() : null;
   const tab = theId ? 'duyet' : tabs.some((x) => x.key === tabUrl) ? tabUrl
-    : tabViec && tabs.some((x) => x.key === tabViec) ? tabViec : tabMacDinh(tabs);
+    : tabViec && tabs.some((x) => x.key === tabViec) ? tabViec
+      /* AUDIT-1611 A2-12: "Chờ bạn duyệt" là việc của chính QL — xem Của GV / Tất cả thì tab mặc định là tab việc của GV. */
+      : tabMacDinh(nguoi === 'toi' ? tabs : tabs.filter((x) => x.key !== 'duyet'));
   /* Ghi tab vào địa chỉ một lần (thay chỗ) — lưu việc làm đổi số quá hạn không làm trang nhảy tab; Quay lại về đúng tab. `loai=` đang lọc thì không ghi (ghi `nhom` = bỏ lọc loại).
      Đếm thẻ duyệt chưa về → chưa ghi (địa chỉ `nhom=duyet` không bị tab mặc định đè). */
   const choDemDuyet = !!session?.nav?.workApprove && !xemMotGv && demDuyet === undefined;
@@ -537,7 +539,13 @@ export function HoTroHocVienTab() {
               <>
                 {!chiChamDiem && <span className="max-sm:col-span-3 [&_button]:text-[13px] [&>div]:max-sm:flex [&>div>div]:max-sm:flex-1 [&_button]:max-sm:flex-1 [&_button]:max-sm:justify-center [&_button]:max-sm:text-[15px]">
                   <BoLocDoan ariaLabel={t('Việc của ai')} value={typeof nguoi === 'number' ? 'gv' : nguoi}
-                    onChange={(k) => { nhoNguoi(uid, k); setParam('nguoi', k); }}
+                    onChange={(k) => {
+                      nhoNguoi(uid, k);
+                      /* AUDIT-1611 A2-12: rời "Của tôi" khi đang ở Chờ bạn duyệt → bỏ `nhom` để chọn lại tab mặc định (tab việc của GV). */
+                      const next = new URLSearchParams(params); next.set('nguoi', k);
+                      if (k !== 'toi' && next.get('nhom') === 'duyet') next.delete('nhom');
+                      setParams(next, { replace: true });
+                    }}
                     muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'toi' && hienSoToi ? soToi : null }))} /></span>}
               </>
             )}
