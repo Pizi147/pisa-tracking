@@ -15,7 +15,7 @@ import { demoToday } from '../demoConfig.ts';
 import {
   activeAt, bangLop, can, classScopeSql, defaultWorkScope, editableSkills, isCoreTeacherOf, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, mySkills, scopeXemLuotCham, type Principal,
 } from '../permissions.ts';
-import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
+import { ASSESSED_SKILLS, CHAM_CHEO, O_FT_XONG_SQL, khoaBai, nhanBai, dauTruCuaO, LUOT_TINH_NO_SQL, PERMISSIONS, boMonLich, khoiCham, khungCua, laChamCheo, lopTuMo, tenMonNgan, type Khung, nhanLopLichTest, soSanhLop, soSanhLopCham, trangThaiChamLabel, type LoaiNhanLop, type PhamViLichTest } from '../../../shared/domain/index.ts';
 import { classScoreSheet, conBaiCanCham, listAttempts, type MonDoiLich } from '../fasttrack/attempts.ts';
 import { pendingMovesFor } from '../fasttrack/absence.ts';
 import { LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
@@ -402,10 +402,9 @@ export function noQuaHan(
         : `/nhap-diem/${d.classId}?kind=${encodeURIComponent(khoaBai(d.kind, d.attemptNo))}`,
     };
   });
-  /* PR-UXF-a (UX-F7, U1): NHÓM THEO LỚP (`soSanhLop` — MB FT 9 trước MB FT 10); trong lớp: quá hạn trước, rồi hạn tăng dần, rồi tuần thi. */
-  dong.sort((x, y) => soSanhLop({ code: x.classCode }, { code: y.classCode })
-    || (Number(y.quaHan) - Number(x.quaHan)) || (x.han ?? '9999').localeCompare(y.han ?? '9999')
-    || (x.weekStart ?? '').localeCompare(y.weekStart ?? ''));
+  /* XEP-CHAM-TEST (chủ SP 16/11, thay PR-UXF-a U1 phần trong lớp): lớp thường có bài lên đầu → mã lớp số nhỏ trước (`xepLopCham`);
+     trong lớp: tuần gần nhất lên đầu, hoà → quá hạn trước. */
+  dong.sort((x, y) => xepLopCham(x, y) || (y.weekStart ?? '').localeCompare(x.weekStart ?? '') || (Number(y.quaHan) - Number(x.quaHan)));
   return { dong, hanRieng };
 }
 
@@ -738,8 +737,8 @@ function hangLopTuan(
   const xemCaLop = (classId: number) => !coPhanCong || can(p, PERMISSIONS.PLAN_WEEK, { classId });
   const lopCon = [...new Set([...byLop.values()].filter((l) => l._conKhac.length && xemCaLop(l.classId)).map((l) => l.classId))];
   const pc = lopCon.length ? phanCongDangHieuLuc(lopCon, demoToday()) : new Map<string, { ten: string }>();
-  /* PR-UXF-a U1: lớp sắp theo `soSanhLop` (không theo chữ — "MB FT 10" không đứng trước "MB FT 9"). */
-  return [...byLop.values()].sort((a, b) => soSanhLop({ code: a.classCode }, { code: b.classCode })).map(({
+  /* XEP-CHAM-TEST (thay PR-UXF-a U1): lớp thường có bài lên đầu → mã lớp số nhỏ trước (`xepLopCham`, không theo chữ). */
+  return [...byLop.values()].sort(xepLopCham).map(({
     dong, _dot, _hv, _luot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, _conKhac, ...l
   }) => {
     /* OV-1b (3.5): nhãn "Quá hạn" của hàng = ô CỦA NGƯỜI XEM quá hạn (GV); Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
@@ -776,6 +775,10 @@ function hangLopTuan(
 
 /** PR-MT0: khung của một hàng Lịch Test — MT0 chấm band nhưng ở lớp thường, nên thuộc khung "Lớp thường". */
 const khungDong = (x: { mode: CheDo; kind: string | null }): Khung => (x.kind === 'mt0' ? 'thuong' : khungCua(x.mode));
+/** XEP-CHAM-TEST (chủ SP 16/11): thứ tự lớp chấm Test chung (`soSanhLopCham`) — lớp thường (`khungDong`) còn bài lên đầu, rồi mã lớp số nhỏ trước. */
+type HangCham = { classCode: string; mode: CheDo; kind: string | null; conBai?: number };
+const lopChamCua = (x: HangCham) => ({ code: x.classCode, thuong: khungDong(x) === 'thuong', coBai: (x.conBai ?? 1) > 0 });
+function xepLopCham(a: HangCham, b: HangCham): number { return soSanhLopCham(lopChamCua(a), lopChamCua(b)); }
 
 /**
  * "TUẦN NÀY CÓ NHỮNG LƯỢT TEST NÀO, CÒN PHẢI CHẤM GÌ" — MỘT lời gọi đủ cho màn Lịch Test (PR-UX1, PR-LT3 T15–T17). Ba khối, một bài
@@ -842,8 +845,7 @@ export function lichTest(
       if (t) chamTuanNay.push(...hangLopTuan(p, ctx, t, cacO));
     }
     /* Q4 (chủ sản phẩm 06/10): lớp còn bài trước (theo lớp, tuần mới trước); lớp đã chấm xong xếp cuối — web luôn thu gọn. */
-    chamTuanNay.sort((x, y) => Number(x.conBai === 0) - Number(y.conBai === 0)
-      || soSanhLop({ code: x.classCode }, { code: y.classCode }) || y.weekStart.localeCompare(x.weekStart));
+    chamTuanNay.sort((x, y) => Number(x.conBai === 0) - Number(y.conBai === 0) || xepLopCham(x, y) || y.weekStart.localeCompare(x.weekStart));
   }
 
   /* UI-LICH-TUAN (C13, dieu-chinh-cuoi khu a): Lịch tuần một tuần — dải số chỉ cộng hàng của TUẦN ĐANG XEM (khối 3) + quá hạn (khối 1),

@@ -7,7 +7,9 @@
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
-import { KHOA_CHAM_SPEAKING, laViecChamCheo } from './gopViec.ts';
+import { KHOA_CHAM_SPEAKING, laViecChamCheo, soSanhViecCham } from './gopViec.ts';
+import { addDaysIso } from './sos.ts';
+import { mondayOfDate } from './week.ts';
 
 // ------------------------------------------------------------------ chương trình
 /* PR-Pb2-a (Q31-1, T60): chỉ còn hai khung, FT trước. Nút "Cả hai" đã bỏ — khối không theo kỹ năng gộp bằng `null`. */
@@ -168,13 +170,21 @@ export function dongTab<T extends { studentId: number | null; con?: readonly T[]
   return ds.flatMap((it) => (it.con?.length && !caDong(it) && it.con.every((c) => c.studentId !== null && c.studentId === it.con![0].studentId) ? [...it.con] : [it]));
 }
 export type MucTab<T> = { key: string; label: string; items: T[]; /** Số dòng quá hạn trong mục (đầu mục "n quá hạn"). */ quaHan: number };
-/** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4). */
-export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false): MucTab<T>[] {
+/** Chia dòng của một tab theo mục loại việc (thứ tự `MUC_CV`); trong mục: quá hạn trước, rồi hôm nay, rồi hạn sớm trước (AUDIT-UI B4) — trừ mục chấm Test (XEP-CHAM-TEST: lớp → tuần). */
+export function chiaMucTab<T extends ViecGom & { key: string; kind?: string | null }>(dong: readonly T[], tvv = false,
+  /** XEP-CHAM-TEST: ngày nghiệp vụ — mốc vạch "Hạn đến / Hạn sau {CN}" (`DanhSachViec`); mục chấm Test xếp lớp → tuần TRONG từng vạch. */
+  homNay: string | null = null): MucTab<T>[] {
   const w = (u: ViecGom['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
+  /* XEP-CHAM-TEST (chủ SP 16/11): vạch hạn GIỮ (bố cục GD-4a: Quá hạn · Hôm nay · Hạn đến CN · Hạn sau CN · Không hạn — cùng luật `vach` của DanhSachViec);
+     trong vạch: lớp thường có bài → mã lớp → tuần gần nhất (`soSanhViecCham`). */
+  const cuoiTuan = homNay ? addDaysIso(mondayOfDate(homNay), 6) : null;
+  const vach = (x: T) => (x.urgency === 'overdue' ? 0 : x.urgency === 'today' ? 1 : !x.due ? 4 : cuoiTuan && x.due.slice(0, 10) <= cuoiTuan ? 2 : 3);
+  const xepCham = (a: T, b: T) => vach(a) - vach(b) || soSanhViecCham(a as never, b as never);
   const xep = (a: T, b: T) => Number(b.key === KHOA_CHAM_SPEAKING) - Number(a.key === KHOA_CHAM_SPEAKING) || w(a.urgency) - w(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999');
   const out: MucTab<T>[] = [];
   for (const [m, nhan] of MUC_CV) {
-    const ds = dong.filter((x) => mucCuaViec(x, tvv) === m).sort(xep);
+    /* XEP-CHAM-TEST (chủ SP 16/11): mục chấm Test (Mock · Progress / Final · Checkpoint) theo lớp → tuần gần nhất (`soSanhViecCham`), không theo hạn. */
+    const ds = dong.filter((x) => mucCuaViec(x, tvv) === m).sort(m === 'mock' || m === 'pf' || m === 'cp' ? xepCham : xep);
     if (ds.length) out.push({ key: m, label: nhan, items: ds, quaHan: ds.filter((x) => x.urgency === 'overdue').length });
   }
   return out;
