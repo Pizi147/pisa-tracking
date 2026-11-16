@@ -621,6 +621,10 @@ const EN_B_WEB = {
   'Đã chốt — cần Quản lý hiệu chỉnh': 'Confirmed — needs a manager correction',
   'Đã bỏ vắng {x}{x2} · {x3} {tuanVe}': 'Absence removed {x}{x2} · {x3} {tuanVe}',
   'giữ': 'kept',
+  /* N48 (AU-VIEC-3): GV / GVCN lớp cũ xem hồ sơ chỉ đọc 30 ngày. */
+  'Lớp cũ · chỉ xem': 'Former class · view only',
+  'Em chuyển sang {lop} từ {tu} · bạn xem được tới {den} · việc của em do GV lớp {lop} và GVCN {gvcn} làm': 'Moved to {lop} on {tu} · you can view until {den} · tasks belong to the {lop} teachers and homeroom teacher {gvcn}',
+  'Em chuyển sang {lop} từ {tu} · bạn xem được tới {den} · việc của em do GV lớp {lop} làm': 'Moved to {lop} on {tu} · you can view until {den} · tasks belong to the {lop} teachers',
   'về': 'back to',
   'Vắng — {title}': 'Absent — {title}',
   'Đã nhập': 'Entered',

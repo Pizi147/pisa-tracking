@@ -296,13 +296,14 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
   const coActive = new Set<number>();
   /* GIAM-DOC-0611: lớp đang học = ghi danh `active` id lớn nhất (đúng câu `activeClassOf`, yThuc/access.ts) — nạp cùng câu, hết N+1 (tab Phối hợp SOS của lớp: một câu mỗi em). */
   const lopActive = new Map<number, { eid: number; cid: number }>();
-  for (const id of idsCanNap) { lopCua.set(id, []); lopDangHoc.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
+  const roiLop = new Map<number, RoiLop[]>();   // N48: lớp em đã rời (chuyển lớp / lên lớp) + ngày — cùng câu, 0 câu thêm
+  for (const id of idsCanNap) { roiLop.set(id, []); lopCua.set(id, []); lopDangHoc.set(id, []); cnDangHoc.set(id, new Set()); cnMoiGhiDanh.set(id, new Set()); }
 
   theoLoJson(idsCanNap, (json) => {   // S5: một tham số JSON (trước TD4: lô 900 tham số)
     /* TD4: ghi danh + `students.branch_id` MỘT câu (trước hai câu mỗi lô) — em không ghi danh nào vẫn ra một dòng (`trang_thai` NULL). */
     for (const r of db()
       .prepare(
-        `SELECT s.id AS sid, s.branch_id AS sbid, e.id AS eid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid
+        `SELECT s.id AS sid, s.branch_id AS sbid, e.id AS eid, e.class_id AS cid, e.status AS trang_thai, c.branch_id AS bid, substr(e.ended_at, 1, 10) AS roi
            FROM students s LEFT JOIN enrollments e ON e.student_id = s.id LEFT JOIN classes c ON c.id = e.class_id
           WHERE s.id IN (${DS_JSON})`,
       )
@@ -310,6 +311,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
       if (r.sbid != null) { cnMoiGhiDanh.get(r.sid)!.add(r.sbid); cnDangHoc.get(r.sid)!.add(r.sbid); }
       if (r.trang_thai == null) continue;
       lopCua.get(r.sid)!.push(r.cid);
+      if (LA_ROI_LOP(r.trang_thai) && r.roi) roiLop.get(r.sid)!.push({ classId: r.cid, ngay: r.roi });
       if (r.trang_thai === 'active') {
         coActive.add(r.sid);
         const cu = lopActive.get(r.sid);
@@ -328,6 +330,7 @@ export function napTruocPhamVi(studentIds: readonly (number | null | undefined)[
     datNho('hv-lop-dh:' + id, lopDangHocTu(lopDangHoc.get(id)!));
     datNho('hv-cn:' + id, [...(coActive.has(id) ? cnDangHoc.get(id)! : cnMoiGhiDanh.get(id)!)]);
     datNho('lop-dang-hoc:' + id, lopActive.get(id)?.cid ?? null);
+    datNho('hv-roi:' + id, roiLop.get(id)!);
   }
 }
 
@@ -513,6 +516,43 @@ export function lopXemTam(p: Principal, date = demoToday()): { classId: number; 
 }
 
 /**
+ * N48 (chủ SP 16/11, audit câu 3): GV KHÔNG dạy em vẫn bị chặn; NGOẠI LỆ theo dõi — GV / GVCN lớp CŨ của em (phân công còn hiệu lực ở ngày em rời lớp đó:
+ * chuyển lớp, lên lớp sau Cuối khoá) xem CHỈ ĐỌC hồ sơ em trong `NGAY_XEM_LOP_CU` ngày từ ngày rời. Chỉ `ATTEMPT_VIEW` + `STUDENT_VIEW` có `studentId` (đúng em đó);
+ * mọi quyền sửa không đổi (ghi theo lớp đang học — GV lớp cũ không có). Mẫu như `xemTamCo` / `boTroTamCo`; hỏi SAU khi quyền thật không cho (0 câu ở đường thường).
+ * Ngày rời đọc cùng câu ghi danh `napTruocPhamVi` (danh sách); một em lẻ: một câu nhỏ, nhớ theo request.
+ */
+export const NGAY_XEM_LOP_CU = 30;
+type RoiLop = { classId: number; ngay: string };
+const LA_ROI_LOP = (st: string | null | undefined) => st === 'transferred' || st === 'completed';
+function roiLopCua(studentId: number): RoiLop[] {
+  return nho('hv-roi:' + studentId, () => (db().prepare(
+    `SELECT class_id AS classId, substr(ended_at, 1, 10) AS ngay FROM enrollments WHERE student_id = ? AND status IN ('transferred', 'completed') AND ended_at IS NOT NULL`,
+  ).all(studentId) as RoiLop[]));
+}
+/** Lớp cũ người xem dạy em (còn trong hạn xem) — `den` = ngày cuối được xem. null = không phải ngoại lệ lớp cũ. */
+export function lopCuXem(p: Principal, studentId: number, date = demoToday()): { classId: number; den: string } | null {
+  if (!p.assignments.length) return null;
+  let tot: { classId: number; den: string } | null = null;
+  for (const r of roiLopCua(studentId)) {
+    const den = new Date(Date.parse(r.ngay) + NGAY_XEM_LOP_CU * 86_400_000).toISOString().slice(0, 10);
+    if (date < r.ngay || date > den || !p.assignments.some((a) => a.classId === r.classId && activeAt(a, r.ngay))) continue;
+    if (!tot || den > tot.den) tot = { classId: r.classId, den };
+  }
+  return tot;
+}
+function lopCuTamCo(p: Principal, permission: string, ctx: Ctx): boolean {
+  if (!ctx.studentId || (permission !== PERMISSIONS.ATTEMPT_VIEW && permission !== PERMISSIONS.STUDENT_VIEW)) return false;
+  if (!p.grants.some((g) => g.roleKey === 'teacher' && g.permissions.has(permission))) return false;
+  return lopCuXem(p, ctx.studentId, ctx.date ?? demoToday()) !== null;
+}
+/** N48: người xem vào hồ sơ em CHỈ nhờ ngoại lệ lớp cũ (quyền thật không cho xem lớp đang học của em) → hồ sơ chỉ đọc + nhãn "Lớp cũ · chỉ xem". */
+export function chiXemLopCu(p: Principal, studentId: number, classId: number | null): { den: string; lopId: number } | null {
+  if (canGoc(p, PERMISSIONS.ATTEMPT_VIEW, { classId, studentId })) return null;
+  const x = lopCuXem(p, studentId);
+  return x ? { den: x.den, lopId: x.classId } : null;
+}
+
+/**
  * Ràng buộc thêm cho vai trò Giáo viên. Giáo viên không có quyền nào về lịch, và GVCN
  * không vì chủ nhiệm mà có quyền sửa mọi kỹ năng.
  */
@@ -611,6 +651,9 @@ function teacherAllows(p: Principal, permission: string, ctx: Ctx): boolean {
 }
 
 export function can(p: Principal, permission: string, ctx: Ctx = {}): boolean {
+  return canGoc(p, permission, ctx) || lopCuTamCo(p, permission, ctx);   // N48: ngoại lệ lớp cũ chỉ hỏi khi quyền thật không cho
+}
+function canGoc(p: Principal, permission: string, ctx: Ctx): boolean {
   /* `class.assign_subject` là quyền SUY RA: không vai nào được cấp, grant `teacher` mang nó ngầm và `teacherAllows` siết về GVCN lớp đó. */
   const suyRaGv = permission === PERMISSIONS.CLASS_ASSIGN_SUBJECT;
   if (boTroTamCo(p, permission, ctx)) return true;
