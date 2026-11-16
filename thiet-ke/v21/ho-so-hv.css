@@ -334,8 +334,8 @@ details.ls[open] > summary { border-bottom:1px solid var(--line); }
 .cs.luoi .ten { flex-wrap:nowrap; white-space:nowrap; }
 .cs.luoi .pa1 { display:flex; align-items:center; gap:8px; min-width:0; font-size:13px; color:var(--text-dim); }
 .cs.luoi .pa1 .trang-pa { flex:none; }
-.cs.luoi .pa1 .tpa { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-.cs.luoi .ng { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; min-width:0; }
+.cs.luoi .pa1 .tpa { min-width:0; line-height:1.35; } /* tên PA dài xuống dòng, không cắt "…" */
+.cs.luoi .ng { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--text-dim); min-width:0; }
 .cs.luoi .hn { justify-self:start; }
 .trang-pa.xam { background:var(--muted-nen); color:var(--text-dim); }
 .dt .cs.luoi { grid-template-columns:30px minmax(0,1fr) 16px; gap:4px 10px; padding:12px; }
