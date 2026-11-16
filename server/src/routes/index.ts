@@ -561,7 +561,7 @@ api.get('/ref/teachers', requireAuth, wrap((req) =>
  * Chỉ trả về việc người này thực sự làm được; quyền kiểm ở tầng dịch vụ, không phải ẩn nút.
  */
 /* PR-VN3 (GOP): web chỉ đọc `dong` + `summary` — bỏ `items` / `groups` khỏi JSON (nặng ~3 lần); hàm giữ nguyên cho Nhắc và hồ sơ GV. */
-const nheMyWork = ({ items: _items, groups: _groups, ...con }: any) => con;
+const nheMyWork = ({ items: _items, groups: _groups, cuaGv: _cuaGv, ...con }: any) => con;
 /**
  * LG-8: "Test sắp tới" từng lớp (khối "Lớp của tôi" trang đầu) — CHỈ vai GV / Head tutor, vai khác JSON và số câu không đổi.
  * LG-13 (H7): `sapToi` 7 ngày (số PA tới kỳ + đợt Báo cáo PH mở) — cùng vai; không có gì thì không có khoá.

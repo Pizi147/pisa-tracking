@@ -30,6 +30,8 @@ export type ViecGopDuoc = {
   chonPa?: boolean;
   /** Nhập điểm: số bài (kỹ năng × em) — OV-11c: dòng gộp Nhập điểm một đơn vị "bài". */
   soBai?: number;
+  /** Số bài quá hạn (Chấm Speaking, dòng gộp Nhập điểm) — thiếu thì việc quá hạn tính cả `soBai` (`demBai`). */
+  baiQuaHan?: number;
   /** OV-13c: thứ Hai tuần thi (Case SOS FT, Nhập điểm) · mức SOS 1/2/3 của Case. */
   tuanThi?: string | null; sos?: number | null;
 };
@@ -79,6 +81,11 @@ export function khoaGopCua(it: ViecGopDuoc): string | null {
   if (it.group === 'ghi_ket_qua_pa') return `${k}:d${it.due ?? ''}`;
   return it.khung === 'ft' && it.caseSos && GOP_TUAN_SOS.has(it.group) ? `${k}:t${it.tuanThi ?? ''}:s${it.sos ?? 0}` : k;
 }
+/** AUDIT-1611 P1-02: số bài + bài quá hạn của các dòng (một hàm cho đầu mục / badge tab Chấm Speaking). */
+export const demBai = (ds: readonly Pick<ViecGopDuoc, 'soBai' | 'baiQuaHan' | 'urgency'>[]) => ({
+  n: ds.reduce((s, x) => s + (x.soBai ?? 0), 0),
+  quaHan: ds.reduce((s, x) => s + (x.baiQuaHan ?? (x.urgency === 'overdue' ? x.soBai ?? 0 : 0)), 0),
+});
 const nang = (u: ViecGopDuoc['urgency']) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
 const sapViec = (a: ViecGopDuoc, b: ViecGopDuoc) =>
   nang(a.urgency) - nang(b.urgency) || (a.due ?? '9999').localeCompare(b.due ?? '9999') || a.studentName.localeCompare(b.studentName, 'vi');
@@ -161,6 +168,8 @@ export function gopViecTheoLop<T extends ViecGopDuoc>(items: readonly T[], nhan:
         : sos
           ? [chuQuaHan ?? chung.filter(Boolean).sort().join(', '), sos.tuanThi ? tuanLich(sos.tuanThi) : null, sos.sos ? `SOS ${sos.sos}` : null].filter(Boolean).join(' · ')
           : chuQuaHan ?? (chung.length === 1 ? chung[0] : null),
+      /* AUDIT-1611 P1-02: dòng gộp Nhập điểm mang TỔNG bài của các lớp con (không giữ số của lớp con đầu) — mọi nơi cộng `soBai` tự đúng. */
+      ...(laBai ? { soBai: so, baiQuaHan: quaHan } : {}),
       count: nhom.length, actionLabel: chuSo,
       reason: chuSo,
       href: href.length === 1 ? href[0] : '/cong-viec?khung=tat-ca',
