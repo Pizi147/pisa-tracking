@@ -195,9 +195,11 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   const duongViec = '/my-work';
   const coViec = !!session?.nav?.workSupport;   // AU-GON B2-08: cùng cờ badge Công việc — CX / Head tutor không có Công việc thì không gọi `/my-work` (trước: 403 + chip "!")
   const work = useApi<{ dong: WorkItem[] }>('chuyenDen' in doc || !data || !coViec ? null : duongViec, [duongViec]);
-  /* TVV / CX: tập chip + dòng theo vai — CÙNG phạm vi trang vừa nhận (máy chủ chọn mặc định), nên gọi sau `/hoc-vien-lop`. */
-  const duongVai = !laVai || !data ? null
-    : `/hoc-vien-lop/theo-vai${data.phamVi.dangDung === 'chi-nhanh' && data.phamVi.chiNhanh ? `?phamVi=chi-nhanh&branchId=${data.phamVi.chiNhanh}` : ''}`;
+  /* TVV / CX: tập chip + dòng theo vai — CÙNG phạm vi trang: gửi đúng tham số phạm vi của `qs`, máy chủ chọn bằng cùng hàm (`theoTrang=1`), nên gọi SONG SONG
+     với `/hoc-vien-lop` (TD-NGUOI; trước: chờ trang về). Không gửi `q` / `them`: gõ tìm không tải lại danh sách theo vai. */
+  const thamSoTrang = new URLSearchParams(qs.slice(qs.indexOf('?') + 1));
+  const duongVai = !laVai || 'chuyenDen' in doc ? null : `/hoc-vien-lop/theo-vai?${new URLSearchParams([['theoTrang', '1'],
+    ...['phamVi', 'branchId', 'cnNho'].flatMap((k) => (thamSoTrang.get(k) ? [[k, thamSoTrang.get(k)!]] : []))])}`;
   const theoVai = useApi<TrangVai>(duongVai, [duongVai]);
   const [panelEm, setPanelEm] = useState<{ id: number; caseMo: number | null } | null>(null);
   const [viecMo, setViecMo] = useState<{ ds: WorkItem[]; i: number } | null>(null);
