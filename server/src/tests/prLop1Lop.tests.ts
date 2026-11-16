@@ -13,7 +13,8 @@ export async function runPrLop1LopTests(t: any) {
   const { loadPrincipal, laGvSpeaking, lopFtChoGvSpeaking } = await import('../permissions.ts');
   const { phamViXemViec } = await import('../worklist/xemViec.ts');
   const attempts: any = await import('../fasttrack/attempts.ts');
-  const { demDongViec, gopViecTheoLop, laVaiQuanLy, vaiXemHocVien } = await import('../../../shared/domain/index.ts');
+  const d: any = await import('../../../shared/domain/index.ts');
+  const { demDongViec, gopViecTheoLop, laVaiQuanLy, vaiXemHocVien } = d;
   const { soDongSql, chayTrongRequest, xoaNho, demHienTai } = await import('../platform/nguCanhRequest.ts');
   const { addDays } = await import('../util.ts');
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -196,5 +197,26 @@ export async function runPrLop1LopTests(t: any) {
     const src = fs.readFileSync(path.resolve(process.cwd(), 'web/src/modules/classes/DauTrangLop.tsx'), 'utf8');
     assert(!/useApi[^;]*\/my-work/.test(src), 'DauTrangLop còn gọi /my-work');
     assert(/duongViecLop\(/.test(src) && /soQuaHanLop/.test(src), 'DauTrangLop chưa đọc soQuaHanLop từ duongViecLop');
+  });
+
+  /* AUDIT-1611 P1-01: dải hồ sơ lớp đếm DÒNG như "Lớp của tôi" (Công việc) — `dongToi` giữ `con`; số từng loại = số trên `/my-work` của cùng người, cùng lớp. */
+  check('L3 · P1-01: dongToi giữ con; số dòng theo tab ở hồ sơ lớp = ở Công việc (GVCN, GVBM — mọi lớp đang dạy)', () => {
+    const { dongTab, tabCuaViec, dongCuaToi, laViecChamCheo } = d;
+    let coCon = 0, soLop = 0;
+    for (const p of [P.coreTeacher, P.subjectTeacher]) {
+      xoaNho();
+      const cv = dongCuaToi((myWork(p).dong ?? []) as any[]).filter((x: any) => !laViecChamCheo(x) && x.group !== 'chot_len_ft');
+      for (const lop of [...new Set(p.assignments.map((a: any) => a.classId))] as number[]) {
+        const r = chay(p, lop, false, { chiToi: true }).r;
+        if (!r) continue;
+        soLop++;
+        coCon += r.dongToi.filter((x: any) => x.con?.length).length;
+        const cuaLop = (x: any) => x.classId === lop || !!x.con?.some((c: any) => c.classId === lop);
+        const dem = (ds: any[]) => new Map([...new Set(ds.map((x: any) => tabCuaViec(x)))].map((k) => [k, dongTab(ds.filter((x: any) => tabCuaViec(x) === k)).filter(cuaLop).length]));
+        const a = JSON.stringify([...dem(r.dongToi)].filter(([, n]) => n).sort()), b = JSON.stringify([...dem(cv.filter(cuaLop))].filter(([, n]) => n).sort());
+        assert(a === b, `GV ${p.userId} lớp ${lop}: hồ sơ lớp ${a} ≠ Công việc ${b}`);
+      }
+    }
+    assert(soLop > 0 && coCon > 0, `seed phải có dòng gộp ở hồ sơ lớp (lớp ${soLop}, dòng có con ${coCon})`);
   });
 }

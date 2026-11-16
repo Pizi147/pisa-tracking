@@ -3,7 +3,6 @@ import type { YThucTestKit } from './yThuc.tests.ts';
 import { can } from '../permissions.ts';
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { COT_O_GV, demViecTheoNhom, duongViecCuaGv, laCotOGv } from '../../../shared/domain/hoSoGiaoVien.ts';
-import { demDongViec } from '../../../shared/domain/tongQuan.ts';
 
 export async function runPrGvTests(t: YThucTestKit) {
   const { check, assert, assertThrows, conn, P, classId, TODAY, addDays } = t;
@@ -105,12 +104,13 @@ export async function runPrGvTests(t: YThucTestKit) {
 
   check('PR-GV (2) · số = số việc như đầu nhóm Công việc (S11: demDongViec trên DÒNG): tổng 4 nhóm của viecCuaGv = demDongViec(/my-work?nguoi=), chính mình = myWork', () => {
     const gv = gvcn('MB FT 101');
-    const viec = (w: any) => demDongViec(w.dong ?? []).n;
+    /* AUDIT-1611 P1-03: hồ sơ GV = việc CỦA GV đó (như badge / đầu trang `summary.viec`), không cộng dòng làm thay. */
     const ql = viecCuaGv(P.mbManager, gv);
-    const so = viec(viecCuaNguoi(P.mbManager, gv));
+    const so = viecCuaNguoi(P.mbManager, gv).summary.viec;
     assert(ql.length === 4 && ql.reduce((a, x) => a + x.n, 0) === so, `tổng nhóm ${ql.reduce((a, x) => a + x.n, 0)} = ${so} việc`);
     const tuMinh = viecCuaGv(P.coreTeacher, gv);
-    assert(tuMinh.reduce((a, x) => a + x.n, 0) === viec(myWork(P.coreTeacher)), 'GV tự xem = myWork(p)');
+    assert(tuMinh.reduce((a, x) => a + x.n, 0) === myWork(P.coreTeacher).summary.viec, 'GV tự xem = summary.viec của myWork(p)');
+    assert(tuMinh.reduce((a, x) => a + x.n, 0) === ql.reduce((a, x) => a + x.n, 0), 'GV tự xem = QL xem (cùng tập việc của GV)');
   });
 
   // ------------------------------------------------------------------ Task 3 · hồ sơ GV + ô danh sách

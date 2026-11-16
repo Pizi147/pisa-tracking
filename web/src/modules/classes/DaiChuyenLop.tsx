@@ -66,7 +66,10 @@ export function DaiLopChuyen({ dai, homNay, onChuyenTiep, onBanGiao, onBanGiaoGv
       )}
       {dai.banGiaoMon.map((m) => (
         <Dai key={m.mon} nhan={t('Bàn giao môn {mon}', { mon: m.monNgan })} nut={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => onBanGiao({ mon: m.mon })}>{t('Ghi bàn giao')}</button>}>
-          <b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: m.daGhi, b: m.tong })}</b>{m.han && <> · <Han loai="viec-van-hanh" han={m.han} /></>}
+          {/* AUDIT-1611 A1-22: nhiều môn → số từng môn (cùng chữ dòng Công việc, cùng đếm panel) — không cộng ô thành "n em". */}
+          {(m.tung ?? [{ monNgan: '', daGhi: m.daGhi, tong: m.tong }]).map((x, i) => (
+            <span key={x.monNgan || i}>{i > 0 && ' · '}{x.monNgan && `${x.monNgan} `}<b className="tabular-nums text-slate-100">{t('{a}/{b} em', { a: x.daGhi, b: x.tong })}</b></span>
+          ))}{m.han && <> · <Han loai="viec-van-hanh" han={m.han} /></>}
         </Dai>
       ))}
       <DaiDoiGv dai={dai} h={h} onMo={onBanGiaoGv} />

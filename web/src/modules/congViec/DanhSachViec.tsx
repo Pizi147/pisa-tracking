@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { mucSosTheoNhan } from '../../lib/format.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
-  CHAM_CHEO, LOAI_HAN_CUA_VIEC, bacNgan, chiaVachHan, daysBetween, deadlineView, kyGhiKetQua, laViecChamCheo, shortDate, type MucTab,
+  CHAM_CHEO, LOAI_HAN_CUA_VIEC, demBai, bacNgan, chiaVachHan, daysBetween, deadlineView, kyGhiKetQua, laViecChamCheo, shortDate, type MucTab,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -95,7 +95,8 @@ export const chuDau = (ten: string) => {
  */
 export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDong & {
   muc: readonly MucTab<WorkItem>[];
-  dem: ReadonlyMap<string, { n: number; quaHan: number }>;
+  /** `lamThay` (AUDIT-1611 P1-03): dòng làm thay trong mục — vẽ nhưng không vào `n`. */
+  dem: ReadonlyMap<string, { n: number; quaHan: number; lamThay?: number }>;
   soHien: number;
   /** Cuối thẻ cuối (QL "Việc quản lý": + Giao việc · Vận hành ›). */
   cuoi?: ReactNode;
@@ -114,7 +115,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
         const n = soHien + (them[m.key] ?? 0);
         /* GD-1 (lời 11, 19) · GD-1b (lời 24: tên mục "Chấm Speaking"): mục Chấm Speaking là việc chung của nhóm GV Speaking — đếm BÀI (không phải việc), vạch trái trung tính. */
         const chung = m.key === 'cham-cheo';
-        const d = chung ? { n: m.items.reduce((s, x) => s + (x.soBai ?? 0), 0), quaHan: m.items.reduce((s, x) => s + (x.baiQuaHan ?? 0), 0) } : dem.get(m.key) ?? { n: 0, quaHan: 0 };
+        const d: { n: number; quaHan: number; lamThay?: number } = chung ? demBai(m.items) : dem.get(m.key) ?? { n: 0, quaHan: 0 };
         return (
           <section key={m.key} data-muc={m.key} className="card overflow-clip p-0" aria-label={m.label}>
             <h2 className="sticky -top-4 z-[3] md:-top-5 m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug"
@@ -125,6 +126,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
               {d.quaHan > 0 && (
                 <span className="whitespace-nowrap text-[13px] font-bold tabular-nums text-late">{d.quaHan}<span> {t('quá hạn')}</span></span>
               )}
+              {!!d.lamThay && <span className="whitespace-nowrap text-[13px] font-medium text-slate-400">· {t('{n} làm thay', { n: d.lamThay })}</span>}
               {i === 0 && luat}
             </h2>
             <ul className="m-0 list-none p-0">
