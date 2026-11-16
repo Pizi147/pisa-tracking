@@ -376,13 +376,11 @@ export function Field({ label, children, hint, required, luat, loi, as = 'label'
   const nhom = Wrap === 'div' && !idO ? { role: 'group', 'aria-labelledby': idNhan } : {};
   const chu = <>{label}{required && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}</>;
   const noi = useNoiLoi(loi);
+  const the = troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>;
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Wrap className="block" {...nhom}>
-        {(() => {
-          const the = troO ? <label htmlFor={troO} className="label">{chu}</label> : <span id={idNhan} className="label">{chu}</span>;
-          return luat ? <span className="flex items-baseline gap-1">{the}<NutLuat label={label}>{luat}</NutLuat></span> : the;
-        })()}
+        {luat ? <span className="flex items-baseline gap-1">{the}<NutLuat label={label}>{luat}</NutLuat></span> : the}
         {/* Luôn cùng một lớp bọc (như `Truong`): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {hint && <span className="block text-xs text-slate-500 mt-1">{hint}</span>}

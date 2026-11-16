@@ -588,13 +588,11 @@ export function Truong({ nhan, batBuoc, thieu, phu, phuNhan, luat, loi, dem, as 
   const lopNhan = dam ? 'mb-2 flex items-baseline gap-2 text-[15px] font-bold leading-snug text-[color:var(--text)]'
     : 'mb-1 flex items-baseline gap-2 text-[12px] font-medium text-slate-200';   // D10: nhãn trường 500 (luật chữ: nhãn 500)
   const noi = useNoiLoi(loi);
+  const the = troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>;
   return (
     <BaoOTrongNhan.Provider value={setIdO}>
       <Vo className="block min-w-0" {...nhom}>
-        {(() => {
-          const the = troO ? <label htmlFor={troO} className={lopNhan}>{chu}</label> : <span id={idNhan} className={lopNhan}>{chu}</span>;
-          return luat ? <span className="flex items-baseline gap-1">{the}<NutLuat label={nhan}>{luat}</NutLuat></span> : the;
-        })()}
+        {luat ? <span className="flex items-baseline gap-1">{the}<NutLuat label={nhan}>{luat}</NutLuat></span> : the}
         {/* Luôn cùng một lớp bọc (`contents`, không đổi bố cục): bọc/bỏ bọc theo `loi` làm ô dựng lại → mất focus khi đang gõ. */}
         <div ref={noi.ref} className={loi ? 'contents [&_.field]:border-late [&_.field]:ring-1 [&_.field]:ring-late/40' : 'contents'}>{children}</div>
         {phu && <span className="mt-1 block truncate text-xs text-slate-500">{phu}</span>}
