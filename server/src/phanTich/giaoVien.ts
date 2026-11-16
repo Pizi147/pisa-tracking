@@ -301,7 +301,7 @@ function dungNapBai(p: Principal, c: NguCanhPtGv, rows: readonly any[], bundle: 
         if (v && v.required) chung(skill, { weekStart: v.weekStart, deadline: v.deadline, progress: v.progress, noShow: false });
       }
     } else {
-      for (const x of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], c.homNay, bundle.skillRows.get(a.id))) {
+      for (const x of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], c.homNay, bundle.skillRows.get(a.id), undefined, undefined, true)) {   // TD-HVL: chỉ đếm
         if (x.required) chung(x.skill, { weekStart: x.weekStart, deadline: x.deadline, progress: x.progress, noShow: x.noShow !== null });
       }
     }
