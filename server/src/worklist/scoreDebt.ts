@@ -121,7 +121,7 @@ function tinhNoDiem(p: Principal, today: string, branchIds: number[] | null, cla
       }
     } else {
       /* Không truyền `hoanTat` (R11) có chủ ý: nợ điểm đọc band/noShow/lịch, không đọc canEdit/khoa — đỡ 3 câu SQL. */
-      for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows)) {
+      for (const c of skillCells(p, a, scores, bundle.skips.get(a.id) ?? [], today, skillRows, undefined, undefined, true)) {   // TD-HVL: chỉ đếm
         if (!conPhaiNhap({ required: c.required, scored: c.xong, noShow: c.noShow !== null, progress: c.progress })) continue;
         const chamCheo = laChamCheo(a.kind, c.skill);
         out.push({ attemptId: a.id, classId: a.class_id, skill: c.skill, userId: chamCheo ? null : teacherOf.get(`${a.class_id}|${c.skill}`) ?? null,

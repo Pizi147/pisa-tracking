@@ -4,7 +4,7 @@ import { CHUONG_TRINH_KHONG_CHIA_MON, CO_DIEM_SQL, PERMISSIONS, moiNhatTruoc, bo
 import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
 import { kckCuaLuot, loadBundle, resultOf, type AttemptBundle } from '../fasttrack/attempts.ts';
 import { allProgrammes, chuongTrinhTyLeCuaLuot, evaluateRegular, maCtCuaLuot, nguongDatLop, type ProgrammeInfo } from '../normal/regular.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
 
 /**
  * KẾT QUẢ TEST CỦA TỪNG HỌC VIÊN — nền của ba chỉ số hiện trạng (hv-sos-hien-tai · hv-duoi-ky-vong-mon ·
@@ -144,7 +144,19 @@ export function studentsInScope(p: Principal, branchIdHoi: number | null): numbe
  * được sửa kết quả. (PR-VAI-a Q7: `phanTich/boQuen.ts` — nơi dùng thứ hai — đã gỡ.)
  */
 export function attemptsNewestFirst(studentIds: number[]): Map<number, any[]> {
-  return nho(`luot-hv:${studentIds.join(',')}`, () => attemptsNewestFirstGoc(studentIds));
+  return nho(`luot-hv:${studentIds.join(',')}`, () => {
+    /* TD-HVL: nhớ THEO EM — tập con trong cùng request (Đang SOS của Học viên & Lớp, SOS theo lớp của Tổng quan GV) dùng lại lượt đã đọc, không đọc lại.
+       Thứ tự Map giữ như câu cũ: từng lô 400 em, trong lô em tăng dần (câu `student_id IN (…)` duyệt danh sách IN đã xếp). */
+    const theoEm = nhoTheoId('luot-em:', studentIds, attemptsNewestFirstGoc);
+    const out = new Map<number, any[]>();
+    for (let i = 0; i < studentIds.length; i += 400) {
+      for (const id of [...new Set(studentIds.slice(i, i + 400))].sort((x, y) => x - y)) {
+        const list = theoEm.get(id);
+        if (list && !out.has(id)) out.set(id, list);
+      }
+    }
+    return out;
+  });
 }
 function attemptsNewestFirstGoc(studentIds: number[]): Map<number, any[]> {
   const out = new Map<number, any[]>();
