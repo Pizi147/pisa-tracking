@@ -1671,6 +1671,32 @@ await checkAsync('TURSO-1211 (×3) · Học viên & Lớp kem=sos: trang + Đang
   assert(!loi.length, loi.join(' · '));
 });
 
+/* TD-QUET (17/11, đề xuất 2): `/classes/:id/ho-so?phan=…` — mỗi phần y hệt GET lẻ cùng tham số trang (cả lỗi có chủ đích: mã + thân), mọi vai, lớp FT + thường. */
+await checkAsync('TD-QUET (×3) · Hồ sơ lớp một GET: mỗi phần trùng JSON GET lẻ (mọi vai, FT + thường), phần lạ → 400', async () => {
+  const LE: Record<string, (l: number) => string> = {
+    overview: (l) => `/classes/${l}/overview`, roster: (l) => `/classes/${l}/roster`, diemTheoLuot: (l) => `/classes/${l}/diem-theo-luot`,
+    viecCuaToi: (l) => `/classes/${l}/viec-theo-em?chi=toi`, xetLai: (l) => `/classes/${l}/xet-lai`, xoaKetThuc: (l) => `/classes/${l}/xoa-ket-thuc`,
+    cases: (l) => `/cases?classId=${l}`,
+  };
+  const loi: string[] = [];
+  for (const vai of [...MOI_VAI, 'TVV', 'CX', 'ADMIN'] as Vai[]) {
+    for (const lop of [LOP_FT, LOP_THUONG]) {
+      const gop = await doSql(vai, 'GET', `/classes/${lop}/ho-so?phan=${Object.keys(LE).join(',')}`);
+      if (gop.status !== 200) { loi.push(`${vai} ${lop}: gộp ${gop.status}`); continue; }
+      let cauLe = 0, dongLe = 0;
+      for (const [k, url] of Object.entries(LE)) {
+        const le = await doSql(vai, 'GET', url(lop));
+        cauLe += le.n; dongLe += le.dong;
+        const { status, data, ...e } = (gop.json as any)[k];
+        if (status !== le.status || JSON.stringify(le.status === 200 ? data : e) !== JSON.stringify(le.json)) loi.push(`${vai} ${lop} ${k}`);
+      }
+      if (gop.n > cauLe || gop.dong > dongLe) loi.push(`${vai} ${lop}: gộp ${gop.n} câu ${gop.dong} dòng > lẻ ${cauLe} / ${dongLe}`);
+    }
+  }
+  if ((await doSql('QL', 'GET', `/classes/${LOP_FT}/ho-so?phan=overview,la`)).status !== 400) loi.push('phần lạ không 400');
+  assert(!loi.length, loi.join(' · '));
+});
+
 await checkAsync('TD7a (×3) · Xem nhận xét Speaking: không SCAN assessment_scores / case_milestones; migrate prTd7a chạy lặp được', async () => {
   const { migratePrTd7a, CHI_MUC_TD7A } = await import('../migrate/prTd7a.ts');
   const { myWork } = await import('../worklist/mywork.ts');

@@ -1192,14 +1192,52 @@ api.put('/classes/:id/danh-gia-dau-ra/:studentId', requireAuth, wrap((req) => {
 api.get('/classes/:id/roster', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   if (qStr(req, 'chiId') === '1') return classSvc.rosterIds(principalOf(req), pInt(req, 'id'));   // id + tên cho Trước/Sau (PR-TD2-b)
-  const rows = classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
-  /*
-   * AUDIT-1611 gói 13 (B2-15, Turso — dữ liệu gửi): lớp FT — web chỉ đọc `timeline` để biết mục "Nhập điểm" của menu ⋯ (`nhapDiemCua`: lượt ĐẦU còn ô của
-   * người xem) → trả đúng lượt đó, bốn trường (~30 % JSON / lần mở hồ sơ lớp). Lớp thường giữ đủ (bảng điểm lớp thường đọc cả tiến trình). 0 câu thêm.
-   */
-  if (!bangLop().get(pInt(req, 'id'))?.isFastTrack) return rows;
+  return rosterTrang(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+}));
+/*
+ * AUDIT-1611 gói 13 (B2-15, Turso — dữ liệu gửi): lớp FT — web chỉ đọc `timeline` để biết mục "Nhập điểm" của menu ⋯ (`nhapDiemCua`: lượt ĐẦU còn ô của
+ * người xem) → trả đúng lượt đó, bốn trường (~30 % JSON / lần mở hồ sơ lớp). Lớp thường giữ đủ (bảng điểm lớp thường đọc cả tiến trình). 0 câu thêm.
+ */
+function rosterTrang(p: Principal, classId: number, q?: string) {
+  const rows = classSvc.classRoster(p, classId, q);
+  if (!bangLop().get(classId)?.isFastTrack) return rows;
   return rows.map((r: any) => ({ ...r, timeline: r.timeline.filter((x: any) => x.myPending?.length).slice(0, 1)
     .map((x: any) => ({ kind: x.kind, kindLabel: x.kindLabel, attemptNo: x.attemptNo, myPending: x.myPending })) }));
+}
+
+/**
+ * TD-QUET (17/11, đề xuất 2): HỒ SƠ LỚP MỘT GET — các phần trang mở gọi cùng lúc (`?phan=overview,roster,…`), chạy trong CÙNG ngữ cảnh request nên lượt / điểm /
+ * lịch / Case / phân công của lớp đọc MỘT lần cho mọi phần (`nho`, `nhoTheoId`) — trước mỗi GET lẻ đọc lại. Mỗi phần gọi đúng hàm của GET lẻ cùng tham số trang
+ * (`viecCuaToi` = `viec-theo-em?chi=toi`, `cases` = `/cases?classId=`) → `data` trùng JSON GET lẻ; lỗi có chủ đích của một phần (403 / 404…) trả tại phần đó
+ * `{ status, error, khoa, bien, details }` như GET lẻ, phần khác vẫn có. Quét nền (lệnh tới hạn, Checkpoint lớp liên tục) chạy một lần ĐẦU request.
+ */
+const PHAN_HO_SO_LOP: Record<string, (p: Principal, classId: number) => unknown> = {
+  overview: (p, id) => classSvc.classOverview(p, id),
+  roster: (p, id) => rosterTrang(p, id),
+  diemTheoLuot: (p, id) => diemTheoLuotSvc.danhSachLuot(p, id),
+  viecCuaToi: (p, id) => viecTheoEmCuaLop(p, id, { chiToi: true }),
+  xetLai: (p, id) => xetLaiSvc.xemXetLai(p, id, null),
+  xoaKetThuc: (p, id) => xoaKetThucLopSvc.xemXoaKetThuc(p, id),
+  cases: (p, id) => caseSvc.listCases(p, {   // = GET /cases?classId= (lọc trống như `toInt` / `qStr` của đường đó)
+    branchId: null, classId: id, studentId: null, status: undefined, origin: undefined, skill: undefined, queue: undefined, classKind: undefined,
+    ownerUserId: null, noOwner: false, cycleId: null,
+  }),
+};
+api.get('/classes/:id/ho-so', requireAuth, wrap((req) => {
+  maybeSimulateReadError();
+  const p = principalOf(req), id = pInt(req, 'id');
+  const phan = (qStr(req, 'phan') ?? '').split(',').filter(Boolean);
+  if (!phan.length || phan.some((k) => !(k in PHAN_HO_SO_LOP))) throw badRequest('Phần hồ sơ lớp không hợp lệ.');
+  lenhSvc.quetLenhDenHan();
+  if (phan.includes('diemTheoLuot')) regularSvc.quetCheckpoint(id);
+  const out: Record<string, unknown> = {};
+  for (const k of new Set(phan)) {
+    try { out[k] = { status: 200, data: PHAN_HO_SO_LOP[k](p, id) }; } catch (e) {
+      if (!(e instanceof HttpError)) throw e;
+      out[k] = { status: e.status, error: e.message, khoa: e.khoa, bien: e.bien, details: e.details ?? undefined };
+    }
+  }
+  return out;
 }));
 
 /*

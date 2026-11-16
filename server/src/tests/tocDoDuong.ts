@@ -489,6 +489,9 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/ky-vong-ft' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/cau-hinh/nguong-thuong' },
   { trang: 'Quản trị', vai: ['QT', 'QL'], url: '/admin/nhat-ky?muc=band&gioi-han=8' },
+  /* TD-QUET (17/11, đề xuất 2): hồ sơ lớp một GET — các phần trang mở gọi cùng lúc, đọc chung trong một request. */
+  { trang: 'Hồ sơ lớp FT', vai: [...MOI_VAI, 'TVV', 'CX', 'ADMIN'], url: '/classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases' },
+  { trang: 'Hồ sơ lớp thường', vai: ['QL', 'QT', 'GVCN_THUONG'], url: '/classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases' },
   /* TD-QUET (17/11): GET còn thiếu trong bảng đo (đo toàn bộ trên bản chép thật — docs/superpowers/specs/2026-11-17-toc-do/do-toan-bo.md) — có trần để không tăng âm thầm. */
   { trang: 'Chung', vai: ['QL', 'QT', 'GVCN'], url: '/ref/period-window' },
   { trang: 'Chung', vai: ['QL', 'QT'], url: '/ref/people' },
@@ -1314,6 +1317,15 @@ export const TRAN: Record<string, number> = {
   'QT /admin/programmes': 41,   // đo 31
   'QT /admin/chi-nhanh': 13,   // đo 3
   'QT /admin/bang-quy-doi': 13,   // đo 3
+  /* TD-QUET (17/11, đề xuất 2): hồ sơ lớp một GET — max(đo + 10, ⌈đo × 1,3⌉). QL / QT (đo 112–122 = bảy GET lẻ trong một request) vượt trần cứng 100 của
+     phép kiểm chung → không khoá ở đây; khoá bằng "gộp ≤ tổng các GET lẻ" (tocDo.run, TD-QUET hồ sơ lớp). */
+  'GVCN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 114,   // đo 87
+  'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 110,   // đo 84
+  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 114,   // đo 87
+  'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 17,   // đo 7
+  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 72,   // đo 55
+  'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 85,   // đo 65
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 124,   // đo 95
 };
 
 /**
@@ -2141,6 +2153,18 @@ export const TRAN_DONG: Record<string, number> = {
   'QT /admin/programmes': 100,   // đo 50
   'QT /admin/chi-nhanh': 56,   // đo 6
   'QT /admin/bang-quy-doi': 51,   // đo 1
+  /* TD-QUET (17/11, đề xuất 2): hồ sơ lớp một GET — max(đo + 50, ⌈đo × 1,3⌉). */
+  'QL /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3796,   // đo 2920
+  'GVCN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3569,   // đo 2745
+  'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3546,   // đo 2727
+  'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3569,   // đo 2745
+  'QT /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3803,   // đo 2925
+  'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 118,   // đo 68
+  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3114,   // đo 2395
+  'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 3425,   // đo 2634
+  'QL /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 952,   // đo 732
+  'QT /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 959,   // đo 737
+  'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 740,   // đo 569
 };
 
 export const TRAN_GHI_LO = {
