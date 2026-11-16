@@ -7,7 +7,7 @@
  */
 import { kyGhiKetQua, type DeadlineKind } from './display.ts';
 import { t } from '../i18n/index.ts';
-import { KHOA_CHAM_SPEAKING, laViecChamCheo, soSanhViecCham } from './gopViec.ts';
+import { KHOA_CHAM_SPEAKING, gopViecTheoLop, laViecChamCheo, soSanhViecCham, type ViecGopDuoc } from './gopViec.ts';
 import { addDaysIso } from './sos.ts';
 import { mondayOfDate } from './week.ts';
 
@@ -66,6 +66,20 @@ export function nhomViecCua(loai: string): NhomViec { return NHOM_CUA_LOAI[loai]
 export type DongDem = { key: string; studentId: number | null; urgency: string; con?: readonly DongDem[] | null };
 export const dongNhinThay = <T extends DongDem>(ds: readonly T[]): T[] =>
   ds.flatMap((d) => (d.con?.length && d.con.every((c) => c.studentId !== null && c.studentId === d.con![0].studentId) ? (d.con as T[]) : [d]));
+
+/**
+ * AUDIT-1611 gói 13 (Turso — hồ sơ lớp của GV): việc CỦA TÔI ở MỘT lớp dựng từ `dong` của `/my-work` web ĐÃ NẠP (badge menu) — cùng tập
+ * `viecTheoEmCuaLop(chiToi)` của máy chủ cho GV (`mine`; việc của em gắn lớp này + việc cấp lớp, bỏ "Chốt lộ trình"), khỏi gọi `viec-theo-em` (~35–39 câu).
+ * `dongToi` giữ `con` (như máy chủ, AUDIT-1611 P1-01). Việc của em không gắn lớp (`classId` null) không vào — máy chủ cũng chỉ lấy khi em đang học lớp.
+ */
+export function viecLopTuDong<T extends ViecGopDuoc & { mine: boolean; con?: readonly T[] | null }>(dong: readonly T[], classId: number, nhan: (g: string) => string):
+  { cuaToi: T[]; dongToi: T[] } {
+  const hang = (it: T) => ({ overdue: 0, today: 1, normal: 2 })[it.urgency] ?? 2;
+  const toi = dong.flatMap((d) => (d.con?.length ? d.con : [d])).filter((it) => it.mine && it.classId === classId && !laViecChamCheo(it)
+    && !(it.studentId === null && it.group === 'chot_len_ft'))
+    .sort((a, b) => hang(a) - hang(b) || (a.due ?? '9').localeCompare(b.due ?? '9'));
+  return { cuaToi: toi, dongToi: dongNhinThay(gopViecTheoLop(toi, nhan) as T[]).filter((d) => !laViecChamCheo(d)) };
+}
 export type DemDongViec = { n: number; quaHan: number; homNay: number; canLamNgay: number };
 export function demDongViec(ds: readonly DongDem[]): DemDongViec {
   const la = dongNhinThay(ds).filter((x) => !laViecChamCheo(x));

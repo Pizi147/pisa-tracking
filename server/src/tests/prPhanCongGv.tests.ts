@@ -567,7 +567,7 @@ export async function runPrPhanCongGvTests(t: YThucTestKit) {
     const W = lopMoi('MB PCGV-W'); gan(W, gA, null); gan(W, gA, 'listening'); gan(W, gC, 'reading'); xoaNho();
     pc.luuPhanCong(QL, { lop: [{ classId: W, slots: doiO(W, 'reading', gB) }] });
     pc.luuPhanCong(QL, { lop: [{ classId: W, slots: doiO(W, 'reading', gF) }], hieuLuc: { loai: 'tuan', tuanId: T14 } });
-    xkt.xoaLop(P.admin, W, { maLop: 'MB PCGV-W' });
+    xkt.xoaLop(P.admin, W);
     assert(!one(`SELECT 1 FROM classes WHERE id = ?`, W) && !one(`SELECT 1 FROM doi_phan_cong WHERE class_id = ?`, W), 'đã xoá');
   }));
   check('PTA-P3 · áp muộn (hiệu lực 3 ngày trước): effective_from và xem_den tính từ HÔM NAY, không ghi lùi', () => thu(() => {

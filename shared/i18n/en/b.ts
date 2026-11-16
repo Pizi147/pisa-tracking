@@ -625,6 +625,7 @@ const EN_B_WEB = {
   'Lớp cũ · chỉ xem': 'Former class · view only',
   'Em chuyển sang {lop} từ {tu} · bạn xem được tới {den} · việc của em do GV lớp {lop} và GVCN {gvcn} làm': 'Moved to {lop} on {tu} · you can view until {den} · tasks belong to the {lop} teachers and homeroom teacher {gvcn}',
   'Em chuyển sang {lop} từ {tu} · bạn xem được tới {den} · việc của em do GV lớp {lop} làm': 'Moved to {lop} on {tu} · you can view until {den} · tasks belong to the {lop} teachers',
+  'đã đạt {tg} · gợi ý +1.0': 'reached {tg} · suggested +1.0',   // N50 (12): Lộ trình mới sau khi đạt Target
   'về': 'back to',
   'Vắng — {title}': 'Absent — {title}',
   'Đã nhập': 'Entered',

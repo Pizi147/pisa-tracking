@@ -40,6 +40,14 @@ export const VIOLATION_CATEGORY_LABEL: Record<ViolationCategory, string> = {
   classroom: t('Kỷ luật lớp học'),
   other: t('Khác'),
 };
+/** AUDIT-1611 B3-07: 2–3 câu hay dùng theo Nhóm — chip bấm là điền ô "Vi phạm" (sửa được). "Khác" không gợi ý. Web dịch lúc vẽ (`dich`). */
+export const GOI_Y_VI_PHAM: Record<ViolationCategory, readonly string[]> = {
+  attendance: [t('Đi muộn'), t('Nghỉ không phép'), t('Về sớm')],
+  homework: [t('Không nộp BTVN'), t('Nộp thiếu BTVN'), t('Nộp BTVN muộn')],
+  conduct: [t('Dùng điện thoại trong giờ'), t('Nói chuyện riêng'), t('Thái độ chưa đúng mực')],
+  classroom: [t('Không mang tài liệu'), t('Làm việc riêng'), t('Không tham gia hoạt động')],
+  other: [],
+};
 
 /** Đổi nhóm của dữ liệu cũ: `Tham gia trên lớp` (participation) đã bỏ, đổi sang `Thái độ / hành vi` (Y04). */
 export function legacyTopicToViolationCategory(topic: string | null | undefined): ViolationCategory {
@@ -209,6 +217,7 @@ export type ViPhamVao = {
   id: number; occurredOn: string; reportedOn: string; ghiNhanLuc: string | null;
   /** LG-12: người ghi yêu cầu GVCN xử lý (`yeu_cau_xu_ly`) · ngày GVCN "Không xử lý" (null = chưa / đã Hoàn tác). */
   yeuCau?: boolean; khongXuLy?: string | null;
+  /** N50 (5) (rà PTA ④): Quản lý "Không xử lý" VƯỢT luật — vi phạm ra khỏi luật 3 / 2 tuần như đã đóng (việc xử lý hết). */ vuotLuat?: boolean;
   xuLy: { id: number; kind: string; status: MeasureStatus; performedOn: string | null; quyetLuc: string | null }[];
 };
 /** `mocLop` = max(ngày vào lớp đang học, ngày Quay lại học) — hạn đặt lại từ đây (M-08). `tamDung`: em đang Tạm dừng (T65). */
@@ -216,7 +225,7 @@ export type NguCanhHan = { homNay: string; mocLop: string | null; tamDung: boole
 
 const DONG_VP: ReadonlySet<string> = new Set(['done', 'cho_duyet', 'da_duyet']);
 /** Vi phạm "đã đóng bằng xử lý": nằm trong một lần xử lý xong, đang chờ QL, hoặc đã duyệt. Từ chối / nháp không tính. */
-const daDong = (v: Pick<ViPhamVao, 'xuLy'>) => v.xuLy.some((x) => DONG_VP.has(x.status));
+const daDong = (v: Pick<ViPhamVao, 'xuLy' | 'vuotLuat'>) => !!v.vuotLuat || v.xuLy.some((x) => DONG_VP.has(x.status));
 const maxNgay = (...ds: (string | null | undefined)[]) => ds.filter((d): d is string => !!d).map((d) => d.slice(0, 10)).sort().pop() ?? null;
 const ngayCach = (tu: string, den: string) => Math.round((Date.parse(`${den.slice(0, 10)}T00:00:00Z`) - Date.parse(`${tu.slice(0, 10)}T00:00:00Z`)) / 86_400_000);
 

@@ -234,7 +234,8 @@ export async function runYThucTests(t: YThucTestKit) {
       /* PR-YT4: Ghi nhận (V4-1) — trạng thái vẫn suy ra, không có cột status */ 'ghi_nhan_luc', 'ghi_nhan_boi',
       /* PR-Pb2-b (Q14): hạn xử lý chốt + ngày phản hồi — hai NGÀY, vẫn không có cột status */ 'han_xu_ly', 'phan_hoi_ngay',
       /* TINH-HINH (chủ SP 12/11): "Chỉ nhắc nhở" — cờ, không phải trạng thái */ 'chi_nhac',
-      /* LG-12: cờ "Yêu cầu GVCN xử lý" + "Không xử lý" (ngày, người, lý do) — vẫn không có cột status */ 'yeu_cau_xu_ly', 'khong_xu_ly_luc', 'khong_xu_ly_boi', 'khong_xu_ly_ly_do'];
+      /* LG-12: cờ "Yêu cầu GVCN xử lý" + "Không xử lý" (ngày, người, lý do) — vẫn không có cột status */ 'yeu_cau_xu_ly', 'khong_xu_ly_luc', 'khong_xu_ly_boi', 'khong_xu_ly_ly_do',
+      /* DUONG-LUI-2 (N50 câu 5): QL "Không xử lý" vượt luật — cờ, không phải trạng thái */ 'khong_xu_ly_vuot'];
     assert(JSON.stringify(cols) === JSON.stringify(want), `Cột violations sai: ${cols.join(', ')}`);
     for (const banned of ['severity', 'status', 'due_date', 'episode_no', 'urgency']) {
       assert(!cols.includes(banned), `violations không được có cột ${banned} (quyết định của đặc tả §4.1, không phải thiếu sót)`);

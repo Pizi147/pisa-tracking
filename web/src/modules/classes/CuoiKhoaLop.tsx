@@ -1,4 +1,4 @@
-import { useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { useThamSoUrl } from '../../lib/quayLai.ts';
@@ -44,7 +44,7 @@ type Em = {
   kqdr: { goiY: { overall: number | null; dat: boolean; monTruot: RegularSkill[] } | null; mt0: { overall: number | null } | null; moTay: boolean;
     bands: Record<RegularSkill, number | null> | null; chot: KetLuanKv | null } | null;
 };
-type Lop = { id: number; code: string; ft: boolean; programmeCode: ProgrammeCode | null; studentCount: number };
+type Lop = { id: number; code: string; ft: boolean; programmeCode: ProgrammeCode | null; studentCount: number; branchId: number; branchCode: string };
 type KeHoach = {
   from: { id: number; code: string; programmeCode: ProgrammeCode | null; branchId: number; branchCode: string; programmeName: string | null };
   candidates: Lop[]; tuanChon: string[]; tuanCuoiKhoa: string | null; students: Em[]; gvcn: string | null; goiYLopMoi: { startPeriodId: number } | null;
@@ -94,11 +94,18 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const [loi, setLoi] = useState<Record<number, string>>({});
   const loc = (['chua-chot', 'con-ban-giao', 'xet-lai'].includes(locUrl) || (locUrl === 'loi' && Object.keys(loi).length) ? locUrl : '') as '' | 'chua-chot' | 'con-ban-giao' | 'loi' | 'xet-lai';
   const [ketQua, setKetQua] = useState<{ ok: number; loi: number } | null>(null);
+  /* N50 (7) (rà PTA ⑨): lớp chi nhánh khác — chỉ tải khi QL mở ô lớp của một em (một lần mỗi lần vào trang). */
+  const [lopKhac, setLopKhac] = useState<Lop[]>([]);
+  const daTaiKhac = useRef(false);
+  const taiLopKhac = () => {
+    if (daTaiKhac.current) return;
+    daTaiKhac.current = true;
+    api.get<Lop[]>(`/classes/${classId}/transition/lop-khac`).then(setLopKhac, () => { daTaiKhac.current = false; });
+  };
   const [busy, setBusy] = useState(false);
   /* N36: một ô chung "Reset bậc vi phạm" cho lần chốt — mặc định tắt (giữ bậc, chuỗi đếm thang nối tiếp). */
   const [resetBac, setResetBac] = useState(false);
   const [tienDo, setTienDo] = useState<[number, number] | null>(null);
-  const [hoiNgay, setHoiNgay] = useState<{ ten: string[]; chiEm?: number[] } | null>(null);
   const [tam, setTam] = useState(false);
   const [moLop, setMoLop] = useState<{ huong: ChonHuong; ganCho: 'thanh' | number } | null>(null);
   const [huy, setHuy] = useState<{ em: Em; lyDo: string } | null>(null);
@@ -140,7 +147,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const moc = d.tuanCuoiKhoa ? mocLoTrinh(d.tuanCuoiKhoa) : null;
   const tuanSauFinal = d.tuanCuoiKhoa ? addDaysIso(d.tuanCuoiKhoa, 7) : null;
   const tuanChung = tuanSauFinal && d.tuanChon.includes(tuanSauFinal) ? tuanSauFinal : d.tuanChon[0] ?? '';
-  const lopCua = new Map(d.candidates.map((c) => [c.id, c]));
+  const lopCua = new Map([...d.candidates, ...lopKhac].map((c) => [c.id, c]));
   const kvTen = ma ? KY_VONG_DAU_RA[ma] : undefined;
 
   /** Gốc của dòng: lệnh đã chốt › nháp › gợi ý máy theo Final (mặc định hiển nhiên, chưa lưu). */
@@ -231,7 +238,9 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     }
     setTam(false);
   };
-  const lopAp = lopTheoHuong(d.candidates, ap.huong || (dsChon[0]?.x.huong ?? ''), ma, ke);
+  /* N50 (7): ô áp chung / nhóm (cả lớp) chỉ lớp cùng chi nhánh; ô lớp của từng em có thêm chi nhánh khác (cuối danh sách). */
+  const cungCn = d.candidates.filter((c) => c.branchId === d.from.branchId);
+  const lopAp = lopTheoHuong(cungCn, ap.huong || (dsChon[0]?.x.huong ?? ''), ma, ke);
 
   /* ------------------------------------------------------------------ lưu */
   const ketThuc = (ok: number[], failed: { studentId: number; message: string }[]) => {
@@ -242,33 +251,50 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     if (failed.length) setLoc('loi');
     lamMoi();
   };
-  const chot = async (chiEm?: number[], daHoi = false) => {
+  /* DUONG-LUI-2 (P1-09): chốt "Ngay hôm nay" có Hoàn tác → không hỏi lại trước khi chốt. Rà PTA ③: mọi lô của lần chốt hoàn tác MỘT lời gọi (tất cả hoặc không). */
+  const hoanTacChuyenNgay = async (dao: number[]) => {
+    setBusy(true);
+    try {
+      await api.post(`/classes/${classId}/hoan-tac-chuyen-ngay`, { dao });
+      toast.push('ok', t('Đã hoàn tác — em về lại {lop}', { lop: d.from.code }));
+    } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); setKetQua(null); lamMoi(); }
+  };
+  const chot = async (chiEm?: number[]) => {
     const nhom = guiDuoc.filter((r) => !chiEm || chiEm.includes(r.e.id));
     if (!nhom.length) return;
-    const ngay = nhom.filter((r) => r.lenh && laChuyenNgay(r.x.tuan, h));
-    /* N22 ③: chốt "Ngay hôm nay" không hoàn tác → một hộp xác nhận nêu tên em; tuần thường không hỏi. */
-    if (ngay.length && !daHoi) { setHoiNgay({ ten: ngay.map((r) => r.e.fullName), chiEm }); return; }   // giữ lô đang chốt (vd Thử lại n em)
-    setHoiNgay(null); setBusy(true);
+    const laNgay = (r: (typeof nhom)[number]) => !!r.lenh && laChuyenNgay(r.x.tuan, h);
+    /* N50 (7) (rà PTA ①): lớp chi nhánh khác chỉ ở ô lớp của một em — gửi riêng em đó, đánh dấu `khacChiNhanh` (máy chủ chặn lô). */
+    const khacCn = (r: (typeof nhom)[number]) => { const c = r.x.lop ? lopCua.get(r.x.lop) : null; return !!c && c.branchId !== d.from.branchId; };
+    const kvDong = (r: (typeof nhom)[number]) => ({ sid: r.e.id, dat: r.x.kv!.dat, nguyenNhan: r.x.kv!.nn, mon: r.x.kv!.mon, lyDo: r.x.kv!.phuongAn.trim() || null });
+    setBusy(true);
     try {
-      const lenh = nhom.filter((r) => r.lenh).map((r) => ({
+      const dongLenh = (r: (typeof nhom)[number]) => ({
         studentId: r.e.id, huong: huongLenh(r.x), toClassId: canLopDich(huongLenh(r.x)!) ? r.x.lop : null, tuan: r.x.tuan || null,
         mucTieu: mucTieuCua(r.e, r.x), ngayXemLai: r.x.huong === 'dung' && r.x.quayLai ? r.x.xemLai || null : null, lyDo: r.x.lyDo.trim() || null,
         /* Không tích → không gửi: máy chủ giữ cờ của lệnh đang chờ (đặt ở Chuyển lớp một em). */
         ...(resetBac && soBac ? { resetBac: true } : {}),
-      }));
-      const kq = lenh.length
-        ? await guiTheoLo(`/classes/${classId}/transition`, null, ngay.length ? LO_CHUYEN_NGAY_THUONG : lenh.length, setTienDo, lenh)
-        : { ok: [] as number[], failed: [] as { studentId: number; message: string }[] };
-      const kv = nhom.filter((r) => r.kv && !kq.failed.some((f) => f.studentId === r.e.id));
+        ...(khacCn(r) ? { khacChiNhanh: true } : {}),
+      });
+      const coLenh = nhom.filter((r) => r.lenh);
+      /* "Ngay hôm nay" và em sang chi nhánh khác: mỗi em một lời gọi (Netlify 10 s); em chuyển ngay gửi KÈM Kỳ vọng — cùng giao dịch + ảnh chụp Hoàn tác (rà PTA ②). */
+      const rieng = coLenh.filter((r) => laNgay(r) || khacCn(r));
+      const lo = coLenh.filter((r) => !rieng.includes(r));
+      const url = `/classes/${classId}/transition`;
+      const kqLo = await guiTheoLo(url, null, Math.max(lo.length, 1), setTienDo, lo.map(dongLenh));
+      const kqRieng = await guiTheoLo(url, null, LO_CHUYEN_NGAY_THUONG, setTienDo, rieng.map(dongLenh),
+        (phan) => ({ kyVong: rieng.filter((r) => laNgay(r) && r.kv && phan.some((x) => x.studentId === r.e.id)).map(kvDong) }));
+      const kq = { ok: [...kqLo.ok, ...kqRieng.ok], failed: [...kqLo.failed, ...kqRieng.failed], daChuyen: [...kqLo.daChuyen, ...kqRieng.daChuyen], dao: [...kqLo.dao, ...kqRieng.dao] };
+      if (kq.dao.length) toast.hoanTac(t('Đã chuyển {n} em sang lớp mới', { n: kq.daChuyen.length }), () => hoanTacChuyenNgay(kq.dao), { key: `chuyen-ngay-${classId}` });
+      const kv = nhom.filter((r) => r.kv && !laNgay(r) && !kq.failed.some((f) => f.studentId === r.e.id));
       const ok = [...kq.ok], failed = [...kq.failed];
       /* Kỳ vọng từng em (máy chủ chốt cả lô trong một tx — một em lỗi không được làm hỏng em khác). */
       for (const r of kv) {
         try {
-          await api.put(`/classes/${classId}/ky-vong`, { dong: [{ sid: r.e.id, dat: r.x.kv!.dat, nguyenNhan: r.x.kv!.nn, mon: r.x.kv!.mon, lyDo: r.x.kv!.phuongAn.trim() || null }] });
+          await api.put(`/classes/${classId}/ky-vong`, { dong: [kvDong(r)] });
           if (!ok.includes(r.e.id)) ok.push(r.e.id);
         } catch (e: any) { failed.push({ studentId: r.e.id, message: e.message }); const i = ok.indexOf(r.e.id); if (i >= 0) ok.splice(i, 1); }
       }
-      if (kv.length) invalidate('/cases');
+      if (kv.length || rieng.some((r) => r.kv)) invalidate('/cases');
       ketThuc(ok, failed);
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); setTienDo(null); }
   };
@@ -545,11 +571,11 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       return <button type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-[13px] xl:invisible xl:group-hover/hang:visible xl:group-focus-within/hang:visible sm:min-h-0"
         onClick={() => setDoiLopRieng((s) => new Set(s).add(e.id))}>{t('Đổi lớp')}</button>;
     }
-    const dsLop = lopTheoHuong(d.candidates, x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` }));
+    const dsLop = lopTheoHuong([...d.candidates, ...lopKhac], x.huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${c.branchCode} · ${c.studentCount} em` }));
     return (
-      <span className="block">
+      <span className="block" onFocusCapture={taiLopKhac}>
         <ChonLop ds={dsLop} value={x.lop} onChange={(id) => doi(e.id, { lop: id })} ariaLabel={t('Lớp · {ten}', { ten: e.fullName })}
-          maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chỉ lớp chi nhánh {cn}', { cn: d.from.branchCode })} />
+          maCu={x.lop ? lopCua.get(x.lop)?.code : undefined} moLopMoi={() => setMoLop({ huong: x.huong, ganCho: e.id })} ghiChuDs={t('Chi nhánh {cn} trước, chi nhánh khác sau', { cn: d.from.branchCode })} />
         {x.lop !== null && tuan}
       </span>
     );
@@ -685,7 +711,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
           ))}
         </span>
       )}
-      {laChuyenNgay(ap.tuan, h) && <span role="note" className="rounded-lg border px-2 py-1 text-[12px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay, không hoàn tác')}</span>}
+      {laChuyenNgay(ap.tuan, h) && <span role="note" className="rounded-lg border px-2 py-1 text-[12px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay khi chốt')}</span>}
     </>
   );
 
@@ -736,7 +762,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const tatCa = idsChon.length > 0 && idsChon.every((id) => chon.has(id));
     const huong = HUONG_NHOM[k];
     const coO = laQl && !!huong && dongNhomHuong(k).length > 0;
-    const dsLop = coO ? lopTheoHuong(d.candidates, huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` })) : [];
+    const dsLop = coO ? lopTheoHuong(cungCn, huong, ma, ke).map((c) => ({ id: c.id, ma: c.code, phu: `${c.programmeCode ?? 'FT'} · ${d.from.branchCode} · ${c.studentCount} em` })) : [];
     const mauVach = k === 'len' ? 'rgb(var(--ok-rgb))' : k === 'lai' ? 'rgb(var(--bad-rgb))' : k === 'cn' ? 'rgb(var(--soon-rgb))' : 'var(--text-faint)';
     return (
       <div className={`grid min-h-[44px] grid-cols-[28px_minmax(0,1fr)] items-center gap-x-3.5 gap-y-2 border-b px-4 py-2 pl-[13px] ${LUOI}`}
@@ -838,16 +864,6 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
         )}
       </section>
 
-      {hoiNgay && (
-        <Modal open onClose={() => setHoiNgay(null)} width="max-w-md" title={t('Chuyển ngay hôm nay?')}
-          footer={<>
-            <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setHoiNgay(null)}>{t('Quay lại')}</button>
-            <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" onClick={() => chot(hoiNgay.chiEm, true)}>{t('Chuyển ngay · {n} em', { n: hoiNgay.ten.length })}</button>
-          </>}>
-          <p className="m-0 rounded-lg border px-3 py-2 text-[13px] font-semibold text-soon" style={KHOI_VANG}>⚠ {t('Chuyển ngay, không hoàn tác')}</p>
-          <p className="mb-0 mt-2 text-sm text-slate-200">{hoiNgay.ten.join(', ')}</p>
-        </Modal>
-      )}
       {huy && (
         <Modal open onClose={() => setHuy(null)} width="max-w-md" title={t('Huỷ quyết định · {ten}', { ten: huy.em.fullName })}
           footer={<>

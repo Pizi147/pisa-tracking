@@ -11,7 +11,7 @@ import {
 import { demoToday, getConfig, scenarioMode, setConfig } from '../demoConfig.ts';
 import { HttpError, badRequest, chuTuDo, forbidden, isIsoDate, loi, notFound, toInt } from '../util.ts';
 import { SESSION_COOKIE, createSession, datGocNhin, destroySession, principalOf, requireAuth } from '../auth.ts';
-import { activeAt, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, bangLop, can, classScopeSql, laGvSpeaking, loadPrincipal, permissionSummary, require_, scopeFor, type Principal } from '../permissions.ts';
 import { khungPhamVi, navOf } from '../platform/nav.ts';
 import * as attachmentSvc from '../platform/attachments.ts';
 import * as khoiPhucRacSvc from '../platform/khoiPhucRac.ts';
@@ -1192,7 +1192,14 @@ api.put('/classes/:id/danh-gia-dau-ra/:studentId', requireAuth, wrap((req) => {
 api.get('/classes/:id/roster', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   if (qStr(req, 'chiId') === '1') return classSvc.rosterIds(principalOf(req), pInt(req, 'id'));   // id + tên cho Trước/Sau (PR-TD2-b)
-  return classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+  const rows = classSvc.classRoster(principalOf(req), pInt(req, 'id'), qStr(req, 'q'));
+  /*
+   * AUDIT-1611 gói 13 (B2-15, Turso — dữ liệu gửi): lớp FT — web chỉ đọc `timeline` để biết mục "Nhập điểm" của menu ⋯ (`nhapDiemCua`: lượt ĐẦU còn ô của
+   * người xem) → trả đúng lượt đó, bốn trường (~30 % JSON / lần mở hồ sơ lớp). Lớp thường giữ đủ (bảng điểm lớp thường đọc cả tiến trình). 0 câu thêm.
+   */
+  if (!bangLop().get(pInt(req, 'id'))?.isFastTrack) return rows;
+  return rows.map((r: any) => ({ ...r, timeline: r.timeline.filter((x: any) => x.myPending?.length).slice(0, 1)
+    .map((x: any) => ({ kind: x.kind, kindLabel: x.kindLabel, attemptNo: x.attemptNo, myPending: x.myPending })) }));
 }));
 
 /*
@@ -1737,7 +1744,7 @@ api.patch('/classes/:id/thong-tin', requireAuth, wrap((req) => {
 api.get('/classes/:id/xoa-ket-thuc', requireAuth, wrap((req) => xoaKetThucLopSvc.xemXoaKetThuc(principalOf(req), pInt(req, 'id'))));
 api.post('/classes/:id/xoa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return xoaKetThucLopSvc.xoaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return xoaKetThucLopSvc.xoaLop(principalOf(req), pInt(req, 'id'));
 }));
 api.post('/classes/:id/ket-thuc', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
@@ -2009,6 +2016,8 @@ api.get('/classes/:id/progress', requireAuth, wrap((req) => {
  * KẾ HOẠCH CHUYỂN TIẾP khi lớp học hết chương trình (mục 6.1) — chỉ đọc.
  * Trả về chương trình kế tiếp theo luồng mặc định, lớp chuyển đến đang có, và danh sách học viên.
  */
+/** N50 (7) (rà PTA ⑨): lớp đích chi nhánh khác cho ô lớp của MỘT em ở trang Cuối khoá — chỉ tải khi QL mở ô đó. */
+api.get('/classes/:id/transition/lop-khac', requireAuth, wrap((req) => transitionSvc.lopKhacChiNhanh(principalOf(req), pInt(req, 'id'))));
 api.get('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateReadError();
   lenhSvc.quetLenhDenHan();
@@ -2043,12 +2052,11 @@ api.put('/classes/:id/xet-lai/:sid/nhan-xet', requireAuth, wrap((req) => {
  */
 api.post('/classes/:id/transition', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  const id = pInt(req, 'id');
-  const b = req.body ?? {};
-  return lenhSvc.raLenh(principalOf(req), {
-    lopNguonId: id, boiCanh: lenhSvc.boiCanhTheoLop(id), tuanChung: b.tuanChung ?? null, caLop: true,
-    dongs: Array.isArray(b.dongs) ? b.dongs.map(lenhSvc.dongTuBody) : [],
-  });
+  return hoanTacChuyenNgaySvc.chotCaLop(principalOf(req), pInt(req, 'id'), req.body ?? {});
+}));
+api.post('/classes/:id/hoan-tac-chuyen-ngay', requireAuth, wrap((req) => {
+  maybeSimulateSaveFailure();
+  return hoanTacChuyenNgaySvc.hoanTacChuyenNgay(principalOf(req), pInt(req, 'id'), req.body?.dao, 'classes');
 }));
 
 api.patch('/lenh-chuyen/:id', requireAuth, wrap((req) => {
@@ -2690,7 +2698,7 @@ api.delete('/s-expert/:id', requireAuth, wrap((req) => {
   return sExSvc.xoaSEx(principalOf(req), pInt(req, 'id'));
 }));
 /* Q-RL2a THÙNG RÁC: Quản trị › Đã xoá (đọc) · Khôi phục một mục (Hoàn tác 5 s của web gọi cùng đường) — quyền như thao tác gốc. */
-const LOAI_RAC = ['case', 'pa', 'ket_qua_pa', 'vi_pham', 'tep', 'hoc_vien'] as const;
+const LOAI_RAC = ['case', 'pa', 'ket_qua_pa', 'vi_pham', 'tep', 'hoc_vien', 'lop'] as const;
 const loaiRac = (v: string | undefined) => ((LOAI_RAC as readonly string[]).includes(v ?? '') ? v as (typeof LOAI_RAC)[number] : null);
 api.get('/thung-rac', requireAuth, wrap((req) => khoiPhucRacSvc.danhSachRac(principalOf(req), loaiRac(qStr(req, 'loai')))));
 /* GD-16: số tab "Đã xoá" ở Lưu trữ khi mở trang (danh sách chỉ nạp khi bấm tab). `loai` lạ → bỏ qua (null). */
@@ -3204,7 +3212,7 @@ api.post('/admin/accounts/:id/password', requireAuth, wrap((req) => accountSvc.r
 api.get('/admin/accounts/:id/xoa', requireAuth, wrap((req) => xoaTaiKhoanSvc.xemXoaTaiKhoan(principalOf(req), pInt(req, 'id'))));
 api.post('/admin/accounts/:id/xoa', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
-  return xoaTaiKhoanSvc.xoaTaiKhoan(principalOf(req), pInt(req, 'id'), req.body ?? {});
+  return xoaTaiKhoanSvc.xoaTaiKhoan(principalOf(req), pInt(req, 'id'));
 }));
 /** RKC-6 (PTA 8): Tài khoản › Đã xoá › Khôi phục — CHỈ Quản trị hệ thống. */
 api.post('/admin/accounts/:id/khoi-phuc', requireAuth, wrap((req) => {

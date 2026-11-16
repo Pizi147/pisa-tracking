@@ -1908,7 +1908,9 @@ CREATE TABLE violations (
   -- LG-12: GVCN "Không xử lý" + lý do (≥ 8 ký tự) → hết bắt buộc DO yêu cầu; vi phạm vẫn đếm luật 3 / 2 tuần. NULL = chưa / đã Hoàn tác (lịch sử: violation_history).
   khong_xu_ly_luc TEXT,
   khong_xu_ly_boi INTEGER REFERENCES users(id),
-  khong_xu_ly_ly_do TEXT
+  khong_xu_ly_ly_do TEXT,
+  -- DUONG-LUI-2 (N50 câu 5): 1 = Quản lý "Không xử lý" vượt luật 3 vi phạm / 2 tuần → vi phạm ra khỏi luật (việc xử lý hết). Hoàn tác về 0.
+  khong_xu_ly_vuot INTEGER NOT NULL DEFAULT 0
 );
 CREATE INDEX idx_violation_student ON violations(student_id, occurred_on);
 CREATE INDEX idx_violation_class ON violations(class_id, occurred_on);

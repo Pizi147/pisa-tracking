@@ -683,6 +683,14 @@ export function laAdminCua(p: Principal, ctx: Ctx): boolean {
   return p.grants.some((g) => g.roleKey === 'office_admin' && grantCovers(g, ctx));
 }
 
+/**
+ * DUONG-LUI-2 (B1-14): câu chặn nhập điểm theo người — QL / Admin (có quyền nhập hộ ở chi nhánh mình) gặp em chi nhánh khác thì nói đúng lý do + bước tiếp,
+ * không nhận câu dành cho GV.
+ */
+export const CHU_CHAN_NHAP_DIEM = (p: Principal): string => (can(p, PERMISSIONS.SCORE_OVERRIDE, { anyScope: true })
+  ? 'Học viên ở chi nhánh khác — Quản lý chi nhánh của em nhập điểm.'
+  : 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
+
 export function require_(p: Principal, permission: string, ctx: Ctx = {}, message?: string) {
   if (!can(p, permission, ctx)) {
     throw forbidden(message ?? 'Bạn không có quyền thực hiện thao tác này.', {

@@ -12,7 +12,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { KHOI_VANG, NutHomNay, OTuan } from '../classes/chuyenLopChung.tsx';
 import { ClassCreatePanel } from '../classes/ClassCreatePanel.tsx';
-import { hoanTacHangLoat } from './hangLoatEm.ts';
+import { chayHangLoat, hoanTacHangLoat } from './hangLoatEm.ts';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
 import {
   CHU_CHUYEN_LOP, TOI_DA_NHIEU_EM, canHoiTarget, kindCuaBac, nhanLoaiXuLy, chuTargetKck, tachKck, chonGuiNhieuEm, docOTarget, chuTuanHoc, chuTyLeXetLai, nguongThuongHienTai, dsLoi, hanBanGiaoLenh, kyHieuLop, laChuyenNgay,
@@ -223,6 +223,17 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   /* Không hỏi Target → không gửi: máy chủ lấy Target LTT / khoá; sửa lệnh thì giữ Target + Dự kiến thi của lệnh (R-C3). */
   const mucTieuGui = oTarget ? oT.giaTri : undefined;
   const xong = (chu: string) => { xongChuyen(); toast.push('ok', chu); onDone?.(); onClose(); };
+  /* DUONG-LUI-2 (A2-23): lệnh chờ (tuần sau) — toast có Hoàn tác như mọi loại duyệt; `hoan` = đúng đường "Huỷ quyết định" đang có. */
+  const xongCoHoanTac = (chu: string, hoan: () => Promise<{ failed?: { message: string }[] } | unknown>) => {
+    xongChuyen(); onDone?.(); onClose();
+    toast.hoanTac(chu, async () => {
+      try {
+        const r = await hoan() as { failed?: { message: string }[] } | undefined;
+        xongChuyen(); onDone?.();
+        toast.push(r?.failed?.length ? 'error' : 'ok', r?.failed?.length ? r.failed[0].message : t('Đã hoàn tác'));
+      } catch (e: any) { toast.push('error', loiMayChu(e)); }
+    }, { key: `chuyen-lop-${studentId}` });
+  };
   /* OV-13l: ngày máy chủ (cùng ngày `tuanHopLe` kiểm). Chuyển ngay chỉ ở chế độ Quản lý ra lệnh. */
   const homNayMay = nen?.today ?? homNay ?? null;
   const ngayNay = !dx && !!homNayMay && laChuyenNgay(tuan, homNayMay);
@@ -242,11 +253,15 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac } });
         /* #8: Duyệt "Ngay hôm nay" — Hoàn tác = Huỷ quyết định của thẻ (thẻ về Chờ duyệt, em về lớp cũ). */
-        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, theDuyet: duyet.id }); } else xong(t('Đã duyệt và quyết định chuyển lớp'));
+        if (ngayNay && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, theDuyet: duyet.id }); }
+        else xongCoHoanTac(t('Đã duyệt và quyết định chuyển lớp'), () => api.post(`/yeu-cau/${duyet.id}/huy-quyet-dinh`, {}));
       } else {
         /* PR-CL (B1, D15): ra mới hoặc sửa lệnh đang chờ — cùng một đường, máy chủ tính bối cảnh + hướng. */
         const r = await api.post<{ daChuyen?: number[]; dao?: number }>(`/students/${studentId}/transfer`, { toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac, ...(chonTheoCk ? { theoCuoiKhoa: theoCk } : {}) });
-        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, dao: r.dao }); } else xong(t('Đã lưu quyết định chuyển lớp'));
+        if (r?.daChuyen?.includes(studentId) && dich) { xongChuyen(); setDaChuyen({ lop: { id: dich.id, code: dich.code }, han: hanGvcn, dao: r.dao }); }
+        /* Lệnh MỚI → Hoàn tác = Huỷ quyết định; sửa lệnh đang chờ thì Huỷ không phải đảo của lần sửa → toast thường (sửa lại tại chỗ). */
+        else if (!lenh) xongCoHoanTac(t('Đã lưu quyết định chuyển lớp'), () => chayHangLoat('huy-lenh', [studentId], {}));
+        else xong(t('Đã lưu quyết định chuyển lớp'));
       }
     } catch (e: any) { toast.push('error', ngayNay ? `${t('Không lưu được — chưa chuyển')} · ${loiMayChu(e)}` : loiMayChu(e)); } finally { setBusy(false); }
   };
@@ -354,7 +369,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
           {dx ? (
             <p className="mb-0 mt-3 text-xs text-slate-400">{t('Gửi Quản lý duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
           ) : toClassId && (
-            <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay, không hoàn tác')}` : t('Khi chuyển, web sẽ')}>
+            <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay (có Hoàn tác)')}` : t('Khi chuyển, web sẽ')}>
               {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : t('Đang xem trước…')}</p> : (
                 <div className={xemLop.canhBao || ngayNay ? 'rounded-lg border p-3' : ''} style={xemLop.canhBao || ngayNay ? khoiVang : undefined} role={xemLop.canhBao || ngayNay ? 'note' : undefined}>
                   <ul className="m-0 list-disc space-y-1 pl-5 text-sm text-slate-200">{[...dongNgay, ...xemLop.khiChuyen.map((c) => dichChu(c))].map((c) => <li key={c}>{c}</li>)}</ul>

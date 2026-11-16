@@ -96,6 +96,8 @@ export function sExTuan(p: Principal, weekStart: string, o: { branchId?: number 
 // ------------------------------------------------------------------ ghi
 
 type Than = { tuan: string; ngay: string | null; diem: number | null; nhanXet: string | null };
+/** `tuDoi`: điểm nhập trước tuần của lượt → máy dời lượt về tuần này (B1-05, như Mock / MT0 — `doiVeTuanNayNeuChua`). Không lưu vào bảng. */
+type ThanDoc = Than & { tuDoi: boolean };
 
 function docLich(body: Record<string, unknown>): Pick<Than, 'tuan' | 'ngay'> {
   if (body.ngay != null) {
@@ -107,19 +109,31 @@ function docLich(body: Record<string, unknown>): Pick<Than, 'tuan' | 'ngay'> {
 }
 
 /** Thân yêu cầu gộp lên bản cũ: khoá có mặt mới đổi. Band 0..9 bậc 0.5 — không suy luật điểm nào khác (XM-1 đóng: không tính). */
-function docThan(body: Record<string, unknown>, cu: Than | null, today: string): Than {
-  const lich = cu && !('ngay' in body) && !('tuan' in body) ? { tuan: cu.tuan, ngay: cu.ngay } : docLich(body);
+function docThan(body: Record<string, unknown>, cu: Than | null, today: string): ThanDoc {
+  const guiLich = 'ngay' in body || 'tuan' in body;
+  const lich = cu && !guiLich ? { tuan: cu.tuan, ngay: cu.ngay } : docLich(body);
   let diem = cu?.diem ?? null;
   if ('diem' in body) {
     if (body.diem !== null && kiemBand(body.diem)) throw badRequest(kiemBand(body.diem)!);
     diem = body.diem as number | null;
   }
   const nhanXet = 'nhanXet' in body ? chuTuDo(body.nhanXet, 'Nhận xét', NHAN_XET_TOI_DA) : cu?.nhanXet ?? null;
-  if (diem !== null && lich.tuan > mondayOf(today)) throw badRequest('Chưa tới tuần của lượt S Expert — chưa nhập điểm được.');
-  return { ...lich, diem, nhanXet };
+  /*
+   * DUONG-LUI-2 (B1-05): điểm trước tuần → tự dời lượt về tuần này (chỉ tuần), nhật ký ghi `tuDoi`; trước 14/11 là chặn 400. Rà PTA ⑦: CHỈ khi không gửi
+   * ngày / tuần mới (gửi lại đúng lịch đang có cũng tính là không đổi) — người chủ động chọn ngày tương lai kèm điểm thì giữ ý họ: 400 nói đường làm.
+   */
+  if (diem !== null && lich.tuan > mondayOf(today)) {
+    const giuLich = !guiLich || (!!cu && lich.tuan === cu.tuan && (lich.ngay ?? lich.tuan) === (cu.ngay ?? cu.tuan));
+    if (!giuLich) throw badRequest('Chưa tới tuần của lượt S Expert — chọn ngày từ tuần này trở về trước, hoặc lưu điểm giữ nguyên ngày để máy dời về tuần này.');
+    return { tuan: mondayOf(today), ngay: null, diem, nhanXet, tuDoi: true };
+  }
+  return { ...lich, diem, nhanXet, tuDoi: false };
 }
 
-const anh = (id: number, t: Than) => ({ id, ...t });
+const anh = (id: number, t: Than | ThanDoc) => {
+  const { tuDoi, ...x } = t as ThanDoc;
+  return { id, ...x, ...(tuDoi ? { tuDoi: 'diem' } : {}) };
+};
 const nhan = (studentId: number, tuan: string, today: string) => {
   const s = db().prepare('SELECT student_code AS ma FROM students WHERE id = ?').get(studentId) as { ma: string };
   return `${s.ma} · ${tuanLich(tuan, today)} · S Expert`;
@@ -143,7 +157,7 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
       'INSERT INTO s_expert (student_id, tuan, ngay, diem, nhan_xet, cham_boi, cham_luc, them_boi, them_luc) VALUES (?,?,?,?,?,?,?,?,?)',
     ).run(studentId, t.tuan, t.ngay, t.diem, t.nhanXet, chamBoi, chamBoi ? luc : null, p.userId, luc).lastInsertRowid);
     writeAudit({ actorUserId: p.userId, action: 's_expert.them', entityType: 'student', entityId: studentId, entityLabel: nhan(studentId, t.tuan, today), before: null, after: anh(id, t) });
-    return { id, themBoi: p.fullName, themLuc: luc };
+    return { id, themBoi: p.fullName, themLuc: luc, ...(t.tuDoi ? { tuan: t.tuan } : {}) };
   });
 }
 
@@ -174,7 +188,8 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
     const doiLich = t.tuan !== cu.tuan || t.ngay !== cu.ngay;
     const doiDiem = t.diem !== cu.diem || t.nhanXet !== cu.nhanXet;
     if (!doiLich && !doiDiem) return { id, doi: false };
-    if (doiLich) requireSuaLichTest(p, { studentId }, QL_MSG);
+    /* B1-05: lịch đổi CHỈ vì máy tự dời theo điểm → như Mock: không cần quyền sửa lịch; khoá cuối tuần N15 vẫn áp (rà PTA ⑦). */
+    if (doiLich && !t.tuDoi) requireSuaLichTest(p, { studentId }, QL_MSG);
     if (doiLich) chanCuoiTuan(p, { ...SEX, student_id: studentId }, [cu.tuan, t.tuan]);
     if (doiDiem && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     const luc = nowIso();
@@ -185,7 +200,7 @@ export function suaSEx(p: Principal, id: number, body: Record<string, unknown>) 
       actorUserId: p.userId, action: doiLich ? 's_expert.sua' : 's_expert.cham', entityType: 'student', entityId: studentId,
       entityLabel: nhan(studentId, t.tuan, today), before: anh(id, cu), after: anh(id, t),
     });
-    return { id, doi: true, suaBoi: p.fullName, suaLuc: luc };
+    return { id, doi: true, suaBoi: p.fullName, suaLuc: luc, ...(t.tuDoi ? { tuan: t.tuan } : {}) };
   });
 }
 

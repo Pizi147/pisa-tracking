@@ -33,7 +33,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
       /* TD7a: chỉ mục một phần trên cột OV-13k — cắt cùng (chỉ so cột, không so chỉ mục). */
       .replace(/\n\/\* TD7a: ô S Mock[^\n]*\nCREATE INDEX idx_score_cho_phu_trach [^\n]*/, '')
       /* LG-12: bốn cột thêm SAU TINH-HINH — cắt trước nhất; (1b) chạy lại migratePrYeuCauXuLy sau TINH-HINH. */
-      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_ly_do TEXT\n\);/, '\n);')
+      .replace(/,\n  -- LG-12 \(chủ SP lời 47, 48\)[\s\S]*?khong_xu_ly_vuot INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')   // + DUONG-LUI-2 khong_xu_ly_vuot
       /* TINH-HINH: cột thêm SAU Pb2-b — cắt trước; (1b) chạy lại migratePrTinhHinh sau OV-13k. */
       .replace(/,\n  -- TINH-HINH \(chủ SP 12\/11\)[^\n]*\n  chi_nhac INTEGER NOT NULL DEFAULT 0\n\);/, '\n);')
       .replace(/,\n  -- PR-Pb2-b \(Q14\)[\s\S]*?phan_hoi_ngay TEXT\n\);/, '\n);');

@@ -19,7 +19,7 @@ import { DaiLopChuyen } from './DaiChuyenLop.tsx';
 import type { TinhTrangXoaKetThuc } from './XoaKetThucLopPanel.tsx';
 import { TAB_HO_SO_LOP_NHAN, duongHoSoHocVien, trangCha, type TabHoSoLop, badgeLop, badgeHienTheoVai, vaiXemHocVien, khungCua, duongLichTest, laVaiQuanLy, needScoresText, menuHoSoLop, nhomGiaoVienBoMon, ketQuaGanNhat, type KetQuaVao, type ViecMenuLop, type NhomGiaoVien, tuanLich, type BadgeLop, type DaiLop, type WorkScope } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import { duongViecLop, type ViecLop } from './ThanhViecLop.tsx';
+import { duongViecLop, useViecLop } from './ThanhViecLop.tsx';
 import { PanelNhapDiemLop } from '../cham/PanelNhapDiemLop.tsx';
 import { NutTask, type EmLop, type LoaiTask } from '../congViec/NutTask.tsx';
 import { duongDiemTheoLuot, type DanhSachLuot } from '../cham/LuoiChamLop.tsx';
@@ -126,7 +126,7 @@ export function DauTrangLop({ data, onViec: onViecGoc, onBanGiao, onBanGiaoGv, t
   const tomTat = useTomTatLop(data, homNay);
   /* OV-13b · LOP-1-LOP: badge "n việc quá hạn" = `soQuaHanLop` của viec-theo-em (cùng danh sách việc `myWork` với Công việc, cùng `demDongViec` — S11 đếm dòng; GV chỉ việc
      của mình) — cùng đường ThanhViecLop nên một GET; QL / QT thôi đọc `/my-work?nguoi=tat-ca` cả chi nhánh (GV vẫn có `/my-work` của khung App). */
-  const viec = useApi<ViecLop>(duongViecLop(data.id), [data.id]);
+  const viec = useViecLop(data.id);
   const soViecQuaHan = viec.data?.soQuaHanLop ?? 0;
   /* Thao tác Case / PA… chỉ vô hiệu `/my-work` — trước PR badge đọc `/my-work` nên tự tải lại; giữ vậy và vô hiệu đúng đường này để badge + thanh "Việc của
      tôi" cùng tải lại (một GET). Lưu điểm vô hiệu `/classes` rồi `/my-work` cùng nhịp → đường đã tải lại theo `/classes`, bỏ qua để không gọi đôi. */

@@ -15,12 +15,15 @@ import { GIU_NGAY, docMucRac, khoiPhucMuc, kiemGoc, type DuLieuRac, type MucRac 
  * của học viên; tệp: quyền gỡ tệp của bản ghi chủ.
  * Danh sách "Đã xoá" (Quản trị) chỉ hiện mục người xem khôi phục được (Quản trị: mọi mục, kể cả đã khôi phục / hết hạn).
  */
-const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', ket_qua_pa: 'case_followups', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students' };
+const BANG_CHINH: Record<MucRac['loai'], string> = { case: 'sos_cases', pa: 'case_interventions', ket_qua_pa: 'case_followups', vi_pham: 'violations', tep: 'attachments', hoc_vien: 'students', lop: 'classes' };
 const duLieu = (m: MucRac) => JSON.parse(m.du_lieu) as DuLieuRac;
 const dongGoc = (m: MucRac, bang: string) => duLieu(m).ban.find((b) => b.k === 'xoa' && b.bang === bang)?.dong[0] as any;
 
 function kiemQuyen(p: Principal, m: MucRac): void {
-  if (m.loai === 'hoc_vien') {
+  if (m.loai === 'lop') {
+    /* DUONG-LUI-2 (B1-02): như Xoá lớp trống (`class.edit`) — lớp đã không còn nên xét theo chi nhánh lúc xoá. */
+    require_(p, PERMISSIONS.CLASS_EDIT, { branchId: m.branch_id }, 'Chỉ Quản lý chi nhánh của lớp này hoặc Quản trị hệ thống mới khôi phục được lớp.');
+  } else if (m.loai === 'hoc_vien') {
     /* Q-RL2b: như Xoá học viên (`CYCLE_EDIT` — Quản lý của em / Quản trị); em đã không còn nên xét theo lớp cuối / chi nhánh lúc xoá. */
     require_(p, PERMISSIONS.CYCLE_EDIT, m.class_id ? { classId: m.class_id } : { branchId: m.branch_id }, 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới khôi phục được học viên.');
   } else if (m.loai === 'case') {

@@ -484,8 +484,9 @@ function PhuTrach({ data, toi, onDoi, reload }: { data: CaseDetail; toi: number 
  */
 function NguyenNhan({ data, sua, nhap, onDoi }: { data: CaseDetail; sua: boolean; nhap: { v: string[]; dat: (v: string[]) => void } | null; onDoi: (d: CaseDetail) => void }) {
   const bao = useContext(BaoLuuCase);
-  const [moHop, setMoHop] = useState(false);
   const goc = [...data.issues.filter((i) => i.role === 'primary'), ...data.issues.filter((i) => i.role === 'secondary')];
+  /* AUDIT-1611 B3-05: Case chưa có nguyên nhân → hàng chip mở sẵn (bỏ bấm "Sửa nguyên nhân"); chọn là lưu như cũ. */
+  const [moHop, setMoHop] = useState(() => sua && !goc.length && !nhap?.v.length);
   const [v, setV] = useState<string[]>(() => nhap?.v.length ? nhap.v : goc.map((x) => x.code));
   const chinh = data.issues.find((i) => i.role === 'primary') ?? null;
   const [ghiRo, setGhiRo] = useState(chinh?.observation ?? '');
