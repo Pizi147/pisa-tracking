@@ -10,6 +10,7 @@ import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { GhiDao, daoLai, luuGhiDao, timGhiDao } from '../platform/ghiDao.ts';
 import { countAttachments } from '../platform/attachments.ts';
+import { LUOT_SAU_THI_SQL } from '../students/tamDung.ts';
 import { kckCuaLuot, loadBundle, resultOf, routeCuaLuot } from '../fasttrack/attempts.ts';
 import type { AttemptResult } from '../fasttrack/scoring.ts';
 import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } from '../normal/regular.ts';
@@ -559,15 +560,16 @@ export function dongPhoiHopLop(classIds: number[]) {
  * Việc "Khác" tách theo tên GVCN đặt. `han` = hạn sớm nhất (chỉ Meeting CX có hạn). Ít câu hơn `dongPhoiHopLop` (không còn lô điểm thẻ SOS).
  */
 export type DongPhoiHopViec = { classId: number; className: string; kind: string; ten: string; khoa: string; em: { id: number; ten: string }[]; han: string | null };
-export function dongPhoiHopTheoViec(classIds: number[]): DongPhoiHopViec[] {
+/** `emId`: chỉ việc của một em (thanh "Việc cần làm" hồ sơ HV — P1-04, cùng hàm, cùng khoá với Công việc). */
+export function dongPhoiHopTheoViec(classIds: number[], emId?: number): DongPhoiHopViec[] {
   if (!classIds.length) return [];
   const rows = db().prepare(
     `SELECT x.kind, x.custom_name, x.created_at, x.han_chon, x.pb_moc, x.student_id, s.full_name, e.class_id FROM sos_coordination_actions x
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${DS_JSON}) AND e.status = 'active'
-       JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock'
+       JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND NOT ${LUOT_SAU_THI_SQL('a')}   -- N46
        JOIN students s ON s.id = x.student_id
-      WHERE x.status = 'pending' ORDER BY s.full_name, x.id`,
-  ).all(JSON.stringify(classIds)) as any[];
+      WHERE x.status = 'pending'${emId ? ' AND x.student_id = ?' : ''} ORDER BY s.full_name, x.id`,
+  ).all(JSON.stringify(classIds), ...(emId ? [emId] : [])) as any[];
   const lop = lopDayDu();
   const theoKhoa = new Map<string, DongPhoiHopViec>();
   for (const r of rows) {

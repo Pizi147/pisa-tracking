@@ -296,7 +296,7 @@ function MotKyNangThuong({ data, onReload, kn, hv, anNutTao, tuanDangXem }: {
       daNhap: rs.filter((r) => ketQuaCua(r, k)?.score != null || !!lichCua(r, k)?.noShow).length,
     };
   });
-  const macDinh = tongPhoBien(data.rows, chon);
+  const macDinh = tongPhoBien(data.rowsTong ?? data.rows, chon);   // P1-10: cả lớp, không chỉ hàng của việc
   const chuTong = tongGo[chon] ?? (macDinh === null ? '' : String(macDinh));
   const tongCot = /^\d+$/.test(chuTong.trim()) && Number(chuTong) > 0 ? Number(chuTong) : null;
   const tenMonChon = tenMon(data.programme.code, chon);

@@ -40,7 +40,7 @@ const HOAN_TAC_MS = 10_000;
  * (`ChuDich`). Góp ý tuần cũ: nhãn khoá, chỉ đọc. "+ Ghi tiến độ" và bấm dòng mình sửa được → form NGAY TRONG CỘT (không panel); lưu xong dòng viền nhấn +
  * "✓ Đã lưu · Hoàn tác" (10 giây; xoá cũng Hoàn tác được). Thang riêng: không vào MT / Overall / KPI. Quyền ghi do máy chủ (`lop[].kyNang`, `sua`).
  */
-export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns = [], tenKn }: {
+export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns = [], tenKn, anKhiRong = false }: {
   studentId: number; lopNay: number | null; chon: ChonKn; ct: string | null; homNay: string;
   /** U02 dòng 5 (N33 ②): kỹ năng của lộ trình (thứ tự ô điểm) — Overall = mỗi kỹ năng MỘT dòng gần nhất, chỉ đọc; ghi / sửa khi chọn kỹ năng. */
   kns?: string[];
@@ -48,6 +48,8 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
   tenKn?: string;
   /** Rê / focus một dòng → tuần của dòng (Hành trình tô cột tuần đó); rời → null. */
   onRe?: (tuan: string | null) => void;
+  /** A3-21 (③ K9b): hồ sơ lưu trữ — rỗng thì không vẽ (Case chiếm cả hàng). */
+  anKhiRong?: boolean;
 }) {
   const duong = `/students/${studentId}/bai-tren-lop`;
   const { data, error, reload } = useApi<DsBai>(duong, [studentId]);
@@ -83,6 +85,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
   /* HS2 (mockup v18, chủ SP 10/11 — Tiến độ luôn cột trái, Case cột phải): rỗng → thẻ gọn hai hàng, không ngăn đầu thẻ: tên · ⓘ / "Chưa có ghi nhận" · + Ghi tiến độ.
      Đang có form, báo "Đã lưu / Đã xoá · Hoàn tác" thì vẽ thẻ đủ như cũ. */
   const rong = !!data && !error && !vua && mo !== 'moi' && (tomTat ? !knTomTat.some((k) => ds.some((x) => x.skill === k)) : !ds.length);
+  if (rong && anKhiRong) return null;
   if (rong) {
     return (
       <section className="card flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-4 py-3" aria-label={t('Tiến độ trên lớp')}>
@@ -110,7 +113,7 @@ export function TienDoTrenLop({ studentId, lopNay, chon, ct, homNay, onRe, kns =
                 return (
                   <li key={k} className="grid grid-cols-[40px_minmax(0,1fr)] items-start gap-x-3 border-t px-4 py-3 first:border-t-0" style={{ borderColor: 'var(--line)' }}
                     onMouseEnter={d ? () => onRe?.(d.tuan) : undefined} onMouseLeave={d ? () => onRe?.(null) : undefined}>
-                    <span className="the-kn">{tenMonNgan(ct, k)}</span>
+                    <span className="the-kn dac">{tenMonNgan(ct, k)}</span>
                     {d ? (
                       <span className="flex min-w-0 flex-col gap-1">
                         <span className="flex flex-wrap gap-1.5"><span className="the-phu nhat tabular-nums">{d.tuanMa}</span></span>

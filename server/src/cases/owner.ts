@@ -3,7 +3,7 @@ import { datLaiHanKhiChuyenLop } from './hanChuyenLop.ts';
 import { demoToday } from '../demoConfig.ts';
 import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseThuocO, caseTopicLabel, categoryOf, laCapBanGiao, tenMonNgan, type DoiO } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
-import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
+import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { conflict, loi, nowIso } from '../util.ts';
 import { activeClassOf } from '../yThuc/access.ts';
@@ -164,7 +164,7 @@ export function caseChuaCoNguoi(p: Principal, branchId?: number | null, coSan?: 
        LEFT JOIN enrollments cur ON cur.student_id = s.id AND cur.status = 'active'
        LEFT JOIN classes ac ON ac.id = a.class_id
        LEFT JOIN classes cc ON cc.id = cur.class_id
-      WHERE sc.status != 'done' AND sc.owner_user_id IS NULL AND sc.tam = 0`,
+      WHERE sc.status != 'done' AND sc.owner_user_id IS NULL AND sc.tam = 0 AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}`,   /* N46: như `napCaseMo` của Công việc */
   ).all() as any[];
   napTruocPhamVi(rows.map((r) => r.eff_student_id));
   return rows.filter((c) => (!branchId || c.eff_branch_id === branchId) && (c.eff_class_id

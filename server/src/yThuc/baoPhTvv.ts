@@ -414,7 +414,8 @@ export const baoPhCuKhiKiem = { bat: false };
  * Việc Báo PH đang mở, em đang học (Tạm dừng → ẩn — K7). Người giữ: TVV của em; em không có TVV → QL trong phạm vi em là người giữ.
  * `tatCa` (QL "Của GV"): cả việc TVV giữ trong phạm vi. Một câu; TVV chỉ đọc em của mình.
  */
-export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null }): WorkItem[] {
+/* P1-04: `studentId` — chỉ việc của một em (thanh "Việc cần làm" hồ sơ HV), cùng luật người giữ, cùng khoá. */
+export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean; branchId: number | null; studentId?: number }): WorkItem[] {
   /* MỘT câu, không thêm câu phạm vi / Tạm dừng (TD4-b): phạm vi QL tính từ quyền đã nạp (`scopeFor`, chi nhánh của em); lần Quay lại học sau ngày lưu
      (có Tạm dừng trước hạn) đọc ngay trong câu → `hanBaoPhHieuLuc`. X05 (audit 03/11): QL không toàn quyền → lọc chi nhánh của em NGAY trong câu. */
   const pv = scopeFor(p, PERMISSIONS.REQUEST_APPROVE, o.today);
@@ -436,15 +437,16 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
        LEFT JOIN discipline_measures m ON m.id = COALESCE(v.measure_id, v.bao_lai_cua)
        LEFT JOIN enrollments e ON e.id = (SELECT MAX(x.id) FROM enrollments x WHERE x.student_id = s.id AND x.status = 'active')
        LEFT JOIN classes c ON c.id = e.class_id
-      WHERE v.trang_thai = 'mo'`;
+      WHERE v.trang_thai = 'mo'${o.studentId ? ' AND v.student_id = ?' : ''}`;
+  const em = o.studentId ? [o.studentId] : [];
   const rows = !ql && !tvv ? [] : db().prepare(
     `${COT}${baoPhCuKhiKiem.bat ? ' AND (s.consultant_user_id = ? OR ? = 1)' : !ql ? ' AND s.consultant_user_id = ?'
         : pv.all ? '' : ` AND (s.consultant_user_id = ? OR ${CHI_NHANH_EM} IN (${DS_JSON}))`} ORDER BY v.han, v.id`,
-  ).all(o.today, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])) as any[];   // ?1 = hôm nay (GVCN hiệu lực)
+  ).all(o.today, ...em, ...(baoPhCuKhiKiem.bat ? [p.userId, ql ? 1 : 0] : !ql ? [p.userId] : pv.all ? [] : [p.userId, JSON.stringify(pv.branchIds)])) as any[];   // ?1 = hôm nay (GVCN hiệu lực)
   if (lopCn.length) {
     const co = new Set(rows.map((r) => r.id));
     for (const r of db().prepare(`${COT} AND v.phoi_hop_id IS NOT NULL AND s.consultant_user_id IS NULL AND e.class_id IN (${DS_JSON}) ORDER BY v.han, v.id`)
-      .all(o.today, JSON.stringify(lopCn)) as any[]) if (!co.has(r.id)) rows.push(r);
+      .all(o.today, ...em, JSON.stringify(lopCn)) as any[]) if (!co.has(r.id)) rows.push(r);
   }
   const items: WorkItem[] = [];
   for (const r of rows) {

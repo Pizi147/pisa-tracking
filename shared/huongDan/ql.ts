@@ -208,6 +208,19 @@ export const HD_QL: HuongDan = {
       tuKhac: ['phụ huynh', 'báo cáo ph', 'parent report', 'đợt', 'pdf'],
     },
     {
+      /* N49 (chủ SP 16/11): việc QL "Báo cáo PH quá hạn" — đợt quá hạn > 7 ngày (việc GV đã rời) còn em chưa đủ. */
+      id: 'bc-ph-qua-han', ten: 'Báo cáo PH quá hạn', nhom: 'hv', tab: 'van-hanh', viecWeb: ['bc_ph_qua_han'],
+      tep: ['web/src/modules/classes/TabBaoCaoPh.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx'],
+      loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Báo cáo PH', duong: CV },
+      loiTat: ['ho-so-lop'], cung: 'mở tab Báo cáo PH của lớp.',
+      khiCo: 'Đợt quá hạn hơn 7 ngày, lớp còn em chưa đủ.',
+      buoc: ['Bấm <b>Báo cáo PH ›</b> ở dòng.', 'Nhắc GV còn thiếu, hoặc viết hộ.'],
+      xong: 'Mọi em đủ báo cáo; dòng tự rời.',
+      han: 'Dòng còn thiếu tính quá hạn từ hạn đợt.',
+      sai: 'Đợt không cần: <b>Không báo cáo đợt này</b>.',
+      tuKhac: ['báo cáo ph', 'quá hạn', 'parent report'],
+    },
+    {
       id: 'chot-lo-trinh', ten: 'Cuối khoá lớp thường: chốt lộ trình', nhom: 'hv', tab: 'van-hanh', viecWeb: ['chot_len_ft'],
       tep: ['web/src/modules/classes/CuoiKhoaLop.tsx', 'web/src/modules/congViec/HoTroHocVienTab.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Việc quản lý › Chốt lộ trình', duong: CV },

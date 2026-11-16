@@ -344,6 +344,8 @@
   .the-phu b { color: var(--text); font-weight: 700; }
   .the-kn { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 24px; flex: none; border-radius: 4px; border: 1px solid var(--line-strong);
     font-size: 12px; font-weight: 700; color: var(--text); }
+  /* ③ K9e `.ky` (A3-09): chip kỹ năng nền đặc nhạt — hàng Case, dòng Tiến độ hồ sơ HV. */
+  .the-kn.dac { background: var(--accent-soft); color: var(--accent); border-color: transparent; }
   .o-tin { display: flex; flex-wrap: wrap; row-gap: 8px; }
   .o-tin > * { padding: 2px 18px; border-left: 1px solid var(--line); min-width: 0; }
   .o-tin > *:first-child { padding-left: 0; border-left: 0; }

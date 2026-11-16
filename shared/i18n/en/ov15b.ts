@@ -4,6 +4,7 @@ import type { Dich } from '../en.ts';
 export const EN_OV15B = {
   'Nhập điểm · {lop}': 'Enter scores · {lop}',
   'Nhập điểm MT cũ · {lop}': 'Enter old MT scores · {lop}',
+  'Bạn nhập hộ': 'Entering on behalf',
   /* Tiêu đề cột "Nhận xét L…S" của tệp xuất Test (R1-EN-2 `dichSheetXuat` dịch qua mẫu này) — không chỉ Dán Excel dùng. */
   'Nhận xét {k}': 'Comment {k}',
   /* Lưới điểm (R1-BO-DAN-EXCEL: bỏ Dán từ Excel điểm — khoá còn lại dùng ở Tutor / máy chủ) */

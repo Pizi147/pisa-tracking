@@ -19,6 +19,8 @@ import { dich, dichChu, t, type Bien } from '@shared/i18n/index.ts';
 /** Việc của em theo người — cùng kiểu `ViecHocVien` ở `server/src/students/viecHocVien.ts`. */
 export type Viec = {
   key: string; loai: string; chu: string; khoa?: string; bien?: Bien; kyNang: string | null; caseId: number | null; paId: number | null;
+  /** P1-04: id việc Báo PH — panel Ghi báo PH. */
+  viecId?: number;
   han: string | null; quaHanNgay: number | null; tone: 'danger' | 'warn' | 'info' | 'wait';
   /** GD-7a (V22): độ gấp của hạn — màu viên hạn. */
   gap: 'qua-han' | 'gan' | 'chua' | null;
@@ -43,9 +45,11 @@ const nutViec = (x: Viec) => dich(x.nut);
  *   lớp thường  Lớp MB FOU 15 · Chương trình FOU · Tuần học 7/10 · Cuối khoá W4 OCT · Target 5.5 · thi IELTS 06/2027 · GVCN · TVV
  */
 /** P8 (mockup k7): `mon` = "L · R · W2 · S" — chỉ khi em không học đủ 5 môn (null = đủ, không hiện). */
-export function DongThongTin({ tt, tvv, mon, deXuatTarget }: { tt: any; tvv?: string | null; mon?: string | null;
+export function DongThongTin({ tt, tvv, mon, deXuatTarget, yThuc, onYThuc }: { tt: any; tvv?: string | null; mon?: string | null;
   /** GD-7 (③ K5, R3.6 · L6 / 2.3): GV lớp, em chưa có Target — ô Target "Chưa có" màu nhắc + "Đề xuất sửa" tại chỗ (không thành việc). */
-  deXuatTarget?: () => void }) {
+  deXuatTarget?: () => void;
+  /** A3-12 (③ K9d): ô "Ý thức" cuối dòng — bậc đã tới ("WL 2" đỏ, "REPORT 1") + "chờ QL" khi có đề xuất chờ duyệt; dữ liệu `/y-thuc` đã nạp. null = không ô. */
+  yThuc?: { bac: string | null; wl: boolean; choQl: boolean } | null; onYThuc?: () => void }) {
   if (!tt?.lop) return <p className="m-0 text-[13px] text-slate-400">{t('Chưa xếp lớp')}</p>;
   const target = ((tt.target !== null && tt.target !== undefined) || (tt.kck && !tt.kyThi))   // OV-9: "6.5 · KCK" · "— · KCK"; P13: KET / PET số nguyên
     ? <NhanGt key="tg" n="Target" g={<span className="tabular-nums"><TargetText band={tt.target} kck={tt.kck} kyThi={tt.kyThi} /></span>} />
@@ -73,6 +77,13 @@ export function DongThongTin({ tt, tvv, mon, deXuatTarget }: { tt: any; tvv?: st
     tt.thiIelts && <NhanGt key="ielts" n={t('Thi IELTS dự kiến')} g={<span className="tabular-nums">{tt.thiIelts}</span>} />,
     tt.gvcn && <NhanGt key="gv" n={t('GVCN')} g={tt.gvcn} />,
     tvv && <NhanGt key="tvv" n={t('TVV')} g={tvv} />,
+    yThuc && <NhanGt key="yt" n={t('Ý thức')} g={
+      <button type="button" onClick={onYThuc} className="min-h-[44px] min-w-[44px] appearance-none border-0 bg-transparent p-0 text-left font-[inherit] text-[color:var(--text)] hover:text-[color:var(--accent)] sm:min-h-0 sm:min-w-0"
+        aria-label={[t('Ý thức'), yThuc.bac, yThuc.choQl ? t('chờ QL') : null, t('mở tab Ý thức & Phối hợp')].filter(Boolean).join(', ')}>
+        {yThuc.bac && <span className={yThuc.wl ? 'text-bad' : undefined}>{yThuc.bac}</span>}
+        {yThuc.bac && yThuc.choQl && <span className="text-dim"> · </span>}
+        {yThuc.choQl && <span className="font-medium text-dim">{t('chờ QL')}</span>}
+      </button>} />,
   ].filter(Boolean);
   /* U02 dòng 1 (mockup `.facts`): ô nhãn trên – giá trị dưới, vạch dọc ngăn ô. */
   return <div className="o-tin items-start">{muc}</div>;
@@ -184,6 +195,8 @@ const NHOM_PANEL: Partial<Record<string, string>> = {
   'de-ra-pa': 'no_plan', 'xac-nhan-pa': 'xac_nhan_pa', 'ghi-ket-qua': 'ghi_ket_qua_pa', 'mini-test': 'mini_test',
   'y-thuc': 'yt_xu_ly', 'yt-xem': 'yt_xem', 'yt-thuc-hien': 'yt_thuc_hien', 'nhap-diem': 'score', 'tinh-hinh': 'yt_hoi_tinh_hinh',
   'buoc-tiep': 'buoc_tiep', 'thi-that': 'thi_that',
+  /* P1-04: Phối hợp SOS · Báo PH (vi phạm / sau Meeting CX) · Bổ sung hồ sơ — cùng panel Công việc, chỉ em này. */
+  'phoi-hop-sos': 'phoi_hop_sos', 'phoi-hop-tvv': 'phoi_hop_tvv', 'bao-ph-yt': 'bao_ph_yt', 'bo-sung': 'bo_sung_ho_so',
 };
 
 /**
@@ -203,7 +216,10 @@ export function viecSangPanel(x: Viec, em: { id: number; ten: string; lopId: num
     tieuDe: chuViec(x), ownerId: x.nguoi.id, owner: x.nguoi.ten, mine: x.cuaBan, due: x.han, statusLabel: '',
     contextLabel: null, count: null,
     ...(nd ? { luot: nd.luot, kn: nd.kns[0], kns: nd.kns, tuanThi: nd.tuanThi, periodId: nd.periodId, kind: nd.kind, soBai: nd.soBai ?? undefined, emIds: [em.id] } : {}),
-    ...(m.loai === 'tinh-hinh' ? { viecId: m.viecId } : {}),
+    ...(m.loai === 'tinh-hinh' ? { viecId: m.viecId } : x.viecId ? { viecId: x.viecId } : {}),
+    /* P1-04: Phối hợp SOS — khoá việc nằm trong khoá dòng (`phoi_hop_sos:{lớp}:{việc}`); Bổ sung hồ sơ — panel lần lượt chỉ em này. */
+    ...(group === 'phoi_hop_sos' ? { phoiHop: { kind: '', khoa: x.key.split(':').slice(2).join(':') } } : {}),
+    ...(group === 'bo_sung_ho_so' ? { emIds: [em.id] } : {}),
   };
 }
 
