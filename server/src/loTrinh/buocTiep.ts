@@ -99,6 +99,8 @@ const kemKqHocTiep = (c: any): any => {
   const h = dongHocTiep(c);
   return h ? { ...c, ...JSON.parse(h.cot_json), co_kq: 1 } : c;
 };
+/** N53 (chủ SP 18/11): Target band luôn ".0 / .5" ("7.0", "6.5 KCK") — chữ Target của panel Bước tiếp, xem trước Lộ trình mới, ô Học tiếp. */
+const tgChu = (c: any) => chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket);
 const dauKq = (c: any) => JSON.stringify([!!c.thi_that_khong_thi, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, c.outcome_score ?? null, c.outcome ?? null]);
 
 export type TrangThaiBuocTiep = {
@@ -144,7 +146,7 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     coTheGiaHan: !c.buoc_tiep && coTheChon,   // rà #436: giai đoạn chờ bước tiếp — chỉ người chọn được (`coTheGiaHanSauThi`)
     daXong: daXongCua(c), han: hanBuocTiep(c, demoToday()), hen: c.buoc_tiep_hen ?? null, henLop: c.buoc_tiep_hen ? g.lopMoiCode ?? c.lop_code ?? c.bc_class_code ?? null : null,
     lopNay: c.lop_id ? { id: c.lop_id, code: c.lop_code } : c.bc_class_id ? { id: c.bc_class_id, code: c.bc_class_code } : null,
-    target: chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
+    target: tgChu(c), ngayThi: c.thi_that_ngay ?? null, studentId: c.student_id, cycleId: c.id, ketLuan: c.thi_that_khong_thi ? null : ketLuanCua(c),
     hoanTacDuoc: !daChuyen,
     kqDaDoi: !!c.buoc_tiep && g.kq !== undefined && g.kq !== dauKq(c),
     targetGoiY: targetGoiYSauDat(c, ketLuanCua(c)),
@@ -221,7 +223,7 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
   const batDau = input.batDau === undefined || input.batDau === null || input.batDau === '' || input.batDau === 'ngay' ? homNay : String(input.batDau);
   if (!tuanHopLe(batDau, homNay)) throw badRequest(LOI_TUAN_BAT_DAU);
   const mucTieu = input.mucTieu === undefined || input.mucTieu === null || input.mucTieu === '' ? null : input.mucTieu;
-  const tg = lt.boTarget ? '' : mucTieu !== null ? String(mucTieu) : chuTargetKck(c.target_score ?? null, !!c.khong_cam_ket);
+  const tg = lt.boTarget ? '' : mucTieu !== null ? String(mucTieu) : tgChu(c);
   const ten = lt.route === ROUTE_KHAC ? `"${lt.routeTen ?? 'Khác'}"` : `FT ${lt.route}`;
   const lich = lt.lopDich ? lichMtCua(lt.lopDich, lt.route) : [];
   const t2 = mondayOf(batDau);

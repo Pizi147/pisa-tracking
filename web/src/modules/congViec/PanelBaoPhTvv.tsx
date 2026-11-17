@@ -255,14 +255,16 @@ function BoViec({ id, onDong, onDaBo }: { id: number; onDong: () => void; onDaBo
  * NHÓM NÚT RADIO (mockup V5 `.lua-chon`, bảng mẫu mục 7): radio thật (↑ ↓ đổi), mục chọn viền + nền nhấn; `disabled` = bước chưa mở.
  * Dùng chung panel Báo PH (Kết quả) và Sau thi (Bước tiếp, Lớp).
  */
-export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled }: {
+export function LuaChonRadio<K extends string>({ ten, nhan, muc, value, onChange, disabled, khungRo }: {
   ten: string; nhan: string; muc: readonly (readonly [K, string])[]; value: K | null; onChange: (k: K) => void; disabled?: boolean;
+  /** Chủ SP 18/11 (Bước tiếp #1839) "khung rõ": ô nền surface-2 + viền mạnh, ô đang chọn nền nhấn nhạt. Mặc định giữ kiểu cũ. */
+  khungRo?: boolean;
 }) {
   return (
     <div className="flex flex-wrap gap-2" role="radiogroup" aria-label={nhan}>
       {muc.map(([k, chu]) => (
         <label key={k} className={`inline-flex h-10 items-center gap-2 rounded-lg border px-3.5 text-sm max-sm:min-h-[44px] ${disabled ? 'cursor-default' : 'cursor-pointer'} ${value === k ? 'font-semibold text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : ''}`}
-          style={value === k ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : { borderColor: 'var(--o-nhap-vien)' }}>
+          style={value === k ? { borderColor: 'var(--accent)', background: 'var(--accent-soft)' } : khungRo ? { borderColor: 'var(--line-strong)', background: 'var(--surface-2)' } : { borderColor: 'var(--o-nhap-vien)' }}>
           <input type="radio" name={ten} checked={value === k} disabled={disabled} onChange={() => onChange(k)} className="accent-[color:var(--accent)]" />{chu}
         </label>
       ))}

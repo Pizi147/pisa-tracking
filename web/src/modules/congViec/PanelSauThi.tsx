@@ -196,12 +196,12 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
         <Buoc so="2" tieuDe={t('Bước tiếp')} mo={!khoaBuoc2 || daChonTruoc || !!daChot} phu={coKq && b.han ? t('hạn {ngay}', { ngay: shortDate(b.han, hn) }) : null}>
           {/* Tiêu đề bước đã là "Bước tiếp" — nhóm nút không nhãn riêng; lỗi (sau khi bấm Chốt) ngay dưới. */}
           <div {...lf.o(loiB, 'chon')} tabIndex={-1} className="outline-none">
-            <LuaChonRadio ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon ? (b.chon === 'tam_dung' || b.chon === 'ket_thuc' ? 'dung' : b.chon === 'hoc_tiep' ? 'hoc_tiep' : 'lo_trinh_moi') : null) : chon} disabled={khoaBuoc2}
+            <LuaChonRadio khungRo ten={`bt-${cycleId}`} nhan={t('Bước tiếp')} value={daChot || daChonTruoc ? (b.chon ? (b.chon === 'tam_dung' || b.chon === 'ket_thuc' ? 'dung' : b.chon === 'hoc_tiep' ? 'hoc_tiep' : 'lo_trinh_moi') : null) : chon} disabled={khoaBuoc2}
               muc={HUONG_SAU_THI.map((k) => [k, NHAN_HUONG_SAU_THI[k]] as const)} onChange={(k) => { setChon(k); if (tt === 'loi') setTt(null); }} />
             {lf.loiCua(loiB, 'chon') && <p role="alert" className="m-0 mt-1.5 text-[13px] text-bad">{lf.loiCua(loiB, 'chon')}</p>}
           </div>
           {chon === 'dung' && !khoaBuoc2 && <KhoiDung v={dung} onChange={setDung} loTrinh={c.route ?? null} disabled={tt === 'dang'} />}
-          {chon === 'hoc_tiep' && !khoaBuoc2 && <KhoiHocTiep bt={b} v={hocTiep} onChange={setHocTiep} loTrinh={c.route ?? null} bamLuu={lf.daBam} disabled={tt === 'dang'} />}
+          {chon === 'hoc_tiep' && !khoaBuoc2 && <KhoiHocTiep bt={b} v={hocTiep} onChange={setHocTiep} loTrinh={c.route ?? null} bamLuu={lf.daBam} disabled={tt === 'dang'} nen="var(--surface-2)" />}
           <Truong nhan={t('Ghi chú')}>
             <textarea className="field w-full" rows={3} maxLength={2000} autoComplete="off" disabled={khoaBuoc2} value={ghiChu} placeholder={t('Trao đổi với HV / PH')}
               onChange={(e) => setGhiChu(e.target.value)} />

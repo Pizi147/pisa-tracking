@@ -21,6 +21,8 @@ Không cần mockup (plan.md 1.3b: thêm lựa chọn theo mẫu sẵn có của
 | Khối dưới khi chọn Học tiếp | — | Target (giữ + Sửa → ô, "Giữ Target") · Lớp (Giữ {lớp} / Lớp khác → ô chọn lớp FT) · "Khi lưu, web sẽ" · nút "Học tiếp" — mặc định không phải điền gì |
 | Em không còn học lộ trình (đã nghỉ / tạm dừng / lộ trình đã đóng) | — | Chọn Học tiếp → một dòng lý do + bước kế "Chỉ khi em đang học lộ trình này — chọn Lộ trình mới." (không bày ô; máy chủ cũng 400) |
 | Hoàn tác | như hai hướng kia | như hai hướng kia; Học tiếp có đổi lớp (đã chuyển) → ẩn Hoàn tác, Đổi vẫn được (như Lộ trình mới · Lớp khác). Rà PTA: lần thi sau đã có dữ liệu → Hoàn tác / Đổi trả theo nhóm (KQ · lịch thi · hạn), nhóm đã có dữ liệu mới GIỮ (không trộn điểm hai lần), Target đã Sửa sau giữ, có nhật ký + dòng nhắc |
+| Khung lựa chọn (chủ SP 18/11 "làm rõ khung") | ô viền mảnh `--line`, nền trong suốt — hoà vào nền khối | ô nền `--surface` (hồ sơ, trên nền nhấn của khối) / `--surface-2` (Công việc) + viền `--line-strong`; ô đang chọn viền nhấn 2 px + nền nhấn nhạt; khối Target / Lớp / "Khi lưu, web sẽ" có khung viền `--line-strong`, nền khác nền chỗ đặt. Chỉ panel Bước tiếp / Sau thi (radio Sau thi bật cờ `khungRo`, nơi khác giữ kiểu cũ) |
+| Điểm (N53) | Target "7" ở khối Target / Lộ trình mới | "7.0" — máy chủ định dạng Target của panel một chỗ (`tgChu`) |
 | "Sửa" KQ ở panel hồ sơ | có | ẩn khi đã chọn Học tiếp (KQ lần đó đã vào lịch sử; ô KQ của lộ trình là lần thi sau) |
 | Hướng dẫn (QL, GV, TVV) + chữ việc | "Lộ trình mới hoặc Tạm dừng / Kết thúc học" | "Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới" + một bước giải thích Học tiếp (QL) |
 
