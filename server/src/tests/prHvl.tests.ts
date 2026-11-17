@@ -34,7 +34,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq(d.ketQuaGanNhat(thuong()), { chinh: '3/4 môn đạt', lech: null, dat: false, sos: 'SOS 1', dong1: 'Progress Test', dong2: 'Không đạt: G+V' }, 'FOU Progress Test (OV-12c: SOS theo số môn trượt)');
     const be = d.ketQuaGanNhat(thuong({ chuongTrinh: 'BE', attemptLabel: 'Final Test', attemptKind: 'final', tyLeTong: 0.58, failed: 2,
       failedSkills: [{ skill: 'reading', score: 10, total: 20 }, { skill: 'writing', score: 8, total: 20 }] }));
-    eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Final Test → QL cân nhắc', 'Không đạt: R W', null], 'BE Final Test đủ điểm (PR-UXF-a K2-01: hậu tố hướng)');
+    eq([be.chinh, be.dong1, be.dong2, be.sos], ['58%', 'Final Test → Head cân nhắc', 'Không đạt: R W', null], 'BE Final Test đủ điểm (PR-UXF-a K2-01: hậu tố hướng)');
     const pre = d.ketQuaGanNhat(thuong({ chuongTrinh: 'PREFOU', khongChiaMon: true, attemptLabel: 'Final Test', attemptKind: 'final', tyLeTong: 0.64, failed: 0, sosLevel: 0, failedSkills: [] }));
     eq([pre.chinh, pre.dong1, pre.dong2, pre.dat], ['64%', 'Final Test → lên + bổ trợ', null, true], 'Pre FOU: không dòng 2 (PR-UXF-a K2-01: hậu tố hướng)');
     const thieu = d.ketQuaGanNhat(thuong({ attemptLabel: 'Final Test', attemptKind: 'final', scored: 2, failed: 0, sosLevel: null, failedSkills: [] }));
@@ -66,7 +66,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     const gv = d.badgeLop({ ...goc, vai: 'gv' });
     eq([...gv.hien, ...gv.an].map((x: any) => x.key), ['cham', 'qua-han', 'xep-lop', 'cho-duyet'], 'Thứ tự GV');
     const ql = d.badgeLop({ ...goc, vai: 'ql' });
-    eq([...ql.hien, ...ql.an].map((x: any) => x.key), ['cho-duyet', 'xep-lop', 'cham', 'qua-han'], 'Thứ tự Quản lý');
+    eq([...ql.hien, ...ql.an].map((x: any) => x.key), ['cho-duyet', 'xep-lop', 'cham', 'qua-han'], 'Thứ tự Head');
     eq([ql.hien.length, ql.an.length], [2, 2], 'Hiện 2, còn lại "+n"');
     const tat = [...ql.hien, ...ql.an];
     eq(tat.find((x: any) => x.key === 'qua-han'), { key: 'qua-han', nhan: 'Quá hạn · 4', so: 4, tone: 'danger', title: tat.find((x: any) => x.key === 'qua-han').title }, 'qua-han');
@@ -91,7 +91,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
         viecCase(13, 'speaking', { chu: 'Kết quả PA Luyện nói', loaiHan: 'cap-nhat-pa', han: '2026-09-21', paId: 91 }),
         viecCase(14, 'writing1', { chu: 'Kết quả cuối Viết lại', loaiHan: 'cap-nhat-pa', han: '2026-09-14', paId: 92 }),
         viecCase(15, 'writing2', { chu: 'Thêm PA', loaiHan: 'lap-pa', han: null }),
-        viecCase(16, null, { chu: 'Chờ Quản lý duyệt · không theo dõi', loaiHan: null, han: null }),
+        viecCase(16, null, { chu: 'Chờ Head duyệt · không theo dõi', loaiHan: null, han: null }),
         viecCase(17, 'listening', null),
       ],
       yThuc: { nhom: 'bat_buoc', so: 1, han: '2026-09-18', quaHanNgay: null },
@@ -109,7 +109,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     eq([cuoi.viec, cuoi.tone, cuoi.quaHanNgay], ['Kết quả cuối W1 · kỳ W1–W2 SEP', 'danger', 2], 'Kết quả cuối');
     assert(/hạn 14\/09 · quá hạn 2 ngày/.test(cuoi.title), cuoi.title);
     eq(theoViec(/^Thêm PA/).tone, 'warn', 'Thêm PA chưa hạn');
-    eq([theoViec(/^Chờ Quản lý/).viec, theoViec(/^Chờ Quản lý/).tone], ['Chờ Quản lý duyệt Case', 'info'], 'Chờ QL duyệt');
+    eq([theoViec(/^Chờ Head/).viec, theoViec(/^Chờ Head/).tone], ['Chờ Head duyệt Case', 'info'], 'Chờ Head duyệt');
     const yt = theoViec(/^Xử lý vi phạm/);
     eq([yt.tone, yt.dich, yt.han], ['warn', { loai: 'y-thuc' }, 'hạn 18/09'], 'Ý thức bắt buộc');
     eq(theoViec(/^Nhập điểm/).dich, { loai: 'nhap-diem' }, 'Nhập điểm');
@@ -365,7 +365,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
   const LOP_FOU = classId('MB FOU 12');
 
   check('PR-HVL (5) · can-ho-tro: quyền (GV lớp khác bị chặn); chỉ em có Case mở; `tong` khớp; mọi Case vào đúng một hàng', () => {
-    assertThrows(() => canHoTro.canHoTroLop(P.cpManager, LOP_FT), /ngoài phạm vi/, 'Quản lý chi nhánh khác');
+    assertThrows(() => canHoTro.canHoTroLop(P.cpManager, LOP_FT), /ngoài phạm vi/, 'Head chi nhánh khác');
     const r = canHoTro.canHoTroLop(P.admin, LOP_FT);
     assert(r.em.length > 0 && r.em.every((e: any) => e.cases.length > 0), 'Chỉ em có Case mở (T19)');
     eq([r.tong.soEm, r.tong.soCase], [r.em.length, r.em.reduce((n: number, e: any) => n + e.cases.length, 0)], 'tong.soEm / soCase');
@@ -377,7 +377,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
       const dem = hang.reduce((n: number, h: any) => n + (h.kind === 'hang' ? h.cases.length : 0), 0);
       eq(dem, e.cases.length, `em ${e.id}: mọi Case vào đúng một hàng`);
     }
-    eq(r.em.map((e: any) => e.id).sort(), [...new Set(canHoTro.canHoTroLop(P.mbManager, LOP_FT).em.map((e: any) => e.id))].sort(), 'QL thấy cùng tập em');
+    eq(r.em.map((e: any) => e.id).sort(), [...new Set(canHoTro.canHoTroLop(P.mbManager, LOP_FT).em.map((e: any) => e.id))].sort(), 'Head thấy cùng tập em');
   });
 
   check('PR-HVL (5) · can-ho-tro: GVBM thuần có kyNangToi và laGvbmThuan; GVCN/Quản trị thì không (công tắc "Chỉ kỹ năng tôi dạy")', () => {
@@ -524,7 +524,7 @@ export async function runPrHvlTests(t: YThucTestKit) {
     }
     assert(soPa > 0, 'Phải có ít nhất một loại PA ở lớp FT');
     assertThrows(() => ptlMod.oPhanTichLop(P.admin, LOP_FT, 'listening', 'khong-co', null), /không hợp lệ/, 'cột lạ');
-    assertThrows(() => ptlMod.oPhanTichLop(P.cpManager, LOP_FT, 'listening', 'case', null), /ngoài phạm vi/, 'Quản lý chi nhánh khác');
+    assertThrows(() => ptlMod.oPhanTichLop(P.cpManager, LOP_FT, 'listening', 'case', null), /ngoài phạm vi/, 'Head chi nhánh khác');
   });
 
   check('PR-HVL (6) · cùng `planOutcomes` với Phân tích › Hiệu quả PA: tổng "Đã thực hiện" của lớp = PA có kết quả xác định của lớp; khác Hiệu quả PA chỉ vì khung thời gian và Case chưa chọn nhóm nguyên nhân', () => {
@@ -700,7 +700,7 @@ export async function runPrHvlDemoTests(t: YThucTestKit) {
     eq(nhanHang(d.hangCanHoTro({ ct: fou.ct, cases: linh.cases })), ['~Không có Case: L · R', 'G+V:1', 'P:1'], 'Hàng G+V và P');
     const vy = standingMod.standingFor([idHv('Nguyễn Thảo Vy')!]).get(idHv('Nguyễn Thảo Vy')!);
     const kq = d.ketQuaGanNhat(vy);
-    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Final Test → QL cân nhắc'], 'H2 Final Test 58/100 (PR-UXF-a K2-01)');
+    eq([kq.chinh, kq.sos, kq.dong1], ['58%', null, 'Final Test → Head cân nhắc'], 'H2 Final Test 58/100 (PR-UXF-a K2-01)');
     const pre = (conn.prepare(`SELECT s.id FROM students s JOIN enrollments e ON e.student_id = s.id JOIN classes c ON c.id = e.class_id
                                 WHERE c.code = 'MB Pre FOU 03' AND e.status = 'active'`).all() as any[]).map((r) => r.id as number);
     const chinhPre = [...standingMod.standingFor(pre).values()].map((s: any) => d.ketQuaGanNhat(s).chinh);

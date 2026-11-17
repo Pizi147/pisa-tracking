@@ -31,7 +31,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const g = d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.55, monTruot: ['reading', 'writing', 'speaking'] })!;
     assert(g.dai === '50_59' && g.huong === null && g.canQuanLy, 'canQuanLy');
     assert(g.boTroNeuLen!.soTuan === 2 && g.boTroNeuLen!.soBuoi === 6 && !g.baoPhTvv, 'bổ trợ nếu lên');
-    assert(g.nhan.startsWith('Quản lý cân nhắc') && g.nhanNgan === '→ QL cân nhắc', g.nhan);
+    assert(g.nhan.startsWith('Head cân nhắc') && g.nhanNgan === '→ Head cân nhắc', g.nhan);
   });
   check('LT2b (1) · Pre FOU 52% → 4 buổi, 64% → 2 buổi, không theo môn (PF3)', () => {
     const a = d.goiYCuoiKhoa({ ct: 'PREFOU', tyLe: 0.52, monTruot: [] })!.boTroNeuLen!;
@@ -398,7 +398,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const pass = d.nhanGhim({ cheDo: 'ratio', attemptNo: 2, kind: 'final', overall: null, sosLevel: 0, soDat: 4, soYeuCau: 4, soCoDiem: 4, tyLe: 0.78, goiY: d.goiYCuoiKhoa({ ct: 'BE', tyLe: 0.78, monTruot: [] })! });
     assert(pass.mau === 'dat' && pass.chu === 'Final · 78% → Pass', JSON.stringify(pass));
     const pf = d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'final', overall: null, sosLevel: 1, soDat: null, soYeuCau: 1, soCoDiem: 1, khongChiaMon: true, tyLe: 0.52, goiY: d.goiYCuoiKhoa({ ct: 'PREFOU', tyLe: 0.52, monTruot: [] })! });
-    assert(pf.chu === 'Final · 52% → QL cân nhắc', pf.chu);
+    assert(pf.chu === 'Final · 52% → Head cân nhắc', pf.chu);
     assert(d.nhanGhim({ cheDo: 'ratio', attemptNo: 1, kind: 'progress', overall: null, sosLevel: 1, soDat: 2, soYeuCau: 4, soCoDiem: 4, goiY: null }).chu === 'Progress · 2/4 môn đạt', 'Progress Test không có hướng');
   });
   check('LT2b (8) · Excel lớp thường: cột "Hướng gợi ý" sau "% tổng", số cột khớp tiêu đề, Progress Test để trống', () => {
@@ -410,7 +410,7 @@ export async function runPrLt2bTests(t: YThucTestKit) {
       assert(i === b[0].indexOf('% tổng') + 1 && b.every((h) => h.length === b[0].length), `${cot}: cột ${i}`);
       assert(b[1][i] === 'Lên ELE + bổ trợ' && b[2][i] === null, `${cot}: ô hướng`);
     }
-    assert(d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.45, monTruot: [] })!.nhanExcel === 'Học lại FOU' && d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.55, monTruot: ['reading'] })!.nhanExcel === 'QL cân nhắc', 'nhãn Excel');
+    assert(d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.45, monTruot: [] })!.nhanExcel === 'Học lại FOU' && d.goiYCuoiKhoa({ ct: 'FOU', tyLe: 0.55, monTruot: ['reading'] })!.nhanExcel === 'Head cân nhắc', 'nhãn Excel');
   });
 
   // ------------------------------------------------------------------ Task 6 · Mini Test
@@ -499,8 +499,8 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     voiLenhFt(be.classId, s, () => {
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: true }), /MT0/, 'chưa đủ MT0 (PR-KV)');
     mt0Kv(be.classId, s, [4, 4, 4, 4]);
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Quản lý/, 'GVCN');
-    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.cpManager, s, { dat: true }), /Quản lý|phạm vi/, 'QL chi nhánh khác');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(gvcnDich(), s, { dat: true }), /Head/, 'GVCN');
+    assertThrows(() => cuoiSvc.ghiKetLuanFt(P.cpManager, s, { dat: true }), /Head|phạm vi/, 'Head chi nhánh khác');
     /* KY-VONG-MT0 (chủ SP 14/11): MT0 4.0 đạt mốc BE → mọi "Không đạt" bị chặn (thiếu lý do / kỹ năng: prKv KV4, KV9). */
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'hoc_sinh', mon: ['reading'], ghiChu: '  ' }), /đã đạt mốc/, 'Học viên khi MT0 đạt');
     assertThrows(() => cuoiSvc.ghiKetLuanFt(P.mbManager, s, { dat: false, nguyenNhan: 'trung_tam' }), /đã đạt mốc/, 'Trung tâm khi MT0 đạt');
@@ -548,12 +548,12 @@ export async function runPrLt2bTests(t: YThucTestKit) {
     const len = dung('FOU', 0.64, [70, 58, 66, 62], ['reading', 'speaking']);
     assert(len.chinh === 'Final Test 64%' && len.phu === 'L 70 · R 58 · G+V 66 · P 62' && /^Lên BE \+ bổ trợ miễn phí 2 buổi/.test(len.nhan!), JSON.stringify(len));
     const cn = dung('BE', 0.55, [50, 60, 55, 55], ['listening']);
-    assert(/^Quản lý cân nhắc/.test(cn.nhan!) && cn.tone === 'warn', cn.nhan!);
+    assert(/^Head cân nhắc/.test(cn.nhan!) && cn.tone === 'warn', cn.nhan!);
     const qd = dung('BE', 0.55, [50, 60, 55, 55], ['listening'], { huong: 'len_lop', luc: `${NGAY_CHUYEN}T08:00:00Z` });
-    assert(/^QL đã quyết: Lên ELE \+ bổ trợ · /.test(qd.nhan!), qd.nhan!);
-    assert(/^QL đã quyết: Học lại BE · /.test(dung('BE', 0.55, [50, 60, 55, 55], [], { huong: 'hoc_lai', luc: `${NGAY_CHUYEN}T08:00:00Z` }).nhan!), 'đã quyết học lại');
+    assert(/^Head đã quyết: Lên ELE \+ bổ trợ · /.test(qd.nhan!), qd.nhan!);
+    assert(/^Head đã quyết: Học lại BE · /.test(dung('BE', 0.55, [50, 60, 55, 55], [], { huong: 'hoc_lai', luc: `${NGAY_CHUYEN}T08:00:00Z` }).nhan!), 'đã quyết học lại');
     const hl = dung('FOU', 0.45, [40, 45, 50, 45], ['listening']);
-    assert(hl.nhan === 'Học lại FOU · Quản lý báo PH kết quả Test' && hl.tone === 'bad', JSON.stringify(hl));
+    assert(hl.nhan === 'Học lại FOU · Head báo PH kết quả Test' && hl.tone === 'bad', JSON.stringify(hl));
     const kv = dung('BE', 0.78, [80, 75, 78, 79], [], null, { dat: false, nguyenNhan: 'trung_tam', mon: ['reading', 'writing'] });
     assert(kv.kyVong!.nhan === 'Kỳ vọng BE IELTS 4.0' && kv.kyVong!.trangThai === 'Không đạt · Trung tâm · R, W' && kv.kyVong!.daDanhDau, JSON.stringify(kv.kyVong));
     assert(dung('BE', 0.78, [80, 75, 78, 79], []).kyVong!.trangThai === 'Chưa đánh dấu' && dung('FOU', 0.78, [80, 75, 78, 79], []).kyVong?.nhan === 'Kỳ vọng FOU IELTS > 3.5', 'chưa đánh dấu · P9b: FOU có Kỳ vọng');

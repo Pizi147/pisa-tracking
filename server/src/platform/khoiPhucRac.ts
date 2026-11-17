@@ -22,25 +22,25 @@ const dongGoc = (m: MucRac, bang: string) => duLieu(m).ban.find((b) => b.k === '
 function kiemQuyen(p: Principal, m: MucRac): void {
   if (m.loai === 'lop') {
     /* DUONG-LUI-2 (B1-02): như Xoá lớp trống (`class.edit`) — lớp đã không còn nên xét theo chi nhánh lúc xoá. */
-    require_(p, PERMISSIONS.CLASS_EDIT, { branchId: m.branch_id }, 'Chỉ Quản lý chi nhánh của lớp này hoặc Quản trị hệ thống mới khôi phục được lớp.');
+    require_(p, PERMISSIONS.CLASS_EDIT, { branchId: m.branch_id }, 'Chỉ Head chi nhánh của lớp này hoặc Quản trị hệ thống mới khôi phục được lớp.');
   } else if (m.loai === 'hoc_vien') {
     /* Q-RL2b: như Xoá học viên (`CYCLE_EDIT` — Quản lý của em / Quản trị); em đã không còn nên xét theo lớp cuối / chi nhánh lúc xoá. */
-    require_(p, PERMISSIONS.CYCLE_EDIT, m.class_id ? { classId: m.class_id } : { branchId: m.branch_id }, 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới khôi phục được học viên.');
+    require_(p, PERMISSIONS.CYCLE_EDIT, m.class_id ? { classId: m.class_id } : { branchId: m.branch_id }, 'Chỉ Head của học viên này hoặc Quản trị hệ thống mới khôi phục được học viên.');
   } else if (m.loai === 'case') {
     /* Case đã xoá: lớp lúc xoá (`m.class_id`), em + kỹ năng + nguồn từ bản chụp; PA của Case trong cùng mục. */
     const sc = dongGoc(m, 'sos_cases');
     const pas = duLieu(m).ban.filter((b) => b.k === 'xoa' && b.bang === 'case_interventions').flatMap((b) => b.dong);
     if (cachXoaCase(p, { ...sc, eff_student_id: sc.student_id ?? m.hoc_vien_id, class_id: m.class_id }, pas) !== 'ngay') {
-      throw forbidden('Chỉ Quản lý hoặc người xoá được Case này mới khôi phục được.');
+      throw forbidden('Chỉ Head hoặc người xoá được Case này mới khôi phục được.');
     }
   } else if (m.loai === 'pa') {
     const c = loadCase(dongGoc(m, 'case_interventions').case_id);   // Case HIỆN TẠI (đã so dấu — đúng Case lúc xoá)
-    if (quyenXoaPa(p, dongGoc(m, 'case_interventions'), c) !== 'ngay') throw forbidden('Chỉ Quản lý hoặc người xoá được PA này mới khôi phục được.');
+    if (quyenXoaPa(p, dongGoc(m, 'case_interventions'), c) !== 'ngay') throw forbidden('Chỉ Head hoặc người xoá được PA này mới khôi phục được.');
   } else if (m.loai === 'ket_qua_pa') {
     /* VIEC-SAU-LOGIC: như Xoá kết quả PA (`quyenXoaPa` = 'ngay') theo PA HIỆN TẠI; xoá lần GẦN NHẤT (PA đã về trước) mà PA đã ghi lần mới → không khôi phục (PA đã đi tiếp). */
     const f = dongGoc(m, 'case_followups');
     const iv = db().prepare('SELECT * FROM case_interventions WHERE id = ?').get(f.intervention_id) as any;
-    if (quyenXoaPa(p, iv, loadCase(iv.case_id)) !== 'ngay') throw forbidden('Chỉ Quản lý hoặc người xoá được kết quả PA này mới khôi phục được.');
+    if (quyenXoaPa(p, iv, loadCase(iv.case_id)) !== 'ngay') throw forbidden('Chỉ Head hoặc người xoá được kết quả PA này mới khôi phục được.');
     const paDaDao = duLieu(m).ban.some((b) => b.k === 'sua' && b.bang === 'case_interventions');   // lần xoá đã đưa PA về trước lần ghi
     /* So theo lúc ghi, không theo id: id đã xoá có thể được lần ghi mới dùng lại (không AUTOINCREMENT). */
     if (paDaDao && db().prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND created_at >= ? LIMIT 1').get(iv.id, m.xoa_luc)) {

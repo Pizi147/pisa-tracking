@@ -80,7 +80,7 @@ const HANG: HangHv[] = [
     viec: <span className="flex flex-col items-start gap-1"><NutViec>Nhập điểm L · MT3</NutViec>{khac('+ Ghi kết quả PA · R (Lê Minh Khoa)')}</span> },
   { id: 2, ten: 'Trần Thu Hà', target: '6.0', l: ['5.5', 'bang'], r: ['5.5', 'bang'], w: ['5.5', 'bang', 'W1 5.5 · W2 5.5'], s: ['5.0', 'duoi'], ovr: ['5.5', 'bang'],
     kq: <NhanKq kq="dat">Đạt</NhanKq>, thi: <NhanLich loai="du-kien">{nhanThangDuKien('2027-01')}</NhanLich>,
-    viec: <Nhan tone="muted">Chờ QL duyệt · dời MT3 S</Nhan> },
+    viec: <Nhan tone="muted">Chờ Head duyệt · dời MT3 S</Nhan> },
   { id: 3, ten: 'Lê Quang Huy', target: '6.5', l: ['6.0', 'bang'], r: ['5.0', 'duoi'], w: ['5.5', 'duoi', 'W1 5.0 · W2 5.5'], s: ['6.0', 'bang'], ovr: ['5.5', 'duoi'],
     kq: <span className="flex flex-wrap gap-1"><NhanKq kq="chua-dat">Chưa đạt</NhanKq><ChipSos muc={2} kyNang={['R', 'W']} dot="MT2" tinh /></span>, thi: <NhanLich loai="chua">Chưa có lịch</NhanLich>,
     viec: <span className="flex flex-col items-start gap-1"><NutViec>Ghi kết quả PA · R</NutViec><NutViec>Xử lý vi phạm</NutViec>{khac('+ Ghi kết quả PA · W (Lê Minh Khoa)')}</span> },
@@ -245,7 +245,7 @@ export function BangMauV5() {
         <div className="grid grid-cols-3 items-start gap-4 max-[1100px]:grid-cols-1">
           <div className="card"><Empty title="Không còn việc quá hạn" hint="7 việc còn hạn ở nhóm dưới." /></div>
           <div className="card p-4"><ErrorState message="Không tải được danh sách." hint="Kiểm tra mạng rồi bấm Tải lại. Dữ liệu đã lưu không mất." onRetry={() => undefined} /></div>
-          <div className="card flex flex-col gap-2.5 p-4"><DaiChiXem>Chỉ xem · QL Nguyễn Khánh Vy xem việc của cô Hà</DaiChiXem></div>
+          <div className="card flex flex-col gap-2.5 p-4"><DaiChiXem>Chỉ xem · Head Nguyễn Khánh Vy xem việc của cô Hà</DaiChiXem></div>
         </div>
       </Muc>
     </div>

@@ -564,7 +564,7 @@ function KhoiPa({ p, huy, hang, truc, rongTuan, homNay, onOpenCase }: {
   const cho = !!p.cho && p.status !== 'completed';
   const lop = huy ? 'border-0 text-faint line-through' : cho ? KHOI_CHO : `border-0 ${KHOI[nh.tone]}`;
   return (
-    <button type="button" data-pa-id={p.id} title={cho ? t('{pa} · chờ Quản lý duyệt', { pa: nh.ten }) : nh.day} onClick={onOpenCase}
+    <button type="button" data-pa-id={p.id} title={cho ? t('{pa} · chờ Head duyệt', { pa: nh.ten }) : nh.day} onClick={onOpenCase}
       style={{ gridRow: hang, gridColumn: `${a + 2} / ${b + 3}`, ...(huy ? { background: 'var(--surface-2)' } : {}) }}
       className={`z-[2] mx-0.5 flex h-5 min-w-0 appearance-none items-center gap-1.5 self-center overflow-hidden whitespace-nowrap rounded-[5px] text-[12px] font-semibold ${lop} ${hienTen ? 'px-2' : 'justify-center px-0'}`}>
       {!cho && !huy && <span className="flex-none">{DAU_KHOI[nh.tone]}</span>}

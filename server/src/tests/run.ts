@@ -91,7 +91,7 @@ const THOI_GIAN_MS: Record<string, number> = {
   prUiCongViec: 100, prUiLichTuan: 100, prLuatNxMt: 100, prUiHoSoGv: 100, prSuaChamLai: 100, prDiemTieuChi: 100, prUiChung: 100, prChonLop: 100,
   prKhoaLich: 100, prMoSuaLichTest: 100, r1LuuTiep: 100, r1SuaNho: 100, r1NoNho: 100, tenChiSo: 100, r1NoCu: 100, uiChartD: 100, prSvBaiLop2: 100, prKhungNganXep: 100,
   prPilotViec: 100, pr6cPanelAp: 100, prHslMayChu: 100, prHslLt: 100, prLuotTenGv: 100, prLuotKhoiPhuc: 100, prQuyenLichMt: 100, prKhtGon: 100,
-  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100,
+  prSuaNhoQuyen: 100, prSuaNhoUi: 100, donMa: 100, prTabA11y: 100, prSuaLichLop: 100, prYtGon: 100, prYtBaoPh: 100, prYtDeXuat: 100, prHead: 100,
 };
 let quaTk = false;
 /** Gán khi nạp `dbGoc.ts` (sau seed) — bocTep đầu tiên gọi sau đó. */
@@ -496,7 +496,7 @@ check('[12.1] Bộ demo có đủ độ đa dạng mà mục 11.4 yêu cầu', (
       one(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='pending'`)],
     ['đề xuất bị từ chối',
       one(`SELECT COUNT(*) n FROM case_interventions WHERE approval_state='declined'`)],
-    ['xin hỗ trợ Quản lý',
+    ['xin hỗ trợ Head',
       one(`SELECT COUNT(*) n FROM case_followups WHERE next_step='ask_manager'`)],
     ['kết quả "không đủ căn cứ"',
       one(`SELECT COUNT(*) n FROM case_followups WHERE outcome='insufficient'`)],
@@ -833,7 +833,7 @@ check('Chỉ Quản lý chốt tuần MT; giáo viên không chốt được', (
    */
   assert(can(P.mbManager, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'Quản lý phải chốt được tuần');
   assert(!can(P.coreTeacher, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'GVCN không được tự chốt tuần MT');
-  assertThrows(() => attempts.setPlanningWeek(P.coreTeacher, planned.id, periodOf('2026-10-12')), /Quản lý/,
+  assertThrows(() => attempts.setPlanningWeek(P.coreTeacher, planned.id, periodOf('2026-10-12')), /Head/,
     'GVCN đổi tuần MT');
 });
 check('Hai quyền về ngày MT đã bị gỡ khỏi hệ thống', () => {
@@ -846,7 +846,7 @@ check('Hai quyền về ngày MT đã bị gỡ khỏi hệ thống', () => {
 });
 check('GVCN chỉ đọc lịch: không chốt được tuần', () => {
   assert(!can(P.coreTeacher, PERMISSIONS.PLAN_WEEK, { classId: mbClass }), 'GVCN không được chốt tuần');
-  assertThrows(() => attempts.setPlanningWeek(P.coreTeacher, planned.id, periodOf('2026-10-12')), /quyền|Quản lý/, 'GVCN đổi tuần');
+  assertThrows(() => attempts.setPlanningWeek(P.coreTeacher, planned.id, periodOf('2026-10-12')), /quyền|Head/, 'GVCN đổi tuần');
   assert(can(P.coreTeacher, PERMISSIONS.ATTEMPT_VIEW, { classId: mbClass }), 'GVCN vẫn phải xem được lịch');
 });
 check('Nhập điểm KHÔNG kèm quyền sửa lịch: payload điểm không đụng tới tuần', () => {
@@ -934,9 +934,9 @@ check('API chặn thao tác ngoài chi nhánh, không chỉ ẩn nút', () => {
   const cpAttempt = conn
     .prepare('SELECT a.* FROM assessment_attempts a JOIN classes c ON c.id=a.class_id WHERE c.code = ? ORDER BY a.id LIMIT 1')
     .get('CP FT 110') as any;
-  assertThrows(() => attempts.attemptDetail(P.mbManager, cpAttempt.id), /phạm vi/, 'Quản lý MB xem lượt của CP');
-  assertThrows(() => attempts.setPlanningWeek(P.mbManager, cpAttempt.id, periodOf('2026-10-12')), /quyền|Quản lý/,
-    'Quản lý MB đổi tuần của CP');
+  assertThrows(() => attempts.attemptDetail(P.mbManager, cpAttempt.id), /phạm vi/, 'Head MB xem lượt của CP');
+  assertThrows(() => attempts.setPlanningWeek(P.mbManager, cpAttempt.id, periodOf('2026-10-12')), /quyền|Head/,
+    'Head MB đổi tuần của CP');
   assert(attempts.attemptDetail(P.cpManager, cpAttempt.id).id === cpAttempt.id, 'Quản lý CP phải xem được lượt của CP');
 });
 check('Một người có hai grant khác chi nhánh không cộng chéo quyền', () => {
@@ -1315,7 +1315,7 @@ check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì 409 hỏi X
     .prepare(`SELECT * FROM assessment_attempts WHERE class_id = ? AND status='done' ORDER BY id DESC LIMIT 1`)
     .get(classId('CP FT 110')) as any;
   const beforeScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
-  assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking'),
+  assertThrows(() => attempts.setSkillSkip(P.cpManager, xong.id, 'speaking', true, 'Head chốt lại: đợt này không yêu cầu Speaking'),
     /đã có điểm — Xoá cả điểm\?/, 'PR-MTGON: huỷ kỹ năng đã có điểm phải hỏi xoá điểm trước');
   const afterScores = (conn.prepare('SELECT COUNT(*) n FROM assessment_scores WHERE attempt_id = ?').get(xong.id) as any).n;
   assert(afterScores === beforeScores, 'Đánh dấu không mock đã xoá điểm đã có');
@@ -1333,7 +1333,7 @@ check('Bỏ một kỹ năng khỏi phạm vi: đã có điểm thì 409 hỏi X
    * chính là đường lách mà mục 10.1 cấm, và hệ thống chặn nó ở chỗ khác — xem phép kiểm
    * "Không bỏ môn khỏi phạm vi sau khi đã xác nhận vắng" bên dưới.
    */
-  attempts.setSkillSkip(P.cpManager, a.id, 'speaking', true, 'Quản lý chốt lại: đợt này không yêu cầu Speaking');
+  attempts.setSkillSkip(P.cpManager, a.id, 'speaking', true, 'Head chốt lại: đợt này không yêu cầu Speaking');
   const d = attempts.attemptDetail(P.cpManager, a.id);
   assert(d.result.required.length === 3 && d.result.scopeNote === '3 kỹ năng', 'Chưa tính lại mẫu số');
   assert(d.result.overall === null, 'Không được giữ Overall bốn kỹ năng khi một kỹ năng không mock');
@@ -1507,7 +1507,7 @@ check('Ô điểm nói rõ kỹ năng có bắt buộc, độc lập với quy�
 });
 check('Badge bằng đúng danh sách — cả ba vai, cả hai phạm vi', () => {
   for (const [who, p] of [
-    ['Quản trị', P.admin], ['Quản lý MB', P.mbManager], ['GV W1', P.w1Teacher],
+    ['Quản trị', P.admin], ['Head MB', P.mbManager], ['GV W1', P.w1Teacher],
   ] as const) {
     for (const scope of ['mine', 'managed'] as const) {
       const rows = classesSvc.listClassSummaries(p, { scope }).rows;
@@ -1595,7 +1595,7 @@ check('Roster chỉ nạp khi mở lớp, và giáo viên ngoài lớp bị từ
   assert(roster.length > 0, 'Roster rỗng');
   assert(roster[0].timeline.length > 0 && 'myPending' in roster[0], 'Roster thiếu tiến trình MT');
   assertThrows(() => classesSvc.classRoster(P.mbManager, classId('CP FT 110')), /phạm vi/,
-    'Quản lý MB mở roster lớp CP');
+    'Head MB mở roster lớp CP');
 });
 
 // ==================================================================== 12
@@ -1918,7 +1918,7 @@ check('Người theo dõi không trùng với người phụ trách', () => {
     .prepare(`SELECT ur.user_id FROM user_roles ur JOIN roles r ON r.id = ur.role_id
                WHERE r.key='manager' AND ur.branch_id = ? LIMIT 1`)
     .get(unit.branch_id) as any;
-  const t = meeting.createTask(P.admin, { title: 'Việc giao cho chính quản lý', unitId: unit.id, assigneeUserId: mgr.user_id }) as any;
+  const t = meeting.createTask(P.admin, { title: 'Việc giao cho chính Head', unitId: unit.id, assigneeUserId: mgr.user_id }) as any;
   const fol = conn.prepare('SELECT * FROM task_followers WHERE task_id = ? AND user_id = ?').all(t.id, mgr.user_id) as any[];
   assert(fol.length === 0, 'Người phụ trách bị thêm luôn vào danh sách theo dõi');
 });
@@ -3008,9 +3008,9 @@ check('Chỉ Quản lý duyệt được, và không duyệt thì bắt buộc c
   const plan = pendingPlanIn('CP');
   assert(plan, 'Dữ liệu mẫu thiếu đề xuất chờ duyệt ở CP');
   assertThrows(() => cases.respondToPlan(P.coreTeacher, plan.id, { decision: 'approved' }),
-    /Quản lý|quyền/, 'Giáo viên tự duyệt đề xuất');
+    /Head|quyền/, 'Giáo viên tự duyệt đề xuất');
   assertThrows(() => cases.respondToPlan(P.mbManager, plan.id, { decision: 'approved' }),
-    /phạm vi|quyền|Quản lý/, 'Quản lý MB duyệt đề xuất của CP');
+    /phạm vi|quyền|Head/, 'Head MB duyệt đề xuất của CP');
   assertThrows(() => cases.respondToPlan(P.cpManager, plan.id, { decision: 'declined' }),
     /lý do/, 'Không duyệt mà không ghi lý do');
 });
@@ -3049,7 +3049,7 @@ check('PR-DUYET: đề xuất chờ duyệt nằm ở hộp Chờ duyệt của 
   const mgrGroups = mywork.myWork(P.mbManager).groups.map((g: any) => g.key);
   const gvGroups = mywork.myWork(gv).groups.map((g: any) => g.key);
   assert(!gvGroups.includes('decide') && !mgrGroups.includes('decide') && !mgrGroups.includes('decide_move'), 'Còn nhóm việc duyệt');
-  assertThrows(() => yeuCau.hopChoDuyet(gv), /Quản lý/, 'Giáo viên mở được hộp Chờ duyệt');
+  assertThrows(() => yeuCau.hopChoDuyet(gv), /Head/, 'Giáo viên mở được hộp Chờ duyệt');
   const anyManagerHasIt = ['MB', 'CP', 'BC', 'HD']
     .map((b) => loadPrincipal(userByRole('manager', b)))
     .some((m) => yeuCau.hopChoDuyet(m).the.some((x: any) => x.loai === 'de_xuat_pa'));
@@ -3110,7 +3110,7 @@ console.log('\n19. Phân công giáo viên');
 check('Giáo viên không tự phân công mình vào lớp', () => {
   const gv = loadPrincipal(teacherOfSkill('MB FT 102', 'listening'));
   assertThrows(() => classesSvc.setClassTeachers(gv, mbClass, { slots: [] }),
-    /Quản lý|Admin|quyền/, 'Giáo viên đổi phân công');
+    /Head|Admin|quyền/, 'Giáo viên đổi phân công');
   assert(!can(gv, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Giáo viên đang có quyền phân công');
   assert(can(P.mbManager, PERMISSIONS.CLASS_ASSIGN, { classId: mbClass }), 'Quản lý phải phân công được');
 });
@@ -4846,7 +4846,7 @@ check('Ma trận tình huống vòng 5 có đủ những ô đã chốt ở mụ
        AND NOT EXISTS (SELECT 1 FROM case_interventions iv WHERE iv.case_id = sc.id)`);
   one('phương án sang chu kỳ thứ hai trở lên', 'SELECT COUNT(*) n FROM case_interventions WHERE cycle_no > 1');
   one('phương án bị thay thế', `SELECT COUNT(*) n FROM case_interventions WHERE closed_reason = 'superseded' AND superseded_by IS NOT NULL`);
-  one('phương án đang chờ Quản lý duyệt', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'pending'`);
+  one('phương án đang chờ Head duyệt', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'pending'`);
   one('phương án được duyệt', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'approved'`);
   one('phương án bị từ chối có lý do', `SELECT COUNT(*) n FROM case_interventions WHERE approval_state = 'declined' AND approval_note IS NOT NULL`);
   one('điểm giáo viên tự chấm', 'SELECT COUNT(*) n FROM case_followups WHERE metrics IS NOT NULL');
@@ -5111,7 +5111,7 @@ check('[7] Đủ năm nhánh kết quả, và điều kiện hoàn thành case c
   for (const r of conn.prepare(`SELECT id FROM sos_cases WHERE status != 'done'`).all() as any[]) {
     const b = cases.closeBlockers(r.id);
     if (b.some((x) => /chưa có phương án/i.test(x))) blockers.noPlan += 1;
-    if (b.some((x) => /chờ Quản lý duyệt/i.test(x))) blockers.pending += 1;
+    if (b.some((x) => /chờ Head duyệt/i.test(x))) blockers.pending += 1;
     if (b.some((x) => /chưa cập nhật kết quả/i.test(x))) blockers.running += 1;
   }
   assert(blockers.noPlan > 0 && blockers.pending > 0 && blockers.running > 0,
@@ -5261,7 +5261,7 @@ check('Sửa được bảng quyền theo vai, và không tự khoá mình ra ng
     () => sysconfig.setRolePermission(P.mbManager, {
       roleKey: 'teacher', permissionKey: PERMISSIONS.CLASS_ASSIGN, granted: true,
     }),
-    /Quản trị hệ thống/, 'Quản lý sửa được bảng quyền',
+    /Quản trị hệ thống/, 'Head sửa được bảng quyền',
   );
 
   /* Và mỗi lần đổi đều để lại dấu vết. */
@@ -5750,7 +5750,7 @@ check('[10.6] Bộ đếm dời do vắng tính RIÊNG từng kỹ năng trong t
 check('[10.7] N38 L2: kỹ năng đã huỷ KHÔNG chặn tuần kế hoạch hoàn tất; môn bắt buộc chưa có tuần mới chặn', () => {
   const a = freshPlannedAttempt('UB FT 401');
   const mgr = loadPrincipal(userByRole('manager', 'UB'));
-  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'cancelled', 'QL từ chối dời, huỷ phần thi này');
+  skillSchedule.setSitStatus(mgr, a.id, 'speaking', 'cancelled', 'Head từ chối dời, huỷ phần thi này');
   const d = attempts.attemptDetail(mgr, a.id);
   assert(d.completionWeek.valid && !d.completionWeek.blocking.includes('speaking'),
     `Môn đã huỷ là đã xong (thiếu) — không chặn: ${JSON.stringify(d.completionWeek)}`);
@@ -5923,7 +5923,7 @@ check('[6.2] Quản lý chi nhánh khác không tạo được Case cho học vi
       summary: 'Tôi xem hộ chi nhánh khác một cái cho nhanh, xem em vướng gì.',
       primaryCode: 'student.listening.technique',
     }),
-    /phạm vi/, 'Quản lý chi nhánh khác tạo được Case ngoài phạm vi',
+    /phạm vi/, 'Head chi nhánh khác tạo được Case ngoài phạm vi',
   );
 });
 
@@ -6274,7 +6274,7 @@ check('[10.6] Thẻ cũ hết hạn duyệt mà chưa ai trả lời thì huỷ 
 
 check('[10.6] Giáo viên bộ môn không tự xử lý việc vắng của lớp (nút Vắng)', () => {
   const a = takePlannedAttempt();
-  assertThrows(() => absence.baoVang(P.subjectTeacher, a.id, 'speaking', 'Thử'), /chủ nhiệm|Quản lý/, 'Giáo viên bộ môn xử lý được việc vắng');
+  assertThrows(() => absence.baoVang(P.subjectTeacher, a.id, 'speaking', 'Thử'), /chủ nhiệm|Head/, 'Giáo viên bộ môn xử lý được việc vắng');
 });
 
 
@@ -7024,7 +7024,7 @@ check('CASE-01 Task 2 · Case Học thuật vẫn chọn được ngày quá kh�
   const made = cases.reportIssue(P.admin, {
     studentId: st.id, cycleId: st.cycle_id, topic: 'reading',
     primaryCode: 'student.reading.time',
-    title: 'Reading: quản lý thời gian còn chậm',
+    title: 'Reading: Head thời gian còn chậm',
     summary: 'Ghi nhận từ buổi học tuần trước, em làm không kịp hai bài cuối.',
     detectedAt: addDays(demoToday(), -10),
     parallel: true,
@@ -7269,7 +7269,7 @@ check('Nhập bù · Chỉ người đóng được Case mới CHỐT được �
     fromDate: '2026-01-20', toDate: '2026-01-25',
     actions: [{ ketQua: 'improved', description: 'Ôn bài với em', performerName: 'GV bộ môn', fromDate: '2026-01-20', toDate: '2026-01-25' }],
     outcome: 'improved', note: 'GVBM tự nhập, phải bị chặn ở bước chốt kết quả.',
-  }), /chủ nhiệm|Quản lý|không có quyền/, 'GVBM trái môn tự chốt được case nhập bù');
+  }), /chủ nhiệm|Head|không có quyền/, 'GVBM trái môn tự chốt được case nhập bù');
   const after = (conn.prepare('SELECT COUNT(*) n FROM sos_cases').get() as any).n;
   assert(before === after, 'GVBM bị chặn ở bước chốt nhưng vẫn để lại một case dở dang — cả chuỗi phải cùng một giao dịch');
 });
@@ -7307,7 +7307,7 @@ check('SCH-01 · GVBM lớp Normal: quyền "-" tự dời ĐÚNG môn mình d�
     can(P.normalSubjectTeacher, PERMISSIONS.SCHEDULE_MOVE, { classId: classId('MB FOU 12'), skill: 'writing' }),
     'GVBM Writing phải dời được đúng môn Writing',
   );
-  assertThrows(() => skillSchedule.setSkillWeek(P.normalSubjectTeacher, attemptId, 'writing', otherPeriod, {}), /Chỉ Quản lý dời lịch Test/,
+  assertThrows(() => skillSchedule.setSkillWeek(P.normalSubjectTeacher, attemptId, 'writing', otherPeriod, {}), /Chỉ Head dời lịch Test/,
     'GVBM dời tay lịch Writing phải bị chặn (R14)');
 });
 
@@ -7931,7 +7931,7 @@ check('PR-F · Đối soát F10 (nhãn): hai định nghĩa khác nhau thì hai 
 check('PR-F · Drill-down: tài khoản NGOÀI phạm vi bị từ chối, không trả tập rút gọn; phạm vi rỗng trả rỗng', () => {
   const mb = branchIdOf('MB'), cp = branchIdOf('CP');
   assertThrows(() => metricsSvc.metricSet(P.cpManager, 'hv-co-case-mo', { branchId: mb }), /phạm vi|quyền/,
-    'Quản lý CP gọi thẳng drill-down của chi nhánh MB');
+    'Head CP gọi thẳng drill-down của chi nhánh MB');
   assertThrows(() => metricsSvc.metricSet(P.subjectTeacher, 'case-mo', { branchId: cp }), /phạm vi|quyền/,
     'Giáo viên MB gọi thẳng drill-down của chi nhánh CP');
   const own = metricsSvc.metricSet(P.mbManager, 'hv-co-case-mo', { branchId: mb }) as any;
@@ -8048,7 +8048,7 @@ check('PR-G · Câu trạng thái đúng chữ của bộ chữ: gợi ý, khôn
     `Sau chốt: "${domain.noShowText(settled, 'W3 SEP 2026', PRG_MON)}"`);
   const late = domain.noShowStateOf({ marked: true, hasScore: false, sameWeek: true, weekEnd: PRG_SUN, today: '2026-09-28',
     enteredAfterWeekEnd: true, lateRule: 'cho-ql-hieu-chinh' });
-  assert(late.state === 'cho-ql-hieu-chinh' && domain.noShowText(late, 'W3 SEP 2026', '2026-09-28') === 'Chờ quản lý hiệu chỉnh',
+  assert(late.state === 'cho-ql-hieu-chinh' && domain.noShowText(late, 'W3 SEP 2026', '2026-09-28') === 'Chờ Head hiệu chỉnh',
     `Tuần đã qua: ${JSON.stringify(late)}`);
   assert(domain.noShowText({ state: 'none', effectiveOn: null, editableUntil: null }, null, TODAY) === null, 'Không có dấu thì không có câu');
 });
@@ -8169,7 +8169,7 @@ check('PR-G · Quyền: GV chỉ báo "-" cho bài mình được phân công; c
   assertThrows(() => attempts.saveScore(P.sTeacher, id, 'listening', { noShow: true } as any), /phân công|quyền/,
     'GV Speaking báo "-" cho ô Listening');
   const settledId = prgAttempts[0];
-  assertThrows(() => absence.baoVang(P.sTeacher, settledId, 'listening', null), /chủ nhiệm|Quản lý/,
+  assertThrows(() => absence.baoVang(P.sTeacher, settledId, 'listening', null), /chủ nhiệm|Head/,
     'GVBM (không phải GVCN) tự dời lịch chỉ vì mình là người báo "-"');
   const row = prgSit(settledId, 'listening');
   assert(row.absence_move_count === 1 && row.sit_status === 'scheduled', `Sau khi tự dời: ${JSON.stringify(row)}`);
@@ -8310,7 +8310,7 @@ const PRH_OLD_STRINGS = [
   // danh sách lớp, học viên, nhập liệu
   'Lớp là gốc', 'Badge chỉ xuất hiện', 'Em nào vào muộn thì ghi đè', 'Cả lô này vào một lớp', 'Bỏ qua {blocking} dòng lỗi',
   /* PR-VAI-a: bỏ 'Việc của tôi' khỏi danh sách — mockup 23 đã duyệt đặt lại tên khối GV "Việc của tôi · hôm nay" (nguồn ưu tiên cao hơn PR-H). */
-  'Thêm 0 học viên', 'Cả phạm vi quản lý', 'Hai mốc kiểm tra đếm từ đây', 'Tiến độ lớp',
+  'Thêm 0 học viên', 'Cả phạm vi Head', 'Hai mốc kiểm tra đếm từ đây', 'Tiến độ lớp',
   // mười hai khái niệm — chữ tuyệt đối không viết
   'SOS ý thức', 'Hoàn thành phương án', 'hoàn thành phương án', 'Đã hoàn thành phương án',
 ];
@@ -8403,7 +8403,7 @@ check('Rà soát · Giao diện chỉ mời "Xử lý vắng" người làm đư
   assert(v(P.admin).canHandleAbsence === true, 'Quản trị phải được');
   assert(v(P.lrTeacher).canHandleAbsence === true, 'GVCN của lớp phải được');
   assert(v(P.subjectTeacher).canHandleAbsence === false, 'Giáo viên bộ môn không phải GVCN thì không được mời bấm');
-  assertThrows(() => absence.baoVang(P.subjectTeacher, id, 'listening', null, PRG_MON), /chủ nhiệm|Quản lý/,
+  assertThrows(() => absence.baoVang(P.subjectTeacher, id, 'listening', null, PRG_MON), /chủ nhiệm|Head/,
     'Máy chủ vẫn phải từ chối — ẩn nút không phải là chặn');
 });
 
@@ -8768,9 +8768,9 @@ await checkAsync('PR-N · N5 Quyền xem tệp = quyền xem BẢN GHI CHỦ: t�
   const row = await attachmentsSvc.addFile(P.mbManager, { ownerType: 'sos_case', ownerId: c.id, fileName: 'a.pdf', data: Buffer.from('bí mật') }) as any;
   assert((attachmentsSvc.listAttachments(P.mbManager, 'sos_case', c.id) as any[]).length === 1, 'Quản lý MB phải xem được');
   assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', c.id) as any[]).length === 1, 'GV dạy lớp phải xem được');
-  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'sos_case', c.id), /phạm vi|quyền/, 'Quản lý CP xem danh sách tệp của case MB');
-  await assertRejects(() => attachmentsSvc.openAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP tải được tệp của case MB — đường tải bỏ qua kiểm quyền');
-  await assertRejects(() => attachmentsSvc.removeAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Quản lý CP xoá được tệp của case MB');
+  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'sos_case', c.id), /phạm vi|quyền/, 'Head CP xem danh sách tệp của case MB');
+  await assertRejects(() => attachmentsSvc.openAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Head CP tải được tệp của case MB — đường tải bỏ qua kiểm quyền');
+  await assertRejects(() => attachmentsSvc.removeAttachment(P.cpManager, row.id), /phạm vi|quyền/, 'Head CP xoá được tệp của case MB');
   await attachmentsSvc.removeAttachment(P.mbManager, row.id);
 });
 
@@ -8780,7 +8780,7 @@ await checkAsync('PR-N · N5 Quyền thêm/xoá = quyền SỬA bản ghi chủ 
   const ok = attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: own.id, url: 'https://example.com/ok', displayName: 'Đúng môn' }) as any;
   assert(ok.id, 'GV đúng môn phải đính kèm được vào case môn mình');
   assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/no', displayName: 'Trái môn' }), /quyền/, 'GV môn khác đính kèm vào case trái môn');
-  const mgr = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/mgr', displayName: 'Quản lý' }) as any;
+  const mgr = attachmentsSvc.addLink(P.mbManager, { ownerType: 'sos_case', ownerId: other.id, url: 'https://example.com/mgr', displayName: 'Head' }) as any;
   assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'sos_case', other.id) as any[]).some((a) => a.id === mgr.id), 'GV môn khác vẫn phải XEM được (xem không cần đúng môn)');
   await assertRejects(() => attachmentsSvc.removeAttachment(P.subjectTeacher, mgr.id), /quyền/, 'GV môn khác xoá được tệp của case trái môn');
   await attachmentsSvc.removeAttachment(P.subjectTeacher, ok.id);
@@ -8806,7 +8806,7 @@ await checkAsync('PR-N · N5 Phương án thừa hưởng quyền của case ch�
   const iv = Number(conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, created_at) VALUES (?, 'tutor', 'PRN phương án có bằng chứng', 'planned', ?)`).run(c.id, nowIsoPrn()).lastInsertRowid);
   const row = attachmentsSvc.addLink(P.mbManager, { ownerType: 'case_intervention', ownerId: iv, url: 'https://example.com/pa', displayName: 'Kế hoạch tutor' }) as any;
   assert((attachmentsSvc.listAttachments(P.subjectTeacher, 'case_intervention', iv) as any[]).length === 1, 'GV dạy lớp xem được bằng chứng của phương án');
-  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'case_intervention', iv), /phạm vi|quyền/, 'Quản lý CP xem bằng chứng phương án của case MB');
+  assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'case_intervention', iv), /phạm vi|quyền/, 'Head CP xem bằng chứng phương án của case MB');
   assertThrows(() => attachmentsSvc.addLink(P.subjectTeacher, { ownerType: 'case_intervention', ownerId: 999999, url: 'https://example.com/x', displayName: 'x' }), /Không tìm thấy/, 'Phương án không tồn tại');
   /* PR-J: hai loại này đã có bản ghi chủ, nên id không tồn tại phải báo "không tìm thấy" (không còn "chưa hỗ trợ"). */
   for (const t of ['violation', 'discipline_measure']) {
@@ -10034,6 +10034,9 @@ await runPrTdHvl2Tests({ check, assert, conn } as any);
 // ==================================================================== NHAP-DIEM-a (chủ SP 14/11: Huỷ điểm một kỹ năng = "Đã huỷ" mọi nơi · nhập / vắng tự do)
 const { runPrNhapDiemTuDoTests } = bocTep('prNhapDiemTuDo', await import('./prNhapDiemTuDo.tests.ts'));
 await runPrNhapDiemTuDoTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
+// ==================================================================== HEAD (vai manager hiện là "Head" — chủ SP 18/11)
+const { runPrHeadTests } = bocTep('prHead', await import('./prHead.tests.ts'));
+await runPrHeadTests({ check, assert } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

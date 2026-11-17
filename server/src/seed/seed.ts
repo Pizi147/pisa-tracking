@@ -147,7 +147,7 @@ function runSeedTho() {
 
     for (const b of BRANCHES) {
 
-      const m = addUser(MANAGER_NAME[b.code], `Quản lý ${b.name}`);
+      const m = addUser(MANAGER_NAME[b.code], `Head ${b.name}`);
       grant(m, 'manager', b.code);
       managers.set(b.code, [m]);
       userId.set(`MGR_${b.code}`, m);
@@ -376,7 +376,7 @@ function runSeedTho() {
       '— trong đó đã xoá (có dòng audit)': yThuc.deleted,
       'Lần xử lý Ý thức': yThuc.measures,
       '— trong đó xử lý theo thang (đã xong)': yThuc.done,
-      '— trong đó đề xuất QL duyệt': yThuc.deXuat,
+      '— trong đó đề xuất Head duyệt': yThuc.deXuat,
       'Khai bậc Ý thức (H5)': yThuc.khai,
       '— trong đó demo rulebook v3 (SOS tự tạo Case)': sosV3.cases,
       'Việc Phối hợp SOS': (conn.prepare('SELECT COUNT(*) AS n FROM sos_coordination_actions').get() as any).n,
@@ -546,7 +546,7 @@ function seedMeeting(conn: any, ctx: {
     assignee: 'T_YEN', due: '2026-09-11', progress: 'done', type: 'long_term',
     periodId: prevId, group: 'curriculum', parentId: curriculum,
     completedAt: '2026-09-10T10:00:00.000Z',
-    updates: [{ progress: 'done', note: '10 bài nghe kèm transcript, đã gửi Quản lý duyệt.', on: '2026-09-10' }],
+    updates: [{ progress: 'done', note: '10 bài nghe kèm transcript, đã gửi Head duyệt.', on: '2026-09-10' }],
   });
   addTask({
     title: 'Giáo trình BE — Reading', unit: unitOf('HD'), branch: 'HD',
@@ -647,7 +647,7 @@ function seedMeeting(conn: any, ctx: {
     periodId: prevId, group: 'teacher', completedAt: '2026-09-05T09:00:00.000Z',
     updates: [
       { progress: 'doing', note: 'Đối chiếu lịch của bốn lớp Fast Track.', on: '2026-09-02' },
-      { progress: 'done', note: 'Khớp lịch xong. Dời MT2 của BC FT 205 sang W2 SEP theo yêu cầu Quản lý.', on: '2026-09-05' },
+      { progress: 'done', note: 'Khớp lịch xong. Dời MT2 của BC FT 205 sang W2 SEP theo yêu cầu Head.', on: '2026-09-05' },
     ],
   });
 

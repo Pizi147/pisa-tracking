@@ -23,7 +23,7 @@ export async function runPrOv13eTests(t: any) {
   const soVai = (id: number) => (conn.prepare("SELECT COUNT(*) n FROM user_roles WHERE user_id = ? AND status = 'active'").get(id) as any).n;
 
   check('OV13e-1 · đăng ký từng vai → requested_role + chức danh đúng, chưa có vai nào; CX không cần chi nhánh; kỹ năng chỉ khi GV', () => thu(() => {
-    const ten: Record<string, string> = { teacher: 'Giáo viên', manager: 'Quản lý', consultant: 'Tư vấn viên', cx: 'CX', office_admin: 'Admin' };
+    const ten: Record<string, string> = { teacher: 'Giáo viên', manager: 'Head', consultant: 'Tư vấn viên', cx: 'CX', office_admin: 'Admin' };
     for (const role of Object.keys(ten)) {
       const id = dk({ role, skills: ['reading'] });
       const u = user(id);
@@ -55,7 +55,7 @@ export async function runPrOv13eTests(t: any) {
     assert(vai(a).join() === 'consultant', `mặc định: ${vai(a)}`);
     const b = dk({ role: 'consultant' });
     accounts.approve(P.admin, b, { role: 'manager', branches: ['MB'] });
-    assert(vai(b).join() === 'manager' && user(b).title === 'Quản lý', `đổi vai: ${vai(b)} · ${user(b).title}`);
+    assert(vai(b).join() === 'manager' && user(b).title === 'Head', `đổi vai: ${vai(b)} · ${user(b).title}`);
     assert(user(a).title === 'Tư vấn viên', `giữ chức danh: ${user(a).title}`);
     const c = dk({ role: 'office_admin' });
     accounts.decline(P.admin, c, 'Thử');

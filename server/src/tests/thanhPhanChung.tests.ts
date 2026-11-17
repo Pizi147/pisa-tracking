@@ -47,7 +47,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     const q = (o: any) => d.quyCheNhapDiem({ thuong: false, homNay: H, ...o }).chu as string;
     const truoc = q({ tuanThi: '2026-10-12', nhapHo: true });
     assert(truoc === `Bạn nhập hộ · Chưa tới tuần Test ${d.tuanLich('2026-10-12', H)} · lưu điểm thì máy dời về tuần này`, truoc);
-    assert(!/nhờ QL|hỏi dời/.test(truoc + q({ tuanThi: '2026-10-12' })), 'không còn câu "nhờ QL dời lịch" / "hỏi dời"');
+    assert(!/nhờ Head|hỏi dời/.test(truoc + q({ tuanThi: '2026-10-12' })), 'không còn câu "nhờ QL dời lịch" / "hỏi dời"');
     assert(q({ tuanThi: '2026-10-12' }).startsWith('Chưa tới tuần Test'), 'việc của mình: không "Bạn nhập hộ"');
     assert(q({ nhapHo: true }) === `Bạn nhập hộ · ${q({})}`, 'mặc định: thêm đầu câu, giữ luật của lượt');
     assert(/TỰ DỜI kỹ năng đó[\s\S]*VỀ TUẦN NÀY, không hỏi, không cần Quản lý/.test(doc('server/src/fasttrack/skillSchedule.ts')), 'câu neo vào luật doiVeTuanNayNeuChua');
@@ -458,7 +458,7 @@ export async function runThanhPhanChungTests(t: YThucTestKit) {
     assert(/<KhungPanel tieuDe=\{t\('Nhật ký cấu hình'\)\}/.test(nk) && /onClick=\{\(\) => \{ setMucPanel\(''\); setMoPanel\(true\); \}\}>\{t\('Xem tất cả'\)\}<\/button>/.test(nk), 'QL thiếu nút Xem tất cả mở panel');
     assert(/<OChonThuong aria-label=\{t\('Mục'\)\}/.test(nk) && /<ChonLoc [^\n]*ariaLabel=\{t\('Người'\)\}/.test(nk) && !/ChonDangNut/.test(nk), 'lọc Mục / Người chưa đúng mẫu ô chọn');
     const ad = doc('web/src/modules/platform/AdminPage.tsx');
-    assert(/!quanTri && tab !== 'da-xoa' && \(\s*<DaiChiXem lon>/.test(ad) && !/Quản trị hệ thống sửa; Quản lý xem/.test(ad + doc('web/src/modules/platform/HanMacDinhAdmin.tsx')), 'câu chỉ-xem phải một chỗ (dải dưới hàng tab)');
+    assert(/!quanTri && tab !== 'da-xoa' && \(\s*<DaiChiXem lon>/.test(ad) && !/Quản trị hệ thống sửa; Head xem/.test(ad + doc('web/src/modules/platform/HanMacDinhAdmin.tsx')), 'câu chỉ-xem phải một chỗ (dải dưới hàng tab)');
     assert(!/🔒/.test(doc('web/src/modules/platform/CauHinhCaseSos.tsx')), 'Case & SOS còn nhãn chỉ-xem riêng');
     assert(/\.ls-hep \.ls-ds time \{ grid-column: 1 \/ -1; \}/.test(doc('web/src/index.css')), 'cột hẹp: giờ trên dòng');
   });

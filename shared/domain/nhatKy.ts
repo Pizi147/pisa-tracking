@@ -23,7 +23,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'case.preset.confirm': 'Xác nhận PA theo quy chế', 'case.preset.replace': 'Thay PA theo quy chế', 'case.confirm': 'Xác nhận Case',
   'case.preset.confirm_undo': 'Hoàn tác xác nhận PA', 'case.confirm_undo': 'Hoàn tác xác nhận Case', 'case.xac_nhan_s_undo': 'Hoàn tác xác nhận Case Speaking',   // HOAN-TAC-XN
   'case.dismiss.request': 'Gửi Không cần theo dõi',
-  'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Kết quả PA', 'case.result.edit': 'Sửa kết quả PA', 'case.result.undo': 'Hoàn tác kết quả PA', 'case.result.delete': 'Xoá kết quả PA', 'case.plan.doi_pa': 'Đề xuất PA khác', 'case.plan.giu_pa_gv': 'Giữ PA của GV (gửi QL duyệt)', 'case.followup.edit': 'Sửa xem lại', 'intervention.edit': 'Sửa PA',
+  'case.report': 'Tạo Case', 'case.report.merge': 'Ghi vào Case đang có', 'case.result.update': 'Kết quả PA', 'case.result.edit': 'Sửa kết quả PA', 'case.result.undo': 'Hoàn tác kết quả PA', 'case.result.delete': 'Xoá kết quả PA', 'case.plan.doi_pa': 'Đề xuất PA khác', 'case.plan.giu_pa_gv': 'Giữ PA của GV (gửi Head duyệt)', 'case.followup.edit': 'Sửa xem lại', 'intervention.edit': 'Sửa PA',
   'case.retired_score_fixed': 'Huỷ Case vì sửa điểm', 'case.xoa_overall_dat': 'Xoá Case vì em đạt lại (chưa có PA xác nhận)', 'case.system_close': 'Hệ thống đóng Case', 'case.system_reopen': 'Mở lại Case hệ thống đã đóng', 'case.mo_lai_xoa_diem': 'Mở lại Case (nhập lại điểm)',
   'case.tam': 'Tạo Case tạm (chờ chốt SOS)', 'case.xoa_tam': 'Xoá Case tạm (trước khi chốt SOS)', 'case.xoa_cho_chot_sos': 'Xoá Case "Chờ chốt SOS" cũ (đổi luật)',
   'class.assign': 'Phân công giáo viên', 'class.assign.hoan_tac': 'Hoàn tác phân công giáo viên', 'class.create': 'Tạo lớp', 'class.bulk_create': 'Tạo nhiều lớp', 'class.delete': 'Xoá lớp', 'class.finished': 'Kết thúc lớp', 'class.finish_scheduled': 'Hẹn kết thúc lớp', 'class.reopened': 'Mở lại lớp',
@@ -38,7 +38,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'cycle.baseline.clear': 'Xoá điểm đầu vào', 'cycle.baseline.set': 'Ghi điểm đầu vào', 'cycle.create': 'Mở lộ trình',
   'cycle.outcome': 'Kết luận lộ trình', 'cycle.thi_that': 'Kết quả thi thật', 'cycle.buoc_tiep': 'Bước tiếp sau thi', 'cycle.han_sau_thi': 'Gia hạn sau thi', 'cycle.mon_dang_ky': 'Đổi môn học', 'cycle.target.revise': 'Đổi Target', 'cycle.update': 'Sửa lộ trình',
   'discipline.acknowledge': 'Ghi nhận vi phạm (đã xem)', 'discipline.handle': 'Xác nhận xử lý vi phạm', 'discipline.edit': 'Sửa vi phạm của lần xử lý', 'discipline.delete': 'Xoá lần xử lý',
-  'discipline.propose': 'Đề xuất QL duyệt xử lý Ý thức', 'discipline.apply': 'QL áp xử lý Ý thức', 'discipline.performed': 'Đã thực hiện xử lý Ý thức',
+  'discipline.propose': 'Đề xuất Head duyệt xử lý Ý thức', 'discipline.apply': 'Head áp xử lý Ý thức', 'discipline.performed': 'Đã thực hiện xử lý Ý thức',
   'discipline.not_performed': 'Đưa lần xử lý về Chưa thực hiện', 'discipline.edit_info': 'Sửa ngày / người / mô tả lần xử lý', 'discipline.unacknowledge': 'Bỏ ghi nhận vi phạm',
   'discipline.declare_level': 'Xác nhận cấp bậc vi phạm từ trước', 'discipline.declare_level_edit': 'Sửa cấp bậc vi phạm', 'discipline.declare_level_undo': 'Hoàn tác cấp bậc vi phạm',
   'discipline.revoke_request': 'Xin thu hồi lần xử lý', 'discipline.revoke': 'Thu hồi lần xử lý', 'discipline.revoke_undo': 'Huỷ thu hồi lần xử lý',   // LUAT-5
@@ -57,7 +57,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'regular.no_show': 'Báo vắng', 'regular.no_show_cleared': 'Bỏ báo vắng', 'regular.plan': 'Xếp lịch bài lớp thường',
   'request.approve': 'Duyệt yêu cầu', 'request.decline': 'Từ chối yêu cầu', 'request.answer': 'Trả lời Xin ý kiến', 'request.undo': 'Huỷ quyết định duyệt',
   'request.create': 'Gửi yêu cầu duyệt', 'request.edit': 'Người gửi sửa yêu cầu', 'request.withdraw': 'Người gửi rút yêu cầu', 'request.answer_edit': 'Sửa câu trả lời Xin ý kiến',
-  'cuoi_khoa.quyet': 'Quản lý quyết hướng Final Test', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Final Test', 'cuoi_khoa.bo_tro_huy': 'Huỷ bổ trợ miễn phí (đổi quyết định)', 'cuoi_khoa.mini_test_dong': 'Đóng Mini Test (em chuyển Fast Track)',
+  'cuoi_khoa.quyet': 'Head quyết hướng Final Test', 'cuoi_khoa.bo_tro_tao': 'Tạo bổ trợ miễn phí sau Final Test', 'cuoi_khoa.bo_tro_huy': 'Huỷ bổ trợ miễn phí (đổi quyết định)', 'cuoi_khoa.mini_test_dong': 'Đóng Mini Test (em chuyển Fast Track)',
   'cuoi_khoa.mini_test': 'Ghi Mini Test', 'cuoi_khoa.ket_luan_ft': 'Chốt Kết quả đầu ra lên FT', 'cuoi_khoa.ky_vong_lop': 'Kết quả đầu ra cả lớp', 'cuoi_khoa.de_xuat_kq': 'GVCN đề xuất Kết quả đầu ra', 'lo_trinh.nhap': 'Lưu nháp lộ trình', 'ban_giao.lam_lai': 'Bàn giao cần làm lại',
   'regular.score': 'Nhập điểm lớp thường', 'regular.score.override': 'Sửa điểm lớp thường',
   'score.lich_su': 'Nhập điểm MT cũ',

@@ -242,7 +242,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     const b = taoCase();
     /* PR-DUYET (T64): "Xin hỗ trợ QL" không còn dừng PA — PA "chờ duyệt" ở đây là PA đề xuất kiểu cũ (dữ liệu trước hộp Chờ duyệt). */
     conn.prepare("UPDATE case_interventions SET status = 'planned', needs_approval = 1, approval_state = 'pending' WHERE id = ?").run(b.ivId);
-    assertThrows(() => cases.updateResult(P.lrTeacher, b.ivId, ADJ_OK), /chờ Quản lý duyệt/, 'Điều chỉnh PA đang chờ duyệt');
+    assertThrows(() => cases.updateResult(P.lrTeacher, b.ivId, ADJ_OK), /chờ Head duyệt/, 'Điều chỉnh PA đang chờ duyệt');
     assert(revRows(a.ivId).length === 0 && revRows(b.ivId).length === 0, 'Bị từ chối mà vẫn có dòng lịch sử');
   });
 
@@ -259,7 +259,7 @@ export async function runDieuChinhPaTests(t: YThucTestKit) {
     }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Kết thúc suông khi Chưa đủ dữ liệu');   // RKC-2c: GV giữ luật
     assertThrows(() => cases.updateResult(P.lrTeacher, ivId, {
       decision: 'ask_manager', outcome: 'insufficient', note: 'Chưa có bài nghe mới để nhìn',
-    }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Xin hỗ trợ từ Quản lý khi Chưa đủ dữ liệu');
+    }), /Giữ nguyên, Điều chỉnh hoặc Thay/, 'Xin hỗ trợ từ Head khi Chưa đủ dữ liệu');
     assert(ivRow(ivId).status === 'started' && !lastFollow(ivId), 'Bị từ chối mà PA đổi trạng thái hoặc có lần cập nhật');
   });
 

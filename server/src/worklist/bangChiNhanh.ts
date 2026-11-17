@@ -72,7 +72,7 @@ function napTruocBang(p: Principal, base: { branchId: number | null; program: Ch
 
 function tinh(p: Principal, f: { branchId?: number | null; ct: ChuongTrinh; chuY?: boolean }) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
-  if (scope.none) throw forbidden('Bảng này dành cho Quản lý.');
+  if (scope.none) throw forbidden('Bảng này dành cho Head.');
   const conn = db();
   /* Một chi nhánh: đã chọn, hoặc phạm vi chỉ có một chi nhánh (P5 "1 CN thì ưu tiên bảng lớp"). */
   const branchId = f.branchId ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);

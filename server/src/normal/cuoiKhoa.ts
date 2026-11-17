@@ -714,7 +714,7 @@ export function ghiMiniTestTrongTx(conn: any, p: Principal, mt: any, x: { tyLe: 
     const lopId = (conn.prepare(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`).get(mt.student_id) as any)?.class_id ?? null;
     /* PR-CT2 (§8): thẻ về GVCN lớp đang học (không có → chủ Case) — PA nhóm đã khép trước lúc này nên `nguoiGiuMotMiniTest` không còn Người dạy (GV-CU-BO-TRO: giữ như cũ). */
     const chu = nguoiGiuMotMiniTest(conn, mt, lopId);
-    const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ ${ptNguong}%) — Quản lý xử lý từng trường hợp`;
+    const lyDo = `Mini Test ${phanTram}% chưa đạt (cần từ ${ptNguong}%) — Head xử lý từng trường hợp`;
     const duLieu = { viecKey: `minitest:${mt.id}`, ownerId: chu, lyDo, tyLe: x.tyLe };
     const moi = taoYeuCau(conn, {
       loai: 'bao_len_mini_test', doiTuongLoai: 'mini_test', doiTuongId: mt.id, hocVienId: mt.student_id, lopId, nguoiXin: null, hanDuyet: null, lyDo, duLieu,
@@ -821,7 +821,7 @@ export function miniTestCuaHocVien(sids: readonly number[]): Map<number, { id: n
 export function ghiKetLuanFt(p: Principal, sid: number, input: { dat?: unknown; nguyenNhan?: unknown; mon?: unknown; ghiChu?: unknown }) {
   const conn = db();
   if (!conn.prepare('SELECT 1 FROM students WHERE id = ?').get(sid)) throw notFound('Không tìm thấy học viên.');
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: sid })) throw forbidden('Chỉ Quản lý mới đánh được Kỳ vọng.');
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: sid })) throw forbidden('Chỉ Head mới đánh được Kỳ vọng.');
   /*
    * PR-KV (§3): cùng điều kiện với panel cả lớp — em có điểm MT0 ở lớp BE/ELE, và có lệnh Lên FT (chờ / đã chuyển) từ lớp đó hoặc đã lên FT
    * từ lớp đó (Lộ trình tiếp theo đã áp). Không còn đòi bài Final Test. Lớp BE/ELE = lớp nguồn của lệnh Lên FT mới nhất, không có thì lớp BE/ELE

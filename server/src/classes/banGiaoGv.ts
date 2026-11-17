@@ -247,7 +247,7 @@ export function phieuBanGiaoGv(p: Principal, id: number): PhieuBanGiaoGvDto {
 export function goGopYVuaChen(p: Principal, id: number, body: { studentId?: unknown; mon?: unknown; noiDung?: unknown }): boolean {
   const b = docViec(id);
   const q = quyenViec(p, b);
-  if (!q.viet) throw forbidden(b.trang_thai === 'huy' ? 'Việc bàn giao đã huỷ.' : 'Chỉ người được giao hoặc Quản lý lớp viết bàn giao.');
+  if (!q.viet) throw forbidden(b.trang_thai === 'huy' ? 'Việc bàn giao đã huỷ.' : 'Chỉ người được giao hoặc Head lớp viết bàn giao.');
   const mon = String(body?.mon ?? ''), sid = Number(body?.studentId), chu = String(body?.noiDung ?? '').trim();
   return tx(() => {
     if (!chu || !db().prepare('DELETE FROM ban_giao_gv_em WHERE ban_giao_id = ? AND student_id = ? AND mon = ? AND noi_dung = ?').run(id, sid, mon, chu).changes) return false;
@@ -259,8 +259,8 @@ export function goGopYVuaChen(p: Principal, id: number, body: { studentId?: unkn
 export function ghiGopYGv(p: Principal, id: number, body: { studentId?: unknown; mon?: unknown; noiDung?: unknown }): void {
   const b = docViec(id);
   const q = quyenViec(p, b);
-  if (!q.viet) throw forbidden(b.trang_thai === 'huy' ? 'Việc bàn giao đã huỷ.' : 'Chỉ người được giao hoặc Quản lý lớp viết bàn giao.');
-  if (q.vuot) canXacNhan('Người được giao còn hạn bàn giao — Quản lý vẫn điền thay?', undefined, 'Vẫn làm thay');
+  if (!q.viet) throw forbidden(b.trang_thai === 'huy' ? 'Việc bàn giao đã huỷ.' : 'Chỉ người được giao hoặc Head lớp viết bàn giao.');
+  if (q.vuot) canXacNhan('Người được giao còn hạn bàn giao — Head vẫn điền thay?', undefined, 'Vẫn làm thay');
   const mon = String(body?.mon ?? '');
   const sid = Number(body?.studentId);
   const conn = db();
@@ -283,8 +283,8 @@ export function ghiGopYGv(p: Principal, id: number, body: { studentId?: unknown;
 export function ghiNhanXetChungGv(p: Principal, id: number, chu: unknown): void {
   const b = docViec(id);
   const qv = quyenViec(p, b);
-  if (!qv.viet) throw forbidden('Chỉ người được giao hoặc Quản lý lớp viết bàn giao.');
-  if (qv.vuot) canXacNhan('Người được giao còn hạn bàn giao — Quản lý vẫn điền thay?', undefined, 'Vẫn làm thay');
+  if (!qv.viet) throw forbidden('Chỉ người được giao hoặc Head lớp viết bàn giao.');
+  if (qv.vuot) canXacNhan('Người được giao còn hạn bàn giao — Head vẫn điền thay?', undefined, 'Vẫn làm thay');
   const nx = chuTuDo(chu, 'Nhận xét chung', 2000);
   db().prepare('UPDATE ban_giao_gv SET nhan_xet_chung = ? WHERE id = ?').run(nx, id);
   writeAudit({ actorUserId: p.userId, action: 'ban_giao_gv.nhan_xet', entityType: 'class', entityId: b.class_id,
@@ -296,8 +296,8 @@ export function xacNhanBanGiaoGv(p: Principal, id: number): void {
   const b = docViec(id);
   const q = quyenViec(p, b);
   if (b.trang_thai !== 'mo') throw conflict(b.trang_thai === 'xong' ? 'Bàn giao đã được xác nhận.' : 'Việc bàn giao đã huỷ.');
-  if (!q.xacNhan) throw forbidden('Chỉ người được giao hoặc Quản lý lớp xác nhận bàn giao.');
-  if (q.vuot) canXacNhan('Người được giao còn hạn bàn giao — Quản lý vẫn điền thay?', undefined, 'Vẫn làm thay');
+  if (!q.xacNhan) throw forbidden('Chỉ người được giao hoặc Head lớp xác nhận bàn giao.');
+  if (q.vuot) canXacNhan('Người được giao còn hạn bàn giao — Head vẫn điền thay?', undefined, 'Vẫn làm thay');
   const conn = db();
   const cot = conn.prepare(`SELECT mon, nguoi_moi FROM ban_giao_gv_mon WHERE ban_giao_id = ? AND trang_thai = 'mo'`).all(id) as any[];
   const em = emDangHoc(b.class_id);

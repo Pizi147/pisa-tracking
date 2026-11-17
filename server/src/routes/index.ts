@@ -331,7 +331,7 @@ api.put('/session/goc-nhin', requireAuth, wrap((req) => {
   const role = req.body?.role ?? null;
   if (role !== null && typeof role !== 'string') throw badRequest('Vai không hợp lệ.');
   const vaiGoc = p.vaiGoc ?? p.roleKeys;
-  if (!coTheDoiGocNhin(vaiGoc)) throw forbidden('Chỉ Quản lý hoặc Quản trị hệ thống nắm từ hai vai trở lên mới đổi được góc nhìn.');
+  if (!coTheDoiGocNhin(vaiGoc)) throw forbidden('Chỉ Head hoặc Quản trị hệ thống nắm từ hai vai trở lên mới đổi được góc nhìn.');
   if (role !== null && !vaiGoc.includes(role)) throw forbidden('Tài khoản này không nắm vai đó.');
   datGocNhin(req.sessionToken!, role);
   return { ok: true, gocNhin: role };
@@ -3274,7 +3274,7 @@ api.post('/admin/accounts/:id/khoi-phuc', requireAuth, wrap((req) => {
 api.get('/ref/routes', requireAuth, wrap(() => sysconfigSvc.listRoutes()));
 api.get('/admin/routes', requireAuth, wrap((req) => {
   /* QTV2-CAU-HINH: Quản lý xem (chỉ đọc) — sửa vẫn `ADMIN_CONFIG` trong `saveRoute`. */
-  if (!bangQuyDoiSvc.xemDuocBangQuyDoi(principalOf(req))) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được danh mục lộ trình đầy đủ.');
+  if (!bangQuyDoiSvc.xemDuocBangQuyDoi(principalOf(req))) throw forbidden('Chỉ Quản trị hệ thống và Head xem được danh mục lộ trình đầy đủ.');
   return sysconfigSvc.listRoutes(true, can(principalOf(req), PERMISSIONS.ADMIN_CONFIG, { anyScope: true }));
 }));
 api.put('/admin/routes', requireAuth, wrap((req) => sysconfigSvc.saveRoute(principalOf(req), req.body ?? {})));

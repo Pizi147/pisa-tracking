@@ -60,5 +60,5 @@ export function luatVangThuong(tuanThi: string, homNay: string): { khongDuThi: t
 export function lyDoHuy(o: { huyVang?: boolean; huyTay?: boolean; sit?: string | null }): string | null {
   if (o.huyVang) return t('vắng 2 lần');
   if (o.huyTay) return null;   // NHAP-DIEM-b: Huỷ điểm tay — chỉ "huỷ"
-  return o.sit === 'cancelled' ? t('QL từ chối dời') : null;
+  return o.sit === 'cancelled' ? t('Head từ chối dời') : null;
 }

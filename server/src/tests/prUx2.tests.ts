@@ -29,7 +29,7 @@ export async function runPrUx2Tests(t: YThucTestKit) {
   const tuanNay = week.ensurePeriod(week.mondayOf(TODAY)).id as number;
 
   check('UX2-1 · Lịch Test "Quá hạn chấm" (Tất cả) = Tổng quan "Bài quá hạn", gồm ô tuần trước đã quá hạn; danh sách = đúng các ô', () => thu(() => {
-    for (const [ten, p, cn] of [['QL MB', P.mbManager, MB], ['Quản trị', P.admin, null]] as const) {
+    for (const [ten, p, cn] of [['Head MB', P.mbManager, MB], ['Quản trị', P.admin, null]] as const) {
       const m = metrics.metricSet(p, 'bai-qua-han-nhap-diem', { branchId: cn });
       const so = cham.dsQuaHanCham(p, { branchId: cn, phamVi: 'tat-ca' }, TODAY, false);
       assert(so && !('rows' in so), `${ten}: số không kèm dòng`);

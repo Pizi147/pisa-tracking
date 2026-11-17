@@ -109,9 +109,9 @@ export async function runPrGopTests(t: YThucTestKit) {
     const gvcn = loadPrincipal(7), gvbm = loadPrincipal(9), ql = loadPrincipal(2);
     kiemDong(mywork.myWork(gvcn), 'GVCN 7');
     kiemDong(mywork.myWork(gvbm), 'GVBM 9');
-    kiemDong(mywork.myWork(ql), 'QL 2');
-    kiemDong(mywork.myWork(ql, { nguoi: 'tat-ca' }), 'QL 2 tất cả');
-    kiemDong(mywork.viecCuaNguoi(ql, 7), 'QL xem GV 7');
+    kiemDong(mywork.myWork(ql), 'Head 2');
+    kiemDong(mywork.myWork(ql, { nguoi: 'tat-ca' }), 'Head 2 tất cả');
+    kiemDong(mywork.viecCuaNguoi(ql, 7), 'Head xem GV 7');
   });
 
   check('GOP-3 · số dòng giảm trên DB test (GVCN 7, QL 2) — in trước/sau; số đo seed 14/09 sạch ghi ở mô tả PR', () => {

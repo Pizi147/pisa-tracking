@@ -113,7 +113,7 @@ export function HopKhoiPhucMt({ attemptId, attemptNo, onDong, onXong, onXepMoi, 
             <p className="m-0 rounded-lg border border-bad-line bg-bad-bg px-3 py-2" role="alert">
               {dich(d.khoiPhuc.chan)}
             </p>
-          ) : !d.viewer.canCancel ? <p className="m-0 text-slate-400">{t('Chỉ Quản lý khôi phục được lượt đã huỷ.')}</p>
+          ) : !d.viewer.canCancel ? <p className="m-0 text-slate-400">{t('Chỉ Head khôi phục được lượt đã huỷ.')}</p>
           : !daHuy ? <p className="m-0 text-slate-400">{t('{mt} không ở trạng thái huỷ.', { mt })}</p>
           : (
             <>

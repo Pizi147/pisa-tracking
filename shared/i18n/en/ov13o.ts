@@ -5,8 +5,8 @@ export const EN_OV13O = {
   'Xoá học viên': 'Delete student',
   'Đề xuất sửa thông tin…': 'Propose info change…',
   'đóng lộ trình': 'closes the pathway',
-  'Quản lý duyệt rồi mới đổi': 'changes after manager approval',
-  'Quản lý duyệt rồi quyết định': 'manager approves, then decides',
+  'Head duyệt rồi mới đổi': 'changes after Head approval',
+  'Head duyệt rồi quyết định': 'Head approves, then decides',
   'chọn lớp chuyển đến và tuần bắt đầu': 'pick the new class and start week',
   'tạm dừng giữ lớp · thôi học đóng lộ trình': 'pause keeps the class · withdraw closes the pathway',
   'hạn tính lại từ ngày quay lại': 'deadlines restart from the return date',
@@ -15,7 +15,7 @@ export const EN_OV13O = {
   /* Hồ sơ giáo viên */
   'Kỳ vọng đầu ra': 'Expected outcome',   // tiêu đề Case Chuyển cấp "Kỳ vọng đầu ra chưa đạt · …" (biến của mẫu '{x} chưa đạt')
   'chưa khai': 'not set',
-  'Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}': 'Manager view · only classes, cases and requests in {cn}',
+  'Head đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}': 'Head view · only classes, cases and requests in {cn}',
   'Mở Công việc ›': 'Open Tasks ›',
   'Việc của {ten} ›': "{ten}'s tasks ›",
   'Hiệu quả PA của {ten} ›': "{ten}'s PA results ›",

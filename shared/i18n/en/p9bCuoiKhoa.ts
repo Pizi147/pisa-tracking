@@ -1,8 +1,8 @@
 /** P9b CUOI-KHOA (chủ SP 25/10, N17 · N20 · N22): trang Cuối khoá lớp thường, Kỳ vọng FT, hạn chốt T5 tuần trước Final. */
 export const EN_P9B_CUOI_KHOA = {
   'Cuối khoá…': 'End of course…',
-  'Quản lý chốt hướng và lớp chuyển đến cho mọi em, hạn thứ Năm tuần trước tuần Final Test. Quá hạn vẫn làm được.':
-    'A manager confirms the direction and next class for every student, due the Thursday of the week before Final Test week. Still possible after the due date.',
+  'Head chốt hướng và lớp chuyển đến cho mọi em, hạn thứ Năm tuần trước tuần Final Test. Quá hạn vẫn làm được.':
+    'A Head confirms the direction and next class for every student, due the Thursday of the week before Final Test week. Still possible after the due date.',
   "+ Ghi chú": "+ Note",
   "+ Mở lớp mới…": "+ Open new class…",
   "Bàn giao · {ten}": "Handover · {ten}",
@@ -25,7 +25,7 @@ export const EN_P9B_CUOI_KHOA = {
   "Giữ hướng": "Keep direction",
   "Huỷ quyết định · {ten}": "Cancel decision · {ten}",
   "Hướng cho các em đã chọn": "Direction for selected students",
-  "Hướng · QL chốt": "Direction · manager confirms",
+  "Hướng · Head chốt": "Direction · Head confirms",
   "Hướng · {ten}": "Direction · {ten}",
   "Hướng": "Direction",
   "Khi chốt:": "On confirm:",
@@ -43,11 +43,11 @@ export const EN_P9B_CUOI_KHOA = {
   "Lớp chưa có học viên đang học": "The class has no active students",
   "Lớp · {ten}": "Class · {ten}",
   "Mọi em đã chốt": "Every student is confirmed",
-  "Nháp — chỉ QL thấy": "Draft — managers only",
+  "Nháp — chỉ Head thấy": "Draft — Heads only",
   "Nhận xét · {ten}": "Comment · {ten}",
   "Phương án · {ten}": "Plan · {ten}",
-  "QL chưa chốt": "Not confirmed by manager",
-  "QL thấy dưới cột \"Gợi ý\"; nhận xét đi kèm việc Báo PH kết quả Test": "Managers see it under \"Suggestion\"; it goes with the Test-result report to parents",
+  "Head chưa chốt": "Not confirmed by Head",
+  "Head thấy dưới cột \"Gợi ý\"; nhận xét đi kèm việc Báo PH kết quả Test": "Heads see it under \"Suggestion\"; it goes with the Test-result report to parents",
   "Quay lại": "Back",
   "Quá hạn bàn giao": "Handover overdue",
   "Quá hạn {n} ngày · hạn {ngay}": "Overdue {n} days · due {ngay}",

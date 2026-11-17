@@ -24,7 +24,7 @@ export const BRANCHES = [
 
 export const ROLES = [
   { key: 'system_admin', name: 'Quản trị hệ thống' },
-  { key: 'manager', name: 'Quản lý' },
+  { key: 'manager', name: 'Head' },
   { key: 'teacher', name: 'Giáo viên' },
   { key: 'office_admin', name: 'Admin' },
   { key: 'consultant', name: 'Tư vấn viên' },

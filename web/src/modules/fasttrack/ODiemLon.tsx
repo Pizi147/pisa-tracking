@@ -42,8 +42,8 @@ function trangThaiO(l: LichKn | undefined, c: Cell | undefined, lichSu: boolean,
   if (!l || !l.required) return { chu: t('Ngoài phạm vi') };
   if (l.sitStatus === 'cancelled' || l.progress === 'cancelled') return { chu: t('Đã huỷ') };
   if (l.pendingMove) {
-    const cau = t('chờ Quản lý duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: l.pendingMove.moveNo, ngay: ngay(l.pendingMove.decideBy, homNay) });
-    return { chu: cau, mau: 'text-muted', title: t('Đề nghị dời sang {x} — Quản lý trả lời trước {ngay}, quá hạn thì huỷ kỹ năng.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
+    const cau = t('chờ Head duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: l.pendingMove.moveNo, ngay: ngay(l.pendingMove.decideBy, homNay) });
+    return { chu: cau, mau: 'text-muted', title: t('Đề nghị dời sang {x} — Head trả lời trước {ngay}, quá hạn thì huỷ kỹ năng.', { x: l.pendingMove.toWeek ?? t('tuần kế tiếp'), ngay: ngay(l.pendingMove.decideBy, homNay) }) };
   }
   if (l.sitStatus === 'absent') return { chu: t('vắng · chờ xếp lại'), title: t('Đã xác nhận vắng — em có làm bài thì nhập điểm, máy hỏi rồi đổi thành đã làm bài.') };
   if (lichSu) return { chu: t('Nhập bù, không tính hạn') };

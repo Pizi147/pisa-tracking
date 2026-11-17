@@ -142,7 +142,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
     return [...dem].map(([nhan, n]) => t('{nhan} ({n} em)', { nhan: dich(nhan), n })).join(' · ');
   };
   /* Mockup: khoá một dòng ngay chỗ chọn — "Nhờ QL sửa" (có xử lý trên web) / "Chỉ QL sửa" (đã khai); lý do đủ ở `title`. */
-  const lyDoKhoa = (e: EmLo) => (e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ QL sửa'));
+  const lyDoKhoa = (e: EmLo) => (e.capBac.lyDo ? dichChu(e.capBac.lyDo) : t('chỉ Head sửa'));
   const ngan = nganBac;
   /** Hiện tại MỘT dòng: bậc · nguồn ngắn; đang đổi em đã có bậc → "R2 → R1 ↓". Chưa khai mà đổi → giữ "Chưa khai" (chip nền đặc đã nói). */
   const hienTai = (e: EmLo, doi: boolean) => {
@@ -189,7 +189,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
               <b className="font-semibold text-slate-100">{t('Đổi {n} em', { n: gui.length })}</b><span>{chiaBac}</span>
               {soHa > 0 && <span className="font-semibold text-soon">· {t('{n} em hạ bậc', { n: soHa })}</span>}
             </span>
-          ) : <span className="text-[13px] text-dim">{t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em khoá (chỉ QL sửa)', { n: soKhoa })}` : ''}</span>,
+          ) : <span className="text-[13px] text-dim">{t('Chưa đổi em nào')}{soKhoa ? ` · ${t('{n} em khoá (chỉ Head sửa)', { n: soKhoa })}` : ''}</span>,
         /* GD-4d (lời 36, dòng 40c ⓪): còn việc kế + người xem khai được → "Đóng" · Lưu · "Lưu · việc tiếp ›" (375: Đóng qua ✕);
            đã lưu hết, không còn em đổi → "Việc tiếp ›". Không có việc kế → như cũ. */
         ...(onTiep && duoc.length ? {
@@ -281,7 +281,7 @@ export function KhaiBacLoPanel({ classId, lop, han, studentIds, onClose, onDone,
                 <span className="col-span-3 min-w-0 [@container(min-width:600px)]:col-span-1">
                   {khoa ? (
                     <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-faint" title={lyDoKhoa(e)}>
-                      <IconKhoa />{/QL/.test(lyDoKhoa(e)) && /nhờ/i.test(lyDoKhoa(e)) ? t('Nhờ QL sửa') : t('Chỉ QL sửa')}
+                      <IconKhoa />{/Head/.test(lyDoKhoa(e)) && /nhờ/i.test(lyDoKhoa(e)) ? t('Nhờ Head sửa') : t('Chỉ Head sửa')}
                     </span>
                   ) : <ChipBac chon={bacMoi[e.studentId]} cu={vuaLuu ? (loVua.find((x) => x.studentId === e.studentId)?.bac ?? e.capBac.khai) : e.capBac.khai} onPick={(b) => chonMot(e, b)} nhan={t('Bậc khai của {ten}', { ten: e.ten })} />}
                 </span>

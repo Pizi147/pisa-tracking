@@ -168,7 +168,7 @@ export async function runPrLcbTests(t: YThucTestKit) {
     const bang: [string, string, string][] = [
       ['gửi', ids(d.chonDongGui(rows)), '1,3,4,8,9'],
       ['chưa gửi', ids(d.chonChuaGui(rows)), '5,6,7'],
-      ['lưu QL', luu(d.chonDongLuu(rows, true)), '1:len_lop,2:len_lop,5:chua_quyet,6:fast_track,7:len_lop,9:fast_track+T'],
+      ['lưu Head', luu(d.chonDongLuu(rows, true)), '1:len_lop,2:len_lop,5:chua_quyet,6:fast_track,7:len_lop,9:fast_track+T'],
       ['lưu GVCN', luu(d.chonDongLuu(rows, false)), '1:len_lop,2:len_lop,5:chua_quyet,6:fast_track,7:len_lop'],
       /* Xác nhận: 1, 3, 8, 9 ok; 4 lỗi. Lưu sau lệnh: ghi chú của em vừa ok (không có) + dòng lưu được ngoài lô gửi (2, 5, 6, 7). */
       ['sau xác nhận', luu(d.chonLuuSauXacNhan(rows, [1, 3, 8, 9], true)), '2:len_lop,5:chua_quyet,6:fast_track,7:len_lop'],

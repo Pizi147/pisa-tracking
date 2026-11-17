@@ -75,11 +75,11 @@ export function DeXuatSuaPanel({ studentId, studentName, lop, truongDau, hienTai
       chan={{
         conThieu: lf.conThieu(loi),
         chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={gui} disabled={busy}>
-          {busy ? t('Đang lưu…') : sua ? t('Lưu') : t('Gửi Quản lý')}
+          {busy ? t('Đang lưu…') : sua ? t('Lưu') : t('Gửi Head')}
         </button>,
       }}>
-      <Khoi tieuDe={t('Đề xuất sửa')} luat={boLoTrinh ? t('Target do Quản lý sửa. Quản lý duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.', { n: hanDuyetNgay() })
-        : t('Target và lộ trình do Quản lý sửa. Quản lý duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.', { n: hanDuyetNgay() })}>
+      <Khoi tieuDe={t('Đề xuất sửa')} luat={boLoTrinh ? t('Target do Head sửa. Head duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.', { n: hanDuyetNgay() })
+        : t('Target và lộ trình do Head sửa. Head duyệt trong {n} ngày; kết quả báo ở chuông và Yêu cầu của tôi.', { n: hanDuyetNgay() })}>
         <Truong nhan={t('Thông tin cần sửa')} batBuoc loi={lf.loiCua(loi, 'truong')}>
           <div className="flex flex-wrap gap-1.5" {...lf.o(loi, 'truong')}>
             {TRUONG.filter((x) => !(boLoTrinh && x.key === 'lo-trinh' && sua?.truong !== 'lo-trinh')).map((x) => (

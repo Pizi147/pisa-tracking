@@ -32,7 +32,7 @@ export async function runPrNoiThiTests(t: any) {
 
   check('NOI-THI (2) · kiểm: quá 40 ký tự → 400; QL chi nhánh khác → 403 (cùng quyền sửa ngày thi); dữ liệu không đổi', () => {
     assertThrows(() => lt.luuLichThi(P.mbManager, cy, { noiThi: 'x'.repeat(41) }), /tối đa/, 'không chặn nơi thi quá dài');
-    assertThrows(() => lt.luuLichThi(P.cpManager, cy, { noiThi: 'IDP' }), /quyền/, 'QL CP sửa được lịch thi em MB');
+    assertThrows(() => lt.luuLichThi(P.cpManager, cy, { noiThi: 'IDP' }), /quyền/, 'Head CP sửa được lịch thi em MB');
     assert(noiThi() === null, 'dữ liệu bị đổi khi lỗi');
   });
 

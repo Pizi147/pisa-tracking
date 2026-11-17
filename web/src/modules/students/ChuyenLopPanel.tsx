@@ -235,7 +235,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
         xong(t('Đã lưu đề xuất'));
       } else if (dx) {
         await api.post(`/students/${studentId}/de-xuat-chuyen-lop`, { toClassId: toClassId ?? undefined, tuan: tuan || undefined, lyDo: lyDo.trim(), resetBac: oReset && resetBac });
-        xong(t('Đã gửi đề xuất — Quản lý sẽ xem trong Chờ duyệt'));
+        xong(t('Đã gửi đề xuất — Head sẽ xem trong Chờ duyệt'));
       } else if (duyet) {
         await api.post(`/yeu-cau/${duyet.id}/duyet`, { duLieu: { lopDichId: toClassId, tuan, lyDo: lyDo.trim(), mucTieu: mucTieuGui, resetBac: oReset && resetBac } });
         /* #8: Duyệt "Ngay hôm nay" — Hoàn tác = Huỷ quyết định của thẻ (thẻ về Chờ duyệt, em về lớp cũ). */
@@ -334,7 +334,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               )}
             </Truong>
             {!dx && dich && dangHoc && dich.chiNhanhId !== dangHoc.chiNhanhId && (
-              <p className="m-0 text-xs text-soon">{t('Quản lý chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.')}</p>
+              <p className="m-0 text-xs text-soon">{t('Head chi nhánh và GVCN lớp mới sẽ nhận thông báo “Sắp nhận”.')}</p>
             )}
             <Truong nhan={dx ? t('Từ tuần') : t('Tuần bắt đầu')} batBuoc={!dx} tuyChon={dx} as="div" loi={lf.loiCua(loi, 'tuan')}>
               {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Từ tuần')} chuaChon={t('Chưa chọn')} />
@@ -353,7 +353,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
           </Khoi>
 
           {dx ? (
-            <p className="mb-0 mt-3 text-xs text-slate-400">{t('Gửi Quản lý duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
+            <p className="mb-0 mt-3 text-xs text-slate-400">{t('Gửi Head duyệt · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
           ) : toClassId && (
             <Khoi tieuDe={ngayNay ? `⚠ ${t('Khi chuyển, web sẽ — chuyển ngay (có Hoàn tác)')}` : t('Khi chuyển, web sẽ')}>
               {!xemLop ? <p className="m-0 text-sm text-slate-400">{xem.error ? xem.error.message : t('Đang xem trước…')}</p> : (

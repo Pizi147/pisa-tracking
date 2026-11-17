@@ -56,7 +56,7 @@ export const EN_HD3_KHUNG = {
   'Mọi ô có điểm hoặc "-".': 'Every cell has a score or "-".',
   'Hết {han:cham_test}; quá hạn vẫn nhập được.': 'By the end of {han:cham_test}; you can still enter scores after.',
   'Bấm lại ô để sửa; xoá nhầm: <k>⋯</k> rồi <b>Khôi phục điểm</b>.': 'Click the cell again to edit; deleted by mistake: <k>⋯</k> then <b>Restore score</b>.',
-  'Chưa tới tuần Test, hoặc không phải kỹ năng bạn: nhờ QL.': 'Not the test week yet, or not your skill: ask the manager.',
+  'Chưa tới tuần Test, hoặc không phải kỹ năng bạn: nhờ Head.': 'Not the test week yet, or not your skill: ask the Head.',
   'Em dưới kỳ vọng → GV kỹ năng đó có việc Case.': 'Student below expectation → that skill teacher gets a Case task.',
   /* tình huống mẫu · Em vắng Test (mockup ⑭ K6b) */
   'Em vắng Test': 'Student absent from a test',

@@ -40,8 +40,8 @@ export async function runPrTqSosCnTests(t: any) {
     const cuaMb = d.chiNhanh.find((h: any) => h.id === mb);
     const khac = d.chiNhanh.find((h: any) => h.id !== mb && h.sos23Ids.length) ?? d.chiNhanh.find((h: any) => h.id !== mb);
     assert(bang.sos23ChiNhanh(P.mbManager, { branchId: mb, ids: cuaMb.sos23Ids }).n === cuaMb.sos23, 'QL MB không xem được em SOS 2–3 của MB');
-    assertThrows(() => bang.sos23ChiNhanh(P.mbManager, { branchId: khac.id, ids: khac.sos23Ids }), /chi nhánh|quyền/, 'QL MB xem được chi nhánh khác');
+    assertThrows(() => bang.sos23ChiNhanh(P.mbManager, { branchId: khac.id, ids: khac.sos23Ids }), /chi nhánh|quyền/, 'Head MB xem được chi nhánh khác');
     if (khac.sos23Ids.length) assert(bang.sos23ChiNhanh(P.mbManager, { branchId: null, ids: khac.sos23Ids }).n === 0, 'QL MB đọc được em chi nhánh khác qua ids');
-    assertThrows(() => bang.sos23ChiNhanh(P.subjectTeacher, { branchId: mb, ids: cuaMb.sos23Ids }), /chi nhánh|quyền|Quản lý/, 'GVBM xem được panel SOS chi nhánh');
+    assertThrows(() => bang.sos23ChiNhanh(P.subjectTeacher, { branchId: mb, ids: cuaMb.sos23Ids }), /chi nhánh|quyền|Head/, 'GVBM xem được panel SOS chi nhánh');
   });
 }

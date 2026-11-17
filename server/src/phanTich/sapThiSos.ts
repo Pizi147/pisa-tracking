@@ -36,7 +36,7 @@ export const thangSau = (thang: string): string => {
 type Em = { sid: number; ngay: string | null; thang: string; muc: 1 | 2 | 3; luot: string; kyNang: string[] };
 
 function tapSapThiSos(p: Principal, f: LocKetQuaThi, homNay: string): { em: Em[]; den: string } {
-  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Phân tích dành cho Quản lý.');
+  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Phân tích dành cho Head.');
   const thang = homNay.slice(0, 7), den = thangSau(thang);
   return nho(`sap-thi-sos:${p.userId}:${f.branchId ?? ''}:${f.classId ?? ''}:${homNay}`, () => {
     /* MỘT câu: em đang học trong phạm vi (CÙNG điều kiện `studentsInScope` — quyền xem lượt, ghi danh active, chưa lưu trữ, chi nhánh) có lộ trình đang chạy

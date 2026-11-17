@@ -51,7 +51,7 @@ type DongThuong = {
   tvv?: string | null;
 };
 type LoTrinhChot = NonNullable<DongThuong['loTrinhChot']>;
-const TIEU_DE_LO_TRINH = t('Hướng Quản lý đã chốt (+ bổ trợ nếu có). Chưa chốt thì để trống — xem gợi ý ở panel Lộ trình tiếp theo.');
+const TIEU_DE_LO_TRINH = t('Hướng Head đã chốt (+ bổ trợ nếu có). Chưa chốt thì để trống — xem gợi ý ở panel Lộ trình tiếp theo.');
 
 /** Hồ sơ lớp cũ chưa gửi mốc: Giữa khoá + Cuối khoá như trước. */
 const MOC_MAC_DINH = ['progress', 'final'];
@@ -507,7 +507,7 @@ function ViecTiepCase({ c, ct, homNay, kn, onMo }: { c: CaseCua; ct: string | nu
     <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1">
       <button type="button" onClick={() => onMo({ caseId: c.id, viec: loai, paId: d?.paId ?? undefined })} title={viec.title}
         className={choQl ? 'cursor-pointer border-0 bg-transparent p-0 text-left text-[13px] font-medium text-dim hover:text-slate-100 max-sm:min-h-[44px]' : 'btn h-[30px] whitespace-nowrap px-2.5 text-[13px] max-sm:h-11'}>
-        {choQl ? t('Chờ Quản lý duyệt') : tach.nut}<span className="sr-only"> – {tenMon(ct, c.topic ?? kn)}</span>
+        {choQl ? t('Chờ Head duyệt') : tach.nut}<span className="sr-only"> – {tenMon(ct, c.topic ?? kn)}</span>
       </button>
       {!choQl && c.viecTiep?.han && c.viecTiep.loaiHan && <ChipHan loai={c.viecTiep.loaiHan} han={c.viecTiep.han} vien />}
     </span>

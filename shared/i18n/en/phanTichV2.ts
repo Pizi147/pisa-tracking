@@ -44,7 +44,7 @@ export const EN_PHAN_TICH_V2 = {
   'Chưa có chi nhánh nào trong phạm vi': 'No branch in your scope',
   'HV đang học: hiện tại. Đạt MT (HV), Tiến bộ (lượt kỹ năng), Thi thật (em, trừ KCK): trong kỳ. Hàng tổng là tập gốc — một em ở hai lớp tính một lần.': 'Studying: current. Met MT (students), Progress (skill attempts), Real exam (students, excl. no-commitment): in the period. The total row is the base set — a student in two classes counts once.',
   'HV đang học: hiện tại. Đạt Test, Cuối khoá: bài trong kỳ, cùng ô của bảng Test lớp thường.': 'Studying: current. Passed Test, End of course: tests in the period, the same cells as the standard-class Test table.',
-  'Tab Giáo viên chỉ QL, Quản trị xem — đang mở Chi nhánh': 'The Teachers tab is for managers and admins — showing Branch',
+  'Tab Giáo viên chỉ Head, Quản trị xem — đang mở Chi nhánh': 'The Teachers tab is for Heads and admins — showing Branch',
   'Chấm Test · bài': 'Marking · tests',
   '{ten} — tách {n} chi nhánh': '{ten} — split into {n} branches',
   'bài chưa có GV': 'tests without a teacher',
@@ -77,6 +77,6 @@ export const EN_PHAN_TICH_V2 = {
   /* PT-a (mockup v19): hàng chân S chéo chung, cột % đúng hạn. */
   'chưa ai nhận · GV có kỹ năng S cùng thấy': 'unclaimed · every S teacher sees them',
   'Bậc · hiện tại › kế': 'Level · current › next',
-  'Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt': 'Highest level handled on the ladder (including levels confirmed before the web) › next required action; WL 3 needs manager approval',
+  'Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần Head duyệt': 'Highest level handled on the ladder (including levels confirmed before the web) › next required action; WL 3 needs Head approval',
   'đã qua hạn · + {n} bài S chéo chung': 'past due · + {n} shared S cross-marking tests',
 } satisfies Record<string, Dich>;

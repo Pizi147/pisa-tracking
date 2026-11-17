@@ -2,7 +2,7 @@
 export const EN_UI_U05 = {
   '{m} không thi': '{m} not taken',
   'Chưa đủ MT · {n} em': 'Not enough MTs · {n} students',
-  'Lộ trình chưa đủ MT (3 · RF 2) — Quản lý xếp tiếp': 'Route has fewer MTs than required (3 · RF 2) — the manager schedules more',
+  'Lộ trình chưa đủ MT (3 · RF 2) — Head xếp tiếp': 'Route has fewer MTs than required (3 · RF 2) — the Head schedules more',
   'Chưa đủ MT': 'Not enough MTs',
   'Lớp: {ma}': 'Class: {ma}',
   'Không lớp nào chưa đủ MT': 'Every class has enough MTs',

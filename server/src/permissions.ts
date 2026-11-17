@@ -711,7 +711,7 @@ export function laAdminCua(p: Principal, ctx: Ctx): boolean {
  * không nhận câu dành cho GV.
  */
 export const CHU_CHAN_NHAP_DIEM = (p: Principal): string => (can(p, PERMISSIONS.SCORE_OVERRIDE, { anyScope: true })
-  ? 'Học viên ở chi nhánh khác — Quản lý chi nhánh của em nhập điểm.'
+  ? 'Học viên ở chi nhánh khác — Head chi nhánh của em nhập điểm.'
   : 'Bạn chỉ nhập được điểm của kỹ năng mình được phân công.');
 
 export function require_(p: Principal, permission: string, ctx: Ctx = {}, message?: string) {
@@ -725,7 +725,7 @@ export function require_(p: Principal, permission: string, ctx: Ctx = {}, messag
 export function explain(p: Principal, permission: string, ctx: Ctx): string {
   const holders = p.grants.filter((g) => g.permissions.has(permission));
   if (!holders.length) {
-    if (permission === PERMISSIONS.PLAN_WEEK) return 'Chỉ Quản lý mới chốt được tuần MT.';
+    if (permission === PERMISSIONS.PLAN_WEEK) return 'Chỉ Head mới chốt được tuần MT.';
     return 'Vai trò hiện tại của bạn không có chức năng này.';
   }
   if (holders.every((g) => g.roleKey === 'teacher')) {
@@ -735,14 +735,14 @@ export function explain(p: Principal, permission: string, ctx: Ctx): string {
       return 'Bạn chỉ sửa/xử lý được Case đúng kỹ năng mình dạy — Case Ý thức thì chỉ GVCN.';
     }
     if (permission === PERMISSIONS.SCHEDULE_MOVE) {
-      return 'Bạn chỉ dời được lịch lớp thường mình phụ trách — Fast Track vẫn do Quản lý xếp.';
+      return 'Bạn chỉ dời được lịch lớp thường mình phụ trách — Fast Track vẫn do Head xếp.';
     }
     if (permission === PERMISSIONS.VIOLATION_RECORD) return 'Bạn chỉ ghi được vi phạm của học viên trong lớp mình được phân công.';
     if (permission === PERMISSIONS.CASE_CLOSE) {
       return 'Bạn chỉ hoàn thành được Case đúng môn mình dạy — Case Ý thức thì chỉ GVCN của lớp.';
     }
     if (permission === PERMISSIONS.DISCIPLINE_MANAGE) {
-      return 'Chỉ giáo viên chủ nhiệm của lớp (hoặc Quản lý) mới xử lý được Ý thức; giáo viên bộ môn chỉ ghi và xem.';
+      return 'Chỉ giáo viên chủ nhiệm của lớp (hoặc Head) mới xử lý được Ý thức; giáo viên bộ môn chỉ ghi và xem.';
     }
     return 'Bạn chỉ thao tác được trong lớp mình được phân công.';
   }

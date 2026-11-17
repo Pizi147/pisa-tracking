@@ -157,7 +157,7 @@ export type FilterTongHop = { branchId?: number | null; ct: ChuongTrinh; soTuan:
 
 function tinh(p: Principal, f: FilterTongHop) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
-  if (scope.none) throw forbidden('Phân tích dành cho Quản lý.');
+  if (scope.none) throw forbidden('Phân tích dành cho Head.');
   const conn = db();
   const today = demoToday();
   const soTuan = Math.min(Math.max(f.soTuan, 1), 52);

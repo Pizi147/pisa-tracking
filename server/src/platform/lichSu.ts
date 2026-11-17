@@ -311,7 +311,7 @@ function thiThat(p: Principal, cycleId: number, tiep: number | null): TrangLs {
   const c = db().prepare('SELECT student_id, created_at, route, programme_code FROM learning_cycles WHERE id = ?').get(cycleId) as { student_id: number; created_at: string; route: string | null; programme_code: string | null } | undefined;
   if (!c) throw notFound('Không tìm thấy lộ trình.');
   /* OV-15i1: cùng cổng với lịch sử hồ sơ em (`loai=hv`) — GVBM không xem. */
-  if (!xemLichSuHv(p, c.student_id)) throw forbidden('Chỉ Quản lý, GVCN, Tư vấn viên và CX của em xem được lịch sử.');
+  if (!xemLichSuHv(p, c.student_id)) throw forbidden('Chỉ Head, GVCN, Tư vấn viên và CX của em xem được lịch sử.');
   const kt = !c.route && !!kyThiCuaChuongTrinh(c.programme_code);
   /* SUA-LUU-TRU: hỏi quyền nhập MỘT lần, chỉ khi có mục khôi phục được (Lịch sử không có mục nào như thế → không thêm câu). */
   let nhap: boolean | undefined;

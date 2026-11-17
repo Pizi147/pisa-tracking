@@ -187,7 +187,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(e.daChot.chu === 'Lên BE' && e.daChot.luc === addDays(TODAY, -12) && e.goiY === 'Học lại FOU' && e.lyDo.chu === 'Final 46 % · đã cho lên', `A daChot: ${JSON.stringify(e.daChot)} ${e.goiY}`);
     assert(dong(CHO.sid).han === addDays(THU_HAI, 13) && !dong(CHO.sid).daThiHanh, `CHO: ${JSON.stringify(dong(CHO.sid))}`);
     const eb = dong(B.sid);
-    assert(eb.goiY === 'Quản lý cân nhắc' && eb.boTro && eb.boTro.tong > 0 && eb.boTro.mon.length > 0 && eb.boTro.miniTest.tyLe === null, `B bổ trợ: ${JSON.stringify(eb.boTro)}`);
+    assert(eb.goiY === 'Head cân nhắc' && eb.boTro && eb.boTro.tong > 0 && eb.boTro.mon.length > 0 && eb.boTro.miniTest.tyLe === null, `B bổ trợ: ${JSON.stringify(eb.boTro)}`);
     const v = viec(QL, BE_D.id);
     const g = trongBoNho(() => xl.xemXetLai(QL, BE_D.id, null));
     assert(v && v.count === g.em.length && v.count >= 2 && v.actionLabel === 'Xét lại ›' && v.href === `/hoc-vien/lop/${BE_D.id}?viec=xet-lai` && v.due === g.han
@@ -230,9 +230,9 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(dong(A.sid) && !dong(B.sid), 'A còn dòng, B hết');
     /* DON-LUONG K39b: GVCN lớp mới ghi nhận xét SAU khi QL quyết (panel cũ) → 409 nói bước đã quyết (không 403 không bước tiếp). */
     let k39: any = null; try { trongBoNho(() => xl.ghiNhanXetGvcnMoi(GVCN_BE, BE_D.id, B.sid, 'x')); } catch (e: any) { k39 = e; }
-    assert(k39?.status === 409 && /^QL đã quyết Tiếp tục lúc \d\d\/\d\d — nhận xét không còn cần\.$/.test(k39.message), `K39b: ${k39?.status} ${k39?.message}`);
+    assert(k39?.status === 409 && /^Head đã quyết Tiếp tục lúc \d\d\/\d\d — nhận xét không còn cần\.$/.test(k39.message), `K39b: ${k39?.status} ${k39?.message}`);
     const j = get(`SELECT title, detail FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, B.sid);
-    assert(j?.title === 'QL xét lại: Tiếp tục BE' && /đã lên BE/.test(j.detail) && /Final 55 %/.test(j.detail), JSON.stringify(j));
+    assert(j?.title === 'Head xét lại: Tiếp tục BE' && /đã lên BE/.test(j.detail) && /Final 55 %/.test(j.detail), JSON.stringify(j));
     const l0 = lenhCua(CHO.sid);
     const soLenh = () => get('SELECT COUNT(*) n FROM lenh_chuyen_lop WHERE student_id = ?', CHO.sid).n;
     const n0 = soLenh();
@@ -317,7 +317,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
       const rows = all(`SELECT * FROM xet_lai_lo_trinh WHERE student_id = ? AND tu_dong = 1`, C.sid);
       assert(rows.length === 1 && rows[0].quyet_dinh === 'tiep_tuc', `tự ghi (hai lượt quét): ${JSON.stringify(rows)}`);
       const j = get(`SELECT title FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, C.sid);
-      assert(j?.title === 'QL xét lại: Tiếp tục FOU · tự giữ (hết hạn xét lại)', JSON.stringify(j));
+      assert(j?.title === 'Head xét lại: Tiếp tục FOU · tự giữ (hết hạn xét lại)', JSON.stringify(j));
       assert(!get(`SELECT 1 FROM xet_lai_lo_trinh WHERE student_id = ?`, D2.sid), 'thôi học: không ghi tự động');
     } finally { setConfig('demo_date', cu); }
   });
@@ -373,7 +373,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     const r = xl.luuXetLai(QL, BE_D.id, [{ studentId: F.sid, quyetDinh: 'tiep_tuc', lyDo: 'Thử 2 tuần' }]);
     assert(!r.failed.length && get('SELECT lop_id, chu FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id).lop_id === BE_D.id, JSON.stringify(r));
     const h = xl.hoanTacXetLai(P.cpManager, FOU_CP.id, [r.ok[0].id]);
-    assert(h.failed.length === 1 && /Quản lý chi nhánh/.test(h.failed[0].message) && get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id), `QL CP: ${JSON.stringify(h)}`);
+    assert(h.failed.length === 1 && /Head chi nhánh/.test(h.failed[0].message) && get('SELECT 1 FROM xet_lai_lo_trinh WHERE id = ?', r.ok[0].id), `QL CP: ${JSON.stringify(h)}`);
     const ma400 = (b: any) => { try { xl.luuXetLai(QL, BE_D.id, [b]); } catch (e: any) { return e.status; } return 200; };
     assert(ma400({ studentId: F.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: 123 }) === 400 && ma400({ studentId: F.sid, quyetDinh: 'hoc_lai', toClassId: 'x', tuan: THU_HAI }) === 400
       && ma400({ studentId: F.sid, quyetDinh: 'hoc_lai', toClassId: FOU_D.id, tuan: { a: 1 } }) === 400, 'sai kiểu → 400');
@@ -385,7 +385,7 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(sai.failed.length === 1, `(a) Lên: ${JSON.stringify(sai)}`);
     const len = xl.luuXetLai(QL, FOU_D.id, [{ studentId: C2.sid, quyetDinh: 'len', toClassId: BE_D.id, tuan: THU_HAI }]);
     assert(!len.failed.length && lenhCua(C2.sid).lop_dich_id === BE_D.id && len.ok[0].chu === `Lên BE → ${BE_D.code}`, JSON.stringify(len));
-    assert(get(`SELECT title FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, C2.sid)?.title === `QL xét lại: Lên BE → ${BE_D.code}`, 'Hành trình Lên');
+    assert(get(`SELECT title FROM journey_events WHERE student_id = ? AND event_type = 'xet_lai'`, C2.sid)?.title === `Head xét lại: Lên BE → ${BE_D.code}`, 'Hành trình Lên');
     /* Lên FT (dòng (c)) kèm Target ghi tại thẻ → lệnh mang Target đó. */
     const C3 = kb(66, 'hoc_lai', { thiHanh: true });
     const FT = lop('FT', 1);

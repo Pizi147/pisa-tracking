@@ -88,10 +88,10 @@ export function ThangYThuc({ d, homNay, onKhai, onSuaKhai, onXuLy, onDeXuat, xuL
       {coNut && (xuLyDuoc || onDeXuat) && (
         <div className="flex flex-wrap items-center gap-2">
           {xuLyDuoc && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyChinh ? ' btn-primary' : ''}`} onClick={onXuLy}>{xuLyChinh && CUA_TOI}{t('Xác nhận xử lý')}</button>}
-          {onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất QL duyệt')}</button>}
+          {onDeXuat && <button type="button" className={`btn btn-sm min-h-[44px] sm:min-h-0${xuLyDuoc || !xuLyChinh ? '' : ' btn-primary'}`} onClick={onDeXuat}>{t('Đề xuất Head duyệt')}</button>}
           {/* ⓘ = giải thích (luật V5): hai nút khác nhau ở đâu — thay câu dài cạnh nút. */}
           <NutLuat label={t('Xác nhận hay Đề xuất?')}>
-            {t('Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất QL duyệt: QL duyệt trước khi làm (WL, phương án khác).')}
+            {t('Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất Head duyệt: Head duyệt trước khi làm (WL, phương án khác).')}
           </NutLuat>
         </div>
       )}
@@ -103,7 +103,7 @@ function ChipDeXuat({ d }: { d: Pick<YThucHocVien, 'deXuat'> }) {
   if (!d.deXuat) return null;
   return (
     <li className="inline-flex shrink-0 items-center rounded border border-dashed border-soon px-[7px] py-px font-bold text-soon">
-      {bacDu(dich(d.deXuat.nhan))} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ QL') : t('QL đã duyệt')}
+      {bacDu(dich(d.deXuat.nhan))} · {d.deXuat.status === 'cho_duyet' ? t('đề xuất chờ Head') : t('Head đã duyệt')}
     </li>
   );
 }

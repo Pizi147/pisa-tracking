@@ -121,7 +121,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
       ['12 lần 2 ghi muộn', { lan: 1, tuanThi: '2026-11-09', homNay: QUA }, 'huy', null],
       ['13 lần 2 nhưng MT cũ của kỹ năng → Không dự thi', { lan: 1, homNay: '2026-11-16' }, 'khong-du-thi', null],
       ['21/10 sau chọn tuần (chuỗi đặt lại)', { lan: 0 }, 'doi', '2026-11-09'],
-      ['21/10 sau QL duyệt thẻ cũ (+1)', { lan: 1 }, 'huy', null],
+      ['21/10 sau Head duyệt thẻ cũ (+1)', { lan: 1 }, 'huy', null],
     ];
     assert(!dm.laMtCuKyNang(WS, '2026-11-15') && dm.laMtCuKyNang(WS, '2026-11-16') && dm.laMtCuKyNang('2026-11-05', '2026-11-16'), 'laMtCuKyNang: thứ Hai + 14 ≤ thứ Hai hôm nay');
     for (const [ten, vao, kq, tuan] of ca) {
@@ -445,7 +445,7 @@ export async function runMtTrangThaiTests(t: YThucTestKit) {
     xoaNho();
     attempts.saveScore(gvL, a, 'listening', { rawScore: 34 }, QUA);
     assert(dau(a, 'listening').raw_score === 34, 'RKC: lớp kết thúc — GV đúng ô sửa');
-    attempts.saveScore(QL, a, 'listening', { rawScore: 33, lyDo: 'QL hiệu chỉnh' }, QUA);
+    attempts.saveScore(QL, a, 'listening', { rawScore: 33, lyDo: 'Head hiệu chỉnh' }, QUA);
     assert(dau(a, 'listening').raw_score === 33, 'lớp kết thúc: QL sửa');
   }));
 

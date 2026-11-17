@@ -433,7 +433,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           {(r.diemCase?.luot ?? r.luot) && <span className={`${CHIP_VUONG} shrink-0`} style={{ borderColor: 'var(--line-strong)' }}>{r.diemCase?.luot ?? r.luot}</span>}
           <span className="min-w-0" title={r.title}>{r.kyNang ?? r.title}</span>
           {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
-          {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ QL duyệt')}>{t('chờ QL')}</span>}
+          {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ Head duyệt')}>{t('chờ Head')}</span>}
         </span>
         <span className="whitespace-nowrap text-[13px] text-slate-400">{r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b> : r.diemCase && <Doan ds={[r.diemCase.so.toFixed(1), r.diemCase.kyVong != null && t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })]} />}</span>
         {r.moTa ? <span className="max-w-[68ch] text-[13px] leading-snug text-slate-300 [text-wrap:pretty]">{catCau(r.moTa)}</span> : <span className="text-[13px] italic text-slate-500">{t('Chưa có mô tả')}</span>}

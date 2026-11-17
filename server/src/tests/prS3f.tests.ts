@@ -99,7 +99,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     const c = caseOf(st.id, 'listening');
     sosAuto.guiKhongTheoDoi(P.admin, c.id, { reasonCode: 'single_incident' });
     assertThrows(() => cases.recordIntervention(P.admin, c.id, { kind: 'tutor', description: 'Tutor thêm một buổi nữa', performerSelf: true, status: 'started', startedDate: TODAY }),
-      /chờ Quản lý duyệt "Không cần theo dõi"/, 'thêm PA khi thẻ đang chờ');
+      /chờ Head duyệt "Không cần theo dõi"/, 'thêm PA khi thẻ đang chờ');
     /* Trạng thái CŨ (trước khi chặn): PA GV tự thêm lúc thẻ đang chờ — Case 45 → PA 53 của lượt rà. Dựng thẳng bằng SQL. */
     const bayGio = new Date().toISOString();
     conn.prepare(`INSERT INTO case_interventions (case_id, kind, description, status, needs_approval, preset, started_date, created_at) VALUES (?, 'tutor', 'Tutor thêm hai buổi mỗi tuần', 'started', 0, 0, ?, ?)`).run(c.id, TODAY, bayGio);
@@ -182,7 +182,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
 
   const theCho = (loai: string, doiTuongId: number) => get('SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? ORDER BY id DESC', loai, doiTuongId);
   const deXuatGui = (sid: number, kind: string, ids: number[]) => {
-    const nhap = xuLy.deXuat(gvcn, sid, { kind, violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết' });
+    const nhap = xuLy.deXuat(gvcn, sid, { kind, violationIds: ids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     return xuLy.guiDeXuat(gvcn, nhap.id);
   };
@@ -213,7 +213,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     nhanXetCaseThu(conn, attemptsSvc.saveScore, P.admin, c.id, XN);   // OV-12c: nguyên nhân Case MT = nhận xét của bài
     const iv = get('SELECT id FROM case_interventions WHERE case_id = ?', c.id);
     sosAuto.xacNhanPaQuyChe(P.admin, iv.id, duXacNhan(conn, iv.id, { description: 'Tutor Listening hai buổi mỗi tuần, cô Hà chữa bài nghe.' }));
-    assertThrows(() => cases.updateResult(P.admin, iv.id, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }), /luật không thay \/ kết thúc sớm/, 'khép PA quy chế sớm: RKC-2c Quản trị / QL được hỏi');
+    assertThrows(() => cases.updateResult(P.admin, iv.id, { decision: 'end', outcome: 'improved', note: 'Em nghe tốt hơn hẳn sau hai tuần' }), /luật không thay \/ kết thúc sớm/, 'khép PA quy chế sớm: RKC-2c Quản trị / Head được hỏi');
     assert(get('SELECT status FROM case_interventions WHERE id = ?', iv.id).status === 'started', 'PA bị khép');
   });
 
@@ -257,7 +257,7 @@ export async function runPrS3fTests(t: YThucTestKit) {
     xuLy.xoaNhap(gvcn, nhap.id);
     const m = deXuatGui(sid, 'meeting_cx', ids);
     assert((viol.violationDetail(P.admin, ids[0]) as any).measures.length === 1, 'đề xuất đã gửi phải có ở chi tiết vi phạm');
-    assert(/Chờ Quản lý duyệt/.test(metricsSvc.rowsFor('bien-phap', [m.id])[0].sub) && !/đang chuẩn bị/.test(metricsSvc.rowsFor('bien-phap', [m.id])[0].sub), 'nhãn biện pháp chờ duyệt');
+    assert(/Chờ Head duyệt/.test(metricsSvc.rowsFor('bien-phap', [m.id])[0].sub) && !/đang chuẩn bị/.test(metricsSvc.rowsFor('bien-phap', [m.id])[0].sub), 'nhãn biện pháp chờ duyệt');
     yc.duyetYeuCau(P.mbManager, theCho('y_thuc', m.id).id);
     assert(/Đã duyệt · chờ thực hiện/.test(metricsSvc.rowsFor('bien-phap', [m.id])[0].sub), 'nhãn biện pháp đã duyệt');
 

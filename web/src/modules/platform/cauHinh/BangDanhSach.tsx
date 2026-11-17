@@ -225,7 +225,7 @@ export function BangPhuongAn({ duLieu, chiXem, luuDs }: ChungProps) {
   const moc = duLieu.moc_sos.du_lieu;
   const nhom: NhomDs<MucPa>[] = [
     { key: 'gv_tu_lam', ten: t('GV tự làm'), muc: pa.filter((m) => m.nhom === 'gv_tu_lam'), themChu: t('Thêm phương án') },
-    { key: 'can_ql_duyet', ten: t('Cần QL duyệt · Đề xuất'), muc: pa.filter((m) => m.nhom === 'can_ql_duyet'), themChu: t('Thêm phương án cần QL duyệt') },
+    { key: 'can_ql_duyet', ten: t('Cần Head duyệt · Đề xuất'), muc: pa.filter((m) => m.nhom === 'can_ql_duyet'), themChu: t('Thêm phương án cần Head duyệt') },
   ];
   const gocMa = new Set(['self_study', 'tutor', 'teaching_adjust', 'extra_homework', 'extra_support', 'other_proposal']);
   return (

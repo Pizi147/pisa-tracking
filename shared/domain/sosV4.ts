@@ -115,7 +115,7 @@ export function trangThaiCaseV4(c: CaseV4Input, homNay: string): { k: TrangThaiC
   if (c.dismissed) return { k: 'huy-khong-theo-doi', t: 'da-huy', chu: t('Đã huỷ · không cần theo dõi'), han: null };
   if (c.status === 'done') return { k: 'xong', t: 'xong', chu: t('Xong'), han: null };
   if (c.tam) return { k: 'tam', t: 'dang-lam', chu: t('Chờ chốt SOS'), han: null };
-  if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: t('Chờ Quản lý duyệt · không theo dõi'), han: null };
+  if (c.choDuyetKhongTheoDoi) return { k: 'cho-duyet-khong-theo-doi', t: 'cho-duyet', chu: t('Chờ Head duyệt · không theo dõi'), han: null };
   const tt: TrangThai = c.hanXacNhan && c.hanXacNhan < homNay ? 'qua-han' : 'can-lam';
   if (c.fromSos && !c.hasCause) return c.laMt ? { k: 'cho-nhan-xet', t: tt, chu: t('Chờ mô tả Case'), han: c.hanXacNhan }
     : { k: 'cho-nguyen-nhan', t: tt, chu: t('Chờ xác nhận Case'), han: c.hanXacNhan };
@@ -160,7 +160,7 @@ export function viecTiepCuaCase(c: CaseV4Input, pas: PaViecTiep[], homNay: strin
   if (s.k === 'xong' || s.k === 'huy-khong-theo-doi' || s.k === 'he-thong-dong' || s.k === 'rut-sua-diem' || s.k === 'tam') return null;
   if (s.k === 'cho-nguyen-nhan') return { chu: t('Xác nhận Case'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
   if (s.k === 'cho-nhan-xet') return { chu: t('Mô tả Case'), loaiHan: 'xac-minh-sos', han: c.hanXacNhan };
-  if (s.k === 'cho-duyet-khong-theo-doi') return { chu: t('Chờ Quản lý duyệt · không theo dõi'), loaiHan: null, han: null };
+  if (s.k === 'cho-duyet-khong-theo-doi') return { chu: t('Chờ Head duyệt · không theo dõi'), loaiHan: null, han: null };
   /* OV-13b: PA gốc chưa chạy chờ QL duyệt đổi PA — việc của QL, không hạn (PA gốc không phải "đang chạy"). */
   if (s.k === 'cho-duyet-doi-pa') return { chu: t('Chờ duyệt đổi PA'), loaiHan: null, han: null };
   const choXn = pas.find((p) => p.choXacNhan && !p.xong);
@@ -211,7 +211,7 @@ export function chanHoanThanh(pas: { batBuoc: boolean; xong: boolean; choDuyet: 
   const ly_do: string[] = [];
   if (!pas.length) ly_do.push(t('Case chưa có phương án nào — chưa làm gì cho em thì chưa có gì để kết luận.'));
   const choDuyet = pas.filter((p) => p.choDuyet).length;
-  if (choDuyet) ly_do.push(t('{choDuyet} phương án đang chờ Quản lý duyệt.', { choDuyet }));
+  if (choDuyet) ly_do.push(t('{choDuyet} phương án đang chờ Head duyệt.', { choDuyet }));
   const chay = pas.filter((p) => !p.xong && !p.choDuyet).length;
   if (chay) ly_do.push(t('{chay} phương án chưa cập nhật kết quả cuối cùng.', { chay }));
   return { an: !!batBuoc, dong: batBuoc ? t('Hoàn thành được sau khi PA theo quy chế kết thúc ({mocChu})', { mocChu: batBuoc.mocChu }) : null, ly_do };

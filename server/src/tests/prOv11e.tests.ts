@@ -262,7 +262,7 @@ export async function runPrOv11eTests(t: YThucTestKit) {
       cycles.reviseTarget(tvv, cy.id, { newTarget: `${moi} KCK`, reason: 'TVV tích KCK' });
       assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === 1, 'TVV tích KCK được');
     }
-    cycles.reviseTarget(QL, cy.id, { newTarget: moi, reason: 'QL bỏ KCK' });
+    cycles.reviseTarget(QL, cy.id, { newTarget: moi, reason: 'Head bỏ KCK' });
     assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === 0, 'QL bỏ KCK được');
     assert(d.duocDoiKck(['cx'], false) === false && d.duocDoiKck(['consultant'], false) && d.duocDoiKck(['manager'], true), 'duocDoiKck (web dùng cùng hàm)');
   }));

@@ -92,7 +92,7 @@ export async function runPrSuaLuuTruATests(t: { check: any; assert: any; assertT
   check('SLT-a3 · quyền + đầu vào: GVBM / QL chi nhánh khác → 403; nhật ký của lộ trình khác / sai id → 404; nhật ký cũ không có bản trước → 400', () => thu(() => {
     const x = emKetThuc();
     const a = thiThat.datKetQuaThiThat(QL, x.cy, { l: 7 });
-    assertThrows(() => thiThat.khoiPhucThiThat(P.cpManager, x.cy, { auditId: a.khoiPhucId }), /GVCN lớp cuối|Quản lý/, 'QL chi nhánh khác');
+    assertThrows(() => thiThat.khoiPhucThiThat(P.cpManager, x.cy, { auditId: a.khoiPhucId }), /GVCN lớp cuối|Head/, 'Head chi nhánh khác');
     const khac = get(`SELECT id FROM learning_cycles WHERE id != ? AND route IS NOT NULL ORDER BY id LIMIT 1`, x.cy).id;
     assertThrows(() => thiThat.khoiPhucThiThat(QL, khac, { auditId: a.khoiPhucId }), /Không tìm thấy bản trước/, 'nhật ký lộ trình khác');
     assertThrows(() => thiThat.khoiPhucThiThat(QL, x.cy, { auditId: 'abc' }), /không hợp lệ/, 'id sai');
@@ -109,7 +109,7 @@ export async function runPrSuaLuuTruATests(t: { check: any; assert: any; assertT
     const ls = lichSu.lichSu(QL, { loai: 'thi-that', id: x.cy });
     assert(!ls.dong[0]?.khoiPhuc && ls.dong[0]?.truong[0]?.ten === 'R', `mục cũ (không bản trước) có khoiPhuc: ${JSON.stringify(ls.dong[0])}`);
     assert(ls.dong[1]?.khoiPhuc === true, `mục có bản trước thiếu khoiPhuc: ${JSON.stringify(ls.dong[1])}`);
-    assertThrows(() => lichSu.lichSu(P.cpManager, { loai: 'thi-that', id: x.cy }), /xem được lịch sử/, 'QL chi nhánh khác xem');
+    assertThrows(() => lichSu.lichSu(P.cpManager, { loai: 'thi-that', id: x.cy }), /xem được lịch sử/, 'Head chi nhánh khác xem');
   }));
 
   check('SLT-a5 · ⋯ hồ sơ: em lưu trữ có "Kết quả thi thật" khi `nhapThiThat`; không có cờ → không; em đang học giữ luật cũ', () => {

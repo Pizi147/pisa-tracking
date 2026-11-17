@@ -30,7 +30,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
 
   check('QTV2-H-2 · lưu: chỉ Quản trị; sai → 400 nêu hạn; tuPhienBan cũ → 409; giống hệt → không thêm bản', () => thu(() => {
     conn.exec('DELETE FROM cau_hinh_phien_ban'); ch.xoaNhoHan();
-    assertThrows(() => ch.luuHanMacDinh(P.mbManager, { han: goc(), tuPhienBan: 0 }), /Quản trị/, 'QL sửa được');
+    assertThrows(() => ch.luuHanMacDinh(P.mbManager, { han: goc(), tuPhienBan: 0 }), /Quản trị/, 'Head sửa được');
     assert(ch.xemHanMacDinh(P.mbManager).suaDuoc === false && ch.xemHanMacDinh(P.admin).suaDuoc === true, 'cờ suaDuoc');
     assertThrows(() => ch.xemHanMacDinh(P.lrTeacher), /Quản trị/, 'GV xem được');
     const sai = goc(); sai.xu_ly_vi_pham.ngay = 0;

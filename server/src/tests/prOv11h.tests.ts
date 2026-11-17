@@ -90,7 +90,7 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     const o = tongHop.oTongHop(P.mbManager, { ct: 'thuong', soTuan: 26, classId: pet.id, theo: 'lop', khoa: 'tong', cot: 'luot' });
     assert(/^\d+ bài — /.test(o.tieuDe), o.tieuDe);
     const gvId = P.coreTeacher.userId;
-    for (const k of ['cx', 'consultant']) assert(loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId)) === 'Hồ sơ giáo viên dành cho Quản lý.', `${k}: ${loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId))}`);
+    for (const k of ['cx', 'consultant']) assert(loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId)) === 'Hồ sơ giáo viên dành cho Head.', `${k}: ${loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId))}`);
     const gvKhac = one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.user_id != ? LIMIT 1`, gvId).id;
     assert(/chính mình/.test(loiCua(() => phamVi.phamViHoSoGv(P.coreTeacher, gvKhac))), 'GV xem hồ sơ GV khác: giữ câu cũ');
   }));

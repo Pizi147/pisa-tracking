@@ -158,7 +158,7 @@ export async function runPrOv12aTests(t: any) {
     const ma = 'MB-OV12A-TRONG';
     const lop = intake.createClass(P.admin, { code: ma, branchId: MB, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' }).id as number;
     assert(xoaKetThuc.xemXoaKetThuc(QL, lop).coTheXoa === true, 'QL phải thấy Xoá lớp trống');
-    for (const [ten, p] of [['GV', P.coreTeacher], ['TVV', TVV], ['CX', CX], ['QL CP', P.cpManager]] as const) {
+    for (const [ten, p] of [['GV', P.coreTeacher], ['TVV', TVV], ['CX', CX], ['Head CP', P.cpManager]] as const) {
       assert(maLoi(() => xoaKetThuc.xoaLop(p, lop)) === 403, `${ten} xoá phải 403`);
     }
     assert(maLoi(() => xoaKetThuc.xoaLop(QL, LOP)) === 400, 'lớp có dữ liệu phải 400');

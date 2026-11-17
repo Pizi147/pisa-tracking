@@ -229,7 +229,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
   check('Dọn-b (YT3–5) · khối Thang có hai nút cùng cỡ "Xác nhận xử lý" + "Đề xuất QL duyệt"; nút không kèm tên bậc; hồ sơ HV và hồ sơ lớp cùng truyền onXuLy (xử lý được cả khi mới 1 vi phạm)', () => {
     const th = doc('web/src/modules/yThuc/ThangYThuc.tsx');
     /* UI-Y-THUC-HV: nút chính theo `xuLyChinh` (chỉ còn vi phạm Mới → Ghi nhận là việc chính). */
-    assert(/btn btn-sm min-h-\[44px\] sm:min-h-0\$\{xuLyChinh \? ' btn-primary' : ''\}`\} onClick=\{onXuLy\}>\{xuLyChinh && CUA_TOI\}\{t\('Xác nhận xử lý'\)\}</.test(th) && /onClick=\{onDeXuat\}>\{t\('Đề xuất QL duyệt'\)\}</.test(th) && !th.includes('Đề xuất QL duyệt…'), 'ThangYThuc');
+    assert(/btn btn-sm min-h-\[44px\] sm:min-h-0\$\{xuLyChinh \? ' btn-primary' : ''\}`\} onClick=\{onXuLy\}>\{xuLyChinh && CUA_TOI\}\{t\('Xác nhận xử lý'\)\}</.test(th) && /onClick=\{onDeXuat\}>\{t\('Đề xuất Head duyệt'\)\}</.test(th) && !th.includes('Đề xuất Head duyệt…'), 'ThangYThuc');
     const sotBac = webSrc().filter((x) => x.f.includes('/yThuc/') && /Xác nhận xử lý\$\{|`Xác nhận xử lý ·|Xác nhận xử lý · \$\{/.test(x.s)).map((x) => x.f);
     assert(sotBac.length === 0, sotBac.join(', '));
     /* UI-2 (mockup U10 K1): tab lớp — Xác nhận xử lý ở cột Việc của hàng (bắt buộc: nút chính; mới, cả khi 1 vi phạm: nút chữ dưới "Đã xem"). Q-7: gỡ kiểm chuỗi bố cục cũ. */
@@ -239,7 +239,7 @@ export async function runPrDonBTests(t: YThucTestKit) {
     /* OV-12e (mockup panel v3 §8, chủ SP 14/10): trong panel "Đề xuất QL duyệt" là nút chữ ngay sau nút chính Xác nhận xử lý (khối Cần làm). */
     /* TINH-HINH (chủ SP 12/11, mockup v20 D): bỏ nút "Đề xuất QL duyệt" — Không nâng · Vượt bậc · Ngoài thang chọn ngay trong panel. */
     const pn = doc('web/src/modules/yThuc/XacNhanXuLyPanel.tsx');
-    assert(!/<NutChu[^>]*>\{t\('Đề xuất QL duyệt'\)\}/.test(pn) && /k: 'vuot'/.test(pn) && /k: 'ngoai'/.test(pn), 'panel: bốn cách, không nút Đề xuất');
+    assert(!/<NutChu[^>]*>\{t\('Đề xuất Head duyệt'\)\}/.test(pn) && /k: 'vuot'/.test(pn) && /k: 'ngoai'/.test(pn), 'panel: bốn cách, không nút Đề xuất');
   });
 
   // ------------------------------------------------------------------ khối A · mã cũ Dọn-a / S3 để lại

@@ -179,7 +179,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
 
   check('S11 · Vắng do Quản lý/GVCN xác nhận bằng tay KHÔNG mang cờ chốt dấu "-"', () => {
     const hv = taoHocVien({ classCode: 'MB FT 101', weekStart: '2026-09-14' });
-    skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'speaking', 'absent', 'Quản lý xác nhận em vắng buổi Speaking');
+    skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'speaking', 'absent', 'Head xác nhận em vắng buổi Speaking');
     assert(sit(hv.attemptId, 'speaking').sit_status === 'absent' && sit(hv.attemptId, 'speaking').flag === 0,
       `Vắng tay phải cờ 0: ${JSON.stringify(sit(hv.attemptId, 'speaking'))}`);
   });
@@ -215,7 +215,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     conn.prepare(`INSERT INTO skill_move_requests (attempt_id, skill, move_no, from_period_id, to_period_id, reason, requested_on, decide_by, status, created_at)
       VALUES (?, 'listening', 1, ?, ?, 'Vắng (thẻ cũ)', '2026-09-28', '2026-10-04', 'pending', ?)`).run(hv.attemptId, hv.periodId, week.ensurePeriod('2026-10-05').id, NOW);
     assert(settledCount(hv.attemptId, 'listening') === 1, 'Tiền đề: phải chốt đúng một lần');
-    skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'listening', 'scheduled', 'Quản lý sửa: em có làm bài');
+    skillSchedule.setSitStatus(P.mbManager, hv.attemptId, 'listening', 'scheduled', 'Head sửa: em có làm bài');
     assert(!conn.prepare(`SELECT 1 FROM skill_move_requests WHERE attempt_id = ? AND status = 'pending'`).get(hv.attemptId),
       'Quản lý đổi kết luận thì đề nghị dời máy đã gửi phải được rút');
     attempts.saveScore(P.lrTeacher, hv.attemptId, 'listening', { noShow: true }, '2026-09-29');
@@ -551,7 +551,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(cases.canCloseCase(P.sTeacher, ctx('speaking')) === true, 'GVBM Speaking phải hoàn thành được Case Speaking (PR-QU)');
     assert(cases.canCloseCase(P.sTeacher, ctx('listening')) === (P.sTeacher.userId === P.coreTeacher.userId), 'GVBM Speaking hoàn thành được Case Listening');
     assertThrows(() => cases.closeCaseOutcome(P.coreTeacher, sp.id, { outcome: 'improved', note: 'Em đã tiến bộ rõ ở phần nói.' }),
-      /Quản lý|GVCN/, 'GVCN hoàn thành Case Speaking qua đường chốt kết quả');
+      /Head|GVCN/, 'GVCN hoàn thành Case Speaking qua đường chốt kết quả');
     const card = (cases.skillSupportBoard(P.coreTeacher, hv.sid) as any).rows.flatMap((r: any) => r.cases);
     assert(card.find((x: any) => x.id === sp.id)?.canClose === false && card.find((x: any) => x.id === li.id)?.canClose === true,
       'Thẻ Case phải nói đúng quyền theo môn');
@@ -734,7 +734,7 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     studentsSvc.setStudentStatus(P.mbManager, hv.sid, 'finished', TODAY, 'Kết thúc');
     /* PR-XOA §2: Kết thúc học đã tự lưu trữ — bỏ lưu trữ trước để thử lại đúng nút Lưu trữ của Quản lý. */
     studentsSvc.unarchiveStudent(P.mbManager, hv.sid);
-    assertThrows(() => studentsSvc.archiveStudent(pGvcnFou, hv.sid), /Quản lý/, 'GVCN lưu trữ học viên');
+    assertThrows(() => studentsSvc.archiveStudent(pGvcnFou, hv.sid), /Head/, 'GVCN lưu trữ học viên');
     studentsSvc.archiveStudent(P.mbManager, hv.sid);
     const s = conn.prepare('SELECT status, archived_at FROM students WHERE id = ?').get(hv.sid) as any;
     assert(s.archived_at && s.status === 'finished', `Lưu trữ phải chỉ ẩn, không đổi trạng thái: ${JSON.stringify(s)}`);

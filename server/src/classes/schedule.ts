@@ -729,7 +729,7 @@ export function setClassProgress(p: Principal, classId: number, input: {
   const conn = db();
   const c = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp');
-  if (!duocSuaLichLop(p, classId)) throw forbidden('Chỉ GVCN của lớp, Admin chi nhánh hoặc Quản lý mới sửa được lịch lớp.');
+  if (!duocSuaLichLop(p, classId)) throw forbidden('Chỉ GVCN của lớp, Admin chi nhánh hoặc Head mới sửa được lịch lớp.');
   /* RKC-4a (chủ SP 07/11, PTA Q-B1 mở khoá lớp kết thúc): GVCN / Admin chi nhánh sửa lịch lớp đã kết thúc như lớp đang chạy — nhật ký như cũ. */
 
   const code = (c.programme_code ?? programmeOf(c.kind)) as ProgrammeCode | null;
@@ -794,16 +794,16 @@ export type MissingInfo = {
 };
 
 const MISSING_LABEL: Record<MissingInfo['key'], { label: string; who: string }> = {
-  start_week: { label: 'Tuần bắt đầu học', who: 'Admin CN · Quản lý · GVCN' },
-  exam_month: { label: 'Tháng/năm dự kiến thi', who: 'Admin CN · Quản lý · GVCN' },
-  target: { label: 'Target', who: 'Admin CN · Quản lý' },
+  start_week: { label: 'Tuần bắt đầu học', who: 'Admin CN · Head · GVCN' },
+  exam_month: { label: 'Tháng/năm dự kiến thi', who: 'Admin CN · Head · GVCN' },
+  target: { label: 'Target', who: 'Admin CN · Head' },
   dob: { label: 'Ngày sinh', who: 'TVV · Admin CN' },
   email: { label: NHAN_THIEU_EMAIL, who: 'TVV · Admin CN' },   // OV-13f: Cần làm tách việc "Thiếu email" theo nhãn này (`tachThieuEmail`)
-  class_start_week: { label: 'Tuần bắt đầu của lớp', who: 'Admin CN · Quản lý' },
-  teachers: { label: 'Giáo viên các kỹ năng', who: 'Admin CN · Quản lý' },
-  core_teacher: { label: 'Giáo viên chủ nhiệm', who: 'Admin CN · Quản lý' },
-  next_milestone: { label: 'Mốc đánh giá tiếp theo', who: 'Admin CN · Quản lý' },
-  baseline: { label: 'Điểm đầu vào', who: 'Admin CN · Quản lý' },
+  class_start_week: { label: 'Tuần bắt đầu của lớp', who: 'Admin CN · Head' },
+  teachers: { label: 'Giáo viên các kỹ năng', who: 'Admin CN · Head' },
+  core_teacher: { label: 'Giáo viên chủ nhiệm', who: 'Admin CN · Head' },
+  next_milestone: { label: 'Mốc đánh giá tiếp theo', who: 'Admin CN · Head' },
+  baseline: { label: 'Điểm đầu vào', who: 'Admin CN · Head' },
 };
 
 const miss = (key: MissingInfo['key']): MissingInfo => ({ key, ...MISSING_LABEL[key] });

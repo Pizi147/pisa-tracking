@@ -253,7 +253,7 @@ export async function runPrMtaTests(t: YThucTestKit) {
     const b = baiThuong(2);
     skillSch.setSkillWeek(QL, b.aid, 'speaking', tuan(-1).id, {});
     assert(kyNang(b.aid, 'speaking').planned_period_id === tuan(-1).id, 'QL chưa dời được');
-    assertThrows(() => skillSch.setSkillWeek(P.normalCoreTeacher, b.aid, 'listening', tuan(-1).id, {}), /Chỉ Quản lý dời lịch Test/, 'GVCN');
+    assertThrows(() => skillSch.setSkillWeek(P.normalCoreTeacher, b.aid, 'listening', tuan(-1).id, {}), /Chỉ Head dời lịch Test/, 'GVCN');
   });
 
   check('MTa T1 (C6) · Xếp hàng loạt FT: tạo MT ở tuần trước → lichSu false; 3 tuần trước → lichSu true', () => {

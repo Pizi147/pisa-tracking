@@ -120,7 +120,7 @@ export async function runPrQrl2cDuyetTests(t: YThucTestKit) {
   const guiWl3 = (): { measureId: number; id: number } => {
     const sid = moiEm();
     const ids = [1, 2, 3].map((i) => viol.recordViolation(P.subjectTeacher, { studentId: sid, category: 'homework', ten: `Vi phạm QRL2c ${i}`, occurredOn: addDays(TODAY, -i) }).violation.id);
-    const nhap = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết' });
+    const nhap = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: ids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
     att.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     xu.guiDeXuat(gvcn, nhap.id);
     return { measureId: nhap.id, id: mot(`SELECT id FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id).id };

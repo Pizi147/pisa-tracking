@@ -595,7 +595,7 @@ export function HoTroHocVienTab() {
         {/* CV-TAB b (mockup a2): QL xem một GV dạy cả chi nhánh khác — việc ở đó do QL chi nhánh đó theo dõi, không hiện ở đây (máy chủ `cnAn`). */}
         {xemMotGv && !!data?.cnAn?.length && (
           <p className="m-0 text-[13px] text-faint" role="note">
-            {t('{gv} dạy cả {cn} — việc ở đó do QL {cn} theo dõi, không hiện ở đây.', { gv: (tenGvChon ?? '').trim().split(/\s+/).pop() ?? '', cn: data.cnAn.join(', ') })}
+            {t('{gv} dạy cả {cn} — việc ở đó do Head {cn} theo dõi, không hiện ở đây.', { gv: (tenGvChon ?? '').trim().split(/\s+/).pop() ?? '', cn: data.cnAn.join(', ') })}
           </p>
         )}
         {/* GD-8 (④ K1, R4.2): dải mỏng 5 chỉ số của TVV ngay dưới đầu trang (thay 5 ô to của Tổng quan TVV cũ). */}
@@ -813,7 +813,7 @@ function TomTatTheoDoi({ it, loai, them, onDong, onLamThay, onTiep, tenTiep }: {
             [t('Gần nhất'), data ? ketQuaGanNhat(data) : null],
           ]} />
           {/* SUA-LOI-CV: bài chấm chéo không của riêng ai (T18) — không câu "Chỉ … làm được". */}
-          {!it.lamThay && !laViecChamCheo(it) && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Quản lý làm được việc này.', { ai })}</p>}
+          {!it.lamThay && !laViecChamCheo(it) && <p className="m-0 mt-3 text-sm text-dim" role="status">{t('Chỉ {ai} hoặc Head làm được việc này.', { ai })}</p>}
         </div>
       </KhungPanel>
     </DauViecCongViec.Provider>

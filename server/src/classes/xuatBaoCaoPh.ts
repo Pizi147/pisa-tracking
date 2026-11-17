@@ -169,7 +169,7 @@ const tep = (...phan: string[]) => `PISA_BaoCaoPH_${phan.join('_').replace(/[^\p
 export function xuatLopBaoCaoPh(p: Principal, classId: number, dotMa: string | null, emId: number | null, kieu: 'xlsx' | 'pdf' = 'xlsx') {
   const c = lopDayDu().get(classId) as LopBc | undefined;
   if (!c) throw notFound('Không tìm thấy lớp');
-  if (!quyenBc(p, c).xuat) throw forbidden('Xuất báo cáo PH: chỉ Quản lý, Admin, Tư vấn viên.');
+  if (!quyenBc(p, c).xuat) throw forbidden('Xuất báo cáo PH: chỉ Head, Admin, Tư vấn viên.');
   const homNay = demoToday();
   const dl = dotCuaLop(c, homNay);
   if (!dl) throw badRequest('Chương trình của lớp chưa có mẫu báo cáo PH');

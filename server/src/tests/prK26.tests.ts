@@ -123,7 +123,7 @@ export async function runPrK26Tests(t: YThucTestKit) {
     loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'chua_ro' });
     assert(banGhi(sid).huong === 'chua_quyet', 'chua_ro → chua_quyet');
     assertThrows(() => loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'abc' }), /Hướng không hợp lệ/, 'hướng lạ');
-    assertThrows(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' }), /Quản lý/, 'OV-3b: GVCN → 403');
+    assertThrows(() => loTrinh.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' }), /Head/, 'OV-3b: GVCN → 403');
     const r = loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'chua_quyet', ngayXemLai: addDays(TODAY, 7) });
     assert(r.banGhi.ngayXemLai === addDays(TODAY, 7), `ngày xem lại: ${JSON.stringify(r.banGhi)}`);
     assertThrows(() => loTrinh.ghiLoTrinhTiep(ql, sid, { huong: 'chua_quyet', ngayXemLai: '28/09' }), /Ngày xem lại/, 'ngày sai dạng');

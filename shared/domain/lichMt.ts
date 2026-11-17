@@ -114,7 +114,7 @@ export function gvcnDoiMtCu(o: { tuanCuKetThuc: string | null | undefined; tuanM
 export const CAU_TUAN_DA_QUA = t('MT chưa làm bài xếp về tuần đã qua — tuần cách ≥ 2 tuần thì là MT cũ.');
 
 /** P6 N15: câu lỗi một chỗ cho máy chủ, nút web, xem trước hàng loạt. */
-export const LOI_KHOA_CUOI_TUAN = t('Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước, tuần này và tuần sau — mở lại thứ Hai. Quản lý / Quản trị đổi được.');
+export const LOI_KHOA_CUOI_TUAN = t('Thứ Sáu – Chủ nhật không đổi lịch MT của tuần trước, tuần này và tuần sau — mở lại thứ Hai. Head / Quản trị đổi được.');
 
 /**
  * P6 N15 (chủ SP 24–25/10): thứ Sáu → Chủ nhật của tuần chứa `homNay`, lịch MT có tuần gốc / đích (`tuan` = Thứ Hai; null bỏ qua) thuộc

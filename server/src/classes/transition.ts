@@ -88,7 +88,7 @@ function maUngVien(cls: any): { from: ProgrammeCode | null; steps: ProgrammeCode
 export function lopKhacChiNhanh(p: Principal, classId: number) {
   const cls = db().prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
-  if (!coTheRaLenh(p, classId)) throw forbidden('Chỉ Quản lý của lớp này xem được lớp chuyển đến.');
+  if (!coTheRaLenh(p, classId)) throw forbidden('Chỉ Head của lớp này xem được lớp chuyển đến.');
   if (cls.is_fast_track) return [];
   const { optionCodes } = maUngVien(cls);
   return optionCodes.length ? ungVienLop(classId, cls.branch_id, optionCodes, false, true) : [];

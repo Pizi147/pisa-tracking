@@ -84,11 +84,11 @@ export const quyCheBanGiao = (gvcn: boolean, han: string | null, homNay: string 
 export const quyCheBanGiaoGv = (): QuyChe => ({ chu: chenHan(t('Hạn {han:ban_giao_doi_gv} · xác nhận xong GV mới nhận tin')) });
 
 /** Q43 Việc được giao (việc mgmt). */
-export const quyCheViecGiao = (): QuyChe => ({ chu: t('Hạn do QL đặt · ghi Hoàn thành khi xong') });
+export const quyCheViecGiao = (): QuyChe => ({ chu: t('Hạn do Head đặt · ghi Hoàn thành khi xong') });
 
 /** Q59 Đề xuất chuyển lớp (GVCN) · Q78 / Q79 Chuyển lớp (QL) — luat/4 L-15, L-17; luat/2 C-07. */
 export const quyCheChuyenLop = (o: { deXuat: boolean; ngayNay: boolean; tuan: string | null; homNay: string | null }): QuyChe => (
-  o.deXuat ? { chu: t('QL lớp nguồn quyết định · duyệt xong bạn nhận việc bàn giao') }
+  o.deXuat ? { chu: t('Head lớp nguồn quyết định · duyệt xong bạn nhận việc bàn giao') }
     : o.ngayNay ? { chu: t('Ngay hôm nay: em sang lớp mới từ hôm nay') }
       : { chu: o.tuan && o.homNay ? t('Bắt đầu {tuan} · Case, PA mở sang GV lớp mới', { tuan: tuanLich(o.tuan, o.homNay) }) : t('Bắt đầu Thứ Hai tuần sau · Case, PA mở sang GV lớp mới') }
 );

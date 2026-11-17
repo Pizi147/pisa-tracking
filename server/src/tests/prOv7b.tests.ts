@@ -57,7 +57,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
       adjust: { description: 'Tự học Listening — nghe chép số liệu 20 phút mỗi ngày' } },
     replace: { decision: 'replace', outcome: 'worse', note: 'Sai nhiều hơn tuần trước', decisionNote: 'Tự học không hiệu quả',
       newPlan: { kind: 'extra_support', description: 'Học kèm 1-1 với Tutor 2 buổi/tuần' } },
-    ask_manager: { decision: 'ask_manager', outcome: 'unchanged', note: 'Không tiến bộ sau hai tuần', decisionNote: 'Cần QL xếp tutor buổi tối cho em' },
+    ask_manager: { decision: 'ask_manager', outcome: 'unchanged', note: 'Không tiến bộ sau hai tuần', decisionNote: 'Cần Head xếp tutor buổi tối cho em' },
   };
   const ghi = (ivId: number, k: string, p = GV) => cases.updateResult(p, ivId, LUA_CHON[k]);
   const fuMoi = (ivId: number) => get('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId);
@@ -131,9 +131,9 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     ghi(ivId, 'ask_manager');
     const the = get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_y_kien' AND doi_tuong_id = ? AND trang_thai = 'cho'`, ivId);
     const chuong = get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ?`, QL.userId).n;
-    cases.suaKetQua(GV, fuMoi(ivId).id, { ...LUA_CHON.ask_manager, outcome: 'worse', decisionNote: 'Cần QL gọi phụ huynh trong tuần' });
+    cases.suaKetQua(GV, fuMoi(ivId).id, { ...LUA_CHON.ask_manager, outcome: 'worse', decisionNote: 'Cần Head gọi phụ huynh trong tuần' });
     const sau = all(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_y_kien' AND doi_tuong_id = ? AND trang_thai = 'cho'`, ivId);
-    assert(sau.length === 1 && sau[0].id === the.id && sau[0].ly_do === 'Cần QL gọi phụ huynh trong tuần', JSON.stringify(sau));
+    assert(sau.length === 1 && sau[0].id === the.id && sau[0].ly_do === 'Cần Head gọi phụ huynh trong tuần', JSON.stringify(sau));
     assert(JSON.parse(sau[0].du_lieu).followupId === fuMoi(ivId).id, 'thẻ trỏ lần ghi mới');
     assert(get(`SELECT COUNT(*) n FROM notifications WHERE user_id = ?`, QL.userId).n === chuong, 'không chuông mới cho QL');
   }));
@@ -165,7 +165,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     keep: { decision: 'keep', outcome: 'partial', note: 'Cả nhóm làm đủ bài tuần này' },
     adjust: { decision: 'adjust', outcome: 'unchanged', note: 'Chưa tiến bộ rõ ở dạng bài dài', decisionNote: 'Đổi nội dung',
       adjust: { description: 'Bổ trợ 2 buổi/tuần — tập trung bài đọc dài' } },
-    ask: { decision: 'ask_manager', outcome: 'unchanged', note: 'Chưa tiến bộ rõ ở dạng bài dài', decisionNote: 'Cần QL xếp thêm phòng học buổi tối' },
+    ask: { decision: 'ask_manager', outcome: 'unchanged', note: 'Chưa tiến bộ rõ ở dạng bài dài', decisionNote: 'Cần Head xếp thêm phòng học buổi tối' },
   };
   const MT = (tyLe: number, outcome = 'improved') => ({ outcome, note: 'Hết mốc bổ trợ, em làm Mini Test', miniTest: { tyLe, ngay: TODAY } });
   for (const [ten, cu, moi] of [['keep → adjust', BT.keep, BT.adjust], ['adjust → ask', BT.adjust, BT.ask], ['ask → keep', BT.ask, BT.keep]] as const) {
@@ -225,7 +225,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     const moiPa = get('SELECT superseded_by FROM case_interventions WHERE id = ?', x.ivId).superseded_by;
     cases.respondToPlan(QL, moiPa, { decision: 'approved' });
     e = loi(() => cases.suaKetQua(GV, fuMoi(x.ivId).id, LUA_CHON.keep));
-    assert(e?.status === 400 && /Quản lý đã (duyệt|trả lời)/.test(e.message), JSON.stringify(e));
+    assert(e?.status === 400 && /Head đã (duyệt|trả lời)/.test(e.message), JSON.stringify(e));
     cases.updateResult(GV, moiPa, LUA_CHON.keep);
     e = loi(() => cases.suaKetQua(GV, fuMoi(x.ivId).id, LUA_CHON.keep));
     assert(e?.status === 400 && /PA thay thế đã có kết quả/.test(e.message), JSON.stringify(e));
@@ -236,7 +236,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     yc.chotYeuCau(conn, { loai: 'xin_y_kien', doiTuongLoai: 'intervention', doiTuongId: y.ivId }, 'da_tra_loi', { nguoiDuyet: QL.userId, traLoi: 'Đã xếp tutor tối thứ Tư' });
     void the;
     e = loi(() => cases.suaKetQua(GV, fuMoi(y.ivId).id, LUA_CHON.keep));
-    assert(e?.status === 400 && /Quản lý đã trả lời/.test(e.message), JSON.stringify(e));
+    assert(e?.status === 400 && /Head đã trả lời/.test(e.message), JSON.stringify(e));
     /* Case đã hoàn thành → Mở lại trước */
     ghi(ivId, 'end');
     cases.closeCaseOutcome(GV, caseId, { outcome: 'much_better', note: 'MT3 Listening lên 6.0, không còn sai dạng điền số' });
@@ -298,7 +298,7 @@ export async function runPrOv7bTests(t: YThucTestKit) {
     assert(get(`SELECT title FROM journey_events WHERE ref_table = 'case_followups' AND ref_id = ?`, moi.id).title.includes('unchanged'), 'Hành trình đổi chữ');
     const nk = all(`SELECT before_json, after_json FROM audit_logs WHERE action = 'case.followup.edit' AND entity_id = ?`, moi.id);
     assert(nk.length === 1 && JSON.parse(nk[0].before_json).outcome === 'improved' && JSON.parse(nk[0].after_json).outcome === 'unchanged', JSON.stringify(nk));
-    cases.suaXemLai(QL, moi.id, { outcome: 'improved', note: 'QL sửa: đúng hết số' });
+    cases.suaXemLai(QL, moi.id, { outcome: 'improved', note: 'Head sửa: đúng hết số' });
     assert(loi(() => cases.suaXemLai(GV, moi.id, { outcome: 'bogus', note: 'x' }))?.status === 400, 'kết quả sai 400');
     assert(cases.caseDetail(GV, caseId).followups.filter((f: any) => f.suaDuoc && f.nextStep === null).map((f: any) => f.id).sort().join() === [cu.id, moi.id].sort().join(), 'RKC-2b: cờ sửa ở mọi lần xem lại');
   }));

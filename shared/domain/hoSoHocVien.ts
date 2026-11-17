@@ -84,7 +84,7 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
     const coHan = chay.filter((p) => p.actionDue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     const quaHanRoi = chay.filter((p) => p.actionDue && p.actionOverdue).sort((a, b) => a.actionDue!.localeCompare(b.actionDue!))[0];
     if (quaHanRoi) tiep = { text: t('Kết quả PA'), due: quaHanRoi.actionDue, overdue: true };
-    else if (choDuyet) tiep = { text: t('Chờ Quản lý trả lời'), due: choDuyet.approvalDue, overdue: false };
+    else if (choDuyet) tiep = { text: t('Chờ Head trả lời'), due: choDuyet.approvalDue, overdue: false };
     else if (coHan) tiep = { text: t('Kết quả PA'), due: coHan.actionDue, overdue: coHan.actionOverdue };
     else if (c.followUntil) tiep = { text: t('Kết quả PA'), due: c.followUntil, overdue: c.followOverdue };
   }
@@ -95,7 +95,7 @@ export function tienDoCase(plans: readonly PhuongAnTomTat[], c: { status: string
 export function viecTiepPhuongAn(p: PhuongAnTomTat): {
   loai: 'cho-duyet' | 'cho-xac-nhan' | 'ghi-cuoi' | 'ghi-ket-qua' | 'da-xong'; text: string; due: string | null; overdue: boolean;
 } {
-  if (p.pendingApproval) return { loai: 'cho-duyet', text: t('Chờ Quản lý trả lời'), due: p.approvalDue, overdue: false };
+  if (p.pendingApproval) return { loai: 'cho-duyet', text: t('Chờ Head trả lời'), due: p.approvalDue, overdue: false };
   /* PR-SOS: PA quy chế chờ xác nhận chưa chạy — việc là Xác nhận PA (hạn ở Case). Tuần chạm mốc → Ghi kết quả cuối. */
   if (p.choXacNhan) return { loai: 'cho-xac-nhan', text: t('Chờ xác nhận'), due: null, overdue: false };
   if (p.lanCuoi && dangChay(p)) return { loai: 'ghi-cuoi', text: t('Kết quả cuối'), due: p.actionDue, overdue: p.actionOverdue };
@@ -242,7 +242,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
       ...(y.han ? kem('Ý thức: bắt buộc {ke}, hạn hết {han}', { ke: y.keTiep ?? 'xử lý', han: ngay(y.han, i.homNay) }) : kem('Ý thức: bắt buộc {ke}', { ke: y.keTiep ?? 'xử lý' })),
       tone: 'warn',
     }
-    : y.nhom === 'cho_duyet' ? { ...(y.deXuat ? kem('Ý thức: đề xuất {de} chờ Quản lý', { de: y.deXuat }) : { chu: 'Ý thức: đề xuất chờ Quản lý' }), tone: 'wait' }
+    : y.nhom === 'cho_duyet' ? { ...(y.deXuat ? kem('Ý thức: đề xuất {de} chờ Head', { de: y.deXuat }) : { chu: 'Ý thức: đề xuất chờ Head' }), tone: 'wait' }
     : null;
 
   /* OV-11d (HV-22): nhãn "KCK · không tính SOS" không đẩy mất việc có hạn — đủ 3 mảnh khác thì bỏ nhãn, KCK nói ở mảnh kết quả. */
@@ -321,7 +321,7 @@ export function oYThuc(y: {
   const k = (phuK: ChuKhoa, tone: 'danger' | 'warn' | 'wait' | null) => ({ tren, gt, phu: phuK.chu, phuK, tone });
   if (y.nhom === 'qua_han' && !y.tamDung) return k(y.quaHanNgay ? kem('{vp} · quá hạn {n} ngày', { vp, n: y.quaHanNgay }) : kem('{vp} · quá hạn', { vp }), 'danger');
   if (y.nhom === 'bat_buoc' && !y.tamDung) return k(y.han ? kem('{vp} · hạn hết {han}', { vp, han: ngay(y.han, homNay) }) : vp, 'warn');
-  if (y.nhom === 'cho_duyet') return k(kem('đề xuất {de} chờ Quản lý duyệt', { de: y.deXuat ?? 'xử lý' }), 'wait');
+  if (y.nhom === 'cho_duyet') return k(kem('đề xuất {de} chờ Head duyệt', { de: y.deXuat ?? 'xử lý' }), 'wait');
   if (y.soMo > 0) return k(kem(y.tamDung ? '{n} vi phạm mở · hạn đang dừng' : '{n} vi phạm mở · chưa bắt buộc', { n: y.soMo }), null);
   return { tren, gt, phu: 'không có vi phạm mở', tone: null };
 }
@@ -338,7 +338,7 @@ export function oSapToi(i: {
 }): { tren: string; gt: string; gtK?: ChuKhoa; phu: string | null; phuK?: ChuKhoa; thi?: boolean } {
   if (i.ketLuan) { const gtK = kem('Kết luận: {kl}', { kl: i.ketLuan }); return { tren: 'lộ trình đã khép', gt: gtK.chu, gtK, phu: null }; }
   if (i.sauCuoiKhoa) {
-    const phuK = i.sauCuoiKhoa.tuanKetThuc ? kem('chờ Quản lý quyết định · lớp kết thúc {tuan}', { tuan: tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay) }) : { chu: 'chờ Quản lý quyết định' };
+    const phuK = i.sauCuoiKhoa.tuanKetThuc ? kem('chờ Head quyết định · lớp kết thúc {tuan}', { tuan: tuanLich(i.sauCuoiKhoa.tuanKetThuc, i.homNay) }) : { chu: 'chờ Head quyết định' };
     return { tren: 'sau Final Test', gt: 'Chuyển lớp', phu: phuK.chu, phuK };
   }
   const n = i.next;
@@ -348,7 +348,7 @@ export function oSapToi(i: {
   }
   if (!n) return { tren: 'mốc kế tiếp', gt: 'Chưa có mốc', phu: 'chưa xếp lịch Test' };
   const gt = n.tuan ? `${n.dau} · ${tuanLich(n.tuan, i.homNay)}` : n.dau;
-  if (i.tamDung) return { tren: 'mốc kế tiếp', gt, phu: 'giữ lịch · Quản lý dời nếu cần' };
+  if (i.tamDung) return { tren: 'mốc kế tiếp', gt, phu: 'giữ lịch · Head dời nếu cần' };
   const phu = (phuK: ChuKhoa) => ({ tren: 'mốc kế tiếp', gt, phu: phuK.chu, phuK });
   if (i.ratio) return phu(n.final && i.bacKe ? kem('{n} môn · xét lên {bac}', { n: n.soPhan, bac: i.bacKe }) : kem('{n} môn', { n: n.soPhan }));
   if (i.kck && n.kyVong === null) return phu(n.attemptNo > 1 ? kem('so với MT{so}, không kỳ vọng', { so: n.attemptNo - 1 }) : { chu: 'không kỳ vọng' });   // OV-9: KCK chưa có Target

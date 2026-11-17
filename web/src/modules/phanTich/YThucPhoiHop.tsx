@@ -171,18 +171,18 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   const cachChon = (
     <>
-      <p className="m-0">{t('Học viên đang học có vi phạm chưa xử lý đã qua hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ QL duyệt.')}</p>
+      <p className="m-0">{t('Học viên đang học có vi phạm chưa xử lý đã qua hạn, Bắt buộc xử lý (3 vi phạm trở lên trong tuần này + tuần trước) hoặc có đề xuất Chờ Head duyệt.')}</p>
       {/* GD-12a (⑨ Y2, R9.2): giải thích từng cột (trước ở `title` tiêu đề cột) + thang là danh sách viết tắt VIẾT HOA (lời 35, 36). */}
       <dl className="m-0 space-y-1">
         {([[t('Vi phạm'), t('Trong khoảng đang lọc')], [t('Chưa xử lý'), t('Mới · Cần xử lý · Quá hạn (Đã ghi nhận không tính)')],
-          [t('Bậc · hiện tại › kế'), t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần QL duyệt')],
+          [t('Bậc · hiện tại › kế'), t('Bậc cao nhất đã xử lý trên thang (kể cả cấp bậc vi phạm đã xác nhận từ trước khi dùng web) › lần xử lý bắt buộc kế tiếp; WL 3 cần Head duyệt')],
           [t('Lần xử lý gần nhất'), t('Lần xử lý đã xong gần nhất; lần mới hơn còn chờ duyệt hoặc bị từ chối hiện ở dòng dưới, kèm trạng thái')]] as const).map(([c, g]) => (
           <div key={c}><dt className="inline font-semibold text-slate-200">{c}: </dt><dd className="m-0 inline">{g}</dd></div>
         ))}
       </dl>
       <p className="m-0">{t('Thang (bậc kế):')}</p>
       <ol className="m-0 list-decimal space-y-0.5 pl-5">
-        {['Report 1', 'Report 2', 'WL 1', t('Report 4 + Meeting CX/GĐCN'), 'WL 2', 'WL 3'].map((b) => <li key={b}>{bacNgan(b)}{b === 'WL 3' ? ` (${t('cần QL')})` : ''}</li>)}
+        {['Report 1', 'Report 2', 'WL 1', t('Report 4 + Meeting CX/GĐCN'), 'WL 2', 'WL 3'].map((b) => <li key={b}>{bacNgan(b)}{b === 'WL 3' ? ` (${t('cần Head')})` : ''}</li>)}
       </ol>
       <p className="m-0">{t('Đề xuất ngoài thang không đổi bậc.')}</p>
     </>
@@ -198,7 +198,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
     const dem = (n: DongHvCanChuY['nhom']) => d.hvCanChuY.filter((x) => x.nhom === n).length;
     const nhom = [
       dem('bat_buoc') && t('{n} bắt buộc xử lý', { n: dem('bat_buoc') }),
-      dem('cho_duyet') && t('{n} chờ QL duyệt', { n: dem('cho_duyet') }),
+      dem('cho_duyet') && t('{n} chờ Head duyệt', { n: dem('cho_duyet') }),
     ].filter(Boolean).join(' · ');
     return (
       <DaiChiSo ds={[

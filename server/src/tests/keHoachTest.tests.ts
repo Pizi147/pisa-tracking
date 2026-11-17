@@ -164,7 +164,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
   check('PR-Rc2 · R11(b) Quản lý sửa được đợt hoàn tất (lý do tuỳ chọn, kể cả xoá); nhật ký score.override kèm sauHoanTat', () => {
     const { attemptId, classId: clsId, chuNhatCuoi } = dungDotHoanTatFT();
     const sauChuNhat = addDays(chuNhatCuoi, 1);
-    attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: 34, lyDo: 'Quản lý hiệu chỉnh sau hoàn tất' }, sauChuNhat);
+    attemptsMod.saveScore(P.mbManager, attemptId, 'listening', { rawScore: 34, lyDo: 'Head hiệu chỉnh sau hoàn tất' }, sauChuNhat);
     const daDoi = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
       .get(attemptId, 'listening') as any;
     assert(daDoi.raw_score === 34, 'Quản lý có lý do mà vẫn không sửa được');
@@ -199,7 +199,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     regularMod.saveRegularScore(P.normalCoreTeacher, attemptId, 'listening', { score: 31, total: 40, lyDo: 'Chấm lại' }, sauChuNhat);
     assert((conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?').get(attemptId, 'listening') as any).raw_score === 31,
       'GVBM lớp thường phải sửa được sau Đủ điểm');
-    regularMod.saveRegularScore(P.mbManager, attemptId, 'listening', { score: 32, total: 40, lyDo: 'Quản lý hiệu chỉnh' }, sauChuNhat);
+    regularMod.saveRegularScore(P.mbManager, attemptId, 'listening', { score: 32, total: 40, lyDo: 'Head hiệu chỉnh' }, sauChuNhat);
     const daDoi = conn.prepare('SELECT raw_score FROM assessment_scores WHERE attempt_id=? AND skill=?')
       .get(attemptId, 'listening') as any;
     assert(daDoi.raw_score === 32, 'Quản lý có lý do mà vẫn không sửa được bài lớp thường');
@@ -305,7 +305,7 @@ export async function runKeHoachTestTests(t: YThucTestKit) {
     }
     /* Chủ SP 28/10: GV xem Kế hoạch Test lớp mình dạy — chỉ xem (ghi vẫn PLAN_WEEK). */
     assert(keHoachMod.luoiFT(P.lrTeacher, mbClass).chiXem === true, 'GVBM đọc luoiFT, chỉ xem');
-    assertThrows(() => keHoachMod.xepHangLoat(P.lrTeacher, { classId: mbClass, attemptNo: 95, studentIds: [], tuan: {}, xemTruoc: true }), /Quản lý|quyền/, 'GVBM xếp hàng loạt phải bị chặn');
+    assertThrows(() => keHoachMod.xepHangLoat(P.lrTeacher, { classId: mbClass, attemptNo: 95, studentIds: [], tuan: {}, xemTruoc: true }), /Head|quyền/, 'GVBM xếp hàng loạt phải bị chặn');
   });
 
   /* PR-MTa T20 thay "kỹ năng đã có điểm giữ nguyên": Quản lý dời được, điểm đi theo. */

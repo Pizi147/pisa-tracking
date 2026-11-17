@@ -33,7 +33,7 @@ export const CHU_CHUYEN_LOP = {
   giu: 'Giữ quyết định',
   luu: 'Lưu quyết định',
   chua: 'Chưa chốt lộ trình',   // CA2-4: một khái niệm một tên — badge "n HV chưa chốt lộ trình", cột Khoá
-  choDuyetDeXuat: 'Chờ QL duyệt đề xuất',
+  choDuyetDeXuat: 'Chờ Head duyệt đề xuất',
   sapChuyen: (tuan: string) => `Sắp chuyển · từ ${tuan}`,
   banGiao: 'GVCN xác nhận bàn giao',
 } as const;
@@ -482,7 +482,7 @@ export function dongKhiChuyen(x: DuLieuKhiChuyen): { khiChuyen: string[]; canhBa
       : x.dongCase === 'normal' ? `${x.soCase} Case FT tự đóng`
         : `${x.soCase} Case đang mở đi theo em${x.goiYNhan ? `, người nhận gợi ý: ${x.goiYNhan}` : ''}`);
   }
-  if (x.doiChiNhanh) dong.push('Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”');
+  if (x.doiChiNhanh) dong.push('Head chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”');
   return { khiChuyen: dong, canhBao: x.nguonFt && !x.dichFt };
 }
 

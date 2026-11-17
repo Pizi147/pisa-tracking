@@ -127,7 +127,7 @@ export function lopKyVong(p: Principal, branchId: number | null): LopKyVong[] {
 /** Lớp nguồn BE/ELE + quyền Quản lý (`request.approve` ở lớp đó). */
 function lopNguon(p: Principal, classId: number): { id: number; code: string; ct: string } {
   /* PR-DON: quyền trước — người không quyền nhận 403 dù lớp có hay không (không dò được lớp tồn tại). */
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { classId })) throw forbidden('Chỉ Quản lý mới đánh được Kỳ vọng.');
+  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { classId })) throw forbidden('Chỉ Head mới đánh được Kỳ vọng.');
   const c = db().prepare('SELECT id, code, programme_code FROM classes WHERE id = ?').get(classId) as any;
   if (!c) throw notFound('Không tìm thấy lớp.');
   const ct = programmeOf(c.programme_code);

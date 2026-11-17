@@ -28,7 +28,7 @@ export async function runPrOv15h1Tests(t: YThucTestKit) {
   const bo = (o: any, keys: string[]) => JSON.parse(JSON.stringify(o, (k, v) => (keys.includes(k) ? undefined : v)));
   const r1 = (fn: () => unknown) => { try { GET(fn); return 200; } catch (e: any) { return e?.status ?? 500; } };
   const MOI = ['chuaDiem', 'sos1', 'sos2', 'sos3', 'daThiChoKq'];
-  const vai: [string, any, number | null][] = [['QL', P.mbManager, null], ['QL·MB', P.mbManager, MB], ['QT', P.admin, null], ['QT·MB', P.admin, MB]];
+  const vai: [string, any, number | null][] = [['QL', P.mbManager, null], ['Head·MB', P.mbManager, MB], ['QT', P.admin, null], ['QT·MB', P.admin, MB]];
 
   check('H1-1 · /tong-quan/ql một request = các đường cũ chạy riêng: Lớp cần chú ý (cột cũ) · Lịch — từng số giữ nguyên; Trễ chấm thay /giao-vien (H1-3)', () => {
     for (const ct of ['ft', 'thuong']) {

@@ -117,7 +117,7 @@ export function TasksBoard() {
   if (data?.scopeEmpty) {
     return (
       <Forbidden
-        message={t('Phần này dành cho Quản trị hệ thống và Quản lý chi nhánh')}
+        message={t('Phần này dành cho Quản trị hệ thống và Head chi nhánh')}
         hint={t('Việc được giao cho bạn vẫn hiện ở Tổng quan và mở được từ thông báo.')}
       />
     );

@@ -70,7 +70,7 @@ export function viecCase(c: CaseCua, ct: string | null, homNay: string) {
   const goc = c.viecTiep?.chu ?? '';
   const loai = !viec ? undefined : goc.startsWith('Xác nhận Case') || goc.startsWith('Mô tả Case') ? 'xac-nhan' as const
     : goc.startsWith('Xác nhận PA') ? 'xac-nhan-pa' as const : d?.ghiKetQua && d.paId != null ? 'ghi-ket-qua' as const : undefined;
-  return { viec, d, loai, choQl: goc.startsWith('Chờ Quản lý duyệt') };
+  return { viec, d, loai, choQl: goc.startsWith('Chờ Head duyệt') };
 }
 
 /** Một dòng Case. 375 (`the`): xếp dọc — môn + tên (+ SOS, Gấp) · nguyên nhân · viên · PA · người · nút việc full rộng + hạn. */
@@ -112,7 +112,7 @@ export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }
                   {/* Bỏ đoạn trùng mốc ("đến Cuối khoá" đã có trong `mocChu` — chủ SP 08/11 chê lặp). */}
                   {doan.slice(1).filter((x) => !p.mocChu?.startsWith(x)).map((x, i) => <li key={i}>{x}</li>)}
                   {p.mocChu && <li>{dich(p.mocChu)}</li>}
-                  {p.choXacNhan && <li>{t('Chờ xác nhận')}</li>}{p.choDuyet && <li>{t('Chờ Quản lý duyệt')}</li>}
+                  {p.choXacNhan && <li>{t('Chờ xác nhận')}</li>}{p.choDuyet && <li>{t('Chờ Head duyệt')}</li>}
                   {c.moTu && !gap && <li>{t('Mức: {m}', { m: dich(c.moTu) })}</li>}
                 </ul>
               </NutLuat>
@@ -132,7 +132,7 @@ export function DongCase({ h, c, ct, homNay, onMo, the = false, chiDoc = false }
       <button type="button" onClick={() => onMo(loai, d?.paId)} title={viec.title}
         className={choQl ? 'cursor-pointer border-0 bg-transparent p-0 text-left text-[13px] font-medium text-dim hover:text-slate-100 max-sm:min-h-[44px]'
           : `btn h-[30px] whitespace-nowrap px-2.5 text-[13px] ${the ? 'h-11 w-full flex-1 justify-center text-sm' : ''}`}>
-        {choQl ? t('Chờ Quản lý duyệt') : tach.nut}<span className="sr-only"> – {h.tenDu ?? h.nhan}</span>
+        {choQl ? t('Chờ Head duyệt') : tach.nut}<span className="sr-only"> – {h.tenDu ?? h.nhan}</span>
       </button>
       {tach.ky && !the && <span className="whitespace-nowrap text-xs font-medium tabular-nums text-faint">{tach.ky}</span>}
     </span>

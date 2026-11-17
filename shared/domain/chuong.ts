@@ -154,7 +154,7 @@ export function tachTin(n: { kind: string | null; title: string }): { kq: KetQua
       return { kq: { tone, chu }, chu: sau ? `${truoc} — ${sau}` : truoc };
     }
   }
-  if (n.kind === 'duyet_tu_duyet' && tieuDe.startsWith('Quản lý tự duyệt · ')) return { kq: { tone: 'trung', chu: t('Tự duyệt') }, chu: tieuDe.slice('Quản lý tự duyệt · '.length) };
+  if (n.kind === 'duyet_tu_duyet' && tieuDe.startsWith('Head tự duyệt · ')) return { kq: { tone: 'trung', chu: t('Tự duyệt') }, chu: tieuDe.slice('Head tự duyệt · '.length) };
   if (n.kind === 'lenh_loi' || n.kind === 'phan_cong_loi' || n.kind === 'buoc_tiep_loi') return { kq: { tone: 'bad', chu: t('Lỗi') }, chu: tieuDe };
   return { kq: null, chu: tieuDe };
 }

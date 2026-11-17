@@ -90,12 +90,12 @@ export async function runPrUiHoSoLopTests(t: any) {
       assert(d.nhanXet === 'Đọc hiểu tiến bộ rõ; cần luyện viết.' && d.deXuat === 'len_lop' && !!d.boi && !!d.luc, JSON.stringify(d));
       assert(d.lichSu.length === 2 && d.lichSu[0].nhanXet === 'Đọc hiểu tiến bộ rõ; cần luyện viết.' && d.lichSu[1].nhanXet === 'Đọc hiểu tiến bộ rõ.', `lịch sử: ${JSON.stringify(d.lichSu)}`);
       /* T15: hai người cùng mở bản d.luc — người sau gửi bản cũ → 409, không đè im lặng; gửi lại với bản mới → ghi đè có chủ ý. */
-      const moi = ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: 'QL sửa', luc: d.luc });
+      const moi = ghiDanhGiaDauRa(P.mbManager, FOU, emFou, { nhanXet: 'Head sửa', luc: d.luc });
       assert(moi.luc && moi.luc !== d.luc, 'phải trả luc mới');
       let e409: any = null;
       try { ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', luc: d.luc }); } catch (e) { e409 = e; }
       assert(e409?.status === 409 && e409.details?.luc === moi.luc && /Đã có người sửa lúc/.test(e409.message), `409: ${e409?.status} ${e409?.message}`);
-      assert(xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'QL sửa', 'bản QL giữ nguyên sau 409');
+      assert(xemDanhGiaDauRa(P.mbManager, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'Head sửa', 'bản QL giữ nguyên sau 409');
       ghiDanhGiaDauRa(gv, FOU, emFou, { nhanXet: 'GVCN đè', luc: moi.luc });
       assert(xemDanhGiaDauRa(gv, FOU).rows.find((r: any) => r.studentId === emFou)!.nhanXet === 'GVCN đè', 'ghi đè có chủ ý');
       let e2: any = null;

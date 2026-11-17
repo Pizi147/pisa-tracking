@@ -101,7 +101,7 @@ export function HopThaoTacMt({ thaoTac, attemptId, skill, ct, laThuong, quanLy, 
     ...(kiemLyDoThaoTac(tt, lyDo) ? [{ khoa: 'ly-do', nhan: t('Lý do'), lyDo: t('Chưa điền') }] : []),
     ...(coTuan && (!tuan || (tt === 'doi-lich' && tuan.periodId === row.periodId)) ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Chọn tuần khác tuần hiện tại') }]
       : coTuan && tuanNay && tuan!.weekStart < tuanNay ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Tuần đã qua — chọn từ tuần này trở đi') }]
-      : gvcnCu && tuan!.weekStart.slice(0, 10) > mondayOfDate(homNay!) ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Chọn tuần đã qua hoặc tuần này — tuần tới do Quản lý xếp') }] : []),
+      : gvcnCu && tuan!.weekStart.slice(0, 10) > mondayOfDate(homNay!) ? [{ khoa: 'tuan', nhan: t('Tuần Test mới'), lyDo: t('Chọn tuần đã qua hoặc tuần này — tuần tới do Head xếp') }] : []),
     ...(tt === 'doi-han' && !han ? [{ khoa: 'han', nhan: t('Hạn chấm mới'), lyDo: t('Chưa chọn') }] : []),
   ];
   const lyDoGui = lyDo.trim() || undefined;

@@ -25,7 +25,7 @@ import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** Lý do hệ thống đóng việc theo lần xử lý (Q-D1 ①). */
-const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', system_tu_choi: 'QL từ chối xử lý', system_rut: 'Đề xuất đã rút', system_huy_thu_hoi: 'QL huỷ thu hồi',
+const LY_DO_HE_THONG = { system_thu_hoi: 'Xử lý đã thu hồi', system_tu_choi: 'Head từ chối xử lý', system_rut: 'Đề xuất đã rút', system_huy_thu_hoi: 'Head huỷ thu hồi',
   system_meeting_mo_lai: 'GVCN đưa Meeting về Cần xử lý', system_rut_tinh_hinh: 'GV đã rút' } as const;
 /** PHOI-HOP-V2: việc TVV sau Meeting CX đóng vì GVCN đưa Meeting về Cần xử lý / bỏ — xác nhận lại thì mở lại (`phoiHop.ts dongBoViecTvv`). */
 export const LY_DO_MEETING_MO_LAI = 'system_meeting_mo_lai';
@@ -145,7 +145,7 @@ export const coTheGhi = (p: Principal, v: { consultant_user_id: number | null; s
 export const coTheSuaHan = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null }): boolean =>
   coTheGhi(p, v) || canManageDiscipline(p, v.student_id);
 function requireGhi(p: Principal, v: any): void {
-  if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV hoặc Quản lý chi nhánh của em ghi được kết quả báo phụ huynh.');
+  if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV hoặc Head chi nhánh của em ghi được kết quả báo phụ huynh.');
 }
 /** Lần xử lý còn hiệu lực (không thu hồi / từ chối / rút). */
 const xuLyCon = (v: any): 'con' | 'thu_hoi' | 'tu_choi' | 'rut' =>
@@ -390,7 +390,7 @@ export function doiHanChon(o: { loai: LoaiViecHan; bang: 'viec_bao_ph' | 'sos_co
 export function suaHanBaoPh(p: Principal, id: number, body: { han?: unknown; hanCu?: unknown }): ViecBaoPhView {
   const { han, hanCu } = docSuaHan(body);
   const x = loadViec(id);
-  if (!coTheSuaHan(p, x)) throw forbidden('Chỉ TVV, GVCN lớp em đang học hoặc Quản lý sửa được hạn báo phụ huynh.');
+  if (!coTheSuaHan(p, x)) throw forbidden('Chỉ TVV, GVCN lớp em đang học hoặc Head sửa được hạn báo phụ huynh.');
   if (x.trang_thai !== 'mo') throw badRequest('Việc Báo PH đã kết thúc — không sửa hạn.');
   const xl = xuLyCon(x);
   if (xl !== 'con') throw badRequest(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — việc Báo PH chỉ xem.`);

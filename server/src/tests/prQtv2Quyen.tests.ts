@@ -33,7 +33,7 @@ export async function runPrQtv2QuyenTests(t: { check: any; assert: any; assertTh
   }));
 
   check('QTV2-NK-2 · quyền: QL không xem tài khoản / quyền / mở sửa lịch, không lọc mục → chỉ mục cấu hình; GV bị chặn; mục lạ / ngày sai → 400', () => {
-    for (const m of ['tai-khoan', 'quyen', 'mo-sua-lich']) assertThrows(() => nk.nhatKyQuanTri(P.mbManager, { muc: m }), /Quản trị/, `QL xem được ${m}`);
+    for (const m of ['tai-khoan', 'quyen', 'mo-sua-lich']) assertThrows(() => nk.nhatKyQuanTri(P.mbManager, { muc: m }), /Quản trị/, `Head xem được ${m}`);
     const ql = nk.nhatKyQuanTri(P.mbManager, {});
     assert(ql.muc.every((m: string) => !['tai-khoan', 'quyen', 'mo-sua-lich'].includes(m)), JSON.stringify(ql.muc));
     assertThrows(() => nk.nhatKyQuanTri(P.lrTeacher, {}), /Quản trị/, 'GV xem được nhật ký');
@@ -65,9 +65,9 @@ export async function runPrQtv2QuyenTests(t: { check: any; assert: any; assertTh
   check('QTV2-CH-1 · Quản lý XEM chương trình, lộ trình, chi nhánh; không sửa được; GV bị chặn; nav có tab cấu hình cho QL', () => {
     const { navOf } = nav;
     assert(Array.isArray(sc.listProgrammes(P.mbManager)) && sc.listChiNhanh(P.mbManager).length > 0, 'QL không xem được');
-    assertThrows(() => sc.saveProgramme(P.mbManager, { code: 'FOU', name: 'X' }), /Quản trị/, 'QL sửa được chương trình');
-    assertThrows(() => sc.saveRoute(P.mbManager, { code: 'LT1', name: 'X' }), /Quản trị/, 'QL sửa được lộ trình');
-    assertThrows(() => sc.luuChiNhanh(P.mbManager, cp().id, { name: 'X', diaChi: '', soDienThoai: '' }), /Quản trị/, 'QL sửa được chi nhánh');
+    assertThrows(() => sc.saveProgramme(P.mbManager, { code: 'FOU', name: 'X' }), /Quản trị/, 'Head sửa được chương trình');
+    assertThrows(() => sc.saveRoute(P.mbManager, { code: 'LT1', name: 'X' }), /Quản trị/, 'Head sửa được lộ trình');
+    assertThrows(() => sc.luuChiNhanh(P.mbManager, cp().id, { name: 'X', diaChi: '', soDienThoai: '' }), /Quản trị/, 'Head sửa được chi nhánh');
     assertThrows(() => sc.listProgrammes(P.lrTeacher), /Quản trị/, 'GV xem được chương trình');
     assert(navOf(P.mbManager).bangQuyDoi && !navOf(P.mbManager).admin && !navOf(P.lrTeacher).bangQuyDoi, 'cờ nav cấu hình');
     /* PTA chốt 11/11 (PR-Dọn quét #10): số "đang dùng" (lộ quy mô) chỉ ở bản Quản trị. */

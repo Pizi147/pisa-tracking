@@ -14,8 +14,8 @@ export const EN_BAN_GIAO_GV = {
   'Bàn giao đã được xác nhận.': 'The handover is already confirmed.',
   'Bàn giao vừa được xác nhận.': 'The handover was just confirmed.',
   'Bạn không có quyền đọc bàn giao này.': 'You cannot read this handover.',
-  'Chỉ người được giao hoặc Quản lý lớp viết bàn giao.': 'Only the assigned writer or the class manager can fill in this handover.',
-  'Chỉ người được giao hoặc Quản lý lớp xác nhận bàn giao.': 'Only the assigned writer or the class manager can confirm this handover.',
+  'Chỉ người được giao hoặc Head lớp viết bàn giao.': 'Only the assigned writer or the class Head can fill in this handover.',
+  'Chỉ người được giao hoặc Head lớp xác nhận bàn giao.': 'Only the assigned writer or the class Head can confirm this handover.',
   'Cột này không có trong việc bàn giao.': 'This column is not part of the handover.',
   'Học viên không thuộc phiếu bàn giao này.': 'This student is not on this handover.',
   'Không hoàn tác được: việc bàn giao vừa tạo đã có góp ý — sửa trực tiếp ở bảng phân công.': 'Cannot undo: the new handover already has notes — edit directly in the assignment table.',
@@ -66,7 +66,7 @@ export const EN_BAN_GIAO_GV = {
   'Xác nhận bàn giao': 'Confirm handover',
   'Đã xác nhận bàn giao {lop}': 'Handover {lop} confirmed',
   'Chỉ đọc': 'Read only',
-  'Quản lý điền thay — góp ý ghi là điền thay.': 'Manager filling in — notes are marked as filled in.',
+  'Head điền thay — góp ý ghi là điền thay.': 'Head filling in — notes are marked as filled in.',
   'Lớp không còn em nào đang học.': 'No active students in this class.',
   /* dải hồ sơ lớp */
   '{mon} đã giao cho {ten} từ {ngay} · còn xem tới khi xong bàn giao, ít nhất tới {den}': '{mon} handed to {ten} from {ngay} · you can view until the handover is done, at least until {den}',
@@ -83,5 +83,5 @@ export const EN_BAN_GIAO_GV = {
   'Không tạo việc — huỷ việc bàn giao của {gv}.': "No new task — {gv}'s handover task is cancelled.",
   'Không tạo việc — việc bàn giao của {gv} chuyển người nhận sang {moi}.': "No new task — {gv}'s handover task now goes to {moi}.",
   'Đã hoàn tác — em về lại {lop}': 'Undone — the student is back in {lop}',
-  'Chỉ Quản lý lớp cũ của em hoàn tác được lần chuyển này.': "Only a Manager of the student's previous class can undo this transfer.",
+  'Chỉ Head lớp cũ của em hoàn tác được lần chuyển này.': "Only a Head of the student's previous class can undo this transfer.",
 } satisfies Record<string, Dich>;

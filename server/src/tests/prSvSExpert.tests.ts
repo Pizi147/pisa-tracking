@@ -69,7 +69,7 @@ export async function runPrSvSExpertTests(t: any) {
     const sid = em();
     assert(sex.themSEx(taoNguoi('office_admin', ['MB']), { studentId: sid, tuan }).id, 'Admin MB thêm');
     assert(sex.themSEx(P.admin, { studentId: sid, tuan }).id, 'QT thêm');
-    for (const [ten, p] of [['GV S', P.sTeacher], ['GVCN', P.coreTeacher], ['TVV', taoNguoi('consultant', ['MB'])], ['QL CP', P.cpManager]] as const) {
+    for (const [ten, p] of [['GV S', P.sTeacher], ['GVCN', P.coreTeacher], ['TVV', taoNguoi('consultant', ['MB'])], ['Head CP', P.cpManager]] as const) {
       assert(maLoi(() => sex.themSEx(p, { studentId: sid, tuan })) === 403, `${ten} thêm → 403`);
     }
     const sai: [string, Record<string, unknown>][] = [
