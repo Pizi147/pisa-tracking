@@ -484,7 +484,7 @@ export const TU_TVV: TuHd[] = [
   { ten: 'Cần chú ý trước', nghia: 'Cách xếp em trong lớp: việc quá hạn lên đầu, rồi SOS cao.' },
   { ten: 'Sắp thi', nghia: 'Em thi IELTS trong 6 tuần tới.' },
   { ten: 'Thiếu thông tin', nghia: 'Hồ sơ chưa đủ để theo dõi; điền đủ là hết.' },
-  { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Lộ trình mới · Tạm dừng / Kết thúc học.' },
+  { ten: 'Bước tiếp', nghia: 'Hướng sau thi thật: Tạm dừng / Kết thúc học · Học tiếp · Lộ trình mới.' },
   { ten: 'Phối hợp SOS', nghia: 'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting); TVV chỉ báo lại kết quả meeting CX/GĐCN.' },
 ];
 

@@ -7,8 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const GOC = ['web/src', 'shared', 'server/src'];
-// ponytail: 3 panel HOC-TIEP (đang sửa riêng) tạm miễn — gỡ khỏi regex khi PR HOC-TIEP merge (PanelSauThi còn 5 chỗ .toFixed(1)).
-const BO_QUA_TEP = /[\\/](tests|node_modules|dist)[\\/]|shared[\\/]domain[\\/]display\.ts$|(PanelSauThi|PanelBuocTiep|PanelLoTrinhMoi)\.tsx$/;
+const BO_QUA_TEP = /[\\/](tests|node_modules|dist)[\\/]|shared[\\/]domain[\\/]display\.ts$/;
 const KHONG_PHAI_BAND = /MB\b|KB\b|\bms\b|★|1e6|band-ok/;
 const IN_THANG = /\bString\(\s*(?:[\w$]+(?:[?!]?\.[\w$]+)*\.)?(band|overall|ovr|kyVong|expectation|dauVao|target|targetScore|target_score)\s*\)/;
 

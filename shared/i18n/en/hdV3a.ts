@@ -208,7 +208,7 @@ export const EN_HD_V3A = {
   'Kết quả thi thật đang mở': 'Real exam result open',
   'Điểm thi thật của một em và bước tiếp sau thi.': 'A student’s real exam scores and the next step after the exam.',
   'Gõ điểm từng kỹ năng (KET / PET: điểm Cambridge), lưu.': 'Type each skill score (KET / PET: Cambridge scale), save.',
-  'Bước tiếp (Tạm dừng / Kết thúc học, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.': 'The next step (Pause / End study, New pathway) is chosen by the student’s consultant — you only view it.',
+  'Bước tiếp (Tạm dừng / Kết thúc học, Học tiếp, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.': 'The next step (Pause / End study, Continue studying, New pathway) is chosen by the student’s consultant — you only view it.',
   'Thêm học viên đang mở': 'Add students open',
   'Thêm em mới vào lớp.': 'Add new students to the class.',
   'Xoá học viên': 'Delete student',

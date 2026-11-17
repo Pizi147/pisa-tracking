@@ -241,7 +241,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
   });
 
   await checkAsync('OV15e-11 · Thi thật lọc ngày thi qua chỉ mục (không quét learning_cycles); migrate chỉ mục chạy lặp được', async () => {
-    const plan = conn.prepare(`EXPLAIN QUERY PLAN ${kqt.SQL_THI_THAT}`).all('2026-01-01', '2026-12-31', '2026-01-01', '2026-12-31') as any[];
+    const plan = conn.prepare(`EXPLAIN QUERY PLAN ${kqt.SQL_THI_THAT}`).all('2026-01-01', '2026-12-31', '2026-01-01', '2026-12-31', '2026-01-01', '2026-12-31') as any[];
     const ke = plan.map((r: any) => r.detail).join(' | ');
     assert(/idx_cycle_thi_that_ngay/.test(ke) && /idx_cycle_khong_thi/.test(ke) && !/SCAN c\b/.test(ke), `kế hoạch: ${ke}`);
     const { migratePrOv15e } = await import('../migrate/prOv15e.ts');

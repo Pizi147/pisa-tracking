@@ -300,6 +300,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     /* PR-TK: bản chụp lộ trình của em (+ một dòng lượt) */
     const bc1 = ins(`INSERT INTO ban_chup_lo_trinh (cycle_id, student_id, lan, ly_do, dong_ngay, nguon, so_luot, created_at) VALUES (?,?, 1, 'ket_thuc', ?, 'luc_dong', 1, ?)`, y1, sid, TODAY, now);
     ins(`INSERT INTO ban_chup_luot (ban_chup_id, attempt_id, ky_nang) VALUES (?,?, 'listening')`, bc1, a1);
+    ins(`INSERT INTO thi_that_lich_su (cycle_id, student_id, cot_json, chon_luc, chon_boi, created_at) VALUES (?,?, '{}', ?, ?, ?)`, y1, sid, TODAY, U, now);   // HOC-TIEP — người chọn U (dấu vết)
     /* PR-OV12g: góp ý hàng tuần của em — người ghi U (dấu vết) */
     ins(`INSERT INTO gop_y_tuan (student_id, class_id, period_id, skill, noi_dung, ghi_boi, ghi_luc) VALUES (?,?,?, 'listening', 'Góp ý thử', ?, ?)`, sid, FT, KY, U, now);
     /* SV-BAI-LOP: bài trên lớp của em — người ghi / sửa U (dấu vết) */
@@ -340,20 +341,20 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { sid, ma, ten, y1, y2, a1, a2, c1, i1, f1, g1, v1, m1, x1, r1, task, tep };
   }
 
-  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (50 bảng — TINH-HINH thêm tinh_hinh_hoc_tap, BAO-CAO-PH thêm bao_cao_ph, PR-B thêm ban_giao_gv_em, P9a XET-LAI thêm xet_lai_lo_trinh, UI-HO-SO-LOP thêm danh_gia_dau_ra, SV-S-EXPERT thêm s_expert, SV-YT-TVV thêm viec_bao_ph, viec_bao_ph_lan, SV-BAI-LOP thêm bai_tren_lop, OV-15c thêm ghi_chu_lich_thi, OV-12g thêm gop_y_tuan, OV-12h thêm case_followup_buoi, OV-3b thêm lo_trinh_nhap, PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
+  check('PR-XOA X1 · Bao đóng theo PRAGMA foreign_key_list BẰNG ĐÚNG BANG_CUA_HOC_VIEN (51 bảng — HOC-TIEP thêm thi_that_lich_su, TINH-HINH thêm tinh_hinh_hoc_tap, BAO-CAO-PH thêm bao_cao_ph, PR-B thêm ban_giao_gv_em, P9a XET-LAI thêm xet_lai_lo_trinh, UI-HO-SO-LOP thêm danh_gia_dau_ra, SV-S-EXPERT thêm s_expert, SV-YT-TVV thêm viec_bao_ph, viec_bao_ph_lan, SV-BAI-LOP thêm bai_tren_lop, OV-15c thêm ghi_chu_lich_thi, OV-12g thêm gop_y_tuan, OV-12h thêm case_followup_buoi, OV-3b thêm lo_trinh_nhap, PR-YT4 thêm y_thuc_khai_bac, PR-LT2b thêm mini_test, PR-CT thêm lenh_chuyen_lop, ban_giao_mon, PR-MTa thêm ket_qua_huy, PR-TK thêm ban_chup_lo_trinh, ban_chup_luot)', () => {
     const tap = baoDongLuocDo();
     const coDinh = new Set(xoaHV.BANG_CUA_HOC_VIEN);
     const thieu = [...tap].filter((b) => !coDinh.has(b));
     const thua = [...coDinh].filter((b) => !tap.has(b));
     assert(!thieu.length, thieu.map((b) => `Bảng ${b} trỏ tới học viên mà xoaHocVien chưa xoá`).join('; '));
     assert(!thua.length, `BANG_CUA_HOC_VIEN có bảng không trỏ tới học viên: ${thua.join(', ')}`);
-    assert(tap.size === 50, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
+    assert(tap.size === 51, `Bao đóng đổi cỡ (${tap.size}) — cập nhật bảng tham chiếu của kế hoạch`);
   });
 
   check('PR-XOA X2 · Mỗi cạnh FK vào bao đóng có câu trong CAU_XOA_HOC_VIEN (DELETE theo cột, hoặc UPDATE … = NULL cho CANH_NULL); đủ owner_type tệp', () => {
     const tap = baoDongLuocDo();
     const vao = CANH.filter((c) => tap.has(c.toi));
-    assert(vao.length === 84, `Số cạnh vào bao đóng đổi (${vao.length})`);   // TINH-HINH: +1 (tinh_hinh_hoc_tap.student_id); YT-BAO-PH: +1 (viec_bao_ph.bao_lai_cua); BAO-CAO-PH: +1 (bao_cao_ph.student_id); PR-B: +1 (ban_giao_gv_em.student_id); P9a XET-LAI: +3 (xet_lai_lo_trinh.student_id, .lenh_id, .lenh_moi_id); UI-HO-SO-LOP: +1 (danh_gia_dau_ra.student_id); SV-S-EXPERT: +1 (s_expert.student_id); SV-YT-TVV: +3 (viec_bao_ph.student_id, .measure_id, viec_bao_ph_lan.viec_id); SV-BAI-LOP: +1 (bai_tren_lop.student_id); OV-15c: +2 (ghi_chu_lich_thi.student_id, .cycle_id); OV-12g: +1 (gop_y_tuan.student_id); OV-12h: +1 (case_followup_buoi.followup_id); OV-3b: +1 (lo_trinh_nhap.student_id); PR-MTa: +2 (ket_qua_huy.attempt_id, vuot_boi_attempt_id); PR-TK: +3 (ban_chup_lo_trinh.cycle_id, .student_id, ban_chup_luot.ban_chup_id)
+    assert(vao.length === 86, `Số cạnh vào bao đóng đổi (${vao.length})`);   // HOC-TIEP: +2 (thi_that_lich_su.cycle_id, .student_id); TINH-HINH: +1 (tinh_hinh_hoc_tap.student_id); YT-BAO-PH: +1 (viec_bao_ph.bao_lai_cua); BAO-CAO-PH: +1 (bao_cao_ph.student_id); PR-B: +1 (ban_giao_gv_em.student_id); P9a XET-LAI: +3 (xet_lai_lo_trinh.student_id, .lenh_id, .lenh_moi_id); UI-HO-SO-LOP: +1 (danh_gia_dau_ra.student_id); SV-S-EXPERT: +1 (s_expert.student_id); SV-YT-TVV: +3 (viec_bao_ph.student_id, .measure_id, viec_bao_ph_lan.viec_id); SV-BAI-LOP: +1 (bai_tren_lop.student_id); OV-15c: +2 (ghi_chu_lich_thi.student_id, .cycle_id); OV-12g: +1 (gop_y_tuan.student_id); OV-12h: +1 (case_followup_buoi.followup_id); OV-3b: +1 (lo_trinh_nhap.student_id); PR-MTa: +2 (ket_qua_huy.attempt_id, vuot_boi_attempt_id); PR-TK: +3 (ban_chup_lo_trinh.cycle_id, .student_id, ban_chup_luot.ban_chup_id)
     const sot: string[] = [];
     for (const c of vao) {
       const ok = laCanhNull(c)
@@ -622,12 +623,12 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
     return { id: userId, email, ten: `Thu Xoa ${ten} ${tkSeq}` };
   };
 
-  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (121 — LG-12 thêm 1 (violations.khong_xu_ly_boi), LG-5c thêm 2 thiết lập (gv_cham_cot.user_id, examiner_user_id), TINH-HINH thêm 3 (tinh_hinh_hoc_tap.nguoi_gui, tra_loi_boi, rut_boi), QTV2-HAN thêm 1 (cau_hinh_phien_ban.nguoi_id), BC-DOT-QL thêm 1 (bao_cao_ph_dot.nguoi), BAO-CAO-PH thêm 1 (bao_cao_ph.sua_boi), HAN-BAO-PH thêm 1 (viec_han_lan.boi), PR-B thêm 5 (ban_giao_gv.nguoi_cu, nguoi_lam, tao_boi, ban_giao_gv_mon.nguoi_moi, ban_giao_gv_em.nguoi_ghi), PC-GV-A thêm 3 (doi_phan_cong.nguoi_cu, nguoi_moi, tao_boi), BAND-QUY-DOI thêm 1 (bang_quy_doi.nguoi_id), P9a XET-LAI thêm 1 (xet_lai_lo_trinh.nguoi_id), UI-HO-SO-LOP thêm 1 (danh_gia_dau_ra.sua_boi), SV-LOP thêm 1 (s_expert.xoa_boi), SV-S-EXPERT thêm 3, SV-YT-TVV thêm 2, SV-BAI-LOP thêm 2, TU-a thêm 3, OV-15c thêm 1, OV-13k thêm 1, OV-12g thêm 1, OV-3b thêm 2, PR-YT4 thêm 3, PR-HSM thêm 1, PR-LT2b thêm 2, PR-CT thêm 4, PR-MTa thêm 2, PR-LUI-a2 thêm 1, PR-OV2a thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 11 cột thiết lập', () => {
+  check('PR-XOA T1 · COT_TRO_TAI_KHOAN (122 — HOC-TIEP thêm 1 (thi_that_lich_su.chon_boi), LG-12 thêm 1 (violations.khong_xu_ly_boi), LG-5c thêm 2 thiết lập (gv_cham_cot.user_id, examiner_user_id), TINH-HINH thêm 3 (tinh_hinh_hoc_tap.nguoi_gui, tra_loi_boi, rut_boi), QTV2-HAN thêm 1 (cau_hinh_phien_ban.nguoi_id), BC-DOT-QL thêm 1 (bao_cao_ph_dot.nguoi), BAO-CAO-PH thêm 1 (bao_cao_ph.sua_boi), HAN-BAO-PH thêm 1 (viec_han_lan.boi), PR-B thêm 5 (ban_giao_gv.nguoi_cu, nguoi_lam, tao_boi, ban_giao_gv_mon.nguoi_moi, ban_giao_gv_em.nguoi_ghi), PC-GV-A thêm 3 (doi_phan_cong.nguoi_cu, nguoi_moi, tao_boi), BAND-QUY-DOI thêm 1 (bang_quy_doi.nguoi_id), P9a XET-LAI thêm 1 (xet_lai_lo_trinh.nguoi_id), UI-HO-SO-LOP thêm 1 (danh_gia_dau_ra.sua_boi), SV-LOP thêm 1 (s_expert.xoa_boi), SV-S-EXPERT thêm 3, SV-YT-TVV thêm 2, SV-BAI-LOP thêm 2, TU-a thêm 3, OV-15c thêm 1, OV-13k thêm 1, OV-12g thêm 1, OV-3b thêm 2, PR-YT4 thêm 3, PR-HSM thêm 1, PR-LT2b thêm 2, PR-CT thêm 4, PR-MTa thêm 2, PR-LUI-a2 thêm 1, PR-OV2a thêm 1) BẰNG ĐÚNG tập cột FK trỏ users; đúng 11 cột thiết lập', () => {
     const coDinh = xoaTK.COT_TRO_TAI_KHOAN.map((x) => `${x.bang}.${x.cot}`);
     const thieu = COT_USERS.filter((k) => !coDinh.includes(k));
     const thua = coDinh.filter((k) => !COT_USERS.includes(k));
     assert(!thieu.length, thieu.map((k) => `Phân loại cột ${k} (dấu vết hay thiết lập)`).join('; '));
-    assert(!thua.length && coDinh.length === 121 && new Set(coDinh).size === 121, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
+    assert(!thua.length && coDinh.length === 122 && new Set(coDinh).size === 122, `thừa/trùng: ${thua.join(', ')} · ${coDinh.length}`);
     const tl = xoaTK.COT_TRO_TAI_KHOAN.filter((x) => x.loai === 'thiet_lap').map((x) => `${x.bang}.${x.cot}`).sort();
     assert(JSON.stringify(tl) === JSON.stringify(['demo_sessions.user_id', 'gv_cham_cot.examiner_user_id', 'gv_cham_cot.user_id', 'notifications.user_id', 'task_followers.user_id', 'teacher_assignments.user_id',
       'user_emails.user_id', 'user_permissions.user_id', 'user_prefs.user_id', 'user_roles.user_id', 'user_skills.user_id']), tl.join());

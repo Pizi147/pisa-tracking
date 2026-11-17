@@ -34,6 +34,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'ban_giao_gv_em',   // PR-B: góp ý bàn giao đổi GV của em
   'bao_cao_ph',   // BAO-CAO-PH: báo cáo gửi phụ huynh của em
   'tinh_hinh_hoc_tap',   // TINH-HINH: tình hình học tập GV ↔ TVV của em
+  'thi_that_lich_su',   // HOC-TIEP: KQ thi thật lần trước của lộ trình Học tiếp
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -141,6 +142,7 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   /* PR-TK: bản chụp lộ trình (bảng dòng lượt trước, bảng chính sau) — đứng trước learning_cycles / students */
   { bang: 'ban_chup_luot', sql: `DELETE FROM ban_chup_luot WHERE ban_chup_id IN (SELECT id FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y}))` },
   { bang: 'ban_chup_lo_trinh', sql: `DELETE FROM ban_chup_lo_trinh WHERE student_id = ?1 OR cycle_id IN (${Y})` },
+  { bang: 'thi_that_lich_su', sql: `DELETE FROM thi_that_lich_su WHERE student_id = ?1 OR cycle_id IN (${Y})` },   // HOC-TIEP
   { bang: 'gop_y_tuan', sql: 'DELETE FROM gop_y_tuan WHERE student_id = ?1' },   // PR-OV12g
   { bang: 'bai_tren_lop', sql: 'DELETE FROM bai_tren_lop WHERE student_id = ?1' },   // SV-BAI-LOP
   { bang: 's_expert', sql: 'DELETE FROM s_expert WHERE student_id = ?1' },   // SV-S-EXPERT

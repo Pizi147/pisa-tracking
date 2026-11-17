@@ -101,18 +101,19 @@ export async function runPrOv8aTests(t: YThucTestKit) {
     assert(hoSo(a.sid).archived_at === null && loTrinh(a.cy).buoc_tiep === null && viecBt(QL, a.sid).length === 1, 'Hoàn tác');
   }));
 
-  await checkAsync('OV8a-3 · Học tiếp LT2 → lộ trình mới ở lớp đã chọn, em hết Lưu trữ, bản chụp + kết quả thi lộ trình cũ còn; thiếu lớp → 400', () => thu(() => {
+  /* HOC-TIEP (N51, chủ SP 18/11): "Học tiếp lộ trình mới" của OV-8a nay là Lộ trình mới (LT2, lớp khác); `hoc_tiep` = cùng lộ trình chạy tiếp (prSvLoTrinh HT-*). */
+  await checkAsync('OV8a-3 · Lộ trình mới LT2 ở lớp khác (em đã Kết thúc) → lộ trình mới ở lớp đã chọn, em hết Lưu trữ, bản chụp + kết quả thi lộ trình cũ còn; Học tiếp (em đã nghỉ) → 400', () => thu(() => {
     const lop = taoLop(); const lt2 = taoLop('LT2');
     const a = emDaKetThuc(lop);
     thiThatSvc.datKetQuaThiThat(P.admin, a.cy, NHAP4);
     studentsSvc.archiveStudent(QL, a.sid);   // QL đã lưu trữ tay: Học tiếp vẫn đưa ra khỏi Lưu trữ
-    assert(maLoi(() => chon(QL, a.cy, { chon: 'hoc_tiep' })) === 400, 'Học tiếp phải chọn lớp');
-    chon(QL, a.cy, { chon: 'hoc_tiep', lopMoiId: lt2 });
+    assert(maLoi(() => chon(QL, a.cy, { chon: 'hoc_tiep' })) === 400, 'N51: em đã nghỉ → Học tiếp 400 (chọn Lộ trình mới)');
+    chon(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT2', lopMoiId: lt2 });
     const moi = dangChay(a.sid);
     assert(hoSo(a.sid).status === 'active' && hoSo(a.sid).archived_at === null, JSON.stringify(hoSo(a.sid)));
     assert(moi.length === 1 && moi[0].id !== a.cy && moi[0].route === 'LT2' && ghiDanhDang(a.sid).join() === String(lt2), JSON.stringify(moi));
     const b = get('SELECT * FROM ban_chup_lo_trinh WHERE cycle_id = ? ORDER BY lan DESC LIMIT 1', a.cy);
-    assert(b && b.thi_that_ovr === 6.5 && loTrinh(a.cy).status !== 'active' && loTrinh(a.cy).buoc_tiep === 'hoc_tiep', JSON.stringify(b));
+    assert(b && b.thi_that_ovr === 6.5 && loTrinh(a.cy).status !== 'active' && loTrinh(a.cy).buoc_tiep === 'lo_trinh_moi', JSON.stringify(b));
     assert(viecBt(QL, a.sid).length === 0, 'việc hết');
     assert(tongKetSvc.tongKetLoTrinh(QL, a.cy).huongTiep.khoa === 'len_lt2', 'Hướng tiếp theo Bước tiếp (LT1 → LT2)');
   }));
@@ -133,13 +134,13 @@ export async function runPrOv8aTests(t: YThucTestKit) {
       JSON.stringify([hoSo(a.sid), loTrinh(a.cy).status]));
   }));
 
-  await checkAsync('OV8a-5 · đổi lựa chọn: Kết thúc → Học tiếp đúng như chỉ chọn Học tiếp; Học tiếp → Kết thúc gỡ lộ trình mới; lộ trình mới đã có điểm → đi thẳng (HOTFIX-MO-KHOA)', () => thu(() => {
+  await checkAsync('OV8a-5 · đổi lựa chọn: Kết thúc → Lộ trình mới (lớp khác) đúng như chỉ chọn nó; Lộ trình mới → Kết thúc gỡ lộ trình mới; lộ trình mới đã có điểm → đi thẳng (HOTFIX-MO-KHOA)', () => thu(() => {
     const lop = taoLop(); const lt2 = taoLop('LT2');
     const a = emDaKetThuc(lop); const b = emDaKetThuc(lop);
     for (const x of [a, b]) thiThatSvc.datKetQuaThiThat(P.admin, x.cy, NHAP4);
     chon(QL, a.cy, { chon: 'ket_thuc' });
-    chon(QL, a.cy, { chon: 'hoc_tiep', lopMoiId: lt2 });
-    chon(QL, b.cy, { chon: 'hoc_tiep', lopMoiId: lt2 });
+    chon(QL, a.cy, { chon: 'lo_trinh_moi', route: 'LT2', lopMoiId: lt2 });
+    chon(QL, b.cy, { chon: 'lo_trinh_moi', route: 'LT2', lopMoiId: lt2 });
     const tom = (x: { sid: number; cy: number }) => JSON.stringify([hoSo(x.sid), ghiDanhDang(x.sid), dangChay(x.sid).map((c) => c.route), loTrinh(x.cy).status, loTrinh(x.cy).buoc_tiep]);
     assert(tom(a) === tom(b), `${tom(a)} ≠ ${tom(b)}`);
     assert(all(`SELECT 1 FROM journey_events WHERE cycle_id = ? AND title LIKE 'Sau thi:%'`, a.cy).length === 2, 'mỗi lần chọn một mốc');

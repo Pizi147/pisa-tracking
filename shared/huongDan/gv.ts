@@ -738,7 +738,7 @@ export const HD_GV: HuongDan = {
       id: 'p-sau-thi', ten: 'Kết quả thi thật đang mở', duong: [], panel: 'sau-thi', the: 'thi-that',
       dangO: { cau: 'Điểm thi thật của một em và bước tiếp sau thi.' },
       khongLam: [{ ten: 'Chọn bước tiếp sau thi', cua: 'việc của TVV' }],
-      muc: [{ id: 'pkt-ghi', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Gõ điểm từng kỹ năng (KET / PET: điểm Cambridge), lưu.', 'Bước tiếp (Tạm dừng / Kết thúc học, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.'] }],
+      muc: [{ id: 'pkt-ghi', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Gõ điểm từng kỹ năng (KET / PET: điểm Cambridge), lưu.', 'Bước tiếp (Tạm dừng / Kết thúc học, Học tiếp, Lộ trình mới) do TVV của em chọn — bạn chỉ xem.'] }],
     },
     {
       id: 'p-them-hv', ten: 'Thêm học viên đang mở', duong: [], panel: 'them-hv', the: 'them-hv',

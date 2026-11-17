@@ -92,6 +92,7 @@ import { migratePrGvCuBoTro } from './migrate/prGvCuBoTro.ts';
 import { migratePrBcPhViecGv } from './migrate/prBcPhViecGv.ts';
 import { migratePrKyVongTuDat } from './migrate/prKyVongTuDat.ts';
 import { migratePrTdQuet } from './migrate/prTdQuet.ts';
+import { migratePrHocTiep } from './migrate/prHocTiep.ts';
 import { migratePrCxN52 } from './migrate/prCxN52.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
@@ -198,6 +199,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* PR-OV11e: cột KCK theo lượt — TRƯỚC mọi bước tính kết quả lượt (`kckCuaLuot` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv11e(conn, applied));
     /* LO-TRINH-THEO-HV (chủ SP 11/11): cột assessment_attempts.route_at_attempt — TRƯỚC mọi bước tính kết quả lượt (câu lượt đọc `COALESCE(a.route_at_attempt, cy.route)`). Chỉ thêm cột. */ buoc(() => migratePrLoTrinhHv(conn, applied));
     /* MON-CT-1311: cột assessment_attempts.bo_mon — TRƯỚC mọi bước đọc bộ môn của lượt (`boMonTheoLuot`). Chỉ thêm cột. */ buoc(() => themCotPrMonCt1311(conn, applied));
+    /* HOC-TIEP (N51): bảng thi_that_lich_su — TRƯỚC mọi bước đọc cột sau thi (`ngayCoKq` đọc bảng này, vd prOv13q). Chỉ thêm bảng + chỉ mục. */ buoc(() => migratePrHocTiep(conn, applied));
     /* PR-OV13a: cột sos_cases.tam (Case tạm) — TRƯỚC mọi bước có thể chạy luật Case (đọc / ghi cột này). Chỉ thêm cột. */ buoc(() => themCotPrOv13a(conn, applied));
     /* SV-NX-CASE: cột sos_cases.mo_ta_attempt_id (nguồn mô tả Case MT) — TRƯỚC mọi bước có thể đồng bộ mô tả Case (`dongBoNguyenNhanMt` đọc cột này). Chỉ thêm cột. */ buoc(() => themCotPrSvNxCase(conn, applied));
     /* OV-13k: cột nhận xét GV phụ trách Speaking (assessment_scores) — TRƯỚC mọi bước đọc điểm (`scoresOf` / `diemCuaLuot` JOIN các cột này). Chỉ thêm cột. */ buoc(() => migratePrOv13k(conn, applied));

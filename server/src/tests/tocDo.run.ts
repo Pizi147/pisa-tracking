@@ -1500,8 +1500,10 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* DEM-VIEC (chủ SP 18/11): chụp lại 3 băm Quản trị (QT toi / tat-ca / tat-ca cn) — đổi CÓ CHỦ Ý: việc của QL chi nhánh (em chưa có TVV, Chốt lộ trình, Kỳ vọng, Xét lại,
        Xếp lịch MT, Phân công người phụ trách) ở chi nhánh có QL không còn là của Quản trị: "Của tôi" bỏ dòng, "Tất cả" giữ dòng với `mine: false`, `ownerId: null`.
        8 băm vai khác giữ nguyên. Trước: QT toi e6ce92ac5383842d, QT tat-ca 48f85bbf269d190a, QT tat-ca cn 74fce9d8e33ac72f */
+    /* HOC-TIEP (N51, 18/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý: gợi ý nhóm việc "Chọn bước tiếp" nói 3 hướng (Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới).
+       Đã kiểm (trước HEAD / DEM-VIEC): trả chữ gợi ý cũ → mọi băm trùng ảnh cũ. Trước: QT tat-ca 0b4978eb4ee4b434 */
     'QL toi': 'bae55443ea652c0f', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '0b4978eb4ee4b434',
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '3862f5c189798284',
     'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

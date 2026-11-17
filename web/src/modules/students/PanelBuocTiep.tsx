@@ -6,7 +6,7 @@ import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { CanLam, KhoiDaLuu, NutChu, TrangThaiLuu, dauViec, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
-import { KhoiDung, PanelLoTrinhMoi, type GiaTriDung } from './PanelLoTrinhMoi.tsx';
+import { HOC_TIEP_TRONG, KhoiDung, KhoiHocTiep, PanelLoTrinhMoi, loiHocTiep, thanHocTiep, type GiaTriDung, type GiaTriHocTiep } from './PanelLoTrinhMoi.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHU_DA_XONG, HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ngay, shortDate, tuanLich, type HuongSauThi, type LuaChonSauThi } from '@shared/domain/index.ts';
@@ -26,6 +26,10 @@ export type TrangThaiBuocTiep = {
   kqDaDoi?: boolean;
   /** N50 (12): đã đạt Target → Target gợi ý (+1.0) cho Lộ trình mới; null = giữ Target. */
   targetGoiY?: string | null;
+  /** N51: Học tiếp làm được (em đang học chính lộ trình này) — false: lựa chọn tắt kèm lý do. */
+  hocTiepDuoc?: boolean;
+  /** Rà PTA #1839: Học tiếp mà lần thi sau đã có dữ liệu — Hoàn tác / Đổi giữ phần đó (nhãn nhóm: "lịch thi", "KQ thi"…). */
+  lanSauGiu?: string[];
 };
 type Chon = HuongSauThi;
 
@@ -50,8 +54,8 @@ export function useKhoiPhucThiThat(cycleId: number, sau?: () => void) {
 
 /**
  * BƯỚC TIẾP SAU THI (OV-13m, mockup `mockup-ov13-buoc-tiep-2026-10-15.html` §1–3) — panel v3: đầu "Bước tiếp · Hạn …", kết quả thi một dòng "✓ Đã xong · OVR … · Sửa",
- * P7 (N12, mockup V6 `trang-thai-hv.html` k4): HAI nút lớn không chọn sẵn — "Tạm dừng / Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
- * tắt sẵn) · "Lộ trình mới" (nội dung panel đổi thành `PanelLoTrinhMoi`, ‹ Bước tiếp). Gia hạn 1 tuần, Lịch sử, Hoàn tác, Huỷ hẹn giữ. Đã chọn → khối trạng thái + Huỷ hẹn / Hoàn tác (Tạm dừng: Quay lại học = Lộ trình mới). GVCN / người
+ * P7 (N12, mockup V6 `trang-thai-hv.html` k4) + N51: BA nút lớn không chọn sẵn — "Tạm dừng / Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
+ * tắt sẵn) · "Học tiếp" (`KhoiHocTiep` ngay trong panel: chọn là xong, Target / Lớp tuỳ chọn) · "Lộ trình mới" (nội dung panel đổi thành `PanelLoTrinhMoi`, ‹ Bước tiếp). Gia hạn 1 tuần, Lịch sử, Hoàn tác, Huỷ hẹn giữ. Đã chọn → khối trạng thái + Huỷ hẹn / Hoàn tác (Tạm dừng: Quay lại học = Lộ trình mới). GVCN / người
  * không chọn được: chỉ đọc. Dùng ở panel Kết quả thi thật (đổi tại chỗ), ngăn Tổng kết, hồ sơ (`?buoc-tiep=`), Công việc.
  */
 export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKetQua, onClose, onDone, onTiep }: {
@@ -68,6 +72,8 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const [doi, setDoi] = useState(!!chonSan);
   const [chon, setChon] = useState<Chon | null>(chonSan ?? null);
   const [dung, setDung] = useState<GiaTriDung>({ ngay: '', lyDo: '', quayLai: false });
+  const [hocTiep, setHocTiep] = useState<GiaTriHocTiep>(HOC_TIEP_TRONG);
+  const [bamHt, setBamHt] = useState(false);
   const [tt, setTt] = useState<'dang' | 'loi' | null>(null);
   const [loi, setLoi] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ x: DaLuuPanel; luc: string } | null>(null);
@@ -108,6 +114,14 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
     void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, { chon: chonMay, date: dung.ngay || undefined, lyDo: dung.lyDo.trim() || undefined }),
       { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI[chonMay] }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI[chonMay] }), hoanTac: boChon });
   };
+  /* N51: Học tiếp — thân POST từ hai ô tuỳ chọn; lớp khác (đã chuyển ngay) thì máy chủ không hoàn tác chính xác được → không nút Hoàn tác ở khối Đã lưu. */
+  const luuHocTiep = () => {
+    setBamHt(true);
+    if (loiHocTiep(hocTiep, bt).length) return;
+    const doiLop = hocTiep.lopKhac && !!hocTiep.lopMoiId;
+    void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, thanHocTiep(hocTiep)),
+      { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI.hoc_tiep }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI.hoc_tiep }), hoanTac: doiLop ? undefined : boChon });
+  };
   const viecTiep = onTiep
     ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{t('Việc tiếp ›')}</button>
     : <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button>;
@@ -120,7 +134,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
       <span className="flex-1" />
       {/* OV-13q: Gia hạn — hộp nhỏ đè panel này (không đóng panel). */}
       {!bt.chon && bt.coTheGiaHan && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setGiaHan(true)}>{t('Gia hạn')}</button>}
-      {onSuaKetQua && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSuaKetQua}>{t('Sửa')}</button>}
+      {onSuaKetQua && bt.chon !== 'hoc_tiep' && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={onSuaKetQua}>{t('Sửa')}</button>}
       <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 sm:min-h-0" onClick={() => setLichSu(true)}>{t('Lịch sử')}</button>
       {giaHan && <HopGiaHan x={{ cycleId, han: bt.han, daGiaHan: bt.daGiaHan }} hocVien={em?.ten || null} lop={lop ?? bt.lopNay?.code ?? null}
         onClose={() => setGiaHan(false)} onDone={() => { reload(); onDone?.(); }} />}
@@ -150,6 +164,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
         </div>
         {/* SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — nhắc nhẹ, không chặn. */}
         {bt.chon && bt.kqDaDoi && <p className="m-0 mt-2 text-sm text-soon">{t('Kết quả đã đổi — xem lại bước tiếp?')}</p>}
+        {bt.chon === 'hoc_tiep' && !!bt.lanSauGiu?.length && <p className="m-0 mt-2 text-sm text-slate-400">{t('Đã có dữ liệu lần thi sau ({ds}) — Hoàn tác / Đổi giữ nguyên phần này.', { ds: bt.lanSauGiu.map((x) => dich(x)).join(', ') })}</p>}
         {bt.chon && bt.coTheChon && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {/* SUA-LUU-TRU (việc 3): Đổi = chọn lại tại chỗ (máy chủ gỡ lựa chọn cũ + làm mới, một giao dịch). HOTFIX-MO-KHOA: luôn bấm được — không hoàn tác
@@ -176,10 +191,13 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   }
   const nut = chon === 'dung'
     ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuDung} disabled={tt === 'dang'}>{dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc}</button>
-    : undefined;
+    : chon === 'hoc_tiep'
+      ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuHocTiep} disabled={tt === 'dang' || bt.hocTiepDuoc === false}>{NHAN_SAU_THI.hoc_tiep}</button>
+      : undefined;
+  const luuChon = chon === 'hoc_tiep' ? luuHocTiep : luuDung;
   return (
     <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} quayLai={quayLai} onDong={onClose}
-      chan={{ v3: true, daSua: chon === 'dung', chinh: nut, dongTren: chon ? <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={luuDung} /> : undefined }}>
+      chan={{ v3: true, daSua: chon === 'dung' || chon === 'hoc_tiep', chinh: nut, dongTren: chon ? <TrangThaiLuu tt={tt ?? 'nhap'} loi={loi} onThuLai={luuChon} /> : undefined }}>
       {dongKetQua}
       <div className="pt-3">
         <CanLam>
@@ -189,19 +207,21 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
               <NutChu onClick={() => { setDoi(false); setChon(null); setTt(null); setLoi(null); }}>{t('Giữ lựa chọn cũ')}</NutChu>
             </p>
           )}
-          <div role="group" aria-label={tieuDe} className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
+          <div role="group" aria-label={tieuDe} className="grid grid-cols-1 gap-2.5">
             {HUONG_SAU_THI.map((k) => (
               <button key={k} type="button" aria-pressed={chon === k} onClick={() => setChon(k)}
-                className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'border-[color:var(--line)] text-slate-100 hover:border-[color:var(--accent)]'}`}>
+                /* Chủ SP 18/11 "khung rõ": ô nền surface + viền mạnh trên nền nhấn của khối; ô đang chọn viền nhấn 2 px + nền nhấn nhạt. */
+                className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'border-[color:var(--line-strong)] bg-[color:var(--surface)] text-slate-100 hover:border-[color:var(--accent)]'}`}>
                 {NHAN_HUONG_SAU_THI[k]}
                 <span className="text-[13px] font-normal text-slate-400">
-                  {k === 'dung' ? t('Em vào Lưu trữ') : t('LT1 · LT2 · RF · Khác')}{bt.goiY === k ? ` · ${t('gợi ý')}` : ''}
+                  {k === 'dung' ? t('Em vào Lưu trữ') : k === 'hoc_tiep' ? t('Giữ lộ trình, lớp, Target') : t('LT1 · LT2 · RF · Khác')}{bt.goiY === k ? ` · ${t('gợi ý')}` : ''}
                 </span>
               </button>
             ))}
           </div>
           {chon === 'dung' && <KhoiDung v={dung} onChange={setDung} loTrinh={null} disabled={tt === 'dang'} />}
-          {chon === 'dung' && <div className="hidden flex-wrap items-center gap-2 sm:flex">{nut}</div>}
+          {chon === 'hoc_tiep' && <KhoiHocTiep bt={bt} v={hocTiep} onChange={setHocTiep} loTrinh={null} bamLuu={bamHt} disabled={tt === 'dang'} />}
+          {(chon === 'dung' || chon === 'hoc_tiep') && <div className="hidden flex-wrap items-center gap-2 sm:flex">{nut}</div>}
         </CanLam>
       </div>
     </KhungPanel>
