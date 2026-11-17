@@ -16,6 +16,7 @@ import { NHAN_TRANG_THAI, TONE_BADGE_TRANG_THAI } from './trangThai.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 import { dich as dichChuoi, t } from '../i18n/index.ts';
 import { kyGhiKetQua } from './display.ts';
+import { fmtBand } from './display.ts';
 
 // ---------------------------------------------------------------- chung
 
@@ -257,7 +258,7 @@ export type KetQuaHien = {
   dong2: string | null;          // "Không đạt: L R W" · "Không đạt: L G+V" · null
 };
 
-const band1 = (n: number) => n.toFixed(1);
+const band1 = (n: number) => fmtBand(n);
 const noiDong = (...p: (string | null | false)[]) => p.filter(Boolean).join(' · ');
 
 /**

@@ -5,6 +5,7 @@ import { lopKq } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { DongKhungPanel, KhungTrongThe, NhanTruongDam, useChoHoanTac } from './KhungPanel.tsx';
 import { LOP_GIA_TRI, LOP_NHAN } from './ui.tsx';
+import { fmtBand } from '../lib/format.ts';
 
 /** "✓ Đã lưu" — MỘT lớp màu cho mọi nơi báo đã lưu: LUÔN XANH (chủ SP 14/11, DESIGN.md V12 — thay K-HTT-3 xám). */
 export const LOP_DA_LUU = 'text-ok';
@@ -282,7 +283,7 @@ export function DaiVuaLuu({ x, ai, onHoanTac }: { x: DaLuuPanel; ai: string | nu
 
 /** Điểm trong dòng bối cảnh (P2): dưới kỳ vọng = đỏ ✗, đạt = xanh ✓ (cùng token `kq-*` của ô điểm); không kỳ vọng → số thường. */
 export function DiemKq({ diem, kyVong }: { diem: number; kyVong?: number | null }) {
-  const so = diem.toFixed(1);
+  const so = fmtBand(diem);
   if (kyVong == null) return <span className="tabular-nums">{so}</span>;
   const dat = diem >= kyVong;
   return <span className={`font-bold tabular-nums ${lopKq(mucDiem(dat, diem, kyVong))}`}><span aria-hidden>{dat ? '✓ ' : '✗ '}</span>{so}</span>;

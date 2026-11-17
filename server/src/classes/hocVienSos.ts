@@ -25,6 +25,7 @@ import { standingFor } from '../students/standing.ts';
 import { diemTuStanding } from '../worklist/diemDong.ts';
 import { sauThiCuaEm } from '../loTrinh/thiThat.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 export type CaseTomTat = {
   id: number; topic: string | null; kyNang: string | null;
@@ -218,7 +219,7 @@ export function panelMotEm(p: Principal, studentId: number) {
   return {
     em: { id: s.id as number, ten: s.full_name as string, ma: s.student_code as string, lop: s.lop_id ? { id: s.lop_id as number, code: s.lop_code as string, ft: !!s.is_fast_track } : null,
       tvv: em.tvv, lienHe: em.lienHe,
-      target: lt ? (lt.target_score != null ? `${Number(lt.target_score).toFixed(1)}${lt.khong_cam_ket ? ' KCK' : ''}` : lt.khong_cam_ket ? 'KCK' : null) : null,
+      target: lt ? (lt.target_score != null ? `${fmtBand(lt.target_score)}${lt.khong_cam_ket ? ' KCK' : ''}` : lt.khong_cam_ket ? 'KCK' : null) : null,
       lichThi: lich && lich.trangThai !== 'chua-co' ? lich : null },
     /* Dòng 2 đầu panel: lượt gần nhất · SOS (không mã HV — panel v3 "Đã lược bỏ"). PANEL-MC (B5): + tạm, kỹ năng hụt, số cho hộp "Vì sao SOS" (CÙNG `chipSosTuKetQua` của bảng). */
     luot: st ? { nhan: st.attemptLabel, sosLevel: st.sosLevel ?? null, tam: st.provisional, kyNang: chip?.kyNang ?? [], soLieu: chip?.soLieu ?? [] } : null,

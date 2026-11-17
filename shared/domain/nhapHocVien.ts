@@ -5,6 +5,7 @@
 import { docONgay } from './oNgay.ts';
 import { mondayOfDate } from './week.ts';
 import { t } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 export type MucVanDe = 'loi' | 'luu_y';
 /** Một vấn đề của một ô. `loi` chặn thêm dòng đó; `luu_y` chỉ để biết. `row` = số dòng trong lưới (0 = cả lô). */
@@ -147,7 +148,7 @@ export function tachKck(v: unknown): { so: unknown; kck: boolean } {
 }
 /** Chữ ô Target (lưới nhập, gửi máy chủ): "6.5 KCK" · "KCK" · "6.5" · "". */
 export const chuTargetKck = (target: number | string | null | undefined, kck: boolean | null | undefined): string => {
-  const so = target === null || target === undefined ? '' : String(target);
+  const so = target === null || target === undefined ? '' : typeof target === 'number' ? fmtBand(target) : String(target);   // band-ok: chuỗi người dùng đang gõ giữ nguyên
   return kck ? (so ? `${so} ${KCK}` : KCK) : so;
 };
 /** Ô Target dạng chữ (lưới nhập, dán Excel, Sửa cả lớp): "-" / "kck" → "KCK", "6.5 kck" → "6.5 KCK"; còn lại giữ nguyên. */
@@ -157,7 +158,7 @@ export function chuanOTarget(v: string): string {
 }
 /** Hiện Target ở mọi màn / Hành trình: "6.5 · KCK" · "— · KCK" (KCK mà chưa có Target) · "6.5" · "—". */
 export const hienTargetKck = (target: number | string | null | undefined, kck: boolean | null | undefined): string => {
-  const so = target === null || target === undefined ? '—' : String(target);
+  const so = fmtBand(target);
   return kck ? `${so} · ${KCK}` : so;
 };
 

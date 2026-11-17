@@ -13,6 +13,7 @@ import type { Huong } from './lenLop.ts';
 import { ASSESSED_SKILLS, type AssessedSkill } from './skills.ts';
 import { goiYKyVong } from './cuoiKhoa.ts';
 import { t } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 /** Chương trình có MT0 (không Pre FOU). */
 export const MT0_CHUONG_TRINH: readonly ProgrammeCode[] = ['FOU', 'BE', 'ELE'];
@@ -83,4 +84,4 @@ export function nhanMt0(tt: TrangThaiMt0): string {
 
 /** Chip SOS MT0: `W 4.0 SOS`. */
 export const chipSosMt0 = (x: { skill: AssessedSkill; band: number }): string =>
-  `${x.skill[0].toUpperCase()} ${x.band.toFixed(1)} SOS`;
+  `${x.skill[0].toUpperCase()} ${fmtBand(x.band)} SOS`;

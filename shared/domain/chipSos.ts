@@ -5,6 +5,7 @@
 import { t } from '../i18n/index.ts';
 import { skillShort, tenMonNgan } from './normal.ts';
 import type { KetQuaVao } from './hocVienLop.ts';
+import { fmtBand } from './display.ts';
 
 export type VaoChipSos = {
   muc: number;
@@ -51,8 +52,8 @@ export function soLieuSos(r: { expectation: number | null; verdicts: { skill: st
   return {
     kyNang: v.filter((x) => x.passed === false).map((x) => skillShort(x.skill)),
     soLieu: [
-      ...(r.expectation !== null ? [[dot ? t('Kỳ vọng {dot}', { dot }) : t('Kỳ vọng'), r.expectation.toFixed(1)] as [string, string]] : []),
-      ...v.map((x) => [skillShort(x.skill), x.band === null ? '—' : x.band.toFixed(1)] as [string, string]),
+      ...(r.expectation !== null ? [[dot ? t('Kỳ vọng {dot}', { dot }) : t('Kỳ vọng'), fmtBand(r.expectation)] as [string, string]] : []),
+      ...v.map((x) => [skillShort(x.skill), x.band === null ? '—' : fmtBand(x.band)] as [string, string]),
     ],
   };
 }
@@ -70,8 +71,8 @@ export function chipSosTuKetQua(k: KetQuaVao | null): (VaoChipSos & { soLieu: Ar
   return { muc: k.sosLevel, tam: k.provisional, dot,
     kyNang: k.belowSkills.map((b) => skillShort(b.skill)),
     soLieu: [
-      ...(k.expectation !== null ? [[dot ? t('Kỳ vọng {dot}', { dot }) : t('Kỳ vọng'), k.expectation.toFixed(1)] as [string, string]] : []),
-      ...k.belowSkills.map((b) => [skillShort(b.skill), b.band.toFixed(1)] as [string, string]),
+      ...(k.expectation !== null ? [[dot ? t('Kỳ vọng {dot}', { dot }) : t('Kỳ vọng'), fmtBand(k.expectation)] as [string, string]] : []),
+      ...k.belowSkills.map((b) => [skillShort(b.skill), fmtBand(b.band)] as [string, string]),
     ] };
 }
 

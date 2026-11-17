@@ -455,3 +455,16 @@ export function thoiGianThongBao(iso: string | null | undefined, homNay: string)
   const dm = `${shortDate(ngayVn, homNay)} ${gio}`;
   return ngayVn > homNay ? t('Ghi nhận {dm}', { dm }) : dm;
 }
+
+/**
+ * ĐIỂM BAND HIỂN THỊ (luật N53, chủ SP 18/11): luôn MỘT chữ số thập phân — "7.0", "6.5", không bao giờ "7". Trống = "—" (KHÁC điểm 0).
+ * Mọi chỗ hiện band / Target / Overall / kỳ vọng / đầu vào đi qua ĐÂY (web `lib/format.ts` re-export; máy chủ, PDF, Excel gọi thẳng).
+ * Nhận số hoặc chuỗi số ("7" từ ô nhập). Giá trị > 9 (thang Cambridge KET / PET, vd 140) và chuỗi không phải số giữ nguyên.
+ * Chỉ đổi PHẦN HIỂN THỊ; giá trị lưu DB / JSON không đổi.
+ */
+export function fmtBand(n: number | string | null | undefined): string {
+  if (n === null || n === undefined || (typeof n === 'string' && n.trim() === '')) return '—';
+  const x = Number(n);
+  if (!Number.isFinite(x)) return String(n);
+  return x > 9 ? String(n).trim() : x.toFixed(1);
+}

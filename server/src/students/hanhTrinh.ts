@@ -14,6 +14,7 @@ import { loTrinhTinhTuan } from '../fasttrack/cycles.ts';
 import { boTaskCuaDong, monLuotSql } from '../fasttrack/skillSchedule.ts';
 import { mt0TheoHocVien } from '../fasttrack/mt0.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 /**
  * MÁY CHỦ CỦA TAB HÀNH TRÌNH (PR-Qb, spec §3.8; PR-VAI-b Task 9, mockup 26 bản 2 + bản 1) — trả dữ liệu THÔ; mọi nhãn, màu, tầng tính ở
@@ -362,7 +363,7 @@ export function hanhTrinhHocVien(p: Principal, studentId: number, giaiDoanMuon: 
     } : null;
     const lenh = lenhRows.filter((l) => l.lop_nguon_id === e.class_id).at(-1);
     const target = cy && (cy.khong_cam_ket || cy.target_score != null)   // OV-9: "6.5 · KCK"
-      ? hienTargetKck(cy.target_score != null ? Number(cy.target_score).toFixed(1) : null, !!cy.khong_cam_ket) : null;
+      ? hienTargetKck(cy.target_score != null ? fmtBand(cy.target_score) : null, !!cy.khong_cam_ket) : null;
     return {
       enrollmentId: e.id, classId: e.class_id, code: e.class_code, ngan: String(e.class_code).split(' ').slice(1).join(' ') || e.class_code,
       nhan: ft ? ['FT', cy?.route, dangHoc ? 'đang học' : target ? `Target ${target}` : null].filter(Boolean).join(' · ') : `${e.class_programme ?? '—'} · lớp thường`,

@@ -19,6 +19,7 @@ import { NGON_NGU, t } from '../i18n/index.ts';
 import { kyHieuLop } from './tenLop.ts';
 import type { DiemHv } from './diemDong.ts';
 import { hienTargetKck, tachKck } from './nhapHocVien.ts';
+import { fmtBand } from './display.ts';
 
 /**
  * PR-S3 (chủ sản phẩm 02/10): bộ chữ chuyển lớp — MỘT nơi. Quyết định của Quản lý (6 hướng) gọi là "Quyết định chuyển lớp"; chữ "lệnh"
@@ -129,7 +130,7 @@ export const ghepMucTieu = (target: number | null | undefined, kck: boolean | nu
 /** Hiện Target của lệnh: "6.5 · KCK" · "— · KCK" · "6.5". */
 export const hienMucTieu = (m: MucTieuLenh): string => {
   const t = tachMucTieu(m);
-  return hienTargetKck(t.target !== null ? t.target.toFixed(1) : null, t.kck);
+  return hienTargetKck(t.target !== null ? fmtBand(t.target) : null, t.kck);
 };
 const mucTieuHopLe = (m: MucTieuLenh | null | undefined) => {
   if (m === null || m === undefined) return false;

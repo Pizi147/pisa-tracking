@@ -32,6 +32,7 @@ import { mucThiTheoGv, oThiGv, SKILL_KN, type MucThiGv } from './thiThatThongKe.
 import { t } from '../../../shared/i18n/index.ts';
 import { dongBaiThuongCua, dongLuotDiemCua, ganLuotDiem, nguongCua } from './tongHop.ts';
 import { KN_LUOT_CUA, NHAN_KN_LUOT, duongCaseRieng, duongDotTest, tabViecHanCua, tachBaiId, type DongTangGiam, type DongViecHan } from '../../../shared/domain/index.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 const LO = 400;
 const KN_NGAN: Record<KnDay, string> = { l: 'L', r: 'R', w1: 'W1', w2: 'W2', s: 'S' };
@@ -940,14 +941,14 @@ function oChiSoCua(p: Principal, c: NguCanhPtGv, gv: number, cot: string, pTap: 
     const tb = !kq ? tapTienBo(c, nap) : null;
     const tap = tb ? tb.get(gv) : kq![2] ? tapKq!.get(kq![2])?.get(gv) : gopTap(...[...tapKq!.values()].map((t) => t.get(gv)));
     const theoMuc = new Map(muc.map((m) => [m.x.id, m]));
-    const diem = (x: OBai) => (x.band !== null ? `${tenMonNgan(c.lop.get(x.classId)?.ct ?? null, x.skill)} ${x.band.toFixed(1)}` : null);
+    const diem = (x: OBai) => (x.band !== null ? `${tenMonNgan(c.lop.get(x.classId)?.ct ?? null, x.skill)} ${fmtBand(x.band)}` : null);
     /* V5 C09: dòng phụ ghi Overall + kỳ vọng / Target — đọc được vì sao kỹ năng dưới kỳ vọng vẫn tính Đạt. */
     const ky = (x: OBai) => {
       const m = theoMuc.get(x.id);
-      if (m) return [diem(x), m.ovr !== null ? `Overall ${m.ovr.toFixed(1)}` : null, m.kv !== null ? `kỳ vọng ${m.kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
+      if (m) return [diem(x), m.ovr !== null ? `Overall ${fmtBand(m.ovr)}` : null, m.kv !== null ? `kỳ vọng ${fmtBand(m.kv)}` : null].filter(Boolean).join(' · ');
       const a = nap.attempts.get(x.attemptId);
       const kv = a && a.scoring_mode !== 'ratio' ? expectationFor(a.target_score ?? null, a.attempt_no, a.route, a.created_at) : null;
-      return [diem(x), kv !== null ? `kỳ vọng ${kv.toFixed(1)}` : null].filter(Boolean).join(' · ');
+      return [diem(x), kv !== null ? `kỳ vọng ${fmtBand(kv)}` : null].filter(Boolean).join(' · ');
     };
     const o = new Map(nap.o.map((x) => [x.id, x]));
     const diemLuot = (x: OBai): Partial<MetricRow> => {
@@ -1211,7 +1212,7 @@ function oChiSoHoSoGvDu(p: Principal, gvId: number, q: QHoSoGv & { cot: string; 
         diemHv: { luot: t('Thi thật'), tuan: x.ngayThi ?? '', tam: false, overall: kq.ovr, soVoi,
           kn: (['l', 'r', 'w', 's'] as const).map((k) => ({ k: k.toUpperCase(), v: kq[k], dat: kq[k] === null || kq.target === null ? null : kq[k]! >= kq.target, cua: k === m.kn[0] })), thiThat: { cycleId: x.cycleId, ten: x.ten } },
         /* một em có thể có nhiều mục (nhiều kỹ năng, hai lần thi) — id theo dòng */ id: i + 1, title: x.ten, href: `/hoc-vien/${x.studentId}`, lop: x.lop,
-        sub: [x.lop, `${t('Thi thật')} ${ngay}`, `${kn} ${m.band.toFixed(1)}`, soVoi ? `Target ${soVoi.v.toFixed(1)}` : null,
+        sub: [x.lop, `${t('Thi thật')} ${ngay}`, `${kn} ${fmtBand(m.band)}`, soVoi ? `Target ${fmtBand(soVoi.v)}` : null,
           NHAN_MUC_THI[m.muc]].filter(Boolean).join(' · '),   // V2: bỏ trọng số tuần dạy
       };
     });

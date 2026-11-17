@@ -30,6 +30,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { classProgress, classProgressMany, lichMtCua, suggestedMockWeeks, type SuggestedMock } from '../classes/schedule.ts';
 import { planRegularTests, programmeByCode, programmeOfClass, taoCheckpointTay } from '../normal/regular.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
 const CAU_XAC_NHAN = 'Xác nhận lại nếu vẫn muốn xếp vào tuần này.';
@@ -278,7 +279,7 @@ function diemChu(cheDo: CheDo, row: any, scores: any[]): string | undefined {
     return s ? `${s.raw_score}${s.raw_total != null ? `/${s.raw_total}` : ''}` : undefined;
   }
   const ds = (entrySkillsOf(row.skill) as string[]).map((k) => scores.find((x) => x.skill === k)?.band).filter((b) => b !== null && b !== undefined);
-  return ds.length ? ds.map((b) => Number(b).toFixed(1)).join(' / ') : undefined;
+  return ds.length ? ds.map((b) => fmtBand(b)).join(' / ') : undefined;
 }
 
 /**

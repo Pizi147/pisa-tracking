@@ -26,6 +26,7 @@ import {
   quyCheChotLoTrinh, thuNgay, tuanLich, type GoiYCuoiKhoa, type HuongLenh, type MucTieuLenh, type ProgrammeCode, type RegularSkill,
 } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const BanGiaoPanel = lazyHop(() => import('./BanGiaoPanel.tsx').then((x) => x.BanGiaoPanel));
 
@@ -62,7 +63,7 @@ type Dong = { huong: ChonHuong; quayLai: boolean; lop: number | null; tuan: stri
 const NGAN: Record<RegularSkill, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 const huongLenh = (d: Pick<Dong, 'huong' | 'quayLai'>): HuongLenh | null => (d.huong === 'dung' ? (d.quayLai ? 'bao_luu' : 'dung_hoc') : d.huong || null);
 const chonCua = (h: HuongLenh | null | undefined): ChonHuong => (h === 'bao_luu' || h === 'dung_hoc' ? 'dung' : h === 'chuyen_lop' || !h ? '' : h);
-const b1 = (n: number | null) => (n === null ? '—' : n.toFixed(1));   // KY-VONG-MT0: có kỹ năng Đã huỷ → không Overall
+const b1 = (n: number | null) => (n === null ? '—' : fmtBand(n));   // KY-VONG-MT0: có kỹ năng Đã huỷ → không Overall
 
 /** Lớp chuyển đến hợp lệ cho hướng: FT → lớp FT; Lên → chương trình kế; Học lại → cùng hoặc thấp hơn (`maHocLai`). Ứng viên máy chủ đã lọc cùng chi nhánh (N17). */
 function lopTheoHuong(ds: readonly Lop[], huong: ChonHuong, ma: ProgrammeCode | null, ke: ProgrammeCode | null): Lop[] {
@@ -161,7 +162,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     const c = e.kqdr?.chot;
     return {
       huong, quayLai: l ? l.huong !== 'dung_hoc' : true, lop: l?.lopDichId ?? null, tuan: l?.tuan ?? tuanChung,
-      lyDo: (e.lenh ? e.lenh.lyDo : e.nhap?.ghiChu) ?? '', target: tg?.target != null ? String(tg.target) : '', kck: !!tg?.kck, xemLai: l?.ngayXemLai ?? '',
+      lyDo: (e.lenh ? e.lenh.lyDo : e.nhap?.ghiChu) ?? '', target: tg?.target != null ? fmtBand(tg.target) : '', kck: !!tg?.kck, xemLai: l?.ngayXemLai ?? '',
       kv: c ? { dat: c.dat, nn: c.nguyenNhan, mon: c.mon, phuongAn: c.ghiChu ?? '' } : null,
     };
   };

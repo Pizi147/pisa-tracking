@@ -97,7 +97,7 @@ const btnLink = 'link appearance-none border-0 bg-transparent p-0';
 const kqChu = (kq: KqThiThat | null): ReactNode => {
   if (!kq) return t('Có KQ');
   if (kq.khongThi) return t('Không thi');
-  return <span className={`lt-kq ${kq.dat === true ? 'dat' : kq.dat === false ? 'duoi' : ''}`}>{kq.ovr!.toFixed(1)}</span>;
+  return <span className={`lt-kq ${kq.dat === true ? 'dat' : kq.dat === false ? 'duoi' : ''}`}>{fmtBand(kq.ovr!)}</span>;
 };
 
 /** Chữ MỘT dòng của ô Lịch thi (lời 37: không dòng phụ — nơi thi, hạn bước tiếp, lịch sử ở phần mở). */
@@ -143,7 +143,7 @@ export function CotMt({ r }: { r: HangHien }) {
   if (st?.overall == null) return <span className="text-faint">—</span>;
   const dat = datKv(st.overall, st.expectation, r.kck);
   const phu = [st.attemptLabel, r.chiTiet.mtTuan ? tuanLich(r.chiTiet.mtTuan, homNay) : null].filter(Boolean).join(' · ');
-  return <><span className={`lt-diem ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{st.overall.toFixed(1)}</span>{phu && <span className="lt-diem-phu">{phu}</span>}</>;
+  return <><span className={`lt-diem ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{fmtBand(st.overall)}</span>{phu && <span className="lt-diem-phu">{phu}</span>}</>;
 }
 /* AUDIT-UI HSL2 (G6): KCK không gạch chấm; chưa có Target thì chỉ "KCK"; nghĩa ở title. */
 export const CotTarget = ({ r }: { r: HangHien }) => (r.kck
@@ -259,7 +259,7 @@ const mocLs = (x: DongLichSu, homNay: string) => (x.ngay ? (x.ngay.length === 7 
 
 /** ↑0.5 · ↓1.0 · = so với MT trước (không có lượt trước / thiếu điểm → không dòng). */
 const doiDiem = (v: number | null, p: number | null | undefined): string | null =>
-  v == null || p == null ? null : v === p ? '=' : `${v > p ? '↑ ' : '↓ '}${Math.abs(v - p).toFixed(1)}`;
+  v == null || p == null ? null : v === p ? '=' : `${v > p ? '↑ ' : '↓ '}${fmtBand(Math.abs(v - p))}`;
 
 /** Ô % một môn lớp thường (cùng dáng ô kỹ năng FT): ✓ đạt ngưỡng · ✗ chưa đạt · không dấu = chưa chấm / không xét. */
 function OPt({ nhan, v, dat }: { nhan: string; v: number | null; dat: boolean | null }) {
@@ -275,9 +275,9 @@ function OPt({ nhan, v, dat }: { nhan: string; v: number | null; dat: boolean | 
 function OKn({ nhan, v, kv, kck, dl, ovr }: { nhan: string; v: number | null; kv: number | null; kck: boolean; dl: string | null; ovr?: boolean }) {
   const dat = datKv(v, kv, kck);
   return (
-    <span className={`lt-okn ${ovr ? 'ovr' : ''}`} role="img" aria-label={[nhan, v == null ? '—' : v.toFixed(1), dat === false ? t('Dưới kỳ vọng') : null, dl].filter(Boolean).join(' ')}>
+    <span className={`lt-okn ${ovr ? 'ovr' : ''}`} role="img" aria-label={[nhan, v == null ? '—' : fmtBand(v), dat === false ? t('Dưới kỳ vọng') : null, dl].filter(Boolean).join(' ')}>
       <span className="okn-t">{nhan}</span>
-      <span className={`lt-okn-so ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{v == null ? '—' : v.toFixed(1)}</span>
+      <span className={`lt-okn-so ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{v == null ? '—' : fmtBand(v)}</span>
       {dl && <span className={`lt-okn-dl ${dl === '=' ? 'bang' : ''}`}>{dl}</span>}
     </span>
   );
@@ -315,7 +315,7 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
       : st.khongChiaMon ? (st.tyLeTong != null ? [['', { v: st.tyLeTong * 100, dat: null }]] : [])
         : Object.entries(st.skills ?? {}).map(([k, x]) => [k, { v: x.v, dat: x.evaluable ? !x.under : null }]);
     const tieuDe = <>{[st?.attemptLabel, c.mtTuan ? tuanLich(c.mtTuan, homNay) : null].filter(Boolean).join(' · ') || t('MT gần nhất')}
-      {c.kn && kv != null && <> · <b>{t('kỳ vọng {kv}', { kv: kv.toFixed(1) })}</b></>}{c.kn && tr && <> · {t('↑↓ so {mt}', { mt: tr.nhan })}</>}</>;
+      {c.kn && kv != null && <> · <b>{t('kỳ vọng {kv}', { kv: fmtBand(kv) })}</b></>}{c.kn && tr && <> · {t('↑↓ so {mt}', { mt: tr.nhan })}</>}</>;
     return (
       <Khoi tieuDe={tieuDe}>
         {c.kn ? (

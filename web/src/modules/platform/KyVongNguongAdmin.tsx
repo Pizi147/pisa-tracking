@@ -7,12 +7,13 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 
 type GiaTri = Record<string, number>;
 type Xem = { id: number; v: GiaTri; goc: GiaTri; suaDuoc: boolean };
 type Truong = { k: string; nhan: string; hien: (n: number) => string; min: number; max: number; buoc: number; donVi: string; luat?: string };
 
-const hienKyVong = (n: number) => (n === 0 ? '= Target' : `Target − ${n.toFixed(1)}`);   // tên riêng + số: EN giống VI
+const hienKyVong = (n: number) => (n === 0 ? '= Target' : `Target − ${fmtBand(n)}`);   // tên riêng + số: EN giống VI
 const pt = (n: number) => `${n} %`;
 
 const KY_VONG: Truong[] = [

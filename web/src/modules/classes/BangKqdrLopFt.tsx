@@ -13,6 +13,7 @@ import { useDienThoai } from '../../ui/TheDong.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { NGUONG_KY_VONG, REGULAR_SKILLS, duongCase, mocThuong, tenMon, tuanLich, type RegularSkill } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 
 /** `GET /classes/:id/ket-qua-dau-ra` (server/src/normal/kyVong.ts → kqdrLopFt). Kết quả = giá trị QL đã chốt, hoặc tự Đạt theo MT0 (`tuDong`). */
 type KetQua = { dat: boolean; nguyenNhan: 'trung_tam' | 'hoc_sinh' | null; mon: string[]; ghiChu: string | null; tuDong?: true };
@@ -29,7 +30,7 @@ type Bang_ = { ct: string; lop: { id: number; code: string }[]; dot: Dot[] };
 type Hang = { loai: 'dot'; dot: Dot } | { loai: 'em'; em: Em };
 
 const NGAN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S', writing2: 'W' };
-const b1 = (n: number | null) => (n === null ? null : n.toFixed(1));
+const b1 = (n: number | null) => (n === null ? null : fmtBand(n));
 const BAN_GIAO_DAI = 110;   // hơn ~2 dòng ở cột Bàn giao → "Xem" mở đủ chữ
 
 const COT: CotBang[] = [
@@ -240,8 +241,8 @@ function HopChot({ em, ct, neo, onDong, onXong }: { em: Em; ct: string; neo: HTM
         <b className="text-[15px] text-slate-100">{t('Kết quả đầu ra')} · {em.ten}</b>
         <span className="text-[13px] text-slate-400">
           {!em.mt0 ? t('MT0 chưa đủ 3 kỹ năng') : em.mt0.overall === null
-            ? t('MT0 có kỹ năng huỷ · mốc {ct} {n}', { ct, n: (NGUONG_KY_VONG[ct] ?? 0).toFixed(1) })
-            : t('MT0 Overall {ov} · mốc {ct} {n}', { ov: em.mt0.overall.toFixed(1), ct, n: (NGUONG_KY_VONG[ct] ?? 0).toFixed(1) })}
+            ? t('MT0 có kỹ năng huỷ · mốc {ct} {n}', { ct, n: fmtBand(NGUONG_KY_VONG[ct] ?? 0) })
+            : t('MT0 Overall {ov} · mốc {ct} {n}', { ov: fmtBand(em.mt0.overall), ct, n: fmtBand(NGUONG_KY_VONG[ct] ?? 0) })}
         </span>
       </div>
       {/* Radio-card như panel Xác nhận xử lý (⑤ D1a): chấm tròn + tên + một dòng hệ quả; đang chọn = viền + nền nhấn. */}

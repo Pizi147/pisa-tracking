@@ -98,7 +98,7 @@ export function KetQuaThi(pv: PhamViPhanTich) {
     const dau3 = (dau: string): (string | null)[][] => [[dau, t('Em'), ...MUC.flatMap((m) => [NHAN_MUC[m], null])], [null, null, ...MUC.flatMap(() => [t('Số'), '%'])]];
     const danhSach: OXlsx[][] = rows.map((r) => {
       const m = mucDong(r);
-      return [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : ngayX(r.ngayThi), r.thiLai ? thiLai(r.thiLai) : '', ...[r.l, r.r, r.w, r.s, r.ovr].map((b) => (b == null ? '' : b)), r.target ?? '',
+      return [r.ten, r.lop ?? '', r.khongThi ? t('Không thi') : ngayX(r.ngayThi), r.thiLai ? thiLai(r.thiLai) : '', ...[r.l, r.r, r.w, r.s, r.ovr].map((b): OXlsx => (b == null ? '' : { v: b, dang: 'band' })), r.target ?? '',
         r.khongThi ? t('Không thi') : m ? { v: NHAN_MUC[m], mau: MAU_X[m] } : r.wl2 ? 'WL 2' : r.kck ? 'KCK' : '', r.buocTiepChu != null ? dich(r.buocTiepChu) : t('Chưa chọn'), r.nguoiChon ?? '', ngayX(r.ngayChon)];
     });
     xuatBaoCao({ bao: t('Thi thật'), cn: pv.branchId ? dsCn.data?.find((b) => b.id === pv.branchId)?.name ?? null : null, ct: 'ft', khoang: pv.khoang, homNay }, [
@@ -106,7 +106,7 @@ export function KetQuaThi(pv: PhamViPhanTich) {
         { ten: t('Tổng'), coDinhCot: false, dau: dau3(t('Nhóm')), hang: tong },
         { ten: t('Không vào %'), coDinhCot: false, dau: [[t('Nhóm'), t('Em')]], hang: khac },
         { ten: t('Theo kỹ năng'), coDinhCot: false, dau: [[t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null]), t('Điểm TB')], [null, null, ...MUC.flatMap(() => [t('Số'), '%']), null]],
-          hang: KN4.map((k): OXlsx[] => { const x = tk.kyNang[k]; return [NHAN_KN[k], x.hv, ...ba(x, x.hv), x.tb ?? '—']; }) },
+          hang: KN4.map((k): OXlsx[] => { const x = tk.kyNang[k]; return [NHAN_KN[k], x.hv, ...ba(x, x.hv), x.tb == null ? '—' : { v: x.tb, dang: 'band' }]; }) },
         ...(tk.gv ? [{ ten: t('Theo GV'), dau: [[t('Giáo viên'), t('Kỹ năng'), t('HV'), ...MUC.flatMap((m) => [NHAN_MUC[m], null])], [null, null, null, ...MUC.flatMap(() => [t('Số'), '%'])]],
           hang: tk.gv.map((g): OXlsx[] => [g.ten, NHAN_KN[g.kn] ?? g.kn, g.hv, ...ba(g.so, g.hv)]) }] : []),
       ] : []),

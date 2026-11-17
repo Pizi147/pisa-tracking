@@ -13,6 +13,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { PanelNhapDiem } from '../congViec/PanelViec.tsx';
 import type { BangTheoLuot } from '../cham/LuoiChamLop.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 
 /** Trả lời của `GET /tong-quan/gv-tre` (`server/src/worklist/gvTre.ts`). */
 type DongGvTre = {
@@ -227,7 +228,7 @@ function BangEm({ d }: { d: DongGvTre }) {
   const hang: { id: number; ten: string; o: OEm[] }[] = data.ft
     ? data.ft.rows.filter((r) => em.has(r.studentId)).map((r) => ({ id: r.studentId, ten: r.studentName, o: d.kns.map((k): OEm => {
       const c = r.cells.find((x) => x.skill === k);
-      if (c?.band != null) return { diem: c.band.toFixed(1) };
+      if (c?.band != null) return { diem: fmtBand(c.band) };
       if (c?.noShow) return { khong: t('vắng') };
       if (c?.progress === 'cancelled') return { khong: t('Đã huỷ') };
       return c?.required && c.overdue ? { trong: true } : { khong: t('không tính') };

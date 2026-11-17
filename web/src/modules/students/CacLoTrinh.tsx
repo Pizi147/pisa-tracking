@@ -7,11 +7,12 @@ import type { TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { Nhan, type ToneNhan } from '../../ui/Nhan.tsx';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 
 export type KetQuaGon = { chinh: string; tone: 'ok' | 'soon' | 'late' | 'muted'; phu?: string; kyThi?: KetQuaKyThi; ovr?: number };
 /** Chữ kết quả gọn theo tiếng của trang: số liệu máy chủ gửi (kỳ thi, Overall thi thật) ghép bằng t(); câu khác qua dich(). */
 export const chuKetQuaGon = (k: KetQuaGon) => (k.kyThi ? (k.kyThi.khongThi ? t('Không thi') : t('Thi thật {kq}', { kq: chuKetQuaKyThi(k.kyThi) }))
-  : k.ovr != null ? t('Thi thật {kq}', { kq: k.ovr.toFixed(1) }) : dich(k.chinh));
+  : k.ovr != null ? t('Thi thật {kq}', { kq: fmtBand(k.ovr) }) : dich(k.chinh));
 export type DongCacLoTrinh = {
   id: number; ten: string; lop: string | null; thoiGian: string; dangHoc: boolean; ketQua: KetQuaGon | null; huong: string | null;
   /** OV-13m: lộ trình FT mới nhất có kết quả thi thật — "Đã xong · OVR …" + Chọn bước tiếp / Hẹn bắt đầu / chờ QL · TVV. */

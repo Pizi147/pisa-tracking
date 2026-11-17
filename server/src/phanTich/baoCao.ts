@@ -23,6 +23,7 @@ import { ganTangGiam, kieuBang, tienBoTheoKyNang } from './giaoVien.ts';
 import { diemTuEval, diemTuMock } from '../worklist/diemDong.ts';
 import { evaluateAttemptRow } from '../worklist/danhGia.ts';
 import { allProgrammes } from '../normal/regular.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 /** `classId` (UI-TONG-QUAN): chỉ panel Đạt MT / Thi tháng này của MỘT lớp (Tổng quan › Lớp cần chú ý) — tập em theo lớp của lượt / lớp đang học. */
 export type LocBaoCao = { branchId?: number | null; ct: ChuongTrinh; tu: string; den: string; classId?: number | null };
@@ -361,7 +362,7 @@ export function oBaoCao(p: Principal, f: LocBaoCao & { o: string }): { n: number
     const em = tapKqMt(p, f).get(l)!;
     const ids = [...em].filter(([, e]) => (cot ? e.cot === cot : e.cot !== 'chua-du')).map(([s]) => s)
       .sort((a, b) => (ttt ? Number(em.get(a)!.cot === 'dat') - Number(em.get(b)!.cot === 'dat') : 0) || a - b);
-    const so = (x: number) => x.toFixed(1);
+    const so = (x: number) => fmtBand(x);
     const rows = rowsFor('hoc-vien', ids, undefined, p, false, new Map(ids.map((s) => [s, em.get(s)!.diem]))).map((row) => {
       const e = em.get(row.id)!;
       const lech = e.ovr !== null && e.truoc !== null ? e.ovr - e.truoc : null;

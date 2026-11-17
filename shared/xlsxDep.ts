@@ -11,8 +11,8 @@ import { strToU8, zipSync } from 'fflate';
 export type MauXlsx = 'vuot' | 'dat' | 'chua-dat' | 'sos1' | 'sos2' | 'sos3' | 'mo' | 'nhan';
 export type OXlsx = string | number | null | undefined | {
   v: string | number | null | undefined;
-  /** 'pt' = số 0–1 hiện "85%"; 'ngay' = chuỗi ISO yyyy-mm-dd → ô ngày dd/mm/yyyy (sắp xếp được). Mặc định theo kiểu giá trị. */
-  dang?: 'pt' | 'ngay';
+  /** 'pt' = số 0–1 hiện "85%"; 'ngay' = chuỗi ISO yyyy-mm-dd → ô ngày dd/mm/yyyy (sắp xếp được); 'band' = số hiện một chữ số lẻ "7.0" (N53, vẫn là số). Mặc định theo kiểu giá trị. */
+  dang?: 'pt' | 'ngay' | 'band';
   mau?: MauXlsx; dam?: boolean;
 };
 export type SheetDep = {
@@ -46,8 +46,8 @@ class KieuO {
     if (!this.fontId.has(k)) { this.fontId.set(k, this.fonts.length); this.fonts.push(`<font>${dam ? '<b/>' : ''}<sz val="${co}"/>${mau ? `<color rgb="${mau}"/>` : ''}<name val="Calibri"/></font>`); }
     return this.fontId.get(k)!;
   }
-  /** fill: 0 không · 2 nền tiêu đề · 3 nền tổng. numFmt: 0 chung · 1 "0" · 9 "0%" · 164 "dd/mm/yyyy". */
-  lay(o: { dam?: boolean; mau?: string; co?: number; fill?: 0 | 2 | 3; fmt?: 0 | 1 | 9 | 164; giua?: boolean; vien?: boolean; xuong?: boolean }) {
+  /** fill: 0 không · 2 nền tiêu đề · 3 nền tổng. numFmt: 0 chung · 1 "0" · 9 "0%" · 164 "dd/mm/yyyy" · 165 "0.0". */
+  lay(o: { dam?: boolean; mau?: string; co?: number; fill?: 0 | 2 | 3; fmt?: 0 | 1 | 9 | 164 | 165; giua?: boolean; vien?: boolean; xuong?: boolean }) {
     const f = this.font(!!o.dam, o.mau ?? '', o.co ?? 11);
     const k = `${f}|${o.fill ?? 0}|${o.fmt ?? 0}|${o.giua ? 'g' : ''}${o.vien ? 'v' : ''}${o.xuong ? 'x' : ''}`;
     if (!this.ds.has(k)) {
@@ -60,7 +60,7 @@ class KieuO {
   xml() {
     const fill = (rgb: string) => `<fill><patternFill patternType="solid"><fgColor rgb="${rgb}"/><bgColor indexed="64"/></patternFill></fill>`;
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">`
-      + `<numFmts count="1"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/></numFmts>`
+      + `<numFmts count="2"><numFmt numFmtId="164" formatCode="dd/mm/yyyy"/><numFmt numFmtId="165" formatCode="0.0"/></numFmts>`
       + `<fonts count="${this.fonts.length}">${this.fonts.join('')}</fonts>`
       + `<fills count="4"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill>${fill(NEN_DAU)}${fill(NEN_TONG)}</fills>`
       + `<borders count="2"><border/><border><left/><right/><top/><bottom style="thin"><color rgb="${VIEN}"/></bottom><diagonal/></border></borders>`
@@ -72,7 +72,7 @@ class KieuO {
 /** Ngày ISO → số ngày Excel (gốc 30/12/1899). */
 const soNgayExcel = (iso: string) => { const [y, m, d] = iso.slice(0, 10).split('-').map(Number); return (Date.UTC(y, m - 1, d) - Date.UTC(1899, 11, 30)) / 86_400_000; };
 const giaTri = (o: OXlsx) => (o != null && typeof o === 'object' ? (o.dang === 'ngay' && typeof o.v === 'string' && /^\d{4}-\d{2}-\d{2}/.test(o.v) ? soNgayExcel(o.v) : o.v) : o);
-const doDai = (o: OXlsx) => { const v = giaTri(o); if (v == null) return 0; if (typeof o === 'object' && o?.dang) return o.dang === 'pt' ? 5 : 10; return String(v).length; };
+const doDai = (o: OXlsx) => { const v = giaTri(o); if (v == null) return 0; if (typeof o === 'object' && o?.dang) return o.dang === 'pt' ? 5 : o.dang === 'band' ? 3 : 10; return String(v).length; };
 
 function sheetXml(s: SheetDep, tieuDe: string, moTa: string, k: KieuO): string {
   const soCot = Math.max(...s.dau.map((h) => h.length), ...s.hang.map((h) => h.length), 1);
@@ -110,7 +110,7 @@ function sheetXml(s: SheetDep, tieuDe: string, moTa: string, k: KieuO): string {
     const cells = h.map((x, c) => {
       const v = giaTri(x);
       const ob = x != null && typeof x === 'object' ? x : null;
-      const fmt = typeof v !== 'number' ? 0 : ob?.dang === 'pt' ? 9 : ob?.dang === 'ngay' ? 164 : Number.isInteger(v) ? 1 : 0;
+      const fmt = typeof v !== 'number' ? 0 : ob?.dang === 'pt' ? 9 : ob?.dang === 'ngay' ? 164 : ob?.dang === 'band' ? 165 : Number.isInteger(v) ? 1 : 0;
       const xf = k.lay({ dam: laTong || ob?.dam, mau: ob?.mau ? MAU[ob.mau] : undefined, fill: laTong ? 3 : 0, fmt, giua: c > 0 && (typeof v === 'number' || v === '—') });
       return o(c, r, v, xf);
     });
