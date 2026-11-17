@@ -80,6 +80,7 @@
  "web/src/modules/fasttrack/CaseLuotKn.tsx",
  "web/src/modules/fasttrack/DongThoiGianLuot.tsx",
  "web/src/modules/fasttrack/HopNhapDiem.tsx",
+ "web/src/modules/fasttrack/HopNhapDiemHop.tsx",
  "web/src/modules/fasttrack/HopThaoTacMt.tsx",
  "web/src/modules/fasttrack/MockDetailPage.tsx",
  "web/src/modules/fasttrack/NhanXet.tsx",

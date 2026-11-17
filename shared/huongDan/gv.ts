@@ -16,7 +16,7 @@ export const HD_GV: HuongDan = {
     {
       /* HD3-2: thẻ theo dòng việc "Nhập điểm" (mockup ⑭ K1, sửa theo mã: Vắng · ⋯ Bỏ vắng; gõ trước tuần Test máy dời về tuần này nên bỏ lý do "chưa tới tuần"). */
       id: 'nhap-diem', ten: 'Nhập điểm', nhom: 'diem', tab: 'cham-diem', viecWeb: ['score'],
-      tep: ['web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/congViec/PanelViec.tsx', 'web/src/modules/cham/MotKyNang.tsx'],
+      tep: ['web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/fasttrack/HopNhapDiemHop.tsx', 'web/src/modules/congViec/PanelViec.tsx', 'web/src/modules/cham/MotKyNang.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm điểm', duong: CV, chi: { hd: 'cv-dong', duong: CV, chu: 'Dòng <b>Nhập điểm</b> ở tab <b>Chấm điểm</b> — bấm để gõ điểm.' } },
       loiTat: ['lich-test', 'diem-lop', 'ho-so-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ dòng em'], cung: 'mở cùng ô điểm.',
       khiCo: 'Từ thứ Hai tuần Test, cho GV dạy kỹ năng đó ở lớp.',
@@ -42,7 +42,7 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'cham-s', ten: 'Chấm Speaking', nhom: 'diem', tab: 'cham-cheo', chiS: true, viecWeb: ['cham_speaking'],
-      tep: ['web/src/modules/congViec/PanelChamSpeaking.tsx', 'web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/congViec/PanelViec.tsx'],
+      tep: ['web/src/modules/congViec/PanelChamSpeaking.tsx', 'web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/fasttrack/HopNhapDiemHop.tsx', 'web/src/modules/congViec/PanelViec.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm Speaking', duong: CV },
       loiTat: ['lich-test', 'p-nhap-diem'], cung: 'mở cùng ô điểm.',
       khiCo: 'Từ thứ Hai tuần Test: ô Speaking Mock FT, MT0 lớp thường, chung cho mọi GV Speaking.',

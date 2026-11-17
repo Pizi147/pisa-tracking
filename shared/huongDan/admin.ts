@@ -22,7 +22,7 @@ export const HD_ADMIN: HuongDan = {
     {
       /* HD3-5: dòng Nhập hộ là việc của GV (mine = false) → "?" ở dòng mở thẻ GV + dải "làm thay"; thẻ này cho Tôi muốn…, tìm, panel ở Lịch Test. */
       id: 'nhap-ho', ten: 'Nhập hộ, nhập bù điểm', nhom: 'diem', tab: 'cham-diem',
-      tep: ['web/src/modules/congViec/HoTroHocVienTab.tsx', 'web/src/modules/congViec/DanhSachViec.tsx', 'web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/congViec/PanelViec.tsx'],
+      tep: ['web/src/modules/congViec/HoTroHocVienTab.tsx', 'web/src/modules/congViec/DanhSachViec.tsx', 'web/src/modules/fasttrack/HopNhapDiem.tsx', 'web/src/modules/fasttrack/HopNhapDiemHop.tsx', 'web/src/modules/congViec/PanelViec.tsx'],
       loiChinh: { man: 'cong-viec', chu: 'Công việc › Chấm điểm', duong: CV, chi: { hd: 'cv-loc-them', duong: CV, chu: 'Lọc bài chấm theo một GV ở đây.' } },
       loiTat: ['tong-quan', 'lich-test', 'diem-lop', 'nhap-diem', 'p-nhap-diem'], tatThem: ['⋯ hàng lớp › Nhập điểm'], cung: 'mở cùng lưới nhập.',
       khiCo: 'Bài trong chi nhánh chưa có điểm, từ thứ Hai tuần Test.',

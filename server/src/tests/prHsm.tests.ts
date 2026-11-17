@@ -210,7 +210,7 @@ export async function runPrHsmTests(t: YThucTestKit) {
   const { docSach } = await import('./panelUx3.tests.ts');
   check('HSM (3) · ScoreEntry: tiêu chí qua tieuChiCua, không "— (—)", lỗi dưới ô có aria, nút Vắng + thông báo ngắn (không Hoàn tác), nhận xét ≤ 1000', () => {
     const se = docSach('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const hop = docSach('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    const hop = docSach('web/src/modules/fasttrack/HopNhapDiemHop.tsx');
     assert(!/CRITERIA\[|criteriaSetFor\(/.test(se + hop) && /tieuChiNganCua\(/.test(hop), 'còn CRITERIA / criteriaSetFor');
     assert(!se.includes("'—'} ({"), 'còn kiểu "— (—)"');
     assert(/aria-invalid/.test(se) && /aria-describedby/.test(se) && /role="alert"/.test(se), 'lỗi dưới ô thiếu aria');
