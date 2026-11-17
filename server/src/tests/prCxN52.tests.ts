@@ -11,7 +11,8 @@ export async function runPrCxN52Tests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const { migratePrCxN52, KHOA_PR_CX_N52, QUYEN_CX_N52 } = await import('../migrate/prCxN52.ts');
   const { ROLE_PERMISSIONS } = await import('../seed/data.ts');
-  const { loadPrincipal, can, coQuyenBuocTiep, duyetYThuc } = await import('../permissions.ts');
+  const { loadPrincipal, can, coQuyenBuocTiep, duyetYThuc, duocSuaLichLop } = await import('../permissions.ts');
+  const { quyenBanGiao } = await import('../classes/banGiao.ts');
   const { emailThu } = await import('../seed/emailThu.ts');
   const { duocDoiMon } = await import('../fasttrack/monDangKy.ts');
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
@@ -186,6 +187,24 @@ export async function runPrCxN52Tests(t: YThucTestKit) {
       if (luot) { r = await goi('PUT', `/attempts/${luot}/scores/listening`, cxCp, { rawScore: 20, rawTotal: 40 }); assert(r.status === 403, `CX lưu điểm: ${r.status}`); }
       if (cs) { r = await goi('POST', `/cases/${cs}/interventions`, cxCp, { kind: 'tutor', note: 'N52' }); assert(r.status === 403, `CX thêm PA: ${r.status}`); }
       assert(luot || cs, 'demo cần lượt hoặc Case của em CP');
+    });
+
+    await checkAsync('N52-7 · rà bảo mật #1841: CX có class.edit nhưng KHÔNG quyết Xét lại lộ trình (lưu / hoàn tác 403, xem được chỉ xem), KHÔNG bàn giao thay GV, KHÔNG đổi lịch lớp (tiến độ = lịch Test)', async () => {
+      const lop = emCp.lop as number;
+      let r = await goi('POST', `/classes/${lop}/xet-lai`, cxCp, { items: [{ studentId: emCp.id, quyetDinh: 'tiep_tuc' }] });
+      assert(r.status === 403, `CX lưu Xét lại: ${r.status} ${r.json?.error}`);
+      r = await goi('POST', `/classes/${lop}/xet-lai/hoan-tac`, cxCp, { ids: [1] });
+      assert(r.status === 403, `CX hoàn tác Xét lại: ${r.status} ${r.json?.error}`);
+      r = await goi('GET', `/classes/${lop}/xet-lai`, cxCp);
+      assert(r.status === 200 && r.json?.chiXem === true, `CX xem Xét lại: ${r.status} ${JSON.stringify(r.json?.chiXem)}`);
+      r = await goi('PATCH', `/classes/${lop}/progress`, cxCp, { startWeek: '2026-09-07' });
+      assert(r.status === 403, `CX đổi tiến độ lớp: ${r.status} ${r.json?.error}`);
+      const p = loadPrincipal(idCxCp);
+      assert(!duocSuaLichLop(p, lop), 'CX không sửa lịch lớp');
+      const q = quyenBanGiao(p, { lop_nguon_id: lop, han_gvcn: null }, 'listening');
+      assert(!q.ghiMon && !q.xacNhan && !q.xacNhanThay, `CX bàn giao thay: ${JSON.stringify(q)}`);
+      const bg = one(`SELECT b.id FROM ban_giao_gv b JOIN classes c ON c.id = b.class_id WHERE c.branch_id = ? ORDER BY b.id LIMIT 1`, CP)?.id;
+      if (bg) { r = await goi('PUT', `/ban-giao-gv/${bg}/gop-y`, cxCp, { gopY: 'N52 thử' }); assert(r.status === 403, `CX góp ý bàn giao GV: ${r.status} ${r.json?.error}`); }
     });
   } finally {
     may.close();

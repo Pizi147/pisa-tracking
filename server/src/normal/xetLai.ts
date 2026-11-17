@@ -225,7 +225,8 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
 }
 
 /** Quyết được: QL / Quản trị chi nhánh lớp em ĐANG học (`class.edit` lớp đó — cùng quyền ra lệnh). */
-const quyetDuoc = (p: Principal, lopId: number) => coTheRaLenh(p, lopId);
+/* N52: CX có `class.edit` (sửa lớp) nhưng KHÔNG quyết Xét lại lộ trình (học thuật) — chỉ xem như Head (`xemXetLai`). */
+const quyetDuoc = (p: Principal, lopId: number) => coTheRaLenh(boVaiCx(p), lopId);
 const CHI_QL = 'Chỉ Head chi nhánh của lớp em đang học mới xét lại lộ trình.';
 
 /** Việc QL: một dòng mỗi lớp em đang học (chỉ dòng CHƯA quyết), hạn sớm nhất. Cùng tập với GET panel. */
@@ -251,15 +252,16 @@ export function xemXetLai(p: Principal, classId: number, studentId: number | nul
   const lop = db().prepare('SELECT id, code, branch_id, is_fast_track FROM classes WHERE id = ?').get(classId) as any;
   if (!lop) throw notFound('Không tìm thấy lớp');
   const ql = quyetDuoc(p, classId);
-  const gvcn = !ql && isCoreTeacherOf(p, classId);
+  const xemQl = ql || coTheRaLenh(p, classId);   // N52: CX xem đủ như Head, `chiXem`
+  const gvcn = !xemQl && isCoreTeacherOf(p, classId);
   /* Một em / một lớp: tính đúng phạm vi đó (không cả chi nhánh); dòng quá hạn rời tập như `tapXetLai`. */
-  const tap = ql || gvcn
+  const tap = xemQl || gvcn
     ? tinhTapXetLai(today, studentId ? { chiEm: studentId } : { lop: classId }).filter((e) => e.lopHienTai.id === classId && (!!e.quyetDinh || e.han >= today))
     : [];
   /* N36: Quản lý — bậc vi phạm của em đang học lớp thường (ô "Reset bậc vi phạm" khi Học lại / Lên). +3 câu, chỉ khi có em lớp thường. */
-  const lt = ql ? tap.filter((e) => !e.lopHienTai.ft).map((e) => e.studentId) : [];
+  const lt = xemQl ? tap.filter((e) => !e.lopHienTai.ft).map((e) => e.studentId) : [];
   const yt = lt.length ? trangThaiYThuc(lt, today) : null;
-  const em: (EmXetLai & { bacYThuc?: number })[] = ql ? tap.map((e) => ({ ...e, bacYThuc: yt?.get(e.studentId)?.bac ?? 0 })) : tap.filter((e) => e.daChot.lopDichId === classId).map((e) => ({
+  const em: (EmXetLai & { bacYThuc?: number })[] = xemQl ? tap.map((e) => ({ ...e, bacYThuc: yt?.get(e.studentId)?.bac ?? 0 })) : tap.filter((e) => e.daChot.lopDichId === classId).map((e) => ({
     ...e, goiY: null, phuHuynh: null, banGiaoGvcnCu: null, daChot: { ...e.daChot, lyDo: null }, coTheNhanXet: true,
   }));
   const lopHocLai: Record<string, { id: number; code: string; phu: string }[]> = {};

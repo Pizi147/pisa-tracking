@@ -695,7 +695,7 @@ function canGoc(p: Principal, permission: string, ctx: Ctx): boolean {
  * (đổi lớp, chương trình, kết thúc…). Lớp FT vẫn chỉ `class.edit`. Cờ nút `viewer.canEditSchedule` và máy chủ `setClassProgress` dùng chung hàm này.
  */
 export function duocSuaLichLop(p: Principal, classId: number): boolean {
-  if (can(p, PERMISSIONS.CLASS_EDIT, { classId })) return true;
+  if (can(boVaiCx(p), PERMISSIONS.CLASS_EDIT, { classId })) return true;   // N52: lịch lớp = lịch Test — CX (class.edit để sửa lớp) không đổi
   if (classIsFastTrack(classId)) return false;
   const ctx = { classId };
   return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
