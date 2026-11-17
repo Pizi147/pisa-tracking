@@ -37,7 +37,7 @@ export const EN_HD_V2 = {
   'Mở <b>Công việc</b>, nhóm <b>Thiếu dữ liệu đánh giá</b>.': 'Open <b>Work</b>, group <b>Missing assessment data</b>.',
   'Dòng <b>Nhập điểm MT cũ</b> › <b>Nhập điểm</b>.': 'Row <b>Enter past MT scores</b> › <b>Enter scores</b>.',
   'Gõ điểm các MT em đã làm, rồi lưu.': 'Type the MTs the student already took, then save.',
-  'Chấm Speaking chéo': 'Cross-mark Speaking',
+  'Chấm Speaking chéo': 'Speaking cross-marking',
   'Công việc › Speaking chấm chéo': 'Work › Speaking cross-marking',
   'Mở <b>Công việc</b>, nhóm <b>Speaking chấm chéo</b>, dòng <b>Chấm Speaking · n bài</b>.': 'Open <b>Work</b>, group <b>Speaking cross-marking</b>, row <b>Mark Speaking · n tests</b>.',
   'Tìm em (tên, email), lọc lớp, bấm ô S để chấm.': 'Find the student (name, email), filter by class, click the S cell to mark.',
