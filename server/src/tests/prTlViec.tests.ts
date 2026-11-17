@@ -69,11 +69,12 @@ export async function runPrTlViecTests(t: any) {
     } finally { may.close(); }
   }
 
-  await checkAsync('TV1 · /my-work?nguoi=tat-ca QL: câu đọc teacher_assignments ≤ 1, câu FROM sos_cases ≤ 2', async () => {
+  await checkAsync('TV1 · /my-work?nguoi=tat-ca QL: câu đọc teacher_assignments ≤ 1, câu FROM sos_cases ≤ 3', async () => {
+    /* TD-VIEC-2: Case mở chỉ đọc dòng thành việc → `lamThayCua` đọc riêng Case của dòng PA / Xác nhận PA không còn trong tập (một câu, theo id). */
     const { cau } = await doGet(P.mbManager.userId, '/my-work?nguoi=tat-ca');
     const ta = cau.filter((s) => /^SELECT [^()]*FROM teacher_assignments/.test(s)), sos = cau.filter((s) => /\bFROM sos_cases sc\b/.test(s));
     assert(ta.length <= 1, `${ta.length} câu teacher_assignments: ${ta.map((s) => s.slice(0, 120)).join(' | ')}`);
-    assert(sos.length <= 2, `${sos.length} câu sos_cases: ${sos.map((s) => s.slice(0, 120)).join(' | ')}`);
+    assert(sos.length <= 3, `${sos.length} câu sos_cases: ${sos.map((s) => s.slice(0, 120)).join(' | ')}`);
   });
 
   await checkAsync('TV1 · dòng không tăng so với gốc TV0 > 5 % (QL · GV)', async () => {
