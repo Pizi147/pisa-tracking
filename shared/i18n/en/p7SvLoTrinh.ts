@@ -7,7 +7,7 @@ export const EN_P7_SV_LO_TRINH = {
   'Giữ lộ trình · Case, PA, MT giữ nguyên': 'Keeps the route · Cases, plans, MTs unchanged',
   'KQ thi {ngay} vào lịch sử · chờ lần thi sau': 'Exam result {ngay} goes to history · waits for the next exam',
   'KQ thi vào lịch sử · chờ lần thi sau': 'Exam result goes to history · waits for the next exam',
-  'Target {cu} → {moi}': 'Target {cu} → {moi}',
+  'Target {cu} → {moi}': 'Target changes {cu} → {moi}',
   'Chuyển sang {lop} ngay · đường Chuyển lớp': 'Moves to {lop} now · via class change',
   'Giữ Target': 'Keep Target',
   'Chỉ khi em đang học lộ trình này — chọn Lộ trình mới.': 'Only while the student is studying this route — choose New pathway.',

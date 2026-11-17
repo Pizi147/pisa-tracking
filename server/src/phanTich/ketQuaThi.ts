@@ -152,8 +152,10 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
 const DU_4_KN = (c: string) => `${c}.thi_that_l IS NOT NULL AND ${c}.thi_that_r IS NOT NULL AND ${c}.thi_that_w IS NOT NULL AND ${c}.thi_that_s IS NOT NULL`;
 const WL2 = (cy: string, ngay: string) => `EXISTS (SELECT 1 FROM discipline_measures dm WHERE dm.cycle_id = ${cy} AND dm.kind = 'wl_2' AND dm.status = 'done'
                      AND substr(COALESCE(dm.performed_on, dm.created_at), 1, 10) <= COALESCE(${ngay}, '9999-12-31'))`;
-export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
-            c.thi_that_khong_thi, c.thi_that_lay_lai, substr(c.started_at, 1, 10) AS bat_dau, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon,
+export const SQL_THI_THAT = `SELECT c.id AS id, c.student_id AS student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l AS thi_that_l,
+            c.thi_that_r AS thi_that_r, c.thi_that_w AS thi_that_w, c.thi_that_s AS thi_that_s, c.thi_that_khong_thi AS thi_that_khong_thi, c.thi_that_lay_lai AS thi_that_lay_lai,
+            substr(c.started_at, 1, 10) AS bat_dau, c.outcome AS outcome, c.outcome_score AS outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score,
+            c.khong_cam_ket AS khong_cam_ket, c.buoc_tiep AS buoc_tiep, c.buoc_tiep_luc AS buoc_tiep_luc, c.buoc_tiep_json AS buoc_tiep_json, u.full_name AS nguoi_chon,
             ${WL2('c.id', 'COALESCE(c.thi_that_ngay, c.exam_date)')} AS wl2, NULL AS lop_ls
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
       WHERE c.route IS NOT NULL
