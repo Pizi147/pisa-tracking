@@ -269,7 +269,7 @@ export const EN_HD_V3B = {
   '<b>Lưu</b> một lần cho cả lớp.': '<b>Save</b> once for the whole class.',
   'Sau thi đang mở': 'After the exam open',
   'Kết quả thi thật và bước tiếp của một em.': 'A student\'s real exam result and next step.',
-  'Lưu <b>Kết quả thi thật</b> trước; rồi chọn <b>Bước tiếp</b>: Lộ trình mới hoặc Tạm dừng / Kết thúc học.': 'Save the <b>Real exam result</b> first; then choose the <b>Next step</b>: New pathway or Pause / End study.',
+  'Lưu <b>Kết quả thi thật</b> trước; rồi chọn <b>Bước tiếp</b>: Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới.': 'Save the <b>Real exam result</b> first; then choose the <b>Next step</b>: Pause / End study, Continue studying or New pathway.',
   'Hạn ngày thi + 7 ngày; <b>Gia hạn</b> được.': 'Due: exam date + 7 days; <b>Extend</b> works.',
   'Chốt ngày thi đang mở': 'Set exam date open',
   'Chốt ngày thi của một em; chưa có ngày thì ghi tháng thi.': 'Set a student\'s exam date; with no date yet, record the exam month.',

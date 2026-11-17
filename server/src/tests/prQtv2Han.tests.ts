@@ -110,7 +110,7 @@ export async function runPrQtv2HanTests(t: { check: any; assert: any; assertThro
     conn.exec('DELETE FROM cau_hinh_phien_ban'); ch.xoaNhoHan();
     const bg = () => huongDanNhomViec('ban_giao'); const bt = () => huongDanNhomViec('buoc_tiep');
     assert(/Hạn tối thiểu 7 ngày/.test(bg()) && !/2 ngày|3 ngày/.test(bg()), 'bàn giao gốc: ' + bg());
-    assert(/Hạn 7 ngày/.test(bt()) && /Lộ trình mới hoặc Tạm dừng \/ Kết thúc học/.test(bt()) && !/Thôi học/.test(bt()), 'bước tiếp gốc: ' + bt());
+    assert(/Hạn 7 ngày/.test(bt()) && /Tạm dừng \/ Kết thúc học, Học tiếp hoặc Lộ trình mới/.test(bt()) && !/Thôi học/.test(bt()), 'bước tiếp gốc: ' + bt());
     const moi = goc(); moi.ban_giao_chuyen_lop.ngay = 9; moi.buoc_tiep_sau_thi.ngay = 10; moi.ql_duyet_pa.ngay = 8;
     ch.luuHanMacDinh(P.admin, { han: moi, tuPhienBan: 0 });
     assert(/Hạn tối thiểu 9 ngày/.test(bg()) && /Hạn 10 ngày/.test(bt()), 'đổi hạn → chữ đổi: ' + bg() + ' | ' + bt());

@@ -9,7 +9,7 @@ import { NutChon } from '../../ui/ui.tsx';
 import { NutMon } from '../../ui/NutMon.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, lopChonLoTrinhMoi, thuNgay, tuanChonDuoc, tuanLich, quyCheLoTrinhMoi } from '@shared/domain/index.ts';
+import { ENTRY_SKILLS, ROUTE_KHAC, ROUTE_LO_TRINH_MOI, ROUTE_NAME, kiemLopLoTrinhMoi, lopChonLoTrinhMoi, ngay, thuNgay, tuanChonDuoc, tuanLich, quyCheLoTrinhMoi } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { KhoiKhiLuu } from './HopTamDungKetThuc.tsx';
 import type { TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
@@ -42,6 +42,61 @@ export function KhoiDung({ v, onChange, loTrinh, disabled }: { v: GiaTriDung; on
         <b className="font-semibold text-slate-100">{t('Có thể quay lại học')}</b>
       </label>
       <KhoiKhiLuu dong={dong} vang={!v.quayLai} />
+    </div>
+  );
+}
+
+/**
+ * HỌC TIẾP (N51, chủ SP 18/11) — ngay trong panel Bước tiếp / Sau thi như hộp "Tạm dừng / Kết thúc học": chọn là xong (cùng lộ trình chạy tiếp, lớp cũ, Target cũ);
+ * hai ô tuỳ chọn Target (Sửa) · Lớp (Giữ / Lớp khác — máy chủ đi đúng đường Chuyển lớp). `thanHocTiep` = thân POST; `loiHocTiep` = ô còn thiếu.
+ */
+export type GiaTriHocTiep = { tg: string | null; lopKhac: boolean; lopMoiId: number | null };
+export const HOC_TIEP_TRONG: GiaTriHocTiep = { tg: null, lopKhac: false, lopMoiId: null };
+export const thanHocTiep = (v: GiaTriHocTiep) => ({
+  chon: 'hoc_tiep' as const, ...(v.tg?.trim() ? { mucTieu: v.tg.trim().replace(',', '.') } : {}), ...(v.lopKhac && v.lopMoiId ? { lopMoiId: v.lopMoiId } : {}),
+});
+export const loiHocTiep = (v: GiaTriHocTiep) => (v.lopKhac && !v.lopMoiId ? [{ khoa: 'lop-hoc-tiep', nhan: t('Lớp'), lyDo: t('Chọn lớp') }] : []);
+export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled }: {
+  bt: TrangThaiBuocTiep; v: GiaTriHocTiep; onChange: (v: GiaTriHocTiep) => void; loTrinh: string | null; bamLuu?: boolean; disabled?: boolean;
+}) {
+  const { homNay } = useNgayNghiepVu();
+  const dsLop = useApi<{ lop: LopDich[] }>(v.lopKhac ? `/students/${bt.studentId}/hoc-lai/lop-dich` : null, [v.lopKhac, bt.studentId]);
+  const ds = lopChonLoTrinhMoi(loTrinh ?? 'LT1', dsLop.data?.lop ?? []).filter((l) => l.id !== bt.lopNay?.id);
+  const lopMoi = v.lopKhac ? ds.find((l) => l.id === v.lopMoiId)?.ma ?? null : null;
+  const tg = v.tg?.trim() || null;
+  const dong = [
+    t('Giữ lộ trình {lt} · Case, PA, MT giữ nguyên', { lt: loTrinh ?? '' }),
+    bt.ngayThi ? t('KQ thi {ngay} vào lịch sử · chờ lần thi sau', { ngay: ngay(bt.ngayThi, homNay ?? '') }) : t('KQ thi vào lịch sử · chờ lần thi sau'),
+    ...(tg && tg !== bt.target ? [t('Target {cu} → {moi}', { cu: bt.target || '—', moi: tg })] : []),
+    ...(lopMoi ? [t('Chuyển sang {lop} ngay · đường Chuyển lớp', { lop: lopMoi })] : []),
+  ];
+  const nut = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0';
+  return (
+    <div className="flex flex-col gap-3">
+      <Truong nhan="Target" tuyChon as="div">
+        <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
+          {v.tg !== null
+            ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={v.tg} disabled={disabled}
+                onChange={(e) => onChange({ ...v, tg: e.target.value })} />
+            : <><b className="tabular-nums text-slate-100">{bt.target || '—'}</b>{bt.target && <span className="text-sm text-slate-500">{t('giữ')}</span>}</>}
+          {v.tg === null
+            ? <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: bt.target })}>{t('Sửa')}</button>
+            : <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: null })}>{t('Giữ Target')}</button>}
+        </div>
+      </Truong>
+      <Truong nhan={t('Lớp')} tuyChon as="div" loi={bamLuu && v.lopKhac && !v.lopMoiId ? t('Chọn lớp') : null}>
+        <div className="flex flex-col gap-2">
+          <div role="radiogroup" aria-label={t('Lớp')} className="flex flex-wrap gap-1.5">
+            <NutChon chon={!v.lopKhac} onClick={() => onChange({ ...v, lopKhac: false })}>{t('Giữ {lop}', { lop: bt.lopNay?.code ?? '' })}</NutChon>
+            <NutChon chon={v.lopKhac} onClick={() => onChange({ ...v, lopKhac: true })}>{t('Lớp khác')}</NutChon>
+          </div>
+          {v.lopKhac && (
+            <ChonLop ariaLabel={t('Lớp khác')} value={v.lopMoiId} onChange={(id) => onChange({ ...v, lopMoiId: id })} invalid={bamLuu && !v.lopMoiId} tat={disabled}
+              khongKhop={dsLop.data ? t('Không có lớp Fast Track khác đang chạy') : t('Đang tải…')} ds={ds} />
+          )}
+        </div>
+      </Truong>
+      <KhoiKhiLuu dong={dong} />
     </div>
   );
 }

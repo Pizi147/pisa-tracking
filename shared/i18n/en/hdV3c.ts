@@ -52,7 +52,7 @@ export const EN_HD_V3C = {
   'Năm ô của HV bạn phụ trách: việc của tôi, Báo PH đúng hạn, thi tháng này, chờ kết quả, chưa chốt lộ trình tiếp.': 'Five tiles for your students: my tasks, parent call on time, exam this month, awaiting result, next pathway not set.',
   'Thống kê theo kỳ: chi nhánh, thi thật, SOS.': 'Statistics by period: branch, real exam, SOS.',
   'Cách xếp em trong lớp: việc quá hạn lên đầu, rồi SOS cao.': 'How students are ordered in a class: overdue tasks first, then high SOS.',
-  'Hướng sau thi thật: Lộ trình mới · Tạm dừng / Kết thúc học.': 'Direction after the real exam: New pathway · Pause / End study.',
+  'Hướng sau thi thật: Tạm dừng / Kết thúc học · Học tiếp · Lộ trình mới.': 'Direction after the real exam: Pause / End study · Continue studying · New pathway.',
   'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting); TVV chỉ báo lại kết quả meeting CX/GĐCN.': 'What the core teacher does with the student and family when in SOS (talks, meetings); the consultant only reports back the CX/Head meeting result.',
   'Dòng <b>Báo PH · Meeting CX/GĐCN</b> ở nhóm <b>Báo PH</b>.': 'The <b>Parent call · CX/Head meeting</b> row in the <b>Parent call</b> group.',
   'Nút <b>Xuất Excel</b> ở đầu trang.': 'The <b>Export Excel</b> button at the top of the page.',

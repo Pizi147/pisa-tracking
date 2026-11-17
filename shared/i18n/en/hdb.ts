@@ -291,4 +291,5 @@ export const EN_HDB = {
   'Bấm <b>Test</b>, rồi bấm dòng lớp để mở lưới điểm.': 'Click <b>Tests</b>, then a class row to open the score grid.',
   'Lộ trình mới bắt đầu ngay: tuần này là tuần 1; lớp khác thì GV lớp cũ làm phiếu bàn giao.': 'New route starting now: this week is week 1; another class means the old class teachers write the handover.',
   'Tạm dừng: đóng lộ trình, mọi hạn dừng; sau này <b>Quay lại học</b> mở Lộ trình mới.': 'Paused: the route closes, all deadlines stop; later <b>Resume</b> opens a New route.',
+  'Học tiếp: cùng lộ trình học tiếp, giữ lớp, Target, Case; đổi Target / lớp được. Lần thi sau ghi như thường, KQ lần này vào lịch sử.': 'Continue studying: the same route goes on, keeping class, Target, Cases; Target / class can change. The next exam is recorded as usual, this result goes to history.',
 };

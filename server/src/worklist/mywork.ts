@@ -279,7 +279,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   buoc_tiep: {
     label: 'Chọn bước tiếp',
     /* L2 (PTA 13/11): web còn HAI hướng (N12). Hạn đọc từ Hạn mặc định (getter: đổi cấu hình → chữ đổi). */
-    get hint() { return t('Em Fast Track đã có kết quả thi thật — chọn Lộ trình mới hoặc Tạm dừng / Kết thúc học. Hạn {ngay} ngày kể từ ngày có kết quả.', { ngay: hanTai('buoc_tiep_sau_thi').ngay }); },
+    get hint() { return t('Em Fast Track đã có kết quả thi thật — chọn Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới. Hạn {ngay} ngày kể từ ngày có kết quả.', { ngay: hanTai('buoc_tiep_sau_thi').ngay }); },
   },
   bo_sung_ho_so: {
     label: 'Bổ sung hồ sơ thiếu',

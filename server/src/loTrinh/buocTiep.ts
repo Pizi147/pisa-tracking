@@ -5,7 +5,9 @@
  *  · Lộ trình mới (`lo_trinh_moi`) — Lớp này: `hocLai` về lớp cũ (Kết thúc học + Học lại một giao dịch, lộ trình MỚI); Lớp khác, em đang học: đúng đường
  *    Chuyển lớp (`raLenh`, OV-13l: "Ngay bây giờ" chuyển ngay, tuần sau = lệnh chờ + phiếu bàn giao), `apDungMotDong` đóng-mở vì lộ trình đã xong.
  *    Bắt đầu một Thứ Hai sau (không qua lệnh) = "Hẹn bắt đầu" (`buoc_tiep_hen`), tới tuần đó tự bắt đầu (`batDauHenDenHan`, cùng cron / quét khi đọc).
- *  · `hoc_tiep` / `hoc_lai` (OV-8a) — chỉ dữ liệu / API cũ.
+ *  · Học tiếp (`hoc_tiep`, N51 chủ SP 18/11) — CÙNG lộ trình chạy tiếp, giữ lớp / Target / môn / MT / Case / PA: KQ lần này + dự kiến thi chép vào `thi_that_lich_su`
+ *    rồi trả về như chưa thi (lần thi sau: Chốt ngày thi, nhập KQ, Bước tiếp như thường). Tuỳ chọn Target (`updateCycle`) · lớp (đúng đường Chuyển lớp, FT → FT giữ lộ trình).
+ *    Dòng `hoc_tiep` cũ (OV-8a "học tiếp lộ trình mới", không có `hocTiep` trong `buoc_tiep_json`) và `hoc_lai` — chỉ dữ liệu cũ, hoàn tác như cũ.
  * P7 SV-LO-TRINH (N12): web hai hướng — "Tạm dừng / Kết thúc học" (`tam_dung` / `ket_thuc` theo ô "Có thể quay lại học", ngày + lý do của hộp) · "Lộ trình mới" chọn
  *  LT1 / LT2 / RF / Khác (`route`, `routeTen`, `boTarget`): lớp đích là lớp FT bất kỳ (`kiemLopLoTrinhMoi`, lộ trình theo em), không chép ngày thi (E1), đầu vào = KQ thi thật (E3), Giữ lớp đã
  *  kết thúc → máy chủ tự mở lại lớp (E2), Case chưa xong của lộ trình cũ đóng "Kết thúc lộ trình" (PA "Dừng — kết thúc lộ trình", không vào Hiệu quả PA).
@@ -30,7 +32,7 @@ import { mondayOf } from '../platform/week.ts';
 import { thongBaoTrangThai } from '../students/trangThaiHv.ts';
 import { closeCasesBySystem, dongPhoiHopLoTrinh, moLaiCaseHeThongDong, moLaiPhoiHopLoTrinh, type ChupCaseDong } from '../cases/systemClose.ts';
 import { ghiBanChup } from './banChup.ts';
-import { docTarget } from '../fasttrack/cycles.ts';
+import { docTarget, updateCycle } from '../fasttrack/cycles.ts';
 import { COT_SAU_THI, NGAY_CO_KQ } from './cotSauThi.ts';
 import { chuViecTvv, coTheGiuViecTvv } from '../worklist/viecTvv.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -60,6 +62,28 @@ const coMuc = (c: any) => !!c && !!c.route && (c.status === 'active' || c.bc_ly_
 const ketLuanCua = (c: any): string | null => (c.status !== 'active' ? c.bc_ket_luan : null) ?? c.outcome ?? null;
 const daXongCua = (c: any) => nhanDaXong({ khongThi: !!c.thi_that_khong_thi, ovr: c.outcome_score ?? null, ketLuan: ketLuanCua(c) });
 /** SUA-LUU-TRU (việc 5): dấu kết quả thi thật lúc chọn bước tiếp — khác dấu hiện tại = "Kết quả đã đổi — xem lại bước tiếp?". */
+/**
+ * N51 Học tiếp: cột của LẦN THI — chép vào `thi_that_lich_su` (`cot_json`) rồi về giá trị "chưa thi" bên phải: lộ trình chờ thi lần sau như thường
+ * (Lịch thi, Chốt ngày thi, Cập nhật KQ, Bước tiếp) và việc Case / PA / MT hiện lại (N46 đọc `CO_KET_QUA_THI_SQL`). Hoàn tác trả nguyên.
+ */
+const COT_HOC_TIEP: Record<string, string | number | null> = {
+  thi_that_ngay: null, thi_that_l: null, thi_that_r: null, thi_that_w: null, thi_that_s: null, thi_that_khong_thi: 0, thi_that_nhap_boi: null, thi_that_nhap_luc: null,
+  thi_that_target: null, thi_that_lay_lai: null, outcome: null, outcome_attempt_id: null, outcome_score: null, outcome_note: null,
+  exam_month: null, exam_period_id: null, exam_date: null, noi_thi: null,
+  lich_thi_ket_luan: null, lich_thi_thang: null, lich_thi_ghi_chu: null, lich_thi_ghi_chu_boi: null, lich_thi_ghi_chu_luc: null,
+  han_sau_thi: null, han_sau_thi_boi: null, han_sau_thi_luc: null, han_sau_thi_ly_do: null, han_sau_thi_so_lan: 0,
+};
+/** Dòng lịch sử của lần Học tiếp đang chọn — null: lựa chọn khác, hoặc `hoc_tiep` cũ (OV-8a, không có `hocTiep`). */
+const dongHocTiep = (c: any): any => {
+  if (c?.buoc_tiep !== 'hoc_tiep') return null;
+  const id = (JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep).hocTiep;
+  return id ? db().prepare('SELECT * FROM thi_that_lich_su WHERE id = ?').get(id) ?? null : null;
+};
+/** Lộ trình + KQ lần thi vừa chọn Học tiếp (cột đã chép sang lịch sử) — panel Bước tiếp, xem trước Lộ trình mới khi Đổi đọc như lúc chọn. */
+const kemKqHocTiep = (c: any): any => {
+  const h = dongHocTiep(c);
+  return h ? { ...c, ...JSON.parse(h.cot_json), co_kq: 1 } : c;
+};
 const dauKq = (c: any) => JSON.stringify([!!c.thi_that_khong_thi, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, c.outcome_score ?? null, c.outcome ?? null]);
 
 export type TrangThaiBuocTiep = {
@@ -88,11 +112,12 @@ export function targetGoiYSauDat(c: { target_score?: number | null; outcome_scor
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
 export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocTiep | null {
-  const c = docLoTrinh(cycleId);
-  if (!coMuc(c)) return null;
+  const c0 = docLoTrinh(cycleId);
+  if (!coMuc(c0)) return null;
+  const c = kemKqHocTiep(c0);   // N51: Học tiếp — nhãn "Đã xong", gợi ý, Target gợi ý theo KQ lần thi đã chọn
   const g = JSON.parse(c.buoc_tiep_json ?? '{}') as GhiBuocTiep;
   const coTheChon = coQuyenBuocTiep(p, c.student_id);
-  const daChuyen = c.buoc_tiep === 'lo_trinh_moi' && !!g.lenhId && (db().prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any)?.trang_thai === 'da_chuyen';
+  const daChuyen = (c.buoc_tiep === 'lo_trinh_moi' || c.buoc_tiep === 'hoc_tiep') && !!g.lenhId && (db().prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any)?.trang_thai === 'da_chuyen';
   return {
     chon: (c.buoc_tiep ?? null) as LuaChonSauThi | null, luc: c.buoc_tiep_luc ?? null, boi: c.boi_ten ?? null,
     goiY: goiYSauThi({ khongThi: !!c.thi_that_khong_thi, ketLuan: ketLuanCua(c) }),
@@ -163,7 +188,7 @@ function docLoTrinhMoi(c: any, input: ChonBuocTiepVao, lopMoiId: number | null, 
  * Ai xem được panel Bước tiếp thì đọc được; lỗi chọn (lớp sai loại, thiếu tên) trả ở `loi`, không ném.
  */
 export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuocTiepVao & { lopMoiId?: unknown }) {
-  const c = docLoTrinh(cycleId);
+  const c = kemKqHocTiep(docLoTrinh(cycleId));   // N51: Đổi từ Học tiếp → đầu vào = KQ lần thi đó (Hoàn tác trả lại trước khi mở)
   if (!coMuc(c)) throw notFound('Lộ trình không có Bước tiếp');
   const conn = db();
   const homNay = demoToday();
@@ -244,6 +269,8 @@ type GhiBuocTiep = {
   /** SUA-LUU-TRU (Đổi): đầu vào ĐÃ KIỂM của lần chọn này (chọn lại đúng nó được) · lựa chọn TRƯỚC lần Đổi (Hoàn tác = chọn lại nó, chuỗi lùi được). */
   vao?: ChonBuocTiepVao;
   truoc?: TruocDoi | null;
+  /** N51 Học tiếp: dòng `thi_that_lich_su` của lần này · Target trước khi Sửa (Hoàn tác trả lại; chỉ khi đổi). */
+  hocTiep?: number; targetCu?: string | number | null;
 };
 type TruocDoi = { vao: ChonBuocTiepVao; kq?: string; truoc?: TruocDoi | null };
 /** Bản chụp mới nhất của lộ trình (hai tham số: cycle_id, cycle_id). */
@@ -260,6 +287,16 @@ function hoanTac(p: Principal, c: any) {
     } else if (c.buoc_tiep === 'tam_dung') {
       if (g.tamDung) hoanTacTamDung(p, c.student_id);
       if (g.dongLoTrinh) conn.prepare(`UPDATE learning_cycles SET status = 'active', ended_at = NULL WHERE id = ? AND status = 'completed'`).run(c.id);
+    } else if (c.buoc_tiep === 'hoc_tiep' && g.hocTiep) {
+      /* N51: Target về như trước, KQ lần thi + dự kiến thi trả nguyên từ lịch sử. Lớp đã chuyển (đường Chuyển lớp) giữ — đổi lại bằng Chuyển lớp (web ẩn Hoàn tác). */
+      if (g.targetCu !== undefined) updateCycle(p, c.id, { targetScore: g.targetCu ?? '', lyDo: 'Hoàn tác Học tiếp' });
+      const h = conn.prepare('SELECT cot_json FROM thi_that_lich_su WHERE id = ?').get(g.hocTiep) as any;
+      if (h) {
+        const cot = JSON.parse(h.cot_json) as Record<string, unknown>;
+        const ten = Object.keys(COT_HOC_TIEP).filter((k) => k in cot);
+        conn.prepare(`UPDATE learning_cycles SET ${ten.map((k) => `${k} = ?`).join(', ')} WHERE id = ?`).run(...ten.map((k) => cot[k] ?? null), c.id);
+        conn.prepare('DELETE FROM thi_that_lich_su WHERE id = ?').run(g.hocTiep);
+      }
     } else if (c.buoc_tiep === 'lo_trinh_moi' && g.lenhId) {
       const l = conn.prepare('SELECT trang_thai FROM lenh_chuyen_lop WHERE id = ?').get(g.lenhId) as any;
       if (l?.trang_thai === 'da_chuyen') throw conflict(KHONG_HOAN_TAC);
@@ -293,6 +330,40 @@ function hoanTac(p: Principal, c: any) {
   const cu = g.tuTamDung ? g.tamDungCu ?? { json: '{}', luc: c.buoc_tiep_luc, boi: c.buoc_tiep_boi } : null;
   conn.prepare('UPDATE learning_cycles SET buoc_tiep = ?, buoc_tiep_luc = ?, buoc_tiep_boi = ?, buoc_tiep_json = ?, buoc_tiep_hen = NULL WHERE id = ?')
     .run(cu ? 'tam_dung' : null, cu?.luc ?? null, cu?.boi ?? null, cu ? cu.json ?? '{}' : null, c.id);
+}
+
+const KHONG_HOC_TIEP = 'Học tiếp chỉ khi em đang học lộ trình này — em đã nghỉ / tạm dừng: chọn Lộ trình mới.';
+/**
+ * N51 HỌC TIẾP (chủ SP 18/11): CÙNG lộ trình chạy tiếp — mặc định lớp cũ, Target cũ, mọi thứ giữ. KQ lần này + dự kiến thi vào `thi_that_lich_su`, cột về
+ * "chưa thi" (`COT_HOC_TIEP`). Tuỳ chọn: Target (`updateCycle`, cùng luật Sửa Target + Hành trình) · lớp FT khác (đúng đường Chuyển lớp `raLenh` "Ngay bây giờ";
+ * FT → FT giữ lộ trình, bài chưa làm đi theo). Trong giao dịch của `chonBuocTiep`; lựa chọn đã ghi trước (`apDungMotDong` thấy `hoc_tiep` → không đóng lộ trình).
+ */
+function hocTiep(q: Principal, p: Principal, c: any, o: { tg: { target: number | null; kck: boolean } | null; mucTieu: number | string | null; lopMoiId: number | null; homNay: string }, ghi: GhiBuocTiep) {
+  if (!c.co_kq) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
+  if (c.status !== 'active' || c.em_status !== 'active' || c.ghi_danh !== 'active' || c.em_archived) throw badRequest(KHONG_HOC_TIEP);
+  const conn = db();
+  const doiLop = !!o.lopMoiId && o.lopMoiId !== c.lop_id;
+  const lopMoi = doiLop ? conn.prepare('SELECT id, is_fast_track FROM classes WHERE id = ?').get(o.lopMoiId) as any : null;
+  if (doiLop && !lopMoi?.is_fast_track) throw badRequest('Học tiếp: chọn lớp Fast Track (lộ trình giữ nguyên).');
+  const cot = Object.fromEntries(Object.keys(COT_HOC_TIEP).map((k) => [k, c[k] ?? null]));
+  ghi.hocTiep = Number(conn.prepare(`INSERT INTO thi_that_lich_su (cycle_id, student_id, class_id, ngay_thi, thi_that_l, thi_that_r, thi_that_w, thi_that_s, thi_that_khong_thi,
+      thi_that_lay_lai, outcome, outcome_score, target, khong_cam_ket, cot_json, chon_luc, chon_boi, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`)
+    .run(c.id, c.student_id, c.lop_id ?? null, c.thi_that_ngay ?? c.exam_date ?? null, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null,
+      c.thi_that_khong_thi ? 1 : 0, c.thi_that_lay_lai ?? null, c.outcome ?? null, c.outcome_score ?? null, c.thi_that_target ?? c.target_score ?? null, c.khong_cam_ket ? 1 : 0,
+      JSON.stringify(cot), o.homNay, p.userId, nowIso()).lastInsertRowid);
+  conn.prepare(`UPDATE learning_cycles SET ${Object.keys(COT_HOC_TIEP).map((k) => `${k} = ?`).join(', ')} WHERE id = ?`).run(...Object.values(COT_HOC_TIEP), c.id);
+  if (o.tg && (o.tg.target !== (c.target_score ?? null) || o.tg.kck !== !!c.khong_cam_ket)) {
+    ghi.targetCu = ghepMucTieu(c.target_score ?? null, !!c.khong_cam_ket);
+    updateCycle(q, c.id, { targetScore: o.mucTieu, lyDo: 'Học tiếp sau thi' });
+  }
+  if (lopMoi) {
+    const r = raLenh(q, {
+      lopNguonId: c.lop_id, boiCanh: 'giua-khoa', tuanChung: null,
+      dongs: [{ studentId: c.student_id, huong: 'chuyen_lop', toClassId: lopMoi.id, tuan: o.homNay, lyDo: 'Học tiếp sau thi', mucTieu: null }],
+    });
+    if (r.failed.length) throw badRequest(r.failed[0].message);
+    ghi.lenhId = (conn.prepare('SELECT id FROM lenh_chuyen_lop WHERE student_id = ? ORDER BY id DESC LIMIT 1').get(c.student_id) as any).id;
+  }
 }
 
 /**
@@ -336,9 +407,8 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
   const q = nguoiLam(p, c0.student_id);
   const chon = input.chon as LuaChonSauThi;
   if (![...LUA_CHON_SAU_THI, ...LUA_CHON_SAU_THI_CU].includes(chon)) throw badRequest('Bước tiếp không hợp lệ.');
-  if (!coMuc(c0) || !c0.co_kq) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
+  if (!coMuc(c0) || !(c0.co_kq || dongHocTiep(c0))) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
   const lopMoiId = input.lopMoiId ? Number(input.lopMoiId) : null;
-  if (chon === 'hoc_tiep' && !lopMoiId) throw badRequest('Học tiếp lộ trình mới: chọn lớp.');
   /* OV-12a: TVV chỉ xếp sang lớp thuộc chi nhánh của mình (quyền tạm `nguoiLam` theo chi nhánh TVV); QL giữ luật cũ (Q3: không đòi quyền lớp mới). */
   if (lopMoiId && q !== p && !can(q, PERMISSIONS.CLASS_EDIT, { classId: lopMoiId })) throw forbidden('Lớp chuyển đến nằm ngoài chi nhánh của bạn.');
   const conn = db();
@@ -375,7 +445,7 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     /* HOTFIX-MO-KHOA: lựa chọn Kết thúc / Tạm dừng ghi trước #1172 (không `vao`) — Hoàn tác sau Đổi vẫn về đúng nó. */
     const vaoCu = gCu.vao ?? (cu.buoc_tiep === 'ket_thuc' || cu.buoc_tiep === 'tam_dung' ? { chon: cu.buoc_tiep } : null);
     const truoc: TruocDoi | null = o.truoc !== undefined ? o.truoc : cu.buoc_tiep && vaoCu && !quayLaiTuTamDung ? { vao: vaoCu, kq: gCu.kq, truoc: gCu.truoc ?? null } : null;
-    const ghi: GhiBuocTiep = { thamSo, kq: o.kq ?? dauKq(cu), vao, ...(truoc ? { truoc } : {}), ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { route: lt.route, routeTen: lt.routeTen, boTarget: lt.boTarget, monDangKy: lt.monDangKy, cuoiId: cycleId } } : {}) };
+    const ghi: GhiBuocTiep = { thamSo, kq: o.kq ?? dauKq(kemKqHocTiep(cu)), vao, ...(truoc ? { truoc } : {}), ...(ghiChu ? { ghiChu } : {}), ...(lt ? { loTrinhMoi: { route: lt.route, routeTen: lt.routeTen, boTarget: lt.boTarget, monDangKy: lt.monDangKy, cuoiId: cycleId } } : {}) };
     /* OV-13m: em Tạm dừng sau thi → Lộ trình mới = Quay lại học (hạn tính lại từ hôm nay), không gỡ Tạm dừng; hoàn tác thì Tạm dừng lại. */
     if (quayLaiTuTamDung) {
       if (cu.em_status === 'inactive') setStudentStatus(q, cu.student_id, 'active', homNay, 'Quay lại học', null, { lopKetThucDuoc: true });   // P7 (E2): lớp giữ đã kết thúc → mở lại ở dưới
@@ -422,14 +492,16 @@ export function chonBuocTiep(p: Principal, cycleId: number, input: ChonBuocTiepV
     } else if (chon === 'lo_trinh_moi' && hen) {
       /* Hẹn bắt đầu: chưa đổi gì — tới Thứ Hai đó `batDauHenDenHan` bắt đầu bằng đúng đường "Ngay bây giờ". */
       Object.assign(ghi, { lopMoiId, mucTieu });
-    } else if (chon === 'lo_trinh_moi' || chon === 'hoc_tiep' || chon === 'hoc_lai') {
+    } else if (chon === 'hoc_tiep') {
+      hocTiep(q, p, c, { tg, mucTieu, lopMoiId, homNay }, ghi);
+    } else if (chon === 'lo_trinh_moi' || chon === 'hoc_lai') {
       batDauBangHocLai(q, c, { date: chon === 'lo_trinh_moi' ? homNay : typeof input.date === 'string' && input.date ? input.date : homNay, lopMoiId,
         mucTieu, moLaiLop: input.moLaiLop, lyDo: chon === 'lo_trinh_moi' ? undefined : input.lyDo, thangThi: input.thangThi }, ghi);
     }
     const lopMoi = lopMoiId ? conn.prepare('SELECT code, route FROM classes WHERE id = ?').get(lopMoiId) as any : null;
     if (lopMoi) ghi.lopMoiCode = lopMoi.code;
     const lop = lopMoi?.code ?? null;
-    datHuong(cycleId, chon, lt?.route ?? lopMoi?.route ?? null, ghi);   // P7: hướng theo lộ trình đã chọn (LT2 ở lớp LT1 vẫn "Lên LT2")
+    if (chon !== 'hoc_tiep') datHuong(cycleId, chon, lt?.route ?? lopMoi?.route ?? null, ghi);   // P7: hướng theo lộ trình đã chọn (LT2 ở lớp LT1 vẫn "Lên LT2"); N51: lộ trình không đóng
     conn.prepare('UPDATE learning_cycles SET buoc_tiep_json = ? WHERE id = ?').run(JSON.stringify(ghi), cycleId);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'buoc_tiep', eventDate: homNay, title: o.hoanTac ? `Sau thi: hoàn tác — về ${NHAN_SAU_THI[chon]}` : `Sau thi: ${NHAN_SAU_THI[chon]}`,

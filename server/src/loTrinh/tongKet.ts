@@ -107,7 +107,8 @@ export function cacLoTrinh(p: Principal, studentId: number): DongCacLoTrinh[] {
   const bt = cycles[0].route ? trangThaiBuocTiep(p, cycles[0].id) : null;   // `cycles` xếp seq giảm: [0] = mới nhất
   return cycles.map((c): DongCacLoTrinh => {
     const b = bc.get(c.id);
-    const buocTiep = c.id === cycles[0].id ? bt : null;
+    /* N51: Học tiếp — lộ trình đang chạy tiếp: hàng "Đang học" như thường (Đổi / Hoàn tác ở panel Bước tiếp của hồ sơ). */
+    const buocTiep = c.id === cycles[0].id && !(bt?.chon === 'hoc_tiep' && c.status === 'active') ? bt : null;
     if (c.status === 'active' || !b) {
       const ct = c.route ? null : programmeByCode(c.programme_code);
       const lopCuaLoTrinh = luot.filter((a) => a.cycle_id === c.id);

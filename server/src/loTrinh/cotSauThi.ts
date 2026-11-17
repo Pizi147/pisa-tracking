@@ -2,9 +2,11 @@
 /**
  * OV-13q: ngày CÓ KẾT QUẢ = mốc Hành trình "Kết quả thi thật" ĐẦU TIÊN của lộ trình — sửa kết quả sau đó không dời hạn Bước tiếp.
  * Lọc theo `student_id` trước để đi chỉ mục `idx_journey_student` (journey_events không có chỉ mục cycle_id).
+ * N51: lộ trình Học tiếp — chỉ mốc SAU lần chọn Học tiếp gần nhất (`thi_that_lich_su`, chỉ mục `idx_ttls_cycle`) là của lần thi đang chờ.
  * shortcut: lưu dở (thiếu kỹ năng) trước rồi mới đủ cũng tính từ lần lưu dở — cần cột riêng nếu chủ SP báo hạn Bước tiếp sớm.
  */
-export const ngayCoKq = (c = 'c') => `(SELECT MIN(j.event_date) FROM journey_events j WHERE j.student_id = ${c}.student_id AND j.cycle_id = ${c}.id AND j.event_type = 'cycle_outcome')`;
+export const ngayCoKq = (c = 'c') => `(SELECT MIN(j.event_date) FROM journey_events j WHERE j.student_id = ${c}.student_id AND j.cycle_id = ${c}.id AND j.event_type = 'cycle_outcome'
+  AND j.event_date > COALESCE((SELECT MAX(h.chon_luc) FROM thi_that_lich_su h WHERE h.cycle_id = ${c}.id), ''))`;   // N51: lần thi sau Học tiếp tính từ sau ngày chọn
 export const NGAY_CO_KQ = ngayCoKq();
 /**
  * Cột `trangThaiSauThi` đọc — `c` = learning_cycles, `ep` = report_periods của tuần thi dự kiến (`LEFT JOIN report_periods ep ON ep.id = c.exam_period_id`).

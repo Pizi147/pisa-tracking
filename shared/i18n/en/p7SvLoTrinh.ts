@@ -1,5 +1,15 @@
 /** P7 SV-LO-TRINH (chủ SP 25/10, N11, N12, N22 ⑤): một nút Tạm dừng / Kết thúc học, Quay lại học, Bước tiếp 2 hướng, Lộ trình mới. */
 export const EN_P7_SV_LO_TRINH = {
+  /* HOC-TIEP (N51, chủ SP 18/11): hướng thứ ba của Bước tiếp. */
+  'Học tiếp': 'Continue studying',
+  'Giữ lộ trình, lớp, Target': 'Keeps route, class, Target',
+  'Giữ lộ trình {lt} · Case, PA, MT giữ nguyên': 'Keeps route {lt} · Cases, plans, MTs unchanged',
+  'KQ thi {ngay} vào lịch sử · chờ lần thi sau': 'Exam result {ngay} goes to history · waits for the next exam',
+  'KQ thi vào lịch sử · chờ lần thi sau': 'Exam result goes to history · waits for the next exam',
+  'Target {cu} → {moi}': 'Target {cu} → {moi}',
+  'Chuyển sang {lop} ngay · đường Chuyển lớp': 'Moves to {lop} now · via class change',
+  'Giữ Target': 'Keep Target',
+  'Không có lớp Fast Track khác đang chạy': 'No other running Fast Track class',
   'Tạm dừng / Kết thúc học': 'Pause / End study',
   'em vào Lưu trữ · tạm dừng giữ lớp': 'student goes to Archive · pausing keeps the class seat',
   'Kết thúc lộ trình': 'Route ended',

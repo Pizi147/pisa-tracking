@@ -91,6 +91,7 @@ import { migratePrGvCuBoTro } from './migrate/prGvCuBoTro.ts';
 import { migratePrBcPhViecGv } from './migrate/prBcPhViecGv.ts';
 import { migratePrKyVongTuDat } from './migrate/prKyVongTuDat.ts';
 import { migratePrTdQuet } from './migrate/prTdQuet.ts';
+import { migratePrHocTiep } from './migrate/prHocTiep.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
@@ -544,6 +545,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrKyVongTuDat(conn, applied));
   /* TD-QUET (17/11): chỉ mục sos_case_history(case_id) + case_signals(class_id) — Lịch sử Case / "lớp đã có dữ liệu" hết quét cả bảng (chỉ thêm chỉ mục). */
   buoc(() => migratePrTdQuet(conn, applied));
+  /* HOC-TIEP (N51, chủ SP 18/11): bảng thi_that_lich_su — KQ thi thật lần trước của lộ trình Học tiếp (chỉ thêm bảng + chỉ mục, chạy lặp được). */
+  buoc(() => migratePrHocTiep(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

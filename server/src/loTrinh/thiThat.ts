@@ -24,11 +24,14 @@ export type NhapThiThat = { ngayThi?: string | null; l?: unknown; r?: unknown; w
  * Em chỉ thi lại một / vài kỹ năng → kỹ năng còn lại lấy từ đây (ô form tự điền / một bấm), overall + Đạt Target tính như thường.
  */
 export type ThiTruoc = { cycleId: number; l: number; r: number; w: number; s: number; ngay: string | null };
-export function thiTruocCua(c: { route?: string | null; student_id: number; seq: number }): ThiTruoc | null {
+/* N51 Học tiếp: lần thi trước của CHÍNH lộ trình này (`thi_that_lich_su`) đứng trước lộ trình cũ — vẫn MỘT câu. */
+const DU_4_KN = 'thi_that_khong_thi = 0 AND thi_that_l IS NOT NULL AND thi_that_r IS NOT NULL AND thi_that_w IS NOT NULL AND thi_that_s IS NOT NULL';
+export function thiTruocCua(c: { id: number; route?: string | null; student_id: number; seq: number }): ThiTruoc | null {
   if (!c.route) return null;
-  const r = db().prepare(`SELECT id, thi_that_l AS l, thi_that_r AS r, thi_that_w AS w, thi_that_s AS s, thi_that_ngay AS ngay FROM learning_cycles
-     WHERE student_id = ? AND seq < ? AND route IS NOT NULL AND thi_that_khong_thi = 0
-       AND thi_that_l IS NOT NULL AND thi_that_r IS NOT NULL AND thi_that_w IS NOT NULL AND thi_that_s IS NOT NULL ORDER BY seq DESC LIMIT 1`).get(c.student_id, c.seq) as any;
+  const r = db().prepare(`SELECT * FROM (SELECT 0 AS uu, cycle_id AS id, thi_that_l AS l, thi_that_r AS r, thi_that_w AS w, thi_that_s AS s, ngay_thi AS ngay FROM thi_that_lich_su
+       WHERE cycle_id = ? AND ${DU_4_KN} ORDER BY id DESC LIMIT 1)
+     UNION ALL SELECT * FROM (SELECT 1, id, thi_that_l, thi_that_r, thi_that_w, thi_that_s, thi_that_ngay FROM learning_cycles
+       WHERE student_id = ? AND seq < ? AND route IS NOT NULL AND ${DU_4_KN} ORDER BY seq DESC LIMIT 1) ORDER BY uu LIMIT 1`).get(c.id, c.student_id, c.seq) as any;
   return r ? { cycleId: r.id, l: r.l, r: r.r, w: r.w, s: r.s, ngay: r.ngay ?? null } : null;
 }
 
@@ -140,6 +143,13 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
     if (Object.keys(sauNk).some((k) => (sauNk as any)[k] !== (truocNk as any)[k])) {   // ovr / kết luận suy từ điểm — không tự thành lần đổi
       khoiPhucId = writeAudit({ actorUserId: p.userId, action: 'cycle.thi_that', entityType: 'learning_cycle', entityId: cycleId,
         before: { ...truocNk, _hoan: hoan }, after: { ...sauNk, ovr: kq.ovr, ketLuan: kq.ketLuan, ...(kt ? { kyThi: kt.ma } : {}) } });
+    }
+    /* N51: lộ trình đang Học tiếp có đủ KQ lần thi sau → lựa chọn Học tiếp xong việc (lần đó ở `thi_that_lich_su`) — bỏ lựa chọn để Bước tiếp lần này
+       hiện như thường (việc Chọn bước tiếp, hạn sau thi). Dòng `hoc_tiep` cũ (OV-8a, không `hocTiep`) giữ nguyên. */
+    if (c.buoc_tiep === 'hoc_tiep' && (khongThi || DIEM.every((k) => ghi[k] !== null)) && (() => { try { return !!JSON.parse(c.buoc_tiep_json ?? '{}').hocTiep; } catch { return false; } })()) {
+      conn.prepare('UPDATE learning_cycles SET buoc_tiep = NULL, buoc_tiep_luc = NULL, buoc_tiep_boi = NULL, buoc_tiep_json = NULL, buoc_tiep_hen = NULL WHERE id = ?').run(cycleId);
+      writeAudit({ actorUserId: p.userId, action: 'cycle.buoc_tiep', entityType: 'learning_cycle', entityId: cycleId,
+        before: { buocTiep: 'hoc_tiep', buocTiepHen: null }, after: { buocTiep: null, buocTiepHen: null, _nguon: 'Kết quả thi lần sau' } });
     }
     /* `khoiPhucId`: nhật ký của lần lưu này — toast Hoàn tác gửi lại (`khoiPhucThiThat`); không đổi gì → null (không có gì để hoàn tác). */
     return { ...cycleById(cycleId), khoiPhucId };

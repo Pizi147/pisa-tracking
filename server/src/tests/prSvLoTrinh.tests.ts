@@ -43,8 +43,7 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     assert(!d.coTheTamDungKetThuc(QUYEN_QL, 'finished').ketThuc, 'đã kết thúc: không');
   });
 
-  check('SV-2 · Bước tiếp 2 hướng: goiYSauThi Đạt → "dung", chưa đạt / Không thi → Lộ trình mới, không Target → null; không trả hoc_lai (E9)', () => {
-    assert(d.HUONG_SAU_THI.join() === 'dung,lo_trinh_moi', 'hai hướng trên web');
+  check('SV-2 · Bước tiếp (N51: 3 hướng — HT-1): goiYSauThi Đạt → "dung", chưa đạt / Không thi → Lộ trình mới, không Target → null; không trả hoc_lai (E9)', () => {
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'reached' }) === 'dung', 'Đạt');
     assert(d.goiYSauThi({ khongThi: false, ketLuan: 'not_reached' }) === 'lo_trinh_moi', 'Chưa đạt');
     assert(d.goiYSauThi({ khongThi: true, ketLuan: 'unknown' }) === 'lo_trinh_moi', 'Không thi');
@@ -423,5 +422,130 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     const d2 = emThiXong(lop());
     const tt = thv.tomTatTrangThai([c.sid, d2.sid], false);
     assert(tt.soCase === 1 && tt.dong.includes('1 Case dừng hạn'), JSON.stringify(tt));
+  }));
+
+  // ------------------------------------------------------------------ HOC-TIEP (N51, chủ SP 18/11): hướng thứ ba "Học tiếp"
+  const ts: any = await import('../students/tamDung.ts');
+  const thiThat: any = await import('../loTrinh/thiThat.ts');
+  const kqThi: any = await import('../phanTich/ketQuaThi.ts');
+  const { migratePrHocTiep } = await import('../migrate/prHocTiep.ts');
+  /** Một điều kiện N46 (`CASE_SAU_THI_SQL`) cho Case của em — true = việc Case / PA ẩn khỏi Công việc. */
+  const anViecCase = (caseId: number) => !!get(`SELECT ${ts.CASE_SAU_THI_SQL('sc', 'sc.student_id')} AS x FROM sos_cases sc WHERE sc.id = ?`, caseId).x;
+  const luotConKeHoach = (cy: number) => get(`SELECT COUNT(*) n FROM assessment_attempts a WHERE a.cycle_id = ? AND a.status = 'planned' AND ${ts.LUOT_CON_KE_HOACH_SQL('a')}`, cy).n as number;
+  const choChon = (sid: number) => bt.choBuocTiep(sid).map((x: any) => x.id);
+  const thiKhoang = (sid: number) => { xoaNho(); return kqThi.thiThatTrongKhoang(null, { branchId: null, tu: t.addDays(TODAY, -60), den: TODAY }, { boQuyen: true }).filter((x: any) => x.dong.studentId === sid).map((x: any) => x.dong); };
+  /** Em thi xong (KQ L7 R7 W6.5 S6.5 · 3 ngày trước) có MT2 chưa làm, ngày thi dự kiến + ghi chú lịch thi (phải về "chưa thi" khi Học tiếp). */
+  const emHocTiep = (L: number) => {
+    const a = emThiXong(L);
+    conn.prepare(`UPDATE learning_cycles SET exam_date = ?, exam_month = ?, lich_thi_ghi_chu = 'họp 1', outcome = 'reached', outcome_score = 7 WHERE id = ?`).run(t.addDays(TODAY, -3), t.addDays(TODAY, -3).slice(0, 7), a.cy);
+    const mt2 = Number(conn.prepare(`INSERT INTO assessment_attempts (cycle_id, student_id, attempt_no, kind, class_id, planned_period_id, status, created_at) VALUES (?,?,2,'mock',?,?,'planned',?)`)
+      .run(a.cy, a.sid, L, week.ensurePeriod(t.addDays(T2, 14)).id, NOW).lastInsertRowid);
+    return { ...a, mt2 };
+  };
+
+  check('HT-1 · Bước tiếp 3 hướng: Tạm dừng / Kết thúc học · Học tiếp · Lộ trình mới; `hoc_tiep` không thuộc nhóm "kết thúc lộ trình đã thi" (DA_THI_THAT)', () => {
+    assert(d.HUONG_SAU_THI.join() === 'dung,hoc_tiep,lo_trinh_moi', d.HUONG_SAU_THI.join());
+    assert(d.NHAN_HUONG_SAU_THI.hoc_tiep === 'Học tiếp' && d.NHAN_SAU_THI.hoc_tiep === 'Học tiếp', 'nhãn');
+    assert(!d.LUA_CHON_SAU_THI.includes('hoc_tiep'), 'hoc_tiep ngoài LUA_CHON_SAU_THI (N46 ngoại lệ, MT giữ)');
+  });
+
+  check('HT-2 · Học tiếp mặc định: cùng lộ trình (lớp, Target, Case / PA, MT) · KQ vào lịch sử · lộ trình về "chưa thi" · việc Case / MT hiện lại (N46) · Phân tích giữ KQ · Hoàn tác trả nguyên', () => thu(() => {
+    const L = lop(); const a = emHocTiep(L);
+    const truoc = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(anViecCase(a.caseId) && luotConKeHoach(a.cy) === 0 && choChon(a.sid).includes(a.cy), 'trước: N46 ẩn việc, MT2 không còn kế hoạch, chờ chọn bước tiếp');
+    const kq = bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep' });
+    const c = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(kq.chon === 'hoc_tiep' && kq.hoanTacDuoc && /OVR 7\.0/.test(kq.daXong) && kq.ngayThi === truoc.thi_that_ngay, `trạng thái: ${JSON.stringify(kq)}`);
+    assert(c.status === 'active' && c.seq === truoc.seq && c.target_score === 6.5 && cyMoi(a.sid).id === a.cy, 'cùng lộ trình, Target giữ, không lộ trình mới');
+    assert(get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a.sid).class_id === L, 'lớp cũ');
+    assert(c.thi_that_l === null && c.thi_that_s === null && c.outcome_score === null && c.exam_date === null && c.exam_month === null && c.lich_thi_ghi_chu === null, `về chưa thi: ${JSON.stringify(c)}`);
+    assert(d.trangThaiSauThi(c, TODAY).giaiDoan === 'chua_thi', 'Lịch thi / Công việc: chờ thi lần sau');
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', a.caseId).status === 'open' && get('SELECT status FROM case_interventions WHERE id = ?', a.paId).status === 'started', 'Case / PA giữ');
+    assert(!anViecCase(a.caseId) && luotConKeHoach(a.cy) === 1 && !choChon(a.sid).length, 'N51: việc Case / MT2 hiện lại, hết việc Chọn bước tiếp');
+    const h = get('SELECT * FROM thi_that_lich_su WHERE cycle_id = ?', a.cy);
+    assert(h && h.thi_that_l === 7 && h.thi_that_s === 6.5 && h.outcome_score === 7 && h.class_id === L && h.ngay_thi === truoc.thi_that_ngay && h.chon_boi === QL.userId, `lịch sử: ${JSON.stringify(h)}`);
+    const pt = thiKhoang(a.sid);
+    assert(pt.length === 1 && pt[0].buocTiep === 'hoc_tiep' && pt[0].ovr === 7 && pt[0].lop && pt[0].ngayThi === truoc.thi_that_ngay, `Phân tích giữ KQ: ${JSON.stringify(pt)}`);
+    /* Bấm lại đúng lựa chọn → không làm lại (một dòng lịch sử). */
+    bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep' });
+    assert(get('SELECT COUNT(*) n FROM thi_that_lich_su WHERE cycle_id = ?', a.cy).n === 1, 'bấm đúp không chép hai lần');
+    bt.boChonBuocTiep(QL, a.cy);
+    const sau = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    const cot = ['thi_that_ngay', 'thi_that_l', 'thi_that_r', 'thi_that_w', 'thi_that_s', 'outcome', 'outcome_score', 'exam_date', 'exam_month', 'lich_thi_ghi_chu', 'target_score'];
+    assert(cot.every((k) => sau[k] === truoc[k]) && sau.buoc_tiep === null, `Hoàn tác trả nguyên: ${JSON.stringify(cot.map((k) => [k, truoc[k], sau[k]]))}`);
+    assert(!get('SELECT 1 x FROM thi_that_lich_su WHERE cycle_id = ?', a.cy) && anViecCase(a.caseId) && choChon(a.sid).includes(a.cy), 'Hoàn tác: hết lịch sử, N46 ẩn lại, việc Chọn bước tiếp về');
+  }));
+
+  check('HT-3 · Học tiếp đổi Target + lớp (đúng đường Chuyển lớp, FT → FT giữ lộ trình) · lớp không FT → 400 · Đổi sang Tạm dừng trả KQ + Target', () => thu(() => {
+    const L = lop(); const L2 = lop(); const a = emHocTiep(L);
+    const lopTh = get(`SELECT id FROM classes WHERE is_fast_track = 0 AND status = 'active' AND branch_id = ? LIMIT 1`, MB)?.id;
+    if (lopTh) assert(loi(() => bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep', lopMoiId: lopTh }))?.status === 400 && get('SELECT thi_that_l FROM learning_cycles WHERE id = ?', a.cy).thi_that_l === 7, 'lớp thường → 400, không đổi gì');
+    const kq = bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep', mucTieu: '7.0', lopMoiId: L2 });
+    const c = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(c.status === 'active' && c.target_score === 7 && cyMoi(a.sid).id === a.cy, `cùng lộ trình, Target 7: ${JSON.stringify(c)}`);
+    assert(get(`SELECT class_id FROM enrollments WHERE student_id = ? AND status = 'active'`, a.sid).class_id === L2, 'đã chuyển lớp');
+    assert(get('SELECT class_id, cycle_id FROM assessment_attempts WHERE id = ?', a.mt2).class_id === L2 && get('SELECT cycle_id FROM assessment_attempts WHERE id = ?', a.mt1).cycle_id === a.cy, 'MT chưa làm theo em, điểm cũ cùng lộ trình');
+    assert(get(`SELECT COUNT(*) n FROM cycle_target_revisions WHERE cycle_id = ?`, a.cy).n >= 1, 'Sửa Target có lịch sử');
+    assert(!kq.hoanTacDuoc, 'đã chuyển lớp → web ẩn Hoàn tác (Đổi vẫn được)');
+    bt.chonBuocTiep(QL, a.cy, { chon: 'tam_dung' });
+    const s2 = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(s2.thi_that_l === 7 && s2.outcome_score === 7 && s2.target_score === 6.5 && s2.buoc_tiep === 'tam_dung' && s2.status === 'completed', `Đổi → Tạm dừng: ${JSON.stringify(s2)}`);
+    assert(!get('SELECT 1 x FROM thi_that_lich_su WHERE cycle_id = ?', a.cy) && hs(a.sid).status === 'inactive', 'lịch sử gỡ, em Tạm dừng');
+  }));
+
+  check('HT-4 · Lần thi sau: KQ mới ghi như thường → hết Học tiếp, việc Chọn bước tiếp lần 2 · "điểm lần trước" = lần thi trước của CHÍNH lộ trình · Phân tích có cả hai lần · N46 ẩn lại', () => thu(() => {
+    const L = lop(); const a = emHocTiep(L);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep' });
+    const truoc = thiThat.thiTruocCua(get('SELECT * FROM learning_cycles WHERE id = ?', a.cy));
+    assert(truoc && truoc.cycleId === a.cy && truoc.l === 7 && truoc.w === 6.5, `điểm lần trước: ${JSON.stringify(truoc)}`);
+    thiThat.datKetQuaThiThat(QL, a.cy, { ngayThi: TODAY, l: 7.5, r: 7 });
+    assert(get('SELECT buoc_tiep FROM learning_cycles WHERE id = ?', a.cy).buoc_tiep === 'hoc_tiep', 'lưu dở (2 kỹ năng) → Học tiếp còn');
+    thiThat.datKetQuaThiThat(QL, a.cy, { ngayThi: TODAY, l: 7.5, r: 7, w: 7, s: 7 });
+    const c = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(c.buoc_tiep === null && c.thi_that_l === 7.5 && c.outcome_score === 7.0 && c.status === 'active', `KQ lần 2: ${JSON.stringify(c)}`);
+    assert(choChon(a.sid).includes(a.cy) && anViecCase(a.caseId), 'việc Chọn bước tiếp lần 2 · N46 ẩn lại');
+    const bt2 = bt.trangThaiBuocTiep(QL, a.cy);
+    assert(!bt2.chon && bt2.han >= TODAY && /OVR 7\.0/.test(bt2.daXong), `Bước tiếp lần 2: ${JSON.stringify(bt2)}`);
+    const pt = thiKhoang(a.sid);
+    assert(pt.length === 2 && pt.some((x: any) => x.buocTiep === 'hoc_tiep' && x.l === 7) && pt.some((x: any) => !x.buocTiep && x.l === 7.5), `Phân tích hai lần: ${JSON.stringify(pt)}`);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'tam_dung' });
+    assert(get('SELECT COUNT(*) n FROM thi_that_lich_su WHERE cycle_id = ?', a.cy).n === 1 && thiKhoang(a.sid).length === 2, 'Tạm dừng lần 2: lần thi trước vẫn còn');
+  }));
+
+  check('HT-5 · Đổi Học tiếp → Lộ trình mới: đầu vào = KQ lần đó, Case cũ đóng "Kết thúc lộ trình"; Hoàn tác về đúng Học tiếp · em đã nghỉ (không qua Bước tiếp) → 400 kèm đường đi tiếp', () => thu(() => {
+    const L = lop(); const a = emHocTiep(L);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep' });
+    const xem = bt.xemTruocLoTrinhMoi(QL, a.cy, {});
+    assert(xem.dong.some((x: string) => /^Đầu vào = KQ thi \d\d\/\d\d: L 7\.0/.test(x)), `xem trước dùng KQ lần đó: ${xem.dong.join(' | ')}`);
+    bt.chonBuocTiep(QL, a.cy, { chon: 'lo_trinh_moi' });
+    const m = cyMoi(a.sid);
+    assert(m.id !== a.cy && m.baseline_listening === 7 && get('SELECT system_close_reason FROM sos_cases WHERE id = ?', a.caseId).system_close_reason === 'ket_thuc_lo_trinh', `Lộ trình mới: ${JSON.stringify(m)}`);
+    bt.boChonBuocTiep(QL, a.cy);
+    const c = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(c.buoc_tiep === 'hoc_tiep' && c.thi_that_l === null && c.status === 'active' && cyMoi(a.sid).id === a.cy && get('SELECT COUNT(*) n FROM thi_that_lich_su WHERE cycle_id = ?', a.cy).n === 1, `Hoàn tác về Học tiếp: ${JSON.stringify(c)}`);
+    assert(get('SELECT status FROM sos_cases WHERE id = ?', a.caseId).status !== 'done' && !anViecCase(a.caseId), 'Case mở lại, việc hiện');
+    const b = emThiXong(L);
+    students.setStudentStatus(QL, b.sid, 'finished', TODAY, 'nghỉ');
+    const e = loi(() => bt.chonBuocTiep(QL, b.cy, { chon: 'hoc_tiep' }));
+    assert(e?.status === 400 && /Lộ trình mới/.test(e.message) && get('SELECT thi_that_l FROM learning_cycles WHERE id = ?', b.cy).thi_that_l === 7, `em đã nghỉ: ${e?.message}`);
+  }));
+
+  check('HT-6 · TVV chi nhánh chọn Học tiếp được (như hai hướng kia); GVCN 403 · migrate prHocTiep chạy lặp không làm gì · trần câu SQL', () => thu(() => {
+    const L = lop(); const a = emHocTiep(L); const b = emHocTiep(L);
+    const TVV = nguoi('consultant', ['MB']);
+    assert(loi(() => bt.chonBuocTiep(P.coreTeacher, a.cy, { chon: 'hoc_tiep' }))?.status === 403, 'GVCN 403');
+    bt.chonBuocTiep(TVV, a.cy, { chon: 'hoc_tiep' });
+    assert(get('SELECT buoc_tiep FROM learning_cycles WHERE id = ?', a.cy).buoc_tiep === 'hoc_tiep', 'TVV chọn được');
+    const ap: string[] = [];
+    migratePrHocTiep(conn, ap); migratePrHocTiep(conn, ap);
+    assert(!ap.length, `schema đã có bảng — migrate không làm gì: ${ap}`);
+    const ke = (conn.prepare(`EXPLAIN QUERY PLAN ${kqThi.SQL_THI_THAT}`).all(TODAY, TODAY, TODAY, TODAY, TODAY, TODAY) as any[]).map((r) => r.detail).join(' | ');
+    assert(/idx_ttls_ngay/.test(ke) && !/SCAN h\b/.test(ke), `Phân tích đọc lịch sử qua chỉ mục: ${ke}`);
+    const do_ = (fn: () => unknown, kieu = 'GET') => { xoaNho(); const s0 = soCauSql(); chayTrongRequest(kieu, fn); return soCauSql() - s0; };
+    const chon = do_(() => bt.chonBuocTiep(QL, b.cy, { chon: 'hoc_tiep' }), 'POST');
+    const doc = do_(() => bt.trangThaiBuocTiep(QL, b.cy));
+    const hoan = do_(() => bt.boChonBuocTiep(QL, b.cy), 'POST');
+    console.log(`      (đo: chọn Học tiếp ${chon} · đọc Bước tiếp ${doc} · Hoàn tác ${hoan} câu)`);
+    assert(chon <= 40 && doc <= 12 && hoan <= 40, `vượt trần: ${chon} / ${doc} / ${hoan}`);
   }));
 }

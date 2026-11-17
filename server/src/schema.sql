@@ -2201,6 +2201,21 @@ CREATE INDEX idx_bcl_student ON ban_chup_lo_trinh(student_id);
 CREATE INDEX idx_bcl_class ON ban_chup_lo_trinh(class_id);
 CREATE INDEX idx_bcluot_class ON ban_chup_luot(class_id);
 
+-- HOC-TIEP (N51, chủ SP 18/11): KQ thi thật lần trước của lộ trình chọn "Học tiếp" (cùng lộ trình chạy tiếp; cột thi_that_* của lộ trình xoá để ghi lần thi sau).
+-- Cùng câu ở `migrate/prHocTiep.ts` (DDL_HOC_TIEP). Phân tích Kết quả thi đọc thêm bảng này; Hoàn tác Học tiếp trả nguyên từ cot_json.
+CREATE TABLE IF NOT EXISTS thi_that_lich_su (
+  id INTEGER PRIMARY KEY,
+  cycle_id INTEGER NOT NULL REFERENCES learning_cycles(id),
+  student_id INTEGER NOT NULL REFERENCES students(id),
+  class_id INTEGER,                    -- lớp lúc thi (lớp đang học lúc chọn Học tiếp); không FK như bản chụp
+  ngay_thi TEXT,                       -- ngày Phân tích đọc: ngày thi thật, "Không thi" → ngày thi dự kiến
+  thi_that_l REAL, thi_that_r REAL, thi_that_w REAL, thi_that_s REAL, thi_that_khong_thi INTEGER NOT NULL DEFAULT 0, thi_that_lay_lai TEXT,
+  outcome TEXT, outcome_score REAL, target REAL, khong_cam_ket INTEGER NOT NULL DEFAULT 0,
+  cot_json TEXT NOT NULL,              -- mọi cột lộ trình đã xoá lúc Học tiếp (Hoàn tác trả nguyên)
+  chon_luc TEXT NOT NULL, chon_boi INTEGER REFERENCES users(id), created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_ttls_cycle ON thi_that_lich_su(cycle_id);
+CREATE INDEX IF NOT EXISTS idx_ttls_ngay ON thi_that_lich_su(ngay_thi);
+
 -- PR-OV12g: GÓP Ý HÀNG TUẦN ở hồ sơ lớp — một ô chữ mỗi em × lớp × tuần × kỹ năng (cột của lớp: FT L R W S, lớp thường theo môn chương trình).
 -- Không bắt buộc, không việc, không thông báo. Em chuyển lớp: dòng giữ class_id lớp cũ. Xoá học viên xoá dòng (`CAU_XOA_HOC_VIEN`).
 CREATE TABLE gop_y_tuan (

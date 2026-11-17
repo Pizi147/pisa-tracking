@@ -31,19 +31,20 @@ export function huongTiep(lyDo: LyDoDong, routeMoi: string | null): HuongTiepTk 
 }
 
 /**
- * BƯỚC TIẾP SAU THI — OV-13m; P7 SV-LO-TRINH (N12): web còn HAI hướng (`HUONG_SAU_THI`): "Tạm dừng / Kết thúc học" (hộp N11 ngay trong panel, ô "Có thể quay lại học"
- * tắt sẵn → máy chủ ghi `tam_dung` hoặc `ket_thuc` theo ô) · "Lộ trình mới". `LUA_CHON_SAU_THI` = khoá máy chủ nhận. `hoc_tiep` / `hoc_lai` (OV-8a) còn trong
- * dữ liệu cũ + API cũ — đọc, hoàn tác được, web không bày.
+ * BƯỚC TIẾP SAU THI — OV-13m; P7 SV-LO-TRINH (N12) + HOC-TIEP (N51, chủ SP 18/11): web BA hướng (`HUONG_SAU_THI`): "Tạm dừng / Kết thúc học" (hộp N11 ngay trong
+ * panel, ô "Có thể quay lại học" tắt sẵn → máy chủ ghi `tam_dung` hoặc `ket_thuc` theo ô) · "Học tiếp" (`hoc_tiep` — CÙNG lộ trình chạy tiếp, giữ mọi thứ; tuỳ chọn
+ * Target / lớp) · "Lộ trình mới". `LUA_CHON_SAU_THI` = lựa chọn KẾT THÚC lộ trình đã thi (MT chưa làm không còn, việc Case / PA ẩn — `DA_THI_THAT_SQL`);
+ * `hoc_tiep` không thuộc nhóm đó (lộ trình chạy tiếp). `hoc_lai` (OV-8a) chỉ còn trong dữ liệu / API cũ — đọc, hoàn tác được, web không bày.
  */
 export const LUA_CHON_SAU_THI = ['lo_trinh_moi', 'tam_dung', 'ket_thuc'] as const;
 export const LUA_CHON_SAU_THI_CU = ['hoc_tiep', 'hoc_lai'] as const;
 export type LuaChonSauThi = (typeof LUA_CHON_SAU_THI)[number] | (typeof LUA_CHON_SAU_THI_CU)[number];
 export const NHAN_SAU_THI: Record<LuaChonSauThi, string> = {
-  lo_trinh_moi: t('Lộ trình mới'), tam_dung: t('Tạm dừng'), ket_thuc: t('Kết thúc học'), hoc_tiep: t('Học tiếp lộ trình mới'), hoc_lai: t('Học lại'),
+  lo_trinh_moi: t('Lộ trình mới'), tam_dung: t('Tạm dừng'), ket_thuc: t('Kết thúc học'), hoc_tiep: t('Học tiếp'), hoc_lai: t('Học lại'),
 };
-export const HUONG_SAU_THI = ['dung', 'lo_trinh_moi'] as const;
+export const HUONG_SAU_THI = ['dung', 'hoc_tiep', 'lo_trinh_moi'] as const;
 export type HuongSauThi = (typeof HUONG_SAU_THI)[number];
-export const NHAN_HUONG_SAU_THI: Record<HuongSauThi, string> = { dung: t('Tạm dừng / Kết thúc học'), lo_trinh_moi: t('Lộ trình mới') };
+export const NHAN_HUONG_SAU_THI: Record<HuongSauThi, string> = { dung: t('Tạm dừng / Kết thúc học'), hoc_tiep: t('Học tiếp'), lo_trinh_moi: t('Lộ trình mới') };
 /** "Đã xong · OVR 6.5 · Đạt Target" — MỘT hàm nhãn cho Các lộ trình, đầu hồ sơ, panel Bước tiếp và dòng Công việc (OV-13m). */
 /* Mockup bước tiếp chủ SP duyệt 15/10 dùng đúng chữ "Đã xong" cho lộ trình có kết quả thi (khác trạng thái việc "Xong" của S3) — chỉ ở file này. */
 export const CHU_DA_XONG = t('Đã xong');

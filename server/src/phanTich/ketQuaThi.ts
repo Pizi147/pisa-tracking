@@ -145,17 +145,26 @@ export function ketQuaMockKq(p: Principal, f: LocKetQuaThi & { xep?: XepMock; kq
 }
 
 /**
- * Lộ trình FT có kết quả thi thật trong khoảng (4 tham số: tu, den, tu, den). Có điểm → ngày thi thật; "Không thi" không có ngày thi thật
+ * Lộ trình FT có kết quả thi thật trong khoảng (6 tham số: tu, den, tu, den, tu, den). Có điểm → ngày thi thật; "Không thi" không có ngày thi thật
  * (`thi_that_ngay` NULL) → ngày thi dự kiến (`exam_date`). Hai vế OR, mỗi vế một chỉ mục một phần (`idx_cycle_thi_that_ngay`, `idx_cycle_khong_thi`).
+ * N51: + lần thi TRƯỚC của lộ trình chọn Học tiếp (`thi_that_lich_su`, chỉ mục `idx_ttls_ngay`) — cùng câu; `lop_ls` = lớp lúc thi đã ghi (dòng lộ trình: NULL → `lopLucThiThat`).
  */
+const DU_4_KN = (c: string) => `${c}.thi_that_l IS NOT NULL AND ${c}.thi_that_r IS NOT NULL AND ${c}.thi_that_w IS NOT NULL AND ${c}.thi_that_s IS NOT NULL`;
+const WL2 = (cy: string, ngay: string) => `EXISTS (SELECT 1 FROM discipline_measures dm WHERE dm.cycle_id = ${cy} AND dm.kind = 'wl_2' AND dm.status = 'done'
+                     AND substr(COALESCE(dm.performed_on, dm.created_at), 1, 10) <= COALESCE(${ngay}, '9999-12-31'))`;
 export const SQL_THI_THAT = `SELECT c.id, c.student_id, s.full_name AS ten, COALESCE(c.thi_that_ngay, c.exam_date) AS ngay_thi, c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s,
             c.thi_that_khong_thi, c.thi_that_lay_lai, substr(c.started_at, 1, 10) AS bat_dau, c.outcome, c.outcome_score, COALESCE(c.thi_that_target, c.target_score) AS target_score, c.khong_cam_ket, c.buoc_tiep, c.buoc_tiep_luc, c.buoc_tiep_json, u.full_name AS nguoi_chon,
-            EXISTS (SELECT 1 FROM discipline_measures dm WHERE dm.cycle_id = c.id AND dm.kind = 'wl_2' AND dm.status = 'done'
-                     AND substr(COALESCE(dm.performed_on, dm.created_at), 1, 10) <= COALESCE(c.thi_that_ngay, c.exam_date, '9999-12-31')) AS wl2
+            ${WL2('c.id', 'COALESCE(c.thi_that_ngay, c.exam_date)')} AS wl2, NULL AS lop_ls
        FROM learning_cycles c JOIN students s ON s.id = c.student_id LEFT JOIN users u ON u.id = c.buoc_tiep_boi
       WHERE c.route IS NOT NULL
-        AND ((c.thi_that_ngay BETWEEN ? AND ? AND c.thi_that_l IS NOT NULL AND c.thi_that_r IS NOT NULL AND c.thi_that_w IS NOT NULL AND c.thi_that_s IS NOT NULL)
-          OR (c.thi_that_khong_thi = 1 AND c.exam_date BETWEEN ? AND ?))`;
+        AND ((c.thi_that_ngay BETWEEN ? AND ? AND ${DU_4_KN('c')})
+          OR (c.thi_that_khong_thi = 1 AND c.exam_date BETWEEN ? AND ?))
+     UNION ALL
+     SELECT h.cycle_id, h.student_id, s.full_name, h.ngay_thi, h.thi_that_l, h.thi_that_r, h.thi_that_w, h.thi_that_s,
+            h.thi_that_khong_thi, h.thi_that_lay_lai, substr(c.started_at, 1, 10), h.outcome, h.outcome_score, h.target, h.khong_cam_ket, 'hoc_tiep', h.chon_luc, NULL, u.full_name,
+            ${WL2('h.cycle_id', 'h.ngay_thi')}, h.class_id
+       FROM thi_that_lich_su h JOIN learning_cycles c ON c.id = h.cycle_id JOIN students s ON s.id = h.student_id LEFT JOIN users u ON u.id = h.chon_boi
+      WHERE h.ngay_thi BETWEEN ? AND ? AND (h.thi_that_khong_thi = 1 OR ${DU_4_KN('h')})`;
 
 /** Một lộ trình có kết quả thi thật: dòng danh sách + dữ liệu của `thongKeThiThat` (`KqThi`) + ngày bắt đầu lộ trình (tuần dạy, Theo GV). */
 export type ThiThatTho = { dong: DongThiThat; kq: KqThi; batDau: string | null };
@@ -170,22 +179,23 @@ export function thiThatTrongKhoang(p: Principal | null, f: LocKetQuaThi, o: { bo
   /* `p` null: Phân tích GV / hồ sơ GV đã kiểm quyền phần giáo viên (`nguCanhPtGv`, `phamViHoSoGv`) — đọc theo chi nhánh của ngữ cảnh. */
   const scope = p ? phamVi(p) : { all: true, branchIds: [] as number[], classIds: [] as number[] };
   const conn = db();
-  const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den) as any[];
-  /* P12 (E7): lớp LÚC THI — cùng luật Phân tích GV (`lopLucThiThat`). */
-  const lopCua = lopLucThiThat(ds.map((c) => ({ id: c.id, student_id: c.student_id, ngay: c.ngay_thi ?? null })));
+  const ds = conn.prepare(SQL_THI_THAT).all(f.tu, f.den, f.tu, f.den, f.tu, f.den) as any[];
+  /* P12 (E7): lớp LÚC THI — cùng luật Phân tích GV (`lopLucThiThat`). N51: lần thi trước của lộ trình Học tiếp mang lớp đã ghi (cùng id lộ trình — không qua Map). */
+  const lopTheoCy = lopLucThiThat(ds.filter((c) => c.lop_ls == null).map((c) => ({ id: c.id, student_id: c.student_id, ngay: c.ngay_thi ?? null })));
+  const lopCua = { get: (c: any): number | undefined => (c.lop_ls != null ? c.lop_ls : lopTheoCy.get(c.id)) };
   const lop = new Map<number, { code: string; branch: number }>();
-  theoLo([...new Set(lopCua.values())], (lo, ph) => {
+  theoLo([...new Set([...lopTheoCy.values(), ...ds.filter((c) => c.lop_ls != null).map((c) => c.lop_ls as number)])], (lo, ph) => {
     for (const r of conn.prepare(`SELECT id, code, branch_id FROM classes WHERE id IN (${ph})`).all(...lo) as any[]) lop.set(r.id, { code: r.code, branch: r.branch_id });
   });
   return ds.filter((c) => {
-    const l = lopCua.get(c.id);
+    const l = lopCua.get(c);
     const x = l ? lop.get(l) : undefined;
     if (!x) return false;
     if (f.branchId && x.branch !== f.branchId) return false;
     if (f.classId && l !== f.classId) return false;
     return scope.all || scope.branchIds.includes(x.branch) || scope.classIds.includes(l!);
   }).map((c): ThiThatTho => {
-    const l = lopCua.get(c.id)!;
+    const l = lopCua.get(c)!;
     const g = JSON.parse(c.buoc_tiep_json ?? '{}');
     const chon = (c.buoc_tiep ?? null) as LuaChonSauThi | null;
     const ll = docLayLai(c.thi_that_lay_lai);
