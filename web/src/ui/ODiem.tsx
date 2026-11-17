@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { LOP_DA_LUU } from './KhuonViec.tsx';
 import { lopKq, type KqDiem } from './BieuTuong.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../lib/format.ts';
 
 type Kq = KqDiem | null;
 const chuKq = (kq: KqDiem) => (kq === 'duoi' ? t('Dưới kỳ vọng') : kq === 'bang' ? t('Bằng kỳ vọng') : kq === 'dat' ? t('Đạt') : t('Vượt kỳ vọng'));
@@ -32,7 +33,7 @@ export function ODiem({ kieu = 'doc', so, kq = null, kck, tong, tongCot, phu, lu
 }) {
   const kqHien: Kq = kck && kq === 'duoi' ? null : kq;
   const mau = lopKq(kqHien);
-  const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : chuKq(kq)}${kyVong ? ` ${kyVong}` : ''}` : ''].filter(Boolean).join(' ');
+  const ten = [nhan, so ?? t('Chưa có'), kq ? `— ${kck && kq === 'duoi' ? 'KCK' : chuKq(kq)}${kyVong ? ` ${fmtBand(kyVong)}` : ''}` : ''].filter(Boolean).join(' ');
   /* "✓ " / "✗ " trong cùng span với số (kế thừa cỡ, đậm, màu); không kết quả → giữ chỗ ẩn để số thẳng cột (trừ `lon`). */
   const kyHieu = so === null ? null : kqHien
     ? <span aria-hidden className={kieu === 'lon' ? 'mr-0.5 text-[17px]' : undefined}>{kqHien === 'duoi' ? '✗' : '✓'} </span>

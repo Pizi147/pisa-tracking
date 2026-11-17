@@ -132,7 +132,7 @@ function KhoiCauHinh({ duong, tieuDe, truong, apDung, giaiThich, them, sauLuu }:
 
 /** Ô sửa một giá trị tại chỗ: Enter lưu, Esc thôi (đã đổi thì hỏi một lần). Kiểm ở web như máy chủ; lỗi máy chủ (vd "Lên từ" ≤ "Học lại dưới") báo tại ô. */
 function SuaO({ q, n, onThoi, onLuu }: { q: Truong; n: number; onThoi: () => void; onLuu: (n: number) => Promise<void> }) {
-  const [x, setX] = useState(String(n));
+  const [x, setX] = useState(fmtBand(n));
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [hoiBo, setHoiBo] = useState(false);
