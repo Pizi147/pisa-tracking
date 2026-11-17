@@ -187,7 +187,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   /* P1-04 (B2-07): Bổ sung hồ sơ thiếu — người giữ như Công việc (`chuViecTvv`: TVV của em, chưa có TVV → QL), khoá dòng tổng của người giữ (`bo-sung-ho-so:{người}`). */
   const chuBs = n.boSung?.thieu.length ? chuViecTvv(p, sid, n.boSung.tvv, true) : null;
   if (chuBs) {
-    ds.push({ key: `bo-sung-ho-so:${chuBs.ownerId}`, loai: 'bo-sung', chu: 'Bổ sung hồ sơ', the: n.boSung!.thieu.map((chu) => ({ chu })), kyNang: null, caseId: null, paId: null,
+    ds.push({ key: `bo-sung-ho-so:${chuBs.ownerId ?? 'ql'}`, loai: 'bo-sung', chu: 'Bổ sung hồ sơ', the: n.boSung!.thieu.map((chu) => ({ chu })), kyNang: null, caseId: null, paId: null,
       han: null, tone: 'info', nguoiId: chuBs.ownerId, nut: 'Bổ sung hồ sơ', mo: { loai: 'duong', href: duongHoSoHocVien(sid) } });
   }
   /* Mini Test — người giữ việc (`emConMiniTest().gv` = `nguoiGiuMiniTest`, cùng `mywork.ts`), không có thì GVCN. */

@@ -5,6 +5,7 @@
  *   · Chọn bước tiếp sau thi (`viecBuocTiep`) · Cập nhật KQ thi thật (`viecThiThat`, không hạn) — dùng `chuViecTvv` của tệp này.
  */
 import { db, theoLo } from '../db.ts';
+import { nho } from '../platform/nguCanhRequest.ts';
 import { PERMISSIONS, nhanLichThi, soSanhLop, trangThaiLichThi } from '../../../shared/domain/index.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { examPlanOf } from '../fasttrack/cycles.ts';
@@ -15,10 +16,10 @@ import type { WorkItem } from './mywork.ts';
  * Người giữ việc TVV của một em đối với người xem: chính TVV của em → của tôi; em chưa có TVV và người xem là QL của em → của tôi;
  * em có TVV khác: QL xem "Của GV" (`tatCa`) thấy việc của TVV đó, còn lại không thấy. GV / GVCN không bao giờ giữ.
  */
-export function chuViecTvv(p: Principal, studentId: number, tvv: number | null, tatCa = false): { ownerId: number; mine: boolean } | null {
+export function chuViecTvv(p: Principal, studentId: number, tvv: number | null, tatCa = false, branchId?: number | null): { ownerId: number | null; mine: boolean } | null {
   if (tvv === p.userId) return { ownerId: p.userId, mine: true };
   if (!can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return null;
-  if (!tvv) return { ownerId: p.userId, mine: true };
+  if (!tvv) return giuViecQl(p)(branchId !== undefined ? branchId : () => chiNhanhCuaEm(studentId)) ? { ownerId: p.userId, mine: true } : tatCa ? { ownerId: null, mine: false } : null;
   return tatCa ? { ownerId: tvv, mine: false } : null;
 }
 
@@ -26,16 +27,43 @@ export function chuViecTvv(p: Principal, studentId: number, tvv: number | null, 
  * Như `chuViecTvv` cho DANH SÁCH, không thêm câu SQL (TD4-b): phạm vi QL theo chi nhánh của em, tính một lần từ quyền đã nạp (`scopeFor`).
  * Em không có chi nhánh (chưa lớp, chưa hồ sơ chi nhánh) thì chỉ QL toàn hệ thống giữ.
  */
-export function nguoiGiuTvv(p: Principal, today: string): (branchId: number | null, tvv: number | null, tatCa?: boolean) => { ownerId: number; mine: boolean } | null {
+export function nguoiGiuTvv(p: Principal, today: string): (branchId: number | null, tvv: number | null, tatCa?: boolean) => { ownerId: number | null; mine: boolean } | null {
   const pv = scopeFor(p, PERMISSIONS.CYCLE_EDIT, today);
   const ql = (b: number | null) => pv.all || (b !== null && pv.branchIds.includes(b));
+  const giu = giuViecQl(p);
   return (branchId, tvv, tatCa = false) => {
     if (tvv === p.userId) return { ownerId: p.userId, mine: true };
     if (!ql(branchId)) return null;
-    if (!tvv) return { ownerId: p.userId, mine: true };
+    if (!tvv) return giu(branchId) ? { ownerId: p.userId, mine: true } : tatCa ? { ownerId: null, mine: false } : null;
     return tatCa ? { ownerId: tvv, mine: false } : null;
   };
 }
+
+/**
+ * DEM-VIEC (chủ SP 18/11 "thấy ghi có việc quá hạn nhưng vào xem không thấy gì"): việc của QL CHI NHÁNH (em chưa có TVV, Chốt lộ trình, Kỳ vọng, Xét lại,
+ * Xếp lịch MT, Phân công người phụ trách…) là việc của người có vai QL ở chi nhánh đó (hoặc QL toàn hệ thống). Quản trị chỉ GIỮ việc đó khi chi nhánh
+ * không có QL nào — có QL thì Quản trị chỉ làm thay ("Tất cả"), không vào "Của tôi", badge, ô Tổng quan. Góc nhìn đang chọn quyết vai (`apGocNhin` lọc grant).
+ */
+export function giuViecQl(p: Principal): (branchId: number | null | (() => number | null)) => boolean {
+  const ql = p.grants.filter((g) => g.roleKey === 'manager').map((g) => g.branchId);
+  const qt = p.grants.some((g) => g.roleKey === 'system_admin');
+  return (cn) => {
+    if (ql.includes(null)) return true;
+    if (!ql.length && !qt) return false;
+    const b = typeof cn === 'function' ? cn() : cn;   // chi nhánh đọc lười — QL toàn hệ thống / người không giữ: 0 câu
+    return (b !== null && ql.includes(b)) || (qt && (b === null || !chiNhanhCoQl().has(b)));
+  };
+}
+/** Chi nhánh có ít nhất một QL còn hoạt động (QL toàn hệ thống → mọi chi nhánh, khoá 0). Một câu mỗi request, chỉ khi người xem là Quản trị. */
+const chiNhanhCoQl = (): { has(b: number): boolean } => nho('chi-nhanh-co-ql', () => {
+  const ds = new Set((db().prepare(`SELECT DISTINCT COALESCE(ur.branch_id, 0) AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+      WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL`).all() as any[]).map((r) => r.b as number));
+  return { has: (b: number) => ds.has(0) || ds.has(b) };
+});
+/** Chi nhánh của một em (lớp đang học, không có → hồ sơ) — chỉ `chuViecTvv` một em (hồ sơ HV) khi em chưa có TVV. */
+const chiNhanhCuaEm = (studentId: number): number | null => (db().prepare(
+  `SELECT COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), s.branch_id) AS b
+     FROM students s WHERE s.id = ?`).get(studentId) as any)?.b ?? null;
 
 /** TVV của nhiều em — một câu mỗi lô (Turso ≤ 900 tham số). */
 export function tvvCuaEm(ids: readonly number[]): Map<number, number | null> {
@@ -102,7 +130,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
       WHERE ${dk.join(' AND ')}`,   /* em Tạm dừng: vẫn Bổ sung hồ sơ (như chip), không Chốt ngày thi */
   ).all(...thamSo) as any[];
   const out: WorkItem[] = [];
-  const theoNguoi = new Map<number, { mine: boolean; em: Set<number>; truong: Map<string, number> }>();
+  const theoNguoi = new Map<number | null, { mine: boolean; em: Set<number>; truong: Map<string, number> }>();
   const daChot = new Set<number>();
   for (const r of ds.sort((x, y) => soSanhLop({ code: x.class_code }, { code: y.class_code }) || String(x.full_name).localeCompare(String(y.full_name), 'vi'))) {
     const chu = giu(r.branch_id ?? null, r.tvv ?? null, o.tatCa);
@@ -136,7 +164,7 @@ export function viecHoSoTvv(p: Principal, o: { today: string; tatCa: boolean; br
   }
   for (const [ownerId, g] of theoNguoi) {
     out.push({
-      key: `bo-sung-ho-so:${ownerId}`, group: 'bo_sung_ho_so', urgency: 'normal',
+      key: `bo-sung-ho-so:${ownerId ?? 'ql'}`, group: 'bo_sung_ho_so', urgency: 'normal',
       studentId: null, studentName: 'Hồ sơ học viên', classId: null, classCode: null,
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: null, count: g.em.size, emIds: [...g.em],
       reason: [...g.truong].map(([ten, n]) => `${ten} ${n}`).join(' · '),

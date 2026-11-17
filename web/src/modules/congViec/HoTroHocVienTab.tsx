@@ -132,7 +132,9 @@ export function HoTroHocVienTab() {
   const qs = new URLSearchParams();
   if (branchId && !laGvThuong) qs.set('branchId', String(branchId));
   /* GV không gửi `nguoi` — `/my-work` không tham số giữ NGUYÊN hành vi cũ (Q3). OV-15d: QL đọc "tất cả" MỘT lần, Của tôi / Của GV lọc tại máy (cùng danh sách, cùng số). */
-  if (laQuanLy) qs.set('nguoi', typeof nguoi === 'number' ? String(nguoi) : 'tat-ca');
+  /* DEM-VIEC (chủ SP 18/11): "Của tôi" đọc đường "của tôi" của máy chủ — CÙNG đường badge / ô Tổng quan (`useDuongViecCuaToi`, cùng chi nhánh mặc định) nên số = số dòng,
+     không GET thêm; "Của GV" / "Tất cả" đọc `nguoi=tat-ca` (lọc tại máy như OV-15d). */
+  if (laQuanLy && nguoi !== 'toi') qs.set('nguoi', typeof nguoi === 'number' ? String(nguoi) : 'tat-ca');
   const url = `/my-work${qs.toString() ? `?${qs}` : ''}`;
   const { data, loading, error, reload, cu } = useApi<Work>(url, [url], { giuCu: true });
 
@@ -255,7 +257,7 @@ export function HoTroHocVienTab() {
       : tabMacDinh(nguoi === 'toi' ? tabs : tabs.filter((x) => x.key !== 'duyet'));
   /* Ghi tab vào địa chỉ một lần (thay chỗ) — lưu việc làm đổi số quá hạn không làm trang nhảy tab; Quay lại về đúng tab. `loai=` đang lọc thì không ghi (ghi `nhom` = bỏ lọc loại).
      Đếm thẻ duyệt chưa về → chưa ghi (địa chỉ `nhom=duyet` không bị tab mặc định đè). */
-  const choDemDuyet = !!session?.nav?.workApprove && !xemMotGv && demDuyet === undefined;
+  const choDemDuyet = !!session?.nav?.workApprove && !xemMotGv && demDuyet == null;   // DEM-VIEC: useApi trả null khi đang tải — `/my-work` đã nạp (badge) về trước đếm duyệt
   useEffect(() => {
     if (data && tab && !choDemDuyet && tab !== params.get('nhom') && !params.get('loai') && !theId) setParam('nhom', tab);
   }, [data, tab, choDemDuyet]);   // eslint-disable-line react-hooks/exhaustive-deps

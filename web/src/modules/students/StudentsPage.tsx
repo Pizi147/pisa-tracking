@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link, Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useDuongViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { invalidate } from '../../lib/api.ts';
 import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -202,8 +203,8 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
     : { data: bangSos.data ?? null, cu: bangSos.cu, khongXem: khongXemSos };   // lỗi tải trang: báo một lần ở đầu trang (`trang.error`)
   const demSos: readonly DongDem[] | null = data?.sos ? data.sos.rows : data?.sosDem ? data.sosDem.rows : null;
   /* Cột "Việc của tôi" + chip "Có việc quá hạn" (U04-5, chủ SP 03/11 khuya): CHỈ việc của người đang xem — cùng nguồn badge Công việc (`/my-work`). Chờ trang tải xong mới gọi. */
-  const duongViec = '/my-work';
-  const coViec = !!session?.nav?.workSupport;   // AU-GON B2-08: cùng cờ badge Công việc — CX / Head tutor không có Công việc thì không gọi `/my-work` (trước: 403 + chip "!")
+  const duongViec = useDuongViecCuaToi();   // DEM-VIEC: đúng đường badge (đã nạp — 0 request)
+  const coViec = !!duongViec;   // AU-GON B2-08: cùng cờ badge Công việc — CX / Head tutor không có Công việc thì không gọi `/my-work` (trước: 403 + chip "!")
   const work = useApi<{ dong: WorkItem[] }>('chuyenDen' in doc || !data || !coViec ? null : duongViec, [duongViec]);
   /* TVV / CX: tập chip + dòng theo vai — CÙNG phạm vi trang: gửi đúng tham số phạm vi của `qs`, máy chủ chọn bằng cùng hàm (`theoTrang=1`), nên gọi SONG SONG
      với `/hoc-vien-lop` (TD-NGUOI; trước: chờ trang về). Không gửi `q` / `them`: gõ tìm không tải lại danh sách theo vai. */

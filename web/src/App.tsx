@@ -2,7 +2,7 @@ import { Component, Suspense, useEffect, useLayoutEffect, useRef, useState, type
 import { flushSync } from 'react-dom';
 import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { useSession } from './lib/session.tsx';
-import { DemYeuCauCtx, ViecCuaToiCtx, type SoViecCuaToi } from './lib/viecCuaToi.ts';
+import { DemYeuCauCtx, ViecCuaToiCtx, useDuongViecCuaToi, type SoViecCuaToi } from './lib/viecCuaToi.ts';
 import { MOI_MY_WORK_MS, henTaiLaiKhiCu, onHetPhien, onLoiTaiLai, thuLaiNen, useApi } from './lib/useApi.ts';
 import { onInvalidate, xaGop } from './lib/api.ts';
 import { DemoBar } from './modules/platform/DemoBar.tsx';
@@ -331,7 +331,8 @@ export default function App() {
    * Q16: giáo viên đọc MỘT lần — tải lại khi đổi trang sau một lần vô hiệu `/my-work` (`lanViec`, GIAM-COMPUTE ở trên). D14: chính `/my-work` (Tổng quan,
    * Công việc cũng đọc — `useApi` gộp GET đang bay, máy chủ tính `myWork` một lần; badge nhận bản của trang qua `chiNghe`).
    */
-  const viecGv = useApi<{ summary: SoViecCuaToi } & ViecChuong>(session?.authenticated && session.nav?.workSupport ? '/my-work' : null, [lanViec], { chiNghe: true }).data;
+  const duongViec = useDuongViecCuaToi();   // DEM-VIEC: cùng đường Công việc "Của tôi" mặc định (chi nhánh mặc định với QL · Quản trị · Admin · TVV)
+  const viecGv = useApi<{ summary: SoViecCuaToi } & ViecChuong>(duongViec, [lanViec], { chiNghe: true }).data;
   /* Bản mới đã về (của badge hay của trang) → hết cũ, bỏ hẹn 60 s, mốc 60 s tính lại từ đây. */
   useEffect(() => { henViec.coBan(); }, [viecGv, henViec]);
   const gv = viecGv ? { n: viecGv.summary?.canLamNgay ?? 0, quaHan: viecGv.summary?.viecQuaHan ?? 0 } : null;
