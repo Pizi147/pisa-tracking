@@ -5,17 +5,25 @@ import { AsyncLocalStorage } from 'node:async_hooks';
  * gọi hàng trăm câu lặp lại cùng một tra cứu (chi nhánh của một lớp, ngày nghiệp vụ, danh sách Case…) trong một
  * request. Kho này giữ (a) bộ nhớ tạm cho những tra cứu đó và (b) bộ đếm câu SQL.
  *
- * CHỈ bật bộ nhớ cho GET: các trang đọc là nơi bị lặp; request ghi ít và không phải chỗ chậm, thêm bộ nhớ cho ghi chỉ
- * thêm rủi ro đọc phải giá trị cũ ngay sau khi vừa ghi. Có một lệnh `run()` (ghi) trong một request GET (ví dụ
+ * GET: bộ nhớ đầy đủ (`coNho()` = true — các hàm chọn đường đọc theo lô / cả bảng lớp đã nhớ). Có một lệnh `run()` (ghi) trong một request GET (ví dụ
  * `ensurePeriod`, cập nhật phiên) thì xoá sạch bộ nhớ ngay — đơn giản hơn nhiều so với theo dõi bảng nào vừa đổi,
  * và đúng: dữ liệu vừa ghi có thể ảnh hưởng bất kỳ tra cứu nào đã nhớ trước đó.
+ * TD-GHI (chủ SP 18/11): request GHI mở bộ nhớ HẸP — `nho()` vẫn tắt, `coNho()` vẫn false (đường SQL giữ nguyên như trước); chỉ (a) `nhoTheoId`
+ * (luôn trả bản chép) giữ tới câu ghi kế tiếp — mọi `run`, câu `RETURNING`, mọi `exec` trừ SAVEPOINT / RELEASE xoá sạch; (b) `nhoTheoBang` giữ tới
+ * câu ghi vào chính bảng nguồn (lưu điểm hỏi lộ trình ×15, phân công lớp ×9…).
  *
  * KHÔNG import db.ts ở đây — db.ts import file này để gọi demCau()/xoaNho() (giống platform/hanGio.ts).
  */
 
 type Kho = {
-  /** null = không mở bộ nhớ cho request này (không phải GET). */
+  /** null = không mở bộ nhớ (ngoài request: `voiXacNhan` không kho). */
   nho: Map<string, unknown> | null;
+  /** TD-GHI: request ghi — `nho` chỉ phục vụ `nhoTheoId`, sống tới câu ghi kế tiếp; `nho()` tắt, `coNho()` = false (xem đầu tệp). */
+  ghi?: boolean;
+  /** TD-GHI: kho ngoài của `trongBoNho` mở trong request ghi — câu ghi bên trong cũng xoá nhớ của kho ngoài. */
+  cha?: Kho;
+  /** TD-GHI: `nhoTheoBang` của request ghi — khoá → bảng nguồn + giá trị; câu ghi nhắc tới bảng nguồn thì quên khoá đó. */
+  theoBang?: Map<string, { bang: readonly string[]; giaTri: unknown }>;
   /** n = số câu SQL, dong = số dòng các câu trả về (TD2-0: `[cham]` in cả hai); top = 3 câu đọc nhiều dòng nhất (TD3-0). */
   dem: Dem;
   /** TL-NEN: mốc chung đọc kèm câu phiên (`MocHeThong`, platform/mocHeThong.ts) — không có = không có phiên. */
@@ -44,7 +52,7 @@ let tongCau = 0;
 let tongDong = 0;
 
 export function chayTrongRequest<T>(method: string, fn: () => T, xacNhan?: ReadonlySet<string>): T {
-  return kho.run({ nho: method === 'GET' ? new Map() : null, dem: demMoi(), xacNhan }, fn);
+  return kho.run({ nho: new Map(), ghi: method !== 'GET', dem: demMoi(), xacNhan }, fn);
 }
 
 /**
@@ -122,7 +130,7 @@ function dongBangMotTang<T>(giaTri: T): T {
 /** Đọc qua bộ nhớ: có kho và đang mở bộ nhớ (GET) → tính một lần rồi nhớ; ngoài ra → tính thẳng, không nhớ. */
 export function nho<T>(khoa: string, tinh: () => T): T {
   const s = kho.getStore();
-  if (!s || s.nho === null) return tinh();
+  if (!s || s.nho === null || s.ghi) return tinh();   // TD-GHI: request ghi không nhớ giá trị dùng chung (nơi gọi có thể sửa tại chỗ)
   if (s.nho.has(khoa)) return s.nho.get(khoa) as T;
   let giaTri = tinh();
   if (process.env.PISA_DONG_BANG_NHO === '1') giaTri = dongBangMotTang(giaTri);
@@ -149,11 +157,49 @@ export function quenNhoCaRequest(khoa: string): void {
   kho.getStore()?.rieng?.delete(khoa);
 }
 
+/**
+ * TD-GHI (chủ SP 18/11): như `nho`, nhưng ở request GHI giá trị sống qua các câu ghi KHÔNG ghi vào bảng nguồn `bang` — lưu điểm hỏi lộ trình (`learning_cycles`)
+ * ×15, phân công lớp ×9 xen giữa ~50 câu ghi vào bảng điểm / Case. Câu ghi (`run`, `RETURNING`) có bảng ĐÍCH (INSERT / REPLACE INTO, UPDATE, DELETE FROM)
+ * là một bảng nguồn → quên khoá; không đọc được bảng đích, hoặc `exec` (BEGIN / COMMIT / ROLLBACK / DDL, trừ SAVEPOINT / RELEASE) → quên hết.
+ * `bang` phải liệt kê ĐỦ mọi bảng `tinh` đọc. Trigger ghi sang bảng khác thì ở đây không thấy: trigger hiện có chỉ ghi `attempt_skills`, `sos_cases`,
+ * `moc_he_thong` → KHÔNG dùng hàm này cho giá trị đọc từ ba bảng đó. GET / `trongBoNho` / ngoài request → đúng như `nho`.
+ * Giá trị dùng chung trong request — nơi gọi KHÔNG sửa tại chỗ.
+ */
+export function nhoTheoBang<T>(bang: readonly string[], khoa: string, tinh: () => T): T {
+  const s = kho.getStore();
+  if (!s?.ghi) return nho(khoa, tinh);
+  const m = (s.theoBang ??= new Map());
+  const cu = m.get(khoa);
+  if (cu) return cu.giaTri as T;
+  let giaTri = tinh();
+  if (process.env.PISA_DONG_BANG_NHO === '1') giaTri = dongBangMotTang(giaTri);
+  m.set(khoa, { bang, giaTri });
+  return giaTri;
+}
+
+/** Bảng đích của MỘT câu ghi (câu đầu tiên khớp — CTE của SQLite không chứa câu ghi; upsert `DO UPDATE` cùng bảng với INSERT). null = không đọc được. */
+const DICH_GHI = /\b(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|REPLACE\s+INTO|UPDATE(?:\s+OR\s+\w+)?|DELETE\s+FROM)\s+(?:["`[]?\w+["`\]]?\.)?["`[]?(\w+)/i;   // `main.x` → x
+export const bangDichGhi = (sql: string): string | null => DICH_GHI.exec(sql)?.[1]?.toLowerCase() ?? null;
+
+/** db.ts gọi ở mỗi câu ghi: `sql` = câu ghi (quên khoá có bảng đích trong `bang`); null = quên hết (`exec`). Cả kho ngoài của `trongBoNho`. */
+export function quenTheoBang(sql: string | null | undefined): void {
+  let dich: string | null | undefined;
+  for (let s = kho.getStore(); s; s = s.cha) {
+    if (!s.theoBang?.size) continue;
+    if (dich === undefined) dich = sql ? bangDichGhi(sql) : null;
+    if (!dich) { s.theoBang.clear(); continue; }
+    for (const [k, v] of s.theoBang) if (v.bang.includes(dich)) s.theoBang.delete(k);
+  }
+}
+
 /** Đặt thẳng một giá trị vào bộ nhớ (dùng khi nạp trước theo lô — `napTruocPhamVi`). Không có bộ nhớ → bỏ qua. */
 export function datNho<T>(khoa: string, giaTri: T): void {
   const s = kho.getStore();
-  if (!s || s.nho === null) return;
-  s.nho.set(khoa, process.env.PISA_DONG_BANG_NHO === '1' ? dongBangMotTang(giaTri) : giaTri);
+  if (!s || s.nho === null || s.ghi) return;   // TD-GHI: request ghi — `nho()` không đọc, chỉ `nhoTheoId` dùng bộ nhớ (`datNhoVao`)
+  datNhoVao(s.nho, khoa, giaTri);
+}
+function datNhoVao(m: Map<string, unknown>, khoa: string, giaTri: unknown): void {
+  m.set(khoa, process.env.PISA_DONG_BANG_NHO === '1' ? dongBangMotTang(giaTri) : giaTri);
 }
 
 /**
@@ -168,7 +214,7 @@ export function nhoTheoId<T extends object>(tienTo: string, ids: number[], doc: 
   const thieu = [...new Set(ids)].filter((id) => !s.nho!.has(tienTo + id));
   if (thieu.length) {
     const moi = doc(thieu);
-    for (const id of thieu) datNho(tienTo + id, moi.get(id) ?? []);
+    for (const id of thieu) datNhoVao(s.nho, tienTo + id, moi.get(id) ?? []);
   }
   const out = new Map<number, T[]>();
   for (const id of ids) {
@@ -181,19 +227,23 @@ export function nhoTheoId<T extends object>(tienTo: string, ids: number[], doc: 
 /** Đang có bộ nhớ mở không (request GET, hoặc bên trong `trongBoNho`)? */
 export function coNho(): boolean {
   const s = kho.getStore();
-  return !!s && s.nho !== null;
+  return !!s && s.nho !== null && !s.ghi;
 }
 
 /** Khoá này đã có giá trị nhớ chưa? Dùng để bỏ bớt phần tử đã nạp khi nạp trước theo lô (`napTruocPhamVi`). */
 export function coKhoa(khoa: string): boolean {
   const s = kho.getStore();
-  return !!s && s.nho !== null && s.nho.has(khoa);
+  return !!s && s.nho !== null && !s.ghi && s.nho.has(khoa);
 }
 
-/** Xoá sạch bộ nhớ hiện có (không đóng kho — bộ đếm câu vẫn tiếp tục cộng dồn cho request). */
+/** Xoá sạch bộ nhớ hiện có (không đóng kho — bộ đếm câu vẫn tiếp tục cộng dồn cho request) — cả kho ngoài của `trongBoNho` (TD-GHI). */
 export function xoaNho(): void {
-  const s = kho.getStore();
-  s?.nho?.clear();
+  for (let s = kho.getStore(); s; s = s.cha) s.nho?.clear();
+}
+
+/** TD-GHI: câu ghi không qua `run` (`RETURNING` qua `all` / `get`, `exec` trừ SAVEPOINT / RELEASE) — xoá nhớ nếu đang trong request ghi. GET giữ như cũ. */
+export function xoaNhoNeuRequestGhi(): void {
+  for (let s = kho.getStore(); s; s = s.cha) if (s.ghi) { xoaNho(); return; }
 }
 
 /**
@@ -204,8 +254,8 @@ export function xoaNho(): void {
  */
 export function trongBoNho<T>(fn: () => T): T {
   const s = kho.getStore();
-  if (s && s.nho !== null) return fn();
-  return kho.run({ nho: new Map(), dem: s?.dem ?? demMoi(), moc: s?.moc, coGhi: s?.coGhi }, fn);   // TL-NEN: giữ mốc phiên — quét vẫn theo mốc
+  if (s && s.nho !== null && !s.ghi) return fn();
+  return kho.run({ nho: new Map(), dem: s?.dem ?? demMoi(), moc: s?.moc, coGhi: s?.coGhi, cha: s }, fn);   // TL-NEN: giữ mốc phiên — quét vẫn theo mốc
 }
 
 /** Gọi mỗi lần chạy một câu SQL thật (`get`/`run`/`iterate` — KHÔNG gọi cho `all`, xem chú thích ở db.ts). */

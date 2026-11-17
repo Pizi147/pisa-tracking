@@ -20,7 +20,7 @@ import { pbCuaLuot, dongBoBaoPhCuaBai } from '../yThuc/phoiHop.ts';
 import { CHO_DOI_PA, LA_CASE_MT, PA_GV_MO, PA_QUY_CHE_CHUA_GHI, UNCONFIRMED_PRESET, choDoiPa, dongBoTrangThaiCase, sosCaseState } from './sosState.ts';
 import { ghiBanDieuChinh, nguoiSauSua, soBuoiMoi } from './planRevisions.ts';
 import { chayPaBoTro, mocCuoiKhoa } from './boTro.ts';
-import { nho } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoBang } from '../platform/nguCanhRequest.ts';
 
 export { UNCONFIRMED_PRESET, NOT_UNCONFIRMED_PRESET, PA_QUY_CHE_CHUA_GHI } from './sosState.ts';
 
@@ -66,7 +66,8 @@ function examDateTu(c: Parameters<typeof examPlanOf>[0]): string | null {
 /** Loại + mô tả + loại mốc (span) của PA quy chế cho một lượt ở mức SOS đó. `null` khi không có gì để điền. Mốc tính lúc Xác nhận PA. */
 export function presetFor(attempt: { id?: number; attempt_no: number; cycle_id?: number | null }, sosLevel: number | null | undefined): AcademicSupportPreset | null {
   /* CAU-HINH-CASE-SOS: ô của bản mốc SOS của lượt (như việc phối hợp) — đổi cấu hình không đổi PA của SOS đang chạy. */
-  const pb = attempt.id ? pbCuaLuot(db().prepare('SELECT preset, pb_moc FROM sos_coordination_actions WHERE attempt_id = ?').all(attempt.id) as any[]) : undefined;
+  const pb = attempt.id ? nhoTheoBang(['sos_coordination_actions'], `pb-luot:${attempt.id}`, () =>   // TD-GHI: tạo Case hỏi ×11
+    pbCuaLuot(db().prepare('SELECT preset, pb_moc FROM sos_coordination_actions WHERE attempt_id = ?').all(attempt.id) as any[])) : undefined;
   return academicSupportFor(attempt.attempt_no, sosLevel, routeCuaLuot(attempt), pb);   // T4: RF theo hàng RF
 }
 

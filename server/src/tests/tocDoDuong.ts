@@ -2188,6 +2188,14 @@ export const TRAN_DONG: Record<string, number> = {
 };
 
 export const TRAN_GHI_LO = {
+  /**
+   * TD-GHI (chủ SP 18/11): lưu điểm — trần = đo + 10 câu (chặt hơn max(đo + 10, ⌈đo × 1,3⌉): giữ phần vừa giảm), dòng ⌈đo × 1,3⌉. Đo bộ demo (QL, lượt FT
+   * chưa có điểm MB FT 101 + lượt lớp thường), trước → sau: R 96 → 91 · L 94 → 88 · W1 73 → 68 · S 104 → 96 (222 dòng) · W2 chốt lượt 230 → 186 (331 → 231 dòng) ·
+   * thường L 61 → 54 · R 61 → 54 · W 84 → 69 · S 96 → 79 (183 → 113 dòng). Bản chép 12/11 (GV thật): R 80 → 76 · L 63 → 57 · W2 183 → 150 · thường 57–65 → 50–56.
+   */
+  luuDiemFt: 106, luuDiemFtDong: 289,
+  luuDiemFtChotLuot: 196, luuDiemFtChotLuotDong: 301,
+  luuDiemThuong: 89, luuDiemThuongDong: 147,
   /** LG-12: POST /violations/:id/khong-xu-ly — đọc vi phạm + trạng thái Ý thức em (trước + sau, trong giao dịch) + ghi cột, phản hồi, hạn, lịch sử, nhật ký, tin; đo trong prYt4 LG-12 (3). */
   khongXuLy: 37,   // đo 15/11 (seed, ngoài request — không bộ nhớ request): 27 câu → max(27 + 10, ⌈27 × 1,3⌉)
   /** LG-12: POST /violations/:id/khong-xu-ly/hoan-tac — như trên, gỡ tin chưa đọc; đo trong prYt4 LG-12 (5). */

@@ -18,7 +18,7 @@ import {
   boTaskTrong, oNhapHoc, expectationFor, failingEntrySkills, isCriteriaSkill, isRawSkill, type AttemptResult,
 } from './scoring.ts';
 import { mondayOf, quaHanNhapDiem, weekInfo } from '../platform/week.ts';
-import { nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { nho, nhoTheoBang, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import {
   boMonCuaLuot, checkWeekVsNeighbours, completionWeekOf, ensureSkillRows, kiemDaToiTuanThi, kiemVuot, tuanCuoiSauKhiDoi, loadSkillRows, logSchedule, recomputeCompletionWeek, scoringModeOf, tinhLaiMtCu,
   setSkillScope, setSkillWeek, skillScheduleOf, skippedSkillsOf, viewSkill, boTaskCuaDong, MON_MOT_LUOT_SQL,
@@ -246,7 +246,7 @@ export function routeCuaLuot(attempt: any): string | null {
   if (attempt.route_at_attempt) return attempt.route_at_attempt;   // LO-TRINH-THEO-HV: lượt đã có điểm lúc em đổi lộ trình giữ lộ trình lúc thi
   if ('route' in attempt) return attempt.route ?? null;
   if (!attempt.cycle_id) return null;
-  return nho(`lo-trinh:${attempt.cycle_id}`, () =>
+  return nhoTheoBang(['learning_cycles'], `lo-trinh:${attempt.cycle_id}`, () =>
     (db().prepare('SELECT route FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.route ?? null);
 }
 
@@ -258,13 +258,13 @@ export function routeCuaLuot(attempt: any): string | null {
  */
 export function kckCuaLuot(attempt: any): boolean {
   const chup = 'kck_at_attempt' in attempt ? attempt.kck_at_attempt
-    : attempt.id ? nho(`kck-luot:${attempt.id}`, () => (db().prepare('SELECT kck_at_attempt k FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.k ?? null)
+    : attempt.id ? nhoTheoBang(['assessment_attempts'], `kck-luot:${attempt.id}`, () => (db().prepare('SELECT kck_at_attempt k FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.k ?? null)
     : null;
   if (chup !== null && chup !== undefined) return !!chup;
   if ('cy_kck' in attempt) return !!attempt.cy_kck;
   if ('khong_cam_ket' in attempt) return !!attempt.khong_cam_ket;
   if (!attempt.cycle_id) return false;
-  return nho(`kck:${attempt.cycle_id}`, () =>
+  return nhoTheoBang(['learning_cycles'], `kck:${attempt.cycle_id}`, () =>
     !!(db().prepare('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?').get(attempt.cycle_id) as any)?.k);
 }
 

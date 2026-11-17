@@ -12,7 +12,7 @@ import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, ensurePeriods, mondayOf, skillScoreDeadline } from '../platform/week.ts';
 import { chanKhoiPhucThuong, huyCua, moLaiLuotNeuHuy, kckCuaLuot, lichSuCaseCua, lichSuLichCua, lopHienTaiCua, nguoiLamCuaLuot, regularSkillViews, scoreHistoryOf, weekStartOf } from '../fasttrack/attempts.ts';
-import { coNho, nho } from '../platform/nguCanhRequest.ts';
+import { coNho, nho, nhoTheoBang } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu } from '../platform/mocHeThong.ts';
 import { boMonCuaLuot, lichGopCua, checkSkillWeekMove, doiVeTuanNayNeuChua, ensureSkillRows, loadSkillRows, logSchedule, recomputeCompletionWeek, setSkillWeek } from '../fasttrack/skillSchedule.ts';
 import { dotHoanTat, dotHoanTatMany, kiemLopKetThuc, laLopKetThuc, quyenSuaSauHoanTat } from '../fasttrack/hoanTat.ts';
@@ -152,7 +152,8 @@ function duongGhiLuot(p: Principal, a: { class_id: number | null; student_id: nu
 
 export function programmeOfClass(classId: number): ProgrammeInfo | null {
   /* TL-HVL: GET đọc bảng lớp đã nhớ — hồ sơ HV hỏi lại cùng lớp cho từng lượt (`typedResult`), mỗi lần một lượt mạng Turso. */
-  return programmeByCode(coNho() ? bangLop().get(classId)?.ct : (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any)?.programme_code);
+  return programmeByCode(coNho() ? bangLop().get(classId)?.ct
+    : nhoTheoBang(['classes'], `ct-lop:${classId}`, () => (db().prepare('SELECT programme_code FROM classes WHERE id = ?').get(classId) as any)?.programme_code));   // TD-GHI: request ghi
 }
 
 /** Lớp này có chấm theo tỷ lệ điểm đạt/tổng điểm không (tức là lớp thường). */

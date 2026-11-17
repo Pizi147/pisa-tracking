@@ -9,7 +9,7 @@ import { HttpError, badRequest, canXacNhan, forbidden, isIsoDate, notFound, nowI
 import { can, explain, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { boKhoaCuoiTuan, choSuaLichTest, requireSuaLichTest, vuotKhoaCuoiTuan } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
-import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoId } from '../platform/nguCanhRequest.ts';
+import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoBang, nhoTheoId } from '../platform/nguCanhRequest.ts';
 import { nhoThamChieu, xoaNhoThamChieu, type MocHeThong } from '../platform/mocHeThong.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { programmeByCode } from '../normal/regular.ts';
@@ -158,7 +158,7 @@ export function clearScoringModeCache() {
 }
 
 const ctLoTrinh = (cycleId: number | null | undefined): string | null => cycleId == null ? null
-  : nho(`ct-lt:${cycleId}`, () => (db().prepare('SELECT programme_code FROM learning_cycles WHERE id = ?').get(cycleId) as any)?.programme_code ?? null);
+  : nhoTheoBang(['learning_cycles'], `ct-lt:${cycleId}`, () => (db().prepare('SELECT programme_code FROM learning_cycles WHERE id = ?').get(cycleId) as any)?.programme_code ?? null);
 
 export function scoringModeOf(
   attempt: { class_id?: number | null; kind?: string | null; scoring_mode?: string | null; cycle_id?: number | null },
@@ -189,7 +189,8 @@ export function scoringModeOf(
  */
 /** K5-38, PF6: bộ môn xếp lịch của MỘT lượt — FT 4 kỹ năng đánh giá; lớp thường theo `programme_skills` (Pre FOU một ô). */
 export function boMonCuaLuot(conn: any, attemptId: number, dongLich?: readonly { skill: string }[]): readonly string[] {
-  const r = conn.prepare(`SELECT c.programme_code AS ct, a.kind, a.bo_mon FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any;
+  const r = nhoTheoBang(['assessment_attempts', 'classes'], `bo-mon-luot:${attemptId}`, () =>   // TD-GHI: request ghi hỏi lại ×3 giữa các câu ghi điểm
+    conn.prepare(`SELECT c.programme_code AS ct, a.kind, a.bo_mon FROM assessment_attempts a JOIN classes c ON c.id = a.class_id WHERE a.id = ?`).get(attemptId) as any);
   if (r?.kind === 'mt0') return ASSESSED_SKILLS;   // PR-MT0: MT0 luôn bốn kỹ năng IELTS
   const prog = programmeByCode(r?.ct);
   const bo = boMonLich(r?.ct ?? null, prog?.skills);
