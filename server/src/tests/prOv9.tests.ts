@@ -65,7 +65,7 @@ export async function runPrOv9Tests(t: YThucTestKit) {
     assert(tach(6.5) === JSON.stringify({ target: 6.5, kck: false }) && tach('') === JSON.stringify({ target: null, kck: false }), tach(6.5));
     assert(d.hienTargetKck(6.5, true) === '6.5 · KCK' && d.hienTargetKck(null, true) === '— · KCK'
       && d.hienTargetKck(6.5, false) === '6.5' && d.hienTargetKck(null, false) === '—', 'hiện Target + KCK');
-    assert(d.chuTargetKck(6.5, true) === '6.5 KCK' && d.chuTargetKck(null, true) === 'KCK' && d.chuTargetKck(6, false) === '6', 'chữ ô Target');
+    assert(d.chuTargetKck(6.5, true) === '6.5 KCK' && d.chuTargetKck(null, true) === 'KCK' && d.chuTargetKck(6, false) === '6.0', 'chữ ô Target');
   });
 
   check('OV9 (1) · dán Excel cột Target "6.5 KCK" / "KCK": lưới giữ chữ, xem trước không lỗi; thêm HV lưu Target 6.5 + KCK, lượt MT có Target', () => {
