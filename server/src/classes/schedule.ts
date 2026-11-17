@@ -441,8 +441,16 @@ export function mocKetKhoa(pr: TienDoMoc, homNay: string) {
 
 export function classProgressMany(classIds: number[]): Map<number, ClassProgress> {
   if (!coNho()) return tinhTienDoNhieu(classIds);
-  /* RA-DOC-0611: hồ sơ lớp thường gọi 2–3 lần cùng tập lớp trong một request — nhớ theo đúng danh sách; trả bản chép sâu (dữ liệu thuần). */
-  return structuredClone(nho(`tien-do-lop:${classIds.join(',')}`, () => tinhTienDoNhieu(classIds)));
+  /* RA-DOC-0611: hồ sơ lớp thường gọi 2–3 lần cùng tập lớp trong một request — trả bản chép sâu (dữ liệu thuần).
+     TD-VIEC-2: nhớ THEO LỚP (mỗi lớp tính độc lập) — /my-work gọi 3 lần với 3 tập lớp chồng nhau; lần sau chỉ tính lớp chưa có. Thứ tự Map như
+     `tinhTienDoNhieu` (thứ tự bảng lớp đã nhớ). */
+  const da = nho('tien-do-lop', () => new Map<number, ClassProgress>());
+  const thieu = classIds.filter((id) => !da.has(id));
+  if (thieu.length) for (const [id, v] of tinhTienDoNhieu(thieu)) da.set(id, v);
+  const can = new Set(classIds);
+  const out = new Map<number, ClassProgress>();
+  for (const c of lopDayDu().values()) if (can.has(c.id) && da.has(c.id)) out.set(c.id, structuredClone(da.get(c.id)!));
+  return out;
 }
 
 function tinhTienDoNhieu(classIds: number[]): Map<number, ClassProgress> {

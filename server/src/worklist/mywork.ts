@@ -425,6 +425,10 @@ const COT_CASE = `COALESCE(sc.student_id, a.student_id) AS eff_student_id,
               s.full_name, a.attempt_no, a.kind AS attempt_kind, sc.han_xac_nhan AS due, rp.week_start AS tuan_thi`;
 /** TL-VIEC: Case chưa có người — cùng WHERE với `caseChuaCoNguoi`. */
 const CHUA_CO_NGUOI = `(sc.owner_user_id IS NULL AND sc.tam = 0 AND ${HV_DANG_HOC_SQL('s')})`;
+/* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt · K3-41: em Tạm dừng dừng hạn. */
+const LA_NO_PLAN = `(COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active')`;
+const LA_CAUSE = `(${HV_DANG_HOC_SQL('s')} AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
+              AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary'))`;
 
 /**
  * TL-VIEC: MỌI Case mở, MỘT câu mỗi request — trước năm câu `sos_cases` ở năm khối. Cờ tính bằng ĐÚNG luật SQL cũ của từng khối (không dịch sang JS):
@@ -451,14 +455,14 @@ const dsCho = (n: number) => Array(n).fill('?').join(',');
  * chưa có người, Case người xem phụ trách, và Case còn có thể thành "Thêm PA" (QL làm thay khi chủ Case không đủ quyền — `nguoiLamThemPa`); trước đọc mọi
  * Case mở trong phạm vi (Quản trị: cả hệ thống).
  */
-function napCaseMo(loc: LocCaseMo = null, toi: number | null = null): any[] {
-  if (coKhoa('case-mo')) { loc = null; toi = null; }   // đã đọc đủ trong request → tập cha nào cũng là tập con của nó, khỏi đọc lại
+function napCaseMo(loc: LocCaseMo = null, toi: number | null = null, chiViec = false): any[] {
+  if (coKhoa('case-mo')) { loc = null; toi = null; chiViec = false; }   // đã đọc đủ trong request → tập cha nào cũng là tập con của nó, khỏi đọc lại
   const lop = loc && 'lop' in loc ? loc.lop : null;
   const cn = loc && 'cn' in loc ? loc.cn : null;
   const lopGv = loc && 'lopGv' in loc ? loc.lopGv : [];
   if ((lop && !lop.length) || (cn && !cn.length)) return [];
   const { sql: locSql, thamSo } = sqlLocCaseMo(loc);
-  const khoaToi = toi === null ? '' : `:toi:${toi}`;
+  const khoaToi = (toi === null ? '' : `:toi:${toi}`) + (chiViec ? ':viec' : '');
   const sqlToi = toi === null ? '' : `
         AND (sc.owner_user_id IS NULL OR sc.owner_user_id = ?
              OR (COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0 AND sc.disposition IS NULL
@@ -468,15 +472,15 @@ function napCaseMo(loc: LocCaseMo = null, toi: number | null = null): any[] {
             COALESCE(ac.branch_id, cc.branch_id, s.branch_id) AS cn_du,
             (SELECT COUNT(*) FROM case_interventions iv WHERE iv.case_id = sc.id AND iv.status != 'cancelled') AS iv_count,
             NULL AS current_class_id, cur.id AS cur_eid,
-            (COALESCE(sc.sos_level, 1) > 0 AND sc.kck = 0 AND sc.tam = 0   /* OV-9: Case nhẹ (KCK) không bắt Thêm PA, không hạn · OV-13a: Case tạm chờ chốt */
-              AND sc.disposition IS NULL AND COALESCE(s.status, 'active') = 'active') AS la_no_plan,   /* K3-41: em Tạm dừng dừng hạn */
-            (${HV_DANG_HOC_SQL('s')} AND ${LA_CASE_SOS('sc')} AND ${CASE_THAT('sc')}
-              AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')) AS la_cause,
+            ${LA_NO_PLAN} AS la_no_plan,
+            ${LA_CAUSE} AS la_cause,
             ${CHUA_CO_NGUOI} AS chua_co_nguoi,
             CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GV_MON} END AS thieu_gv_mon,
             CASE WHEN ${CHUA_CO_NGUOI} THEN ${COT_THIEU_GVCN} END AS thieu_gvcn,
             ${CASE_SAU_THI_SQL('sc', 's.id')} AS sau_thi
-       FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done'${locSql}${sqlToi} ORDER BY sc.id`,
+       FROM sos_cases sc ${NOI_CASE} WHERE sc.status != 'done'${locSql}${sqlToi}${!chiViec ? '' : `
+        AND (${CHUA_CO_NGUOI} OR (${LA_NO_PLAN} AND NOT EXISTS (SELECT 1 FROM case_interventions iv1 WHERE iv1.case_id = sc.id AND iv1.status != 'cancelled'))
+             OR ${LA_CAUSE})`} ORDER BY sc.id`,
   ).all(...thamSo, ...(toi === null ? [] : [toi])) as any[]));
   /* GIAM-DOC-0711a: `lamThayCua` dùng lại dòng đã nạp ở request (bất kỳ tập cha nào — id thiếu `ctxSuaCaseNhieu` tự đọc). */
   if (!coKhoa(CASE_MO_DA_NAP)) nho(CASE_MO_DA_NAP, () => kq);
@@ -519,7 +523,8 @@ function lopHienTai(ds: any[]): any[] {
  * có `case.approve` / `class.assign` (Thêm PA của QL, việc Case chưa có người), và `sos.edit` chỉ qua vai Giáo viên (`teacherAllows` → `hasAssignment`).
  * GIAM-DOC-0711a: còn lại theo chi nhánh của grant (hoặc chi nhánh Công việc đang lọc); grant toàn hệ thống → null (đọc như cũ). Theo quyền thật của grant, không theo tên vai.
  */
-/** RA-DOC-0611b: phép kiểm bật → đọc như trước (không tập cha) để so JSON. TD-VIEC: tắt cả tập cha Xác nhận PA, "Của tôi" của QL (`napCaseMo`), em Ý thức. */
+/** RA-DOC-0611b: phép kiểm bật → đọc như trước (không tập cha) để so JSON. TD-VIEC: tắt cả tập cha Xác nhận PA, "Của tôi" của QL (`napCaseMo`), em Ý thức.
+ *  TD-VIEC-2: + Case mở chỉ dòng thành việc (`chiViec`), MT cũ "Của tôi" của QL. */
 export const caseMoTapChaKhiKiem = { tat: false };
 function locCaseMo(p: Principal, branchId: number | null | undefined, tatCa: boolean): LocCaseMo {
   if (caseMoTapChaKhiKiem.tat) return null;
@@ -1000,7 +1005,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const locCm = locCaseMo(p, f.branchId, tatCa);
   const toi = xemNguoiKhac && !tatCa && !caseMoTapChaKhiKiem.tat ? p.userId : null;   // TD-VIEC: "Của tôi" của QL / Quản trị — xem `napCaseMo`
   const locLop: LocCaseMo = f.chiLop ? { lop: [f.chiLop] } : locCm;   // TD-VIEC `chiLop`: tập cha theo lớp (Case của em ghi danh lớp / lượt của lớp) thay tập cha quyền
-  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(locLop, toi) : [];
+  /* TD-VIEC-2: chỉ dòng thành việc (Chưa có người · Thêm PA khi chưa PA nào · Xác nhận / Mô tả Case) — các khối dưới chỉ đọc ba cờ đó; QL 5 chi nhánh
+     "Tất cả" 882 → 133 dòng. */
+  const caseMo = co('no_plan', 'cause', 'ghi_nhan_xet', 'no_owner') ? napCaseMo(locLop, toi, !caseMoTapChaKhiKiem.tat) : [];
   /* Một dòng mỗi Case (em hai ghi danh `active` có hai dòng ở `caseMo`). */
   const caseRows = !co('no_plan') ? [] : [...new Map(caseMo.filter((c) => c.la_no_plan).map((c) => [c.id, c])).values()];
   /* RA-LUONG-8 (N8 ④): Case tạm (em KCK, lượt chưa chốt) không sinh việc "Mô tả Case" — cùng `CASE_THAT` như mọi câu đếm. */
@@ -1077,7 +1084,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     : [...new Set(p.assignments.filter((x) => x.isCore).map((x) => x.classId))];
   /* `chiLop`: việc Ý thức mang `classId` = lớp đang học của em → em ghi danh (đang học / tạm dừng) lớp đó; giao với tập cha quyền. */
   const lopYt = !f.chiLop ? lopYtQuyen : lopYtQuyen ? lopYtQuyen.filter((x) => x === f.chiLop) : [f.chiLop];
-  const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null, lopIds: lopYt }) : [];
+  /* TD-VIEC-2: QL / Quản trị "Của tôi" — việc Ý thức chỉ thành của người xem khi họ là GVCN lớp em hoặc lớp chưa có GVCN (`mine` ở 5b) → chỉ đọc em đó. */
+  const gvcnLa = xemNguoiKhac && !tatCa && !caseMoTapChaKhiKiem.tat ? { nguoi: p.userId, homNay: today } : undefined;
+  const uv = co('khai_bac', 'yt_xu_ly', 'yt_thuc_hien') ? ungVienVaThe({ branchId: f.branchId ?? null, lopIds: lopYt, gvcnLa }) : [];
   napTruocPhamVi([...ghiKetQua, ...caseMo, ...xacNhanPa].map((r) => r.eff_student_id)
     .concat(baoPh.map((r) => r.student_id), miniTest.map((r) => r.student_id), tatCa ? nxS.map((r) => r.student_id) : [], tatCa ? uv.map((r) => r.id) : []));
   /* PR-PA (§8): người giữ việc — cùng hàm với chỉ số `pa-can-cap-nhat` và quyền ghi; tính một lần cho mọi dòng. */
@@ -1554,7 +1563,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* K2-32: MT CŨ chưa nhập — một việc XÁM mỗi lớp (GVCN / Quản lý), không hạn, không quá hạn. Cùng hàm với dòng nhắc Lịch Test. */
   /* `chiLop`: chỉ lớp đó — và chỉ khi người xem được nhắc lớp đó (đúng điều kiện `duoc` của `mtLichSuChuaNhap`), khỏi đọc lượt rồi bỏ. */
   const mtCu = co('missing_data') && (!f.chiLop || isCoreTeacherOf(p, f.chiLop) || can(p, PERMISSIONS.PLAN_WEEK, { classId: f.chiLop }));
-  for (const l of mtCu ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null, ...(f.chiLop ? { classIds: [f.chiLop] } : {}) }) : []) {
+  /* TD-VIEC-2: QL / Quản trị "Của tôi" — chủ việc = GVCN lớp (`gvcnLop`), lọc cuối hàm bỏ việc người khác giữ → chỉ đọc lớp chưa có GVCN hoặc người xem
+     là GVCN (QL 5 chi nhánh: trước 567 dòng lượt / lần, trả 0 việc). */
+  const locMtCu = xemNguoiKhac && !tatCa && !caseMoTapChaKhiKiem.tat ?(id: number) => (gvcnLop().get(id) ?? p.userId) === p.userId : undefined;
+  for (const l of mtCu ? mtLichSuChuaNhap(p, { branchId: f.branchId ?? null, ...(f.chiLop ? { classIds: [f.chiLop] } : {}), loc: locMtCu }) : []) {
     items.push({
       key: `lich-su:${l.classId}`, group: 'missing_data', urgency: 'normal',
       studentId: null, studentName: `Lớp ${l.classCode}`, classId: l.classId, classCode: l.classCode,
