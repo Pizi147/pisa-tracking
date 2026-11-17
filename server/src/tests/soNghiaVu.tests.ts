@@ -395,7 +395,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
   /* L4 (13/11): hộp nhập điểm dùng CÙNG nhóm với máy chủ — ô "Người chấm" S của lượt chấm chéo chỉ liệt kê GV có S (không 400 sau khi chọn QL / GV không có S). */
   check('NV-SCHEO-CHON-WEB · hộp nhập điểm: ô "Người chấm Speaking" lượt chấm chéo dùng nhóm gv_speaking (như nút "GV chấm S"); lượt không chéo mới là nhan_vien', () => {
     const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..');
-    const src = fs.readFileSync(path.join(ROOT, 'web/src/modules/fasttrack/HopNhapDiem.tsx'), 'utf8');
+    const src = ['HopNhapDiem', 'HopNhapDiemHop'].map((f) => fs.readFileSync(path.join(ROOT, `web/src/modules/fasttrack/${f}.tsx`), 'utf8')).join('\n');
     const dong = src.split(/\r?\n/).find((l) => l.includes("ariaLabel={t('Người chấm Speaking')}")) ?? '';
     assert(dong.includes("nhom={ctx.khongCheo ? 'nhan_vien' : 'gv_speaking'}"), `ô Người chấm: ${dong.trim()}`);
     assert(/khongCheo: !laChamCheo\(d\.kind, 'speaking'\)/.test(src), 'nguCanhChiTiet phải đặt khongCheo theo laChamCheo (một luật với máy chủ)');
