@@ -123,7 +123,7 @@ export function hoanTacChuyenNgay(p: Principal, sid: number, daoVao: unknown, ba
     const muc = JSON.parse(g.du_lieu) as { bang: string; truoc: any[] }[];
     const ghiDanh = (muc.find((m) => m.bang === 'enrollments')?.truoc ?? []).filter((e) => e.status === 'active');
     const lopNguon = ghiDanh[0]?.class_id as number | undefined;
-    if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Head lớp cũ của em hoàn tác được lần chuyển này.');
+    if (!lopNguon || !can(p, PERMISSIONS.CLASS_EDIT, { classId: lopNguon })) throw forbidden('Chỉ Head phụ trách lớp cũ của em hoàn tác được lần chuyển này.');
     return { g, ghiDanh, lopNguon };
   });
   return tx(() => {

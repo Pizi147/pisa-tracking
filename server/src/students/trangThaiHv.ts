@@ -34,7 +34,7 @@ export function traLaiLenhDaHuy(p: Principal, studentId: number): string | null 
 
 /** Câu khi em có quyết định chuyển lớp chờ mà người làm không huỷ được quyết định (hàng loạt nạp cả lô một lần). */
 export const cauLenhCho = (tuanBatDau: string): string =>
-  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — Head lớp huỷ quyết định (Chuyển lớp…) hoặc làm việc này, rồi làm lại.`;
+  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — Head phụ trách huỷ quyết định (Chuyển lớp…) hoặc làm việc này, rồi làm lại.`;
 
 /**
  * "Khi lưu, web sẽ" của hộp Tạm dừng / Kết thúc học (k2, k3). `ketThuc` = ô "Có thể quay lại học" tắt. Em đã kết thúc / không tìm thấy không tính.

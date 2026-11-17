@@ -117,7 +117,7 @@ export const EN_HD3_GV = {
   'Head duyệt (hoặc máy chốt) cách xử lý khác mặc định: GVCN ghi ngày đã làm.': 'The Head approves (or the system settles) a non-default action: the core teacher records when it was done.',
   'Head giao việc cho GV ở Tiến độ công việc.': 'The Head assigns a task in Work progress.',
   'Head làm thay được.': 'A Head can do it for you.',
-  'Head lớp cũ quyết định; tới tuần bắt đầu máy tự chuyển.': 'The old class Head decides; the system moves the student on the start week.',
+  'Head phụ trách lớp cũ quyết định; tới tuần bắt đầu máy tự chuyển.': 'The old class Head decides; the system moves the student on the start week.',
   'Head trả lời trong {han:ql_duyet_pa}; quá hạn Head và Quản trị nhận tin.': 'The Head replies within {han:ql_duyet_pa}; after that Heads and admins are notified.',
   'Head đổi GV dạy lớp và tạo việc bàn giao: GV cũ viết cho GV mới.': 'The Head changes the class teacher and creates a handover: the old teacher writes for the new one.',
   'Sửa ô, hoặc <b>Hoàn tác</b> ngay sau khi lưu; kết quả PA: <b>Sửa kết quả</b>.': 'Edit the cell, or <b>Undo</b> right after saving; PA results: <b>Edit result</b>.',

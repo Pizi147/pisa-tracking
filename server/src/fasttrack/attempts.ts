@@ -1868,7 +1868,7 @@ export function chanKhoiPhucThuong(a: any, nhan: string, p?: Principal): string 
   const conn = db();
   const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
   /* Rà PTA ⑤: lớp đã kết thúc chỉ Quản lý lớp (`class.edit`) mở lại được — người khác không được hỏi "Mở lại lớp?" rồi 403: nói lý do + ai làm. */
-  if (p && laLopKetThuc(a.class_id) && !can(p, PERMISSIONS.CLASS_EDIT, { classId: a.class_id })) return `Lớp ${lop} đã kết thúc — nhờ Head lớp mở lại lớp rồi khôi phục ${nhan}.`;
+  if (p && laLopKetThuc(a.class_id) && !can(p, PERMISSIONS.CLASS_EDIT, { classId: a.class_id })) return `Lớp ${lop} đã kết thúc — nhờ Head phụ trách mở lại lớp rồi khôi phục ${nhan}.`;
   /* Em lưu trữ / kết thúc học: lượt khôi phục sẽ bị mọi danh sách hiện tại ẩn. Tạm dừng (chưa lưu trữ) vẫn khôi phục được. */
   if (!conn.prepare(`SELECT 1 FROM students s WHERE s.id = ? AND (${HV_DANG_HOC_SQL('s')} OR (s.status = 'inactive' AND s.archived_at IS NULL))`).get(a.student_id)) {
     return `Em đã lưu trữ / kết thúc học — bỏ lưu trữ trước rồi khôi phục ${nhan}.`;

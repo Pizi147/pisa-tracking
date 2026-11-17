@@ -429,7 +429,7 @@ export const HD_GV: HuongDan = {
     },
     {
       id: 'em-chuyen-lop', ten: 'Em chuyển lớp / lên lớp', the: 'ban-giao',
-      may: ['Head lớp cũ quyết định; tới tuần bắt đầu máy tự chuyển.', 'Case, PA đang mở sang GV lớp mới, hạn tính lại.'],
+      may: ['Head phụ trách lớp cũ quyết định; tới tuần bắt đầu máy tự chuyển.', 'Case, PA đang mở sang GV lớp mới, hạn tính lại.'],
       ban: 'GVCN đề xuất ở hồ sơ em; GV bộ môn và GVCN lớp cũ làm việc Bàn giao.',
       ai: ['GV lớp mới nhận Case, PA; quá hạn bàn giao Head được báo, em vẫn chuyển đúng tuần.', 'PA Bổ trợ miễn phí: GV cũ vẫn dạy tới khi ghi Mini Test.'],
       tuKhac: ['chuyển lớp', 'lên lớp', 'đổi lớp', 'transfer'],

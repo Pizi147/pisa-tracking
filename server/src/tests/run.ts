@@ -10036,7 +10036,7 @@ const { runPrNhapDiemTuDoTests } = bocTep('prNhapDiemTuDo', await import('./prNh
 await runPrNhapDiemTuDoTests({ check, assert, assertThrows, conn, P, TODAY, addDays, classId } as any);
 // ==================================================================== HEAD (vai manager hiện là "Head" — chủ SP 18/11)
 const { runPrHeadTests } = bocTep('prHead', await import('./prHead.tests.ts'));
-await runPrHeadTests({ check, assert } as any);
+await runPrHeadTests({ check, assert, conn } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';

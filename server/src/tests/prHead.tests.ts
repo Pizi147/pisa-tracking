@@ -6,6 +6,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { migratePrHead } from '../migrate/prHead.ts';
 import * as people from '../../../shared/domain/people.ts';
 
 const REPO = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../../..');
@@ -16,7 +17,7 @@ const tepDeQuy = (rel: string): string[] => fs.readdirSync(path.join(REPO, rel),
 const KHONG_PHAI_VAI = /Quản lý (thời gian|danh sách tutor)|[Qq]uản lý học vụ/g;
 
 export async function runPrHeadTests(t: any) {
-  const { check, assert } = t;
+  const { check, assert, conn } = t;
   console.log('\nHEAD · vai manager hiện là "Head"');
 
   check('HEAD-1 · ROLE_LABEL.manager = "Head"; Head tutor vẫn là vai riêng', () => {
@@ -36,5 +37,16 @@ export async function runPrHeadTests(t: any) {
       }
     }
     assert(sot.length === 0, `còn ${sot.length} chỗ: ${sot.slice(0, 8).join(' · ')}`);
+  });
+
+  check('HEAD-3 · migrate prHead: roles.name_vi của manager "Quản lý" → "Head", chạy lặp không đổi / không báo; vai khác giữ nguyên', () => {
+    const ten = (k: string) => (conn.prepare('SELECT name_vi FROM roles WHERE key = ?').get(k) as any).name_vi as string;
+    const khac = ten('teacher');
+    conn.prepare("UPDATE roles SET name_vi = 'Quản lý' WHERE key = 'manager'").run();
+    const lan1: string[] = []; migratePrHead(conn, lan1);
+    assert(ten('manager') === 'Head' && lan1.length === 1, `lần một: ${ten('manager')} · ${lan1}`);
+    const lan2: string[] = []; migratePrHead(conn, lan2);
+    assert(ten('manager') === 'Head' && lan2.length === 0, `lần hai: ${lan2}`);
+    assert(ten('teacher') === khac, 'vai khác không đổi');
   });
 }
