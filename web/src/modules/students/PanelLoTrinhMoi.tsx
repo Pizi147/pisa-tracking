@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { api } from '../../lib/api.ts';
+import { fmtBand } from '../../lib/format.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
@@ -65,11 +66,13 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled }: {
   const dsLop = useApi<{ lop: LopDich[] }>(v.lopKhac ? `/students/${bt.studentId}/hoc-lai/lop-dich` : null, [v.lopKhac, bt.studentId]);
   const ds = lopChonLoTrinhMoi(loTrinh ?? 'LT1', dsLop.data?.lop ?? []).filter((l) => l.id !== bt.lopNay?.id);
   const lopMoi = v.lopKhac ? ds.find((l) => l.id === v.lopMoiId)?.ma ?? null : null;
+  /* Rà PTA: Target như đầu panel / hồ sơ ("7.0", "6.5 KCK") — số band qua `fmtBand`, giữ đuôi KCK. */
+  const tgCu = bt.target.replace(/^\d+(\.\d+)?/, (m) => fmtBand(Number(m)));
   const tg = v.tg?.trim() || null;
   const dong = [
     loTrinh ? t('Giữ lộ trình {lt} · Case, PA, MT giữ nguyên', { lt: loTrinh }) : t('Giữ lộ trình · Case, PA, MT giữ nguyên'),
     bt.ngayThi ? t('KQ thi {ngay} vào lịch sử · chờ lần thi sau', { ngay: ngay(bt.ngayThi, homNay ?? '') }) : t('KQ thi vào lịch sử · chờ lần thi sau'),
-    ...(tg && tg !== bt.target ? [t('Target {cu} → {moi}', { cu: bt.target || '—', moi: tg })] : []),
+    ...(tg && tg !== bt.target && tg !== tgCu ? [t('Target {cu} → {moi}', { cu: tgCu || '—', moi: tg })] : []),
     ...(lopMoi ? [t('Chuyển sang {lop} ngay · đường Chuyển lớp', { lop: lopMoi })] : []),
   ];
   const nut = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0';
@@ -80,11 +83,11 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled }: {
       <Truong nhan="Target" tuyChon as="div">
         <div className="flex flex-wrap items-center gap-2.5 text-[15px]">
           {v.tg !== null
-            ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={bt.target || t('Ví dụ: 6.5')} value={v.tg} disabled={disabled}
+            ? <input className="field w-24 tabular-nums" inputMode="decimal" autoComplete="off" aria-label="Target" placeholder={tgCu || t('Ví dụ: 6.5')} value={v.tg} disabled={disabled}
                 onChange={(e) => onChange({ ...v, tg: e.target.value })} />
-            : <><b className="tabular-nums text-slate-100">{bt.target || '—'}</b>{bt.target && <span className="text-sm text-slate-500">{t('giữ')}</span>}</>}
+            : <><b className="tabular-nums text-slate-100">{tgCu || '—'}</b>{tgCu && <span className="text-sm text-slate-500">{t('giữ')}</span>}</>}
           {v.tg === null
-            ? <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: bt.target })}>{t('Sửa')}</button>
+            ? <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: tgCu })}>{t('Sửa')}</button>
             : <button type="button" className={nut} disabled={disabled} onClick={() => onChange({ ...v, tg: null })}>{t('Giữ Target')}</button>}
         </div>
       </Truong>
