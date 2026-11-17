@@ -101,6 +101,8 @@ export type TrangThaiBuocTiep = {
   kqDaDoi: boolean;
   /** N50 (12) — chủ SP 16/11: KQ thi thật ≥ Target → Lộ trình mới gợi ý Target cũ + 1.0 band (tối đa 9.0), ô Target mở sẵn, sửa được; chưa đạt / Không thi → null (giữ). */
   targetGoiY: string | null;
+  /** N51: Học tiếp làm được — em đang học CHÍNH lộ trình này (hoặc đã có lựa chọn: Đổi hoàn tác trước rồi máy chủ kiểm lại). false → web tắt kèm lý do. */
+  hocTiepDuoc: boolean;
 };
 /** N50 (12): Target gợi ý cho Lộ trình mới khi em đã đạt Target — +1.0 band, trần 9.0. Không có Target số / chưa đạt → null. */
 export function targetGoiYSauDat(c: { target_score?: number | null; outcome_score?: number | null; thi_that_khong_thi?: number | null }, ketLuan: string | null): string | null {
@@ -129,6 +131,7 @@ export function trangThaiBuocTiep(p: Principal, cycleId: number): TrangThaiBuocT
     hoanTacDuoc: !daChuyen,
     kqDaDoi: !!c.buoc_tiep && g.kq !== undefined && g.kq !== dauKq(c),
     targetGoiY: targetGoiYSauDat(c, ketLuanCua(c)),
+    hocTiepDuoc: !!c.buoc_tiep || dangHocLoTrinh(c),
   };
 }
 /** HOTFIX-MO-KHOA: Hoàn tác không trả đúng như trước được (em đã đổi sau đó, lộ trình mới đã có điểm, lệnh chuyển lớp đã chạy) — một câu ngắn, đường làm thay là "Đổi". */
@@ -332,7 +335,9 @@ function hoanTac(p: Principal, c: any) {
     .run(cu ? 'tam_dung' : null, cu?.luc ?? null, cu?.boi ?? null, cu ? cu.json ?? '{}' : null, c.id);
 }
 
-const KHONG_HOC_TIEP = 'Học tiếp chỉ khi em đang học lộ trình này — em đã nghỉ / tạm dừng: chọn Lộ trình mới.';
+const KHONG_HOC_TIEP = 'Học tiếp chỉ khi em đang học lộ trình này (lộ trình đã đóng, hoặc em tạm dừng / đã nghỉ) — chọn Lộ trình mới.';
+/** Em đang học CHÍNH lộ trình này: lộ trình mở, em đang học (không Lưu trữ), ghi danh đang học — điều kiện Học tiếp (một chỗ cho panel và lúc lưu). */
+const dangHocLoTrinh = (c: any) => c.status === 'active' && c.em_status === 'active' && c.ghi_danh === 'active' && !c.em_archived;
 /**
  * N51 HỌC TIẾP (chủ SP 18/11): CÙNG lộ trình chạy tiếp — mặc định lớp cũ, Target cũ, mọi thứ giữ. KQ lần này + dự kiến thi vào `thi_that_lich_su`, cột về
  * "chưa thi" (`COT_HOC_TIEP`). Tuỳ chọn: Target (`updateCycle`, cùng luật Sửa Target + Hành trình) · lớp FT khác (đúng đường Chuyển lớp `raLenh` "Ngay bây giờ";
@@ -340,7 +345,7 @@ const KHONG_HOC_TIEP = 'Học tiếp chỉ khi em đang học lộ trình này �
  */
 function hocTiep(q: Principal, p: Principal, c: any, o: { tg: { target: number | null; kck: boolean } | null; mucTieu: number | string | null; lopMoiId: number | null; homNay: string }, ghi: GhiBuocTiep) {
   if (!c.co_kq) throw badRequest('Lộ trình chưa có kết quả thi thật — nhập kết quả (hoặc Không thi) trước khi chọn bước tiếp.');
-  if (c.status !== 'active' || c.em_status !== 'active' || c.ghi_danh !== 'active' || c.em_archived) throw badRequest(KHONG_HOC_TIEP);
+  if (!dangHocLoTrinh(c)) throw badRequest(KHONG_HOC_TIEP);
   const conn = db();
   const doiLop = !!o.lopMoiId && o.lopMoiId !== c.lop_id;
   const lopMoi = doiLop ? conn.prepare('SELECT id, is_fast_track FROM classes WHERE id = ?').get(o.lopMoiId) as any : null;

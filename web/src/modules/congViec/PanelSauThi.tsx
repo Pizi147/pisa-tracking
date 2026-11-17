@@ -105,7 +105,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   /* ② Bước tiếp */
   const daChonTruoc = !!b.chon;
   const khoaBuoc2 = !coKq || moDiem || !b.coTheChon || daChonTruoc || !!daChot;
-  const loiB = !chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : chon === 'hoc_tiep' ? loiHocTiep(hocTiep) : [];
+  const loiB = !chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : chon === 'hoc_tiep' ? loiHocTiep(hocTiep, b) : [];
   const chot = async (): Promise<boolean> => {
     lf.bam();
     if (loiB.length) return false;
@@ -156,7 +156,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
 
   return (
     <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
-      quyChe={daChot ? null : moDiem ? quyCheKqThiThat() : !khoaBuoc2 && (chon === 'dung' || chon === 'hoc_tiep') ? quyCheDungHoc(b.han ? shortDate(b.han, hn) : null) : null}>
+      quyChe={daChot ? null : moDiem ? quyCheKqThiThat() : !khoaBuoc2 && chon === 'dung' ? quyCheDungHoc(b.han ? shortDate(b.han, hn) : null) : null}>
       <div className="flex flex-col gap-4 pt-4">
         <Buoc so={coKq && !moDiem ? '✓' : '1'} xong={coKq && !moDiem} tieuDe={t('Kết quả thi thật')}
           phu={coKq && c.thi_that_nhap_luc ? t('lưu {ngay}', { ngay: shortDate(c.thi_that_nhap_luc, hn) }) : t('không hạn')}>

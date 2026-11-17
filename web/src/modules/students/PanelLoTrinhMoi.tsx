@@ -55,7 +55,9 @@ export const HOC_TIEP_TRONG: GiaTriHocTiep = { tg: null, lopKhac: false, lopMoiI
 export const thanHocTiep = (v: GiaTriHocTiep) => ({
   chon: 'hoc_tiep' as const, ...(v.tg?.trim() ? { mucTieu: v.tg.trim().replace(',', '.') } : {}), ...(v.lopKhac && v.lopMoiId ? { lopMoiId: v.lopMoiId } : {}),
 });
-export const loiHocTiep = (v: GiaTriHocTiep) => (v.lopKhac && !v.lopMoiId ? [{ khoa: 'lop-hoc-tiep', nhan: t('Lớp'), lyDo: t('Chọn lớp') }] : []);
+const CHU_KHONG_HOC_TIEP = () => t('Chỉ khi em đang học lộ trình này — chọn Lộ trình mới.');
+export const loiHocTiep = (v: GiaTriHocTiep, bt: TrangThaiBuocTiep) => (bt.hocTiepDuoc === false ? [{ khoa: 'chon', nhan: t('Học tiếp'), lyDo: CHU_KHONG_HOC_TIEP() }]
+  : v.lopKhac && !v.lopMoiId ? [{ khoa: 'lop-hoc-tiep', nhan: t('Lớp'), lyDo: t('Chọn lớp') }] : []);
 export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled }: {
   bt: TrangThaiBuocTiep; v: GiaTriHocTiep; onChange: (v: GiaTriHocTiep) => void; loTrinh: string | null; bamLuu?: boolean; disabled?: boolean;
 }) {
@@ -65,12 +67,14 @@ export function KhoiHocTiep({ bt, v, onChange, loTrinh, bamLuu, disabled }: {
   const lopMoi = v.lopKhac ? ds.find((l) => l.id === v.lopMoiId)?.ma ?? null : null;
   const tg = v.tg?.trim() || null;
   const dong = [
-    t('Giữ lộ trình {lt} · Case, PA, MT giữ nguyên', { lt: loTrinh ?? '' }),
+    loTrinh ? t('Giữ lộ trình {lt} · Case, PA, MT giữ nguyên', { lt: loTrinh }) : t('Giữ lộ trình · Case, PA, MT giữ nguyên'),
     bt.ngayThi ? t('KQ thi {ngay} vào lịch sử · chờ lần thi sau', { ngay: ngay(bt.ngayThi, homNay ?? '') }) : t('KQ thi vào lịch sử · chờ lần thi sau'),
     ...(tg && tg !== bt.target ? [t('Target {cu} → {moi}', { cu: bt.target || '—', moi: tg })] : []),
     ...(lopMoi ? [t('Chuyển sang {lop} ngay · đường Chuyển lớp', { lop: lopMoi })] : []),
   ];
   const nut = 'link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-sm font-semibold sm:min-h-0';
+  /* Lộ trình đã đóng / em tạm dừng, đã nghỉ: không có gì để "học tiếp" — nói lý do + bước kế, không bày ô. */
+  if (bt.hocTiepDuoc === false) return <p role="alert" className="m-0 text-[13px] text-soon">{CHU_KHONG_HOC_TIEP()}</p>;
   return (
     <div className="flex flex-col gap-3">
       <Truong nhan="Target" tuyChon as="div">

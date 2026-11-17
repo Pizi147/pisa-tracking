@@ -528,6 +528,10 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     students.setStudentStatus(QL, b.sid, 'finished', TODAY, 'nghỉ');
     const e = loi(() => bt.chonBuocTiep(QL, b.cy, { chon: 'hoc_tiep' }));
     assert(e?.status === 400 && /Lộ trình mới/.test(e.message) && get('SELECT thi_that_l FROM learning_cycles WHERE id = ?', b.cy).thi_that_l === 7, `em đã nghỉ: ${e?.message}`);
+    assert(bt.trangThaiBuocTiep(QL, b.cy).hocTiepDuoc === false && bt.trangThaiBuocTiep(QL, a.cy).hocTiepDuoc === true, 'panel tắt Học tiếp kèm lý do khi em không còn học lộ trình');
+    const c2 = emThiXong(L);
+    conn.prepare(`UPDATE learning_cycles SET status = 'completed', ended_at = ? WHERE id = ?`).run(TODAY, c2.cy);   // lộ trình đã đóng (dữ liệu cũ), em vẫn học
+    assert(!bt.trangThaiBuocTiep(QL, c2.cy).hocTiepDuoc && loi(() => bt.chonBuocTiep(QL, c2.cy, { chon: 'hoc_tiep' }))?.status === 400, 'lộ trình đã đóng → Học tiếp tắt + 400');
   }));
 
   check('HT-6 · TVV chi nhánh chọn Học tiếp được (như hai hướng kia); GVCN 403 · migrate prHocTiep chạy lặp không làm gì · trần câu SQL', () => thu(() => {

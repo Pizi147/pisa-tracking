@@ -26,6 +26,8 @@ export type TrangThaiBuocTiep = {
   kqDaDoi?: boolean;
   /** N50 (12): đã đạt Target → Target gợi ý (+1.0) cho Lộ trình mới; null = giữ Target. */
   targetGoiY?: string | null;
+  /** N51: Học tiếp làm được (em đang học chính lộ trình này) — false: lựa chọn tắt kèm lý do. */
+  hocTiepDuoc?: boolean;
 };
 type Chon = HuongSauThi;
 
@@ -113,7 +115,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   /* N51: Học tiếp — thân POST từ hai ô tuỳ chọn; lớp khác (đã chuyển ngay) thì máy chủ không hoàn tác chính xác được → không nút Hoàn tác ở khối Đã lưu. */
   const luuHocTiep = () => {
     setBamHt(true);
-    if (loiHocTiep(hocTiep).length) return;
+    if (loiHocTiep(hocTiep, bt).length) return;
     const doiLop = hocTiep.lopKhac && !!hocTiep.lopMoiId;
     void gui(() => api.post(`/cycles/${cycleId}/buoc-tiep`, thanHocTiep(hocTiep)),
       { chu: daChonTruoc ? t('Đã đổi sang {chon}', { chon: NHAN_SAU_THI.hoc_tiep }) : t('Đã chọn {chon}', { chon: NHAN_SAU_THI.hoc_tiep }), hoanTac: doiLop ? undefined : boChon });
@@ -187,7 +189,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
   const nut = chon === 'dung'
     ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuDung} disabled={tt === 'dang'}>{dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc}</button>
     : chon === 'hoc_tiep'
-      ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuHocTiep} disabled={tt === 'dang'}>{NHAN_SAU_THI.hoc_tiep}</button>
+      ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luuHocTiep} disabled={tt === 'dang' || bt.hocTiepDuoc === false}>{NHAN_SAU_THI.hoc_tiep}</button>
       : undefined;
   const luuChon = chon === 'hoc_tiep' ? luuHocTiep : luuDung;
   return (
@@ -202,7 +204,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
               <NutChu onClick={() => { setDoi(false); setChon(null); setTt(null); setLoi(null); }}>{t('Giữ lựa chọn cũ')}</NutChu>
             </p>
           )}
-          <div role="group" aria-label={tieuDe} className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+          <div role="group" aria-label={tieuDe} className="grid grid-cols-1 gap-2.5">
             {HUONG_SAU_THI.map((k) => (
               <button key={k} type="button" aria-pressed={chon === k} onClick={() => setChon(k)}
                 className={`flex min-h-[44px] flex-col gap-0.5 rounded-[10px] border px-3.5 py-3 text-left text-[15px] font-bold ${chon === k ? 'border-[color:var(--accent)] bg-[color:var(--accent-soft)] text-[color:var(--accent)]' : 'border-[color:var(--line)] text-slate-100 hover:border-[color:var(--accent)]'}`}>
