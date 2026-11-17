@@ -1,5 +1,5 @@
 import { MuiChev } from '../../ui/HangNhom.tsx';
-import { Children, type ReactNode, useState } from 'react';
+import { Children, Fragment, type ReactNode, useState } from 'react';
 import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -358,15 +358,20 @@ function MuiTenMoTrang({ it, dong, nut }: { it: WorkItem; dong: ChungDong; nut: 
  */
 /* Thẻ giữ đủ chữ; hàng ≥ 640 cao đúng một thẻ — thẻ không đủ chỗ rơi xuống hàng ẩn (thứ tự quan trọng trước), không thẻ nào bị cắt nửa / "Phan Khánh Li…". */
 const THE_PHU = 'sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5';
-const DongPhu = ({ nguoi, ds, children }: { nguoi?: ReactNode; ds: readonly ReactNode[]; children?: ReactNode }) => {
+/* TD-WEB-2 (A1-13): `chip` = chip mức / SOS của việc — ở dòng phụ, ngay sau mẩu `chipSau` (tên em), không đẩy tên việc xuống dòng. */
+const DongPhu = ({ nguoi, ds, chip, chipSau = 0, children }: { nguoi?: ReactNode; ds: readonly ReactNode[]; chip?: ReactNode; chipSau?: number; children?: ReactNode }) => {
   const coHuy = Children.toArray(children).length > 0;   // `{tvv && …}` = false khi không phải TVV — không tính
   const cham = (i: number) => i < ds.length - 1 && <span aria-hidden className="sm:hidden"> ·</span>;
-  return ds.length || coHuy || nguoi ? (
+  return ds.length || coHuy || nguoi || chip ? (
   <span onMouseEnter={(e) => { e.currentTarget.title = e.currentTarget.textContent ?? ''; }}
     className={`flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px] ${coHuy ? '' : 'sm:h-5 sm:overflow-hidden'}`}>
     {nguoi && <span className="shrink-0 whitespace-nowrap sm:mr-1">{nguoi}{ds.length > 0 && <span aria-hidden className="sm:hidden"> ·</span>}</span>}
     {/* GD-4d (⑤ H5): thẻ phụ dòng việc (vd "bậc kế tiếp: Report 2") — tên bậc viết hoa, dạng tắt. */}
-    {ds.map((x, i) => <span key={i} className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{typeof x === 'string' ? bacNgan(x) : x}{cham(i)}</span>)}
+    {ds.map((x, i) => <Fragment key={i}>
+      <span className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{typeof x === 'string' ? bacNgan(x) : x}{cham(i)}</span>
+      {chip && i === Math.min(chipSau, ds.length - 1) && <span className="inline-flex shrink-0 items-center [&>span]:!h-5 [&>span]:!min-h-0">{chip}</span>}
+    </Fragment>)}
+    {chip && !ds.length && <span className="inline-flex shrink-0 items-center [&>span]:!h-5 [&>span]:!min-h-0">{chip}</span>}
     {children}
   </span>
 ) : null;
@@ -398,9 +403,8 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
           className={`${TEN} ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
           <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={ten} ma={dong.theCn?.(it)} /></span>
           <MuiTenMoTrang it={it} dong={dong} nut={nut} />
-          {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
         </button>
-        <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={[
+        <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} chip={muc} chipSau={0} ds={[
           <Link key="em" to={`/hoc-vien/${it.studentId}`} title={t('Mở hồ sơ {ten}', { ten: it.studentName })} onClick={(e) => e.stopPropagation()}
             className="text-dim no-underline hover:text-[color:var(--accent)] hover:underline">{it.studentName}</Link>,
           ...phu,
@@ -461,9 +465,8 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
             aria-current={dangChon ? 'true' : undefined} className={`${TEN} ${daXong ? 'text-dim' : 'text-[color:var(--text)]'}`}>
             <span className={daXong ? 'line-through' : ''}>{daXong && <span aria-hidden className="text-ok">✓ </span>}<TenCn ten={caTuan ? t('Cả lớp') : luoiKq ? voiLop(it, t('Ghi kết quả PA')) : voiLop(it, tenViec(boDongTu(it.group, tenGoc)))} ma={dong.theCn?.(it)} /></span>
             {!con && <MuiTenMoTrang it={it} dong={dong} nut={nut} />}
-            {muc && <span className="ml-2 inline-flex align-middle">{muc}</span>}
           </button>
-          <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} ds={phu} />
+          <DongPhu nguoi={nguoi && !daXong ? <NguoiGiu ten={nguoi} /> : null} chip={muc} ds={phu} />
         </span></span>
         {/* UA-03: dòng gộp cũng ghi người phụ trách (QL "Tất cả" phân biệt ba dòng giống nhau) — ở đầu dòng phụ. */}
         <CotHan it={it} daXong={daXong} />
