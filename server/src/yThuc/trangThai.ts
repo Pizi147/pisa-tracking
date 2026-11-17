@@ -63,6 +63,9 @@ export type EmYThuc = {
 
 const LO = 400;
 const cho = (n: number) => Array.from({ length: n }, () => '?').join(',');
+/** GVCN đang hiệu lực (tham số: hôm nay ×2) của lớp ghi danh `e` — việc Ý thức về người này; `trangThaiYThuc` và lọc "Của tôi" (`ungVienVaThe`) dùng chung. */
+const GVCN_LOP_SQL = (e: string) => `(SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = ${e}.class_id AND ta.is_core = 1 AND ta.status = 'active'
+                AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1)`;
 
 /**
  * Trạng thái Ý thức của các em (Map theo id). Em không tồn tại vẫn có một dòng rỗng (không vi phạm) để nơi gọi khỏi kiểm null.
@@ -142,8 +145,7 @@ function napLo(lo: number[], homNay: string): Map<number, EmYThuc> {
   for (const r of conn.prepare(
     `SELECT s.id, s.status AS s_status, e.class_id, e.started_at,
             (SELECT MAX(j.event_date) FROM journey_events j WHERE j.student_id = s.id AND j.event_type = 'resume') AS quay_lai,
-            (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = e.class_id AND ta.is_core = 1 AND ta.status = 'active'
-                AND ta.effective_from <= ? AND (ta.effective_to IS NULL OR ta.effective_to >= ?) ORDER BY ta.id LIMIT 1) AS gvcn
+            ${GVCN_LOP_SQL('e')} AS gvcn
        FROM students s LEFT JOIN enrollments e ON e.student_id = s.id AND e.status IN ('active', 'paused')
       WHERE s.id IN (${ph}) ORDER BY e.id`).all(homNay, homNay, json) as any[]) {
     gd.set(r.id, { lopId: r.class_id ?? null, batDau: r.started_at ?? null, gvcn: r.gvcn ?? null, tamDung: r.s_status === 'inactive' });
@@ -277,7 +279,9 @@ export function ghiPhanHoi(violationIds: readonly number[], homNay = demoToday()
 /**
  * Như `ungVienYThuc` + em đang có thẻ Báo QL Ý thức chờ (để quét đóng thẻ khi hết lý do) — MỘT câu, cờ `coThe` cho từng em.
  */
-export function ungVienVaThe(f: { branchId?: number | null; lopIds?: readonly number[] | null; kemThe?: boolean } = {}): { id: number; coThe: boolean; ten: string; lop: string | null }[] {
+export function ungVienVaThe(f: { branchId?: number | null; lopIds?: readonly number[] | null; kemThe?: boolean;
+  /** TD-VIEC-2: QL / Quản trị "Của tôi" — chỉ em mà lớp đang học (ghi danh mới nhất, như `trangThaiYThuc`) chưa có GVCN hoặc GVCN là người này. */
+  gvcnLa?: { nguoi: number; homNay: string } } = {}): { id: number; coThe: boolean; ten: string; lop: string | null }[] {
   /* TD-VIEC: `lopIds` = chỉ em đang học / tạm dừng ở các lớp này (tập cha do nơi gọi chọn); [] → không em nào. */
   if (f.lopIds && !f.lopIds.length) return [];
   const loc: string[] = [];
@@ -292,7 +296,15 @@ export function ungVienVaThe(f: { branchId?: number | null; lopIds?: readonly nu
                          WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1), s.branch_id) = ?`);
     args.push(f.branchId);
   }
+  if (f.gvcnLa) {
+    loc.push(`COALESCE((SELECT ${GVCN_LOP_SQL('e')} FROM enrollments e WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1), ?) = ?`);
+    args.push(f.gvcnLa.homNay, f.gvcnLa.homNay, f.gvcnLa.nguoi, f.gvcnLa.nguoi);
+  }
   /* TD6: lọc bằng `s.id IN (…)` thay `EXISTS … = s.id` lồng OR — câu cũ quét MỌI học viên; nay chỉ đọc vi phạm / biện pháp / thẻ đang mở. */
+  /* TD-VIEC-2: có `lopIds` (GV: vài lớp) → đi từ em của lớp, tra vi phạm theo em (`idx_violation_student`); trước quét CẢ bảng `violations` mỗi lần.
+     Không lớp (QL / Quản trị cả chi nhánh) giữ đi từ `violations` (ít dòng hơn bảng em). */
+  const VP_CHUA_XU_LY = `v.chi_nhac = 0 AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
+                                         WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet'))`;
   const THE = `EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_y_thuc' AND y.doi_tuong_id = s.id AND y.trang_thai = 'cho')`;
   return (db().prepare(
     `SELECT s.id, s.full_name AS ten, ${f.kemThe ? THE : '0'} AS co_the,
@@ -300,10 +312,10 @@ export function ungVienVaThe(f: { branchId?: number | null; lopIds?: readonly nu
               WHERE e.student_id = s.id AND e.status IN ('active', 'paused') ORDER BY e.id DESC LIMIT 1) AS lop
        FROM students s
       WHERE (s.archived_at IS NULL${loc.map((x) => ` AND ${x}`).join('')}
-        AND s.id IN (SELECT v.student_id FROM violations v
-                      WHERE v.chi_nhac = 0 AND NOT EXISTS (SELECT 1 FROM measure_violations mv JOIN discipline_measures m ON m.id = mv.measure_id
-                                         WHERE mv.violation_id = v.id AND m.status IN ('done', 'cho_duyet', 'da_duyet'))
-          UNION SELECT m.student_id FROM discipline_measures m WHERE m.status IN ('cho_duyet', 'da_duyet')))
+        AND ${f.lopIds ? `(EXISTS (SELECT 1 FROM violations v WHERE v.student_id = s.id AND ${VP_CHUA_XU_LY})
+          OR EXISTS (SELECT 1 FROM discipline_measures m WHERE m.student_id = s.id AND m.status IN ('cho_duyet', 'da_duyet')))`
+        : `s.id IN (SELECT v.student_id FROM violations v WHERE ${VP_CHUA_XU_LY}
+          UNION SELECT m.student_id FROM discipline_measures m WHERE m.status IN ('cho_duyet', 'da_duyet'))`})
         ${f.kemThe ? `OR s.id IN (SELECT y.doi_tuong_id FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_y_thuc' AND y.trang_thai = 'cho')` : ''}
       ORDER BY s.id`).all(...args) as any[]).map((r) => ({ id: r.id as number, coThe: !!r.co_the, ten: r.ten, lop: r.lop ?? null }));
 }

@@ -428,14 +428,15 @@ export async function runPrTlNenTests(t: any) {
     }
   });
 
-  await checkAsync('N2-j · câu GET /my-work QL khi quét chạy − khi không ≤ 16', async () => {
+  /* TD-VIEC-2: "không quét" QL "Của tôi" bớt câu (Ý thức / MT cũ chỉ em · lớp của mình) lượt quét không đổi mã → hiệu tăng (đo: quét 47 · không 29), trần 16 → 19. */
+  await checkAsync('N2-j · câu GET /my-work QL khi quét chạy − khi không ≤ 19', async () => {
     await voiMayChu(async (goi) => {
       await goi(P.mbManager.userId, '/my-work');
       const dem = async () => { const a = ngu.soCauSql(); await goi(P.mbManager.userId, '/my-work'); return ngu.soCauSql() - a; };
       datMocQuet(null);
       const quet = await dem();
       const khong = await dem();
-      assert(quet - khong <= 16 && quet > khong, `quét ${quet} · không ${khong}`);
+      assert(quet - khong <= 19 && quet > khong, `quét ${quet} · không ${khong}`);
     });
   });
 }
