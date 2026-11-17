@@ -109,7 +109,7 @@ export function boPhanBc(ct: string | null | undefined): readonly PhanBc[] | nul
   return BO_PHAN[programmeOf(ct) ?? ''] ?? null;
 }
 /** Vai ĐỌC mọi lớp + XUẤT Excel báo cáo PH ở chi nhánh lớp (QL · QT · Admin · TVV — chủ SP 05/11). Một nguồn cho máy chủ (`quyenBc`) và web (mẫu Xuất Excel). */
-export const VAI_XUAT_BC: readonly string[] = ['manager', 'system_admin', 'office_admin', 'consultant'];
+export const VAI_XUAT_BC: readonly string[] = ['manager', 'system_admin', 'office_admin', 'consultant', 'cx'];   // N52: CX như TVV
 export const tieuChiPhan = (p: PhanBc): TieuChiBc[] => p.nhom.flatMap((n) => n.ds);
 /** Ô chữ của phần: GVCN "Nhận xét chung", kỹ năng "Đề xuất cải thiện". */
 export const nhanOChu = (p: Pick<PhanBc, 'khoa'>): string => (p.khoa === 'chung' ? t('Nhận xét chung') : t('Đề xuất cải thiện'));

@@ -22,7 +22,7 @@ import {
 import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
-import { can, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { can, grantPhiaTvv, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, ketThucSangTamDung, setStudentStatus, unarchiveStudent } from '../students/students.ts';
 import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { dauVaoTuLoTrinh, type LoTrinhMoiSauThi } from '../classes/luatLoTrinh.ts';
@@ -212,7 +212,7 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
  */
 function nguoiLam(p: Principal, studentId: number): Principal {
   if (can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return p;
-  const g = p.grants.find((x) => x.roleKey === 'consultant' && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));
+  const g = p.grants.find((x) => grantPhiaTvv(x) && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));   // N52: CX như TVV
   if (!g) throw forbidden(CHI_QL);
   const quyen = new Set<string>([PERMISSIONS.CYCLE_EDIT, PERMISSIONS.CLASS_EDIT, PERMISSIONS.STUDENT_EDIT, PERMISSIONS.STUDENT_EDIT_MORE]);
   return { ...p, grants: [...p.grants, { ...g, id: -1, roleKey: 'buoc_tiep', roleName: 'Bước tiếp sau thi', permissions: quyen }] };

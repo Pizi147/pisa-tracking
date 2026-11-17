@@ -94,9 +94,10 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     assert(/huy: d\.viewer\.canSkipSkill, han: d\.viewer\.canOverrideDeadline/.test(doc('web/src/modules/fasttrack/MockDetailPage.tsx')), 'MockDetailPage: huy / han theo cờ máy chủ');
   });
 
-  check('OV10a-5 · link vào Test / Công việc: TVV · CX không có khu (nav.test / nav.work), Admin có Test + Công việc nhưng không Chờ duyệt; web gắn link theo nav', () => {
-    /* UI-CV-TVV: TVV có Công việc (chỉ việc của mình, không Chờ duyệt); CX vẫn không. */
-    for (const vai of ['TVV', 'CX'] as const) { const n = navOf(V[vai]); assert(!n.test && (vai === 'TVV' ? n.work && !n.workApprove : !n.work), `${vai}: không Test; Công việc chỉ TVV`); }
+  check('OV10a-5 · link vào Test / Công việc: TVV không Test, Công việc của mình; CX (N52) có Test + Công việc, không Chờ duyệt; Admin có Test + Công việc nhưng không Chờ duyệt; web gắn link theo nav', () => {
+    /* UI-CV-TVV: TVV có Công việc (chỉ việc của mình, không Chờ duyệt). N52: CX xem Test, Công việc như QL, không hộp Chờ duyệt (không việc của mình). */
+    { const n = navOf(V.TVV); assert(!n.test && n.work && !n.workApprove, 'TVV: không Test; Công việc của mình'); }
+    { const n = navOf(V.CX); assert(n.test && n.work && !n.workApprove, 'CX: Test + Công việc, không Chờ duyệt'); }
     const n = navOf(V.Admin);
     assert(n.test && n.work && !n.workApprove, 'Admin: có Test, Công việc, không Chờ duyệt');
     const lop = doc('web/src/modules/classes/DauTrangLop.tsx');
@@ -107,16 +108,18 @@ export async function runPrOv10aTests(t: YThucTestKit) {
     assert(/session\?\.nav\?\.testPlan\b/.test(doc('web/src/modules/classes/ClassProgressPanel.tsx')), 'ClassProgressPanel: link Kế hoạch Test theo nav.testPlan');
   });
 
-  check('OV10a-6 · Phân tích › Ý thức (discipline.stats): TVV · CX · Admin không có khoá, đường API 403; góc Ý thức ẩn', () => {
+  check('OV10a-6 · Phân tích › Ý thức (discipline.stats): TVV · Admin không có khoá, đường API 403; góc Ý thức ẩn (CX N52 có)', () => {
     for (const [vai, p] of Object.entries(V)) {
+      if (vai === 'CX') continue;   // N52 (chủ SP 18/11): CX xem thống kê Ý thức như QL
       assert(loi(() => yThucPt.yThucPhanTich(p, { branchId: null, ct: null, classId: null, from: '2026-08-01', to: '2026-09-14' }))?.status === 403, `${vai}: Ý thức phân tích phải 403`);
     }
-    for (const k of ['consultant', 'cx', 'office_admin']) assert(!ROLE_PERMISSIONS[k].includes('discipline.stats'), `${k} không được có discipline.stats`);
+    for (const k of ['consultant', 'office_admin']) assert(!ROLE_PERMISSIONS[k].includes('discipline.stats'), `${k} không được có discipline.stats`);
+    assert(ROLE_PERMISSIONS.cx.includes('discipline.stats'), 'CX (N52) phải có discipline.stats');
     assert(/DISCIPLINE_STATS/.test(doc('web/src/modules/phanTich/PhanTich.tsx')), 'PhanTich: góc Ý thức gắn discipline.stats');
   });
 
-  check('OV10a-7 · Admin: tên GV là link (như QL, có analysis.view_teacher); TVV · CX không', () => {
-    assert(navOf(V.Admin).phanTichGv && !navOf(V.TVV).phanTichGv && !navOf(V.CX).phanTichGv, 'phanTichGv: Admin có, TVV / CX không');
+  check('OV10a-7 · Admin, CX (N52): tên GV là link (như QL, có analysis.view_teacher); TVV không', () => {
+    assert(navOf(V.Admin).phanTichGv && !navOf(V.TVV).phanTichGv && navOf(V.CX).phanTichGv, 'phanTichGv: Admin, CX có, TVV không');
     assert(/session\?\.nav\?\.phanTichGv/.test(doc('web/src/modules/classes/TenGiaoVien.tsx')), 'TenGiaoVien: link theo nav.phanTichGv');
   });
 

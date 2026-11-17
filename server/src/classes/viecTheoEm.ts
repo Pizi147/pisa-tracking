@@ -8,7 +8,7 @@
 import { PERMISSIONS, demDongViec, dongNhinThay, gopViecTheoLop, laViecChamCheo, laVaiQuanLy, vaiXemHocVien, type ViecTiepTheo } from '../../../shared/domain/index.ts';
 import { db } from '../db.ts';
 import { demoToday } from '../demoConfig.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, coVaiCx, require_, type Principal } from '../permissions.ts';
 import { myWork, nhanNhomViec, NHOM_VIEC_TVV, type WorkItem } from '../worklist/mywork.ts';
 import { phamViXemViec } from '../worklist/xemViec.ts';
 import { listCases } from '../cases/cases.ts';
@@ -49,7 +49,8 @@ export function viecTheoEmCuaLop(p: Principal, classId: number, o: { chiToi?: bo
 
   let w: WorkItem[];
   if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })) w = itemsCua(myWork(p, { ...f, chiNhom: NHOM_VIEC_TVV }));
-  else if (phamViXemViec(p)) w = itemsCua(myWork(p, { ...f, nguoi: 'tat-ca' }));
+  /* N52: CX không có việc của mình ở lớp — đi nhánh "của tôi" (rỗng, 0 câu), không dựng Công việc "Tất cả" (hồ sơ lớp CX 55 → 112 câu, vượt trần 100). */
+  else if (phamViXemViec(p) && !coVaiCx(p)) w = itemsCua(myWork(p, { ...f, nguoi: 'tat-ca' }));
   /* P11 VIEC-DUNG-VAI: GV chỉ việc CỦA MÌNH — việc của GV khác xem ở Công việc › Của một GV (quyền không đổi). Không còn nạp `/my-work` từng GV dạy lớp. */
   else w = itemsCua(myWork(p, f)).filter((it) => it.mine);
   /* S11 (chủ SP 05/11): đếm DÒNG việc như Công việc (`demDongViec` trên dòng gộp của chính các việc đó — "Cả lớp" = 1). */

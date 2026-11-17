@@ -9,7 +9,7 @@ import { DS_JSON, db, theoLo, tx } from '../db.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, notFound, nowIso, addDays, todayInBusinessTz, canXacNhan } from '../util.ts';
-import { can, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
+import { can, duyetYThuc, napTruocPhamVi, require_, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import { quetTheoMoc } from '../platform/mocHeThong.ts';
@@ -348,8 +348,11 @@ export function theCuaDoiTuong(doiTuongLoai: string, ids: readonly number[]): (T
 /** Thẻ trong phạm vi duyệt của người xem (quyền theo TỪNG thẻ, không anyScope). */
 export function trongPhamVi(p: Principal, rows: any[]): any[] {
   napTruocPhamVi(rows.map((r) => r.hoc_vien_id));
-  return rows.filter((r) => can(p, P_DUYET, ctxThe(r)));
+  return rows.filter((r) => duyetDuocThe(p, r));
 }
+/** Duyệt được thẻ này: `request.approve` theo phạm vi thẻ; N52 — thẻ Ý thức thêm CX (`duyetYThuc`), loại khác vẫn chỉ Head. */
+const duyetDuocThe = (p: Principal, r: any): boolean => (r.loai === 'y_thuc' ? duyetYThuc(p, ctxThe(r)) : can(p, P_DUYET, ctxThe(r)));
+const kiemDuyetThe = (p: Principal, r: any) => { if (!duyetDuocThe(p, r)) throw forbidden('Yêu cầu này nằm ngoài phạm vi bạn được duyệt.'); };
 
 const tuNgay = (n: number) => `${addDays(demoToday(), -n)}T00:00:00.000Z`;
 const xepDaXuLy = (a: TheYeuCauDto, b: TheYeuCauDto) => ((b.xuLyLuc ?? '') < (a.xuLyLuc ?? '') ? -1 : 1);
@@ -516,7 +519,7 @@ function dongNeuChet(yc: YeuCauRow): void {
 /** Đọc thẻ, kiểm quyền theo phạm vi CỦA THẺ; trong giao dịch đọc lại để hai người bấm cùng lúc chỉ một người chốt. */
 function quyetDinh<T>(p: Principal, id: number, lam: (yc: YeuCauRow, meta: LoaiYcMeta) => T): T {
   const truoc = docThe(id);
-  require_(p, P_DUYET, ctxThe(truoc), 'Yêu cầu này nằm ngoài phạm vi bạn được duyệt.');
+  kiemDuyetThe(p, truoc);
   dongNeuChet(truoc);
   return tx(() => {
     const yc = docThe(id);
@@ -643,7 +646,7 @@ export function suaTraLoi(p: Principal, id: number, traLoi: unknown) {
   const tl = typeof traLoi === 'string' ? chuTuDo(traLoi, 'Câu trả lời', 2000) ?? '' : '';
   if (!tl) throw badRequest('Ghi câu trả lời.');
   const truoc = docThe(id);
-  require_(p, P_DUYET, ctxThe(truoc), 'Yêu cầu này nằm ngoài phạm vi bạn được duyệt.');
+  kiemDuyetThe(p, truoc);
   return tx(() => {
     const conn = db();
     const yc = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
@@ -767,7 +770,7 @@ function theHuyDuoc(conn: any, rows: any[]): Set<number> {
  */
 export function huyQuyetDinh(p: Principal, id: number) {
   const truoc = docThe(id);
-  require_(p, P_DUYET, ctxThe(truoc), 'Yêu cầu này nằm ngoài phạm vi bạn được duyệt.');
+  kiemDuyetThe(p, truoc);
   return tx(() => {
     const conn = db();
     const yc = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;

@@ -20,7 +20,7 @@ import {
   bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
-import { can, type Principal } from '../permissions.ts';
+import { can, duyetYThuc, type Principal } from '../permissions.ts';
 import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
@@ -111,7 +111,7 @@ export function ghiNhan(p: Principal, studentId: number, violationIds: unknown):
   const ids = viPhamChon(em, violationIds);
   /* RKC-3a (PTA 07/11, luật thang vi phạm): GV giữ luật — bắt buộc xử lý thì dùng Xác nhận xử lý; Quản lý vượt được, hỏi một câu nêu luật (nhật ký Ghi nhận như thường). */
   if (ids.some((id) => { const t = em.viPham.get(id)!; return t.t === 'can_xu_ly' || t.lyDoQuaHan === 'xu-ly'; })) {
-    if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId })) throw badRequest('Em đang phải xử lý bắt buộc — dùng Xác nhận xử lý (Head Ghi nhận được).');
+    if (!duyetYThuc(p, { studentId })) throw badRequest('Em đang phải xử lý bắt buộc — dùng Xác nhận xử lý (Head Ghi nhận được).');
     canXacNhan('Em đang phải xử lý bắt buộc — vẫn chỉ Ghi nhận (bỏ qua luật xử lý)?', undefined, 'Vẫn ghi nhận');
   }
   return { ok: true, soGhiNhan: luuGhiNhan(p, hv, studentId, ids, demoToday()) };
@@ -223,7 +223,7 @@ export function khaiBac(p: Principal, studentId: number, v: { bac?: unknown; tha
   const hv = hocVien(studentId);
   requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   /* RKC-3a: chuỗi đã có lần xử lý trên web — GV giữ luật "khai một lần trước khi dùng web"; Quản lý vượt được (hỏi; bậc = max nên không chồng sai). */
-  const vuot = emCua(studentId).soXuLyChuoi > 0 && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId });
+  const vuot = emCua(studentId).soXuLyChuoi > 0 && duyetYThuc(p, { studentId });
   if (vuot) canXacNhan('Chuỗi này đã có lần xử lý trên web — vẫn xác nhận cấp bậc đã có trước đó?', undefined, 'Vẫn xác nhận');
   return luuKhai(p, hv, studentId, kiemKhai(v), demoToday(), vuot);
 }
@@ -251,7 +251,7 @@ export function luuKhai(p: Principal, hv: { student_code: string }, studentId: n
  */
 export function suaKhaiBac(p: Principal, studentId: number, v: { bac?: unknown; thang?: unknown; ghiChu?: unknown }) {
   const hv = hocVien(studentId);
-  const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId });
+  const ql = duyetYThuc(p, { studentId });
   if (!ql) requireManageDiscipline(p, studentId, MANAGE_MESSAGE);
   return luuSuaKhai(p, hv, studentId, kiemKhai(v), demoToday());
 }
@@ -417,7 +417,7 @@ export function xemXuLy(p: Principal, id: number): XuLyView {
     viPham: violationsByIds(vIds), soTep: m.so_tep, canManage: canManageDiscipline(p, m.student_id) && m.status !== 'thu_hoi', the,
     coTheSua, coTheThuHoi: coTheSua && THU_HOI_DUOC.has(m.status) && thuHoi?.trangThai !== 'cho',   // RKC-3a: lần giữa thu hồi được (máy chủ hỏi nêu lần sau)
     lanSau: sau ? nhanLoaiXuLy(sau.kind, sau.custom_name) : null, bacVe, thuHoi,
-    thuHoiThang: coTheSua && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }),
+    thuHoiThang: coTheSua && duyetYThuc(p, { studentId: m.student_id }),
     daBaoPh: coTheSua && THU_HOI_DUOC.has(m.status) && !!db().prepare("SELECT 1 FROM viec_bao_ph WHERE measure_id = ? AND trang_thai = 'xong'").get(id),
     chuaXuLy: em ? violationsByIds(em.dsViPham.map((v) => v.id).filter((vid) => {
       const t = em.viPham.get(vid);
@@ -484,9 +484,9 @@ export function yThucHocVien(p: Principal, studentId: number, o: { phamVi?: 'chu
   return {
     studentId, ten: hv.full_name, maHv: hv.student_code, homNay,
     canManage, canRecord: can(p, PERMISSIONS.VIOLATION_RECORD, { studentId, classId: em.lopId }),
-    canSuaKhai: !!em.khai && (can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }) || (canManage && em.khai.coTheSua)),
+    canSuaKhai: !!em.khai && (duyetYThuc(p, { studentId }) || (canManage && em.khai.coTheSua)),
     coTheKhai: canManage && khaiDuoc(em),
-    qlApThang: canManage && can(p, PERMISSIONS.REQUEST_APPROVE, { studentId }),
+    qlApThang: canManage && duyetYThuc(p, { studentId }),
     chuoi: { nhan: em.nhanChuoi, cycleIds: em.chuoi, soXuLy: em.xuLy.filter((m) => m.status === 'done' && m.cycleId != null && em.chuoi.includes(m.cycleId)).length },
     bac: em.bac, bacNhan: em.bac > 0 ? nhanLoaiXuLy(kindCuaBac(em.bac)) : null,
     keTiep: { kind: em.keTiep.kind, nhan: nhanLoaiXuLy(em.keTiep.kind), bac: em.keTiep.bac },
@@ -581,7 +581,7 @@ export function khongXuLy(p: Principal, violationId: number, v: { lyDo?: unknown
   /* Rà #1735 P2: vi phạm đang bắt buộc THEO LUẬT 3 (không chỉ vì yêu cầu) → chặn trước khi ghi, trạng thái đã nạp. */
   const vuotLuat = em0.batBuocLuat.has(r.id);
   if (vuotLuat) {
-    if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: r.student_id })) {
+    if (!duyetYThuc(p, { studentId: r.student_id })) {
       throw badRequest('Em đang có 3 vi phạm trong 2 tuần — phải Xác nhận xử lý theo luật, không ghi "Không xử lý" được (Head vượt được).');
     }
     canXacNhan('Em đang có 3 vi phạm trong 2 tuần — vẫn "Không xử lý" (bỏ qua luật xử lý)?', undefined, 'Vẫn không xử lý');
@@ -714,7 +714,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
   if (!tep.length && canTep(m.kind)) throw badRequest('Cần đính kèm tệp hoặc liên kết làm bằng chứng trước khi gửi Head.');
   /* MA-QL-VIEC (PTA 16/11): người gửi là người duyệt (QL / Quản trị trong phạm vi em) → ÁP THẲNG một bước: không thẻ Chờ duyệt, chốt ngay như Duyệt
      (`chotDeXuatYThuc`: da_duyet + việc Báo PH TVV + tin GVCN). GVCN vẫn gửi QL duyệt như cũ. Sai: Thu hồi ở lần xử lý (QL thu hồi ngay). */
-  if (can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id })) {
+  if (duyetYThuc(p, { studentId: m.student_id })) {
     tx(() => {
       const em = emCua(m.student_id);
       const vIds = (db().prepare('SELECT violation_id FROM measure_violations WHERE measure_id = ?').all(measureId) as any[]).map((r) => r.violation_id);
@@ -756,7 +756,7 @@ export function guiDeXuat(p: Principal, measureId: number) {
 /** OV-7a (chủ SP 13/10, thay Q5 06/10): ai lưu được thì sửa được — GVCN lớp em (cả lần đã thực hiện) + QL / Quản trị. Lần nháp đi `xoaNhap`. */
 function quyenSuaXuLy(p: Principal, m: any): boolean {
   if (m.status === 'nhap' || m.status === 'thu_hoi') return false;
-  return can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }) || canManageDiscipline(p, m.student_id);
+  return duyetYThuc(p, { studentId: m.student_id }) || canManageDiscipline(p, m.student_id);
 }
 
 function loadXuLy(id: number): any {
@@ -851,7 +851,7 @@ export function soLieuThuHoi(ds: { measureId: number; studentId: number }[]): Ma
 export function kiemNguoiGuiYThuc(p: Principal, measureId: number): void {
   const m = db().prepare('SELECT student_id FROM discipline_measures WHERE id = ?').get(measureId) as any;
   if (!m) return;   // lần xử lý không còn — luật của loại báo lỗi riêng
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id }) && !canManageDiscipline(p, m.student_id)) {
+  if (!duyetYThuc(p, { studentId: m.student_id }) && !canManageDiscipline(p, m.student_id)) {
     throw forbidden('Bạn không còn phụ trách lớp của em — không sửa hoặc rút được yêu cầu này. Head chi nhánh xử lý yêu cầu trong Chờ duyệt.');
   }
 }
@@ -873,7 +873,7 @@ function hoiLanSau(m: any, thuHoi: boolean): void {
 export function xoaXuLy(p: Principal, measureId: number): never {
   const m = loadXuLy(measureId);
   requireSuaXuLy(p, m);
-  if (!can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id })) throw forbidden('Lần xử lý đã lưu không xoá được — bấm "Thu hồi…" để gửi Head duyệt.');
+  if (!duyetYThuc(p, { studentId: m.student_id })) throw forbidden('Lần xử lý đã lưu không xoá được — bấm "Thu hồi…" để gửi Head duyệt.');
   throw badRequest('Lần xử lý đã lưu không xoá được — bấm "Thu hồi…" và ghi lý do.');
 }
 
@@ -891,7 +891,7 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown;
   if (!THU_HOI_DUOC.has(m.status)) {
     throw badRequest(m.status === 'cho_duyet' ? 'Đề xuất đang chờ Head — dùng Rút đề xuất.' : 'Lần xử lý bị Head từ chối không tính bậc — không cần thu hồi.');
   }
-  const ql = can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: m.student_id });
+  const ql = duyetYThuc(p, { studentId: m.student_id });
   tx(() => {
     hoiLanSau(m, true);
     const em = emCua(m.student_id);

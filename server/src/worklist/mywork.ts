@@ -1,4 +1,4 @@
-import { phamViXemViec } from './xemViec.ts';
+import { nhinNhuQl, phamViXemViec } from './xemViec.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { ENTRY_SKILLS, HAN_HANG, chenHan, hanTai } from '../../../shared/domain/index.ts';
 import { coKhoa, coNho, nho } from '../platform/nguCanhRequest.ts';
@@ -10,7 +10,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso } from '../util.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { COT_PRINCIPAL, activeAt, bangLop, can, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
+import { COT_PRINCIPAL, activeAt, bangLop, boVaiCx, can, coVaiCx, editableSkills, isCoreTeacherOf, loadPrincipal, lopFtChoGvSpeaking, lopMt0ChoGvSpeaking, napTruocPhamVi, phanCongDaNap, phanCongDangHoatDong, principalTuDong, scopeFor, teachesClass, type Principal } from '../permissions.ts';
 import { phamViHoSoGv } from '../giaoVien/phamVi.ts';
 import { allProgrammes } from '../normal/regular.ts';
 import { attemptHref, listAttempts } from '../fasttrack/attempts.ts';
@@ -799,6 +799,18 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * TD-VIEC (hồ sơ lớp `viecTheoEmCuaLop`): nơi gọi CHỈ dùng việc gắn lớp này (`classId` = lớp) hoặc việc không lớp của em ghi danh lớp này — các khối Case mở,
    * Xác nhận PA, Ý thức, hồ sơ TVV, MT cũ, Bàn giao chỉ đọc tập cha theo lớp đó (trước đọc cả chi nhánh). Việc của lớp trả về y hệt; việc lớp khác có thể thiếu.
    */ chiLop?: number } = {}) {
+  /*
+   * N52: CX không là chủ việc. "Của tôi" (mọi nơi không `tat-ca`: badge, chuông, hồ sơ GV…) = việc của các vai KHÁC của tài khoản; CX thuần → rỗng, 0 câu.
+   * "Tất cả" = danh sách của Quản lý trong phạm vi grant CX (`nhinNhuQl`) — cuối hàm bỏ hết "của tôi", làm thay theo quyền thật (`nguoiXem`).
+   */
+  const nguoiXem = p;
+  if (coVaiCx(p)) {
+    if (f.nguoi === 'tat-ca' && phamViXemViec(p)) p = nhinNhuQl(p);
+    else {
+      p = boVaiCx(p);
+      if (!p.grants.length) return { summary: demSo([]), groups: [], items: [] as WorkItem[], dong: [] as WorkItem[], scopeEmpty: false, xemNguoiKhac: false };
+    }
+  }
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
@@ -1835,6 +1847,15 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * Hỏi từng dòng một thì một màn ba trăm việc sinh ba trăm câu truy vấn — chậm mà không
    * màn nào báo lỗi, đúng kiểu khó tìm nhất.
    */
+  /* N52: "Tất cả" của CX — việc chỉ là của người xem khi vai KHÁC của tài khoản giữ nó (một lượt nữa chỉ khi có vai khác); còn lại là làm thay (`lamThayCua`). */
+  if (coVaiCx(nguoiXem) && tatCa) {
+    const chu = boVaiCx(nguoiXem);
+    const that = new Set<string>(chu.grants.length ? ((myWork(chu, { ...f, nguoi: undefined }) as any).items as WorkItem[]).filter((it) => it.mine).map((it) => it.key) : []);
+    for (const it of items) {
+      it.mine = that.has(it.key);
+      if (!it.mine && it.ownerId === p.userId) it.ownerId = null;
+    }
+  }
   const ownerIds = [...new Set(items.map((i) => i.ownerId).filter((x): x is number => x !== null))];
   if (ownerIds.length) {
     const names = new Map<number, string>();
@@ -1850,7 +1871,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
 
   ganKhung(items, lopCua);
   if (tatCa) {
-    const lt = lamThayCua(p, items.filter((it) => !it.mine));
+    const lt = lamThayCua(nguoiXem, items.filter((it) => !it.mine));   // N52: CX làm thay theo quyền thật, không theo lăng kính QL
     for (const it of items) if (!it.mine) it.lamThay = it.lamThay || lt(it);
   }
 

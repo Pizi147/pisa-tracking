@@ -134,7 +134,7 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
     assert(ky(mt(e.cy, 1).id) === 5.5, `MT1 LT: kỳ vọng Target − 1: ${ky(mt(e.cy, 1).id)}`);
   }));
 
-  check('LTHV-5 · quyền: QL, Quản trị, GVCN lớp đang học, TVV, Admin chi nhánh ([XM 2]) đổi được; GV bộ môn, CX, QL / Admin chi nhánh khác 403; Admin không đổi Môn học', () => thu(() => {
+  check('LTHV-5 · quyền: QL, Quản trị, GVCN lớp đang học, TVV, Admin chi nhánh ([XM 2]) đổi được; GV bộ môn, QL / Admin chi nhánh khác 403 (CX N52 đổi được); Admin không đổi Môn học', () => thu(() => {
     const lop = t.classId('MB FT 101');
     const e = them(lop, W(-7));
     const gvbm = loadPrincipal(one(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status = 'active'
@@ -143,7 +143,7 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
       WHERE r.key = 'manager' AND ur.branch_id = b.id AND ur.status = 'active') LIMIT 1`).code;
     const adminKhac = one(`SELECT b.code FROM branches b WHERE b.code != 'MB' AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
       WHERE r.key = 'office_admin' AND ur.branch_id = b.id AND ur.status = 'active') LIMIT 1`).code;
-    for (const [ai, ng] of [['GV bộ môn', gvbm], ['CX', nguoiVai('cx', null)], [`Head ${khac}`, nguoiVai('manager', khac)], [`Admin ${adminKhac}`, nguoiVai('office_admin', adminKhac)]] as const) {
+    for (const [ai, ng] of [['GV bộ môn', gvbm], [`Head ${khac}`, nguoiVai('manager', khac)], [`Admin ${adminKhac}`, nguoiVai('office_admin', adminKhac)]] as const) {
       assert(ma(() => lt.doiLoTrinh(ng, e.cy, { route: 'LT2' })) === 403, `${ai} phải 403`);
       const hs = (() => { try { return profile.studentProfile(ng, e.sid); } catch { return null; } })();   // QL chi nhánh khác: không xem được hồ sơ
       assert(!hs?.cycle?.coTheDoiLoTrinh, `${ai}: hồ sơ không có ô chọn`);

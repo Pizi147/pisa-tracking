@@ -185,7 +185,7 @@ export default function ClassOverviewPage() {
   if (params.get('xem') === 'cuoi-khoa' && thuong && !data.lienTuc) {
     return (
       <XetLaiCtx.Provider value={ctxXetLai}>
-        <CuoiKhoaLop key={data.id} classId={data.id} theoVai={!!vai} emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })} />
+        <CuoiKhoaLop key={data.id} classId={data.id} theoVai={!!vai && vai !== 'cx'} emMo={Number(params.get('em')) || null} onDaMoEm={() => doiThamSo({ em: null })} />
         {panelXetLai}
       </XetLaiCtx.Provider>
     );

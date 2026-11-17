@@ -130,13 +130,13 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     const v = V();
     const cs = { classId: lop }; const hs = { studentId: em };
     const KY_NANG = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
-    /* Mỗi dòng: tên · kiểm · [QT, QL, Admin, GVCN, GVBM, TVV, CX]. */
+    /* Mỗi dòng: tên · kiểm · [QT, QL, Admin, GVCN, GVBM, TVV, CX]. N52 (chủ SP 18/11): CX xem như QL (phần GV, Test, Công việc); sửa phía TVV, không học thuật. */
     const bang: [string, (p: any) => boolean, boolean[]][] = [
       ['Xem HV', (p) => can(p, 'student.view', hs), [true, true, true, true, true, true, true]],
       ['Xem Case · PA (attempt.view + case.view)', (p) => can(p, 'attempt.view', hs) && can(p, 'case.view', hs), [true, true, true, true, true, true, true]],
       ['Tổng quan · Phân tích', (p) => can(p, 'analysis.view', { anyScope: true }), [true, true, true, false, false, true, true]],
-      ['Phần GV (Phân tích theo GV, hồ sơ GV)', (p) => can(p, 'analysis.view_teacher', { anyScope: true }), [true, true, true, false, false, false, false]],
-      ['Test (3 tab)', (p) => can(p, 'test.view', cs), [true, true, true, true, true, false, false]],
+      ['Phần GV (Phân tích theo GV, hồ sơ GV)', (p) => can(p, 'analysis.view_teacher', { anyScope: true }), [true, true, true, false, false, false, true]],
+      ['Test (3 tab)', (p) => can(p, 'test.view', cs), [true, true, true, true, true, false, true]],
       ['Xếp/dời lịch MT', (p) => can(p, 'plan.week', cs), [true, true, true, false, false, false, false]],
       ['Nhập / sửa điểm (GV: môn mình)', (p) => editableSkills(p, lop, KY_NANG).length > 0, [true, true, true, true, true, false, false]],
       ['Huỷ / khôi phục cả lượt', (p) => can(p, 'attempt.cancel', cs), [true, true, false, false, false, false, false]],
@@ -144,7 +144,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
       ['Sửa hồ sơ đủ (lộ trình tiếp theo, chuyển lớp)', (p) => can(p, 'student.edit', hs), [true, true, false, true, false, false, false]],
       ['Target', (p) => can(p, 'cycle.edit', hs), [true, true, false, false, false, false, false]],
       ['Xử lý Case Ý thức', (p) => can(p, 'sos.edit', { ...hs, skill: null }), [true, true, false, true, false, false, false]],
-      ['Công việc', (p) => can(p, 'work.view', { anyScope: true }), [true, true, true, true, true, false, false]],
+      ['Công việc', (p) => can(p, 'work.view', { anyScope: true }), [true, true, true, true, true, false, true]],
       ['Quản trị', (p) => can(p, 'admin.config', { anyScope: true }), [true, false, false, false, false, false, false]],
     ];
     const ten = ['QT', 'QL', 'Admin', 'GVCN', 'GVBM', 'TVV', 'CX'] as const;
@@ -155,13 +155,14 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     assert(!sai.length, sai.join(' | '));
   });
 
-  check('OV2a-3 · thanh trên theo vai: TVV/CX không Test, Công việc; Admin có Công việc (Việc học viên), không Báo cáo/Vận hành; CX không phần GV', () => {
+  check('OV2a-3 · thanh trên theo vai: TVV không Test, Công việc chỉ của mình; CX (N52) có Test, Công việc xem, phần GV; Admin có Công việc (Việc học viên), không Báo cáo/Vận hành', () => {
     const v = V();
     for (const k of ['TVV', 'CX'] as const) {
       const n = navOf((v as any)[k]);
-      /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV có Công việc chỉ việc của mình — không Chấm điểm / duyệt / Vận hành; CX vẫn không. */
-      assert(!n.test && (k === 'TVV' ? n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests : !n.work) && n.students && n.analysis, `${k}: ${JSON.stringify(n)}`);
-      assert(!(n as any).phanTichGv, `${k} còn Phân tích theo GV`);
+      /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1): TVV có Công việc chỉ việc của mình — không Chấm điểm / duyệt / Vận hành. N52: CX có Test, Công việc (xem / làm thay,
+         không hộp Chờ duyệt, không Vận hành), phần GV. */
+      if (k === 'TVV') assert(!n.test && n.work && n.workSupport && !n.workApprove && !n.workOps && !n.workRequests && n.students && n.analysis && !(n as any).phanTichGv, `${k}: ${JSON.stringify(n)}`);
+      else assert(n.test && n.work && n.workCx && !n.workApprove && !n.workOps && n.students && n.analysis && (n as any).phanTichGv && !n.admin, `${k}: ${JSON.stringify(n)}`);
     }
     const a = navOf(v.Admin);
     const ql = navOf(v.QL);
@@ -178,7 +179,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
     assert(!ngoai.length, `Admin thấy việc ngoài Chấm điểm: ${ngoai.map((x: any) => x.group).join(',')}`);
   });
 
-  check('OV2a-5 · TVV/CX/Admin sửa thông tin HV: trường trong danh sách được, ngoài danh sách 403; GVBM 403', () => {
+  check('OV2a-5 · TVV/CX/Admin sửa thông tin HV: trường trong danh sách được, ngoài danh sách 403 (CX N52 như TVV); GVBM 403', () => {
     thu(() => {
       for (const id of [idTvv, idCx, idAdmin]) {
         const p = loadPrincipal(id);
@@ -191,8 +192,8 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         const e2 = loi(() => cycles.updateCycle(p, chuKy, { targetScore: 7, lyDo: 'thử' }));
         assert(e2?.status === 403, `${id} sửa Target: ${e2?.status} ${e2?.message}`);
         const e3 = loi(() => cycles.updateCycle(p, chuKy, { startWeek: '2026-09-07' }));
-        /* [XM-C1] (chủ SP 13/11): TVV chi nhánh em sửa được Tuần bắt đầu (prOv8b OV8b-TUAN); CX, Admin vẫn 403. */
-        if (id === idTvv) assert(!e3, `TVV sửa tuần bắt đầu: ${e3?.status} ${e3?.message}`);
+        /* [XM-C1] (chủ SP 13/11): TVV chi nhánh em sửa được Tuần bắt đầu (prOv8b OV8b-TUAN); N52: CX như TVV; Admin vẫn 403. */
+        if (id === idTvv || id === idCx) assert(!e3, `${id} sửa tuần bắt đầu: ${e3?.status} ${e3?.message}`);
         else assert(e3?.status === 403, `${id} sửa tuần bắt đầu: ${e3?.status}`);
         const e4 = loi(() => cycles.updateCycle(p, chuKy, { examDate: '2027-03' }));
         assert(!e4, `${id} sửa dự kiến thi: ${e4?.status} ${e4?.message}`);
@@ -238,7 +239,7 @@ export async function runPrOv2aTests(t: YThucTestKit) {
   const cn = one(`SELECT id FROM branches WHERE code = 'CP'`).id;
 
   try {
-    await checkAsync('OV2a-7 · gọi thẳng API ngoài quyền → 403 (Admin huỷ/khôi phục, TVV/CX vào Test/Công việc, CX phần GV, TVV Target)', async () => {
+    await checkAsync('OV2a-7 · gọi thẳng API ngoài quyền → 403 (Admin huỷ/khôi phục, TVV vào Test/Công việc, TVV Target, CX phân công GV); CX (N52) xem Test, Công việc, phần GV', async () => {
       const a = await vao(idAdmin); const tv = await vao(idTvv); const cx = await vao(idCx);
       const mong: [string, string, string, string, unknown?][] = [
         ['Admin khôi phục lượt', a, 'POST', `/attempts/${luot}/reopen`],
@@ -247,13 +248,10 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['TVV Kế hoạch Test', tv, 'GET', `/ke-hoach-test/lop?branchId=${cn}`],
         /* UI-CV-TVV: TVV đọc `/my-work` (chỉ việc TVV của mình — prUiCvTvv); việc người khác / khu khác của Công việc vẫn 403. */
         ['TVV Công việc người khác', tv, 'GET', '/my-work?nguoi=tat-ca'], ['TVV Vận hành', tv, 'GET', '/mgmt-tasks'],
-        ['TVV Công việc (đổi hoa thường)', tv, 'GET', '/My-Work?nguoi=tat-ca'], ['CX Lịch Test (đổi hoa thường)', cx, 'GET', '/CHAM/Lich-Test'],
+        ['TVV Công việc (đổi hoa thường)', tv, 'GET', '/My-Work?nguoi=tat-ca'],
         ['TVV Yêu cầu', tv, 'GET', '/yeu-cau'],
         ['TVV sửa Target', tv, 'PATCH', `/cycles/${chuKy}`, { targetScore: 7, lyDo: 'thử' }],
-        ['CX Lịch Test', cx, 'GET', '/cham/lich-test'],
-        ['CX Công việc', cx, 'GET', '/my-work'],
-        ['CX hồ sơ GV', cx, 'GET', `/giao-vien/${gvcn}`],
-        ['CX Phân tích theo GV', cx, 'GET', `/phan-tich/giao-vien?cn=${cn}`],
+        ['CX phân công GV', cx, 'PUT', `/classes/${lop}/teachers`, { slots: [] }],
       ];
       const sai: string[] = [];
       for (const [ten, ck, m, url, body] of mong) {
@@ -267,6 +265,9 @@ export async function runPrOv2aTests(t: YThucTestKit) {
         ['Admin Ý thức HV', a, `/students/${em}/y-thuc`], ['Admin Case', a, `/cases?studentId=${em}`], ['TVV Phân tích', tv, `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`],
         ['CX Phân tích tổng hợp', cx, `/phan-tich/tong-hop?branchId=${cn}&ct=ft&soTuan=4`], ['CX hồ sơ HV', cx, `/students/${em}`],
         ['Admin Lịch Test', a, '/cham/lich-test'], ['Admin Công việc', a, '/my-work?nguoi=tat-ca'],
+        /* N52 (chủ SP 18/11): CX xem Test, Công việc, phần GV như QL. */
+        ['CX Lịch Test', cx, '/cham/lich-test'], ['CX Lịch Test (đổi hoa thường)', cx, '/CHAM/Lich-Test'], ['CX Công việc', cx, '/my-work'],
+        ['CX hồ sơ GV', cx, `/giao-vien/${gvcn}`], ['CX Phân tích theo GV', cx, `/phan-tich/giao-vien?cn=${cn}`],
       ];
       for (const [ten, ck, url] of duoc) {
         const r = await goi('GET', url, ck);

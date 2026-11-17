@@ -244,7 +244,7 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     assert(toi.every((o) => o.trangThai === 'da-xep'), JSON.stringify(toi.map((o) => o.trangThai)));
   }));
 
-  check('OV11e-9 · Q8 quyền: CX đổi dấu KCK → 403 (Target số vẫn sửa được); TVV, QL tích / bỏ KCK được', () => thu(() => {
+  check('OV11e-9 · Q8 quyền: TVV, QL, CX (N52 — như TVV) tích / bỏ KCK được; Target số sửa được', () => thu(() => {
     const vai = (key: string) => one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = ? ORDER BY ur.user_id LIMIT 1`, key)?.id;
     const cx = loadPrincipal(vai('cx')), tvv = loadPrincipal(vai('consultant'));
     /* Lộ trình FT đang chạy QL MB sửa được (ưu tiên em của TVV demo). */
@@ -252,9 +252,9 @@ export async function runPrOv11eTests(t: YThucTestKit) {
        WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.khong_cam_ket = 0 AND cy.target_score IS NOT NULL ORDER BY (s.consultant_user_id = ?) DESC, cy.id`, tvv.userId)
       .find((x: any) => can(QL, d.PERMISSIONS.CYCLE_EDIT, { studentId: x.student_id }));
     assert(cy, 'demo cần một lộ trình FT QL MB sửa được');
-    let loi: any = null;
-    try { cycles.reviseTarget(cx, cy.id, { newTarget: `${cy.target_score} KCK`, reason: 'CX thử tích KCK' }); } catch (e) { loi = e; }
-    assert(loi?.status === 403, `CX tích KCK phải 403: ${loi?.status ?? 'không lỗi'}`);
+    /* N52 (chủ SP 18/11): CX như TVV — tích KCK được (`duocDoiKck`). */
+    cycles.reviseTarget(cx, cy.id, { newTarget: `${cy.target_score} KCK`, reason: 'CX thử tích KCK' });
+    assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === 1, 'CX tích KCK được');
     const moi = cy.target_score >= 9 ? cy.target_score - 0.5 : cy.target_score + 0.5;
     cycles.reviseTarget(cx, cy.id, { newTarget: moi, reason: 'CX sửa Target số' });
     assert(one('SELECT target_score t, khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).t === moi, 'CX sửa Target số được');
@@ -264,6 +264,6 @@ export async function runPrOv11eTests(t: YThucTestKit) {
     }
     cycles.reviseTarget(QL, cy.id, { newTarget: moi, reason: 'Head bỏ KCK' });
     assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === 0, 'QL bỏ KCK được');
-    assert(d.duocDoiKck(['cx'], false) === false && d.duocDoiKck(['consultant'], false) && d.duocDoiKck(['manager'], true), 'duocDoiKck (web dùng cùng hàm)');
+    assert(d.duocDoiKck(['cx'], false) && d.duocDoiKck(['consultant'], false) && d.duocDoiKck(['manager'], true), 'duocDoiKck (web dùng cùng hàm)');
   }));
 }

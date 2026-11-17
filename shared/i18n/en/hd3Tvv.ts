@@ -15,7 +15,7 @@ export const EN_HD3_TVV = {
   'Bấm <b>Sửa</b> ở ô kết quả.': 'Click <b>Edit</b> in the result cell.',
   'Bấm <b>Thử lại</b>; đừng đóng trình duyệt khi còn chưa lưu.': 'Click <b>Retry</b>; do not close the browser while something is unsaved.',
   'Bấm nút lưu ở chân panel.': 'Click the save button in the panel footer.',
-  'CX không có Công việc; Case, điểm, Ý thức, Phối hợp SOS chỉ xem.': 'CX has no Work page; Cases, scores, conduct and SOS coordination are view-only.',
+  'CX không có việc của mình; học thuật (điểm, Case, PA) chỉ xem.': 'CX has no tasks of their own; academic items (scores, Cases, PAs) are view only.',
   'Case, điểm, Ý thức, Phối hợp SOS: bạn chỉ xem, trừ ghi Báo PH.': 'Cases, scores, conduct, SOS coordination: view only, except recording parent calls.',
   'Chuyển lớp, lịch Test: Head; điểm, Case: GV; vi phạm, Phối hợp: GVCN.': 'Class changes, test schedule: Head; scores, Cases: teacher; incidents, coordination: core teacher.',
   'Chân panel báo không lưu được, chữ đang gõ vẫn giữ.': 'The panel footer says not saved and keeps your typing.',

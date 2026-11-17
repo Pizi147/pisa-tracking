@@ -5,7 +5,7 @@ import {
   NHAN_XET_TOI_THIEU, PERMISSIONS, duongHoSoHocVien, kindCuaBac, nhanLoaiXuLy, programmeOf, coPhieu, kyNangPhuTrach, tenMon, tenMonNgan, trangThaiPhieu,
 } from '../../../shared/domain/index.ts';
 import { badRequest, canXacNhan, chuTuDo, conflict, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { can, phanCongDaNap, type Principal } from '../permissions.ts';
+import { boVaiCx, can, phanCongDaNap, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
 import type { DiemHv, PhieuBanGiaoDto, PhieuEm, PhieuMon, TuDien } from '../../../shared/domain/index.ts';
@@ -33,7 +33,7 @@ const coGvcn = (lopId: number) => !!db().prepare(`SELECT 1 FROM teacher_assignme
  */
 export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: string | null }, mon?: string, o: { coGvcn?: boolean; ct?: string | null } = {}) {
   const pc = phanCongO(db(), p.userId, l.lop_nguon_id);
-  const ql = coTheRaLenh(p, l.lop_nguon_id);
+  const ql = coTheRaLenh(boVaiCx(p), l.lop_nguon_id);
   /* RKC-4b (PTA 07/11, luật chung "GV theo luật, QL vượt"): Câu 1 = A (QL thay khi lớp không GVCN / quá hạn) là luật — QL vẫn làm thay TRƯỚC điều kiện đó,
      nhưng nơi ghi hỏi một câu (`vuot`, `hoiVuotBanGiao`). */
   const qlLuat = ql && (!(o.coGvcn ?? coGvcn(l.lop_nguon_id)) || (!!l.han_gvcn && demoToday() > l.han_gvcn));
@@ -324,7 +324,7 @@ function phieuBanGiaoGoc(p: Principal, f: { lopNguonId?: number; lenhId?: number
 
   const monGhi = q.doNguon ? monDs.filter((m) => q.laGvcn || q.qlThay || kyNangPhuTrach(ct, m.ma).some((k) => q.kyNang.has(k))).map((m) => m.ma) : [];
   /* OV-7a: phiếu đã xác nhận — người ghi được (GVCN / GVBM đúng môn) sửa tới ngày thi hành lệnh; Quản lý lớp nguồn sửa mọi lúc. */
-  const ql = coTheRaLenh(p, lopId);
+  const ql = coTheRaLenh(boVaiCx(p), lopId);
   /* OV-13h (chủ SP 15/10): không còn khoá theo ngày chuyển lớp — GVBM / GVCN lớp nguồn sửa mọi lúc. */
   for (const e of ds) e.suaDuoc = !!e.xacNhan && e.trangThaiLenh !== 'huy' && (ql || q.xacNhan || monGhi.length > 0);
   /* Lỗi chủ SP 30/10: hạn đầu panel = hạn SỚM NHẤT của em chưa xác nhận — trả kèm tên em đó. */
@@ -368,7 +368,7 @@ function chuaBanGiaoCua(l: { id: number; lop_nguon_id: number; lop_dich_id: numb
 export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: string): void {
   const l = docLenhPhieu(lenhId);
   const q = quyenBanGiao(p, l, mon, { ct: l.ct });
-  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(p, l.lop_nguon_id);
+  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(boVaiCx(p), l.lop_nguon_id);
   if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
   if (!qlSua) hoiVuotBanGiao(q, q.gvbmDungMon);
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
@@ -405,7 +405,7 @@ export function ghiMon(p: Principal, lenhId: number, mon: string, noiDung: strin
 export function goMonVuaChen(p: Principal, lenhId: number, mon: string, noiDung: string): boolean {
   const l = docLenhPhieu(lenhId);
   const q = quyenBanGiao(p, l, mon, { ct: l.ct });
-  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(p, l.lop_nguon_id);
+  const qlSua = !!l.xac_nhan_luc && coTheRaLenh(boVaiCx(p), l.lop_nguon_id);
   if (!q.ghiMon && !qlSua) throw forbidden('Bạn chỉ ghi được bàn giao cho môn mình được phân công (GVCN điền thay được).');
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không ghi bàn giao được.');
   const text = String(noiDung ?? '').trim();
@@ -495,7 +495,7 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không sửa bàn giao được.');
   if (!l.xac_nhan_luc) throw badRequest('Phiếu chưa xác nhận — viết nhận xét chung rồi Xác nhận bàn giao.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
-  if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Head sửa được nhận xét chung của bàn giao.');
+  if (!q.xacNhan && !coTheRaLenh(boVaiCx(p), l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Head sửa được nhận xét chung của bàn giao.');
   const nx = String(nhanXetChung ?? '').trim();
   const cung = cungGvTheoLo([l]).get(l.id);
   if (!cung?.gvcn && nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });
