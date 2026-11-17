@@ -47,7 +47,7 @@ export function MoSuaLichTest() {
     /* QTV2-QUYEN: MỘT hàng — tên + ⓘ (hậu quả) · trạng thái · ai bật · nút. */
     <section className="card flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3">
       <h2 className="h-khoi m-0 inline-flex items-center gap-1.5 text-lg font-bold text-slate-100">{t('Mở sửa lịch Test')}
-        <NutLuat label={t('Mở sửa lịch Test')}>{t('Mở: GVCN (lớp mình), Admin, Quản lý sửa được lịch Test kể cả Thứ Sáu – CN.')}</NutLuat></h2>
+        <NutLuat label={t('Mở sửa lịch Test')}>{t('Mở: GVCN (lớp mình), Admin, Head sửa được lịch Test kể cả Thứ Sáu – CN.')}</NutLuat></h2>
       {data.bat && (
         <span className="min-w-0 break-words text-sm text-slate-300" role="status">
           {t('Bật bởi {nguoi} lúc {luc}', { nguoi: data.nguoi ?? '—', luc: data.luc ? fmtDateTime(data.luc) : '—' })}

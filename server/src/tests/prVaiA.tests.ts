@@ -76,7 +76,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       const cp = metricsSvc.metricSet(P.cpManager, 'lop-thieu-gv-mon', {}).ids as number[];
       const mbLop = new Set((conn.prepare('SELECT id FROM classes WHERE branch_id = ?').all(MB) as any[]).map((r) => r.id));
       assert(!cp.some((id) => mbLop.has(id)), 'QL CP thấy lớp MB');
-      assertThrows(() => metricsSvc.metricSet(P.cpManager, 'lop-thieu-gv-mon', { branchId: MB }), /ngoài phạm vi/, 'QL CP hỏi MB → 403');
+      assertThrows(() => metricsSvc.metricSet(P.cpManager, 'lop-thieu-gv-mon', { branchId: MB }), /ngoài phạm vi/, 'Head CP hỏi MB → 403');
       const gv = metricsSvc.metricSet(P.coreTeacher, 'lop-thieu-gv-mon', {});
       assert(gv.n === 0 && gv.empty === true && gv.note, 'GV: tập rỗng có nhãn');
       eq(chuongTrinh.locTheoChuongTrinh('lop', [classId('MB FT 101'), classId('MB FOU 12')], 'ft'), [classId('MB FT 101')], 'lọc khung theo chính lớp');
@@ -111,7 +111,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
       assert(Array.isArray(r) && r.length <= 3, `${ct}: ≤ 3 điểm`);
       assert(r.every((x: any) => x.soDanhSach === metricsSvc.metricSet(P.admin, x.metricId, { ...(x.extra ?? {}), program: ct }).ids.length), `${ct}: số = danh sách`);
     }
-    assertThrows(() => tq.diemChuY(P.coreTeacher, { ct: 'ft' }), /Quản lý/, 'GV mở Điểm đáng chú ý');
+    assertThrows(() => tq.diemChuY(P.coreTeacher, { ct: 'ft' }), /Head/, 'GV mở Điểm đáng chú ý');
   });
 
   // ================================================================== Task 2 · bốn việc "của Bạn"
@@ -313,10 +313,10 @@ export async function runPrVaiATests(t: YThucTestKit) {
     for (const branchId of [MB, null]) {
       const dem = yc.demYeuCau(P.mbManager, { branchId });
       const hop = yc.hopChoDuyet(P.mbManager, { branchId });
-      eq([dem.cho, dem.deBiet], [hop.dem['tat-ca'], hop.demBiet], `cn ${branchId}: tổng, Để QL biết`);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
+      eq([dem.cho, dem.deBiet], [hop.dem['tat-ca'], hop.demBiet], `cn ${branchId}: tổng, Để Head biết`);   // PR-GVb (J5b): Báo QL tách khỏi tab Chờ duyệt → tab Để QL biết
       eq(dem.chip, hop.dem, `cn ${branchId}: chip từng phân loại`);
       eq(yc.hopChoDuyet(P.mbManager, { branchId, quaHan: true }).the.length, dem.quaHan, `cn ${branchId}: số thẻ khi lọc quá hạn = k quá hạn`);
-      eq(yc.hopChoDuyet(P.mbManager, { branchId, xem: 'de-biet' }).the.length, dem.deBiet, `cn ${branchId}: tab Để QL biết = deBiet`);
+      eq(yc.hopChoDuyet(P.mbManager, { branchId, xem: 'de-biet' }).the.length, dem.deBiet, `cn ${branchId}: tab Để Head biết = deBiet`);
     }
     const khong = yc.demYeuCau(P.admin);
     const co = yc.demYeuCau(P.admin, {});
@@ -327,7 +327,7 @@ export async function runPrVaiATests(t: YThucTestKit) {
   });
 
   check('VAI-a (4b) · phủ định: QL MB hỏi chi nhánh CP → 403; GV không có phần hộp (chỉ cuaToi*)', () => {
-    assertThrows(() => yc.demYeuCau(P.mbManager, { branchId: branchOf('CP') }), /ngoài phạm vi/, 'QL MB hỏi CP');
+    assertThrows(() => yc.demYeuCau(P.mbManager, { branchId: branchOf('CP') }), /ngoài phạm vi/, 'Head MB hỏi CP');
     const gv = yc.demYeuCau(P.coreTeacher, { branchId: MB });
     eq([gv.cho, gv.quaHan, gv.baoLen, 'chip' in gv], [0, 0, 0, false], 'GV: không số hộp');
     const r = tq.tongQuanQuanLy(P.mbManager, { branchId: MB });

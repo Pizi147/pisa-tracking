@@ -199,11 +199,11 @@ export async function runPrLuiA1Tests(t: YThucTestKit) {
   await checkAsync('LUIa1-15 · quyền: GVBM 403; GVCN sửa được mọi lần (OV-7a: cả lần đã thực hiện); QL ngoài phạm vi 403; nháp → 400', () => thu(() => {
     const sid = moiEm('15'); const [v1, v2, v3] = nVp(sid, 3);
     const r1 = xuLy(gvcn, sid, [v1]);
-    assertThrows(() => xu.suaViPhamXuLy(gvbm, r1.id, { violationIds: [v1, v2] }), /chủ nhiệm/, 'GVBM sửa: câu quyền chung, không phải "chỉ Quản lý"');
+    assertThrows(() => xu.suaViPhamXuLy(gvbm, r1.id, { violationIds: [v1, v2] }), /chủ nhiệm/, 'GVBM sửa: câu quyền chung, không phải "chỉ Head"');
     assertThrows(() => xu.thuHoiXuLy(gvbm, r1.id, { lyDo: 'Ghi nhầm' }), /chủ nhiệm/, 'GVBM thu hồi');
     assert(xu.suaViPhamXuLy(gvcn, r1.id, { violationIds: [v1, v2] }).viPham.length === 2, 'OV-7a: GVCN sửa lần đã thực hiện');
     xu.suaViPhamXuLy(gvcn, r1.id, { violationIds: [v1] });
-    assertThrows(() => xu.thuHoiXuLy(P.cpManager, r1.id, { lyDo: 'Ghi nhầm' }), /chủ nhiệm/, 'QL chi nhánh khác: câu quyền chung');
+    assertThrows(() => xu.thuHoiXuLy(P.cpManager, r1.id, { lyDo: 'Ghi nhầm' }), /chủ nhiệm/, 'Head chi nhánh khác: câu quyền chung');
     assert(xu.xemXuLy(gvcn, r1.id).coTheSua === true && xu.xemXuLy(P.mbManager, r1.id).coTheSua === true && xu.xemXuLy(gvbm, r1.id).coTheSua === false, 'cờ coTheSua');
     for (const st of ['cho_duyet', 'da_duyet']) {
       conn.prepare('UPDATE discipline_measures SET status = ? WHERE id = ?').run(st, r1.id);

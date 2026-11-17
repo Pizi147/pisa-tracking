@@ -162,7 +162,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     assert(o().cho_phu_trach_xem === 1, 'ô phải còn chờ khi người chấm sửa nhận xét');
     /* Chốt lượt: QL nhập L R W1 W2 đúng kỳ vọng 6.5 (Overall dưới Target) → Case MT Speaking có PA quy chế chờ xác nhận. */
     for (const s of ['listening', 'reading', 'writing1', 'writing2']) {
-      await ma(await goi(QL.userId, `/attempts/${aid}/scores/${s}`, put({ ...(s === 'listening' || s === 'reading' ? { band: 6.5 } : { criteria: tieuChiThu(6.5) }), nhanXet: 'Làm bài ổn định, đúng yêu cầu.' })), 200, `QL nhập ${s}`);
+      await ma(await goi(QL.userId, `/attempts/${aid}/scores/${s}`, put({ ...(s === 'listening' || s === 'reading' ? { band: 6.5 } : { criteria: tieuChiThu(6.5) }), nhanXet: 'Làm bài ổn định, đúng yêu cầu.' })), 200, `Head nhập ${s}`);
     }
     const iv = one(`SELECT iv.id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id
         WHERE sc.attempt_id = ? AND sc.topic = 'speaking' AND iv.preset IS NOT NULL AND iv.confirmed_at IS NULL AND iv.status = 'planned' AND iv.kind != 'bo_tro'`, aid);
@@ -203,7 +203,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
 
   await checkAsync('OV13k-9 · QL nhập hộ, ghi người chấm là GV phụ trách → không sinh việc / thông báo (không có gì để xem)', () => voiMayChu(async (goi) => {
     const x = emMoi(2);
-    await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerUserId: gvPT } })), 200, 'QL nhập hộ');
+    await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerUserId: gvPT } })), 200, 'Head nhập hộ');
     xoaNho();
     assert(!(mywork.myWork(loadPrincipal(gvPT)).items as any[]).some((v) => v.group === 'xem_nx_s' && v.attemptId === x.aid)
       && !one(`SELECT COUNT(*) n FROM notifications WHERE dedup_key = ?`, `nxs:${x.aid}`).n, 'không được sinh việc khi người chấm là GV phụ trách');
@@ -249,7 +249,7 @@ export async function runPrOv13kTests(t: YThucTestKit) {
     const chot = async (luot: number) => {
       await ma(await goi(gvCheo, `/attempts/${luot}/scores/speaking`, put({ criteria: [5, 5, 5, 5], nhanXet: NX, nhomNguyenNhan: [n1], gvCham: { performerSelf: true } })), 200, 'chấm chéo S');
       for (const k of ['listening', 'reading', 'writing1', 'writing2']) {
-        await ma(await goi(QL.userId, `/attempts/${luot}/scores/${k}`, put({ ...(k === 'listening' || k === 'reading' ? { band: 6.5 } : { criteria: tieuChiThu(6.5) }), nhanXet: 'Làm bài ổn định, đúng yêu cầu.' })), 200, `QL ${k}`);
+        await ma(await goi(QL.userId, `/attempts/${luot}/scores/${k}`, put({ ...(k === 'listening' || k === 'reading' ? { band: 6.5 } : { criteria: tieuChiThu(6.5) }), nhanXet: 'Làm bài ổn định, đúng yêu cầu.' })), 200, `Head ${k}`);
       }
       xoaNho();
     };

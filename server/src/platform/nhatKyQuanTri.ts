@@ -57,7 +57,7 @@ export type DongNhatKy = { id: number; luc: string; nguoi: string; muc: MucNhatK
 /** `gioiHan` (1–8): cột Nhật ký của một tab — chỉ đọc đúng n dòng, không trang tiếp, không đọc danh sách người. */
 export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: number | null; tu?: string | null; den?: string | null; tiep?: number | null; gioiHan?: number | null }) {
   const laQt = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
-  if (!laQt && !xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được nhật ký cấu hình.');
+  if (!laQt && !xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Head xem được nhật ký cấu hình.');
   if (q.muc && !(MUC_NHAT_KY as readonly string[]).includes(q.muc)) throw badRequest('Mục nhật ký không hợp lệ.');
   const muc = q.muc as MucNhatKy | undefined;
   if (muc && CHI_QUAN_TRI.has(muc) && !laQt) throw forbidden('Chỉ Quản trị hệ thống xem được nhật ký tài khoản và quyền.');
@@ -95,6 +95,6 @@ export function nhatKyQuanTri(p: Principal, q: { muc?: string | null; nguoi?: nu
 
 /** Đơn vị báo cáo (chỉ xem, tab Chi nhánh — chuyển từ `/admin/overview` cũ): một câu. */
 export function donViBaoCao(p: Principal) {
-  if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }) && !xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được đơn vị báo cáo.');
+  if (!can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }) && !xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Head xem được đơn vị báo cáo.');
   return db().prepare("SELECT id, name, kind FROM reporting_units WHERE status = 'active' ORDER BY seq").all() as { id: number; name: string; kind: string }[];
 }

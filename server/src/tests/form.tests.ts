@@ -209,7 +209,7 @@ export async function runFormTests(t: YThucTestKit) {
           status: 'started', startedDate: TODAY,
         }),
         /giáo viên đang làm việc/,
-        'QL thuần không phải giáo viên — phải 400',
+        'Head thuần không phải giáo viên — phải 400',
       );
 
       const { caseId: c2 } = taoCase();
@@ -349,12 +349,12 @@ export async function runFormTests(t: YThucTestKit) {
 
       assertThrows(
         () => cases.updateResult(P.lrTeacher, iv.id, {
-          decision: 'adjust', decisionNote: 'Đổi người thực hiện sang Quản lý — phải bị từ chối',
+          decision: 'adjust', decisionNote: 'Đổi người thực hiện sang Head — phải bị từ chối',
           outcome: 'partial', note: 'Đang có tiến bộ, tiếp tục theo dõi thêm.', soBuoi: 0,
           adjust: { performerUserId: P.mbManager.userId },
         }),
         /giáo viên đang làm việc/,
-        'QL thuần không được nhận làm PA học thuật',
+        'Head thuần không được nhận làm PA học thuật',
       );
 
       cases.updateResult(P.lrTeacher, iv.id, {

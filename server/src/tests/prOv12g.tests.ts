@@ -44,10 +44,10 @@ export async function runPrOv12gTests(t: any) {
     const sid = em();
     const w1 = P.w1Teacher;
     assert(!isCoreTeacherOf(w1, LOP), 'GV W1 của seed không phải GVCN');
-    ghi(P.mbManager, { studentId: sid, skill: 'speaking', noiDung: 'QL sửa' });
+    ghi(P.mbManager, { studentId: sid, skill: 'speaking', noiDung: 'Head sửa' });
     const TVV = taoNguoi('consultant', ['MB']); const CX = taoNguoi('cx', []); const ADMIN = taoNguoi('office_admin', ['MB']);
     for (const [ten, p] of [['TVV', TVV], ['CX', CX], ['Admin', ADMIN]] as const) {
-      assert(o(p, sid, 'speaking')?.noiDung === 'QL sửa', `${ten} đọc được`);
+      assert(o(p, sid, 'speaking')?.noiDung === 'Head sửa', `${ten} đọc được`);
       const r = gopY.gopYTuan(p, LOP, tuan);
       assert(r.cot.every((c: any) => !c.ghiDuoc), `${ten}: mọi cột chỉ đọc`);
     }

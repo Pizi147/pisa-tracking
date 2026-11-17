@@ -21,7 +21,7 @@ import { matNhieuEm, xoaHocVien } from './xoaHocVien.ts';
  * trả `ok` + `failed` để web nói "Đã lưu n học viên · m học viên chưa lưu".
  * ponytail: không có "một giao dịch cho cả lô" — cố ý (lỗi giữa chừng phải giữ phần đã lưu); thêm khoá chống gửi trùng nếu cần: các việc đều lặp lại an toàn.
  */
-const CHI_QL = 'Chỉ Quản lý mới làm được việc này cho nhiều học viên.';
+const CHI_QL = 'Chỉ Head mới làm được việc này cho nhiều học viên.';
 
 function docViec(v: unknown): ViecHangLoat {
   if (!(VIEC_HANG_LOAT as readonly unknown[]).includes(v)) throw badRequest('Việc không hợp lệ.');

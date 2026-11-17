@@ -105,9 +105,9 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(bg.phieuBanGiao(x.gvcnBg, { lopNguonId: x.nguon }).ds[0].suaDuoc === true, 'phiếu GVCN: vẫn sửa được');
     const ql = bg.phieuBanGiao(P.mbManager, { lopNguonId: x.nguon });
     assert(ql.ds[0].suaDuoc === true && ql.nguoiXem.ql === true, 'phiếu QL: sửa được');
-    bg.suaBanGiao(P.mbManager, x.l.id, 'Quản lý sửa nhận xét sau ngày thi hành.');
-    bg.ghiMon(P.mbManager, x.l.id, 'listening', 'Quản lý ghi thay môn L.');
-    assert(get('SELECT nhan_xet_chung FROM lenh_chuyen_lop WHERE id = ?', x.l.id).nhan_xet_chung.startsWith('Quản lý sửa'), 'QL sửa được');
+    bg.suaBanGiao(P.mbManager, x.l.id, 'Head sửa nhận xét sau ngày thi hành.');
+    bg.ghiMon(P.mbManager, x.l.id, 'listening', 'Head ghi thay môn L.');
+    assert(get('SELECT nhan_xet_chung FROM lenh_chuyen_lop WHERE id = ?', x.l.id).nhan_xet_chung.startsWith('Head sửa'), 'QL sửa được');
     assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ? AND mon = 'listening'`, x.l.id).dien_thay === 1, 'QL ghi môn = điền thay');
   }));
 
@@ -121,7 +121,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
   const trangThaiVp = (sid: number, vid: number) => xu.yThucHocVien(P.mbManager, sid).viPham.find((v: any) => v.id === vid)?.trangThai;
   /** Đề xuất WL 3 đã gửi QL (thẻ `y_thuc` đang chờ). */
   const guiWl3 = (sid: number, ids: number[]) => {
-    const nhap = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết' });
+    const nhap = xu.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: ids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     xu.guiDeXuat(gvcn, nhap.id);
     return { measureId: nhap.id as number, the: get(`SELECT * FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? AND trang_thai = 'cho'`, nhap.id) };
@@ -138,9 +138,9 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(xu.suaViPhamXuLy(gvcn, m.id, { violationIds: [v1, v2] }).viPham.length === 2, 'GVCN sửa vi phạm lần đã thực hiện');
     assert(xu.yThucHocVien(P.mbManager, sid).bac === 1, 'bậc tính lại như Sửa vi phạm');
     assertThrows(() => xu.suaXuLy(gvbm, m.id, { note: 'GVBM sửa ghi chú lần xử lý' }), /chủ nhiệm/, 'GVBM 403');
-    assert(maLoi(() => xu.suaXuLy(P.cpManager, m.id, { note: 'QL chi nhánh khác sửa lần xử lý' })) === 403, 'QL chi nhánh khác 403');
+    assert(maLoi(() => xu.suaXuLy(P.cpManager, m.id, { note: 'Head chi nhánh khác sửa lần xử lý' })) === 403, 'QL chi nhánh khác 403');
     assert(maLoi(() => xu.suaXuLy(gvcn, m.id, { performedOn: addDays(TODAY, 2) })) === 400 && maLoi(() => xu.suaXuLy(gvcn, m.id, { note: 'ngắn' })) === 400, 'ngày tương lai / ghi chú ngắn 400');
-    xu.suaXuLy(P.mbManager, m.id, { note: 'Quản lý sửa ghi chú lần xử lý' });
+    xu.suaXuLy(P.mbManager, m.id, { note: 'Head sửa ghi chú lần xử lý' });
   }));
 
   await checkAsync('OV7a-2b · Ý thức: "Đã thực hiện" bấm nhầm → "Chưa thực hiện" về QL đã duyệt (ghi chú giữ); lần xác nhận thẳng (không qua QL) → 400', () => thu(() => {
@@ -157,7 +157,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assertThrows(() => xu.chuaThucHien(gvcn, g.measureId), /chưa ghi "Đã thực hiện"|không ở trạng thái/, 'bấm lần hai');
     assert(maLoi(() => xu.chuaThucHien(gvbm, g.measureId)) === 403, 'GVBM 403');
     const thang = xu.xacNhanXuLy(gvcn, sid, { violationIds: [v2], performedOn: TODAY, performerName: 'Cô Thu', note: 'Đã gọi điện và gửi report cho gia đình' });
-    assertThrows(() => xu.chuaThucHien(gvcn, thang.id), /QL duyệt|Xoá/, 'lần xác nhận thẳng');
+    assertThrows(() => xu.chuaThucHien(gvcn, thang.id), /Head duyệt|Xoá/, 'lần xác nhận thẳng');
   }));
 
   await checkAsync('OV7a-2c · Ý thức: Khai bậc — GVCN sửa bậc đã khai; N50 (8): có lần xử lý GVCN vẫn sửa (nhật ký), QL sửa được và thang tính lại', () => thu(() => {
@@ -172,7 +172,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(xu.yThucHocVien(gvcn, sid).canSuaKhai === true && xu.yThucHocVien(P.mbManager, sid).canSuaKhai === true, 'N50 (8): GVCN + QL đều thấy Sửa');
     xu.suaKhaiBac(gvcn, sid, { bac: 4, ghiChu: 'GVCN sửa sau khi có lần xử lý' });
     assert(nhatKy('discipline.declare_level_edit', sid).length === 2, 'N50 (8): GVCN sửa sau lần xử lý có nhật ký');
-    xu.suaKhaiBac(P.mbManager, sid, { bac: 5, ghiChu: 'QL sửa: em đã qua Report 5 trước khi dùng web' });
+    xu.suaKhaiBac(P.mbManager, sid, { bac: 5, ghiChu: 'Head sửa: em đã qua Report 5 trước khi dùng web' });
     const hv = xu.yThucHocVien(P.mbManager, sid);
     assert(hv.bac === 5 && hv.keTiep.bac === 6, `thang tính lại từ bậc mới: ${hv.bac} → ${hv.keTiep.bac}`);
     assert(maLoi(() => xu.suaKhaiBac(gvbm, sid, { bac: 1, ghiChu: 'GVBM sửa khai bậc' })) === 403, 'GVBM 403');
@@ -194,13 +194,13 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     const g = guiWl3(sid, [v1]);
     const chuongQl = demChuong(P.mbManager.userId);
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: g.measureId, url: 'https://example.com/them', displayName: 'Ảnh thêm' });
-    yc.suaYeuCau(gvcn, g.the.id, { note: 'Em vi phạm nhiều lần, đã nhắc ba buổi — cần QL quyết' });
+    yc.suaYeuCau(gvcn, g.the.id, { note: 'Em vi phạm nhiều lần, đã nhắc ba buổi — cần Head quyết' });
     const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', g.the.id);
     assert(the.trang_thai === 'cho' && the.ly_do.includes('ba buổi') && get('SELECT note FROM discipline_measures WHERE id = ?', g.measureId).note.includes('ba buổi'), 'thẻ + lần xử lý cùng đổi');
     assert(JSON.parse(the.du_lieu).soTep === 2 && JSON.parse(the.bang_chung).length === 2, `bằng chứng đếm lại: ${the.du_lieu}`);
     assert(nhatKy('request.edit', g.the.id).length === 1, 'nhật ký sửa thẻ');
     assert(demChuong(P.mbManager.userId) === chuongQl, 'sửa không chuông QL');
-    assert(maLoi(() => yc.suaYeuCau(P.mbManager, g.the.id, { note: 'QL sửa thẻ người khác gửi' })) === 403 && maLoi(() => yc.rutYeuCau(gvbm, g.the.id)) === 403, 'không phải người gửi → 403');
+    assert(maLoi(() => yc.suaYeuCau(P.mbManager, g.the.id, { note: 'Head sửa thẻ người khác gửi' })) === 403 && maLoi(() => yc.rutYeuCau(gvbm, g.the.id)) === 403, 'không phải người gửi → 403');
     const chuongGv = demChuong(gvcn.userId);
     yc.rutYeuCau(gvcn, g.the.id);
     const sau = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', g.the.id);
@@ -210,7 +210,7 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     assert(nhatKy('request.withdraw', g.the.id).length === 1, 'nhật ký rút');
     const g2 = guiWl3(sid, [v2]);
     yc.duyetYeuCau(P.mbManager, g2.the.id);
-    assert(maLoi(() => yc.rutYeuCau(gvcn, g2.the.id)) === 400 && maLoi(() => yc.suaYeuCau(gvcn, g2.the.id, { note: 'Sửa sau khi QL đã duyệt' })) === 400, 'QL đã trả lời → như nay (400)');
+    assert(maLoi(() => yc.rutYeuCau(gvcn, g2.the.id)) === 400 && maLoi(() => yc.suaYeuCau(gvcn, g2.the.id, { note: 'Sửa sau khi Head đã duyệt' })) === 400, 'QL đã trả lời → như nay (400)');
   }));
 
   // ==================================================================== 3 · PHỐI HỢP / BÁO PH
@@ -391,12 +391,12 @@ export async function runPrOv7aTests(t: YThucTestKit) {
     const truoc = demChuong(gvbm.userId);
     yc.suaTraLoi(P.mbManager, id, 'Giữ PA thêm 2 tuần, thêm 1 buổi Tutor');
     assert(theCua(id).tra_loi === 'Giữ PA thêm 2 tuần, thêm 1 buổi Tutor' && theCua(id).trang_thai === 'da_tra_loi', 'bản mới');
-    assert(demChuong(gvbm.userId) === truoc + 1 && get(`SELECT title FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 1`, gvbm.userId).title.includes('QL đã sửa câu trả lời'), 'một chuông');
+    assert(demChuong(gvbm.userId) === truoc + 1 && get(`SELECT title FROM notifications WHERE user_id = ? ORDER BY id DESC LIMIT 1`, gvbm.userId).title.includes('Head đã sửa câu trả lời'), 'một chuông');
     yc.suaTraLoi(P.mbManager, id, 'Giữ PA thêm 2 tuần, thêm 1 buổi Tutor');
     assert(demChuong(gvbm.userId) === truoc + 1, 'trùng chữ: không chuông');
     const nk = nhatKy('request.answer_edit', id);
     assert(nk.length === 1 && JSON.parse(nk[0].before_json).traLoi === 'Giữ PA thêm 2 tuần', 'nhật ký trước → sau');
-    assert(maLoi(() => yc.suaTraLoi(gvcn, id, 'GV sửa câu trả lời')) === 403 && maLoi(() => yc.suaTraLoi(P.cpManager, id, 'QL chi nhánh khác')) === 403, 'GV / QL ngoài phạm vi 403');
+    assert(maLoi(() => yc.suaTraLoi(gvcn, id, 'GV sửa câu trả lời')) === 403 && maLoi(() => yc.suaTraLoi(P.cpManager, id, 'Head chi nhánh khác')) === 403, 'GV / QL ngoài phạm vi 403');
     assert(maLoi(() => yc.suaTraLoi(P.mbManager, id, '   ')) === 400, 'rỗng → 400');
   }));
 }

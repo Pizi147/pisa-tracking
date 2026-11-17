@@ -3,7 +3,7 @@ export const EN_UI_CHAM_TEST = {
   'Chấm Test': 'Marking',
   'vắng MT cũ': 'absent, old MT',
   'vắng 2 lần': 'absent twice',
-  'QL từ chối dời': 'move declined by manager',
+  'Head từ chối dời': 'move declined by Head',
   'S Ex': 'Expert S',
   '+ S Ex': '+ Expert S',
   'Band': 'Band score',

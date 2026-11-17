@@ -94,7 +94,7 @@ export async function runPrOv13cTests(t: YThucTestKit) {
       assert(r.actionLabel === `${bai} bài` && r.soBai === bai, `dòng ${r.key}: ${r.actionLabel} / soBai ${r.soBai} ≠ ${bai} bài`);
     }
     /* AUDIT-1611 P1-02: TỔNG DÒNG = TỔNG LÁ — Σ soBai trên dòng hiển thị = Σ soBai trên việc lẻ (QL Tất cả + GVCN, mọi khung). */
-    for (const [ten, x] of [['QL tất cả', w], ['GVCN', mywork.myWork(P.coreTeacher, {})]] as const) {
+    for (const [ten, x] of [['Head tất cả', w], ['GVCN', mywork.myWork(P.coreTeacher, {})]] as const) {
       const sum = (ds: any[]) => ds.filter((it) => it.group === 'score').reduce((n, it) => n + (it.soBai ?? 0), 0);
       assert(sum(x.dong) === sum(x.items) && sum(x.items) > 0, `${ten}: Σ bài dòng ${sum(x.dong)} ≠ Σ bài lá ${sum(x.items)}`);
     }

@@ -331,7 +331,7 @@ export const NO_SHOW_HINT = t('Nhập - nếu học viên không làm bài');
  * S13 (quyết định 4.5, 22/09/2026): ô đã chốt "không dự thi" rồi Quản lý đổi kết luận — dấu "-" báo lại cho CÙNG tuần không chốt
  * lại và không hiện lại. Ô hiện đúng một dòng này để người nhập không tưởng máy bỏ sót thao tác của mình.
  */
-export const NO_SHOW_OVERRIDDEN_NOTE = t('Quản lý đã đổi kết luận tuần này — dấu "-" không được tính lại.');
+export const NO_SHOW_OVERRIDDEN_NOTE = t('Head đã đổi kết luận tuần này — dấu "-" không được tính lại.');
 
 /** Câu trạng thái của một ô có dấu '-'. `weekCode` là nhãn tuần đã định dạng — nơi gọi dùng `tuanLich` (`W3 SEP`, G-6). */
 export function noShowText(v: NoShowView, weekCode: string | null, today: string): string | null {
@@ -343,7 +343,7 @@ export function noShowText(v: NoShowView, weekCode: string | null, today: string
   switch (v.state) {
     case 'khong-co-bai': return t('Không có bài · Có thể sửa đến hết Chủ nhật {day}', { day: day(v.editableUntil!) });
     case 'khong-du-thi': return t('Không dự thi · Tuần {x}', { x: weekCode ?? '' }).trim();
-    case 'cho-ql-hieu-chinh': return t('Chờ quản lý hiệu chỉnh');
+    case 'cho-ql-hieu-chinh': return t('Chờ Head hiệu chỉnh');
     default: return null;
   }
 }

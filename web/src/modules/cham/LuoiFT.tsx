@@ -159,7 +159,7 @@ export function LuoiFT({ data, onReload, kn = null, hv = null, gon = false, tuan
     /* B8 (chủ SP 08/11 "trải ra hẳn như mockup"): cột tên gốc 230 px (≈ 280 px sau khi chia phần dư theo tỉ lệ ở 1440), phần dư chia đều cho các cột điểm (`deu` của Bang) tới mép phải. */
     { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: chiCot ? 140 : 230,   /* V6 K8c: lưới vài cột vừa 375 (phần dư 1440 vẫn chia theo `deu`) */ goiY: t('Cột này đứng yên khi cuộn ngang, để không lạc mất đang nhập cho em nào.') },
     ...(cot.trangThai ? [{ key: 'tt', nhan: t('Trạng thái'), kieu: 'chip', rong: 146, goiY: t('Lượt đã chấm xong, đang chờ, hay đã huỷ.') } as const] : []),
-    ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Quản lý đặt được hạn riêng.') } as const] : []),
+    ...(cot.han ? [{ key: 'han', nhan: t('Hạn chấm'), kieu: 'tuan', rong: 128, goiY: t('Hạn chấm tính riêng cho từng môn, từ tuần Test của chính môn đó: hết thứ Tư của tuần kế tiếp. Head đặt được hạn riêng.') } as const] : []),
     ...rawCot.map(oKn), ...wCot.map(oKn),
     ...(cot.w ? [{ key: 'w', nhan: 'W', kieu: 'diem', rong: 64, tinh: true, sang: khopKn('writing', kn), goiY: W_HINT } as const] : []),
     ...(hien('speaking') ? [oKn('speaking')] : []),

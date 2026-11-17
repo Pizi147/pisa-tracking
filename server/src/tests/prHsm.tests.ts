@@ -128,8 +128,8 @@ export async function runPrHsmTests(t: YThucTestKit) {
     const sau = addDays(TODAY, 30);
     /* LUAT-34 (Luật 3): "Đủ điểm" không còn khoá — GV đúng kỹ năng sửa cả điểm (máy chủ: mtTrangThai T21). Không ghi thêm (ảnh chụp DL-2): soi cờ ô. */
     assert(svc.attemptDetail(P.sTeacher, e1.aid).cells.find((c: any) => c.skill === 'speaking')?.canEdit === true, 'GVBM sau Đủ điểm vẫn sửa được');
-    svc.saveScore(QL, e1.aid, 'speaking', { nhanXet: 'Quản lý sửa sau hoàn tất' }, sau);
-    assert(dong(e1.aid, 'speaking').comment === 'Quản lý sửa sau hoàn tất', 'Quản lý sau hoàn tất');
+    svc.saveScore(QL, e1.aid, 'speaking', { nhanXet: 'Head sửa sau hoàn tất' }, sau);
+    assert(dong(e1.aid, 'speaking').comment === 'Head sửa sau hoàn tất', 'Quản lý sau hoàn tất');
     const e2 = emMoi('Lịch Sử');
     conn.prepare('UPDATE assessment_attempts SET lich_su = 1 WHERE id = ?').run(e2.aid);
     svc.saveScore(P.coreTeacher, e2.aid, 'writing2', { nhanXet: 'Bài viết đủ ý' }, TODAY);

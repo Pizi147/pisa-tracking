@@ -17,7 +17,7 @@ export const EN_GD12 = {
   'Chờ duyệt · n': 'Awaiting approval · n',
   'số sau dấu chấm (màu đỏ) là phần đã quá hạn duyệt.': 'the number after the dot (red) is the part past its approval deadline.',
   'Thang (bậc kế):': 'Ladder (next level):',
-  'cần QL': 'needs a manager',
+  'cần Head': 'needs a Head',
   'Đề xuất ngoài thang không đổi bậc.': 'Off-ladder proposals do not change the level.',
   'lịch thi {a} – {b}': 'exams {a} – {b}',
   'Sắp thi · tới hết {thang} · còn SOS': 'Exam soon · through {thang} · still SOS',

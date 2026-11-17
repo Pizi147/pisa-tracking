@@ -354,7 +354,7 @@ export function planRegularTests(p: Principal, classId: number, opts: {
   const cls = conn.prepare('SELECT * FROM classes WHERE id = ?').get(classId) as any;
   if (!cls) throw notFound('Không tìm thấy lớp');
   requireSuaLichTest(p, { classId },
-    'Chỉ Quản lý mới lập được kế hoạch kiểm tra của lớp.');
+    'Chỉ Head mới lập được kế hoạch kiểm tra của lớp.');
 
   const prog = programmeOfClass(classId);
   if (!prog || prog.scoringMode !== 'ratio') {
@@ -514,7 +514,7 @@ export function taoBaiThuongMacDinh(cycleIds: readonly number[], actorUserId: nu
 /** Chữ Hành trình / lịch sử lịch của lượt Checkpoint TỰ SINH (`sinhCheckpointKeTiep`) — dấu để migrate `prTatCp` chỉ ẩn Checkpoint tự sinh, không đụng lượt QL xếp tay. */
 export const CHI_TIET_CP_TU_SINH = 'Tự xếp Checkpoint kế tiếp';
 /** Chữ của lượt Checkpoint QL xếp tay (Kế hoạch Test, `taoCheckpointTay`). */
-export const CHI_TIET_CP_TAY = 'Quản lý xếp Checkpoint';
+export const CHI_TIET_CP_TAY = 'Head xếp Checkpoint';
 
 type LuotMoi = { cycleId: number; studentId: number; kind: 'progress' | 'final' | 'checkpoint'; classId: number; week: string; no: number };
 
@@ -946,7 +946,7 @@ export function reportRegularNoShow(
       const hoaVaoFinal = final?.id && final.tuan === moi.weekStart ? final.id as number : undefined;
       const check = checkSkillWeekMove({ attemptId, skill: skill as AssessedSkill, newWeekStart: moi.weekStart, boQua: hoaVaoFinal ? [hoaVaoFinal] : undefined });
       if (check.blockers.length) {
-        throw loi(400, '{x} Nhờ Quản lý dời lịch ở Kế hoạch Test.', { x: check.blockers.join(' ') });
+        throw loi(400, '{x} Nhờ Head dời lịch ở Kế hoạch Test.', { x: check.blockers.join(' ') });
       }
       if (existing) {
         conn.prepare(

@@ -242,7 +242,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
       invalidateCases();
       const yc = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.doiPa?.yeuCauId ?? null;
       onXong({
-        chu: t('Đã gửi Quản lý duyệt'),
+        chu: t('Đã gửi Head duyệt'),
         phu: chenHan(t('Giữ {gv} · quá {han:giu_pa_gv} chưa trả lời: chốt theo PA của bạn', { gv: tenGv })),
         hoanTac: yc ? async () => { await api.post(`/yeu-cau/${yc}/rut`); invalidateCases(); } : undefined,
       });
@@ -259,7 +259,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
         const yc = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.doiPa?.yeuCauId ?? null;
         xoaNhap();
         onXong({
-          chu: t('Đã gửi Quản lý duyệt'),
+          chu: t('Đã gửi Head duyệt'),
           phu: t('{moi} thay {goc} · Case "Chờ duyệt đổi PA"', { moi: dich(INTERVENTION_KIND_LABEL[doi.v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? doi.v.kind), goc: tenLoai }),
           /* Hoàn tác = Rút đề xuất (người gửi rút được khi QL chưa trả lời). */
           hoanTac: yc ? async () => { await api.post(`/yeu-cau/${yc}/rut`); invalidateCases(); } : undefined,
@@ -292,7 +292,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
   const giuPa = !!paGv && chon === 'giu';
   const nut = cheDo === 'doi' || giuPa ? (
     <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={busy} onClick={() => void (cheDo === 'doi' ? luu() : giu())}>
-      {busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}
+      {busy ? t('Đang gửi…') : t('Gửi Head duyệt')}
     </button>
   ) : <NutVaTiep chu={t('Xác nhận PA')} chuTiep={t('Xác nhận · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;
   const daSua = cheDo === 'doi' ? doi.daSua : giuPa ? !!lyDoGiu.trim() : !!v.description.trim();
@@ -315,7 +315,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
       <div className="flex flex-col gap-6 pt-4">
         {tuChoi && (
           <p className="m-0 rounded-lg bg-late-bg px-3 py-2 text-[13px] text-slate-200" role="status">
-            <b className="font-semibold text-late">{t('QL từ chối PA khác')}</b>{tuChoi.lyDoTuChoi ? ` · “${tuChoi.lyDoTuChoi}”` : ''}
+            <b className="font-semibold text-late">{t('Head từ chối PA khác')}</b>{tuChoi.lyDoTuChoi ? ` · “${tuChoi.lyDoTuChoi}”` : ''}
           </p>
         )}
         {/* U01 #6 / #28 (mockup A1 `.khoi-pn`): CASE trước — trường tách rõ, không nền: Điểm · Nguyên nhân (chip) · Mô tả (trích + Xem Case); Phương án sau. */}
@@ -338,7 +338,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
         </section>}
         <section className="flex flex-col gap-4" aria-label={t('Phương án')}>
           {cheDo === 'ktd' ? (
-            <KhongTheoDoiForm caseId={data.id} onClose={() => setCheDo('xac-nhan')} onDone={() => onXong({ chu: t('Đã gửi Quản lý duyệt'), phu: t('Không cần theo dõi') })} />
+            <KhongTheoDoiForm caseId={data.id} onClose={() => setCheDo('xac-nhan')} onDone={() => onXong({ chu: t('Đã gửi Head duyệt'), phu: t('Không cần theo dõi') })} />
           ) : cheDo === 'doi' ? (
             <>
               <div className="flex flex-wrap items-center gap-2">
@@ -346,7 +346,7 @@ export function XacNhanPaPanel({ pa, data, onXong, tiep, onGhiKetQua, ...chung }
                 <span className="flex-1" />
                 <NutChu onClick={() => { setCheDo('xac-nhan'); lf.datLai(); }}>{t('‹ Xác nhận PA gốc')}</NutChu>
               </div>
-              <FormDoiPa d={doi} lf={lf} studentId={data.student?.id} chuNgay={t('ngày QL duyệt')} />
+              <FormDoiPa d={doi} lf={lf} studentId={data.student?.id} chuNgay={t('ngày Head duyệt')} />
               <p className="m-0 text-xs text-slate-400">{t('Nếu gửi: {goc} chờ, chưa chạy · Case "Chờ duyệt đổi PA"', { goc: tenLoai })}</p>
             </>
           ) : (
@@ -421,7 +421,7 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
     try {
       await api.post(`/cases/${caseId}/dismiss`, { reasonCode: reason, reasonText: reasonNeedsText(reason) ? text.trim() : undefined });
       invalidateCases();
-      toast.push('ok', t('Đã gửi Quản lý duyệt — xem ở Yêu cầu của tôi'));
+      toast.push('ok', t('Đã gửi Head duyệt — xem ở Yêu cầu của tôi'));
       onClose(); onDone?.();
     } catch (e: any) { toast.push('error', e.message); } finally { setBusy(false); }
   };
@@ -442,7 +442,7 @@ export function KhongTheoDoiForm({ caseId, onClose, onDone }: { caseId: number; 
       <DongQuyChe px="px-0" qc={quyCheKhongTheoDoi(hanDuyetNgay())} />
       <div className="flex gap-1.5">
         <button type="button" className="btn btn-sm" onClick={onClose} disabled={busy}>{t('Đóng')}</button>
-        <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>{t('Gửi Quản lý duyệt')}</button>
+        <button type="button" className="btn btn-sm btn-primary" disabled={busy} onClick={gui}>{t('Gửi Head duyệt')}</button>
       </div>
     </div>
   );

@@ -33,7 +33,7 @@ import { sExCuaHv } from '../cham/sExpert.ts';
 
 const KIND_NHAN: Record<'progress' | 'final', string> = { progress: ATTEMPT_KIND_SHORT.progress, final: ATTEMPT_KIND_SHORT.final };
 const CAU_XAC_NHAN = 'Xác nhận lại nếu vẫn muốn xếp vào tuần này.';
-const PLAN_MSG = 'Chỉ Quản lý xếp được lịch Test.';
+const PLAN_MSG = 'Chỉ Head xếp được lịch Test.';
 const XEM_MSG = 'Bạn không dạy lớp này.';
 
 /**
@@ -1500,7 +1500,7 @@ function emCanXepLai(classIds: readonly number[]): Map<number, Set<number>> {
            JOIN assessment_attempts a ON a.id = k.attempt_id AND a.status = 'planned' AND a.lich_su = 0 AND a.kind = 'mock'
            JOIN enrollments e ON e.student_id = a.student_id AND e.class_id = a.class_id AND e.status = 'active'
            JOIN students s ON s.id = a.student_id AND ${LUOT_HIEN_TAI_SQL('a', 's')}   -- lỗi chủ SP 28/10: chỉ lượt hiện tại
-          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status = 'absent'   -- N38 L2: huỷ vắng 2 lần = đã xong · PTA 07/11 (XEP-MT-NHAC): môn QL tự huỷ = chủ động, không nhắc
+          WHERE a.class_id IN (${ph}) AND k.required = 1 AND k.sit_status = 'absent'   -- N38 L2: huỷ vắng 2 lần = đã xong · PTA 07/11 (XEP-MT-NHAC): môn Head tự huỷ = chủ động, không nhắc
             AND NOT EXISTS (SELECT 1 FROM skill_move_requests r WHERE r.attempt_id = a.id AND r.skill = k.skill AND r.status = 'pending')`,
       )
       .all(...lo) as any[]) (out.get(r.class_id) ?? out.set(r.class_id, new Set()).get(r.class_id)!).add(r.student_id);

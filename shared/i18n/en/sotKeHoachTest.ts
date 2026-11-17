@@ -10,7 +10,7 @@ export const EN_SOT_KE_HOACH_TEST = {
   'Bạn không có lớp nào để xem lịch Test': 'You have no classes with a test schedule',
   'Bỏ lọc tuần — xem mọi lớp': 'Clear week filter — show all classes',
   'Cần xếp lại': 'Needs rescheduling',
-  'Học viên có kỹ năng vắng hoặc đã huỷ — Quản lý cần xếp lại': 'Students with an absent or cancelled skill — the manager must reschedule',
+  'Học viên có kỹ năng vắng hoặc đã huỷ — Head cần xếp lại': 'Students with an absent or cancelled skill — the Head must reschedule',
   'Lọc ▾': 'Filter ▾',
   'Luật xếp lịch Test': 'Test scheduling rules',
   'Mỗi đợt xếp riêng': 'Each round schedules',

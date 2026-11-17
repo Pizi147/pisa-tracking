@@ -215,7 +215,7 @@ export async function runPrTd7bTests(t: YThucTestKit) {
     for (const k of ['writing1', 'writing2']) att.saveScore(QL, a, k, { criteria: S4, nhanXet: NX }, TODAY);
     const st = get('SELECT student_id s, cycle_id c FROM assessment_attempts WHERE id = ?', a);
     luotThu(conn, att.createAttempt, P.admin, { studentId: st.s, cycleId: st.c, classId: classId('MB FT 101'), no: 2, periodId: week.ensurePeriod(addDays(tuanNay, 7)).id });
-    doiCo('báo vắng S chờ Quản lý duyệt (tuần kế bị MT2 chặn)', a, () => absence.baoVang(P.coreTeacher, a, 'speaking', 'Em ốm', TODAY));
+    doiCo('báo vắng S chờ Head duyệt (tuần kế bị MT2 chặn)', a, () => absence.baoVang(P.coreTeacher, a, 'speaking', 'Em ốm', TODAY));
     /* Chuyển lớp một em sang lớp khác chương trình (cờ phải khớp mọi lượt của em). */
     const b = emMoi('MB FOU 12', 'Chuyen');
     const sb = get('SELECT student_id s FROM assessment_attempts WHERE id = ?', b).s;

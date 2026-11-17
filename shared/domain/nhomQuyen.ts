@@ -41,7 +41,7 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa?: str
   'sos.edit': { nhom: 'case_sos',
     phamVi: 'GV: Case học thuật đúng môn mình dạy; Case Ý thức chỉ GVCN.' },
   'case.close': { nhom: 'case_sos',
-    phamVi: 'GV: Case học thuật đúng môn mình dạy; Case Ý thức chỉ GVCN. Đóng xong báo Quản lý.' },
+    phamVi: 'GV: Case học thuật đúng môn mình dạy; Case Ý thức chỉ GVCN. Đóng xong báo Head.' },
   'case.approve': { nhom: 'duyet' },
   'violation.record': { nhom: 'y_thuc', phamVi: 'GV: lớp mình dạy, kể cả trái môn.' },
   'discipline.manage': { nhom: 'y_thuc',
@@ -68,7 +68,7 @@ export const MO_TA_QUYEN: Record<PermissionKey, { nhom: NhomQuyenKey; moTa?: str
   'work.view': { nhom: 'van_hanh' },
   'analysis.view': { nhom: 'van_hanh' },
   'analysis.view_teacher': { nhom: 'van_hanh' },
-  'tutor.view': { nhom: 'van_hanh', moTa: 'Xem trang Tutor: tutor, buổi dạy, nhận xét.', phamVi: 'QL: chỉ buổi của em chi nhánh mình.' },
+  'tutor.view': { nhom: 'van_hanh', moTa: 'Xem trang Tutor: tutor, buổi dạy, nhận xét.', phamVi: 'Head: chỉ buổi của em chi nhánh mình.' },
   'tutor.manage': { nhom: 'van_hanh', moTa: 'Sửa danh sách tutor, gộp tên gõ tay, ghi nhận xét về tutor.' },
   'admin.config': { nhom: 'quan_tri', moTa: 'Quản trị phần mềm: tài khoản, vai trò, quyền và cấu hình.' },
 };
@@ -84,7 +84,7 @@ export const QUYEN_SUY_RA_GV: { quyen: PermissionKey; ai: 'GV' | 'GVCN'; ghiChu:
   { quyen: PERMISSIONS.STUDENT_EDIT_INFO, ai: 'GVCN', ghiChu: 'Chỉ học viên lớp chủ nhiệm.' },
   { quyen: PERMISSIONS.DISCIPLINE_MANAGE, ai: 'GVCN', ghiChu: 'Chỉ lớp chủ nhiệm.' },
   { quyen: PERMISSIONS.CASE_CLOSE, ai: 'GVCN', ghiChu: 'Case Ý thức lớp chủ nhiệm; Case học thuật chỉ môn mình dạy.' },
-  { quyen: PERMISSIONS.SCHEDULE_MOVE, ai: 'GVCN', ghiChu: 'Lớp thường mình chủ nhiệm: máy tự dời khi gõ "-"; dời tay chỉ Quản lý.' },
+  { quyen: PERMISSIONS.SCHEDULE_MOVE, ai: 'GVCN', ghiChu: 'Lớp thường mình chủ nhiệm: máy tự dời khi gõ "-"; dời tay chỉ Head.' },
 ];
 
 /** Quyền CHỈ suy ra (không bật theo vai, không cấp riêng): cấp cho người không chủ nhiệm thì vô nghĩa hoặc mở quá phạm vi. */
@@ -97,7 +97,7 @@ export const KHONG_CAP_RIENG: readonly PermissionKey[] = [PERMISSIONS.ADMIN_CONF
 export const CAM_CAP_VAI: Record<string, { quyen: PermissionKey; lyDo: string }[]> = {
   teacher: [{
     quyen: PERMISSIONS.PLAN_WEEK,
-    lyDo: 'SCH-01: giáo viên chỉ dời lịch lớp thường (quyền Dời lịch Test). Chốt tuần MT kèm xếp lịch Fast Track là việc của Quản lý.',
+    lyDo: 'SCH-01: giáo viên chỉ dời lịch lớp thường (quyền Dời lịch Test). Chốt tuần MT kèm xếp lịch Fast Track là việc của Head.',
   }],
 };
 

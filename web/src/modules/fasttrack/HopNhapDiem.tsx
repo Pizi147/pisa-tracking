@@ -128,7 +128,7 @@ function hienO(c: Cell, vangGoc: boolean): { chu: ReactNode; phu?: string; doc: 
     return { ...(ly ? hai(t('Đã huỷ'), ly) : { chu: t('Đã huỷ') }), doc: ly ? `${t('Đã huỷ')} · ${ly}` : t('Đã huỷ'), kieu: 'huy' };
   }
   if (vangGoc && c.daChot?.doiSang) return { ...hai(t('Vắng'), `→ ${c.daChot.doiSang}`), doc: t('Vắng, đã dời sang {doiSang}', { doiSang: c.daChot.doiSang }), kieu: 'vang' };
-  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { ...hai(t('Vắng'), t('chờ QL')), doc: t('Vắng, chờ Quản lý xếp lại'), kieu: 'vang' };
+  if (c.daChot && !c.daChot.doiSang && c.sitStatus === 'absent') return { ...hai(t('Vắng'), t('chờ Head')), doc: t('Vắng, chờ Head xếp lại'), kieu: 'vang' };
   /* N38 L3: "-" ở MT cũ của kỹ năng (≥ 2 tuần) = Không dự thi — bấm ô gỡ "-" / nhập điểm như ô "-" khác. */
   if (c.noShow?.state === 'khong-du-thi') return { ...hai(t('Vắng'), t('không dự thi')), doc: t('Không dự thi'), kieu: 'chot' };
   if (c.noShow) return { chu: '-', doc: c.noShow.text, kieu: null };

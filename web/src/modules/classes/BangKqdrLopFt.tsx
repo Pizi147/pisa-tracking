@@ -79,7 +79,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       if (!e.mt0 && !e.moTay) return <span className="text-[13px] text-faint" title={t('MT0 cần ít nhất 3 kỹ năng có điểm')}>{t('Chờ MT0')}</span>;
       return e.chotDuoc
         ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={mo}>{t('Chốt…')}</button>
-        : <NhanKq kq="thieu" title={t('Quản lý chưa chốt Kết quả đầu ra')}>{t('Chưa chốt')}</NhanKq>;
+        : <NhanKq kq="thieu" title={t('Head chưa chốt Kết quả đầu ra')}>{t('Chưa chốt')}</NhanKq>;
     }
     const chip = <NhanKq kq={k.dat ? 'dat' : 'chua-dat'}>{chuKq(k)}</NhanKq>;
     return (

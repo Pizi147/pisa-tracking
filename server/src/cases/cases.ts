@@ -205,7 +205,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
   const conn = db();
   const c = loadCase(caseId);
   if (!canCloseCase(p, c)) {
-    throw forbidden('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
+    throw forbidden('Chỉ Head, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
   }
   const outcome: string = input.outcome ?? '';
   if (!(CASE_OUTCOMES as readonly string[]).includes(outcome)) {
@@ -346,7 +346,7 @@ export function setFollowUntil(p: Principal, caseId: number, date: string | null
 export function moLaiCase(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
-  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Quản lý hoặc người hoàn thành được Case này mở lại được.');
+  if (!coTheMoLaiCase(p, c)) throw forbidden('Chỉ Head hoặc người hoàn thành được Case này mở lại được.');
   if (c.status !== 'done') throw badRequest('Case này chưa hoàn thành.');
   const chan = chanMoLai(c);
   if (chan) throw badRequest(chan.loi);
@@ -1233,7 +1233,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
     .get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án');
   require_(p, PERMISSIONS.CASE_APPROVE, { classId: iv.class_id, studentId: iv.eff_student_id },
-    'Chỉ Quản lý mới duyệt được phương án hỗ trợ.');
+    'Chỉ Head mới duyệt được phương án hỗ trợ.');
   if (!iv.needs_approval) throw badRequest('Phương án này không cần duyệt.');
   /* K5-58 (PR-N1): PA đã huỷ / Case đã đóng thì không còn gì để duyệt — trước đây vẫn duyệt được và PA "sống lại". */
   if (iv.iv_status === 'cancelled' || iv.case_status === 'done') throw badRequest('PA này đã huỷ hoặc Case đã đóng — không còn gì để duyệt.');
@@ -1289,7 +1289,7 @@ export function respondToPlan(p: Principal, interventionId: number, input: {
       studentId: iv.eff_student_id, cycleId: iv.eff_cycle_id,
       eventType: input.decision === 'declined' ? 'plan_declined' : 'plan_approved',
       eventDate: demoToday(),
-      title: input.decision === 'approved' ? 'Quản lý duyệt PA hỗ trợ' : 'Quản lý từ chối PA',
+      title: input.decision === 'approved' ? 'Head duyệt PA hỗ trợ' : 'Head từ chối PA',
       detail: [iv.description, note].filter(Boolean).join(' — ') || null,
       refTable: 'case_interventions', refId: interventionId, createdBy: p.userId,
       dedupKey: `plan-${input.decision}:${interventionId}`,
@@ -1334,7 +1334,7 @@ export function huyQuyetDinhPa(p: Principal, interventionId: number) {
     .run(`:huy:${nowIso()}`, `plan-${iv.approval_state}:${interventionId}`);
   addJourney({
     studentId: iv.eff_student_id, cycleId: iv.eff_cycle_id, eventType: 'plan_approval_undone', eventDate: demoToday(),
-    title: 'Quản lý huỷ quyết định PA', detail: iv.description ?? null,
+    title: 'Head huỷ quyết định PA', detail: iv.description ?? null,
     refTable: 'case_interventions', refId: interventionId, createdBy: p.userId, dedupKey: `plan-undo:${interventionId}:${nowIso()}`,
   });
   dongBoTrangThaiCase(iv.case_id);
@@ -1383,7 +1383,7 @@ function xinXoa(p: Principal, the: { doiTuongLoai: 'sos_case' | 'intervention' |
   duLieu: Record<string, unknown>) {
   return tx(() => {
     const id = taoYeuCau(db(), { loai: 'xin_xoa', ...the, hocVienId: c.eff_student_id, lopId: c.class_id, nguoiXin: p.userId, duLieu });
-    if (id === null) throw badRequest('Đã gửi QL duyệt xoá — đang chờ.');
+    if (id === null) throw badRequest('Đã gửi Head duyệt xoá — đang chờ.');
     writeAudit({ actorUserId: p.userId, action: 'xin_xoa.request', entityType: the.doiTuongLoai === 'sos_case' ? 'sos_case' : the.doiTuongLoai === 'case_followup' ? 'case_followup' : 'case_intervention',
       entityId: the.doiTuongId, entityLabel: String(duLieu.ten ?? ''), after: { yeuCauId: id } });
     return { ok: true as const, choDuyet: true as const, yeuCauId: id };
@@ -1396,19 +1396,19 @@ export function apDungXinXoa(p: Principal, yc: { id: number; loai: string; doi_t
   let thungRacId: number;
   if (yc.doi_tuong_loai === 'sos_case') {
     const c = loadCase(yc.doi_tuong_id);
-    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được Case.');
+    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Head xoá được Case.');
     thungRacId = xoaCaseTrongTx(p, c).thungRacId;
   } else if (yc.doi_tuong_loai === 'case_followup') {
     const f = conn.prepare('SELECT case_id FROM case_followups WHERE id = ?').get(yc.doi_tuong_id) as any;
     if (!f) throw notFound('Không tìm thấy kết quả PA.');
     const c = loadCase(f.case_id);
-    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được kết quả PA.');
+    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Head xoá được kết quả PA.');
     thungRacId = xoaKetQuaTrongTx(p, yc.doi_tuong_id).thungRacId;
   } else {
     const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(yc.doi_tuong_id) as any;
     if (!iv) throw notFound('Không tìm thấy phương án');
     const c = loadCase(iv.case_id);
-    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Quản lý xoá được PA.');
+    require_(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id }, 'Chỉ Head xoá được PA.');
     thungRacId = xoaPaTrongTx(p, iv, c).thungRacId;
   }
   conn.prepare('UPDATE yeu_cau_duyet SET du_lieu = ? WHERE id = ?').run(JSON.stringify({ ...JSON.parse(yc.du_lieu ?? '{}'), thungRacId }), yc.id);
@@ -1558,7 +1558,7 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
   if (c.status === 'done' || c.tam || c.topic !== 'speaking' || c.attempt_kind !== 'mock') throw badRequest('Case này không có nhận xét Speaking chấm chéo chờ xác nhận.');
   const o = conn.prepare(`SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).get(c.attempt_id) as any;
   if (!o?.cho_phu_trach_xem) throw badRequest('Nhận xét Speaking chấm chéo đã được xác nhận.');
-  if (!quyenPhuTrachS(p, c.attempt_class_id ?? null)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý xác nhận được Case này.');
+  if (!quyenPhuTrachS(p, c.attempt_class_id ?? null)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Head xác nhận được Case này.');
   const cach = body.cach;
   if (cach !== 'dung' && cach !== 'giu' && cach !== 'viet') throw badRequest('Chọn: dùng nhận xét chấm chéo, giữ mô tả, hoặc viết mô tả khác.');
   const chinh = conn.prepare(`SELECT * FROM case_issues WHERE case_id = ? AND role = 'primary' ORDER BY id LIMIT 1`).get(caseId) as any;
@@ -1622,7 +1622,7 @@ export function xacNhanCaseS(p: Principal, caseId: number, body: { cach?: unknow
 export function hoanTacXacNhanCaseS(p: Principal, caseId: number) {
   const conn = db();
   const c = loadCase(caseId);
-  if (!quyenPhuTrachS(p, c.attempt_class_id ?? null)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý hoàn tác được.');
+  if (!quyenPhuTrachS(p, c.attempt_class_id ?? null)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Head hoàn tác được.');
   return tx(() => {
     const { nk, truoc, sau } = nhatKyXacNhan(p, 'sos_case', caseId, 'case.xac_nhan_s', 'Sửa Case nếu cần.');
     const h = truoc.hoanTac as { issues: any[]; scoreId: number; moTaAttemptId: number | null };
@@ -1766,7 +1766,7 @@ export function ketThucPaQuyChe(p: Principal, interventionId: number, input: { l
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Quản lý kết thúc sớm PA theo quy chế.');
+  if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Head kết thúc sớm PA theo quy chế.');
   if (iv.preset !== 1 || laBoTro(iv)) throw badRequest('Chỉ PA theo quy chế có "Kết thúc PA" ở đây — PA khác kết thúc khi ghi Kết quả.');
   if (c.status === 'done') throw badRequest('Case đã hoàn thành — không còn PA để kết thúc.');
   chanPaChuaChay(iv, 'PA theo quy chế chưa được xác nhận — chưa chạy thì chưa có gì để kết thúc.');
@@ -1823,7 +1823,7 @@ export function hoanTacKetThucPa(p: Principal, interventionId: number) {
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (!iv) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(iv.case_id);
-  if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Quản lý mở lại PA đã kết thúc.');
+  if (!coTheKetThucPa(p, c)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Head mở lại PA đã kết thúc.');
   return tx(() => {
     /* Trong giao dịch: Case vừa được Đóng chen giữa lúc kiểm và lúc đảo không lọt qua. */
     /* RKC-2a: Case đã hoàn thành → hỏi rồi Mở lại Case cùng giao dịch. */
@@ -1908,7 +1908,7 @@ function xoaKetQuaTrongTx(p: Principal, followupId: number): { ok: true; caseId:
   if (quyenXoaPa(p, iv, c) !== 'ngay') throw forbidden('Bạn không có quyền xoá kết quả PA này.');
   /* (b): thẻ đang chờ (Xin hỗ trợ / Đề xuất PA) gắn với CHÍNH lần ghi này — kết quả nào cũng chặn, không chỉ lần gần nhất. */
   if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND loai IN ('xin_y_kien', 'de_xuat_pa') AND json_extract(du_lieu, '$.followupId') = ?`).get(f.id)) {
-    throw badRequest('Kết quả này đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá.');
+    throw badRequest('Kết quả này đang chờ Head trả lời — rút thẻ Chờ duyệt trước khi xoá.');
   }
   const ganNhat = !conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? AND id > ? LIMIT 1').get(iv.id, f.id);
   const daoPa = ganNhat && !!f.next_step && paKhopLanGhi(f.next_step, iv);
@@ -1921,7 +1921,7 @@ function xoaKetQuaTrongTx(p: Principal, followupId: number): { ok: true; caseId:
       throw badRequest('Kết quả chung của nhóm bổ trợ — dùng Sửa kết quả để đổi cả nhóm.');
     }
     if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND loai IN ('xin_y_kien', 'de_xuat_pa') AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?`).get(iv.id)) {
-      throw badRequest('PA đang chờ QL trả lời — rút thẻ Chờ duyệt trước khi xoá kết quả.');
+      throw badRequest('PA đang chờ Head trả lời — rút thẻ Chờ duyệt trước khi xoá kết quả.');
     }
   }
   const chup = new BoChup(conn);
@@ -1973,7 +1973,7 @@ export function hoanTacThemPa(p: Principal, interventionId: number) {
   if (!iv) throw notFound('Không tìm thấy phương án');
   const c = loadCase(iv.case_id);
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), 'Bạn không có quyền ghi nhận hỗ trợ cho Case này.');
-  if (iv.recorded_by !== p.userId) throw forbidden('Chỉ người vừa thêm PA hoàn tác được — Quản lý dùng "Xoá PA".');
+  if (iv.recorded_by !== p.userId) throw forbidden('Chỉ người vừa thêm PA hoàn tác được — Head dùng "Xoá PA".');
   if (iv.preset === 1 || (SYSTEM_KINDS as readonly string[]).includes(iv.kind)) throw badRequest('PA do hệ thống tạo — không hoàn tác được.');
   if (!duocHoanTacPa(iv.created_at, Date.now())) throw conflict('Đã quá thời gian hoàn tác.');
   const khoaTep: string[] = [];
@@ -1981,7 +1981,7 @@ export function hoanTacThemPa(p: Principal, interventionId: number) {
     /* Kiểm trong giao dịch: kết quả / câu trả lời QL ghi chen giữa lúc kiểm và lúc gỡ không bị xoá theo. */
     if (conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(interventionId)) throw conflict('PA đã có kết quả — không hoàn tác được.');
     const tt = (conn.prepare('SELECT approval_state FROM case_interventions WHERE id = ?').get(interventionId) as any)?.approval_state;
-    if (tt && tt !== 'pending') throw conflict('Quản lý đã trả lời đề xuất — không hoàn tác được.');
+    if (tt && tt !== 'pending') throw conflict('Head đã trả lời đề xuất — không hoàn tác được.');
     if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'cho' AND doi_tuong_loai = 'intervention' AND doi_tuong_id = ?
         AND json_extract(du_lieu, '$.thayPaId') IS NOT NULL`).get(interventionId)) throw badRequest('PA đề xuất thay PA khác — rút ở thẻ Chờ duyệt.');
     goPaTrongTx(conn, iv, { nguoiDuyet: p.userId, lyDo: 'Giáo viên hoàn tác thêm PA' }, khoaTep);
@@ -2219,7 +2219,7 @@ export function setDisposition(p: Principal, caseId: number, input: {
 
   if (closing) {
     if (!canCloseCase(p, c)) {
-      throw forbidden('Chỉ Quản lý, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
+      throw forbidden('Chỉ Head, giáo viên dạy đúng môn của Case, hoặc GVCN (Case Ý thức) mới hoàn thành được Case này.');
     }
     const disposition = input.disposition ?? c.disposition;
     if (!disposition) {
@@ -3838,7 +3838,7 @@ function caseCardOf(p: Principal, caseId: number, c: any, soBangChung: Map<numbe
  */
 function nguoiLamCua(v: { chu: string; paId?: number } | null, c: any, plans: { id: number; nguoiId: number | null; nguoiTen: string | null }[]): { id: number | null; ten: string | null } | null {
   if (!v) return null;
-  if (v.chu.startsWith('Chờ Quản lý')) return { id: null, ten: 'Quản lý' };
+  if (v.chu.startsWith('Chờ Head')) return { id: null, ten: 'Head' };
   const pa = v.paId ? plans.find((pl) => pl.id === v.paId) : null;
   const [id, ten] = pa ? [pa.nguoiId, pa.nguoiTen] : [c.owner_user_id ?? null, c.owner_name ?? null];
   return id ? { id, ten } : null;
@@ -4080,7 +4080,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
     const cam = input.decision !== undefined
       ? !quyetDinhChoPa({ preset: true }, false).includes(input.decision as PlanDecision)
       : mode === 'end';
-    if (cam && !qlVuot) throw badRequest('PA theo quy chế — GV không thay / kết thúc sớm ở đây: chọn "Xin hỗ trợ Quản lý" để đề xuất; GVCN / Quản lý "Kết thúc sớm…" ở thẻ PA.');
+    if (cam && !qlVuot) throw badRequest('PA theo quy chế — GV không thay / kết thúc sớm ở đây: chọn "Xin hỗ trợ Head" để đề xuất; GVCN / Head "Kết thúc sớm…" ở thẻ PA.');
     if (cam) canXacNhan('PA theo quy chế — luật không thay / kết thúc sớm ở form Kết quả. Vẫn lưu?', undefined, 'Vẫn lưu kết quả');
   }
 
@@ -4104,11 +4104,11 @@ export function updateResult(p: Principal, interventionId: number, input: {
     const traiLuat = (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') || !(allowed as readonly string[]).includes(nextStep);
     if (traiLuat && !qlVuot) {
       if (!canEndWithOutcome(input.outcome) && nextStep !== 'propose') {
-        throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được — chọn Giữ nguyên, Điều chỉnh hoặc Thay PA; cần kết thúc thì nhờ Quản lý.');
+        throw badRequest('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được — chọn Giữ nguyên, Điều chỉnh hoặc Thay PA; cần kết thúc thì nhờ Head.');
       }
       throw badRequest(
         `Kết quả "${outcomeLabelFor(input.outcome)}" chỉ kết thúc được bằng: `
-        + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · ') + ' — cần kết thúc khác thì nhờ Quản lý.',
+        + allowed.map((x) => NEXT_STEP_LABEL[x]).join(' · ') + ' — cần kết thúc khác thì nhờ Head.',
       );
     }
     if (traiLuat) canXacNhan('Kết quả "{x}" — luật chưa cho kết thúc PA theo cách này. Vẫn lưu?', { x: outcomeLabelFor(input.outcome) }, 'Vẫn lưu kết quả');
@@ -4129,7 +4129,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   }
   /* PR-DUYET (T64): câu hỏi gửi Quản lý là nội dung của thẻ Xin ý kiến — bắt buộc. */
   if (nextStep === 'ask_manager' && (decisionNote ?? '').length < CHU_TOI_THIEU_CASE) {
-    throw badRequest('Xin hỗ trợ Quản lý thì ghi rõ cần Quản lý giúp gì, ít nhất 8 ký tự.');
+    throw badRequest('Xin hỗ trợ Head thì ghi rõ cần Head giúp gì, ít nhất 8 ký tự.');
   }
   /* T13: thay sang PA đề xuất "Khác" — báo thiếu Ghi rõ TRƯỚC khi ghi gì (`recordIntervention` kiểm lại lần nữa). */
   if (nextStep === 'propose' && input.newPlan?.kind === 'other_proposal') {
@@ -4149,7 +4149,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   if (input.deXuatPa) {
     /* Câu nói đúng vì sao: lần ghi cuối thì PA khép (không còn gì để đổi); còn lại chỉ đi cùng Giữ nguyên. */
     if (lanCuoi) throw badRequest('Đây là lần ghi kết quả cuối — PA kết thúc, không đề xuất PA khác.');
-    if (nextStep !== 'continue') throw badRequest('Đề xuất PA khác chỉ đi cùng quyết định Giữ nguyên — PA hiện tại chạy tới khi Quản lý duyệt.');
+    if (nextStep !== 'continue') throw badRequest('Đề xuất PA khác chỉ đi cùng quyết định Giữ nguyên — PA hiện tại chạy tới khi Head duyệt.');
     kiemTruocDoiPa(p, iv, input.deXuatPa);
   }
 
@@ -4497,7 +4497,7 @@ function nguCanhSuaKetQua(p: Principal, followupId: number) {
   if (!f || !f.intervention_id || !f.next_step) throw notFound('Không tìm thấy lần ghi kết quả PA.');
   const cF = loadCase(f.case_id);
   if (f.observer_user_id !== p.userId && !can(p, PERMISSIONS.CASE_APPROVE, { classId: cF.class_id, studentId: cF.eff_student_id })) {
-    throw forbidden('Chỉ người đã ghi lần này hoặc Quản lý sửa được.');
+    throw forbidden('Chỉ người đã ghi lần này hoặc Head sửa được.');
   }
   /* RKC-2b (chủ SP 07/11 "không chặn cứng"): lần ghi CŨ, PA đã đổi trạng thái, nhóm bổ trợ đã ghi tiếp → vẫn SỬA CHỮ được (không đảo gì); chỉ đổi
      lựa chọn mới cần là lần gần nhất (`chanDoi`). Case đã hoàn thành → đổi lựa chọn = hỏi rồi Mở lại Case (`caseXong`); sửa chữ không cần mở. */
@@ -4540,9 +4540,9 @@ function nguCanhSuaKetQua(p: Principal, followupId: number) {
     ? (conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(iv.superseded_by) as any) ?? null : null;
   if (chanDoi) { /* đã có lý do — không đọc thêm */ }
   else if (paMoi && conn.prepare('SELECT 1 FROM case_followups WHERE intervention_id = ? LIMIT 1').get(paMoi.id)) {
-    chanDoi = 'PA thay thế đã có kết quả — chỉ sửa được chữ. Muốn bỏ Thay PA thì nhờ Quản lý xoá PA mới trước.';
+    chanDoi = 'PA thay thế đã có kết quả — chỉ sửa được chữ. Muốn bỏ Thay PA thì nhờ Head xoá PA mới trước.';
   } else if (paMoi && (paMoi.approval_state === 'approved' || paMoi.approval_state === 'declined')) {
-    chanDoi = `Quản lý đã ${paMoi.approval_state === 'approved' ? 'duyệt' : 'từ chối'} PA thay thế — chỉ sửa được chữ; ghi kết quả tuần mới ở PA mới.`;
+    chanDoi = `Head đã ${paMoi.approval_state === 'approved' ? 'duyệt' : 'từ chối'} PA thay thế — chỉ sửa được chữ; ghi kết quả tuần mới ở PA mới.`;
   }
   /* Xin hỗ trợ QL: thẻ của CHÍNH lần này (`du_lieu.followupId`). Đang chờ → viết lại thẳng thẻ; Quản lý đã trả lời → không đổi được. */
   let the: any = null;
@@ -4552,7 +4552,7 @@ function nguCanhSuaKetQua(p: Principal, followupId: number) {
     let fid: unknown = null;
     try { fid = JSON.parse(y?.du_lieu ?? '{}').followupId; } catch { /* du_lieu hỏng — không phải thẻ của lần này */ }
     if (y && fid === chinh.id && y.trang_thai === 'cho') the = y;
-    else if (y && fid === chinh.id && y.trang_thai !== 'tu_dong') chanDoi = 'Quản lý đã trả lời câu hỏi Xin hỗ trợ — chỉ sửa được chữ; ghi kết quả tuần mới nếu cần.';
+    else if (y && fid === chinh.id && y.trang_thai !== 'tu_dong') chanDoi = 'Head đã trả lời câu hỏi Xin hỗ trợ — chỉ sửa được chữ; ghi kết quả tuần mới nếu cần.';
   }
   /* Câu hỏi lần này NỐI vào thẻ của lần trước ("Bổ sung dd/mm: …") → phần trước giữ lại khi viết lại / bỏ câu hỏi. */
   const lyDoTruoc = the && the.ly_do !== chinh.decision_note && String(the.ly_do ?? '').endsWith(duoiBoSung(chinh))
@@ -4628,7 +4628,7 @@ export function hoanTacKetQua(p: Principal, followupId: number) {
   const caseId = tx(() => {
     /* OV-13b: lần ghi kèm đề xuất đổi PA mà QL đã duyệt — PA mới đang chạy, PA gốc đã khép: không đảo được (nói trước câu chặn chung). */
     if (conn.prepare(`SELECT 1 FROM yeu_cau_duyet WHERE loai = 'de_xuat_pa' AND trang_thai = 'duyet' AND json_extract(du_lieu, '$.followupId') = ?`).get(followupId)) {
-      throw badRequest('QL đã duyệt đổi PA — không hoàn tác được.');
+      throw badRequest('Head đã duyệt đổi PA — không hoàn tác được.');
     }
     const x = nguCanhSuaKetQua(p, followupId);
     if (x.chanDoi) throw badRequest(x.chanDoi);
@@ -4733,11 +4733,11 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   const decisionNote = String(vao.decisionNote ?? '').trim() || null;
   if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');
   if (chinh.next_step === 'ask_manager' && (decisionNote ?? '').length < CHU_TOI_THIEU_CASE) {
-    throw badRequest('Xin hỗ trợ Quản lý thì ghi rõ cần Quản lý giúp gì, ít nhất 8 ký tự.');
+    throw badRequest('Xin hỗ trợ Head thì ghi rõ cần Head giúp gì, ít nhất 8 ký tự.');
   }
   if (x.quyetDinh === null && chinh.outcome === 'insufficient' && !decisionNote) throw badRequest('"Chưa đủ dữ liệu" ở lần ghi cuối thì ghi Lý do.');
   if (chinh.next_step === 'ask_manager' && !x.the && x.chanDoi && decisionNote !== chinh.decision_note) {
-    throw badRequest('Quản lý đã trả lời câu hỏi Xin hỗ trợ — muốn hỏi thêm: gửi Xin hỗ trợ mới.');
+    throw badRequest('Head đã trả lời câu hỏi Xin hỗ trợ — muốn hỏi thêm: gửi Xin hỗ trợ mới.');
   }
   const cu = chinh.so_buoi == null;   // OV-12h: lần ghi cũ (không số buổi) giữ như trước
   const t = chuKetQuaTuan(p, iv, x.c, vao, cu);
@@ -4827,7 +4827,7 @@ export function suaXemLai(p: Principal, followupId: number, input: { outcome?: s
   if (!f || f.next_step || f.metrics) throw notFound('Không tìm thấy lần xem lại.');
   const c = loadCase(f.case_id);
   if (f.observer_user_id !== p.userId && !can(p, PERMISSIONS.CASE_APPROVE, { classId: c.class_id, studentId: c.eff_student_id })) {
-    throw forbidden('Chỉ người đã ghi lần xem lại này hoặc Quản lý sửa được.');
+    throw forbidden('Chỉ người đã ghi lần xem lại này hoặc Head sửa được.');
   }
   require_(p, PERMISSIONS.SOS_EDIT, sosEditCtx(c), 'Bạn không có quyền ghi nhận theo dõi cho Case này.');   // cùng quyền như `recordFollowUp`
   /* RKC-2a: lần xem lại không có hệ quả → sửa được cả khi Case đã hoàn thành (nhật ký `case.followup.edit`). */
@@ -4897,7 +4897,7 @@ export function kiemQuyenPa(p: Principal, iv: any, c: any, msg = 'Bạn không c
 /** PR-PA: PA chưa chạy (quy chế chưa xác nhận, chờ Quản lý duyệt) hoặc đã khép → không ghi Kết quả, không Sửa PA. */
 function chanPaChuaChay(iv: any, chuaXacNhan: string) {
   if (iv.preset === 1 && !iv.confirmed_at) throw badRequest(chuaXacNhan);
-  if (iv.approval_state === 'pending') throw badRequest('Phương án này đang chờ Quản lý duyệt — việc thực hiện chưa bắt đầu.');
+  if (iv.approval_state === 'pending') throw badRequest('Phương án này đang chờ Head duyệt — việc thực hiện chưa bắt đầu.');
   if (iv.status === 'cancelled') throw badRequest('Phương án này đã huỷ.');
   if (iv.status === 'completed') throw badRequest('Phương án này đã kết thúc — không cập nhật thêm được.');
 }

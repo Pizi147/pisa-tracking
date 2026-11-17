@@ -260,7 +260,7 @@ export async function runPrOv13aTests(t: YThucTestKit) {
     assert(one(`SELECT COUNT(*) n FROM audit_logs WHERE action = 'case.intervention.complete' AND entity_id = ?`, pa.id).n === 1, 'nhật ký hệ thống');
     assert(cases.caseDetail(QL, cL.id).viecTiep?.chu === 'Hoàn thành Case', 'PA khép → Hoàn thành Case');
     const paS2 = xacNhanPa(cS.id);
-    cases.ketThucPaQuyChe(QL, paS2.id, { lyDo: 'QL quyết định dừng PA theo đề nghị phụ huynh.' });
+    cases.ketThucPaQuyChe(QL, paS2.id, { lyDo: 'Head quyết định dừng PA theo đề nghị phụ huynh.' });
     assert(one('SELECT status FROM case_interventions WHERE id = ?', paS2.id).status === 'completed', 'QL kết thúc được');
   }));
 

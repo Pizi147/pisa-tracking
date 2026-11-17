@@ -33,7 +33,7 @@ const dsSo = (v: unknown, toiDa: number): number[] => {
 /** Các lớp: người gọi có quyền quyết đợt ở TỪNG lớp, cùng chi nhánh (hộp "nhiều lớp" chỉ chọn trong một chi nhánh). */
 function lopQuyen(p: Principal, ids: readonly number[]): LopBc[] {
   const lop = ids.map((id) => docLop(id));
-  for (const c of lop) if (!quyenBc(p, c).quyetDot) throw forbidden('Chỉ Quản lý, Quản trị, Admin của chi nhánh quyết đợt báo cáo PH.');
+  for (const c of lop) if (!quyenBc(p, c).quyetDot) throw forbidden('Chỉ Head, Quản trị, Admin của chi nhánh quyết đợt báo cáo PH.');
   if (new Set(lop.map((c) => c.branch_id)).size > 1) throw badRequest('Chỉ chọn các lớp cùng một chi nhánh');
   return lop;
 }

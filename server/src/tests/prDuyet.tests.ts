@@ -132,7 +132,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
       const a = tao(), b = tao({ nguoiXin: P.mbManager.userId });
       const hop = yc.hopChoDuyet(P.mbManager).the;
       const v = (id: number) => hop.find((x: any) => x.id === id)?.vaiNguoiXin;
-      assert(v(a) === 'GVCN' && v(b) === 'QL', `${v(a)} ${v(b)}`);
+      assert(v(a) === 'GVCN' && v(b) === 'Head', `${v(a)} ${v(b)}`);
       yc.duyetYeuCau(P.mbManager, a);
       const da = yc.yeuCauCuaToi(P.coreTeacher).the.find((x: any) => x.id === a);
       assert(da?.nguoiDuyet && da.vaiNguoiXin === 'GVCN' && da.nguoiXin, JSON.stringify(da));
@@ -262,7 +262,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     const { ivId } = paChay();
     const truoc = conn.prepare('SELECT followup_due, action_due, COALESCE(started_date, cycle_started_on) bat_dau FROM case_interventions WHERE id = ?').get(ivId) as any;
     assert(chuLoi(() => casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số', observedOn: TODAY }))
-      .includes('cần Quản lý giúp gì'), 'thiếu câu hỏi vẫn gửi được');
+      .includes('cần Head giúp gì'), 'thiếu câu hỏi vẫn gửi được');
     casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'unchanged', note: 'Em vẫn nghe sót số',
       decisionNote: 'Có nên chuyển sang tutor không?', observedOn: TODAY });
     const iv = conn.prepare('SELECT status, approval_state, action_due, followup_due FROM case_interventions WHERE id = ?').get(ivId) as any;
@@ -278,7 +278,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
   check('DUYET (5) · Trả lời thiếu chữ → 400; có chữ → Đã trả lời, GV nhận câu trả lời, Ngăn Case có dòng trả lời; Duyệt thẻ này → 400', () => {
     const { caseId, ivId } = paChay();
     casesSvc.updateResult(P.lrTeacher, ivId, { decision: 'ask_manager', outcome: 'worse', note: 'Em vẫn nghe sót số',
-      decisionNote: 'Cần Quản lý xếp tutor giúp em', observedOn: TODAY });
+      decisionNote: 'Cần Head xếp tutor giúp em', observedOn: TODAY });
     const id = theCua('xin_y_kien', ivId).id;
     assert(casesSvc.caseDetail(P.lrTeacher, caseId).interventions.find((x: any) => x.id === ivId).xinYKien?.trangThai === 'cho', 'Ngăn Case thiếu dòng chờ');
     assert(maLoi(() => yc.traLoiYeuCau(P.mbManager, id, ' ')) === 400 && maLoi(() => yc.duyetYeuCau(P.mbManager, id)) === 400, '400');
@@ -307,7 +307,7 @@ export async function runPrDuyetTests(t: YThucTestKit) {
     assert(maLoi(() => cyclesSvc.createCycle(P.coreTeacher, { studentId: cyc.student_id, route: 'LT2' })) === 403, 'GVCN mở lộ trình mới');
     cyclesSvc.updateCycle(P.coreTeacher, cyc.id, { note: 'Ghi chú của GVCN', examMonth: '2026-12', targetScore: 6.5, route: cyc.route });
     assert(cycCua(cyc.student_id).exam_month === '2026-12', 'GVCN không sửa được tháng thi');
-    cyclesSvc.reviseTarget(P.mbManager, cyc.id, { newTarget: 7, reason: 'QL đổi' });
+    cyclesSvc.reviseTarget(P.mbManager, cyc.id, { newTarget: 7, reason: 'Head đổi' });
     assert(cycCua(cyc.student_id).target_score === 7, 'QL không đổi được target');
   });
   check('DUYET (6) · GVBM gửi Đề xuất sửa target 6.5 → 7.0 → thẻ; QL Duyệt → đổi target, lịch sử ghi lý do đề xuất và người duyệt', () => {

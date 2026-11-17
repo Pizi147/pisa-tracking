@@ -61,7 +61,7 @@ export async function runPrUiChamTestTests(t: Kit) {
   check('UCT-3 (Rulebook §21.4 T5) · lyDoHuy: vắng 2 lần › QL từ chối dời (thẻ cũ); MT cũ không phải huỷ (N38); không huỷ kỹ năng → null', () => {
     assert(d.lyDoHuy({ mtCu: true, huyVang: true, sit: 'cancelled' } as any) === 'vắng 2 lần', 'cờ mtCu cũ không còn đổi lý do');
     assert(d.lyDoHuy({ huyVang: true, sit: 'cancelled' }) === 'vắng 2 lần', 'vắng 2 lần');
-    assert(d.lyDoHuy({ sit: 'cancelled' }) === 'QL từ chối dời', 'QL từ chối dời');
+    assert(d.lyDoHuy({ sit: 'cancelled' }) === 'Head từ chối dời', 'QL từ chối dời');
     assert(d.lyDoHuy({ sit: 'scheduled' }) === null && d.lyDoHuy({}) === null, 'không huỷ');
   });
 
@@ -69,7 +69,7 @@ export async function runPrUiChamTestTests(t: Kit) {
     const o = (x: object) => ({ trangThai: 'da-huy', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: 'đã huỷ', sit: 'cancelled', tuanKetThuc: '2026-09-13', choDuyet: false, hanCham: null, ...x });
     const nhom = d.nhomKyNang({ listening: o({ huyVang: true }), reading: o({}) }, '2026-09-14');
     const viec = nhom.map((g: any) => g.viec).sort();
-    assert(JSON.stringify(viec) === JSON.stringify(['huỷ · QL từ chối dời', 'huỷ · vắng 2 lần']), JSON.stringify(viec));
+    assert(JSON.stringify(viec) === JSON.stringify(['huỷ · Head từ chối dời', 'huỷ · vắng 2 lần']), JSON.stringify(viec));
     assert(d.chipDongKyNang(o({ huyVang: true }), '2026-09-14')?.chu === 'huỷ · vắng 2 lần', 'dòng hộp một đợt');
     assert(d.chipDongKyNang({ ...o({}), trangThai: 'xong', khongDuThi: true, sit: 'sat' }, '2026-09-14', null, true)?.chu === 'Không dự thi', 'MT cũ: Không dự thi (N38 L3)');
   });

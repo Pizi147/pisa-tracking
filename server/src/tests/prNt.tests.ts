@@ -172,7 +172,7 @@ export async function runPrNtTests(t: YThucTestKit) {
   const cyc: any = await import('../fasttrack/cycles.ts');
   check('NT-4 · đổi Target lộ trình lớp thường: cần CYCLE_EDIT + lý do, ghi revision + Hành trình; GVCN bị chặn; không chụp target vào bài lớp thường', () => {
     assertThrows(() => cyc.updateCycle(P.admin, em.cid, { targetScore: 6.5 }), /lý do/, 'thiếu lý do');
-    assertThrows(() => cyc.updateCycle(P.normalCoreTeacher, em.cid, { targetScore: 6.5, lyDo: 'Em muốn thi sớm hơn dự kiến' }), /Quản lý|quyền/i, 'GVCN không sửa Target');
+    assertThrows(() => cyc.updateCycle(P.normalCoreTeacher, em.cid, { targetScore: 6.5, lyDo: 'Em muốn thi sớm hơn dự kiến' }), /Head|quyền/i, 'GVCN không sửa Target');
     cyc.updateCycle(P.admin, em.cid, { targetScore: 6.5, lyDo: 'Phụ huynh đổi mục tiêu' });
     const rv = conn.prepare('SELECT * FROM cycle_target_revisions WHERE cycle_id = ? ORDER BY id DESC').get(em.cid) as any;
     assert(rv && rv.new_target === 6.5 && rv.reason === 'Phụ huynh đổi mục tiêu', JSON.stringify(rv));

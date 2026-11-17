@@ -63,7 +63,7 @@ export function thongBaoCua(userId: number) {
                       CASE WHEN sc.status != 'done' AND ${LA_CASE_SOS('sc')} AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}
                                 AND NOT EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary') THEN 1 ELSE 0 END
                     /* SL1 (rà #502): đăng ký còn việc khi tài khoản còn chờ duyệt; đề nghị dời lịch còn việc khi còn chờ. */
-                    /* #6 (rà 11/11 G3-7): QL đã duyệt đề xuất Ý thức → GVCN còn việc tới khi ghi "Đã thực hiện" (hoặc lần xử lý đổi khác). */
+                    /* #6 (rà 11/11 G3-7): Head đã duyệt đề xuất Ý thức → GVCN còn việc tới khi ghi "Đã thực hiện" (hoặc lần xử lý đổi khác). */
                     WHEN n.kind = 'yt_da_duyet' THEN CASE WHEN dm.status = 'da_duyet' THEN 1 ELSE 0 END
                     WHEN n.kind = 'dang_ky' AND n.entity_type = 'user' THEN CASE WHEN uu.approval_state = 'pending' THEN 1 ELSE 0 END
                     WHEN n.kind = 'schedule_move' AND n.entity_type = 'skill_move_requests' THEN CASE WHEN smr.status = 'pending' THEN 1 ELSE 0 END

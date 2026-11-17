@@ -143,7 +143,7 @@ export default function ProfilePage() {
           </Field>
 
           {nguoiDay && (
-            <Field label={t('Kỹ năng bạn phụ trách được')} hint={data.suaKyNang ? undefined : t('Quản lý hoặc Quản trị hệ thống sửa.')}>
+            <Field label={t('Kỹ năng bạn phụ trách được')} hint={data.suaKyNang ? undefined : t('Head hoặc Quản trị hệ thống sửa.')}>
               <ChonKyNang value={d.skills} onToggle={toggleSkill} disabled={!data.suaKyNang} />
             </Field>
           )}

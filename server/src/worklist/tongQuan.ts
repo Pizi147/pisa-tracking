@@ -37,13 +37,13 @@ export const toiHan = (han: string | null | undefined, homNay: string) => !!han 
  */
 
 const laQuanLy = (p: Principal) => {
-  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Khối này dành cho Quản lý.');
+  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Khối này dành cho Head.');
 };
 /* OV-11f (TQ-9): Cần xử lý + dải Chờ duyệt là VIỆC của Quản lý (GV nào trễ, nhắc ai) — đòi quyền xem việc người khác (`case.approve`, `phamViXemViec`
    = 'het'), không chỉ `analysis.view` (TVV / CX / Admin cũng có). Điểm đáng chú ý / bảng chi nhánh giữ `analysis.view`. */
 const laViecQuanLy = (p: Principal) => {
   laQuanLy(p);
-  if (phamViXemViec(p) !== 'het') throw forbidden('Khối này dành cho Quản lý.');
+  if (phamViXemViec(p) !== 'het') throw forbidden('Khối này dành cho Head.');
 };
 
 /**

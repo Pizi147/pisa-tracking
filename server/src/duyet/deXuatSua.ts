@@ -47,7 +47,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
   /* RKC-3b (chủ SP 07/11; trước OV-13h chặn Kết thúc học / Lưu trữ): mọi trạng thái gửi được — QL duyệt vẫn kiểm giá trị. */
   if (body.truong === 'lop') throw badRequest('Dùng Đề xuất chuyển lớp.');   // PR-CT (Q30-1)
   const truong = body.truong as TruongDeXuat;
-  if (truong === 'lich-mt') throw badRequest('Lịch Test do Quản lý xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng
+  if (truong === 'lich-mt') throw badRequest('Lịch Test do Head xử lý — không gửi đề xuất.');   // luật 09/10; thẻ cũ vẫn hiện để đóng
   if (!(TRUONG_DE_XUAT as readonly string[]).includes(String(truong))) throw badRequest('Chọn thông tin cần sửa.');
   const lyDo = lyDoDeXuat(body.lyDo);
   const { cu, moi, kyThi } = kiemGiaTriDeXuat(conn, studentId, truong, body.moi);   // P13: thẻ nhớ thang (KET / PET)
@@ -56,7 +56,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
       loai: 'sua_thong_tin', doiTuongLoai: `student:${truong}`, doiTuongId: studentId, hocVienId: studentId,
       nguoiXin: p.userId, lyDo, duLieu: { truong, cu, moi, ...(kyThi ? { kyThi } : {}) },
     });
-    if (id === null) throw badRequest(`Đã có một đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} của em đang chờ Quản lý duyệt — sửa ở Công việc › Yêu cầu của tôi.`);
+    if (id === null) throw badRequest(`Đã có một đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} của em đang chờ Head duyệt — sửa ở Công việc › Yêu cầu của tôi.`);
     writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id,
       entityLabel: `Đề xuất sửa ${NHAN_TRUONG_DE_XUAT[truong]} · ${hv.full_name}`, after: { truong, cu, moi, lyDo } });
     return { ok: true, id };
@@ -65,7 +65,7 @@ export function guiDeXuatSua(p: Principal, studentId: number, body: { truong?: u
 
 export function lyDoDeXuat(v: unknown): string {
   const lyDo = typeof v === 'string' ? v.trim() : '';
-  if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
+  if (!lyDo) throw badRequest('Ghi lý do để Head có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
   return lyDo;
 }
 

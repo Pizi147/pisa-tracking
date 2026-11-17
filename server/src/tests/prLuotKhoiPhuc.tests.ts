@@ -93,7 +93,7 @@ export async function runPrLuotKhoiPhucTests(t: any) {
     xoaNho();
     /* Rà PTA ⑤: người không mở được lớp (GVCN) — câu chặn nói ai làm, không hỏi "Mở lại lớp?". */
     const chanGv = attempts.chanKhoiPhucThuong(get('SELECT * FROM assessment_attempts WHERE id = ?', l.id), 'Progress Test', P.coreTeacher);
-    assert(/nhờ Quản lý lớp mở lại lớp/.test(chanGv ?? ''), `GVCN: ${chanGv}`);
+    assert(/nhờ Head phụ trách mở lại lớp/.test(chanGv ?? ''), `GVCN: ${chanGv}`);
     assert(attempts.chanKhoiPhucThuong(get('SELECT * FROM assessment_attempts WHERE id = ?', l.id), 'Progress Test', P.mbManager) === null, 'QL: không chặn (hỏi Mở lại lớp)');
     const e = loi(() => attempts.reopenAttempt(P.mbManager, l.id));
     assert(e.status === 409 && e.msg.includes('Mở lại lớp để khôi phục'), `lớp kết thúc: ${e.status} ${e.msg}`);

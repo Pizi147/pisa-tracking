@@ -107,10 +107,10 @@ export async function runPrNhapKqTests(t: YThucTestKit) {
 
   check('AUDIT-1454 N01 · khác người (GV + Quản lý cùng chi nhánh) → cũng 409, không phải lỗi quyền', () => {
     const goc = cot();
-    cases.luuNhapKetQua(P.mbManager, ivId, { outcome: 'partial', note: 'QL ghi thêm', ky: ky(), coSo: goc.luc });
+    cases.luuNhapKetQua(P.mbManager, ivId, { outcome: 'partial', note: 'Head ghi thêm', ky: ky(), coSo: goc.luc });
     const e = loiCua(() => cases.luuNhapKetQua(P.lrTeacher, ivId, { outcome: 'partial', note: 'GV từ bản cũ', ky: ky(), coSo: goc.luc }));
     assert(e?.status === 409 && e.details?.nhapMoi?.boi === P.mbManager.fullName, `xung đột nêu người lưu (có ${e?.status})`);
-    assert(cot()?.note === 'QL ghi thêm', 'bản QL còn');
+    assert(cot()?.note === 'Head ghi thêm', 'bản QL còn');
   });
 
   check('AUDIT-1454 N01 · gửi lại sau mất phản hồi (cùng nội dung, cùng bản gốc) → coi là đã lưu, không nhật ký đôi', () => {
@@ -152,10 +152,10 @@ export async function runPrNhapKqTests(t: YThucTestKit) {
 
   check('AUDIT-1454 N03 · chốt từ tab cũ khi phiên khác vừa lưu nháp mới → 409 kèm bản mới; không ghi kết quả, nháp còn', () => {
     const n = soKq();
-    const v = cases.luuNhapKetQua(P.mbManager, ivId, { outcome: 'improved', note: 'QL vừa ghi nháp', ky: ky(), coSo: null }).nhap;
+    const v = cases.luuNhapKetQua(P.mbManager, ivId, { outcome: 'improved', note: 'Head vừa ghi nháp', ky: ky(), coSo: null }).nhap;
     const e = loiCua(() => cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'GV chốt từ form mở trước', ky: ky(), nhapCoSo: null }));
     assert(e?.status === 409 && e.details?.nhapMoi?.luc === v.luc, `chốt phải báo có nháp mới hơn (có ${e?.status ?? 'không lỗi'})`);
-    assert(soKq() === n && cot()?.note === 'QL vừa ghi nháp', 'không ghi kết quả, nháp của QL còn');
+    assert(soKq() === n && cot()?.note === 'Head vừa ghi nháp', 'không ghi kết quả, nháp của QL còn');
     /* GV xem rồi vẫn chốt bản mình (bản gốc = nháp mới) → được; nháp xoá cùng giao dịch. */
     cases.updateResult(P.lrTeacher, ivId, { decision: 'keep', outcome: 'partial', note: 'GV chốt từ form mở trước', ky: ky(), nhapCoSo: v.luc });
     assert(soKq() === n + 1 && cot() === null, 'chốt + xoá nháp');

@@ -259,8 +259,8 @@ export async function runPrOv13bTests(t: YThucTestKit) {
     yeuCau.duyetYeuCau(QL, the.id, {});
     const fu = one('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', goc.id);
     const e = loi(() => cases.hoanTacKetQua(GV, fu.id));
-    assert(e?.status === 400 && /QL đã duyệt đổi PA/.test(e.message), `hoàn tác sau duyệt: ${e?.message}`);
-    assert(/QL đã duyệt đổi PA/.test(loi(() => yeuCau.rutYeuCau(GV, the.id))?.message ?? ''), 'rút sau duyệt nói đúng lý do');
+    assert(e?.status === 400 && /Head đã duyệt đổi PA/.test(e.message), `hoàn tác sau duyệt: ${e?.message}`);
+    assert(/Head đã duyệt đổi PA/.test(loi(() => yeuCau.rutYeuCau(GV, the.id))?.message ?? ''), 'rút sau duyệt nói đúng lý do');
     /* Thẻ chết: PA mới bị huỷ đường khác → quét đóng thẻ + PA gốc thôi trỏ. */
     const { goc: g2 } = dungCase();
     doiPa.deXuatDoiPa(GV, g2.id, deXuat(g2));

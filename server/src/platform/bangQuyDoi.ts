@@ -49,7 +49,7 @@ export const xemDuocBangQuyDoi = (p: Principal) => can(p, PERMISSIONS.ADMIN_CONF
 
 /** Màn Quản trị › Bảng quy đổi: bảng đang dùng + mọi phiên bản (mới nhất trước, phiên bản 0 = gốc ở cuối; `doi` = ô đổi so với phiên bản trước). */
 export function xemBangQuyDoi(p: Principal) {
-  if (!xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được bảng quy đổi.');
+  if (!xemDuocBangQuyDoi(p)) throw forbidden('Chỉ Quản trị hệ thống và Head xem được bảng quy đổi.');
   const ds = db().prepare(
     `SELECT b.*, u.full_name AS ten FROM bang_quy_doi b LEFT JOIN users u ON u.id = b.nguoi_id ORDER BY b.id`,
   ).all() as DongPb[];

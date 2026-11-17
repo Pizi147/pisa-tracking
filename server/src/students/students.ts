@@ -420,7 +420,7 @@ export function hocLai(p: Principal, studentId: number, o: {
   /** P7 (N12): Học lại do Bước tiếp › Lộ trình mới gọi — lộ trình mới theo lựa chọn ở panel (`moLoTrinhMoi.sauThi`). */
   sauThi?: LoTrinhMoiSauThi | null;
 } = {}) {
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới cho học viên học lại được.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Head mới cho học viên học lại được.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -526,7 +526,7 @@ export function hocLai(p: Principal, studentId: number, o: {
  * chuông chuyển vào — CHỈ khi lộ trình mới chưa có điểm / dữ liệu nào (409, báo rõ, nếu đã có).
  */
 export function hoanTacHocLai(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Học lại.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Head mới hoàn tác được việc Học lại.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -599,7 +599,7 @@ export function hoanTacHocLai(p: Principal, studentId: number) {
  */
 export function hoanTacKetThuc(p: Principal, studentId: number) {
   /* OV-8b: TVV / CX Thôi học được thì Hoàn tác được. */
-  if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới hoàn tác được việc Kết thúc học.');
+  if (!can(p, PERMISSIONS.STUDENT_EDIT_MORE, { studentId })) require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Head mới hoàn tác được việc Kết thúc học.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -712,7 +712,7 @@ export { coQuyenBuocTiep };
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;
  * OV-12a: TVV của chi nhánh cũng đọc được (chỉ đọc — panel Học lại mở từ Bước tiếp sau thi; Học lại thẳng `/hoc-lai` vẫn chỉ Quản lý). */
 export function lopChoHocLai(p: Principal, studentId: number) {
-  if (!coQuyenBuocTiep(p, studentId)) throw forbidden('Chỉ Quản lý mới cho học viên học lại được.');
+  if (!coQuyenBuocTiep(p, studentId)) throw forbidden('Chỉ Head mới cho học viên học lại được.');
   const conn = db();
   /* OV-11d (HV-6): em còn ghi danh (Bước tiếp sau lộ trình đã đóng) — lớp cũ = lớp đang giữ; máy chủ Kết thúc học rồi Học lại cùng giao dịch, lộ trình MỚI. */
   const conHoc = (conn.prepare('SELECT status FROM students WHERE id = ?').get(studentId) as any)?.status !== 'finished';
@@ -749,7 +749,7 @@ export function lopChoHocLai(p: Principal, studentId: number) {
  * Lưu trữ chỉ ẩn khỏi danh sách mặc định: không đổi trạng thái, không xoá dữ liệu, không đóng việc còn dở. Chỉ em đã kết thúc học.
  */
 export function archiveStudent(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới lưu trữ được học viên.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Head mới lưu trữ được học viên.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -763,7 +763,7 @@ export function archiveStudent(p: Principal, studentId: number) {
 }
 
 export function unarchiveStudent(p: Principal, studentId: number) {
-  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Quản lý mới bỏ lưu trữ được học viên.');
+  require_(p, PERMISSIONS.CYCLE_EDIT, { studentId }, 'Chỉ Head mới bỏ lưu trữ được học viên.');
   const conn = db();
   const s = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   if (!s) throw notFound('Không tìm thấy học viên');
@@ -828,7 +828,7 @@ export function chanDoiLienHe(p: Principal, vao: Record<string, unknown> | null 
     return (moi ?? null) !== (s[COT_LIEN_HE[k]] ?? null);
   });
   /* QUYEN-THEO-CN (chủ SP 02/11): vai có quyền liên hệ phải ở CHI NHÁNH CỦA EM (`vaiVoiEm` ⊆ `roleKeys`, cả khi đổi góc nhìn) — chỉ đọc chi nhánh khi thật sự đổi. */
-  if (doi && !coONhapLienHe(vaiVoiEm(p, s.id))) throw loi(403, 'Chỉ Quản lý, TVV hoặc CX sửa được thông tin liên hệ — báo TVV / Quản lý cập nhật.');
+  if (doi && !coONhapLienHe(vaiVoiEm(p, s.id))) throw loi(403, 'Chỉ Head, TVV hoặc CX sửa được thông tin liên hệ — báo TVV / Head cập nhật.');
 }
 
 /** PR-OV2b: tài khoản vai TVV còn hoạt động (đã duyệt, chưa xoá, vai chưa gỡ). */

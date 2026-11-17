@@ -13,13 +13,13 @@ export const EN_UI_Y_THUC_HV = {
   'Duyệt · thu hồi · Báo PH': 'Approval · withdrawal · Parent report',
   'Chưa có lần xử lý · chưa có gì cần báo PH': 'No action yet · nothing to report to parents',
   '— chưa có lần xử lý cần báo': '— no action to report yet',
-  'QL đã duyệt {nhan} · chờ "Đã thực hiện"': 'Manager approved {nhan} · waiting for "Done"',
+  'Head đã duyệt {nhan} · chờ "Đã thực hiện"': 'Head approved {nhan} · waiting for "Done"',
   'chưa tới mức bắt buộc': 'not yet required',
-  'đề xuất chờ QL': 'proposed, awaiting manager',
-  'QL đã duyệt': 'manager approved',
+  'đề xuất chờ Head': 'proposed, awaiting Head',
+  'Head đã duyệt': 'Head approved',
   'Xem lần xử lý': 'View action',
   '· kế tiếp': '· next',
   'Xác nhận hay Đề xuất?': 'Confirm or propose?',
-  'Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất QL duyệt: QL duyệt trước khi làm (WL, phương án khác).':
-    'Confirm action: saves this step now. Propose for approval: the manager approves first (WL, other actions).',
+  'Xác nhận xử lý: lưu ngay bậc lần này. Đề xuất Head duyệt: Head duyệt trước khi làm (WL, phương án khác).':
+    'Confirm action: saves this step now. Propose for approval: the Head approves first (WL, other actions).',
 } satisfies Record<string, Dich>;

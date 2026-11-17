@@ -410,7 +410,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
         xong.push(t('lộ trình'));
       }
       for (const k of ['/students', '/cycles', '/attempts', '/classes', '/hoc-vien-lop', '/tong-quan']) invalidate(k);
-      const cau = targetDeXuat && doiTarget ? t('Đã lưu · Target gửi Quản lý duyệt') : t('Đã lưu');
+      const cau = targetDeXuat && doiTarget ? t('Đã lưu · Target gửi Head duyệt') : t('Đã lưu');
       if (khoaDoi.length) {
         toast.hoanTac(xong.length > 1 ? `${cau} · ${t('Hoàn tác chỉ phần thông tin')}` : cau, () => {
           api.patch(`/students/${student.id}`, Object.fromEntries(khoaDoi.map((k) => [k, cuTt[k]])))
@@ -536,7 +536,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
           {(targetThang || targetDeXuat) && !(targetDeXuat && dx) ? (
             <Truong nhan={kt ? `Target (${kt.ten} ${kt.min}–${kt.max})` : 'Target'} tuyChon as="div" loi={lf.loiCua(loi, 'target')}
               luat={kt ? t('Số nguyên. Bỏ trống = chưa có Target.') : `${t('Band 0–9, bước 0,5.')}${oKck ? ` KCK: ${dichChu(GIAI_THICH_KCK)}.` : ''}`}
-              phu={[targetDeXuat ? t('Lưu thành Đề xuất sửa — Quản lý duyệt rồi Target mới đổi.') : null,
+              phu={[targetDeXuat ? t('Lưu thành Đề xuất sửa — Head duyệt rồi Target mới đổi.') : null,
                 dx ? t('Chờ duyệt: {x}', { x: kt ? dx.moi : chuDeXuat(dx.moi) }) : null].filter(Boolean).join(' · ') || undefined}>
               <span className="flex flex-wrap items-center gap-3">
                 <input className="field max-w-[8rem]" type="number" inputMode={kt ? 'numeric' : 'decimal'} step={kt ? 1 : 0.5} min={kt?.min ?? 0} max={kt?.max ?? 9} aria-label="Target"
@@ -548,13 +548,13 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
             <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-slate-200">
               <span>Target: {targetCu || kckCu ? <strong className="tabular-nums"><TargetText band={cycle.target ?? null} kck={kckCu} kyThi={kt} /></strong> : <span className="text-slate-500">{t('chưa có')}</span>}</span>
               {dx ? <span className="text-slate-400">· {t('Chờ duyệt:')} <strong className="text-slate-200">{kt ? dx.moi : chuDeXuat(dx.moi)}</strong></span>
-                : <span className="text-slate-500">· {t('Quản lý / TVV sửa')}</span>}
+                : <span className="text-slate-500">· {t('Head / TVV sửa')}</span>}
               {dx?.cuaToi && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => setSuaDx(true)}>{t('Sửa đề xuất')}</button>}
             </div>
           )}
           {doiTarget && (
             <Truong nhan={t('Lý do đổi Target')} batBuoc loi={lf.loiCua(loi, 'ly-do-target')}
-              phu={targetDeXuat ? t('Quản lý đọc lý do này khi duyệt.') : t('Ghi vào Hành trình — sau này đọc lại biết vì sao Target đổi.')}>
+              phu={targetDeXuat ? t('Head đọc lý do này khi duyệt.') : t('Ghi vào Hành trình — sau này đọc lại biết vì sao Target đổi.')}>
               <input className="field w-full" maxLength={2000} {...lf.o(loi, 'ly-do-target')} value={lyDo}
                 onChange={(e) => setLyDo(e.target.value)} placeholder={t('Ví dụ: Gia đình đổi kế hoạch thi')} />
             </Truong>

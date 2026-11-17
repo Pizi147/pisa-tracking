@@ -38,7 +38,7 @@ export async function runPrEnTests(t: any) {
     assert(i18n.dichSang('en', 'Đăng nhập') === 'Sign in', 'máy chủ vẫn có từ điển đầy đủ');
   });
 
-  const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test', 'Case']);   // AUDIT-UI A1: 'Case' thuật ngữ cố định (PRODUCT.md), tiêu đề khối Tạo Case;   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
+  const GIU = new Set<string>(['Tutor', 'Final Test', 'Progress Test', 'Case', 'Head', 'Head{x}: {approvalNote}']);   // AUDIT-UI A1: 'Case' thuật ngữ cố định (PRODUCT.md), tiêu đề khối Tạo Case;   // R1-EN-2: tên bài giữ (mẫu 'Final {ct}' khớp nhầm)   // EN-e: tên PA / nhãn ô — luật thuật ngữ 3 giữ nguyên
 
   check('EN-KHOA · mọi chữ có bản Anh không rỗng, cùng {biến}, không còn "{" sau khi thay; không chép nguyên chữ Việt', () => {
     const loi: string[] = [];
@@ -585,7 +585,7 @@ const CHO_PHEP: { file: string; text: RegExp }[] = [
   { file: 'web/src/modules/congViec/DanhSachViec.tsx', text: /^Lớp \{/ },
   { file: 'web/src/modules/cases/CapNhatTuan.tsx', text: /^Buổi \{…\}: \{x\}$/ },   // ghi chú gửi máy chủ, lưu vào nhật ký (giữ Việt) — OV-12f
   /* Đợt c: so với chữ GỐC máy chủ gửi (tiếng Việt) — không hiện ra. */
-  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Chờ Quản lý duyệt)$/ },
+  { file: 'web/src/modules/classes/BangCanHoTro.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Chờ Head duyệt)$/ },
   { file: 'web/src/modules/students/CacLoTrinh.tsx', text: /^(Học lại|Kết thúc|Chuyển lớp)$/ },
   { file: 'web/src/modules/students/KetQuaThiThatPanel.tsx', text: /^(Đạt Target|Chưa đạt Target|Chờ kết quả thi thật)$/ },
   { file: 'web/src/modules/students/NganCase.tsx', text: /^(Xác nhận Case|Mô tả Case|Xác nhận PA|Kết quả cuối)$/ },

@@ -91,7 +91,7 @@ function kiemLichMt(v: unknown): number[] {
 /* ------------------------------------------------------------------ chương trình */
 
 export function listProgrammes(p: Principal) {
-  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được cấu hình chương trình.');
+  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Head xem được cấu hình chương trình.');
   /* Số lớp (lộ quy mô, PR-Dọn quét #10) chỉ ở bản Quản trị; Quản lý xem cấu hình không có. */
   const laQt = can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true });
   const conn = db();
@@ -494,7 +494,7 @@ const lienHe = (r: any): LienHeCn => ({ name: r.name, diaChi: r.dia_chi ?? null,
 
 /** GET /admin/chi-nhanh — Quản trị › Chi nhánh: tên hiển thị, địa chỉ, SĐT (đầu tệp Báo cáo PH). Một câu, ≤ số chi nhánh dòng. */
 export function listChiNhanh(p: Principal) {
-  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Quản lý xem được thông tin chi nhánh.');
+  xemCauHinh(p, 'Chỉ Quản trị hệ thống và Head xem được thông tin chi nhánh.');
   return (db().prepare('SELECT id, code, name, status, dia_chi, so_dien_thoai FROM branches ORDER BY id').all() as any[])
     .map((r) => ({ id: r.id, code: r.code, status: r.status, ...lienHe(r) }));
 }

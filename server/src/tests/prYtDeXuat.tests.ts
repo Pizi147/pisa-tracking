@@ -48,7 +48,7 @@ export async function runPrYtDeXuatTests(t: YThucTestKit) {
     const sid = moiEm(); const v = vp(sid);
     const a = xu.deXuat(gvcn, sid, { kind: 'meeting_cx', violationIds: [v], note: 'Lần một — đóng tab giữa chừng' });
     att.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: a.id, url: 'https://example.com/a', displayName: 'A' });
-    const khac = xu.deXuat(ql, sid, { kind: 'meeting_cx', violationIds: [v], note: 'Nháp của Quản lý cho em này' });
+    const khac = xu.deXuat(ql, sid, { kind: 'meeting_cx', violationIds: [v], note: 'Nháp của Head cho em này' });
     const b = xu.deXuat(gvcn, sid, { kind: 'meeting_cx', violationIds: [v], note: 'Lần hai — gửi thật sự' });
     const nhap = hang("SELECT id FROM discipline_measures WHERE student_id = ? AND status = 'nhap' ORDER BY id", sid).map((r) => r.id);
     assert(JSON.stringify(nhap) === JSON.stringify([khac.id, b.id]), JSON.stringify(nhap));

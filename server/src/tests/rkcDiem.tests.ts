@@ -78,7 +78,7 @@ export async function runRkcDiemTests(t: any) {
     svc.huyLuot(QL, id, { lyDo: 'Thử RKC' });
     xoaNho();
     const eGv = loiCua(() => svc.saveScore(gvL, id, 'listening', { rawScore: 28 }, T3));
-    assert(eGv?.status === 400 && /nhờ Quản lý khôi phục/.test(eGv.message), `GV: ${eGv?.status} ${eGv?.message}`);
+    assert(eGv?.status === 400 && /nhờ Head khôi phục/.test(eGv.message), `GV: ${eGv?.status} ${eGv?.message}`);
     const eQl = loiCua(() => svc.saveScore(QL, id, 'listening', { rawScore: 28 }, T3));
     assert(hoi(eQl) && get('SELECT status FROM assessment_attempts WHERE id = ?', id).status === 'cancelled', `QL chưa xác nhận: ${eQl?.status} ${eQl?.message}`);
     voiXacNhan(() => svc.saveScore(QL, id, 'listening', { rawScore: 28 }, T3));

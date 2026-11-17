@@ -14,7 +14,7 @@ import { writeAudit } from '../platform/audit.ts';
 export const DE_XUAT_DAU_RA = ['len_lop', 'fast_track', 'hoc_lai', 'bao_luu', 'dung_hoc'] as const;
 export type DeXuatDauRa = (typeof DE_XUAT_DAU_RA)[number];
 export const NHAN_XET_DAU_RA_TOI_DA = 2000;
-export const CHI_QL_CHOT_HUONG = 'Chỉ Quản lý chốt hướng — GVCN ghi Nhận xét.';
+export const CHI_QL_CHOT_HUONG = 'Chỉ Head chốt hướng — GVCN ghi Nhận xét.';
 
 export type LuuDauRa = { luc: string; nguoi: string | null; nhanXet: string | null; deXuat: string | null };
 export type DongDauRa = { studentId: number; nhanXet: string | null; deXuat: DeXuatDauRa | null; boi: string | null; luc: string | null; lichSu: LuuDauRa[] };
@@ -63,7 +63,7 @@ export function xemDanhGiaDauRa(p: Principal, classId: number): { rows: DongDauR
  */
 export function ghiDanhGiaDauRa(p: Principal, classId: number, studentId: number, input: { nhanXet?: unknown; deXuat?: unknown; luc?: unknown }) {
   const c = lopThuong(classId);
-  if (!coTheGhi(p, c)) throw forbidden('Chỉ GVCN hoặc Quản lý của lớp ghi được Đánh giá đầu ra.');
+  if (!coTheGhi(p, c)) throw forbidden('Chỉ GVCN hoặc Head của lớp ghi được Đánh giá đầu ra.');
   /* N22 ① (chủ SP 25/10): chỉ QL chốt hướng — không ai ghi đề xuất hướng nữa; `de_xuat` cũ giữ để đọc. GVCN chỉ ghi Nhận xét (không bắt buộc). */
   if (input.deXuat !== undefined && input.deXuat !== null && input.deXuat !== '') throw forbidden(CHI_QL_CHOT_HUONG);
   const nhanXet = chuTuDo(input.nhanXet ?? null, 'Nhận xét', NHAN_XET_DAU_RA_TOI_DA);

@@ -44,7 +44,7 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(k({ dismissed: true, status: 'done' }).chu === 'Đã huỷ · không cần theo dõi' && k({ dismissed: true }).t === 'da-huy', 'huỷ');
     assert(k({ status: 'done', hasCause: true }).k === 'xong', 'xong');
     const cd = k({ choDuyetKhongTheoDoi: true });
-    assert(cd.k === 'cho-duyet-khong-theo-doi' && cd.t === 'cho-duyet' && cd.chu === 'Chờ Quản lý duyệt · không theo dõi', 'chờ duyệt');
+    assert(cd.k === 'cho-duyet-khong-theo-doi' && cd.t === 'cho-duyet' && cd.chu === 'Chờ Head duyệt · không theo dõi', 'chờ duyệt');
     const cn = k({});
     /* OV-12c: Case không phải MT (Progress) chờ "Xác nhận Case"; Case MT cũ (bài chưa nhận xét) "Chờ ghi nhận xét". */
     assert(cn.k === 'cho-nguyen-nhan' && cn.t === 'can-lam' && cn.han === '2026-09-16' && cn.chu === 'Chờ xác nhận Case', JSON.stringify(cn));
@@ -72,13 +72,13 @@ export async function runPrSosTests(t: YThucTestKit) {
     assert(d.viecTiepCuaCase({ ...chay, fromSos: false }, [], hom)?.loaiHan === 'lap-pa', 'Thêm PA');
     assert(d.viecTiepCuaCase({ ...chay, status: 'done' }, [], hom) === null, 'xong → không việc');
     const cu = JSON.stringify([d.viecTiepCuaCase(c, [], hom), xn, g]);
-    assert(!/Xác minh SOS|gợi ý|Chờ QL/.test(cu), cu);
+    assert(!/Xác minh SOS|gợi ý|Chờ Head/.test(cu), cu);
   });
   check('SOS (1) · chanHoanThanh: PA bắt buộc chưa khép → ẩn nút + câu; PA thường → lý do', () => {
     const r = d.chanHoanThanh([{ batBuoc: true, xong: false, choDuyet: false, followupDue: null, mocChu: 'đến MT2 · W2 OCT' }]);
     assert(r.an && r.dong === 'Hoàn thành được sau khi PA theo quy chế kết thúc (đến MT2 · W2 OCT)', JSON.stringify(r));
     const t2 = d.chanHoanThanh([{ batBuoc: false, xong: false, choDuyet: true, followupDue: null, mocChu: '' }, { batBuoc: true, xong: true, choDuyet: false, followupDue: null, mocChu: '' }]);
-    assert(!t2.an && t2.dong === null && t2.ly_do.join().includes('chờ Quản lý duyệt'), JSON.stringify(t2));
+    assert(!t2.an && t2.dong === null && t2.ly_do.join().includes('chờ Head duyệt'), JSON.stringify(t2));
     assert(d.chanHoanThanh([]).ly_do.length === 1, 'chưa PA');
   });
   check('SOS (1) · mocQuyChe tính từ ngày xác nhận (dùng lại sosPlanEndDate: +30 ngày → Chủ nhật đầu tiên sau)', () => {
@@ -401,9 +401,9 @@ export async function runPrSosTests(t: YThucTestKit) {
       choDuyetKhongTheoDoi: !!dto.sos.choDuyetKhongTheoDoi, coPaChoXacNhan: dto.sos.coPaChoXacNhan, hanXacNhan: dto.sos.dueOn }, TODAY);
     assert(s.k === 'cho-duyet-khong-theo-doi', s.k);
     assert(!coViec(owner, `ghi_nhan_xet:${c.id}`), 'việc Ghi nhận xét còn sau khi gửi');
-    assertThrows(() => sosAuto.guiKhongTheoDoi(owner, c.id, { reasonCode: 'single_incident' }), /đang chờ Quản lý duyệt/, 'gửi lần hai');
+    assertThrows(() => sosAuto.guiKhongTheoDoi(owner, c.id, { reasonCode: 'single_incident' }), /đang chờ Head duyệt/, 'gửi lần hai');
     nhanXet(owner, c.id, { ...XN, primaryCode: d.issuesForTopic('writing2', null)[0].code });
-    assertThrows(() => sosAuto.xacNhanPaQuyChe(owner, plansOf(c.id)[0].id, duXacNhan(conn, plansOf(c.id)[0].id, { description: MO_TA })), /chờ Quản lý duyệt/, 'xác nhận PA khi đang chờ thẻ');
+    assertThrows(() => sosAuto.xacNhanPaQuyChe(owner, plansOf(c.id)[0].id, duXacNhan(conn, plansOf(c.id)[0].id, { description: MO_TA })), /chờ Head duyệt/, 'xác nhận PA khi đang chờ thẻ');
     /* OV-12c: Case MT có nguyên nhân (nhận xét) mà PA chưa chạy → vẫn gửi "Không cần theo dõi" được; PA đã chạy → kết thúc bằng Hoàn thành Case. */
     const c2 = caseOf(st.id, 'speaking');
     nhanXet(P.admin, c2.id, { ...XN, primaryCode: d.issuesForTopic('speaking', null)[0].code });

@@ -43,7 +43,7 @@ function KetQua({ d, onBuocTiep, onDoi }: { d: DongCacLoTrinh; onBuocTiep?: (cyc
             {/* SUA-LUU-TRU (việc 5): kết quả đổi sau khi chọn — nhắc nhẹ, mở panel Bước tiếp (không chặn). */}
             {bt.kqDaDoi && onBuocTiep && <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Kết quả đã đổi — xem lại bước tiếp?')}</button>}</>
             : bt.coTheChon && onBuocTiep ? <button type="button" className={NUT_CHU} onClick={() => onBuocTiep(d.id)}>{t('Chọn bước tiếp ›')}</button>
-              : <span className="text-[12px] text-slate-500">{t('Chờ QL / TVV chọn bước tiếp')}</span>}
+              : <span className="text-[12px] text-slate-500">{t('Chờ Head / TVV chọn bước tiếp')}</span>}
       </span>
     );
   }

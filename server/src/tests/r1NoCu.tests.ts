@@ -159,7 +159,7 @@ export async function runR1NoCuTests(t: YThucTestKit) {
   /* PTA security-review #606: chi nhánh khác / CX / Admin VP, Case không tồn tại, Case tạm, kiểu ô sai, ứng viên chỉ trả cho người đổi được, hai ghi danh. */
   check('CHU-8 QL chi nhánh khác · CX · Admin VP → 403; Case không tồn tại → 404; ownerCu chuỗi / ownerId null → 400', () => thu(() => {
     const c = caseCuaLop();
-    for (const [ten, p] of [['QL CP', P.cpManager], ['CX', perm.loadPrincipal(nguoiTheoVai('cx'))], ['Admin VP', perm.loadPrincipal(nguoiTheoVai('office_admin'))]] as const) {
+    for (const [ten, p] of [['Head CP', P.cpManager], ['CX', perm.loadPrincipal(nguoiTheoVai('cx'))], ['Admin VP', perm.loadPrincipal(nguoiTheoVai('office_admin'))]] as const) {
       assert(maLoi(() => owner.doiChuCase(p, c.id, { ownerId: c.gvMon, ownerCu: gvcn() })) === 403, `${ten} phải 403`);
     }
     assert(maLoi(() => owner.doiChuCase(P.mbManager, 99_999_999, { ownerId: c.gvMon, ownerCu: null })) === 404, 'Case không tồn tại → 404');

@@ -20,7 +20,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 import { conLaiMs } from '../platform/hanGio.ts';
 
-const CHI_QL = 'Chỉ Quản lý của học viên này hoặc Quản trị hệ thống mới xoá được học viên.';
+const CHI_QL = 'Chỉ Head của học viên này hoặc Quản trị hệ thống mới xoá được học viên.';
 
 /** Bao đóng theo FK của `students` (41 bảng, PR-TK +2, PR-OV12g +1, OV-15c +1, SV-BAI-LOP +1, SV-YT-TVV +2, SV-S-EXPERT +1, UI-HO-SO-LOP +1, P9a XET-LAI +1) — phép kiểm X1 so bằng đúng với đồ thị dựng từ PRAGMA. */
 export const BANG_CUA_HOC_VIEN: readonly string[] = [

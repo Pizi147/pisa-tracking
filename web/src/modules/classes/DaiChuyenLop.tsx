@@ -157,7 +157,7 @@ export function DaiHocVienChuyen({ dai, homNay, onLam }: {
       <Dai nhan={dai.loai === 'sap' ? dich(CHU_CHUYEN_LOP.sapChuyen(tuanLich(dai.tuan, h))) : t('Đã chuyển')} nut={nut.length ? <>{nut}</> : undefined}>
         {dai.loai === 'sap' ? (
           <>
-            {lopDen} · {t('quyết định của {ai}', { ai: dai.nguoiRaLenh ?? t('Quản lý') })}
+            {lopDen} · {t('quyết định của {ai}', { ai: dai.nguoiRaLenh ?? t('Head') })}
             {bg && <> · {t('Bàn giao:')} {bg.daXacNhan ? t('GVCN đã xác nhận') : t('đã có {a}/{b} môn', { a: bg.daGhi, b: bg.soMon })}{!bg.daXacNhan && bg.hanGvcn && <> · <Han loai="viec-van-hanh" han={bg.hanGvcn} /></>}</>}
           </>
         ) : (

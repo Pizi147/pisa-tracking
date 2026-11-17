@@ -89,7 +89,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       assert(d.PLAN_DECISION_NGHIA[k].length <= 45, `nghĩa ${k} dài ${d.PLAN_DECISION_NGHIA[k].length}`);
       assert(!/^Hãy/.test(d.PLAN_DECISION_NGHIA[k]), `nghĩa ${k} mở bằng "Hãy"`);
     }
-    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ QL' && d.NUT_LUU_KET_QUA.keep === 'Lưu', 'chữ chốt');
+    assert(d.PLAN_DECISION_NGAN.ask_manager === 'Xin hỗ trợ Head' && d.NUT_LUU_KET_QUA.keep === 'Lưu', 'chữ chốt');
   });
 
   check('UX3 (1) · viecTiepCuaEm: động từ + đối tượng, hạn tách riêng; không còn "Cập nhật"/"Xác định nguyên nhân"', () => {
@@ -212,7 +212,7 @@ export async function runPanelUx3Tests(t: YThucTestKit) {
       assert(!/<Modal\b/.test(src), `${f} còn <Modal`);
       assert(!/type="date"/.test(src), `${f} còn type="date"`);
       assert(!/khongDoi=/.test(src), `${f} còn khongDoi=`);
-      assert(!/Xin hỗ trợ từ Quản lý/.test(src), `${f} còn "Xin hỗ trợ từ Quản lý"`);
+      assert(!/Xin hỗ trợ từ Head/.test(src), `${f} còn "Xin hỗ trợ từ Quản lý"`);
       assert(!/fmtDate\(/.test(src), `${f} còn fmtDate(`);
     }
     const tt = docSach('web/src/modules/cases/ThaoTacCase.tsx');

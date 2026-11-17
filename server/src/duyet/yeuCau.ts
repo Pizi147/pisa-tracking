@@ -116,7 +116,7 @@ export function taoYeuCau(conn: any, v: TaoYeuCauVao): number | null {
     if (uid === v.nguoiXin) continue;
     notify({
       userId: uid, kind: baoLen ? 'bao_len' : 'duyet_moi',
-      title: `${baoLen ? 'Báo QL' : 'Chờ duyệt'} · ${meta.nhan}${hv ? ` · ${hv}` : ''}`,
+      title: `${baoLen ? 'Báo Head' : 'Chờ duyệt'} · ${meta.nhan}${hv ? ` · ${hv}` : ''}`,
       body: v.lyDo?.trim().slice(0, 120) || null,
       entityType: 'yeu_cau_duyet', entityId: id, dedupKey: `duyet_moi:${id}`,
     });
@@ -202,7 +202,7 @@ export function chotYeuCau(
           if (uid === nguoiDuyet) continue;
           notify({
             userId: uid, kind: 'duyet_tu_duyet',
-            title: `Quản lý tự duyệt · ${meta.nhan}${r.hv ? ` · ${r.hv}` : ''}`,
+            title: `Head tự duyệt · ${meta.nhan}${r.hv ? ` · ${r.hv}` : ''}`,
             entityType: 'yeu_cau_duyet', entityId: r.id, dedupKey: `tu_duyet:${r.id}`,
           });
         }
@@ -293,7 +293,7 @@ function napNguCanh(conn: any, rows: YeuCauRow[], homNay: string): NguCanhThe {
          WHEN EXISTS (SELECT 1 FROM ta WHERE ta.yc = j.yc AND ta.skill IS NOT NULL) THEN 'GVBM'
          WHEN s.consultant_user_id = j.u THEN 'TVV'
          WHEN EXISTS (SELECT 1 FROM user_roles ur JOIN roles ro ON ro.id = ur.role_id WHERE ur.user_id = j.u AND ur.status = 'active'
-                       AND ro.key = 'manager' AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE(j.cn, s.branch_id))) THEN 'QL'
+                       AND ro.key = 'manager' AND (ur.branch_id IS NULL OR ur.branch_id = COALESCE(j.cn, s.branch_id))) THEN 'Head'
        END AS vai
        FROM j JOIN users us ON us.id = j.u LEFT JOIN students s ON s.id = j.hv
        UNION ALL SELECT NULL, id, full_name, NULL FROM users WHERE id IN (${DS_JSON})`,
@@ -361,7 +361,7 @@ export function hopChoDuyet(p: Principal, f: {
   /** PANEL-MC: kèm chip SOS / dòng điểm / số Lịch sử (`ganBoiCanh`) — chỉ panel duyệt Công việc xin; Tổng quan, hồ sơ HV không trả thêm câu. */
   boiCanh?: boolean;
 } = {}) {
-  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống mở được hộp Chờ duyệt.');
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Head và Quản trị hệ thống mở được hộp Chờ duyệt.');
   const homNay = demoToday();
   quetYeuCau(homNay);
   const conn = db();
@@ -441,7 +441,7 @@ const NHAN_HANH_DONG: Record<string, string> = {
 /** `GET /lich-su?loai=yeu-cau&id=` — quyền = quyền xem thẻ ở hộp Chờ duyệt (`trongPhamVi`); ≤ 50 dòng mới nhất trước. */
 export function lichSuYeuCau(p: Principal, id: number): { dong: { luc: string; nguoi: string | null; chu: string }[] } {
   if (!Number.isInteger(id) || id < 1) throw badRequest('Thiếu đối tượng cần xem lịch sử.');
-  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống mở được hộp Chờ duyệt.');
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Head và Quản trị hệ thống mở được hộp Chờ duyệt.');
   const conn = db();
   const y = conn.prepare('SELECT * FROM yeu_cau_duyet WHERE id = ?').get(id) as any;
   if (!y || !trongPhamVi(p, [y]).length) throw forbidden('Yêu cầu này nằm ngoài phạm vi bạn được xem.');
@@ -554,7 +554,7 @@ const chanDao = (conn: any, yc: any, g: NonNullable<ReturnType<typeof timGhiDao>
 export function duyetYeuCau(p: Principal, id: number, v: { ghiChu?: string | null; duLieu?: unknown } = {}, o: { boCo?: boolean } = {}) {
   return quyetDinh(p, id, (yc, meta) => {
     if (meta.kieuNut === 'tra-loi') throw badRequest('Xin ý kiến chỉ cần Trả lời, không có Duyệt.');
-    if (meta.kieuNut === 'nhac') throw badRequest('Báo QL chỉ để biết — bấm Mở.');
+    if (meta.kieuNut === 'nhac') throw badRequest('Báo Head chỉ để biết — bấm Mở.');
     const ghiChu = chuTuDo(v.ghiChu, 'Ghi chú', 2000);   // PR-Dọn (Q4, quét #24)
     voiGhiDao(p, yc, 'duyet', () => {
       dinhNghiaCua(yc.loai)?.khiDuyet?.(p, yc, { ghiChu, duLieu: v.duLieu });
@@ -599,7 +599,7 @@ export function traLoiYeuCau(p: Principal, id: number, traLoi: unknown) {
 function theCuaNguoiGui(p: Principal, id: number, rut = false): YeuCauRow {
   const yc = docThe(id);
   if (yc.nguoi_xin !== p.userId) throw forbidden('Chỉ người gửi mới sửa hoặc rút được yêu cầu này.');
-  if (rut && yc.loai === 'de_xuat_pa' && yc.trang_thai === 'duyet') throw badRequest('QL đã duyệt đổi PA — không hoàn tác được.');   // OV-13b: Hoàn tác = Rút
+  if (rut && yc.loai === 'de_xuat_pa' && yc.trang_thai === 'duyet') throw badRequest('Head đã duyệt đổi PA — không hoàn tác được.');   // OV-13b: Hoàn tác = Rút
   if (yc.trang_thai !== 'cho') throw badRequest('Yêu cầu này đã được xử lý. Danh sách đã được làm mới.');
   /* OV-13b: loại chỉ Rút được (không Sửa) — có `khiRut` (Đề xuất PA). */
   if (!LOAI_NGUOI_XIN_SUA.includes(yc.loai) && !(rut && dinhNghiaCua(yc.loai)?.khiRut)) throw badRequest('Loại yêu cầu này không sửa hoặc rút được.');
@@ -657,7 +657,7 @@ export function suaTraLoi(p: Principal, id: number, traLoi: unknown) {
     if (yc.nguoi_xin != null && yc.nguoi_xin !== p.userId) {
       const hv = tenHocVien(conn, yc.hoc_vien_id);
       notify({
-        userId: yc.nguoi_xin, kind: 'duyet_ket_qua', title: `QL đã sửa câu trả lời · ${meta.nhan}${hv ? ` · ${hv}` : ''}: ${tl}`.slice(0, 200),
+        userId: yc.nguoi_xin, kind: 'duyet_ket_qua', title: `Head đã sửa câu trả lời · ${meta.nhan}${hv ? ` · ${hv}` : ''}: ${tl}`.slice(0, 200),
         entityType: 'yeu_cau_duyet', entityId: id, dedupKey: `sua_tra_loi:${id}:${luc}`,
       });
     }
@@ -674,7 +674,7 @@ export function duyetNhieu(p: Principal, ids: unknown): { ok: number[]; loi: { i
 
 /** PR-LUI-a2: Từ chối hàng loạt — CÙNG luật Duyệt nhiều, MỘT lý do chung (kiểm trước khi đụng thẻ nào). */
 export function tuChoiNhieu(p: Principal, ids: unknown, lyDo: unknown): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
-  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Quản lý và Quản trị hệ thống từ chối được yêu cầu.');
+  require_(p, P_DUYET, { anyScope: true }, 'Chỉ Head và Quản trị hệ thống từ chối được yêu cầu.');
   const ld = typeof lyDo === 'string' ? chuTuDo(lyDo, 'Lý do', 2000) ?? '' : '';
   if (!ld) throw badRequest('Ghi lý do từ chối.');
   return lamNhieu(p, ids, 'từ chối', (id) => { tuChoiYeuCau(p, id, ld, { boCo: true }); });
@@ -682,7 +682,7 @@ export function tuChoiNhieu(p: Principal, ids: unknown, lyDo: unknown): { ok: nu
 
 function lamNhieu(p: Principal, ids: unknown, viec: 'duyệt' | 'từ chối', lam: (id: number) => void): { ok: number[]; loi: { id: number; loi: string; ma: number }[] } {
   /* PR-Dọn (Q1): kiểm quyền TRƯỚC mọi bước đọc thân yêu cầu (GV → 403, không phải 400). Từng thẻ vẫn kiểm theo phạm vi ở `duyetYeuCau`. */
-  require_(p, P_DUYET, { anyScope: true }, `Chỉ Quản lý và Quản trị hệ thống ${viec} được yêu cầu.`);
+  require_(p, P_DUYET, { anyScope: true }, `Chỉ Head và Quản trị hệ thống ${viec} được yêu cầu.`);
   if (!Array.isArray(ids) || !ids.length || ids.length > TRAN_HANG_LOAT) throw badRequest(`Chọn từ 1 đến ${TRAN_HANG_LOAT} yêu cầu để ${viec}.`);
   const ok: number[] = [];
   const loi: { id: number; loi: string; ma: number }[] = [];
@@ -817,7 +817,7 @@ export function huyQuyetDinh(p: Principal, id: number) {
     if (yc.nguoi_xin != null && yc.nguoi_xin !== p.userId) {
       const hv = tenHocVien(conn, yc.hoc_vien_id);
       notify({
-        userId: yc.nguoi_xin, kind: 'duyet_ket_qua', title: `Quản lý huỷ quyết định · ${meta.nhan}${hv ? ` · ${hv}` : ''} · chờ duyệt lại`.slice(0, 200),
+        userId: yc.nguoi_xin, kind: 'duyet_ket_qua', title: `Head huỷ quyết định · ${meta.nhan}${hv ? ` · ${hv}` : ''} · chờ duyệt lại`.slice(0, 200),
         entityType: 'yeu_cau_duyet', entityId: id, dedupKey: `duyet_huy:${id}${duoi}`,
       });
     }

@@ -122,7 +122,7 @@ function SanMauCu() {
           one={<Han loai="nhap-diem" han={d(9)} coViec />}
           many={<>{DEADLINE_KINDS.map((k) => <div key={k}><Han loai={k} han={d(9)} coViec /></div>)}</>}
           long={<Han loai="lap-pa" han={d(3)} tienTo="Thi W3 SEP tuần Speaking của lớp Fast Track MB FT 101"
-            ghiChu="hạn riêng cả đợt do quản lý chi nhánh đặt" />}
+            ghiChu="hạn riêng cả đợt do Head chi nhánh đặt" />}
         />
         <div className="grid gap-3 sm:grid-cols-2 mt-3">
           <Cell title="Quá hạn — đếm từ hạn gốc">
@@ -333,7 +333,7 @@ function SanMauCu() {
       <Card title="Bốn trạng thái dữ liệu chuẩn (bắt buộc cho mọi khối đọc dữ liệu)">
         <div className="grid gap-3 sm:grid-cols-2">
           <Cell title="Đang tải"><Skeleton rows={3} /></Cell>
-          <Cell title="Rỗng"><Empty title="Chưa có phương án hỗ trợ" hint="Giáo viên chủ nhiệm hoặc quản lý thêm phương án đầu tiên." /></Cell>
+          <Cell title="Rỗng"><Empty title="Chưa có phương án hỗ trợ" hint="Giáo viên chủ nhiệm hoặc Head thêm phương án đầu tiên." /></Cell>
         </div>
       </Card>
     </div>

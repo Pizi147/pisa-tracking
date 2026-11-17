@@ -136,7 +136,7 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       assert(nk('score.edit', gvW, x.aid) === truoc + 1, 'thiếu nhật ký');
       await ma(await goi(gvW, `/attempts/${x.aid}/scores/writing1`, put({ criteria: [7, 7, 7, 7], nhanXet: nx })), 200, 'GV W1 sửa điểm đã có (RKC)');
       assert(nk('score.edit', gvW, x.aid) === truoc + 2, 'thiếu nhật ký lần sửa');
-      await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/writing1`, put({ criteria: tieuChiThu(7.5), nhanXet: nx, lyDo: 'Chấm lại' })), 200, 'QL sửa');
+      await ma(await goi(QL.userId, `/attempts/${x.aid}/scores/writing1`, put({ criteria: tieuChiThu(7.5), nhanXet: nx, lyDo: 'Chấm lại' })), 200, 'Head sửa');
     })));
     await checkAsync('OV13h-1d · RKC · lớp thường đã kết thúc: GV đúng môn nhập + SỬA → 200 + nhật ký; GV khác môn → 403; nhận xét 200; "-" ô có điểm → huỷ điểm (cất) + Không dự thi, không hỏi (NHAP-DIEM-a); cờ canEdit, không khongVang', lopTam(FOU12, () => voiMayChu(TODAY, async (goi) => {
       const a = one(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind IN ('progress', 'final') AND a.status != 'cancelled'
@@ -270,16 +270,16 @@ export async function runPrOv13hTests(t: YThucTestKit) {
     const unit = one(`SELECT id FROM reporting_units WHERE kind = 'branch' AND branch_id = ?`, MB).id as number;
     await ma(await goi(gvL, `/meeting/units/${unit}/reports/students`, put({ periodId: old.id, status: 'ok', note: 'GV thử', nop: true })), 403, 'GV nộp báo cáo');
     const truoc = nk('unit_report.save', QL.userId);
-    await ma(await goi(QL.userId, `/meeting/units/${unit}/reports/students`, put({ periodId: old.id, status: 'watch', note: 'Nộp muộn thử', nop: true })), 200, 'QL nộp muộn');
+    await ma(await goi(QL.userId, `/meeting/units/${unit}/reports/students`, put({ periodId: old.id, status: 'watch', note: 'Nộp muộn thử', nop: true })), 200, 'Head nộp muộn');
     assert(nk('unit_report.save', QL.userId) === truoc + 1, 'thiếu nhật ký unit_report.save');
     const o = async (pid: number) => ((await (await goi(QL.userId, `/meeting/board?periodId=${pid}`)).json()) as any).units.find((u: any) => u.unitId === unit).cells.find((c: any) => c.key === 'students');
     const muon = await o(old.id);
     assert(muon.trangThai === 'da-nop' && muon.nopMuon === true, `ô quá hạn: ${JSON.stringify({ t: muon.trangThai, m: muon.nopMuon })}`);
     /* Rà #410: "Lưu" trên báo cáo đã nộp = sửa bản đã nộp — vẫn đã nộp, giữ nhãn nộp muộn. */
-    await ma(await goi(QL.userId, `/meeting/units/${unit}/reports/students`, put({ periodId: old.id, status: 'problem', note: 'Sửa sau khi nộp' })), 200, 'QL sửa bản đã nộp');
+    await ma(await goi(QL.userId, `/meeting/units/${unit}/reports/students`, put({ periodId: old.id, status: 'problem', note: 'Sửa sau khi nộp' })), 200, 'Head sửa bản đã nộp');
     const sua = await o(old.id);
     assert(sua.trangThai === 'da-nop' && sua.nopMuon === true && sua.status === 'problem', `sửa bản đã nộp về nháp: ${JSON.stringify({ t: sua.trangThai, m: sua.nopMuon, s: sua.status })}`);
-    await ma(await goi(QL.userId, `/meeting/units/${unit}/reports/students`, put({ periodId: trongHan.id, status: 'ok', note: 'Trong hạn', nop: true })), 200, 'QL nộp trong hạn');
+    await ma(await goi(QL.userId, `/meeting/units/${unit}/reports/students`, put({ periodId: trongHan.id, status: 'ok', note: 'Trong hạn', nop: true })), 200, 'Head nộp trong hạn');
     assert((await o(trongHan.id)).nopMuon === false, 'nộp trong hạn bị gắn nộp muộn');
     await ma(await goi(P.admin.userId, `/meeting/periods/${old.id}/unlock`, post({ unlocked: true })), 404, 'đường mở lại');
   }));
@@ -302,8 +302,8 @@ export async function runPrOv13hTests(t: YThucTestKit) {
       run('UPDATE students SET archived_at = ? WHERE id = ?', new Date().toISOString(), x.sid); xoaNho();
       try {
         await voiMayChu(TODAY, async (goi) => {
-          await ma(await goi(P.cpManager.userId, `/cycles/${x.cy}/outcome`, put({ l: 7, r: 7, w: 6.5, s: 6.5 })), 403, 'QL chi nhánh khác');
-          await ma(await goi(QL.userId, `/cycles/${x.cy}/outcome`, put({ l: 7, r: 7, w: 6.5, s: 6.5 })), 200, 'QL nhập thi thật em Lưu trữ');
+          await ma(await goi(P.cpManager.userId, `/cycles/${x.cy}/outcome`, put({ l: 7, r: 7, w: 6.5, s: 6.5 })), 403, 'Head chi nhánh khác');
+          await ma(await goi(QL.userId, `/cycles/${x.cy}/outcome`, put({ l: 7, r: 7, w: 6.5, s: 6.5 })), 200, 'Head nhập thi thật em Lưu trữ');
           assert(one('SELECT thi_that_l FROM learning_cycles WHERE id = ?', x.cy).thi_that_l === 7 && nk('cycle.thi_that', QL.userId, x.cy) === 1, 'chưa lưu / thiếu nhật ký');
           await ma(await goi(QL.userId, `/cycles/${x.cy}/baseline`, put({ source: 'mt1' })), 400, 'sửa lộ trình em Lưu trữ');
         });

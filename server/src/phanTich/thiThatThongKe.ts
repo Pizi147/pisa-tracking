@@ -48,7 +48,7 @@ export function oThiThat(p: Principal, f: LocKetQuaThi & { o: string }): {
 } {
   const m = /^(?:tong:(thi|co-target|exceed|dat|fail|khong-thi|tt-exceed|tt-dat|tt-fail)|kn:([lrws]):(hv|exceed|dat|fail)|gv:(\d+):(l|r|w1|w2|s):(hv|exceed|dat|fail))$/.exec(f.o);
   if (!m) throw badRequest('Số này không có trong Thi thật — có thể bộ lọc vừa đổi.');
-  if (m[4] && !coTheoGv(p)) throw forbidden('Theo GV dành cho Quản lý, Quản trị và CX.');
+  if (m[4] && !coTheoGv(p)) throw forbidden('Theo GV dành cho Head, Quản trị và CX.');
   const ds = thiThatTrongKhoang(p, f, { boQuyen: true });
   const dong = (x: ThiThatTho, tuan?: DongThiThatBang['tuan']): DongThiThatBang => {
     const { kq } = x;

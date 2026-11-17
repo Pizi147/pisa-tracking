@@ -113,7 +113,7 @@ export const CHU_MUC_HOP: Record<MucHop, string> = {
 
 /** Vì sao mục mờ (≤ 6 từ). `moi` = đợt chưa tạo. */
 function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
-  if (moi) return muc === 'bao-vang' || muc === 'doi-han' || muc === 'huy-diem' || muc === 'nhat-ky' ? t('Đợt chưa tạo') : t('Chỉ Quản lý');
+  if (moi) return muc === 'bao-vang' || muc === 'doi-han' || muc === 'huy-diem' || muc === 'nhat-ky' ? t('Đợt chưa tạo') : t('Chỉ Head');
   if (muc === 'huy-diem' && tt !== 'co-diem') return t('Chưa có điểm');
   switch (tt) {
     case 'co-diem': return t('Đã có điểm');
@@ -123,7 +123,7 @@ function viSaoMo(muc: MucHop, tt: TrangThaiTT, moi: boolean): string {
     case 'cho-duyet': return t('Chờ duyệt');
     case 'lich-su': return t('Chỉ nhập bù');   // SV-NX-CASE (N8): không ghi chữ "cũ"
     /* OV-11e (TE-12): Dời / Dời hạn chấm mờ ở đây là thiếu quyền (Admin không dời hạn — OV-10a), không phải "không thi". */
-    default: return muc === 'doi-tuan' || muc === 'doi-han' || muc === 'bo-ky-nang' ? t('Chỉ Quản lý') : t('Không có trong đợt này');
+    default: return muc === 'doi-tuan' || muc === 'doi-han' || muc === 'bo-ky-nang' ? t('Chỉ Head') : t('Không có trong đợt này');
   }
 }
 

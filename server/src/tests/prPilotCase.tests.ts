@@ -87,7 +87,7 @@ export async function runPrPilotCaseTests(t: YThucTestKit) {
     assert(/chinh\?\.observation/.test(than) && /moTaTuMt/.test(than) && /className=\{`o-trong/.test(than), 'Mô tả không đọc observation / thiếu ô Mô tả');
     /* CASE-PA-UI (v16 k3): câu "ai làm được" ở thân Case (`bao-chi-xem`) — mọi lối vào cùng thân. */
     assert(/chuAiLamDuoc\(data\.owner\)/.test(than), 'chưa có câu "ai làm được"');
-    assert(typeof d.chuAiLamDuoc === 'function' && d.chuAiLamDuoc('Lê Minh Khoa').includes('Lê Minh Khoa') && d.chuAiLamDuoc(null).includes('Quản lý'), 'câu ai làm được');
+    assert(typeof d.chuAiLamDuoc === 'function' && d.chuAiLamDuoc('Lê Minh Khoa').includes('Lê Minh Khoa') && d.chuAiLamDuoc(null).includes('Head'), 'câu ai làm được');
   });
 
   check('6b-2 · panel số: dòng có nhóm → dải nhóm dính + bấm dòng mở view Case trong CÙNG panel; Case tiếp ›', () => {

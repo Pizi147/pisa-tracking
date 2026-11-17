@@ -10,7 +10,7 @@ export type QuyChe = { chu: string; chiTiet?: string };
 
 /** SOS-TAM-PA: "Theo PA quy chế" = PA của GV dừng ("Được thay thế"); "Giữ PA của tôi" → QL duyệt, quá 3 ngày chưa trả lời chốt theo PA của GV. */
 export const quyCheChonPa = (giu: boolean): QuyChe => giu
-  ? { chu: chenHan(t('QL duyệt trong {han:giu_pa_gv} · quá hạn theo bạn')), chiTiet: chenHan(t('Quá {han:giu_pa_gv} Quản lý chưa trả lời: chốt theo PA của bạn.')) }
+  ? { chu: chenHan(t('Head duyệt trong {han:giu_pa_gv} · quá hạn theo bạn')), chiTiet: chenHan(t('Quá {han:giu_pa_gv} Head chưa trả lời: chốt theo PA của bạn.')) }
   : { chu: t('PA của bạn dừng, kết quả giữ'), chiTiet: t('PA của bạn chuyển "Được thay thế"; kết quả đã ghi vẫn giữ trong Case.') };
 
 /** Kết quả PA ghi theo kỳ 2 tuần; chủ SP 13/11: không Hoàn tác — sai thì "Sửa kết quả" ở thẻ PA. */

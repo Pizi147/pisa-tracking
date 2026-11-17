@@ -346,7 +346,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T2) · oMt: chờ Quản lý duyệt dời = "vắng S" + tooltip; vắng đứng trước đã huỷ; tuần sớm nhất; tên môn theo chương trình', () => {
     const cd = d.oMt(luot(xongKn('2026-09-14', { speaking: { trangThai: 'cho-duyet', tuan: TUAN.qua, sit: 'absent', choDuyet: true } })), H);
-    assert(cd.kieu === 'con-viec' && cd.viec === 'vắng S' && /Speaking: .*chờ Quản lý duyệt/.test(cd.title), JSON.stringify(cd));
+    assert(cd.kieu === 'con-viec' && cd.viec === 'vắng S' && /Speaking: .*chờ Head duyệt/.test(cd.title), JSON.stringify(cd));
     vaoRa(luot(xongKn('2026-09-14', {
       speaking: { trangThai: 'da-huy', tuan: TUAN.qua, sit: 'cancelled', huyVang: true },
       reading: { trangThai: 'vang', tuan: TUAN.qua, tuanKetThuc: '2026-09-27', sit: 'absent' },
@@ -492,7 +492,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(JSON.stringify(chip(o('da-xep', TUAN.vua, { hanCham: '2026-10-07' }))) === '{"chu":"chờ chấm","tone":"muted"}', 'chờ chấm');
     assert(JSON.stringify(chip(o('vang', TUAN.qua, { sit: 'absent' }))) === '{"chu":"vắng","tone":"soon"}', 'vắng');
     assert(JSON.stringify(chip(o('cho-duyet', TUAN.qua, { sit: 'absent', choDuyet: true }))) === '{"chu":"vắng","tone":"soon"}', 'chờ duyệt dời = vắng');
-    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled' }))) === '{"chu":"huỷ · QL từ chối dời","tone":"soon"}', 'huỷ (UI-CHAM-TEST: kèm lý do — §21.4 T5)');
+    assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled' }))) === '{"chu":"huỷ · Head từ chối dời","tone":"soon"}', 'huỷ (UI-CHAM-TEST: kèm lý do — §21.4 T5)');
     assert(JSON.stringify(chip(o('da-huy', TUAN.qua, { sit: 'cancelled', huyVang: true }))) === '{"chu":"huỷ · vắng 2 lần","tone":"soon"}', 'huỷ vì vắng 2 lần');
     assert(JSON.stringify(chip(o('chua-xep', null))) === '{"chu":"chưa xếp","tone":"muted"}', 'chưa xếp');
     assert(chip(o('da-xep', TUAN.nay)) === null && chip(o('da-xep', TUAN.toi)) === null && chip(o('xong', TUAN.vua)) === null, 'không chip');
@@ -674,7 +674,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/HopKhoiPhucKetQua/.test(hl) && /Khôi phục kết quả/.test(hl), 'HangLichMt');
     const duyet = (dir: string): string[] => fs.readdirSync(path.join(ROOT, dir), { withFileTypes: true })
       .flatMap((f) => (f.isDirectory() ? duyet(`${dir}/${f.name}`) : /\.tsx?$/.test(f.name) ? [`${dir}/${f.name}`] : []));
-    for (const f of [...duyet('web/src'), ...duyet('shared')]) assert(!/từ lần 2 Quản lý duyệt/.test(nguon(f)), `${f} còn câu luật cũ`);
+    for (const f of [...duyet('web/src'), ...duyet('shared')]) assert(!/từ lần 2 Head duyệt/.test(nguon(f)), `${f} còn câu luật cũ`);
   });
 
   // ------------------------------------------------------------------ Task 9 — lưới Kế hoạch Test FT dùng Ô MT (Q1 = A)
@@ -726,7 +726,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     // Ô MT vẫn "huỷ S" (một kỹ năng bắt buộc = đủ cả đợt: chữ `huỷ`), tooltip nói chờ Quản lý duyệt.
     const s: any = { trangThai: 'da-huy', tuan: '2026-09-07', periodId: 1, doiTu: null, batBuoc: true, khoa: null, sit: 'cancelled', tuanKetThuc: '2026-09-13', choDuyet: true, huyVang: true, hanCham: null };
     const r = d.oMt({ so: 1, attemptId: 1, kn: { speaking: s }, cu: false }, '2026-09-16');
-    assert(r.kieu === 'con-viec' && r.viec === 'huỷ' && r.tuan === 'W2 SEP' && /chờ Quản lý duyệt/.test(r.title), JSON.stringify(r));
+    assert(r.kieu === 'con-viec' && r.viec === 'huỷ' && r.tuan === 'W2 SEP' && /chờ Head duyệt/.test(r.title), JSON.stringify(r));
     assert(d.chipDongKyNang(s, '2026-09-16')?.chu === 'huỷ · vắng 2 lần', 'chip');
   });
 
@@ -780,7 +780,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb sau rà (6) · 3 câu máy chủ "Chỉ Quản lý sửa được điểm" không còn bắt "kèm lý do" (T7/T22)', () => {
     for (const f of ['server/src/fasttrack/attempts.ts', 'server/src/normal/regular.ts']) {
-      assert(!/nhờ Quản lý hiệu chỉnh, kèm lý do/.test(nguon(f)), `${f} còn câu cũ`);
+      assert(!/nhờ Head hiệu chỉnh, kèm lý do/.test(nguon(f)), `${f} còn câu cũ`);
     }
   });
 

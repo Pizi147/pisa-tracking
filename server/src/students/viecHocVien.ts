@@ -128,9 +128,9 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
       ds.push({ key: `support:${c.id}`, loai: 'de-ra-pa', ...kem('Thêm PA {kn}', { kn }), kyNang: r.category, caseId: c.id, paId: null,
         han: v.han, tone: 'info', nguoiId: c.ownerId ?? null, nut: CHU_THEM_PA, mo: { loai: 'case', caseId: c.id, viec: 'them-pa' } });
     }
-    if (v?.chu === 'Chờ Quản lý duyệt · không theo dõi') {
-      ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', ...kem('Case {kn} chờ Quản lý duyệt · không theo dõi', { kn }), kyNang: r.category, caseId: c.id, paId: null,
-        han: null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id } });
+    if (v?.chu === 'Chờ Head duyệt · không theo dõi') {
+      ds.push({ key: `cho-duyet:case:${c.id}`, loai: 'cho-duyet', ...kem('Case {kn} chờ Head duyệt · không theo dõi', { kn }), kyNang: r.category, caseId: c.id, paId: null,
+        han: null, tone: 'wait', nguoiId: null, vaiChu: 'Head', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id } });
     }
     for (const pl of c.plans) {
       /* P1 G2-02: Case chờ QL duyệt "không theo dõi" — việc ở Quản lý, không giao Xác nhận PA (cùng `viecTiepCuaCase` và `mywork.ts` `CO_THE_KHONG_THEO_DOI`). */
@@ -148,8 +148,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
           nut: cuoi ? 'Ghi kết quả cuối' : 'Ghi kết quả PA', mo: { loai: 'case', caseId: c.id, paId: pl.id, viec: 'ghi-ket-qua' } });
       }
       if (pl.pendingApproval) {
-        ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', ...kem('PA {pa} chờ Quản lý duyệt', { pa: pl.name }), kyNang: r.category, caseId: c.id, paId: pl.id,
-          han: pl.approvalDue ?? null, tone: 'wait', nguoiId: null, vaiChu: 'Quản lý', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id, paId: pl.id } });
+        ds.push({ key: `cho-duyet:pa:${pl.id}`, loai: 'cho-duyet', ...kem('PA {pa} chờ Head duyệt', { pa: pl.name }), kyNang: r.category, caseId: c.id, paId: pl.id,
+          han: pl.approvalDue ?? null, tone: 'wait', nguoiId: null, vaiChu: 'Head', nut: 'Mở Case', mo: { loai: 'case', caseId: c.id, paId: pl.id } });
       }
     }
   }
@@ -162,7 +162,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   for (const x of baoPh) {
     const cuoi = x.kind === 'final';
     ds.push({ key: `baoph:${x.id}`, loai: 'bao-ph', ...kem('Báo PH kết quả Test · kết quả {bai}', { bai: nhanBaiThuong(cuoi ? 'final' : 'progress') }), kyNang: null, caseId: null, paId: null,
-      han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Quản lý' : undefined,
+      han: null, tone: 'info', nguoiId: cuoi ? null : -1, vaiChu: cuoi ? 'Head' : undefined,
       cuaBanTheoVai: cuoi ? can(p, PERMISSIONS.REQUEST_APPROVE, { classId: n.lopId, studentId: sid }) : undefined,
       nut: 'Đánh dấu đã làm', mo: { loai: 'tab', tab: 'y-thuc', sub: 'phoi-hop' } });
   }

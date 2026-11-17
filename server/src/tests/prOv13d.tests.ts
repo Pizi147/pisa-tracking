@@ -45,14 +45,14 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     const an = moiEm(), binh = moiEm(), chi = moiEm(), huy = moiEm();
     nVp(an, 3); nVp(binh, 3); const vChi = nVp(chi, 3); nVp(huy, 1);
     xu.khaiBac(gvcn, binh, { bac: 1, ghiChu: 'Report 1 trước khi dùng web' });
-    const nhap = xu.deXuat(gvcn, chi, { kind: 'wl_3', violationIds: vChi, note: 'Em vi phạm nhiều lần, cần QL quyết' });
+    const nhap = xu.deXuat(gvcn, chi, { kind: 'wl_3', violationIds: vChi, note: 'Em vi phạm nhiều lần, cần Head quyết' });
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bb', displayName: 'Biên bản' });
     xu.guiDeXuat(gvcn, nhap.id);
 
     const bang = lo.loYThucLop(gvcn, cid);
     const dong = (sid: number) => bang.em.find((x: any) => x.studentId === sid);
     assert(dong(an).xuLy.duoc && dong(an).keTiep.nhan === 'Report 1' && dong(binh).keTiep.nhan === 'Report 2', JSON.stringify([dong(an), dong(binh)]));
-    assert(!dong(chi).xuLy.duoc && /chờ QL/.test(dong(chi).xuLy.lyDo.chu), JSON.stringify(dong(chi).xuLy));
+    assert(!dong(chi).xuLy.duoc && /chờ Head/.test(dong(chi).xuLy.lyDo.chu), JSON.stringify(dong(chi).xuLy));
     assert(!dong(huy).xuLy.duoc && /Ghi nhận/.test(dong(huy).xuLy.lyDo.chu) && dong(huy).ghiNhan.soMoi === 1, JSON.stringify(dong(huy)));
 
     const r = lo.loXuLy(gvcn, cid, {
@@ -60,7 +60,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
       performedOn: TODAY, note: MO_TA, idempotencyKey: 'ov13d-1',
     });
     assert(kq(r, an).ok && kq(r, an).nhan === 'Report 1' && kq(r, binh).ok && kq(r, binh).nhan === 'Report 2', JSON.stringify(r));
-    assert(!kq(r, chi).ok && /chờ QL/.test(kq(r, chi).loi.chu) && !kq(r, huy).ok && /Ghi nhận/.test(kq(r, huy).loi.chu), JSON.stringify(r));
+    assert(!kq(r, chi).ok && /chờ Head/.test(kq(r, chi).loi.chu) && !kq(r, huy).ok && /Ghi nhận/.test(kq(r, huy).loi.chu), JSON.stringify(r));
     assert(get(`SELECT note FROM discipline_measures WHERE student_id = ? AND status = 'done'`, binh).note.startsWith('Đã gửi WL') &&
       get(`SELECT note FROM discipline_measures WHERE student_id = ? AND status = 'done'`, an).note === MO_TA, 'mô tả riêng / chung');
     assert(soXuLy(chi) === 0 && soXuLy(huy) === 0, 'em bị loại không có lần xử lý');
@@ -169,7 +169,7 @@ export async function runPrOv13dTests(t: YThucTestKit) {
     assert(bacDb(b).bac === 3 && bacDb(b).thang === '2026-08', `giữ tháng cũ: ${JSON.stringify(bacDb(b))}`);
     /* Bảo mật: Hoàn tác gửi giả (truoc: null) không xoá được bậc QL đã khai / lần lưu không phải của mình hôm nay. */
     const d = moiEm();
-    xu.khaiBac(P.mbManager, d, { bac: 2, ghiChu: 'QL khai' });
+    xu.khaiBac(P.mbManager, d, { bac: 2, ghiChu: 'Head khai' });
     const gia = lo.loHoanTacCapBac(gvcn, cid, { em: [{ studentId: d, bac: 2, truoc: null }, { studentId: c, bac: 4, truoc: { bac: 6, ghiChu: '' } }] });
     assert(!kq(gia, d).ok && /chính bạn/.test(kq(gia, d).loi.chu) && bacDb(d)?.bac === 2, `không xoá bậc QL khai: ${JSON.stringify(gia)}`);
     assert(!kq(gia, c).ok && bacDb(c).bac === 4, 'không đè bậc QL sửa bằng truoc giả');

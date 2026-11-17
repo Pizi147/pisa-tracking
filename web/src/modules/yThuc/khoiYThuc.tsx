@@ -58,7 +58,7 @@ export function CanLamEm({ x, homNay, onXem, hanDuoi = false, laQl = false }: {
   const han = (h: string | null) => !hanDuoi && h ? ` · ${t('hạn {ngay}', { ngay: ngay(h, homNay) })}` : '';
   if (x.deXuat) {
     const dx = x.deXuat;
-    return o(<BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('QL đã duyệt') : laQl ? t('Đề xuất') : t('Chờ QL duyệt')}{han(dx.han)}</BadgeViec>,
+    return o(<BadgeViec tong="dang" title={onXem ? t('Xem lần xử lý') : undefined} onClick={onXem ? () => onXem(dx.id) : undefined}>{dx.status === 'da_duyet' ? t('Head đã duyệt') : laQl ? t('Đề xuất') : t('Chờ Head duyệt')}{han(dx.han)}</BadgeViec>,
       dx.han, dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('duyệt trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null);
   }
   switch (x.nhom) {

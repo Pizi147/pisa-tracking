@@ -173,7 +173,7 @@ function manhThoiGian(f: BoLocXuatMt): { sql: string; params: (string | number)[
 export function duLieuXuatMt(p: Principal, f: BoLocXuatMt, toiDa = XUAT_TOI_DA_LUOT, luc = nowIso()): DuLieuXuat {
   const homNay = demoToday();   // một lần — `demoToday()` là một câu SQL, không gọi theo từng dòng
   const v = phamViXuatMt(p, homNay);
-  if (!coPhamViXuat(v)) throw forbidden('Bạn chưa có phạm vi xuất kết quả Test — chỉ Quản lý, Quản trị và GVCN (lớp mình).');
+  if (!coPhamViXuat(v)) throw forbidden('Bạn chưa có phạm vi xuất kết quả Test — chỉ Head, Quản trị và GVCN (lớp mình).');
   const phamVi = danhSachPhamVi(v);
   if (f.chiNhanh.some((id) => !phamVi.chiNhanh.some((c) => c.id === id))) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được xuất.');
   const lopChon = f.lop.map((id) => phamVi.lop.find((l) => l.id === id));

@@ -5,7 +5,7 @@
 import { chupHoacSo } from './soGoc.ts';
 
 /** Dòng đọc trên DB gốc, đo trên main 17c2da510 (mốc quét còn hạn, không quét) — `TV1 · dòng`. */
-const DONG_GOC: Record<string, number> = { 'QL tat-ca': 1443, QL: 1086, GVCN: 828, GVBM: 851 };
+const DONG_GOC: Record<string, number> = { 'Head tat-ca': 1443, QL: 1086, GVCN: 828, GVBM: 851 };
 
 export async function runPrTlViecTests(t: any) {
   const { check, checkAsync, assert, P } = t;
@@ -79,7 +79,7 @@ export async function runPrTlViecTests(t: any) {
 
   await checkAsync('TV1 · dòng không tăng so với gốc TV0 > 5 % (QL · GV)', async () => {
     const lech: string[] = [];
-    for (const [ten, uid, url] of [['QL tat-ca', P.mbManager.userId, '/my-work?nguoi=tat-ca'], ['QL', P.mbManager.userId, '/my-work'], ['GVCN', P.coreTeacher.userId, '/my-work'], ['GVBM', P.subjectTeacher.userId, '/my-work']] as [string, number, string][]) {
+    for (const [ten, uid, url] of [['Head tat-ca', P.mbManager.userId, '/my-work?nguoi=tat-ca'], ['QL', P.mbManager.userId, '/my-work'], ['GVCN', P.coreTeacher.userId, '/my-work'], ['GVBM', P.subjectTeacher.userId, '/my-work']] as [string, number, string][]) {
       const { dong } = await doGet(uid, url);
       console.log(`    ${ten} ${url}: ${dong} dòng (gốc ${DONG_GOC[ten]})`);
       if (dong > DONG_GOC[ten] * 1.05) lech.push(`${ten}: ${dong} > ${DONG_GOC[ten]} × 1,05`);

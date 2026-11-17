@@ -85,7 +85,7 @@ export async function runPrNvTests(t: YThucTestKit) {
     assert(dem.cho === yc.hopChoDuyet(P.mbManager, {}).dem['tat-ca'], `cho ${dem.cho}`);
     const biet = yc.hopChoDuyet(P.admin, { xem: 'de-biet' }).the;
     assert(biet.length > 0, 'seed cần thẻ Nhắc việc');
-    const sai = biet.filter((x: any) => x.dong.some((s: string) => /để QL biết|không cần duyệt/i.test(s)));
+    const sai = biet.filter((x: any) => x.dong.some((s: string) => /để Head biết|không cần duyệt/i.test(s)));
     assert(!sai.length, JSON.stringify(sai.map((x: any) => [x.loai, x.dong])));
   });
 

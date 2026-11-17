@@ -338,7 +338,7 @@ function RegisterForm({ info, onDone }: { info: AuthInfo | null; onDone: () => v
 
 /** Tài khoản xem được kịch bản mới — PR-MT (Task 10): MT lịch sử, lớp RF, dời do vắng lần 2 · PR-YT4 (K1-55): Ý thức v4 · PR-XLMT: xếp lịch MT nhiều lớp. */
 const XEM_DUOC: Record<string, string[]> = {
-  'Nguyễn Khánh Vy': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Chờ duyệt Ý thức + Báo QL'), t('Xếp lịch MT nhiều lớp, Chưa đủ MT'), t('Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)')],
+  'Nguyễn Khánh Vy': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Chờ duyệt Ý thức + Báo Head'), t('Xếp lịch MT nhiều lớp, Chưa đủ MT'), t('Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)')],
   'Trần Ngọc Hà': [t('Xem được: MT cũ, lớp RF, dời lần 2'), t('Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2'), t('Progress Test lớp thường: nộp kế hoạch bổ trợ, Báo PH kết quả Test (MB FOU 15)')],
 };
 
@@ -349,7 +349,7 @@ function DemoAccounts({ accounts, loading }: { accounts: Account[]; loading: boo
   return (
     <div>
       <p className="text-sm text-slate-400 mb-4 leading-relaxed">
-        {t('Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Quản lý · GV · Admin · TVV · CX; QL / Quản trị nắm ≥ 2 vai đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.')}
+        {t('Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Head · GV · Admin · TVV · CX; Head / Quản trị nắm ≥ 2 vai đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.')}
       </p>
       {loading && <div className="text-slate-400">{t('Đang tải danh sách tài khoản…')}</div>}
 

@@ -31,7 +31,7 @@ export const EN_F = {
   'Không gắn lớp': 'No class',
   'Cả lớp · {n} em': (b) => `Whole class · ${so(b.n, 'student', 'students')}`,
   'Cần làm theo lớp': 'To do by class',
-  'Yêu cầu chờ Quản lý': 'Request awaiting manager',
+  'Yêu cầu chờ Head': 'Request awaiting Head',
   'Kết quả thi': 'Exam result',
   'Thi {ngay} · chưa có kết quả': 'Exam {ngay} · no result yet',
   'chưa có kết quả': 'no result yet',

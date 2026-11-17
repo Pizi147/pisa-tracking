@@ -62,7 +62,7 @@ export function BangQuyDoiAdmin({ dau, phai }: { dau?: ReactNode; phai?: ReactNo
   const [khoiPhuc, setKhoiPhuc] = useState<PhienBan | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (error && error.status === 403) return <Forbidden message={t('Phần này dành cho Quản trị hệ thống và Quản lý.')} />;
+  if (error && error.status === 403) return <Forbidden message={t('Phần này dành cho Quản trị hệ thống và Head.')} />;
   if (error) return <Card title={t('Bảng quy đổi band')}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></Card>;
   if (loading || !data) return <Card><Skeleton rows={10} /></Card>;
 

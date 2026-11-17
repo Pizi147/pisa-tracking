@@ -112,7 +112,7 @@ export async function runTongQuanTests(t: YThucTestKit) {
     assert(d.CAN_XU_LY.every((x: any) => !('denLoc' in x)), 'Không còn cơ chế denLoc');
     const dem = { 'pa-can-cap-nhat': 3, 'lop-thieu-gv-mon': 2, 'pa-cho-duyet': 1, 'case-thieu-pa': 4, 'case-xac-dinh-nguyen-nhan-qua-han': 5, 'hv-can-xu-ly': 6 };
     const co = d.sapCanXuLy(dem, true);
-    eq(co.map((x: any) => x.metricId).sort(), ['case-xac-dinh-nguyen-nhan-qua-han', 'lop-thieu-gv-mon', 'pa-can-cap-nhat'], 'Q3: việc QL tự quyết không lặp ở Cần xử lý (UX-2: Case quá hạn trở lại); dòng 0 bị bỏ');
+    eq(co.map((x: any) => x.metricId).sort(), ['case-xac-dinh-nguyen-nhan-qua-han', 'lop-thieu-gv-mon', 'pa-can-cap-nhat'], 'Q3: việc Head tự quyết không lặp ở Cần xử lý (UX-2: Case quá hạn trở lại); dòng 0 bị bỏ');
     eq(co.find((x: any) => x.metricId === 'lop-thieu-gv-mon').nhan, 'lớp thiếu GV môn', 'Chữ dòng lớp thiếu GV');
     const all = Object.fromEntries(d.CAN_XU_LY.map((x: any) => [x.metricId, 5]));
     assert(d.sapCanXuLy(all, true).length === d.CAN_XU_LY.length && d.CAN_XU_LY.length <= d.CAN_XU_LY_TOI_DA && d.CAN_XU_LY_TOI_DA === 10, 'Đủ dòng, trần 10');
@@ -315,8 +315,8 @@ export async function runTongQuanTests(t: YThucTestKit) {
   });
 
   check('PR-Pa · Khối Quản lý: giáo viên bị từ chối (403), không trả tập rút gọn', () => {
-    assertThrows(() => tq.tongQuanQuanLy(P.normalCoreTeacher, {}), /Quản lý/, 'GVCN mở khối Quản lý');
-    assertThrows(() => tq.diemChuY(P.normalCoreTeacher, { ct: 'ft' }), /Quản lý/, 'GVCN mở Điểm đáng chú ý');
+    assertThrows(() => tq.tongQuanQuanLy(P.normalCoreTeacher, {}), /Head/, 'GVCN mở khối Head');
+    assertThrows(() => tq.diemChuY(P.normalCoreTeacher, { ct: 'ft' }), /Head/, 'GVCN mở Điểm đáng chú ý');
   });
 
   check('PR-Pa · (PR-VAI-a Q12) Lớp tôi dạy thay Học viên cần hỗ trợ: em chưa đạt ở lớp tôi dạy vào ô "Chưa đạt" của đúng lớp; em đạt hết thì không; GV lớp khác không có hàng lớp đó', () => {
@@ -373,13 +373,13 @@ export async function runTongQuanTests(t: YThucTestKit) {
     eq(a.branchId, null, 'Quản trị không chọn: branchId null');
     const m = bang.bangChiNhanh(P.mbManager, { ct: 'ft' });
     assert(m.cheDo === 'lop' && m.hang.every((h: any) => h.loai === 'lop') && m.tenChiNhanh === 'Monbay', `Quản lý MB: ${m.cheDo}`);
-    eq(m.branchId, mbBranch, 'QL một chi nhánh: bảng trả branchId đã giải');
+    eq(m.branchId, mbBranch, 'Head một chi nhánh: bảng trả branchId đã giải');
   });
 
   check('PR-Pa · Bảng chi nhánh: Lớp thường không có hàng lớp FT; giáo viên bị từ chối', () => {
     const b = bang.bangChiNhanh(P.admin, { branchId: mbBranch, ct: 'thuong' });
     assert(b.hang.length > 0 && b.hang.every((h: any) => h.laFt === false), 'Lọt lớp FT vào Lớp thường');
-    assertThrows(() => bang.bangChiNhanh(P.normalCoreTeacher, { ct: 'ft' }), /Quản lý/, 'GV mở bảng chi nhánh');
+    assertThrows(() => bang.bangChiNhanh(P.normalCoreTeacher, { ct: 'ft' }), /Head/, 'GV mở bảng chi nhánh');
   });
 
   // ================================================================== 7. Lịch sắp tới

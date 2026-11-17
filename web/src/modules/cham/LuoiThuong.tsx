@@ -295,7 +295,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
         title={t('Lớp này chưa có bài kiểm tra nào')}
         hint={anNutTao ? undefined : data.canPlan
           ? t('Bấm "Tạo bài kiểm tra theo chương trình" để sinh bài Progress Test và Final Test theo đúng mốc tuần học.')
-          : t('Quản lý cần tạo kế hoạch kiểm tra cho lớp này.')}
+          : t('Head cần tạo kế hoạch kiểm tra cho lớp này.')}
         action={nutTao || undefined}
       />
     );

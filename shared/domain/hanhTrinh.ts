@@ -635,7 +635,7 @@ export function chiaChuong<G extends { classId: number | null; tuan: string | nu
       loai,
       ...(loai === 'len' ? chuLenK(sau, boTroCuaChuong(l.classId), l.ct) : sangLopSau ? kem('Sang {lop}', { lop: sau!.code }) : { chu: loai === 'chuyen' ? 'Chuyển lớp' : loai === 'hoc-lai' ? 'Học lại'
         : loai === 'bao-luu' ? 'Tạm dừng học (bảo lưu)' : loai === 'dung' ? 'Dừng học hẳn' : loai === 'ket-thuc' ? 'Kết thúc học' : l.status === 'paused' ? 'Tạm dừng học' : 'Rời lớp' }),
-      how: l.lenh ? 'Quản lý quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
+      how: l.lenh ? 'Head quyết định' : loai === 'len' ? 'theo Final Test' : l.endReason,
       tu: sau?.tu ?? null,
       docBanGiao: l.lenh?.xacNhan ? { lenhId: l.lenh.id, lopNguonId: l.classId } : null,
     };

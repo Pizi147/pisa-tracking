@@ -50,7 +50,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (1) · Chờ QL duyệt không bao giờ Quá hạn; Đã duyệt · chờ thực hiện có hạn ngày quyết + 4', () => {
     const cho = tt([vp(1, '2026-09-01', '2026-09-01', null, [{ id: 9, kind: 'wl_3', status: 'cho_duyet', performedOn: null, quyetLuc: null }])], 1, n('2026-09-29'));
-    assert(cho.t === 'cho_duyet' && cho.nhan === 'Chờ QL duyệt' && cho.han === null, JSON.stringify(cho));
+    assert(cho.t === 'cho_duyet' && cho.nhan === 'Chờ Head duyệt' && cho.han === null, JSON.stringify(cho));
     const duyet = tt([vp(1, '2026-09-01', '2026-09-01', null, [{ id: 9, kind: 'wl_3', status: 'da_duyet', performedOn: null, quyetLuc: '2026-09-10' }])], 1, n('2026-09-16'));
     assert(duyet.t === 'cho_duyet' && duyet.nhan === 'Đã duyệt · chờ thực hiện' && duyet.han === '2026-09-14' && duyet.quaHanNgay === 2, JSON.stringify(duyet));
   });
@@ -537,12 +537,12 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     xuLy.khaiBac(gvcn, sid, { bac: 1, ghiChu: 'Report 1 tháng 8' });
     xuLy.suaKhaiBac(gvcn, sid, { bac: 2, ghiChu: 'GVCN tự sửa' });
     assert(em(sid).bac === 2, 'GVCN sửa');
-    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa theo hồ sơ giấy' });
+    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'Head sửa theo hồ sơ giấy' });
     assert(em(sid).bac === 2, 'QL sửa');
     xl(gvcn, sid, [ghiVp(gvbm, sid)]);
     xuLy.suaKhaiBac(gvcn, sid, { bac: 1, ghiChu: 'Sửa sau khi đã xử lý' });
     assert((conn.prepare(`SELECT bac FROM y_thuc_khai_bac WHERE student_id = ?`).get(sid) as any).bac === 1, 'N50 (8): GVCN sửa sau lần xử lý');
-    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'QL sửa sau khi đã xử lý' });
+    xuLy.suaKhaiBac(P.mbManager, sid, { bac: 2, ghiChu: 'Head sửa sau khi đã xử lý' });
     const sid2 = hv(); xl(gvcn, sid2, [ghiVp(gvbm, sid2)]);
     assert(/đã có lần xử lý/.test(loiCua(() => xuLy.khaiBac(gvcn, sid2, { bac: 2, ghiChu: 'Khai sau khi xử lý' })).msg), 'khai sau lần xử lý');
   });
@@ -675,8 +675,8 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const s2 = hv(); ghiVp(gvbm, s2); ghiVp(gvbm, s2); const v2 = ghiYc(gvbm, s2);
     assert(loiCua(() => xuLy.khongXuLy(gvcn, v2.id, { lyDo: 'Đã nhắc riêng em trên lớp' })).status === 400, 'đủ 3 → phải xử lý');
     assert(!(conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc && viecYt(gvcn, s2), 'không đổi gì');
-    assert(loiCua(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'QL đã gặp phụ huynh' })).status === 409, 'QL → hỏi');
-    voiXacNhan(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'QL đã gặp phụ huynh' }));
+    assert(loiCua(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'Head đã gặp phụ huynh' })).status === 409, 'QL → hỏi');
+    voiXacNhan(() => xuLy.khongXuLy(P.mbManager, v2.id, { lyDo: 'Head đã gặp phụ huynh' }));
     assert((conn.prepare('SELECT khong_xu_ly_luc FROM violations WHERE id = ?').get(v2.id) as any).khong_xu_ly_luc, 'QL vượt → đã ghi');
     const au = conn.prepare(`SELECT after_json a FROM audit_logs WHERE action = 'violation.khong_xu_ly' AND entity_id = ? ORDER BY id DESC LIMIT 1`).get(v2.id) as any;
     assert(JSON.parse(au.a).vuotLuat === true, `nhật ký vuotLuat: ${au?.a}`);
@@ -741,7 +741,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (4) · Đã thực hiện chỉ cho lần xử lý QL đã duyệt; lần xử lý đã xong → 400', () => {
     const sid = hv(); const m = xl(gvcn, sid, [ghiVp(gvbm, sid)]);
-    assert(/QL đã duyệt/.test(loiCua(() => xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY })).msg), 'chặn');
+    assert(/Head đã duyệt/.test(loiCua(() => xuLy.daThucHien(gvcn, m.id, { performedOn: TODAY })).msg), 'chặn');
   });
   check('YT4 (4) · GET /students/:id/y-thuc: thang một dòng 6 bậc + Report 7, tick mặc định (K3-36), dòng thời gian trộn, dòng đếm cuối theo nhóm', () => {
     const sid = hv();
@@ -756,7 +756,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   // ------------------------------------------------------------------ Task 5 · Đề xuất QL duyệt (thẻ y_thuc) + Báo QL (bao_len_y_thuc)
   const theCho = (loai: string, doiTuongId: number) => conn.prepare(`SELECT * FROM yeu_cau_duyet WHERE loai = ? AND doi_tuong_id = ? ORDER BY id DESC`).get(loai, doiTuongId) as any;
   const deXuatGui = (who: any, sid: number, kind: string, ids: number[], extra: Record<string, unknown> = {}) => {
-    const nhap = xuLy.deXuat(who, sid, { kind, violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết', ...extra });
+    const nhap = xuLy.deXuat(who, sid, { kind, violationIds: ids, note: 'Em vi phạm nhiều lần, cần Head quyết', ...extra });
     attachments.addLink(who, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     return xuLy.guiDeXuat(who, nhap.id);
   };
@@ -765,7 +765,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   check('YT4 (5) · Đề xuất: WL 3 đề xuất được bất kỳ lúc nào (không cần là bậc kế); bậc kế (mặc định) → 400 — TINH-HINH: vượt bậc nay đề xuất được; "Khác" thiếu tên → 400', () => {
     const sid = hv(); const v = ghiVp(gvbm, sid);
     assert(xuLy.deXuat(gvcn, sid, { kind: 'wl_3', violationIds: [v], note: 'Đề xuất WL 3 sớm' }).kind === 'wl_3', 'WL 3 bất kỳ lúc nào');
-    assert(/Chọn cách cần QL duyệt/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'report_1', violationIds: [v], note: 'Bậc kế là mặc định' })).msg), 'bậc kế');
+    assert(/Chọn cách cần Head duyệt/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'report_1', violationIds: [v], note: 'Bậc kế là mặc định' })).msg), 'bậc kế');
     assert(xuLy.deXuat(gvcn, sid, { kind: 'report_2', violationIds: [v], note: 'Vượt bậc lên Report 2' }).kind === 'report_2', 'vượt bậc');
     assert(/Khác/.test(loiCua(() => xuLy.deXuat(gvcn, sid, { kind: 'other', customName: 'x', violationIds: [v], note: 'Loại khác thiếu tên' })).msg), 'Khác');
   });
@@ -785,7 +785,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     const the = theCho('y_thuc', m.id);
     const tep = (conn.prepare(`SELECT id FROM attachments WHERE owner_type = 'discipline_measure' AND owner_id = ?`).all(m.id) as any[]).map((r) => r.id);
     assert(the.trang_thai === 'cho' && the.han_duyet === addDays(TODAY, 4) && JSON.parse(the.bang_chung).join() === tep.join() && the.nguoi_xin === gvcn.userId, JSON.stringify(the));
-    assert(ids.every((x) => em(sid).viPham.get(x).nhan === 'Chờ QL duyệt') && em(sid).nhom === 'cho_duyet', 'nhãn + nhóm');
+    assert(ids.every((x) => em(sid).viPham.get(x).nhan === 'Chờ Head duyệt') && em(sid).nhom === 'cho_duyet', 'nhãn + nhóm');
   });
   check('YT4 (5) · (bấm thử) thẻ Ý thức nói có bao nhiêu bằng chứng — QL biết mà bấm Mở xem trước khi duyệt (V4-10)', () => {
     const sid = hv(); deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
@@ -864,7 +864,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
     assert(e.nhom === 'moi' && [...e.viPham.values()].every((x: any) => x.t === 'moi' && !x.han && !x.lyDoQuaHan) && e.hanXem === null, `Mới không hạn: ${JSON.stringify([...e.viPham.values()])}`);
     assert(!(myworkYt.myWork(P.coreTeacher).items as any[]).some((i) => i.studentId === sid), 'không việc Xem ở Công việc GVCN');
     const t2 = theCho('bao_len_y_thuc', sid2);
-    assert(t2 && JSON.parse(t2.du_lieu).viecKey === `yt_thuc_hien:${m.id}` && /đã duyệt chưa thực hiện|QL đã duyệt, quá 5 ngày/.test(t2.ly_do), JSON.stringify(t2));
+    assert(t2 && JSON.parse(t2.du_lieu).viecKey === `yt_thuc_hien:${m.id}` && /đã duyệt chưa thực hiện|Head đã duyệt, quá 5 ngày/.test(t2.ly_do), JSON.stringify(t2));
   });
   check('YT4 (5) · Thẻ Ý thức tự đóng khi đề xuất không còn chờ (em lưu trữ) — "Không còn chờ duyệt"', () => {
     const sid = hv(); const m = deXuatGui(gvcn, sid, 'suspension', [ghiVp(gvbm, sid)]);
@@ -1054,7 +1054,7 @@ export async function runPrYt4Tests(t: YThucTestKit) {
   });
   check('YT4 (8) · Đề xuất QL duyệt: MỘT màn (#6): bằng chứng chọn trong form (bắt buộc loại ngoài thang) → "Gửi Quản lý duyệt" = nháp → tải tệp → gửi; đóng khi dở xoá nháp', () => {
     const s = docW(`${YT}/XacNhanXuLyPanel.tsx`);
-    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi Quản lý duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
+    assert(/y-thuc\/de-xuat/.test(s) && /\/gui`/.test(s) && /t\('Gửi Head duyệt'\)/.test(s) && /taiTepCho\(/.test(s) && !/Tiếp: đính kèm bằng chứng/.test(s), 'luồng');
     assert(/api\.del\(`\/y-thuc\/xu-ly\/\$\{nhapDo\.current\}`\)/.test(s) && /Cần đính kèm tệp hoặc liên kết/.test(s), 'xoá nháp + bằng chứng');
     /* TINH-HINH (mockup v20 D): không còn nút chữ "Đề xuất QL duyệt" — chọn cách xử lý tại chỗ (4 ô). */
     assert(/role="radiogroup" aria-label=\{t\('Cách xử lý'\)\}/.test(s) && /t\('Khai cấp bậc'\)/.test(s), '4 cách xử lý + dòng Khai cấp bậc (Q7; rà 11/11 G3-11)');

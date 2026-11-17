@@ -434,8 +434,8 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
 /** Lý do ngắn cạnh nút từ câu chặn của máy chủ (`closeBlockers`) — không tính lại luật. */
 function lyDoNgan(x: string): string {
   if (/^Case chưa có phương án/.test(x)) return t('cần ít nhất 1 PA');
-  const a = /^(\d+) phương án đang chờ Quản lý duyệt/.exec(x);
-  if (a) return t('{n} PA chờ QL duyệt', { n: a[1] });
+  const a = /^(\d+) phương án đang chờ Head duyệt/.exec(x);
+  if (a) return t('{n} PA chờ Head duyệt', { n: a[1] });
   const b = /^(\d+) phương án chưa cập nhật kết quả cuối/.exec(x);
   if (b) return t('{n} PA chưa có kết quả cuối', { n: b[1] });
   return dich(x);
@@ -642,7 +642,7 @@ function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number
     return (
       <div className="cuoi-case">
         {vw.canApprove ? <div className="w-full"><TheYeuCau gon yc={the} onXong={onXong} /></div> : (
-          <div className="cho-xoa w-full"><span><b>{t('Chờ QL duyệt xoá Case')}</b> · {t('gửi {ngay}', { ngay: (the.taoLuc ?? '').slice(8, 10) + '/' + (the.taoLuc ?? '').slice(5, 7) })}</span>
+          <div className="cho-xoa w-full"><span><b>{t('Chờ Head duyệt xoá Case')}</b> · {t('gửi {ngay}', { ngay: (the.taoLuc ?? '').slice(8, 10) + '/' + (the.taoLuc ?? '').slice(5, 7) })}</span>
             {the.nguoiXinId === toi && <span className="phai"><RutLai id={the.id} onXong={onXong} /></span>}</div>
         )}
       </div>
@@ -651,10 +651,10 @@ function XoaCase({ data, toi, onXong, onDaXoa }: { data: CaseDetail; toi: number
   if (!vw.xoa) return null;
   return (
     <div className="cuoi-case">
-      {!hoi && <NutXoa busy={busy} onClick={() => (vw.xoa === 'ngay' && pas.length > 0 ? setHoi(true) : void gui())}>{vw.xoa === 'xin' ? t('Đề nghị QL xoá Case') : t('Xoá Case')}</NutXoa>}
+      {!hoi && <NutXoa busy={busy} onClick={() => (vw.xoa === 'ngay' && pas.length > 0 ? setHoi(true) : void gui())}>{vw.xoa === 'xin' ? t('Đề nghị Head xoá Case') : t('Xoá Case')}</NutXoa>}
       {/* G2-14: lý do chặn đặt tại nút — QL đã từ chối lần xin trước. */}
       {!hoi && vw.xoa === 'xin' && vw.tuChoiXoa && (
-        <span className="text-[13px] text-slate-400">{vw.tuChoiXoa.lyDo ? t('QL từ chối xoá · {lyDo}', { lyDo: vw.tuChoiXoa.lyDo }) : t('QL từ chối xoá')}</span>
+        <span className="text-[13px] text-slate-400">{vw.tuChoiXoa.lyDo ? t('Head từ chối xoá · {lyDo}', { lyDo: vw.tuChoiXoa.lyDo }) : t('Head từ chối xoá')}</span>
       )}
       {hoi && (
         <div className="hoi-xoa" role="alertdialog" aria-label={t('Xoá Case')}>
@@ -692,11 +692,11 @@ function NutXoaKetQua({ f, onXong }: { f: { id: number; xoa: 'ngay' | 'xin' | nu
     try {
       const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/followups/${f.id}`);
       lamMoi();
-      if (r?.choDuyet) toast.push('ok', t('Đã gửi QL duyệt xoá kết quả PA'));
+      if (r?.choDuyet) toast.push('ok', t('Đã gửi Head duyệt xoá kết quả PA'));
       else hoanTacXoa(toast, r?.thungRacId, t('Đã xoá kết quả PA'), lamMoi);
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusy(false); }
   };
-  return <NutXoa busy={busy} onClick={() => void xoa()}>{f.xoa === 'xin' ? t('Đề nghị QL xoá kết quả') : t('Xoá kết quả')}</NutXoa>;
+  return <NutXoa busy={busy} onClick={() => void xoa()}>{f.xoa === 'xin' ? t('Đề nghị Head xoá kết quả') : t('Xoá kết quả')}</NutXoa>;
 }
 
 /** U02 dòng 7 (N35, `00` 21 "Mô tả dài"): mô tả = đoạn trích vạch trái (`.trich`); dài ≤ 3 dòng + "Xem đầy đủ" tại chỗ — không cắt dữ liệu lưu; nút Dịch nằm trong chữ (ChuDich) như cũ. */
@@ -767,10 +767,10 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
 
   /* Trạng thái = nút làm việc khi tới việc của người xem; còn lại viên xám + chấm màu (V4 ③). */
   const vien = (chu: string, cham: string) => <span className="tt-pa" style={{ ['--cham' as any]: cham }}>{chu}</span>;
-  const trangThai = theXoa ? vien(t('Chờ QL duyệt xoá'), 'rgb(var(--soon-rgb))')
+  const trangThai = theXoa ? vien(t('Chờ Head duyệt xoá'), 'rgb(var(--soon-rgb))')
     : formHien === 'ghi' ? vien(t('Đang ghi kết quả'), 'rgb(var(--soon-rgb))')
     : iv.awaitingConfirmation ? (xacNhanDuoc && !mo ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('xac-nhan')}>{iv.chonPa ? t('Chọn PA') : t('Xác nhận PA')}</button> : vien(iv.chonPa ? t('Chờ chọn PA') : t('Chờ xác nhận'), 'rgb(var(--doing-rgb))'))
-    : choDuyet || (iv.preset && !iv.confirmedAt && iv.status === 'planned' && iv.doiPa?.trangThai === 'cho') ? vien(t('Chờ Quản lý duyệt'), 'rgb(var(--soon-rgb))')   // PA quy chế chưa chạy chờ QL duyệt đổi / giữ PA GV
+    : choDuyet || (iv.preset && !iv.confirmedAt && iv.status === 'planned' && iv.doiPa?.trangThai === 'cho') ? vien(t('Chờ Head duyệt'), 'rgb(var(--soon-rgb))')   // PA quy chế chưa chạy chờ QL duyệt đổi / giữ PA GV
     : iv.chuaChay ? vien(t('Chưa bắt đầu'), 'var(--text-faint)')
     : dangChay ? (ghiDuoc && toiKy && !mo
       ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setForm('ghi')}>{iv.lanCuoi ? t('Ghi kết quả cuối') : t('Ghi kết quả')}</button>
@@ -890,9 +890,9 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   );
 
   const xoaNut = theXoa ? (
-    <span className="cho-xoa w-full"><span><b>{t('Chờ QL duyệt xoá PA')}</b> · {t('gửi {ngay}', { ngay: ngan(theXoa.taoLuc) })} · {t('PA vẫn chạy')}</span>
+    <span className="cho-xoa w-full"><span><b>{t('Chờ Head duyệt xoá PA')}</b> · {t('gửi {ngay}', { ngay: ngan(theXoa.taoLuc) })} · {t('PA vẫn chạy')}</span>
       {theXoa.nguoiXinId === toi && <span className="phai"><RutLai id={theXoa.id} onXong={lamMoi} /></span>}</span>
-  ) : nut.xoa ? <NutXoa busy={busyXoa} onClick={() => void xoaPa()}>{iv.xoa === 'xin' ? t('Đề nghị QL xoá PA') : t('Xoá PA')}</NutXoa> : null;
+  ) : nut.xoa ? <NutXoa busy={busyXoa} onClick={() => void xoaPa()}>{iv.xoa === 'xin' ? t('Đề nghị Head xoá PA') : t('Xoá PA')}</NutXoa> : null;
   const chanThe = formHien || (!xoaNut && !nut.ketThuc && !iv.coTheHoanTacKetThuc && !ghiDuoc) ? null : (
     <div className="pa-chan">
       <span className="trai">{!(theXoa && vw.canApprove) && xoaNut}
@@ -929,9 +929,9 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
             {fld}{nhatKy}
             {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
             {choDuyet && !(vw.canApprove && iv.yeuCau) && (
-              <p className="m-0 text-xs text-slate-400">{t('Đang chờ Quản lý trả lời{x} — thời gian chờ tính cho Quản lý.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}</p>
+              <p className="m-0 text-xs text-slate-400">{t('Đang chờ Head trả lời{x} — thời gian chờ tính cho Head.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}</p>
             )}
-            {iv.approvalNote && <p className="m-0 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>{t('Quản lý{x}: {approvalNote}', { x: iv.approvedBy ? ` (${iv.approvedBy})` : '', approvalNote: iv.approvalNote })}</p>}
+            {iv.approvalNote && <p className="m-0 border-l pl-3 text-xs text-slate-300" style={{ borderColor: 'var(--line)' }}>{t('Head{x}: {approvalNote}', { x: iv.approvedBy ? ` (${iv.approvedBy})` : '', approvalNote: iv.approvalNote })}</p>}
             <DongXinYKien x={iv.xinYKien} ngan={ngan} />
             {iv.kind === 'bo_tro' && data.boTro?.chung && data.boTro.mon.length > 1 && <p className="m-0 text-xs text-slate-400">{t('PA chung · {x}', { x: data.boTro.mon.map((m) => m.tenMon).join(', ') })}</p>}
             {(thayCho || thayBang) && <p className="m-0 text-xs text-slate-400">{[thayCho && t('Thay cho: {tenPA}', { tenPA: tenCua(thayCho) }), thayBang && t('Được thay bằng: {tenPA}', { tenPA: tenCua(thayBang) })].filter(Boolean).join(' · ')}</p>}
@@ -950,8 +950,8 @@ function DongDoiPaGon({ iv, ngan }: { iv: any; data: CaseDetail; ngan: (d: strin
   const tenMoi = dich(INTERVENTION_KIND_LABEL[d.loaiMoi as keyof typeof INTERVENTION_KIND_LABEL] ?? d.loaiMoi);
   return (
     <p className="m-0 px-3.5 pb-2 text-[13px] text-slate-300">
-      {d.trangThai === 'cho' ? <>{d.giuPaGv ? t('Chờ QL duyệt PA của GV') : t('Chờ duyệt đổi PA')} → <b className="font-semibold text-slate-100">{tenMoi}</b> · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}</>
-        : <b className="font-semibold text-late">{t('QL từ chối đổi PA')}</b>}
+      {d.trangThai === 'cho' ? <>{d.giuPaGv ? t('Chờ Head duyệt PA của GV') : t('Chờ duyệt đổi PA')} → <b className="font-semibold text-slate-100">{tenMoi}</b> · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}</>
+        : <b className="font-semibold text-late">{t('Head từ chối đổi PA')}</b>}
     </p>
   );
 }
@@ -1095,9 +1095,9 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
     return (
       <div className="flex flex-col gap-1.5">
         <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-slate-300">
-          <Nhan tone="muted">{d.giuPaGv ? t('Chờ QL duyệt PA của GV') : t('Chờ duyệt đổi PA')}</Nhan>
+          <Nhan tone="muted">{d.giuPaGv ? t('Chờ Head duyệt PA của GV') : t('Chờ duyệt đổi PA')}</Nhan>
           <span>→ <b className="font-semibold text-slate-100">{tenMoi}</b></span>
-          <span className="text-slate-400">· {d.giuPaGv ? t('PA của GV vẫn chạy') : iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${d.giuPaGv ? t('quá {ngay} tự chốt theo GV', { ngay: ngan(d.hanDuyet) }) : t('QL hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
+          <span className="text-slate-400">· {d.giuPaGv ? t('PA của GV vẫn chạy') : iv.status === 'started' ? t('PA gốc vẫn chạy') : t('chưa chạy')} · {t('gửi {ngay}', { ngay: ngan(d.guiLuc) })}{d.hanDuyet ? ` · ${d.giuPaGv ? t('quá {ngay} tự chốt theo GV', { ngay: ngan(d.hanDuyet) }) : t('Head hạn {ngay}', { ngay: ngan(d.hanDuyet) })}` : ''}</span>
           {d.laNguoiGui && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" disabled={busy} onClick={() => void rut()}>{busy ? t('Đang lưu…') : t('Rút')}</button>}
           {loi && <span role="alert" className="text-bad">⚠ {loi}</span>}
           {/* GD-3: lý do "Giữ PA của tôi" (mockup v21 K4b) hiện lại tại PA. */}
@@ -1110,7 +1110,7 @@ function DongDoiPa({ iv, data, ngan, onDoi }: { iv: any; data: CaseDetail; ngan:
   return (
     <div className="flex flex-col gap-2">
       <p className="m-0 text-[13px] text-slate-300">
-        <b className="font-semibold text-late">{t('QL từ chối đổi PA')}</b>{d.lyDoTuChoi ? `: “${d.lyDoTuChoi}”` : ''}
+        <b className="font-semibold text-late">{t('Head từ chối đổi PA')}</b>{d.lyDoTuChoi ? `: “${d.lyDoTuChoi}”` : ''}
         {iv.status === 'started' && iv.ghiDuoc && !lai && <> · <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 font-semibold sm:min-h-0" onClick={() => setLai(true)}>{t('Đề xuất lại')}</button></>}
       </p>
       {lai && <DeXuatLai iv={iv} studentId={data.student?.id} onHuy={() => setLai(false)} onXong={() => { setLai(false); onDoi?.(); }} />}
@@ -1133,10 +1133,10 @@ function DeXuatLai({ iv, studentId, onHuy, onXong }: { iv: any; studentId?: numb
   };
   return (
     <CanLam>
-      <FormDoiPa d={d} lf={lf} studentId={studentId} chuNgay={t('ngày QL duyệt')} />
+      <FormDoiPa d={d} lf={lf} studentId={studentId} chuNgay={t('ngày Head duyệt')} />
       {loi && <p role="alert" className="m-0 text-[13px] font-semibold text-bad">⚠ {loi}</p>}
       <div className="flex flex-wrap items-center gap-2">
-        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={busy} onClick={() => void gui()}>{busy ? t('Đang gửi…') : t('Gửi Quản lý duyệt')}</button>
+        <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={busy} onClick={() => void gui()}>{busy ? t('Đang gửi…') : t('Gửi Head duyệt')}</button>
         <NutChu onClick={onHuy}>{t('Đóng')}</NutChu>
       </div>
     </CanLam>
@@ -1158,12 +1158,12 @@ const MILESTONE_TITLE: Record<string, string> = {
   /* PR-SOS (K3-21): Xác nhận Case + ba mốc của thẻ Không cần theo dõi (lý do ở dòng ghi chú). */
   xac_nhan_case: t('Xác nhận Case'),
   xin_khong_theo_doi: t('Xin không theo dõi'),
-  ql_duyet_khong_theo_doi: t('Quản lý duyệt không theo dõi'),
-  ql_tu_choi_khong_theo_doi: t('Quản lý từ chối không theo dõi'),
+  ql_duyet_khong_theo_doi: t('Head duyệt không theo dõi'),
+  ql_tu_choi_khong_theo_doi: t('Head từ chối không theo dõi'),
   /* PR-LT2a (K3-21): kế hoạch bổ trợ lớp thường — PR-CT2 bỏ bước này, nhãn giữ để đọc lịch sử Case cũ. */
   nop_ke_hoach: t('Nộp kế hoạch bổ trợ'),
-  ke_hoach_duyet: t('Quản lý duyệt kế hoạch'),
-  ke_hoach_tu_choi: t('Quản lý từ chối kế hoạch'),
+  ke_hoach_duyet: t('Head duyệt kế hoạch'),
+  ke_hoach_tu_choi: t('Head từ chối kế hoạch'),
   /* PR-LUI-a2: Quản lý mở lại Case đã hoàn thành. */
   reopened: t('Mở lại'),
   /* OV-1c: Overall ≥ kỳ vọng sau khi kỹ năng dời có điểm — Case đã có người làm giữ, GV tự đóng. */

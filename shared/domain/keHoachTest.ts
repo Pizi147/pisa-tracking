@@ -263,7 +263,7 @@ export function viecXepMt(ds: LuotXep[], chon: number, so: LuotSo[], ep = false)
   const can = a.kn.filter((k) => k.batBuoc);
   const conThi = can.filter((k) => !k.coDiem && !k.daThi && !k.choDuyet);
   if (!conThi.length) {
-    if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Quản lý duyệt dời — trả lời đề nghị trước.` };
+    if (can.some((k) => k.choDuyet)) return { loai: 'chan', no: n, cau: `MT${n} còn kỹ năng chờ Head duyệt dời — trả lời đề nghị trước.` };
     const cd = can.filter((k) => k.coDiem).map((k) => k.skill);
     if (!ep) return { loai: 'chan', no: n, cau: `MT${n} đã xong.` };
     return cd.length ? { loai: 'da-du', no: n, coDiem: cd } : { loai: 'chan', no: n, cau: `MT${n} đã làm bài, đang chờ chấm.` };

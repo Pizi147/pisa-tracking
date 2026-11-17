@@ -121,7 +121,7 @@ export type ChonBuocTiepVao = {
   monDangKy?: unknown;
 };
 
-const CHI_QL = 'Chỉ Quản lý hoặc TVV của chi nhánh chọn được bước tiếp sau thi.';
+const CHI_QL = 'Chỉ Head hoặc TVV của chi nhánh chọn được bước tiếp sau thi.';
 const LY_DO_MOI = 'Lộ trình mới sau thi';
 
 /** Ngày của hộp "Tạm dừng / Kết thúc học" trong panel Bước tiếp: trống → hôm nay; sai dạng / sau hôm nay → 400. */

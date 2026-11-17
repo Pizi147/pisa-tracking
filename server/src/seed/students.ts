@@ -719,7 +719,7 @@ export const STUDENTS: StudentSeed[] = [
 
   {
     code: 'J07', name: 'Phan Minh Tú', branch: 'BC', dob: '2008-07-08',
-    story: 'Quy trình duyệt: một đề xuất đang chờ Quản lý trả lời, và một đề xuất trước đó đã bị '
+    story: 'Quy trình duyệt: một đề xuất đang chờ Head trả lời, và một đề xuất trước đó đã bị '
       + 'từ chối kèm lý do rồi được sửa lại. Chu kỳ thực hiện chỉ chạy TỪ LÚC được duyệt.',
     enrollments: [{ class: 'BC FT 205', from: '2026-06-08', status: 'active' }],
     cycles: [
@@ -796,7 +796,7 @@ export const STUDENTS: StudentSeed[] = [
                 followups: [{
                   on: '2026-08-31', outcome: 'partial', nextStep: 'ask_manager',
                   note: 'Đuôi -s đã rõ hơn, -ed vẫn nuốt. Tự mình không quyết được việc chuyển lớp, '
-                    + 'xin ý kiến Quản lý.',
+                    + 'xin ý kiến Head.',
                   /* Điểm cô TỰ CHẤM, KHÔNG phải điểm chính thức và không đổi mức SOS. */
                   metrics: [{ skill: 'speaking', score: 55, total: 100 }],
                 }],

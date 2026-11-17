@@ -4,7 +4,7 @@ import type { Dich } from '../en.ts';
 export const EN_R1_NO_CU = {
   'Chọn người phụ trách.': 'Pick an owner.',
   'Thiếu người phụ trách hiện tại — tải lại.': 'Current owner is missing — reload.',
-  'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.': 'Only the class manager or homeroom teacher can change the case owner.',
+  'Chỉ Head hoặc GVCN của lớp em đổi được người phụ trách Case.': 'Only the class Head or homeroom teacher can change the case owner.',
   'Case đã đóng.': 'The case is closed.',
   'Case tạm chưa là việc — chưa đổi người được.': 'Provisional case — the owner can’t be changed yet.',
   'Người phụ trách vừa đổi — tải lại.': 'The owner was just changed — reload.',

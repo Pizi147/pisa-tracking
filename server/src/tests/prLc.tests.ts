@@ -142,7 +142,7 @@ export async function runPrLcTests(t: YThucTestKit) {
     raDu(l.classId, [{ studentId: sid, huong: 'hoc_lai', toClassId: FOU }]);
     assert(get('SELECT status FROM assessment_attempts WHERE id = ?', m).status === 'cancelled', 'lệnh Học lại → MT0 chưa điểm huỷ ngay');
     assert(ltt(sid, l.classId)?.huong === 'hoc_lai', `LTT sau lệnh Học lại: ${ltt(sid, l.classId)?.huong}`);
-    assert(hanhTrinh(sid)?.startsWith('QL quyết: ') && hanhTrinh(sid)!.includes('(GVCN: '), `Hành trình nêu hướng GVCN (R9): ${hanhTrinh(sid)}`);
+    assert(hanhTrinh(sid)?.startsWith('Head quyết: ') && hanhTrinh(sid)!.includes('(GVCN: '), `Hành trình nêu hướng GVCN (R9): ${hanhTrinh(sid)}`);
     const id = lenhCua(sid).id as number;
     lenh.suaLenh(QL, id, { huong: 'fast_track', toClassId: FT, mucTieu: 6 });
     const ds = mt0Cua(sid);
@@ -286,7 +286,7 @@ export async function runPrLcTests(t: YThucTestKit) {
     lenh.suaLenh(QL, lenhCua(sid).id, { huong: 'fast_track', toClassId: FT, mucTieu: 6 });
     assert(lenhCua(sid).huong === 'fast_track' && ltt(sid, l.classId)?.huong === 'fast_track',
       `QL sửa lệnh: lệnh ${lenhCua(sid).huong} · LTT ${ltt(sid, l.classId)?.huong}`);
-    assert(hanhTrinh(sid)?.startsWith('QL quyết: ') && !hanhTrinh(sid)!.includes('(GVCN:'), `hướng cũ là của QL → không "(GVCN: …)" (R9): ${hanhTrinh(sid)}`);
+    assert(hanhTrinh(sid)?.startsWith('Head quyết: ') && !hanhTrinh(sid)!.includes('(GVCN:'), `hướng cũ là của QL → không "(GVCN: …)" (R9): ${hanhTrinh(sid)}`);
     const e6 = loi(() => loTrinh.ghiLoTrinhTiepCaLop(QL, l.classId, { items: [{ studentId: sid, huong: 'fast_track', ghiChu: 'h' }] }));
     assert(!e6 && ltt(sid, l.classId)?.muc_tieu === 6, `GVCN cả lớp giữ Target lệnh được: ${e6?.message} · ${ltt(sid, l.classId)?.muc_tieu}`);
     const e7 = loi(() => loTrinh.ghiLoTrinhTiep(QL, sid, { huong: 'fast_track', mucTieu: 7 }));
@@ -336,7 +336,7 @@ export async function runPrLcTests(t: YThucTestKit) {
       `LTT theo lệnh, giữ ghi chú: ${JSON.stringify({ h: t1?.huong, lop: t1?.lop_du_kien_id, mt: t1?.muc_tieu, gc: t1?.ghi_chu })}`);
     const m1 = mt0Cua(sid);
     assert(m1.length === 1 && m1[0].status === 'planned' && m1[0].target_at_attempt === 6.5, `một MT0 chờ, Target 6.5: ${JSON.stringify(m1.map((m) => [m.status, m.target_at_attempt]))}`);
-    assert(hanhTrinh(sid)?.startsWith('QL quyết: '), `Hành trình "QL quyết": ${hanhTrinh(sid)}`);
+    assert(hanhTrinh(sid)?.startsWith('Head quyết: '), `Hành trình "QL quyết": ${hanhTrinh(sid)}`);
     assert(a1.length === 1 && /^PR-LC: /.test(a1[0]), `báo đúng một dòng PR-LC: ${a1.join(' | ')}`);
     const n1 = soHanhTrinh();
     const a2: string[] = [];
@@ -380,7 +380,7 @@ export async function runPrLcTests(t: YThucTestKit) {
     assert(a1.length === 1 && a1[0].includes('theo 4 quyết định'), `đúng 4 lệnh lệch (em khớp không chọn): ${a1.join(' | ')}`);
     const t0 = ltt(lenLop, a.classId);
     assert(t0?.huong === 'len_lop' && t0.lop_du_kien_id === BE, `chưa LTT → Lên lớp: ${JSON.stringify({ h: t0?.huong, lop: t0?.lop_du_kien_id })}`);
-    assert(hanhTrinh(lenLop)?.startsWith('QL quyết: ') && !hanhTrinh(lenLop)!.includes('(GVCN:'), `Hành trình "QL quyết" không "(GVCN: …)": ${hanhTrinh(lenLop)}`);
+    assert(hanhTrinh(lenLop)?.startsWith('Head quyết: ') && !hanhTrinh(lenLop)!.includes('(GVCN:'), `Hành trình "QL quyết" không "(GVCN: …)": ${hanhTrinh(lenLop)}`);
     const t1 = ltt(lenFt, a.classId);
     const m1 = mt0Cua(lenFt);
     assert(t1?.huong === 'fast_track' && t1.lop_du_kien_id === FT && t1.muc_tieu === 6.5, `chưa LTT → Lên FT 6.5: ${JSON.stringify({ h: t1?.huong, lop: t1?.lop_du_kien_id, mt: t1?.muc_tieu })}`);
@@ -421,7 +421,7 @@ export async function runPrLcTests(t: YThucTestKit) {
     const ds = mt0Cua(sid);
     assert(ds.length === 1 && ds[0].id === m && ds[0].status === 'planned' && ds[0].target_at_attempt === 6.5,
       `cùng MT0 chờ lại: ${JSON.stringify(ds.map((x) => [x.id, x.status, x.target_at_attempt]))} (MT0 cũ ${m})`);
-    assert(hanhTrinh(sid)?.startsWith('QL quyết: ') && hanhTrinh(sid)!.includes('(GVCN: '), `Hành trình: ${hanhTrinh(sid)}`);
+    assert(hanhTrinh(sid)?.startsWith('Head quyết: ') && hanhTrinh(sid)!.includes('(GVCN: '), `Hành trình: ${hanhTrinh(sid)}`);
   });
 
   // ------------------------------------------------------------------ (q) đề xuất Lên FT duyệt trong tuần Final → lệnh cuối khoá, có MT0 (planning 08/10)

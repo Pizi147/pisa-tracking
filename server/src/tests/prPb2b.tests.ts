@@ -131,7 +131,7 @@ export async function runPrPb2bTests(t: YThucTestKit) {
   const vp = (id: number) => get('SELECT han_xu_ly, phan_hoi_ngay FROM violations WHERE id = ?', id);
   const hanDung = (sid: number, id: number) => tt.trangThaiYThuc([sid]).get(sid).viPham.get(id).han;
   const deXuatGui = (sid: number, ids: number[]) => {
-    const nhap = xuLy.deXuat(gvcn, sid, { kind: 'suspension', violationIds: ids, note: 'Em vi phạm nhiều lần, cần QL quyết' });
+    const nhap = xuLy.deXuat(gvcn, sid, { kind: 'suspension', violationIds: ids, note: 'Em vi phạm nhiều lần, cần Head quyết' });
     attachments.addLink(gvcn, { ownerType: 'discipline_measure', ownerId: nhap.id, url: 'https://example.com/bang-chung', displayName: 'Biên bản' });
     return { nhap, gui: () => xuLy.guiDeXuat(gvcn, nhap.id) };
   };

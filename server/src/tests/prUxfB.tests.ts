@@ -204,7 +204,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
   });
   check('UXF-b (5) · PHỦ ĐỊNH: người ngoài phạm vi vẫn không mở được lượt của lớp khác (kn chỉ là chỗ cuộn, không đổi quyền)', () => {
     const a = t.conn.prepare(`SELECT a.id FROM assessment_attempts a JOIN classes c ON c.id = a.class_id JOIN branches b ON b.id = c.branch_id WHERE b.code = 'MB' AND a.kind = 'mock' LIMIT 1`).get() as any;
-    t.assertThrows(() => attemptsSvc.attemptDetail(t.P.cpManager, a.id), /phạm vi/, 'QL CP mở lượt MT của MB');
+    t.assertThrows(() => attemptsSvc.attemptDetail(t.P.cpManager, a.id), /phạm vi/, 'Head CP mở lượt MT của MB');
   });
   check('UXF-b (5) · quét chữ: lưới chấm, một kỹ năng, chip Lịch Test, hồ sơ HV (muc + id) dùng đường chung', () => {
     assert(/duongDotTest\(/.test(doc('web/src/modules/cham/LuoiFT.tsx')), 'LuoiFT');
@@ -290,7 +290,7 @@ export async function runPrUxfBTests(t: YThucTestKit) {
     /* Y-THUC-V2 (mockup 11/11 K9b): QL từ chối → khối "Bắt buộc xử lý", ô ② badge "QL từ chối" + tên lần (bấm mở lần xử lý) — hai tab cùng chữ, không "vi phạm / 2 tuần". */
     for (const f of ['web/src/modules/yThuc/ClassYThucCard.tsx', 'web/src/modules/yThuc/StudentYThucSection.tsx']) {
       const cy = doc(f);
-      const i = cy.indexOf("t('QL từ chối')");
+      const i = cy.indexOf("t('Head từ chối')");
       assert(i > 0 && !/vi phạm \/ 2 tuần/.test(cy.slice(i - 200, i + 300)), `VN26 ${f}`);
     }
   });

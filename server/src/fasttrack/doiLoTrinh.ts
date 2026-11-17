@@ -134,7 +134,7 @@ export function cauTomTat(t: TomTatDoiLoTrinh): string {
 }
 
 const LOAI_DAO = 'lo_trinh.doi';
-const CHI_DOI_LO_TRINH = 'Chỉ Quản lý, Admin, GVCN hoặc TVV của em đổi được lộ trình.';
+const CHI_DOI_LO_TRINH = 'Chỉ Head, Admin, GVCN hoặc TVV của em đổi được lộ trình.';
 
 /** Sửa thông tin › ô "Lộ trình đang học": kiểm quyền, đổi + chụp `ghi_dao` cùng giao dịch. Trả tóm tắt + id bản ghi Hoàn tác. */
 export function doiLoTrinh(p: Principal, cycleId: number, body: { route?: unknown; lyDo?: unknown }): TomTatDoiLoTrinh & { dao: number; cau: string } {

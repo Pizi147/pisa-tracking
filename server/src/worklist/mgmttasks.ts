@@ -396,7 +396,7 @@ export function createMgmtTask(p: Principal, input: {
   idempotencyKey?: string | null;
 }) {
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId: input.branchId ?? null, anyScope: !input.branchId },
-    'Chỉ Quản lý mới tạo được công việc quản lý.');
+    'Chỉ Head mới tạo được công việc quản lý.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
   const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
   chuTuDo(input.note, 'Ghi chú', 2000);
@@ -419,7 +419,7 @@ export function createMgmtTask(p: Principal, input: {
   }
 
   const taskBranchId = input.branchId ?? parent?.branch_id ?? null;
-  require_(p, PERMISSIONS.MEETING_EDIT, { branchId: taskBranchId, anyScope: !taskBranchId }, 'Chỉ Quản lý mới tạo được công việc quản lý.');
+  require_(p, PERMISSIONS.MEETING_EDIT, { branchId: taskBranchId, anyScope: !taskBranchId }, 'Chỉ Head mới tạo được công việc quản lý.');
   kiemNguoi('Người phụ trách', input.assigneeUserId, taskBranchId);
   kiemNguoi('Người theo dõi', input.watcherUserId, taskBranchId);
   /*
@@ -515,7 +515,7 @@ export function updateMgmtTask(p: Principal, taskId: number, input: {
   /* Người được giao cập nhật được việc của mình; người THEO DÕI thì không (mục 8.3). */
   const isAssignee = t.assignee_user_id === p.userId;
   if (!coQuyenViec(p, t) && !isAssignee) {
-    throw forbidden('Chỉ người được giao hoặc Quản lý mới cập nhật được công việc này.');
+    throw forbidden('Chỉ người được giao hoặc Head mới cập nhật được công việc này.');
   }
   if (!(TASK_PROGRESS as readonly string[]).includes(input.progress)) {
     throw badRequest('Trạng thái không hợp lệ.');
@@ -620,7 +620,7 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const t = conn.prepare('SELECT * FROM tasks WHERE id = ?').get(taskId) as any;
   if (!t) throw notFound('Không tìm thấy công việc.');
   require_(p, PERMISSIONS.MEETING_EDIT, { branchId: t.branch_id, anyScope: !t.branch_id },
-    'Chỉ Quản lý mới sửa được công việc quản lý.');
+    'Chỉ Head mới sửa được công việc quản lý.');
 
   const sets: string[] = [];
   const params: unknown[] = [];

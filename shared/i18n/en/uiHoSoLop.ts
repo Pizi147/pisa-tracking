@@ -9,7 +9,7 @@ export const EN_UI_HO_SO_LOP = {
   'Chưa ghi': 'Not recorded',
   'Chờ Final': 'Awaiting Final',
   'Dừng học hẳn': 'Stop studying',
-  'GVCN đề xuất, QL chốt': 'Homeroom teacher proposes, manager decides',
+  'GVCN đề xuất, Head chốt': 'Homeroom teacher proposes, Head decides',
   'Ghi KQ PA': 'Record PA result',
   'Hạn ghi KQ': 'Result due',
   'Học viên lớp {lop}': 'Students of class {lop}',

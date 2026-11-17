@@ -195,13 +195,13 @@ export function PhanPhanCong({ lop, suaDuoc, moSua = false, onDone, oMo = null }
       {dangSua && error && <Empty title={t('Không đọc được phân công')} hint={error.message} />}
       {dangSua && data && (
         <div className="space-y-3">
-          {!suaMay && <p className="m-0 text-xs text-slate-400">{t('Chỉ xem: đổi phân công là việc của Quản lý chi nhánh.')}</p>}
+          {!suaMay && <p className="m-0 text-xs text-slate-400">{t('Chỉ xem: đổi phân công là việc của Head chi nhánh.')}</p>}
           {chiBoMon && (
             <div className="grid grid-cols-[6rem_1fr] items-center gap-x-2.5" id={lf.oId('gvcn')}>
               <span className="text-xs font-bold text-slate-200">{t('GVCN')}</span>
               <span className="text-sm text-slate-300">
                 {data.core.map((c) => c.name).join(' · ') || t('Chưa có')}
-                <span className="block text-xs text-slate-500">{t('Đổi GVCN: nhờ Quản lý chi nhánh.')}</span>
+                <span className="block text-xs text-slate-500">{t('Đổi GVCN: nhờ Head chi nhánh.')}</span>
                 {loiO('gvcn') && <span className="block text-xs text-late">{loiO('gvcn')}</span>}
               </span>
             </div>
