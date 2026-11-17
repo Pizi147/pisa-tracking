@@ -34,7 +34,7 @@ export const EN_GD15 = {
   'Ba tab của hồ sơ ở đây.': 'The profile\'s three tabs are here.',
   '<b>Từ tuần</b> → <b>Đến tuần</b>: dải Việc · Chấm Test (% đúng hạn · Chưa làm) và tab <b>Học thuật</b> theo khoảng đó; bấm số mở danh sách ngay tại trang.':
     '<b>From week</b> → <b>To week</b>: the Tasks · Test marking strip (% on time · Not done) and the <b>Academic</b> tab follow that range; click a number for the list right on the page.',
-  'Kỹ năng của GV: <b>Sửa</b> → <b>Lưu</b>, lỡ tay thì <b>Hoàn tác</b> (QL, Quản trị).': 'Teacher skills: <b>Edit</b> → <b>Save</b>, <b>Undo</b> if it was a slip (Manager, System admin).',
+  'Kỹ năng của GV: <b>Sửa</b> → <b>Lưu</b>, lỡ tay thì <b>Hoàn tác</b> (Head, Quản trị).': 'Teacher skills: <b>Edit</b> → <b>Save</b>, <b>Undo</b> if it was a slip (Head, System admin).',
   'Tab <b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm thay; nút việc của GV ở đầu trang mở Công việc của GV.':
     '<b>Tasks & Cases</b> tab: click a <b>Do first</b> row to do it for them; the teacher\'s tasks button in the page header opens their To do.',
   'Chọn <b>Từ tuần</b> → <b>Đến tuần</b>: dải đúng hạn và tab <b>Học thuật</b> theo khoảng đó; tab <b>Lớp</b> · <b>Việc & Case</b> tính tới hôm nay.':

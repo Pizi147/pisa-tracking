@@ -48,7 +48,7 @@ export async function runPrTinhHinhTests(t: YThucTestKit) {
   const theYc = (mid: number) => hang(`SELECT * FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ? ORDER BY id DESC`, mid)[0];
   const viecCuaXl = (mid: number) => hang('SELECT * FROM viec_bao_ph WHERE measure_id = ?', mid);
   const guiDx = (sid: number, kind: string, vIds: number[]) => {
-    const nhap = xu.deXuat(gvcn, sid, { kind, violationIds: vIds, note: 'Lý do đề xuất đủ dài để gửi QL' });
+    const nhap = xu.deXuat(gvcn, sid, { kind, violationIds: vIds, note: 'Lý do đề xuất đủ dài để gửi Head' });
     xu.guiDeXuat(gvcn, nhap.id);
     return nhap.id as number;
   };

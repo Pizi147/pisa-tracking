@@ -216,7 +216,7 @@ export async function runPrHdTests(t: any) {
     const chu = (k: string) => k;
     const a = hd.timHd(gv, 'doi lop', chu, 'lich-test');
     assert(a.viec.some((v: any) => v.id === 'de-xuat-chuyen-lop'), `doi lop: ${a.viec.map((v: any) => v.id)}`);
-    assert(a.vaiKhac.some((v: any) => v.cua === 'việc của QL'), 'việc vai khác');
+    assert(a.vaiKhac.some((v: any) => v.cua === 'việc của Head'), 'việc vai khác');
     const b = hd.timHd(gv, 'nhập điểm', chu, 'lich-test');
     assert(['nhap-diem', 'nhap-mt-cu'].every((i) => b.viec.some((v: any) => v.id === i)), `nhập điểm: ${b.viec.map((v: any) => v.id)}`);
     const c = hd.timHd(gv, 'xoá tài khoản', chu);
@@ -292,7 +292,7 @@ export async function runPrHdTests(t: any) {
     assert(ht.man.map((m: any) => m.id).join() === 'tong-quan,ho-so-ca-nhan,huong-dan', `HT màn: ${ht.man.map((m: any) => m.id)}`);
     const chu = (k: string) => k;
     assert(hd.timHd(tvv, 'bao phu huynh', chu).viec.some((v: any) => v.id === 'bao-ph'), 'TVV tìm "bao phu huynh"');
-    assert(hd.timHd(tvv, 'doi lop', chu).vaiKhac.some((v: any) => v.cua === 'việc của QL'), 'TVV: đổi lớp là việc của QL');
+    assert(hd.timHd(tvv, 'doi lop', chu).vaiKhac.some((v: any) => v.cua === 'việc của Head'), 'TVV: đổi lớp là việc của QL');
     assert(hd.timHd(cx, 'ket qua thi that', chu).viec.some((v: any) => v.id === 'thi-that'), 'CX tìm "ket qua thi that"');
     /* Trang /huong-dan dùng chung dữ liệu: mọi vai có màn Hướng dẫn riêng ("Xem vai khác" cho QL / QT đọc được cả 7 vai). */
     for (const [vai, h] of Object.entries(hd.HUONG_DAN) as [string, any][]) assert(hd.manCuaDuong(h, '/huong-dan')?.id === 'huong-dan', `${vai}: thiếu màn Hướng dẫn`);

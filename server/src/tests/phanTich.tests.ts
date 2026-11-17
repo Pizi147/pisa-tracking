@@ -506,10 +506,10 @@ export async function runPhanTichTests(t: YThucTestKit) {
   check('UX4 · Hiệu quả PA — quyền: GVCN 403; QL chi nhánh khác 403; lớp ngoài phạm vi 403', () => {
     eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.coreTeacher, FQ())), 403, 'GVCN hieuQuaPa');
     eq(boiHttp(() => hieuQuaSvc.oHieuQuaPa(P.coreTeacher, { ...FQ(), dong: 'chua-ghi-ket-qua', cot: '' })), 403, 'GVCN oHieuQuaPa');
-    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ({ branchId: cpBranch }))), 403, 'QL Monbay hỏi CP');
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ({ branchId: cpBranch }))), 403, 'Head Monbay hỏi CP');
     const lopCp = (conn.prepare('SELECT id FROM classes WHERE branch_id = ? LIMIT 1').get(cpBranch) as any).id as number;
-    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ({ classId: lopCp }))), 403, 'QL Monbay hỏi lớp CP');
-    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ())), 200, 'QL Monbay hỏi phạm vi mình');
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ({ classId: lopCp }))), 403, 'Head Monbay hỏi lớp CP');
+    eq(boiHttp(() => hieuQuaSvc.hieuQuaPa(P.mbManager, FQ())), 200, 'Head Monbay hỏi phạm vi mình');
   });
 
   await checkAsync('UX4 · Hiệu quả PA: không N+1 — số câu SQL không đổi theo khoảng và ≤ 12', async () => {
@@ -581,7 +581,7 @@ export async function runPhanTichTests(t: YThucTestKit) {
       eq([dong(m.a)?.viPham, dong(m.a)?.chuaXuLy], [3, 3], 'a: 3 vi phạm, 3 chưa xử lý');
       eq([dong(m.b)?.nhom, dong(m.b)?.bac, dong(m.b)?.bacKe], ['qua_han', 'Report 1', 'Report 2'], 'b: quá hạn (bắt buộc xử lý)');
       eq([dong(m.b)?.bienPhapGanNhat, dong(m.b)?.ngay], ['Report 1', cong(TODAY, -20)], 'b: xử lý gần nhất');
-      eq(dong(m.e)?.nhom, 'cho_duyet', 'e: đề xuất chờ QL');
+      eq(dong(m.e)?.nhom, 'cho_duyet', 'e: đề xuất chờ Head');
       assert(!dong(m.c) && !dong(m.dd), 'c (Mới) và d (đã xử lý hết) không vào danh sách');
       for (const r of kq.hvCanChuY) assert(['qua_han', 'bat_buoc', 'cho_duyet'].includes(r.nhom) && !('buocTiep' in r), `"${r.ten}": ${r.nhom}`);
       const vt = (id: number) => kq.hvCanChuY.findIndex((x: any) => x.studentId === id);
@@ -654,10 +654,10 @@ export async function runPhanTichTests(t: YThucTestKit) {
   check('UX4 · Ý thức — quyền: GVCN 403; QL chi nhánh khác 403; classId ngoài phạm vi 403', () => {
     eq(boiHttp(() => yThucSvc.yThucPhanTich(P.coreTeacher, FY())), 403, 'GVCN yThucPhanTich');
     eq(boiHttp(() => yThucSvc.oYThucPhanTich(P.coreTeacher, { ...FY(), dong: 'gom', cot: 'vi-pham' })), 403, 'GVCN oYThucPhanTich');
-    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ branchId: cpBranch }))), 403, 'QL Monbay hỏi CP');
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ branchId: cpBranch }))), 403, 'Head Monbay hỏi CP');
     const lopCp = (conn.prepare('SELECT id FROM classes WHERE branch_id = ? LIMIT 1').get(cpBranch) as any).id as number;
-    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ classId: lopCp }))), 403, 'QL Monbay hỏi lớp CP');
-    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ branchId: mbBranch }))), 200, 'QL Monbay hỏi chi nhánh mình');
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ classId: lopCp }))), 403, 'Head Monbay hỏi lớp CP');
+    eq(boiHttp(() => yThucSvc.yThucPhanTich(P.mbManager, FY({ branchId: mbBranch }))), 200, 'Head Monbay hỏi chi nhánh mình');
     eq(boiHttp(() => yThucSvc.yThucPhanTich(P.admin, FY({ classId: lopCp }))), 200, 'Quản trị hỏi lớp bất kỳ');
   });
 

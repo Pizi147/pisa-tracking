@@ -101,9 +101,9 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
   const cot = COT.filter((c) => !(d?.lopThuong && c.key === 'baseline') && (d?.coMonHoc || c.key !== 'monDangKy') && (d?.nhapLienHe || !(TRUONG_LIEN_HE as readonly string[]).includes(c.key)));
   const goc = useMemo(() => new Map((d?.rows ?? []).map((r) => [r.studentId, r])), [d]);
   /** Cả cột khoá theo vai — máy chủ kiểm lại (`duocDoiTarget`, `CHI_SUA_THONG_TIN`). */
-  const khoaCot = (k: Cot) => (k === 'target' && !d?.coTheSuaTarget ? t('Chỉ Quản lý, TVV hoặc CX đổi Target')
-    : k === 'startWeek' && !d?.coTheDoiTuan ? t('Chỉ Quản lý, GVCN hoặc TVV sửa Tuần bắt đầu')
-    : k === 'monDangKy' && !d?.coTheDoiMon ? t('Chỉ Quản lý, GVCN hoặc TVV đổi Môn học') : null);
+  const khoaCot = (k: Cot) => (k === 'target' && !d?.coTheSuaTarget ? t('Chỉ Head, TVV hoặc CX đổi Target')
+    : k === 'startWeek' && !d?.coTheDoiTuan ? t('Chỉ Head, GVCN hoặc TVV sửa Tuần bắt đầu')
+    : k === 'monDangKy' && !d?.coTheDoiMon ? t('Chỉ Head, GVCN hoặc TVV đổi Môn học') : null);
 
   /** Giá trị gốc của ô: đã lưu ở lô trước (lưu dở) thì lấy giá trị đó. */
   const nen = (g: DongGoc, k: Cot) => luuRoi[g.studentId]?.[k] ?? chuGoc(g, k);
@@ -301,7 +301,7 @@ export function SuaCaLopPanel({ classId, onClose, onDone }: { classId: number; o
                             ? vanDe(r.studentId, c.key).find((i) => i.muc === 'loi')?.message ?? null : null;
                           const khoaO = (O_LO_TRINH.has(c.key) && !r.coLoTrinh) || !!khoaCot(c.key) || (c.key === 'monDangKy' && !r.laFt);
                           /* QUYEN-CN: ô Liên hệ của em ở chi nhánh mình không có vai sửa liên hệ — chỉ đọc (máy chủ 403 nếu gửi). */
-                          const chiDoc = (TRUONG_LIEN_HE as readonly string[]).includes(c.key) && !r.nhapLienHe ? t('Em thuộc chi nhánh bạn không sửa được liên hệ — báo TVV / Quản lý chi nhánh em') : null;
+                          const chiDoc = (TRUONG_LIEN_HE as readonly string[]).includes(c.key) && !r.nhapLienHe ? t('Em thuộc chi nhánh bạn không sửa được liên hệ — báo TVV / Head chi nhánh em') : null;
                           const nhan = `${c.nhan} · ${r.fullName}`;
                           const idLoi = `loi-${r.studentId}-${c.key}`;
                           return (

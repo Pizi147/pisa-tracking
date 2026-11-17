@@ -154,7 +154,7 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
   for (const c of tao) {
     const ai = c.nguoiViet.loai === 'ql' ? 'ql' : String(c.nguoiViet.id);
     const k = `${c.classId}|${ai}`;
-    const v = viec.get(k) ?? { cot: [], soEm: c.soEm, nguoi: c.nguoiViet.loai === 'ql' ? t('Quản lý chi nhánh') : ten(c.nguoiViet.id) };
+    const v = viec.get(k) ?? { cot: [], soEm: c.soEm, nguoi: c.nguoiViet.loai === 'ql' ? t('Head chi nhánh') : ten(c.nguoiViet.id) };
     v.cot.push(c.nhan);
     viec.set(k, v);
   }
@@ -214,7 +214,7 @@ export function HopLuuPhanCong({ lop, tuanMacDinh, onQuayLai, onDaLuu, onLoi, ne
         {c.nguoiViet.loai !== 'gv-cu' && (
           <span className="ct">{c.nguoiViet.loai === 'gvcn'
             ? t('{gv} đã nghỉ → việc bàn giao do GVCN {x} viết.', { gv: ten(c.nguoiCu), x: ten(c.nguoiViet.id) })
-            : t('{gv} đã nghỉ → việc bàn giao do Quản lý chi nhánh viết.', { gv: ten(c.nguoiCu) })}</span>
+            : t('{gv} đã nghỉ → việc bàn giao do Head chi nhánh viết.', { gv: ten(c.nguoiCu) })}</span>
         )}
       </div>
     );

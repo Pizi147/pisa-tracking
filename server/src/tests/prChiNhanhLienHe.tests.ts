@@ -42,7 +42,7 @@ export async function runPrChiNhanhLienHeTests(t: { check: any; assert: any; ass
     /* QTV2-CAU-HINH (chủ SP 11/11 "QL xem"): Quản lý XEM được danh sách chi nhánh, vẫn không sửa được; GV bị chặn. */
     assert(sc.listChiNhanh(P.mbManager).some((b: any) => b.code === 'CP'), 'QL không xem được danh sách chi nhánh');
     assertThrows(() => sc.listChiNhanh(P.lrTeacher), /Quản trị/, 'GV xem được danh sách chi nhánh');
-    assertThrows(() => sc.luuChiNhanh(P.mbManager, cp().id, { name: 'X', diaChi: '', soDienThoai: '' }), /Quản trị/, 'QL sửa được chi nhánh');
+    assertThrows(() => sc.luuChiNhanh(P.mbManager, cp().id, { name: 'X', diaChi: '', soDienThoai: '' }), /Quản trị/, 'Head sửa được chi nhánh');
     const r = sc.luuChiNhanh(P.admin, cp().id, { name: ' Cẩm Phả 2 ', diaChi: ' Số 1 Tô Hiệu ', soDienThoai: '' });
     assert(r.truoc.diaChi === 'Số 48 Tô Hiệu, Cẩm Phả, Quảng Ninh' && r.truoc.soDienThoai === '082.228.9288', `trước: ${JSON.stringify(r)}`);
     assert(cp().name === 'Cẩm Phả 2' && cp().dia_chi === 'Số 1 Tô Hiệu' && cp().so_dien_thoai == null,JSON.stringify(cp()));

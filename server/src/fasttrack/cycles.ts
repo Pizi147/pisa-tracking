@@ -148,8 +148,8 @@ function apTargetLuotChuaDiem(cycleId: number, target: number | null) {
 }
 
 /** PR-DUYET (T44, Câu 1 = B): GVCN không tự sửa target/lộ trình — gửi Đề xuất sửa. Chuyển lớp vẫn là của GVCN. */
-export const CHI_QL_SUA = 'Target và lộ trình do Quản lý sửa. Bấm "Đề xuất sửa" để gửi Quản lý duyệt.';
-export const CHI_DOI_KCK = 'Chỉ Quản lý, Quản trị và Tư vấn viên tích / bỏ KCK.';
+export const CHI_QL_SUA = 'Target và lộ trình do Head sửa. Bấm "Đề xuất sửa" để gửi Head duyệt.';
+export const CHI_DOI_KCK = 'Chỉ Head, Quản trị và Tư vấn viên tích / bỏ KCK.';
 
 export function createCycle(p: Principal, input: {
   studentId: number; route?: Route | null; targetScore?: number | string | null;

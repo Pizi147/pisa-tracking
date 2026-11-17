@@ -24,7 +24,7 @@ const THU_TU_KN = ['listening', 'reading', 'writing1', 'writing2', 'speaking'];
 
 function phamVi(p: Principal, f: LocChiNhanh) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
-  if (scope.none) throw forbidden('Phân tích dành cho Quản lý.');
+  if (scope.none) throw forbidden('Phân tích dành cho Head.');
   if (f.branchId && !scope.all && !scope.branchIds.includes(f.branchId)) throw forbidden('Bạn không xem được chi nhánh này.');
   /* Một chi nhánh: đã chọn, hoặc phạm vi chỉ có một chi nhánh (như `bangChiNhanh`). */
   const branchId = f.branchId ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);

@@ -94,7 +94,7 @@ function kiemGhi(p: Principal, classId: number, skill: string, today: string) {
   const { c, cot } = kyNangGhi(p, classId, today);
   const k = cot.find((x) => x.skill === skill);
   if (!k) throw badRequest('Kỹ năng không thuộc lớp này.');
-  if (!k.ghiDuoc) throw loi(403, 'Bạn không ghi được bài {nhan} của lớp {code} — chỉ GV dạy {nhan2}, GVCN hoặc Quản lý.', { nhan: k.nhan, code: c.code, nhan2: k.nhan });
+  if (!k.ghiDuoc) throw loi(403, 'Bạn không ghi được bài {nhan} của lớp {code} — chỉ GV dạy {nhan2}, GVCN hoặc Head.', { nhan: k.nhan, code: c.code, nhan2: k.nhan });
   return { c, nhan: k.nhan };
 }
 

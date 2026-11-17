@@ -105,7 +105,7 @@ export async function runPrOv13pTests(t: YThucTestKit) {
       assert(r.status === 403, `TVV MB: ${r.status}`);
       r = await goi('POST', '/classes/bulk', tv, { rows: [lopMoi(CP), lopMoi(MB)] });
       assert(r.status === 403, `TVV lô có dòng MB: ${r.status}`);
-      for (const [ten, ck, b] of [['CX MB', cx, MB], ['CX CP', cx, CP], ['QL CP', ql, CP], ['QT MB', qt, MB]] as const) {
+      for (const [ten, ck, b] of [['CX MB', cx, MB], ['CX CP', cx, CP], ['Head CP', ql, CP], ['QT MB', qt, MB]] as const) {
         r = await goi('POST', '/classes', ck, lopMoi(b));
         assert(r.status === 200, `${ten}: ${r.status} ${r.json?.error}`);
       }

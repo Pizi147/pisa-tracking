@@ -7,7 +7,7 @@ export const EN_OV13M = {
   'Đã xong · OVR {ovr} · {kl}': 'Done · OVR {ovr} · {kl}',
   'Chọn bước tiếp ›': 'Choose next step ›',
   'Chọn một bước': 'Choose one step',
-  'Chờ QL / TVV chọn bước tiếp': 'Waiting for manager / consultant to choose the next step',
+  'Chờ Head / TVV chọn bước tiếp': 'Waiting for Head / consultant to choose the next step',
   'Huỷ hẹn': 'Cancel schedule',
   'Hẹn bắt đầu {tuan}': 'Schedule start {tuan}',
   'Hẹn bắt đầu {tuan} · {lop}': 'Starts {tuan} · {lop}',

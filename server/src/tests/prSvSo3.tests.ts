@@ -115,7 +115,7 @@ export async function runPrSvSo3Tests(t: YThucTestKit) {
 
   check('SVSO3 · O-TQ-BAM panel Đạt Target thi thật: QL chi nhánh khác → 403; lớp thường → 400', () => {
     const cpId = get("SELECT id FROM branches WHERE id <> (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1", MB_FT).id as number;
-    assertThrows(() => bc.oBaoCao(P.mbManager, { ...f, branchId: cpId, o: 'dat-target-thi' }), /phạm vi|quyền/, 'QL MB xem được chi nhánh khác');
+    assertThrows(() => bc.oBaoCao(P.mbManager, { ...f, branchId: cpId, o: 'dat-target-thi' }), /phạm vi|quyền/, 'Head MB xem được chi nhánh khác');
     let loi = false;
     try { bc.oBaoCao(P.mbManager, { ...f, ct: 'thuong', o: 'dat-target-thi' }); } catch { loi = true; }
     assert(loi, 'lớp thường → 400');

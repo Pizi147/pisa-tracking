@@ -71,7 +71,7 @@ export function StudentPlanPanel({ cycleId, studentName, ratio, onSuaThongTin, o
               <div className="flex flex-wrap items-center justify-between gap-2 mb-1">
                 <span className="label">{t('Lịch MT hệ thống đề xuất')}</span>
                 {/* OV-11d (HV-22): không áp được thì nói lý do bằng chữ (không nút mờ). */}
-                {!bang?.coTheXep ? <span className="text-xs text-slate-400">{t('Quản lý xếp lịch MT')}</span>
+                {!bang?.coTheXep ? <span className="text-xs text-slate-400">{t('Head xếp lịch MT')}</span>
                   : actionable ? <button className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy} onClick={applyPlan}>{t('Áp lịch cho {n} lượt', { n: actionable })}</button>
                   : <span className="text-xs text-slate-400">{t('Lịch đã đúng')}</span>}
               </div>

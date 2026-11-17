@@ -28,7 +28,7 @@ export const HD_HT: HuongDan = {
   ],
   vaiKhac: [
     { ten: 'Nhập điểm, xử lý Case', cua: 'việc của GV', tuKhac: ['điểm', 'case', 'score'] },
-    { ten: 'Duyệt yêu cầu', cua: 'việc của QL', tuKhac: ['duyệt', 'approve'] },
+    { ten: 'Duyệt yêu cầu', cua: 'việc của Head', tuKhac: ['duyệt', 'approve'] },
     { ten: 'Tạo, sửa, xoá tài khoản', cua: 'việc của Quản trị', tuKhac: ['tài khoản', 'account'] },
   ],
   man: [

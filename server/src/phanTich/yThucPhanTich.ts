@@ -36,7 +36,7 @@ const mucMoi = (): Muc => ({ vp: new Set(), chua: new Set(), qua: new Set(), hv:
 
 function tinh(p: Principal, f: FilterYThuc) {
   const scope = statScope(p, f.branchId ?? null);
-  if (scope.none) throw forbidden('Ý thức dành cho Quản lý.');
+  if (scope.none) throw forbidden('Ý thức dành cho Head.');
   if (f.classId) checkClassInScope(f.classId, scope.branchIds);
   const conn = db();
   const dai = soNgay(f.from, f.to);

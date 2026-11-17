@@ -32,7 +32,7 @@ export async function runPrQtv2BandTests(t: { check: any; assert: any; assertThr
 
   check('QTV2-B-2 · lưu: chỉ Quản trị; sai → 400 nêu trường; tuPhienBan cũ → 409; giống hệt → không thêm bản; nhật ký mục Band', () => thu(() => {
     xoa();
-    assertThrows(() => ch.luuBand(P.mbManager, 'ky-vong-ft', { giaTri: kv(), tuPhienBan: 0 }), /Quản trị/, 'QL sửa được');
+    assertThrows(() => ch.luuBand(P.mbManager, 'ky-vong-ft', { giaTri: kv(), tuPhienBan: 0 }), /Quản trị/, 'Head sửa được');
     assert(ch.xemBand(P.mbManager, 'nguong-thuong').suaDuoc === false && ch.xemBand(P.admin, 'nguong-thuong').suaDuoc === true, 'cờ suaDuoc');
     assertThrows(() => ch.xemBand(P.lrTeacher, 'ky-vong-ft'), /Quản trị/, 'GV xem được');
     assertThrows(() => ch.xemBand(P.admin, 'han'), /Không có mục/, 'loại lạ');

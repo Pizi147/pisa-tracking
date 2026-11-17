@@ -138,7 +138,7 @@ export const EN_TUB = {
   'Số buổi "Có" / số buổi có trả lời ô đó; buổi ghi trước khi có 3 ô không tính.': '"Yes" sessions / sessions that answered that item; sessions recorded before the 3 items do not count.',
   'Đánh giá = trung bình các buổi có đánh giá.': 'Rating = average of rated sessions.',
   'Ai thấy gì': 'Who sees what',
-  'Head tutor, Quản trị: mọi chi nhánh, sửa được. QL: tutor dạy em chi nhánh mình, chỉ xem.': 'Head tutor, Admin: every branch, can edit. Manager: tutors teaching their branch\'s students, view only.',
+  'Head tutor, Quản trị: mọi chi nhánh, sửa được. Head: tutor dạy em chi nhánh mình, chỉ xem.': 'Head tutor, Admin: every branch, can edit. Head: tutors teaching their branch\'s students, view only.',
   'Head tutor không mở hồ sơ học viên, Case, điểm.': 'Head tutors do not open student profiles, Cases or scores.',
   'Tên gõ tay': 'Typed name',
   'Tên tutor GV gõ ở "Tutor khác" khi tutor chưa có trong danh sách.': 'A tutor name a teacher typed under "Other tutor" when the tutor was not in the list.',

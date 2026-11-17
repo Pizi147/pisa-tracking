@@ -237,7 +237,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           <dd className="m-0">{che.loai === 'hoi'
             ? <b className="font-semibold text-slate-100">{che.gvcn ? t('GVCN {ten}', { ten: che.gvcn }) : t('GVCN lớp em')}</b>
             : [...new Set(em.map((e) => e.tvv ?? ''))].map((tv) => (
-              <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Quản lý chi nhánh')}</b>{/* PTA rà #1708: một em → chỉ người nhận (tên em đã ở dòng Học viên); nhiều em → em nào gửi ai */}{em.length > 1 && <> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</>}</span>
+              <span key={tv} className="block"><b className="font-semibold text-slate-100">{tv ? t('TVV {ten}', { ten: tv }) : t('Head chi nhánh')}</b>{/* PTA rà #1708: một em → chỉ người nhận (tên em đã ở dòng Học viên); nhiều em → em nào gửi ai */}{em.length > 1 && <> · {em.filter((e) => (e.tvv ?? '') === tv).map((e) => e.ten).join(', ')}</>}</span>
             ))}</dd>
           <dt>{che.loai === 'bao' ? t('Hạn TVV') : t('Hạn')}</dt>
           <dd className="m-0"><b className="font-semibold text-slate-100">{chenHan(che.loai === 'hoi' ? '{hang:tinh_hinh}' : '{han:bao_ph_vi_pham}')}</b> · {t('tới {ngay}', { ngay: ngay(che.loai === 'hoi' ? addDaysIso(homNay, HAN_HANG.tinh_hinh - 1) : hanBaoPh(homNay), homNay) })}</dd>

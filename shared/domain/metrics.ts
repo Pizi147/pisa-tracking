@@ -97,7 +97,7 @@ export const METRICS: readonly ChiSo[] = [
     id: 'case-cho-xac-dinh-nguyen-nhan', ten: 'Case chưa chốt PA',
     cauHoi: 'Bao nhiêu Case đang mở chưa có PA đang theo dõi?',
     donVi: 'case',
-    tapDuDieuKien: 'Case HỌC THUẬT đang mở trong phạm vi chưa có PA đang theo dõi: chưa có PA, PA theo quy chế chờ xác nhận, PA chờ Quản lý duyệt, "Không cần theo dõi" chờ Quản lý, Case Mock Test chờ mô tả Case, Case Progress Test chờ Xác nhận Case. Cùng hàm với cột "Chưa có PA" của Tổng hợp (OV-12d) — ô này còn đếm Case giáo viên báo tay (không sinh từ lượt). Case đã đóng không thuộc tập.',
+    tapDuDieuKien: 'Case HỌC THUẬT đang mở trong phạm vi chưa có PA đang theo dõi: chưa có PA, PA theo quy chế chờ xác nhận, PA chờ Head duyệt, "Không cần theo dõi" chờ Head, Case Mock Test chờ mô tả Case, Case Progress Test chờ Xác nhận Case. Cùng hàm với cột "Chưa có PA" của Tổng hợp (OV-12d) — ô này còn đếm Case giáo viên báo tay (không sinh từ lượt). Case đã đóng không thuộc tập.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi Case chỉ đếm 1 lần', drilldown: '/metrics/case-cho-xac-dinh-nguyen-nhan',
   },
   {
@@ -116,7 +116,7 @@ export const METRICS: readonly ChiSo[] = [
   },
   {
     id: 'pa-cho-duyet', ten: 'PA học thuật chờ duyệt',
-    cauHoi: 'Bao nhiêu phương án giáo viên đề xuất đang chờ Quản lý trả lời?',
+    cauHoi: 'Bao nhiêu phương án giáo viên đề xuất đang chờ Head trả lời?',
     donVi: 'phuong-an',
     tapDuDieuKien: 'Phương án đang chờ duyệt ở Case đang mở trong phạm vi. Đếm phương án — không đếm Case, không đếm học viên.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi PA chỉ đếm 1 lần', drilldown: '/metrics/pa-cho-duyet',
@@ -165,14 +165,14 @@ export const METRICS: readonly ChiSo[] = [
     id: 'vi-pham-theo-nhom', ten: 'Vi phạm theo nhóm',
     cauHoi: 'Trong kỳ, mỗi nhóm vi phạm có bao nhiêu vi phạm — chia theo trạng thái tính đến hôm nay?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'ĐÚNG TẬP của `vi-pham-tong` (xảy ra trong kỳ, thuộc lớp GHI LÚC ĐÓ), chia theo NHÓM (`category`) và TRẠNG THÁI TÍNH ĐẾN NGÀY DỮ LIỆU (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý — một hàm trạng thái, không phải trạng thái lúc xảy ra). Lọc một khoá `{nhóm}:{trạng thái}` bằng tham số kind (P13, Q17).',
+    tapDuDieuKien: 'ĐÚNG TẬP của `vi-pham-tong` (xảy ra trong kỳ, thuộc lớp GHI LÚC ĐÓ), chia theo NHÓM (`category`) và TRẠNG THÁI TÍNH ĐẾN NGÀY DỮ LIỆU (Mới · Đã ghi nhận · Cần xử lý · Quá hạn · Chờ Head duyệt · Đã xử lý — một hàm trạng thái, không phải trạng thái lúc xảy ra). Lọc một khoá `{nhóm}:{trạng thái}` bằng tham số kind (P13, Q17).',
     thoiGian: 'phat-sinh-trong-ky', khuTrung: 'Mỗi vi phạm chỉ đếm 1 lần', drilldown: '/metrics/vi-pham-theo-nhom',
   },
   {
     id: 'vi-pham-chua-xu-ly', ten: 'Vi phạm chưa xử lý',
     cauHoi: 'Hiện có bao nhiêu vi phạm còn phải ghi nhận hoặc xử lý?',
     donVi: 'vi-pham',
-    tapDuDieuKien: 'Vi phạm ở trạng thái Mới · Cần xử lý · Quá hạn (một hàm trạng thái). "Đã ghi nhận" KHÔNG tính — GVCN đã xem, không cần xử lý (K1-26). Đang chờ QL duyệt hoặc đã xử lý cũng không tính. Theo lớp học viên ĐANG học.',
+    tapDuDieuKien: 'Vi phạm ở trạng thái Mới · Cần xử lý · Quá hạn (một hàm trạng thái). "Đã ghi nhận" KHÔNG tính — GVCN đã xem, không cần xử lý (K1-26). Đang chờ Head duyệt hoặc đã xử lý cũng không tính. Theo lớp học viên ĐANG học.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi vi phạm chỉ đếm 1 lần', drilldown: '/metrics/vi-pham-chua-xu-ly',
   },
   {
@@ -193,14 +193,14 @@ export const METRICS: readonly ChiSo[] = [
     id: 'bien-phap-da-thuc-hien', ten: 'Lần xử lý đã xong',
     cauHoi: 'Có bao nhiêu lần xử lý Ý thức đã xong trong kỳ?',
     donVi: 'bien-phap',
-    tapDuDieuKien: 'Lần xử lý đã xong (Xác nhận xử lý, hoặc QL duyệt rồi GVCN ghi Đã thực hiện), đếm theo NGÀY THỰC HIỆN thực tế. Một lần xử lý gom n vi phạm là MỘT lần, không phải n. Thuộc lớp của lần xử lý.',
+    tapDuDieuKien: 'Lần xử lý đã xong (Xác nhận xử lý, hoặc Head duyệt rồi GVCN ghi Đã thực hiện), đếm theo NGÀY THỰC HIỆN thực tế. Một lần xử lý gom n vi phạm là MỘT lần, không phải n. Thuộc lớp của lần xử lý.',
     thoiGian: 'ket-qua-trong-ky', khuTrung: 'Mỗi lần xử lý chỉ đếm 1 lần', drilldown: '/metrics/bien-phap-da-thuc-hien',
   },
   {
-    id: 'bien-phap-cho-duyet', ten: 'Đề xuất Ý thức chờ QL duyệt',
-    cauHoi: 'Hiện có bao nhiêu đề xuất xử lý Ý thức đang chờ Quản lý duyệt?',
+    id: 'bien-phap-cho-duyet', ten: 'Đề xuất Ý thức chờ Head duyệt',
+    cauHoi: 'Hiện có bao nhiêu đề xuất xử lý Ý thức đang chờ Head duyệt?',
     donVi: 'bien-phap',
-    tapDuDieuKien: 'Đề xuất Meeting CX/GĐCN · WL 3 · Đình chỉ học tạm thời · Khác đang chờ QL (thẻ Ý thức ở hộp Chờ duyệt, hạn 5 ngày). Chia theo loại bằng tham số kind.',
+    tapDuDieuKien: 'Đề xuất Meeting CX/GĐCN · WL 3 · Đình chỉ học tạm thời · Khác đang chờ Head (thẻ Ý thức ở hộp Chờ duyệt, hạn 5 ngày). Chia theo loại bằng tham số kind.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi đề xuất chỉ đếm 1 lần', drilldown: '/metrics/bien-phap-cho-duyet',
   },
   {
@@ -252,7 +252,7 @@ export const METRICS: readonly ChiSo[] = [
   /* PR-VAI-a (K1-09, V8, K5-11, Q8): bốn việc "của Bạn" ở Cần xử lý — mỗi chỉ số gọi đúng hàm màn khác đang dùng. */
   {
     id: 'van-hanh-can-quyet-dinh', ten: 'Việc Vận hành cần quyết định',
-    cauHoi: 'Bao nhiêu việc Vận hành đang chờ Quản lý quyết định?',
+    cauHoi: 'Bao nhiêu việc Vận hành đang chờ Head quyết định?',
     donVi: 'viec-van-hanh',
     tapDuDieuKien: 'Việc Vận hành (gốc) trong phạm vi mà tạm ngưng đã tới ngày xem lại, hoặc mọi việc con đã khép mà việc cha chưa khép — đúng hàng số "cần quyết định" của tab Vận hành.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi việc chỉ đếm 1 lần', drilldown: '/metrics/van-hanh-can-quyet-dinh',
@@ -260,9 +260,9 @@ export const METRICS: readonly ChiSo[] = [
   /* PR-LCb: bỏ `hv-chua-co-lenh-chuyen` (việc "Chuyển tiếp lớp") — gộp vào `lop-chua-chot-len-ft` ("Chốt lộ trình"). */
   {
     id: 'hv-len-ft-chua-ky-vong', ten: 'Học viên lên FT chưa kết luận Kết quả đầu ra',
-    cauHoi: 'Bao nhiêu em FOU/BE/ELE lên FT mà Quản lý chưa kết luận Đạt / Không đạt Kết quả đầu ra (Overall MT0)?',
+    cauHoi: 'Bao nhiêu em FOU/BE/ELE lên FT mà Head chưa kết luận Đạt / Không đạt Kết quả đầu ra (Overall MT0)?',
     donVi: 'hoc-vien',
-    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp FOU/BE/ELE, chưa có kết luận Kết quả đầu ra ở Lộ trình tiếp theo của lớp đó; lớp đó đã có ít nhất một em đủ điểm MT0 (em còn chờ MT0 vẫn đếm). Một việc Quản lý mỗi lớp.',
+    tapDuDieuKien: 'Em có quyết định chuyển lớp hướng Fast Track (đang chờ hoặc đã chuyển) từ lớp FOU/BE/ELE, chưa có kết luận Kết quả đầu ra ở Lộ trình tiếp theo của lớp đó; lớp đó đã có ít nhất một em đủ điểm MT0 (em còn chờ MT0 vẫn đếm). Một việc Head mỗi lớp.',
     thoiGian: 'hien-trang', khuTrung: 'Mỗi học viên chỉ đếm 1 lần', drilldown: '/metrics/hv-len-ft-chua-ky-vong',
   },
   /* PR-VAI-a (K1-05, Q6): gốc của "Case chưa có người phụ trách" — lớp có môn mà chưa ai dạy. Dòng Cần xử lý "Sửa phân công". */

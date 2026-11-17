@@ -58,7 +58,7 @@ export async function runPrQuetTheoKyTests(t: any) {
   });
 
   check('Q1 · myWork QL nguoi=tat-ca (+ QL, GVCN của tôi): items JSON giống hệt khi bật cờ', () => {
-    for (const [vai, p, f] of [['QL tất cả', P.mbManager, { nguoi: 'tat-ca' }], ['QL', P.mbManager, {}], ['GVCN', P.coreTeacher, {}]] as [string, any, object][]) {
+    for (const [vai, p, f] of [['Head tất cả', P.mbManager, { nguoi: 'tat-ca' }], ['QL', P.mbManager, {}], ['GVCN', P.coreTeacher, {}]] as [string, any, object][]) {
       const moi = JSON.stringify(mw.myWork(p, f).items), cu = JSON.stringify(voiCo(at.listAttemptsOrKhiKiem, () => mw.myWork(p, f).items));
       assert(moi === cu, `${vai}: items khác (${moi.length} ≠ ${cu.length} ký tự)`);
     }

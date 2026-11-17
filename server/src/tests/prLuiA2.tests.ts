@@ -220,9 +220,9 @@ export async function runPrLuiA2Tests(t: YThucTestKit) {
       assert(y.trang_thai === 'cho' && y.nguoi_duyet === null && y.xu_ly_luc === null && y.ly_do_tu_choi === null && y.tra_loi === null && y.tu_duyet === 0, JSON.stringify(y));
       const sau = BO_UPDATED(mot('SELECT * FROM case_interventions WHERE id = ?', ivId));
       assert(sau === anh, `${lam}: PA khác ảnh chụp\n${anh}\n${sau}`);
-      assert(hang(`SELECT 1 FROM journey_events WHERE ref_table = 'case_interventions' AND ref_id = ? AND title = 'Quản lý huỷ quyết định PA'`, ivId).length === 1, 'Hành trình');
+      assert(hang(`SELECT 1 FROM journey_events WHERE ref_table = 'case_interventions' AND ref_id = ? AND title = 'Head huỷ quyết định PA'`, ivId).length === 1, 'Hành trình');
       assert(hang(`SELECT 1 FROM audit_logs WHERE action = 'request.undo' AND entity_id = ?`, id).length === 1, 'nhật ký');
-      const chuong = hang(`SELECT title FROM notifications WHERE user_id = ? AND entity_type = 'yeu_cau_duyet' AND entity_id = ? AND title LIKE 'Quản lý huỷ quyết định · Đề xuất PA%'`, P.lrTeacher.userId, id);
+      const chuong = hang(`SELECT title FROM notifications WHERE user_id = ? AND entity_type = 'yeu_cau_duyet' AND entity_id = ? AND title LIKE 'Head huỷ quyết định · Đề xuất PA%'`, P.lrTeacher.userId, id);
       assert(chuong.length === 1 && /chờ duyệt lại$/.test(chuong[0].title), JSON.stringify(chuong));
       /* Quyết lại sau khi huỷ: chạy như lần đầu, người gửi nhận chuông kết quả mới. */
       yc.duyetYeuCau(QL, id);

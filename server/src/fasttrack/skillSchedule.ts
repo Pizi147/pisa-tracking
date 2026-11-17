@@ -825,7 +825,7 @@ export function boTuanLuot(p: Principal, attemptId: number, o: { lyDo?: string |
   const conn = db();
   const a = conn.prepare(`SELECT * FROM assessment_attempts WHERE id = ?`).get(attemptId) as any;
   if (!a) throw notFound('Không tìm thấy lượt kiểm tra');
-  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới huỷ lịch được một lượt.');
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Head mới huỷ lịch được một lượt.');
   const nhan = nhanDot(a.kind, a.attempt_no);
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
   const rows = ensureSkillRows(attemptId);
@@ -947,7 +947,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
    */
   if (!gvcnCu && !opts.khiTao && !opts.ghiBuDau) {
     requireSuaLichTest(p, { classId: attempt.class_id, studentId: attempt.student_id },
-      'Chỉ Quản lý dời lịch Test. Gõ "-" khi em vắng thì máy tự dời.');
+      'Chỉ Head dời lịch Test. Gõ "-" khi em vắng thì máy tự dời.');
   } else if (!gvcnCu) {
     requireMoveSkillSchedule(
       p, { classId: attempt.class_id, studentId: attempt.student_id, skill: row.skill },
@@ -1008,7 +1008,7 @@ export function setSkillWeek(p: Principal, attemptId: number, skill: string, per
       .get(attemptId, row.skill) as any;
     if (waiting) {
       throw badRequest(
-        `${skill} đang có một đề nghị dời do vắng chờ Quản lý trả lời (hạn ${waiting.decide_by}). `
+        `${skill} đang có một đề nghị dời do vắng chờ Head trả lời (hạn ${waiting.decide_by}). `
         + 'Trả lời đề nghị đó thay vì đổi lịch ở đây — nếu không, em bị dời hai lần.',
       );
     }
@@ -1115,7 +1115,7 @@ export function baoGvcnDoiLichThuong(p: Principal, a: { id: number; class_id: nu
   if (gv.includes(p.userId)) return;
   const conn = db();
   const em = (conn.prepare('SELECT full_name FROM students WHERE id = ?').get(a.student_id) as any)?.full_name ?? 'Học viên';
-  const ai = (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(p.userId) as any)?.full_name ?? 'Quản lý';
+  const ai = (conn.prepare('SELECT full_name FROM users WHERE id = ?').get(p.userId) as any)?.full_name ?? 'Head';
   for (const userId of gv) {
     notify({
       userId, kind: 'doi_lich_thuong', title: `${nhanDot(a.kind, a.attempt_no)} · ${em} · dời sang ${tuanLich(tuanMoi, homNay)}`,
@@ -1157,7 +1157,7 @@ export function setSkillScope(
 ) {
   const { attempt, row } = loadOne(attemptId, skill);
   if (!_opts.monDangKy && !_opts.daKiemQuyen) require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: attempt.class_id, studentId: attempt.student_id },
-    'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
+    'Chỉ Head mới đổi được phạm vi kỹ năng của một đợt.');
   const giuHuy = required && !!_opts.giuHuy && row.sit_status === 'cancelled';
   const duaLaiHuy = required && row.sit_status === 'cancelled' && !giuHuy;
   if (!!row.required === required && !duaLaiHuy) return { ok: true, unchanged: true };
@@ -1270,7 +1270,7 @@ export function ghiSitStatus(p: Principal, attemptId: number, row: { id: number;
 export function setSkillDeadline(p: Principal, attemptId: number, skill: string, date: string | null, reason?: string | null) {
   const { attempt, row } = loadOne(attemptId, skill);
   require_(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: attempt.class_id, studentId: attempt.student_id },
-    'Chỉ Quản lý mới đặt được hạn chấm riêng.');
+    'Chỉ Head mới đặt được hạn chấm riêng.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn không hợp lệ.');
   db()
     .prepare(

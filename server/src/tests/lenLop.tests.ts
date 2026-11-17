@@ -346,7 +346,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const cls = taoLopThuong3(3);
     const gvcn = ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
-    assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' }), /Quản lý/, 'GVCN thôi ghi Hướng');
+    assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(gvcn, sid, { huong: 'len_lop' }), /Head/, 'GVCN thôi ghi Hướng');
     const r = loTrinhTiepSvc.ghiLoTrinhTiep(P.mbManager, sid, { huong: 'len_lop' });
     assert(r.banGhi?.huong === 'len_lop', `Phải ghi được: ${JSON.stringify(r.banGhi)}`);
   });
@@ -356,7 +356,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     ganGVCN3(cls, P.normalCoreTeacher.userId);
     const { sid } = taoHocVien3(cls, 'FOU');
     assertThrows(() => loTrinhTiepSvc.ghiLoTrinhTiep(P.normalSubjectTeacher, sid, { huong: 'bao_luu', ghiChu: 'x' }),
-      /Quản lý/, 'GVBM không dạy lớp này phải bị chặn');
+      /Head/, 'GVBM không dạy lớp này phải bị chặn');
   });
 
   check('PR-LT (3) · PUT /students/:id/lo-trinh-tiep: em đang học lớp FT → 400 (chỉ áp dụng lớp thường)', () => {
@@ -630,7 +630,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     assertThrows(() => studentsSvc4.transferStudent(gvcnFrom, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
       /quyền/, 'PR-CT (Q30-1): GVCN lớp nguồn không còn tự chuyển — phải 403');
     assertThrows(() => studentsSvc4.transferStudent(P.cpManager, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true }),
-      /quyền/, 'QL chi nhánh ĐÍCH (khác lớp nguồn) phải 403');
+      /quyền/, 'Head chi nhánh ĐÍCH (khác lớp nguồn) phải 403');
     studentsSvc4.transferStudent(P.mbManager, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
     /*
      * "QL CP thấy ngay" (PR-TD Task2(e), đã kiểm ở đó với HV KHÔNG có ghi danh cũ): ở đây HV có
@@ -947,7 +947,7 @@ export async function runLenLopTests(t: YThucTestKit) {
   check('PR-LT (8) · GV ngoài phạm vi (chi nhánh khác) xem lịch sử lớp → 403', () => {
     const cls = taoLop4({ branchId: MB3, kind: 'FOU', ft: false, tuanHienTai: 2 });
     const { sid } = taoHV4({ clsId: cls, ma: 'FOU', ft: false });
-    assertThrows(() => hanhTrinhHocVien(P.cpManager, sid, null), /phạm vi/, 'QL chi nhánh CP không được xem chương theo lớp của em ở MB');
+    assertThrows(() => hanhTrinhHocVien(P.cpManager, sid, null), /phạm vi/, 'Head chi nhánh CP không được xem chương theo lớp của em ở MB');
   });
 
   check('PR-LT (8) · Đếm câu SQL: ba câu cố định, không tăng theo số lớp em đã học qua', () => {
@@ -1042,7 +1042,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const { sid } = taoLopVaKetThuc9();
     studentsSvc4.archiveStudent(P.mbManager, sid);
     const gvcn = loadPrincipal(P.normalCoreTeacher.userId);
-    assertThrows(() => studentsSvc4.unarchiveStudent(gvcn, sid), /Quản lý/, 'GVCN không được bỏ lưu trữ');
+    assertThrows(() => studentsSvc4.unarchiveStudent(gvcn, sid), /Head/, 'GVCN không được bỏ lưu trữ');
     const r = studentsSvc4.unarchiveStudent(P.mbManager, sid) as any;
     assert(r.archived_at === null, 'QL bỏ lưu trữ phải thành công');
   });
@@ -1142,12 +1142,12 @@ export async function runLenLopTests(t: YThucTestKit) {
     const gvcn = ganGVCN3(from, P.normalCoreTeacher.userId);
     studentsSvc4.transferStudent(P.admin, sid, to, TODAY3, 'Đổi chi nhánh', { noNote: true });
     assert(!!profileSvc.studentProfile(P.cpManager, sid), 'QL CP phải thấy hồ sơ em ngay sau khi chuyển vào CP (chỉ còn ghi danh active ở CP)');
-    assertThrows(() => profileSvc.studentProfile(P.mbManager, sid), /phạm vi/, 'QL MB phải mất quyền xem ngay (không còn ghi danh active ở MB)');
+    assertThrows(() => profileSvc.studentProfile(P.mbManager, sid), /phạm vi/, 'Head MB phải mất quyền xem ngay (không còn ghi danh active ở MB)');
 
     // Em nghỉ hẳn — hết ghi danh active, có lịch sử ở CẢ HAI chi nhánh — giữ luật cũ (một QL một chi nhánh không đủ).
     studentsSvc4.setStudentStatus(P.cpManager, sid, 'finished', TODAY3, 'Nghỉ hẳn');
-    assertThrows(() => profileSvc.studentProfile(P.mbManager, sid), /phạm vi/, 'QL MB (một chi nhánh) vẫn không đủ phạm vi dù em đã nghỉ (lịch sử hai chi nhánh)');
-    assertThrows(() => profileSvc.studentProfile(P.cpManager, sid), /phạm vi/, 'QL CP (một chi nhánh) cũng không đủ phạm vi — giữ đúng luật cũ, chỉ vai toàn hệ thống mới thấy');
+    assertThrows(() => profileSvc.studentProfile(P.mbManager, sid), /phạm vi/, 'Head MB (một chi nhánh) vẫn không đủ phạm vi dù em đã nghỉ (lịch sử hai chi nhánh)');
+    assertThrows(() => profileSvc.studentProfile(P.cpManager, sid), /phạm vi/, 'Head CP (một chi nhánh) cũng không đủ phạm vi — giữ đúng luật cũ, chỉ vai toàn hệ thống mới thấy');
     assert(!!profileSvc.studentProfile(P.admin, sid), 'Vai toàn hệ thống vẫn thấy đúng theo luật cũ');
   });
 
@@ -1172,7 +1172,7 @@ export async function runLenLopTests(t: YThucTestKit) {
     const now = new Date().toISOString();
     const roleId = (conn.prepare(`SELECT id FROM roles WHERE key = 'manager'`).get() as any).id;
     const uid = Number(conn.prepare(
-      `INSERT INTO users (code, full_name, title, status, created_at) VALUES ('LT86-QLNGHI', 'QL CP đã nghỉ', 'QL', 'active', ?)`,
+      `INSERT INTO users (code, full_name, title, status, created_at) VALUES ('LT86-QLNGHI', 'Head CP đã nghỉ', 'Head', 'active', ?)`,
     ).run(now).lastInsertRowid);
     conn.prepare(`INSERT INTO user_roles (user_id, role_id, branch_id, status, created_at) VALUES (?,?,?, 'inactive', ?)`)
       .run(uid, roleId, CP4, now);

@@ -125,7 +125,7 @@ export function HoSoGiaoVienPage() {
             )}
             <NutLuat label={t('Kỳ xem')} phai>
               {t('Chọn hai tuần bất kỳ; mặc định 4 tuần tới tuần này. % đúng hạn · Chưa làm: việc / bài Test có hạn trong kỳ (bấm % xem Đúng hạn · Làm muộn · Chưa làm). Tab Học thuật cũng theo kỳ.')}
-              {!gv.laChinhMinh && data.phamVi.chiNhanh && <> {t('Quản lý đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}', { cn: data.phamVi.chiNhanh.join(', ') })}.</>}
+              {!gv.laChinhMinh && data.phamVi.chiNhanh && <> {t('Head đang xem · chỉ tính lớp, Case, yêu cầu ở {cn}', { cn: data.phamVi.chiNhanh.join(', ') })}.</>}
             </NutLuat>
             {coNutViec && (
               <Link to={duongViecCuaGv(gv.id, nguoiXem, null)} className="btn no-underline max-sm:min-h-11 max-sm:w-full max-sm:items-center max-sm:justify-center">

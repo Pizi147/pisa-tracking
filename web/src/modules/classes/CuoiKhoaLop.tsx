@@ -351,7 +351,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   const nhomCua = (e: Em): KhoaNhom => { const g = e.cuoiKhoa?.goiY; return !g ? 'cho' : g.huong === 'len' ? 'len' : g.huong === 'hoc_lai' ? 'lai' : 'cn'; };
   const goiYHuong = (e: Em): ChonHuong => { const g = e.cuoiKhoa?.goiY; return g?.huong === 'hoc_lai' ? 'hoc_lai' : g?.huong === 'len' ? (ke && ke !== 'FT' ? 'len_lop' : 'fast_track') : ''; };
   const HUONG_NHOM: Record<KhoaNhom, ChonHuong> = { len: ke && ke !== 'FT' ? 'len_lop' : 'fast_track', lai: 'hoc_lai', cn: '', cho: '' };
-  const TEN_NHOM: Record<KhoaNhom, string> = { len: ke && ke !== 'FT' ? t('Lên {ke}', { ke: tenKe ?? '' }) : t('Lên FT'), lai: t('Học lại {ct}', { ct: ma ?? '' }), cn: t('Quản lý cân nhắc'), cho: t('Chờ Final') };
+  const TEN_NHOM: Record<KhoaNhom, string> = { len: ke && ke !== 'FT' ? t('Lên {ke}', { ke: tenKe ?? '' }) : t('Lên FT'), lai: t('Học lại {ct}', { ct: ma ?? '' }), cn: t('Head cân nhắc'), cho: t('Chờ Final') };
   const soNhom = (k: KhoaNhom) => dongs.filter((r) => nhomCua(r.e) === k).length;
   /* Chủ SP 11/11: dải chỉ khi nhóm có gợi ý bước tiếp thật (Lên … / Học lại …) — không dải "Chờ Final" / "Quản lý cân nhắc". */
   const coDai = (k: KhoaNhom) => soNhom(k) >= 2 && (k === 'len' || k === 'lai');
@@ -556,7 +556,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
       e.nhanXet && !laGvcn && <span key="nx" className="min-w-0 truncate" title={`GVCN: ${e.nhanXet}`}>GVCN: {e.nhanXet}</span>,
       bo && (x.huong === 'len_lop' || (khoa(e) && e.lenh?.huong === 'len_lop')) && <span key="bo" className="whitespace-nowrap">{t('+ bổ trợ {n} buổi · {tuan} tuần', { n: bo.soBuoi, tuan: bo.soTuan })}</span>,
       !khoa(e) && canLyDo && !x.lyDo.trim() && <span key="ly-do" className="whitespace-nowrap font-semibold text-soon">⚠ {t('Ghi lý do ngắn')}</span>,
-      !e.lenh && e.nhap && laQl && <span key="nhap" className="whitespace-nowrap">{t('Nháp — chỉ QL thấy')}</span>,
+      !e.lenh && e.nhap && laQl && <span key="nhap" className="whitespace-nowrap">{t('Nháp — chỉ Head thấy')}</span>,
       e.lenh?.loi && <span key="loi-lenh" className="min-w-0 truncate font-semibold text-late">⚠ {t('Chưa chuyển được: {loi}', { loi: e.lenh.loi })}</span>,
       loiDong && <span key="loi" role="alert" className="min-w-0 truncate font-semibold text-late" title={loiDong}>⚠ {loiDong}</span>,
       laQl && !khoa(e) && hl && !coLyDo && <button key="gc" type="button" className="link min-h-[44px] border-0 bg-transparent p-0 text-xs sm:min-h-0" onClick={() => doi(e.id, { lyDo: '' })}>{t('+ Ghi chú')}</button>,
@@ -602,7 +602,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   );
   const oChiDoc = (e: Em) => (e.lenh
     ? <span className="block"><span className="font-semibold text-slate-100">🔒 {chuHuong(e)}{e.lenh.lopDichMa ? ` · ${e.lenh.lopDichMa}` : ''}</span><span className="block text-[12px] tabular-nums text-slate-500">{tuanLich(e.lenh.tuan, h)}</span></span>
-    : <span className="text-slate-500">{t('QL chưa chốt')}</span>);
+    : <span className="text-slate-500">{t('Head chưa chốt')}</span>);
   const oNhanXet = (e: Em) => (laGvcn
     ? <input className="field w-full" placeholder={t('Nhận xét')} aria-label={t('Nhận xét · {ten}', { ten: e.fullName })} maxLength={2000}
         value={nhanXet[e.id] ?? e.nhanXet ?? ''} onChange={(ev) => setNhanXet((m) => ({ ...m, [e.id]: ev.target.value }))} />
@@ -673,7 +673,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
     )
   ) : laGvcn ? (
     <>
-      <span className="min-w-0 flex-1 text-[13px] text-slate-300"><b className="text-slate-100">{t('{n} nhận xét đã sửa', { n: nxDoi })}</b> · {t('QL thấy dưới Kết quả; nhận xét đi kèm việc Báo PH kết quả Test')}</span>
+      <span className="min-w-0 flex-1 text-[13px] text-slate-300"><b className="text-slate-100">{t('{n} nhận xét đã sửa', { n: nxDoi })}</b> · {t('Head thấy dưới Kết quả; nhận xét đi kèm việc Báo PH kết quả Test')}</span>
       <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={busy || !nxDoi} onClick={luuNhanXet}>{t('Lưu nhận xét · {n} em', { n: nxDoi })}</button>
     </>
   ) : null;
@@ -850,7 +850,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
               <div role="list" aria-label={t('Cuối khoá · {lop}', { lop: d.from.code })}>
                 {/* Tiêu đề cột (chữ, không điều khiển — G9); 375 không có. */}
                 <div aria-hidden className={`hidden gap-x-3.5 border-b px-4 py-2 text-xs font-semibold text-slate-500 xl:grid ${LUOI}`} style={{ borderColor: 'var(--line)' }}>
-                  <span /><span>{t('Học viên')}</span><span>{t('Kết quả')}</span><span>{laQl ? t('Bước tiếp') : t('Hướng · QL chốt')}</span>
+                  <span /><span>{t('Học viên')}</span><span>{t('Kết quả')}</span><span>{laQl ? t('Bước tiếp') : t('Hướng · Head chốt')}</span>
                   <span>{laQl ? t('Lớp mới') : t('Nhận xét')}</span>{laQl && coBg && <span>{t('Bàn giao')}</span>}
                 </div>
                 {dsDai.map((n) => <div key={n.k} role="group" aria-label={TEN_NHOM[n.k]}>{daiNhom(n.k, n.rows)}{n.rows.map((r) => dongEm(r, false))}</div>)}

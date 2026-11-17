@@ -35,13 +35,13 @@ export function YeuCauCuaToi({ gon = false }: {
   if (loading) return <Card><Skeleton rows={5} /></Card>;
   const ds = data?.the ?? [];
   if (!ds.length) {
-    return <Card><Empty title={t('Bạn chưa gửi yêu cầu nào cho Quản lý')}
-      hint={t('Đề xuất PA cần duyệt, Xin hỗ trợ QL ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây.')} /></Card>;
+    return <Card><Empty title={t('Bạn chưa gửi yêu cầu nào cho Head')}
+      hint={t('Đề xuất PA cần duyệt, Xin hỗ trợ Head ở Kết quả tuần, hoặc Đề xuất sửa ở ⋯ hồ sơ học viên — mọi yêu cầu đều hiện ở đây.')} /></Card>;
   }
   const cho = ds.filter((x) => x.trangThai === 'cho').length;
   return (
     <div className="space-y-2">
-      <p className="m-0 text-[12px] tabular-nums text-slate-400">{t('{cho} đang chờ Quản lý ·', { cho })}{' '}{ds.length - cho}{' '}{t('đã xử lý (60 ngày)')}</p>
+      <p className="m-0 text-[12px] tabular-nums text-slate-400">{t('{cho} đang chờ Head ·', { cho })}{' '}{ds.length - cho}{' '}{t('đã xử lý (60 ngày)')}</p>
       {ds.map((y) => <TheYeuCau key={y.id} yc={y} laNguoiXin nhanManh={nhan === y.id} onXong={reload} />)}
     </div>
   );

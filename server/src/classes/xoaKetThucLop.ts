@@ -21,7 +21,7 @@ import { doiTrangThai } from '../students/trangThaiHv.ts';
 import { quetMoiNgay } from '../platform/mocHeThong.ts';
 import { BoChup, ghiThungRac } from '../platform/thungRac.ts';
 
-const CHI_QL_LOP = 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
+const CHI_QL_LOP = 'Chỉ Head của lớp này hoặc Quản trị hệ thống mới kết thúc hoặc mở lại được lớp.';
 
 /** Bảng có cột `class_id` mà một dòng ở đó nghĩa là "lớp đã có dữ liệu" (`teacher_assignments`, `class_skills` là cấu hình, không tính). */
 const BANG_DU_LIEU: [string, string][] = [
@@ -101,7 +101,7 @@ export function xemXoaKetThuc(p: Principal, classId: number) {
 
 /** POST /classes/:id/xoa — xoá lớp còn trống vào Thùng rác (trả `thungRacId` để Hoàn tác). Quản lý của lớp hoặc Quản trị (OV-12a). */
 export function xoaLop(p: Principal, classId: number) {
-  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Chỉ Quản lý của lớp này hoặc Quản trị hệ thống mới xoá được lớp.');
+  require_(p, PERMISSIONS.CLASS_EDIT, { classId }, 'Chỉ Head của lớp này hoặc Quản trị hệ thống mới xoá được lớp.');
   const c = docLop(classId);
   const t = tinhTrangLop(classId);
   if (t.coDuLieu) throw badRequest('Lớp đã có dữ liệu — dùng Kết thúc lớp.');

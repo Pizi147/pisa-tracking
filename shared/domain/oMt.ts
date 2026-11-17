@@ -53,8 +53,8 @@ const troCham = (o: OKyNang, homNay: string) => !!o.hanCham && homNay > ngayCua(
 function dongKn(ct: string | null | undefined, k: KyNangKH, o: OKyNang, loai: Loai, homNay: string, cu: boolean): string {
   const tt: Record<Loai, string | null> = {
     xong: 'xong', 'khong-yeu-cau': t('không yêu cầu'), 'khong-du-thi': t('không dự thi'), 'tuan-nay': t('tuần này'), 'co-lich': null, 'chua-lich': null,
-    'da-huy': `${o.huyVang ? t('huỷ (vắng 2 lần)') : t('đã huỷ')}${o.choDuyet ? t(' · chờ Quản lý duyệt') : ''}`,   // đề nghị dời đang chờ (I1)
-    vang: o.choDuyet ? t('chờ Quản lý duyệt') : t('vắng'),
+    'da-huy': `${o.huyVang ? t('huỷ (vắng 2 lần)') : t('đã huỷ')}${o.choDuyet ? t(' · chờ Head duyệt') : ''}`,   // đề nghị dời đang chờ (I1)
+    vang: o.choDuyet ? t('chờ Head duyệt') : t('vắng'),
     // Hạn chấm là hạn cụ thể → được hiện ngày (luật thời gian trên màn); null (MT cũ, không hạn) thì không ghi.
     'het-tuan': `${troCham(o, homNay) ? t('trễ chấm') : t('chờ chấm')}${o.hanCham ? t(' · hạn {ngay}', { ngay: ngay(o.hanCham, homNay) }) : ''}`,
   };

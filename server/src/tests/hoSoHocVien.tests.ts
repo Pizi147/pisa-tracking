@@ -210,7 +210,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     r = f([PA({ lastOutcome: 'improved', status: 'completed', completedOn: '2026-08-20' })], { status: 'done', followUntil: null, followOverdue: false });
     assert(r.tiep === null && r.text === '1 PA · đủ kết quả', `(f) case done → tiep null: ${JSON.stringify(r)}`);
     r = f([PA({ pendingApproval: true, approvalDue: '2026-09-01' })], CASE);
-    assert(r.tiep && r.tiep.text === 'Chờ Quản lý trả lời' && r.tiep.due === '2026-09-01' && r.tiep.overdue === false, `(g) PA chờ duyệt: ${JSON.stringify(r.tiep)}`);
+    assert(r.tiep && r.tiep.text === 'Chờ Head trả lời' && r.tiep.due === '2026-09-01' && r.tiep.overdue === false, `(g) PA chờ duyệt: ${JSON.stringify(r.tiep)}`);
     r = f([PA({ status: 'completed', completedOn: '2026-08-20', actionDue: '2026-08-10', actionOverdue: true })], { status: 'in_progress', followUntil: null, followOverdue: false });
     assert(r.tiep === null, `(h) PA đã xong không được tính là việc tiếp; không followUntil → null: ${JSON.stringify(r.tiep)}`);
     /* Mục 2 (chủ sản phẩm 22/09): PA đang chạy ĐÃ QUÁ HẠN đứng trước "chờ Quản lý trả lời" (và PA quy chế — PR-N1). */
@@ -227,7 +227,7 @@ export async function runHoSoHocVienTests(t: YThucTestKit) {
     let v = f(PA({ preset: true, confirmedAt: '2026-09-28T01:00:00Z', actionDue: '2026-10-05' }));
     assert(v.loai === 'ghi-ket-qua' && v.text === 'Kết quả PA' && v.due === '2026-10-05' && v.overdue === false, `PA quy chế đang chạy = Ghi kết quả: ${JSON.stringify(v)}`);
     v = f(PA({ pendingApproval: true, approvalDue: '2026-09-01' }));
-    assert(v.loai === 'cho-duyet' && v.text === 'Chờ Quản lý trả lời' && v.due === '2026-09-01', `chờ duyệt: ${JSON.stringify(v)}`);
+    assert(v.loai === 'cho-duyet' && v.text === 'Chờ Head trả lời' && v.due === '2026-09-01', `chờ duyệt: ${JSON.stringify(v)}`);
     v = f(PA({ status: 'planned', actionDue: '2026-08-25', actionOverdue: true }));
     assert(v.loai === 'ghi-ket-qua' && v.text === 'Kết quả PA' && v.due === '2026-08-25' && v.overdue === true, `ghi kết quả: ${JSON.stringify(v)}`);
     v = f(PA({ status: 'completed', completedOn: '2026-08-20' }));

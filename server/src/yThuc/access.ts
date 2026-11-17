@@ -77,7 +77,7 @@ export const KEY_TAKEN_MESSAGE = 'Khoá gửi lại này đã được dùng cho
 
 export const EDIT_VIOLATION_MESSAGE =
   'Bạn không có quyền sửa vi phạm này — chỉ người ghi (với vi phạm của chính mình), giáo viên chủ nhiệm của lớp '
-  + 'hoặc Quản lý trong phạm vi mới sửa được.';
+  + 'hoặc Head trong phạm vi mới sửa được.';
 
 /** Kho tệp: quyền của vi phạm làm chủ. Xem = quyền xem học viên; thêm/gỡ = quyền sửa vi phạm đó. */
 export function violationOwner(violationId: number) {
@@ -100,7 +100,7 @@ export function coordinationOwner(actionId: number) {
     requireView: (p: Principal) => requireViewStudent(p, a.student_id),
     requireEdit: (p: Principal) => {
       requireViewStudent(p, a.student_id);
-      requireManageDiscipline(p, a.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của việc phối hợp này — chỉ giáo viên chủ nhiệm và Quản lý.');
+      requireManageDiscipline(p, a.student_id, 'Bạn không có quyền đính kèm hoặc gỡ bằng chứng của việc phối hợp này — chỉ giáo viên chủ nhiệm và Head.');
     },
   };
 }

@@ -419,7 +419,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const dx = cases.recordIntervention(P.lrTeacher, c, { kind: 'extra_support', description: 'Học kèm 1-1 với Tutor 2 buổi/tuần', status: 'planned' }) as any;
     const cho = dx.interventions.find((x: any) => x.approvalState === 'pending').id;
     const e1 = maLoi(() => cases.suaPa(P.lrTeacher, cho, { description: 'Học kèm 1-1 với Tutor 3 buổi/tuần' }));
-    assert(e1.status === 400 && e1.msg.includes('chờ Quản lý duyệt'), `chờ duyệt: ${JSON.stringify(e1)}`);
+    assert(e1.status === 400 && e1.msg.includes('chờ Head duyệt'), `chờ duyệt: ${JSON.stringify(e1)}`);
     const [ps] = taoPa.chenPa(conn, [{ caseId: c, kind: 'tutor', description: 'Tutor theo quy chế', status: 'planned', preset: true, mocQuyChe: 'one_month' }]);
     const e2 = maLoi(() => cases.suaPa(P.lrTeacher, ps, { soBuoi: 8 }));
     assert(e2.status === 400 && e2.msg.includes('Xác nhận PA'), `chưa xác nhận: ${JSON.stringify(e2)}`);
@@ -603,7 +603,7 @@ export async function runPrPaTests(t: YThucTestKit) {
     const nguon = (iv: number) => paDto(kv, iv).nguonTao;
     assert(nguon(t1) === 'ky_vong' && nguon(t2) === null && nguon(q) === 'he_thong', `nguonTao: ${nguon(t1)} ${nguon(t2)} ${nguon(q)}`);
 
-    const pa = { id: 1, kind: 'tutor', soBuoi: 8, performer: 'Phạm Thu Trang', createdAt: '2026-09-29T02:00:00.000Z', recordedBy: 'Quản lý', nguonTao: 'ky_vong',
+    const pa = { id: 1, kind: 'tutor', soBuoi: 8, performer: 'Phạm Thu Trang', createdAt: '2026-09-29T02:00:00.000Z', recordedBy: 'Head', nguonTao: 'ky_vong',
       revisions: [{ id: 5, on: '2026-10-08', source: 'sua_pa', by: 'Ngô Bảo Nam', reason: 'Sửa PA',
         before: { description: 'a', performer: 'Phạm Thu Trang', soBuoi: 10, startedDate: '2026-09-29' },
         after: { description: 'b', performer: 'Phạm Thu Trang', soBuoi: 8, startedDate: '2026-09-29' } }] };

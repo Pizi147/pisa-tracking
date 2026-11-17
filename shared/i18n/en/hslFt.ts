@@ -17,7 +17,7 @@ export const EN_HSL_FT = {
   'dời {ngay}': 'moved {ngay}',
   'Vắng lần {x} · chờ xếp lại': 'Absence #{x} · awaiting reschedule',
   'Lịch gốc': 'Original schedule',
-  'Chờ QL duyệt dời lần {moveNo} · hạn {ngay}': 'Awaiting manager approval for move #{moveNo} · due {ngay}',
+  'Chờ Head duyệt dời lần {moveNo} · hạn {ngay}': 'Awaiting Head approval for move #{moveNo} · due {ngay}',
   'Chưa nhận xét': 'No comment yet',
   'Kết quả theo kỹ năng': 'Results by skill',
   'GV {ten}': 'Teacher {ten}',

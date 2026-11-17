@@ -39,7 +39,7 @@ export async function runPrXlmtTests(t: YThucTestKit) {
     assert(v4.loai === 'doi' && v4.no === 3, `MT cũ → dời: ${JSON.stringify(v4)}`);
     const choS = kn({ listening: { coDiem: true }, reading: { coDiem: true }, writing: { coDiem: true }, speaking: { choDuyet: true } });
     const v5 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: choS }], 3, so3);
-    assert(v5.loai === 'chan' && /chờ Quản lý duyệt/.test(v5.cau), JSON.stringify(v5));
+    assert(v5.loai === 'chan' && /chờ Head duyệt/.test(v5.cau), JSON.stringify(v5));
     const v6 = d.viecXepMt([...truoc, { no: 3, huy: false, lichSu: false, kn: du }], 3, so3, true);
     assert(v6.loai === 'da-du' && v6.coDiem.length === 4 && v6.coDiem[0] === 'listening', JSON.stringify(v6));
     const v7 = d.viecXepMt([{ no: 1, huy: false, lichSu: false, kn: du }], 3, [L(1, 'completed', true)]);
@@ -237,7 +237,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
     datTuan(a.id, tuan(0).id);
     attemptsSvc.saveScore(P.lrTeacher, a.id, 'listening', { rawScore: 30 }, TODAY);
     assert(attemptsSvc.scoresOf(a.id).find((s: any) => s.skill === 'listening')?.band != null, 'chưa có điểm L');
-    assertThrows(() => keHoach.thiLai(P.coreTeacher, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Em làm lại bài' }), /Quản lý/, 'GVCN');
+    assertThrows(() => keHoach.thiLai(P.coreTeacher, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Em làm lại bài' }), /Head/, 'GVCN');
 
     keHoach.thiLai(P.mbManager, { attemptId: a.id, skills: ['listening'], periodId: tuan(2).id, lyDo: 'Đề lỗi, thi lại', force: true });
     const s = attemptsSvc.scoresOf(a.id).find((x: any) => x.skill === 'listening');
@@ -456,7 +456,7 @@ export async function runPrXlmtMayChu(t: YThucTestKit) {
   const { docSach } = await import('./panelUx3.tests.ts');
   check('PR-XLMT (4) · Hộp thao tác chung: không lý do ghi cứng; nhãn nút và tiêu đề qua CHU_THAO_TAC; dòng thời gian dùng SVG', () => {
     const hop = docSach('web/src/modules/fasttrack/HopThaoTacMt.tsx');
-    assert(!/GVCN xác minh|Quản lý chốt trước/.test(hop), 'hộp còn lý do ghi cứng');
+    assert(!/GVCN xác minh|Head chốt trước/.test(hop), 'hộp còn lý do ghi cứng');
     /* OV-11a: "Vắng" sau tuần thi đổi tên thành "Không dự thi" — vẫn lấy từ CHU_THAO_TAC ở mọi trường hợp khác. */
     assert(/const ten = [^;\n]*CHU_THAO_TAC\[tt?\]/.test(hop) && /(title|tieuDe)=\{`\$\{ten\} · \$\{mon\}`\}/.test(hop)   /* PR-LM: KhungPanel dùng tieuDe */ && /: ten\}/.test(hop), 'nhãn/tiêu đề phải qua CHU_THAO_TAC');
     assert(/tenMon\(ct, skill\)/.test(hop), 'tên môn phải qua tenMon');

@@ -16,7 +16,7 @@ export async function runXoaMtTests(t: any) {
     const m = dm.menuHopKyNang('khong-yeu-cau', ql, false);
     assert(m.find((y: any) => y.muc === 'bo-ky-nang').duoc && m.find((y: any) => y.muc === 'doi-tuan').duoc, `QL: ${JSON.stringify(m)}`);
     const ad = dm.menuHopKyNang('khong-yeu-cau', { ...ql, huy: false }, false).find((y: any) => y.muc === 'bo-ky-nang');
-    assert(!ad.duoc && ad.viSao === 'Chỉ Quản lý', `Admin: ${JSON.stringify(ad)}`);
+    assert(!ad.duoc && ad.viSao === 'Chỉ Head', `Admin: ${JSON.stringify(ad)}`);
     assert(dm.thaoTacKyNang('khong-yeu-cau', { ...ql, laFt: false }).chinh === null, 'lớp thường không có');
   });
   if (!t.conn) return;

@@ -342,7 +342,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
           id: r.id, title: r.title, sub: [r.full_name].filter(Boolean).join(' · '),
           href: duongCase(r.sid, r.case_id), nguoi: r.nguoi ?? null, han: viec?.han ?? r.action_due ?? null, nguoiId: r.nguoi_id ?? null,
           em: r.sid ? { id: r.sid, ten: r.full_name } : null, lop: r.lop ?? null, ngCanh: r.title,
-          viec, tinhTrang: viec ? null : r.approval_state === 'pending' ? t('Chờ Quản lý duyệt') : r.pa_status === 'completed' ? t('PA đã kết thúc') : cv?.tinhTrang ?? null,
+          viec, tinhTrang: viec ? null : r.approval_state === 'pending' ? t('Chờ Head duyệt') : r.pa_status === 'completed' ? t('PA đã kết thúc') : cv?.tinhTrang ?? null,
         });
       }
     } else if (unit === 'bai') {
@@ -435,7 +435,7 @@ export function rowsFor(unit: ChiSo['donVi'], ids: number[], metricId?: string, 
         const name = nhanLoaiXuLy(r.kind, r.custom_name);
         /* PR-S3F #12: nói đúng trạng thái thật — không còn "đang chuẩn bị" chung cho cả đề xuất chờ duyệt lẫn đã duyệt. */
         const state = r.status === 'done' ? `đã thực hiện ${String(r.performed_on ?? '').slice(8, 10)}/${String(r.performed_on ?? '').slice(5, 7)}`
-          : r.status === 'cho_duyet' ? 'Chờ Quản lý duyệt' : r.status === 'da_duyet' ? 'Đã duyệt · chờ thực hiện' : 'nháp';
+          : r.status === 'cho_duyet' ? 'Chờ Head duyệt' : r.status === 'da_duyet' ? 'Đã duyệt · chờ thực hiện' : 'nháp';
         byId.set(r.id, { id: r.id, title: name, sub: [r.full_name, state].filter(Boolean).join(' · '), href: `/hoc-vien/${r.student_id}` });
       }
     } else if (unit === 'viec-van-hanh') {

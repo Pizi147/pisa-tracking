@@ -34,7 +34,7 @@ export function traLaiLenhDaHuy(p: Principal, studentId: number): string | null 
 
 /** Câu khi em có quyết định chuyển lớp chờ mà người làm không huỷ được quyết định (hàng loạt nạp cả lô một lần). */
 export const cauLenhCho = (tuanBatDau: string): string =>
-  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — Quản lý lớp huỷ quyết định (Chuyển lớp…) hoặc làm việc này, rồi làm lại.`;
+  `Em đang có quyết định chuyển lớp chờ ${tuanLich(tuanBatDau, demoToday())} — Head phụ trách huỷ quyết định (Chuyển lớp…) hoặc làm việc này, rồi làm lại.`;
 
 /**
  * "Khi lưu, web sẽ" của hộp Tạm dừng / Kết thúc học (k2, k3). `ketThuc` = ô "Có thể quay lại học" tắt. Em đã kết thúc / không tìm thấy không tính.
@@ -176,7 +176,7 @@ export function quayLaiHoc(p: Principal, studentId: number, o: { lopMoiId?: unkn
   if (tt.huong === 'lop-cu') return setStudentStatus(p, studentId, 'active', date, 'Quay lại học');
   const lopMoiId = Number(o.lopMoiId);
   if (!Number.isInteger(lopMoiId) || lopMoiId <= 0) throw loi(400, 'Lớp {x} đã kết thúc — chọn lớp để em quay lại học.', { x: tt.lopCu?.code ?? 'cũ' });
-  if (tt.lopCu && !can(p, PERMISSIONS.CLASS_EDIT, { classId: tt.lopCu.id })) throw forbidden('Lớp cũ đã kết thúc — chỉ Quản lý chọn lớp mới cho em quay lại học.');
+  if (tt.lopCu && !can(p, PERMISSIONS.CLASS_EDIT, { classId: tt.lopCu.id })) throw forbidden('Lớp cũ đã kết thúc — chỉ Head chọn lớp mới cho em quay lại học.');
   return tx(() => {
     setStudentStatus(p, studentId, 'active', date, 'Quay lại học', null, { lopKetThucDuoc: true });
     transferStudent(p, studentId, lopMoiId, date, 'Quay lại học — lớp cũ đã kết thúc', { note: `Quay lại học sau tạm dừng — lớp ${tt.lopCu?.code ?? 'cũ'} đã kết thúc.` });

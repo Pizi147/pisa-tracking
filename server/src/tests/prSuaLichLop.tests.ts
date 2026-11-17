@@ -45,10 +45,10 @@ export async function runPrSuaLichLopTests(t: YThucTestKit) {
 
     /* GVCN lưu được; GVBM, GVCN lớp khác → 403; không ai đổi gì ngoài chính lớp. */
     schedule.setClassProgress(P.normalCoreTeacher, LOP, { finalWeek: cp.finalWeek });
-    assertThrows(() => schedule.setClassProgress(P.normalSubjectTeacher, LOP, { finalWeek: cp.finalWeek }), /GVCN|Quản lý/, 'GVBM');
-    assertThrows(() => schedule.setClassProgress(gvcnKhac, LOP, { finalWeek: cp.finalWeek }), /GVCN|Quản lý/, 'GVCN lớp khác');
-    if (adminKhac) assertThrows(() => schedule.setClassProgress(perm.loadPrincipal(adminKhac), LOP, { finalWeek: cp.finalWeek }), /GVCN|Quản lý/, 'Admin chi nhánh khác');
-    assertThrows(() => schedule.setClassProgress(P.coreTeacher, FT, { startPeriodId: null }), /GVCN|Quản lý/, 'GVCN sửa lớp FT');
+    assertThrows(() => schedule.setClassProgress(P.normalSubjectTeacher, LOP, { finalWeek: cp.finalWeek }), /GVCN|Head/, 'GVBM');
+    assertThrows(() => schedule.setClassProgress(gvcnKhac, LOP, { finalWeek: cp.finalWeek }), /GVCN|Head/, 'GVCN lớp khác');
+    if (adminKhac) assertThrows(() => schedule.setClassProgress(perm.loadPrincipal(adminKhac), LOP, { finalWeek: cp.finalWeek }), /GVCN|Head/, 'Admin chi nhánh khác');
+    assertThrows(() => schedule.setClassProgress(P.coreTeacher, FT, { startPeriodId: null }), /GVCN|Head/, 'GVCN sửa lớp FT');
     /* luật cũ vẫn chặn: tuần ngoài khoá. */
     assertThrows(() => schedule.setClassProgress(P.normalCoreTeacher, LOP, { finalWeek: cp.totalWeeks + 1 }), /vượt quá/, 'tuần ngoài khoá');
   });

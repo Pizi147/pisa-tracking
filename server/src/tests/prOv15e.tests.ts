@@ -137,7 +137,7 @@ export async function runPrOv15eTests(t: YThucTestKit) {
     assert(d.chuSoTruoc(3, 1) === 'Tăng 2 HV' && d.chuSoTruoc(1, 2) === 'Giảm 1 HV' && d.chuSoTruoc(2, 2) === 'Không đổi', 'chữ so kỳ trước');
     const thuong = baoCao.baoCao(QL, { ...f, ct: 'thuong' });
     assert(thuong.sos === null && thuong.mock === null, 'lớp thường: không SOS / Mock');
-    assertThrows(() => baoCao.baoCao(P.w1Teacher, f), /Quản lý/, 'GV không xem Báo cáo');
+    assertThrows(() => baoCao.baoCao(P.w1Teacher, f), /Head/, 'GV không xem Báo cáo');
   });
 
   check('OV15e-6 · Kết quả thi Mock: Đạt ⇔ OVR ≥ kỳ vọng, thiếu OVR = Chưa đủ điểm; đếm theo lượt + số HV; Mức SOS nặng trước; lọc kết quả', () => {

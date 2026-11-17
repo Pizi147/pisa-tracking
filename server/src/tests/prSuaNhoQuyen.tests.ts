@@ -64,7 +64,7 @@ export async function runPrSuaNhoQuyenTests(t: { check: any; assert: any; conn: 
 
   const tvvId = get(`SELECT ur.user_id AS id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.status = 'active' ORDER BY ur.user_id LIMIT 1`)?.id;
   const vai = (): [string, any][] => [
-    ['QT', P.admin], ['QL MB', P.mbManager], ['QL CP', P.cpManager], ['GVCN', P.coreTeacher], ['GVBM', P.subjectTeacher],
+    ['QT', P.admin], ['Head MB', P.mbManager], ['Head CP', P.cpManager], ['GVCN', P.coreTeacher], ['GVBM', P.subjectTeacher],
     ...(tvvId ? [['TVV', loadPrincipal(tvvId)] as [string, any]] : []),
   ];
   const emLop = () => get(`SELECT e.student_id AS id FROM enrollments e JOIN classes c ON c.id = e.class_id JOIN students s ON s.id = e.student_id

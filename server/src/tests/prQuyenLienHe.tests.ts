@@ -117,7 +117,7 @@ export async function runPrQuyenLienHeTests(t: YThucTestKit) {
   const emCp = one(`SELECT s.id FROM enrollments e JOIN students s ON s.id = e.student_id AND s.status = 'active' AND s.archived_at IS NULL
                      WHERE e.class_id = ? AND e.status = 'active' ORDER BY s.id LIMIT 1`, lopCp).id as number;
   const qlMbGvCp = () => {
-    const u = await_accounts.createAccount(P.admin, { email: `qlh.qlmbgvcp${await_accounts.EMAIL_SUFFIX}`, password: 'matkhau-qlh', fullName: 'Thử QLH QL MB GVCN CP',
+    const u = await_accounts.createAccount(P.admin, { email: `qlh.qlmbgvcp${await_accounts.EMAIL_SUFFIX}`, password: 'matkhau-qlh', fullName: 'Thử QLH Head MB GVCN CP',
       roles: [{ role: 'manager', branches: ['MB'] }, { role: 'teacher', branches: ['CP'] }] }).userId as number;
     conn.prepare(`INSERT INTO teacher_assignments (user_id, class_id, skill, is_core, effective_from, status, created_at) VALUES (?,?,'reading',1,'2026-01-01','active',?)`)
       .run(u, lopCp, new Date().toISOString());

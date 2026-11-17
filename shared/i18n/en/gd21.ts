@@ -3,7 +3,7 @@ export const EN_GD21 = {
   'Case theo bước': 'Cases by step',
   'Chưa có mô tả': 'No description yet',
   'Case theo bước xử lý — số = số Case ở bước đó. Chưa có PA = Chờ mô tả + Chờ chọn PA. Bấm bước để lọc, bấm lại để bỏ.': 'Cases by handling step — the number is the Cases at that step. No PA yet = Awaiting description + Awaiting PA choice. Click a step to filter, click again to clear.',
-  'Đề xuất đổi PA chờ QL duyệt': 'PA change proposal awaiting manager approval',
+  'Đề xuất đổi PA chờ Head duyệt': 'PA change proposal awaiting Head approval',
   'Chờ mô tả': 'Awaiting description',
   'Chờ kết quả cuối': 'Awaiting final result',
   'Bỏ lọc bước': 'Clear step filter',

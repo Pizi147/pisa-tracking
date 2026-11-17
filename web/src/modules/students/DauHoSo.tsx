@@ -79,10 +79,10 @@ export function DongThongTin({ tt, tvv, mon, deXuatTarget, yThuc, onYThuc }: { t
     tvv && <NhanGt key="tvv" n={t('TVV')} g={tvv} />,
     yThuc && <NhanGt key="yt" n={t('Ý thức')} g={
       <button type="button" onClick={onYThuc} className="min-h-[44px] min-w-[44px] appearance-none border-0 bg-transparent p-0 text-left font-[inherit] text-[color:var(--text)] hover:text-[color:var(--accent)] sm:min-h-0 sm:min-w-0"
-        aria-label={[t('Ý thức'), yThuc.bac, yThuc.choQl ? t('chờ QL') : null, t('mở tab Ý thức & Phối hợp')].filter(Boolean).join(', ')}>
+        aria-label={[t('Ý thức'), yThuc.bac, yThuc.choQl ? t('chờ Head') : null, t('mở tab Ý thức & Phối hợp')].filter(Boolean).join(', ')}>
         {yThuc.bac && <span className={yThuc.wl ? 'text-bad' : undefined}>{yThuc.bac}</span>}
         {yThuc.bac && yThuc.choQl && <span className="text-dim"> · </span>}
-        {yThuc.choQl && <span className="font-medium text-dim">{t('chờ QL')}</span>}
+        {yThuc.choQl && <span className="font-medium text-dim">{t('chờ Head')}</span>}
       </button>} />,
   ].filter(Boolean);
   /* U02 dòng 1 (mockup `.facts`): ô nhãn trên – giá trị dưới, vạch dọc ngăn ô. */

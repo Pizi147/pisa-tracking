@@ -161,7 +161,7 @@ export function KeHoachTestTab() {
               const bat = !locChuaCoKe;
               setChiChuaCoKe(bat);
               if (bat) setMoList(lopFT.filter((l) => !l.chiXem && l.chuaCoLichTiep > 0).map((l) => l.id));
-            }} title={t('Lộ trình chưa đủ MT (3 · RF 2) — Quản lý xếp tiếp')}>
+            }} title={t('Lộ trình chưa đủ MT (3 · RF 2) — Head xếp tiếp')}>
               {t('Chưa đủ MT')} <b className="tabular-nums">{soChuaCoKe}</b>{locChuaCoKe && <span aria-label={t('Bỏ lọc')}> ✕</span>}
             </button>
           ) : null;

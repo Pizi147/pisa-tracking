@@ -472,7 +472,7 @@ export async function runCongViecTests(t: YThucTestKit) {
   const askIvId = askDetail.interventions.find((i: any) => i.kind === 'self_study').id as number;
   casesSvc.updateResult(P.lrTeacher, askIvId, {
     outcome: 'unchanged', decision: 'ask_manager', observedOn: TODAY,
-    note: 'Đã thử tự học một tuần nhưng em vẫn chưa tiến bộ rõ, cần Quản lý cho ý kiến hướng tiếp theo.',
+    note: 'Đã thử tự học một tuần nhưng em vẫn chưa tiến bộ rõ, cần Head cho ý kiến hướng tiếp theo.',
     decisionNote: 'Có nên chuyển sang tutor không?',
   });
 
@@ -569,11 +569,11 @@ export async function runCongViecTests(t: YThucTestKit) {
     const cpBranchId = (conn.prepare(`SELECT id FROM branches WHERE code = 'CP'`).get() as any).id as number;
     const cpTask = mgmt.createMgmtTask(P.admin, { title: 'Việc Cẩm Phả thử phạm vi', group: 'teacher', branchId: cpBranchId });
     assertThrows(() => mgmt.mgmtTaskDetail(P.mbManager, cpTask.id), /không được giao cho bạn/,
-      'QL Monbay xem chi tiết việc chi nhánh Cẩm Phả phải bị chặn');
+      'Head Monbay xem chi tiết việc chi nhánh Cẩm Phả phải bị chặn');
     assertThrows(() => mgmt.updateMgmtTask(P.mbManager, cpTask.id, { progress: 'doing', on: '2026-09-14' }),
-      /Chỉ người được giao hoặc Quản lý/, 'QL Monbay cập nhật tiến độ việc chi nhánh Cẩm Phả phải bị chặn');
-    assertThrows(() => mgmt.editMgmtTask(P.mbManager, cpTask.id, { note: 'thử' }), /Chỉ Quản lý mới sửa được/,
-      'QL Monbay sửa (PATCH) việc chi nhánh Cẩm Phả phải bị chặn — lỗ này chưa có, kiểm để giữ nguyên');
+      /Chỉ người được giao hoặc Head/, 'Head Monbay cập nhật tiến độ việc chi nhánh Cẩm Phả phải bị chặn');
+    assertThrows(() => mgmt.editMgmtTask(P.mbManager, cpTask.id, { note: 'thử' }), /Chỉ Head mới sửa được/,
+      'Head Monbay sửa (PATCH) việc chi nhánh Cẩm Phả phải bị chặn — lỗ này chưa có, kiểm để giữ nguyên');
     // Đúng chi nhánh thì làm được bình thường — không phải khoá hết mọi Quản lý.
     const d = mgmt.mgmtTaskDetail(P.cpManager, cpTask.id);
     assert(d.id === cpTask.id, 'QL Cẩm Phả phải xem được việc của đúng chi nhánh mình');

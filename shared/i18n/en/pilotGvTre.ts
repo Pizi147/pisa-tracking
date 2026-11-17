@@ -17,7 +17,7 @@ export const EN_PILOT_GV_TRE = {
   'Đã đủ': 'Complete',
   'Phân công GV ở hồ sơ lớp {lop} ›': 'Assign a teacher on class {lop} ›',
   'người nhập': 'marker',
-  'Chỉ GV chấm, Quản lý hoặc Admin của chi nhánh nhập được bài này.': 'Only the marking teacher, a Manager or the branch Admin can enter these papers.',
+  'Chỉ GV chấm, Head hoặc Admin của chi nhánh nhập được bài này.': 'Only the marking teacher, a Head or the branch Admin can enter these papers.',
   'Bạn được ghi là người nhập; bài vẫn của {ten}': 'You are recorded as the one entering; the papers stay with {ten}',
   'Bạn được ghi là người nhập.': 'You are recorded as the one entering.',
   'Mọi chi nhánh': 'All branches',

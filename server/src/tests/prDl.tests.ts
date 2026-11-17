@@ -300,7 +300,7 @@ export async function runPrDlTests(t: YThucTestKit) {
       assert(a.status === 200 && a.body.mode === 'ielts_band' && a.body.luot.length > 0, `GV dạy lớp: ${a.status} ${JSON.stringify(a.body)?.slice(0, 200)}`);
       const b = await goi(gv.userId, `/classes/${LOP}/diem-theo-luot/mt:2`);
       assert(b.status === 200 && b.body.ft.rows.length > 0, `GV đọc bảng MT2: ${b.status}`);
-      for (const [ai, ng] of [['GV lớp khác', gvNgoai], ['QL CP', P.cpManager]] as const) {
+      for (const [ai, ng] of [['GV lớp khác', gvNgoai], ['Head CP', P.cpManager]] as const) {
         assert((await goi(ng.userId, `/classes/${LOP}/diem-theo-luot`)).status === 403, `${ai} đọc danh sách lượt không 403`);
         assert((await goi(ng.userId, `/classes/${LOP}/diem-theo-luot/mt:2`)).status === 403, `${ai} đọc bảng không 403`);
       }
@@ -634,8 +634,8 @@ export async function runPrDlTests(t: YThucTestKit) {
     check('DL-6 coTheXemLuotCham = requireXemLuotCham không ném; hồ sơ lớp có viewer.coTheXemDiem (QL / GV / GVCN / GVCN lớp thường)', () => {
       const nem = (p: any, id: number) => { try { perm.requireXemLuotCham(p, { classId: id }, 'x'); return false; } catch { return true; } };
       const ca: [string, any, number, boolean][] = [
-        ['QL MB', P.mbManager, LOP, true], ['GV L/R', P.lrTeacher, LOP, true], ['GVCN', P.coreTeacher, LOP, true],
-        ['GVCN lớp thường', P.normalCoreTeacher, LOP_T, true], ['QL CP (ngoài phạm vi)', P.cpManager, LOP, false],
+        ['Head MB', P.mbManager, LOP, true], ['GV L/R', P.lrTeacher, LOP, true], ['GVCN', P.coreTeacher, LOP, true],
+        ['GVCN lớp thường', P.normalCoreTeacher, LOP_T, true], ['Head CP (ngoài phạm vi)', P.cpManager, LOP, false],
         ['GV L/R lớp không dạy', P.lrTeacher, classId('CP FT 110'), false],
       ];
       for (const [ten, p, id, mong] of ca) {

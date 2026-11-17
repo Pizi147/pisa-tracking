@@ -121,7 +121,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
   const rut = (nut: HTMLButtonElement) => {
     /* Rút đề xuất Ý thức xoá cả tệp bằng chứng — hỏi một dòng; loại khác rút ngay (gửi lại được). */
     if (yc.loai === 'y_thuc') return moO('rut', nut);
-    void gui(`/yeu-cau/${yc.id}/rut`, {}, t('Đã rút — Quản lý không còn thấy yêu cầu này'));
+    void gui(`/yeu-cau/${yc.id}/rut`, {}, t('Đã rút — Head không còn thấy yêu cầu này'));
   };
   /* Đóng ô: nút gốc vẫn trong DOM (chỉ mờ khi ô mở) — đợi React bỏ `disabled` rồi mới trả focus. Nút gốc đã mất (thẻ đổi trạng thái / gỡ khỏi
      danh sách sau khi gửi) → nút đầu của thẻ này, hết thẻ thì nút đầu của thẻ còn lại trên trang: focus không rơi về <body> (TAB-A11Y). */
@@ -420,7 +420,7 @@ export function TheYeuCau({ yc, onXong, gon, laNguoiXin, chon, nhanManh, onThemP
 
 /** Thẻ đã xử lý: ai quyết, lý do/câu trả lời, vì sao tự đóng. */
 function KetQua({ yc, ngan }: { yc: TheYeuCauDto; ngan: (d: string | null | undefined) => string }) {
-  const ai = yc.nguoiDuyet ? `${yc.nguoiDuyet}` : t('Quản lý');
+  const ai = yc.nguoiDuyet ? `${yc.nguoiDuyet}` : t('Head');
   /* PR-BV: thẻ đã quyết mà sau đó "-" bị xoá — giữ quyết định, thêm "vắng đã gỡ" (`lyDoDong`). */
   const goVang = yc.lyDoDong && yc.trangThai !== 'tu_dong' ? ` · ${yc.lyDoDong}` : '';
   if (yc.trangThai === 'tu_choi') return <p className="m-0 mt-1 text-[12px] text-slate-400">{t('{ai} từ chối', { ai })}{yc.xuLyLuc ? ` ${ngan(yc.xuLyLuc)}` : ''}: “{yc.lyDoTuChoi}”{goVang}</p>;

@@ -41,7 +41,7 @@ export const EN_UI_CV_TVV = {
   'Thao tác phụ': 'More actions',
   'Việc kế: {ten}': 'Next: {ten}',
   'Việc đã xong · lịch sử giữ khi thu hồi': 'Task done · history kept if withdrawn',
-  'chờ QL duyệt.': 'waiting for manager approval.',
+  'chờ Head duyệt.': 'waiting for Head approval.',
   'hạn 23:59 {ngay}': 'due 23:59 {ngay}',
   'không hạn': 'no due date',
   'lưu {luc}': 'saved {luc}',

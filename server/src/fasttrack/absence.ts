@@ -262,7 +262,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
   const req = conn.prepare('SELECT * FROM skill_move_requests WHERE id = ?').get(requestId) as MoveRequest;
   if (!req) throw notFound('Không tìm thấy đề nghị dời lịch.');
   const attempt = loadAttempt(req.attempt_id);
-  if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
+  if (!canDecide(p, attempt)) throw forbidden('Chỉ Head mới trả lời được đề nghị dời lịch.');
   /* PR-Dọn (VN10): cùng chốt với đường xin dời / báo vắng — đề nghị cũ còn treo trên MT lịch sử cũng không được duyệt. */
   if (attempt.lich_su) throw badRequest('MT cũ không vào luồng vắng — nhập bù điểm, không dời lịch.');
   if (req.status !== 'pending') {
@@ -287,7 +287,7 @@ export function decideAbsenceMove(p: Principal, requestId: number, input: {
         .run(p.userId, nowIso(), note, nowIso(), requestId);
       /* T3 (Q3): từ chối "Xin dời" của kỹ năng đã huỷ vì vắng 2 lần = không mock lại (bỏ khỏi đợt). */
       if (row.huy_vang) khongMockLaiNoi(p, req.attempt_id, req.skill, note);
-      else cancelPart(conn, p.userId, attempt, row, requestId, 'Quản lý từ chối đề nghị dời lịch.');
+      else cancelPart(conn, p.userId, attempt, row, requestId, 'Head từ chối đề nghị dời lịch.');
       chotYeuCau(conn, { loai: 'lich_thi', doiTuongLoai: 'skill_move', doiTuongId: requestId }, 'tu_choi', { nguoiDuyet: p.userId, lyDo: note });
       refreshOutcome(p, req.attempt_id);   // OV-1c: huỷ phần thi = kỹ năng thiếu đã xong
       return { ok: true, status: 'declined', cancelled: true };
@@ -340,7 +340,7 @@ export function huyQuyetDinhDoi(p: Principal, requestId: number): void {
   const req = conn.prepare('SELECT * FROM skill_move_requests WHERE id = ?').get(requestId) as MoveRequest & { status: string; from_period_id: number | null; cancelled_part: number };
   if (!req) throw notFound('Không tìm thấy đề nghị dời lịch.');
   const attempt = loadAttempt(req.attempt_id);
-  if (!canDecide(p, attempt)) throw forbidden('Chỉ Quản lý mới trả lời được đề nghị dời lịch.');
+  if (!canDecide(p, attempt)) throw forbidden('Chỉ Head mới trả lời được đề nghị dời lịch.');
   if (req.status !== 'approved' && req.status !== 'declined') throw badRequest('Đề nghị này chưa có quyết định để huỷ.');
   const row = ensureSkillRows(req.attempt_id).find((r) => r.skill === req.skill)!;
   const diem = conn.prepare(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill IN (${entrySkillsOf(req.skill as AssessedSkill).map(() => '?').join(',')})
@@ -445,7 +445,7 @@ function cancelPart(
   notifyPlanners(
     attempt,
     ratio
-      ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why} Môn này vẫn phải làm bài, chờ Quản lý xếp lại.`
+      ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why} Môn này vẫn phải làm bài, chờ Head xếp lại.`
       : `Đã huỷ ${skillName(row.skill)} — ${why} Đợt này chưa đủ kết quả cho tới khi được khôi phục.`,
     requestId, actor, {},
     ratio ? `Xếp lại lịch ${skillName(row.skill)}` : `Khôi phục kỹ năng ${skillName(row.skill)}`,
@@ -466,7 +466,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
 } = {}) {
   const attempt = loadAttempt(attemptId);
   if (!canDecide(p, attempt)) {
-    throw forbidden('Chỉ Quản lý mới khôi phục được kỹ năng đã huỷ và đặt tuần mới.');
+    throw forbidden('Chỉ Head mới khôi phục được kỹ năng đã huỷ và đặt tuần mới.');
   }
   const rows = ensureSkillRows(attemptId);
   const row = rows.find((r) => r.skill === skill);
@@ -506,7 +506,7 @@ export function restoreCancelledSkill(p: Principal, attemptId: number, skill: st
     logSchedule(attemptId, {
       action: 'skill_part_restored', field: skill,
       oldValue: row.period_code, newValue: period.code,
-      reason: opts.reason ?? 'Quản lý khôi phục và đặt tuần mới', actor: p.userId,
+      reason: opts.reason ?? 'Head khôi phục và đặt tuần mới', actor: p.userId,
     });
     const cw = recomputeCompletionWeek(attemptId, p.userId);
     tinhLaiMtCu(attemptId, demoToday());
@@ -682,7 +682,7 @@ export function duocGoDau(p: Principal, o: {
 }): string | null {
   if (can(p, PERMISSIONS.PLAN_WEEK, { classId: o.classId })) return null;
   if (!(o.duocNhap ?? scoreEditPath(p, o.classId, o.skill, { lich_su: 0, kind: o.kind }) !== null) && !isCoreTeacherOf(p, o.classId, o.today)) {
-    return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Quản lý gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
+    return teachesClass(p, o.classId, o.today) ? 'Chỉ GV chấm kỹ năng này, GVCN hoặc Head gỡ được dấu "-".' : 'Bạn không có quyền với lớp này.';
   }
   return null;
 }
@@ -787,7 +787,7 @@ export function baoVang(p: Principal, attemptId: number, skill: string, lyDo: st
   let a = loadAttempt(attemptId);
   /* NHAP-DIEM-a (chủ SP 14/11 "GV nhập có quyền ghi vắng, bỏ vắng"): + người nhập được ô của kỹ năng — như gõ "-" ở ô. */
   if (!canRequest(p, a) && !(a.class_id && entrySkillsOf(skill as AssessedSkill).some((e) => scoreEditPath(p, a.class_id, e, { lich_su: a.lich_su ?? 0, kind: a.kind }) !== null))) {
-    throw forbidden('Chỉ người nhập được ô này, GVCN của lớp và Quản lý báo vắng được.');
+    throw forbidden('Chỉ người nhập được ô này, GVCN của lớp và Head báo vắng được.');
   }
   if (isRatio(a)) throw badRequest('Bài lớp thường báo vắng ở bảng điểm lớp thường.');   // chủ SP 14/11: MT0 báo vắng như Mock (N38)
   if (a.status === 'cancelled') { moLaiLuotNeuHuy(p, a); a = loadAttempt(attemptId); }   // RKC: hỏi rồi khôi phục lượt
@@ -858,7 +858,7 @@ export function huyDiemKn(p: Principal, attemptId: number, skill: string, huy: b
   const lq = { lich_su: a.lich_su ?? 0, kind: a.kind };
   const duoc = canRequest(p, a) || (!!a.class_id && o.some((e) => scoreEditPath(p, a.class_id, e, lq) !== null
     || can(p, PERMISSIONS.SCORE_EDIT, { classId: a.class_id, studentId: a.student_id, skill: e })));
-  if (!duoc) throw loi(403, 'Chỉ người nhập được ô này, GVCN lớp hoặc Quản lý huỷ / khôi phục được điểm.');
+  if (!duoc) throw loi(403, 'Chỉ người nhập được ô này, GVCN lớp hoặc Head huỷ / khôi phục được điểm.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ — khôi phục lượt trước.');
   return tx(() => {
     const row = ensureSkillRows(attemptId).find((r) => r.skill === kn);

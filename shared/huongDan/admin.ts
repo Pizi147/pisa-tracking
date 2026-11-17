@@ -11,7 +11,7 @@ const CV = '/cong-viec';
 const HV = '/hoc-vien';
 const TEST = '/test/lich';
 const KH = '/test/ke-hoach';
-const KHONG_QL = { ten: 'Dời hạn chấm, chuyển lớp', cua: 'việc của QL' } as const;
+const KHONG_QL = { ten: 'Dời hạn chấm, chuyển lớp', cua: 'việc của Head' } as const;
 
 const mucGv = (man: string, id: string): MucHd => HD_GV.man.find((m) => m.id === man)!.muc.find((m) => m.id === id)!;
 
@@ -52,7 +52,7 @@ export const HD_ADMIN: HuongDan = {
       loiChinh: { man: 'ke-hoach', chu: 'Test › Kế hoạch Test', duong: KH, chi: { hd: 'kht-loc', duong: KH, chu: 'Lọc lớp và xếp nhiều MT ở hàng này.' } },
       loiTat: ['p-xep-lich-mt'],
       buoc: ['Mở <b>Test › Kế hoạch Test</b>: <b>Xếp nhiều MT…</b> (FT) · <b>Xếp lịch Test…</b> (lớp thường); chip <b>Chưa đủ MT</b> chỉ lớp có em cần xếp tiếp.',
-        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b> môn: <b>Huỷ điểm</b>, <b>Lịch sử</b>; <b>Dời hạn chấm</b> mờ, ghi "Chỉ Quản lý". FT xoá cả lượt: <b>⋯</b> đầu hộp, có Hoàn tác.', 'Thứ Sáu tới Chủ nhật máy hỏi trước khi đổi: bấm <b>Vẫn đổi lịch</b>.'],
+        'Một kỹ năng: bấm ô MT — mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.', '<b>⋯</b> môn: <b>Huỷ điểm</b>, <b>Lịch sử</b>; <b>Dời hạn chấm</b> mờ, ghi "Chỉ Head". FT xoá cả lượt: <b>⋯</b> đầu hộp, có Hoàn tác.', 'Thứ Sáu tới Chủ nhật máy hỏi trước khi đổi: bấm <b>Vẫn đổi lịch</b>.'],
       tuKhac: ['dời lịch', 'xếp lịch', 'lịch mt', 'schedule', 'reschedule'],
     },
     {
@@ -81,21 +81,21 @@ export const HD_ADMIN: HuongDan = {
       xong: 'Không cần đánh dấu đã xuất; dòng tự rời.',
       han: 'Dòng còn thiếu tính quá hạn từ hạn đợt.',
       sai: 'Xuất lại được; đợt không cần: <b>Không báo cáo đợt này</b>.',
-      khongDuoc: ['Viết hộ báo cáo là việc của QL.'],
+      khongDuoc: ['Viết hộ báo cáo là việc của Head.'],
       sau: 'Gửi tệp cho phụ huynh ngoài web.',
       tuKhac: ['báo cáo ph', 'phụ huynh', 'pdf', 'parent report', 'export'],
     },
     {
       id: 'sua-lich-lop', ten: 'Sửa lịch lớp thường', nhom: 'hv',
       loiChinh: { man: 'ho-so-lop', chu: 'Hồ sơ lớp › ⋯ › Thông tin lớp' },
-      buoc: ['Mở hồ sơ lớp thường, bấm <b>⋯ › Thông tin lớp</b>.', 'Đổi tuần khai giảng, tuần Progress, tuần Final; lớp Fast Track nhờ Quản lý.'],
+      buoc: ['Mở hồ sơ lớp thường, bấm <b>⋯ › Thông tin lớp</b>.', 'Đổi tuần khai giảng, tuần Progress, tuần Final; lớp Fast Track nhờ Head.'],
       tuKhac: ['lịch lớp', 'tuần final', 'tuần progress', 'khai giảng', 'class schedule'],
     },
     {
       id: 'sua-hv', ten: 'Sửa thông tin học viên, đổi lộ trình', nhom: 'hv',
       loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › ⋯ › Sửa thông tin' },
       loiTat: ['p-sua-thong-tin'],
-      buoc: ['Ở hồ sơ em, bấm <b>⋯ › Sửa thông tin</b>: họ tên, ngày sinh, liên hệ.', '<b>Lộ trình đang học</b> là của em, không theo lớp: Admin đổi được (LT1 · LT2 · RF). Target, môn học: nhờ Quản lý / TVV.'],
+      buoc: ['Ở hồ sơ em, bấm <b>⋯ › Sửa thông tin</b>: họ tên, ngày sinh, liên hệ.', '<b>Lộ trình đang học</b> là của em, không theo lớp: Admin đổi được (LT1 · LT2 · RF). Target, môn học: nhờ Head / TVV.'],
       tuKhac: ['họ tên', 'ngày sinh', 'liên hệ', 'lộ trình', 'edit student'],
     },
     {
@@ -140,7 +140,7 @@ export const HD_ADMIN: HuongDan = {
       id: 'bc-ph-chua-du', ten: 'Báo cáo PH lớp chưa đủ / đợt quá hạn', the: 'xuat-bc-ph',
       may: ['Hết hạn đợt còn em thiếu: dòng Xuất báo cáo PH đỏ, ghi số em thiếu.', 'Lớp viết đủ sau đó: dòng thành lớp đủ, bạn nhận tin Báo cáo PH đủ.'],
       ban: 'Bấm <b>Báo cáo PH ›</b> xem phần thiếu; đợt không cần: <b>Không báo cáo đợt này</b>.',
-      ai: ['GV có phần thiếu vẫn có việc Viết Báo cáo PH; viết hộ là việc của QL.'],
+      ai: ['GV có phần thiếu vẫn có việc Viết Báo cáo PH; viết hộ là việc của Head.'],
       tuKhac: ['báo cáo ph', 'thiếu', 'quá hạn', 'parent report'],
     },
     {
@@ -152,9 +152,9 @@ export const HD_ADMIN: HuongDan = {
     },
     {
       id: 'khong-thay-nut', ten: 'Không thấy nút / không có quyền',
-      may: ['Bạn chỉ có việc Chấm điểm và Xuất báo cáo PH.', 'Mục không làm được hiện mờ kèm lý do, như Dời hạn chấm: Chỉ Quản lý.'],
-      ban: 'Nhờ QL: dời hạn chấm, Target, môn học, chuyển lớp, viết hộ báo cáo PH.',
-      tuKhac: ['quyền', 'không thấy', 'chỉ quản lý', 'permission'],
+      may: ['Bạn chỉ có việc Chấm điểm và Xuất báo cáo PH.', 'Mục không làm được hiện mờ kèm lý do, như Dời hạn chấm: Chỉ Head.'],
+      ban: 'Nhờ Head: dời hạn chấm, Target, môn học, chuyển lớp, viết hộ báo cáo PH.',
+      tuKhac: ['quyền', 'không thấy', 'chỉ Head', 'permission'],
     },
     {
       id: 'luu-loi', ten: 'Không lưu được, mất mạng',
@@ -178,23 +178,23 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'em-chuyen-lop', ten: 'Em chuyển lớp',
       may: ['Việc theo phân công ở lớp em đang học; lượt có điểm đứng yên.'],
-      ban: 'Chuyển lớp là việc của QL; bạn đổi được lộ trình của em nếu cần.',
+      ban: 'Chuyển lớp là việc của Head; bạn đổi được lộ trình của em nếu cần.',
       ai: ['GV bộ môn, GVCN lớp cũ làm Bàn giao.'],
       tuKhac: ['chuyển lớp', 'đổi lớp', 'transfer'],
     },
     {
       id: 'em-tam-dung', ten: 'Em tạm dừng / kết thúc học',
       may: ['Em tạm dừng hoặc kết thúc học thì không sinh việc nhập điểm.'],
-      ban: 'Đổi trạng thái em là việc của QL, GVCN, TVV.',
+      ban: 'Đổi trạng thái em là việc của Head, GVCN, TVV.',
       tuKhac: ['tạm dừng', 'nghỉ học', 'pause'],
     },
   ],
   vaiKhac: [
-    { ten: 'Duyệt yêu cầu, đề xuất PA', cua: 'việc của QL', tuKhac: ['duyệt', 'approve'] },
-    { ten: 'Dời hạn chấm', cua: 'việc của QL', tuKhac: ['dời hạn', 'reschedule'] },
-    { ten: 'Đổi Target, môn học', cua: 'việc của QL', tuKhac: ['target', 'môn học', 'tutor'] },
-    { ten: 'Chuyển lớp', cua: 'việc của QL', tuKhac: ['đổi lớp', 'chuyển lớp', 'change class', 'transfer'] },
-    { ten: 'Viết hộ báo cáo PH', cua: 'việc của QL', tuKhac: ['viết hộ', 'báo cáo ph'] },
+    { ten: 'Duyệt yêu cầu, đề xuất PA', cua: 'việc của Head', tuKhac: ['duyệt', 'approve'] },
+    { ten: 'Dời hạn chấm', cua: 'việc của Head', tuKhac: ['dời hạn', 'reschedule'] },
+    { ten: 'Đổi Target, môn học', cua: 'việc của Head', tuKhac: ['target', 'môn học', 'tutor'] },
+    { ten: 'Chuyển lớp', cua: 'việc của Head', tuKhac: ['đổi lớp', 'chuyển lớp', 'change class', 'transfer'] },
+    { ten: 'Viết hộ báo cáo PH', cua: 'việc của Head', tuKhac: ['viết hộ', 'báo cáo ph'] },
     { ten: 'Xác nhận Case, PA', cua: 'việc của GV', tuKhac: ['case', 'phương án', 'sos'] },
   ],
   man: [
@@ -213,13 +213,13 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: [HV],
       dangO: { cau: 'Tìm em, lớp trong chi nhánh; xem nhanh một em.', sau: { chu: 'Lịch Test tuần', duong: TEST } },
-      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của QL' }],
+      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của Head' }],
       muc: [mucGv('hoc-vien', 'hv-tim'), { id: 'ad-hvl-goc', ten: 'Xem và lọc', buoc: ['Ô <b>Xem</b>: phạm vi chi nhánh của bạn; tab <b>Tất cả</b> · <b>Lịch thi</b>.', 'Bấm dòng em mở panel một em.'], chi: { hd: 'hvl-goc', duong: HV, chu: 'Tab và lọc của trang ở hàng này.' } }],
     },
     {
       id: 'ho-so-lop', ten: 'Hồ sơ lớp', duong: ['/hoc-vien/lop'],
       dangO: { cau: 'Một lớp: em, điểm Mock Test của lớp, Báo cáo PH.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
-      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của QL' }],
+      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của Head' }],
       muc: [
         { id: 'ad-lop-xem', ten: 'Xem lớp', buoc: ['Tab <b>Học viên</b>: bảng em của lớp.', 'Cuối trang: <b>Điểm Mock Test của lớp</b>.'] },
         { id: 'ad-lop-sua-lich', viec: 'sua-lich-lop', ten: 'Sửa lịch lớp thường', buoc: ['<b>⋯ › Thông tin lớp</b>: tuần khai giảng, Progress, Final.'] },
@@ -229,19 +229,19 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'ho-so-hv', ten: 'Hồ sơ học viên', duong: ['/hoc-vien/'],
       dangO: { cau: 'Một em: điểm, Case, ý thức, lộ trình; sửa thông tin và lộ trình.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
-      khongLam: [{ ten: 'Đổi Target, môn học', cua: 'việc của QL' }, { ten: 'Xác nhận Case, PA', cua: 'việc của GV' }],
+      khongLam: [{ ten: 'Đổi Target, môn học', cua: 'việc của Head' }, { ten: 'Xác nhận Case, PA', cua: 'việc của GV' }],
       muc: [{ id: 'ad-hv', viec: 'sua-hv', ten: 'Sửa thông tin, đổi lộ trình', buoc: ['<b>⋯ › Sửa thông tin</b> (có <b>Lộ trình đang học</b>) · <b>⋯ › Lịch sử</b>.', 'Ba tab <b>Học thuật</b> · <b>Ý thức & Phối hợp</b> · <b>Lộ trình & lớp</b>: chỉ xem.'] }],
     },
     {
       id: 'luu-tru', ten: 'Lưu trữ', duong: ['/hoc-vien/luu-tru'],
       dangO: { cau: 'Lớp đã kết thúc và em đã lưu trữ (từ ô tìm “Tìm trong HV lưu trữ ›”); chỉ xem.', truoc: { chu: 'Học viên & Lớp', duong: HV } },
-      khongLam: [{ ten: 'Tạm dừng, kết thúc học, Quay lại học', cua: 'việc của QL' }],
+      khongLam: [{ ten: 'Tạm dừng, kết thúc học, Quay lại học', cua: 'việc của Head' }],
       muc: [{ id: 'ad-luu-tru', ten: 'Xem Lưu trữ', buoc: ['Ba tab: <b>Lớp đã kết thúc</b> · <b>Học viên đã lưu trữ</b> · <b>Đã xoá</b>; chia theo chi nhánh, học viên theo lớp cuối.', 'Bấm tên em hoặc lớp mở hồ sơ.'] }],
     },
     {
       id: 'ho-so-gv', ten: 'Hồ sơ giáo viên', duong: ['/giao-vien'],
       dangO: { cau: 'Một GV: lớp dạy, số theo khoảng tuần (chỉ xem).', truoc: { chu: 'Phân tích', duong: '/phan-tich' } },
-      khongLam: [{ ten: 'Sửa kỹ năng của GV', cua: 'việc của QL' }],
+      khongLam: [{ ten: 'Sửa kỹ năng của GV', cua: 'việc của Head' }],
       muc: [{ id: 'ad-hsgv', ten: 'Xem hồ sơ giáo viên', buoc: ['<b>Từ tuần</b> → <b>Đến tuần</b>: dải Việc · Chấm Test (% đúng hạn · Chưa làm) theo khoảng đó; tab <b>Học thuật</b> · <b>Việc & Case</b>.', 'Bấm số mở danh sách ngay tại trang.'] }],
     },
     {
@@ -309,8 +309,8 @@ export const HD_ADMIN: HuongDan = {
     {
       id: 'p-sua-thong-tin', ten: 'Sửa thông tin đang mở', duong: [], panel: 'sua-thong-tin', the: 'sua-hv',
       dangO: { cau: 'Sửa thông tin và lộ trình của một em.' },
-      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của QL' }],
-      muc: [{ id: 'pst-sua', viec: 'sua-hv', ten: 'Sửa thông tin học viên, đổi lộ trình', buoc: ['Sửa họ tên, ngày sinh, liên hệ; <b>Lộ trình đang học</b> đổi được (LT1 · LT2 · RF).', 'Target, môn học: nhờ Quản lý / TVV; <b>Lưu</b>.'] }],
+      khongLam: [{ ten: 'Chuyển lớp, Target', cua: 'việc của Head' }],
+      muc: [{ id: 'pst-sua', viec: 'sua-hv', ten: 'Sửa thông tin học viên, đổi lộ trình', buoc: ['Sửa họ tên, ngày sinh, liên hệ; <b>Lộ trình đang học</b> đổi được (LT1 · LT2 · RF).', 'Target, môn học: nhờ Head / TVV; <b>Lưu</b>.'] }],
     },
     {
       id: 'p-xuat-ds', ten: 'Xuất Excel học viên đang mở', duong: [], panel: 'xuat-ds', the: 'lich-thi',
@@ -327,7 +327,7 @@ export const HD_ADMIN: HuongDan = {
   ],
   luat: [
     ...luatGv('han-cham', 'dau-gach'),
-    { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch Test, xoá / khôi phục MT, nhập bù / sửa điểm, sửa thông tin HV, đổi lộ trình, sửa lịch lớp thường, xuất Excel và báo cáo PH.', 'Huỷ / khôi phục lượt: khi công tắc <b>Mở sửa lịch Test</b> bật.', 'Chỉ Quản lý: dời hạn chấm, Target, môn học, chuyển lớp, viết hộ báo cáo PH.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
+    { id: 'ad-luat-quyen', ten: 'Admin làm / không làm', buoc: ['Làm: xếp / dời lịch Test, xoá / khôi phục MT, nhập bù / sửa điểm, sửa thông tin HV, đổi lộ trình, sửa lịch lớp thường, xuất Excel và báo cáo PH.', 'Huỷ / khôi phục lượt: khi công tắc <b>Mở sửa lịch Test</b> bật.', 'Chỉ Head: dời hạn chấm, Target, môn học, chuyển lớp, viết hộ báo cáo PH.', 'Case, Ý thức, Phối hợp: chỉ xem.'] },
   ],
-  tu: HD_GV.tu.filter((x) => ['MT (Mock Test)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Chấm Speaking', 'KCK', 'Mã tuần', 'QL (Quản lý)'].includes(x.ten)),
+  tu: HD_GV.tu.filter((x) => ['MT (Mock Test)', 'Lớp thường (không phải FT)', 'Kỳ vọng', 'SOS 1 · 2 · 3', 'GVCN · GVBM', 'Chấm Speaking', 'KCK', 'Mã tuần', 'Head'].includes(x.ten)),
 };

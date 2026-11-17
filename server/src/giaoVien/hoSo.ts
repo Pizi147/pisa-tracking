@@ -388,7 +388,7 @@ export type BangGv = { cn: number; tenChiNhanh: string; ct: ChuongTrinh; hang: H
  */
 export function bangGvChiNhanh(p: Principal, q: { cn?: number | null; ct?: string | null }): BangGv {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
-  if (scope.none) throw forbidden('Chỉ Quản lý và Quản trị hệ thống xem được bảng này.');
+  if (scope.none) throw forbidden('Chỉ Head và Quản trị hệ thống xem được bảng này.');
   const cn = q.cn ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
   if (cn === null) throw badRequest('Chọn một chi nhánh.');
   if (!scope.all && !scope.branchIds.includes(cn)) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được xem.');

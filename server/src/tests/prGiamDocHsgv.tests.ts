@@ -24,7 +24,7 @@ export async function runPrGiamDocHsgvTests(t: any) {
   };
   const gvs = (conn.prepare(`SELECT u.id FROM users u WHERE u.status = 'active' AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
       WHERE ur.user_id = u.id AND ur.status = 'active' AND r.key = 'teacher') ORDER BY u.id`).all() as any[]).map((r) => r.id as number);
-  const nguoiXem = (gv: number) => [['chính mình', perm.loadPrincipal(gv)], ['Quản trị', P.admin], ['QL MB', P.mbManager]] as [string, any][];
+  const nguoiXem = (gv: number) => [['chính mình', perm.loadPrincipal(gv)], ['Quản trị', P.admin], ['Head MB', P.mbManager]] as [string, any][];
   const KY = { tu: '2026-03-02', den: '2026-09-14' };
 
   check('GIAM-DOC-HSGV (1) · chỉ số hồ sơ GV (kỳ mặc định + dài) và panel: đường gộp = đường tách từng ngữ cảnh — mọi GV × chính mình / Quản trị / QL', () => {

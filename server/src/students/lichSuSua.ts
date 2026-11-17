@@ -77,7 +77,7 @@ const LO = 60;
 export function lichSuSua(p: Principal, studentId: number, q: { loai?: string; truoc?: number | null }): { dong: DongLichSu[]; tiep: number | null } {
   const conn = db();
   if (!conn.prepare('SELECT 1 FROM students WHERE id = ?').get(studentId)) throw notFound('Không tìm thấy học viên');
-  if (!xemLichSuHv(p, studentId)) throw forbidden('Chỉ Quản lý, GVCN, Tư vấn viên và CX của em xem được lịch sử sửa.');
+  if (!xemLichSuHv(p, studentId)) throw forbidden('Chỉ Head, GVCN, Tư vấn viên và CX của em xem được lịch sử sửa.');
   const loai = q.loai || null;
   if (loai && !['thong-tin', 'target', 'trang-thai'].includes(loai)) throw badRequest('Bộ lọc không hợp lệ.');
 

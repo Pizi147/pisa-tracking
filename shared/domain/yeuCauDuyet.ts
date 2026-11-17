@@ -12,7 +12,7 @@ import type { DiemHv } from './diemDong.ts';
 export const PHAN_LOAI = ['hoc-thuat', 'y-thuc', 'lich-thi', 'thong-tin-hv', 'bao-len'] as const;
 export type PhanLoai = (typeof PHAN_LOAI)[number];
 export const PHAN_LOAI_LABEL: Record<PhanLoai, string> = {
-  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức'), 'lich-thi': t('Dời lịch Test'), 'thong-tin-hv': t('Thông tin HV'), 'bao-len': t('Báo QL'),
+  'hoc-thuat': t('Học thuật'), 'y-thuc': t('Ý thức'), 'lich-thi': t('Dời lịch Test'), 'thong-tin-hv': t('Thông tin HV'), 'bao-len': t('Báo Head'),
 };
 
 /**
@@ -174,7 +174,7 @@ export function sapThe<T extends { hanDuyet: string | null; taoLuc: string }>(ds
 }
 
 /** QL tự gửi rồi tự duyệt (Q-D). Người xin `null` = hệ thống (Báo QL) → không bao giờ là tự duyệt. */
-export type VaiNguoiXin = 'GVCN' | 'GVBM' | 'TVV' | 'QL';
+export type VaiNguoiXin = 'GVCN' | 'GVBM' | 'TVV' | 'Head';
 
 export function laTuDuyet(nguoiXin: number | null, nguoiDuyet: number): boolean {
   return nguoiXin !== null && nguoiXin === nguoiDuyet;

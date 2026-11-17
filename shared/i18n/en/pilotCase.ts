@@ -13,6 +13,6 @@ export const EN_PILOT_CASE = {
   'Chưa có · ghi khi mọi PA đã khép': 'None yet · written once every plan is closed',
   'Case tiếp ›': 'Next case ›',
   'Hết Case chờ trong danh sách': 'No more cases waiting in this list',
-  'Chỉ {ten} (phụ trách) hoặc Quản lý làm được việc ở Case này.': 'Only {ten} (owner) or a Manager can act on this case.',
-  'Chỉ Quản lý làm được việc ở Case này (Case chưa có người phụ trách).': 'Only a Manager can act on this case (it has no owner yet).',
+  'Chỉ {ten} (phụ trách) hoặc Head làm được việc ở Case này.': 'Only {ten} (owner) or a Head can act on this case.',
+  'Chỉ Head làm được việc ở Case này (Case chưa có người phụ trách).': 'Only a Head can act on this case (it has no owner yet).',
 } satisfies Record<string, Dich>;

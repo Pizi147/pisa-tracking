@@ -53,7 +53,7 @@ export function lyDoBaoLenYThuc(em: EmYThuc | undefined): { viec: 'yt_xu_ly' | '
   const qua = em.daDuyet.find((x) => x.quaHan);
   if (qua) {
     const nhan = nhanLoaiXuLy(qua.kind, qua.customName);
-    return { viec: 'yt_thuc_hien', viecId: qua.id, ngan: `${nhan} đã duyệt chưa thực hiện`, cau: `${nhan} QL đã duyệt, quá 5 ngày chưa thực hiện` };
+    return { viec: 'yt_thuc_hien', viecId: qua.id, ngan: `${nhan} đã duyệt chưa thực hiện`, cau: `${nhan} Head đã duyệt, quá 5 ngày chưa thực hiện` };
   }
   return null;
 }
@@ -277,7 +277,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       if (!yc.hoc_vien_id || !iv) return;
       addJourney({
         studentId: yc.hoc_vien_id, cycleId: iv.cycle_id ?? null, eventType: 'note', eventDate: demoToday(),
-        title: `Quản lý trả lời: ${traLoi.slice(0, 80)}`, detail: yc.ly_do ? `Giáo viên hỏi: ${yc.ly_do}` : null,
+        title: `Head trả lời: ${traLoi.slice(0, 80)}`, detail: yc.ly_do ? `Giáo viên hỏi: ${yc.ly_do}` : null,
         refTable: 'case_interventions', refId: yc.doi_tuong_id, createdBy: p.userId, dedupKey: `xin-y-kien:${yc.id}`,
       });
     },
@@ -414,7 +414,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
         `SELECT sc.id, sc.owner_user_id, COALESCE(sc.student_id, a.student_id) AS sid, a.class_id, sc.han_xac_nhan AS han
            FROM sos_cases sc LEFT JOIN assessment_attempts a ON a.id = sc.attempt_id
            JOIN students s ON s.id = COALESCE(sc.student_id, a.student_id)
-          WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* K3-41: em Tạm dừng không bị Báo QL */
+          WHERE sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}   /* K3-41: em Tạm dừng không bị Báo Head */
             AND sc.han_xac_nhan < ?
             AND NOT EXISTS (SELECT 1 FROM yeu_cau_duyet y WHERE y.loai = 'bao_len_nguyen_nhan' AND y.doi_tuong_loai = 'sos_case'
                              AND y.doi_tuong_id = sc.id AND y.trang_thai = 'cho')`,
@@ -816,7 +816,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       return {
         tieuDe: `Mini Test chưa đạt${pt ? ` · ${pt}` : ''}`,
         phu: x?.ten_gv ?? null,   // OV-11c (CV-10): người giữ việc — tên em đã ở dòng phụ của thẻ
-        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ ${Math.round(nguongMiniTest(x?.ghi_luc ?? x?.ngay_lam) * 100)}%) — Case để mở, Quản lý xử lý từng trường hợp.`],
+        dong: [`Mini Test ${pt} ngày ${ngay(x?.ngay_lam, ngu)} (cần từ ${Math.round(nguongMiniTest(x?.ghi_luc ?? x?.ngay_lam) * 100)}%) — Case để mở, Head xử lý từng trường hợp.`],
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id, x?.case_id ? { caseId: x.case_id } : undefined) : undefined,
         duLieu: { tenGv: x?.ten_gv ?? null },
       };

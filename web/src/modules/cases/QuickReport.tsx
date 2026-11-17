@@ -523,7 +523,7 @@ export function QuickReport({
             <BangChung ownerType="sos_case" ownerId={daLuu.id} canEdit={daLuu.canEdit} tieuDe="" />
           ) : (
             /* GVCN mở Case môn mình không dạy — không đính kèm được ở đây; nói rõ ai sẽ thêm, không vẽ khối trống. */
-            <p className="m-0 text-xs text-slate-500">{t('Bạn không có quyền đính kèm cho Case môn này. GV dạy môn đó hoặc Quản lý sẽ thêm.')}</p>
+            <p className="m-0 text-xs text-slate-500">{t('Bạn không có quyền đính kèm cho Case môn này. GV dạy môn đó hoặc Head sẽ thêm.')}</p>
           )}
         </Khoi>
       </KhungPanel>

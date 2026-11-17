@@ -59,7 +59,7 @@ const studentRow = (sid: number) => {
 const quyenGui = (p: Principal, chieu: ChieuTinhHinh, s: any): void => {
   if (chieu === 'gv_tvv') { requireRecordViolation(p, s.id); return; }
   if (!coTheGhi(p, { consultant_user_id: s.consultant_user_id ?? null, student_id: s.id })) {
-    throw forbidden('Chỉ TVV hoặc Quản lý của em hỏi được tình hình học tập.');
+    throw forbidden('Chỉ TVV hoặc Head của em hỏi được tình hình học tập.');
   }
 };
 
@@ -131,7 +131,7 @@ const trongHoanTac = (luc: string | null) => !!luc && Date.now() - Date.parse(lu
 /** Sửa nội dung / câu hỏi — người gửi hoặc QL, khi còn chờ và chưa có kết quả. */
 export function suaTinhHinh(p: Principal, id: number, v: { noiDung?: unknown }): { ok: true } {
   const r = load(id);
-  if (!laNguoiGuiHoacQl(p, r)) throw forbidden('Chỉ người gửi hoặc Quản lý sửa được.');
+  if (!laNguoiGuiHoacQl(p, r)) throw forbidden('Chỉ người gửi hoặc Head sửa được.');
   if (r.trang_thai !== 'mo' || coKetQua(r)) throw badRequest('Đã có kết quả — không sửa được.');
   const noiDung = kiemChu(v.noiDung, r.chieu === 'gv_tvv' ? 'Nội dung' : 'Câu hỏi');
   if (noiDung === r.noi_dung) return { ok: true };
@@ -148,7 +148,7 @@ export function suaTinhHinh(p: Principal, id: number, v: { noiDung?: unknown }):
  */
 export function rutTinhHinh(p: Principal, id: number, o: { hoanTac?: boolean } = {}): { ok: true; xoa: boolean } {
   const r = load(id);
-  if (!laNguoiGuiHoacQl(p, r)) throw forbidden('Chỉ người gửi hoặc Quản lý rút được.');
+  if (!laNguoiGuiHoacQl(p, r)) throw forbidden('Chỉ người gửi hoặc Head rút được.');
   if (r.trang_thai !== 'mo' || coKetQua(r)) throw badRequest('Đã có kết quả — không rút được.');
   const xoa = !!o.hoanTac && r.nguoi_gui === p.userId && trongHoanTac(r.tao_luc);
   tx(() => {
@@ -173,7 +173,7 @@ export function rutTinhHinh(p: Principal, id: number, o: { hoanTac?: boolean } =
 export function traLoiTinhHinh(p: Principal, id: number, v: { traLoi?: unknown }): { ok: true } {
   const r = load(id);
   if (r.chieu !== 'tvv_gvcn') throw badRequest('Chỉ trả lời câu TVV hỏi.');
-  if (!canManageDiscipline(p, r.student_id)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Quản lý ghi được kết quả.');
+  if (!canManageDiscipline(p, r.student_id)) throw forbidden('Chỉ GVCN lớp em đang học hoặc Head ghi được kết quả.');
   if (r.trang_thai === 'rut') throw badRequest('TVV đã rút câu hỏi.');
   const traLoi = kiemChu(v.traLoi, 'Kết quả');
   tx(() => {

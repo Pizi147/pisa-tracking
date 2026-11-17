@@ -266,11 +266,11 @@ export const MILESTONE_KIND_LABEL: Record<MilestoneKind, string> = {
   route_changed: t('Sang lộ trình mới'),
   xac_nhan_case: t('Xác nhận Case'),
   xin_khong_theo_doi: t('Xin không theo dõi'),
-  ql_duyet_khong_theo_doi: t('Quản lý duyệt không theo dõi'),
-  ql_tu_choi_khong_theo_doi: t('Quản lý từ chối không theo dõi'),
+  ql_duyet_khong_theo_doi: t('Head duyệt không theo dõi'),
+  ql_tu_choi_khong_theo_doi: t('Head từ chối không theo dõi'),
   nop_ke_hoach: t('Nộp kế hoạch bổ trợ'),
-  ke_hoach_duyet: t('Quản lý duyệt kế hoạch'),
-  ke_hoach_tu_choi: t('Quản lý từ chối kế hoạch'),
+  ke_hoach_duyet: t('Head duyệt kế hoạch'),
+  ke_hoach_tu_choi: t('Head từ chối kế hoạch'),
   reopened: t('Mở lại'),
   overall_dat: t('Overall đã đạt'),
   ket_thuc_pa: t('Kết thúc PA'),
@@ -793,7 +793,7 @@ export function cycleDeadline(startDate: string): string {
  * `HAN_DUYET_NGAY`; `cycleDeadline` ở trên chỉ còn bộ demo dùng.
  */
 export function cycleDeadlineHint(): string {
-  return t('Hạn Quản lý trả lời: {HAN_DUYET_NGAY} ngày, tính cả ngày gửi.', { HAN_DUYET_NGAY: hanDuyetNgay() });
+  return t('Hạn Head trả lời: {HAN_DUYET_NGAY} ngày, tính cả ngày gửi.', { HAN_DUYET_NGAY: hanDuyetNgay() });
 }
 
 /**
@@ -946,7 +946,7 @@ export const NEXT_STEP_LABEL: Record<NextStep, string> = {
   continue: t('Giữ nguyên'),
   adjust: t('Điều chỉnh'),
   propose: t('Thay PA'),
-  ask_manager: t('Xin hỗ trợ từ Quản lý'),
+  ask_manager: t('Xin hỗ trợ từ Head'),
 };
 /** Kết quả tốt được phép khép lại; kết quả chưa tốt BẮT BUỘC đi tiếp. */
 const GOOD_OUTCOMES = ['improved', 'partial'];
@@ -1022,31 +1022,31 @@ export const PLAN_DECISION_LABEL: Record<PlanDecision, string> = {
   adjust: t('Điều chỉnh'),
   replace: t('Thay PA'),
   end: t('Kết thúc PA'),
-  ask_manager: t('Xin hỗ trợ từ Quản lý'),
+  ask_manager: t('Xin hỗ trợ từ Head'),
 };
 export const PLAN_DECISION_HINT: Record<PlanDecision, string> = {
   keep: t('Phương án chạy tiếp như cũ. Kết quả kỳ sau ghi trước hết Thứ Ba sau kỳ.'),
   adjust: t('Cùng phương án, sửa nội dung, số buổi hoặc người. Bản cũ giữ trong lịch sử.'),
   replace: t('Khép phương án này (Được thay thế) và mở phương án mới. Đổi loại phương án thì chọn ở đây.'),
   end: t('Khép phương án này. Case chỉ hoàn thành được khi mọi phương án đã khép.'),
-  ask_manager: t('Kết quả tính như Giữ nguyên và gửi câu hỏi cho Quản lý. PA vẫn chạy.'),
+  ask_manager: t('Kết quả tính như Giữ nguyên và gửi câu hỏi cho Head. PA vẫn chạy.'),
 };
 
 /** Bản NGẮN cho danh sách dọc trong panel Ghi kết quả (PR-UX3, mockup 15 §4): tên một dòng + `PLAN_DECISION_NGHIA` một dòng nghĩa. */
 export const PLAN_DECISION_NGAN: Record<PlanDecision, string> = {
-  keep: t('Giữ nguyên'), adjust: t('Điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Xin hỗ trợ QL'),
+  keep: t('Giữ nguyên'), adjust: t('Điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Xin hỗ trợ Head'),
 };
 export const PLAN_DECISION_NGHIA: Record<PlanDecision, string> = {
   keep: t('Tiếp tục PA này, hẹn kết quả kỳ sau'),
   adjust: t('Cùng PA, sửa nội dung, số buổi hoặc người'),
   replace: t('Khép PA này, mở PA khác thay vào'),
   end: t('Khép PA này; Case chỉ xong khi mọi PA đã khép'),
-  ask_manager: t('Lưu như Giữ nguyên, gửi câu hỏi cho Quản lý'),
+  ask_manager: t('Lưu như Giữ nguyên, gửi câu hỏi cho Head'),
 };
 /** Nút chính ở chân panel theo quyết định đang chọn. */
 export const NUT_LUU_KET_QUA: Record<PlanDecision, string> = {
   /* GD-3 (mockup v21 K4c, lời chủ SP 13/11): Giữ nguyên → nút "Lưu". */
-  keep: t('Lưu'), adjust: t('Lưu điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Gửi Quản lý'),
+  keep: t('Lưu'), adjust: t('Lưu điều chỉnh'), replace: t('Thay PA'), end: t('Kết thúc PA'), ask_manager: t('Gửi Head'),
 };
 
 export function decisionToStep(d: PlanDecision): { mode: ResultMode; nextStep: NextStep } {
@@ -1073,7 +1073,7 @@ export function decisionsFor(outcome: string): PlanDecision[] {
 export function decisionBlockedReason(outcome: string, d: PlanDecision): string | null {
   if (decisionsFor(outcome).includes(d)) return null;
   if (!canEndWithOutcome(outcome)) return t('"Chưa đủ dữ liệu" thì chưa kết thúc phương án được. Chọn Giữ nguyên, Điều chỉnh hoặc Thay PA.');
-  return t('Kết quả chưa tốt thì chưa khép suông được. Chọn Thay PA hoặc Xin hỗ trợ từ Quản lý.');
+  return t('Kết quả chưa tốt thì chưa khép suông được. Chọn Thay PA hoặc Xin hỗ trợ từ Head.');
 }
 
 /** Điều chỉnh và Thay bắt buộc ghi lý do (rulebook §18.2: "vì sao đổi"). */
@@ -1122,5 +1122,5 @@ export function isNoPlanCase(c: { status: string; disposition?: string | null; i
 
 /** M6 6b-2 (khu K ⑤, luồng ①): câu "ai làm được" khi người xem không có quyền — MỘT câu cho mọi nơi; "Quản lý" là luật quyền cố định. */
 export function chuAiLamDuoc(phuTrach: string | null | undefined): string {
-  return phuTrach ? t('Chỉ {ten} (phụ trách) hoặc Quản lý làm được việc ở Case này.', { ten: phuTrach }) : t('Chỉ Quản lý làm được việc ở Case này (Case chưa có người phụ trách).');
+  return phuTrach ? t('Chỉ {ten} (phụ trách) hoặc Head làm được việc ở Case này.', { ten: phuTrach }) : t('Chỉ Head làm được việc ở Case này (Case chưa có người phụ trách).');
 }

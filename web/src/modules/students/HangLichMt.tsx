@@ -105,7 +105,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
               <span className="text-slate-200">{tuanLich(tuanHien, homNay)}</span>
               <span className="block text-xs text-slate-500">{ngay(tuanHien, homNay)} – {ngay(addDaysStr(tuanHien, 6), homNay)}</span>
             </>
-          ) : <span className="text-xs text-slate-500" title={t('Ngoài lịch mặc định — Quản lý xếp tay')}>{t('xếp tay')}</span>}
+          ) : <span className="text-xs text-slate-500" title={t('Ngoài lịch mặc định — Head xếp tay')}>{t('xếp tay')}</span>}
         </td>
         <td className="td">
           {/*
@@ -115,9 +115,9 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
           {!l && h.huy ? <Status kind="idle">{t('Đã huỷ')}</Status>
             : l?.trangThai === 'chua-xep' ? <Status kind="waiting">{t('Chưa xếp lịch')}</Status>
             : !l ? <Status kind="waiting">{t('Chưa có, sẽ tạo')}</Status>
-            : !coDeXuat ? <Status kind="done">{t('Quản lý đã xếp')}</Status>
+            : !coDeXuat ? <Status kind="done">{t('Head đã xếp')}</Status>
             : h.locked ? <Status kind="done">{t('Đã làm xong, giữ nguyên')}</Status>
-            : h.existingSource === 'manual' ? <Status kind="done">{t('Quản lý đã chốt, giữ nguyên')}</Status>
+            : h.existingSource === 'manual' ? <Status kind="done">{t('Head đã chốt, giữ nguyên')}</Status>
             : h.existingPeriodId !== h.periodId ? <Status kind="done">{t('Giữ lịch hiện tại')}</Status>
             : <Status kind="done">{t('Đã đúng')}</Status>}
           {that && <span className="mt-0.5 block text-xs text-slate-400">{t('Đang ở {tuan}', { tuan: that })}</span>}
@@ -128,7 +128,7 @@ export function HangLichMt({ h, bang, hocVien, homNay, moDiem, onMoDiem, onHienD
               <button id={l ? `mt-${l.attemptId}` : undefined} type="button" className="btn btn-sm min-h-[44px] sm:min-h-0"
                 aria-expanded={chinh.nhan === t('Nhập điểm') ? moDiem : undefined}
                 onClick={(e) => chinh!.lam(e.currentTarget)}>{chinh.nhan}</button>
-            ) : !l && h.huy ? <span className="text-xs text-slate-500">{t('Chỉ Quản lý khôi phục được')}</span>
+            ) : !l && h.huy ? <span className="text-xs text-slate-500">{t('Chỉ Head khôi phục được')}</span>
             : !l ? <span className="text-xs text-slate-500">{t('Áp lịch để tạo')}</span> : null}
             {muc.length > 0 && <MenuDong nhan={t('Thao tác khác · MT{n}', { n: h.attemptNo })} muc={muc} />}
           </span>

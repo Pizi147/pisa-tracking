@@ -9,7 +9,7 @@ export const EN_DON_LUONG = {
   'Em đã học xong khoá ở {lop} — xếp lớp mới trước khi ghi vi phạm.': 'The student finished the course in {lop} — assign a new class before logging an incident.',
   'Em đã thôi học ở {lop} — không ghi vi phạm mới.': 'The student has left {lop} — no new incidents can be logged.',
   /* K39b */
-  'QL đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.': 'The manager already decided {buoc} on {ngay} — the note is no longer needed.',
+  'Head đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.': 'The Head already decided {buoc} on {ngay} — the note is no longer needed.',
   /* A6 */
   'Danh sách thông báo không hợp lệ (tối đa {n} dòng).': 'Invalid notification list (at most {n} rows).',
   /* A8 */

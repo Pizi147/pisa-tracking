@@ -142,7 +142,7 @@ export default function LuotThuongPage() {
           <span className="font-semibold text-slate-100">{t('Đã huỷ')}</span>
           <span className="min-w-0 break-words text-slate-400">{[d.huy?.lyDo, d.huy?.ai, d.huy ? fmtDate(d.huy.khi) : null].filter(Boolean).join(' · ')}</span>
           {/* LUOT-KHOI-PHUC (luật "không khoá cứng"): người có quyền → nút; bị chặn → câu lý do + bước tiếp; còn lại → ai khôi phục được (như FT). */}
-          {!d.canCancel ? <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Quản lý khôi phục được lượt đã huỷ.')}</span>
+          {!d.canCancel ? <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Head khôi phục được lượt đã huỷ.')}</span>
             : d.khoiPhuc?.chan ? <span className="min-w-0 break-words text-xs text-slate-400 sm:ml-auto">{dich(d.khoiPhuc.chan)}</span>
             : (
               <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" disabled={khoiPhucLuot === 'dang'} onClick={() => void khoiPhucCaLuot()}>

@@ -21,7 +21,7 @@ export type { ChiChoToi, DichHd, HuongDan, ManHd, MucHd, NhomHd, PanelHd, PhanHd
 export const HUONG_DAN: Partial<Record<VaiHd, HuongDan>> = { gv: HD_GV, ql: HD_QL, qt: HD_QT, tvv: HD_TVV, cx: HD_CX, admin: HD_ADMIN, ht: HD_HT };
 
 export const TEN_VAI_HD: Record<VaiHd, string> = {
-  gv: t('Giáo viên'), ql: t('Quản lý'), qt: t('Quản trị hệ thống'), tvv: t('Tư vấn viên'), cx: 'CX', admin: 'Admin', ht: 'Head tutor',
+  gv: t('Giáo viên'), ql: t('Head'), qt: t('Quản trị hệ thống'), tvv: t('Tư vấn viên'), cx: 'CX', admin: 'Admin', ht: 'Head tutor',
 };
 
 /** Vai của tài khoản cho Hướng dẫn: vai "rộng" nhất trước (QL dạy lớp vẫn đọc hướng dẫn QL). */

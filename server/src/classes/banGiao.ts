@@ -50,7 +50,7 @@ export function quyenBanGiao(p: Principal, l: { lop_nguon_id: number; han_gvcn: 
 
 /** RKC-4b: Quản lý làm thay bàn giao khi GVCN còn hạn — hỏi nêu luật bị vượt (nhật ký ghi `thay` như cũ). */
 function hoiVuotBanGiao(q: { vuot: boolean; laGvcn: boolean }, chinhMinh = false): void {
-  if (q.vuot && !q.laGvcn && !chinhMinh) canXacNhan('GVCN lớp nguồn còn hạn bàn giao — Quản lý vẫn làm thay?', undefined, 'Vẫn làm thay');
+  if (q.vuot && !q.laGvcn && !chinhMinh) canXacNhan('GVCN lớp nguồn còn hạn bàn giao — Head vẫn làm thay?', undefined, 'Vẫn làm thay');
 }
 
 // ==================================================================== MÔN BÀN GIAO (audit 03/11 F05)
@@ -424,7 +424,7 @@ export function xacNhanBanGiao(p: Principal, lenhId: number, nhanXetChung: strin
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không xác nhận bàn giao được.');
   if (!coPhieu(l.huong)) throw badRequest('Quyết định Dừng học hẳn không có phiếu bàn giao.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
-  if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
+  if (!q.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Head xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
   if (l.xac_nhan_luc) throw conflict('Phiếu đã được xác nhận.');
   hoiVuotBanGiao(q);
   const nx = String(nhanXetChung ?? '').trim();
@@ -480,7 +480,7 @@ export function luuNhapNhanXet(p: Principal, lenhId: number, chu: unknown): void
   const l = docLenhPhieu(lenhId);
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không xác nhận bàn giao được.');
   const qn = quyenBanGiao(p, l, undefined, { ct: l.ct });
-  if (!qn.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Quản lý xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
+  if (!qn.xacNhan) throw forbidden('Chỉ GVCN lớp nguồn xác nhận bàn giao (Head xác nhận thay khi lớp không có GVCN hoặc đã quá hạn).');
   hoiVuotBanGiao(qn);
   const nx = chuTuDo(chu, 'Nhận xét chung', 2000);
   if (!db().prepare('UPDATE lenh_chuyen_lop SET nhan_xet_chung = ? WHERE id = ? AND xac_nhan_luc IS NULL').run(nx, lenhId).changes) throw badRequest('Phiếu đã xác nhận — dùng Sửa.');
@@ -495,7 +495,7 @@ export function suaBanGiao(p: Principal, lenhId: number, nhanXetChung: string): 
   if (l.trang_thai === 'huy') throw badRequest('Quyết định chuyển lớp đã huỷ — không sửa bàn giao được.');
   if (!l.xac_nhan_luc) throw badRequest('Phiếu chưa xác nhận — viết nhận xét chung rồi Xác nhận bàn giao.');
   const q = quyenBanGiao(p, l, undefined, { ct: l.ct });
-  if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Quản lý sửa được nhận xét chung của bàn giao.');
+  if (!q.xacNhan && !coTheRaLenh(p, l.lop_nguon_id)) throw forbidden('Chỉ GVCN lớp nguồn hoặc Head sửa được nhận xét chung của bàn giao.');
   const nx = String(nhanXetChung ?? '').trim();
   const cung = cungGvTheoLo([l]).get(l.id);
   if (!cung?.gvcn && nx.length < NHAN_XET_TOI_THIEU) throw loi(400, 'Nhận xét chung cần ít nhất {NHAN_XET_TOI_THIEU} ký tự.', { NHAN_XET_TOI_THIEU });

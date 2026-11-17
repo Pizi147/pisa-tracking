@@ -139,7 +139,7 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
   const chung = { dai, tyLe: x.tyLe };
   const dong = (huong: HuongGoiY, canQuanLy: boolean, bo: BoTroMienPhi | null, baoPhTvv: boolean, nhanK: ChuKhoa, nhanNgan: string, nhanExcel: string): GoiYCuoiKhoa => ({
     ...chung, huong, canQuanLy, boTroNeuLen: bo, baoPhTvv, nhan: dichChu(nhanK), nhanK, nhanNgan: dichChuoi(nhanNgan), nhanExcel,
-    nhanHuong: canQuanLy ? 'Quản lý cân nhắc' : huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${ke}${dai === '60_69' && bo ? ' + bổ trợ' : ''}`,
+    nhanHuong: canQuanLy ? 'Head cân nhắc' : huong === 'hoc_lai' ? `Học lại ${tenBac(ct)}` : `Lên ${ke}${dai === '60_69' && bo ? ' + bổ trợ' : ''}`,
   });
   if (dai === 'dat') return dong('len', false, null, false, { chu: 'Pass' }, '→ Pass', 'Pass');
   if (dai === 'duoi_50') return dong('hoc_lai', false, null, true, kem('Học lại {bac}', { bac: tenBac(ct) }), '→ học lại', `Học lại ${tenBac(ct)}`);
@@ -148,7 +148,7 @@ export function goiYCuoiKhoa(x: { ct: string | null; tyLe: number | null; monTru
     ? kem(' + bổ trợ miễn phí {n} buổi ({mon}) · {tuan} tuần · Mini Test sau buổi cuối', { n: bo.soBuoi, mon: chuMonTruot(ct, bo.mon), tuan: bo.soTuan })
     : kem(' + bổ trợ miễn phí {n} buổi · {tuan} tuần · Mini Test sau buổi cuối', { n: bo.soBuoi, tuan: bo.soTuan });
   if (dai === '50_59') {
-    return dong(null, true, bo, false, kem('Quản lý cân nhắc: học lại {bac} hoặc lên {ke}{bo}', { bac: tenBac(ct), ke, bo: chuBo }), '→ QL cân nhắc', 'QL cân nhắc');
+    return dong(null, true, bo, false, kem('Head cân nhắc: học lại {bac} hoặc lên {ke}{bo}', { bac: tenBac(ct), ke, bo: chuBo }), '→ Head cân nhắc', 'Head cân nhắc');
   }
   return dong('len', false, bo, false, kem('Lên {ke}{bo}', { ke, bo: chuBo }), bo ? '→ lên + bổ trợ' : '→ lên', bo ? `Lên ${ke} + bổ trợ` : `Lên ${ke}`);
 }
@@ -249,7 +249,7 @@ export const KY_VONG_DAU_RA: Readonly<Record<string, string>> = { FOU: 'FOU IELT
  */
 export function chuDaiKetQua(g: GoiYCuoiKhoa): string {
   if (g.dai === 'dat') return 'Pass';
-  if (g.dai === 'duoi_50') return t('{nhan} · Quản lý báo PH kết quả Test', { nhan: dichChuoi(g.nhanHuong) });
+  if (g.dai === 'duoi_50') return t('{nhan} · Head báo PH kết quả Test', { nhan: dichChuoi(g.nhanHuong) });
   return dichChuoi(g.nhanHuong);
 }
 
@@ -296,10 +296,10 @@ export function chuHopKetLuan(x: HopKetLuanVao): HopKetLuan {
   const chinh = `Final Test ${Math.round(x.tyLe * 100)}%`;
   if (g.dai === 'dat') return { chinh, phu, nhan: 'Pass', tone: 'ok', kyVong };
   if (g.dai === '60_69') return { chinh, phu, nhan: nhanGoiY(g), tone: 'warn', kyVong };
-  if (g.dai === 'duoi_50') return { chinh, phu, nhan: t('{nhan} · Quản lý báo PH kết quả Test', { nhan: nhanGoiY(g) }), tone: 'bad', kyVong };
+  if (g.dai === 'duoi_50') return { chinh, phu, nhan: t('{nhan} · Head báo PH kết quả Test', { nhan: nhanGoiY(g) }), tone: 'bad', kyVong };
   /* 50–59%: chưa quyết → Quản lý cân nhắc; đã chuyển thì hiện điều Quản lý đã quyết (Q30-3, không còn thẻ). */
-  if (!x.quyetDinh) return { chinh, phu, nhan: t('Quản lý cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)'), tone: 'warn', kyVong };
+  if (!x.quyetDinh) return { chinh, phu, nhan: t('Head cân nhắc: học lại hoặc lên (chọn khi chuyển lớp)'), tone: 'warn', kyVong };
   const dich = x.quyetDinh.huong === 'hoc_lai' ? t('Học lại {bac}', { bac: tenBac(ct) })
     : g.boTroNeuLen && coBoTroFinal(ct, x.quyetDinh.huong === 'fast_track') ? t('Lên {bac} + bổ trợ', { bac: tenBacKe(ct) }) : t('Lên {bac}', { bac: tenBacKe(ct) });   // PR-CT2: ELE / BE → FT không bổ trợ
-  return { chinh, phu, nhan: t('QL đã quyết: {kl} · {ngay}', { kl: dich, ngay: ngay(x.quyetDinh.luc.slice(0, 10), x.homNay) }), tone: 'warn', kyVong };
+  return { chinh, phu, nhan: t('Head đã quyết: {kl} · {ngay}', { kl: dich, ngay: ngay(x.quyetDinh.luc.slice(0, 10), x.homNay) }), tone: 'warn', kyVong };
 }

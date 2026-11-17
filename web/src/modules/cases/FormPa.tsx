@@ -55,8 +55,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_T
           <optgroup label={t('Bạn tự làm được')}>
             {kinds.selfServe.map((k) => <option key={k} value={k}>{tenLoai(k)}</option>)}
           </optgroup>
-          <optgroup label={t('Cần Quản lý duyệt')}>
-            {kinds.proposals.map((k) => <option key={k} value={k}>{t('{tenLoai} · cần Quản lý duyệt', { tenLoai: tenLoai(k) })}</option>)}
+          <optgroup label={t('Cần Head duyệt')}>
+            {kinds.proposals.map((k) => <option key={k} value={k}>{t('{tenLoai} · cần Head duyệt', { tenLoai: tenLoai(k) })}</option>)}
           </optgroup>
         </select>
       </Truong>

@@ -281,7 +281,7 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     for (const k of ['observed_on', 'outcome', 'note', 'next_step', 'cycle_no', 'late', 'remaining_issue', 'decision_note']) assert(fg[0][k] === fp[0][k], `followup khác ở ${k}`);
     assert(paBt(cGv.id).action_due === paBt(cP.id).action_due && paBt(cP.id).cycle_no === 2 && paBt(cP.id).status === 'started', `PA P cũng sang chu kỳ mới, cùng hạn: ${JSON.stringify([paBt(cGv.id).action_due, paBt(cGv.id).cycle_no, paBt(cP.id).action_due, paBt(cP.id).cycle_no, paBt(cP.id).status])}`);
     /* Xin hỗ trợ QL chỉ MỘT thẻ (dòng chính) */
-    cases.updateResult(ha, ivGv.id, { ...KQ, decision: 'ask_manager', decisionNote: 'Cần Quản lý gợi ý thêm giáo trình luyện thì.' });
+    cases.updateResult(ha, ivGv.id, { ...KQ, decision: 'ask_manager', decisionNote: 'Cần Head gợi ý thêm giáo trình luyện thì.' });
     const the = all(`SELECT * FROM yeu_cau_duyet WHERE loai = 'xin_y_kien' AND doi_tuong_id IN (?, ?)`, ivGv.id, ivP.id);
     assert(the.length === 1 && the[0].doi_tuong_id === ivGv.id, 'chỉ một thẻ Xin ý kiến');
   });

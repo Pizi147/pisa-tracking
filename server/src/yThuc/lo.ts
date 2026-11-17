@@ -67,20 +67,20 @@ const viPhamMoi = (em: EmYThuc) => [...em.viPham].filter(([, t]) => t.t === 'moi
 function lyDoXuLy(em: EmYThuc): ChuKhoa | null {
   if (em.coChoDuyet) {
     const cho = em.xuLy.filter((m) => m.status === 'cho_duyet').sort((a, b) => b.id - a.id)[0];
-    return kem('có đề xuất {nhan} chờ QL duyệt', { nhan: cho ? nhanLoaiXuLy(cho.kind, cho.customName) : '' });
+    return kem('có đề xuất {nhan} chờ Head duyệt', { nhan: cho ? nhanLoaiXuLy(cho.kind, cho.customName) : '' });
   }
   if (em.soBatBuoc === 0) return em.soMoi > 0 ? kem('chưa bắt buộc — dùng Ghi nhận') : kem('không có vi phạm bắt buộc xử lý');
   return null;
 }
 /** RKC-3b: `vuot` = Quản lý (vượt luật bắt buộc xử lý — lô hỏi một câu trước). */
 function lyDoGhiNhan(em: EmYThuc, vuot = false): ChuKhoa | null {
-  if (em.soBatBuoc > 0) return vuot ? null : kem('đang bắt buộc xử lý — dùng Xác nhận xử lý (Quản lý Ghi nhận được)');
+  if (em.soBatBuoc > 0) return vuot ? null : kem('đang bắt buộc xử lý — dùng Xác nhận xử lý (Head Ghi nhận được)');
   return viPhamMoi(em).length ? null : kem('không có vi phạm Mới');
 }
 function lyDoCapBac(em: EmYThuc, laQl: boolean): ChuKhoa | null {
   if (!em.chuoi.length) return kem('chưa có lộ trình');
   if (em.khai) return null;   // N50 (8): GVCN sửa bậc đã khai mọi lúc
-  if (em.soXuLyChuoi > 0) return laQl ? null : kem('đã có xử lý trên web · nhờ QL');   // RKC-3b: QL vượt (lô hỏi một câu)
+  if (em.soXuLyChuoi > 0) return laQl ? null : kem('đã có xử lý trên web · nhờ Head');   // RKC-3b: QL vượt (lô hỏi một câu)
   return null;   // RKC-3a: em Tạm dừng khai được (như `khaiDuoc`)
 }
 
@@ -275,7 +275,7 @@ export function loHoanTacCapBac(p: Principal, classId: number, v: { em?: unknown
         const lai = trangThaiYThuc([sid], c.homNay).get(sid)!;
         if (!lai.khai || lai.khai.bac !== sau) throw badRequest('Bậc của em đã đổi sau lần lưu này — không hoàn tác em này.');
         chiLanCuaMinh(p, sid, lai, c.homNay);
-        if (!c.laQl && lai.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Quản lý sửa được cấp bậc đã khai.');
+        if (!c.laQl && lai.soXuLyChuoi > 0) throw badRequest('Chuỗi này đã có lần xử lý trên web — chỉ Head sửa được cấp bậc đã khai.');
         db().prepare('DELETE FROM y_thuc_khai_bac WHERE student_id = ? AND chuoi_cycle_id = ?').run(sid, lai.khai.cycleId);
         writeAudit({ actorUserId: p.userId, action: 'discipline.declare_level_undo', entityType: 'student', entityId: sid,
           entityLabel: `${hv.student_code} · hoàn tác cấp bậc`, before: { bac: sau }, after: null });

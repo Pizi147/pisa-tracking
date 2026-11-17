@@ -28,7 +28,7 @@ type BanGhiLoTrinh = {
   /** PR-LCb: Hướng GVCN đề xuất (cột "Gợi ý · GVCN") — quyết định của Quản lý không ghi đè; null = GVCN chưa ghi. */
   huongGvcn: Huong | null;
 };
-const CHI_QL = 'Chỉ Quản lý ghi lộ trình tiếp theo.';
+const CHI_QL = 'Chỉ Head ghi lộ trình tiếp theo.';
 /** Lộ trình tiếp theo chỉ của lớp thường CÓ SỐ TUẦN — không FT, không lớp liên tục (OV-6b2: PET, KET…). */
 const coLoTrinhTiep = (c: { is_fast_track?: number | null; moc_lap?: number | null }) => !c.is_fast_track && !laLienTuc(c);
 
@@ -181,7 +181,7 @@ function ghiCacDong(p: Principal, dongs: readonly DongGhi[], tuLenh?: ReadonlyMa
     'INSERT INTO journey_events (student_id, event_type, event_date, title, created_by, created_at)',
     nhatKy.map((d) => {
       const cu = tuLenh?.get(d.studentId);
-      const title = !tuLenh ? `Ghi lộ trình tiếp theo: ${nhan(d, d.huong)}` : `QL quyết: ${nhan(d, d.huong)}${cu?.cuaGvcn ? ` (GVCN: ${nhan(d, cu.huong)})` : ''}`;
+      const title = !tuLenh ? `Ghi lộ trình tiếp theo: ${nhan(d, d.huong)}` : `Head quyết: ${nhan(d, d.huong)}${cu?.cuaGvcn ? ` (GVCN: ${nhan(d, cu.huong)})` : ''}`;
       return [d.studentId, 'next_step', homNay, title, p.userId, now];
     }),
   );
@@ -230,7 +230,7 @@ function chanQlDaQuyet(classId: number, dongs: readonly DongGhi[], ten?: (sid: n
      */
     const doiTarget = l?.huong === 'fast_track' && (l.muc_tieu ?? null) !== d.mucTieu && (l.muc_tieu_ltt ?? null) !== d.mucTieu;   // OV-9: lệnh KCK giữ số
     if (l && (l.huong !== d.huong || doiTarget)) {
-      throw loi(409, '{x}Quản lý đã quyết.', { x: ten ? `${ten(d.studentId)}: ` : '' }, { studentId: d.studentId });
+      throw loi(409, '{x}Head đã quyết.', { x: ten ? `${ten(d.studentId)}: ` : '' }, { studentId: d.studentId });
     }
   }
 }
@@ -249,7 +249,7 @@ export function ghiLoTrinhTiep(p: Principal, studentId: number, input: GhiVao) {
   const lopDk = docLopDuKien([input.lopDuKienId]);
   const dk = input.lopDuKienId ? lopDk.get(input.lopDuKienId) : null;
   if (dk && dk.branch_id !== enr.branch_id && dk.id !== cu?.lop_du_kien_id && !can(p, PERMISSIONS.CLASS_EDIT, { classId: dk.id })) {
-    throw forbidden('Lớp dự kiến ở chi nhánh khác — cần Quản lý chi nhánh đó hoặc Quản trị.');
+    throw forbidden('Lớp dự kiến ở chi nhánh khác — cần Head chi nhánh đó hoặc Quản trị.');
   }
   const dong = kiemDong(studentId, enr, input, lopDk, cu?.ngay_xem_lai ?? null, cu?.lop_du_kien_id ?? null, true);
   tx(() => { chanQlDaQuyet(enr.class_id, [dong]); ghiCacDong(p, [dong]); });
@@ -323,7 +323,7 @@ export function ghiLoTrinhTiepCaLop(p: Principal, classId: number, body: { items
     if (thay.has(sid)) throw loi(400, '{x}: trùng dòng.', { x: em.get(sid).full_name }, { studentId: sid });
     thay.add(sid);
     /* R5: Target trên bảng cả lớp ("Lưu hướng" của Quản lý) — chỉ người sửa được lộ trình học (cycle.edit). */
-    if (it && 'mucTieu' in it && !can(p, PERMISSIONS.CYCLE_EDIT, { classId })) throw forbidden('Chỉ Quản lý sửa Target.', { studentId: sid });
+    if (it && 'mucTieu' in it && !can(p, PERMISSIONS.CYCLE_EDIT, { classId })) throw forbidden('Chỉ Head sửa Target.', { studentId: sid });
   }
   /* Dòng giữ nguyên hướng đã lưu thì giữ chi tiết đã lưu (bảng không có ô lớp dự kiến, Target, ngày xem lại). */
   const vao = (items as any[]).map((it) => {
@@ -430,7 +430,7 @@ export const nhapRowToView = (r: any): NhapLoTrinh => ({
   huong: r.huong, lopDichId: r.lop_dich_id ?? null, tuan: r.tuan ?? null, mucTieu: ghepMucTieu(r.muc_tieu, r.khong_cam_ket),
   ngayXemLai: r.ngay_xem_lai ?? null, ghiChu: r.ghi_chu ?? null,
 });
-const CHI_QL_NHAP = 'Chỉ Quản lý lưu nháp lộ trình.';
+const CHI_QL_NHAP = 'Chỉ Head lưu nháp lộ trình.';
 
 /**
  * PUT /classes/:id/lo-trinh-nhap — QL / Quản trị (`coTheRaLenh`) lưu nháp nhiều em (≤ 60). Nháp KHÔNG ghi `lo_trinh_tiep_theo`, không lệnh, không MT0,

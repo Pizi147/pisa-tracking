@@ -51,7 +51,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
       </KhungPanel>
     );
   }
-  const loiNgay = m.quyetLuc && ngayTh < m.quyetLuc.slice(0, 10) ? t('Chọn từ ngày QL duyệt ({ngay}) trở đi', { ngay: ngay(m.quyetLuc, homNay) }) : null;
+  const loiNgay = m.quyetLuc && ngayTh < m.quyetLuc.slice(0, 10) ? t('Chọn từ ngày Head duyệt ({ngay}) trở đi', { ngay: ngay(m.quyetLuc, homNay) }) : null;
   const loiNguoi = nguoiThieu(nguoi, true);
   const laMeeting = m.kind === 'meeting_cx';
   const luu = async (): Promise<boolean> => {
@@ -72,7 +72,7 @@ export function DaThucHienPanel({ measureId, onClose, onDone, onTiep = null }: {
   return (
     <KhungPanel hd="xu-ly-vi-pham" tieuDe={t('Đã thực hiện')} hocVien={m.ten} onDong={onClose}
       quyChe={m.status === 'da_duyet' ? quyCheDaThucHien(m.bac ? bacDu(dich(m.nhan)) : null, laMeeting && phDu) : null}
-      ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}{m.quyetLuc ? t(' · QL duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
+      ngCanh={<span className="truncate">{bacDu(dich(m.nhan))}{m.quyetLuc ? t(' · Head duyệt {ngay}', { ngay: ngay(m.quyetLuc, homNay) }) : ''}</span>}
       chan={{
         daSua: !daLuu && !!ghiChu.trim(),
         conThieu: lf.daBam && (loiNgay || loiNguoi) ? [{ nhan: t('Đã thực hiện'), lyDo: loiNgay ?? loiNguoi ?? '' }] : undefined,

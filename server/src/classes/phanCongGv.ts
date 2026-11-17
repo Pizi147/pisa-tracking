@@ -129,7 +129,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const classId = Number(l.classId);
     const c = cls.get(classId);
     const full = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
-    if (!full) require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: c.branch_id }, 'Chỉ Quản lý hoặc GVCN của lớp mới phân công giáo viên.');
+    if (!full) require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: c.branch_id }, 'Chỉ Head hoặc GVCN của lớp mới phân công giáo viên.');
     const prog = progCua(classId);
     const ct = prog?.code ?? null;
     const kyNang: string[] = prog?.skills ?? [...ENTRY_SKILLS];
@@ -138,7 +138,7 @@ export function luuPhanCong(p: Principal, body: { lop?: unknown; hieuLuc?: HieuL
     const slots = moRongPhanCong(ct, kyNang, docSlots(l.slots));
     const cu = truoc.active.get(classId)!.map(slotCua);
     const doi = doiTheoO(ct, kyNang, cu, slots);
-    if (!full && doi.some((d) => d.khoa === 'gvcn')) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.', { classId });
+    if (!full && doi.some((d) => d.khoa === 'gvcn')) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Head chi nhánh.', { classId });
     /* Kiểm NGUYÊN bức tranh gửi lên (như cũ: hai người một môn, môn lạ → 400, không lặng lẽ bỏ). Môn cũ đang có dòng (P13 môn gộp, MON-CT-1311 Quản trị
        đổi môn chương trình — dòng giữ cho lượt cũ) là môn hợp lệ. */
     const monGopCo = [...new Set(cu.map((x) => x.skill).filter((k): k is string => !!k && !kyNang.includes(k)))];
@@ -392,7 +392,7 @@ function kiemQuyenDong(p: Principal, rows: { class_id: number; khoa: string }[])
   for (const r of rows) {
     if (can(p, PERMISSIONS.CLASS_ASSIGN, { classId: r.class_id })) continue;
     if (r.khoa !== 'gvcn' && can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId: r.class_id })) continue;
-    throw forbidden('Chỉ Quản lý (hoặc GVCN với ô bộ môn lớp mình) mới đổi được phân công này.', { classId: r.class_id });
+    throw forbidden('Chỉ Head (hoặc GVCN với ô bộ môn lớp mình) mới đổi được phân công này.', { classId: r.class_id });
   }
 }
 
@@ -508,12 +508,12 @@ export function trangPhanCongGv(p: Principal, branchId: number | null): TrangPha
   let cn = branchId;
   if (cn === null) {
     const ds = chiNhanhXem(p);
-    if (!ds.length) throw forbidden('Phân công GV dành cho Quản lý.');
+    if (!ds.length) throw forbidden('Phân công GV dành cho Head.');
     if (ds.length > 1) return { chiNhanh: null, canChonChiNhanh: true, sua: false, homNay, lop: [], gv: [] };
     cn = ds[0];
   }
   const q = quyenPhanCongGv(p, cn);
-  if (!q.xem) throw forbidden('Phân công GV dành cho Quản lý.');
+  if (!q.xem) throw forbidden('Phân công GV dành cho Head.');
   quetDoiDenHan(homNay);
   const conn = db();
   const b = conn.prepare('SELECT id, code FROM branches WHERE id = ?').get(cn) as any;
@@ -581,13 +581,13 @@ export function xemTruocLuu(p: Principal, body: { lop?: unknown }): XemTruocLuu 
       const classId = Number(l.classId);
       const c = cls.get(classId);
       const full = can(p, PERMISSIONS.CLASS_ASSIGN, { classId });
-      if (!full) require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: c.branch_id }, 'Chỉ Quản lý hoặc GVCN của lớp mới phân công giáo viên.');
+      if (!full) require_(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId, branchId: c.branch_id }, 'Chỉ Head hoặc GVCN của lớp mới phân công giáo viên.');
       const prog = progCua(classId);
       const ct = prog?.code ?? null;
       const kyNang: string[] = prog?.skills ?? [...ENTRY_SKILLS];
       const cu = hienTai.active.get(classId)!.map(slotCua);
       const doi = doiTheoO(ct, kyNang, cu, moRongPhanCong(ct, kyNang, docSlots(l.slots)));
-      if (!full && doi.some((d) => d.khoa === 'gvcn')) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Quản lý chi nhánh.', { classId });
+      if (!full && doi.some((d) => d.khoa === 'gvcn')) throw forbidden('GVCN chỉ đổi được GV bộ môn. Đổi GVCN thì nhờ Head chi nhánh.', { classId });
       const sau = moRongPhanCong(ct, kyNang, apDoi(cu, doi, kyNang));
       const conDay = (u: number) => new Set(sau.filter((s) => s.userId === u && !s.isCore && s.skill).map((s) => s.skill!));
       const chon = chonViecChuyen(classId, ct, doi, conDay);

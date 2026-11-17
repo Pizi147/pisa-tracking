@@ -130,7 +130,7 @@ export async function runPrTlNapBaiTests(t: any) {
 
   check('B2-a · giống hệt: napBai(gv = null) + bảng Phân tích GV — QL MB × 5 khoảng, QT × mọi chi nhánh × 5 khoảng: đường mới = đường đủ', () => {
     let co = 0;
-    const ds: [string, any, object][] = [...LOC.map(([t, f]) => [`QL MB ${t}`, P.mbManager, { cn: mb, ...f }] as [string, any, object]),
+    const ds: [string, any, object][] = [...LOC.map(([t, f]) => [`Head MB ${t}`, P.mbManager, { cn: mb, ...f }] as [string, any, object]),
       ...cns.flatMap((cn) => LOC.map(([t, f]) => [`QT cn=${cn} ${t}`, P.admin, { cn, ...f }] as [string, any, object]))];
     for (const [ten, p, f] of ds) {
       const moi = voiCo(false, () => napJson(p, f)), du = voiCo(true, () => napJson(p, f));

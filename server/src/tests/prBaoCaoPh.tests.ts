@@ -79,7 +79,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
       assert(bc.trangBaoCaoPh(x, lop, trang.dot).em.length === trang.em.length, `${vai} đọc được`);
       assertThrows(() => bc.luuBaoCaoPh(x, lop, { dot: trang.dot, phan: 'listening', studentId: sid, muc, chu: 'x' }), /./, `${vai} không viết`);
     }
-    assertThrows(() => bc.trangBaoCaoPh(P.cpManager, lop, null), /./, 'QL chi nhánh khác không xem');
+    assertThrows(() => bc.trangBaoCaoPh(P.cpManager, lop, null), /./, 'Head chi nhánh khác không xem');
     const o = bc.trangBaoCaoPh(P.mbManager, lop, trang.dot).em.find((e: any) => e.id === sid).o;
     assert(o.listening === 'du' && o.chung === 'nhap' && o.speaking === 'nhap' && o.reading === null, JSON.stringify(o));
     assertThrows(() => bc.luuBaoCaoPh(P.lrTeacher, lop, { dot: 'thang:2099-01', phan: 'listening', studentId: sid, muc, chu: 'x' }), /./, 'đợt chưa mở');

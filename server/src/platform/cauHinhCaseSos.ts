@@ -113,7 +113,7 @@ function demDangDung(ban: Map<LoaiCauHinh, Ban>): Record<string, number> {
 type DongNhatKy = { id: number; loai: LoaiCauHinh; luc: string; nguoi: string | null; thayDoi: ThayDoi[]; khoiPhucTu: number | null };
 
 export function xemCauHinh(p: Principal) {
-  if (!xemDuocCauHinh(p)) throw forbidden('Chỉ Quản trị hệ thống và Quản lý xem được cấu hình Case & SOS.');
+  if (!xemDuocCauHinh(p)) throw forbidden('Chỉ Quản trị hệ thống và Head xem được cấu hình Case & SOS.');
   const ban = docDangDung();
   const nhatKy = (db().prepare(
     `SELECT c.id, c.loai, c.tao_luc, c.thay_doi, c.khoi_phuc_tu, u.full_name AS ten FROM cau_hinh_phien_ban c LEFT JOIN users u ON u.id = c.nguoi_id

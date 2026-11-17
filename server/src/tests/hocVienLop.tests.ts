@@ -99,12 +99,12 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · Q3/Q12 Phạm vi: chỉ lựa chọn có nghĩa, mặc định theo vai', () => {
     eq(d.phamViCoThe({ dayLop: true, capChiNhanh: false, toanHeThong: false, soChiNhanh: 0 }), ['toi'], 'GV');
-    eq(d.phamViCoThe({ dayLop: false, capChiNhanh: true, toanHeThong: false, soChiNhanh: 1 }), ['chi-nhanh'], 'QL một chi nhánh');
-    eq(d.phamViCoThe({ dayLop: true, capChiNhanh: true, toanHeThong: false, soChiNhanh: 2 }), ['toi', 'chi-nhanh', 'tat-ca'], 'QL hai chi nhánh có dạy');
+    eq(d.phamViCoThe({ dayLop: false, capChiNhanh: true, toanHeThong: false, soChiNhanh: 1 }), ['chi-nhanh'], 'Head một chi nhánh');
+    eq(d.phamViCoThe({ dayLop: true, capChiNhanh: true, toanHeThong: false, soChiNhanh: 2 }), ['toi', 'chi-nhanh', 'tat-ca'], 'Head hai chi nhánh có dạy');
     eq(d.phamViCoThe({ dayLop: false, capChiNhanh: false, toanHeThong: true, soChiNhanh: 0 }), ['chi-nhanh', 'tat-ca'], 'Quản trị');
     eq(d.phamViMacDinh(['toi', 'chi-nhanh']), 'toi', 'Có dạy → Lớp tôi dạy');
     eq(d.phamViMacDinh(['chi-nhanh', 'tat-ca']), 'tat-ca', 'Quản trị → Tất cả');
-    eq(d.phamViMacDinh(['chi-nhanh']), 'chi-nhanh', 'QL một chi nhánh');
+    eq(d.phamViMacDinh(['chi-nhanh']), 'chi-nhanh', 'Head một chi nhánh');
     eq(d.phamViCoThe({ dayLop: false, capChiNhanh: true, toanHeThong: false, soChiNhanh: 1, cuaToi: true }), ['cua-toi', 'chi-nhanh'], 'TVV có em (PR-OV2a)');
     eq(d.phamViMacDinh(['cua-toi', 'chi-nhanh']), 'cua-toi', 'TVV → HV của tôi');
     eq(d.PHAM_VI_NHAN, { 'cua-toi': 'HV của tôi', toi: 'Lớp tôi dạy', 'chi-nhanh': 'Chi nhánh', 'tat-ca': 'Tất cả' }, 'Nhãn');
@@ -145,8 +145,8 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     const goc = { needsPlacement: true, canXepLop: 4, missingSkills: ['writing'], soBaiChoCham: 3, needScoresTitle: 'Lớp còn 3 bài chưa nhập điểm',
       phase: 'final_week', missingCount: 1, soChoDuyet: 2, soViecQuaHan: 1 };
     const ql = d.badgeLop({ ...goc, vai: 'ql' });
-    eq(ql.hien.map((x: any) => x.nhan), ['Chờ duyệt · 2', 'Cần xếp lớp tiếp · 4'], 'B4: Quản lý — chờ duyệt, cần xếp lớp trước');
-    eq(ql.an.map((x: any) => x.key), ['cham', 'qua-han', 'thieu-gv', 'chang', 'thieu-tt'], 'Phần gom (Quản lý)');
+    eq(ql.hien.map((x: any) => x.nhan), ['Chờ duyệt · 2', 'Cần xếp lớp tiếp · 4'], 'B4: Head — chờ duyệt, cần xếp lớp trước');
+    eq(ql.an.map((x: any) => x.key), ['cham', 'qua-han', 'thieu-gv', 'chang', 'thieu-tt'], 'Phần gom (Head)');
     const gv = d.badgeLop({ ...goc, vai: 'gv' });
     eq(gv.hien.map((x: any) => x.nhan), ['Chờ chấm · 3', 'Quá hạn · 1'], 'B4: GV — việc của mình trước');
     eq(gv.an.map((x: any) => x.key), ['chang', 'thieu-gv', 'thieu-tt', 'xep-lop', 'cho-duyet'], 'Phần gom (GV)');
@@ -179,7 +179,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
     eq([...d.MUC_MENU_DONG_HIEM], ['sua-thong-tin', 'lo-trinh-tiep', 'chuyen-lop', 'de-xuat-chuyen-lop'], 'Việc hiếm (PR-CT thêm Đề xuất chuyển lớp…, PR-OV2b Sửa thông tin)');
     /* OV-3b: GVCN thôi ghi Hướng — không có mục "Lộ trình tiếp theo" (chỉ Quản lý mở hộp Lộ trình ở bảng lớp). */
     eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: false, coTheDeXuatChuyenLop: true }), ['case', 'vi-pham', 'nhap-diem', 'sua-thong-tin', 'de-xuat-chuyen-lop'], 'GVCN: Đề xuất chuyển lớp… thay Chuyển lớp…');
-    eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: true, coTheDeXuatChuyenLop: true }).includes('de-xuat-chuyen-lop'), false, 'Quản lý chỉ thấy Chuyển lớp…');
+    eq(d.mucMenuDongHocVien({ ...q, coTheChuyenLop: true, coTheDeXuatChuyenLop: true }).includes('de-xuat-chuyen-lop'), false, 'Head chỉ thấy Chuyển lớp…');
   });
 
   check('PR-Qa · §3.6 xếp A→Z hoặc "Cần chú ý trước"; lớp mở sẵn', () => {
@@ -513,7 +513,7 @@ export async function runHocVienLopTests(t: YThucTestKit) {
 
   check('PR-Qa · điểm a rà soát cuối: coTheTaoLop chỉ true khi thật sự tạo được lớp (không phải nút bấm ra 403)', () => {
     eq(hvl.danhSachHocVienLop(P.admin, {}).coTheTaoLop, true, 'Quản trị hệ thống — grant branchId null phủ mọi chi nhánh');
-    eq(hvl.danhSachHocVienLop(P.mbManager, {}).coTheTaoLop, true, 'QL chi nhánh MB');
+    eq(hvl.danhSachHocVienLop(P.mbManager, {}).coTheTaoLop, true, 'Head chi nhánh MB');
     eq(hvl.danhSachHocVienLop(P.coreTeacher, {}).coTheTaoLop, false, 'GVCN không tạo được lớp mới (hasAssignment đòi ctx.classId)');
     eq(hvl.danhSachHocVienLop(P.subjectTeacher, {}).coTheTaoLop, false, 'GV bộ môn cũng vậy');
   });
