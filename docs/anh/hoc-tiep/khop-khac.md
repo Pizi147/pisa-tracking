@@ -7,6 +7,7 @@ phông Be Vietnam Pro đã nạp (`document.fonts.check` = true ở mọi ảnh)
 |---|---|
 | `ho-so-1440.png` · `ho-so-375.png` | Panel Bước tiếp ở hồ sơ HV (Quản trị, `?buoc-tiep=23`): TRƯỚC · SAU mở panel · SAU chọn Học tiếp |
 | `cong-viec-1440.png` · `cong-viec-375.png` | Panel Sau thi ở Công việc (TVV giữ việc, `?viec=buoc_tiep:23`): TRƯỚC · SAU chọn Học tiếp |
+| `giu-lan-sau.png` | (rà PTA) Học tiếp mà lần thi sau đã có dữ liệu: dòng nhắc "Đã có dữ liệu lần thi sau (lịch thi) — Hoàn tác / Đổi giữ nguyên phần này." |
 | `ho-so-1440-da-chon.png` | SAU lưu: "✓ Đã chọn Học tiếp" + Hoàn tác · mở lại: "Đã chọn: Học tiếp · ngày · người" + Đổi · Hoàn tác; đầu hồ sơ "Thi thật: Chưa có lịch", MT4 hiện lại |
 
 Không cần mockup (plan.md 1.3b: thêm lựa chọn theo mẫu sẵn có của panel).
@@ -19,7 +20,7 @@ Không cần mockup (plan.md 1.3b: thêm lựa chọn theo mẫu sẵn có của
 | Lựa chọn Bước tiếp (Công việc) | 2 nút radio | 3 nút radio, cùng thứ tự |
 | Khối dưới khi chọn Học tiếp | — | Target (giữ + Sửa → ô, "Giữ Target") · Lớp (Giữ {lớp} / Lớp khác → ô chọn lớp FT) · "Khi lưu, web sẽ" · nút "Học tiếp" — mặc định không phải điền gì |
 | Em không còn học lộ trình (đã nghỉ / tạm dừng / lộ trình đã đóng) | — | Chọn Học tiếp → một dòng lý do + bước kế "Chỉ khi em đang học lộ trình này — chọn Lộ trình mới." (không bày ô; máy chủ cũng 400) |
-| Hoàn tác | như hai hướng kia | như hai hướng kia; Học tiếp có đổi lớp (đã chuyển) → ẩn Hoàn tác, Đổi vẫn được (như Lộ trình mới · Lớp khác) |
+| Hoàn tác | như hai hướng kia | như hai hướng kia; Học tiếp có đổi lớp (đã chuyển) → ẩn Hoàn tác, Đổi vẫn được (như Lộ trình mới · Lớp khác). Rà PTA: lần thi sau đã có dữ liệu → Hoàn tác / Đổi trả theo nhóm (KQ · lịch thi · hạn), nhóm đã có dữ liệu mới GIỮ (không trộn điểm hai lần), Target đã Sửa sau giữ, có nhật ký + dòng nhắc |
 | "Sửa" KQ ở panel hồ sơ | có | ẩn khi đã chọn Học tiếp (KQ lần đó đã vào lịch sử; ô KQ của lộ trình là lần thi sau) |
 | Hướng dẫn (QL, GV, TVV) + chữ việc | "Lộ trình mới hoặc Tạm dừng / Kết thúc học" | "Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới" + một bước giải thích Học tiếp (QL) |
 

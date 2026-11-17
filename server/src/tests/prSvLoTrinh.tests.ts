@@ -552,4 +552,29 @@ export async function runPrSvLoTrinhTests(t: { check: any; assert: any; conn: an
     console.log(`      (đo: chọn Học tiếp ${chon} · đọc Bước tiếp ${doc} · Hoàn tác ${hoan} câu)`);
     assert(chon <= 40 && doc <= 12 && hoan <= 40, `vượt trần: ${chon} / ${doc} / ${hoan}`);
   }));
+
+  check('HT-7 · (rà PTA #1839) Hoàn tác / Đổi Học tiếp KHÔNG xoá dữ liệu lần thi sau: nhóm đã có dữ liệu mới (lịch thi · KQ một phần · hạn) giữ, nhóm còn trống trả lại; KQ không trộn hai lần; Target đã Sửa sau giữ', () => thu(() => {
+    const L = lop(); const a = emHocTiep(L); const b = emHocTiep(L);
+    const ngayMoi = t.addDays(TODAY, 30);
+    /* a: lần sau đã Chốt ngày thi + nhập L (một phần) + gia hạn + Target Sửa sau đó */
+    bt.chonBuocTiep(QL, a.cy, { chon: 'hoc_tiep', mucTieu: '7.0' });
+    conn.prepare(`UPDATE learning_cycles SET exam_date = ?, exam_month = ?, han_sau_thi = ?, target_score = 7.5 WHERE id = ?`).run(ngayMoi, ngayMoi.slice(0, 7), ngayMoi, a.cy);
+    thiThat.datKetQuaThiThat(QL, a.cy, { l: 8 });
+    const s0 = bt.trangThaiBuocTiep(QL, a.cy);
+    assert(s0.chon === 'hoc_tiep' && ['KQ thi', 'lịch thi', 'hạn sau thi'].every((x) => s0.lanSauGiu.includes(x)), `nhắc giữ: ${JSON.stringify(s0.lanSauGiu)}`);
+    bt.boChonBuocTiep(QL, a.cy);
+    const c = get('SELECT * FROM learning_cycles WHERE id = ?', a.cy);
+    assert(c.buoc_tiep === null && c.exam_date === ngayMoi && c.han_sau_thi === ngayMoi && c.thi_that_l === 8 && c.thi_that_r === null && c.thi_that_s === null && c.target_score === 7.5,
+      `giữ lần sau, không trộn KQ: ${JSON.stringify(c)}`);
+    assert(get('SELECT thi_that_l FROM thi_that_lich_su WHERE cycle_id = ?', a.cy)?.thi_that_l === 7, 'KQ lần trước ở lại lịch sử');
+    assert((conn.prepare(`SELECT after_json FROM audit_logs WHERE entity_type = 'learning_cycle' AND entity_id = ? AND action = 'cycle.buoc_tiep'`).all(a.cy) as any[]).some((r) => /giữ dữ liệu lần thi sau/.test(r.after_json ?? '')), 'nhật ký ghi phần giữ');
+    /* b: lần sau chỉ Chốt ngày thi → KQ lần trước trả lại, ngày thi mới giữ, lịch sử gỡ */
+    bt.chonBuocTiep(QL, b.cy, { chon: 'hoc_tiep' });
+    conn.prepare(`UPDATE learning_cycles SET exam_date = ?, exam_month = ? WHERE id = ?`).run(ngayMoi, ngayMoi.slice(0, 7), b.cy);
+    assert(bt.trangThaiBuocTiep(QL, b.cy).lanSauGiu.join() === 'lịch thi', 'chỉ lịch thi');
+    bt.chonBuocTiep(QL, b.cy, { chon: 'tam_dung' });   // Đổi cũng đi cùng đường
+    const d2 = get('SELECT * FROM learning_cycles WHERE id = ?', b.cy);
+    assert(d2.thi_that_l === 7 && d2.thi_that_s === 6.5 && d2.exam_date === ngayMoi && d2.buoc_tiep === 'tam_dung' && !get('SELECT 1 x FROM thi_that_lich_su WHERE cycle_id = ?', b.cy),
+      `Đổi: KQ trả, ngày thi mới giữ: ${JSON.stringify(d2)}`);
+  }));
 }

@@ -28,6 +28,8 @@ export type TrangThaiBuocTiep = {
   targetGoiY?: string | null;
   /** N51: Học tiếp làm được (em đang học chính lộ trình này) — false: lựa chọn tắt kèm lý do. */
   hocTiepDuoc?: boolean;
+  /** Rà PTA #1839: Học tiếp mà lần thi sau đã có dữ liệu — Hoàn tác / Đổi giữ phần đó (nhãn nhóm: "lịch thi", "KQ thi"…). */
+  lanSauGiu?: string[];
 };
 type Chon = HuongSauThi;
 
@@ -162,6 +164,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
         </div>
         {/* SUA-LUU-TRU (việc 5): kết quả thi thật đổi sau khi chọn — nhắc nhẹ, không chặn. */}
         {bt.chon && bt.kqDaDoi && <p className="m-0 mt-2 text-sm text-soon">{t('Kết quả đã đổi — xem lại bước tiếp?')}</p>}
+        {bt.chon === 'hoc_tiep' && !!bt.lanSauGiu?.length && <p className="m-0 mt-2 text-sm text-slate-400">{t('Đã có dữ liệu lần thi sau ({ds}) — Hoàn tác / Đổi giữ nguyên phần này.', { ds: bt.lanSauGiu.map((x) => dich(x)).join(', ') })}</p>}
         {bt.chon && bt.coTheChon && (
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {/* SUA-LUU-TRU (việc 3): Đổi = chọn lại tại chỗ (máy chủ gỡ lựa chọn cũ + làm mới, một giao dịch). HOTFIX-MO-KHOA: luôn bấm được — không hoàn tác
