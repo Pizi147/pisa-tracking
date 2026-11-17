@@ -3,7 +3,7 @@ import {
   NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy, laDongLs, soTenVi,
   type NhomEm, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
-import { VAI_PHIA_TVV, can, type Principal } from '../permissions.ts';
+import { VAI_PHIA_TVV, can, duyetYThuc, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { requireViewClass } from './access.ts';
@@ -258,7 +258,7 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
   const dongCuaEm = new Map<number, DongEm>();
   /* Hàng dựng trong bộ nhớ cho mọi em; "đang xin thu hồi" đọc MỘT câu cho cả lớp (UI-2: em chỉ còn việc thu hồi chờ QL vẫn có hàng — K4). */
   /* G3-14: người GIỮ việc Báo PH của em (như Công việc): TVV của em; em chưa có TVV → QL trong phạm vi. */
-  const coTheDuyet = can(p, PERMISSIONS.REQUEST_APPROVE, { classId });
+  const coTheDuyet = duyetYThuc(p, { classId });   // N52: CX duyệt Ý thức như Head
   const tatCa = ids.map((id) => ({ ...dongEm(trang.get(id)!, info.get(id)?.ten ?? '', info.get(id)?.ma ?? '', homNay), baoPh: baoPh.get(id) ?? null, tvv: info.get(id)?.tvv ?? null,
     giuBaoPh: info.get(id)?.tvvId != null ? info.get(id)!.tvvId === p.userId : coTheDuyet }));
   danhDauDangXinThuHoi(tatCa);

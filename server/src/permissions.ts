@@ -924,4 +924,10 @@ export const grantPhiaTvv = (g: Pick<Grant, 'roleKey'>): boolean => VAI_PHIA_TVV
  * chuyển lớp. Vai khác của cùng tài khoản giữ nguyên.
  */
 export const coVaiCx = (p: Pick<Principal, 'grants'>): boolean => p.grants.some((g) => g.roleKey === 'cx');
+/**
+ * N52: duyệt / áp thẳng Ý thức (thẻ đề xuất Ý thức, áp thẳng, thu hồi, sửa bậc khai…) — Head (`request.approve`) HOẶC CX (`discipline.manage` của grant CX,
+ * đúng phạm vi). Chỉ dùng cho Ý thức; Kỳ vọng / Cuối khoá / thẻ khác vẫn hỏi `request.approve`.
+ */
+export const duyetYThuc = (p: Principal, ctx: Ctx): boolean =>
+  can(p, PERMISSIONS.REQUEST_APPROVE, ctx) || can({ ...p, grants: p.grants.filter((g) => g.roleKey === 'cx') }, PERMISSIONS.DISCIPLINE_MANAGE, ctx);
 export const boVaiCx = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'cx'), grants: p.grants.filter((g) => g.roleKey !== 'cx') });

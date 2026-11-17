@@ -11,7 +11,8 @@ export async function runPrCxN52Tests(t: YThucTestKit) {
   const accounts: any = await import('../platform/accounts.ts');
   const { migratePrCxN52, KHOA_PR_CX_N52, QUYEN_CX_N52 } = await import('../migrate/prCxN52.ts');
   const { ROLE_PERMISSIONS } = await import('../seed/data.ts');
-  const { loadPrincipal, can, coQuyenBuocTiep } = await import('../permissions.ts');
+  const { loadPrincipal, can, coQuyenBuocTiep, duyetYThuc } = await import('../permissions.ts');
+  const { emailThu } = await import('../seed/emailThu.ts');
   const { duocDoiMon } = await import('../fasttrack/monDangKy.ts');
   const { PERMISSIONS } = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
@@ -151,6 +152,40 @@ export async function runPrCxN52Tests(t: YThucTestKit) {
         r = await goi('GET', '/phan-tich/giao-vien', ck);
         assert(r.status === 200, `CX ${ten} Phân tích GV: ${r.status} ${r.json?.error}`);
       }
+    });
+
+    await checkAsync('N52-6 · phía TVV + Ý thức + lớp qua HTTP: CX CP đổi Target em CP 200, em MB 403; duyệt / áp thẳng Ý thức em CP, không MB, không duyệt loại khác; tạo lớp + thêm HV CP 200, MB 403; lưu điểm, thêm PA 403', async () => {
+      const cy = (sid: number) => one(`SELECT id, target_score t FROM learning_cycles WHERE student_id = ? AND status = 'active' ORDER BY id DESC LIMIT 1`, sid);
+      const cyCp = cy(emCp.id); const cyMb = cy(emMb.id);
+      assert(cyCp && cyMb, JSON.stringify({ cyCp, cyMb }));
+      const moi = (c: any) => ((c.t ?? 6.5) >= 8.5 ? 6.5 : (c.t ?? 6.5) + 0.5);
+      let r = await goi('POST', `/cycles/${cyCp.id}/target-revision`, cxCp, { newTarget: moi(cyCp), reason: 'N52 CX đổi Target' });
+      assert(r.status === 200, `CX CP đổi Target em CP: ${r.status} ${r.json?.error}`);
+      r = await goi('POST', `/cycles/${cyMb.id}/target-revision`, cxCp, { newTarget: moi(cyMb), reason: 'N52 CX đổi Target ngoài' });
+      assert(r.status === 403, `CX CP đổi Target em MB: ${r.status}`);
+      /* Ý thức: CX duyệt / áp thẳng như Head trong phạm vi (`duyetYThuc`); loại thẻ khác (Kỳ vọng, Cuối khoá…) vẫn chỉ `request.approve`. */
+      const p = loadPrincipal(idCxCp);
+      assert(duyetYThuc(p, { studentId: emCp.id }) && !duyetYThuc(p, { studentId: emMb.id }) && !can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: emCp.id }),
+        'Ý thức CX: duyệt em CP, không MB, không request.approve chung');
+      /* Tạo lớp + thêm HV: chi nhánh mình 200, chi nhánh khác 403. */
+      let so = 990;
+      const lopMoi = (b: number) => ({ branchId: b, chuongTrinh: 'FT', loTrinh: 'LT1', so: String(++so) });
+      r = await goi('POST', '/classes', cxCp, lopMoi(CP));
+      assert(r.status === 200 && r.json?.id, `CX CP tạo lớp CP: ${r.status} ${r.json?.error}`);
+      const lopCp = r.json.id as number;
+      r = await goi('POST', '/classes', cxCp, lopMoi(MB));
+      assert(r.status === 403, `CX CP tạo lớp MB: ${r.status}`);
+      const mot = (ten: string) => ({ rows: [{ fullName: ten, target: 7, email: emailThu(), dob: '2010-01-01' }] });
+      r = await goi('POST', '/intake/commit', cxCp, { classId: lopCp, ...mot('N52 Thêm HV'), idempotencyKey: 'n52-them-1' });
+      assert(r.status === 200, `CX CP thêm HV lớp CP: ${r.status} ${r.json?.error}`);
+      r = await goi('POST', '/intake/commit', cxCp, { classId: emMb.lop, ...mot('N52 Ngoài') });
+      assert(r.status === 403, `CX CP thêm HV lớp MB: ${r.status}`);
+      /* Học thuật: lưu điểm, thêm PA → 403. */
+      const luot = one(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status != 'cancelled' ORDER BY id LIMIT 1`, emCp.id)?.id;
+      const cs = one(`SELECT id FROM sos_cases WHERE student_id = ? ORDER BY id LIMIT 1`, emCp.id)?.id;
+      if (luot) { r = await goi('PUT', `/attempts/${luot}/scores/listening`, cxCp, { rawScore: 20, rawTotal: 40 }); assert(r.status === 403, `CX lưu điểm: ${r.status}`); }
+      if (cs) { r = await goi('POST', `/cases/${cs}/interventions`, cxCp, { kind: 'tutor', note: 'N52' }); assert(r.status === 403, `CX thêm PA: ${r.status}`); }
+      assert(luot || cs, 'demo cần lượt hoặc Case của em CP');
     });
   } finally {
     may.close();
