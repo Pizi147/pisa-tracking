@@ -346,7 +346,8 @@ check('TD-GHI · request ghi: nhoTheoBang giữ qua câu ghi bảng khác, quên
     const nhan = (v: string) => assert(ngu.bangDichGhi(v.split('|')[0]) === v.split('|')[1], `bảng đích sai: ${v}`);
     ['INSERT OR REPLACE INTO _td_nguon (v) VALUES (1)|_td_nguon', 'UPDATE OR IGNORE _td_nguon AS a SET v = (SELECT 1 FROM _td_khac)|_td_nguon',
       'DELETE FROM "_td_nguon" WHERE v IN (SELECT v FROM _td_khac)|_td_nguon', 'WITH x AS (SELECT 1 FROM _td_khac) UPDATE _td_nguon SET v = 1|_td_nguon',
-      'INSERT INTO _td_khac (v) SELECT v FROM _td_nguon ON CONFLICT DO UPDATE SET v = 2|_td_khac'].forEach(nhan);
+      'INSERT INTO _td_khac (v) SELECT v FROM _td_nguon ON CONFLICT DO UPDATE SET v = 2|_td_khac', 'UPDATE main._td_nguon SET v = 1|_td_nguon',
+      'DELETE FROM "main"."_td_nguon"|_td_nguon'].forEach(nhan);
     assert(ngu.bangDichGhi('PRAGMA optimize') === null, 'câu không có bảng đích phải null (quên hết)');
     ngu.chayTrongRequest('POST', () => {
       let n = 0;
@@ -393,6 +394,26 @@ check('TD-GHI · request ghi: nhoTheoBang giữ qua câu ghi bảng khác, quên
       assert(n === 2, `GET: như nho() — mọi câu ghi đều quên: ${n}`);
     });
   } finally { conn.exec('DROP TABLE IF EXISTS _td_nguon; DROP TABLE IF EXISTS _td_khac'); }
+});
+
+/* TD-GHI: `nhoTheoBang` không thấy câu ghi do TRIGGER sinh ra — mọi trigger (schema.sql, migrate, cauHinh.ts) chỉ được ghi vào ba bảng không bảng nào gắn nhãn. */
+check('TD-GHI · mọi CREATE TRIGGER chỉ ghi attempt_skills / sos_cases / moc_he_thong (giả định của nhoTheoBang)', () => {
+  const src = path.resolve(__dirname, '../../../../server/src');   // chạy từ dist-server/server/src/tests: đọc mã nguồn
+  const tep = [path.join(src, 'schema.sql'), path.join(src, 'platform', 'cauHinh.ts'),
+    ...fs.readdirSync(path.join(src, 'migrate')).filter((f) => f.endsWith('.ts')).map((f) => path.join(src, 'migrate', f))];
+  const DUOC = new Set(['attempt_skills', 'sos_cases', 'moc_he_thong']);
+  const sai: string[] = [];
+  let dem = 0;
+  for (const f of tep) {
+    for (const m of fs.readFileSync(f, 'utf8').matchAll(/CREATE TRIGGER[\s\S]*?\bBEGIN\b([\s\S]*?)\bEND\b/gi)) {
+      dem++;
+      for (const g of m[1].matchAll(/\b(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|REPLACE\s+INTO|UPDATE(?:\s+OR\s+\w+)?|DELETE\s+FROM)\s+["`[]?(\w+)/gi)) {
+        if (!DUOC.has(g[1].toLowerCase())) sai.push(`${path.basename(f)}: ${g[1]}`);
+      }
+    }
+  }
+  assert(dem >= 7, `không tìm thấy trigger (${dem}) — mẫu quét sai`);
+  assert(!sai.length, `trigger ghi bảng mới: ${sai.join(', ')} — rà mọi nhoTheoBang đọc bảng đó (nguCanhRequest.ts) rồi mới thêm vào danh sách`);
 });
 
 check('PR-TD Task1(d) · chạy run() trong request GET xoá bộ nhớ', () => {

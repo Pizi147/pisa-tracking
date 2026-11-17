@@ -178,7 +178,7 @@ export function nhoTheoBang<T>(bang: readonly string[], khoa: string, tinh: () =
 }
 
 /** Bảng đích của MỘT câu ghi (câu đầu tiên khớp — CTE của SQLite không chứa câu ghi; upsert `DO UPDATE` cùng bảng với INSERT). null = không đọc được. */
-const DICH_GHI = /\b(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|REPLACE\s+INTO|UPDATE(?:\s+OR\s+\w+)?|DELETE\s+FROM)\s+["`[]?(\w+)/i;
+const DICH_GHI = /\b(?:INSERT(?:\s+OR\s+\w+)?\s+INTO|REPLACE\s+INTO|UPDATE(?:\s+OR\s+\w+)?|DELETE\s+FROM)\s+(?:["`[]?\w+["`\]]?\.)?["`[]?(\w+)/i;   // `main.x` → x
 export const bangDichGhi = (sql: string): string | null => DICH_GHI.exec(sql)?.[1]?.toLowerCase() ?? null;
 
 /** db.ts gọi ở mỗi câu ghi: `sql` = câu ghi (quên khoá có bảng đích trong `bang`); null = quên hết (`exec`). Cả kho ngoài của `trongBoNho`. */
