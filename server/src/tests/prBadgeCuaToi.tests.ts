@@ -107,6 +107,7 @@ export async function runPrBadgeCuaToiTests(t: { check: any; assert: any; P: any
     assert(/useApi<[^>]+>\(duongViec, \[lanViec\]/.test(doc('web/src/App.tsx')) && /useDuongViecCuaToi\(\)/.test(doc('web/src/modules/students/StudentsPage.tsx')),
       'badge App + HV & Lớp đọc đường useDuongViecCuaToi');
     assert(/laQuanLy && nguoi !== 'toi'/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'Công việc "Của tôi" đọc đường của tôi (không nguoi=tat-ca)');
-    assert(/nguoi=toi/.test(doc('web/src/modules/worklist/TongQuanV5.tsx')) && /loc=qua-han/.test(doc('web/src/modules/worklist/TongQuanV5.tsx')), 'ô Việc của tôi mở Của tôi, "n quá hạn" mở lọc Quá hạn');
+    assert(/nguoi=toi&khung=tat-ca/.test(doc('web/src/modules/worklist/TongQuanV5.tsx')) && /loc=qua-han/.test(doc('web/src/modules/worklist/TongQuanV5.tsx')), 'ô Việc của tôi mở Của tôi mọi khung (không khung đã nhớ), "n quá hạn" mở lọc Quá hạn');
+    assert(/k: 'khung'/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /onClick=\{xoaLoc\}>\{t\('Bỏ lọc'\)\}/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'khung đã nhớ hiện chip ✕ + một bấm Bỏ lọc');
   });
 }

@@ -400,12 +400,17 @@ export function HoTroHocVienTab() {
     if (khung !== 'tat-ca') { nhoKhung('cong-viec', 'tat-ca'); next.set('khung', 'tat-ca'); }
     setParams(next, { replace: true });
   };
+  const tenGvChon = typeof nguoi === 'number' ? (tenGv ?? dsGoc.find((x) => x.ownerId === nguoi)?.owner ?? t('một GV')) : null;
   /* Chip bộ lọc đến từ link (Tổng quan, chuông): mỗi chip có ✕ (C10). */
   const chipLoc: { k: string; nhan: string; bo: () => void }[] = [
     ...(loc !== 'tat-ca' && loc !== 'qua-han' && loc !== 'hom-nay' && loc !== 'den-het-tuan' ? [{ k: 'loc', nhan: LOC_NHANH_LABEL[loc], bo: () => setParam('loc', null) }] : []),
     ...(loai ? [{ k: 'nhom', nhan: NHAN_LOAI_VIEC[loai] ?? NHOM_VIEC_LABEL[nhomViecCua(loai)]   /* CHUONG-V2: cùng tên dòng loại ở chuông / Tổng quan (`loai=`) */, bo: () => {
       const next = new URLSearchParams(params); next.delete('nhom'); next.delete('loai'); setParams(next, { replace: true });
     } }] : []),
+    /* DEM-VIEC (chủ SP 18/11: Công việc "3 việc" trong khi Tổng quan "85 việc" — khung Fast Track nhớ trên máy, nằm kín trong "Lọc thêm"): bộ lọc phụ đang bật
+       luôn hiện thành chip ✕ (kể cả khi "Lọc thêm" đóng) — số đầu trang theo đúng bộ lọc đang thấy. */
+    ...(khung !== 'tat-ca' ? [{ k: 'khung', nhan: khung === 'ft' ? 'Fast Track' : t('Lớp thường'), bo: () => { nhoKhung('cong-viec', 'tat-ca'); setParam('khung', 'tat-ca'); } }] : []),
+    ...(typeof nguoi === 'number' ? [{ k: 'gv', nhan: tenGvChon ?? t('một GV'), bo: () => setParam('nguoi', null) }] : []),
   ];
   /* Chờ bạn duyệt — OV-15h1: đếm theo chi nhánh đang lọc (cùng `cn` hộp thẻ đọc); SUA-LOI-CV: đang xem việc MỘT GV thì không có (yêu cầu là của người xem). */
   const [khuDuyet, setKhuDuyet] = useState<HTMLDivElement | null>(null);
@@ -423,7 +428,6 @@ export function HoTroHocVienTab() {
   useEffect(() => { if (!xong.size) setXemXong(false); }, [xong.size]);
   const coBaoCao = !!session?.nav?.workReports;
   const loiVanHanh = <LoiVanHanh cn={branchId} baoCao={coBaoCao} onGiao={() => setGiaoViec(true)} />;
-  const tenGvChon = typeof nguoi === 'number' ? (tenGv ?? dsGoc.find((x) => x.ownerId === nguoi)?.owner ?? t('một GV')) : null;
   const laGv = laGvThuong;
   /* GD-1: "Lớp của tôi" — phân công trong phiên + việc đã nạp (`/my-work`), không request thêm. */
   const dongLop = useMemo(() => (laGv ? dungLopCuaToi(session?.assignments ?? [], dsGoc, data?.testSapToi, moCaDong) : []),
@@ -592,6 +596,8 @@ export function HoTroHocVienTab() {
             {chipLoc.map((c) => (
               <button key={c.k} type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" title={t('Bỏ lọc')} onClick={c.bo}>{c.nhan} <span aria-hidden>✕</span></button>
             ))}
+            {/* DEM-VIEC: một bấm bỏ hết bộ lọc (hạn · loại · khung · một GV) — về đúng danh sách badge / ô Tổng quan đếm. */}
+            {chipLoc.length > 1 && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[28px]" onClick={xoaLoc}>{t('Bỏ lọc')}</button>}
           </div>
         )}
         {/* CV-TAB b (mockup a2): QL xem một GV dạy cả chi nhánh khác — việc ở đó do QL chi nhánh đó theo dõi, không hiện ở đây (máy chủ `cnAn`). */}

@@ -600,7 +600,8 @@ export function OViecCuaToi({ dai, khongBam }: { dai?: boolean; /** GD-8: đang 
      DEM-VIEC (chủ SP 18/11): số = dòng Công việc "Của tôi" (cùng đường `/my-work`, cùng chi nhánh mặc định) — cả ô mở đúng danh sách đó; "n quá hạn" mở lọc Quá hạn. */
   const n = viec?.viec ?? null;
   const bam = !!session.nav.work && !!n;
-  const den = session.nav.workOps || session.nav.workChamDiem ? '/cong-viec?nguoi=toi' : '/cong-viec';
+  /* `khung=tat-ca`: không dùng khung đã nhớ ở Công việc — mở đúng tập đã đếm (mọi khung). */
+  const den = session.nav.workOps || session.nav.workChamDiem ? '/cong-viec?nguoi=toi&khung=tat-ca' : '/cong-viec?khung=tat-ca';
   const qh = viec?.viecQuaHan ?? 0;
   return <ChiSo ten={bam ? `${t('Việc của tôi')} ›` : t('Việc của tôi')} ky={t('hiện tại')}
     giaTri={bam ? <SoDen n={n!} to={den} className="so-chinh" /> : n === 0 ? <span className="font-normal text-faint">0</span> : n ?? '…'}

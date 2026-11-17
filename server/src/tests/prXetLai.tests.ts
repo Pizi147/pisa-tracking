@@ -195,7 +195,10 @@ export async function runPrXetLaiTests(t: YThucTestKit) {
     assert(g.lopHocLai.FOU?.some((l: any) => l.id === FOU_D.id) && g.lopHocLai.FOU.some((l: any) => l.id === FOU_CP.id)   // Q-RL6: mọi chi nhánh
       && g.lopHocLai.FOU.findIndex((l: any) => l.id === FOU_D.id) < g.lopHocLai.FOU.findIndex((l: any) => l.id === FOU_CP.id) && !g.chiXem, `lớp học lại (cùng chi nhánh trước): ${JSON.stringify(g.lopHocLai)}`);
     assert(viec(QL, CHO.fou.id)?.count === 1, 'lệnh chưa thi hành: việc ở lớp cũ');
-    assert(!viec(P.cpManager, BE_D.id) && !viec(GVCN_BE, BE_D.id) && !viec(GVBM_BE, BE_D.id) && viec(P.admin, BE_D.id), 'QL CP / GVCN / GVBM không việc, QT có');
+    /* DEM-VIEC: Quản trị — chi nhánh có QL → chỉ ở "Tất cả" (làm thay), không vào "Của tôi". */
+    const qtTatCa = trongBoNho(() => (mywork.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).find((it) => it.key === `xetlai:${BE_D.id}`));
+    assert(!viec(P.cpManager, BE_D.id) && !viec(GVCN_BE, BE_D.id) && !viec(GVBM_BE, BE_D.id) && !viec(P.admin, BE_D.id) && qtTatCa && !qtTatCa.mine,
+      'QL CP / GVCN / GVBM không việc, QT chỉ ở "Tất cả"');
     const gv = trongBoNho(() => xl.xemXetLai(GVCN_BE, BE_D.id, null));
     assert(gv.chiXem && gv.em.length === g.em.length && !Object.keys(gv.lopHocLai).length, 'GVCN lớp mới: chỉ xem');
     assert(gv.em.every((x: any) => x.goiY === null && x.phuHuynh === null && x.banGiaoGvcnCu === null && x.daChot.lyDo === null && x.coTheNhanXet), `GVCN: bỏ gợi ý / PH / lý do: ${JSON.stringify(gv.em[0])}`);
