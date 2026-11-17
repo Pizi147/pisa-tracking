@@ -9,7 +9,7 @@ import { DS_JSON, db } from '../db.ts';
 import { dotDaHoanTat, mondayOfDate, PERMISSIONS } from '../../../shared/domain/index.ts';
 import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { addDays, badRequest, forbidden } from '../util.ts';
-import { coNho } from '../platform/nguCanhRequest.ts';
+import { coNho, nhoTheoBang } from '../platform/nguCanhRequest.ts';
 import { diemCuaLuot } from './attempts.ts';
 import { loadSkillRows, scoringModeOf, type SkillRow } from './skillSchedule.ts';
 
@@ -132,4 +132,4 @@ export const oChuaCoDiem = (r: any): boolean =>
 
 /** Lớp đã kết thúc → sửa điểm chỉ lưu điểm + nhật ký: không tự tạo / rút Case, tín hiệu, bổ trợ (rà PR #379, Q4). */
 export const laLopKetThuc = (classId: number | null): boolean =>
-  !!classId && (db().prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any)?.status === 'finished';
+  !!classId && nhoTheoBang(['classes'], `tt-lop:${classId}`, () => (db().prepare('SELECT status FROM classes WHERE id = ?').get(classId) as any)?.status) === 'finished';

@@ -2,7 +2,7 @@ import { DS_JSON, db, theoLoJson } from './db.ts';
 import { C02_GVCN_XU_LY_CASE_TRAI_MON, PERMISSIONS, type WorkScope } from '../../shared/domain/index.ts';
 import { demoToday } from './demoConfig.ts';
 import { forbidden } from './util.ts';
-import { coKhoa, coNho, datNho, nho } from './platform/nguCanhRequest.ts';
+import { coKhoa, coNho, datNho, nho, nhoTheoBang } from './platform/nguCanhRequest.ts';
 import { nhoThamChieu } from './platform/mocHeThong.ts';
 
 /**
@@ -202,8 +202,7 @@ export const phanCongDaNap = (): readonly DongPhanCong[] | null => (coKhoa('pc-a
 
 function branchOfClass(classId: number): number | null {
   if (coNho()) return bangLop().get(classId)?.branchId ?? null;
-  const r = db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any;
-  return r?.branch_id ?? null;
+  return nhoTheoBang(['classes'], `cn-lop:${classId}`, () => (db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any)?.branch_id ?? null);   // TD-GHI
 }
 
 /** Fast Track hay Normal — sổ SCH-01: quyền dời lịch của giáo viên chỉ mở cho lớp thường. */

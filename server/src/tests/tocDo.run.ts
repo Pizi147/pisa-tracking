@@ -40,6 +40,7 @@ const { danhSachHocVienLop, thieuThongTinHocVien } = await import('../classes/ho
 const { mtLichSuChuaNhap } = await import('../cham/canCham.ts');
 const { bangChiNhanh } = await import('../worklist/bangChiNhanh.ts');   // TQ-SOS-CN: `{sos23}`   // GIAM-DOC-0611f
 const { DUONG_DO, MOI_VAI, TRAN: TRAN_MAU, TRAN_DONG: TRAN_DONG_MAU, TRAN_GHI_LO } = await import('./tocDoDuong.ts');
+const nguCanhTd = await import('../platform/nguCanhRequest.ts');   // TD-GHI
 const { demoToday: demoToday15d } = await import('../demoConfig.ts');
 
 runSeed();
@@ -336,6 +337,62 @@ check("PR-TD Task1(c) · request 'POST' không mở bộ nhớ", () => {
     nho('kiem-c', tinh);
     assert(calls === 2, `POST không nhớ nên tinh() phải chạy lại mỗi lần: calls=${calls}`);
   });
+});
+
+check('TD-GHI · request ghi: nhoTheoBang giữ qua câu ghi bảng khác, quên khi ghi bảng nguồn / RETURNING / BEGIN·ROLLBACK; SAVEPOINT giữ; nho() vẫn tắt; nhoTheoId giữ tới câu ghi kế; GET = nho', () => {
+  const ngu = nguCanhTd;
+  conn.exec('CREATE TABLE IF NOT EXISTS _td_nguon (v INTEGER); CREATE TABLE IF NOT EXISTS _td_khac (v INTEGER)');
+  try {
+    const nhan = (v: string) => assert(ngu.bangDichGhi(v.split('|')[0]) === v.split('|')[1], `bảng đích sai: ${v}`);
+    ['INSERT OR REPLACE INTO _td_nguon (v) VALUES (1)|_td_nguon', 'UPDATE OR IGNORE _td_nguon AS a SET v = (SELECT 1 FROM _td_khac)|_td_nguon',
+      'DELETE FROM "_td_nguon" WHERE v IN (SELECT v FROM _td_khac)|_td_nguon', 'WITH x AS (SELECT 1 FROM _td_khac) UPDATE _td_nguon SET v = 1|_td_nguon',
+      'INSERT INTO _td_khac (v) SELECT v FROM _td_nguon ON CONFLICT DO UPDATE SET v = 2|_td_khac'].forEach(nhan);
+    assert(ngu.bangDichGhi('PRAGMA optimize') === null, 'câu không có bảng đích phải null (quên hết)');
+    ngu.chayTrongRequest('POST', () => {
+      let n = 0;
+      const doc = () => ngu.nhoTheoBang(['_td_nguon'], 'td-ghi', () => ++n);
+      doc(); doc();
+      assert(n === 1, `nhớ trong request ghi: ${n}`);
+      conn.prepare('INSERT INTO _td_khac (v) VALUES (1)').run();
+      conn.prepare('UPDATE _td_khac SET v = (SELECT COUNT(*) FROM _td_nguon)').run();   // bảng nguồn chỉ ĐỌC trong câu ghi → giữ
+      doc();
+      assert(n === 1, `ghi bảng khác phải giữ: ${n}`);
+      conn.prepare('INSERT INTO _td_nguon (v) VALUES (1)').run();
+      doc();
+      assert(n === 2, `ghi bảng nguồn phải quên: ${n}`);
+      conn.prepare('UPDATE _td_nguon SET v = 2 RETURNING v').all();
+      doc();
+      assert(n === 3, `RETURNING vào bảng nguồn phải quên: ${n}`);
+      conn.exec('SAVEPOINT td_ghi'); conn.exec('RELEASE td_ghi');
+      doc();
+      assert(n === 3, `SAVEPOINT / RELEASE phải giữ: ${n}`);
+      conn.exec('BEGIN'); doc();
+      assert(n === 4, `BEGIN phải quên (đọc lại trong giao dịch): ${n}`);
+      conn.prepare('INSERT INTO _td_nguon (v) VALUES (9)').run(); doc();
+      conn.exec('ROLLBACK'); doc();
+      assert(n === 6, `ROLLBACK phải quên (giá trị vừa cuộn lại): ${n}`);
+      /* trongBoNho trong request ghi: câu ghi bên trong quên luôn nhớ của request ngoài. */
+      ngu.trongBoNho(() => conn.prepare('INSERT INTO _td_nguon (v) VALUES (3)').run());
+      doc();
+      assert(n === 7, `ghi trong trongBoNho phải quên nhớ ngoài: ${n}`);
+      let m = 0;
+      ngu.nho('td-ghi-nho', () => ++m); ngu.nho('td-ghi-nho', () => ++m);
+      assert(m === 2 && !ngu.coNho(), `nho() / coNho() trong request ghi phải như cũ (tắt): ${m}`);
+      let k = 0;
+      const theoId = () => ngu.nhoTheoId('td-ghi-id:', [1, 2], (ids) => { k++; return new Map(ids.map((id) => [id, [{ id }]])); });
+      const a = theoId(); a.get(1)![0].id = 99;
+      assert(theoId().get(1)![0].id === 1 && k === 1, `nhoTheoId giữ + trả bản chép: ${k}`);
+      conn.prepare('INSERT INTO _td_khac (v) VALUES (2)').run(); theoId();
+      assert(k === 2, `nhoTheoId phải quên sau MỌI câu ghi: ${k}`);
+    });
+    ngu.chayTrongRequest('GET', () => {
+      let n = 0;
+      const doc = () => ngu.nhoTheoBang(['_td_nguon'], 'td-ghi-get', () => ++n);
+      doc(); doc();
+      conn.prepare('INSERT INTO _td_khac (v) VALUES (3)').run(); doc();
+      assert(n === 2, `GET: như nho() — mọi câu ghi đều quên: ${n}`);
+    });
+  } finally { conn.exec('DROP TABLE IF EXISTS _td_nguon; DROP TABLE IF EXISTS _td_khac'); }
 });
 
 check('PR-TD Task1(d) · chạy run() trong request GET xoá bộ nhớ', () => {
@@ -1900,6 +1957,33 @@ await checkAsync(`TU-b · Tải danh sách tutor 50 dòng (POST /tutors/tai-len,
   assert(r.status === 200, `POST tai-len ${r.status}`);
   console.log(`      (đo: ${n} câu, ${soDongSql() - dongTruoc} dòng)`);
   assert(n <= TRAN_GHI_LO.taiLenTutor, `${n} câu > trần ${TRAN_GHI_LO.taiLenTutor}`);
+});
+
+/* TD-GHI (chủ SP 18/11): lưu điểm — đường ghi hay gọi nhất (log 24 h: ~200 lần / ngày). FT: 5 môn của MỘT lượt chưa có điểm (môn cuối chốt lượt + Case);
+ * lớp thường: các môn của một lượt chưa có điểm. QL nhập (cùng đường kiểm quyền / ghi như GV). Trần từng lần lưu. */
+await checkAsync('TD-GHI · lưu điểm FT 5 môn (môn cuối chốt lượt) + lớp thường từng môn ≤ trần câu SQL / lần lưu', async () => {
+  const chuaDiem = `NOT EXISTS (SELECT 1 FROM assessment_scores s WHERE s.attempt_id = a.id) AND a.status = 'planned'`;
+  const ft = (conn.prepare(`SELECT a.id FROM assessment_attempts a WHERE a.class_id = ? AND a.kind = 'mock' AND ${chuaDiem} ORDER BY a.id LIMIT 1`).get(LOP_FT) as any)?.id as number;
+  const th = conn.prepare(`SELECT a.id, c.programme_code ct FROM assessment_attempts a JOIN classes c ON c.id = a.class_id
+    WHERE c.is_fast_track = 0 AND c.branch_id = ? AND c.status != 'finished' AND a.kind != 'mt0' AND ${chuaDiem} ORDER BY a.class_id = ? DESC, a.id LIMIT 1`).get(CN, LOP_THUONG) as any;
+  assert(ft && th, `thiếu lượt chưa có điểm: FT ${ft} · thường ${JSON.stringify(th)}`);
+  const ngay = demoToday15d();
+  const ghi: string[] = [];
+  const luu = async (url: string, body: unknown, tran: number, tranDong: number) => {
+    const truoc = soCauSql(), dongTruoc = soDongSql();
+    const r = await callHttp('QL', 'PUT', url, body);
+    const n = soCauSql() - truoc, dong = soDongSql() - dongTruoc;
+    ghi.push(`${url.replace(/\d+/, ':id')} ${n} câu ${dong} dòng`);
+    assert(r.status === 200, `${url} ${r.status} ${JSON.stringify(r.json)}`);
+    assert(n <= tran && dong <= tranDong, `${url}: ${n} câu / ${dong} dòng > trần ${tran} / ${tranDong}`);
+  };
+  for (const [k, band] of [['reading', 5], ['listening', 5.5], ['writing1', 5], ['speaking', 5]] as const) {
+    await luu(`/attempts/${ft}/scores/${k}`, { band, resultDate: ngay, nhanXet: 'Đo tốc độ lưu điểm.', ...(k === 'speaking' ? { gvCham: { performerName: 'GV ngoài đo tốc độ' } } : {}) }, TRAN_GHI_LO.luuDiemFt, TRAN_GHI_LO.luuDiemFtDong);
+  }
+  await luu(`/attempts/${ft}/scores/writing2`, { band: 5, resultDate: ngay, nhanXet: 'Đo tốc độ lưu điểm.' }, TRAN_GHI_LO.luuDiemFtChotLuot, TRAN_GHI_LO.luuDiemFtChotLuotDong);
+  const mon = (conn.prepare('SELECT skill FROM programme_skills WHERE programme_code = ? ORDER BY seq').all(th.ct) as any[]).map((r) => r.skill as string);
+  for (const k of mon) await luu(`/regular/attempts/${th.id}/scores/${k}`, { score: 5, total: 10 }, TRAN_GHI_LO.luuDiemThuong, TRAN_GHI_LO.luuDiemThuongDong);
+  console.log(`      (đo: ${ghi.join(' · ')})`);
 });
 
 await checkAsync(`OV-15f · Lưu kết luận Lịch thi (PUT /hoc-vien-lop/lich-thi/:cycleId) ≤ ${TRAN_GHI_LO.luuLichThi} câu SQL`, async () => {

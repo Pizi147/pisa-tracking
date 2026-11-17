@@ -4,7 +4,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { cauHinhDb, choPhepSeedTurso, coCoBanChinh } from './moiTruong.ts';
 import { chanGiaoDichNeuSapHetGio, conLaiMs, KHONG_MO_GIAO_DICH_KHI_CON_MS } from './platform/hanGio.ts';
-import { daGhiDb, demCau, demDong, demGhi, nhoTheoId, xoaNho } from './platform/nguCanhRequest.ts';
+import { daGhiDb, demCau, demDong, demGhi, nhoTheoId, quenTheoBang, xoaNho, xoaNhoNeuRequestGhi } from './platform/nguCanhRequest.ts';
 import { HttpError } from './util.ts';
 
 /** Câu SQL vừa prepare gần nhất — chỉ để ghi log khi giao dịch hỏng (gán trong khối vá `prepare` bên dưới). */
@@ -61,7 +61,7 @@ let sqlGanNhat = '';
     if (ten === 'all') {
       /* TD2-0: đếm dòng ở `all` (mọi `get` của câu dùng lại cũng đi qua đây) — chỉ cộng length. */
       proto[ten] = function (this: { sql?: string }, ...args: unknown[]) {
-        if (CO_RETURNING.test(this.sql ?? '')) demGhi();   // ghi qua `all()` (trước khi chạy: lỗi giữa chừng vẫn coi như có thể đã ghi)
+        if (CO_RETURNING.test(this.sql ?? '')) { demGhi(); xoaNhoNeuRequestGhi(); quenTheoBang(this.sql); }   // ghi qua `all()` (trước khi chạy: lỗi giữa chừng vẫn coi như có thể đã ghi) · TD-GHI: request ghi bỏ nhớ
         const out = goc.apply(this, motNull(args));
         if (Array.isArray(out)) { demDong(out.length, this.sql ?? ''); for (const r of out) thuong(r); }
         return out;
@@ -69,7 +69,7 @@ let sqlGanNhat = '';
       continue;
     }
     proto[ten] = function (this: unknown, ...args: unknown[]) {
-      if (ten === 'run') { xoaNho(); daGhiDb(); }   // TL-NEN: request đã ghi → phần còn lại không dùng nhớ bảng tham chiếu theo tiến trình
+      if (ten === 'run') { xoaNho(); quenTheoBang((this as { sql?: string }).sql); daGhiDb(); }   // TL-NEN: request đã ghi → phần còn lại không dùng nhớ bảng tham chiếu theo tiến trình
       /* Z2c-d: ghi lẻ NGOÀI giao dịch (mốc dùng phiên, lần thử đăng nhập…) gặp khoá của người khác thì chờ như tx(). */
       const out = ten === 'run' && !instance?.inTransaction
         ? choKhoaGhi(() => goc.apply(this, motNull(args)))
@@ -81,7 +81,7 @@ let sqlGanNhat = '';
   const getGoc = proto.get;
   proto.get = function (this: { daLuu?: boolean; sql?: string; all(...a: unknown[]): unknown[] }, ...args: unknown[]) {
     /* PR-BN: `get()` của libsql trên statement DÙNG LẠI trả dòng của lần gọi TRƯỚC (tham số mới bị bỏ qua) — `all()` thì đúng. */
-    if (!this.daLuu && CO_RETURNING.test(this.sql ?? '')) demGhi();   // đường `daLuu` đã đếm ở `all`
+    if (!this.daLuu && CO_RETURNING.test(this.sql ?? '')) { demGhi(); xoaNhoNeuRequestGhi(); quenTheoBang(this.sql); }   // đường `daLuu` đã đếm ở `all`
     const row = this.daLuu ? this.all(...args)[0] : getGoc.apply(this, motNull(args));
     if (!this.daLuu) { demCau(); demDong(row ? 1 : 0, this.sql ?? ''); }   // đường `all` đã đếm qua `iterate` / `all`
     if (row && typeof row === 'object' && '_metadata' in row) delete (row as Record<string, unknown>)._metadata;
@@ -102,6 +102,7 @@ let sqlGanNhat = '';
   const execGoc = Database.prototype.exec;
   Database.prototype.exec = function (this: object, sql: string) {
     daGhiDb();
+    if (!/^\s*(SAVEPOINT|RELEASE)\b/i.test(sql)) { xoaNhoNeuRequestGhi(); quenTheoBang(null); }   // TD-GHI: BEGIN / COMMIT / ROLLBACK / DDL — request ghi đọc lại sau đó
     return execGoc.call(this, sql);
   } as unknown as typeof Database.prototype.exec;
   const prepareGoc = Database.prototype.prepare;

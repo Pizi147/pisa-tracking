@@ -1,4 +1,5 @@
 import { db, tx } from '../db.ts';
+import { nhoTheoBang } from '../platform/nguCanhRequest.ts';
 import { datLaiHanKhiChuyenLop } from './hanChuyenLop.ts';
 import { demoToday } from '../demoConfig.ts';
 import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseThuocO, caseTopicLabel, categoryOf, laCapBanGiao, tenMonNgan, type DoiO } from '../../../shared/domain/index.ts';
@@ -31,10 +32,10 @@ export function suggestCaseOwner(input: {
 
 type PhanCong = { user_id: number; skill: string | null; is_core: number; ten: string | null };
 /** Phân công đang chạy của lớp, theo thứ tự id (một câu đọc — CASE-NHIEU đọc một lần cho mọi kỹ năng). */
-const phanCongLop = (classId: number) => db().prepare(
+const phanCongLop = (classId: number) => nhoTheoBang(['teacher_assignments', 'users'], `pc-lop:${classId}`, () => db().prepare(   // TD-GHI: tạo Case hỏi ×9
   `SELECT ta.user_id, ta.skill, ta.is_core, u.full_name AS ten FROM teacher_assignments ta LEFT JOIN users u ON u.id = ta.user_id
     WHERE ta.class_id = ? AND ta.status = 'active' ORDER BY ta.id`,
-).all(classId) as PhanCong[];
+).all(classId) as PhanCong[]);
 
 /** Luật mục 2.3 (một chỗ): GV dạy đúng kỹ năng của hạng mục; chưa phân công ai thì GVCN — vẫn là một người cụ thể, không phải cả lớp. */
 function chonChuCase(ds: PhanCong[], category: string | null): PhanCong | null {

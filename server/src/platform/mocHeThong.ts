@@ -1,5 +1,6 @@
 import { db } from '../db.ts';
-import { coGhiTrongRequest, coNho, layMoc, nho } from './nguCanhRequest.ts';
+import { coGhiTrongRequest, coNho, layMoc, nho, nhoTheoBang } from './nguCanhRequest.ts';
+import { BANG_THAM_CHIEU } from '../migrate/prTlNen.ts';
 
 /**
  * MỐC CHUNG TOÀN HỆ THỐNG (TL-NEN, TRANG-LON S3) — bảng `moc_he_thong` (migrate/prTlNen.ts), đọc kèm câu phiên (`COT_MOC`, auth.ts): 0 câu thêm.
@@ -48,8 +49,10 @@ const theoGhi = new WeakMap<object, Map<string, { so: string; giaTri: unknown }>
  * Bảng tham chiếu nhớ theo tiến trình, khoá bằng phiên bản DB. Chỉ dùng khi đang trong request GET có phiên, request chưa ghi gì, cờ kiểm tắt;
  * còn lại tính như cũ (vẫn một lần mỗi request qua `nho`). Giá trị dùng chung giữa request — nơi gọi KHÔNG sửa tại chỗ.
  */
+/** TD-GHI: nguồn của mọi `nhoThamChieu` — bảng có trigger `tham-chieu` + `users` (tên) + `cau_hinh_phien_ban` + `branches` (`bang-chi-nhanh`). */
+const NGUON_THAM_CHIEU = [...BANG_THAM_CHIEU, 'users', 'cau_hinh_phien_ban', 'branches'];
 export function nhoThamChieu<T>(khoa: string, tinh: () => T): T {
-  return nho(khoa, () => {
+  return nhoTheoBang(NGUON_THAM_CHIEU, khoa, () => {   // TD-GHI: request ghi nhớ tới câu ghi chạm bảng tham chiếu
     const so = (layMoc() as MocHeThong | undefined)?.thamChieu;
     if (so == null || thamChieuDayDuKhiKiem.bat || !coNho() || coGhiTrongRequest()) return tinh();
     const conn = db();
