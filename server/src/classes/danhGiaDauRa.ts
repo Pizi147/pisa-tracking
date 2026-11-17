@@ -5,7 +5,7 @@
  */
 import { PERMISSIONS } from '../../../shared/domain/index.ts';
 import { db, tx } from '../db.ts';
-import { can, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
+import { boVaiCx, can, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, forbidden, loi, notFound, nowIso } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -21,7 +21,7 @@ export type DongDauRa = { studentId: number; nhanXet: string | null; deXuat: DeX
 
 /** GVCN của lớp (phân công còn hiệu lực hôm nay — lớp đã kết thúc: hiệu lực ngày kết thúc, GVCN vẫn ghi đánh giá cuối khoá), hoặc Quản lý của lớp (`class.edit`). */
 const coTheGhi = (p: Principal, c: { id: number; finished_at: string | null }) =>
-  isCoreTeacherOf(p, c.id, c.finished_at ? c.finished_at.slice(0, 10) : demoToday()) || can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id });
+  isCoreTeacherOf(p, c.id, c.finished_at ? c.finished_at.slice(0, 10) : demoToday()) || can(boVaiCx(p), PERMISSIONS.CLASS_EDIT, { classId: c.id });   // N52: CX không ghi học thuật
 
 function lopThuong(classId: number) {
   const c = db().prepare(

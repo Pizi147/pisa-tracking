@@ -114,6 +114,13 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc', vai: ['QL'], url: '/my-work?nguoi={gv}' },
   /* DOC-THUA (05/11): Công việc lọc một chi nhánh — việc "Báo PH kết quả Test" lọc chi nhánh trong SQL (trước đọc mọi chi nhánh rồi lọc ở JS). */
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
+  /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: 0 câu nghiệp vụ) · trang Công việc "Tất cả" (đọc như QL, không ai là chủ việc). */
+  { trang: 'Công việc CX', vai: ['CX'], url: '/my-work' },
+  { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca' },
+  { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
+  /* N52: CX xem Phân tích phần GV + Test (như QL). */
+  { trang: 'Phân tích GV CX', vai: ['CX'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft&v2=1' },
+  { trang: 'Lịch Test CX', vai: ['CX'], url: '/cham/lich-test' },
   /* OV-14c: hàng đợi Chấm Speaking (panel của việc) — GV Speaking: mọi lớp FT chi nhánh; GV khác: rỗng. */
   { trang: 'Công việc', vai: ['GVCN', 'GVBM', 'QL'], url: '/my-work/cham-speaking' },
   /* S-CHEO-CN (16/11): mục "Chi nhánh khác" của panel Chấm Speaking — chỉ tải khi mở; GV Speaking đo ở prSCheoCn (`TRAN_CHAM_SPEAKING_CN_KHAC`). */
@@ -535,6 +542,9 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: chỉ câu phiên) đo 2 · "Tất cả" (danh sách QL cùng phạm vi, CX demo toàn hệ thống) đo 51 / 51
+     · Lịch Test đo 22 · Phân tích GV đo 17 (trước N52: 403) → max(đo + 10, ⌈đo × 1,3⌉). */
+  'CX /my-work': 12, 'CX /my-work?nguoi=tat-ca': 67, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 67, 'CX /cham/lich-test': 32, 'CX /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30,
   /* TQ-SOS-CN: panel ô SOS 2–3 (đọc đúng các em của ô, dữ liệu ×3): đo 9 / 9 / 8 câu → đo + 10. Cách cũ (tính lại cả chi nhánh) đo 10 câu · 3 358 dòng. */
   'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 19, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 18,
   /* GD-7a (XM-10): hồ sơ HV thêm Nhập điểm + Trả lời tình hình của người xem (listAttempts theo em + câu tình hình): đo 66 / 66 / 74 / 72 câu → đo + 10. */
@@ -1325,7 +1335,7 @@ export const TRAN: Record<string, number> = {
   'GVBM /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 110,   // đo 84
   'GVCN_THUONG /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 114,   // đo 87
   'TVV /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 17,   // đo 7
-  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 72,   // đo 55
+  'CX /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 94,   // đo 55 · N52: CX sửa lớp (`class.edit` — khối Xét lại / Kết thúc lớp / Lộ trình tiếp) đo 72 → max(72 + 10, ⌈72 × 1,3⌉); việc theo em không dựng (CX không có việc)
   'ADMIN /classes/{lopFT}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 85,   // đo 65
   'GVCN_THUONG /classes/{lopThuong}/ho-so?phan=overview,roster,diemTheoLuot,viecCuaToi,xetLai,xoaKetThuc,cases': 124,   // đo 95
   /* TD-QUET (17/11): Học viên & Lớp mở với số tab Đang SOS (`kem=sos-dem`) — max(đo + 10, ⌈đo × 1,3⌉). */
@@ -1352,6 +1362,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* N52: CX Công việc "Tất cả" đo 1 198 · một chi nhánh 925 dòng → ⌈đo × 1,3⌉. */
+  'CX /my-work?nguoi=tat-ca': 1558, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 1203,
   /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */
   'QL /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 621, 'QT /tong-quan/chi-nhanh/sos23?branchId={cn}&ids={sos23}': 621, 'QT /tong-quan/chi-nhanh/sos23?ids={sos23}': 619,
   /* MYWORK-TVV: đo 13 dòng (seed, không kèm quét nền) → max(đo + 50, ⌈đo × 1,3⌉). Bản chép 12/11, TVV 66 (109 em): 920–1 121 dòng (14–21 câu); lượt quét nền đầu ngày ~200 câu chạy một lần cho cả hệ thống, không thuộc TVV. */
@@ -2335,7 +2347,7 @@ export const TAI_TRANG: Record<string, { vai: Vai; urls: string[]; tran: number 
   },
   'CX trang Tổng quan': {
     vai: 'CX', tran: 80,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 61 → max(61 + 10, ⌈61 × 1,3⌉) ·   // RA-DOC-0611: đo 109 (trước 111) → max(109 + 10, ⌈109 × 1,3⌉)
-    urls: ['/demo/session', '/ref/branches', '/tong-quan/hoc-vien', '/tong-quan/v5?ct=ft'],   // UI-TONG-QUAN: một GET
+    urls: ['/demo/session', '/ref/branches', '/tong-quan/hoc-vien', '/tong-quan/v5?ct=ft', '/my-work'],   // UI-TONG-QUAN: một GET · N52: + badge `/my-work` (CX có Công việc; không việc của mình)
   },
   'Admin trang Tổng quan': {
     vai: 'ADMIN', tran: 60,   // CHUONG-V2: bỏ /notifications khỏi lượt mở trang — đo 46 → max(46 + 10, ⌈46 × 1,3⌉) ·

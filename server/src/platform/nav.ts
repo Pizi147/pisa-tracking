@@ -5,7 +5,7 @@
  * Một hàm thuần để phép kiểm gọi thẳng được (server/src/tests/khung.tests.ts).
  */
 import { PERMISSIONS, laVaiQuanLy, type NavQuyen } from '../../../shared/domain/index.ts';
-import { activeAt, can, classScopeSql, lopFtChoGvSpeaking, scopeFor, type Principal } from '../permissions.ts';
+import { activeAt, boVaiCx, can, classScopeSql, coVaiCx, lopFtChoGvSpeaking, scopeFor, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { db } from '../db.ts';
 import { canSeeBoard } from '../worklist/mgmttasks.ts';
@@ -49,8 +49,10 @@ export function navOf(p: Principal): NavQuyen {
     work,
     workSupport: support || viecTvv, workOps: viec && board, workReports: viec && meeting,
     /* Admin (chỉ nhóm Chấm điểm, `phamViXemViec`) không có Yêu cầu của tôi — không gửi yêu cầu nào. */
-    workApprove: viec && can(p, PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && (!chamDiem || p.roleKeys.includes('teacher')),   // Admin kiêm GV vẫn gửi Yêu cầu của tôi (phần GV)
+    /* N52: hộp Chờ bạn duyệt + badge là việc của QL — CX duyệt / làm thay ở hồ sơ em, không có hộp (vai CX không là chủ việc). */
+    workApprove: viec && can(boVaiCx(p), PERMISSIONS.REQUEST_APPROVE, { anyScope: true }), workRequests: support && (!chamDiem || p.roleKeys.includes('teacher')),   // Admin kiêm GV vẫn gửi Yêu cầu của tôi (phần GV)
     workChamDiem: support && chamDiem,
+    workCx: support && coVaiCx(p) && phamViXemViec(p) === 'het',
     xuatMt: coPhamViXuat(phamViXuatMt(p)),
     tutor,
     tutorSua: tutor && can(p, PERMISSIONS.TUTOR_MANAGE, { anyScope: true }),

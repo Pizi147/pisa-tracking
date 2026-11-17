@@ -7,7 +7,7 @@ import { db } from '../db.ts';
 import { GOP_Y_SO_TUAN, PERMISSIONS, tenMonNgan, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, isIsoDate, notFound } from '../util.ts';
-import { activeAt, can, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
+import { activeAt, boVaiCx, can, isCoreTeacherOf, require_, type Principal } from '../permissions.ts';
 import { mondayOf } from '../platform/week.ts';
 import { boMonCt } from '../normal/regular.ts';
 
@@ -22,7 +22,7 @@ export function docLop(classId: number): Lop {
 
 /** Cột của lớp (FT L R W S; lớp thường theo môn chương trình) + GV phân công + người xem ghi được không (Tiến độ trên lớp dùng chung). */
 export function cotCua(p: Principal, c: Lop, today: string): CotGopY[] {
-  const quanLy = can(p, PERMISSIONS.CLASS_EDIT, { classId: c.id });
+  const quanLy = can(boVaiCx(p), PERMISSIONS.CLASS_EDIT, { classId: c.id });   // N52: CX (class.edit để sửa lớp) không ghi góp ý học thuật
   const laGv = p.roleKeys.includes('teacher');   // OV-13h (chủ SP 15/10): lớp đã kết thúc GV / GVCN vẫn ghi góp ý
   const gvcn = laGv && isCoreTeacherOf(p, c.id, today);
   const cuaToi = laGv ? p.assignments.filter((a) => a.classId === c.id && activeAt(a, today)).map((a) => a.skill) : [];

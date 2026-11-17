@@ -81,7 +81,7 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     assert(ds.every((r: any) => r.points.some((p: any) => p.attemptKind === 'checkpoint')) && ds[0].short === 'L+S', JSON.stringify(ds.map((r: any) => [r.short, r.points])));
   }));
 
-  check('OV11h-4 · chữ: đơn vị "lượt MT" / "bài" / "Case" (không "đợt Test"), Thiếu điểm gồm SOS tạm, hồ sơ GV với CX / TVV "dành cho Quản lý"', () => thu(() => {
+  check('OV11h-4 · chữ: đơn vị "lượt MT" / "bài" / "Case" (không "đợt Test"), Thiếu điểm gồm SOS tạm, hồ sơ GV với TVV "dành cho Quản lý" (CX N52 xem được)', () => thu(() => {
     assert(!Object.values(d.METRIC_UNIT_LABEL).some((v: any) => /đợt Test/.test(v)), JSON.stringify(d.METRIC_UNIT_LABEL));
     assert(d.METRIC_UNIT_LABEL.case === 'Case' && d.nhanDonVi('dot-test', 'ft') === 'lượt MT' && d.nhanDonVi('dot-test', 'thuong') === 'bài', 'nhãn đơn vị');
     /* PT-9: Fast Track (lớp thường không chữ SOS — T58). */
@@ -90,7 +90,8 @@ export async function runPrOv11hTests(t: YThucTestKit) {
     const o = tongHop.oTongHop(P.mbManager, { ct: 'thuong', soTuan: 26, classId: pet.id, theo: 'lop', khoa: 'tong', cot: 'luot' });
     assert(/^\d+ bài — /.test(o.tieuDe), o.tieuDe);
     const gvId = P.coreTeacher.userId;
-    for (const k of ['cx', 'consultant']) assert(loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId)) === 'Hồ sơ giáo viên dành cho Head.', `${k}: ${loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId))}`);
+    for (const k of ['consultant']) assert(loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId)) === 'Hồ sơ giáo viên dành cho Head.', `${k}: ${loiCua(() => phamVi.phamViHoSoGv(vai(k), gvId))}`);
+    assert(!loiCua(() => phamVi.phamViHoSoGv(vai('cx'), gvId)), `CX (N52) xem hồ sơ GV: ${loiCua(() => phamVi.phamViHoSoGv(vai('cx'), gvId))}`);
     const gvKhac = one(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'teacher' AND ur.status = 'active' AND ur.user_id != ? LIMIT 1`, gvId).id;
     assert(/chính mình/.test(loiCua(() => phamVi.phamViHoSoGv(P.coreTeacher, gvKhac))), 'GV xem hồ sơ GV khác: giữ câu cũ');
   }));

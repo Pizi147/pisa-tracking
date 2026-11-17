@@ -35,16 +35,14 @@ export async function runPrOv13oTests(t: YThucTestKit) {
     roles: [{ role: 'cx', branches: [] }] }).userId as number;
   const ft = t.classId('MB FT 101');
 
-  check('OV13o-1 · CX đổi KCK cả lớp: xem trước báo lỗi ở đúng dòng (cột Target), lưu 400 cùng câu; đổi Target số không lỗi', () => thu(() => {
+  /* N52 (chủ SP 18/11): CX sửa Target như QL (`cycle.edit` → `duocDoiKck`) — trước N52 xem trước báo CHI_DOI_KCK. */
+  check('OV13o-1 · CX (N52) đổi KCK cả lớp: xem trước không lỗi ở cột Target; đổi Target số không lỗi', () => thu(() => {
     const em = get(`SELECT s.id sid, cy.target_score tg, cy.khong_cam_ket kck FROM enrollments e JOIN students s ON s.id = e.student_id
       JOIN learning_cycles cy ON cy.student_id = s.id AND cy.status = 'active' WHERE e.class_id = ? AND e.status = 'active' ORDER BY s.id LIMIT 1`, ft);
     const cx = perm.loadPrincipal(CX);
     const kckMoi = d.chuTargetKck(em.tg ?? 6.5, !em.kck);
     const xt = suaCaLop.xemTruocSuaCaLop(cx, ft, { rows: [{ studentId: em.sid, target: kckMoi }] });
-    const vd = xt.rows[0].issues.find((i: any) => i.field === 'target');
-    assert(vd && vd.muc === 'loi' && vd.message === CHI_DOI_KCK, `xem trước: ${JSON.stringify(xt.rows)}`);
-    const e = loi(() => suaCaLop.luuSuaCaLop(cx, ft, { rows: [{ studentId: em.sid, target: kckMoi }], lyDoTarget: 'thử' }));
-    assert(e.status === 400 && String(e.message).endsWith(CHI_DOI_KCK), `lưu: ${e.status} ${e.message}`);
+    assert(!xt.rows[0].issues.some((i: any) => i.message === CHI_DOI_KCK), `xem trước: ${JSON.stringify(xt.rows)}`);
     const so = d.chuTargetKck(em.tg === 7 ? 6.5 : 7, !!em.kck);
     assert(suaCaLop.xemTruocSuaCaLop(cx, ft, { rows: [{ studentId: em.sid, target: so }] }).rows[0].issues.length === 0, 'Target số: không lỗi');
   }));

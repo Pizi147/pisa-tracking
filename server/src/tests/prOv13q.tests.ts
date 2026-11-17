@@ -166,13 +166,13 @@ export async function runPrOv13qTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ 4 · gia hạn + quyền (chỉ Chọn bước tiếp)
-  await checkAsync('Q13-4 · Gia hạn / Bỏ gia hạn chỉ ở Chọn bước tiếp: QL · TVV 200; GVCN · GVBM · Admin · CX 403; chờ kết quả 400; trước hôm nay / không sau hạn gốc 400; nhật ký + Lịch sử sửa', async () => {
+  await checkAsync('Q13-4 · Gia hạn / Bỏ gia hạn chỉ ở Chọn bước tiếp: QL · TVV (· CX N52) 200; GVCN · GVBM · Admin 403; chờ kết quả 400; trước hôm nay / không sau hạn gốc 400; nhật ký + Lịch sử sửa', async () => {
     const x = em({ exam_date: addDays(TODAY, -10) });
     await voiMayChu(TODAY, async (goi) => {
       assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 4) }))) === 400, 'chờ kết quả: không hạn → 400');
       await json(await goi(TVV, `/cycles/${x.cy}/outcome`, put({ ...KQ, ngayThi: addDays(TODAY, -10) })));   // hạn = hôm nay + 7
       const moi = addDays(TODAY, 10);
-      for (const u of [x.gvcn, x.gvbm, ADMIN, CX]) assert(await ma(await goi(u, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi }))) === 403, `vai ${u} phải 403`);
+      for (const u of [x.gvcn, x.gvbm, ADMIN]) assert(await ma(await goi(u, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi }))) === 403, `vai ${u} phải 403`);
       assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, -1) }))) === 400, 'trước hôm nay 400');
       assert(await ma(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: addDays(TODAY, 5) }))) === 400, 'không sau hạn gốc 400');
       const r = await json(await goi(QL, `/cycles/${x.cy}/han-sau-thi`, put({ han: moi, lyDo: 'Chờ gia đình quyết' })));

@@ -11,7 +11,7 @@ export const EN_HD3_ADMIN = {
   'Bài trong chi nhánh chưa có điểm, từ thứ Hai tuần Test.': 'A branch teacher’s test has no score yet, from Monday of the test week.',
   'Bài của tuần Test: chấm xong trước hết {han:cham_test}.': 'Tests of the test week: mark them by the end of {han:cham_test}.',
   'Báo cáo PH lớp chưa đủ / đợt quá hạn': 'Parent report incomplete / round overdue',
-  'Bước tiếp: Head hoặc TVV chọn, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.': 'Next step: a Head or consultant chooses, within {han:buoc_tiep_sau_thi} from the result date (<b>Extend</b> allowed); CX only views.',
+  'Bước tiếp: việc của Head hoặc TVV, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chọn thay được.': 'Next step: the Head or consultant task, within {han:buoc_tiep_sau_thi} from the day the result is in (<b>Extend</b> possible); CX can choose on their behalf.',
   'Bạn chỉ có việc Chấm điểm và Xuất báo cáo PH.': 'You only have Marking and Export parent report tasks.',
   'Bấm <b>Báo cáo PH ›</b> xem phần thiếu; đợt không cần: <b>Không báo cáo đợt này</b>.': 'Click <b>Parent report ›</b> to see what is missing; round not needed: <b>No report this round</b>.',
   'Bấm <b>Lưu lại</b> ở ô đó; xuất lỗi thì bấm lại nút xuất.': 'Click <b>Retry save</b> on that cell; export failed: click the export button again.',

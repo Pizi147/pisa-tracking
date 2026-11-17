@@ -400,7 +400,7 @@ export async function runPrBaoCaoPhTests(t: { check: any; assert: any; assertThr
     const ngan = doc('web/src/modules/students/NganXuatDs.tsx');
     assert(ngan.includes('VAI_XUAT_BC.includes(r)') && ngan.includes('coBc && (') && /setDem\(null\); setLoi\(null\);/.test(ngan), 'mẫu Báo cáo PH theo vai + đếm lại xoá lỗi cũ');
     /* Cùng một nguồn vai với máy chủ: Admin / TVV xuất được, GV không. */
-    assert(d.VAI_XUAT_BC.join() === 'manager,system_admin,office_admin,consultant' && !d.VAI_XUAT_BC.includes('teacher'), d.VAI_XUAT_BC.join());
+    assert(d.VAI_XUAT_BC.join() === 'manager,system_admin,office_admin,consultant,cx' && !d.VAI_XUAT_BC.includes('teacher'), d.VAI_XUAT_BC.join());
     /* Máy chủ (đối chiếu web): lớp thường, em chưa có điểm bài → sửa tay bị chặn (web không còn nút). */
     let daKiem = false;
     thu(() => {

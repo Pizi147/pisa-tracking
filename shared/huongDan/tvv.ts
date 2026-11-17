@@ -4,7 +4,7 @@
  * Sự thật mã (kiểm 13/11): TVV có Công việc CHỈ việc của mình — một tab, bốn nhóm (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ); không Test;
  * Case, điểm, Ý thức, Phối hợp SOS chỉ xem (ngoại lệ: ghi kết quả Báo PH); sửa thông tin / Target / Tạm dừng / thi thật / Lộ trình đang học / Môn học;
  * ở Hồ sơ HV các việc là NÚT trên đầu hồ sơ (không phải ⋯ — `vaiXemHocVien`). `lam` là MỘT nguồn (xem `ql.ts`). CX dùng lại phần lớn tệp này
- * (`cx.ts`, CX KHÔNG đổi Lộ trình / Môn học, không Báo cáo PH), Head tutor lấy Hồ sơ cá nhân (`headTutor.ts`).
+ * (`cx.ts`, N52: CX làm thay phía TVV, không có việc của mình), Head tutor lấy Hồ sơ cá nhân (`headTutor.ts`).
  */
 import { HD_GV } from './gv.ts';
 import type { HuongDan, ManHd, MucHd, TinhHuongHd, TuHd, ViecHd, ViecVaiKhac } from './kieu.ts';
@@ -235,7 +235,7 @@ export const VAI_KHAC_TVV: ViecVaiKhac[] = [
 
 /* ---------------------------------------------------------------- Màn dùng chung TVV / CX */
 
-const THI_THAT_CX: MucHd = { id: 'cx-hv-thi-that', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET).', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.', 'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> — Head hoặc TVV chọn; CX chỉ xem.'] };
+const THI_THAT_CX: MucHd = { id: 'cx-hv-thi-that', viec: 'thi-that', ten: 'Ghi kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET).', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.', 'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> — việc của Head hoặc TVV; CX chọn thay được.'] };
 const THI_THAT_TVV: MucHd = { id: 'tvv-hv-thi-that', viec: 'thi-that', ten: 'Cập nhật kết quả thi thật', buoc: ['Bấm <b>Kết quả thi thật</b> trên đầu hồ sơ (lộ trình FT hoặc KET / PET), hoặc <b>Cập nhật kết quả thi thật ›</b> ở thanh Việc cần làm.', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>.', 'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> ngay.'] };
 
 /** Phần CHỈ của TVV (CX không có): mảng literal được gõ theo kiểu đích — spread `cx ? [] : […]` làm chuỗi thành `string`. */
@@ -250,13 +250,13 @@ export const manHoSoHv = (cx = false): ManHd => ({
   khongLam: [KHONG_GV, KHONG_QL],
   muc: [
     { id: 'tvv-hv-nut', ten: 'Nút trên đầu hồ sơ', buoc: cx
-      ? ['<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.', 'CX không đổi Lộ trình đang học, Môn học; không chọn Bước tiếp.']
+      ? ['<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.', 'CX làm thay TVV: đổi Lộ trình đang học, Môn học, chọn Bước tiếp; không có việc của mình.']
       : ['<b>Sửa thông tin</b> · <b>Tạm dừng / Kết thúc học</b> · <b>Bước tiếp…</b> (khi đã chọn) · <b>Kết quả thi thật</b> · <b>Lịch sử</b>; em đang Tạm dừng: <b>Quay lại học</b>.',
         'Thanh <b>Việc cần làm</b> đầu hồ sơ: <b>Chọn bước tiếp ›</b> · <b>Cập nhật kết quả thi thật ›</b> khi là việc của bạn; bấm dòng mở panel ngay tại hồ sơ.',
         '<b>+ Task</b> đầu hồ sơ: <b>Hỏi tình hình học tập</b> — gửi GVCN của em.'] },
     cx ? THI_THAT_CX : THI_THAT_TVV,
     { id: 'tvv-hv-tab', ten: 'Ba tab', buoc: ['<b>Học thuật</b>: điểm, Case, PA — chỉ xem.',
-      cx ? '<b>Ý thức & Phối hợp</b>: <b>Vi phạm</b> và <b>Phối hợp SOS</b> — chỉ xem; cột báo PH ghi “Chờ TVV” hoặc kết quả.'
+      cx ? '<b>Ý thức & Phối hợp</b>: ghi <b>Vi phạm</b>, xác nhận / duyệt xử lý; <b>Ghi kết quả báo PH</b> thay TVV; <b>Phối hợp SOS</b> chỉ xem (trừ báo PH sau meeting).'
         : '<b>Ý thức & Phối hợp</b>: <b>Vi phạm</b> › nhóm <b>Chờ TVV báo PH</b> › <b>Ghi kết quả báo PH</b>; <b>Phối hợp SOS</b> chỉ xem (trừ <b>Ghi kết quả</b> sau meeting).',
       '<b>Lộ trình & lớp</b>: lưới tuần theo lớp, mọi lượt Test.'] },
   ],
@@ -373,11 +373,11 @@ const TINH_HUONG_TVV: TinhHuongHd[] = [
     tuKhac: ['chuyển lớp', 'đổi lớp', 'transfer'],
   },
 ];
-/** HD3-3 — Trường hợp CX gặp (CX không Công việc; chỉ xem phần lớn). */
+/** HD3-3 — Trường hợp CX gặp (N52: CX không có việc của mình; học thuật chỉ xem). */
 export const TINH_HUONG_CX: TinhHuongHd[] = [
   {
     id: 'cx-chi-xem', ten: 'Không thấy nút / chỉ xem',
-    may: ['CX không có Công việc; Case, điểm, Ý thức, Phối hợp SOS chỉ xem.'],
+    may: ['CX không có việc của mình; học thuật (điểm, Case, PA) chỉ xem.'],
     ban: 'Việc của người khác thì nhờ TVV, GV, GVCN hoặc Head.',
     ai: ['Chọn bước tiếp sau thi: Head hoặc TVV.'],
     tuKhac: ['quyền', 'chỉ xem', 'permission'],
@@ -472,9 +472,9 @@ export const LUAT_TVV: MucHd[] = [
   { id: 'tvv-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['Nhập được cả khi em đã Lưu trữ.', 'Có kết quả → việc <b>Chọn bước tiếp</b>; Head hoặc TVV chọn. Hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (hoặc từ ngày thi nếu muộn hơn), <b>Gia hạn</b> được.'] },
   { id: 'tvv-luat-bao-ph', ten: 'Báo PH vi phạm', buoc: ['GVCN lưu xử lý Nâng 1 bậc là có việc ngay cho TVV của em; cách khác có việc khi Head duyệt hoặc máy chốt; hạn {han:bao_ph_vi_pham}, tính cả ngày lưu.',
     'Chưa liên hệ được: việc vẫn mở, giữ hạn. Sửa hạn: TVV, GVCN lớp em, Head; không trần, không xin duyệt.', 'GVCN thu hồi lần xử lý: lần báo của bạn giữ trong lịch sử; Head nhờ báo lại thì có việc mới.'] },
-  { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['Phối hợp SOS chỉ GVCN làm; Head theo dõi và làm thay. TVV, CX chỉ xem.',
+  { id: 'tvv-luat-phoi-hop', ten: 'Phối hợp SOS', buoc: ['Phối hợp SOS chỉ GVCN làm; Head theo dõi và làm thay. TVV chỉ xem; CX làm thay phần TVV.',
     'Ngoại lệ: GVCN xác nhận meeting CX/GĐCN xong thì TVV báo PH, xếp họp, ghi kết quả; hạn theo cấu hình Case & SOS. Em chưa có TVV: GVCN báo.'] },
-  { id: 'tvv-luat-lo-trinh', ten: 'Đổi lộ trình đang học', buoc: ['TVV, GVCN, Head đổi; CX không. MT đã có điểm giữ nguyên, MT chưa thi xếp lại theo lộ trình mới.', 'Có nhật ký ở <b>Lịch sử</b>.'] },
+  { id: 'tvv-luat-lo-trinh', ten: 'Đổi lộ trình đang học', buoc: ['TVV, GVCN, Head, CX đổi. MT đã có điểm giữ nguyên, MT chưa thi xếp lại theo lộ trình mới.', 'Có nhật ký ở <b>Lịch sử</b>.'] },
   { id: 'tvv-luat-hoc-thuat', ten: 'Học thuật', buoc: ['Điểm, Case, PA, Ý thức: GV và Head ghi; TVV xem.'] },
 ];
 

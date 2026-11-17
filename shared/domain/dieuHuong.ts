@@ -28,6 +28,8 @@ export type NavQuyen = {
   workApprove: boolean; workRequests: boolean;
   /** PR-OV2a: Công việc chỉ nhóm Chấm điểm + Nhắc (vai Admin). */
   workChamDiem: boolean;
+  /** N52: CX — Công việc xem mọi việc trong phạm vi để làm thay, không có việc của mình (mặc định "Tất cả", không hộp Chờ bạn duyệt). */
+  workCx?: boolean;
   /** PR-XUAT: nút Xuất Excel kết quả Test — Quản lý/Quản trị theo phạm vi, GVCN lớp mình (không phải GVBM). */
   xuatMt: boolean;
   /** TU-a: trang Tutor (`tutor.view`) — Head tutor, Quản trị, QL. */

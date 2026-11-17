@@ -8,7 +8,7 @@
  */
 import { db, tx } from '../db.ts';
 import { badRequest, forbidden, notFound, nowIso } from '../util.ts';
-import { can, laAdminCua, type Principal } from '../permissions.ts';
+import { can, grantPhiaTvv, laAdminCua, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { closeCasesBySystem } from '../cases/systemClose.ts';
 import { capNhatConOCho } from './conOCho.ts';
@@ -44,12 +44,12 @@ export function docMon(mon: MonVao): string | null {
 }
 
 /**
- * Ai đổi được môn (chủ SP 26/10 đêm): QL, Quản trị, GVCN (`student.edit` theo phạm vi) và TVV (vai `consultant`, `student.edit_more` đúng chi nhánh).
- * CX (cũng `student.edit_more`) và GV bộ môn không đổi được.
+ * Ai đổi được môn (chủ SP 26/10 đêm): QL, Quản trị, GVCN (`student.edit` theo phạm vi) và phía TVV (vai TVV / CX — N52, `student.edit_more` đúng chi nhánh).
+ * GV bộ môn không đổi được.
  */
 export function duocDoiMon(p: Principal, ctx: { studentId?: number; classId?: number }): boolean {
   return can(p, PERMISSIONS.STUDENT_EDIT, ctx)
-    || p.grants.some((g) => g.roleKey === 'consultant' && can({ ...p, grants: [g] }, PERMISSIONS.STUDENT_EDIT_MORE, ctx));
+    || p.grants.some((g) => grantPhiaTvv(g) && can({ ...p, grants: [g] }, PERMISSIONS.STUDENT_EDIT_MORE, ctx));
 }
 
 /**

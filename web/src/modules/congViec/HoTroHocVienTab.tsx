@@ -102,9 +102,11 @@ export function HoTroHocVienTab() {
   const branchId = params.get('cn') === 'tat-ca' ? null : params.get('cn') ? Number(params.get('cn')) : macDinh;
   /* PR-OV2a: Admin (`nav.workChamDiem`) xem việc Chấm điểm của GV như Quản lý, chỉ nhóm đó (OV-12h bỏ Nhắc). */
   const chiChamDiem = !!session?.nav?.workChamDiem;
-  const laQuanLy = !!session?.nav?.workOps || chiChamDiem;
+  /* N52: CX xem mọi việc trong phạm vi như QL (Của tôi / Của GV / Tất cả) nhưng không có việc của mình → mặc định "Tất cả". */
+  const laCx = !!session?.nav?.workCx && !session?.nav?.workOps;
+  const laQuanLy = !!session?.nav?.workOps || chiChamDiem || laCx;
   const uid = session?.user?.id;
-  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
+  const nguoi = laQuanLy ? thamSoNguoi(params.get('nguoi') ?? (chiChamDiem ? null : laCx ? nguoiDaNho(uid) ?? 'tat-ca' : nguoiDaNho(uid) ?? 'toi')) : 'tat-ca';
   /* UI-CV-TVV (mockup `tvv.html`): TVV — chỉ việc của mình, chia nhóm theo việc TVV (Báo PH · Sau thi · Chốt ngày thi · Bổ sung hồ sơ). */
   const laTvv = !laQuanLy && !!session?.nav?.hvCuaToi;
   const hep = useManHinh('(max-width: 639px)');

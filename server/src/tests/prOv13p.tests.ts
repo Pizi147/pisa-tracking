@@ -146,11 +146,11 @@ export async function runPrOv13pTests(t: YThucTestKit) {
       }
     });
 
-    await checkAsync('OV13p-4 · TVV / CX vẫn 403: chuyển lớp, lưu trữ, phân công GV', async () => {
+    await checkAsync('OV13p-4 · TVV / CX vẫn 403: lưu trữ, phân công GV; TVV 403 chuyển lớp (N52: CX chuyển lớp đi cùng `class.edit`)', async () => {
       const sai: string[] = [];
       for (const [ten, ck] of [['TVV', tv], ['CX', cx]] as const) {
         for (const [viec, m, url, body] of [
-          ['Chuyển lớp', 'POST', `/students/${em.id}/transfer`, { toClassId: lopCpKhac, lyDo: 'thử' }],
+          ...(ten === 'TVV' ? [['Chuyển lớp', 'POST', `/students/${em.id}/transfer`, { toClassId: lopCpKhac, lyDo: 'thử' }] as const] : []),
           ['Lưu trữ', 'POST', '/hang-loat-hoc-vien', { viec: 'luu-tru', studentIds: [em.id] }],
           ['Phân công GV', 'PUT', `/classes/${lopTvv}/teachers`, { slots: [] }],
         ] as const) {
