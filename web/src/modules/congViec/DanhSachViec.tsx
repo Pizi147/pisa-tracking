@@ -369,7 +369,10 @@ const DongPhu = ({ nguoi, ds, chip, chipSau = 0, children }: { nguoi?: ReactNode
     {/* GD-4d (⑤ H5): thẻ phụ dòng việc (vd "bậc kế tiếp: Report 2") — tên bậc viết hoa, dạng tắt. */}
     {ds.map((x, i) => <Fragment key={i}>
       <span className={`whitespace-nowrap sm:shrink-0 ${THE_PHU}`}>{typeof x === 'string' ? bacNgan(x) : x}{cham(i)}</span>
-      {chip && i === Math.min(chipSau, ds.length - 1) && <span className="inline-flex shrink-0 items-center [&>span]:!h-5 [&>span]:!min-h-0">{chip}</span>}
+      {chip && i === Math.min(chipSau, ds.length - 1) && <>
+        <span className="inline-flex shrink-0 items-center [&>span]:!h-5 [&>span]:!min-h-0">{chip}</span>
+        {i < ds.length - 1 && <span aria-hidden className="sm:hidden">·</span>}
+      </>}
     </Fragment>)}
     {chip && !ds.length && <span className="inline-flex shrink-0 items-center [&>span]:!h-5 [&>span]:!min-h-0">{chip}</span>}
     {children}

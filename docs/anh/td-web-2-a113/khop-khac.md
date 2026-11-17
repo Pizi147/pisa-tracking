@@ -12,3 +12,9 @@
 
 Thao tác: không đổi (bấm tên / hàng / nút như cũ). KHÔNG còn: chip không ở tên nữa. Hình ảnh: chip giữ màu / chữ cũ; chỉ đổi vị trí + cao 20.
 Không đổi đường máy chủ, không thêm request / dòng đọc.
+
+Rà lại theo PTA Plan: 375 thêm "·" sau chip (nối "·" như các dòng khác: "Trịnh Gia Bảo · [Đạt kỳ vọng] · MT1"); ảnh chụp lại từ đầu nhóm "Phương án", cả 4 ảnh cùng vị trí.
+
+## Audit (nhanh, chỉ phần đổi ở `DanhSachViec.tsx`)
+- `impeccable detect` (regex, tệp tsx): 0 phát hiện (không chạy được quy tắc cần trang dựng — tính là dưới ước lượng, không phải "sạch" tuyệt đối).
+- web-design-guidelines, theo từng ý: chip không chỉ phân biệt bằng màu (có chữ "Đạt kỳ vọng"); dấu "·" `aria-hidden`; chip cao 20 = thẻ phụ, không cắt "…" (dòng phụ 1440 giữ `overflow-hidden`, chip ở vị trí thứ hai nên không bị cắt trước); 375 xuống dòng, không tràn ngang; không thêm request.
