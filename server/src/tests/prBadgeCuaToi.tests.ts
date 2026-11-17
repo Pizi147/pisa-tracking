@@ -46,8 +46,69 @@ export async function runPrBadgeCuaToiTests(t: { check: any; assert: any; P: any
     assert(coBadge > 0, 'seed phải có GV có việc cần làm ngay');
     const doc = (f: string) => fs.readFileSync(f, 'utf8');
     assert(/summary\?\.canLamNgay/.test(doc('web/src/App.tsx')), 'badge App đọc summary.canLamNgay');
-    assert(/soCuaToi\(dsGoc\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /k === 'toi' && hienSoToi \? soToi : null/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'ô Của tôi = soCuaToi, Của GV / Tất cả không số');
+    /* DEM-VIEC (chủ SP 18/11): nút "Của tôi" / "Của GV" / "Tất cả" đều không số — đầu trang "n việc · m quá hạn" là số duy nhất của danh sách. */
+    assert(!/soCuaToi\(dsGoc\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /nhan: LOC_NGUOI_VIEC_LABEL\[k\], so: null \}/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'nút lọc người không số');
     /* CV-TAB: đầu trang đếm demDongViec(items); badge tab đếm dòng nhìn thấy (badgeTab ∘ dongTab — CVT-2 so tổng với demDongViec). */
     assert(/demDongViec\(items\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /badgeTab\(dongCuaTab\(cuaBan\(items\), k\)/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'đầu nhóm đếm demDongViec');
+  });
+
+  /*
+   * DEM-VIEC (chủ SP 18/11, QT + QL CP: "thấy ghi có việc quá hạn nhưng vào xem không thấy gì"). Gốc: (1) badge / ô Tổng quan đọc `/my-work` mọi chi nhánh, Công việc
+   * đọc chi nhánh đang chọn; (2) Quản trị giữ MỌI việc của QL chi nhánh (em chưa có TVV, Chốt lộ trình, Kỳ vọng…) ở mọi chi nhánh — QL chi nhánh đó cũng giữ.
+   */
+  const { db, tx } = await import('../db.ts');
+  const { dongCuaToi } = await import('../../../shared/domain/index.ts');
+  const KHOA_QL = /^(kyvong|chotft|xetlai|owner|moc|thi_that|chot-ngay-thi|buoc_tiep|bao-ph):/;
+  const cnCoQl = () => {
+    const ds = (db().prepare(`SELECT DISTINCT COALESCE(ur.branch_id, 0) AS b FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN users u ON u.id = ur.user_id
+      WHERE r.key = 'manager' AND ur.status = 'active' AND u.status = 'active' AND u.deleted_at IS NULL`).all() as any[]).map((r) => r.b as number);
+    return (b: number | null) => b !== null && (ds.includes(0) || ds.includes(b));
+  };
+  check('BCT-3 (DEM-VIEC) · Quản trị: việc QL chi nhánh ở chi nhánh CÓ QL không vào "Của tôi" (badge, ô Tổng quan) — "Tất cả" vẫn có dòng, làm thay được; chi nhánh không còn QL → Quản trị giữ', () => {
+    const coQl = cnCoQl();
+    xoaNho();
+    const toi = mywork.myWork(P.admin, {});
+    for (const x of (toi.items as any[]).filter((y) => KHOA_QL.test(y.key))) assert(!coQl(x.cn ?? null), `Quản trị "Của tôi" còn ${x.key} ở chi nhánh ${x.cn} (có QL)`);
+    xoaNho();
+    const tatCa = (mywork.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).filter((y) => KHOA_QL.test(y.key) && coQl(y.cn ?? null) && y.ownerId === null);
+    assert(tatCa.length > 0 && tatCa.every((y) => !y.mine), `"Tất cả" phải còn việc QL chi nhánh, không của Quản trị: ${tatCa.length}`);
+    /* QL chi nhánh đó vẫn giữ đúng các việc này. */
+    xoaNho();
+    const qlMb = new Set((mywork.myWork(P.mbManager, {}).items as any[]).map((y) => y.key));
+    const cuaMb = tatCa.filter((y) => y.cn === P.mbManager.grants.find((g: any) => g.roleKey === 'manager').branchId && !/^(thi_that|chot-ngay-thi|buoc_tiep|bao-ph):/.test(y.key));
+    for (const y of cuaMb) assert(qlMb.has(y.key), `QL MB không còn giữ ${y.key}`);
+    /* Chi nhánh không còn QL nào (thử trong giao dịch, trả lại) → việc về Quản trị. */
+    const cn = tatCa[0].cn as number;
+    let coLai = false;
+    try {
+      tx(() => {
+        db().prepare(`UPDATE user_roles SET status = 'inactive' WHERE role_id IN (SELECT id FROM roles WHERE key = 'manager') AND (branch_id = ? OR branch_id IS NULL)`).run(cn);
+        xoaNho();
+        coLai = (mywork.myWork(P.admin, {}).items as any[]).some((y) => y.key === tatCa[0].key && y.mine);
+        throw new Error('tra-lai');
+      });
+    } catch (e: any) { if (e.message !== 'tra-lai') throw e; }
+    xoaNho();
+    assert(coLai, `chi nhánh ${cn} không còn QL: Quản trị phải giữ ${tatCa[0].key}`);
+  });
+
+  check('BCT-4 (DEM-VIEC) · mọi vai × chi nhánh: số ô / badge (summary) = số dòng Công việc "Của tôi" cùng đường (dòng `mine`); quá hạn = dòng quá hạn; web một đường', () => {
+    for (const p of [P.admin, P.mbManager, P.cpManager, P.bcManager, P.coreTeacher, P.subjectTeacher, P.sTeacher]) {
+      const cns = [null, ...new Set(p.grants.map((g: any) => g.branchId).filter((b: any) => b !== null))];
+      for (const branchId of cns) {
+        xoaNho();
+        const w = mywork.myWork(p, { branchId });
+        const ds = demDongViec((w.dong as any[]).filter((d) => d.mine));
+        assert(w.summary.viec === ds.n && w.summary.viecQuaHan === ds.quaHan && w.summary.canLamNgay === ds.canLamNgay
+          && demDongViec(dongCuaToi(w.dong as any[]) as any).n === ds.n, `${p.userId} cn ${branchId}: summary ${JSON.stringify(w.summary)} ≠ dòng Của tôi ${JSON.stringify(ds)}`);
+        if (branchId !== null) assert((w.dong as any[]).every((d) => d.cn == null || d.cn === branchId), `${p.userId}: việc chi nhánh khác lọt vào chi nhánh ${branchId}`);
+      }
+    }
+    const doc = (f: string) => fs.readFileSync(f, 'utf8');
+    assert(/useApi<[^>]+>\(duongViec, \[lanViec\]/.test(doc('web/src/App.tsx')) && /useDuongViecCuaToi\(\)/.test(doc('web/src/modules/students/StudentsPage.tsx')),
+      'badge App + HV & Lớp đọc đường useDuongViecCuaToi');
+    assert(/laQuanLy && nguoi !== 'toi'/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'Công việc "Của tôi" đọc đường của tôi (không nguoi=tat-ca)');
+    assert(/nguoi=toi&khung=tat-ca/.test(doc('web/src/modules/worklist/TongQuanV5.tsx')) && /loc=qua-han/.test(doc('web/src/modules/worklist/TongQuanV5.tsx')), 'ô Việc của tôi mở Của tôi mọi khung (không khung đã nhớ), "n quá hạn" mở lọc Quá hạn');
+    assert(/k: 'khung'/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')) && /onClick=\{xoaLoc\}>\{t\('Bỏ lọc'\)\}/.test(doc('web/src/modules/congViec/HoTroHocVienTab.tsx')), 'khung đã nhớ hiện chip ✕ + một bấm Bỏ lọc');
   });
 }
