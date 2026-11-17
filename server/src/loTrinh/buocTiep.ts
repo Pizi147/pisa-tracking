@@ -666,7 +666,7 @@ export function viecBuocTiep(p: Principal, f: { today: string; branchId: number 
   for (const c of ds) {
     if ((f.branchId && c.branch_id && c.branch_id !== f.branchId) || (f.studentId && c.student_id !== f.studentId)) continue;
     /* SV-TVV-VIEC: MỘT người giữ = TVV của em (không có → QL chi nhánh) — QL / TVV khác của chi nhánh vẫn chọn được (`coQuyenBuocTiep`) nhưng không là việc của họ. */
-    const chu = chuViecTvv(p, c.student_id, c.tvv ?? null, f.tatCa);
+    const chu = chuViecTvv(p, c.student_id, c.tvv ?? null, f.tatCa, c.branch_id ?? null);
     if (!chu) continue;
     const st = trangThaiSauThi(c, f.today);
     const han = st.han ?? f.today;

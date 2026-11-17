@@ -515,7 +515,9 @@ export async function runPrClTests(t: YThucTestKit) {
     const gvcn = ganGv(BE2.id, 6, null, true);
     const gvbm = ganGv(BE2.id, 7, 'reading');
     assert(!viecXetLai(gvcn, null).length && !viecXetLai(gvbm, null).length, 'GVCN / GVBM không có');
-    assert(viecXetLai(P.admin, null).some((x) => x.key === `xetlai:${BE2.id}`), 'QT có');
+    /* DEM-VIEC: chi nhánh có QL → Quản trị chỉ thấy ở "Tất cả" (làm thay), không vào "Của tôi". */
+    assert(!viecXetLai(P.admin, null).some((x) => x.key === `xetlai:${BE2.id}`)
+      && (mywork.myWork(P.admin, { nguoi: 'tat-ca' }).items as any[]).some((x) => x.key === `xetlai:${BE2.id}` && !x.mine), 'QT: chỉ ở "Tất cả" (làm thay)');
   });
 
   await checkAsync('CL-j · GET /classes/:id/xet-lai (lớp HIỆN TẠI, P9a): cùng em với việc + daChot.huong, final.tyLe, lopHienTai; lớp nguồn finished vẫn trả; lớp nguồn → em: []; GVCN → chỉ xem', async () => {

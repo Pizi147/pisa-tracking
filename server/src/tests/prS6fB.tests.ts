@@ -80,7 +80,8 @@ async function runTask12(t: YThucTestKit) {
     const u = doc('web/src/lib/useApi.ts');
     assert(/const dangBay = new Map<string, Promise<unknown>>\(\)/.test(u) && /dangBay\.delete\(/.test(u), 'useApi chưa gộp GET đang bay');
     const app = doc('web/src/App.tsx');
-    assert(/useApi<[^>]*>\([^;]*'\/my-work'/.test(app) && /summary\??\.canLamNgay\b/.test(app) && !app.includes('/my-work/dem'), 'App: badge GV');
+    /* DEM-VIEC: đường badge từ `useDuongViecCuaToi` (`/my-work` + chi nhánh mặc định với vai không phải GV thuần). */
+    assert(/useApi<[^>]*>\(duongViec,/.test(app) && /'\/my-work'/.test(doc('web/src/lib/viecCuaToi.ts')) && /summary\??\.canLamNgay\b/.test(app) && !app.includes('/my-work/dem'), 'App: badge GV');
     assert(!doc('server/src/routes/index.ts').includes("'/my-work/dem'"), 'route /my-work/dem còn');
   });
 
