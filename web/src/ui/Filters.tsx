@@ -245,10 +245,10 @@ export function nhoChiNhanh(uid: number | undefined, id: number | null): void {
  * Chi nhánh mặc định khi URL không có `cn` (và không trỏ một thẻ / lớp — `coDichLienKet`): lần tự chọn trước (còn trong quyền) → gợi ý của máy chủ (Quản lý/Quản trị) → `cuoi` → Tất cả.
  * Ô chi nhánh ẩn (≤ 1 chi nhánh) → null như hôm nay. Không ghi URL, không ghi localStorage — chỉ lần người dùng tự chọn mới nhớ.
  */
-export function useChiNhanhMacDinh(o?: { cuoi?: number | null }): number | null {
+export function useChiNhanhMacDinh(o?: { cuoi?: number | null; /** DEM-VIEC: khung App (badge) — không theo link trỏ thẻ / lớp của trang đang mở. */ boQuaDich?: boolean }): number | null {
   const { session, branchCount } = useSession();
   const [params] = useSearchParams();
-  if (branchCount <= 1 || coDichLienKet(params)) return null;
+  if (branchCount <= 1 || (!o?.boQuaDich && coDichLienKet(params))) return null;
   const nho = docChiNhanhDaNho(session?.user?.id);
   const g = session?.grants ?? [];
   /* ponytail: chi nhánh ngừng hoạt động vẫn qua kiểm này — người dùng chọn lại một lần; kiểm theo /ref/branches nếu gặp */

@@ -3,7 +3,7 @@ import { Navigate, useSearchParams } from 'react-router-dom';
 import { LopCuaToi } from '../congViec/LopCuaToi.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { useApi } from '../../lib/useApi.ts';
-import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
+import { BranchFilter, nhoChiNhanh, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
 import { LichSapToi } from './Highlights.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { MockTestAdmin } from './MockTestAdmin.tsx';
@@ -26,6 +26,7 @@ export default function OverviewPage() {
   const macDinh = useChiNhanhMacDinh();
   const branchId = params.get('cn') ? Number(params.get('cn')) : macDinh;
   const setBranchId = (id: number | null) => {
+    nhoChiNhanh(session?.user?.id, id);   // DEM-VIEC: bấm dòng chi nhánh cũng nhớ — ô "Việc của tôi" (badge) cùng chi nhánh với trang
     const next = new URLSearchParams(params);
     if (id) next.set('cn', String(id)); else next.delete('cn');
     setParams(next);

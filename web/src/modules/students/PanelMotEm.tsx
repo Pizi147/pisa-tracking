@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { lazyHop } from '../../ui/lazyHop.tsx';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
+import { useDuongViecCuaToi } from '../../lib/viecCuaToi.ts';
 import { invalidate } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -68,7 +69,8 @@ export function PanelMotEm({ studentId, caseMo, viecTrang, onClose, onDoi }: {
   /* QL / Quản trị làm thay được mọi việc trong phạm vi → đọc "Của GV" (tất cả); GV chỉ việc của mình. */
   const xemTatCa = !!session?.nav?.workOps;
   const { data, error, reload } = useApi<DuLieuEm>(`/hoc-vien-lop/em/${studentId}`, [studentId]);
-  const work = useApi<{ dong: WorkItem[] }>(chiDoc ? null : `/my-work${xemTatCa ? '?nguoi=tat-ca' : ''}`);
+  const duongToi = useDuongViecCuaToi();   // DEM-VIEC: GV — đúng đường badge (đã nạp)
+  const work = useApi<{ dong: WorkItem[] }>(chiDoc ? null : xemTatCa ? '/my-work?nguoi=tat-ca' : duongToi);
   const [view, setView] = useState<{ caseId: number; viec?: ViecCase; paId?: number | null } | null>(null);
   const [mo, setMo] = useState<Set<number>>(() => new Set(caseMo ? [caseMo] : []));
   /* OV-13b: lần ghi nhanh vừa lưu theo Case — dòng "✓ Đã lưu · … · Hoàn tác" đứng lại sau khi việc rời danh sách. */

@@ -41,7 +41,8 @@ export async function runPrMoTatCaTests(t: YThucTestKit) {
     const s = doc('web/src/modules/worklist/TongQuanV5.tsx');
     /* XM 3 (rà 11/11): ô là component chung `OViecCuaToi` (QL · TVV · Admin) — Link ở đó. LG-7: bỏ Tổng quan GV (GD-1: trang đầu GV = Công việc). */
     const o = s.slice(s.indexOf('export function OViecCuaToi'), s.indexOf('/* ───────────── TVV'));
-    assert(/<Link to="\/cong-viec"[^\n]*>\{o\}<\/Link>/.test(o), 'cả ô bọc Link /cong-viec');
+    /* DEM-VIEC: cả ô bấm qua số chính `so-chinh` (O-TQ-BAM) — mở Công việc "Của tôi" mọi khung; "n quá hạn" mở lọc Quá hạn. */
+    assert(/<SoDen n=\{n!\} to=\{den\} className="so-chinh" \/>/.test(o) && /'\/cong-viec\?nguoi=toi&khung=tat-ca'/.test(o), 'cả ô bấm mở /cong-viec Của tôi');
   });
 
   check('MTC-5 · EN có đủ chữ mới', () => {

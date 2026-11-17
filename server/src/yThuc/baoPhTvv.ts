@@ -21,6 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
+import { giuViecQl } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
@@ -426,6 +427,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     .filter((a) => a.isCore && a.effectiveFrom <= o.today && (!a.effectiveTo || a.effectiveTo >= o.today)).map((a) => a.classId))];
   if (!ql && !tvv && !lopCn.length) return [];   // GV không giữ việc này — khỏi tốn câu
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
+  const giu = giuViecQl(p);
   const COT = `SELECT v.id, v.student_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
@@ -451,7 +453,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   const items: WorkItem[] = [];
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
-    let ownerId: number;
+    let ownerId: number | null;
     if (r.tvv === p.userId) ownerId = p.userId;
     else if (r.phoi_hop_id != null && !r.tvv && r.gvcn_id) {
       /* PHOI-HOP-V2: em chưa có TVV — GVCN giữ; QL "Tất cả" thấy dòng của GVCN đó. */
@@ -460,7 +462,8 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
       else continue;
     }
     else if (!trongPv(r.branch_id)) continue;
-    else if (!r.tvv) ownerId = p.userId;
+    /* DEM-VIEC: em chưa có TVV → QL chi nhánh giữ; Quản trị chỉ giữ khi chi nhánh không có QL (`giuViecQl`), còn lại thấy ở "Tất cả" (chưa ai giữ). */
+    else if (!r.tvv) { if (giu(r.branch_id)) ownerId = p.userId; else if (o.tatCa) ownerId = null; else continue; }
     else if (o.tatCa) ownerId = r.tvv;
     else continue;
     const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : [], r.han_chon);

@@ -203,7 +203,7 @@ export async function runPrLopTests(t: YThucTestKit) {
       JOIN students s ON s.id = e.student_id WHERE c.code = 'MB FT 101' AND e.status = 'active' AND s.archived_at IS NULL LIMIT 1`).get() as any;
     const caseId = Number(conn.prepare(`INSERT INTO sos_cases (student_id, category, topic, origin_kind, status, owner_user_id, created_at)
       VALUES (?, 'reading', 'reading', 'teacher_report', 'open', NULL, ?)`).run(hv.sid, new Date().toISOString()).lastInsertRowid);
-    const dong = () => (mywork.myWork(P.admin).items as any[]).find((i) => i.key === `owner:${caseId}`);
+    const dong = () => (mywork.myWork(P.mbManager).items as any[]).find((i) => i.key === `owner:${caseId}`);   // DEM-VIEC: việc của QL chi nhánh (Quản trị chỉ ở "Tất cả")
     try {
       conn.prepare(`UPDATE teacher_assignments SET status = 'tam_lop9' WHERE class_id = ? AND skill = 'reading' AND status = 'active'`).run(hv.cid);
       const r = dong();
