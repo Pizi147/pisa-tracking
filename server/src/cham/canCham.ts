@@ -146,7 +146,8 @@ export type NhacLichSu = {
  * K2-32 — LƯỢT MT LỊCH SỬ CÒN THIẾU ĐIỂM, gom theo lớp: một dòng nhắc MỜ ở Lịch Test và một việc xám ở Việc cần làm (không số đỏ,
  * không vào dải số hay Nợ, không hạn). Chỉ lớp người xem là GVCN hoặc Quản lý (xếp tuần được lớp đó). Một câu cho mọi lớp.
  */
-export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null } = {}): NhacLichSu[] {
+export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; branchId?: number | null;
+  /** TD-VIEC-2: nơi gọi chỉ dùng lớp `loc` trả true (QL "Của tôi" — lớp chưa có GVCN khác) → chỉ đọc lượt các lớp đó. */ loc?: (classId: number) => boolean } = {}): NhacLichSu[] {
   if (o.classIds && !o.classIds.length) return [];
   /*
    * GIAM-DOC-0611f (Turso 30/10–06/11: câu này 5,3 K dòng / lần × 2,55 K lần): không truyền lớp → trước đọc MỌI lượt MT lịch sử còn trống cả hệ thống (bản chính 641)
@@ -160,6 +161,10 @@ export function mtLichSuChuaNhap(p: Principal, o: { classIds?: number[] | null; 
       o = { ...o, classIds: [...bangLop()].filter(([id, l]) => cn.has(l.branchId) || isCoreTeacherOf(p, id)).map(([id]) => id) };
       if (!o.classIds!.length) return [];
     }
+  }
+  if (o.loc) {
+    o = { ...o, classIds: (o.classIds ?? [...bangLop().keys()]).filter(o.loc) };
+    if (!o.classIds!.length) return [];
   }
   /* T23 (PR-MTa): ô "-" (không dự thi) của MT cũ không còn là ô chưa nhập — chỉ nhắc lượt còn ô trống thật. */
   const where = ['a.lich_su = 1', `a.status = 'planned'`, `c.status = 'active'`, `EXISTS (SELECT 1 FROM attempt_skills k
