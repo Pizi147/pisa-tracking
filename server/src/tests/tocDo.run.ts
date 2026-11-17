@@ -1497,9 +1497,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        Trước (main 16/11 sau AU-SO): QT toi 11db1ca94e232a13, GVCN toi 5b567fb9fc7aa168, GVBM toi 9dc4aef5f266094a, GVCN_THUONG toi 5b567fb9fc7aa168, QL tat-ca 7441e526cfa9d8c7,
        QT tat-ca 41c9031fd1f7f54f, QT tat-ca cn 218778b5e821a297, QL gvcn ff446108d217da2d, GVS toi 7a4bed4a0aeddaec */
     /* HEAD (chủ SP 18/11): chụp lại 10 băm — đổi CÓ CHỦ Ý: chữ vai Quản lý / QL trong việc / lý do đổi thành "Head" (ADMIN toi giữ). */
-    'QL toi': 'bae55443ea652c0f', 'QT toi': 'e6ce92ac5383842d', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '48f85bbf269d190a',
-    'QT tat-ca cn': '74fce9d8e33ac72f', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
+    /* DEM-VIEC (chủ SP 18/11): chụp lại 3 băm Quản trị (QT toi / tat-ca / tat-ca cn) — đổi CÓ CHỦ Ý: việc của QL chi nhánh (em chưa có TVV, Chốt lộ trình, Kỳ vọng, Xét lại,
+       Xếp lịch MT, Phân công người phụ trách) ở chi nhánh có QL không còn là của Quản trị: "Của tôi" bỏ dòng, "Tất cả" giữ dòng với `mine: false`, `ownerId: null`.
+       8 băm vai khác giữ nguyên. Trước: QT toi e6ce92ac5383842d, QT tat-ca 48f85bbf269d190a, QT tat-ca cn 74fce9d8e33ac72f */
+    'QL toi': 'bae55443ea652c0f', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '0b4978eb4ee4b434',
+    'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

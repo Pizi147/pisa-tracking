@@ -37,7 +37,7 @@ import { mtLichSuChuaNhap } from '../cham/canCham.ts';
 import { trangThaiYThuc, ungVienVaThe } from '../yThuc/trangThai.ts';
 import { viecThiThat } from '../loTrinh/thiThat.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
-import { viecHoSoTvv } from './viecTvv.ts';
+import { giuViecQl, viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
@@ -846,6 +846,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   const xemNguoiKhac = xemViec !== null;
   const tatCa = f.nguoi === 'tat-ca' && xemNguoiKhac;
+  /* DEM-VIEC: việc của QL chi nhánh — Quản trị chỉ giữ ở chi nhánh không có QL (`giuViecQl`). Không giữ: "Của tôi" bỏ, "Tất cả" còn dòng (chưa ai giữ, làm thay được). */
+  const giuQl = giuViecQl(p);
+  const cnLop = (classId: number | null | undefined) => (classId ? bangLop().get(classId)?.branchId ?? null : null);
   /* PR-UXF-a T65: em Tạm dừng không sinh việc nhập điểm. */
   /*
    * TD4: Công việc chỉ đọc lượt CÓ THỂ còn ô cần chấm (`chiConO`) — trước đọc mọi lượt trong phạm vi. XEP-MT-NHAC: bỏ lượt chưa tuần (hết việc "Chốt tuần MT").
@@ -1167,6 +1170,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * chỉ trả lớp người xem chốt được (`class.edit` = quyền ra lệnh): badge, "Của tôi · Quá hạn" đếm như Xét lại lộ trình (P1 G5-01, rà 11/11).
    */
   for (const x of co('chot_len_ft') ? lopChoChotLoTrinh(p, f.branchId ?? null, today) : []) {
+    const minh = giuQl(cnLop(x.classId));
+    if (!minh && !tatCa) continue;
     const chu = chuViecChotLoTrinh(x);
     items.push({
       key: `chotft:${x.classId}`, group: 'chot_len_ft', urgency: urgencyOf(x.han, today),
@@ -1175,12 +1180,14 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       reason: chu,
       tieuDe: `Chốt lộ trình · ${x.code}`, actionLabel: 'Cuối khoá ›',
       href: `/hoc-vien/lop/${x.classId}?xem=cuoi-khoa`,
-      ownerId: null, owner: null, mine: true, due: x.han, statusLabel: 'Chưa chốt',
+      ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa chốt',
     });
   }
 
   // ------------------------------------------------- 2d'. P9a (N21): Xét lại lộ trình — một việc mỗi lớp em ĐANG học (QL chi nhánh lớp đó), hạn sớm nhất, hết hạn tự giữ (cùng hàm với GET /classes/:id/xet-lai)
   for (const x of co('xet_lai_lo_trinh') ? emXetLaiLoTrinh(p, f.branchId ?? null, today) : []) {
+    const minh = giuQl(cnLop(x.lopId));
+    if (!minh && !tatCa) continue;
     const ten = x.em.map((e) => (e.lyDo.ma === 'd' ? `${e.ten} · ${e.lyDo.chu}` : e.final.tyLe !== null ? `${e.ten} ${chuTyLeXetLai(e.final.tyLe)}` : e.ten));
     items.push({
       key: `xetlai:${x.lopId}`, group: 'xet_lai_lo_trinh', urgency: urgencyOf(x.han, today),
@@ -1191,7 +1198,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Xét lại lộ trình · ${x.code} · ${x.em.length} em`, actionLabel: 'Xét lại ›',
       href: `/hoc-vien/lop/${x.lopId}?viec=xet-lai`,
       /* P9a: việc của chính QL đang xem (chỉ người quyết được mới có dòng) — thanh Việc cần làm hồ sơ lớp lấy dòng `mine`. */
-      ownerId: null, owner: null, mine: true, due: x.han, statusLabel: 'Chưa quyết',
+      ownerId: null, owner: null, mine: minh, due: x.han, statusLabel: 'Chưa quyết',
     });
   }
 
@@ -1438,7 +1445,9 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
     const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
     const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
+    const qlGiu = laCuoiKhoa && cuaGv && giuQl(cnLop(r.cur_class_id));
     if (!gvcn && !cuaGv) continue;
+    if (laCuoiKhoa && !gvcn && !qlGiu && !tatCa) continue;
     items.push({
       key: `baoph:${r.id}`, group: 'phoi_hop', urgency: 'normal',
       studentId: r.student_id, studentName: r.full_name ?? 'Học viên',
@@ -1450,7 +1459,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Báo PH kết quả Test · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress')}`,
       actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
-      ownerId: gvcn || (laCuoiKhoa && cuaGv) ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || (laCuoiKhoa && cuaGv),
+      ownerId: gvcn || qlGiu ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || qlGiu,
       due: null, statusLabel: 'Chưa làm',
     });
   }
@@ -1603,6 +1612,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       for (const r of sau) {
         if (f.branchId && r.branch_id !== f.branchId) continue;
         if (r.sau_thi || !can(p, PERMISSIONS.CASE_APPROVE, { classId: r.class_id, studentId: r.sid })) continue;   // N46: lộ trình đã có KQ thi thật
+        const minh = giuQl(r.branch_id ?? null);
+        if (!minh && !tatCa) continue;
         const v = viecMoc(r);
         /* XEP-MT-NHAC (chủ SP 07/11): "Xếp lịch MTn" chỉ khi lộ trình thiếu MT — đủ 3 (RF 2) MT đã có thì không nhắc. */
         if (!v.thi && !thieuMt(r.so_mt_co, lichMtCua({ lich_mt: r.lop_lich_mt, route: r.lop_route }, r.route).length)) continue;
@@ -1618,7 +1629,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
           attemptId: null, attemptNo: r.attempt_no ?? null, caseId: r.case_id, level: null, contextLabel: null, count: null,
           reason: v.reason, tieuDe: v.tieuDe, phu: v.phu,
           actionLabel: v.thi ? 'Nhập ngày thi' : 'Xếp lịch', href: r.sid ? `/hoc-vien/${r.sid}` : '/hoc-vien',
-          ownerId: p.userId, owner: null, mine: true, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
+          ownerId: minh ? p.userId : null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có lịch', boQuaDuoc: true,
         });
       }
     }
@@ -1634,6 +1645,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    */
   /* CV-LOI: cùng nguồn với số Tổng quan `case-chua-co-nguoi-phu-trach` (`caseChuaCoNguoi`) — số trên Tổng quan = số dòng ở đây. */
   for (const c of !co('no_owner') ? [] : caseChuaCoNguoi(p, f.branchId ?? null, caseMo.filter((x) => x.chua_co_nguoi).map((x) => ({ ...x, eff_branch_id: x.cn_du })))) {
+    const minh = giuQl(cnLop(c.eff_class_id) ?? c.eff_branch_id ?? null);
+    if (!minh && !tatCa) continue;
     const head = caseHeadline({
       summary: c.summary, originKind: c.origin_kind, sosLevel: c.sos_level, attemptNo: c.attempt_no,
       attemptKind: c.attempt_kind ?? null,
@@ -1655,7 +1668,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       href: chon ? duongHoSoHocVien(c.eff_student_id, { caseId: c.id }) : `/hoc-vien/lop/${c.eff_class_id}?viec=phan-cong`,
       /* MA-QL-VIEC (PTA 16/11): việc CỦA người xem như Chốt lộ trình — `caseChuaCoNguoi` chỉ trả Case người xem phân công được (`class.assign` /
          `case.approve`), nên vào "Của tôi", chuông, badge (cùng hàm đếm). */
-      ownerId: null, owner: null, mine: true,
+      ownerId: null, owner: null, mine: minh,
       due: null, statusLabel: 'Chưa có người phụ trách', ...(chon ? {} : { thieuNguoi: { mon: c.mon } }),
     });
   }
@@ -1748,6 +1761,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* CÙNG hàm `lopKyVong` với chỉ số `hv-len-ft-chua-ky-vong` (tập em chưa kết luận) — Σ `count` = số của chỉ số. KY-VONG-MT0 (chủ SP 14/11): em đã sang FT →
      bảng Kết quả đầu ra của lớp FT em đang học; em chưa chuyển → Cuối khoá lớp nguồn. */
   for (const x of co('ky_vong_dau_ra') ? lopKyVong(p, f.branchId ?? null) : []) {
+    const minh = giuQl(cnLop(x.classId));
+    if (!minh && !tatCa) continue;
     const n = x.chua.length;
     const chu = x.choMt0 === n ? `Chờ MT0 ${n} em` : `MT0 đủ ${n - x.choMt0}/${n}`;
     items.push({
@@ -1756,7 +1771,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       attemptId: null, attemptNo: null, caseId: null, level: null, contextLabel: chu, count: n, emIds: x.chua,
       reason: chu,
       tieuDe: `Kỳ vọng · ${x.code} · ${n} em`, actionLabel: x.ftDangHoc ? 'Kết quả đầu ra ›' : 'Cuối khoá ›',
-      href: `/hoc-vien/lop/${x.classId}?${x.ftDangHoc ? 'che-do=ket-qua' : 'xem=cuoi-khoa'}`, ownerId: null, owner: null, mine: true, due: null, statusLabel: 'Chưa có hạn',   // MA-QL-VIEC: việc của người xem (phạm vi `request.approve`) — vào Của tôi, chuông
+      href: `/hoc-vien/lop/${x.classId}?${x.ftDangHoc ? 'che-do=ket-qua' : 'xem=cuoi-khoa'}`, ownerId: null, owner: null, mine: minh, due: null, statusLabel: 'Chưa có hạn',   // MA-QL-VIEC: việc của người xem (phạm vi `request.approve`) — vào Của tôi, chuông
     });
   }
 
