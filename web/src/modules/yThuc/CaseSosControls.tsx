@@ -25,6 +25,7 @@ import { CHU_TOI_THIEU_CASE,
 import { chenHan, hanDuyetNgay, quyCheChonPa, quyCheKhongTheoDoi, quyCheXacNhanCase, quyCheXacNhanPa } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import { ChuDich, type NguonDich } from '../../ui/ChuDich.tsx';
+import { fmtBand } from '../../lib/format.ts';
 
 /**
  * HOAN-TAC-XN: chỗ xác nhận không có dải (lưu xong về Case / sang bước kế) — toast "✓ … · Hoàn tác (n)" 10 giây như dải panel. Lỗi đảo (403 / 409)
@@ -91,14 +92,14 @@ export function diemCase(data: CaseDetail): ReactNode {
   if (!m) return null;
   const kv = m.expectation != null ? Number(m.expectation) : null;
   const tg = data.cycle?.target_score ?? null;
-  return <><DiemKq diem={Number(m.band)} kyVong={kv} />{kv != null ? <span className="text-dim"> / {t('kỳ vọng {kv}', { kv: kv.toFixed(1) })}</span> : null}{tg != null ? <span className="text-dim"> · Target {Number(tg).toFixed(1)}</span> : null}</>;
+  return <><DiemKq diem={Number(m.band)} kyVong={kv} />{kv != null ? <span className="text-dim"> / {t('kỳ vọng {kv}', { kv: fmtBand(kv) })}</span> : null}{tg != null ? <span className="text-dim"> · Target {fmtBand(tg)}</span> : null}</>;
 }
 /** Kết quả gần nhất của Case MT: mốc mở / trượt lại mới nhất có band — "MT2 · R ✗ 5.0 · kỳ vọng 5.5" (điểm tô màu kết quả, P2). */
 export function ketQuaGanNhat(data: CaseDetail): ReactNode {
   const m = [...(data.milestones ?? [])].reverse().find((x: any) => (x.kind === 'opened' || x.kind === 'repeat') && x.band != null);
   if (!m) return null;
   const kv = m.expectation != null ? Number(m.expectation) : null;
-  return <>MT{m.attemptNo} · {skillShort(data.topic ?? '')} <DiemKq diem={Number(m.band)} kyVong={kv} />{kv != null ? t(' · kỳ vọng {toFixed}', { toFixed: kv.toFixed(1) }) : ''}</>;
+  return <>MT{m.attemptNo} · {skillShort(data.topic ?? '')} <DiemKq diem={Number(m.band)} kyVong={kv} />{kv != null ? t(' · kỳ vọng {toFixed}', { toFixed: fmtBand(kv) }) : ''}</>;
 }
 
 /**

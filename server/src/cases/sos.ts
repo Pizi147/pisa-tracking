@@ -25,6 +25,7 @@ import { ngayTaoLuot } from '../classes/schedule.ts';
 import { taoPaBoTro } from './boTro.ts';
 import { dongBoNguyenNhanMt } from './nguyenNhanO.ts';
 import { boMonDaBo, soThuTuLuot, tenCaseThuong, tenMonNgan } from '../../../shared/domain/index.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 /**
  * Hành động phối hợp theo Lần MT × mức SOS, lấy nguyên từ 'Quy trinh SOS' của trung tâm.
@@ -553,7 +554,7 @@ export function raiseSignalsForResult(p: Principal, attempt: any, result: Attemp
       eventType: 'mock_result', eventDate: detectedAt,
       title: `MT${attempt.attempt_no}: ${kck ? DUOI_KY_VONG_KCK : SOS_LABEL[result.sosLevel!]}`,
       detail: [
-        result.overall !== null ? `Overall ${result.overall}` : null,
+        result.overall !== null ? `Overall ${fmtBand(result.overall)}` : null,
         `kỳ vọng ${result.expectation ?? '—'}`,
         failing.map((s) => ENTRY_SKILL_LABEL[s]).join(', '),
         result.provisional ? `mới có ${result.scoredRequired}/${result.required.length} kỹ năng` : null,
@@ -616,7 +617,7 @@ export function xoaSosOverallDat(actor: number | null, attempt: any, result: Att
     if (luatOv1c) closeCasesBySystem({ actorUserId: actor, studentId: attempt.student_id, reason: 'overall_dat', on, caseIds: dong });
     else for (const id of dong) {
       /* SOS-TAM-PA (Q5): Case tạm có mô tả GV sửa riêng / tệp → đóng, không xoá. */
-      if (tamCua(id) && giuCaseTamDaLam(actor, id, attempt, `Overall ${result.overall} ≥ kỳ vọng ${result.expectation}`)) continue;
+      if (tamCua(id) && giuCaseTamDaLam(actor, id, attempt, `Overall ${fmtBand(result.overall)} ≥ kỳ vọng ${fmtBand(result.expectation)}`)) continue;
       xoaCaseHeThong(conn, id, actor, `${SYSTEM_CLOSE_REASON_LABEL.overall_dat} — em đạt lại, Case chưa có PA được xác nhận`);
     }
   }
@@ -624,13 +625,13 @@ export function xoaSosOverallDat(actor: number | null, attempt: any, result: Att
     paSangKetQuaCuoi(giu, on, actor);   // OV-13a (A): Overall đạt mà Case đã có PA → PA quy chế sang "Kết quả cuối" → Hoàn thành được
     /* Case tạm "giữ": có PA → Case thường + mốc; chỉ tệp / mô tả riêng → đóng (`giuCaseTamDaLam`). */
     for (const r of conn.prepare(`SELECT id FROM sos_cases WHERE tam = 1 AND id IN (${giu.map(() => '?').join(',')})`).all(...giu) as any[]) {
-      if (!giuCaseTamDaLam(actor, r.id, attempt, `Overall ${result.overall} ≥ kỳ vọng ${result.expectation}`)) dongCaseTamCoTep(actor, r.id);
+      if (!giuCaseTamDaLam(actor, r.id, attempt, `Overall ${fmtBand(result.overall)} ≥ kỳ vọng ${fmtBand(result.expectation)}`)) dongCaseTamCoTep(actor, r.id);
     }
   }
   for (const id of giu) {
     addMilestone({
       caseId: id, kind: 'overall_dat', attemptId: attempt.id, attemptNo: attempt.attempt_no, band: result.overall, expectation: result.expectation,
-      occurredOn: on, note: `Overall ${result.overall} ≥ kỳ vọng ${result.expectation} — GV xem và tự đóng Case`, createdBy: actor,
+      occurredOn: on, note: `Overall ${fmtBand(result.overall)} ≥ kỳ vọng ${fmtBand(result.expectation)} — GV xem và tự đóng Case`, createdBy: actor,
       dedupKey: `mt:${attempt.id}:${id}:overall_dat`,
     });
   }

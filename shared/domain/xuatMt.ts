@@ -5,6 +5,7 @@ import { kyHieuLop } from './tenLop.ts';
 import { ATTEMPT_KIND_SHORT } from './normal.ts';
 import { issueLabel } from './cases.ts';
 import { dichMau, type NgonNgu } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 /**
  * XUẤT EXCEL KẾT QUẢ TEST (PR-XUAT · YC-13.9 · T40). LUẬT THUẦN: đọc + kiểm bộ lọc, bộ cột, dựng mảng hai chiều, tên tệp.
@@ -306,7 +307,7 @@ export function tenTepXuatMt(o: { khung: KhungXuat; chiNhanhTen: string[]; lopMa
 }
 const thuTuKhoa = (k: string) => (k === 'giua' ? 1000 : k === 'cuoi' ? 1001 : Number(k.slice(3)));
 
-const so1 = (n: number | null) => (n === null ? '—' : n.toFixed(1));
+const so1 = (n: number | null) => (n === null ? '—' : fmtBand(n));
 /** Một dòng xem trước — `Nguyễn Minh An · MB FT 101 · MT3 · W3 SEP · L 6.0 · R 6.5 · W — · S — · SOS 2 tạm thời`. */
 export function dongXemTruoc(d: DongFT, homNay?: string): string {
   const sos = String(d.target ?? '').endsWith('KCK') ? 'KCK' : d.sos === null ? 'SOS —' : `SOS ${d.sos}${d.trangThai.includes('SOS tạm thời') ? ' tạm thời' : ''}`;

@@ -4,6 +4,7 @@
  * Máy chủ dựng từ dữ liệu hàm tính con số đã nạp (`server/src/worklist/diemDong.ts`); web chỉ vẽ.
  */
 import { t } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 /** `dat`: true đạt · false dưới kỳ vọng / ngưỡng · null chưa đủ căn cứ (chưa điểm, môn bỏ, không kỳ vọng). `cua`: kỹ năng GV đang xem phụ trách (hồ sơ GV). */
 export type KnDiem = { k: string; v: number | null; dat: boolean | null; cua?: boolean };
@@ -42,7 +43,7 @@ export function dauDiem(dat: boolean | null): '✓' | '✗' | null {
 
 /** Một chữ số: "61 %" · band "6.5" · thang Cambridge (nguyên, ≥ 100 — band tối đa 9) "140". */
 export const chuDiem = (v: number, pt = false): string =>
-  (pt ? `${Math.round(v)} %` : v > 9 && Number.isInteger(v) ? String(v) : v.toFixed(1));
+  (pt ? `${Math.round(v)} %` : v > 9 && Number.isInteger(v) ? String(v) : fmtBand(v));
 
 /** Chữ cho trình đọc màn hình / rê chuột: "R ✗ 5.0, dưới kỳ vọng 6.0" · "L ✓ 6.5" · "W chưa có điểm". */
 export function nhanDocDiem(kn: KnDiem, soVoi: DiemHv['soVoi']): string {
@@ -65,7 +66,7 @@ export function datKv(v: number | null, kv: number | null, kck?: boolean): boole
 /** Chữ ô điểm mini: "✗ 5.0" · "✓ 6.5" · "6.0" (không căn cứ) · "—" (chưa có). */
 export function chuMiniKn(v: number | null, kv: number | null, kck?: boolean): string {
   if (v === null) return '—';
-  return [dauDiem(datKv(v, kv, kck)), v.toFixed(1)].filter(Boolean).join(' ');
+  return [dauDiem(datKv(v, kv, kck)), fmtBand(v)].filter(Boolean).join(' ');
 }
 
 /**

@@ -3,6 +3,7 @@ import { can, type Principal } from '../permissions.ts';
 import { badRequest, forbidden, notFound } from '../util.ts';
 import { NHAN_SAU_THI, kyThiCuaChuongTrinh, nhanHanhDongNhatKy, PERMISSIONS, STUDENT_STATUS_LABEL, tuanLich, type LuaChonSauThi } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 /**
  * OV-13j — LỊCH SỬ SỬA THÔNG TIN HỌC VIÊN (chủ SP 15/10): ai sửa gì, cũ → mới. Đọc `audit_logs` của em (entity `student`) và các lộ trình của em
@@ -223,7 +224,7 @@ function hien(c: string, v: unknown, ten: BangTen, ct: string | null = null): st
   switch (kieu) {
     case 'ngay': return /^\d{4}-\d{2}-\d{2}/.test(s) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
     case 'thang': return /^\d{4}-\d{2}$/.test(s) ? `${s.slice(5, 7)}/${s.slice(0, 4)}` : s;
-    case 'band': return Number.isFinite(Number(v)) ? (c === 'target_score' && kyThiCuaChuongTrinh(ct) ? String(Number(v)) : Number(v).toFixed(1)) : s;
+    case 'band': return Number.isFinite(Number(v)) ? (c === 'target_score' && kyThiCuaChuongTrinh(ct) ? String(Number(v)) : fmtBand(Number(v))) : s;
     case 'trangThai': return STUDENT_STATUS_LABEL[s as keyof typeof STUDENT_STATUS_LABEL] ?? s;
     case 'buocTiep': return NHAN_SAU_THI[s as LuaChonSauThi] ?? s;
     case 'ketLuan': return KET_LUAN[s] ?? s;

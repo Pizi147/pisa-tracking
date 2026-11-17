@@ -14,6 +14,7 @@ import {
   type HvXuatDs, type MauXuatDs,
 } from '../../../shared/domain/index.ts';
 import { gioVn } from '../../../shared/domain/xuatMt.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, forbidden, nowIso, loi } from '../util.ts';
 import { can, type Principal } from '../permissions.ts';
@@ -135,7 +136,7 @@ export function xuatDanhSach(
     const k = (sc?.kyNang ?? []).map((x) => KY_HIEU[x] ?? x);
     const luu = luuTuCot(s);
     const plan = examPlanOf(s);
-    const target = s?.target_score != null ? `${s.target_score}${s.khong_cam_ket ? ' KCK' : ''}` : s?.khong_cam_ket ? 'KCK' : null;
+    const target = s?.target_score != null ? `${fmtBand(s.target_score)}${s.khong_cam_ket ? ' KCK' : ''}` : s?.khong_cam_ket ? 'KCK' : null;
     return {
       ten: s?.full_name ?? '', gmail: s?.email ?? null,
       lop: chuoiLop([...(s?.cycle_id ? lopLoTrinh.get(s.cycle_id) ?? [] : []), ...ds.map((x) => x.code)]),

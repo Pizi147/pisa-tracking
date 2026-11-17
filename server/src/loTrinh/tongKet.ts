@@ -14,6 +14,7 @@ import { tinhLuot, type NguCanhLuot } from './banChup.ts';
 import { coTheNhapThiThat } from './thiThat.ts';
 import { trangThaiBuocTiep, type TrangThaiBuocTiep } from './buocTiep.ts';
 import { nguongDatLop, programmeByCode } from '../normal/regular.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 type Tone = 'ok' | 'soon' | 'late' | 'muted';
 /** P13: `kyThi` = số liệu KQ thi thật KET / PET — web ghép chữ bằng `t()` (EN); `chinh` / `phu` giữ cho nơi đọc cũ. */
@@ -33,7 +34,7 @@ function ketQuaBanChup(b: any): KetQuaGon | null {
     const k = ketQuaThiThat({ l: b.thi_that_l, r: b.thi_that_r, w: b.thi_that_w, s: b.thi_that_s, khongThi: !!b.thi_that_khong_thi }, b.target);   // OV-9: KCK giữ Target
     if (b.thi_that_ovr !== null && b.thi_that_ovr !== undefined) {
       const phu = b.ket_luan === 'reached' ? 'Đạt Target' : b.ket_luan === 'not_reached' ? 'Chưa đạt Target' : undefined;
-      return { chinh: `Thi thật ${b.thi_that_ovr.toFixed(1)}`, ovr: b.thi_that_ovr, tone: b.ket_luan === 'reached' ? 'ok' : b.ket_luan === 'not_reached' ? 'late' : 'muted', phu };
+      return { chinh: `Thi thật ${fmtBand(b.thi_that_ovr)}`, ovr: b.thi_that_ovr, tone: b.ket_luan === 'reached' ? 'ok' : b.ket_luan === 'not_reached' ? 'late' : 'muted', phu };
     }
     /* Kết quả CŨ chỉ có kết luận chọn tay (không Overall): vẫn là đã có kết quả. */
     if (b.ket_luan === 'reached' || b.ket_luan === 'not_reached') return { chinh: b.ket_luan === 'reached' ? 'Đạt Target' : 'Chưa đạt Target', tone: b.ket_luan === 'reached' ? 'ok' : 'late' };
@@ -65,7 +66,7 @@ function ketQuaSong(c: any, attempts: any[], scores: Map<number, any[]>, lich: M
     const nguong = nguongDatLop(a.class_id, nc.maCt);
     const t = tinhLuot({ ...nc, nguong }, a, a.target_at_attempt ?? null, rows, [], false, lich.get(a.id));
     if (laFt) {
-      return { chinh: `MT${a.attempt_no} · ${t.overall !== null ? t.overall.toFixed(1) : '—'}`, tone: t.sos && t.sos > 0 ? 'soon' : 'ok', phu: t.sos && t.sos > 0 ? `SOS ${t.sos}` : undefined };
+      return { chinh: `MT${a.attempt_no} · ${t.overall !== null ? fmtBand(t.overall) : '—'}`, tone: t.sos && t.sos > 0 ? 'soon' : 'ok', phu: t.sos && t.sos > 0 ? `SOS ${t.sos}` : undefined };
     }
     if (t.tyLeTong !== null) return { chinh: phanTram(t.tyLeTong), tone: t.tyLeTong >= nguong ? 'ok' : 'soon' };
   }

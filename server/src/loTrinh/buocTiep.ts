@@ -19,6 +19,7 @@ import {
   type DongSauThi, type HuongSauThi, type LuaChonSauThi,
   chuMon, luuMon, type MonVao,
 } from '../../../shared/domain/index.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
 import { can, grantPhiaTvv, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
@@ -83,7 +84,7 @@ export function targetGoiYSauDat(c: { target_score?: number | null; outcome_scor
   const tg = c.target_score ?? null;
   if (tg === null || c.thi_that_khong_thi) return null;
   const dat = ketLuan === 'reached' || (c.outcome_score != null && c.outcome_score >= tg);
-  return dat ? Math.min(9, tg + 1).toFixed(1) : null;
+  return dat ? fmtBand(Math.min(9, tg + 1)) : null;
 }
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
@@ -190,8 +191,8 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
     /* P8 (mockup k1, k3): môn học trong dòng đầu — "đủ 5 môn" · "chỉ S" · "L · R · W2 · S". */
     `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`}${!lt.lopDich?.is_fast_track ? '' : ` · ${!lt.monDangKy ? 'đủ 5 môn' : JSON.parse(lt.monDangKy).length === 1 ? `chỉ ${chuMon(lt.monDangKy)}` : chuMon(lt.monDangKy)}`}${tg ? ` · Target ${tg}` : ''}`,
     lich.length ? `Tạo MT1–MT${lich.length}: ${lich.map((w) => tuanLich(addDays(t2, 7 * (w - 1)), homNay)).join(' · ')}` : 'Không tạo MT · thêm "+ MT" ở Kế hoạch Test khi cần',
-    ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${dv.score?.toFixed(1)}) — chưa có KQ thi thật`
-      : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${dv.l?.toFixed(1)} · R ${dv.r?.toFixed(1)} · W ${dv.w?.toFixed(1)} · S ${dv.s?.toFixed(1)}`] : []),
+    ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${fmtBand(dv.score)}) — chưa có KQ thi thật`
+      : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${fmtBand(dv.l)} · R ${fmtBand(dv.r)} · W ${fmtBand(dv.w)} · S ${fmtBand(dv.s)}`] : []),
     ...(lopMoiId && c.lop_id && lopMoiId !== c.lop_id ? [`Rời ${c.lop_code}`] : []),
     caseMo.length ? `Kết thúc ${tenCu} · đóng ${caseMo.length} Case${mon ? ` (${mon})` : ''} — Kết thúc lộ trình` : `Kết thúc ${tenCu}`,
     ...(soPa ? [`Dừng ${soPa} PA — Dừng · kết thúc lộ trình`] : []),

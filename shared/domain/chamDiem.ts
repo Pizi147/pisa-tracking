@@ -8,6 +8,7 @@
 import { mondayOfDate } from './week.ts';
 import { addDaysIso } from './sos.ts';
 import { t } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 /** Lịch Test lọc lớp nào (PR-UX1 Q4): lớp người xem có phân công, hay cả phạm vi được xem. */
 export type PhamViLichTest = 'cua-toi' | 'tat-ca';
@@ -194,7 +195,7 @@ export function kiemBangQuyDoi(b: unknown): LoiBangQuyDoi[] {
       if (v === null || v === undefined || Number.isNaN(v)) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: chưa có band.', { ten, n }), ngan: t('trống') });
       else if (kiemBand(v) !== null) loi.push({ skill, cau: n, loi: t('{ten} {n} câu: band từ 0 đến 9, bậc 0.5 (đang là {v}).', { ten, n, v }), ngan: t('bậc 0.5') });
       else if (n > 0 && kiemBand(cot[n - 1]) === null && v < cot[n - 1]) {
-        const a = v.toFixed(1), m = n - 1, truoc = cot[m].toFixed(1);
+        const a = fmtBand(v), m = n - 1, truoc = fmtBand(cot[m]);
         loi.push({ skill, cau: n, loi: t('{ten} {n} câu: {a} thấp hơn {m} câu ({b}) — band không giảm khi số câu tăng.', { ten, n, a, m, b: truoc }), ngan: `≥ ${truoc}` });
       }
     });
@@ -268,7 +269,7 @@ export const kiemTieuChi = (v: number | null): string | null =>
 export const LOI_MOT_KIEU = t('Chỉ chọn một kiểu: 4 tiêu chí hoặc Band');
 /** Có chữ / số ở Band VÀ ở ít nhất một tiêu chí ("-" cũng là chữ). Một hàm cho web (chữ gõ) và máy chủ (số). */
 export const caHaiKieu = (tieuChi: readonly unknown[], band: unknown): boolean =>
-  band != null && String(band).trim() !== '' && tieuChi.some((v) => v != null && String(v).trim() !== '');
+  band != null && String(band).trim() !== '' && tieuChi.some((v) => v != null && String(v).trim() !== '');   // band-ok: chỉ kiểm có nhập, không in
 export function criteriaPatchFrom(vals: string[], cell: OCoDau, bandText = ''): {
   dash: boolean; preview: number | null; patch: PatchDiem | null; loi: string | null;
 } {

@@ -20,6 +20,7 @@ import { lichSuSua, truongSuaCaLop, xemLichSuHv } from '../students/lichSuSua.ts
 import { scoreHistoryOf } from '../fasttrack/attempts.ts';
 import { coTheNhapThiThat } from '../loTrinh/thiThat.ts';
 import { MOC_LICH_SU } from '../migrate/prOv15g.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 /** `heThong`: giá trị là nhãn hệ thống (Có / Không, trạng thái, kết luận, "tuần n"…) — web dịch theo tiếng của trang; chữ người gõ giữ nguyên. */
 export type TruongLs = { ten: string; cu: string | null; moi: string | null; doiTuong?: string; heThong?: true };
@@ -130,7 +131,7 @@ function docJson(s: string | null): Record<string, any> {
 }
 
 const chu = (v: unknown): string | null => (v === null || v === undefined || v === '' ? null : String(v));
-const band = (v: unknown): string | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? chu(v) : Number(v).toFixed(1));
+const band = (v: unknown): string | null => (v === null || v === undefined || v === '' || !Number.isFinite(Number(v)) ? chu(v) : fmtBand(Number(v)));
 const ngay = (v: unknown): string | null => { const s = chu(v); return s && /^\d{4}-\d{2}-\d{2}/.test(s) ? `${s.slice(8, 10)}/${s.slice(5, 7)}/${s.slice(0, 4)}` : s; };
 const coKhong = (v: unknown): string => (v ? 'Có' : 'Không');
 
@@ -153,7 +154,7 @@ function baiLop(p: Principal, studentId: number, tiep: number | null): TrangLs {
     ({ b, f, label }) => {
       const doiTuong = [label, f.tenBai ?? b.tenBai].filter(Boolean).join(' · ');   // SV-BAI-LOP-2: tên bài trống được
       return { nguon: null, lyDo: null, truong: ([
-        ['Kỹ năng', chu(b.kyNang), chu(f.kyNang)], ['Tên bài', chu(b.tenBai), chu(f.tenBai)], ['Điểm', diem(b), diem(f)], ['Band', b.band == null ? null : String(b.band), f.band == null ? null : String(f.band)],
+        ['Kỹ năng', chu(b.kyNang), chu(f.kyNang)], ['Tên bài', chu(b.tenBai), chu(f.tenBai)], ['Điểm', diem(b), diem(f)], ['Band', b.band == null ? null : fmtBand(b.band), f.band == null ? null : fmtBand(f.band)],
         ['Tuần', tuan(b), tuan(f)], ['Nhận xét', chu(b.nhanXet), chu(f.nhanXet)],
       ] as const).map(([ten, cu, moi]) => ({ ten, cu, moi, doiTuong })) };
     });

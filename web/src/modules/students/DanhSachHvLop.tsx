@@ -21,6 +21,7 @@ import { NhanSauThi } from './HopGiaHan.tsx';
 import { bacDu, bacNgan, boTenEm, chuPhuHuynh, mocTuNhan, dongTieuChi, duongHoSoHocVien, maLoTrinhNgan, shortDate, tuanLich, type ExamPlan, type GiaiDoanSauThi, type HangHv, type LichThi, type LienHe, type NguCanhDs } from '@shared/domain/index.ts';
 import { dich, t } from '@shared/i18n/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
+import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const XacNhanXuLyPanel = lazyHop(() => import('../yThuc/XacNhanXuLyPanel.tsx').then((x) => x.XacNhanXuLyPanel));
 
@@ -43,7 +44,7 @@ export type EmVai = {
 /** Bảng ở góc nhìn TVV / CX: dữ liệu theo em · có cột Việc không (CX không có Công việc) · bấm nhãn sau thi mở panel một em. */
 export type VaiBang = { em: Map<number, EmVai>; coViec: boolean; onMoEm: (id: number) => void };
 
-const chuSo = (n: number | null | undefined) => (n == null ? null : n.toFixed(1));
+const chuSo = (n: number | null | undefined) => (n == null ? null : fmtBand(n));
 const trong = <span className="text-faint">—</span>;
 const KN5 = ['L', 'R', 'W1', 'W2', 'S'] as const;
 

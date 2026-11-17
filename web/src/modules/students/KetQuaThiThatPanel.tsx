@@ -16,9 +16,10 @@ import { dich, t } from '@shared/i18n/index.ts';
 import { PanelBuocTiep, useKhoiPhucThiThat } from './PanelBuocTiep.tsx';
 import { HopGiaHan } from './HopGiaHan.tsx';
 import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from './diemLanTruoc.tsx';
+import { fmtBand } from '../../lib/format.ts';
 
 const KY_NANG = ['l', 'r', 'w', 's'] as const;
-const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
+const fmt = (v: number | null | undefined) => (v === null || v === undefined ? '' : fmtBand(v));
 const toneKq = (n: string) => (n === 'Đạt Target' ? 'doing' : n === 'Chưa đạt Target' ? 'bad' : 'muted') as 'doing' | 'bad' | 'muted';
 
 /** Nhãn "Dự kiến thi" từ cột lộ trình: ngày → dd/mm; tháng → SEP 2026; chưa có → null. */
@@ -120,7 +121,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
       chan={{ huy: { onClick: onClose }, daSua: JSON.stringify(form) !== goc, conThieu: lf.conThieu(loi), chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={luu} disabled={busy}>{t('Lưu')}</button> }}>
       <div className="max-w-[560px] space-y-3">
         <div className="flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-400">
-          <span>Target <b className="tabular-nums text-slate-200">{kt ? target ?? '—' : hienTargetKck(target !== null ? target.toFixed(1) : null, !!c.khong_cam_ket)}</b></span>
+          <span>Target <b className="tabular-nums text-slate-200">{kt ? target ?? '—' : hienTargetKck(target !== null ? fmtBand(target) : null, !!c.khong_cam_ket)}</b></span>
           {kt ? <span>{t('Thang')} <b className="tabular-nums text-slate-200">{kt.ten} {kt.min}–{kt.max}</b></span>
             : <span>{t('Dự kiến thi')} <b className="tabular-nums text-slate-200">{nhanThi(c, homNay) ?? '—'}</b></span>}
           {!kt && st?.giaiDoan === 'da_thi_cho_kq' && st.han && (
@@ -156,7 +157,7 @@ export function KetQuaThiThatPanel({ cycleId, studentName, lop, quayLai, onClose
                 {/* OV-11d (HV-22): OVR máy tính — chữ, không trông như ô nhập (như "Overall tự tính" ở Sửa thông tin). */}
                 <span className="block text-xs text-slate-400">{kt ? 'Overall' : 'OVR'}</span>
                 <strong className="mt-1.5 block text-sm tabular-nums text-slate-100" aria-label={t('OVR tự tính')}>
-                  {kt ? (kqKt && !kqKt.khongThi ? kqKt.tong : '—') : kq?.ovr != null ? kq.ovr.toFixed(1) : '—'}
+                  {kt ? (kqKt && !kqKt.khongThi ? kqKt.tong : '—') : kq?.ovr != null ? fmtBand(kq.ovr) : '—'}
                 </strong>
                 {/* TL-GV (v20, XM-4): ô là ô nhập, không bấm mở được → nút chữ "Tuần dạy" (chỉ khi đã lưu đủ 4 kỹ năng) mở hộp tóm tắt 5 kỹ năng. */}
                 {!kt && !c.thi_that_khong_thi && [c.thi_that_l, c.thi_that_r, c.thi_that_w, c.thi_that_s].every((v) => v != null) && (

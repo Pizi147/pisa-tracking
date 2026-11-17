@@ -15,6 +15,7 @@ import {
   kyGhiKetQua, nguoiCuaPa, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 
 type Em = NonNullable<WorkItem['con']>[number];
 type NhapMayChu = { outcome: string; note: string; luc: string; boi: string };
@@ -272,7 +273,7 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
   const kn = pa?.topic ? dich(caseTopicLabel(pa.topic)) : null;
   const tenPa = pa ? (dichDu(pa.description) || dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind)) : null;
   const cuoi = /^Kết quả cuối/.test(em.tieuDe);
-  const mt = pa?.mt ? <>MT{pa.mt.attemptNo} {pa.topic ? skillShort(pa.topic) : ''} <span className="tabular-nums">{pa.mt.band.toFixed(1)}</span>{pa.mt.expectation != null && <> · {t('kỳ vọng')} <span className="tabular-nums">{pa.mt.expectation.toFixed(1)}</span></>}</> : cuoi ? t('Kỳ cuối') : null;
+  const mt = pa?.mt ? <>MT{pa.mt.attemptNo} {pa.topic ? skillShort(pa.topic) : ''} <span className="tabular-nums">{fmtBand(pa.mt.band)}</span>{pa.mt.expectation != null && <> · {t('kỳ vọng')} <span className="tabular-nums">{fmtBand(pa.mt.expectation)}</span></>}</> : cuoi ? t('Kỳ cuối') : null;
   const n = v.note.trim().length;
   const dang = tt === 'dang';
   const chu = tt === 'thieu' && !v.outcome ? t('Thiếu tiến triển') : tt === 'thieu' && n > TRAN_CHU.ketQuaPa ? t('Nhận xét quá dài') : chuTt(tt);

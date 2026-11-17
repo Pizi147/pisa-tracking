@@ -16,6 +16,7 @@ import type { HangFT, KnO, LopKH, LuoiFTData } from './kieu.ts';
 import { TuanNho, resolveTuan, type Tuan } from './TuanNho.tsx';
 /* `t` trùng tên biến tuần / hẹn giờ trong tệp → đặt tên khác. */
 import { t as tChu } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../../lib/format.ts';
 
 const KY = KY_NANG_KE_HOACH;
 const TOI_DA_EM = 3;
@@ -465,7 +466,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
               <tr key={x.d.n} className="align-middle">
                 <td className="whitespace-nowrap border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>
                   <b className="text-slate-100">MT{x.d.n}</b>
-                  {x.d.luot?.kyVong != null && <div className="text-xs text-slate-500">{tChu('kỳ vọng {kv}', { kv: x.d.luot.kyVong.toFixed(1) })}</div>}
+                  {x.d.luot?.kyVong != null && <div className="text-xs text-slate-500">{tChu('kỳ vọng {kv}', { kv: fmtBand(x.d.luot.kyVong) })}</div>}
                 </td>
                 <td className="border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>{tuanChung(x)}</td>
                 {KY.map((k) => <td key={k} className="whitespace-nowrap border-t px-2.5 py-1.5" style={{ borderColor: 'var(--line)' }}>{oKn(x, k)}</td>)}
@@ -481,7 +482,7 @@ function BangEm({ sid, ds, homNay, kiem, lf, loiO, onTuan, onBo }: {
           <div key={x.d.n} className="rounded-lg border p-2" style={{ borderColor: 'var(--line)' }}>
             <div className="flex items-center gap-2">
               <b className="text-slate-100">MT{x.d.n}</b>
-              <span className="text-xs text-slate-500">{x.d.nhap?.moi ? tChu('Tạo mới') : x.d.luot?.kyVong != null ? tChu('kỳ vọng {kv}', { kv: x.d.luot.kyVong.toFixed(1) }) : ''}</span>
+              <span className="text-xs text-slate-500">{x.d.nhap?.moi ? tChu('Tạo mới') : x.d.luot?.kyVong != null ? tChu('kỳ vọng {kv}', { kv: fmtBand(x.d.luot.kyVong) }) : ''}</span>
               <span className="ml-auto">{menu(x)}</span>
             </div>
             <div className="mt-1.5">{tuanChung(x)}</div>

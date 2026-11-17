@@ -194,7 +194,7 @@ type DongKn = DiemD & { a?: LuotD; nhanXet?: string | null };
 
 const KN_THI: Record<string, 'l' | 'r' | 'w' | 's'> = { listening: 'l', reading: 'r', writing1: 'w', writing2: 'w', speaking: 's' };
 const kyNangDot = (k: string) => (k.startsWith('writing') ? 'writing' : k);
-const pm = (d: number) => (d > 0 ? `+${d.toFixed(1)}` : d < 0 ? `−${(-d).toFixed(1)}` : '=');
+const pm = (d: number) => (d > 0 ? `+${fmtBand(d)}` : d < 0 ? `−${fmtBand(-d)}` : '=');
 
 /** Thi thật của lộ trình FT, một nguồn cho chart D, Bảng kỹ năng và hàng Thi thật bảng Mock Test: đã nhập (kết quả / chờ) → ngày thi; chưa nhập → kế hoạch
  * thi (tuần; tuần đã qua = đã thi chờ kết quả · tháng → khối tháng). `khong` = em không thi. */

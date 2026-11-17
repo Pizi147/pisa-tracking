@@ -13,6 +13,7 @@
 import { DB_PATH, closeDb, db, theoLo } from '../db.ts';
 import { moTaDichDb } from '../moiTruong.ts';
 import { nhanDot, type AssessedSkill } from '../../../shared/domain/index.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 import { entrySkillsOf } from '../fasttrack/scoring.ts';
 
 export type DongO = {
@@ -103,7 +104,7 @@ function inBang(ds: DongO[]): string[] {
   const co = (b: boolean) => (b ? 'có' : '');
   const hang = ds.map((d) => [
     d.hocVien, d.ma, d.luot + (d.lichSu ? ' ·LS' : ''), d.trangThaiLuot, d.o || d.kyNang, d.tuanLich, d.sitStatus, co(d.batBuoc),
-    d.soLanVang ? String(d.soLanVang) : '', co(d.huyVang), d.hanRieng, d.band === null ? '' : String(d.band),
+    d.soLanVang ? String(d.soLanVang) : '', co(d.huyVang), d.hanRieng, d.band === null ? '' : fmtBand(d.band),
     d.diem === null ? '' : `${d.diem}/${d.tong ?? '?'}`, d.dauTru ? `- ${d.tuanDauTru}` : '', d.daChot.slice(0, 10), co(d.nhapMuon),
   ]);
   const rong = tieu.map((t, i) => Math.max(t.length, ...hang.map((h) => h[i].length)));
