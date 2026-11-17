@@ -39,7 +39,7 @@ import { NutLuat } from '../../ui/NutLuat.tsx';
 import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
-  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, soCuaToi, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
+  LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
   NHAN_LOAI_VIEC, chenHan, demBai,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
@@ -157,8 +157,6 @@ export function HoTroHocVienTab() {
       return con.length === x.con.length ? [x] : con.length ? [{ ...x, con }] : [];
     });
   }, [data, anTam]);
-  /* S11 (chủ SP 05/11): ô "Của tôi" = số badge (dòng của tôi quá hạn + hôm nay, `soCuaToi` — cùng hàm máy chủ); "Của GV" / "Tất cả" không số. */
-  const soToi = useMemo(() => soCuaToi(dsGoc), [dsGoc]);
   /* RA-LOI-0711d: `cn=` chỉ lọc khi chi nhánh đó còn trên dải — làm hết việc một CN (dải ẩn) hay mở địa chỉ cũ thì không giấu việc CN khác. */
   const cnLoc = cnUrl != null && (data?.chiNhanh ?? []).some((b) => b.id === cnUrl) ? cnUrl : null;
   /* Nguồn đang xem (người · chi nhánh) — một điều kiện cho danh sách và dòng giữ chỗ vừa xong. */
@@ -497,8 +495,6 @@ export function HoTroHocVienTab() {
   const anTrenDienThoai = chon || theId ? 'max-lg:hidden' : '';
   /* GD-1 (mockup v21 K8): < 1024 px không có khung phải — công tắc "Việc · Lớp của tôi" thay hai cột. */
   const xemLopHep = (laGv || laTvv) && xemLop && !chon && !theId;
-  /* Đang tải / lỗi: không số ở ô phạm vi (không nơi nào báo chờ khi chưa chắc). */
-  const hienSoToi = !!data && !error && soToi > 0;
   return (
     <div className="space-y-3">
       <div className={`space-y-2.5 ${anTrenDienThoai}`}>
@@ -552,7 +548,8 @@ export function HoTroHocVienTab() {
                       if (k !== 'toi' && next.get('nhom') === 'duyet') next.delete('nhom');
                       setParams(next, { replace: true });
                     }}
-                    muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: k === 'toi' && hienSoToi ? soToi : null }))} /></span>}
+                    muc={LOC_NGUOI_VIEC.map((k) => ({ key: k, nhan: LOC_NGUOI_VIEC_LABEL[k], so: null }))} /></span>}
+                {/* DEM-VIEC (chủ SP 18/11, thay S11): nút "Của tôi" không số — đầu trang đã có "n việc · m quá hạn", badge menu giữ số cần làm ngay. */}
               </>
             )}
             {/* CV-TAB b (mockup a1 `.seg`): GV có việc ở > 1 chi nhánh — "Tất cả chi nhánh n · {CN} n …", mặc định Tất cả; lọc tại máy, badge tab đếm theo CN đang chọn. */}
