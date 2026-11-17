@@ -7,6 +7,7 @@ import { Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { toneHuong } from '../students/CacLoTrinh.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const NganTongKet = lazyHop(() => import('../students/NganTongKet.tsx').then((x) => x.NganTongKet));
 
@@ -23,7 +24,7 @@ type TongKetLop = {
   dong: Dong[];
 };
 
-const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v.toFixed(1));
+const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : fmtBand(v));
 /* MAU-THONG-NHAT (chủ SP 05/11): Đạt xanh dương · chưa đạt đỏ (trước: vàng). */
 const toneDai = (d: string | null | undefined): ToneNhan => (d === 'dat' ? 'doing' : d ? 'bad' : 'muted');
 

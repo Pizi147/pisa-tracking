@@ -1,6 +1,7 @@
 import { tuanLich } from './hienThiNgay.ts';
 import { nhanLichThi, type LichThi } from './lichThiOv15f.ts';
 import { t } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 /** Ô "Sắp tới" của bảng Học viên & Lớp (chủ sản phẩm 03/10, mục 5): ngắn, chỉ thêm con số kỳ vọng. */
 export function chuSapToi(o: {
@@ -10,7 +11,7 @@ export function chuSapToi(o: {
 }): string | null {
   if (o.nhanLuot) {
     const tuan = o.tuanBatDau ? ` · ${tuanLich(o.tuanBatDau, o.homNay)}` : '';
-    const so = o.kyVong !== null && o.khung === 'ft' ? ` · ${o.kyVong.toFixed(1)}` : '';
+    const so = o.kyVong !== null && o.khung === 'ft' ? ` · ${fmtBand(o.kyVong)}` : '';
     return `${o.nhanLuot}${tuan}${so}`;
   }
   if (o.conLuotChuaXep) return t('{conLuotChuaXep} · chưa xếp', { conLuotChuaXep: o.conLuotChuaXep });

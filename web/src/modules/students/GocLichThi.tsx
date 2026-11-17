@@ -20,6 +20,7 @@ import {
   type NguCanhDs, type ThaoTacLichThi, type LichThi,
 } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 const PanelSauThi = lazyHop(() => import('../congViec/PanelSauThi.tsx').then((x) => x.PanelSauThi));
 
 type Trang = { thang: string[]; rows: Hang[] };
@@ -234,7 +235,7 @@ export function GocLichThi({ duongGoc, thangUrl, onDoiThang, onIds, ds, locTren,
           {hopMo && <HopLich key={hopMo} r={r} nut={hopMo} the onHuy={() => setHop(null)} onLuu={(b) => luu(r, b)} />}
           {!hopMo && <div className="lt-the-diem">
             <span>Target <b className="tabular-nums"><CotTarget r={r} /></b></span>
-            {st?.overall != null && <span>{st.attemptLabel} <span className={`lt-diem ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{st.overall.toFixed(1)}</span></span>}
+            {st?.overall != null && <span>{st.attemptLabel} <span className={`lt-diem ${dat === true ? 'dat' : dat === false ? 'duoi' : ''}`}>{fmtBand(st.overall)}</span></span>}
             {!!st?.sosLevel && st.sosLevel > 0 && <CotSos r={r} />}
           </div>}
           {oGhi(r, true)}

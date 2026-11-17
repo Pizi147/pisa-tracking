@@ -94,7 +94,7 @@ export function HoSoGiaoVienPage() {
   const { gv } = data;
   const nguoiXem = { userId: session?.user?.id ?? 0, laQuanLy: laVaiQuanLy(session?.roles) };
   /* Chủ SP 10/11 (B' 11): vai không có Công việc (Head tutor) → không nút sang Công việc (trước: bấm bị đẩy về Tổng quan). */
-  const coNutViec = (gv.laChinhMinh && !!session?.nav?.work) || !!session?.nav?.workOps;
+  const coNutViec = (gv.laChinhMinh && !!session?.nav?.work) || !!session?.nav?.workOps || !!session?.nav?.workCx;   // N52: CX xem việc của GV như QL
   const tenGoi = gv.ten.split(' ').pop() ?? gv.ten;
   const lopCn = data.lop.filter((l) => l.laGvcn);
   /* Badge tab Việc & Case = số việc quá hạn của "Việc đang tồn" (cùng GET): đỏ khi là việc của người xem, mờ khi xem người khác (H4 — đỏ chỉ cho việc của mình). */

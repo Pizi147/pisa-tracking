@@ -15,6 +15,7 @@ import { ASSESSED_SKILL_LABEL } from './skills.ts';
 import { mondayOfDate, owningMonthOf, weekNumberInMonthOf, MONTH_CODE } from './week.ts';
 import type { TrangThai } from './trangThai.ts';
 import { dich, kem, t, type ChuKhoa } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 const DAY_MS = 86_400_000;
 const ngayThu = (iso: string) => Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / DAY_MS;
@@ -320,7 +321,7 @@ export type MocDiem = { chu: string; xau: boolean; cho: boolean; lech: LechDiem 
 export function lechDiem(truoc: number, sau: number, cheDo: 'ielts' | 'ratio'): LechDiem {
   const d = cheDo === 'ratio' ? Math.round(sau) - Math.round(truoc) : Math.round((sau - truoc) * 10) / 10;
   if (d === 0) return { dau: 'bang', chu: t('Không đổi') };
-  const so = cheDo === 'ratio' ? String(Math.abs(d)) : Math.abs(d).toFixed(1);
+  const so = cheDo === 'ratio' ? String(Math.abs(d)) : fmtBand(Math.abs(d));
   return d > 0 ? { dau: 'len', chu: t('Tăng {so}', { so }) } : { dau: 'xuong', chu: t('Giảm {so}', { so }) };
 }
 
@@ -342,7 +343,7 @@ export function chuoiDiem(
   const moc: MocDiem[] = lay.map((d) => {
     const phanTram = cheDo === 'ratio' && d.tong ? Math.round((d.gt / d.tong) * 100) : null;
     const gia = phanTram ?? d.gt;
-    const chu = phanTram !== null ? `${phanTram}%` : cheDo === 'ielts' ? d.gt.toFixed(1) : String(d.gt);
+    const chu = phanTram !== null ? `${phanTram}%` : cheDo === 'ielts' ? fmtBand(d.gt) : String(d.gt);
     const nhan = d.attemptNo != null
       ? nhanDotTest({ cheDo, attemptNo: d.attemptNo, kind: d.kind ?? '', maLop: d.maLop })
       : null;
@@ -351,7 +352,7 @@ export function chuoiDiem(
       const cauDung = d.tong ? ` (${d.gt}/${d.tong})` : '';
       phan = [nhan, `${chu}${cauDung}`, d.chuaDat ? t('Chưa đạt — ngưỡng {pt}%', { pt: Math.round((d.nguong ?? RATIO_PASS_THRESHOLD) * 100) }) : t('Đạt')];
     } else {
-      const ky = d.kyVong != null ? (d.chuaDat ? t('dưới kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) }) : t('kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) })) : null;
+      const ky = d.kyVong != null ? (d.chuaDat ? t('dưới kỳ vọng {kv}', { kv: fmtBand(d.kyVong) }) : t('kỳ vọng {kv}', { kv: fmtBand(d.kyVong) })) : null;
       phan = [nhan, chu, ky];
     }
     const lech = giaTriTruoc === null ? null : lechDiem(giaTriTruoc, gia, cheDo);
@@ -417,7 +418,7 @@ export function nhanGhim(a: {
     if (a.soCoDiem < a.soYeuCau && !a.chot) {
       return { chu: t('{mt} · đang chấm', { mt }), gon: so, day: ghep(mt, tuan, t('đang chấm {a}/{b} kỹ năng', { a: a.soCoDiem, b: a.soYeuCau })), mau: 'tam', hai: [so, `${a.soCoDiem}/${a.soYeuCau}`] };
     }
-    const band = a.overall != null ? a.overall.toFixed(1) : '—';
+    const band = a.overall != null ? fmtBand(a.overall) : '—';
     const overall = `Overall ${band}`;
     if (a.sosLevel == null) {
       return { chu: `${mt} · ${band}`, gon: `${so} ${band}`, day: ghep(mt, tuan, overall, t('chưa có kỳ vọng')), mau: 'tam', hai: [so, band] };

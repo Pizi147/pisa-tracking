@@ -462,7 +462,7 @@ export function Th({ children, hint, align = 'left', sort, className = '' }: {
 export function TargetText({ band, kck, kyThi }: { band: number | null | undefined; kck?: boolean | null;
   /** P13 KET-PET: khoá có kỳ thi Cambridge — Target là số nguyên trong thang, không KCK, không định dạng band. */
   kyThi?: { ten: string; min: number; max: number } | null }) {
-  if (kyThi) return <span title={`${kyThi.ten} ${kyThi.min}–${kyThi.max}`}>{band == null ? '—' : String(band)}</span>;
+  if (kyThi) return <span title={`${kyThi.ten} ${kyThi.min}–${kyThi.max}`}>{fmtBand(band)}</span>;
   if (!kck) return <>{fmtBand(band)}</>;
   return (
     <span className="whitespace-nowrap">{fmtBand(band)} · <abbr title={GIAI_THICH_KCK} aria-label={`${KCK}: ${GIAI_THICH_KCK}`}

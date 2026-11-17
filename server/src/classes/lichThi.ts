@@ -25,6 +25,7 @@ import { diemCuaLuot } from '../fasttrack/attempts.ts';
 import { luotTheoLoTrinh, luotTruocCoOverall } from '../fasttrack/overallLuot.ts';
 import { cotSauThi } from '../loTrinh/cotSauThi.ts';
 import { listCases, type MappedCase } from '../cases/cases.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 const GHI_CHU_TOI_DA = 300;
 /** LICH-THI-NOI-THI: nơi thi là chữ NGẮN (IDP · BC · British Council Hà Nội…) — đủ cho tên trung tâm thi, không thành ô ghi chú thứ hai. */
@@ -232,7 +233,7 @@ export function lichSuLichThi(cyc: readonly number[], gioiHan: number, dem?: Map
       if (x.action === 'lich_thi.luu') {
         ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: sau.ketLuan ?? null, ngay: null, ghiChu: sau.ghiChu ?? null, ...(sau.noiThi !== undefined ? { noiThi: sau.noiThi } : {}) });
       } else if (x.action === 'cycle.thi_that') {
-        const kq = sau.khongThi ? 'Không thi' : sau.ovr != null ? Number(sau.ovr).toFixed(1) : null;
+        const kq = sau.khongThi ? 'Không thi' : sau.ovr != null ? fmtBand(sau.ovr) : null;
         ls.push({ luc: x.created_at, ai: x.ai ?? null, ketLuan: 'ghi-kq', ngay: null, ghiChu: null, kq });
       } else {
         const moc = sau.exam_date ?? sau.exam_month ?? null;

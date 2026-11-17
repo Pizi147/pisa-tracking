@@ -209,14 +209,16 @@ export async function runPrSvYtTvvTests(t: YThucTestKit) {
     assert(ma(() => ghi(tvv, [v.id], 'da_bao', { ngay: '31/12' })) === 400, 'ngày sai dạng');
   }));
 
-  await checkAsync('SVYT-K9 · GVCN / GVBM / CX / TVV chi nhánh khác ghi → 403; TVV cùng chi nhánh làm thay được (không thành việc của mình); QL chi nhánh ghi được; bỏ việc: lý do sẵn có, "Khác" bắt chữ, đã bỏ thì không ghi', () => thu(() => {
+  await checkAsync('SVYT-K9 · GVCN / GVBM / TVV chi nhánh khác ghi → 403 (CX N52 làm thay được); TVV cùng chi nhánh làm thay được (không thành việc của mình); QL chi nhánh ghi được; bỏ việc: lý do sẵn có, "Khác" bắt chữ, đã bỏ thì không ghi', () => thu(() => {
     const tvv = tvvMoi(); const khac = tvvMoi(); const sid = moiEm(tvv); const [v1] = nVp(sid, 1);
     xuLy(gvcn, sid, [v1]);
     const [v] = viecCua(sid);
     assert(ma(() => ghi(gvcn, [v.id], 'da_bao')) === 403 && ma(() => ghi(gvbm, [v.id], 'da_bao')) === 403, 'GV / GVCN 403');
     const tvvCp = loadPrincipal(accounts.createAccount(P.admin, { email: `svyt.cp${dem}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-svyt', fullName: `TVV CP SVYT ${dem}`, roles: [{ role: 'consultant', branches: ['CP'] }] }).userId);
     const cx = loadPrincipal(accounts.createAccount(P.admin, { email: `svyt.cx${dem}${accounts.EMAIL_SUFFIX}`, password: 'matkhau-svyt', fullName: `CX SVYT ${dem}`, roles: [{ role: 'cx', branches: [] }] }).userId);
-    assert(ma(() => ghi(tvvCp, [v.id], 'da_bao')) === 403 && ma(() => ghi(cx, [v.id], 'da_bao')) === 403, 'TVV chi nhánh khác / CX 403');
+    assert(ma(() => ghi(tvvCp, [v.id], 'da_bao')) === 403, 'TVV chi nhánh khác 403');
+    /* N52 (chủ SP 18/11): CX làm thay được như QL (không ghi thật ở đây — việc còn dùng ở dưới), không thành việc của CX. */
+    assert(bp.xemViecBaoPh(cx, v.id).coTheGhi === true && viecToi(cx, sid).length === 0, 'CX (N52): làm thay được, không phải việc của mình');
     assert(bp.xemViecBaoPh(khac, v.id).coTheGhi === true, 'TVV cùng chi nhánh: làm thay được');
     assert(viecToi(khac, sid).length === 0, 'TVV cùng chi nhánh: không phải việc của mình');
     assert(ma(() => bp.boViecBaoPh(gvcn, v.id, { lyDo: 'not_needed' })) === 403, 'GVCN không bỏ được');

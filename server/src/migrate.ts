@@ -93,6 +93,7 @@ import { migratePrBcPhViecGv } from './migrate/prBcPhViecGv.ts';
 import { migratePrKyVongTuDat } from './migrate/prKyVongTuDat.ts';
 import { migratePrTdQuet } from './migrate/prTdQuet.ts';
 import { migratePrHocTiep } from './migrate/prHocTiep.ts';
+import { migratePrCxN52 } from './migrate/prCxN52.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
@@ -547,6 +548,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrKyVongTuDat(conn, applied));
   /* TD-QUET (17/11): chỉ mục sos_case_history(case_id) + case_signals(class_id) — Lịch sử Case / "lớp đã có dữ liệu" hết quét cả bảng (chỉ thêm chỉ mục). */
   buoc(() => migratePrTdQuet(conn, applied));
+  /* N52 (chủ SP 18/11): vai CX thêm quyền xem như Quản lý + sửa học viên (một lần, khoá demo_config — chỉ INSERT dòng còn thiếu). */
+  buoc(() => migratePrCxN52(conn, applied));
   /* HEAD (chủ SP 18/11): tên hiển thị vai manager trong roles "Quản lý" → "Head" (chỉ một câu UPDATE có điều kiện, chạy lặp được). */
   buoc(() => migratePrHead(conn, applied));
 

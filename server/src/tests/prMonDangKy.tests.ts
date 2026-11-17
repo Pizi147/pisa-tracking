@@ -426,7 +426,7 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
     });
   });
 
-  check('MDK-12 · quyền đổi môn: QL, GVCN, TVV đổi được; GV bộ môn, CX 403; Sửa cả lớp: TVV chỉ cột Môn học', () => {
+  check('MDK-12 · quyền đổi môn: QL, GVCN, TVV, CX (N52) đổi được; GV bộ môn 403; Sửa cả lớp: TVV chỉ cột Môn học', () => {
     thu(() => {
       const lopMb = t.classId('MB FT 101');
       const x = emDu({ lop: lopMb });
@@ -434,15 +434,16 @@ export async function runPrMonDangKyTests(t: { check: any; checkAsync: any; asse
       const gvbm = loadPrincipal(get(`SELECT user_id id FROM teacher_assignments WHERE class_id = ? AND skill IS NOT NULL AND status = 'active'
         AND user_id NOT IN (SELECT user_id FROM teacher_assignments WHERE class_id = ? AND is_core = 1) LIMIT 1`, lopMb, lopMb).id);
       assert(mdk.apMonDangKy(tvv, x.id, KHONG_S).doi, 'TVV đổi được');
-      for (const [ai, ng] of [['GV bộ môn', gvbm], ['CX', cx]] as const) {
+      for (const [ai, ng] of [['GV bộ môn', gvbm]] as const) {
         let ma: any = null; try { mdk.apMonDangKy(ng, x.id, CHI_W2); } catch (e: any) { ma = e.status; }
         assert(ma === 403, `${ai}: ${ma}`);
       }
       const du = suaCaLop.duLieuSuaCaLop(tvv, lopMb);
       assert(du.coTheDoiMon && du.coTheDoiTuan, 'TVV: mở cột Môn học + Tuần bắt đầu ([XM-C1])');
       assert(suaCaLop.xemTruocSuaCaLop(tvv, lopMb, { rows: [{ studentId: x.sid, monDangKy: CHI_W2 }] }).rows[0].issues.length === 0, 'TVV sửa cột Môn học');
+      /* N52 (chủ SP 18/11): CX sửa mọi thứ về HV như QL — cả Tuần bắt đầu. */
       let ma: any = null; try { suaCaLop.xemTruocSuaCaLop(cx, lopMb, { rows: [{ studentId: x.sid, startWeek: T2 }] }); } catch (e: any) { ma = e.status; }
-      assert(ma === 403, `CX Tuần bắt đầu vẫn 403: ${ma}`);
+      assert(ma === null, `CX Tuần bắt đầu (N52) phải được: ${ma}`);
     });
   });
 

@@ -154,11 +154,11 @@ export async function runPrOv12aTests(t: any) {
   });
 
   // ------------------------------------------------------------------ (4) QL xoá lớp trống
-  check('OV12a-4 · QL xoá lớp trống 200; lớp có dữ liệu 400; GV / TVV / CX / QL chi nhánh khác 403', () => thu(() => {
+  check('OV12a-4 · QL xoá lớp trống 200; lớp có dữ liệu 400; GV / TVV / QL chi nhánh khác 403 (N52: CX sửa lớp — `class.edit` — xoá được lớp trống)', () => thu(() => {
     const ma = 'MB-OV12A-TRONG';
     const lop = intake.createClass(P.admin, { code: ma, branchId: MB, kind: 'FOU', isFastTrack: false, startDate: '2026-08-03' }).id as number;
     assert(xoaKetThuc.xemXoaKetThuc(QL, lop).coTheXoa === true, 'QL phải thấy Xoá lớp trống');
-    for (const [ten, p] of [['GV', P.coreTeacher], ['TVV', TVV], ['CX', CX], ['Head CP', P.cpManager]] as const) {
+    for (const [ten, p] of [['GV', P.coreTeacher], ['TVV', TVV], ['Head CP', P.cpManager]] as const) {
       assert(maLoi(() => xoaKetThuc.xoaLop(p, lop)) === 403, `${ten} xoá phải 403`);
     }
     assert(maLoi(() => xoaKetThuc.xoaLop(QL, LOP)) === 400, 'lớp có dữ liệu phải 400');
@@ -209,18 +209,18 @@ export async function runPrOv12aTests(t: any) {
     return { sid, cy };
   };
   const hs = (sid: number) => get('SELECT status, archived_at FROM students WHERE id = ?', sid);
-  check('OV12a-6 · TVV chọn / bỏ Bước tiếp cả 3 hướng (200); hồ sơ có việc "Chọn bước tiếp sau thi"; TVV chi nhánh khác / CX / GV / Admin 403', () => thu(() => {
+  check('OV12a-6 · TVV chọn / bỏ Bước tiếp cả 3 hướng (200); hồ sơ có việc "Chọn bước tiếp sau thi"; TVV chi nhánh khác / GV / Admin 403 (CX N52 chọn được)', () => thu(() => {
     const lop = taoLopFt(); const lt2 = taoLopFt('LT2');
     const a = emCoKetQua(lop);
-    assert(buocTiep.trangThaiBuocTiep(TVV, a.cy).coTheChon === true && buocTiep.trangThaiBuocTiep(CX, a.cy).coTheChon === false, 'cờ coTheChon');
+    assert(buocTiep.trangThaiBuocTiep(TVV, a.cy).coTheChon === true && buocTiep.trangThaiBuocTiep(CX, a.cy).coTheChon === true, 'cờ coTheChon');
     const viec = profile.studentProfile(TVV, a.sid).dauHoSo.viec.cuaBan;
     assert(viec.some((v: any) => v.loai === 'buoc-tiep' && v.key === `buoc_tiep:${a.cy}` && v.mo?.href?.includes(`buoc-tiep=${a.cy}`)), JSON.stringify(viec));   // OV-13m: panel Bước tiếp
-    for (const [ten, p] of [['TVV CP', TVV_CP], ['CX', CX], ['GV', P.coreTeacher], ['Admin', ADMIN]] as const) {
+    for (const [ten, p] of [['TVV CP', TVV_CP], ['GV', P.coreTeacher], ['Admin', ADMIN]] as const) {   // N52: CX chọn được như QL
       assert(maLoi(() => buocTiep.chonBuocTiep(p, a.cy, { chon: 'ket_thuc' })) === 403, `${ten} chọn phải 403`);
     }
     buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'ket_thuc' });
     assert(hs(a.sid).archived_at && get('SELECT buoc_tiep FROM learning_cycles WHERE id = ?', a.cy).buoc_tiep === 'ket_thuc', 'Kết thúc');
-    assert(maLoi(() => buocTiep.boChonBuocTiep(CX, a.cy)) === 403 && maLoi(() => buocTiep.boChonBuocTiep(TVV_CP, a.cy)) === 403, 'bỏ chọn ngoài quyền');
+    assert(maLoi(() => buocTiep.boChonBuocTiep(TVV_CP, a.cy)) === 403, 'bỏ chọn ngoài quyền');
     buocTiep.boChonBuocTiep(TVV, a.cy);
     assert(!hs(a.sid).archived_at && get('SELECT buoc_tiep FROM learning_cycles WHERE id = ?', a.cy).buoc_tiep === null, 'bỏ Kết thúc');
     buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'hoc_lai' });
@@ -264,7 +264,7 @@ export async function runPrOv12aTests(t: any) {
     assert(maLoi(() => buocTiep.chonBuocTiep(TVV, a.cy, { chon: 'hoc_tiep', lopMoiId: lopCp })) === 403, 'TVV Học tiếp sang lớp chi nhánh khác');
     const dsTvv = students.lopChoHocLai(TVV, a.sid).lop as any[];
     assert(dsTvv.length > 0 && dsTvv.every((l) => l.chiNhanhId === MB) && students.lopChoHocLai(QL, a.sid).lop.some((l: any) => l.id === lopCp), 'TVV chỉ thấy lớp chi nhánh mình; QL thấy cả lớp CP');
-    assert(maLoi(() => students.lopChoHocLai(TVV_CP, a.sid)) === 403 && maLoi(() => students.lopChoHocLai(CX, a.sid)) === 403, 'lớp Học lại ngoài quyền');
+    assert(maLoi(() => students.lopChoHocLai(TVV_CP, a.sid)) === 403, 'lớp Học lại ngoài quyền');   // N52: CX xem lớp Học lại như QL
     ngay('2026-09-17');
     const sid = em();
     const { caseId, ivId } = caseVaPa(sid, '2026-09-17');

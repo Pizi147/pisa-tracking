@@ -5,6 +5,7 @@
  */
 import { DS_JSON, db, theoLoJson, tx } from '../db.ts';
 import { PERMISSIONS, canNamGan, diemThiHopLe, docLayLai, docTargetKyThi, kyThiCuaChuongTrinh, type KyThi, docNgayNhap, duongHoSoHocVien, ngay, trangThaiSauThi, tuanLich, type GiaiDoanSauThi, type TrangThaiSauThi } from '../../../shared/domain/index.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
 import { can, coQuyenBuocTiep, lopDayDu, type Principal } from '../permissions.ts';
@@ -129,7 +130,7 @@ export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiTh
           thi_that_nhap_boi = ?, thi_that_nhap_luc = ?, ket_luan = ?, lam_moi_luc = ? WHERE id = ?`)
         .run(ngayLuu, ghi.l, ghi.r, ghi.w, ghi.s, k2.ovr, khongThi ? 1 : 0, p.userId, nowIso(), k2.ketLuan, nowIso(), bc.id);
     }
-    const tom = (d: Diem, kt: boolean, ovr: number | null) => (kt ? 'Không thi' : `L ${d.l ?? '—'} · R ${d.r ?? '—'} · W ${d.w ?? '—'} · S ${d.s ?? '—'}${ovr !== null ? ` · OVR ${ovr}` : ''}`);
+    const tom = (d: Diem, kt: boolean, ovr: number | null) => (kt ? 'Không thi' : `L ${fmtBand(d.l)} · R ${fmtBand(d.r)} · W ${fmtBand(d.w)} · S ${fmtBand(d.s)}${ovr !== null ? ` · OVR ${fmtBand(ovr)}` : ''}`);
     addJourney({
       studentId: c.student_id, cycleId, eventType: 'cycle_outcome', eventDate: homNay, title: 'Kết quả thi thật',
       detail: `${tom(cu, !!c.thi_that_khong_thi, c.outcome_score ?? null)} → ${tom(ghi, khongThi, kq.ovr)}${lay.length ? ` · ${lay.map((k) => k.toUpperCase()).join(' ')}: điểm lần trước` : ''}`,

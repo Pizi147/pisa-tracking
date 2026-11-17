@@ -10,7 +10,7 @@ import {
   type PhieuBanGiaoGvDto, type SlotPhanCong, type TuDien,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
-import { can, type Principal } from '../permissions.ts';
+import { boVaiCx, can, type Principal } from '../permissions.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import type { GhiDao } from '../platform/ghiDao.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -177,7 +177,7 @@ function docViec(id: number): any {
 
 /** Quyền trên một việc: người viết (`nguoi_lam`); QL lớp điền thay khi việc không có người viết hoặc quá hạn; sau xác nhận người viết / QL vẫn sửa góp ý. */
 function quyenViec(p: Principal, b: any) {
-  const ql = coTheRaLenh(p, b.class_id);
+  const ql = coTheRaLenh(boVaiCx(p), b.class_id);
   const laNguoiLam = b.nguoi_lam === p.userId;
   /* RKC-4b: QL điền thay TRƯỚC hạn được — hỏi một câu ở nơi ghi (`vuot`), như luật bàn giao chuyển lớp. */
   const thayLuat = ql && !laNguoiLam && (b.nguoi_lam === null || demoToday() > b.han || b.trang_thai === 'xong');

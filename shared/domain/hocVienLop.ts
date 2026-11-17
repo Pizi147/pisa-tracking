@@ -16,6 +16,7 @@ import { NHAN_TRANG_THAI, TONE_BADGE_TRANG_THAI } from './trangThai.ts';
 import { CLASS_PHASE_LABEL, type ClassPhase } from './fasttrack.ts';
 import { dich as dichChuoi, t } from '../i18n/index.ts';
 import { kyGhiKetQua } from './display.ts';
+import { fmtBand } from './display.ts';
 
 // ---------------------------------------------------------------- chung
 
@@ -79,7 +80,7 @@ export function vaiXemHocVien(roles: readonly string[] | null | undefined): VaiX
   return r.includes('consultant') ? 'tvv' : r.includes('cx') ? 'cx' : r.includes('office_admin') ? 'admin' : null;
 }
 /** OV-11e (Q8 chủ SP): tích / bỏ KCK chỉ Quản lý / Quản trị (`cycle.edit`) và TVV — CX sửa được Target số, không đổi dấu KCK. Máy chủ + web cùng hàm. */
-export const duocDoiKck = (roles: readonly string[] | null | undefined, suaLoTrinh: boolean): boolean => suaLoTrinh || (roles ?? []).includes('consultant');
+export const duocDoiKck = (roles: readonly string[] | null | undefined, suaLoTrinh: boolean): boolean => suaLoTrinh || (roles ?? []).some((r) => r === 'consultant' || r === 'cx');   // N52: CX như TVV
 /** OV-10b: ô nhập Liên hệ hiện cho QL, Quản trị, TVV, CX, Admin — GV (GVCN, GVBM) không thấy. LIEN-HE-TVV (chủ SP 31/10): kiêm GV + TVV → vai TVV thắng. */
 export const coONhapLienHe = (roles: readonly string[] | null | undefined): boolean =>
   laVaiQuanLy(roles) || (roles ?? []).includes('consultant') || vaiXemHocVien(roles) !== null;
@@ -257,7 +258,7 @@ export type KetQuaHien = {
   dong2: string | null;          // "Không đạt: L R W" · "Không đạt: L G+V" · null
 };
 
-const band1 = (n: number) => n.toFixed(1);
+const band1 = (n: number) => fmtBand(n);
 const noiDong = (...p: (string | null | false)[]) => p.filter(Boolean).join(' · ');
 
 /**

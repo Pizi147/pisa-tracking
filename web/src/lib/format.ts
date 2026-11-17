@@ -35,10 +35,8 @@ export function fmtDateTime(d?: string | null): string {
   return `${fmtDate(d)} ${String(dt.getHours()).padStart(2, '0')}:${String(dt.getMinutes()).padStart(2, '0')}`;
 }
 
-/** Band trống KHÁC điểm 0 — luôn hiện dấu gạch, không bao giờ hiện 0 thay cho ô trống. */
-export function fmtBand(n: number | null | undefined): string {
-  return n === null || n === undefined ? '—' : Number(n).toFixed(1);
-}
+/** Band luôn một chữ số thập phân (N53); trống KHÁC điểm 0. Một hàm chung ở shared. */
+export { fmtBand } from '@shared/domain/display.ts';
 
 export function addDaysStr(d: string, days: number): string {
   const dt = new Date(d + 'T00:00:00Z');

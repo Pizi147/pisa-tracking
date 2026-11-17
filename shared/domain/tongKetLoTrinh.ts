@@ -6,6 +6,7 @@ import { hanTai } from './hanMacDinh.ts';
 import { addDaysIso } from './sos.ts';
 import { tuanLich } from './hienThiNgay.ts';
 import { t } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 export const LY_DO_DONG = ['lo_trinh_moi', 'chuyen_lop', 'len_lop', 'hoc_lai', 'sang_ft', 'ket_thuc', 'tam_dung', 'sua_tay', 'khong_ro'] as const;
 export type LyDoDong = (typeof LY_DO_DONG)[number];
@@ -51,7 +52,7 @@ export const CHU_DA_XONG = t('Đã xong');
 /** `ngan`: bỏ "Đã xong · " (dòng Công việc đã có tên việc "Chọn bước tiếp"). */
 export function nhanDaXong(k: { khongThi: boolean; ovr: number | null; ketLuan: string | null }, ngan = false): string {
   const kl = k.ketLuan === 'reached' ? t('Đạt Target') : k.ketLuan === 'not_reached' ? t('Chưa đạt Target') : null;
-  const ds = k.khongThi ? [t('Không thi')] : [k.ovr !== null ? `OVR ${k.ovr.toFixed(1)}` : null, kl].filter((x): x is string => !!x);
+  const ds = k.khongThi ? [t('Không thi')] : [k.ovr !== null ? `OVR ${fmtBand(k.ovr)}` : null, kl].filter((x): x is string => !!x);
   return (ngan ? ds : [CHU_DA_XONG, ...ds]).join(' · ');
 }
 /** Gợi ý (chỉ chữ, QL vẫn chọn): Đạt Target → Tạm dừng / Kết thúc học; chưa đạt / Không thi → Lộ trình mới (P7, sửa E9 — không trả `hoc_lai`); không có Target → không gợi ý. */

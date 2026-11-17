@@ -252,12 +252,12 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(loi(() => students.updateStudent(QL, sid, { dob: '31/02/2010' }))?.status === 400, 'ngày sinh không có thật phải 400');
   }));
 
-  check('OV11d-9 · Q8: đổi dấu KCK — QL / TVV được; GVCN (đề xuất) / CX / Admin 403', () => thu(() => {
+  check('OV11d-9 · Q8: đổi dấu KCK — QL / TVV / CX (N52) được; GVCN (đề xuất) / Admin 403', () => thu(() => {
     const sid = emFt();
     const cy = one(`SELECT id, target_score, khong_cam_ket FROM learning_cycles WHERE student_id = ? AND status = 'active'`, sid);
     const lat = (kck: boolean) => d.chuTargetKck(cy.target_score ?? null, kck);
     const kckMoi = !cy.khong_cam_ket;
-    for (const [ten, p] of [['CX', CX], ['Admin', ADMIN]] as const) {
+    for (const [ten, p] of [['Admin', ADMIN]] as const) {
       assert(loi(() => cycles.reviseTarget(p, cy.id, { newTarget: lat(kckMoi), reason: 'Thử KCK' }))?.status === 403, `${ten} đổi KCK phải 403`);
     }
     assert(loi(() => deXuat.guiDeXuatSua(GVCN, sid, { truong: 'target', moi: lat(kckMoi) || 'KCK', lyDo: 'Thử KCK' }))?.status === 403, 'GVCN đề xuất đổi KCK phải 403');
@@ -265,5 +265,8 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(!!one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === kckMoi, 'TVV đổi KCK');
     cycles.reviseTarget(QL, cy.id, { newTarget: lat(!kckMoi), reason: 'Head bỏ KCK' });
     assert(!!one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === !kckMoi, 'QL đổi KCK');
+    /* N52 (chủ SP 18/11): CX sửa Target như QL — cả dấu KCK. */
+    cycles.reviseTarget(CX, cy.id, { newTarget: lat(kckMoi), reason: 'CX tích KCK' });
+    assert(!!one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === kckMoi, 'CX đổi KCK');
   }));
 }

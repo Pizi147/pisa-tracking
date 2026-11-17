@@ -7,12 +7,13 @@ import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { NutLuat } from '../../ui/NutLuat.tsx';
 import { t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 
 type GiaTri = Record<string, number>;
 type Xem = { id: number; v: GiaTri; goc: GiaTri; suaDuoc: boolean };
 type Truong = { k: string; nhan: string; hien: (n: number) => string; min: number; max: number; buoc: number; donVi: string; luat?: string };
 
-const hienKyVong = (n: number) => (n === 0 ? '= Target' : `Target − ${n.toFixed(1)}`);   // tên riêng + số: EN giống VI
+const hienKyVong = (n: number) => (n === 0 ? '= Target' : `Target − ${fmtBand(n)}`);   // tên riêng + số: EN giống VI
 const pt = (n: number) => `${n} %`;
 
 const KY_VONG: Truong[] = [
@@ -131,7 +132,7 @@ function KhoiCauHinh({ duong, tieuDe, truong, apDung, giaiThich, them, sauLuu }:
 
 /** Ô sửa một giá trị tại chỗ: Enter lưu, Esc thôi (đã đổi thì hỏi một lần). Kiểm ở web như máy chủ; lỗi máy chủ (vd "Lên từ" ≤ "Học lại dưới") báo tại ô. */
 function SuaO({ q, n, onThoi, onLuu }: { q: Truong; n: number; onThoi: () => void; onLuu: (n: number) => Promise<void> }) {
-  const [x, setX] = useState(String(n));
+  const [x, setX] = useState(fmtBand(n));
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const [hoiBo, setHoiBo] = useState(false);

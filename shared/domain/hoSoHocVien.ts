@@ -16,6 +16,7 @@ import { nhanLichThi, type LichThi } from './lichThiOv15f.ts';
 import { VIOLATION_CATEGORIES, VIOLATION_CATEGORY_LABEL, type ViolationCategory } from './yThuc.ts';
 import { moiNhatTruoc, nhanBaiThuong } from './normal.ts';
 import { dich, ghepChu, kem, t, type ChuKhoa } from '../i18n/index.ts';
+import { fmtBand } from './display.ts';
 
 // ====================================================================== ba tab (D2, A6)
 
@@ -260,7 +261,7 @@ export function cauTomTat(i: DauVaoCau): ManhCau[] {
     const dau = k.phanTram !== null ? { chu: `${k.dau} ${k.phanTram}%` } : kem('{dau} {dat}/{mon} môn đạt', { dau: k.dau, dat: k.soDat, mon: k.soMon });
     m1 = { ...(k.monTruot.length ? kem('{dau}: không đạt {ds}', { dau, ds: noiVaK(k.monTruot) }) : dau), tone: k.monTruot.length ? 'warn' : null };
   } else if (k.kck && k.kckDuoi) m1 = { ...voiHoTro(kem(kckRieng ? '{dau} dưới kỳ vọng' : '{dau} dưới kỳ vọng · KCK', { dau: k.dau })), tone: null };   // OV-9: không SOS, không màu; mảnh 0 đã nói KCK thì không lặp
-  else if (k.kck && k.sos === null && !k.dat) m1 = { ...voiHoTro({ chu: k.overall !== null ? `${k.dau} OVR ${k.overall.toFixed(1)}` : k.dau }), tone: null };   // KCK chưa có Target (không kỳ vọng)
+  else if (k.kck && k.sos === null && !k.dat) m1 = { ...voiHoTro({ chu: k.overall !== null ? `${k.dau} OVR ${fmtBand(k.overall)}` : k.dau }), tone: null };   // KCK chưa có Target (không kỳ vọng)
   else if (k.sos) {
     const tam = !(k.chot ?? (k.coDiem === undefined || k.coDiem >= k.soMon));
     m1 = { ...voiHoTro(tam ? kem('{dau} SOS {sos} tạm thời', { dau: k.dau, sos: k.sos }) : { chu: `${k.dau} SOS ${k.sos}` }), tone: toneSos(k.sos) };
@@ -352,7 +353,7 @@ export function oSapToi(i: {
   const phu = (phuK: ChuKhoa) => ({ tren: 'mốc kế tiếp', gt, phu: phuK.chu, phuK });
   if (i.ratio) return phu(n.final && i.bacKe ? kem('{n} môn · xét lên {bac}', { n: n.soPhan, bac: i.bacKe }) : kem('{n} môn', { n: n.soPhan }));
   if (i.kck && n.kyVong === null) return phu(n.attemptNo > 1 ? kem('so với MT{so}, không kỳ vọng', { so: n.attemptNo - 1 }) : { chu: 'không kỳ vọng' });   // OV-9: KCK chưa có Target
-  return phu(n.kyVong !== null ? kem('kỳ vọng {kv} · {n} phần', { kv: n.kyVong.toFixed(1), n: n.soPhan }) : kem('{n} phần', { n: n.soPhan }));
+  return phu(n.kyVong !== null ? kem('kỳ vọng {kv} · {n} phần', { kv: fmtBand(n.kyVong), n: n.soPhan }) : kem('{n} phần', { n: n.soPhan }));
 }
 
 // ====================================================================== bảng kỹ năng: chữ của hàng PA và cột Việc tiếp (PR-VAI-b Task 6)

@@ -18,7 +18,7 @@ import {
   type NhomEm, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { kem, type ChuKhoa } from '../../../shared/i18n/index.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, duyetYThuc, require_, type Principal } from '../permissions.ts';
 import { HttpError, badRequest, canXacNhan, loi, notFound } from '../util.ts';
 import { demoToday } from '../demoConfig.ts';
 import { writeAudit } from '../platform/audit.ts';
@@ -99,7 +99,7 @@ export function loYThucLop(p: Principal, classId: number): BangLo {
   const ids = emCuaLop(classId);
   const trang = trangThaiYThuc(ids, homNay);
   const hv = hvCua(ids);
-  const laQl = can(p, PERMISSIONS.REQUEST_APPROVE, { classId });
+  const laQl = duyetYThuc(p, { classId });
   const em: EmLo[] = ids.map((sid) => {
     const e = trang.get(sid)!;
     const tick = viPhamXuLy(e, homNay);
@@ -129,7 +129,7 @@ function chuanBi(p: Principal, classId: number, studentIds: unknown[]) {
   const homNay = demoToday();
   const trongLop = new Set((db().prepare(`SELECT student_id FROM enrollments WHERE class_id = ? AND status = 'active' AND student_id IN (${ids.map(() => '?').join(',')})`)
     .all(classId, ...ids) as any[]).map((r) => r.student_id as number));
-  return { cls, ids, homNay, trongLop, hv: hvCua(ids), trang: trangThaiYThuc(ids, homNay), laQl: can(p, PERMISSIONS.REQUEST_APPROVE, { classId }) };
+  return { cls, ids, homNay, trongLop, hv: hvCua(ids), trang: trangThaiYThuc(ids, homNay), laQl: duyetYThuc(p, { classId }) };
 }
 type Lo = ReturnType<typeof chuanBi>;
 type HvLo = { full_name: string; student_code: string };

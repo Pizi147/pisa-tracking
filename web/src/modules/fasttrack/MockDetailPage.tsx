@@ -642,7 +642,7 @@ function knHop(d: Detail): KnO {
     kn[r.skill as KyNangKH] = {
       ...oKyNangTuLich(r, khongDuThiTuO(d.cells, r.skill)),
       khoa: r.sitStatus === 'cancelled' ? 'đã huỷ' : coDiem ? 'đã có điểm' : r.sitStatus === 'sat' ? 'đã làm bài' : null,
-      ...(bands.length ? { diem: bands.map((b) => b.toFixed(1)).join(' / ') } : {}),
+      ...(bands.length ? { diem: bands.map((b) => fmtBand(b)).join(' / ') } : {}),
     };
   }
   return kn;

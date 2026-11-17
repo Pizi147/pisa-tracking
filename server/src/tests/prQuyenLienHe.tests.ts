@@ -152,20 +152,21 @@ export async function runPrQuyenLienHeTests(t: YThucTestKit) {
   };
   const loTrinhLop = (lopId: number) => one(`SELECT cy.* FROM learning_cycles cy JOIN enrollments e ON e.student_id = cy.student_id AND e.class_id = ? AND e.status = 'active'
       WHERE cy.status = 'active' AND cy.route IS NOT NULL AND cy.khong_cam_ket = 0 AND cy.target_score IS NOT NULL ORDER BY cy.id LIMIT 1`, lopId);
-  check('QCN · KCK: TVV MB kiêm CX CP — tích KCK em CP → 403 (Target số vẫn sửa được); em MB tích KCK được', () => thu(() => {
+  /* N52 (chủ SP 18/11): CX sửa Target như QL (`cycle.edit` ở chi nhánh grant) — trước N52 em CP → 403. */
+  check('QCN · KCK: TVV MB kiêm CX CP — tích KCK em CP (CX N52) và em MB (TVV) được; Target số sửa được', () => thu(() => {
     const p = taoTk('tvvmbcxcp', [{ role: 'consultant', branches: ['MB'] }, { role: 'cx', branches: ['CP'] }]);
     const cyCp = loTrinhLop(lopCp), cyMb = loTrinhLop(lop);
     assert(cyCp && cyMb, 'demo cần lộ trình FT có Target ở MB FT 101 và CP FT 110');
     assert(!vaiVoiEm(p, cyCp.student_id).includes('consultant'), `em CP không thuộc MB: ${vaiVoiEm(p, cyCp.student_id)}`);
     const e = maLoi(() => cycles.reviseTarget(p, cyCp.id, { newTarget: `${cyCp.target_score} KCK`, reason: 'Thử tích KCK khác chi nhánh' }));
-    assert(e?.status === 403, `em CP → ${e?.status} ${e?.message ?? ''}`);
-    assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cyCp.id).k === 0, 'không ghi');
+    assert(!e, `em CP → ${e?.status} ${e?.message ?? ''}`);
+    assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cyCp.id).k === 1, 'CX CP tích KCK');
     const moi = cyCp.target_score >= 9 ? cyCp.target_score - 0.5 : cyCp.target_score + 0.5;
     cycles.reviseTarget(p, cyCp.id, { newTarget: moi, reason: 'CX sửa Target số' });
     assert(one('SELECT target_score t FROM learning_cycles WHERE id = ?', cyCp.id).t === moi, 'CX CP sửa Target số được');
     cycles.reviseTarget(p, cyMb.id, { newTarget: `${cyMb.target_score} KCK`, reason: 'TVV MB tích KCK' });
     assert(one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cyMb.id).k === 1, 'em MB: TVV tích KCK được');
-    assert(hs.studentProfile(p, cyCp.student_id).viewer.doiKck === false && hs.studentProfile(p, cyMb.student_id).viewer.doiKck === true, 'hồ sơ: ô KCK theo chi nhánh em');
+    assert(hs.studentProfile(p, cyCp.student_id).viewer.doiKck === true && hs.studentProfile(p, cyMb.student_id).viewer.doiKck === true, 'hồ sơ: ô KCK theo chi nhánh em');
   }));
   check('QCN · Sửa cả lớp MB, CX MB kiêm GV CP: em chi nhánh CP → ô Liên hệ chỉ đọc (rows[].nhapLienHe), gửi → 403; em MB sửa được', () => thu(() => {
     const p = taoTk('cxmbgvcp', [{ role: 'cx', branches: ['MB'] }, { role: 'teacher', branches: ['CP'] }]);

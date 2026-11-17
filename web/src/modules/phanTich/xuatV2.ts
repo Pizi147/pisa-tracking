@@ -34,11 +34,11 @@ const KN_LUOT = ['l', 'r', 'w1', 'w2', 's'] as const;
 export function sheetDanhSach(rows: readonly any[], gv?: (r: any) => string | null): SheetDep {
   const ten = t('Danh sách');
   if (rows.length && rows.every((r) => r.luotDiem)) {
-    const d = (o: any): OXlsx => (o ? { v: o.v, mau: MAU_KQ[o.kq ?? ''] } : '—');
+    const d = (o: any): OXlsx => (o ? { v: o.v, dang: 'band', mau: MAU_KQ[o.kq ?? ''] } : '—');
     const kq = (o: any): OXlsx => (!o?.kq ? '' : o.kq === 'vuot' ? { v: t('Vượt'), mau: 'vuot' } : o.kq === 'duoi' ? { v: t('Chưa đạt'), mau: 'chua-dat' } : { v: t('Đạt'), mau: 'dat' });
     return { ten, coDinhCot: false, dau: [[t('Học viên'), t('Lớp'), t('Lượt'), t('Tuần'), 'L', 'R', 'W1', 'W2', 'S', 'Overall', t('Kỳ vọng'), t('Kết quả')]],
       hang: rows.map(({ luotDiem: x }) => [x.ten, x.lop, `MT${x.mt}`, /^\d{4}-\d{2}-\d{2}/.test(x.tuan ?? '') ? maTuan(x.tuan).ma : x.tuan ?? '',
-        ...KN_LUOT.map((k) => d(x.kn?.[k])), d(x.ovr), x.kyVong ?? '—', kq(x.ovr)]) };
+        ...KN_LUOT.map((k) => d(x.kn?.[k])), d(x.ovr), x.kyVong == null ? '—' : { v: x.kyVong, dang: 'band' }, kq(x.ovr)]) };
   }
   if (rows.length && rows.every((r) => r.baiThuong)) {
     /* Bài lớp thường: mỗi môn "đúng/tổng" (màu Đạt / Chưa đạt theo ngưỡng lớp) + % tổng (Final). Môn theo thứ tự xuất hiện. */

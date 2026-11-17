@@ -37,6 +37,7 @@ import { trangThaiYThuc, ungVienVaThe, type EmYThuc } from '../yThuc/trangThai.t
 import { apDungDeXuatChuyenLop, kiemDeXuatChuyenLop, nguoiNhanCuaLop } from '../classes/lenhChuyen.ts';
 import { chotDeXuatYThuc, duyetThuHoiYThuc, quetYThucHetHan, huyThuHoiYThuc, kiemNguoiGuiYThuc, rutDeXuatYThuc, soLieuThuHoi, suaDeXuatYThuc } from '../yThuc/xuLy.ts';
 import { dongViecTheoXuLy } from '../yThuc/baoPhTvv.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 /**
  * PR-YT4 — vì sao em cần Báo QL (null = không): bắt buộc quá hạn · đã duyệt chưa thực hiện quá 5 ngày. Chủ SP 06/11: vi phạm Mới quá 5 ngày chưa xem
@@ -391,7 +392,7 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const d = JSON.parse(yc.du_lieu ?? '{}') as { truong: TruongDeXuat; cu: unknown; moi: unknown };
       const nhan = NHAN_TRUONG_DE_XUAT[d.truong] ?? 'thông tin';
       const tuAp = TRUONG_TU_AP.includes(d.truong);
-      const hien = (x: unknown) => (x === null || x === undefined || x === '' ? 'chưa có' : typeof x === 'number' ? x.toFixed(1) : String(x));
+      const hien = (x: unknown) => (x === null || x === undefined || x === '' ? 'chưa có' : typeof x === 'number' ? fmtBand(x) : String(x));
       return {
         /* Không có giá trị cũ (lịch MT, khác) thì không ghi "chưa có →" — nói thẳng nội dung đề xuất. */
         tieuDe: d.truong === 'khac' ? `Đề xuất sửa: ${hien(d.moi)}`

@@ -11,6 +11,7 @@ import { toneHuong } from './CacLoTrinh.tsx';
 import { OTuanDay } from '../../ui/TuanDayGv.tsx';
 import { PanelBuocTiep, type TrangThaiBuocTiep } from './PanelBuocTiep.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
 
@@ -37,7 +38,7 @@ type TongKet = {
   luot: Luot[];
 };
 
-const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : v.toFixed(1));
+const b1 = (v: number | null | undefined) => (v === null || v === undefined ? '—' : fmtBand(v));
 const NGAN_KN: Record<string, string> = { listening: 'L', reading: 'R', writing: 'W', speaking: 'S' };
 const chuKqdr = (k: { dat: boolean; nguyenNhan: string | null; mon: string[] }) => (k.dat ? t('Đạt')
   : [t('Không đạt'), k.nguyenNhan === 'hoc_sinh' ? t('Học viên') : k.nguyenNhan === 'trung_tam' ? t('Trung tâm') : null, k.mon.map((m) => NGAN_KN[m] ?? m).join(' ') || null].filter(Boolean).join(' · '));
@@ -89,7 +90,7 @@ const diem5 = (l: Luot) => {
 function Chenh({ moi, cu, duoi }: { moi: number | null; cu: number | null; /** dòng riêng dưới số (bảng 1440 — cột không nở) */ duoi?: boolean }) {
   if (moi === null || cu === null) return null;
   const d = Math.round((moi - cu) * 10) / 10;
-  return <span className={`${duoi ? 'block leading-tight' : 'ml-1'} text-[12px] font-semibold tabular-nums ${d > 0 ? 'text-kq-bang' : d < 0 ? 'text-kq-duoi' : 'text-slate-500'}`}>{d > 0 ? '+' : d < 0 ? '−' : '±'}{Math.abs(d).toFixed(1)}</span>;
+  return <span className={`${duoi ? 'block leading-tight' : 'ml-1'} text-[12px] font-semibold tabular-nums ${d > 0 ? 'text-kq-bang' : d < 0 ? 'text-kq-duoi' : 'text-slate-500'}`}>{d > 0 ? '+' : d < 0 ? '−' : '±'}{fmtBand(Math.abs(d))}</span>;
 }
 
 function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: DauVao | null }) {
@@ -316,7 +317,7 @@ export function NganTongKet({ cycleId, onClose, onDoi }: { cycleId: number; onCl
 
             <div className="flex flex-wrap gap-x-3.5 gap-y-1 text-[13px] text-slate-400">
               {/* Chủ SP 12/11: FT có hàng "Đầu vào" đủ kỹ năng trong bảng MT — dòng này giữ Đầu vào cho lớp thường. */}
-              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), !ft && data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.kyThi ? (data.target !== null ? String(data.target) : null) : data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
+              {[[t('Lớp'), data.lop], [t('GVCN'), data.gvcn], [t('Đầu vào'), !ft && data.dauVao !== null ? b1(data.dauVao) : null], ...(ft ? [] : [['Target', data.kyThi ? (data.target !== null ? fmtBand(data.target) : null) : data.khongCamKet ? hienTargetKck(data.target !== null ? b1(data.target) : null, true) : data.target !== null ? b1(data.target) : null]]), [t('Thời gian'), dich(data.thoiGian)],
                 ...(kq.loai === 'thuong' && kq.kqdr ? [[t('Kết quả đầu ra'), chuKqdr(kq.kqdr)]] : [])]
                 .filter(([, v]) => v).map(([k, v]) => <span key={k as string}>{k} <b className="font-semibold text-slate-200">{v}</b></span>)}
             </div>

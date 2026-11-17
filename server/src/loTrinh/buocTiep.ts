@@ -21,9 +21,10 @@ import {
   type DongSauThi, type HuongSauThi, type LuaChonSauThi,
   chuMon, luuMon, type MonVao,
 } from '../../../shared/domain/index.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 import { demoToday } from '../demoConfig.ts';
 import { HttpError, addDays, badRequest, conflict, forbidden, notFound, nowIso, chuTuDo } from '../util.ts';
-import { can, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { can, grantPhiaTvv, loadPrincipal, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { archiveStudent, coQuyenBuocTiep, hoanTacHocLai, hoanTacKetThuc, hoanTacTamDung, hocLai, ketThucSangTamDung, setStudentStatus, unarchiveStudent } from '../students/students.ts';
 import { huyLenh, raLenh } from '../classes/lenhChuyen.ts';
 import { dauVaoTuLoTrinh, type LoTrinhMoiSauThi } from '../classes/luatLoTrinh.ts';
@@ -100,7 +101,7 @@ const kemKqHocTiep = (c: any): any => {
   return h ? { ...c, ...JSON.parse(h.cot_json), co_kq: 1 } : c;
 };
 /** N53 (chủ SP 18/11): Target band luôn ".0 / .5" ("7.0", "6.5 KCK") — chữ Target của panel Bước tiếp, xem trước Lộ trình mới, ô Học tiếp. */
-const tgChu = (c: any) => chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket);
+const tgChu = (c: any) => chuTargetKck(c.target_score == null ? null : fmtBand(c.target_score), !!c.khong_cam_ket);
 const dauKq = (c: any) => JSON.stringify([!!c.thi_that_khong_thi, c.thi_that_l ?? null, c.thi_that_r ?? null, c.thi_that_w ?? null, c.thi_that_s ?? null, c.outcome_score ?? null, c.outcome ?? null]);
 
 export type TrangThaiBuocTiep = {
@@ -128,7 +129,7 @@ export function targetGoiYSauDat(c: { target_score?: number | null; outcome_scor
   const tg = c.target_score ?? null;
   if (tg === null || c.thi_that_khong_thi) return null;
   const dat = ketLuan === 'reached' || (c.outcome_score != null && c.outcome_score >= tg);
-  return dat ? Math.min(9, tg + 1).toFixed(1) : null;
+  return dat ? fmtBand(Math.min(9, tg + 1)) : null;
 }
 
 /** Mục "Bước tiếp" (ngăn Tổng kết, panel Bước tiếp, Các lộ trình) — null khi lộ trình không có mục. `coTheChon` = `coQuyenBuocTiep`, máy chủ kiểm lại khi chọn. */
@@ -238,8 +239,8 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
     /* P8 (mockup k1, k3): môn học trong dòng đầu — "đủ 5 môn" · "chỉ S" · "L · R · W2 · S". */
     `Mở ${ten} ở ${lt.lopDich?.code ?? '—'} từ ${batDau === homNay ? ngay(batDau, homNay) : `Thứ Hai ${ngay(batDau, homNay)}`}${!lt.lopDich?.is_fast_track ? '' : ` · ${!lt.monDangKy ? 'đủ 5 môn' : JSON.parse(lt.monDangKy).length === 1 ? `chỉ ${chuMon(lt.monDangKy)}` : chuMon(lt.monDangKy)}`}${tg ? ` · Target ${tg}` : ''}`,
     lich.length ? `Tạo MT1–MT${lich.length}: ${lich.map((w) => tuanLich(addDays(t2, 7 * (w - 1)), homNay)).join(' · ')}` : 'Không tạo MT · thêm "+ MT" ở Kế hoạch Test khi cần',
-    ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${dv.score?.toFixed(1)}) — chưa có KQ thi thật`
-      : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${dv.l?.toFixed(1)} · R ${dv.r?.toFixed(1)} · W ${dv.w?.toFixed(1)} · S ${dv.s?.toFixed(1)}`] : []),
+    ...(dv ? [dv.attemptId ? `Đầu vào = ${dv.nguon.split(' ')[0]} (Overall ${fmtBand(dv.score)}) — chưa có KQ thi thật`
+      : `Đầu vào = KQ thi ${ngay(c.thi_that_ngay, homNay)}: L ${fmtBand(dv.l)} · R ${fmtBand(dv.r)} · W ${fmtBand(dv.w)} · S ${fmtBand(dv.s)}`] : []),
     ...(lopMoiId && c.lop_id && lopMoiId !== c.lop_id ? [`Rời ${c.lop_code}`] : []),
     caseMo.length ? `Kết thúc ${tenCu} · đóng ${caseMo.length} Case${mon ? ` (${mon})` : ''} — Kết thúc lộ trình` : `Kết thúc ${tenCu}`,
     ...(soPa ? [`Dừng ${soPa} PA — Dừng · kết thúc lộ trình`] : []),
@@ -259,7 +260,7 @@ export function xemTruocLoTrinhMoi(p: Principal, cycleId: number, input: ChonBuo
  */
 function nguoiLam(p: Principal, studentId: number): Principal {
   if (can(p, PERMISSIONS.CYCLE_EDIT, { studentId })) return p;
-  const g = p.grants.find((x) => x.roleKey === 'consultant' && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));
+  const g = p.grants.find((x) => grantPhiaTvv(x) && can({ ...p, grants: [x] }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId }));   // N52: CX như TVV
   if (!g) throw forbidden(CHI_QL);
   const quyen = new Set<string>([PERMISSIONS.CYCLE_EDIT, PERMISSIONS.CLASS_EDIT, PERMISSIONS.STUDENT_EDIT, PERMISSIONS.STUDENT_EDIT_MORE]);
   return { ...p, grants: [...p.grants, { ...g, id: -1, roleKey: 'buoc_tiep', roleName: 'Bước tiếp sau thi', permissions: quyen }] };

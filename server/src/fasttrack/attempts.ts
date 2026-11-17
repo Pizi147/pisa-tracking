@@ -46,6 +46,7 @@ import { lichMtCua } from '../classes/schedule.ts';
 import { moLaiLop } from '../classes/xoaKetThucLop.ts';
 import { sExCuaHv } from '../cham/sExpert.ts';
 import { MT0_THEO_EM_SQL } from './mt0.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 export type ScoreRow = {
   id: number; skill: EntrySkill;
@@ -1071,14 +1072,14 @@ export function listAttempts(p: Principal, f: AttemptFilters = {}) {
 /** Một dòng chữ mô tả một ô điểm, để "trước → sau" trong lịch sử đọc được mà không cần biết bảng dữ liệu. */
 export function scoreSummaryText(row: Partial<ScoreRow> | null | undefined): string {
   if (!row) return 'Chưa có';
-  const band = row.band !== null && row.band !== undefined ? ` · Band ${Number(row.band).toFixed(1)}` : '';
+  const band = row.band !== null && row.band !== undefined ? ` · Band ${fmtBand(row.band)}` : '';
   if (row.raw_score !== null && row.raw_score !== undefined) return `${row.raw_score} câu đúng${band}`;
   const crit = [row.c1, row.c2, row.c3, row.c4];
   if (crit.some((v) => v !== null && v !== undefined)) {
     return `Tiêu chí ${crit.map((v) => (v === null || v === undefined ? '–' : v)).join(' / ')}${band}`;
   }
   if (row.no_show_period_id) return 'Báo "-" (không có bài)';
-  if (band) return `Band ${Number(row.band).toFixed(1)}`;   // T10: band nhập thẳng
+  if (band) return `Band ${fmtBand(row.band)}`;   // T10: band nhập thẳng
   return 'Trống';
 }
 

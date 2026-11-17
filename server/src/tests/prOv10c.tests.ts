@@ -90,9 +90,10 @@ export async function runPrOv10cTests(t: YThucTestKit) {
     assert(motCn.dem.thieu_tt === danhSachHocVienLop(cx, { phamVi: 'chi-nhanh', branchId: cp }).dem.thieu_tt, 'Thiếu thông tin ≠ chip (CP)');
   });
 
-  check('OV10c-4 · CX không nhận số theo giáo viên: bảng "Theo giáo viên" vẫn 403', () => {
+  /* N52 (chủ SP 18/11): CX xem phần giáo viên như QL. */
+  check('OV10c-4 · CX (N52) xem bảng "Theo giáo viên"', () => {
     const e = loi(() => bangGvChiNhanh(loadPrincipal(idCx), { cn: cp, ct: null }));
-    assert(e?.status === 403, `CX /giao-vien: ${e?.status ?? 'không lỗi'}`);
+    assert(!e, `CX /giao-vien: ${e?.status} ${e?.message}`);
   });
 
   // ------------------------------------------------------------------ Admin "Mock Test" (Móng Bình: demo có MT tuần này, ô quá hạn, đề nghị dời)

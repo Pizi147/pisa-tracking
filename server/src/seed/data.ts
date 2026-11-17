@@ -101,8 +101,14 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * OV-13p (chủ SP 16/10): tạo lớp (`class.create`, chi nhánh của grant) + thêm học viên (`student.add`) — KHÔNG phân công GV (`class.assign`).
    */
   consultant: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
-  /* CX: như TVV, grant toàn hệ thống; Tổng quan · Phân tích trừ phần giáo viên (không `analysis.view_teacher`). */
-  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add'],
+  /*
+   * CX — N52 (chủ SP 18/11): theo 1 / nhiều chi nhánh (grant không chi nhánh = toàn hệ thống). XEM mọi thứ như Quản lý (Test, Công việc, Phân tích cả
+   * phần giáo viên, thống kê Ý thức). SỬA = phía TVV (người quản lý TVV): mọi quyền TVV (`VAI_PHIA_TVV`, `permissions.ts`) + Ý thức + tạo / sửa lớp, thêm HV,
+   * chuyển lớp (`class.edit`). KHÔNG học thuật: điểm, lịch Test, Case / PA, phân công GV, quản trị. KHÔNG bị giao việc (`boVaiCx`, `worklist/xemViec.ts`).
+   * Migrate DB cũ: `migrate/prCxN52.ts`.
+   */
+  cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add',
+    'class.edit', 'violation.record', 'discipline.manage', 'test.view', 'work.view', 'analysis.view_teacher', 'discipline.stats', 'meeting.view'],
   /* TU-a: Head tutor — chỉ trang Tutor (toàn hệ thống). Không Case, HV, điểm, Công việc. */
   head_tutor: ['tutor.view', 'tutor.manage'],
 };

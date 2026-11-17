@@ -1,6 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { api, invalidate } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
+import { fmtBand } from '../../lib/format.ts';
 import { KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { ChuLuu, LOP_DA_LUU, NutDongPanel, dauViec, type TtLuu } from '../../ui/KhuonViec.tsx';
 import { LichSuThayDoi } from '../../ui/LichSuThayDoi.tsx';
@@ -20,7 +21,7 @@ import { DongLanTruoc, diemBanDau, layLaiBanDau, type KyNangThi } from '../stude
 
 const KN = ['l', 'r', 'w', 's'] as const;
 type Diem = Record<(typeof KN)[number], string>;
-const so = (v: number | null | undefined) => (v === null || v === undefined ? '' : v.toFixed(1));
+const so = (v: number | null | undefined) => (v === null || v === undefined ? '' : fmtBand(v));
 const LAM_MOI = ['/students', '/classes', '/hoc-vien-lop', '/lo-trinh', '/my-work', '/cycles', '/tong-quan'];
 type Chon = HuongSauThi;
 
@@ -67,7 +68,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
     em, lop,
     ngCanh: c ? (
       <span className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1">
-        {[ngayThi && t('thi IELTS {ngay}', { ngay: ngay(ngayThi, hn) }), target !== null && `Target ${target.toFixed(1)}`].filter(Boolean).join(' · ')}
+        {[ngayThi && t('thi IELTS {ngay}', { ngay: ngay(ngayThi, hn) }), target !== null && `Target ${fmtBand(target)}`].filter(Boolean).join(' · ')}
         {/* DON-LUONG K14: đã chốt bước tiếp (kể cả vừa "Mở lộ trình" — đọc lại bước tiếp) → chip nói bước đã chọn, không còn "Chưa chốt". */}
         {coKq && bt.data?.chon ? <Nhan tone="ok">{t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[bt.data.chon as keyof typeof NHAN_SAU_THI] })}</Nhan>
           : coKq ? <Nhan tone="doing">{t('Đã có kết quả · Chưa chốt bước tiếp')}</Nhan> : <NhanLich loai="da-thi">{t('Đã thi · chờ KQ')}</NhanLich>}
@@ -171,15 +172,15 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
               <div className="max-sm:col-span-4">
                 <span className="mb-1.5 block text-xs font-semibold text-slate-400">Overall</span>
                 <span className="flex h-10 items-center justify-center rounded-lg text-sm font-bold tabular-nums" style={{ background: 'var(--surface-2)' }} aria-label={t('Overall tự tính')}>
-                  {kq?.ovr != null ? <span className={kq.ketLuan === 'reached' ? 'text-kq-bang' : kq.ketLuan === 'not_reached' ? 'text-bad' : 'text-slate-100'}>{kq.ketLuan === 'reached' ? '✓ ' : ''}{kq.ovr.toFixed(1)}</span> : '–'}
+                  {kq?.ovr != null ? <span className={kq.ketLuan === 'reached' ? 'text-kq-bang' : kq.ketLuan === 'not_reached' ? 'text-bad' : 'text-slate-100'}>{kq.ketLuan === 'reached' ? '✓ ' : ''}{fmtBand(kq.ovr)}</span> : '–'}
                 </span>
               </div>
             </div>
           )}
           {!(c.thi_that_khong_thi && !moDiem) && <DongLanTruoc truoc={c.thiTruoc} layLai={layLai} trong={trong} onLay={layTrong} />}
           <div className="flex flex-wrap items-center gap-2">
-            {!moDiem && kq && (kq.ketLuan === 'reached' ? <NhanKq kq="dat">{t('Đạt Target {tg}', { tg: target!.toFixed(1) })}</NhanKq>
-              : kq.ketLuan === 'not_reached' ? <NhanKq kq="chua-dat">{t('Chưa đạt Target {tg}', { tg: target!.toFixed(1) })}</NhanKq> : null)}
+            {!moDiem && kq && (kq.ketLuan === 'reached' ? <NhanKq kq="dat">{t('Đạt Target {tg}', { tg: fmtBand(target) })}</NhanKq>
+              : kq.ketLuan === 'not_reached' ? <NhanKq kq="chua-dat">{t('Chưa đạt Target {tg}', { tg: fmtBand(target) })}</NhanKq> : null)}
             {ttDiem === 'loi' && <span className="text-[13px]"><ChuLuu tt="loi" loi={loiDiem} /></span>}
             {ttDiem === 'dang' && <span className="text-[13px]"><ChuLuu tt="dang" /></span>}
             <span className="flex-1" />

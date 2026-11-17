@@ -27,6 +27,7 @@ import { laBand } from './StudentPlanPanel.tsx';
 import { ErrorState, NutChon, OKck, Skeleton, TargetText } from '../../ui/ui.tsx';
 import { ChonNguoi, type NguoiTrongDs } from '../../ui/PeoplePicker.tsx';
 import { dich as dichChu, t } from '@shared/i18n/index.ts';
+import { fmtBand } from '../../lib/format.ts';
 /* TD-NGUOI-2: hộp mở bằng thao tác — mảnh riêng, tải khi mở (`ui/lazyHop.tsx`). */
 const ChuyenLopPanel = lazyHop(() => import('./ChuyenLopPanel.tsx').then((x) => x.ChuyenLopPanel));
 const KetQuaThiThatPanel = lazyHop(() => import('./KetQuaThiThatPanel.tsx').then((x) => x.KetQuaThiThatPanel));
@@ -290,7 +291,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const thiCu: string = cycle?.examDate ?? cycle?.examMonth ?? '';
   const [thi, setThi] = useState(thiCu);
   /* Target: '' = chưa có, còn lại là band; OV-9: dấu KCK riêng (ô tích), Target giữ. */
-  const targetCu: string = cycle?.target != null ? String(cycle.target) : '';
+  const targetCu: string = cycle?.target != null ? fmtBand(cycle.target) : '';
   const kckCu = !!cycle?.khongCamKet;
   /* P13 KET-PET: Target theo điểm Cambridge (số nguyên trong thang, không KCK) — cùng luật máy chủ `docTargetKyThi`. */
   const kt: KyThi | null = cycle?.kyThi ?? null;
@@ -304,7 +305,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
   const [dv, setDv] = useState(dvCu);
   const kn = [dv.l, dv.r, dv.w, dv.s];
   const duKn = kn.every((x) => laBand(x));
-  const overall = duKn ? String(roundToHalf(kn.reduce((a, x) => a + Number(x), 0) / 4)) : dv.o;
+  const overall = duKn ? fmtBand(roundToHalf(kn.reduce((a, x) => a + Number(x), 0) / 4)) : dv.o;
   const doiDauVao = coDauVao && JSON.stringify(dv) !== JSON.stringify(dvCu);
   const doiTarget = !!cycle && (targetThang || targetDeXuat) && (target !== targetCu || kck !== kckCu);
   /* P8 (N13, mockup k4): môn đăng ký của lộ trình FT — QL / GVCN; tóm tắt "Khi lưu" do máy chủ tính (cùng hàm lúc lưu). */
@@ -613,7 +614,7 @@ function ThongTinPanel({ studentName, lop, onClose, onDone, student, cycle, atte
 function chuDeXuat(moi: string): string {
   const t = tachKck(moi);
   const so = t.so === '' || t.so == null ? null : Number(t.so);
-  return [so != null && Number.isFinite(so) ? so.toFixed(1) : null, t.kck ? 'KCK' : null].filter(Boolean).join(' · ') || moi;
+  return [so != null && Number.isFinite(so) ? fmtBand(so) : null, t.kck ? 'KCK' : null].filter(Boolean).join(' · ') || moi;
 }
 
 /** Band → chữ cho ô ('' khi trống). */

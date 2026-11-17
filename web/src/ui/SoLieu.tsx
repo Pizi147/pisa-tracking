@@ -18,6 +18,7 @@ import { useNgayNghiepVu } from './ngayNghiepVu.ts';
 import { NutLuat } from './NutLuat.tsx';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { lazyTai } from '../lib/taiLaiManh.ts';
+import { fmtBand } from '../lib/format.ts';
 
 /**
  * KHUNG-LOI (B-02): vùng bấm của số ≥ 24 × 24 px máy tính, 44 × 44 px điện thoại — `after:` canh giữa chữ số (hình chữ không đổi; trước đây
@@ -114,7 +115,7 @@ export function DongDiem({ d, knNhan, kck, rongLuot }: { d: DiemHv; knNhan?: str
 
 /** PANEL-V10: chữ chip xu hướng — ▲ ▼ CHỈ cho tiến độ (so lượt trước), ký hiệu đi trước chữ: "▲ Tăng 1.0" · "▼ Giảm 0.5" · "= Không đổi" · "Cải thiện". */
 export function chuXuHuong(x: NonNullable<DongSoLieu['xuHuong']>): { lop: string; chu: string } {
-  const lech = x.truoc && x.sau ? Math.abs(x.sau.v - x.truoc.v).toFixed(1) : null;
+  const lech = x.truoc && x.sau ? fmtBand(Math.abs(x.sau.v - x.truoc.v)) : null;
   if (x.huong === 'tang') return { lop: 'tang', chu: [`▲ ${t('Tăng')}`, lech].filter(Boolean).join(' ') };
   if (x.huong === 'giam') return { lop: 'giam', chu: [`▼ ${t('Giảm')}`, lech].filter(Boolean).join(' ') };
   if (x.huong === 'giu') return { lop: '', chu: `= ${t('Không đổi')}` };
@@ -216,8 +217,8 @@ const toKetLuan = (x: string, vuot?: boolean): ReactNode => (x === 'Đạt' || x
 /** 6c-2 (critique vòng 3): MỘT cách ghi "điểm so kỳ vọng" cho mọi dòng panel số — "[nhãn] ✗ 5.5 · kỳ vọng 6.5 · thiếu 1.0" (✓ / ✗ + màu `DiemKq`). */
 const doanDiem = (d: NonNullable<DongSoLieu['diemCase']>): ReactNode[] => [
   <>{d.nhan && <>{d.nhan} </>}<DiemKq diem={d.so} kyVong={d.kyVong} /></>,
-  d.kyVong != null && t('kỳ vọng {kv}', { kv: d.kyVong.toFixed(1) }),
-  d.kyVong != null && d.so < d.kyVong && t('thiếu {n}', { n: (d.kyVong - d.so).toFixed(1) }),
+  d.kyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(d.kyVong) }),
+  d.kyVong != null && d.so < d.kyVong && t('thiếu {n}', { n: fmtBand(d.kyVong - d.so) }),
 ];
 
 
@@ -435,7 +436,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
           {(r.nhom === 'choDuyetPa' || r.nhom === 'khongTheoDoi') && <span className={CHIP_VUONG} style={{ borderColor: 'var(--line-strong)' }} title={t('Đề xuất đổi PA chờ Head duyệt')}>{t('chờ Head')}</span>}
         </span>
-        <span className="whitespace-nowrap text-[13px] text-slate-400">{r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b> : r.diemCase && <Doan ds={[r.diemCase.so.toFixed(1), r.diemCase.kyVong != null && t('kỳ vọng {kv}', { kv: r.diemCase.kyVong.toFixed(1) })]} />}</span>
+        <span className="whitespace-nowrap text-[13px] text-slate-400">{r.xong ? <b className="font-semibold text-ok">✓ {r.xong}</b> : r.diemCase && <Doan ds={[fmtBand(r.diemCase.so), r.diemCase.kyVong != null && t('kỳ vọng {kv}', { kv: fmtBand(r.diemCase.kyVong) })]} />}</span>
         {r.moTa ? <span className="max-w-[68ch] text-[13px] leading-snug text-slate-300 [text-wrap:pretty]">{catCau(r.moTa)}</span> : <span className="text-[13px] italic text-slate-500">{t('Chưa có mô tả')}</span>}
       </span>
     );
@@ -514,7 +515,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
           {hienLop(tieuDe, lop) && <span className="whitespace-nowrap text-[13px] text-slate-400">{lop}</span>}
           {r.sos && r.sos.muc > 0 && <span className={`${CHIP_SOS} ${lopSos(r.sos.muc, r.sos.tam)}`}>SOS {r.sos.muc}{r.sos.tam ? ` ${t('tạm')}` : ''}</span>}
           <span className="ml-auto inline-flex items-center gap-2">
-            {r.xuHuong?.truoc && r.xuHuong.sau && <span className="doi">{r.xuHuong.truoc.luot} <b>{r.xuHuong.truoc.v.toFixed(1)}</b> → {r.xuHuong.sau.luot} <b>{r.xuHuong.sau.v.toFixed(1)}</b></span>}
+            {r.xuHuong?.truoc && r.xuHuong.sau && <span className="doi">{r.xuHuong.truoc.luot} <b>{fmtBand(r.xuHuong.truoc.v)}</b> → {r.xuHuong.sau.luot} <b>{fmtBand(r.xuHuong.sau.v)}</b></span>}
             {chipHan}
             {phanCong}
             {r.xong ? <span className="text-[13px] font-bold text-ok">✓ {r.xong}</span>

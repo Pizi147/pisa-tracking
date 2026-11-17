@@ -22,6 +22,7 @@ import { listCases } from '../cases/cases.ts';
 import { tomTatCase } from '../classes/hocVienSos.ts';
 import { luotTrongKhoang } from './tongHop.ts';
 import { lopLucThiThat } from './lopLucThi.ts';
+import { fmtBand } from '../../../shared/domain/display.ts';
 
 export type LocKetQuaThi = { branchId?: number | null; classId?: number | null; tu: string; den: string };
 
@@ -214,7 +215,7 @@ export function thiThatTrongKhoang(p: Principal | null, f: LocKetQuaThi, o: { bo
         kck: !!c.khong_cam_ket, wl2: !!c.wl2,
         ovr: c.outcome_score ?? null, l: c.thi_that_l ?? null, r: c.thi_that_r ?? null, w: c.thi_that_w ?? null, s: c.thi_that_s ?? null,
         thiLai: thiLai ? thiLai.map((k) => k.toUpperCase()) : null,
-        target: chuTargetKck(c.target_score == null ? null : Number(c.target_score).toFixed(1), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"
+        target: chuTargetKck(c.target_score == null ? null : fmtBand(c.target_score), !!c.khong_cam_ket),   // một chữ số lẻ như OVR: 6 → "6.0"
         dat: c.thi_that_khong_thi ? null : c.outcome === 'reached' ? true : c.outcome === 'not_reached' ? false : null,
         buocTiep: chon, buocTiepChu: chon ? NHAN_SAU_THI[chon] : null, buocTiepPhu: g.lopMoiCode ? `lớp ${g.lopMoiCode}` : null,
         nguoiChon: chon ? c.nguoi_chon ?? null : null, ngayChon: chon ? c.buoc_tiep_luc ?? null : null,
