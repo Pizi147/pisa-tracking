@@ -155,7 +155,7 @@ export async function runPrChanRoiNhapTests(t: YThucTestKit) {
     assert(doc('web/src/modules/test/LichTestTab.tsx').includes('useChanRoiNhap('), 'Lịch Test dùng hook');
     const kp = doc('web/src/ui/KhungPanel.tsx');
     assert(kp.includes('khoRoiNhap.dat('), 'panel đang sửa ghi vào kho');
-    assert(doc('web/src/modules/fasttrack/HopNhapDiem.tsx').includes('khoRoiNhap.dat('), 'hộp điểm đã gõ (Lịch Test, Chấm Test) ghi vào kho');
+    assert(doc('web/src/modules/fasttrack/HopNhapDiemHop.tsx').includes('khoRoiNhap.dat('), 'hộp điểm đã gõ (Lịch Test, Chấm Test) ghi vào kho');
     const ss = doc('web/src/lib/session.tsx');
     assert((ss.match(/quaRoiNhap\(/g) ?? []).length >= 3, 'đổi tài khoản, đăng xuất, đổi góc nhìn hỏi trước');
     const app = doc('web/src/App.tsx');

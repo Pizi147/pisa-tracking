@@ -142,7 +142,7 @@ export async function runPrOv4cTests(t: YThucTestKit) {
   }));
 
   check('BT-8 · hộp nhập điểm: ô Band W / S luôn là ô nhập (không còn <output> / cờ bandThang); đỏ viền theo caHaiKieu + chữ LOI_MOT_KIEU', () => {
-    const hop = nguon('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    const hop = nguon('web/src/modules/fasttrack/HopNhapDiemHop.tsx');
     assert(!/bandThang/.test(hop) && !/<output/.test(hop), 'hộp còn dấu vết OV-4c');
     assert(/criteriaPatchFrom\(vals, cell, bandText\)/.test(hop) && /caHaiKieu\(vals, bandText\)/.test(hop), 'hộp phải dùng hàm chung');
     assert(/stSai\(loi\?\.o === 4 \|\| haiKieu\)/.test(hop) && /\{LOI_MOT_KIEU\}/.test(hop), 'đỏ ô Band + chữ nhỏ');

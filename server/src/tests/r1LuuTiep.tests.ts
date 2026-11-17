@@ -81,7 +81,7 @@ export async function runR1LuuTiepTests({ check, assert }: Kit) {
     assert(d.docNguCanhDs({ loai: 'luot', ids: [5, 6], nhan: 'x' }, 'hoc-vien', 6) === null, 'khác loại → null');
   });
   check('HOP · nút tiếp mặc định "Lưu · bài tiếp ›"; "Lưu · em tiếp ›" chỉ ở trang một em (tiepEm)', () => {
-    const src = fs.readFileSync('web/src/modules/fasttrack/HopNhapDiem.tsx', 'utf8');
+    const src = fs.readFileSync('web/src/modules/fasttrack/HopNhapDiemHop.tsx', 'utf8');
     const em = src.split("t('Lưu · em tiếp ›')").length - 1;
     assert(em === src.split("tiepEm ? t('Lưu · em tiếp ›')").length - 1, 'còn "Lưu · em tiếp ›" ngoài nhánh tiepEm');
     assert(src.includes("t('Lưu · bài tiếp ›')"), 'thiếu "Lưu · bài tiếp ›"');
