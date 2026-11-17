@@ -196,7 +196,7 @@ export async function runPrOv15fTests(t: YThucTestKit) {
       assert(e.status === 200, `RKC (mở Q-B1): em lưu trữ sửa được dự kiến thi: ${JSON.stringify(e)}`);
       /* Ngoài phạm vi: QL chi nhánh khác và TVV chi nhánh khác không sửa được lịch thi của em chi nhánh này. */
       const tvvCp = nguoi('consultant', ['CP']);
-      for (const [ai, ten] of [[P.cpManager.userId as number, 'QL CP'], [tvvCp, 'TVV CP']] as const) {
+      for (const [ai, ten] of [[P.cpManager.userId as number, 'Head CP'], [tvvCp, 'TVV CP']] as const) {
         const x = await loi(await goi(ai, `/hoc-vien-lop/lich-thi/${a.cy}`, put({ ketLuan: 'can-xac-nhan' })));
         assert(x.status === 403, `${ten} sửa em chi nhánh khác → 403: ${JSON.stringify(x)}`);
       }

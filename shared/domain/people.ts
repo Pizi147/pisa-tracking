@@ -19,7 +19,7 @@ import { t } from '../i18n/index.ts';
 export const ROLES = ['system_admin', 'manager', 'teacher', 'office_admin', 'consultant', 'cx', 'head_tutor'] as const;
 export type Role = (typeof ROLES)[number];
 export const ROLE_LABEL: Record<Role, string> = {
-  system_admin: t('Quản trị hệ thống'), manager: t('Quản lý'), teacher: t('Giáo viên'),
+  system_admin: t('Quản trị hệ thống'), manager: t('Head'), teacher: t('Giáo viên'),
   office_admin: 'Admin', consultant: t('Tư vấn viên'), cx: 'CX', head_tutor: 'Head tutor',
 };
 /** OV-13e: vai tự đăng ký chọn được (thứ tự = chip trên form). KHÔNG có Quản trị hệ thống — vai đó chỉ Quản trị cấp tay. */
@@ -268,7 +268,7 @@ export const STUDENT_FILTERS: {
   { key: 'my_scores', label: 'Cần nhập điểm Test', needs: 'attempt.view',
     hint: 'Lượt MT đã làm bài mà còn ô điểm để trống.' },
   { key: 'no_plan', label: 'Chưa có tuần MT', needs: 'plan.week',
-    hint: 'Học viên chưa được chốt tuần cho lượt MT tiếp theo. Việc của Quản lý.' },
+    hint: 'Học viên chưa được chốt tuần cho lượt MT tiếp theo. Việc của Head.' },
 ];
 
 /** Bộ lọc nào hiện ra với người mang bộ quyền này. */

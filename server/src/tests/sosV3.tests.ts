@@ -573,7 +573,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     assertThrows(() => xacNhanCaseW2(w1T, f), /phân công/, 'GVBM W1 xác nhận Case W2');
     assertThrows(() => sosAuto.xacNhanPaQuyChe(w1T, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA })), /phân công/, 'GVBM W1 xác nhận PA case W2');
     assertThrows(() => sosAuto.guiKhongTheoDoi(w1T, f.w2.id, { reasonCode: 'single_incident' }), /phân công/, 'GVBM W1 đóng case W2');
-    assertThrows(() => xacNhanCaseW2(P.cpManager, f), /phạm vi|phân công|quyền/, 'Quản lý chi nhánh khác');
+    assertThrows(() => xacNhanCaseW2(P.cpManager, f), /phạm vi|phân công|quyền/, 'Head chi nhánh khác');
     assert(get('SELECT confirmed_by FROM case_interventions WHERE id = ?', f.w2Plan.id).confirmed_by === null, 'Bị từ chối thì không đổi gì');
     xacNhanCaseW2(P.mbManager, f);
     sosAuto.xacNhanPaQuyChe(P.mbManager, f.w2Plan.id, duXacNhan(conn, f.w2Plan.id, { description: MO_TA_PA }));
@@ -783,7 +783,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const manual = cases.reportIssue(P.mbManager, { studentId: f.st.id, cycleId: f.st.cycleId, topic: 'reading', primaryCode: 'student.reading.logic',
       title: 'Case tay cho chỉ số', summary: 'Em hay mất tập trung ở phần này của bài, cần theo dõi thêm.' }) as any;
     assert(M().includes(manual.id), 'OV-12d: Case tạo tay chưa có PA thuộc tập (chờ người chốt)');
-    assertThrows(() => metricsSvc.metricSet(P.cpManager, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bid }), /phạm vi/, 'Quản lý chi nhánh khác hỏi chi nhánh này');
+    assertThrows(() => metricsSvc.metricSet(P.cpManager, 'case-cho-xac-dinh-nguyen-nhan', { branchId: bid }), /phạm vi/, 'Head chi nhánh khác hỏi chi nhánh này');
   });
 
   // ================================================================== T5 — Phối hợp SOS (P01–P10)
@@ -896,14 +896,14 @@ export async function runSosV3Tests(t: YThucTestKit) {
     const f = freshSos('P04');
     const id = rowOf(f.a.id, 'gvcn_meeting').id;
     for (const [who, name] of [[w1T, 'GVBM W1'], [w2T, 'GVBM W2']] as const) {
-      assertThrows(() => phoiHop.confirmCoordination(who, id, { performedOn: TODAY, note: 'Đã làm' }), /chủ nhiệm|Quản lý|quyền/, `${name} xác nhận`);
-      assertThrows(() => phoiHop.removeCoordination(who, id, { reasonCode: 'not_needed' }), /chủ nhiệm|Quản lý|quyền/, `${name} bỏ`);
-      assertThrows(() => phoiHop.addCoordination(who, f.a.id, { kind: 'cx_meeting_student' }), /chủ nhiệm|Quản lý|quyền/, `${name} thêm`);
+      assertThrows(() => phoiHop.confirmCoordination(who, id, { performedOn: TODAY, note: 'Đã làm' }), /chủ nhiệm|Head|quyền/, `${name} xác nhận`);
+      assertThrows(() => phoiHop.removeCoordination(who, id, { reasonCode: 'not_needed' }), /chủ nhiệm|Head|quyền/, `${name} bỏ`);
+      assertThrows(() => phoiHop.addCoordination(who, f.a.id, { kind: 'cx_meeting_student' }), /chủ nhiệm|Head|quyền/, `${name} thêm`);
       assert((phoiHop.coordinationOfClass(who, CLASS) as any).rows.some((r: any) => r.attemptId === f.a.id), `${name} phải XEM được`);
     }
     assertThrows(() => phoiHop.coordinationOfClass(outsiderT, CLASS), /phạm vi/, 'Người ngoài lớp xem lớp');
     assertThrows(() => phoiHop.coordinationOfStudent(outsiderT, f.st.id), /phạm vi/, 'Người ngoài lớp xem học viên');
-    assertThrows(() => phoiHop.confirmCoordination(P.cpManager, id, { performedOn: TODAY, note: 'Đã làm' }), /phạm vi|quyền|chủ nhiệm/, 'Quản lý chi nhánh khác');
+    assertThrows(() => phoiHop.confirmCoordination(P.cpManager, id, { performedOn: TODAY, note: 'Đã làm' }), /phạm vi|quyền|chủ nhiệm/, 'Head chi nhánh khác');
     assert(rowOf(f.a.id, 'gvcn_meeting').status === 'pending', 'Bị từ chối thì không đổi gì');
     phoiHop.confirmCoordination(P.mbManager, id, { performedOn: TODAY, note: 'Đã làm' });
     phoiHop.confirmCoordination(gvcn, rowOf(f.a.id, 'talk_family').id, { performedOn: TODAY, note: 'Đã làm' });
@@ -1034,7 +1034,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
     enter(P.admin, f.a, 'writing2', 7); enter(P.admin, f.a, 'speaking', 7);      // hết SOS → không còn là SOS Event
     assert(!M('phoi-hop-luot-sos').ids.includes(f.a.id), 'SOS hết thì lượt không còn là SOS Event');
     assert(M('phoi-hop-luot-sos').n === M('phoi-hop-luot-sos').ids.length, 'Số = độ dài tập');
-    assertThrows(() => M('phoi-hop-luot-sos', P.cpManager), /phạm vi/, 'Quản lý chi nhánh khác');
+    assertThrows(() => M('phoi-hop-luot-sos', P.cpManager), /phạm vi/, 'Head chi nhánh khác');
     assert(M('phoi-hop-luot-sos', w1T).ids.length === 0 && M('phoi-hop-luot-sos', w1T).empty === true, 'GVBM không có thống kê chi nhánh → rỗng có nhãn');
     const rows = metricsSvc.metricResponse(M('phoi-hop-luot-sos'), true).rows as any[];
     assert(rows.length === M('phoi-hop-luot-sos').ids.length && rows.every((r) => r.title && r.href), 'Danh sách bấm số phải có dòng đủ tên + đường dẫn');
@@ -1093,7 +1093,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
   check('PR-T · V10+V12′ Người xoá được: người ghi (của mình) · GVCN của lớp · Quản lý trong phạm vi · Quản trị; GVBM đồng nghiệp, giáo viên ngoài lớp, Quản lý chi nhánh khác thì KHÔNG — vi phạm còn nguyên', () => {
     const st = makeStudent('V10p');
     const byW1 = recordV(w1T, st.id, { description: 'Vi phạm do GV Writing 1 ghi' });
-    for (const [who, name] of [[w2T, 'GVBM đồng nghiệp'], [outsiderT, 'GV ngoài lớp'], [P.cpManager, 'Quản lý CP']] as const) {
+    for (const [who, name] of [[w2T, 'GVBM đồng nghiệp'], [outsiderT, 'GV ngoài lớp'], [P.cpManager, 'Head CP']] as const) {
       assertThrows(() => violSvc.deleteViolation(who, byW1), /quyền|phạm vi|người ghi|chủ nhiệm/, `${name} xoá vi phạm`);
     }
     assert(get('SELECT id FROM violations WHERE id = ?', byW1), 'Bị từ chối thì vi phạm còn nguyên');
@@ -1152,7 +1152,7 @@ export async function runSosV3Tests(t: YThucTestKit) {
 
   check('PR-T · (PR-YT4 §5.4) Trạng thái hiển thị của vi phạm là SÁU nhãn v4 (Mới · Đã xem — N34 ④ · Cần xử lý · Quá hạn · Chờ QL duyệt · Đã xử lý); không còn `Không còn hiệu lực`, không còn trường hiệu lực trong dữ liệu trả ra', () => {
     assert(JSON.stringify(domain.TRANG_THAI_VP) === JSON.stringify(['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly']), `Trạng thái: ${domain.TRANG_THAI_VP}`);
-    assert(Object.values(domain.TRANG_THAI_VP_LABEL).join() === 'Mới,Đã xem,Cần xử lý,Quá hạn,Chờ QL duyệt,Đã xử lý', 'Nhãn sáu trạng thái');
+    assert(Object.values(domain.TRANG_THAI_VP_LABEL).join() === 'Mới,Đã xem,Cần xử lý,Quá hạn,Chờ Head duyệt,Đã xử lý', 'Nhãn sáu trạng thái');
     const st = makeStudent('V14s'); const v = recordV(P.w1Teacher, st.id);
     const view = (violSvc.listViolations(gvcn, { studentId: st.id }) as any).rows[0];
     for (const k of ['valid', 'invalidReason', 'invalidatedBy', 'invalidatedByName', 'invalidatedAt', 'state']) assert(!(k in view), `Vi phạm còn trường "${k}" của mô hình cũ`);

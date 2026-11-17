@@ -248,7 +248,7 @@ export function doiChuCase(p: Principal, caseId: number, body: { ownerId?: unkno
     const { c: lc } = kiemXemCase(p, caseId);
     const c: CaseDoiChu = { ...lc, student_id: lc.eff_student_id, class_id: lc.current_class_id ?? null,
       full_name: (db().prepare('SELECT full_name FROM students WHERE id = ?').get(lc.eff_student_id) as any)?.full_name ?? null };
-    if (!duocDoi(p, c)) throw loi(403, 'Chỉ Quản lý hoặc GVCN của lớp em đổi được người phụ trách Case.');
+    if (!duocDoi(p, c)) throw loi(403, 'Chỉ Head hoặc GVCN của lớp em đổi được người phụ trách Case.');
     /* RKC-2b (PTA 07/11 "không chặn ở bất kỳ đâu"): Case đã đóng đổi người phụ trách thẳng được — lịch sử `sos_case_history` + nhật ký; web Hoàn tác = đổi lại người cũ. */
     if (c.tam) throw loi(400, 'Case tạm chưa là việc — chưa đổi người được.');
     if (c.owner_user_id !== ownerCu) throw loi(409, 'Người phụ trách vừa đổi — tải lại.');

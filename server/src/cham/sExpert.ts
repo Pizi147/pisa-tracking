@@ -31,8 +31,8 @@ export type DongSEx = {
 
 /** P6 N15: S Ex chung khoá đổi lịch T6 → CN với MT. */
 const SEX = { kind: 's_expert' };
-const QL_MSG = 'Chỉ Quản lý / Admin thêm, dời, xoá hoặc khôi phục lượt S Expert.';
-const CHAM_MSG = 'Chỉ GV Speaking cùng chi nhánh hoặc Quản lý / Admin chấm được S Expert của học viên này.';
+const QL_MSG = 'Chỉ Head / Admin thêm, dời, xoá hoặc khôi phục lượt S Expert.';
+const CHAM_MSG = 'Chỉ GV Speaking cùng chi nhánh hoặc Head / Admin chấm được S Expert của học viên này.';
 const laQl = (p: Principal, studentId: number) => can(p, PERMISSIONS.PLAN_WEEK, { studentId });
 /** Có `plan.week` ở phạm vi nào đó — kiểm TRƯỚC khi tra dòng, để vai khác nhận 403 chứ không 404. */
 const coQuyenQl = (p: Principal) => p.grants.some((g) => g.permissions.has(PERMISSIONS.PLAN_WEEK)) || coQuyenSuaLich(p);

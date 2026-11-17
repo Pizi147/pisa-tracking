@@ -5,16 +5,16 @@ export const EN_MT_VANG = {
   /* LG-9: Huỷ tay bài lớp thường / MT0 lớp thường. */
   /* NHAP-DIEM-a (chủ SP 14/11): Huỷ điểm / Khôi phục một kỹ năng — mọi loại bài. */
   'Đã xoá {mon}{ai}': 'Cleared {mon}{ai}',
-  'Chỉ người nhập được ô này, GVCN lớp hoặc Quản lý huỷ / khôi phục được điểm.': 'Only whoever can enter this cell, the homeroom teacher or a manager can cancel / restore this score.',
+  'Chỉ người nhập được ô này, GVCN lớp hoặc Head huỷ / khôi phục được điểm.': 'Only whoever can enter this cell, the homeroom teacher or a Head can cancel / restore this score.',
   'Lượt này đã huỷ — khôi phục lượt trước.': 'This attempt is cancelled — restore the attempt first.',
-  'Chỉ người nhập được ô này, GVCN của lớp và Quản lý báo vắng được.': 'Only whoever can enter this cell, the homeroom teacher and managers can report an absence.',
+  'Chỉ người nhập được ô này, GVCN của lớp và Head báo vắng được.': 'Only whoever can enter this cell, the homeroom teacher and Heads can report an absence.',
   'Đã huỷ {mon}{ai}': 'Cancelled {mon}{ai}',
   'Huỷ môn': 'Cancel subject',
   '{x} đã huỷ': '{x} cancelled',
   'trên {n} môn · {x} đã huỷ': 'over {n} subjects · {x} cancelled',
   '{x}: đã huỷ (vắng).': '{x}: cancelled (absent).',
   'Chỉ Progress / Final lớp thường có Huỷ môn — MT vắng 2 lần tự huỷ.': 'Only regular-class Progress / Final tests have Cancel subject — an MT cancels itself after 2 absences.',
-  'Chỉ GV của môn, GVCN lớp hoặc Quản lý huỷ được bài này.': 'Only the subject teacher, homeroom teacher or a manager can cancel this test.',
+  'Chỉ GV của môn, GVCN lớp hoặc Head huỷ được bài này.': 'Only the subject teacher, homeroom teacher or a Head can cancel this test.',
   'Đã khôi phục {mon}{ai}': 'Restored {mon}{ai}',
   '{skill} không nằm trong bài này.': '{skill} is not part of this test.',
   '{skill} đã có điểm — không huỷ được.': '{skill} already has a score — it cannot be cancelled.',
@@ -27,7 +27,7 @@ export const EN_MT_VANG = {
   ' · huỷ (vắng 2 lần)': ' · cancelled (absent twice)',
   'huỷ {x} · vắng 2 lần': 'cancelled {x} · absent twice',
   '{x} đã huỷ — "Khôi phục và đặt tuần" trước.': '{x} is cancelled — use "Restore and set week" first.',
-  'Đã huỷ · vắng 2 lần — Quản lý chọn tuần mới (Dời) để xếp lại.': 'Cancelled · absent twice — a manager picks a new week (Move) to reschedule.',
+  'Đã huỷ · vắng 2 lần — Head chọn tuần mới (Dời) để xếp lại.': 'Cancelled · absent twice — a Head picks a new week (Move) to reschedule.',
   '{mon} bỏ khỏi đợt này, không tính vào kết quả đợt. Muốn làm lại thì Dời — chọn tuần.': '{mon} leaves this round and does not count toward its result. To sit it again, Move — pick a week.',
   'Tuần Test đã qua 2 tuần: ghi Không dự thi cho {mon} — không dời, không tính lần vắng.': 'Test week is 2+ weeks past: record did not sit for {mon} — no move, no absence counted.',
   'Ghi "-" cho {mon}: lần đầu dời sang tuần sau tuần Test; vắng 2 lần thì huỷ.': 'Record "-" for {mon}: the first time it moves to the week after its test week; absent twice cancels it.',
@@ -51,8 +51,8 @@ export const EN_MT_VANG = {
     'One skill: click the MT cell — each skill <b>Move</b> · <b>Absent</b>; <b>⋯</b> has <b>Cancel score</b>, <b>Log</b>.',
   'Bấm ô MT: mỗi môn <b>Dời</b> (chọn tuần = xếp lại từ đầu) · <b>Vắng</b>, rồi <b>Lưu</b>.':
     'Click an MT cell: each skill <b>Move</b> (pick a week = reschedule from scratch) · <b>Absent</b>, then <b>Save</b>.',
-  '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Nhật ký</b>; mục ghi "Chỉ Quản lý" thì nhờ QL.':
-    '<b>⋯</b>: <b>Cancel score</b> · <b>Log</b>; items marked "Managers only" — ask a manager.',
+  '<b>⋯</b>: <b>Huỷ điểm</b> · <b>Nhật ký</b>; mục ghi "Chỉ Head" thì nhờ Head.':
+    '<b>⋯</b>: <b>Cancel score</b> · <b>Log</b>; items marked "Heads only" — ask a Head.',
   'Đã có điểm / đã làm bài: mục mờ.': 'Already scored / taken: dimmed.',
   'Lần vắng về 0': 'Absence count reset to 0',
 } satisfies Record<string, Dich>;

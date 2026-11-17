@@ -71,15 +71,15 @@ export async function runPrGvaTests(t: AnToanTestKit) {
 
   check('GVa-1 · khoá gắn người tạo: người khác gửi đúng khoá đó → việc MỚI của họ, không đọc được việc người kia', () => {
     const a = mg.createMgmtTask(P.admin, { title: 'GVa của admin', group: 'curriculum', branchId: MB, idempotencyKey: 'gva-nguoi-0001' });
-    const b = mg.createMgmtTask(P.mbManager, { title: 'GVa của QL', group: 'curriculum', branchId: MB, idempotencyKey: 'gva-nguoi-0001' });
+    const b = mg.createMgmtTask(P.mbManager, { title: 'GVa của Head', group: 'curriculum', branchId: MB, idempotencyKey: 'gva-nguoi-0001' });
     assert(a.id !== b.id, 'khoá theo người tạo');
-    assert(b.title === 'GVa của QL', 'trả đúng việc của người gửi');
+    assert(b.title === 'GVa của Head', 'trả đúng việc của người gửi');
   });
 
   check('GVa-1 · kiểm quyền TRƯỚC khi tra khoá: QL chi nhánh khác gửi khoá của việc đã có → vẫn bị từ chối', () => {
     mg.createMgmtTask(P.mbManager, { title: 'GVa quyền trước', group: 'curriculum', branchId: MB, idempotencyKey: 'gva-quyen-0001' });
     assertThrows(() => mg.createMgmtTask(P.cpManager, { title: 'GVa quyền trước', group: 'curriculum', branchId: MB, idempotencyKey: 'gva-quyen-0001' }),
-      /Quản lý|quyền/, 'QL CP tạo việc ở MB');
+      /Head|quyền/, 'Head CP tạo việc ở MB');
   });
 
   check('GVa-1 · /tasks (teacher_task): cùng khoá → một việc, PA toả ra một lần; khác khoá cùng tiêu đề → hai việc', () => {

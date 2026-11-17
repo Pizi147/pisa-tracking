@@ -15,7 +15,7 @@ export const EN_CHU_THI = {
   'Vắng — dấu "-" trong tuần thi': 'Absent — "-" in the test week',
   'Hết hạn duyệt — phần thi bị huỷ': 'Approval deadline passed — skill cancelled',
   'Xếp lại lịch thi': 'Reschedule test',
-  'Đã huỷ phần thi (vắng 2 lần) — Quản lý khôi phục phần thi.': 'Cancelled · absent twice — a manager restores it.',
+  'Đã huỷ phần thi (vắng 2 lần) — Head khôi phục phần thi.': 'Cancelled · absent twice — a Head restores it.',
   'em vắng buổi thi': 'student missed the test',
   'Tuần thi': 'Test week',
   'tuần thi {tuan}': 'test week {tuan}',

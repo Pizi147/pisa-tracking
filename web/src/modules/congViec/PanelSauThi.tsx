@@ -133,7 +133,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   } : !coKq || moDiem ? {
     huy: null, trai: <span className="text-slate-400">{t('Bước tiếp mở sau khi lưu điểm')}</span>,
   } : daChonTruoc || !b.coTheChon ? {
-    huy: null, trai: <span className="text-slate-300">{b.chon ? t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[b.chon] }) : t('Chờ QL / TVV chọn bước tiếp')}</span>,
+    huy: null, trai: <span className="text-slate-300">{b.chon ? t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[b.chon] }) : t('Chờ Head / TVV chọn bước tiếp')}</span>,
     chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,
   } : {
     huy: null, daSua: !!chon || !!ghiChu.trim(), conThieu: lf.conThieu(loiB),

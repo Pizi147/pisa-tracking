@@ -12,7 +12,7 @@ export const EN_M1111_KHAI_BAC = {
   'Chọn {n} em đang lọc': 'Select {n} filtered students',
   'Đã có xử lý': 'Already disciplined',
   'Bậc khai': 'Declared level',
-  'Nhờ QL sửa': 'Ask a manager',
-  'Chỉ QL sửa': 'Manager only',
+  'Nhờ Head sửa': 'Ask a Head',
+  'Chỉ Head sửa': 'Head only',
   'Bậc khai của {ten}': 'Declared level for {ten}',
 } satisfies Record<string, Dich>;

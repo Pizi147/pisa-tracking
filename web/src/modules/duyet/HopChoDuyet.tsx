@@ -262,7 +262,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
           <ChipLoc key={c.key} bat={xem !== 'de-biet' && phan === c.key} so={dem?.[c.key] ?? null} onClick={() => chonLoc(xem === 'de-biet' ? 'cho' : xem, c.key)}>{c.nhan}</ChipLoc>
         ))}
         <span aria-hidden className="h-6 w-px max-sm:hidden" style={{ background: 'var(--line-strong)' }} />
-        <ChipLoc bat={xem === 'de-biet'} so={data?.demBiet ?? null} onClick={() => chonLoc(xem === 'de-biet' ? 'cho' : 'de-biet', null)}>{t('Báo QL')}</ChipLoc>
+        <ChipLoc bat={xem === 'de-biet'} so={data?.demBiet ?? null} onClick={() => chonLoc(xem === 'de-biet' ? 'cho' : 'de-biet', null)}>{t('Báo Head')}</ChipLoc>
         <ChipLoc bat={xem === 'da-xu-ly'} onClick={() => chonLoc(xem === 'da-xu-ly' ? 'cho' : 'da-xu-ly', phan)}>{t('Đã xử lý · 30 ngày')}</ChipLoc>
         {(dsLop.length > 0 || lopId) && (
           /* GD-5 (R5.2 #50): ô lọc có tìm — lớp có thẻ đang chờ (suy từ dòng đã nạp + lớp đang lọc, không gọi thêm). */
@@ -291,7 +291,7 @@ export function HopChoDuyet({ branchId, khuPanel, khuLoc }: {
         {loading && !data && <div className="px-4 py-3"><Skeleton rows={4} /></div>}
         {data && ds.length === 0 && (
           <div className="px-4 py-6">
-            <Empty title={xem === 'cho' ? t('Không có yêu cầu nào đang chờ') : xem === 'de-biet' ? t('Không có thẻ Báo QL')
+            <Empty title={xem === 'cho' ? t('Không có yêu cầu nào đang chờ') : xem === 'de-biet' ? t('Không có thẻ Báo Head')
               : t('Chưa có yêu cầu nào được xử lý trong 30 ngày')} />
           </div>
         )}

@@ -20,7 +20,7 @@ export async function runChamDiemTests(t: YThucTestKit) {
     eq(n(3, 3, true, true), 'chua-toi-han|Chưa đến lịch', 'Tuần sau: chưa ai nợ gì');
     eq(n(3, 1, false, true), 'cho-ban|Chờ bạn chấm', 'Còn bài của tôi');
     eq(n(3, 0, false, true), 'cho-gv-khac|Chờ GV khác', 'Tôi dạy lớp nhưng bài còn lại của người khác');
-    eq(n(3, 0, false, false), 'cho-cham|Chờ chấm', 'Quản lý (không dạy lớp) không thấy chữ "GV khác"');
+    eq(n(3, 0, false, false), 'cho-cham|Chờ chấm', 'Head (không dạy lớp) không thấy chữ "GV khác"');
     for (const x of [n(0, 0, false, false), n(2, 0, true, false), n(2, 2, false, true), n(2, 0, false, true), n(2, 0, false, false)]) {
       assert(x.chu.split(' ').length <= 3, `Badge dài hơn 3 từ: ${x.chu}`);
       assert(!/quá hạn/i.test(x.chu), `Quá hạn nói ở cột Hạn, không ở badge: ${x.chu}`);

@@ -96,7 +96,7 @@ const DA_LUU: Record<PlanDecision, string> = {
   adjust: t('Đã điều chỉnh PA, bản cũ giữ trong lịch sử'),
   replace: t('Đã thay PA'),
   end: t('Đã kết thúc PA'),
-  ask_manager: t('Đã gửi Quản lý — PA vẫn chạy'),
+  ask_manager: t('Đã gửi Head — PA vẫn chạy'),
 };
 
 export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat, ketThucSom, hoanThanhCase }: {
@@ -260,7 +260,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     ...(lanCuoi ? [] : [{ khoa: 'quyet-dinh', nhan: t('Quyết định'), chon: true }]),
     ...(lanCuoi && outcome === 'insufficient' ? [{ khoa: 'ly-do', nhan: t('Lý do chưa đủ dữ liệu'), toiThieu: 1 }] : []),
     ...(needReason ? [{ khoa: 'ly-do', nhan: decision === 'adjust' ? t('Lý do điều chỉnh') : t('Lý do thay'), toiThieu: 1 }] : []),
-    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: t('Cần Quản lý giúp gì'), toiThieu: CHU_TOI_THIEU_CASE }] : []),
+    ...(decision === 'ask_manager' ? [{ khoa: 'ly-do', nhan: t('Cần Head giúp gì'), toiThieu: CHU_TOI_THIEU_CASE }] : []),
   ];
   const loi = dsLoi(LUAT, { 'ket-qua': outcome, 'tien-trien': progress, 'quyet-dinh': decision, 'ly-do': reason });
   if (decision === 'replace') loi.push(...loiFormPa(paThay, { tienTo: 'moi-' }));   // khoá riêng: không đụng ô Số buổi tuần này
@@ -345,7 +345,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       /* OV-13b: ở lại panel — "✓ Đã lưu · {quyết định}" + kết quả · hạn kế. Chủ SP 13/11: không Hoàn tác — sai thì "Sửa kết quả" ở thẻ PA. */
       const hanKe = (ct?.interventions ?? []).find((x: any) => x.id === pa.id)?.actionDue ?? null;
       (diTiep && tiep ? tiep.lam : onSaved)({
-        chu: daHt ? t('Đã lưu kết quả · đã hoàn thành Case') : loiHt ? t('Đã lưu kết quả · chưa hoàn thành Case: {loi}', { loi: loiHt }) : sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Quản lý duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
+        chu: daHt ? t('Đã lưu kết quả · đã hoàn thành Case') : loiHt ? t('Đã lưu kết quả · chưa hoàn thành Case: {loi}', { loi: loiHt }) : sua ? t('Đã sửa kết quả') : lanCuoi ? t('Đã lưu kết quả cuối — PA theo quy chế kết thúc') : deXuat ? t('Đã lưu · gửi Head duyệt đổi PA') : pa.choXacNhan && decision === 'keep' ? t('Đã lưu kết quả · đã xác nhận PA') : DA_LUU[decision as PlanDecision],
         phu: [dich(outcomeLabelFor(outcome)), hanKe && !lanCuoi ? t('hạn kế {ngay}', { ngay: ngan(hanKe) }) : null].filter(Boolean).join(' · '),
       });
     } catch (e: any) {
@@ -404,10 +404,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     if (d === 'ask_manager') {
       return (
         <div className="space-y-2">
-          <Truong nhan={t('Cần Quản lý giúp gì')} batBuoc loi={loiCua('ly-do')}>
+          <Truong nhan={t('Cần Head giúp gì')} batBuoc loi={loiCua('ly-do')}>
             <textarea className="field w-full" {...o('ly-do')} rows={2} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>
-          <p className="m-0 text-xs text-slate-400">{t('Gửi Quản lý · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
+          <p className="m-0 text-xs text-slate-400">{t('Gửi Head · trả lời trong {n} ngày · xem ở Yêu cầu của tôi', { n: hanDuyetNgay() })}</p>
         </div>
       );
     }
@@ -419,7 +419,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const khoiDoi = deXuat ? (
     <div className="space-y-2">
       <FormDoiPa d={doi} lf={lf} />
-      <p className="m-0 text-xs text-slate-400">{t('PA hiện tại chạy tới khi Quản lý duyệt')}</p>
+      <p className="m-0 text-xs text-slate-400">{t('PA hiện tại chạy tới khi Head duyệt')}</p>
     </div>
   ) : null;
   /* Quyết định bị chặn theo kết quả (vd "Chưa đủ dữ liệu" thì chưa Kết thúc) — bấm thì nói lý do ngay dưới, không chọn. */
@@ -469,7 +469,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     /* GD-3 (mockup v21 K4c): "Lưu nháp" là nút phụ đứng trước nút chính. */
     <button type="button" className="btn min-h-[40px] px-4" onClick={() => void luuNhap()} disabled={!!gui}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</button>
   );
-  const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi QL duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
+  const nhanNut = busy ? t('Đang lưu…') : sua ? t('Lưu') : lanCuoi ? t('Lưu kết quả cuối') : deXuat ? t('Lưu kết quả · gửi Head duyệt') : dich(NUT_LUU_KET_QUA[decision || 'keep']);
   const nut = tiep && !sua
     ? <NutVaTiep chu={nhanNut} chuTiep={chuTiep ?? t('Lưu · việc tiếp ›')} busy={busy} tat={!!gui} tiep={tiep} bam={bam} luu={(x) => void luu(x)} coDong={false} />
     : <button type="button" className="btn btn-primary min-h-[40px] px-4 font-bold" disabled={!!gui} onClick={() => void luu()}>{nhanNut}</button>;

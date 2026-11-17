@@ -224,7 +224,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
       nhapDo.current = null;
       xoaNhap(); setMoTa(''); lamMoi(); onDone?.();
       /* MA-QL-VIEC: QL / Quản trị áp thẳng (máy chủ chốt ngay) — sai thì Thu hồi ở lần xử lý. */
-      toast.push('ok', d.qlApThang ? cauXong(m.nhan) : t('Đã gửi QL duyệt {nhan} cho {ten}. QL trả lời trong {n} ngày.', { nhan: bacDu(dich(m.nhan)), ten: d.ten, n: hanDuyetNgay(homNay) }));
+      toast.push('ok', d.qlApThang ? cauXong(m.nhan) : t('Đã gửi Head duyệt {nhan} cho {ten}. Head trả lời trong {n} ngày.', { nhan: bacDu(dich(m.nhan)), ten: d.ten, n: hanDuyetNgay(homNay) }));
       if (!diTiep) setTimeout(onClose, 0);
       return true;
     } catch (e: any) { setLoiLuu(e.message); return false; } finally { setBusy(false); }
@@ -317,7 +317,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const hanh = (diTiep: boolean) => (cheDo === 'xu-ly' ? luuXuLy(diTiep) : guiDeXuat(diTiep));
   const luu = (diTiep: boolean) => { setBam(diTiep ? 'tiep' : 'luu'); void (diTiep && onTiep ? luuRoiTiep(() => hanh(true), onTiep) : hanh(false)); };
   const nutChinh = <NutVaTiep busy={busy} bam={bam} luu={luu} tiep={onTiep ? { ten: null, lam: () => {} } : undefined} chuTiep={t('Lưu · việc tiếp ›')}
-    chu={cheDo === 'xu-ly' ? (bacKe ? t('Xác nhận · {nhan}', { nhan: bacDu(dich(bacKe.nhan)) }) : t('Xác nhận xử lý')) : d.qlApThang ? t('Lưu xử lý') : t('Gửi Quản lý duyệt')} />;
+    chu={cheDo === 'xu-ly' ? (bacKe ? t('Xác nhận · {nhan}', { nhan: bacDu(dich(bacKe.nhan)) }) : t('Xác nhận xử lý')) : d.qlApThang ? t('Lưu xử lý') : t('Gửi Head duyệt')} />;
   /* Lựa chọn bậc của từng cách (máy chủ kiểm lại `deXuatHopLe`). */
   const bacGiu = THANG.slice(0, Math.min(d.bac, THANG.length)).reverse() as string[];
   const bacVuot = THANG.slice(Math.min(d.bac + 1, THANG.length)) as string[];
@@ -418,8 +418,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
               {/* Hậu quả đặt ngay dưới lựa chọn (chủ SP 12/11) — không chỉ bằng màu: có ⚠ + chữ. */}
               <p role="note" className="m-0 grid grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 rounded-lg border border-soon-line bg-soon-bg px-3 py-2.5 text-sm leading-snug text-slate-100">
                 <span aria-hidden className="font-bold text-soon">⚠</span>
-                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi QL duyệt.')}</b> {t('QL có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}
-                  {' '}<NutLuat label={t('Sau khi chốt')}>{t('TVV nhận việc báo PH sau khi QL duyệt hoặc tự chốt. Bạn ghi "Đã thực hiện" sau khi chốt.')}</NutLuat></span>
+                <span><b className="font-semibold">{t('Khác mặc định → sẽ gửi Head duyệt.')}</b> {t('Head có {n} ngày (tới {ngay}); hết hạn giữ quyết định của bạn: {nhan}.', { n: soNgayQl, ngay: ngay(hanQl, homNay), nhan: loai ? (loai === 'other' && tenKhac.trim() ? tenKhac.trim() : tenBac(loai)) : '—' })}
+                  {' '}<NutLuat label={t('Sau khi chốt')}>{t('TVV nhận việc báo PH sau khi Head duyệt hoặc tự chốt. Bạn ghi "Đã thực hiện" sau khi chốt.')}</NutLuat></span>
               </p>
             </div>
           )}

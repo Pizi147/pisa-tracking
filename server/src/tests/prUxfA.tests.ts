@@ -74,7 +74,7 @@ export async function runPrUxfATests(t: YThucTestKit) {
     });
     const truot = [{ skill: 'writing', score: 8, total: 20 }, { skill: 'speaking', score: 9, total: 20 }];
     assert(k({ tyLeTong: 0.45 }).dong1 === 'Final Test → học lại', k({ tyLeTong: 0.45 }).dong1);
-    assert(k({ tyLeTong: 0.55 }).dong1 === 'Final Test → QL cân nhắc', '55%');
+    assert(k({ tyLeTong: 0.55 }).dong1 === 'Final Test → Head cân nhắc', '55%');
     assert(k({ tyLeTong: 0.64, failed: 2, failedSkills: truot }).dong1 === 'Final Test → lên + bổ trợ', '64%');
     assert(k({ tyLeTong: 0.78 }).dong1 === 'Final Test → Pass', '78%');
     assert(k({ tyLeTong: null, scored: 3 }).dong1 === 'Final Test · 3/4 môn có điểm', 'thiếu điểm');

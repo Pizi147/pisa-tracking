@@ -317,10 +317,10 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
             )}
             {em.xacNhan && (
               <p className="m-0 text-xs text-slate-400">
-                {t('Xác nhận bởi {ai}', { ai: em.xacNhan.boi ?? t('GVCN') })}{em.xacNhan.thay ? ` ${t('(Quản lý xác nhận thay)')}` : ''} · {ngay(em.xacNhan.luc, homNay)}
+                {t('Xác nhận bởi {ai}', { ai: em.xacNhan.boi ?? t('GVCN') })}{em.xacNhan.thay ? ` ${t('(Head xác nhận thay)')}` : ''} · {ngay(em.xacNhan.luc, homNay)}
               </p>
             )}
-            {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">{chenHan(t('GVCN lớp cũ xác nhận · hạn {han:ban_giao_chuyen_lop} · Quản lý xác nhận thay được'))}</p>}
+            {!ghi && !em.xacNhan && dto.nguoiXem.xemTuNguon && <p className="m-0 text-xs text-slate-400">{chenHan(t('GVCN lớp cũ xác nhận · hạn {han:ban_giao_chuyen_lop} · Head xác nhận thay được'))}</p>}
           </div>
         </div>
       )}

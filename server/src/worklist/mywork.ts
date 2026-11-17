@@ -224,7 +224,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
     /* HD3-1 (15 mục 8.2): số ngày / thứ lấy từ Hạn mặc định (`chenHan`) — Quản trị đổi hạn thì câu tự đúng. */
     get hint() {
       return chenHan('Progress Test đã tự tạo Case cho môn này. Chọn nhóm nguyên nhân, ghi mô tả ngắn, xem PA Bổ trợ rồi Xác nhận Case — '
-        + 'hoặc Không cần theo dõi (gửi Quản lý duyệt). Hạn {han:xac_nhan_case}, tính cả ngày Case ra đời.');
+        + 'hoặc Không cần theo dõi (gửi Head duyệt). Hạn {han:xac_nhan_case}, tính cả ngày Case ra đời.');
     },
   },
   /* MO-TA-CASE (N8, chủ SP 27/10): nhận xét bài không bắt buộc — Case MT chưa có mô tả thì GV phụ trách kỹ năng ghi Mô tả + nhóm ở Case, Case sang Xác nhận PA. */
@@ -235,7 +235,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-SOS (§3.1d) → OV-12c: Case MT có nguyên nhân từ nhận xét — PA theo quy chế chờ xác nhận, chưa chạy tới khi bấm Xác nhận PA. */
   xac_nhan_pa: {
     label: 'Xác nhận PA',
-    hint: 'Nguyên nhân đã có từ nhận xét Mock Test — xác nhận PA theo quy chế để PA bắt đầu, hoặc Không cần theo dõi (gửi Quản lý duyệt).',
+    hint: 'Nguyên nhân đã có từ nhận xét Mock Test — xác nhận PA theo quy chế để PA bắt đầu, hoặc Không cần theo dõi (gửi Head duyệt).',
   },
   /* OV-13k (chủ SP 15/10): người chấm chéo đã lưu bài Speaking có nhận xét — GV phụ trách S của lớp xem; không hạn, không đỏ. */
   xem_nx_s: {
@@ -288,7 +288,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LT2b (M-05, T47): Mini Test sau bổ trợ miễn phí — hạn = ngày buổi cuối + 2. */
   mini_test: {
     label: 'Ghi Mini Test',
-    hint: 'Em đã học bổ trợ miễn phí xong — ghi % và ngày làm Mini Test. Đạt thì Case tự hoàn thành, chưa đạt thì Quản lý được báo.',
+    hint: 'Em đã học bổ trợ miễn phí xong — ghi % và ngày làm Mini Test. Đạt thì Case tự hoàn thành, chưa đạt thì Head được báo.',
   },
 
   /* ---------------------------------------------------- ba nhóm học thuật chính (mục 3.2) */
@@ -314,7 +314,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* PR-LCb: khoá `chot_len_ft` = "Chốt lộ trình" (giữ tên để không chạm drilldown, nhắc việc, phép kiểm cũ). */
   chot_len_ft: {
     label: 'Chốt lộ trình',
-    get hint() { return chenHan('Quản lý chốt hướng và lớp chuyển đến cho mọi em, hạn {han:chot_lo_trinh} tuần Final Test. Quá hạn vẫn làm được.'); },
+    get hint() { return chenHan('Head chốt hướng và lớp chuyển đến cho mọi em, hạn {han:chot_lo_trinh} tuần Final Test. Quá hạn vẫn làm được.'); },
   },
   xet_lai_lo_trinh: {
     label: 'Xét lại lộ trình',
@@ -327,7 +327,7 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   /* ---------------------------------------------------- Ý thức (PR-YT4, V4-2…V4-5, K3-37) — người nhận = GVCN lớp đang học */
   yt_xu_ly: {
     label: 'Xử lý vi phạm',
-    get hint() { return chenHan('Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong {han:xu_ly_vi_pham} (tính cả ngày ghi). Quá hạn thì Quản lý được báo.'); },
+    get hint() { return chenHan('Em có 3 vi phạm trở lên trong tuần này + tuần trước — phải Xác nhận xử lý trong {han:xu_ly_vi_pham} (tính cả ngày ghi). Quá hạn thì Head được báo.'); },
   },
   bao_ph_yt: {
     label: 'Báo PH vi phạm',
@@ -339,12 +339,12 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   },
   yt_thuc_hien: {
     label: 'Ghi "Đã thực hiện"',
-    hint: 'Quản lý đã duyệt đề xuất — ghi ngày đã thực hiện trong 5 ngày kể từ ngày duyệt.',
+    hint: 'Head đã duyệt đề xuất — ghi ngày đã thực hiện trong 5 ngày kể từ ngày duyệt.',
   },
   ban_giao: {
     label: 'Bàn giao',
     /* L1 (PTA 13/11): GVBM = GVCN, một hạn (hanBanGiao, Hạn mặc định). */
-    get hint() { return t('Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình, GVCN gom lại, viết nhận xét chung rồi xác nhận bàn giao. Hạn tối thiểu {ngay} ngày, tính cả ngày ra quyết định (GVBM và GVCN cùng hạn). Quá hạn thì Quản lý được báo — em vẫn chuyển đúng tuần.', { ngay: hanTai('ban_giao_chuyen_lop').ngay }); },
+    get hint() { return t('Lớp có quyết định chuyển lớp: GVBM ghi một câu mỗi em cho môn mình, GVCN gom lại, viết nhận xét chung rồi xác nhận bàn giao. Hạn tối thiểu {ngay} ngày, tính cả ngày ra quyết định (GVBM và GVCN cùng hạn). Quá hạn thì Head được báo — em vẫn chuyển đúng tuần.', { ngay: hanTai('ban_giao_chuyen_lop').ngay }); },
   },
   xuat_bc_ph: {
     label: 'Xuất báo cáo PH',
@@ -563,8 +563,8 @@ const SQL_MOC = `SELECT iv.id, iv.case_id, iv.moc_quy_che, COALESCE(sc.student_i
          LEFT JOIN learning_cycles lc ON lc.id = a.cycle_id   -- cùng lộ trình với điều kiện MT sau (nx.cycle_id = a.cycle_id)
         WHERE iv.preset = 1 AND iv.status = 'started' AND iv.followup_due IS NULL AND iv.moc_quy_che IN ('until_next_mt', 'until_exam')
           AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')}
-          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc QL xếp lại; QL vẫn tự xếp được.
-             XEP-MT-NHAC (chủ SP 07/11): MT sau QL chủ động xoá cũng vậy — xoá rồi thì thôi (LUOT_HUY_HET_SQL gồm cả MT đã xoá). */
+          /* MT-HUY-XONG (chủ SP 05/11): MT sau đã huỷ hết (vắng / ngoài phạm vi) = đợt kết thúc — không nhắc Head xếp lại; Head vẫn tự xếp được.
+             XEP-MT-NHAC (chủ SP 07/11): MT sau Head chủ động xoá cũng vậy — xoá rồi thì thôi (LUOT_HUY_HET_SQL gồm cả MT đã xoá). */
           AND NOT EXISTS (SELECT 1 FROM assessment_attempts nx WHERE nx.cycle_id = a.cycle_id AND nx.attempt_no > a.attempt_no
                             AND nx.status != 'cancelled' AND ${LUOT_HUY_HET_SQL('nx')})
 `;
@@ -592,7 +592,7 @@ export type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; stud
 export function boQuaViec(p: Principal, key: unknown, boQua: boolean) {
   const m = /^moc:([1-9]\d*)$/.exec(typeof key === 'string' ? key : '');
   if (!m) throw badRequest('Việc này không bỏ qua được.');
-  if (phamViXemViec(p) !== 'het') throw forbidden('Chỉ Quản lý trong phạm vi bỏ qua được việc này.');
+  if (phamViXemViec(p) !== 'het') throw forbidden('Chỉ Head trong phạm vi bỏ qua được việc này.');
   const conn = db();
   const r = conn.prepare(`${SQL_MOC} AND iv.id = ?`).get(Number(m[1])) as any;
   if (!r) throw notFound('Việc này không còn — có thể đã xếp lịch.');
@@ -1026,8 +1026,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
          FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id ${NOI_CASE} LEFT JOIN users pu ON pu.id = iv.performer_user_id
         WHERE ${UNCONFIRMED_PRESET('iv')} AND iv.status = 'planned' AND iv.kind != 'bo_tro' AND NOT ${CHO_DOI_PA('iv')} AND sc.status != 'done' AND ${HV_DANG_HOC_SQL('s')} AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}   /* N46 · PA bổ trợ chờ kế hoạch, không chờ "Xác nhận PA" (M8) */
           AND EXISTS (SELECT 1 FROM case_issues ci WHERE ci.case_id = sc.id AND ci.role = 'primary')
-          AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Quản lý */${locPa.sql}${toi === null ? '' : `
-          AND sc.owner_user_id = ?   /* TD-VIEC: "Của tôi" của QL — dongCase chỉ giữ dòng người xem phụ trách */`}`,
+          AND NOT ${CO_THE_KHONG_THEO_DOI('sc')}   /* OV-12c: Không cần theo dõi mở ở bước này — thẻ đang chờ thì việc ở Head */${locPa.sql}${toi === null ? '' : `
+          AND sc.owner_user_id = ?   /* TD-VIEC: "Của tôi" của Head — dongCase chỉ giữ dòng người xem phụ trách */`}`,
     )
     .all(...locPa.thamSo, ...(toi === null ? [] : [toi])) as any[];
   /* Chỉ người có phân công Speaking (của mình) hoặc "Tất cả" mới có dòng — vai khác không tốn câu SQL nào. */
@@ -1718,7 +1718,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       for (const x of em.daDuyet) {
         const nhan = nhanLoaiXuLy(x.kind, x.customName);
         items.push({ ...chung, key: `yt_thuc_hien:${x.id}`, group: 'yt_thuc_hien', urgency: urgencyOf(x.han, today),
-          reason: `QL đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, phu: nhan, actionLabel: 'Đã thực hiện',
+          reason: `Head đã duyệt ${nhan}`, tieuDe: `Ghi "Đã thực hiện" ${nhan} · ${r.ten}`, phu: nhan, actionLabel: 'Đã thực hiện',
           href: duongLop(em.lopId, r.id, `&mo=da-thuc-hien&xl=${x.id}`), due: x.han, statusLabel: 'Đã duyệt · chờ thực hiện' });
       }
     }

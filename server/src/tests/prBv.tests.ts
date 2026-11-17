@@ -589,7 +589,7 @@ export async function runPrBvTests(t: YThucTestKit) {
     const e1 = loiCua(() => go(P.cpManager ?? perm.loadPrincipal(lop(`SELECT ur.user_id u FROM user_roles ur JOIN roles r ON r.id = ur.role_id JOIN branches b ON b.id = ur.branch_id WHERE r.key = 'manager' AND b.code = 'CP' LIMIT 1`)), a.m1, 'listening', han(-1)));
     assert(e1.status === 403 && e1.message === 'Bạn không có quyền với lớp này.', `${e1.status} ${e1.message}`);
     const e2 = loiCua(() => go(gvKhac, a.m1, 'listening', han(-1)));
-    assert(e2.status === 403 && /GVCN hoặc Quản lý/.test(e2.message), e2.message);
+    assert(e2.status === 403 && /GVCN hoặc Head/.test(e2.message), e2.message);
   });
 
   // ------------------------------------------------------------------ L · xoá "-" lớp thường (Task 5)

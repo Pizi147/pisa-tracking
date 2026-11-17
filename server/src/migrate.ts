@@ -16,6 +16,7 @@ import { migratePrNhap } from './migrate/prNhap.ts';
 import { migratePrKck } from './migrate/prKck.ts';
 import { migratePrSos } from './migrate/prSos.ts';
 import { migratePrYt4 } from './migrate/prYt4.ts';
+import { migratePrHead } from './migrate/prHead.ts';
 import { migratePrHsm } from './migrate/prHsm.ts';
 import { migratePrLt2a } from './migrate/prLt2a.ts';
 import { migratePrOv2 } from './migrate/prOv2.ts';
@@ -546,6 +547,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrKyVongTuDat(conn, applied));
   /* TD-QUET (17/11): chỉ mục sos_case_history(case_id) + case_signals(class_id) — Lịch sử Case / "lớp đã có dữ liệu" hết quét cả bảng (chỉ thêm chỉ mục). */
   buoc(() => migratePrTdQuet(conn, applied));
+  /* HEAD (chủ SP 18/11): tên hiển thị vai manager trong roles "Quản lý" → "Head" (chỉ một câu UPDATE có điều kiện, chạy lặp được). */
+  buoc(() => migratePrHead(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

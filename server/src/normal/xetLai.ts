@@ -226,7 +226,7 @@ function tinhTapXetLai(today: string, o: { chiEm?: number; cn?: readonly number[
 
 /** Quyết được: QL / Quản trị chi nhánh lớp em ĐANG học (`class.edit` lớp đó — cùng quyền ra lệnh). */
 const quyetDuoc = (p: Principal, lopId: number) => coTheRaLenh(p, lopId);
-const CHI_QL = 'Chỉ Quản lý chi nhánh của lớp em đang học mới xét lại lộ trình.';
+const CHI_QL = 'Chỉ Head chi nhánh của lớp em đang học mới xét lại lộ trình.';
 
 /** Việc QL: một dòng mỗi lớp em đang học (chỉ dòng CHƯA quyết), hạn sớm nhất. Cùng tập với GET panel. */
 export function emXetLaiLoTrinh(p: Principal, branchId: number | null, today: string): LopXetLai[] {
@@ -380,7 +380,7 @@ function motEm(p: Principal, e: EmXetLai, it: MucXetLai, today: string, classId:
   const id = Number(conn.prepare(
     `INSERT INTO xet_lai_lo_trinh (student_id, lenh_id, lop_id, ly_do_ma, moc, quyet_dinh, chu, lenh_moi_id, lenh_cu, quyet_cu, ly_do_text, tu_dong, nguoi_id, luc) VALUES (?,?,?,?,?,?,?,?,?,?,?,0,?,?)`,
   ).run(e.studentId, e.lenhId, classId, e.lyDo.ma, e.lyDo.moc, it.quyetDinh, cot.chu, cot.lenhMoi, cot.lenhCu, quyetCu, it.lyDo ?? null, p.userId, nowIso()).lastInsertRowid);
-  ghiHanhTrinh(p.userId, e, id, `QL xét lại: ${cot.chu}`, today);
+  ghiHanhTrinh(p.userId, e, id, `Head xét lại: ${cot.chu}`, today);
   writeAudit({ actorUserId: p.userId, action: 'xet_lai.quyet', entityType: 'student', entityId: e.studentId, entityLabel: e.ten,
     after: { quyetDinh: it.quyetDinh, lyDo: e.lyDo.ma, lenhId: e.lenhId, lenhMoiId: cot.lenhMoi, ghiChu: it.lyDo ?? null } });
   return { studentId: e.studentId, id, chu: cot.chu, daChuyen: cot.daChuyen };
@@ -531,7 +531,7 @@ export function ghiNhanXetGvcnMoi(p: Principal, classId: number, studentId: numb
         WHERE x.student_id = ? AND l.lop_dich_id = ? AND x.quyet_dinh IS NOT NULL ORDER BY x.id DESC LIMIT 1`,
     ).get(studentId, classId) as { quyet_dinh: string; luc: string } | undefined;
     if (q) {
-      throw loi(409, 'QL đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.', {
+      throw loi(409, 'Head đã quyết {buoc} lúc {ngay} — nhận xét không còn cần.', {
         buoc: ({ tiep_tuc: 'Tiếp tục', hoc_lai: 'Học lại', len: 'Lên lớp', dung: 'Tạm dừng / Kết thúc học' } as Record<string, string>)[q.quyet_dinh] ?? q.quyet_dinh,
         ngay: ((d) => `${d.slice(8, 10)}/${d.slice(5, 7)}`)(todayInBusinessTz(new Date(q.luc))),   // ngày VN (rà sâu #742: `luc` UTC)
       });
@@ -564,7 +564,7 @@ function tuGiu(het: readonly EmXetLai[], today: string): number {
       ).run(e.studentId, e.lenhId, e.lopHienTai.id, e.lyDo.ma, e.lyDo.moc, chu, nowIso());
       if (!r.changes) continue;
       n += 1;
-      ghiHanhTrinh(null, e, Number(r.lastInsertRowid), `QL xét lại: ${chu} · tự giữ (hết hạn xét lại)`, today);
+      ghiHanhTrinh(null, e, Number(r.lastInsertRowid), `Head xét lại: ${chu} · tự giữ (hết hạn xét lại)`, today);
     }
     return n;
   });

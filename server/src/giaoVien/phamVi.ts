@@ -26,7 +26,7 @@ function tinhPhamVi(p: Principal, gvId: number): { branchIds: number[] | null; l
   ).get(gvId)) throw notFound('Không tìm thấy giáo viên này.');
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
   /* OV-11h (PT-11): câu theo vai — GV được xem hồ sơ của chính mình; TVV / CX / Admin không có phần GV. */
-  if (scope.none) throw forbidden(p.roleKeys.includes('teacher') ? 'Bạn chỉ xem được hồ sơ giáo viên của chính mình.' : 'Hồ sơ giáo viên dành cho Quản lý.');
+  if (scope.none) throw forbidden(p.roleKeys.includes('teacher') ? 'Bạn chỉ xem được hồ sơ giáo viên của chính mình.' : 'Hồ sơ giáo viên dành cho Head.');
   if (scope.all) return { branchIds: null, laChinhMinh: false, ten };
   if (!scope.branchIds.length) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');
   if (!gvThuocChiNhanh(gvId, scope.branchIds)) throw forbidden('Giáo viên này không thuộc chi nhánh bạn quản lý.');

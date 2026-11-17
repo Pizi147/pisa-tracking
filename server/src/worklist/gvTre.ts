@@ -86,7 +86,7 @@ export function gvTre(p: Principal, f: { branchId?: number | null; ct?: ChuongTr
     };
   }
 
-  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Bảng này dành cho Quản lý.');
+  if (scopeFor(p, PERMISSIONS.ANALYSIS_VIEW).none) throw forbidden('Bảng này dành cho Head.');
   const { dong, baiCua, hanCua } = treCham(p, branchId, f.ct ?? 'ft');
   const g = dong.find((x) => x.khoa === f.gv);
   const rong: PanelGvTre = { chiNhanh, soGv: 0, soBai: 0, soBaiChuaCoGv: 0, choCham: 0, nhom: [] };

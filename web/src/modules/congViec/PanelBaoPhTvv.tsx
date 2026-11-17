@@ -157,7 +157,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
       <div className="flex flex-col gap-4 pt-4">
         {v.thuHoiCho && (
           <div role="status" className="flex flex-col gap-1 rounded-lg border border-soon-line bg-soon-bg px-3.5 py-2.5 text-sm">
-            <span><b className="text-slate-100">{t('GVCN đang xin thu hồi {nhan}', { nhan: v.nhan })}</b> · {t('chờ QL duyệt.')}</span>
+            <span><b className="text-slate-100">{t('GVCN đang xin thu hồi {nhan}', { nhan: v.nhan })}</b> · {t('chờ Head duyệt.')}</span>
             <span className="text-slate-300">{t('Lần báo PH của bạn vẫn giữ trong lịch sử. Bạn không cần làm gì.')}</span>
           </div>
         )}
@@ -173,7 +173,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
         {v.tinhHinhId == null && <TienTrinh nay={v.coTheGhi && v.trangThai === 'mo' ? 2 : null} buoc={[
           [t('{n} vi phạm', { n: v.boiCanh.viPham.length }), v.boiCanh.viPham.length ? `${shortDate(v.boiCanh.viPham[0].ngay, hn)} – ${shortDate(v.boiCanh.viPham[v.boiCanh.viPham.length - 1].ngay, hn)}` : null],
           v.choQlDuyet
-            ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ QL duyệt'), v.choQlDuyet.han && t('QL trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
+            ? [<BadgeViec xuong tong="cho">{bacNgan(v.nhan)}</BadgeViec>, [t('Chờ Head duyệt'), v.choQlDuyet.han && t('Head trả lời trước {ngay}', { ngay: shortDate(v.choQlDuyet.han, hn) })].filter(Boolean).join(' · ')]
             : [<BadgeViec xuong tong="xong">{bacNgan(v.nhan)}</BadgeViec>, [v.boiCanh.nguoiLuu && t('GVCN {ten}', { ten: v.boiCanh.nguoiLuu }), v.boiCanh.ngayLam ? shortDate(v.boiCanh.ngayLam, hn) : v.boiCanh.luuLuc && lucVn(v.boiCanh.luuLuc)].filter(Boolean).join(' · ') || null],
           [<BadgeViec xuong tong={v.trangThai === 'xong' ? 'xong' : v.trangThai === 'bo' ? 'xam' : v.quaHan ? 'qua' : 'cho'}>{dich(v.nhanTrangThai)}</BadgeViec>, v.trangThai === 'mo' ? t('hạn {ngay}', { ngay: shortDate(v.han, hn) }) : null],
         ]} />}

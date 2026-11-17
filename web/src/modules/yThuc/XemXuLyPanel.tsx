@@ -59,10 +59,10 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
   const dongThuHoi = !th || !d ? null
     /* LG-10 (chủ SP 15/11): QL quá hạn chưa quyết → máy chốt theo GVCN (thu hồi có hiệu lực). */
     : th.trangThai === 'cho' ? (th.hanDuyet
-      ? t('Chờ QL duyệt thu hồi · gửi {ngay} · quá {han} tự chốt theo GVCN: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), han: ngay(th.hanDuyet, homNay), lyDo: th.lyDo ?? '' })
-      : t('Chờ QL duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' }))
-    : th.trangThai === 'tu_choi' ? t('{x} từ chối thu hồi {ngay}: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDoTuChoi ?? '' })
-    : th.trangThai === 'duyet' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · {x} duyệt: “{lyDo}”', { x: th.nguoiDuyet ?? 'QL', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
+      ? t('Chờ Head duyệt thu hồi · gửi {ngay} · quá {han} tự chốt theo GVCN: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), han: ngay(th.hanDuyet, homNay), lyDo: th.lyDo ?? '' })
+      : t('Chờ Head duyệt thu hồi · gửi {ngay}: “{lyDo}”', { ngay: ngay(th.taoLuc, homNay), lyDo: th.lyDo ?? '' }))
+    : th.trangThai === 'tu_choi' ? t('{x} từ chối thu hồi {ngay}: “{lyDo}”', { x: th.nguoiDuyet ?? 'Head', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDoTuChoi ?? '' })
+    : th.trangThai === 'duyet' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · {x} duyệt: “{lyDo}”', { x: th.nguoiDuyet ?? 'Head', ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
     : th.trangThai === 'tu_dong' && d.status === 'thu_hoi' ? t('Đã thu hồi {ngay} · tự chốt vì hết hạn duyệt: “{lyDo}”', { ngay: ngay(th.xuLyLuc, homNay), lyDo: th.lyDo ?? '' })
     : null;
 
@@ -118,7 +118,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       if (rutDuoc) await api.post(`/yeu-cau/${the!.id}/rut`);
       else await api.post(`/discipline-measures/${d.id}/thu-hoi`, { lyDo: lyDo.trim(), ...(ql && d.daBaoPh ? { baoLai } : {}) });
       lamMoiYThuc(); invalidate('/yeu-cau');
-      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: bacDu(dich(d.nhan)) }) : ql ? t('Đã thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }) : t('Đã gửi QL thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }));
+      toast.push('ok', rutDuoc ? t('Đã rút đề xuất {nhan}', { nhan: bacDu(dich(d.nhan)) }) : ql ? t('Đã thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }) : t('Đã gửi Head thu hồi {nhan}', { nhan: bacDu(dich(d.nhan)) }));
       setHoiXoa(false); setDaBam(false); onDone?.();
       if (rutDuoc) dong(); else { setLyDo(''); reload(); }
     } catch (e: any) { setLoiMay(e.message); } finally { setBusy(false); }
@@ -187,7 +187,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                 {!tt && !sua && !hoiXoa && loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
               </Khoi>
             ) : (
-              <Khoi tieuDe={t('Đề xuất QL duyệt')}>
+              <Khoi tieuDe={t('Đề xuất Head duyệt')}>
                 {rutDuoc && !tt && !sua && <button type="button" className="btn btn-sm min-h-[44px] self-start sm:min-h-0" onClick={moSuaTt}>{t('Sửa')}</button>}
                 {tt ? (
                   <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
@@ -197,7 +197,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                 {tt && loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
                 {the && (
                   <p className="m-0 text-xs text-slate-400">
-                    {t('Gửi {ngay}{x}{x2}{x3}', { ngay: ngay(the.taoLuc, homNay), x: the.trangThai === 'cho' && the.hanDuyet ? t(' · QL trả lời trước {ngay}', { ngay: ngay(the.hanDuyet, homNay) }) : '', x2: the.trangThai === 'duyet' ? t(' · {x} đã duyệt {ngay} — ghi "Đã thực hiện" trong 5 ngày', { x: the.nguoiDuyet ?? 'QL', ngay: ngay(d.quyetLuc, homNay) }) : '', x3: the.trangThai === 'tu_choi' ? t(' · {x} từ chối {ngay}: “{x2}”', { x: the.nguoiDuyet ?? 'QL', ngay: ngay(d.quyetLuc, homNay), x2: the.lyDoTuChoi ?? '' }) : '' })}
+                    {t('Gửi {ngay}{x}{x2}{x3}', { ngay: ngay(the.taoLuc, homNay), x: the.trangThai === 'cho' && the.hanDuyet ? t(' · Head trả lời trước {ngay}', { ngay: ngay(the.hanDuyet, homNay) }) : '', x2: the.trangThai === 'duyet' ? t(' · {x} đã duyệt {ngay} — ghi "Đã thực hiện" trong 5 ngày', { x: the.nguoiDuyet ?? 'Head', ngay: ngay(d.quyetLuc, homNay) }) : '', x3: the.trangThai === 'tu_choi' ? t(' · {x} từ chối {ngay}: “{x2}”', { x: the.nguoiDuyet ?? 'Head', ngay: ngay(d.quyetLuc, homNay), x2: the.lyDoTuChoi ?? '' }) : '' })}
                   </p>
                 )}
               </Khoi>
@@ -239,8 +239,8 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
       {/* 6c-2 (lỗi 9): hộp nhỏ trong panel (không ngăn 480 đè); LUAT-5: Thu hồi có ô Lý do * — đang gõ thì đóng hỏi một lần. */}
       {d && (
         <ConfirmDialog open={hoiXoa} onClose={() => setHoiXoa(false)} onConfirm={() => void xoa()} danger busy={busy} z="z-[60]"
-          title={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi QL thu hồi?')}
-          confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi QL')} busyLabel={rutDuoc ? t('Đang rút…') : ql ? t('Đang thu hồi…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
+          title={rutDuoc ? t('Rút đề xuất này?') : ql ? t('Thu hồi lần xử lý này?') : t('Gửi Head thu hồi?')}
+          confirmLabel={rutDuoc ? t('Rút đề xuất') : ql ? t('Thu hồi') : t('Gửi Head')} busyLabel={rutDuoc ? t('Đang rút…') : ql ? t('Đang thu hồi…') : t('Đang gửi…')} daSua={!rutDuoc && !!lyDo.trim()}
           body={<>
             <p className="m-0">
               {rutDuoc ? t('{nhan} · {length} vi phạm về chưa xử lý · {soTep} tệp bằng chứng bị xoá', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, soTep: d.soTep }) : t('{nhan} · {length} vi phạm · bậc về {bacVe}', { nhan: bacDu(dich(d.nhan)), length: d.viPham.length, bacVe })}

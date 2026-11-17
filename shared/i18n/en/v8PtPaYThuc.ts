@@ -27,7 +27,7 @@ export const EN_V8_PT_PA_Y_THUC = {
   'Mức SOS / loại PA': 'SOS level / plan type',
   /* Ý thức */
   '{n} bắt buộc xử lý': '{n} must be handled',
-  '{n} chờ QL duyệt': '{n} awaiting manager approval',
+  '{n} chờ Head duyệt': '{n} awaiting Head approval',
   'trên {n} vi phạm': (b) => `of ${soNhieu(b.n, 'incident', 'incidents')}`,
   'Lớp có vi phạm': 'Classes with incidents',
   'Học viên cần chú ý': 'Students needing attention',

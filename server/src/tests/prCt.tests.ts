@@ -300,7 +300,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const gvbm2 = loadPrincipal(P.subjectTeacher.userId);
     const cpDich = lopMoi({ branchId: CP, kind: 'BE', tuanHienTai: 1 });
     const l = lenhCua(em[1]);
-    for (const [ten, who] of [['GVCN', gvcnNguon], ['GVBM', gvbm2], ['QL chi nhánh khác/đích', P.cpManager]] as const) {
+    for (const [ten, who] of [['GVCN', gvcnNguon], ['GVBM', gvbm2], ['Head chi nhánh khác/đích', P.cpManager]] as const) {
       assert(maLoi(() => lenh.raLenh(who, { lopNguonId: nguon, boiCanh: 'cuoi-khoa', tuanChung: null, dongs: [dongCua(em[1], 'len_lop', beDich)] })) === 403, `${ten} ra quyết định phải 403`);
       assert(maLoi(() => lenh.suaLenh(who, l.id, { tuan: TUAN[2] })) === 403, `${ten} sửa quyết định phải 403`);
       assert(maLoi(() => lenh.huyLenh(who, l.id, 'thử huỷ')) === 403, `${ten} huỷ quyết định phải 403`);
@@ -593,7 +593,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ? AND mon = ?`, l.id, monR).dien_thay === 1, 'GVCN điền thay');
     assert(maLoi(() => bg.ghiMon(gvbmL, l.id, monL, '   ')) === 400 && maLoi(() => bg.ghiMon(gvbmL, l.id, monL, 'x'.repeat(301))) === 400, 'rỗng / quá dài');
     assert(maLoi(() => bg.ghiMon(gvcn5, l.id, 'khong_co_mon', 'x')) === 400, 'môn không có ở lớp nguồn');
-    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'QL ghi')) === 409, 'GV lớp chuyển đến 403; RKC-4b: QL (chưa quá hạn) được hỏi (409)');
+    assert(maLoi(() => bg.ghiMon(gvDich, l.id, monL, 'GV lớp chuyển đến ghi')) === 403 && maLoi(() => bg.ghiMon(P.mbManager, l.id, monL, 'Head ghi')) === 409, 'GV lớp chuyển đến 403; RKC-4b: QL (chưa quá hạn) được hỏi (409)');
     assert(maLoi(() => bg.ghiMon(gvcn5, lenhCua(em5[3]).id, monL, 'dừng học hẳn')) === 400, 'lệnh Dừng học hẳn không có phiếu');
   });
   check('GD-20b · gỡ câu môn vừa chèn (Hoàn tác "Chèn cho n em"): khớp → xoá + nhật ký; đã sửa → giữ (false); GV lớp chuyển đến → 403', () => {
@@ -776,19 +776,19 @@ export async function runPrCtTests(t: YThucTestKit) {
     const e = hocVien(kg, 'FOU', false).sid;
     ra(P.mbManager, kg, 'cuoi-khoa', [dongCua(e, 'len_lop', kgDich)]);
     const l = lenhCua(e);
-    bg.ghiMon(P.mbManager, l.id, monL, 'QL điền thay khi lớp chưa có GVCN.');
+    bg.ghiMon(P.mbManager, l.id, monL, 'Head điền thay khi lớp chưa có GVCN.');
     assert(get(`SELECT dien_thay FROM ban_giao_mon WHERE lenh_id = ?`, l.id).dien_thay === 1, 'QL điền thay');
-    bg.xacNhanBanGiao(P.mbManager, l.id, 'Quản lý xác nhận thay: lớp chưa có GVCN.');
+    bg.xacNhanBanGiao(P.mbManager, l.id, 'Head xác nhận thay: lớp chưa có GVCN.');
     assert(lenhCua(e).xac_nhan_thay === 1 && bg.phieuBanGiao(P.mbManager, { lenhId: l.id }).ds[0].xacNhan.thay, 'ghi "xác nhận thay"');
     /* Lớp có GVCN: QL chỉ thay được khi quá hạn 3 ngày */
     const e2 = hocVien(n5, 'FOU', false).sid;
     ra(P.mbManager, n5, 'cuoi-khoa', [dongCua(e2, 'len_lop', d5)]);
     const l2 = lenhCua(e2);
-    assert(maLoi(() => bg.xacNhanBanGiao(P.mbManager, l2.id, 'QL xác nhận sớm không được phép.')) === 409, 'RKC-4b: chưa quá hạn → QL được hỏi (409)');
+    assert(maLoi(() => bg.xacNhanBanGiao(P.mbManager, l2.id, 'Head xác nhận sớm không được phép.')) === 409, 'RKC-4b: chưa quá hạn → QL được hỏi (409)');
     conn.prepare('UPDATE lenh_chuyen_lop SET han_gvcn = ? WHERE id = ?').run(t.addDays(TODAY, -1), l2.id);
-    bg.xacNhanBanGiao(P.mbManager, l2.id, 'Quá hạn 3 ngày, Quản lý xác nhận thay.');
+    bg.xacNhanBanGiao(P.mbManager, l2.id, 'Quá hạn 3 ngày, Head xác nhận thay.');
     assert(lenhCua(e2).xac_nhan_thay === 1, 'quá hạn → QL thay được');
-    assert(maLoi(() => bg.xacNhanBanGiao(P.cpManager, lenhCua(e).id, 'QL chi nhánh khác không được xác nhận.')) === 403, 'QL chi nhánh khác 403');
+    assert(maLoi(() => bg.xacNhanBanGiao(P.cpManager, lenhCua(e).id, 'Head chi nhánh khác không được xác nhận.')) === 403, 'QL chi nhánh khác 403');
   });
   check('CT (5h) · số câu SQL của phiếu cả lớp KHÔNG tăng theo số em (3 em vs 30 em)', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 8 });
@@ -973,7 +973,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     assert(l.ly_do.startsWith('Phụ huynh xin'), 'lý do lấy từ thẻ');
     /* QL tự gửi rồi tự duyệt */
     const e2 = hocVien(lop, 'FOU', false).sid;
-    const r2 = lenh.guiDeXuatChuyenLop(P.mbManager, e2, { toClassId: dichA, tuan: TUAN[1], lyDo: 'Quản lý tự đề xuất chuyển lớp cho em.' });
+    const r2 = lenh.guiDeXuatChuyenLop(P.mbManager, e2, { toClassId: dichA, tuan: TUAN[1], lyDo: 'Head tự đề xuất chuyển lớp cho em.' });
     yc.duyetYeuCau(P.mbManager, r2.id, { duLieu: { lopDichId: dichA, tuan: TUAN[1] } });
     assert(get('SELECT tu_duyet FROM yeu_cau_duyet WHERE id = ?', r2.id).tu_duyet === 1, 'tự duyệt');
     /* đã có lệnh cho từ đường khác → thẻ mới không gửi được; thẻ cũ tự đóng */

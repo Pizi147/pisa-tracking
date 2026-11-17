@@ -217,7 +217,7 @@ export function giuPaGv(p: Principal, qId: number, input: { lyDo?: unknown } = {
     caseAccess(q.case_id).requireEdit(p, EDIT_MESSAGE);
     if (q.case_status === 'done') throw badRequest('Case đã đóng — không còn chọn PA được.');
     if (!q.preset || q.kind === 'bo_tro' || q.confirmed_at || q.status !== 'planned') throw badRequest('PA quy chế này không còn chờ chọn.');
-    if (choDoiPa(q)) throw badRequest('Đang chờ Quản lý duyệt — Rút trước nếu muốn chọn lại.');
+    if (choDoiPa(q)) throw badRequest('Đang chờ Head duyệt — Rút trước nếu muốn chọn lại.');
     const gs = paGvKhacLoai(q);
     if (!gs.length) throw badRequest('Case không có PA của GV khác PA quy chế — Xác nhận PA quy chế.');
     return { q, gs };
@@ -230,7 +230,7 @@ export function giuPaGv(p: Principal, qId: number, input: { lyDo?: unknown } = {
     const { q, gs } = kiem();
     const id = taoYeuCau(conn, { loai: 'giu_pa_gv', doiTuongLoai: 'intervention', doiTuongId: q.id, hocVienId: q.sid, nguoiXin: p.userId, lyDo,
       duLieu: { paGv: gs.map((g) => g.id), kindQ: q.kind, kindG: gs[0].kind } });
-    if (id == null) throw badRequest('Đã gửi Quản lý duyệt rồi.');
+    if (id == null) throw badRequest('Đã gửi Head duyệt rồi.');
     conn.prepare('UPDATE case_interventions SET superseded_by = ?, updated_at = ? WHERE id = ?').run(gs[0].id, nowIso(), q.id);
     dongBoTrangThaiCase(q.case_id);
     writeAudit({ actorUserId: p.userId, action: 'case.plan.giu_pa_gv', entityType: 'case_intervention', entityId: q.id, entityLabel: `Case ${q.case_id} · ${q.kind}`,
@@ -275,7 +275,7 @@ export function quetGiuPaGv(conn: any, homNay: string): number {
     for (const y of ds) {
       apDungGiuPaGv(y, 'duyet', null);
       chotYeuCau(conn, { loai: 'giu_pa_gv', doiTuongLoai: 'intervention', doiTuongId: y.doi_tuong_id }, 'tu_dong',
-        { lyDo: 'Quá hạn Quản lý chưa trả lời — chốt theo PA của GV' });
+        { lyDo: 'Quá hạn Head chưa trả lời — chốt theo PA của GV' });
     }
   });
   return ds.length;
@@ -321,7 +321,7 @@ export function announceAutoCase(input: {
 
 // ---------------------------------------------------------------- Xác nhận Case · Xác nhận PA · Không cần theo dõi (S4-2…S4-7)
 
-const EDIT_MESSAGE = 'Bạn chỉ xử lý được Case của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).';
+const EDIT_MESSAGE = 'Bạn chỉ xử lý được Case của kỹ năng mình được phân công (hoặc là Head trong phạm vi).';
 
 /** Ghi một mốc của Case (khoá chống trùng tuỳ chọn). Viết tại chỗ để không import vòng `sos.ts`. */
 export function ghiMoc(caseId: number, kind: MilestoneKind, on: string, note: string | null, actor: number | null, dedupKey: string | null = null) {
@@ -978,7 +978,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
   if (!st.fromSos) {
     throw badRequest('Chỉ Case tự tạo từ kết quả Test mới gửi "Không cần theo dõi" được — Case này không phải Case tự tạo.');
   }
-  if (st.choDuyetKhongTheoDoi) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
+  if (st.choDuyetKhongTheoDoi) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Head duyệt.');
   /* OV-12c: mở cả ở bước chờ xác nhận PA (Case MT có nguyên nhân sẵn) — chặn chỉ khi đã có PA chạy / kết quả (dưới). */
   const { code, text, lyDo } = lyDoKhongTheoDoi(input);
   const started = conn
@@ -988,7 +988,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
   const followed = conn.prepare('SELECT COUNT(*) n FROM case_followups WHERE case_id = ?').get(caseId) as any;
   /* RKC-2c ④ (PTA 07/11): Case đã có PA chạy / kết quả vẫn gửi được — hỏi nêu hệ quả; QL duyệt thì PA đang chạy dừng (`apDungKhongTheoDoi`). */
   if (started.n > 0 || followed.n > 0) {
-    canXacNhan('Case đang có PA chạy — vẫn gửi "Không cần theo dõi"? PA đang chạy sẽ dừng khi Quản lý duyệt.', undefined, 'Vẫn gửi');
+    canXacNhan('Case đang có PA chạy — vẫn gửi "Không cần theo dõi"? PA đang chạy sẽ dừng khi Head duyệt.', undefined, 'Vẫn gửi');
   }
   const today = demoToday();
   return tx(() => {
@@ -996,7 +996,7 @@ export function guiKhongTheoDoi(p: Principal, caseId: number, input: { reasonCod
       loai: 'khong_theo_doi', doiTuongLoai: 'sos_case', doiTuongId: caseId, hocVienId: c.student_id ?? null,
       nguoiXin: p.userId, lyDo, duLieu: { reasonCode: code, reasonText: reasonNeedsText(code) ? text : null },
     });
-    if (id === null) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Quản lý duyệt.');
+    if (id === null) throw badRequest('Case đã gửi "Không cần theo dõi" — đang chờ Head duyệt.');
     ghiMoc(caseId, 'xin_khong_theo_doi', today, lyDo, p.userId);
     writeAudit({
       actorUserId: p.userId, action: 'case.dismiss.request', entityType: 'sos_case', entityId: caseId, entityLabel: `Không cần theo dõi · ${lyDo}`,
@@ -1033,7 +1033,7 @@ export function suaKhongTheoDoi(conn: any, yc: { doi_tuong_id: number }, input: 
  * hạn xác nhận giữ nguyên (lúc gửi không đổi hạn), việc Xác nhận nguyên nhân về lại người phụ trách.
  */
 /** RKC-2b: câu hỏi chung khi thêm PA / Xác nhận Case / Xác nhận PA lúc Case đang chờ QL duyệt "Không cần theo dõi". */
-export const CAU_RUT_KTD = 'Case đang chờ Quản lý duyệt "Không cần theo dõi" — rút đề nghị đó rồi lưu?';
+export const CAU_RUT_KTD = 'Case đang chờ Head duyệt "Không cần theo dõi" — rút đề nghị đó rồi lưu?';
 export const NUT_RUT_KTD = 'Rút đề nghị và lưu';
 /** RKC-2b: rút thẻ "Không cần theo dõi" đang chờ của Case (như người gửi bấm Rút — thẻ đóng `tu_dong`, mốc xin gỡ). Gọi TRONG giao dịch của nơi gọi. */
 export function rutKhongTheoDoiTrongTx(conn: any, p: Principal, caseId: number): void {

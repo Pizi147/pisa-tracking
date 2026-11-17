@@ -209,7 +209,7 @@ function BangLuot({ luot, ft, dauVao }: { luot: Luot[]; ft: boolean; dauVao: Dau
  */
 function MucBuocTiep({ bt, onMo }: { bt: NonNullable<TongKet['buocTiep']>; onMo: () => void }) {
   const { homNay } = useNgayNghiepVu();
-  const chu = !bt.chon ? (bt.coTheChon ? null : t('Chờ QL / TVV chọn bước tiếp'))
+  const chu = !bt.chon ? (bt.coTheChon ? null : t('Chờ Head / TVV chọn bước tiếp'))
     : bt.hen ? t('Hẹn bắt đầu {tuan} · {lop}', { tuan: tuanLich(bt.hen, homNay), lop: bt.henLop ?? '—' }) : t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[bt.chon] });
   return (
     <section aria-label={t('Bước tiếp')} className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-[10px] border px-3 py-2.5" style={{ background: 'var(--surface-2)', borderColor: 'var(--line)' }}>

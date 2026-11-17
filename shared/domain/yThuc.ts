@@ -200,7 +200,7 @@ export function bacCuaLoai(kind: string): number {
 export const MEASURE_STATUSES = ['done', 'nhap', 'cho_duyet', 'da_duyet', 'tu_choi', 'thu_hoi'] as const;
 export type MeasureStatus = (typeof MEASURE_STATUSES)[number];
 export const XU_LY_STATUS_LABEL: Record<MeasureStatus, string> = {
-  done: t('Đã xử lý'), nhap: t('Đang soạn'), cho_duyet: t('Chờ QL duyệt'), da_duyet: t('Đã duyệt · chờ thực hiện'), tu_choi: t('QL từ chối'),
+  done: t('Đã xử lý'), nhap: t('Đang soạn'), cho_duyet: t('Chờ Head duyệt'), da_duyet: t('Đã duyệt · chờ thực hiện'), tu_choi: t('Head từ chối'),
   thu_hoi: t('Đã thu hồi'),
 };
 
@@ -210,7 +210,7 @@ export const HAN_Y_THUC_NGAY = 5;
 export const TRANG_THAI_VP = ['moi', 'da_ghi_nhan', 'can_xu_ly', 'qua_han', 'cho_duyet', 'da_xu_ly'] as const;
 export type TrangThaiVp = (typeof TRANG_THAI_VP)[number];
 export const TRANG_THAI_VP_LABEL: Record<TrangThaiVp, string> = {
-  moi: t('Mới'), da_ghi_nhan: t('Đã xem'), can_xu_ly: t('Cần xử lý'), qua_han: t('Quá hạn'), cho_duyet: t('Chờ QL duyệt'), da_xu_ly: t('Đã xử lý'),
+  moi: t('Mới'), da_ghi_nhan: t('Đã xem'), can_xu_ly: t('Cần xử lý'), qua_han: t('Quá hạn'), cho_duyet: t('Chờ Head duyệt'), da_xu_ly: t('Đã xử lý'),
 };
 
 export type ViPhamVao = {
@@ -271,7 +271,7 @@ export function trangThaiViPham(v: ViPhamVao, batBuoc: string | null, n: NguCanh
   const xong = v.xuLy.filter((x) => x.status === 'done')
     .sort((a, b) => (a.performedOn ?? '').localeCompare(b.performedOn ?? '') || a.id - b.id).pop();
   if (xong) return { t: 'da_xu_ly', nhan: t('Đã xử lý · {nhanLoaiXuLy}', { nhanLoaiXuLy: nhanLoaiXuLy(xong.kind) }), han: null, quaHanNgay: null, lyDoQuaHan: null };
-  if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: t('Chờ QL duyệt'), han: null, quaHanNgay: null, lyDoQuaHan: null };
+  if (v.xuLy.some((x) => x.status === 'cho_duyet')) return { t: 'cho_duyet', nhan: t('Chờ Head duyệt'), han: null, quaHanNgay: null, lyDoQuaHan: null };
   const duyet = v.xuLy.find((x) => x.status === 'da_duyet');
   if (duyet) {
     const han = duyet.quyetLuc && !n.tamDung ? hanTheoNgay(duyet.quyetLuc.slice(0, 10), hanTai('xu_ly_vi_pham', duyet.quyetLuc.slice(0, 10)).ngay) : null;
@@ -345,7 +345,7 @@ export type NhomEm = 'qua_han' | 'bat_buoc' | 'cho_duyet' | 'moi' | 'da_xu_ly';
 export type NhanYThucEm = { nhom: 'qua_han' | 'bat_buoc'; so: number; han: string | null; quaHanNgay: number | null };
 export const NHOM_EM: readonly NhomEm[] = ['qua_han', 'bat_buoc', 'cho_duyet', 'moi', 'da_xu_ly'];
 export const NHOM_EM_LABEL: Record<NhomEm, string> = {
-  qua_han: t('Quá hạn'), bat_buoc: t('Bắt buộc xử lý'), cho_duyet: t('Chờ QL duyệt'), moi: t('Mới, chưa ghi nhận'), da_xu_ly: t('Đã xử lý (7 ngày)'),
+  qua_han: t('Quá hạn'), bat_buoc: t('Bắt buộc xử lý'), cho_duyet: t('Chờ Head duyệt'), moi: t('Mới, chưa ghi nhận'), da_xu_ly: t('Đã xử lý (7 ngày)'),
 };
 
 /**

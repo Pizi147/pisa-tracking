@@ -3,13 +3,13 @@ import type { Dich } from '../en.ts';
 
 export const EN_OV13D = {
   'Chưa có xử lý vi phạm': 'No prior disciplinary action',
-  'có đề xuất {nhan} chờ QL duyệt': 'has a {nhan} proposal awaiting manager approval',
+  'có đề xuất {nhan} chờ Head duyệt': 'has a {nhan} proposal awaiting Head approval',
   'chưa bắt buộc — dùng Ghi nhận': 'not mandatory yet — use Acknowledge',
   'không có vi phạm bắt buộc xử lý': 'no incident requiring action',
   'đang bắt buộc xử lý — dùng Xác nhận xử lý': 'action required — use Confirm action',
   'không có vi phạm Mới': 'no New incidents',
   'chưa có lộ trình': 'no learning path yet',
-  'đã có xử lý · chỉ QL sửa': 'already actioned · managers only',
+  'đã có xử lý · chỉ Head sửa': 'already actioned · Heads only',
   'đã có xử lý trên web': 'already actioned on the web',
   'Em không học lớp này': 'Student is not in this class',
   'Lỗi máy chủ — chưa lưu em này, thử lại.': 'Server error — this student was not saved, try again.',

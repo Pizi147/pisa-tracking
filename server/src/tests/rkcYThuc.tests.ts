@@ -40,7 +40,7 @@ export async function runRkcYThucTests(t: any) {
     const sid = moiEm();
     const ids = nVp(sid, 3);
     const e = loi(() => xu.ghiNhan(gvcn, sid, ids));
-    assert(e?.status === 400 && /Quản lý Ghi nhận được/.test(e.message), `GV: ${e?.status} ${e?.message}`);
+    assert(e?.status === 400 && /Head Ghi nhận được/.test(e.message), `GV: ${e?.status} ${e?.message}`);
     const e2 = loi(() => xu.ghiNhan(QL, sid, ids));
     assert(e2?.status === 409 && e2.details?.canXacNhan, `QL phải hỏi: ${e2?.status} ${e2?.message}`);
     const r = voiXacNhan(() => xu.ghiNhan(QL, sid, ids));

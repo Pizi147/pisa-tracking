@@ -9,7 +9,7 @@ import type { HuongDan, ViecHd } from './kieu.ts';
 
 const HV = '/hoc-vien';
 const tvv = (id: string): ViecHd => VIEC_TVV.find((v) => v.id === id)!;
-const KHONG = [{ ten: 'Nhập điểm, ghi Case, PA', cua: 'việc của GV' }, { ten: 'Chuyển lớp, duyệt yêu cầu', cua: 'việc của QL' }] as const;
+const KHONG = [{ ten: 'Nhập điểm, ghi Case, PA', cua: 'việc của GV' }, { ten: 'Chuyển lớp, duyệt yêu cầu', cua: 'việc của Head' }] as const;
 
 const VIEC_CX: ViecHd[] = [
   {
@@ -40,16 +40,16 @@ const VIEC_CX: ViecHd[] = [
     loiChinh: { man: 'ho-so-hv', chu: 'Hồ sơ HV › Kết quả thi thật' },
     loiTat: ['hoc-vien', 'p-sau-thi'], tatThem: ['⋯ dòng em'], cung: 'mở cùng chỗ.',
     buoc: ['Ở hồ sơ em (lộ trình FT hoặc KET / PET), bấm <b>Kết quả thi thật</b>.', 'Gõ <b>Ngày thi</b>, điểm L R W S (hoặc <b>Không thi</b>), bấm <b>Lưu</b>; nhập được cả khi em đã Lưu trữ.',
-      'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> — QL hoặc TVV chọn; CX chỉ xem.'],
+      'Lưu đủ kết quả: panel chuyển sang <b>Bước tiếp</b> — Head hoặc TVV chọn; CX chỉ xem.'],
     tuKhac: ['ielts', 'điểm thi', 'kết quả thi', 'exam result', 'ket', 'pet'],
   },
   {
     ...tvv('sua-hv'),
-    buoc: ['Ở hồ sơ em, bấm <b>Sửa thông tin</b> (liên hệ, Dự kiến thi, Target, ghi chú).', 'Đổi Target: ghi <b>Lý do đổi Target</b>. Lộ trình đang học, Môn học: TVV hoặc QL đổi.',
+    buoc: ['Ở hồ sơ em, bấm <b>Sửa thông tin</b> (liên hệ, Dự kiến thi, Target, ghi chú).', 'Đổi Target: ghi <b>Lý do đổi Target</b>. Lộ trình đang học, Môn học: TVV hoặc Head đổi.',
       'Cả lớp: hồ sơ lớp › ⋯ <b>Thao tác khác</b> › <b>Sửa thông tin học viên</b>.'],
   },
   { ...tvv('them-hv'), buoc: ['Mở <b>Học viên & Lớp</b>: <b>+ Thêm học viên</b> (một em, hoặc <b>Dán vùng bảng từ Excel / Google Sheets</b> rồi <b>Đọc nội dung đã dán</b>).',
-    'Lớp mới: <b>⋯</b> › <b>Thao tác trang</b> › <b>+ Lớp mới</b>. Mọi chi nhánh; Dán Excel chỉ để thêm học viên; phân công giáo viên do QL làm.'] },
+    'Lớp mới: <b>⋯</b> › <b>Thao tác trang</b> › <b>+ Lớp mới</b>. Mọi chi nhánh; Dán Excel chỉ để thêm học viên; phân công giáo viên do Head làm.'] },
   { ...tvv('xuat-ds'), buoc: ['Mở <b>Học viên & Lớp</b>, đặt bộ lọc, bấm <b>Xuất Excel</b>.', 'Ngăn xuất đúng danh sách đang lọc (CX không có mẫu Báo cáo PH).'] },
   { ...tvv('phan-tich'), buoc: ['Mở <b>Phân tích</b>; mọi chi nhánh; tab <b>Chi nhánh</b> · <b>Thi thật</b> (thêm <b>Theo GV</b>) · <b>SOS</b> (lớp thường: <b>Test</b>).',
     'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; Chi nhánh mặc định một tháng, tab khác 2 tuần.', 'Bấm số mở danh sách tại trang; <b>Xuất Excel</b> ở hàng lọc.'] },
@@ -71,7 +71,7 @@ export const HD_CX: HuongDan = {
     ...VAI_KHAC_TVV,
     { ten: 'Báo PH vi phạm, chốt ngày thi', cua: 'việc của TVV', tuKhac: ['phụ huynh', 'gọi', 'ngày thi', 'parent', 'exam date'] },
     { ten: 'Xuất báo cáo PH, đổi lộ trình đang học', cua: 'việc của TVV', tuKhac: ['báo cáo phụ huynh', 'lộ trình', 'môn học', 'route'] },
-    { ten: 'Chọn bước tiếp sau thi', cua: 'việc của QL, TVV', tuKhac: ['bước tiếp', 'lộ trình mới', 'next step'] },
+    { ten: 'Chọn bước tiếp sau thi', cua: 'việc của Head, TVV', tuKhac: ['bước tiếp', 'lộ trình mới', 'next step'] },
   ],
   man: [
     {
@@ -102,8 +102,8 @@ export const HD_CX: HuongDan = {
   ],
   luat: [
     ...LUAT_TVV.filter((m) => m.id !== 'tvv-luat-thi-that' && m.id !== 'tvv-luat-bao-ph' && m.id !== 'tvv-luat-lo-trinh'),
-    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: QL hoặc TVV chọn, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.'] },
-    { id: 'cx-luat-lo-trinh', ten: 'Lộ trình, môn học', buoc: ['TVV, GVCN, QL đổi Lộ trình đang học và Môn học; CX không.'] },
+    { id: 'cx-luat-thi-that', ten: 'Kết quả thi thật', buoc: ['CX nhập được, cả khi em đã Lưu trữ.', 'Bước tiếp: Head hoặc TVV chọn, hạn {han:buoc_tiep_sau_thi} từ ngày có kết quả (<b>Gia hạn</b> được); CX chỉ xem.'] },
+    { id: 'cx-luat-lo-trinh', ten: 'Lộ trình, môn học', buoc: ['TVV, GVCN, Head đổi Lộ trình đang học và Môn học; CX không.'] },
   ],
   tu: [
     ...TU_TVV.filter((x) => x.ten !== 'HV của tôi'),

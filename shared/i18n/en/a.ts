@@ -57,7 +57,7 @@ export const EN_A = {
 
   /* shared/domain/people — vai, phạm vi */
   'Quản trị hệ thống': 'System admin',
-  'Quản lý': 'Manager',
+  'Head': 'Head',
   'Giáo viên': 'Teacher',
   'Tư vấn viên': 'Counsellor',
   'Toàn hệ thống': 'All branches',
@@ -192,13 +192,13 @@ export const EN_A = {
   'Ví dụ: rảnh thứ 3, 5, 7': 'E.g. free Tue, Thu, Sat',
   'Đang gửi…': 'Sending…',
   'Vai trò': 'Role',
-  'Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Quản lý · GV · Admin · TVV · CX; QL / Quản trị nắm ≥ 2 vai đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.': 'Click an account to sign in, no password. Roles: Admin · Manager · Teacher · Office admin · Counsellor · CX; managers / admins with 2+ roles can switch view. Demo data is fake.',
+  'Bấm một tài khoản để vào ngay, không cần mật khẩu. Vai: Quản trị · Head · GV · Admin · TVV · CX; Head / Quản trị nắm ≥ 2 vai đổi được góc nhìn. Dữ liệu demo là dữ liệu giả.': 'Click an account to sign in, no password. Roles: Admin · Head · Teacher · Office admin · Counsellor · CX; Heads / admins with 2+ roles can switch view. Demo data is fake.',
   'Đang tải danh sách tài khoản…': 'Loading accounts…',
   '{n} phân công': (b) => `${b.n} ${Number(b.n) === 1 ? 'assignment' : 'assignments'}`,
 
   /* WelcomePage — gợi ý tài khoản demo */
   'Xem được: MT cũ, lớp RF, dời lần 2': 'Shows: past MT, RF class, 2nd reschedule',
-  'Chờ duyệt Ý thức + Báo QL': 'Conduct approvals + manager reports',
+  'Chờ duyệt Ý thức + Báo Head': 'Conduct approvals + Head reports',
   'Xếp lịch MT nhiều lớp, Cần xếp lại': 'Multi-class MT scheduling, To reschedule',
   'Progress Test lớp thường: thẻ kế hoạch bổ trợ chờ duyệt (MB FOU 15)': 'Normal-class Progress Test: extra-class plan pending (MB FOU 15)',
   'Ý thức: em quá hạn, em bắt buộc, xác nhận cấp bậc vi phạm, WL 2': 'Conduct: overdue, action required, confirm incident level, WL 2',
@@ -313,7 +313,7 @@ export const EN_A = {
   'Bỏ': 'Remove',
   'Đang tìm…': 'Searching…',
   'Không tìm thấy ai khớp.': 'No match.',
-  'Quản lý chi nhánh — hệ thống tự thêm': 'Branch manager — added automatically',
+  'Head chi nhánh — hệ thống tự thêm': 'Branch Head — added automatically',
   'tự động': 'auto',
   'Bỏ {ten} khỏi người theo dõi': 'Remove {ten} from followers',
   'Chưa có ai theo dõi thêm': 'No extra followers',
@@ -439,8 +439,8 @@ export const EN_A = {
   'Case chưa chốt PA': 'Case without confirmed PA',
   'Chưa chốt PA': 'PA not confirmed',
   'Cách tính nhóm Xử lý': 'How the Handling columns are counted',
-  'HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chưa chốt PA: Case chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Quản lý duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Quản lý, Case Mock Test chờ mô tả Case, Case Progress Test chờ Xác nhận Case; số đỏ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.':
-    'Students - Cases: students with a case - number of cases from the tests in this row (including closed / cancelled cases). PA not confirmed: cases with no PA being followed — no PA yet, PA awaiting confirmation / manager approval, support PA not started, all PAs finished but case not closed, "No follow-up needed" awaiting the manager, Mock Test case awaiting a case description, Progress Test case awaiting Confirm case; red number = overdue. In progress: cases with a PA being followed. As of today, not at marking time.',
+  'HV - Case: học viên có Case - số Case sinh từ các lượt trong dòng (kể cả Case đã xong / huỷ). Chưa chốt PA: Case chưa có PA đang theo dõi — chưa có PA, PA chờ xác nhận / chờ Head duyệt, PA Bổ trợ chưa chạy, PA đã xong hết nhưng chưa Hoàn thành Case, "Không cần theo dõi" chờ Head, Case Mock Test chờ mô tả Case, Case Progress Test chờ Xác nhận Case; số đỏ = quá hạn. Đang xử lý: Case có PA đang theo dõi. Tính theo hôm nay, không phải lúc chấm.':
+    'Students - Cases: students with a case - number of cases from the tests in this row (including closed / cancelled cases). PA not confirmed: cases with no PA being followed — no PA yet, PA awaiting confirmation / Head approval, support PA not started, all PAs finished but case not closed, "No follow-up needed" awaiting the Head, Mock Test case awaiting a case description, Progress Test case awaiting Confirm case; red number = overdue. In progress: cases with a PA being followed. As of today, not at marking time.',
   'Case & phương án': 'Cases & PAs',
   'lặp từ MT{n}': 'repeat from MT{n}',
 } satisfies Record<string, Dich>;

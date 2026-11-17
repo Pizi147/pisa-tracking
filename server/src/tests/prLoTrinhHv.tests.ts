@@ -143,7 +143,7 @@ export async function runPrLoTrinhHvTests(t: YThucTestKit) {
       WHERE r.key = 'manager' AND ur.branch_id = b.id AND ur.status = 'active') LIMIT 1`).code;
     const adminKhac = one(`SELECT b.code FROM branches b WHERE b.code != 'MB' AND EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id
       WHERE r.key = 'office_admin' AND ur.branch_id = b.id AND ur.status = 'active') LIMIT 1`).code;
-    for (const [ai, ng] of [['GV bộ môn', gvbm], ['CX', nguoiVai('cx', null)], [`QL ${khac}`, nguoiVai('manager', khac)], [`Admin ${adminKhac}`, nguoiVai('office_admin', adminKhac)]] as const) {
+    for (const [ai, ng] of [['GV bộ môn', gvbm], ['CX', nguoiVai('cx', null)], [`Head ${khac}`, nguoiVai('manager', khac)], [`Admin ${adminKhac}`, nguoiVai('office_admin', adminKhac)]] as const) {
       assert(ma(() => lt.doiLoTrinh(ng, e.cy, { route: 'LT2' })) === 403, `${ai} phải 403`);
       const hs = (() => { try { return profile.studentProfile(ng, e.sid); } catch { return null; } })();   // QL chi nhánh khác: không xem được hồ sơ
       assert(!hs?.cycle?.coTheDoiLoTrinh, `${ai}: hồ sơ không có ô chọn`);

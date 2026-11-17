@@ -29,13 +29,13 @@ function kiemDoiPa(p: Principal, goc: any, v: VaoDoiPa) {
   if (!goc) throw notFound('Không tìm thấy phương án.');
   const c = loadCase(goc.case_id);
   const chuaChay = goc.preset === 1 && !goc.confirmed_at && goc.status === 'planned';
-  if (chuaChay) caseAccess(goc.case_id).requireEdit(p, 'Bạn chỉ đề xuất đổi PA của kỹ năng mình được phân công (hoặc là Quản lý trong phạm vi).');
+  if (chuaChay) caseAccess(goc.case_id).requireEdit(p, 'Bạn chỉ đề xuất đổi PA của kỹ năng mình được phân công (hoặc là Head trong phạm vi).');
   else kiemQuyenPa(p, goc, c, 'Bạn không có quyền đề xuất đổi PA này.');
   if (c.status === 'done') throw badRequest('Case đã đóng — không đề xuất đổi PA được.');
-  if (!laPaMacDinh(goc)) throw badRequest('Chỉ PA mặc định (quy chế, Bổ trợ) mới đề xuất đổi qua Quản lý — PA khác Điều chỉnh / Thay trực tiếp.');
+  if (!laPaMacDinh(goc)) throw badRequest('Chỉ PA mặc định (quy chế, Bổ trợ) mới đề xuất đổi qua Head — PA khác Điều chỉnh / Thay trực tiếp.');
   if (goc.status !== 'planned' && goc.status !== 'started') throw badRequest('PA này đã kết thúc — không đổi được.');
   if (goc.kind === 'bo_tro' && goc.status === 'planned') throw badRequest('PA Bổ trợ chưa chạy — Xác nhận Case trước.');
-  if (choDoiPa(goc)) throw badRequest('PA này đang chờ Quản lý duyệt đổi PA — Rút đề xuất cũ rồi gửi lại.');
+  if (choDoiPa(goc)) throw badRequest('PA này đang chờ Head duyệt đổi PA — Rút đề xuất cũ rồi gửi lại.');
   if (chuaChay && !sosCaseState(goc.case_id).hasCause) throw badRequest('Ghi Mô tả Case (nguyên nhân) trước, rồi mới đề xuất PA khác.');
   const kind = String(v.kind ?? '');
   if (!loaiPaDoi().includes(kind)) throw badRequest('Chọn loại PA mới.');

@@ -14,7 +14,7 @@ type Signal = {
 };
 
 const OWNER_LABEL: Record<Signal['owner'], string> = {
-  manager: t('Quản lý'), teacher: t('Giáo viên'),
+  manager: t('Head'), teacher: t('Giáo viên'),
 };
 
 /**

@@ -124,7 +124,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
   });
 
   check('VAI-b (1) · PHỦ ĐỊNH: Quản lý chi nhánh CP mở hồ sơ em MB → bị chặn', () => {
-    assertThrows(() => studentProfile(P.cpManager, emCuaLop('MB FT 101')), /phạm vi/, 'QL CP xem em MB');
+    assertThrows(() => studentProfile(P.cpManager, emCuaLop('MB FT 101')), /phạm vi/, 'Head CP xem em MB');
   });
 
   // ------------------------------------------------------------------ khối 2 · việc của em theo người (K3-01, Q2, Q3)
@@ -252,9 +252,9 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     const r = cau({
       ketQua: { dau: 'Progress Test', ratio: true, sos: 2, dat: false, overall: null, kck: false, soDat: 2, soMon: 4, monTruot: ['G+V', 'P'], phanTram: null },
       hoTro: ['Grammar + Vocabulary', 'Pronunciation'],
-      viec: [{ loai: 'cho-duyet', chu: 'PA Tutor chờ Quản lý duyệt', kyNangTen: null, quaHanNgay: null }],
+      viec: [{ loai: 'cho-duyet', chu: 'PA Tutor chờ Head duyệt', kyNangTen: null, quaHanNgay: null }],
     });
-    assert(chu(r).join(' · ') === 'Progress Test 2/4 môn đạt: không đạt G+V và P · PA Tutor chờ Quản lý duyệt', JSON.stringify(r));
+    assert(chu(r).join(' · ') === 'Progress Test 2/4 môn đạt: không đạt G+V và P · PA Tutor chờ Head duyệt', JSON.stringify(r));
     assert(r[1].tone === 'wait' && !JSON.stringify(r).includes('SOS'), JSON.stringify(r));
     const dat = cau({ ketQua: { ...KQ_FT, dau: 'MT2', sos: 0, dat: true } });
     assert(chu(dat).join(' · ') === 'MT2 đạt kỳ vọng · không có việc đang mở', JSON.stringify(dat));
@@ -290,7 +290,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     s = st({ ratio: true, bacKe: 'BE', next: { dau: 'Final Test', attemptNo: 2, tuan: '2026-10-19', kyVong: null, soPhan: 4, final: true } });
     assert(s.gt === 'Final Test · W4 OCT' && s.phu === '4 môn · xét lên BE', JSON.stringify(s));
     s = st({ sauCuoiKhoa: { tuanKetThuc: '2026-10-19' } });
-    assert(s.gt === 'Chuyển lớp' && s.phu === 'chờ Quản lý quyết định · lớp kết thúc W4 OCT', JSON.stringify(s));
+    assert(s.gt === 'Chuyển lớp' && s.phu === 'chờ Head quyết định · lớp kết thúc W4 OCT', JSON.stringify(s));
     assert(st({ ketLuan: 'Đạt Target' }).gt === 'Kết luận: Đạt Target', 'kết luận');
   });
 
@@ -363,7 +363,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert((studentProfile(P.mbManager, sid) as any).viewer.coTheDuyet === true, 'Quản lý MB phải duyệt được');
     for (const [ten, p] of [['GVCN', P.coreTeacher], ['GVBM', P.w2Teacher]] as const) {
       assert((studentProfile(p, sid) as any).viewer.coTheDuyet === false, `${ten} không được có dải chờ duyệt`);
-      assertThrows(() => yeuCau.hopChoDuyet(p, { studentId: sid }), /Quản lý|quyền|403/i, `${ten} gọi /yeu-cau?studentId= phải bị chặn`);
+      assertThrows(() => yeuCau.hopChoDuyet(p, { studentId: sid }), /Head|quyền|403/i, `${ten} gọi /yeu-cau?studentId= phải bị chặn`);
     }
     const em = get(`SELECT hoc_vien_id id FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND hoc_vien_id IS NOT NULL GROUP BY hoc_vien_id ORDER BY COUNT(*) DESC LIMIT 1`);
     if (em) {
@@ -459,7 +459,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
         const a = get('SELECT attempt_no, student_id FROM assessment_attempts WHERE id = ?', r.bandAttemptId);
         assert(a && a.attempt_no === r.bandAttemptNo && a.student_id === sid, `em ${sid} ${r.category}: lượt ${r.bandAttemptId} ≠ MT${r.bandAttemptNo}`);
         so++;
-        if (so === 1) assertThrows(() => attemptDetail(P.cpManager, r.bandAttemptId), /phạm vi|quyền/, 'QL chi nhánh CP mở hồ sơ Mock em MB');
+        if (so === 1) assertThrows(() => attemptDetail(P.cpManager, r.bandAttemptId), /phạm vi|quyền/, 'Head chi nhánh CP mở hồ sơ Mock em MB');
       }
     }
     assert(so > 0, 'bộ demo MB FT 101 phải có hàng có điểm');
@@ -486,7 +486,7 @@ export async function runPrVaiBTests(t: YThucTestKit) {
     assert(ch[2].ghim.length === 1 && ch[3].ghim[0].nhanNgan === 'MT2', 'ghim theo lớp');
     assert(ch[2].tamDung.length === 1 && ch[3].tamDung.length === 0, 'Tạm dừng nằm đúng chương');
     assert(ch[0].ra.chu === 'Lên FOU' && ch[0].ra.how === 'theo Final Test' && ch[0].ra.tu === '2026-03-09', JSON.stringify(ch[0].ra));
-    assert(ch[2].ra.loai === 'chuyen' && ch[2].ra.how === 'Quản lý quyết định' && ch[2].ra.docBanGiao?.lenhId === 9, JSON.stringify(ch[2].ra));
+    assert(ch[2].ra.loai === 'chuyen' && ch[2].ra.how === 'Head quyết định' && ch[2].ra.docBanGiao?.lenhId === 9, JSON.stringify(ch[2].ra));
     assert(ch[3].ra === null, 'chương đang học không có "ra"');
     assert(!/"(han|nguoi|ownerId|endKind|lenh)"/.test(JSON.stringify(ch)), 'chương không kể việc / hạn / người giữ việc');
   });
@@ -532,13 +532,13 @@ export async function runPrVaiBTests(t: YThucTestKit) {
       const n2 = demTruyVan(() => { hanhTrinhHocVien(P.admin, sid, null); });
       const ch = (hanhTrinhHocVien(P.admin, sid, null) as any).chuong.find((c: any) => c.classId === cu);
       conn.prepare('DELETE FROM lenh_chuyen_lop WHERE id = ?').run(lenh);
-      assert(ch?.ra?.docBanGiao?.lenhId === lenh && ch.ra.how === 'Quản lý quyết định', JSON.stringify(ch?.ra));
+      assert(ch?.ra?.docBanGiao?.lenhId === lenh && ch.ra.how === 'Head quyết định', JSON.stringify(ch?.ra));
       assert(n2 - n1 <= 1, `thêm lớp cũ tăng câu SQL: ${n1} → ${n2}`);
     } finally { conn.prepare(`DELETE FROM enrollments WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids); }
   });
 
   check('VAI-b (9) · PHỦ ĐỊNH: Quản lý chi nhánh CP mở Hành trình em MB → bị chặn', () => {
-    assertThrows(() => hanhTrinhHocVien(P.cpManager, emCuaLop('MB FT 101'), null), /phạm vi/, 'QL CP xem Hành trình em MB');
+    assertThrows(() => hanhTrinhHocVien(P.cpManager, emCuaLop('MB FT 101'), null), /phạm vi/, 'Head CP xem Hành trình em MB');
   });
 
   // ------------------------------------------------------------------ khối 10 · Hành trình web: thẻ chương thay Lịch sử lớp (mockup 26 bản 2)

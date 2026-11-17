@@ -280,8 +280,8 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
   onTick: (v: boolean) => void; onNut: (q: Quyet) => void; onChon: (c: Chon) => void; onSua: () => void;
 }) {
   const ct = bac(e.lopNguon.ct);
-  const nguoiChot = e.daChot.nguoi ? `QL ${tenGoi(e.daChot.nguoi)}` : null;
-  const chuDaLuu = daLuu ? `✓ ${daLuu.chu} · ${toi ? `QL ${tenGoi(toi)}` : ''} ${homNay ? ngay(homNay, homNay) : ''}`.trim()
+  const nguoiChot = e.daChot.nguoi ? `Head ${tenGoi(e.daChot.nguoi)}` : null;
+  const chuDaLuu = daLuu ? `✓ ${daLuu.chu} · ${toi ? `Head ${tenGoi(toi)}` : ''} ${homNay ? ngay(homNay, homNay) : ''}`.trim()
     : e.quyetDinh ? `${chuyenChu(e)} → ${e.quyetDinh.lopDich ?? ''}${e.quyetDinh.tuan ? ` · ${t('từ {tuan}', { tuan: tuanLich(e.quyetDinh.tuan, homNay) })}` : ''}` : null;
   const vien = tick ? { borderColor: 'var(--accent)', boxShadow: 'inset 3px 0 0 var(--accent)' } : loi ? { borderColor: 'rgb(var(--late-line-rgb))' } : { borderColor: 'var(--line)' };
   return (
@@ -293,14 +293,14 @@ function TheEm({ e, chiXem, classId, homNay, toi, tuanChon, chon, daLuu, xong, l
         {!xong && e.lyDo.chu && <span className={`text-[13px] font-bold ${doLyDo(e) ? 'text-bad' : 'text-soon'}`}>{e.lyDo.chu}</span>}
         {chuDaLuu && (daLuu && !daLuu.chu.startsWith('Học lại') ? <span className="text-[13px] font-semibold text-ok">{chuDaLuu}</span>
           : <Nhan tone="doing">{daLuu ? chuDaLuu.replace(/^✓ /, '') : chuDaLuu}</Nhan>)}
-        {chiXem && <span className="ml-auto flex items-center gap-1.5 text-[13px] text-slate-400">{t('QL quyết')} · <ChipHan loai="viec-van-hanh" han={e.han} /></span>}
+        {chiXem && <span className="ml-auto flex items-center gap-1.5 text-[13px] text-slate-400">{t('Head quyết')} · <ChipHan loai="viec-van-hanh" han={e.han} /></span>}
         {!chiXem && xong && !daLuu?.daChuyen && <button type="button" className="btn btn-sm btn-ghost ml-auto min-h-[44px] sm:min-h-0" onClick={onSua} disabled={busy}>{t('Sửa')}</button>}
       </div>
       {/* PANEL-RIENG (B7, mockup `.xl-em`): dòng điểm Final lớp thường (% từng môn ✓ / ✗ so ngưỡng, Tổng / ngưỡng) — lý do xét lại thấy ngay. */}
       {!xong && e.final.tyLe !== null && <div className="px-3.5 pb-2 pl-[42px] max-sm:pl-3.5"><DongDiem d={diemFinal(e)} rongLuot={64} /></div>}
       {!xong && (
         <dl className="m-0 grid grid-cols-[7.5rem_minmax(0,1fr)] gap-x-3 gap-y-1 px-3.5 pb-2.5 pl-[42px] max-sm:grid-cols-1 max-sm:pl-3.5">
-          {e.xetLaiTruoc && <Dong n={t('Đã xét lại')}>{e.xetLaiTruoc.chu ?? '—'} · {e.xetLaiTruoc.tuDong ? t('tự giữ') : e.xetLaiTruoc.nguoi ? `QL ${tenGoi(e.xetLaiTruoc.nguoi)}` : ''} {ngay(e.xetLaiTruoc.luc.slice(0, 10), homNay)}</Dong>}
+          {e.xetLaiTruoc && <Dong n={t('Đã xét lại')}>{e.xetLaiTruoc.chu ?? '—'} · {e.xetLaiTruoc.tuDong ? t('tự giữ') : e.xetLaiTruoc.nguoi ? `Head ${tenGoi(e.xetLaiTruoc.nguoi)}` : ''} {ngay(e.xetLaiTruoc.luc.slice(0, 10), homNay)}</Dong>}
           <Dong n={t('Đã chốt')}>{[e.daChot.chu, nguoiChot && `${nguoiChot} ${ngay(e.daChot.luc, homNay)}`].filter(Boolean).join(' · ')}{e.lyDo.ma === 'b' ? ` ${t('(chưa có Final)')}` : ''}{!chiXem && e.daChot.lyDo && <> · <span className="text-slate-300">“{e.daChot.lyDo}”</span></>}</Dong>
           {!chiXem && e.goiY && <Dong n={t('Gợi ý')}>{e.goiY}</Dong>}
           {!chiXem && e.phuHuynh && <Dong n={t('Phụ huynh')}>{[e.phuHuynh.tvv && `TVV ${tenGoi(e.phuHuynh.tvv)}`, e.phuHuynh.luc && ngay(e.phuHuynh.luc, homNay)].filter(Boolean).join(' ')}{e.phuHuynh.ketQua && <> · “{e.phuHuynh.ketQua}”</>}</Dong>}
@@ -391,7 +391,7 @@ function HangLam({ e, ct, chon, loi, busy, homNay, tuanChon, lopHocLai, onNut, o
                   : <li>{t('Sửa quyết định ở {lop}: {viec} → {den} từ {tuan}', { lop: e.lopNguon.code, viec: chuyenChu(e), den: lopChu ?? '', tuan: tuanLich(chon.tuan, homNay) })}</li>}
                 {e.daThiHanh && <li>{t('Đóng khoá {cu}, mở khoá {moi} mới · điểm {cu} (nếu có) ở lại khoá {cu}', { cu: bac(e.lopHienTai.ct) || e.lopHienTai.code, moi: len ? ke : ct })}</li>}
                 {e.daThiHanh && <li>{t('Phiếu bàn giao GVCN {lop}', { lop: e.lopHienTai.code })}</li>}
-                <li>{t('Hành trình: “QL xét lại: {viec}”', { viec: chuyenChu(e) })}</li>
+                <li>{t('Hành trình: “Head xét lại: {viec}”', { viec: chuyenChu(e) })}</li>
               </ul>
               </NutLuat>
             </div>

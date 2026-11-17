@@ -23,7 +23,7 @@ const KY_VONG: Truong[] = [
 ];
 const NGUONG: Truong[] = [
   { k: 'hocLai', nhan: t('Học lại dưới'), hien: pt, min: 1, max: 100, buoc: 1, donVi: '%', luat: t('Final lớp thường, % tổng chưa làm tròn. Dưới mức này: gợi ý học lại, Báo PH kết quả Test.') },
-  { k: 'len', nhan: t('Lên từ'), hien: pt, min: 1, max: 100, buoc: 1, donVi: '%', luat: t('Từ mức này tới dưới "Đạt từ": lên lớp kèm bổ trợ miễn phí. Giữa "Học lại dưới" và mức này: Quản lý cân nhắc.') },
+  { k: 'len', nhan: t('Lên từ'), hien: pt, min: 1, max: 100, buoc: 1, donVi: '%', luat: t('Từ mức này tới dưới "Đạt từ": lên lớp kèm bổ trợ miễn phí. Giữa "Học lại dưới" và mức này: Head cân nhắc.') },
   { k: 'miniTest', nhan: t('Mini Test đạt từ'), hien: pt, min: 1, max: 100, buoc: 1, donVi: '%', luat: t('Mini Test sau bổ trợ Final: đạt thì Case tự Hoàn thành; chưa đạt thì Xét lại lộ trình.') },
 ];
 

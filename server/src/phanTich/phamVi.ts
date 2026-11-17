@@ -13,7 +13,7 @@ import { classScopeSql, scopeFor, type Principal } from '../permissions.ts';
  */
 export function phamViPhanTich(p: Principal, branchId: number | null, classId: number | null) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
-  if (scope.none) throw forbidden('Phân tích dành cho Quản lý.');
+  if (scope.none) throw forbidden('Phân tích dành cho Head.');
   if (branchId && !scope.all && !scope.branchIds.includes(branchId)) {
     throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được xem.');
   }

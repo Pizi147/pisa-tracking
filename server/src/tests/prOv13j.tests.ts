@@ -168,7 +168,7 @@ export async function runPrOv13jTests(t: YThucTestKit) {
         const r = await goi(id, `/students/${a}/lich-su-sua`);
         assert(r.status === 200, `${ten}: ${r.status}`);
       }
-      for (const [ten, id] of [['GVBM', gvbm], ['QL CP', P.cpManager.userId]] as const) {
+      for (const [ten, id] of [['GVBM', gvbm], ['Head CP', P.cpManager.userId]] as const) {
         const r = await goi(id, `/students/${a}/lich-su-sua`);
         assert(r.status === 403, `${ten}: ${r.status}`);
       }

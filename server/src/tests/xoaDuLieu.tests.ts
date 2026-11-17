@@ -408,7 +408,7 @@ export async function runXoaDuLieuTests(t: YThucTestKit) {
   });
 
   check('PR-XOA X9 · Quyền: QL chi nhánh khác, GVCN → 403 cả xem và xoá, không dòng nào mất; id lạ → 404 (rà 11/11 G5-12: xoá một em không gõ mã)', () => {
-    for (const [ten, p] of [['QL chi nhánh khác', P.cpManager], ['GVCN', P.coreTeacher]] as const) {   // OV-12a: QL của em xoá được
+    for (const [ten, p] of [['Head chi nhánh khác', P.cpManager], ['GVCN', P.coreTeacher]] as const) {   // OV-12a: QL của em xoá được
       assert(maLoi(() => xoaHV.xemXoaHocVien(p, S.sid)) === 403, `${ten} xem phải 403`);
       assert(maLoi(() => xoaHV.xoaHocVien(p, S.sid, { maXacNhan: S.ma })) === 403, `${ten} xoá phải 403`);
     }

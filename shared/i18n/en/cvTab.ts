@@ -12,5 +12,5 @@ export const EN_CV_TAB = {
   /* CV-TAB b — GV nhiều chi nhánh, QL xem một GV. */
   'Tất cả CN': 'All branches',
   'việc ở {cn}': 'tasks in {cn}',
-  '{gv} dạy cả {cn} — việc ở đó do QL {cn} theo dõi, không hiện ở đây.': '{gv} also teaches at {cn} — tasks there are followed by the {cn} manager and are not shown here.',
+  '{gv} dạy cả {cn} — việc ở đó do Head {cn} theo dõi, không hiện ở đây.': '{gv} also teaches at {cn} — tasks there are followed by the {cn} Head and are not shown here.',
 } satisfies Record<string, Dich>;

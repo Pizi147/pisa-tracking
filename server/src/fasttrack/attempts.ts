@@ -1392,7 +1392,7 @@ export function createAttempt(p: Principal, input: {
     .get(student.id) as any;
   const classId = enr?.class_id ?? null;
   requireSuaLichTest(p, { classId, studentId: student.id },
-    'Chỉ Quản lý mới lập được kế hoạch tuần MT.');
+    'Chỉ Head mới lập được kế hoạch tuần MT.');
 
   const cycle = input.cycleId ? cycleById(input.cycleId) : currentCycle(student.id);
   if (!cycle) throw badRequest('Học viên chưa có lộ trình nào. Mở lộ trình trước khi lên lịch MT.');
@@ -1503,7 +1503,7 @@ export function setPlanningWeek(p: Principal, attemptId: number, periodId: numbe
   opts: { force?: boolean } = {}) {
   const a = loadAttempt(attemptId);
   requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id },
-    'Chỉ Quản lý mới chốt được tuần kế hoạch.');
+    'Chỉ Head mới chốt được tuần kế hoạch.');
   if (a.status === 'cancelled') throw badRequest('Lượt này đã huỷ. Mở lại trước khi đổi tuần.');
   const period = db().prepare('SELECT * FROM report_periods WHERE id = ?').get(periodId) as any;
   if (!period) throw notFound('Không tìm thấy tuần');
@@ -1555,7 +1555,7 @@ export function setSkillSkip(p: Principal, attemptId: number, skill: string, ski
   return tx(() => {
     if (skipped && opts.xoaDiem) {
       const a = loadAttempt(attemptId);
-      require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới đổi được phạm vi kỹ năng của một đợt.');
+      require_(p, PERMISSIONS.ATTEMPT_SKIP_SKILL, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Head mới đổi được phạm vi kỹ năng của một đợt.');
       xoaDiemCua(p, attemptId, entrySkillsOf(skill as AssessedSkill), reason?.trim() || 'Bỏ khỏi đợt');
     }
     const r = setSkillScope(p, attemptId, skill, !skipped, reason ?? null, opts);
@@ -1637,7 +1637,7 @@ function xoaDiemBaiThuong(p: Principal, a: ReturnType<typeof loadAttempt>, o: Sc
 const LY_DO_XOA_MT = 'Xoá MT';   // `scope_reason` của lần Xoá MT — Khôi phục chỉ đưa lại đúng các môn mang dấu này
 export function xoaLuot(p: Principal, attemptId: number) {
   const a = loadAttempt(attemptId);
-  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới xoá được MT.');
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Head mới xoá được MT.');
   if (a.kind !== 'mock') throw badRequest('Chỉ xoá được MT của lớp FT.');
   const nhan = `MT${a.attempt_no}`;
   if (a.status === 'cancelled') throw loi(400, '{nhan} đã huỷ.', { nhan });
@@ -1661,7 +1661,7 @@ export function xoaLuot(p: Principal, attemptId: number) {
  */
 export function duaLaiCaLuot(p: Principal, attemptId: number, kyNang?: readonly string[] | null) {
   const a = loadAttempt(attemptId);
-  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Quản lý mới khôi phục được MT.');
+  requireSuaLichTest(p, { classId: a.class_id, studentId: a.student_id }, 'Chỉ Head mới khôi phục được MT.');
   if (a.status === 'cancelled') throw loi(400, 'MT{attempt_no} đã huỷ — mở lại lượt trước.', { attempt_no: a.attempt_no });
   /* Môn em không học (môn đăng ký P8) không phải "đã xoá" — chỉ đổi ở Sửa thông tin, không đưa lại ở đây.
      RA-LOI-0711c: MT đã "Xoá MT" → Khôi phục (Hoàn tác lẫn nút ô / hồ sơ) chỉ đưa lại đúng các môn lần xoá đó, về trạng thái trước xoá
@@ -1683,7 +1683,7 @@ export function duaLaiCaLuot(p: Principal, attemptId: number, kyNang?: readonly 
 export function setDeadlineOverride(p: Principal, attemptId: number, date: string | null, reason?: string) {
   const a = loadAttempt(attemptId);
   require_(p, PERMISSIONS.DEADLINE_OVERRIDE, { classId: a.class_id, studentId: a.student_id },
-    'Chỉ Quản lý và Admin chi nhánh mới đặt được hạn riêng.');
+    'Chỉ Head và Admin chi nhánh mới đặt được hạn riêng.');
   if (date && !isIsoDate(date)) throw badRequest('Hạn không hợp lệ.');
   db()
     .prepare(
@@ -1868,7 +1868,7 @@ export function chanKhoiPhucThuong(a: any, nhan: string, p?: Principal): string 
   const conn = db();
   const lop = (conn.prepare('SELECT code FROM classes WHERE id = ?').get(a.class_id) as any)?.code ?? '';
   /* Rà PTA ⑤: lớp đã kết thúc chỉ Quản lý lớp (`class.edit`) mở lại được — người khác không được hỏi "Mở lại lớp?" rồi 403: nói lý do + ai làm. */
-  if (p && laLopKetThuc(a.class_id) && !can(p, PERMISSIONS.CLASS_EDIT, { classId: a.class_id })) return `Lớp ${lop} đã kết thúc — nhờ Quản lý lớp mở lại lớp rồi khôi phục ${nhan}.`;
+  if (p && laLopKetThuc(a.class_id) && !can(p, PERMISSIONS.CLASS_EDIT, { classId: a.class_id })) return `Lớp ${lop} đã kết thúc — nhờ Head phụ trách mở lại lớp rồi khôi phục ${nhan}.`;
   /* Em lưu trữ / kết thúc học: lượt khôi phục sẽ bị mọi danh sách hiện tại ẩn. Tạm dừng (chưa lưu trữ) vẫn khôi phục được. */
   if (!conn.prepare(`SELECT 1 FROM students s WHERE s.id = ? AND (${HV_DANG_HOC_SQL('s')} OR (s.status = 'inactive' AND s.archived_at IS NULL))`).get(a.student_id)) {
     return `Em đã lưu trữ / kết thúc học — bỏ lưu trữ trước rồi khôi phục ${nhan}.`;
@@ -1890,7 +1890,7 @@ export function moLaiLuotNeuHuy(p: Principal, a: any): void {
   if (a.status !== 'cancelled') return;
   const nhan = LOAI_THUONG.includes(a.kind) ? nhanBai(khoaBai(a.kind, a.attempt_no)) : `MT${a.attempt_no}`;
   if (!choHuyKhoiPhucLichTest(p, { classId: a.class_id, studentId: a.student_id })) {
-    throw loi(400, '{nhan} đã huỷ — nhờ Quản lý khôi phục {nhan} rồi làm tiếp.', { nhan });
+    throw loi(400, '{nhan} đã huỷ — nhờ Head khôi phục {nhan} rồi làm tiếp.', { nhan });
   }
   canXacNhan('{nhan} đã huỷ — khôi phục {nhan} rồi làm tiếp?', { nhan }, 'Khôi phục rồi làm tiếp');
   reopenAttempt(p, a.id);
@@ -1907,7 +1907,7 @@ export function moLaiLuotNeuHuy(p: Principal, a: any): void {
 export function reopenAttempt(p: Principal, attemptId: number, o: { banId?: number | null } = {}) {
   const truoc = loadAttempt(attemptId);
   if (!choHuyKhoiPhucLichTest(p, { classId: truoc.class_id, studentId: truoc.student_id })) {
-    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Quản lý khôi phục được lượt đã huỷ.');
+    require_(p, PERMISSIONS.ATTEMPT_CANCEL, { classId: truoc.class_id, studentId: truoc.student_id }, 'Chỉ Head khôi phục được lượt đã huỷ.');
   }
   /* LUOT-KHOI-PHUC: lượt lớp thường (Progress / Final / Checkpoint) đi cùng đường — tên theo bài, chặn riêng (`chanKhoiPhucThuong`). */
   const thuong = LOAI_THUONG.includes(truoc.kind);
@@ -2210,7 +2210,7 @@ export function luuNhanXetPhuTrach(p: Principal, attemptId: number, body: { nhan
   const conn = db();
   const a = loadAttempt(attemptId);
   if (!laChamCheo(a.kind, 'speaking')) throw badRequest('Chỉ bài Speaking Mock Test (chấm chéo) có nhận xét GV phụ trách.');
-  if (!quyenPhuTrachS(p, a.class_id)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Quản lý ghi được nhận xét GV phụ trách.');
+  if (!quyenPhuTrachS(p, a.class_id)) throw forbidden('Chỉ GV phụ trách Speaking của lớp, GVCN hoặc Head ghi được nhận xét GV phụ trách.');
   const coNx = body.nhanXetPhuTrach !== undefined, coNhom = body.nhomNguyenNhan !== undefined;
   if (!coNx && !coNhom) throw badRequest('Không có gì để lưu.');
   /* N35: nhận xét MT ≤ 300 (thành mô tả Case); chữ cũ dài gửi lại nguyên văn thì giữ — chỉ đọc chữ cũ khi chữ mới đã vượt. */
@@ -2439,7 +2439,7 @@ export function saveScore(
             try {
               saveScore(p, attemptId, k, { rawScore: null, criteria: [null, null, null, null], lyDo: 'Ghi vắng cả Writing' }, today);
             } catch (e) {
-              if ((e as any)?.status === 403) throw loi(403, '{o} đã có điểm — nhờ GV {o}, GVCN hoặc Quản lý ghi vắng (huỷ điểm {o}).', { o });
+              if ((e as any)?.status === 403) throw loi(403, '{o} đã có điểm — nhờ GV {o}, GVCN hoặc Head ghi vắng (huỷ điểm {o}).', { o });
               throw e;
             }
             kia = conn.prepare('SELECT * FROM assessment_scores WHERE attempt_id = ? AND skill = ?').get(attemptId, k) as ScoreRow | undefined;

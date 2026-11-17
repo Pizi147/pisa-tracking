@@ -189,13 +189,13 @@ export function kiemCauHinh<L extends LoaiCauHinh>(l: L, d: unknown): LoiCauHinh
     if (!Array.isArray(x.muc)) return [{ duong: 'muc', loi: 'Thiếu danh sách phương án.' }];
     kiemTen(x.muc, 'muc', loi);
     x.muc.forEach((m, i) => {
-      if (m.nhom !== 'gv_tu_lam' && m.nhom !== 'can_ql_duyet') loi.push({ duong: `muc[${i}].nhom`, loi: 'Nhóm phải là GV tự làm hoặc Cần QL duyệt.' });
+      if (m.nhom !== 'gv_tu_lam' && m.nhom !== 'can_ql_duyet') loi.push({ duong: `muc[${i}].nhom`, loi: 'Nhóm phải là GV tự làm hoặc Cần Head duyệt.' });
       if (typeof m.nguoiDay !== 'boolean' || typeof m.soBuoi !== 'boolean') loi.push({ duong: `muc[${i}]`, loi: 'Thiếu cờ người dạy / số buổi.' });
       const g = cauHinhGoc().phuong_an.muc.find((y) => y.ma === m.ma);
       if (g && (g.nhom !== m.nhom || g.nguoiDay !== m.nguoiDay || g.soBuoi !== m.soBuoi)) loi.push({ duong: `muc[${i}]`, loi: `"${m.ten}" có cách chạy cố định — chỉ đổi tên / thứ tự / ẩn.` });
       if (typeof m.ma === 'string' && !g && !/^pa\.m\d+$/.test(m.ma)) loi.push({ duong: `muc[${i}]`, loi: 'Mã phương án mới không hợp lệ.' });
     });
-    if (x.muc.length && !laKhac(x.muc[x.muc.length - 1].ma)) loi.push({ duong: 'muc', loi: '"Khác" (cần QL duyệt) phải đứng cuối.' });
+    if (x.muc.length && !laKhac(x.muc[x.muc.length - 1].ma)) loi.push({ duong: 'muc', loi: '"Khác" (cần Head duyệt) phải đứng cuối.' });
     if (x.muc.find((m) => laKhac(m.ma))?.an) loi.push({ duong: 'muc', loi: '"Khác" không ẩn được.' });
     /* PA đang là PA quy chế ở ô Mốc SOS: không ẩn / không chuyển sang Cần QL duyệt (bỏ khỏi ô trước). */
     const moc = cauHinh('moc_sos').du_lieu;

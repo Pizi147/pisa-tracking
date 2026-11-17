@@ -152,7 +152,7 @@ const MOC_THUONG: { k: KhoaThuong; ten: string; phu: string; caseChu: string }[]
   { k: 'progress', ten: 'Progress Test', phu: t('môn trượt · FOU, BE, ELE'), get caseChu() { return chenHan(t('Case mỗi môn trượt · xác nhận {han:xac_nhan_case}')); } },
   /* QTV2-BAND (PTA XM-1): khoảng % đọc bản Ngưỡng lớp thường mới nhất (Band & ngưỡng) — getter: tính lúc vẽ, không lúc nạp mô-đun. */
   { k: 'final6069', get ten() { return `Final ${khoangDai('60_69', RATIO_PASS_THRESHOLD)}`; }, phu: t('lên'), caseChu: t('Case mỗi môn trượt') },
-  { k: 'final5059Len', get ten() { return `Final ${khoangDai('50_59', RATIO_PASS_THRESHOLD)}`; }, phu: t('QL cho lên'), caseChu: t('Case mỗi môn trượt') },
+  { k: 'final5059Len', get ten() { return `Final ${khoangDai('50_59', RATIO_PASS_THRESHOLD)}`; }, phu: t('Head cho lên'), caseChu: t('Case mỗi môn trượt') },
   { k: 'final5059HocLai', get ten() { return `Final ${khoangDai('50_59', RATIO_PASS_THRESHOLD)}`; }, phu: t('học lại'), caseChu: '—' },
   { k: 'finalDuoi50', get ten() { return `Final ${khoangDai('duoi_50', RATIO_PASS_THRESHOLD)}`; }, phu: t('học lại / lên'), caseChu: '—' },
   { k: 'khongDatKyVong', ten: t('Lên FT'), phu: t('không đạt kỳ vọng · Trung tâm'), caseChu: t('Case mỗi kỹ năng') },

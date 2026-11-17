@@ -80,9 +80,9 @@ export const HD_QT: HuongDan = {
   ],
   luat: [
     ...HD_QL.luat,
-    { id: 'qt-luat-dang-ky', ten: 'Đăng ký tài khoản', buoc: ['Người đăng ký tự chọn vai GV · QL · TVV · CX · Admin, không có Quản trị.', 'Chi nhánh bắt buộc, trừ CX.', 'Không duyệt: lý do bắt buộc, người đăng ký đọc được.'] },
+    { id: 'qt-luat-dang-ky', ten: 'Đăng ký tài khoản', buoc: ['Người đăng ký tự chọn vai GV · Head · TVV · CX · Admin, không có Quản trị.', 'Chi nhánh bắt buộc, trừ CX.', 'Không duyệt: lý do bắt buộc, người đăng ký đọc được.'] },
     { id: 'qt-luat-quyen', ten: 'Đổi quyền', buoc: ['Quyền theo vai: đổi cho mọi người của vai đó.', 'Quyền cấp riêng: lý do bắt buộc; nhật ký ghi lại.'] },
-    { id: 'qt-luat-bao', ten: 'Quản trị nhận báo gì', buoc: ['Thẻ duyệt quá hạn của mọi chi nhánh.', 'QL tự duyệt thẻ của mình: có nhật ký, báo Quản trị.'] },
+    { id: 'qt-luat-bao', ten: 'Quản trị nhận báo gì', buoc: ['Thẻ duyệt quá hạn của mọi chi nhánh.', 'Head tự duyệt thẻ của mình: có nhật ký, báo Quản trị.'] },
   ],
   tu: [
     ...HD_QL.tu,

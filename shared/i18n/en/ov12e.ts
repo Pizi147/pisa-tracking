@@ -41,14 +41,14 @@ export const EN_OV12E = {
   'Kết thúc PA này?': 'End this PA?',
   'Ít nhất {n} ký tự': 'At least {n} characters',
   'Ghi lý do kết thúc PA, ít nhất {n} ký tự.': 'Give a reason for ending the PA, at least {n} characters.',
-  'Chỉ GVCN lớp em đang học hoặc Quản lý kết thúc sớm PA theo quy chế.': 'Only the homeroom teacher of the student\'s current class or a manager can end a rule-based PA early.',
+  'Chỉ GVCN lớp em đang học hoặc Head kết thúc sớm PA theo quy chế.': 'Only the homeroom teacher of the student\'s current class or a Head can end a rule-based PA early.',
   'Chỉ PA theo quy chế có "Kết thúc PA" ở đây — PA khác kết thúc khi ghi Kết quả.': 'Only rule-based PAs have "End PA" here — other PAs end when you record a result.',
   'Case đã hoàn thành — không còn PA để kết thúc.': 'The case is complete — no PA left to end.',
   'PA theo quy chế chưa được xác nhận — chưa chạy thì chưa có gì để kết thúc.': 'This rule-based PA has not been confirmed — it is not running, so there is nothing to end.',
   'Lý do tối đa 500 ký tự.': 'Reason: 500 characters at most.',
   'Case tạm — lượt Mock Test chưa chốt SOS. Lượt chốt rồi mới thêm PA.': 'Provisional case — the Mock Test round has not been finalised for SOS. Add a PA once the round is final.',
-  'PA theo quy chế — không thay, không kết thúc sớm. GVCN / Quản lý: "Kết thúc sớm…" ở thẻ PA, kèm lý do.': 'Rule-based PA — cannot be replaced or ended early. Homeroom teacher / manager: "End early…" on the PA card, with a reason.',
+  'PA theo quy chế — không thay, không kết thúc sớm. GVCN / Head: "Kết thúc sớm…" ở thẻ PA, kèm lý do.': 'Rule-based PA — cannot be replaced or ended early. Homeroom teacher / Head: "End early…" on the PA card, with a reason.',
   /* OV-13i: Sửa thông tin cả lớp — TVV / CX đổi Target, không sửa Tuần bắt đầu. */
-  'Chỉ Quản lý, TVV hoặc CX đổi Target': 'Only a Manager, Counsellor or CX can change the Target',
-  'Chỉ Quản lý, TVV hoặc CX đổi được Target.': 'Only a Manager, Counsellor or CX can change the Target.',
+  'Chỉ Head, TVV hoặc CX đổi Target': 'Only a Head, Counsellor or CX can change the Target',
+  'Chỉ Head, TVV hoặc CX đổi được Target.': 'Only a Head, Counsellor or CX can change the Target.',
 } satisfies Record<string, Dich>;

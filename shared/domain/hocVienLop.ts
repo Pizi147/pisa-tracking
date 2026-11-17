@@ -100,7 +100,7 @@ export const LOC_HOC_VIEN_NHAN: Record<LocHocVien, { nhan: string; goiY: string;
   'tat-ca': { nhan: t('Tất cả'), goiY: t('Mọi học viên đang học trong các lớp đang hiện.'), can: null },
   'can-lam': { nhan: NHAN_TRANG_THAI['can-lam'], goiY: t('Có việc quá hạn hoặc việc hạn ngắn (xác nhận, xử lý vi phạm).'), can: null },
   'qua-han': { nhan: NHAN_TRANG_THAI['qua-han'], goiY: t('Có việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm) — cùng số với badge "HV quá hạn việc".'), can: null },
-  'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: t('Có yêu cầu đang chờ Quản lý duyệt.'), can: null },
+  'cho-duyet': { nhan: NHAN_TRANG_THAI['cho-duyet'], goiY: t('Có yêu cầu đang chờ Head duyệt.'), can: null },
   sos: { nhan: t('Đang SOS'), goiY: t('SOS hiện tại: đợt Test mới nhất ở mức SOS 1–3.'), can: 'case.view' },
   thieu_tt: { nhan: t('Thiếu thông tin'), goiY: t('Hồ sơ còn thiếu thông tin cần để xếp lịch và theo dõi.'), can: null },
   'da-thi': { nhan: t('Đã thi · chờ kết quả'), goiY: t('Đã qua ngày thi, chưa có kết quả thi thật — hạn 1 tuần sau ngày thi.'), can: null },
@@ -370,14 +370,14 @@ export function badgeLop(c: {
     co['xep-lop'] = {
       /* PR-Dọn (Câu 2 = B): lớp chưa hết khoá → em chưa có quyết định chuyển lớp. PR-LCb: Quản lý quyết ở panel "Lộ trình tiếp theo". */
       key: 'xep-lop', nhan: c.needsPlacement ? t('Cần xếp lớp tiếp · {n}', { n: nXep }) : t('Chưa chốt lộ trình · {n}', { n: nXep }), so: nXep, tone: 'warn',
-      title: c.needsPlacement ? t('Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp') : t('Quản lý quyết định ở Lộ trình tiếp theo'),
+      title: c.needsPlacement ? t('Lớp đã hết khoá: những học viên này chưa được xếp lớp tiếp') : t('Head quyết định ở Lộ trình tiếp theo'),
     };
   }
   if (c.missingSkills.length) co['thieu-gv'] = { key: 'thieu-gv', nhan: t('Thiếu GV {mon}', { mon: c.missingSkills.map((k) => tenMonNgan(c.chuongTrinh, k)).join(', ') }), tone: 'warn' };
   if (c.soBaiChoCham > 0) co.cham = { key: 'cham', nhan: t('Chờ chấm · {n}', { n: c.soBaiChoCham }), so: c.soBaiChoCham, tone: TONE_BADGE_TRANG_THAI['cho-cham'], title: c.needScoresTitle ?? undefined };
   if (CHANG_THI.includes(c.phase)) co.chang = { key: 'chang', nhan: dichChuoi(CLASS_PHASE_LABEL[c.phase as ClassPhase]), tone: 'info' };
   if (c.missingCount > 0) co['thieu-tt'] = { key: 'thieu-tt', nhan: t('Thiếu thông tin · {n}', { n: c.missingCount }), so: c.missingCount, tone: 'warn' };
-  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('Chờ duyệt · {n}', { n: c.soChoDuyet }), so: c.soChoDuyet, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Quản lý duyệt') };
+  if (c.soChoDuyet) co['cho-duyet'] = { key: 'cho-duyet', nhan: t('Chờ duyệt · {n}', { n: c.soChoDuyet }), so: c.soChoDuyet, tone: TONE_BADGE_TRANG_THAI['cho-duyet'], title: t('Yêu cầu đang chờ Head duyệt') };
   if (c.soViecQuaHan) co['qua-han'] = { key: 'qua-han', nhan: t('Quá hạn · {n}', { n: c.soViecQuaHan }), so: c.soViecQuaHan, tone: 'danger', title: t('Việc đã quá hạn (xác nhận, kết quả, xử lý vi phạm)') };
   const all = THU_TU_BADGE[c.vai].flatMap((k) => (co[k] ? [co[k]!] : []));
   return { hien: all.slice(0, 2), an: all.slice(2) };
@@ -553,8 +553,8 @@ export function viecTiepCuaEm(i: {
     const viec = kn === 'Case' && dongTu.endsWith('Case') ? dichChuoi(dongTu) : `${dichChuoi(dongTu)} ${kn}`;
     const dich: DichViec = { loai: 'case', caseId: c.caseId, paId: v.paId, ghiKetQua: v.loaiHan === 'cap-nhat-pa' };
     const goc = `${dichChuoi(v.chu)} · ${c.topic ? tenMon(ct, c.topic) : 'Case'}`;
-    if (v.chu.startsWith('Chờ Quản lý duyệt')) {
-      out.push({ viec: t('Chờ Quản lý duyệt {kn}', { kn }), han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
+    if (v.chu.startsWith('Chờ Head duyệt')) {
+      out.push({ viec: t('Chờ Head duyệt {kn}', { kn }), han: null, quaHanNgay: null, tone: 'info', dich, title: goc });
     } else if (v.loaiHan && v.han) {
       const d = deadlineView({ kind: v.loaiHan, due: v.han, today: i.homNay });
       const tone = d.tone === 'overdue' ? 'danger' : v.loaiHan === 'xac-minh-sos' ? 'warn' : 'info';

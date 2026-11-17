@@ -21,7 +21,7 @@ export const quyCheXacNhanPa = (tu: string | null): QuyChe => ({
 
 /** Q15 Không cần theo dõi (luat/2 C-19): gửi QL duyệt trong `n` ngày (`hanDuyetNgay`), duyệt thì Case đóng. */
 export const quyCheKhongTheoDoi = (n: number): QuyChe => ({
-  chu: t('Không cần theo dõi: QL duyệt trong {n} ngày · duyệt thì Case đóng', { n }),
+  chu: t('Không cần theo dõi: Head duyệt trong {n} ngày · duyệt thì Case đóng', { n }),
   chiTiet: t('Kết quả xem ở Yêu cầu của tôi.'),
 });
 
@@ -30,7 +30,7 @@ export const quyCheKhongTheoDoi = (n: number): QuyChe => ({
  * `han` = hạn việc "Thêm PA" (Case chưa có PA): `undefined` = không biết → câu không ngày; `null` = Case không có hạn lập PA (đã có PA) → chỉ vế "lưu xong".
  */
 export const quyCheThemPa = (deXuat: boolean, han?: string | null): QuyChe => deXuat
-  ? { chu: t('Loại này cần QL duyệt · QL nhận thẻ khi bạn lưu') }
+  ? { chu: t('Loại này cần Head duyệt · Head nhận thẻ khi bạn lưu') }
   : { chu: chenHan(han ? t('Hạn {han} ({han:xac_nhan_case}; Gấp: {han:xac_nhan_case.ngayGap}) · lưu xong PA chạy', { han }) : han === undefined ? t('Hạn {han:xac_nhan_case} (Gấp: {han:xac_nhan_case.ngayGap}) · lưu xong PA chạy') : t('Lưu xong PA chạy')) };
 
 /**
@@ -38,9 +38,9 @@ export const quyCheThemPa = (deXuat: boolean, han?: string | null): QuyChe => de
  * · Điều chỉnh / Thay / Đề xuất PA khác (Q21) · PA quy chế giữ nguyên (Q24, câu Q20 vào ⓘ) · mặc định (Q20).
  */
 export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean; htCase?: boolean; ketThucSom?: boolean }): QuyChe => {
-  if (x.miniTest) return { chu: t('Từ 70 %: Case tự hoàn thành · dưới 70 %: QL quyết') };
+  if (x.miniTest) return { chu: t('Từ 70 %: Case tự hoàn thành · dưới 70 %: Head quyết') };
   if (x.lanCuoi) return { chu: t('Kết quả cuối: lưu xong PA khép') };
-  if (x.decision === 'ask_manager') return { chu: t('Xin hỗ trợ QL: PA vẫn chạy · QL nhận thẻ') };
+  if (x.decision === 'ask_manager') return { chu: t('Xin hỗ trợ Head: PA vẫn chạy · Head nhận thẻ') };
   /* GD-20d (⑫ D2): form có ô "Hoàn thành Case" (`htCase` ≠ undefined) → câu theo ô tick. */
   if (x.decision === 'end' && x.htCase !== undefined) return { chu: x.htCase ? t('Kết thúc PA · Case hoàn thành, mở lại được ở thẻ Case') : t('Kết thúc PA · Case còn mở · không hạn') };
   if (x.decision === 'end') return { chu: t('Chỉ kết thúc khi Tiến bộ rõ hoặc Tiến bộ một phần') };
@@ -64,7 +64,7 @@ export const hoanThanhCaseBatSan = (x: { ketThuc: boolean; outcome: string; boTr
  * tới khi bấm Xác nhận Case (`POST /cases/:id/xac-nhan` → "PA Bổ trợ bắt đầu từ hôm nay") → câu theo mã: "lưu xong PA Bổ trợ chạy".
  */
 export const quyCheXacNhanCase = (han: string | null): QuyChe => ({
-  chu: chenHan(han ? t('Hạn {han} ({han:xac_nhan_case}) · lưu xong PA Bổ trợ chạy · quá hạn báo QL', { han }) : t('Hạn {han:xac_nhan_case} · lưu xong PA Bổ trợ chạy · quá hạn báo QL')),
+  chu: chenHan(han ? t('Hạn {han} ({han:xac_nhan_case}) · lưu xong PA Bổ trợ chạy · quá hạn báo Head', { han }) : t('Hạn {han:xac_nhan_case} · lưu xong PA Bổ trợ chạy · quá hạn báo Head')),
 });
 
 /** Q28 / Q29 Xác nhận Case Speaking (luat/2 C-08, việc xem_nx_s): dùng nhận xét người chấm, hoặc viết khác (ngưỡng `CHU_TOI_THIEU_CASE`). */

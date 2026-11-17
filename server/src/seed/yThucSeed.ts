@@ -165,7 +165,7 @@ export const Y_THUC_SEEDS: StudentYThuc[] = [
   /* ============================================================ (f) Lương Gia Bảo — khai bậc 6 (WL 2) + 3 vi phạm → đề xuất WL 3 chờ QL */
   {
     moi: { ten: 'Lương Gia Bảo', target: 6.5 },
-    khai: { bac: 6, thang: '2026-07', ghiChu: 'WL 2 tháng 7 ở lớp cũ, QL Vy ký', on: '2026-08-17' },
+    khai: { bac: 6, thang: '2026-07', ghiChu: 'WL 2 tháng 7 ở lớp cũ, Head Vy ký', on: '2026-08-17' },
     violations: [
       { key: 'f1', on: '2026-09-07', category: 'attendance', skill: null, by: 'T_HA', text: 'Nghỉ hai buổi liền không báo' },
       { key: 'f2', on: '2026-09-08', category: 'conduct', skill: 'speaking', by: 'T_TRANG', text: 'Cãi lại giáo viên trong giờ Speaking' },
@@ -453,12 +453,12 @@ export function buildYThuc(ctx: BuildCtx) {
       conn.prepare('UPDATE discipline_measures SET created_at = ?, updated_at = ? WHERE id = ?').run(stamp(gui, '09:00:00'), stamp(gui, '09:05:00'), nhap.id);
       conn.prepare('UPDATE measure_violations SET added_at = ? WHERE measure_id = ?').run(stamp(gui, '09:00:00'), nhap.id);
       if ('tuChoi' in d.ket) {
-        const on = notFuture(d.ket.tuChoi, 'QL từ chối');
+        const on = notFuture(d.ket.tuChoi, 'Head từ chối');
         tuChoiYeuCau(vy, the, d.ket.lyDo);
         conn.prepare('UPDATE yeu_cau_duyet SET xu_ly_luc = ? WHERE id = ?').run(stamp(on, '10:00:00'), the);
         conn.prepare('UPDATE discipline_measures SET quyet_luc = ?, updated_at = ? WHERE id = ?').run(on, stamp(on, '10:00:00'), nhap.id);
       } else if ('duyet' in d.ket) {
-        const on = notFuture(d.ket.duyet, 'QL duyệt');
+        const on = notFuture(d.ket.duyet, 'Head duyệt');
         const lam = notFuture(d.ket.thucHien, 'đã thực hiện');
         duyetYeuCau(vy, the, {});
         conn.prepare('UPDATE yeu_cau_duyet SET xu_ly_luc = ? WHERE id = ?').run(stamp(on, '10:00:00'), the);

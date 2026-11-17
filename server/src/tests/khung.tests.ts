@@ -169,7 +169,7 @@ export async function runKhungTests(t: YThucTestKit) {
   const tabs = (n: any) => `${d.khuVucHienThi(n).map((k) => k.key)}|${d.tabTestHienThi(n)}|${d.tabCongViecHienThi(n)}|${n.analysis}|${n.admin}`;
 
   check('PR-O · O6 Quản trị và QL chi nhánh: đủ 4 khu, đủ tab, có Phân tích', () => {
-    for (const [ten, p] of [['Quản trị', t.P.admin], ['QL MB', t.P.mbManager]] as const) {
+    for (const [ten, p] of [['Quản trị', t.P.admin], ['Head MB', t.P.mbManager]] as const) {
       const n = navOf(p);
       assert(d.khuVucHienThi(n).length === 5, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích; AN-TUTOR: bỏ Tutor
       assert(d.tabTestHienThi(n).join(',') === 'lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);   // OV-15b: bỏ tab Điểm theo lớp

@@ -67,7 +67,7 @@ export type NguCanhPtGv = {
 
 export function nguCanhPtGv(p: Principal, f: LocPtGv): NguCanhPtGv {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
-  if (scope.none) throw forbidden('Phân tích giáo viên dành cho Quản lý và Quản trị hệ thống.');
+  if (scope.none) throw forbidden('Phân tích giáo viên dành cho Head và Quản trị hệ thống.');
   const cn = f.cn ?? (!scope.all && scope.branchIds.length === 1 ? scope.branchIds[0] : null);
   if (cn == null) throw badRequest('Chọn một chi nhánh.');
   if (!scope.all && !scope.branchIds.includes(cn)) throw forbidden('Chi nhánh này nằm ngoài phạm vi bạn được xem.');
@@ -735,7 +735,7 @@ function ptGvMotCn(p: Principal, f: LocPtGv): PhanTichGvKq {
 /** Xem TỔNG MỌI CHI NHÁNH (spec 1.7): người xem có quyền nhiều chi nhánh. `cns = null` = mọi chi nhánh. Một chi nhánh → không có chế độ này. */
 function phamViTong(p: Principal): { cns: number[] | null } | null {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW_TEACHER);
-  if (scope.none) throw forbidden('Phân tích giáo viên dành cho Quản lý và Quản trị hệ thống.');
+  if (scope.none) throw forbidden('Phân tích giáo viên dành cho Head và Quản trị hệ thống.');
   return scope.all ? { cns: null } : scope.branchIds.length > 1 ? { cns: [...scope.branchIds] } : null;
 }
 function phamViSoTong(f: LocPtGv, cns: number[] | null): PhamViSo & { khung: KhungPtGv; tu: string; den: string } {

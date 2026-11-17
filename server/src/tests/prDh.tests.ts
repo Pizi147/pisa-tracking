@@ -41,7 +41,7 @@ export async function runPrDhTests(t: YThucTestKit) {
     assert(phu({ tiepTheo: 'BE', nhacLoTrinh: true }).includes(co), 'đã ghi lộ trình, chưa có quyết định');
     assert(/tiếp theo: BE/.test(phu({ tiepTheo: 'BE', nhacLoTrinh: true })), 'vẫn giữ lộ trình đã ghi');
     assert(!phu({ tiepTheo: 'BE', nhacLoTrinh: false }).includes(co), 'em đã có quyết định: không cờ');
-    assert(phu({ choDuyetChuyen: true, nhacLoTrinh: false }).includes('chờ QL duyệt'), 'đề xuất đang chờ duyệt');
+    assert(phu({ choDuyetChuyen: true, nhacLoTrinh: false }).includes('chờ Head duyệt'), 'đề xuất đang chờ duyệt');
     assert(/^kết thúc /.test(phu({})), 'không cờ, không lộ trình: giữ "kết thúc …"');
   });
 

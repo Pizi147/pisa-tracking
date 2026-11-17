@@ -7,7 +7,7 @@ export const EN_M1111_CUOI_KHOA = {
   '+ bổ trợ {n} buổi · {tuan} tuần': '+ {n} support sessions · {tuan} weeks',
   'Không chuyển lớp': 'No class move',
   'Đổi lớp': 'Change class',
-  'QL thấy dưới Kết quả; nhận xét đi kèm việc Báo PH kết quả Test': 'Managers see it under Result; the comment goes with the Test-result report to parents',
+  'Head thấy dưới Kết quả; nhận xét đi kèm việc Báo PH kết quả Test': 'Heads see it under Result; the comment goes with the Test-result report to parents',
   'Chọn cả nhóm {nhom}': 'Select the whole {nhom} group',
   'Chốt trước Final được. Bổ trợ Final và Xét lại lộ trình tự sinh khi có Final.': 'You can confirm before the Final. Final support and pathway review are created automatically once the Final is in.',
   'Lớp cho cả nhóm': 'Class for the whole group',

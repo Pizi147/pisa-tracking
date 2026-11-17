@@ -313,12 +313,12 @@ export async function runYThucTests(t: YThucTestKit) {
     const st = makeStudent('V01');
     assert(!one('SELECT COUNT(*) n FROM case_signals WHERE student_id = ?', st.id) && !one('SELECT COUNT(*) n FROM sos_cases WHERE student_id = ?', st.id),
       'Học viên thử phải chưa có SOS hay case nào');
-    for (const [name, who] of [['GVBM', gvbm], ['GVBM khác', gvbm2], ['GVCN', gvcn], ['Quản lý MB', P.mbManager], ['Quản trị', P.admin]] as const) {
+    for (const [name, who] of [['GVBM', gvbm], ['GVBM khác', gvbm2], ['GVCN', gvcn], ['Head MB', P.mbManager], ['Quản trị', P.admin]] as const) {
       const r = record(who, st.id, { description: `${name} ghi một vi phạm hợp lệ` });
       assert(r.violation.id > 0 && r.violation.studentId === st.id && r.violation.reportedBy === who.userId, `${name} không ghi được vi phạm`);
     }
     assertThrows(() => record(outsider, st.id), /phạm vi|quyền/, 'Giáo viên không dạy lớp này ghi được vi phạm');
-    assertThrows(() => record(P.cpManager, st.id), /phạm vi|quyền/, 'Quản lý chi nhánh khác ghi được vi phạm');
+    assertThrows(() => record(P.cpManager, st.id), /phạm vi|quyền/, 'Head chi nhánh khác ghi được vi phạm');
     assertThrows(() => record(gvbm, 999999), /Không tìm thấy/, 'Ghi cho học viên không tồn tại');
     /* Học viên đã rời lớp thì không còn "học viên của lớp". */
     const gone = makeStudent('V01 đã nghỉ');
@@ -418,7 +418,7 @@ export async function runYThucTests(t: YThucTestKit) {
     const truoc = one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id);
     const v = vid(record(gvbm, st.id, { description: 'Vi phạm vừa ghi, bấm Hoàn tác trong toast' }));
     assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === truoc + 1, 'đã ghi');
-    assertThrows(() => viol.deleteViolation(gvbm2, v), /không có quyền|người ghi|chủ nhiệm/, 'Hoàn tác chỉ của người ghi / GVCN / QL');
+    assertThrows(() => viol.deleteViolation(gvbm2, v), /không có quyền|người ghi|chủ nhiệm/, 'Hoàn tác chỉ của người ghi / GVCN / Head');
     const kq = viol.deleteViolation(gvbm, v);
     assert(kq.ok && kq.thungRacId > 0, `Hoàn tác = xoá vào thùng rác (khôi phục được): ${JSON.stringify(kq)}`);
     assert(one('SELECT COUNT(*) n FROM violations WHERE student_id = ?', st.id) === truoc, 'Hoàn tác trả số vi phạm về như trước');
@@ -501,10 +501,10 @@ export async function runYThucTests(t: YThucTestKit) {
     assertThrows(() => viol.editViolation(gvbm2, v, { description: 'GV Writing 2 sửa hộ đồng nghiệp' }), /không có quyền|người ghi|chủ nhiệm/, 'Đồng nghiệp sửa được vi phạm của người khác');
     assertThrows(() => viol.deleteViolation(gvbm2, v), /không có quyền|người ghi|chủ nhiệm/, 'Đồng nghiệp xoá được vi phạm của người khác');
     assertThrows(() => viol.editViolation(outsider, v, { description: 'Người ngoài lớp sửa' }), /phạm vi|quyền/, 'Giáo viên ngoài lớp sửa được');
-    assertThrows(() => viol.editViolation(P.cpManager, v, { description: 'Quản lý chi nhánh khác sửa' }), /phạm vi|quyền/, 'Quản lý chi nhánh khác sửa được');
+    assertThrows(() => viol.editViolation(P.cpManager, v, { description: 'Head chi nhánh khác sửa' }), /phạm vi|quyền/, 'Head chi nhánh khác sửa được');
     viol.editViolation(gvbm, v, { description: 'Người ghi tự sửa lỗi của chính mình' });
     viol.editViolation(gvcn, v, { description: 'GVCN của lớp sửa vi phạm của GVBM' });
-    viol.editViolation(P.mbManager, v, { description: 'Quản lý trong phạm vi sửa vi phạm' });
+    viol.editViolation(P.mbManager, v, { description: 'Head trong phạm vi sửa vi phạm' });
     viol.editViolation(P.admin, v, { description: 'Quản trị hệ thống sửa vi phạm' });
     const other = vid(record(gvbm2, st.id, { description: 'Vi phạm do GV Writing 2 ghi' }));
     viol.deleteViolation(gvcn, other);
@@ -600,7 +600,7 @@ export async function runYThucTests(t: YThucTestKit) {
       const mb = ms(P.mbManager, id), cp = ms(P.cpManager, id);
       const own = id === 'hv-co-vi-pham' ? st.id : v;
       assert(mb.ids.includes(own) && !cp.ids.includes(own), `${id}: dữ liệu chi nhánh MB không được lẫn vào Quản lý CP`);
-      assertThrows(() => ms(P.cpManager, id, { branchId: mbId }), /phạm vi/, `${id}: Quản lý CP hỏi chi nhánh MB phải bị từ chối chứ không trả tập rút gọn`);
+      assertThrows(() => ms(P.cpManager, id, { branchId: mbId }), /phạm vi/, `${id}: Head CP hỏi chi nhánh MB phải bị từ chối chứ không trả tập rút gọn`);
       assert(ms(P.admin, id).ids.includes(own), `${id}: Quản trị thấy toàn hệ thống`);
       assert(ms(P.admin, id, { branchId: cpId }).ids.every((x: number) => !mb.ids.includes(x)), `${id}: lọc chi nhánh CP không chứa dữ liệu MB`);
       for (const [name, who] of [['GVBM', gvbm], ['GVCN', gvcn]] as const) {
@@ -628,7 +628,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert((attachmentsSvc.listAttachments(gvbm2, 'violation', v) as any[]).length === 1, 'Đồng nghiệp dạy lớp xem được bằng chứng');
     assertThrows(() => attachmentsSvc.addLink(gvbm2, { ownerType: 'violation', ownerId: v, url: 'https://example.com/x', displayName: 'x' }), /quyền/, 'Đồng nghiệp thêm được bằng chứng vào vi phạm của người khác');
     assertThrows(() => attachmentsSvc.listAttachments(outsider, 'violation', v), /phạm vi|quyền/, 'Giáo viên ngoài lớp xem được bằng chứng');
-    assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'violation', v), /phạm vi|quyền/, 'Quản lý chi nhánh khác xem được bằng chứng');
+    assertThrows(() => attachmentsSvc.listAttachments(P.cpManager, 'violation', v), /phạm vi|quyền/, 'Head chi nhánh khác xem được bằng chứng');
     assert(attachmentsSvc.addLink(gvcn, { ownerType: 'violation', ownerId: v, url: 'https://example.com/gvcn', displayName: 'GVCN bổ sung' }).id > 0, 'GVCN thêm được');
     assert((viol.violationDetail(gvbm, v) as any).attachmentCount === 2, 'Chi tiết vi phạm đếm đúng tệp');
     await attachmentsSvc.removeAttachment(gvbm, own.id);
@@ -694,11 +694,11 @@ export async function runYThucTests(t: YThucTestKit) {
   const statGvbm = await call(gvbm, 'GET', '/metrics/vi-pham-tong?rows=1');
   const statMb = await call(P.mbManager, 'GET', `/metrics/vi-pham-tong?rows=1&branchId=${mbId}`);
   /* MA-QL-VIEC: QL làm thay GVCN, cách khác Nâng 1 bậc → áp thẳng một bước (không thẻ Chờ duyệt). */
-  const hs6 = makeStudent('HTTP QL ap');
+  const hs6 = makeStudent('HTTP Head ap');
   const hv6 = violations(hs6.id, 2);
   const qlHv = await call(P.mbManager, 'GET', `/students/${hs6.id}/y-thuc`);
   const gvcnHv = await call(gvcn, 'GET', `/students/${hs6.id}/y-thuc`);
-  const qlNhap = await call(P.mbManager, 'POST', `/students/${hs6.id}/y-thuc/de-xuat`, { kind: 'meeting_cx', violationIds: hv6, note: 'QL áp Meeting CX ngay, không qua thẻ duyệt' });
+  const qlNhap = await call(P.mbManager, 'POST', `/students/${hs6.id}/y-thuc/de-xuat`, { kind: 'meeting_cx', violationIds: hv6, note: 'Head áp Meeting CX ngay, không qua thẻ duyệt' });
   const qlLink = await call(P.mbManager, 'POST', '/attachments/link', { ownerType: 'discipline_measure', ownerId: qlNhap.json?.id, url: 'https://example.com/meeting', displayName: 'Biên bản' });
   const qlGui = await call(P.mbManager, 'POST', `/y-thuc/xu-ly/${qlNhap.json?.id}/gui`);
   server.close();
@@ -731,7 +731,7 @@ export async function runYThucTests(t: YThucTestKit) {
     assert(qlNhap.status === 200 && qlLink.status === 200 && qlGui.status === 200 && qlGui.json?.status === 'da_duyet', `QL gửi: ${qlGui.status} ${JSON.stringify(qlGui.json)}`);
     const id = qlNhap.json?.id;
     assert(one("SELECT COUNT(*) n FROM yeu_cau_duyet WHERE loai = 'y_thuc' AND doi_tuong_id = ?", id) === 0, 'QL áp thẳng không tạo thẻ Chờ duyệt');
-    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'discipline.apply' AND entity_id = ? AND entity_label LIKE '%QL áp%'", id) === 1, 'Nhật ký "QL áp"');
+    assert(one("SELECT COUNT(*) n FROM audit_logs WHERE action = 'discipline.apply' AND entity_id = ? AND entity_label LIKE '%Head áp%'", id) === 1, 'Nhật ký "QL áp"');
     assert(one('SELECT COUNT(*) n FROM viec_bao_ph WHERE measure_id = ?', id) === 1, 'Áp thẳng sinh việc Báo PH như khi QL duyệt');
     assert(wl3Gui.json?.status === 'cho_duyet', 'GVCN vẫn gửi QL duyệt');
   });

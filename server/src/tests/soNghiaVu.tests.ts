@@ -445,9 +445,9 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     attempts.GHI_NGAM_NGUOI_CHAM.bat = false;
     try {
     conn.prepare(`DELETE FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking'`).run(a.id);
-    assertThrows(() => attempts.saveScore(ql, a.id, 'speaking', { band: 6 }, han), /GV chấm/, 'QL không chọn GV chấm phải bị chặn');
+    assertThrows(() => attempts.saveScore(ql, a.id, 'speaking', { band: 6 }, han), /GV chấm/, 'Head không chọn GV chấm phải bị chặn');
     assert(!get(`SELECT 1 FROM assessment_scores WHERE attempt_id = ? AND skill = 'speaking' AND band IS NOT NULL`, a.id), 'không ghi điểm khi bị chặn');
-    assertThrows(() => attempts.saveScore(ql, a.id, 'speaking', { band: 6, gvCham: { performerSelf: true } }, han), /GV Speaking/, 'QL chọn "Tôi" phải bị chặn');
+    assertThrows(() => attempts.saveScore(ql, a.id, 'speaking', { band: 6, gvCham: { performerSelf: true } }, han), /GV Speaking/, 'Head chọn "Tôi" phải bị chặn');
     const gvS = get(`SELECT u.id FROM users u JOIN user_skills us ON us.user_id = u.id AND us.skill = 'speaking' JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
       JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher' WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
     attempts.saveScore(ql, a.id, 'speaking', { band: 6, gvCham: { performerUserId: gvS } }, han);
@@ -512,7 +512,7 @@ export async function runSoNghiaVuTests(t: YThucTestKit) {
     assert(!perm.laGvSpeaking(ql) && perm.laGvSpeaking(gvS), 'seed: QL không, GV có S là GV Speaking');
     const dot = '999';
     assert(gc.docGvChamCot(gvS, lop, dot)?.kieu === 'toi' && gc.docGvChamCot(ql, lop, dot) === null, 'mặc định theo vai');
-    assertThrows(() => gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'toi' } }), /GV Speaking/, 'QL chọn "Tôi" → 400');
+    assertThrows(() => gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'toi' } }), /GV Speaking/, 'Head chọn "Tôi" → 400');
     const khongS = get(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'manager'
       WHERE u.status = 'active' ORDER BY u.id LIMIT 1`).id;
     assertThrows(() => gc.ghiGvChamCot(ql, { classId: lop, dot, gv: { kieu: 'tai_khoan', id: khongS } }), /GV Speaking/, 'chọn người không phải GV Speaking → 400');

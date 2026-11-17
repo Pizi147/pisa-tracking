@@ -162,7 +162,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const nhomCho = batBuoc ? d.nhom : null;
   const kCho = nhomCho ? khoi({
     key: 'cho', vp: choGv.map(vpDong), ph: null, moiIds: batBuoc ? undefined : xemIds,
-    gv: d.hang.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(d.hang.tuChoi!.id)}>{t('QL từ chối')}</BadgeViec>} phu={[bacNgan(dich(d.hang.tuChoi.nhan))]} /> : null,
+    gv: d.hang.tuChoi ? <OBuoc badge={<BadgeViec xuong tong="qua" title={t('Xem lần xử lý')} onClick={() => xemXl(d.hang.tuChoi!.id)}>{t('Head từ chối')}</BadgeViec>} phu={[bacNgan(dich(d.hang.tuChoi.nhan))]} /> : null,
     tiep: <>
       <span className="flex flex-col items-start gap-1.5"><CanLamEm x={{ ...d, nhom: nhomCho, deXuat: null }} homNay={homNay} hanDuoi />
         {batBuoc && <span className="text-xs text-slate-400">{t('Lần này')} <b className="font-semibold text-slate-100">{bacNgan(dich(d.keTiep.nhan))}</b></span>}</span>
@@ -190,17 +190,17 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const xlDx = dx ? xlTheoId.get(dx.id) : undefined;
   const kDx = dx ? khoi({
     key: `dx${dx.id}`, vp: vpCua(xlDx?.viPhamIds ?? d.viPham.filter((v) => v.trangThai === 'cho_duyet').map((v) => v.id)), ph: ph(xlDx?.baoPh), b: xlDx?.baoPh,
-    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem đề xuất')} onClick={() => xemXl(dx.id)}>{dx.status === 'da_duyet' ? t('QL đã duyệt {nhan}', { nhan: bacNgan(dich(dx.nhan)) }) : t('Đề xuất {nhan} · chờ QL', { nhan: bacNgan(dich(dx.nhan)) })}</BadgeViec>}
-      phu={[dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('QL trả lời trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null]} />,
+    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem đề xuất')} onClick={() => xemXl(dx.id)}>{dx.status === 'da_duyet' ? t('Head đã duyệt {nhan}', { nhan: bacNgan(dich(dx.nhan)) }) : t('Đề xuất {nhan} · chờ Head', { nhan: bacNgan(dich(dx.nhan)) })}</BadgeViec>}
+      phu={[dx.han ? (dx.status === 'da_duyet' ? t('thực hiện trước {ngay}', { ngay: ngay(dx.han, homNay) }) : t('Head trả lời trước {ngay}', { ngay: ngay(dx.han, homNay) })) : null]} />,
     tiep: dx.status === 'da_duyet' && d.canManage ? nutChinh(t('Đánh dấu đã thực hiện'), () => mo({ loai: 'da-thuc-hien', id: dx.id }))
-      : dx.status === 'da_duyet' ? choAi('GVCN', d.gvcn) : choAi('QL', null),
+      : dx.status === 'da_duyet' ? choAi('GVCN', d.gvcn) : choAi('Head', null),
   }) : null;
   const th = d.hang.thuHoi?.cho ? d.hang.thuHoi : null;
   const xlTh = th ? xlTheoId.get(th.id) : undefined;
   const kTh = th ? khoi({
     key: `th${th.id}`, vp: vpCua(xlTh?.viPhamIds ?? []), ph: ph(xlTh?.baoPh), b: xlTh?.baoPh,
-    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem lần xử lý')} onClick={() => xemXl(th.id)}>{t('Xin thu hồi {nhan}', { nhan: bacNgan(dich(th.nhan)) })}</BadgeViec>} phu={[t('chờ QL')]} />,
-    tiep: choAi('QL', null),
+    gv: <OBuoc badge={<BadgeViec xuong tong="dang" title={t('Xem lần xử lý')} onClick={() => xemXl(th.id)}>{t('Xin thu hồi {nhan}', { nhan: bacNgan(dich(th.nhan)) })}</BadgeViec>} phu={[t('chờ Head')]} />,
+    tiep: choAi('Head', null),
   }) : null;
   const choTvv = xls.filter((x) => x.status === 'done' && x.baoPh?.trangThai === 'mo' && x.id !== th?.id);
   const kTvv = choTvv.map((x) => khoi({
@@ -222,7 +222,7 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   };
   const kThMo = d.tinhHinh.filter((x) => x.trangThai === 'mo').map((x) => dongTh(x));
   const soCanLam = (kCho ? 1 : 0) + (dx ? 1 : 0) + (th ? 1 : 0) + choTvv.length + kThMo.length;
-  const iBaoPh = <NutLuat label={t('Báo PH sinh khi nào')}>{chenHan(t('GVCN: lần xử lý (bậc, ngày). TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi QL duyệt / tự chốt, hạn {han:bao_ph_vi_pham}.'))}</NutLuat>;
+  const iBaoPh = <NutLuat label={t('Báo PH sinh khi nào')}>{chenHan(t('GVCN: lần xử lý (bậc, ngày). TVV: kết quả báo PH và Nội dung TVV ghi. Báo PH sinh khi GVCN lưu xử lý hoặc khi Head duyệt / tự chốt, hạn {han:bao_ph_vi_pham}.'))}</NutLuat>;
 
   /* ---------------- Cả quá trình (mockup v20 A4) ---------------- */
   const loaiCua = (x: DongThoiGianYt): Exclude<LocLs, 'tat-ca' | 'tinh-hinh'> => (x.loai === 'vi-pham' && x.chiNhac ? 'nhac-nho' : 'vi-pham');

@@ -161,7 +161,7 @@ export async function runPrCuoiKhoaTests(t: any) {
     const lo = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [a, b].map((studentId) => lenh.dongTuBody({ studentId, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28', khacChiNhanh: true })) });
     assert(!lo.ok.length && lo.failed.length === 2, `lô 2 em có đánh dấu: ${JSON.stringify(lo)}`);
     const qlMb = lenh.raLenh(QL, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [lenh.dongTuBody({ studentId: a, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28', khacChiNhanh: true })] });
-    assert(!qlMb.ok.length && /chi nhánh khác — cần Quản lý/.test(qlMb.failed[0]?.message ?? ''), `QL MB không có quyền lớp đích: ${JSON.stringify(qlMb)}`);
+    assert(!qlMb.ok.length && /chi nhánh khác — cần Head/.test(qlMb.failed[0]?.message ?? ''), `QL MB không có quyền lớp đích: ${JSON.stringify(qlMb)}`);
     const r = lenh.raLenh(P.admin, { lopNguonId: be, boiCanh: 'cuoi-khoa', tuanChung: null, caLop: true, dongs: [lenh.dongTuBody({ studentId: a, huong: 'len_lop', toClassId: eleKhac, tuan: '2026-09-28', khacChiNhanh: true })] });
     assert(r.ok.includes(a), `trang Cuối khoá, một em khác chi nhánh (đánh dấu, có quyền): ${JSON.stringify(r)}`);
     lenh.huyLenh(P.admin, get(`SELECT id FROM lenh_chuyen_lop WHERE student_id = ? AND trang_thai = 'cho'`, a).id);

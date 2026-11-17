@@ -25,12 +25,12 @@ export const quyCheXemViPham = (): QuyChe => ({ chu: t('Đã xem vẫn đếm ·
  * tự chốt theo GVCN (`quetYThucHetHan`). Lô (nhiều em, nhiều TVV): `tvv` = null.
  */
 export const quyCheXuLy = (cach: 'nang' | 'giu' | 'vuot' | 'ngoai', o: { tvv: string | null; han: string; soNgay: number; /** MA-QL-VIEC: QL / Quản trị áp thẳng. */ qlAp?: boolean }): QuyChe => {
-  if (cach !== 'nang' && o.qlAp) return { chu: cach === 'ngoai' ? t('Ngoài thang: cần tệp bằng chứng · bạn là QL, lưu là chốt ngay') : t('Bạn là QL: lưu là chốt ngay · TVV báo PH, hạn {han}', { han: o.han }) };
+  if (cach !== 'nang' && o.qlAp) return { chu: cach === 'ngoai' ? t('Ngoài thang: cần tệp bằng chứng · bạn là Head, lưu là chốt ngay') : t('Bạn là Head: lưu là chốt ngay · TVV báo PH, hạn {han}', { han: o.han }) };
   if (cach === 'nang') return { chu: o.tvv ? t('Nâng 1 bậc: xong ngay · TVV {tvv} báo PH, hạn {han}', { tvv: o.tvv, han: o.han }) : t('Nâng 1 bậc: xong ngay · TVV báo PH, hạn {han}', { han: o.han }) };
-  const chiTiet = t('Quá {n} ngày QL chưa duyệt: giữ quyết định của bạn. TVV nhận việc báo PH sau khi chốt.', { n: o.soNgay });
+  const chiTiet = t('Quá {n} ngày Head chưa duyệt: giữ quyết định của bạn. TVV nhận việc báo PH sau khi chốt.', { n: o.soNgay });
   return cach === 'ngoai'
-    ? { chu: t('Ngoài thang: cần tệp bằng chứng · QL duyệt {n} ngày', { n: o.soNgay }), chiTiet }
-    : { chu: t('Gửi Quản lý duyệt {n} ngày · hết hạn giữ cách của bạn · TVV chưa có việc', { n: o.soNgay }), chiTiet };
+    ? { chu: t('Ngoài thang: cần tệp bằng chứng · Head duyệt {n} ngày', { n: o.soNgay }), chiTiet }
+    : { chu: t('Gửi Head duyệt {n} ngày · hết hạn giữ cách của bạn · TVV chưa có việc', { n: o.soNgay }), chiTiet };
 };
 
 /** Q48 / Q49 (luat/3 mục 2 (a), mục 4): GVCN ghi "Đã thực hiện". `nhan` = tên bậc đã dịch; lần ngoài thang (không bậc) → câu không có bậc. */
@@ -45,9 +45,9 @@ export const quyCheDaThucHien = (nhan: string | null, phDuMeeting: boolean): Quy
 export const quyCheThuHoi = (o: { ql: boolean; soNgay: number; daBaoPh: boolean; baoLai: boolean }): QuyChe => o.ql
   ? { chu: !o.daBaoPh ? t('Thu hồi ngay · bậc tính lại') : o.baoLai ? t('Thu hồi ngay · bậc tính lại · TVV báo lại PH') : t('Thu hồi ngay · bậc tính lại · TVV không báo lại PH') }
   : {
-    chu: o.daBaoPh ? t('Gửi Quản lý duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại · TVV báo lại PH', { n: o.soNgay })
-      : t('Gửi Quản lý duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại', { n: o.soNgay }),
-    chiTiet: t('Quá {n} ngày QL chưa duyệt: thu hồi theo bạn. TVV đã báo PH thì nhận việc báo lại.', { n: o.soNgay }),
+    chu: o.daBaoPh ? t('Gửi Head duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại · TVV báo lại PH', { n: o.soNgay })
+      : t('Gửi Head duyệt {n} ngày · quá hạn tự thu hồi · bậc tính lại', { n: o.soNgay }),
+    chiTiet: t('Quá {n} ngày Head chưa duyệt: thu hồi theo bạn. TVV đã báo PH thì nhận việc báo lại.', { n: o.soNgay }),
   };
 
 /** Q51 (luat/3 Y-12, việc khai_bac): Xác nhận cấp bậc HV cũ (một em hoặc cả lớp). */

@@ -251,7 +251,7 @@ export async function runPrXoaCasePaTests(t: any) {
     ketQua(iv1, 'Đúng 15/20 câu điền số tuần này');
     assert(maLoi(() => cases.xoaKetQuaPa(QL, fuCua(iv1).at(-1).id)) === 400, 'xoá được kết quả chung nhóm');
     const iv3 = themPa(taoCase());
-    cases.updateResult(P.lrTeacher, iv3, { decision: 'ask_manager', outcome: 'unchanged', note: 'Vẫn sai 6/20 câu điền số', decisionNote: 'Cần QL xếp thêm buổi tutor', soBuoi: 0 });
+    cases.updateResult(P.lrTeacher, iv3, { decision: 'ask_manager', outcome: 'unchanged', note: 'Vẫn sai 6/20 câu điền số', decisionNote: 'Cần Head xếp thêm buổi tutor', soBuoi: 0 });
     const f1 = fuCua(iv3).at(-1);
     assert(mot(`SELECT 1 FROM yeu_cau_duyet WHERE trang_thai = 'cho' AND json_extract(du_lieu, '$.followupId') = ?`, f1.id), 'dữ liệu: thẻ Xin hỗ trợ phải gắn lần ghi');
     try { ketQua(iv3, 'Đúng 16/20 câu điền số tuần này'); } catch { /* ghi tiếp có thể bị chặn khi đang chờ QL — vẫn kiểm f1 */ }

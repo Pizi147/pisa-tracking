@@ -263,7 +263,7 @@ export async function runPrOv11dTests(t: YThucTestKit) {
     assert(loi(() => deXuat.guiDeXuatSua(GVCN, sid, { truong: 'target', moi: lat(kckMoi) || 'KCK', lyDo: 'Thử KCK' }))?.status === 403, 'GVCN đề xuất đổi KCK phải 403');
     cycles.reviseTarget(TVV, cy.id, { newTarget: lat(kckMoi), reason: 'TVV tích KCK' });
     assert(!!one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === kckMoi, 'TVV đổi KCK');
-    cycles.reviseTarget(QL, cy.id, { newTarget: lat(!kckMoi), reason: 'QL bỏ KCK' });
+    cycles.reviseTarget(QL, cy.id, { newTarget: lat(!kckMoi), reason: 'Head bỏ KCK' });
     assert(!!one('SELECT khong_cam_ket k FROM learning_cycles WHERE id = ?', cy.id).k === !kckMoi, 'QL đổi KCK');
   }));
 }

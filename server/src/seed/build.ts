@@ -296,7 +296,7 @@ function insertAttempt(
   if (t.skip) {
     conn
       .prepare('INSERT INTO attempt_skill_skips (attempt_id, skill, reason, created_by, created_at) VALUES (?,?,?,?,?)')
-      .run(aid, t.skip, 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó.', ctx.adminId, NOW);
+      .run(aid, t.skip, 'Head chốt trước: đợt này không yêu cầu kỹ năng đó.', ctx.adminId, NOW);
     counts.skips += 1;
   }
 
@@ -320,7 +320,7 @@ function insertAttempt(
       )
       .run(
         aid, skill, t.skip === skill ? 0 : 1,
-        t.skip === skill ? 'Quản lý chốt trước: đợt này không yêu cầu kỹ năng đó.' : null,
+        t.skip === skill ? 'Head chốt trước: đợt này không yêu cầu kỹ năng đó.' : null,
         skillPeriod.id, ownWeek ? 'manual' : 'auto',
         didSit ? 'sat' : 'scheduled', NOW,
       );

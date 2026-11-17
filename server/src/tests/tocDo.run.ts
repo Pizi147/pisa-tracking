@@ -1496,11 +1496,12 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
        A1-05 việc "Nhập điểm MT cũ" nút "Nhập điểm ›" + link `&ma=` (tiêu đề trang có mã lớp); B3-09 Bàn giao môn một em ghi tên em → lớp đến. ADMIN, QL toi giữ.
        Trước (main 16/11 sau AU-SO): QT toi 11db1ca94e232a13, GVCN toi 5b567fb9fc7aa168, GVBM toi 9dc4aef5f266094a, GVCN_THUONG toi 5b567fb9fc7aa168, QL tat-ca 7441e526cfa9d8c7,
        QT tat-ca 41c9031fd1f7f54f, QT tat-ca cn 218778b5e821a297, QL gvcn ff446108d217da2d, GVS toi 7a4bed4a0aeddaec */
+    /* HEAD (chủ SP 18/11): chụp lại 10 băm — đổi CÓ CHỦ Ý: chữ vai Quản lý / QL trong việc / lý do đổi thành "Head" (ADMIN toi giữ). */
     /* HOC-TIEP (N51, 18/11): chụp lại 'QT toi' / 'QT tat-ca' — đổi CÓ CHỦ Ý: gợi ý nhóm việc "Chọn bước tiếp" nói 3 hướng (Tạm dừng / Kết thúc học, Học tiếp hoặc
-       Lộ trình mới). Đã kiểm: trả chữ gợi ý cũ → cả 11 băm trùng ảnh cũ. Trước: QT toi 6749974fbb534de7, QT tat-ca dc386f02aa5bc3ac */
-    'QL toi': '09c37684928d6602', 'QT toi': '34ef7aed3bf5d702', 'GVCN toi': 'cb7ba93cdce874b0', 'GVBM toi': 'dea23f4bd557d1c7',
-    'GVCN_THUONG toi': 'cb7ba93cdce874b0', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '99ec209105649976', 'QT tat-ca': '0aba4b245bd7bb06',
-    'QT tat-ca cn': '352e3d0da47441d2', 'QL gvcn': '85de014ca21d027c', 'GVS toi': 'dd037332ce5913ce',
+       Lộ trình mới). Đã kiểm (trước khi gộp HEAD): trả chữ gợi ý cũ → cả 11 băm trùng ảnh cũ. Trước: QT toi e6ce92ac5383842d, QT tat-ca 48f85bbf269d190a */
+    'QL toi': 'bae55443ea652c0f', 'QT toi': 'a7959c204d800942', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '36bb9e3c7458985b',
+    'QT tat-ca cn': '74fce9d8e33ac72f', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);
   const goc: [string, () => unknown][] = [

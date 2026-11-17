@@ -238,7 +238,7 @@ export async function runPrTuTests(t: any) {
     await t.checkAsync('TU-4b · Head tutor, CX, QL chi nhánh khác → 403; ô Người dạy theo studentId: QL / GV 200, nhóm gợi ý = tutor MB', async () => {
       const ht = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'head_tutor' LIMIT 1`).id;
       const cx = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'cx' LIMIT 1`).id;
-      for (const [ai, id] of [['Head tutor', ht], ['CX', cx], ['QL Cẩm Phả', P.cpManager.userId]] as const) {
+      for (const [ai, id] of [['Head tutor', ht], ['CX', cx], ['Head Cẩm Phả', P.cpManager.userId]] as const) {
         const s = (await goi(id, `/tutors/chon?paId=${ivId}`)).status;
         assert(s === 403, `${ai}: ${s}`);
       }

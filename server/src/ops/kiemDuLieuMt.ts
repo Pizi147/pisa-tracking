@@ -92,7 +92,7 @@ export function kiemDuLieuMt(conn: any): DongKiem[] {
       WHERE ${coLoai ? `q.loai = 'doi_vuot' AND ` : ''}q.khoi_phuc_luc IS NULL AND (a.status = 'cancelled' OR a.created_at > q.huy_luc)
       ORDER BY q.id`).all() as (Luot & { huy_luc: string; tao_luc: string })[];
   for (const l of mo) {
-    ra.push(dong(3, l, l.status === 'cancelled' ? `Lượt đã huỷ nhưng kết quả huỷ (${l.huy_luc.slice(0, 10)}) chưa khôi phục — Quản lý "Khôi phục MT" để đưa điểm về`
+    ra.push(dong(3, l, l.status === 'cancelled' ? `Lượt đã huỷ nhưng kết quả huỷ (${l.huy_luc.slice(0, 10)}) chưa khôi phục — Head "Khôi phục MT" để đưa điểm về`
       : `Lượt tạo ${l.tao_luc.slice(0, 10)} SAU lúc huỷ kết quả ${l.huy_luc.slice(0, 10)} — kết quả huỷ mồ côi`));
   }
 

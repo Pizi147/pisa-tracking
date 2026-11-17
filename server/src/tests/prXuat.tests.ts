@@ -184,7 +184,7 @@ async function mayChu(t: YThucTestKit) {
     assert(navOf(P.subjectTeacher).xuatMt === laGvcnKhac, `cờ GVBM = ${navOf(P.subjectTeacher).xuatMt}`);
     if (!laGvcnKhac) {
       const e = loi(() => xm.duLieuXuatMt(P.subjectTeacher, loc()));
-      assert(e?.status === 403 && /Quản lý, Quản trị và GVCN/.test(e.message), String(e?.message));
+      assert(e?.status === 403 && /Head, Quản trị và GVCN/.test(e.message), String(e?.message));
     }
     assert(navOf(P.coreTeacher).xuatMt && navOf(P.mbManager).xuatMt && navOf(P.admin).xuatMt, 'GVCN, QL, Quản trị có nút');
     /* GVBM thuần (không GVCN lớp nào — bộ demo: Phạm Thu Trang): không nút, mọi lời gọi 403 câu tiếng Việt. */
@@ -194,7 +194,7 @@ async function mayChu(t: YThucTestKit) {
     const gvbm = loadPrincipal(thuan.id);
     assert(!navOf(gvbm).xuatMt && !xm.coPhamViXuat(xm.phamViXuatMt(gvbm)), 'GVBM thuần không có phạm vi xuất');
     const e403 = loi(() => xm.duLieuXuatMt(gvbm, loc()));
-    assert(e403?.status === 403 && /Quản lý, Quản trị và GVCN/.test(e403.message), String(e403?.message));
+    assert(e403?.status === 403 && /Head, Quản trị và GVCN/.test(e403.message), String(e403?.message));
   });
 
   check('PR-XUAT (2) · tuần của lượt = tuần SỚM NHẤT của kỹ năng phải thi, khác planned_period_id (tuần hoàn tất, muộn nhất) (K4-35b)', () => {

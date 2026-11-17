@@ -136,8 +136,8 @@ export function QuyenTheoVai({ onDaLuu }: { onDaLuu: () => void }) {
         {t('Quyền = quyền của vai trò × phạm vi chi nhánh của CHÍNH grant đó × phân công lớp/kỹ năng. Không vai trò nào mặc định thấy toàn hệ thống: chỉ grant không gắn chi nhánh mới phủ toàn bộ.')}
         <br />
         {/* K1-53: Quyền dẫn xuất (không có công tắc) — nói rõ ở ⓘ. */}
-        <strong>{t('Quyền dẫn xuất khác (không có ô bật/tắt):')}</strong> <em>{t('Xem hồ sơ giáo viên')}</em> {t('— chính mình; Quản lý: giáo viên thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả.')}
-        {' '}<em>{t('Xuất Excel kết quả Test')}</em> {t('— Quản lý và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).')}
+        <strong>{t('Quyền dẫn xuất khác (không có ô bật/tắt):')}</strong> <em>{t('Xem hồ sơ giáo viên')}</em> {t('— chính mình; Head: giáo viên thuộc chi nhánh mình (có vai hoặc đang dạy lớp ở đó); Quản trị hệ thống: tất cả.')}
+        {' '}<em>{t('Xuất Excel kết quả Test')}</em> {t('— Head và Quản trị hệ thống (trong phạm vi của mình), Giáo viên chủ nhiệm (lớp mình chủ nhiệm).')}
       </NutLuat></span>} bodyClass="p-0"
       action={<button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-pressed={soSanh} onClick={() => setSoSanh(!soSanh)}>
         {soSanh ? t('Theo từng vai') : t('So sánh mọi vai')}</button>}>

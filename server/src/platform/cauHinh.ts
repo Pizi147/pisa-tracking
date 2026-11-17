@@ -76,7 +76,7 @@ function taoLoai<T>(d: DinhNghia<T>) {
 
   /** Bản đang dùng + 30 lần đổi gần nhất (ai · lúc · đổi gì). QT + QL xem. */
   const xem = (p: Principal) => {
-    if (!xemDuocBangQuyDoi(p)) throw forbidden(`Chỉ Quản trị hệ thống và Quản lý xem được ${d.ten}.`);
+    if (!xemDuocBangQuyDoi(p)) throw forbidden(`Chỉ Quản trị hệ thống và Head xem được ${d.ten}.`);
     const hien = moiNhat();
     const rows = db().prepare(
       `SELECT b.id, b.thay_doi, b.khoi_phuc_tu, b.tao_luc, u.full_name AS ten FROM cau_hinh_phien_ban b LEFT JOIN users u ON u.id = b.nguoi_id

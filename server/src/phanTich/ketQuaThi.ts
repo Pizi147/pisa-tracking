@@ -27,7 +27,7 @@ export type LocKetQuaThi = { branchId?: number | null; classId?: number | null; 
 
 function phamVi(p: Principal) {
   const scope = scopeFor(p, PERMISSIONS.ANALYSIS_VIEW);
-  if (scope.none) throw forbidden('Phân tích dành cho Quản lý.');
+  if (scope.none) throw forbidden('Phân tích dành cho Head.');
   return scope;
 }
 

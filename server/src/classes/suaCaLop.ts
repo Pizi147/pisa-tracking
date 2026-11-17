@@ -34,7 +34,7 @@ type DauVao = { rows: DongSua[]; lyDoTarget?: string };
 
 export const TOI_DA_DONG_SUA_CA_LOP = 60;
 /** Panel này không có nút "Đề xuất sửa" (khác `CHI_QL_SUA` của đường một em) — chỉ nói ai được đổi. */
-export const CHI_QL_DOI_TARGET = 'Chỉ Quản lý, TVV hoặc CX đổi được Target.';
+export const CHI_QL_DOI_TARGET = 'Chỉ Head, TVV hoặc CX đổi được Target.';
 /**
  * OV-13i (chủ SP 15/10): ai mở được panel — GVCN / QL (`student.edit`) hoặc TVV / CX (`student.edit_more`) đúng phạm vi. Một luật cho cờ nút
  * ở hồ sơ lớp (`coTheSuaCaLop`) và máy chủ. TVV / CX chỉ sửa trường của `CHI_SUA_THONG_TIN` + Target (`duocDoiTarget`); Tuần bắt đầu: [XM-C1] TVV chi nhánh em

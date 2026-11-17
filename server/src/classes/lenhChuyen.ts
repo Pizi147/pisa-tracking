@@ -42,7 +42,7 @@ const HUONG_THEO_BOI_CANH: Record<BoiCanhLenh, readonly HuongLenh[]> = {
   'giua-khoa': ['chuyen_lop', 'fast_track', 'bao_luu', 'dung_hoc'],
 };
 
-const CUNG_LOP_CHI_NHANH = 'Chỉ Quản lý chi nhánh của lớp này mới ra quyết định chuyển lớp.';
+const CUNG_LOP_CHI_NHANH = 'Chỉ Head chi nhánh của lớp này mới ra quyết định chuyển lớp.';
 
 /** GVCN đang hiệu lực + (khi `ql`) mọi Quản lý của các chi nhánh — cho thông báo. Tối đa ba câu cho cả lô lớp (không hỏi lại theo lớp). */
 export function nguoiNhanCuaLop(lopIds: readonly number[], chiNhanhQl: readonly number[] = []): Map<number, Set<number>> {
@@ -158,7 +158,7 @@ export function raLenh(p: Principal, v: {
          sang lớp chi nhánh khác được nếu người ra lệnh có quyền ở lớp đích. Lệnh cũ giữ nguyên lớp đến (chỉ đổi tuần) vẫn được. */
       if (v.caLop && lopDich && lopDich.branch_id !== nguon.branch_id && cu?.lop_dich_id !== lopDich.id) {
         if (!d.khacChiNhanh || dongs.length !== 1) { loi(LOI_KHAC_CHI_NHANH); continue; }
-        if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: lopDich.id })) { loi(`Lớp ${lopDich.code} ở chi nhánh khác — cần Quản lý chi nhánh đó hoặc Quản trị chốt em này.`); continue; }
+        if (!can(p, PERMISSIONS.CLASS_EDIT, { classId: lopDich.id })) { loi(`Lớp ${lopDich.code} ở chi nhánh khác — cần Head chi nhánh đó hoặc Quản trị chốt em này.`); continue; }
       }
       /* PR-S5F-a: lệnh còn `cho` luôn sửa được (kể cả đã tới tuần mà chưa chuyển được) — tuần mới: hôm nay hoặc từ tuần sau (`kiemDongLenh`). */
       if (cu && cu.lop_nguon_id !== v.lopNguonId) { loi('Em đã có quyết định chuyển lớp ở lớp khác.'); continue; }
@@ -287,7 +287,7 @@ function phieuLamLai(p: Principal, nguon: any, sids: number[], han: { gvbm: stri
   for (const { user_id: userId } of gv) {
     if (userId === p.userId) continue;
     notify({
-      userId, kind: 'lam_lai_ban_giao', title: `Cần làm lại bàn giao · ${ten} · ${nguon.code}`, body: 'Quản lý đổi lộ trình — phiếu cũ đã điền sẵn',
+      userId, kind: 'lam_lai_ban_giao', title: `Cần làm lại bàn giao · ${ten} · ${nguon.code}`, body: 'Head đổi lộ trình — phiếu cũ đã điền sẵn',
       entityType: 'class', entityId: nguon.id, dedupKey: `lam_lai_ban_giao:${nguon.id}:${luc}`, duong: `/hoc-vien/lop/${nguon.id}?viec=ban-giao`,
     });
   }
@@ -902,7 +902,7 @@ export function guiDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: n
       loai: 'de_xuat_chuyen_lop', doiTuongLoai: 'student:chuyen-lop', doiTuongId: sid, hocVienId: sid, lopId: enr.class_id,
       nguoiXin: p.userId, lyDo, duLieu: { lopDichId: toClassId, tuan, resetBac },
     });
-    if (id === null) throw badRequest('Đã có một đề xuất chuyển lớp của em đang chờ Quản lý.');
+    if (id === null) throw badRequest('Đã có một đề xuất chuyển lớp của em đang chờ Head.');
     writeAudit({ actorUserId: p.userId, action: 'request.create', entityType: 'yeu_cau_duyet', entityId: id, entityLabel: `Đề xuất chuyển lớp · ${hv.full_name}`, after: { toClassId, tuan, lyDo, resetBac } });
     return { ok: true, id };
   });
@@ -918,7 +918,7 @@ export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: 
   /* GVCN của lớp em đang học (`student.edit` ở lớp với vai Giáo viên đã siết về GVCN); Quản lý cũng gửi được → tự duyệt (Q-D). */
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Chỉ GVCN lớp em đang học mới gửi được đề xuất chuyển lớp.');
   const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm
-  if (!lyDo) throw badRequest('Ghi lý do để Quản lý có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
+  if (!lyDo) throw badRequest('Ghi lý do để Head có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
   const toClassId = v.toClassId ? Number(v.toClassId) : null;
   if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
   const tuan = typeof v.tuan === 'string' && v.tuan ? v.tuan : null;

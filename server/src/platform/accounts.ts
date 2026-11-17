@@ -559,7 +559,7 @@ export function updateProfile(p: Principal, input: {
     if (input.skills !== undefined) {
       /* QUYEN-KY-NANG (chủ SP 10/11, B' 7): GV chỉ xem kỹ năng — gửi lại đúng bộ đang có (form cũ luôn gửi kèm) thì bỏ qua, khác → 403. */
       if (duocSuaKyNang(p, p.userId)) setSkills(conn, p.userId, input.skills);
-      else if (!cungBo(chuanKyNang(input.skills), docKyNang(conn, p.userId))) throw forbidden('Kỹ năng do Quản lý hoặc Quản trị hệ thống sửa.');
+      else if (!cungBo(chuanKyNang(input.skills), docKyNang(conn, p.userId))) throw forbidden('Kỹ năng do Head hoặc Quản trị hệ thống sửa.');
     }
     if (input.extraEmails !== undefined) {
       if (!Array.isArray(input.extraEmails)) throw badRequest('Email khác: cần danh sách.');
@@ -702,7 +702,7 @@ export function listAccounts(p: Principal) {
 
 /** K1-51, Q9: sửa kỹ năng phụ trách được của một tài khoản — QUYEN-KY-NANG (B' 7): Quản trị, hoặc QL chi nhánh của GV (Hồ sơ GV). */
 export function setUserSkills(p: Principal, userId: number, skills: string[]): { skills: string[] } {
-  if (!duocSuaKyNang(p, userId)) throw forbidden('Chỉ Quản lý chi nhánh của giáo viên hoặc Quản trị hệ thống sửa được kỹ năng.');
+  if (!duocSuaKyNang(p, userId)) throw forbidden('Chỉ Head chi nhánh của giáo viên hoặc Quản trị hệ thống sửa được kỹ năng.');
   const conn = db();
   const user = conn.prepare('SELECT * FROM users WHERE id = ?').get(userId) as any;
   if (!user) throw notFound('Không tìm thấy tài khoản.');

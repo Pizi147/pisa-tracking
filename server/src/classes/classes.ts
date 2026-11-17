@@ -1027,7 +1027,7 @@ export function giaoVienPhanCong(p: Principal, q: { branchId?: number; classId?:
   if (!can(p, PERMISSIONS.CLASS_ASSIGN, { anyScope: true })) {
     const lop = q.classId ? db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(q.classId) as any : null;
     if (!lop || !can(p, PERMISSIONS.CLASS_ASSIGN_SUBJECT, { classId: q.classId! })) {
-      throw forbidden('Chỉ Quản lý hoặc GVCN của lớp mới xem được danh sách giáo viên để phân công.');
+      throw forbidden('Chỉ Head hoặc GVCN của lớp mới xem được danh sách giáo viên để phân công.');
     }
     cn = [lop.branch_id];
   } else {

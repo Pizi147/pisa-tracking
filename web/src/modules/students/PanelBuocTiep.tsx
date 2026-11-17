@@ -149,7 +149,7 @@ export function PanelBuocTiep({ cycleId, hocVien, lop, quayLai, chonSan, onSuaKe
 
   /* Đã chọn (hoặc người xem không chọn được): khối trạng thái — Huỷ hẹn / Hoàn tác / Quay lại học. */
   if (!doi && (bt.chon || !bt.coTheChon)) {
-    const chu = !bt.chon ? t('Chờ QL / TVV chọn bước tiếp')
+    const chu = !bt.chon ? t('Chờ Head / TVV chọn bước tiếp')
       : bt.hen ? t('Hẹn bắt đầu {tuan} · {lop}', { tuan: tuanLich(bt.hen, hn), lop: bt.henLop ?? '—' })
         : t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[bt.chon] });
     return (

@@ -44,7 +44,7 @@ export function CauHinhCaseSos() {
   const [khoiPhuc, setKhoiPhuc] = useState<{ id: number; loai: LoaiCauHinh; ten: string; dao: string[] } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  if (error && error.status === 403) return <Forbidden message={t('Phần này dành cho Quản trị hệ thống và Quản lý.')} />;
+  if (error && error.status === 403) return <Forbidden message={t('Phần này dành cho Quản trị hệ thống và Head.')} />;
   if (error) return <ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} />;
   if (loading || !data) return <Skeleton rows={10} />;
 

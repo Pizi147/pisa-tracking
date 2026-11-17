@@ -326,7 +326,7 @@ export default function MockDetailPage() {
           </span>
           {d.viewer.canCancel ? (
             <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" onClick={() => setKhoiPhucLuot(true)}>{t('Khôi phục MT{attemptNo}', { attemptNo: d.attemptNo })}</button>
-          ) : <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Quản lý khôi phục được lượt đã huỷ.')}</span>}
+          ) : <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Head khôi phục được lượt đã huỷ.')}</span>}
         </div>
       )}
 
@@ -338,7 +338,7 @@ export default function MockDetailPage() {
           {lanXoa && <span className="min-w-0 break-words text-slate-400">{[lanXoa.actorName, fmtDate(lanXoa.createdAt)].filter(Boolean).join(' · ')}</span>}
           {d.viewer.canPlanWeek ? (
             <button type="button" className="btn btn-sm min-h-[44px] sm:ml-auto sm:min-h-0" disabled={dangXoa} onClick={khoiPhuc}>{dangXoa ? t('Đang khôi phục…') : t('Khôi phục MT{attemptNo}', { attemptNo: d.attemptNo })}</button>
-          ) : <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Quản lý khôi phục được MT đã xoá.')}</span>}
+          ) : <span className="text-xs text-slate-500 sm:ml-auto">{t('Chỉ Head khôi phục được MT đã xoá.')}</span>}
         </div>
       )}
 
@@ -555,8 +555,8 @@ function conLaiLuot(d: Detail, homNay: string, theCase: Map<number, CaseCard>, c
     const n = skillShort(k);
     const cua = (viec: string, chon: string | null, ai?: string | null) =>
       ds.push({ khoa: `${k}:${viec}`, nhan: n, viec, ai, mo: chon !== null && !chiDoc ? () => mo.moDong(k, chon) : undefined });
-    if (r.pendingMove) cua(CHU_THAO_TAC['tra-loi-de-nghi'], chinh === 'tra-loi-de-nghi' ? '[data-chinh]' : null, chinh === 'tra-loi-de-nghi' ? null : t('Quản lý'));
-    else if (r.required && r.sitStatus === 'absent' && prog !== 'cancelled') cua(CHU_THAO_TAC['doi-lich'], chinh === 'doi-lich' ? '[data-chinh]' : null, chinh === 'doi-lich' ? null : t('Quản lý'));   // N38 L5: vắng cũ → Dời
+    if (r.pendingMove) cua(CHU_THAO_TAC['tra-loi-de-nghi'], chinh === 'tra-loi-de-nghi' ? '[data-chinh]' : null, chinh === 'tra-loi-de-nghi' ? null : t('Head'));
+    else if (r.required && r.sitStatus === 'absent' && prog !== 'cancelled') cua(CHU_THAO_TAC['doi-lich'], chinh === 'doi-lich' ? '[data-chinh]' : null, chinh === 'doi-lich' ? null : t('Head'));   // N38 L5: vắng cũ → Dời
     else if (r.required && (prog === 'due' || prog === 'overdue') && cells.some((c) => c.required && c.band === null && c.rawScore === null && !c.noShow)) {
       cua(chinh === 'nhap-diem' ? CHU_THAO_TAC['nhap-diem'] : t('Chờ điểm'), chinh === 'nhap-diem' ? '[data-chinh]' : null,
         chinh === 'nhap-diem' ? null : tenNguoiLam(d.nguoiLam, cells.filter((c) => c.required && !coDiemO(c)).map((c) => c.skill)));
@@ -914,8 +914,8 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
               {r.required && prog !== 'scored' && !khongDuThi && !huy && r.sitStatus !== 'absent' && !r.pendingMove && !d.lichSu && <div><DeadlinePill cell={oThieu} mo={!cells.some((c) => c.required && c.canEdit)} /></div>}
               {/* ĐANG CHỜ AI, ĐẾN NGÀY NÀO: không nói hạn thì người xem không biết còn bao lâu nữa phần thi bị huỷ. */}
               {r.pendingMove && (
-                <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Quản lý cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
-                  {t('Chờ QL duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
+                <div className="text-xs text-amber-200" title={`${t('Đề nghị dời sang')} ${r.pendingMove.toWeek ?? t('tuần kế tiếp')} ${t('(lần {moveNo}) — Head cần trả lời trước', { moveNo: r.pendingMove.moveNo })} ${fmtDate(r.pendingMove.decideBy)}${r.huyVang ? '' : t(', quá hạn thì huỷ kỹ năng')}.`}>
+                  {t('Chờ Head duyệt dời lần {moveNo} · hạn {ngay}', { moveNo: r.pendingMove.moveNo, ngay: fmtDate(r.pendingMove.decideBy).slice(0, 5) })}
                 </div>
               )}
               {/* LUOT-TEN-GV (khung: "Chờ điểm · hạn …" + tên): bài còn nợ mà người xem không nhập được — ai đang giữ việc. */}
@@ -967,7 +967,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
     <section aria-label={t('Kết quả theo kỹ năng')} className="card overflow-hidden p-0">
       {!d.completionWeek.valid && (
         <p className="m-0 px-3 pt-3 text-xs text-amber-200">
-          {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi Quản lý xếp lại.')}
+          {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi Head xếp lại.')}
         </p>
       )}
       {d.cells.length === 0 ? (

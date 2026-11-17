@@ -334,7 +334,7 @@ export async function runPrClTests(t: YThucTestKit) {
     assert(vy.boiCanh === 'cuoi-khoa' && vy.huong === 'fast_track' && fw, `cuối khoá: ${vy.boiCanh} ${vy.huong} ${JSON.stringify(vy.mt0)}`);
     assert(vy.khiChuyen[0] === 'Đóng lộ trình FOU, mở lộ trình FT LT1', `dòng 1: ${vy.khiChuyen[0]}`);
     assert(vy.khiChuyen.includes(`MT0 làm đầu vào, tự xếp ${fw}`) && vy.khiChuyen.includes('Target 6.5 (khoá)'), JSON.stringify(vy.khiChuyen));
-    assert(vy.khiChuyen.includes('Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”') && vy.canhBao === false, JSON.stringify(vy.khiChuyen));
+    assert(vy.khiChuyen.includes('Head chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”') && vy.canhBao === false, JSON.stringify(vy.khiChuyen));
   });
 
   check('CL-g2 · dongKhiChuyen (bảng thuần): mọi nhánh, dòng rỗng bỏ; phuLopDich', () => {
@@ -348,7 +348,7 @@ export async function runPrClTests(t: YThucTestKit) {
       [{ nguonFt: true, dichFt: true, khoa: 'giu', routeNguon: 'LT1', routeDich: 'LT1', soCase: 1, goiYNhan: 'Trần Ngọc Hà' },
         ['Giữ lộ trình FT LT1', 'MT chưa làm bài chuyển sang lớp mới', '1 Case đang mở đi theo em, người nhận gợi ý: Trần Ngọc Hà'], false],
       [{ nguonFt: true, dichFt: true, routeNguon: 'LT1', routeDich: 'LT2', doiChiNhanh: true },
-        ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)', 'Quản lý chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”'], false],
+        ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)', 'Head chi nhánh mới và GVCN lớp mới được báo “Sắp nhận”'], false],
       [{}, ['Đóng lộ trình cũ và mở lộ trình mới theo lớp chuyển đến', 'Bài chưa làm ở lại lớp cũ', 'Điểm đã có ở lại khoá cũ (xem ở hồ sơ)'], false],
       [{ khoa: 'giu' }, ['Giữ khoá FOU', 'Bài chưa làm chuyển sang lớp mới'], false],
       [{ nguonFt: true, routeNguon: 'LT1', soCase: 3, dongCase: 'normal', veThuong: { mt0: { coDiem: true, kyNang: ['L', 'R'] }, mockHuy: ['MT1', 'MT2'], giuDiem: ['MT0 L', 'MT0 R'] } },

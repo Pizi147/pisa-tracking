@@ -65,7 +65,7 @@ export async function runPrGvTests(t: YThucTestKit) {
     assertThrows(() => phamViHoSoGv(P.subjectTeacher, gv), /chính mình/, 'GVBM xem GVCN');
     /* GVCN 7 ở seed còn dạy một lớp CP nên QL CP xem được — dùng GV tạm chỉ ở MB. */
     const chiMb = dungGv('TMP-GV-MB', 'MB', { lop: 'MB FT 101', den: null });
-    try { assertThrows(() => phamViHoSoGv(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'QL CP xem GV chỉ ở MB'); } finally { don(chiMb); }
+    try { assertThrows(() => phamViHoSoGv(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'Head CP xem GV chỉ ở MB'); } finally { don(chiMb); }
     assertThrows(() => phamViHoSoGv(P.admin, 999999), /Không tìm thấy/, 'id lạ → 404');
     const xoa = dungGv('TMP-GV-XOA', 'MB', null);
     try {
@@ -99,7 +99,7 @@ export async function runPrGvTests(t: YThucTestKit) {
       'dòng không lớp/HV chỉ là việc Vận hành; lọc theo quyền người xem');
     assertThrows(() => viecCuaNguoi(P.subjectTeacher, gv), /chỉ xem được việc của mình/, 'GV gửi nguoi= → 403');
     const chiMb = dungGv('TMP-GV-MB2', 'MB', { lop: 'MB FT 101', den: null });
-    try { assertThrows(() => viecCuaNguoi(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'QL CP xem GV chỉ ở MB → 403'); } finally { don(chiMb); }
+    try { assertThrows(() => viecCuaNguoi(P.cpManager, chiMb), /chi nhánh bạn quản lý/, 'Head CP xem GV chỉ ở MB → 403'); } finally { don(chiMb); }
   });
 
   check('PR-GV (2) · số = số việc như đầu nhóm Công việc (S11: demDongViec trên DÒNG): tổng 4 nhóm của viecCuaGv = demDongViec(/my-work?nguoi=), chính mình = myWork', () => {
@@ -124,7 +124,7 @@ export async function runPrGvTests(t: YThucTestKit) {
     assertThrows(() => viecHoSoGv(P.subjectTeacher, gv), /chính mình/, 'GVBM xem việc của GVCN');
     assert(viecHoSoGv(P.mbManager, gv).viec.length === 4, 'QL MB xem việc → đủ 4 nhóm');
     const chiMb = dungGv('TMP-GV-O', 'MB', { lop: 'MB FT 101', den: null });
-    try { assertThrows(() => vaoO(P.cpManager, chiMb, { cot: 'case-mo' }), /chi nhánh bạn quản lý/, 'QL CP gọi ô của GV chỉ ở MB'); } finally { don(chiMb); }
+    try { assertThrows(() => vaoO(P.cpManager, chiMb, { cot: 'case-mo' }), /chi nhánh bạn quản lý/, 'Head CP gọi ô của GV chỉ ở MB'); } finally { don(chiMb); }
     assertThrows(() => vaoO(P.mbManager, gv, { cot: 'kpi-bai' }), /Cột không hợp lệ/, 'cột KPI đã bỏ → 400');
     assertThrows(() => vaoO(P.mbManager, gv, { cot: 'ket-qua' }), /Cột không hợp lệ/, 'UI-HO-SO-GV: ô "mốc gần nhất của lớp" đã bỏ (P8) → 400');
     assertThrows(() => vaoO(P.mbManager, gv, { cot: 'chua-nhap', lop: 99999999 }), /không nằm trong danh sách lớp/, 'lớp ngoài hồ sơ → 403');
@@ -143,7 +143,7 @@ export async function runPrGvTests(t: YThucTestKit) {
       assert(qt.lop.length === 2 && qt.lop.some((l) => l.id === lopCp), 'Quản trị thấy thêm lớp CP');
       assert(mb.phamVi.chiNhanh?.length === 1 && qt.phamVi.chiNhanh === null, 'phạm vi ghi đúng: QL một chi nhánh, Quản trị mọi chi nhánh');
       assert(vaoO(P.mbManager, gv, { cot: 'lop' }).n === 1 && vaoO(P.admin, gv, { cot: 'lop' }).n === 2, 'ô "Lớp" cùng phạm vi với số');
-      assertThrows(() => vaoO(P.mbManager, gv, { cot: 'chua-nhap', lop: lopCp }), /không nằm trong danh sách lớp/, 'QL MB không mở được ô của lớp CP');
+      assertThrows(() => vaoO(P.mbManager, gv, { cot: 'chua-nhap', lop: lopCp }), /không nằm trong danh sách lớp/, 'Head MB không mở được ô của lớp CP');
     } finally { don(gv); }
   });
 
@@ -230,9 +230,9 @@ export async function runPrGvTests(t: YThucTestKit) {
   const KHUNG = ['ft', 'thuong'] as const;
 
   check('PR-GV (4) · phủ định: GV → 403, QL CP xem cn MB → 403, Quản trị thiếu cn → 400, QL một chi nhánh tự lấy chi nhánh mình', () => {
-    assertThrows(() => bangGvChiNhanh(P.normalCoreTeacher, { cn: mbId }), /Chỉ Quản lý và Quản trị/, 'GVCN → 403');
-    assertThrows(() => bangGvChiNhanh(P.subjectTeacher, { cn: mbId }), /Chỉ Quản lý và Quản trị/, 'GVBM → 403');
-    assertThrows(() => bangGvChiNhanh(P.cpManager, { cn: mbId }), /ngoài phạm vi/, 'QL CP xem MB → 403');
+    assertThrows(() => bangGvChiNhanh(P.normalCoreTeacher, { cn: mbId }), /Chỉ Head và Quản trị/, 'GVCN → 403');
+    assertThrows(() => bangGvChiNhanh(P.subjectTeacher, { cn: mbId }), /Chỉ Head và Quản trị/, 'GVBM → 403');
+    assertThrows(() => bangGvChiNhanh(P.cpManager, { cn: mbId }), /ngoài phạm vi/, 'Head CP xem MB → 403');
     assertThrows(() => bangGvChiNhanh(P.admin, {}), /Chọn một chi nhánh/, 'Quản trị thiếu cn → 400');
     assertThrows(() => bangGvChiNhanh(P.admin, { cn: 999999 }), /Không tìm thấy chi nhánh/, 'cn lạ → 404');
     assert(bangGvChiNhanh(P.mbManager, {}).cn === mbId, 'QL MB không gửi cn → dùng MB');

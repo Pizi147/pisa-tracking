@@ -30,5 +30,5 @@ export const EN_AUDIT_CONG_VIEC = {
   'Theo lượt': 'By round',
   'Xác nhận PA · {kn}': 'Confirm PA · {kn}',
   'Gần nhất': 'Latest',
-  'Chỉ {ai} hoặc Quản lý làm được việc này.': 'Only {ai} or a manager can do this task.',
+  'Chỉ {ai} hoặc Head làm được việc này.': 'Only {ai} or a Head can do this task.',
 } satisfies Record<string, Dich>;

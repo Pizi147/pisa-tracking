@@ -186,7 +186,7 @@ function ViewEm({ g, d, toi, loai, veNhan, onLui, onNhap, onDong }: {
     ? <>{t('người nhập')} <Link className="font-bold text-slate-100 no-underline hover:underline" to={`/giao-vien/${g.gvId}`}>{g.ten}</Link></>
     : tenNhom(g);
   const cuaToi = g.gvId === toi;
-  const chuChan = !d.nhapHo ? t('Chỉ GV chấm, Quản lý hoặc Admin của chi nhánh nhập được bài này.')
+  const chuChan = !d.nhapHo ? t('Chỉ GV chấm, Head hoặc Admin của chi nhánh nhập được bài này.')
     : cuaToi ? null : g.gvId > 0 ? t('Bạn được ghi là người nhập; bài vẫn của {ten}', { ten: g.ten })
     : t('Bạn được ghi là người nhập.');
   return (

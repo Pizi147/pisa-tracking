@@ -82,7 +82,7 @@ const docDiem = (v: unknown, nhan: string, kt: KyThi | null = null): number | nu
 export function datKetQuaThiThat(p: Principal, cycleId: number, input: NhapThiThat) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh nhập được kết quả thi thật.');
+  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head hoặc TVV của chi nhánh nhập được kết quả thi thật.');
   /* P13 KET-PET: lộ trình KET / PET có kết quả thi thật theo điểm Cambridge — chỉ 4 cột + Target lúc nhập; KHÔNG kết luận / Overall band (`outcome*`),
      không bản chụp, không Bước tiếp (luồng FT lọc `route IS NOT NULL`). Overall · Grade · CEFR tính khi hiện (`ketQuaKyThi`). */
   const kt = !c.route ? kyThiCuaChuongTrinh(c.programme_code) : null;
@@ -180,7 +180,7 @@ const truongNk = (r: any) => ({ l: r.thi_that_l ?? null, r: r.thi_that_r ?? null
 export function khoiPhucThiThat(p: Principal, cycleId: number, input: { auditId?: unknown; hoanTac?: unknown }) {
   const c = cycleById(cycleId);
   if (!c) throw notFound('Không tìm thấy lộ trình');
-  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Quản lý hoặc TVV của chi nhánh nhập được kết quả thi thật.');
+  if (!coTheNhapThiThat(p, c)) throw forbidden('Chỉ GVCN lớp cuối, Head hoặc TVV của chi nhánh nhập được kết quả thi thật.');
   const auditId = Number(input.auditId);
   if (!Number.isInteger(auditId) || auditId <= 0) throw badRequest('Bản trước không hợp lệ.');
   const conn = db();
@@ -321,7 +321,7 @@ export function datHanSauThi(p: Principal, cycleId: number, input: { han?: unkno
   const dong = dongSauThi(cycleId);
   const st = trangThaiSauThi(dong, homNay);
   if (st.giaiDoan !== 'cho_buoc_tiep') throw badRequest('Chỉ gia hạn Chọn bước tiếp (đã có kết quả, chưa chọn) — nhập kết quả thi thật không tính hạn.');
-  if (!coTheGiaHanSauThi(p, c, st.giaiDoan)) throw forbidden('Đã có kết quả — chỉ Quản lý hoặc TVV của chi nhánh gia hạn được.');
+  if (!coTheGiaHanSauThi(p, c, st.giaiDoan)) throw forbidden('Đã có kết quả — chỉ Head hoặc TVV của chi nhánh gia hạn được.');
   const vao = input.han === null || input.han === undefined || input.han === '' ? null : docNgayNhap(input.han, homNay, canNamGan(homNay));
   if (vao && !vao.iso) throw badRequest(`Hạn mới: ${vao.loi ?? 'không hợp lệ'}`);   // rà #436: ngày không có thật (31/09) → 400
   const han = vao?.iso ?? null;

@@ -44,7 +44,7 @@ export function PhanTich() {
   const chan = !!params.get('goc') && doc.goc !== goc && (GOC_NHIN as readonly string[]).includes(doc.goc);
   useEffect(() => {
     if (!chan || !session) return;
-    if (doc.goc === 'giao-vien') toast.push('info', t('Tab Giáo viên chỉ QL, Quản trị xem — đang mở Chi nhánh'), { key: 'pt-goc-chan' });
+    if (doc.goc === 'giao-vien') toast.push('info', t('Tab Giáo viên chỉ Head, Quản trị xem — đang mở Chi nhánh'), { key: 'pt-goc-chan' });
     const next = new URLSearchParams(params);
     next.set('goc', goc);
     setParams(next, { replace: true });

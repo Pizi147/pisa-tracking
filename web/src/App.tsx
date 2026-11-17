@@ -422,22 +422,22 @@ export default function App() {
           <Route path="/" element={<OverviewPage />} />
           {/* AN-TUTOR (chủ SP 22/10): trang Tutor ẩn — link cũ về trang đầu. */}
           <Route path="/tutor/*" element={<Navigate to="/" replace />} />
-          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Quản lý, Admin, TVV và CX')} />} />
+          <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Head, Admin, TVV và CX')} />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
           <Route path="/hoc-vien/luu-tru" element={<LuuTruPage />} />
           <Route path="/hoc-vien/:id" element={<StudentDetailPage />} />
           {/* Trang riêng của một Case — máy chủ sinh link này trong thông báo và Việc cần làm, nên phải giữ. */}
           <Route path="/hoc-thuat/case/:id" element={<CaseRoutePage />} />
-          <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <KhongCoTrang ai={t('Giáo viên, Quản lý và Admin')} />} />
+          <Route path="/test/:tab?" element={nav.test ? <TestPage /> : <KhongCoTrang ai={t('Giáo viên, Head và Admin')} />} />
           {/* Một trang lưới cho cả hai loại lớp — máy chủ trả `mode`, trang chọn lưới đúng (đặc tả §3.5, §6). */}
           {/* OV-11i (TE-12): TVV / CX (không `nav.test`) mở thẳng lưới nhập điểm → Tổng quan, như `/test`. */}
           {/* UI-LICH-TUAN: lưới cũ thành chuyển hướng về Lịch tuần / panel Nhập điểm lớp (`duongNhapDiemCu`). */}
-          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Quản lý và Admin')} />} />
-          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Quản lý và Admin')} />} />
+          <Route path="/nhap-diem/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Head và Admin')} />} />
+          <Route path="/bang-diem-thuong/:classId" element={nav.test ? <ChuyenNhapDiemCu /> : <KhongCoTrang ai={t('Giáo viên, Head và Admin')} />} />
           <Route path="/mock-test/:id" element={<MockDetailPage />} />
           <Route path="/luot-test/:id" element={<LuotThuongPage />} />
-          <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <KhongCoTrang ai={t('Giáo viên, Quản lý, Admin và TVV')} />} />
+          <Route path="/cong-viec/:tab?" element={nav.work ? <CongViecPage /> : <KhongCoTrang ai={t('Giáo viên, Head, Admin và TVV')} />} />
           {/*
             MÀN QUẢN TRỊ CHỈ GẮN VÀO KHI NGƯỜI XEM CÓ QUYỀN. Máy chủ vẫn chặn API; không có quyền thì đưa thẳng về
             Tổng quan thay vì để trang tải rồi báo 403.

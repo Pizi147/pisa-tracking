@@ -108,7 +108,7 @@ export async function runPrMoSuaLichTestTests(t: any) {
     const a = em(); const m1 = a.luot(1, W.nay);
     msl.datMoSua(P.admin, true);
     doiNgay();
-    for (const [ten, p] of [['GVCN lớp khác', gvcnLopKhac()], ['GV bộ môn', P.subjectTeacher], ['QL CP', P.cpManager]] as const) {
+    for (const [ten, p] of [['GVCN lớp khác', gvcnLopKhac()], ['GV bộ môn', P.subjectTeacher], ['Head CP', P.cpManager]] as const) {
       const m = (f: () => unknown) => { try { f(); return 'ok'; } catch (e: any) { return `${e?.status}:${e?.message}`; } };
       const r = [m(() => ss.setSkillWeek(p, m1, 'listening', pid(W.c3), {})), m(() => ss.boTuanLuot(p, m1, {})),
         m(() => svc.createAttempt(p, { studentId: a.sid, cycleId: a.cy, attemptNo: 2, periodId: pid(W.c3) })), m(() => sEx.themSEx(p, { studentId: a.sid, tuan: W.c3 }))];
