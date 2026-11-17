@@ -65,7 +65,7 @@ export async function runPrOv13iTests(t: YThucTestKit) {
       const tv = await goi(TVV, `/classes/${ft}/sua-ca-lop`);
       assert(tv.json.coTheDoiTuan === true, 'TVV MB: cột Tuần bắt đầu mở ([XM-C1])');
       const cx = await goi(CX, `/classes/${ft}/sua-ca-lop`);
-      assert(cx.json.coTheDoiTuan === false, 'CX: cột Tuần bắt đầu khoá');
+      assert(cx.json.coTheDoiTuan === true, 'CX (N52): cột Tuần bắt đầu mở như QL');
     });
 
     await checkAsync('OV13i-2 · TVV MB sửa họ tên + dự kiến thi + Target (có lý do) → 200, audit student.update, dòng cycle_target_revisions', async () => {
@@ -91,14 +91,13 @@ export async function runPrOv13iTests(t: YThucTestKit) {
       assert(r1.status === 200 && r1.json.daSua === 1 && soRev(c.cid) === rv + 1, `${r1.status} ${JSON.stringify(r1.json)}`);
     });
 
-    await checkAsync('OV13i-4 · [XM-C1] Tuần bắt đầu cả lớp: CX → 403 ở xem trước và lưu, không ghi; TVV MB xem trước + lưu được (MT dời như QL, nhật ký nguồn lô); TVV CP → 403', async () => {
+    await checkAsync('OV13i-4 · [XM-C1] Tuần bắt đầu cả lớp: (CX N52 như QL); TVV MB xem trước + lưu được (MT dời như QL, nhật ký nguồn lô); TVV CP → 403', async () => {
       const a = em[3];
       const tuanCua = (cid: number) => get('SELECT rp.week_start w FROM learning_cycles c JOIN report_periods rp ON rp.id = c.start_period_id WHERE c.id = ?', cid)?.w as string;
       const tuan0 = tuanCua(a.cid);
       const moi = t.addDays(tuan0, 7);
       for (const url of [`/classes/${ft}/sua-ca-lop/xem-truoc`, `/classes/${ft}/sua-ca-lop`]) {
-        const r = await goi(CX, url, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, fullName: 'OV13i Không Ghi', startWeek: moi }] });
-        assert(r.status === 403 && r.json.error === d.CHI_SUA_THONG_TIN, `CX ${url}: ${r.status} ${JSON.stringify(r.json)}`);
+        /* N52 (chủ SP 18/11): CX sửa Tuần bắt đầu như QL — không gọi CX ở đây (lưu sẽ ghi thật). */
         const c = await goi(TVV_CP, url, { idempotencyKey: khoa(), rows: [{ studentId: a.sid, startWeek: moi }] });
         assert(c.status === 403, `TVV CP ${url}: ${c.status}`);
       }

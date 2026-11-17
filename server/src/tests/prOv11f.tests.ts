@@ -28,8 +28,10 @@ export async function runPrOv11fTests(t: YThucTestKit) {
   const maLoi = (fn: () => unknown) => { try { fn(); } catch (e: any) { return e?.status ?? -1; } return 0; };
   const em = (ten: string) => one('SELECT id FROM students WHERE full_name = ?', ten)?.id as number | undefined;
 
-  check('OV11f-1 · /tong-quan/quan-ly chỉ cho người làm việc của QL: TVV / CX / Admin → 403, QL 200; Điểm đáng chú ý giữ cho CX', () => thu(() => {
-    for (const k of ['consultant', 'cx', 'office_admin']) assert(maLoi(() => tongQuan.tongQuanQuanLy(vai(k), {})) === 403, `${k} vẫn đọc được Cần xử lý của QL`);
+  check('OV11f-1 · /tong-quan/quan-ly chỉ cho người làm việc của QL: TVV / Admin → 403, QL, CX (N52) 200; Điểm đáng chú ý giữ cho CX', () => thu(() => {
+    /* N52 (chủ SP 18/11): CX xem mọi thứ như QL — đọc được Cần xử lý (không là việc của CX). */
+    for (const k of ['consultant', 'office_admin']) assert(maLoi(() => tongQuan.tongQuanQuanLy(vai(k), {})) === 403, `${k} vẫn đọc được Cần xử lý của QL`);
+    assert(maLoi(() => tongQuan.tongQuanQuanLy(vai('cx'), {})) === 0, 'CX (N52) phải đọc được');
     assert(maLoi(() => tongQuan.tongQuanQuanLy(P.mbManager, {})) === 0, 'QL phải đọc được');
     assert(maLoi(() => tongQuan.diemChuY(vai('cx'), { ct: 'ft' })) === 0, 'CX vẫn xem Điểm đáng chú ý');
   }));

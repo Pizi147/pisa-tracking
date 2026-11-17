@@ -262,7 +262,7 @@ export async function runPrHdTests(t: any) {
     assert(/\.o-chon-vai \{[^}]*appearance: none/.test(fs.readFileSync(path.join(ROOT, 'web/src/index.css'), 'utf8')), 'thiếu .o-chon-vai trong index.css');
   });
 
-  await checkAsync('HD-VAI-C · TVV, CX, Head tutor đã chuyển sang `lam`; lối chính khớp mã main (nhóm Công việc TVV, nút đầu Hồ sơ HV); CX không Công việc; gvCu.ts đã xoá; tìm "bao phu huynh", "doi lop"', async () => {
+  await checkAsync('HD-VAI-C · TVV, CX, Head tutor đã chuyển sang `lam`; lối chính khớp mã main (nhóm Công việc TVV, nút đầu Hồ sơ HV); CX (N52) Công việc chỉ xem; gvCu.ts đã xoá; tìm "bao phu huynh", "doi lop"', async () => {
     const { tvv, cx, ht } = hd.HUONG_DAN;
     for (const [vai, h] of [['tvv', tvv], ['cx', cx], ['ht', ht]] as [string, any][]) assert(h.lam?.length && h.viec.length === 0 && h.tuan?.length, `${vai} chưa chuyển sang HD-V2`);
     assert(!fs.existsSync(path.join(ROOT, 'shared/huongDan/gvCu.ts')), 'gvCu.ts còn');
@@ -285,8 +285,8 @@ export async function runPrHdTests(t: any) {
       if (dau === 'Công việc' && cuoi) assert(nhom.includes(cuoi), `${vai} ${v.id}: nhóm Công việc "${cuoi}" không có ở NHOM_CV_TVV_LABEL`);
       if (dau === 'Hồ sơ HV' && cuoi && !cuoi.includes('&')) assert(nut.includes(cuoi) || cuoi === 'Ý thức & Phối hợp', `${vai} ${v.id}: nút "${cuoi}" không có ở NHAN_VIEC_QUAN_LY`);
     }
-    /* CX không có Công việc: không màn, không lối chính nào ở đó; chọn bước tiếp là việc của QL / TVV. */
-    assert(!cx.man.some((m: any) => m.id === 'cong-viec') && cx.lam.every((v: any) => v.loiChinh.man !== 'cong-viec' && !(v.loiTat ?? []).includes('cong-viec')), 'CX có Công việc');
+    /* N52 (chủ SP 18/11): CX có màn Công việc (xem / làm thay) nhưng không việc nào là của CX — không lối chính nào ở đó; chọn bước tiếp là việc của QL / TVV. */
+    assert(cx.man.some((m: any) => m.id === 'cong-viec') && cx.lam.every((v: any) => v.loiChinh.man !== 'cong-viec' && !(v.loiTat ?? []).includes('cong-viec')), 'CX: màn Công việc chỉ xem, không lối chính');
     assert(!cx.lam.some((v: any) => v.id === 'buoc-tiep') && cx.vaiKhac.some((v: any) => v.ten === 'Chọn bước tiếp sau thi'), 'CX không chọn Bước tiếp');
     /* Head tutor chỉ Tổng quan, Hồ sơ cá nhân, Hướng dẫn (AN-TUTOR). */
     assert(ht.man.map((m: any) => m.id).join() === 'tong-quan,ho-so-ca-nhan,huong-dan', `HT màn: ${ht.man.map((m: any) => m.id)}`);

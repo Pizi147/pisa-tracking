@@ -904,10 +904,24 @@ export function permissionSummary(p: Principal) {
 }
 
 /**
- * BƯỚC TIẾP SAU THI THẬT (OV-12a, chủ SP 14/10): Quản lý (`cycle.edit`) HOẶC TVV của chi nhánh em (`student.edit_more` của vai TVV — CX không).
+ * BƯỚC TIẾP SAU THI THẬT (OV-12a, chủ SP 14/10): Quản lý (`cycle.edit`) HOẶC phía TVV của chi nhánh em (`student.edit_more` của vai TVV / CX — N52).
  * Một hàm cho `loTrinh/buocTiep.ts` (chọn / bỏ / việc / nút) và danh sách lớp của panel Học lại mở từ Bước tiếp.
  */
 export function coQuyenBuocTiep(p: Principal, studentId: number): boolean {
   return can(p, PERMISSIONS.CYCLE_EDIT, { studentId })
-    || can({ ...p, grants: p.grants.filter((g) => g.roleKey === 'consultant') }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
+    || can({ ...p, grants: p.grants.filter(grantPhiaTvv) }, PERMISSIONS.STUDENT_EDIT_MORE, { studentId });
 }
+
+/**
+ * N52 (chủ SP 18/11): CX = người quản lý TVV — mọi QUYỀN phía TVV (Bước tiếp, đổi môn / lộ trình / Tuần bắt đầu, KCK, Báo PH, Hỏi tình hình…) như vai TVV,
+ * trong phạm vi grant CX. Chỉ dùng cho quyền làm; người GIỮ việc TVV vẫn chỉ vai `consultant` (`worklist/viecTvv.ts`, HV của tôi).
+ */
+export const VAI_PHIA_TVV: ReadonlySet<string> = new Set(['consultant', 'cx']);
+export const grantPhiaTvv = (g: Pick<Grant, 'roleKey'>): boolean => VAI_PHIA_TVV.has(g.roleKey);
+/**
+ * N52: CX không là chủ việc và không có quyền học thuật. `boVaiCx` = principal bỏ grant CX — dùng ở (1) mọi nơi tính "việc của người xem" (Công việc, hồ sơ HV)
+ * và (2) nơi `class.edit` mang nghĩa "QL học thuật của lớp" (đổi chủ Case, Góp ý tuần, Đánh giá đầu ra, Xét lại lộ trình): CX có `class.edit` chỉ để tạo / sửa lớp,
+ * chuyển lớp. Vai khác của cùng tài khoản giữ nguyên.
+ */
+export const coVaiCx = (p: Pick<Principal, 'grants'>): boolean => p.grants.some((g) => g.roleKey === 'cx');
+export const boVaiCx = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'cx'), grants: p.grants.filter((g) => g.roleKey !== 'cx') });

@@ -115,12 +115,12 @@ export async function runPrOv13mTests(t: YThucTestKit) {
     });
   });
 
-  await checkAsync('M13-2 · quyền: QL / TVV chọn được (200); GVCN chỉ đọc (GET coTheChon=false), GVCN / GV khác / CX chọn → 403', async () => {
+  await checkAsync('M13-2 · quyền: QL / TVV / CX (N52) chọn được (200); GVCN chỉ đọc (GET coTheChon=false), GVCN / GV khác chọn → 403', async () => {
     await voiMayChu(TODAY, async (goi) => {
       const x = await coKetQua(goi);
       const doc = await json(await goi(x.gvcn, `/cycles/${x.cy}/buoc-tiep`));
       assert(doc.coTheChon === false && doc.daXong.startsWith('Đã xong'), JSON.stringify(doc));
-      for (const u of [x.gvcn, GV_KHAC, CX]) {
+      for (const u of [x.gvcn, GV_KHAC]) {   // N52 (chủ SP 18/11): CX chọn được như QL (`cycle.edit`)
         const r = await goi(u, `/cycles/${x.cy}/buoc-tiep`, post({ chon: 'ket_thuc' }));
         assert(r.status === 403, `người ${u}: ${r.status}`);
       }

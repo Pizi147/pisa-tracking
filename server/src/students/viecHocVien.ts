@@ -1,6 +1,6 @@
 import { db } from '../db.ts';
 import { CHU_DA_XONG, CHU_THEM_PA, HAN_GAN_NGAY, PERMISSIONS, hanBanGiao, kyGhiKetQua, nhanLoaiXuLy, tenMon, type DaiHocVien, nhanBaiThuong } from '../../../shared/domain/index.ts';
-import { can, isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { boVaiCx, can, coVaiCx, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addDays, diffDays } from '../util.ts';
 import type { EmYThuc } from '../yThuc/trangThai.ts';
@@ -283,5 +283,12 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   });
   /* Quá hạn → hạn sớm → không hạn (T72). */
   ra.sort((a, b) => (a.han ? 0 : 1) - (b.han ? 0 : 1) || (a.han ?? '').localeCompare(b.han ?? ''));
-  return { cuaBan: [...bt, ...ra.filter((x) => x.cuaBan)], nguoiKhac: ra.filter((x) => !x.cuaBan) };
+  const kq = { cuaBan: [...bt, ...ra.filter((x) => x.cuaBan)], nguoiKhac: ra.filter((x) => !x.cuaBan) };
+  if (!coVaiCx(p)) return kq;
+  /* N52: CX không là chủ việc — "của bạn" chỉ khi vai KHÁC của tài khoản giữ việc; còn lại sang "người khác" (CX làm thay được, không hạn của CX). */
+  const chu = boVaiCx(p);
+  const that = new Set(chu.grants.length ? viecCuaHocVien(chu, sid, board, n).cuaBan.map((x) => x.key) : []);
+  const lamThay = kq.cuaBan.filter((x) => !that.has(x.key))
+    .map((x) => ({ ...x, cuaBan: false, nguoi: x.nguoi.id === p.userId ? { id: null, ten: 'Chưa có người phụ trách', vai: null } : x.nguoi }));
+  return { cuaBan: kq.cuaBan.filter((x) => that.has(x.key)), nguoiKhac: [...lamThay, ...kq.nguoiKhac] };
 }

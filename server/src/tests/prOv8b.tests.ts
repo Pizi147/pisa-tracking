@@ -63,7 +63,9 @@ export async function runPrOv8bTests(t: YThucTestKit) {
     assert(can(v.TVV, 'student.edit_more', { studentId: em.id }) && can(v.CX, 'student.edit_more', { studentId: em.id }), 'TVV / CX chi nhánh em phải có');
     assert(!can(v.TVVKhac, 'student.edit_more', { studentId: em.id }), 'TVV chi nhánh khác không được có');
     for (const q of ['student.edit', 'cycle.edit', 'score.edit', 'sos.edit', 'sos.report', 'plan.week', 'request.approve', 'discipline.manage']) {
-      assert(!can(v.TVV, q, { studentId: em.id }) && !can(v.CX, q, { studentId: em.id }), `TVV / CX không được có ${q}`);
+      /* N52 (chủ SP 18/11): CX sửa phía TVV + Ý thức — không học thuật. */
+      const cxCo = q === 'discipline.manage';
+      assert(!can(v.TVV, q, { studentId: em.id }) && can(v.CX, q, { studentId: em.id }) === cxCo, `TVV không được có / CX ${cxCo ? 'phải' : 'không được'} có ${q}`);
     }
   });
 
@@ -86,19 +88,20 @@ export async function runPrOv8bTests(t: YThucTestKit) {
     });
   });
 
-  check('OV8b-TUAN · [XM-C1] Tuần bắt đầu: TVV chi nhánh em đổi được (MT chưa thi dời như QL, MT có điểm giữ, nhật ký) · TVV chi nhánh khác / CX / Admin 403 · ô hiện đúng vai · Bổ sung hồ sơ xong', () => {
+  check('OV8b-TUAN · [XM-C1] Tuần bắt đầu: TVV chi nhánh em, CX (N52) đổi được (MT chưa thi dời như QL, MT có điểm giữ, nhật ký) · TVV chi nhánh khác / Admin 403 · ô hiện đúng vai · Bổ sung hồ sơ xong', () => {
     thu(() => {
       const v = V();
       const c0 = cycles.cycleById(em.cycleId);
       const tuan0 = one('SELECT week_start FROM report_periods WHERE id = ?', c0.start_period_id)?.week_start as string;
       const moi = t.addDays(tuan0, 7);
-      for (const [ten, p] of [['TVV khác', v.TVVKhac], ['CX', v.CX], ['Admin', v.Admin]] as const) {
+      /* N52 (chủ SP 18/11): CX sửa Tuần bắt đầu như QL — không còn trong danh sách 403. */
+      for (const [ten, p] of [['TVV khác', v.TVVKhac], ['Admin', v.Admin]] as const) {
         assert(loi(() => cycles.updateCycle(p, em.cycleId, { startWeek: moi }))?.status === 403, `${ten} sửa tuần bắt đầu phải 403`);
         assert(loi(() => cycles.updateCycle(p, em.cycleId, { startPeriodId: 1 }))?.status === 403, `${ten} gửi startPeriodId phải 403`);
       }
       /* Ô ở Sửa thông tin theo cùng luật máy chủ. */
       const ve = (p: any) => (xoaNho(), profile.studentProfile(p, em.id)?.viewer?.doiTuanBatDau);
-      assert(ve(v.TVV) === true && ve(v.CX) === false && ve(v.Admin) === false && ve(P.cpManager) === true, `cờ doiTuanBatDau: TVV ${ve(v.TVV)} CX ${ve(v.CX)} Admin ${ve(v.Admin)} QL ${ve(P.cpManager)}`);
+      assert(ve(v.TVV) === true && ve(v.CX) === true && ve(v.Admin) === false && ve(P.cpManager) === true, `cờ doiTuanBatDau: TVV ${ve(v.TVV)} CX ${ve(v.CX)} Admin ${ve(v.Admin)} QL ${ve(P.cpManager)}`);
       /* Kiểm dữ liệu nhập như QL (cùng `docTuanBatDau`). */
       assert(loi(() => cycles.updateCycle(v.TVV, em.cycleId, { startWeek: 'abc' }))?.status === 400, 'tuần sai dạng phải 400');
       /* Lịch: lượt MT tự xếp chưa có điểm dời theo, lượt có điểm giữ (cùng `apLichMacDinh` của QL). */
@@ -265,7 +268,7 @@ export async function runPrOv8bTests(t: YThucTestKit) {
   };
 
   try {
-    await checkAsync('OV8b-10 · TVV / CX gọi thẳng API học thuật → 403 từng đường (điểm, Case / PA, Ý thức, Lộ trình tiếp theo, KQĐR, lịch Test, Học lại, Lưu trữ, Chuyển lớp, bước tiếp sau thi)', async () => {
+    await checkAsync('OV8b-10 · TVV / CX (N52: trừ Ý thức, Tuần bắt đầu, chuyển lớp, bước tiếp) gọi thẳng API học thuật → 403 từng đường (điểm, Case / PA, Ý thức, Lộ trình tiếp theo, KQĐR, lịch Test, Học lại, Lưu trữ, Chuyển lớp, bước tiếp sau thi)', async () => {
       const tv = await vao(idTvv); const cx = await vao(idCx);
       const duong: [string, string, string, unknown?][] = [
         ['nhập điểm', 'PUT', `/attempts/${luot}/scores/listening`, { rawScore: 30, rawTotal: 40 }],
@@ -292,6 +295,8 @@ export async function runPrOv8bTests(t: YThucTestKit) {
         for (const [viec, m, url, body] of duong) {
           if (ten === 'TVV' && url.endsWith('/buoc-tiep')) continue;
           if (ten === 'TVV' && m === 'PATCH' && url === `/cycles/${em.cycleId}`) continue;   // [XM-C1]: TVV đổi được Tuần bắt đầu (OV8b-TUAN)
+          /* N52 (chủ SP 18/11): CX sửa phía TVV + Ý thức + chuyển lớp (`class.edit`) — không gọi các đường đó (đổi dữ liệu thật); học thuật vẫn 403. */
+          if (ten === 'CX' && ['ghi Ý thức', 'xử lý Ý thức', 'tuần bắt đầu / lộ trình', 'Chuyển lớp', 'chọn bước tiếp sau thi', 'bỏ chọn bước tiếp'].includes(viec)) continue;
           const r = await goi(m, url, ck, body);
           if (r.status !== 403) sai.push(`${ten} ${viec}: ${r.status} ${r.json?.error ?? ''}`);
         }

@@ -706,7 +706,7 @@ export function hoanTacQuayLai(p: Principal, studentId: number) {
 }
 
 /* OV-13q: `coQuyenBuocTiep` chuyển sang permissions.ts (thiThat.ts dùng — tránh vòng import thiThat → students → buocTiep → thiThat). */
-import { coQuyenBuocTiep } from '../permissions.ts';
+import { coQuyenBuocTiep, grantPhiaTvv } from '../permissions.ts';
 export { coQuyenBuocTiep };
 
 /** GET /students/:id/hoc-lai/lop-dich — lớp cũ + lộ trình sẽ chạy tiếp (hay mở mới) + lớp ĐANG hoạt động để chọn "Sang lớp mới" (panel Học lại). Quản lý / Quản trị của học viên;
@@ -729,7 +729,7 @@ export function lopChoHocLai(p: Principal, studentId: number) {
   /* OV-12a: TVV (không `cycle.edit`) chỉ thấy lớp chi nhánh của vai TVV — cùng phạm vi `chonBuocTiep` cho Học tiếp. */
   const ds = danhSachLopDich(enr?.class_id ?? -1, true);
   const cnTvv = can(p, PERMISSIONS.CYCLE_EDIT, { studentId }) ? null
-    : new Set(p.grants.filter((g) => g.roleKey === 'consultant').map((g) => g.branchId));
+    : new Set(p.grants.filter(grantPhiaTvv).map((g) => g.branchId));   // N52: CX như TVV
   const dsLop = cnTvv ? { ...ds, lop: ds.lop.filter((l) => cnTvv.has(null) || cnTvv.has(l.chiNhanhId)) } : ds;
   return {
     conHoc,

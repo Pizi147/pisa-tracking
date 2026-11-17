@@ -3,7 +3,7 @@ import { nhoTheoBang } from '../platform/nguCanhRequest.ts';
 import { datLaiHanKhiChuyenLop } from './hanChuyenLop.ts';
 import { demoToday } from '../demoConfig.ts';
 import { CASE_CATEGORY_SKILL, MON_GOP, PERMISSIONS, caseThuocO, caseTopicLabel, categoryOf, laCapBanGiao, tenMonNgan, type DoiO } from '../../../shared/domain/index.ts';
-import { can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { boVaiCx, can, isCoreTeacherOf, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { CASE_SAU_THI_SQL, HV_DANG_HOC_SQL } from '../students/tamDung.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { conflict, loi, nowIso } from '../util.ts';
@@ -211,7 +211,7 @@ function ungVienCua(c: CaseDoiChu) {
 /** Quyền (D17): QL / Quản trị của lớp (`class.assign` | `class.edit`) hoặc GVCN lớp hiện tại của em; em không có lớp → `case.approve`. */
 function duocDoi(p: Principal, c: CaseDoiChu) {
   return c.class_id
-    ? can(p, PERMISSIONS.CLASS_ASSIGN, { classId: c.class_id }) || can(p, PERMISSIONS.CLASS_EDIT, { classId: c.class_id }) || isCoreTeacherOf(p, c.class_id)
+    ? can(p, PERMISSIONS.CLASS_ASSIGN, { classId: c.class_id }) || can(boVaiCx(p), PERMISSIONS.CLASS_EDIT, { classId: c.class_id }) || isCoreTeacherOf(p, c.class_id)   // N52: CX không đổi chủ Case
     : can(p, PERMISSIONS.CASE_APPROVE, { studentId: c.student_id });
 }
 

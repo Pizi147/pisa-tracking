@@ -3,7 +3,7 @@ import {
   NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy, laDongLs, soTenVi,
   type NhomEm, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
-import { can, type Principal } from '../permissions.ts';
+import { VAI_PHIA_TVV, can, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { notFound } from '../util.ts';
 import { requireViewClass } from './access.ts';
@@ -309,7 +309,7 @@ export function bangYThucLop(p: Principal, classId: number, homNay = demoToday()
     catLs: dong.length > DONG_THOI_GIAN_TOI_DA,
     tinhHinh,
     coTheBao: can(p, PERMISSIONS.VIOLATION_RECORD, { classId }),
-    coTheHoi: p.roleKeys.includes('consultant') || coTheDuyet,
+    coTheHoi: p.roleKeys.some((k) => VAI_PHIA_TVV.has(k)) || coTheDuyet,   // N52: CX hỏi tình hình như TVV
   };
 }
 

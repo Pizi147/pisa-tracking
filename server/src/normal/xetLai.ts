@@ -3,7 +3,7 @@ import {
   NORMAL_LADDER, PERMISSIONS, chuTyLeXetLai, ghepMucTieu, goiYCuoiKhoa, hanXetLai, kyHieuLop, lyDoXetLai, tenBacKe, tenMonNgan, tuanHopLe, type LyDoXetLai, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { HttpError, badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso, todayInBusinessTz, loi } from '../util.ts';
-import { isCoreTeacherOf, type Principal } from '../permissions.ts';
+import { boVaiCx, isCoreTeacherOf, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
 import { HV_DANG_HOC_SQL } from '../students/tamDung.ts';
@@ -89,7 +89,7 @@ export const coXetLaiMiniTest = (studentId: number, miniTestId: number, today = 
 
 /** Chi nhánh QL / Quản trị được quyết (grant `class.edit`): null = mọi chi nhánh. */
 export function phamViQuyet(p: Principal): number[] | null {
-  const g = p.grants.filter((x) => x.permissions.has(PERMISSIONS.CLASS_EDIT));
+  const g = boVaiCx(p).grants.filter((x) => x.permissions.has(PERMISSIONS.CLASS_EDIT));   // N52: CX không quyết Xét lại lộ trình (học thuật)
   return g.some((x) => x.branchId === null) ? null : [...new Set(g.map((x) => x.branchId as number))];
 }
 const chiNhanhLop = (classId: number) => (db().prepare('SELECT branch_id FROM classes WHERE id = ?').get(classId) as any)?.branch_id as number | undefined;
