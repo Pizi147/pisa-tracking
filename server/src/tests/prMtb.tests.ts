@@ -657,7 +657,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   check('MTb (T10) · quét nguồn: hộp nhập điểm (OV-4b, một hộp thay 3 hộp tiêu chí) có ô "Band"; rawPatchFrom / criteriaPatchFrom ở shared', () => {
     const se = nguon('web/src/modules/fasttrack/ScoreEntry.tsx');
-    const hop = nguon('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    const hop = nguon('web/src/modules/fasttrack/HopNhapDiemHop.tsx');
     assert(/>Band<\/span>/.test(hop) && /inputMode="decimal"/.test(hop) && /bandText/.test(hop) && /criteriaPatchFrom\(vals, cell, bandText\)/.test(hop), 'hộp nhập điểm thiếu ô Band');
     assert(/band\?: number \| null/.test(se) && !/export function rawPatchFrom/.test(se), 'SavePatch.band / chuyển rawPatchFrom');
     const cd = nguon('shared/domain/chamDiem.ts');
@@ -689,7 +689,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
 
   /* Rà code #MTb: ô L/R chỉ có band — mở "Sửa điểm" rồi Lưu không được đổi thành xoá điểm (giá trị đầu giữ band, như RawScoreInput). */
   check('MTb (T10) · hộp nhập điểm L/R: giá trị đầu của ô band-only là band (6.5), Lưu giữ nguyên band — không thành rawScore null', () => {
-    const ed = nguon('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    const ed = nguon('web/src/modules/fasttrack/HopNhapDiemHop.tsx');
     assert(/cell\.rawScore !== null \? String\(cell\.rawScore\) : cell\.band !== null \? fmtBand\(cell\.band\)/.test(ed), 'giá trị đầu thiếu band');
     const cell: any = { skill: 'listening', rawScore: null, band: 6.5, criteria: [null, null, null, null], noShow: false };
     assert(JSON.stringify(d.rawPatchFrom('6.5', cell)) === JSON.stringify({ band: 6.5 }), 'đọc lại "6.5" phải là band 6.5');

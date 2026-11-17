@@ -590,7 +590,7 @@ export async function runPrDlTests(t: YThucTestKit) {
     /* NHAP-DIEM-b: ô lớp thường có điểm sửa ngay tại ô (bỏ hộp lý do `SuaDiemCoLyDo`) — chữ đang gõ là bản nháp của ô (`dirty`), như ô trống. */
     assert(!se.includes('SuaDiemCoLyDo') && !se.includes('setSua('), 'ô lớp thường có điểm không còn hộp lý do riêng');
     /* OV-4b: ô MT sửa trong hộp nhập điểm — hộp có chữ đã gõ = ô chưa lưu (cùng BaoDangLuuContext). */
-    assert(/useBaoHopLyDoMo\(busy, daGo\)/.test(doc('web/src/modules/fasttrack/HopNhapDiem.tsx')), 'hộp nhập điểm phải báo ô chưa lưu');
+    assert(/useBaoHopLyDoMo\(busy, daGo\)/.test(doc('web/src/modules/fasttrack/HopNhapDiemHop.tsx')), 'hộp nhập điểm phải báo ô chưa lưu');
     const ss = doc('web/src/ui/SaveState.tsx');
     const hook = ss.slice(ss.indexOf('export function useBaoHopLyDoMo'), ss.indexOf('export function useTrangThaiLuuO'));
     assert(/useContext\(BaoDangLuuContext\)/.test(hook) && !/BaoLuuContext\b|useBaoLuu/.test(hook), 'chỉ báo qua BaoDangLuuContext');

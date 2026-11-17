@@ -501,7 +501,7 @@ export async function runPrHk2Tests(t: YThucTestKit) {
 
   /* OV-4b: hộp nhập điểm thay CriteriaModal — cùng luật không mất chữ đang gõ. */
   check('C30 · Hộp nhập điểm (thay CriteriaModal): đã gõ thì Esc hỏi trước khi bỏ; bấm ra ngoài giữ hộp', () => {
-    const s = doc('web/src/modules/fasttrack/HopNhapDiem.tsx');
+    const s = doc('web/src/modules/fasttrack/HopNhapDiemHop.tsx');
     /* OV-11a (CA3-8): hỏi ngay chân hộp (`KhungHop`: câu `cauBo` + Bỏ · Gõ tiếp), không còn hộp trình duyệt. */
     assert(!/window\.confirm/.test(s) && /else if \(moi\.current\.daGo\) setHoi\(true\);/.test(s) && /cauBo=\{t\('Bỏ điểm \{skillLabel\} · \{tenHv\}\?', \{ skillLabel: skillLabel\(cell\.skill\), tenHv: ctx\.tenHv \}\)\}/.test(s),
       'Esc khi đã gõ phải hỏi ở chân hộp');

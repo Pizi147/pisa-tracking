@@ -64,7 +64,7 @@ export async function runPrDichTests(t: any) {
     }
     const noi: [string, string[]][] = [
       ['web/src/modules/fasttrack/MockDetailPage.tsx', ['assessment_scores.comment', 'assessment_scores.nhan_xet_phu_trach']],
-      ['web/src/modules/fasttrack/HopNhapDiem.tsx', ['assessment_scores.nhan_xet_phu_trach']],
+      ['web/src/modules/fasttrack/HopNhapDiemHop.tsx', ['assessment_scores.nhan_xet_phu_trach']],
       ['web/src/modules/cham/LuoiThuong.tsx', ['assessment_scores.comment']],
       ['web/src/modules/cham/MotKyNang.tsx', ['assessment_scores.comment']],
       ['web/src/modules/cases/CasePanel.tsx', ['sos_cases.summary', 'sos_cases.note', 'case_interventions.description', 'case_followups.note', 'case_followups.remaining_issue', 'case_followups.decision_note']],
