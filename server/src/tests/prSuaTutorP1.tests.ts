@@ -165,6 +165,27 @@ export async function runPrSuaTutorP1Tests(t: any) {
     assert(e3?.status === 400, `sửa thành chữ ngắn mới: ${e3?.status}`);
   }));
 
+  check('S4-LUAT (a) · Sửa lần ghi cũ có ghi chú GHÉP ngắn ("Tốt") giữ nguyên chữ: sửa chữ + đổi kết quả đều được; chữ ngắn MỚI vẫn 400', () => thu(() => {
+    const { ivId } = pa();
+    ghiKq(ivId);
+    const f = one('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId).id as number;
+    run(`UPDATE case_followups SET note = 'Tốt' WHERE id = ?`, f);
+    run(`UPDATE case_followup_buoi SET nhan_xet = 'Tốt' WHERE followup_id = ?`, f);
+    xoaNho();
+    const than = (x: Record<string, unknown>) => ({ decision: 'keep', outcome: 'partial', note: 'Tốt', observedOn: TODAY, soBuoi: 2, buoiDuKien: 3,
+      buoi: [{ tutor: 'Cô Hà gõ tay', nhanXet: 'Tốt', soBuoi: 1 }, { tutor: 'Cô Hà gõ tay', nhanXet: 'Tốt', soBuoi: 1 }], ...x });
+    const e1 = loiCua(() => cases.suaKetQua(GV, f, than({})));
+    assert(!e1, `sửa chữ, giữ "Tốt": ${e1?.status} ${e1?.message}`);
+    const f2 = one('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId).id as number;
+    const e2 = loiCua(() => cases.suaKetQua(GV, f2, than({ outcome: 'improved', buoi: [{ tutor: 'Cô Hà gõ tay', nhanXet: 'Tốt', soBuoi: 2 }] })));
+    assert(!e2, `đổi kết quả, giữ "Tốt": ${e2?.status} ${e2?.message}`);
+    const f3 = one('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId).id as number;
+    const e3 = loiCua(() => cases.suaKetQua(GV, f3, than({ outcome: 'improved', note: 'Ổn', buoi: [{ tutor: 'Cô Hà gõ tay', nhanXet: 'Tốt', soBuoi: 2 }] })));
+    assert(e3?.status === 400, `chữ ngắn mới: ${e3?.status}`);
+    const e4 = loiCua(() => cases.suaKetQua(GV, f3, than({ outcome: 'partial', note: 'Ổn', buoi: [{ tutor: 'Cô Hà gõ tay', nhanXet: 'Tốt', soBuoi: 2 }] })));
+    assert(e4?.status === 400, `đổi kết quả + chữ ngắn mới: ${e4?.status}`);
+  }));
+
   check('S1 P2-15 · điền sẵn tutor kỳ trước dùng cùng `laNguoiHopLe`: GV kỳ trước mất vai GV → lưới + ô chọn không điền sẵn', () => thu(() => {
     const { ivId } = pa();
     ghiKq(ivId, { buoi: [{ gvId: GV2, tutor: 'x', nhanXet: 'Chữa Section 3 điền bảng, đúng 9/13', soBuoi: 2 }] });

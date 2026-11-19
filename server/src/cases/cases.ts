@@ -4034,6 +4034,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
   buoiTruoc?: DongBuoiCu[];
   /** TU2-1 (rà #1862): `suaKetQua` đường đảo — Người dạy kỳ này của lần ghi cũ; thân không có `nguoiDay` (web mới: PA Tutor không còn ô) thì giữ, không xoá. */
   nguoiDayCu?: { userId: number | null; name: string | null };
+  /** S4-LUAT (a): `suaKetQua` đường đảo — ghi chú của lần ghi cũ; gửi lại đúng chữ đó thì không chặn ≥ 8 ký tự (lần ghi trước luật). */
+  noteCu?: string;
 } = {}): ReturnType<typeof caseDetail> | null {
   const conn = db();
   const iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(interventionId) as any;
@@ -4071,7 +4073,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * đâu, còn kẹt chỗ nào, tuần tới làm gì. Đó mới là thứ để so giữa hai chu kỳ.
    */
   const note = (input.note ?? '').trim();
-  if (!tutorKhongBuoi(iv, input.soBuoi, !!opts.giuCu) && note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
+  if (note !== opts.noteCu && !tutorKhongBuoi(iv, input.soBuoi, !!opts.giuCu) && note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   /* N35: nhận xét kết quả PA ≤ 200 — trừ PA Tutor (ghi chú ghép từ nhận xét từng buổi; Tutor đang hoãn). */
   if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });
 
@@ -4689,7 +4691,7 @@ export function suaKetQua(p: Principal, followupId: number, input: VaoKetQua) {
     daoKetQua(conn, p, x, khoaTep);
     const truocMax = (conn.prepare('SELECT COALESCE(MAX(id), 0) m FROM case_followups').get() as any).m as number;
     updateResult(p, iv.id, vao, { khongTraCase: true, giuYeuCau: !!x.the, giuCu: laLanGhiCu(chinh, vao), buoiTruoc,
-      nguoiDayCu: { userId: chinh.phu_trach_user_id ?? null, name: chinh.phu_trach_ten ?? null } });   // OV-12h: lần ghi cũ không số buổi
+      nguoiDayCu: { userId: chinh.phu_trach_user_id ?? null, name: chinh.phu_trach_ten ?? null }, noteCu: String(chinh.note ?? '').trim() });   // OV-12h: lần ghi cũ không số buổi
     const moi = conn.prepare('SELECT * FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1').get(iv.id) as any;
     /* Quản lý sửa hộ: lần ghi vẫn là của người đã ghi (họ còn sửa tiếp được); ai sửa nằm ở nhật ký. */
     if (chinh.observer_user_id !== p.userId) {
@@ -4834,7 +4836,8 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   kiemQuyenPa(p, iv, x.c);   // cùng quyền như lúc ghi (đường đảo kiểm qua `updateResult`)
   const cu = laLanGhiCu(chinh, vao);   // OV-12h: lần ghi cũ (không số buổi) giữ như trước
   const note = (vao.note ?? '').trim();
-  if (!tutorKhongBuoi(iv, vao.soBuoi, cu) && note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
+  /* S4-LUAT (a): ghi chú (Tutor: ghép từ Nội dung các dòng) giữ nguyên chữ lần ghi cũ → không chặn ≥ 8 (lần ghi trước luật), như `kiemBuoiTutor`. */
+  if (note !== String(chinh.note ?? '').trim() && !tutorKhongBuoi(iv, vao.soBuoi, cu) && note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa, chinh.note)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });   // N35
   const decisionNote = String(vao.decisionNote ?? '').trim() || null;
   if ((chinh.next_step === 'adjust' || chinh.next_step === 'propose') && !decisionNote) throw badRequest('Điều chỉnh hoặc thay phương án thì phải ghi Lý do.');

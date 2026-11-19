@@ -1,7 +1,7 @@
 /**
  * Hướng dẫn Head tutor — HD-V2 (c). TU2-6 (chủ SP 19/11, TU12–TU14): trang Tutor mở lại — Tổng quan, Tutor, Hồ sơ cá nhân, Hướng dẫn (không Học viên & Lớp, Test, Công việc).
  * LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): dạy lớp thì Quản trị cấp thêm vai Giáo viên (khi đó trang đầu + Hướng dẫn GV, N43).
- * N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor → trang đầu mở thẳng Tutor. `lam` là MỘT nguồn (xem `ql.ts`).
+ * N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor → trang đầu mở thẳng Tutor, menu không có Tổng quan (`nav.ts`). `lam` là MỘT nguồn (xem `ql.ts`).
  */
 import { mucGv } from './tvv.ts';
 import type { HuongDan, ManHd, ViecHd } from './kieu.ts';
@@ -41,7 +41,7 @@ export const VIEC_TUTOR: Record<'xem' | 'nhanXet' | 'danhBa' | 'xuat', ViecHd> =
 /** Màn Tutor của một vai (Head tutor nhận xét; Head sửa danh bạ chi nhánh mình; CX chỉ xem). */
 export const manTutor = (vai: 'ht' | 'ql' | 'cx'): ManHd => ({
   id: 'tutor', ten: 'Tutor', duong: [TUTOR],
-  dangO: { cau: vai === 'cx' ? 'Người dạy tutor trong phạm vi của bạn — chỉ xem, xuất số buổi.' : 'Người dạy tutor: số buổi, tỉ lệ, nhận xét; danh bạ tutor.', truoc: { chu: 'Tổng quan', duong: '/' } },
+  dangO: { cau: vai === 'cx' ? 'Người dạy tutor trong phạm vi của bạn — chỉ xem, xuất số buổi.' : 'Người dạy tutor: số buổi, tỉ lệ, nhận xét; danh bạ tutor.', ...(vai === 'ht' ? {} : { truoc: { chu: 'Tổng quan', duong: '/' } }) },
   muc: [
     { id: `${vai}-tutor-bang`, ten: 'Bảng Người dạy', buoc: ['Ba cột <b>Chuẩn bị</b> · <b>Tài liệu</b> · <b>Feedback GV</b> ghi số lần có trên số lần có trả lời; số cam bấm được — panel lọc sẵn lần ghi Không.',
       vai === 'ht' ? 'Nhận xét và kết luận: Head tutor, Quản trị.' : vai === 'ql' ? 'Head thêm, sửa tutor chi nhánh mình; nhận xét chỉ đọc.' : 'CX chỉ xem; không sửa danh bạ, không nhận xét.'],
@@ -55,7 +55,7 @@ export const HD_HT: HuongDan = {
     {
       id: 'xem-tong-quan', ten: 'Xem trang đầu', nhom: 'khac',
       loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/' },
-      buoc: ['Đăng nhập hoặc bấm <b>Tổng quan</b>: trang đầu mở thẳng <b>Tutor</b>.', 'Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — trang đầu thành Công việc như GV; Tutor vẫn ở menu.'],
+      buoc: ['Đăng nhập: trang đầu mở thẳng <b>Tutor</b> (không có mục Tổng quan).', 'Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — trang đầu thành Công việc như GV; Tutor vẫn ở menu.'],
       tuKhac: ['case', 'trang đầu', 'home'],
     },
     VIEC_TUTOR.nhanXet, VIEC_TUTOR.danhBa, VIEC_TUTOR.xuat,
@@ -86,7 +86,7 @@ export const HD_HT: HuongDan = {
     manTutor('ht'),
     {
       id: 'ho-so-ca-nhan', ten: 'Hồ sơ cá nhân', duong: ['/ho-so-ca-nhan'],
-      dangO: { cau: 'Thông tin và mật khẩu của bạn.', truoc: { chu: 'Tổng quan', duong: '/' } },
+      dangO: { cau: 'Thông tin và mật khẩu của bạn.', truoc: { chu: 'Tutor', duong: TUTOR } },   // S4-LUAT (b): không còn mục Tổng quan
       muc: [mucGv('ho-so-ca-nhan', 'hs-sua')],
     },
     {
