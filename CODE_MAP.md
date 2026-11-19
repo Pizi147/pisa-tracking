@@ -58,7 +58,8 @@ sau đó viết tắt. Luật thuần (không đụng DB, máy chủ và web cù
 | Quản trị (Tài khoản · Quyền · Chương trình · Chi nhánh · Bảng quy đổi · Nhật ký) | `web/src/modules/platform/{AdminPage,AccountsAdmin,CatalogAdmin,ChiNhanhAdmin,BangQuyDoiAdmin}.tsx` | `server/src/platform/{accounts,sysconfig,bangQuyDoi,audit}.ts` |
 | Hồ sơ cá nhân | `web/src/modules/platform/ProfilePage.tsx` (`ChonKyNang`) | `PATCH /me/profile` |
 | Hướng dẫn `/huong-dan`, nút "?", "Chỉ cho tôi" | `web/src/modules/huongDan/{HuongDanPage,NutHuongDan,chiChoToi,MucHuongDan,DaiMoiDung}.tsx` | nội dung `shared/huongDan/index.ts` (`HUONG_DAN`, `manCuaDuong`) |
-| Trang Tutor (đang tắt: `/tutor` về `/`) | `web/src/modules/tutor/{TutorPage,PanelTutor,HopTutor,TaiDanhSach}.tsx` | `server/src/tutors/{trang,taiLen}.ts` |
+| Trang Tutor `/tutor` (đã mở lại 19/11, N54: bảng "Người dạy", panel, thêm / gộp tutor, xuất Excel) | `web/src/modules/tutor/{TutorPage,PanelTutor,HopTutor,TaiDanhSach,kieu}.tsx` | `GET /tutors` · `/tutors/{dem,go-tay,gop}` · `GET /tutors/xuat-buoi?tu=&den=` (số buổi người dạy × tháng) → `server/src/tutors/{trang,taiLen}.ts` |
+| Khối "PA đang chạy" (Công việc GV, N54: mọi PA chưa tới hạn, không tính badge) · nhập PA "a / b" | `web/src/modules/congViec/PaDangChay.tsx` · `web/src/lib/nhapPa.ts` (đọc / ghép "a / b") | `GET /my-work` trả `paDangChay` → `server/src/worklist/tongQuan.ts` (`sapToiCuaGv`) · `luoiKetQua.ts` |
 | Sân mẫu thành phần `/dev/thanh-phan` (chỉ dev) | `web/src/modules/dev/{ThanhPhanDemo,BangMauV5,SanMauNen,BangMau}.tsx` | — |
 
 ---
@@ -288,7 +289,7 @@ Chỉ Case **học thuật**. Bảng `sos_cases`; Ý thức là module riêng.
 | Cần bổ sung đánh giá · chi tiết theo thành phần kỹ năng | `web/src/modules/cases/{NeedsEvaluation,ChiTietKyNang}.tsx` |
 | Mở lại, sửa, xoá Case; xoá / kết thúc PA | `server/src/cases/cases.ts` (`moLaiCase`, `suaCase`, `xoaCase`, `xoaPa`, `ketThucPaQuyChe`; N37 quyền xoá `cachXoaCase` / `cachXoaPa`, xin QL duyệt `xinXoa` → thẻ `xoa_case` / `xoa_pa` ở `duyet/loaiYeuCau.ts`) · `web/src/modules/cases/MenuXoaPa.tsx` (`MenuPa`) · `ThaoTacCase.tsx` (`HopXoaCase` — ⋯ đầu `NganCase` + chân Sửa Case) |
 | PA Bổ trợ · PA đại diện nhóm Bổ trợ | `server/src/cases/boTro.ts` · `shared/domain/daiDienBoTro.ts` |
-| Buổi Tutor trong kết quả PA | `web/src/modules/cases/BuoiTutorO.tsx` · `server/src/cases/cases.ts` (`ghiBuoiTutor`) · `server/src/tutors/chon.ts` |
+| Buổi Tutor trong kết quả PA (một dòng gộp cả kỳ, "a / b", lưu nháp; migrate `server/src/migrate/prTutor2.ts`) | `web/src/modules/cases/BuoiTutorO.tsx` · `web/src/modules/congViec/LuoiKetQuaPa.tsx` · `server/src/cases/cases.ts` (`ghiBuoiTutor`) · `server/src/tutors/chon.ts` (`GET /tutors/chon`) · `shared/domain/paDongBo.ts` |
 | Hệ thống tự đóng Case | `server/src/cases/systemClose.ts` (`closeCasesBySystem`, `closeCasesOnProgrammeSwitch`) |
 | Bảng kỹ năng ở hồ sơ, Case + PA dưới hàng kỹ năng | `web/src/modules/cases/TheKyNang.tsx` (`KhoiCase`, `KhoiPa`; `SkillBoard.tsx` giữ kiểu + `TenCase` / `NhanLoai` dùng chung) |
 | Hiệu quả PA (đếm thành công / thất bại, n/N) | `server/src/cases/effectiveness.ts` (`planOutcomes`) · `server/src/phanTich/hieuQuaPa.ts` · `web/src/modules/phanTich/HieuQuaPa.tsx` |
