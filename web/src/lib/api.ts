@@ -109,7 +109,7 @@ export function datHoiXacNhan(fn: (cau: string, nut?: string) => Promise<boolean
   return () => { if (hoiXacNhan === fn) hoiXacNhan = null; };
 }
 
-async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan: readonly string[] = [], nho?: Set<string>): Promise<T> {
+async function request<T>(method: string, path: string, body?: unknown, isForm = false, xacNhan: readonly string[] = [], dongY?: Set<string>): Promise<T> {
   let res: Response;
   try {
     const headers: Record<string, string> = {};
@@ -142,7 +142,7 @@ async function request<T>(method: string, path: string, body?: unknown, isForm =
     const nut = typeof payload?.details?.nut === 'string' ? dich(payload.details.nut) : undefined;
     const ma = payload?.details?.canXacNhan && typeof payload.details.ma === 'string' ? payload.details.ma as string : null;
     if (res.status === 409 && ma && !xacNhan.includes(ma) && hoiXacNhan) {
-      if (await hoiLanLuot(cau, nut, () => !!nho?.has(ma))) { nho?.add(ma); return request<T>(method, path, body, isForm, [...xacNhan, ma], nho); }   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
+      if (await hoiLanLuot(cau, nut, () => !!dongY?.has(ma))) { dongY?.add(ma); return request<T>(method, path, body, isForm, [...xacNhan, ma], dongY); }   // mỗi câu hỏi riêng — câu mới phát sinh sau thì hỏi tiếp
       /* Người dùng bấm Đóng / Esc = KHÔNG làm, không phải lỗi: dấu `huy` + câu trung tính; Toast bỏ qua, 409 xung đột thật vẫn là lỗi. */
       throw new ApiError(res.status, cauHuy(), payload?.details, true);
     }
