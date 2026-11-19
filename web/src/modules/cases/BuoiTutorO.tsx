@@ -1,96 +1,124 @@
-import { Hang2, Truong } from '../../ui/KhungPanel.tsx';
+import { Truong } from '../../ui/KhungPanel.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
-import { BoLocDoan } from '../../ui/ui.tsx';
 import { IconDat, IconKhong } from '../../ui/BieuTuong.tsx';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
-import { TIEU_CHI_TUTOR, type BuoiTutor, type HinhThuc, type LoiTruong, type NguoiChon } from '@shared/domain/index.ts';
+import { CHU_TOI_THIEU_CASE, TIEU_CHI_TUTOR, type BuoiTutor, type LoiTruong, type NguoiChon } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
+/** TU2-3: trần chữ Nội dung của một dòng Tutor trên web (máy chủ giữ ≤ 1000 cho dữ liệu cũ). */
+export const TRAN_NOI_DUNG_TUTOR = 300;
+
 /**
- * MỘT BUỔI CỦA KẾT QUẢ PA TUTOR (TU-a, đặc tả Tutor mục 5, mockup tutor-1 §1 + §7): Tutor * (danh sách + "Tutor khác") · Hình thức (tự suy, bấm đổi) ·
- * Nhận xét buổi * · "Tutor buổi này *" 3 ô Có · Không (+ "Cả 3 Có") · khối gập "Đánh giá tutor · tuỳ chọn" (sao 1–5, bấm lại = bỏ; Nhận xét về tutor).
- * Khoá lỗi: `buoi-{i}-tutor` · `buoi-{i}-nx` · `buoi-{i}-{chuanBi|taiLieu|feedbackGv}` (cùng `CapNhatTuan`). `cu3`: lần ghi trước TU-a — 3 ô không bắt buộc.
+ * MỘT DÒNG TUTOR của Kết quả PA Tutor (TU3, TU5, TU6 — mockup Ⓣ1 A2, A6, A8): Tutor * (GV · tutor · tên gõ tay) · Nội dung * (n / 300) · khối
+ * "Về tutor {tên} · tuỳ chọn" (3 nút Có / Không, bấm lại = bỏ; "Cả 3 Có"; "Đánh giá thêm" gập) CHỈ khi dòng có tên Tutor. `nhieu`: có từ 2 dòng — dòng là
+ * một thẻ, ô "Buổi" nhỏ đứng đầu (tổng các dòng = đã học). Khoá lỗi: `buoi-{i}-tutor` · `buoi-{i}-nx` · `buoi-{i}-so`.
  */
-export function BuoiTutorO({ i, b, dat, paId, lf, loi, cu3 }: {
-  i: number; b: BuoiTutor | undefined; dat: (p: Partial<BuoiTutor>) => void; paId: number;
-  lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[]; cu3: boolean;
+export function DongTutorO({ i, b, dat, paId, lf, loi, nhieu, onBo, loiTong }: {
+  i: number; b: BuoiTutor; dat: (p: Partial<BuoiTutor>) => void; paId: number;
+  lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[];
+  nhieu: boolean; onBo?: () => void;
+  /** Tổng số buổi các dòng ≠ đã học — viền đỏ ô "Buổi" (câu lỗi ở ô đã học). */
+  loiTong: boolean;
 }) {
   const k = (x: string) => `buoi-${i}-${x}`;
-  const nguoi: NguoiChon | null = !b?.tutor.trim() ? null
-    : b.tutorId ? { kieu: 'tai_khoan', id: b.tutorId, ten: b.tutor } : { kieu: 'ngoai', ten: b.tutor, phu: t('Tutor khác') };
-  return (
-    <div className="space-y-3">
-      <span className="block text-[13px] font-bold text-slate-200">{t('Buổi {n}', { n: i + 1 })}</span>
-      <Hang2>
-        <Truong nhan={t('Tutor')} batBuoc as="div" loi={lf.loiCua(loi, k('tutor'))}>
-          <ChonNguoi nhom="nhan_vien" tutor={{ paId, chi: true }} choToi={false} value={nguoi} ariaLabel={t('Tutor buổi {n}', { n: i + 1 })}
-            placeholder={t('Gõ tên tutor để tìm')} id={lf.oId(k('tutor'))} onBlur={lf.roi(k('tutor'))} invalid={!!lf.loiCua(loi, k('tutor'))}
-            onChange={(v, tutor) => dat(v?.kieu === 'tai_khoan'
-              ? { tutorId: v.id, tutor: v.ten, hinhThuc: tutor?.hinhThuc ?? null }
-              : { tutorId: null, tutor: v && v.kieu === 'ngoai' ? v.ten : '', hinhThuc: null })} />
-        </Truong>
-        <Truong nhan={t('Hình thức')} as="div">
-          <BoLocDoan ariaLabel={t('Hình thức buổi {n}', { n: i + 1 })} value={(b?.hinhThuc ?? '') as HinhThuc}
-            muc={[{ key: 'offline', nhan: 'Offline' }, { key: 'online', nhan: 'Online' }]} onChange={(h) => dat({ hinhThuc: h })} />
-        </Truong>
-      </Hang2>
-      <Truong nhan={t('Nhận xét buổi')} batBuoc loi={lf.loiCua(loi, k('nx'))}>
-        <textarea className="field w-full" rows={2} maxLength={1000} {...lf.o(loi, k('nx'))} value={b?.nhanXet ?? ''}
-          onChange={(e) => dat({ nhanXet: e.target.value })} placeholder={t('Ví dụ: luyện số đếm, còn nhầm 15 và 50')} />
-      </Truong>
-      <div className="rounded-lg border p-3" style={{ borderColor: 'var(--line)' }}>
-        <div className="mb-2 flex items-center gap-2">
-          <span className="flex-1 text-[13px] font-semibold text-slate-300">
-            {t('Tutor buổi này')}{!cu3 && <><span aria-hidden className="text-bad"> *</span><span className="sr-only"> {t('(bắt buộc)')}</span></>}
-          </span>
-          <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={() => dat({ chuanBi: true, taiLieu: true, feedbackGv: true })}>{t('Cả 3 Có')}</button>
-        </div>
-        <div className="space-y-2.5">
-          {TIEU_CHI_TUTOR.map(({ k: o, nhan }) => {
-            const loiO = lf.loiCua(loi, k(o));
-            const gt = b?.[o] ?? null;
-            return (
-              <div key={o} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 max-sm:flex-col max-sm:items-stretch">
-                <span className="min-w-0 flex-1 text-[13px] text-slate-200">{nhan}
-                  {loiO && <span className="ml-2 text-xs text-late">{loiO}</span>}</span>
-                <div {...lf.o(loi, k(o))} tabIndex={-1} role="group" aria-label={nhan}
-                  className={`inline-flex shrink-0 overflow-hidden rounded-lg border outline-none max-sm:w-full ${loiO ? 'border-late' : ''}`}
-                  style={loiO ? undefined : { borderColor: 'var(--line-strong)' }}>
-                  {([true, false] as const).map((co) => (
-                    <button key={String(co)} type="button" aria-pressed={gt === co} onClick={() => dat({ [o]: co })}
-                      className={`inline-flex min-h-[44px] items-center justify-center gap-1.5 px-3 text-xs font-semibold max-sm:flex-1 sm:min-h-[32px] ${co ? '' : 'border-l'} ${
-                        gt === co ? 'bg-[color:var(--accent-soft)] text-slate-100 shadow-[inset_0_0_0_1px_var(--accent)]' : 'bg-transparent text-slate-400 hover:text-slate-200'}`}
-                      style={{ borderColor: 'var(--line)' }}>
-                      <span aria-hidden className={co ? 'text-ok' : 'text-bad'}>{co ? <IconDat /> : <IconKhong />}</span>{co ? t('Có') : t('Không')}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+  const ten = b.tutor.trim();
+  const nguoi: NguoiChon | null = !ten ? null
+    : b.tutorId || b.gvId ? { kieu: 'tai_khoan', id: b.tutorId ?? -(b.gvId as number), ten: b.tutor } : { kieu: 'ngoai', ten: b.tutor, phu: t('tên gõ tay') };
+  const loiSo = lf.loiCua(loi, k('so'));
+  const oTutor = (
+    <Truong nhan={t('Tutor')} batBuoc as="div" loi={lf.loiCua(loi, k('tutor'))}>
+      <div className="max-w-[440px]">
+        <ChonNguoi nhom="nhan_vien" tutor={{ paId, chi: true }} choToi={false} value={nguoi} ariaLabel={nhieu ? t('Tutor dòng {n}', { n: i + 1 }) : t('Tutor')}
+          placeholder={t('Tìm GV, tutor…')} id={lf.oId(k('tutor'))} onBlur={lf.roi(k('tutor'))} invalid={!!lf.loiCua(loi, k('tutor'))}
+          /* TU4: dòng GV gửi `gvId` (máy chủ tìm / tạo dòng danh bạ của GV); tutor → `tutorId`; "Dùng tên" → chỉ tên. Hình thức thôi hỏi (R1.10). */
+          onChange={(v, tu) => dat(tu?.loai === 'gv' && tu.gvId
+            ? { gvId: tu.gvId, tutorId: null, tutor: tu.ten, hinhThuc: null }
+            : v?.kieu === 'tai_khoan' ? { tutorId: v.id, gvId: null, tutor: v.ten, hinhThuc: null }
+            : { tutorId: null, gvId: null, tutor: v && v.kieu === 'ngoai' ? v.ten : '', hinhThuc: null })} />
       </div>
-      {/* Mặc định gập; Sửa kết quả có sẵn đánh giá / nhận xét về tutor thì mở. `<details>` giữ chữ khi gập (ô vẫn trong DOM). */}
-      <details className="group rounded-lg border px-3 py-2" style={{ borderColor: 'var(--line)' }} open={b?.danhGia != null || !!b?.nhanXetTutor || undefined}>
-        <summary className="cursor-pointer list-none [&::-webkit-details-marker]:hidden text-[13px] font-semibold text-slate-300 min-h-[32px] flex items-center gap-1.5 max-sm:min-h-[44px]">
-          <span aria-hidden className="inline-block transition-transform group-open:rotate-90">›</span>{t('Đánh giá tutor')}
-          <span className="font-normal text-slate-500">· {t('tuỳ chọn')}</span>
+      {/* Lần ghi cũ có Hình thức: dữ liệu chỉ đọc (R1.10 — ô Hình thức đã bỏ). */}
+      {b.hinhThuc && <span className="mt-1 block text-xs text-slate-400">{b.hinhThuc === 'online' ? 'Online' : 'Offline'} · {t('ghi cũ')}</span>}
+    </Truong>
+  );
+  const nd = b.nhanXet.trim().length;
+  const than = (
+    <>
+      {nhieu ? (
+        <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5">
+          <Truong nhan={t('Buổi')} loi={loiSo}>
+            <input className={`field h-9 w-14 text-center tabular-nums ${loiTong && !loiSo ? '!border-late ring-1 ring-late/40' : ''}`} inputMode="numeric" maxLength={2}
+              {...lf.o(loi, k('so'))} aria-invalid={loiTong || !!loiSo || undefined} value={b.soBuoi == null ? '' : String(b.soBuoi)}
+              onChange={(e) => { const x = e.target.value.replace(/\D/g, ''); dat({ soBuoi: x ? Number(x) : null }); }} />
+          </Truong>
+          {oTutor}
+          {onBo ? <button type="button" className="btn btn-ghost mt-5 min-h-[44px] font-semibold text-[color:var(--accent)] sm:min-h-[36px]" onClick={onBo}>{t('Bỏ dòng')}</button> : <span />}
+        </div>
+      ) : oTutor}
+      <Truong nhan={t('Nội dung')} batBuoc loi={lf.loiCua(loi, k('nx'))} dem={{ co: nd, can: CHU_TOI_THIEU_CASE, toiDa: TRAN_NOI_DUNG_TUTOR }}>
+        <textarea className="field w-full" rows={2} maxLength={Math.max(TRAN_NOI_DUNG_TUTOR, b.nhanXet.length)} {...lf.o(loi, k('nx'))} value={b.nhanXet}
+          onChange={(e) => dat({ nhanXet: e.target.value })} placeholder={t('Em học được gì, còn yếu gì')} />
+      </Truong>
+      {ten && <BaNut i={i} b={b} ten={ten} dat={dat} />}
+    </>
+  );
+  return nhieu
+    ? <div className="flex flex-col gap-3 rounded-[10px] border p-3" style={{ borderColor: loiTong ? 'rgb(var(--bad-line-rgb))' : 'var(--line-strong)' }}>{than}</div>
+    : <div className="flex flex-col gap-5">{than}</div>;
+}
+
+/** Khối "Về tutor {tên} · tuỳ chọn" (TU5): 3 nút Có / Không — bấm lại nút đang chọn = bỏ chọn; ✓ / ✗ chỉ ở nút đang chọn; "Đánh giá thêm" gập. */
+function BaNut({ i, b, ten, dat }: { i: number; b: BuoiTutor; ten: string; dat: (p: Partial<BuoiTutor>) => void }) {
+  return (
+    <div className="rounded-[10px] border" style={{ borderColor: 'var(--line)' }}>
+      <div className="flex min-h-[40px] items-center gap-2 border-b py-1 pl-3.5 pr-2 text-[13px] font-semibold text-slate-300" style={{ borderColor: 'var(--line)' }}>
+        <span className="min-w-0 flex-1">{t('Về tutor')} <b className="font-semibold text-slate-100">{ten}</b> <span className="font-normal text-slate-500">· {t('tuỳ chọn')}</span></span>
+        <button type="button" className="btn btn-ghost min-h-[44px] px-2 font-semibold text-[color:var(--accent)] sm:min-h-[32px]"
+          onClick={() => dat({ chuanBi: true, taiLieu: true, feedbackGv: true })}>{t('Cả 3 Có')}</button>
+      </div>
+      {TIEU_CHI_TUTOR.map(({ k: o, nhan }, j) => {
+        const gt = b[o] ?? null;
+        return (
+          <div key={o} className={`flex min-h-[46px] items-center gap-3 py-1.5 pl-3.5 pr-2 text-sm text-slate-200 max-sm:flex-col max-sm:items-stretch max-sm:gap-1.5 max-sm:pr-3.5 ${j ? 'border-t' : ''}`}
+            style={{ borderColor: 'var(--line)' }}>
+            <span className="min-w-0 flex-1">{nhan}</span>
+            <div role="group" aria-label={nhan} className="inline-flex shrink-0 overflow-hidden rounded-lg border max-sm:w-full" style={{ borderColor: 'var(--line-strong)' }}>
+              {([true, false] as const).map((co) => {
+                const on = gt === co;
+                return (
+                  <button key={String(co)} type="button" aria-pressed={on} onClick={() => dat({ [o]: on ? null : co })}
+                    className={`inline-flex h-11 items-center justify-center gap-1.5 text-[13px] max-sm:flex-1 sm:h-8 sm:w-[86px] ${co ? '' : 'border-l'} ${on
+                      ? (co ? 'font-bold text-ok' : 'font-bold text-bad') : 'bg-transparent font-medium text-slate-400 hover:text-slate-200'}`}
+                    style={{ borderColor: 'var(--line-strong)', ...(on ? { background: `rgb(var(--${co ? 'ok' : 'bad'}-bg-rgb))`, boxShadow: `inset 0 0 0 1px rgb(var(--${co ? 'ok' : 'bad'}-line-rgb))` } : {}) }}>
+                    {on && <span aria-hidden>{co ? <IconDat /> : <IconKhong />}</span>}{co ? t('Có') : t('Không')}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })}
+      {/* Gập mặc định; có đánh giá / nhận xét về tutor (Sửa) thì mở. `<details>` giữ chữ khi gập (ô vẫn trong DOM). */}
+      <details className="group border-t" style={{ borderColor: 'var(--line)' }} open={b.danhGia != null || !!b.nhanXetTutor || undefined}>
+        <summary className="flex min-h-[44px] cursor-pointer list-none items-center gap-2 px-3.5 text-[13px] font-semibold text-slate-300 sm:min-h-[42px] [&::-webkit-details-marker]:hidden">
+          <span aria-hidden className="inline-block transition-transform group-open:rotate-90">›</span>{t('Đánh giá thêm')}
+          <span className="font-normal text-slate-500">· {t('sao, nhận xét về tutor')}</span>
+          {b.danhGia != null && <span className="ml-auto text-xs font-semibold tabular-nums text-slate-400">{b.danhGia} / 5</span>}
         </summary>
-        <div className="mt-2 space-y-3 pb-1">
-          <Truong nhan={t('Đánh giá')} as="div">
-            <div className="flex items-center gap-0.5" role="group" aria-label={t('Đánh giá buổi {n}', { n: i + 1 })}>
+        <div className="flex flex-col gap-2.5 px-3.5 pb-3.5 pt-1">
+          <div className="flex items-center gap-3" role="group" aria-label={t('Đánh giá tutor dòng {n}', { n: i + 1 })}>
+            <span className="w-[88px] shrink-0 text-[13px] font-semibold text-slate-300">{t('Đánh giá')}</span>
+            <span className="flex items-center gap-0.5">
               {[1, 2, 3, 4, 5].map((s) => (
-                <button key={s} type="button" aria-label={`${s}/5`} aria-pressed={b?.danhGia === s}
-                  onClick={() => dat({ danhGia: b?.danhGia === s ? null : s })}
+                <button key={s} type="button" aria-label={`${s}/5`} aria-pressed={b.danhGia === s}
+                  onClick={() => dat({ danhGia: b.danhGia === s ? null : s })}
                   className="grid h-11 w-11 place-items-center rounded-md bg-transparent sm:h-8 sm:w-8 bam">
-                  <Sao day={(b?.danhGia ?? 0) >= s} />
+                  <Sao day={(b.danhGia ?? 0) >= s} />
                 </button>
               ))}
-              {b?.danhGia != null && <span className="ml-2 text-xs tabular-nums text-slate-400">{b.danhGia}/5</span>}
-            </div>
-          </Truong>
+            </span>
+          </div>
           <Truong nhan={t('Nhận xét về tutor')}>
-            <textarea className="field w-full" rows={2} maxLength={1000} value={b?.nhanXetTutor ?? ''} onChange={(e) => dat({ nhanXetTutor: e.target.value })} />
+            <textarea className="field w-full" rows={2} maxLength={1000} value={b.nhanXetTutor ?? ''} onChange={(e) => dat({ nhanXetTutor: e.target.value })} />
           </Truong>
         </div>
       </details>
@@ -109,25 +137,32 @@ function Sao({ day, nho }: { day: boolean; nho?: boolean }) {
 }
 
 /**
- * Một buổi ở lịch sử Case / Ngăn Case (mockup tutor-1 §8): "Buổi n · tutor" + hình thức + 3 dấu ✓ / ✗ kèm chữ + sao (nếu có) · nhận xét buổi ·
- * nhận xét về tutor (nếu có). Lần ghi trước TU-a (3 ô trống): chỉ tên + nhận xét như cũ.
+ * Một dòng Tutor ở lịch sử Case / Ngăn Case (mockup Ⓣ1 C1, R1.16): "{tutor} · {n buổi}: nội dung" (số buổi chỉ khi lần ghi có > 1 dòng) + 3 dấu ✓ / ✗ kèm chữ
+ * CHỈ khi có trả lời + sao (nếu có) · nhận xét về tutor. `cu` (lần ghi trước TU2, không có "b"): "Buổi n · tutor [Offline]" như cũ.
  */
-export function DongBuoiTutor({ b, i }: { b: BuoiTutor; i: number }) {
+export function DongBuoiTutor({ b, i, nhieu, cu }: { b: BuoiTutor; i: number; nhieu: boolean; cu: boolean }) {
   return (
     <li className="break-words">
       <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-        <span>{t('Buổi {x} · {tutor}:', { x: i + 1, tutor: b.tutor })}</span>
-        {b.hinhThuc && <span className="rounded border px-1 text-[12px] text-slate-400" style={{ borderColor: 'var(--line)' }}>{b.hinhThuc === 'online' ? 'Online' : 'Offline'}</span>}
-        {TIEU_CHI_TUTOR.map(({ k, ngan }) => b[k] == null ? null : (
-          <span key={k} className="inline-flex items-center gap-0.5">
-            <span aria-hidden className={b[k] ? 'text-ok' : 'text-bad'}>{b[k] ? <IconDat /> : <IconKhong />}</span>
-            <span className={b[k] ? 'text-slate-400' : 'text-slate-200'}>{ngan}</span>
-            <span className="sr-only">{b[k] ? t('Có') : t('Không')}</span>
-          </span>
-        ))}
-        {b.danhGia != null && <span className="inline-flex items-center gap-0.5 tabular-nums"><Sao day nho />{b.danhGia}/5</span>}
+        <span>
+          <b className="font-semibold text-slate-200">
+            {cu ? t('Buổi {x} · {tutor}', { x: i + 1, tutor: b.tutor }) : nhieu ? t('{tutor} · {n} buổi', { tutor: b.tutor, n: b.soBuoi ?? 1 }) : b.tutor}
+          </b>
+          {cu && b.hinhThuc && <span className="ml-1.5 rounded border px-1 text-[12px] text-slate-400" style={{ borderColor: 'var(--line)' }}>{b.hinhThuc === 'online' ? 'Online' : 'Offline'}</span>}
+          : <span className="text-slate-300">{b.nhanXet}</span>
+        </span>
       </span>
-      <span className="block text-slate-300">{b.nhanXet}</span>
+      {(TIEU_CHI_TUTOR.some(({ k }) => b[k] != null) || b.danhGia != null) && (
+        <span className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
+          {TIEU_CHI_TUTOR.map(({ k, ngan }) => b[k] == null ? null : (
+            <span key={k} className={`inline-flex items-center gap-0.5 ${b[k] ? 'text-ok' : 'text-bad'}`}>
+              <span aria-hidden>{b[k] ? <IconDat /> : <IconKhong />}</span>{ngan}
+              <span className="sr-only">: {b[k] ? t('Có') : t('Không')}</span>
+            </span>
+          ))}
+          {b.danhGia != null && <span className="inline-flex items-center gap-0.5 tabular-nums"><Sao day nho />{b.danhGia} / 5</span>}
+        </span>
+      )}
       {b.nhanXetTutor && <span className="block text-slate-400">{t('Về tutor: {nx}', { nx: b.nhanXetTutor })}</span>}
     </li>
   );
