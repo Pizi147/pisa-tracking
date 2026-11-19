@@ -205,7 +205,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
     ];
   /* Target: trống "Chưa điền", sai "Gõ band 0–9…" ngay tại ô (cùng luật máy chủ; "6,5" đọc là 6.5). */
   const oT = docOTarget(mucTieu);
-  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: dichChu(oT.loi) }] : [])];
+  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: dichChu(oT.loi) }] : [])];
   /* Không hỏi Target → không gửi: máy chủ lấy Target LTT / khoá; sửa lệnh thì giữ Target + Dự kiến thi của lệnh (R-C3). */
   const mucTieuGui = oTarget ? oT.giaTri : undefined;
   const xong = (chu: string) => { xongChuyen(); toast.push('ok', chu); onDone?.(); onClose(); };
@@ -422,7 +422,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
   const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }];   // N56 ②: Lý do tuỳ chọn
   /* I1 (§7): em Lên FT từ lớp thường mà chưa có Target nào → ô Target ở hàng em; thiếu thì "Còn thiếu: Target · {tên}". */
   const hoiTarget = (sid: number) => { const x = xem[sid]; return !!x && 'hoiTarget' in x && x.hoiTarget; };
-  const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan, 'ly-do': lyDo }),
+  const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan }),
     ...canGui.flatMap((r) => { const l = hoiTarget(r.e.studentId) ? docOTarget(mucTieu[r.e.studentId] ?? '').loi : null;
       return l ? [{ khoa: `muc-tieu-${r.e.studentId}`, nhan: `Target · ${r.e.ten}`, lyDo: dichChu(l) }] : []; })];
   /* M1: còn em đang xem trước → chưa biết có cần Target → chưa cho gửi. */

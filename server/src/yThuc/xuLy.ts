@@ -94,7 +94,7 @@ export function moTa(v: unknown, cu?: string | null): string {
   return chuTuDo(s, 'Mô tả', MO_TA_TOI_DA, cu) ?? s;
 }
 /** N56 ③ (chủ SP 20/11): Xác nhận xử lý ĐÚNG BẬC KẾ — Mô tả để trống được (`luuXuLy` tự ghi); có chữ thì kiểm như cũ. Đề xuất (khác mặc định) vẫn `moTa`. */
-export const moTaTuyChon = (v: unknown): string => (String(v ?? '').trim() ? moTa(v) : '');
+const moTaTuyChon = (v: unknown): string => (String(v ?? '').trim() ? moTa(v) : '');
 /** N56 ③: Mô tả máy tự ghi "{BẬC} · {vi phạm}" — cùng câu nút "Chèn" ở web. Một câu, chỉ khi Mô tả trống. */
 function moTaTuDong(ids: readonly number[], kind: string): string {
   const ten = (db().prepare(`SELECT COALESCE(NULLIF(ten, ''), NULLIF(description, ''), category) AS ten FROM violations WHERE id IN (${DS_JSON}) ORDER BY occurred_on, id`)
