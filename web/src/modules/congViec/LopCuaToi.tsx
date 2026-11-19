@@ -109,13 +109,15 @@ export function NutChipViec({ c, ngu, onBam }: { c: ChipViec; ngu?: string; onBa
   );
 }
 
-const COT = 'grid grid-cols-[104px_150px_152px_minmax(0,1fr)] items-center gap-x-3 px-4';
+const COT = 'grid grid-cols-[104px_164px_152px_minmax(0,1fr)] items-center gap-x-3 px-4';
+/* C1 (rà 19/11): bốn cột cố định cần ≥ 640 px. Khung hẹp hơn (Công việc 1100: khung phải ~520 px; 375) → mỗi lớp một thẻ dọc — đo theo
+   bề ngang KHUNG (container query `[container-type:inline-size]` ở <section>), không theo cửa sổ, nên chip không bao giờ tràn / bị cắt sang cột bên. */
 
 /**
  * LỚP CỦA TÔI — khung phải trang Công việc khi chưa chọn việc (GD-1, mockup v21 ① K1 + `04-thiet-ke.md` mục 12, 13).
  * Cột: Lớp (link hồ sơ lớp) · Tôi dạy (chip kỹ năng; "chủ nhiệm") · Test (tình trạng + hạn) · Việc cần làm (nút-chip "{loại} · {số}", đỏ khi quá hạn (V22: chỉ màu), "›" khi đổi trang — dòng 19).
  * Bấm chip = việc đầu (hạn sớm nhất) của loại đó ở lớp đó: mở panel tại chỗ, hoặc sang trang khi việc không làm tại chỗ (`onMo`).
- * 375: mỗi lớp một thẻ, chip cao 44.
+ * Khung < 640 px (375, cột phải Công việc ở 1100): mỗi lớp một thẻ; 375 chip cao 44.
  */
 export function LopCuaToi({ dong, onMo, dangTai, loi }: {
   dong: Dong[]; onMo: (x: WorkItem) => void; dangTai: boolean; loi: React.ReactNode;
@@ -123,7 +125,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
   const { session } = useSession();
   const chuaPhanCong = !dangTai && !loi && !dong.length;
   return (
-    <section className="card overflow-clip p-0" aria-labelledby="lop-cua-toi" data-hd="cv-lop-cua-toi">
+    <section className="card overflow-clip p-0 [container-type:inline-size]" aria-labelledby="lop-cua-toi" data-hd="cv-lop-cua-toi">
       <h2 id="lop-cua-toi" className="m-0 flex min-h-[48px] items-center gap-2 border-b border-l-[3px] pl-[13px] pr-2 text-[15px] font-bold leading-snug bg-[color:var(--surface-2)]"
         style={{ borderBottomColor: 'var(--line)', borderLeftColor: 'var(--accent)' }}>
         <span className="text-[color:var(--accent)]"><IconNhom k="lop-toi-day" /></span>
@@ -135,7 +137,7 @@ export function LopCuaToi({ dong, onMo, dangTai, loi }: {
         : dangTai ? <div className="p-4"><Skeleton rows={4} /></div>
           : chuaPhanCong ? <p className="m-0 px-4 py-6 text-[15px] text-dim">{session?.assignments?.length ? t('Không có lớp nào đang mở.') : t('Chưa được phân công lớp nào')}</p>
             : <>
-              <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint max-sm:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
+              <div className={`${COT} min-h-[34px] border-b text-xs font-semibold text-faint [@container(max-width:639px)]:hidden`} style={{ borderColor: 'var(--line)' }} aria-hidden>
                 <span>{t('Lớp')}</span><span>{t('Tôi dạy')}</span><span>{t('Test')}</span><span>{t('Việc cần làm')}</span>
               </div>
               <ul className="m-0 list-none p-0">
@@ -150,19 +152,19 @@ function DongLop({ d, dau, onMo }: { d: Dong; dau: boolean; onMo: (x: WorkItem) 
   const ranh = !d.chip.length;
   const nhat = ranh && !d.test;
   return (
-    <li className={`${COT} min-h-[58px] py-2 ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-col max-sm:items-start max-sm:gap-2 max-sm:py-3`}
+    <li className={`${COT} min-h-[58px] py-2 ${dau ? '' : 'border-t'} [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-col [@container(max-width:639px)]:items-start [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:py-3`}
       style={{ borderColor: 'var(--line)' }}>
-      <span className="flex min-w-0 items-center gap-2 max-sm:w-full">
+      <span className="flex min-w-0 items-center gap-2 [@container(max-width:639px)]:w-full [@container(max-width:639px)]:flex-wrap">
         <Link to={`/hoc-vien/lop/${d.classId}`} className={`whitespace-nowrap text-[15px] leading-snug !text-[color:var(--text)] no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold'}`}>{d.code}</Link>
-        <span className="hidden max-sm:flex max-sm:gap-1">{monCua(d, nhat)}</span>
+        <span className="hidden [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:gap-1">{monCua(d, nhat)}</span>
       </span>
-      {/* C1 (rà 19/11): cột cố định 150 px — 5 môn + "chủ nhiệm" xuống dòng TRONG ô, không tràn sang cột Test. */}
-      <span className="flex min-w-0 flex-wrap items-center gap-1 max-sm:hidden">{monCua(d, nhat)}</span>
-      <span className="grid min-w-0 justify-items-start gap-1 max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-2 max-sm:empty:hidden">
+      {/* C1 (rà 19/11): cột 164 px — 5 môn một dòng, "chủ nhiệm" xuống dòng TRONG ô, không tràn sang cột Test. */}
+      <span className="flex min-w-0 flex-wrap items-center gap-1 [@container(max-width:639px)]:hidden">{monCua(d, nhat)}</span>
+      <span className="grid min-w-0 justify-items-start gap-1 [@container(max-width:639px)]:flex [@container(max-width:639px)]:flex-wrap [@container(max-width:639px)]:items-center [@container(max-width:639px)]:gap-2 [@container(max-width:639px)]:empty:hidden">
         {d.test && <span className={`whitespace-nowrap text-sm leading-snug ${d.test.han ? 'font-medium text-[color:var(--text)]' : 'text-dim'}`}>{d.test.chu}</span>}
         {d.test?.han?.due && <ChipHan vien loai={LOAI_HAN_CUA_VIEC[d.test.han.group] ?? 'nhap-diem'} han={d.test.han.due} />}
       </span>
-      <span className="flex flex-wrap gap-1.5 max-sm:w-full max-sm:empty:hidden">
+      <span className="flex flex-wrap gap-1.5 [@container(max-width:639px)]:w-full [@container(max-width:639px)]:empty:hidden">
         {d.chip.map((c) => <NutChipViec key={c.tab} c={c} ngu={d.code} onBam={() => onMo(c.dau)} />)}
       </span>
     </li>

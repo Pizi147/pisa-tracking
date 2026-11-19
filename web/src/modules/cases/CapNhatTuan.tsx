@@ -20,7 +20,7 @@ import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   GOI_Y_KET_QUA_PA, NUT_LUU_KET_QUA, PLAN_DECISION_NGAN, nhomQuyetDinh, quyetDinhChoPa,
   decisionBlockedReason, decisionNeedsReason, interventionKindsFor, nhanTuanGhiKetQua, outcomeLabelFor,
   type NguoiChon, type PlanDecision, dsLoi, type LuatTruong, TRAN_CHU,
-  canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoiKy, coTongBuoi, demSauKetQua, kiemSoBuoiKy, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
+  canBuoiTutor, TIEU_CHI_TUTOR, MOC_QUY_CHE_SOS, coNguoiDay, coSoBuoiKy, coTongBuoi, demSauKetQua, kiemSoBuoiKy, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
 import { hanDuyetNgay, hoanThanhCaseBatSan, quyCheGhiKetQua, toiKyGhi } from '@shared/domain/index.ts';
@@ -284,7 +284,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       if (nhieuDong && !(x.soBuoi && x.soBuoi >= 1)) loi.push({ khoa: `buoi-${i}-so`, nhan: t('Số buổi dòng {n}', { n: i + 1 }), lyDo: t('Từ 1 buổi') });
       if (!x.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: nhieuDong ? t('Tutor dòng {n}', { n: i + 1 }) : t('Tutor'), lyDo: t('Chọn hoặc gõ tên tutor') });
     });
-    loi.push(...dsLoi(buoi.map((x, i) => ({ khoa: `buoi-${i}-nx`, nhan: nhieuDong ? t('Nội dung dòng {n}', { n: i + 1 }) : t('Nội dung'), toiThieu: CHU_TOI_THIEU_CASE })),
+    /* S2 (từ rà #1875, cùng luật máy chủ `chuCu`): SỬA lần ghi cũ — Nội dung cũ giữ nguyên (trước luật ≥ 8 ký tự) không bị chặn; dòng mới / chữ đã sửa vẫn kiểm. */
+    const chuCu = new Set(sua ? (g?.buoi ?? []).map((x) => x.nhanXet.trim()).filter(Boolean) : []);
+    loi.push(...dsLoi(buoi.flatMap((x, i) => (chuCu.has(x.nhanXet.trim()) ? []
+      : [{ khoa: `buoi-${i}-nx`, nhan: nhieuDong ? t('Nội dung dòng {n}', { n: i + 1 }) : t('Nội dung'), toiThieu: CHU_TOI_THIEU_CASE }])),
       Object.fromEntries(buoi.map((x, i) => [`buoi-${i}-nx`, x.nhanXet]))));
     if (nhieuDong && soA != null && tongDong !== soA) {
       loi.push({ khoa: 'buoi-tong', nhan: t('Số buổi các dòng'), lyDo: t('Tổng {tong}, đã học {a}', { tong: tongDong, a: soA }) });
@@ -382,7 +385,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const oSo = (khoa: string, v: string, dat: (x: string) => void, nhan: string, aria: string, loiThem = false) => (
     <label className="flex flex-col items-center gap-1">
       <input className={`field h-10 w-[84px] text-center text-[15px] font-semibold tabular-nums max-sm:w-[72px] ${loiThem || loiCua(khoa) ? '!border-late ring-1 ring-late/40' : ''}`}
-        inputMode="numeric" autoComplete="off" maxLength={2} {...o(khoa)} aria-label={aria} value={v} placeholder={nhan} readOnly={busy}
+        inputMode="numeric" autoComplete="off" maxLength={2} {...o(khoa)} aria-label={aria} value={v} readOnly={busy}
         onChange={(e) => dat(e.target.value.replace(/\D/g, ''))} />
       <span className="text-xs text-slate-400">{nhan}</span>
     </label>
@@ -426,7 +429,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     if (d === 'adjust') {
       return (
         <div className="space-y-3">
-          <FormPa phang tienTo="dc-" v={dc} dat={(p) => setDc((x) => ({ ...x, ...p }))} lf={lf} loi={loi} daDay={dem?.da ?? daDay} />
+          {/* S2 (từ S1, TU11): PA Tutor có mốc quy chế SOS không đếm tổng (`coTongBuoi`) → Điều chỉnh (kể cả mở lại từ `g.adjust`) không có ô "Tổng số buổi";
+              cờ `xacNhan` của FormPa đúng việc này (ẩn ô Tổng số buổi của PA Tutor). */}
+          <FormPa phang tienTo="dc-" v={dc} dat={(p) => setDc((x) => ({ ...x, ...p }))} lf={lf} loi={loi} daDay={dem?.da ?? daDay}
+            xacNhan={(MOC_QUY_CHE_SOS as readonly (string | null | undefined)[]).includes(pa.mocQuyChe)} />
           <Truong nhan={t('Lý do điều chỉnh')} batBuoc loi={loiCua('ly-do')}>
             <input className="field w-full" {...o('ly-do')} value={reason} onChange={(e) => setReason(e.target.value)} />
           </Truong>

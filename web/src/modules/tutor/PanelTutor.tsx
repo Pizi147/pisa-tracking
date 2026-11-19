@@ -124,7 +124,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
   };
   const cot: CotBang[] = [
     { key: 'ngay', nhan: t('Ngày ghi'), kieu: 'chu', rong: 80 },
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 200 },
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 168 },
     { key: 'kn', nhan: 'KN', kieu: 'chu', rong: 48 },
     { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 60 },
     ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'chu', rong: c.k === 'feedbackGv' ? 104 : c.k === 'chuanBi' ? 84 : 76 })),
@@ -142,7 +142,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
       case 'buoi': return <span className="tabular-nums">{b.soBuoi}</span>;
       case 'sao': return sao(b.danhGia);
       /* P2-9: một dòng chính (đủ chữ ở title) + "Về tutor" là dòng phụ của `Bang` → mọi hàng cao 64 như chuẩn bảng. */
-      case 'nd': return <span className="text-[13px] text-slate-300" title={b.nhanXet}>{b.nhanXet}</span>;
+      case 'nd': return <span className="block truncate text-[13px] text-slate-300 max-sm:whitespace-normal" title={b.nhanXet}>{b.nhanXet}</span>;
       default: return dau(b[c.key as TieuChi]);
     }
   };
@@ -224,9 +224,9 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
 
             <DauMuc chu={t('Kết quả đã ghi')} so={kq.length} phai={<>
               {loc !== 'tat-ca' && loc !== 'khong' && (
-                <span className="inline-flex h-[30px] items-center gap-1.5 rounded-lg border pl-2.5 pr-1 text-[13px] font-semibold text-slate-100" style={{ borderColor: 'var(--accent)', background: 'var(--accent-soft)' }}>
+                <span className="inline-flex h-[30px] items-center gap-1.5 rounded-lg border pl-2.5 pr-1 text-[13px] font-semibold text-slate-100 max-sm:h-11 max-sm:pr-0" style={{ borderColor: 'var(--accent)', background: 'var(--accent-soft)' }}>
                   {NHAN_LOC[loc]}
-                  <button type="button" className="grid h-6 w-6 place-items-center rounded-md border-0 bg-transparent p-0 text-xs text-slate-300 hover:text-slate-100" aria-label={t('Bỏ lọc')} onClick={() => setLoc('tat-ca')}>✕</button>
+                  <button type="button" className="grid h-6 w-6 place-items-center rounded-md border-0 bg-transparent p-0 text-xs text-slate-300 hover:text-slate-100 max-sm:h-11 max-sm:w-11" aria-label={t('Bỏ lọc')} onClick={() => setLoc('tat-ca')}>✕</button>
                 </span>
               )}
               <button type="button" aria-pressed={loc === 'khong'} disabled={!soKhong && loc !== 'khong'} onClick={() => setLoc(loc === 'khong' ? 'tat-ca' : 'khong')}

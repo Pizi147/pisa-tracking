@@ -287,7 +287,7 @@ export async function runPrTuTests(t: any) {
       assert(/vai === 'ht'\) return nav\?\.tutor \? <Navigate to="\/tutor" replace \/> : trang\('', <LopCuaToi dong=\{\[\]\} dangTai=\{false\} loi=\{null\}/.test(ov)
         && !ov.includes('/hai-khoi') && !/TongQuanGvV5/.test(ov), 'OverviewPage vai ht');
       const hdHt = readFileSync(join(process.cwd(), 'shared/huongDan/headTutor.ts'), 'utf8');
-      assert(hdHt.includes("loiChinh: { man: 'tutor', chu: 'Tutor', duong: TUTOR }") && !hdHt.includes('Lớp của tôi</b>'), 'Hướng dẫn Head tutor: trang đầu = Tutor');
+      assert(hdHt.includes('trang đầu mở thẳng <b>Tutor</b>') && !hdHt.includes('Lớp của tôi</b>'), 'Hướng dẫn Head tutor: trang đầu = Tutor');
     });
   } finally { httpApp.close(); }
 

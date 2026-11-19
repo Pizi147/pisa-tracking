@@ -303,7 +303,7 @@ function OTyLe({ v, nhan, onClick }: { v: TyLe; nhan: string; onClick?: () => vo
   if (!v[1]) return <span className="text-faint">—</span>;
   const chu = <span className="whitespace-nowrap tabular-nums">{v[0]} / {v[1]}</span>;
   return onClick
-    ? <button type="button" className="-mx-1 rounded border-0 bg-transparent px-1 font-bold text-late hover:underline hover:underline-offset-[3px] max-sm:min-h-[32px]" onClick={onClick}
+    ? <button type="button" className="-mx-1 rounded border-0 bg-transparent px-1 font-bold text-late hover:underline hover:underline-offset-[3px] max-sm:min-h-[44px] max-sm:min-w-[44px]" onClick={onClick}
       aria-label={`${nhan} ${v[0]} / ${v[1]} · ${t('xem lần ghi có Không')}`}>{chu}</button>
     : <span>{chu}</span>;
 }

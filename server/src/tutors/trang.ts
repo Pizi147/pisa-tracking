@@ -19,7 +19,7 @@ export type KetLuan = 'on' | 'can_cai_thien' | 'ngung';
 const KET_LUAN: readonly string[] = ['on', 'can_cai_thien', 'ngung'];
 /** Tỉ lệ một tiêu chí: [số LẦN GHI (dòng) "Có", số lần ghi có trả lời ô đó] — dòng không trả lời (NULL) không vào mẫu. */
 export type TyLe = [number, number];
-/** `luc` = lần ghi (`case_followups.created_at`) gần nhất của từng loại; `ids` = id dòng buổi gây chú ý (N56 ⑥: panel mở đúng các dòng này, mọi thời gian). */
+/** `luc` = ngày nghiệp vụ (`case_followups.observed_on`, YYYY-MM-DD — cùng nguồn ngày với bảng / panel sau S1 #1875) của lần ghi gần nhất từng loại; `ids` = id dòng buổi gây chú ý (N56 ⑥: panel mở đúng các dòng này, mọi thời gian). */
 export type ChuY = { chuanBi: number; taiLieu: number; feedbackGv: number; sao: number[]; ids: number[]; luc: Record<'chuanBi' | 'taiLieu' | 'feedbackGv' | 'sao', string> };
 export type NoiDay = { id: number; ten: string } | 'online' | null;
 export type SoTutor = { buoi: number; chuanBi: TyLe; taiLieu: TyLe; feedbackGv: TyLe; danhGia: number | null };
@@ -97,7 +97,7 @@ export function cauChuY(branchIds: number[] | null, tutorId?: number): { sql: st
   const l = locLop(branchIds);
   return {
     sql: `SELECT b.id, b.tutor_id, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.ghi_luc,
-            (SELECT f.created_at FROM case_followups f WHERE f.id = b.followup_id) AS ngay_ghi,
+            (SELECT f.observed_on FROM case_followups f WHERE f.id = b.followup_id) AS ngay_ghi,
             (SELECT n.ket_luan FROM tutor_nhan_xet n WHERE n.tutor_id = b.tutor_id ORDER BY n.luc DESC, n.id DESC LIMIT 1) AS kl,
             (SELECT MAX(n.luc) FROM tutor_nhan_xet n WHERE n.tutor_id = b.tutor_id) AS moc
        FROM case_followup_buoi b
@@ -137,11 +137,8 @@ export function lyDoChuY(c: ChuY): string {
   const [n, chu] = loaiChinh(c);
   return `${n} lần ${chu}`;
 }
-/** N56 ⑥: ngày VN (YYYY-MM-DD) lần ghi gần nhất của loại đứng trong câu lý do — web ghi kèm "· 02/09". */
-export function ngayChuY(c: ChuY): string | null {
-  const luc = c.luc[loaiChinh(c)[2]];
-  return luc ? ngayVn(luc) : null;
-}
+/** N56 ⑥: ngày (YYYY-MM-DD) lần ghi gần nhất của loại đứng trong câu lý do — web ghi kèm "· 02/09". */
+export const ngayChuY = (c: ChuY): string | null => c.luc[loaiChinh(c)[2]] || null;
 
 /** Số "Tutor n" trên menu — chỉ người sửa danh sách (Head tutor, Quản trị; QL không có số). */
 export function demChuY(p: Principal): { n: number } {
@@ -229,7 +226,7 @@ const trong24h = (luc: string) => Date.now() - new Date(luc).getTime() < 24 * 36
 
 /**
  * Panel một tutor: đầu + 5 ô số + nhận xét (dòng thời gian) + buổi trong khoảng (QL: chỉ buổi chi nhánh mình; ngoài phạm vi → 404).
- * N56 ⑥: `ids` (dòng gây "Cần chú ý", mọi thời gian) → đọc ĐÚNG các dòng đó của tutor này thay cho khoảng — cùng một câu, cùng phạm vi chi nhánh.
+ * N56 ⑥: `ids` (dòng vào nhóm chú ý, mọi thời gian) → đọc ĐÚNG các dòng đó của tutor này thay cho khoảng — cùng một câu, cùng phạm vi chi nhánh.
  */
 export function panelTutor(p: Principal, id: number, k: Khoang, ids?: number[]) {
   const { branchIds, sua, danhBa } = phamVi(p);

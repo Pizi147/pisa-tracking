@@ -54,7 +54,7 @@ export const HD_HT: HuongDan = {
   lam: [
     {
       id: 'xem-tong-quan', ten: 'Xem trang đầu', nhom: 'khac',
-      loiChinh: { man: 'tutor', chu: 'Tutor', duong: TUTOR },
+      loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/' },
       buoc: ['Đăng nhập hoặc bấm <b>Tổng quan</b>: trang đầu mở thẳng <b>Tutor</b>.', 'Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — trang đầu thành Công việc như GV; Tutor vẫn ở menu.'],
       tuKhac: ['case', 'trang đầu', 'home'],
     },
@@ -79,7 +79,7 @@ export const HD_HT: HuongDan = {
   man: [
     {
       id: 'tong-quan', ten: 'Tổng quan', duong: ['/'],
-      dangO: { cau: 'Trang đầu như GV: lớp của bạn (chưa có lớp thì trống).' },
+      dangO: { cau: 'Trang đầu mở thẳng Tutor; có thêm vai GV thì trang đầu như GV.' },
       khongLam: [{ ten: 'Nhập điểm, xử lý Case', cua: 'việc của GV' }],
       muc: [],
     },
