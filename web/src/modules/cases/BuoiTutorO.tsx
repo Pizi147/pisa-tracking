@@ -5,6 +5,9 @@ import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { CHU_TOI_THIEU_CASE, TIEU_CHI_TUTOR, type BuoiTutor, type LoiTruong, type NguoiChon } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 
+/** Dòng trên form: thêm chữ phụ của tên đã chọn (chỉ hiển thị). */
+type DongForm = BuoiTutor & { phu?: string };
+
 /** TU2-3: trần chữ Nội dung của một dòng Tutor trên web (máy chủ giữ ≤ 1000 cho dữ liệu cũ). */
 export const TRAN_NOI_DUNG_TUTOR = 300;
 
@@ -22,8 +25,10 @@ export function DongTutorO({ i, b, dat, paId, lf, loi, nhieu, onBo, loiTong }: {
 }) {
   const k = (x: string) => `buoi-${i}-${x}`;
   const ten = b.tutor.trim();
+  /* Chữ phụ của tên đã chọn ("GV · Monbay", "Tutor · Monbay · R") chỉ giữ trong phiên (`phu`, không gửi / lưu) — mở lại nháp chỉ còn tên. */
+  const phu = (b as DongForm).phu;
   const nguoi: NguoiChon | null = !ten ? null
-    : b.tutorId || b.gvId ? { kieu: 'tai_khoan', id: b.tutorId ?? -(b.gvId as number), ten: b.tutor } : { kieu: 'ngoai', ten: b.tutor, phu: t('tên gõ tay') };
+    : b.tutorId || b.gvId ? { kieu: 'tai_khoan', id: b.tutorId ?? -(b.gvId as number), ten: b.tutor, ...(phu ? { phu } : {}) } : { kieu: 'ngoai', ten: b.tutor, phu: t('tên gõ tay') };
   const loiSo = lf.loiCua(loi, k('so'));
   const oTutor = (
     <Truong nhan={t('Tutor')} batBuoc as="div" loi={lf.loiCua(loi, k('tutor'))}>
@@ -32,9 +37,9 @@ export function DongTutorO({ i, b, dat, paId, lf, loi, nhieu, onBo, loiTong }: {
           placeholder={t('Tìm GV, tutor…')} id={lf.oId(k('tutor'))} onBlur={lf.roi(k('tutor'))} invalid={!!lf.loiCua(loi, k('tutor'))}
           /* TU4: dòng GV gửi `gvId` (máy chủ tìm / tạo dòng danh bạ của GV); tutor → `tutorId`; "Dùng tên" → chỉ tên. Hình thức thôi hỏi (R1.10). */
           onChange={(v, tu) => dat(tu?.loai === 'gv' && tu.gvId
-            ? { gvId: tu.gvId, tutorId: null, tutor: tu.ten, hinhThuc: null }
-            : v?.kieu === 'tai_khoan' ? { tutorId: v.id, gvId: null, tutor: v.ten, hinhThuc: null }
-            : { tutorId: null, gvId: null, tutor: v && v.kieu === 'ngoai' ? v.ten : '', hinhThuc: null })} />
+            ? { gvId: tu.gvId, tutorId: null, tutor: tu.ten, hinhThuc: null, phu: ['GV', tu.noiDay].filter(Boolean).join(' · ') } as Partial<DongForm>
+            : v?.kieu === 'tai_khoan' ? { tutorId: v.id, gvId: null, tutor: v.ten, hinhThuc: null, phu: tu ? ['Tutor', tu.noiDay, tu.kyNang.split(',').join(', ')].filter(Boolean).join(' · ') : undefined } as Partial<DongForm>
+            : { tutorId: null, gvId: null, tutor: v && v.kieu === 'ngoai' ? v.ten : '', hinhThuc: null, phu: undefined } as Partial<DongForm>)} />
       </div>
       {/* Lần ghi cũ có Hình thức: dữ liệu chỉ đọc (R1.10 — ô Hình thức đã bỏ). */}
       {b.hinhThuc && <span className="mt-1 block text-xs text-slate-400">{b.hinhThuc === 'online' ? 'Online' : 'Offline'} · {t('ghi cũ')}</span>}
@@ -46,7 +51,7 @@ export function DongTutorO({ i, b, dat, paId, lf, loi, nhieu, onBo, loiTong }: {
       {nhieu ? (
         <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-2.5">
           <Truong nhan={t('Buổi')} loi={loiSo}>
-            <input className={`field h-9 w-14 text-center tabular-nums ${loiTong && !loiSo ? '!border-late ring-1 ring-late/40' : ''}`} inputMode="numeric" maxLength={2}
+            <input className={`field h-9 w-14 text-center tabular-nums ${loiTong && !loiSo ? '!border-late ring-1 ring-late/40' : ''}`} inputMode="numeric" autoComplete="off" maxLength={2}
               {...lf.o(loi, k('so'))} aria-invalid={loiTong || !!loiSo || undefined} value={b.soBuoi == null ? '' : String(b.soBuoi)}
               onChange={(e) => { const x = e.target.value.replace(/\D/g, ''); dat({ soBuoi: x ? Number(x) : null }); }} />
           </Truong>

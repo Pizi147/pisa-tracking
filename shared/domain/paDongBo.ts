@@ -118,9 +118,9 @@ export type BuoiTutor = {
 export type HinhThuc = 'offline' | 'online';
 /** Ba tiêu chí "Tutor buổi này" (Q3) — thứ tự hiện trên form, lịch sử, trang Tutor. */
 export const TIEU_CHI_TUTOR = [
-  { k: 'chuanBi', nhan: t('Có chuẩn bị bài'), ngan: t('Chuẩn bị') },
-  { k: 'taiLieu', nhan: t('Xin tài liệu đúng hạn'), ngan: t('Tài liệu') },
-  { k: 'feedbackGv', nhan: t('Gửi feedback về HV cho GV'), ngan: t('Feedback GV') },
+  { k: 'chuanBi', nhan: t('Có chuẩn bị bài'), ngan: t('Chuẩn bị bài') },   // TU2-3 (mockup Ⓣ1 C1): chữ ngắn ở lịch sử
+  { k: 'taiLieu', nhan: t('Xin tài liệu đúng hạn'), ngan: t('Tài liệu đúng hạn') },
+  { k: 'feedbackGv', nhan: t('Gửi feedback về HV cho GV'), ngan: t('Feedback cho GV') },
 ] as const;
 /** MỌI PA Tutor → Kết quả có dòng Tutor (a = 0 không dòng). Chỉ sửa lần ghi cũ chưa có số buổi (`cu`) là không hỏi. */
 export const canBuoiTutor = (pa: PaKetQua): boolean => pa.kind === 'tutor' && !pa.cu;

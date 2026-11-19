@@ -379,7 +379,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const oSo = (khoa: string, v: string, dat: (x: string) => void, nhan: string, aria: string, loiThem = false) => (
     <label className="flex flex-col items-center gap-1">
       <input className={`field h-10 w-[84px] text-center text-[15px] font-semibold tabular-nums max-sm:w-[72px] ${loiThem || loiCua(khoa) ? '!border-late ring-1 ring-late/40' : ''}`}
-        inputMode="numeric" maxLength={2} {...o(khoa)} aria-label={aria} value={v} placeholder={nhan} readOnly={busy}
+        inputMode="numeric" autoComplete="off" maxLength={2} {...o(khoa)} aria-label={aria} value={v} placeholder={nhan} readOnly={busy}
         onChange={(e) => dat(e.target.value.replace(/\D/g, ''))} />
       <span className="text-xs text-slate-400">{nhan}</span>
     </label>
@@ -581,10 +581,16 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
             <span className="mt-0.5 text-slate-400"><KhoaNho /></span><span>{sua.chan}</span>
           </p>
         )}
+        {/* TU2-3 (mockup Ⓣ1 A2, R1.9): dải "Nháp · {ai} · {lúc}" đầu form — nền vàng như "✓ Đã lưu nháp" (XM-6). */}
+        {banNhap && !xungDot && (
+          <p className="m-0 flex min-h-[40px] flex-wrap items-center gap-x-2.5 rounded-lg border px-3 py-1.5 text-[13px] text-slate-300"
+            style={{ borderColor: 'rgb(var(--soon-line-rgb))', background: 'rgb(var(--soon-bg-rgb))' }}>
+            <b className="font-bold text-soon">{t('Nháp')}</b><span className="tabular-nums">{banNhap.boi} · {lucNhap(banNhap.luc)}</span>
+          </p>
+        )}
         {/* GD-3 (mockup v21 K4c): bối cảnh (PA · người dạy · kỳ trước) ĐẦU form, trước Tiến triển. */}
         <BoiCanh dong={boiCanh ?? [[t('Phương án'), [tenPa, coNguoiDay(pa.kind) && pa.performer, pa.mocChu && dich(pa.mocChu)].filter(Boolean).join(' · ')]]} />
         <CanLam>
-          {banNhap && !xungDot && <p className="m-0 text-xs text-slate-400">{t('Nháp lưu {luc} · {ten}', { luc: lucNhap(banNhap.luc), ten: banNhap.boi })}</p>}
           {xungDot && (
             /* N01 / N03: phiên khác vừa lưu nháp khác (hoặc xoá) — chữ của mình ở nguyên các ô dưới; xem bản mới rồi chọn, không tự gộp. */
             <div role="alert" className="flex flex-col gap-1.5 rounded-lg border px-3 py-2.5 text-[13px]" style={{ borderColor: 'var(--line-strong)' }}>
