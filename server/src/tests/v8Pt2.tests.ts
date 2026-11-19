@@ -105,7 +105,7 @@ export async function runV8Pt2Tests(t: YThucTestKit & { P: any }) {
     const cong = (k: 'viPham' | 'chuaXuLy') => lop.reduce((s, x) => s + x[k], 0);
     assert(oYThucPhanTich(P.mbManager, { ...f, dong: 'tong', cot: 'vi-pham' }).rows.length === cong('viPham'), 'vi phạm');
     assert(oYThucPhanTich(P.mbManager, { ...f, dong: 'tong', cot: 'chua-xu-ly' }).rows.length === cong('chuaXuLy'), 'chưa xử lý');
-    assert(oYThucPhanTich(P.mbManager, { ...f, dong: 'tong', cot: 'lop' }).rows.length === lop.length, 'lớp');
+    assert(oYThucPhanTich(P.mbManager, { ...f, dong: 'tong', cot: 'lop' }).rows.length === lop.filter(d.coViPhamLop).length, 'lớp');
     assert(oYThucPhanTich(P.mbManager, { ...f, dong: 'hv-can-chu-y', cot: 'hv' }).rows.length === kq.hvCanChuY.length, 'HV cần chú ý');
   });
 
@@ -114,5 +114,23 @@ export async function runV8Pt2Tests(t: YThucTestKit & { P: any }) {
     const kq = yThucPhanTich(P.admin, f);
     const dem = (a: string, b: string) => (conn.prepare(`SELECT COUNT(*) AS n FROM violations WHERE occurred_on >= ? AND occurred_on <= ?`).get(a, b) as any).n as number;
     assert(kq.soVoiTruoc === dem(f.from, f.to) - dem('2026-08-17', '2026-08-30'), `soVoiTruoc ${kq.soVoiTruoc}`);
+  });
+
+  /* S3-1 (rà Tutor C3): thẻ "↓n so kỳ trước" và cột "± kỳ trước" từng hàng cùng một tập — lớp CHỈ có vi phạm kỳ trước vẫn có hàng (nhóm "lớp khác"),
+     Σ hàng = thẻ, Σ hàng con = hàng lớp; "Lớp có vi phạm" không đếm hàng đó. Demo: tuần 07–13/09 MB FT 101 ↑6 trong khi MB tổng "=". */
+  check('S3-1 · Ý thức "± kỳ trước": Σ hàng lớp = thẻ, Σ nhóm vi phạm = hàng lớp; lớp chỉ kỳ trước không vào "Lớp có vi phạm"', () => {
+    for (const [from, to] of [['2026-09-07', '2026-09-13'], ['2026-08-31', '2026-09-13'], [TU, DEN]]) {
+      const f = { ct: null, from, to };
+      const kq = yThucPhanTich(P.mbManager, f);
+      const lop = [...kq.lop, ...(kq.gom?.hang ?? [])];
+      const tong = lop.reduce((s, x) => s + x.soVoiTruoc, 0);
+      assert(tong === kq.soVoiTruoc, `${from}: Σ hàng ${tong} ≠ thẻ ${kq.soVoiTruoc}`);
+      for (const x of kq.lop) {
+        const con = (x.con ?? []).reduce((s, c) => s + c.soVoiTruoc, 0);
+        assert(con === x.soVoiTruoc, `${from} ${x.nhan}: Σ nhóm ${con} ≠ hàng ${x.soVoiTruoc}`);
+      }
+      const coVp = lop.filter(d.coViPhamLop);
+      assert(oYThucPhanTich(P.mbManager, { ...f, dong: 'tong', cot: 'lop' }).rows.length === coVp.length, `${from}: panel lớp ≠ hàng có vi phạm`);
+    }
   });
 }

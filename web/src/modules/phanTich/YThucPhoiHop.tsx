@@ -9,7 +9,7 @@ import { PhanTrang, usePhanTrang } from '../../ui/PhanTrang.tsx';
 import { DINH_TRAI, DaiChiSo, DauThe, MAU_SO_VOI_TRUOC, NutXemToanBo, NutXuat, RongDau, SoO as OSo, VaoHangLoc, thamSoLoc, type PhamViPhanTich } from './dungChung.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import {
-  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay,
+  COT_XUAT_HV_CAN_CHU_Y, KHOA_LOAI_XU_LY, nhanKhoang, duongHoSoHocVien, nhanLoaiXuLy, nhanSoVoiTruoc, ngay, coViPhamLop,
   type DongHvCanChuY, type DongLopViPham, type YThucPhanTichKetQua, bacDu, bacNgan } from '@shared/domain/index.ts';
 
 /**
@@ -190,7 +190,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
 
   /** Thẻ chỉ số: lớp = mọi dòng lớp của bảng (cả nhóm "lớp khác") — tổng cột = số trên thẻ. */
   const chiSo = (d: YThucPhanTichKetQua) => {
-    const lop = [...d.lop, ...(d.gom?.hang ?? [])];
+    const lop = [...d.lop, ...(d.gom?.hang ?? [])].filter(coViPhamLop);   // S3-1: hàng chỉ có vi phạm kỳ trước không là "Lớp có vi phạm"
     const cong = (k: 'viPham' | 'chuaXuLy' | 'hvCoViPham') => lop.reduce((s, x) => s + x[k], 0);
     const viPham = cong('viPham');
     const hv = cong('hvCoViPham');
@@ -229,7 +229,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
                 : <><div ref={ptHv.thanh.dauBang} />{dienThoai ? ptHv.cat(data.hvCanChuY).map(theHv) : bang1(ptHv.cat(data.hvCanChuY))}<div className="px-3"><PhanTrang {...ptHv.thanh} duoi /></div></>}
             </Card>
             <Card bodyClass="p-0">
-              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: data.lop.length + (data.gom?.soLop ?? 0) })} cachTinh={(
+              <DauThe ten={t('Lớp nhiều vi phạm')} dem={t('{n} lớp', { n: [...data.lop, ...(data.gom?.hang ?? [])].filter(coViPhamLop).length })} cachTinh={(
                 <dl className="m-0 space-y-1">
                   <div>{t('xếp theo vi phạm chưa xử lý')}</div>
                   <div><dt className="inline font-semibold text-slate-200">{t('HV có vi phạm')}: </dt><dd className="m-0 inline">{t('Học viên có vi phạm / sĩ số lớp')}</dd></div>
