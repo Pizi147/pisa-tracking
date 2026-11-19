@@ -534,7 +534,7 @@ export function TenEm({ s, mo, onMo, ds }: { s: { id: number; fullName: string; 
       {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp mới — em khác chữ thường, không link (máy chủ `xemHoSo: false`). */}
       {s.xemHoSo === false
         ? <span className="ten-hv min-w-0 font-semibold" style={{ color: 'var(--text)' }}>{s.fullName}</span>
-        : <Link className="ten-hv ten-ho-so min-w-0"   /* N54 (thay AU-GON A1-12): 1440 lẫn 375 tên em xuống dòng, không "…" */ to={duongHoSoHocVien(s.id)} state={{ ds }}>{s.fullName}</Link>}
+        : <Link className="ten-hv ten-ho-so min-w-0"   /* N55 (thay AU-GON A1-12): 1440 lẫn 375 tên em xuống dòng, không "…" */ to={duongHoSoHocVien(s.id)} state={{ ds }}>{s.fullName}</Link>}
       <button type="button" className="lt-mo-ct ten-mo" aria-expanded={mo} aria-controls={`mo-${s.id}`} aria-label={t('Chi tiết {ten}', { ten: s.fullName })} onClick={onMo}>
         <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 8l5 5 5-5" /></svg>
       </button>

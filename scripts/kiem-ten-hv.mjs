@@ -1,4 +1,4 @@
-// N54 (chủ SP 19/11) — tên học viên KHÔNG BAO GIỜ bị cắt "…" (1440 lẫn 375); hết chỗ thì xuống dòng. Chạy trong `npm run check`.
+// N55 (chủ SP 19/11) — tên học viên KHÔNG BAO GIỜ bị cắt "…" (1440 lẫn 375); hết chỗ thì xuống dòng. Chạy trong `npm run check`.
 // Phần tử hiện tên HV mang lớp `ten-hv` (index.css, ngoài @layer: thắng `truncate` và luật cắt của ô bảng). Quét web/src:
 //   1. Phần tử có `ten-hv` mà className còn lớp cắt (`truncate`, `text-ellipsis`, `line-clamp-*`, `whitespace-nowrap`) — mâu thuẫn, bỏ lớp cắt.
 //   2. Dòng in thẳng trường tên HV (`{….studentName}`, `fullName`, `full_name`, `tenHv`, `hoTen`) kèm lớp cắt trên CÙNG dòng mà không có `ten-hv`.
@@ -53,5 +53,5 @@ const loi = duyet('web/src').flatMap((f) =>
 const css = fs.readFileSync('web/src/index.css', 'utf8');
 const sauLop = css.slice(css.lastIndexOf('\n}') + 2);   // phần sau khối @layer cuối
 if (!/\.ten-hv\s*\{[^}]*white-space:\s*normal/.test(sauLop)) loi.push('web/src/index.css  thiếu luật `.ten-hv { white-space: normal … }` ngoài @layer (cuối tệp)');
-if (loi.length) { console.error(`kiem-ten-hv: ${loi.length} chỗ tên học viên có thể bị cắt "…" (luật N54):\n` + loi.join('\n')); process.exit(1); }
+if (loi.length) { console.error(`kiem-ten-hv: ${loi.length} chỗ tên học viên có thể bị cắt "…" (luật N55):\n` + loi.join('\n')); process.exit(1); }
 console.log('kiem-ten-hv: ok');

@@ -128,7 +128,7 @@ function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phu
       {/* OV-14b: tên giữ ≥ 8rem (375: không vỡ từng chữ cái) — cụm ô chật thì xuống dòng dưới tên. */}
       <div className="min-w-[8rem] flex-1">
         <div className="min-w-0">
-          {/* N54 (chủ SP 19/11): dòng tên chỉ có tên (không cắt "…"); "{lượt} ›" đầu dòng phụ, như lưới 1440. */}
+          {/* N55 (chủ SP 19/11): dòng tên chỉ có tên (không cắt "…"); "{lượt} ›" đầu dòng phụ, như lưới 1440. */}
           <Link className="ten-hv ten-ho-so max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-end" to={duongHoSoHocVien(studentId)}>{ten}</Link>
           {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>

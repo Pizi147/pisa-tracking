@@ -1880,6 +1880,6 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   }
 }
 
-/* N54 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
+/* N55 (chủ SP 19/11): tên học viên KHÔNG BAO GIỜ bị cắt "…" — hết chỗ thì xuống dòng ở chỗ cách. Ngoài @layer để thắng `truncate` /
    `whitespace-nowrap` / `line-clamp` và luật cắt chung của ô bảng (`.bang td[data-kieu="ten"]`). Phép kiểm nguồn: `scripts/kiem-ten-hv.mjs`. */
 .ten-hv { white-space: normal; overflow: visible; text-overflow: clip; overflow-wrap: break-word; -webkit-line-clamp: none; }

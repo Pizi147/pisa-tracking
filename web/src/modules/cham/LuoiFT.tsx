@@ -423,7 +423,7 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
       {/* Tên (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: "MTn ›" · dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
         {/* TEN-HV-LINK (chủ SP 07/11): tên = hồ sơ HV; lượt mở qua "MTn ›".
-            N54 (chủ SP 19/11): tên KHÔNG cắt "…" (1440 lẫn 375), dòng tên chỉ có tên — "MTn ›" LUÔN ở dòng phụ dưới tên (đồng bộ lưới lớp thường). */}
+            N55 (chủ SP 19/11): tên KHÔNG cắt "…" (1440 lẫn 375), dòng tên chỉ có tên — "MTn ›" LUÔN ở dòng phụ dưới tên (đồng bộ lưới lớp thường). */}
         {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`): tên + MTn chữ thường (hồ sơ / lượt của em đó 403). */}
         {(row as { xemHoSo?: boolean }).xemHoSo === false
           ? <span className="ten-hv font-semibold" style={{ color: 'var(--text)' }}>{row.studentName}</span>
@@ -597,7 +597,7 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
           : <Link className="ten-hv ten-ho-so inline-flex min-h-[40px] items-end font-semibold" to={duongHoSoHocVien(row.studentId)}>{row.studentName}</Link>}
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
-      {/* N54 (chủ SP 19/11): "MTn ›" dòng dưới tên, như lưới 1440. */}
+      {/* N55 (chủ SP 19/11): "MTn ›" dòng dưới tên, như lưới 1440. */}
       <span className="-mt-2 text-xs text-slate-400">{(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="inline-flex min-h-[40px] items-start pt-0.5">MT{row.attemptNo}</span>
         : <Link className="link inline-flex min-h-[40px] items-start pt-0.5" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
       {vangHang && <span className="-mt-2 text-xs"><DongVang vang={vangHang} tuan={tuanThiCua(oThe.filter((c, i) => chuVangThe[i]), homNay)} /></span>}
