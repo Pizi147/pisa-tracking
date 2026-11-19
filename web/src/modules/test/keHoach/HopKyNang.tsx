@@ -44,8 +44,8 @@ type Dong = { tick: boolean; periodId: number | null; weekStart: string | null }
  *     chip "Tuần đã qua"). Hộp chỉ dành cho Quản lý / Quản trị: chọn được tuần đã qua ở mọi lượt (T4, T20 — rà #212).
  * PR-HOP1: một việc dời lịch một MT chỉ có hộp này và một đường lưu `/ke-hoach-test/dot` (Hồ sơ MT cũng mở nó). FT đợt đã có: ⋯ đầu
  *   hộp `Nhật ký · Mở hồ sơ MT`. `doiTuanDau`: dòng `kyNangDau` mở sẵn bộ chọn tuần (⋯ "Dời lịch thi" một kỹ năng).
- * OV-15c (mục 6, mockup 6 khung 8): lớp thường ⋯ "Xoá lịch" = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ), hỏi một lần
- *   NGAY TRONG hộp, xong có Hoàn tác. FT (chủ SP 06/11): ⋯ "Xoá MT{n}" (`xoaMt`, cùng đường hồ sơ MT) — không hỏi lại, ô "Đã xoá" + Khôi phục,
+ * OV-15c (mục 6, mockup 6 khung 8): lớp thường ⋯ "Xoá lịch" = bỏ tuần (`/attempts/:id/bo-tuan`, đợt về Chưa xếp, lịch sử giữ), xoá thẳng
+ *   (S4-GD 20/11: bỏ hộp hỏi), toast Hoàn tác. FT (chủ SP 06/11): ⋯ "Xoá MT{n}" (`xoaMt`, cùng đường hồ sơ MT) — không hỏi lại, ô "Đã xoá" + Khôi phục,
  *   Hoàn tác; MT đã xoá → ⋯ "Khôi phục MT{n}". Đã có điểm / đã thi → mờ + lý do. N38: bỏ `Khôi phục → Chưa xếp` · `Giữ huỷ` (Dời thay).
  *   Ô "Ghi chú lịch thi" (C21) lưu cùng nút Lưu. Tuần luôn kèm năm (C20).
  * Bộ chọn tuần KHỞI TẠO bằng TUẦN HIỆN CÓ (Bổ sung sau rà #87): không để bộ chọn tự phát "tuần này" làm nút Lưu mở ngay.
@@ -121,9 +121,6 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   /* GD-11b (mockup ⑦ B2, [XM-3] PTA): MỘT khối "Lịch sử · n" của cả lượt — việc lịch / điểm (mọi môn, dòng ghi tên môn) + lịch sử ghi chú lịch Test;
      đọc khi mở (như "Nhật ký" cũ: `/attempts/:id` + lịch sử ghi chú), không đọc thêm lúc mở hộp. */
   const [lichSuLuot, setLichSuLuot] = useState<DongLuot[] | null>(null);
-  /* Xoá (mục 6): `hoi` = đang hỏi lại trong hộp; `loiXoa` = câu lỗi (lịch giữ nguyên, bấm lại được). */
-  const [hoi, setHoi] = useState(false);
-  const [loiXoa, setLoiXoa] = useState<string | null>(null);
   const [bai, setBai] = useState<BaiXemTruoc[] | null>(null);
   const seq = useRef(0);
 
@@ -271,11 +268,12 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
     setRieng({}); setDaChinh(false); setForce(false); setLyDo(''); setGhi(ghiChu?.noiDung ?? '');
   };
 
-  /* Lớp thường — Xoá lịch (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ. */
+  /* Lớp thường — Xoá lịch (mục 6): bỏ tuần mọi kỹ năng chưa thi — máy chủ chặn có điểm / đã thi / đề nghị dời chờ duyệt. Hoàn tác = đặt lại đúng tuần cũ.
+     S4-GD (Tutor 20/11, đề xuất 3): xoá THẲNG, không hộp hỏi — như xoá MT (`xoaMt`); toast Hoàn tác trả đúng lịch cũ. Lỗi → toast, lịch giữ nguyên. */
   const lyDoXoa = attemptId === null ? null : lyDoKhongXoa(kn);
   const xoa = async () => {
     if (attemptId === null || busy) return;
-    setBusy(true); setLoiXoa(null);
+    setBusy(true);
     const cu = ky.filter((k) => kn[k]?.batBuoc && kn[k]?.periodId && kn[k]?.sit === 'scheduled').map((k) => ({ skill: k, periodId: kn[k]!.periodId }));
     try {
       await api.post(`/attempts/${attemptId}/bo-tuan`, { lyDo: t('Xoá lịch') });
@@ -287,7 +285,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
       });
       onSaved(); onClose();
     } catch (e: any) {
-      setLoiXoa(t('Chưa xoá được — {loi} Lịch giữ nguyên.', { loi: e.message ?? '' }));
+      toast.push('error', t('Chưa xoá được — {loi} Lịch giữ nguyên.', { loi: e.message ?? '' }));
     } finally {
       setBusy(false);
     }
@@ -360,7 +358,7 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
   const chanFt = (lyDo: string | null) => ({ tat: !!(lyDo || daSua || doiGhi || busy), title: lyDo ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined) });
   const mucDau = attemptId === null ? [] : loai === 'thuong' ? [
     { key: 'xoa', nhan: t('Xoá lịch'), nguyHiem: true, tat: !!(lyDoXoa || daSua || doiGhi || busy),
-      title: lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined), onChon: () => setHoi(true) },
+      title: lyDoXoa ?? (daSua || doiGhi ? t('Lưu hoặc huỷ thay đổi trước') : undefined), onChon: () => void xoa() },
   ] : daXoaHet ? [
     { key: 'khoi-phuc', nhan: t('Khôi phục {dot}', { dot: nhanDot(dot) }), ...chanFt(null), onChon: () => { setBusy(true); void khoiPhucMt(toast, mtNay).finally(() => setBusy(false)); } },
   ] : [
@@ -438,30 +436,16 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
           </div>
         )}
       </div>
-      {hoi && attemptId !== null ? (
-        /* Mục 6: hỏi lại MỘT lần ngay trong hộp (không panel chồng panel) — nêu đúng em + đợt. */
-        <div className="space-y-2 border-t px-3 py-2.5" style={{ borderColor: 'var(--line)' }} role="alertdialog" aria-label={t('Xoá lịch')}>
-          <p className="m-0 text-sm font-bold text-slate-100">{t('Xoá lịch {dot} của {ten}?', { dot: nhanDot(dot), ten: tenHv })}</p>
-          <p className="m-0 text-xs text-slate-400">{t('Đợt về Chưa xếp, lịch sử vẫn xem được.')}</p>
-          {loiXoa && <p className="m-0 text-xs text-bad" role="alert">⚠ {loiXoa}</p>}
-          <div className="flex items-center justify-end gap-2">
-            {/* Menu ⋯ vừa đóng — đưa focus vào câu hỏi (nút an toàn), không rơi về body. */}
-            <button type="button" autoFocus className="btn min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => { setHoi(false); setLoiXoa(null); }}>{t('Đóng')}</button>
-            <button type="button" className="btn btn-danger min-h-[44px] sm:min-h-0" disabled={busy} onClick={() => void xoa()}>{busy ? t('Đang xoá…') : t('Xoá')}</button>
-          </div>
+      <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
+        {/* GD-11b (mockup ⑦ B2): MỘT chân "Đóng · Lưu" — "Nhật ký" thành khối Lịch sử trong thân hộp, "Mở hồ sơ MT ›" gộp vào tên lượt ở đầu hộp. */}
+        <div className="flex items-center gap-2">
+          <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? t('Huỷ thay đổi') : t('Đóng')}</button>
+          <span className="flex-1" />
+          <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
+            {busy ? t('Đang lưu…') : nutLuu}
+          </button>
         </div>
-      ) : (
-        <div className="border-t px-3 py-2" style={{ borderColor: 'var(--line)' }}>
-          {/* GD-11b (mockup ⑦ B2): MỘT chân "Đóng · Lưu" — "Nhật ký" thành khối Lịch sử trong thân hộp, "Mở hồ sơ MT ›" gộp vào tên lượt ở đầu hộp. */}
-          <div className="flex items-center gap-2">
-            <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={daSua || doiGhi ? huyDoi : onClose} disabled={busy}>{daSua || doiGhi ? t('Huỷ thay đổi') : t('Đóng')}</button>
-            <span className="flex-1" />
-            <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => { if (canhBao.length) setForce(true); void luu(); }} disabled={!luuDuoc}>
-              {busy ? t('Đang lưu…') : nutLuu}
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
       {thaoTac && attemptId !== null && (
         <HopThaoTacMt key={`${thaoTac.t}:${thaoTac.k}`} thaoTac={thaoTac.t} attemptId={attemptId} skill={thaoTac.k} ct={ct} laThuong={loai === 'thuong'}
           quanLy row={{ periodId: kn[thaoTac.k]?.periodId ?? null, weekStart: kn[thaoTac.k]?.tuan ?? null }}

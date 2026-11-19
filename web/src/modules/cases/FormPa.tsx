@@ -4,6 +4,7 @@ import { Khoi, Truong } from '../../ui/KhungPanel.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { NutChon } from '../../ui/ui.tsx';
 import { CHU_TOI_THIEU_CASE,
   GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU,
   coNguoiDay, coSoBuoi, interventionKindsFor, khacNguoi, kiemGhiRoKhac, nguoiMacDinh, nhanNguoiDay, nhatKyPa,
@@ -50,15 +51,15 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_T
 
   const loai = chonLoai ? (
     <div>
-      <Truong nhan={t('Loại PA')} batBuoc>
-        <select className="field w-full" value={v.kind} onChange={(e) => doiLoai(e.target.value)}>
-          <optgroup label={t('Bạn tự làm được')}>
-            {kinds.selfServe.map((k) => <option key={k} value={k}>{tenLoai(k)}</option>)}
-          </optgroup>
-          <optgroup label={t('Cần Head duyệt')}>
-            {kinds.proposals.map((k) => <option key={k} value={k}>{t('{tenLoai} · cần Head duyệt', { tenLoai: tenLoai(k) })}</option>)}
-          </optgroup>
-        </select>
+      {/* S4-GD (Tutor 20/11, đề xuất 6): chip một hàng (xuống dòng khi hẹp) thay ô thả — chọn là xong; loại cần Head duyệt ghi ngay trên chip. Giá trị gửi lên (`kind`) và mọi nhánh ô theo loại giữ nguyên. */}
+      <Truong nhan={t('Loại PA')} batBuoc as="div">
+        <div role="group" aria-label={t('Loại PA')} className="flex flex-wrap gap-1.5">
+          {[...kinds.selfServe, ...kinds.proposals].map((k) => (
+            <NutChon key={k} nho chon={v.kind === k} onClick={() => doiLoai(k)}>
+              {kinds.proposals.includes(k) ? t('{tenLoai} · cần Head duyệt', { tenLoai: tenLoai(k) }) : tenLoai(k)}
+            </NutChon>
+          ))}
+        </div>
       </Truong>
       {/* PA đề xuất "Khác" (T13): ô Tên đề xuất ngay dưới; máy chủ ghép "{tên} — {mô tả}" (Q9). */}
       <OKhac hien={v.kind === 'other_proposal'} value={v.ghiRo} onChange={(x) => dat({ ghiRo: x })} nhan={t('Tên đề xuất')} goiY={t('Ví dụ: Học kèm 1-1 với Tutor')}

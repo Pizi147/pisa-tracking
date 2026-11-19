@@ -599,6 +599,7 @@ export function CuoiKhoaLop({ classId, emMo, onDaMoEm, theoVai }: { classId: num
   };
   const oChon = (e: Em) => (
     <input type="checkbox" className="h-[18px] w-[18px] cursor-pointer" aria-label={t('Chọn {ten}', { ten: e.fullName })} disabled={!chonDuoc(e)}
+      title={chonDuoc(e) ? undefined : t('Đã chốt · không chọn được')} aria-description={chonDuoc(e) ? undefined : t('Đã chốt · không chọn được')}   /* S4-GD (đề xuất 14): lý do tại ô mờ */
       checked={chon.has(e.id)} onChange={() => setChon((s) => { const n = new Set(s); if (n.has(e.id)) n.delete(e.id); else n.add(e.id); return n; })} />
   );
   const oChiDoc = (e: Em) => (e.lenh

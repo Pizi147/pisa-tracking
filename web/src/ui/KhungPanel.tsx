@@ -27,12 +27,12 @@ export const panelHdTren = (): PanelHd | null => panelHd.reduce<{ hd: PanelHd; t
  * PR-EN: panel đang sửa dở (`chan.daSua` hoặc còn nháp) — đổi ngôn ngữ (tải lại trang) hỏi trước khi bỏ chữ đang gõ.
  * NEN-PANEL (T16): mỗi panel ghi kèm cách HỎI của nó (hộp "Bỏ chữ đang gõ?" vẽ trong panel) — `boChuRoi` dùng khi đổi việc.
  */
-const panelDangSua = new Map<string, (tiep: () => void) => void>();
+const panelDangSua = new Map<string, (tiep: () => void, o?: () => void, nut?: string) => void>();
 export const coPanelDangSua = () => panelDangSua.size > 0;
 /** Đổi việc / "‹ Công việc" / mở việc khác: còn chữ chưa lưu thì panel hỏi (Ở lại = nút chính); bỏ chữ hoặc không có chữ → `tiep`. */
-export function boChuRoi(tiep: () => void) {
+export function boChuRoi(tiep: () => void, nut?: string) {
   const hoi = [...panelDangSua.values()].pop();
-  if (hoi) hoi(tiep); else tiep();
+  if (hoi) hoi(tiep, undefined, nut); else tiep();
 }
 
 type NhapPanel = { viec: string; coChu: boolean; bao: (o: string, coChu: boolean) => void; xoa: () => () => void };
@@ -313,7 +313,7 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
   const mat = !!chan?.daSua || !!daSuaRieng || conSua;
   useEffect(() => {
     if (!daSua) { daBo.current = false; return undefined; }
-    const hoiBo = (nut: string) => (tiep: () => void, o?: () => void) => { hienLaiRef.current?.(); setHoi({ nut, tiep, o }); };
+    const hoiBo = (nut: string) => (tiep: () => void, o?: () => void, nutRieng?: string) => { hienLaiRef.current?.(); setHoi({ nut: nutRieng ?? nut, tiep, o }); };
     panelDangSua.set(id, hoiBo(t('Bỏ chữ, sang việc khác')));
     /* CHAN-ROI-NHAP-2: link sang trang khác, Back / tiến của trình duyệt (kể cả cùng trang — đóng panel), đổi tài khoản → bộ chặn gốc (`ChanRoiNhapGoc`)
        gọi chính hộp này. App tự đổi URL trong cùng trang (đổi việc, lọc, việc tiếp sau khi lưu) thì panel tự lo như cũ. */

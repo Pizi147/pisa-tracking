@@ -8,6 +8,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { NutDongPanel } from '../../ui/KhuonViec.tsx';
+import { HopBoChu } from '../../ui/Drawer.tsx';
 import { CHU_TOI_THIEU, HAN_HANG, addDaysIso, chenHan, dsLoi, hanBaoPh, luuRoiTiep, ngay, quyCheBaoTinhHinh, quyCheHoiTinhHinh, quyCheTraLoiTinhHinh } from '@shared/domain/index.ts';
 import { t } from '@shared/i18n/index.ts';
 import { BadgeViec } from './khoiYThuc.tsx';
@@ -153,6 +154,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
   const canEm = che.loai === 'bao' || che.loai === 'hoi';
   const [luu, setLuu] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  const [hoiBo, setHoiBo] = useState(false);   // S4-GD: hộp chung "Bỏ chữ đang gõ?" thay hộp gốc trình duyệt
   const daDoi = chu.trim() !== (che.loai === 'sua' ? che.x.noiDung : che.loai === 'tra-loi' ? che.x.traLoi ?? '' : '');
   const chonEm = che.loai === 'bao' ? che.chonEm : undefined;
   const tieuDe = che.loai === 'bao' ? t('Báo tình hình học tập') : che.loai === 'hoi' ? t('Hỏi tình hình học tập')
@@ -185,7 +187,7 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
     } catch (e: any) { setLoi(e.message); } finally { setLuu(false); }
   };
   /* F03: đang gửi thì chưa đóng (kết quả về sẽ đóng hộp) — không để lần gửi cũ đóng nhầm hộp mới mở. */
-  const ngoai = () => { if (luu) return; if (!daDoi || window.confirm(t('Bỏ chữ đang gõ?'))) onDong(); };
+  const ngoai = () => { if (luu) return; if (daDoi) setHoiBo(true); else onDong(); };
   /* Mockup v20 C3 / F3: 375 → tấm dưới rộng hết màn (nền mờ), máy rộng → hộp neo nút. */
   const hep = typeof window !== 'undefined' && window.matchMedia?.('(max-width: 639px)').matches;
   /* Không khai component trong lúc vẽ (vẽ lại là mất focus ô chữ) — dựng thân rồi bọc. */
@@ -259,6 +261,8 @@ export function HopTinhHinh({ neo, che, homNay, onDong, onXong }: {
           {luu ? t('Đang gửi…') : che.loai === 'bao' ? t('Gửi TVV') : che.loai === 'hoi' ? t('Gửi GVCN') : che.loai === 'tra-loi' ? t('Lưu · gửi TVV') : t('Lưu')}
         </button>
       </div>
+      {/* Trong thân (cây React của hộp neo): bấm hộp hỏi không tính là bấm ngoài hộp Tình hình. */}
+      {hoiBo && <HopBoChu viec={t('Tình hình học tập')} nut={t('Bỏ chữ, đóng')} onO={() => setHoiBo(false)} onBo={onDong} />}
     </>
   );
   return hep

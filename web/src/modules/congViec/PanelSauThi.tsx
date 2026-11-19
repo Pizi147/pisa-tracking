@@ -12,7 +12,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { laBand } from '../students/StudentPlanPanel.tsx';
 import type { TrangThaiBuocTiep } from '../students/PanelBuocTiep.tsx';
-import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, luuRoiTiep, type HuongSauThi } from '@shared/domain/index.ts';
+import { HUONG_SAU_THI, NHAN_HUONG_SAU_THI, NHAN_SAU_THI, ketQuaThiThat, ngay, quyCheChotNgayThi, quyCheDungHoc, quyCheKqThiThat, shortDate, luuRoiTiep, thangKe, type HuongSauThi } from '@shared/domain/index.ts';
 import { HOC_TIEP_TRONG, KhoiDung, KhoiHocTiep, PanelLoTrinhMoi, loiHocTiep, thanHocTiep, type GiaTriDung, type GiaTriHocTiep } from '../students/PanelLoTrinhMoi.tsx';
 import { t } from '@shared/i18n/index.ts';
 import { LuaChonRadio } from './PanelBaoPhTvv.tsx';
@@ -86,26 +86,31 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
   const moDiem = !coKq || suaDiem;
   const sai = KN.filter((k) => diem[k].trim() !== '' && !laBand(diem[k]));
   const kq = sai.length ? null : ketQuaThiThat({ l: diem.l ? Number(diem.l) : null, r: diem.r ? Number(diem.r) : null, w: diem.w ? Number(diem.w) : null, s: diem.s ? Number(diem.s) : null, khongThi: false }, target);
-  const guiDiem = async (than: object) => {
+  const guiDiem = async (than: object): Promise<boolean> => {
     setTtDiem('dang'); setLoiDiem(null);
     try {
       await api.put(`/cycles/${cycleId}/outcome`, than);
       LAM_MOI.forEach((k) => invalidate(k));
       setTtDiem(null); setSuaDiem(false); cy.reload(); bt.reload(); onDaLam();
-    } catch (e: any) { setTtDiem('loi'); setLoiDiem(e?.message ?? null); }
+      return true;
+    } catch (e: any) { setTtDiem('loi'); setLoiDiem(e?.message ?? null); return false; }
   };
   const loiD = KN.filter((k) => !laBand(diem[k])).map((k) => ({ khoa: `diem-${k}`, nhan: k.toUpperCase(), lyDo: t('0–9, bước 0.5') }));
-  const luuDiem = () => {
+  const luuDiem = async (): Promise<boolean> => {
     lfD.bam();
-    if (loiD.length) return;
-    void guiDiem({ khongThi: false, ngayThi, l: Number(diem.l), r: Number(diem.r), w: Number(diem.w), s: Number(diem.s), ghiChu: c.outcome_note ?? '', layLai });
+    if (loiD.length) return false;
+    return guiDiem({ khongThi: false, ngayThi, l: Number(diem.l), r: Number(diem.r), w: Number(diem.w), s: Number(diem.s), ghiChu: c.outcome_note ?? '', layLai });
   };
   const trong = moDiem && c.thiTruoc ? KN.filter((k) => diem[k].trim() === '') : [];
   const layTrong = () => { setDiem({ ...diem, ...Object.fromEntries(trong.map((k) => [k, so(c.thiTruoc[k])])) }); setLayLai([...layLai, ...trong]); };
 
   /* ② Bước tiếp */
   const daChonTruoc = !!b.chon;
-  const khoaBuoc2 = !coKq || moDiem || !b.coTheChon || daChonTruoc || !!daChot;
+  /* S4-GD (Tutor 20/11, đề xuất 4): đủ 4 điểm hợp lệ → Bước tiếp mở NGAY (không chờ bấm "Lưu điểm"); MỘT nút chân lưu cả hai. Chưa có KQ thì `buoc-tiep` còn null → chưa biết
+     `coTheChon` (máy chủ kiểm lại khi chọn; lỗi báo tại bước 2). */
+  const diemDu = loiD.length === 0;
+  const sapChon = moDiem && diemDu && !daChonTruoc && !daChot && (!coKq || b.coTheChon);
+  const khoaBuoc2 = moDiem ? !sapChon : !b.coTheChon || daChonTruoc || !!daChot;
   const loiB = !chon ? [{ khoa: 'chon', nhan: t('Bước tiếp'), lyDo: t('Chọn một bước') }] : chon === 'hoc_tiep' ? loiHocTiep(hocTiep, b) : [];
   const chot = async (): Promise<boolean> => {
     lf.bam();
@@ -126,13 +131,20 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
     catch (e: any) { setTt('loi'); setLoi(e?.message ?? null); }
   };
   const nutTiep = onTiep && <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onTiep}>{tenTiep ? t('Việc kế: {ten}', { ten: tenTiep }) : t('Việc tiếp ›')}</button>;
+  const gopChot = sapChon && chon === 'dung';   // chọn Tạm dừng / Kết thúc ngay khi nhập điểm → một nút: lưu điểm rồi chốt
+  /* Hai lệnh sẵn có, theo thứ tự (PUT outcome → POST buoc-tiep). Điểm lỗi: báo ở bước 1, dừng — bước tiếp chưa gửi. Bước tiếp lỗi: báo ở chân, điểm đã lưu, chữ giữ nguyên, bấm lại chỉ chốt.
+     Học tiếp / Lộ trình mới cần dữ liệu máy chủ chỉ có sau khi lưu điểm (lớp, Target gợi ý) → nút chỉ lưu điểm, lựa chọn giữ nguyên để làm tiếp ngay. */
+  const luuCaHai = async () => { if ((await luuDiem()) && gopChot) await chot(); };
   const chuChot = chon === 'dung' ? (dung.quayLai ? NHAN_SAU_THI.tam_dung : NHAN_SAU_THI.ket_thuc) : chon === 'hoc_tiep' ? NHAN_SAU_THI.hoc_tiep : t('Chốt bước tiếp');
   const chan = daChot ? {
     huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: daChot })}</span>,
     phu: (b.hen || b.hoanTacDuoc) ? <button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void hoanTac()}>{t('Hoàn tác')}</button> : null,
     chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,
-  } : !coKq || moDiem ? {
-    huy: null, trai: <span className="text-slate-400">{t('Bước tiếp mở sau khi lưu điểm')}</span>,
+  } : moDiem ? {
+    huy: null,
+    trai: tt === 'loi' ? <ChuLuu tt="loi" loi={loi} /> : ttDiem === 'dang' || tt === 'dang' ? <ChuLuu tt="dang" />
+      : !diemDu ? <span className="text-slate-400">{t('Nhập đủ điểm L R W S để chọn bước tiếp')}</span> : null,
+    chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang' || tt === 'dang'} onClick={() => void luuCaHai()}>{gopChot ? t('Lưu điểm · {chon}', { chon: chuChot }) : t('Lưu điểm')}</button>,
   } : daChonTruoc || !b.coTheChon ? {
     huy: null, trai: <span className="text-slate-300">{b.chon ? t('Đã chọn: {chon}', { chon: NHAN_SAU_THI[b.chon] }) : t('Chờ Head / TVV chọn bước tiếp')}</span>,
     chinh: <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button>,
@@ -148,7 +160,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
       chinh: <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void chot()}>{chuChot}</button>,
     }),
   };
-  if (chon === 'lo_trinh_moi' && !khoaBuoc2) {
+  if (chon === 'lo_trinh_moi' && !khoaBuoc2 && !moDiem) {
     return (
       <PanelLoTrinhMoi bt={b} hocVien={em} lop={lop} dau={dau} onClose={onDong} quayLai={{ nhan: t('Sau thi'), onClick: () => setChon(null) }}
         onSaved={() => { LAM_MOI.forEach((k) => invalidate(k)); setChon(null); setDaChot(gioVnNay()); cy.reload(); bt.reload(); onDaLam(); }} />
@@ -157,7 +169,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
 
   return (
     <KhungPanel hd="sau-thi" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}
-      quyChe={daChot ? null : moDiem ? quyCheKqThiThat() : !khoaBuoc2 && chon === 'dung' ? quyCheDungHoc(b.han ? shortDate(b.han, hn) : null) : null}>
+      quyChe={daChot ? null : moDiem && !gopChot ? quyCheKqThiThat() : !khoaBuoc2 && chon === 'dung' ? quyCheDungHoc(b.han ? shortDate(b.han, hn) : null) : null}>
       <div className="flex flex-col gap-4 pt-4">
         <Buoc so={coKq && !moDiem ? '✓' : '1'} xong={coKq && !moDiem} tieuDe={t('Kết quả thi thật')}
           phu={coKq && c.thi_that_nhap_luc ? t('lưu {ngay}', { ngay: shortDate(c.thi_that_nhap_luc, hn) }) : t('không hạn')}>
@@ -188,7 +200,6 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
               <>
                 {!coKq && <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={() => void guiDiem({ khongThi: true, ghiChu: c.outcome_note ?? '' })}>{t('Không thi')}</button>}
                 {suaDiem && <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => { setSuaDiem(false); napDiem(c); }}>{t('Huỷ sửa')}</button>}
-                <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={ttDiem === 'dang'} onClick={luuDiem}>{t('Lưu điểm')}</button>
               </>
             ) : <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaDiem(true)}>{t('Sửa điểm')}</button>}
           </div>
@@ -202,7 +213,7 @@ export function PanelSauThi({ cycleId, em, lop, onDong, onDaLam, onTiep, tenTiep
             {lf.loiCua(loiB, 'chon') && <p role="alert" className="m-0 mt-1.5 text-[13px] text-bad">{lf.loiCua(loiB, 'chon')}</p>}
           </div>
           {chon === 'dung' && !khoaBuoc2 && <KhoiDung v={dung} onChange={setDung} loTrinh={c.route ?? null} disabled={tt === 'dang'} />}
-          {chon === 'hoc_tiep' && !khoaBuoc2 && <KhoiHocTiep bt={b} v={hocTiep} onChange={setHocTiep} loTrinh={c.route ?? null} bamLuu={lf.daBam} disabled={tt === 'dang'} nen="var(--surface-2)" />}
+          {chon === 'hoc_tiep' && !khoaBuoc2 && !moDiem && <KhoiHocTiep bt={b} v={hocTiep} onChange={setHocTiep} loTrinh={c.route ?? null} bamLuu={lf.daBam} disabled={tt === 'dang'} nen="var(--surface-2)" />}
           <Truong nhan={t('Ghi chú')}>
             <textarea className="field w-full" rows={3} maxLength={2000} autoComplete="off" disabled={khoaBuoc2} value={ghiChu} placeholder={t('Trao đổi với HV / PH')}
               onChange={(e) => setGhiChu(e.target.value)} />
@@ -238,8 +249,8 @@ function Buoc({ so, tieuDe, phu, xong, mo = true, children }: { so: string; tieu
  * được — em đã thi) hoặc Dời tháng dự kiến. Cùng đường lưu với Học viên & Lớp › Lịch thi (`PUT /hoc-vien-lop/lich-thi/:cycleId`, máy chủ kiểm quyền + ghi nhật ký).
  * DUONG-LUI-2 (B1-09): lưu xong ô vẫn sửa được — đổi ô thì chân về "Chốt ngày" (lưu lại = sửa, có lịch sử ở Lịch thi), không phải sang trang khác.
  */
-export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, onTiep, tenTiep }: {
-  cycleId: number; em: { id: number; ten: string }; lop: string | null; duKien: string | null;
+export function PanelChotNgayThi({ cycleId, em, lop, duKien, thangDuKien = null, onDong, onDaLam, onTiep, tenTiep }: {
+  cycleId: number; em: { id: number; ten: string }; lop: string | null; duKien: string | null; thangDuKien?: string | null;
   onDong: () => void; onDaLam: () => void; onTiep: (() => void) | null; tenTiep?: string | null;
 }) {
   const [kieu, setKieu] = useState<'ngay' | 'thang'>('ngay');
@@ -249,6 +260,8 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
   const [loi, setLoi] = useState<string | null>(null);
   const [daLuu, setDaLuu] = useState<{ gio: string; kieu: 'ngay' | 'thang'; gia: string } | null>(null);
   const lfC = useLoiForm();
+  /* S4-GD (đề xuất 13): "Dời tháng dự kiến" điền sẵn THÁNG KẾ của tháng dự kiến (`thangDuKien` = yyyy-mm thô từ máy chủ). */
+  const thangMacDinh = thangDuKien ? thangKe(thangDuKien) : '';
   const gia = kieu === 'ngay' ? ngayThi : thang;
   /* Đang hiện "Đã lưu" khi ô còn y như lần lưu; sửa ô → về trạng thái lưu. */
   const xong = daLuu && daLuu.kieu === kieu && daLuu.gia === gia ? daLuu.gio : null;
@@ -270,7 +283,7 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
       dau={dauViec({ em, lop, ngCanh: duKien ? <span className="inline-flex items-center gap-1.5"><NhanLich loai="du-kien">{duKien}</NhanLich></span> : null })}
       chan={xong ? { huy: null, trai: <span role="status" className={`font-semibold ${LOP_DA_LUU}`}>✓ {t('Đã lưu {gio} · Việc xong', { gio: xong })}</span>,
         chinh: nutTiep || <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={onDong}>{t('Đóng')}</button> }
-        : { huy: null, daSua: !!gia, conThieu: lfC.conThieu(loiC), trai: tt || gia ? <ChuLuu tt={tt ?? 'nhap'} loi={loi} /> : null,
+        : { huy: null, daSua: kieu === 'ngay' ? !!ngayThi : !!thang && thang !== thangMacDinh, conThieu: lfC.conThieu(loiC), trai: tt || gia ? <ChuLuu tt={tt ?? 'nhap'} loi={loi} /> : null,
           /* GD-18 (lời 36): còn việc kế → "Đóng" · Chốt ngày · "Chốt ngày · việc tiếp ›" (chính). */
           ...(onTiep && tt !== 'loi' ? {
             phu: <><NutDongPanel busy={tt === 'dang'} /><button type="button" className="btn min-h-[44px] sm:min-h-0" disabled={tt === 'dang'} onClick={() => void luu()}>{t('Chốt ngày')}</button></>,
@@ -280,7 +293,7 @@ export function PanelChotNgayThi({ cycleId, em, lop, duKien, onDong, onDaLam, on
           }) }}>
       <div className="flex flex-col gap-4 pt-4">
         <Truong nhan={t('Chốt')} as="div">
-          <LuaChonRadio ten={`chot-${cycleId}`} nhan={t('Chốt')} value={kieu} disabled={tt === 'dang'} onChange={setKieu}
+          <LuaChonRadio ten={`chot-${cycleId}`} nhan={t('Chốt')} value={kieu} disabled={tt === 'dang'} onChange={(k) => { setKieu(k); if (k === 'thang' && !thang) setThang(thangMacDinh); }}
             muc={[['ngay', t('Ngày thi')], ['thang', t('Dời tháng dự kiến')]]} />
         </Truong>
         {kieu === 'ngay'

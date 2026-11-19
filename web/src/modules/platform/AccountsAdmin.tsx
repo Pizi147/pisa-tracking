@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react';
+import { Fragment, useEffect, useState, type ReactNode } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { api, invalidate } from '../../lib/api.ts';
@@ -523,6 +523,20 @@ function PendingRow({ user, branches, onDone, duyetLai }: {
   );
 }
 
+/** S4-GD (Tutor 20/11, đề xuất 12): mật khẩu ban đầu ngẫu nhiên — 12 ký tự chữ + số bỏ ký tự dễ lẫn (0 O 1 l I), `crypto.getRandomValues`. Điền sẵn khi tạo; sửa được, có nút Chép. */
+const KY_TU_MAT_KHAU = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+const taoMatKhau = (): string => Array.from(crypto.getRandomValues(new Uint32Array(12)), (x) => KY_TU_MAT_KHAU[x % KY_TU_MAT_KHAU.length]).join('');
+
+/** Nút "Chép" cạnh ô mật khẩu ban đầu: chép vào bộ nhớ tạm, 2 giây hiện "Đã chép". Trình duyệt chặn chép → ô vẫn đọc / bôi đen được (không thêm hộp). */
+function NutChepMatKhau({ chu }: { chu: string }) {
+  const [xong, setXong] = useState(false);
+  useEffect(() => { if (!xong) return undefined; const h = setTimeout(() => setXong(false), 2000); return () => clearTimeout(h); }, [xong]);
+  return (
+    <button type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" disabled={!chu} aria-label={t('Chép mật khẩu ban đầu')} aria-live="polite"
+      onClick={() => { void navigator.clipboard?.writeText(chu).then(() => setXong(true), () => undefined); }}>{xong ? t('Đã chép') : t('Chép')}</button>
+  );
+}
+
 /** Tạo tài khoản mới, hoặc sửa vai trò / quyền riêng / mật khẩu của một tài khoản đã có. */
 function AccountDialog({ account, branches, onClose, onDone }: {
   account?: Account; branches: Branch[]; onClose: () => void; onDone: () => void;
@@ -533,7 +547,7 @@ function AccountDialog({ account, branches, onClose, onDone }: {
   /* OV-11b (QT-2): dòng vai Quản trị của chính mình khoá "Gỡ" + ô chọn vai (máy chủ cũng chặn). */
   const qtCuaMinh = !!account && account.id === session?.user?.id && account.roles.some((g) => g.role === 'system_admin');
   const [form, setForm] = useState({
-    fullName: account?.fullName ?? '', email: account?.email ?? '', password: '',
+    fullName: account?.fullName ?? '', email: account?.email ?? '', password: account ? '' : taoMatKhau(),
     phone: account?.phone ?? '', title: account?.title ?? '',
   });
   const [grants, setGrants] = useState<CapVai[]>(() => (account ? capTuTaiKhoan(account.roles) : [{ role: 'teacher', branches: new Set<string>() }]));
@@ -635,8 +649,11 @@ function AccountDialog({ account, branches, onClose, onDone }: {
                   onChange={(e) => setForm({ ...form, email: e.target.value })} />
               </Field>
               <Field label={t('Mật khẩu ban đầu')} required loi={lf.loiCua(loi, 'mat-khau')}>
-                <input className="field w-full" {...lf.o(loi, 'mat-khau')} value={form.password} title={t('Người dùng đổi lại ở hồ sơ cá nhân.')}
-                  onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                <span className="flex items-stretch gap-2">
+                  <input className="field min-w-0 flex-1" autoComplete="off" spellCheck={false} {...lf.o(loi, 'mat-khau')} value={form.password} title={t('Người dùng đổi lại ở hồ sơ cá nhân.')}
+                    onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                  <NutChepMatKhau chu={form.password} />
+                </span>
               </Field>
               <Field label={t('Số điện thoại')}>
                 <input className="field w-full" maxLength={20} value={form.phone}

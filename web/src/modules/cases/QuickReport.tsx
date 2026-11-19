@@ -11,6 +11,7 @@ import { BangChung } from '../../ui/BangChung.tsx';
 import { TepCho, taiTepCho, type TepChoMuc } from '../../ui/TepCho.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { OKhac } from '../../ui/OKhac.tsx';
+import { ChonNhom } from '../fasttrack/NhanXet.tsx';
 import { NutChon } from '../../ui/ui.tsx';
 import { ComponentsField, componentsPayload } from './ChiTietKyNang.tsx';
 import { TenCase } from './SkillBoard.tsx';
@@ -159,6 +160,14 @@ export function QuickReport({
     if (k && !khongGhiBu(k)) chonChip(k);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, kyNangDau, topicsKey]);
+
+  /* S4-GD (Tutor 20/11, đề xuất 5): GV chỉ có quyền ghi đúng MỘT kỹ năng của em (máy chủ trả `ghiBuDuoc` theo quyền) → chọn sẵn, đổi được. Chỉ khi chưa chọn gì; bỏ chip rồi không chọn lại. */
+  const duocGhi = chuDe.data?.ghiBuDuoc;
+  useEffect(() => {
+    if (!open || kyNangDau || chon.length || duocGhi?.length !== 1 || !topics.includes(duocGhi[0])) return;
+    chonChip(duocGhi[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, kyNangDau, topicsKey, duocGhi?.join('|')]);
 
   const ct = chuDe.data?.chuongTrinh ?? null;
   const topicLabel = (k: string) => tenMon(ct, k);
@@ -445,16 +454,12 @@ export function QuickReport({
     const tien = tienCua(kn);
     const k = (s: string) => tien + s;
     const v = cua(kn);
-    const causes = kn ? issuesForTopic(kn, ct) : [];
     return (
       <div>
-        <Truong nhan={t('Nhóm nguyên nhân')} batBuoc loi={loiCua(k('phan-loai'))}>
-          <select className="field w-full" {...o(k('phan-loai'))} value={v.primaryCode} disabled={!kn}
-            title={causes.find((i) => i.code === v.primaryCode)?.hint}
-            onChange={(e) => sua(kn, { primaryCode: e.target.value })}>
-            <option value="">{kn ? t('Chọn nhóm') : t('Chọn kỹ năng trước')}</option>
-            {causes.map((i) => <option key={i.code} value={i.code} title={i.hint}>{i.label}</option>)}
-          </select>
+        {/* S4-GD (đề xuất 7): cùng hàng chip với "Nguyên nhân" của panel Case (`ChonNhom`), chọn một nhóm — thay ô thả. */}
+        <Truong nhan={t('Nhóm nguyên nhân')} batBuoc as="div" loi={loiCua(k('phan-loai'))}>
+          {kn ? <div {...o(k('phan-loai'))} tabIndex={-1} className="outline-none"><ChonNhom mot skill={kn} ct={ct} value={v.primaryCode ? [v.primaryCode] : []} onChange={(x) => sua(kn, { primaryCode: x[0] ?? '' })} /></div>
+            : <span className="text-sm text-slate-400">{t('Chọn kỹ năng trước')}</span>}
         </Truong>
         <OKhac hien={laKhac(v.primaryCode)} value={v.ghiRo} onChange={(x) => sua(kn, { ghiRo: x })} goiY={t('Ví dụ: Chưa quen dạng bài mới')}
           id={lf.oId(k('ghi-ro'))} onBlur={lf.roi(k('ghi-ro'))} loi={lf.hien(k('ghi-ro')) ? kiemGhiRoKhac(v.ghiRo) : null} />
