@@ -65,6 +65,14 @@ Nhãn: **[MÃ]** đã kiểm trong mã · **[SỐ]** đo trên bản chép · **
 
 Đã đúng, giữ: bảng quy chế SOS → PA · mốc tự khép · Hiệu quả PA · N46 (ẩn việc khi có KQ thi thật) · N51 (Học tiếp) · bộ đếm việc một nguồn #1840 (việc "Xác nhận PA", "Kết quả PA" đi qua `/my-work`) · `GET /tutors/chon` (3 số cuối SĐT) · Tải danh sách / Gộp tên gõ tay.
 
-## 4. Dòng đọc hiện tại [MÃ] `server/src/tests/tocDoDuong.ts`
+## 4. Bổ sung 19/11 chiều (sau lời chủ SP)
+
+- **Hạn Kết quả PA "21/11" là thứ Bảy — không phải lỗi công thức.** [MÃ] `hanKyGhiKetQua` / `hanKe` (`shared/domain/week.ts:42-56`) luôn ra thứ Ba. [SỐ] bản chép 12/11: 420 PA đang chạy có hạn — **290 PA hạn 21/11**, còn lại đều thứ Ba (17/11 · 24/11 · 01/12 · 08/12). Nguồn: migrate một lần `prResetHanCase` lúc deploy 07/11 (RESET-HAN-CASE #1127, lời chủ SP 06/11 "Kết quả PA này thôi reset hết cho đến 2 tuần tới đi") đặt hạn = 07/11 + 14 = 21/11. Ghi xong kỳ này, `hanKe` trả hạn kế về thứ Ba. Hệ quả phụ: 290 việc cùng tới hạn một ngày — đúng cảnh "một đống việc" trong ảnh chủ SP.
+- **Nháp máy chủ đã có trong `main` (chưa deploy):** NHAP-KQ-PA (chủ SP 13/11) — `PUT /interventions/:id/nhap`, cột `case_interventions.nhap_ket_qua` (JSON mức + nhận xét; **chưa** giữ số buổi / tutor / 3 nút) — [MÃ] `server/src/cases/cases.ts:4301-4357`, `server/src/schema.sql:1265`.
+- **Dải "Sắp tới" đã có trong `main` (chưa deploy):** GD-21 / LG-13 — trên "Lớp của tôi", cụm "Ghi kết quả PA · {ngày}" chỉ là **một con số** PA tới kỳ trong 7 ngày, chưa có danh sách em / PA — [MÃ] `web/src/modules/congViec/SapToi.tsx:19-21`, `server/src/worklist/mywork.ts:754-780`.
+- **Lưới Kết quả PA đã có:** GD-20c — dòng gộp cùng lớp + cùng kỳ mở lưới ghi nhiều em (`GET /interventions/luoi-ket-qua`, `web/src/modules/congViec/LuoiKetQuaPa.tsx`); PA Tutor không ghi nhanh được, phải mở panel đầy đủ — [MÃ] `shared/domain/paDongBo.ts:72-73`.
+- Việc "Kết quả PA" chỉ hiện từ **hạn − 2 ngày** — [MÃ] `mywork.ts:780, 1004`.
+
+## 5. Dòng đọc hiện tại [MÃ] `server/src/tests/tocDoDuong.ts`
 
 `/tutors` 17–18 câu · 65 dòng (seed) · `/tutors/:id` 18–19 câu · `/tutors/chon` 15–21 câu · 60–95 dòng. Chưa có trần cho vai Head tutor.

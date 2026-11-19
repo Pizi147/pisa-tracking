@@ -1,6 +1,11 @@
 # 01 — Đề bài: Tutor để làm gì, ai được gì (19/11/2026)
 
-Session PTA Tutor (Fable 5.2 · high). Trạng thái: **ĐỀ XUẤT — chờ chủ SP trả lời `04-cau-hoi.md`**. Chưa có gì ở đây là đã duyệt, trừ dòng ghi "đã chốt".
+Session PTA Tutor (Fable 5.2 · high).
+
+> **CẬP NHẬT 19/11 chiều — chủ SP đã trả lời (nguyên văn `plan.md` mục 4):** KHÔNG theo cách B dưới đây. Chọn gần cách A, làm gọn: không phân công người dạy · không tính vắng (số buổi "a / b") · một dòng gộp cho cả kỳ · 3 nút Có / Không tuỳ chọn · lưu nháp trong kỳ + khối "PA đang chạy" · ô Tutor gồm GV. Mục đích chủ SP nêu: Tutor để **làm rõ kết quả và đánh giá được tutor, không sinh thêm việc**.
+> Bản đang có hiệu lực: `02-luat.md` + `03-workflow.md` (bản 2). Mục 3, 4 dưới đây (bảng vai, ba cách) giữ làm lịch sử cân nhắc; mục 2 (đầu ra, số liệu) vẫn đúng.
+
+Trạng thái bản 1: **ĐỀ XUẤT — chờ chủ SP trả lời `04-cau-hoi.md`**. Chưa có gì ở đây là đã duyệt, trừ dòng ghi "đã chốt".
 Lời chủ SP 19/11: "design lại UI/UX, luật, workflow của tutor và các vai trò liên quan" (plan.md mục 4).
 
 ## 1. Một câu
