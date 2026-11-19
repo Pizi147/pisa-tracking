@@ -299,7 +299,7 @@ export async function runPrTutor5Tests(t: any) {
       const g = chonSvc.chonTutor(p, { gop: true, q: tenGv.split(' ').pop() });
       assert(g.ds.some((r: any) => r.loai === 'gv' && r.gvId === GV.userId && r.sdtDuoi === null), `${ai}: gõ tên → có GV (loai gv, không SĐT)`);
     }
-    assert(!chonSvc.chonTutor(HMB, { studentId: one('SELECT student_id id FROM enrollments LIMIT 1').id, q: 'Thử Chọn' }).ds.some((r: any) => r.id === ngung), 'ô chọn thường: tutor Ngừng hợp tác không hiện');
+    assert(!chonSvc.chonTutor(QT, { paId: one("SELECT id FROM case_interventions WHERE kind = 'tutor' ORDER BY id LIMIT 1").id, q: 'Thử Chọn' }).ds.some((r: any) => r.id === ngung), 'ô chọn thường: tutor Ngừng hợp tác không hiện');
     for (const [ai, p] of [['CX', CXALL], ['GV', GV]] as const) assert(ma(() => chonSvc.chonTutor(p, { gop: true })) === 403, `${ai} 403`);
   }));
 
