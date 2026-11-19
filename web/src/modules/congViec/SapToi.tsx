@@ -8,17 +8,15 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { VUNG_BAM_SO, LOP_OSO } from '../../ui/SoLieu.tsx';
 import type { TestSapToi } from './LopCuaToi.tsx';
 
-/** `/my-work` vai GV, khoá `sapToi` (LG-13 H7): việc CHƯA sinh trong 7 ngày — không có gì thì máy chủ không trả khoá. */
+/** `/my-work` vai GV, khoá `sapToi` (LG-13 H7): việc CHƯA sinh trong 7 ngày (đợt Báo cáo PH sắp mở; Test từ `testSapToi`) — không có gì thì máy chủ không trả khoá. TU2-4: PA chưa tới hạn ở khối "PA đang chạy" (`paDangChay`), không ở đây. */
 export type SapToiGv = {
-  paToiKy: { so: number; han: string } | null;
   baoCaoPh: { classId: number; code: string; dot: string; nhanDot: string; mo: string }[];
 };
-type Cum = { khoa: 'test' | 'pa' | 'ph'; ten: string; tom: string; so: number; nhan: string; hop: string; dong: ReactNode[]; chan?: ReactNode };
+type Cum = { khoa: 'test' | 'ph'; ten: string; tom: string; so: number; nhan: string; hop: string; dong: ReactNode[]; chan?: ReactNode };
 
 /**
  * GD-21 (mockup ⑬ H7): dòng "Sắp tới" 7 ngày trên "Lớp của tôi" — dáng dải chỉ số mỏng: nhãn · cụm "tên + ô số" · ⓘ. Bấm số → hộp nhỏ tại chỗ (đã nạp, 0 request).
  * Không vào số việc / badge; thiếu cụm nào bỏ cụm đó, không cụm nào thì không vẽ dòng. 375: MỘT hàng 44 "Sắp tới · Test · Kết quả PA ⌄", bấm mở mỗi cụm một hàng.
- * ponytail: hộp "Kết quả PA" chỉ ghi số + kỳ (máy chủ chưa trả em / lớp / kỹ năng từng PA — thêm khi LG-13 trả danh sách).
  */
 export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; testSapToi?: TestSapToi[]; tenLop: (classId: number) => string | undefined }) {
   const { homNay, ngan } = useNgayNghiepVu();
@@ -43,13 +41,6 @@ export function SapToi({ sapToi, testSapToi, tenLop }: { sapToi?: SapToiGv; test
       hop: t('Test trong 7 ngày tới'),
       dong: lopTest.map((x) => <span key={x.classId}><Link className="font-semibold" to={duongLichTest({ classId: x.classId })}>{tenLop(x.classId) ?? `#${x.classId}`}</Link> <span className="text-dim">{x.testKeTiep}</span></span>),
       chan: <Link className="link" to={duongLichTest()}>{t('Lịch Test ›')}</Link> });
-  }
-  if (sapToi?.paToiKy) {
-    const han = ngan(sapToi.paToiKy.han);
-    cum.push({ khoa: 'pa', ten: t('Ghi kết quả PA · {ngay}', { ngay: han }), tom: t('Kết quả PA'), so: sapToi.paToiKy.so,
-      nhan: t('{n} PA tới kỳ ghi kết quả {ngay}', { n: sapToi.paToiKy.so, ngay: han }), hop: t('Ghi kết quả PA · {ngay}', { ngay: han }),
-      dong: [<span key="pa">{t('{n} PA tới kỳ ghi kết quả {ngay}', { n: sapToi.paToiKy.so, ngay: han })}</span>],
-      chan: <Link className="link" to="/cong-viec?nhom=case-hoc-thuat">{t('Công việc ›')}</Link> });
   }
   if (sapToi?.baoCaoPh.length) {
     const ds = sapToi.baoCaoPh;

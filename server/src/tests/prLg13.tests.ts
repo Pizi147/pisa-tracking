@@ -101,14 +101,10 @@ export async function runPrLg13Tests(t: any) {
       const homNay = demoToday();
       xoaNho();
       const st = tq.sapToiCuaGv(p).sapToi;
-      const tu = mw.hanGhiKetQuaToi(homNay), den = mw.hanGhiKetQuaToi(d.addDaysIso(homNay, 7));
-      const viecSau = sauBay(() => mw.myWork(p).items);
-      const sau = viecSau.filter((i: any) => i.group === 'ghi_ket_qua_pa' && i.mine && i.due > tu && i.due <= den);
-      /* Lần ghi cuối của nhóm Bổ trợ có Mini Test chờ thành "Ghi Mini Test" — Sắp tới vẫn đếm (ponytail ở `sapToiCuaGv`). */
-      const mini = viecSau.filter((i: any) => i.group === 'mini_test' && i.mine).length;
-      const so = st?.paToiKy?.so ?? 0;
-      assert(so >= sau.length && so - sau.length <= mini, `GV ${id}: Sắp tới ${so} PA ≠ ${sau.length} việc 7 ngày sau (+ ${mini} Mini Test)`);
-      if (sau.length) { coPa++; assert(st.paToiKy.han <= sau.map((i: any) => i.due).sort()[0], `GV ${id}: hạn sớm nhất lệch`); }
+      const viecSau = sauBay(() => mw.myWork(p).items);   // TU2-4: cụm "PA tới kỳ" bỏ — PA chưa tới hạn nằm ở `paDangChay` (prTu22)
+      assert(!(st as any)?.paToiKy, `GV ${id}: sapToi không còn paToiKy`);
+      const coPaSau = viecSau.some((i: any) => i.group === 'ghi_ket_qua_pa' && i.mine);
+      if (coPaSau) coPa++;
       const nguoi = [{ userId: id, assignments: p.assignments }];
       const khoa = (v: any) => `${v.classId}|${v.dot}`;
       const bcNay = new Set(bc.viecBaoCaoPhGv(nguoi, homNay).map(khoa));
@@ -120,7 +116,7 @@ export async function runPrLg13Tests(t: any) {
         assert(bcSau.has(khoa(x)), `GV ${id}: đợt ${khoa(x)} ở Sắp tới mà 7 ngày sau không thành việc`);
       }
       for (const k of bcSau) if (!bcNay.has(k)) assert(sapMo.has(k), `GV ${id}: việc BC PH ${k} 7 ngày sau không có ở Sắp tới`);
-      if (st) assert(st.paToiKy || st.baoCaoPh.length, `GV ${id}: khối rỗng phải null`);
+      if (st) assert(st.baoCaoPh.length, `GV ${id}: khối rỗng phải null`);
     }
     console.log(`    (${ids.length} GV, ${coPa} GV có PA tới kỳ, ${coBc} đợt BC PH sắp mở)`);
   });

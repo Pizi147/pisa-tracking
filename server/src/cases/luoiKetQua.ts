@@ -26,6 +26,8 @@ export type DongLuoiKetQua = {
   nhap: { outcome: string; note: string; luc: string; boi: string; soBuoi: number | null; buoiDuKien: number | null; buoi: BuoiTutor[] } | null;
   /** TU2-2 (TU11): "b" điền sẵn — b của lần ghi gần nhất CÓ b (dự phòng có chủ ý: lần ghi cũ / web cũ không gửi b thì lấy b trước đó, rà #1864); chưa có thì `so_buoi` cũ của PA quy chế SOS (nhập dưới nhãn "/ 2 tuần"). PA không có ô a / b: null. */
   buoiKy: number | null;
+  /** TU2-4: `so_buoi` của PA — web quyết dòng ghi nhanh được (`ghiNhanhDuoc`) từ chính PA (PA chưa tới hạn không có dòng việc). */
+  soBuoi: number | null;
   /** TU2-2 (TU4): tutor của lần ghi gần nhất (dòng Tutor cuối) — cùng luật `dienSan` của `/tutors/chon` (tutor ngừng / GV đã xoá: null). PA khác Tutor: null. */
   tutorTruoc: { tutorId: number | null; gvId: number | null; ten: string } | null;
   mt: { attemptNo: number; band: number; expectation: number | null } | null;
@@ -81,6 +83,7 @@ export function luoiKetQua(p: Principal, ids: readonly number[]): { ds: DongLuoi
         performer: r.performer ?? null, performerUserId: r.performer_user_id ?? null, cycleNo: r.cycle_no ?? 1,
         dangChay: r.status === 'planned' || r.status === 'started',
         nhap: n ? { outcome: n.outcome, note: n.note, luc: n.luc, boi: n.boi, soBuoi: n.soBuoi ?? null, buoiDuKien: n.buoiDuKien ?? null, buoi: n.buoi ?? [] } : null,
+        soBuoi: r.so_buoi ?? null,
         buoiKy: !coSoBuoiKy({ kind: r.kind, soBuoi: r.so_buoi ?? null }) ? null : r.b_truoc ?? (quyChe ? r.so_buoi ?? null : null),
         tutorTruoc: tt && tt[3] ? { tutorId: tt[0], gvId: tt[1], ten: tt[2] } : null,
         mt: m ? { attemptNo: m[0], band: Number(m[1]), expectation: m[2] == null ? null : Number(m[2]) } : null,

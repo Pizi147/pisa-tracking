@@ -1,7 +1,7 @@
 import { db } from '../db.ts';
 import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import {
-  ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, daiDienNhomBoTro, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
+  ASSESSED_SKILLS, nhanDotNgan, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, daiDienNhomBoTro, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
   type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type PaDangChay, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
@@ -383,8 +383,8 @@ const PA_CUA_GV_SQL = `
           UNION SELECT iv2.id FROM sos_cases sc2 JOIN case_interventions iv2 ON iv2.case_id = sc2.id WHERE sc2.owner_user_id = ? AND sc2.status != 'done'
           UNION SELECT iv2.id FROM case_interventions iv2 WHERE iv2.nhom_bo_tro IN (SELECT nhom_bo_tro FROM case_interventions WHERE performer_user_id = ?
             AND kind = 'bo_tro_mien_phi' AND status IN ('planned', 'started'))`;
-export function sapToiCuaGv(p: Principal, branchId?: number | null): { sapToi: { paToiKy: { so: number; han: string } | null; baoCaoPh: DotBcSapMo[] } | null; paDangChay: PaDangChay[] } {
-  const today = demoToday(), den = hanGhiKetQuaToi(addDays(today, 7));
+export function sapToiCuaGv(p: Principal, branchId?: number | null): { sapToi: { baoCaoPh: DotBcSapMo[] } | null; paDangChay: PaDangChay[] } {
+  const today = demoToday();
   const lop = [...new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId))];
   /* Người dạy nhóm `mt:` đọc trong cùng câu (khỏi `nguoiDayNhom`). TU2-2: bỏ cận trên 7 ngày — mọi PA chưa tới hạn (khối "PA đang chạy"); cùng câu, + 0 câu. */
   const hang = db().prepare(`SELECT x.*, ${NGUOI_DAY_NHOM('x.nhom_bo_tro')} AS nguoi_day
@@ -405,16 +405,13 @@ export function sapToiCuaGv(p: Principal, branchId?: number | null): { sapToi: {
     const n = docNhapKetQua(r.nhap_ket_qua);   // cột thô, tách ở JS — đo bản chép: 3 `json_extract` mỗi dòng tốn bước máy ảo hơn
     return {
       paId: r.id, caseId: r.case_id, studentId: r.eff_student_id, studentName: r.full_name ?? 'Học viên', classId: r.eff_class_id ?? null, classCode: r.class_code ?? null,
-      topic: r.topic ?? null, kind: r.kind, tenPa: tenPaCua(r), han: r.action_due,
+      topic: r.topic ?? null, kind: r.kind, tenPa: tenPaCua(r), han: r.action_due, dot: nhanDotNgan(r.attempt_kind, r.attempt_no),
       nhap: n ? { soBuoi: n.soBuoi ?? null, buoiDuKien: n.buoiDuKien ?? null, luc: n.luc } : null,
     };
   }).sort((a, b) => a.han.localeCompare(b.han) || a.paId - b.paId);
-  /* LG-13 cụm "Kết quả PA" (cửa sổ 7 ngày) giữ cho web hiện tại tới khi TU2-4 thay bằng khối "PA đang chạy" — cùng hàng đã đọc, 0 câu. */
-  const toiKy = cua.filter((r) => r.action_due <= den);
   const baoCaoPh = dotBcSapMoGv({ userId: p.userId, assignments: p.assignments }, today, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today)
     .filter((x) => !branchId || bangLop().get(x.classId)?.branchId === branchId);
-  const sapToi = toiKy.length || baoCaoPh.length
-    ? { paToiKy: toiKy.length ? { so: toiKy.length, han: toiKy.map((r) => r.action_due as string).sort()[0] } : null, baoCaoPh } : null;
+  const sapToi = baoCaoPh.length ? { baoCaoPh } : null;   // TU2-4: cụm "PA tới kỳ" bỏ — khối "PA đang chạy" (`paDangChay`) thay
   return { sapToi, paDangChay };
 }
 

@@ -24,7 +24,7 @@ export const EN_GD21 = {
   'Việc sẽ có trong 7 ngày tới, chưa thành việc — không tính vào số việc.': 'Tasks that will appear in the next 7 days, not yet tasks — not counted in the task total.',
   'Sao chép việc quá hạn của {gv} để nhắn': 'Copy {gv}’s overdue items to message',
   'Đã chép': 'Copied',
-  'Dòng <b>Sắp tới</b> trên cùng: việc sẽ có trong 7 ngày tới (Test, Kết quả PA, Báo cáo PH) — bấm số mở hộp nhỏ; chưa tính vào số việc. Không có gì thì không hiện.': 'The <b>Coming up</b> row on top: tasks that will appear in the next 7 days (Test, PA result, parent report) — click a number to open a small box; not counted in the task total. Hidden when empty.',
+  'Dòng <b>Sắp tới</b> trên cùng: việc sẽ có trong 7 ngày tới (Test, Báo cáo PH) — bấm số mở hộp nhỏ; chưa tính vào số việc. Không có gì thì không hiện.': 'The <b>Coming up</b> row on top: tasks that will appear in the next 7 days (Test, parent report) — click a number to open a small box; not counted in the task total. Hidden when empty.',
   'Panel Case có dải bốn bước (Chờ mô tả · Chờ chọn PA · Đang chạy · Chờ kết quả cuối): bấm bước để lọc, <b>Bỏ lọc bước</b> về bộ lọc ban đầu. Panel <b>Bài quá hạn</b> theo GV có biểu tượng hai tờ giấy: chép chữ nhắc GV để dán Zalo (không có tên học viên).': 'The Case panel has a four-step strip (Awaiting description · Awaiting PA choice · Running · Awaiting final result): click a step to filter, <b>Clear step filter</b> returns to the original filter. The overdue panel per teacher has a two-sheets icon: copies a reminder text to paste in Zalo (no student names).',
   '{gv} · {n} bài quá hạn (tới {ngay})': '{gv} · {n} overdue (to {ngay})',
   '{gv} · {n} {dv} quá hạn (tới {ngay})': '{gv} · {n} {dv} overdue (to {ngay})',

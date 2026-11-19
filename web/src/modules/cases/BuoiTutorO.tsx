@@ -122,9 +122,11 @@ function BaNut({ i, b, ten, dat }: { i: number; b: BuoiTutor; ten: string; dat: 
               ))}
             </span>
           </div>
-          <Truong nhan={t('Nhận xét về tutor')}>
+          {/* TU2-4: nhãn cùng cỡ / độ đậm với nhãn "Đánh giá" ngay trên (13 / 600), không dùng nhãn ô 12 / 500. */}
+          <label className="block min-w-0">
+            <span className="mb-1 block text-[13px] font-semibold text-slate-300">{t('Nhận xét về tutor')}</span>
             <textarea className="field w-full" rows={2} maxLength={1000} value={b.nhanXetTutor ?? ''} onChange={(e) => dat({ nhanXetTutor: e.target.value })} />
-          </Truong>
+          </label>
         </div>
       </details>
     </div>
