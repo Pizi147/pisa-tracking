@@ -422,14 +422,14 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
     <tr className={`do-hang ${row.ngungHoc ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`} data-hv={row.studentId}>
       {/* Tên một dòng (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: dòng thi (Điểm theo lớp) · "lịch sử" · dấu lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
-        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline max-sm:block ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
+        <span className={`inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0 align-baseline max-sm:block ${lich ? "[&>a.link]:!text-slate-100 [&>a.link]:no-underline [&>a.link:hover]:underline" : ''}`}>
           {/* TEN-HV-LINK (chủ SP 07/11): tên = hồ sơ HV; lượt mở qua "MTn ›". */}
           {/* S-CHEO-CN (chủ SP: "web không bị clipped"): 375 tên dài XUỐNG DÒNG thay vì cắt (`truncate` trên inline-flex mất "…"). */}
           {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`): tên + MTn chữ thường (hồ sơ / lượt của em đó 403). */}
           {(row as { xemHoSo?: boolean }).xemHoSo === false
-            ? <><span className="min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span><span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400 max-sm:ml-1.5">MT{row.attemptNo}</span></>
+            ? <><span className="ten-hv font-semibold" style={{ color: 'var(--text)' }}>{row.studentName}</span><span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400 max-sm:ml-1.5">MT{row.attemptNo}</span></>
             : <>
-              <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
+              <Link className="ten-hv ten-ho-so font-semibold" to={duongHoSoHocVien(row.studentId)}>{row.studentName}</Link>
               <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:ml-1.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
             </>}
         </span>
@@ -595,8 +595,8 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
     <article className={`flex flex-col gap-2 border-b border-[color:var(--line)] px-3.5 py-3 ${active ? 'dang-mo' : ''} ${row.ngungHoc ? 'row-muted' : ''}`} data-hv={row.studentId}>
       <div className="flex min-w-0 flex-wrap items-center gap-x-2">{/* DO-KHUNG-DO: thiếu chỗ thì chip xuống dòng, không cắt tên */}
         {(row as { xemHoSo?: boolean }).xemHoSo === false   /* GV-CU-BO-TRO [XM-2] */
-          ? <span className="inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span>
-          : <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongHoSoHocVien(row.studentId)} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>}
+          ? <span className="ten-hv inline-flex min-h-[44px] items-center font-semibold" style={{ color: 'var(--text)' }}>{row.studentName}</span>
+          : <Link className="ten-hv ten-ho-so inline-flex min-h-[44px] items-center font-semibold" to={duongHoSoHocVien(row.studentId)}>{row.studentName}</Link>}
         <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="inline-flex min-h-[44px] items-center">MT{row.attemptNo}</span>
           : <Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
@@ -661,7 +661,7 @@ function DongSExHv({ d, ten, studentId, cotDs, cc, rieng }: {
   return (
     <tr className="do-hang" data-hv={studentId} data-sex={d.id}>
       <OBang c={cc.hv}>
-        {rieng ? <span className="inline-flex max-w-full items-center gap-1.5"><Link className="ten-ho-so truncate" title={ten} to={`/hoc-vien/${studentId}`}>{ten}</Link>{chip}</span> : <span className="pl-3">{chip}</span>}
+        {rieng ? <span className="inline-flex max-w-full flex-wrap items-center gap-x-1.5 gap-y-0"><Link className="ten-hv ten-ho-so" to={`/hoc-vien/${studentId}`}>{ten}</Link>{chip}</span> : <span className="pl-3">{chip}</span>}
       </OBang>
       <td className="td text-xs text-slate-400" colSpan={Math.max(iS - 1, 1)}>{d.nguoiCham ?? ''}{d.nhanXet ? <span className="block truncate" title={d.nhanXet}>{d.nhanXet}</span> : null}</td>
       {iS > 0 && (
