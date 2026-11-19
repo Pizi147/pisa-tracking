@@ -310,7 +310,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   );
 }
 
-const NUT_MA = 'btn btn-sm min-h-[44px] w-fit justify-self-start border-transparent bg-transparent px-2 text-[13px] font-semibold text-[color:var(--accent)] hover:border-[color:var(--line-strong)] focus-visible:border-[color:var(--line-strong)] sm:-ml-2 sm:min-h-[30px]';
+const NUT_MA = 'btn btn-sm min-h-[44px] w-fit justify-self-start border-transparent bg-transparent px-2 max-sm:!border-[color:var(--line-strong)] max-sm:!bg-[color:var(--surface-2)] max-sm:px-3 text-[13px] font-semibold text-[color:var(--accent)] hover:border-[color:var(--line-strong)] focus-visible:border-[color:var(--line-strong)] sm:-ml-2 sm:min-h-[30px]';
 const NUT_VIEN = 'btn btn-sm min-h-[44px] w-fit justify-self-start px-2.5 text-[13px] font-semibold sm:min-h-[30px]';
 /* Chữ qua `t` lúc vẽ (đổi ngôn ngữ không tải lại mô-đun). */
 const chuTt = (tt: Tt): string => ({

@@ -22,7 +22,7 @@ import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
 import { SapToi, type SapToiGv } from './SapToi.tsx';
-import { PaDangChayKhoi } from './PaDangChay.tsx';
+import { PaDangChayKhoi, viecPdcTheoKhoa } from './PaDangChay.tsx';
 import { NutTask } from './NutTask.tsx';
 import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
 import { DaiChiSoTvv, type ChiSoTvv } from '../worklist/TongQuanV5.tsx';
@@ -273,9 +273,9 @@ export function HoTroHocVienTab() {
   /* `viec` trỏ tới việc không có panel (đường cũ, gõ tay) → như chưa chọn. */
   const chon = useMemo(() => {
     /* DON-HINH: việc mở từ chuông / link có thể không thuộc "Của tôi" — tìm cả danh sách QL đã nạp, không riêng dòng đang lọc. */
-    const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? pdcMo.current.get(viec) ?? null : null;
+    const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? pdcMo.current.get(viec) ?? viecPdcTheoKhoa(data?.paDangChay ?? [], viec, uid ?? null) ?? null : null;
     return x && lamTaiCho(x) ? x : null;
-  }, [viec, hienThi, giu, dsGoc]);
+  }, [viec, hienThi, giu, dsGoc, data?.paDangChay]);   // eslint-disable-line react-hooks/exhaustive-deps
   const luoiRong = !!chon && chon.group === 'ghi_ket_qua_pa' && moCaDong(chon);
   /*
    * Danh sách vẽ: cùng bộ lọc, cộng dòng đã làm giữ chỗ. OV-11c (CV-3): đang mở panel thì GIỮ THỨ TỰ lúc mở — dòng xong / làm một phần (hạn đổi) đứng

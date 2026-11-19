@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { caseTopicLabel, duongHoSoHocVien, kyGhiKetQua, type PaDangChay } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
@@ -32,6 +32,14 @@ export const viecTuLop = (g: Nhom, uid: number | null): WorkItem => ({
   due: g.ds.map((x) => x.han).sort()[0],
   con: g.ds.map((x) => ({ ...viecTuPa(x, uid), conTen: x.studentName, conPhu: '' })),
 });
+
+/** Dựng lại việc từ khoá trên địa chỉ (F5 / link) — `action:{paId}` hoặc `pdc-lop:{lớp}`; không có trong `paDangChay` → null. */
+export function viecPdcTheoKhoa(ds: readonly PaDangChay[], khoa: string, uid: number | null): WorkItem | null {
+  if (khoa.startsWith('action:')) { const x = ds.find((y) => `action:${y.paId}` === khoa); return x ? viecTuPa(x, uid) : null; }
+  if (!khoa.startsWith('pdc-lop:')) return null;
+  const g = gomTheoLop(ds).find((y) => `pdc-lop:${y.classId}` === khoa && y.ds.length > 1);
+  return g ? viecTuLop(g, uid) : null;
+}
 
 const KHOA_GAP = (uid: number | null) => `pisa.pa-dang-chay.gap.u${uid ?? ''}`;
 const docGap = (uid: number | null): boolean | null => { try { const v = localStorage.getItem(KHOA_GAP(uid)); return v === null ? null : v === '1'; } catch { return null; } };
@@ -74,11 +82,24 @@ const Av = () => (
 );
 const TEN = 'min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug text-[color:var(--text)]';
 
+/** ponytail: 375 vẽ lại dòng (DongNho + dải lớp) thay vì một dòng co giãn — mockup D5 khác hẳn bố cục 1440; gộp khi có thêm màn dùng chung. */
+/** 375: thẻ hai dòng — tên · hạn │ kỹ năng · PA · nhãn nháp (hai dòng đều cao ≥ 44). */
+function DongNho({ k, chonDong, tren, duoi, han, nut, onBam }: { k: string; chonDong: boolean; tren: ReactNode; duoi: ReactNode; han: string; nut: ReactNode; onBam: () => void }) {
+  return (
+    <div data-hd="pdc-dong-nho" data-khoa={k} onClick={onBam} className={`grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 px-3.5 sm:hidden ${chonDong ? 'row-active' : 'bam'}`}>
+      <span className="min-w-0 truncate text-[15px] text-[color:var(--text)]" title={typeof tren === 'string' ? tren : undefined}>{tren}</span>
+      <span className="justify-self-end"><ChipHan vien loai="cap-nhat-pa" han={han} /></span>
+      <span className="min-w-0 truncate text-[13px] text-dim" title={typeof duoi === 'string' ? duoi : undefined}>{duoi}</span>
+      <span className="justify-self-end" onClick={(e) => e.stopPropagation()}>{nut}</span>
+    </div>
+  );
+}
+
 export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangChay[]; uid: number | null; onMo: (it: WorkItem) => void; chon: string | null }) {
   const [gap, setGap] = useState<boolean>(() => docGap(uid) ?? ds.length > NGUONG_GAP);
   const [moLop, setMoLop] = useState<ReadonlySet<string>>(new Set());
   const nhapMoi = useNhapPaMoi(ds);
-  const { homNay } = useNgayNghiepVu();
+  const { homNay, ngan } = useNgayNghiepVu();
   const nhom = useMemo(() => gomTheoLop(ds), [ds]);
   if (!ds.length) return null;   // không PA → không vẽ khối
   const nhapCua = (x: PaDangChay): NhapPaMoi => (nhapMoi.has(x.paId) ? nhapMoi.get(x.paId)! : x.nhap);
@@ -87,7 +108,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
   const moPa = (x: PaDangChay) => onMo(viecTuPa(x, uid));
   return (
     <section data-muc="pa-dang-chay" className="card mt-3.5 overflow-clip p-0" aria-label={t('PA đang chạy')}>
-      <DaiNhom k="pa-chay" nhan={t('PA đang chạy')} chip={t('{n} PA', { n: ds.length })} mo={!gap} onMo={doiGap} trungTinh
+      <DaiNhom k="pa-chay" nhan={t('PA đang chạy')} chip={t('{n} PA', { n: ds.length })} mo={!gap} onMo={doiGap} trungTinh chevPhai
         luat={<NutLuat label={t('Giải thích PA đang chạy')}>{t('PA bạn đang giữ, chưa tới hạn ghi kết quả. Tới hạn − 2 ngày PA chuyển lên nhóm Kết quả PA. Không tính vào số việc.')}</NutLuat>} />
       {!gap && (
         <ul className="m-0 list-none p-0">
@@ -103,7 +124,22 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
               : <>{g.lop ? <><b className="font-semibold">{g.lop}</b> · </> : null}{dichDu(x0.tenPa)}</>;
             return (
               <li key={g.khoa} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
-                <div data-hd="pdc-dong" data-khoa={key} className={`${DONG} ${chonDong ? 'row-active' : 'bam'}`}
+                {/* 375 (mockup D5, R1.23): dải lớp cao 44 "MB FT 101 · 4 PA · hạn 24/11 ⌄" · thẻ hai dòng (tên · hạn │ kỹ năng · PA · nhãn nháp). */}
+                {nhieu ? (
+                  <div data-hd="pdc-dong-nho" data-khoa={key} className={`flex min-h-[44px] items-center gap-2 pl-3.5 pr-1 sm:hidden ${chonDong ? 'row-active' : ''}`}>
+                    <button type="button" className="min-h-[44px] min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-left text-[15px] text-[color:var(--text)]" onClick={() => onMo(viecTuLop(g, uid))}>
+                      <b className="font-semibold">{g.lop}</b> <span className="text-[13px] text-dim">· {t('{n} PA', { n: g.ds.length })} · {t('hạn {ngay}', { ngay: ngan(han) })}</span>
+                    </button>
+                    <button type="button" aria-expanded={mo} aria-label={t('{n} PA · {lop}', { n: g.ds.length, lop: g.lop ?? '' })} onClick={() => khay(g.khoa)}
+                      className="inline-flex h-11 w-11 shrink-0 appearance-none items-center justify-center rounded-md border-0 bg-transparent text-dim">
+                      <svg viewBox="0 0 16 16" aria-hidden className={`h-4 w-4 fill-none stroke-current motion-safe:transition-transform ${mo ? 'rotate-90' : ''}`} strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5 10.5 8 6 12.5" /></svg></button>
+                  </div>
+                ) : (
+                  <DongNho k={key} chonDong={chonDong} han={x0.han} onBam={() => moPa(x0)} nut={<NutNhap x={x0} nhap={nhapCua(x0)} onBam={() => moPa(x0)} />}
+                    tren={<>{g.lop ? <b className="font-semibold">{g.lop} · </b> : null}{dichDu(x0.tenPa)}</>}
+                    duoi={<><Link to={duongHoSoHocVien(x0.studentId)} onClick={(e) => e.stopPropagation()} className="text-dim no-underline hover:underline">{x0.studentName}</Link>{nhanKn(x0) ? ` · ${nhanKn(x0)}` : ''}</>} />
+                )}
+                <div data-hd="pdc-dong" data-khoa={key} className={`${DONG} max-sm:hidden ${chonDong ? 'row-active' : 'bam'}`}
                   onClick={() => (nhieu ? onMo(viecTuLop(g, uid)) : moPa(x0))}>
                   <span className="flex min-w-0 items-center gap-3 max-sm:items-start"><Av />
                     <span className="grid min-w-0 gap-0.5">
@@ -129,8 +165,11 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                     {g.ds.map((x, j) => {
                       const k2 = `action:${x.paId}`;
                       return (
-                        <li key={x.paId} className={`${NET_CAY} ${j ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
-                          <div data-hd="pdc-em" data-khoa={k2} className={`${DONG} min-h-[48px] pl-8 max-sm:py-2 sm:pl-8 ${chon === k2 ? 'row-active' : 'bam'}`} onClick={() => moPa(x)}>
+                        <li key={x.paId} className={`${NET_CAY} max-sm:before:hidden max-sm:after:hidden ${j ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
+                          <DongNho k={k2} chonDong={chon === k2} han={x.han} onBam={() => moPa(x)} nut={<NutNhap x={x} nhap={nhapCua(x)} onBam={() => moPa(x)} />}
+                            tren={<Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="inline-flex min-h-[44px] items-center font-semibold text-[color:var(--text)] no-underline hover:underline">{x.studentName}</Link>}
+                            duoi={[nhanKn(x), dichDu(x.tenPa)].filter(Boolean).join(' · ')} />
+                          <div data-hd="pdc-em" data-khoa={k2} className={`${DONG} min-h-[48px] pl-8 max-sm:hidden sm:pl-8 ${chon === k2 ? 'row-active' : 'bam'}`} onClick={() => moPa(x)}>
                             <span className="grid min-w-0 gap-0.5">
                               <span className="flex min-w-0 items-baseline gap-2 text-[15px] leading-snug max-sm:items-center">
                                 <Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="shrink-0 font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center">{x.studentName}</Link>

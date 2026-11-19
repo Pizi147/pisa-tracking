@@ -166,9 +166,15 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
  * tên 15 / 700, chip đếm vuông có đơn vị, phụ 13; dính khi cuộn (thẻ cha `overflow-clip`, không `overflow-hidden`). Bấm tên = gập / mở. Dùng chung cho
  * "Chờ bạn duyệt" và "Việc quản lý" rỗng ở `HoTroHocVienTab` — mọi nhóm cùng dáng.
  */
-export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false }: {
+export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false, chevPhai = false }: {
   k: string; nhan: string; chip?: string; mo: boolean; onMo: () => void; luat?: ReactNode; phu?: ReactNode; trungTinh?: boolean;
+  /** TU2-4 (mockup Ⓣ1 D1, duyệt 19/11): chevron ở mép phải dải (sau ⓘ) thay vì ngay sau tên — chỉ khối "PA đang chạy". */
+  chevPhai?: boolean;
 }) {
+  const chev = (
+    <svg viewBox="0 0 16 16" aria-hidden className={`h-4 w-4 shrink-0 fill-none stroke-[color:var(--text-dim)] group-hover:stroke-[color:var(--text)] motion-safe:transition-transform ${mo ? 'rotate-90' : ''}`}
+          strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
+  );
   return (
     /* v12 S8: MỘT hàng cả ở 375 — tên · chip "n việc" · số quá hạn cùng hàng (không số phụ thứ hai); tên dài thì tên xuống dòng, không cắt (M2).
        CV6 (mockup v18, chủ SP 10/11): chevron 16 px NGAY SAU tên (sau chip), xoay khi mở; CẢ DẢI là một nút (lớp phủ `after:`) — rê / focus cả dải;
@@ -181,11 +187,11 @@ export function DaiNhom({ k, nhan, chip, mo, onMo, luat, phu, trungTinh = false 
         <span className="min-w-0 text-[color:var(--text)]">{nhan}</span>
         {chip && <span className="inline-flex h-[22px] shrink-0 items-center whitespace-nowrap rounded border px-[7px] text-xs font-semibold tabular-nums text-[color:var(--text)]"
           style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)' }}>{chip}</span>}
-        <svg viewBox="0 0 16 16" aria-hidden className={`h-4 w-4 shrink-0 fill-none stroke-[color:var(--text-dim)] group-hover:stroke-[color:var(--text)] motion-safe:transition-transform ${mo ? 'rotate-90' : ''}`}
-          strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round"><path d="M6 3.5 10.5 8 6 12.5" /></svg>
+        {!chevPhai && chev}
       </button>
       {luat && <span className="relative z-[1] inline-flex">{luat}</span>}
       {phu && <span className="relative z-[1] flex shrink-0 items-center gap-x-2.5 whitespace-nowrap text-[13px] empty:hidden">{phu}</span>}
+      {chevPhai && <span aria-hidden className="pointer-events-none ml-auto inline-flex pr-1">{chev}</span>}
     </h2>
   );
 }
