@@ -174,6 +174,8 @@ export function mucCuaViec(it: { group: string; key: string; kind?: string | nul
   if (laViecChamCheo(it)) return 'cham-cheo';
   if (it.group === 'score') return it.kind === 'progress' || it.kind === 'final' ? 'pf' : it.kind === 'checkpoint' ? 'cp' : 'mock';
   if (tvv && it.group === 'missing_data') return 'chot-ngay';   // việc `missing_data` của TVV chỉ có Chốt ngày thi
+  /* S3-5 (rà Tutor P2-13): ngoài góc TVV (QL "Tất cả" / "Của GV"), Báo PH của TVV chung mục "Báo PH" với Báo PH kết quả Test — không hai mục cùng tên. */
+  if (!tvv && it.group === 'bao_ph_yt') return 'bao-ph-test';
   return MUC_CUA_LOAI[it.group] ?? 'khac';
 }
 

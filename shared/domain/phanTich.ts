@@ -412,6 +412,9 @@ export function nhanSoVoiTruoc(d: number | null): { chu: string; tone: 'bad' | '
   return { chu: '=', tone: 'muted' };
 }
 
+/** S3-1: hàng lớp CÓ vi phạm (kỳ này hoặc còn mở) — hàng chỉ có vi phạm kỳ trước nằm trong bảng cho "± kỳ trước" nhưng không vào "Lớp có vi phạm". */
+export const coViPhamLop = (x: { viPham: number; chuaXuLy: number }) => x.viPham > 0 || x.chuaXuLy > 0;
+
 // ------------------------------------------------------------------ kiểu trả về dùng chung máy chủ ↔ web
 
 export type DongTongHop = {

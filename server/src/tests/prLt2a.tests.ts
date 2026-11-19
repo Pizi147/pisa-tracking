@@ -348,6 +348,17 @@ export async function runPrLt2aTests(t: YThucTestKit) {
     assert(!dongViec(khoa, 'xnpa:', em.id).length && !dongViec(ha, 'xnpa:', em.id).length, 'không có dòng "Xác nhận PA" cho PA bổ trợ');
   });
 
+  /* S3-5 (rà Tutor P2-13): QL xem "Tất cả" — Báo PH của TVV (vi phạm · tình hình) và Báo PH kết quả Test của GVCN từng thành HAI mục cùng tên "Báo PH".
+     Một khái niệm một mục: góc nhìn không TVV gom về mục `bao-ph-test` (vị trí GD-4b); TVV giữ mục `bao-ph` như cũ. */
+  check('S3-5 · Công việc QL "Tất cả": một mục "Báo PH" (không hai mục cùng tên); TVV giữ thứ tự Báo PH → Phối hợp', () => {
+    const muc = (ds: string[], tvv: boolean) => d.chiaMucTab(ds.map((g, i) => ({ group: g, key: `${g}:${i}`, urgency: 'normal', due: null, studentId: 1 })), tvv);
+    const ql = muc(['bao_ph_yt', 'phoi_hop', 'phoi_hop_sos', 'yt_xu_ly', 'yt_hoi_tinh_hinh'], false);
+    const nhan = ql.map((m: any) => m.label);
+    assert(new Set(nhan).size === nhan.length, `mục trùng tên: ${nhan.join(', ')}`);
+    assert(ql.find((m: any) => m.key === 'bao-ph-test')?.items.length === 2, 'mục Báo PH gồm cả hai loại việc');
+    assert(muc(['phoi_hop_tvv', 'bao_ph_yt'], true).map((m: any) => m.key).join(',') === 'bao-ph,phoi-hop', 'TVV không đổi');
+  });
+
   check('LT2a (7) · Nhóm 2 PA đang chạy → MỘT dòng "Ghi kết quả" (id nhỏ nhất) nói "PA chung · G+V, P"; GVCN ghi được, GV không liên quan không thấy', () => {
     const { cGv, cP, ha, em } = dungFouChay('LT2a FOU VIEC');
     conn.prepare('UPDATE case_interventions SET action_due = ? WHERE nhom_bo_tro = ?').run(TODAY, paBt(cGv.id).nhom_bo_tro);
