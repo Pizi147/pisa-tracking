@@ -10026,6 +10026,9 @@ await runPrNhapKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } 
 // ==================================================================== TU2-1 (Kết quả PA Tutor a / b, dòng gộp, GV làm tutor, nháp phần Tutor, Xác nhận PA không Số buổi)
 const { runPrTutor2Tests } = bocTep('prTutor2', await import('./prTutor2.tests.ts'));
 await runPrTutor2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
+// ==================================================================== TU2-5 (trang Tutor: Head sửa danh bạ chi nhánh mình, CX xem, Buổi = Σ so_buoi, người dạy là GV, xuất số buổi)
+const { runPrTutor5Tests } = bocTep('prTutor5', await import('./prTutor5.tests.ts'));
+await runPrTutor5Tests({ check, checkAsync, assert, conn, P } as any);
 const { runPrLuoiKqTests } = bocTep('prLuoiKq', await import('./prLuoiKq.tests.ts'));
 await runPrLuoiKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
 // ==================================================================== OV6-DOC-CHON (14/11: ô chọn / ô tìm đọc ít — LIMIT, /classes gọn)

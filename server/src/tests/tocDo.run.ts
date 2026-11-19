@@ -227,6 +227,7 @@ const USER: Record<Vai, number> = {
   }).userId as number,
   TVV: userByRole('consultant', 'CP'),
   CX: userByRole('cx', null),
+  HDT: userByRole('head_tutor', null),   // TU2-5: Head tutor — chỉ đo đường trang Tutor
 };
 /** TQ-SOS-CN: `{sos23}` = id em SOS 2–3 của chi nhánh `{cn}` (chính `sos23Ids` của bảng Tổng quan) — tính lại sau khi nhân dữ liệu. */
 const tinhSos23 = () => ((bangChiNhanh(loadPrincipal(USER.QT), { ct: 'ft', chuY: true }).hang.find((h: any) => h.id === CN)?.sos23 ?? []) as number[]).join(',');

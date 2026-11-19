@@ -11,8 +11,8 @@
  * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{lopPet}`, `{hv}`, `{case}`, `{cn}`.
  */
 
-/** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. */
-export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX';
+/** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. TU2-5: HDT = Head tutor, chỉ đo đường trang Tutor. */
+export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX' | 'HDT';
 
 export const MOI_VAI: readonly Vai[] = ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'];
 
@@ -279,10 +279,13 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?studentId={hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?paId={paTutor}', maChuDich: { GVBM: 403 } },   // GVBM không dạy kỹ năng của PA: không ghi được
   /* TU-b: trang Tutor — bảng (QL: buổi lớp chi nhánh mình), panel một tutor, số menu, tên gõ tay (Quản trị = như Head tutor). GV không có trang. */
-  { trang: 'Tutor', vai: ['QL', 'QT', 'GVCN'], url: '/tutors', maChuDich: { GVCN: 403 } },
-  { trang: 'Tutor', vai: ['QL', 'QT'], url: '/tutors/1' },
-  { trang: 'Tutor', vai: ['QL', 'QT'], url: '/tutors/dem', maChuDich: { QL: 403 } },
-  { trang: 'Tutor', vai: ['QT'], url: '/tutors/go-tay' },
+  /* TU2-5 (chủ SP 19/11): Head tutor (HDT) + CX xem trang; Head (QL) sửa danh bạ chi nhánh mình (go-tay, ô chọn Gộp); CX chỉ đọc (go-tay / dem / chon?gop 403); xuất số buổi theo tháng. */
+  { trang: 'Tutor', vai: ['QL', 'QT', 'GVCN', 'HDT', 'CX'], url: '/tutors', maChuDich: { GVCN: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/1' },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/dem', maChuDich: { QL: 403, CX: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/go-tay', maChuDich: { CX: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX', 'GVCN'], url: '/tutors/xuat-buoi?tu=2026-01&den=2026-12', maChuDich: { GVCN: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/chon?gop=1&q=a', maChuDich: { CX: 403 } },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
   /* PR-VAI-b (V1/K3-47): dải "n yêu cầu chờ bạn duyệt" của hồ sơ HV — chỉ Quản lý / Quản trị gọi (GVCN 403). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?studentId={hv}', maChuDich: { GVCN: 403 } },

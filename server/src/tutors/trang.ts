@@ -1,18 +1,23 @@
 /**
  * TRANG TUTOR (TU-b, đặc tả Tutor mục 7, 8) — bảng tutor + panel một tutor, nhận xét / kết luận, thêm / sửa / xoá tutor, gộp tên gõ tay.
- * Quyền: đọc `tutor.view` (QL: chỉ BUỔI có `lop_id` thuộc chi nhánh mình — lớp chụp lúc ghi, mục 12.1); ghi `tutor.manage` (Head tutor, Quản trị).
+ * Quyền: đọc `tutor.view` (Head / CX: chỉ DÒNG có `lop_id` thuộc chi nhánh mình — lớp chụp lúc ghi, mục 12.1; CX chỉ đọc, TU12);
+ * nhận xét / kết luận / xoá tutor `tutor.manage` (Head tutor, Quản trị); sửa DANH BẠ (thêm / sửa / tải / gộp) thêm Head — CHỈ chi nhánh mình (`quyenDanhBa`, TU13).
  * Ngày của buổi = `case_followups.created_at` theo giờ VN. Nhóm chú ý = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
+ * TU2-5 (chủ SP 19/11): "Buổi" = SUM(so_buoi) (dòng gộp 2 buổi đếm 2); ba tỉ lệ + Cần chú ý đếm theo LẦN GHI (số dòng) — dòng không trả lời không vào mẫu số;
+ * người dạy là GV = dòng `tutors` có `user_id` (`loai: 'gv'`): bảng, nhận xét, kết luận như tutor, nhưng không ai sửa tên / xoá ở trang này.
  */
 import { db, theoLo, tx } from '../db.ts';
 import { addDays, badRequest, forbidden, loi, normalizeName, notFound, nowIso } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
+import { laNguoiHopLe } from '../platform/timNguoi.ts';
+import { tutorCuaGv } from '../cases/cases.ts';
 import { KN_TUTOR, PERMISSIONS, chuanSdt, knTutorCuaTopic } from '../../../shared/domain/index.ts';
 
 export type Khoang = { tu: string; den: string };
 export type KetLuan = 'on' | 'can_cai_thien' | 'ngung';
 const KET_LUAN: readonly string[] = ['on', 'can_cai_thien', 'ngung'];
-/** Tỉ lệ một tiêu chí: [số buổi "Có", số buổi có trả lời ô đó] — dòng cũ (NULL) không vào mẫu. */
+/** Tỉ lệ một tiêu chí: [số LẦN GHI (dòng) "Có", số lần ghi có trả lời ô đó] — dòng không trả lời (NULL) không vào mẫu. */
 export type TyLe = [number, number];
 export type ChuY = { chuanBi: number; taiLieu: number; feedbackGv: number; sao: number[] };
 export type NoiDay = { id: number; ten: string } | 'online' | null;
@@ -20,17 +25,49 @@ export type SoTutor = { buoi: number; chuanBi: TyLe; taiLieu: TyLe; feedbackGv: 
 export type DongTutor = SoTutor & {
   id: number; ten: string; sdt: string | null; noiDay: NoiDay; kyNang: string[];
   ketLuan: { kl: KetLuan; luc: string } | null; chuY: string | null; thieu: ('sdt' | 'noiDay')[];
+  /** TU2-5: `gv` = dòng danh bạ của một GV (`gvId` = tài khoản); `suaDuoc` = người xem Sửa được dòng này (Head: tutor chi nhánh mình; dòng GV: không ai). */
+  loai: 'gv' | 'tutor'; gvId: number | null; suaDuoc: boolean;
 };
 
 /** Phạm vi đọc: `branchIds` null = toàn hệ thống. Không có `tutor.view` → 403. */
-function phamVi(p: Principal): { branchIds: number[] | null; sua: boolean } {
+function phamVi(p: Principal): { branchIds: number[] | null; sua: boolean; danhBa: QuyenDanhBa | null } {
   const s = scopeFor(p, PERMISSIONS.TUTOR_VIEW);
   if (s.none) throw forbidden('Bạn không có quyền xem trang Tutor.');
-  return { branchIds: s.all ? null : s.branchIds, sua: coSua(p) };
+  return { branchIds: s.all ? null : s.branchIds, sua: coSua(p), danhBa: quyenDanhBa(p) };
 }
+/** Nhận xét / kết luận / xoá tutor: Head tutor + Quản trị (`tutor.manage`). */
 const coSua = (p: Principal) => can(p, PERMISSIONS.TUTOR_MANAGE, { anyScope: true });
 function canSua(p: Principal) {
   if (!coSua(p)) throw forbidden('Bạn không có quyền sửa danh sách tutor.');
+}
+/**
+ * TU13 (chủ SP 19/11): ai sửa DANH BẠ tutor (thêm / sửa / tải danh sách / gộp tên gõ tay). Quản trị + Head tutor (`tutor.manage`) = mọi chi nhánh; Head (vai
+ * `manager` có `tutor.view`) = CHỈ chi nhánh của grant (grant không chi nhánh = mọi). CX không có (chỉ đọc, N52). null = không sửa được.
+ * Một hàm cho `luuTutor`, `taiLenTutor`, `gopTen`, `tenGoTay` và ô chọn của hộp Gộp (`chon.ts`).
+ */
+export type QuyenDanhBa = { tatCa: boolean; chiNhanh: number[] };
+export function quyenDanhBa(p: Principal): QuyenDanhBa | null {
+  if (coSua(p)) return { tatCa: true, chiNhanh: [] };
+  const head = p.grants.filter((g) => g.roleKey === 'manager' && g.permissions.has(PERMISSIONS.TUTOR_VIEW));
+  if (!head.length) return null;
+  if (head.some((g) => g.branchId === null)) return { tatCa: true, chiNhanh: [] };
+  return { tatCa: false, chiNhanh: [...new Set(head.map((g) => g.branchId as number))] };
+}
+export function kiemQuyenDanhBa(p: Principal): QuyenDanhBa {
+  const q = quyenDanhBa(p);
+  if (!q) throw forbidden('Bạn không có quyền sửa danh sách tutor.');
+  return q;
+}
+/** Dòng `tutors` (có `user_id`, `created_by`, `updated_by`) người xem sửa được: không phải dòng GV; Head: nơi dạy = chi nhánh mình, hoặc Chỉ online do mình tạo / sửa. */
+export function suaDuocTutor(q: QuyenDanhBa | null, p: Principal, r: any): boolean {
+  if (!q || r.user_id != null) return false;
+  if (q.tatCa) return true;
+  if (r.noi_day_branch_id != null) return q.chiNhanh.includes(r.noi_day_branch_id);
+  return !!r.chi_online && (r.created_by === p.userId || r.updated_by === p.userId);
+}
+/** Head chỉ đặt nơi dạy = chi nhánh mình hoặc Chỉ online (Thêm / Sửa / Tải danh sách). */
+export function noiDayHopLe(q: QuyenDanhBa, s: { noiDayBranchId: number | null; chiOnline: 0 | 1 }): boolean {
+  return q.tatCa || s.chiOnline === 1 || (s.noiDayBranchId != null && q.chiNhanh.includes(s.noiDayBranchId));
 }
 /** Mảnh SQL lọc buổi theo chi nhánh của lớp chụp lúc ghi (alias `b`). */
 const locLop = (branchIds: number[] | null) => (branchIds
@@ -80,7 +117,7 @@ export function canChuY(conn: any, branchIds: number[] | null, tutorId?: number)
   return m;
 }
 
-/** Câu lý do theo loại nhiều buổi nhất ("3 buổi không gửi feedback cho GV", "1 buổi đánh giá 2/5"). */
+/** Câu lý do theo loại nhiều LẦN GHI nhất ("3 lần không gửi feedback cho GV", "1 lần đánh giá 2/5") — đếm theo lần ghi (dòng), không theo số buổi. */
 export function lyDoChuY(c: ChuY): string {
   const saoMax = Math.max(...c.sao);
   const loai: [number, string][] = [
@@ -88,7 +125,7 @@ export function lyDoChuY(c: ChuY): string {
     [c.sao.length, c.sao.every((s) => s === saoMax) ? `đánh giá ${saoMax}/5` : `đánh giá ≤ ${saoMax}/5`],
   ];
   const [n, chu] = loai.reduce((a, b) => (b[0] > a[0] ? b : a));
-  return `${n} buổi ${chu}`;
+  return `${n} lần ${chu}`;
 }
 
 /** Số "Tutor n" trên menu — chỉ người sửa danh sách (Head tutor, Quản trị; QL không có số). */
@@ -101,20 +138,22 @@ export function demChuY(p: Principal): { n: number } {
 
 function docTutors(conn: any, id?: number): any[] {
   return conn.prepare(
-    `SELECT t.id, t.ten, t.sdt, t.noi_day_branch_id, t.chi_online, t.ky_nang,
+    `SELECT t.id, t.ten, t.sdt, t.noi_day_branch_id, t.chi_online, t.ky_nang, t.user_id, t.created_by, t.updated_by,
             (SELECT n.ket_luan || '|' || n.luc FROM tutor_nhan_xet n WHERE n.tutor_id = t.id ORDER BY n.luc DESC, n.id DESC LIMIT 1) AS kl
        FROM tutors t${id ? ' WHERE t.id = ?' : ''}`,
   ).all(...(id ? [id] : [])) as any[];
 }
 const docChiNhanh = (conn: any) => new Map((conn.prepare('SELECT id, name FROM branches').all() as any[]).map((b) => [b.id as number, b.name as string]));
 
-function thanhDong(r: any, cn: Map<number, string>, so: SoTutor, chuY: ChuY | undefined, sua: boolean): DongTutor {
+function thanhDong(r: any, cn: Map<number, string>, so: SoTutor, chuY: ChuY | undefined, p: Principal, danhBa: QuyenDanhBa | null): DongTutor {
   const [kl, luc] = r.kl ? String(r.kl).split('|') : [];
   const noiDay: NoiDay = r.chi_online ? 'online' : r.noi_day_branch_id ? { id: r.noi_day_branch_id, ten: cn.get(r.noi_day_branch_id) ?? '' } : null;
+  const suaDuoc = suaDuocTutor(danhBa, p, r);
   return {
     id: r.id, ten: r.ten, sdt: r.sdt ?? null, noiDay, kyNang: String(r.ky_nang).split(',').filter(Boolean), ...so,
     ketLuan: kl ? { kl: kl as KetLuan, luc } : null, chuY: chuY ? lyDoChuY(chuY) : null,
-    thieu: sua ? [...(r.sdt ? [] : ['sdt' as const]), ...(noiDay ? [] : ['noiDay' as const])] : [],
+    thieu: suaDuoc ? [...(r.sdt ? [] : ['sdt' as const]), ...(noiDay ? [] : ['noiDay' as const])] : [],
+    loai: r.user_id != null ? 'gv' : 'tutor', gvId: r.user_id ?? null, suaDuoc,
   };
 }
 const SO_RONG: SoTutor = { buoi: 0, chuanBi: [0, 0], taiLieu: [0, 0], feedbackGv: [0, 0], danhGia: null };
@@ -124,13 +163,14 @@ const SO_RONG: SoTutor = { buoi: 0, chuanBi: [0, 0], taiLieu: [0, 0], feedbackGv
  * + tutor nơi dạy = chi nhánh mình (cho "Tất cả"); số chỉ tính buổi chi nhánh mình. Lọc / tìm / phân trang ở web trên danh sách này.
  */
 export function bangTutor(p: Principal, k: Khoang) {
-  const { branchIds, sua } = phamVi(p);
+  const { branchIds, sua, danhBa } = phamVi(p);
   const conn = db();
   const [tu, den] = mocKhoang(k);
   const l = locLop(branchIds);
   // ponytail: đọc mọi buổi có tutor rồi lọc ngày qua case_followups (bảng buổi tutor nhỏ); nâng cấp = chỉ mục case_followups(created_at) khi bảng lớn.
+  /* TU2-5: "Buổi" = SUM(so_buoi) (dòng gộp 2 buổi đếm 2); 3 tỉ lệ đếm theo LẦN GHI (dòng) — COUNT(cột) chỉ đếm dòng có trả lời. */
   const so = new Map<number, SoTutor>((conn.prepare(
-    `SELECT b.tutor_id AS id, COUNT(*) AS buoi, SUM(b.chuan_bi = 1) AS cb, COUNT(b.chuan_bi) AS cbn, SUM(b.tai_lieu = 1) AS tl, COUNT(b.tai_lieu) AS tln,
+    `SELECT b.tutor_id AS id, SUM(b.so_buoi) AS buoi, SUM(b.chuan_bi = 1) AS cb, COUNT(b.chuan_bi) AS cbn, SUM(b.tai_lieu = 1) AS tl, COUNT(b.tai_lieu) AS tln,
             SUM(b.feedback_gv = 1) AS fb, COUNT(b.feedback_gv) AS fbn, AVG(b.danh_gia) AS sao
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
       WHERE b.tutor_id IS NOT NULL AND f.created_at >= ? AND f.created_at < ?${l.sql}
@@ -142,18 +182,23 @@ export function bangTutor(p: Principal, k: Khoang) {
   const chuY = canChuY(conn, branchIds);
   const dong = docTutors(conn)
     .filter((r) => !branchIds || so.has(r.id) || chuY.has(r.id) || branchIds.includes(r.noi_day_branch_id))   // chuY: nhóm chú ý tính mọi thời gian
-    .map((r) => thanhDong(r, cn, so.get(r.id) ?? SO_RONG, chuY.get(r.id), sua))
+    .map((r) => thanhDong(r, cn, so.get(r.id) ?? SO_RONG, chuY.get(r.id), p, danhBa))
     .sort((a, b) => a.ten.localeCompare(b.ten, 'vi'));
+  /* Dải "n tên gõ tay · m buổi · Gộp…": người sửa danh bạ — Head chỉ phần buổi lớp chi nhánh mình (TU13). */
   let goTay: { soTen: number; soBuoi: number } | null = null;
-  if (sua) {
+  if (danhBa) {
+    const lg = locLop(danhBa.tatCa ? null : danhBa.chiNhanh);
     const ten = new Map<string, number>();
-    for (const r of conn.prepare('SELECT tutor_ten, COUNT(*) AS n FROM case_followup_buoi WHERE tutor_id IS NULL GROUP BY tutor_ten').all() as any[]) {
+    for (const r of conn.prepare(`SELECT b.tutor_ten, SUM(b.so_buoi) AS n FROM case_followup_buoi b WHERE b.tutor_id IS NULL${lg.sql} GROUP BY b.tutor_ten`).all(...lg.args) as any[]) {
       ten.set(khoaTen(r.tutor_ten), (ten.get(khoaTen(r.tutor_ten)) ?? 0) + r.n);
     }
     goTay = { soTen: ten.size, soBuoi: [...ten.values()].reduce((a, b) => a + b, 0) };
   }
   return {
-    dong, goTay, coSua: sua, chiNhanh: branchIds ? branchIds.map((id) => cn.get(id)).join(', ') : null,
+    dong, goTay, coSua: sua,
+    /* TU13: Thêm tutor / Tải danh sách / Gộp. `chiNhanhDanhBa` = chi nhánh Head được đặt nơi dạy (null = mọi chi nhánh). */
+    coDanhBa: !!danhBa, chiNhanhDanhBa: danhBa && !danhBa.tatCa ? danhBa.chiNhanh.map((id) => ({ id, ten: cn.get(id) ?? '' })) : null,
+    chiNhanh: branchIds ? branchIds.map((id) => cn.get(id)).join(', ') : null,
     dsChiNhanh: [...cn].map(([id, ten]) => ({ id, ten })),
   };
 }
@@ -168,7 +213,7 @@ const trong24h = (luc: string) => Date.now() - new Date(luc).getTime() < 24 * 36
 
 /** Panel một tutor: đầu + 5 ô số + nhận xét (dòng thời gian) + buổi trong khoảng (QL: chỉ buổi chi nhánh mình; ngoài phạm vi → 404). */
 export function panelTutor(p: Principal, id: number, k: Khoang) {
-  const { branchIds, sua } = phamVi(p);
+  const { branchIds, sua, danhBa } = phamVi(p);
   const conn = db();
   const r = docTutors(conn, id)[0];
   const l = locLop(branchIds);
@@ -179,7 +224,7 @@ export function panelTutor(p: Principal, id: number, k: Khoang) {
   const [tu, den] = mocKhoang(k);
   const hang = conn.prepare(
     `SELECT b.id, f.created_at, s.full_name AS hv, c.code AS lop, u.full_name AS nguoi_ghi, sc.topic,
-            b.hinh_thuc, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.nhan_xet, b.nhan_xet_tutor
+            b.hinh_thuc, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.nhan_xet, b.nhan_xet_tutor, b.so_buoi
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
        JOIN sos_cases sc ON sc.id = f.case_id LEFT JOIN students s ON s.id = sc.student_id
        LEFT JOIN classes c ON c.id = b.lop_id LEFT JOIN users u ON u.id = f.observer_user_id
@@ -188,7 +233,7 @@ export function panelTutor(p: Principal, id: number, k: Khoang) {
   ).all(id, tu, den, ...l.args) as any[];
   const sao = hang.filter((b) => b.danh_gia != null);
   const so: SoTutor = {
-    buoi: hang.length, chuanBi: tyLe(hang, 'chuan_bi'), taiLieu: tyLe(hang, 'tai_lieu'), feedbackGv: tyLe(hang, 'feedback_gv'),
+    buoi: hang.reduce((a, b) => a + b.so_buoi, 0), chuanBi: tyLe(hang, 'chuan_bi'), taiLieu: tyLe(hang, 'tai_lieu'), feedbackGv: tyLe(hang, 'feedback_gv'),
     danhGia: sao.length ? tron1(sao.reduce((a, b) => a + b.danh_gia, 0) / sao.length) : null,
   };
   const nhanXet = (conn.prepare(
@@ -200,10 +245,10 @@ export function panelTutor(p: Principal, id: number, k: Khoang) {
     coXoa: sua && n.nguoi_id === p.userId && trong24h(n.luc),   // xoá trong 24 giờ
   }));
   return {
-    tutor: thanhDong(r, docChiNhanh(conn), so, canChuY(conn, branchIds, id).get(id), sua), so, coSua: sua, nhanXet,
+    tutor: thanhDong(r, docChiNhanh(conn), so, canChuY(conn, branchIds, id).get(id), p, danhBa), so, coSua: sua, coDanhBa: !!danhBa, nhanXet,
     coBuoi: sua ? !!conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id) : true,
     buoi: hang.map((b) => ({
-      id: b.id, ngay: ngayVn(b.created_at), hocVien: b.hv ?? '', lop: b.lop ?? null, nguoiGhi: b.nguoi_ghi ?? null, kn: knCua(b.topic),
+      id: b.id, ngay: ngayVn(b.created_at), hocVien: b.hv ?? '', lop: b.lop ?? null, nguoiGhi: b.nguoi_ghi ?? null, kn: knCua(b.topic), soBuoi: b.so_buoi,
       hinhThuc: b.hinh_thuc ?? null, chuanBi: coKhong(b.chuan_bi), taiLieu: coKhong(b.tai_lieu), feedbackGv: coKhong(b.feedback_gv),
       danhGia: b.danh_gia ?? null, nhanXet: b.nhan_xet, nhanXetTutor: b.nhan_xet_tutor ?? null,
     })),
@@ -245,13 +290,17 @@ export function kiemTutor(conn: any, v: TutorVao, boQuaId: number | null, tra?: 
 
 /** Thêm (không `id`) hoặc sửa một tutor. `trungTen`: đã có tutor khác cùng tên (bỏ dấu) — chỉ nhắc, vẫn lưu. */
 export function luuTutor(p: Principal, v: TutorVao, id?: number): { id: number; trungTen: boolean } {
-  canSua(p);
+  const q = kiemQuyenDanhBa(p);   // TU13: Head cũng sửa được — chỉ chi nhánh mình
   const conn = db();
-  const truoc = id ? conn.prepare('SELECT ten, sdt, noi_day_branch_id, chi_online, ky_nang FROM tutors WHERE id = ?').get(id) as any : null;
+  const truoc = id ? conn.prepare('SELECT ten, sdt, noi_day_branch_id, chi_online, ky_nang, user_id, created_by, updated_by FROM tutors WHERE id = ?').get(id) as any : null;
   if (id && !truoc) throw notFound('Không tìm thấy tutor.');
+  /* Dòng danh bạ của GV: tên / kỹ năng lấy từ tài khoản — không ai sửa ở trang Tutor (TU2-5). */
+  if (truoc?.user_id != null) throw badRequest('Dòng này là tài khoản giáo viên — không sửa ở trang Tutor.');
+  if (truoc && !suaDuocTutor(q, p, truoc)) throw forbidden('Tutor này không thuộc chi nhánh của bạn — bạn không sửa được.');
   const k = kiemTutor(conn, v ?? {}, id ?? null);
   if ('loi' in k) throw badRequest(Object.values(k.loi).join(' · '), { loi: k.loi });
   const t = k.ok;
+  if (!noiDayHopLe(q, t)) throw forbidden('Nơi dạy chỉ chọn được chi nhánh của bạn hoặc Chỉ online.');
   const luc = nowIso();
   try {
   return tx(() => {
@@ -281,8 +330,9 @@ export function luuTutor(p: Principal, v: TutorVao, id?: number): { id: number; 
 export function xoaTutor(p: Principal, id: number): { ok: true } {
   canSua(p);
   const conn = db();
-  const t = conn.prepare('SELECT ten, sdt, noi_day_branch_id, chi_online, ky_nang FROM tutors WHERE id = ?').get(id) as any;
+  const t = conn.prepare('SELECT ten, sdt, noi_day_branch_id, chi_online, ky_nang, user_id FROM tutors WHERE id = ?').get(id) as any;
   if (!t) throw notFound('Không tìm thấy tutor.');
+  if (t.user_id != null) throw badRequest('Dòng này là tài khoản giáo viên — không xoá ở trang Tutor.');
   tx(() => {
     /* Kiểm trong giao dịch: GV vừa ghi buổi trỏ tutor này thì không xoá. */
     if (conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id)) {
@@ -353,19 +403,23 @@ export function xoaNhanXet(p: Principal, id: number): { ok: true } {
 
 // ---------------------------------------------------------------- Gộp tên gõ tay
 
-const docGoTay = (conn: any) => conn.prepare(
-  `SELECT b.id, b.tutor_ten, f.created_at, c.code AS lop FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
-     LEFT JOIN classes c ON c.id = b.lop_id WHERE b.tutor_id IS NULL ORDER BY f.created_at`,
-).all() as any[];
+/** Dòng buổi tên gõ tay (chưa gộp). `chiNhanh` (Head): chỉ dòng của lớp thuộc chi nhánh mình (lớp chụp lúc ghi) — TU13; null = mọi chi nhánh. */
+const docGoTay = (conn: any, chiNhanh: number[] | null) => {
+  const l = locLop(chiNhanh);
+  return conn.prepare(
+    `SELECT b.id, b.tutor_ten, b.so_buoi, f.created_at, c.code AS lop FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
+       LEFT JOIN classes c ON c.id = b.lop_id WHERE b.tutor_id IS NULL${l.sql} ORDER BY f.created_at`,
+  ).all(...l.args) as any[];
+};
 
-/** Tên gõ tay ("Tutor khác") chưa có trong danh sách, gom theo `khoaTen`: số buổi, lớp, ngày. */
+/** Tên gõ tay ("Tutor khác") chưa có trong danh sách, gom theo `khoaTen`: số buổi (Σ so_buoi), lớp, ngày. Head: chỉ phần lớp chi nhánh mình. */
 export function tenGoTay(p: Principal) {
-  canSua(p);
+  const q = kiemQuyenDanhBa(p);
   const nhom = new Map<string, { khoa: string; ten: string; soBuoi: number; lop: string[]; ngay: string[] }>();
-  for (const r of docGoTay(db())) {
+  for (const r of docGoTay(db(), q.tatCa ? null : q.chiNhanh)) {
     const khoa = khoaTen(r.tutor_ten);
     const g = nhom.get(khoa) ?? { khoa, ten: String(r.tutor_ten).trim().replace(/\s+/g, ' '), soBuoi: 0, lop: [], ngay: [] };
-    g.soBuoi++;
+    g.soBuoi += r.so_buoi;
     if (r.lop && !g.lop.includes(r.lop)) g.lop.push(r.lop);
     const ng = ngayVn(r.created_at);
     if (!g.ngay.includes(ng)) g.ngay.push(ng);
@@ -377,44 +431,117 @@ export function tenGoTay(p: Principal) {
 export type GoiGop = { tutorId: number; buoiIds: number[] }[];
 const laId = (x: unknown) => Number.isInteger(x) && (x as number) > 0;
 
-/** Gộp: mỗi tên (khoá) → một tutor có sẵn; đặt `tutor_id` cho các buổi đó (giữ `tutor_ten`), một giao dịch. Trả id mục nhật ký để Hoàn tác. */
+/**
+ * Gộp: mỗi tên (khoá) → một tutor có sẵn (`tutorId`) hoặc một GV (`gvId` — dòng danh bạ của GV tìm / tạo trong giao dịch, TU4); đặt `tutor_id` cho các dòng đó
+ * (giữ `tutor_ten`), một giao dịch. Head chỉ gộp dòng lớp chi nhánh mình. Trả id mục nhật ký để Hoàn tác (`gvMoi`: dòng GV vừa tạo — Hoàn tác dọn nếu trống).
+ */
 export function gopTen(p: Principal, v: { muc?: unknown }): { nhatKyId: number; soBuoi: number } {
-  canSua(p);
+  const q = kiemQuyenDanhBa(p);
   const muc = Array.isArray(v?.muc) ? v.muc as any[] : [];
-  if (!muc.length || muc.some((m) => typeof m?.khoa !== 'string' || !laId(m?.tutorId))) throw badRequest('Chọn tutor cho ít nhất một tên.');
+  if (!muc.length || muc.some((m) => typeof m?.khoa !== 'string' || laId(m?.tutorId) === laId(m?.gvId))) throw badRequest('Chọn tutor cho ít nhất một tên.');
   const conn = db();
   const co = new Set((conn.prepare('SELECT id FROM tutors').all() as any[]).map((r) => r.id));
-  if (muc.some((m) => !co.has(m.tutorId))) throw badRequest('Tutor đã chọn không còn trong danh sách.');
+  if (muc.some((m) => m.tutorId && !co.has(m.tutorId))) throw badRequest('Tutor đã chọn không còn trong danh sách.');
+  if (muc.some((m) => m.gvId && !laNguoiHopLe(m.gvId, 'giao_vien'))) throw badRequest('Giáo viên đã chọn không còn làm việc.');
   return tx(() => {
-    const ds = docGoTay(conn);
+    const ds = docGoTay(conn, q.tatCa ? null : q.chiNhanh);
+    const gvMoi: number[] = [];
     const hoanTac = muc.map((m) => {
       const buoiIds = ds.filter((r) => khoaTen(r.tutor_ten) === m.khoa).map((r) => r.id as number);
-      theoLo(buoiIds, (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = ? WHERE tutor_id IS NULL AND id IN (${ph})`).run(m.tutorId, ...lo), 800);
-      return { tutorId: m.tutorId as number, buoiIds };
+      if (!buoiIds.length) return { tutorId: 0, buoiIds };
+      let tutorId = m.tutorId as number;
+      if (m.gvId) {
+        const co2 = !!conn.prepare('SELECT 1 AS x FROM tutors WHERE user_id = ?').get(m.gvId);
+        tutorId = tutorCuaGv(conn, p, m.gvId).id;
+        if (!co2) gvMoi.push(tutorId);
+      }
+      theoLo(buoiIds, (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = ? WHERE tutor_id IS NULL AND id IN (${ph})`).run(tutorId, ...lo), 800);
+      return { tutorId, buoiIds };
     }).filter((h) => h.buoiIds.length);
-    writeAudit({ actorUserId: p.userId, action: 'tutor.gop_ten', entityType: 'tutor', after: { hoanTac } });
+    writeAudit({ actorUserId: p.userId, action: 'tutor.gop_ten', entityType: 'tutor', after: { hoanTac, gvMoi } });
     const nhatKyId = (conn.prepare('SELECT last_insert_rowid() AS id').get() as any).id as number;
-    return { nhatKyId, soBuoi: hoanTac.reduce((a, h) => a + h.buoiIds.length, 0) };
+    const soBuoiDong = new Map<number, number>(ds.map((r) => [r.id, r.so_buoi]));   // "buổi" = Σ so_buoi của các dòng đã gộp (dòng gộp 2 buổi đếm 2)
+    return { nhatKyId, soBuoi: hoanTac.reduce((a, h) => a + h.buoiIds.reduce((x, i) => x + (soBuoiDong.get(i) ?? 1), 0), 0) };
   });
 }
 
+
 /**
  * Hoàn tác gộp: đọc ĐÚNG mục nhật ký `tutor.gop_ten` của chính người gọi (không tin danh sách buổi web gửi) rồi đặt lại NULL các dòng của lần
- * gộp còn trỏ tutor đó (dòng đã đổi sang tutor khác giữ nguyên).
+ * gộp còn trỏ tutor đó (dòng đã đổi sang tutor khác giữ nguyên). Dòng danh bạ của GV do chính lần gộp tạo (`gvMoi`) còn trống thì dọn.
  */
 export function hoanTacGop(p: Principal, v: { nhatKyId?: unknown }): { ok: true } {
-  canSua(p);
+  kiemQuyenDanhBa(p);
   if (!laId(v?.nhatKyId)) throw badRequest('Không tìm thấy lần gộp để hoàn tác.');
   const conn = db();
   const nk = conn.prepare('SELECT actor_user_id, action, after_json FROM audit_logs WHERE id = ?').get(v.nhatKyId) as any;
   if (!nk || nk.action !== 'tutor.gop_ten') throw notFound('Không tìm thấy lần gộp để hoàn tác.');
   if (nk.actor_user_id !== p.userId) throw forbidden('Chỉ người gộp hoàn tác được lần gộp này.');
-  const ds = ((JSON.parse(nk.after_json ?? '{}').hoanTac ?? []) as GoiGop).filter((h) => laId(h?.tutorId) && Array.isArray(h?.buoiIds));
+  const sau = JSON.parse(nk.after_json ?? '{}');
+  const ds = ((sau.hoanTac ?? []) as GoiGop).filter((h) => laId(h?.tutorId) && Array.isArray(h?.buoiIds));
   tx(() => {
     for (const h of ds) {
       theoLo(h.buoiIds.filter(laId), (lo, ph) => conn.prepare(`UPDATE case_followup_buoi SET tutor_id = NULL WHERE tutor_id = ? AND id IN (${ph})`).run(h.tutorId, ...lo), 800);
     }
+    for (const id of ((sau.gvMoi ?? []) as unknown[]).filter(laId)) {
+      conn.prepare(`DELETE FROM tutors WHERE id = ? AND user_id IS NOT NULL AND NOT EXISTS (SELECT 1 FROM case_followup_buoi WHERE tutor_id = ?)
+          AND NOT EXISTS (SELECT 1 FROM tutor_nhan_xet WHERE tutor_id = ?)`).run(id, id, id);
+    }
     writeAudit({ actorUserId: p.userId, action: 'tutor.gop_hoan_tac', entityType: 'tutor', entityId: v.nhatKyId as number, after: { hoanTac: ds } });
   });
   return { ok: true };
+}
+
+// ---------------------------------------------------------------- Xuất số buổi (TU14)
+
+const THANG = /^\d{4}-(0[1-9]|1[0-2])$/;
+const TOI_DA_THANG = 24;
+const cuoiThang = (t: string) => new Date(Date.UTC(Number(t.slice(0, 4)), Number(t.slice(5)), 0)).toISOString().slice(0, 10);   // ngày 0 của tháng sau = ngày cuối tháng này
+
+/**
+ * `GET /tutors/xuat-buoi?tu=YYYY-MM&den=YYYY-MM` — số buổi theo NGƯỜI DẠY × THÁNG (TU14). Tháng = tháng (giờ VN) của ngày ghi lần kết quả (`case_followups.created_at`,
+ * cùng mốc trang đang lọc, XM-3); số = SUM(so_buoi). Quyền `tutor.view` + phạm vi người xem (Head / CX: chỉ dòng lớp chi nhánh mình — người ngoài phạm vi
+ * không lộ). Tên gõ tay chưa gộp cũng có dòng "{tên} (gõ tay)" (XM-8) để tổng buổi đủ. MỘT câu số liệu + tutors + chi nhánh. Trả `{ sheets, tenTep, dem }` như các
+ * đường xuất khác (web dựng .xlsx); ghi nhật ký `tutor.xuat_so_buoi`.
+ */
+export function xuatSoBuoi(p: Principal, tu: unknown, den: unknown) {
+  const { branchIds } = phamVi(p);
+  if (typeof tu !== 'string' || typeof den !== 'string' || !THANG.test(tu) || !THANG.test(den)) throw badRequest('Chọn khoảng tháng hợp lệ (YYYY-MM).');
+  if (tu > den) throw badRequest('Tháng bắt đầu phải trước hoặc cùng tháng kết thúc.');
+  const thang: string[] = [];
+  for (let t = tu; t <= den; t = t.slice(5) === '12' ? `${Number(t.slice(0, 4)) + 1}-01` : `${t.slice(0, 4)}-${String(Number(t.slice(5)) + 1).padStart(2, '0')}`) thang.push(t);
+  if (thang.length > TOI_DA_THANG) throw badRequest(`Xuất tối đa ${TOI_DA_THANG} tháng một lần.`);
+  const conn = db();
+  const [a, b] = mocKhoang({ tu: `${tu}-01`, den: cuoiThang(den) });
+  const l = locLop(branchIds);
+  const hang = conn.prepare(
+    `SELECT b.tutor_id AS id, CASE WHEN b.tutor_id IS NULL THEN b.tutor_ten END AS ten_go, strftime('%Y-%m', f.created_at, '+7 hours') AS thang, SUM(b.so_buoi) AS n
+       FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
+      WHERE f.created_at >= ? AND f.created_at < ?${l.sql} GROUP BY b.tutor_id, ten_go, thang`,
+  ).all(a, b, ...l.args) as any[];
+  const tutor = new Map((conn.prepare('SELECT id, ten, noi_day_branch_id, chi_online, user_id FROM tutors').all() as any[]).map((r) => [r.id as number, r]));
+  const cn = docChiNhanh(conn);
+  type Dong = { ten: string; loai: string; noi: string; theo: Map<string, number> };
+  const dong = new Map<string, Dong>();
+  for (const r of hang) {
+    const t = r.id ? tutor.get(r.id) : null;
+    const khoa = r.id ? `t${r.id}` : `g${khoaTen(r.ten_go)}`;
+    const d = dong.get(khoa) ?? (r.id
+      ? { ten: t?.ten ?? '', loai: t?.user_id != null ? 'GV' : 'Tutor', noi: t?.chi_online ? 'Chỉ online' : cn.get(t?.noi_day_branch_id) ?? '', theo: new Map() }
+      : { ten: `${String(r.ten_go).trim().replace(/\s+/g, ' ')} (gõ tay)`, loai: '—', noi: '', theo: new Map() });
+    d.theo.set(r.thang, (d.theo.get(r.thang) ?? 0) + r.n);
+    dong.set(khoa, d);
+  }
+  const ds = [...dong.values()].sort((x, y) => x.ten.localeCompare(y.ten, 'vi'));
+  const tong = (d: Dong) => [...d.theo.values()].reduce((s, n) => s + n, 0);
+  const nhanThang = (t: string) => `${t.slice(5)}/${t.slice(0, 4)}`;
+  const aoa: (string | number | null)[][] = [
+    ['Người dạy', 'Loại', 'Nơi dạy', ...thang.map(nhanThang), 'Tổng'],
+    ...ds.map((d) => [d.ten, d.loai, d.noi, ...thang.map((t) => d.theo.get(t) ?? 0), tong(d)]),
+    ['Tổng', '', '', ...thang.map((t) => ds.reduce((s, d) => s + (d.theo.get(t) ?? 0), 0)), ds.reduce((s, d) => s + tong(d), 0)],
+  ];
+  const dem = { nguoiDay: ds.length, buoi: ds.reduce((s, d) => s + tong(d), 0) };
+  writeAudit({ actorUserId: p.userId, action: 'tutor.xuat_so_buoi', entityType: 'tutor_xuat', entityLabel: `${nhanThang(tu)} – ${nhanThang(den)} · ${dem.nguoiDay} người · ${dem.buoi} buổi`,
+    after: { tu, den, ...dem } });
+  return { sheets: [{ ten: 'Số buổi', aoa }], tenTep: `so-buoi-tutor-${tu}-${den}`, dem };
 }
