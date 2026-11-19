@@ -55,18 +55,6 @@ export async function runPrOv15i2Tests(t: YThucTestKit) {
     }
   });
 
-  check('I2-9 · /tutors/chon?classId: gợi ý theo chi nhánh LỚP của nhóm PA (không theo lớp em đang học); ngoài phạm vi lớp → 403', () => {
-    const khac = one(`SELECT c.id, b.name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE b.code <> 'MB' AND c.status = 'active' ORDER BY c.id LIMIT 1`);
-    assert(khac, 'dữ liệu demo: cần lớp chi nhánh khác MB');
-    const mb = chonSvc.chonTutor(QL, { classId: LOP });
-    assert(mb.ds.some((r: any) => r.goiY && r.ten === 'Nguyễn Thu Lan') && mb.nhomGoiY?.startsWith(one(`SELECT b.name FROM branches b WHERE b.code = 'MB'`).name),
-      `lớp MB: ${JSON.stringify(mb.ds.filter((r: any) => r.goiY))} · ${mb.nhomGoiY}`);
-    const kh = chonSvc.chonTutor(P.admin, { classId: khac.id });
-    assert(!kh.ds.some((r: any) => r.goiY && r.ten === 'Nguyễn Thu Lan') && kh.nhomGoiY?.startsWith(khac.name), `lớp ${khac.name}: ${kh.nhomGoiY}`);
-    assert(maLoi(() => chonSvc.chonTutor(QL, { classId: khac.id })) === 403, 'QL MB · lớp chi nhánh khác → 403');
-    assert(maLoi(() => chonSvc.chonTutor(P.lrTeacher, { classId: khac.id })) === 403, 'GV · lớp không dạy → 403');
-  });
-
   // ------------------------------------------------------------------ ý 6 · Xuất điểm Test (qua HTTP: xếp lượt như web)
   const MB = one(`SELECT id FROM branches WHERE code = 'MB'`).id as number;
   const { id: KHAC, code: MA_KHAC } = one(`SELECT id, code FROM branches WHERE code <> 'MB' ORDER BY id LIMIT 1`) as { id: number; code: string };

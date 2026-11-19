@@ -245,12 +245,7 @@ export async function runPrTuTests(t: any) {
         const s = (await goi(id, `/tutors/chon?paId=${ivId}`)).status;
         assert(s === 403, `${ai}: ${s}`);
       }
-      const sid = get('SELECT student_id FROM case_interventions iv JOIN sos_cases sc ON sc.id = iv.case_id WHERE iv.id = ?', ivId).student_id;
-      assert((await goi(ht, `/tutors/chon?studentId=${sid}`)).status === 403, 'Head tutor theo studentId');
-      const ql = await goi(P.mbManager.userId, `/tutors/chon?studentId=${sid}`);
-      const x: any = await ql.json();
-      assert(ql.status === 200 && x.dienSan === null && x.ds.filter((r: any) => r.goiY && r.loai === 'tutor').map((r: any) => r.ten).sort().join() === 'Nguyễn Thu Lan,Phạm Đức Long,Vũ Thanh Hằng', `QL: ${ql.status} ${JSON.stringify(x.ds.map((r: any) => [r.ten, r.goiY]))}`);
-      assert((await goi(GV.userId, '/tutors/chon')).status === 403, 'thiếu paId / studentId');
+      assert((await goi(GV.userId, '/tutors/chon')).status === 403, 'thiếu paId');
     });
 
     /* LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính", phương án duyệt: KHÔNG thêm quyền — Head tutor dạy lớp = có thêm vai Giáo viên). */

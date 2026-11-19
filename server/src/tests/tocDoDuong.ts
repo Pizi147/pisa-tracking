@@ -276,7 +276,6 @@ export const DUONG_DO: MucDo[] = [
   /* PR-Dọn-a (Q2): ô chọn người theo một em — kiểm STUDENT_VIEW trước, rồi lọc theo phạm vi người xem. */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/ref/nguoi?nhom=giao_vien&studentId={hv}' },
   /* TU-a: nhóm "Tutor" của ô Người dạy PA Tutor (Thêm / Sửa / Xác nhận PA) — một câu đọc tutor + kết luận mới nhất. */
-  { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?studentId={hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?paId={paTutor}', maChuDich: { GVBM: 403 } },   // GVBM không dạy kỹ năng của PA: không ghi được
   /* TU-b: trang Tutor — bảng (QL: buổi lớp chi nhánh mình), panel một tutor, số menu, tên gõ tay (Quản trị = như Head tutor). GV không có trang. */
   /* TU2-5 (chủ SP 19/11): Head tutor (HDT) + CX xem trang; Head (QL) sửa danh bạ chi nhánh mình (go-tay, ô chọn Gộp); CX chỉ đọc (go-tay / dem / chon?gop 403); xuất số buổi theo tháng. */
@@ -637,7 +636,6 @@ export const TRAN: Record<string, number> = {
   'QL /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'QT /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'HDT /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'CX /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'GVCN /tutors/xuat-buoi?tu=2026-01&den=2026-12': 12,
   'QL /tutors/chon?gop=1&q=a': 14, 'QT /tutors/chon?gop=1&q=a': 14, 'HDT /tutors/chon?gop=1&q=a': 14, 'CX /tutors/chon?gop=1&q=a': 12,
   /* TU-a: ô chọn tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
-  'QL /tutors/chon?studentId=1': 17, 'QT /tutors/chon?studentId=1': 15, 'GVCN /tutors/chon?studentId=1': 19, 'GVBM /tutors/chon?studentId=1': 19,
   'QL /tutors/chon?paId=7': 20, 'QT /tutors/chon?paId=7': 17, 'GVCN /tutors/chon?paId=7': 21,
   /* DOC-IT-1: isInitialised nhớ theo kết nối (−1 câu sqlite_master) — đo 3 · 4 · 4 · 4 · 3 → max(đo+10, ⌈đo×1,3⌉). */
   'QL /demo/session': 13,
@@ -1488,7 +1486,6 @@ export const TRAN_DONG: Record<string, number> = {
      đo 20 câu / 946 dòng (×3 → 2 704) — dưới trần cũ, giữ nguyên trần. */
   'QL /hoc-vien-lop?phamVi=chi-nhanh&branchId=1&them=1': 3469,   // OV-15h2: đo 2816 (×3 → 7094; trang không them ~2545) → max(đo + 50, ⌈đo × 1,3⌉); TL-HVL: đo 2668 (trước 3023)
   /* TU-a: ô chọn tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10 (13 · 11 · 17 · 17 · 44 · 12 · 45 dòng). */
-  'QL /tutors/chon?studentId=1': 63, 'QT /tutors/chon?studentId=1': 61, 'GVCN /tutors/chon?studentId=1': 67, 'GVBM /tutors/chon?studentId=1': 67,
   'QL /tutors/chon?paId=7': 94, 'QT /tutors/chon?paId=7': 62, 'GVCN /tutors/chon?paId=7': 95,
   'QL /my-work?nguoi=tat-ca&branchId={cn}': 1420, 'QT /my-work?nguoi=tat-ca&branchId={cn}': 1427,   // DOC-THUA: đo QL 1092 · QT 1097 (trước 1093 · 1098 — seed chỉ 1 dòng Báo PH ở chi nhánh khác; DB thật bớt mọi dòng Báo PH chờ của chi nhánh khác)
   'ADMIN /my-work': 423,   // AUDIT-1611 PR 5: đo 325 (trước 449 — lượt chỉ lớp nhập điểm được) → max(đo + 50, ⌈đo × 1,3⌉) · RA-DOC-0611: đo 449 (việc Xuất báo cáo PH: ghi danh lớp có đợt ~100) → max(đo + 50, ⌈đo × 1,3⌉)
