@@ -472,19 +472,22 @@ export function HoTroHocVienTab() {
   /* "Em này còn" (T01): việc khác của cùng em ở danh sách (làm tại chỗ, chưa xong) — một bấm sang việc đó. */
   const emNayCon = chon && chon.studentId !== null
     ? phang(tatCaViec).filter((x) => !x.con?.length && x.studentId === chon.studentId && x.key !== chon.key && lamTaiCho(x) && !xong.has(x.key)) : [];
-  const [lamThay, setLamThay] = useState<string | null>(null);
+  /* N56 ① (chủ SP 20/11, sửa N33 ③): việc của người khác mà mình làm thay được (`lamThay` máy chủ) mở THẲNG form + dải "Bạn đang làm thay …";
+     "Chỉ xem" về tóm tắt (nhớ theo việc), ở đó "Làm thay" mở lại form. Không có quyền → tóm tắt như cũ. Quyền máy chủ không đổi. */
+  const [chiXem, setChiXem] = useState<string | null>(null);
   const theoDoiChon = !!chon && theoDoi(chon);
   /* CV-SUA-1011 (chủ SP 10/11 ý 5 "skip cái panel thừa này đi … muốn nhập hộ thì nhập hộ luôn"): Nhập điểm / Chấm Speaking của người khác mở THẲNG
      lưới — sửa được (quyền máy chủ từng ô) thì nhập ngay, không thì chỉ xem; không tóm tắt + nút "Nhập hộ". */
   const moThang = theoDoiChon && chon.group === 'score';
-  const khoaPanel = theoDoiChon && !moThang && lamThay !== chon?.key;
-  const dangLamThay = theoDoiChon && (moThang ? !!(chon as { lamThay?: boolean }).lamThay : lamThay === chon?.key);
+  const coLamThay = !!(chon as { lamThay?: boolean } | null)?.lamThay;
+  const khoaPanel = theoDoiChon && !moThang && (!coLamThay || chiXem === chon?.key);
+  const dangLamThay = theoDoiChon && coLamThay && (moThang || chiXem !== chon?.key);
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Chấm Speaking')
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
     loai: `${dangLamThay ? t('Làm thay') : theoDoiChon ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
     dai: noiDai === 'viec' && daiVuaLuu || dangLamThay ? <>
-      {dangLamThay && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setLamThay(null))} />}
+      {dangLamThay && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))} />}
       {noiDai === 'viec' ? daiVuaLuu : null}
     </> : undefined,
     them: emNayCon.length ? (
@@ -702,9 +705,9 @@ export function HoTroHocVienTab() {
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <button type="button" autoFocus className="link flex min-h-[44px] items-center gap-1.5 appearance-none border-0 bg-transparent p-0 text-[13px] lg:hidden" onClick={() => boChuRoi(dong)}>{t('‹ Công việc')}</button>
               <KhungTaiCho.Provider value><NhanTruongDam.Provider value>
-                {/* N33 ③ (U01 #5, #11): việc người khác = TÓM TẮT chỉ đọc + "Làm thay"; bấm mới ra form, dải vàng "Bạn đang làm thay … · Thôi, chỉ xem". */}
+                {/* N56 ① (sửa N33 ③): làm thay được → form ngay, dải vàng "Bạn đang làm thay … · Chỉ xem"; tóm tắt chỉ đọc khi không có quyền hoặc bấm "Chỉ xem". */}
                 {khoaPanel ? (
-                  <TomTatTheoDoi key={chon.key} it={chon} loai={dauPanel!.loai} them={dauPanel!.them} onDong={dong} onLamThay={() => setLamThay(chon.key)}
+                  <TomTatTheoDoi key={chon.key} it={chon} loai={dauPanel!.loai} them={dauPanel!.them} onDong={dong} onLamThay={() => setChiXem(null)}
                     onTiep={keTiep ? () => mo(keTiep) : null} tenTiep={viecVuaLuu.ten} />
                 ) : <>
                 <DauViecCongViec.Provider value={dauPanel}>
@@ -786,7 +789,7 @@ function HetViecNhom({ nhom, ke, con, daLuu, dai, tenNhom, onDong, onTiep, onXem
 }
 
 /**
- * THEO DÕI (N33 ③, U01 #5 · khung A2 / C4): việc của người khác (trừ Nhập điểm / Chấm Speaking — mở thẳng lưới, CV-SUA-1011) — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
+ * THEO DÕI (N33 ③ → N56 ①, U01 #5 · khung A2 / C4): việc của người khác — không làm thay được, hoặc đã bấm "Chỉ xem" ở dải làm thay (trừ Nhập điểm / Chấm Speaking — mở thẳng lưới, CV-SUA-1011) — TÓM TẮT chỉ đọc, không form mờ. Đầu = dải sự kiện (Học viên · Lớp · Mức · Hạn ·
  * Phụ trách); thân = Việc · Phương án · Tới đâu · Gần nhất (Case đọc một lần — cùng câu form làm thay sẽ đọc); chân = Việc tiếp › + **Làm thay** (nút chính)
  * khi máy chủ báo `lamThay` (quyền thật: Case `SOS_EDIT`, điểm `editableSkills`), không có quyền → một câu ai làm được.
  */

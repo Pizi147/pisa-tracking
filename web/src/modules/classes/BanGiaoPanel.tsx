@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { LOP_DA_LUU, NutDongPanel } from '../../ui/KhuonViec.tsx';
-import { api, invalidate, invalidateGop } from '../../lib/api.ts';
+import { apiNho, invalidate, quenXacNhan, invalidateGop } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -16,6 +16,9 @@ import { lopKq } from '../../ui/BieuTuong.tsx';
 import { DaiChenLo, DuoiOChu, KhoiDaGhi, useChen, useChenLo } from '../../ui/KhoiDaGhi.tsx';
 import { useSession } from '../../lib/session.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+
+/** Đề xuất 2 (S4-LUAT): Head điền thay — câu hỏi "vẫn làm thay" hỏi MỘT lần cho phiếu đang mở; đóng panel thì quên (`quenXacNhan`). */
+const apiPhieu = apiNho('ban-giao');
 
 /**
  * BÀN GIAO (PR-CT, §3.1f Q30-2, mockup 20 màn F · G · đọc bàn giao) — MỘT panel, ba dạng theo người mở:
@@ -35,6 +38,7 @@ export function BanGiaoPanel({ classId, docLenh, mon, lenhId, onClose, onDone, q
   /** OV-15h1: mở thay panel Lộ trình ở Tổng quan — "‹ Lộ trình" về lại panel đó. */
   quayLai?: { nhan: string; onClick: () => void };
 }) {
+  useEffect(() => () => quenXacNhan('ban-giao'), []);
   const { data, loading, error, reload } = useApi<PhieuBanGiaoDto>(
     docLenh ? `/lenh-chuyen/${docLenh}/ban-giao` : `/lenh-chuyen/ban-giao?lop=${classId}${mon ? `&mon=${mon}` : ''}`, [docLenh, classId, mon]);
   if (error) {
@@ -112,7 +116,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
     if (!o) {
       o = hang.o(String(e.lenhId), e.nhanXetChung ?? '',
         /* DOC-THUA: lưu nháp không tải lại phiếu đang mở — làm mới khi đóng panel. */
-        (v) => api.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { daDoiPhieu(); return null; }, (er: any) => er?.message ?? ''),
+        (v) => apiPhieu.put(`/lenh-chuyen/${e.lenhId}/nhan-xet-nhap`, { nhanXetChung: v ?? '' }).then(() => { daDoiPhieu(); return null; }, (er: any) => er?.message ?? ''),
         (tt) => { if (chonRef.current === e.lenhId) setNxLuu(tt === 'dang' ? 'luu' : tt === 'xong' ? 'da' : tt === 'loi' ? 'loi' : 'yen'); });
       oNx.set(e.lenhId, o);
     }
@@ -148,7 +152,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
     setBusy(true);
     try {
       await hang.xong();
-      await api.post(`/lenh-chuyen/${em.lenhId}/xac-nhan`, { nhanXetChung: nhap.trim() });
+      await apiPhieu.post(`/lenh-chuyen/${em.lenhId}/xac-nhan`, { nhanXetChung: nhap.trim() });
       invalidate('/lenh-chuyen'); invalidate('/classes'); invalidate('/my-work'); invalidate('/students'); invalidate('/yeu-cau');
       toast.push('ok', t('Đã xác nhận bàn giao {ten}', { ten: em.ten }));
       const con = dto.ds.filter((e) => !e.xacNhan && e.lenhId !== em.lenhId);
@@ -165,7 +169,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
     if (thieu) return;
     setBusy(true);
     try {
-      await api.put(`/lenh-chuyen/${em.lenhId}/ban-giao`, { nhanXetChung: nhap.trim() });
+      await apiPhieu.put(`/lenh-chuyen/${em.lenhId}/ban-giao`, { nhanXetChung: nhap.trim() });
       invalidate('/lenh-chuyen'); invalidate('/students');
       toast.push('ok', t('Đã lưu bàn giao {ten}', { ten: em.ten }));
       setDangSua(false); setDaBam(false); reload();
@@ -175,7 +179,7 @@ function MasterDetail({ dto, lenhId, chiDoc, onClose, onDone, reload, quayLai, o
   const luuDienThay = async () => {
     if (!dienThay || !dienThay.chu.trim()) return;
     try {
-      await api.put(`/lenh-chuyen/${dienThay.lenhId}/ban-giao-mon`, { mon: dienThay.mon, noiDung: dienThay.chu.trim() });
+      await apiPhieu.put(`/lenh-chuyen/${dienThay.lenhId}/ban-giao-mon`, { mon: dienThay.mon, noiDung: dienThay.chu.trim() });
       invalidate('/lenh-chuyen'); invalidate('/my-work');
       setDienThay(null); reload();
     } catch (er: any) { toast.push('error', er.message); }
@@ -395,7 +399,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
     let o = oO.get(k(e, m));
     if (!o) {
       o = hang.o(k(e, m), oMon(e, m)?.noiDung ?? '',
-        (v) => api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v ?? '' })
+        (v) => apiPhieu.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v ?? '' })
           .then(() => { daDoiPhieu(); invalidateGop('/my-work', '/classes'); return null; }, (er: any) => er?.message ?? ''),
         (moi, lyDo) => setTt((x) => ({ ...x, [k(e, m)]: moi === 'loi'
           ? { tt: 'loi', loi: lyDo || t('Không lưu được — chữ vẫn giữ, thử lại khi rời ô.') }
@@ -431,7 +435,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
     await o.luu();
     if (o.nhap().trim() !== cau.trim()) return;
     try {
-      const r = await api.post<{ ok: boolean }>(`/lenh-chuyen/${e.lenhId}/ban-giao-mon/go-chen`, { mon: m, noiDung: cau });
+      const r = await apiPhieu.post<{ ok: boolean }>(`/lenh-chuyen/${e.lenhId}/ban-giao-mon/go-chen`, { mon: m, noiDung: cau });
       if (!r.ok) return;
       o.nhanGoc('');
       setChu((x) => ({ ...x, [k(e, m)]: '' }));
@@ -455,7 +459,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
     if (!v) return;
     if (!giu) { void oCua(e, m).luu(); return; }
     try {
-      await api.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v });
+      await apiPhieu.put(`/lenh-chuyen/${e.lenhId}/ban-giao-mon`, { mon: m, noiDung: v });
       setTt((x) => ({ ...x, [k(e, m)]: { tt: 'xong' } }));
       invalidate('/lenh-chuyen'); invalidate('/my-work'); invalidate('/classes');
       reload();

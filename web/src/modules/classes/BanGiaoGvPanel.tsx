@@ -1,6 +1,6 @@
 import { MuiChev } from '../../ui/HangNhom.tsx';
-import { useState } from 'react';
-import { api, invalidate } from '../../lib/api.ts';
+import { useEffect, useState } from 'react';
+import { apiNho, invalidate, quenXacNhan } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { ErrorState, Skeleton } from '../../ui/ui.tsx';
@@ -14,6 +14,9 @@ import { dongSauKhiLuu } from '../../lib/luuChac.ts';
 import { DaiChenLo, useChenLo } from '../../ui/KhoiDaGhi.tsx';
 import { useSession } from '../../lib/session.tsx';
 
+/** Đề xuất 2 (S4-LUAT): Head điền thay — câu hỏi "vẫn làm thay" hỏi MỘT lần cho phiếu đang mở; đóng panel thì quên (`quenXacNhan`). */
+const apiPhieu = apiNho('ban-giao-gv');
+
 /**
  * BÀN GIAO KHI ĐỔI GV (PR-B, mockup `thiet-ke/v9/phan-cong-gv.html` khu 6 + 9) — panel mẫu F của bàn giao chuyển lớp, nhiều cột:
  * trái danh sách em + trạng thái (Đủ · Thiếu … · Chưa có) + dòng phụ từng cột; phải phiếu em đang chọn: tự điền (chỉ đọc) + MỘT ô góp ý mỗi cột
@@ -24,6 +27,7 @@ export function BanGiaoGvPanel({ id, onClose, onDone, quayLai, onTiep }: {
   id: number; onClose: () => void; onDone?: () => void; quayLai?: { nhan: string; onClick: () => void };
   /** GD-4d (lời 36): mở từ danh sách Công việc còn việc kế → "Xác nhận · việc tiếp ›". */ onTiep?: (() => void) | null;
 }) {
+  useEffect(() => () => quenXacNhan('ban-giao-gv'), []);
   const { data, loading, error, reload } = useApi<PhieuBanGiaoGvDto>(`/ban-giao-gv/${id}`, [id]);
   if (error) {
     return (
@@ -78,7 +82,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
 
   /* F01: các ô lưu khi rời ô (bấm Xác nhận / Đóng làm ô mất focus → lưu ô đó trước); ô lưu lỗi giữ chữ theo khoá `${studentId}|${mon}` · `chung`. */
   const hang = useHangLuu();
-  const luuGop = (sid: number, m: string) => (chu: string) => api.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu })
+  const luuGop = (sid: number, m: string) => (chu: string) => apiPhieu.put(`/ban-giao-gv/${dto.id}/gop-y`, { studentId: sid, mon: m, noiDung: chu })
     .then(() => { setDaLuu((x) => ({ ...x, [`${sid}|${m}`]: chu })); invalidate('/my-work'); });
   /* GD-20b (H2, mockup ⑫ B4): "Bạn đã ghi" 30 ngày gần nhất của lớp — MỘT lần khi mở phiếu đang mở. Khối cạnh ô góp ý (cột GVCN: phần Chung); "Chèn cho n em"
      chèn câu đầu (MT gần nhất, không có thì Case) vào mọi ô trống, tự lưu + Hoàn tác 10 giây; vẫn bấm Xác nhận bàn giao như nay. */
@@ -88,7 +92,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
   const emDaGhi = (sid: number) => daGhi.data?.em.find((x) => x.id === sid);
   const khoaGoiY = (m: string) => (m === 'gvcn' ? 'chung' : m);
   const goGop = async (sid: number, m: string, cau: string) => {
-    const r = await api.post<{ ok: boolean }>(`/ban-giao-gv/${dto.id}/gop-y/go-chen`, { studentId: sid, mon: m, noiDung: cau })
+    const r = await apiPhieu.post<{ ok: boolean }>(`/ban-giao-gv/${dto.id}/gop-y/go-chen`, { studentId: sid, mon: m, noiDung: cau })
       .catch((e: any) => { toast.push('error', e.message); return { ok: false }; });
     if (r.ok) { setDaLuu((x) => { const { [`${sid}|${m}`]: _, ...con } = x; return con; }); invalidate('/my-work'); }
     return r.ok;
@@ -115,7 +119,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
       await hang.xong();
       /* Không xác nhận bằng bản cũ khi chữ mới chưa lưu được (F01). Còn thiếu thật → máy chủ trả "Còn n em thiếu góp ý." (toast). */
       if (hang.chuaLuu.size) { baoChuaLuu(hang.chuaLuu.size); return; }
-      await api.post(`/ban-giao-gv/${dto.id}/xac-nhan`, {});
+      await apiPhieu.post(`/ban-giao-gv/${dto.id}/xac-nhan`, {});
       invalidate('/my-work'); invalidate('/classes');
       toast.push('ok', t('Đã xác nhận bàn giao {lop}', { lop: dto.lop.code }));
       onDone?.();
@@ -166,7 +170,7 @@ function Phieu({ dto, onClose, onDone, reload, quayLai, onTiep }: {
           {moChung && (
             <div className="px-3 pb-3">
               <OGopY nhan={t('Nhận xét chung cả lớp')} batBuoc={false} giaTri={dto.nhanXetChung ?? ''} docThoi={docThoi} rows={2} hang={hang} khoa="chung"
-                onLuu={async (chu) => { await api.put(`/ban-giao-gv/${dto.id}/nhan-xet`, { nhanXetChung: chu }); }} />
+                onLuu={async (chu) => { await apiPhieu.put(`/ban-giao-gv/${dto.id}/nhan-xet`, { nhanXetChung: chu }); }} />
             </div>
           )}
         </section>
