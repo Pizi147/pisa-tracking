@@ -130,7 +130,7 @@ const soDuong = (v: unknown) => v == null || (Number.isInteger(v) && (v as numbe
  * TU3, TU5, TU6: a = 0 → không dòng; a ≥ 1 → 1…a dòng, Σ (soBuoi ?? 1) = a; mỗi dòng có tutor (tên / `tutorId` / `gvId`) + Nội dung. 3 ô Có / Không
  * tuỳ chọn (`true` | `false` | trống), có gửi thì đúng kiểu. → câu lỗi | null (web và máy chủ cùng gọi; máy chủ kiểm thêm `tutorId` / `gvId` có thật).
  */
-export function kiemBuoiTutor(a: number, buoi: unknown): string | null {
+export function kiemBuoiTutor(a: number, buoi: unknown, chuCu?: ReadonlySet<string>): string | null {
   if (!Array.isArray(buoi)) return t('dòng Tutor không hợp lệ');
   if (a === 0) return buoi.length ? t('0 buổi thì không có dòng Tutor') : null;
   if (!buoi.length || buoi.length > a) return t('cần 1 đến {n} dòng Tutor', { n: a });
@@ -143,6 +143,8 @@ export function kiemBuoiTutor(a: number, buoi: unknown): string | null {
     if (!soDuong(b?.soBuoi)) return t('dòng {x}: số buổi là số nguyên từ 1', { x });
     if (!tutor && b.tutorId == null && b.gvId == null) return t('dòng {x} chưa có Tutor', { x });
     if (!nhanXet) return t('dòng {x} chưa có Nội dung', { x });
+    /* TU6 (rà #1872 P2-14): Nội dung ≥ 8 ký tự ở máy chủ như web — trừ chữ của lần ghi đang sửa giữ nguyên (`chuCu`: lần ghi cũ trước luật không bị chặn). */
+    if (nhanXet.length < CHU_TOI_THIEU_CASE && !chuCu?.has(nhanXet)) return t('dòng {x}: Nội dung ít nhất {n} ký tự', { x, n: CHU_TOI_THIEU_CASE });
     if (tutor.length > 100 || nhanXet.length > 1000) return t('dòng {x} quá dài (tên ≤ 100, nội dung ≤ 1000 ký tự)', { x });
     for (const { k } of TIEU_CHI_TUTOR) if (b[k] != null && !laCoKhong(b[k])) return t('dòng {x}: "Tutor buổi này" là Có, Không hoặc để trống', { x });
     if (b.hinhThuc != null && b.hinhThuc !== 'offline' && b.hinhThuc !== 'online') return t('dòng {x}: hình thức là Offline hoặc Online', { x });
@@ -151,6 +153,21 @@ export function kiemBuoiTutor(a: number, buoi: unknown): string | null {
     tong += b.soBuoi ?? 1;
   }
   return tong === a ? null : t('tổng số buổi các dòng là {tong}, cần bằng số buổi đã học ({a})', { tong, a });
+}
+/**
+ * T1 (rà #1872): nháp phần Tutor mà lưới Kết quả PA ghi được không mất gì — lưới chỉ có a / b + MỘT Tutor + Nội dung. Nháp nhiều dòng, có 3 nút, đánh giá,
+ * nhận xét tutor hay hình thức (ghi ở form đầy đủ) → dòng lưới thành "Mở đầy đủ"; máy chủ chặn lưới ghi đè (`tuLuoi`).
+ */
+export const nhapGonLuoi = (buoi: readonly BuoiTutor[] | null | undefined): boolean => !buoi || (buoi.length <= 1
+  && buoi.every((b) => TIEU_CHI_TUTOR.every(({ k }) => b[k] == null) && b.danhGia == null && !b.nhanXetTutor && b.hinhThuc == null));
+/**
+ * Nháp máy chủ kèm theo 409 của lưu nháp / lưu chốt (lưới nhận làm bản gốc mới): `nhapMoi` (phiên khác vừa lưu — `null` = vừa XOÁ, vẫn là bản mới) hoặc
+ * `moDay` (`nhap`, T1). `undefined` = 409 / lỗi không mang nháp (không đổi bản gốc). Rà #1875: không dùng `??` — `null` của `nhapMoi` phải giữ.
+ */
+export function nhapTheo409<T>(e: { status?: number; details?: { nhapMoi?: T | null; moDay?: boolean; nhap?: T | null } } | null | undefined): T | null | undefined {
+  if (e?.status !== 409 || !e.details) return undefined;
+  if ('nhapMoi' in e.details) return e.details.nhapMoi ?? null;
+  return e.details.moDay ? e.details.nhap ?? null : undefined;
 }
 
 /** Hình thức tự chọn (mục 5.2, 13): nơi dạy = chi nhánh lớp của em → Offline; chi nhánh khác / Chỉ online → Online; chưa có nơi dạy / "Tutor khác" → trống. */
@@ -198,7 +215,8 @@ export function thanKetQuaTuan(pa: PaKetQua, tuan: string, nguoi: NguoiChon | nu
 // ------------------------------------------------------------------ form PA (web: FormPa — Thêm · Sửa · Thay · Xác nhận PA)
 
 /** Giá trị form PA. Số buổi giữ dạng chữ người gõ; Tên đề xuất chỉ với PA "Khác". */
-export type GiaTriPa = { kind: string; description: string; soBuoi: string; nguoi: NguoiChon | null; ghiRo: string };
+/** `quyCheSos` (rà #1872 P2-17): PA có mốc quy chế SOS — PA Tutor không có ô "Tổng số buổi" (`so_buoi` cũ là số buổi / 2 tuần, chỉ điền sẵn "b"). */
+export type GiaTriPa = { kind: string; description: string; soBuoi: string; nguoi: NguoiChon | null; ghiRo: string; quyCheSos?: boolean };
 
 /** Người mặc định theo Loại: Người dạy → trống; Người thực hiện → "Tôi"; Tự học không có người. */
 export const nguoiMacDinh = (kind: string): NguoiChon | null => (!coNguoiDay(kind) || nhanNguoiDay(kind) === 'Người dạy' ? null : { kieu: 'toi' });
@@ -211,8 +229,9 @@ export function nguoiCuaPa(pa: { performerUserId?: number | null; performer?: st
   return null;
 }
 /** Giá trị form của PA hiện có (Sửa PA, Điều chỉnh trong Kết quả). */
-export const giaTriCuaPa = (pa: { kind: string; description?: string | null; soBuoi?: number | null; performerUserId?: number | null; performer?: string | null }): GiaTriPa =>
-  ({ kind: pa.kind, description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa), ghiRo: '' });
+export const giaTriCuaPa = (pa: { kind: string; description?: string | null; soBuoi?: number | null; performerUserId?: number | null; performer?: string | null; mocQuyChe?: string | null }): GiaTriPa =>
+  ({ kind: pa.kind, description: pa.description ?? '', soBuoi: pa.soBuoi == null ? '' : String(pa.soBuoi), nguoi: nguoiCuaPa(pa), ghiRo: '',
+    ...((MOC_QUY_CHE_SOS as readonly (string | null | undefined)[]).includes(pa.mocQuyChe) ? { quyCheSos: true } : {}) });
 export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
   if (!a || !b) return a !== b;
   if (a.kieu !== b.kieu) return true;
@@ -271,7 +290,7 @@ export type PaNhatKy = {
 };
 export type KetQuaNhatKy = {
   id: number; interventionId: number; observedOn: string; observerName?: string | null; cycleDue?: string | null;
-  soBuoi?: number | null; nguoiDay?: string | null;
+  soBuoi?: number | null; buoiDuKien?: number | null; nguoiDay?: string | null;
 };
 /** Một dòng: `ngay` ISO, `ai` (đậm cùng ngày), `chu` phần sau. */
 export type DongNhatKyPa = { khoa: string; ngay: string; ai: string; chu: string };
@@ -299,7 +318,7 @@ export function nhatKyPa(pa: PaNhatKy, ketQua: readonly KetQuaNhatKy[], homNay: 
     if (f.interventionId !== pa.id) continue;
     dong.push({
       khoa: `kq-${f.id}`, ngay: f.observedOn, ai: f.observerName ?? '—',
-      chu: [t('Kết quả {x}', { x: f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : tuan(f.observedOn) }), f.soBuoi != null ? t('dạy {soBuoi} buổi', { soBuoi: f.soBuoi }) : null,
+      chu: [t('Kết quả {x}', { x: f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : tuan(f.observedOn) }), f.soBuoi == null ? null : f.buoiDuKien != null ? t('dạy {a} / {b} buổi', { a: f.soBuoi, b: f.buoiDuKien }) : t('dạy {soBuoi} buổi', { soBuoi: f.soBuoi }),
         f.nguoiDay && f.nguoiDay !== f.observerName ? t('người dạy {nguoiDay}', { nguoiDay: f.nguoiDay }) : null].filter(Boolean).join(' · '),
       hang: 1, id: f.id,
     });

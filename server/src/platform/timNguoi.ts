@@ -28,18 +28,16 @@ const KY_NANG_S = (nhom: NhomNguoi, u = 'u') => (nhom === 'gv_speaking' ? ` AND 
  * `branchId` (PR-S5F-b): vai đó phải ở ĐÚNG chi nhánh này — người dạy bổ trợ là GV cùng chi nhánh của lớp.
  */
 export function laNguoiHopLe(userId: number, nhom: NhomNguoi, branchId?: number | null): boolean {
-  const keys = ROLE_KEYS_OF[nhom];
-  const placeholders = keys.map(() => '?').join(',');
-  const row = db()
-    .prepare(
-      `SELECT 1 FROM users u
-        JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active'
-        JOIN roles r ON r.id = ur.role_id
-       WHERE u.id = ? AND u.status = 'active' AND r.key IN (${placeholders})${branchId ? ' AND ur.branch_id = ?' : ''}${KY_NANG_S(nhom)} LIMIT 1`,
-    )
-    .get(userId, ...keys, ...(branchId ? [branchId] : []));
-  return !!row;
+  const row = db().prepare(`SELECT ${sqlNguoiHopLe('?', nhom, !!branchId)} AS ok`).get(userId, ...(branchId ? [branchId] : [])) as any;
+  return !!row?.ok;
 }
+/**
+ * Luật của `laNguoiHopLe` thành mảnh SQL (EXISTS) để đặt trong câu sẵn có — không thêm một câu cho mỗi dòng (rà #1872 P2-15: điền sẵn tutor kỳ trước).
+ * `cot` = cột / tham số id tài khoản; `coChiNhanh` thêm một tham số `?` chi nhánh sau `cot`.
+ */
+export const sqlNguoiHopLe = (cot: string, nhom: NhomNguoi, coChiNhanh = false): string =>
+  `EXISTS (SELECT 1 FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id
+     WHERE u.id = ${cot} AND u.status = 'active' AND r.key IN (${ROLE_KEYS_OF[nhom].map((k) => `'${k}'`).join(',')})${coChiNhanh ? ' AND ur.branch_id = ?' : ''}${KY_NANG_S(nhom)})`;
 
 type HangDangDay = { userId: number; skill: string | null };
 
