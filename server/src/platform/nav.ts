@@ -29,6 +29,7 @@ export function navOf(p: Principal): NavQuyen {
   const analysis = coPhamVi(PERMISSIONS.ANALYSIS_VIEW);
   const hvCuaToi = p.roleKeys.includes('consultant') && !laVaiQuanLy(p.roleKeys);
   const tutor = coPhamVi(PERMISSIONS.TUTOR_VIEW);
+  const students = coPhamVi(PERMISSIONS.STUDENT_VIEW);
   /* UI-CV-TVV (03 mục 3 "CẦN QUYỀN" 1, C05): TVV có Công việc — CHỈ việc của chính mình (`/my-work` lọc `NHOM_VIEC_TVV`), không Chấm điểm / Case / duyệt. */
   const viecTvv = !viec && p.roleKeys.includes('consultant');
   const work = (viec && (attempt || board || meeting)) || viecTvv;
@@ -36,8 +37,10 @@ export function navOf(p: Principal): NavQuyen {
     /* NEN-V5: mọi vai có Tổng quan. GD-1 (Overhaul V6, `04-thiet-ke.md` 5.1): GV (Công việc, không Phân tích, không TVV — cùng điều kiện vai 'gv'
        của `OverviewPage`) không còn Tổng quan: trang đầu = Công việc, số liệu sang Hồ sơ GV. */
     /* GD-8 (mockup v21 ④ R4.1): TVV (Công việc của mình + HV của tôi) cũng không còn Tổng quan — trang đầu = Công việc, dải 5 chỉ số ở đầu trang. */
-    overview: !(work && (!analysis || hvCuaToi)),
-    students: coPhamVi(PERMISSIONS.STUDENT_VIEW),
+    /* N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor (vai 'ht' của `OverviewPage`: không Phân tích / Công việc / Học viên, có Tutor) vào thẳng
+       /tutor → không còn mục Tổng quan. Kèm vai GV có Công việc → nhánh GV ở trên (N43). */
+    overview: !(work && (!analysis || hvCuaToi)) && !(tutor && !analysis && !work && !students),
+    students,
     admin: can(p, PERMISSIONS.ADMIN_CONFIG, { anyScope: true }),
     analysis,
     phanTichGv: coPhamVi(PERMISSIONS.ANALYSIS_VIEW_TEACHER),

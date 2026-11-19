@@ -270,12 +270,12 @@ export async function runPrTuTests(t: any) {
         const viec = await goi(GV.userId, '/my-work');
         assert(viec.status === 200 && (await viec.text()) === viecTruoc, 'GV + Head tutor: /my-work khác GV');
       } finally { conn.prepare('DELETE FROM user_roles WHERE id = ?').run(urId); }
-      /* Chỉ Head tutor = GV chưa có lớp (`scopeFor` rỗng): chỉ trang đầu, không Công việc / HV & Lớp / Test / Phân tích. */
+      /* Chỉ Head tutor = GV chưa có lớp (`scopeFor` rỗng) + Tutor: menu chỉ Tutor (S4-LUAT b · N56 ⑦ — không Tổng quan), không Công việc / HV & Lớp / Test / Phân tích. */
       const ht = loadPrincipal(htId);
       const nHt = navOf(ht);
       const gvChuaLop = navOf({ ...loadPrincipal(GV.userId), assignments: [], kyNang: [], xemTam: [], boTro: [] });
       const khu = (x: any) => dh.khuVucHienThi(x).map((k: any) => k.key).join();
-      assert(khu(nHt) === 'tong-quan,tutor' && khu(gvChuaLop) === 'tong-quan' && !nHt.work && !nHt.students && !nHt.test && !nHt.analysis, `Head tutor: ${khu(nHt)} · GV chưa lớp: ${khu(gvChuaLop)}`);
+      assert(khu(nHt) === 'tutor' && !nHt.overview && khu(gvChuaLop) === 'tong-quan' && !nHt.work && !nHt.students && !nHt.test && !nHt.analysis, `Head tutor: ${khu(nHt)} · GV chưa lớp: ${khu(gvChuaLop)}`);
       for (const url of ['/my-work', '/cham/lich-test', '/yeu-cau/dem']) {
         const s = (await goi(htId, url)).status;
         assert(s === 403, `Head tutor ${url}: ${s}`);
@@ -300,7 +300,7 @@ export async function runPrTuTests(t: any) {
     const ht = loadPrincipal(get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'head_tutor' LIMIT 1`).id);
     const nav = navOf(ht);
     const khu = dh.khuVucHienThi(nav).map((k: any) => k.key).join();
-    assert(khu === 'tong-quan,tutor' && nav.overview && nav.tutor, `Head tutor: ${khu} · ${JSON.stringify({ o: nav.overview, t: nav.tutor })}`);
+    assert(khu === 'tutor' && !nav.overview && nav.tutor, `Head tutor: ${khu} · ${JSON.stringify({ o: nav.overview, t: nav.tutor })}`);
     for (const p of [ht, P.mbManager, P.admin]) assert(dh.khuVucHienThi(navOf(p)).some((k: any) => k.key === 'tutor'), 'menu thiếu Tutor');
     assert(!dh.khuVucHienThi(navOf(GV)).some((k: any) => k.key === 'tutor') && !navOf(GV).tutor, 'GV không có Tutor');
     const app = readFileSync(join(process.cwd(), 'web/src/App.tsx'), 'utf8');

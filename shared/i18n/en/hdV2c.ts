@@ -99,7 +99,7 @@ export const EN_HD_V2C = {
   '<b>Bước tiếp</b> do Head hoặc TVV chọn; hồ sơ ghi "Chờ Head / TVV chọn bước tiếp".': 'The <b>Next step</b> is chosen by the Head or the consultant; the profile says "Waiting for Head / consultant to choose the next step".',
   /* ---------------------------------------------------------------- Head tutor */
   'Xem trang đầu': 'See the home page',
-  'Đăng nhập hoặc bấm <b>Tổng quan</b>: trang đầu mở thẳng <b>Tutor</b>.': 'Sign in or press <b>Home</b>: the home page opens <b>Tutor</b> directly.',
+  'Đăng nhập: trang đầu mở thẳng <b>Tutor</b> (không có mục Tổng quan).': 'Sign in: the home page opens <b>Tutor</b> directly (no Home item).',
   'Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — trang đầu thành Công việc như GV; Tutor vẫn ở menu.':
     'To teach a class: ask the administrator to add the <b>Teacher</b> role — your home page becomes Tasks like a teacher; Tutor stays in the menu.',
   'Trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.': 'The Tutor page is hidden for now; tutor data is kept as is.',
