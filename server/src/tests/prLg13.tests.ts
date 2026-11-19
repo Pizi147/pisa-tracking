@@ -100,7 +100,7 @@ export async function runPrLg13Tests(t: any) {
       const p = perm.loadPrincipal(id);
       const homNay = demoToday();
       xoaNho();
-      const st = tq.sapToiCuaGv(p);
+      const st = tq.sapToiCuaGv(p).sapToi;
       const tu = mw.hanGhiKetQuaToi(homNay), den = mw.hanGhiKetQuaToi(d.addDaysIso(homNay, 7));
       const viecSau = sauBay(() => mw.myWork(p).items);
       const sau = viecSau.filter((i: any) => i.group === 'ghi_ket_qua_pa' && i.mine && i.due > tu && i.due <= den);
@@ -136,7 +136,7 @@ export async function runPrLg13Tests(t: any) {
     } finally { datNgay(cu); }
   });
   check('LG-13b · QL không phân công → null', () => {
-    assert(tq.sapToiCuaGv(P.mbManager) === null, `QL: ${JSON.stringify(tq.sapToiCuaGv(P.mbManager))}`);
+    assert(tq.sapToiCuaGv(P.mbManager).sapToi === null, `QL: ${JSON.stringify(tq.sapToiCuaGv(P.mbManager))}`);
   });
 
   // ---------------------------------------------------------------- (c)
