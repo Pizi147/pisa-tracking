@@ -5,6 +5,7 @@
  * Việc, màn, luật dùng lại của `tvv.ts` (`lam` là MỘT nguồn — xem `ql.ts`).
  */
 import { HD_TVV, LUAT_TVV, TINH_HUONG_CX, TU_TVV, VAI_KHAC_TVV, VIEC_TVV, manHoSoVai, manPanelTvvCx } from './tvv.ts';
+import { VIEC_TUTOR, manTutor } from './headTutor.ts';
 import type { HuongDan, ViecHd } from './kieu.ts';
 
 const HV = '/hoc-vien';
@@ -57,15 +58,15 @@ const VIEC_CX: ViecHd[] = [
     'Kỳ: <b>Toàn bộ</b> hoặc <b>Chọn khoảng tuần</b>; Chi nhánh mặc định một tháng, tab khác 2 tuần.', 'Bấm số mở danh sách tại trang; <b>Xuất Excel</b> ở hàng lọc.'] },
 ];
 
-const THU_TU = ['xem-so', 'loc-hv', 'thi-that', 'meeting', 'sua-hv', 'tam-dung', 'xem-case', 'lich-su', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'phan-tich'];
+const THU_TU = ['xem-so', 'loc-hv', 'thi-that', 'meeting', 'sua-hv', 'tam-dung', 'xem-case', 'lich-su', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'phan-tich', 'tutor-xem', 'tutor-xuat'];
 
 export const HD_CX: HuongDan = {
   viec: [],
-  lam: THU_TU.map((id) => [...VIEC_CX, ...VIEC_TVV].find((v) => v.id === id)!),
+  lam: THU_TU.map((id) => [...VIEC_CX, ...VIEC_TVV, VIEC_TUTOR.xem, VIEC_TUTOR.xuat].find((v) => v.id === id)!),   // TU12: CX xem trang Tutor, xuất số buổi
   tuan: [
     { nhip: 'Hằng ngày', viec: ['xem-so', 'loc-hv'] },
-    { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds'] },
-    { nhip: 'Khi có', viec: ['sua-hv', 'xem-case', 'meeting', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru', 'tam-dung', 'thi-that'] },
+    { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds', 'tutor-xuat'] },
+    { nhip: 'Khi có', viec: ['sua-hv', 'xem-case', 'meeting', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru', 'tam-dung', 'thi-that', 'tutor-xem'] },
   ],
   /* HD3-3: chỉ trường hợp CX gặp (nguồn: `docs/anh/hd3-3-tvv-cx/khop-khac.md`); N52: CX không có việc của mình. */
   tinhHuong: TINH_HUONG_CX,
@@ -88,6 +89,7 @@ export const HD_CX: HuongDan = {
     { ...HD_TVV.man.find((m) => m.id === 'phan-tich')!, /* GD-8: TVV không còn Tổng quan (Trước = Công việc) — CX còn. */ dangO: { cau: 'Thống kê theo kỳ: chi nhánh, thi thật, SOS.', truoc: { chu: 'Tổng quan', duong: '/' } }, muc: [{ id: 'cx-pt', ten: 'Tab phân tích', buoc: ['<b>Chi nhánh</b> · <b>Thi thật</b> · <b>SOS</b> · <b>Giáo viên</b> · <b>Ý thức</b> (Phân tích V2), như Head.',
       'Mọi chi nhánh; <b>Toàn bộ</b> · <b>Chọn khoảng tuần</b>; bấm số mở danh sách ngay tại trang; <b>Xuất Excel</b> ở hàng lọc.'],
       chi: { hd: 'pt-goc', duong: '/phan-tich', chu: 'Chọn tab ở hàng này.' } }] },
+    manTutor('cx'),
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: [HV],
       dangO: { cau: 'Tìm em, lớp mọi chi nhánh; thêm lớp, học viên; xuất Excel; xem nhanh một em.', truoc: { chu: 'Tổng quan', duong: '/' } },

@@ -82,13 +82,13 @@ export async function runKhungTests(t: YThucTestKit) {
 
   check('PR-O · O1/O6 Bốn khu vực đúng thứ tự, khu không có quyền thì bỏ hẳn', () => {
     const keys = (n: any) => d.khuVucHienThi(n).map((k) => k.key).join(',');
-    assert(keys(QL) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', `QL: ${keys(QL)}`);   // OV-15e: Phân tích lên thanh trên; thứ tự chốt 20/10 (KHUNG-LOI)
+    assert(keys(QL) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', `QL: ${keys(QL)}`);   // QL mẫu không có cờ tutor; Tutor (TU12) sau Phân tích — prKhungLoi KL-1   // OV-15e: Phân tích lên thanh trên; thứ tự chốt 20/10 (KHUNG-LOI)
     assert(keys(GV) === 'tong-quan,hoc-vien,test,cong-viec', `GV thấy cả Test và Công việc (spec §3.1): ${keys(GV)}`);
     /* GD-1 (Overhaul V6): không Tổng quan (GV) → Công việc đứng đầu thanh. */
     assert(keys({ ...GV, overview: false }) === 'cong-viec,hoc-vien,test', `GV không Tổng quan: ${keys({ ...GV, overview: false })}`);
     assert(keys(nav({ overview: true, students: true })) === 'tong-quan,hoc-vien', 'Không có Test/Công việc thì không hiện');
     const labels = d.KHU_VUC.map((k) => `${k.label}|${k.labelNgan}`).join(',');
-    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Công việc|Công việc,Phân tích|Phân tích', `Chữ: ${labels}`);
+    assert(labels === 'Tổng quan|Tổng quan,Học viên & Lớp|Học viên,Test|Test,Công việc|Công việc,Phân tích|Phân tích,Tutor|Tutor', `Chữ: ${labels}`);
   });
 
   check('PR-O · Khu vực của một đường dẫn (tô sáng đúng mục trên thanh)', () => {
@@ -171,7 +171,7 @@ export async function runKhungTests(t: YThucTestKit) {
   check('PR-O · O6 Quản trị và QL chi nhánh: đủ 4 khu, đủ tab, có Phân tích', () => {
     for (const [ten, p] of [['Quản trị', t.P.admin], ['Head MB', t.P.mbManager]] as const) {
       const n = navOf(p);
-      assert(d.khuVucHienThi(n).length === 5, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích; AN-TUTOR: bỏ Tutor
+      assert(d.khuVucHienThi(n).length === 6, `${ten}: ${tabs(n)}`);   // OV-15e: + Phân tích; TU12 (TU2-6): + Tutor
       assert(d.tabTestHienThi(n).join(',') === 'lich,ke-hoach', `${ten} tab Test: ${tabs(n)}`);   // OV-15b: bỏ tab Điểm theo lớp
       assert(d.tabCongViecHienThi(n).join(',') === 'cho-duyet,ho-tro,van-hanh,bao-cao', `${ten} tab Công việc: ${tabs(n)}`);
       assert(n.analysis, `${ten} phải thấy Phân tích`);

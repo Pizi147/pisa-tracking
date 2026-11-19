@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { api, ApiError, invalidate } from '../../lib/api.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { BoLocDoan } from '../../ui/ui.tsx';
+import { Bang, type CotBang } from '../../ui/Bang.tsx';
+import { NutLuat } from '../../ui/NutLuat.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 import { nhanKyNang, nhanSdt, type ChiNhanh } from './kieu.ts';
@@ -82,6 +84,10 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
 
   const NHAN_COT: Record<Cot, string> = { ten: t('Tên'), sdt: t('SĐT'), noiDay: t('Nơi dạy'), kyNang: t('Kỹ năng') };
   const nhanNoi = (d: DongTai) => (d.noiDay === 'online' ? t('Chỉ online') : d.noiDay ? dsChiNhanh.find((c) => c.id === d.noiDay)?.ten ?? '' : '');
+  const cot: CotBang[] = [
+    { key: 'so', nhan: t('Dòng'), kieu: 'so', rong: 56 }, { key: 'ten', nhan: t('Tên'), kieu: 'ten', rong: 170 }, { key: 'sdt', nhan: t('SĐT'), kieu: 'chu', rong: 124 },
+    { key: 'noiDay', nhan: t('Nơi dạy'), kieu: 'chu', rong: 110 }, { key: 'kyNang', nhan: t('Kỹ năng'), kieu: 'chu', rong: 96 }, { key: 'kq', nhan: t('Kết quả'), kieu: 'chu', linhHoat: true },
+  ];
   const dong = (kq?.dong ?? []).filter((d) => loc === 'tat-ca' || d.kq === loc);
   const soLuu = (kq?.soMoi ?? 0) + (kq?.soCapNhat ?? 0);
   const ketQua = (d: DongTai) => (
@@ -106,8 +112,11 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
             muc={[{ key: 'tep', nhan: t('Chọn tệp') }, { key: 'dan', nhan: t('Dán từ Excel') }]} />
           <span className="flex-1" />
           <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={taiMau}>⤓ {t('Tải mẫu')}</button>
+          {/* R2.9 / R2.12: câu "Cột: …" vào ⓘ cạnh Tải mẫu — không chú thích tĩnh. */}
+          <NutLuat label={t('Cột của tệp')} phai>
+            <p className="m-0">{t('Cột: Tên · SĐT · Nơi dạy (tên hoặc mã chi nhánh, "Chỉ online") · Kỹ năng (L, R, W1, W2, S; "W" = W1 + W2). Bắt buộc Tên + Kỹ năng; có hay không có dòng tiêu đề đều được. Tối đa 500 dòng.')}</p>
+          </NutLuat>
         </div>
-        <p className="m-0 text-xs text-slate-400">{t('Cột: Tên · SĐT · Nơi dạy (tên hoặc mã chi nhánh, "Chỉ online") · Kỹ năng (L, R, W1, W2, S; "W" = W1 + W2). Bắt buộc Tên + Kỹ năng; có hay không có dòng tiêu đề đều được. Tối đa 500 dòng.')}</p>
         {cach === 'tep' ? (
           <label className="flex min-h-[44px] cursor-pointer flex-wrap items-center gap-2 rounded-lg border border-dashed px-3 py-3 text-sm focus-within:ring-2 focus-within:ring-[color:var(--accent)]" style={{ borderColor: 'var(--line-strong)' }}>
             <input type="file" accept=".xlsx,.xls,.csv" className="sr-only" onChange={(e) => { chonTep(e.target.files?.[0]); e.target.value = ''; }} />
@@ -129,25 +138,13 @@ export function TaiDanhSach({ dsChiNhanh, onDong }: { dsChiNhanh: ChiNhanh[]; on
               muc={[{ key: 'tat-ca', nhan: t('Tất cả'), so: kq.dong.length }, { key: 'moi', nhan: t('Mới'), so: kq.soMoi },
                 { key: 'capNhat', nhan: t('Cập nhật'), so: kq.soCapNhat }, { key: 'loi', nhan: t('Lỗi'), so: kq.soLoi }]} />
             {!dong.length ? <p className="m-0 text-xs text-slate-500">{t('Không có dòng nào.')}</p> : (
-              <div className="table-scroll">
-                <table className="w-full text-sm" style={{ tableLayout: 'fixed', minWidth: 640 }}>
-                  <colgroup><col style={{ width: 48 }} /><col style={{ width: 150 }} /><col style={{ width: 118 }} /><col style={{ width: 100 }} /><col style={{ width: 92 }} /><col /></colgroup>
-                  <thead><tr>
-                    <th className="th">{t('Dòng')}</th><th className="th">{t('Tên')}</th><th className="th">{t('SĐT')}</th><th className="th">{t('Nơi dạy')}</th>
-                    <th className="th">{t('Kỹ năng')}</th><th className="th">{t('Kết quả')}</th>
-                  </tr></thead>
-                  <tbody>{dong.map((d) => (
-                    <tr key={d.so} className="align-top">
-                      <td className="td tabular-nums text-xs text-slate-500">{d.so}</td>
-                      <td className="td">{o(d, 'ten', d.ten)}</td>
-                      <td className="td tabular-nums">{o(d, 'sdt', nhanSdt(d.sdt))}</td>
-                      <td className="td">{o(d, 'noiDay', nhanNoi(d))}</td>
-                      <td className="td">{o(d, 'kyNang', d.kq === 'loi' ? d.kyNang : nhanKyNang(d.kyNang.split(',')))}</td>
-                      <td className="td">{ketQua(d)}</td>
-                    </tr>
-                  ))}</tbody>
-                </table>
-              </div>
+              <Bang<DongTai> ten={t('Xem trước')} khung={false} cot={cot} hang={dong} khoa={(d) => d.so} oCua={(d, c) => (
+                c.key === 'so' ? <span className="tabular-nums text-faint">{d.so}</span>
+                  : c.key === 'kq' ? ketQua(d)
+                  : c.key === 'sdt' ? o(d, 'sdt', nhanSdt(d.sdt))
+                  : c.key === 'noiDay' ? o(d, 'noiDay', nhanNoi(d))
+                  : c.key === 'kyNang' ? o(d, 'kyNang', d.kq === 'loi' ? d.kyNang : nhanKyNang(d.kyNang.split(',')))
+                  : o(d, 'ten', d.ten))} />
             )}
           </>
         )}

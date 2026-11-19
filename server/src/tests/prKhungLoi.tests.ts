@@ -12,12 +12,12 @@ export async function runPrKhungLoiTests(t: any) {
   const QL = { ...d.NAV_RONG, overview: true, students: true, analysis: true, test: true, testSchedule: true, work: true, workSupport: true, tutor: true };
   const keys = (ds: any[]) => ds.map((k) => k.key).join(',');
 
-  check('KL-1 · thứ tự menu 20/10: Tổng quan → Học viên & Lớp → Test → Công việc → Phân tích (AN-TUTOR: không Tutor dù có cờ)', () => {
-    assert(keys(d.khuVucHienThi(QL)) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich', keys(d.khuVucHienThi(QL)));
+  check('KL-1 · thứ tự menu 20/10: Tổng quan → Học viên & Lớp → Test → Công việc → Phân tích → Tutor (TU12: Tutor mở lại, sau Phân tích)', () => {
+    assert(keys(d.khuVucHienThi(QL)) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich,tutor', keys(d.khuVucHienThi(QL)));
   });
 
   check('KL-2 · thanh trên: đủ chỗ không gom; thiếu chỗ dồn từ cuối vào Thêm, giữ thứ tự', () => {
-    const muc = d.khuVucHienThi(QL);
+    const muc = d.khuVucHienThi({ ...QL, tutor: false });
     const rong = muc.map(() => 100);   // 5 mục × 100 px, nút Thêm 70 px
     const chia = (co: number) => { const r = d.chiaMucThanh(muc, rong, co, 70); return `${keys(r.hien)}|${keys(r.them)}`; };
     assert(chia(500) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich|', `đủ chỗ: ${chia(500)}`);
@@ -26,15 +26,16 @@ export async function runPrKhungLoiTests(t: any) {
     assert(chia(0) === 'tong-quan,hoc-vien,test,cong-viec,phan-tich|', 'chưa đo (rộng 0) → vẽ đủ, không gom');
   });
 
-  check('KL-2 · thanh dưới ≤ 5 nút: QL 5 giữ; > 5 → 4 + Thêm; GV 3 giữ; một mục → ẩn', () => {
+  check('KL-2 · thanh dưới ≤ 5 nút: QL 6 mục → 4 + Thêm (Phân tích, Tutor); > 5 → 4 + Thêm; GV 3 giữ; một mục → ẩn', () => {
     const nam = d.chiaThanhDuoi(d.khuVucHienThi(QL));
-    assert(nam.hien.length === 5 && !nam.them.length, 'QL: 5 nút, không Thêm');
+    assert(nam.hien.length === 4 && nam.them.map((k: any) => k.key).join() === 'phan-tich,tutor', 'QL: 4 nút + Thêm (Phân tích, Tutor)');
     const sau = d.chiaThanhDuoi(['a', 'b', 'c', 'd', 'e', 'f']);
     assert(sau.hien.join() === 'a,b,c,d' && sau.them.join() === 'e,f', '6 mục → 4 + Thêm');
     const gv = d.chiaThanhDuoi(d.khuVucHienThi({ ...d.NAV_RONG, overview: true, students: true, work: true }));
     assert(gv.hien.length === 3 && !gv.them.length, 'GV 3 nút');
     const ht = d.chiaThanhDuoi(d.khuVucHienThi({ ...d.NAV_RONG, overview: true, tutor: true }));
-    assert(!ht.hien.length && !ht.them.length, 'Head tutor chỉ Tổng quan → không thanh dưới');
+    assert(ht.hien.map((k: any) => k.key).join() === 'tong-quan,tutor' && !ht.them.length, 'Head tutor: Tổng quan · Tutor (2 nút — điện thoại cần lối vào Tutor)');
+    assert(!d.chiaThanhDuoi(d.khuVucHienThi({ ...d.NAV_RONG, overview: true })).hien.length, 'một mục → không thanh dưới');
   });
 
   check('KL-8 · chú giải màu ô MT: mọi kiểu có nhãn; "xong" = Đã thi (không "Xám = đã thi xong")', () => {

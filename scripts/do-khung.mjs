@@ -74,6 +74,9 @@ const KICH_BAN = [
   // [tên, vai, đường, thao tác thêm]
   ['hvl', 2, '/hoc-vien'], ['hvl-gvcn', 7, '/hoc-vien'],
   ['hvl-cuoi', 2, '/hoc-vien', async (p) => { await p.evaluate(() => { const m = document.getElementById('noi-dung'); m.scrollTop = m.scrollHeight; window.scrollTo(0, 1e6); }); await p.waitForTimeout(300); }],
+  /* TU2-6: trang Tutor — Head tutor (25) · Head (2) · CX (24); panel một người dạy. */
+  ['tutor', 25, '/tutor?loc=tat-ca', null, RONG_MAY], ['tutor-head', 2, '/tutor?loc=tat-ca'], ['tutor-cx', 24, '/tutor'],
+  ['tutor-panel', 25, '/tutor?loc=tat-ca', async (p) => { await p.locator('#noi-dung tr.bam:visible, #noi-dung article.bam:visible').first().click(); await p.waitForTimeout(800); }],
   ['tong-quan', 2, '/'], ['tong-quan-gv', 7, '/'], ['phan-tich', 2, '/phan-tich', null, RONG_MAY], ['phan-tich-thuong', 2, '/phan-tich?ct=thuong', null, RONG_MAY],
   // DO-KHUNG-DO: năm tab còn lại của Phân tích (V8-PT-2).
   ...['giao-vien', 'tong-hop', 'ket-qua-thi', 'hieu-qua-pa', 'y-thuc'].map((g) => [`phan-tich-${g}`, 2, `/phan-tich?goc=${g}`, null, RONG_MAY]),
@@ -580,7 +583,7 @@ if (!CHI_BANG && (!LOC || 'lich'.includes(LOC) || LOC.startsWith('lich-'))) {
   /** [tên, vai, đường, mở hộp]: mọi hộp / panel có ô ngày mà demo mở được. */
   const HOP_NGAY = [
     ['lich-phan-tich', 2, '/phan-tich', hopThoiGian],
-    /* lich-tutor, lich-panel-tutor: bỏ — /tutor chuyển về trang chủ (Tutor hoãn, App.tsx) (SUA-DO-KHUNG). */
+    ['lich-tutor', 25, '/tutor', hopThoiGian],   // TU2-6: Tutor mở lại — khoảng tuần đầu trang (panel dùng khoảng của trang, không ô ngày)
     ['lich-loc-them', 2, '/hoc-vien?lt=1&ltu=2026-08-03&lden=2026-09-13', hopThoiGian],
     ...['hop-ky-nang-mt', 'panel-tao-case', 'panel-vi-pham', 'panel-pa'].map((k) => { const [, v, d, mo] = theoTen(k); return [`lich-${k}`, v, d, mo]; }),
   ];

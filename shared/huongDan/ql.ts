@@ -4,6 +4,7 @@
  * QT dùng lại cả tệp này (`qt.ts`, không đụng). PR đổi màn / nhãn nào thì sửa ở đây; `data-hd` phải có thật trong web/src (HD-CHI); chữ đậm là nhãn nút (HD-NHAN).
  */
 import { HD_GV } from './gv.ts';
+import { VIEC_TUTOR, manTutor } from './headTutor.ts';
 import type { HuongDan, MucHd } from './kieu.ts';
 
 const CV = '/cong-viec';
@@ -374,6 +375,8 @@ export const HD_QL: HuongDan = {
       buoc: ['Mở <b>Phân tích</b>, tab <b>Giáo viên</b> (hoặc bảng <b>Giáo viên</b> ở Tổng quan), bấm tên GV.', 'Chọn <b>Từ tuần</b> → <b>Đến tuần</b>: dải đúng hạn và tab <b>Học thuật</b> theo khoảng đó; tab <b>Lớp</b> · <b>Việc & Case</b> tính tới hôm nay.', 'Kỹ năng của GV: <b>Sửa</b> (Head, Quản trị).'],
       tuKhac: ['hồ sơ gv', 'giáo viên', 'teacher profile', 'kỹ năng gv'],
     },
+    /* TU2-6 (TU13, TU14): Head xem người dạy, thêm / sửa tutor chi nhánh mình, gộp tên gõ tay, xuất số buổi. */
+    VIEC_TUTOR.xem, VIEC_TUTOR.danhBa, VIEC_TUTOR.xuat,
     {
       id: 'khoi-phuc', ten: 'Khôi phục thứ đã xoá', nhom: 'khac',
       loiChinh: { man: 'quan-tri', chu: 'Tài khoản › Cấu hình hệ thống › Đã xoá', duong: DA_XOA, chi: { hd: 'qt-tab', duong: DA_XOA, chu: 'Chọn tab <b>Đã xoá</b> ở hàng này.' } },
@@ -452,8 +455,8 @@ export const HD_QL: HuongDan = {
     { nhip: 'Mỗi tuần', viec: ['xep-lich', 'xep-lich-moc', 'xem-lich-test', 'sua-diem', 'case-lam-thay'] },
     { nhip: 'Khi có', viec: ['chuyen-lop', 'sua-hv', 'them-hv', 'tao-case', 'case-hoan-thanh', 'doi-chu-case', 'ket-thuc-pa', 'thi-lai-s-ex', 'phan-cong', 'khoi-phuc', 'luu-tru', 'vi-pham', 'xu-ly-vi-pham', 'ban-giao', 'bao-cao-ph'] },
     { nhip: 'Lớp sắp hết khoá', viec: ['chot-lo-trinh', 'xet-lai', 'ky-vong', 'buoc-tiep'] },
-    { nhip: 'Mỗi kỳ', viec: ['phan-tich', 'bao-cao-tuan', 'van-hanh', 'xuat-test', 'lich-thi'] },
-    { nhip: 'Khi cần tra', viec: ['xem-case', 'lich-su', 'tim-kiem', 'xem-ho-so-gv', 'chuong'] },
+    { nhip: 'Mỗi kỳ', viec: ['phan-tich', 'bao-cao-tuan', 'van-hanh', 'xuat-test', 'lich-thi', 'tutor-xuat'] },
+    { nhip: 'Khi cần tra', viec: ['xem-case', 'lich-su', 'tim-kiem', 'xem-ho-so-gv', 'chuong', 'tutor-xem', 'tutor-danh-ba'] },
   ],
   vaiKhac: [
     { ten: 'Tạo, sửa, xoá tài khoản', cua: 'việc của Quản trị', tuKhac: ['tài khoản', 'account', 'xoá tài khoản'] },
@@ -492,6 +495,7 @@ export const HD_QL: HuongDan = {
         { id: 'ql-pt-cach-tinh', ten: 'Cách tính', buoc: ['Bấm <b>ⓘ</b> ở đầu bảng: giải thích từng cột mở ngay dưới đầu bảng; <b>✕</b> hoặc Esc để đóng.'] },
       ],
     },
+    manTutor('ql'),
     {
       id: 'hoc-vien', ten: 'Học viên & Lớp', duong: [HV],
       dangO: { cau: 'Tìm em, lớp; thêm lớp, học viên; xem nhanh một em không rời trang.', sau: { chu: 'Công việc', duong: CV } },

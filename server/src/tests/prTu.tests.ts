@@ -275,7 +275,7 @@ export async function runPrTuTests(t: any) {
       const nHt = navOf(ht);
       const gvChuaLop = navOf({ ...loadPrincipal(GV.userId), assignments: [], kyNang: [], xemTam: [], boTro: [] });
       const khu = (x: any) => dh.khuVucHienThi(x).map((k: any) => k.key).join();
-      assert(khu(nHt) === 'tong-quan' && khu(gvChuaLop) === 'tong-quan' && !nHt.work && !nHt.students && !nHt.test && !nHt.analysis, `Head tutor: ${khu(nHt)} · GV chưa lớp: ${khu(gvChuaLop)}`);
+      assert(khu(nHt) === 'tong-quan,tutor' && khu(gvChuaLop) === 'tong-quan' && !nHt.work && !nHt.students && !nHt.test && !nHt.analysis, `Head tutor: ${khu(nHt)} · GV chưa lớp: ${khu(gvChuaLop)}`);
       for (const url of ['/my-work', '/cham/lich-test', '/yeu-cau/dem']) {
         const s = (await goi(htId, url)).status;
         assert(s === 403, `Head tutor ${url}: ${s}`);
@@ -293,15 +293,15 @@ export async function runPrTuTests(t: any) {
   const { loadPrincipal } = await import('../permissions.ts');
   const dh: any = await import('../../../shared/domain/dieuHuong.ts');
   const accounts: any = await import('../platform/accounts.ts');
-  check('AN-TUTOR · menu mọi vai không có Tutor; Head tutor trang đầu = Tổng quan; quyền tutor.view giữ', () => {
+  check('TU12 (TU2-6) · menu có Tutor sau Phân tích cho Head tutor · Head · Quản trị; GV không; /tutor mở TutorPage theo nav.tutor, GV về trang đầu', () => {
     const ht = loadPrincipal(get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'head_tutor' LIMIT 1`).id);
     const nav = navOf(ht);
     const khu = dh.khuVucHienThi(nav).map((k: any) => k.key).join();
-    assert(khu === 'tong-quan' && nav.overview && nav.tutor, `Head tutor: ${khu} · ${JSON.stringify({ o: nav.overview, t: nav.tutor })}`);
-    for (const p of [ht, P.mbManager, P.admin, GV]) assert(!dh.khuVucHienThi(navOf(p)).some((k: any) => k.key === 'tutor'), 'menu có Tutor');
-    assert(navOf(P.mbManager).tutor && navOf(P.admin).tutor && !navOf(GV).tutor, 'cờ quyền tutor giữ nguyên');
+    assert(khu === 'tong-quan,tutor' && nav.overview && nav.tutor, `Head tutor: ${khu} · ${JSON.stringify({ o: nav.overview, t: nav.tutor })}`);
+    for (const p of [ht, P.mbManager, P.admin]) assert(dh.khuVucHienThi(navOf(p)).some((k: any) => k.key === 'tutor'), 'menu thiếu Tutor');
+    assert(!dh.khuVucHienThi(navOf(GV)).some((k: any) => k.key === 'tutor') && !navOf(GV).tutor, 'GV không có Tutor');
     const app = readFileSync(join(process.cwd(), 'web/src/App.tsx'), 'utf8');
-    assert(/path="\/tutor\/\*" element=\{<Navigate to="\/" replace \/>\}/.test(app) && !/TutorPage/.test(app), '/tutor/* phải chuyển hướng về trang đầu');
+    assert(/path="\/tutor" element=\{nav\.tutor \? <TutorPage \/> : <Navigate to="\/" replace \/>\}/.test(app), '/tutor phải mở TutorPage theo nav.tutor, không quyền về trang đầu');
   });
   check('TU-5b · Quản trị cấp vai Head tutor không chọn chi nhánh → một grant toàn hệ thống (branch_id NULL)', () => thu(() => {
     const r = accounts.createAccount(P.admin, { fullName: 'Thử Head Tutor', email: 'thu.headtutor.tu.pisa@gmail.com', password: 'Matkhau123!', roles: [{ role: 'head_tutor', branches: [] }] });

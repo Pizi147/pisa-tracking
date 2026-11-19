@@ -62,6 +62,7 @@ const ProfilePage = lazyTai(() => import('./modules/platform/ProfilePage.tsx'));
 const HoSoGiaoVienPage = lazyTai(() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx').then((m) => ({ default: m.HoSoGiaoVienPage })));
 const HuongDanPage = lazyTai(() => import('./modules/huongDan/HuongDanPage.tsx'));
 const PhanTichPage = lazyTai(() => import('./modules/phanTich/PhanTichPage.tsx'));
+const TutorPage = lazyTai(() => import('./modules/tutor/TutorPage.tsx'));
 /*
  * U05 (SUA-RA-1311, đo 13/11 — `vite build` + manifest, gzip, chưa có cache): nạp sẵn mọi khu = 78 tệp / 702 KB. Trang có route chặn theo `nav` (Phân tích,
  * Test, Công việc, Quản trị — cùng điều kiện các `<Route>` dưới) chỉ nạp khi vai mở được: GV 619 KB, TVV 620, CX 602, Admin VP 655; QL / QT không đổi.
@@ -87,6 +88,7 @@ const NAP_SAN: [() => Promise<unknown>, ((n: typeof NAV_RONG) => boolean) | null
   [() => import('./modules/giaoVien/HoSoGiaoVienPage.tsx'), null, /^\/giao-vien\/[^/]+$/],
   [() => import('./modules/huongDan/HuongDanPage.tsx'), null, /^\/huong-dan$/],
   [() => import('./modules/phanTich/PhanTichPage.tsx'), (n) => n.analysis, /^\/phan-tich$/],
+  [() => import('./modules/tutor/TutorPage.tsx'), (n) => n.tutor, /^\/tutor$/],
   [() => import('./modules/congViec/PanelViec.tsx'), null],
 ];
 /* Lỗi tải mảnh (vừa deploy) để `lazyTai` của trang tự xử lý như cũ — ở đây bỏ qua. */
@@ -421,8 +423,9 @@ export default function App() {
         <Suspense fallback={<div className="p-8 max-w-4xl mx-auto"><Skeleton rows={8} /></div>}>
         <Routes>
           <Route path="/" element={<OverviewPage />} />
-          {/* AN-TUTOR (chủ SP 22/10): trang Tutor ẩn — link cũ về trang đầu. */}
-          <Route path="/tutor/*" element={<Navigate to="/" replace />} />
+          {/* TU12 (TU2-6): trang Tutor mở lại cho người có `tutor.view`; GV (không quyền) gõ /tutor → về trang đầu. */}
+          <Route path="/tutor" element={nav.tutor ? <TutorPage /> : <Navigate to="/" replace />} />
+          <Route path="/tutor/*" element={<Navigate to="/tutor" replace />} />
           <Route path="/phan-tich" element={nav.analysis ? <PhanTichPage /> : <KhongCoTrang ai={t('Head, Admin, TVV và CX')} />} />
           <Route path="/hoc-vien" element={<StudentsPage />} />
           <Route path="/hoc-vien/lop/:classId" element={<ClassOverviewPage />} />
@@ -460,7 +463,7 @@ export default function App() {
       {/* Điện thoại: thanh dưới 4 nút (G-11). z-30 — dưới menu tài khoản/thông báo ở đầu trang (z-40), Drawer/Modal (z-50),
           menu ⋯ của dòng (z-[60]) và Toast (z-[100]). */}
       <KhoanhPhanTu />
-      {/* KHUNG-LOI (A1-05): ≤ 5 nút — QL / QT: 4 + "Thêm" (Phân tích, Tutor); Head tutor (1 mục) không vẽ thanh. */}
+      {/* KHUNG-LOI (A1-05): ≤ 5 nút — QL / QT: 4 + "Thêm" (Phân tích, Tutor); Head tutor: Tổng quan · Tutor (2 nút). */}
       {duoi.hien.length > 0 && (
         <nav data-thanh-duoi aria-label={t('Điều hướng chính')} className="md:hidden fixed bottom-0 inset-x-0 z-30 flex border-t bg-[color:var(--surface)] print:hidden"
           style={{ borderColor: 'var(--line)', paddingBottom: 'env(safe-area-inset-bottom)' }}>

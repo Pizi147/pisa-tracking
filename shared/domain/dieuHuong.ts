@@ -32,7 +32,7 @@ export type NavQuyen = {
   workCx?: boolean;
   /** PR-XUAT: nút Xuất Excel kết quả Test — Quản lý/Quản trị theo phạm vi, GVCN lớp mình (không phải GVBM). */
   xuatMt: boolean;
-  /** TU-a: trang Tutor (`tutor.view`) — Head tutor, Quản trị, QL. */
+  /** TU-a · TU12: trang Tutor (`tutor.view`) — Head tutor, Quản trị, Head, CX. */
   tutor: boolean;
   /** TU-b: sửa danh sách tutor, gộp, nhận xét (`tutor.manage`) — Head tutor, Quản trị; số "Tutor n" trên menu. */
   tutorSua: boolean;
@@ -56,7 +56,8 @@ export const KHU_VUC: readonly KhuVucMuc[] = [
   /* Thứ tự chủ SP chốt 20/10 (đánh giá 10.0 I.2): Công việc trước Phân tích. OV-15e: Phân tích là mục thanh trên. */
   { key: 'cong-viec', to: '/cong-viec', label: t('Công việc'), labelNgan: t('Công việc') },
   { key: 'phan-tich', to: '/phan-tich', label: t('Phân tích'), labelNgan: t('Phân tích') },
-  /* AN-TUTOR (chủ SP 22/10): Tutor ẩn khỏi web mọi vai — dữ liệu, API, quyền `tutor.view` giữ nguyên. */
+  /* TU12 (chủ SP 19/11, TU2-6): Tutor mở lại, sau Phân tích (G11) — Head tutor · Head · Quản trị · CX (`tutor.view`); GV không có. */
+  { key: 'tutor', to: '/tutor', label: t('Tutor'), labelNgan: t('Tutor') },
 ];
 
 const HIEN: Record<KhuVuc, (n: NavQuyen) => boolean> = {
