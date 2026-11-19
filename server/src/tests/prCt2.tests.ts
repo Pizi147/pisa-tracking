@@ -42,7 +42,9 @@ export async function runPrCt2Tests(t: YThucTestKit) {
     assert(f.length === 1 && f[0].so_buoi === 2 && f[0].phu_trach_user_id === null && f[0].phu_trach_ten === null, JSON.stringify(f));
     const khoa = (tuan: string, ng: any) => d.loiKetQuaTuan({ kind: 'tutor', soBuoi: 10 }, tuan, ng).map((l: any) => l.khoa).join();
     assert(khoa('2', null) === '' && khoa('10', null) === '', `không người: ${khoa('2', null)}`);
-    assert(khoa('2', { kieu: 'ngoai', ten: 'A' }) === 'nguoi-day', 'tên ngoài 1 ký tự phải lỗi');
+    /* TU1 (chủ SP 19/11): PA Tutor không còn ô Người dạy kỳ này; loại có người dạy (Bổ trợ) vẫn kiểm tên ngoài. */
+    assert(khoa('2', { kieu: 'ngoai', ten: 'A' }) === '', 'Tutor: không ô người dạy');
+    assert(d.loiKetQuaTuan({ kind: 'bo_tro', soBuoi: 10 }, '2', { kieu: 'ngoai', ten: 'A' }).map((l: any) => l.khoa).join() === 'nguoi-day', 'tên ngoài 1 ký tự phải lỗi');
     let loi: any = null;
     try { cases.updateResult(P.lrTeacher, iv, { ...KQ, soBuoi: 1, nguoiDay: { performerName: 'A' } }); } catch (e: any) { loi = e; }
     assert(loi?.status === 400 && /người dạy tuần này/i.test(String(loi?.message)), `máy chủ vẫn kiểm tên ngoài: ${loi?.message}`);

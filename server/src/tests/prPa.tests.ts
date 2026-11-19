@@ -45,7 +45,8 @@ export async function runPrPaTests(t: YThucTestKit) {
 
   check('PA0 · luật thuần: coSoBuoi / coNguoiDay / nhanNguoiDay · kiemSoBuoiPa · kiemSoBuoiTuan · demBuoi', () => {
     assert(['tutor', 'self_study', 'bo_tro', 'bo_tro_mien_phi'].every(d.coSoBuoi) && !d.coSoBuoi('teaching_adjust') && !d.coSoBuoi('extra_support'), 'coSoBuoi');
-    assert(!d.coNguoiDay('self_study') && d.coNguoiDay('tutor') && d.coNguoiDay('teaching_adjust'), 'coNguoiDay');
+    /* TU1 (chủ SP 19/11): PA Tutor không còn ô Người dạy trên web; máy chủ vẫn nhận (`coNguoiPa`). */
+    assert(!d.coNguoiDay('self_study') && !d.coNguoiDay('tutor') && d.coNguoiDay('teaching_adjust') && d.coNguoiPa('tutor') && !d.coNguoiPa('self_study'), 'coNguoiDay');
     assert(d.nhanNguoiDay('tutor') === 'Người dạy' && d.nhanNguoiDay('bo_tro') === 'Người dạy' && d.nhanNguoiDay('bo_tro_mien_phi') === 'Người dạy'
       && d.nhanNguoiDay('teaching_adjust') === 'Người thực hiện', 'nhanNguoiDay');
     const L = 'Từ 1 đến 60 buổi, hoặc để trống';
@@ -614,11 +615,11 @@ export async function runPrPaTests(t: YThucTestKit) {
     assert(nk.map((x: any) => `${x.ngay}|${x.ai}|${x.chu}`).join('\n') === [
       '2026-10-08|Ngô Bảo Nam|Sửa PA · Số buổi 10 → 8 · Nội dung đổi',
       `2026-10-06|Phạm Thu Trang|Kết quả ${tuan} · dạy 3 buổi`,
-      '2026-09-29|Web|Tạo "Học Tutor" · 10 buổi · dạy Phạm Thu Trang',
+      '2026-09-29|Web|Tạo "Học Tutor" · 10 buổi',   // TU1: PA Tutor không hiện người dạy
     ].join('\n'), `nhật ký: ${JSON.stringify(nk)}`);
     assert(d.soDongNhatKyPa(pa, kq) === 3, 'đếm nhật ký');
     const tayKhongNguoi = d.nhatKyPa({ id: 9, kind: 'tutor', performer: null, recordedBy: 'Lê Minh Khoa', createdAt: '2026-10-01T03:00:00Z' }, [], TODAY);
-    assert(tayKhongNguoi.length === 1 && tayKhongNguoi[0].ai === 'Lê Minh Khoa' && tayKhongNguoi[0].chu === 'Tạo "Học Tutor" · người dạy trống', JSON.stringify(tayKhongNguoi));
+    assert(tayKhongNguoi.length === 1 && tayKhongNguoi[0].ai === 'Lê Minh Khoa' && tayKhongNguoi[0].chu === 'Tạo "Học Tutor"', JSON.stringify(tayKhongNguoi));
   });
 
   check('PA17 · Kết quả (luật thuần web): đếm sau khi lưu còn / đủ / vượt; lỗi + thân khối đếm; không người dạy lưu được (PR-CT2); Điều chỉnh xoá Người dạy', () => {
@@ -628,10 +629,11 @@ export async function runPrPaTests(t: YThucTestKit) {
     const tutor = { kind: 'tutor', soBuoi: 10 };
     const khoa = (pa: any, tuan: string, ng: any) => d.loiKetQuaTuan(pa, tuan, ng).map((l: any) => `${l.khoa}:${l.lyDo}`).join('|');
     assert(khoa(tutor, '2', null) === '' && khoa(tutor, '0', null) === '' && khoa(tutor, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'
-      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên') && khoa({ kind: 'tutor', soBuoi: null }, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'   /* OV-12h: mọi PA Tutor */
+      && khoa(tutor, '1', { kieu: 'ngoai', ten: 'A' }) === '' && khoa({ kind: 'bo_tro', soBuoi: 10 }, '1', { kieu: 'ngoai', ten: 'A' }).startsWith('nguoi-day:Gõ tên')   /* TU1: Tutor không ô Người dạy */
+      && khoa({ kind: 'tutor', soBuoi: null }, '', null) === 'so-buoi-tuan:Từ 0 đến 60 buổi'   /* OV-12h: mọi PA Tutor */
       && khoa({ kind: 'tutor', soBuoi: null, cu: true }, '', null) === ''
       && khoa({ kind: 'self_study', soBuoi: 8 }, '2', null) === '', `loiKetQuaTuan: ${khoa(tutor, '2', null)}`);
-    assert(JSON.stringify(d.thanKetQuaTuan(tutor, '0', null)) === '{"soBuoi":0,"nguoiDay":{}}'
+    assert(JSON.stringify(d.thanKetQuaTuan(tutor, '0', null)) === '{"soBuoi":0}'
       && JSON.stringify(d.thanKetQuaTuan({ kind: 'self_study', soBuoi: 8 }, '2', { kieu: 'tai_khoan', id: 5, ten: 'X' })) === '{"soBuoi":2}'
       && JSON.stringify(d.thanKetQuaTuan({ kind: 'teaching_adjust', soBuoi: null }, '1', null)) === '{"nguoiDay":{}}', 'thanKetQuaTuan');
     /* Máy chủ nhận đúng thân web gửi: 0 buổi hay 2 buổi không người dạy → đều lưu (PR-CT2). */

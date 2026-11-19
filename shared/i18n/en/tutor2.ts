@@ -1,0 +1,31 @@
+/** TU2-1 LUAT-KQ-TUTOR (chủ SP 19/11): Kết quả PA Tutor "a / b", dòng Tutor gộp, GV làm tutor, nháp giữ phần Tutor. */
+import type { Dich } from '../en.ts';
+
+export const EN_TUTOR2 = {
+  'Dự kiến từ 1 đến 60 buổi, hoặc để trống': 'Planned: 1 to 60 sessions, or leave blank',
+  'dòng Tutor không hợp lệ': 'invalid tutor rows',
+  '0 buổi thì không có dòng Tutor': '0 sessions means no tutor rows',
+  'cần 1 đến {n} dòng Tutor': 'needs 1 to {n} tutor rows',
+  'dòng {x}: tutor không hợp lệ': 'row {x}: invalid tutor',
+  'dòng {x}: GV không hợp lệ': 'row {x}: invalid teacher',
+  'dòng {x}: số buổi là số nguyên từ 1': 'row {x}: sessions must be a whole number from 1',
+  'dòng {x} chưa có Tutor': 'row {x} has no tutor',
+  'dòng {x} chưa có Nội dung': 'row {x} has no content',
+  'dòng {x} quá dài (tên ≤ 100, nội dung ≤ 1000 ký tự)': 'row {x} is too long (name ≤ 100, content ≤ 1000 characters)',
+  'dòng {x}: "Tutor buổi này" là Có, Không hoặc để trống': 'row {x}: "Tutor this session" is Yes, No or blank',
+  'dòng {x}: hình thức là Offline hoặc Online': 'row {x}: mode is Offline or Online',
+  'dòng {x}: đánh giá từ 1 đến 5, hoặc để trống': 'row {x}: rating 1 to 5, or leave blank',
+  'dòng {x}: nhận xét về tutor tối đa 1000 ký tự': 'row {x}: tutor comment up to 1000 characters',
+  'tổng số buổi các dòng là {tong}, cần bằng số buổi đã học ({a})': 'rows add up to {tong} sessions, must equal sessions attended ({a})',
+  '{ten}: số nguyên từ {tu} đến {den}, hoặc để trống.': '{ten}: a whole number from {tu} to {den}, or leave blank.',
+  'Số buổi đã học': 'Sessions attended',
+  'Số buổi dự kiến': 'Sessions planned',
+  'Dòng Tutor của nháp không hợp lệ.': 'Invalid tutor rows in the draft.',
+  'Nháp · dòng Tutor {x}: chữ không hợp lệ.': 'Draft · tutor row {x}: invalid text.',
+  'Nháp · dòng Tutor {x}: tối đa {toiDa} ký tự.': 'Draft · tutor row {x}: up to {toiDa} characters.',
+  'Nháp · dòng Tutor {x} không hợp lệ.': 'Draft · tutor row {x} is invalid.',
+  'Buổi tutor: dòng {x}: tên tutor ít nhất 2 ký tự.': 'Tutor sessions: row {x}: tutor name needs at least 2 characters.',
+  'Buổi tutor: dòng {x}: tutor không có trong danh sách.': 'Tutor sessions: row {x}: tutor is not in the list.',
+  'Buổi tutor: dòng {x}: GV không còn làm việc hoặc không phải GV.': 'Tutor sessions: row {x}: not an active teacher.',
+  'Buổi tutor: dòng {x}: {ten} không còn là GV đang làm việc — chọn tutor / GV khác, hoặc gõ tên.': 'Tutor sessions: row {x}: {ten} is no longer an active teacher — pick another tutor / teacher, or type a name.',
+} satisfies Record<string, Dich>;

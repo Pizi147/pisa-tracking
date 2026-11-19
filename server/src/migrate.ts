@@ -103,6 +103,7 @@ import { migratePrOv15e } from './migrate/prOv15e.ts';
 import { migratePrTd7 } from './migrate/prTd7.ts';
 import { migratePrTu } from './migrate/prTu.ts';
 import { migratePrTub } from './migrate/prTub.ts';
+import { migratePrTutor2 } from './migrate/prTutor2.ts';
 import { migratePrUiHoSoLop } from './migrate/prUiHoSoLop.ts';
 import { migratePrBaoCaoLichSu } from './migrate/prBaoCaoLichSu.ts';
 import { migratePrKetPet } from './migrate/prKetPet.ts';
@@ -464,6 +465,7 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
     /* OV-15c: bảng ghi_chu_lich_thi — ghi chú lịch thi ở Kế hoạch Test (chỉ thêm bảng, chạy lặp được). */ buoc(() => migratePrOv15c(conn, applied));
     /* TU-a (SAU migratePermissions): bảng tutors, tutor_nhan_xet, 9 cột buổi tutor, vai Head tutor (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTu(conn, applied));
     /* TU-b (sau TU-a): chỉ mục một phần buổi tutor cần chú ý (chỉ thêm). */ buoc(() => migratePrTub(conn, applied));
+    /* TU2-1 (sau TU-a, sau PR-S2 thêm cột case_followups — giữ thứ tự cột như schema.sql): so_buoi dòng Tutor · buoi_du_kien · tutors.user_id + CX tutor.view (chỉ thêm, chạy lặp được). */ buoc(() => migratePrTutor2(conn, applied));
     /* OV-15g: mốc bắt đầu Lịch sử thay đổi (chỉ thêm một dòng demo_config, chạy lặp không đổi). */ buoc(() => migratePrOv15g(conn, applied));
     /* OV-15i1: chỉ mục audit_logs(entity_type, action, entity_id) — Lịch sử góp ý tuần không đọc mọi dòng nhật ký của em (chỉ thêm, chạy lặp được). */ buoc(() => migratePrOv15i1(conn, applied));
     /* CV-LOI: Case mở chưa có người phụ trách → gán theo luật tạo Case (GV môn → GVCN), có lịch sử + nhật ký nguồn (một lần, khoá demo_config — SUA-NO-RA). */ buoc(() => migratePrCvLoi(conn, applied));

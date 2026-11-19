@@ -75,7 +75,8 @@ export function buildDuyetDemo(ctx: BuildCtx): { the: number } {
           decisionNote: 'Có nên chuyển em sang tutor 1-1 không, hay giữ tự học thêm một tuần?',
           /* OV-12h: PA Tutor (kể cả không có Số buổi) ghi Số buổi kỳ này + dòng buổi — giữ đúng PA được chọn như trước. */
           /* TU-a: tên gõ tay "Mr Long" (chưa có trong danh sách) — Không gửi feedback cho GV. */
-          ...(r.kind === 'tutor' && r.so_buoi == null ? { soBuoi: 1, buoi: [{ tutor: 'Mr Long', nhanXet: 'Nghe số và tên riêng Part 1, vẫn sót 3/10',
+          /* TU2-1: "1 / 2" — em vắng một buổi (không có khái niệm vắng, chỉ a / b). */
+          ...(r.kind === 'tutor' && r.so_buoi == null ? { soBuoi: 1, buoiDuKien: 2, buoi: [{ tutor: 'Mr Long', nhanXet: 'Nghe số và tên riêng Part 1, vẫn sót 3/10',
             chuanBi: true, taiLieu: true, feedbackGv: false }] } : {}),
         } as any);
         break;

@@ -188,7 +188,8 @@ export function buildPb2bDemo(ctx: BuildCtx): { gv: number; lop: number } {
     updateResult(admin, ivId, { decision: 'end', outcome, observedOn: '2026-09-11', completedOn: '2026-09-11', note: 'Bài kiểm tra nhỏ cuối đợt làm tốt hơn hẳn.',
       /* OV-12h: mọi PA Tutor ghi Số buổi kỳ này + một dòng mỗi buổi. */
       /* TU-a: buổi 1 tutor danh sách (đánh giá 4), buổi 2 tên gõ tay "Ms Mai" — Không xin tài liệu đúng hạn, đánh giá 2/5. */
-      ...(kind === 'tutor' ? { soBuoi: 2, buoi: [
+      /* TU2-1: "a / b" = 2 / 2. */
+      ...(kind === 'tutor' ? { soBuoi: 2, buoiDuKien: 2, buoi: [
         { tutorId: idTutor(conn, 'Nguyễn Thu Lan'), tutor: 'Nguyễn Thu Lan', nhanXet: 'Nghe chép số điện thoại, đúng 8/10', hinhThuc: 'offline',
           chuanBi: true, taiLieu: true, feedbackGv: true, danhGia: 4 },
         { tutor: 'Ms Mai', nhanXet: 'Nghe tên riêng Part 1, còn sót 2 tên', chuanBi: true, taiLieu: false, feedbackGv: true, danhGia: 2,

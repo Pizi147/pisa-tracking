@@ -13,6 +13,7 @@ export async function runPrTuTests(t: any) {
   const d: any = await import('../../../shared/domain/index.ts');
   const mTu: any = await import('../migrate/prTu.ts');
   const mTub: any = await import('../migrate/prTub.ts');
+  const mTutor2: any = await import('../migrate/prTutor2.ts');
   console.log('\nTU-a · Tutor: migrate · vai Head tutor · luật buổi tutor');
 
   const all = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
@@ -34,9 +35,11 @@ export async function runPrTuTests(t: any) {
     const ap: string[] = [];
     mTu.migratePrTu(tam, ap);
     mTub.migratePrTub(tam, ap);   // TU-b: chỉ mục một phần nhóm chú ý (sau TU-a, như migrate.ts)
+    mTutor2.migratePrTutor2(tam, ap);   // TU2-1: so_buoi dòng, tutors.user_id (sau TU-b, như migrate.ts)
     mTu.migratePrTu(tam, ap);
     mTub.migratePrTub(tam, ap);
-    assert(ap.length === 2, JSON.stringify(ap));
+    mTutor2.migratePrTutor2(tam, ap);
+    assert(ap.length === 3, JSON.stringify(ap));
     const cot = (c: any, ten: string) => c.prepare('SELECT name, type, "notnull" AS nn, dflt_value AS dv FROM pragma_table_info(?)').all(ten)
       .map((x: any) => `${x.name}:${x.type}:${x.nn}:${x.dv}`).join(',');
     for (const b of ['tutors', 'tutor_nhan_xet', 'case_followup_buoi']) assert(cot(tam, b) === cot(conn, b), `${b}: ${cot(tam, b)} ≠ ${cot(conn, b)}`);
@@ -44,7 +47,7 @@ export async function runPrTuTests(t: any) {
     for (const b of ['tutors', 'tutor_nhan_xet', 'case_followup_buoi']) assert(fk(tam, b) === fk(conn, b), `FK ${b}: ${fk(tam, b)} ≠ ${fk(conn, b)}`);
     const cm = (c: any) => c.prepare(`SELECT name FROM sqlite_master WHERE type = 'index' AND name NOT LIKE 'sqlite_%' AND tbl_name IN ('tutors','tutor_nhan_xet','case_followup_buoi') ORDER BY name`)
       .all().map((x: any) => x.name).join(',');
-    assert(cm(tam) === cm(conn) && cm(conn) === 'idx_followup_buoi_chu_y,idx_followup_buoi_tutor,idx_tutor_nhan_xet,idx_tutors_sdt', `${cm(tam)} | ${cm(conn)}`);
+    assert(cm(tam) === cm(conn) && cm(conn) === 'idx_followup_buoi_chu_y,idx_followup_buoi_tutor,idx_tutor_nhan_xet,idx_tutors_sdt,idx_tutors_user', `${cm(tam)} | ${cm(conn)}`);
     const dong = tam.prepare('SELECT tutor_ten, chuan_bi, ghi_luc FROM case_followup_buoi').get() as any;
     assert(dong.tutor_ten === 'Ms Mai' && dong.chuan_bi === null && dong.ghi_luc === null, `dòng cũ giữ, cột mới NULL: ${JSON.stringify(dong)}`);
     const q = tam.prepare(`SELECT group_concat(p.key) k FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id WHERE r.key = 'head_tutor'`).get() as any;
@@ -55,11 +58,11 @@ export async function runPrTuTests(t: any) {
     tam.close();
   });
 
-  check('TU-1b · quyền theo vai: head_tutor = tutor.view + tutor.manage; Quản trị cả hai; QL chỉ tutor.view; GV, CX, TVV, Admin không', () => {
+  check('TU-1b · quyền theo vai: head_tutor = tutor.view + tutor.manage; Quản trị cả hai; QL, CX (TU12) chỉ tutor.view; GV, TVV, Admin không', () => {
     assert(quyenCua('head_tutor') === 'tutor.manage,tutor.view', quyenCua('head_tutor'));
     assert(quyenCua('system_admin') === 'tutor.manage,tutor.view', quyenCua('system_admin'));
-    assert(quyenCua('manager') === 'tutor.view', quyenCua('manager'));
-    for (const v of ['teacher', 'cx', 'consultant', 'office_admin']) assert(quyenCua(v) === '', `${v}: ${quyenCua(v)}`);
+    assert(quyenCua('manager') === 'tutor.view' && quyenCua('cx') === 'tutor.view', `${quyenCua('manager')} · cx ${quyenCua('cx')}`);
+    for (const v of ['teacher', 'consultant', 'office_admin']) assert(quyenCua(v) === '', `${v}: ${quyenCua(v)}`);
     const k = all(`SELECT p.key FROM role_permissions rp JOIN roles r ON r.id = rp.role_id JOIN permissions p ON p.id = rp.permission_id WHERE r.key = 'head_tutor'`);
     assert(k.length === 2, `head_tutor không có quyền nào khác: ${k.map((x) => x.key)}`);
     assert(d.ROLE_LABEL.head_tutor === 'Head tutor', d.ROLE_LABEL.head_tutor);
@@ -68,23 +71,22 @@ export async function runPrTuTests(t: any) {
 
   // ------------------------------------------------------------------ T2 · luật chung buổi tutor
   const du = (x: Record<string, unknown> = {}) => ({ tutorId: 1, tutor: 'Nguyễn Thu Lan', nhanXet: 'Chữa Section 3', hinhThuc: 'offline', chuanBi: true, taiLieu: false, feedbackGv: true, ...x });
-  check('TU-2a · kiemBuoiTutor: 3 ô bắt buộc Có / Không; đánh giá 1–5 hoặc trống; hình thức offline / online / trống; lần ghi cũ (cu3) không bắt 3 ô', () => {
+  check('TU-2a · kiemBuoiTutor (TU5 chủ SP 19/11): 3 ô tuỳ chọn (Có / Không / trống, sai kiểu vẫn lỗi); đánh giá 1–5 hoặc trống; hình thức offline / online / trống', () => {
     assert(d.kiemBuoiTutor(1, [du()]) === null, String(d.kiemBuoiTutor(1, [du()])));
     assert(d.kiemBuoiTutor(1, [du({ danhGia: null, nhanXetTutor: '', hinhThuc: null, tutorId: null })]) === null, 'tuỳ chọn trống được');
     for (const k of ['chuanBi', 'taiLieu', 'feedbackGv']) {
-      assert(/Có hoặc Không/.test(d.kiemBuoiTutor(1, [du({ [k]: null })]) ?? ''), `thiếu ${k}: ${d.kiemBuoiTutor(1, [du({ [k]: null })])}`);
+      assert(d.kiemBuoiTutor(1, [du({ [k]: null })]) === null, `trống ${k} được: ${d.kiemBuoiTutor(1, [du({ [k]: null })])}`);
       assert(d.kiemBuoiTutor(1, [du({ [k]: 'co' })]) !== null, `${k} không phải boolean`);
     }
-    assert(d.kiemBuoiTutor(2, [du(), du({ feedbackGv: undefined })])?.includes('2'), 'nói đúng buổi 2');
+    assert(d.kiemBuoiTutor(2, [du(), du({ feedbackGv: 'x' })])?.includes('2'), 'nói đúng dòng 2');
     for (const v of [0, 6, 2.5, '3']) assert(d.kiemBuoiTutor(1, [du({ danhGia: v })]) !== null, `danhGia ${v}`);
     assert(d.kiemBuoiTutor(1, [du({ danhGia: 5 })]) === null, 'danhGia 5');
     assert(d.kiemBuoiTutor(1, [du({ hinhThuc: 'x' })]) !== null, 'hình thức lạ');
     assert(d.kiemBuoiTutor(1, [du({ tutorId: -1 })]) !== null && d.kiemBuoiTutor(1, [du({ tutorId: 1.5 })]) !== null, 'tutorId không nguyên dương');
     assert(d.kiemBuoiTutor(1, [du({ nhanXetTutor: 'a'.repeat(1001) })]) !== null, 'nhận xét về tutor ≤ 1000');
-    assert(d.kiemBuoiTutor(1, [{ tutor: 'Ms Mai', nhanXet: 'Nghe số' }], true) === null, 'lần ghi cũ: không bắt 3 ô');
-    assert(d.kiemBuoiTutor(1, [{ tutor: 'Ms Mai', nhanXet: 'Nghe số' }]) !== null, 'lần ghi mới: bắt 3 ô');
-    assert(d.kiemBuoiTutor(1, [du({ chuanBi: 'x' })], true) !== null, 'cũ mà gửi giá trị lạ vẫn lỗi');
-    assert(d.kiemBuoiTutor(1, [du({ tutor: '' })]) !== null && d.kiemBuoiTutor(1, [du({ nhanXet: ' ' })]) !== null, 'tên + nhận xét buổi vẫn bắt buộc');
+    assert(d.kiemBuoiTutor(1, [{ tutor: 'Ms Mai', nhanXet: 'Nghe số' }]) === null, 'không gửi 3 ô: lưu được');
+    assert(d.kiemBuoiTutor(1, [du({ tutor: '', tutorId: null })]) !== null && d.kiemBuoiTutor(1, [du({ nhanXet: ' ' })]) !== null, 'tên + nội dung vẫn bắt buộc');
+    assert(d.kiemBuoiTutor(2, [du({ soBuoi: 2 })]) === null && /tổng/.test(d.kiemBuoiTutor(2, [du()]) ?? ''), 'dòng gộp: Σ số buổi = a');
   });
 
   check('TU-2b · hinhThucTuSuy: cùng chi nhánh → Offline; khác / Chỉ online → Online; chưa có nơi dạy / Tutor khác → trống. knTutorCuaTopic: Writing khớp W1 hoặc W2', () => {
@@ -137,9 +139,9 @@ export async function runPrTuTests(t: any) {
   const dong = (followupId: number) => conn.prepare('SELECT * FROM case_followup_buoi WHERE followup_id = ? ORDER BY buoi_so').all(followupId) as any[];
   const lanCuoi = (ivId: number) => get('SELECT id FROM case_followups WHERE intervention_id = ? ORDER BY id DESC LIMIT 1', ivId).id as number;
 
-  check('TU-3a · Ghi kết quả PA Tutor 2 buổi: thiếu một ô → 400, không ghi; đủ (đánh giá trống được) → lưu đủ cột, lop_id = lớp em, ghi_luc; lịch sử + form Sửa trả đủ trường', () => thu(() => {
+  check('TU-3a · Ghi kết quả PA Tutor 2 buổi: một ô sai kiểu → 400, không ghi; đủ (đánh giá trống được) → lưu đủ cột, lop_id = lớp em, ghi_luc; lịch sử + form Sửa trả đủ trường', () => thu(() => {
     const { caseId, ivId } = paTutor();
-    for (const k of ['chuanBi', 'taiLieu', 'feedbackGv']) assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ [k]: null }) }))) === 400, `thiếu ${k} phải 400`);
+    for (const k of ['chuanBi', 'taiLieu', 'feedbackGv']) assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ [k]: 'co' }) }))) === 400, `${k} sai kiểu phải 400 (TU5: trống được)`);
     assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ tutorId: 999999 }) }))) === 400, 'tutor không có trong danh sách phải 400');
     assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ danhGia: 7 }) }))) === 400, 'đánh giá 7 phải 400');
     assert(maLoi(() => cases.updateResult(GV, ivId, kq({ buoi: hai({ tutor: 'M' }) }))) === 400, '"Tutor khác" 1 ký tự phải 400');
@@ -204,10 +206,10 @@ export async function runPrTuTests(t: any) {
   });
   try {
     const { ivId } = paTutor();
-    await t.checkAsync('TU-3e · HTTP: POST /interventions/:id/result thiếu 3 ô → 400 kèm câu "Có hoặc Không"', async () => {
-      const res = await goi(GV.userId, `/interventions/${ivId}/result`, kq({ buoi: hai({ taiLieu: undefined }) }));
+    await t.checkAsync('TU-3e · HTTP: POST /interventions/:id/result 3 ô sai kiểu → 400 kèm câu "Có, Không hoặc để trống" (TU5: trống được)', async () => {
+      const res = await goi(GV.userId, `/interventions/${ivId}/result`, kq({ buoi: hai({ taiLieu: 'co' }) }));
       const x: any = await res.json().catch(() => ({}));
-      assert(res.status === 400 && /Có hoặc Không/.test(JSON.stringify(x)), `${res.status} ${JSON.stringify(x)}`);
+      assert(res.status === 400 && /Có, Không hoặc để trống/.test(JSON.stringify(x)), `${res.status} ${JSON.stringify(x)}`);
     });
 
     // ---------------------------------------------------------------- T4 · GET /tutors/chon
@@ -217,13 +219,14 @@ export async function runPrTuTests(t: any) {
       assert(res.status === 200, `${res.status} ${JSON.stringify(x)}`);
       assert(!JSON.stringify(x).includes('"sdt"') && x.ds.every((r: any) => r.sdtDuoi === null || /^\d{3}$/.test(r.sdtDuoi)), `SĐT lộ: ${JSON.stringify(x.ds)}`);
       assert(!x.ds.some((r: any) => r.ten === 'Đặng Thu Hà') && x.ds.length <= 20, `Ngừng hợp tác vẫn có / quá 20: ${x.ds.map((r: any) => r.ten)}`);
-      const goiY = x.ds.filter((r: any) => r.goiY).map((r: any) => r.ten).sort().join();
+      /* TU2-1: nhóm GV (loai 'gv') đi cùng — phần này chỉ soi nhóm tutor ngoài. */
+      const goiY = x.ds.filter((r: any) => r.goiY && r.loai === 'tutor').map((r: any) => r.ten).sort().join();
       assert(goiY === 'Nguyễn Thu Lan,Phạm Đức Long' && x.ds[0].goiY && x.ds[0].hinhThuc === 'offline', `gợi ý: ${goiY} · đầu ${JSON.stringify(x.ds[0])}`);
       const hinh = Object.fromEntries(x.ds.map((r: any) => [r.ten, r.hinhThuc]));
       assert(hinh['Lê Lan Hương'] === 'online' && hinh['Hồ Ngọc Lan'] === 'online' && hinh['Bùi Quang Minh'] === null, `hình thức: ${JSON.stringify(hinh)}`);
-      assert(x.dienSan?.tutorId === tutorId('Nguyễn Thu Lan') && x.dienSan.hinhThuc === 'offline', `điền sẵn theo Người dạy của PA: ${JSON.stringify(x.dienSan)}`);
+      assert(x.dienSan === null, `TU2-1: chưa có lần ghi → không điền sẵn (thôi theo Người dạy của PA): ${JSON.stringify(x.dienSan)}`);
       const tim: any = await (await goi(GV.userId, `/tutors/chon?paId=${ivId}&q=lan`)).json();
-      assert(tim.ds.map((r: any) => r.ten).sort().join() === 'Hồ Ngọc Lan,Lê Lan Hương,Nguyễn Thu Lan', `tìm "lan": ${tim.ds.map((r: any) => r.ten)}`);
+      assert(tim.ds.filter((r: any) => r.loai === 'tutor').map((r: any) => r.ten).sort().join() === 'Hồ Ngọc Lan,Lê Lan Hương,Nguyễn Thu Lan', `tìm "lan": ${tim.ds.map((r: any) => r.ten)}`);
       const theoSo: any = await (await goi(GV.userId, `/tutors/chon?paId=${ivId}&q=442`)).json();
       assert(theoSo.ds.length === 1 && theoSo.ds[0].ten === 'Hồ Ngọc Lan', `tìm theo số cuối: ${theoSo.ds.map((r: any) => r.ten)}`);
       /* Rà #475: GV không dò được đủ SĐT — 6 số giữa / 4 số đầu không ra ai; Quản trị (`tutor.manage`) tìm được cả SĐT. */
@@ -246,7 +249,7 @@ export async function runPrTuTests(t: any) {
       assert((await goi(ht, `/tutors/chon?studentId=${sid}`)).status === 403, 'Head tutor theo studentId');
       const ql = await goi(P.mbManager.userId, `/tutors/chon?studentId=${sid}`);
       const x: any = await ql.json();
-      assert(ql.status === 200 && x.dienSan === null && x.ds.filter((r: any) => r.goiY).map((r: any) => r.ten).sort().join() === 'Nguyễn Thu Lan,Phạm Đức Long,Vũ Thanh Hằng', `QL: ${ql.status} ${JSON.stringify(x.ds.map((r: any) => [r.ten, r.goiY]))}`);
+      assert(ql.status === 200 && x.dienSan === null && x.ds.filter((r: any) => r.goiY && r.loai === 'tutor').map((r: any) => r.ten).sort().join() === 'Nguyễn Thu Lan,Phạm Đức Long,Vũ Thanh Hằng', `QL: ${ql.status} ${JSON.stringify(x.ds.map((r: any) => [r.ten, r.goiY]))}`);
       assert((await goi(GV.userId, '/tutors/chon')).status === 403, 'thiếu paId / studentId');
     });
 

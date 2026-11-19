@@ -105,10 +105,10 @@ export const ROLE_PERMISSIONS: Record<string, string[]> = {
    * CX — N52 (chủ SP 18/11): theo 1 / nhiều chi nhánh (grant không chi nhánh = toàn hệ thống). XEM mọi thứ như Quản lý (Test, Công việc, Phân tích cả
    * phần giáo viên, thống kê Ý thức). SỬA = phía TVV (người quản lý TVV): mọi quyền TVV (`VAI_PHIA_TVV`, `permissions.ts`) + Ý thức + tạo / sửa lớp, thêm HV,
    * chuyển lớp (`class.edit`). KHÔNG học thuật: điểm, lịch Test, Case / PA, phân công GV, quản trị. KHÔNG bị giao việc (`boVaiCx`, `worklist/xemViec.ts`).
-   * Migrate DB cũ: `migrate/prCxN52.ts`.
+   * Migrate DB cũ: `migrate/prCxN52.ts`. TU12 (chủ SP 19/11): xem trang Tutor (`tutor.view`, chỉ đọc) — `migrate/prTutor2.ts`.
    */
   cx: ['attempt.view', 'case.view', 'student.view', 'student.edit_info', 'student.edit_more', 'analysis.view', 'class.create', 'student.add',
-    'class.edit', 'violation.record', 'discipline.manage', 'test.view', 'work.view', 'analysis.view_teacher', 'discipline.stats', 'meeting.view'],
+    'class.edit', 'violation.record', 'discipline.manage', 'test.view', 'work.view', 'analysis.view_teacher', 'discipline.stats', 'meeting.view', 'tutor.view'],
   /* TU-a: Head tutor — chỉ trang Tutor (toàn hệ thống). Không Case, HV, điểm, Công việc. */
   head_tutor: ['tutor.view', 'tutor.manage'],
 };

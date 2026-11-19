@@ -10023,6 +10023,9 @@ await runPrQtv2BandTests({ check, assert, assertThrows, conn, P } as any);
 // ==================================================================== NHAP-KQ-PA (chủ SP 13/11: GV lưu nháp kết quả PA trên máy chủ)
 const { runPrNhapKqTests } = bocTep('prNhapKq', await import('./prNhapKq.tests.ts'));
 await runPrNhapKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
+// ==================================================================== TU2-1 (Kết quả PA Tutor a / b, dòng gộp, GV làm tutor, nháp phần Tutor, Xác nhận PA không Số buổi)
+const { runPrTutor2Tests } = bocTep('prTutor2', await import('./prTutor2.tests.ts'));
+await runPrTutor2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
 const { runPrLuoiKqTests } = bocTep('prLuoiKq', await import('./prLuoiKq.tests.ts'));
 await runPrLuoiKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
 // ==================================================================== OV6-DOC-CHON (14/11: ô chọn / ô tìm đọc ít — LIMIT, /classes gọn)

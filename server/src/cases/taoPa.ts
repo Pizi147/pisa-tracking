@@ -1,6 +1,6 @@
 import { THAM_SO_TOI_DA, theoLo } from '../db.ts';
 import { badRequest, nowIso, loi as loiHttp } from '../util.ts';
-import { cauHinh, coNguoiDay, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
+import { cauHinh, coNguoiPa, coSoBuoi, kiemSoBuoiPa, soBuoiTu } from '../../../shared/domain/index.ts';
 
 /**
  * PR-PA (§8): MỘT hàm tạo PA cho mọi đường (tay, quy chế SOS, bổ trợ Giữa khoá, bổ trợ miễn phí, Tutor kỳ vọng) — một bộ cột cố định,
@@ -29,7 +29,7 @@ function giaTri(x: DongPa, luc: string): unknown[] {
   if (x.performerUserId && ten) throw badRequest('Người dạy: chọn tài khoản hoặc ghi tên, không cả hai.');
   const loi = coSoBuoi(x.kind) ? kiemSoBuoiPa(x.soBuoi) : null;
   if (loi) throw loiHttp(400, 'Số buổi: {loi}.', { loi });
-  const nguoi = coNguoiDay(x.kind);
+  const nguoi = coNguoiPa(x.kind);
   return [x.caseId, x.kind, x.description, coSoBuoi(x.kind) ? soBuoiTu(x.soBuoi) : null,
     nguoi ? x.performerUserId ?? null : null, nguoi ? ten : null, x.recordedBy ?? null, x.status,
     x.plannedDate ?? null, x.startedDate ?? null, x.completedDate ?? null, x.followupDue ?? null, x.actionDue ?? null, 1, x.cycleStartedOn ?? null,

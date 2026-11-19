@@ -1335,7 +1335,8 @@ CREATE TABLE case_followups (
   /* PR-LUI-a2: Người phụ trách của lần ghi kết quả — tài khoản HOẶC tên ngoài hệ thống (không cả hai). Dòng cũ NULL. */
   phu_trach_user_id INTEGER REFERENCES users(id),
   phu_trach_ten TEXT,
-  so_buoi INTEGER                     -- PR-PA (§8): Số buổi tuần này (0–60) của PA có Số buổi; Đã dạy = tổng cột này. Dòng cũ NULL.
+  so_buoi INTEGER,                    -- PR-PA (§8): Số buổi tuần này (0–60) của PA có Số buổi; Đã dạy = tổng cột này. Dòng cũ NULL. TU2: "a" (đã học).
+  buoi_du_kien INTEGER                -- TU2-1 (TU2, TU11): "b" = số buổi dự kiến của kỳ (1–60, trống được); kỳ sau điền sẵn. Dòng cũ NULL.
 );
 CREATE UNIQUE INDEX ux_case_followups_khoa_gui ON case_followups(observer_user_id, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_followup_case ON case_followups(case_id);
@@ -1363,6 +1364,8 @@ CREATE TABLE case_followup_buoi (
   nhan_xet_tutor TEXT,
   lop_id INTEGER REFERENCES classes(id),
   ghi_luc TEXT,
+  /* TU2-1 (TU3, chủ SP 19/11): một dòng gộp cả kỳ — số buổi của dòng (Σ các dòng = số buổi đã học của lần ghi). Dòng cũ = 1 (mỗi buổi một dòng). */
+  so_buoi INTEGER NOT NULL DEFAULT 1,
   UNIQUE (followup_id, buoi_so)
 );
 CREATE INDEX idx_followup_buoi_tutor ON case_followup_buoi(tutor_id);
@@ -1383,9 +1386,12 @@ CREATE TABLE tutors (
   created_at TEXT NOT NULL,
   created_by INTEGER REFERENCES users(id),
   updated_at TEXT,
-  updated_by INTEGER REFERENCES users(id)
+  updated_by INTEGER REFERENCES users(id),
+  /* TU2-1 (TU4): dòng danh bạ của một GV — tạo khi GV đó được chọn ở ô Tutor lần đầu (tên = họ tên tài khoản). NULL = tutor ngoài. */
+  user_id INTEGER REFERENCES users(id)
 );
 CREATE UNIQUE INDEX idx_tutors_sdt ON tutors(sdt) WHERE sdt IS NOT NULL;
+CREATE UNIQUE INDEX idx_tutors_user ON tutors(user_id) WHERE user_id IS NOT NULL;
 /* TU-a: nhận xét + kết luận của Head tutor / Quản trị về một tutor (TU-b ghi). Kết luận mới nhất "ngung" → bỏ khỏi ô chọn tutor. */
 CREATE TABLE tutor_nhan_xet (
   id INTEGER PRIMARY KEY,
