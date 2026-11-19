@@ -39,7 +39,9 @@ export type DongNoGopVao = {
   phan: { toi: { kyNang: string[]; con: number } | null; khac: { kyNang: string[]; con: number; quaHanNgay: number | null } | null } | null;
 };
 export type LuoiNoLop = { kind: string | null; nhan: string };
-export function gopNoTheoLop<T extends DongNoGopVao>(ds: readonly T[], chamCheo: string): (T & { luoi: LuoiNoLop[]; soDong: number })[] {
+/** LICH-TEST-GON (19/11): số em theo đợt của cả lớp (`dotLabel` → Σ `soHv`), đợt đông em trước — "đợt chính" = phần tử đầu (như `luot` hàng lớp Test tuần). */
+export type LuotNo = { dot: string; soHv: number; attemptId: number; kind: string };
+export function gopNoTheoLop<T extends DongNoGopVao>(ds: readonly T[], chamCheo: string): (T & { luoi: LuoiNoLop[]; soDong: number; luot: LuotNo[] })[] {
   const nhom = new Map<number, T[]>();
   for (const d of ds) nhom.set(d.classId, [...(nhom.get(d.classId) ?? []), d]);
   const hop = (a: readonly string[][]) => [...new Set(a.flat())];
@@ -56,6 +58,12 @@ export function gopNoTheoLop<T extends DongNoGopVao>(ds: readonly T[], chamCheo:
     const coPhan = g.some((d) => d.phan);
     const khoaLuoi = (d: T) => (d.mode === 'ratio' ? d.kind : d.kind === 'mt0' ? 'mt0' : '');
     const luoi: LuoiNoLop[] = [...new Set(g.map(khoaLuoi))].map((k) => ({ kind: k || null, nhan: k ? g.find((d) => khoaLuoi(d) === k)!.dotLabel.split(' · ')[0] : 'Mock Test' }));
+    const theoDot = new Map<string, LuotNo>();
+    for (const d of g) {
+      const x = theoDot.get(d.dotLabel);
+      if (x) x.soHv += d.soHv; else theoDot.set(d.dotLabel, { dot: d.dotLabel, soHv: d.soHv, attemptId: d.attemptIds[0], kind: d.kind });
+    }
+    const luot = [...theoDot.values()].sort((a, b) => b.soHv - a.soHv);
     return {
       ...dau, key: `lop:${dau.classId}`, kind: g.every((d) => d.kind === dau.kind) ? dau.kind : '', attemptNo: null,
       dotLabel: [...new Set(g.map((d) => d.dotLabel))].join(' · '), periodId: null, weekStart: null,
@@ -69,7 +77,7 @@ export function gopNoTheoLop<T extends DongNoGopVao>(ds: readonly T[], chamCheo:
         return m;
       }, {}),
       phan: coPhan ? { toi: gopPhan('toi'), khac: gopPhan('khac') } as T['phan'] : null,
-      luoi, soDong: g.length,
+      luoi, soDong: g.length, luot,
     };
   });
 }

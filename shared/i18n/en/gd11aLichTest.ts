@@ -4,7 +4,8 @@ import type { Dich } from '../en.ts';
 export const EN_GD11A_LICH_TEST = {
   'Môn của bạn': 'Your skills',
   'Còn chờ': 'Waiting on',
-  'còn chờ: {ds}': 'waiting on: {ds}',
+  'Còn chờ: {ds}': 'Waiting on: {ds}',
+  'Mở {dot}': 'Open {dot}',
   'chấm chéo {mon}': 'cross-marking {mon}',
   '{n} bài chờ duyệt dời': '{n} awaiting move approval',
   'Không tải được Lịch Test tuần.': 'Could not load the weekly Test schedule.',
