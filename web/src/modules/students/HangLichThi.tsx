@@ -401,7 +401,7 @@ export function DaiMo({ r, hanh }: { r: HangHien; hanh: Hanh }) {
 
 /** Tên em: link hồ sơ. */
 export function TenEm({ r, ds }: { r: HangHien; ds?: NguCanhDs }) {
-  return <Link className="ten-ho-so khong-mui lt-ten" title={r.ten} to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>;
+  return <Link className="ten-hv ten-ho-so khong-mui lt-ten" to={`/hoc-vien/${r.studentId}`} state={ds ? { ds } : undefined}>{r.ten}</Link>;
 }
 
 /** Dải nhóm lớp (mockup `.ltt-lop`): mã lớp (link hồ sơ lớp) · n em — tab thông tin, không đếm việc (lời 35). */

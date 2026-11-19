@@ -249,8 +249,8 @@ function BangEm({ d }: { d: DongGvTre }) {
       </div>
       {hang.map((h) => (
         <div key={h.id} role="row" className="grid min-h-[44px] items-center gap-x-2 border-b px-4 py-2 text-[15px]" style={{ gridTemplateColumns: cot, borderColor: 'var(--line)' }}>
-          <span role="cell" className="min-w-0 truncate">
-            <Link className="font-medium text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(h.id)}>{h.ten}</Link>
+          <span role="cell" className="min-w-0">
+            <Link className="ten-hv font-medium text-slate-100 no-underline hover:underline" to={duongHoSoHocVien(h.id)}>{h.ten}</Link>
           </span>
           {h.o.map((v, i) => ('diem' in v ? <span key={i} role="cell" className="text-center tabular-nums text-slate-100">{v.diem}</span>
             : 'trong' in v ? <span key={i} role="cell" className="text-center text-[13px] font-semibold text-late">{t('trống')}</span>

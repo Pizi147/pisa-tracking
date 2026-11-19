@@ -46,7 +46,7 @@ export function DsEmBanGiao<T extends { id: number; ten: string }>({ ds, chon, o
               onClick={() => onChon(e.id)} onFocus={() => onChon(e.id)}
               className={`cursor-pointer px-3 py-2 outline-none ${e.id === chon ? 'bg-[color:var(--accent-soft)] shadow-[inset_0_0_0_1px_var(--accent)]' : 'bam'}`}>
               <div className="flex items-center justify-between gap-2">
-                <span className="min-w-0 truncate text-sm text-slate-100" title={e.ten}>{e.ten}</span>
+                <span className="ten-hv min-w-0 text-sm text-slate-100">{e.ten}</span>
                 {tt && <Nhan tone={TONE[tt.khoa]}>{tt.nhan}</Nhan>}
               </div>
               {phu && <div className="flex items-center justify-between gap-2 text-xs text-slate-500">{phu(e)}</div>}

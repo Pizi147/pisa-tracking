@@ -35,3 +35,31 @@ Vùng chạm 375: tên và "{bài} ›" mỗi cái 40 px (trước 44), tên can
 - 1440: không còn phần tử tên có `text-overflow: ellipsis` bị tràn (đo bằng script chụp), không tràn ngang trang. Lưới lớp thường 1440 vốn cuộn ngang
   trong khung 45 px (bảng 1434 > khung 1389); cột tên +20 → 65 px, cột Kết quả vẫn thấy đủ chip.
 - 375: không tràn ngang (`scrollWidth` = 375).
+
+## PR2 — phần còn lại (xếp chồng trên PR1)
+
+Mọi nơi dưới đây: bỏ lớp cắt (`truncate`, `sm:truncate`, `line-clamp-2`, luật cắt chung của ô bảng / `.lt-ten` / `.oc-muc .t` / `.chv-x`), gắn `ten-hv` →
+thiếu chỗ thì xuống dòng, không "…". Bỏ `title` lặp lại tên (tên đã hiện đủ). Không đổi thao tác, quyền, dữ liệu, request.
+
+| Nơi | Trước | Sau |
+|---|---|---|
+| Đầu panel `KhungPanel` (dòng phụ `ngu` "{em} · {lớp}", ~30 panel: Case, PA, Chuyển lớp, Kết luận khoá, Thi thật, Ý thức, Duyệt…) | `truncate` mọi cỡ, đầu panel cao cứng 52 px | `ten-hv`; đầu panel `min-h-[52px]` (một dòng vẫn 52) |
+| Nút lùi panel "‹ {em}" (`KhungPanel`) · nút về hồ sơ "‹ {nguồn}" (`ThanhTruocSau`) | `truncate` | `ten-hv` |
+| "Tiếp: {việc} · {em}" — `KhuonViec` `DongTiep`, Case (`NganCase`), Hỗ trợ HV (`HoTroHocVienTab`), Chờ duyệt (`HopChoDuyet` ×2), hộp nhập điểm (`HopNhapDiemHop`) | `truncate` | `ten-hv` |
+| Hộp nhập điểm / Nhận xét — dòng phụ "{em} · {lớp} · {tuần}" (`HopNhapDiemHop` `KhungHop`) | `truncate` | `ten-hv` — ảnh `sau2-hop-nhan-xet-375.jpg` (tên 5 chữ xuống dòng đủ) |
+| HV & Lớp: Tất cả (`DanhSachHvLop` `TenEm`), Đang SOS | luật cắt ô bảng / `block truncate` | `ten-hv` — `cap2-hv-lop-1440.png`, `cap2-sos-1440.png` |
+| Lịch thi (`HangLichThi` `.lt-ten`, bảng + thẻ 375) | `.lt-ten` nowrap + "…" | `ten-hv` thắng `.lt-ten` — `cap2-lich-thi-1440.png`, `cap2-lich-thi-375.png` |
+| Lưu trữ (`LuuTruPage`), Đã xoá (`DaXoaAdmin`, mục HV) | luật cắt ô bảng | `ten-hv` — `cap2-luu-tru-1440.png` |
+| Hồ sơ lớp: Kết quả đầu ra FT (`BangKqdrLopFt`), Báo cáo PH (`TabBaoCaoPh`) | `truncate` / luật ô bảng | `ten-hv` |
+| Hồ sơ GV: Em đang bổ trợ (`HoSoGiaoVienPage`) · Phân tích: Sắp thi / SOS (`SapThiSos`), Kết quả thi 375 (`KetQuaThi`), Ý thức 375 (`YThucPhoiHop`), Chưa làm (`PanelChuaLam` chip em) · Số liệu (`SoLieu`) | `truncate` / luật ô bảng | `ten-hv` (chip em `min-h-5` thay `h-5`) |
+| Công việc › HV của tôi (`HvCuaToi`) · Tổng quan › GV chấm trễ (`PanelGvTre`) | `truncate` | `ten-hv` |
+| Bàn giao (`banGiaoChung`, `BanGiaoPanel`) | `truncate` | `ten-hv` |
+| Lịch Test: Xếp hàng loạt (`NganXepHangLoat` ×3), Xếp lịch MT cột tên (`NganXepLichMt`, trước 1440 cắt / 375 2 dòng rồi cắt), hộp kỹ năng tiêu đề (`HopKyNang` ×2), tìm kế hoạch (`TimKeHoach`, chỉ mục HV) | `truncate` / `line-clamp-2` / `.oc-muc .t` | `ten-hv` |
+| Ý thức: Khai bậc lô (`KhaiBacLoPanel`), Ghi vi phạm danh sách em (`RecordViolationPanel`) | `truncate` | `ten-hv` |
+| Ô chọn người (`PeoplePicker`): giá trị đã chọn, chip em (nhiều em), mục danh sách | `.oc .da b` / `.chip-em > span` / `.oc-muc .t` "…" | `ten-hv`; `.chip-em` cao `min-height: 28px` (tên dài chip cao thêm, không cắt) |
+| Chuông: tin vi phạm, nhóm "n vi phạm mới", việc không mã lớp (`HopChuong`) | `.chv-x` "…" / 2 dòng rồi cắt, `.chv-v1` "…" | `ten-hv` — chữ tin đủ, xuống dòng |
+| Tìm kiếm đầu trang (`Header`) — đã ở PR1 | | |
+
+**[XM] để chủ SP quyết (không tự đổi):** Danh sách Công việc (`DanhSachViec` `DongPhu` / `DongGon`) — dòng phụ cao cứng 20–22 px ≥ 640: chip tên em
+không có "…" nhưng chip nào tràn khỏi dòng bị ẨN hẳn (thường là chip sau tên; tên đầu dòng chỉ mất khi dài hơn cả cột). Sửa = cho dòng phụ xuống dòng
+→ đổi nhịp danh sách việc (bố cục đã khoá). Đề xuất: giữ, vì tên em luôn là chip đầu và cột rộng.

@@ -107,7 +107,7 @@ export function YThucPhoiHop(props: PhamViPhanTich) {
   /* ---------------- 375: một thẻ mỗi dòng, cùng thứ tự cột với bảng (`TheDong`). */
   const theHv = (x: DongHvCanChuY) => (
     <TheDong key={x.studentId}
-      dau={<Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-ho-so min-w-0 truncate">{x.ten}</Link>}
+      dau={<Link to={duongHoSoHocVien(x.studentId, { tab: 'y-thuc' })} className="ten-hv ten-ho-so min-w-0">{x.ten}</Link>}
       dong={[
         { nhan: t('Lớp'), noiDung: x.lop ?? '—' },
         { nhan: t('Vi phạm'), noiDung: <OSo giaTri={x.viPham} nguon={nguon(`hv:${x.studentId}`, 'vi-pham')} tieuDe={t('{ten} · vi phạm', { ten: x.ten })} /> },

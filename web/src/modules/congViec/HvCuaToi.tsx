@@ -135,7 +135,7 @@ function DongEm({ d, dau, ranh, homNay, onMo, nhat = false }: { d: Dong; dau: bo
     /* ④ K7b: 375 — tên · lớp · trạng thái một hàng (gói khi hẹp), chip xuống hàng riêng cao 44. */
     <li className={`${COT} min-h-[52px] py-[7px] ${dau ? '' : 'border-t'} max-sm:flex max-sm:flex-wrap max-sm:items-center max-sm:gap-x-2 max-sm:gap-y-2 max-sm:py-3`}
       style={{ borderColor: ranh ? 'var(--line-strong)' : 'var(--line)' }}>
-      <Link to={duongHoSoHocVien(e.id)} className={`min-w-0 max-w-full truncate text-[15px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
+      <Link to={duongHoSoHocVien(e.id)} className={`ten-hv min-w-0 max-w-full text-[15px] leading-normal no-underline hover:!text-[color:var(--accent)] hover:underline ${nhat ? 'font-medium !text-[color:var(--text-dim)]' : 'font-semibold !text-[color:var(--text)]'}`}>{e.ten}</Link>
       <span className="truncate whitespace-nowrap text-[13px] text-dim">
         {e.lop.length ? e.lop.map((l, i) => <span key={l.id}>{i > 0 && ', '}<Link to={`/hoc-vien/lop/${l.id}`} className="!text-[color:var(--text-dim)] no-underline hover:underline">{l.ma}</Link></span>) : '—'}
       </span>

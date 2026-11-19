@@ -414,11 +414,11 @@ export function PanelDuyet({ yc, moSan, tiep, xong, onDong, onXong, onThemPa }: 
           ].filter(Boolean) }}
         chan={xong ? {
           huy: tiep ? null : { nhan: t('Đóng'), onClick: onDong },
-          trai: <span className="min-w-0 truncate text-dim"><b className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</b>{chuTiep && ` · ${chuTiep}`}</span>,
+          trai: <span className="ten-hv min-w-0 text-dim"><b className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</b>{chuTiep && ` · ${chuTiep}`}</span>,
           chinh: tiep ? <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-0" onClick={() => xong.onTiep(tiep)}>{t('Yêu cầu tiếp ›')}</button> : undefined,
         } : !cho ? undefined : {
           huy: null,
-          trai: chuTiep && <span className="min-w-0 truncate text-dim" title={chuTiep}>{chuTiep}</span>,
+          trai: chuTiep && <span className="ten-hv min-w-0 text-dim">{chuTiep}</span>,
           chinh: <span ref={setChanEl} className="flex flex-wrap items-center gap-2 max-sm:w-full max-sm:[&>.btn]:flex-1 max-sm:[&>.btn]:justify-center" />,
         }}
         /* GD-4b Q69–Q73: theo loại thẻ, chỉ thẻ đang chờ quyết. */

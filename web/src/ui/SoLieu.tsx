@@ -423,7 +423,7 @@ export function NganDanhSach({ nguon, tieuDe, dv, data, loading, error, reload, 
     const v = r.viec ?? null;
     if (k === 'hv') return (
       <span className="flex min-w-0 flex-col">
-        <Link to={r.href} className="min-w-0 truncate font-medium text-slate-100 no-underline hover:underline" title={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })}>{r.em?.ten ?? r.title}</Link>
+        <Link to={r.href} className="ten-hv min-w-0 font-medium text-slate-100 no-underline hover:underline" title={t('Mở hồ sơ {ten}', { ten: r.em?.ten ?? r.title })}>{r.em?.ten ?? r.title}</Link>
         {r.lop && <span className="text-[13px] text-slate-400">{r.lop}</span>}
       </span>
     );

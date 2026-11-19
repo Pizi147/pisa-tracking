@@ -53,7 +53,7 @@ export function TimKeHoach({ branchId, value, onChange, onChonLop, onChonHv, cla
   const muc = (i: number, m: Muc, t1: ReactNode, p: string) => (
     <button key={m.loai === 'lop' ? `l${m.x.id}` : `h${m.x.studentId}-${m.x.classId}`} id={`tim-kht-${i}`} type="button" tabIndex={-1} role="option" aria-selected={i === dong}
       className={`oc-muc${i === dong ? ' re' : ''}`} onMouseDown={(e) => { e.preventDefault(); chon(m); }} onMouseEnter={() => setDong(i)}>
-      <span className="t">{t1}</span>{p && <span className="p">{p}</span>}
+      <span className={`t${m.loai === 'hv' ? ' ten-hv' : ''}`}>{t1}</span>{p && <span className="p">{p}</span>}
     </button>
   );
 
