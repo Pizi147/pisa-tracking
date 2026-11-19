@@ -11,13 +11,14 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { NutChon, Skeleton } from '../../ui/ui.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
-import { BAC_0_NHAN, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon, bacDu, bacNgan } from '@shared/domain/index.ts';
+import { BAC_0_NHAN, CHU_TOI_THIEU, THANG, dsLoi, nguoiThanhPayload, nguoiThieu, hanBaoPh, ngay, nhanLoaiXuLy, quyCheXemViPham, quyCheXuLy, type NguoiChon, bacDu, bacNgan } from '@shared/domain/index.ts';
 import { dich, dichChu, t } from '@shared/i18n/index.ts';
 import { DUONG_LAM_MOI_Y_THUC, type BangLo, type EmLo, type KqEm } from './kieu.ts';
 const KhaiBacLoPanel = lazyHop(() => import('./KhaiBacLoPanel.tsx').then((x) => x.KhaiBacLoPanel));
 
 export type ViecLo = 'xu-ly' | 'ghi-nhan' | 'cap-bac';
-const MO_TA_MIN = 10;
+/** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */
+const MO_TA_MIN = CHU_TOI_THIEU;
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 const duocCua = (e: EmLo, viec: ViecLo) => (viec === 'xu-ly' ? e.xuLy : viec === 'ghi-nhan' ? e.ghiNhan : e.capBac);
 /**
@@ -101,7 +102,8 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
   const soOk = [...kq.values()].filter((x) => x.ok).length;
   const soLoi = duoc.filter((e) => kq.get(e.studentId)?.ok === false).length;
 
-  const canChung = viec === 'xu-ly' && gui.some((sid) => !rieng[sid]?.trim());
+  /* N56 ③: Mô tả chung tuỳ chọn — em không có mô tả nào thì máy ghi "{BẬC} · {vi phạm}"; có chữ thì ≥ 8 (máy chủ kiểm cùng ngưỡng). */
+  const canChung = viec === 'xu-ly' && !!moTa.trim();
   const loi = viec === 'xu-ly' ? dsLoi([
     { khoa: 'em', nhan: t('Học viên'), chon: true },
     ...(canChung ? [{ khoa: 'mo-ta', nhan: t('Mô tả chung'), toiThieu: MO_TA_MIN }] : []),
@@ -260,9 +262,9 @@ function LoYThucPanelBa({ classId, lop, viec, studentIds, han, onClose, onDone }
                   <ChonNguoi nhom="nhan_vien" value={nguoi} onChange={setNguoi} />
                 </Truong>
               </Hang2>
-              <Truong nhan={t('Mô tả chung')} batBuoc={canChung} loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
+              <Truong nhan={t('Mô tả chung')} tuyChon loi={lf.loiCua(loi, 'mo-ta')} dem={{ co: moTa.trim().length, can: MO_TA_MIN }}>
                 <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(ev) => setMoTa(ev.target.value)}
-                  placeholder={t('Ví dụ: Đã đưa REPORT 1, nhắc em trước lớp')} />
+                  placeholder={t('Để trống: máy ghi bậc · vi phạm của từng em')} />
               </Truong>
             </>
           )}

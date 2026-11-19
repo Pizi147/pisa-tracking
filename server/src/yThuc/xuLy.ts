@@ -4,7 +4,7 @@
  *   Ghi nhận          "đã xem, không cần biện pháp" (V4-1, V4-6) — không đẩy bậc, vẫn đếm vào luật ≥ 3. Vi phạm đang BẮT BUỘC thì không
  *                     Ghi nhận được (V4-2).
  *   Xác nhận xử lý    MỘT bước (V4-7): vi phạm · bậc kế tiếp (máy chủ tự tính, client KHÔNG gửi loại) · ngày ≤ hôm nay · người thực hiện
- *                     · mô tả ≥ 10 ký tự · tệp tuỳ chọn (tải sau vào chủ `discipline_measure`). Lưu là `done`.
+ *                     · mô tả ≥ 8 ký tự (N56 ③: trống → máy tự ghi) · tệp tuỳ chọn (tải sau vào chủ `discipline_measure`). Lưu là `done`.
  *
  * Bậc kế cần QL (WL 3) hoặc hết thang → phải đi đường Đề xuất (thẻ `y_thuc`, `deXuat*` ở cuối file). Bậc không lùi (V4-12): bậc đọc từ
  * `kind` của lần xử lý, xoá vi phạm không xoá lần xử lý. Trạng thái mọi vi phạm đọc qua `trangThaiYThuc()` (một cửa).
@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -92,6 +92,19 @@ export function moTa(v: unknown, cu?: string | null): string {
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
   /* TINH-HINH (mockup v20 D1 "/ 300", N35): trần 300 — quá thì không lưu, chữ giữ ở ô (trước: cắt lặng ở 2000); chữ cũ dài gửi lại nguyên văn thì giữ. */
   return chuTuDo(s, 'Mô tả', MO_TA_TOI_DA, cu) ?? s;
+}
+/** N56 ③ (chủ SP 20/11): Xác nhận xử lý ĐÚNG BẬC KẾ — Mô tả để trống được (`luuXuLy` tự ghi); có chữ thì kiểm như cũ. Đề xuất (khác mặc định) vẫn `moTa`. */
+const moTaTuyChon = (v: unknown): string => (String(v ?? '').trim() ? moTa(v) : '');
+/**
+ * N56 ③: Mô tả máy tự ghi "{BẬC} · {vi phạm}" — ĐÚNG câu nút "Chèn" ở web (`cauChen`): tên vi phạm = `tachTenMoTa(...).ten` (như danh sách vi phạm web hiện),
+ * theo thứ tự các vi phạm được chọn, bỏ trùng. Một câu theo khoá chính, chỉ khi Mô tả trống (`em.dsViPham` không mang tên — thêm cột vào câu chung
+ * của `trangThaiYThuc` thì mọi trang Ý thức đọc nặng hơn).
+ */
+function moTaTuDong(ids: readonly number[], kind: string): string {
+  const theoId = new Map((db().prepare(`SELECT id, ten, description, category FROM violations WHERE id IN (${DS_JSON})`).all(JSON.stringify(ids)) as any[])
+    .map((r) => [r.id as number, tachTenMoTa(r.ten, r.description, r.category).ten]));
+  const ten = [...new Set(ids.map((id) => theoId.get(id)).filter(Boolean))].join(', ');
+  return [bacDu(nhanLoaiXuLy(kind)), ten].filter(Boolean).join(' · ').slice(0, MO_TA_TOI_DA);
 }
 
 // ---------------------------------------------------------------- Ghi nhận (V4-1, V4-2, V4-6)
@@ -172,7 +185,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
       return xemXuLy(p, seen.id);
     }
   }
-  const note = moTa(v.note);
+  const note = moTaTuyChon(v.note);
   const performedOn = ngayThucHien(v.performedOn);
   const nguoi = nguoiThucHien(p, v);
   return xemXuLy(p, luuXuLy(p, hv, studentId, { violationIds: v.violationIds, performedOn, nguoi, note, key, bacDaThay: v.bacDaThay }, demoToday()).id);
@@ -185,7 +198,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
 export function luuXuLy(p: Principal, hv: { full_name: string; student_code: string }, studentId: number, v: {
   violationIds: unknown; performedOn: string; nguoi: { by: number | null; ten: string | null }; note: string; key: string | null; bacDaThay?: unknown;
 }, homNay: string): { id: number; kind: string } {
-  const { performedOn, nguoi, note, key } = v;
+  const { performedOn, nguoi, key } = v;
   return tx(() => {
     /* Tính lại TRONG giao dịch (BEGIN IMMEDIATE): bậc là của máy chủ, không tin client. */
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
@@ -194,6 +207,7 @@ export function luuXuLy(p: Principal, hv: { full_name: string; student_code: str
       throw conflict('Bậc đã đổi, mở lại panel.', { bac: em.bac });
     }
     const ke = em.keTiep;
+    const note = v.note || moTaTuDong(ids, ke.kind);   // N56 ③
     const info = db().prepare(
       `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, status, owner_user_id, note, performed_on, performed_by,
                                         performer_name, confirmed_by, confirmed_at, idempotency_key, created_at, created_by)
@@ -344,7 +358,7 @@ export function chuaThucHien(p: Principal, measureId: number): XuLyView {
 
 /**
  * OV-7a: sửa GHI CHÚ · NGÀY · NGƯỜI THỰC HIỆN của lần xử lý đã xong (cùng quyền Sửa vi phạm — GVCN em + QL). Chỉ trường có gửi mới đổi; kiểm như lúc
- * lưu (mô tả ≥ 10, ngày ≤ hôm nay và từ ngày QL duyệt). Nhật ký trước → sau. Bậc không đổi (đọc từ loại) — hạn xử lý chốt lại như Sửa vi phạm.
+ * lưu (mô tả ≥ 8 — `MO_TA_MIN`, ngày ≤ hôm nay và từ ngày QL duyệt). Nhật ký trước → sau. Bậc không đổi (đọc từ loại) — hạn xử lý chốt lại như Sửa vi phạm.
  */
 export function suaXuLy(p: Principal, measureId: number, v: { note?: unknown; performedOn?: unknown; performerSelf?: unknown; performerUserId?: unknown; performerName?: unknown }): XuLyView {
   const m = loadXuLy(measureId);
@@ -646,7 +660,7 @@ export function laGvcnDangHoc(p: Principal, studentId: number, em: EmYThuc = emC
 /**
  * Bước 1: tạo NHÁP (`nhap`, nội bộ, không vào trạng thái) để có chủ cho tệp/liên kết bằng chứng. Loại: WL 3 (bất kỳ lúc nào, không đẩy bậc) ·
  * Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác (tên ≥ 3 ký tự — T30) · LUAT-5 "không tăng bậc": bậc thang ≤ bậc hiện tại (lặp hoặc nhẹ hơn —
- * bậc em không đổi vì `bacHienTai` = max). Mô tả (lý do) ≥ 10 ký tự.
+ * bậc em không đổi vì `bacHienTai` = max). Mô tả (lý do) ≥ 8 ký tự, bắt buộc.
  */
 export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; customName?: unknown; violationIds?: unknown; note?: unknown }) {
   const hv = hocVien(studentId);

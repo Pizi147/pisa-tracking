@@ -3,7 +3,7 @@ import { datLaiHanKhiChuyenLop } from '../cases/hanChuyenLop.ts';
 import { ghiSoHocVien } from '../phanTich/soNghiaVu.ts';
 import { THAM_SO_TOI_DA, chenNhieuDong, db, theoLo, tx } from '../db.ts';
 import {
-  PERMISSIONS, ROUTE_KHAC, coMt0, mocLoTrinh, xepLopDich, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanKhoa, tuanLich,
+  PERMISSIONS, ROUTE_KHAC, coMt0, khacGoiY, mocLoTrinh, xepLopDich, cungThangTarget, dongKhiChuyen, roundToHalf, ghepMucTieu, huongMotEm, kiemDongChuyenTiep, luatDoiLop, targetLenFt, tuanChonDuoc, tuanHocTai, tuanKhoa, tuanLich,
   type HuongLenh, type LoaiLop, type LuatDoiLop, type MucTieuLenh, type ProgrammeCode,
 } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -16,7 +16,7 @@ import { banGiaoPaQuyChe, datLaiHanCase } from '../cases/sosAuto.ts';
 import { taoMtMacDinh, taoMtMacDinhLo } from '../fasttrack/mtMacDinh.ts';
 import { classProgressMany, mocKetKhoa } from './schedule.ts';
 import { isRatioClass, programmeByCode, taoBaiThuongMacDinh } from '../normal/regular.ts';
-import { sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
+import { cuoiKhoaTheoHocVien, sauChuyenCuoiKhoa } from '../normal/cuoiKhoa.ts';
 import { ensurePeriod, mondayOf } from '../platform/week.ts';
 import { chotHanXuLy, trangThaiYThuc } from '../yThuc/trangThai.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
@@ -608,6 +608,12 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       soCase: ctDong ? seDong.size : openCases.length, dongCase: luat.dongCase, goiYNhan: nhan?.ten ?? null, doiChiNhanh,
     });
   }
+  /*
+   * Rà #1879 (N56 ②): Lý do vẫn bắt buộc khi Head chọn KHÁC gợi ý Cuối khoá (PR-UXF-a Q1) — tính ĐÚNG như `raLenh` (`kiemDongLenh`) để web chỉ đòi
+   * Lý do đúng ca máy chủ đòi. Chỉ lớp thường đã tới Cuối khoá + đã chọn lớp mới đọc gợi ý của MỘT em.
+   */
+  const canLyDo = !!huong && !ft && (huong.boiCanh === 'cuoi-khoa' || mocKetKhoa(pr, homNay).tuCuoiKhoa)
+    && khacGoiY(huong.huong, cuoiKhoaTheoHocVien(enr.class_id, [sid]).get(sid)?.goiY);
   const truoc = ft ? conn.prepare(
     `SELECT c.code, c.is_fast_track FROM enrollments e JOIN classes c ON c.id = e.class_id
       WHERE e.student_id = ? AND e.id != ? ORDER BY e.started_at DESC, e.id DESC LIMIT 1`,
@@ -631,7 +637,7 @@ export function xemChuyenLop(p: Principal, sid: number, toClassId?: number | nul
       seDong: seDong.has(c.id),
       goiY: toClassId ? (goiY.get(c.id) ?? null) : null,
     })),
-    luat, canLuuY: openCases.length === 0, doiChiNhanh,
+    luat, canLuuY: openCases.length === 0, doiChiNhanh, canLyDo,
     /** PR-CL (B3): bối cảnh + hướng máy chủ sẽ ra lệnh; Target đã có khi Lên FT (`null` → web hiện ô Target); MT0; việc FT → thường. */
     boiCanh: huong?.boiCanh ?? null, huong: huong?.huong ?? null, targetSan, nguonTarget, mt0, veThuong,
     khiChuyen: khoi.khiChuyen, canhBao: khoi.canhBao,

@@ -10035,6 +10035,9 @@ await runPrTu22Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== S1 SUA-TUTOR-P1 (rà #1872: lưới không ghi đè nháp Tutor, lanCuoi, danh bạ GV theo tài khoản, ngày nghiệp vụ, P2)
 const { runPrSuaTutorP1Tests } = bocTep('prSuaTutorP1', await import('./prSuaTutorP1.tests.ts'));
 await runPrSuaTutorP1Tests({ check, assert, conn, TODAY, P, addDays, classId } as any);
+// ==================================================================== S4-LUAT (chủ SP 20/11, N56 ② ③ ⑤ + đề xuất 9)
+const { runPrS4LuatTests } = bocTep('prS4Luat', await import('./prS4Luat.tests.ts'));
+await runPrS4LuatTests({ check, assert, conn, TODAY, P, classId } as any);
 const { runPrLuoiKqTests } = bocTep('prLuoiKq', await import('./prLuoiKq.tests.ts'));
 await runPrLuoiKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
 // ==================================================================== OV6-DOC-CHON (14/11: ô chọn / ô tìm đọc ít — LIMIT, /classes gọn)

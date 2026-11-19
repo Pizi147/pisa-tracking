@@ -1034,7 +1034,8 @@ function KetThucSom({ iv, hoanThanhCase, onThoi, onXong }: { iv: any; hoanThanhC
   const coHt = !!hoanThanhCase && htCase;
   const noteHt = htNote ?? lyDo;
   const loiMuc = coHt && !htMuc ? t('Chọn mức') : null;
-  const loiKetLuan = coHt && noteHt.trim().length < CHU_TOI_THIEU_CASE ? t('Ít nhất {n} ký tự', { n: CHU_TOI_THIEU_CASE }) : null;
+  const tienBoRo = htMuc === 'much_better';   // N56 ⑤: "Tiến bộ rõ" — kết luận để trống được (máy chủ `closeCaseOutcome` cùng luật)
+  const loiKetLuan = coHt && !tienBoRo && noteHt.trim().length < CHU_TOI_THIEU_CASE ? t('Ít nhất {n} ký tự', { n: CHU_TOI_THIEU_CASE }) : null;
   useBaoDangSua(!!lyDo.trim());
   const key = `ket-thuc-pa-${iv.id}`;
   const lamMoi = () => { invalidate('/cases'); invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan'); };
@@ -1082,7 +1083,7 @@ function KetThucSom({ iv, hoanThanhCase, onThoi, onXong }: { iv: any; hoanThanhC
                   ))}
                 </div>
               </Truong>
-              <Truong nhan={t('Kết luận')} batBuoc loi={thu ? loiKetLuan : null} dem={{ co: noteHt.trim().length, can: CHU_TOI_THIEU_CASE }}>
+              <Truong nhan={t('Kết luận')} batBuoc={!tienBoRo} tuyChon={tienBoRo} loi={thu ? loiKetLuan : null} dem={{ co: noteHt.trim().length, can: tienBoRo ? undefined : CHU_TOI_THIEU_CASE }}>
                 <textarea className="field w-full" rows={2} maxLength={500} value={noteHt} readOnly={busy} onChange={(e) => setHtNote(e.target.value)} />
               </Truong>
             </div>
