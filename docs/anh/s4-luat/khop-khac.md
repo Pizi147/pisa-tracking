@@ -7,8 +7,7 @@ việc mẫu "Ghi kết quả PA · Reading" của GV Trần Ngọc Hà (`/cong-
 |---|---|
 | `truoc/n56-1-lam-thay-*` | Trước: mở việc của GV khác → TÓM TẮT chỉ đọc + nút "Làm thay" |
 | `truoc/n56-1-sau-bam-lam-thay-*` | Trước: phải bấm "Làm thay" mới ra form |
-| `sau/n56-1-lam-thay-*` | Sau: mở việc → FORM ngay (dòng loại "Làm thay · Case học thuật") |
-| `sau/n56-1-lam-thay-dai-*` | Sau: đầu thân panel có dải "Bạn đang làm thay Trần Ngọc Hà. · Chỉ xem" |
+| `sau/n56-1-lam-thay-*` | Sau: mở việc → FORM ngay; dải "Bạn đang làm thay Trần Ngọc Hà. · Chỉ xem" ở đầu panel, LUÔN thấy dù panel Case tự cuộn tới form PA (1440: ngoài vùng cuộn; 375: dính đầu vùng nhìn) |
 | `sau/n56-1-chi-xem-*` | Sau: bấm "Chỉ xem" → tóm tắt như cũ, nút "Làm thay" mở lại form |
 
 ## Bảng thao tác TRƯỚC → SAU
@@ -25,6 +24,6 @@ việc mẫu "Ghi kết quả PA · Reading" của GV Trần Ngọc Hà (`/cong-
 
 Không mất thao tác nào. Quyền máy chủ không đổi (máy chủ vẫn kiểm `canXacNhan` từng lần; web chỉ gửi kèm mã đã đồng ý). Nhật ký vẫn ghi người làm thay.
 
-## Ghi nhận (không sửa trong PR này)
-- Panel Case tự cuộn tới form PA đang mở, nên dải "Bạn đang làm thay" nằm trên vùng nhìn (cuộn lên là thấy); dòng loại "Làm thay · …" luôn thấy ở đầu panel.
-  Muốn dải luôn hiện → chuyển `cvNgoai.dai` lên phần đầu cố định của `KhungPanel` (thành phần chung, đổi mọi panel Công việc) — để PTA quyết.
+
+## Rà PTA #1880
+Dải làm thay chuyển từ đầu THÂN panel (vùng cuộn — panel Case tự cuộn tới form nên dải trôi khỏi vùng nhìn) lên ngay dưới đầu panel qua prop chung `daiLamThay` của `KhungPanel` (context `DauViecCongViec`): 1440 ngoài vùng cuộn, 375 `sticky` sát mép trên. Dải "Đã lưu … · Hoàn tác" (`dai`) giữ ở đầu thân như cũ.

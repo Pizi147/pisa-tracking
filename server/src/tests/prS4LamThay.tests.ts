@@ -50,5 +50,9 @@ export async function runPrS4LamThayTests(t: any) {
     assert(/const khoaPanel = theoDoiChon && !moThang && \(!coLamThay \|\| chiXem === chon\?\.key\);/.test(s), 'khoaPanel');
     assert(/const dangLamThay = theoDoiChon && coLamThay && \(moThang \|\| chiXem !== chon\?\.key\);/.test(s), 'dangLamThay');
     assert(s.includes('onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))}') && s.includes('onLamThay={() => setChiXem(null)}'), 'Chỉ xem ↔ Làm thay');
+    /* PTA rà #1880: dải làm thay ở đầu panel (ngoài vùng cuộn, 375 dính) — không nằm trong `dai` (đầu thân cuộn). */
+    const kp = fs.readFileSync('web/src/ui/KhungPanel.tsx', 'utf8');
+    assert(s.includes('daiLamThay: dangLamThay ? <DaiLamThay') && !/dai: [^\n]*DaiLamThay/.test(s), 'HoTroHocVienTab: dải qua daiLamThay');
+    assert(/cvNgoai\?\.daiLamThay && \([\s\S]{0,40}<div className="shrink-0 [^"]*max-sm:sticky max-sm:-top-4/.test(kp) && kp.indexOf('cvNgoai?.daiLamThay &&') < kp.indexOf('{tabs && <div'), 'KhungPanel: dải ngoài vùng cuộn, trước thân');
   });
 }

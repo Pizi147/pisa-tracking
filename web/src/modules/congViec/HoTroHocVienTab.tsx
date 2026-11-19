@@ -486,10 +486,9 @@ export function HoTroHocVienTab() {
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
     loai: `${dangLamThay ? t('Làm thay') : theoDoiChon ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
-    dai: noiDai === 'viec' && daiVuaLuu || dangLamThay ? <>
-      {dangLamThay && <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))} />}
-      {noiDai === 'viec' ? daiVuaLuu : null}
-    </> : undefined,
+    dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
+    /* PTA rà #1880: dải làm thay ở đầu panel (KhungPanel `daiLamThay`), không trong vùng cuộn — luôn thấy trước khi lưu. */
+    daiLamThay: dangLamThay ? <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))} /> : undefined,
     them: emNayCon.length ? (
       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-[13px] text-slate-400">
         <span>{t('Em này còn:')}</span>
