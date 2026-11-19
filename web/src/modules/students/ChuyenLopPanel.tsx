@@ -345,7 +345,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Từ tuần')} chuaChon={t('Chưa chọn')} />
                 : <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />}
             </Truong>
-            <Truong nhan={t('Lý do')} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')} phu={canLyDo ? t('Khác gợi ý Cuối khoá') : undefined}>
+            <Truong nhan={t('Lý do')} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')} phu={canLyDo ? t('Khác gợi ý: cần lý do') : undefined}>
               <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
                 placeholder={dx ? t('Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học') : t('Ghi lý do')} />
             </Truong>
@@ -526,7 +526,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         <Truong nhan={t('Tuần bắt đầu')} batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
           <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />
         </Truong>
-        <Truong nhan={t('Lý do')} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')} phu={canLyDo ? t('Khác gợi ý Cuối khoá') : undefined}>
+        <Truong nhan={t('Lý do')} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')} phu={canLyDo ? t('Khác gợi ý: cần lý do') : undefined}>
           <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
             placeholder={t('Ví dụ: Gộp lớp')} />
         </Truong>
