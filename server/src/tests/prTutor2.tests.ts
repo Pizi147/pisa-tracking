@@ -284,6 +284,45 @@ export async function runPrTutor2Tests(t: any) {
     assert(d.kiemSoBuoiKy(2, 1) === null && d.kiemSoBuoiKy(0, '') === null && d.kiemSoBuoiKy(null, 2) !== null && d.kiemSoBuoiKy(1, 61) !== null, 'kiemSoBuoiKy (a ≤ b không ràng buộc)');
   }));
 
+  check('TU2-1 (rà #1862) · Sửa không gửi Người dạy kỳ này (web mới) → giữ người đã ghi, cả sửa chữ lẫn đổi lựa chọn (đường đảo)', () => thu(() => {
+    const { ivId } = paTutor();
+    cases.updateResult(GV, ivId, kq({ soBuoi: 1, buoi: [gop({ soBuoi: 1 })], nguoiDay: { performerName: 'Ms Mai' } }));
+    const f = lanCuoi(ivId);
+    assert(f.phu_trach_ten === 'Ms Mai', 'web cũ gửi Người dạy kỳ này');
+    cases.suaKetQua(GV, f.id, kq({ soBuoi: 1, buoi: [gop({ soBuoi: 1 })], note: 'Sửa một chữ ghi chú kết quả' }));
+    const s = get('SELECT phu_trach_ten, phu_trach_user_id, note FROM case_followups WHERE id = ?', f.id);
+    assert(s.note === 'Sửa một chữ ghi chú kết quả' && s.phu_trach_ten === 'Ms Mai', `sửa chữ: ${JSON.stringify(s)}`);
+    cases.suaKetQua(GV, f.id, kq({ outcome: 'improved', soBuoi: 1, buoi: [gop({ soBuoi: 1 })] }));
+    assert(lanCuoi(ivId).phu_trach_ten === 'Ms Mai', `đường đảo: ${lanCuoi(ivId).phu_trach_ten}`);
+  }));
+
+  check('TU2-1 (rà #1862) · GV đã xoá tài khoản: không điền sẵn, buổi MỚI dưới tên đó → 400 nêu bước kế; sửa lần ghi đã có tên đó vẫn được', () => thu(() => {
+    const w1 = P.w1Teacher.userId;
+    const a = paTutor();
+    cases.updateResult(GV, a.ivId, kq({ soBuoi: 1, buoi: [{ gvId: w1, tutor: '', nhanXet: 'GV kèm Section 2 điền số' }] }));
+    const dongGv = get('SELECT id FROM tutors WHERE user_id = ?', w1).id as number;
+    assert(chonSvc.chonTutor(GV, { paId: a.ivId }).dienSan?.tutorId === dongGv, 'GV còn làm: điền sẵn');
+    conn.prepare(`UPDATE users SET status = 'deleted' WHERE id = ?`).run(w1);
+    xoaNho();
+    assert(chonSvc.chonTutor(GV, { paId: a.ivId }).dienSan === null, 'GV đã xoá: không điền sẵn');
+    const b = paTutor();
+    const e = loiCua(() => cases.updateResult(GV, b.ivId, kq({ soBuoi: 1, buoi: [{ tutorId: dongGv, tutor: '', nhanXet: 'Buổi mới dưới GV đã nghỉ' }] })));
+    assert(e?.status === 400 && /không còn là GV đang làm việc — chọn tutor/.test(e.message), `${e?.status} ${e?.message}`);
+    const f = lanCuoi(a.ivId).id;
+    cases.suaKetQua(GV, f, kq({ soBuoi: 1, buoi: [{ tutorId: dongGv, tutor: '', nhanXet: 'Sửa nội dung lần ghi cũ, GV đã nghỉ' }] }));
+    assert(dong(f)[0].nhan_xet === 'Sửa nội dung lần ghi cũ, GV đã nghỉ', 'sửa lần ghi đã có GV đó');
+  }));
+
+  check('TU2-1 (rà #1862) · đổi lựa chọn lần ghi có số buổi nhưng không dòng Tutor (trước OV-12h), không gửi dòng → lưu, không đòi dòng', () => thu(() => {
+    const { ivId } = paTutor();
+    cases.updateResult(GV, ivId, kq({ soBuoi: 2, buoi: [gop()] }));
+    const f = lanCuoi(ivId).id;
+    conn.prepare('DELETE FROM case_followup_buoi WHERE followup_id = ?').run(f);
+    cases.suaKetQua(GV, f, kq({ outcome: 'improved', soBuoi: 2 }));
+    const moi = lanCuoi(ivId);
+    assert(moi.outcome === 'improved' && moi.so_buoi === 2 && !dong(moi.id).length, JSON.stringify(moi));
+  }));
+
   check('TU2-1 · Turso: ghi kết quả Tutor chọn GV (tạo dòng danh bạ) ≤ trần ghi kết quả; lưu nháp có phần Tutor ≤ trần nháp', () => thu(() => {
     const { ivId } = paTutor();
     xoaNho(); let s0 = soCauSql();

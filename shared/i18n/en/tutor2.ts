@@ -27,4 +27,5 @@ export const EN_TUTOR2 = {
   'Buổi tutor: dòng {x}: tên tutor ít nhất 2 ký tự.': 'Tutor sessions: row {x}: tutor name needs at least 2 characters.',
   'Buổi tutor: dòng {x}: tutor không có trong danh sách.': 'Tutor sessions: row {x}: tutor is not in the list.',
   'Buổi tutor: dòng {x}: GV không còn làm việc hoặc không phải GV.': 'Tutor sessions: row {x}: not an active teacher.',
+  'Buổi tutor: dòng {x}: {ten} không còn là GV đang làm việc — chọn tutor / GV khác, hoặc gõ tên.': 'Tutor sessions: row {x}: {ten} is no longer an active teacher — pick another tutor / teacher, or type a name.',
 } satisfies Record<string, Dich>;

@@ -51,10 +51,11 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
   const nhomGoiY = lop ? [lop.name, kn.join('/')].filter(Boolean).join(' · ') : null;
   /* Một câu: tutor + tên chi nhánh + kết luận mới nhất — mỗi tutor đọc đúng một nhận xét qua chỉ mục (tutor_id, luc), không quét cả bảng nhận xét. */
   const tatCa = conn.prepare(
-    `SELECT t.id, t.ten, t.sdt, t.noi_day_branch_id, t.chi_online, t.ky_nang, t.user_id, b.name AS noi_day,
+    `SELECT t.id, t.ten, t.sdt, t.noi_day_branch_id, t.chi_online, t.ky_nang, t.user_id, b.name AS noi_day, gu.status AS gv_status,
             (SELECT n.ket_luan FROM tutor_nhan_xet n WHERE n.tutor_id = t.id ORDER BY n.luc DESC, n.id DESC LIMIT 1) AS ket_luan
        FROM tutors t
-       LEFT JOIN branches b ON b.id = t.noi_day_branch_id`,
+       LEFT JOIN branches b ON b.id = t.noi_day_branch_id
+       LEFT JOIN users gu ON gu.id = t.user_id`,
   ).all() as any[];
   const hang = tatCa.filter((r) => r.ket_luan !== 'ngung');
   const khopKn = (ky: string) => !kn.length || kn.some((k) => ky.split(',').includes(k));
@@ -105,7 +106,8 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
     /* TU4: kỳ sau điền sẵn tutor của lần ghi gần nhất (dòng Tutor cuối). */
     const b = conn.prepare(`SELECT b.tutor_id, b.tutor_ten FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
         WHERE f.intervention_id = ? ORDER BY f.id DESC, b.buoi_so DESC LIMIT 1`).get(iv.id) as any;
-    const t = b?.tutor_id ? hang.find((r) => r.id === b.tutor_id) : null;
+    /* Rà #1862: dòng danh bạ của GV đã xoá tài khoản không điền sẵn (lưu dưới tên đó sẽ bị chặn). */
+    const t = b?.tutor_id ? hang.find((r) => r.id === b.tutor_id && (r.user_id == null || r.gv_status === 'active')) : null;
     if (t) dienSan = { tutorId: t.id, ten: t.ten, hinhThuc: hinhThucTuSuy({ noiDayBranchId: t.noi_day_branch_id, chiOnline: t.chi_online }, cnLop) };
     else if (b && !b.tutor_id) dienSan = { tutorId: null, ten: b.tutor_ten, hinhThuc: null };
   }
