@@ -37,7 +37,7 @@ export type LopLichTest = {
   chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string; kyNangTuan: string[];
   /** UI-LICH-TUAN: số em làm bài trong tuần + tách theo lượt của từng em (`MT3` 20 · `MT2` 1), lượt đông em trước. */
-  soHv: number; luot: { dot: string; soHv: number }[];
+  soHv: number; luot: { dot: string; soHv: number; attemptId: number }[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
   /** OV-11e: số bài của người xem trong hàng (có `phan`) — dải số cộng phần này thay `tong`. */
   tongCuaToi: number;
