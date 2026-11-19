@@ -515,7 +515,6 @@ export function xuatSoBuoi(p: Principal, tu: unknown, den: unknown) {
   for (let t = tu; t <= den; t = t.slice(5) === '12' ? `${Number(t.slice(0, 4)) + 1}-01` : `${t.slice(0, 4)}-${String(Number(t.slice(5)) + 1).padStart(2, '0')}`) thang.push(t);
   if (thang.length > TOI_DA_THANG) throw badRequest(`Xuất tối đa ${TOI_DA_THANG} tháng một lần.`);
   const conn = db();
-
   const l = locLop(branchIds);
   // ponytail: lọc ngày qua case_followups.observed_on (quét bảng buổi tutor nhỏ, như bangTutor); thêm chỉ mục case_followups(observed_on) khi bảng lớn.
   const hang = conn.prepare(
