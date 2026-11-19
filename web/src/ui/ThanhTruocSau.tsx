@@ -32,7 +32,7 @@ export function DuongVe({ cha, ten, chiTiet, tieuDe, children }: {
     <div className="mb-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
       <button type="button" className="nut-ve" onClick={() => ve(dich.url, !chong.length)}
         title={t('Về {vai}', { vai: dich.ten }) + (dich.chiTiet ? ` · ${dich.chiTiet}` : '')}>
-        <span aria-hidden>‹</span><span className="min-w-0 truncate">{dich.ten}</span>
+        <span aria-hidden>‹</span><span className="ten-hv min-w-0">{dich.ten}</span>
       </button>
       {chong.length > 1 && (
         <MenuDong chu={t('Các bước ({n})', { n: chong.length })} canhTrai lopNut="btn btn-sm btn-ghost min-h-[44px] sm:min-h-[32px]"

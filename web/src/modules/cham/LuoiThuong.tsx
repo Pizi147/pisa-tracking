@@ -5,7 +5,7 @@
  * sửa riêng từng em vẫn được, và ô có tổng khác tổng của cột thì viền vàng. Không có tổng cố định theo chương trình.
  * Gõ "-" = em không làm bài: môn đó tự dời sang tuần sau (C08) — không phải điểm 0, không đụng môn khác.
  */
-import { useMemo, useRef, useState } from 'react';
+import { useContext, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, invalidate, invalidateGop } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
@@ -27,7 +27,7 @@ import { HopThaoTacMt, THAO_TAC_CO_HOP } from '../fasttrack/HopThaoTacMt.tsx';
 import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { useTrongKhung } from '../../ui/KhungPanel.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
-import { DongThi } from './DongThi.tsx';
+import { DongThi, LuotChinhContext } from './DongThi.tsx';
 import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -433,6 +433,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
 }) {
+  const lichTest = useContext(LuotChinhContext) !== null;   /* LICH-TEST-GON: một lưới = một bài của lớp, ghi ở hàng lớp — không lặp "{bài} ›" ở mọi em */
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
@@ -449,7 +450,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
         {(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="ten-hv font-semibold" style={{ color: 'var(--text)' }}>{row.studentName}</span>
           : <Link className="ten-hv ten-ho-so max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-end" to={duongHoSoHocVien(row.studentId)}>{row.studentName}</Link>}
         <div className="bang-phu !flex flex-wrap items-center gap-x-1.5" data-phu-odiem="">
-          <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })}>{nhanBai(row.kind)} ›</Link>
+          {!lichTest && <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })}>{nhanBai(row.kind)} ›</Link>}
           <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')
             .map((s) => ({ nhan: tenMonNgan(sheet.programme.code, s.skill), weekStart: s.weekStart }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />

@@ -96,14 +96,17 @@ export async function runPrUxGTests(t: YThucTestKit) {
 
   // ------------------------------------------------------------------ G4 · Lịch Test: cột thao tác nằm trong khung
   console.log('\nUX-G · G4 Lịch Test không cắt nút Nhập điểm');
-  check('G4 · bảng Nợ tuần trước: cột thao tác rộng ≥ 110 px (nút "Nhập điểm" 86 px + đệm 2×12) ở cả bảng rộng lẫn hẹp; cột GV chấm xuống dòng, không cắt "…"', () => {
-    /* GD-11a (⑦ A1): hàng Quá hạn dùng bộ cột chung `COT_LICH_TEST` — cột nút ≥ 110 px; ô "còn chờ" một dòng cắt "…" CÓ `title` đủ chữ (mockup `.gc`). */
+  check('G4 · bảng Nợ tuần trước: cột thao tác rộng ≥ 110 px (nút "Nhập điểm" 86 px + đệm 2×12) ở cả bảng rộng lẫn hẹp; hàng Lịch Test không còn cột "Còn chờ" (LICH-TEST-GON 19/11)', () => {
+    /* GD-11a (⑦ A1): hàng Quá hạn dùng bộ cột chung `COT_LICH_TEST` — cột nút ≥ 110 px; LICH-TEST-GON: bỏ cột "Còn chờ", ai còn chờ = dòng nhỏ trong phần lớp đã mở (PTA rà #1859). */
     const s = doc('web/src/modules/test/lichTest/KhoiNo.tsx');
     const m = /export const COT_LICH_TEST = \[([^\]]+)\]/.exec(doc('web/src/modules/test/lichTest/HangLop.tsx'));
+    const COT_SO = m?.[1].split(',').length;
     const cuoi = Number(m?.[1].split(',').pop());
     assert(cuoi >= 110, `cột nút = ${cuoi}`);
     assert(/<ColLichTest \/>/.test(s) && /w-full justify-center/.test(s), 'hàng Quá hạn: bộ cột chung + nút hết bề rộng cột');
-    assert(/className="lt-gc" title=\{chuConChoDu/.test(s) && !/ellipsis/.test(doc('web/src/index.css').split('.lt-gc {')[1]?.split('}')[0] ?? ''), 'ô còn chờ: title đủ tên, không cắt (PTA rà #1705)');
+    const hl = doc('web/src/modules/test/lichTest/HangLop.tsx');
+    assert(!/className="lt-gc"/.test(s + hl) && !/t\('Còn chờ'\)/.test(hl) && COT_SO === 6, 'Lịch Test: không cột "Còn chờ" (6 cột — LICH-TEST-GON)');
+    assert(s.includes('<DongConCho ds={conCho} />') && hl.includes('<DongConCho ds={conCho} />'), 'Quá hạn + hàng lớp: ai còn chờ là MỘT dòng nhỏ trong phần lớp đã mở (điện thoại không có tooltip)');
   });
 
   // ------------------------------------------------------------------ G5 · 0 vi phạm: không hai nút chính, ô nói "Không có vi phạm"

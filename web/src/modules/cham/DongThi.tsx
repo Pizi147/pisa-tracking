@@ -5,6 +5,12 @@ import { skillShort } from '../../lib/format.ts';
 /** Chỉ Test › Điểm theo lớp bật (`DiemTheoLop`): dưới mã học viên thêm dòng tuần thi. Nhập điểm / Lịch Test không có dòng này. */
 export const DongThiContext = createContext(false);
 
+/**
+ * LICH-TEST-GON (chủ SP 19/11: "chữ MT# nhìn rối"): Lịch Test — ĐỢT CHÍNH của lớp (vd "MT3") ghi MỘT lần ở hàng lớp; lưới bên dưới không lặp "MT3 ›" ở mọi em,
+ * chỉ em KHÁC đợt chính có một link phụ ở dòng phụ dưới tên. `null` = nơi khác (Điểm theo lớp, panel việc, hồ sơ…): giữ như cũ.
+ */
+export const LuotChinhContext = createContext<string | null>(null);
+
 /** "W1 OCT" (lệch kỹ năng: "W1 OCT · S W2 OCT"; chưa có: "Chưa xếp tuần") — chữ nhỏ xám, không tô đậm / màu. OV-4b: `tienTo` "MT2 · W2 OCT". */
 export function DongThi({ muc, tienTo }: { muc: { nhan: string; weekStart: string | null }[]; tienTo?: string }) {
   if (!useContext(DongThiContext)) return null;

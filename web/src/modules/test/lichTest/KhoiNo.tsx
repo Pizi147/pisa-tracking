@@ -8,7 +8,7 @@ import { chuOChuaLuu } from '@shared/domain/index.ts';
 import type { DongNoLop } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { useManHinh } from '../../../ui/TheDong.tsx';
-import { COT_LICH_TEST, ChipMon, ColLichTest, ODot, TienDo, Vien, chuConCho } from './HangLop.tsx';
+import { COT_LICH_TEST, ChipMon, ColLichTest, DongConCho, DotChinh, ODot, TienDo, Vien, chuConCho, chuDot } from './HangLop.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /** OV-11e (TE-7): số bài của người xem — người có phân công chỉ đếm phần của mình (dải số, badge khối, cột Còn cùng số). */
@@ -67,7 +67,7 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
   return (
     <div id="lich-test-no">
       <NhomDau id="lich-test-no-than" qua={soBai > 0} mo={mo} onMo={onMo} tieuDe={tieuDe} phu={t('{soLop} lớp · {n} bài', { soLop, n: soBai })}>
-        {/* GD-11a (⑦ A1): hàng Quá hạn cùng bộ cột với hàng lớp (Lớp · Đợt · Môn · Hạn · còn chờ · số bài · nút) — các bảng thẳng cột. */}
+        {/* GD-11a (⑦ A1): hàng Quá hạn cùng bộ cột với hàng lớp (Lớp · Đợt · Môn · Hạn · số bài · nút) — các bảng thẳng cột. */}
         <table className="lt-bang w-full text-sm bang-dinh" style={{ tableLayout: 'fixed' }}>
           {gon ? <colgroup><col /></colgroup> : <ColLichTest />}
           <tbody>
@@ -84,13 +84,12 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
                   {dangMo ? t('Thu gọn') : d.duocCham && !xong ? t('Nhập điểm') : t('Xem')}
                 </button>
               );
+              const conCho = chuConCho(d.gvMon, d.chuongTrinh);   /* LICH-TEST-GON: ai còn chờ — dòng nhỏ trong phần lớp đã mở, không cột */
               const so = xong ? <Vien muc="xong">{t('Đã chấm')}</Vien> : <TienDo so={conCua(d)} />;
               const han = xong ? null : d.phan && !d.quaHan ? <Han loai="nhap-diem" han={d.han} boTinHieu /> : <ChipHan vien loai="nhap-diem" han={d.han} />;
               const canhBao = loi > 0 && <Nhan tone="bad" title={t('Ô viền đỏ chưa lưu được — bấm Lưu lại ở ô đó.')}>{chuOChuaLuu(loi)}</Nhan>;
               const mon = <ChipMon ct={d.chuongTrinh} ds={d.phan ? d.phan.toi?.kyNang ?? [] : d.kyNang} />;
-              const conCho = chuConCho(d.gvMon, d.chuongTrinh);
-              const chuConChoDong = conCho.chu && t('còn chờ: {ds}', { ds: conCho.chu });
-              const chuConChoDu = conCho.du && t('còn chờ: {ds}', { ds: conCho.du });
+              const dot = chuDot(d.luot);
               const maLop = <Link to={`/hoc-vien/lop/${d.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: d.classCode })}>{d.classCode}</Link>;
               return (
                 <Fragment key={d.key}>
@@ -100,19 +99,17 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
                       <td className="cursor-pointer">
                         <span className="lt-the">
                           <span className="h1">{maLop}{so}</span>
-                          <span className="h2"><b>{dich(d.dotLabel)}</b>{mon}</span>
+                          <span className="h2"><b><DotChinh luot={d.luot[0]} classId={d.classId} kind={d.kind} /></b>{dot.phu && <span className="text-xs text-dim">{dot.phu}</span>}{mon}</span>
                           {(han || canhBao) && <span className="h3">{han}{canhBao}</span>}
-                          {chuConChoDong && <span className="text-xs text-dim">{chuConChoDong}</span>}
                           {nut}
                         </span>
                       </td>
                     </tr>
                   ) : (
                     <HangNhom mo={dangMo} onMo={doi} nhan={t('lớp {classCode}', { classCode: d.classCode })} className="lt-hang" tieuDe={maLop}>
-                      <td><ODot dot={dich(d.dotLabel)} phu={t('{n} em', { n: d.soHv })} /></td>
+                      <td><ODot luot={d.luot} classId={d.classId} kind={d.kind} /></td>
                       <td>{mon}</td>
                       <td><span className="inline-flex items-center gap-2">{han}{canhBao}</span></td>
-                      <td className="lt-gc" title={chuConChoDu || undefined}>{chuConChoDong}</td>
                       <td className="text-right">{so}</td>
                       <td>{nut}</td>
                     </HangNhom>
@@ -122,11 +119,12 @@ export function KhoiNo({ no, mo, onMo, dongMo, onMoDong, hep, onDaLuu, knUrl, ch
                     <tr>
                       <td colSpan={soCot} className="p-0" style={{ background: 'var(--hang-con-bg)' }}>
                         <div className="muc-con ml-2 border-l py-1.5 pl-2.5 sm:ml-5 sm:pl-3.5" style={{ borderColor: 'var(--line-strong)' }}>
+                          <DongConCho ds={conCho} />
                           {d.luoi.map((l, j) => (
                             <Fragment key={l.kind ?? 'ft'}>
                               {d.luoi.length > 1 && <div className="px-1 pt-1.5 text-xs font-medium text-dim">{dich(l.nhan)}</div>}
                               <LuoiNhung classId={d.classId} periodId={null} kind={l.kind} tuanDangXem={null} chiAttempt={chiAttempt}
-                                kn={knUrl ?? d.kyNang[0] ?? null} hrefDayDu={d.hrefDayDu} datConTro={dongMo!.conTro && j === 0} coLinkRieng luotDuoiTen
+                                kn={knUrl ?? d.kyNang[0] ?? null} hrefDayDu={d.hrefDayDu} datConTro={dongMo!.conTro && j === 0} coLinkRieng luotDuoiTen luotChinh={dot.nhanChinh}
                                 onDaLuu={onDaLuu} onSoOChuaLuu={(n) => baoLoiLuoi(khoa, j, n)} />
                             </Fragment>
                           ))}

@@ -50,7 +50,7 @@ function DongChiDoc({ d, n }: Dong) {
         <span className="block truncate text-[15px] font-medium text-[color:var(--text)]">{[d.lop?.ma, mon].filter(Boolean).join(' · ')}</span>
         {(em || phu.length > 0) && (
           <span className="mt-[3px] flex min-w-0 flex-wrap items-center gap-[3px]">
-            {em && <Link to={`/hoc-vien/${em.id}`} className={`${THE} no-underline hover:underline`} style={{ background: 'var(--surface-2)' }}>{em.ten}</Link>}
+            {em && <Link to={`/hoc-vien/${em.id}`} className="ten-hv min-h-5 min-w-0 rounded-md px-1.5 text-xs font-medium leading-5 text-dim no-underline hover:underline" style={{ background: 'var(--surface-2)' }}>{em.ten}</Link>}
             {phu.map((x) => <span key={x} className={THE} style={{ background: 'var(--surface-2)' }}>{x}</span>)}
           </span>
         )}

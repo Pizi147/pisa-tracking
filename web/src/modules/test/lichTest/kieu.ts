@@ -1,4 +1,4 @@
-import type { LoaiNhanLop, LuoiNoLop, PhamViLichTest } from '@shared/domain/index.ts';
+import type { LoaiNhanLop, LuoiNoLop, LuotNo, PhamViLichTest } from '@shared/domain/index.ts';
 import type { DongSEx } from '../keHoach/kieu.ts';
 
 /** Trả lời của `GET /cham/lich-test` (`lichTest` ở server/src/cham/canCham.ts). */
@@ -25,7 +25,7 @@ export type DongNo = {
   phan: PhanCuaBan | null;
 };
 /** LT-GON: một hàng khối Quá hạn = một lớp (`gopNoTheoLop`) — `luoi` là các lưới mở dưới hàng, `soDong` số dòng nợ đã gộp. */
-export type DongNoLop = DongNo & { luoi: LuoiNoLop[]; soDong: number };
+export type DongNoLop = DongNo & { luoi: LuoiNoLop[]; soDong: number; luot: LuotNo[] };
 /** OV-1b (3.5) "Phần của bạn" (kỹ năng L R W S; W1 + W2 cùng người gộp "W"). */
 export type PhanCuaBan = {
   toi: { kyNang: string[]; con: number } | null;
@@ -37,7 +37,7 @@ export type LopLichTest = {
   chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string; kyNangTuan: string[];
   /** UI-LICH-TUAN: số em làm bài trong tuần + tách theo lượt của từng em (`MT3` 20 · `MT2` 1), lượt đông em trước. */
-  soHv: number; luot: { dot: string; soHv: number }[];
+  soHv: number; luot: { dot: string; soHv: number; attemptId: number }[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
   /** OV-11e: số bài của người xem trong hàng (có `phan`) — dải số cộng phần này thay `tong`. */
   tongCuaToi: number;

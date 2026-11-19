@@ -797,7 +797,7 @@ export async function runPrMtbTests(t: YThucTestKit) {
     assert(/attemptId !== null\s*\?\s*<Link to=\{duongDotTest\(\{ id: attemptId,[^}]*classId \}, null\)\} onClick=\{onClose\}/.test(h), 'tên chưa là Link đóng hộp');
     const tieuDe = h.slice(h.indexOf('<Link to={duongDotTest'), h.indexOf('</Link>') + 120);
     assert(/className="ten-ho-so flex min-h-\[44px\] items-center gap-1 sm:min-h-0"/.test(tieuDe), 'Link chưa 44px ở 375');
-    assert(/<span className="block truncate">\{tieuDe\}<\/span>/.test(tieuDe), 'đợt mới phải là chữ');
+    assert(/<span className="ten-hv block">\{tieuDe\}<\/span>/.test(tieuDe), 'đợt mới phải là chữ (N55: ten-hv, không cắt)');
   });
 
   check('MTb sau rà đợt 2 (2) · panel Xếp lịch: số em / bài và danh sách GỬI chỉ gồm em đang thấy (ẩn bởi Tìm / chip lọc thì không đếm, không gửi)', () => {

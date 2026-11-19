@@ -484,7 +484,7 @@ export type LopLichTest = {
   chuongTrinh: string | null; boMon: string[];
   kind: string | null; dotLabel: string;
   /** UI-LICH-TUAN: số em làm bài trong tuần (lượt còn ngồi thi) + tách theo lượt (`MT3` · `MT2`…), lượt đông em trước. */
-  soHv: number; luot: { dot: string; soHv: number }[];
+  soHv: number; luot: { dot: string; soHv: number; attemptId: number }[];
   /** Môn đánh giá có thi tuần này, thứ tự L · R · W · S. */
   kyNangTuan: string[];
   tong: number; daCham: number; conBai: number; conBaiCuaToi: number;
@@ -645,7 +645,7 @@ function hangLopTuan(
   };
   type DongTam = Omit<DongLichTest, 'trangThai'> & { quaHan: boolean };
   type LopTam = Omit<LopLichTest, 'dong' | 'nhan' | 'moSan' | 'daCham' | 'dotLabel' | 'kyNangTuan' | 'han' | 'choDuyetDoi' | 'periodId' | 'weekStart' | 'phan' | 'tongCuaToi' | 'soHv' | 'luot' | 'gvMon'> & {
-    dong: Map<string, DongTam>; _dot: string[]; _hv: Set<number>; _luot: Map<string, Set<number>>; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
+    dong: Map<string, DongTam>; _dot: string[]; _hv: Set<number>; _luot: Map<string, Set<number>>; _luotAid: Map<string, number>; _kn: Set<string>; _hanNo: string | null; _conKhongCheo: number;
     /* OV-1b: phần của người xem / của GV khác. */
     _toiKn: Set<string>; _toiQuaHan: boolean; _quaHanMoi: boolean; _khacKn: Set<string>; _khacCon: number; _khacTre: number | null; _tongToi: number;
     /** GD-11a: ô còn chờ chưa phải của người xem (ô nhập, kèm loại bài để biết S chấm chéo). */
@@ -681,7 +681,7 @@ function hangLopTuan(
           : mode === 'ratio'
           ? `/nhap-diem/${r.class_id}?kind=${encodeURIComponent(bai)}`
           : lichTestHref(r.class_id, periodId),
-        dong: new Map(), _dot: [], _hv: new Set(), _luot: new Map(), _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
+        dong: new Map(), _dot: [], _hv: new Set(), _luot: new Map(), _luotAid: new Map(), _kn: new Set(), _hanNo: null, _conKhongCheo: 0,
         _toiKn: new Set(), _toiQuaHan: false, _quaHanMoi: false, _khacKn: new Set(), _khacCon: 0, _khacTre: null, _tongToi: 0, _conKhac: [],
       };
       byLop.set(khoa, lop);
@@ -692,6 +692,7 @@ function hangLopTuan(
     if (!lop._dot.includes(dot)) lop._dot.push(dot);
     lop._hv.add(r.student_id);
     (lop._luot.get(dot) ?? lop._luot.set(dot, new Set()).get(dot)!).add(r.student_id);
+    if (!lop._luotAid.has(dot)) lop._luotAid.set(dot, r.id);   /* LICH-TEST-GON: link "MT3" ở hàng lớp mở lượt của em đầu tiên trong đợt */
     lop._kn.add(r.skill);
     const key = `${r.kind}:${r.attempt_no ?? 0}:${r.skill}`;
     let d = lop.dong.get(key);
@@ -757,7 +758,7 @@ function hangLopTuan(
   const pc = lopCon.length ? phanCongDangHieuLuc(lopCon, demoToday()) : new Map<string, { ten: string }>();
   /* XEP-CHAM-TEST (thay PR-UXF-a U1): lớp thường có bài lên đầu → mã lớp số nhỏ trước (`xepLopCham`, không theo chữ). */
   return [...byLop.values()].sort(xepLopCham).map(({
-    dong, _dot, _hv, _luot, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, _conKhac, ...l
+    dong, _dot, _hv, _luot, _luotAid, _kn, _hanNo, _conKhongCheo, _toiKn, _toiQuaHan, _quaHanMoi, _khacKn, _khacCon, _khacTre, _tongToi, _conKhac, ...l
   }) => {
     /* OV-1b (3.5): nhãn "Quá hạn" của hàng = ô CỦA NGƯỜI XEM quá hạn (GV); Quản lý / Quản trị (xếp lịch được lớp) — mọi ô, như cũ. */
     const phanRieng = coPhanCong && !can(p, PERMISSIONS.PLAN_WEEK, { classId: l.classId });
@@ -772,7 +773,7 @@ function hangLopTuan(
       dotLabel: _dot.join(', '),
       soHv: _hv.size,
       /* UI-LICH-TUAN: "MT3 20 · MT2 1" — số em theo lượt của TỪNG em (không giả định cả lớp cùng MT), lượt đông em trước. */
-      luot: [..._luot].map(([dot, hv]) => ({ dot, soHv: hv.size })).sort((a, b) => b.soHv - a.soHv),
+      luot: [..._luot].map(([dot, hv]) => ({ dot, soHv: hv.size, attemptId: _luotAid.get(dot)! })).sort((a, b) => b.soHv - a.soHv),
       kyNangTuan: [...new Set([..._kn].map((k) => assessedSkillOf(k)))].sort(theoThuTu),
       daCham: l.tong - l.conBai,
       han: _hanNo ?? skillScoreDeadline(l.mode === 'ratio' ? 'ratio' : 'band', tuan.week_start, l.kind === 'mt0'),

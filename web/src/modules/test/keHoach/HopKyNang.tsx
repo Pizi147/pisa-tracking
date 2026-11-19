@@ -378,8 +378,8 @@ export function HopKyNang({ anchor, tieuDe, tenHv = tieuDe.split(' · ')[0], maL
         <div className="min-w-0 flex-1 text-[17px] font-bold text-slate-100" title={tieuDe}>
           {attemptId !== null
             ? <Link to={duongDotTest({ id: attemptId, kind: dot.loai === 'thuong' ? khoaBaiThuong(dot.kind) : 'mock', classId }, null)} onClick={onClose}
-                className="ten-ho-so flex min-h-[44px] items-center gap-1 sm:min-h-0"><span className="truncate">{tieuDe}</span><span aria-hidden>›</span></Link>
-            : <span className="block truncate">{tieuDe}</span>}
+                className="ten-ho-so flex min-h-[44px] items-center gap-1 sm:min-h-0"><span className="ten-hv">{tieuDe}</span><span aria-hidden>›</span></Link>
+            : <span className="ten-hv block">{tieuDe}</span>}
         </div>
         {maLop && <span className="shrink-0 text-[13px] text-dim">{maLop}</span>}
         {/* G1-12: một mục thì nút thẳng ở đầu hộp (vẫn xa nút Lưu — U3 30/10), không ⋯ một mục. */}

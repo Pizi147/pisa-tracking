@@ -183,7 +183,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
         <button type="button" className={`chv-tin${n.read_at ? '' : ' chv-chua'}${day || lyDo ? ' chv-day' : ''}`} onClick={() => { void moTin(n); }} title={`${chu}${n.body ? ` · ${bacNgan(dich(n.body))}` : ''}`} aria-label={`${doc}, ${luc}`}>
           {!trongGom && <span aria-hidden className="chv-c" />}
           {!trongGom && <span className="chv-m"><span className={`chv-l${viPham ? ' chv-l-vp' : ''}`}>{nhanLoai}</span>{n.lop && <span className="chv-lop">{n.lop}</span>}<time title={nhan(homNay, n.created_at)}>{luc}</time></span>}
-          <span className="chv-x">{kq && <><b className={`chv-kq chv-${kq.tone}`}>{kq.chu}</b> · </>}{chu}{lyDo && <span className="chv-ly"> · «{lyDo}»</span>}</span>
+          <span className="chv-x ten-hv">{kq && <><b className={`chv-kq chv-${kq.tone}`}>{kq.chu}</b> · </>}{chu}{lyDo && <span className="chv-ly"> · «{lyDo}»</span>}</span>
         </button>
         {!n.read_at && <button type="button" className="chv-xem" aria-label={t('Đã xem: {x}', { x: chu })} title={t('Đã xem')} onClick={() => { void daXem([n]); }}><DauXem /></button>}
       </li>
@@ -199,7 +199,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
         <button type="button" className="chv-tin chv-chua" onClick={() => { void moTin(ns[0]); }} aria-label={t('{n} vi phạm mới · {lop}: {ten}, {luc}', { n: ns.length, lop, ten, luc })}>
           <span aria-hidden className="chv-c" />
           <span className="chv-m"><span className="chv-l chv-l-vp">{t('{n} vi phạm mới', { n: ns.length })}</span><span className="chv-lop">{lop}</span><time>{luc}</time></span>
-          <span className="chv-x">{ten}</span>
+          <span className="chv-x ten-hv">{ten}</span>
         </button>
         <button type="button" className="chv-mo-rong" aria-expanded={mo} aria-label={mo ? t('Thu gọn {n} vi phạm mới · {lop}', { n: ns.length, lop }) : t('Mở {n} vi phạm mới · {lop}', { n: ns.length, lop })}
           onClick={() => setMoGom(mo ? null : lop)}><MuiXuong /></button>
@@ -231,7 +231,7 @@ export function HopChuong({ viec, dem, onDong }: { viec: ViecChuong | null | und
               const phu = [x.studentId != null && x.classCode ? x.studentName : null, phuNgan(x)].filter(Boolean).join(' · ');
               return (
                 <button key={x.key} type="button" className="chv-vh" onClick={() => { navigate(duongTab(g.tab, x.key)); onDong(); }}>
-                  <span className="chv-v1"><b>{lop}</b>{lop ? ' · ' : ''}{dich(NHAN_LOAI_VIEC[x.group] ?? x.group)}</span>
+                  <span className="chv-v1 ten-hv"><b>{lop}</b>{lop ? ' · ' : ''}{dich(NHAN_LOAI_VIEC[x.group] ?? x.group)}</span>
                   {phu && <span className="chv-v2">{phu}</span>}
                   {x.due && <span className="chv-v-han"><ChipHan loai={LOAI_HAN_CUA_VIEC[x.group] ?? 'viec-van-hanh'} han={x.due} vien /></span>}
                 </button>

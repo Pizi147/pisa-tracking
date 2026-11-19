@@ -215,7 +215,7 @@ export default function LuuTruPage() {
     <span className="inline-flex min-w-0 items-center gap-2.5">
       {chon.bat && s.coTheQuayLai && <OChon chon={chon} id={s.id} ten={s.fullName} />}
       {/* OV-13f (Q8): không in mã học viên — mockup L2 vẽ mã dưới tên → KHÁC theo luật đã chốt. */}
-      <Link to={`/hoc-vien/${s.id}`} className="ten-ho-so khong-mui">{s.fullName}</Link>
+      <Link to={`/hoc-vien/${s.id}`} className="ten-hv ten-ho-so khong-mui">{s.fullName}</Link>
     </span>
   );
   const COT_LOP: CotBang[] = [
