@@ -221,7 +221,8 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * mà đó chính là câu người đọc hồ sơ ba tháng sau cần.
    */
   const closeNote = chuTuDo(input.note, 'Kết luận', 2000) ?? '';   // PR-Dọn (Q4, quét #24)
-  if (closeNote.length < CHU_TOI_THIEU_CASE) {
+  /* N56 ⑤ (chủ SP 20/11): "Tiến bộ rõ" — kết luận để trống được; mức khác giữ ≥ 8 ký tự. */
+  if (outcome !== 'much_better' && closeNote.length < CHU_TOI_THIEU_CASE) {
     throw loi(400, 'Hoàn thành Case thì phải ghi kết luận — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
   }
   const closedOn = input.closedOn ?? demoToday();
@@ -289,7 +290,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
          ON CONFLICT(dedup_key) DO NOTHING`,
       )
       .run(caseId, 'closed', closedOn,
-           [CASE_OUTCOME_LABEL[outcome as CaseOutcome], closeNote].join(' — '),
+           [CASE_OUTCOME_LABEL[outcome as CaseOutcome], closeNote].filter(Boolean).join(' — '),
            p.userId, nowIso(), `outcome:${caseId}:${closedOn}:end`);
 
     /* Đánh giá chi tiết lúc kết luận: lưu thành một dòng cập nhật gắn thẳng vào case. */
@@ -308,7 +309,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
       eventType: 'case_closed', eventDate: closedOn,
       /* Chốt 6/mục 10.3 Step 6: nhãn phân biệt mốc nhập bù với mốc ghi tại chỗ. */
       title: `${c.origin_kind === 'backfill' ? '(nhập bù) ' : ''}Hoàn thành Case: ${CASE_OUTCOME_LABEL[outcome as CaseOutcome]}`,
-      detail: closeNote,
+      detail: closeNote || null,
       refTable: 'sos_cases', refId: caseId, createdBy: p.userId,
       dedupKey: `case_outcome:${caseId}:${closedOn}:end`,
     });

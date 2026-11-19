@@ -51,11 +51,11 @@ export async function runPrCtTests(t: YThucTestKit) {
     }
     assert(d.kiemDongLenh(dong({ tuan: null })) === 'Chọn tuần bắt đầu.', 'OV-11g HL-12: ô trống nói "Chọn tuần bắt đầu."');
   });
-  check('CT (1g) · kiemDongLenh: chọn khác gợi ý hoặc Chuyển lớp / Tạm dừng học (bảo lưu) / Dừng học hẳn mà lý do < 3 ký tự → "Ghi lý do ngắn"', () => {
+  check('CT (1g) · kiemDongLenh: chọn khác gợi ý hoặc Tạm dừng học (bảo lưu) / Dừng học hẳn mà thiếu lý do → "Ghi lý do ngắn"; Chuyển lớp không cần (N56 ②)', () => {
     assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: '' })) === 'Ghi lý do ngắn', 'khác gợi ý');   // PR-MTa T7: bỏ tối thiểu 3 ký tự
     assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: '   ' })) === 'Ghi lý do ngắn', 'lý do toàn dấu cách');
     assert(d.kiemDongLenh(dong({ khacGoiY: true, lyDo: 'a' })) === null, 'một ký tự là đủ (PR-MTa T7)');
-    assert(d.kiemDongLenh(dong({ huong: 'chuyen_lop' })) === 'Ghi lý do ngắn', 'chuyển lớp');
+    assert(d.kiemDongLenh(dong({ huong: 'chuyen_lop' })) === null, 'chuyển lớp: Lý do tuỳ chọn (N56 ②)');
     assert(d.kiemDongLenh(dong({ huong: 'dung_hoc', lopDichId: null })) === 'Ghi lý do ngắn', 'dừng học hẳn');
     assert(d.kiemDongLenh(dong()) === null, 'lên lớp theo gợi ý không cần lý do');
   });
@@ -937,7 +937,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     hocVien(giua, 'FOU', false);
     assert(!(myWork(P.mbManager) as any).items.some((i: any) => i.group === 'chot_len_ft' && i.classId === giua), 'chưa tới cửa sổ Chốt lộ trình: chưa có việc');
   });
-  check('CT (6g) · Đề xuất chuyển lớp: GVCN lớp em gửi được; GVBM / GVCN lớp khác / lý do < 15 ký tự → lỗi; gửi trùng → 400; "lớp" bị bỏ khỏi Đề xuất sửa', () => {
+  check('CT (6g) · Đề xuất chuyển lớp: GVCN lớp em gửi được; GVBM / GVCN lớp khác → lỗi, Lý do tuỳ chọn (N56 ②); gửi trùng → 400; "lớp" bị bỏ khỏi Đề xuất sửa', () => {
     const lop = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
     ganGv(lop, GV[0].userId, null, true);
     ganGv(lop, GV[1].userId, 'listening', false);
@@ -946,7 +946,7 @@ export async function runPrCtTests(t: YThucTestKit) {
     const dichKhac = lopMoi({ kind: 'FOU', tuanHienTai: 4 });
     const v = { toClassId: dichKhac, tuan: TUAN[0], lyDo: 'Phụ huynh xin chuyển sang lớp khác giờ học.' };
     assert(maLoi(() => lenh.guiDeXuatChuyenLop(gBm, e, v)) === 403 && maLoi(() => lenh.guiDeXuatChuyenLop(gKhac, e, v)) === 403, 'GVBM / GVCN lớp khác → 403');
-    assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, lyDo: ' ' })) === 400, 'lý do trống');   // PR-MTa T7: bỏ tối thiểu 15 ký tự
+    assert(lenh.kiemDeXuatChuyenLop(gCn, e, { ...v, lyDo: ' ' }).lyDo === '', 'lý do trống vẫn gửi được (N56 ②)');
     assert(maLoi(() => lenh.guiDeXuatChuyenLop(gCn, e, { ...v, tuan: tuanQua })) === 400, 'tuần đã qua');
     const r = lenh.guiDeXuatChuyenLop(gCn, e, v);
     const the = get('SELECT * FROM yeu_cau_duyet WHERE id = ?', r.id);

@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  bacCuaLoai, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  bacCuaLoai, bacDu, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -92,6 +92,14 @@ export function moTa(v: unknown, cu?: string | null): string {
   if (s.length < MO_TA_MIN) throw badRequest(`Mô tả cần ít nhất ${MO_TA_MIN} ký tự — đã làm gì, với ai.`);
   /* TINH-HINH (mockup v20 D1 "/ 300", N35): trần 300 — quá thì không lưu, chữ giữ ở ô (trước: cắt lặng ở 2000); chữ cũ dài gửi lại nguyên văn thì giữ. */
   return chuTuDo(s, 'Mô tả', MO_TA_TOI_DA, cu) ?? s;
+}
+/** N56 ③ (chủ SP 20/11): Xác nhận xử lý ĐÚNG BẬC KẾ — Mô tả để trống được (`luuXuLy` tự ghi); có chữ thì kiểm như cũ. Đề xuất (khác mặc định) vẫn `moTa`. */
+export const moTaTuyChon = (v: unknown): string => (String(v ?? '').trim() ? moTa(v) : '');
+/** N56 ③: Mô tả máy tự ghi "{BẬC} · {vi phạm}" — cùng câu nút "Chèn" ở web. Một câu, chỉ khi Mô tả trống. */
+function moTaTuDong(ids: readonly number[], kind: string): string {
+  const ten = (db().prepare(`SELECT COALESCE(NULLIF(ten, ''), NULLIF(description, ''), category) AS ten FROM violations WHERE id IN (${DS_JSON}) ORDER BY occurred_on, id`)
+    .all(JSON.stringify(ids)) as any[]).map((r) => (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten));
+  return [bacDu(nhanLoaiXuLy(kind)), [...new Set(ten)].join(', ')].filter(Boolean).join(' · ').slice(0, MO_TA_TOI_DA);
 }
 
 // ---------------------------------------------------------------- Ghi nhận (V4-1, V4-2, V4-6)
@@ -172,7 +180,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
       return xemXuLy(p, seen.id);
     }
   }
-  const note = moTa(v.note);
+  const note = moTaTuyChon(v.note);
   const performedOn = ngayThucHien(v.performedOn);
   const nguoi = nguoiThucHien(p, v);
   return xemXuLy(p, luuXuLy(p, hv, studentId, { violationIds: v.violationIds, performedOn, nguoi, note, key, bacDaThay: v.bacDaThay }, demoToday()).id);
@@ -185,7 +193,7 @@ export function xacNhanXuLy(p: Principal, studentId: number, v: XuLyVao): XuLyVi
 export function luuXuLy(p: Principal, hv: { full_name: string; student_code: string }, studentId: number, v: {
   violationIds: unknown; performedOn: string; nguoi: { by: number | null; ten: string | null }; note: string; key: string | null; bacDaThay?: unknown;
 }, homNay: string): { id: number; kind: string } {
-  const { performedOn, nguoi, note, key } = v;
+  const { performedOn, nguoi, key } = v;
   return tx(() => {
     /* Tính lại TRONG giao dịch (BEGIN IMMEDIATE): bậc là của máy chủ, không tin client. */
     const em = trangThaiYThuc([studentId], homNay).get(studentId)!;
@@ -194,6 +202,7 @@ export function luuXuLy(p: Principal, hv: { full_name: string; student_code: str
       throw conflict('Bậc đã đổi, mở lại panel.', { bac: em.bac });
     }
     const ke = em.keTiep;
+    const note = v.note || moTaTuDong(ids, ke.kind);   // N56 ③
     const info = db().prepare(
       `INSERT INTO discipline_measures (student_id, cycle_id, class_id, kind, status, owner_user_id, note, performed_on, performed_by,
                                         performer_name, confirmed_by, confirmed_at, idempotency_key, created_at, created_by)

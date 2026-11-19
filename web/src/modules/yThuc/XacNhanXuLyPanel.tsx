@@ -22,7 +22,8 @@ import { ChipMon, chuMoc } from './BangLan.tsx';
 import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
-const MO_TA_MIN = 10;
+/** Đề xuất 9 (S4): một ngưỡng với máy chủ (`MO_TA_MIN` = `CHU_TOI_THIEU`, xuLy.ts). */
+const MO_TA_MIN = CHU_TOI_THIEU;
 /** Mockup v20 D1 (bộ đếm "78 / 300") + N35: Mô tả / Lý do ≤ 300 — máy chủ kiểm cùng trần (`moTa`, xuLy.ts). */
 const MO_TA_TOI_DA = 300;
 const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
@@ -141,7 +142,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
     { khoa: 'vi-pham', nhan: t('Vi phạm'), chon: true },
     ...(cheDo === 'de-xuat' ? [{ khoa: 'loai', nhan: t('Loại'), chon: true }] : []),
     ...(cheDo === 'de-xuat' && loai === 'other' ? [{ khoa: 'ghi-ro', nhan: t('Ghi rõ'), toiThieu: KHAC_TOI_THIEU }] : []),
-    { khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: MO_TA_MIN, toiDa: MO_TA_TOI_DA },
+    /* N56 ③ (chủ SP 20/11): xử lý ĐÚNG BẬC KẾ — Mô tả để trống được (máy ghi "{BẬC} · {vi phạm}"); có chữ thì ≥ 8. Đề xuất (khác mặc định) giữ bắt buộc. */
+    { khoa: 'mo-ta', nhan: t('Mô tả'), toiThieu: cheDo === 'xu-ly' && !moTa.trim() ? undefined : MO_TA_MIN, toiDa: MO_TA_TOI_DA },
   ], { 'vi-pham': chon.size ? 'co' : '', loai, 'ghi-ro': tenKhac, 'mo-ta': moTa }).concat(
     tep.some((m) => m.loi && !m.daGui) ? [{ khoa: 'tep', nhan: t('Tệp'), lyDo: t('Bỏ tệp lỗi') }]
       /* #6: đề xuất loại ngoài thang bắt bằng chứng (V4-10, LUAT-5) — báo ngay khi bấm Gửi, không gọi máy chủ. */
@@ -296,6 +298,8 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
 
   /* ---------------------------------------------------------------- bước 1 */
   const bacKe = d.keTiep;
+  /* "Chèn" và chữ máy tự ghi khi Mô tả trống (N56 ③, `moTaTuDong` máy chủ) — cùng một câu: bậc kế · các vi phạm đang chọn. */
+  const cauChen = chon.size ? [bacKe ? bacDu(dich(bacKe.nhan)) : null, [...new Set([...chon].map((id) => theoId.get(id)?.ten).filter(Boolean))].join(', ')].filter(Boolean).join(' · ') : '';
   const dongVp = (v: ViPhamV4) => (
     <li key={v.id}>
       {/* Cả dòng là nhãn của ô tick — bấm vào chữ cũng chọn (vùng chạm ≥ 44px trên điện thoại). */}
@@ -435,16 +439,16 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
             </Hang2>
           )}
           <div className="grid gap-1">
-            <Truong nhan={cheDo === 'xu-ly' ? t('Mô tả') : t('Lý do')} batBuoc loi={lf.loiCua(loi, 'mo-ta')}>
+            <Truong nhan={cheDo === 'xu-ly' ? t('Mô tả') : t('Lý do')} batBuoc={cheDo !== 'xu-ly'} tuyChon={cheDo === 'xu-ly'} loi={lf.loiCua(loi, 'mo-ta')}>
               {/* NT-SUA P1-3 (PTA chốt): Mô tả = ghi nhận việc đã làm (đầu ra của xử lý) → nói lý do ngay tại ô, không điền sẵn chữ mẫu. */}
               <textarea className="field w-full" {...lf.o(loi, 'mo-ta')} rows={3} value={moTa} readOnly={busy} onChange={(e) => setMoTa(e.target.value)}
-                placeholder={cheDo === 'xu-ly' ? t('Ghi việc đã làm, vd đã nhắc em trước lớp, đã báo PH') : undefined} />
+                placeholder={cheDo === 'xu-ly' ? (cauChen ? t('Để trống: máy ghi "{cau}"', { cau: cauChen }) : t('Ghi việc đã làm, vd đã nhắc em trước lớp, đã báo PH')) : undefined} />
             </Truong>
             <span className="flex items-center gap-2">
               {/* AUDIT-1611 B3-06: "Chèn" (cùng kiểu bàn giao, lời 47–48) — điền bậc + các vi phạm đang chọn vào ô, sửa được; không điền sẵn (NT-SUA P1-3 giữ). */}
               {cheDo === 'xu-ly' && chon.size > 0 && !busy && (
                 <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" aria-label={t('Chèn bậc và vi phạm vào Mô tả')}
-                  onClick={() => { const cau = [bacKe ? bacDu(dich(bacKe.nhan)) : null, [...chon].map((id) => theoId.get(id)?.ten).filter(Boolean).join(', ')].filter(Boolean).join(' · '); setMoTa(moTa.trim() ? `${moTa.trimEnd()} ${cau}` : cau); }}>
+                  onClick={() => setMoTa(moTa.trim() ? `${moTa.trimEnd()} ${cauChen}` : cauChen)}>
                   {t('Chèn')}</button>
               )}
               <span className={`ml-auto text-xs tabular-nums ${moTa.trim().length > MO_TA_TOI_DA ? 'font-semibold text-bad' : 'text-slate-500'}`} aria-live="polite">{moTa.trim().length} / {MO_TA_TOI_DA}</span>

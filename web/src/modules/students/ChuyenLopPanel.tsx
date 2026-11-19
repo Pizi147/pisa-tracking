@@ -196,12 +196,12 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const nguonLd = lopDich.data?.nguon;
   const oReset = bacNay > 0 && (dx ? !dich || dich.ft || dich.ma !== (nguonLd?.ma ?? null) || !!nguonLd?.tuCuoiKhoa : !!xemLop && xemLop.luat?.khoa === 'dong-mo');
 
+  /* N56 ② (chủ SP 20/11): Lý do tuỳ chọn ở mọi kiểu chuyển (lệnh, đề xuất, duyệt, nhiều em) — máy chủ cùng luật. */
   const LUAT: LuatTruong[] = dx
-    ? [{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }]   // T7 (PR-MTa): không tối thiểu ký tự
+    ? []
     : [
       { khoa: 'lop', nhan: t('Lớp chuyển đến'), chon: true },
       { khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true },
-      { khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 },
     ];
   /* Target: trống "Chưa điền", sai "Gõ band 0–9…" ngay tại ô (cùng luật máy chủ; "6,5" đọc là 6.5). */
   const oT = docOTarget(mucTieu);
@@ -340,8 +340,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Từ tuần')} chuaChon={t('Chưa chọn')} />
                 : <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />}
             </Truong>
-            <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ly-do')}>
-              <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
+            <Truong nhan={t('Lý do')} tuyChon>
+              <textarea className="field w-full" rows={2} maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
                 placeholder={dx ? t('Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học') : t('Ghi lý do')} />
             </Truong>
             {oTarget && (
@@ -419,7 +419,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
   const emMau = ds.find((e) => !daXong.has(e.studentId))?.studentId ?? null;
   const lopDich = useApi<LopDichData>(emMau ? `/chuyen-lop/lop-dich?studentId=${emMau}` : null, [emMau, lopMoi]);
   const { gui: canGui, boQua } = chonGuiNhieuEm(rows);
-  const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }, { khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }];
+  const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }];   // N56 ②: Lý do tuỳ chọn
   /* I1 (§7): em Lên FT từ lớp thường mà chưa có Target nào → ô Target ở hàng em; thiếu thì "Còn thiếu: Target · {tên}". */
   const hoiTarget = (sid: number) => { const x = xem[sid]; return !!x && 'hoiTarget' in x && x.hoiTarget; };
   const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan, 'ly-do': lyDo }),
@@ -519,8 +519,8 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         <Truong nhan={t('Tuần bắt đầu')} batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
           <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />
         </Truong>
-        <Truong nhan={t('Lý do')} batBuoc loi={lf.loiCua(loi, 'ly-do')}>
-          <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
+        <Truong nhan={t('Lý do')} tuyChon>
+          <textarea className="field w-full" rows={2} maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
             placeholder={t('Ví dụ: Gộp lớp')} />
         </Truong>
       </div>

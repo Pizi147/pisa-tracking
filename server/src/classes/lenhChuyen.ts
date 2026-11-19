@@ -918,7 +918,7 @@ export function kiemDeXuatChuyenLop(p: Principal, sid: number, v: { toClassId?: 
   /* GVCN của lớp em đang học (`student.edit` ở lớp với vai Giáo viên đã siết về GVCN); Quản lý cũng gửi được → tự duyệt (Q-D). */
   require_(p, PERMISSIONS.STUDENT_EDIT, { classId: enr.class_id }, 'Chỉ GVCN lớp em đang học mới gửi được đề xuất chuyển lớp.');
   const lyDo = chuTuDo(v.lyDo, 'Lý do', 2000) ?? '';   // rà Dọn-a P2 (Q4): kiểu + trần, không cắt ngầm
-  if (!lyDo) throw badRequest('Ghi lý do để Head có căn cứ duyệt.');   // T7 (PR-MTa): không tối thiểu ký tự
+  /* N56 ② (chủ SP 20/11): Lý do tuỳ chọn ở mọi kiểu chuyển lớp — cả đề xuất của GVCN. */
   const toClassId = v.toClassId ? Number(v.toClassId) : null;
   if (toClassId && !lopDichHopLe(toClassId, enr.class_id)) throw badRequest('Lớp chuyển đến không hợp lệ.');
   const tuan = typeof v.tuan === 'string' && v.tuan ? v.tuan : null;
