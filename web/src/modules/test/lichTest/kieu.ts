@@ -1,4 +1,4 @@
-import type { LoaiNhanLop, LuoiNoLop, PhamViLichTest } from '@shared/domain/index.ts';
+import type { LoaiNhanLop, LuoiNoLop, LuotNo, PhamViLichTest } from '@shared/domain/index.ts';
 import type { DongSEx } from '../keHoach/kieu.ts';
 
 /** Trả lời của `GET /cham/lich-test` (`lichTest` ở server/src/cham/canCham.ts). */
@@ -25,7 +25,7 @@ export type DongNo = {
   phan: PhanCuaBan | null;
 };
 /** LT-GON: một hàng khối Quá hạn = một lớp (`gopNoTheoLop`) — `luoi` là các lưới mở dưới hàng, `soDong` số dòng nợ đã gộp. */
-export type DongNoLop = DongNo & { luoi: LuoiNoLop[]; soDong: number };
+export type DongNoLop = DongNo & { luoi: LuoiNoLop[]; soDong: number; luot: LuotNo[] };
 /** OV-1b (3.5) "Phần của bạn" (kỹ năng L R W S; W1 + W2 cùng người gộp "W"). */
 export type PhanCuaBan = {
   toi: { kyNang: string[]; con: number } | null;

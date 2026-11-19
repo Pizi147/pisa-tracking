@@ -14,7 +14,7 @@ import { ODiemMt, chuVangO, type KetThucHop } from '../fasttrack/HopNhapDiem.tsx
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import { fmtBand, skillLabel, skillShort, sosLabel } from '../../lib/format.ts';
 import { ENTRY_SKILLS, chipSosMt0, duongHoSoHocVien, conThieuFt, gopVangHang, type NguCanhDs, type DinhNghiaCot, soKyVong, soLieuSos, chuOChuaLuu, dotGvCham, duongDotTest, ngay, nhanLuot, tuanLich, type AssessedSkill, type NguoiChon, type TrangThaiLuuO } from '@shared/domain/index.ts';
-import { DongThi } from './DongThi.tsx';
+import { DongThi, LuotChinhContext } from './DongThi.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
 import { HopSEx } from '../test/keHoach/HopSEx.tsx';
@@ -393,6 +393,11 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
   /* OV-15b (6b): ✓ / ✗ so kỳ vọng ở ô L · R · S khi lưới có cột Kỳ vọng; W1 / W2 là ô nhập thường (✓ / ✗ ở cột W). */
   const kyVong = cot.kyVong ? row.result.expectation ?? null : null;
   const { homNay } = useNgayNghiepVu();
+  /* LICH-TEST-GON: trong Lịch Test em cùng đợt chính không ghi "MTn ›" (đã ở hàng lớp); em khác: link phụ ở dòng phụ. */
+  const luotChinh = useContext(LuotChinhContext);
+  const nhanMt = `MT${row.attemptNo}`;
+  const gonLuot = luotChinh !== null;
+  const phuLuot = gonLuot && nhanMt !== luotChinh;
   const oHien = row.cells.filter((c) => hien(c.skill) && c.required && !khacTuanFt(c, tuanDangXem));
   const chuVang = oHien.map((c) => chuVangO(c, tuanXem, homNay));
   /* V6 K3: lưới một cột (Chấm Speaking) — "vắng W2 SEP" dưới tên như mockup, ô không lặp. */
@@ -427,15 +432,17 @@ function SheetRow({ row, lop, active, cot, cc, hien, tuanDangXem, tuanXem, onRel
           {/* S-CHEO-CN (chủ SP: "web không bị clipped"): 375 tên dài XUỐNG DÒNG thay vì cắt (`truncate` trên inline-flex mất "…"). */}
           {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`): tên + MTn chữ thường (hồ sơ / lượt của em đó 403). */}
           {(row as { xemHoSo?: boolean }).xemHoSo === false
-            ? <><span className="min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span><span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400 max-sm:ml-1.5">MT{row.attemptNo}</span></>
+            ? <><span className="min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span>{!gonLuot && <span className="shrink-0 whitespace-nowrap text-[13px] text-slate-400 max-sm:ml-1.5">MT{row.attemptNo}</span>}</>
             : <>
               <Link className="ten-ho-so min-w-0 truncate font-semibold max-sm:whitespace-normal max-sm:break-words" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>
-              <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:ml-1.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>
+              {!gonLuot && <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:ml-1.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}
             </>}
         </span>
         <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">{/* rỗng → hàng 44 (CSS :empty) */}
+          {phuLuot && ((row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="shrink-0 whitespace-nowrap">{nhanMt}</span>
+            : <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>{nhanMt} ›</Link>)}
           <DongVang vang={vangHang} tuan={tuanThi} />
-          {row.phu && <span className="min-w-0 truncate" title={row.phu}>{row.phu}</span>}
+          {row.phu &&<span className="min-w-0 truncate" title={row.phu}>{row.phu}</span>}
           <DongThi muc={row.cells.filter((c) => c.required && c.progress !== 'cancelled')
             .map((c) => ({ nhan: c.skill.startsWith('writing') ? 'W' : skillShort(c.skill), weekStart: c.weekStart ?? null }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />
@@ -585,7 +592,11 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
   const oThe = row.cells.filter((c) => c.required && !khacTuanFt(c, tuanDangXem));
   const chuVangThe = oThe.map((c) => chuVangO(c, tuanXem, homNay));
   const vangHang = gopVangHang(chuVangThe);
-  const ketQua = row.ngungHoc ? <Level tone="muted">{dich(row.ngungHoc)}</Level>
+  /* LICH-TEST-GON: thẻ 375 — em cùng đợt chính không ghi "MTn ›" (đã ở thẻ lớp), chỉ còn kỳ vọng. */
+  const luotChinh = useContext(LuotChinhContext);
+  const nhanMt = `MT${row.attemptNo}`;
+  const cungDot = luotChinh !== null && nhanMt === luotChinh;
+  const ketQua =row.ngungHoc ? <Level tone="muted">{dich(row.ngungHoc)}</Level>
     : row.result.kckDuoi ? <ChipDuoiKck />
     : row.result.chot && row.result.sosLevel !== null ? <SosLuot row={row} />
     : row.result.provisional && (row.result.sosLevel ?? 0) > 0 ? <SosLuot row={row} tam />
@@ -597,8 +608,8 @@ function TheHv({ row, lop, active, tuanDangXem, tuanXem, onReload, gvMacDinh, mo
         {(row as { xemHoSo?: boolean }).xemHoSo === false   /* GV-CU-BO-TRO [XM-2] */
           ? <span className="inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span>
           : <Link className="ten-ho-so inline-flex min-h-[44px] min-w-0 items-center truncate font-semibold" to={duongHoSoHocVien(row.studentId)} title={row.studentName}><span className="truncate">{row.studentName}</span></Link>}
-        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="inline-flex min-h-[44px] items-center">MT{row.attemptNo}</span>
-          : <Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? ` · ${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
+        <span className="shrink-0 whitespace-nowrap text-xs text-slate-400">{cungDot ? null : (row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="inline-flex min-h-[44px] items-center">MT{row.attemptNo}</span>
+          : <Link className="link inline-flex min-h-[44px] items-center" to={duongDotTest({ id: row.attemptId })} state={{ ds: dsLuot }}>MT{row.attemptNo} ›</Link>}{kyVong != null ? `${cungDot ? '' : ' · '}${t('kỳ vọng {kv}', { kv: fmtBand(kyVong) })}` : ''}</span>
         <span className="ml-auto shrink-0">{ketQua}</span>
       </div>
       {vangHang && <span className="-mt-2 text-xs"><DongVang vang={vangHang} tuan={tuanThiCua(oThe.filter((c, i) => chuVangThe[i]), homNay)} /></span>}
