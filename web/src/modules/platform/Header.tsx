@@ -161,7 +161,7 @@ export function Header({ viec, dem, so, onMoChuong }: { viec: ViecChuong | null 
       <li key={`hv${h.id}`} role="none">
         <button {...nutMuc(i)}>
           <span className="flex min-w-0 items-center gap-2">
-            <span className="min-w-0 truncate font-semibold text-slate-100"><ToKhop chu={h.fullName} q={q} /></span>
+            <span className="ten-hv min-w-0 font-semibold text-slate-100"><ToKhop chu={h.fullName} q={q} /></span>
             {h.openCase?.sos_level ? <ChipSos muc={h.openCase.sos_level} hienKyNang={false} tinh /> : null}
             {/* NGHI-HOC-LUU-TRU: em Lưu trữ xếp cuối (máy chủ), ghi chữ "Lưu trữ" thay mã lớp — vẫn mở hồ sơ. */}
             {(h.archived || h.classCode) && <span className="ml-auto shrink-0 text-xs text-slate-500">{h.archived ? t('Lưu trữ') : h.classCode}</span>}
@@ -295,7 +295,7 @@ export function Header({ viec, dem, so, onMoChuong }: { viec: ViecChuong | null 
           aria-label={t('Tài khoản {ten}', { ten: hoTen })} aria-expanded={openMenu === 'account'}>
           <span aria-hidden className="grid h-[30px] w-[30px] place-items-center rounded-full text-[13px] font-bold sm:hidden"
             style={{ background: 'var(--accent-soft)', color: 'var(--accent)' }}>{chuCaiDau}</span>
-          <span className="hidden max-w-[10rem] truncate text-slate-200 sm:inline">{hoTen}</span>
+          <span className="hidden max-w-[10rem] truncate text-slate-200 sm:inline">{hoTen}</span>{/* ten-hv-ok: tên tài khoản đang đăng nhập, không phải HV */}
         </button>
         {openMenu === 'account' && (
           /* KHUNG-LOI (B-09): không cao quá màn — cuộn trong menu, "Đăng xuất" dính đáy (trước: trang cuộn, Đăng xuất ra ngoài màn ở 375). */
