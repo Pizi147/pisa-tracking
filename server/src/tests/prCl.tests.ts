@@ -221,15 +221,15 @@ export async function runPrClTests(t: YThucTestKit) {
   });
 
   // ------------------------------------------------------------------ (d) FT → FT: chỉ Lý do
-  await checkAsync('CL-d · FT → FT: chỉ Lý do (không Target) → lệnh; thiếu Lý do → 400 "Ghi lý do ngắn"', async () => {
+  await checkAsync('CL-d · FT → FT: không Target → lệnh; Lý do trống vẫn lệnh (N56 ②), có Lý do thì lưu như cũ', async () => {
     const ft2 = lop('FT', 2);
     const x = em(FT_C.id, { ft: true });
     await voiMayChu(async (goi) => {
       const r0 = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft2.id, tuan: THU_HAI, lyDo: '' });
       const j: any = await thuong(r0);
-      assert(r0.status === 400 && /Ghi lý do ngắn/.test(String(j?.error ?? j?.message ?? '')) && !lenhCua(x.sid), `thiếu lý do: ${r0.status} ${JSON.stringify(j)}`);
+      assert(r0.status === 200 && lenhCua(x.sid)?.huong === 'chuyen_lop' && !lenhCua(x.sid)?.ly_do, `lý do trống: ${r0.status} ${JSON.stringify(j)}`);
       const r = await post(goi, QL.userId, `/students/${x.sid}/transfer`, { toClassId: ft2.id, tuan: THU_HAI, lyDo: 'Gộp lớp' });
-      assert(r.status === 200 && lenhCua(x.sid)?.huong === 'chuyen_lop' && lenhCua(x.sid)?.boi_canh === 'giua-khoa', `${r.status} ${JSON.stringify(lenhCua(x.sid))}`);
+      assert(r.status === 200 && lenhCua(x.sid)?.huong === 'chuyen_lop' && lenhCua(x.sid)?.boi_canh === 'giua-khoa' && lenhCua(x.sid)?.ly_do === 'Gộp lớp', `${r.status} ${JSON.stringify(lenhCua(x.sid))}`);
     });
   });
 

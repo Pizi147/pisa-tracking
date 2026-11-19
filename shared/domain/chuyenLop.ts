@@ -183,7 +183,8 @@ export function kiemDongLenh(d: {
   if (canLopDich(d.huong) && !d.lopDichId) return 'Chọn lớp chuyển đến';
   if (!d.tuan) return 'Chọn tuần bắt đầu.';   // HL-12: ô trống khác tuần sai
   if (!tuanHopLe(d.tuan, d.homNay)) return LOI_TUAN_BAT_DAU;
-  const canLyDo = d.khacGoiY || d.huong === 'chuyen_lop' || d.huong === 'bao_luu' || d.huong === 'dung_hoc';
+  /* N56 ② (chủ SP 20/11): chuyển lớp — Lý do tuỳ chọn (lịch sử vẫn ghi ai · lúc · lớp → lớp). Cuối khoá khác gợi ý / Bảo lưu / Dừng học giữ bắt buộc. */
+  const canLyDo = d.khacGoiY || d.huong === 'bao_luu' || d.huong === 'dung_hoc';
   if (canLyDo && !(d.lyDo ?? '').trim()) return 'Ghi lý do ngắn';   // T7 (PR-MTa): không tối thiểu ký tự
   if (canLopDich(d.huong) && d.lopDichFt && !d.nguonFt && !mucTieuHopLe(d.mucTieu)) return 'Ghi Target (hoặc KCK)';
   if (d.huong === 'bao_luu' && !d.ngayXemLai) return 'Chọn tuần xem lại';

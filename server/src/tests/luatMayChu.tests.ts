@@ -704,9 +704,9 @@ export async function runLuatMayChuTests(t: YThucTestKit) {
     assert(domain.NO_HANDOVER_NOTE === 'Không có lưu ý', 'Chữ lựa chọn');
   });
 
-  check('RB-3 · Không lý do → từ chối; không lưu ý và không chọn "Không có lưu ý" → từ chối; chọn "Không có lưu ý" → chuyển được, hành trình ghi rõ', () => {
+  check('RB-3 · Không lý do → đi tiếp (N56 ②); không lưu ý và không chọn "Không có lưu ý" → từ chối; chọn "Không có lưu ý" → chuyển được, hành trình ghi rõ', () => {
     const hv = taoHocVien({ classCode: 'MB FOU 12', weekStart: '2026-09-07' });
-    assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, '  '), /lý do/, 'Chuyển lớp không lý do');
+    assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, '  '), /Không có lưu ý/, 'Chuyển lớp không lý do: không chặn ở lý do (N56 ②), chặn ở lưu ý bàn giao');
     assertThrows(() => studentsSvc.transferStudent(P.mbManager, hv.sid, targetClass, TODAY, 'Đổi lịch học', {}),
       /Không có lưu ý/, 'Chuyển lớp không lưu ý bàn giao');
     /* PR-LT, Q7: targetClass là lớp Fast Track — chuyển thật từ lớp thường bắt buộc Target. */
