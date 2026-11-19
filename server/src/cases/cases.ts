@@ -37,7 +37,7 @@ import { chuCaseTheoKyNang, doiChuCua, suggestCaseOwner } from './owner.ts';
 import { caseKhacChuongTrinh, chuongTrinhCuaLop } from './sos.ts';
 import { duLieuDoiPa, ghiDoiPa, kiemTruocDoiPa, rutDoiPa, type VaoDoiPa } from './doiPa.ts';
 import { CASE_THAT, HAN_KQ_NGOAI_TAM, LA_CASE_SOS, choDoiPa, NOT_UNCONFIRMED_PRESET, awaitingCauseCaseIds, dongBoTrangThaiCase, dongBoTrangThaiCaseLo, sosCaseState, sosCaseStateMany, xuLyCaseMany, type SosCaseState } from './sosState.ts';
-import { CHU_TOI_THIEU_CASE, DANH_MUC_DOI, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiPa, coSoBuoiKy, coTongBuoi, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiKy, soBuoiTu, tuanLich, knTutorCuaKyNang, SO_BUOI_TOI_DA, TIEU_CHI_TUTOR, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
+import { CHU_TOI_THIEU_CASE, DANH_MUC_DOI, PLAN_DECISIONS, duocHoanTacPa, canBuoiTutor, coNguoiPa, coSoBuoiKy, coTongBuoi, decisionToStep, duongDotTest, kiemBuoiTutor, kiemSoBuoiKy, soBuoiTu, tuanLich, knTutorCuaKyNang, nhapGonLuoi, SO_BUOI_TOI_DA, TIEU_CHI_TUTOR, type BuoiTutor, type PlanDecision } from '../../../shared/domain/index.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
 import { chenPa } from './taoPa.ts';
 import { ganMoTaTuO } from './nguyenNhanO.ts';
@@ -4021,6 +4021,8 @@ export function updateResult(p: Principal, interventionId: number, input: {
    * tab cũ) → 409 `daChot`; phiên khác vừa lưu nháp khác → 409 `nhapMoi` (chưa ghi gì). Không gửi = không kiểm (nơi gọi khác, Sửa).
    */
   ky?: unknown; nhapCoSo?: unknown;
+  /** T1 (rà #1872): lời gọi từ lưới Kết quả PA — nháp Tutor lưới không chứa hết (`nhapGonLuoi`) thì 409 `moDay`, không ghi đè. */
+  tuLuoi?: unknown;
 }, opts: {
   /** OV-7b (`suaKetQua`): nơi gọi tự trả Case — bỏ `caseDetail` trong giao dịch. */
   khongTraCase?: boolean;
@@ -4155,7 +4157,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   const nguoiDay = input.nguoiDay === undefined && opts.nguoiDayCu ? opts.nguoiDayCu : kq.nguoiDay;
   /* Rà #1862: sửa lần ghi chưa có dòng Tutor (trước OV-12h) mà không gửi dòng → giữ như cũ, không đòi dòng (như Sửa chữ). */
   const buoi = input.buoi === undefined && opts.buoiTruoc && !opts.buoiTruoc.length ? null
-    : buoiTutorCua(iv, soBuoiTuan, input.buoi, new Set((opts.buoiTruoc ?? []).flatMap((r) => (r.tutor_id ? [r.tutor_id] : []))));
+    : buoiTutorCua(iv, soBuoiTuan, input.buoi, opts.buoiTruoc);
   /* Điều chỉnh: chuẩn hoá TRƯỚC giao dịch; sai thì không ghi gì. Số buổi mới ≥ đã dạy SAU tuần này. */
   const adjustPatch = nextStep === 'adjust'
     ? chuanHoaDieuChinh(p, iv, input.adjust, observedOn, daDayCua(interventionId) + (soBuoiTuan ?? 0)) : null;
@@ -4167,7 +4169,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
   }
 
   return tx(() => {
-    if (!opts.khongTraCase) kiemKyVaNhap(interventionId, input.ky, input.nhapCoSo, { outcome: input.outcome, note });
+    if (!opts.khongTraCase) kiemKyVaNhap(interventionId, input.ky, input.nhapCoSo, { outcome: input.outcome, note }, input.tuLuoi === true);
     const cycleNo = iv.cycle_no ?? 1;
     const cycleDue = iv.action_due ?? iv.followup_due ?? null;
     /* Cập nhật SAU hạn vẫn ghi đúng là trễ — không reset để che. */
@@ -4323,6 +4325,10 @@ export const docNhapKetQua = (v: unknown): NhapKetQuaPa | null => {
 
 const CAU_DA_CHOT = 'Kết quả kỳ này đã được lưu — tải lại để xem, cần đổi thì bấm Sửa';   // không dấu chấm: chân nối ". Chữ đang gõ vẫn giữ."
 const CAU_NHAP_MOI = 'Có bản nháp mới hơn — bản của bạn chưa lưu.';
+/** T1 (rà #1872): lưới chỉ ghi a / b + một Tutor + Nội dung — nháp có hơn (ghi ở form đầy đủ) thì không để lưới ghi đè làm mất dòng / 3 nút / đánh giá. */
+function chanLuoiDeNhap(cu: NhapKetQuaPa | null, tuLuoi: boolean): void {
+  if (tuLuoi && cu && !nhapGonLuoi(cu.buoi)) throw conflict('Nháp có nhiều dòng Tutor hoặc đánh giá — Mở đầy đủ để ghi tiếp', { moDay: true, nhap: cu });
+}
 const kiemKy = (v: unknown) => { if (v !== undefined && !Number.isInteger(v)) throw badRequest('Kỳ không hợp lệ.'); };
 const kiemCoSo = (v: unknown) => { if (v !== undefined && v !== null && typeof v !== 'string') throw badRequest('Bản gốc của nháp không hợp lệ.'); };
 const khep = (iv: any) => iv.status === 'completed' || iv.status === 'cancelled';
@@ -4331,12 +4337,13 @@ const khep = (iv: any) => iv.status === 'completed' || iv.status === 'cancelled'
  * AUDIT-1454 (N03): chốt kết quả — gọi TRONG giao dịch của `updateResult`, đọc lại PA (phiên khác có thể vừa ghi). Kỳ khác / PA đã khép = kết quả kỳ này đã lưu
  * (gửi lại, tab cũ) → 409, không ghi lần hai. Nháp máy chủ khác bản form đã đọc mà khác chữ đang chốt → 409 kèm bản mới (không xoá chữ phiên khác im lặng).
  */
-function kiemKyVaNhap(interventionId: number, ky: unknown, coSo: unknown, dang: { outcome: string; note: string }): void {
+function kiemKyVaNhap(interventionId: number, ky: unknown, coSo: unknown, dang: { outcome: string; note: string }, tuLuoi = false): void {
   if (ky === undefined && coSo === undefined) return;
   kiemKy(ky); kiemCoSo(coSo);
   const hien = db().prepare('SELECT cycle_no, status, nhap_ket_qua FROM case_interventions WHERE id = ?').get(interventionId) as any;
   if (ky !== undefined && (khep(hien) || (hien.cycle_no ?? 1) !== ky)) throw conflict(CAU_DA_CHOT, { daChot: true });
   const cu = docNhapKetQua(hien.nhap_ket_qua);
+  chanLuoiDeNhap(cu, tuLuoi);
   if (coSo === undefined || !cu || cu.luc === coSo) return;
   if (cu.outcome === dang.outcome && cu.note === dang.note) return;   // nháp mới đúng bằng chữ đang chốt: không mất gì
   throw conflict(CAU_NHAP_MOI, { nhapMoi: cu });
@@ -4351,7 +4358,7 @@ function kiemKyVaNhap(interventionId: number, ky: unknown, coSo: unknown, dang: 
  * đang có (mất phản hồi, hai tab) = đã lưu, không ghi thêm. `luc` tăng ngặt nên dùng được làm bản gốc.
  */
 export function luuNhapKetQua(p: Principal, interventionId: number, input: { outcome?: unknown; note?: unknown; ky?: unknown; coSo?: unknown;
-  soBuoi?: unknown; buoiDuKien?: unknown; buoi?: unknown }): { nhap: NhapKetQuaPa | null } {
+  soBuoi?: unknown; buoiDuKien?: unknown; buoi?: unknown; tuLuoi?: unknown }): { nhap: NhapKetQuaPa | null } {
   const conn = db();
   const outcome = typeof input.outcome === 'string' ? input.outcome : '';
   if (outcome && !(FOLLOWUP_OUTCOMES as readonly string[]).includes(outcome)) throw badRequest('Kết quả không hợp lệ với loại Case này.');
@@ -4367,6 +4374,7 @@ export function luuNhapKetQua(p: Principal, interventionId: number, input: { out
     if (input.ky !== undefined && (khep(iv) || (iv.cycle_no ?? 1) !== input.ky)) throw conflict(CAU_DA_CHOT, { daChot: true });
     if (khep(iv)) throw badRequest('Phương án này đã khép — không lưu nháp được.');
     const cu = docNhapKetQua(iv.nhap_ket_qua);
+    chanLuoiDeNhap(cu, input.tuLuoi === true);
     const trong = !outcome && !note && !Object.keys(tutor).length;
     if (cu ? noiDungNhap(cu) === noiDungNhap({ outcome, note, ...tutor }) : trong) return { nhap: cu };
     if (input.coSo !== undefined && (cu?.luc ?? null) !== input.coSo) throw conflict(CAU_NHAP_MOI, { nhapMoi: cu });
@@ -4447,11 +4455,13 @@ function chuKetQuaTuan(p: Principal, iv: any, c: any, input: {
  * OV-12h · TU3–TU6: MỌI PA Tutor → 1…a dòng Tutor, Σ số buổi = a (a = 0 không dòng); loại khác / không có ô số buổi → null (không ghi bảng).
  * `tutorId` phải có trong danh bạ; `gvId` (TU4) phải là GV đang làm việc — dòng danh bạ của GV tìm / tạo trong giao dịch ghi (`ghiBuoiTutor`).
  */
-function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, giuTutor: ReadonlySet<number> = new Set()): BuoiTutor[] | null {
+function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, truoc: readonly DongBuoiCu[] = []): BuoiTutor[] | null {
   if (!canBuoiTutor({ kind: iv.kind }) || soBuoiTuan === null) return null;
+  /* Lần ghi đang sửa: tutor đã có thì giữ (kể cả GV đã nghỉ) · Nội dung cũ giữ nguyên không bị chặn ≥ 8 ký tự. */
+  const giuTutor = new Set(truoc.flatMap((r) => (r.tutor_id ? [r.tutor_id] : [])));
   /* ponytail: web cũ (trước TU2-3) chọn dòng GV của `/tutors/chon` gửi `tutorId` = −gvId (GV chưa có dòng danh bạ) — đổi về `gvId`; gỡ khi TU2-3 merge. */
   const vao = Array.isArray(buoi) ? buoi.map((b) => (b && Number.isInteger(b.tutorId) && b.tutorId < 0 && b.gvId == null ? { ...b, tutorId: null, gvId: -b.tutorId } : b)) : buoi ?? [];
-  const sai = kiemBuoiTutor(soBuoiTuan, vao);
+  const sai = kiemBuoiTutor(soBuoiTuan, vao, new Set(truoc.map((r) => String(r.nhan_xet ?? '').trim())));
   if (sai) throw loi(400, 'Buổi tutor: {loi}.', { loi: sai });
   const ds: BuoiTutor[] = (vao as any[]).map((b) => ({
     tutorId: b.gvId ? null : b.tutorId ?? null, gvId: b.gvId ?? null, soBuoi: b.soBuoi ?? 1, tutor: String(b.tutor ?? '').trim(), nhanXet: String(b.nhanXet).trim(),
@@ -4463,8 +4473,9 @@ function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, giuTuto
   if (ngan >= 0) throw loi(400, 'Buổi tutor: dòng {x}: tên tutor ít nhất 2 ký tự.', { x: ngan + 1 });
   const ids = [...new Set(ds.flatMap((b) => (b.tutorId ? [b.tutorId] : [])))];
   if (ids.length) {
-    /* Tutor danh sách: tên lưu = tên trong danh sách lúc ghi (bản chụp), không theo chữ web gửi. */
-    const dong = new Map((db().prepare(`SELECT id, ten, user_id FROM tutors WHERE id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
+    /* Tutor danh sách: tên lưu = tên trong danh sách lúc ghi (bản chụp), không theo chữ web gửi; dòng của GV = tên tài khoản lúc ghi (T3). */
+    const dong = new Map((db().prepare(`SELECT t.id, COALESCE(gu.full_name, t.ten) AS ten, t.user_id FROM tutors t LEFT JOIN users gu ON gu.id = t.user_id
+      WHERE t.id IN (${ids.map(() => '?').join(',')})`).all(...ids) as any[]).map((r) => [r.id as number, r]));
     const i = ds.findIndex((b) => b.tutorId && !dong.has(b.tutorId));
     if (i >= 0) throw loi(400, 'Buổi tutor: dòng {x}: tutor không có trong danh sách.', { x: i + 1 });
     for (const b of ds) if (b.tutorId) b.tutor = dong.get(b.tutorId).ten;
@@ -4481,7 +4492,7 @@ function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, giuTuto
  * nơi dạy = chi nhánh đầu của GV. Trong giao dịch của nơi ghi. → `{ id, ten }`.
  */
 export function tutorCuaGv(conn: any, p: Principal, gvId: number): { id: number; ten: string } {
-  const co = conn.prepare('SELECT id, ten FROM tutors WHERE user_id = ?').get(gvId) as any;
+  const co = conn.prepare('SELECT t.id, u.full_name AS ten FROM tutors t JOIN users u ON u.id = t.user_id WHERE t.user_id = ?').get(gvId) as any;   // T3: tên tài khoản hiện tại
   if (co) return co;
   const u = conn.prepare(`SELECT u.full_name,
       (SELECT GROUP_CONCAT(s.skill) FROM user_skills s WHERE s.user_id = u.id) AS kn,
@@ -4491,8 +4502,18 @@ export function tutorCuaGv(conn: any, p: Principal, gvId: number): { id: number;
     .run(u.full_name, u.cn ?? null, knTutorCuaKyNang(u.kn), nowIso(), p.userId, gvId).lastInsertRowid);
   return { id, ten: u.full_name };
 }
-/** TU-a: dòng buổi đã ghi (để giữ `ghi_luc` / `lop_id` khi sửa). */
-type DongBuoiCu = { buoi_so: number; tutor_id: number | null; chuan_bi: number | null; tai_lieu: number | null; feedback_gv: number | null; danh_gia: number | null; ghi_luc: string | null; lop_id: number | null };
+/**
+ * T3 (rà #1872): dòng danh bạ của GV (`tutors.user_id`) — tên / kỹ năng / nơi dạy đọc từ TÀI KHOẢN lúc đọc (cột của `tutors` chỉ là bản chụp lúc tạo, dòng GV
+ * không ai sửa ở trang Tutor). Cột cho câu có bí danh `t` + `LEFT JOIN users gu ON gu.id = t.user_id`; mỗi dòng đọc xong qua `chuanTutor` (kỹ năng hồ sơ → mã tutor).
+ * Nơi dạy = chi nhánh đầu của GV (như lúc tạo dòng — `tutorCuaGv`).
+ */
+export const COT_TUTOR_TK = `COALESCE(gu.full_name, t.ten) AS ten,
+  CASE WHEN t.user_id IS NULL THEN t.noi_day_branch_id ELSE COALESCE((SELECT ur.branch_id FROM user_roles ur WHERE ur.user_id = t.user_id AND ur.status = 'active'
+    AND ur.branch_id IS NOT NULL ORDER BY ur.id LIMIT 1), t.noi_day_branch_id) END AS noi_day_branch_id,
+  CASE WHEN t.user_id IS NULL THEN t.ky_nang ELSE (SELECT GROUP_CONCAT(s.skill) FROM user_skills s WHERE s.user_id = t.user_id) END AS ky_nang`;
+export const chuanTutor = <T extends { user_id?: number | null; ky_nang?: string | null }>(r: T): T => (r.user_id != null ? { ...r, ky_nang: knTutorCuaKyNang(r.ky_nang) } : r);
+/** TU-a: dòng buổi đã ghi (để giữ `ghi_luc` / `lop_id` khi sửa; `nhan_xet` cũ không bị chặn ≥ 8 ký tự). */
+type DongBuoiCu = { buoi_so: number; tutor_id: number | null; nhan_xet?: string | null; chuan_bi: number | null; tai_lieu: number | null; feedback_gv: number | null; danh_gia: number | null; ghi_luc: string | null; lop_id: number | null };
 /** Một câu đọc đủ cột (giữ `ghi_luc` / `lop_id`, nhật ký trước → sau qua `buoiTuDong`). */
 const docBuoiCu = (conn: any, followupId: number): DongBuoiCu[] =>
   conn.prepare(`SELECT b.buoi_so, b.ghi_luc, b.lop_id, ${COT_BUOI} FROM case_followup_buoi b WHERE b.followup_id = ? ORDER BY b.buoi_so`).all(followupId);
@@ -4828,7 +4849,7 @@ function suaChuKetQua(p: Principal, x: NguCanhSua, vao: VaoKetQua): void {
   /* OV-12h · TU18: sửa lần ghi Tutor (mọi lần, kể cả lần cũ) — gửi dòng Tutor, hoặc lần ghi đã có dòng, thì kiểm như lúc ghi và thay; lần ghi cũ không gửi thì giữ. */
   const truocBuoi = docBuoiCu(conn, chinh.id);
   const buoi = cu || (vao.buoi === undefined && !truocBuoi.length) ? null
-    : buoiTutorCua(iv, t.soBuoiTuan, vao.buoi, new Set(truocBuoi.flatMap((r) => (r.tutor_id ? [r.tutor_id] : []))));
+    : buoiTutorCua(iv, t.soBuoiTuan, vao.buoi, truocBuoi);
   /* Rà #1862: thân không có `nguoiDay` (web mới: PA Tutor không còn ô Người dạy kỳ này) → giữ người đã ghi, không xoá. */
   const nd = vao.nguoiDay === undefined ? { userId: chinh.phu_trach_user_id ?? null, name: chinh.phu_trach_ten ?? null } : t.nguoiDay;
   const sau = { ...chinh, note, decision_note: decisionNote, remaining_issue: t.remainingIssue, so_buoi: t.soBuoiTuan, buoi_du_kien: t.buoiDuKien,

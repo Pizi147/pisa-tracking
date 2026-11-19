@@ -12,7 +12,7 @@ import { NganCase } from '../students/NganCaseLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
   CHU_TOI_THIEU_CASE, FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, INTERVENTION_KIND_LABEL, KY_HIEU_TIEN_TRIEN, TRAN_CHU, caseTopicLabel, duongHoSoHocVien,
-  ghiNhanhDuoc, kyGhiKetQua, nguoiCuaPa, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan, toiKyGhi, type NguoiChon,
+  ghiNhanhDuoc, kyGhiKetQua, nguoiCuaPa, nhapGonLuoi, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan, toiKyGhi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -29,6 +29,8 @@ type PaLuoi = {
   nhap: NhapMayChu | null; mt: { attemptNo: number; band: number; expectation: number | null } | null; hanKe: string | null;
   /** TU2-2 / TU2-4: PA Tutor — b điền sẵn · tutor kỳ trước · `so_buoi` của PA (quyết dòng ghi nhanh được). */
   buoiKy?: number | null; tutorTruoc?: { tutorId: number | null; gvId: number | null; ten: string } | null; soBuoi?: number | null;
+  /** Rà #1872 T2: lưu hôm nay là Kết quả cuối (máy chủ `laLanGhiCuoi`) — không đoán từ tiêu đề việc. */
+  lanCuoi: boolean;
 };
 /** TU2-4 (R1.24): dòng PA Tutor ghi trong lưới — `a` đã học · `b` dự kiến (chữ người gõ) · `tu` tutor / GV đã chọn; `note` = Nội dung của dòng Tutor duy nhất. */
 type TuChon = { tutorId?: number | null; gvId?: number | null; tutor: string; phu?: string };
@@ -57,7 +59,8 @@ const lucNhap = (luc: string) => { const d = new Date(luc); const h = (x: number
 /** 409 của máy chủ (`luuNhapKetQua` / `updateResult`): kỳ đã chốt ở phiên khác → không Thử lại; nháp mới hơn → chọn bản ở panel đầy đủ. */
 const xungDotCua = (e: any): { moi: NhapMayChu | null } | null => (e?.status === 409 && e.details && 'nhapMoi' in e.details ? { moi: e.details.nhapMoi ?? null } : null);
 const loiCua = (e: any, kieu: Loi['kieu']): Loi => {
-  if (e?.status === 409 && e.details?.daChot) return { chu: dich(e.message ?? ''), thuLai: false, kieu };
+  /* daChot: kỳ đã chốt ở phiên khác · moDay (rà #1872 T1): nháp có nhiều dòng Tutor / đánh giá — lưới không ghi đè, chỉ "Mở đầy đủ". */
+  if (e?.status === 409 && (e.details?.daChot || e.details?.moDay)) return { chu: dich(e.message ?? ''), thuLai: false, kieu };
   const xd = xungDotCua(e);
   if (xd) {
     return { chu: xd.moi ? t('Có bản nháp mới hơn · {gio} · {ten}: “{chu}”', { gio: lucNhap(xd.moi.luc), ten: xd.moi.boi, chu: xd.moi.note }) : t('Nháp vừa bị xoá ở phiên khác'), thuLai: true, kieu, xungDot: true };
@@ -94,7 +97,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
 
   const nhapCua = (id: number) => (id in nhapMoi ? nhapMoi[id] : paCua.get(id)?.nhap ?? null);
   const emCua = new Map(ds.map((x) => [x.paId!, x]));
-  const cuoiCua = (x: Em) => /^Kết quả cuối/.test(x.tieuDe);
+  const cuoiCua = (x: Em) => !!paCua.get(x.paId!)?.lanCuoi;   // rà #1872 T2: cờ máy chủ, không đoán từ tiêu đề việc
   /* TU2-4: PA Tutor (không phải kết quả cuối) ghi ngay trong lưới — a / b + Tutor + Nhận xét; 3 nút, Đánh giá thêm, "+ Tutor khác" ở "Mở đầy đủ". */
   const laTutor = (x: Em) => paCua.get(x.paId!)?.kind === 'tutor' && !cuoiCua(x);
   /* Điền sẵn từ nháp máy chủ; b = b kỳ trước, tutor = tutor kỳ trước (TU4, TU11) — chỉ khi ghi mới. */
@@ -108,8 +111,9 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   };
   const giaTri = (id: number): GiaTri => sua[id] ?? (laTutor(emCua.get(id)!) ? macDinhTutor(id)
     : nhapCua(id) ? { outcome: nhapCua(id)!.outcome, note: nhapCua(id)!.note } : TRONG);
-  /* Ghi nhanh = PA không đếm buổi, không kết quả cuối, không Mini Test (`ghiNhanhDuoc`, tính từ chính PA: PA chưa tới hạn không có dòng việc mang cờ) — hoặc PA Tutor ghi ở lưới. */
-  const ghiLuoi = (x: Em) => { const pa = paCua.get(x.paId!); return !!pa && (laTutor(x) || ghiNhanhDuoc({ kind: pa.kind, soBuoi: pa.soBuoi ?? null, lanCuoi: cuoiCua(x) })); };
+  /* Ghi nhanh = PA không đếm buổi, không kết quả cuối, không Mini Test (`ghiNhanhDuoc`, tính từ chính PA: PA chưa tới hạn không có dòng việc mang cờ) — hoặc PA Tutor ghi ở lưới
+     khi nháp gọn (rà #1872 T1: nháp nhiều dòng Tutor / 3 nút / đánh giá → "Mở đầy đủ", lưới không ghi đè). */
+  const ghiLuoi = (x: Em) => { const pa = paCua.get(x.paId!); return !!pa && (laTutor(x) ? nhapGonLuoi(nhapCua(x.paId!)?.buoi) : ghiNhanhDuoc({ kind: pa.kind, soBuoi: pa.soBuoi ?? null, lanCuoi: pa.lanCuoi })); };
   const phuc = (x: Em) => !ghiLuoi(x);
   const trangThai = (x: Em): Tt => {
     const id = x.paId!;
@@ -160,7 +164,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
       try {
         const tu = laTutor(emCua.get(id)!);
         await api.post(`/interventions/${id}/result`, {
-          decision: 'keep', outcome: v.outcome, note: tu && Number(v.a) === 0 ? '' : v.note.trim(), observedOn: homNay || undefined, ky: pa.cycleNo, nhapCoSo: nhapCua(id)?.luc ?? null,
+          decision: 'keep', outcome: v.outcome, note: tu && Number(v.a) === 0 ? '' : v.note.trim(), observedOn: homNay || undefined, ky: pa.cycleNo, nhapCoSo: nhapCua(id)?.luc ?? null, tuLuoi: true,
           ...(tu ? thanTutorChot(v) : thanKetQuaTuan({ kind: pa.kind, soBuoi: null }, '1', nguoiCuaPa(pa))),
         });
         delete loiMoi[id];
@@ -185,7 +189,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
       setDang(new Set([id]));
       try {
         const tu = laTutor(emCua.get(id)!);
-        const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${id}/nhap`, { outcome: v.outcome, note: tu ? '' : v.note, ...(tu ? thanTutorNhap(v) : {}), ky: pa.cycleNo, coSo: nhapCua(id)?.luc ?? null });
+        const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${id}/nhap`, { outcome: v.outcome, note: tu ? '' : v.note, ...(tu ? thanTutorNhap(v) : {}), ky: pa.cycleNo, coSo: nhapCua(id)?.luc ?? null, tuLuoi: true });
         setNhapMoi((m) => ({ ...m, [id]: r.nhap }));
         baoNhapPa(id, r.nhap);   // TU2-4: khối "PA đang chạy" đổi nhãn nháp tại chỗ
         delete loiMoi[id];
@@ -199,7 +203,10 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   };
   const thuLai = (id: number) => (loi[id]?.kieu === 'nhap' ? luuNhap([id]) : luu([id]));
   /* Xung đột nháp: bản mới thành bản gốc (lần gửi sau so với nó) — chữ của mình vẫn trong ô. "Dùng bản mới" bỏ chữ của mình, lấy bản mới. */
-  function nhanBanMoi(id: number, e: unknown) { const xd = xungDotCua(e); if (xd) setNhapMoi((m) => ({ ...m, [id]: xd.moi })); }
+  function nhanBanMoi(id: number, e: any) {
+    const moi = xungDotCua(e)?.moi ?? (e?.status === 409 && e.details?.moDay ? e.details.nhap ?? null : undefined);
+    if (moi !== undefined) setNhapMoi((m) => ({ ...m, [id]: moi }));
+  }
   const dungBanMoi = (id: number) => { boSua([id]); setLoi((l) => { const n = { ...l }; delete n[id]; return n; }); };
 
   /* Về từ panel đầy đủ: đọc lại lưới (một câu); dòng có kỳ đổi / PA khép = đã ghi ở panel. */
@@ -327,7 +334,7 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, tutor, coCotTutor, thieu, k
 }) {
   const kn = pa?.topic ? dich(caseTopicLabel(pa.topic)) : null;
   const tenPa = pa ? (dichDu(pa.description) || dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind)) : null;
-  const cuoi = /^Kết quả cuối/.test(em.tieuDe);
+  const cuoi = !!pa?.lanCuoi;
   const mt = pa?.mt ? <>MT{pa.mt.attemptNo} {pa.topic ? skillShort(pa.topic) : ''} <span className="tabular-nums">{fmtBand(pa.mt.band)}</span>{pa.mt.expectation != null && <> · {t('kỳ vọng')} <span className="tabular-nums">{fmtBand(pa.mt.expectation)}</span></>}</> : cuoi ? t('Kỳ cuối') : null;
   const n = v.note.trim().length;
   const dang = tt === 'dang';
@@ -398,7 +405,8 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, tutor, coCotTutor, thieu, k
           <span>{!pa ? t('Mở đầy đủ để ghi kết quả PA này') : cuoi && pa.kind === 'bo_tro_mien_phi'
             ? <><b className="font-semibold text-[color:var(--text)]">{t('Kết quả cuối')}</b> · {t('cần Mini Test (%) và ngày làm')}</>
             : cuoi ? <><b className="font-semibold text-[color:var(--text)]">{t('Kết quả cuối')}</b> · {t('cần kết luận PA')}</>
-            : <><b className="font-semibold text-[color:var(--text)]">{t('Học theo buổi')}</b> · {t('cần số buổi kỳ này và nhận xét từng buổi')}</>}</span>
+            : pa.kind === 'tutor' ? <><b className="font-semibold text-[color:var(--text)]">{t('Nháp đầy đủ')}</b> · {t('nhiều dòng Tutor hoặc có đánh giá — ghi tiếp ở Mở đầy đủ')}</>
+            : <><b className="font-semibold text-[color:var(--text)]">{t('Học theo buổi')}</b> · {t('cần số buổi kỳ này')}</>}</span>
         </div>
       ) : (
         <div className="grid min-w-0 gap-1.5">
