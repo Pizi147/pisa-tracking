@@ -565,11 +565,12 @@ const nheMyWork = ({ items: _items, groups: _groups, cuaGv: _cuaGv, ...con }: an
 /**
  * LG-8: "Test sắp tới" từng lớp (khối "Lớp của tôi" trang đầu) — CHỈ vai GV / Head tutor, vai khác JSON và số câu không đổi.
  * LG-13 (H7): `sapToi` 7 ngày (số PA tới kỳ + đợt Báo cáo PH mở) — cùng vai; không có gì thì không có khoá.
+ * TU2-2: `paDangChay` (PA chưa tới hạn người xem giữ — `PaDangChay`) cùng câu với `sapToi`; không có PA thì không có khoá.
  */
 const kemTestSapToi = (p: Principal, kq: any) => {
   if (!p.roleKeys.some((k) => k === 'teacher' || k === 'head_tutor')) return kq;
-  const sapToi = tongQuanSvc.sapToiCuaGv(p);
-  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}) };
+  const { sapToi, paDangChay } = tongQuanSvc.sapToiCuaGv(p);
+  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}), ...(paDangChay.length ? { paDangChay } : {}) };
 };
 /**
  * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·

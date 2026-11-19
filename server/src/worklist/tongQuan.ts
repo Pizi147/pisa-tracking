@@ -3,7 +3,7 @@ import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import {
   ASSESSED_SKILLS, ATTEMPT_KIND_SHORT, chuViecChotLoTrinh, daiDienNhomBoTro, CAN_XU_LY, CHAM_CHEO, CHUA_CO_HAN, baiId, MOC_KE_TIEP_SQL, PERMISSIONS, type AttemptKind, tenMon, tenMonNgan, chonDiemDangChuY, sapCanXuLy,
   duongHoSoHocVien, nguoiGiuViecChu, NHOM_CASE_CHUA_CHOT_LABEL, soSanhLop, tuanCuaHanGhiKetQua, tuanLich,
-  type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type UngVienChuY,
+  type ChuongTrinh, type DiemChuY, type DongCanXuLyGoc, type MaCanXuLy, type PaDangChay, type UngVienChuY,
 } from '../../../shared/domain/index.ts';
 import { lopChoChotLoTrinh } from '../classes/lenhChuyen.ts';
 import { demoToday, getConfig } from '../demoConfig.ts';
@@ -22,8 +22,9 @@ import { tapThiThangNayLop } from '../phanTich/baoCao.ts';
 import { phamViXemViec } from './xemViec.ts';
 import { viecBuocTiep } from '../loTrinh/buocTiep.ts';
 import { nho } from '../platform/nguCanhRequest.ts';
-import { cauPaGhiKetQua, hanGhiKetQuaToi } from './mywork.ts';
+import { cauPaGhiKetQua, hanGhiKetQuaToi, tenPaCua } from './mywork.ts';
 import { NGUOI_DAY_NHOM, nguoiGiuKetQua } from '../cases/giuKetQua.ts';
+import { docNhapKetQua } from '../cases/cases.ts';
 import { dotBcSapMoGv, type DotBcSapMo } from '../classes/xuatBaoCaoPh.ts';
 import { KHOA_MOC_BC_PH_VIEC_GV } from '../migrate/prBcPhViecGv.ts';
 
@@ -367,6 +368,7 @@ export function testSapToiCuaGv(p: Principal) {
  * LG-13 (H7, overhaul V6 đợt 4): "Sắp tới" 7 ngày của GV — việc CHƯA sinh: số PA tới kỳ ghi kết quả (việc "Ghi kết quả PA" của chính GV hiện từ hạn − 2, nên PA
  * có hạn trong (hạn tới hôm nay, hạn tới hôm nay + 7] — cùng câu `cauPaGhiKetQua`, cùng người giữ `nguoiGiuKetQua`, cùng đại diện nhóm bổ trợ) · đợt Báo cáo PH mở
  * trong 7 ngày (`dotBcSapMoGv`). Không có gì → null (web không hiện dòng). Không vào số việc / badge.
+ * TU2-2 (TU8, TU9): cùng câu trả `paDangChay` — MỌI PA chưa tới hạn người xem giữ (cụm 7 ngày lọc lại từ đó).
  * Turso: 1 câu PA (đi từ em lớp GV / Case GV chủ / nhóm GV là Người dạy — `PA_CUA_GV_SQL`; người dạy nhóm là câu con) + Mini Test chờ khi có PA Bổ trợ — phân công đã nạp ở
  * Công việc. Báo cáo PH: 0 câu (cùng tập lớp với việc Báo cáo PH), + 1 câu em chỉ khi có đợt sắp mở.
  * ponytail: người giữ tính theo phân công HÔM NAY — đổi phân công trong tuần thì số đổi theo; PA mới tạo trong tuần chưa tính.
@@ -381,23 +383,34 @@ const PA_CUA_GV_SQL = `
           UNION SELECT iv2.id FROM sos_cases sc2 JOIN case_interventions iv2 ON iv2.case_id = sc2.id WHERE sc2.owner_user_id = ? AND sc2.status != 'done'
           UNION SELECT iv2.id FROM case_interventions iv2 WHERE iv2.nhom_bo_tro IN (SELECT nhom_bo_tro FROM case_interventions WHERE performer_user_id = ?
             AND kind = 'bo_tro_mien_phi' AND status IN ('planned', 'started'))`;
-export function sapToiCuaGv(p: Principal): { paToiKy: { so: number; han: string } | null; baoCaoPh: DotBcSapMo[] } | null {
-  const today = demoToday(), den = addDays(today, 7);
+export function sapToiCuaGv(p: Principal): { sapToi: { paToiKy: { so: number; han: string } | null; baoCaoPh: DotBcSapMo[] } | null; paDangChay: PaDangChay[] } {
+  const today = demoToday(), den = hanGhiKetQuaToi(addDays(today, 7));
   const lop = [...new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId))];
-  /* Người dạy nhóm `mt:` đọc trong cùng câu (khỏi `nguoiDayNhom`). */
+  /* Người dạy nhóm `mt:` đọc trong cùng câu (khỏi `nguoiDayNhom`). TU2-2: bỏ cận trên 7 ngày — mọi PA chưa tới hạn (khối "PA đang chạy"); cùng câu, + 0 câu. */
   const rows = db().prepare(`SELECT x.*, ${NGUOI_DAY_NHOM('x.nhom_bo_tro')} AS nguoi_day
     FROM (${cauPaGhiKetQua(`
           AND iv.action_due > ?
-          AND iv.id IN (${PA_CUA_GV_SQL})`)}) x`)
-    .all(hanGhiKetQuaToi(den), hanGhiKetQuaToi(today), JSON.stringify(lop), p.userId, p.userId) as any[];
+          AND iv.id IN (${PA_CUA_GV_SQL})`, ' iv.nhap_ket_qua,')}) x`)
+    .all('9999-12-31', hanGhiKetQuaToi(today), JSON.stringify(lop), p.userId, p.userId) as any[];
   rows.sort((a, b) => a.id - b.id);   // chỉ mục hạn không giữ thứ tự id — khoá như Công việc
   const giu = rows.length ? nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null,
     ownerUserId: r.owner_user_id ?? null, nguoiDay: r.nhom_bo_tro?.startsWith('mt:') ? r.nguoi_day ?? null : null })), today) : new Map();
   /* ponytail: nhóm Bổ trợ có Mini Test chờ ở lần ghi cuối vẫn đếm (tuần đó việc là "Ghi Mini Test", vẫn là việc của GV) — khỏi câu `mini_test` quét chỉ mục chờ. */
   const cua = daiDienNhomBoTro(rows.filter((r) => giu.get(r.id) === p.userId));
+  const paDangChay: PaDangChay[] = cua.map((r) => {
+    const n = docNhapKetQua(r.nhap_ket_qua);   // cột thô, tách ở JS — đo bản chép: 3 `json_extract` mỗi dòng tốn bước máy ảo hơn
+    return {
+      paId: r.id, caseId: r.case_id, studentId: r.eff_student_id, studentName: r.full_name ?? 'Học viên', classId: r.eff_class_id ?? null, classCode: r.class_code ?? null,
+      topic: r.topic ?? null, kind: r.kind, tenPa: tenPaCua(r), han: r.action_due,
+      nhap: n ? { soBuoi: n.soBuoi ?? null, buoiDuKien: n.buoiDuKien ?? null, luc: n.luc } : null,
+    };
+  }).sort((a, b) => a.han.localeCompare(b.han) || a.paId - b.paId);
+  /* LG-13 cụm "Kết quả PA" (cửa sổ 7 ngày) giữ cho web hiện tại tới khi TU2-4 thay bằng khối "PA đang chạy" — cùng hàng đã đọc, 0 câu. */
+  const toiKy = cua.filter((r) => r.action_due <= den);
   const baoCaoPh = dotBcSapMoGv({ userId: p.userId, assignments: p.assignments }, today, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today);
-  if (!cua.length && !baoCaoPh.length) return null;
-  return { paToiKy: cua.length ? { so: cua.length, han: cua.map((r) => r.action_due as string).sort()[0] } : null, baoCaoPh };
+  const sapToi = toiKy.length || baoCaoPh.length
+    ? { paToiKy: toiKy.length ? { so: toiKy.length, han: toiKy.map((r) => r.action_due as string).sort()[0] } : null, baoCaoPh } : null;
+  return { sapToi, paDangChay };
 }
 
 export function lopToiDay(p: Principal, f: { ct: 'ft' | 'thuong' }, chiKhiChuNhiem = false) {

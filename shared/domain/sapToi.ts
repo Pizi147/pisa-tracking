@@ -18,3 +18,13 @@ export function chuSapToi(o: {
   if (o.khung !== 'ft') return null;
   return o.lichThi ? nhanLichThi(o.lichThi, o.homNay) : null;
 }
+
+/**
+ * TU2-2 (TU8, TU9): `/my-work` vai GV, khoá `paDangChay` — PA người xem giữ việc Kết quả PA, đang chạy, CHƯA tới hạn (`action_due` > hôm nay + 2).
+ * Không phải việc: không vào số việc / badge / chuông. `nhap`: nháp kỳ này (a / b chỉ PA Tutor có). Không có PA → máy chủ không trả khoá.
+ */
+export type PaDangChay = {
+  paId: number; caseId: number; studentId: number; studentName: string; classId: number | null; classCode: string | null;
+  topic: string | null; kind: string; tenPa: string; han: string;
+  nhap: { soBuoi: number | null; buoiDuKien: number | null; luc: string } | null;
+};
