@@ -123,15 +123,16 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
     chuanBi: t('Chuẩn bị · Không'), taiLieu: t('Tài liệu · Không'), feedbackGv: t('Feedback GV · Không'), sao: t('Đánh giá ≤ 2'),
   };
   const cot: CotBang[] = [
-    { key: 'ngay', nhan: t('Ngày ghi'), kieu: 'chu', rong: 80 },
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 168 },
+    /* PTA Tutor 20/11: bảng ĐỌC — ba cột tiêu chí đủ "✗ Không" nguyên chữ; bớt Ngày / Buổi / Đánh giá; Nội dung co và xuống dòng. */
+    { key: 'ngay', nhan: t('Ngày ghi'), kieu: 'chu', rong: 72 },
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 160 },
     { key: 'kn', nhan: 'KN', kieu: 'chu', rong: 48 },
-    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 60 },
-    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'chu', rong: c.k === 'feedbackGv' ? 104 : c.k === 'chuanBi' ? 84 : 76 })),
-    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 76 },
+    { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 50 },
+    ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'chu', rong: c.k === 'feedbackGv' ? 112 : 92 })),
+    { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 80 },   // tiêu đề "Đánh giá" cần 56 px chữ — 76 làm tiêu đề tràn lệch tâm 3 px (do-bang g1)
     { key: 'nd', nhan: t('Nội dung'), kieu: 'chu', linhHoat: true },
   ];
-  /* P2-9: dòng phụ qua `phuCua` của `Bang` (lớp · người ghi; về tutor) — `Bang` biết hàng có dòng phụ nên cao đều 64. */
+  /* Dòng phụ qua `phuCua` của `Bang` (lớp · người ghi; về tutor) — đủ chữ, xuống dòng (`.bang-doc`, index.css). */
   const phuKq = (b: BuoiDay, c: CotBang): ReactNode => (c.key === 'hv' ? [b.lop, b.nguoiGhi ? t('ghi: {ten}', { ten: b.nguoiGhi }) : null].filter(Boolean).join(' · ')
     : c.key === 'nd' && b.nhanXetTutor ? `${t('Về tutor')}: ${b.nhanXetTutor}` : null);
   const oKq = (b: BuoiDay, c: CotBang): ReactNode => {
@@ -141,8 +142,7 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
       case 'kn': return b.kn || '—';
       case 'buoi': return <span className="tabular-nums">{b.soBuoi}</span>;
       case 'sao': return sao(b.danhGia);
-      /* P2-9: một dòng chính (đủ chữ ở title) + "Về tutor" là dòng phụ của `Bang` → mọi hàng cao 64 như chuẩn bảng. */
-      case 'nd': return <span className="block truncate text-[13px] text-slate-300 max-sm:whitespace-normal" title={b.nhanXet}>{b.nhanXet}</span>;
+      case 'nd': return <span className="text-[13px] text-slate-300">{b.nhanXet}</span>;
       default: return dau(b[c.key as TieuChi]);
     }
   };
@@ -243,8 +243,9 @@ export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhD
                 <button type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => { setCy(false); setLoc('tat-ca'); }}>{t('Về {khoang}', { khoang: khoangChu })}</button>
               </div>
             )}
-            <Bang<BuoiDay> ten={t('Kết quả đã ghi')} khung={false} cot={cot} hang={kq} khoa={(b) => b.id} oCua={oKq} phuCua={phuKq}
-              rong={{ tieuDe: tatCa.length ? t('Không có lần ghi khớp bộ lọc.') : t('Chưa có kết quả nào trong khoảng này.') }} />
+            {/* PTA Tutor 20/11: bảng Head tutor ĐỌC để đánh giá — không theo chuẩn hàng 44 / 64: đủ chữ ngay, hàng cao theo nội dung (`.bang-doc`). */}
+            <div className="bang-doc"><Bang<BuoiDay> ten={t('Kết quả đã ghi')} khung={false} cot={cot} hang={kq} khoa={(b) => b.id} oCua={oKq} phuCua={phuKq}
+              rong={{ tieuDe: tatCa.length ? t('Không có lần ghi khớp bộ lọc.') : t('Chưa có kết quả nào trong khoảng này.') }} /></div>
           </div>
         )}
       <ConfirmDialog open={!!xoa} onClose={() => setXoa(null)} onConfirm={() => xoa && xoaNx(xoa)} busy={gui} danger z="z-[60]"
