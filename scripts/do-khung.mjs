@@ -70,6 +70,12 @@ const doBangO = (w, sang) => (w === 375 ? sang : !sang && (w === 1440 || w === 1
 const RONG_MAY = [1440, 375, 1366, 1280];   // kịch bản có bảng dính đầu (bang-dinh): đo thêm ở 1366 và 1280, nơi bảng có thể rộng hơn khung
 const RONG_THEM = (process.env.KHUNG_RONG ?? '').split(',').filter(Boolean).map(Number);
 const nut = (ten) => async (p) => { await p.getByRole('button', { name: ten }).first().click(); await p.waitForTimeout(500); };
+/** "+ Task" (đầu hồ sơ; 375: nút nổi hiện sau khi cuộn) → chọn mục. Thay nút "+ Case" / "Ghi vi phạm" cũ (GD-6). */
+const moTask = (muc) => async (p) => {
+  if (p.viewportSize().width < 640) { await p.mouse.move(200, 400); await p.mouse.wheel(0, 700); await p.waitForTimeout(500); }
+  await p.getByRole('button', { name: /^Task: / }).first().click(); await p.waitForTimeout(300);
+  await p.getByRole('menuitem', { name: muc }).first().click({ timeout: 4000 }); await p.waitForTimeout(600);
+};
 const KICH_BAN = [
   // [tên, vai, đường, thao tác thêm]
   ['hvl', 2, '/hoc-vien'], ['hvl-gvcn', 7, '/hoc-vien'],
@@ -84,7 +90,7 @@ const KICH_BAN = [
   ['cv-bao-cao', 2, '/cong-viec/bao-cao'], ['cv-gv', 7, '/cong-viec'],
   // DUYET-QL: panel duyệt Công việc QL — chân dính + Lịch sử mở (thẻ demo 6: Không cần theo dõi · W, SOS 2).
   /* RA-GD-0711c: thẻ id 6 không còn trong Chờ duyệt của QL sau seed mới — mở dòng đầu (CV-TAB: tab Chờ bạn duyệt là tab đầu của QL). */
-  ['cv-duyet-panel', 2, '/cong-viec', async (p) => { await p.locator('[data-hd=cd-dong] button').first().click(); await p.waitForTimeout(800); await p.getByRole('button', { name: /^(Lịch sử|History) ·/ }).first().click(); await p.waitForTimeout(800); }],
+  ['cv-duyet-panel', 2, '/cong-viec?nhom=duyet', async (p) => { await p.locator('[data-hd=cd-dong] button').first().click(); await p.waitForTimeout(800); await p.locator('summary', { hasText: /^(Lịch sử|History) ·/ }).first().click(); await p.waitForTimeout(800); }],
   /* UI-CV-TVV: Công việc của TVV (23) — danh sách + panel Báo PH, panel Sau thi. */
   ['cv-tvv', 23, '/cong-viec'], ['cv-tvv-bao-ph', 23, '/cong-viec?viec=bao-ph%3A10'], ['cv-tvv-sau-thi', 23, '/cong-viec?viec=buoc_tiep%3A23'],
   ['lop-ft', 7, '/hoc-vien/lop/3?tab=hoc-vien'], ['lop-ft-phan-tich', 7, '/hoc-vien/lop/3?tab=phan-tich'],
@@ -92,7 +98,7 @@ const KICH_BAN = [
   ['lop-thuong-phan-tich', 2, '/hoc-vien/lop/6?tab=phan-tich'],
   /* P9b: trang Cuối khoá lớp thường — QL (chọn nhóm + thanh Áp), GVCN (Nhận xét). */
   ['cuoi-khoa', 2, '/hoc-vien/lop/6?xem=cuoi-khoa', null, [1440, 1280, 375]],
-  ['cuoi-khoa-ap', 2, '/hoc-vien/lop/6?xem=cuoi-khoa', async (p) => { await p.getByRole('button', { name: /^Chọn tất cả/ }).click(); await p.waitForTimeout(300); }, [1440, 1280, 375]],
+  ['cuoi-khoa-ap', 2, '/hoc-vien/lop/6?xem=cuoi-khoa', async (p) => { await p.getByRole('checkbox', { name: /^Chọn tất cả/ }).first().click(); await p.waitForTimeout(300); }, [1440, 1280, 375]],
   ['cuoi-khoa-gvcn', 7, '/hoc-vien/lop/6?xem=cuoi-khoa', null, [1440, 1280, 375]],
   ['hv-hoc-thuat', 7, '/hoc-vien/3'], ['hv-y-thuc', 7, '/hoc-vien/3?tab=y-thuc'], ['hv-hanh-trinh', 7, '/hoc-vien/3?tab=hanh-trinh'],
   ['hv-thuong', 2, '/hoc-vien/8'], ['hv-thuong-hanh-trinh', 2, '/hoc-vien/8?tab=hanh-trinh'], ['luu-tru', 2, '/hoc-vien/luu-tru'],
@@ -107,17 +113,17 @@ const KICH_BAN = [
   ['gv-yeu-cau', 7, '/cong-viec/yeu-cau'],
   /* KHUNG-LOI: tab Điểm theo lớp đã bỏ (OV-15b) — hộp nhập điểm MT mở từ lưới lớp FT trên Lịch Test. */
   ['gv-hop-diem', 7, '/test/lich', async (p) => {
-    const mo = p.getByRole('button', { name: /^(Mở lớp|Open class) MB FT 101$/ });
+    const mo = p.getByRole('button', { name: /^(Mở lớp|Open class) MB FT 101$/ }).first();
     if (await mo.count()) { await mo.click(); await p.waitForTimeout(600); }
     /* 375: lưới một môn (L) đã đủ điểm — mở ô đã có điểm (cùng hộp). */
     await p.locator('#noi-dung button[aria-label$=": Nhập"], #noi-dung button[aria-label$=": Enter"], #noi-dung button[aria-label*=" câu, band "]').first().click(); await p.waitForTimeout(500);
   }],
   /* RA-GD-0711c: CV-TAB — việc Ghi kết quả PA nằm ở tab "Case học thuật", nút "Ghi kết quả PA". */
-  ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('tab', { name: /^(Case học thuật|Academic case)/ }).first().click(); await p.waitForTimeout(600); await p.getByRole('button', { name: /^(Ghi kết quả PA|Record PA result)/ }).first().click(); await p.waitForTimeout(800); }],
+  ['gv-ket-qua-pa', 7, '/cong-viec', async (p) => { await p.getByRole('tab', { name: /^(Case học thuật|Academic case)/ }).first().click(); await p.waitForTimeout(600); await p.getByRole('button', { name: /^(Ghi kết quả PA|Record PA result)/ }).or(p.getByRole('button', { name: /· (PA học thuật|Academic PA) ·/ })).first().click(); await p.waitForTimeout(800); }],
   ['gv-ho-so', 7, '/giao-vien/7'],
   // UI-HO-SO-GV: QL xem GV nhiều lớp + GVCN; Quản trị xem GV có thi thật trong kỳ (bảng Theo kỹ năng, cột Thi thật).
   ['gv-ho-so-ql', 2, '/giao-vien/8'], ['gv-ho-so-thi', 1, '/giao-vien/16?tu=2026-08-10'],
-  ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.locator('#noi-dung button[aria-haspopup]').first().click(); await p.waitForTimeout(400); }],
+  ['hv-menu', 7, '/hoc-vien/3', async (p) => { await p.getByRole('button', { name: /^(Thao tác khác|More actions)$/ }).first().click(); await p.waitForTimeout(400); }],
   // EN-e: Đang SOS bốn vai + panel một em (bấm Mở dòng đầu).
   ['sos-ql', 2, '/hoc-vien?view=sos'], ['sos-gv', 7, '/hoc-vien?view=sos'], ['sos-tvv', 23, '/hoc-vien?view=sos'], ['sos-cx', 24, '/hoc-vien?view=sos'],
   ['panel-mot-em-ql', 2, '/hoc-vien?view=sos', nut(/^(Mở|Open) /)], ['panel-mot-em-gv', 7, '/hoc-vien?view=sos', nut(/^(Mở|Open) /)],
@@ -134,8 +140,8 @@ const KICH_BAN = [
     await goc.getByRole('button', { name: /^(Mở PA|Open plan)/ }).first().click(); await p.waitForTimeout(500);
     await goc.getByRole('button', { name: /^(Cập nhật trước hạn|Ghi kết quả|Update early|Log result)/ }).first().click({ timeout: 1500 }).catch(() => {}); await p.waitForTimeout(300);
     await p.getByRole('button', { name: /Tiến bộ một phần|Some progress/ }).first().click({ timeout: 1500 }).catch(() => {}); }],
-  ['panel-tao-case', 7, '/hoc-vien/3', nut(/^\+ Case$/)],
-  ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await nut(/Ghi vi phạm|Log incident/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
+  ['panel-tao-case', 7, '/hoc-vien/3', moTask(/^Case/)],
+  ['panel-vi-pham', 7, '/hoc-vien/3?tab=y-thuc', async (p) => { await moTask(/^(Vi phạm|Violation|Incident)/)(p); await p.evaluate(() => { const t = document.querySelector('[role=dialog] .overflow-y-auto'); if (t) t.scrollTop = 120; }); await p.waitForTimeout(200); }],
   /* "Sửa thông tin" nay trong ⋯ đầu hồ sơ lớp. */
   ['panel-sua-tt', 2, '/hoc-vien/lop/3?tab=hoc-vien', async (p) => {
     await nut(/^Thao tác khác$/)(p);
@@ -555,16 +561,13 @@ if (!CHI_BANG && (!LOC || 'hd-chi'.includes(LOC))) {
     for (const [phan, ds] of [['viec', hd.viec], ['luat', hd.luat]]) for (const m of ds) if (m.chi) {
       await thu(`${w}/v${vai} ${m.id}`, () => p.goto(`${BASE}/huong-dan?phan=${phan}`, { waitUntil: 'networkidle' }), '#noi-dung', m.id, m.chi.hd);
     }
-    /* Theo màn bấm TỪ trang Hướng dẫn (rà #417): "Chỉ cho tôi" phải tự mở trang của màn. */
-    for (const man of hd.man) for (const m of man.muc) if (m.chi) {
-      await thu(`${w}/v${vai} trang-hd ${man.id}›${m.id}`, () => p.goto(`${BASE}/huong-dan?phan=man`, { waitUntil: 'networkidle' }), '#noi-dung', m.id, m.chi.hd);
-    }
+    /* S6: trang Hướng dẫn không còn phần "Theo màn" (nội dung theo màn ở panel) — bỏ vòng `trang-hd`. */
     for (const man of hd.man) for (const m of man.muc) if (m.chi) {
       await thu(`${w}/v${vai} ${man.id}›${m.id}`, async () => {
         await p.goto(BASE + man.duong[0], { waitUntil: 'networkidle' });
-        /* OV-15a: Hướng dẫn của màn nằm trong menu Tài khoản (bỏ nút "?" trên thanh). */
-        await p.locator('[data-hd="tai-khoan"]:visible').first().click();
-        await p.getByRole('button', { name: /^(Hướng dẫn|Guide)$/ }).click();
+        /* S6: nút "Hướng dẫn" nằm trên thanh trên (data-hd=nut-hd); tab "Trang này" gập bớt → bung "+ n việc khác". */
+        await p.locator('[data-hd="nut-hd"]:visible').first().click();
+        for (let i = 0; i < 4; i++) { const them = p.locator('[role=dialog]').getByRole('button', { name: /^[+] [0-9]+ (việc khác|more tasks)/ }).first(); if (!(await them.count())) break; await them.click(); }
       }, '[role=dialog]', m.id, m.chi.hd);
     }
     await ctx.close();
