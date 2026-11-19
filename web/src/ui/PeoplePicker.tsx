@@ -79,7 +79,9 @@ function useTimXa(term: string, tim: TimXa | undefined, active: boolean) {
 }
 
 /** TU-a: một dòng của `GET /tutors/chon` (máy chủ `tutors/chon.ts`). */
-export type TutorChon = { id: number; ten: string; noiDay: string | null; kyNang: string; sdtDuoi: string | null; goiY: boolean; hinhThuc: 'offline' | 'online' | null };
+export type TutorChon = { id: number; ten: string; noiDay: string | null; kyNang: string; sdtDuoi: string | null; goiY: boolean; hinhThuc: 'offline' | 'online' | null;
+  /** TU4 (TU2-1): dòng là GV (`gvId` = tài khoản; `id` âm khi GV chưa có dòng danh bạ) hay tutor danh bạ. */
+  loai?: 'gv' | 'tutor'; gvId?: number };
 export type KetQuaTutorChon = { ds: TutorChon[]; dienSan: { tutorId: number | null; ten: string; hinhThuc: 'offline' | 'online' | null } | null; nhomGoiY: string | null };
 /**
  * Tham số ô chọn tutor: `paId` (buổi của Ghi kết quả PA Tutor), `classId` (ô Người dạy chung của Xác nhận PA cùng lúc — lớp của nhóm, OV-15i2)
@@ -113,8 +115,10 @@ function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: bool
 }
 
 /** Dòng phụ của một tutor: `L · R · Monbay · …908` (3 số cuối SĐT, không đủ số — đặc tả Tutor mục 12.5). */
-export const phuTutor = (x: TutorChon) =>
-  [x.kyNang.split(',').join(' · '), x.noiDay ? dich(x.noiDay) : t('Chưa có nơi dạy'), x.sdtDuoi ? `…${x.sdtDuoi}` : null].filter(Boolean).join(' · ');
+export const phuTutor = (x: TutorChon) => x.loai === 'gv'
+  /* TU4: GV — chi nhánh · kỹ năng hồ sơ (không SĐT). */
+  ? [x.noiDay ? dich(x.noiDay) : null, x.kyNang ? x.kyNang.split(',').join(', ') : null].filter(Boolean).join(' · ')
+  : [x.kyNang.split(',').join(' · '), x.noiDay ? dich(x.noiDay) : t('Chưa có nơi dạy'), x.sdtDuoi ? `…${x.sdtDuoi}` : null].filter(Boolean).join(' · ');
 
 /** `dạy L · R lớp này` · hoặc `vai · chi nhánh` cho một dòng kết quả tìm. */
 function nguoiContextOf(r: NguoiKetQua): string {
@@ -246,10 +250,10 @@ export function ChonNguoi({
   const tx = useTimXa(term, tim, editing && open && !ds);
   const tt = useTutorChon(term, tutor, editing && open && !!tutor);   // chỉ nạp khi danh sách mở
   const rows = useMemo<NguoiTrongDs[]>(() => {
-    /* TU-a: tutor — gợi ý (nơi dạy = chi nhánh lớp + kỹ năng PA) rồi "Khác"; ô Người dạy: nhóm "Tutor" trước người. */
+    /* TU-a → TU4 (mockup Ⓣ1 A3): ô Tutor — "Gợi ý · {chi nhánh · kỹ năng}" → "Giáo viên" → "Tutor" (máy chủ đã xếp liền nhóm); ô Người dạy: nhóm "Tutor" trước người. */
     const dsTutor: NguoiTrongDs[] = (tt.kq?.ds ?? []).map((x) => ({
       id: x.id, ten: x.ten, phu: phuTutor(x), tutor: x,
-      nhom: chiTutor ? (x.goiY ? tt.kq?.nhomGoiY ?? t('Gợi ý') : t('Khác')) : t('Tutor'),
+      nhom: chiTutor ? (x.goiY ? (tt.kq?.nhomGoiY ? t('Gợi ý · {nhom}', { nhom: dich(tt.kq.nhomGoiY) }) : t('Gợi ý')) : x.loai === 'gv' ? t('Giáo viên') : t('Tutor')) : t('Tutor'),
     }));
     if (chiTutor) return dsTutor;
     const nguoi: NguoiTrongDs[] = ds ? locNguoiChon(ds, term) : tim ? tx.rows
@@ -341,7 +345,7 @@ export function ChonNguoi({
     else if (opt.kind === 'toi') onChange({ kieu: 'toi' });
     else if (opt.kind === 'nguoi' && opt.row.tutor && !chiTutor) onChange({ kieu: 'ngoai', ten: opt.row.ten, phu: t('Tutor') }, opt.row.tutor);
     else if (opt.kind === 'nguoi') onChange({ kieu: 'tai_khoan', id: opt.row.id, ten: opt.row.ten, phu: opt.row.phu }, opt.row.tutor);
-    else onChange({ kieu: 'ngoai', ten: opt.text, ...(chiTutor ? { phu: t('Tutor khác') } : {}) });
+    else onChange({ kieu: 'ngoai', ten: opt.text, ...(chiTutor ? { phu: t('tên gõ tay') } : {}) });
     setTerm('');
     setOpen(false);
     /* Bỏ chọn ở ô không có chữ thay thế (phân công GV trống): ở lại ô gõ, không hiện "—" + ✕. */
@@ -511,10 +515,11 @@ export function ChonNguoi({
             >
               {opt.kind === 'trong' && <span className="t">{choTrong}</span>}
               {opt.kind === 'toi' && <><span className="t">{t('Tôi')}</span>{session?.user?.fullName && <span className="p">{session.user.fullName}</span>}</>}
-              {opt.kind === 'nguoi' && <><span className="t ten-hv"><ToKhop chu={opt.row.ten} q={term} /></span>{opt.row.phu && <span className="p">{opt.row.phu}</span>}</>}
+              {opt.kind === 'nguoi' && <><span className="t ten-hv"><ToKhop chu={opt.row.ten} q={term} />{opt.row.tutor?.loai === 'gv' && chiTutor && <span className="nhan-gv">GV</span>}</span>{opt.row.phu && <span className="p">{opt.row.phu}</span>}</>}
               {opt.kind === 'ngoai' && <span className="t">{tat(opt)
-                ? (chiTutor ? t('Tutor khác: gõ tên ở ô trên') : t('Dùng tên ngoài hệ thống: gõ tên ở ô trên'))
-                : (chiTutor ? t('Tutor khác: «{ten}»', { ten: opt.text }) : t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text }))}</span>}
+                ? (chiTutor ? t('Dùng tên: gõ tên ở ô trên') : t('Dùng tên ngoài hệ thống: gõ tên ở ô trên'))
+                : (chiTutor ? t('Dùng tên: «{ten}»', { ten: opt.text }) : t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text }))}</span>}
+              {opt.kind === 'ngoai' && chiTutor && !tat(opt) && <span className="p">{t('tên gõ tay, chưa có trong danh bạ')}</span>}
               {opt.kind === 'dau' && <span className="t">{dau?.nhan}</span>}
               {opt.kind === 'them' && <><span className="t">{them?.nhan}</span>{them?.phu && <span className="p">{them.phu}</span>}</>}
               {ben && <span className="oc-ben">{ben}</span>}

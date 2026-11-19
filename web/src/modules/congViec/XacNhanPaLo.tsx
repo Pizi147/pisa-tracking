@@ -9,7 +9,7 @@ import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import {
-  CHU_TOI_THIEU, GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, kiemSoBuoiPa, quyCheXacNhanPa, soBuoiTu, type LoiTruong, type NguoiChon,
+  CHU_TOI_THIEU, GOI_Y_MO_TA_PA, INTERVENTION_KIND_LABEL, TRAN_CHU, LOAI_HAN_CUA_VIEC, addDaysIso, coNguoiDay, datLaiNguoi, quyCheXacNhanPa, type LoiTruong, type NguoiChon,
 } from '@shared/domain/index.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -39,7 +39,6 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const [moTa, setMoTa] = useState('');
   const [batDau, setBatDau] = useState('');
   const [nguoi, setNguoi] = useState<NguoiChon | null>(null);
-  const [soBuoi, setSoBuoi] = useState('');
   const [rieng, setRieng] = useState<Record<string, Rieng>>({});
   const [xong, setXong] = useState<ReadonlySet<string>>(new Set());
   const [loiMay, setLoiMay] = useState<Record<string, string>>({});
@@ -59,23 +58,18 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
   const ngan = t('Nội dung cần ít nhất {n} ký tự', { n: TOI_THIEU });
   const oRieng = (x: Em) => `noi-dung-${x.paId}`;
   const dai = (s: string) => t('Tối đa {toiDa} ký tự (đang có {n})', { toiDa: TRAN_CHU.noiDungPa, n: s.trim().length });
-  /* OV-13b (mockup §9 "Số buổi *"): PA Tutor quy chế sinh ra chưa có Số buổi — ô chung điền cho em Tutor còn trống (em đã có giữ nguyên). */
-  const thieuSoBuoi = (x: Em) => x.pa?.kind === 'tutor' && x.pa.soBuoi == null;
-  const canSoBuoi = chon.some(thieuSoBuoi);
-  const loiSoBuoi = canSoBuoi ? (soBuoiTu(soBuoi) === null ? t('Nhập số buổi') : kiemSoBuoiPa(soBuoi)) : null;
+  /* TU11 (chủ SP 19/11, mockup Ⓣ1 B2): Xác nhận PA Tutor thôi bắt "Số buổi / 2 tuần" — số buổi ghi "a / b" ở Kết quả. */
   const loi: LoiTruong[] = [
-    ...(loiSoBuoi ? [{ khoa: 'so-buoi', nhan: t('Số buổi / 2 tuần'), lyDo: loiSoBuoi }] : []),
     ...(canChung && moTa.trim().length < TOI_THIEU ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: moTa.trim() ? ngan : t('Ghi nội dung / hướng dẫn') }] : []),
     ...chon.filter((x) => { const m = riengCua(x.key).moTa.trim(); return m && m.length < TOI_THIEU; }).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: ngan })),
     /* N35: nội dung PA ≤ 200 — ô chung và ô riêng từng em; chữ giữ trong ô. */
     ...(moTa.trim().length > TRAN_CHU.noiDungPa ? [{ khoa: 'noi-dung', nhan: t('Nội dung / hướng dẫn'), lyDo: dai(moTa) }] : []),
     ...chon.filter((x) => riengCua(x.key).moTa.trim().length > TRAN_CHU.noiDungPa).map((x) => ({ khoa: oRieng(x), nhan: x.studentName, lyDo: dai(riengCua(x.key).moTa) })),
   ];
-  const daSua = !!moTa.trim() || !!batDau || !!nguoi || !!soBuoi.trim() || Object.values(rieng).some((r) => r.moTa.trim() || r.batDau || r.nguoi);
+  const daSua = !!moTa.trim() || !!batDau || !!nguoi || Object.values(rieng).some((r) => r.moTa.trim() || r.batDau || r.nguoi);
   const loai = [...new Set(ds.map((x) => x.pa?.kind).filter((k): k is string => !!k))];
   const tenLoai = loai.map((k) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k).join(' · ');
   const coNguoi = ds.some((x) => coNguoiDay(x.pa?.kind ?? 'self_study'));
-  const coSoBuoiTrong = ds.some(thieuSoBuoi);
   /* OV-15i2: ô Người dạy chung gợi ý tutor theo chi nhánh LỚP của nhóm (lớp của Case), không theo lớp em đầu đang học; khác lớp → không nhóm Tutor. */
   const lopNhom = ds.length && ds.every((x) => x.classId && x.classId === ds[0].classId) ? ds[0].classId : null;
 
@@ -86,7 +80,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
     const chung = { description: moTa.trim(), batDau: ngay, ...(nguoi ? datLaiNguoi(nguoi) : {}) };
     const hang = chon.map((x) => {
       const r = riengCua(x.key);
-      return { id: x.paId as number, ...(thieuSoBuoi(x) ? { soBuoi: soBuoiTu(soBuoi) } : {}), ...(r.moTa.trim() ? { description: r.moTa.trim() } : {}), ...(r.batDau ? { batDau: r.batDau } : {}), ...(r.nguoi ? datLaiNguoi(r.nguoi) : {}) };
+      return { id: x.paId as number, ...(r.moTa.trim() ? { description: r.moTa.trim() } : {}), ...(r.batDau ? { batDau: r.batDau } : {}), ...(r.nguoi ? datLaiNguoi(r.nguoi) : {}) };
     });
     const m = hang.length;
     const loiMoi: Record<string, string> = {};
@@ -179,12 +173,6 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                     ariaLabel={t('Người dạy')} disabled={busy} id={lf.oId('nguoi')} onBlur={lf.roi('nguoi')} invalid={!!lf.loiCua(loi, 'nguoi')} />
                 </Truong>
               )}
-              {coSoBuoiTrong && (
-                <Truong nhan={t('Số buổi / 2 tuần')} batBuoc={canSoBuoi} loi={lf.loiCua(loi, 'so-buoi')} phu={t('Em đã có số buổi giữ nguyên')}>
-                  <input className="field w-24 tabular-nums" inputMode="numeric" maxLength={2} {...lf.o(loi, 'so-buoi')} value={soBuoi} disabled={busy}
-                    onChange={(e) => setSoBuoi(e.target.value)} placeholder="—" />
-                </Truong>
-              )}
             </div>
             <div>
               <span className="mb-1.5 block text-[13px] font-semibold text-slate-300">{t('Học viên')} · <span className="tabular-nums">{chon.length}/{conLai.length}</span></span>
@@ -200,7 +188,7 @@ export function XacNhanPaLo({ it, onDong, onDaLam, onMo, onTiep }: {
                             onChange={() => setTick((s) => { const n = new Set(s); if (co) n.delete(x.key); else n.add(x.key); return n; })} />
                           <span className="min-w-0">
                             <span className="block font-semibold text-slate-100">{x.studentName}</span>
-                            <small className="block text-[12px] text-slate-500">{[dich(x.conPhu), x.pa?.nguoi].filter(Boolean).join(' · ')}{co ? '' : ` · ${t('bỏ tick')}`}</small>
+                            <small className="block text-[12px] text-slate-500">{[dich(x.conPhu), coNguoiDay(x.pa?.kind ?? 'self_study') ? x.pa?.nguoi : null].filter(Boolean).join(' · ')}{co ? '' : ` · ${t('bỏ tick')}`}</small>
                           </span>
                         </label>
                         <button type="button" className="btn btn-ghost min-h-[44px] font-semibold text-[color:var(--accent)] sm:min-h-[32px]" aria-expanded={r.mo}

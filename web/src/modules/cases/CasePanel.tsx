@@ -19,7 +19,7 @@ import { ChipSos } from '../../ui/ChipSos.tsx';
 import {
   CASE_OUTCOMES, CASE_OUTCOME_LABEL, FOLLOWUP_OUTCOMES, INTERVENTION_KIND_LABEL, KHAC_TOI_THIEU, LY_DO_KET_THUC_PA_TOI_THIEU, CHU_TOI_THIEU_CASE, NEXT_STEP_LABEL, OUTCOME_MARK, OUTCOME_TONE, TRAN_CHU,
   chuAiLamDuoc, chuKhoangPa, coNguoiDay, datLaiNguoi, deadlineView, demBuoi, giaTriCuaPa, issuesForTopic, laKhac, laPaMacDinh, loiFormPa, nhanNguoiDay, nutDongPa, outcomeLabelFor,
-  tenMon, thanSuaPa, toiKyGhi, tuanLich,
+  kyGhiKetQua, tenMon, thanSuaPa, toiKyGhi, tuanLich,
   type GiaTriPa, type TrangThai,
 } from '@shared/domain/index.ts';
 import { DongXinYKien } from './DongXinYKien.tsx';
@@ -202,7 +202,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   /* Đang chạy lên trên, đã khép xuống dưới; mới nhất trước. PA mới của đề xuất đổi PA đang chờ / bị từ chối nằm ở thẻ PA gốc. */
   const dsPa = [...(data.interventions ?? [])].filter((x) => !(x.laPaDoi && (x.approvalState === 'pending' || x.approvalState === 'declined'))).sort((a, b) =>
     Number(daBatDau(b)) - Number(daBatDau(a)) || (b.id as number) - (a.id as number));
-  const lichSu = buildLichSu(data, ngan);
+  const lichSu = buildLichSu(data, ngan, homNay);
   const bc = useApi<{ rows: unknown[] }>(duongBangChungCase(data.id), [data.id]);
   const box = useRef<HTMLDivElement>(null);
 
@@ -751,7 +751,15 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   const toiKy = toiKyGhi(iv.actionDue, homNay);
   const ghiDuoc = nut.ketQua && !iv.awaitingConfirmation && !iv.chuaChay && iv.ghiDuoc !== false;
   const theXoa = iv.theXoa ?? null;
-  const dem = iv.soBuoi != null ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
+  /* TU11: "x / tổng" chỉ PA có Tổng số buổi và không có mốc quy chế SOS (`coTongBuoi` của máy chủ). */
+  const dem = iv.coTongBuoi ? demBuoi(iv.daDay ?? 0, iv.soBuoi) : null;
+  /* TU2-3 (mockup Ⓣ1 C1, R1.15): PA Tutor — dòng tóm tắt kỳ gần nhất "a / b buổi · {tutor}"; có nháp → nhãn "nháp a / b · dd/mm". */
+  const laTutor = iv.kind === 'tutor';
+  const fTutor = laTutor ? ketQua.find((f: any) => f.interventionId === iv.id && f.soBuoi != null) ?? null : null;
+  /* PA có tổng ('x/tổng buổi' đã nói số buổi) → chỉ thêm tên tutor. */
+  const chuTutor = fTutor ? [dem ? null : abBuoi(fTutor.soBuoi, fTutor.buoiDuKien), [...new Set((fTutor.buoi ?? []).map((b: BuoiTutor) => b.tutor))].join(', ') || null].filter(Boolean).join(' · ') : null;
+  const nhapKq = laTutor && dangChay ? iv.nhapKetQua ?? null : null;
+  const chuNhap = nhapKq ? [t('nháp'), nhapKq.soBuoi != null ? `${nhapKq.soBuoi}${nhapKq.buoiDuKien != null ? ` / ${nhapKq.buoiDuKien}` : ''}` : null, ngan(nhapKq.luc)].filter(Boolean).join(' · ').replace(/^(nháp|draft) · /, '$1 ') : null;
   const all: any[] = data.interventions ?? [];
   const thayBang = iv.supersededBy && iv.closedReason ? all.find((x) => x.id === iv.supersededBy) ?? null : null;
   const thayCho = all.find((x) => x.supersededBy === iv.id && x.closedReason) ?? null;
@@ -759,9 +767,11 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   /* Thẻ PA chờ xác nhận mở = form xác nhận (điền sẵn). */
   const formHien: FormThe | null = form ?? (mo && xacNhanDuoc ? 'xac-nhan' : null);
 
+  /* Nhãn nháp bấm được (mở form ghi) khi chưa tới kỳ và người xem ghi được; tới kỳ thì nút "Ghi kết quả" đã mở form — nhãn chỉ là chữ. */
+  const nhapBam = !!chuNhap && ghiDuoc && !toiKy && !mo;
   const phu = [iv.preset ? [t('Theo quy chế'), iv.mocChu ? dich(iv.mocChu) : null].filter(Boolean).join(' · ') : null,
     coNguoiDay(iv.kind) ? (iv.performer ? `${nhanNguoiDay(iv.kind) === 'Người dạy' ? t('người dạy') : t('thực hiện')} ${iv.performer}` : t('chưa chọn người dạy')) : null,
-    dem ? t('{da}/{tong} buổi', { da: dem.da, tong: dem.tong }) : null,
+    dem ? t('{da}/{tong} buổi', { da: dem.da, tong: dem.tong }) : null, chuTutor,
     fGan ? t('KQ {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) }) : null,
     !dangChay && iv.startedDate && iv.completedDate ? chuKhoangPa({ startedOn: iv.startedDate, completedOn: iv.completedDate }, homNay) : null].filter(Boolean).join(' · ');
 
@@ -812,7 +822,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
   const chung = { hocVien: data.student?.name ?? null, lop: null, onClose: () => { setForm(null); if (iv.awaitingConfirmation) setMo(false); } };
   const formThan = !formHien ? null : (
     <KhungTrongThe.Provider value>
-      {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} onGhiKetQua={iv.kind === 'tutor' && iv.soBuoi == null ? undefined : () => setForm('ghi')} />   /* RKC-2b ③: Tutor chưa có Số buổi — xác nhận ở form (máy chủ đòi Số buổi) */
+      {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} onGhiKetQua={() => setForm('ghi')} />   /* TU11: Xác nhận PA Tutor thôi bắt Số buổi — ghi kết quả luôn được (RKC-2b ③) */
         : formHien === 'ghi' ? (
           <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove} ketThucSom={!!vw.coTheKetThucPa}
             hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null}
@@ -823,7 +833,9 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
               actionDue: iv.actionDue ?? null, miniTestHan: iv.miniTestHan ?? null, cycleNo: iv.cycleNo ?? null,
               batBuoc: !!iv.batBuoc, lanCuoi: !!iv.lanCuoi, mocChu: iv.mocChu ?? null, soBuoi: iv.soBuoi ?? null, daDay: iv.daDay ?? 0,
               laMacDinh: laPaMacDinh(iv), doiPaCho: iv.doiPa?.trangThai === 'cho', choXacNhan: !!iv.awaitingConfirmation,
-              nhap: iv.nhapKetQua ?? null,
+              nhap: iv.nhapKetQua ?? null, mocQuyChe: iv.mocQuyChe ?? null,
+              /* TU2: b điền sẵn — b của lần ghi gần nhất; chưa có thì Số buổi cũ của PA quy chế (nhập dưới nhãn "/ 2 tuần"). */
+              buoiKy: laTutor ? ketQua.find((f: any) => f.interventionId === iv.id && f.buoiDuKien != null)?.buoiDuKien ?? (iv.coTongBuoi ? null : iv.soBuoi ?? null) : null,
             }} />
         ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
         : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}
@@ -842,8 +854,8 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         : iv.description
           ? <GiaTriSua kieu="chu" nhan={t('Sửa nội dung PA')} sua={nut.sua} onClick={() => setSua('noiDung')}><ChuDich chu={iv.description} nguon={{ bang: 'case_interventions', id: iv.id, cot: 'description' }} /></GiaTriSua>
           : <GiaTriSua kieu="chu" nhan={t('Sửa nội dung PA')} sua={nut.sua} onClick={() => setSua('noiDung')}><span className="text-faint">{t('Chưa có')}</span></GiaTriSua>}</dd>
-      {iv.soBuoi != null && <>
-        <dt>{t('Số buổi')}</dt>
+      {iv.soBuoi != null && (!laTutor || iv.coTongBuoi) && <>
+        <dt>{laTutor ? t('Tổng số buổi') : t('Số buổi')}</dt>
         <dd>{tt('buoi')
           ? <OGoTuLuu mot dau={String(iv.soBuoi)} toiThieu={1} toiDa={3} nhan={t('Số buổi')} luu={(x) => luuTruong({ soBuoi: x })} onDong={() => setSua(null)} />
           : <GiaTriSua kieu="go" nhan={t('Sửa số buổi')} sua={nut.sua} onClick={() => setSua('buoi')}><span className="tabular-nums">{t('{n} buổi', { n: iv.soBuoi })}</span></GiaTriSua>}
@@ -871,7 +883,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         : tt('batDau')
           ? <ONgay kieu="ngay" value={iv.startedDate ?? ''} ariaLabel={t('Bắt đầu')} onChange={(x) => { if (x && x !== iv.startedDate) void luuNgay(() => luuTruong({}, x)); }} />
           : <GiaTriSua kieu="go" nhan={t('Đổi ngày bắt đầu')} onClick={() => setSua('batDau')}><span className="tabular-nums">{iv.startedDate ? `${tuanLich(iv.startedDate, homNay)} · ${ngan(iv.startedDate)}` : t('Chưa đặt')}</span></GiaTriSua>}</dd>
-      {!iv.awaitingConfirmation && <>
+      {!iv.awaitingConfirmation && !(laTutor && fGan) && <>
         <dt>{t('Kết quả')}</dt>
         <dd>{fGan ? <>
           <GiaTriSua kieu="go" nhan={t('Sửa kết quả {tuan}', { tuan: tuanLich(fGan.observedOn, homNay) })} sua={!!fSua && fSua.id === fGan.id} onClick={() => setForm({ suaKq: fGan.id })}>   {/* RKC-2b: Case xong vẫn sửa (đổi lựa chọn: máy chủ hỏi Mở lại) */}
@@ -909,9 +921,9 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
       <div className="pa-dau">
         <button type="button" className="pa-bam" aria-expanded={mo} onClick={() => { setMo(!mo); if (mo) setForm(null); }}>
           <span className="ten-pa">{tenLoai}</span>
-          {phu && <span className="phu-pa">{phu}</span>}
+          {(phu || chuNhap) && <span className="phu-pa">{phu}{chuNhap && !nhapBam && <>{phu ? ' ' : ''}<span className="nhan-nhap">{chuNhap}</span></>}</span>}
         </button>
-        <span className="pa-tt">{trangThai}</span>
+        <span className="pa-tt">{nhapBam && <button type="button" className="nhan-nhap min-h-[44px] sm:min-h-[22px]" onClick={() => setForm('ghi')}>{chuNhap}</button>}{trangThai}</span>
         <button type="button" className="mui-pa" aria-expanded={mo} aria-label={mo ? t('Gập PA {ten}', { ten: tenLoai }) : t('Mở PA {ten}', { ten: tenLoai })}
           onClick={() => { setMo(!mo); if (mo) setForm(null); }}>{IC_PA}</button>
       </div>
@@ -926,7 +938,8 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
             {theXoa && vw.canApprove && <div className="pt-2.5"><TheYeuCau gon yc={theXoa} onXong={lamMoi} /></div>}
             {vw.canApprove && iv.yeuCau && (iv.yeuCau.loai === 'de_xuat_pa' || iv.yeuCau.loai === 'giu_pa_gv') && <div className="pt-2.5"><TheYeuCau gon yc={iv.yeuCau} onXong={lamMoi} /></div>}
             <div className="pt-1"><DongDoiPa iv={iv} data={data} ngan={ngan} onDoi={lamMoi} /></div>
-            {fld}{nhatKy}
+            {fld}{laTutor && fGan && <KetQuaDaGhi ds={ketQua.filter((f: any) => f.interventionId === iv.id && f.outcome)} fGan={fGan} homNay={homNay} ngan={ngan}
+              onSua={(id) => setForm({ suaKq: id })} lamMoi={lamMoi} />}{nhatKy}
             {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
             {choDuyet && !(vw.canApprove && iv.yeuCau) && (
               <p className="m-0 text-xs text-slate-400">{t('Đang chờ Head trả lời{x} — thời gian chờ tính cho Head.', { x: iv.approvalDue ? t(' · hạn {ngan}', { ngan: ngan(iv.approvalDue) }) : '' })}</p>
@@ -942,6 +955,43 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     </div>
   );
 }
+
+/**
+ * TU2-3 (mockup Ⓣ1 C1, R1.16): "Kết quả đã ghi" trong thẻ PA Tutor — mỗi lần ghi một khối "Kỳ … · a / b buổi" + mức + "ghi dd/mm · người" + Sửa (lần sửa được) →
+ * các dòng Tutor (✓ / ✗ chỉ khi có trả lời) → quyết định. Thay dòng "Kết quả" một lần của thẻ (giữ "Xoá kết quả" ở lần gần nhất). Dữ liệu Case đã nạp, 0 request thêm.
+ */
+function KetQuaDaGhi({ ds, fGan, homNay, ngan, onSua, lamMoi }: { ds: any[]; fGan: any; homNay: string; ngan: (d: string | null | undefined) => string;
+  onSua: (id: number) => void; lamMoi: () => void }) {
+  return (
+    <div className="mt-3 flex flex-col gap-2">
+      <p className="muc-h">{t('Kết quả đã ghi')}<span className="dem">{ds.length}</span></p>
+      <ul className="m-0 list-none rounded-[10px] border p-0" style={{ borderColor: 'var(--line)' }}>
+        {ds.map((f, i) => (
+          <li key={f.id} className={`flex flex-col gap-1.5 px-3.5 pb-3 pt-2.5 text-sm ${i ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+              <b className="font-semibold text-slate-100">{[t('Kỳ {ky}', { ky: f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : tuanLich(f.observedOn, homNay) }), f.soBuoi != null ? abBuoi(f.soBuoi, f.buoiDuKien) : null].filter(Boolean).join(' · ')}</b>
+              <span className={`ket ${LOP_KET[OUTCOME_TONE[f.outcome as keyof typeof OUTCOME_TONE]] ?? 'cd'}`}>{dich(outcomeLabelFor(f.outcome))}</span>
+              <span className="ml-auto flex items-center gap-2.5 text-[13px] text-slate-400">
+                <span>{[t('ghi {ngay}', { ngay: ngan(f.observedOn) }), f.observerName].filter(Boolean).join(' · ')}</span>
+                {f.suaDuoc && f.nextStep && <NutChu onClick={() => onSua(f.id)}>{t('Sửa')}</NutChu>}
+              </span>
+            </div>
+            {f.buoi?.length > 0 ? (
+              <ol className="m-0 list-none space-y-1 border-l p-0 pl-2.5 text-[13px] text-slate-400" style={{ borderColor: 'var(--line)' }} aria-label={t('Các dòng tutor')}>
+                {f.buoi.map((b: BuoiTutor, j: number) => <DongBuoiTutor key={j} b={b} i={j} nhieu={f.buoi.length > 1} cu={f.buoiDuKien == null} />)}
+              </ol>
+            ) : f.note ? <span className="text-[13px] text-slate-300"><ChuDich chu={f.note} nguon={{ bang: 'case_followups', id: f.id, cot: 'note' }} /></span> : null}
+            {f.nextStep && <span className="text-[13px] text-slate-400">{[dich(NEXT_STEP_LABEL[f.nextStep as keyof typeof NEXT_STEP_LABEL] ?? f.nextStep), f.decisionNote].filter(Boolean).join(' · ')}</span>}
+            {f.id === fGan.id && <span><NutXoaKetQua f={f} onXong={lamMoi} /></span>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** TU2: "a / b buổi" (b trống → "a buổi"). */
+const abBuoi = (a: number, b: number | null | undefined) => (b != null ? t('{a} / {b} buổi', { a, b }) : t('{n} buổi', { n: a }));
 
 /** Thẻ gập: đề xuất đổi PA đang chờ vẫn thấy ("Chờ duyệt đổi PA → …") — mở thẻ thấy đủ + Rút. */
 function DongDoiPaGon({ iv, ngan }: { iv: any; data: CaseDetail; ngan: (d: string | null | undefined) => string; onDoi: () => void }) {
@@ -1225,7 +1275,7 @@ function MetricPills({ metrics, ct = null }: {
 }
 
 /** Mốc của Case + mọi lần ghi kết quả, MỚI NHẤT LÊN ĐẦU (mục 4.3). Phương án đã nằm ở khối trên nên không lặp ở đây. */
-function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => string): MucLichSu[] {
+function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => string, homNay: string): MucLichSu[] {
   const out: MucLichSu[] = [];
   for (const m of data.milestones ?? []) {
     if (m.kind === 'opened') continue;   // ngày mở và người tạo đã ở khối Vấn đề
@@ -1274,10 +1324,13 @@ function buildLichSu(data: CaseDetail, ngan: (d: string | null | undefined) => s
           {f.note && <span className="block text-slate-300"><ChuDich chu={f.note} nguon={{ bang: 'case_followups', id: f.id, cot: 'note' }} /></span>}
           {f.nguoiDay && <span className="block text-xs text-slate-400">{t('Người dạy: {nguoiDay}', { nguoiDay: f.nguoiDay })}</span>}
           {/* OV-12h: Kết quả PA Tutor theo buổi. */}
+          {/* TU2-3 (mockup Ⓣ1 C1, R1.16): "Kỳ … · a / b buổi" rồi các dòng Tutor; lần ghi cũ (không có b) giữ "Buổi n · tutor". */}
+          {f.buoi?.length > 0 && f.soBuoi != null && (
+            <span className="block text-xs font-semibold text-slate-300">{[f.cycleDue ? kyGhiKetQua(f.cycleDue, homNay) : null, abBuoi(f.soBuoi, f.buoiDuKien)].filter(Boolean).join(' · ')}</span>
+          )}
           {f.buoi?.length > 0 && (
-            <ol className="m-0 mt-0.5 list-none space-y-1.5 p-0 text-xs text-slate-400" aria-label={t('Các buổi tutor')}>
-              {/* TU-a (mockup tutor-1 §8): hình thức + 3 dấu ✓ / ✗ + sao + nhận xét về tutor. */}
-              {f.buoi.map((b: BuoiTutor, i: number) => <DongBuoiTutor key={i} b={b} i={i} />)}
+            <ol className="m-0 mt-0.5 list-none space-y-1.5 border-l p-0 pl-2.5 text-xs text-slate-400" style={{ borderColor: 'var(--line)' }} aria-label={t('Các dòng tutor')}>
+              {f.buoi.map((b: BuoiTutor, i: number) => <DongBuoiTutor key={i} b={b} i={i} nhieu={f.buoi.length > 1} cu={f.buoiDuKien == null} />)}
             </ol>
           )}
           {f.remainingIssue && <span className="block text-xs text-slate-400">{t('Còn tồn / Ghi chú')}: <ChuDich chu={f.remainingIssue} nguon={{ bang: 'case_followups', id: f.id, cot: 'remaining_issue' }} /></span>}

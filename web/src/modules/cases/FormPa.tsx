@@ -20,7 +20,7 @@ import { dich, t } from '@shared/i18n/index.ts';
 
 const tenLoai = (k: string) => INTERVENTION_KIND_LABEL[k as keyof typeof INTERVENTION_KIND_LABEL] ?? k;
 
-export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_THIEU_CASE, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '', batBuoc = false }: {
+export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_THIEU_CASE, daDay = 0, ngay, luat, cuoi, phang, studentId, tienTo = '', xacNhan = false }: {
   v: GiaTriPa; dat: (p: Partial<GiaTriPa>) => void;
   lf: ReturnType<typeof useLoiForm>; loi: readonly LoiTruong[];
   /** Thêm PA / Thay PA: chọn Loại. Không có = Loại khoá (Sửa PA, Xác nhận PA); `phang` mà không chọn Loại (Điều chỉnh) = không có ô Loại. */
@@ -39,8 +39,8 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_T
   studentId?: number | null;
   /** Khoá ô lỗi riêng (cùng `tienTo` của `loiFormPa`) khi form nằm trong panel khác — Thay PA trong Kết quả: 'moi-'. */
   tienTo?: string;
-  /** OV-13b (Xác nhận PA): Tutor Số buổi * (cùng `loiFormPa({ batBuoc })`). Người dạy luôn tuỳ chọn (chủ SP 19/10). */
-  batBuoc?: boolean;
+  /** Xác nhận PA. TU11 (chủ SP 19/11, mockup Ⓣ1 B1): PA Tutor không còn ô Số buổi khi xác nhận — số buổi ghi "a / b" ở Kết quả. */
+  xacNhan?: boolean;
 }) {
   const k = (x: string) => tienTo + x;
   const kinds = interventionKindsFor();
@@ -76,8 +76,9 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_T
     </Truong>
   );
   /* UI-CONG-VIEC (mockup U01): bỏ câu "Có số buổi thì web đếm…" — không đổi quyết định; giữ câu chặn khi đã dạy. */
-  const soBuoi = coSoBuoi(v.kind) ? (
-    <Truong nhan={t('Số buổi')} tuyChon={!(batBuoc && v.kind === 'tutor')} batBuoc={batBuoc && v.kind === 'tutor'} loi={lf.loiCua(loi, k('so-buoi'))}
+  /* TU11 (mockup Ⓣ1 B3, XM-9): PA Tutor — "Tổng số buổi" tuỳ chọn (đếm "Đã học x / tổng"); PA loại khác giữ "Số buổi". */
+  const soBuoi = coSoBuoi(v.kind) && !(xacNhan && v.kind === 'tutor') ? (
+    <Truong nhan={v.kind === 'tutor' ? t('Tổng số buổi') : t('Số buổi')} tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
       phu={daDay > 0 ? t('Đã dạy {daDay} buổi — không nhỏ hơn {daDay}', { daDay }) : undefined}>
       <input className={`field tabular-nums ${phang ? 'w-full' : 'w-24'}`} inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
         onChange={(e) => dat({ soBuoi: e.target.value })} placeholder="—" />

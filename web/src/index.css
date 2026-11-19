@@ -433,6 +433,11 @@
   .mui-pa svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
   .mui-pa[aria-expanded="true"] svg { transform: rotate(180deg); }
   .pa-tt { justify-self: end; }
+  /* TU2-3 (mockup Ⓣ1 C1, XM-6): nhãn nháp — viền đứt xám, chữ trung tính (không lẫn vàng "gần hạn"). */
+  .nhan-nhap { display: inline-flex; align-items: center; height: 22px; padding: 0 7px; border-radius: 6px; border: 1px dashed var(--line-strong); background: transparent;
+    font-size: 12px; font-weight: 600; color: var(--text-dim); white-space: nowrap; font-variant-numeric: tabular-nums; vertical-align: 1px; }
+  button.nhan-nhap { cursor: pointer; margin-right: 8px; }
+  button.nhan-nhap:hover { background: var(--accent-soft); }
   .pa-than { border-top: 1px solid var(--line); padding: 4px 14px 12px; }
   .pa-chan { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-top: 1px solid var(--line); padding: 10px 14px; }
   .pa-chan .trai { flex: 1; min-width: 0; font-size: 13px; color: var(--text-dim); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
@@ -1757,6 +1762,9 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
   .oc-muc { display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 10px; align-items: center; min-height: 44px; padding: 5px 12px; cursor: pointer; width: 100%;
     appearance: none; border: 0; background: none; color: inherit; text-align: left; font: inherit; }
   .oc-muc .t, .oc-muc .p { grid-column: 1; }
+  /* TU2-3 (mockup Ⓣ1 A3 `.nhan-gv`): nhãn "GV" sau tên ở ô Tutor. */
+  .oc-muc .nhan-gv { display: inline-flex; align-items: center; height: 18px; padding: 0 5px; margin-left: 6px; border-radius: 4px; border: 1px solid var(--line-strong);
+    font-size: 12px; font-weight: 600; line-height: 1; color: var(--text-dim); vertical-align: 1px; }
   .oc-muc .t { font-size: 14px; font-weight: 500; line-height: 1.3; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .oc-muc .p { font-size: 12px; line-height: 1.35; color: var(--text-faint); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .oc-muc .oc-ben { grid-column: 2; grid-row: 1 / span 2; font-size: 12px; font-weight: 600; color: var(--text-faint); white-space: nowrap; }

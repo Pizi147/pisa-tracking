@@ -118,9 +118,9 @@ export type BuoiTutor = {
 export type HinhThuc = 'offline' | 'online';
 /** Ba tiêu chí "Tutor buổi này" (Q3) — thứ tự hiện trên form, lịch sử, trang Tutor. */
 export const TIEU_CHI_TUTOR = [
-  { k: 'chuanBi', nhan: t('Có chuẩn bị bài'), ngan: t('Chuẩn bị') },
-  { k: 'taiLieu', nhan: t('Xin tài liệu đúng hạn'), ngan: t('Tài liệu') },
-  { k: 'feedbackGv', nhan: t('Gửi feedback về HV cho GV'), ngan: t('Feedback GV') },
+  { k: 'chuanBi', nhan: t('Có chuẩn bị bài'), ngan: t('Chuẩn bị bài') },   // TU2-3 (mockup Ⓣ1 C1): chữ ngắn ở lịch sử
+  { k: 'taiLieu', nhan: t('Xin tài liệu đúng hạn'), ngan: t('Tài liệu đúng hạn') },
+  { k: 'feedbackGv', nhan: t('Gửi feedback về HV cho GV'), ngan: t('Feedback cho GV') },
 ] as const;
 /** MỌI PA Tutor → Kết quả có dòng Tutor (a = 0 không dòng). Chỉ sửa lần ghi cũ chưa có số buổi (`cu`) là không hỏi. */
 export const canBuoiTutor = (pa: PaKetQua): boolean => pa.kind === 'tutor' && !pa.cu;
@@ -220,9 +220,7 @@ export function khacNguoi(a: NguoiChon | null, b: NguoiChon | null): boolean {
 }
 
 /** Lỗi của form PA. `tienTo`: khoá ô riêng khi form nằm trong panel khác (Thay PA trong Kết quả: 'moi-'). `goc` (Sửa PA): ô KHÔNG đổi thì không kiểm — PA vượt buổi (Số buổi < đã dạy), mô tả cũ ngắn vẫn sửa được ô khác. */
-export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string;
-  /** OV-13b (Xác nhận PA): Tutor Số buổi / 2 tuần *. Người dạy không bắt buộc (chủ SP 19/10). Cùng luật `xacNhanPaQuyChe`. */
-  batBuoc?: boolean } = {}): LoiTruong[] {
+export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; goc?: GiaTriPa; tienTo?: string } = {}): LoiTruong[] {
   const { goc } = o;
   const tien = o.tienTo ?? '';
   const doi = (k: 'description' | 'soBuoi') => !goc || v[k].trim() !== goc[k].trim();
@@ -230,8 +228,8 @@ export function loiFormPa(v: GiaTriPa, o: { toiThieu?: number; daDay?: number; g
     ...(v.kind === 'other_proposal' && !goc ? [{ khoa: `${tien}ghi-ro`, nhan: t('Tên đề xuất'), toiThieu: KHAC_TOI_THIEU }] : []),
     ...(doi('description') ? [{ khoa: `${tien}noi-dung`, nhan: t('Nội dung'), toiThieu: o.toiThieu ?? CHU_TOI_THIEU_CASE, toiDa: TRAN_CHU.noiDungPa }] : []),   // N35
   ], { [`${tien}ghi-ro`]: v.ghiRo, [`${tien}noi-dung`]: v.description });
-  const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0)
-    ?? (o.batBuoc && v.kind === 'tutor' && !v.soBuoi.trim() ? t('Nhập số buổi') : null) : null;
+  /* TU11: Xác nhận PA Tutor thôi bắt Số buổi — Số buổi (Tổng số buổi) luôn tuỳ chọn. */
+  const sb = coSoBuoi(v.kind) && doi('soBuoi') ? kiemSoBuoiPa(v.soBuoi, o.daDay ?? 0) : null;
   if (sb) loi.push({ khoa: `${tien}so-buoi`, nhan: t('Số buổi'), lyDo: sb });
   const ng = coNguoiDay(v.kind) ? nguoiThieu(v.nguoi, false) : null;
   if (ng) loi.push({ khoa: `${tien}nguoi`, nhan: nhanNguoiDay(v.kind), lyDo: ng });

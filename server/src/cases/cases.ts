@@ -4888,6 +4888,8 @@ export function moSuaKetQua(p: Principal, followupId: number) {
           mtCuoi: iv.moc_quy_che === 'until_exam' ? mtCuoiNho((db().prepare('SELECT cycle_id FROM sos_cases WHERE id = ?').get(iv.case_id) as any)?.cycle_id) : null }, demoToday())
         : null,
       soBuoi: (truoc.soBuoi ?? null) as number | null, daDay,
+      /** TU2-3: web đếm "Đã học x / tổng" theo `coTongBuoi` — PA quy chế SOS không đếm. */
+      mocQuyChe: (iv.moc_quy_che ?? null) as string | null,
     },
     giaTri: {
       outcome: f.outcome as string, note: (f.note ?? '') as string, remainingIssue: (f.remaining_issue ?? '') as string, decision: x.quyetDinh,
