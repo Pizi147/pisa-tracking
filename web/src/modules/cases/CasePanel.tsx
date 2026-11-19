@@ -859,7 +859,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
         <dd>{tt('buoi')
           ? <OGoTuLuu mot dau={String(iv.soBuoi)} toiThieu={1} toiDa={3} nhan={t('Số buổi')} luu={(x) => luuTruong({ soBuoi: x })} onDong={() => setSua(null)} />
           : <GiaTriSua kieu="go" nhan={t('Sửa số buổi')} sua={nut.sua} onClick={() => setSua('buoi')}><span className="tabular-nums">{t('{n} buổi', { n: iv.soBuoi })}</span></GiaTriSua>}
-          {dem && <span className="flex items-center gap-2 text-[13px] text-slate-300"><VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />{t('đã dạy {da}', { da: dem.da })}{dem.tt === 'du' ? ` · ${t('đủ buổi')}` : dem.tt === 'vuot' ? ` · ${t('vượt {x}', { x: dem.da - dem.tong })}` : ` · ${t('còn {n}', { n: dem.con })}`}</span>}</dd>
+          {dem && <span className="flex items-center gap-2 text-[13px] text-slate-300"><VachBuoi da={dem.da} tong={dem.tong} tt={dem.tt} />{t('đã học {da}', { da: dem.da })}{dem.tt === 'du' ? ` · ${t('đủ buổi')}` : dem.tt === 'vuot' ? ` · ${t('vượt {x}', { x: dem.da - dem.tong })}` : ` · ${t('còn {n}', { n: dem.con })}`}</span>}</dd>
       </>}
       {coNguoiDay(iv.kind) && <>
         <dt>{nhanNguoiDay(iv.kind) === 'Người dạy' ? t('Người dạy') : t('Thực hiện')}</dt>

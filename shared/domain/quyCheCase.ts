@@ -37,7 +37,7 @@ export const quyCheThemPa = (deXuat: boolean, han?: string | null): QuyChe => de
  * Q20–Q26 Ghi kết quả PA theo lựa chọn đang chọn (luat/2 C-14 – C-17, C-20). Thứ tự: Mini Test (Q26) · kỳ cuối (Q25) · Xin hỗ trợ QL (Q23) · Kết thúc (Q22)
  * · Điều chỉnh / Thay / Đề xuất PA khác (Q21) · PA quy chế giữ nguyên (Q24, câu Q20 vào ⓘ) · mặc định (Q20).
  */
-export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean; htCase?: boolean; ketThucSom?: boolean }): QuyChe => {
+export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision | ''; deXuat: boolean; lanCuoi: boolean; batBuoc: boolean; miniTest: boolean; htCase?: boolean; ketThucSom?: boolean; sapToi?: boolean }): QuyChe => {
   if (x.miniTest) return { chu: t('Từ 70 %: Case tự hoàn thành · dưới 70 %: Head quyết') };
   if (x.lanCuoi) return { chu: t('Kết quả cuối: lưu xong PA khép') };
   if (x.decision === 'ask_manager') return { chu: t('Xin hỗ trợ Head: PA vẫn chạy · Head nhận thẻ') };
@@ -45,6 +45,8 @@ export const quyCheGhiKetQua = (x: { han: string | null; decision: PlanDecision 
   if (x.decision === 'end' && x.htCase !== undefined) return { chu: x.htCase ? t('Kết thúc PA · Case hoàn thành, mở lại được ở thẻ Case') : t('Kết thúc PA · Case còn mở · không hạn') };
   if (x.decision === 'end') return { chu: t('Chỉ kết thúc khi Tiến bộ rõ hoặc Tiến bộ một phần') };
   if (x.deXuat || x.decision === 'adjust' || x.decision === 'replace') return { chu: t('Điều chỉnh / Thay PA cần lý do') };
+  /* TU2-4 (XM-5): PA chưa tới hạn — Lưu sớm = chốt kỳ (không hộp xác nhận, sửa được); Lưu nháp giữ tới hạn. */
+  if (x.sapToi) return { chu: t('Lưu nháp giữ tới hạn · Lưu là chốt, đổi bằng Sửa') };
   if (x.batBuoc) return { chu: x.ketThucSom ? t('PA quy chế: không thay · kết thúc sớm ở thẻ PA') : t('PA quy chế: không thay, không kết thúc sớm'), chiTiet: quyCheKetQuaPa(x.han).chu };
   return quyCheKetQuaPa(x.han);
 };

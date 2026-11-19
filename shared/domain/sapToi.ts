@@ -26,5 +26,7 @@ export function chuSapToi(o: {
 export type PaDangChay = {
   paId: number; caseId: number; studentId: number; studentName: string; classId: number | null; classCode: string | null;
   topic: string | null; kind: string; tenPa: string; han: string;
+  /** Lượt MT của Case ("MT2"); không có → null. TU2-4: thẻ "kỹ năng · MT" ở khối PA đang chạy — cùng hàng đã đọc, 0 câu. */
+  dot: string | null;
   nhap: { soBuoi: number | null; buoiDuKien: number | null; luc: string } | null;
 };
