@@ -895,7 +895,7 @@ Chỉ chuông trong ứng dụng, không email/Zalo. Chia "Cần làm" (trỏ t�
   **[ĐÃ THAY 21/10 — §21.5 R5 — còn "Đã huỷ · QL từ chối dời" và "Đã huỷ · vắng MT cũ"]** Ngoại lệ duy nhất: huỷ vì **vắng 2 lần** vẫn có trạng thái huỷ; QL "Khôi phục → Chưa xếp" hoặc "Giữ huỷ". Lượt đã huỷ trước đây giữ nguyên làm lịch sử.
   (Mã: OV-15c #464 — **đã merge 19/10**, §21.5 R6.)
 - **Người dạy lúc Xác nhận PA tuỳ chọn (HOTFIX-4 #465, 19/10):** Xác nhận PA (một em hoặc cùng lúc) để trống Người dạy được — chưa biết ai dạy thì ghi sau.
-  Tutor vẫn bắt buộc **Số buổi / 2 tuần**. Ghi kết quả PA Tutor có ≥ 1 buổi: mỗi buổi một dòng, **tên tutor + nhận xét bắt buộc** (như OV-12h). **[ĐÃ THAY 19/11 — N54 (§22 dòng 7)]** Xác nhận PA Tutor thôi bắt "Số buổi / 2 tuần"; ghi kết quả PA Tutor là **một dòng gộp cho cả kỳ**, "Số buổi" ghi "a / b", không còn "mỗi buổi một dòng"; **tên tutor + nhận xét không còn bắt buộc theo dòng**.
+  Tutor vẫn bắt buộc **Số buổi / 2 tuần**. Ghi kết quả PA Tutor có ≥ 1 buổi: mỗi buổi một dòng, **tên tutor + nhận xét bắt buộc** (như OV-12h). **[ĐÃ THAY 19/11 — N54 (§22 dòng 7)]** Xác nhận PA Tutor thôi bắt "Số buổi / 2 tuần"; ghi kết quả PA Tutor là **một dòng gộp cho cả kỳ**, "Số buổi" ghi "a / b", không còn "mỗi buổi một dòng"; số buổi đã học a ≥ 1 vẫn **bắt một tên Tutor + một Nội dung ≥ 8 ký tự cho cả kỳ** (mỗi dòng "+ Tutor khác" cũng có tên + nội dung); a = 0 thì không bắt; chỉ 3 nút Có / Không và đánh giá là tuỳ chọn (TU6).
 - **Ký hiệu điểm (OV-15a):** bằng kỳ vọng = **Đạt** (✓ xanh dương), vượt ✓ xanh lá, dưới ✗ đỏ; không còn chữ "thiếu / vượt". Hạn chỉ ghi ngày (`hạn 18/09`).
 
 ### 20.13 Điểm còn mở — cần chủ sản phẩm chốt
