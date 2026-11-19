@@ -1,28 +1,33 @@
-# 04 — 12 câu hỏi chủ SP (19/11/2026)
+# 04 — Câu hỏi chủ SP (bản 2, 19/11/2026)
 
-Mỗi câu có MỘT khuyến nghị (KN). Trả lời "ok" = theo KN. Chi tiết: `01-de-bai.md` (đầu ra, 3 cách), `02-luat.md` (TU1–TU22), `03-workflow.md`.
+## A. Đã trả lời 19/11 (nguyên văn: `plan.md` mục 4)
+
+| Câu bản 1 | Kết quả |
+|---|---|
+| C1 buổi là bản ghi riêng, người dạy ghi | **Không.** Giữ ghi trong Kết quả PA; gộp một dòng cho cả kỳ, thêm dòng chỉ khi tutor / nội dung khác (ý 4) |
+| C2 ai dạy | GV có trong danh sách chọn tutor (ý 3) |
+| C3 lịch · C4 giao người dạy | **Không phân công** — xong mới ghi ai đã dạy (ý 1) |
+| C5 bỏ 3 nút | **Giữ 3 nút**, hiện sau khi có tên Tutor, **tuỳ chọn**; nhận xét thêm vẫn gập (ý 6) |
+| C8 vắng | **Không tính vắng** — chỉ số buổi "1 / 2" (ý 2) |
+| C7 theo dõi | Khối PA đang chạy ở Công việc GV + lưu nháp hàng tuần (ý 4) |
+| C9 thẻ cho GV dạy tutor | hết cần (không phân công) |
+| (mới) hạn thứ Bảy | Không phải lỗi công thức — xem `00-hien-trang.md` mục 4 (ý 5) |
+
+## B. Còn 4 câu (trả lời "ok" = theo khuyến nghị)
 
 | # | Câu hỏi | Khuyến nghị | Lý do |
 |---|---|---|---|
-| C1 | Hướng chung: **buổi tutor là một bản ghi riêng** (ngày · người dạy · kỹ năng · một hay nhiều em), người dạy ghi; GV bộ môn chỉ chốt Tiến triển 2 tuần / lần, số buổi tự đếm? | **Có** | Bản chính: 294 PA Tutor đang chạy mà mới 59 buổi được ghi — cách "GV gõ lại từng buổi" không ai làm nổi |
-| C2 | Ngoài đời ai dạy tutor: **GV của trung tâm, tutor part-time ngoài, hay cả hai**? | Làm cho **cả hai**: GV có tài khoản tự ghi buổi mình dạy; tutor ngoài không đăng nhập, GV bộ môn / GVCN / Head / Head tutor ghi hộ | Không phải mở tài khoản cho người ngoài; ai biết buổi thì người đó ghi |
-| C3 | Có cần **xếp lịch từng buổi trước** trên PISA không? | **Không.** Buổi ghi sau khi dạy. Cạnh ô Người dạy có một ô chữ ngắn "Lịch" tuỳ chọn (vd "T3 · T6 18:00") để GVCN / TVV biết | Xếp từng buổi = thêm thao tác dời / huỷ mà đầu ra (em có buổi, có nhận xét) không đổi |
-| C4 | Ai **giao người dạy** cho em? | **Head tutor** (mọi chi nhánh) + **Head** (chi nhánh mình) + GV bộ môn của Case; không ai duyệt, đổi lúc nào cũng được | Ai nắm người dạy thì giao; không để em kẹt chờ một người |
-| C5 | Mỗi buổi đang bắt 3 ô Có / Không (chuẩn bị · tài liệu · feedback) + sao. **Bỏ**, thay bằng nút **"Báo vấn đề về người dạy"** tuỳ chọn? | **Bỏ** | 42 / 52 buổi chọn cả 3 "Có", sao dùng 1 / 59 lần; trang đọc số này đang ẩn |
-| C6 | Xác nhận PA Tutor đang bắt **"Số buổi / 2 tuần"** — 133 PA đang kẹt ở bước này. **Bỏ bắt buộc**; "Số buổi" chỉ còn một nghĩa = tổng buổi dự kiến, tuỳ chọn (Kỳ vọng vẫn 10 buổi / kỹ năng)? | **Bỏ bắt buộc** | Cùng một ô đang mang hai nghĩa (mỗi 2 tuần / tổng); số buổi thật đã đếm từ buổi |
-| C7 | Em **chưa có người dạy** hoặc **2 tuần chưa có buổi**: là **việc có hạn** hay **danh sách theo dõi**? Của ai? | **Danh sách theo dõi, không hạn, không đỏ quá hạn**: ở trang Tutor + một dòng trong "Việc quản lý" của Head tutor và Head | Có người dạy hay không còn tuỳ nguồn tutor — đặt hạn chỉ sinh quá hạn giả |
-| C8 | **Em vắng buổi tutor**: xử lý gì? | Tick **Vắng** tại buổi, không tính buổi, hiện "vắng n" ở thẻ PA. **Không** tự sinh vi phạm / việc / báo PH | GV thấy cần thì tự ghi vi phạm như thường; không thêm luật Ý thức |
-| C9 | GV dạy tutor **không dạy lớp của em** được xem gì? | Một **thẻ tóm tắt chỉ đọc** của đúng kỹ năng được giao: điểm kỹ năng + kỳ vọng, mô tả Case, nhận xét các buổi. Không mở hồ sơ | Phải biết em yếu gì mới dạy được; phần còn lại vẫn chặn như N48 |
-| C10 | Có cần **đếm buổi theo người dạy × tháng** + xuất Excel (để tính lương buổi tutor)? | **Có** — bảng chỉ đọc ở tab Người dạy; Admin, Head, Head tutor, Quản trị xem | Rulebook ghi buổi tutor "có lương"; số có sẵn từ buổi, không ai nhập thêm |
-| C11 | Vai: **Head tutor** = GV + mục Tutor toàn hệ thống, **thấy em cần tutor** để giao (19/10 cấm xem hồ sơ HV — nay nới đúng phần tutor) · **Head** làm được mọi việc Tutor trong chi nhánh (19/10: chỉ xem) · **CX** xem · **Admin** xem + xuất · **TVV, GVCN** xem ở hồ sơ? | **Có** | Bản chính chưa có tài khoản Head tutor nào, danh bạ tutor trống — Head làm được thì chi nhánh không phải chờ |
-| C12 | **Mở lại menu "Tutor"** (ẩn từ 22/10) cho Head tutor · Head · Quản trị · CX · Admin, 3 tab **Học viên · Buổi · Người dạy**; GV không có menu mà có khối **"Em tôi dạy tutor"** ở Công việc (chỉ hiện khi có em)? | **Có** | Việc của vai nào nằm ở trang vai đó đang dùng; không thêm trang cho GV |
+| C1 | Số "b" trong "a / b" (số buổi dự kiến của kỳ): hiện **bắt nhập "Số buổi / 2 tuần" lúc Xác nhận PA** — 133 PA đang kẹt ở bước này. Giữ bắt, hay thôi? | **Thôi bắt lúc Xác nhận** (một bấm là xong). Lần ghi kết quả đầu GV gõ cả "a / b"; b được nhớ cho các kỳ sau, sửa được. PA Kỳ vọng "Trung tâm" giữ tổng 10 buổi / kỹ năng như nay | Lúc xác nhận thường chưa biết mấy buổi; bắt ô này chỉ làm PA đứng yên |
+| C2 | **Trang Tutor** (đang ẩn từ 22/10) — nơi duy nhất đọc 3 nút + đánh giá. Mở lại không? | **Mở lại, một bảng "Người dạy"** (tutor + GV có buổi): số buổi · 3 tỉ lệ · đánh giá · kết luận; bấm tên → các kỳ đã ghi. Cho Head tutor · Head · Quản trị; CX xem. Dựng lại theo mockup đã duyệt 22/10 (F1 + B1), bỏ phần "Việc của bạn" | Không mở thì 3 nút không ai đọc — trái mục đích "đánh giá được tutor" |
+| C3 | Bản chính **chưa có tài khoản Head tutor**, danh bạ tutor **trống** (26 tên đang gõ tay). Ai lo danh bạ? | **Head** được thêm / sửa tutor của chi nhánh mình + gộp tên gõ tay; nhận xét + kết luận về tutor vẫn chỉ Head tutor + Quản trị (như 20/10). Không ai có việc / hạn | GV vẫn chọn được GV và gõ tay nên không ai kẹt; Head làm được thì danh bạ sạch dần |
+| C4 | Có cần **số buổi theo người dạy × tháng** + xuất Excel (tính lương buổi tutor)? | **Có** — một cột + nút Xuất ở trang Tutor; lấy từ số buổi đã ghi, không ai nhập thêm | Rulebook §20.6 ghi buổi tutor "có lương"; chủ SP 19/10 chưa chọn nên hỏi lại |
 
-## PTA tự chọn (không hỏi — chủ SP sửa nếu khác)
+## C. PTA tự chọn (không hỏi — chủ SP sửa nếu khác)
 
-1. Một buổi = một kỹ năng; em học 2 kỹ năng một lần gặp = 2 buổi (TU19).
-2. Nhận xét buổi 8–300 ký tự (theo N50-6, N35); em Vắng không cần nhận xét.
-3. Hình thức Offline / Online máy tự suy, không hỏi lúc ghi (TU22).
-4. Xoá buổi / nhận xét về tutor qua Thùng rác 30 ngày + Hoàn tác (N28), không còn khoá 24 giờ (TU18).
-5. 59 buổi cũ chuyển sang bảng mới (ngày = ngày ghi); 3 ô / sao cũ giữ chỉ đọc.
-6. Nhận xét + kết luận (Ổn · Cần cải thiện · Ngừng) chỉ cho tutor ngoài; GV trung tâm đã có Phân tích GV.
-7. Không tab cấu hình Tutor trong Quản trị (lời chủ SP 12/11); không đưa Tutor vào Báo cáo PH ở đợt này.
+1. PA Tutor thôi hiện ô "Người dạy" ở Xác nhận / Thêm / Sửa PA và "Người dạy kỳ này" (theo ý 1) — dữ liệu cũ giữ.
+2. Khi a ≥ 1: bắt **một** Tutor + **một** Nội dung ≥ 8 ký tự cho cả kỳ (giữ luật 19/10, giảm từ mỗi buổi xuống một lần); a = 0 không bắt gì.
+3. Khối "PA đang chạy" áp mọi loại PA, không riêng Tutor; không tính vào số việc / badge / chuông; thay dải "Sắp tới · Kết quả PA".
+4. Nháp giữ cả phần Tutor (số buổi, tutor, nội dung, 3 nút) — mở rộng nháp máy chủ đã làm 13/11.
+5. Lưới Kết quả PA (dòng gộp cả lớp) ghi được PA Tutor ngay trong lưới.
+6. Sửa kết quả đã lưu: sửa được phần Tutor của mọi lần ghi, có lịch sử.
+7. Hạn 21/11 (thứ Bảy): **để nguyên** — ghi xong kỳ này hạn kế tự về thứ Ba; không thêm migrate.
