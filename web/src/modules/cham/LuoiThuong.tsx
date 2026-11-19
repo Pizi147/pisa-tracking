@@ -321,7 +321,7 @@ export function LuoiThuong({ data, onReload, kn = null, hv = null, tuanDangXem =
     /* AUDIT-1611 A1-14: cột đệm cuối nhận phần thừa — tên giữ 200 px, ô điểm ngay sau tên (như lưới FT), không dồn mép phải. */
     { key: 'du', nhan: '', kieu: 'chu', linhHoat: true },
   ] : [
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 230, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8: như lưới FT — tên gốc 230, cột điểm chia đều
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 250, goiY: t('Cột này đứng yên khi cuộn ngang.') },   // B8 + N55: tên gốc 250 (tên 5 chữ một dòng ở 1440), cột điểm chia đều
     ...skills.map((k): DinhNghiaCot => ({
       key: k, nhan: tenMonNgan(data.programme.code, k), kieu: 'diem-ti-le', rong: cotSuaDuoc(k) ? COT_MON : 128,   /* chỉ đọc: "✗ 17/25" + ⋯ */ sang: kn === k,
       phu: soTong(k) !== null ? `/${soTong(k)}` : undefined, goiY: tenMon(data.programme.code, k),
@@ -433,7 +433,7 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   register: (col: number, el: HTMLInputElement | null) => void;
   onMove: (row: number, col: number, dr: number, boChiDoc?: boolean) => void;
 }) {
-  const lichTest = useContext(LuotChinhContext) !== null;   /* LICH-TEST-GON: một lưới = một bài của lớp, ghi ở hàng lớp / đầu lưới — không lặp "{bài} ›" ở mọi em */
+  const lichTest = useContext(LuotChinhContext) !== null;   /* LICH-TEST-GON: một lưới = một bài của lớp, ghi ở hàng lớp — không lặp "{bài} ›" ở mọi em */
   const { luu, dau, nhanXet, status, lastError, retry, o, loi, luuLai, soLoi, loiNhap, coGuiLai } = useLuuThuong(row.attemptId, onReload, sheet.programme.code, row.studentName);
   const homNay = sheet.today;
   const ct = sheet.programme.code;
@@ -442,16 +442,15 @@ function DongThuong({ row, rowIndex, sheet, laCp, cc, active, tongCot, dien, onR
   return (
     <tr className={`do-hang group/hang ${row.studentStatus !== 'active' ? 'row-muted' : ''} ${active ? 'dang-mo' : ''}`}
       data-hv={row.studentId}>
-      {/* Tên một dòng (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: dòng thi · trạng thái lưu của dòng (BANG-1). */}
+      {/* Tên (N33 ④: bỏ nhãn "Đủ điểm"); MỘT dòng phụ: "{bài} ›" · dòng thi · trạng thái lưu của dòng (BANG-1). */}
       <OBang c={cc.hv}>
-        <span className={`inline-flex max-w-full items-center gap-1.5 align-baseline ${gon ? 'flex-wrap gap-y-0' : ''}`}>
-          {/* TEN-HV-LINK (chủ SP 07/11, thay HSL-LT): tên em = hồ sơ HV; hồ sơ lượt lớp thường mở qua "{bài} ›". G1-11 gọn: tên dài xuống dòng, không cắt (CSS `.luoi-thuong-gon .ten-ho-so`). */}
-          {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`) chữ thường, không link tới 403. */}
-          {(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="min-w-0 truncate font-semibold" style={{ color: 'var(--text)' }} title={row.studentName}>{row.studentName}</span>
-            : <Link className="ten-ho-so min-w-0 truncate max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(row.studentId)} title={row.studentName}>{row.studentName}</Link>}
-          {!lichTest && <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })}>{nhanBai(row.kind)} ›</Link>}
-        </span>
-        <div className="bang-phu !flex items-center gap-1.5" data-phu-odiem="">
+        {/* TEN-HV-LINK (chủ SP 07/11, thay HSL-LT): tên em = hồ sơ HV; hồ sơ lượt lớp thường mở qua "{bài} ›".
+            N55 (chủ SP 19/11): tên KHÔNG cắt "…", dòng tên chỉ có tên — "{bài} ›" LUÔN ở dòng phụ dưới tên (đồng bộ mọi hàng; lưới FT cùng kiểu). */}
+        {/* GV-CU-BO-TRO [XM-2]: người dạy bổ trợ chỉ xem lớp — em khác (`xemHoSo: false`) chữ thường, không link tới 403. */}
+        {(row as { xemHoSo?: boolean }).xemHoSo === false ? <span className="ten-hv font-semibold" style={{ color: 'var(--text)' }}>{row.studentName}</span>
+          : <Link className="ten-hv ten-ho-so max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-end" to={duongHoSoHocVien(row.studentId)}>{row.studentName}</Link>}
+        <div className="bang-phu !flex flex-wrap items-center gap-x-1.5" data-phu-odiem="">
+          {!lichTest && <Link className="link shrink-0 whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id })}>{nhanBai(row.kind)} ›</Link>}
           <DongThi muc={row.skillSchedule.filter((s) => s.progress !== 'cancelled' && s.progress !== 'skipped')
             .map((s) => ({ nhan: tenMonNgan(sheet.programme.code, s.skill), weekStart: s.weekStart }))} />
           <DauLuu status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />

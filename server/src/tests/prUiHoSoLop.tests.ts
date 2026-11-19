@@ -128,7 +128,7 @@ export async function runPrUiHoSoLopTests(t: any) {
     const ft = doc('modules/classes/BangHoSoLop.tsx');
     const thuong = doc('modules/classes/BangDiemLopThuong.tsx');
     const tenEm = ft.slice(ft.indexOf('export function TenEm'), ft.indexOf('const VUNG_BAM'));
-    assert(/<Link className="ten-ho-so[^"]*"[^>]*to=\{duongHoSoHocVien\(s\.id\)\} state=\{\{ ds \}\}>\{s\.fullName\}<\/Link>/.test(tenEm), 'TenEm: tên phải là <Link> duongHoSoHocVien + state ds');
+    assert(/<Link className="[^"]*ten-ho-so[^"]*"[^>]*to=\{duongHoSoHocVien\(s\.id\)\} state=\{\{ ds \}\}>\{s\.fullName\}<\/Link>/.test(tenEm), 'TenEm: tên phải là <Link> duongHoSoHocVien + state ds');
     assert(/<button[^>]*aria-expanded=\{mo\}[^>]*onClick=\{onMo\}/.test(tenEm) && !/<button[^>]*>\{s\.fullName\}/.test(tenEm), 'TenEm: mở rộng là nút riêng, không bọc tên');
     assert((ft.match(/<TenEm s=\{r\}.*?ds=\{ngCanh\}/g) ?? []).length === 2 && /<TenEm s=\{s\}.*?ds=\{ds\}/.test(thuong), 'mọi chỗ dùng TenEm phải truyền ds');
     assert((ft.match(/onClick=\{bamHang\(/g) ?? []).length === 2 && (thuong.match(/onClick=\{bamHang\(/g) ?? []).length === 2, 'hàng / thẻ: bấm phần còn lại = mở rộng (bamHang)');
