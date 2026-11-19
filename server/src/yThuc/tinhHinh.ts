@@ -169,6 +169,25 @@ export function rutTinhHinh(p: Principal, id: number, o: { hoanTac?: boolean } =
   return { ok: true, xoa };
 }
 
+/**
+ * Đề xuất 10 (S4-LUAT, chủ SP 20/11): Rút không hỏi — toast "Hoàn tác" gọi đây. Cùng người rút, trong 2 phút, còn đang `rut` → về chờ như trước;
+ * việc TVV do chính lần rút bỏ (`system_rut_tinh_hinh`, còn `bo`) mở lại. Nhật ký `tinh_hinh.bo_rut`.
+ */
+export function boRutTinhHinh(p: Principal, id: number): { ok: true } {
+  const r = load(id);
+  if (r.trang_thai !== 'rut' || r.rut_boi !== p.userId || !trongHoanTac(r.rut_luc)) throw badRequest('Không hoàn tác được nữa — gửi lại tình hình nếu cần.');
+  tx(() => {
+    db().prepare(`UPDATE tinh_hinh_hoc_tap SET trang_thai = 'mo', rut_boi = NULL, rut_luc = NULL WHERE id = ? AND trang_thai = 'rut'`).run(id);
+    if (r.bp_id) {
+      db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_boi = NULL, bo_luc = NULL WHERE id = ? AND trang_thai = 'bo' AND bo_ly_do = 'system_rut_tinh_hinh'`)
+        .run(r.bp_id);
+    }
+    writeAudit({ actorUserId: p.userId, action: 'tinh_hinh.bo_rut', entityType: 'tinh_hinh_hoc_tap', entityId: id, entityLabel: `${r.student_code} · tình hình học tập`,
+      before: { trangThai: 'rut' }, after: { trangThai: 'mo' } });
+  });
+  return { ok: true };
+}
+
 /** GVCN lớp em đang học (QL làm thẳng — `discipline.manage`) trả lời câu TVV hỏi; trả lời lại = sửa (nhật ký giữ bản cũ). */
 export function traLoiTinhHinh(p: Principal, id: number, v: { traLoi?: unknown }): { ok: true } {
   const r = load(id);
