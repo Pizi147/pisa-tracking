@@ -58,6 +58,15 @@ export async function runPrSuaTutorP1Tests(t: any) {
     assert(!d.nhapGonLuoi([{ ...b, danhGia: 4 }]) && !d.nhapGonLuoi([{ ...b, nhanXetTutor: 'Tutor đúng giờ' }]) && !d.nhapGonLuoi([{ ...b, hinhThuc: 'online' }]), 'đánh giá thêm');
   });
 
+  check('S1 rà #1875 · nhapTheo409: nhapMoi null (nháp vừa xoá ở phiên khác) → null, không bỏ qua; moDay → nháp kèm; 409 khác / lỗi khác → undefined', () => {
+    const n = { luc: 'x', buoi: [] };
+    assert(d.nhapTheo409({ status: 409, details: { nhapMoi: null } }) === null, 'nhapMoi null giữ null');
+    assert(d.nhapTheo409({ status: 409, details: { nhapMoi: n } }) === n, 'nhapMoi có bản');
+    assert(d.nhapTheo409({ status: 409, details: { moDay: true, nhap: n } }) === n, 'moDay');
+    assert(d.nhapTheo409({ status: 409, details: { daChot: true } }) === undefined && d.nhapTheo409({ status: 400, details: { nhapMoi: n } }) === undefined
+      && d.nhapTheo409(null) === undefined, 'không mang nháp');
+  });
+
   check('S1 T1 · máy chủ: lưới (`tuLuoi`) không ghi đè nháp Tutor 2 dòng — lưu nháp / lưu chốt 409 `moDay`, nháp giữ nguyên; form đầy đủ vẫn lưu', () => thu(() => {
     const { ivId } = pa();
     const hai = [{ tutor: 'Cô Hà', nhanXet: 'Nghe Part 1 đủ ý', soBuoi: 1 }, { tutor: 'Thầy Nam', nhanXet: 'Nghe Part 2 bảng', soBuoi: 1, chuanBi: true }];

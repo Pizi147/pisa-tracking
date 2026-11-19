@@ -160,6 +160,15 @@ export function kiemBuoiTutor(a: number, buoi: unknown, chuCu?: ReadonlySet<stri
  */
 export const nhapGonLuoi = (buoi: readonly BuoiTutor[] | null | undefined): boolean => !buoi || (buoi.length <= 1
   && buoi.every((b) => TIEU_CHI_TUTOR.every(({ k }) => b[k] == null) && b.danhGia == null && !b.nhanXetTutor && b.hinhThuc == null));
+/**
+ * Nháp máy chủ kèm theo 409 của lưu nháp / lưu chốt (lưới nhận làm bản gốc mới): `nhapMoi` (phiên khác vừa lưu — `null` = vừa XOÁ, vẫn là bản mới) hoặc
+ * `moDay` (`nhap`, T1). `undefined` = 409 / lỗi không mang nháp (không đổi bản gốc). Rà #1875: không dùng `??` — `null` của `nhapMoi` phải giữ.
+ */
+export function nhapTheo409<T>(e: { status?: number; details?: { nhapMoi?: T | null; moDay?: boolean; nhap?: T | null } } | null | undefined): T | null | undefined {
+  if (e?.status !== 409 || !e.details) return undefined;
+  if ('nhapMoi' in e.details) return e.details.nhapMoi ?? null;
+  return e.details.moDay ? e.details.nhap ?? null : undefined;
+}
 
 /** Hình thức tự chọn (mục 5.2, 13): nơi dạy = chi nhánh lớp của em → Offline; chi nhánh khác / Chỉ online → Online; chưa có nơi dạy / "Tutor khác" → trống. */
 export function hinhThucTuSuy(tutor: { noiDayBranchId: number | null; chiOnline: number | boolean } | null, branchIdLop: number | null): HinhThuc | null {

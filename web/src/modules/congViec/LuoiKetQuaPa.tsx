@@ -12,7 +12,7 @@ import { NganCase } from '../students/NganCaseLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
   CHU_TOI_THIEU_CASE, FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, INTERVENTION_KIND_LABEL, KY_HIEU_TIEN_TRIEN, TRAN_CHU, caseTopicLabel, duongHoSoHocVien,
-  ghiNhanhDuoc, kyGhiKetQua, nguoiCuaPa, nhapGonLuoi, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan, toiKyGhi, type NguoiChon,
+  ghiNhanhDuoc, kyGhiKetQua, nguoiCuaPa, nhapGonLuoi, nhapTheo409, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan, toiKyGhi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { fmtBand } from '../../lib/format.ts';
@@ -204,7 +204,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const thuLai = (id: number) => (loi[id]?.kieu === 'nhap' ? luuNhap([id]) : luu([id]));
   /* Xung đột nháp: bản mới thành bản gốc (lần gửi sau so với nó) — chữ của mình vẫn trong ô. "Dùng bản mới" bỏ chữ của mình, lấy bản mới. */
   function nhanBanMoi(id: number, e: any) {
-    const moi = xungDotCua(e)?.moi ?? (e?.status === 409 && e.details?.moDay ? e.details.nhap ?? null : undefined);
+    const moi = nhapTheo409<NhapMayChu>(e);   // nhapMoi null (nháp vừa xoá ở phiên khác) cũng là bản gốc mới
     if (moi !== undefined) setNhapMoi((m) => ({ ...m, [id]: moi }));
   }
   const dungBanMoi = (id: number) => { boSua([id]); setLoi((l) => { const n = { ...l }; delete n[id]; return n; }); };
