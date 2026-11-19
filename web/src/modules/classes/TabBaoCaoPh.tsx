@@ -284,7 +284,7 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
             ...(data.xuat ? [{ key: 'xuat', nhan: t('Xuất'), kieu: 'nut', rong: 112 } as CotBang] : []),
           ]}
           oCua={(e, c) => {
-            if (c.key === 'ten') return <Link className="ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
+            if (c.key === 'ten') return <Link className="ten-hv ten-ho-so" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
             if (c.key === 'xuat') {
               return (
                 <span className="inline-flex gap-3">

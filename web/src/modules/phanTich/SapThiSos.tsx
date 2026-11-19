@@ -63,7 +63,7 @@ function PanelSapThi({ nguon, tieuDe, ngCanh, so, onDong }: { nguon: string; tie
   ];
   const oCua = (r: DongSapThi, c: CotBang): ReactNode => {
     switch (c.key) {
-      case 'em': return <Link to={r.href} className="ten-ho-so font-semibold">{r.em.ten}</Link>;
+      case 'em': return <Link to={r.href} className="ten-hv ten-ho-so font-semibold">{r.em.ten}</Link>;
       case 'lop': return r.classId ? <Link to={`/hoc-vien/lop/${r.classId}`} className="text-[color:var(--text)] no-underline hover:underline">{r.lop}</Link> : (r.lop ?? '—');
       case 'lich': return r.lichThi.ngay
         ? <span className="grid leading-tight"><b className="font-semibold">{t('thi {ngay}', { ngay: `${r.lichThi.ngay.slice(8, 10)}/${r.lichThi.ngay.slice(5, 7)}` })}</b><small className="text-xs text-[color:var(--text-faint)]">{tuanLich(r.lichThi.ngay)}</small></span>

@@ -329,7 +329,7 @@ function DanhSach({ rows, homNay, pt: phan }: { rows: DongThiThat[]; homNay: str
       {hien.map((r) => (
         <div key={r.cycleId} className={THE_HV} style={nenThe}>
           <div className="flex items-center gap-2">
-            <Link to={`/hoc-vien/${r.studentId}`} className={`min-w-0 truncate text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link>
+            <Link to={`/hoc-vien/${r.studentId}`} className={`ten-hv min-w-0 text-[15px] font-semibold ${LINK_CHU}`}>{r.ten}</Link>
             <span className="ml-auto shrink-0">{chipMuc(r)}</span>
           </div>
           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[13px] text-dim">

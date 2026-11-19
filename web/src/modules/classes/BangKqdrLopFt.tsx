@@ -120,7 +120,7 @@ export function BangKqdrLopFt({ classId }: { classId: number }) {
       </span>
     )
     : <span className="text-[13px] text-faint">{t('Chưa bàn giao')}</span>);
-  const tenEm = (e: Em) => <Link className="ten-ho-so min-w-0 truncate" title={e.ten} to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
+  const tenEm = (e: Em) => <Link className="ten-hv ten-ho-so min-w-0" to={`/hoc-vien/${e.id}`}>{e.ten}</Link>;
   const dongDot = (d: Dot) => (
     <span className="flex flex-wrap items-baseline gap-x-2 text-[13px] text-slate-400">
       <b className="font-semibold text-slate-200">{t('Đợt')} {tuan(d.vao)}</b>

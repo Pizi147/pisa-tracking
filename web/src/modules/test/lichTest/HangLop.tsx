@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { HangCon, HangNhom } from '../../../ui/HangNhom.tsx';
 import { ChipHan, ChipKy, Nhan } from '../../../ui/Nhan.tsx';
-import { CHAM_CHEO, chuOChuaLuu, tenMonNgan } from '@shared/domain/index.ts';
+import { CHAM_CHEO, chuOChuaLuu, duongDotTest, tenMonNgan } from '@shared/domain/index.ts';
 import { khoaHang, type LichTest, type LopLichTest } from './kieu.ts';
 import { LuoiNhung } from './LuoiNhung.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -36,20 +36,17 @@ export const ChipMon = ({ ct, ds }: { ct: string | null; ds: readonly string[] }
 );
 
 /**
- * "Đinh Thu Hằng (L R) · Phạm Thu Trang (W1 W2) · chấm chéo S" — ô còn chờ theo người (máy chủ `gvMon`, đã bỏ phần của người xem).
- * PTA rà #1705 (chủ SP ghét chữ cắt "…"): tối đa `TOI_DA_CON_CHO` người, còn lại "+k"; `du` = đủ tên cho `title`. Ô xuống dòng (≤ 2 dòng ở 1440).
+ * "Đinh Thu Hằng (L R) · Phạm Thu Trang (W1 W2) · chấm chéo S" — ai còn chờ chấm (máy chủ `gvMon`, đã bỏ phần của người xem).
+ * LICH-TEST-GON (chủ SP 19/11: "bỏ cột Còn chờ"): không còn cột — hiện MỘT dòng nhỏ "Còn chờ: …" BÊN TRONG phần lớp khi mở ra (`DongConCho`; điện thoại không có tooltip). Đủ tên, không cắt.
  */
-const TOI_DA_CON_CHO = 3;
-export function chuConCho(gvMon: Readonly<Record<string, readonly string[]>> | undefined, ct: string | null): { chu: string; du: string } {
-  const ds = Object.entries(gvMon ?? {}).map(([ten, kn]) => {
+export function chuConCho(gvMon: Readonly<Record<string, readonly string[]>> | undefined, ct: string | null): string {
+  return Object.entries(gvMon ?? {}).map(([ten, kn]) => {
     const mon = kn.map((k) => tenMonNgan(ct, k)).join(' ');
     return dich(ten) === CHAM_CHEO ? t('chấm chéo {mon}', { mon }) : `${dich(ten)} (${mon})`;
-  });
-  const thua = ds.length - TOI_DA_CON_CHO;
-  return { chu: ds.slice(0, TOI_DA_CON_CHO).join(' · ') + (thua > 0 ? ` +${thua}` : ''), du: ds.join(' · ') };
+  }).join(' · ');
 }
 
-/** Thẻ "n bài chờ duyệt dời" (⑦ A1 `.tag.doi`: vắng lần 2 chờ Quản lý duyệt dời). */
+/** Thẻ "n bài chờ duyệt dời" (⑦ A1 `.tag.doi`: vắng lần 2 chờ Quản lý duyệt dời) — nằm cạnh Tiến độ. */
 export const TheChoDoi = ({ n }: { n: number }) => (n > 0 ? <span className="lt-tag-doi">{t('{n} bài chờ duyệt dời', { n })}</span> : null);
 
 /** Tiến độ "2 / 27 bài" (⑦ `.td`: số Inter 600 15, chữ "bài" nhỏ mờ). */
@@ -58,20 +55,47 @@ export const TienDo = ({ so, title }: { so: ReactNode; title?: string }) => (
 );
 
 /**
- * CỘT CHUNG của Lịch Test (⑦ A1 `.hl`: mũi tên + Lớp · Đợt · Môn · Hạn chấm · Còn chờ · Tiến độ · Trạng thái / nút) — hàng Quá hạn chấm và hàng lớp
- * cùng một bộ cột để thẳng hàng. Cột "Còn chờ" giãn.
+ * CỘT CHUNG của Lịch Test (⑦ A1 `.hl`: mũi tên + Lớp · Đợt · Môn · Hạn chấm · Tiến độ · Trạng thái / nút) — hàng Quá hạn chấm và hàng lớp
+ * cùng một bộ cột để thẳng hàng. LICH-TEST-GON (chủ SP 19/11): bỏ cột "Còn chờ"; cột Đợt giãn, Tiến độ rộng đủ chỗ cho thẻ "n bài chờ duyệt dời".
  */
-export const COT_LICH_TEST = [198, 172, 184, 150, null, 104, 178] as const;
+export const COT_LICH_TEST = [210, null, 196, 140, 232, 170] as const;
 export const ColLichTest = () => <colgroup>{COT_LICH_TEST.map((w, i) => <col key={i} style={w ? { width: w } : undefined} />)}</colgroup>;
 
-/** Đợt: tên đợt (600 14) + số em mỗi đợt dòng phụ ("MT3 · MT1" / "5 em · 1 em"). */
-export const ODot = ({ dot, phu }: { dot: string; phu: string }) => (
-  <span className="lt-dot"><span className="truncate">{dot}</span><small className="truncate">{phu}</small></span>
-);
+/**
+ * LICH-TEST-GON (chủ SP 19/11: "chữ MT# nhìn rối"): ĐỢT CHÍNH của lớp (đông em nhất) ghi MỘT lần — "MT3 · 5 em"; lượt khác (MT cũ, vắng dời) chỉ một dòng phụ
+ * "+ MT1 · 1 em". Lưới bên dưới không lặp "MT3 ›" ở mọi em (`LuotChinhContext`). `luot` đã sắp đông em trước (máy chủ / `gopNoTheoLop`).
+ */
+type LuotHang = { dot: string; soHv: number; attemptId?: number; kind?: string | null };
+export function chuDot(luot: readonly LuotHang[]) {
+  const chu = (x: LuotHang) => `${dich(x.dot)} · ${t('{n} em', { n: x.soHv })}`;
+  return { phu: luot.slice(1).map((x) => `+ ${chu(x)}`).join(' '), nhanChinh: luot[0]?.dot ?? null };
+}
+/**
+ * "MT3 · 5 em": tên đợt là LINK mở lượt của em đầu tiên trong đợt (cùng `duongDotTest` như "MT3 ›" cũ cạnh tên em — PTA rà #1859: không mất đường vào trang lượt);
+ * `kind` / `classId` để lớp thường mở đúng trang bài. Không có `attemptId` thì chữ thường.
+ */
+export function DotChinh({ luot, classId, kind }: { luot: LuotHang | undefined; classId: number; kind?: string | null }) {
+  if (!luot) return null;
+  const ten = dich(luot.dot);
+  const k = (luot.kind ?? kind ?? '').split(':')[0] || null;
+  return (
+    <>
+      {luot.attemptId ? <Link to={duongDotTest({ id: luot.attemptId, kind: k, classId })} className="lt-ma-dot" title={t('Mở {dot}', { dot: ten })}>{ten}</Link> : ten}
+      {' · '}{t('{n} em', { n: luot.soHv })}
+    </>
+  );
+}
+export const ODot = ({ luot, classId, kind }: { luot: readonly LuotHang[]; classId: number; kind?: string | null }) => {
+  const { phu } = chuDot(luot);
+  return <span className="lt-dot"><span><DotChinh luot={luot[0]} classId={classId} kind={kind} /></span>{phu && <small>{phu}</small>}</span>;
+};
+
+/** Dòng nhỏ "Còn chờ: GV (môn) · …" ở ĐẦU phần lớp đã mở (1440 và 375). Rỗng thì không vẽ. */
+export const DongConCho = ({ ds }: { ds: string }) => (ds ? <p className="m-0 px-4 pt-2.5 text-[13px] leading-snug text-dim">{t('Còn chờ: {ds}', { ds })}</p> : null);
 
 /**
- * HÀNG LỚP của Lịch tuần (GD-11a, ⑦ A1 / A3 / A6): ghi THẲNG trên hàng — Lớp (link hồ sơ) · Đợt (+ số em) · Môn của bạn (QL: Môn) · hạn chấm (chip,
- * lớp xong thì trống) · thẻ "n bài chờ duyệt dời" (QL: + "Còn chờ: GV (môn)") · tiến độ · trạng thái; một hàng tiêu đề cột mảnh ở đầu.
+ * HÀNG LỚP của Lịch tuần (GD-11a, ⑦ A1 / A3 / A6): ghi THẲNG trên hàng — Lớp (link hồ sơ) · Đợt chính "MT3 · 5 em" (+ "+ MT1 · 1 em" nếu có lượt khác) · Môn của bạn
+ * (QL: Môn) · hạn chấm (chip, lớp xong thì trống) · tiến độ (kèm thẻ "n bài chờ duyệt dời"; tooltip có "còn chờ: GV (môn)") · trạng thái; một hàng tiêu đề cột mảnh ở đầu.
  * Mở ra là lưới chấm tại chỗ đúng tuần thi của hàng (KHÔNG đổi). < 1024 px: mỗi lớp một thẻ (mã · tiến độ / đợt · môn / hạn · chờ dời · trạng thái).
  */
 export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClassId, urlKn, conTro, onDaLuu, chuaLuu, baoChuaLuu, sEx }: {
@@ -93,7 +117,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
   /** SV-S-EXPERT: lượt S Ex của tuần — cột S Ex trong lưới FT. */
   sEx: LichTest['sEx'];
 }) {
-  /* Người có phân công: cột "Môn của bạn", không cột "Còn chờ" (phần GV khác đã ở trạng thái); Quản lý / Quản trị: "Môn" + "Còn chờ" (⑦ A3). */
+  /* Người có phân công: cột "Môn của bạn" (phần GV khác đã ở trạng thái); Quản lý / Quản trị: "Môn" (⑦ A3). */
   const coPhan = lop.some((l) => !!l.phan);
   const soCot = gon ? 1 : COT_LICH_TEST.length;
   /* Lớp kế (sau lớp này, vòng lên) còn bài của người xem. */
@@ -110,7 +134,7 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
         <thead>
           <tr className="lt-cot">
             <th>{t('Lớp')}</th><th>{t('Đợt')}</th><th>{coPhan ? t('Môn của bạn') : t('Môn')}</th><th>{t('Hạn chấm')}</th>
-            <th>{coPhan ? '' : t('Còn chờ')}</th><th className="text-right">{t('Tiến độ')}</th><th className="text-right">{t('Trạng thái')}</th>
+            <th className="text-right">{t('Tiến độ')}</th><th className="text-right">{t('Trạng thái')}</th>
           </tr>
         </thead>
       )}
@@ -123,10 +147,9 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
         /* QL: môn của lượt theo Ô NHẬP — FT ghi W1 W2 như lưới (⑦ A3). */
         const monLuot = l.mode === 'ielts_band' ? l.kyNangTuan.flatMap((x) => (x === 'writing' ? ['writing1', 'writing2'] : [x])) : l.kyNangTuan;
         const mon = <ChipMon ct={l.chuongTrinh} ds={l.phan ? l.phan.toi?.kyNang ?? [] : monLuot} />;
-        const dot = l.luot.map((x) => dich(x.dot)).join(' · ');
-        const soEm = l.luot.map((x) => t('{n} em', { n: x.soHv })).join(' · ');
-        const { chu: conCho, du: conChoDu } = l.phan ? { chu: '', du: '' } : chuConCho(l.gvMon, l.chuongTrinh);
-        const tienDo = <TienDo so={`${l.daCham} / ${l.tong}`} title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong })} />;
+        const { phu: dotPhu, nhanChinh } = chuDot(l.luot);
+        const conCho = l.phan ? '' : chuConCho(l.gvMon, l.chuongTrinh);
+        const tienDo = <TienDo so={`${l.daCham} / ${l.tong}`} title={t('Đã chấm {daCham} trong {tong} bài', { daCham: l.daCham, tong: l.tong }) } />;
         const maLop = (
           <span className="block min-w-0">
             <Link to={`/hoc-vien/lop/${l.classId}`} className="lt-ma" title={t('Hồ sơ lớp {classCode}', { classCode: l.classCode })}>{l.classCode}</Link>
@@ -140,17 +163,16 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
                 /* ⑦ A6: thẻ ba dòng — mã · tiến độ / đợt · môn / hạn · chờ dời · trạng thái. */
                 <span className="lt-the">
                   <span className="h1">{maLop}{tienDo}</span>
-                  <span className="h2"><b>{dot}</b>{mon}</span>
-                  <span className="h3">{han}<TheChoDoi n={l.choDuyetDoi} />{conCho && <span className="text-xs text-dim">{conCho}</span>}<NhanLop l={l} chuaLuu={chuaLuu[k]} /></span>
+                  <span className="h2"><b><DotChinh luot={l.luot[0]} classId={l.classId} kind={l.kind} /></b>{dotPhu && <span className="text-xs text-dim">{dotPhu}</span>}{mon}</span>
+                  <span className="h3">{han}<TheChoDoi n={l.choDuyetDoi} /><NhanLop l={l} chuaLuu={chuaLuu[k]} /></span>
                 </span>
               ) : maLop}>
               {!gon && (
                 <>
-                  <td><ODot dot={dot} phu={soEm} /></td>
+                  <td><ODot luot={l.luot} classId={l.classId} kind={l.kind} /></td>
                   <td>{mon}</td>
                   <td>{han}</td>
-                  <td className="lt-gc" title={conChoDu || undefined}>{/* thẻ chạy cùng dòng chữ (không chiếm dòng riêng) — ≤ 2 dòng */}<TheChoDoi n={l.choDuyetDoi} />{l.choDuyetDoi > 0 && conCho ? ' ' : null}{conCho}</td>
-                  <td className="text-right">{tienDo}</td>
+                  <td className="text-right"><span className="lt-td-cell"><TheChoDoi n={l.choDuyetDoi} />{tienDo}</span></td>
                   <td className="text-right"><NhanLop l={l} chuaLuu={chuaLuu[k]} /></td>
                 </>
               )}
@@ -158,10 +180,11 @@ export function HangLop({ lop, moCua, onMo, onLopTiep, coChiNhanh, gon, urlClass
             {(mo || (chuaLuu[k] ?? 0) > 0) && (
               <HangCon className={mo ? '' : 'hidden'}>
                 <td colSpan={soCot} className="!p-0">
+                  <DongConCho ds={conCho} />
                   <LuoiNhung classId={l.classId} periodId={l.mode === 'ielts_band' ? l.periodId : null} kind={l.kind}
                     tuanDangXem={l.weekStart} kn={l.classId === urlClassId ? urlKn : null} hrefDayDu={l.hrefDayDu}
                     datConTro={conTro.has(k)} onDaLuu={onDaLuu} coLinkRieng sEx={l.mode === 'ielts_band' ? sEx.filter((x) => x.classId === l.classId) : undefined}
-                    onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} />
+                    onSoOChuaLuu={(n) => baoChuaLuu(k, n)} onHet={onHet(l)} luotChinh={nhanChinh} />
                 </td>
               </HangCon>
             )}

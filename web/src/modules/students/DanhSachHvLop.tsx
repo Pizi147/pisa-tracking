@@ -77,7 +77,7 @@ function TenEm({ h, ev, ds, tim }: { h: HvGon; ev?: EmVai; ds: NguCanhDs; tim?: 
   const phu = ev?.status === 'inactive' ? t('Tạm dừng') : '';
   return (
     <span className="block min-w-0">
-      <Link className="ten-ho-so khong-mui block" title={h.ten} to={`/hoc-vien/${h.id}`} state={{ ds }}><ToKhop chu={h.ten} tim={tim} /></Link>
+      <Link className="ten-hv ten-ho-so khong-mui block" to={`/hoc-vien/${h.id}`} state={{ ds }}><ToKhop chu={h.ten} tim={tim} /></Link>
       {phu && <span className="dong2">{phu}</span>}
     </span>
   );
@@ -460,7 +460,7 @@ export function BangSosGon({ rows, hang, nguCanh, onMo, viec, tvv, onMoViec }: {
     switch (c.key) {
       case 'ten': return (
         <span className="block min-w-0">
-          <Link className="ten-ho-so khong-mui block truncate" to={`/hoc-vien/${r.studentId}`} state={{ ds: nguCanh }}>{r.ten}</Link>
+          <Link className="ten-hv ten-ho-so khong-mui block" to={`/hoc-vien/${r.studentId}`} state={{ ds: nguCanh }}>{r.ten}</Link>
           <span className="block text-xs font-normal text-slate-400">{r.classCode}</span>
         </span>);
       case 'muc': return <ChipSos muc={r.sosLevel} kyNang={r.kyNang.map((k) => skillShort(k))} dot={r.luot} ten={r.ten} thuong={!r.ft} />;

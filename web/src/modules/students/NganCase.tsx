@@ -147,7 +147,7 @@ function ThanNganCase({ caseId, paId, viec, viecBanDau, paViec = null, hocVien, 
     huy: null, trai,
     /* RA-GD-0711: "Tiếp: …" chia chỗ đều với trạng thái lưu và tự cắt "…" (tên đủ ở `title`) — panel 580 px không còn dồn "● PA mới chưa lưu" thành 4 dòng;
        form đang mở thì chỉ còn trạng thái nháp (nút Việc tiếp › vẫn ở chân). */
-    phu: <>{onTiep && cv?.ten && !formMo && <span className="min-w-0 flex-1 truncate text-right text-[13px] text-faint max-sm:hidden" title={t('Tiếp: {ten}', { ten: cv.ten })}>{t('Tiếp: {ten}', { ten: cv.ten })}</span>}
+    phu: <>{onTiep && cv?.ten && !formMo && <span className="ten-hv min-w-0 flex-1 text-right text-[13px] text-faint max-sm:hidden">{t('Tiếp: {ten}', { ten: cv.ten })}</span>}
       <button type="button" className="btn min-h-[44px] sm:min-h-0" onClick={onClose}>{t('Đóng')}</button></>,
     chinh: nutTiep ?? undefined,
   };

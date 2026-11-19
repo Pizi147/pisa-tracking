@@ -10,7 +10,7 @@
  *
  * Kỹ năng mình được phân công đứng trước; kỹ năng khác vẫn chọn được để đối chiếu, nhưng ô chỉ đọc.
  */
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import {
   ENTRY_SKILLS, nhanBai, tenMon, tenMonNgan, tuanLich, type NguoiChon,
@@ -23,7 +23,7 @@ import {
 } from '../fasttrack/ScoreEntry.tsx';
 import { NutNhanXet, ODiemMt } from '../fasttrack/HopNhapDiem.tsx';
 import { GOI_Y_COT_MT, NutGvCham, useGvChamCot } from './GvCham.tsx';
-import { DongThi, nhanKyNangFt } from './DongThi.tsx';
+import { DongThi, LuotChinhContext, nhanKyNangFt } from './DongThi.tsx';
 import { DauLuu, DauO, LuoiFT, VIEN_LOI, chiConHuy, khacTuanFt, khopKn, nutTuanGoc, oTrongFt, tenDotFt, type FtSheet, type HangMo, type PhienO } from './LuoiFT.tsx';
 import { usePhienCham, type OnHet } from './phienCham.ts';
 import {
@@ -107,12 +107,14 @@ function useDiChuyen() {
 }
 
 /** Một dòng học viên: tên + TỐI ĐA một dòng phụ ngắn bên trái (G-3), một ô to bên phải. */
-function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false }: {
+function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phuDo = false, luu, children, nhan, thi, mo = false, thuong = false }: {
   studentId: number; active: boolean; ten: string; href: string;
   /** TEN-HV-LINK: nhãn link hồ sơ lượt ('MT2', 'Progress Test') — tên em mở hồ sơ HV. */
   nhanLuot: string;
   /** R1-LUU-TIEP: danh sách lượt nguồn cho hồ sơ MT ("Lưu · em tiếp ›"). */
   ds?: NguCanhDs;
+  /** LICH-TEST-GON: lớp thường — một lưới một bài, ghi ở hàng lớp (Lịch Test không lặp "{bài} ›" ở mọi em). */
+  thuong?: boolean;
   /** OV-1d: em đã Kết thúc học / Lưu trữ — dòng mờ. */
   mo?: boolean;
   phu: string; phuTitle?: string; phuDo?: boolean; luu: React.ReactNode; children: React.ReactNode;
@@ -121,6 +123,8 @@ function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phu
   /** Dòng "Thi W1 OCT" — chỉ hiện ở Điểm theo lớp (`DongThiContext`). */
   thi?: React.ComponentProps<typeof DongThi>['muc'];
 }) {
+  const luotChinh = useContext(LuotChinhContext);   /* LICH-TEST-GON: em cùng đợt chính (FT) / mọi em lớp thường → không ghi lại lượt */
+  const anLuot = luotChinh !== null && (thuong || nhanLuot === luotChinh);
   return (
     <li data-hv={studentId}
       className={`flex flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 min-h-[60px] border-t ${mo ? 'row-muted' : ''} ${active ? 'row-active' : ''}`}
@@ -133,7 +137,7 @@ function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phu
           {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
         <div className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
-          <Link className="link whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={href} state={ds ? { ds } : undefined}>{nhanLuot} ›</Link>
+          {!anLuot && <Link className="link whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={href} state={ds ? { ds } : undefined}>{nhanLuot} ›</Link>}
           <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
@@ -357,7 +361,7 @@ function DongThuongMot({ row, k, sheet, tongCot, active, onReload, inputRef, onK
     ?? ketQua
     ?? '';
   return (
-    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id }, k)} nhanLuot={nhanBai(row.kind)}
+    <DongHv studentId={row.studentId} active={active} ten={row.studentName} href={duongDotTest({ id: row.attemptId, kind: row.kind.split(':')[0], classId: sheet.class.id }, k)} nhanLuot={nhanBai(row.kind)} thuong
       phu={phu} phuTitle={tenMonO} phuDo={phu === ketQua && cell.ketQua === 'fail'}
       luu={<DauLuu lon status={status} error={lastError} onRetry={coGuiLai ? retry : undefined} soLoi={soLoi} />}
       thi={row.skillSchedule.filter((x) => x.progress !== 'cancelled' && x.progress !== 'skipped')
