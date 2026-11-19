@@ -13,7 +13,7 @@
 | C9 thẻ cho GV dạy tutor | hết cần (không phân công) |
 | (mới) hạn thứ Bảy | Không phải lỗi công thức — xem `00-hien-trang.md` mục 4 (ý 5) |
 
-## B. Còn 4 câu (trả lời "ok" = theo khuyến nghị)
+## B. Bốn câu — **chủ SP 19/11: "Ok cả 4 câu"** → chốt theo cột Khuyến nghị (luật TU11–TU14)
 
 | # | Câu hỏi | Khuyến nghị | Lý do |
 |---|---|---|---|
