@@ -567,11 +567,12 @@ const nheMyWork = ({ items: _items, groups: _groups, cuaGv: _cuaGv, ...con }: an
 /**
  * LG-8: "Test sắp tới" từng lớp (khối "Lớp của tôi" trang đầu) — CHỈ vai GV / Head tutor, vai khác JSON và số câu không đổi.
  * LG-13 (H7): `sapToi` 7 ngày (số PA tới kỳ + đợt Báo cáo PH mở) — cùng vai; không có gì thì không có khoá.
+ * TU2-2: `paDangChay` (PA chưa tới hạn người xem giữ — `PaDangChay`) cùng câu với `sapToi`; không có PA thì không có khoá.
  */
-const kemTestSapToi = (p: Principal, kq: any) => {
+const kemTestSapToi = (p: Principal, kq: any, branchId?: number | null) => {
   if (!p.roleKeys.some((k) => k === 'teacher' || k === 'head_tutor')) return kq;
-  const sapToi = tongQuanSvc.sapToiCuaGv(p);
-  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}) };
+  const { sapToi, paDangChay } = tongQuanSvc.sapToiCuaGv(p, branchId);   // rà #1864: `?branchId` lọc như dòng việc
+  return { ...kq, testSapToi: tongQuanSvc.testSapToiCuaGv(p), ...(sapToi ? { sapToi } : {}), ...(paDangChay.length ? { paDangChay } : {}) };
 };
 /**
  * PR-Ra Q1–Q2: `?nguoi=` chọn góc nhìn — `toi` (mặc định) · `tat-ca` (Quản lý/Quản trị, Q1) ·
@@ -587,7 +588,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   /* UI-CV-TVV: không có khu Công việc (TVV) → chỉ việc TVV của chính mình; không xem việc người khác. */
   if (!can(p, PERMISSIONS.WORK_VIEW, { anyScope: true })) {
     if (nguoi === 'tat-ca' || typeof nguoi === 'number') throw forbidden('Bạn chỉ xem được việc của mình.');
-    return kemTestSapToi(p, nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV })));
+    return kemTestSapToi(p, nheMyWork(myWork(p, { branchId, chiNhom: NHOM_VIEC_TVV })), branchId);
   }
 
   if (nguoi === 'tat-ca') {
@@ -596,7 +597,7 @@ api.get('/my-work', requireAuth, wrap((req) => {
   }
   if (typeof nguoi === 'number') return nheMyWork(viecCuaNguoi(p, nguoi, branchId));
 
-  return kemTestSapToi(p, nheMyWork(myWork(p, { branchId })));
+  return kemTestSapToi(p, nheMyWork(myWork(p, { branchId })), branchId);
 }));
 
 /** BO-QUA-XEP-MT: QL bỏ qua (`boQua: true`) / khôi phục (`false`) việc `moc:` — chỉ ẩn việc, không đổi lịch / PA. */

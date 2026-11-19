@@ -751,11 +751,11 @@ export function viecNhapDiemCuaEm(p: Principal, studentId: number, today: string
  * Kết quả = đúng các dòng của `myWork(p)` thuộc nhóm đó (phép kiểm NV-2). Không truyền thì y hệt trước.
  */
 /**
- * Câu đọc PA "Ghi kết quả PA" (mục 2b) — `them`: điều kiện thêm sau `action_due <= ?` (LG-13 "Sắp tới": cửa sổ 7 ngày tới + phạm vi GV). Một câu cho cả hai nơi
- * để "Sắp tới" cùng luật với việc sinh ra tuần sau.
+ * Câu đọc PA "Ghi kết quả PA" (mục 2b) — `them`: điều kiện thêm sau `action_due <= ?` (TU2-2 "PA đang chạy": chưa tới hạn + phạm vi GV); `cot`: cột thêm. Một câu
+ * cho cả hai nơi để "PA đang chạy" cùng luật với việc sinh ra khi tới hạn.
  */
-export const cauPaGhiKetQua = (them = '') =>
-  `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi, iv.nhap_ket_qua IS NOT NULL AS co_nhap,
+export const cauPaGhiKetQua = (them = '', cot = '') =>
+  `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.action_due, iv.followup_due, iv.preset, iv.nhom_bo_tro, iv.so_buoi, iv.nhap_ket_qua IS NOT NULL AS co_nhap,${cot}
               iv.performer_user_id, iv.performer_name, sc.owner_user_id,
               sc.topic, sc.sos_level, sc.urgency, sc.summary, sc.origin_kind, sc.attempt_id,
               COALESCE(sc.student_id, a.student_id) AS eff_student_id,
@@ -776,6 +776,10 @@ export const cauPaGhiKetQua = (them = '') =>
           AND COALESCE(iv.approval_state, '') != 'pending'
           AND ${NOT_UNCONFIRMED_PRESET('iv')}
           AND ${HV_DANG_HOC_SQL('s')} AND NOT ${CASE_SAU_THI_SQL('sc', 's.id')}`;   /* N46: lộ trình đã có KQ thi thật — như Tạm dừng */
+
+/** Tên PA trên dòng việc / "PA đang chạy": mô tả, không có thì tên loại. */
+export const tenPaCua = (iv: { description?: string | null; kind: string }): string =>
+  (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
 
 /** "Ghi kết quả PA" thành việc từ hạn − 2: PA có `action_due` ≤ ngày này. Công việc và hồ sơ HV (`viecHocVien.ts`) dùng chung (P1 G2-03). */
 export const hanGhiKetQuaToi = (today: string): string => addDays(today, 2);
@@ -1133,7 +1137,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     reviewedCases.add(iv.case_id);
     /* PR-SOS (T22, M-17): PA theo quy chế chạm mốc → "Ghi kết quả cuối" (PA thường không có mốc — Q28-4). */
     const tuanCuoi = laLanGhiCuoi({ preset: iv.preset === 1, followupDue: iv.followup_due ?? null, actionDue: iv.action_due ?? null, mienPhi: iv.kind === 'bo_tro_mien_phi' }, today);
-    const tenPa = (iv.description ?? '').trim() || INTERVENTION_KIND_LABEL[iv.kind as InterventionKind] || 'PA học thuật';
+    const tenPa = tenPaCua(iv);
     items.push({
       key: `action:${iv.id}`, group: 'ghi_ket_qua_pa', urgency: u, paId: iv.id,
       studentId: iv.eff_student_id, studentName: iv.full_name ?? 'Học viên',
