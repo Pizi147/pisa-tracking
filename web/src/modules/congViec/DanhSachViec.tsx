@@ -68,6 +68,8 @@ const DUONG_IC: Record<string, ReactNode> = {
   'lop-toi-day': <><rect x="2.5" y="2.5" width="11" height="8" rx="1" /><path d="M5 13.5l3-3 3 3M5.5 5.5h5M5.5 7.8h3" /></>,
   /* CV6 (mockup v18): "Yêu cầu của tôi" — phiếu gửi đi, không mượn biểu tượng người của lớp. */
   'yeu-cau': <><path d="M14 2L7 9" /><path d="M14 2l-4.5 12-2.5-5-5-2.5z" /></>,
+  /* TU2-4: "PA đang chạy" — đồng hồ (chưa tới hạn). */
+  'pa-chay': <><circle cx="8" cy="8" r="5.5" /><path d="M8 5v3.2l2 1.3" /></>,
   lop: <><circle cx="6" cy="6" r="2.2" /><circle cx="11.2" cy="6.6" r="1.7" /><path d="M2.5 13c.4-2.2 1.8-3.4 3.5-3.4s3.1 1.2 3.5 3.4M10.3 9.7c1.6 0 2.8 1 3.2 3" /></>,
 };
 export const IconNhom = ({ k }: { k: string }) => (

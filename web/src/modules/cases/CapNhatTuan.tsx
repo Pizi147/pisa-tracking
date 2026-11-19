@@ -7,6 +7,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DongQuyChe, Hang2, KhungPanel, Truong, useBaoDangSua, useNhap } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { ChipHan } from '../../ui/Nhan.tsx';
+import { baoNhapPa } from '../../lib/nhapPa.ts';
 import { BoiCanh, CanLam, NutChu, NutDongPanel, NutVaTiep, TrangThaiLuu, dauViec, type TiepViec } from '../../ui/KhuonViec.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { BoLocDoan, ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
@@ -22,7 +23,7 @@ import { CHU_TOI_THIEU_CASE, CASE_OUTCOMES, CASE_OUTCOME_LABEL, nhanNguoiDay,
   canBuoiTutor, TIEU_CHI_TUTOR, coNguoiDay, coSoBuoiKy, coTongBuoi, demSauKetQua, kiemSoBuoiKy, kiemSoBuoiTuan, soBuoiTu, type BuoiTutor, giaTriCuaPa, loiFormPa, loiKetQuaTuan, nguoiCuaPa, paMoi, paPayload, tachKhac, thanKetQuaTuan, thanSuaPa,
   type GiaTriPa,
 } from '@shared/domain/index.ts';
-import { hanDuyetNgay, hoanThanhCaseBatSan, quyCheGhiKetQua } from '@shared/domain/index.ts';
+import { hanDuyetNgay, hoanThanhCaseBatSan, quyCheGhiKetQua, toiKyGhi } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
 /**
@@ -364,6 +365,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
 
   /* K3-17 → OV-12a: kỳ đang ghi ("Kết quả PA · W3–W4 SEP"); trễ nhiều kỳ thì khoảng + "(ghi bù n kỳ)". Tên việc ở đầu panel: "Kết quả PA · W3–W4 SEP". */
   const tuanGhi = nhanTuanGhiKetQua(pa.actionDue ?? null, homNay).tieuDe;
+  /* TU2-4 (XM-5): PA chưa tới hạn ghi kết quả (mở từ khối "PA đang chạy") — Lưu nháp giữ tới hạn, Lưu là chốt. */
+  const sapToiHan = !sua && !!pa.actionDue && !toiKyGhi(pa.actionDue, homNay);
   const tenLoai = dich(INTERVENTION_KIND_LABEL[pa.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? pa.kind);
   /* PR-PA (§7): PA có Số buổi → "Học Tutor · 10 buổi"; còn lại giữ nội dung PA. */
   const tenPa = coDem ? t('{tenLoai} · {soBuoi} buổi', { tenLoai, soBuoi: pa.soBuoi }) : dichDu(pa.description) || tenLoai;
@@ -487,7 +490,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
     try {
       const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${pa.id}/nhap`, { ...chup, ky, coSo });
       setBanNhap(r.nhap);   // trùng chữ đang có → effect trên bỏ nháp trình duyệt
-      invalidate('/my-work'); invalidate('/cases');
+      /* TU2-4: PA chưa tới hạn không có dòng việc — báo tại chỗ cho khối "PA đang chạy", không tải lại `/my-work` (dòng đọc GV sát trần). */
+      baoNhapPa(pa.id, r.nhap);
+      if (!sapToiHan) invalidate('/my-work');
+      invalidate('/cases');
     } catch (e: any) {
       const xd = xungDotCua(e);
       if (xd) setXungDot({ ...xd, tu: 'nhap' }); else setLoiNhap({ chu: e?.message ?? t('Không lưu được'), thuLai: !daChotCua(e) });
@@ -699,7 +705,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
           )}
           {/* GD-3 / GD-4b: dòng quy chế (mockup v21 K4c) ngay trên hàng nút — chân v3 để nút trong thân; câu đổi theo Quyết định (Q20–Q26). Sửa: không có câu. */}
           {!sua && <DongQuyChe px="px-0" qc={quyCheGhiKetQua({ han: pa.actionDue ? ngan(pa.actionDue) : null, decision, deXuat,
-            lanCuoi, batBuoc: !!pa.batBuoc, ketThucSom, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined })} />}
+            lanCuoi, batBuoc: !!pa.batBuoc, ketThucSom, sapToi: sapToiHan, miniTest: coMiniTest || !!pa.miniTestHan, htCase: hoanThanhCase && ketThucPa ? htCase : undefined })} />}
           <div className="flex flex-wrap items-center justify-end gap-2 pt-0.5 max-sm:hidden"><NutDongPanel busy={busy} />{nutNhap}{nut}</div>
         </CanLam>
       </div>

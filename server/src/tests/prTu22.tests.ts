@@ -95,16 +95,14 @@ export async function runPrTu22Tests(t: any) {
     assert(dangChay().filter((r) => r.paId === c.ivId).length === 1, 'em hai ghi danh active: trùng PA');
   }));
 
-  check('TU2-2 (4a) · cụm "Kết quả PA" 7 ngày (web hiện tại) = PA paDangChay hạn ≤ hôm nay + 9 — cùng hàng; số câu không theo số PA', () => thu(() => {
+  check('TU2-2 (4a) · bỏ cụm "Kết quả PA" 7 ngày (TU2-4): sapToi không còn paToiKy, paDangChay đủ cả PA hạn xa; số câu không theo số PA', () => thu(() => {
     const dem = () => { xoaNho(); tq.sapToiCuaGv(GV); const s0 = soCauSql(); const x = trongBoNho(() => tq.sapToiCuaGv(GV)); return { x, n: soCauSql() - s0 }; };   // ấm như hàm Netlify
     pa({ sau: 4 });
     const truoc = dem().n;
     pa({ sau: 30 }); pa({ sau: 40, kind: 'self_study' });
     const { x: { sapToi, paDangChay }, n: cau } = dem();
-    const den = mw.hanGhiKetQuaToi(addDays(TODAY, 7));
-    const trong = paDangChay.filter((r: any) => r.han <= den);
-    assert(sapToi?.paToiKy?.so === trong.length && sapToi.paToiKy.han === trong[0].han, `Sắp tới ${JSON.stringify(sapToi?.paToiKy)} ≠ ${trong.length}`);
-    assert(paDangChay.length > trong.length, 'PA hạn xa vẫn ở khối');
+    assert(!(sapToi as any)?.paToiKy, 'sapToi không còn paToiKy');
+    assert(paDangChay.some((r: any) => r.han > mw.hanGhiKetQuaToi(addDays(TODAY, 7))), 'PA hạn xa vẫn ở khối');
     assert(cau === truoc, `sapToiCuaGv ${truoc} → ${cau} câu khi thêm PA`);
   }));
 

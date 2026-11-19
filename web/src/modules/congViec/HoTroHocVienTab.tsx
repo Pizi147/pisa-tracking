@@ -22,6 +22,7 @@ import { HopChoDuyet } from '../duyet/HopChoDuyet.tsx';
 import { YeuCauCuaToi } from '../duyet/YeuCauCuaToi.tsx';
 import { LopCuaToi, dungLopCuaToi, type TestSapToi } from './LopCuaToi.tsx';
 import { SapToi, type SapToiGv } from './SapToi.tsx';
+import { PaDangChayKhoi } from './PaDangChay.tsx';
 import { NutTask } from './NutTask.tsx';
 import { HvCuaToi, type EmTvv } from './HvCuaToi.tsx';
 import { DaiChiSoTvv, type ChiSoTvv } from '../worklist/TongQuanV5.tsx';
@@ -40,7 +41,7 @@ import {
   LOC_NHANH_LABEL, NHOM_VIEC_LABEL, demLocNhanh, khoaGopCua, khopLocNhanh, nhomViecCua, NHOM_CV_TVV, TAB_CV, tabCuaViec, nhanTabCv, dongTab, chiaMucTab, badgeTab, tabMacDinh,
   LOC_NHANH, viecKeTiepVong, choDaiVuaLuu, soMucPanel, type LocNhanh, type BadgeTab, demDongViec, laViecChamCheo, shortDate, chiaVachHan,
   LOC_NGUOI_VIEC, LOC_NGUOI_VIEC_LABEL, LOAI_HAN_CUA_VIEC, INTERVENTION_KIND_LABEL, NHOM_CV_TVV_LABEL, nhomViecTvvCua, khopNguoiViec, dongCuaToi, dongTheoChiNhanh, type DemYeuCau, type LocNguoiViec,
-  NHAN_LOAI_VIEC, chenHan, demBai,
+  NHAN_LOAI_VIEC, chenHan, demBai, type PaDangChay,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 
@@ -60,6 +61,8 @@ type Work = {
   testSapToi?: TestSapToi[];
   /** GD-21 (LG-13 H7): việc CHƯA sinh trong 7 ngày (PA tới kỳ · đợt Báo cáo PH sắp mở) — dòng "Sắp tới"; không có thì không có khoá. */
   sapToi?: SapToiGv;
+  /** TU2-4 (TU8, TU9): PA đang chạy chưa tới hạn người xem giữ — khối "PA đang chạy"; không phải việc (không vào số việc / badge / chuông). Không có thì không có khoá. */
+  paDangChay?: PaDangChay[];
 };
 type ViecDaBoQua = { key: string; tieuDe: string; studentId: number; studentName: string; classCode: string | null; boi: string | null; luc: string };
 
@@ -232,6 +235,7 @@ export function HoTroHocVienTab() {
   const tenTab = (k: string) => (k === 'duyet' ? t('Chờ bạn duyệt') : k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : nhanTabCv(k, laTvv));
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
+    if (data?.paDangChay?.length) conGiu.add('case-hoc-thuat');   // TU2-4: GV chỉ có PA chưa tới hạn vẫn vào được khối "PA đang chạy"
     /* GD-1 (lời 19): tab "Chấm Speaking" — đủ ngắn, 375 giữ nguyên tên (mockup v21 K8a). */
     /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục); V22: có bài quá hạn → badge đỏ. */
     const badgeCua = (k: string): BadgeTab => {
@@ -264,10 +268,12 @@ export function HoTroHocVienTab() {
   const trongTab = useMemo(() => items.filter((it) => tabCua(it) === tab), [items, tab, laTvv]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* P1 rà 11/11 G5-04 / G1-05: bộ lọc hạn áp CẢ trang (mọi tab, `locItems`) → số trong ô đếm cùng tập với đầu trang "n việc · m quá hạn" (`items`), không riêng tab. */
   const demHan = useMemo(() => demLocNhanh(items, 'tat-ca', homNay), [items, homNay]);
+  /* TU2-4: việc dựng từ PA chưa tới hạn (khối "PA đang chạy") đang / vừa mở — không nằm trong `/my-work`; nhớ để panel đứng nguyên khi dữ liệu tải lại (Lưu xong PA rời khối). */
+  const pdcMo = useRef(new Map<string, WorkItem>());
   /* `viec` trỏ tới việc không có panel (đường cũ, gõ tay) → như chưa chọn. */
   const chon = useMemo(() => {
     /* DON-HINH: việc mở từ chuông / link có thể không thuộc "Của tôi" — tìm cả danh sách QL đã nạp, không riêng dòng đang lọc. */
-    const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? null : null;
+    const x = viec ? phang(hienThi).find((y) => y.key === viec) ?? [...giu.values()].find((y) => y.key === viec) ?? phang(dsGoc).find((y) => y.key === viec) ?? pdcMo.current.get(viec) ?? null : null;
     return x && lamTaiCho(x) ? x : null;
   }, [viec, hienThi, giu, dsGoc]);
   const luoiRong = !!chon && chon.group === 'ghi_ket_qua_pa' && moCaDong(chon);
@@ -313,6 +319,7 @@ export function HoTroHocVienTab() {
   const cuon = useRef(0);
   const mo = (it: WorkItem) => {
     if (!lamTaiCho(it)) { navigate(it.group === 'bao_cao_ph' ? `${it.href}&viet=1` : it.href); return; }   /* AU-GON B3-10: "Viết ›" mở thẳng panel viết (`?viet=1`, TabBaoCaoPh) */
+    if (it.key.startsWith('pdc-lop:') || data?.paDangChay?.some((x) => `action:${x.paId}` === it.key && !phang(dsGoc).some((y) => y.key === it.key))) pdcMo.current.set(it.key, it);
     const next = new URLSearchParams(params);
     next.set('viec', it.key);
     if (tabCua(it) !== tab && !params.get('loai')) next.set('nhom', tabCua(it));   // CV-TAB: việc của tab khác (Việc tiếp, Em này còn) → danh sách sang tab đó
@@ -356,7 +363,7 @@ export function HoTroHocVienTab() {
   const [het, setHet] = useState<{ nhom: string; ke: (WorkItem & { nhom: string }) | null } | null>(null);
   useEffect(() => { setHet(null); }, [viec]);
   /* G1-13 / G4-18: giữ bản dòng lúc lưu LẦN ĐẦU — lưu tiếp (Lưu L rồi Vắng R) không đổi dòng vừa xong thành phần còn lại ("✓ Reading · 1 bài"). */
-  const daLam = (it: WorkItem) => setGiu((m) => (m.has(it.key) ? m : new Map(m).set(it.key, it)));
+  const daLam = (it: WorkItem) => { if (pdcMo.current.has(it.key)) return; setGiu((m) => (m.has(it.key) ? m : new Map(m).set(it.key, it))); };   // TU2-4: việc dựng từ PA chưa tới hạn không phải dòng giữ chỗ
   /*
    * M6 6b-3 (mockup panel-pilot ②b, ②d): việc vừa lưu bằng "· việc tiếp ›" — dải "✓ … · Hoàn tác" ở đầu việc kế (`den`) hoặc thẻ "Hết việc" (`den` = null);
    * Hoàn tác xong mở lại việc đó để làm lại (`lan` dựng lại panel đang mở, không giữ "✓ Đã lưu" cũ).
@@ -663,6 +670,10 @@ export function HoTroHocVienTab() {
                   : x.group === 'xuat_bc_ph' && !x.due && x.classId
                     ? <NutXuatLopBc lopId={x.classId} dot={x.key.split(':').slice(2).join(':')} />
                     : null)} />
+          )}
+          {/* TU2-4 (mockup Ⓣ1 D1): "PA đang chạy" ngay dưới nhóm Kết quả PA (cuối tab Case học thuật) — không phải việc, không vào số việc / badge / chuông. */}
+          {data && !data.scopeEmpty && tab === 'case-hoc-thuat' && !!data.paDangChay?.length && (
+            <PaDangChayKhoi ds={data.paDangChay} uid={uid ?? null} chon={viec} onMo={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} />
           )}
           {/* OV-15h1 → CV-TAB: không có việc Vận hành nào — tab "Việc quản lý" vẫn có lối Giao việc · Vận hành · Báo cáo đơn vị. */}
           {data && tab === 'van-hanh' && coVanHanh && mucs.length === 0 && <section className="card p-0"><div className="px-4 py-1">{loiVanHanh}</div></section>}

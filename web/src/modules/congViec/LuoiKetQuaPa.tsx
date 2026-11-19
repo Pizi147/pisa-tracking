@@ -12,20 +12,42 @@ import { NganCase } from '../students/NganCaseLuoi.tsx';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 import {
   CHU_TOI_THIEU_CASE, FOLLOWUP_OUTCOMES, GOI_Y_KET_QUA_PA, INTERVENTION_KIND_LABEL, KY_HIEU_TIEN_TRIEN, TRAN_CHU, caseTopicLabel, duongHoSoHocVien,
-  kyGhiKetQua, nguoiCuaPa, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan,
+  ghiNhanhDuoc, kyGhiKetQua, nguoiCuaPa, outcomeLabelFor, quyCheLuoiKetQua, thanKetQuaTuan, toiKyGhi, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { dich, dichDu, t } from '@shared/i18n/index.ts';
 import { fmtBand } from '../../lib/format.ts';
+import { baoNhapPa } from '../../lib/nhapPa.ts';
+import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
+import { TRAN_NOI_DUNG_TUTOR } from '../cases/BuoiTutorO.tsx';
 
 type Em = NonNullable<WorkItem['con']>[number];
-type NhapMayChu = { outcome: string; note: string; luc: string; boi: string };
+type NhapMayChu = { outcome: string; note: string; luc: string; boi: string; soBuoi?: number | null; buoiDuKien?: number | null; buoi?: { tutorId?: number | null; gvId?: number | null; tutor: string; nhanXet: string }[] };
 /** Một PA của lưới (`GET /interventions/luoi-ket-qua`, máy chủ `cases/luoiKetQua.ts`). */
 type PaLuoi = {
   id: number; caseId: number; kind: string; description: string | null; topic: string | null;
   performer: string | null; performerUserId: number | null; cycleNo: number; dangChay: boolean;
   nhap: NhapMayChu | null; mt: { attemptNo: number; band: number; expectation: number | null } | null; hanKe: string | null;
+  /** TU2-2 / TU2-4: PA Tutor — b điền sẵn · tutor kỳ trước · `so_buoi` của PA (quyết dòng ghi nhanh được). */
+  buoiKy?: number | null; tutorTruoc?: { tutorId: number | null; gvId: number | null; ten: string } | null; soBuoi?: number | null;
 };
-type GiaTri = { outcome: string; note: string };
+/** TU2-4 (R1.24): dòng PA Tutor ghi trong lưới — `a` đã học · `b` dự kiến (chữ người gõ) · `tu` tutor / GV đã chọn; `note` = Nội dung của dòng Tutor duy nhất. */
+type TuChon = { tutorId?: number | null; gvId?: number | null; tutor: string; phu?: string };
+type GiaTri = { outcome: string; note: string; a?: string; b?: string; tu?: TuChon };
+const soNho = (s: string | undefined): number | null => (s && /^\d{1,2}$/.test(s.trim()) ? Number(s.trim()) : null);
+/** Đủ để lưu: Tiến triển · a (0–60) · b (1–60) · a ≥ 1 thì thêm Tutor + Nội dung (≥ 8, ≤ 300 ký tự). */
+const duTutor = (v: GiaTri): boolean => {
+  const a = soNho(v.a), b = soNho(v.b), n = v.note.trim().length;
+  if (!v.outcome || a === null || a > 60 || b === null || b < 1 || b > 60) return false;
+  return a === 0 || (!!v.tu?.tutor.trim() && n >= CHU_TOI_THIEU_CASE && n <= TRAN_NOI_DUNG_TUTOR);
+};
+const thieuTutor = (v: GiaTri): string[] => {
+  const a = soNho(v.a), b = soNho(v.b), n = v.note.trim().length;
+  return [!v.outcome && t('Thiếu tiến triển'), (a === null || a > 60) && t('Thiếu số buổi đã học'), (b === null || b < 1 || b > 60) && t('Thiếu số buổi dự kiến'),
+    a !== null && a >= 1 && !v.tu?.tutor.trim() && t('Thiếu Tutor'), a !== null && a >= 1 && n < CHU_TOI_THIEU_CASE && t('Nhận xét ≥ {n} ký tự', { n: CHU_TOI_THIEU_CASE }), n > TRAN_NOI_DUNG_TUTOR && t('Tối đa {n} ký tự', { n: TRAN_NOI_DUNG_TUTOR })].filter((x): x is string => !!x);
+};
+/** Phần Tutor của thân gửi: lưu chốt (`soBuoi` = a, đúng một dòng khi a ≥ 1) · nháp (chỉ phần có chữ). */
+const thanTutorChot = (v: GiaTri) => { const a = Number(v.a); return { soBuoi: a, buoiDuKien: Number(v.b), buoi: a > 0 ? [{ tutorId: v.tu?.tutorId ?? null, gvId: v.tu?.gvId ?? null, tutor: v.tu!.tutor.trim(), nhanXet: v.note.trim(), soBuoi: a }] : [] }; };
+const thanTutorNhap = (v: GiaTri) => ({ soBuoi: soNho(v.a), buoiDuKien: soNho(v.b), buoi: v.tu?.tutor.trim() || v.note.trim() ? [{ tutorId: v.tu?.tutorId ?? null, gvId: v.tu?.gvId ?? null, tutor: (v.tu?.tutor ?? '').trim(), nhanXet: v.note.trim(), soBuoi: null }] : [] });
 /** `xungDot`: phiên khác vừa lưu nháp khác (409 `nhapMoi`) — bản mới đã nhận làm bản gốc; dòng chọn "Lưu bản của tôi" (đè có chủ ý) hoặc "Dùng bản mới". */
 type Loi = { chu: string; thuLai: boolean; kieu: 'chot' | 'nhap'; xungDot?: boolean };
 type Tt = 'chua' | 'thieu' | 'san' | 'nhap' | 'dang' | 'loi' | 'da' | 'phuc';
@@ -71,9 +93,24 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   const doiODay = useRef(false);
 
   const nhapCua = (id: number) => (id in nhapMoi ? nhapMoi[id] : paCua.get(id)?.nhap ?? null);
-  const giaTri = (id: number): GiaTri => sua[id] ?? (nhapCua(id) ? { outcome: nhapCua(id)!.outcome, note: nhapCua(id)!.note } : TRONG);
   const emCua = new Map(ds.map((x) => [x.paId!, x]));
-  const phuc = (x: Em) => !x.ghiNhanh || !paCua.has(x.paId!);
+  const cuoiCua = (x: Em) => /^Kết quả cuối/.test(x.tieuDe);
+  /* TU2-4: PA Tutor (không phải kết quả cuối) ghi ngay trong lưới — a / b + Tutor + Nhận xét; 3 nút, Đánh giá thêm, "+ Tutor khác" ở "Mở đầy đủ". */
+  const laTutor = (x: Em) => paCua.get(x.paId!)?.kind === 'tutor' && !cuoiCua(x);
+  /* Điền sẵn từ nháp máy chủ; b = b kỳ trước, tutor = tutor kỳ trước (TU4, TU11) — chỉ khi ghi mới. */
+  const macDinhTutor = (id: number): GiaTri => {
+    const pa = paCua.get(id), nh = nhapCua(id), b0 = nh?.buoi?.[0];
+    return {
+      outcome: nh?.outcome ?? '', note: b0 ? b0.nhanXet : nh?.note ?? '',
+      a: nh?.soBuoi != null ? String(nh.soBuoi) : '', b: nh?.buoiDuKien != null ? String(nh.buoiDuKien) : pa?.buoiKy != null ? String(pa.buoiKy) : '',
+      tu: b0 ? { tutorId: b0.tutorId ?? null, gvId: b0.gvId ?? null, tutor: b0.tutor } : pa?.tutorTruoc ? { tutorId: pa.tutorTruoc.tutorId, gvId: pa.tutorTruoc.gvId, tutor: pa.tutorTruoc.ten } : undefined,
+    };
+  };
+  const giaTri = (id: number): GiaTri => sua[id] ?? (laTutor(emCua.get(id)!) ? macDinhTutor(id)
+    : nhapCua(id) ? { outcome: nhapCua(id)!.outcome, note: nhapCua(id)!.note } : TRONG);
+  /* Ghi nhanh = PA không đếm buổi, không kết quả cuối, không Mini Test (`ghiNhanhDuoc`, tính từ chính PA: PA chưa tới hạn không có dòng việc mang cờ) — hoặc PA Tutor ghi ở lưới. */
+  const ghiLuoi = (x: Em) => { const pa = paCua.get(x.paId!); return !!pa && (laTutor(x) || ghiNhanhDuoc({ kind: pa.kind, soBuoi: pa.soBuoi ?? null, lanCuoi: cuoiCua(x) })); };
+  const phuc = (x: Em) => !ghiLuoi(x);
   const trangThai = (x: Em): Tt => {
     const id = x.paId!;
     if (da.has(id)) return 'da';
@@ -82,12 +119,17 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
     if (phuc(x)) return 'phuc';
     const v = giaTri(id);
     const n = v.note.trim().length;
+    if (laTutor(x)) {
+      if (duTutor(v)) return 'san';
+      if (!v.outcome && !n && !(v.a ?? '').trim()) return 'chua';
+      return nhapCua(id) && !sua[id] ? 'nhap' : 'thieu';
+    }
     if (v.outcome && n >= CHU_TOI_THIEU_CASE && n <= TRAN_CHU.ketQuaPa) return 'san';
     if (!v.outcome && !n) return 'chua';
     const nh = nhapCua(id);
     return nh && !sua[id] ? 'nhap' : 'thieu';
   };
-  const du = (x: Em) => { const v = giaTri(x.paId!); const n = v.note.trim().length; return !phuc(x) && !!v.outcome && n >= CHU_TOI_THIEU_CASE && n <= TRAN_CHU.ketQuaPa; };
+  const du = (x: Em) => { const v = giaTri(x.paId!); const n = v.note.trim().length; return !phuc(x) && (laTutor(x) ? duTutor(v) : !!v.outcome && n >= CHU_TOI_THIEU_CASE && n <= TRAN_CHU.ketQuaPa); };
   /* PA máy chủ không trả (ngoài quyền xem) không tính vào "đủ / xong" của lưới — không chặn "Lưu · việc tiếp ›"; báo một dòng (PTA rà #1738). */
   const ngoai = data ? ds.filter((x) => !paCua.has(x.paId!)) : [];
   const dsLam = ngoai.length ? ds.filter((x) => paCua.has(x.paId!)) : ds;
@@ -116,12 +158,13 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
       const v = giaTri(id);
       setDang(new Set([id]));
       try {
+        const tu = laTutor(emCua.get(id)!);
         await api.post(`/interventions/${id}/result`, {
-          decision: 'keep', outcome: v.outcome, note: v.note.trim(), observedOn: homNay || undefined, ky: pa.cycleNo, nhapCoSo: nhapCua(id)?.luc ?? null,
-          ...thanKetQuaTuan({ kind: pa.kind, soBuoi: null }, '1', nguoiCuaPa(pa)),
+          decision: 'keep', outcome: v.outcome, note: tu && Number(v.a) === 0 ? '' : v.note.trim(), observedOn: homNay || undefined, ky: pa.cycleNo, nhapCoSo: nhapCua(id)?.luc ?? null,
+          ...(tu ? thanTutorChot(v) : thanKetQuaTuan({ kind: pa.kind, soBuoi: null }, '1', nguoiCuaPa(pa))),
         });
         delete loiMoi[id];
-        daMoi.set(id, { outcome: v.outcome, note: v.note.trim() });
+        daMoi.set(id, { ...v, note: v.note.trim() });
         ok.push(id);
       } catch (e: any) { loiMoi[id] = loiCua(e, 'chot'); nhanBanMoi(id, e); }
     }
@@ -141,15 +184,18 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
       const v = giaTri(id);
       setDang(new Set([id]));
       try {
-        const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${id}/nhap`, { outcome: v.outcome, note: v.note, ky: pa.cycleNo, coSo: nhapCua(id)?.luc ?? null });
+        const tu = laTutor(emCua.get(id)!);
+        const r = await api.put<{ nhap: NhapMayChu | null }>(`/interventions/${id}/nhap`, { outcome: v.outcome, note: tu ? '' : v.note, ...(tu ? thanTutorNhap(v) : {}), ky: pa.cycleNo, coSo: nhapCua(id)?.luc ?? null });
         setNhapMoi((m) => ({ ...m, [id]: r.nhap }));
+        baoNhapPa(id, r.nhap);   // TU2-4: khối "PA đang chạy" đổi nhãn nháp tại chỗ
         delete loiMoi[id];
         ok.push(id);
       } catch (e: any) { loiMoi[id] = loiCua(e, 'nhap'); nhanBanMoi(id, e); }
     }
     setDang(new Set()); setLoi(loiMoi); boSua(ok); xepLai(loiMoi, da);
     dangGui.current = false; setGui(null);
-    if (ok.length) { invalidate('/my-work'); invalidate('/cases'); }
+    /* PA chưa tới hạn không có dòng việc: không tải lại `/my-work` (khối đã nhận nhãn nháp ở trên). */
+    if (ok.length) { if (ok.some((id) => toiKyGhi(emCua.get(id)?.due, homNay))) invalidate('/my-work'); invalidate('/cases'); }
   };
   const thuLai = (id: number) => (loi[id]?.kieu === 'nhap' ? luuNhap([id]) : luu([id]));
   /* Xung đột nháp: bản mới thành bản gốc (lần gửi sau so với nó) — chữ của mình vẫn trong ô. "Dùng bản mới" bỏ chữ của mình, lấy bản mới. */
@@ -196,6 +242,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
     <button type="button" className="btn min-h-[44px] px-4 sm:min-h-[40px]" disabled={!!gui} onClick={() => void luuNhap(coSoNhap.map((x) => x.paId!))}>{gui === 'nhap' ? t('Đang lưu nháp…') : t('Lưu nháp')}</button>
   );
   const soDa = dsLam.length - conLai.length;
+  const coTutorLuoi = dsLam.some((x) => laTutor(x));   // có dòng Tutor → cột Buổi / Tutor / Nhận xét thẳng hàng cho mọi dòng
   const trai: ReactNode = gui ? <span className="tt-luu dang" role="status">{gui === 'nhap' ? t('Đang lưu nháp…') : t('Đang lưu {n} dòng…', { n: sanLuu.length || 1 })}</span>
     : xongHet ? <span className="tt-luu da" role="status">✓ {t('Đã lưu')}</span>
     : coLoi.length ? <>{soDa > 0 && <span className="tt-luu da">✓ {t('Đã lưu {n}', { n: soDa })}</span>}<span className="tt-luu loi" role="status">⚠ {t('{n} dòng không lưu được ↑', { n: coLoi.length })}</span></>
@@ -222,7 +269,12 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
             <div className="overflow-hidden rounded-[10px] border max-sm:-mx-4 max-sm:rounded-none max-sm:border-x-0" style={{ borderColor: 'var(--line)' }}>
               <div className="grid grid-cols-[186px_minmax(0,1fr)_124px] gap-x-3.5 border-b px-3.5 py-2 text-xs font-semibold text-faint max-sm:hidden" style={{ borderColor: 'var(--line)', background: 'var(--surface-2)' }}>
                 <span>{t('Học viên · PA')}</span>
-                <span>{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span> · {t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span>
+                {coTutorLuoi ? (
+                  <span className="grid gap-0.5">
+                    <span>{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span></span>
+                    <span className="grid grid-cols-[150px_196px_minmax(0,1fr)] gap-2"><span>{t('Buổi: đã học / dự kiến')}</span><span>{t('Tutor')}</span><span>{t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span></span>
+                  </span>
+                ) : <span>{t('Tiến triển (2 tuần)')}<span aria-hidden className="text-bad"> *</span> · {t('Nhận xét')}<span aria-hidden className="text-bad"> *</span></span>}
                 <span>{t('Trạng thái')}</span>
               </div>
               <ul className="m-0 list-none p-0">
@@ -231,6 +283,7 @@ export function LuoiKetQuaPa({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
                   return (
                     <li key={id} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
                       <DongLuoi em={x} pa={paCua.get(id) ?? null} tt={trangThai(x)} v={giaTri(id)} daLuu={da.get(id)} loi={loi[id] ?? null} nhap={sua[id] ? null : nhapCua(id)}
+                        tutor={laTutor(x)} coCotTutor={coTutorLuoi} thieu={laTutor(x) ? thieuTutor(giaTri(id)) : []}
                         khoa={!!gui} datO={(p) => datO(id, p)} thuLai={() => void thuLai(id)} dungBanMoi={() => dungBanMoi(id)} moDay={(xem) => setDay({ em: x, xem })} />
                     </li>
                   );
@@ -266,8 +319,10 @@ const chuTt = (tt: Tt): string => ({
 const MAU_TT: Partial<Record<Tt, string>> = { thieu: 'text-soon', nhap: 'text-soon', loi: 'text-bad', da: 'text-ok' };
 
 /** Một dòng lưới = một PA. 1440: [em 200 | chip + Nhận xét | trạng thái 128]; 375: thẻ (em + trạng thái một hàng, chip xuống dòng, ô, nút). */
-function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBanMoi, moDay }: {
+function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, tutor, coCotTutor, thieu, khoa, datO, thuLai, dungBanMoi, moDay }: {
   em: Em; pa: PaLuoi | null; tt: Tt; v: GiaTri; daLuu: GiaTri | null | undefined; loi: Loi | null; nhap: NhapMayChu | null; khoa: boolean;
+  /** TU2-4: dòng PA Tutor ghi trong lưới · lưới có cột Buổi / Tutor / Nhận xét · những ô còn thiếu (câu ngắn). */
+  tutor: boolean; coCotTutor: boolean; thieu: string[];
   datO: (p: Partial<GiaTri>) => void; thuLai: () => void; dungBanMoi: () => void; moDay: (xem: boolean) => void;
 }) {
   const kn = pa?.topic ? dich(caseTopicLabel(pa.topic)) : null;
@@ -276,7 +331,7 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
   const mt = pa?.mt ? <>MT{pa.mt.attemptNo} {pa.topic ? skillShort(pa.topic) : ''} <span className="tabular-nums">{fmtBand(pa.mt.band)}</span>{pa.mt.expectation != null && <> · {t('kỳ vọng')} <span className="tabular-nums">{fmtBand(pa.mt.expectation)}</span></>}</> : cuoi ? t('Kỳ cuối') : null;
   const n = v.note.trim().length;
   const dang = tt === 'dang';
-  const chu = tt === 'thieu' && !v.outcome ? t('Thiếu tiến triển') : tt === 'thieu' && n > TRAN_CHU.ketQuaPa ? t('Nhận xét quá dài') : chuTt(tt);
+  const chu = tt === 'thieu' && tutor ? t('Thiếu') : tt === 'thieu' && !v.outcome ? t('Thiếu tiến triển') : tt === 'thieu' && n > TRAN_CHU.ketQuaPa ? t('Nhận xét quá dài') : chuTt(tt);
   const nhanTt = <span className={`whitespace-nowrap text-[13px] font-semibold ${MAU_TT[tt] ?? 'text-faint'}`} role={tt === 'loi' ? 'alert' : undefined}>{chu}</span>;
   /* Cột Trạng thái (PTA rà ⑫): "Mở đầy đủ" / "Sửa" không viền (viền khi rê / focus); dòng BẮT BUỘC mở đầy đủ giữ nút có viền. */
   const nut = tt === 'da' ? <button type="button" className={NUT_MA} onClick={() => moDay(true)}>{t('Sửa')}</button>
@@ -291,6 +346,36 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
     <Link to={duongHoSoHocVien(em.studentId!)} className="text-[15px] font-semibold text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline max-sm:-my-2.5 max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center sm:text-sm">{em.studentName}</Link>
   );
   const phu = [kn && <b key="k" className="font-semibold text-dim">{kn}</b>, tenPa].filter(Boolean);
+  /* TU2-4 (mockup Ⓣ1 E1): cụm `[a] / [b]` · ô Tutor (hẹp, có tìm, có GV) · Nhận xét — a = 0 ẩn Tutor và Nhận xét. */
+  const a = soNho(v.a);
+  const oSo = (k: 'a' | 'b', nhanOo: string, loiO: boolean) => (
+    <span className="grid justify-items-center gap-0.5">
+      <input className="field h-9 w-[58px] text-center tabular-nums max-sm:h-11 max-sm:w-[84px] max-sm:text-base" inputMode="numeric" autoComplete="off" maxLength={2} placeholder="–" readOnly={dang}
+        aria-label={`${nhanOo} · ${em.studentName}`} aria-invalid={loiO || undefined} value={v[k] ?? ''} onChange={(e) => datO({ [k]: e.target.value.replace(/\D/g, '') })} />
+      <small className="text-xs text-faint sm:hidden">{nhanOo}</small>
+    </span>
+  );
+  const oAB = (
+    <div role="group" aria-label={t('Số buổi · {ten}', { ten: em.studentName })} className="flex items-start gap-1.5">
+      {oSo('a', t('đã học'), tt === 'thieu' && (a === null || a > 60))}
+      <span aria-hidden className="pt-1.5 text-dim max-sm:pt-2.5">/</span>
+      {oSo('b', t('dự kiến'), tt === 'thieu' && soNho(v.b) === null)}
+    </div>
+  );
+  const ten = v.tu?.tutor.trim() ?? '';
+  const nguoiTutor: NguoiChon | null = !ten ? null : v.tu?.tutorId || v.tu?.gvId ? { kieu: 'tai_khoan', id: v.tu!.tutorId ?? -(v.tu!.gvId as number), ten, ...(v.tu!.phu ? { phu: v.tu!.phu } : {}) } : { kieu: 'ngoai', ten, phu: t('tên gõ tay') };
+  const oTutor = (
+    <ChonNguoi nhom="nhan_vien" tutor={{ paId: em.paId!, chi: true }} choToi={false} value={nguoiTutor} ariaLabel={t('Tutor · {ten}', { ten: em.studentName })} placeholder={t('Tìm GV, tutor…')}
+      invalid={tt === 'thieu' && a !== null && a >= 1 && !ten} disabled={dang}
+      onChange={(nv, tg) => datO(tg?.loai === 'gv' && tg.gvId ? { tu: { gvId: tg.gvId, tutorId: null, tutor: tg.ten, phu: ['GV', tg.noiDay].filter(Boolean).join(' · ') } }
+        : nv?.kieu === 'tai_khoan' ? { tu: { tutorId: nv.id, gvId: null, tutor: nv.ten, phu: tg ? ['Tutor', tg.noiDay, tg.kyNang.split(',').join(', ')].filter(Boolean).join(' · ') : undefined } }
+          : { tu: nv && nv.kieu === 'ngoai' ? { tutorId: null, gvId: null, tutor: nv.ten } : undefined })} />
+  );
+  const oNx = (
+    <textarea rows={1} className="field min-h-[44px] w-full resize-none text-sm [field-sizing:content] sm:min-h-9 max-sm:placeholder-shown:min-h-[66px]" name={`nhan-xet-${em.paId}`} autoComplete="off" value={v.note} readOnly={dang}
+      placeholder={tutor ? t('Em học được gì, còn yếu gì') : dich(GOI_Y_KET_QUA_PA)} aria-label={t('Nhận xét · {ten}', { ten: em.studentName })}
+      aria-invalid={tt === 'thieu' && n > 0 ? true : undefined} onChange={(e) => datO({ note: e.target.value })} />
+  );
 
   return (
     <div className={`grid gap-x-3.5 gap-y-2 px-4 py-3 sm:grid-cols-[186px_minmax(0,1fr)_124px] sm:px-3.5 sm:py-2.5 ${tt === 'loi' ? 'bg-bad-bg' : tt === 'da' ? 'max-sm:bg-ok-bg' : ''}`}>
@@ -306,7 +391,7 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
 
       {tt === 'da' ? (
         <p className="m-0 min-w-0 self-center text-sm leading-snug text-dim max-sm:hidden">
-          {daLuu ? <><b className="mr-2 font-semibold text-[color:var(--text)]">{KY_HIEU_TIEN_TRIEN[daLuu.outcome as keyof typeof KY_HIEU_TIEN_TRIEN]} {dich(outcomeLabelFor(daLuu.outcome))}</b>{daLuu.note}</> : t('Đã ghi ở panel đầy đủ')}
+          {daLuu ? <><b className="mr-2 font-semibold text-[color:var(--text)]">{KY_HIEU_TIEN_TRIEN[daLuu.outcome as keyof typeof KY_HIEU_TIEN_TRIEN]} {dich(outcomeLabelFor(daLuu.outcome))}</b>{daLuu.a !== undefined && <span className="mr-1 tabular-nums">{daLuu.a} / {daLuu.b}{Number(daLuu.a) > 0 && daLuu.tu?.tutor ? ` · ${daLuu.tu.tutor} ·` : ''}</span>}{Number(daLuu.a ?? 1) > 0 && daLuu.note}</> : t('Đã ghi ở panel đầy đủ')}
         </p>
       ) : tt === 'phuc' || !pa ? (
         <div className="flex min-w-0 items-center rounded-lg border border-dashed px-3 py-2 text-[13px] text-dim sm:min-h-[72px] max-sm:border-0 max-sm:p-0" style={{ borderColor: 'var(--line-strong)' }}>
@@ -326,10 +411,20 @@ function DongLuoi({ em, pa, tt, v, daLuu, loi, nhap, khoa, datO, thuLai, dungBan
             ))}
           </div>
           {/* Ô tự giãn theo chữ (mockup ⑫ `.o`): một dòng khi ngắn, xuống dòng khi dài; 375 chữ gợi ý hiện đủ (hai dòng). */}
-          <textarea rows={1} className="field min-h-[44px] w-full resize-none text-sm [field-sizing:content] sm:min-h-9 max-sm:placeholder-shown:min-h-[66px]" name={`nhan-xet-${em.paId}`} autoComplete="off" value={v.note} readOnly={dang} placeholder={dich(GOI_Y_KET_QUA_PA)} aria-label={t('Nhận xét · {ten}', { ten: em.studentName })}
-            aria-invalid={tt === 'thieu' && n > 0 ? true : undefined} onChange={(e) => datO({ note: e.target.value })} />
+          {coCotTutor ? (
+            <div className="grid gap-2 sm:grid-cols-[150px_196px_minmax(0,1fr)]">
+              {tutor ? oAB : <span className="max-sm:hidden" />}
+              {tutor && a !== 0 ? <div className="min-w-0">{oTutor}</div> : <span className="max-sm:hidden" />}
+              {!tutor || a !== 0 ? oNx : null}
+            </div>
+          ) : oNx}
+          {/* Dòng Tutor: ô còn thiếu nói một dòng (mockup E1 "Thiếu Tutor · Nhận xét ≥ 8 ký tự"). */}
+          {tutor && tt === 'thieu' && thieu.length > 0 && (
+            <span className="flex justify-between gap-3 text-xs font-semibold text-soon"><span>{thieu.join(' · ')}</span>
+              {n > 0 && n < CHU_TOI_THIEU_CASE && <span className="tabular-nums text-dim">{n}/{CHU_TOI_THIEU_CASE}</span>}</span>
+          )}
           {/* Bộ đếm chỉ khi đang gõ mà chưa đủ / quá dài (mockup C2 "Nhận xét ≥ 8 ký tự · 7/8"). */}
-          {n > 0 && (n < CHU_TOI_THIEU_CASE || n > TRAN_CHU.ketQuaPa) && (
+          {!tutor && n > 0 && (n < CHU_TOI_THIEU_CASE || n > TRAN_CHU.ketQuaPa) && (
             <span className={`flex justify-between gap-3 text-xs font-semibold ${n > TRAN_CHU.ketQuaPa ? 'text-bad' : 'text-soon'}`}>
               <span>{n > TRAN_CHU.ketQuaPa ? t('Tối đa {n} ký tự', { n: TRAN_CHU.ketQuaPa }) : t('Nhận xét ≥ {n} ký tự', { n: CHU_TOI_THIEU_CASE })}</span>
               <span className="tabular-nums text-dim">{n}/{n > TRAN_CHU.ketQuaPa ? TRAN_CHU.ketQuaPa : CHU_TOI_THIEU_CASE}</span>
