@@ -1,7 +1,7 @@
 # 02 — Luật Tutor (bản 2, 19/11/2026 — theo lời chủ SP 19/11)
 
 Bản 1 (buổi là bản ghi riêng, giao người dạy, tick Vắng) **đã bỏ** — chủ SP 19/11 ý 1, 2, 6 (nguyên văn: `plan.md` mục 4). Bản 1 còn trong git (#1848).
-Cột "Nguồn": **CSP n** = lời chủ SP 19/11 ý n (đã chốt) · **PTA** = PTA Tutor tự chọn cho khớp, chủ SP sửa nếu khác · **Cn** = còn hỏi ở `04-cau-hoi.md`.
+Cột "Nguồn": **CSP n** = lời chủ SP 19/11 ý n (đã chốt) · **PTA** = PTA Tutor tự chọn cho khớp, chủ SP sửa nếu khác · **(Cn)** = câu n của `04-cau-hoi.md` mục B, chủ SP "Ok cả 4 câu" 19/11.
 "20/10" = đặc tả `2026-10-19-tutor-head-tutor-design.md`. Luật không nhắc (SOS → PA, mốc quy chế, hạn thứ Ba, Hiệu quả PA, N46, N51, N52…) **không đổi**.
 
 ## Nguyên tắc (CSP 6)
@@ -22,10 +22,10 @@ Phần Tutor chỉ để **làm rõ kết quả PA** và **đánh giá được 
 | TU8 | **Khối "PA đang chạy"** ở Công việc của GV, dưới các việc tới hạn: mọi PA GV đang giữ mà **chưa tới hạn** — em · kỹ năng · PA · hạn kỳ · dấu "nháp" nếu có; bấm = mở ghi nháp. **Không tính** vào số việc, badge, chuông | THAY dải "Sắp tới · Kết quả PA n" (chỉ một con số, cửa sổ 7 ngày — GD-21) | CSP 4 |
 | TU9 | Khối TU8 áp **mọi loại PA** (Tutor, Tự học, Bổ trợ…), không riêng Tutor; phần Tutor (a / b, ô Tutor) chỉ hiện ở PA Tutor | — | PTA (chủ SP nói "những Phương Án… đang chạy") |
 | TU10 | **Hạn Kết quả PA giữ: 2 tuần một lần, hết thứ Ba.** Không đổi công thức | GIỮ (OV-12a) | CSP 5 — xem `00-hien-trang.md` mục 4 |
-| TU11 | **b (số buổi dự kiến của kỳ)**: — | — | **C1** |
-| TU12 | **Trang Tutor** (đánh giá tutor): — | — | **C2** |
-| TU13 | **Head** ở danh bạ tutor: — | — | **C3** |
-| TU14 | **Đếm buổi theo người dạy × tháng**: — | — | **C4** |
+| TU11 | **Xác nhận PA Tutor thôi bắt "Số buổi / 2 tuần".** Lần ghi kết quả đầu GV gõ "a / b"; b được nhớ cho kỳ sau, sửa được. "Số buổi" của PA từ nay = **Tổng số buổi**, tuỳ chọn, chỉ đếm với PA không có mốc quy chế SOS (Kỳ vọng "Trung tâm" giữ 10 buổi / kỹ năng) | ĐỔI (HOTFIX-4 19/10) — gỡ kẹt 133 PA | CSP "Ok cả 4 câu" (C1) |
+| TU12 | **Mở lại trang Tutor**: một bảng "Người dạy" (tutor + GV có buổi) — số buổi · 3 tỉ lệ (trên buổi có trả lời) · đánh giá · kết luận; bấm tên → các kết quả đã ghi. Head tutor · Head · Quản trị; **CX xem**. Không khối "Việc của bạn" | ĐỔI (AN-TUTOR 22/10 ẩn) | CSP (C2) |
+| TU13 | **Head** thêm / sửa tutor của chi nhánh mình + gộp tên gõ tay; nhận xét + kết luận về tutor vẫn chỉ Head tutor + Quản trị. Không ai có việc / hạn | ĐỔI (20/10: Head chỉ xem) | CSP (C3) |
+| TU14 | **Số buổi theo người dạy × tháng** + xuất Excel ở trang Tutor (ai xem được trang thì xuất được, theo phạm vi của mình); lấy từ số buổi đã ghi | MỚI | CSP (C4) |
 | TU15 | Danh bạ tutor: Tên + Kỹ năng bắt buộc; SĐT chống trùng; Tải danh sách; Gộp tên gõ tay + Hoàn tác; GV chỉ thấy 3 số cuối SĐT; xoá chỉ khi chưa có buổi; tutor "Ngừng hợp tác" không hiện ở ô chọn | GIỮ 20/10 | — |
 | TU16 | "Cần chú ý" (tutor) = có dòng có ô "Không" hoặc sao ≤ 2 **sau** nhận xét gần nhất của Head tutor / Quản trị. Dòng không trả lời 3 nút **không** vào mẫu số, không tính | GIỮ 20/10 (đã đúng với ô trống) | — |
 | TU17 | Không thêm việc có hạn, không chuông, không chặn nào mới. Không tab cấu hình Tutor ở Quản trị (chủ SP 12/11) | GIỮ | CSP 6 |
