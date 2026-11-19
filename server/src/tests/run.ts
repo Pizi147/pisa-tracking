@@ -10026,6 +10026,9 @@ await runPrNhapKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } 
 // ==================================================================== TU2-1 (Kết quả PA Tutor a / b, dòng gộp, GV làm tutor, nháp phần Tutor, Xác nhận PA không Số buổi)
 const { runPrTutor2Tests } = bocTep('prTutor2', await import('./prTutor2.tests.ts'));
 await runPrTutor2Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);
+// ==================================================================== TU2-5 (trang Tutor: Head sửa danh bạ chi nhánh mình, CX xem, Buổi = Σ so_buoi, người dạy là GV, xuất số buổi)
+const { runPrTutor5Tests } = bocTep('prTutor5', await import('./prTutor5.tests.ts'));
+await runPrTutor5Tests({ check, checkAsync, assert, conn, P } as any);
 // ==================================================================== TU2-2 (PA đang chạy ở /my-work GV · lưới Kết quả PA có phần Tutor)
 const { runPrTu22Tests } = bocTep('prTu22', await import('./prTu22.tests.ts'));
 await runPrTu22Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, addDays, classId } as any);

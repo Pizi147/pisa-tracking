@@ -11,8 +11,8 @@
  * URL có chỗ thay bằng ID thật lúc chạy: `{lopFT}`, `{lopThuong}`, `{lopBe}`, `{lopPet}`, `{hv}`, `{case}`, `{cn}`.
  */
 
-/** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. */
-export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX';
+/** OV-10c: ADMIN (Admin MT, Móng Bình), TVV, CX chỉ đo đường Tổng quan của vai đó — không nằm trong MOI_VAI. TU2-5: HDT = Head tutor, chỉ đo đường trang Tutor. */
+export type Vai = 'QL' | 'GVCN' | 'GVBM' | 'GVCN_THUONG' | 'QT' | 'ADMIN' | 'TVV' | 'CX' | 'HDT';
 
 export const MOI_VAI: readonly Vai[] = ['QL', 'GVCN', 'GVBM', 'GVCN_THUONG', 'QT'];
 
@@ -279,10 +279,13 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?studentId={hv}' },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/tutors/chon?paId={paTutor}', maChuDich: { GVBM: 403 } },   // GVBM không dạy kỹ năng của PA: không ghi được
   /* TU-b: trang Tutor — bảng (QL: buổi lớp chi nhánh mình), panel một tutor, số menu, tên gõ tay (Quản trị = như Head tutor). GV không có trang. */
-  { trang: 'Tutor', vai: ['QL', 'QT', 'GVCN'], url: '/tutors', maChuDich: { GVCN: 403 } },
-  { trang: 'Tutor', vai: ['QL', 'QT'], url: '/tutors/1' },
-  { trang: 'Tutor', vai: ['QL', 'QT'], url: '/tutors/dem', maChuDich: { QL: 403 } },
-  { trang: 'Tutor', vai: ['QT'], url: '/tutors/go-tay' },
+  /* TU2-5 (chủ SP 19/11): Head tutor (HDT) + CX xem trang; Head (QL) sửa danh bạ chi nhánh mình (go-tay, ô chọn Gộp); CX chỉ đọc (go-tay / dem / chon?gop 403); xuất số buổi theo tháng. */
+  { trang: 'Tutor', vai: ['QL', 'QT', 'GVCN', 'HDT', 'CX'], url: '/tutors', maChuDich: { GVCN: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/1' },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/dem', maChuDich: { QL: 403, CX: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/go-tay', maChuDich: { CX: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX', 'GVCN'], url: '/tutors/xuat-buoi?tu=2026-01&den=2026-12', maChuDich: { GVCN: 403 } },
+  { trang: 'Tutor', vai: ['QL', 'QT', 'HDT', 'CX'], url: '/tutors/chon?gop=1&q=a', maChuDich: { CX: 403 } },
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN', 'GVBM'], url: '/cases/{case}' },
   /* PR-VAI-b (V1/K3-47): dải "n yêu cầu chờ bạn duyệt" của hồ sơ HV — chỉ Quản lý / Quản trị gọi (GVCN 403). */
   { trang: 'Hồ sơ HV', vai: ['QL', 'QT', 'GVCN'], url: '/yeu-cau?studentId={hv}', maChuDich: { GVCN: 403 } },
@@ -628,6 +631,11 @@ export const TRAN: Record<string, number> = {
   'QL /lich-su?loai=o&id=5': 20, 'QT /lich-su?loai=o&id=5': 17, 'GVCN /lich-su?loai=o&id=5': 21, 'GVBM /lich-su?loai=o&id=5': 21,
   /* TU-b: trang Tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 17, 'QT /tutors': 18, 'GVCN /tutors': 13, 'QL /tutors/1': 18, 'QT /tutors/1': 19, 'QL /tutors/dem': 12, 'QT /tutors/dem': 13, 'QT /tutors/go-tay': 13,
+  /* TU2-5 (19/11): Head tutor (HDT) + CX + Head đọc go-tay · xuất số buổi · ô chọn của hộp Gộp — đo 19/11: 7 · 6 · 8 · 7 · 3 · 2 · 3 · 6 · 4 · 2 câu (trần = max(đo+10, ⌈đo×1,3⌉)). */
+  'HDT /tutors': 17, 'CX /tutors': 16, 'HDT /tutors/1': 18, 'CX /tutors/1': 17, 'HDT /tutors/dem': 13, 'CX /tutors/dem': 12,
+  'QL /tutors/go-tay': 13, 'HDT /tutors/go-tay': 13, 'CX /tutors/go-tay': 12,
+  'QL /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'QT /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'HDT /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'CX /tutors/xuat-buoi?tu=2026-01&den=2026-12': 16, 'GVCN /tutors/xuat-buoi?tu=2026-01&den=2026-12': 12,
+  'QL /tutors/chon?gop=1&q=a': 14, 'QT /tutors/chon?gop=1&q=a': 14, 'HDT /tutors/chon?gop=1&q=a': 14, 'CX /tutors/chon?gop=1&q=a': 12,
   /* TU-a: ô chọn tutor — trần = max(đo+10, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors/chon?studentId=1': 17, 'QT /tutors/chon?studentId=1': 15, 'GVCN /tutors/chon?studentId=1': 19, 'GVBM /tutors/chon?studentId=1': 19,
   'QL /tutors/chon?paId=7': 20, 'QT /tutors/chon?paId=7': 17, 'GVCN /tutors/chon?paId=7': 21,
@@ -1470,6 +1478,11 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /lich-su?loai=o&id=5': 86, 'QT /lich-su?loai=o&id=5': 54, 'GVCN /lich-su?loai=o&id=5': 87, 'GVBM /lich-su?loai=o&id=5': 87,
   /* TU-b: trang Tutor — trần = max(đo+50, ⌈đo×1,3⌉), đo 20/10. */
   'QL /tutors': 65, 'QT /tutors': 66, 'QL /tutors/1': 58, 'QT /tutors/1': 59, 'QT /tutors/dem': 51, 'QT /tutors/go-tay': 52,   // đo 15 · 16 · 8 · 9 · 1 · 2
+  /* TU2-5 (19/11): đo HDT /tutors 21 · CX 19 · /1 9 · 8 · dem 2 · 1 · go-tay QL 2 · HDT 3 · CX 1 · xuất 16 · 26 · chọn Gộp 25 dòng (trần = max(đo+50, ⌈đo×1,3⌉)). */
+  'HDT /tutors': 71, 'CX /tutors': 69, 'HDT /tutors/1': 59, 'CX /tutors/1': 58, 'HDT /tutors/dem': 52, 'CX /tutors/dem': 51,
+  'QL /tutors/go-tay': 52, 'HDT /tutors/go-tay': 53, 'CX /tutors/go-tay': 51,
+  'QL /tutors/xuat-buoi?tu=2026-01&den=2026-12': 66, 'QT /tutors/xuat-buoi?tu=2026-01&den=2026-12': 76, 'HDT /tutors/xuat-buoi?tu=2026-01&den=2026-12': 76, 'CX /tutors/xuat-buoi?tu=2026-01&den=2026-12': 76, 'GVCN /tutors/xuat-buoi?tu=2026-01&den=2026-12': 51,
+  'QL /tutors/chon?gop=1&q=a': 75, 'QT /tutors/chon?gop=1&q=a': 75, 'HDT /tutors/chon?gop=1&q=a': 75, 'CX /tutors/chon?gop=1&q=a': 51,
   'QL /hoc-vien-lop/lich-thi?thang=2026-10,2026-11': 1154,   // OV-15f: đo 593 (FT + lớp thường; ×3 → 1 659); trần = max(đo + 50, ⌈đo × 1,3⌉). UI-HV-LOP: + chi tiết dưới hàng (lượt sắp tới, nhật ký, điểm, Case mở qua `listCases`) đo 1 104 (×3 → 2 936) → đo + 50
   /* LICH-THI-UI (dải mở hàng bản 3): + 3 cột thi thật trên cùng hàng lộ trình (không thêm dòng), + so MT trước (`luotTheoLoTrinh` 1 câu + `diemCuaLuot` lượt trước, nhớ theo lượt) + đếm PA theo Case (1 câu theo lô);
      đo 20 câu / 946 dòng (×3 → 2 704) — dưới trần cũ, giữ nguyên trần. */

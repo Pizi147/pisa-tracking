@@ -100,7 +100,7 @@ const NHAN_NHAT_KY: Record<string, string> = {
   /* TU-b: trang Tutor. */
   'tutor.them': 'Thêm tutor', 'tutor.sua': 'Sửa tutor', 'tutor.xoa': 'Xoá tutor', 'tutor.tai_len': 'Tải danh sách tutor',
   'tutor.nhan_xet': 'Ghi nhận xét về tutor', 'tutor.nhan_xet_sua': 'Sửa nhận xét về tutor', 'tutor.nhan_xet_xoa': 'Xoá nhận xét về tutor',
-  'tutor.gop_ten': 'Gộp tên tutor gõ tay', 'tutor.gop_hoan_tac': 'Hoàn tác gộp tên tutor',
+  'tutor.gop_ten': 'Gộp tên tutor gõ tay', 'tutor.gop_hoan_tac': 'Hoàn tác gộp tên tutor', 'tutor.xuat_so_buoi': 'Xuất số buổi của người dạy',
 };
 
 export function nhanHanhDongNhatKy(ma: string): string {

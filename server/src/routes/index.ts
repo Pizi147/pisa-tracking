@@ -500,16 +500,18 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
 
 /** TU-a: ô chọn tutor (Ghi kết quả PA Tutor theo `paId`; ô Người dạy PA Tutor theo `studentId`) — 3 số cuối SĐT, ≤ 20 dòng (`tutors/chon.ts`). */
 api.get('/tutors/chon', requireAuth, wrap((req) =>
-  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId'), classId: qInt(req, 'classId') })));
+  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId'), classId: qInt(req, 'classId'), gop: qStr(req, 'gop') === '1' })));
 
 /*
- * TU-b: TRANG TUTOR (đặc tả Tutor mục 7, 8) — quyền kiểm trong `tutors/trang.ts` / `taiLen.ts`: đọc `tutor.view` (QL: buổi lớp chi nhánh mình), ghi `tutor.manage`.
+ * TU-b: TRANG TUTOR (đặc tả Tutor mục 7, 8) — quyền kiểm trong `tutors/trang.ts` / `taiLen.ts`: đọc `tutor.view` (Head / CX: dòng lớp chi nhánh mình; CX chỉ đọc),
+ * nhận xét / kết luận / xoá `tutor.manage`, sửa danh bạ (thêm / sửa / tải / gộp) thêm Head chi nhánh mình (TU2-5, `quyenDanhBa`).
  * Khoảng thời gian = bộ chọn chung của Phân tích (`kieu`/`tu`/`den`; vắng = 2 tuần vừa qua). Đường cố định đặt TRƯỚC `/tutors/:id`.
  */
 const khoangTutor = (req: Request) => khoangOf(req) ?? (({ tu, den }) => ({ tu, den }))(khoangTuUrl({ get: () => null }, demoToday()));
 api.get('/tutors', requireAuth, wrap((req) => tutorSvc.bangTutor(principalOf(req), khoangTutor(req))));
 api.get('/tutors/dem', requireAuth, wrap((req) => tutorSvc.demChuY(principalOf(req))));
 api.get('/tutors/go-tay', requireAuth, wrap((req) => tutorSvc.tenGoTay(principalOf(req))));
+api.get('/tutors/xuat-buoi', requireAuth, wrap((req) => tutorSvc.xuatSoBuoi(principalOf(req), qStr(req, 'tu'), qStr(req, 'den'))));   // TU14: người dạy × tháng, quyền tutor.view
 api.post('/tutors/gop', requireAuth, wrap((req) => tutorSvc.gopTen(principalOf(req), req.body)));
 api.post('/tutors/gop/hoan-tac', requireAuth, wrap((req) => tutorSvc.hoanTacGop(principalOf(req), req.body)));
 api.post('/tutors/tai-len', requireAuth, wrap((req) => taiLenTutor(principalOf(req), req.body)));

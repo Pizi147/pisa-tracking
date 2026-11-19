@@ -6,11 +6,11 @@
  * Ô trống trong tệp không xoá giá trị đang có. Tutor không có trong tệp: giữ nguyên. ≤ 500 dòng.
  */
 import { chenNhieuDong, db, tx } from '../db.ts';
-import { badRequest, forbidden, loi, normalizeName, nowIso } from '../util.ts';
-import { can, type Principal } from '../permissions.ts';
+import { badRequest, loi, normalizeName, nowIso } from '../util.ts';
+import { type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
-import { KN_TUTOR, PERMISSIONS, chuanSdt } from '../../../shared/domain/index.ts';
-import { khoaTen, kiemTutor, type TraSan } from './trang.ts';
+import { KN_TUTOR, chuanSdt } from '../../../shared/domain/index.ts';
+import { khoaTen, kiemQuyenDanhBa, kiemTutor, noiDayHopLe, suaDuocTutor, type QuyenDanhBa, type TraSan } from './trang.ts';
 
 const TOI_DA = 500;
 type Cot = 'ten' | 'sdt' | 'noiDay' | 'kyNang';
@@ -43,7 +43,7 @@ function docKyNang(s: string): { kn: string[] } | { loi: string } {
 const nhanNoi = (cn: Map<number, string>, id: number | null, online: number) => (online ? 'Chỉ online' : id ? cn.get(id) ?? '' : 'chưa có');
 const nhanKn = (s: string) => s.split(',').join(' · ');
 
-function xemTruoc(conn: any, rows: unknown) {
+function xemTruoc(conn: any, rows: unknown, p: Principal, q: QuyenDanhBa) {
   if (!Array.isArray(rows)) throw badRequest('Không đọc được dữ liệu tải lên.');
   const bang = rows.map((r) => (Array.isArray(r) ? r : []).map((c) => String(c ?? '').trim()));
   const dau = bang[0] ?? [];
@@ -56,7 +56,9 @@ function xemTruoc(conn: any, rows: unknown) {
   const vao = bang.map((r, i) => ({ r, so: i + 1 })).slice(laTieuDe ? 1 : 0).filter(({ r }) => r.some(Boolean));
   if (vao.length > TOI_DA) throw loi(400, 'Tối đa {n} dòng một lần — tách tệp rồi tải lần lượt.', { n: TOI_DA });
 
-  const tutors = conn.prepare('SELECT id, ten, sdt, noi_day_branch_id, chi_online, ky_nang FROM tutors').all() as any[];
+  const tatCaTutor = conn.prepare('SELECT id, ten, sdt, noi_day_branch_id, chi_online, ky_nang, user_id, created_by, updated_by FROM tutors').all() as any[];
+  /* TU2-5: dòng danh bạ của GV (`user_id`) không khớp / không sửa bằng tệp tải lên — tên, kỹ năng lấy từ tài khoản. */
+  const tutors = tatCaTutor.filter((t) => t.user_id == null);
   const chiNhanh = conn.prepare('SELECT id, code, name FROM branches').all() as any[];
   const cn = new Map(chiNhanh.map((b) => [b.id as number, b.name as string]));
   const maCn = new Map<string, number>();
@@ -100,12 +102,15 @@ function xemTruoc(conn: any, rows: unknown) {
       if (ds.length > 1) return { ...d, loi: ['Trùng tên — thêm SĐT'] };
       cu = ds[0] ?? null;
     }
+    /* TU13: Head chỉ sửa tutor chi nhánh mình (hoặc Chỉ online do mình tạo) và chỉ đặt nơi dạy = chi nhánh mình / Chỉ online. */
+    if (cu && !suaDuocTutor(q, p, cu)) return { ...d, loi: ['Tutor không thuộc chi nhánh của bạn — không sửa được'] };
     const v = {
       ten, sdt: sdt || cu?.sdt || null, kyNang: (kn as { kn: string[] }).kn,
       noiDay: noiDay !== undefined ? noiDay : cu ? (cu.chi_online ? 'online' : cu.noi_day_branch_id) : null,
     };
     const k = kiemTutor(conn, v, cu?.id ?? null, tra);
     if ('loi' in k) return { ...d, loi: Object.values(k.loi) as string[] };
+    if (!noiDayHopLe(q, k.ok)) return { ...d, loi: ['Nơi dạy cần là chi nhánh của bạn hoặc Chỉ online'] };
     return { ...d, kq: cu ? 'capNhat' : 'moi', id: cu?.id, _sach: k.ok, _cu: cu };
   });
 
@@ -144,10 +149,10 @@ function xemTruoc(conn: any, rows: unknown) {
 
 /** Xem trước (`luu` false) hoặc lưu mọi dòng hợp lệ trong MỘT giao dịch + một mục nhật ký (`luu` true). */
 export function taiLenTutor(p: Principal, v: { rows?: unknown; luu?: unknown }) {
-  if (!can(p, PERMISSIONS.TUTOR_MANAGE, { anyScope: true })) throw forbidden('Bạn không có quyền sửa danh sách tutor.');
+  const q = kiemQuyenDanhBa(p);   // TU13: Quản trị, Head tutor, Head (chỉ chi nhánh mình)
   const conn = db();
   const lam = () => {
-    const kq = xemTruoc(conn, v?.rows);
+    const kq = xemTruoc(conn, v?.rows, p, q);
     if (v?.luu === true) {
       const luc = nowIso();
       const moi = kq.dong.filter((x) => x.kq === 'moi').map((x) => x._sach);

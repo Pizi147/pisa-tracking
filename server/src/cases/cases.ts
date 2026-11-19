@@ -4480,7 +4480,7 @@ function buoiTutorCua(iv: any, soBuoiTuan: number | null, buoi: unknown, giuTuto
  * TU4: dòng danh bạ của GV `gvId` — có thì dùng lại (chỉ mục UNIQUE `tutors.user_id`), chưa có thì tạo: tên = họ tên tài khoản, kỹ năng = kỹ năng hồ sơ,
  * nơi dạy = chi nhánh đầu của GV. Trong giao dịch của nơi ghi. → `{ id, ten }`.
  */
-function tutorCuaGv(conn: any, p: Principal, gvId: number): { id: number; ten: string } {
+export function tutorCuaGv(conn: any, p: Principal, gvId: number): { id: number; ten: string } {
   const co = conn.prepare('SELECT id, ten FROM tutors WHERE user_id = ?').get(gvId) as any;
   if (co) return co;
   const u = conn.prepare(`SELECT u.full_name,

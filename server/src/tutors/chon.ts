@@ -14,6 +14,7 @@ import { can, require_, type Principal } from '../permissions.ts';
 import { PERMISSIONS, knTutorCuaKyNang, hinhThucTuSuy, knTutorCuaTopic, type HinhThuc } from '../../../shared/domain/index.ts';
 import { activeClassOf } from '../yThuc/access.ts';
 import { kiemQuyenPa, loadCase } from '../cases/cases.ts';
+import { kiemQuyenDanhBa } from './trang.ts';
 
 export type TutorChon = { id: number; ten: string; noiDay: string | null; kyNang: string; sdtDuoi: string | null; goiY: boolean; hinhThuc: HinhThuc | null;
   loai: 'gv' | 'tutor'; gvId?: number };
@@ -21,12 +22,15 @@ export type DienSanTutor = { tutorId: number | null; ten: string; hinhThuc: Hinh
 
 const TOI_DA = 20;
 
-export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; studentId?: number | null; classId?: number | null }): { ds: TutorChon[]; dienSan: DienSanTutor | null; nhomGoiY: string | null } {
+export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; studentId?: number | null; classId?: number | null; gop?: boolean }): { ds: TutorChon[]; dienSan: DienSanTutor | null; nhomGoiY: string | null } {
   const conn = db();
   let lopId: number | null = null;
   let topic: string | null = null;
   let iv: any = null;
-  if (o.paId) {
+  /* TU2-5 (R2.9): ô chọn của hộp Gộp tên gõ tay (trang Tutor) — người sửa danh bạ (Quản trị, Head tutor, Head chi nhánh mình); không cần PA / học viên; có cả tutor "Ngừng hợp tác"
+     (buổi cũ của người đã nghỉ vẫn gộp được). Không `lopId` → gợi ý GV theo chi nhánh đầu của Head (Quản trị / Head tutor: chỉ khi gõ). */
+  const quyenGop = o.gop ? kiemQuyenDanhBa(p) : null;
+  if (quyenGop) { /* không lớp, không PA */ } else if (o.paId) {
     iv = conn.prepare('SELECT * FROM case_interventions WHERE id = ?').get(o.paId);
     if (!iv) throw notFound('Không tìm thấy phương án.');
     const c = loadCase(iv.case_id);
@@ -45,7 +49,7 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
     throw forbidden('Chọn tutor cần phương án hoặc học viên.');
   }
   const lop = lopId ? conn.prepare('SELECT c.branch_id, b.name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?').get(lopId) as any : null;
-  const cnLop: number | null = lop?.branch_id ?? null;
+  const cnLop: number | null = quyenGop ? (quyenGop.tatCa ? null : quyenGop.chiNhanh[0] ?? null) : lop?.branch_id ?? null;
   const kn = knTutorCuaTopic(topic);
   /* Tiêu đề nhóm gợi ý của ô chọn: "Monbay · L" (mockup mục 1). */
   const nhomGoiY = lop ? [lop.name, kn.join('/')].filter(Boolean).join(' · ') : null;
@@ -57,7 +61,7 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
        LEFT JOIN branches b ON b.id = t.noi_day_branch_id
        LEFT JOIN users gu ON gu.id = t.user_id`,
   ).all() as any[];
-  const hang = tatCa.filter((r) => r.ket_luan !== 'ngung');
+  const hang = quyenGop ? tatCa : tatCa.filter((r) => r.ket_luan !== 'ngung');
   const khopKn = (ky: string) => !kn.length || kn.some((k) => ky.split(',').includes(k));
   const thanh = (r: any): TutorChon => {
     const ky = String(r.ky_nang);
@@ -86,8 +90,9 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
   const cuaGv = new Map(tatCa.filter((r) => r.user_id != null).map((r) => [r.user_id as number, r]));
   const dsGv: TutorChon[] = gv.filter((u) => !go || normalizeName(u.full_name).includes(go)).flatMap((u): TutorChon[] => {
     const lk = cuaGv.get(u.id);
-    if (lk?.ket_luan === 'ngung') return [];
+    if (lk?.ket_luan === 'ngung' && !quyenGop) return [];
     const cn = String(u.cn ?? '').split('\u001f').filter(Boolean).map((x) => { const [id, ...ten] = x.split('|'); return { id: Number(id), ten: ten.join('|') }; });
+    if (quyenGop && !quyenGop.tatCa && !cn.some((x) => quyenGop.chiNhanh.includes(x.id))) return [];   // Head chỉ gộp vào GV chi nhánh mình (cùng luật `gopTen`)
     const noi = cn.find((x) => x.id === cnLop) ?? cn[0] ?? null;
     const ky = knTutorCuaKyNang(u.kn);
     return [{

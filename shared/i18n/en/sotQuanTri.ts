@@ -505,5 +505,6 @@ export const EN_SOT_QUAN_TRI = {
   'Xoá nhận xét về tutor': 'Delete tutor review',
   'Gộp tên tutor gõ tay': 'Merge typed tutor names',
   'Hoàn tác gộp tên tutor': 'Undo tutor name merge',
+  'Xuất số buổi của người dạy': 'Export teaching sessions',
   'Thao tác hệ thống': 'System action',
 } satisfies Record<string, Dich>;
