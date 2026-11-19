@@ -308,7 +308,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const coHt = !!hoanThanhCase && ketThucPa && htCase;
   const mucHt = htMuc ?? CASE_OUTCOMES.find((x) => CASE_OUTCOME_LABEL[x] === outcomeLabelFor(outcome)) ?? '';
   const noteHt = htNote ?? (nhanXetTheoBuoi ? ghepBuoi : progress);
-  if (coHt) loi.push(...dsLoi([{ khoa: 'ht-muc', nhan: t('Em tiến bộ đến đâu'), chon: true }, { khoa: 'ht-ket-luan', nhan: t('Kết luận'), toiThieu: CHU_TOI_THIEU_CASE }],
+  const htTienBoRo = mucHt === 'much_better';   // N56 ⑤: "Tiến bộ rõ" — kết luận để trống được (máy chủ cùng luật)
+  if (coHt) loi.push(...dsLoi([{ khoa: 'ht-muc', nhan: t('Em tiến bộ đến đâu'), chon: true }, { khoa: 'ht-ket-luan', nhan: t('Kết luận'), toiThieu: htTienBoRo ? undefined : CHU_TOI_THIEU_CASE }],
     { 'ht-muc': mucHt, 'ht-ket-luan': noteHt }));
   const thieu = loi.map((l) => l.nhan);
   const loiCua = (khoa: string) => lf.loiCua(loi, khoa);
@@ -693,7 +694,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
                       ))}
                     </div>
                   </Truong>
-                  <Truong nhan={t('Kết luận')} batBuoc loi={loiCua('ht-ket-luan')} dem={{ co: noteHt.trim().length, can: CHU_TOI_THIEU_CASE }}>
+                  <Truong nhan={t('Kết luận')} batBuoc={!htTienBoRo} tuyChon={htTienBoRo} loi={loiCua('ht-ket-luan')} dem={{ co: noteHt.trim().length, can: htTienBoRo ? undefined : CHU_TOI_THIEU_CASE }}>
                     <textarea className="field w-full" rows={2} {...o('ht-ket-luan')} value={noteHt} readOnly={busy} onChange={(e) => setHtNote(e.target.value)} />
                   </Truong>
                 </div>

@@ -171,7 +171,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                     <ChonNguoi nhom="nhan_vien" value={tt.nguoi} onChange={(v) => setTt({ ...tt, nguoi: v })} studentId={d.studentId} />
                   </Truong>
                 </Hang2>
-                <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
+                <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: CHU_TOI_THIEU }}>
                   <textarea className="field w-full" rows={3} value={tt.moTa} onChange={(e) => setTt({ ...tt, moTa: e.target.value })} />
                 </Truong>
                 {loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
@@ -190,7 +190,7 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
               <Khoi tieuDe={t('Đề xuất Head duyệt')}>
                 {rutDuoc && !tt && !sua && <button type="button" className="btn btn-sm min-h-[44px] self-start sm:min-h-0" onClick={moSuaTt}>{t('Sửa')}</button>}
                 {tt ? (
-                  <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: 10 }}>
+                  <Truong nhan={t('Mô tả')} batBuoc loi={daBam && tt.moTa.trim().length < CHU_TOI_THIEU ? t('Cần ít nhất {n} ký tự', { n: CHU_TOI_THIEU }) : null} dem={{ co: tt.moTa.trim().length, can: CHU_TOI_THIEU }}>
                     <textarea className="field w-full" rows={3} value={tt.moTa} onChange={(e) => setTt({ ...tt, moTa: e.target.value })} />
                   </Truong>
                 ) : <p className="m-0 whitespace-pre-wrap break-words text-sm text-slate-200">{d.note ?? '—'}</p>}

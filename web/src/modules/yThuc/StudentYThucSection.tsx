@@ -211,7 +211,8 @@ export function StudentYThucSection({ studentId, onGoAcademic, thuong: thuongVao
   const fTh: ThaoTacTh = {
     onGhiBaoPh: (x) => x.baoPh && setBaoPh({ viecId: x.baoPh.id, han: x.han ?? homNay }),
     onSua: (x, neo) => setHop({ che: { loai: 'sua', x }, neo }),
-    onRut: (x) => { if (!window.confirm(t('Rút tình hình này? Việc của người nhận sẽ đóng.'))) return; void api.post(`/tinh-hinh/${x.id}/rut`, {}).then(() => { toast.push('ok', t('Đã rút')); lamMoi(); }, (e) => toast.push('error', e.message)); },
+    /* Đề xuất 10 (S4-LUAT): rút thẳng + toast Hoàn tác (`boRutTinhHinh`). */
+    onRut: (x) => { void api.post(`/tinh-hinh/${x.id}/rut`, {}).then(() => { toast.hoanTac(t('Đã rút'), () => void api.post(`/tinh-hinh/${x.id}/rut/hoan-tac`, {}).then(lamMoi, (e) => toast.push('error', e.message)), { key: `rut-th-${x.id}` }); lamMoi(); }, (e) => toast.push('error', e.message)); },
     onTraLoi: (x, neo) => setHop({ che: { loai: 'tra-loi', x }, neo }),
     onHoanTacTraLoi: (x) => void api.post(`/tinh-hinh/${x.id}/tra-loi/hoan-tac`, {}).then(lamMoi, (e) => toast.push('error', e.message)),
   };

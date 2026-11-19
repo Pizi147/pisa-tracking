@@ -7,7 +7,6 @@ export const EN_A = {
   'Lưu': 'Save',
   'quá hạn {n} ngày': (b) => `${soNhieu(b.n, 'day', 'days')} overdue`,
   'Ngôn ngữ': 'Language',
-  'Đang sửa dở — đổi ngôn ngữ sẽ tải lại trang và mất phần chưa lưu. Vẫn đổi?': 'You have unsaved changes — switching language reloads the page and loses them. Switch anyway?',
 
   /* Câu lỗi hạ tầng (máy chủ gửi khoá = chữ Việt) */
   'Có lỗi · mã {ma}. Thử lại sau ít phút; nếu vẫn lỗi, báo Quản trị hệ thống kèm mã này.': 'Error · code {ma}. Try again in a few minutes; if it persists, send this code to the system admin.',

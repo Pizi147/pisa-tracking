@@ -188,9 +188,11 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
   const [busy, setBusy] = useState(false);
   const components = componentsFor(category, ratio ? 'ratio' : 'band');
   const counts = componentsAreCounts(category);
+  const tienBoRo = outcome === 'much_better';
   const loi = dsLoi([
     { khoa: 'muc', nhan: t('Em tiến bộ đến đâu'), chon: true },
-    { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: CHU_TOI_THIEU_CASE },   // #4 ngưỡng chung
+    /* #4 ngưỡng chung · N56 ⑤ (chủ SP 20/11): "Tiến bộ rõ" để trống được (máy chủ cùng luật). */
+    { khoa: 'vi-sao', nhan: t('Vì sao kết luận vậy'), toiThieu: tienBoRo ? undefined : CHU_TOI_THIEU_CASE },
   ], { muc: outcome, 'vi-sao': note });
   const thieu = loi.map((l) => l.nhan);
 
@@ -231,8 +233,8 @@ export function HoanThanhCasePanel({ caseId, category, categoryLabel, ratio, paG
             ))}
           </div>
         </Truong>
-        <Truong nhan={t('Vì sao kết luận vậy')} batBuoc
-          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: CHU_TOI_THIEU_CASE }}>
+        <Truong nhan={t('Vì sao kết luận vậy')} batBuoc={!tienBoRo} tuyChon={tienBoRo}
+          loi={lf.loiCua(loi, 'vi-sao')} dem={{ co: note.trim().length, can: tienBoRo ? undefined : CHU_TOI_THIEU_CASE }}>
           {/* AUDIT-UI C6: câu hướng dẫn chuyển vào `title` của ô (ví dụ vẫn ở placeholder). */}
           <textarea className="field w-full" title={t('Phương án đã áp dụng cho em, kết quả ra sao, vì sao dừng ở đây')} {...lf.o(loi, 'vi-sao')} rows={3} value={note} onChange={(e) => setNote(e.target.value)}
             placeholder={t('Ví dụ: MT3 Listening lên 6.0')} />

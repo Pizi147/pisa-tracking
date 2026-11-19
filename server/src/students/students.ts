@@ -234,8 +234,7 @@ export function transferStudent(p: Principal, studentId: number, toClassId: numb
   if (!toClass) throw badRequest('Lớp chuyển đến không hợp lệ.');
   if (!isIsoDate(effectiveDate)) throw badRequest('Ngày hiệu lực không hợp lệ.');
 
-  const why = String(reason ?? '').trim();
-  if (!why) throw badRequest('Chọn lý do chuyển lớp.');
+  const why = String(reason ?? '').trim();   // N56 ②: tuỳ chọn
   /*
    * LƯU Ý BÀN GIAO BẮT BUỘC, có lựa chọn "Không có lưu ý" (RB-3). Còn Case dở thì KHÔNG được chọn "Không có lưu ý": người nhận lớp
    * đọc đúng dòng này để biết em đang vướng gì (mục 6.4) — plan PR-S1 Q10.

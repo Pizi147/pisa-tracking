@@ -162,7 +162,7 @@ export function loXuLy(p: Principal, classId: number, v: {
   const performedOn = ngayThucHien(v.performedOn);
   const nguoi = nguoiThucHien(p, v);
   const chung = String(v.note ?? '').trim();
-  if (c.ids.some((sid) => !String(rieng.get(sid)?.note ?? '').trim())) moTa(chung);
+  if (chung) moTa(chung);   // N56 ③: mô tả chung trống được — em không có mô tả riêng thì máy tự ghi "{BẬC} · {vi phạm}" (`luuXuLy`)
   const key = typeof v.idempotencyKey === 'string' && v.idempotencyKey.trim() ? v.idempotencyKey.trim().slice(0, 100) : null;
   const khoaEm = (sid: number) => (key ? `${key}:${sid}` : null);
   /* Gửi lại cùng khoá (mất phản hồi, Thử lại): em đã lưu trả lần cũ — không bị loại vì "không còn bắt buộc". Một câu cho cả lô. */

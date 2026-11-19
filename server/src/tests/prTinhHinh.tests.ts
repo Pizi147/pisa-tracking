@@ -5,6 +5,7 @@
  *  · GV báo tình hình → việc TVV "Báo PH · Tình hình học tập"; TVV hỏi GVCN hạn 3 ngày → GVCN trả lời; quyền máy chủ.
  */
 import type { YThucTestKit } from './yThuc.tests.ts';
+import { readFileSync } from 'node:fs';
 import { emailThu } from '../seed/emailThu.ts';
 
 export async function runPrTinhHinhTests(t: YThucTestKit) {
@@ -133,6 +134,30 @@ export async function runPrTinhHinhTests(t: YThucTestKit) {
     const { ids: [b] } = th.guiTinhHinh(gvbm, { chieu: 'gv_tvv', studentIds: [sid], noiDung: 'Gửi nhầm em, hoàn tác ngay' });
     assert(th.rutTinhHinh(gvbm, b, { hoanTac: true }).xoa === true, 'hoàn tác');
     assert(!hang('SELECT 1 FROM tinh_hinh_hoc_tap WHERE id = ?', b).length && !hang('SELECT 1 FROM viec_bao_ph WHERE tinh_hinh_id = ?', b).length, 'xoá hẳn');
+  }));
+
+  await checkAsync('TH-7b (S4 đề xuất 10) · Rút rồi Hoàn tác → về chờ, việc TVV mở lại, có nhật ký; người khác / đã quá 2 phút → 400; web rút thẳng không window.confirm', () => thu(() => {
+    const sid = moiEm();
+    const { ids: [a] } = th.guiTinhHinh(gvbm, { chieu: 'gv_tvv', studentIds: [sid], noiDung: 'Em vắng 2 buổi Reading liền' });
+    th.rutTinhHinh(gvbm, a);
+    let loi = '';
+    try { th.boRutTinhHinh(tvv, a); } catch (e: any) { loi = e.message; }
+    assert(/Không hoàn tác được/.test(loi), `người khác: ${loi}`);
+    th.boRutTinhHinh(gvbm, a);
+    assert(hang('SELECT trang_thai, rut_boi FROM tinh_hinh_hoc_tap WHERE id = ?', a)[0].trang_thai === 'mo' && hang('SELECT rut_boi FROM tinh_hinh_hoc_tap WHERE id = ?', a)[0].rut_boi === null, 'về chờ');
+    const bpv = hang('SELECT trang_thai, bo_ly_do FROM viec_bao_ph WHERE tinh_hinh_id = ?', a)[0];
+    assert(bpv.trang_thai === 'mo' && bpv.bo_ly_do === null, `việc TVV mở lại: ${JSON.stringify(bpv)}`);
+    assert(th.tinhHinhCuaEm(gvbm, [sid])[0].trangThai === 'mo', 'xem lại: chờ');
+    assert(hang(`SELECT 1 FROM audit_logs WHERE action = 'tinh_hinh.bo_rut' AND entity_id = ?`, a).length === 1, 'nhật ký');
+    th.rutTinhHinh(gvbm, a);
+    conn.prepare(`UPDATE tinh_hinh_hoc_tap SET rut_luc = '2020-01-01T00:00:00.000Z' WHERE id = ?`).run(a);
+    loi = '';
+    try { th.boRutTinhHinh(gvbm, a); } catch (e: any) { loi = e.message; }
+    assert(/Không hoàn tác được/.test(loi), `quá 2 phút: ${loi}`);
+    for (const f of ['ClassYThucCard.tsx', 'StudentYThucSection.tsx']) {
+      const s = readFileSync(`web/src/modules/yThuc/${f}`, 'utf8');
+      assert(!s.includes('Rút tình hình này?') && s.includes('/rut/hoan-tac'), f);
+    }
   }));
 
   await checkAsync('TH-9 · Mốc dưới tên em (bảng lớp) = thang của em (hồ sơ HV) — cùng một hàm; em đã xử lý, không còn việc chờ vẫn có mốc', () => thu(() => {

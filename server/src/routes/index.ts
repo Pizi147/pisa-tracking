@@ -1581,6 +1581,10 @@ api.post('/tinh-hinh/:id/rut', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return tinhHinhSvc.rutTinhHinh(principalOf(req), pInt(req, 'id'), { hoanTac: yThucBody(req).hoanTac === true });
 }));
+api.post('/tinh-hinh/:id/rut/hoan-tac', requireAuth, wrap((req) => {   // đề xuất 10 (S4-LUAT): Hoàn tác ngay sau Rút
+  maybeSimulateSaveFailure();
+  return tinhHinhSvc.boRutTinhHinh(principalOf(req), pInt(req, 'id'));
+}));
 api.post('/tinh-hinh/:id/tra-loi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return tinhHinhSvc.traLoiTinhHinh(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });
@@ -2846,16 +2850,15 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     nguoiNhan, mucTieu, thangThi,
   } = req.body ?? {};
   if (!toClassId) throw badRequest('Cần chọn lớp chuyển đến.');
-  /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ, không trống — T7); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
+  /* PR-CT: panel mới gửi thẳng `lyDo` (một ô chữ — N56 ② tuỳ chọn, để trống được); đường lý do chọn nhanh cũ giữ cho phép kiểm và client cũ. */
   const lyDoTuDo = typeof req.body?.lyDo === 'string' ? chuTuDo(req.body.lyDo, 'Lý do chuyển lớp', 2000) ?? '' : '';   // PR-Dọn (Q4, quét #24)
-  if (req.body?.lyDo !== undefined && !lyDoTuDo) throw badRequest('Ghi lý do ngắn');   // PR-CL: cùng chữ `kiemDongLenh`
   /* RB-3: lý do chọn nhanh BẮT BUỘC; "Khác" phải ghi rõ ≥ 3 ký tự (T13). */
   if (!lyDoTuDo && laKhac(reasonCode)) {
     const ghiRo = kiemGhiRoKhac(reasonNote);
     if (ghiRo) throw loi(400, 'Lý do "Khác": {ghiRo}.', { ghiRo });
   }
   const reason = lyDoTuDo || transferReasonText(reasonCode, reasonNote);
-  if (!reason) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');
+  if (!reason && req.body?.lyDo === undefined) throw badRequest('Chọn lý do chuyển lớp (chọn "Khác" thì ghi rõ).');   // client cũ (lý do chọn nhanh)
   /*
    * PR-CT: em đang học một lớp → RA LỆNH (Quản lý); chỉ em CHƯA TỪNG xếp lớp (xếp lần đầu) mới đi đường cũ.
    * PR-CL (B1): bối cảnh + hướng do máy chủ tính (`huongChuyenMotEm`) — lớp thường đã tới Cuối khoá đi luật Cuối khoá. Lệnh `cho` của em được
@@ -2888,7 +2891,7 @@ api.post('/students/:id/transfer', requireAuth, wrap((req) => {
     return r;
   }
   return studentSvc.transferStudent(principalOf(req), sid, Number(toClassId),
-    effectiveDate ?? demoToday(), reason, {
+    effectiveDate ?? demoToday(), reason ?? '', {
       note: handoverNote ?? null,
       noNote: noHandoverNote === true,
       receiverUserId: receiverUserId ? Number(receiverUserId) : null,
