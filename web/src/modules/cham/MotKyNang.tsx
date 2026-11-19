@@ -128,11 +128,12 @@ function DongHv({ studentId, active, ten, href, nhanLuot, ds, phu, phuTitle, phu
       {/* OV-14b: tên giữ ≥ 8rem (375: không vỡ từng chữ cái) — cụm ô chật thì xuống dòng dưới tên. */}
       <div className="min-w-[8rem] flex-1">
         <div className="min-w-0">
-          <span className="flex flex-wrap items-center gap-x-2"><Link className="ten-ho-so break-words max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={duongHoSoHocVien(studentId)} title={ten}>{ten}</Link>
-            <Link className="link whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" to={href} state={ds ? { ds } : undefined}>{nhanLuot} ›</Link></span>
+          {/* N55 (chủ SP 19/11): dòng tên chỉ có tên (không cắt "…"); "{lượt} ›" đầu dòng phụ, như lưới 1440. */}
+          <Link className="ten-hv ten-ho-so max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-end" to={duongHoSoHocVien(studentId)}>{ten}</Link>
           {nhan && <div className="mt-0.5">{nhan}</div>}
         </div>
-        <div className="flex items-center gap-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
+        <div className="flex flex-wrap items-baseline gap-x-1.5 text-xs text-slate-500 min-w-0 tabular-nums">
+          <Link className="link whitespace-nowrap text-[13px] font-normal max-sm:inline-flex max-sm:min-h-[40px] max-sm:items-start max-sm:pt-0.5" to={href} state={ds ? { ds } : undefined}>{nhanLuot} ›</Link>
           <span className={`truncate ${phuDo ? 'text-rose-300' : ''}`} title={phuTitle}>{phu}</span>
           {luu}
         </div>
@@ -218,7 +219,7 @@ function MotKyNangFt({ data, onReload, kn, hv, hangMo, tuanDangXem, onHet }: {
         {hangMo.map((h) => (
           <li key={`mo-${h.studentId}`} data-hv={h.studentId} className="px-3 py-2 min-h-[60px] border-t text-slate-500"
             style={{ borderColor: 'var(--line)' }}>
-            <div className="truncate"><Link className="text-slate-500 no-underline hover:underline" title={h.ten} to={`/hoc-vien/${h.studentId}`}>{h.ten}</Link></div>
+            <div><Link className="ten-hv text-slate-500 no-underline hover:underline" to={`/hoc-vien/${h.studentId}`}>{h.ten}</Link></div>
             <div className="text-xs text-slate-400">{h.chu}</div>
           </li>
         ))}
