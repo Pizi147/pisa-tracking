@@ -10035,9 +10035,6 @@ await runPrTu22Tests({ check, checkAsync, assert, assertThrows, conn, TODAY, P, 
 // ==================================================================== S1 SUA-TUTOR-P1 (rà #1872: lưới không ghi đè nháp Tutor, lanCuoi, danh bạ GV theo tài khoản, ngày nghiệp vụ, P2)
 const { runPrSuaTutorP1Tests } = bocTep('prSuaTutorP1', await import('./prSuaTutorP1.tests.ts'));
 await runPrSuaTutorP1Tests({ check, assert, conn, TODAY, P, addDays, classId } as any);
-// ==================================================================== S4-LUAT phần 3 (đề xuất 2 hỏi một lần mỗi phiếu · N56 ① làm thay vào thẳng form)
-const { runPrS4LamThayTests } = bocTep('prS4LamThay', await import('./prS4LamThay.tests.ts'));
-await runPrS4LamThayTests({ check, checkAsync, assert } as any);
 const { runPrLuoiKqTests } = bocTep('prLuoiKq', await import('./prLuoiKq.tests.ts'));
 await runPrLuoiKqTests({ check, assert, assertThrows, conn, TODAY, P, classId } as any);
 // ==================================================================== OV6-DOC-CHON (14/11: ô chọn / ô tìm đọc ít — LIMIT, /classes gọn)
@@ -10046,6 +10043,9 @@ await runPrOv6DocChonTests({ check, assert, conn, P } as any);
 // ==================================================================== TIM-HV-LOP-TOI (GD-4a [XM-A]: "+ Task" chỉ em lớp của tôi)
 const { runPrTimHvLopToiTests } = bocTep('prTimHvLopToi', await import('./prTimHvLopToi.tests.ts'));
 await runPrTimHvLopToiTests({ check, assert, P } as any);
+// ==================================================================== S4-LUAT phần 3 (đề xuất 2 hỏi một lần mỗi phiếu · N56 ① làm thay vào thẳng form)
+const { runPrS4LamThayTests } = bocTep('prS4LamThay', await import('./prS4LamThay.tests.ts'));
+await runPrS4LamThayTests({ check, checkAsync, assert } as any);
 // ==================================================================== TD-HVL-2 (TOC-DO-1711: standingFor đọc lượt từ nguồn chung)
 const { runPrTdHvl2Tests } = bocTep('prTdHvl2', await import('./prTdHvl2.tests.ts'));
 await runPrTdHvl2Tests({ check, assert, conn } as any);
