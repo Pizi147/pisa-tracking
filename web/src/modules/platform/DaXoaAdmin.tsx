@@ -62,7 +62,7 @@ export function DaXoaAdmin({ loai, loc = '', branchId = null, onDoi }: {
   ];
   const oCua = (m: MucRac, c: CotBang) => {
     if (c.key === 'loai') return <span className="text-[13px] text-slate-400">{nhanLoai(m.loai)}</span>;
-    if (c.key === 'muc') return m.hocVienId ? <Link className="ten-ho-so" to={`/hoc-vien/${m.hocVienId}`}>{m.nhan}</Link> : m.nhan;
+    if (c.key === 'muc') return m.hocVienId ? <Link className="ten-hv ten-ho-so" to={`/hoc-vien/${m.hocVienId}`}>{m.nhan}</Link> : m.nhan;
     if (c.key === 'lop') return m.lop ?? '—';
     if (c.key === 'ai') return m.xoaBoi ?? '—';
     if (c.key === 'luc') return <span className="tabular-nums">{fmtDateTime(m.xoaLuc)}</span>;

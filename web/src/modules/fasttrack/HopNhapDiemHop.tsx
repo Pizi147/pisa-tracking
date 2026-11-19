@@ -373,7 +373,7 @@ export function HopNhapDiem({ cell, anchor, ctx, onSave, onDong, onTiep, nhanTie
     </>
   ) : (
     <>
-      {onTiep && nhanTiep && <span className="basis-full truncate text-xs text-slate-400" title={nhanTiep}>{t('Tiếp: {x}', { x: nhanTiep })}</span>}
+      {onTiep && nhanTiep && <span className="ten-hv basis-full text-xs text-slate-400">{t('Tiếp: {x}', { x: nhanTiep })}</span>}
       {/* GD-3 HOP-NHAP-GON (mockup v21 K2b): ngoài chỉ ⋯ · Vắng · nút chính; ⋯ = Lưu · đóng (thay "Lưu" ở lại khi có bài kế) · Khôi phục điểm · Bỏ vắng
           (hai mục sau chỉ khi ô ở trạng thái đó). Không có bài kế: "Lưu" vẫn là nút chính như cũ. */}
       {!daLuu && (
@@ -564,7 +564,7 @@ function KhungHop({ anchor, ten, phu, nhanHop, daGo, cauBo, onDong, onKeyDown, c
         <div className="flex items-start gap-2 border-b pb-2.5 pl-4 pr-3 pt-3" style={{ borderColor: 'var(--line)' }}>
           <div className="min-w-0 flex-1">
             <div className="text-[15px] font-bold text-slate-100">{ten}</div>
-            <div className="mt-0.5 truncate text-[13px] text-slate-400" title={nhanHop}>{phu}</div>
+            <div className="ten-hv mt-0.5 text-[13px] text-slate-400">{phu}</div>
           </div>
           {/* GD-3 (mockup v21 K2b): ✕ ở đầu hộp — cùng đường với Esc (đã gõ thì hỏi bỏ chữ ở chân). */}
           <button type="button" aria-label={t('Đóng')} className="-mr-1 grid h-9 w-9 shrink-0 place-items-center rounded-md border-0 bg-transparent text-[17px] text-slate-400 hover:text-slate-100 max-sm:h-11 max-sm:w-11"

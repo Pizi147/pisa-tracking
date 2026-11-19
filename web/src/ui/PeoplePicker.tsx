@@ -380,7 +380,7 @@ export function ChonNguoi({
       <div className={`oc${gonLop}${gon && coGt && !nhan ? ' dang' : ''}${invalid ? ' loi' : ''}${disabled ? ' oc-tat' : ' bam'}`} aria-disabled={disabled || undefined}
         onBlur={onBlur} onClick={disabled ? undefined : () => setEditing(true)}>
         {nhan && <span className="nh">{nhan}</span>}
-        {coGt ? <span className="da"><b>{chinh}</b>{phu && !nhan && <small>{phu}</small>}</span> : <span className="oc-goi">{chinh}</span>}
+        {coGt ? <span className="da"><b className="ten-hv">{chinh}</b>{phu && !nhan && <small>{phu}</small>}</span> : <span className="oc-goi">{chinh}</span>}
         {/* Nhãn ô trỏ vào nút này (htmlFor): ✕ = Đổi (mở lại ô, giữ người cũ tới khi chọn người khác); `xBo` (ô lọc) = bỏ chọn. */}
         {!disabled && <button id={oId} type="button" className={coGt && !nhan ? 'oc-bo' : 'oc-bo mui-xuong'}
           aria-label={!coGt ? ariaLabel ?? t('Chọn') : xBo ? t('Bỏ chọn {ma} · {o}', { ma: chinh, o: ariaLabel ?? t('Chọn') }) : ariaLabel ? t('Đổi · {o}', { o: ariaLabel }) : t('Đổi')}
@@ -424,7 +424,7 @@ export function ChonNguoi({
       {!nhieu && <IcTim />}
       {nhieu?.chon.map((x, k) => (
         <span key={x.id} className={`chip-em${tron && k === nhieu.chon.length - 1 ? ' tron' : ''}`}>
-          <span>{x.ten}</span>
+          <span className="ten-hv">{x.ten}</span>
           <button type="button" aria-label={t('Bỏ {ten}', { ten: x.ten })} onMouseDown={(e) => e.preventDefault()}
             onClick={(e) => { e.stopPropagation(); nhieu.onDoi(nhieu.chon.filter((y) => y.id !== x.id)); inputRef.current?.focus(); }}>✕</button>
         </span>
@@ -511,7 +511,7 @@ export function ChonNguoi({
             >
               {opt.kind === 'trong' && <span className="t">{choTrong}</span>}
               {opt.kind === 'toi' && <><span className="t">{t('Tôi')}</span>{session?.user?.fullName && <span className="p">{session.user.fullName}</span>}</>}
-              {opt.kind === 'nguoi' && <><span className="t"><ToKhop chu={opt.row.ten} q={term} /></span>{opt.row.phu && <span className="p">{opt.row.phu}</span>}</>}
+              {opt.kind === 'nguoi' && <><span className="t ten-hv"><ToKhop chu={opt.row.ten} q={term} /></span>{opt.row.phu && <span className="p">{opt.row.phu}</span>}</>}
               {opt.kind === 'ngoai' && <span className="t">{tat(opt)
                 ? (chiTutor ? t('Tutor khác: gõ tên ở ô trên') : t('Dùng tên ngoài hệ thống: gõ tên ở ô trên'))
                 : (chiTutor ? t('Tutor khác: «{ten}»', { ten: opt.text }) : t('Dùng tên ngoài hệ thống: «{ten}»', { ten: opt.text }))}</span>}

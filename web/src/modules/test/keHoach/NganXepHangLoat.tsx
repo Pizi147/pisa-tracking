@@ -251,7 +251,7 @@ export function NganXepHangLoat({ lopThuong, classIdBanDau, coFt, onDoiKhung, on
                           if (e.target.checked) n.add(h.studentId); else n.delete(h.studentId);
                           return n;
                         })} />
-                      <span className="min-w-0 flex-1 truncate">{h.ten}</span>
+                      <span className="ten-hv min-w-0 flex-1">{h.ten}</span>
                       <span className="shrink-0 text-xs text-slate-500">{tinhTrang}</span>
                     </label>
                     {loi && <div className="pb-1 pl-6 text-xs text-bad [overflow-wrap:anywhere]">{loi}</div>}
@@ -369,7 +369,7 @@ function DongXemTruoc({ d, ct }: { d: DongHangLoat; ct: string | null }) {
   if (!nhom.length) {
     return (
       <tr className="border-t" style={{ borderColor: 'var(--line)' }}>
-        <td className="truncate py-1.5 pr-2 text-slate-200" title={d.ten}>{d.ten}</td>
+        <td className="ten-hv py-1.5 pr-2 text-slate-200">{d.ten}</td>
         <td className="py-1.5">—</td><td className="py-1.5">—</td>
         <td className="py-1.5"><Nhan tone="bad">{t('Chặn')}</Nhan> <span className="text-slate-400" title={d.loi ?? ''}>{d.loi}</span></td>
       </tr>
@@ -381,7 +381,7 @@ function DongXemTruoc({ d, ct }: { d: DongHangLoat; ct: string | null }) {
         const t = TONE_GHI_CHU[g.ghiChu];
         return (
           <tr key={i} className={i === 0 ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
-            <td className="truncate py-1.5 pr-2 text-slate-200" title={d.ten}>{i === 0 ? d.ten : ''}</td>
+            <td className="ten-hv py-1.5 pr-2 text-slate-200">{i === 0 ? d.ten : ''}</td>
             <td className="py-1.5 font-bold text-slate-300">{g.kyNang.map((k) => tenMonNgan(ct, k)).join(' ')}</td>
             <td className="py-1.5 text-slate-300">{g.tu ? tuanLich(g.tu) : '—'} → {g.den ? tuanLich(g.den) : '—'}</td>
             <td className="min-w-0 py-1.5">

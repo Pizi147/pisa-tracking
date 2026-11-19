@@ -205,7 +205,7 @@ export function NutVaTiep({ chu, chuTiep, busy, tat, tiep, bam, luu, coDong = tr
 /** "Tiếp: {việc} · {em}" — dưới hàng nút trong khối Cần làm (≥ 640); `chan`: bản ở chân dính 375, trên nút (không bị chân che). */
 export function DongTiep({ tiep, chan = false }: { tiep?: TiepViec; chan?: boolean }) {
   if (!tiep?.ten) return null;
-  return <p className={`m-0 truncate text-[13px] text-slate-400 ${chan ? '' : '-mt-1.5 max-sm:hidden'}`} title={tiep.ten}>{t('Tiếp: {x}', { x: tiep.ten })}</p>;
+  return <p className={`ten-hv m-0 text-[13px] text-slate-400 ${chan ? '' : '-mt-1.5 max-sm:hidden'}`}>{t('Tiếp: {x}', { x: tiep.ten })}</p>;
 }
 
 /**

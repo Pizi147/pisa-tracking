@@ -681,7 +681,7 @@ function KhoiViec({ gvId, nguoiXem, homNay, viec }: { gvId: number; nguoiXem: { 
 function KhoiBoTro({ ds }: { ds: BoTroHs[] }) {
   if (!ds.length) return null;
   const o = (x: BoTroHs, k: string): ReactNode => {
-    if (k === 'ten') return <Link to={duongHoSoHocVien(x.hvId, { caseId: x.caseId, paId: x.paId })} className="ten-ho-so">{x.ten}</Link>;
+    if (k === 'ten') return <Link to={duongHoSoHocVien(x.hvId, { caseId: x.caseId, paId: x.paId })} className="ten-hv ten-ho-so">{x.ten}</Link>;
     if (k === 'buoi') return <span className="tabular-nums text-slate-300">{x.soBuoi ? t('buổi {n}/{m}', { n: x.daDay, m: x.soBuoi }) : '—'}</span>;
     return x.hanMiniTest ? <ChipHan loai="mini-test" han={x.hanMiniTest} vien /> : <span className="text-slate-500">—</span>;
   };

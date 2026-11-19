@@ -520,7 +520,7 @@ function BangGvbm({ dto, mons, lenhId, onClose, onDone, reload, quayLai, onTiep 
           const khoa = !!e.xacNhan && !e.suaDuoc;   // OV-13h: đã xác nhận vẫn sửa được, cả sau ngày chuyển lớp (khoá chỉ khi lệnh huỷ / không quyền)
           return (
             <div key={e.lenhId} role="row" className={`grid gap-x-3.5 gap-y-1.5 px-3.5 py-2.5 text-sm ${cot}`}>
-              <span role="cell" className="min-w-0 truncate font-semibold text-slate-100" title={e.ten}>{e.ten}
+              <span role="cell" className="ten-hv min-w-0 font-semibold text-slate-100">{e.ten}
                 {e.lopDich && <span className="block text-xs font-semibold text-slate-500">→ {e.lopDich.code} · {tuanLich(e.tuan, homNay)}</span>}</span>
               <span role="cell" className="min-w-0 text-[13px] text-slate-400">
                 {/* Mockup v11: FT — lượt mới nhất + điểm từng cột của bảng (W1 · W2 riêng), ✓ / ✗ so kỳ vọng của lượt; không có thì câu tự điền như cũ. */}
