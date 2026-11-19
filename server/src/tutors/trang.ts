@@ -3,7 +3,7 @@
  * Quyền: đọc `tutor.view` (Head / CX: chỉ DÒNG có `lop_id` thuộc chi nhánh mình — lớp chụp lúc ghi, mục 12.1; CX chỉ đọc, TU12);
  * nhận xét / kết luận / xoá tutor `tutor.manage` (Head tutor, Quản trị); sửa DANH BẠ (thêm / sửa / tải / gộp) thêm Head — CHỈ chi nhánh mình (`quyenDanhBa`, TU13).
  * Ngày của buổi = `case_followups.created_at` theo giờ VN. Nhóm chú ý = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
- * TU2-5 (chủ SP 19/11): "Buổi" = SUM(so_buoi) (dòng gộp 2 buổi đếm 2); ba tỉ lệ + Cần chú ý đếm theo LẦN GHI (số dòng) — dòng không trả lời không vào mẫu số;
+ * TU2-5 (chủ SP 19/11): "Buổi" = SUM(so_buoi) (dòng gộp 2 buổi đếm 2); ba tỉ lệ + nhóm chú ý đếm theo LẦN GHI (số dòng) — dòng không trả lời không vào mẫu số;
  * người dạy là GV = dòng `tutors` có `user_id` (`loai: 'gv'`): bảng, nhận xét, kết luận như tutor, nhưng không ai sửa tên / xoá ở trang này.
  */
 import { db, theoLo, tx } from '../db.ts';
