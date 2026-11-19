@@ -1,4 +1,4 @@
-import { coNguoiDay } from '../../../shared/domain/paDongBo.ts';
+import { coNguoiPa } from '../../../shared/domain/paDongBo.ts';
 /**
  * PR-MT — dữ liệu thử cho phép kiểm CŨ dựng lượt MT bằng tay (sosV3, PR-N …).
  *
@@ -57,7 +57,7 @@ export function duXacNhan<T extends Record<string, any>>(conn: any, ivId: number
   if (!iv) return input;
   const them: Record<string, any> = {};
   const guiNguoi = 'performerSelf' in input || 'performerUserId' in input || 'performerName' in input;
-  if (coNguoiDay(iv.kind) && !guiNguoi && !iv.performer_user_id && !iv.performer_name) them.performerName = 'GV thử';
+  if (coNguoiPa(iv.kind) && !guiNguoi && !iv.performer_user_id && !iv.performer_name) them.performerName = 'GV thử';
   if (iv.kind === 'tutor' && iv.so_buoi == null && input.soBuoi === undefined) them.soBuoi = 4;
   return { ...input, ...them };
 }

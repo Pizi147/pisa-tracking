@@ -96,6 +96,8 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   c('thi_that_lich_su', 'chon_boi', DV, 'Học tiếp sau thi'),   // HOC-TIEP
   c('ghi_chu_lich_thi', 'created_by', DV, 'ghi chú lịch Test'),   // OV-15c
   c('tutors', 'created_by', DV, 'danh sách tutor'), c('tutors', 'updated_by', DV, 'danh sách tutor'),   // TU-a
+  /* TU2-1: dòng danh bạ của GV (đã dạy tutor) — dấu vết, GIỮ liên kết khi xoá mềm: Khôi phục không sinh dòng danh bạ thứ hai; GV đã xoá tự rời ô chọn (status). */
+  c('tutors', 'user_id', DV, 'dạy tutor'),
   c('tutor_nhan_xet', 'nguoi_id', DV, 'nhận xét về tutor'),
   c('bang_quy_doi', 'nguoi_id', DV, 'bảng quy đổi band'),   // BAND-QUY-DOI
   c('cau_hinh_phien_ban', 'nguoi_id', DV, 'cấu hình hệ thống'),   // QTV2-HAN · CAU-HINH-CASE-SOS (cùng bảng)

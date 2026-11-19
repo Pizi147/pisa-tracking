@@ -36,7 +36,7 @@ export async function runPrCxN52Tests(t: YThucTestKit) {
   const emCp = emCua(CP); const emMb = emCua(MB);
   const QUYEN_HV = [PERMISSIONS.STUDENT_EDIT_INFO, PERMISSIONS.STUDENT_EDIT_MORE, PERMISSIONS.VIOLATION_RECORD, PERMISSIONS.DISCIPLINE_MANAGE];
   const KHONG = ['class.assign', 'admin.config', 'student.edit', 'cycle.edit', 'sos.report', 'sos.edit', 'case.close', 'case.approve', 'request.approve', 'plan.week', 'schedule.move', 'attempt.cancel', 'attempt.skip_skill', 'deadline.override',
-    'score.edit', 'score.override', 'meeting.edit', 'tutor.view', 'tutor.manage'];
+    'score.edit', 'score.override', 'meeting.edit', 'tutor.manage'];   // TU12 (chủ SP 19/11): CX xem trang Tutor (`tutor.view`, migrate prTutor2)
 
   check('N52-0 · seed: CX có đủ quyền N52, không học thuật (Case / PA, điểm, lịch Test), không quyền hệ thống / phân công GV', () => {
     assert(emCp?.id && emMb?.id, JSON.stringify({ emCp, emMb }));

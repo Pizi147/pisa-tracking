@@ -1,7 +1,7 @@
 import { DS_JSON, db, docNhoTheoId, theoLo, tx } from '../db.ts';
 import { capNhatMoTaLuc } from '../migrate/prNgayXong0711.ts';
 import { maNhomHopLe, cauHinh, DANH_MUC_DOI,
-  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiDay, issueBranchOf, tenMonNgan,
+  CASE_DISMISS_REASONS, CASE_DISMISS_REASON_LABEL, CONFIRM_EDIT_REASON, URGENCY_LEVELS, academicSupportFor, caseTopicLabel, coNguoiPa, issueBranchOf, MOC_QUY_CHE_SOS, tenMonNgan,
   hanXacNhan, issuesForTopic, kiemGhiRoKhac, laKhac, mocQuyChe, ngay, reasonNeedsText, tenCaseSos, hanKyGhiKetQua, MOC_DAT_KY_VONG,
   type AcademicSupportPreset, type AcademicSupportSpan, type CaseDismissReason, type MilestoneKind, nhanBaiThuong, duocHoanTacPa, TRAN_CHU, vuotTran, LUOT_DA_XOA_SQL, CHU_TOI_THIEU_CASE } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
@@ -121,8 +121,8 @@ export function resyncUnconfirmedPresets(
   const lop = rows.length ? (db().prepare('SELECT class_id FROM assessment_attempts WHERE id = ?').get(attempt.id) as any)?.class_id ?? null : null;
   for (const iv of rows) {
     /* PR-PA (§8): đổi loại thì người theo loại mới — Tự học không người; Tutor chưa có người → GVBM đúng kỹ năng (như lúc dựng). */
-    const nguoi = coNguoiDay(p.kind) ? iv.performer_user_id ?? (iv.performer_name ? null : suggestCaseOwner({ classId: lop, category: iv.category })) : null;
-    const ten = coNguoiDay(p.kind) ? iv.performer_name : null;
+    const nguoi = coNguoiPa(p.kind) ? iv.performer_user_id ?? (iv.performer_name ? null : suggestCaseOwner({ classId: lop, category: iv.category })) : null;
+    const ten = coNguoiPa(p.kind) ? iv.performer_name : null;
     if (iv.kind === p.kind && iv.description === p.description && iv.moc_quy_che === p.span && nguoi === iv.performer_user_id && ten === iv.performer_name) continue;
     db()
       /* CAU-HINH-CASE-SOS: đổi loại → phiên bản danh sách PA đang dùng (như PA mới tạo, `chenPa`); giữ loại → giữ bản cũ. */
@@ -259,7 +259,7 @@ export function apDungGiuPaGv(yc: { doi_tuong_id: number; du_lieu: string | null
     try { ids = (JSON.parse(yc.du_lieu ?? '{}').paGv ?? []) as number[]; } catch { ids = []; }
     const gs = ids.length ? conn.prepare(`SELECT g.* FROM case_interventions g WHERE g.id IN (${ids.map(() => '?').join(',')}) AND ${PA_GV_MO('g')}`).all(...ids) as any[] : [];
     thayPaGvBangQuyChe(gs, q.id);
-    /* Q4: chạy ngay — Tutor máy gán chưa có Số buổi vẫn chạy (Số buổi trống = không đếm buổi); GV điền ở Sửa PA. */
+    /* Q4: chạy ngay — Tutor máy gán không cần Số buổi (TU11, chủ SP 19/11: như Xác nhận PA; GV ghi "a / b" ở lần Ghi kết quả đầu). */
     const moc = q.moc_quy_che ? mocPaQuyChe(q.id, q.moc_quy_che, today) : null;
     conn.prepare(`UPDATE case_interventions SET superseded_by = NULL, status = 'started', started_date = ?, cycle_no = 1, cycle_started_on = ?, action_due = ?, followup_due = ?,
         confirmed_by = ?, confirmed_at = ?, updated_at = ? WHERE id = ?`).run(today, today, hanKyGhiKetQua(today, today), moc, actor, nowIso(), nowIso(), q.id);
@@ -673,7 +673,7 @@ export function paHetMocTruotLai(caseId: number, ngay: string, actor: number | n
  */
 export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   performerSelf?: boolean; performerUserId?: number | null; performerName?: string | null; description?: string | null;
-  /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). */
+  /** PR-PA (§8): Số buổi — cùng luật Thêm PA (loại có Số buổi, 1–60; không gửi = giữ). TU11: PA Tutor quy chế SOS không nhận (giữ giá trị cũ). */
   soBuoi?: unknown;
   /** OV-13c: ngày bắt đầu (YYYY-MM-DD, lùi ≤ 7 ngày, tới ≤ 30 ngày); không gửi = hôm nay như cũ. Mốc quy chế, hạn kết quả tính từ ngày này. */
   batDau?: unknown;
@@ -701,11 +701,11 @@ export function xacNhanPaQuyChe(p: Principal, interventionId: number, input: {
   if (vuotTran(description, TRAN_CHU.noiDungPa, iv.description)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Mô tả ngắn', toiDa: TRAN_CHU.noiDungPa, n: description.length });   // N35
   /* PR-PA (§8): như Sửa PA — không gửi khoá người = giữ người máy gán. */
   const { performerUserId, performerName } = nguoiSauSua(p, iv, input);
-  const soBuoi = soBuoiMoi(iv, input.soBuoi, 0);
+  /* TU11 (chủ SP 19/11, gỡ kẹt PA chờ xác nhận): PA Tutor quy chế SOS thôi bắt / thôi nhận "Số buổi / 2 tuần" — GV ghi "a / b" ở lần Ghi kết quả đầu. */
+  const tutorQuyChe = iv.kind === 'tutor' && (MOC_QUY_CHE_SOS as readonly string[]).includes(iv.moc_quy_che);
+  const soBuoi = tutorQuyChe ? (iv.so_buoi ?? null) as number | null : soBuoiMoi(iv, input.soBuoi, 0);
   const today = demoToday();
   const batDau = batDauHopLe(input.batDau, today);
-  /* OV-13b: Tutor cần Số buổi / 2 tuần. Người dạy để trống được (chủ SP 19/10) — tên tutor bắt buộc ở Kết quả, mỗi buổi một dòng. */
-  if (iv.kind === 'tutor' && soBuoi == null) throw badRequest('PA Tutor cần Số buổi / 2 tuần.');
   const moc = iv.moc_quy_che ? mocPaQuyChe(iv.id, iv.moc_quy_che, batDau) : null;   // OV-13a (B) + OV-13c: mốc tính từ ngày bắt đầu
   return tx(() => {
     if (rutKtd) rutKhongTheoDoiTrongTx(conn, p, iv.case_id);

@@ -2274,7 +2274,9 @@ export const TRAN_GHI_LO = {
   /** NHAP-KQ-PA: PUT /interventions/:id/nhap — đọc PA + Case (quyền), một UPDATE, một nhật ký; không trả Case. */
   /** GD-20c: GET /interventions/luoi-ket-qua — lưới Ghi kết quả PA một dòng gộp (lớp × kỳ): MỘT câu đọc PA + nháp + MT gần nhất, một câu phạm vi em cho cả lưới. */
   luoiKetQua: 6,   // đo 4 câu (1 câu PA + 1 câu phạm vi em + 2 câu quyền), 1 PA = 3 PA — trần nhỏ: thêm câu theo PA là lỗi
-  luuNhapKetQua: 18,   // đo 8 câu → max(8 + 10, ⌈8 × 1,3⌉)
+  luuNhapKetQua: 18,   // đo 8 câu → max(8 + 10, ⌈8 × 1,3⌉) · TU2-1: nháp có phần Tutor (a, b, dòng Tutor) — cùng số câu
+  /** TU2-1: POST /interventions/:id/result PA Tutor, dòng chọn GV chưa có dòng danh bạ (kiểm GV + tạo dòng tutors trong giao dịch), trả Case. */
+  ghiKetQuaTutor: 106,   // đo 81 câu (~40 là `caseDetail` trả về; GV mới: + kiểm GV + tìm / tạo dòng tutors = +4 câu so với tutor danh bạ) → max(81 + 10, ⌈81 × 1,3⌉)
   /** HAN-BAO-PH (UI-1): POST /y-thuc/bao-ph/:id/han — đọc việc + quyền + Tạm dừng, so-và-đổi `han_chon`, lịch sử, nhật ký, trả `xemViecBaoPh`. */
   suaHanBaoPh: 22,   // đo 12 câu → max(12 + 10, ⌈12 × 1,3⌉)
   /** HAN-BAO-PH (UI-1): POST /phoi-hop-sos/:id/han — meeting CX, như trên (trả một việc phối hợp). */
