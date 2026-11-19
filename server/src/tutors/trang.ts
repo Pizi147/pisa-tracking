@@ -2,16 +2,16 @@
  * TRANG TUTOR (TU-b, đặc tả Tutor mục 7, 8) — bảng tutor + panel một tutor, nhận xét / kết luận, thêm / sửa / xoá tutor, gộp tên gõ tay.
  * Quyền: đọc `tutor.view` (Head / CX: chỉ DÒNG có `lop_id` thuộc chi nhánh mình — lớp chụp lúc ghi, mục 12.1; CX chỉ đọc, TU12);
  * nhận xét / kết luận / xoá tutor `tutor.manage` (Head tutor, Quản trị); sửa DANH BẠ (thêm / sửa / tải / gộp) thêm Head — CHỈ chi nhánh mình (`quyenDanhBa`, TU13).
- * Ngày của buổi = `case_followups.created_at` theo giờ VN. Nhóm chú ý = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
+ * Ngày của buổi = ngày nghiệp vụ của lần ghi (`case_followups.observed_on` — ngày demo trên bản demo; rà #1872 C4). Nhóm chú ý = MỘT hàm (`canChuY`) cho bộ lọc, số menu và cột lý do.
  * TU2-5 (chủ SP 19/11): "Buổi" = SUM(so_buoi) (dòng gộp 2 buổi đếm 2); ba tỉ lệ + nhóm chú ý đếm theo LẦN GHI (số dòng) — dòng không trả lời không vào mẫu số;
  * người dạy là GV = dòng `tutors` có `user_id` (`loai: 'gv'`): bảng, nhận xét, kết luận như tutor, nhưng không ai sửa tên / xoá ở trang này.
  */
 import { db, theoLo, tx } from '../db.ts';
-import { addDays, badRequest, forbidden, loi, normalizeName, notFound, nowIso } from '../util.ts';
+import { badRequest, forbidden, loi, normalizeName, notFound, nowIso } from '../util.ts';
 import { can, scopeFor, type Principal } from '../permissions.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
-import { tutorCuaGv } from '../cases/cases.ts';
+import { COT_TUTOR_TK, chuanTutor, tutorCuaGv } from '../cases/cases.ts';
 import { KN_TUTOR, PERMISSIONS, chuanSdt, knTutorCuaTopic } from '../../../shared/domain/index.ts';
 
 export type Khoang = { tu: string; den: string };
@@ -76,9 +76,6 @@ export function noiDayHopLe(q: QuyenDanhBa, s: { noiDayBranchId: number | null; 
 const locLop = (branchIds: number[] | null) => (branchIds
   ? { sql: ` AND b.lop_id IN (SELECT id FROM classes WHERE branch_id IN (${branchIds.map(() => '?').join(',') || 'NULL'}))`, args: branchIds }
   : { sql: '', args: [] as number[] });
-/** Khoảng ngày VN → mốc `created_at` (UTC ISO): [tu 00:00 VN, den + 1 00:00 VN). */
-const mocKhoang = (k: Khoang): [string, string] => [`${addDays(k.tu, -1)}T17:00:00.000Z`, `${k.den}T17:00:00.000Z`];
-const ngayVn = (iso: string) => new Date(new Date(iso).getTime() + 7 * 3600_000).toISOString().slice(0, 10);
 /** Khoá gom tên (bỏ dấu, hoa thường, khoảng trắng) — tên gõ tay và khớp tên khi tải lên. */
 export const khoaTen = (s: string) => normalizeName(String(s ?? ''));
 const tron1 = (x: number | null) => (x == null ? null : Math.round(x * 10) / 10);
@@ -149,11 +146,11 @@ export function demChuY(p: Principal): { n: number } {
 // ---------------------------------------------------------------- Bảng + panel
 
 function docTutors(conn: any, id?: number): any[] {
-  return conn.prepare(
-    `SELECT t.id, t.ten, t.sdt, t.noi_day_branch_id, t.chi_online, t.ky_nang, t.user_id, t.created_by, t.updated_by,
+  return (conn.prepare(
+    `SELECT t.id, t.sdt, t.chi_online, t.user_id, t.created_by, t.updated_by, ${COT_TUTOR_TK},
             (SELECT n.ket_luan || '|' || n.luc FROM tutor_nhan_xet n WHERE n.tutor_id = t.id ORDER BY n.luc DESC, n.id DESC LIMIT 1) AS kl
-       FROM tutors t${id ? ' WHERE t.id = ?' : ''}`,
-  ).all(...(id ? [id] : [])) as any[];
+       FROM tutors t LEFT JOIN users gu ON gu.id = t.user_id${id ? ' WHERE t.id = ?' : ''}`,
+  ).all(...(id ? [id] : [])) as any[]).map(chuanTutor);
 }
 const docChiNhanh = (conn: any) => new Map((conn.prepare('SELECT id, name FROM branches').all() as any[]).map((b) => [b.id as number, b.name as string]));
 
@@ -178,17 +175,16 @@ const SO_RONG: SoTutor = { buoi: 0, chuanBi: [0, 0], taiLieu: [0, 0], feedbackGv
 export function bangTutor(p: Principal, k: Khoang) {
   const { branchIds, sua, danhBa } = phamVi(p);
   const conn = db();
-  const [tu, den] = mocKhoang(k);
   const l = locLop(branchIds);
-  // ponytail: đọc mọi buổi có tutor rồi lọc ngày qua case_followups (bảng buổi tutor nhỏ); nâng cấp = chỉ mục case_followups(created_at) khi bảng lớn.
+  // ponytail: đọc mọi buổi có tutor rồi lọc ngày qua case_followups (bảng buổi tutor nhỏ); nâng cấp = chỉ mục case_followups(observed_on) khi bảng lớn.
   /* TU2-5: "Buổi" = SUM(so_buoi) (dòng gộp 2 buổi đếm 2); 3 tỉ lệ đếm theo LẦN GHI (dòng) — COUNT(cột) chỉ đếm dòng có trả lời. */
   const so = new Map<number, SoTutor>((conn.prepare(
     `SELECT b.tutor_id AS id, SUM(b.so_buoi) AS buoi, SUM(b.chuan_bi = 1) AS cb, COUNT(b.chuan_bi) AS cbn, SUM(b.tai_lieu = 1) AS tl, COUNT(b.tai_lieu) AS tln,
             SUM(b.feedback_gv = 1) AS fb, COUNT(b.feedback_gv) AS fbn, AVG(b.danh_gia) AS sao
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
-      WHERE b.tutor_id IS NOT NULL AND f.created_at >= ? AND f.created_at < ?${l.sql}
+      WHERE b.tutor_id IS NOT NULL AND f.observed_on >= ? AND f.observed_on <= ?${l.sql}
       GROUP BY b.tutor_id`,
-  ).all(tu, den, ...l.args) as any[]).map((r) => [r.id, {
+  ).all(k.tu, k.den, ...l.args) as any[]).map((r) => [r.id, {
     buoi: r.buoi, chuanBi: [r.cb ?? 0, r.cbn], taiLieu: [r.tl ?? 0, r.tln], feedbackGv: [r.fb ?? 0, r.fbn], danhGia: tron1(r.sao),
   }]));
   const cn = docChiNhanh(conn);
@@ -237,16 +233,15 @@ export function panelTutor(p: Principal, id: number, k: Khoang, ids?: number[]) 
     && !conn.prepare(`SELECT 1 AS x FROM case_followup_buoi b WHERE b.tutor_id = ?${l.sql} LIMIT 1`).get(id, ...l.args))) {
     throw notFound('Không tìm thấy tutor.');
   }
-  const [tu, den] = mocKhoang(k);
   const hang = conn.prepare(
-    `SELECT b.id, f.created_at, s.full_name AS hv, c.code AS lop, u.full_name AS nguoi_ghi, sc.topic,
+    `SELECT b.id, f.observed_on, s.full_name AS hv, c.code AS lop, u.full_name AS nguoi_ghi, sc.topic,
             b.hinh_thuc, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.nhan_xet, b.nhan_xet_tutor, b.so_buoi
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
        JOIN sos_cases sc ON sc.id = f.case_id LEFT JOIN students s ON s.id = sc.student_id
        LEFT JOIN classes c ON c.id = b.lop_id LEFT JOIN users u ON u.id = f.observer_user_id
-      WHERE b.tutor_id = ? AND ${ids ? `b.id IN (${ids.map(() => '?').join(',') || 'NULL'})` : 'f.created_at >= ? AND f.created_at < ?'}${l.sql}
-      ORDER BY f.created_at DESC, b.buoi_so DESC`,
-  ).all(id, ...(ids ?? [tu, den]), ...l.args) as any[];
+      WHERE b.tutor_id = ? AND ${ids ? `b.id IN (${ids.map(() => '?').join(',') || 'NULL'})` : 'f.observed_on >= ? AND f.observed_on <= ?'}${l.sql}
+      ORDER BY f.observed_on DESC, f.id DESC, b.buoi_so DESC`,
+  ).all(id, ...(ids ?? [k.tu, k.den]), ...l.args) as any[];
   const sao = hang.filter((b) => b.danh_gia != null);
   const so: SoTutor = {
     buoi: hang.reduce((a, b) => a + b.so_buoi, 0), chuanBi: tyLe(hang, 'chuan_bi'), taiLieu: tyLe(hang, 'tai_lieu'), feedbackGv: tyLe(hang, 'feedback_gv'),
@@ -264,7 +259,7 @@ export function panelTutor(p: Principal, id: number, k: Khoang, ids?: number[]) 
     tutor: thanhDong(r, docChiNhanh(conn), so, canChuY(conn, branchIds, id).get(id), p, danhBa), so, coSua: sua, coDanhBa: !!danhBa, nhanXet,
     coBuoi: sua ? !!conn.prepare('SELECT 1 AS x FROM case_followup_buoi WHERE tutor_id = ? LIMIT 1').get(id) : true,
     buoi: hang.map((b) => ({
-      id: b.id, ngay: ngayVn(b.created_at), hocVien: b.hv ?? '', lop: b.lop ?? null, nguoiGhi: b.nguoi_ghi ?? null, kn: knCua(b.topic), soBuoi: b.so_buoi,
+      id: b.id, ngay: b.observed_on, hocVien: b.hv ?? '', lop: b.lop ?? null, nguoiGhi: b.nguoi_ghi ?? null, kn: knCua(b.topic), soBuoi: b.so_buoi,
       hinhThuc: b.hinh_thuc ?? null, chuanBi: coKhong(b.chuan_bi), taiLieu: coKhong(b.tai_lieu), feedbackGv: coKhong(b.feedback_gv),
       danhGia: b.danh_gia ?? null, nhanXet: b.nhan_xet, nhanXetTutor: b.nhan_xet_tutor ?? null,
     })),
@@ -329,7 +324,7 @@ export function luuTutor(p: Principal, v: TutorVao, id?: number): { id: number; 
         .run(t.ten, t.sdt, t.noiDayBranchId, t.chiOnline, t.kyNang, luc, p.userId).lastInsertRowid);
     }
     writeAudit({ actorUserId: p.userId, action: id ? 'tutor.sua' : 'tutor.them', entityType: 'tutor', entityId: ma, entityLabel: t.ten, before: truoc ?? undefined, after: t });
-    const trungTen = (conn.prepare('SELECT ten FROM tutors WHERE id <> ?').all(ma) as any[]).some((r) => khoaTen(r.ten) === khoaTen(t.ten));
+    const trungTen = (conn.prepare('SELECT COALESCE(gu.full_name, t.ten) AS ten FROM tutors t LEFT JOIN users gu ON gu.id = t.user_id WHERE t.id <> ?').all(ma) as any[]).some((r) => khoaTen(r.ten) === khoaTen(t.ten));
     return { id: ma, trungTen };
   });
   } catch (e) {
@@ -423,8 +418,8 @@ export function xoaNhanXet(p: Principal, id: number): { ok: true } {
 const docGoTay = (conn: any, chiNhanh: number[] | null) => {
   const l = locLop(chiNhanh);
   return conn.prepare(
-    `SELECT b.id, b.tutor_ten, b.so_buoi, f.created_at, c.code AS lop FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
-       LEFT JOIN classes c ON c.id = b.lop_id WHERE b.tutor_id IS NULL${l.sql} ORDER BY f.created_at`,
+    `SELECT b.id, b.tutor_ten, b.so_buoi, f.observed_on, c.code AS lop FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
+       LEFT JOIN classes c ON c.id = b.lop_id WHERE b.tutor_id IS NULL${l.sql} ORDER BY f.observed_on, f.id`,
   ).all(...l.args) as any[];
 };
 
@@ -437,7 +432,7 @@ export function tenGoTay(p: Principal) {
     const g = nhom.get(khoa) ?? { khoa, ten: String(r.tutor_ten).trim().replace(/\s+/g, ' '), soBuoi: 0, lop: [], ngay: [] };
     g.soBuoi += r.so_buoi;
     if (r.lop && !g.lop.includes(r.lop)) g.lop.push(r.lop);
-    const ng = ngayVn(r.created_at);
+    const ng = r.observed_on;
     if (!g.ngay.includes(ng)) g.ngay.push(ng);
     nhom.set(khoa, g);
   }
@@ -523,7 +518,7 @@ const TOI_DA_THANG = 24;
 const cuoiThang = (t: string) => new Date(Date.UTC(Number(t.slice(0, 4)), Number(t.slice(5)), 0)).toISOString().slice(0, 10);   // ngày 0 của tháng sau = ngày cuối tháng này
 
 /**
- * `GET /tutors/xuat-buoi?tu=YYYY-MM&den=YYYY-MM` — số buổi theo NGƯỜI DẠY × THÁNG (TU14). Tháng = tháng (giờ VN) của ngày ghi lần kết quả (`case_followups.created_at`,
+ * `GET /tutors/xuat-buoi?tu=YYYY-MM&den=YYYY-MM` — số buổi theo NGƯỜI DẠY × THÁNG (TU14). Tháng = tháng của ngày nghiệp vụ lần kết quả (`case_followups.observed_on`,
  * cùng mốc trang đang lọc, XM-3); số = SUM(so_buoi). Quyền `tutor.view` + phạm vi người xem (Head / CX: chỉ dòng lớp chi nhánh mình — người ngoài phạm vi
  * không lộ). Tên gõ tay chưa gộp cũng có dòng "{tên} (gõ tay)" (XM-8) để tổng buổi đủ. MỘT câu số liệu + tutors + chi nhánh. Trả `{ sheets, tenTep, dem }` như các
  * đường xuất khác (web dựng .xlsx); ghi nhật ký `tutor.xuat_so_buoi`.
@@ -536,15 +531,15 @@ export function xuatSoBuoi(p: Principal, tu: unknown, den: unknown) {
   for (let t = tu; t <= den; t = t.slice(5) === '12' ? `${Number(t.slice(0, 4)) + 1}-01` : `${t.slice(0, 4)}-${String(Number(t.slice(5)) + 1).padStart(2, '0')}`) thang.push(t);
   if (thang.length > TOI_DA_THANG) throw badRequest(`Xuất tối đa ${TOI_DA_THANG} tháng một lần.`);
   const conn = db();
-  const [a, b] = mocKhoang({ tu: `${tu}-01`, den: cuoiThang(den) });
   const l = locLop(branchIds);
-  // ponytail: lọc ngày qua case_followups.created_at (quét bảng buổi tutor nhỏ, như bangTutor); thêm chỉ mục case_followups(created_at) khi bảng lớn.
+  // ponytail: lọc ngày qua case_followups.observed_on (quét bảng buổi tutor nhỏ, như bangTutor); thêm chỉ mục case_followups(observed_on) khi bảng lớn.
   const hang = conn.prepare(
-    `SELECT b.tutor_id AS id, CASE WHEN b.tutor_id IS NULL THEN b.tutor_ten END AS ten_go, strftime('%Y-%m', f.created_at, '+7 hours') AS thang, SUM(b.so_buoi) AS n
+    `SELECT b.tutor_id AS id, CASE WHEN b.tutor_id IS NULL THEN b.tutor_ten END AS ten_go, substr(f.observed_on, 1, 7) AS thang, SUM(b.so_buoi) AS n
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
-      WHERE f.created_at >= ? AND f.created_at < ?${l.sql} GROUP BY b.tutor_id, ten_go, thang`,
-  ).all(a, b, ...l.args) as any[];
-  const tutor = new Map((conn.prepare('SELECT id, ten, noi_day_branch_id, chi_online, user_id FROM tutors').all() as any[]).map((r) => [r.id as number, r]));
+      WHERE f.observed_on >= ? AND f.observed_on <= ?${l.sql} GROUP BY b.tutor_id, ten_go, thang`,
+  ).all(`${tu}-01`, cuoiThang(den), ...l.args) as any[];
+  const tutor = new Map((conn.prepare(`SELECT t.id, t.chi_online, t.user_id, ${COT_TUTOR_TK} FROM tutors t LEFT JOIN users gu ON gu.id = t.user_id`).all() as any[])
+    .map((r) => [r.id as number, r]));   // T3: dòng GV theo tài khoản
   const cn = docChiNhanh(conn);
   type Dong = { ten: string; loai: string; noi: string; theo: Map<string, number> };
   const dong = new Map<string, Dong>();

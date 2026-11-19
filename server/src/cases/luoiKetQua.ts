@@ -11,7 +11,8 @@ import { db } from '../db.ts';
 import { can, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, loi } from '../util.ts';
-import { MOC_QUY_CHE_SOS, PERMISSIONS, coSoBuoiKy, hanKe, type BuoiTutor } from '../../../shared/domain/index.ts';
+import { MOC_QUY_CHE_SOS, PERMISSIONS, coSoBuoiKy, hanKe, laLanGhiCuoi, type BuoiTutor } from '../../../shared/domain/index.ts';
+import { sqlNguoiHopLe } from '../platform/timNguoi.ts';
 import { docNhapKetQua } from './cases.ts';
 import { nguoiGiuKetQua } from './giuKetQua.ts';
 
@@ -28,11 +29,13 @@ export type DongLuoiKetQua = {
   buoiKy: number | null;
   /** TU2-4: `so_buoi` của PA — web quyết dòng ghi nhanh được (`ghiNhanhDuoc`) từ chính PA (PA chưa tới hạn không có dòng việc). */
   soBuoi: number | null;
-  /** TU2-2 (TU4): tutor của lần ghi gần nhất (dòng Tutor cuối) — cùng luật `dienSan` của `/tutors/chon` (tutor ngừng / GV đã xoá: null). PA khác Tutor: null. */
+  /** TU2-2 (TU4): tutor của lần ghi gần nhất (dòng Tutor cuối) — cùng luật `dienSan` của `/tutors/chon` (tutor ngừng / GV không còn hợp lệ — `laNguoiHopLe`: null); dòng GV mang tên tài khoản hiện tại. PA khác Tutor: null. */
   tutorTruoc: { tutorId: number | null; gvId: number | null; ten: string } | null;
   mt: { attemptNo: number; band: number; expectation: number | null } | null;
   /** Hạn kỳ sau nếu lưu hôm nay với Giữ nguyên (cùng `hanKeSauGhi` của máy chủ). */
   hanKe: string | null;
+  /** T2 (rà #1872): lưu hôm nay là "Kết quả cuối" (PA quy chế chạm mốc — cùng `laLanGhiCuoi` của `updateResult`) → web không ghi nhanh, chỉ "Mở đầy đủ". */
+  lanCuoi: boolean;
 };
 
 export function docIdLuoi(v: unknown): number[] {
@@ -47,11 +50,11 @@ export function luoiKetQua(p: Principal, ids: readonly number[]): { ds: DongLuoi
   const rows = db().prepare(
     `SELECT iv.id, iv.case_id, iv.kind, iv.description, iv.cycle_no, iv.nhap_ket_qua, iv.performer_user_id, iv.started_date, iv.cycle_started_on,
             iv.action_due, iv.status, iv.nhom_bo_tro, COALESCE(u.full_name, iv.performer_name) AS performer, sc.topic, sc.owner_user_id,
-            iv.so_buoi, iv.moc_quy_che,
+            iv.so_buoi, iv.moc_quy_che, iv.preset, iv.followup_due,
             CASE WHEN iv.kind = 'tutor' OR iv.so_buoi IS NOT NULL THEN (SELECT f.buoi_du_kien FROM case_followups f
               WHERE f.intervention_id = iv.id AND f.buoi_du_kien IS NOT NULL ORDER BY f.id DESC LIMIT 1) END AS b_truoc,
-            CASE WHEN iv.kind = 'tutor' THEN (SELECT json_array(b.tutor_id, t.user_id, COALESCE(t.ten, b.tutor_ten),
-                b.tutor_id IS NULL OR (t.id IS NOT NULL AND (t.user_id IS NULL OR gu.status = 'active')
+            CASE WHEN iv.kind = 'tutor' THEN (SELECT json_array(b.tutor_id, t.user_id, COALESCE(gu.full_name, t.ten, b.tutor_ten),
+                b.tutor_id IS NULL OR (t.id IS NOT NULL AND (t.user_id IS NULL OR ${sqlNguoiHopLe('t.user_id', 'giao_vien')})
                   AND COALESCE((SELECT n.ket_luan FROM tutor_nhan_xet n WHERE n.tutor_id = t.id ORDER BY n.luc DESC, n.id DESC LIMIT 1), '') != 'ngung'))
               FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id LEFT JOIN tutors t ON t.id = b.tutor_id LEFT JOIN users gu ON gu.id = t.user_id
               WHERE f.intervention_id = iv.id ORDER BY f.id DESC, b.buoi_so DESC LIMIT 1) END AS tutor_truoc,
@@ -88,6 +91,7 @@ export function luoiKetQua(p: Principal, ids: readonly number[]): { ds: DongLuoi
         tutorTruoc: tt && tt[3] ? { tutorId: tt[0], gvId: tt[1], ten: tt[2] } : null,
         mt: m ? { attemptNo: m[0], band: Number(m[1]), expectation: m[2] == null ? null : Number(m[2]) } : null,
         hanKe: r.kind === 'bo_tro_mien_phi' ? r.action_due ?? null : hanKe(r.started_date ?? r.cycle_started_on ?? homNay, r.action_due ?? null, homNay),
+        lanCuoi: laLanGhiCuoi({ preset: r.preset === 1, followupDue: r.followup_due ?? null, actionDue: r.action_due ?? null, mienPhi: r.kind === 'bo_tro_mien_phi' }, homNay),
       };
     }),
   };

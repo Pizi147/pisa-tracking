@@ -35,7 +35,7 @@ export async function runPrTubTests(t: any) {
   const FU = one('SELECT id FROM case_followups ORDER BY id LIMIT 1').id as number;
   const K = { tu: '2026-01-05', den: '2026-12-27' };   // khoảng rộng
   let soBuoi = 100;
-  /** Thêm một tutor + (tuỳ chọn) buổi gắn vào lần ghi FU (ngày = created_at của FU, đặt lại trong `thu`). */
+  /** Thêm một tutor + (tuỳ chọn) buổi gắn vào lần ghi FU (ngày = observed_on của FU, đặt lại trong `thu`). */
   const themTutor = (ten: string, noi: string | null = 'MB', kn = 'L,R', sdt: string | null = null) => Number(run(
     `INSERT INTO tutors (ten, sdt, noi_day_branch_id, chi_online, ky_nang, created_at) VALUES (?,?,?,?,?,?)`,
     ten, sdt, noi && noi !== 'online' ? cn(noi) : null, noi === 'online' ? 1 : 0, kn, '2026-09-01T00:00:00.000Z').lastInsertRowid);
@@ -45,7 +45,8 @@ export async function runPrTubTests(t: any) {
     o.fb === undefined ? 1 : o.fb, o.sao ?? null, o.lop ?? lopCua('MB'), o.ghi ?? '2026-09-10T03:00:00.000Z').lastInsertRowid);
   const nhanXet = (tutorId: number, kl: string, luc: string, nguoi = HT.userId) =>
     run(`INSERT INTO tutor_nhan_xet (tutor_id, ket_luan, noi_dung, nguoi_id, luc) VALUES (?,?,?,?,?)`, tutorId, kl, 'Nhận xét thử đủ dài', nguoi, luc);
-  const ngayFu = (iso: string) => run('UPDATE case_followups SET created_at = ? WHERE id = ?', iso, FU);
+  /* Rà #1872 C4: trang Tutor lọc theo ngày nghiệp vụ `observed_on` — đặt cả hai như lần ghi thật (ngày VN của lúc ghi). */
+  const ngayFu = (iso: string) => run('UPDATE case_followups SET created_at = ?, observed_on = ? WHERE id = ?', iso, new Date(Date.parse(iso) + 7 * 3600_000).toISOString().slice(0, 10), FU);
   const dong = (kq: any, id: number) => kq.dong.find((x: any) => x.id === id);
 
   // ------------------------------------------------------------------ TUB-1 · Cần chú ý

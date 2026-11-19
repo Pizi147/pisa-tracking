@@ -47,7 +47,9 @@ export async function runPrTutor5Tests(t: any) {
     `INSERT INTO tutors (ten, sdt, noi_day_branch_id, chi_online, ky_nang, created_at, created_by, user_id) VALUES (?,?,?,?,?,?,?,?)`,
     ten, o.sdt ?? null, noi && noi !== 'online' ? cn(noi) : null, noi === 'online' ? 1 : 0, o.kn ?? 'L,R', '2026-09-01T00:00:00.000Z', o.tao ?? null, o.gv ?? null).lastInsertRowid);
   /** Lần ghi mới (ngày ghi = `iso`) — một dòng buổi có `so_buoi`, ba ô, lớp. */
-  const themLan = (iso: string) => Number(run(`INSERT INTO case_followups (case_id, observed_on, created_at) VALUES (?,?,?)`, FU0.case_id, iso.slice(0, 10), iso).lastInsertRowid);
+  /* Ngày nghiệp vụ `observed_on` = ngày VN của lúc ghi (như lần ghi thật trên bản chính) — trang Tutor lọc theo ngày này (rà #1872 C4). */
+  const themLan = (iso: string) => Number(run(`INSERT INTO case_followups (case_id, observed_on, created_at) VALUES (?,?,?)`, FU0.case_id,
+    new Date(Date.parse(iso) + 7 * 3600_000).toISOString().slice(0, 10), iso).lastInsertRowid);
   const themDong = (fu: number, tutorId: number | null, o: { n?: number; cb?: number | null; tl?: number | null; fb?: number | null; sao?: number | null; lop?: string; ten?: string } = {}) =>
     Number(run(`INSERT INTO case_followup_buoi (followup_id, buoi_so, tutor_ten, nhan_xet, tutor_id, chuan_bi, tai_lieu, feedback_gv, danh_gia, lop_id, ghi_luc, so_buoi)
       VALUES (?,?,?,?,?,?,?,?,?,?,?,?)`, fu, ++seq + 1000, o.ten ?? 'x', 'Nhận xét', tutorId, o.cb === undefined ? 1 : o.cb, o.tl === undefined ? 1 : o.tl,
@@ -272,7 +274,8 @@ export async function runPrTutor5Tests(t: any) {
     const x = tr.xuatSoBuoi(QT, '2026-10', '2026-11');
     assert(x.sheets[0].aoa[0].join('|') === 'Người dạy|Loại|Nơi dạy|10/2026|11/2026|Tổng', `đầu bảng: ${x.sheets[0].aoa[0]}`);
     assert(dongXuat(x, 'Thử Xuất A').slice(1).join('|') === 'Tutor|Monbay|3|4|7', `A: ${dongXuat(x, 'Thử Xuất A')}`);
-    assert(dongXuat(x, 'Thử Xuất GV')[1] === 'GV' && dongXuat(x, 'Thử Xuất GV')[4] === 3, `GV: ${dongXuat(x, 'Thử Xuất GV')}`);
+    const tenGv = one('SELECT full_name FROM users WHERE id = ?', GV.userId).full_name as string;   // rà #1872 T3: dòng GV mang tên tài khoản, không tên chụp
+    assert(dongXuat(x, tenGv)?.[1] === 'GV' && dongXuat(x, tenGv)[4] === 3 && !dongXuat(x, 'Thử Xuất GV'), `GV: ${dongXuat(x, tenGv)}`);
     assert(dongXuat(x, 'Cô Gõ Tay (gõ tay)')?.slice(1).join('|') === '—||0|2|2', `gõ tay: ${dongXuat(x, 'Cô Gõ Tay (gõ tay)')}`);
     const tong = x.sheets[0].aoa[x.sheets[0].aoa.length - 1];
     assert(tong[0] === 'Tổng' && tong[tong.length - 1] === x.dem.buoi, `dòng tổng: ${tong}`);
@@ -280,7 +283,7 @@ export async function runPrTutor5Tests(t: any) {
     const xh = tr.xuatSoBuoi(HMB, '2026-10', '2026-11');
     assert(!dongXuat(xh, 'Thử Xuất B') && dongXuat(xh, 'Thử Xuất A') && dongXuat(xh, 'Cô Gõ Tay (gõ tay)'), 'Head MB không thấy người chỉ dạy em CP');
     assert(dongXuat(tr.xuatSoBuoi(CXALL, '2026-10', '2026-11'), 'Thử Xuất B')?.[4] === 5, 'CX toàn hệ thống thấy cả CP');
-    assert(!dongXuat(tr.xuatSoBuoi(QT, '2026-10', '2026-10'), 'Thử Xuất GV'), 'một tháng: người chỉ dạy tháng 11 không có dòng');
+    assert(!dongXuat(tr.xuatSoBuoi(QT, '2026-10', '2026-10'), tenGv), 'một tháng: người chỉ dạy tháng 11 không có dòng');
     assert(ma(() => tr.xuatSoBuoi(GV, '2026-10', '2026-11')) === 403, 'GV 403');
     for (const [tu, den] of [['2026-13', '2026-12'], ['2026-11', '2026-10'], ['x', 'y'], ['2024-01', '2026-12']] as const) assert(ma(() => tr.xuatSoBuoi(QT, tu, den)) === 400, `kiểm tháng ${tu} → ${den}`);
     assert(tr.xuatSoBuoi(QT, '2026-02', '2026-02').dem.buoi === 0, 'tháng không có dữ liệu: bảng rỗng, không lỗi');

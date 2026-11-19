@@ -84,7 +84,7 @@ export async function runPrTuTests(t: any) {
     assert(d.kiemBuoiTutor(1, [du({ hinhThuc: 'x' })]) !== null, 'hình thức lạ');
     assert(d.kiemBuoiTutor(1, [du({ tutorId: -1 })]) !== null && d.kiemBuoiTutor(1, [du({ tutorId: 1.5 })]) !== null, 'tutorId không nguyên dương');
     assert(d.kiemBuoiTutor(1, [du({ nhanXetTutor: 'a'.repeat(1001) })]) !== null, 'nhận xét về tutor ≤ 1000');
-    assert(d.kiemBuoiTutor(1, [{ tutor: 'Ms Mai', nhanXet: 'Nghe số' }]) === null, 'không gửi 3 ô: lưu được');
+    assert(d.kiemBuoiTutor(1, [{ tutor: 'Ms Mai', nhanXet: 'Nghe số liệu' }]) === null, 'không gửi 3 ô: lưu được');   // rà #1872: Nội dung ≥ 8 ký tự
     assert(d.kiemBuoiTutor(1, [du({ tutor: '', tutorId: null })]) !== null && d.kiemBuoiTutor(1, [du({ nhanXet: ' ' })]) !== null, 'tên + nội dung vẫn bắt buộc');
     assert(d.kiemBuoiTutor(2, [du({ soBuoi: 2 })]) === null && /tổng/.test(d.kiemBuoiTutor(2, [du()]) ?? ''), 'dòng gộp: Σ số buổi = a');
   });

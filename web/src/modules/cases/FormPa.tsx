@@ -76,8 +76,9 @@ export function FormPa({ v, dat, lf, loi, chonLoai, quyChe, toiThieu = CHU_TOI_T
     </Truong>
   );
   /* UI-CONG-VIEC (mockup U01): bỏ câu "Có số buổi thì web đếm…" — không đổi quyết định; giữ câu chặn khi đã dạy. */
-  /* TU11 (mockup Ⓣ1 B3, XM-9): PA Tutor — "Tổng số buổi" tuỳ chọn (đếm "Đã học x / tổng"); PA loại khác giữ "Số buổi". */
-  const soBuoi = coSoBuoi(v.kind) && !(xacNhan && v.kind === 'tutor') ? (
+  /* TU11 (mockup Ⓣ1 B3, XM-9): PA Tutor — "Tổng số buổi" tuỳ chọn (đếm "Đã học x / tổng"); PA loại khác giữ "Số buổi".
+     Rà #1872 P2-17: PA Tutor có mốc quy chế SOS không đếm tổng (`coTongBuoi`) — Sửa / Điều chỉnh không hiện ô (số cũ là "/ 2 tuần", chỉ điền sẵn "b"). */
+  const soBuoi = coSoBuoi(v.kind) && !(v.kind === 'tutor' && (xacNhan || quyChe || v.quyCheSos)) ? (
     <Truong nhan={v.kind === 'tutor' ? t('Tổng số buổi') : t('Số buổi')} tuyChon loi={lf.loiCua(loi, k('so-buoi'))}
       phu={daDay > 0 ? t('Đã dạy {daDay} buổi — không nhỏ hơn {daDay}', { daDay }) : undefined}>
       <input className={`field tabular-nums ${phang ? 'w-full' : 'w-24'}`} inputMode="numeric" maxLength={2} {...lf.o(loi, k('so-buoi'))} value={v.soBuoi}
