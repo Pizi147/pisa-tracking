@@ -257,7 +257,8 @@ function ThanhAp({ n, mau, chonChung, onAp, onBo }: { n: number; mau: EmXetLai; 
         <NutChon nho chon={q === 'dung'} onClick={() => setQ('dung')}>{t('Tạm dừng / Kết thúc học')}</NutChon>
       </span>
       <span className="ml-auto flex gap-1.5">
-        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={!q} onClick={() => q && onAp(q)}>{t('Áp cho {n} em', { n })}</button>
+        <button type="button" className="btn btn-sm btn-primary min-h-[44px] sm:min-h-0" disabled={!q} title={q ? undefined : t('Chọn một hướng trước')} aria-description={q ? undefined : t('Chọn một hướng trước')}
+          onClick={() => q && onAp(q)}>{t('Áp cho {n} em', { n })}</button>
         <button type="button" className="btn btn-sm btn-ghost min-h-[44px] sm:min-h-0" onClick={onBo}>{t('Bỏ chọn')}</button>
       </span>
     </div>

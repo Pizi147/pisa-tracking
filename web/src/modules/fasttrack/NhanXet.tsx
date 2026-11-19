@@ -84,8 +84,10 @@ export function ONhanXet({ nhan, phu, giaTri, onLuu, nenCo = false, kyNang = nul
 }
 
 /** Hàng chip nhóm nguyên nhân — `value` theo thứ tự chọn; bỏ chip thì các chip sau lên một bậc (chip 1 = nguyên nhân chính). */
-export function ChonNhom({ skill, ct = null, value, onChange, disabled, nhanId, moTa }: {
+export function ChonNhom({ skill, ct = null, value, onChange, disabled, nhanId, moTa, mot }: {
   skill: string; value: string[]; onChange: (v: string[]) => void; disabled?: boolean; nhanId?: string;
+  /** S4-GD: chọn MỘT nhóm (+ Case chỉ gửi nguyên nhân chính) — cùng chip, không số thứ tự; bấm lại chip đã chọn = bỏ chọn. */
+  mot?: boolean;
   /** Nhắc cho trình đọc màn (V15: không chữ trên màn). */ moTa?: string;
   /** OV-12c: chương trình lớp thường (FOU "G+V") — bộ nhóm theo chương trình, như Xác nhận Case. */
   ct?: string | null;
@@ -95,10 +97,10 @@ export function ChonNhom({ skill, ct = null, value, onChange, disabled, nhanId, 
       {issuesForTopic(skill, ct).map((i) => {
         const th = value.indexOf(i.code);
         return (
-          <NutChon key={i.code} nho chon={th >= 0} dau={th + 1} disabled={disabled}
-            title={th === 0 ? t('Nguyên nhân chính') : i.hint && dich(i.hint)}
-            onClick={() => onChange(th >= 0 ? value.filter((x) => x !== i.code) : [...value, i.code])}>
-            {dich(i.label)}{th >= 0 && <span className="sr-only">{t(', thứ')}{' '}{th + 1}{th === 0 ? t(' (chính)') : ''}</span>}
+          <NutChon key={i.code} nho chon={th >= 0} dau={mot ? undefined : th + 1} disabled={disabled}
+            title={th === 0 && !mot ? t('Nguyên nhân chính') : i.hint && dich(i.hint)}
+            onClick={() => onChange(mot ? (th >= 0 ? [] : [i.code]) : th >= 0 ? value.filter((x) => x !== i.code) : [...value, i.code])}>
+            {dich(i.label)}{th >= 0 && !mot && <span className="sr-only">{t(', thứ')}{' '}{th + 1}{th === 0 ? t(' (chính)') : ''}</span>}
           </NutChon>
         );
       })}

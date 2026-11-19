@@ -10,7 +10,6 @@ export const EN_UI_CV_TVV = {
   'Báo PH · {bac}': 'Parent call · {bac}',
   'Báo PH': 'Parent call',
   'Bước tiếp chưa chốt': 'Next step not confirmed',
-  'Bước tiếp mở sau khi lưu điểm': 'Next step opens after scores are saved',
   'Bấm dòng để làm việc.': 'Click a row to work on it.',
   'Bỏ việc · chọn lý do': 'Drop task · choose a reason',
   'Bỏ việc': 'Drop task',

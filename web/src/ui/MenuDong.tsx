@@ -119,6 +119,15 @@ export function MenuDong({ muc, nhan = t('Thao tác khác'), bieuTuong = '⋯', 
   useEffect(() => { if (mo && coViTri) tro(0); }, [mo, coViTri]); // eslint-disable-line react-hooks/exhaustive-deps
 
   if (!muc.length && !luonHien) return null;
+  /* S4-GD (Tutor 20/11, đề xuất 1): chỉ MỘT mục bấm được (tiêu đề nhóm không tính), nút ⋯ trơn (không chữ riêng `chu` / `mat`, không chip) → nút chữ
+     bấm thẳng, đỡ 1 bấm. Mục tắt: nút mờ, `title` ghi lý do. Mục nguy hiểm giữ màu đỏ. Cao 36 nơi ⋯ cao 36 (đầu trang, chân hộp), còn lại nút phụ nhỏ;
+     điện thoại ≥ 44. Tên đọc màn = chữ nút + ngữ cảnh của ⋯ (ô nào, em nào). */
+  const don = bam.length === 1 && !chu && !mat && kieu !== 'chip' && bam[0].chon === undefined ? bam[0] : null;
+  if (don) return (
+    <button type="button" title={don.title ?? don.goi} aria-disabled={don.tat ? 'true' : undefined} aria-label={nhan === t('Thao tác khác') ? undefined : `${don.nhan} · ${nhan}`}
+      className={`btn shrink-0 justify-center ${/(^|\s)h-9(\s|$)/.test(lopNut ?? '') ? 'h-9 max-sm:h-11' : 'btn-sm min-h-[44px] sm:min-h-0'}${don.nguyHiem ? ' btn-danger' : ''}${don.tat ? ' opacity-45 cursor-not-allowed' : ''}`}
+      onClick={(e) => { e.stopPropagation(); if (!don.tat) don.onChon(); }}>{don.nhan}</button>
+  );
   return (
     <>
       <button ref={nut} type="button" title={chu ? undefined : nhan} aria-label={chu ? undefined : nhan} aria-haspopup="menu" aria-expanded={mo}

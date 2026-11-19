@@ -41,10 +41,10 @@ export async function runPrSlTests(t: YThucTestKit) {
     assert(ngan.rows[0].fullName === 'An' && ngan.rows[0].email === 'a@x.vn', JSON.stringify(ngan.rows));
   });
 
-  check('SL-5 · I2 Tạo Case: mức độ mặc định "Bình thường" (#4 bản rà 11/11, thay I2), "Chọn nhóm", không hàng nút L R W S giả, Bắt đầu theo dõi chọn theo tuần', () => {
+  check('SL-5 · I2 Tạo Case: mức độ mặc định "Bình thường" (#4 bản rà 11/11, thay I2), Nhóm nguyên nhân là hàng chip (S4-GD 20/11, thay ô thả "Chọn nhóm"), không hàng nút L R W S giả, Bắt đầu theo dõi chọn theo tuần', () => {
     const q = doc('web/src/modules/cases/QuickReport.tsx');
     assert(q.includes("const MUC_DO_MAC_DINH = 'attention'") && q.includes('useState(MUC_DO_MAC_DINH)'), 'mức độ mặc định Bình thường');
-    assert(q.includes("'Chọn nhóm'") && !q.includes("'Chọn phân loại'"), 'placeholder Nhóm nguyên nhân');
+    assert(q.includes('<ChonNhom mot ') && !q.includes('<select') && !q.includes("'Chọn phân loại'"), 'Nhóm nguyên nhân là chip ChonNhom, không ô thả');
     assert(!q.includes("['L', 'R', 'W', 'S']"), 'hàng nút giả có W trần');
     assert(/<ChonTuan[^>]*ariaLabel=\{t\('Bắt đầu theo dõi'\)\}/.test(q) && !/<ONgay kieu="ngay"[^>]*setDetectedAt/.test(q), 'Bắt đầu theo dõi phải là bộ chọn tuần');
   });

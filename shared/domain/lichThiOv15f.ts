@@ -82,6 +82,9 @@ export function thangTrongKhoang(tu: string, den: string): string[] {
   return out;
 }
 
+/** `2026-08` → `2026-09` (S4-GD: "Dời tháng dự kiến" điền sẵn tháng kế của tháng dự kiến). */
+export const thangKe = (m: string): string => congThang(m, 1);
+
 /** Tháng kế tiếp của ngày nghiệp vụ — đích của lối "Lịch thi thật ›" ở Test › Lịch Test. */
 export const thangKeTiep = (homNay: string): string => congThang(homNay.slice(0, 7), 1);
 

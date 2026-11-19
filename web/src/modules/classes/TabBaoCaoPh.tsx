@@ -237,10 +237,12 @@ export function TabBaoCaoPh({ lopId, ct, dot, onDot, onDuHet, onDoiDot, viet, on
               {cuaToi.map((p) => {
                 const n = em.filter((e) => e.o[p.khoa] === 'du').length;
                 const dau = em.find((e) => e.o[p.khoa] !== 'du') ?? em[0];
-                return <button key={p.khoa} type="button" className="btn min-h-[44px] justify-center font-semibold" disabled={!dau}
+                return <button key={p.khoa} type="button" className="btn min-h-[44px] justify-center font-semibold" disabled={!dau} title={dau ? undefined : t('Lớp chưa có học viên')}
                   onClick={() => dau && setMo({ phan: p.khoa, em: dau.id, kieu: 'viet' })}>{t('Viết {phan} · {n}/{tong}', { phan: p.ngan, n, tong: em.length })}</button>;
               })}
             </div>
+            {/* S4-GD (đề xuất 14): nút "Viết …" mờ vì lớp chưa có em — nói lý do ngay dưới nút (375 không có tooltip). */}
+            {!em.length && <p className="m-0 mt-1.5 text-[12px] text-slate-400">{t('Lớp chưa có học viên')}</p>}
           </div>
         )}
         <ul className="m-0 list-none divide-y p-0" style={{ borderColor: 'var(--line)' }}>

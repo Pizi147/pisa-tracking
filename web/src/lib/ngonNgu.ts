@@ -4,7 +4,7 @@
  */
 import { NGON_NGU, NGON_NGU_KHOA, laNgonNgu, t, type NgonNgu } from '@shared/i18n/index.ts';
 import { api } from './api.ts';
-import { coPanelDangSua } from '../ui/KhungPanel.tsx';
+import { boChuRoi, coPanelDangSua } from '../ui/KhungPanel.tsx';
 
 /** Đã bấm chọn tiếng khi CHƯA đăng nhập (màn đăng nhập): lần đăng nhập kế, tài khoản theo lựa chọn này thay vì kéo máy về tiếng cũ của tài khoản. */
 const VUA_CHON = 'pisa-ngon-ngu-vua-chon';
@@ -14,10 +14,10 @@ function luuMay(nn: NgonNgu): boolean {
 }
 const docMay = (): NgonNgu | null => { try { const v = localStorage.getItem(NGON_NGU_KHOA); return laNgonNgu(v) ? v : null; } catch { return null; } };
 
-/** Bấm VI | EN. Panel đang sửa dở → hỏi trước (tải lại trang mất chữ đang gõ). Lưu máy không được (chặn lưu trữ) → không tải lại. */
-export async function doiNgonNgu(nn: NgonNgu, daDangNhap: boolean): Promise<void> {
+/** Bấm VI | EN. Panel đang sửa dở → hỏi trước bằng hộp chung của panel (Ở lại / Bỏ chữ, đổi ngôn ngữ — tải lại trang mất chữ đang gõ; S4-GD: thay hộp gốc trình duyệt). Lưu máy không được (chặn lưu trữ) → không tải lại. */
+export async function doiNgonNgu(nn: NgonNgu, daDangNhap: boolean, daHoi = false): Promise<void> {
   if (nn === NGON_NGU) return;
-  if (coPanelDangSua() && !window.confirm(t('Đang sửa dở — đổi ngôn ngữ sẽ tải lại trang và mất phần chưa lưu. Vẫn đổi?'))) return;
+  if (!daHoi && coPanelDangSua()) { boChuRoi(() => void doiNgonNgu(nn, daDangNhap, true), t('Bỏ chữ, đổi ngôn ngữ')); return; }
   if (!luuMay(nn)) return;
   /* Chưa đăng nhập, hoặc lưu tài khoản lỗi (mất mạng): đánh dấu "vừa chọn" — lần đồng bộ sau đẩy lựa chọn của máy lên tài khoản,
      không kéo máy về tiếng cũ. */
