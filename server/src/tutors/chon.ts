@@ -1,18 +1,16 @@
 /**
- * Ô CHỌN TUTOR (TU-a, đặc tả Tutor mục 4, 5, 6) — `GET /tutors/chon?q=&paId=` (mỗi buổi của Ghi kết quả PA Tutor) hoặc `?q=&studentId=` (nhóm "Tutor"
- * của ô Người dạy khi Thêm / Sửa / Xác nhận PA Tutor). Máy chủ tự suy lớp (lớp của Case — `loadCase().class_id`; hoặc lớp em đang học), kỹ năng PA (topic
- * Case) và quyền: `paId` → như ghi kết quả PA (`kiemQuyenPa`); `studentId` → xem được em + có `sos.edit` (người thêm / sửa PA).
+ * Ô CHỌN TUTOR (TU-a, đặc tả Tutor mục 4, 5, 6) — `GET /tutors/chon?q=&paId=` (mỗi buổi của Ghi kết quả PA Tutor) hoặc `?q=&gop=1` (hộp Gộp tên gõ tay). Máy chủ tự suy lớp
+ * (lớp của Case — `loadCase().class_id`), kỹ năng PA (topic Case) và quyền: `paId` → như ghi kết quả PA (`kiemQuyenPa`). N54 (19/11): PA Tutor thôi có ô "Người dạy" →
+ * bỏ `studentId` / `classId` (S6: không còn nơi gọi).
  * Trả tối đa 20 dòng: gợi ý (nơi dạy = chi nhánh lớp + có kỹ năng PA) → GV → tutor; bỏ tutor có kết luận mới nhất "Ngừng hợp tác"; SĐT chỉ 3 số cuối.
- * OV-15i2: `?classId=` — ô Người dạy CHUNG của Xác nhận PA cùng lúc (lớp của nhóm Case; quyền `sos.edit` ở lớp đó).
  * TU4 (TU2-1, chủ SP 19/11): ô Tutor gồm cả GV — chưa gõ: GV có vai ở chi nhánh lớp; gõ: mọi GV đang làm việc (MỘT câu). Dòng `loai: 'gv'` + `gvId`, không có SĐT;
  * tutor đã gắn GV (`tutors.user_id`) chỉ hiện một lần, dưới nhóm GV (`id` = dòng danh bạ đó). GV chưa có dòng danh bạ: `id` = −gvId (web cũ gửi `tutorId` âm — máy chủ đổi về `gvId`).
  * `nhomGoiY`: tiêu đề nhóm gợi ý ("Monbay · L"). `dienSan` (chỉ `paId`): tutor của lần ghi gần nhất (dòng Tutor cuối).
  */
 import { db } from '../db.ts';
 import { forbidden, notFound, normalizeName } from '../util.ts';
-import { can, require_, type Principal } from '../permissions.ts';
+import { can, type Principal } from '../permissions.ts';
 import { PERMISSIONS, knTutorCuaKyNang, hinhThucTuSuy, knTutorCuaTopic, type HinhThuc } from '../../../shared/domain/index.ts';
-import { activeClassOf } from '../yThuc/access.ts';
 import { kiemQuyenPa, loadCase } from '../cases/cases.ts';
 import { kiemQuyenDanhBa } from './trang.ts';
 import { laNguoiHopLe } from '../platform/timNguoi.ts';
@@ -23,7 +21,7 @@ export type DienSanTutor = { tutorId: number | null; ten: string; hinhThuc: Hinh
 
 const TOI_DA = 20;
 
-export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; studentId?: number | null; classId?: number | null; gop?: boolean }): { ds: TutorChon[]; dienSan: DienSanTutor | null; nhomGoiY: string | null } {
+export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; gop?: boolean }): { ds: TutorChon[]; dienSan: DienSanTutor | null; nhomGoiY: string | null } {
   const conn = db();
   let lopId: number | null = null;
   let topic: string | null = null;
@@ -38,16 +36,8 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
     kiemQuyenPa(p, iv, c);
     lopId = c.class_id ?? null;
     topic = c.topic ?? null;
-  } else if (o.classId) {
-    /* OV-15i2: Xác nhận PA cùng lúc — nhóm em cùng lớp của Case: gợi ý theo chi nhánh lớp đó (không theo lớp em đầu đang học). */
-    require_(p, PERMISSIONS.SOS_EDIT, { classId: o.classId }, 'Bạn không chọn được tutor cho lớp này.');
-    lopId = o.classId;
-  } else if (o.studentId) {
-    require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: o.studentId }, 'Bạn không có quyền xem học viên này.');
-    if (!can(p, PERMISSIONS.SOS_EDIT, { anyScope: true })) throw forbidden('Bạn không chọn được tutor.');
-    lopId = activeClassOf(o.studentId);
   } else {
-    throw forbidden('Chọn tutor cần phương án hoặc học viên.');
+    throw forbidden('Chọn tutor cần phương án.');
   }
   const lop = lopId ? conn.prepare('SELECT c.branch_id, b.name FROM classes c JOIN branches b ON b.id = c.branch_id WHERE c.id = ?').get(lopId) as any : null;
   const cnLop: number | null = quyenGop ? (quyenGop.tatCa ? null : quyenGop.chiNhanh[0] ?? null) : lop?.branch_id ?? null;

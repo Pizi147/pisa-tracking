@@ -4075,7 +4075,7 @@ export function updateResult(p: Principal, interventionId: number, input: {
    */
   const note = (input.note ?? '').trim();
   if (note !== opts.noteCu && !tutorKhongBuoi(iv, input.soBuoi, !!opts.giuCu) && note.length < CHU_TOI_THIEU_CASE) throw loi(400, 'Ghi chú phải nói rõ quan sát được gì — ít nhất {n} ký tự.', { n: CHU_TOI_THIEU_CASE });
-  /* N35: nhận xét kết quả PA ≤ 200 — trừ PA Tutor (ghi chú ghép từ nhận xét từng buổi; Tutor đang hoãn). */
+  /* N35: nhận xét kết quả PA ≤ 200 — trừ PA Tutor (ghi chú ghép từ nhận xét từng buổi). */
   if (iv.kind !== 'tutor' && vuotTran(note, TRAN_CHU.ketQuaPa)) throw loi(400, '{ten}: Tối đa {toiDa} ký tự (đang có {n}).', { ten: 'Ghi chú', toiDa: TRAN_CHU.ketQuaPa, n: note.length });
 
   const observedOn = input.observedOn ?? demoToday();

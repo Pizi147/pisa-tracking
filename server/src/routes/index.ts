@@ -498,9 +498,9 @@ api.get('/ref/nguoi', requireAuth, wrap((req) => {
   });
 }));
 
-/** TU-a: ô chọn tutor (Ghi kết quả PA Tutor theo `paId`; ô Người dạy PA Tutor theo `studentId`) — 3 số cuối SĐT, ≤ 20 dòng (`tutors/chon.ts`). */
+/** TU-a: ô chọn tutor (Ghi kết quả PA Tutor theo `paId`; hộp Gộp tên gõ tay `gop=1`) — 3 số cuối SĐT, ≤ 20 dòng (`tutors/chon.ts`). */
 api.get('/tutors/chon', requireAuth, wrap((req) =>
-  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), studentId: qInt(req, 'studentId'), classId: qInt(req, 'classId'), gop: qStr(req, 'gop') === '1' })));
+  chonTutor(principalOf(req), { q: qStr(req, 'q'), paId: qInt(req, 'paId'), gop: qStr(req, 'gop') === '1' })));
 
 /*
  * TU-b: TRANG TUTOR (đặc tả Tutor mục 7, 8) — quyền kiểm trong `tutors/trang.ts` / `taiLen.ts`: đọc `tutor.view` (Head / CX: dòng lớp chi nhánh mình; CX chỉ đọc),

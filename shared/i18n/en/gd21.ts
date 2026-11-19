@@ -13,8 +13,6 @@ export const EN_GD21 = {
   'Test trong 7 ngày tới': 'Tests in the next 7 days',
   '{n} lớp có Test trong 7 ngày tới': '{n} classes with a Test in the next 7 days',
   'Lịch Test ›': 'Test schedule ›',
-  'Ghi kết quả PA · {ngay}': 'Record PA result · {ngay}',
-  '{n} PA tới kỳ ghi kết quả {ngay}': '{n} PA due for a result on {ngay}',
   'Công việc ›': 'Work ›',
   'Báo cáo PH · mở {ngay}': 'Parent report · opens {ngay}',
   'Báo cáo PH': 'Parent report',

@@ -84,17 +84,16 @@ export type TutorChon = { id: number; ten: string; noiDay: string | null; kyNang
   loai?: 'gv' | 'tutor'; gvId?: number };
 export type KetQuaTutorChon = { ds: TutorChon[]; dienSan: { tutorId: number | null; ten: string; hinhThuc: 'offline' | 'online' | null } | null; nhomGoiY: string | null };
 /**
- * Tham số ô chọn tutor: `paId` (buổi của Ghi kết quả PA Tutor), `classId` (ô Người dạy chung của Xác nhận PA cùng lúc — lớp của nhóm, OV-15i2)
- * hoặc `studentId` (ô Người dạy PA Tutor). `chi`: chỉ tutor (ô Tutor của buổi).
+ * Tham số ô chọn tutor: `paId` (buổi của Ghi kết quả PA Tutor). `chi`: chỉ tutor (ô Tutor của buổi). N54: PA Tutor thôi có ô "Người dạy" → bỏ `classId` / `studentId` (S6).
  */
-export type ThamSoTutor = { paId?: number | null; classId?: number | null; studentId?: number | null; chi?: boolean };
+export type ThamSoTutor = { paId?: number | null; chi?: boolean };
 
 // ponytail: chép khuôn trễ + bộ đếm lượt của `useNguoiSearch` (khác kiểu trả về); gộp một hook chung khi có nơi gọi thứ ba.
 function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: boolean) {
   const [kq, setKq] = useState<KetQuaTutorChon | null>(null);
   const [loading, setLoading] = useState(false);
   const seq = useRef(0);
-  const khoa = tutor ? `${tutor.paId ?? ''}:${tutor.classId ?? ''}:${tutor.studentId ?? ''}` : '';
+  const khoa = tutor?.paId ? String(tutor.paId) : '';
   useEffect(() => {
     if (!active || !khoa) { setKq(null); return; }
     const my = ++seq.current;
@@ -102,9 +101,7 @@ function useTutorChon(term: string, tutor: ThamSoTutor | undefined, active: bool
     const h = setTimeout(async () => {
       try {
         const qs = new URLSearchParams({ q: term.trim() });
-        if (tutor?.paId) qs.set('paId', String(tutor.paId));
-        else if (tutor?.classId) qs.set('classId', String(tutor.classId));
-        else if (tutor?.studentId) qs.set('studentId', String(tutor.studentId));
+        qs.set('paId', khoa);
         const r = await api.get<KetQuaTutorChon>(`/tutors/chon?${qs.toString()}`);
         if (my === seq.current) setKq(r);
       } catch { if (my === seq.current) setKq(null); } finally { if (my === seq.current) setLoading(false); }
