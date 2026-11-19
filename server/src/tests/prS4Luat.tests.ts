@@ -15,6 +15,10 @@ export async function runPrS4LuatTests(t: any) {
   const viol: any = await import('../yThuc/violations.ts');
   const xuLy: any = await import('../yThuc/xuLy.ts');
   const lenh: any = await import('../classes/lenhChuyen.ts');
+  const llt: any = await import('../classes/luatLoTrinh.ts');
+  const ck: any = await import('../normal/cuoiKhoa.ts');
+  const lo: any = await import('../yThuc/lo.ts');
+  const lyc: any = await import('../duyet/loaiYeuCau.ts');
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   console.log('\nS4-LUAT · N56 ② Lý do chuyển lớp · ③ Mô tả xử lý tự ghi · ⑤ Tiến bộ rõ · đề xuất 9');
 
@@ -38,12 +42,49 @@ export async function runPrS4LuatTests(t: any) {
     const e0 = loiCua(() => xuLy.xacNhanXuLy(P.coreTeacher, sid, { violationIds: [v1], performedOn: TODAY, performerName: 'Cô Thu', note: 'ngắn' }));
     assert(e0?.status === 400, `chữ ngắn: ${e0?.status} ${e0?.message}`);
     const e1 = loiCua(() => xuLy.deXuat(P.coreTeacher, sid, { kind: 'wl_3', violationIds: [v2], note: '' }));
-    assert(e1?.status === 400, `đề xuất trống: ${e1?.status} ${e1?.message}`);
+    assert(e1?.status === 400 && /Mô tả/.test(e1?.message ?? ''), `đề xuất trống: ${e1?.status} ${e1?.message}`);
     const kq = xuLy.xacNhanXuLy(P.coreTeacher, sid, { violationIds: [v1], performedOn: TODAY, performerName: 'Cô Thu', note: '' });
     const m = one('SELECT kind, note FROM discipline_measures WHERE id = ?', kq.id);
     const mong = `${d.bacDu(d.nhanLoaiXuLy(m.kind))} · Không nộp bài số 1`;
     assert(m.note === mong, `chữ tự ghi: "${m.note}" ≠ "${mong}"`);
   }));
+
+  check('S4-LUAT ③ (rà #1879) · xử lý theo lô, Mô tả chung trống → mỗi em máy ghi "{BẬC của em} · {vi phạm của em}" (tên = tachTenMoTa như web)', () => thu(() => {
+    const a = emMoi(), b = emMoi();
+    const ghi = (sid: number, ten: string) => viol.recordViolation(P.w1Teacher, { studentId: sid, category: 'homework', ten, skill: 'writing1', occurredOn: d.addDaysIso(TODAY, -1), yeuCauXuLy: true });
+    ghi(a, 'Quên vở'); ghi(b, 'Đi muộn 20 phút');
+    xoaNho();
+    const kq = lo.loXuLy(P.coreTeacher, LOP, { em: [{ studentId: a }, { studentId: b }], performedOn: TODAY, performerName: 'Cô Thu', note: '' });
+    assert(kq.em.every((x: any) => x.ok !== false), `lô: ${JSON.stringify(kq.em)}`);
+    for (const [sid, ten] of [[a, 'Quên vở'], [b, 'Đi muộn 20 phút']] as const) {
+      const m = one(`SELECT kind, note FROM discipline_measures WHERE student_id = ? AND status = 'done' ORDER BY id DESC LIMIT 1`, sid);
+      assert(m?.note === `${d.bacDu(d.nhanLoaiXuLy(m.kind))} · ${ten}`, `em ${sid}: "${m?.note}"`);
+    }
+  }));
+
+  check('S4-LUAT ② (rà #1879) · panel Chuyển lớp: canLyDo = true đúng ca máy chủ đòi Lý do (em hết khoá, chọn KHÁC gợi ý); FT → FT false', () => thu(() => {
+    const be04 = classId('MB BE 04');
+    const em = [...(ck.cuoiKhoaTheoHocVien(be04) as Map<number, any>)].find(([, e]) => e.goiY?.huong === 'len');
+    if (!em) throw new Error('MB BE 04 không có em được gợi ý lên lớp');
+    assert(llt.xemChuyenLop(P.mbManager, em[0], classId('MB BE 03')).canLyDo === true, 'khác gợi ý → canLyDo');
+    const sid = emMoi();
+    const ft2 = one(`SELECT id FROM classes WHERE is_fast_track = 1 AND status = 'active' AND id <> ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1`, LOP, LOP).id;
+    assert(llt.xemChuyenLop(P.mbManager, sid, ft2).canLyDo === false, 'FT → FT không đòi Lý do');
+  }));
+
+  check('S4-LUAT ② (rà #1879) · thẻ Đề xuất chuyển lớp không Lý do: dòng không in “”', () => {
+    const def = lyc.dinhNghiaCua('de_xuat_chuyen_lop');
+    const ngu = { them: new Map([[1, { lop: 'MB BE 03' }]]), homNay: TODAY, nguoi: new Map(), tenNguoi: new Map() };
+    const dong = (ly_do: string | null) => { try { return def.moTa({ id: 1, ly_do, du_lieu: '{}', tao_luc: `${TODAY}T08:00:00Z`, nguoi_xin: P.coreTeacher.userId }, ngu).dong[0] as string; } catch { return null; } };
+    const trong = dong(null);
+    if (trong !== null) assert(!trong.includes('“') && dong('PH xin đổi giờ')!.includes('“PH xin đổi giờ”'), `${trong}`);
+    else assert(fs.readFileSync('server/src/duyet/loaiYeuCau.ts', 'utf8').includes('${yc.ly_do ? `: “${yc.ly_do}”` : \'\'}'), 'mã loaiYeuCau');
+  });
+
+  check('S4-LUAT ⑤ (rà #1879) · ô "Hoàn thành Case" ở Kết thúc PA (CasePanel) và Kết quả PA (CapNhatTuan): Tiến bộ rõ không đòi ≥ 8', () => {
+    assert(fs.readFileSync('web/src/modules/cases/CasePanel.tsx', 'utf8').includes('const loiKetLuan = coHt && !tienBoRo && '), 'CasePanel');
+    assert(fs.readFileSync('web/src/modules/cases/CapNhatTuan.tsx', 'utf8').includes('toiThieu: htTienBoRo ? undefined : CHU_TOI_THIEU_CASE'), 'CapNhatTuan');
+  });
 
   check('S4-LUAT ⑤ · Hoàn thành Case "Tiến bộ rõ" kết luận trống → xong, mốc ghi "Tiến bộ rõ"; mức khác trống → 400', () => thu(() => {
     const sid = emMoi();

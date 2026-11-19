@@ -251,7 +251,7 @@ export function closeCaseOutcome(p: Principal, caseId: number, input: {
    * CHƯA CÓ PHƯƠNG ÁN NÀO vẫn lọt qua đây.
    */
   /*
-   * RKC-2a (chủ SP 07/11 "không chặn cứng", PTA quyết 5): Case chưa có PA hoàn thành được (kết luận ≥ 10 ký tự đã đủ). Còn PA chưa khép — đang chạy, chờ
+   * RKC-2a (chủ SP 07/11 "không chặn cứng", PTA quyết 5): Case chưa có PA hoàn thành được (kết luận ≥ 8 ký tự đã đủ; N56 ⑤ "Tiến bộ rõ" trống được). Còn PA chưa khép — đang chạy, chờ
    * duyệt, kể cả PA theo quy chế — thì HỎI một câu nêu số PA; đồng ý = kết thúc sớm các PA đó ("Dừng — Case hoàn thành", không tính hiệu quả), thẻ chờ
    * của chúng tự đóng. Chụp ghi đảo để Mở lại Case trả các PA + thẻ về như cũ.
    */

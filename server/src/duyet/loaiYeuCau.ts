@@ -676,7 +676,8 @@ export const DINH_NGHIA_LOAI: DinhNghiaLoai[] = [
       const lop = ngu.them.get(yc.id)?.lop as string | undefined;
       return {
         tieuDe: `Đề xuất chuyển lớp · ${lop ?? 'chưa chọn lớp'}${d.tuan ? ` · từ ${tuanLich(d.tuan, ngu.homNay)}` : ''}`,
-        dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)}): “${yc.ly_do ?? ''}”`],
+        /* N56 ②: Lý do tuỳ chọn — không có thì không in “”. */
+        dong: [`${nguoiXin(yc, ngu)} (${ngay(yc.tao_luc, ngu)})${yc.ly_do ? `: “${yc.ly_do}”` : ''}`],
         neuDuyet: 'Mở panel quyết định chuyển lớp — sửa được lớp, tuần.',
         mo: yc.hoc_vien_id ? duongHoSoHocVien(yc.hoc_vien_id) : undefined,
         duLieu: { moPanelChuyenLop: true, lopDichId: d.lopDichId ?? null, tuan: d.tuan ?? null, resetBac: d.resetBac === true },

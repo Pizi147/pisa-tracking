@@ -4,7 +4,7 @@
  *   Ghi nhận          "đã xem, không cần biện pháp" (V4-1, V4-6) — không đẩy bậc, vẫn đếm vào luật ≥ 3. Vi phạm đang BẮT BUỘC thì không
  *                     Ghi nhận được (V4-2).
  *   Xác nhận xử lý    MỘT bước (V4-7): vi phạm · bậc kế tiếp (máy chủ tự tính, client KHÔNG gửi loại) · ngày ≤ hôm nay · người thực hiện
- *                     · mô tả ≥ 10 ký tự · tệp tuỳ chọn (tải sau vào chủ `discipline_measure`). Lưu là `done`.
+ *                     · mô tả ≥ 8 ký tự (N56 ③: trống → máy tự ghi) · tệp tuỳ chọn (tải sau vào chủ `discipline_measure`). Lưu là `done`.
  *
  * Bậc kế cần QL (WL 3) hoặc hết thang → phải đi đường Đề xuất (thẻ `y_thuc`, `deXuat*` ở cuối file). Bậc không lùi (V4-12): bậc đọc từ
  * `kind` của lần xử lý, xoá vi phạm không xoá lần xử lý. Trạng thái mọi vi phạm đọc qua `trangThaiYThuc()` (một cửa).
@@ -17,7 +17,7 @@ import { DS_JSON, db, tx } from '../db.ts';
 import { xoaNho } from '../platform/nguCanhRequest.ts';
 import {
   hanTai, NGOAI_THANG, PERMISSIONS, THANG, VIOLATION_CATEGORY_LABEL, XU_LY_STATUS_LABEL, hanTheoNgay,
-  bacCuaLoai, bacDu, bacHienTai, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
+  bacCuaLoai, bacDu, bacHienTai, tachTenMoTa, dongThang, duongHoSoHocVien, kindCuaBac, kiemGhiRoKhac, macDinhTick, nhanLoaiXuLy, shortDate,
   CHU_TOI_THIEU, type MeasureKind, type TheYeuCauDto, type ViolationCategory,
 } from '../../../shared/domain/index.ts';
 import { can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -95,11 +95,16 @@ export function moTa(v: unknown, cu?: string | null): string {
 }
 /** N56 ③ (chủ SP 20/11): Xác nhận xử lý ĐÚNG BẬC KẾ — Mô tả để trống được (`luuXuLy` tự ghi); có chữ thì kiểm như cũ. Đề xuất (khác mặc định) vẫn `moTa`. */
 const moTaTuyChon = (v: unknown): string => (String(v ?? '').trim() ? moTa(v) : '');
-/** N56 ③: Mô tả máy tự ghi "{BẬC} · {vi phạm}" — cùng câu nút "Chèn" ở web. Một câu, chỉ khi Mô tả trống. */
+/**
+ * N56 ③: Mô tả máy tự ghi "{BẬC} · {vi phạm}" — ĐÚNG câu nút "Chèn" ở web (`cauChen`): tên vi phạm = `tachTenMoTa(...).ten` (như danh sách vi phạm web hiện),
+ * theo thứ tự các vi phạm được chọn, bỏ trùng. Một câu theo khoá chính, chỉ khi Mô tả trống (`em.dsViPham` không mang tên — thêm cột vào câu chung
+ * của `trangThaiYThuc` thì mọi trang Ý thức đọc nặng hơn).
+ */
 function moTaTuDong(ids: readonly number[], kind: string): string {
-  const ten = (db().prepare(`SELECT COALESCE(NULLIF(ten, ''), NULLIF(description, ''), category) AS ten FROM violations WHERE id IN (${DS_JSON}) ORDER BY occurred_on, id`)
-    .all(JSON.stringify(ids)) as any[]).map((r) => (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten));
-  return [bacDu(nhanLoaiXuLy(kind)), [...new Set(ten)].join(', ')].filter(Boolean).join(' · ').slice(0, MO_TA_TOI_DA);
+  const theoId = new Map((db().prepare(`SELECT id, ten, description, category FROM violations WHERE id IN (${DS_JSON})`).all(JSON.stringify(ids)) as any[])
+    .map((r) => [r.id as number, tachTenMoTa(r.ten, r.description, r.category).ten]));
+  const ten = [...new Set(ids.map((id) => theoId.get(id)).filter(Boolean))].join(', ');
+  return [bacDu(nhanLoaiXuLy(kind)), ten].filter(Boolean).join(' · ').slice(0, MO_TA_TOI_DA);
 }
 
 // ---------------------------------------------------------------- Ghi nhận (V4-1, V4-2, V4-6)
@@ -353,7 +358,7 @@ export function chuaThucHien(p: Principal, measureId: number): XuLyView {
 
 /**
  * OV-7a: sửa GHI CHÚ · NGÀY · NGƯỜI THỰC HIỆN của lần xử lý đã xong (cùng quyền Sửa vi phạm — GVCN em + QL). Chỉ trường có gửi mới đổi; kiểm như lúc
- * lưu (mô tả ≥ 10, ngày ≤ hôm nay và từ ngày QL duyệt). Nhật ký trước → sau. Bậc không đổi (đọc từ loại) — hạn xử lý chốt lại như Sửa vi phạm.
+ * lưu (mô tả ≥ 8 — `MO_TA_MIN`, ngày ≤ hôm nay và từ ngày QL duyệt). Nhật ký trước → sau. Bậc không đổi (đọc từ loại) — hạn xử lý chốt lại như Sửa vi phạm.
  */
 export function suaXuLy(p: Principal, measureId: number, v: { note?: unknown; performedOn?: unknown; performerSelf?: unknown; performerUserId?: unknown; performerName?: unknown }): XuLyView {
   const m = loadXuLy(measureId);
@@ -655,7 +660,7 @@ export function laGvcnDangHoc(p: Principal, studentId: number, em: EmYThuc = emC
 /**
  * Bước 1: tạo NHÁP (`nhap`, nội bộ, không vào trạng thái) để có chủ cho tệp/liên kết bằng chứng. Loại: WL 3 (bất kỳ lúc nào, không đẩy bậc) ·
  * Meeting CX/GĐCN · Đình chỉ học tạm thời · Khác (tên ≥ 3 ký tự — T30) · LUAT-5 "không tăng bậc": bậc thang ≤ bậc hiện tại (lặp hoặc nhẹ hơn —
- * bậc em không đổi vì `bacHienTai` = max). Mô tả (lý do) ≥ 10 ký tự.
+ * bậc em không đổi vì `bacHienTai` = max). Mô tả (lý do) ≥ 8 ký tự, bắt buộc.
  */
 export function deXuat(p: Principal, studentId: number, v: { kind?: unknown; customName?: unknown; violationIds?: unknown; note?: unknown }) {
   const hv = hocVien(studentId);

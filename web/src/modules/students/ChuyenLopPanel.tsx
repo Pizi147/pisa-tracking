@@ -34,6 +34,8 @@ export type XemChuyenLopData = {
   luat?: { khoa: 'giu' | 'dong-mo' } | null;
   /** N36: bậc vi phạm hiện tại (em đang ở lộ trình lớp thường; FT = 0). */
   bacYThuc?: number;
+  /** Rà #1879: lớp đang chọn KHÁC gợi ý Cuối khoá → Lý do bắt buộc (máy chủ tính như lúc ra lệnh); còn lại Lý do tuỳ chọn (N56 ②). */
+  canLyDo?: boolean;
 };
 
 /** Thẻ Đề xuất chuyển lớp đang được duyệt: panel mở điền sẵn, nút chính `Duyệt và quyết định` (mockup 20 — thẻ Chờ duyệt → D). */
@@ -196,16 +198,19 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
   const nguonLd = lopDich.data?.nguon;
   const oReset = bacNay > 0 && (dx ? !dich || dich.ft || dich.ma !== (nguonLd?.ma ?? null) || !!nguonLd?.tuCuoiKhoa : !!xemLop && xemLop.luat?.khoa === 'dong-mo');
 
-  /* N56 ② (chủ SP 20/11): Lý do tuỳ chọn ở mọi kiểu chuyển (lệnh, đề xuất, duyệt, nhiều em) — máy chủ cùng luật. */
+  /* N56 ② (chủ SP 20/11): Lý do tuỳ chọn ở mọi kiểu chuyển (lệnh, đề xuất, duyệt, nhiều em) — trừ khi chọn KHÁC gợi ý Cuối khoá (`canLyDo` máy chủ,
+     PR-UXF-a Q1 — PTA giữ 20/11). Đề xuất: trước đã chỉ bắt Lý do (lớp / tuần tuỳ chọn) — giữ như cũ. */
+  const canLyDo = !!xemLop?.canLyDo;
   const LUAT: LuatTruong[] = dx
     ? []
     : [
       { khoa: 'lop', nhan: t('Lớp chuyển đến'), chon: true },
       { khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true },
+      ...(canLyDo ? [{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }] : []),
     ];
   /* Target: trống "Chưa điền", sai "Gõ band 0–9…" ngay tại ô (cùng luật máy chủ; "6,5" đọc là 6.5). */
   const oT = docOTarget(mucTieu);
-  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: dichChu(oT.loi) }] : [])];
+  const loi = [...dsLoi(LUAT, { lop: toClassId, tuan, 'ly-do': lyDo }), ...(oTarget && oT.loi ? [{ khoa: 'muc-tieu', nhan: 'Target', lyDo: dichChu(oT.loi) }] : [])];
   /* Không hỏi Target → không gửi: máy chủ lấy Target LTT / khoá; sửa lệnh thì giữ Target + Dự kiến thi của lệnh (R-C3). */
   const mucTieuGui = oTarget ? oT.giaTri : undefined;
   const xong = (chu: string) => { xongChuyen(); toast.push('ok', chu); onDone?.(); onClose(); };
@@ -340,8 +345,8 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
               {dx ? <OTuan tuanChon={tuanChon} rong value={tuan} onChange={setTuan} ariaLabel={t('Từ tuần')} chuaChon={t('Chưa chọn')} />
                 : <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />}
             </Truong>
-            <Truong nhan={t('Lý do')} tuyChon>
-              <textarea className="field w-full" rows={2} maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
+            <Truong nhan={t('Lý do')} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')} phu={canLyDo ? t('Khác gợi ý Cuối khoá') : undefined}>
+              <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
                 placeholder={dx ? t('Ví dụ: Phụ huynh xin chuyển sang lớp khác giờ học') : t('Ghi lý do')} />
             </Truong>
             {oTarget && (
@@ -373,7 +378,7 @@ function NoiDungChuyenLop({ onClose, studentId, studentName, lop, onDone, cheDo,
 
 /** `huong`, `tyLe` luôn null từ P9a (Xét lại lộ trình có panel riêng `PanelXetLai`) — giữ cột hàng như R5.3. */
 type EmXetLai = { studentId: number; ten: string; huong: 'len_lop' | 'fast_track' | 'hoc_lai' | null; tyLe: number | null; lopHienTai: { id: number; code: string } };
-type XemEm = { nap: true } | { loi: string } | { nguonFt: boolean; dichFt: boolean; khiChuyen: string[]; canhBao: boolean; hoiTarget: boolean };
+type XemEm = { nap: true } | { loi: string } | { nguonFt: boolean; dichFt: boolean; khiChuyen: string[]; canhBao: boolean; hoiTarget: boolean; canLyDo: boolean };
 const DA_CHOT: Record<NonNullable<EmXetLai['huong']>, string> = { len_lop: t('Lên lớp'), fast_track: t('Lên FT'), hoc_lai: t('Học lại') };
 /** 1440: ☑ · Học viên · Final Test · Đang ở · Lớp chuyển đến (mockup phần 2 ④). */
 const LUOI_NHIEU = 'grid grid-cols-[28px_minmax(11rem,1.2fr)_5.5rem_8rem_minmax(16rem,1.6fr)] items-start gap-x-3';
@@ -419,10 +424,12 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
   const emMau = ds.find((e) => !daXong.has(e.studentId))?.studentId ?? null;
   const lopDich = useApi<LopDichData>(emMau ? `/chuyen-lop/lop-dich?studentId=${emMau}` : null, [emMau, lopMoi]);
   const { gui: canGui, boQua } = chonGuiNhieuEm(rows);
-  const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }];   // N56 ②: Lý do tuỳ chọn
+  /* N56 ②: Lý do tuỳ chọn — trừ khi có em được chọn lớp KHÁC gợi ý Cuối khoá (`canLyDo` máy chủ, một Lý do chung). */
+  const canLyDo = canGui.some((r) => { const x = xem[r.e.studentId]; return !!x && 'canLyDo' in x && x.canLyDo; });
+  const LUAT: LuatTruong[] = [{ khoa: 'tuan', nhan: t('Tuần bắt đầu'), chon: true }, ...(canLyDo ? [{ khoa: 'ly-do', nhan: t('Lý do'), toiThieu: 1 }] : [])];
   /* I1 (§7): em Lên FT từ lớp thường mà chưa có Target nào → ô Target ở hàng em; thiếu thì "Còn thiếu: Target · {tên}". */
   const hoiTarget = (sid: number) => { const x = xem[sid]; return !!x && 'hoiTarget' in x && x.hoiTarget; };
-  const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan }),
+  const loi: LoiTruong[] = [...dsLoi(LUAT, { tuan, 'ly-do': lyDo }),
     ...canGui.flatMap((r) => { const l = hoiTarget(r.e.studentId) ? docOTarget(mucTieu[r.e.studentId] ?? '').loi : null;
       return l ? [{ khoa: `muc-tieu-${r.e.studentId}`, nhan: `Target · ${r.e.ten}`, lyDo: dichChu(l) }] : []; })];
   /* M1: còn em đang xem trước → chưa biết có cần Target → chưa cho gửi. */
@@ -436,7 +443,7 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
     if (id === null) return;
     setXem((m) => ({ ...m, [sid]: { nap: true } }));
     api.get<XemChuyenLopData>(`/students/${sid}/chuyen-lop?toClassId=${id}`)
-      .then((r) => { if (moiNhat.current[sid] === id) setXem((m) => ({ ...m, [sid]: { nguonFt: r.hienTai.ft, dichFt, khiChuyen: r.khiChuyen, canhBao: r.canhBao, hoiTarget: canHoiTarget(r.hienTai.ft, dichFt, r.targetSan) } })); })
+      .then((r) => { if (moiNhat.current[sid] === id) setXem((m) => ({ ...m, [sid]: { nguonFt: r.hienTai.ft, dichFt, khiChuyen: r.khiChuyen, canhBao: r.canhBao, hoiTarget: canHoiTarget(r.hienTai.ft, dichFt, r.targetSan), canLyDo: !!r.canLyDo } })); })
       .catch((e: any) => { if (moiNhat.current[sid] === id) setXem((m) => ({ ...m, [sid]: { loi: loiMayChu(e) } })); });
   };
 
@@ -519,8 +526,8 @@ export function ChuyenLopNhieuEm({ classId, onClose, onDone, emIds, lop: lopNguo
         <Truong nhan={t('Tuần bắt đầu')} batBuoc as="div" loi={lf.loiCua(loi, 'tuan')}>
           <OTuanBatDau tuanChon={tuanChon} tuan={tuan} setTuan={setTuan} homNay={homNay} oProps={lf.o(loi, 'tuan')} />
         </Truong>
-        <Truong nhan={t('Lý do')} tuyChon>
-          <textarea className="field w-full" rows={2} maxLength={2000} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
+        <Truong nhan={t('Lý do')} batBuoc={canLyDo} tuyChon={!canLyDo} loi={lf.loiCua(loi, 'ly-do')} phu={canLyDo ? t('Khác gợi ý Cuối khoá') : undefined}>
+          <textarea className="field w-full" rows={2} maxLength={2000} {...lf.o(loi, 'ly-do')} value={lyDo} onChange={(e) => setLyDo(e.target.value)}
             placeholder={t('Ví dụ: Gộp lớp')} />
         </Truong>
       </div>
