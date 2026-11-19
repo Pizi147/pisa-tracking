@@ -775,8 +775,13 @@ export function demQuaHan(ds: readonly { quaHan: boolean; studentId: number | nu
  * HSL-GON (M3, chủ SP 05/11 — "TVV Lê Thu lặp gần mọi dòng em"): TVV CHÍNH của lớp = TVV giữ nhiều em nhất (hoà → tên đứng trước theo bảng chữ cái).
  * Đầu hồ sơ lớp ghi một lần "TVV {chính}"; dòng em chỉ ghi TVV khi KHÁC TVV chính (ngoại lệ). Lớp chưa em nào có TVV → null.
  */
-/** HSL-LUU-TRU (chủ SP 10/11): dòng tab Học viên của hồ sơ lớp — lớp đã kết thúc giữ cả em đã lưu trữ (= "n HV" đầu trang = tab Tổng kết); lớp đang học bỏ em lưu trữ. */
-export const dongTabHocVien = <T extends { archived: boolean }>(ds: readonly T[], daKetThuc: boolean): T[] => ds.filter((r) => daKetThuc || !r.archived);
+/**
+ * HSL-LUU-TRU (chủ SP 10/11): dòng tab Học viên của hồ sơ lớp — lớp đã kết thúc giữ cả em đã lưu trữ (= "n HV" đầu trang = tab Tổng kết); lớp đang học bỏ em lưu trữ.
+ * S2 (rà 19/11 P2-1): xếp tên theo tiếng Việt như Học viên & Lớp (`localeCompare(…, 'vi')`) — máy chủ ORDER BY theo mã ký tự ("Hoàng" trước "Hà"); em lưu trữ vẫn cuối.
+ */
+export const dongTabHocVien = <T extends { archived: boolean; fullName: string }>(ds: readonly T[], daKetThuc: boolean): T[] => ds
+  .filter((r) => daKetThuc || !r.archived)
+  .sort((a, b) => Number(a.archived) - Number(b.archived) || a.fullName.localeCompare(b.fullName, 'vi'));
 
 export function tvvChinhCuaLop(ds: readonly { tvv?: string | null }[]): string | null {
   const dem = new Map<string, number>();

@@ -9,6 +9,8 @@ export type SoTutor = { buoi: number; chuanBi: TyLe; taiLieu: TyLe; feedbackGv: 
 export type DongTutor = SoTutor & {
   id: number; ten: string; sdt: string | null; noiDay: NoiDay; kyNang: string[];
   ketLuan: { kl: KetLuan; luc: string } | null; chuY: string | null; thieu: ('sdt' | 'noiDay')[];
+  /** N56 ⑥: ngày lần ghi gần nhất của lý do · id các dòng gây "Cần chú ý" (mọi thời gian — panel mở đúng các dòng này). */
+  chuYNgay: string | null; chuYIds: number[];
   /** TU2-5: `gv` = dòng danh bạ của một GV (`gvId` = tài khoản) — không ai Sửa / Xoá ở trang này; `suaDuoc` = người xem Sửa được dòng này. */
   loai: 'gv' | 'tutor'; gvId: number | null; suaDuoc: boolean;
 };

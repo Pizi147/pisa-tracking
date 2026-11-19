@@ -1,7 +1,7 @@
 /**
  * Hướng dẫn Head tutor — HD-V2 (c). TU2-6 (chủ SP 19/11, TU12–TU14): trang Tutor mở lại — Tổng quan, Tutor, Hồ sơ cá nhân, Hướng dẫn (không Học viên & Lớp, Test, Công việc).
- * LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): trang đầu như GV — dạy lớp thì Quản trị cấp thêm vai Giáo viên (khi đó Hướng dẫn GV); chưa có lớp:
- * khung "Lớp của tôi" rỗng. `lam` là MỘT nguồn (xem `ql.ts`).
+ * LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): dạy lớp thì Quản trị cấp thêm vai Giáo viên (khi đó trang đầu + Hướng dẫn GV, N43).
+ * N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor → trang đầu mở thẳng Tutor. `lam` là MỘT nguồn (xem `ql.ts`).
  */
 import { mucGv } from './tvv.ts';
 import type { HuongDan, ManHd, ViecHd } from './kieu.ts';
@@ -54,8 +54,8 @@ export const HD_HT: HuongDan = {
   lam: [
     {
       id: 'xem-tong-quan', ten: 'Xem trang đầu', nhom: 'khac',
-      loiChinh: { man: 'tong-quan', chu: 'Tổng quan', duong: '/' },
-      buoc: ['Mở <b>Tổng quan</b>: khung <b>Lớp của tôi</b> như trang đầu GV.', 'Chưa có lớp: ghi "Chưa được phân công lớp nào". Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — bạn có Công việc, Học viên & Lớp, Test như GV.'],
+      loiChinh: { man: 'tutor', chu: 'Tutor', duong: TUTOR },
+      buoc: ['Đăng nhập hoặc bấm <b>Tổng quan</b>: trang đầu mở thẳng <b>Tutor</b>.', 'Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — trang đầu thành Công việc như GV; Tutor vẫn ở menu.'],
       tuKhac: ['case', 'trang đầu', 'home'],
     },
     VIEC_TUTOR.nhanXet, VIEC_TUTOR.danhBa, VIEC_TUTOR.xuat,

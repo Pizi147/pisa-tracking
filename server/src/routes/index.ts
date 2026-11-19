@@ -518,7 +518,9 @@ api.post('/tutors/tai-len', requireAuth, wrap((req) => taiLenTutor(principalOf(r
 api.post('/tutors', requireAuth, wrap((req) => tutorSvc.luuTutor(principalOf(req), req.body)));
 api.patch('/tutors/nhan-xet/:id', requireAuth, wrap((req) => tutorSvc.suaNhanXet(principalOf(req), pInt(req, 'id'), req.body)));
 api.delete('/tutors/nhan-xet/:id', requireAuth, wrap((req) => tutorSvc.xoaNhanXet(principalOf(req), pInt(req, 'id'))));
-api.get('/tutors/:id', requireAuth, wrap((req) => tutorSvc.panelTutor(principalOf(req), pInt(req, 'id'), khoangTutor(req))));
+/* N56 ⑥: `ids=1,2` = xem đúng các dòng "Cần chú ý" (ngoài khoảng tuần); tối đa 200 id số nguyên dương, sai dạng → bỏ qua. */
+const idsTutor = (req: Request) => { const s = qStr(req, 'ids'); if (!s) return undefined; const v = s.split(',').map(Number).filter((n) => Number.isInteger(n) && n > 0).slice(0, 200); return v.length ? v : undefined; };
+api.get('/tutors/:id', requireAuth, wrap((req) => tutorSvc.panelTutor(principalOf(req), pInt(req, 'id'), khoangTutor(req), idsTutor(req))));
 api.patch('/tutors/:id', requireAuth, wrap((req) => tutorSvc.luuTutor(principalOf(req), req.body, pInt(req, 'id'))));
 api.delete('/tutors/:id', requireAuth, wrap((req) => tutorSvc.xoaTutor(principalOf(req), pInt(req, 'id'))));
 api.post('/tutors/:id/nhan-xet', requireAuth, wrap((req) => tutorSvc.ghiNhanXet(principalOf(req), pInt(req, 'id'), req.body)));

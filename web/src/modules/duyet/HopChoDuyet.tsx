@@ -490,7 +490,7 @@ function CayDuyet({ ds, ...dong }: { ds: (TheYeuCauDto & { giu?: { chu: string; 
                   style={{ background: 'var(--surface-2)', borderColor: 'var(--line-strong)' }}>{chuDau(k[0].hocVien ?? '')}</span>
                 <span className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5">
                   <Link to={`/hoc-vien/${k[0].hocVienId}`} title={t('Mở hồ sơ {ten}', { ten: k[0].hocVien ?? '' })}
-                    className="whitespace-nowrap text-[15px] font-semibold leading-snug text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline">{k[0].hocVien}</Link>
+                    className="ten-hv text-[15px] font-semibold leading-snug text-[color:var(--text)] no-underline hover:text-[color:var(--accent)] hover:underline">{k[0].hocVien}</Link>
                   {k[0].lop && <span className="whitespace-nowrap text-[13px] text-dim">{k[0].lop}</span>}
                   {/* DUYET-QL: SOS hiện tại của em (máy chủ gắn ở tab Chờ duyệt) — dòng duyệt không có cột điểm nên giữ "· S". */}
                   {k[0].sos && <ChipSos muc={k[0].sos.muc} kyNang={k[0].sos.kyNang} tam={k[0].sos.tam} dot={k[0].diemHv?.luot} ten={k[0].hocVien} />}

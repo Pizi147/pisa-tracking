@@ -41,14 +41,19 @@ function DauMuc({ chu, so, phai }: { chu: string; so?: number; phai?: ReactNode 
  * (sửa / xoá của mình) → Kết quả đã ghi (Ngày ghi · Học viên · KN · Buổi · 3 dấu · Đánh giá · Nội dung) + "Chỉ dòng có Không". Không link sang hồ sơ HV / Case (Q2).
  * Sau Lưu nhận xét: ở lại, "✓ Đã lưu nhận xét", nút chính "Người cần chú ý tiếp ›" (V12, XM-4).
  */
-export function PanelTutor({ id, tieuChi, khoang, dsChiNhanh, chiNhanhDanhBa, ds, tiep, onTiep, onDong }: {
-  id: number; tieuChi?: TieuChi; khoang: KhoangNgay; dsChiNhanh: ChiNhanh[]; chiNhanhDanhBa: ChiNhanh[] | null; ds: DongTutor[];
+export function PanelTutor({ id, tieuChi, xemChuY, khoang, dsChiNhanh, chiNhanhDanhBa, ds, tiep, onTiep, onDong }: {
+  id: number; tieuChi?: TieuChi; khoang: KhoangNgay;
+  /** N56 ⑥: mở từ lý do "Cần chú ý" → bảng Kết quả đã ghi = đúng các dòng gây chú ý (mọi thời gian), có nút về khoảng của trang. */
+  xemChuY?: boolean; dsChiNhanh: ChiNhanh[]; chiNhanhDanhBa: ChiNhanh[] | null; ds: DongTutor[];
   /** Người cần chú ý kế tiếp (theo thứ tự bảng) — null: không còn ai. */
   tiep: DongTutor | null; onTiep: (id: number) => void; onDong: () => void;
 }) {
   const { homNay } = useNgayNghiepVu();
   const toast = useToast();
-  const qs = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den }).toString();
+  /* N56 ⑥: id dòng gây chú ý lấy từ bảng đã nạp (không thêm request); sau khi nhận xét, bảng tải lại → hết id → tự về khoảng. */
+  const [cy, setCy] = useState(!!xemChuY);
+  const idsCy = cy ? (ds.find((d) => d.id === id)?.chuYIds ?? []).join(',') : '';
+  const qs = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den, ...(idsCy ? { ids: idsCy } : {}) }).toString();
   const { data, loading, error, reload } = useApi<PanelTutorKq>(`/tutors/${id}?${qs}`, [id, qs]);
   const [loc, setLoc] = useState<LocKq>(tieuChi ?? 'tat-ca');
   const [kl, setKl] = useState<KetLuan | null>(null);
@@ -102,6 +107,7 @@ export function PanelTutor({ id, tieuChi, khoang, dsChiNhanh, chiNhanhDanhBa, ds
   const kq = tatCa.filter((b) => khopKq(loc, b));
   const soKhong = tatCa.filter(coKhong).length;
   const khoangChu = `${maTuan(khoang.tu).ma} – ${maTuan(khoang.den).ma}`;
+  const ngoaiKhoang = !!idsCy && tatCa.some((b) => b.ngay < khoang.tu || b.ngay > khoang.den);
   const dau = (v: boolean | null) => (v == null ? <span className="text-faint">—</span>
     : v ? <span className="whitespace-nowrap text-[13px] font-semibold text-ok">✓ {t('Có')}</span> : <span className="whitespace-nowrap text-[13px] font-bold text-late">✗ {t('Không')}</span>);
   const sao = (v: number | null) => (v == null ? <span className="text-faint">—</span> : <span className={`whitespace-nowrap tabular-nums ${v <= 2 ? 'font-bold text-late' : ''}`}>★ {v.toFixed(1)}</span>);
@@ -118,23 +124,25 @@ export function PanelTutor({ id, tieuChi, khoang, dsChiNhanh, chiNhanhDanhBa, ds
   };
   const cot: CotBang[] = [
     { key: 'ngay', nhan: t('Ngày ghi'), kieu: 'chu', rong: 80 },
-    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 168 },
+    { key: 'hv', nhan: t('Học viên'), kieu: 'ten', rong: 200 },
     { key: 'kn', nhan: 'KN', kieu: 'chu', rong: 48 },
     { key: 'buoi', nhan: t('Buổi'), kieu: 'so', rong: 60 },
     ...TIEU_CHI.map((c): CotBang => ({ key: c.k, nhan: c.nhan, kieu: 'chu', rong: c.k === 'feedbackGv' ? 104 : c.k === 'chuanBi' ? 84 : 76 })),
     { key: 'sao', nhan: t('Đánh giá'), kieu: 'so', rong: 76 },
     { key: 'nd', nhan: t('Nội dung'), kieu: 'chu', linhHoat: true },
   ];
+  /* P2-9: dòng phụ qua `phuCua` của `Bang` (lớp · người ghi; về tutor) — `Bang` biết hàng có dòng phụ nên cao đều 64. */
+  const phuKq = (b: BuoiDay, c: CotBang): ReactNode => (c.key === 'hv' ? [b.lop, b.nguoiGhi ? t('ghi: {ten}', { ten: b.nguoiGhi }) : null].filter(Boolean).join(' · ')
+    : c.key === 'nd' && b.nhanXetTutor ? `${t('Về tutor')}: ${b.nhanXetTutor}` : null);
   const oKq = (b: BuoiDay, c: CotBang): ReactNode => {
     switch (c.key) {
       case 'ngay': return <span className="tabular-nums">{ngay(b.ngay, homNay)}</span>;
-      case 'hv': return <span className="block min-w-0"><b className="block truncate font-semibold text-slate-100">{b.hocVien}</b>
-        <span className="block truncate text-xs text-faint" title={[b.lop, b.nguoiGhi ? t('ghi: {ten}', { ten: b.nguoiGhi }) : null].filter(Boolean).join(' · ')}>{[b.lop, b.nguoiGhi ? t('ghi: {ten}', { ten: b.nguoiGhi }) : null].filter(Boolean).join(' · ')}</span></span>;
+      case 'hv': return <b className="ten-hv font-semibold text-slate-100">{b.hocVien}</b>;
       case 'kn': return b.kn || '—';
       case 'buoi': return <span className="tabular-nums">{b.soBuoi}</span>;
       case 'sao': return sao(b.danhGia);
-      case 'nd': return <span className="block whitespace-normal text-[13px] text-slate-300">{b.nhanXet}
-        {b.nhanXetTutor && <small className="mt-0.5 block text-xs text-faint">{t('Về tutor')}: {b.nhanXetTutor}</small>}</span>;
+      /* P2-9: một dòng chính (đủ chữ ở title) + "Về tutor" là dòng phụ của `Bang` → mọi hàng cao 64 như chuẩn bảng. */
+      case 'nd': return <span className="text-[13px] text-slate-300" title={b.nhanXet}>{b.nhanXet}</span>;
       default: return dau(b[c.key as TieuChi]);
     }
   };
@@ -154,7 +162,7 @@ export function PanelTutor({ id, tieuChi, khoang, dsChiNhanh, chiNhanhDanhBa, ds
         han: tu.loai === 'gv' && tu.gvId
           ? <Link to={`/giao-vien/${tu.gvId}`} className="link inline-flex min-h-[44px] items-center whitespace-nowrap text-sm font-semibold sm:min-h-0">{t('Hồ sơ GV ›')}</Link>
           : suaDuoc ? <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSuaTutor(true)}>{t('Sửa')}</button> : undefined,
-        dong2: [tu.sdt ? <span key="sdt" className="tabular-nums">{nhanSdt(tu.sdt)}</span> : null, nhanNoiDay(tu.noiDay), nhanKyNang(tu.kyNang), khoangChu].filter(Boolean),
+        dong2: [tu.sdt ? <span key="sdt" className="tabular-nums">{nhanSdt(tu.sdt)}</span> : null, nhanNoiDay(tu.noiDay), nhanKyNang(tu.kyNang), idsCy ? t('Lần ghi cần chú ý') : khoangChu].filter(Boolean),
       } : undefined}
       chan={{ huy: { onClick: onDong }, daSua: daGo, conThieu: data?.coSua ? lf.conThieu(loi) : undefined, chinh: nutChinh,
         trai: daLuu && !daGo ? <span className="text-[13px] font-semibold text-ok" role="status">✓ {t('Đã lưu nhận xét')} · {daLuu}</span> : undefined }}>
@@ -170,7 +178,10 @@ export function PanelTutor({ id, tieuChi, khoang, dsChiNhanh, chiNhanhDanhBa, ds
 
             <DauMuc chu={t('Nhận xét')} />
             {tu.chuY && (
-              <p className="m-0 text-[13px] font-semibold text-late">{t('Cần chú ý')}: {dich(tu.chuY)}
+              <p className="m-0 text-[13px] font-semibold text-late">{t('Cần chú ý')}: {idsCy ? dich(tu.chuY) : (
+                <button type="button" className="-mx-1 rounded border-0 bg-transparent px-1 text-left font-semibold text-late underline underline-offset-[3px] max-sm:min-h-[44px]"
+                  onClick={() => { setCy(true); setLoc('tat-ca'); }}>{dich(tu.chuY)}</button>)}
+                {tu.chuYNgay && <span className="whitespace-nowrap tabular-nums"> · {ngay(tu.chuYNgay, homNay)}</span>}
                 <span className="font-normal text-faint"> · {tu.ketLuan ? t('sau nhận xét {ngay}', { ngay: ngay(tu.ketLuan.luc, homNay) }) : t('chưa có nhận xét')}</span></p>
             )}
             {data.coSua ? (
@@ -224,7 +235,15 @@ export function PanelTutor({ id, tieuChi, khoang, dsChiNhanh, chiNhanhDanhBa, ds
                 {loc === 'khong' && <span aria-hidden>✓</span>}{t('Chỉ dòng có Không')} <span className="tabular-nums text-faint">{soKhong}</span>
               </button>
             </>} />
-            <Bang<BuoiDay> ten={t('Kết quả đã ghi')} khung={false} cot={cot} hang={kq} khoa={(b) => b.id} oCua={oKq}
+            {idsCy && (
+              <div role="status" className="flex flex-wrap items-center gap-x-3 gap-y-1.5 rounded-[10px] border px-3 py-2 text-[13px] text-slate-300" style={{ borderColor: 'var(--accent)', background: 'var(--accent-soft)' }}>
+                <span className="min-w-0 flex-1">{ngoaiKhoang
+                  ? t('Đang xem {n} lần ghi cần chú ý — có lần ngoài {khoang}.', { n: tatCa.length, khoang: khoangChu })
+                  : t('Đang xem {n} lần ghi cần chú ý.', { n: tatCa.length })}</span>
+                <button type="button" className="btn btn-sm min-h-[44px] shrink-0 sm:min-h-0" onClick={() => { setCy(false); setLoc('tat-ca'); }}>{t('Về {khoang}', { khoang: khoangChu })}</button>
+              </div>
+            )}
+            <Bang<BuoiDay> ten={t('Kết quả đã ghi')} khung={false} cot={cot} hang={kq} khoa={(b) => b.id} oCua={oKq} phuCua={phuKq}
               rong={{ tieuDe: tatCa.length ? t('Không có lần ghi khớp bộ lọc.') : t('Chưa có kết quả nào trong khoảng này.') }} />
           </div>
         )}

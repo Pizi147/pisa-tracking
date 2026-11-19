@@ -167,7 +167,7 @@ export function PaDangChayKhoi({ ds, uid, onMo, chon }: { ds: readonly PaDangCha
                       return (
                         <li key={x.paId} className={`${NET_CAY} max-sm:before:hidden max-sm:after:hidden ${j ? 'border-t' : ''}`} style={{ borderColor: 'var(--line)' }}>
                           <DongNho k={k2} chonDong={chon === k2} han={x.han} onBam={() => moPa(x)} nut={<NutNhap x={x} nhap={nhapCua(x)} onBam={() => moPa(x)} />}
-                            tren={<Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="inline-flex min-h-[44px] items-center font-semibold text-[color:var(--text)] no-underline hover:underline">{x.studentName}</Link>}
+                            tren={<Link to={duongHoSoHocVien(x.studentId)} onClick={(e) => e.stopPropagation()} className="ten-hv inline-flex min-h-[44px] items-center font-semibold text-[color:var(--text)] no-underline hover:underline">{x.studentName}</Link>}
                             duoi={[nhanKn(x), dichDu(x.tenPa)].filter(Boolean).join(' · ')} />
                           <div data-hd="pdc-em" data-khoa={k2} className={`${DONG} min-h-[48px] pl-8 max-sm:hidden sm:pl-8 ${chon === k2 ? 'row-active' : 'bam'}`} onClick={() => moPa(x)}>
                             <span className="grid min-w-0 gap-0.5">

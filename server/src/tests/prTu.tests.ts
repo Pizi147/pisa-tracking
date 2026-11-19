@@ -282,9 +282,12 @@ export async function runPrTuTests(t: any) {
       }
       const hv: any = await (await goi(htId, '/students')).json().catch(() => null);
       assert(!hv?.items?.length && !hv?.students?.length && !(Array.isArray(hv) && hv.length), `Head tutor thấy học viên: ${JSON.stringify(hv)?.slice(0, 200)}`);
-      /* Web: trang đầu Head tutor = khung "Lớp của tôi" rỗng, KHÔNG GET (trước: /hai-khoi + ô Case của Tổng quan GV cũ). */
+      /* Web (N56 ⑦, chủ SP 20/11): chỉ Head tutor → trang đầu mở thẳng /tutor (nav.tutor); không Tutor (GV chưa lớp) → khung "Lớp của tôi" rỗng, KHÔNG GET. */
       const ov = readFileSync(join(process.cwd(), 'web/src/modules/worklist/OverviewPage.tsx'), 'utf8');
-      assert(/vai === 'ht'\) return trang\('', <LopCuaToi dong=\{\[\]\} dangTai=\{false\} loi=\{null\}/.test(ov) && !ov.includes('/hai-khoi') && !/TongQuanGvV5/.test(ov), 'OverviewPage vai ht');
+      assert(/vai === 'ht'\) return nav\?\.tutor \? <Navigate to="\/tutor" replace \/> : trang\('', <LopCuaToi dong=\{\[\]\} dangTai=\{false\} loi=\{null\}/.test(ov)
+        && !ov.includes('/hai-khoi') && !/TongQuanGvV5/.test(ov), 'OverviewPage vai ht');
+      const hdHt = readFileSync(join(process.cwd(), 'shared/huongDan/headTutor.ts'), 'utf8');
+      assert(hdHt.includes("loiChinh: { man: 'tutor', chu: 'Tutor', duong: TUTOR }") && !hdHt.includes('Lớp của tôi</b>'), 'Hướng dẫn Head tutor: trang đầu = Tutor');
     });
   } finally { httpApp.close(); }
 
