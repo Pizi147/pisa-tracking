@@ -178,6 +178,40 @@ export async function runPrTutor5Tests(t: any) {
     assert(ma(() => tr.gopTen(QT, { muc: [{ khoa, gvId: HT.userId }] })) === 400, 'gvId không phải GV → 400');
   }));
 
+  check('TU2-5 (5b) · Gộp: đích phải đúng một (tutorId HOẶC gvId, số nguyên — chuỗi 400); đích GV đã nghỉ / xoá tài khoản 400; Head chỉ gộp vào GV chi nhánh mình (Quản trị không giới hạn); ô chọn Gộp của Head chỉ GV chi nhánh mình', () => thu(() => {
+    run('INSERT INTO case_followup_buoi (followup_id, buoi_so, tutor_ten, nhan_xet, tutor_id, lop_id, so_buoi) VALUES (?,?,?,?,NULL,?,1)', caChinh(), 9001, 'Cô Đích Thử', 'x', lopCua('MB'));
+    const khoa = tr.khoaTen('Cô Đích Thử');
+    const a = themTutor('Thử Đích Tutor', 'MB');
+    const gvCp = one(`SELECT u.id FROM users u JOIN user_roles ur ON ur.user_id = u.id AND ur.status = 'active' JOIN roles r ON r.id = ur.role_id AND r.key = 'teacher'
+      WHERE u.status = 'active' AND ur.branch_id = ? AND NOT EXISTS (SELECT 1 FROM user_roles u2 WHERE u2.user_id = u.id AND u2.status = 'active' AND u2.branch_id = ?) LIMIT 1`, cn('CP'), cn('MB'))?.id as number;
+    assert(gvCp, 'seed thiếu GV chỉ dạy CP');
+    for (const muc of [{ khoa, tutorId: a, gvId: String(GV.userId) }, { khoa, tutorId: String(a) }, { khoa, gvId: String(GV.userId) }, { khoa, tutorId: a, gvId: GV.userId }, { khoa, tutorId: 0 }, { khoa, tutorId: null, gvId: null }]) {
+      assert(ma(() => tr.gopTen(QT, { muc: [muc] })) === 400, `đích sai kiểu / không phải đúng một → 400: ${JSON.stringify(muc)}`);
+    }
+    assert(!one('SELECT 1 FROM case_followup_buoi WHERE tutor_ten = ? AND tutor_id IS NOT NULL', 'Cô Đích Thử'), 'bị chặn mà vẫn ghi');
+    /* GV chi nhánh khác: Head MB 403, Quản trị 200. */
+    assert(ma(() => tr.gopTen(HMB, { muc: [{ khoa, gvId: gvCp }] })) === 403, 'Head MB gộp vào GV chỉ dạy CP');
+    const dongGvCp = themTutor('Thử Dòng GV CP', 'CP', { gv: gvCp });
+    assert(ma(() => tr.gopTen(HMB, { muc: [{ khoa, tutorId: dongGvCp }] })) === 403, 'Head MB gộp vào dòng danh bạ của GV CP');
+    assert(ma(() => tr.gopTen(HMB, { muc: [{ khoa, gvId: GV.userId }] })) === 200, 'Head MB gộp vào GV chi nhánh mình');
+    run('UPDATE case_followup_buoi SET tutor_id = NULL WHERE tutor_ten = ?', 'Cô Đích Thử');
+    assert(ma(() => tr.gopTen(QT, { muc: [{ khoa, gvId: gvCp }] })) === 200, 'Quản trị không giới hạn chi nhánh');
+    run('UPDATE case_followup_buoi SET tutor_id = NULL WHERE tutor_ten = ?', 'Cô Đích Thử');
+    /* GV đã xoá tài khoản / nghỉ: cả gvId lẫn dòng danh bạ của GV đó bị từ chối (cùng luật TU2-1). */
+    run("UPDATE users SET status = 'inactive' WHERE id = ?", gvCp);
+    const e1 = loiCua(() => tr.gopTen(QT, { muc: [{ khoa, gvId: gvCp }] }));
+    const e2 = loiCua(() => tr.gopTen(QT, { muc: [{ khoa, tutorId: dongGvCp }] }));
+    assert(e1?.status === 400 && e2?.status === 400 && /không còn làm việc/.test(e1.message + e2.message), `đích GV đã nghỉ: ${e1?.status} ${e2?.status}`);
+    assert(!one('SELECT 1 FROM case_followup_buoi WHERE tutor_ten = ? AND tutor_id IS NOT NULL', 'Cô Đích Thử'), 'đích bị từ chối thì không ghi');
+    run("UPDATE users SET status = 'active' WHERE id = ?", gvCp);
+    /* Ô chọn Gộp: Head MB chỉ thấy GV có vai ở chi nhánh mình; Quản trị thấy cả GV CP. */
+    const ten = (id: number) => one('SELECT full_name n FROM users WHERE id = ?', id).n as string;
+    const goHead = chonSvc.chonTutor(HMB, { gop: true, q: ten(gvCp) });
+    const goQt = chonSvc.chonTutor(QT, { gop: true, q: ten(gvCp) });
+    assert(!goHead.ds.some((r: any) => r.gvId === gvCp) && goQt.ds.some((r: any) => r.gvId === gvCp), 'ô chọn Gộp: Head không thấy GV CP, Quản trị thấy');
+    assert(chonSvc.chonTutor(HMB, { gop: true, q: ten(GV.userId) }).ds.some((r: any) => r.gvId === GV.userId), 'Head thấy GV chi nhánh mình');
+  }));
+
   check('TU2-5 (6) · Tải danh sách theo vai: Head chỉ nơi dạy = chi nhánh mình / Chỉ online, không sửa tutor chi nhánh khác, không khớp dòng GV; CX 403; Quản trị như cũ', () => thu(() => {
     const cp = themTutor('Thử Tải CP', 'CP');
     const gv = themTutor('Thử Tải GV', 'MB', { gv: GV.userId });

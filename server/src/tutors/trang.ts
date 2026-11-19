@@ -438,11 +438,19 @@ const laId = (x: unknown) => Number.isInteger(x) && (x as number) > 0;
 export function gopTen(p: Principal, v: { muc?: unknown }): { nhatKyId: number; soBuoi: number } {
   const q = kiemQuyenDanhBa(p);
   const muc = Array.isArray(v?.muc) ? v.muc as any[] : [];
-  if (!muc.length || muc.some((m) => typeof m?.khoa !== 'string' || laId(m?.tutorId) === laId(m?.gvId))) throw badRequest('Chọn tutor cho ít nhất một tên.');
+  /* Đúng MỘT đích mỗi tên: `tutorId` HOẶC `gvId`, số nguyên dương (chuỗi / giá trị lạ → 400, không lọt qua kiểm kiểu). */
+  const motDich = (m: any) => (m?.tutorId != null) !== (m?.gvId != null) && laId(m?.tutorId ?? m?.gvId);
+  if (!muc.length || muc.some((m) => typeof m?.khoa !== 'string' || !motDich(m))) throw badRequest('Chọn tutor cho ít nhất một tên.');
   const conn = db();
-  const co = new Set((conn.prepare('SELECT id FROM tutors').all() as any[]).map((r) => r.id));
-  if (muc.some((m) => m.tutorId && !co.has(m.tutorId))) throw badRequest('Tutor đã chọn không còn trong danh sách.');
-  if (muc.some((m) => m.gvId && !laNguoiHopLe(m.gvId, 'giao_vien'))) throw badRequest('Giáo viên đã chọn không còn làm việc.');
+  const taiKhoan = new Map((conn.prepare('SELECT id, user_id FROM tutors').all() as any[]).map((r) => [r.id as number, r.user_id as number | null]));
+  if (muc.some((m) => m.tutorId && !taiKhoan.has(m.tutorId))) throw badRequest('Tutor đã chọn không còn trong danh sách.');
+  /* Đích là GV (`gvId`, hoặc dòng danh bạ của một GV): còn làm việc (như TU2-1 — tài khoản đã xoá / nghỉ không nhận) và Head chỉ gộp vào GV chi nhánh mình. */
+  for (const m of muc) {
+    const gv = m.gvId ?? taiKhoan.get(m.tutorId);
+    if (gv == null) continue;
+    if (!laNguoiHopLe(gv, 'giao_vien')) throw badRequest('Giáo viên đã chọn không còn làm việc — chọn tutor hoặc GV khác cho tên này.');
+    if (!q.tatCa && !q.chiNhanh.some((cn) => laNguoiHopLe(gv, 'giao_vien', cn))) throw forbidden('GV này không làm việc ở chi nhánh của bạn — chọn GV chi nhánh mình, hoặc nhờ Quản trị gộp.');
+  }
   return tx(() => {
     const ds = docGoTay(conn, q.tatCa ? null : q.chiNhanh);
     const gvMoi: number[] = [];
@@ -514,6 +522,7 @@ export function xuatSoBuoi(p: Principal, tu: unknown, den: unknown) {
   const conn = db();
   const [a, b] = mocKhoang({ tu: `${tu}-01`, den: cuoiThang(den) });
   const l = locLop(branchIds);
+  // ponytail: lọc ngày qua case_followups.created_at (quét bảng buổi tutor nhỏ, như bangTutor); thêm chỉ mục case_followups(created_at) khi bảng lớn.
   const hang = conn.prepare(
     `SELECT b.tutor_id AS id, CASE WHEN b.tutor_id IS NULL THEN b.tutor_ten END AS ten_go, strftime('%Y-%m', f.created_at, '+7 hours') AS thang, SUM(b.so_buoi) AS n
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id

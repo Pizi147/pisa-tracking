@@ -92,6 +92,7 @@ export function chonTutor(p: Principal, o: { q?: string; paId?: number | null; s
     const lk = cuaGv.get(u.id);
     if (lk?.ket_luan === 'ngung' && !quyenGop) return [];
     const cn = String(u.cn ?? '').split('\u001f').filter(Boolean).map((x) => { const [id, ...ten] = x.split('|'); return { id: Number(id), ten: ten.join('|') }; });
+    if (quyenGop && !quyenGop.tatCa && !cn.some((x) => quyenGop.chiNhanh.includes(x.id))) return [];   // Head chỉ gộp vào GV chi nhánh mình (cùng luật `gopTen`)
     const noi = cn.find((x) => x.id === cnLop) ?? cn[0] ?? null;
     const ky = knTutorCuaKyNang(u.kn);
     return [{
