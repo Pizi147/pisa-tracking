@@ -99,16 +99,16 @@ export const EN_HD_V2C = {
   '<b>Bước tiếp</b> do Head hoặc TVV chọn; hồ sơ ghi "Chờ Head / TVV chọn bước tiếp".': 'The <b>Next step</b> is chosen by the Head or the consultant; the profile says "Waiting for Head / consultant to choose the next step".',
   /* ---------------------------------------------------------------- Head tutor */
   'Xem trang đầu': 'See the home page',
-  'Mở <b>Tổng quan</b>: khung <b>Lớp của tôi</b> như trang đầu GV.': 'Open <b>Home</b>: the <b>My classes</b> box, as on the teacher home page.',
-  'Chưa có lớp: ghi "Chưa được phân công lớp nào". Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — bạn có Công việc, Học viên & Lớp, Test như GV.':
-    'No class yet: it says "No classes assigned yet". To teach a class: ask the administrator to add the <b>Teacher</b> role — you then get Tasks, Students & Classes and Tests like a teacher.',
+  'Đăng nhập hoặc bấm <b>Tổng quan</b>: trang đầu mở thẳng <b>Tutor</b>.': 'Sign in or press <b>Home</b>: the home page opens <b>Tutor</b> directly.',
+  'Dạy lớp: nhờ Quản trị cấp thêm vai <b>Giáo viên</b> — trang đầu thành Công việc như GV; Tutor vẫn ở menu.':
+    'To teach a class: ask the administrator to add the <b>Teacher</b> role — your home page becomes Tasks like a teacher; Tutor stays in the menu.',
   'Trang Tutor tạm ẩn, dữ liệu tutor vẫn giữ nguyên.': 'The Tutor page is hidden for now; tutor data is kept as is.',
   'Sửa hồ sơ cá nhân': 'Edit my profile',
   'Tài khoản › Hồ sơ cá nhân': 'Account › My profile',
   'Bấm tên bạn › <b>Hồ sơ cá nhân</b>.': 'Press your name › <b>My profile</b>.',
   'Ngôn ngữ: menu Tài khoản › <b>VI | EN</b>. Giao diện: <b>Theo máy · Sáng · Tối</b> ở cùng menu.': 'Language: Account menu › <b>VI | EN</b>. Theme: <b>System · Light · Dark</b> in the same menu.',
   'Nhập điểm, xử lý Case': 'Enter scores, handle Cases',
-  'Trang đầu như GV: lớp của bạn (chưa có lớp thì trống).': 'Home page as for teachers: your classes (empty until you have a class).',
+  'Trang đầu mở thẳng Tutor; có thêm vai GV thì trang đầu như GV.': 'Home opens Tutor directly; with the Teacher role too, home is the teacher home page.',
   /* Rà 11/11 G5-14: Hướng dẫn theo màn hiện tại */
   'Việc của tôi và bốn số của HV bạn phụ trách.': 'Your tasks and four numbers for your students.',
   'Bốn số của TVV': 'Four consultant figures',

@@ -8,7 +8,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const CAT = /(?<![\w-])(?:(?:max-|min-)?(?:sm|md|lg|xl):)?(truncate|text-ellipsis|line-clamp-\d+|whitespace-nowrap)(?![\w-])/;
-const TRUONG_TEN = /\{[^{}]*\b(studentName|fullName|full_name|tenHv|hoTen)\s*\}/;
+const TRUONG_TEN = /\{[^{}]*\b(studentName|fullName|full_name|tenHv|hoTen|hocVien)\s*\}/;
 
 function duyet(d, ra = []) {
   for (const e of fs.readdirSync(d, { withFileTypes: true })) {

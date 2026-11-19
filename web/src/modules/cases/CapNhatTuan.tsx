@@ -90,7 +90,8 @@ function giaTriDau(pa: PaCanCapNhat, sua: SuaKetQua | undefined, homNay: string)
   if (g?.newPlan && thay.kind === 'other_proposal') Object.assign(thay, (({ ghiRo, moTa }) => ({ ghiRo, description: moTa }))(tachKhac(thay.description)));
   return {
     goc, thay,
-    dc: g?.adjust ? giaTriCuaPa({ kind: pa.kind, ...g.adjust }) : goc,
+    /* S2 mục 7 (TU11): mở lại từ `g.adjust` mang theo mốc quy chế của PA → `quyCheSos` → PA Tutor quy chế SOS không có ô "Tổng số buổi" (như `goc`). */
+    dc: g?.adjust ? giaTriCuaPa({ kind: pa.kind, mocQuyChe: pa.mocQuyChe, ...g.adjust }) : goc,
     nguoiDay: g ? nguoiCuaPa({ performerUserId: g.nguoiDay?.userId, performer: g.nguoiDay?.ten }) : goc.nguoi,
     tuan: g?.soBuoi != null ? String(g.soBuoi) : '1',
     mtTyLe: g?.miniTest ? String(g.miniTest.tyLe) : '', mtNgay: g?.miniTest?.ngay ?? homNay ?? '',
@@ -284,7 +285,10 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       if (nhieuDong && !(x.soBuoi && x.soBuoi >= 1)) loi.push({ khoa: `buoi-${i}-so`, nhan: t('Số buổi dòng {n}', { n: i + 1 }), lyDo: t('Từ 1 buổi') });
       if (!x.tutor.trim()) loi.push({ khoa: `buoi-${i}-tutor`, nhan: nhieuDong ? t('Tutor dòng {n}', { n: i + 1 }) : t('Tutor'), lyDo: t('Chọn hoặc gõ tên tutor') });
     });
-    loi.push(...dsLoi(buoi.map((x, i) => ({ khoa: `buoi-${i}-nx`, nhan: nhieuDong ? t('Nội dung dòng {n}', { n: i + 1 }) : t('Nội dung'), toiThieu: CHU_TOI_THIEU_CASE })),
+    /* S2 (từ rà #1875, cùng luật máy chủ `chuCu`): SỬA lần ghi cũ — Nội dung cũ giữ nguyên (trước luật ≥ 8 ký tự) không bị chặn; dòng mới / chữ đã sửa vẫn kiểm. */
+    const chuCu = new Set(sua ? (g?.buoi ?? []).map((x) => x.nhanXet.trim()).filter(Boolean) : []);
+    loi.push(...dsLoi(buoi.flatMap((x, i) => (chuCu.has(x.nhanXet.trim()) ? []
+      : [{ khoa: `buoi-${i}-nx`, nhan: nhieuDong ? t('Nội dung dòng {n}', { n: i + 1 }) : t('Nội dung'), toiThieu: CHU_TOI_THIEU_CASE }])),
       Object.fromEntries(buoi.map((x, i) => [`buoi-${i}-nx`, x.nhanXet]))));
     if (nhieuDong && soA != null && tongDong !== soA) {
       loi.push({ khoa: 'buoi-tong', nhan: t('Số buổi các dòng'), lyDo: t('Tổng {tong}, đã học {a}', { tong: tongDong, a: soA }) });
@@ -382,7 +386,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   const oSo = (khoa: string, v: string, dat: (x: string) => void, nhan: string, aria: string, loiThem = false) => (
     <label className="flex flex-col items-center gap-1">
       <input className={`field h-10 w-[84px] text-center text-[15px] font-semibold tabular-nums max-sm:w-[72px] ${loiThem || loiCua(khoa) ? '!border-late ring-1 ring-late/40' : ''}`}
-        inputMode="numeric" autoComplete="off" maxLength={2} {...o(khoa)} aria-label={aria} value={v} placeholder={nhan} readOnly={busy}
+        inputMode="numeric" autoComplete="off" maxLength={2} {...o(khoa)} aria-label={aria} value={v} readOnly={busy}
         onChange={(e) => dat(e.target.value.replace(/\D/g, ''))} />
       <span className="text-xs text-slate-400">{nhan}</span>
     </label>

@@ -3,6 +3,7 @@ import { t } from '@shared/i18n/index.ts';
 import { CHU_TOI_THIEU, laKhac, soOMocCuaPa, type MocSos, type MucNguyenNhan, type MucPa, type NguyenNhan, type NhanhNN, type Viec } from '@shared/domain/index.ts';
 import type { DuLieuCauHinh, LuuDs } from '../CauHinhCaseSos.tsx';
 import { Bang, OBang, type CotBang } from '../../../ui/Bang.tsx';
+import { useDienThoai } from '../../../ui/TheDong.tsx';
 
 /** Cột chung (Bang): kéo · tên (linh hoạt) · đang dùng · nút. Tiêu đề chỉ chữ (G9). */
 const COT: CotBang[] = [
@@ -11,6 +12,8 @@ const COT: CotBang[] = [
   { key: 'dung', nhan: t('Đang dùng'), kieu: 'so', rong: 96 },
   { key: 'nut', nhan: '', kieu: 'nut', rong: 160 },
 ];
+/* S2 (rà 19/11 P2-6): 375 — số "Đang dùng" đã ở dòng dưới tên (`sm:hidden`) → bỏ cột riêng, cột nút vừa một nút: tên đủ chỗ, không ngắt 3 dòng / cuộn ngang. */
+const COT_DT: CotBang[] = [COT[0], COT[1], { ...COT[3], rong: 104 }];
 
 /**
  * BẢNG DANH SÁCH SỬA TẠI DÒNG (CAU-HINH-CASE-SOS, mockup K1–K4, K6): một bảng nhóm theo dải; tên bấm thẳng = sửa tại dòng (Enter lưu, Esc thôi);
@@ -37,6 +40,8 @@ type Props<M extends MucChung> = {
 const chuan = (s: string) => s.trim().replace(/\s+/g, ' ').toLowerCase();
 
 export function BangDanhSach<M extends MucChung>(p: Props<M>) {
+  const dt = useDienThoai();
+  const cot = dt ? COT_DT : COT;
   const [sua, setSua] = useState<{ nhom: string; idx: number | 'moi'; m: M } | null>(null);
   const [busy, setBusy] = useState(false);
   const [keo, setKeo] = useState<{ nhom: string; idx: number } | null>(null);
@@ -80,12 +85,12 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
   };
 
   return (
-    <Bang<number> ten={p.nhom.map((n) => n.ten).join(' · ')} cot={COT} hang={[0]} khoa={() => 0} the375={false} hangRieng={() => <>
+    <Bang<number> ten={p.nhom.map((n) => n.ten).join(' · ')} cot={cot} hang={[0]} khoa={() => 0} the375={false} hangRieng={() => <>
           {p.nhom.map((n) => {
             const hien = n.muc.filter((m) => !m.an).length, an = n.muc.length - hien;
             return [
               <tr key={`d-${n.key}`} className="border-b" style={{ borderColor: 'var(--line)' }}>
-                <OBang c={COT[0]} colSpan={4} className="!whitespace-normal bg-[color:var(--surface-2)] py-2.5 pl-3.5 pr-3 shadow-[inset_3px_0_0_var(--line-strong)]">
+                <OBang c={COT[0]} colSpan={cot.length} className="!whitespace-normal bg-[color:var(--surface-2)] py-2.5 pl-3.5 pr-3 shadow-[inset_3px_0_0_var(--line-strong)]">
                   <span className="flex flex-wrap items-center gap-2.5 text-[15px] font-bold text-slate-100">
                     {n.ten}<span className="rounded border px-1.5 text-[12px] font-semibold tabular-nums text-slate-200" style={{ borderColor: 'var(--line-strong)' }}>{hien}</span>
                     {an > 0 && <span className="text-[13px] font-normal text-slate-400">· {t('{n} đang ẩn', { n: an })}</span>}
@@ -115,7 +120,7 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                       {/* Mục gốc: máy chủ không đếm (luôn coi là đang dùng, chỉ ẩn được) → để trống. */}
                       {(dung || !p.coDinh(m)) && <div className="text-[13px] text-slate-400 sm:hidden">{dung ? `${dung} ${p.donVi}` : t('Chưa dùng')}</div>}
                     </OBang>
-                    <OBang c={COT[2]} className="py-1.5 text-sm tabular-nums text-slate-400">{dung ? <><b className="font-semibold text-slate-100">{dung}</b> {p.donVi}</> : p.coDinh(m) ? null : '—'}</OBang>
+                    {!dt && <OBang c={COT[2]} className="py-1.5 text-sm tabular-nums text-slate-400">{dung ? <><b className="font-semibold text-slate-100">{dung}</b> {p.donVi}</> : p.coDinh(m) ? null : '—'}</OBang>}
                     <OBang c={COT[3]} className="py-1.5 pr-3.5">
                       {p.chiXem ? (m.an ? <span className="text-[12px] font-semibold text-slate-400">{t('Đang ẩn')}</span> : null)
                         : khac ? <span className="text-[13px] text-slate-500">{t('Luôn cuối')}</span>
@@ -136,7 +141,7 @@ export function BangDanhSach<M extends MucChung>(p: Props<M>) {
                 : !p.chiXem && n.themChu && (
                   <tr key={`t-${n.key}`} className="border-b" style={{ borderColor: 'var(--line)' }}>
                     <OBang c={COT[0]} />
-                    <OBang c={COT[1]} colSpan={3} className="py-1.5"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua({ nhom: n.key, idx: 'moi', m: p.moi(n.key) })}>+ {n.themChu}</button></OBang>
+                    <OBang c={COT[1]} colSpan={cot.length - 1} className="py-1.5"><button type="button" className="btn btn-sm min-h-[44px] sm:min-h-0" onClick={() => setSua({ nhom: n.key, idx: 'moi', m: p.moi(n.key) })}>+ {n.themChu}</button></OBang>
                   </tr>
                 ),
             ];
@@ -150,12 +155,13 @@ function DongSua<M extends MucChung>(p: Props<M> & {
   loi: string | null; busy: boolean; onLuu: () => void; phim: (e: KeyboardEvent) => void; doiCho?: (d: number) => void;
 }) {
   const { sua, setSua } = p;
+  const dt = useDienThoai();
   const dat = (m: M) => setSua({ ...sua, m });
   const moi = sua.idx === 'moi';
   return (
     <tr className="border-b bg-[color:var(--surface-2)] shadow-[inset_3px_0_0_var(--accent)]" style={{ borderColor: 'var(--line)' }} onKeyDown={p.phim}>
       <OBang c={COT[0]} />
-      <OBang c={COT[1]} colSpan={3} className="!whitespace-normal py-3 pr-3.5">
+      <OBang c={COT[1]} colSpan={dt ? 2 : 3} className="!whitespace-normal py-3 pr-3.5">
         <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.3fr)]">
           <label className="grid gap-1 text-[13px] font-medium text-slate-400">
             <span className="flex justify-between">{t('Tên')}<span className="tabular-nums text-slate-500">{sua.m.ten.length}/60</span></span>

@@ -19,12 +19,15 @@ export type KetLuan = 'on' | 'can_cai_thien' | 'ngung';
 const KET_LUAN: readonly string[] = ['on', 'can_cai_thien', 'ngung'];
 /** Tỉ lệ một tiêu chí: [số LẦN GHI (dòng) "Có", số lần ghi có trả lời ô đó] — dòng không trả lời (NULL) không vào mẫu. */
 export type TyLe = [number, number];
-export type ChuY = { chuanBi: number; taiLieu: number; feedbackGv: number; sao: number[] };
+/** `luc` = ngày nghiệp vụ (`case_followups.observed_on`, YYYY-MM-DD — cùng nguồn ngày với bảng / panel sau S1 #1875) của lần ghi gần nhất từng loại; `ids` = id dòng buổi gây chú ý (N56 ⑥: panel mở đúng các dòng này, mọi thời gian). */
+export type ChuY = { chuanBi: number; taiLieu: number; feedbackGv: number; sao: number[]; ids: number[]; luc: Record<'chuanBi' | 'taiLieu' | 'feedbackGv' | 'sao', string> };
 export type NoiDay = { id: number; ten: string } | 'online' | null;
 export type SoTutor = { buoi: number; chuanBi: TyLe; taiLieu: TyLe; feedbackGv: TyLe; danhGia: number | null };
 export type DongTutor = SoTutor & {
   id: number; ten: string; sdt: string | null; noiDay: NoiDay; kyNang: string[];
   ketLuan: { kl: KetLuan; luc: string } | null; chuY: string | null; thieu: ('sdt' | 'noiDay')[];
+  /** N56 ⑥: ngày VN của lần ghi gần nhất thuộc loại lý do · id các dòng gây chú ý (null / [] khi không chú ý). */
+  chuYNgay: string | null; chuYIds: number[];
   /** TU2-5: `gv` = dòng danh bạ của một GV (`gvId` = tài khoản); `suaDuoc` = người xem Sửa được dòng này (Head: tutor chi nhánh mình; dòng GV: không ai). */
   loai: 'gv' | 'tutor'; gvId: number | null; suaDuoc: boolean;
 };
@@ -90,7 +93,8 @@ const tron1 = (x: number | null) => (x == null ? null : Math.round(x * 10) / 10)
 export function cauChuY(branchIds: number[] | null, tutorId?: number): { sql: string; args: number[] } {
   const l = locLop(branchIds);
   return {
-    sql: `SELECT b.tutor_id, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.ghi_luc,
+    sql: `SELECT b.id, b.tutor_id, b.chuan_bi, b.tai_lieu, b.feedback_gv, b.danh_gia, b.ghi_luc,
+            (SELECT f.observed_on FROM case_followups f WHERE f.id = b.followup_id) AS ngay_ghi,
             (SELECT n.ket_luan FROM tutor_nhan_xet n WHERE n.tutor_id = b.tutor_id ORDER BY n.luc DESC, n.id DESC LIMIT 1) AS kl,
             (SELECT MAX(n.luc) FROM tutor_nhan_xet n WHERE n.tutor_id = b.tutor_id) AS moc
        FROM case_followup_buoi b
@@ -104,26 +108,34 @@ export function canChuY(conn: any, branchIds: number[] | null, tutorId?: number)
   const m = new Map<number, ChuY>();
   for (const r of hang) {
     if (r.kl === 'ngung' || (r.moc && !(String(r.ghi_luc ?? '') > r.moc))) continue;
-    const c = m.get(r.tutor_id) ?? { chuanBi: 0, taiLieu: 0, feedbackGv: 0, sao: [] };
-    if (r.chuan_bi === 0) c.chuanBi++;
-    if (r.tai_lieu === 0) c.taiLieu++;
-    if (r.feedback_gv === 0) c.feedbackGv++;
-    if (r.danh_gia != null && r.danh_gia <= 2) c.sao.push(r.danh_gia);
+    const c = m.get(r.tutor_id) ?? { chuanBi: 0, taiLieu: 0, feedbackGv: 0, sao: [], ids: [], luc: { chuanBi: '', taiLieu: '', feedbackGv: '', sao: '' } };
+    const ngay = String(r.ngay_ghi ?? '');
+    const ghi = (k: keyof ChuY['luc']) => { if (ngay > c.luc[k]) c.luc[k] = ngay; };
+    if (r.chuan_bi === 0) { c.chuanBi++; ghi('chuanBi'); }
+    if (r.tai_lieu === 0) { c.taiLieu++; ghi('taiLieu'); }
+    if (r.feedback_gv === 0) { c.feedbackGv++; ghi('feedbackGv'); }
+    if (r.danh_gia != null && r.danh_gia <= 2) { c.sao.push(r.danh_gia); ghi('sao'); }
+    c.ids.push(r.id);
     m.set(r.tutor_id, c);
   }
   return m;
 }
 
 /** Câu lý do theo loại nhiều LẦN GHI nhất ("3 lần không gửi feedback cho GV", "1 lần đánh giá 2/5") — đếm theo lần ghi (dòng), không theo số buổi. */
-export function lyDoChuY(c: ChuY): string {
+function loaiChinh(c: ChuY): [number, string, keyof ChuY['luc']] {
   const saoMax = Math.max(...c.sao);
-  const loai: [number, string][] = [
-    [c.chuanBi, 'không chuẩn bị'], [c.taiLieu, 'không xin tài liệu đúng hạn'], [c.feedbackGv, 'không gửi feedback cho GV'],
-    [c.sao.length, c.sao.every((s) => s === saoMax) ? `đánh giá ${saoMax}/5` : `đánh giá ≤ ${saoMax}/5`],
+  const loai: [number, string, keyof ChuY['luc']][] = [
+    [c.chuanBi, 'không chuẩn bị', 'chuanBi'], [c.taiLieu, 'không xin tài liệu đúng hạn', 'taiLieu'], [c.feedbackGv, 'không gửi feedback cho GV', 'feedbackGv'],
+    [c.sao.length, c.sao.every((s) => s === saoMax) ? `đánh giá ${saoMax}/5` : `đánh giá ≤ ${saoMax}/5`, 'sao'],
   ];
-  const [n, chu] = loai.reduce((a, b) => (b[0] > a[0] ? b : a));
+  return loai.reduce((a, b) => (b[0] > a[0] ? b : a));
+}
+export function lyDoChuY(c: ChuY): string {
+  const [n, chu] = loaiChinh(c);
   return `${n} lần ${chu}`;
 }
+/** N56 ⑥: ngày (YYYY-MM-DD) lần ghi gần nhất của loại đứng trong câu lý do — web ghi kèm "· 02/09". */
+export const ngayChuY = (c: ChuY): string | null => c.luc[loaiChinh(c)[2]] || null;
 
 /** Số "Tutor n" trên menu — chỉ người sửa danh sách (Head tutor, Quản trị; QL không có số). */
 export function demChuY(p: Principal): { n: number } {
@@ -149,6 +161,7 @@ function thanhDong(r: any, cn: Map<number, string>, so: SoTutor, chuY: ChuY | un
   return {
     id: r.id, ten: r.ten, sdt: r.sdt ?? null, noiDay, kyNang: String(r.ky_nang).split(',').filter(Boolean), ...so,
     ketLuan: kl ? { kl: kl as KetLuan, luc } : null, chuY: chuY ? lyDoChuY(chuY) : null,
+    chuYNgay: chuY ? ngayChuY(chuY) : null, chuYIds: chuY?.ids ?? [],
     thieu: suaDuoc ? [...(r.sdt ? [] : ['sdt' as const]), ...(noiDay ? [] : ['noiDay' as const])] : [],
     loai: r.user_id != null ? 'gv' : 'tutor', gvId: r.user_id ?? null, suaDuoc,
   };
@@ -207,8 +220,11 @@ const coKhong = (v: number | null) => (v == null ? null : v === 1);
 const tyLe = (ds: any[], cot: string): TyLe => [ds.filter((b) => b[cot] === 1).length, ds.filter((b) => b[cot] != null).length];
 const trong24h = (luc: string) => Date.now() - new Date(luc).getTime() < 24 * 3600_000;
 
-/** Panel một tutor: đầu + 5 ô số + nhận xét (dòng thời gian) + buổi trong khoảng (QL: chỉ buổi chi nhánh mình; ngoài phạm vi → 404). */
-export function panelTutor(p: Principal, id: number, k: Khoang) {
+/**
+ * Panel một tutor: đầu + 5 ô số + nhận xét (dòng thời gian) + buổi trong khoảng (QL: chỉ buổi chi nhánh mình; ngoài phạm vi → 404).
+ * N56 ⑥: `ids` (dòng vào nhóm chú ý, mọi thời gian) → đọc ĐÚNG các dòng đó của tutor này thay cho khoảng — cùng một câu, cùng phạm vi chi nhánh.
+ */
+export function panelTutor(p: Principal, id: number, k: Khoang, ids?: number[]) {
   const { branchIds, sua, danhBa } = phamVi(p);
   const conn = db();
   const r = docTutors(conn, id)[0];
@@ -223,9 +239,9 @@ export function panelTutor(p: Principal, id: number, k: Khoang) {
        FROM case_followup_buoi b JOIN case_followups f ON f.id = b.followup_id
        JOIN sos_cases sc ON sc.id = f.case_id LEFT JOIN students s ON s.id = sc.student_id
        LEFT JOIN classes c ON c.id = b.lop_id LEFT JOIN users u ON u.id = f.observer_user_id
-      WHERE b.tutor_id = ? AND f.observed_on >= ? AND f.observed_on <= ?${l.sql}
+      WHERE b.tutor_id = ? AND ${ids ? `b.id IN (${ids.map(() => '?').join(',') || 'NULL'})` : 'f.observed_on >= ? AND f.observed_on <= ?'}${l.sql}
       ORDER BY f.observed_on DESC, f.id DESC, b.buoi_so DESC`,
-  ).all(id, k.tu, k.den, ...l.args) as any[];
+  ).all(id, ...(ids ?? [k.tu, k.den]), ...l.args) as any[];
   const sao = hang.filter((b) => b.danh_gia != null);
   const so: SoTutor = {
     buoi: hang.reduce((a, b) => a + b.so_buoi, 0), chuanBi: tyLe(hang, 'chuan_bi'), taiLieu: tyLe(hang, 'tai_lieu'), feedbackGv: tyLe(hang, 'feedback_gv'),

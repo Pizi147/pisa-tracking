@@ -124,9 +124,10 @@ export function BaoCao(pv: PhamViPhanTich) {
         gt={phanTram(d.datTest, nTest(tong, 'dat-test'), t('Đạt Test'))} phu={d.datTest?.mau ? <><Dam>{d.datTest.dat}/{d.datTest.mau}</Dam> {t('bài · Progress, Final')}</> : t('Chưa có dữ liệu')} />
       <SoTo ten={t('Cuối khoá')} ky={t('trong kỳ')} luat={t('Đếm HỌC VIÊN có bài Final Test đủ môn trong kỳ (thi lại: bài mới nhất), xếp theo % tổng = Σ điểm / Σ câu các môn: Đạt từ 70 % · 60–69 % · 50–59 % · dưới 50 %.')}
         gt={<>{(d.cuoiKhoa ?? [0, 0, 0, 0]).reduce((a, b) => a + b, 0)}<small className="text-[15px] font-medium text-[color:var(--text-dim)]">{t('HV có Final')}</small></>}>
-        <span className="mt-1.5 grid grid-cols-4 gap-1.5">
+        {/* C2 (rà 19/11): 375 — thẻ nửa bề ngang, bốn ô một hàng đè nhãn → lưới 2 × 2. */}
+        <span className="mt-1.5 grid grid-cols-4 gap-1.5 max-sm:grid-cols-2">
           {CK.map(([nhan, cot, mau], i) => (
-            <span key={cot} className="grid rounded-lg border px-2.5 pb-1.5 pt-1 text-sm font-medium text-[color:var(--text-dim)]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
+            <span key={cot} className="grid min-w-0 rounded-lg border px-2.5 pb-1.5 pt-1 text-sm font-medium text-[color:var(--text-dim)] max-sm:px-2 max-sm:text-[13px]" style={{ borderColor: 'var(--line-strong)', background: 'var(--surface-2)' }}>
               <span className="whitespace-nowrap">{nhan === 'Đạt' ? t('Đạt') : nhan}</span>
               <b className="text-[22px] font-bold leading-tight tabular-nums"><OSo giaTri={d.cuoiKhoa?.[i] ?? 0} nguon={nMoi(cot, 'tong')} tieuDe={`${t('Cuối khoá')} · ${nhan === 'Đạt' ? t('Đạt') : nhan}`} className={d.cuoiKhoa?.[i] ? mau : ''} /></b>
             </span>

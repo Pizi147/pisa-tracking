@@ -57,7 +57,7 @@ export default function TutorPage() {
   const qs = new URLSearchParams({ kieu: khoang.kieu, tu: khoang.tu, den: khoang.den }).toString();
   const { data, loading, error, reload } = useApi<BangTutor>(`/tutors?${qs}`, [qs]);
   const [tim, setTim] = useState('');
-  const [mo, setMo] = useState<{ id: number; tieuChi?: TieuChi } | null>(null);
+  const [mo, setMo] = useState<{ id: number; tieuChi?: TieuChi; chuY?: boolean } | null>(null);
   const [hop, setHop] = useState<'them' | 'tai' | 'gop' | 'xuat' | null>(null);
   const [tenThem, setTenThem] = useState<{ ten: string; xong?: (id: number) => void } | null>(null);
   const [moLoc, setMoLoc] = useState(false);
@@ -100,9 +100,12 @@ export default function TutorPage() {
 
   const tyLe = (d: DongTutor, k: TieuChi) => <OTyLe v={d[k]} nhan={TIEU_CHI.find((c) => c.k === k)!.nhan} onClick={d[k][0] < d[k][1] ? () => setMo({ id: d.id, tieuChi: k }) : undefined} />;
   const sao = (v: number | null) => (v == null ? <span className="text-faint">—</span> : <span className={`whitespace-nowrap tabular-nums ${v <= 2 ? 'font-bold text-late' : ''}`}>★ {v.toFixed(1)}</span>);
-  /* Cột cuối: lý do cần chú ý (chữ cam + mốc nhận xét) hoặc kết luận gần nhất + ngày — lý do bằng chữ, không chỉ màu (R2.2). */
+  /* Cột cuối: lý do cần chú ý (chữ cam + mốc nhận xét) hoặc kết luận gần nhất + ngày — lý do bằng chữ, không chỉ màu (R2.2).
+     N56 ⑥: lý do tính mọi thời gian → ghi kèm ngày lần ghi gần nhất; bấm = panel mở đúng các dòng đó (dù ngoài khoảng). */
   const ketLuan = (d: DongTutor) => (d.chuY
-    ? <span className="text-[13px] font-semibold text-late">{dich(d.chuY)}</span>
+    ? <button type="button" className="-mx-1 rounded border-0 bg-transparent px-1 text-left text-[13px] font-semibold text-late hover:underline hover:underline-offset-[3px] max-sm:min-h-[44px]"
+      onClick={() => setMo({ id: d.id, chuY: true })} aria-label={`${t('Cần chú ý')}: ${dich(d.chuY)}${d.chuYNgay ? ` · ${ngay(d.chuYNgay, homNay)}` : ''} · ${t('xem lần ghi')}`}>
+      {dich(d.chuY)}{d.chuYNgay && <span className="whitespace-nowrap tabular-nums"> · {ngay(d.chuYNgay, homNay)}</span>}</button>
     : d.ketLuan
       ? <span className="whitespace-nowrap">{NHAN_KET_LUAN[d.ketLuan.kl]}<span className="ml-1.5 text-[13px] tabular-nums text-faint">{ngay(d.ketLuan.luc, homNay)}</span></span>
       : <span className="text-faint">—</span>);
@@ -273,7 +276,7 @@ export default function TutorPage() {
           </div>
         )}
 
-      {mo && <PanelTutor key={mo.id} id={mo.id} tieuChi={mo.tieuChi} khoang={khoang} dsChiNhanh={data?.dsChiNhanh ?? []} chiNhanhDanhBa={data?.chiNhanhDanhBa ?? null} ds={ds}
+      {mo && <PanelTutor key={`${mo.id}-${mo.chuY ? 'cy' : ''}`} id={mo.id} tieuChi={mo.tieuChi} xemChuY={mo.chuY} khoang={khoang} dsChiNhanh={data?.dsChiNhanh ?? []} chiNhanhDanhBa={data?.chiNhanhDanhBa ?? null} ds={ds}
         tiep={keTiep(mo.id)} onTiep={(id) => setMo({ id })} onDong={() => setMo(null)} />}
       {(hop === 'them' || tenThem) && <HopTutor dsChiNhanh={data?.dsChiNhanh ?? []} chiNhanhDanhBa={data?.chiNhanhDanhBa ?? null} ds={ds} tenSan={tenThem?.ten}
         onDong={() => { setHop(hop === 'them' ? null : hop); setTenThem(null); }} onXong={(id) => { tenThem?.xong?.(id); setHop(hop === 'them' ? null : hop); setTenThem(null); }} />}
@@ -300,7 +303,7 @@ function OTyLe({ v, nhan, onClick }: { v: TyLe; nhan: string; onClick?: () => vo
   if (!v[1]) return <span className="text-faint">—</span>;
   const chu = <span className="whitespace-nowrap tabular-nums">{v[0]} / {v[1]}</span>;
   return onClick
-    ? <button type="button" className="-mx-1 rounded border-0 bg-transparent px-1 font-bold text-late hover:underline hover:underline-offset-[3px] max-sm:min-h-[32px]" onClick={onClick}
+    ? <button type="button" className="-mx-1 rounded border-0 bg-transparent px-1 font-bold text-late hover:underline hover:underline-offset-[3px] max-sm:min-h-[44px] max-sm:min-w-[44px]" onClick={onClick}
       aria-label={`${nhan} ${v[0]} / ${v[1]} · ${t('xem lần ghi có Không')}`}>{chu}</button>
     : <span>{chu}</span>;
 }

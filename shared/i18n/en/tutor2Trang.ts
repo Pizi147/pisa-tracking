@@ -84,4 +84,10 @@ export const EN_TUTOR2_TRANG = {
   'Head thêm, sửa tutor chi nhánh mình; nhận xét chỉ đọc.': 'Heads add and edit tutors of their branch; reviews are read-only.',
   'CX chỉ xem; không sửa danh bạ, không nhận xét.': 'CX views only; no list edits, no reviews.',
   'Một bảng cho cả tutor và GV có buổi.': 'One table for tutors and teachers with sessions.',
+  /* S2 (N56 ⑥): lý do Cần chú ý → panel xem đúng các lần ghi gây chú ý. */
+  'xem lần ghi': 'view entries',
+  'Lần ghi cần chú ý': 'Entries needing attention',
+  'Đang xem {n} lần ghi cần chú ý — có lần ngoài {khoang}.': (b) => `Showing ${b.n} entries needing attention — some outside ${b.khoang}.`,
+  'Đang xem {n} lần ghi cần chú ý.': (b) => `Showing ${b.n} entries needing attention.`,
+  'Về {khoang}': (b) => `Back to ${b.khoang}`,
 } satisfies Record<string, Dich>;

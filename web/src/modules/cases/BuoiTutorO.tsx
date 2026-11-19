@@ -1,4 +1,5 @@
 import { Truong } from '../../ui/KhungPanel.tsx';
+import { useSession, type Session } from '../../lib/session.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { IconDat, IconKhong } from '../../ui/BieuTuong.tsx';
 import type { useLoiForm } from '../../ui/loiForm.tsx';
@@ -7,6 +8,18 @@ import { t } from '@shared/i18n/index.ts';
 
 /** Dòng trên form: thêm chữ phụ của tên đã chọn (chỉ hiển thị). */
 type DongForm = BuoiTutor & { phu?: string };
+
+/**
+ * S2 (rà 19/11 P2-4): mở lại nháp (máy chủ chỉ giữ `gvId` / `tutorId` + tên) → dựng lại chữ phụ từ dữ liệu ĐÃ CÓ, không request: dòng GV ghi "GV",
+ * thêm chi nhánh khi GV đó là chính người dùng và dạy ở MỘT chi nhánh (phiên); dòng tutor ghi "Tutor". Chi nhánh / kỹ năng người khác không suy ra được.
+ */
+export function phuSuyRa(b: BuoiTutor, s: Session | null | undefined): string | undefined {
+  if (b.gvId) {
+    const cn = b.gvId === s?.user?.id ? [...new Set((s?.grants ?? []).filter((g) => g.role === 'teacher' && g.branchName).map((g) => g.branchName))] : [];
+    return [t('GV'), cn.length === 1 ? cn[0] : null].filter(Boolean).join(' · ');
+  }
+  return b.tutorId ? t('Tutor') : undefined;
+}
 
 /** TU2-3: trần chữ Nội dung của một dòng Tutor trên web (máy chủ giữ ≤ 1000 cho dữ liệu cũ). */
 export const TRAN_NOI_DUNG_TUTOR = 300;
@@ -25,8 +38,9 @@ export function DongTutorO({ i, b, dat, paId, lf, loi, nhieu, onBo, loiTong }: {
 }) {
   const k = (x: string) => `buoi-${i}-${x}`;
   const ten = b.tutor.trim();
-  /* Chữ phụ của tên đã chọn ("GV · Monbay", "Tutor · Monbay · R") chỉ giữ trong phiên (`phu`, không gửi / lưu) — mở lại nháp chỉ còn tên. */
-  const phu = (b as DongForm).phu;
+  /* Chữ phụ của tên đã chọn ("GV · Monbay", "Tutor · Monbay · R") chỉ giữ trong phiên (`phu`, không gửi / lưu) — mở lại nháp: `phuSuyRa`. */
+  const { session } = useSession();
+  const phu = (b as DongForm).phu ?? phuSuyRa(b, session);
   const nguoi: NguoiChon | null = !ten ? null
     : b.tutorId || b.gvId ? { kieu: 'tai_khoan', id: b.tutorId ?? -(b.gvId as number), ten: b.tutor, ...(phu ? { phu } : {}) } : { kieu: 'ngoai', ten: b.tutor, phu: t('tên gõ tay') };
   const loiSo = lf.loiCua(loi, k('so'));

@@ -128,6 +128,13 @@ export async function runPrTubTests(t: any) {
     themBuoi(cp, { fb: 0 });
     const ngoai = tr.bangTutor(QL, { tu: '2026-10-05', den: '2026-10-11' });
     assert(dong(ngoai, cp)?.chuY === '1 lần không gửi feedback cho GV' && dong(ngoai, cp).buoi === 0, `QL thấy tutor Cần chú ý ngoài khoảng: ${JSON.stringify(dong(ngoai, cp))}`);
+    /* N56 ⑥: lý do kèm ngày lần ghi gần nhất + id dòng; panel theo `ids` hiện đúng dòng đó dù ngoài khoảng, vẫn trong phạm vi chi nhánh. */
+    const x = dong(ngoai, cp);
+    const ngayFuNay = one('SELECT observed_on FROM case_followups WHERE id = ?', FU).observed_on;
+    assert(!!ngayFuNay && x.chuYNgay === ngayFuNay && x.chuYIds.length === 1, `ngày (observed_on ${ngayFuNay}) / id lý do: ${x.chuYNgay} ${JSON.stringify(x.chuYIds)}`);
+    const pn = tr.panelTutor(QL, cp, { tu: '2026-10-05', den: '2026-10-11' }, x.chuYIds);
+    assert(pn.buoi.length === 1 && pn.buoi[0].id === x.chuYIds[0] && pn.buoi[0].feedbackGv === false, `panel theo id: ${JSON.stringify(pn.buoi)}`);
+    assert(tr.panelTutor(QL, bc, K, x.chuYIds).buoi.length === 0, 'id dòng của tutor khác → không dòng');
   }));
 
   check('TUB-2c · panel: 5 ô số, nhận xét (người ghi, coSua), buổi có HV + lớp + người ghi + KN; giờ VN 23:30 ngày cuối khoảng vẫn tính', () => thu(() => {

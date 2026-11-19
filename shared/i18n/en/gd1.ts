@@ -9,7 +9,6 @@ export const EN_GD1 = {
   'Không tìm được — thử lại.': 'Search failed — try again.',
   'Tiếp ›': 'Next ›',
   'Chưa được phân công lớp nào': 'No classes assigned yet',
-  'Chưa được phân công lớp — nhờ Quản trị cấp thêm vai Giáo viên.': 'No classes assigned — ask the system admin to add the Teacher role.',
   'Không có lớp nào đang mở.': 'No open classes.',
   'chủ nhiệm': 'homeroom',
   '{n} bài chờ nhập điểm': '{n} tests awaiting scores',

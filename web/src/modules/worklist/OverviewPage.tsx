@@ -17,7 +17,7 @@ import { t } from '@shared/i18n/index.ts';
 /**
  * TỔNG QUAN THEO VAI V5 (UI-TONG-QUAN, `thiet-ke/v5/tong-quan.html` phương án B) — trang đầu mọi vai (K10: GV cũng vậy). Chia vai theo cờ điều hướng của
  * máy chủ (`nav.ts`), dữ liệu theo quyền máy chủ: QL / QT / CX một GET `/tong-quan/v5`; GV / TVV → Công việc (GD-1, GD-8);
- * Admin 3 ô Mock Test + Lịch sắp tới (V4, bỏ "Đề nghị dời chờ"); LG-7: Head tutor (và GV chưa có lớp) — không có Công việc → trang đầu rỗng của GV ("Lớp của tôi"), 0 GET. Chi nhánh đang chọn ở URL (`cn`), khung nhớ theo máy.
+ * Admin 3 ô Mock Test + Lịch sắp tới (V4, bỏ "Đề nghị dời chờ"); N56 ⑦: chỉ Head tutor → /tutor; GV chưa có lớp → trang đầu rỗng của GV ("Lớp của tôi"), 0 GET. Chi nhánh đang chọn ở URL (`cn`), khung nhớ theo máy.
  */
 export default function OverviewPage() {
   const { session } = useSession();
@@ -56,8 +56,9 @@ export default function OverviewPage() {
 
   /* LG-7 (chủ SP 14/11 "Head tutor vẫn là GV là chính"): không quyền Công việc (Head tutor, GV chưa phân công) → khung "Lớp của tôi" của trang đầu GV,
      rỗng đúng chữ ("Chưa được phân công lớp nào"), không request. Head tutor dạy lớp = có thêm vai Giáo viên → vai 'gv' ở trên. */
-  /* AUDIT-1611 A3-17 · luật N50 (9): Head tutor bản chính luôn kèm vai GV → tài khoản chỉ có Head tutor là thiếu cấp vai — câu nói bước tiếp. */
-  if (vai === 'ht') return trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} chuRong={t('Chưa được phân công lớp — nhờ Quản trị cấp thêm vai Giáo viên.')} />);
+  /* N56 ⑦ (chủ SP 20/11): tài khoản CHỈ có vai Head tutor → trang đầu mở thẳng Tutor (thay câu "nhờ Quản trị cấp thêm vai Giáo viên" — A3-17);
+     người kèm vai GV đi nhánh 'gv' ở trên (N43). Không có Tutor (GV chưa có lớp) → khung rỗng như cũ. */
+  if (vai === 'ht') return nav?.tutor ? <Navigate to="/tutor" replace /> : trang('', <LopCuaToi dong={[]} dangTai={false} loi={null} onMo={() => {}} />);
   if (vai === 'admin') {
     /* GD-14 (⑧ T5): Lịch sắp tới sang cột phải 400 (khối phụ mọi vai cùng một chỗ). */
     const cn = branchId ? dsCn?.find((b) => b.id === branchId) : dsCn?.length === 1 ? dsCn[0] : null;
