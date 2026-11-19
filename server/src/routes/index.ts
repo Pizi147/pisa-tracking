@@ -1581,6 +1581,10 @@ api.post('/tinh-hinh/:id/rut', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return tinhHinhSvc.rutTinhHinh(principalOf(req), pInt(req, 'id'), { hoanTac: yThucBody(req).hoanTac === true });
 }));
+api.post('/tinh-hinh/:id/rut/hoan-tac', requireAuth, wrap((req) => {   // đề xuất 10 (S4-LUAT): Hoàn tác ngay sau Rút
+  maybeSimulateSaveFailure();
+  return tinhHinhSvc.boRutTinhHinh(principalOf(req), pInt(req, 'id'));
+}));
 api.post('/tinh-hinh/:id/tra-loi', requireAuth, wrap((req) => {
   maybeSimulateSaveFailure();
   return tinhHinhSvc.traLoiTinhHinh(principalOf(req), pInt(req, 'id'), { traLoi: yThucBody(req).traLoi });

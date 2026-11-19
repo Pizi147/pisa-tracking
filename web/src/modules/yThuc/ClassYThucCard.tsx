@@ -353,7 +353,9 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   const fTh: ThaoTacTh = {
     onGhiBaoPh: (x) => x.baoPh && setBaoPh({ viecId: x.baoPh.id, studentId: x.studentId, ten: emLop.get(x.studentId)?.ten ?? '', han: x.han ?? homNay }),
     onSua: (x, neo) => setHop({ che: { loai: 'sua', x }, neo }),
-    onRut: (x) => { if (!window.confirm(t('Rút tình hình này? Việc của người nhận sẽ đóng.'))) return; void api.post(`/tinh-hinh/${x.id}/rut`, {}).then(() => { toast.push('ok', t('Đã rút')); DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); }, (e) => toast.push('error', e.message)); },
+    /* Đề xuất 10 (S4-LUAT): rút thẳng (không hộp hỏi của trình duyệt) + toast Hoàn tác — máy chủ `boRutTinhHinh` trả lại đúng trạng thái. */
+    onRut: (x) => { const moi = () => { DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); };
+      void api.post(`/tinh-hinh/${x.id}/rut`, {}).then(() => { toast.hoanTac(t('Đã rút'), () => void api.post(`/tinh-hinh/${x.id}/rut/hoan-tac`, {}).then(moi, (e) => toast.push('error', e.message)), { key: `rut-th-${x.id}` }); moi(); }, (e) => toast.push('error', e.message)); },
     onTraLoi: (x, neo) => setHop({ che: { loai: 'tra-loi', x }, neo }),
     onHoanTacTraLoi: (x) => void api.post(`/tinh-hinh/${x.id}/tra-loi/hoan-tac`, {}).then(() => { DUONG_LAM_MOI_Y_THUC.forEach((p) => invalidate(p)); lamMoi(); }, (e) => toast.push('error', e.message)),
   };
