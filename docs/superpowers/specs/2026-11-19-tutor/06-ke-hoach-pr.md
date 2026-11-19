@@ -1,12 +1,12 @@
 # 06 — Kế hoạch PR Tutor (19/11/2026) — gửi PTA Plan
 
 PTA Tutor (Fable 5.2 · high). Luật: `02-luat.md` TU1–TU19 (đã chốt — `plan.md` mục 4 khối "Chủ SP 19/11", 1.6 N54). Workflow: `03-workflow.md`. Mockup: `05-de-bai-mockup.md` (Ⓣ1 `thiet-ke/v21/tutor-ket-qua.html`, Ⓣ2 `thiet-ke/v21/tutor.html`) — **PR giao diện chỉ giao sau khi mockup tương ứng được chủ SP duyệt + merge**; PR máy chủ giao được ngay.
-PTA Plan soạn kế hoạch chi tiết từng PR (Task, mã phép kiểm) theo mẫu `plan.md` mục 10-A; tài liệu này chốt **phạm vi, giao diện dữ liệu, tiêu chí kiểm** — session code không tự đổi các điều đó, thấy vướng → [XM] nhắn PTA Plan.
+**Ai giao (chủ SP 19/11):** PR máy chủ / luật **TU2-1, TU2-2, TU2-5 → PTA Plan** giao, rà, merge · PR giao diện **TU2-3, TU2-4, TU2-6 + hai mockup → PTA Tutor** tự giao session con, rà, duyệt ảnh cặp, merge. Người giao soạn kế hoạch chi tiết từng PR (Task, mã phép kiểm) theo mẫu `plan.md` mục 10-A; tài liệu này chốt **phạm vi, giao diện dữ liệu, tiêu chí kiểm** — session code không tự đổi các điều đó, thấy vướng → [XM] nhắn PTA Plan.
 
 ## 0. Luật mọi PR
 
 - Skill: `karpathy-guidelines` + `ponytail` (PR giao diện: `/ponytail lite`); trước PR `/ponytail-review`, liệt kê chú thích `ponytail:` trong mô tả PR.
-- PR giao diện thêm: impeccable `layout` + `polish` + `harden` + `adapt`, rồi `audit` + skill `web-design-guidelines`; bảng truy vết khung → thành phần → ảnh (dòng GIỮ / BỎ); bảng thao tác TRƯỚC → SAU; ảnh cặp toàn trang mockup │ web (1440 Tối + 375 Sáng), ≥ 90 % KHỚP, soi ✕ / ⋯ ≤ 1 px; **chủ SP duyệt ảnh cặp trước merge, không merge qua đêm**; Hướng dẫn "?" (`shared/huongDan/`) sửa cùng PR; bản EN (`shared/i18n/en/`) cho chữ mới.
+- PR giao diện thêm: impeccable `layout` + `polish` + `harden` + `adapt`, rồi `audit` + skill `web-design-guidelines`; bảng truy vết khung → thành phần → ảnh (dòng GIỮ / BỎ); bảng thao tác TRƯỚC → SAU; ảnh cặp toàn trang mockup │ web (1440 Tối + 375 Sáng), ≥ 90 % KHỚP, soi ✕ / ⋯ ≤ 1 px; **PTA Tutor duyệt ảnh cặp trước merge (chủ SP giao 19/11) và gửi ảnh cho chủ SP xem**; Hướng dẫn "?" (`shared/huongDan/`) sửa cùng PR; bản EN (`shared/i18n/en/`) cho chữ mới.
 - Turso: đo câu + dòng TRƯỚC → SAU trong mô tả PR; đường mới / đổi có trần ở `server/src/tests/tocDoDuong.ts`; JSON các đường không đổi phải trùng trước / sau trên bản chép (`scripts/do-ban-chep.mjs`).
 - Bản chép thật: PR có migrate hoặc đụng luồng ghi kết quả / nháp / quyền thử trên bản chép mới nhất ở `H:\My Drive\PISA TRACKING\back-up` (chép ra tạm, không sửa bản gốc), báo số ca.
 - `npm run check` đầy đủ trước khi mở PR; phép kiểm cũ đọc luật cũ (`prTu`, `prTub`, `prOv12h`, `prOv13b`, `prCxN52`, `form.tests`) sửa theo luật mới — liệt kê trong PR.

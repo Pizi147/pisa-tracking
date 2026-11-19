@@ -1,6 +1,6 @@
 # 05 — Đề bài mockup Tutor (19/11/2026)
 
-PTA Tutor · gửi PTA Plan giao session con. **Hai mockup, hai session con** — Opus 5.5 · high (B: Sonnet 5.5 · high), chạy song song được (khác tệp).
+PTA Tutor tự giao session con, tự rà + duyệt + merge (chủ SP 19/11: "mockup, giao diện, UI/UX thì bạn tự chủ động… giao luôn, bạn duyệt và merge"). **Hai mockup, hai session con** — Opus 5.5 · high (B: Sonnet 5.5 · high), chạy song song được (khác tệp).
 Luật đã chốt: `02-luat.md` TU1–TU19 (chủ SP 19/11: 6 ý + "Ok cả 4 câu" — nguyên văn `plan.md` mục 4). Workflow + phác form: `03-workflow.md` mục 3, 4. Hiện trạng + đường dẫn mã: `00-hien-trang.md`.
 
 **Đọc trước, cho cả hai:** `plan.md` mục 4 (khối "Chủ SP 19/11" về Tutor) · thư mục này `00` `02` `03` · `CLAUDE.md` · `DESIGN.md` Luật V5 (nhất là V12, V13, V18, V21, V22) · bộ chuẩn `thiet-ke/v21/bang-mau.html` + `bang-mau-ghi-chu.md` + `v21.css` · memory dự án: nang-cap-khong-bat-chuoc, cong-chat-luong-mockup, pta-ra-mockup-theo-yeu-cau, bo-chu-thich, case-pa-bam-thang, feedback-ngan-gon.
@@ -13,7 +13,7 @@ Luật đã chốt: `02-luat.md` TU1–TU19 (chủ SP 19/11: 6 ý + "Ok cả 4 c
 - **G3 Mục đích chủ SP (ý 6):** phần Tutor để làm rõ kết quả và đánh giá được tutor, **không sinh thêm việc**. Không thêm bước, ô bắt buộc, trạng thái, cảnh báo, chú thích tĩnh nào ngoài đề bài. Không có chữ "vắng", không nút giao người dạy, không lịch. Thấy chỗ đụng luật khác → [XM], không tự quyết.
 - **G4 Đầu ra:** `thiet-ke/v21/<tên>.html` + `<tên>.css` riêng (`v21.css`, `bang-mau.css` CHỈ ĐỌC) + `<tên>-ghi-chu.md` gồm: bảng truy vết **dòng R → khung** (đủ mọi R) · bảng **khung → thành phần web hiện có → TRƯỚC → SAU** có dòng GIỮ / BỎ · bảng **thao tác TRƯỚC → SAU** · [XM] · bảng tự rà từng R (Đạt / Chưa + chỗ trong mockup). Ảnh từng khung ở `thiet-ke/v21/anh/<tên>/`: 1440 Tối + Sáng, 375 Sáng; mỗi khung có ảnh cặp **TRƯỚC (web hiện tại) │ SAU (mockup)**; kiểm `document.fonts` đã nạp Be Vietnam Pro trước khi chụp. Tên người bịa (không dùng tên thật GV / HV).
 - **G5 Cổng chất lượng:** `critique` mục tiêu ≥ 35 / 40; chạm 30 thì tối đa 2 vòng sửa nữa; sau đó chỉ cần không còn P0 / P1. Điểm critique không thay bảng tự rà theo R.
-- **G6 Xong:** PR chỉ gồm tệp trong `thiet-ke/v21/`, tiêu đề "mockup v21: … — chờ chủ SP duyệt", KHÔNG merge; nhắn session **"PTA Plan"**: số PR, bảng tự rà, [XM], đường dẫn ảnh. Chủ SP nói gì trong session thì ghi nguyên văn vào tệp ghi chú mục 0 và chuyển PTA Plan.
+- **G6 Xong:** PR chỉ gồm tệp trong `thiet-ke/v21/`, tiêu đề "mockup v21: … — chờ chủ SP duyệt", KHÔNG tự merge; nhắn session **"PTA Tutor"**: số PR, bảng tự rà, [XM], đường dẫn ảnh. Chủ SP nói gì trong session thì ghi nguyên văn vào tệp ghi chú mục 0 và chuyển PTA Tutor.
 
 ---
 
