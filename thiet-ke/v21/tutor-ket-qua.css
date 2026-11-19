@@ -1,0 +1,208 @@
+/* v21 Ⓣ1 · Kết quả PA Tutor + PA đang chạy — phần riêng của mockup.
+   CHỈ ĐỌC: v21.css (token, panel, ô chọn mẫu A, dòng việc) · bang-mau.css (ô chọn toàn màn 375, sàn) ·
+   gv-viet-it.css (lưới .lkq, "‹ Lưới", tt-luu.cham, bỏ ⚠ ở chip hạn — V22) · ho-so-hv.css (thẻ Case / PA .cs .cb .pa .fm).
+   Mới: cụm Số buổi a / b (.sb) · khối 3 nút Có / Không (.ba-nut) · dòng tutor thêm (.dong-tt) · dải nháp / làm thay / 409 (.dai-fm)
+   · khối "PA đang chạy" (.pa-chay) · dòng Tutor trong lưới (.lkq .hang2) · lịch sử kết quả trong thẻ PA (.kq-ky).
+   Mọi màu là token v21; không gradient, không in hoa, chữ ≥ 12 px. */
+
+.trang.tkq { min-width:1500px; }
+.tkq .hang-khung { gap:24px; }
+.pn.w736 { width:736px; }
+
+/* ---------- Số buổi "a / b" (R1.2): hai ô số liền nhau trên MỘT hàng ---------- */
+.sb-hang { display:flex; align-items:center; gap:14px; flex-wrap:wrap; }
+.sb { display:inline-flex; align-items:center; gap:8px; }
+.o-so { width:84px; height:40px; border-radius:8px; border:1px solid var(--o-vien); background:var(--o-nen); display:inline-flex; align-items:center; justify-content:center; font:600 15px var(--phong-so); font-variant-numeric:tabular-nums; color:var(--text); }
+.o-so .mo3 { font:400 13px var(--phong); color:var(--text-faint); }
+.o-so.go { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft); }
+.o-so.loi { border-color:var(--bad); box-shadow:0 0 0 3px var(--bad-nen); }
+.o-so.nho { width:56px; height:36px; font-size:14px; }
+.sb .cheo { font:500 17px var(--phong-so); color:var(--text-faint); }
+.sb-tong { font-size:13px; color:var(--text-dim); white-space:nowrap; }
+.sb-tong b { color:var(--text); font-weight:600; }
+.loi-o { font:400 13px var(--phong); color:var(--bad); display:flex; gap:6px; align-items:center; }
+.o-truong .chon-hang.loi { outline:2px solid var(--bad); outline-offset:4px; border-radius:999px; }
+.o.loi { border-color:var(--bad); box-shadow:0 0 0 3px var(--bad-nen); }
+.o-truong > .lb.co-dem { display:flex; align-items:baseline; gap:6px; }
+.dem-ket.thieu { color:var(--soon); font-weight:700; }
+
+/* ô Tutor = ô chọn có tìm mẫu A (v21 .oc) — trong form trải hết cột, tối đa 440 */
+.tkq .oc-vung.oc-form { width:100%; max-width:440px; }
+.tkq .oc-vung.oc-hep { width:100%; }
+.tkq .oc .da small .so { font-family:var(--phong-so); }
+.oc-muc .nhan-gv { display:inline-flex; align-items:center; height:18px; padding:0 5px; margin-left:6px; border-radius:4px; border:1px solid var(--line-strong); font:600 12px/1 var(--phong); color:var(--text-dim); vertical-align:1px; }
+
+/* ---------- 3 nút Có / Không (R1.6): hiện sau khi có tên Tutor, tuỳ chọn, không dấu * ---------- */
+.ba-nut { border:1px solid var(--line); border-radius:10px; display:grid; }
+.bn-dau { display:flex; align-items:center; gap:8px; min-height:40px; padding:4px 8px 4px 14px; font:600 13px var(--phong); color:var(--text-dim); border-bottom:1px solid var(--line); }
+.bn-dau b { color:var(--text); font-weight:600; }
+.bn-dau .tc { font-weight:400; color:var(--text-faint); }
+.bn-dau .link-nho { margin-left:auto; padding:6px 8px; border-radius:6px; }
+.bn-dong { display:flex; align-items:center; gap:12px; min-height:46px; padding:5px 8px 5px 14px; font-size:14px; }
+.bn-dong + .bn-dong { border-top:1px solid var(--line); }
+.bn-dong > span:first-child { flex:1; min-width:0; }
+.ck { display:inline-flex; border:1px solid var(--line-strong); border-radius:8px; overflow:hidden; flex:none; }
+.ck button { width:86px; height:32px; border:0; background:transparent; font:500 13px var(--phong); color:var(--text-dim); display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+.ck button + button { border-left:1px solid var(--line-strong); }
+.ck button .ky-h { font-weight:700; }
+.ck button.on.co { background:var(--ok-nen); color:var(--ok); font-weight:700; box-shadow:inset 0 0 0 1px var(--ok-vien); }
+.ck button.on.khong { background:var(--bad-nen); color:var(--bad); font-weight:700; box-shadow:inset 0 0 0 1px var(--bad-vien); }
+details.dg-them { border-top:1px solid var(--line); }
+details.dg-them > summary { list-style:none; display:flex; align-items:center; gap:8px; min-height:42px; padding:0 14px; font:600 13px var(--phong); color:var(--text-dim); cursor:pointer; }
+details.dg-them > summary::-webkit-details-marker { display:none; }
+details.dg-them > summary .tc { font-weight:400; color:var(--text-faint); }
+details.dg-them > summary .so-sao { margin-left:auto; font:600 12px var(--phong-so); color:var(--text-dim); }
+.dg-than { padding:4px 14px 14px; display:grid; gap:10px; }
+.sao5 { display:inline-flex; gap:2px; }
+.sao5 button { width:32px; height:32px; border:0; background:none; border-radius:6px; font-size:20px; line-height:1; color:var(--line-strong); }
+.sao5 button.on { color:var(--soon); }
+.sao5 button:hover { background:var(--surface-2); }
+.dg-hang { display:flex; align-items:center; gap:12px; font-size:13px; color:var(--text-dim); }
+.dg-hang .lb2 { font:600 13px var(--phong); color:var(--text-dim); width:88px; flex:none; }
+.them-tt { justify-self:start; }
+
+/* ---------- dòng tutor (R1.8 "+ Tutor khác"): mỗi dòng một thẻ, ô số buổi nhỏ đứng đầu ---------- */
+.ds-tt { display:grid; gap:10px; }
+.dong-tt { border:1px solid var(--line-strong); border-radius:10px; padding:12px; display:grid; gap:12px; }
+.dong-tt.loi { border-color:var(--bad-vien); }
+.dtt-dau { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:10px; align-items:end; }
+.dtt-dau .o-truong > .lb { font-size:13px; }
+.dtt-dau .bo-dong { align-self:center; margin-top:22px; }
+.dong-tt .ba-nut { border-color:var(--line); }
+.tag.cu { background:var(--muted-nen); border-color:var(--line); color:var(--text-dim); font-weight:500; }
+
+/* ---------- dải đầu form: Nháp · Làm thay · 409 · lỗi máy chủ ---------- */
+.dai-fm { display:flex; align-items:center; gap:10px; flex-wrap:wrap; min-height:40px; padding:7px 12px; border-radius:8px; font-size:13px; color:var(--text-dim); border:1px solid var(--line); background:var(--surface-2); }
+.dai-fm b { color:var(--text); font-weight:600; }
+.dai-fm .phai { margin-left:auto; display:flex; gap:8px; }
+.dai-fm.nhap { border-color:var(--soon-vien); background:var(--soon-nen); }
+.dai-fm.nhap .nhan-n { color:var(--soon); font-weight:700; }
+.dai-fm.xung { border-color:var(--soon-vien); background:var(--soon-nen); color:var(--text); }
+.dai-fm.xung .t { display:grid; gap:2px; }
+.dai-fm.xung .t small { font-size:12px; color:var(--text-dim); }
+.dai-fm.loi { border-color:var(--bad-vien); background:var(--bad-nen); color:var(--text); }
+.dai-fm.loi b { color:var(--bad); }
+
+/* ---------- KHỐI "PA ĐANG CHẠY" (R1.17–R1.23): dải cùng dáng dải nhóm, vạch trái TRUNG TÍNH + chip đếm mờ ---------- */
+.nhom.pa-chay .dai-nhom { border-left-color:var(--text-faint); padding-right:6px; }
+.nhom.pa-chay .dai-nhom .ic { color:var(--text-faint); }
+.dem.mo { background:transparent; border-color:var(--line); color:var(--text-dim); font-weight:500; }
+.pa-chay .dai-nhom .nut-gap { margin-left:auto; width:36px; height:36px; border:0; background:none; border-radius:8px; display:grid; place-items:center; color:var(--text-dim); }
+.pa-chay .dai-nhom .nut-gap:hover { background:var(--accent-soft); }
+.pa-chay .dai-nhom .nut-gap .chev { transform:rotate(90deg); }
+.pa-chay.gap .dai-nhom .nut-gap .chev { transform:none; }
+.pa-chay.gap .dai-nhom { border-bottom:0; cursor:pointer; }
+.pa-chay .dai-nhom .nut-i { width:28px; height:28px; font-size:15px; }
+.pa-chay .viec .t1 .pa-ten { color:var(--text-dim); font-weight:400; }
+.nhan-nhap { display:inline-flex; align-items:center; justify-content:center; gap:4px; height:30px; width:100%; padding:0 8px; border-radius:8px; border:1px dashed var(--soon-vien); background:transparent; font:600 12px var(--phong-so); color:var(--soon); white-space:nowrap; }
+.nhan-nhap:hover { background:var(--soon-nen); }
+.pa-chay .ds-viec > li > .viec { grid-template-columns:minmax(0,1fr) 150px 118px; }
+.pa-chay .ten-em { font-size:15px; }
+
+/* dải Sắp tới (chép dáng theo-doi.css ⑬ — chỉ còn cụm Test, Báo cáo PH) */
+.sap-toi { display:flex; align-items:center; min-height:44px; padding:4px 4px 4px 16px; margin-bottom:12px; border:1px solid var(--line); border-radius:10px; background:var(--surface); font-size:14px; color:var(--text-dim); }
+.sap-toi .st-nhan { font:600 14px var(--phong); color:var(--text); padding-right:16px; white-space:nowrap; }
+.sap-toi .st-cum { display:inline-flex; align-items:baseline; gap:6px; padding:0 14px; border-left:1px solid var(--line); white-space:nowrap; }
+.sap-toi > .nut-i { margin-left:auto; }
+.st-bo { display:inline-flex; align-items:baseline; gap:6px; padding:0 14px; border-left:1px solid var(--line); white-space:nowrap; color:var(--text-faint); text-decoration:line-through; }
+
+/* khung xương khối */
+.xd-dai { display:flex; align-items:center; gap:10px; min-height:48px; padding:0 13px; background:var(--surface-2); border-left:3px solid var(--text-faint); border-bottom:1px solid var(--line); }
+
+/* ---------- LƯỚI (R1.24): dòng Tutor thêm cụm [a] / [b] + Tutor trước Nhận xét; dòng khác để trống, cột thẳng ---------- */
+.lkq .hang2 { display:grid; grid-template-columns:150px 196px minmax(0,1fr); gap:8px; align-items:start; }
+.lkq .hang2 > .trong { min-height:36px; }
+.lkq .hang2 .o-so { width:58px; height:36px; font-size:14px; }
+.lkq .hang2 .sb { gap:5px; }
+.lkq .hang2 .oc { min-height:36px; font-size:14px; padding:2px 4px 2px 8px; }
+.lkq .hang2 .oc .da small { display:none; }
+.lkq .hang2 .oc .goi { font-size:14px; }
+.lkq .hang2 .o { min-height:36px; }
+.lkq .h .h2 { display:grid; grid-template-columns:150px 196px minmax(0,1fr); gap:8px; }
+.lkq .h .h-giua { display:grid; gap:2px; }
+.lkq .gon .tt-ten { color:var(--text-dim); }
+.lkq .r .loi-o { font-size:12px; }
+
+/* ---------- THẺ PA + LỊCH SỬ KẾT QUẢ (R1.15, R1.16) ---------- */
+.pa-dau .p .nhan-nhap { width:auto; height:24px; margin-left:4px; vertical-align:1px; }
+.kq-ds { display:grid; gap:0; border:1px solid var(--line); border-radius:10px; overflow:clip; }
+.kq-ky { padding:10px 14px 12px; display:grid; gap:6px; font-size:14px; }
+.kq-ky + .kq-ky { border-top:1px solid var(--line); }
+.kq-ky .k1 { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font:600 14px var(--phong); }
+.kq-ky .k1 .phu { font:400 13px var(--phong); color:var(--text-dim); }
+.kq-ky .k1 .phai { margin-left:auto; display:flex; gap:10px; align-items:center; }
+.kq-tt { display:grid; gap:3px; padding-left:12px; border-left:2px solid var(--line); }
+.kq-tt .ai { font-weight:600; }
+.kq-tt .nd { color:var(--text-dim); }
+.dau3 { display:flex; flex-wrap:wrap; gap:4px 12px; font-size:13px; }
+.dau3 .co { color:var(--ok); } .dau3 .khong { color:var(--bad); }
+.dau3 .sao-n { color:var(--text-dim); }
+.kq-moc { font-size:13px; color:var(--text-dim); }
+.nhan-tt { display:inline-flex; height:22px; padding:0 8px; border-radius:6px; align-items:center; font:600 12px var(--phong); background:var(--surface-2); color:var(--text-dim); }
+.nhan-tt.ok { background:var(--ok-nen); color:var(--ok); }
+.nhan-tt.vang { background:var(--soon-nen); color:var(--soon); }
+
+/* hai cột TRƯỚC │ SAU */
+.cap { display:grid; grid-template-columns:auto auto; gap:20px; align-items:start; }
+.cap > figure > img { display:block; border-radius:6px; border:1px solid #b0b8cd; }
+
+/* ---------- 375 ---------- */
+.dt .o-so { height:44px; width:84px; font-size:16px; }
+.dt .sb-hang { flex-wrap:nowrap; gap:10px; }
+.dt .sb-tong { font-size:12px; white-space:normal; }
+.dt .bn-dong { display:grid; grid-template-columns:minmax(0,1fr); gap:6px; padding:10px 12px; }
+.dt .ck { display:grid; grid-template-columns:1fr 1fr; width:100%; }
+.dt .ck button { width:auto; height:44px; font-size:14px; }
+.dt .bn-dau { padding:4px 4px 4px 12px; }
+.dt .bn-dau .link-nho { min-height:44px; }
+.dt details.dg-them > summary { min-height:44px; }
+.dt .sao5 button { width:44px; height:44px; }
+.dt .dtt-dau { grid-template-columns:auto minmax(0,1fr); }
+.dt .dtt-dau .bo-dong { grid-column:1 / -1; margin-top:0; justify-self:start; }
+.dt .nhan-nhap { height:44px; }
+.dt .sap-toi { display:none; }
+.the-pa { border-top:1px solid var(--line); padding:12px 12px; display:grid; gap:6px; }
+.the-pa .h1 { display:flex; align-items:baseline; gap:8px; }
+.the-pa .h1 .ten-em { font-size:15px; }
+.the-pa .h1 .han-v { margin-left:auto; }
+.the-pa .h2 { display:flex; align-items:center; gap:8px; font-size:13px; color:var(--text-dim); flex-wrap:wrap; }
+.the-pa .h2 .nhan-nhap, .the-pa .h2 .nut { margin-left:auto; width:auto; }
+.dt .pa-chay .dai-nhom { min-height:44px; }
+.dt .lop-pa { display:flex; align-items:center; gap:8px; min-height:44px; padding:0 12px; border-top:1px solid var(--o-vien); font:600 14px var(--phong); background:var(--surface); }
+.dt .lop-pa .phu-d { font:400 13px var(--phong); color:var(--text-dim); }
+.dt .lop-pa .chev { margin-left:auto; transform:rotate(90deg); }
+.dt .pa-chay .dai-nhom .nut-gap { width:44px; height:44px; }
+.o-truong > .doan { justify-self:start; }
+/* ho-so-hv.css có .da (chữ "đã" xanh + ✓) — trả ô chọn mẫu A về dáng v21 */
+.oc .da { color:var(--text); font-weight:400; }
+.oc .da::before { content:none; }
+.trt.da::before, .tt-luu.da::before { content:none; }
+.dt .pn-chan .phai { flex:1; }
+.dt .lop-pa.dong .chev { transform:none; }
+/* sau critique B: vùng bấm 375 ≥ 44 · ✕ thẳng hàng khi đầu panel có "‹ Quay lại" */
+.dt .doan button { height:44px; }
+.dt .oc .bo { width:44px; height:44px; margin:-6px -4px -6px 0; }
+.dt .pa-dau .p .nhan-nhap { height:44px; }
+.pn:not(.dt *) .pn-h1 > .quay { min-height:36px; }
+.dt .pa-chay .dai-nhom { align-items:center; }
+.dt .pa-chay .dai-nhom .nut-gap { align-self:center; }
+/* sau critique A (33 / 40): a / b luôn có nhãn dưới ô · Có / Không chỉ có dấu khi đang chọn · khối PA đang chạy dịu hơn nhóm việc */
+.sb.co-nhan { align-items:flex-start; }
+.sb-o { display:grid; justify-items:center; gap:2px; }
+.sb-o small { font:500 12px var(--phong); color:var(--text-faint); }
+.sb.co-nhan .cheo { line-height:40px; }
+.dt .sb.co-nhan .cheo { line-height:44px; }
+.ck button .ky-h { display:none; }
+.ck button.on .ky-h { display:inline; }
+.cu-meta { font:500 12px var(--phong); color:var(--text-faint); margin-top:4px; }
+.dong-tt .ba-nut { border:0; border-top:1px solid var(--line); border-radius:0; margin:0 -12px -12px; }
+.dong-tt .bn-dau { border-bottom:0; }
+.pa-chay .nut.nut-ma { border-color:transparent; background:transparent; color:var(--accent); }
+.pa-chay .nut.nut-ma:hover, .pa-chay .nut.nut-ma:focus-visible { border-color:var(--line-strong); background:var(--surface-2); }
+.nhan-nhap { border-color:var(--line-strong); color:var(--text-dim); }
+.nhan-nhap:hover { background:var(--surface-2); }
+.lkq .hang2 .o-so .mo3 { font-size:14px; }
+.dtt-dau { align-items:start; }
+.dtt-dau .bo-dong { margin-top:30px; }
+.dtt-dau .bo-dong { margin-top:24px; align-self:start; }
+.dt .dtt-dau .bo-dong { margin-top:0; }
