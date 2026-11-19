@@ -82,6 +82,19 @@ export async function runPrTu22Tests(t: any) {
     assert(!ids.includes(a.ivId) && !ids.includes(b.ivId), `còn: ${ids.filter((x) => x === a.ivId || x === b.ivId)}`);
   }));
 
+  check('TU2-2 (3b) · rà #1864: nhóm Bổ trợ còn PA tới hạn (đã là việc) → PA anh em hạn xa KHÔNG ở paDangChay; hết PA tới hạn thì hiện · em hai ghi danh: một dòng mỗi PA', () => thu(() => {
+    const a = pa({ sau: 1 }), b = pa({ sau: 15 });
+    conn.prepare("UPDATE case_interventions SET kind = 'bo_tro', nhom_bo_tro = 'mt:tu22-nhom' WHERE id IN (?, ?)").run(a.ivId, b.ivId);
+    assert(viec().some((i) => i.key === `action:${a.ivId}` && i.mine), 'nhóm: PA tới hạn là việc của GV');
+    assert(!dangChay().some((r) => r.paId === a.ivId || r.paId === b.ivId), 'nhóm vừa là việc vừa là đang chạy');
+    conn.prepare("UPDATE case_interventions SET status = 'completed' WHERE id = ?").run(a.ivId);
+    assert(dangChay().some((r) => r.paId === b.ivId), 'hết PA tới hạn: nhóm về khối đang chạy');
+    const c = pa();
+    const lop2 = get('SELECT id FROM classes WHERE id != ? AND branch_id = (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1', LOP, LOP).id;
+    conn.prepare(`INSERT INTO enrollments (student_id, class_id, status, started_at, created_at) VALUES (?,?, 'active', '2026-07-27', ?)`).run(c.sid, lop2, new Date().toISOString());
+    assert(dangChay().filter((r) => r.paId === c.ivId).length === 1, 'em hai ghi danh active: trùng PA');
+  }));
+
   check('TU2-2 (4a) · cụm "Kết quả PA" 7 ngày (web hiện tại) = PA paDangChay hạn ≤ hôm nay + 9 — cùng hàng; số câu không theo số PA', () => thu(() => {
     const dem = () => { xoaNho(); tq.sapToiCuaGv(GV); const s0 = soCauSql(); const x = trongBoNho(() => tq.sapToiCuaGv(GV)); return { x, n: soCauSql() - s0 }; };   // ấm như hàm Netlify
     pa({ sau: 4 });
@@ -109,6 +122,10 @@ export async function runPrTu22Tests(t: any) {
         const w = mw.myWork(GV);
         assert(JSON.stringify(g.summary) === JSON.stringify(w.summary) && g.dong.length === w.dong.length, 'số việc / dòng lệch myWork');
         assert(JSON.stringify(d.demDongViec(g.dong)) === JSON.stringify(d.demDongViec(w.dong)), 'demDongViec lệch');
+        const cnKhac = get('SELECT id FROM branches WHERE id != (SELECT branch_id FROM classes WHERE id = ?) ORDER BY id LIMIT 1', LOP).id;
+        const cnLop = get('SELECT branch_id b FROM classes WHERE id = ?', LOP).b;
+        assert(!('paDangChay' in await goi(GV.userId, `/my-work?branchId=${cnKhac}`)), 'rà #1864: ?branchId chi nhánh khác → không khoá');
+        assert((await goi(GV.userId, `/my-work?branchId=${cnLop}`)).paDangChay?.some((r: any) => r.paId === ivId), '?branchId chi nhánh lớp → có PA');
         const ql = P.mbManager.userId, qt = P.admin.userId;
         const tvv = get(`SELECT ur.user_id id FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE r.key = 'consultant' AND ur.status = 'active'
           AND ur.user_id NOT IN (SELECT user_id FROM user_roles x JOIN roles y ON y.id = x.role_id WHERE y.key IN ('teacher', 'head_tutor')) LIMIT 1`)?.id;

@@ -383,16 +383,20 @@ const PA_CUA_GV_SQL = `
           UNION SELECT iv2.id FROM sos_cases sc2 JOIN case_interventions iv2 ON iv2.case_id = sc2.id WHERE sc2.owner_user_id = ? AND sc2.status != 'done'
           UNION SELECT iv2.id FROM case_interventions iv2 WHERE iv2.nhom_bo_tro IN (SELECT nhom_bo_tro FROM case_interventions WHERE performer_user_id = ?
             AND kind = 'bo_tro_mien_phi' AND status IN ('planned', 'started'))`;
-export function sapToiCuaGv(p: Principal): { sapToi: { paToiKy: { so: number; han: string } | null; baoCaoPh: DotBcSapMo[] } | null; paDangChay: PaDangChay[] } {
+export function sapToiCuaGv(p: Principal, branchId?: number | null): { sapToi: { paToiKy: { so: number; han: string } | null; baoCaoPh: DotBcSapMo[] } | null; paDangChay: PaDangChay[] } {
   const today = demoToday(), den = hanGhiKetQuaToi(addDays(today, 7));
   const lop = [...new Set(p.assignments.filter((a) => activeAt(a, today)).map((a) => a.classId))];
   /* Người dạy nhóm `mt:` đọc trong cùng câu (khỏi `nguoiDayNhom`). TU2-2: bỏ cận trên 7 ngày — mọi PA chưa tới hạn (khối "PA đang chạy"); cùng câu, + 0 câu. */
-  const rows = db().prepare(`SELECT x.*, ${NGUOI_DAY_NHOM('x.nhom_bo_tro')} AS nguoi_day
+  const hang = db().prepare(`SELECT x.*, ${NGUOI_DAY_NHOM('x.nhom_bo_tro')} AS nguoi_day
     FROM (${cauPaGhiKetQua(`
           AND iv.action_due > ?
+          AND (iv.nhom_bo_tro IS NULL OR NOT EXISTS (SELECT 1 FROM case_interventions anh WHERE anh.nhom_bo_tro = iv.nhom_bo_tro
+            AND anh.status IN ('planned', 'started') AND anh.action_due <= ?))   /* rà #1864: nhóm Bổ trợ còn PA tới hạn = nhóm đã là việc (đại diện hạn sớm nhất) */
           AND iv.id IN (${PA_CUA_GV_SQL})`, ' iv.nhap_ket_qua,')}) x`)
-    .all('9999-12-31', hanGhiKetQuaToi(today), JSON.stringify(lop), p.userId, p.userId) as any[];
-  rows.sort((a, b) => a.id - b.id);   // chỉ mục hạn không giữ thứ tự id — khoá như Công việc
+    .all('9999-12-31', hanGhiKetQuaToi(today), hanGhiKetQuaToi(today), JSON.stringify(lop), p.userId, p.userId) as any[];
+  /* Rà #1864: em hai ghi danh `active` → câu trả trùng PA — giữ một dòng mỗi PA; `?branchId` lọc như dòng việc (chi nhánh lớp hiện tại). */
+  const rows = [...new Map(hang.sort((a, b) => a.id - b.id).map((r) => [r.id, r] as const)).values()]   // chỉ mục hạn không giữ thứ tự id — khoá như Công việc
+    .filter((r) => !branchId || r.eff_branch_id === branchId);
   const giu = rows.length ? nguoiGiuKetQua(rows.map((r) => ({ id: r.id, topic: r.topic ?? null, nhomBoTro: r.nhom_bo_tro ?? null, classId: r.eff_class_id ?? null,
     ownerUserId: r.owner_user_id ?? null, nguoiDay: r.nhom_bo_tro?.startsWith('mt:') ? r.nguoi_day ?? null : null })), today) : new Map();
   /* ponytail: nhóm Bổ trợ có Mini Test chờ ở lần ghi cuối vẫn đếm (tuần đó việc là "Ghi Mini Test", vẫn là việc của GV) — khỏi câu `mini_test` quét chỉ mục chờ. */
@@ -407,7 +411,8 @@ export function sapToiCuaGv(p: Principal): { sapToi: { paToiKy: { so: number; ha
   }).sort((a, b) => a.han.localeCompare(b.han) || a.paId - b.paId);
   /* LG-13 cụm "Kết quả PA" (cửa sổ 7 ngày) giữ cho web hiện tại tới khi TU2-4 thay bằng khối "PA đang chạy" — cùng hàng đã đọc, 0 câu. */
   const toiKy = cua.filter((r) => r.action_due <= den);
-  const baoCaoPh = dotBcSapMoGv({ userId: p.userId, assignments: p.assignments }, today, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today);
+  const baoCaoPh = dotBcSapMoGv({ userId: p.userId, assignments: p.assignments }, today, getConfig(KHOA_MOC_BC_PH_VIEC_GV) || today)
+    .filter((x) => !branchId || bangLop().get(x.classId)?.branchId === branchId);
   const sapToi = toiKy.length || baoCaoPh.length
     ? { paToiKy: toiKy.length ? { so: toiKy.length, han: toiKy.map((r) => r.action_due as string).sort()[0] } : null, baoCaoPh } : null;
   return { sapToi, paDangChay };

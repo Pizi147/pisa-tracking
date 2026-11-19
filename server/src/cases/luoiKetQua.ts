@@ -24,7 +24,7 @@ export type DongLuoiKetQua = {
   /** PA còn chạy (planned / started) — web so với lúc mở để biết dòng đã ghi ở panel đầy đủ (kỳ đổi hoặc PA khép). */
   dangChay: boolean;
   nhap: { outcome: string; note: string; luc: string; boi: string; soBuoi: number | null; buoiDuKien: number | null; buoi: BuoiTutor[] } | null;
-  /** TU2-2 (TU11): "b" điền sẵn — b của lần ghi gần nhất; chưa có thì `so_buoi` cũ của PA quy chế SOS (nhập dưới nhãn "/ 2 tuần"). PA không có ô a / b: null. */
+  /** TU2-2 (TU11): "b" điền sẵn — b của lần ghi gần nhất CÓ b (dự phòng có chủ ý: lần ghi cũ / web cũ không gửi b thì lấy b trước đó, rà #1864); chưa có thì `so_buoi` cũ của PA quy chế SOS (nhập dưới nhãn "/ 2 tuần"). PA không có ô a / b: null. */
   buoiKy: number | null;
   /** TU2-2 (TU4): tutor của lần ghi gần nhất (dòng Tutor cuối) — cùng luật `dienSan` của `/tutors/chon` (tutor ngừng / GV đã xoá: null). PA khác Tutor: null. */
   tutorTruoc: { tutorId: number | null; gvId: number | null; ten: string } | null;
