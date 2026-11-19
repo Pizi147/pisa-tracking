@@ -92,9 +92,9 @@ export function onInvalidate(fn: InvalidateListener) {
 let hoiXacNhan: ((cau: string, nut?: string) => Promise<boolean>) | null = null;
 /* Một hộp một lúc: hai request cùng cần hỏi (gõ nhanh hai ô) → hỏi lần lượt, không hộp sau đè hộp trước (promise treo). */
 let hangHoi: Promise<unknown> = Promise.resolve();
-const hoiLanLuot = (cau: string, nut?: string, daDongY?: () => boolean): Promise<boolean> => {
+const hoiLanLuot = (cau: string, nut?: string, daCo?: () => boolean): Promise<boolean> => {
   /* Đề xuất 2: hai request cùng chờ một câu của phiếu đang mở (`apiNho`) — câu trước vừa đồng ý thì câu sau không hỏi lại. */
-  const p = hangHoi.then(() => (daDongY?.() ? true : hoiXacNhan ? hoiXacNhan(cau, nut) : false));
+  const p = hangHoi.then(() => (daCo?.() ? true : hoiXacNhan ? hoiXacNhan(cau, nut) : false));
   hangHoi = p.catch(() => undefined);
   return p;
 };
