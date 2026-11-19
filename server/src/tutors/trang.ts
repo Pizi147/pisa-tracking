@@ -350,7 +350,7 @@ export function xoaTutor(p: Principal, id: number): { ok: true } {
 function kiemNhanXet(v: any): { ketLuan: KetLuan; noiDung: string } {
   if (!KET_LUAN.includes(v?.ketLuan)) throw badRequest('Chọn Kết luận: Ổn · Cần cải thiện · Ngừng hợp tác.');
   const noiDung = String(v?.noiDung ?? '').trim();
-  if (noiDung.length < 10) throw badRequest('Nhận xét cần ít nhất 10 ký tự.');
+  if (noiDung.length < 8) throw badRequest('Nhận xét cần ít nhất 8 ký tự.');   // TU2-6 (R2.6, XM-7): 8 ký tự như luật nhận xét nơi khác
   if (noiDung.length > 1000) throw badRequest('Nhận xét tối đa 1000 ký tự.');
   return { ketLuan: v.ketLuan, noiDung };
 }

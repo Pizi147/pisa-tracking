@@ -65,7 +65,7 @@ export async function runPrHdTests(t: any) {
   });
 
   check('HD-VIEC · mỗi vai đúng 5 việc hằng tuần, mỗi việc 2–4 bước; mỗi vai đủ 4 phần', () => {
-    /* AN-TUTOR (chủ SP 22/10): Head tutor không còn việc trên web — chỉ Tổng quan, Hồ sơ cá nhân, Hướng dẫn. */
+    /* Head tutor đã chuyển sang `lam` (không `viec` cũ) — bỏ qua như các vai V2. */
     for (const [vai, h] of Object.entries(hd.HUONG_DAN).filter(([v, x]: any) => v !== 'ht' && !x.lam) as [string, any][]) {
       assert(h.viec.length === 5, `${vai}: ${h.viec.length} việc`);
       for (const m of h.viec) assert(m.buoc.length >= 2, `${vai} ${m.id}: việc hằng tuần cần 2–4 bước (${m.buoc.length})`);
@@ -288,8 +288,8 @@ export async function runPrHdTests(t: any) {
     /* N52 (chủ SP 18/11): CX có màn Công việc (xem / làm thay) nhưng không việc nào là của CX — không lối chính nào ở đó; chọn bước tiếp là việc của QL / TVV. */
     assert(cx.man.some((m: any) => m.id === 'cong-viec') && cx.lam.every((v: any) => v.loiChinh.man !== 'cong-viec' && !(v.loiTat ?? []).includes('cong-viec')), 'CX: màn Công việc chỉ xem, không lối chính');
     assert(!cx.lam.some((v: any) => v.id === 'buoc-tiep') && cx.vaiKhac.some((v: any) => v.ten === 'Chọn bước tiếp sau thi'), 'CX không chọn Bước tiếp');
-    /* Head tutor chỉ Tổng quan, Hồ sơ cá nhân, Hướng dẫn (AN-TUTOR). */
-    assert(ht.man.map((m: any) => m.id).join() === 'tong-quan,ho-so-ca-nhan,huong-dan', `HT màn: ${ht.man.map((m: any) => m.id)}`);
+    /* Head tutor: Tổng quan, Tutor (TU2-6 — mở lại), Hồ sơ cá nhân, Hướng dẫn. */
+    assert(ht.man.map((m: any) => m.id).join() === 'tong-quan,tutor,ho-so-ca-nhan,huong-dan', `HT màn: ${ht.man.map((m: any) => m.id)}`);
     const chu = (k: string) => k;
     assert(hd.timHd(tvv, 'bao phu huynh', chu).viec.some((v: any) => v.id === 'bao-ph'), 'TVV tìm "bao phu huynh"');
     assert(hd.timHd(tvv, 'doi lop', chu).vaiKhac.some((v: any) => v.cua === 'việc của Head'), 'TVV: đổi lớp là việc của QL');

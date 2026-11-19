@@ -205,7 +205,7 @@ export async function runPrTubTests(t: any) {
 
   check('TUB-3b · nhận xét: kết luận * + ≥ 10 ký tự; chỉ người ghi sửa / xoá trong 24 giờ; QL đọc được, không ghi', () => thu(() => {
     const a = themTutor('Thử Nhận Xét');
-    assertThrows(() => tr.ghiNhanXet(HT, a, { ketLuan: 'on', noiDung: 'ngắn' }), /10 ký tự/, '< 10 ký tự');
+    assertThrows(() => tr.ghiNhanXet(HT, a, { ketLuan: 'on', noiDung: 'ngắn' }), /8 ký tự/, '< 8 ký tự');
     assertThrows(() => tr.ghiNhanXet(HT, a, { ketLuan: 'tot', noiDung: 'Nội dung đủ dài rồi' }), /Kết luận/, 'kết luận lạ');
     const { id } = tr.ghiNhanXet(HT, a, { ketLuan: 'can_cai_thien', noiDung: 'Nhắc gửi feedback đều' });
     assertThrows(() => tr.suaNhanXet(P.admin, id, { ketLuan: 'on', noiDung: 'Người khác sửa thử' }), /người ghi/, 'người khác sửa');
