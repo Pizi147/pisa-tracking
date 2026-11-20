@@ -569,6 +569,10 @@ export function theoGvcnHienTai(em: string, thamSo: readonly unknown[]): void {
 }
 /** Đổi GVCN của lớp (`ghiPhanCong`). */
 export const theoGvcnCuaLop = (classId: number) => theoGvcnHienTai(EM_CUA_LOP, [classId]);
+/** Hoàn tác phân công nhiều lớp: một lượt (2 câu) cho mọi lớp. */
+export const theoGvcnCacLop = (classIds: readonly number[]) => {
+  if (classIds.length) theoGvcnHienTai(`SELECT student_id FROM enrollments WHERE class_id IN (${DS_JSON}) AND status = 'active'`, [JSON.stringify(classIds)]);
+};
 
 /**
  * (7) TRONG tx của `updateStudent` (đổi / gán / bỏ TVV): dòng `tvv` của việc còn mở → TVV mới (trùng → bỏ dòng cũ; bỏ TVV → bỏ dòng); gán lần đầu → TVV theo dõi

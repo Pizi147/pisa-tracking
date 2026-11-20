@@ -20,7 +20,7 @@ import { moLaiLop } from './xoaKetThucLop.ts';
 import { allProgrammes, programmeByCode, programmeOfClass } from '../normal/regular.ts';
 import { classProgressMany } from './schedule.ts';
 import { boCotPhu, caseThieuChuLop, chonViecChuyen, chuyenViecKhiDoi, docViecLo, type ViecLop } from '../cases/owner.ts';
-import { theoGvcnCuaLop } from '../worklist/giaoViec.ts';
+import { theoGvcnCacLop } from '../worklist/giaoViec.ts';
 import { docSlots, ghiPhanCong, kiemTruocPhanCong, monGopConCanMany, phienBanPhanCong, teacherCandidatesBranch, type TeacherSlot } from './classes.ts';
 import { doiMocViecTheoDoi, docBanGiaoLo, hoanTacViecDuoc, dongBoViecBanGiao, huyViecTheoDoi, viecBanGiaoGv } from './banGiaoGv.ts';
 
@@ -481,7 +481,7 @@ export function hoanTacLuu(p: Principal, o: { lo?: unknown; dao?: unknown }): vo
     }
     daoLai(conn, g, p.userId);
     /* GV-1 (rà PTA E): người theo dõi `gvcn` không nằm trong bản ghi đảo (không chặn Hoàn tác) — tính lại theo GVCN sau khi đảo. */
-    for (const l of new Set(dong.map((d) => d.class_id as number))) theoGvcnCuaLop(l);
+    theoGvcnCacLop([...new Set(dong.map((d) => d.class_id as number))]);   // một lượt cho cả lô (2 câu)
     writeAudit({ actorUserId: p.userId, action: 'class.assign.hoan_tac', entityType: 'class', entityId: dong[0].class_id,
       after: { loai: g.loai, ghiDao: g.id, lop: [...new Set(dong.map((d) => d.class_id))] } });
   });

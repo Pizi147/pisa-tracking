@@ -15,6 +15,7 @@ export const EN_GIAO_VIEC = {
   'Ngày giờ họp không hợp lệ (ngày YYYY-MM-DD, giờ HH:MM).': 'Invalid meeting date/time (date YYYY-MM-DD, time HH:MM).',
   'Bạn không sửa được hạn của việc này.': 'You cannot change this task\'s deadline.',
   'Chọn người theo dõi.': 'Choose followers.',
+  'Việc đã kết thúc — không thêm người theo dõi.': 'The task is closed — no followers can be added.',
   'Phần này vừa được cập nhật — mở lại để xem.': 'This part was just updated — reopen it to see.',
   'Thiếu người phụ trách đang xem — mở lại việc rồi đổi.': 'Missing the owner you saw — reopen the task and change again.',
   'Chỉ người phụ trách, người giao, Head hoặc CX thêm được người theo dõi.': 'Only the owner, the assigner, Head or CX can add followers.',
