@@ -32,7 +32,7 @@ Tên người là tên bịa (BPXL Hoàng Minh Đức). Hôm nay thứ Hai 14/09
 
 - Dải nằm **dưới tab, trên hàng lọc** (là bộ lọc của danh sách ngay dưới, như dải "Của bạn" ở Lịch Test tuần).
 - Số đang lọc: nền nhấn nhạt + viền + chip "Lọc: … ✕" ở hàng lọc (không chỉ màu); bấm lại số hoặc ✕ = bỏ lọc. Chỉ một số lọc một lúc.
-- "Lượt thi tuần này" lọc lớp có lượt Test tuần này; "Bài chưa có điểm" lọc lớp còn bài chưa nhập (BPXL không nhập điểm — chỉ để biết, đúng thiết kế "chỉ xem").
+- "Lượt MT tuần này" lọc lớp có lượt Test tuần này; "Bài chưa có điểm" lọc lớp còn bài chưa nhập (BPXL không nhập điểm — chỉ để biết, đúng thiết kế "chỉ xem").
 - Tin vắng: tóm một dòng "3 đã dời · 1 đã huỷ" thay vì liệt kê tên (tên HV không bị cắt "…" — N55); mở ⌄ mới thấy tên từng em.
 - Bấm tin vắng = Kế hoạch Test lọc đúng lớp ("Lớp: … ✕" như ⑦ A4).
 - Số 0 vẫn hiện (biết là đã xếp hết), không câu chúc mừng.
@@ -44,6 +44,7 @@ Tên người là tên bịa (BPXL Hoàng Minh Đức). Hôm nay thứ Hai 14/09
 
 - **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — một tên **"Chưa xếp lịch MT"** cho cả dải số lẫn ô số hàng lớp, mọi khung 1440 + 375.
 - **ĐÃ CHỐT (chủ SP duyệt mockup v22, theo đề xuất PTA)** — chuông BPXL không có thanh "Đang theo dõi" (tab không số) — giữ như mockup.
+- **ĐÃ CHỐT (PTA 21/11, BPXL-2 #1928)** — số thứ tư của dải ghi **"Lượt MT tuần này"** (thay "Lượt thi tuần này"): luật Thi = thi thật, Test = MT (phép kiểm CT-1); cùng tên với ô cùng số của Admin.
 
 ## 5. Dòng đọc
 
