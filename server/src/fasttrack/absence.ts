@@ -211,7 +211,7 @@ function huyVangNoi(conn: any, actor: number | null, attempt: any, row: any, mov
   });
   return {
     skill, result: 'huy-vang', toWeek: null, moveNo, canhBao: null,
-    message: `${skillName(skill)}: vắng ${moveNo} lần — đã huỷ. Muốn xếp lại thì chọn tuần (Dời).`,
+    message: `${skillName(skill)}: vắng ${moveNo} lần — đã huỷ.`,
   };
 }
 
@@ -446,10 +446,10 @@ function cancelPart(
   notifyPlanners(
     attempt,
     ratio
-      ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why} Môn này vẫn phải làm bài, chờ Head xếp lại.`
+      ? `Đã huỷ lịch hẹn ${skillName(row.skill)} — ${why}`
       : `Đã huỷ ${skillName(row.skill)} — ${why} Đợt này chưa đủ kết quả cho tới khi được khôi phục.`,
     requestId, actor, {},
-    ratio ? `Xếp lại lịch ${skillName(row.skill)}` : `Khôi phục kỹ năng ${skillName(row.skill)}`,
+    ratio ? `Đã huỷ lịch ${skillName(row.skill)}` : `Khôi phục kỹ năng ${skillName(row.skill)}`,
   );
 }
 
@@ -541,7 +541,7 @@ function notifyPlanners(
   attempt: any, message: string, refId: number, actor: number | null,
   opts: { entityType?: string; dedupBase?: string } = {},
   /** PR-VAI-a (K1-42, Q20): tiêu đề = việc + em + lớp — không còn một tiêu đề lịch thi chung chung cho mọi trường hợp. */
-  viec = 'Xếp lại lịch Test',
+  viec = 'Duyệt dời lịch Test',
 ) {
   const conn = db();
   const ai = conn.prepare('SELECT s.full_name AS hv, (SELECT code FROM classes WHERE id = ?) AS lop FROM students s WHERE s.id = ?')
