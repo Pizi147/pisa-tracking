@@ -229,12 +229,20 @@ export function KhoiDaLuu({ x, luc, nutChinh, phu, onHoanTac }: {
   );
 }
 
+/**
+ * VIEC-XONG-AN (chủ SP 21/11): trang Công việc nghe đường đảo của panel đang mở — dải "✓ Đã lưu · Hoàn tác" ở chỗ dòng vừa xong dùng đúng đường đó.
+ * `null` = hết đường đảo (đã hoàn tác ở panel). Ngoài Công việc: không có.
+ */
+export const BaoHoanTac = createContext<((f: (() => Promise<void>) | null) => void) | null>(null);
+
 /** Hoàn tác 10 giây (mockup OV-13 §1) — chân "✓ Đã lưu" và dải việc vừa lưu (6b-3) dùng chung. */
 function useHoanTac(hoanTac: (() => Promise<void>) | undefined, onHoanTac?: () => void) {
   const [con, setCon] = useState(!!hoanTac);
   const [busy, setBusy] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   useChoHoanTac(con);
+  const bao = useContext(BaoHoanTac);
+  useEffect(() => { if (con && hoanTac) bao?.(hoanTac); }, [con]);   // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!con) return undefined;
     const h = setTimeout(() => setCon(false), 10_000);
@@ -242,7 +250,7 @@ function useHoanTac(hoanTac: (() => Promise<void>) | undefined, onHoanTac?: () =
   }, [con]);
   const bam = async () => {
     setBusy(true); setLoi(null);
-    try { await hoanTac!(); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
+    try { await hoanTac!(); bao?.(null); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); } finally { setBusy(false); }
   };
   return { con, busy, loi, bam };
 }
@@ -276,7 +284,8 @@ export function DaiVuaLuu({ x, ai, onHoanTac }: { x: DaLuuPanel; ai: string | nu
       <b className="font-bold text-ok">✓ {x.chu}</b>
       <span className="min-w-0 text-slate-300">{[ai, x.phu].filter(Boolean).join(' · ')}</span>
       <span className="flex-1" />
-      <NutHoanTac hoanTac={x.hoanTac} onHoanTac={onHoanTac} />
+      {/* Đường đảo của việc TRƯỚC — không báo lên như của việc đang mở (nơi gọi báo theo đúng việc). */}
+      <BaoHoanTac.Provider value={null}><NutHoanTac hoanTac={x.hoanTac} onHoanTac={onHoanTac} /></BaoHoanTac.Provider>
     </div>
   );
 }

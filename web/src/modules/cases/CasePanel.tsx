@@ -29,7 +29,7 @@ import type { BuoiTutor, TheYeuCauDto } from '@shared/domain/index.ts';
 import { nhatKyPa, quyCheMoTaCase, quyCheXacNhanS } from '@shared/domain/index.ts';
 import { LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { FormDoiPa, useDoiPa } from './DoiPa.tsx';
-import { CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BaoHoanTac, CanLam, NUT_MO, NutChu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
 import { KhongTheoDoiForm, XacNhanCasePanel, XacNhanPaPanel, ketQuaGanNhat, type PaQuyChe } from '../yThuc/CaseSosControls.tsx';
@@ -1138,9 +1138,12 @@ function DaiVuaDoi({ x, onHoanTac, onSua }: { x: VuaDoiPa; onHoanTac?: () => voi
     const h = setTimeout(() => setCon(false), 10_000);
     return () => clearTimeout(h);
   }, [con]);
+  /* VIEC-XONG-AN: báo đường đảo cho dải dòng vừa xong ở Công việc (cùng `useHoanTac`). */
+  const bao = useContext(BaoHoanTac);
+  useEffect(() => { if (con && x.hoanTac) bao?.(x.hoanTac); }, [con]);   // eslint-disable-line react-hooks/exhaustive-deps
   const bam = async () => {
     setBusy(true); setLoi(null);
-    try { await x.hoanTac!(); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); setBusy(false); }
+    try { await x.hoanTac!(); bao?.(null); onHoanTac?.(); } catch (e: any) { setLoi(e?.message ?? t('Không lưu được')); setBusy(false); }
   };
   return (
     <p role="status" className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 border-t pt-2 text-[13px]" style={{ borderColor: 'var(--line)' }}>

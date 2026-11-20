@@ -304,6 +304,16 @@ export function choDaiVuaLuu(v: { tu: string; den: string | null } | null, chon:
   if (het) return v.den === null && v.tu === chon ? 'het' : null;
   return v.den === chon ? 'viec' : null;
 }
+/**
+ * VIEC-XONG-AN (PTA rà #1905): việc đang mở đã rời danh sách (xong, dải hết giờ; dòng gộp vừa tan) vẫn cần chỗ trong hàng đợi "việc tiếp" — chèn lại
+ * theo vị trí đã nhớ `vt` (trước dòng đầu tiên đứng sau nó); không nhớ vị trí thì cuối. Đã có trong `ds` → giữ nguyên.
+ */
+export function chenTheoViTri<T extends { key: string }>(ds: readonly T[], it: T | null, vt: (x: T) => number | undefined): T[] {
+  if (!it || ds.some((x) => x.key === it.key)) return [...ds];
+  const v = vt(it);
+  const i = v === undefined ? -1 : ds.findIndex((x) => (vt(x) ?? Infinity) > v);
+  return i < 0 ? [...ds, it] : [...ds.slice(0, i), it, ...ds.slice(i)];
+}
 /** CONG-VIEC-2 (mockup "việc tiếp", V12 ⑤): như `viecKeTiep` nhưng đi hết nhóm — sau việc đang mở, rồi vòng lên đầu nhóm. */
 export function viecKeTiepVong<T extends { key: string; nhom: string; mine: boolean }>(ds: readonly T[], hienTai: string | null, duoc: (x: T) => boolean): T | null {
   const i = ds.findIndex((x) => x.key === hienTai);
