@@ -145,7 +145,7 @@ function DaiVuaGiao({ ten, het, onHet, onHoanTac }: { ten: string; het: number; 
  * Nguồn ô chọn người (N45, mockup G3a): "Liên quan" (người theo luật · đang phụ trách · người giao · người theo dõi — đã có trong khối) trước, rồi người có vai
  * ở chi nhánh của việc (`/ref/nguoi`, có LIMIT). Không request khi chỉ mở hộp ngoài lần tìm đầu (ô `ChonNguoi` trễ 250 ms).
  */
-function nguonNguoi(g: KhoiGv[], bo: ReadonlySet<number> = new Set()): (q: string) => Promise<NguoiTrongDs[]> {
+function nguonNguoi(g: KhoiGv[], tenCn: () => ReadonlyMap<string, string>, bo: ReadonlySet<number> = new Set()): (q: string) => Promise<NguoiTrongDs[]> {
   const lq = new Map<number, NguoiTrongDs>();
   const them = (n: Nguoi | null, phu: string) => { if (n?.ten && !lq.has(n.id) && !bo.has(n.id)) lq.set(n.id, { id: n.id, ten: n.ten, phu, nhom: t('Liên quan') }); };
   for (const x of g) {
@@ -161,7 +161,7 @@ function nguonNguoi(g: KhoiGv[], bo: ReadonlySet<number> = new Set()): (q: strin
     const ds = await api.get<{ id: number; name: string; role: string | null; branches: string[] }[]>(`/ref/nguoi?${qs}`);
     const dau = locNguoiChon([...lq.values()], q);
     return [...dau, ...ds.filter((r) => !lq.has(r.id) && !bo.has(r.id)).map((r) => ({ id: r.id, ten: r.name, phu: [r.role, r.branches.join('/')].filter(Boolean).join(' · '),
-      nhom: r.branches[0] ?? t('Chi nhánh') }))];
+      nhom: (r.branches[0] && tenCn().get(r.branches[0])) ?? r.branches[0] ?? t('Chi nhánh'), anSoNhom: true as const }))];
   };
 }
 
@@ -194,12 +194,21 @@ function useConTroO() {
   return ref;
 }
 
+/** Mã → tên chi nhánh ("MB" → "Monbay", mockup G3a) — `/ref/branches` là đường tĩnh có bản nhớ (thường đã nạp: 0 request); chưa có thì giữ mã. */
+function useTenCn(): () => ReadonlyMap<string, string> {
+  const ds = useApi<{ code: string; name: string }[]>('/ref/branches').data;
+  const ref = useRef<ReadonlyMap<string, string>>(new Map());
+  ref.current = new Map((ds ?? []).map((b) => [b.code, b.name]));
+  return () => ref.current;
+}
+
 /** HỘP NHỎ "Đổi người phụ trách" (mockup G3a / G3c): ô tìm + chọn, Liên quan trước, "Về mặc định · {tên}", không lý do. */
 function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () => void; onXong: (g: KhoiGv, ten: string) => void; onXungDot: () => void }) {
   const [chon, setChon] = useState<NguoiChon | null>(null);
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<Loi | null>(null);
-  const [tim] = useState(() => ({ goi: nguonNguoi([g]), toiThieu: 0 }));
+  const tenCn = useTenCn();
+  const [tim] = useState(() => ({ goi: nguonNguoi([g], tenCn), toiThieu: 0 }));
   const lechMacDinh = g.duocGiao;
   const tenMd = g.macDinh.map((x) => x.ten).filter(Boolean).join(', ') || t('Head chi nhánh');
   const gui = async (userId: number | null, ten: string) => {
@@ -305,8 +314,9 @@ function HopThemTheoDoi({ ds, da, onDong, onThem }: { ds: KhoiGv[]; da: Readonly
   const [chon, setChon] = useState<NguoiTrongDs[]>([]);
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
+  const tenCn = useTenCn();
   const [tim] = useState(() => {
-    const goc = nguonNguoi(ds);
+    const goc = nguonNguoi(ds, tenCn);
     return { toiThieu: 0, goi: async (q: string) => (await goc(q)).map((r) => (da.has(r.id) ? { ...r, tat: t('đang theo dõi') } : r)) };
   });
   const them = async () => {

@@ -60,7 +60,7 @@ export const KHOA_CHAM_SPEAKING = 'score:cham-speaking|cc';
 export const khoaDongGop = (group: string, classId: number, ownerId: number | null) => `gop:${group}:${classId}:u${ownerId ?? 0}`;
 
 /** UI-CV-TVV (mockup `tvv.html`): việc TVV theo từng em — mỗi việc một dòng, một panel (Báo PH có lịch sử từng em; Sau thi; Chốt ngày thi). */
-const GIU_TUNG_DONG_TVV = new Set(['bao_ph_yt', 'thi_that', 'buoc_tiep']);
+const GIU_TUNG_DONG_TVV = new Set(['bao_ph_yt', 'thi_that', 'buoc_tiep', 'phoi_hop_tvv']);   // GV-2 ([XM 1] PTA): Báo PH Meeting mỗi em một dòng — panel ba phần là đường làm chính
 /** PHOI-HOP-V2 (mockup #1368 K1): dòng Phối hợp SOS đã là (lớp × việc) — không gộp các việc của một lớp lại. */
 /* GV-2 (mockup v22 G8a / G8e): Xếp lịch họp · Kết quả meeting — mỗi em một dòng (nút Hoàn thành bấm thẳng trên dòng). */
 const GIU_TUNG_DONG = new Set(['phoi_hop_sos', 'meeting_xep_lich', 'meeting_ket_qua']);

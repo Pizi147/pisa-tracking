@@ -208,6 +208,8 @@ export function emCoBaoPhChuaLam(studentIds: readonly number[]): Set<number> {
 // ---------------------------------------------------------------- đọc
 
 export type CoordinationAction = {
+  /** GV-2: người xem làm được việc này (quản lý Ý thức của em, hoặc người được giao còn hiệu lực). */
+  lamDuoc?: boolean;
   /** CAU-HINH-CASE-SOS: ghi chú tối thiểu khi xác nhận (0 = không bắt buộc), theo bản chụp của việc. */
   toiThieuGhiChu?: number;
   id: number; kind: CoordinationKind; kindLabel: string; customName: string | null; name: string;
@@ -461,6 +463,9 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
         boTro: tinh[0] ? moTaBoTro(a.programme_code, tinh[0]) : 'chưa có PA bổ trợ',
       }) as string[]; };
     }
+    const quanLy = canManageDiscipline(p, a.student_id);
+    let hl: boolean | null = null;   // một câu khi có việc giao cho người xem
+    const duocGiao = () => (hl ??= conHieuLuc(p.userId, a.student_id));
     out.push({
       attemptId, attemptNo: a.attempt_no, studentId: a.student_id, studentName: a.full_name, studentCode: a.student_code,
       classId: a.class_id ?? null, classCode: a.class_code ?? null,
@@ -469,15 +474,14 @@ function turnsOf(p: Principal, rows: any[]): CoordinationTurn[] {
       skills, skillLabels: skills.map((s) => tenMon(a.programme_code, s)), kyNangNgan: skills.map((s) => tenMonNgan(a.programme_code, s)),
       summary: coordinationSummary(list.map((r) => r.status)),
       actions: list.map((r) => {
-        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null };
+        /* GV-2 (N58): cờ theo TỪNG việc — người được giao (còn hiệu lực) làm đúng việc của mình, không thấy nút việc khác của lượt. */
+        const x = { ...shapeAction(r, attachments), tvv: tvv.get(r.id) ?? null, lamDuoc: quanLy || (r.phu_trach_id === p.userId && duocGiao()) };
         if (r.kind !== 'bao_ph_tvv' || !noiDungCua) return x;
         /* PR-PHH: việc đã xong → bản chụp lúc xác nhận; dòng cũ (chưa có bản chụp) → nội dung hiện tại + cờ. */
         const luu = r.status === 'done' ? docBanChup(r.noi_dung_luc_bao) : null;
         return { ...x, noiDung: luu ?? noiDungCua(r.status === 'done' ? r.performed_on ?? null : null), noiDungLaHienTai: r.status === 'done' && !luu };
       }),
-      /* GV-2 (N58): người được giao một việc của lượt (còn hiệu lực) làm được lượt đó dù không có `discipline.manage` — máy chủ vẫn kiểm từng việc (`requireLam`).
-         ponytail: cờ theo LƯỢT, nút việc khác của lượt vẫn hiện với người được giao (bấm → 403); tách cờ theo từng việc nếu chủ SP thấy rối. */
-      canAct: canManageDiscipline(p, a.student_id) || (list.some((r) => r.phu_trach_id === p.userId && r.status === 'pending') && conHieuLuc(p.userId, a.student_id)),
+      canAct: quanLy,   // việc của lượt (thêm việc, xác nhận lô): người quản lý Ý thức; người được giao dùng `lamDuoc` của từng việc
     });
   }
   return out;

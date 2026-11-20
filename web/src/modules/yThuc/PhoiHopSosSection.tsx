@@ -24,6 +24,8 @@ import { MuiTenGap } from './NhanViPham.tsx';
 import { BadgeViec } from './khoiYThuc.tsx';
 
 export type CoordAction = {
+  /** GV-2: làm được việc này (người quản lý Ý thức, hoặc người được giao) — nút từng việc theo cờ này. */
+  lamDuoc?: boolean;
   id: number; kind: string; kindLabel: string; customName: string | null; name: string;
   preset: boolean; status: 'pending' | 'done' | 'removed'; statusLabel: string;
   performedOn: string | null; performerName: string | null; note: string | null;
@@ -133,7 +135,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
           </span>
         </div>
         <div className="mt-1">
-          {open && luot.actions.map((a) => <ActionRow key={a.id} a={a} canAct={luot.canAct} onChanged={onChanged} />)}
+          {open && luot.actions.map((a) => <ActionRow key={a.id} a={a} canAct={a.lamDuoc ?? luot.canAct} onChanged={onChanged} />)}
           {adding && <div className="mt-2"><AddCoordinationForm attemptId={luot.attemptId} existing={luot.actions.map((a) => a.kind)} onClose={() => setAdding(false)} onChanged={onChanged} /></div>}
         </div>
       </div>
@@ -186,7 +188,7 @@ export function TheSos({ t: luot, cot1 = 'luot', onGoAcademic, onChanged, gon = 
       {open && (
         <div className="border-t px-3 pb-3" style={{ borderColor: 'var(--line)' }}>
           {luot.actions.map((a) => (
-            <ActionRow key={a.id} a={a} canAct={luot.canAct} onChanged={onChanged} />
+            <ActionRow key={a.id} a={a} canAct={a.lamDuoc ?? luot.canAct} onChanged={onChanged} />
           ))}
           {/* PR-S5F-b: lượt Giữa khoá lớp thường (`nhanDot`) không thêm việc — máy chủ chỉ nhận ở lượt Mock FT có SOS. */}
           {luot.canAct && !adding && !luot.nhanDot && (

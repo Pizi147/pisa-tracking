@@ -205,6 +205,7 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
   const { luot, a } = d;
   const toast = useToast();
   const anHan = useContext(AnHan);
+  const lam = a.lamDuoc ?? luot.canAct;   // GV-2: cờ theo từng việc (người được giao)
   const [mo, setMo] = useState<null | 'xac-nhan' | 'ghi' | 'bo' | 'han'>(null);
   const { homNay } = useNgayNghiepVu();
   const [du, setDu] = useState(false);
@@ -257,9 +258,9 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
                 <span className="whitespace-nowrap text-sm font-semibold tabular-nums text-ok">✓ {a.performedOn ? shortDate(a.performedOn, homNay) : ''}{vua && !tvv ? ` · ${t('Bạn')}` : ''}</span>
                 {ngoiLam && <span className="text-[13px] text-dim">{ngoiLam}</span>}
                 {tvv && a.note && <span className="line-clamp-2 text-[13px] text-dim">{a.note}</span>}
-                {!tvv && luot.canAct && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
+                {!tvv && lam && <button type="button" className="link min-h-[44px] appearance-none border-0 bg-transparent p-0 text-[13px] font-semibold sm:min-h-0" onClick={() => setMo('xac-nhan')}>{t('Sửa')}</button>}
               </span>
-            ) : luot.canAct ? (
+            ) : lam ? (
               <button type="button" className={`btn btn-primary btn-sm min-h-[44px] max-sm:w-full sm:min-h-[30px] ${gop ? 'w-full justify-center' : ''}`} onClick={() => setMo('xac-nhan')}>{t('Xác nhận')}</button>
             ) : <span className="text-[13px] text-dim">{t('Chờ GVCN')}</span>}
             {gop && <span className="mt-1.5 block empty:hidden"><OKetQua a={a} tvv={false} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
@@ -270,8 +271,8 @@ function DongPhoiHop({ d, tvv, noi, vua, onVua, onChanged, cotViec = false, gop 
             <>
               {!gop && <span role="cell" className={`${O} max-sm:order-4`}><OKetQua a={a} tvv={tvv} du={du} onDu={() => setDu((v) => !v)} onGhi={() => setMo('ghi')} /></span>}
               <span role="cell" className="relative py-2.5 text-right max-sm:col-start-2 max-sm:row-start-1 max-sm:pb-1">
-                <Menu3 a={a} tvv={tvv} canAct={luot.canAct} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
-                  onHan={a.status === 'pending' && a.hanMacDinh && luot.canAct && !anHan ? () => setMo('han') : undefined} />
+                <Menu3 a={a} tvv={tvv} canAct={lam} onBo={() => setMo('bo')} onMoLai={() => void moLai()}
+                  onHan={a.status === 'pending' && a.hanMacDinh && lam && !anHan ? () => setMo('han') : undefined} />
               </span>
             </>
           )}

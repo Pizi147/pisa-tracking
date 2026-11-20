@@ -45,5 +45,6 @@ export const EN_GIAO_VIEC_2 = {
   'Chọn ngày họp trước khi ghi giờ.': 'Pick the meeting date before the time.',
   'họp': 'meeting',
   'họp {ngay}': 'meeting {ngay}',
+  'Lên SOS {n}': 'Reached SOS {n}',
   'GV ghi': 'Recording teacher', 'Head': 'Head',
 } as const;

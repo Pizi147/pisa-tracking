@@ -3,7 +3,8 @@ import { api } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useSession } from '../../lib/session.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
-import { dauViec } from '../../ui/KhuonViec.tsx';
+import { BoiCanh, dauViec } from '../../ui/KhuonViec.tsx';
+import { ChipSos } from '../../ui/ChipSos.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -15,7 +16,11 @@ import { lucVn } from './gioVn.ts';
 import type { WorkItem } from '../worklist/WorkList.tsx';
 
 /** `GET /phoi-hop-sos/:id/meeting` — hai phần (Xếp lịch họp · Kết quả meeting) + id việc Báo PH Meeting của TVV. */
-export type MeetingBaPhan = { phoiHopId: number; phan: KhoiGv[]; baoPhId: number | null };
+export type MeetingBaPhan = { phoiHopId: number; phan: KhoiGv[]; baoPhId: number | null;
+  /** Bối cảnh đầu panel (G8a): SOS của lượt · ngày + GVCN xác nhận · ghi chú GVCN · PH (null = người xem không được thấy liên hệ). */
+  boiCanh: { sos: number | null; ngay: string | null; gvcn: string | null; ghiChu: string | null; phuHuynh: { ten: string | null; quanHe: string | null; sdt: string | null } | null } };
+/** "0903 118 260" — chỉ để đọc; `tel:` giữ số gốc. */
+const sdtDoc = (s: string) => s.replace(/\D/g, '').replace(/^(\d{4})(\d{3})(\d+)$/, '$1 $2 $3');
 export const duongMeeting = (phoiHopId: number) => `/phoi-hop-sos/${phoiHopId}/meeting`;
 
 /** "18/09 · 15:00" từ `YYYY-MM-DD[ HH:MM]`. */
@@ -33,7 +38,9 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   useEffect(() => setBan(null), [data]);
   const phan = ban ?? data?.phan ?? null;
   const bp = useGiaoViec('bao_ph', data?.baoPhId);
-  const dau = dauViec({ em: it.studentId ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode });
+  const bc = data?.boiCanh;
+  /* Mockup G8a: em · lớp · chip SOS của lượt (đầu panel). */
+  const dau = dauViec({ em: it.studentId ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: bc?.sos ? <ChipSos muc={bc.sos} tinh /> : null });
   const tieuDe = t('Meeting CX/GĐCN');
   const chan = { huy: null, chinh: <>{onTiep && <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>}
     <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onDong}>{t('Đóng')}</button></> };
@@ -44,6 +51,12 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   return (
     <KhungPanel hd="phoi-hop-sos" tieuDe={tieuDe} dau={dau} onDong={onDong} chan={chan}>
       <div className="flex flex-col gap-3 pt-4">
+        {/* Mockup G8a: họp vì sao (SOS · ngày · GVCN · ghi chú) + liên hệ ai (PH · SĐT bấm gọi) — dữ liệu đi cùng GET panel. */}
+        {bc && <BoiCanh dong={[
+          [bc.sos ? t('Lên SOS {n}', { n: bc.sos }) : t('GVCN xác nhận'), [bc.ngay ? shortDate(bc.ngay, hn) : null, bc.gvcn ? t('GVCN {ten}', { ten: bc.gvcn }) : null, bc.ghiChu].filter(Boolean).join(' · ') || null],
+          [t('Phụ huynh'), bc.phuHuynh?.ten ? <span className="flex flex-wrap items-center gap-x-1.5">{bc.phuHuynh.ten}{bc.phuHuynh.quanHe ? ` (${bc.phuHuynh.quanHe})` : ''}
+            {bc.phuHuynh.sdt && <> · <a className="link tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" href={`tel:${bc.phuHuynh.sdt.replace(/\D/g, '')}`}>{sdtDoc(bc.phuHuynh.sdt)}</a></>}</span> : null],
+        ]} />}
         {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={datPhan} reload={reload} />)}
         {bp.g && <DongBaoPh g={bp.g} />}
         <DongTheoDoi rieng ds={bp.g ? [...phan, bp.g] : phan} reload={reload}

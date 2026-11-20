@@ -350,15 +350,26 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(await ma(() => bp.xemViecBaoPh(p2, id)) === 403, 'không đọc panel');
   }));
 
-  await checkAsync('GV2-1 · Phối hợp giao cho Admin: thẻ Phối hợp của em có canAct (người ngoài 403); migrate sinh bù phần Meeting → có người theo dõi mặc định', () => thu(async () => {
+  await checkAsync('GV2-1 · Phối hợp giao cho Admin: cờ lamDuoc đúng TỪNG việc (việc khác của lượt không; canAct lượt vẫn chỉ người quản lý), người ngoài 403; Meeting: bối cảnh + SĐT PH chỉ người làm được; tab theo dõi ghi tên người theo luật; migrate sinh bù phần Meeting → có người theo dõi mặc định', () => thu(async () => {
     const { migratePrGiaoViec } = await import('../migrate/prGiaoViec.ts');
     const sid = moiEm(); const x = phoiHopViec(sid);
-    assert(!ph.coordinationOfStudent(admin, sid).rows.some((r: any) => r.canAct), 'Admin (không discipline.manage) chưa được giao → không canAct');
+    const y = phoiHopViec(sid, 'talk_student');
+    assert(!ph.coordinationOfStudent(admin, sid).rows.some((r: any) => r.canAct || r.actions.some((a: any) => a.lamDuoc)), 'Admin (không discipline.manage) chưa được giao → không làm được gì');
     giao(gvcn, 'phoi_hop', x, admin.userId);
     const the = ph.coordinationOfStudent(admin, sid);
-    assert(the.rows.some((r: any) => r.canAct && r.actions.some((a: any) => a.id === x)), 'được giao → canAct ở lượt có việc');
+    const ds = the.rows.flatMap((r: any) => r.actions);
+    assert(ds.find((a: any) => a.id === x)?.lamDuoc === true, 'được giao → lamDuoc ở việc đó');
+    assert(ds.find((a: any) => a.id === y)?.lamDuoc === false && !the.rows.some((r: any) => r.canAct), 'việc khác của em / thêm việc: không');
+    assert(ph.coordinationOfStudent(gvcn, sid).rows.flatMap((r: any) => r.actions).every((a: any) => a.lamDuoc), 'GVCN làm được mọi việc');
     assert(await ma(() => ph.coordinationOfStudent(ngoai, sid)) === 403, 'người ngoài vẫn 403');
-    const { aid } = meeting(moiEm());
+    const mt = meeting(moiEm());
+    const { aid } = mt;
+    const bcCx = gv.xemMeeting(cx, aid).boiCanh;
+    assert(bcCx.phuHuynh !== null && bcCx.gvcn, `CX (làm Kết quả meeting) thấy PH + GVCN: ${JSON.stringify(bcCx)}`);
+    assert(gv.xemMeeting(gvbm, aid).boiCanh.phuHuynh === null, 'GVBM chỉ xem (không làm phần nào) → không SĐT PH');
+    xoaNho();
+    const dTd = gv.viecTheoDoi(tvv).nhom.find((g: any) => g.loai === 'meeting')?.mo.find((d: any) => d.refId === mt.kq.id);
+    assert(dTd && dTd.phuTrach && !/chi nhánh/.test(dTd.phuTrach), `tab theo dõi: tên người theo luật, không ghi vai: ${dTd?.phuTrach}`);
     const ids = hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id);
     conn.prepare(`DELETE FROM viec_theo_doi WHERE loai = 'meeting' AND ref_id IN (${ids.join(',')})`).run();
     conn.prepare('DELETE FROM meeting_phan WHERE phoi_hop_id = ?').run(aid);
