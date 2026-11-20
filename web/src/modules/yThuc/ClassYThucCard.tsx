@@ -50,7 +50,8 @@ export function ClassYThucCard({ classId, thuong = false, onDiemMt }: { classId:
   /* Phạm vi Lịch sử (X08) lọc tại trình duyệt theo cờ `trongChuoi` — đổi không đọc lại bảng lớp. */
   const [phamVi, setPhamVi] = useState<'chuoi' | 'tat-ca'>('chuoi');
   const board = useApi<BangYThucLop>(`/classes/${classId}/y-thuc`, [classId], { giuCu: true });
-  const roster = useApi<any[]>(`/classes/${classId}/roster`);
+  /* S5 PR B: roster chỉ cho ô chọn em + cờ xem hồ sơ — dùng bản trang lớp đã nạp (không đọc lại khi bản > 10 s); lần ghi vẫn vô hiệu và tải lại. */
+  const roster = useApi<any[]>(`/classes/${classId}/roster`, [], { dungBanLuu: true });
   const [includeDone, setIncludeDone] = useState(false);
   const coord = useApi<{ rows: CoordTurn[]; pendingCount: number }>(`/classes/${classId}/phoi-hop-sos${includeDone ? '?includeDone=1' : ''}`, [classId, includeDone]);
   /* Phân đoạn ghi vào địa chỉ (`sub`) — sang hồ sơ em rồi Quay lại về đúng chỗ. YT-a: bỏ `Cần làm | Lịch sử` (lịch sử mở trong khối em). */
