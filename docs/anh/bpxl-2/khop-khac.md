@@ -45,9 +45,9 @@ Vai chụp: BPXL demo **Lương Thu Trang** (id 33, MB) · Head demo **Nguyễn 
 | 11 | 375: dải 2 × 2, số căn phải | KHỚP |
 | 12 | 375 đang lọc: mockup ẩn Fast Track / ô tìm | KHÁC có lý do — GIỮ thao tác (luật "không bỏ thao tác cũ") |
 | 13 | Chuông mockup nền trang mờ khi mở | KHÁC — hành vi chuông sẵn có mọi vai, ngoài phạm vi màn |
-| 14 | Nhãn số 4 "Lượt thi tuần này" | KHÁC [XM] — web "Lượt MT tuần này": luật chữ "thi" (Thi = thi thật, Test = MT; phép kiểm CT-1 đỏ) + cùng số / cùng tên với ô "Lượt MT tuần này" của Admin (một khái niệm một tên). Chủ SP muốn giữ chữ mockup thì phải sửa luật CT-1 |
+| 14 | Nhãn số 4 "Lượt MT tuần này" | KHỚP — PTA chốt [XM-1] 21/11, mockup đã sửa theo (luật Thi = thi thật, CT-1; cùng tên ô cùng số của Admin). Ảnh `k4` bên trái là PNG duyệt cũ (còn chữ cũ) |
 
-11 / 14 KHỚP (≈ 79 % theo hạng mục). Ba KHÁC đều là chữ / thao tác do luật đã chốt, không phải lệch hình ảnh: màu, nền, viền, cỡ chữ, khoảng cách khớp ở mọi khung. Chủ SP xem ảnh để quyết.
+12 / 14 KHỚP (≈ 86 % theo hạng mục). Hai KHÁC là thao tác giữ theo luật / hành vi chung ngoài màn, không phải lệch hình ảnh: màu, nền, viền, cỡ chữ, khoảng cách khớp ở mọi khung. Chủ SP xem ảnh để quyết.
 
 ## Nguồn số
 
