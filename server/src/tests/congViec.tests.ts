@@ -116,7 +116,7 @@ export async function runCongViecTests(t: YThucTestKit) {
     const fresh = new SqliteDb(':memory:');
     fresh.exec(SCHEMA);
     /* PR-DUYET thêm `tasks.assignee_name`, PR-GVa thêm `tasks.idempotency_key` ở bước migrate của mình (sau PR-Ra) — so PR-Ra trên phần schema của đúng bước này. */
-    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && (c.startsWith('assignee_name:') || c.startsWith('idempotency_key:'))));
+    const sauPrRa = (db: any, tb: string) => colsOf(db, tb).filter((c) => !(tb === 'tasks' && (c.startsWith('assignee_name:') || c.startsWith('idempotency_key:') || /^(group_id|lap_\w+):/.test(c))));
     for (const tb of ['tasks', 'task_history', 'unit_reports', 'unit_report_history', 'unit_report_task_links']) {
       assert(JSON.stringify(colsOf(m, tb)) === JSON.stringify(sauPrRa(fresh, tb)),
         `${tb} sau nâng cấp khác schema.sql:\n  ${colsOf(m, tb).join(',')}\n  ${colsOf(fresh, tb).join(',')}`);
@@ -571,8 +571,8 @@ export async function runCongViecTests(t: YThucTestKit) {
     assertThrows(() => mgmt.mgmtTaskDetail(P.mbManager, cpTask.id), /không được giao cho bạn/,
       'Head Monbay xem chi tiết việc chi nhánh Cẩm Phả phải bị chặn');
     assertThrows(() => mgmt.updateMgmtTask(P.mbManager, cpTask.id, { progress: 'doing', on: '2026-09-14' }),
-      /Chỉ người được giao hoặc Head/, 'Head Monbay cập nhật tiến độ việc chi nhánh Cẩm Phả phải bị chặn');
-    assertThrows(() => mgmt.editMgmtTask(P.mbManager, cpTask.id, { note: 'thử' }), /Chỉ Head mới sửa được/,
+      /Chỉ người được giao, Head/, 'Head Monbay cập nhật tiến độ việc chi nhánh Cẩm Phả phải bị chặn');
+    assertThrows(() => mgmt.editMgmtTask(P.mbManager, cpTask.id, { note: 'thử' }), /Chỉ Head, Quản trị hoặc CX mới sửa được/,
       'Head Monbay sửa (PATCH) việc chi nhánh Cẩm Phả phải bị chặn — lỗ này chưa có, kiểm để giữ nguyên');
     // Đúng chi nhánh thì làm được bình thường — không phải khoá hết mọi Quản lý.
     const d = mgmt.mgmtTaskDetail(P.cpManager, cpTask.id);
@@ -612,9 +612,8 @@ export async function runCongViecTests(t: YThucTestKit) {
     assert(d2.helpUserId === null && d2.helpName === null, `Rời Tạm ngưng phải xoá cả hai: ${JSON.stringify({ helpUserId: d2.helpUserId, helpName: d2.helpName })}`);
   });
 
-  check('PR-Ra Q9 · Dời hạn không lý do → 400; có lý do → task_history đúng old/new/reason và hanGoc = hạn đầu tiên; quá hạn tính theo hạn hiện tại', () => {
+  check('PR-Ra Q9 (VH-1: lý do tuỳ chọn — không lý do xem prVanHanh) · Dời hạn có lý do → task_history đúng old/new/reason và hanGoc = hạn đầu tiên; quá hạn tính theo hạn hiện tại', () => {
     const v = taoViecRa({ due: '2026-09-01' });   // đã quá hạn so với TODAY = 2026-09-14
-    assertThrows(() => mgmt.editMgmtTask(P.mbManager, v.id, { due: '2026-09-20' }), /lý do/i, 'Dời hạn không lý do phải 400');
     mgmt.editMgmtTask(P.mbManager, v.id, { due: '2026-09-08', lyDoDoiHan: 'Chờ duyệt ngân sách nhà cung cấp.' });
     let row = mgmt.listMgmtTasks(P.mbManager, {}).rows.find((r: any) => r.id === v.id);
     assert(row.hanGoc === '2026-09-01' && row.lyDoDoiHan === 'Chờ duyệt ngân sách nhà cung cấp.',
@@ -718,11 +717,11 @@ export async function runCongViecTests(t: YThucTestKit) {
 
   check('PR-Ra · createMgmtTask/editMgmtTask: assigneeUserId không hợp lệ (học viên) → 400', () => {
     assertThrows(() => mgmt.createMgmtTask(P.mbManager, {
-      title: 'Việc gán sai người', group: 'teacher', branchId: mbBranchId, assigneeUserId: motHocVien,
-    }), /không hợp lệ/i, 'Tạo việc với assigneeUserId là học viên phải 400');
+      title: 'Việc gán sai người', group: 'teacher', branchId: mbBranchId, assigneeUserId: 999999,   // VH-1 (N59): mọi vai nhận được — id không phải tài khoản
+    }), /tài khoản đang hoạt động/i, 'Tạo việc với assigneeUserId là học viên phải 400');
     const v = taoViecRa();
-    assertThrows(() => mgmt.editMgmtTask(P.mbManager, v.id, { assigneeUserId: motHocVien }),
-      /không hợp lệ/i, 'Sửa việc với assigneeUserId là học viên phải 400');
+    assertThrows(() => mgmt.editMgmtTask(P.mbManager, v.id, { assigneeUserId: 999999 }),
+      /tài khoản đang hoạt động/i, 'Sửa việc với assigneeUserId là học viên phải 400');
   });
 
   // ================================================================== 6. Máy chủ: Báo cáo đơn vị

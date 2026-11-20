@@ -448,9 +448,9 @@ export function listTasks(p: Principal, f: TaskFilters = {}) {
     const ids = rows.map((t) => t.id);
     for (const r of conn
       .prepare(
-        `SELECT f.task_id, f.user_id, f.source, u.full_name
-           FROM task_followers f JOIN users u ON u.id = f.user_id
-          WHERE f.task_id IN (${ids.map(() => '?').join(',')}) ORDER BY u.full_name`,
+        `SELECT f.ref_id AS task_id, f.user_id, CASE f.nguon WHEN 'head' THEN 'auto' ELSE 'manual' END AS source, u.full_name
+           FROM viec_theo_doi f JOIN users u ON u.id = f.user_id
+          WHERE f.loai = 'van_hanh' AND f.ref_id IN (${ids.map(() => '?').join(',')}) ORDER BY u.full_name`,
       )
       .all(...ids) as any[]) {
       if (!followers.has(r.task_id)) followers.set(r.task_id, []);
@@ -752,14 +752,12 @@ function setFollowers(
   const t = conn.prepare('SELECT assignee_user_id FROM tasks WHERE id = ?').get(taskId) as any;
   if (t?.assignee_user_id) wanted.delete(t.assignee_user_id);
 
-  conn.prepare('DELETE FROM task_followers WHERE task_id = ?').run(taskId);
+  /* VH-1 (N59): người theo dõi ở khung chung `viec_theo_doi` (loai van_hanh; auto → nguồn 'head', manual → 'tay') — `task_followers` giữ, thôi đọc / ghi. */
+  conn.prepare("DELETE FROM viec_theo_doi WHERE loai = 'van_hanh' AND ref_id = ?").run(taskId);
   for (const [userId, source] of wanted) {
-    const ok = conn.prepare(`SELECT 1 FROM users WHERE id = ? AND status = 'active'`).get(userId);
-    if (!ok) continue;
-    conn.prepare('INSERT INTO task_followers (task_id, user_id, source, created_at) VALUES (?,?,?,?)')
-      .run(taskId, userId, source, nowIso());
+    conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc) SELECT 'van_hanh', ?, u.id, ?, ?, ? FROM users u WHERE u.id = ? AND u.status = 'active'
+        ON CONFLICT(loai, ref_id, user_id) DO NOTHING`).run(taskId, source === 'auto' ? 'head' : 'tay', actorId, nowIso(), userId);
   }
-  void actorId;
 }
 
 const ASSIGNEE_EDITABLE = new Set(['progress', 'note']);

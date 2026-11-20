@@ -990,7 +990,7 @@ function metricSetGoc(
     /* ---------------------------------------------- PR-VAI-a Q8: bốn việc "của Bạn" ở Cần xử lý — mỗi chỉ số gọi đúng hàm màn khác dùng */
     case 'van-hanh-can-quyet-dinh': {
       /* (a) cùng `listMgmtTasks` + `khopHang('can-quyet-dinh')` của hàng số tab Vận hành — không câu SQL mới. */
-      const r = listMgmtTasks(p, { branchId: scope.branchId, hang: 'can-quyet-dinh' });
+      const r = listMgmtTasks(p, { branchId: scope.branchId, hang: 'can-quyet-dinh', chiDem: true });   // VH-1: không đọc người theo dõi / nhóm
       if (r.scopeEmpty) return { ...done([]), empty: true, note: EMPTY_NOTE };
       return done(r.rows.map((x: any) => x.id as number));
     }

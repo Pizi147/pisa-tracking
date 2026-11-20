@@ -372,7 +372,9 @@ export const DUONG_DO: MucDo[] = [
 
   // ---------------------------------------------------------------- Công việc · Vận hành (PR-Ra)
   /* GVCN không vào được tab Vận hành, nhưng `listMgmtTasks` trả `scopeEmpty` chứ không 403 — mã thật là 200. */
-  { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN'], url: '/mgmt-tasks' },
+  { trang: 'Công việc', vai: ['QL', 'QT', 'GVCN', 'CX'], url: '/mgmt-tasks' },   // VH-1 (N59): CX xem bảng Vận hành
+  /* VH-1: hộp Nhóm công việc — một câu nhóm của phạm vi. */
+  { trang: 'Công việc', vai: ['QL', 'QT', 'CX'], url: '/mgmt-tasks/nhom' },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/mgmt-tasks?hang=qua-han' },
   { trang: 'Công việc', vai: ['QL', 'QT'], url: '/meeting/board' },
 
@@ -806,6 +808,8 @@ export const TRAN: Record<string, number> = {
   'QT /yeu-cau/dem': 15,   // TL-NEN: đo 5 (trước 15)
   'QL /mgmt-tasks': 17,
   'QT /mgmt-tasks': 17,
+  'CX /mgmt-tasks': 17,   // VH-1: đo 8 (main QL / QT 6: +1 người theo dõi, +1 nhóm)
+  'QL /mgmt-tasks/nhom': 10, 'QT /mgmt-tasks/nhom': 10, 'CX /mgmt-tasks/nhom': 10,   // VH-1: đo 3
   'GVCN /mgmt-tasks': 12,
   'QL /mgmt-tasks?hang=qua-han': 17,
   'QT /mgmt-tasks?hang=qua-han': 17,
@@ -1975,11 +1979,11 @@ export const TRAN_DONG: Record<string, number> = {
   'GVBM /cases': 335,   // đo 257
   'GVCN_THUONG /cases': 316,   // đo 243
   'QT /cases': 419,   // đo 322
-  'QL /tasks': 55,   // đo 5
+  'QL /tasks': 143,   // VH-1 (seed + 24 việc Vận hành MB, 8 việc con, người theo dõi, nhóm — tocDo.run.ts): đo 93 (main 37) — người theo dõi đọc ở viec_theo_doi (gồm việc Vận hành) → max(đo + 50, ⌈đo × 1,3⌉)
   'GVCN /tasks': 51,   // đo 1
   'GVBM /tasks': 51,   // đo 1
   'GVCN_THUONG /tasks': 51,   // đo 1
-  'QT /tasks': 66,   // đo 16
+  'QT /tasks': 156,   // VH-1: đo 106 (main 48)
   'QL /ke-hoach-test/lop?branchId={cn}': 312,   // đo 240
   'GVCN /ke-hoach-test/lop?branchId={cn}': 234,   // đo 180
   'GVBM /ke-hoach-test/lop?branchId={cn}': 284,   // đo 218
@@ -2003,11 +2007,13 @@ export const TRAN_DONG: Record<string, number> = {
   'QL /ke-hoach-test/ghi-chu/lich-su?classId={lopFT}': 52,   // đo 2
   'QT /ke-hoach-test/ghi-chu/lich-su?classId={lopFT}': 52,   // đo 2
   'GVCN /ke-hoach-test/ghi-chu/lich-su?classId={lopFT}': 51,   // đo 1
-  'QL /mgmt-tasks': 60,   // đo 10
-  'QT /mgmt-tasks': 86,   // đo 36
+  'QL /mgmt-tasks': 144,   // VH-1 (seed + 24 việc Vận hành MB, 8 việc con, người theo dõi, nhóm — tocDo.run.ts): đo 94 (main cùng dữ liệu 42: +48 dòng theo dõi — người tạo tự theo dõi + người theo dõi, +4 nhóm) → max(đo + 50, ⌈đo × 1,3⌉)
+  'QT /mgmt-tasks': 172,   // VH-1 (seed + 24 việc Vận hành MB, 8 việc con, người theo dõi, nhóm — tocDo.run.ts): đo 122 (main 68)
+  'CX /mgmt-tasks': 172,   // VH-1: CX xem bảng — đo 122
   'GVCN /mgmt-tasks': 51,   // đo 1
-  'QL /mgmt-tasks?hang=qua-han': 60,   // đo 10
-  'QT /mgmt-tasks?hang=qua-han': 86,   // đo 36
+  'QL /mgmt-tasks?hang=qua-han': 144,   // VH-1: đo 94 (main 42)
+  'QT /mgmt-tasks?hang=qua-han': 172,   // VH-1: đo 122 (main 68)
+  'QL /mgmt-tasks/nhom': 55, 'QT /mgmt-tasks/nhom': 55, 'CX /mgmt-tasks/nhom': 55,   // VH-1: hộp Nhóm — đo 5 (1 câu nhóm)
   'QL /meeting/board': 62,   // đo 12
   'QT /meeting/board': 75,   // đo 25
   'QL /xuat-mt/xem-truoc?tg=dot&dot=mt:1,mt:2,mt:3,mt:4,mt:5,mt:6,mt:7,mt:8': 1313,   // đo 1010

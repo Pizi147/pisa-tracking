@@ -1672,12 +1672,41 @@ CREATE TABLE tasks (
   help_name TEXT,
   -- PR-DUYET (NEN Q12): người phụ trách NGOÀI hệ thống, gõ tay (ví dụ "Tổ chuyên môn") — chỉ khi assignee_user_id NULL; không nhận thông báo.
   assignee_name TEXT,
-  idempotency_key TEXT                -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
+  idempotency_key TEXT,               -- PR-GVa: một mã cho mỗi lần mở form (gửi lại cùng mã → trả dòng đã có)
+  /*
+   * VH-1 (N59, chủ SP 20/11): nhóm tự đặt `group_id` (`task_groups`; NULL = "Không phân loại" — `group_key` cũ giữ, thôi đọc).
+   * LẶP LẠI: việc gốc có `lap_kieu` 'tuan' (`lap_ngay` = thứ ISO "1,3" — T2 = 1 … CN = 7) | 'thang' (`lap_ngay` = ngày "15"; tháng ngắn → ngày cuối tháng);
+   * bản tạo theo kỳ trỏ `lap_goc_id` (việc gốc), `lap_ky` = ngày của kỳ (việc gốc: ngày tạo). `lap_dung_luc` trên việc gốc = đã Dừng lặp.
+   * Người theo dõi: khung giao việc chung (loai 'van_hanh', GV-1) — `watcher_user_id` + `task_followers` giữ, thôi đọc.
+   */
+  group_id INTEGER REFERENCES task_groups(id),
+  lap_kieu TEXT,
+  lap_ngay TEXT,
+  lap_goc_id INTEGER REFERENCES tasks(id),
+  lap_ky TEXT,
+  lap_dung_luc TEXT
 );
 CREATE UNIQUE INDEX ux_tasks_khoa_gui ON tasks(created_by, idempotency_key) WHERE idempotency_key IS NOT NULL;
 CREATE INDEX idx_task_period ON tasks(period_id);
 CREATE INDEX idx_task_parent ON tasks(parent_task_id);   -- PR-DEPLOY (DEP-2c): migrate (`migrateMgmtTasks`) đã có, schema.sql thiếu
 CREATE INDEX idx_task_assignee ON tasks(assignee_user_id);
+CREATE UNIQUE INDEX ux_tasks_lap_ky ON tasks(lap_goc_id, lap_ky) WHERE lap_goc_id IS NOT NULL;   -- VH-1: một bản mỗi kỳ (chạy lại không trùng)
+CREATE INDEX idx_tasks_lap_mo ON tasks(id) WHERE lap_kieu IS NOT NULL AND lap_dung_luc IS NULL;   -- VH-1: hàm đêm đọc việc gốc còn lặp
+
+/*
+ * VH-1 (N59): NHÓM VIỆC VẬN HÀNH tự đặt — Head / Quản trị / CX tạo, đổi tên, sắp ▲▼, ẩn (ẩn: việc giữ nhóm, nhóm rời ô chọn). `branch_id` NULL = dùng chung mọi
+ * chi nhánh. `khoa` chỉ ở 4 nhóm khởi đầu (nhóm cố định cũ student_parent · curriculum · teacher · tutor) — migrate chuyển `tasks.group_key` theo khoá này.
+ */
+CREATE TABLE task_groups (
+  id INTEGER PRIMARY KEY,
+  ten TEXT NOT NULL,
+  thu_tu INTEGER NOT NULL DEFAULT 0,
+  an INTEGER NOT NULL DEFAULT 0,
+  branch_id INTEGER REFERENCES branches(id),
+  khoa TEXT UNIQUE,
+  tao_boi INTEGER REFERENCES users(id),
+  tao_luc TEXT NOT NULL
+);
 
 /*
  * VIỆC QUẢN LÝ GIAO CHO GIÁO VIÊN, TOẢ RA THÀNH PHƯƠNG ÁN CỦA TỪNG EM.
