@@ -8,7 +8,7 @@ Chạy `scripts/do-khung.mjs` MỘT MÌNH: seed sạch (`npm run seed`), API c�
 |---|---|---|
 | Tổng lỗi | 312 (+135 đã miễn) | **190** (+139 đã miễn) |
 | Kịch bản không mở được | 31 dòng | **0** |
-| `hd-chi` ("Chỉ cho tôi") | 172 dòng | **64** (chưa kết luận, mục 3) |
+| `hd-chi` ("Chỉ cho tôi") | 172 dòng | **64** → **0** sau HD-CHI (mục 3) |
 | g (lệch bảng) | 74 | 87 |
 | c (chữ cắt) | 22 | 30 |
 | f | 8 | 8 |
@@ -30,24 +30,25 @@ Số g / c tăng vì các màn trước không mở được (Tạo Case, ⋯ h�
 
 - `lich-panel-pa-1440` / `-375` "không thấy ô ngày": kịch bản `panel-pa` chỉ mở thẻ PA; ô ngày (`ONgay`, `CapNhatTuan.tsx`) có thể chỉ hiện sau thêm một bước. [XM] PTA giao kiểm.
 
-## 3. Nghi LỖI THẬT của web (chưa sửa — để PTA giao)
+## 3. `hd-chi` — ĐÃ SỬA (HD-CHI, 20/11): 61 → **0** dòng
 
-`hd-chi` còn 64 dòng: mục màn của "Chỉ cho tôi" **không thấy trong panel Hướng dẫn** (hoặc khoanh báo "Chưa có việc nào ở đây"). Ở màn có tab (tầng 2, `Tang2`, `web/src/modules/huongDan/NutHuongDan.tsx:410`) panel chỉ liệt kê việc theo tab; mục riêng của màn (`man.muc` không có `viec`) chỉ ở tầng 3 và có thể gập sau "+ n việc khác". Cần xác nhận người dùng thường có tới được mục đó không.
+Phân loại khi mở thật từng nhóm đúng vai (61 dòng đo lại trên seed; S6 ghi 64 — chênh do nhịp tải): (a) không tới được mục trong panel → web · (b) tới được nhưng khoanh không thấy → neo / nội dung · (d) web đúng, kịch bản sai. Không có loại (c). Ảnh trước | sau lúc bấm "Chỉ cho tôi": `anh-hd-chi/`.
 
-| Mục (màn›id) | Nội dung hướng dẫn | Dòng |
-|---|---|---|
-| hoc-vien›hv-lich-thi | `shared/huongDan/gv.ts:580` | 10 |
-| lich-test›lt-nhap-diem | `gv.ts:540`, `ql.ts:558` | 8 |
-| lich-test›lt-thi-that | `gv.ts:543` | 3 |
-| lich-test›lt-lich-thi | `ql.ts:561` | 2 |
-| phan-tich›ql-pt-goc | `ql.ts:489` | 4 |
-| hoc-vien›ql-hvl-pham-vi | `ql.ts:506` | 4 |
-| hoc-vien›hv-tim | `gv.ts:576`, `cx.ts:98`, `tvv.ts:531` | 4 |
-| ho-so-gv›hsgv-tab ("Chưa có việc") | `gv.ts:624` | 4 |
-| cong-viec›ql-cv-cua-gv · ql-cd-loc | `ql.ts:599`, `ql.ts:595` | 8 |
-| cong-viec›cv-lop · cv-loc | `gv.ts:522`, `gv.ts:520` | 8 |
-| tong-quan›tq-duyet · ql-tq-so-lieu | `ql.ts:478`, `ql.ts:480` | 4 |
-| han-ket-qua ("Chưa có việc", Quản trị) | trang Hướng dẫn `?phan=luat` | 2 |
+| Mục (màn›id) | Dòng | Loại | Gốc | Sửa |
+|---|---|---|---|---|
+| hoc-vien›hv-lich-thi | 10 | d | kịch bản bung "+ n việc khác" trước khi panel vẽ xong | `do-khung.mjs`: đợi dòng đầu panel |
+| hoc-vien›ql-hvl-pham-vi · hv-tim | 8 | d | như trên | như trên |
+| tong-quan›ql-tq-so-lieu | 2 | d | như trên | như trên |
+| lich-test›lt-nhap-diem | 8 | a + d | mục có `viec`: panel vẽ thẻ việc chung, bỏ bước + "Chỉ cho tôi" riêng của màn (khoanh nhảy sang Công việc) | `DongCuaDong` / `Tang2` dùng bước + Chỉ cho tôi của màn (`theCuaDong`); kịch bản tìm dòng theo id việc |
+| phan-tich›ql-pt-goc · tong-quan›tq-duyet | 6 | a + d | như trên | như trên |
+| cong-viec›ql-cd-loc | 4 | a + d | như trên; việc Duyệt ở tab Chờ bạn duyệt | như trên; kịch bản mở `chi.duong` (đúng tab) |
+| cong-viec›cv-loc · cv-lop · ql-cv-cua-gv | 12 | a | tầng 2 (Công việc luôn đứng ở một tab) chỉ liệt kê việc của tab, không lối lên tầng 3 → mục riêng của màn chỉ tới được bằng ô tìm | `Tang2`: mục riêng của màn xếp cuối cùng danh sách (sau "+ n việc khác"); không đổi bố cục |
+| cong-viec›cv-lop (375) | — | b | < 1024 px khung Lớp của tôi ẩn sau công tắc | `data-hd="cv-lop-cua-toi"` cả trên nút "Lớp của tôi" |
+| lich-test›lt-thi-that · lt-lich-thi (375) | 5 | b (+ d 1440) | 375: "Lịch thi thật ›" nằm trong ⋯ đầu trang | `data-hd="test-lich-thi-that"` trên ⋯ (375) |
+| ho-so-gv›hsgv-tab | 4 | b + d | `chi.duong: '/giao-vien'` là trang 404 (hồ sơ là `/giao-vien/:id`) | bỏ `duong` (chỉ bấm từ chính hồ sơ); kịch bản mở `/giao-vien/{vai}` |
+| han-ket-qua (Quản trị) | 2 | b | Quản trị không có dòng việc của mình (`cv-dong`), Công việc mở Chờ bạn duyệt | `hd: ['cv-dong', 'cd-dong']` (dòng duyệt cũng có chip hạn) |
+
+Không thêm request / câu SQL (hướng dẫn là dữ liệu tĩnh).
 
 ## 4. Lệch bảng / cắt chữ còn lại, theo màn (để PTA giao sửa)
 

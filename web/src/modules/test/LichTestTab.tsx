@@ -400,7 +400,9 @@ export function LichTestTab() {
         )}
       <ConfirmDialog open={!!hoiBo} onClose={() => setHoiBo(null)} title={hoiBo?.title ?? ''} body={hoiBo?.body} danger
         confirmLabel={hoiBo?.nut} closeLabel={t('Ở lại')} onConfirm={() => { hoiBo?.tiep(); setHoiBo(null); }} />
-      {choNut && (dienThoai ? nutBaCham : nutXuat) && createPortal(dienThoai ? nutBaCham : nutXuat, choNut)}
+      {/* HD-CHI: 375 — "Lịch thi thật ›" nằm trong ⋯ này, "Chỉ cho tôi" khoanh nút ⋯ (cùng `data-hd`). */}
+      {choNut && (dienThoai ? nutBaCham : nutXuat) && createPortal(dienThoai
+        ? <span className="inline-flex shrink-0" data-hd={session?.nav?.students ? 'test-lich-thi-that' : undefined}>{nutBaCham}</span> : nutXuat, choNut)}
       {moXuat && data.tuan && (
         <NganXuatTest dau="diem" lich={{ branchId, classIds: [] }} onDong={() => setMoXuat(false)}
           diem={{ khung: loai ?? 'ft', chiNhanh: branchId, lop: urlClassId ? { id: urlClassId, ma: data.lopDangLoc?.code ?? `#${urlClassId}` } : null,

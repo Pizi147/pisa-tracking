@@ -564,11 +564,15 @@ if (!CHI_BANG && (!LOC || 'hd-chi'.includes(LOC))) {
     /* S6: trang Hướng dẫn không còn phần "Theo màn" (nội dung theo màn ở panel) — bỏ vòng `trang-hd`. */
     for (const man of hd.man) for (const m of man.muc) if (m.chi) {
       await thu(`${w}/v${vai} ${man.id}›${m.id}`, async () => {
-        await p.goto(BASE + man.duong[0], { waitUntil: 'networkidle' });
+        /* HD-CHI: `/giao-vien` là tiền tố khớp màn, trang thật là `/giao-vien/:id` (hồ sơ của chính mình). */
+        /* Mục có `viec` nằm ở tab của việc đó (Chờ bạn duyệt…) → mở đúng trang của "Chỉ cho tôi" như người dùng đi. */
+        const den = (m.viec && m.chi.duong) || man.duong[0];
+        await p.goto(BASE + (den === '/giao-vien' ? `/giao-vien/${vai}` : den), { waitUntil: 'networkidle' });
         /* S6: nút "Hướng dẫn" nằm trên thanh trên (data-hd=nut-hd); tab "Trang này" gập bớt → bung "+ n việc khác". */
         await p.locator('[data-hd="nut-hd"]:visible').first().click();
+        await p.locator('[role=dialog] [data-muc]').first().waitFor();   // HD-CHI: đợi panel vẽ xong rồi mới bung "+ n việc khác"
         for (let i = 0; i < 4; i++) { const them = p.locator('[role=dialog]').getByRole('button', { name: /^[+] [0-9]+ (việc khác|more tasks)/ }).first(); if (!(await them.count())) break; await them.click(); }
-      }, '[role=dialog]', m.id, m.chi.hd);
+      }, '[role=dialog]', m.viec ?? m.id, m.chi.hd);   // HD-CHI: mục có `viec` vẽ thành dòng của thẻ việc (data-muc = id việc)
     }
     await ctx.close();
   }

@@ -103,7 +103,8 @@ export async function runPrHdTests(t: any) {
         if (m.chi.duong && !hd.manCuaDuong(h, m.chi.duong)) loi.push(`${vai} ${m.id}: trang ${m.chi.duong} không có mục`);
         /* Bấm từ trang /huong-dan: không có `duong` thì chỉ khoanh được phần tử có ở MỌI màn (thanh điều hướng, ô tìm, nút tài khoản, nút "?" — HD-V2). */
         const khapNoi = [m.chi.hd].flat().every((x: string) => x.startsWith('nav-') || x === 'tim-hv' || x === 'tai-khoan' || x === 'nut-hd');
-        if (!m.chi.duong && !khapNoi) loi.push(`${vai} ${m.id}: thiếu duong — bấm từ trang Hướng dẫn sẽ "Chưa có việc nào ở đây"`);
+        /* HD-CHI: mục của màn chỉ bấm trong panel ngay trên màn đó (trang Hướng dẫn bỏ "Theo màn") — không cần `duong` (hồ sơ GV `/giao-vien/:id` không có đường tĩnh). */
+        if (!m.chi.duong && !khapNoi && !h.man.some((x: any) => x.muc.includes(m))) loi.push(`${vai} ${m.id}: thiếu duong — bấm từ trang Hướng dẫn sẽ "Chưa có việc nào ở đây"`);
         /* Phần tử chỉ dựng cho một số vai: vai khác bấm sẽ "Chưa có việc nào ở đây" (do-khung hd-chi 28/10). */
         for (const [duong, x, vaiCo] of CHI_VAI) if (m.chi.duong === duong && [m.chi.hd].flat().includes(x) && !vaiCo.includes(vai)) loi.push(`${vai} ${m.id}: ${x} ở ${duong} không dựng cho vai này`);
       }

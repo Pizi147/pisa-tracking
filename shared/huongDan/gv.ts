@@ -624,7 +624,7 @@ export const HD_GV: HuongDan = {
         { id: 'hsgv-tab', ten: 'Ba tab Lớp · Học thuật · Việc & Case', buoc: ['<b>Lớp</b>: Lớp đang dạy (Chưa nhập · Quá hạn theo lớp, Test sắp tới dưới mã lớp) · Lớp chủ nhiệm · Em đang bổ trợ (tên em mở hồ sơ, kể cả em đã chuyển lớp).',
           '<b>Học thuật</b>: Đạt kỳ vọng Test · Tiến bộ · Kết quả thi thật, bảng Theo kỹ năng · Theo lớp; công tắc Fast Track / Lớp thường.',
           '<b>Việc & Case</b>: bấm dòng <b>Cần làm trước</b> để làm việc ngay tại trang; <b>Việc đang tồn</b> bấm số xem danh sách, tên nhóm › mở Công việc; <b>Yêu cầu đã gửi</b>.'],
-        chi: { hd: 'hsgv-tab', duong: '/giao-vien', chu: 'Ba tab của hồ sơ ở đây.' } }],
+        chi: { hd: 'hsgv-tab', chu: 'Ba tab của hồ sơ ở đây.' } }],
     },
     {
       id: 'huong-dan', ten: 'Hướng dẫn', duong: ['/huong-dan'],
@@ -757,7 +757,7 @@ export const HD_GV: HuongDan = {
     { id: 'han-cham', ten: 'Hạn chấm Mock Test', buoc: ['Bài của tuần Test: chấm xong trước hết {han:cham_test}.', 'MT0: hết {han:cham_test}.', 'Chấm Speaking chung không tính quá hạn.'] },
     { id: 'han-xac-nhan', ten: 'Hạn Xác nhận PA', buoc: ['{han:xac_nhan_case} từ ngày chốt lượt, tính cả ngày đầu.', 'SOS 3 / Gấp: {han:xac_nhan_case.ngayGap}.', 'Progress Test lớp thường: Xác nhận Case trong {han:xac_nhan_case}.'] },
     { id: 'han-ket-qua', ten: 'Hạn Ghi kết quả PA', buoc: ['Kỳ {han:ghi_kq_pa}; hạn <b>Thứ Ba</b> sau kỳ. Lưu nháp không đổi hạn.', 'Kỹ năng đạt ở MT sau → <b>Kết quả cuối</b>, rồi Hoàn thành Case.', 'Chưa có ngày thi → mốc là MT cuối lộ trình.'],
-      chi: { hd: 'cv-dong', duong: '/cong-viec', chu: 'Mỗi việc có chip hạn ở cuối dòng.' } },
+      chi: { hd: ['cv-dong', 'cd-dong'], duong: '/cong-viec', chu: 'Mỗi việc có chip hạn ở cuối dòng.' } },
     { id: 'han-vi-pham', ten: 'Hạn Xử lý vi phạm', buoc: ['Em có từ 3 vi phạm trong tuần này + tuần trước → GVCN xử lý trong {han:xu_ly_vi_pham}, tính cả ngày ghi.', 'Bậc cần Head thì Head duyệt; lưu xử lý → TVV báo phụ huynh trong {han:bao_ph_vi_pham}.'] },
     { id: 'han-ql', ten: 'Head trả lời đề xuất', buoc: ['Head trả lời Đề xuất PA / Xin hỗ trợ trong <b>hạn duyệt</b> (mặc định {han:ql_duyet_pa}, Quản trị đổi được), tính cả ngày gửi.'] },
     { id: 'dau-gach', ten: 'Dấu "-" (vắng)', buoc: ['Gõ "-" = vắng, chốt ngay: lần 1 dời sang tuần sau tuần Test.', 'MT, MT0 vắng 2 lần thì huỷ (không thẻ, không nhắc). Progress / Final lớp thường không tự huỷ — cần dừng thì ⋯ › Huỷ điểm (Hoàn tác / Khôi phục được). Gõ "-" trước tuần Test = báo trước, ghi đúng tuần Test đó. Tuần Test đã qua 2 tuần: "-" không dời, không tính lần vắng.', 'Chọn tuần cho kỹ năng (Dời) = xếp lại từ đầu. Gỡ vắng: xoá "-", lúc nào cũng được.'] },

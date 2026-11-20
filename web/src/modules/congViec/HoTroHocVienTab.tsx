@@ -621,7 +621,8 @@ export function HoTroHocVienTab() {
         {(laGv || laTvv) && data && !data.scopeEmpty && (
           <div role="group" aria-label={t('Xem')} className="flex h-11 overflow-hidden rounded-lg border lg:hidden" style={{ borderColor: 'var(--line-strong)' }}>
             {[[false, t('Việc')], [true, laTvv ? t('HV của tôi') : t('Lớp của tôi')]].map(([k, nhan], i) => (
-              <button key={String(k)} type="button" aria-pressed={xemLop === k} onClick={() => setXemLop(k as boolean)}
+              /* HD-CHI: < 1024 px khung "Lớp của tôi" ẩn sau nút này — "Chỉ cho tôi" khoanh nút (cùng `data-hd` với khung). */
+              <button key={String(k)} type="button" aria-pressed={xemLop === k} onClick={() => setXemLop(k as boolean)} data-hd={k && !laTvv ? 'cv-lop-cua-toi' : undefined}
                 className={`flex-1 appearance-none border-0 text-[15px] ${i ? 'border-l' : ''} ${xemLop === k
                   ? 'bg-[color:var(--accent-soft)] font-bold text-[color:var(--text)] shadow-[inset_0_-2px_0_var(--accent)]' : 'surface-2 font-medium text-dim'}`}
                 style={{ borderColor: 'var(--line-strong)' }}>{nhan as string}</button>
