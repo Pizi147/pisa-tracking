@@ -549,7 +549,9 @@ export function HoTroHocVienTab() {
      lưới — sửa được (quyền máy chủ từng ô) thì nhập ngay, không thì chỉ xem; không tóm tắt + nút "Nhập hộ". */
   const moThang = theoDoiChon && chon.group === 'score';
   const coLamThay = !!(chon as { lamThay?: boolean } | null)?.lamThay;
-  const khoaPanel = theoDoiChon && !moThang && (!coLamThay || chiXem === chon?.key);
+  /* GV-2 (N58): việc giao được (Báo PH · Meeting) có cờ quyền từ máy chủ ở chính panel — mở THẲNG panel (khối Phụ trách: Head / CX "Đổi"; không quyền ghi thì form chỉ xem), không tóm tắt. */
+  const coKhoiGiao = !!chon && /^(bao_ph_yt|phoi_hop_tvv|meeting_xep_lich|meeting_ket_qua)$/.test(chon.group) && !chon.con?.length;
+  const khoaPanel = theoDoiChon && !moThang && !coKhoiGiao && (!coLamThay || chiXem === chon?.key);
   const dangLamThay = theoDoiChon && coLamThay && (moThang || chiXem !== chon?.key);
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Chấm Speaking') : /^(meeting_|phoi_hop_tvv$)/.test(chon.group) ? t('Meeting CX/GĐCN')   // GV-2 (mockup v22 G8): "Việc · Meeting CX/GĐCN"
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
@@ -760,7 +762,7 @@ export function HoTroHocVienTab() {
           {/* OV-15h1 → CV-TAB: không có việc Vận hành nào — tab "Việc quản lý" vẫn có lối Giao việc · Vận hành · Báo cáo đơn vị. */}
           {data && tab === 'van-hanh' && coVanHanh && mucs.length === 0 && <section className="card p-0"><div className="px-4 py-1">{loiVanHanh}</div></section>}
           {tab === 'van-hanh' && !!data?.daBoQua?.length && <DaBoQua ds={data.daBoQua} homNay={homNay} onKhoiPhuc={khoiPhuc} />}
-          {laGv && data && !data.scopeEmpty && session?.nav?.workRequests && (
+          {laGv && data && !data.scopeEmpty && tab !== 'theo-doi' && session?.nav?.workRequests && (
             /* U01 #21 (khung A1): Yêu cầu của tôi giữ cuối trang, nhóm GẬP SẴN — chỉ tải khi mở (bớt đọc Turso). GD-1: "Lớp tôi dạy" gập đã lên khung phải ("Lớp của tôi"). */
             <div className="mt-3.5 flex flex-col gap-3.5">
               <NhomGap k="yeu-cau" nhan={t('Yêu cầu của tôi')}><YeuCauCuaToi gon /></NhomGap>

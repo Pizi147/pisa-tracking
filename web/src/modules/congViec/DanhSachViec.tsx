@@ -465,10 +465,11 @@ function DongViec({ it, ...dong }: ChungDong & { it: WorkItem }) {
   const ten = voiLop(it, tenViec(boDongTu(it.group, tenBoEmGoc(it))));
   const sos = it.level ? mucSosTheoNhan(it.level.text) : null;
   /* Phụ không lặp tên việc (TVV: "Báo PH · Report 1" / phụ "Report 1"). GD-1b: lớp đã ở tên dòng. */
-  const phu = [...thePhu([sos ? `SOS ${sos}` : null, tvv && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : it.group.startsWith('meeting_') ? it.phu : it.contextLabel ?? it.phu,   /* GV-2: dòng Meeting — tên dòng đã nói loại việc; phụ chỉ "họp {ngày giờ}". AU-GON A3-01: bậc đã ở tên dòng + tiêu đề panel */
+  const meet = it.group.startsWith('meeting_');   // GV-2 (mockup v22 G8a): dòng Meeting — chip SOS (không thẻ chữ "SOS n")
+  const phu = [...thePhu([sos && !meet ? `SOS ${sos}` : null, tvv && it.group === 'bao_ph_yt' ? null : it.group === 'thi_that' ? it.contextLabel?.replace(/^Đã thi (?:T[2-7]|CN) /, t('Thi') + ' ') : it.group.startsWith('meeting_') ? it.phu : it.contextLabel ?? it.phu,   /* GV-2: dòng Meeting — tên dòng đã nói loại việc; phụ chỉ "họp {ngày giờ}". AU-GON A3-01: bậc đã ở tên dòng + tiêu đề panel */
      it.group === 'score' && it.soBai ? t('{soBai} bài', { soBai: it.soBai }) : null])
     .filter((x) => !ten.includes(x)), ...(it.coNhap ? [t('Có nháp')] : [])];
-  const muc = chipMuc(it, true);
+  const muc = chipMuc(it, !meet);
   const bam = () => dong.onOpen(it);
   return (
     <div data-hd="cv-dong" data-khoa={it.key} onClick={daXong ? undefined : bam} title={bacNgan(dich(it.reason))}

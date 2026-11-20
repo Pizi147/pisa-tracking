@@ -54,8 +54,8 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
         {/* Mockup G8a: họp vì sao (SOS · ngày · GVCN · ghi chú) + liên hệ ai (PH · SĐT bấm gọi) — dữ liệu đi cùng GET panel. */}
         {bc && <BoiCanh dong={[
           [bc.sos ? t('Lên SOS {n}', { n: bc.sos }) : t('GVCN xác nhận'), [bc.ngay ? shortDate(bc.ngay, hn) : null, bc.gvcn ? t('GVCN {ten}', { ten: bc.gvcn }) : null, bc.ghiChu].filter(Boolean).join(' · ') || null],
-          [t('Phụ huynh'), bc.phuHuynh?.ten ? <span className="flex flex-wrap items-center gap-x-1.5">{bc.phuHuynh.ten}{bc.phuHuynh.quanHe ? ` (${bc.phuHuynh.quanHe})` : ''}
-            {bc.phuHuynh.sdt && <> · <a className="link tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" href={`tel:${bc.phuHuynh.sdt.replace(/\D/g, '')}`}>{sdtDoc(bc.phuHuynh.sdt)}</a></>}</span> : null],
+          [t('Phụ huynh'), bc.phuHuynh?.ten || bc.phuHuynh?.sdt ? <span className="flex flex-wrap items-center gap-x-1.5">{bc.phuHuynh.ten}{bc.phuHuynh.ten && bc.phuHuynh.quanHe ? ` (${bc.phuHuynh.quanHe})` : ''}
+            {bc.phuHuynh.sdt && <>{bc.phuHuynh.ten ? ' · ' : ''}<a className="link tabular-nums max-sm:inline-flex max-sm:min-h-[44px] max-sm:items-center" href={`tel:${bc.phuHuynh.sdt.replace(/\D/g, '')}`}>{sdtDoc(bc.phuHuynh.sdt)}</a></>}</span> : null],
         ]} />}
         {phan.map((g) => <PhanMeeting key={g.id} g={g} dat={datPhan} reload={reload} />)}
         {bp.g && <DongBaoPh g={bp.g} />}
@@ -153,7 +153,7 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
             {t('Bạn nhập hộ CX')} <b className="font-semibold text-[color:var(--text)]">{tenPt}</b>
           </div>
         )}
-        <div className={xep ? 'grid gap-3 sm:grid-cols-[minmax(0,280px)_minmax(0,1fr)]' : 'grid'}>
+        <div className={xep ? 'grid gap-3 sm:grid-cols-[minmax(0,330px)_minmax(0,1fr)]' : 'grid'}>
           {xep && (
             <div className="grid gap-1.5">
               <span className="text-sm font-bold">{t('Ngày giờ họp')} <span className="font-normal text-faint text-[13px]">{t('tuỳ chọn')}</span></span>

@@ -15,7 +15,7 @@ export const EN_GIAO_VIEC_2 = {
   'đang theo dõi': 'following',
   'Gõ tên người': 'Type a name',
   'Người phụ trách mới': 'New owner',
-  'Khối đã tải lại — chọn lại rồi Giao.': 'Reloaded — choose again, then Assign.',
+  'Đã tải lại — bấm Giao lần nữa.': 'Reloaded — press Assign again.',
   'Về mặc định': 'Back to default',
   'Về mặc định · {ten}': 'Back to default · {ten}',
   'Giao': 'Assign',

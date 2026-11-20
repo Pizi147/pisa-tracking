@@ -93,6 +93,7 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep, chiXem }: 
     han: v?.coTheGhi && !bo ? <MenuDong nhan={t('Thao tác phụ')} muc={[{ key: 'bo', nhan: t('Bỏ việc…'), onChon: () => setBo(true) }]} /> : null,
     em, lop: it.classCode,
   });
+  if (chiXem) dau.loai = `${t('Đang theo dõi')} · ${laMeeting ? t('Meeting CX/GĐCN') : t('Báo PH')}`;   // mockup G5: "Đang theo dõi · Báo PH"
   if (error) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><ErrorState message={error.message} hint={error.hint} status={error.status} onRetry={reload} /></KhungPanel>;
   if (!v) return <KhungPanel hd="bao-ph" tieuDe={tieuDe} dau={dau} onDong={onDong}><div className="pt-3"><Skeleton rows={6} /></div></KhungPanel>;
 

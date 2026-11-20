@@ -181,7 +181,16 @@ function HopNho({ nhan, tren, onDong, children }: { nhan: string; tren: string; 
   }, []);
   return (
     <div ref={ref} {...bam} role="dialog" aria-label={nhan} aria-modal="false"
-      onKeyDown={(e) => { if (e.key === 'Escape' && !e.defaultPrevented) { e.preventDefault(); e.stopPropagation(); onDong(); } }}
+      onKeyDown={(e) => {
+        if (e.key === 'Escape' && !e.defaultPrevented) { e.preventDefault(); e.stopPropagation(); onDong(); return; }
+        /* Tab vòng trong hộp — focus không lọt ra panel phía sau (PTA rà #1930). */
+        if (e.key !== 'Tab') return;
+        const ds = [...(ref.current?.querySelectorAll<HTMLElement>('input, button:not([disabled]), [href], [tabindex]:not([tabindex="-1"])') ?? [])].filter((x) => x.offsetParent !== null);
+        if (!ds.length) return;
+        const dau = ds[0], cuoi = ds[ds.length - 1];
+        if (e.shiftKey && document.activeElement === dau) { e.preventDefault(); cuoi.focus(); }
+        else if (!e.shiftKey && document.activeElement === cuoi) { e.preventDefault(); dau.focus(); }
+      }}
       className={`absolute right-0 z-30 mt-1 w-[420px] max-w-full rounded-xl border ${tren}`}
       style={{ borderColor: 'var(--line-strong)', background: 'var(--surface)', boxShadow: 'var(--bong-noi)' }}>{children}</div>
   );
@@ -232,7 +241,7 @@ function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () =
       <div className="grid gap-2 px-4 py-3">
         <ChonNguoi value={chon} onChange={(v) => setChon(v)} nhom="nhan_vien" tim={tim} tinh tuMo choToi={false} choNgoai={false}
           placeholder={t('Gõ tên người')} ariaLabel={t('Người phụ trách mới')} tieuDe={t('Đổi người phụ trách')} />
-        {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi.chu}{loi.xungDot && ` ${t('Khối đã tải lại — chọn lại rồi Giao.')}`}</p>}
+        {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi.chu}{loi.xungDot && ` ${t('Đã tải lại — bấm Giao lần nữa.')}`}</p>}
       </div>
       {/* Nhấn nút chân không làm ô tìm mất focus — danh sách không co lại, nút không dời chỗ dưới con trỏ (cú bấm trượt). */}
       <div onMouseDown={(e) => e.preventDefault()} className="flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
@@ -292,7 +301,7 @@ export function DongTheoDoi({ ds, dat, reload, rieng }: { ds: KhoiGv[]; dat: (ds
       {nguoi.size ? [...nguoi.values()].map(chip) : <span className="text-sm text-faint">{t('Chưa có')}</span>}
     </div>
     <div className={`${O} justify-end pl-0`} style={{ borderColor: 'var(--line)' }}>
-      {suaDuoc && ds.some((g) => g.mo) && <button ref={nut} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] px-0 text-[17px] font-medium sm:min-h-[30px] sm:min-w-[30px]"
+      {suaDuoc && ds.some((g) => g.mo) && <button ref={nut} type="button" className="btn btn-sm min-h-[44px] min-w-[44px] justify-center px-0 text-[17px] font-medium sm:h-[30px] sm:min-h-[30px] sm:w-[30px] sm:min-w-[30px]"
         aria-label={t('Thêm người theo dõi')} aria-haspopup="dialog" aria-expanded={hop} onClick={() => setHop(true)}>+</button>}
     </div>
     {hop && (
