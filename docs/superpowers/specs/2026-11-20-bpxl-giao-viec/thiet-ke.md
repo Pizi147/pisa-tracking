@@ -44,14 +44,15 @@ Lời chủ SP gốc + 4 câu trả lời: `plan.md` mục 4, các đoạn "Ch�
 - Việc người khác giao cho tôi nằm ở "Của tôi", đúng mục, kèm nhãn "{tên} giao".
 - Mọi lần đổi người / hạn / theo dõi có lịch sử (ai · lúc · từ → đến).
 
-### B2. Meeting CX / GĐCN — hai phần trên một việc
+### B2. Meeting CX / GĐCN — hai phần độc lập, mỗi phần chỉ cần Hoàn thành
 
 - **[CHỐT — chủ SP 20/11 tối, thay "BPXL chỉ theo dõi" ở mục A]** "khi giao việc meeting CX/ GĐCN thì cần giao việc xếp lịch họp cho BPXL và CX sẽ phải cập nhật kết quả luôn trên task, TVV có thể nhập hộ".
-- Một việc Meeting, panel có hai bước theo thứ tự:
-  1. **Xếp lịch họp** — phụ trách: BPXL chi nhánh. BPXL ghi ngày giờ họp (ô ngày gõ được + nút lịch, ô giờ) → bước xong, CX + TVV + GVCN nhận tin "Cập nhật". Sửa lại ngày giờ được, có lịch sử. App không có màn lịch họp riêng.
-  2. **Kết quả meeting** — phụ trách: CX. CX ghi kết quả ngay trên việc (một ô Nội dung); **TVV nhập hộ được** (ghi rõ "{TVV} nhập hộ CX").
-- Hai bước hiện ở Công việc của đúng người: BPXL thấy "Xếp lịch họp", CX thấy "Kết quả meeting" (sau khi đã có lịch; chưa có lịch thì ghi "Chờ BPXL xếp lịch", vẫn nhập được — không chặn).
-- Khối Phụ trách · Hạn · Theo dõi áp cho từng bước (đổi người được như mọi việc phần B). Theo dõi mặc định: TVV của em, GVCN, Head.
+- **[CHỐT — chủ SP 20/11 tối, đơn giản hoá]** "chỉ cần đơn giản là có phần cập nhật kết quả task, hoàn thành là được, thích thì ghi thêm ngày giờ đã xếp là xong, nói chung làm cách nào cho nó rõ ràng là ok, không nhất thiết phải lần lượt hay gì cả nhé".
+- Một việc Meeting có hai phần ĐỘC LẬP, KHÔNG thứ tự, mỗi phần là một dòng việc của đúng người, cùng một kiểu thao tác: ô **Kết quả** (tuỳ chọn) + nút **Hoàn thành**:
+  - **Xếp lịch họp** — BPXL chi nhánh. Bấm Hoàn thành là xong; ô "Ngày giờ họp" TUỲ CHỌN (ô ngày gõ được + nút lịch, ô giờ).
+  - **Kết quả meeting** — CX. Ghi kết quả ngay trên việc rồi Hoàn thành; **TVV nhập hộ được** (ghi "{TVV} nhập hộ CX").
+- Panel việc Meeting hiện cả hai phần cạnh nhau với trạng thái rõ (Chưa xong / ✓ Hoàn thành · ai · lúc); phần của người khác chỉ đọc. Không phần nào chờ phần nào. Hoàn tác được; sửa lại sau khi hoàn thành được, có lịch sử.
+- Khối Phụ trách · Hạn · Theo dõi áp cho từng phần (đổi người được như mọi việc phần B). Theo dõi mặc định: TVV của em, GVCN, Head.
 - Chi nhánh không có BPXL → TVV của em xếp như nay; không có CX → Head. Ngoại lệ của "CX / BPXL không bị giao việc theo luật" (N52).
 - PTA hiểu, chờ chủ SP xác nhận: phần "Báo PH · Meeting" của TVV (báo gia đình về buổi họp) giữ như nay.
 
