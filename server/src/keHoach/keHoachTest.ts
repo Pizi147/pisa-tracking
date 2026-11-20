@@ -725,11 +725,11 @@ export function thiLai(p: Principal, i: { attemptId: number; skills: string[]; p
   if (!i.skills?.length) throw badRequest('Chưa chọn kỹ năng thi lại.');
   /* RKC (PTA quyết định 4 — thay T4 "thi lại cần tuần từ tuần này"): thi lại vào tuần đã qua được (ghi bù buổi thi lại đã diễn ra), có nhật ký. */
   const lyDo = i.lyDo?.trim() ? `Thi lại: ${i.lyDo.trim()}` : 'Thi lại';   // T7: lý do tuỳ chọn
-  /* Rà #126: thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng / đã huỷ đi luồng Xếp lại bài vắng / Khôi phục, không qua đây. */
+  /* Rà #126: thi lại chỉ cho kỹ năng ĐÃ CÓ ĐIỂM — vắng / đã huỷ thì Dời (N38), không qua đây. */
   const diem = scoresOf(i.attemptId);
   for (const k of i.skills.map(chonKyNang)) {
     if (!entrySkillsOf(k as any).some((e) => diem.some((x) => x.skill === e && (x.band != null || x.raw_score != null)))) {
-      throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng thì dùng "Xếp lại bài vắng"; kỹ năng đã huỷ thì "Khôi phục và đặt tuần".`);
+      throw badRequest(`${tenMon(null, k)} chưa có điểm — không thi lại. Em vắng hoặc kỹ năng đã huỷ thì chọn tuần mới (Dời).`);
     }
     /* BPXL-1 (N57, PTA rà #1923): thi lại huỷ điểm đã có — chặn TRƯỚC giao dịch người không sửa được điểm (BPXL), không 403 giữa chừng. */
     if (entrySkillsOf(k as any).some((e) => !scoreEditPath(p, a.class_id, e, { lich_su: 0, kind: a.kind }))) throw forbidden(THI_LAI_MSG);
