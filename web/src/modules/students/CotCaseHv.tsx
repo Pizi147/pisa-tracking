@@ -103,7 +103,7 @@ export function CotCaseHv({ rows, tenKn, mo, hocVien, lop, onReport, onChanged, 
             <KhungTrongCot.Provider value>
               <NganCase key={`${c.id}:${ep?.n ?? 0}:${lai[c.id] ?? 0}`} caseId={c.id} paId={ep?.paId} viec={ep?.viec} hocVien={hocVien} lop={lop}
                 onClose={() => { if (ep) setDaDong((x) => ({ ...x, [c.id]: ep.n })); setLai((x) => ({ ...x, [c.id]: (x[c.id] ?? 0) + 1 })); }} onChanged={onChanged}
-                onDoiChu={() => {}} /* S5: lưu chữ tại chỗ — `ThanCase.nhan` đã làm mới đúng hồ sơ em (+ thẻ kỹ năng khi việc / trạng thái đổi) */
+                onDoiChu={() => {}} /* S5: lưu chữ tại chỗ — `ThanCase.nhan` đã làm mới đúng hồ sơ + thẻ kỹ năng của em */
                 onDaXoa={(x) => setVuaXoa((ds) => [...ds, { id: c.id, i: Math.max(0, dangMo.findIndex((d) => d.c.id === c.id)), x }])} />
             </KhungTrongCot.Provider>
           </div>

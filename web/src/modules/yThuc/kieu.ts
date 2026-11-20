@@ -20,8 +20,11 @@ export type ViPhamV4 = {
   soTep?: number;
 };
 
-/** Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức (`pham`: xem `lamMoiYThucTheo`). */
-export const lamMoiYThuc = (pham: PhamViYThuc = null) => lamMoiYThucTheo(['/violations', '/measures', '/classes', '/students', '/y-thuc'], pham);
+/**
+ * Sau mọi thay đổi vi phạm / lần xử lý: làm mới các danh sách đọc dữ liệu Ý thức (`pham`: xem `lamMoiYThucTheo`). S5 [NGHI] 2: + `/my-work` — ghi vi phạm
+ * đổi dòng việc "Xử lý Ý thức" của lớp (số em, quá hạn); trước đây Công việc giữ dòng cũ tới 5 phút.
+ */
+export const lamMoiYThuc = (pham: PhamViYThuc = null) => lamMoiYThucTheo(['/violations', '/measures', '/classes', '/students', '/y-thuc', '/my-work'], pham);
 
 /**
  * S5 (chỗ 2): đường của MỘT lớp có thể đọc Ý thức — mọi `GET /classes/:id/…` TRỪ phần điểm / người dạy (`diem-theo-luot`, `cham`, `chu-da-ghi`,

@@ -158,8 +158,8 @@ export function tenNganCase(d: { categoryLabel: string | null; category: string 
 const daBatDau = (iv: any) => iv.status === 'planned' || iv.status === 'started';
 
 /**
- * S5: phần của Case mà `/my-work` và thẻ kỹ năng đọc (việc Mô tả / Xác nhận Case · Chưa có người · Thêm PA · tiêu đề việc = `caseHeadline` từ `summary` ·
- * trạng thái V4 · người làm). Hai bản trùng → lần lưu không đổi việc / thẻ nào, khỏi tải lại. Nghi thì thêm trường vào đây (tải lại thừa, không bao giờ thiếu).
+ * S5: phần của Case mà `/my-work` đọc (việc Mô tả / Xác nhận Case · Chưa có người · Thêm PA · tiêu đề việc = `caseHeadline` từ `summary` ·
+ * trạng thái V4 · người làm). Hai bản trùng → lần lưu không đổi việc nào, khỏi tải lại `/my-work`. Nghi thì thêm trường vào đây (tải lại thừa, không bao giờ thiếu).
  */
 export const dauViecCase = (d: CaseDetail) => JSON.stringify([d.summary, d.ownerUserId ?? null, d.status, d.trangThaiV4 ?? null,
   d.choXacNhanS?.han ?? null, !!d.choXacNhanS, d.sos?.hasCause ?? null, (d.interventions ?? []).length, (d.issues ?? []).some((i) => i.role === 'primary')]);
@@ -256,14 +256,14 @@ export function ThanCase({ data, setData, reload, onChanged, onDoiChu, dich: dic
     quenBanXem(`/cases/${d.id}$`);
   }), [setData]);
   /* Lưu tại chỗ (Case / một PA): máy chủ trả đúng Case vừa đổi → thay dữ liệu, không tải lại cả Case; danh sách việc làm mới. */
-  /* S5 LAM-MOI-HEP: `/my-work` + thẻ kỹ năng của em (cột Case: người làm, trạng thái) chỉ khi lần lưu có thể đổi chúng (`dauViecCase` khác, hoặc trường PA —
-     hạn / người); hồ sơ đúng em luôn (tiêu đề Case). Chữ mô tả / nguyên nhân sửa lần sau: chỉ hồ sơ em. */
+  /* S5 LAM-MOI-HEP: `/my-work` chỉ khi lần lưu có thể đổi việc (`dauViecCase` khác, hoặc trường PA — hạn / người). Hồ sơ + thẻ kỹ năng ĐÚNG em luôn
+     (thẻ kỹ năng chứa cả chữ Case: mô tả, nguyên nhân); bỏ bài trên lớp, Ý thức, em khác. */
   const nhan = (d: CaseDetail, pa = false) => {
     const doiViec = pa || dauViecCase(data) !== dauViecCase(d);
     setData(d);
     quenBanXem(`/cases/${d.id}$`);   // mở lại panel trong 10 s không hiện bản trước lần lưu
     if (doiViec) invalidate('/my-work');
-    lamMoiHoSoEm(d.student?.id, doiViec);
+    lamMoiHoSoEm(d.student?.id);
     (onDoiChu ?? onChanged)?.();
   };
   const xongForm = (paId: number) => (x?: DaLuuPanel) => {
