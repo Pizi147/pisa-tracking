@@ -294,6 +294,7 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(await ma(() => att.addLink(r2, { ownerType: 'task', ownerId: w.id, url: 'https://example.com/roi' })) === 403, 'rời chi nhánh → không thêm tệp');
     /* Người được giao việc con xem được việc cha. */
     const cha = tao(cx, {}); tao(cx, { parentTaskId: cha.id, assigneeUserId: bpxl.userId });
+    assert(mg.createMgmtTask(cx, { title: 'Con không gửi chi nhánh', parentTaskId: cha.id }).branchId === MB, 'việc con không gửi branchId → chi nhánh việc cha');
     assert(mg.mgmtTaskDetail(bpxl, cha.id).id === cha.id, 'người làm việc con xem việc cha');
   }));
 

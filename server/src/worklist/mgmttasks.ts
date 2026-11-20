@@ -762,7 +762,7 @@ export function createMgmtTask(p: Principal, input: {
   /** VH-1: lặp lại (chỉ việc gốc). */
   lap?: unknown;
 }) {
-  if (!quanLyVanHanh(p, { branchId: input.branchId ?? null })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
+  if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   /* PR-Dọn (Q4, quét #24): chữ tự do có kiểu và trần. */
   const title = chuTuDo(input.title, 'Tên công việc', 200) ?? '';
   chuTuDo(input.note, 'Ghi chú', 2000);
