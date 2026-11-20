@@ -1,5 +1,5 @@
 import { MuiChev } from '../../ui/HangNhom.tsx';
-import { Children, type ReactNode, useEffect, useState } from 'react';
+import { Children, type ReactNode, useEffect, useRef, useState } from 'react';
 import { LOP_DA_LUU, NutHoanTac } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
@@ -157,11 +157,14 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, nho, ...dong }: Chu
     setGapSt({ k: khoaNho, s }); ghiGap(khoaNho, s);
   };
   /* Mở panel việc nằm trong mục đang gập (`?viec=`, "Việc tiếp ›") → mục tự mở; chỉ khi việc ĐỔI — người dùng vẫn gập được mục chứa việc đang mở. */
+  const daMo = useRef<string | null>(null);   // việc đã xử lý — dữ liệu về muộn (`muc` đổi) vẫn tìm được mục, nhưng mỗi việc chỉ tự mở một lần
   useEffect(() => {
-    if (!dong.chon) return;
+    if (!dong.chon) { daMo.current = null; return; }
     const m = muc.find((x) => x.items.some((y) => y.key === dong.chon || y.con?.some((c) => c.key === dong.chon)));
-    if (m && gap.has(m.key)) datGap(m.key, false);
-  }, [dong.chon]);   // eslint-disable-line react-hooks/exhaustive-deps
+    if (!m || daMo.current === dong.chon) return;
+    daMo.current = dong.chon;
+    if (gap.has(m.key)) datGap(m.key, false);
+  }, [dong.chon, muc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const { homNay } = useNgayNghiepVu();
   const cuoiTuan = chiaVachHan([], homNay).cuoiTuan;
   /* GD-4a (mockup ⑤ B1): vạch hạn trong mục — Quá hạn · Hôm nay · Hạn đến {CN} · Hạn sau {CN} · Không hạn; mục đã xếp hạn sớm trước nên vạch đi một chiều. */
