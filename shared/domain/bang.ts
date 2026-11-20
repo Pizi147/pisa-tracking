@@ -43,8 +43,6 @@ export type DinhNghiaCot = {
   tach?: boolean;
   /** Cột nhận phần dư thay thứ tự mặc định (V8-TQ: cột Lớp linh hoạt, cột chữ SOS rộng cố định như mockup). */
   linhHoat?: boolean;
-  /** LECH-BANG XM-4: đệm phải tiêu đề (px) = chỗ của nút ẩn chờ rê trong ô (lưới lớp thường: ⋯ hoặc nút chữ "Lịch sử") — tâm tiêu đề thẳng tâm phần đang thấy. */
-  demPhai?: number;
 };
 
 /** Key của MỘT cột linh hoạt: việc › chữ › tên; không có cột chữ → null. */
