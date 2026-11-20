@@ -28,8 +28,7 @@ import { NganLichSuBai } from './NganLichSuBai.tsx';
 import { useTrongKhung } from '../../ui/KhungPanel.tsx';
 import { DauLuu, DauO, VIEN_LOI } from './LuoiFT.tsx';
 import { DongThi, LuotChinhContext } from './DongThi.tsx';
-import { NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';
-import { HopNhanXetThuong } from '../fasttrack/HopNhapDiemHop.tsx';
+import { HopNhanXetThuong, NutNhanXet } from '../fasttrack/HopNhapDiem.tsx';   /* HopNhanXetThuong: bản nạp lười (TD-WEB-2) — lưới không tải mảnh hộp trước khi mở */
 import { dich, t } from '@shared/i18n/index.ts';
 
 type SkillResult = {

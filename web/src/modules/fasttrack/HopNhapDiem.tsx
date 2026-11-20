@@ -98,7 +98,7 @@ export type HopProps = {
 
 /* TD-WEB-2: thân hộp + hộp nhận xét ở mảnh riêng (`HopNhapDiemHop.tsx`) — lưới / trang lớp không tải ~560 dòng hộp trước khi bấm ô. Nơi dùng giữ nguyên JSX + props. */
 export const HopNhapDiem = lazyHop(() => import('./HopNhapDiemHop.tsx').then((m) => m.HopNhapDiem));
-const HopNhanXetThuong = lazyHop(() => import('./HopNhapDiemHop.tsx').then((m) => m.HopNhanXetThuong));
+export const HopNhanXetThuong = lazyHop(() => import('./HopNhapDiemHop.tsx').then((m) => m.HopNhanXetThuong));
 
 /** AUDIT-1611 B3-08: chỉ số lỗi của ô Người chấm (khác ô điểm 0–4). */
 export const O_NGUOI_CHAM = 9;
