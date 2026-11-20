@@ -29,6 +29,7 @@ import { suaHanPhoiHop } from '../yThuc/phoiHop.ts';
 import { hanHoiTinhHinh } from '../yThuc/tinhHinh.ts';
 import { giuViecQl } from './viecTvv.ts';
 import type { WorkItem } from './mywork.ts';
+import { VAI_GIAO_VIEC } from '../platform/timNguoi.ts';
 
 export const LOAI_GIAO = ['bao_ph', 'phoi_hop', 'tinh_hinh', 'meeting'] as const;
 export type LoaiGiao = (typeof LOAI_GIAO)[number];
@@ -157,11 +158,14 @@ function requireDoc(p: Principal, v: Viec): void {
   throw forbidden('Việc này ngoài phạm vi của bạn.');
 }
 
-/** Tài khoản đang hoạt động có vai (đang hiệu lực) ở chi nhánh của việc hoặc toàn hệ thống. */
+/** Tài khoản đang hoạt động có vai NHẬN được việc (`VAI_GIAO_VIEC` — cùng danh sách ô chọn) ở chi nhánh của việc hoặc toàn hệ thống. */
 function kiemNguoiNhan(uid: unknown, branchId: number | null): number {
   const id = Number(uid);
   if (!Number.isInteger(id) || id <= 0) throw badRequest('Chọn người nhận việc.');
-  if (!hoatDongO(id, branchId)) throw badRequest('Người này không có tài khoản đang hoạt động ở chi nhánh của việc — chọn người khác.');
+  if (!hoatDongO(id, branchId) || !db().prepare(`SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = ? AND ur.status = 'active'
+      AND r.key IN (SELECT value FROM json_each(?)) AND (ur.branch_id IS NULL OR ur.branch_id = ?)`).get(id, JSON.stringify(VAI_GIAO_VIEC), branchId)) {
+    throw badRequest('Người này không có tài khoản đang hoạt động ở chi nhánh của việc — chọn người khác.');
+  }
   return id;
 }
 

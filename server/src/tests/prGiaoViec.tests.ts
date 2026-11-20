@@ -380,6 +380,25 @@ export async function runPrGiaoViecTests(t: YThucTestKit) {
     assert(!b.length, `lần 2 không đổi: ${b.join(' | ')}`);
   }));
 
+  await checkAsync('GV2-2 · (PTA rà quyền #1930) người được giao không xem được em → thẻ Phối hợp CHỈ việc của mình · ô giao việc một chi nhánh, ngoài phạm vi [] · vai Tutor không nhận việc (ô chọn + máy chủ cùng danh sách)', () => thu(async () => {
+    const tn: any = await import('../platform/timNguoi.ts');
+    const gvk = taiKhoan('gvkhac', 'teacher');   // GV ở MB, không dạy lớp em → không student.view
+    const sid = moiEm(); const x = phoiHopViec(sid); const y = phoiHopViec(sid, 'talk_student');
+    assert(await ma(() => ph.coordinationOfStudent(gvk, sid)) === 403, 'chưa được giao → 403');
+    giao(gvcn, 'phoi_hop', x, gvk.userId);
+    const ds = ph.coordinationOfStudent(gvk, sid).rows.flatMap((r: any) => r.actions);
+    assert(ds.length === 1 && ds[0].id === x && ds[0].lamDuoc, `chỉ việc được giao: ${ds.map((a: any) => a.id)} (y = ${y})`);
+    const cnMb = tn.timNguoi(ql, { moiVai: true, chiNhanh: mbId, q: '' }) as any[];
+    assert(cnMb.length > 0 && cnMb.every((r) => r.branches.length <= 1), 'một chi nhánh — không lộ chi nhánh khác của người đó');
+    const cp = mot(`SELECT id FROM branches WHERE code = 'CP'`).id;
+    assert(tn.timNguoi(ql, { moiVai: true, chiNhanh: cp, q: '' }).length === 0, 'chi nhánh ngoài phạm vi (Head MB hỏi CP) → []');
+    assert(tn.timNguoi(ql, { moiVai: true, chiNhanh: null, q: '' }).length === 0, 'không chi nhánh → []');
+    const tutor = taiKhoan('tutor', 'head_tutor');
+    assert(!tn.timNguoi(ql, { moiVai: true, chiNhanh: mbId, q: 'GIAOVIEC TUTOR' }).some((r: any) => r.id === tutor.userId), 'ô chọn không có vai Tutor');
+    const bp = baoPhViPham(moiEm());
+    assert(await ma(() => gv.doiPhuTrach(tvv, 'bao_ph', bp, { userId: tutor.userId, phuTrachCu: null })) === 400, 'máy chủ không nhận vai Tutor (400)');
+  }));
+
   const fs = await import('node:fs');
   const path = await import('node:path');
   const { fileURLToPath } = await import('node:url');

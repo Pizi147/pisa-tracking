@@ -4,7 +4,8 @@ import { mocThuong, cauHinh, maViecCoHan, tenViec, toiThieuGhiChu,
   CHUONG_TRINH_KHONG_CHIA_MON, COORDINATION_SYNC_REVIVE_REASONS, COORDINATION_USER_REMOVE_REASONS, hanPhoiHop, laMeetingCx, SIGNAL_WITHDRAW_SCORE_FIXED, coordinationSummary, moTaBoTro, ngayTheoGioVN, nhanDot, nhanKetQuaThuong, noiDungBaoPh, tenMon, tenMonNgan, kiemGhiRoKhac, reasonNeedsText, sosCoordinationFor,
   type CoordinationKind, type CoordinationRemoveReason, type CoordinationStatus, type TheSosEm, type TheSosLuot, boMonTheoLuot, daGhiLuot, hanBaoPhHieuLuc, type KetQuaBaoPh, buocTvvViec, addDaysIso, HAN_MEETING_CX_NGAY, GHI_CHU_MEETING_TOI_THIEU,
 } from '../../../shared/domain/index.ts';
-import { lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
+import { PERMISSIONS } from '../../../shared/domain/index.ts';
+import { can, lopDayDu, napTruocPhamVi, type Principal } from '../permissions.ts';
 import { badRequest, conflict, loi, isIsoDate, notFound, nowIso } from '../util.ts';
 import { demoToday, nowNghiepVu } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
@@ -616,11 +617,16 @@ export function dongPhoiHopTheoViec(classIds: number[], emId?: number, giao?: an
 export function coordinationOfStudent(p: Principal, studentId: number) {
   const st = db().prepare('SELECT id FROM students WHERE id = ?').get(studentId) as any;
   if (!st) throw notFound('Không tìm thấy học viên');
-  const rows = db()
+  let rows = db()
     .prepare('SELECT * FROM sos_coordination_actions WHERE student_id = ? ORDER BY attempt_id, id')
     .all(studentId) as any[];
-  /* GV-2 (N58): người được giao việc Phối hợp của em (còn hiệu lực) mở được thẻ dù vai thường không xem em. */
-  if (!rows.some((r) => r.phu_trach_id === p.userId && r.status === 'pending') || !conHieuLuc(p.userId, studentId)) requireViewStudent(p, studentId);
+  /* GV-2 (N58, PTA rà quyền #1930 A): người được giao làm ĐÚNG việc của mình — không `student.view` thì chỉ nhận lượt + hành động giao cho mình, còn mở,
+     lượt chưa huỷ (không mức SOS các lượt khác, không việc / ghi chú / nội dung Báo PH của việc khác). Không việc nào như vậy (hoặc hết hiệu lực) → 403 như cũ. */
+  if (!can(p, PERMISSIONS.STUDENT_VIEW, { studentId })) {
+    const huy = new Set((db().prepare(`SELECT id FROM assessment_attempts WHERE student_id = ? AND status = 'cancelled'`).all(studentId) as any[]).map((a) => a.id));
+    rows = rows.filter((r) => r.phu_trach_id === p.userId && r.status === 'pending' && !huy.has(r.attempt_id));
+    if (!rows.length || !conHieuLuc(p.userId, studentId)) requireViewStudent(p, studentId);
+  }
   const turns = turnsOf(p, rows).sort((a, b) => b.attemptNo - a.attemptNo);
   return { studentId, rows: turns, pendingCount: turns.filter((t) => !t.summary.complete).length, canAct: canManageDiscipline(p, studentId) };
 }
