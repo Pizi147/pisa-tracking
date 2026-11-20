@@ -86,7 +86,9 @@ export function KeHoachTestTab() {
     if (!data || daMoSan || !data.lop.length) return;
     const theoUrl = classIdParam ? data.lop.find((l) => l.id === classIdParam) : undefined;
     const trongLoai = loai === 'ft' ? lopFT : lopThuong;
-    const chon = theoUrl ?? (trongLoai.length === 1 ? trongLoai[0] : undefined);
+    /* BPXL-2: vào trang đang lọc theo số (`?so=`, tải lại / dán đường dẫn) → mở lớp đầu khớp như khi bấm số. */
+    const theoSo = so === 'chua-xep' || so === 'vang' ? lopFT.find((l) => khopSo[so](l)) : undefined;
+    const chon = theoUrl ?? theoSo ?? (trongLoai.length === 1 ? trongLoai[0] : undefined);
     if (chon) setMoList([chon.id]);
     setDaMoSan(true);
   }, [data, daMoSan]);   // eslint-disable-line react-hooks/exhaustive-deps
