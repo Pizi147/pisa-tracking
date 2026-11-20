@@ -92,7 +92,7 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
           <button type="button" className="min-w-0 appearance-none border-0 bg-transparent p-0 text-left text-[15px] font-medium leading-snug text-[color:var(--text)]"
             aria-current={chon ? 'true' : undefined} onClick={(e) => { e.stopPropagation(); onMo(); }}>{dich(ten)}</button>
           <span className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-0.5 text-[13px] leading-snug text-dim sm:mt-[3px] sm:gap-[3px]">
-            <Link to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()} className="whitespace-nowrap text-dim no-underline hover:text-[color:var(--accent)] hover:underline sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5">{d.studentName}</Link>
+            <Link to={`/hoc-vien/${d.studentId}`} onClick={(e) => e.stopPropagation()} className="ten-hv text-dim no-underline hover:text-[color:var(--accent)] hover:underline sm:h-5 sm:rounded-md sm:bg-[color:var(--surface-2)] sm:px-1.5 sm:text-xs sm:font-medium sm:leading-5">{d.studentName}</Link>
             {d.phuTrach && <span className="whitespace-nowrap sm:h-5 sm:rounded-md sm:border sm:px-1.5 sm:text-xs sm:font-medium sm:leading-[18px]" style={{ borderColor: 'var(--line-strong)' }}>
               <span aria-hidden className="sm:hidden">· </span>{t('Phụ trách {ten}', { ten: dich(d.phuTrach) })}</span>}
           </span>
