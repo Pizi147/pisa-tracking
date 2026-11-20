@@ -2389,6 +2389,67 @@ await checkAsync('GV-1 (×3) · /my-work + /my-work/theo-doi có phần Meeting 
   assert(!loi.length, loi.join(' ‖ '));
 });
 
+/*
+ * TL-1 (N61): seed CÓ yêu cầu trả lại — 30 vi phạm (MB) trả về GVBM + 10 về GVCN, mọi việc Báo PH đang mở của em TVV đo "Chờ GV sửa" (`tra_lai_id`).
+ * Đo TRƯỚC → SAU trên cùng DB: /my-work GVBM · GVCN · TVV · QL — 0 câu thêm (hai vế UNION ALL trong câu "việc giao cho tôi"), dòng thêm ≤ số yêu cầu của
+ * người đó; câu tra_lai đi chỉ mục (không SCAN); panel GET /y-thuc/tra-lai/:id + /y-thuc/bao-ph/:id (Chờ GV sửa) trong trần nhỏ. Xoá dữ liệu thêm sau đo.
+ */
+await checkAsync('TL-1 (×3) · /my-work có yêu cầu trả lại + Báo PH "Chờ GV sửa": 0 câu thêm, dòng ≤ số yêu cầu, không SCAN vi_pham_tra_lai; panel trong trần', async () => {
+  const luc = new Date().toISOString();
+  const vp = conn.prepare(`SELECT v.id, v.student_id FROM violations v JOIN enrollments e ON e.student_id = v.student_id AND e.status = 'active' JOIN classes c ON c.id = e.class_id
+      WHERE c.branch_id = ? ORDER BY v.id LIMIT 40`).all(CN) as any[];
+  const bp = conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE s.consultant_user_id = ? AND v.trang_thai = 'mo' AND v.measure_id IS NOT NULL`).all(USER.TVV) as any[];
+  assert(vp.length >= 20, `seed thiếu vi phạm MB (${vp.length})`);
+  const DO: [Vai, string][] = [['GVBM', '/my-work'], ['GVCN', '/my-work'], ['TVV', '/my-work'], ['QL', '/my-work'], ['QL', '/my-work?nguoi=tat-ca']];
+  const truoc = new Map<string, { n: number; dong: number }>();
+  for (const [vai, url] of DO) { const d = await doSql(vai, 'GET', url); truoc.set(`${vai} ${url}`, d); }
+  const ids: number[] = [];
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  const so: string[] = [];
+  try {
+    for (const [i, r] of vp.entries()) {
+      ids.push(Number(conn.prepare(`INSERT INTO vi_pham_tra_lai (student_id, violation_id, ly_do, nguoi_tra, tra_luc, han, nguoi_nhan, trang_thai) VALUES (?, ?, 'Đo TL-1 tốc độ', ?, ?, ?, ?, 'mo')`)
+        .run(r.student_id, r.id, USER.QL, luc, demoToday15d(), i < 30 ? USER.GVBM : USER.GVCN).lastInsertRowid));
+    }
+    for (const b of bp) conn.prepare('UPDATE viec_bao_ph SET tra_lai_id = ? WHERE id = ?').run(ids[0], b.id);
+    doQuet.ghi = ghi;
+    for (const [vai, url] of DO) {
+      const d = await doSql(vai, 'GET', url);
+      const t0 = truoc.get(`${vai} ${url}`)!;
+      const nhan = vai === 'GVBM' ? 30 : vai === 'GVCN' ? 10 : url.includes('tat-ca') ? ids.length : 0;   // Head "Tất cả": mọi yêu cầu mở của chi nhánh
+      so.push(`${vai} ${url} ${t0.n} → ${d.n} câu · ${t0.dong} → ${d.dong} dòng`);
+      assert(d.status === 200 && d.n <= t0.n, `${vai} ${url}: ${t0.n} → ${d.n} câu (phải không thêm câu)`);
+      assert(d.dong <= t0.dong + nhan, `${vai} ${url}: ${t0.dong} → ${d.dong} dòng (> + ${nhan} yêu cầu)`);
+      const tran = TRAN[`${vai} ${url}`], tranDong = TRAN_DONG[`${vai} ${url}`];
+      if (tran) assert(d.n <= tran, `${vai} ${url}: ${d.n} câu > trần ${tran}`);
+      if (tranDong) assert(d.dong <= tranDong * 3 + nhan, `${vai} ${url}: ${d.dong} dòng > trần ×3 ${tranDong * 3} + ${nhan}`);
+    }
+    const khoa = new Set(JSON.stringify((await callHttp('GVBM', 'GET', '/my-work')).json).match(/"key":"yt_tra_lai:\d+"/g) ?? []);
+    assert(khoa.size === 30, `GVBM thấy ${khoa.size} / 30 việc trả lại`);
+    const pn = await doSql('GVBM', 'GET', `/y-thuc/tra-lai/${ids[0]}`);
+    assert(pn.status === 200 && pn.n <= 20 && pn.dong <= 60, `panel trả lại: ${pn.status} ${pn.n} câu ${pn.dong} dòng`);
+    so.push(`panel trả lại ${pn.n} câu ${pn.dong} dòng`);
+    if (bp.length) {
+      const b = await doSql('TVV', 'GET', `/y-thuc/bao-ph/${bp[0].id}`);
+      assert(b.status === 200 && (b.json as any).choGvSua === true && b.n <= 25, `panel Báo PH: ${b.status} ${b.n} câu`);
+      so.push(`panel Báo PH (Chờ GV sửa) ${b.n} câu ${b.dong} dòng`);
+    }
+  } finally {
+    doQuet.ghi = null;
+    for (const b of bp) conn.prepare('UPDATE viec_bao_ph SET tra_lai_id = NULL WHERE id = ?').run(b.id);
+    if (ids.length) conn.prepare(`DELETE FROM vi_pham_tra_lai WHERE id IN (${ids.map(() => '?').join(',')})`).run(...ids);
+  }
+  console.log(`      (đo: ${ids.length} yêu cầu · ${bp.length} Báo PH chờ — ${so.join(' · ')})`);
+  const loi: string[] = [];
+  const cau = [...new Map(ghi.filter((g) => /FROM vi_pham_tra_lai t/.test(g.sql)).map((g) => [g.sql, g])).values()];
+  assert(cau.length >= 1, `không bắt được câu trả lại (${cau.length})`);
+  for (const { sql, args } of cau) {
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+    if (plan.some((d) => /^SCAN (t|vi_pham_tra_lai)$/.test(d))) loi.push(plan.join(' | '));
+  }
+  assert(!loi.length, loi.join(' ‖ '));
+});
+
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
   doTurso.bat = false;
   const dong = (c: CauDo) => `${c.nhan} · ${c.thamSo} tham số · ${c.ve} vế · ${c.sql}`;

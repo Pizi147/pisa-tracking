@@ -9,7 +9,7 @@ import { chuViecTvv, tvvCuaEm } from '../worklist/viecTvv.ts';
 import { hanGhiKetQuaToi, viecNhapDiemCuaEm } from '../worklist/mywork.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
 import type { SauThiEm } from '../loTrinh/thiThat.ts';
-import { duongHoSoHocVien } from '../../../shared/domain/index.ts';
+import { duongHoSoHocVien, quaHanBaoPh } from '../../../shared/domain/index.ts';
 import { dongPhoiHopTheoViec } from '../yThuc/phoiHop.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { dongViecGiao, viecGiaoChoToi } from '../worklist/giaoViec.ts';
@@ -97,7 +97,8 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   }
   if (n.trangThaiEm !== 'active') return { cuaBan: bt, nguoiKhac: [] };
   const conn = db();
-  type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay' | 'gap'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean; quaHan?: boolean };
+  type Nhap = Omit<ViecHocVien, 'nguoi' | 'cuaBan' | 'quaHanNgay' | 'gap'> & { nguoiId: number | null; vaiChu?: string; cuaBanTheoVai?: boolean; quaHan?: boolean;
+    /** TL-1 (rà #1927 (3)): Báo PH "Chờ GV sửa" — hạn tạm dừng (`quaHanBaoPh`). */ tamDung?: boolean };
   const ds: Nhap[] = [];
 
   /* N46: Case của lộ trình đã có KQ thi thật (`sauThi`, cùng `CASE_SAU_THI_SQL` với Công việc) không sinh việc. */
@@ -188,7 +189,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
   for (const v of viecBaoPhCuaToi(p, { today, tatCa: true, branchId: null, studentId: sid })) {
     const tvv = v.group === 'phoi_hop_tvv';
     ds.push({ key: v.key, loai: tvv ? 'phoi-hop-tvv' : 'bao-ph-yt', chu: tvv ? 'Báo PH · Meeting CX/GĐCN' : v.phu ?? v.tieuDe, kyNang: null, caseId: null, paId: null,
-      viecId: v.viecId ?? undefined, han: v.due, tone: 'info', nguoiId: v.ownerId, nut: tvv ? 'Ghi KQ' : 'Ghi báo PH',
+      viecId: v.viecId ?? undefined, han: v.due, tone: 'info', nguoiId: v.ownerId, nut: tvv ? 'Ghi KQ' : 'Ghi báo PH', tamDung: !!v.choGvSua,
       mo: { loai: 'tab', tab: 'y-thuc', ...(tvv ? { sub: 'phoi-hop' as const } : {}) } });
   }
   /* P1-04 (B2-07): Bổ sung hồ sơ thiếu — người giữ như Công việc (`chuViecTvv`: TVV của em, chưa có TVV → QL), khoá dòng tổng của người giữ (`bo-sung-ho-so:{người}`). */
@@ -256,16 +257,16 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
 
   /* GV-1 (N58): việc người khác giao cho NGƯỜI XEM với em này (+ phần Meeting của người xem) — cùng hàm Công việc (`viecGiaoChoToi`, một câu), cùng khoá. */
   const LOAI_GIAO_HV: Record<string, ViecHocVien['loai']> = { bao_ph_yt: 'bao-ph-yt', phoi_hop_tvv: 'phoi-hop-tvv', phoi_hop: 'bao-ph', phoi_hop_sos: 'phoi-hop-sos',
-    yt_hoi_tinh_hinh: 'tinh-hinh', meeting_xep_lich: 'phoi-hop-sos', meeting_ket_qua: 'phoi-hop-sos' };
+    yt_hoi_tinh_hinh: 'tinh-hinh', meeting_xep_lich: 'phoi-hop-sos', meeting_ket_qua: 'phoi-hop-sos', yt_tra_lai: 'y-thuc' };   // TL-1: Vi phạm bị trả lại — tab Ý thức
   const coKhoa = new Set(ds.map((x) => x.key));
   for (const v of viecGiaoChoToi(p, { today, studentId: sid })) {
     const hien = ds.find((x) => x.key === v.key);
     if (hien) { hien.nguoiId = p.userId; continue; }
     if (coKhoa.has(v.key)) continue;
     ds.push({ key: v.key, loai: LOAI_GIAO_HV[v.group] ?? 'phoi-hop-sos', chu: v.phu ?? v.tieuDe.split(' · ')[0], kyNang: null, caseId: null, paId: null, viecId: v.viecId ?? undefined,
-      han: v.due, tone: 'info', nguoiId: p.userId, nut: v.actionLabel,
+      han: v.due, tone: 'info', nguoiId: p.userId, nut: v.actionLabel, tamDung: !!v.choGvSua,   // TL-1 (rà #1927 lần 2): Báo PH đã giao, đang chờ GV sửa
       mo: v.group === 'yt_hoi_tinh_hinh' && v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') }
-        : { loai: 'tab', tab: 'y-thuc', ...(v.group === 'bao_ph_yt' ? {} : { sub: 'phoi-hop' as const }) } });
+        : { loai: 'tab', tab: 'y-thuc', ...(v.group === 'bao_ph_yt' || v.group === 'yt_tra_lai' ? {} : { sub: 'phoi-hop' as const }) } });
   }
 
   /* Tên + vai người làm — MỘT câu: người có việc + GVCN lớp đang học (Báo PH / Mini Test không người dạy dùng `-1` = GVCN). */
@@ -293,11 +294,11 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     return mon ? `GVBM ${tenMon(n.chuongTrinh, mon)}` : null;
   };
 
-  const ra: ViecHocVien[] = ds.map(({ nguoiId, vaiChu, cuaBanTheoVai, quaHan, ...x }) => {
+  const ra: ViecHocVien[] = ds.map(({ nguoiId, vaiChu, cuaBanTheoVai, quaHan, tamDung, ...x }) => {
     const id = nguoiId === -1 ? gvcnId : nguoiId === -2 ? gvcnId ?? p.userId : nguoiId;
-    const quaHanNgay = x.han && x.han < today ? diffDays(today, x.han) : null;
+    const quaHanNgay = quaHanBaoPh(x.han, today, tamDung) ? diffDays(today, x.han!) : null;
     return {
-      ...x, quaHanNgay, gap: gapCua(x.han, today, quaHan), tone: quaHanNgay !== null || quaHan ? 'danger' : x.tone,
+      ...x, quaHanNgay, gap: tamDung ? 'chua' : gapCua(x.han, today, quaHan), tone: quaHanNgay !== null || quaHan ? 'danger' : x.tone,
       nguoi: id ? { id, ten: nguoi.get(id)?.ten ?? '—', vai: vaiCua(id, x.kyNang) } : { id: null, ten: vaiChu ?? 'Chưa có người phụ trách', vai: null },
       cuaBan: cuaBanTheoVai ?? (x.loai !== 'cho-duyet' && !!id && id === p.userId),
     };

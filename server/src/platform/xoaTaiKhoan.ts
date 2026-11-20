@@ -60,6 +60,8 @@ export const COT_TRO_TAI_KHOAN: readonly { bang: string; cot: string; loai: Loai
   /* GV-1 (N58): giao việc — người được giao / người giao / người theo dõi / người làm phần Meeting (dấu vết: xoá mềm giữ lịch sử). */
   ...(['viec_bao_ph', 'sos_coordination_actions', 'tinh_hinh_hoc_tap', 'meeting_phan'] as const).flatMap((b) => [c(b, 'phu_trach_id', DV, 'giao việc'), c(b, 'giao_boi', DV, 'giao việc')]),
   c('meeting_phan', 'xong_boi', DV, 'giao việc'), c('meeting_phan', 'nhap_ho_boi', DV, 'giao việc'),
+  /* TL-1 (N61): trả lại vi phạm — người trả / người nhận / người xử lý / giao việc (dấu vết). */
+  ...(['nguoi_tra', 'nguoi_nhan', 'xong_boi', 'phu_trach_id', 'giao_boi'] as const).map((cot) => c('vi_pham_tra_lai', cot, DV, 'trả lại vi phạm')),
   c('viec_theo_doi', 'user_id', DV, 'giao việc'), c('viec_theo_doi', 'them_boi', DV, 'giao việc'), c('viec_giao_lan', 'boi', DV, 'giao việc'),
   c('tinh_hinh_hoc_tap', 'nguoi_gui', DV, 'tình hình học tập'), c('tinh_hinh_hoc_tap', 'tra_loi_boi', DV, 'tình hình học tập'), c('tinh_hinh_hoc_tap', 'rut_boi', DV, 'tình hình học tập'),   // TINH-HINH
   c('journey_events', 'created_by', DV, 'hành trình'), c('lo_trinh_tiep_theo', 'updated_by', DV, 'lộ trình tiếp theo'),
