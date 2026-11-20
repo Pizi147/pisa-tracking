@@ -150,6 +150,8 @@ export const KhungTrongThe = createContext(false);
 /** V5 UI-CONG-VIEC: trang Công việc nói panel việc đang mở thuộc nhóm nào ("VIỆC · CASE HỌC THUẬT" / "THEO DÕI · …") + dòng "Em này còn" dưới đầu. */
 /** M6 6b-3 `dai`: dải "✓ Đã lưu … · Hoàn tác" của việc vừa làm — đầu thân panel của việc kế (mockup panel-pilot ②b). */
 export const DauViecCongViec = createContext<{ loai: string; them?: ReactNode; dai?: ReactNode;
+  /** N56 ① (PTA rà #1880): dải "Bạn đang làm thay … · Chỉ xem" — LUÔN thấy: ngay dưới đầu panel, ngoài vùng cuộn (1440), dính đầu vùng nhìn (375). */
+  daiLamThay?: ReactNode;
   /** UI-CONG-VIEC (khung A3): đang làm thay — dải sự kiện thêm "Phụ trách {tên}". */
   nguoiLam?: string | null } | null>(null);
 /** UI-CONG-VIEC (mockup `.truong > .nhan` 15 / 700): panel việc ở Công việc — nhãn ô nhập đậm, sáng; nơi khác giữ nhãn nhỏ. */
@@ -438,6 +440,9 @@ export function KhungPanel({ tieuDe: tieuDeGoc, hocVien, lop, rong: rongRieng, t
           {!lui && <span className="flex shrink-0 max-sm:self-start">{nutDong}</span>}
           {cvNgoai?.them && <div className="w-full pb-1">{cvNgoai.them}</div>}
         </header>
+        )}
+        {cvNgoai?.daiLamThay && (
+          <div className="shrink-0 px-4 pt-2.5 max-sm:sticky max-sm:-top-4 max-sm:z-20 max-sm:pb-1" style={{ background: 'var(--surface)' }}>{cvNgoai.daiLamThay}</div>
         )}
         {tabs && <div className="shrink-0 border-b px-4" style={{ borderColor: 'var(--line)' }}>{tabs}</div>}
         {/* PR-KHUNG: pb-2 — thân cuộn bắt đầu cách dòng ngữ cảnh; không có thì ô bị cắt ngay sát chữ, trông như đè nhãn (rà LUI-a1, 375). */}
