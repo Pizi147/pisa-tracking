@@ -1,0 +1,218 @@
+/* v22 · BPXL · Giao việc · Vận hành · Trả lại vi phạm — CHỈ phần mới.
+   Token + thành phần dùng lại (chỉ đọc, link thẳng ../v21/): v21.css (thanh trên, dải nhóm, dòng việc, panel, hộp, menu, ô chọn có tìm,
+   dải số, Lịch sử) · bang-mau.css · trang-dau-tvv.css (khối bối cảnh .bc, .ttr, .gui-gv) · test.css (Kế hoạch Test) · chuong-vi-pham.css (hộp chuông).
+   Phần ghi "v22:" là mới. Không gradient, không in hoa, chữ ≥ 12 px. */
+
+/* V22 (chủ SP 14/11): hạn chỉ bằng MÀU, không ⚠ ở chip / số / ô MT */
+.han-v.qua::before, .han-v.nay::before, .dai-cs .oso.xau::before, .omt.qua .st::before { content:none; }
+
+/* ---------- phần đọc mockup ---------- */
+.trang.v22 { min-width:1500px; }
+.cap-doi { font:600 13px 'Be Vietnam Pro'; color:#1f3077; background:#eef1fa; border:1px solid #b0b8cd; border-radius:6px; padding:4px 10px; margin:0; max-width:1440px; }
+.cap-doi b { color:#7a2b26; }
+.cot-mk { display:grid; gap:20px; align-content:start; }
+
+/* ---------- v22: KHỐI PHỤ TRÁCH · HẠN · THEO DÕI — đầu MỌI panel việc liên phòng ban, cùng vị trí, cùng thứ tự ----------
+   Thay dòng "Hạn" (DongHan) đang có: ba hàng cùng lưới — nhãn 84 · giá trị · nút (cột nút căn phải, cùng cỡ nut-nho 30). */
+.pht { display:grid; grid-template-columns:84px minmax(0,1fr) auto; border:1px solid var(--line); border-radius:10px; background:var(--surface); }
+.pht > div { display:contents; }
+.pht > div > * { display:flex; align-items:center; gap:8px; min-height:46px; padding:7px 12px; border-top:1px solid var(--line); min-width:0; }
+.pht > div:first-child > * { border-top:0; }
+.pht .lb { font:500 13px var(--phong); color:var(--text-dim); padding-right:0; }
+.pht .gt { flex-wrap:wrap; font-size:14px; row-gap:6px; }
+.pht .gt b { font-weight:600; }
+.pht .gt .so { font-weight:600; font-size:15px; }
+.pht .gt .phu { font-size:13px; color:var(--text-faint); }
+.pht .gt .md { margin:0; }
+.pht .nt { justify-content:flex-end; padding-left:0; }
+.pht.chi-doc { grid-template-columns:84px minmax(0,1fr) auto; }
+.dt .pht { grid-template-columns:80px minmax(0,1fr) auto; }
+.pht .lb { white-space:nowrap; }
+.dt .pht > div > * { min-height:52px; padding:7px 10px; }
+.dt .pht .nt .nut { height:44px; min-width:44px; }
+/* người theo dõi: chip tên + ✕ (bỏ) — ✕ vuông 22 căn giữa chip */
+.ntd { display:inline-flex; align-items:center; gap:4px; height:28px; padding:0 10px; border-radius:999px; border:1px solid var(--line-strong); background:var(--surface-2); font:500 13px var(--phong); white-space:nowrap; }
+.ntd small { font-size:12px; color:var(--text-faint); }
+.ntd.bo-duoc { padding-right:3px; }
+.ntd button { width:22px; height:22px; border:0; background:none; border-radius:50%; color:var(--text-faint); display:grid; place-items:center; padding:0; font-size:12px; line-height:1; }
+.ntd button:hover { background:var(--accent-soft); color:var(--text); }
+.ntd.moi { box-shadow:0 0 0 2px var(--accent); }
+.dt .ntd { height:32px; } .dt .ntd button { width:28px; height:28px; }
+/* nhãn "{tên} giao" trên dòng việc ở Của tôi */
+.tag.giao { background:transparent; border:1px solid var(--line-strong); color:var(--text-dim); font-weight:500; }
+.tag.cho-gv { background:var(--doing-nen); border-color:transparent; color:var(--doing); }
+.tag.tra { background:var(--soon-nen); border-color:var(--soon-vien); color:var(--soon); }
+/* dải "vừa đổi" sau giao / trả lại — Hoàn tác */
+.da-luu { display:flex; align-items:center; gap:10px; min-height:40px; padding:6px 8px 6px 12px; border-radius:8px; background:var(--ok-nen); border:1px solid var(--ok-vien); font-size:14px; color:var(--text); }
+.da-luu b { color:var(--ok); font-weight:700; }
+.da-luu .nut { margin-left:auto; }
+
+/* ---------- v22: MỤC GẬP / MỞ — <details> dùng chính dải nhóm làm tiêu đề; mục gập vẫn hiện "n việc · m quá hạn" ---------- */
+details.nhom > summary { list-style:none; cursor:pointer; }
+details.nhom > summary::-webkit-details-marker { display:none; }
+details.nhom > summary:hover { background:var(--accent-soft); }
+details.nhom > summary .chev { margin-left:-2px; }
+details.nhom:not([open]) > summary { border-bottom:0; }
+details.nhom:not([open]) > summary .ic { color:var(--text-faint); }
+
+/* ---------- v22: DẢI SỐ LẶNG (BPXL) — chữ xám, số xám gạch chân mảnh, không đỏ, không badge; đang lọc = nền nhấn nhạt + viền + chip "Lọc: … ✕" ---------- */
+.dai-cs.lang { margin-bottom:12px; }
+.dai-cs.lang .oso { color:var(--text-dim); text-decoration-color:var(--text-faint); text-decoration-thickness:1px; padding:2px 6px; margin:-2px -6px; border-radius:6px; }
+.dai-cs.lang .oso:hover { color:var(--text); background:var(--surface-2); }
+.dai-cs.lang .oso[aria-pressed="true"] { color:var(--text); background:var(--accent-soft); box-shadow:inset 0 0 0 1px var(--accent); text-decoration:none; }
+.dai-cs.lang .oso.khong { color:var(--text-faint); }
+.dai-cs.lang .oso.khong:hover { background:none; }
+.dt .dai-cs.lang > span { justify-content:space-between; }
+.dt .dai-cs.lang .oso { min-height:36px; display:inline-flex; align-items:center; font-size:16px; }
+
+/* Kế hoạch Test: ô MT vắng chờ xếp lại (dáng .omt, chữ trạng thái vàng như "chờ") */
+.omt.vang .st { color:var(--soon); }
+
+/* ---------- v22: HÀNG "ĐANG THEO DÕI" — cột cuối là trạng thái (chữ), không nút ---------- */
+.viec.td-dong { grid-template-columns:28px minmax(0,1fr) 150px 118px; }
+.viec .n .tt-chu { font:500 13px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.viec .n .tt-chu.cho { color:var(--doing); font-weight:600; }
+.viec .phu-ng { font-size:13px; color:var(--text-dim); white-space:nowrap; }
+.viec .phu-ng b { color:var(--text); font-weight:600; }
+.dt .viec.td-dong { grid-template-columns:28px minmax(0,1fr); }
+.dt .viec.td-dong .n { display:flex; grid-column:2; }
+
+/* dải "chỉ xem" trong panel của người theo dõi */
+.chi-xem { display:flex; align-items:center; gap:10px; min-height:40px; padding:6px 12px; border-radius:8px; background:var(--surface-2); font-size:14px; color:var(--text-dim); }
+.chi-xem b { color:var(--text); font-weight:600; }
+.chi-xem .nut { margin-left:auto; }
+
+/* ---------- v22: VẬN HÀNH (bảng Head chia theo nhóm) ---------- */
+.vh-the { background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:clip; }
+.vh-dau { display:flex; align-items:center; gap:10px; min-height:52px; padding:0 16px; border-bottom:1px solid var(--line); }
+.vh-dau h2 { font-size:17px; font-weight:700; }
+.vh-dau .phu-d { font-size:14px; color:var(--text-dim); }
+.vh-dau .phai { margin-left:auto; display:flex; gap:8px; align-items:center; }
+.vh-loc { display:flex; flex-wrap:wrap; align-items:center; gap:8px 14px; padding:10px 16px; border-bottom:1px solid var(--line); font-size:13px; color:var(--text-dim); }
+.vh-loc label { display:inline-flex; align-items:center; gap:8px; white-space:nowrap; }
+.vh-loc .oc-vung { width:240px; }
+table.vh { width:100%; border-collapse:collapse; table-layout:fixed; font-size:14px; }
+.vh col.c-viec { width:auto; } .vh col.c-ng { width:200px; } .vh col.c-han { width:150px; } .vh col.c-tt { width:170px; } .vh col.c-con { width:150px; }
+.vh thead th { text-align:left; font:600 12px var(--phong); color:var(--text-faint); padding:8px 12px; border-bottom:1px solid var(--line); white-space:nowrap; }
+.vh thead th:first-child { padding-left:16px; }
+.vh tbody td { padding:9px 12px; border-top:1px solid var(--line); vertical-align:top; }
+.vh tbody td:first-child { padding-left:16px; }
+.vh tr.dong { cursor:pointer; }
+.vh tr.dong:hover td { background:var(--accent-soft); }
+.vh tr.dong.chon td { background:var(--accent-soft); } .vh tr.dong.chon td:first-child { box-shadow:inset 3px 0 0 var(--accent); }
+.vh .t { font-weight:500; color:var(--text); display:block; }
+.vh .p { display:block; margin-top:2px; font-size:12px; color:var(--text-faint); }
+.vh .p .lap { color:var(--text-dim); }
+.vh .p2 { display:block; margin-top:3px; font-size:12px; color:var(--text-faint); }
+.vh .p2.qua { color:var(--bad); }
+/* hàng tiêu đề nhóm: cả hàng là một nút gập / mở (không nằm trong thead) */
+.vh tr.nh td { padding:0; border-top:1px solid var(--line-strong); }
+.vh tr.nh button { width:100%; display:flex; align-items:center; gap:8px; min-height:44px; padding:0 16px 0 13px; border:0; border-left:3px solid var(--accent); background:var(--surface-2); text-align:left; font:700 15px var(--phong); color:var(--text); }
+.vh tr.nh button:hover { background:var(--accent-soft); }
+.vh tr.nh button[aria-expanded="true"] .chev { transform:rotate(90deg); }
+.vh tr.nh.khong-pl button { border-left-color:var(--text-faint); }
+.vh tr.nh .dem { margin-left:4px; }
+.nhan-tt { display:inline-flex; align-items:center; gap:6px; height:22px; padding:0 9px; border-radius:999px; background:var(--muted-nen); font:600 12px var(--phong); color:var(--text-dim); white-space:nowrap; }
+.nhan-tt::before { content:""; width:7px; height:7px; border-radius:50%; background:var(--text-faint); }
+.nhan-tt.dang::before { background:var(--doing); } .nhan-tt.xong::before { background:var(--ok); } .nhan-tt.tam::before { background:var(--soon); } .nhan-tt.dung::before { background:var(--bad); }
+.lap-ic { display:inline-flex; align-items:center; gap:4px; }
+.lap-ic .ic { width:13px; height:13px; }
+
+/* panel tạo / sửa việc */
+.hai-cot { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:12px; }
+.ba-cot { display:grid; grid-template-columns:minmax(0,1fr) 200px; gap:12px; }
+.vc-ds { display:grid; border:1px solid var(--line); border-radius:10px; overflow:clip; }
+.vc-dong { display:grid; grid-template-columns:22px minmax(0,1fr) 190px 150px 36px; gap:8px; align-items:center; min-height:48px; padding:6px 6px 6px 10px; border-top:1px solid var(--line); }
+.vc-dong:first-child { border-top:0; }
+.vc-dong .so-tt { font:600 12px var(--phong-so); color:var(--text-faint); text-align:center; }
+.vc-dong .o, .vc-dong .oc, .vc-dong .o-ngay { min-height:36px; height:36px; font-size:14px; }
+.vc-dong .x { margin:0; width:36px; height:36px; display:grid; place-items:center; padding:0; font-size:15px; }
+.vc-them { display:flex; align-items:center; gap:8px; min-height:44px; padding:0 10px; border-top:1px solid var(--line); }
+.lap-hang { display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px; }
+.thu { display:inline-flex; gap:4px; }
+.thu button { width:40px; height:32px; border-radius:8px; border:1px solid var(--line-strong); background:transparent; font:600 13px var(--phong); color:var(--text-dim); }
+.thu button.on { border-color:var(--accent); background:var(--accent-soft); color:var(--text); }
+.tep-ds { display:grid; gap:6px; }
+.tep { display:grid; grid-template-columns:20px minmax(0,1fr) auto 36px; align-items:center; gap:8px; min-height:40px; padding:4px 4px 4px 10px; border:1px solid var(--line); border-radius:8px; font-size:14px; }
+.tep .ic { color:var(--text-faint); }
+.tep small { font:500 12px var(--phong-so); color:var(--text-faint); white-space:nowrap; }
+.tep .x { margin:0; width:32px; height:32px; display:grid; place-items:center; padding:0; font-size:14px; }
+.tep a { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.dt .vc-dong { grid-template-columns:minmax(0,1fr) 44px; row-gap:6px; }
+.dt .vc-dong .so-tt { display:none; }
+.dt .vc-dong .ten-vc { grid-column:1; }
+.dt .vc-dong .x { grid-column:2; grid-row:1; width:44px; height:44px; }
+.dt .vc-dong .oc, .dt .vc-dong .o-ngay { grid-column:1 / -1; height:44px; }
+.dt .hai-cot, .dt .ba-cot { grid-template-columns:1fr; }
+
+/* việc con trong panel xem */
+.con-ds { display:grid; border:1px solid var(--line); border-radius:10px; overflow:clip; }
+.con-dong { display:grid; grid-template-columns:24px minmax(0,1fr) 170px 120px; gap:10px; align-items:center; min-height:46px; padding:6px 12px; border-top:1px solid var(--line); font-size:14px; }
+.con-dong:first-child { border-top:0; }
+.hop-chon { width:18px; height:18px; border-radius:4px; border:1.5px solid var(--o-vien); background:var(--o-nen); display:grid; place-items:center; font:700 12px/1 var(--phong); color:var(--accent-ink); }
+.hop-chon.co { background:var(--accent); border-color:var(--accent); }
+.con-dong.xong .t { color:var(--text-faint); text-decoration:line-through; }
+.con-dong .ai { font-size:13px; color:var(--text-dim); white-space:nowrap; }
+.con-dong .ai b { color:var(--text); font-weight:600; }
+.dt .con-dong { grid-template-columns:24px minmax(0,1fr); row-gap:4px; }
+.dt .con-dong .ai, .dt .con-dong .h { grid-column:2; }
+
+/* quản lý nhóm */
+.nh-ds { display:grid; border:1px solid var(--line); border-radius:10px; overflow:clip; }
+.nh-dong { display:grid; grid-template-columns:minmax(0,1fr) 64px 72px 30px 30px auto; gap:6px; align-items:center; min-height:48px; padding:6px 8px 6px 12px; border-top:1px solid var(--line); font-size:14px; }
+.nh-dong:first-child { border-top:0; }
+.nh-dong .t { font-weight:600; }
+.nh-dong .dm { font:500 12px var(--phong-so); color:var(--text-faint); white-space:nowrap; text-align:right; }
+.nh-dong .nut-vuong.nut-nho { width:30px; }
+.nh-dong.an .t { color:var(--text-faint); font-weight:500; }
+.nh-dong.sua .o { min-height:34px; height:34px; padding:4px 10px; font-size:14px; }
+
+/* ---------- v22: TRẢ LẠI VI PHẠM ---------- */
+/* danh sách vi phạm trong panel Báo PH: mỗi vi phạm một nút, bấm = mở chi tiết NGAY DƯỚI dòng (không panel lồng) */
+.vp-ds { display:grid; border:1px solid var(--line); border-radius:10px; overflow:clip; background:var(--surface); }
+.vp-dong { display:grid; grid-template-columns:48px 28px minmax(0,1fr) auto 20px; gap:8px; align-items:center; width:100%; min-height:44px; padding:6px 12px; border:0; border-top:1px solid var(--line); background:none; text-align:left; font:14px var(--phong); color:var(--text); }
+.vp-ds > :first-child { border-top:0; }
+.vp-dong:hover { background:var(--accent-soft); }
+.vp-dong[aria-expanded="true"] { background:var(--accent-soft); box-shadow:inset 3px 0 0 var(--accent); }
+.vp-dong[aria-expanded="true"] .chev { transform:rotate(90deg); }
+.vp-dong .ng-d { font:500 13px var(--phong-so); color:var(--text-dim); }
+.vp-dong .ai { font-size:12px; color:var(--text-faint); white-space:nowrap; }
+.vp-ct { display:grid; gap:10px; padding:10px 12px 12px 68px; border-top:1px solid var(--line); background:color-mix(in srgb, var(--accent-soft) 40%, var(--surface)); font-size:14px; }
+.vp-ct .k { display:grid; grid-template-columns:96px minmax(0,1fr); gap:4px 12px; }
+.vp-ct .k > span:nth-child(odd) { font-size:13px; color:var(--text-dim); }
+.vp-ct .hang-nut { display:flex; gap:8px; align-items:center; flex-wrap:wrap; }
+.vp-ct .hang-nut .phai { margin-left:auto; display:flex; gap:8px; }
+.dt .vp-dong { grid-template-columns:44px 26px minmax(0,1fr) 20px; }
+.dt .vp-dong .ai { display:none; }
+.dt .vp-ct { padding:10px 12px 12px; }
+.dt .vp-ct .k { grid-template-columns:1fr; }
+/* dải trạng thái "Chờ GV sửa" đầu thân panel Báo PH */
+.cho-sua { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:4px 12px; align-items:center; padding:10px 12px; border-radius:10px; background:var(--doing-nen); border:1px solid var(--line-strong); font-size:14px; }
+.cho-sua .h1 { display:flex; flex-wrap:wrap; align-items:center; gap:6px 10px; }
+.cho-sua .h1 b { font-weight:700; }
+.cho-sua .p { grid-column:1; font-size:13px; color:var(--text-dim); }
+.cho-sua .nut { grid-column:2; grid-row:1 / span 2; }
+.cho-sua.qua { background:var(--bad-nen); border-color:var(--bad-vien); }
+/* bản cũ → mới trong lịch sử vi phạm */
+.ls-ds .cu-moi { display:grid; gap:2px; }
+.ls-ds .tra-loi { color:var(--text-dim); font-style:normal; }
+/* nút nguy hiểm */
+.nut.nguy { border-color:var(--bad-vien); background:var(--bad-nen); color:var(--bad); }
+.menu-tha .nguy { color:var(--bad) !important; }
+/* toast nổi chân trang */
+.toast { position:absolute; left:50%; bottom:20px; transform:translateX(-50%); z-index:9; display:flex; align-items:center; gap:12px; min-height:44px; padding:6px 8px 6px 14px; border-radius:10px; background:var(--surface); border:1px solid var(--line-strong); box-shadow:0 10px 28px var(--bong); font-size:14px; white-space:nowrap; }
+.toast b { color:var(--ok); }
+.dt .toast { left:12px; right:12px; transform:none; bottom:76px; white-space:normal; }
+.pht .nt .nut-vuong { font-size:17px; font-weight:500; }
+/* trang-dau-tvv.css có .tinh{display:flex} (cột Tình trạng) — trả ô chọn tĩnh về khối */
+.oc-ds.tinh { display:block; }
+/* trang-dau-tvv.css có .goi (nút gọi điện) — trả chữ gợi ý trong ô chọn có tìm về dáng v21 */
+.oc .goi { display:block; height:auto; padding:0; border:0; border-radius:0; background:none; font:400 15px var(--phong); color:var(--text-faint) !important; }
+.dt .oc .goi { height:auto; font-size:16px; }
+/* bảng Vận hành 375: một cột thẻ */
+.vh-dt tr.dong td { padding:10px 14px; }
+.vh-dt tr.nh button { min-height:48px; }
+.vh tr.nh button { flex-wrap:wrap; row-gap:4px; padding-top:6px; padding-bottom:6px; }
+.vh tr.nh button > span:first-child { white-space:nowrap; }
+.cach.ba { grid-template-columns:repeat(3, minmax(0,1fr)); }
+.dt .cach.ba { grid-template-columns:1fr; }
