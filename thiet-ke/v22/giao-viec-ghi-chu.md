@@ -14,11 +14,12 @@ Thiết kế: `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` m�
 | G4a / G4b | "+" thêm người theo dõi (chọn nhiều) · ✕ bỏ người + Hoàn tác |
 | G5 | 1440 · GVCN · tab **Đang theo dõi**: mục Báo PH (Quá hạn đầu) · Phối hợp SOS · "Vừa xong 7 ngày" gập · panel chỉ đọc + "Bỏ theo dõi" |
 | G6 | mục mở + hai mục gập (vẫn "n việc · m quá hạn") — bấm thử |
-| G8a | 1440 · BPXL · Công việc (tab **Xếp lịch họp** · Việc được giao · Đang theo dõi) · panel Meeting hai phần cạnh nhau, chưa ai xong |
-| G8b | CX mở việc: Xếp lịch họp ✓ (ngày giờ 18/09 · 15:00), Kết quả meeting đang ghi |
-| G8c / G8d | TVV nhập hộ CX · cả hai xong ("Đặng Hải Yến nhập hộ CX"), Hoàn tác, Sửa |
+| G8a | 1440 · BPXL · Công việc (tab **Xếp lịch họp** · Việc được giao · Đang theo dõi) · panel Meeting ba phần, chưa phần nào xong |
+| G8b | 1440 · TVV · tab Báo PH, dòng "Báo PH Meeting CX/GĐCN" (như G1) · BPXL đã xếp (18/09 · 15:00) · TVV nhập hộ Kết quả meeting + ghi Báo PH (form đang có) |
+| G8c | CX mở việc · ghi Kết quả meeting · Báo PH chưa xong |
+| G8d | cả ba xong · Hoàn tác · Sửa |
 | G8e | CX · Công việc · dòng "Kết quả meeting" |
-| G8f | 375 · BPXL · hai phần xếp dọc |
+| G8f | 375 · BPXL · ba khối dọc |
 | G7a / b / c | 375 · Đang theo dõi · panel toàn màn có khối · đổi người toàn màn |
 
 ## 2. Thao tác TRƯỚC → SAU
@@ -46,15 +47,15 @@ Thiết kế: `docs/superpowers/specs/2026-11-20-bpxl-giao-viec/thiet-ke.md` m�
 - Chevron mục đặt sát tên (dáng dải gập CV6 đã duyệt); mục gập không đổi chiều cao dải.
 - Lịch sử đổi người / hạn / theo dõi dùng chung khối "Lịch sử · n" đang có (một kiểu ⑤), không thêm khối.
 
-## 3b. Meeting CX / GĐCN (B2 — chủ SP 20/11 tối, bản đơn giản)
+## 3b. Meeting CX / GĐCN (B2 — chủ SP 20/11 tối)
 
-- Hai phần ĐỘC LẬP, không thứ tự, không đánh số, không thanh tiến trình, không chữ "chờ…": **Xếp lịch họp** (BPXL) · **Kết quả meeting** (CX; TVV nhập hộ).
-- Mỗi phần cùng một kiểu: trạng thái chữ (Chưa xong / ✓ Hoàn thành) · khối Phụ trách + Hạn thu gọn · ô (tuỳ chọn) · nút **Hoàn thành**. Xếp lịch họp thêm ô **Ngày giờ họp** tuỳ chọn (ô ngày gõ được + nút lịch, ô giờ).
-- Phần của người khác chỉ đọc: chỉ trạng thái + người phụ trách + hạn (chưa xong) hoặc ai · lúc · nội dung (đã xong).
-- Tự quyết: dòng **Theo dõi** dùng chung cho cả việc (một dòng dưới hai phần) thay vì lặp ở mỗi phần — theo dõi là của cuộc họp, lặp hai lần là thừa. Nếu PTA muốn đúng chữ "khối ba dòng cho từng phần" thì tách lại.
-- Tự quyết: Công việc của BPXL vẽ ở **giao-viec.html G8a** (tab "Xếp lịch họp" đầu hàng tab), không ở bpxl-trang-dau.html; chuông BPXL (bpxl-trang-dau K3) thêm thanh "Xếp lịch họp 2".
-- Tự quyết: CX thấy ngày giờ họp BPXL ghi ngay trên dòng việc ("họp 18/09 · 15:00").
-- Việc "Báo PH Meeting" của TVV giữ như nay (G2a), theo B2 "PTA hiểu".
+- Lời chủ SP: "chỉ cần đơn giản là có phần cập nhật kết quả task, hoàn thành là được…" và "việc báo PH cho việc meeting CX/ GĐCN vẫn cần nhé".
+- Một việc Meeting = **ba phần độc lập**, không thứ tự, không đánh số, không chữ "chờ…": **Xếp lịch họp** (BPXL) · **Kết quả meeting** (CX; TVV nhập hộ, ghi "{TVV} nhập hộ CX") · **Báo PH** (TVV, form Báo PH đang có). Mỗi người thấy đúng dòng việc của mình: BPXL tab "Xếp lịch họp", CX mục "Kết quả meeting", TVV tab Báo PH › Phối hợp SOS "Báo PH Meeting CX/GĐCN" (như G1).
+- **Chọn bố cục: ba khối cùng kiểu XẾP DỌC** (không ba cột) — panel 736 chia ba còn ≈ 225 px mỗi cột, ô ngày + giờ và ô Kết quả chật, lỗ chỗ. Thứ tự cố định (Xếp lịch · Kết quả · Báo PH) chỉ để dễ tìm. Khối của người khác **gọn một dòng** (tên · trạng thái · người · hạn hoặc ai · lúc), khối của mình mở ô — mắt thấy ngay việc mình.
+- Xếp lịch họp: Ngày giờ họp + Kết quả, đều tuỳ chọn → Hoàn thành. Kết quả meeting: Kết quả tuỳ chọn → Hoàn thành. Báo PH: giữ nguyên form + chân Lưu / Lưu · việc tiếp ›.
+- Tự quyết: dòng **Theo dõi** dùng chung một dòng cho cả việc (theo dõi là của cuộc họp, lặp ba lần là thừa). Nếu PTA muốn đúng chữ "khối ba dòng cho từng phần" thì tách lại.
+- Tự quyết: ngày giờ họp BPXL ghi hiện trên dòng việc của CX và TVV ("họp 18/09 · 15:00").
+- Chuông BPXL (bpxl-trang-dau K3) có thanh "Xếp lịch họp 2".
 
 ## 4. [XM]
 
