@@ -2400,7 +2400,7 @@ await checkAsync('TL-1 (×3) · /my-work có yêu cầu trả lại + Báo PH "C
       WHERE c.branch_id = ? ORDER BY v.id LIMIT 40`).all(CN) as any[];
   const bp = conn.prepare(`SELECT v.id FROM viec_bao_ph v JOIN students s ON s.id = v.student_id WHERE s.consultant_user_id = ? AND v.trang_thai = 'mo' AND v.measure_id IS NOT NULL`).all(USER.TVV) as any[];
   assert(vp.length >= 20, `seed thiếu vi phạm MB (${vp.length})`);
-  const DO: [Vai, string][] = [['GVBM', '/my-work'], ['GVCN', '/my-work'], ['TVV', '/my-work'], ['QL', '/my-work']];
+  const DO: [Vai, string][] = [['GVBM', '/my-work'], ['GVCN', '/my-work'], ['TVV', '/my-work'], ['QL', '/my-work'], ['QL', '/my-work?nguoi=tat-ca']];
   const truoc = new Map<string, { n: number; dong: number }>();
   for (const [vai, url] of DO) { const d = await doSql(vai, 'GET', url); truoc.set(`${vai} ${url}`, d); }
   const ids: number[] = [];
@@ -2416,7 +2416,7 @@ await checkAsync('TL-1 (×3) · /my-work có yêu cầu trả lại + Báo PH "C
     for (const [vai, url] of DO) {
       const d = await doSql(vai, 'GET', url);
       const t0 = truoc.get(`${vai} ${url}`)!;
-      const nhan = vai === 'GVBM' ? 30 : vai === 'GVCN' ? 10 : 0;
+      const nhan = vai === 'GVBM' ? 30 : vai === 'GVCN' ? 10 : url.includes('tat-ca') ? ids.length : 0;   // Head "Tất cả": mọi yêu cầu mở của chi nhánh
       so.push(`${vai} ${url} ${t0.n} → ${d.n} câu · ${t0.dong} → ${d.dong} dòng`);
       assert(d.status === 200 && d.n <= t0.n, `${vai} ${url}: ${t0.n} → ${d.n} câu (phải không thêm câu)`);
       assert(d.dong <= t0.dong + nhan, `${vai} ${url}: ${t0.dong} → ${d.dong} dòng (> + ${nhan} yêu cầu)`);

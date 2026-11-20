@@ -1,6 +1,6 @@
 import { db, theoLo } from '../db.ts';
 import {
-  NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy, laDongLs, soTenVi,
+  NHOM_EM, PERMISSIONS, XU_LY_STATUS_LABEL, hanBaoPhHieuLuc, kindCuaBac, nhanLoaiXuLy, laDongLs, quaHanBaoPh, soTenVi,
   type NhomEm, type TrangThaiVp,
 } from '../../../shared/domain/index.ts';
 import { VAI_PHIA_TVV, can, duyetYThuc, type Principal } from '../permissions.ts';
@@ -213,7 +213,7 @@ export function dongThoiGian(emIds: readonly number[], trang: Map<number, EmYThu
     const han = r.bp_tt === 'mo' ? hanBaoPhHieuLuc(r.bp_han, khoang[r.student_id], r.bp_han_chon) : (r.bp_han_chon ?? r.bp_han);
     const lan = r.bp_lan ? JSON.parse(r.bp_lan) : null;
     phu.get(r.id)![r.laBaoLai ? 'baoLai' : 'baoPh'] = {
-      id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && !r.bp_cho && han < homNay, daChinh: r.bp_han_chon != null, ...(r.bp_cho ? { choGvSua: true as const } : {}),
+      id: r.bp_id, trangThai: r.bp_tt, ngay: r.bp_ngay ?? null, han, quaHan: r.bp_tt === 'mo' && quaHanBaoPh(han, homNay, r.bp_cho), daChinh: r.bp_han_chon != null, ...(r.bp_cho ? { choGvSua: true as const } : {}),
       coTheGhi: r.bp_tt === 'mo' && !!o.p && coTheGhi(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
       coTheSuaHan: r.bp_tt === 'mo' && !!o.p && coTheSuaHan(o.p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
       soLan: r.bp_so, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
@@ -349,7 +349,7 @@ function baoPhMoiNhat(p: Principal, ids: readonly number[], homNay: string): Map
       const han = hanBaoPhHieuLuc(r.han, khoang[r.student_id], r.han_chon);
       out.set(r.student_id, {
         id: r.id, nhan: r.m_kind ? nhanLoaiXuLy(r.m_kind, r.m_custom ?? null) : r.nhan, han, trangThai: r.trang_thai,
-        nhanTrangThai: r.trang_thai === 'mo' && r.tra_lai_id ? CHO_GV_SUA : nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && !r.tra_lai_id && han < homNay, ngayXong: r.ngay_xong ?? null,
+        nhanTrangThai: r.trang_thai === 'mo' && r.tra_lai_id ? CHO_GV_SUA : nhanTrangThaiBaoPh(r.trang_thai, r.so_lan > 0), quaHan: r.trang_thai === 'mo' && quaHanBaoPh(han, homNay, r.tra_lai_id), ngayXong: r.ngay_xong ?? null,
         coTheGhi: r.trang_thai === 'mo' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }),
         daChinh: r.han_chon != null,
       });

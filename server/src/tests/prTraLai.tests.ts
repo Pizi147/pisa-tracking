@@ -25,6 +25,10 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
   const { xoaNho } = await import('../platform/nguCanhRequest.ts');
   const { hanBaoPh, hanTraLai } = await import('../../../shared/domain/index.ts');
   const { createApp } = await import('../app.ts');
+  const ph: any = await import('../yThuc/phoiHop.ts');
+  const pc: any = await import('../classes/phanCongGv.ts');
+  const students: any = await import('../students/students.ts');
+  const { LUOT_SAU_THI_SQL } = await import('../students/tamDung.ts');
   const hang = (sql: string, ...a: unknown[]) => conn.prepare(sql).all(...a) as any[];
   const mot = (sql: string, ...a: unknown[]) => conn.prepare(sql).get(...a) as any;
   /* Tệp ĐỘC LẬP (không ở GIU_CHUOI): chạy trên bản chép DB gốc riêng — không bọc ROLLBACK (máy chủ cuộn lại giao dịch bỏ dở ở đầu mỗi request); mỗi phép một em mới. */
@@ -135,7 +139,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(mot('SELECT occurred_on FROM violations WHERE id = ?', vids[0]).occurred_on === addDays(TODAY, -3), 'NGÀY đã sửa');
       assert(mot(`SELECT 1 FROM violation_history WHERE violation_id = ? AND field = 'occurred_on'`, vids[0]) && mot(`SELECT 1 FROM violation_history WHERE violation_id = ? AND field = 'tra_lai_da_sua'`, vids[0]), 'lịch sử');
       assert(JSON.stringify(tin(`tra-lai-kq:${a}`)) === JSON.stringify([tvv.userId]), `TVV nhận "GV đã sửa": ${JSON.stringify(tin(`tra-lai-kq:${a}`))}`);
-      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/gui-lai`, {})).status === 400, 'đã xong → 400');
+      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/gui-lai`, {})).status === 409, 'đã xong → 409');
       const b = (await tra(tvv, { violationId: vids[1] })).json.id;
       assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${b}/giu-nguyen`, { traLoi: 'ngắn' })).status === 400, 'trả lời < 8 → 400');
       const gn = await goi(gvbm, 'POST', `/y-thuc/tra-lai/${b}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
@@ -148,7 +152,11 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(dong(c)?.trang_thai === 'xong' && dong(c).ket_qua === 'da_xoa', `khôi phục: ${JSON.stringify(dong(c))}`);
       const m = (await tra(tvv, { measureId: mid })).json.id;
       const th = await goi(gvcn, 'POST', `/discipline-measures/${mid}/thu-hoi`, { lyDo: 'TVV báo bậc chưa hợp lý, thu hồi để xét lại' });
-      assert(th.status === 200 && dong(m).ket_qua === 'thu_hoi', `thu hồi: ${th.status} ${th.json?.error} ${JSON.stringify(dong(m))}`);
+      assert(th.status === 200 && dong(m).trang_thai === 'mo', `GVCN gửi thu hồi chờ Head duyệt → yêu cầu còn mở (PTA chốt): ${th.status} ${th.json?.error} ${JSON.stringify(dong(m))}`);
+      const sid2 = moiEm(); const x2 = xuLy(sid2);
+      const m2 = (await tra(tvv, { measureId: x2.mid })).json.id;
+      const th2 = await goi(ql, 'POST', `/discipline-measures/${x2.mid}/thu-hoi`, { lyDo: 'TVV báo bậc chưa hợp lý, Head thu hồi thẳng' });
+      assert(th2.status === 200 && dong(m2).ket_qua === 'thu_hoi', `Head thu hồi chốt → đóng: ${th2.status} ${th2.json?.error} ${JSON.stringify(dong(m2))}`);
     }));
 
     await checkAsync('TL-5 · quyền theo việc: người được giao sửa / xoá đúng vi phạm đó, vi phạm khác 403, đóng xong 403', () => thu(async () => {
@@ -161,6 +169,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(items(gvKhac).some((x) => x.key === `yt_tra_lai:${id}` && x.giaoBoi) && !items(gvbm).some((x) => x.key === `yt_tra_lai:${id}`), 'việc sang người được giao');
       assert((await goi(gvKhac, 'PATCH', `/violations/${vids[0]}`, sua)).status === 200, 'người được giao sửa được');
       assert((await goi(gvKhac, 'PATCH', `/violations/${vids[1]}`, sua)).status === 403, 'vi phạm khác → 403');
+      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' })).status === 403, 'người nhận cũ (đã giao đi) → 403');
       assert((await goi(gvKhac, 'POST', `/y-thuc/tra-lai/${id}/gui-lai`, {})).status === 200, 'người được giao gửi lại');
       assert((await goi(gvKhac, 'PATCH', `/violations/${vids[0]}`, { ten: 'Nói chuyện riêng' })).status === 403, 'đã xong → hết quyền theo việc');
     }));
@@ -219,14 +228,17 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
 
     await checkAsync('TL-10 · rút: TVV rút khi GV chưa xử lý (GV nhận tin, việc rời /my-work, Báo PH hết dừng); GV rút 403; sau rút GV xử lý 400; trả lại lần nữa được', () => thu(async () => {
       const sid = moiEm(); const { vids, bp } = xuLy(sid);
+      conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -2), bp);
       const id = (await tra(tvv, { violationId: vids[0] })).json.id;
       assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/rut`)).status === 403, 'GV rút → 403');
       const r = await goi(tvv2, 'POST', `/y-thuc/tra-lai/${id}/rut`);
       assert(r.status === 200 && r.json.trangThai === 'rut' && mot('SELECT tra_lai_id FROM viec_bao_ph WHERE id = ?', bp).tra_lai_id === null, `rút: ${r.status} ${r.json?.error}`);
+      assert(mot('SELECT han_chon FROM viec_bao_ph WHERE id = ?', bp).han_chon === null && items(tvv).find((x) => x.key === `bao-ph:${bp}`)?.urgency === 'overdue',
+        'PTA chốt: rút KHÔNG tính lại hạn Báo PH (chỉ gỡ tạm dừng — quá hạn như cũ)');
       assert(tin(`tra-lai-kq:${id}`).includes(gvbm.userId) && !items(gvbm).some((x) => x.key === `yt_tra_lai:${id}`), 'GV nhận tin rút, việc rời');
       assert(mot(`SELECT 1 FROM violation_history WHERE violation_id = ? AND field = 'tra_lai_rut'`, vids[0]), 'lịch sử rút');
-      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' })).status === 400, 'sau rút → 400');
-      assert((await goi(tvv, 'POST', `/y-thuc/tra-lai/${id}/rut`)).status === 400, 'rút lần hai → 400');
+      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' })).status === 409, 'rút trước, GV trả lời sau → 409');
+      assert((await goi(tvv, 'POST', `/y-thuc/tra-lai/${id}/rut`)).status === 409, 'rút lần hai → 409');
       assert((await tra(tvv, { violationId: vids[0] })).status === 200, 'trả lại lần nữa');
     }));
 
@@ -262,6 +274,133 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       rac.khoiPhucRac(P.admin, x.thungRacId);
       assert(dong(id)?.trang_thai === 'mo' && hang(`SELECT 1 FROM viec_theo_doi WHERE loai = 'tra_lai' AND ref_id = ?`, id).length === 2, 'khôi phục đủ');
     }));
+
+    /** Meeting CX đã xác nhận của em (hai phần, người theo dõi tvv / gvcn / head) — như GV-1. */
+    const meeting = (sid: number) => {
+      const att = mot(`SELECT a.id FROM assessment_attempts a WHERE a.status != 'cancelled' AND NOT EXISTS (SELECT 1 FROM sos_coordination_actions x WHERE x.attempt_id = a.id AND x.kind = 'cx_meeting_student')
+          AND NOT ${LUOT_SAU_THI_SQL('a')} LIMIT 1`).id;
+      const aid = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, preset, status, created_at) VALUES (?, ?, 'cx_meeting_student', 1, 'pending', ?)`)
+        .run(att, sid, new Date().toISOString()).lastInsertRowid);
+      ph.confirmCoordination(gvcn, aid, { performedOn: TODAY, note: 'Cần họp CX với em' });
+      return hang('SELECT id FROM meeting_phan WHERE phoi_hop_id = ?', aid).map((r) => r.id as number);
+    };
+    const theoDoi = (loai: string, id: number) => hang('SELECT user_id, nguon FROM viec_theo_doi WHERE loai = ? AND ref_id = ? ORDER BY user_id', loai, id);
+
+    await checkAsync('TL-15 · (rà 1) đổi GVCN thật + đổi TVV khi Meeting VÀ trả lại cùng mở: người theo dõi gvcn / tvv của CẢ HAI chuyển theo; cả lần xử lý → GVCN mới nhận việc + chuông', () => thu(async () => {
+      const sid = moiEm(); const { mid } = xuLy(sid);
+      const mp = meeting(sid);
+      const id = (await tra(tvv, { measureId: mid })).json.id;
+      const v2 = (await tra(tvv, { violationId: viPham(sid) })).json.id;   // vi phạm lẻ về GVBM → GVCN theo dõi
+      assert(mp.length === 2 && mp.every((m) => theoDoi('meeting', m).some((x) => x.user_id === gvcn.userId && x.nguon === 'gvcn')), 'Meeting: GVCN theo dõi');
+      const slots = hang(`SELECT user_id, skill, is_core FROM teacher_assignments WHERE class_id = ? AND status = 'active'`, lop).map((r) => ({ userId: r.user_id, skill: r.skill, isCore: r.is_core === 1 }));
+      const w2 = P.w2Teacher;
+      const lu = pc.luuPhanCong(ql, { lop: [{ classId: lop, slots: slots.filter((x) => !x.isCore).concat([{ userId: w2.userId, skill: null, isCore: true }]) }] });
+      try {
+        for (const m of mp) assert(theoDoi('meeting', m).some((x) => x.user_id === w2.userId && x.nguon === 'gvcn') && !theoDoi('meeting', m).some((x) => x.user_id === gvcn.userId),
+          `Meeting ${m} theo GVCN mới: ${JSON.stringify(theoDoi('meeting', m))}`);
+        assert(theoDoi('tra_lai', v2).some((x) => x.user_id === w2.userId && x.nguon === 'gvcn'), 'trả lại: theo dõi gvcn chuyển');
+        assert(dong(id).nguoi_nhan === w2.userId && tin(`tra-lai:${id}:nhan:${w2.userId}`).includes(w2.userId), `cả lần → GVCN mới + chuông: ${JSON.stringify(dong(id))}`);
+        assert(items(w2).some((x) => x.key === `yt_tra_lai:${id}`) && !items(gvcn).some((x) => x.key === `yt_tra_lai:${id}`), 'việc sang GVCN mới');
+        assert(mot(`SELECT 1 FROM viec_giao_lan WHERE loai = 'tra_lai' AND ref_id = ? AND truong = 'nguoi_nhan'`, id), 'lịch sử người nhận');
+        students.updateStudent(P.admin, sid, { consultantUserId: tvv2.userId });
+        for (const m of mp) assert(theoDoi('meeting', m).some((x) => x.user_id === tvv2.userId && x.nguon === 'tvv') && !theoDoi('meeting', m).some((x) => x.user_id === tvv.userId),
+          `đổi TVV: Meeting ${m} ${JSON.stringify(theoDoi('meeting', m))}`);
+      } finally {
+        students.updateStudent(P.admin, sid, { consultantUserId: tvv.userId });
+        pc.hoanTacLuu(ql, { lo: lu.lo });
+      }
+    }));
+
+    await checkAsync('TL-16 · (rà 2) tạm dừng theo yêu cầu: hai vi phạm cùng lần (một trả lời, một còn mở) · cả lần + một vi phạm · gỡ vi phạm khỏi lần xử lý → Báo PH hết dừng', () => thu(async () => {
+      const sid = moiEm(); const { vids, mid, bp } = xuLy(sid, 3);
+      const cho = () => mot('SELECT tra_lai_id FROM viec_bao_ph WHERE id = ?', bp).tra_lai_id as number | null;
+      const a = (await tra(tvv, { violationId: vids[0] })).json.id; const b = (await tra(tvv, { violationId: vids[1] })).json.id;
+      await goi(gvbm, 'POST', `/y-thuc/tra-lai/${a}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
+      assert(cho() === b, `một vi phạm còn mở → vẫn chờ (${cho()})`);
+      const c = (await tra(tvv, { measureId: mid })).json.id;
+      await goi(gvbm, 'POST', `/y-thuc/tra-lai/${b}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
+      assert(cho() === c, `cả lần còn mở → vẫn chờ (${cho()})`);
+      await goi(gvcn, 'POST', `/y-thuc/tra-lai/${c}/gui-lai`, {});
+      assert(cho() === null, 'hết yêu cầu mở → hết dừng');
+      const d = (await tra(tvv, { violationId: vids[2] })).json.id;
+      assert(cho() === d, 'trả tiếp → dừng');
+      conn.prepare('UPDATE viec_bao_ph SET han = ?, han_chon = NULL WHERE id = ?').run(addDays(TODAY, -2), bp);   // hạn gốc đã qua trong lúc chờ
+      xu.suaViPhamXuLy(gvcn, mid, { violationIds: [vids[0], vids[1]] });   // GVCN "sửa" bằng cách gỡ vi phạm khỏi lần xử lý
+      assert(cho() === null && mot('SELECT han_chon FROM viec_bao_ph WHERE id = ?', bp).han_chon === hanBaoPh(TODAY), 'gỡ vi phạm → Báo PH hết dừng ngay, hạn tính lại hôm nay + 4');
+      await goi(gvbm, 'POST', `/y-thuc/tra-lai/${d}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' });
+      assert(cho() === null && dong(d).trang_thai === 'xong', 'đóng sau đó không kẹt');
+    }));
+
+    await checkAsync('TL-17 · (rà 5) trả vi phạm CHƯA có lần xử lý → GVCN lưu xử lý chứa nó → Báo PH sinh ra đã "Chờ GV sửa"; TVV báo PH → tự đóng', () => thu(async () => {
+      const sid = moiEm(); const v = viPham(sid);
+      const id = (await tra(tvv, { violationId: v })).json.id;
+      const m = xu.xacNhanXuLy(gvcn, sid, { violationIds: [v], performedOn: TODAY, performerName: null, note: 'Nhắc nhở em sau giờ học, em hứa sửa' });
+      const bp = mot('SELECT id, tra_lai_id FROM viec_bao_ph WHERE measure_id = ?', m.id);
+      assert(bp.tra_lai_id === id, `Báo PH mới chờ GV sửa: ${JSON.stringify(bp)}`);
+      await goi(tvv, 'POST', '/y-thuc/bao-ph/ghi', { viecIds: [bp.id], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em' });
+      assert(dong(id).ket_qua === 'tvv_da_bao', 'tự đóng');
+    }));
+
+    await checkAsync('TL-18 · (rà 3) một luật tạm dừng: hồ sơ HV không đỏ khi chờ; TVV báo PH khi chờ + đã qua hạn gốc → hạn tính lại TRƯỚC khi xong (không trễ)', () => thu(async () => {
+      const sid = moiEm(); const { vids, bp } = xuLy(sid);
+      conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -3), bp);
+      await tra(tvv, { violationId: vids[0] });
+      const tim = (o: any): any => (o && typeof o === 'object' ? (o.key === `bao-ph:${bp}` && 'tone' in o ? o : Object.values(o).map(tim).find(Boolean)) : undefined);
+      const d = tim((await goi(tvv, 'GET', `/students/${sid}`)).json);
+      assert(d && d.quaHanNgay === null && d.tone !== 'danger' && d.gap !== 'qua-han', `hồ sơ HV: ${JSON.stringify(d)}`);
+      await goi(tvv, 'POST', '/y-thuc/bao-ph/ghi', { viecIds: [bp], ketQua: 'da_bao', ghiChu: 'Đã gọi mẹ em, mẹ hứa nhắc em' });
+      const b = mot('SELECT trang_thai, han_chon FROM viec_bao_ph WHERE id = ?', bp);
+      assert(b.trang_thai === 'xong' && b.han_chon === hanBaoPh(TODAY) && b.han_chon >= TODAY, `hạn tính lại trước khi xong: ${JSON.stringify(b)}`);
+    }));
+
+    await checkAsync('TL-19 · (rà 7) hai người trả cùng lúc: chỉ mục UNIQUE bắt người sau → 409 câu tiếng Việt (không 500)', () => thu(async () => {
+      const sid = moiEm(); const { vids } = xuLy(sid);
+      /* Giả lập người kia chèn trước một khắc: trigger chèn dòng mở ngay trước dòng của mình (vượt qua bước đọc kiểm). */
+      conn.exec(`CREATE TEMP TRIGGER tl_dua BEFORE INSERT ON vi_pham_tra_lai WHEN NEW.ly_do = 'Đua trả lại cùng một lúc' BEGIN
+        INSERT INTO vi_pham_tra_lai (student_id, violation_id, ly_do, nguoi_tra, tra_luc, han, trang_thai) VALUES (NEW.student_id, NEW.violation_id, 'Người kia trả trước', ${tvv2.userId}, NEW.tra_luc, NEW.han, 'mo'); END`);
+      try {
+        const r = await tra(tvv, { violationId: vids[0], lyDo: 'Đua trả lại cùng một lúc' });
+        assert(r.status === 409 && /đang chờ GV sửa/.test(r.json?.error ?? ''), `${r.status} ${r.json?.error}`);
+      } finally { conn.exec('DROP TRIGGER IF EXISTS tl_dua'); }
+    }));
+
+    await checkAsync('TL-20 · Head "Tất cả" thấy việc trả lại của GV (đứng tên người giữ); Head chi nhánh khác không; em Tạm dừng → việc ẩn, quay lại → hiện', () => thu(async () => {
+      const sid = moiEm(); const { vids } = xuLy(sid);
+      const id = (await tra(tvv, { violationId: vids[0] })).json.id;
+      xoaNho();
+      const tc = ((myWork(loadPrincipal(ql.userId), { nguoi: 'tat-ca' }) as any).items ?? []).find((x: any) => x.key === `yt_tra_lai:${id}`);
+      assert(tc && !tc.mine && tc.ownerId === gvbm.userId, `Head Tất cả: ${JSON.stringify(tc)}`);
+      xoaNho();
+      assert(!((myWork(loadPrincipal(P.cpManager.userId), { nguoi: 'tat-ca' }) as any).items ?? []).some((x: any) => x.key === `yt_tra_lai:${id}`), 'Head CP không thấy');
+      conn.prepare(`UPDATE students SET status = 'paused' WHERE id = ?`).run(sid);
+      assert(!items(gvbm).some((x) => x.key === `yt_tra_lai:${id}`) && dong(id).trang_thai === 'mo', 'Tạm dừng → ẩn, yêu cầu giữ');
+      conn.prepare(`UPDATE students SET status = 'active' WHERE id = ?`).run(sid);
+      assert(items(gvbm).some((x) => x.key === `yt_tra_lai:${id}`), 'quay lại → hiện');
+    }));
+
+    await checkAsync('TL-21 · (rà 8) CX tự trả thì không tự trả lời phía GV; TVV của em hết vai TVV → không trả được', () => thu(async () => {
+      const sid = moiEm(); const { vids } = xuLy(sid, 2);
+      const id = (await tra(cx, { violationId: vids[0] })).json.id;
+      assert((await goi(cx, 'POST', `/y-thuc/tra-lai/${id}/giu-nguyen`, { traLoi: 'CX tự trả lời yêu cầu của chính mình' })).status === 403, 'CX tự trả lời → 403');
+      const tvvCu = taiKhoan('tvvcu', 'consultant');
+      conn.prepare('UPDATE students SET consultant_user_id = ? WHERE id = ?').run(tvvCu.userId, sid);
+      accounts.setRoles(P.admin, tvvCu.userId, [{ role: 'office_admin', branches: ['MB'] }]);
+      ck.set(tvvCu.userId, await vao(tvvCu.userId));
+      assert((await tra(tvvCu, { violationId: vids[1] })).status === 403, 'TVV của em đã hết vai TVV → 403');
+    }));
+
+    await checkAsync('TL-22 · (rà 4) người nhận hết vai ở chi nhánh → việc về GVCN (chuông, /my-work); người cũ không thấy, không làm được', () => thu(async () => {
+      const sid = moiEm(); const { vids } = xuLy(sid);
+      const id = (await tra(tvv, { violationId: vids[0] })).json.id;
+      assert(dong(id).nguoi_nhan === gvbm.userId, 'ban đầu về GVBM');
+      accounts.setRoles(P.admin, gvbm.userId, [{ role: 'teacher', branches: ['CP'] }]);   // ĐẶT CUỐI: GVBM mất vai MB (không trả lại phân công)
+      assert(dong(id).nguoi_nhan === gvcn.userId && tin(`tra-lai:${id}:nhan:${gvcn.userId}`).includes(gvcn.userId), `về GVCN + chuông: ${JSON.stringify(dong(id))}`);
+      assert(items(gvcn).some((x) => x.key === `yt_tra_lai:${id}`) && !items(gvbm).some((x) => x.key === `yt_tra_lai:${id}`), '/my-work theo người mới');
+      ck.set(gvbm.userId, await vao(gvbm.userId));
+      assert((await goi(gvbm, 'POST', `/y-thuc/tra-lai/${id}/giu-nguyen`, { traLoi: 'Em nói chuyện cả buổi, cô đã nhắc ba lần' })).status === 403, 'người cũ → 403');
+      const kv = await goi(gvcn, 'GET', `/giao-viec/tra_lai/${id}`);
+      assert(kv.json.phuTrach[0].id === gvcn.userId, 'docViec cùng hàm');
+    }));
   } finally {
     may.close();
   }
@@ -281,7 +420,7 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
     const cu = new SqliteDb(':memory:'); cu.exec(cat);
     const a: string[] = []; migratePrTraLai(cu, a);
     const b: string[] = []; migratePrTraLai(cu, b);
-    assert(a.length === 2 && b.length === 0, `${a.join(' | ')} ‖ ${b.join(' | ')}`);
+    assert(a.length === 3 && b.length === 0, `${a.join(' | ')} ‖ ${b.join(' | ')}`);
     cu.exec('DROP INDEX uq_tra_lai_vp_mo');
     const c2: string[] = []; migratePrTraLai(cu, c2);
     assert(c2.length === 1 && !!cu.prepare(`SELECT 1 FROM sqlite_master WHERE name = 'uq_tra_lai_vp_mo'`).get(), `tự lành: ${c2.join(' | ')}`);

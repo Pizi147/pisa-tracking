@@ -377,6 +377,7 @@ export function tinhViecChiNhanh(cn: number): (DongNv & { hanGoc: string | null 
   const items = ((myWork(ql, { branchId: cn, nguoi: 'tat-ca', chiNhom: VIEC_CO_HAN }) as { items?: WorkItem[] }).items ?? []);
   for (const it of items) {
     if (!it.due || !VIEC_CO_HAN.has(it.group)) continue;
+    if (it.choGvSua) continue;   // TL-1 (rà #1927 (3)): Báo PH "Chờ GV sửa" — hạn tạm dừng, không là việc tới hạn / quá hạn (cùng luật `quaHanBaoPh`)
     const { khoa, hanGoc: hg } = theoDoan(khoaDonVi(it.key, it), homNay, it.caseId, it.key);
     out.set(khoa, { loai: 'viec', kieu: it.group, khoa, chiNhanh: cn, lop: it.classId ?? null, hocVien: it.studentId ?? null,
       nguoi: nguoiChiuViec(it), sCheo: false, pcNhapSau: false, han: it.due, tuan: null,

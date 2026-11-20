@@ -33,7 +33,7 @@ import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { tinhHinhCuaEm, type TinhHinhView } from './tinhHinh.ts';
 import { donViec } from '../worklist/giaoViec.ts';
-import { dongTheoDuongSanCo, xoaTraLaiCuaXuLy } from './traLai.ts';
+import { dongBoTamDung, dongTheoDuongSanCo, xoaTraLaiCuaXuLy } from './traLai.ts';
 import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Head trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
@@ -823,6 +823,9 @@ export function suaViPhamXuLy(p: Principal, measureId: number, v: { violationIds
     const link = db().prepare('INSERT INTO measure_violations (measure_id, violation_id, added_by, added_at) VALUES (?,?,?,?)');
     for (const id of them) { link.run(measureId, id, p.userId, nowIso()); noteMeasureChange(id, null, measureId, p.userId); }
     ghiPhanHoi(them);
+    /* TL-1 (rà #1927 (2)): vi phạm vào / ra lần xử lý → "Chờ GV sửa" của Báo PH theo yêu cầu còn mở của lần đó (hết dừng → tính lại hạn). */
+    const bp = db().prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(measureId) as { id: number } | undefined;
+    if (bp) dongBoTamDung([bp.id], p.userId, true);
     db().prepare('UPDATE discipline_measures SET updated_at = ? WHERE id = ?').run(nowIso(), measureId);
     chotHanXuLy([m.student_id]);
     writeAudit({ actorUserId: p.userId, action: 'discipline.edit', entityType: 'discipline_measure', entityId: measureId,
@@ -916,8 +919,6 @@ export function thuHoiXuLy(p: Principal, measureId: number, v: { lyDo?: unknown;
       duLieu: { kind: m.kind, customName: m.custom_name ?? null, bacVe: bacSauThuHoi(em, measureId), soViPham: viPhamCua(measureId).length },
     });
     if (id === null) throw badRequest('Lần xử lý này đang chờ Head duyệt thu hồi.');
-    /* TL-1 (N61): GVCN chọn Thu hồi cho lần xử lý bị trả lại — yêu cầu đang mở đóng "thu hồi" (luật duyệt N5 không đổi). */
-    dongTheoDuongSanCo({ measureId }, 'thu_hoi', p.userId);
     if (ql) {
       apDungThuHoi(p.userId, m, hv, lyDo, v.baoLai !== false);
       chotYeuCau(db(), theThuHoi(measureId), 'duyet', { nguoiDuyet: p.userId });
@@ -943,6 +944,9 @@ function apDungThuHoi(boi: number | null, m: any, hv: { student_code: string }, 
   const vIds = viPhamCua(m.id);
   for (const vid of vIds) noteMeasureChange(vid, m.id, null, boi);
   chotHanXuLy([m.student_id]);
+  /* TL-1 (N61, PTA chốt rà #1927): thu hồi CHỐT (Head làm thẳng / duyệt / tự chốt) → yêu cầu trả lại cả lần còn mở đóng "thu hồi" — trước khi Báo PH đóng.
+     GVCN mới gửi chờ duyệt: yêu cầu còn mở, Báo PH vẫn "Chờ GV sửa". */
+  dongTheoDuongSanCo({ measureId: m.id }, 'thu_hoi', boi);
   dongViecTheoXuLy(m.id, 'system_thu_hoi', lyDo, boi, { baoLai });
   const daBaoPh = !!db().prepare("SELECT 1 FROM sos_coordination_actions WHERE student_id = ? AND kind = 'bao_ph_tvv' AND status = 'done' LIMIT 1").get(m.student_id);
   writeAudit({ actorUserId: boi, action: 'discipline.revoke', entityType: 'discipline_measure', entityId: m.id,

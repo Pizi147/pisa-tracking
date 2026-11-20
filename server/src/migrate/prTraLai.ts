@@ -1,7 +1,8 @@
 /**
  * TL-1 (N61, chủ SP 20/11 — trả lại vi phạm), chạy lặp không đổi, khớp `schema.sql`:
  *   1. Bảng `vi_pham_tra_lai` (TVV trả một vi phạm / cả lần xử lý về GV) + chỉ mục (một yêu cầu mở mỗi vi phạm / lần xử lý; việc của tôi; giao cho tôi; theo em).
- *   2. `viec_bao_ph.tra_lai_id` — Báo PH đang "Chờ GV sửa" (hạn tạm dừng). NULL = không chờ — dữ liệu cũ giữ nguyên.
+ *   2. `viec_bao_ph.tra_lai_id` — Báo PH đang "Chờ GV sửa" (hạn tạm dừng). NULL = không chờ — dữ liệu cũ giữ nguyên. Chỉ mục một phần `idx_viec_bao_ph_tra_lai`
+ *      (dòng cũ NULL không vào chỉ mục — câu cũ không đổi kế hoạch / thứ tự).
  * Chỉ thêm. Mỗi khối TỰ LÀNH: thiếu bảng HOẶC thiếu chỉ mục nào → chạy lại cả khối (`IF NOT EXISTS`). Bảng gốc chưa có (DB rất cũ) → bỏ qua; lần sau làm nốt.
  */
 export const BANG_TRA_LAI = `
@@ -46,5 +47,9 @@ export function migratePrTraLai(conn: any, applied: string[]) {
   if (co(conn, 'viec_bao_ph') && !(conn.prepare(`SELECT 1 FROM pragma_table_info('viec_bao_ph') WHERE name = 'tra_lai_id'`).get())) {
     conn.exec('ALTER TABLE viec_bao_ph ADD COLUMN tra_lai_id INTEGER');
     applied.push('TL-1: thêm viec_bao_ph.tra_lai_id (Báo PH "Chờ GV sửa" — hạn tạm dừng; NULL = không chờ).');
+  }
+  if (co(conn, 'viec_bao_ph') && !co(conn, 'idx_viec_bao_ph_tra_lai')) {
+    conn.exec('CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_tra_lai ON viec_bao_ph(tra_lai_id) WHERE tra_lai_id IS NOT NULL');
+    applied.push('TL-1: chỉ mục một phần idx_viec_bao_ph_tra_lai (Báo PH đang dừng theo yêu cầu).');
   }
 }

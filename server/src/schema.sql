@@ -2447,6 +2447,7 @@ CREATE INDEX IF NOT EXISTS idx_tra_lai_nhan ON vi_pham_tra_lai(nguoi_nhan) WHERE
 CREATE INDEX IF NOT EXISTS idx_tra_lai_giao ON vi_pham_tra_lai(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 CREATE INDEX IF NOT EXISTS idx_tra_lai_hv ON vi_pham_tra_lai(student_id);
 CREATE INDEX IF NOT EXISTS idx_tra_lai_vp ON vi_pham_tra_lai(violation_id);
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_tra_lai ON viec_bao_ph(tra_lai_id) WHERE tra_lai_id IS NOT NULL;   -- Báo PH đang dừng vì một yêu cầu
 CREATE INDEX IF NOT EXISTS idx_tra_lai_xl ON vi_pham_tra_lai(measure_id);
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).

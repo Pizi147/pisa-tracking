@@ -13,6 +13,11 @@ export const ngayCongBaoPh = (moc?: string | null) => hanTai('bao_ph_vi_pham', m
 /** Cửa sổ SQL "quay lại": N lớn nhất qua mọi bản (giảm hạn không làm sót việc cũ); `hanBaoPhHieuLuc` lọc lại đúng bản. */
 export const ngayCongBaoPhLonNhat = () => Math.max(...cacBanHan().map((b) => b.v.bao_ph_vi_pham.ngay)) - 1;
 export const hanBaoPh = (luu: string): string => { const d = ngayTheoGioVN(luu) ?? luu.slice(0, 10); return addDaysIso(d, ngayCongBaoPh(d)); };
+/**
+ * TL-1 (rà #1927 (3)): MỘT luật quá hạn cho việc Báo PH ở mọi nơi đọc (Công việc, panel, tab lớp, hồ sơ HV, Đang theo dõi): đang "Chờ GV sửa" (`viec_bao_ph.tra_lai_id`
+ * / `WorkItem.choGvSua`) → hạn tạm dừng, không quá hạn. `han` = hạn hiệu lực (`hanBaoPhHieuLuc`).
+ */
+export const quaHanBaoPh = (han: string | null | undefined, homNay: string, choGvSua?: unknown): boolean => !choGvSua && !!han && han < homNay;
 /** TL-1 (N61): hạn GV xử lý vi phạm bị trả lại — `tra_lai_vi_pham` (gốc 3) ngày tính cả ngày trả, theo bản tại ngày trả. */
 export const hanTraLai = (ngay: string): string => addDaysIso(ngay, hanTai('tra_lai_vi_pham', ngay).ngay - 1);
 

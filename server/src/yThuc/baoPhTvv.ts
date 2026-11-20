@@ -12,7 +12,7 @@
 import { DS_JSON, db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
+  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, quaHanBaoPh, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -24,7 +24,7 @@ import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, donViec, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
-import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
+import { coTheTraLai, dongBoTamDung, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** TL-1 (N61): việc đang có yêu cầu trả lại mở (`tra_lai_id`) — hạn tạm dừng, không quá hạn ở mọi nơi. */
@@ -73,6 +73,9 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
      GROUP BY n.uid
      ON CONFLICT(loai, ref_id, user_id) DO NOTHING`,
   ).run(nowIso(), m.id, m.studentId, homNay);
+  /* TL-1 (rà #1927 (5)): vi phạm của lần này đã bị trả lại (yêu cầu còn mở) → việc sinh ra đã "Chờ GV sửa" ngay. */
+  const v = db().prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(m.id) as { id: number } | undefined;
+  if (v) dongBoTamDung([v.id], null, false);
 }
 
 /**
@@ -252,7 +255,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
     : null;
   return {
     id, measureId: v.measure_id ?? null, studentId: v.student_id, ten: v.full_name, nhan: v.nhan, tieuDe: `Báo PH · ${v.nhan} · ${v.full_name}`, phoiHopId: v.phoi_hop_id ?? null, tinhHinhId: v.tinh_hinh_id ?? null,
-    han, quaHan: v.trang_thai === 'mo' && !v.tra_lai_id && han < homNay, trangThai: v.trang_thai, nhanTrangThai: v.trang_thai === 'mo' && v.tra_lai_id ? CHO_GV_SUA : nhanTrangThai,
+    han, quaHan: v.trang_thai === 'mo' && quaHanBaoPh(han, homNay, v.tra_lai_id), trangThai: v.trang_thai, nhanTrangThai: v.trang_thai === 'mo' && v.tra_lai_id ? CHO_GV_SUA : nhanTrangThai,
     hanMacDinh, hanChon: v.han_chon ?? null, coTheSuaHan: v.trang_thai === 'mo' && xl === 'con' && coTheSuaHan(p, v), lichSuHan: lichSuHan('bao_ph', id),
     xuLy: xl, nhanXuLy: xl === 'con' ? null : LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong],
     bo: v.trang_thai === 'bo' ? { lyDo: v.bo_ly_do, nhan: nhanLyDo(v.bo_ly_do), chu: v.bo_ly_do_chu ?? null, luc: v.bo_luc } : null,
@@ -321,9 +324,10 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
         baoTheoDoi('bao_ph', id, p.userId, { suKien: 'ket_qua', tieuDe: `Báo PH · ${x.nhan} · ${x.full_name}`, chiTiet: ghiChu, khoa: lanId, studentId: x.student_id,
           duong: duongHoSoHocVien(x.student_id, { tab: 'y-thuc' }), boQua: [gvcnVp] });
       }
-      db().prepare('UPDATE viec_bao_ph SET trang_thai = ? WHERE id = ?').run(sau, id);
-      /* TL-1 (N61): TVV không bị chặn — báo PH xong khi đang "Chờ GV sửa" → yêu cầu trả lại còn mở tự đóng "TVV đã báo PH". */
+      /* TL-1 (N61): TVV không bị chặn — báo PH xong khi đang "Chờ GV sửa" → yêu cầu trả lại còn mở tự đóng "TVV đã báo PH". Gọi TRƯỚC khi việc sang xong:
+         hạn tính lại (hôm nay + 4) nên lần báo này không bị tính trễ ở sổ nghĩa vụ / "Báo PH đúng hạn" (rà #1927 (3)). */
       if (sau === 'xong' && x.tra_lai_id) dongTheoDuongSanCo({ baoPhId: id }, 'tvv_da_bao', p.userId);
+      db().prepare('UPDATE viec_bao_ph SET trang_thai = ? WHERE id = ?').run(sau, id);
       if (x.tinh_hinh_id != null) {
         /* TINH-HINH: kết quả về GV đã báo (chuông khi Đã báo PH). */
         db().prepare(`UPDATE tinh_hinh_hoc_tap SET trang_thai = ? WHERE id = ? AND trang_thai != 'rut'`).run(sau, x.tinh_hinh_id);
@@ -514,7 +518,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
     else continue;
     const han = hanBaoPhHieuLuc(r.han, r.quay_lai ? [{ tu: r.han, den: r.quay_lai }] : [], r.han_chon);
     /* TL-1 (N61): "Chờ GV sửa" — hạn tạm dừng (không quá hạn, không "hôm nay"), cờ cho web. */
-    const urgency = r.tra_lai_id ? 'normal' : han < o.today ? 'overdue' : han === o.today ? 'today' : 'normal';
+    const urgency = r.tra_lai_id ? 'normal' : quaHanBaoPh(han, o.today) ? 'overdue' : han === o.today ? 'today' : 'normal';
     const cho = r.tra_lai_id ? { choGvSua: true as const } : {};
     if (r.phoi_hop_id != null) {
       /* PHOI-HOP-V2: việc sau Meeting CX — nhóm riêng (mục Phối hợp SOS), gộp theo lớp như việc khác; khoá `bao-ph:{id}` như Báo PH (sổ nghĩa vụ, đúng hạn). */
