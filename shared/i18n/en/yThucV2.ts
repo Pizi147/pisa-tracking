@@ -18,6 +18,7 @@ export const EN_Y_THUC_V2 = {
   'Xong · 7 ngày': 'Done · 7 days',
   'Thang · {ten}': 'Ladder · {ten}',
   'Không còn vi phạm nào cần làm': 'No violations left to handle',
+  'Không có mô tả thêm': 'No further description',
   'Ghi đã báo PH gì, PH nói gì': 'Write what was told and what the parent said',
   'Đã báo PH gì, PH nói gì, hẹn gì': 'What was told, what the parent said, any follow-up',
   'Ghi Nội dung: đã báo PH gì, PH nói gì.': 'Write the Content: what was told and what the parent said.',

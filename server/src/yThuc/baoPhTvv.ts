@@ -12,7 +12,7 @@
 import { DS_JSON, db, tx } from '../db.ts';
 import {
   COORDINATION_REMOVE_REASON_LABEL, COORDINATION_USER_REMOVE_REASONS, KET_QUA_BAO_PH, PERMISSIONS,
-  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, type KetQuaBaoPh,
+  GHI_CHU_MEETING_TOI_THIEU, buocTvvViec, ngayCongBaoPhLonNhat, VIOLATION_CATEGORY_LABEL, duongHoSoHocVien, hanBaoPh, hanBaoPhHieuLuc, nhanLoaiXuLy, reasonNeedsText, tachTenMoTa, type KetQuaBaoPh,
 } from '../../../shared/domain/index.ts';
 import { can, coQuyenBuocTiep, scopeFor, type Principal } from '../permissions.ts';
 import { badRequest, chuTuDo, conflict, forbidden, isIsoDate, notFound, nowIso } from '../util.ts';
@@ -173,7 +173,9 @@ export type ViecBaoPhView = {
   /** G3-13: `ngayLam` = ngày THỰC HIỆN xử lý (ngày nghiệp vụ) — ô ② ghi ngày này, không giờ máy lưu. */
   boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null;
     /** UI-1 (mockup U10 K5): vi phạm của lần xử lý, mỗi dòng một (ngày · tên) + ghi chú GVCN riêng — panel tách trường. */
-    viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
+    viPham: { id: number; ngay: string; ten: string; moTa: string; skill: string | null }[]; ghiChu: string | null;
+    /** VI-PHAM-MO: lần xử lý nguồn của `ghiChu` (nút Dịch) — null khi ghi chú là của Meeting / tình hình. */
+    xuLyId?: number | null };
   /** T22: GVCN đang xin thu hồi lần xử lý (thẻ chờ QL) — TVV chỉ cần biết, lịch sử báo PH giữ. */
   thuHoiCho: { lyDo: string | null } | null;
   /** P1 G3-2: lần xử lý còn CHỜ QL duyệt (đề xuất WL 3, Meeting…) — ô ② "Chờ QL duyệt", hạn QL trả lời; null = đã chốt. Việc vẫn sinh ngay (N1). */
@@ -181,12 +183,15 @@ export type ViecBaoPhView = {
 };
 
 /** Vi phạm của lần xử lý (ngày tăng dần) — `noiDung` một câu ("Không làm bài tập về nhà (09/09, 10/09)") + danh sách cho panel tách trường. */
-function viPhamXuLy(measureId: number | null): { ngay: string; ten: string; skill: string | null }[] {
+function viPhamXuLy(measureId: number | null): { id: number; ngay: string; ten: string; moTa: string; skill: string | null }[] {
   if (!measureId) return [];
   return (db().prepare(
-    `SELECT COALESCE(NULLIF(x.ten, ''), NULLIF(x.description, ''), x.category) AS ten, x.occurred_on, x.skill FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
+    `SELECT x.id, x.ten, x.description, x.category, x.occurred_on, x.skill FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id
       WHERE mv.measure_id = ? ORDER BY x.occurred_on, x.id`,
-  ).all(measureId) as any[]).map((r) => ({ ngay: r.occurred_on as string, ten: (VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.ten] ?? String(r.ten), skill: r.skill ?? null }));
+  ).all(measureId) as any[]).map((r) => {
+    const tm = tachTenMoTa(r.ten, r.description, r.category);   // VI-PHAM-MO: cùng chữ với các danh sách vi phạm khác; mô tả mở tại chỗ, không request thêm
+    return { id: r.id as number, ngay: r.occurred_on as string, ten: tm.ten || ((VIOLATION_CATEGORY_LABEL as Record<string, string>)[r.category] ?? String(r.category)), moTa: tm.moTa, skill: r.skill ?? null };
+  });
 }
 function noiDungXuLy(vp: { ngay: string; ten: string }[], note: string | null): string | null {
   const theoTen = new Map<string, string[]>();
@@ -237,7 +242,7 @@ export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
       : v.phoi_hop_id != null
       /* PHOI-HOP-V2: bối cảnh = GVCN xác nhận Meeting (ngày, người, nội dung gửi TVV). */
       ? { nguoiLuu: v.ph_nguoi ?? null, luuLuc: v.ph_ngay ?? null, lop: null, noiDung: v.ph_note?.trim() || null, viPham: [], ghiChu: v.ph_note?.trim() || null }
-      : { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, ngayLam: v.m_ngay ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null },
+      : { nguoiLuu: v.m_nguoi ?? null, luuLuc: v.m_luc ?? null, ngayLam: v.m_ngay ?? null, lop: v.m_lop ?? null, noiDung: noiDungXuLy(vp, v.m_note ?? null), viPham: vp, ghiChu: v.m_note?.trim() || null, xuLyId: v.measure_id ?? v.bao_lai_cua ?? null },
     thuHoiCho: the ? { lyDo: the.ly_do ?? null } : null,
     choQlDuyet: choQl,
   };

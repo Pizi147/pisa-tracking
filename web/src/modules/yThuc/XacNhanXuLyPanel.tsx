@@ -19,6 +19,7 @@ import {
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
 import { DUONG_LAM_MOI_Y_THUC, lamMoiYThucTheo, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { ChipMon, chuMoc } from './BangLan.tsx';
+import { DongViPham } from './DongViPham.tsx';
 import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
@@ -120,14 +121,13 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const khoiYc = yc.length > 0 && (
     <div className="flex flex-col gap-1.5 rounded-[10px] px-3.5 py-3 text-[13px]" style={{ background: 'var(--surface-2)' }}>
       {yc.map((v) => (
-        <div key={v.id} className="grid gap-0.5">
+        <div key={v.id} className="grid gap-1">
           <p className="m-0 flex flex-wrap items-center gap-x-2 gap-y-1 text-slate-400">
             <span className="rounded-md border border-[color:var(--accent)] px-1.5 text-xs font-semibold leading-5 text-[color:var(--accent)]">{t('Yêu cầu xử lý')}</span>
             {v.reportedByName && <span><b className="font-semibold text-slate-100">{v.reportedByName}</b> {t('ghi')} · {ngay(v.reportedOn, homNay)}</span>}
             <span className="ml-auto tabular-nums">{t('Trong 2 tuần:')} <b className="font-semibold text-slate-100">{soHaiTuan}</b> / 3 {t('vi phạm')}</span>
           </p>
-          <p className="m-0 flex items-baseline gap-2 text-sm text-slate-100"><span className="w-11 shrink-0 text-xs tabular-nums text-slate-500">{ngay(v.occurredOn, homNay)}</span><ChipMon skill={v.skill} />{v.ten}</p>
-          {v.moTa && <p className="m-0 pl-[52px] text-[13px] text-slate-400">{v.moTa}</p>}
+          <ul className="m-0 list-none p-0 text-sm text-slate-100"><DongViPham v={v} ngay={ngay(v.occurredOn, homNay)} moSan /></ul>
         </div>
       ))}
     </div>

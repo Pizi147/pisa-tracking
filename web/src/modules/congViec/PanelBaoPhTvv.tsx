@@ -9,8 +9,10 @@ import { OKhac } from '../../ui/OKhac.tsx';
 import { ONgay } from '../../ui/ONgay.tsx';
 import { ErrorState, NutChon, Skeleton } from '../../ui/ui.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
-import { ChipMon, TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
+import { TheLoai, TienTrinh } from '../yThuc/BangLan.tsx';
 import { BadgeViec } from '../yThuc/khoiYThuc.tsx';
+import { DongViPham } from '../yThuc/DongViPham.tsx';
+import { ChuDich } from '../../ui/ChuDich.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -31,7 +33,7 @@ type ViecBaoPh = {
   tinhHinhId?: number | null;
   /** Q-RL2c: việc người dùng đã bỏ, người xem có quyền → nút Khôi phục. */
   khoiPhucDuoc: boolean;
-  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null; viPham: { ngay: string; ten: string; skill: string | null }[]; ghiChu: string | null };
+  boiCanh: { nguoiLuu: string | null; luuLuc: string | null; ngayLam?: string | null; lop: string | null; noiDung: string | null; viPham: { id: number; ngay: string; ten: string; moTa: string; skill: string | null }[]; ghiChu: string | null; xuLyId?: number | null };
   thuHoiCho: { lyDo: string | null } | null;
   /** P1 G3-2: lần xử lý còn chờ QL duyệt → ô ② "Chờ QL duyệt" (không "✓" như đã chốt). */
   choQlDuyet: { han: string | null } | null;
@@ -182,10 +184,11 @@ export function PanelBaoPhTvv({ it, onDong, onDaLam, onTiep, tenTiep }: {
         <BoiCanh dong={[
           [t('Vi phạm'), v.boiCanh.viPham.length > 0 && (
             <ul className="m-0 list-none space-y-0.5 p-0">
-              {v.boiCanh.viPham.map((x, i) => <li key={i} className="grid grid-cols-[3rem_minmax(0,1fr)] gap-2"><span className="tabular-nums text-slate-400">{shortDate(x.ngay, hn)}</span><span className="flex items-start"><ChipMon skill={x.skill} />{x.ten}</span></li>)}
+              {v.boiCanh.viPham.map((x) => <DongViPham key={x.id} v={x} ngay={shortDate(x.ngay, hn)} />)}
             </ul>
           )],
-          [t('Ghi chú GVCN'), v.tinhHinhId == null && v.boiCanh.ghiChu && <span className="font-normal">{v.boiCanh.ghiChu}</span>],
+          [t('Ghi chú GVCN'), v.tinhHinhId == null && v.boiCanh.ghiChu && <span className="font-normal">
+            <ChuDich chu={v.boiCanh.ghiChu} nguon={v.boiCanh.xuLyId ? { bang: 'discipline_measures', id: v.boiCanh.xuLyId, cot: 'note' } : null} /></span>],
           [t('Phụ huynh'), ph.ten && `${ph.ten}${ph.quanHe ? ` (${ph.quanHe})` : ''}`],
           [t('Điện thoại'), ph.sdt && (
             <a className="btn btn-sm min-h-[44px] tabular-nums no-underline sm:min-h-[32px]" href={`tel:${ph.sdt.replace(/\D/g, '')}`} aria-label={t('Gọi {ten} {sdt}', { ten: ph.ten ?? t('phụ huynh'), sdt: sdtDoc(ph.sdt) })}>

@@ -12,6 +12,7 @@ import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { CHU_TOI_THIEU, bacDu, hanDuyetNgay, kindCuaBac, ngay, nguoiThanhPayload, nguoiThieu, nhanLoaiXuLy, quyCheThuHoi, type NguoiChon } from '@shared/domain/index.ts';
 import { lamMoiYThuc, type XuLyView } from './kieu.ts';
+import { DongViPham } from './DongViPham.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
 
 /**
@@ -223,8 +224,8 @@ export function XemXuLyPanel({ measureId, onClose, onDaThucHien, onDone }: {
                   {loiMay && <p className="m-0 text-xs text-late" role="alert">{loiMay}</p>}
                 </>
               ) : d.viPham.length === 0 ? <p className="m-0 text-xs text-slate-400">{t('Vi phạm đã bị xoá — lần xử lý vẫn giữ, bậc không lùi.')}</p> : (
-                <ul className="m-0 list-none space-y-1 p-0 text-xs text-slate-400">
-                  {d.viPham.map((v) => <li key={v.id} className="break-words">{ngay(v.occurredOn, homNay)} · {dich(v.categoryLabel)} · {v.ten}</li>)}
+                <ul className="m-0 list-none space-y-1 p-0 text-sm text-slate-200">
+                  {d.viPham.map((v) => <DongViPham key={v.id} v={{ ...v, nhom: dich(v.categoryLabel) }} ngay={ngay(v.occurredOn, homNay)} />)}
                 </ul>
               )}
             </Khoi>

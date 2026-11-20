@@ -13,7 +13,7 @@ import { require_, requireXemLuotCham, type Principal } from '../permissions.ts'
 import { kiemXemCase } from '../cases/cases.ts';
 import { phieuBanGiao } from '../classes/banGiao.ts';
 import { HttpError, badRequest, notFound, nowIso } from '../util.ts';
-import { ENTRY_SKILLS, PERMISSIONS } from '../../../shared/domain/index.ts';
+import { ENTRY_SKILLS, PERMISSIONS, tachTenMoTa } from '../../../shared/domain/index.ts';
 
 type Dong = { chu: string | null; studentId: number | null };
 type Nguon = { cot: readonly string[]; doc: (p: Principal, id: number, cot: string, kyNang: string | null) => Dong };
@@ -55,6 +55,19 @@ export const NGUON_DICH: Record<string, Nguon> = {
       return { chu: mot(`SELECT ${cot} AS chu FROM sos_cases WHERE id = ?`, id)?.chu ?? null, studentId: c.eff_student_id ?? c.student_id ?? null };
     },
   },
+  /* VI-PHAM-MO (chủ SP 21/11): tên + mô tả một vi phạm — đúng chữ người dùng thấy (`tachTenMoTa`: dòng cũ chưa có `ten` thì tách từ mô tả). Quyền = xem hồ sơ em. */
+  violations: {
+    cot: ['ten', 'mo_ta'],
+    doc: (p, id, cot) => {
+      const r = mot('SELECT student_id, ten, description, category FROM violations WHERE id = ?', id);
+      if (!r) throw notFound();
+      require_(p, PERMISSIONS.STUDENT_VIEW, { studentId: r.student_id }, 'Học viên này nằm ngoài phạm vi bạn được xem.');
+      const tm = tachTenMoTa(r.ten, r.description, r.category);
+      return { chu: cot === 'ten' ? tm.ten : tm.moTa, studentId: r.student_id };
+    },
+  },
+  /* Ghi chú GVCN của lần xử lý (panel Báo PH). */
+  discipline_measures: { cot: ['note'], doc: theoHocVien('discipline_measures') },
   case_issues: { cot: ['observation'], doc: theoCase('case_issues') },
   /* UI-HO-SO-HV-2: Tiến độ trên lớp + góp ý tuần cũ (hồ sơ HV) — quyền như `GET /students/:id/bai-tren-lop` (xem hồ sơ em). */
   bai_tren_lop: { cot: ['nhan_xet'], doc: theoHocVien('bai_tren_lop') },

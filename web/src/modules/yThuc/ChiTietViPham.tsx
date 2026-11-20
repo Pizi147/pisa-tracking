@@ -8,6 +8,7 @@ import { demLanSua, nhanLichSuViPham } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
+import { MoTaViPham } from './DongViPham.tsx';
 
 export type ViolationDetail = {
   id: number; studentId: number;
@@ -55,12 +56,8 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
 
   return (
     <div className="space-y-2.5 text-sm">
-      {d.moTa && (
-        <div>
-          <p className="text-xs text-slate-500 m-0 mb-1">{t('Mô tả')}</p>
-          <p className="m-0 whitespace-pre-wrap break-words">{d.moTa}</p>
-        </div>
-      )}
+      {/* VI-PHAM-MO: cùng khối mô tả + Dịch với dòng vi phạm mở tại chỗ. */}
+      <MoTaViPham v={d} />
       {/* U10.8: nhãn cùng dòng với "+ Tệp · + Liên kết" (mockup `.bc`). */}
       <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} onChanged={reload} />
 
