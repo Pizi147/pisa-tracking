@@ -24,7 +24,7 @@ import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
 import { HOAT_DONG_O, baoTheoDoi, conHieuLuc, donViec, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
-import { coTheTraLai, dongBoTamDung, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
+import { coTheTraLai, dongTheoDuongSanCo, traLaiDangMo } from './traLai.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** TL-1 (N61): việc đang có yêu cầu trả lại mở (`tra_lai_id`) — hạn tạm dừng, không quá hạn ở mọi nơi. */
@@ -58,7 +58,11 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
   const han = hanBaoPh(homNay);
   /* Chuông (CHUONG-V2): việc Báo PH của người giữ HIỆN TẠI đọc từ `/my-work` (`bao_ph_yt`) — đổi TVV thì chuông sang người mới. */
   db().prepare(
-    `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (?,?,?,?, 'mo', ?) ON CONFLICT(measure_id) DO NOTHING`,
+    /* TL-1 (rà #1927 (5)): vi phạm của lần này đã bị trả lại (yêu cầu còn mở) → việc sinh ra đã "Chờ GV sửa" — trong CÙNG câu (0 câu thêm mỗi em). */
+    `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc, tra_lai_id) VALUES (?1, ?2, ?3, ?4, 'mo', ?5,
+       (SELECT t.id FROM vi_pham_tra_lai t WHERE t.trang_thai = 'mo' AND (t.measure_id = ?1
+          OR t.violation_id IN (SELECT mv.violation_id FROM measure_violations mv WHERE mv.measure_id = ?1)) ORDER BY t.id DESC LIMIT 1))
+     ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());
   /* GV-1 (N58): người theo dõi mặc định của Báo PH vi phạm — GVCN lớp em + GV đã ghi vi phạm (nhận tin "Cập nhật" khi có kết quả; thay tin riêng N41). */
   /* MỘT câu (lô xác nhận xử lý: +1 câu / em): GVCN đang hiệu lực của lớp em đang học (nguồn `gvcn` — đổi GVCN thì chuyển theo) + người ghi các vi phạm
@@ -73,9 +77,6 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
      GROUP BY n.uid
      ON CONFLICT(loai, ref_id, user_id) DO NOTHING`,
   ).run(nowIso(), m.id, m.studentId, homNay);
-  /* TL-1 (rà #1927 (5)): vi phạm của lần này đã bị trả lại (yêu cầu còn mở) → việc sinh ra đã "Chờ GV sửa" ngay. */
-  const v = db().prepare('SELECT id FROM viec_bao_ph WHERE measure_id = ?').get(m.id) as { id: number } | undefined;
-  if (v) dongBoTamDung([v.id], null, false);
 }
 
 /**
