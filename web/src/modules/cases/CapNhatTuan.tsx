@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import type { KetQuaTutorChon } from '../../ui/PeoplePicker.tsx';
 import { DongTutorO } from './BuoiTutorO.tsx';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, invalidate, lamMoiHoSoEm } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { ChonNguoi } from '../../ui/PeoplePicker.tsx';
 import { DongQuyChe, Hang2, KhungPanel, Truong, useBaoDangSua, useNhap } from '../../ui/KhungPanel.tsx';
@@ -106,7 +106,7 @@ const DA_LUU: Record<PlanDecision, string> = {
   ask_manager: t('Đã gửi Head — PA vẫn chạy'),
 };
 
-export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat, ketThucSom, hoanThanhCase }: {
+export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, boiCanh, quayLai, onClose, onSaved, onThemPa, tiep, chuTiep, vuotLuat, ketThucSom, hoanThanhCase }: {
   /**
    * #3 bản rà 11/11 (G2-05, chủ SP "chỉ để 'Hoàn thành Case', không có dấu '?'"): PA này là PA CUỐI còn chạy của Case và người xem hoàn thành được Case → kết thúc PA
    * (Kết thúc PA / Kết quả cuối) có ô tick "Hoàn thành Case" ngay trong form: mức theo Tiến triển, kết luận điền sẵn Nhận xét (sửa được).
@@ -120,7 +120,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
   tiep?: TiepViec; chuTiep?: string;
   pa: PaCanCapNhat; hocVien?: string | null; lop?: string | null;
   /** OV-12e: đầu panel v3 — em (link hồ sơ) · ngữ cảnh ("Tăng cường bài tập · L"); Bối cảnh ≤ 3 dòng (Nguyên nhân · Kết quả kỳ trước). */
-  em?: { id: number; ten: string } | null; ngCanh?: string | null; boiCanh?: [string, ReactNode][];
+  em?: { id: number; ten: string } | null; /** S5: em của Case (khi không truyền `em`) — làm mới đúng hồ sơ em. */ studentId?: number | null; ngCanh?: string | null; boiCanh?: [string, ReactNode][];
   /** OV-7b: sửa lần ghi gần nhất — form điền sẵn, lưu qua `POST /followups/:id/sua`. */
   sua?: SuaKetQua;
   /** PA theo quy chế cần thêm hỗ trợ → mở Thêm PA (T63, K3-12). */
@@ -343,7 +343,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       if (deXuat) { body.decision = 'keep'; body.deXuatPa = doi.payload(); }
       if (!sua) { body.ky = ky; body.nhapCoSo = coSo; }
       const ct = await api.post<any>(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
-      const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
+      /* S5: hồ sơ đúng em (+ thẻ kỹ năng); Case có thể đóng / PA kết thúc (hoàn thành cùng lần bấm, kết quả cuối, Kết thúc PA) → mọi `/students` như cũ. */
+      const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); if (daHt || lanCuoi || decision === 'end') invalidate('/students'); else lamMoiHoSoEm(em?.id ?? studentId); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
       /* #3: kết quả đã lưu → hoàn thành Case cùng lần bấm. Lỗi ở bước này không mất kết quả: nói rõ "chưa hoàn thành Case", nút Hoàn thành Case vẫn ở Case. */
       let daHt = false;
       let loiHt: string | null = null;
@@ -498,7 +499,7 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, ngCanh, boiCanh, qua
       /* TU2-4: PA chưa tới hạn không có dòng việc — báo tại chỗ cho khối "PA đang chạy", không tải lại `/my-work` (dòng đọc GV sát trần). */
       baoNhapPa(pa.id, r.nhap);
       if (!sapToiHan) invalidate('/my-work');
-      invalidate('/cases');
+      /* S5 (chỗ 5): Case đang mở (`ThanCase`) nhận nháp qua `baoNhapPa` — đặt vào PA tại chỗ + quên bản vừa xem, không tải lại `/cases`. */
     } catch (e: any) {
       const xd = xungDotCua(e);
       if (xd) setXungDot({ ...xd, tu: 'nhap' }); else setLoiNhap({ chu: e?.message ?? t('Không lưu được'), thuLai: !daChotCua(e) });

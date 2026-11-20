@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { api, ApiError, invalidate } from '../../lib/api.ts';
+import { api, ApiError } from '../../lib/api.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, KhungPanel, Truong, useNhap, useXoaNhap } from '../../ui/KhungPanel.tsx';
@@ -17,7 +17,7 @@ import {
   CHU_TOI_THIEU, KHAC_TOI_THIEU, MEASURE_KIND_LABEL, addDaysIso, mondayOfDate, QUY_CHE_KHONG_XU_LY, bacDu, bacKhongNgat, luuRoiTiep, hanBaoPh, hanDuyetNgay, THANG, dsLoi, hanTheoNgay, kiemGhiRoKhac, ngay, nguoiThanhPayload, nguoiThieu, quyCheXuLy, type NguoiChon,
 } from '@shared/domain/index.ts';
 import { MuiTenGap, NhanViPham } from './NhanViPham.tsx';
-import { DUONG_LAM_MOI_Y_THUC, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
+import { DUONG_LAM_MOI_Y_THUC, lamMoiYThucTheo, type ViPhamV4, type XuLyView, type YThucHocVien } from './kieu.ts';
 import { ChipMon, chuMoc } from './BangLan.tsx';
 import { ThangVach } from './ThangYThuc.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
@@ -26,7 +26,6 @@ import { dich, t } from '@shared/i18n/index.ts';
 const MO_TA_MIN = CHU_TOI_THIEU;
 /** Mockup v20 D1 (bộ đếm "78 / 300") + N35: Mô tả / Lý do ≤ 300 — máy chủ kiểm cùng trần (`moTa`, xuLy.ts). */
 const MO_TA_TOI_DA = 300;
-const lamMoi = () => DUONG_LAM_MOI_Y_THUC.forEach((d) => invalidate(d));
 /** LG-12: lý do "Không xử lý" — cùng ngưỡng máy chủ (`khongXuLy`). */
 const LY_DO_KHONG_TOI_THIEU = CHU_TOI_THIEU;   // N50 (6), cùng máy chủ
 
@@ -47,12 +46,14 @@ type Cach = 'nang' | 'giu' | 'vuot' | 'ngoai';
  * OV-12e (mockup v3 §8): khuôn panel v3 — đầu "Xác nhận xử lý" + chip hạn / tên em (link) · lớp · Ý thức; MỘT khối Cần làm (Bậc xử lý tự điền · vi phạm đưa vào
  * · Ngày * (ô ngày gõ được) · Người * · Mô tả * · nút chính; "Đề xuất QL duyệt" là nút chữ); Bối cảnh: Lần trước · Bậc tiếp theo; chân trạng thái lưu.
  */
-export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, onClose, onDone, onKhai, onTiep }: {
+export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem, lop, classId, onClose, onDone, onKhai, onTiep }: {
   studentId: number | null; cheDo?: 'xu-ly' | 'de-xuat';
   /** Rà 11/11 G3-6: mở từ dòng Đã xem — vi phạm đó tick sẵn (cùng tick mặc định), nằm ở "Cũ hơn" thì mở sẵn nhóm đó. */
   tickThem?: readonly number[];
   /** Mã lớp ở dòng 2 đầu panel (nơi gọi biết). */
   lop?: string | null;
+  /** S5: lớp của em (nơi gọi biết) — lưu xong chỉ làm mới phần Ý thức của lớp đó; không truyền = mọi `/classes`. */
+  classId?: number | null;
   onClose: () => void; onDone?: () => void;
   /** Mở panel Xác nhận cấp bậc vi phạm (Q7): chuỗi chưa có lần xử lý nào và em chưa từng xác nhận. */
   onKhai?: (studentId: number) => void;
@@ -62,6 +63,7 @@ export function XacNhanXuLyPanel({ studentId, cheDo: cheDoMo = 'xu-ly', tickThem
   const toast = useToast();
   const { homNay } = useNgayNghiepVu();
   const { data: d, error: loiTai, reload } = useApi<YThucHocVien>(studentId ? `/students/${studentId}/y-thuc` : null, [studentId]);
+  const lamMoi = () => lamMoiYThucTheo(DUONG_LAM_MOI_Y_THUC, { classId, studentIds: [studentId] });
   /* Một form (bỏ chế độ "Đề xuất QL duyệt" riêng): `cheDo` suy từ cách — Nâng 1 bậc = Xác nhận xử lý, cách khác = Đề xuất. */
   const [cach, setCach] = useState<Cach>(cheDoMo === 'de-xuat' ? 'ngoai' : 'nang');
   const cheDo: 'xu-ly' | 'de-xuat' = cach === 'nang' ? 'xu-ly' : 'de-xuat';

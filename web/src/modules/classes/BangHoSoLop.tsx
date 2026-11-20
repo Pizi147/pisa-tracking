@@ -109,7 +109,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
   const cases = useApi<{ rows: CaseLop[] }>(`/cases?classId=${classId}`, [classId]);
   /* GD-6 (mockup ② mục 0 ý 3): thẻ kỹ năng có việc QUÁ HẠN của người xem tô màu quá hạn (V22) — dùng chung lời gọi `viec-theo-em` của đầu trang (không thêm request). */
   const viec = useViecLop(classId);
-  const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, onDone: () => { roster.reload(); onDoi(); } });
+  const tt = useThaoTacDongHocVien({ laLopThuong: false, quyen, maLop, lopYThuc: classId, onDone: () => { roster.reload(); onDoi(); } });
   const COT = cotCua(!!quyen.theoVai);
   /* Chip lọc nằm trên URL (`?loc=`) — sang hồ sơ em rồi Quay lại / F5 vẫn đúng lọc (luật Quay lại về đúng nguồn). */
   const [locUrl, setLoc] = useThamSoUrl('loc', 'tat-ca');
@@ -283,7 +283,7 @@ export function BangHoSoLop({ classId, maLop, loTrinhLop, quyen, onDoi, chon, on
           : <button type="button" className="btn btn-sm" onClick={() => setLoc('tat-ca')}>{t('Tất cả')} <b className="tabular-nums">{dem['tat-ca']}</b></button> }} />
       {tt.panels}
       {ngan2 && (
-        <NganCase caseId={ngan2.caseId} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong}
+        <NganCase caseId={ngan2.caseId} hocVien={ngan2.hv} lop={maLop} onClose={() => setNgan2(null)} onChanged={xong} onDoiChu={cases.reload}
           kyNangTiep={(() => {
             /* U03 A2 "Lưu · kỹ năng tiếp ›": Case đang mở của kỹ năng kế (L R W1 W2 S) cùng em — tóm tắt dưới hàng đi theo. */
             const ca = caseCua.get(ngan2.sid) ?? [];

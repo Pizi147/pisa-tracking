@@ -1,7 +1,7 @@
 import { xoaViPham } from './DeleteViolationConfirm.tsx';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { api } from '../../lib/api.ts';
-import { lamMoiYThuc as lamMoiCache } from './kieu.ts';
+import { lamMoiYThuc } from './kieu.ts';
 import { useApi } from '../../lib/useApi.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { Hang2, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
@@ -39,12 +39,14 @@ type NguoiChon = { id: number; name: string; code?: string | null };
 const moiDong = (key: number, ngay: string): Dong => ({ key, ngay, mon: '', daChonMon: false, nhom: '', ten: '', moTa: '' });
 
 export function RecordViolationPanel({
-  open, onClose, studentId, studentName, lop, onDone, students, violation, onDelete,
+  open, onClose, studentId, studentName, lop, classId, onDone, students, violation, onDelete,
 }: {
   open: boolean; onClose: () => void;
   studentId: number; studentName?: string;
   /** Mã lớp hiện ở đầu ngăn (`Ghi vi phạm · Tên HV · MB FOU 12`). */
   lop?: string | null;
+  /** S5: lớp của các em (nơi gọi biết) — lưu xong chỉ làm mới phần Ý thức của lớp đó; không truyền = mọi `/classes`. */
+  classId?: number | null;
   /** AUDIT-1611 A1-17: lần ghi mới → `ids` + `chiNhac` để nơi mở mở sẵn Lịch sử, đánh dấu dòng vừa thêm (nhắc nhở không ở Cần làm). */
   onDone?: (x?: { ids: number[]; chiNhac: boolean }) => void;
   /** Mở từ trang lớp: danh sách lớp — chọn một hoặc nhiều học viên ngay trong form. Không truyền = một học viên (`studentId`). */
@@ -62,6 +64,7 @@ export function RecordViolationPanel({
   const chonNhieu = !!students && !editing;
   const lf = useLoiForm();
   const [hocVien, setHocVien] = useState<number[]>([]);
+  const lamMoiCache = () => lamMoiYThuc({ classId, studentIds: hocVien });
   const [moTaRieng, setMoTaRieng] = useState<Record<number, string>>({});
   const [dong, setDong] = useState<Dong[]>([moiDong(1, today)]);
   const [tep, setTep] = useState<TepChoMuc[]>([]);

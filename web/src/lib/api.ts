@@ -19,9 +19,18 @@ const cache = new Map<string, unknown>();
  */
 const lanXoa = new Map<string, number>();
 const demXoa = (prefix: string) => lanXoa.set(prefix, (lanXoa.get(prefix) ?? 0) + 1);
+/**
+ * S5 LAM-MOI-HEP: tiền tố kết thúc bằng `$` (`invalidateDung`) = ĐÚNG đường `p` hoặc `p?…` — không trúng `/students/30` khi sửa `/students/3`, không trúng
+ * đường con `/students/3/skill-board`. Mọi chỗ so tiền tố (bản nhớ, thế hệ, hook, gộp) đi qua hàm này.
+ */
+export function khopTienTo(path: string, prefix: string): boolean {
+  if (!prefix.endsWith('$')) return path.startsWith(prefix);
+  const p = prefix.slice(0, -1);
+  return path === p || path.startsWith(`${p}?`);
+}
 export function theHe(path: string): number {
   let n = 0;
-  for (const [p, c] of lanXoa) if (path.startsWith(p)) n += c;
+  for (const [p, c] of lanXoa) if (khopTienTo(path, p)) n += c;
   return n;
 }
 /**
@@ -46,9 +55,17 @@ export function invalidateAll() {
 export function invalidate(prefix: string, luc?: number) {
   demXoa(prefix);
   for (const key of [...cache.keys()]) {
-    if (key.startsWith(prefix)) cache.delete(key);
+    if (khopTienTo(key, prefix)) cache.delete(key);
   }
   listeners.forEach((l) => l(prefix, luc));
+}
+/** S5: vô hiệu ĐÚNG các đường (`khopTienTo`) — làm mới một em / một lớp / một Case sau lưu, không đánh thức đường con hay em khác. */
+export function invalidateDung(p: string) { invalidate(`${p}$`); }
+/** S5: Case / PA của MỘT em đổi → hồ sơ + thẻ kỹ năng đúng em (không bài trên lớp, Ý thức, em khác); không rõ em → mọi `/students` như cũ. */
+export function lamMoiHoSoEm(sid: number | null | undefined) {
+  if (!sid) { invalidate('/students'); return; }
+  invalidateDung(`/students/${sid}`);
+  invalidate(`/students/${sid}/skill-board`);
 }
 
 /*
@@ -69,7 +86,7 @@ export function invalidateGop(...prefixes: string[]) {
 }
 /** Xả ngay các tiền tố đang chờ: không truyền = tất cả; truyền `path` = chỉ tiền tố mà `path` bắt đầu bằng. */
 export function xaGop(path?: string) {
-  const ds = [...choGop].filter(([p]) => path === undefined || path.startsWith(p));
+  const ds = [...choGop].filter(([p]) => path === undefined || khopTienTo(path, p));
   if (!ds.length) return;
   for (const [p] of ds) choGop.delete(p);
   if (!choGop.size && henGop) { clearTimeout(henGop); henGop = null; }

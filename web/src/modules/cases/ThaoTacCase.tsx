@@ -1,5 +1,5 @@
 import { useRef, useState, type ReactNode } from 'react';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, invalidate, lamMoiHoSoEm } from '../../lib/api.ts';
 import { useToast } from '../../ui/Toast.tsx';
 import { DongQuyChe, Khoi, KhungPanel, Truong } from '../../ui/KhungPanel.tsx';
 import { useLoiForm } from '../../ui/loiForm.tsx';
@@ -37,8 +37,8 @@ type ChungPanel = {
  * LOGIC THÊM PA dùng chung (HSL-FT): panel `ThemPaPanel` và form tại chỗ của hồ sơ lượt (`FormThemPaTaiCho`) — cùng giá trị, lỗi, khoá gửi
  * một lần mở (thử lại không ghi PA thứ hai), cùng đường `POST /cases/:id/interventions`. Lỗi lưu giữ chữ (`loiLuu`, nơi gọi vẽ "Thử lại").
  */
-export function useThemPa({ caseId, onSaved, v0 }: {
-  caseId: number;
+export function useThemPa({ caseId, studentId, onSaved, v0 }: {
+  caseId: number; /** S5: em của Case — làm mới đúng hồ sơ em (không có = mọi `/students`). */ studentId?: number | null;
   /** M6 6b-3 `diTiep`: bấm "… · việc tiếp ›" (panel việc) — nơi gọi chuyển việc kế thay vì ở lại "✓ Đã lưu". */
   onSaved: (caseMoi: any, x: DaLuuPanel, diTiep: boolean) => void;
   /** Bản nháp còn giữ (form tại chỗ bị đóng khi đổi dòng — không mất chữ). */
@@ -78,12 +78,12 @@ export function useThemPa({ caseId, onSaved, v0 }: {
         needsApproval: deXuat,
         idempotencyKey: khoa.current,
       });
-      invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work');   // OV-11c (CV-2): việc Thêm PA hết ở Công việc
+      invalidate('/cases'); lamMoiHoSoEm(studentId); invalidate('/tong-quan'); invalidate('/my-work');   // OV-11c (CV-2): việc Thêm PA hết ở Công việc
       /* OV-13b: panel ở lại "✓ Đã lưu · Việc tiếp ›" (nơi gọi vẽ) — không toast đè chân. */
       /* M6 6b-2 (Q1): PA vừa thêm = id lớn nhất Case trả về (gửi lại cùng khoá trả đúng PA đó) → Hoàn tác Thêm PA (#623; máy chủ kiểm người thêm + 10 giây). */
       const paId = Math.max(0, ...(c?.interventions ?? []).map((x) => x.id)) || undefined;
       onSaved(c, { chu: deXuat ? t('Đã gửi Head duyệt') : t('Đã thêm PA'), phu: [dich(INTERVENTION_KIND_LABEL[v.kind as keyof typeof INTERVENTION_KIND_LABEL] ?? v.kind), v.description.trim()].filter(Boolean).join(' · '),
-        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); invalidate('/students'); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined }, diTiep);
+        paId, hoanTac: paId ? async () => { await api.post(`/interventions/${paId}/hoan-tac-them`); invalidate('/cases'); lamMoiHoSoEm(studentId); invalidate('/tong-quan'); invalidate('/my-work'); } : undefined }, diTiep);
     } catch (e: any) { setLoiLuu(e.message); } finally { setBusy(false); }
   };
 
@@ -132,7 +132,7 @@ export function ThemPaPanel({ caseId, studentId, coPaBatBuoc, hocVien, lop, quay
   /** OV-12e: đầu panel v3 (`dauViec`) + Bối cảnh (Nguyên nhân · Kết quả gần nhất). */
   dau?: { han?: ReactNode; dong2: ReactNode[] }; boiCanh?: [string, ReactNode][];
 }) {
-  const h = useThemPa({ caseId, onSaved: (_c, x, diTiep) => { if (diTiep && tiep) tiep.lam(x); else onSaved(x); } });
+  const h = useThemPa({ caseId, studentId, onSaved: (_c, x, diTiep) => { if (diTiep && tiep) tiep.lam(x); else onSaved(x); } });
   const { v, setV, lf, busy, bam, loiLuu, deXuat, loi, luu, daSua } = h;
   const tiep = deXuat ? undefined : tiepViec;
   const nut = <NutVaTiep chu={deXuat ? t('Gửi Head duyệt') : t('Thêm PA')} chuTiep={t('Thêm PA · việc tiếp ›')} busy={busy} bam={bam} tiep={tiep} luu={(x) => void luu(x)} />;

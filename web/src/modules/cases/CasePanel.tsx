@@ -2,8 +2,9 @@ import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import { DongQuyChe, KhungTrongThe, Truong, useBaoDangSua } from '../../ui/KhungPanel.tsx';
 import { NhatKyPa, VachBuoi } from './FormPa.tsx';
 import { Link } from 'react-router-dom';
-import { useApi } from '../../lib/useApi.ts';
-import { ApiError, api, invalidate } from '../../lib/api.ts';
+import { quenBanXem, useApi } from '../../lib/useApi.ts';
+import { ngheNhapPa } from '../../lib/nhapPa.ts';
+import { ApiError, api, invalidate, lamMoiHoSoEm } from '../../lib/api.ts';
 import { hoanTacXoa } from '../../lib/thungRac.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useToast } from '../../ui/Toast.tsx';
@@ -156,6 +157,13 @@ export function tenNganCase(d: { categoryLabel: string | null; category: string 
 
 const daBatDau = (iv: any) => iv.status === 'planned' || iv.status === 'started';
 
+/**
+ * S5: phần của Case mà `/my-work` đọc (việc Mô tả / Xác nhận Case · Chưa có người · Thêm PA · tiêu đề việc = `caseHeadline` từ `summary` ·
+ * trạng thái V4 · người làm). Hai bản trùng → lần lưu không đổi việc nào, khỏi tải lại `/my-work`. Nghi thì thêm trường vào đây (tải lại thừa, không bao giờ thiếu).
+ */
+export const dauViecCase = (d: CaseDetail) => JSON.stringify([d.summary, d.ownerUserId ?? null, d.status, d.trangThaiV4 ?? null,
+  d.choXacNhanS ?? null, d.sos?.hasCause ?? null, (d.interventions ?? []).length, (d.issues ?? []).some((i) => i.role === 'primary')]);
+
 /** Số ngày từ `tu` đến `den` (ISO), `null` khi thiếu. */
 function soNgayGiua(tu: string | null | undefined, den: string | null | undefined): number | null {
   if (!tu || !den) return null;
@@ -184,8 +192,10 @@ export type BaoThanCase = { formMo: (ten: string | null) => void; daLuu: (x: DaL
  * mở tại chỗ: xem đủ, sửa, xác nhận, ghi / sửa / xoá kết quả, nhật ký) → Kết luận (Hoàn thành Case + lý do chặn cạnh nút, form ngay trong mục) → Lịch sử · Bằng chứng
  * → Xoá Case. Không view riêng, không ⋯, không panel lồng panel. Dùng chung: panel Case (mọi lối vào) và khối Case trong cột hồ sơ HV (N33 ①).
  */
-export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null, bao, onDaXoaCase, kyNangTiep = null }: {
+export function ThanCase({ data, setData, reload, onChanged, onDoiChu, dich: dichMo = null, bao, onDaXoaCase, kyNangTiep = null }: {
   data: CaseDetail; setData: (d: CaseDetail) => void; reload: () => void; onChanged?: () => void;
+  /** S5: lưu tại chỗ chỉ đổi chữ Case / trường PA (`nhan`) — nơi gọi làm mới hẹp (hồ sơ lớp: cột Case); không truyền = `onChanged`. */
+  onDoiChu?: () => void;
   dich?: DichCase | null; bao?: BaoThanCase;
   /** Xoá Case xong (vào Thùng rác) — nơi gọi vẽ dải Hoàn tác thay thân Case. */
   onDaXoaCase: (x: { thungRacId: number | null; ten: string; soPa: number }) => void;
@@ -237,8 +247,25 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
   }, []);   // eslint-disable-line react-hooks/exhaustive-deps
 
   const lamMoi = () => { reload(); onChanged?.(); };
+  /* S5 (chỗ 5): lưu nháp KQ PA (`baoNhapPa`, máy chủ trả bản nháp) → đặt vào PA của Case đang mở, không tải lại `/cases`. */
+  const dataRef = useRef(data); dataRef.current = data;
+  useEffect(() => ngheNhapPa((paId, nhap) => {
+    const d = dataRef.current;
+    if (!(d.interventions ?? []).some((iv) => iv.id === paId)) return;
+    setData({ ...d, interventions: d.interventions.map((iv) => (iv.id === paId ? { ...iv, nhapKetQua: nhap } : iv)) });
+    quenBanXem(`/cases/${d.id}$`, false);   // tải lại Case đang bay (vd sau Lưu kết quả PA khác) vẫn về — máy chủ đã có nháp
+  }), [setData]);
   /* Lưu tại chỗ (Case / một PA): máy chủ trả đúng Case vừa đổi → thay dữ liệu, không tải lại cả Case; danh sách việc làm mới. */
-  const nhan = (d: CaseDetail) => { setData(d); invalidate('/my-work'); invalidate('/students'); onChanged?.(); };
+  /* S5 LAM-MOI-HEP: `/my-work` chỉ khi lần lưu có thể đổi việc (`dauViecCase` khác, hoặc trường PA — hạn / người). Hồ sơ + thẻ kỹ năng ĐÚNG em luôn
+     (thẻ kỹ năng chứa cả chữ Case: mô tả, nguyên nhân); bỏ bài trên lớp, Ý thức, em khác. */
+  const nhan = (d: CaseDetail, pa = false) => {
+    const doiViec = pa || dauViecCase(data) !== dauViecCase(d);
+    setData(d);
+    quenBanXem(`/cases/${d.id}$`);   // mở lại panel trong 10 s không hiện bản trước lần lưu
+    if (doiViec) invalidate('/my-work');
+    lamMoiHoSoEm(d.student?.id);
+    (pa ? onChanged : onDoiChu ?? onChanged)?.();   // trường PA (hạn, người) có thể đổi số đếm của lớp → làm mới rộng như cũ
+  };
   const xongForm = (paId: number) => (x?: DaLuuPanel) => {
     setForm((f) => ({ ...f, [paId]: undefined })); setMo((m) => ({ ...m, [paId]: false }));
     setVuaDoi({ paId: x?.paId ?? paId, chu: x?.chu ?? t('Đã lưu'), hoanTac: x?.hoanTac });
@@ -308,7 +335,7 @@ export function ThanCase({ data, setData, reload, onChanged, dich: dichMo = null
       mo={!!mo[iv.id]} setMo={(v) => setMo((m) => ({ ...m, [iv.id]: v }))}
       form={form[iv.id] ?? null} setForm={(f) => { setForm((x) => ({ ...x, [iv.id]: f ?? undefined })); if (f) setMo((m) => ({ ...m, [iv.id]: true })); }}
       dich={dichPa === iv.id} vua={vuaDoi?.paId === iv.id ? vuaDoi : null} onHoanTac={() => { setVuaDoi(null); lamMoi(); }}
-      onXongForm={xongForm(iv.id)} onDoi={nhan} lamMoi={lamMoi} kyNangTiep={kyNangTiep}
+      onXongForm={xongForm(iv.id)} onDoi={(d) => nhan(d, true)} lamMoi={lamMoi} kyNangTiep={kyNangTiep}
       onDaXoa={(x) => { setDaXoaPa({ ...x, paId: iv.id, viTri: dsPa.indexOf(iv) }); lamMoi(); }} />
   );
   const theXoa = daXoaPa && (
@@ -810,7 +837,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     setBusyXoa(true);
     try {
       const r = await api.del<{ thungRacId?: number; choDuyet?: boolean }>(`/interventions/${iv.id}`);
-      invalidate('/students'); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan');
+      lamMoiHoSoEm(data.student?.id); invalidate('/my-work'); invalidate('/yeu-cau'); invalidate('/tong-quan');   // S5: xoá PA — đúng em
       if (r?.choDuyet) lamMoi(); else onDaXoa({ ten: tenPa, thungRacId: r?.thungRacId ?? null });
     } catch (e: any) { toast.push('error', e?.message ?? t('Không xoá được')); } finally { setBusyXoa(false); }
   };
@@ -824,7 +851,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
     <KhungTrongThe.Provider value>
       {formHien === 'xac-nhan' ? <XacNhanPaPanel key="xn" {...chung} pa={iv as PaQuyChe} data={data} onXong={onXongForm} onGhiKetQua={() => setForm('ghi')} />   /* TU11: Xác nhận PA Tutor thôi bắt Số buổi — ghi kết quả luôn được (RKC-2b ③) */
         : formHien === 'ghi' ? (
-          <GhiKetQuaPanel key="ghi" {...chung} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove} ketThucSom={!!vw.coTheKetThucPa}
+          <GhiKetQuaPanel key="ghi" {...chung} studentId={data.student?.id} onSaved={onXongForm} vuotLuat={!!data.viewer.canApprove} ketThucSom={!!vw.coTheKetThucPa}
             hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null}
             tiep={kyNangTiep ? { ten: kyNangTiep.ten, lam: (x) => { toast.push('ok', x?.chu ?? t('Đã lưu')); lamMoi(); kyNangTiep.di(); } } : undefined} chuTiep={kyNangTiep?.chu ?? t('Lưu · kỹ năng tiếp ›')}
             boiCanh={[[t('Kết quả kỳ trước'), fGan ? <><b className="font-semibold text-slate-300">{dich(outcomeLabelFor(fGan.outcome))}</b> · {tuanLich(fGan.observedOn, homNay)}</> : t('chưa có')], [t('Điểm'), ketQuaGanNhat(data)]]}
@@ -838,7 +865,7 @@ function ThePa({ iv, data, homNay, ngan, toi, mo, setMo, form, setForm, dich: la
               buoiKy: laTutor ? ketQua.find((f: any) => f.interventionId === iv.id && f.buoiDuKien != null)?.buoiDuKien ?? (iv.coTongBuoi ? null : iv.soBuoi ?? null) : null,
             }} />
         ) : formHien === 'ket-thuc' ? <KetThucSom iv={iv} hoanThanhCase={paCuoiHoanThanh(data, iv.id) ? { caseId: data.id } : null} onThoi={() => setForm(null)} onXong={() => { setForm(null); lamMoi(); }} />
-        : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} onSaved={onXongForm} />}
+        : <SuaKetQuaPanel key={`sua-${formHien.suaKq}`} followupId={formHien.suaKq} {...chung} studentId={data.student?.id} onSaved={onXongForm} />}
     </KhungTrongThe.Provider>
   );
 
