@@ -100,11 +100,11 @@ function phamVi(p: Principal): Scope {
  * (`branch_id IS NULL`) thì `anyScope`, việc có chi nhánh thì phải đúng chi nhánh đó.
  */
 function coQuyenViec(p: Principal, t: { branch_id: number | null }): boolean {
-  /* VH-1 (PTA rà #1929 mục 5): việc Toàn hệ thống chỉ người có grant toàn hệ thống SỬA (trước: Head mọi chi nhánh, `anyScope`); Head / CX chi nhánh vẫn XEM (`xemQuanLy`). */
-  return quanLyVanHanh(p, { branchId: t.branch_id ?? null });
+  /* Luật main: việc Toàn hệ thống — Head (và CX, N59) mọi chi nhánh sửa được (`anyScope`). PTA rà lần 2 rút quyết định "chỉ grant toàn hệ thống". */
+  return quanLyVanHanh(p, { branchId: t.branch_id ?? null, anyScope: !t.branch_id });
 }
 /** Xem như quản lý: việc của chi nhánh trong phạm vi, hoặc việc Toàn hệ thống (Head / CX mọi chi nhánh đọc được — bảng Vận hành vẫn liệt kê). */
-const xemQuanLy = (p: Principal, t: { branch_id: number | null }) => quanLyVanHanh(p, { branchId: t.branch_id ?? null, anyScope: !t.branch_id });
+const xemQuanLy = coQuyenViec;
 
 const closed = (pr: string) => (TASK_PROGRESS_CLOSED as readonly string[]).includes(pr);
 
@@ -132,7 +132,7 @@ export function listNhom(p: Principal, branchId?: number | null): { rows: NhomVi
   if (!canSeeBoard(p)) throw forbidden('Chỉ Head, Quản trị hoặc CX xem được nhóm công việc.');
   const sc = phamVi(p);
   const cn = branchId ? [branchId] : sc.all ? null : sc.branchIds;
-  if (branchId && !sc.all && !sc.branchIds.includes(branchId)) throw forbidden('Chi nhánh này ngoài phạm vi của bạn.');
+  if (branchId && !sc.all && !sc.branchIds.includes(branchId)) return { rows: [] };   // ngoài phạm vi: rỗng (như danh sách việc)
   return { rows: docNhom(p, cn) };
 }
 /** Nhóm dùng chung + của các chi nhánh `cn` (null = mọi chi nhánh) — MỘT câu, sắp theo thứ tự. */
@@ -363,10 +363,10 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
   const conn = db();
   const scope = phamVi(p);
   const today = demoToday();
-  /* PTA mục 5: lọc chi nhánh ngoài phạm vi → 403 (không đọc việc, người, ghi chú của chi nhánh khác). */
-  if (f.branchId && !scope.all && !scope.branchIds.includes(f.branchId)) throw forbidden('Chi nhánh này ngoài phạm vi của bạn.');
+  /* PTA rà #1929: lọc chi nhánh ngoài phạm vi → danh sách RỖNG (như main: người có vai khác ở chi nhánh đó, chỉ số Tổng quan không vỡ) — không đọc việc / nhóm chi nhánh đó. */
+  const ngoai = !!f.branchId && !scope.all && !scope.branchIds.includes(f.branchId);
 
-  const base: string[] = ['t.parent_task_id IS NULL', "t.kind = 'branch_ops'"];
+  const base: string[] = ['t.parent_task_id IS NULL', "t.kind = 'branch_ops'", ...(ngoai ? ['0'] : [])];
   const baseParams: unknown[] = [];
   if (f.branchId) { base.push('t.branch_id = ?'); baseParams.push(f.branchId); }
   else if (!scope.all && scope.branchIds.length) {
@@ -493,6 +493,8 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
       /** VH-1: nhóm tự đặt (null = Không phân loại). */
       groupId: r.group_id ?? null, groupName: r.nhom_ten ?? null, groupOrder: r.nhom_thu_tu ?? null,
       taskType: r.task_type as string,
+      /** Quyền sửa THẬT của dòng (PTA rà lần 2) — việc chi nhánh khác trong phạm vi đọc mà không sửa được thì false. */
+      canEdit: coQuyenViec(p, r),
       branchId: r.branch_id, branchName: r.branch_name ?? 'Toàn hệ thống',
       assigneeUserId: r.assignee_user_id, assigneeName: r.assignee_name ?? null,
       /** PR-DUYET: người phụ trách là tên gõ tay, không phải tài khoản — hiện nhãn "ngoài hệ thống". */
@@ -532,7 +534,7 @@ export function listMgmtTasks(p: Principal, f: TaskFilter = {}) {
 
   // (6) nhóm của phạm vi — hàng nhóm của bảng (kể cả nhóm chưa có việc / đã ẩn còn việc), sắp theo thứ tự
   const cnNhom = f.branchId ? [f.branchId] : scope.all ? null : scope.branchIds;
-  const nhom = f.chiDem ? [] : docNhom(p, cnNhom);
+  const nhom = f.chiDem || ngoai ? [] : docNhom(p, cnNhom);
   const demNhom = new Map<number | null, number>();
   for (const r of rowsOut) demNhom.set(r.groupId, (demNhom.get(r.groupId) ?? 0) + 1);
 
@@ -562,7 +564,7 @@ function docTask(taskId: number): any {
 }
 
 /** Tài khoản đang hoạt động, có vai đang hiệu lực ở chi nhánh của việc (việc Toàn hệ thống: vai ở đâu cũng được). */
-const laHieuLuc = (uid: number, branchId: number | null) =>
+export const laHieuLuc = (uid: number, branchId: number | null) =>
   (db().prepare(`SELECT ${HOAT_DONG_O('?', CN_VH('?'))} AS ok`).get(uid, branchId) as any).ok === 1;
 
 /** Người xem một việc: quản lý · người phụ trách · người tạo · người theo dõi (còn hiệu lực) · người phụ trách việc con. */
@@ -573,7 +575,7 @@ function quyenXem(p: Principal, t: any) {
   const phuTrach = conVai && t.assignee_user_id === p.userId;
   const nguoiTao = conVai && t.created_by === p.userId;
   const xem = quanLy || xemQuanLy(p, t) || phuTrach || nguoiTao || laNguoiTheoDoi('van_hanh', t.id, p.userId, t.branch_id ?? null)
-    || !!db().prepare('SELECT 1 FROM tasks WHERE parent_task_id = ? AND assignee_user_id = ?').get(t.id, p.userId);
+    || (!!db().prepare('SELECT 1 FROM tasks WHERE parent_task_id = ? AND assignee_user_id = ?').get(t.id, p.userId) && laHieuLuc(p.userId, t.branch_id ?? null));
   return { quanLy, phuTrach, nguoiTao, xem };
 }
 
@@ -688,8 +690,8 @@ export function mgmtTaskDetail(p: Principal, taskId: number) {
  * ngay khi từng có dòng bị xoá. Thứ tự chữ sai khi vượt 9 999 (`CV10000` < `CV9999`) → vòng dò bù (mỗi bước một câu theo chỉ mục).
  */
 export function nextCode(conn: any): string {
-  const max = (conn.prepare("SELECT code FROM tasks WHERE code >= 'CV0' AND code < 'CV:' ORDER BY code DESC LIMIT 1").get() as any)?.code as string | undefined;
-  let n = (max ? Number(max.slice(2)) || 0 : 0) + 1;
+  const max = (conn.prepare("SELECT code FROM tasks WHERE code >= 'CV-0' AND code < 'CV-:' ORDER BY code DESC LIMIT 1").get() as any)?.code as string | undefined;
+  let n = (max ? Number(max.slice(3)) || 0 : 0) + 1;   // mã thật `CV-0001` (`padCode`); ponytail: thứ tự chữ sai từ CV-10000 — vòng dò bù
   while (conn.prepare('SELECT 1 FROM tasks WHERE code = ?').get(padCode('CV', n, 4))) n += 1;
   return padCode('CV', n, 4);
 }
@@ -781,7 +783,12 @@ export function createMgmtTask(p: Principal, input: {
     if (!coQuyenViec(p, parent)) throw forbidden('Bạn không quản lý công việc cha này.');
   }
 
-  const taskBranchId = input.branchId ?? parent?.branch_id ?? null;
+  /*
+   * PTA rà lần 2 (1): ô Chi nhánh của web mặc định "Toàn hệ thống" (null) — người quản đúng MỘT chi nhánh gửi null → việc của chi nhánh đó (không thành Toàn hệ thống
+   * do vô ý); người quản nhiều chi nhánh / toàn hệ thống gửi null → giữ Toàn hệ thống như main.
+   */
+  const pv = phamVi(p);
+  const taskBranchId = input.branchId ?? parent?.branch_id ?? (!pv.all && pv.branchIds.length === 1 ? pv.branchIds[0] : null);
   if (!quanLyVanHanh(p, { branchId: taskBranchId })) throw forbidden('Chỉ Head, Quản trị hoặc CX mới tạo được công việc vận hành.');
   kiemNguoiVh('Người phụ trách', input.assigneeUserId, taskBranchId);
   const theoDoi = [...(docTheoDoi(input.theoDoiIds, taskBranchId) ?? []), ...(input.watcherUserId ? [input.watcherUserId] : [])];
@@ -1033,8 +1040,11 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   const doiCn = cnMoi !== (t.branch_id ?? null);
   if (doiCn) {
     if (t.parent_task_id) throw badRequest('Việc con theo chi nhánh của việc cha.');
-    if (!quanLyVanHanh(p, { branchId: cnMoi })) throw forbidden('Bạn không quản lý chi nhánh mới của công việc.');
+    if (cnMoi !== null && !conn.prepare('SELECT 1 FROM branches WHERE id = ?').get(cnMoi)) throw badRequest('Chi nhánh không hợp lệ.');
+    if (!quanLyVanHanh(p, { branchId: cnMoi, anyScope: cnMoi === null })) throw forbidden('Bạn không quản lý chi nhánh mới của công việc.');
     put('branch_id', cnMoi);
+    /* Người phụ trách không có vai ở chi nhánh mới (và không gửi người mới) → "Chưa giao" + lịch sử. */
+    if (patch.assigneeUserId === undefined && t.assignee_user_id && !laHieuLuc(t.assignee_user_id, cnMoi)) patch = { ...patch, assigneeUserId: null };
   }
   /*
    * Web cũ (trước VH-2) luôn gửi `group` = khoá nhóm đang thấy, mặc định 'curriculum' khi việc không có khoá (Không phân loại / nhóm tự đặt) — gửi đúng giá trị
@@ -1089,6 +1099,9 @@ export function editMgmtTask(p: Principal, taskId: number, patch: {
   if (patch.lap !== undefined) {
     if (t.parent_task_id || t.lap_goc_id) throw badRequest('Chỉ đặt lặp lại ở việc gốc.');
     lap = docLap(patch.lap);
+  }
+  /* PATCH mang `lap` y như đang có → không đổi gì (không bỏ Dừng lặp, không ghi lịch sử). */
+  if (patch.lap !== undefined && (lap ? `${lap.kieu}:${lap.ngay.join(',')}` : null) !== (t.lap_kieu ? `${t.lap_kieu}:${t.lap_ngay}` : null)) {
     put('lap_kieu', lap?.kieu ?? null); put('lap_ngay', lap ? lap.ngay.join(',') : null);
     if (lap && !t.lap_ky) put('lap_ky', demoToday());
     /* PTA mục 8: đổi lịch / bật lại → kỳ kế tính từ hôm nay (không sinh bản cho kỳ đã qua). */

@@ -8,7 +8,7 @@ import { writeAudit } from '../platform/audit.ts';
 import { ensurePeriod, owningMonth, periodById, reportEditWindow } from '../platform/week.ts';
 import { countAttachments } from '../platform/attachments.ts';
 import { mocNghiepVu } from '../duyet/yeuCau.ts';
-import { nextCode } from './mgmttasks.ts';
+import { laHieuLuc, nextCode } from './mgmttasks.ts';
 import { ghiLan } from './giaoViec.ts';
 
 export const DUE_SOON_DAYS = 3;
@@ -775,7 +775,8 @@ export function updateTask(p: Principal, taskId: number, patch: any) {
   if (!t) throw notFound('Không tìm thấy công việc');
   const manage = can(p, PERMISSIONS.MEETING_EDIT, { branchId: t.branch_id, anyScope: t.branch_id === null });
   if (!manage) {
-    if (t.assignee_user_id !== p.userId) {
+    /* VH-1 (PTA): người phụ trách đã rời chi nhánh của việc không còn quyền theo việc. */
+    if (t.assignee_user_id !== p.userId || !laHieuLuc(p.userId, t.branch_id ?? null)) {
       require_(p, PERMISSIONS.MEETING_EDIT, { branchId: t.branch_id }, 'Bạn không có quyền cập nhật công việc này.');
     }
     const illegal = Object.keys(patch).filter((k) => !ASSIGNEE_EDITABLE.has(k));

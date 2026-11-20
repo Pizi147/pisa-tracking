@@ -273,7 +273,8 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
   }));
 
   await checkAsync('VH1-14 (PTA 5, 7) · phạm vi chi nhánh: lọc chi nhánh khác 403, đổi chi nhánh cần quyền chi nhánh mới (nhóm riêng → Không phân loại), Toàn hệ thống chỉ grant toàn hệ thống; người đã rời chi nhánh mất quyền theo việc', () => thu(async () => {
-    assert(await ma(() => mg.listMgmtTasks(ql, { branchId: CP })) === 403 && await ma(() => mg.listMgmtTasks(cx, { branchId: CP })) === 403, 'lọc chi nhánh khác → 403');
+    assert(mg.listMgmtTasks(ql, { branchId: CP }).rows.length === 0 && mg.listMgmtTasks(cx, { branchId: CP }).nhom.length === 0 && mg.listNhom(ql, CP).rows.length === 0, 'lọc chi nhánh ngoài phạm vi → rỗng (không 403)');
+    assert(Array.isArray(mg.listMgmtTasks(ql, { branchId: CP, hang: 'can-quyet-dinh', chiDem: true }).rows), 'chỉ số Tổng quan (metrics) không vỡ khi lọc chi nhánh khác');
     const nhomMb = mg.taoNhom(ql, { ten: 'Riêng MB VH1-14', branchId: MB }).rows.find((g: any) => g.ten === 'Riêng MB VH1-14');
     const v = tao(ql, { groupId: nhomMb.id });
     const con = tao(ql, { parentTaskId: v.id, title: 'Con VH1-14' });
@@ -281,9 +282,15 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     assert(await ma(() => mg.editMgmtTask(P.admin, v.id, { branchId: 'CP' as any })) === 400, 'branchId sai kiểu → 400');
     const d = mg.editMgmtTask(P.admin, v.id, { branchId: CP });
     assert(d.branchId === CP && d.groupId === null && mot('SELECT branch_id, group_id FROM tasks WHERE id = ?', con.id).branch_id === CP, 'chuyển CP: nhóm riêng MB → Không phân loại, việc con theo');
-    assert(await ma(() => mg.createMgmtTask(ql, { title: 'Toàn hệ thống VH1-14' })) === 403 && await ma(() => mg.createMgmtTask(cx, { title: 'Toàn hệ thống VH1-14' })) === 403, 'Head / CX chi nhánh tạo việc Toàn hệ thống → 403');
+    /* PTA rà lần 2 (rút quyết định): Head / CX một chi nhánh gửi branchId null (ô web mặc định) → việc của chi nhánh đó; người toàn hệ thống giữ Toàn hệ thống. */
+    const webCu = mg.createMgmtTask(ql, { title: 'Web cũ VH1-14', group: 'curriculum', branchId: null, assigneeUserId: null, assigneeName: null, watcherUserId: null, due: null, note: null, parentTaskId: null, caseIds: [], unitReportId: null, idempotencyKey: 'vh1-14-web-cu' } as any);
+    assert(webCu.branchId === MB && mg.createMgmtTask(cx, { title: 'CX null VH1-14' }).branchId === MB, 'một chi nhánh gửi null → chi nhánh đó');
     const toan = mg.createMgmtTask(P.admin, { title: 'Toàn hệ thống VH1-14' });
-    assert(await ma(() => mg.editMgmtTask(ql, toan.id, { title: 'Sửa' })) === 403 && mg.mgmtTaskDetail(ql, toan.id).viewer.canEdit === false, 'Head chi nhánh xem, không sửa việc Toàn hệ thống');
+    assert(toan.branchId === null, 'Quản trị gửi null → Toàn hệ thống');
+    assert(mg.editMgmtTask(ql, toan.id, { title: 'Head sửa' }).title === 'Head sửa' && mg.editMgmtTask(cx, toan.id, { title: 'CX sửa' }).title === 'CX sửa'
+      && mg.listMgmtTasks(ql, {}).rows.find((r: any) => r.id === toan.id).canEdit === true, 'việc Toàn hệ thống: Head / CX sửa như main, canEdit khớp');
+    const cpV = mg.createMgmtTask(P.admin, { title: 'Việc CP VH1-14', branchId: CP });
+    assert(mg.listMgmtTasks(P.admin, {}).rows.find((r: any) => r.id === cpV.id).canEdit === true && !mg.listMgmtTasks(ql, {}).rows.some((r: any) => r.id === cpV.id), 'canEdit theo dòng');
     /* Người phụ trách rời chi nhánh: không cập nhật / xem / thêm tệp. */
     const roi = taiKhoan('roi', 'teacher');
     const w = tao(cx, { assigneeUserId: roi.userId });
@@ -325,6 +332,43 @@ export async function runPrVanHanhTests(t: YThucTestKit) {
     const o = await att.openAttachment(cx, f.id);
     assert(o.kind === 'file' && Buffer.compare(o.duLieu, duLieu) === 0 && o.downloadName === 'bao-gia.pdf', 'tải xuống đúng tệp');
     assert(await ma(() => att.openAttachment(ngoai, f.id)) === 403, 'người ngoài không tải');
+  }));
+
+  await checkAsync('VH1-17 (PTA rà lần 2) · mã việc một câu khi đã ≥ 50 việc, không cấp lại mã; việc Toàn hệ thống giao cho tôi giữ ở bộ lọc chi nhánh; mục nhỏ', () => thu(async () => {
+    for (let i = 0; i < 50; i++) tao(cx, {});
+    let cau = 0;
+    const dem = { prepare: (sql: string) => { cau += 1; return conn.prepare(sql); } };
+    const ma1 = mg.nextCode(dem);
+    assert(cau === 2 && !mot('SELECT 1 FROM tasks WHERE code = ?', ma1), `mã kế: ${cau} câu (${ma1})`);
+    const cuoi = tao(cx, {});
+    conn.prepare('DELETE FROM tasks WHERE id = ?').run(cuoi.id); gv.donViec('van_hanh', [cuoi.id]);
+    assert(mg.nextCode(conn) !== cuoi.code || !mot('SELECT 1 FROM tasks WHERE code = ?', cuoi.code), 'không trùng mã đang có');
+    /* Việc Toàn hệ thống giao cho tôi: lọc chi nhánh vẫn thấy. */
+    const toan = mg.createMgmtTask(P.admin, { title: 'Toàn hệ thống VH1-17', assigneeUserId: bpxl.userId });
+    xoaNho();
+    assert((myWork(loadPrincipal(bpxl.userId) as any, { branchId: MB }) as any).items.some((x: any) => x.key === `mgmt:${toan.id}`), 'lọc chi nhánh vẫn có việc Toàn hệ thống');
+    /* Chuyển chi nhánh không gửi người: người không có vai ở chi nhánh mới → Chưa giao + lịch sử. */
+    const v = tao(cx, { assigneeUserId: gvcn.userId });
+    const d = mg.editMgmtTask(P.admin, v.id, { branchId: CP });
+    assert(d.assigneeUserId === null && mot(`SELECT COUNT(*) n FROM task_history WHERE task_id = ? AND field = 'assignee_user_id'`, v.id).n === 1, 'chuyển chi nhánh → Chưa giao');
+    /* PATCH \`lap\` y như cũ không bỏ Dừng lặp. */
+    const g = tao(cx, { lap: { kieu: 'tuan', ngay: [1] } });
+    mg.dungLap(cx, g.id, true);
+    mg.editMgmtTask(cx, g.id, { lap: { kieu: 'tuan', ngay: [1] } });
+    assert(!!mot('SELECT lap_dung_luc FROM tasks WHERE id = ?', g.id).lap_dung_luc, 'lap không đổi → giữ Dừng lặp');
+    /* Người làm việc con đã rời chi nhánh: không xem việc cha. */
+    const roi = taiKhoan('roi2', 'teacher');
+    const cha = tao(cx, {}); tao(cx, { parentTaskId: cha.id, assigneeUserId: roi.userId });
+    const w = tao(cx, { assigneeUserId: roi.userId });
+    conn.prepare('UPDATE user_roles SET branch_id = ? WHERE user_id = ?').run(CP, roi.userId);
+    assert(await ma(() => mg.mgmtTaskDetail(loadPrincipal(roi.userId), cha.id)) === 403, 'rời chi nhánh → không xem việc cha');
+    /* Đang theo dõi không liệt kê việc Giao GV theo lớp (teacher_task). */
+    const tt = Number(conn.prepare(`INSERT INTO tasks (code, title, kind, branch_id, progress, created_by, created_at) VALUES (?, 'Giao GV VH1-17', 'teacher_task', ?, 'not_started', ?, ?)`)
+      .run(mg.nextCode(conn), MB, ql.userId, new Date().toISOString()).lastInsertRowid);
+    conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES ('van_hanh', ?, ?, 'head', ?)`).run(tt, tvv.userId, new Date().toISOString());
+    assert(!gv.viecTheoDoi(tvv).nhom.some((n: any) => n.mo.some((x: any) => x.refId === tt)), 'teacher_task không vào Đang theo dõi');
+    /* /tasks cũ: người phụ trách đã rời chi nhánh không mở lại việc. */
+    assert(await ma(() => meetingSvc.updateTask(loadPrincipal(roi.userId), w.id, { progress: 'doing' })) === 403, '/tasks: rời chi nhánh → 403');
   }));
 
   const fs = await import('node:fs');

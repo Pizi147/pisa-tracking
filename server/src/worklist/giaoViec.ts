@@ -715,7 +715,7 @@ export function viecGiaoChoToi(p: Principal, o: { today: string; branchId?: numb
   const co = new Set<string>();
   for (const r of rows) {
     const branchId: number | null = r.loai === 'van_hanh' ? r.pb ?? null : r.em_branch ?? (r.loai === 'meeting' ? r.pb ?? null : null);
-    if (o.branchId && branchId !== o.branchId) continue;
+    if (o.branchId && branchId !== o.branchId && !(r.loai === 'van_hanh' && branchId == null)) continue;   // VH-1: việc Toàn hệ thống giao cho tôi hiện ở mọi bộ lọc chi nhánh
     if (r.loai === 'van_hanh') { items.push(dongVanHanh(r, o.today, p.userId)); continue; }
     let ownerId: number | null = p.userId; let mine = true;
     if (r.loai === 'meeting' && r.phu_trach_id !== p.userId) {
@@ -826,7 +826,7 @@ export function viecTheoDoi(p: Principal): { nhom: { loai: LoaiTheoDoi; ten: str
        LEFT JOIN tinh_hinh_hoc_tap th ON t.loai = 'tinh_hinh' AND th.id = t.ref_id
        LEFT JOIN meeting_phan mp ON t.loai = 'meeting' AND mp.id = t.ref_id
        LEFT JOIN sos_coordination_actions mx ON mx.id = mp.phoi_hop_id
-       LEFT JOIN tasks vh ON t.loai = 'van_hanh' AND vh.id = t.ref_id
+       LEFT JOIN tasks vh ON t.loai = 'van_hanh' AND vh.id = t.ref_id AND vh.kind = 'branch_ops'   -- Giao GV theo lớp (teacher_task) không phải việc Vận hành
        LEFT JOIN students s ON s.id = COALESCE(b.student_id, x.student_id, th.student_id, mx.student_id)
        LEFT JOIN users tv ON tv.id = s.consultant_user_id
        LEFT JOIN users pu ON pu.id = COALESCE(b.phu_trach_id, x.phu_trach_id, th.phu_trach_id, mp.phu_trach_id, vh.assignee_user_id)
