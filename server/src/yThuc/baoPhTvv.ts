@@ -23,6 +23,7 @@ import { HV_DANG_HOC_SQL, khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 import { giuViecQl } from '../worklist/viecTvv.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
+import { baoTheoDoi, laNguoiTheoDoi } from '../worklist/giaoViec.ts';
 
 export const NHAN_KET_QUA_BAO_PH: Record<KetQuaBaoPh, string> = { da_bao: 'Đã báo PH', chua_lien_he: 'Chưa liên hệ được' };
 /** Lý do hệ thống đóng việc theo lần xử lý (Q-D1 ①). */
@@ -39,7 +40,7 @@ const nhanViec = (r: { nhan: string; m_kind?: string | null; m_custom?: string |
   (r.m_kind ? `${nhanLoaiXuLy(r.m_kind, r.m_custom ?? null)}${r.bao_lai_cua ? ' đã thu hồi' : ''}` : r.nhan);
 
 /** Chi nhánh của em = lớp đang học, không có thì chi nhánh hồ sơ. */
-const CHI_NHANH_EM = `COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), s.branch_id)`;
+export const CHI_NHANH_EM = `COALESCE((SELECT c.branch_id FROM enrollments e JOIN classes c ON c.id = e.class_id WHERE e.student_id = s.id AND e.status = 'active' ORDER BY e.id DESC LIMIT 1), s.branch_id)`;
 
 /** Người giữ việc của một em: TVV, không có → QL chi nhánh (Q-D3 ①). */
 export function nguoiGiuBaoPh(studentId: number): number[] {
@@ -56,6 +57,17 @@ export function sinhViecBaoPh(m: { id: number; studentId: number; kind: string; 
   db().prepare(
     `INSERT INTO viec_bao_ph (measure_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (?,?,?,?, 'mo', ?) ON CONFLICT(measure_id) DO NOTHING`,
   ).run(m.id, m.studentId, nhan, han, nowIso());
+  /* GV-1 (N58): người theo dõi mặc định của Báo PH vi phạm — GVCN lớp em + GV đã ghi vi phạm (nhận tin "Cập nhật" khi có kết quả; thay tin riêng N41). */
+  /* MỘT câu (lô xác nhận xử lý: +1 câu / em): GVCN đang hiệu lực của lớp em đang học + người ghi các vi phạm của lần xử lý. */
+  db().prepare(
+    `INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, them_boi, luc)
+     SELECT 'bao_ph', v.id, n.uid, 'auto', NULL, ?1 FROM viec_bao_ph v JOIN (
+       SELECT x.reported_by AS uid FROM measure_violations mv JOIN violations x ON x.id = mv.violation_id WHERE mv.measure_id = ?2
+       UNION SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = (SELECT e.class_id FROM enrollments e WHERE e.student_id = ?3 AND e.status = 'active' ORDER BY e.id DESC LIMIT 1)
+         AND ta.is_core = 1 AND ta.status = 'active' AND ta.effective_from <= ?4 AND (ta.effective_to IS NULL OR ta.effective_to >= ?4)
+     ) n WHERE v.measure_id = ?2 AND n.uid IS NOT NULL
+     ON CONFLICT(loai, ref_id, user_id) DO NOTHING`,
+  ).run(nowIso(), m.id, m.studentId, homNay);
 }
 
 /**
@@ -138,13 +150,15 @@ function loadViec(id: number): any {
  * Ghi được = TVV của em · TVV cùng chi nhánh làm thay (chủ SP 22/10 — như Chọn bước tiếp, `coQuyenBuocTiep`; lịch sử ghi người làm) · QL / Quản trị trong
  * phạm vi em. CX, GV, GVCN: không. Người GIỮ việc (việc của tôi, chuông) vẫn chỉ một: TVV của em / QL khi em chưa có TVV.
  */
-export const coTheGhi = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null }): boolean =>
-  v.consultant_user_id === p.userId || coQuyenBuocTiep(p, v.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id })
+export const coTheGhi = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null; phu_trach_id?: number | null }): boolean =>
+  /* GV-1 (N58): người được giao làm được đúng việc này dù vai thường không có quyền. */
+  (v.phu_trach_id != null && v.phu_trach_id === p.userId)
+  || v.consultant_user_id === p.userId || coQuyenBuocTiep(p, v.student_id) || can(p, PERMISSIONS.REQUEST_APPROVE, { studentId: v.student_id })
   /* PHOI-HOP-V2 (PTA chốt 11/11): việc sau Meeting CX, em chưa có TVV → GVCN lớp em (cùng quyền xác nhận Phối hợp) báo. */
   || (v.phoi_hop_id != null && !v.consultant_user_id && canManageDiscipline(p, v.student_id));
 /** HAN-BAO-PH (chủ SP 03/11, 17.1): sửa hạn = người ghi được + GVCN lớp em đang học / QL (`discipline.manage`). Tách quyền ghi — GVCN sửa hạn, không ghi kết quả. */
-export const coTheSuaHan = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null }): boolean =>
-  coTheGhi(p, v) || canManageDiscipline(p, v.student_id);
+export const coTheSuaHan = (p: Principal, v: { consultant_user_id: number | null; student_id: number; phoi_hop_id?: number | null; phu_trach_id?: number | null; giao_boi?: number | null }): boolean =>
+  coTheGhi(p, v) || canManageDiscipline(p, v.student_id) || (v.giao_boi != null && v.giao_boi === p.userId);   // GV-1: + người giao
 function requireGhi(p: Principal, v: any): void {
   if (!coTheGhi(p, v)) throw forbidden('Chỉ TVV hoặc Head chi nhánh của em ghi được kết quả báo phụ huynh.');
 }
@@ -207,7 +221,8 @@ export const nhanTrangThaiBaoPh = (trangThai: string, coLan: boolean): string =>
 export function xemViecBaoPh(p: Principal, id: number): ViecBaoPhView {
   const v = loadViec(id);
   const ghi = coTheGhi(p, v);
-  if (!ghi && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.student_id })) throw forbidden('Học viên ngoài phạm vi của bạn.');
+  /* GV-1: người theo dõi đọc được panel (chỉ xem — không SĐT phụ huynh, không nút ghi). */
+  if (!ghi && !can(p, PERMISSIONS.STUDENT_VIEW, { studentId: v.student_id }) && !laNguoiTheoDoi('bao_ph', id, p.userId)) throw forbidden('Học viên ngoài phạm vi của bạn.');
   const homNay = demoToday();
   const khoang = khoangTamDung([v.student_id])[v.student_id];
   const hanMacDinh = hanBaoPhHieuLuc(v.han, khoang);
@@ -283,9 +298,16 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
       /* PHOI-HOP-V2: kết quả buổi Meeting CX/GĐCN — luật ≥ 10 ký tự (OV-12h) chuyển từ bước GVCN sang bước TVV. */
       const toiThieu = x.phoi_hop_id != null ? buocTvvViec({ kind: x.ph_kind, pb_moc: x.ph_pb ?? null })?.toiThieu ?? GHI_CHU_MEETING_TOI_THIEU : 0;   // CAU-HINH-CASE-SOS
       if (ketQua === 'da_bao' && ghiChu.trim().length < toiThieu) throw badRequest(`Meeting CX/GĐCN: Nội dung ít nhất ${toiThieu} ký tự.`);
-      db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?,?,?,?,?,?,?)')
-        .run(id, ketQua, ngay, ghiChu, p.userId, nowIso(), khoa ? `${khoa}:${id}` : null);
+      const lanId = Number(db().prepare('INSERT INTO viec_bao_ph_lan (viec_id, ket_qua, ngay, ghi_chu, ghi_boi, ghi_luc, khoa) VALUES (?,?,?,?,?,?,?)')
+        .run(id, ketQua, ngay, ghiChu, p.userId, nowIso(), khoa ? `${khoa}:${id}` : null).lastInsertRowid);
       const sau = ketQua === 'da_bao' ? 'xong' : 'mo';
+      /* 2.7 (chủ SP 13/11): GVCN lớp em nhận MỘT tin khi TVV báo PH vi phạm xong (khối dưới) — GV-1 (N58): người được giao + người theo dõi khác nhận tin
+         "Có kết quả" cùng lúc (GVCN không nhận lần hai — một nguồn). Chưa liên hệ được: không tin. */
+      const gvcnVp = sau === 'xong' && x.tinh_hinh_id == null && x.phoi_hop_id == null ? gvcnCuaEm(x.student_id, homNay).gvcn : null;
+      if (sau === 'xong') {
+        baoTheoDoi('bao_ph', id, p.userId, { suKien: 'ket_qua', tieuDe: `Báo PH · ${x.nhan} · ${x.full_name}`, chiTiet: ghiChu, khoa: lanId, studentId: x.student_id,
+          duong: duongHoSoHocVien(x.student_id, { tab: 'y-thuc' }), boQua: [gvcnVp] });
+      }
       db().prepare('UPDATE viec_bao_ph SET trang_thai = ? WHERE id = ?').run(sau, id);
       if (x.tinh_hinh_id != null) {
         /* TINH-HINH: kết quả về GV đã báo (chuông khi Đã báo PH). */
@@ -296,9 +318,9 @@ export function ghiKetQuaBaoPh(p: Principal, v: { viecIds?: unknown; ketQua?: un
         }
       }
       /* 2.7 (chủ SP 13/11): TVV báo PH về VI PHẠM xong → GVCN lớp em đang học nhận MỘT tin Cập nhật (không vào số việc) — cùng kiểu tin tình hình học tập. */
-      if (sau === 'xong' && x.tinh_hinh_id == null && x.phoi_hop_id == null) {
-        const gvcn = gvcnCuaEm(x.student_id, homNay).gvcn;
-        if (gvcn && gvcn !== p.userId) {
+      if (gvcnVp) {
+        const gvcn = gvcnVp;
+        if (gvcn !== p.userId) {
           notify({ userId: gvcn, kind: 'discipline_de_biet', title: `TVV đã báo PH vi phạm · ${x.nhan} · ${x.full_name}`, body: ghiChu.slice(0, 120),
             entityType: 'student', entityId: x.student_id, dedupKey: `bao-ph-vp:${id}`, duong: duongHoSoHocVien(x.student_id, { tab: 'y-thuc' }) });
         }
@@ -326,6 +348,7 @@ export function boViecBaoPh(p: Principal, id: number, v: { lyDo?: unknown; lyDoK
       .run(lyDo, reasonNeedsText(lyDo) ? chu : null, p.userId, nowIso(), id).changes;
     if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');
     luuGhiDao(db(), { loai: LOAI_BO, bang: 'viec_bao_ph', id, nguoi: p.userId, ghi: g });
+    baoTheoDoi('bao_ph', id, p.userId, { suKien: 'bo', tieuDe: `Báo PH · ${x.nhan} · ${x.full_name}`, chiTiet: nhanLyDo(lyDo), khoa: nowIso(), studentId: x.student_id });
     writeAudit({ actorUserId: p.userId, action: 'discipline.bao_ph_bo', entityType: 'discipline_measure', entityId: x.measure_id,
       entityLabel: `${x.student_code} · bỏ Báo PH · ${x.nhan}`, before: { trangThai: 'mo' }, after: { trangThai: 'bo', lyDo, chu } });
   });
@@ -396,7 +419,7 @@ export function doiHanChon(o: { loai: LoaiViecHan; bang: 'viec_bao_ph' | 'sos_co
 export function suaHanBaoPh(p: Principal, id: number, body: { han?: unknown; hanCu?: unknown }): ViecBaoPhView {
   const { han, hanCu } = docSuaHan(body);
   const x = loadViec(id);
-  if (!coTheSuaHan(p, x)) throw forbidden('Chỉ TVV, GVCN lớp em đang học hoặc Head sửa được hạn báo phụ huynh.');
+  if (!coTheSuaHan(p, x)) throw forbidden('Chỉ TVV, GVCN lớp em đang học, người phụ trách, người giao hoặc Head sửa được hạn báo phụ huynh.');
   if (x.trang_thai !== 'mo') throw badRequest('Việc Báo PH đã kết thúc — không sửa hạn.');
   const xl = xuLyCon(x);
   if (xl !== 'con') throw badRequest(`${LY_DO_HE_THONG[`system_${xl}` as LyDoHeThong]} — việc Báo PH chỉ xem.`);
@@ -406,6 +429,7 @@ export function suaHanBaoPh(p: Principal, id: number, body: { han?: unknown; han
     if (doiHanChon({ loai: 'bao_ph', bang: 'viec_bao_ph', id, han, hanCu, cuHieuLuc: cu, moiHieuLuc: moi, boi: p.userId })) {
       writeAudit({ actorUserId: p.userId, action: 'discipline.bao_ph_han', entityType: 'discipline_measure', entityId: x.measure_id,
         entityLabel: `${x.student_code} · hạn Báo PH · ${x.nhan}`, before: { han: cu, hanChon: hanCu }, after: { han: moi, hanChon: han } });
+      baoTheoDoi('bao_ph', id, p.userId, { suKien: 'han', tieuDe: `Báo PH · ${x.nhan} · ${x.full_name}`, chiTiet: `Hạn mới: ${moi.slice(8, 10)}/${moi.slice(5, 7)}`, khoa: moi, studentId: x.student_id });
     }
   });
   return xemViecBaoPh(p, id);
@@ -433,7 +457,7 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   if (!ql && !tvv && !lopCn.length) return [];   // GV không giữ việc này — khỏi tốn câu
   const trongPv = (branchId: number | null) => pv.all || (branchId !== null && pv.branchIds.includes(branchId));
   const giu = giuViecQl(p);
-  const COT = `SELECT v.id, v.student_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
+  const COT = `SELECT v.id, v.student_id, v.phu_trach_id, v.nhan, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, (SELECT u.full_name FROM tinh_hinh_hoc_tap th JOIN users u ON u.id = th.nguoi_gui WHERE th.id = v.tinh_hinh_id) AS th_nguoi, m.kind AS m_kind, m.custom_name AS m_custom, v.han, v.han_chon, s.full_name, s.consultant_user_id AS tvv, ${CHI_NHANH_EM} AS branch_id,
             e.class_id, c.code AS class_code, (SELECT COUNT(*) FROM viec_bao_ph_lan l WHERE l.viec_id = v.id) AS so_lan,
             (SELECT MAX(r.event_date) FROM journey_events r WHERE r.student_id = s.id AND r.event_type = 'resume' AND r.event_date >= date(v.han, '-${ngayCongBaoPhLonNhat()} day')
                AND EXISTS (SELECT 1 FROM journey_events q WHERE q.student_id = s.id AND q.event_type = 'pause' AND q.event_date <= v.han AND q.event_date <= r.event_date)) AS quay_lai,
@@ -459,7 +483,9 @@ export function viecBaoPhCuaToi(p: Principal, o: { today: string; tatCa: boolean
   for (const r of rows) {
     if (o.branchId && r.branch_id !== o.branchId) continue;
     let ownerId: number | null;
-    if (r.tvv === p.userId) ownerId = p.userId;
+    /* GV-1 (N58): việc đã giao rời danh sách người theo luật — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" của QL thấy tên người được giao. */
+    if (r.phu_trach_id != null) { if (!o.tatCa || r.phu_trach_id === p.userId || !trongPv(r.branch_id)) continue; ownerId = r.phu_trach_id; }
+    else if (r.tvv === p.userId) ownerId = p.userId;
     else if (r.phoi_hop_id != null && !r.tvv && r.gvcn_id) {
       /* PHOI-HOP-V2: em chưa có TVV — GVCN giữ; QL "Tất cả" thấy dòng của GVCN đó. */
       if (r.gvcn_id === p.userId) ownerId = p.userId;

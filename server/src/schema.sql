@@ -2031,7 +2031,8 @@ CREATE TABLE sos_coordination_actions (
   created_at TEXT NOT NULL, updated_at TEXT,
   noi_dung_luc_bao TEXT,                -- PR-PHH: JSON mảng 4 chuỗi Báo PH lúc xác nhận (chỉ bao_ph_tvv); NULL = việc cũ/loại khác
   han_chon TEXT,                        -- HAN-BAO-PH: hạn người dùng chọn của meeting CX (YYYY-MM-DD), NULL = mặc định
-  pb_moc INTEGER                        -- CAU-HINH-CASE-SOS: phiên bản mốc SOS lúc sinh việc (NULL = bản gốc)
+  pb_moc INTEGER,                       -- CAU-HINH-CASE-SOS: phiên bản mốc SOS lúc sinh việc (NULL = bản gốc)
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT   -- GV-1 (N58): người được giao; NULL = theo luật
 );
 CREATE UNIQUE INDEX uq_sca_attempt_kind ON sos_coordination_actions(attempt_id, kind, COALESCE(custom_name, ''));
 CREATE INDEX idx_sca_attempt ON sos_coordination_actions(attempt_id);
@@ -2328,7 +2329,8 @@ CREATE TABLE IF NOT EXISTS viec_bao_ph (
   han_chon TEXT,                         -- HAN-BAO-PH: hạn người dùng chọn (YYYY-MM-DD), NULL = mặc định; thắng Tạm dừng
   bao_lai_cua INTEGER REFERENCES discipline_measures(id),  -- YT-BAO-PH: lần xử lý đã thu hồi cần báo lại PH (measure_id NULL); NULL = việc thường
   phoi_hop_id INTEGER,                   -- PHOI-HOP-V2: việc Meeting CX/GĐCN (sos_coordination_actions.id) TVV báo gia đình; NULL = Báo PH ý thức
-  tinh_hinh_id INTEGER                   -- TINH-HINH: việc "Báo PH · Tình hình học tập" (tinh_hinh_hoc_tap.id, chiều gv_tvv)
+  tinh_hinh_id INTEGER,                  -- TINH-HINH: việc "Báo PH · Tình hình học tập" (tinh_hinh_hoc_tap.id, chiều gv_tvv)
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT   -- GV-1 (N58): người được giao; NULL = theo luật
 );
 CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_hv ON viec_bao_ph(student_id, trang_thai);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_viec_bao_ph_phoi_hop ON viec_bao_ph(phoi_hop_id) WHERE phoi_hop_id IS NOT NULL;
@@ -2348,7 +2350,8 @@ CREATE TABLE IF NOT EXISTS tinh_hinh_hoc_tap (
   han TEXT,
   tra_loi TEXT, tra_loi_boi INTEGER REFERENCES users(id), tra_loi_luc TEXT,
   trang_thai TEXT NOT NULL DEFAULT 'mo',
-  rut_boi INTEGER REFERENCES users(id), rut_luc TEXT
+  rut_boi INTEGER REFERENCES users(id), rut_luc TEXT,
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT   -- GV-1 (N58): người được giao; NULL = theo luật
 );
 CREATE INDEX IF NOT EXISTS idx_tinh_hinh_hv ON tinh_hinh_hoc_tap(student_id, trang_thai);
 CREATE INDEX IF NOT EXISTS idx_tinh_hinh_cho ON tinh_hinh_hoc_tap(chieu, trang_thai);
@@ -2373,6 +2376,44 @@ CREATE TABLE IF NOT EXISTS viec_han_lan (
   nguoi_cu INTEGER, ngay TEXT            -- SỔ NGHĨA VỤ (chủ SP 10/11): dòng `chuyen_lop:*` — người giữ việc lớp cũ + ngày chuyển (cases/hanChuyenLop.ts)
 );
 CREATE INDEX IF NOT EXISTS idx_viec_han_lan ON viec_han_lan(loai, viec_id);
+-- GV-1 (N58, chủ SP 20/11): GIAO VIỆC LIÊN PHÒNG BAN. Khoá việc = (loai, ref_id): loai bao_ph (viec_bao_ph) · phoi_hop (sos_coordination_actions) ·
+-- tinh_hinh (tinh_hinh_hoc_tap, chiều tvv_gvcn) · meeting (meeting_phan). PR sau thêm loai (van_hanh, tra_lai) dùng lại hai bảng dưới. Migrate `prGiaoViec` chép y.
+-- Người theo dõi: chỉ xem + nhận tin "Cập nhật". nguon auto (máy thêm lúc tạo việc — đổi GVCN / TVV thì chuyển theo) | tay (người dùng thêm, người giao tự vào).
+CREATE TABLE IF NOT EXISTS viec_theo_doi (
+  id INTEGER PRIMARY KEY, loai TEXT NOT NULL, ref_id INTEGER NOT NULL, user_id INTEGER NOT NULL REFERENCES users(id),
+  nguon TEXT NOT NULL DEFAULT 'tay', them_boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_viec_theo_doi ON viec_theo_doi(loai, ref_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_viec_theo_doi_nguoi ON viec_theo_doi(user_id);
+-- Lịch sử giao việc: truong phu_trach (cu / moi = id người, NULL = theo luật) · theo_doi (moi = thêm, cu = bớt) · xong / mo_lai / sua (phần Meeting). Hạn ghi ở viec_han_lan.
+CREATE TABLE IF NOT EXISTS viec_giao_lan (
+  id INTEGER PRIMARY KEY, loai TEXT NOT NULL, ref_id INTEGER NOT NULL, truong TEXT NOT NULL, cu TEXT, moi TEXT,
+  boi INTEGER REFERENCES users(id), luc TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_viec_giao_lan ON viec_giao_lan(loai, ref_id);
+-- Meeting CX / GĐCN (N58, thiết kế B2): hai phần độc lập của MỘT hành động Phối hợp (sos_coordination_actions), sinh cùng lúc với việc Báo PH Meeting của TVV.
+-- phan: xep_lich (BPXL chi nhánh; không có → TVV của em) | ket_qua (CX chi nhánh; không có → Head; TVV nhập hộ — nhap_ho_boi).
+-- trang_thai: mo | xong | bo (hệ thống: GVCN đưa Meeting về Cần xử lý). branch_id = chi nhánh của em lúc tạo (lọc /my-work theo chỉ mục).
+CREATE TABLE IF NOT EXISTS meeting_phan (
+  id INTEGER PRIMARY KEY,
+  phoi_hop_id INTEGER NOT NULL REFERENCES sos_coordination_actions(id),
+  phan TEXT NOT NULL,
+  branch_id INTEGER,
+  trang_thai TEXT NOT NULL DEFAULT 'mo',
+  ngay_gio TEXT,                         -- xep_lich: ngày giờ họp TUỲ CHỌN ('YYYY-MM-DD' hoặc 'YYYY-MM-DD HH:MM')
+  ket_qua TEXT,                          -- ghi chú / kết quả tuỳ chọn
+  xong_boi INTEGER REFERENCES users(id), xong_luc TEXT, nhap_ho_boi INTEGER REFERENCES users(id),
+  han_chon TEXT,                         -- hạn đặt tay (YYYY-MM-DD), NULL = không hạn
+  phu_trach_id INTEGER REFERENCES users(id), giao_boi INTEGER REFERENCES users(id), giao_luc TEXT,
+  tao_luc TEXT NOT NULL
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_meeting_phan ON meeting_phan(phoi_hop_id, phan);
+CREATE INDEX IF NOT EXISTS idx_meeting_phan_mo ON meeting_phan(branch_id) WHERE trang_thai = 'mo';
+-- Việc giao cho tôi (/my-work, một câu UNION ALL): chỉ mục một phần — dòng theo luật (NULL) không vào chỉ mục, câu cũ không đổi kế hoạch.
+CREATE INDEX IF NOT EXISTS idx_viec_bao_ph_giao ON viec_bao_ph(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_sca_giao ON sos_coordination_actions(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_tinh_hinh_giao ON tinh_hinh_hoc_tap(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_meeting_phan_giao ON meeting_phan(phu_trach_id) WHERE phu_trach_id IS NOT NULL;
 
 -- P14 DICH (N19): bộ nhớ bản dịch — khoá sha256(ngôn ngữ đích + chữ ĐÃ CHE tên / email / SĐT); `ban_dich` cũng là bản đã che (không lưu tên thật).
 -- Sửa chữ gốc → khoá khác → bản cũ tự hết dùng. `dich_luot`: mỗi lần gọi OpenAI thật một dòng (trần DICH_TRAN_NGAY / DICH_TRAN_NGUOI). Migrate `prDich` chép y.

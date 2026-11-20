@@ -41,6 +41,7 @@ import { giuViecQl, viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
+import { viecGiaoChoToi } from './giaoViec.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -160,6 +161,8 @@ export type WorkItem = {
   /** PHOI-HOP-V2 (mockup #1368): dòng Phối hợp SOS (lớp × việc) — loại việc + khoá (việc "Khác" theo tên) để panel lọc đúng việc; `emIds` + `emTen` (tên ≤ 3 em đầu, chip ở ô việc). */
   phoiHop?: { kind: string; khoa: string };
   emTen?: string[];
+  /** GV-1 (N58): việc người khác giao cho người xem — tên người giao (dòng "{tên} giao"). Không có = việc theo luật. */
+  giaoBoi?: string | null;
 };
 
 /**
@@ -203,7 +206,9 @@ export type WorkGroupKey =
   /* LG-3 (chủ SP 13–14/11): GV viết Báo cáo PH — mỗi lớp × đợt một việc, hạn theo đợt (tab Vận hành, mục "Báo cáo PH"). */
   | 'bao_cao_ph'
   /* N49 (chủ SP 16/11): Báo cáo PH quá hạn > 7 ngày (đã rời việc GV) mà lớp còn thiếu em — một việc mỗi lớp × đợt cho QL (tab "Việc quản lý"). */
-  | 'bc_ph_qua_han';
+  | 'bc_ph_qua_han'
+  /* GV-1 (N58, B2): Meeting CX / GĐCN — Xếp lịch họp (BPXL; không có → TVV của em) · Kết quả meeting (CX; không có → Head). Bảng `meeting_phan`. */
+  | 'meeting_xep_lich' | 'meeting_ket_qua';
 
 /**
  * Mỗi nhóm có MỘT DÒNG nói rõ nhóm đó nghĩa là gì.
@@ -257,6 +262,14 @@ const GROUP_META: Record<WorkGroupKey, { label: string; hint: string }> = {
   phoi_hop_tvv: {
     label: 'Báo PH · Meeting CX/GĐCN',
     hint: 'GVCN đã xác nhận Meeting CX/GĐCN (sau Mock) — báo gia đình, sắp xếp buổi họp và ghi kết quả. Em chưa có TVV thì GVCN báo.',
+  },
+  meeting_xep_lich: {
+    label: 'Xếp lịch họp',
+    hint: 'Meeting CX/GĐCN — xếp lịch họp rồi bấm Hoàn thành (ghi ngày giờ họp nếu muốn). Chi nhánh chưa có BPXL thì TVV của em xếp.',
+  },
+  meeting_ket_qua: {
+    label: 'Kết quả meeting',
+    hint: 'Meeting CX/GĐCN — ghi kết quả buổi họp rồi bấm Hoàn thành. TVV nhập hộ được. Chi nhánh chưa có CX thì Head ghi.',
   },
   /* PR-VAI-a (K1-15, Q15): em cũ mới vào web (14 ngày) mà chưa khai bậc Ý thức trước khi dùng web. */
   khai_bac: {
@@ -802,7 +815,23 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /**
    * TD-VIEC (hồ sơ lớp `viecTheoEmCuaLop`): nơi gọi CHỈ dùng việc gắn lớp này (`classId` = lớp) hoặc việc không lớp của em ghi danh lớp này — các khối Case mở,
    * Xác nhận PA, Ý thức, hồ sơ TVV, MT cũ, Bàn giao chỉ đọc tập cha theo lớp đó (trước đọc cả chi nhánh). Việc của lớp trả về y hệt; việc lớp khác có thể thiếu.
-   */ chiLop?: number } = {}) {
+   */ chiLop?: number;
+  /** GV-1: lượt gọi lồng (phần GV của Admin, vai khác của CX) — việc giao cho tôi đã đọc ở lượt ngoài, khỏi câu thứ hai. */ boGiao?: boolean } = {}) {
+  /*
+   * GV-1 (N58): việc người khác giao cho tôi + phần Meeting CX (BPXL / CX / TVV / Head) — MỘT câu, đọc trước mọi nhánh sớm (CX thuần, ngoài phạm vi lượt cũng có).
+   * Ghép vào danh sách sau lọc nhóm (Admin: việc giao không bị cắt về nhóm Chấm điểm); việc trùng khoá với việc theo luật giữ một. TVV (`NHOM_VIEC_TVV`): mọi việc giao.
+   */
+  const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null })
+    .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
+  const chiGiao = () => {
+    const dong = dungDong(giao);
+    const groups = [...new Set(giao.map((i) => i.group))].map((g) => {
+      const list = giao.filter((i) => i.group === g);
+      return { key: g, label: GROUP_META[g].label, hint: GROUP_META[g].hint, items: list,
+        overdue: list.filter((i) => i.urgency === 'overdue').length, today: list.filter((i) => i.urgency === 'today').length };
+    });
+    return { summary: demSo(dong), groups, items: giao, dong, scopeEmpty: false, xemNguoiKhac: false };
+  };
   /*
    * N52: CX không là chủ việc. "Của tôi" (mọi nơi không `tat-ca`: badge, chuông, hồ sơ GV…) = việc của các vai KHÁC của tài khoản; CX thuần → rỗng, 0 câu.
    * "Tất cả" = danh sách của Quản lý trong phạm vi grant CX (`nhinNhuQl`) — cuối hàm bỏ hết "của tôi", làm thay theo quyền thật (`nguoiXem`).
@@ -812,13 +841,13 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
     if (f.nguoi === 'tat-ca' && phamViXemViec(p)) p = nhinNhuQl(p);
     else {
       p = boVaiCx(p);
-      if (!p.grants.length) return { summary: demSo([]), groups: [], items: [] as WorkItem[], dong: [] as WorkItem[], scopeEmpty: false, xemNguoiKhac: false };
+      if (!p.grants.length) return chiGiao();   // CX thuần: chỉ việc được giao + Kết quả meeting (N52 ngoại lệ, N58)
     }
   }
   const today = demoToday();
   const scope = scopeFor(p, PERMISSIONS.ATTEMPT_VIEW);
   /* OV-14c: GV Speaking không phân công (GV nước ngoài) vẫn có việc Chấm Speaking. */
-  if (scope.none && !lopFtChoGvSpeaking(p, today).length && !lopMt0ChoGvSpeaking(p, today).length) return { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
+  if (scope.none && !lopFtChoGvSpeaking(p, today).length && !lopMt0ChoGvSpeaking(p, today).length) return giao.length ? chiGiao() : { summary: demSo([]), groups: [], scopeEmpty: true, xemNguoiKhac: false };
   /* PR-OV2a: Admin chỉ có nhóm Chấm điểm (của mình và của GV trong phạm vi, để Nhắc). */
   const xemViec = phamViXemViec(p);
   const chiNhomGoc = f.chiNhom;   // GV-KIEM-ADMIN: nơi gọi muốn tập nhóm nào thì phần GV cũng chỉ tập đó (chuông nhẹ, tab, Admin xem một GV)
@@ -1068,7 +1097,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   ).all(...(tatCa ? [] : lopS), ...(f.branchId ? [f.branchId] : [])) as any[];
   const baoPh = !co('phoi_hop') ? [] : conn
     .prepare(
-      `SELECT x.id, x.attempt_id, x.student_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
+      `SELECT x.id, x.attempt_id, x.student_id, x.phu_trach_id, s.full_name, a.attempt_no, a.kind AS attempt_kind, cur.class_id AS cur_class_id, c.code AS class_code, c.branch_id,
               (SELECT ta.user_id FROM teacher_assignments ta WHERE ta.class_id = cur.class_id AND ta.is_core = 1 AND ta.status = 'active' ORDER BY ta.id LIMIT 1) AS gvcn_id
          FROM sos_coordination_actions x JOIN students s ON s.id = x.student_id AND ${HV_DANG_HOC_SQL('s')}
          JOIN assessment_attempts a ON a.id = x.attempt_id
@@ -1446,6 +1475,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const phanTramCuoi = new Map<number, string>();
   for (const [id, t] of tyLeTongLo(luotCuoiBaoPh)) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
+    if (r.phu_trach_id != null) continue;   // GV-1 (N58): việc đã giao — người được giao thấy qua `viecGiaoChoToi`
     const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
     const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
     const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
@@ -1830,17 +1860,24 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (f.chiNhom) for (let i = items.length - 1; i >= 0; i--) if (!f.chiNhom.has(items[i].group)) items.splice(i, 1);
   /* OV-11c (CV-11): QL / Quản trị "Của tôi" = việc mình giữ (hoặc chưa ai giữ mà mình làm được); việc GV giữ chỉ ở "Của GV". */
   if (xemNguoiKhac && !tatCa) for (let i = items.length - 1; i >= 0; i--) if (items[i].ownerId !== null && items[i].ownerId !== p.userId) items.splice(i, 1);
+  /* GV-1 (N58): việc giao cho tôi — sau lọc nhóm (Admin không bị cắt về Chấm điểm); trùng khoá (tôi cũng là người theo luật) → bản giao (có "{tên} giao"). */
+  if (giao.length) {
+    const khoaGiao = new Set(giao.map((it) => it.key));
+    for (let i = items.length - 1; i >= 0; i--) if (khoaGiao.has(items[i].key)) items.splice(i, 1);
+    items.push(...giao);
+  }
   /* GV-KIEM-ADMIN: phần GV = ĐÚNG như GV thuần (một lượt myWork với vai GV thuần; thay dòng trùng khoá bằng bản của GV, thêm dòng GV thấy mà Admin lens không có). Đặt SAU lọc "Của tôi" của Admin
      để không mất việc người khác giữ mà GV vẫn thấy (làm thay / chưa giữ). Admin thuần không có vai GV nên không tốn gì. Chuông / badge / Tổng quan / trang Công việc cùng thấy. */
   if (xemViec === 'cham-diem' && p.roleKeys.includes('teacher')) {
     /* Truyền đủ phạm vi của nơi gọi (`chiNhom` gốc, `classIds`, `tachCuaToi`); lọc lại theo `chiNhomGoc` sau khi gộp (nhóm dựng kèm vì phụ thuộc có thể lọt). */
-    const phanGv = myWork(boVaiAdmin(p), { branchId: f.branchId, cnCheo: f.cnCheo, classIds: f.classIds, chiLop: f.chiLop, tachCuaToi: f.tachCuaToi, ...(chiNhomGoc ? { chiNhom: chiNhomGoc } : {}) }) as any;
+    const phanGv = myWork(boVaiAdmin(p), { branchId: f.branchId, cnCheo: f.cnCheo, classIds: f.classIds, chiLop: f.chiLop, tachCuaToi: f.tachCuaToi, boGiao: true, ...(chiNhomGoc ? { chiNhom: chiNhomGoc } : {}) }) as any;
     const theoKhoa = new Map<string, WorkItem>((phanGv.items ?? []).map((it: WorkItem) => [it.key, it]));
     for (let i = 0; i < items.length; i++) { const g = theoKhoa.get(items[i].key); if (g) { items[i] = g; theoKhoa.delete(items[i].key); } }
     items.push(...[...theoKhoa.values()].filter((it) => !chiNhomGoc || chiNhomGoc.has(it.group)));
   }
   const order: WorkGroupKey[] = [
-    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv', 'khai_bac',
+    'cause', 'ghi_nhan_xet', 'xac_nhan_pa', 'xem_nx_s', 'phoi_hop', 'phoi_hop_sos', 'mini_test', 'score', 'no_plan', 'ghi_ket_qua_pa', 'yt_xu_ly', 'yt_thuc_hien', 'bao_ph_yt', 'phoi_hop_tvv',
+    'meeting_xep_lich', 'meeting_ket_qua', 'khai_bac',
     'chot_len_ft', 'xet_lai_lo_trinh', 'ky_vong_dau_ra', 'thi_that', 'buoc_tiep', 'ban_giao', 'no_owner', 'mgmt', 'missing_data', 'bo_sung_ho_so',
   ];
   const weight = (u: WorkUrgency) => (u === 'overdue' ? 0 : u === 'today' ? 1 : 2);
@@ -1854,7 +1891,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* N52: "Tất cả" của CX — việc chỉ là của người xem khi vai KHÁC của tài khoản giữ nó (một lượt nữa chỉ khi có vai khác); còn lại là làm thay (`lamThayCua`). */
   if (coVaiCx(nguoiXem) && tatCa) {
     const chu = boVaiCx(nguoiXem);
-    const that = new Set<string>(chu.grants.length ? ((myWork(chu, { ...f, nguoi: undefined }) as any).items as WorkItem[]).filter((it) => it.mine).map((it) => it.key) : []);
+    const that = new Set<string>(chu.grants.length ? ((myWork(chu, { ...f, nguoi: undefined, boGiao: true }) as any).items as WorkItem[]).filter((it) => it.mine).map((it) => it.key) : []);
+    for (const it of giao) that.add(it.key);   // GV-1: việc giao cho CX / Kết quả meeting là của CX
     for (const it of items) {
       it.mine = that.has(it.key);
       if (!it.mine && it.ownerId === p.userId) it.ownerId = null;

@@ -94,6 +94,7 @@ import { migratePrKyVongTuDat } from './migrate/prKyVongTuDat.ts';
 import { migratePrTdQuet } from './migrate/prTdQuet.ts';
 import { migratePrHocTiep } from './migrate/prHocTiep.ts';
 import { migratePrCxN52 } from './migrate/prCxN52.ts';
+import { migratePrGiaoViec } from './migrate/prGiaoViec.ts';
 import { migratePrDonNguoiChamS } from './migrate/prDonNguoiChamS.ts';
 import { migratePrTatCp } from './migrate/prTatCp.ts';
 import { migratePrResetHanCase, themCotHanThemPa } from './migrate/prResetHanCase.ts';
@@ -554,6 +555,8 @@ function migrateCaseEngine(applied: string[], skipped: string[], loiSauBuoc?: nu
   buoc(() => migratePrCxN52(conn, applied));
   /* HEAD (chủ SP 18/11): tên hiển thị vai manager trong roles "Quản lý" → "Head" (chỉ một câu UPDATE có điều kiện, chạy lặp được). */
   buoc(() => migratePrHead(conn, applied));
+  /* GV-1 (N58, chủ SP 20/11): cột người được giao trên 3 bảng việc + bảng viec_theo_doi · viec_giao_lan · meeting_phan + chỉ mục một phần (chỉ thêm, chạy lặp được). */
+  buoc(() => migratePrGiaoViec(conn, applied));
 
   if (!applied.length) skipped.push('Mô hình case học vụ đã có sẵn, không cần nâng cấp.');
   return { applied, skipped };

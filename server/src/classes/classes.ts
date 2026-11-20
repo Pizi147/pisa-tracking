@@ -31,6 +31,7 @@ import { HV_DANG_HOC_SQL, LUOT_HIEN_TAI_SQL } from '../students/tamDung.ts';
 import { duocSuaCaLop } from './suaCaLop.ts';
 import { sauThiTheoEm } from '../loTrinh/thiThat.ts';
 import { luuPhanCong } from './phanCongGv.ts';
+import { chuyenTheoDoiGvcn } from '../worklist/giaoViec.ts';
 
 /**
  * Màn Học viên lấy LỚP làm gốc.
@@ -1180,6 +1181,7 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
 
   let added = 0; let ended = 0;
   const gopCan = san?.gopCan ?? monGopConCan(classId);
+  const gvcnCu: number[] = [];
   for (const a of active) {
     const k = keyOf(a.user_id, a.skill, a.is_core);
     if (wanted.has(k)) { wanted.delete(k); continue; }
@@ -1187,7 +1189,11 @@ export function ghiPhanCong(p: Principal, classId: number, slots: SlotPhanCong[]
     if (a.skill && !a.is_core && gopCan.has(a.skill)) continue;
     conn.prepare(`UPDATE teacher_assignments SET status = 'ended', effective_to = ? WHERE id = ?`).run(ngay, a.id);
     ended += 1;
+    if (a.is_core) gvcnCu.push(a.user_id);
   }
+  /* GV-1 (N58): đổi GVCN → người theo dõi mặc định (GVCN cũ) của việc còn mở của em lớp này chuyển sang GVCN mới. */
+  const gvcnMoi = [...wanted.values()].find((s) => s.isCore)?.userId ?? null;
+  for (const cu of gvcnCu) chuyenTheoDoiGvcn(classId, cu, gvcnMoi);
   for (const s of wanted.values()) {
     conn
       .prepare(

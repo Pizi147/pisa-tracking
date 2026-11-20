@@ -67,6 +67,18 @@ export const VIEC_TVV: ViecHd[] = [
     tuKhac: ['meeting', 'gđcn', 'cx', 'họp', 'sos 3', 'phối hợp sos', 'báo phụ huynh'],
   },
   {
+    /* GV-1 (N58, B2): hai phần Meeting CX / GĐCN — BPXL xếp lịch, CX ghi kết quả; TVV xếp khi chi nhánh chưa có BPXL, nhập hộ CX. */
+    id: 'meeting-phan', ten: 'Xếp lịch họp, Kết quả meeting', nhom: 'hv', tab: 'bao-ph', viecWeb: ['meeting_xep_lich', 'meeting_ket_qua'],
+    loiChinh: { man: 'cong-viec', chu: 'Công việc › Báo PH', duong: CV },
+    loiTat: ['p-phoi-hop'], cung: 'mở cùng bảng.',
+    khiCo: 'GVCN xác nhận Meeting CX/GĐCN của em sau lượt Mock có SOS.',
+    buoc: ['Bấm <b>Hoàn thành</b> ở dòng <b>Xếp lịch họp</b> (ghi ngày giờ họp nếu muốn).', 'Ở <b>Kết quả meeting</b>: ghi kết quả rồi bấm <b>Hoàn thành</b>; TVV nhập hộ CX được.'],
+    xong: 'Phần đó Hoàn thành; ba phần không chờ nhau.',
+    sai: 'Bấm <b>Hoàn tác</b> hoặc sửa rồi lưu lại.',
+    khongDuoc: ['Chi nhánh chưa có BPXL: TVV của em xếp lịch; chưa có CX: Head ghi kết quả.'],
+    tuKhac: ['meeting', 'xếp lịch họp', 'kết quả meeting', 'bpxl', 'cx', 'họp'],
+  },
+  {
     id: 'han-bao-ph', ten: 'Sửa hạn, bỏ việc Báo PH', nhom: 'hv',
     loiChinh: { man: 'cong-viec', chu: 'Công việc › Báo PH', duong: CV },
     loiTat: ['p-bao-ph'], cung: 'mở cùng panel.',
@@ -488,7 +500,7 @@ export const TU_TVV: TuHd[] = [
   { ten: 'Phối hợp SOS', nghia: 'Việc GVCN làm với em, gia đình khi em SOS (trao đổi, meeting); TVV chỉ báo lại kết quả meeting CX/GĐCN.' },
 ];
 
-const THU_TU = ['xem-viec', 'xem-thi-thang', 'bao-ph', 'bao-ph-meeting', 'han-bao-ph', 'chot-ngay-thi', 'bo-sung', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'lich-su',
+const THU_TU = ['xem-viec', 'xem-thi-thang', 'bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'chot-ngay-thi', 'bo-sung', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'lich-su',
   'loc-hv', 'them-hv', 'tim-kiem', 'luu-tru', 'xuat-ds', 'bao-cao-ph-lop', 'phan-tich'];
 
 export const HD_TVV: HuongDan = {
@@ -497,7 +509,7 @@ export const HD_TVV: HuongDan = {
   tuan: [
     { nhip: 'Hằng ngày', viec: ['xem-viec', 'xem-thi-thang', 'loc-hv'] },
     { nhip: 'Hằng tháng', viec: ['phan-tich', 'xuat-ds', 'bao-cao-ph-lop'] },
-    { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'han-bao-ph', 'bo-sung', 'chot-ngay-thi', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
+    { nhip: 'Khi có', viec: ['bao-ph', 'bao-ph-meeting', 'meeting-phan', 'han-bao-ph', 'bo-sung', 'chot-ngay-thi', 'thi-that', 'buoc-tiep', 'sua-hv', 'doi-lo-trinh', 'tam-dung', 'xem-case', 'them-hv', 'lich-su', 'tim-kiem', 'luu-tru'] },
   ],
   /* HD3-3: tab "Trường hợp" của TVV (15 mục 4.7) — nguồn từng câu ở `docs/anh/hd3-3-tvv-cx/khop-khac.md`. */
   tinhHuong: TINH_HUONG_TVV,

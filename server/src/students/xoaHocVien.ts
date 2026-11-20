@@ -35,6 +35,7 @@ export const BANG_CUA_HOC_VIEN: readonly string[] = [
   'bao_cao_ph',   // BAO-CAO-PH: báo cáo gửi phụ huynh của em
   'tinh_hinh_hoc_tap',   // TINH-HINH: tình hình học tập GV ↔ TVV của em
   'thi_that_lich_su',   // HOC-TIEP: KQ thi thật lần trước của lộ trình Học tiếp
+  'meeting_phan',   // GV-1: hai phần Meeting CX / GĐCN (Xếp lịch họp · Kết quả meeting) của hành động phối hợp của em
 ];
 
 /** Dòng của NGƯỜI KHÁC trỏ vào dữ liệu của em (Q5) — đặt NULL, không xoá. Cả ba cột cho phép NULL. */
@@ -112,6 +113,11 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'case_signals', sql: `DELETE FROM case_signals WHERE id IN (${G})` },
   { bang: 'sos_cases', sql: `DELETE FROM sos_cases WHERE id IN (${C})` },
   /* Ý thức: vi phạm ↔ PA xử lý (Q4 — PA của em khác lỡ nối vi phạm của em: chỉ mất dòng nối) */
+  /* GV-1: người theo dõi + lịch sử giao của việc của em (khoá mềm loai / ref_id, không khoá ngoại) — trước các bảng việc (câu con đọc chúng). */
+  ...(['viec_theo_doi', 'viec_giao_lan'] as const).map((bang) => ({ bang, sql: `DELETE FROM ${bang} WHERE (loai = 'bao_ph' AND ref_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})))
+      OR (loai = 'phoi_hop' AND ref_id IN (${X})) OR (loai = 'tinh_hinh' AND ref_id IN (SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ?1))
+      OR (loai = 'meeting' AND ref_id IN (SELECT id FROM meeting_phan WHERE phoi_hop_id IN (${X})))` })),
+  { bang: 'meeting_phan', sql: `DELETE FROM meeting_phan WHERE phoi_hop_id IN (${X})` },   // GV-1: trước sos_coordination_actions
   /* SV-YT-TVV: việc Báo PH của em / của lần xử lý của em (+ lịch sử ghi) trước lần xử lý */
   { bang: 'viec_bao_ph_lan', sql: `DELETE FROM viec_bao_ph_lan WHERE viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M}))` },
   { bang: 'viec_bao_ph', sql: `DELETE FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})` },

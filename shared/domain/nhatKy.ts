@@ -48,6 +48,9 @@ const NHAN_NHAT_KY: Record<string, string> = {
   'tinh_hinh.gui': 'Gửi tình hình học tập', 'tinh_hinh.sua': 'Sửa tình hình học tập', 'tinh_hinh.rut': 'Rút tình hình học tập',
   'tinh_hinh.hoan_tac': 'Hoàn tác gửi tình hình học tập', 'tinh_hinh.tra_loi': 'Ghi kết quả tình hình học tập', 'tinh_hinh.hoan_tac_tra_loi': 'Hoàn tác kết quả tình hình học tập',   // TINH-HINH
   'tinh_hinh.bo_rut': 'Hoàn tác rút tình hình học tập',   // S4-LUAT đề xuất 10
+  /* GV-1 (N58): giao việc liên phòng ban + phần Meeting CX / GĐCN. */
+  'giao_viec.giao': 'Giao việc cho người khác', 'giao_viec.mac_dinh': 'Trả việc về người theo luật', 'giao_viec.hoan_tac': 'Hoàn tác đổi người phụ trách',
+  'giao_viec.han': 'Sửa hạn việc', 'meeting_phan.xong': 'Hoàn thành phần Meeting', 'meeting_phan.sua': 'Sửa phần Meeting', 'meeting_phan.mo_lai': 'Hoàn tác phần Meeting',
   'discipline.bao_ph': 'Ghi kết quả báo phụ huynh', 'discipline.bao_ph_bo': 'Bỏ việc báo phụ huynh', 'discipline.bao_ph_khoi_phuc': 'Khôi phục việc báo phụ huynh',   // SV-YT-TVV
   'discipline.bao_ph_han': 'Sửa hạn báo phụ huynh', 'sos_coordination.han': 'Sửa hạn việc phối hợp SOS',   // HAN-BAO-PH
   'ke_hoach.hang_loat': 'Xếp lịch Test hàng loạt',

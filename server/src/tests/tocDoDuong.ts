@@ -118,6 +118,8 @@ export const DUONG_DO: MucDo[] = [
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca' },
   { trang: 'Công việc CX', vai: ['CX'], url: '/my-work?nguoi=tat-ca&branchId={cn}' },
+  /* GV-1 (N58): tab "Đang theo dõi" — đường riêng, chỉ gọi khi mở tab (không vào /my-work, không số đếm), mọi vai. */
+  { trang: 'Công việc · Đang theo dõi', vai: ['QL', 'QT', 'GVCN', 'GVBM', 'TVV', 'CX', 'ADMIN'], url: '/my-work/theo-doi' },
   /* N52: CX xem Phân tích phần GV + Test (như QL). */
   { trang: 'Phân tích GV CX', vai: ['CX'], url: '/phan-tich/giao-vien?cn={cn}&ct=ft&v2=1' },
   { trang: 'Lịch Test CX', vai: ['CX'], url: '/cham/lich-test' },
@@ -544,6 +546,8 @@ export const DUONG_DO: MucDo[] = [
  * số "đo …" trong chú thích từng dòng dưới đây là số đo CŨ, trước TD2-d.
  */
 export const TRAN: Record<string, number> = {
+  /* GV-1 (N58): tab "Đang theo dõi" — đo 2–3 câu (phiên + MỘT câu theo dõi) → đo + 10. /my-work mọi vai: +1 câu (việc giao cho tôi, UNION ALL), +0 dòng — trần cũ đủ. */
+  'QL /my-work/theo-doi': 13, 'QT /my-work/theo-doi': 13, 'GVCN /my-work/theo-doi': 13, 'GVBM /my-work/theo-doi': 13, 'TVV /my-work/theo-doi': 13, 'CX /my-work/theo-doi': 13, 'ADMIN /my-work/theo-doi': 13,
   /* N52 (chủ SP 18/11): CX có Công việc — badge `/my-work` (không việc của mình: chỉ câu phiên) đo 2 · "Tất cả" (danh sách QL cùng phạm vi, CX demo toàn hệ thống) đo 51 / 51
      · Lịch Test đo 22 · Phân tích GV đo 17 (trước N52: 403) → max(đo + 10, ⌈đo × 1,3⌉). */
   'CX /my-work': 12, 'CX /my-work?nguoi=tat-ca': 67, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 67, 'CX /cham/lich-test': 32, 'CX /phan-tich/giao-vien?cn={cn}&ct=ft&v2=1': 30,
@@ -1368,6 +1372,8 @@ export const TRAN: Record<string, number> = {
  * khoá bằng EXPLAIN (không SCAN assessment_attempts, đi idx_attempt_o_cho[_lop]) ở khối "TD7b" của tocDo.run.ts.
  */
 export const TRAN_DONG: Record<string, number> = {
+  /* GV-1 (N58): tab "Đang theo dõi" — đo 1–2 dòng (seed chưa có ai theo dõi) → đo + 50. ponytail: dòng tăng theo số việc từng theo dõi (đọc hết rồi lọc 7 ngày ở mã). */
+  'QL /my-work/theo-doi': 52, 'QT /my-work/theo-doi': 52, 'GVCN /my-work/theo-doi': 52, 'GVBM /my-work/theo-doi': 52, 'TVV /my-work/theo-doi': 52, 'CX /my-work/theo-doi': 52, 'ADMIN /my-work/theo-doi': 52,
   /* N52: CX Công việc "Tất cả" đo 1 198 · một chi nhánh 925 dòng → ⌈đo × 1,3⌉. */
   'CX /my-work?nguoi=tat-ca': 1558, 'CX /my-work?nguoi=tat-ca&branchId={cn}': 1203,
   /* TQ-SOS-CN: đo 477 / 477 / 476 dòng (×3: chi nhánh đo 36 em, cả hệ thống 36 em) → max(đo + 50, ⌈đo × 1,3⌉). */

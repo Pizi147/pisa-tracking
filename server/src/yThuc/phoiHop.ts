@@ -17,6 +17,7 @@ import { allProgrammes, evaluateRegular, nguongDatKhacMacDinh, nguongDatLop } fr
 import { branchSql, checkClassInScope, classSql, statScope } from './thongKe.ts';
 import { canManageDiscipline, requireManageDiscipline, requireViewClass, requireViewStudent } from './access.ts';
 import { LY_DO_MEETING_MO_LAI, NHAN_KET_QUA_BAO_PH, coTheGhi, coTheSuaHan, docSuaHan, doiHanChon } from './baoPhTvv.ts';
+import { baoTheoDoi, dongPhanMeeting, moPhanMeeting } from '../worklist/giaoViec.ts';
 
 /**
  * PHỐI HỢP SOS — việc của GVCN sau một lượt Mock Test Fast Track có SOS (rulebook v3, PR-T; `thiet-ke/SOS_VA_PHOI_HOP_V3.md` §5).
@@ -39,6 +40,12 @@ function capText(value: string | null | undefined, max: number, label: string): 
 
 /* PR-S5F-b: dùng chung lượt Mock FT và Giữa khoá lớp thường — không nói "SOS" (lớp thường không có SOS). */
 const ACT_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học và Head trong phạm vi mới xử lý được việc phối hợp — giáo viên bộ môn chỉ xem.';
+/** GV-1 (N58): người được giao (`phu_trach_id`) làm được đúng việc này; còn lại = GVCN lớp em + Head (`discipline.manage`). */
+function requireLam(p: Principal, r: { student_id: number; phu_trach_id?: number | null }): void {
+  if (r.phu_trach_id != null && r.phu_trach_id === p.userId) return;
+  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
+}
+const tieuDeViec = (r: any): string => `${r.kind === 'other' && r.custom_name ? r.custom_name : tenViec(r.kind, r.pb_moc ?? null)}`;
 
 // ---------------------------------------------------------------- điền sẵn và đồng bộ theo mức SOS (P01–P03)
 
@@ -311,7 +318,7 @@ function shapeAction(r: any, attachments: Map<number, number>): CoordinationActi
     removeReasonText: r.remove_reason_text ?? null, removedAt: r.removed_at ?? null,
     attachmentCount: attachments.get(r.id) ?? 0,
     han, quaHan: r.status === 'pending' && han !== null && han < demoToday(),
-    hanMacDinh, hanChon: hanMacDinh ? r.han_chon ?? null : null,
+    hanMacDinh, hanChon: r.han_chon ?? null,   // GV-1: việc không hạn có thể có hạn đặt tay
     /* CAU-HINH-CASE-SOS: ghi chú tối thiểu theo bản chụp của việc (web dùng thay hằng số Meeting CX). */
     toiThieuGhiChu: toiThieuGhiChu(r.kind, r.pb_moc ?? null),
     noiDung: null, noiDungLaHienTai: false, tvv: null,
@@ -367,15 +374,19 @@ function dongBoViecTvv(id: number, truoc: string): void {
     /* Rà PTA (4): "Sửa" việc đã xong (ngày, chữ) không sinh lại việc TVV / chuông — chỉ lần chuyển sang Xong. */
     if (truoc === 'done' || !buoc) return;
     if (!v) {
-      db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
-        .run(id, r.student_id, tenViec(r.kind, r.pb_moc ?? null), hanTvv(), nowIso());
+      const bp = Number(db().prepare(`INSERT INTO viec_bao_ph (measure_id, phoi_hop_id, student_id, nhan, han, trang_thai, tao_luc) VALUES (NULL, ?, ?, ?, ?, 'mo', ?)`)
+        .run(id, r.student_id, tenViec(r.kind, r.pb_moc ?? null), hanTvv(), nowIso()).lastInsertRowid);
+      /* GV-1 (N58, B2): Meeting CX / GĐCN = ba phần độc lập — Xếp lịch họp (BPXL) + Kết quả meeting (CX) cạnh Báo PH của TVV; người theo dõi mặc định. */
+      if (laMeetingCx(r.kind)) moPhanMeeting(id, r.student_id, bp);
     } else if (v.trang_thai === 'bo' && v.bo_ly_do === LY_DO_MEETING_MO_LAI) {
       /* (10) mở lại = hạn mới từ hôm nay, bỏ hạn người dùng chọn của lần trước. */
       db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'mo', bo_ly_do = NULL, bo_ly_do_chu = NULL, bo_boi = NULL, bo_luc = NULL, han = ?, han_chon = NULL WHERE id = ?`)
         .run(hanTvv(), v.id);
-    }
+      if (laMeetingCx(r.kind)) moPhanMeeting(id, r.student_id, v.id);
+    } else if (laMeetingCx(r.kind)) moPhanMeeting(id, r.student_id, v.id);   // việc TVV có từ trước GV-1: thêm hai phần (chạy lặp không đổi)
     return;
   }
+  dongPhanMeeting(id);
   /* Rà PTA (5): không xoá dòng (id có thể bị dùng lại; chuông / bản ghi đảo còn trỏ id) — việc còn mở → "Đã bỏ" lý do hệ thống; việc đã xong / người dùng đã bỏ giữ nguyên. */
   if (v?.trang_thai === 'mo') {
     db().prepare(`UPDATE viec_bao_ph SET trang_thai = 'bo', bo_ly_do = ?, bo_luc = ? WHERE id = ?`).run(LY_DO_MEETING_MO_LAI, nowIso(), v.id);
@@ -564,7 +575,7 @@ export type DongPhoiHopViec = { classId: number; className: string; kind: string
 export function dongPhoiHopTheoViec(classIds: number[], emId?: number): DongPhoiHopViec[] {
   if (!classIds.length) return [];
   const rows = db().prepare(
-    `SELECT x.kind, x.custom_name, x.created_at, x.han_chon, x.pb_moc, x.student_id, s.full_name, e.class_id FROM sos_coordination_actions x
+    `SELECT x.kind, x.custom_name, x.created_at, x.han_chon, x.pb_moc, x.phu_trach_id, x.student_id, s.full_name, e.class_id FROM sos_coordination_actions x
        JOIN enrollments e ON e.student_id = x.student_id AND e.class_id IN (${DS_JSON}) AND e.status = 'active'
        JOIN assessment_attempts a ON a.id = x.attempt_id AND a.status != 'cancelled' AND COALESCE(a.kind, 'mock') = 'mock' AND NOT ${LUOT_SAU_THI_SQL('a')}   -- N46
        JOIN students s ON s.id = x.student_id
@@ -573,7 +584,7 @@ export function dongPhoiHopTheoViec(classIds: number[], emId?: number): DongPhoi
   const lop = lopDayDu();
   const theoKhoa = new Map<string, DongPhoiHopViec>();
   for (const r of rows) {
-    if (!lop.has(r.class_id)) continue;
+    if (!lop.has(r.class_id) || r.phu_trach_id != null) continue;   // GV-1 (N58): việc đã giao rời dòng của GVCN — người được giao thấy riêng
     const ten = r.kind === 'other' && r.custom_name ? r.custom_name : tenViec(r.kind, r.pb_moc ?? null);
     const khoa = r.kind === 'other' ? `other:${encodeURIComponent(r.custom_name ?? '')}` : r.kind;
     const k = `${r.class_id}|${khoa}`;
@@ -619,14 +630,16 @@ function viewOf(id: number, p?: Principal): CoordinationAction {
 export function suaHanPhoiHop(p: Principal, id: number, body: { han?: unknown; hanCu?: unknown }): CoordinationAction {
   const { han, hanCu } = docSuaHan(body);
   const r = loadAction(id);
-  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
-  if (!hanPhoiHop(r.kind, r.created_at, null, r.pb_moc ?? null)) throw badRequest('Việc này không có hạn.');
+  /* GV-1 (N58): + người được giao, người giao; việc không hạn đặt hạn được (sửa N34 ②). */
+  if (r.giao_boi == null || r.giao_boi !== p.userId) requireLam(p, r);
   if (r.status !== 'pending') throw badRequest('Việc đã xong hoặc đã bỏ — không sửa hạn.');
   tx(() => {
-    const cu = hanPhoiHop(r.kind, r.created_at, hanCu, r.pb_moc ?? null), moi = hanPhoiHop(r.kind, r.created_at, han, r.pb_moc ?? null)!;
+    /* ponytail: bỏ hạn của việc không hạn ghi `han_moi` = '' (cột NOT NULL) — đọc lại là "không hạn"; tách cột nếu cần. */
+    const cu = hanPhoiHop(r.kind, r.created_at, hanCu, r.pb_moc ?? null), moi = hanPhoiHop(r.kind, r.created_at, han, r.pb_moc ?? null) ?? '';
     if (doiHanChon({ loai: 'phoi_hop', bang: 'sos_coordination_actions', id, han, hanCu, cuHieuLuc: cu, moiHieuLuc: moi, boi: p.userId })) {
       writeAudit({ actorUserId: p.userId, action: 'sos_coordination.han', entityType: 'sos_coordination_action', entityId: id, entityLabel: r.kind,
         before: { han: cu, hanChon: hanCu }, after: { han: moi, hanChon: han } });
+      baoTheoDoi('phoi_hop', id, p.userId, { suKien: 'han', tieuDe: tieuDeViec(r), chiTiet: moi ? `Hạn mới: ${moi.slice(8, 10)}/${moi.slice(5, 7)}` : 'Bỏ hạn', khoa: moi || 'khong', studentId: r.student_id });
     }
   });
   return viewOf(id);
@@ -679,7 +692,7 @@ export function addCoordination(p: Principal, attemptId: number, input: { kind?:
  */
 export function confirmCoordination(p: Principal, id: number, input: { performedOn?: string | null; note?: string | null; performerName?: string | null }): CoordinationAction {
   const r = loadAction(id);
-  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
+  requireLam(p, r);
   /* RKC-3a: việc đã bỏ xác nhận thẳng được — tự khôi phục (xoá lý do bỏ) rồi ghi xong, cùng giao dịch; nhật ký giữ trạng thái trước. */
   if (!input.performedOn) throw badRequest('Cần chọn ngày thực hiện.');
   if (!isIsoDate(input.performedOn)) throw badRequest('Ngày thực hiện không hợp lệ.');
@@ -702,12 +715,13 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
             remove_reason_code = NULL, remove_reason_text = NULL, removed_by = NULL, removed_at = NULL, updated_at = ? WHERE id = ?`,
       )
       .run(input.performedOn, who ? null : p.userId, who || null, note || null, chup ? JSON.stringify(chup) : null, nowIso(), id);
-    writeAudit({
+    const aid = writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.confirm', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`,
       before: r.status === 'done' ? { status: r.status, performedOn: r.performed_on, note: r.note, performerName: r.performer_name } : { status: r.status },
       after: { status: 'done', performedOn: input.performedOn, note: note || null, performerName: who || null, ...(r.kind === 'bao_ph_tvv' ? { noiDungLuu: !!chup } : {}) },
     });
+    baoTheoDoi('phoi_hop', id, p.userId, { suKien: 'ket_qua', tieuDe: tieuDeViec(r), chiTiet: note || 'Xong', khoa: aid, studentId: r.student_id });   // GV-1
     dongBoViecTvv(id, r.status);
   });
   return viewOf(id, p);
@@ -719,7 +733,7 @@ export function confirmCoordination(p: Principal, id: number, input: { performed
  */
 export function removeCoordination(p: Principal, id: number, input: { reasonCode?: string | null; reasonText?: string | null }): CoordinationAction {
   const r = loadAction(id);
-  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
+  requireLam(p, r);
   /* RKC-3a: việc ĐÃ XONG cũng bỏ được (khỏi "Đưa lại" trước) — bản ghi đảo chụp nguyên dòng xong, Khôi phục trả về xong. Việc đã bỏ: không làm gì thêm. */
   if (r.status === 'removed') throw badRequest('Việc này đã bỏ rồi — bấm Khôi phục nếu cần làm lại.');
   const code = String(input.reasonCode ?? '');
@@ -741,6 +755,7 @@ export function removeCoordination(p: Principal, id: number, input: { reasonCode
       .run(code, reasonNeedsText(code) ? text : null, p.userId, nowIso(), nowIso(), id).changes;
     if (!doi) throw badRequest('Việc vừa được cập nhật — mở lại.');
     luuGhiDao(db(), { loai: LOAI_BO_PHOI_HOP, bang: 'sos_coordination_actions', id, nguoi: p.userId, ghi: g });
+    baoTheoDoi('phoi_hop', id, p.userId, { suKien: 'bo', tieuDe: tieuDeViec(r), chiTiet: COORDINATION_REMOVE_REASON_LABEL[code as CoordinationRemoveReason] ?? code, khoa: nowIso(), studentId: r.student_id });   // GV-1
     writeAudit({
       actorUserId: p.userId, action: 'sos_coordination.remove', entityType: 'sos_coordination_action', entityId: id,
       entityLabel: `${r.kind}${r.custom_name ? ` · ${r.custom_name}` : ''}`, before: { status: r.status }, after: { status: 'removed', reason: code, text: text || null },
@@ -758,7 +773,7 @@ const LOAI_BO_PHOI_HOP = 'bo_phoi_hop';
  */
 export function moLaiCoordination(p: Principal, id: number): CoordinationAction {
   const r = loadAction(id);
-  requireManageDiscipline(p, r.student_id, ACT_MESSAGE);
+  requireLam(p, r);
   if (r.status === 'pending') throw conflict('Việc này đang ở trạng thái Cần xử lý.');   // Q-RL2c: bấm lần hai / đã có người mở lại → 409
   if (r.status === 'removed' && !(COORDINATION_USER_REMOVE_REASONS as readonly string[]).includes(r.remove_reason_code)) {
     throw badRequest('Việc này do hệ thống bỏ theo điểm — không khôi phục tay được.');
