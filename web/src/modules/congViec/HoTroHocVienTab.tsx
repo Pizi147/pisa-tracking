@@ -544,19 +544,20 @@ export function HoTroHocVienTab() {
   /* N56 ① (chủ SP 20/11, sửa N33 ③): việc của người khác mà mình làm thay được (`lamThay` máy chủ) mở THẲNG form + dải "Bạn đang làm thay …";
      "Chỉ xem" về tóm tắt (nhớ theo việc), ở đó "Làm thay" mở lại form. Không có quyền → tóm tắt như cũ. Quyền máy chủ không đổi. */
   const [chiXem, setChiXem] = useState<string | null>(null);
-  const theoDoiChon = !!chon && theoDoi(chon);
+  /* GV-2 (N58): việc giao được (Báo PH · Meeting) có cờ quyền từ máy chủ ở chính panel — mở THẲNG panel như việc của mình (`theoDoiChon` false; nhãn đầu panel vẫn "Theo dõi") (khối Phụ trách: Head / CX "Đổi"; không quyền ghi thì form chỉ xem), không tóm tắt. */
+  const coKhoiGiao = !!chon && /^(bao_ph_yt|phoi_hop_tvv|meeting_xep_lich|meeting_ket_qua)$/.test(chon.group) && !chon.con?.length;
+  const theoDoiViec = !!chon && theoDoi(chon);
+  const theoDoiChon = theoDoiViec && !coKhoiGiao;
   /* CV-SUA-1011 (chủ SP 10/11 ý 5 "skip cái panel thừa này đi … muốn nhập hộ thì nhập hộ luôn"): Nhập điểm / Chấm Speaking của người khác mở THẲNG
      lưới — sửa được (quyền máy chủ từng ô) thì nhập ngay, không thì chỉ xem; không tóm tắt + nút "Nhập hộ". */
   const moThang = theoDoiChon && chon.group === 'score';
   const coLamThay = !!(chon as { lamThay?: boolean } | null)?.lamThay;
-  /* GV-2 (N58): việc giao được (Báo PH · Meeting) có cờ quyền từ máy chủ ở chính panel — mở THẲNG panel (khối Phụ trách: Head / CX "Đổi"; không quyền ghi thì form chỉ xem), không tóm tắt. */
-  const coKhoiGiao = !!chon && /^(bao_ph_yt|phoi_hop_tvv|meeting_xep_lich|meeting_ket_qua)$/.test(chon.group) && !chon.con?.length;
-  const khoaPanel = theoDoiChon && !moThang && !coKhoiGiao && (!coLamThay || chiXem === chon?.key);
+  const khoaPanel = theoDoiChon && !moThang && (!coLamThay || chiXem === chon?.key);
   const dangLamThay = theoDoiChon && coLamThay && (moThang || chiXem !== chon?.key);
   const nhanNhom = chon ? (laViecChamCheo(chon) ? t('Chấm Speaking') : /^(meeting_|phoi_hop_tvv$)/.test(chon.group) ? t('Meeting CX/GĐCN')   // GV-2 (mockup v22 G8): "Việc · Meeting CX/GĐCN"
     : dich(laTvv ? NHOM_CV_TVV_LABEL[nhomViecTvvCua(chon.group)] : NHOM_VIEC_LABEL[nhomViecCua(chon.group)])) : '';
   const dauPanel = chon ? {
-    loai: `${dangLamThay ? t('Làm thay') : theoDoiChon ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiChon ? chon.owner : null,
+    loai: `${dangLamThay ? t('Làm thay') : theoDoiViec ? t('Theo dõi') : t('Việc')} · ${nhanNhom}`, nguoiLam: theoDoiViec ? chon.owner : null,
     dai: noiDai === 'viec' && daiVuaLuu ? daiVuaLuu : undefined,
     /* PTA rà #1880: dải làm thay ở đầu panel (KhungPanel `daiLamThay`), không trong vùng cuộn — luôn thấy trước khi lưu. */
     daiLamThay: dangLamThay ? <DaiLamThay ai={chon.owner ?? t('người phụ trách')} onThoi={moThang ? null : () => boChuRoi(() => setChiXem(chon.key))} /> : undefined,
