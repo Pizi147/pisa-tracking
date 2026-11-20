@@ -301,7 +301,10 @@ function CotHan({ it, daXong }: { it: WorkItem; daXong: boolean }) {
       {daXong ? <span className={`font-semibold ${LOP_DA_LUU}`}>{t('✓ Đã lưu')}</span>
         /* GD-4c ([XM-B] 4a, ⑤ B1 `.han-v`, ⓪ dòng 32): MỘT dáng chip hạn dạng viên cho dòng việc ở mọi nơi — "quá hạn 5 ngày" (đỏ) · "hạn hôm nay"
            (vàng viền) · "hạn 23/09" (xám, kể cả sắp hạn — bỏ "còn n ngày"). Dùng `ChipHan vien` (cùng chip đầu panel, Chờ bạn duyệt, Lớp của tôi). */
-        : v && it.due ? <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />
+        : v && it.due ? (it.choGvSua && it.urgency !== 'overdue'
+          /* GV-2 / TL-1: "Chờ GV sửa" — hạn tạm dừng, máy chủ để urgency normal; không tự so ngày ra "quá hạn". */
+          ? <span className="whitespace-nowrap tabular-nums text-dim">{t('hạn {ngay}', { ngay: shortDate(it.due, homNay) })}</span>
+          : <ChipHan vien loai={LOAI_HAN_CUA_VIEC[it.group] ?? 'viec-van-hanh'} han={it.due} />)
         /* BAO-CAO-PH b: lớp đủ báo cáo PH — viên xám "đủ 23/11" (ngày lớp đủ), không hạn. */
         : it.group === 'xuat_bc_ph' ? <Nhan tone="muted">{dich(it.statusLabel)}</Nhan>
         /* GD-4a (⑤ B1): không hạn → cột trống, vạch nhóm "Không hạn" ở đầu nhóm nói thay; trình đọc màn hình vẫn nghe. */

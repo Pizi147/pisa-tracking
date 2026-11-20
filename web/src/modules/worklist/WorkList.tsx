@@ -49,6 +49,8 @@ export type WorkItem = {
   chonPa?: boolean;
   /** BO-QUA-XEP-MT: QL bỏ qua được ngay trên dòng (việc `moc:` Xếp lịch MT / Nhập dự kiến thi). */
   boQuaDuoc?: boolean;
+  /** TL-1: Báo PH "Chờ GV sửa" — hạn tạm dừng (máy chủ đã để `urgency` normal); cột hạn không tô quá hạn. */
+  choGvSua?: boolean;
   /** GV-2 (N58): việc người khác giao cho tôi — tên người giao (thẻ "{tên} giao"). */
   giaoBoi?: string | null;
   /** GV-2: dòng Xếp lịch họp · Kết quả meeting — id hành động Meeting (panel `/phoi-hop-sos/:id/meeting`). */

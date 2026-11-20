@@ -24,6 +24,7 @@ export type KhoiGv = {
   loai: LoaiGiao; id: number; tieuDe: string; studentId: number; mo: boolean; branchId: number | null;
   phuTrach: Nguoi[]; macDinh: Nguoi[]; duocGiao: boolean; giaoBoi: Nguoi | null; giaoLuc: string | null;
   han: string | null; hanMacDinh: string | null; hanChon: string | null; coTheSuaHan: boolean;
+  /** Báo PH "Chờ GV sửa" (TL-1): hạn tạm dừng — không tô quá hạn. */ tamDung?: boolean;
   theoDoi: (Nguoi & { nguon: string })[]; toiTheoDoi: boolean; coTheDoiNguoi: boolean; coTheSuaTheoDoi: boolean; hoanTacDuoc: boolean;
   lichSu: { truong: string; cu: string | null; moi: string | null; cuTen: string | null; moiTen: string | null; nguoi: string | null; luc: string }[];
   meeting?: { phan: 'xep_lich' | 'ket_qua'; ten: string; phoiHopId: number; trangThai: 'mo' | 'xong' | 'bo'; ngayGio: string | null; ketQua: string | null;
@@ -110,7 +111,7 @@ export function KhoiGiaoViec({ g, dat, reload, gon, chiHan, anTheoDoi, onDaDoi }
           </div>
         </>}
         <div className={NHAN} style={{ borderColor: 'var(--line)' }}>{t('Hạn')}</div>
-        <DongHan khoi han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
+        <DongHan khoi tamDung={g.tamDung} han={g.han} hanMacDinh={g.hanMacDinh} hanChon={g.hanChon} xong={!g.mo} suaDuoc={g.coTheSuaHan} onLuu={suaHan} onTaiLai={reload} />
         {!anTheoDoi && <DongTheoDoi ds={[g]} dat={(x) => daDoi(x[0])} reload={reload} />}
       </div>
       {hop && (

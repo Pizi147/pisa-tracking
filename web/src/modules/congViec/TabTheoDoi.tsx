@@ -7,6 +7,7 @@ import { ChipHan } from '../../ui/Nhan.tsx';
 import { DsLichSu, LichSuGap } from '../../ui/LichSuThayDoi.tsx';
 import { Card, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { dich, t } from '@shared/i18n/index.ts';
+import { shortDate } from '@shared/domain/index.ts';
 import { DONG, DaiNhom, IconNhom, O_HAN, O_NUT, docGap, ghiGap } from './DanhSachViec.tsx';
 import { DaiChiXem, KhoiGiaoViec, dongLichSuGiao, useGiaoViec, useHn, type LoaiGiao } from './KhoiGiaoViec.tsx';
 import { PhanMeeting } from './PanelMeeting.tsx';
@@ -84,6 +85,7 @@ const tenDong = (d: DongTd) => [d.classCode, d.tieuDe.replace(new RegExp(` · ${
 
 function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: () => void }) {
   const ten = tenDong(d);
+  const hn = useHn();
   return (
     <div data-khoa={khoaTd(d)} onClick={onMo} className={`${DONG} ${chon ? 'row-active' : 'bam'}`}>
       <span className="flex min-w-0 items-center gap-3 max-sm:items-start">
@@ -99,7 +101,8 @@ function DongTheoDoiViec({ d, chon, onMo }: { d: DongTd; chon: boolean; onMo: ()
         </span>
       </span>
       <span className={`grid min-w-0 content-center justify-items-start text-[13px] ${O_HAN}`}>
-        {d.trangThai === 'mo' && d.han ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : d.xongLuc ? <span className="tabular-nums text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}
+        {/* Quá hạn theo cờ máy chủ (`quaHan` — Báo PH "Chờ GV sửa" không quá hạn), không tự so ngày. */}
+        {d.trangThai === 'mo' && d.han ? (d.quaHan || d.han >= hn ? <ChipHan vien loai="viec-van-hanh" han={d.han} /> : <span className="whitespace-nowrap tabular-nums text-dim">{t('hạn {ngay}', { ngay: shortDate(d.han, hn) })}</span>) : d.xongLuc ? <span className="tabular-nums text-faint">{lucVn(d.xongLuc)}</span> : <span className="sr-only">{t('không hạn')}</span>}
       </span>
       <span className={`flex min-w-0 items-center whitespace-nowrap text-[13px] font-medium ${d.trangThai === 'mo' ? 'text-dim' : 'text-ok'} ${O_NUT}`}>
         {d.trangThai === 'xong' && <span aria-hidden>✓&nbsp;</span>}{dich(d.nhanTrangThai)}
