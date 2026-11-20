@@ -1508,15 +1508,15 @@ article.hang-nhom-lop { background: var(--hang-lon-bg); box-shadow: inset 3px 0 
    ô lịch thi MỘT dòng bấm được (viền nhạt + gạch chấm, nhận ra cả khi không rê), dải nhóm lớp, hộp một hàng dưới hàng thẳng cột Lịch thi, phần mở theo trạng thái thi.
    Tiền tố `lt-` — không đè lớp sẵn có. */
 @layer components {
-  .lt-bang .bang { table-layout: fixed; }
-  .lt-bang .bang > thead > tr > th { height: 36px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--line); vertical-align: middle; }
-  .lt-bang .bang > thead > tr > th:first-child, .lt-bang .bang > tbody > tr > td:first-child { padding-left: 16px; }
-  .lt-bang .bang > tbody > tr > td { height: auto; vertical-align: middle; font-size: 14px; white-space: normal; overflow: visible; }
-  .lt-bang .bang > tbody > tr.lt-h > td { padding-top: 8px !important; padding-bottom: 8px !important; }   /* đè `.bang tr:has(button, input) > td` (6 px) — mockup `.ltt td` 8 px */
-  .lt-bang .bang > tbody > tr.lt-h:hover > td, .lt-bang .bang > tbody > tr.lt-h:focus-within > td { background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface)); }
-  .lt-bang .bang > tbody > tr.lt-mo > td { border-bottom-color: transparent; }
-  .lt-bang .bang > tbody > tr.lt-r-dai > td, .lt-bang .bang > tbody > tr.lt-r-hop > td { padding: 0 !important; background: none; box-shadow: none; }
-  .lt-bang .bang > tbody > tr.lt-lop > td { padding: 7px 12px 7px 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-bottom: 1px solid var(--line); background: var(--surface-2); box-shadow: none; }
+  div.lt-bang .bang { table-layout: fixed; }
+  div.lt-bang .bang > thead > tr > th { height: 36px; padding: 0 12px; background: var(--surface); border-top: 1px solid var(--line); vertical-align: middle; }
+  div.lt-bang .bang > thead > tr > th:first-child, div.lt-bang .bang > tbody > tr > td:first-child { padding-left: 16px; }
+  div.lt-bang .bang > tbody > tr > td { height: auto; vertical-align: middle; font-size: 14px; white-space: normal; overflow: visible; }
+  div.lt-bang .bang > tbody > tr.lt-h > td { padding-top: 8px !important; padding-bottom: 8px !important; }   /* đè `.bang tr:has(button, input) > td` (6 px) — mockup `.ltt td` 8 px */
+  div.lt-bang .bang > tbody > tr.lt-h:hover > td, div.lt-bang .bang > tbody > tr.lt-h:focus-within > td { background: color-mix(in srgb, var(--accent-soft) 55%, var(--surface)); }
+  div.lt-bang .bang > tbody > tr.lt-mo > td { border-bottom-color: transparent; }
+  div.lt-bang .bang > tbody > tr.lt-r-dai > td, div.lt-bang .bang > tbody > tr.lt-r-hop > td { padding: 0 !important; background: none; box-shadow: none; }
+  div.lt-bang .bang > tbody > tr.lt-lop > td { padding: 7px 12px 7px 16px; font-size: 13px; font-weight: 600; color: var(--text-dim); border-bottom: 1px solid var(--line); background: var(--surface-2); box-shadow: none; }
   .lt-lop-ma { font-size: 14px; font-weight: 700; color: var(--text) !important; text-decoration: none; }
   .lt-lop-ma:hover { text-decoration: underline; text-underline-offset: 3px; }
   .lt-lop-n { font-weight: 500; color: var(--text-dim); }
