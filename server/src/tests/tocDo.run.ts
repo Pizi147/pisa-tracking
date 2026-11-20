@@ -2327,6 +2327,61 @@ await checkAsync('OV-13c · POST /interventions/xac-nhan-pa-lo (×3): lô 3 PA �
   assert(cau <= 45 * ids.length, `${cau} câu cho ${ids.length} PA (> 45 / PA)`);
 });
 
+/*
+ * GV-1 (N58, rà PTA 3 · 4): seed CÓ phần Meeting CX / GĐCN (30 hành động × 2 phần, ba chi nhánh) + Head MB theo dõi mọi phần + 20 việc Báo PH (≥ 60 dòng theo dõi):
+ * `/my-work` của TVV / Head / Quản trị / CX — phần Meeting tìm theo chỉ mục (`idx_meeting_phan_mo` / `_giao`), không SCAN bảng; `/my-work/theo-doi` trong trần.
+ * Dữ liệu thêm xoá ngay sau đo (không lẫn phép đo khác).
+ */
+await checkAsync('GV-1 (×3) · /my-work + /my-work/theo-doi có phần Meeting + ≥ 60 dòng theo dõi: không SCAN meeting_phan / viec_theo_doi, câu + dòng trong trần', async () => {
+  const luc = new Date().toISOString();
+  const em = conn.prepare(`SELECT s.id, COALESCE(c.branch_id, s.branch_id) AS cn, a.id AS att FROM students s JOIN enrollments e ON e.student_id = s.id AND e.status = 'active'
+      JOIN classes c ON c.id = e.class_id JOIN assessment_attempts a ON a.student_id = s.id AND a.status != 'cancelled' GROUP BY s.id ORDER BY s.id LIMIT 30`).all() as any[];
+  const qlMb = USER.QL;
+  const them: { x: number[]; mp: number[] } = { x: [], mp: [] };
+  for (const r of em) {
+    const x = Number(conn.prepare(`INSERT INTO sos_coordination_actions (attempt_id, student_id, kind, custom_name, preset, status, created_at) VALUES (?, ?, 'other', ?, 0, 'done', ?)`)
+      .run(r.att, r.id, `GV1-DO-${r.id}`, luc).lastInsertRowid);
+    them.x.push(x);
+    for (const phan of ['xep_lich', 'ket_qua']) {
+      const mp = Number(conn.prepare(`INSERT INTO meeting_phan (phoi_hop_id, phan, branch_id, trang_thai, tao_luc) VALUES (?, ?, ?, 'mo', ?)`).run(x, phan, r.cn, luc).lastInsertRowid);
+      them.mp.push(mp);
+      conn.prepare(`INSERT INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES ('meeting', ?, ?, 'head', ?)`).run(mp, qlMb, luc);
+    }
+  }
+  for (const v of conn.prepare(`SELECT id FROM viec_bao_ph ORDER BY id LIMIT 20`).all() as any[]) {
+    conn.prepare(`INSERT OR IGNORE INTO viec_theo_doi (loai, ref_id, user_id, nguon, luc) VALUES ('bao_ph', ?, ?, 'tay', ?)`).run(v.id, qlMb, luc);
+  }
+  const soTheoDoi = (conn.prepare('SELECT COUNT(*) n FROM viec_theo_doi WHERE user_id = ?').get(qlMb) as any).n;
+  const ghi: { sql: string; args: unknown[] }[] = [];
+  doQuet.ghi = ghi;
+  const so: string[] = [];
+  try {
+    for (const [vai, url] of [['TVV', '/my-work'], ['QL', '/my-work'], ['QT', '/my-work'], ['CX', '/my-work'], ['QL', '/my-work?nguoi=tat-ca'], ['QL', '/my-work/theo-doi']] as [Vai, string][]) {
+      const d = await doSql(vai, 'GET', url);
+      assert(d.status === 200, `${vai} ${url} → ${d.status}`);
+      so.push(`${vai} ${url} ${d.n} câu ${d.dong} dòng`);
+      const tran = TRAN[`${vai} ${url}`], tranDong = TRAN_DONG[`${vai} ${url}`];
+      if (tran) assert(d.n <= tran, `${vai} ${url}: ${d.n} câu > trần ${tran}`);
+      /* Dòng TRẢ VỀ của phần Meeting theo luật tăng theo số phần đang mở của chi nhánh (ứng viên, lọc người giữ ở mã) — cộng đúng số phần vừa thêm. */
+      if (tranDong) assert(d.dong <= tranDong * 3 + them.mp.length, `${vai} ${url}: ${d.dong} dòng > trần ×3 ${tranDong * 3} + ${them.mp.length} phần Meeting`);
+    }
+  } finally {
+    doQuet.ghi = null;
+    conn.prepare(`DELETE FROM viec_theo_doi WHERE user_id = ? AND luc = ?`).run(qlMb, luc);
+    for (const id of them.mp) conn.prepare('DELETE FROM meeting_phan WHERE id = ?').run(id);
+    for (const id of them.x) conn.prepare('DELETE FROM sos_coordination_actions WHERE id = ?').run(id);
+  }
+  console.log(`      (đo: ${em.length} Meeting · ${them.mp.length} phần · Head MB theo dõi ${soTheoDoi} việc — ${so.join(' · ')})`);
+  const loi: string[] = [];
+  const cau = [...new Map(ghi.filter((g) => /FROM meeting_phan mp|FROM viec_theo_doi t/.test(g.sql)).map((g) => [g.sql, g])).values()];
+  assert(cau.length >= 2, `không bắt được câu Meeting / theo dõi (${cau.length})`);
+  for (const { sql, args } of cau) {
+    const plan = (conn.prepare(`EXPLAIN QUERY PLAN ${sql}`).all(...args) as any[]).map((r) => r.detail as string);
+    if (plan.some((d) => /^SCAN (mp|meeting_phan|t|viec_theo_doi)$/.test(d))) loi.push(plan.join(' | '));
+  }
+  assert(!loi.length, loi.join(' ‖ '));
+});
+
 check('PR-DEPLOY (3b) · Giới hạn Turso trên mọi (đường × vai) sau nhân dữ liệu ×3 + mọi đường ghi lô: mỗi câu ≤ 900 tham số, ≤ 20 vế UNION, 0 tham số đặt tên', () => {
   doTurso.bat = false;
   const dong = (c: CauDo) => `${c.nhan} · ${c.thamSo} tham số · ${c.ve} vế · ${c.sql}`;

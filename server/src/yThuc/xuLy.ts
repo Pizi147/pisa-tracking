@@ -32,6 +32,7 @@ import { dongThoiGian, hangCuaEm, type DongEm, type DongThoiGianYt } from './boa
 import { chotYeuCau, taoYeuCau, theCuaDoiTuong } from '../duyet/yeuCau.ts';
 import { purgeAttachmentsOf, xoaTepSauGiaoDich } from '../platform/attachments.ts';
 import { tinhHinhCuaEm, type TinhHinhView } from './tinhHinh.ts';
+import { donViec } from '../worklist/giaoViec.ts';
 import { coTheGhi, dongViecTheoXuLy, moLaiBaoPhMeeting, moLaiViecTheoXuLy, sinhViecBaoPh, xongBaoPhViMeeting } from './baoPhTvv.ts';
 
 export const MANAGE_MESSAGE = 'Chỉ giáo viên chủ nhiệm của lớp em đang học hoặc Head trong phạm vi mới xử lý được Ý thức — giáo viên bộ môn chỉ đọc.';
@@ -1060,7 +1061,7 @@ export function hoanTacXuLy(p: Principal, measureId: number): { ok: true } {
   const khoaTep: string[] = [];
   tx(() => {
     purgeAttachmentsOf('discipline_measure', measureId, p.userId, khoaTep);
-    if (viec) db().prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(viec.id);
+    if (viec) { db().prepare('DELETE FROM viec_bao_ph WHERE id = ?').run(viec.id); donViec('bao_ph', [viec.id]); }   // GV-1: id dùng lại — dọn người theo dõi / lịch sử
     db().prepare('DELETE FROM measure_violations WHERE measure_id = ?').run(measureId);
     db().prepare(`DELETE FROM notifications WHERE dedup_key = ?`).run(`yt-xu-ly:${measureId}`);
     db().prepare(`DELETE FROM discipline_measures WHERE id = ? AND status = 'done'`).run(measureId);

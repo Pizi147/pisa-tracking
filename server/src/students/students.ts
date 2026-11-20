@@ -22,7 +22,7 @@ import { ghiBanChup } from '../loTrinh/banChup.ts';
 import { cauEmailTrung, emailDangDung } from './emailHocVien.ts';
 
 import { LUOT_HIEN_TAI_SQL, LUOT_LO_TRINH_CUOI_SQL } from './tamDung.ts';
-import { chuyenTheoDoiTvv } from '../worklist/giaoViec.ts';
+import { theoTvvHienTai } from '../worklist/giaoViec.ts';
 
 
 
@@ -955,7 +955,7 @@ export function updateStudent(p: Principal, studentId: number, patch: any, email
     kiemEmail();
     conn.prepare(`UPDATE students SET ${sets.join(', ')} WHERE id = ?`).run(...params);
     /* GV-1 (N58): đổi TVV → người theo dõi mặc định (TVV cũ) của việc còn mở chuyển sang TVV mới. */
-    if (patch.consultantUserId !== undefined && (patch.consultantUserId ?? null) !== (s.consultant_user_id ?? null)) chuyenTheoDoiTvv(studentId, s.consultant_user_id ?? null, patch.consultantUserId ?? null);
+    if (patch.consultantUserId !== undefined && (patch.consultantUserId ?? null) !== (s.consultant_user_id ?? null)) theoTvvHienTai(studentId);
   });
   const sau = conn.prepare('SELECT * FROM students WHERE id = ?').get(studentId) as any;
   /* OV-13j: chỉ ghi trường thực sự đổi; gửi lại nguyên giá trị cũ thì không có dòng nhật ký. */

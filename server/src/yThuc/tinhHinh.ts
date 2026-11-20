@@ -16,7 +16,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, quanLyCuaChiNhanh, writeAudit } from '../platform/audit.ts';
 import { activeClassOf, canManageDiscipline, gvcnCuaEm, requireRecordViolation } from './access.ts';
 import { coTheGhi } from './baoPhTvv.ts';
-import { baoTheoDoi } from '../worklist/giaoViec.ts';
+import { baoTheoDoi, conHieuLuc, donViec } from '../worklist/giaoViec.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import type { WorkItem } from '../worklist/mywork.ts';
 
@@ -154,9 +154,10 @@ export function rutTinhHinh(p: Principal, id: number, o: { hoanTac?: boolean } =
   const xoa = !!o.hoanTac && r.nguoi_gui === p.userId && trongHoanTac(r.tao_luc);
   tx(() => {
     if (xoa) {
-      if (r.bp_id) db().prepare('DELETE FROM viec_bao_ph WHERE id = ? AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan l WHERE l.viec_id = viec_bao_ph.id)').run(r.bp_id);
+      if (r.bp_id && db().prepare('DELETE FROM viec_bao_ph WHERE id = ? AND NOT EXISTS (SELECT 1 FROM viec_bao_ph_lan l WHERE l.viec_id = viec_bao_ph.id)').run(r.bp_id).changes) donViec('bao_ph', [r.bp_id]);   // GV-1: id dùng lại
       db().prepare('DELETE FROM notifications WHERE dedup_key = ?').run(`tinh-hinh-hoi:${id}`);
       db().prepare('DELETE FROM tinh_hinh_hoc_tap WHERE id = ?').run(id);
+      donViec('tinh_hinh', [id]);
     } else {
       db().prepare(`UPDATE tinh_hinh_hoc_tap SET trang_thai = 'rut', rut_boi = ?, rut_luc = ? WHERE id = ? AND trang_thai = 'mo'`).run(p.userId, nowIso(), id);
       if (r.chieu === 'tvv_gvcn') baoTheoDoi('tinh_hinh', id, p.userId, { suKien: 'bo', tieuDe: `Tình hình học tập · ${r.full_name}`, chiTiet: 'TVV đã rút câu hỏi', khoa: nowIso(), studentId: r.student_id });   // GV-1
@@ -195,12 +196,12 @@ export function traLoiTinhHinh(p: Principal, id: number, v: { traLoi?: unknown }
   const r = load(id);
   if (r.chieu !== 'tvv_gvcn') throw badRequest('Chỉ trả lời câu TVV hỏi.');
   /* GV-1 (N58): người được giao trả lời được đúng câu này. */
-  if (r.phu_trach_id !== p.userId && !canManageDiscipline(p, r.student_id)) throw forbidden('Chỉ GVCN lớp em đang học, người được giao hoặc Head ghi được kết quả.');
+  if (!(r.phu_trach_id === p.userId && conHieuLuc(p.userId, r.student_id)) && !canManageDiscipline(p, r.student_id)) throw forbidden('Chỉ GVCN lớp em đang học, người được giao hoặc Head ghi được kết quả.');
   if (r.trang_thai === 'rut') throw badRequest('TVV đã rút câu hỏi.');
   const traLoi = kiemChu(v.traLoi, 'Kết quả');
   tx(() => {
     db().prepare(`UPDATE tinh_hinh_hoc_tap SET tra_loi = ?, tra_loi_boi = ?, tra_loi_luc = ?, trang_thai = 'xong' WHERE id = ?`).run(traLoi, p.userId, nowIso(), id);
-    baoTheoDoi('tinh_hinh', id, p.userId, { suKien: 'ket_qua', tieuDe: `Tình hình học tập · ${r.full_name}`, chiTiet: traLoi, khoa: nowIso(), studentId: r.student_id });
+    baoTheoDoi('tinh_hinh', id, p.userId, { suKien: 'ket_qua', tieuDe: `Tình hình học tập · ${r.full_name}`, chiTiet: traLoi, khoa: nowIso(), studentId: r.student_id, boQua: [r.nguoi_gui] });   // người hỏi nhận tin riêng dưới
     if (r.nguoi_gui !== p.userId) {
       notify({ userId: r.nguoi_gui, kind: 'tinh_hinh', title: `GVCN đã trả lời tình hình học tập · ${r.full_name}`, body: traLoi.slice(0, 120),
         entityType: 'student', entityId: r.student_id, dedupKey: `tinh-hinh-tra-loi:${id}`, duong: duongHoSoHocVien(r.student_id, { tab: 'y-thuc' }) });
@@ -252,7 +253,7 @@ export function tinhHinhCuaEm(p: Principal, ids: readonly number[], homNay = dem
       baoPh: r.bp_id ? { id: r.bp_id, trangThai: r.bp_tt, tvv: r.tvv_ten ?? null, lan: lan ? { ketQua: lan.k, ngay: lan.n, noiDung: lan.g ?? null } : null,
         coTheGhi: r.bp_tt !== 'xong' && coTheGhi(p, { consultant_user_id: r.consultant_user_id ?? null, student_id: r.student_id }) } : null,
       coTheSua: r.trang_thai === 'mo' && choKq && (r.nguoi_gui === p.userId || ql(r.student_id)),
-      coTheTraLoi: r.chieu === 'tvv_gvcn' && r.trang_thai !== 'rut' && (r.phu_trach_id === p.userId || canManageDiscipline(p, r.student_id)),
+      coTheTraLoi: r.chieu === 'tvv_gvcn' && r.trang_thai !== 'rut' && ((r.phu_trach_id === p.userId && conHieuLuc(p.userId, r.student_id)) || canManageDiscipline(p, r.student_id)),
       hoanTacDuoc: r.chieu === 'tvv_gvcn' && r.trang_thai === 'xong' && r.tra_loi_boi === p.userId && trongHoanTac(r.tra_loi_luc),
     };
   });

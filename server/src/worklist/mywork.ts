@@ -41,7 +41,7 @@ import { giuViecQl, viecHoSoTvv } from './viecTvv.ts';
 import { khaiDuoc } from '../yThuc/xuLy.ts';
 import { viecBaoPhCuaToi } from '../yThuc/baoPhTvv.ts';
 import { viecHoiTinhHinhCuaToi } from '../yThuc/tinhHinh.ts';
-import { viecGiaoChoToi } from './giaoViec.ts';
+import { dongViecGiao, viecGiaoChoToi } from './giaoViec.ts';
 
 /**
  * VIỆC CỦA CHÍNH NGƯỜI ĐANG XEM.
@@ -821,7 +821,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
    * GV-1 (N58): việc người khác giao cho tôi + phần Meeting CX (BPXL / CX / TVV / Head) — MỘT câu, đọc trước mọi nhánh sớm (CX thuần, ngoài phạm vi lượt cũng có).
    * Ghép vào danh sách sau lọc nhóm (Admin: việc giao không bị cắt về nhóm Chấm điểm); việc trùng khoá với việc theo luật giữ một. TVV (`NHOM_VIEC_TVV`): mọi việc giao.
    */
-  const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null })
+  const giao = f.boGiao ? [] : viecGiaoChoToi(p, { today: demoToday(), branchId: f.branchId ?? null, tatCa: f.nguoi === 'tat-ca' })
     .filter((it) => !f.chiNhom || f.chiNhom === NHOM_VIEC_TVV || f.chiNhom.has(it.group));
   const chiGiao = () => {
     const dong = dungDong(giao);
@@ -1475,7 +1475,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   const phanTramCuoi = new Map<number, string>();
   for (const [id, t] of tyLeTongLo(luotCuoiBaoPh)) if (t.tyLe !== null) phanTramCuoi.set(id, ` ${Math.round(t.tyLe * 100)}%`);
   for (const r of baoPh) {
-    if (r.phu_trach_id != null) continue;   // GV-1 (N58): việc đã giao — người được giao thấy qua `viecGiaoChoToi`
+    /* GV-1 (N58): việc đã giao — người được giao thấy qua `viecGiaoChoToi`; "Tất cả" (Head, sổ nghĩa vụ) thấy, đứng tên người được giao. */
+    if (r.phu_trach_id != null && (!tatCa || r.phu_trach_id === p.userId)) continue;
     const laCuoiKhoa = r.attempt_kind === 'final';   // PR-LT2b: Final Test < 50% → việc của Quản lý (`request.approve`), không của GVCN
     const gvcn = !laCuoiKhoa && isCoreTeacherOf(p, r.cur_class_id, today);
     const cuaGv = (tatCa || laCuoiKhoa) && can(p, laCuoiKhoa ? PERMISSIONS.REQUEST_APPROVE : PERMISSIONS.CASE_APPROVE, { classId: r.cur_class_id, studentId: r.student_id });
@@ -1493,7 +1494,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       tieuDe: `Báo PH kết quả Test · ${r.full_name ?? 'Học viên'} · ${laCuoiKhoa ? `${nhanBaiThuong('final')}${phanTramCuoi.get(r.attempt_id) ?? ''}` : nhanBaiThuong('progress')}`,
       actionLabel: 'Mở Phối hợp SOS',
       href: duongHoSoHocVien(r.student_id, { tab: 'y-thuc', sub: 'phoi-hop' }),
-      ownerId: gvcn || qlGiu ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null, owner: null, mine: gvcn || qlGiu,
+      ownerId: r.phu_trach_id ?? (gvcn || qlGiu ? p.userId : laCuoiKhoa ? null : r.gvcn_id ?? null), owner: null, mine: r.phu_trach_id == null && (gvcn || qlGiu),
       due: null, statusLabel: 'Chưa làm',
     });
   }
@@ -1504,7 +1505,8 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   /* PHOI-HOP-V2 (mockup #1368 K1): một dòng mỗi (lớp × việc) — QL "Tất cả" dựng cho mọi GVCN trong phạm vi, cùng hàm. QL bấm thẳng như GVCN. */
   const lopCnPhoiHop = () => [...new Set(p.assignments
     .filter((a) => a.isCore && a.effectiveFrom <= today && (!a.effectiveTo || a.effectiveTo >= today)).map((a) => a.classId))];
-  for (const l of !co('phoi_hop_sos') ? [] : dongPhoiHopTheoViec(tatCa ? [...gvcnLop().keys()] : lopCnPhoiHop())) {
+  const phoiHopGiao: any[] = [];   // GV-1: việc Phối hợp SOS đã giao (rời dòng GVCN) — "Tất cả" dựng việc đứng tên người được giao
+  for (const l of !co('phoi_hop_sos') ? [] : dongPhoiHopTheoViec(tatCa ? [...gvcnLop().keys()] : lopCnPhoiHop(), undefined, tatCa ? phoiHopGiao : undefined)) {
     if (f.branchId && bangLop().get(l.classId)?.branchId !== f.branchId) continue;
     const gv = tatCa ? gvcnLop().get(l.classId) ?? p.userId : p.userId;
     const n = l.em.length;
@@ -1518,6 +1520,10 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
       ownerId: gv, owner: null, mine: gv === p.userId, due: l.han, statusLabel: 'Chưa làm',
       phoiHop: { kind: l.kind, khoa: l.khoa }, emIds: l.em.map((x) => x.id), emTen: l.em.slice(0, 3).map((x) => x.ten),
     });
+  }
+  for (const r of phoiHopGiao) {
+    if (r.phu_trach_id === p.userId || (f.branchId && bangLop().get(r.class_id)?.branchId !== f.branchId)) continue;   // của tôi: đã có từ `viecGiaoChoToi`
+    items.push(dongViecGiao(r, today, r.phu_trach_id, false));
   }
   /*
    * PR-LT2b (K5 §3 #10): Ghi Mini Test — hết khi đã ghi; em Tạm dừng ẩn (T65). PR-CT2 (§8): người làm = người giữ việc của nhóm (`nguoiGiuMiniTest` — GVCN lớp em
@@ -1892,7 +1898,7 @@ export function myWork(p: Principal, f: { branchId?: number | null; nguoi?: 'toi
   if (coVaiCx(nguoiXem) && tatCa) {
     const chu = boVaiCx(nguoiXem);
     const that = new Set<string>(chu.grants.length ? ((myWork(chu, { ...f, nguoi: undefined, boGiao: true }) as any).items as WorkItem[]).filter((it) => it.mine).map((it) => it.key) : []);
-    for (const it of giao) that.add(it.key);   // GV-1: việc giao cho CX / Kết quả meeting là của CX
+    for (const it of giao) if (it.mine) that.add(it.key);   // GV-1: việc giao cho CX / Kết quả meeting của CX
     for (const it of items) {
       it.mine = that.has(it.key);
       if (!it.mine && it.ownerId === p.userId) it.ownerId = null;

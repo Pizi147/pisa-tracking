@@ -54,6 +54,11 @@ const X = `SELECT id FROM sos_coordination_actions WHERE student_id = ?1 OR atte
 const R = `SELECT id FROM skill_move_requests WHERE attempt_id IN (${A})`;
 const Q = 'SELECT id FROM yeu_cau_duyet WHERE hoc_vien_id = ?1';
 
+/** GV-1: việc của em theo khoá mềm (loại, id) — người theo dõi, lịch sử giao, lịch sử hạn, bản ghi đảo giao việc. */
+const VIEC_CUA_EM = (loai: string, id: string) => `((${loai} = 'bao_ph' AND ${id} IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})))
+      OR (${loai} = 'phoi_hop' AND ${id} IN (${X})) OR (${loai} = 'tinh_hinh' AND ${id} IN (SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ?1))
+      OR (${loai} = 'meeting' AND ${id} IN (SELECT id FROM meeting_phan WHERE phoi_hop_id IN (${X}))))`;
+
 /** Tệp đính kèm theo liên kết mềm `owner_type/owner_id` (không có FK). `unit_report` không thuộc học viên. */
 const DK_TEP = `(owner_type = 'sos_case' AND owner_id IN (${C}))
   OR (owner_type = 'case_intervention' AND owner_id IN (${I}))
@@ -114,9 +119,9 @@ export const CAU_XOA_HOC_VIEN: readonly { bang: string; sql: string }[] = [
   { bang: 'sos_cases', sql: `DELETE FROM sos_cases WHERE id IN (${C})` },
   /* Ý thức: vi phạm ↔ PA xử lý (Q4 — PA của em khác lỡ nối vi phạm của em: chỉ mất dòng nối) */
   /* GV-1: người theo dõi + lịch sử giao của việc của em (khoá mềm loai / ref_id, không khoá ngoại) — trước các bảng việc (câu con đọc chúng). */
-  ...(['viec_theo_doi', 'viec_giao_lan'] as const).map((bang) => ({ bang, sql: `DELETE FROM ${bang} WHERE (loai = 'bao_ph' AND ref_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M})))
-      OR (loai = 'phoi_hop' AND ref_id IN (${X})) OR (loai = 'tinh_hinh' AND ref_id IN (SELECT id FROM tinh_hinh_hoc_tap WHERE student_id = ?1))
-      OR (loai = 'meeting' AND ref_id IN (SELECT id FROM meeting_phan WHERE phoi_hop_id IN (${X})))` })),
+  ...([['viec_theo_doi', 'ref_id'], ['viec_giao_lan', 'ref_id'], ['viec_han_lan', 'viec_id']] as const).map(([bang, cot]) => ({ bang, sql: `DELETE FROM ${bang} WHERE ${VIEC_CUA_EM('loai', cot)}` })),
+  /* GV-1: bản ghi đảo "giao việc" của việc của em (Hoàn tác đổi người) — không còn việc để đảo. */
+  { bang: 'ghi_dao', sql: `DELETE FROM ghi_dao WHERE loai = 'giao_viec' AND ${VIEC_CUA_EM(`CASE bang WHEN 'viec_bao_ph' THEN 'bao_ph' WHEN 'sos_coordination_actions' THEN 'phoi_hop' WHEN 'tinh_hinh_hoc_tap' THEN 'tinh_hinh' WHEN 'meeting_phan' THEN 'meeting' END`, 'doi_tuong_id')}` },
   { bang: 'meeting_phan', sql: `DELETE FROM meeting_phan WHERE phoi_hop_id IN (${X})` },   // GV-1: trước sos_coordination_actions
   /* SV-YT-TVV: việc Báo PH của em / của lần xử lý của em (+ lịch sử ghi) trước lần xử lý */
   { bang: 'viec_bao_ph_lan', sql: `DELETE FROM viec_bao_ph_lan WHERE viec_id IN (SELECT id FROM viec_bao_ph WHERE student_id = ?1 OR measure_id IN (${M}) OR bao_lai_cua IN (${M}))` },
