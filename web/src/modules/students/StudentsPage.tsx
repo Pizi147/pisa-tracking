@@ -404,7 +404,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
   ].sort((a, b) => (vai === 'tvv' ? Number(a.nhom === t('Chi nhánh')) - Number(b.nhom === t('Chi nhánh')) : 0));
   const iXem = mucXem.findIndex((x) => x.gt === giaTriXem);
   const oXem = pv && (mucPv.length + (coCn ? Math.max(cnDs.length, 1) : 0) > 1) && (
-    <div className="w-[230px] max-sm:w-full">
+    <div className="w-[230px] max-sm:w-full max-sm:min-w-0">
       <ChonNguoi nhan={t('Xem')} gon nhom="nhan_vien" choToi={false} choNgoai={false} ariaLabel={t('Xem')} placeholder={t('Gõ tên chi nhánh…')}
         value={iXem >= 0 ? { kieu: 'tai_khoan', id: iXem + 1, ten: mucXem[iXem].ten } : null} macDinhTrong={t('Xem')}
         ds={mucXem.map((x, k) => ({ id: k + 1, ten: x.ten, nhom: x.nhom }))}
@@ -504,7 +504,7 @@ function TrangTheoLop({ vai }: { vai: VaiXemHocVien | null }) {
           {menuTrang.length > 0 && nutMenuTrang}
         </div>
       </div>
-      {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:flex-1">{oXem}{chonKhung}</div>}
+      {dienThoai && (oXem || chonKhung) && <div className="flex items-center gap-2 [&>.doan]:shrink-0 [&>.doan:only-child]:flex-1">{oXem}{chonKhung}</div>}
 
       {/* PTA rà #1690: 375 nhãn "Phân công" gọn. PTA rà #1704: "Đang SOS" một tên ở mọi cỡ màn (mockup K8b "Đang SOS 10"); hàng tab cuộn ngang khi chật. */}
       <HangTab panelId="hvl-vung" ariaLabel={t('Chế độ xem')} value={goc} onChange={doiGoc} tabs={[

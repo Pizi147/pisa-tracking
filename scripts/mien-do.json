@@ -7,5 +7,6 @@
   {"cong_cu":"do-bang","pr":"M5","ly_do":"bảng Kế hoạch Test (Bang)","khop":"^(test-ke-hoach|cham-test-kh-lop|hop-ky-nang-mt|panel-xep-lich-mt)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"M7","ly_do":"bảng Quản trị (Bang)","khop":"^(quan-tri|quan-tri-quyen|ho-so-ca-nhan)-\\d+-(toi|sang) «[^»]+» g[1-5] "},
   {"cong_cu":"do-bang","pr":"PT-BANG","ly_do":"bảng Phân tích (mockup v8, đo từ DO-KHUNG-DO): cột đầu dạng cây thụt cấp; tiêu đề thẳng VIỀN chip (máy đo lấy chữ trong chip); hàng con 38, hàng có dòng phụ nhiều dòng cao theo nội dung","khop":"^phan-tich-(tong-hop|ket-qua-thi|y-thuc)-\\d+-(toi|sang) «[^»]+» g[123] "},
-  {"cong_cu":"do-bang","pr":"S2-1876","ly_do":"bảng đọc nội dung — PTA Tutor 20/11 (panel Tutor «Kết quả đã ghi»: Nội dung, Về tutor, lớp · người ghi xuống dòng đủ chữ, hàng cao theo nội dung)","khop":"^tutor-panel-\\d+-(toi|sang) «(Kết quả đã ghi|Recorded results)» g3 "}
+  {"cong_cu":"do-bang","pr":"S2-1876","ly_do":"bảng đọc nội dung — PTA Tutor 20/11 (panel Tutor «Kết quả đã ghi»: Nội dung, Về tutor, lớp · người ghi xuống dòng đủ chữ, hàng cao theo nội dung)","khop":"^tutor-panel-\\d+-(toi|sang) «(Kết quả đã ghi|Recorded results)» g3 "},
+  {"cong_cu":"do-khung","pr":"TUTOR-2-DONG","ly_do":"chủ SP 17/11: tên PA Tutor dài ở 375 tối đa 2 dòng (dòng 2 cắt …) — chủ ý, không phải lỗi","khop":"-375-(toi|sang) .*«PA Tutor "}
 ]
