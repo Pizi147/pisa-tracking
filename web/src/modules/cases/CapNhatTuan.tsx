@@ -343,8 +343,8 @@ export function GhiKetQuaPanel({ pa, sua, hocVien, lop, em, studentId, ngCanh, b
       if (deXuat) { body.decision = 'keep'; body.deXuatPa = doi.payload(); }
       if (!sua) { body.ky = ky; body.nhapCoSo = coSo; }
       const ct = await api.post<any>(sua ? `/followups/${sua.followupId}/sua` : `/interventions/${pa.id}/result`, body);
-      /* S5: hồ sơ đúng em (+ thẻ kỹ năng); Case vừa hoàn thành cùng lần bấm → mọi `/students` như cũ (đóng Case = làm mới rộng). */
-      const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); if (daHt) invalidate('/students'); else lamMoiHoSoEm(em?.id ?? studentId); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
+      /* S5: hồ sơ đúng em (+ thẻ kỹ năng); Case có thể đóng / PA kết thúc (hoàn thành cùng lần bấm, kết quả cuối, Kết thúc PA) → mọi `/students` như cũ. */
+      const lamMoi = () => { invalidate('/cases'); invalidate('/my-work'); if (daHt || lanCuoi || decision === 'end') invalidate('/students'); else lamMoiHoSoEm(em?.id ?? studentId); invalidate('/tong-quan'); invalidate('/followups'); invalidate('/yeu-cau'); };
       /* #3: kết quả đã lưu → hoàn thành Case cùng lần bấm. Lỗi ở bước này không mất kết quả: nói rõ "chưa hoàn thành Case", nút Hoàn thành Case vẫn ở Case. */
       let daHt = false;
       let loiHt: string | null = null;

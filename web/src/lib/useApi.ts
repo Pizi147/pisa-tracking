@@ -166,9 +166,12 @@ export function thuLaiNen() { [...loiNen].forEach((f) => f()); }
 export const loiCanHien = <T,>(data: T | null, error: ApiError | null): ApiError | null => (data === null ? error : null);
 
 /** OV-14a (F03): quên bản vừa xem theo tiền tố mà KHÔNG gọi tải lại hook đang gắn — sau khi ghi đã tự cập nhật dữ liệu tại chỗ (`setData`). */
-export function quenBanXem(prefix: string) {
-  boLoiGoiDangBay(prefix);   // GET bắt đầu trước lúc lưu xong về sau → bỏ, không ghi bản cũ
-  for (const k of [...dangBay.keys()]) if (khopTienTo(k, prefix)) dangBay.delete(k);
+export function quenBanXem(prefix: string, boDangBay = true) {
+  /* S5: `boDangBay = false` — chỉ quên bản vừa xem; GET đang bay (bắt đầu SAU lần ghi, vd tải lại vừa gọi) vẫn được nhận. */
+  if (boDangBay) {
+    boLoiGoiDangBay(prefix);   // GET bắt đầu trước lúc lưu xong về sau → bỏ, không ghi bản cũ
+    for (const k of [...dangBay.keys()]) if (khopTienTo(k, prefix)) dangBay.delete(k);
+  }
   for (const k of [...daXem.keys()]) if (khopTienTo(k, prefix)) daXem.delete(k);
 }
 

@@ -162,7 +162,7 @@ const daBatDau = (iv: any) => iv.status === 'planned' || iv.status === 'started'
  * trạng thái V4 · người làm). Hai bản trùng → lần lưu không đổi việc nào, khỏi tải lại `/my-work`. Nghi thì thêm trường vào đây (tải lại thừa, không bao giờ thiếu).
  */
 export const dauViecCase = (d: CaseDetail) => JSON.stringify([d.summary, d.ownerUserId ?? null, d.status, d.trangThaiV4 ?? null,
-  d.choXacNhanS?.han ?? null, !!d.choXacNhanS, d.sos?.hasCause ?? null, (d.interventions ?? []).length, (d.issues ?? []).some((i) => i.role === 'primary')]);
+  d.choXacNhanS ?? null, d.sos?.hasCause ?? null, (d.interventions ?? []).length, (d.issues ?? []).some((i) => i.role === 'primary')]);
 
 /** Số ngày từ `tu` đến `den` (ISO), `null` khi thiếu. */
 function soNgayGiua(tu: string | null | undefined, den: string | null | undefined): number | null {
@@ -253,7 +253,7 @@ export function ThanCase({ data, setData, reload, onChanged, onDoiChu, dich: dic
     const d = dataRef.current;
     if (!(d.interventions ?? []).some((iv) => iv.id === paId)) return;
     setData({ ...d, interventions: d.interventions.map((iv) => (iv.id === paId ? { ...iv, nhapKetQua: nhap } : iv)) });
-    quenBanXem(`/cases/${d.id}$`);
+    quenBanXem(`/cases/${d.id}$`, false);   // tải lại Case đang bay (vd sau Lưu kết quả PA khác) vẫn về — máy chủ đã có nháp
   }), [setData]);
   /* Lưu tại chỗ (Case / một PA): máy chủ trả đúng Case vừa đổi → thay dữ liệu, không tải lại cả Case; danh sách việc làm mới. */
   /* S5 LAM-MOI-HEP: `/my-work` chỉ khi lần lưu có thể đổi việc (`dauViecCase` khác, hoặc trường PA — hạn / người). Hồ sơ + thẻ kỹ năng ĐÚNG em luôn
@@ -264,7 +264,7 @@ export function ThanCase({ data, setData, reload, onChanged, onDoiChu, dich: dic
     quenBanXem(`/cases/${d.id}$`);   // mở lại panel trong 10 s không hiện bản trước lần lưu
     if (doiViec) invalidate('/my-work');
     lamMoiHoSoEm(d.student?.id);
-    (onDoiChu ?? onChanged)?.();
+    (pa ? onChanged : onDoiChu ?? onChanged)?.();   // trường PA (hạn, người) có thể đổi số đếm của lớp → làm mới rộng như cũ
   };
   const xongForm = (paId: number) => (x?: DaLuuPanel) => {
     setForm((f) => ({ ...f, [paId]: undefined })); setMo((m) => ({ ...m, [paId]: false }));

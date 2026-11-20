@@ -60,7 +60,7 @@ export function invalidate(prefix: string, luc?: number) {
   listeners.forEach((l) => l(prefix, luc));
 }
 /** S5: vô hiệu ĐÚNG các đường (`khopTienTo`) — làm mới một em / một lớp / một Case sau lưu, không đánh thức đường con hay em khác. */
-export function invalidateDung(...paths: string[]) { for (const p of paths) invalidate(`${p}$`); }
+export function invalidateDung(p: string) { invalidate(`${p}$`); }
 /** S5: Case / PA của MỘT em đổi → hồ sơ + thẻ kỹ năng đúng em (không bài trên lớp, Ý thức, em khác); không rõ em → mọi `/students` như cũ. */
 export function lamMoiHoSoEm(sid: number | null | undefined) {
   if (!sid) { invalidate('/students'); return; }
