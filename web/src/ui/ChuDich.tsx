@@ -4,7 +4,7 @@
  * Lỗi / hết lượt → giữ bản gốc + câu lỗi + "Thử lại". Máy chủ tắt dịch (`session.dichBat`) → chỉ in chữ, không nút.
  * R1-DICH-2: đổi nguồn / chữ → đặt lại trạng thái, phản hồi về muộn bị bỏ; máy chủ trả `gocBam` — lệch chữ đang thấy thì không gắn bản dịch.
  */
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { canDich } from '@shared/domain/index.ts';
 import { NGON_NGU, dichDu, t } from '@shared/i18n/index.ts';
 import { api } from '../lib/api.ts';
@@ -81,6 +81,17 @@ export function ChuDich({ chu, nguon, anGoc = false }: { chu: string | null | un
  * Chữ rỗng / không dịch được bị bỏ qua (không bao giờ gọi máy chủ với chữ rỗng). `chu(i)` = bản dịch khi đang xem dịch, không thì chữ gốc.
  */
 export type MucDich = { chu: string | null | undefined; nguon: NguonDich };
+/** Chữ nào đang XEM BẢN DỊCH — dùng chung giữa nút Dịch (`useDichGop`) và chữ ở nơi khác trang (`TenDich`): đổi ở nút, chữ ở dòng cha đổi theo. */
+const xemChung = new Set<string>();
+const nguoiNghe = new Set<() => void>();
+const theoDoi = (f: () => void) => { nguoiNghe.add(f); return () => { nguoiNghe.delete(f); }; };
+const datXem = (khoas: string[], xem: boolean) => { for (const k of khoas) { if (xem) xemChung.add(k); else xemChung.delete(k); } nguoiNghe.forEach((f) => f()); };
+/** Chữ ở dòng cha (vd tên vi phạm): bản dịch khi nút Dịch của phần mở đang xem dịch, không thì chữ gốc. */
+export function TenDich({ chu, nguon }: { chu: string; nguon: NguonDich }) {
+  const k = khoaCua(nguon, chu);
+  const ban = useSyncExternalStore(theoDoi, () => (xemChung.has(k) ? daDich.get(k) : undefined));
+  return <>{ban ?? chu}</>;
+}
 const LECH_CHU = () => t('Nội dung vừa đổi — tải lại trang để dịch.');
 export function useDichGop(muc: MucDich[]) {
   const { session } = useSession();
@@ -88,11 +99,13 @@ export function useDichGop(muc: MucDich[]) {
   const lamDuoc = (x: { goc: string }) => x.goc.trim() !== '' && dichDu(x.goc) === x.goc && canDich(x.goc, NGON_NGU);
   const cac = ds.filter(lamDuoc);
   const khoa = JSON.stringify(cac.map((x) => khoaCua(x.nguon, x.goc)));
-  const [xemDich, setXemDich] = useState(false);
+  const khoaMuc = cac.map((x) => khoaCua(x.nguon, x.goc));
+  const xemDich = useSyncExternalStore(theoDoi, () => khoaMuc.length > 0 && khoaMuc.every((k) => xemChung.has(k)));
+  const setXemDich = (xem: boolean) => datXem(khoaMuc, xem);
   const [dang, setDang] = useState(false);
   const [loi, setLoi] = useState<string | null>(null);
   const khoaHienTai = useRef(khoa);
-  useEffect(() => { khoaHienTai.current = khoa; setXemDich(false); setDang(false); setLoi(null); }, [khoa]);
+  useEffect(() => { khoaHienTai.current = khoa; setDang(false); setLoi(null); }, [khoa]);
   const co = !!session?.dichBat && cac.length > 0;
   const daCo = cac.every((x) => daDich.has(khoaCua(x.nguon, x.goc)));
   const hien = co && xemDich && daCo;

@@ -8,7 +8,7 @@ import { demLanSua, nhanLichSuViPham } from '@shared/domain/index.ts';
 import { fmtDate } from '../../lib/format.ts';
 import { useNgayNghiepVu } from '../../ui/ngayNghiepVu.ts';
 import { dich, t } from '@shared/i18n/index.ts';
-import { ChuDich } from '../../ui/ChuDich.tsx';
+import { NutDichGop, useDichGop } from '../../ui/ChuDich.tsx';
 
 export type ViolationDetail = {
   id: number; studentId: number;
@@ -35,6 +35,11 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
   const [errXoa, setErrXoa] = useState<string | null>(null);
   const [xemLichSu, setXemLichSu] = useState(false);
   const [busy, setBusy] = useState(false);
+  /* VI-PHAM-MO: MỘT nút Dịch cho tên + mô tả — chữ tên ở dòng cha đọc cùng bộ nhớ (`TenDich`), đổi theo nút này. */
+  const dg = useDichGop([
+    { chu: d?.ten, nguon: { bang: 'violations', id: violationId, cot: 'ten' } },
+    { chu: d?.moTa, nguon: { bang: 'violations', id: violationId, cot: 'mo_ta' } },
+  ]);
 
   if (loiTai) return <ErrorState message={loiTai.message} hint={loiTai.hint} status={loiTai.status} onRetry={reload} />;
   if (!d) return <Skeleton rows={3} />;
@@ -56,10 +61,10 @@ export function ChiTietViPham({ violationId, onSua, onDaXoa, onMoXuLy }: {
 
   return (
     <div className="space-y-2.5 text-sm">
-      {/* VI-PHAM-MO: mô tả + Dịch (tên đã là dòng của danh sách cha). Chữ rỗng: không vẽ nút Dịch. */}
+      {/* VI-PHAM-MO: mô tả + MỘT nút Dịch (dịch cả tên ở dòng cha). Chữ rỗng: không vẽ nút Dịch. */}
       <div>
         <p className="text-xs text-slate-500 m-0 mb-1">{t('Mô tả')}</p>
-        <p className="m-0 whitespace-pre-wrap break-words">{d.moTa.trim() ? <ChuDich chu={d.moTa} nguon={{ bang: 'violations', id: d.id, cot: 'mo_ta' }} /> : <span className="text-slate-500">{t('Không có mô tả thêm')}</span>}</p>
+        <p className="m-0 whitespace-pre-wrap break-words">{d.moTa.trim() ? dg.chu(1) : <span className="text-slate-500">{t('Không có mô tả thêm')}</span>}{' '}<NutDichGop d={dg} /></p>
       </div>
       {/* U10.8: nhãn cùng dòng với "+ Tệp · + Liên kết" (mockup `.bc`). */}
       <BangChung ownerType="violation" ownerId={d.id} canEdit={d.canEdit} onChanged={reload} />
