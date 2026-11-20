@@ -13,7 +13,7 @@ import { db, theoLo, tx } from '../db.ts';
 import { kiemBand, NHAN_XET_TOI_DA, PERMISSIONS, tuanLich } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { badRequest, chuTuDo, forbidden, isIsoDate, notFound, nowIso, toInt } from '../util.ts';
-import { can, coTheXemLuotCham, grantGvNhapDiem, isCoreTeacherOf, laGvSpeaking, scoreEditPath, type Principal } from '../permissions.ts';
+import { can, coTheXemLuotCham, grantGvNhapDiem, isCoreTeacherOf, laGvSpeaking, qlDiem, scoreEditPath, type Principal } from '../permissions.ts';
 import { dangMoSuaLichTest, requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { writeAudit } from '../platform/audit.ts';
 import { chanCuoiTuan } from '../fasttrack/skillSchedule.ts';
@@ -50,7 +50,7 @@ const lopDangHoc = (studentId: number) => nho('sex-lop:' + studentId, () => db()
 
 /** Như ô S MT ở một lớp đang học của em (GV S phân công · QL / Admin nhập hộ) hoặc GV Speaking cùng chi nhánh ghi danh active (N7). */
 export function chamDuoc(p: Principal, studentId: number): boolean {
-  if (laQl(p, studentId)) return true;   // QL / Admin nhập hộ cả khi em đã rời lớp (không kẹt lượt cũ)
+  if (qlDiem(p, { studentId })) return true;   // QL / Admin nhập hộ (BPXL-1: BPXL chỉ xếp lịch S Ex, không chấm) cả khi em đã rời lớp (không kẹt lượt cũ)
   const gvS = laGvSpeaking(p) ? grantGvNhapDiem(p) : [];
   return lopDangHoc(studentId).some((l) => scoreEditPath(p, l.id, 'speaking') !== null
     || gvS.some((g) => g.branchId === null || g.branchId === l.branch_id));
@@ -149,6 +149,8 @@ export function themSEx(p: Principal, body: Record<string, unknown>) {
   requireSuaLichTest(p, { studentId }, QL_MSG);
   if (!lopDangHoc(studentId).length) throw badRequest('Học viên không có lớp đang học (hoặc đang tạm dừng) — xếp em vào lớp / cho em học lại trước khi thêm lượt S Expert.');
   const t = docThan(body, null, today);
+  /* BPXL-1 (N57): tạo lượt kèm điểm / nhận xét = chấm → người chấm được (`chamDuoc`); BPXL chỉ tạo lượt trống. */
+  if ((t.diem !== null || t.nhanXet) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
   chanCuoiTuan(p, { ...SEX, student_id: studentId }, [t.tuan]);
   const luc = nowIso();
   const chamBoi = t.diem !== null || t.nhanXet ? p.userId : null;
@@ -220,6 +222,8 @@ function doiXoa(p: Principal, id: number, xoa: boolean) {
   return tx(() => {
     const { studentId, t } = docLuot(id, !xoa);
     requireSuaLichTest(p, { studentId }, QL_MSG);
+    /* BPXL-1 (N57, PTA rà #1923): lượt đã chấm (điểm / nhận xét) — xoá / khôi phục là đụng điểm → chỉ người chấm được; BPXL chỉ lượt trống. */
+    if ((t.diem !== null || t.nhanXet) && !chamDuoc(p, studentId)) throw forbidden(CHAM_MSG);
     chanCuoiTuan(p, { ...SEX, student_id: studentId }, [t.tuan]);
     motDong(db().prepare(`UPDATE s_expert SET xoa_luc = ?, xoa_boi = ? WHERE id = ? AND xoa_luc IS ${xoa ? '' : 'NOT '}NULL`)
       .run(xoa ? nowIso() : null, xoa ? p.userId : null, id));

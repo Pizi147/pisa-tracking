@@ -6,7 +6,7 @@ import { dongBoBaoPh, monBaoPh } from '../yThuc/phoiHop.ts';
 import { raiseSignal, reconcileCorrectedSignals, tinHieuDaCoCase } from '../cases/signals.ts';
 import { ATTEMPT_KIND_LABEL, ATTEMPT_KIND_SHORT, CONG_TAC_CP, LIEN_TUC_SQL, PERMISSIONS, boMonTheoLuot, daGhiLuot, RATIO_PASS_THRESHOLD, boMonLich, monBanGiao, boTroGiuaKhoa, chipCheckpoint, khoaBai, nhanBai, categoryOf, goiYCuoiKhoa, kiemNhanXet, luatVangThuong, ratioResult, sosFromFailCount, tenMon, tenMonNgan, tuanLich, type AssessedSkill, type AttemptKind, type RatioOutcome, type SosLevel } from '../../../shared/domain/index.ts';
 import { addDays, badRequest, forbidden, notFound, nowIso, loi } from '../util.ts';
-import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, lopDayDu, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
+import { CHU_CHAN_NHAP_DIEM, bangLop, can, editableSkills, emChiXemBoTro, isCoreTeacherOf, lopDayDu, qlDiem, require_, scoreEditPath, xemLuotQuaLopDangHoc, type Principal } from '../permissions.ts';
 import { requireSuaLichTest } from '../platform/moSuaLichTest.ts';
 import { demoToday } from '../demoConfig.ts';
 import { addJourney, notify, writeAudit } from '../platform/audit.ts';
@@ -147,7 +147,7 @@ export function chuongTrinhCuaLuot(a: { class_id?: number | null; cycle_id?: num
 function duongGhiLuot(p: Principal, a: { class_id: number | null; student_id: number }, skill: string): ReturnType<typeof scoreEditPath> {
   if (a.class_id) return scoreEditPath(p, a.class_id, skill);
   const ctx = { studentId: a.student_id };
-  return can(p, PERMISSIONS.SCORE_OVERRIDE, ctx) || can(p, PERMISSIONS.PLAN_WEEK, ctx) ? 'override' : null;
+  return can(p, PERMISSIONS.SCORE_OVERRIDE, ctx) || qlDiem(p, ctx) ? 'override' : null;
 }
 
 export function programmeOfClass(classId: number): ProgrammeInfo | null {

@@ -698,7 +698,8 @@ export function duocSuaLichLop(p: Principal, classId: number): boolean {
   if (can(boVaiCx(p), PERMISSIONS.CLASS_EDIT, { classId })) return true;   // N52: lịch lớp = lịch Test — CX (class.edit để sửa lớp) không đổi
   if (classIsFastTrack(classId)) return false;
   const ctx = { classId };
-  return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
+  /* BPXL-1 (N57): Chuyên viên Xếp lịch sửa lịch lớp thường như Admin (lớp FT: không). */
+  return p.grants.some((g) => grantCovers(g, ctx) && (g.roleKey === 'office_admin' || g.roleKey === 'scheduler' || (g.roleKey === 'teacher' && isCoreTeacherOf(p, classId))));
 }
 
 /** [XM 2] chủ SP 11/11: Admin (`office_admin`) có phạm vi phủ ngữ cảnh (chi nhánh của em / lớp) — quyền HẸP suy từ vai, như `duocSuaLichLop`. */
@@ -808,7 +809,7 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
   /** PR-XLMT (rà #126): dựng "VIỆC nhập điểm" — bỏ vế Quản lý sửa mọi lúc (quyền sửa ô không phải việc của Quản lý). */
   chiViec = false): string[] {
   const lichSu = !!luot?.lich_su;
-  const qlLichSu = lichSu && can(p, PERMISSIONS.PLAN_WEEK, { classId });
+  const qlLichSu = lichSu && qlDiem(p, { classId });
   /* `today` từ nơi gọi (danh sách) — không hỏi ngày nghiệp vụ lại cho từng lượt. */
   const gvcnLichSu = lichSu && !qlLichSu && isCoreTeacherOf(p, classId, luot!.today);
   return skills.filter(
@@ -816,7 +817,7 @@ export function editableSkills(p: Principal, classId: number, skills: readonly s
       || qlLichSu || gvcnLichSu
       || can(p, PERMISSIONS.SCORE_OVERRIDE, { classId })
       /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý sửa/xoá điểm có lý do (RB-5) ở MỌI lúc, không chỉ sau hoàn tất. */
-      || (!chiViec && can(p, PERMISSIONS.PLAN_WEEK, { classId }))
+      || (!chiViec && qlDiem(p, { classId }))
       /* PR-HSM (chủ sản phẩm 30/09): GV Speaking chấm S chéo lớp FT — quyền, không phải việc. S-CHEO-CN (16/11): cả chi nhánh khác. */
       || (!chiViec && skill === 'speaking' && laGvSpeakingSua(p, classId, luot?.today, luot?.kind)),
   );
@@ -870,9 +871,9 @@ export function scoreEditPath(p: Principal, classId: number, skill: string,
   if (can(p, PERMISSIONS.SCORE_EDIT, { classId, skill })) return 'assigned';
   /* PR-HSM: GV Speaking chấm S chéo lớp FT cùng chi nhánh — nhật ký như nhập điểm thường (`score.edit`), tên GV chấm ghi ở ô. */
   if (skill === 'speaking' && laGvSpeakingSua(p, classId, undefined, attempt?.kind)) return 'assigned';
-  if (attempt?.lich_su === 1 && (can(p, PERMISSIONS.PLAN_WEEK, { classId }) || isCoreTeacherOf(p, classId))) return 'lich_su';
+  if (attempt?.lich_su === 1 && (qlDiem(p, { classId }) || isCoreTeacherOf(p, classId))) return 'lich_su';
   /* PR-XLMT (chủ sản phẩm chốt 29/09): Quản lý (xếp lịch được lớp đó) sửa điểm qua đường `override` ở mọi lúc — RB-5 vẫn đòi lý do. */
-  if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || can(p, PERMISSIONS.PLAN_WEEK, { classId })) return 'override';
+  if (can(p, PERMISSIONS.SCORE_OVERRIDE, { classId }) || qlDiem(p, { classId })) return 'override';
   return null;
 }
 
@@ -931,3 +932,10 @@ export const coVaiCx = (p: Pick<Principal, 'grants'>): boolean => p.grants.some(
 export const duyetYThuc = (p: Principal, ctx: Ctx): boolean =>
   can(p, PERMISSIONS.REQUEST_APPROVE, ctx) || can({ ...p, grants: p.grants.filter((g) => g.roleKey === 'cx') }, PERMISSIONS.DISCIPLINE_MANAGE, ctx);
 export const boVaiCx = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'cx'), grants: p.grants.filter((g) => g.roleKey !== 'cx') });
+/** BPXL-1 (N57): Chuyên viên Xếp lịch không là chủ / người giữ việc theo luật nào — `myWork` bỏ grant BPXL (vai khác của tài khoản giữ nguyên). */
+export const boVaiBpxl = (p: Principal): Principal => ({ ...p, roleKeys: p.roleKeys.filter((k) => k !== 'scheduler'), grants: p.grants.filter((g) => g.roleKey !== 'scheduler') });
+/**
+ * BPXL-1 (N57): `plan.week` của Head / Admin / Quản trị còn mang nghĩa "sửa điểm mọi lúc" (PR-XLMT: nhập hộ, sửa sau hoàn tất, MT cũ, gỡ "-", nhận xét S).
+ * BPXL có `plan.week` CHỈ để xếp lịch → mọi đường GHI ĐIỂM hỏi hàm này thay `can(PLAN_WEEK)`; đường xếp lịch giữ `can(PLAN_WEEK)`.
+ */
+export const qlDiem = (p: Principal, ctx: Ctx): boolean => can(boVaiBpxl(p), PERMISSIONS.PLAN_WEEK, ctx);

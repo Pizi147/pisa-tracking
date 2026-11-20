@@ -9,7 +9,7 @@
  *    P12 Q12 (chủ SP 25/10): CHỈ góc nhìn Admin — bài S chấm chéo chưa ai nhận KHÔNG quá hạn (`myWork` Admin) — một dòng "Chưa có GV · n bài chờ chấm"
  *    (`choCham`, không hạn) cuối bảng, ngoài Σ quá hạn. QL / GV giữ LT3 (quá hạn, có chuông). Lớp thiếu GV môn vẫn quá hạn ở dòng "Chưa có GV" trên.
  */
-import { demPhamVi, khopLocNhanh, laChamCheo } from '../../../shared/domain/index.ts';
+import { PERMISSIONS, demPhamVi, khopLocNhanh, laChamCheo } from '../../../shared/domain/index.ts';
 import { demoToday } from '../demoConfig.ts';
 import { t } from '../../../shared/i18n/index.ts';
 import { forbidden } from '../util.ts';
@@ -43,13 +43,19 @@ export function viecQuaHanAdmin(items: readonly any[]): { quaHan: any[]; choCham
   };
 }
 
+/** Có vai BPXL còn quyền xếp lịch (`plan.week`) ở một chi nhánh nào đó. */
+const laBpxl = (p: Principal) => p.grants.some((g) => g.roleKey === 'scheduler' && g.permissions.has(PERMISSIONS.PLAN_WEEK));
+
 export function tongQuanMt(p: Principal, f: { branchId?: number | null } = {}): TongQuanMt {
-  if (phamViXemViec(p) !== 'cham-diem') throw forbidden('Khối Mock Test chỉ dành cho Admin.');
+  /* BPXL-1 (N57): Chuyên viên Xếp lịch đọc cùng khối trong phạm vi chi nhánh của mình — không có việc Chấm điểm (không bị giao việc) → bỏ lượt `myWork`. */
+  const cham = phamViXemViec(p) === 'cham-diem';
+  const bpxl = !cham && laBpxl(p);
+  if (!cham && !bpxl) throw forbidden('Khối Mock Test chỉ dành cho Admin.');
   const today = demoToday();
   const branchId = f.branchId ?? null;
 
   const tuanDau = highlights(p, { branchId, program: 'ft' }).weeks[0];
-  const w = myWork(p, { branchId, nguoi: 'tat-ca' }) as any;
+  const w = (bpxl ? { items: [], dong: [] } : myWork(p, { branchId, nguoi: 'tat-ca' })) as any;
   const dong = (w.dong ?? []) as any[];
   const keHoach = danhSachLop(p, { branchId });
 

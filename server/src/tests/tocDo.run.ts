@@ -29,7 +29,7 @@ const { createSession } = await import('../auth.ts');
 const {
   chayTrongRequest, nho, coNho, trongBoNho, soCauSql, soDongSql, demHienTai,
 } = await import('../platform/nguCanhRequest.ts');
-const { loadPrincipal, can, napTruocPhamVi, scopeFor, boLopCu } = await import('../permissions.ts');
+const { loadPrincipal, can, napTruocPhamVi, scopeFor, boLopCu, boVaiBpxl } = await import('../permissions.ts');
 const accounts = await import('../platform/accounts.ts');
 const { PERMISSIONS, LO_LUU_SUA_CA_LOP, LO_HANG_LOAT_EM } = await import('../../../shared/domain/index.ts');
 const { listCases } = await import('../cases/cases.ts');
@@ -228,6 +228,7 @@ const USER: Record<Vai, number> = {
   TVV: userByRole('consultant', 'CP'),
   CX: userByRole('cx', null),
   HDT: userByRole('head_tutor', null),   // TU2-5: Head tutor — chỉ đo đường trang Tutor
+  BPXL: userByRole('scheduler', 'MB'),   // BPXL-1: tài khoản demo Chuyên viên Xếp lịch Monbay
 };
 /** TQ-SOS-CN: `{sos23}` = id em SOS 2–3 của chi nhánh `{cn}` (chính `sos23Ids` của bảng Tổng quan) — tính lại sau khi nhân dữ liệu. */
 const tinhSos23 = () => ((bangChiNhanh(loadPrincipal(USER.QT), { ct: 'ft', chuY: true }).hang.find((h: any) => h.id === CN)?.sos23 ?? []) as number[]).join(',');
@@ -617,6 +618,7 @@ function thamChieuCaseIds(
   p: ReturnType<typeof loadPrincipal>,
   f: { branchId?: number; classId?: number; studentId?: number; status?: string },
 ): Set<number> {
+  p = boVaiBpxl(p);   // BPXL-1 (N57): BPXL không xem Case — cùng luật `listCases`
   if (scopeFor(p, PERMISSIONS.ATTEMPT_VIEW).none) return new Set();
   const where: string[] = ['sc.tam = 0'];   // OV-13a: listCases không kèm Case tạm (`CASE_THAT`) — SOS-TAM-PA sinh Case tạm cả ô chưa nhận xét
   const params: unknown[] = [];
@@ -1504,7 +1506,9 @@ await checkAsync('TD4-a (×3) · Công việc trùng JSON ảnh chụp trước 
     /* HOC-TIEP (N51, 18/11): chụp lại 'QT tat-ca' — đổi CÓ CHỦ Ý: gợi ý nhóm việc "Chọn bước tiếp" nói 3 hướng (Tạm dừng / Kết thúc học, Học tiếp hoặc Lộ trình mới).
        Đã kiểm (trước HEAD / DEM-VIEC): trả chữ gợi ý cũ → mọi băm trùng ảnh cũ. Trước: QT tat-ca 0b4978eb4ee4b434 */
     'QL toi': 'bae55443ea652c0f', 'QT toi': '4ed1fc3fa34653f2', 'GVCN toi': 'edb4cf790b2ddc32', 'GVBM toi': 'c0018a4d4207215e',
-    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': 'c07a10f6b7a499e7', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '3862f5c189798284',
+    /* BPXL-1 (N57, 20/11): chụp lại 'ADMIN toi' — seed thêm tài khoản demo BPXL (cuối seed) → tài khoản Admin đo (tạo sau seed) id +1, `ownerId` việc của Admin đổi theo;
+       không việc nào đổi. Trước: ADMIN toi c07a10f6b7a499e7 */
+    'GVCN_THUONG toi': 'edb4cf790b2ddc32', 'ADMIN toi': '40367cf553da5cad', 'QL tat-ca': '22a8a1f30e44bec6', 'QT tat-ca': '3862f5c189798284',
     'QT tat-ca cn': 'f66551b0430a85b6', 'QL gvcn': 'e131a8cc32044548', 'GVS toi': '5277337aca746e96',
   };
   const p = (v: Vai) => loadPrincipal(USER[v]);

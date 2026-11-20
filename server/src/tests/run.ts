@@ -10058,6 +10058,9 @@ await runPrNhapDiemTuDoTests({ check, assert, assertThrows, conn, P, TODAY, addD
 // ==================================================================== HEAD (vai manager hiện là "Head" — chủ SP 18/11)
 const { runPrHeadTests } = bocTep('prHead', await import('./prHead.tests.ts'));
 await runPrHeadTests({ check, assert, conn } as any);
+// ==================================================================== BPXL-1 (N57, chủ SP 20/11: vai Chuyên viên Xếp lịch)
+const { runPrBpxlTests } = bocTep('prBpxl', await import('./prBpxl.tests.ts'));
+await runPrBpxlTests({ check, checkAsync, assert, conn, P, classId } as any);
 /* CN-3a (rà #743): bất biến prTk trên DB CHUỖI ở cuối nhóm 1 — soi dữ liệu các tệp `GIU_CHUOI` + phần viết thẳng của tệp này (tệp độc lập đã có `[BB] <tệp>`). */
 if (NHOM === 1) {
   tepHienTai = '[BB] chuỗi';
