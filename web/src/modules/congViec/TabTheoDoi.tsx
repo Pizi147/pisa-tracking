@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
@@ -26,8 +26,13 @@ const ICON: Record<LoaiGiao, string> = { bao_ph: 'bao-ph', phoi_hop: 'y-thuc', t
  * Mục theo loại (dải `DaiNhom`, gập / mở nhớ như GAP-MO) · trong mục: vạch "Quá hạn" · "Còn hạn" (máy chủ đã xếp quá hạn trước) · "Vừa xong 7 ngày" một mục
  * cuối GẬP SẴN. Dòng: mắt · tên việc · em | Phụ trách {tên} · hạn · trạng thái bằng chữ (không nút). Bấm dòng = panel CHỈ ĐỌC (`PanelTheoDoi`).
  */
-export function DsTheoDoi({ chon, onMo, nho }: { chon: string | null; onMo: (d: DongTd) => void; nho?: string }) {
+export function DsTheoDoi({ chon, onMo, onCo, nho }: { chon: string | null; onMo: (d: DongTd) => void; nho?: string;
+  /** Mở từ đường dẫn (`theo=`, F5, Quay lại): dòng đang chọn tìm thấy trong danh sách vừa nạp → panel dựng lại, không request thêm. */ onCo: (d: DongTd) => void }) {
   const { data, error, loading, reload } = useApi<TheoDoi>('/my-work/theo-doi');
+  useEffect(() => {
+    const d = chon ? data?.nhom.flatMap((g) => [...g.mo, ...g.vuaXong]).find((x) => khoaTd(x) === chon) : null;
+    if (d) onCo(d);
+  }, [data, chon]);   // eslint-disable-line react-hooks/exhaustive-deps
   const khoa = nho ? `pisa.cv.gap.${nho}` : null;
   /* "Vừa xong 7 ngày" gập sẵn: nhớ là MỞ (khoá `+vua-xong`), không nhớ thì gập. */
   const [gap, setGap] = useState(() => docGap(khoa));

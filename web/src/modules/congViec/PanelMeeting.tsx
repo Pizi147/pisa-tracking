@@ -33,7 +33,7 @@ export function PanelMeeting({ it, onDong, onDaLam, onTiep }: { it: WorkItem; on
   useEffect(() => setBan(null), [data]);
   const phan = ban ?? data?.phan ?? null;
   const bp = useGiaoViec('bao_ph', data?.baoPhId);
-  const dau = dauViec({ em: it.studentId ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode, ngCanh: it.contextLabel });
+  const dau = dauViec({ em: it.studentId ? { id: it.studentId, ten: it.studentName } : null, lop: it.classCode });
   const tieuDe = t('Meeting CX/GĐCN');
   const chan = { huy: null, chinh: <>{onTiep && <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onTiep}>{t('Việc tiếp ›')}</button>}
     <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" onClick={onDong}>{t('Đóng')}</button></> };
@@ -146,7 +146,7 @@ export function PhanMeeting({ g, dat, reload }: { g: KhoiGv; dat: (g: KhoiGv) =>
               <span className="text-sm font-bold">{t('Ngày giờ họp')} <span className="font-normal text-faint text-[13px]">{t('tuỳ chọn')}</span></span>
               <div className="flex gap-2">
                 <div className="min-w-0 flex-1"><ONgay kieu="ngay" value={ngay || null} onChange={setNgay} ariaLabel={t('Ngày họp')} /></div>
-                <input type="time" className="field w-[96px] shrink-0 tabular-nums max-sm:h-11" value={gio} onChange={(e) => setGio(e.target.value)} aria-label={t('Giờ họp')} />
+                <input type="time" className="field w-[124px] shrink-0 tabular-nums max-sm:h-11" value={gio} onChange={(e) => setGio(e.target.value)} aria-label={t('Giờ họp')} />
               </div>
             </div>
           )}

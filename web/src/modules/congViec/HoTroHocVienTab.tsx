@@ -729,7 +729,7 @@ export function HoTroHocVienTab() {
           {tab === 'duyet' && <HopChoDuyet branchId={branchId} khuPanel={khuDuyet} khuLoc={khuLocDuyet} />}
           {/* RA-LOI-0711i: tab đang hiện chính danh sách bài chấm chéo thì không ghi "không có việc" ngay trên danh sách đó. */}
           {chiCc && tab !== 'duyet' && !trongTab.some(laViecChamCheo) && <p className="m-0 mb-3 text-sm text-slate-400">{t('Bạn không có việc đang mở.')}</p>}
-          {tab === 'theo-doi' && <DsTheoDoi chon={theo} onMo={(d) => boChuRoi(() => moTheo(d))} nho={uid != null ? `u${uid}:theo-doi` : undefined} />}
+          {tab === 'theo-doi' && <DsTheoDoi chon={theo} onMo={(d) => boChuRoi(() => moTheo(d))} onCo={setTheoDong} nho={uid != null ? `u${uid}:theo-doi` : undefined} />}
           {data && !data.scopeEmpty && tab !== 'duyet' && tab !== 'theo-doi' && mucs.length === 0 && !(tab === 'van-hanh' && coVanHanh) && (
             <Card><Empty title={coLoc ? t('Không có việc nào khớp bộ lọc') : t('Không còn việc đang mở')}
               action={coLoc ? <button type="button" className="btn btn-sm" onClick={xoaLoc}>{t('Xoá lọc')}</button> : undefined} /></Card>

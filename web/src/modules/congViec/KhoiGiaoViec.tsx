@@ -225,7 +225,8 @@ function HopDoiNguoi({ g, onDong, onXong, onXungDot }: { g: KhoiGv; onDong: () =
           placeholder={t('Gõ tên người')} ariaLabel={t('Người phụ trách mới')} tieuDe={t('Đổi người phụ trách')} />
         {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi.chu}{loi.xungDot && ` ${t('Khối đã tải lại — chọn lại rồi Giao.')}`}</p>}
       </div>
-      <div className="flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+      {/* Nhấn nút chân không làm ô tìm mất focus — danh sách không co lại, nút không dời chỗ dưới con trỏ (cú bấm trượt). */}
+      <div onMouseDown={(e) => e.preventDefault()} className="flex flex-wrap items-center gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn btn-sm min-h-[44px] sm:min-h-[32px]" disabled={!lechMacDinh || dang} onClick={() => void gui(null, tenMd)}>
           {lechMacDinh ? t('Về mặc định · {ten}', { ten: tenMd }) : t('Về mặc định')}</button>
         <span className="ml-auto flex gap-2">
@@ -324,7 +325,7 @@ function HopThemTheoDoi({ ds, da, onDong, onThem }: { ds: KhoiGv[]; da: Readonly
           placeholder={t('Gõ tên người')} ariaLabel={t('Người theo dõi')} tieuDe={t('Thêm người theo dõi')} />
         {loi && <p role="alert" className="m-0 text-[13px] text-bad">⚠ {loi}</p>}
       </div>
-      <div className="flex justify-end gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
+      <div onMouseDown={(e) => e.preventDefault()} className="flex justify-end gap-2 border-t px-4 py-2.5" style={{ borderColor: 'var(--line)' }}>
         <button type="button" className="btn min-h-[44px] sm:min-h-[36px]" disabled={dang} onClick={onDong}>{t('Đóng')}</button>
         <button type="button" className="btn btn-primary min-h-[44px] sm:min-h-[36px]" disabled={!chon.length || dang} onClick={() => void them()}>
           {chon.length ? t('Thêm {n} người', { n: chon.length }) : t('Thêm')}</button>
