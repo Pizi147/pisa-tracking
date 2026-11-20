@@ -1,12 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useApi } from '../../lib/useApi.ts';
-import { api, invalidate } from '../../lib/api.ts';
+import { api, invalidate, theHe } from '../../lib/api.ts';
 import { useSession } from '../../lib/session.tsx';
 import { useManHinh } from '../../ui/TheDong.tsx';
 import { BoLocDoan, Card, ChonDangNut, Empty, ErrorState, Skeleton } from '../../ui/ui.tsx';
 import { BranchFilter, useChiNhanhMacDinh } from '../../ui/Filters.tsx';
-import { COT_VIEC, DaiNhom, DanhSachViec, tenBoEm } from './DanhSachViec.tsx';
+import { COT_VIEC, DaiNhom, DaiXongDong, DanhSachViec, tenBoEm } from './DanhSachViec.tsx';
 import { HangTab } from '../../ui/HangTab.tsx';
 import { KhungPanel } from '../../ui/KhungPanel.tsx';
 import { LOP_DA_LUU, TheMuc, Trich, TruongDoc } from '../../ui/KhuonViec.tsx';
@@ -32,7 +32,7 @@ import { DauViecCongViec, KhungTaiCho, NhanTruongDam, boChuRoi } from '../../ui/
 import { PanelViec } from './PanelViecLuoi.tsx';
 import { lamTaiCho, moCaDong } from './lamTaiCho.ts';
 import { NganCase } from '../students/NganCaseLuoi.tsx';
-import { DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
+import { BaoHoanTac, DaiVuaLuu, ViecVuaLuu, type DaLuuPanel } from '../../ui/KhuonViec.tsx';
 import { useToast } from '../../ui/Toast.tsx';
 import { HopGiaHan } from '../students/HopGiaHan.tsx';
 import { NutXuatLopBc } from '../classes/TabBaoCaoPh.tsx';
@@ -82,6 +82,10 @@ const MAN_HEP = '(max-width: 1023px)';
 const vungCuon = () => document.getElementById('noi-dung');
 /** Mọi việc của danh sách — dòng và từng em trong dòng gộp. */
 const phang = (ds: readonly WorkItem[]) => ds.flatMap((x) => [x, ...(x.con ?? [])]);
+/* VIEC-XONG-AN: dải "✓ Đã lưu" ở chỗ dòng vừa xong — 4 giây; panel có đường đảo thì bằng thời gian Hoàn tác (10 giây, `useHoanTac`). */
+const DAI_XONG_MS = 4_000;
+const DAI_HOAN_TAC_MS = 10_000;
+type DaiXong = { het: number; hoanTac?: () => Promise<void>; hoan?: boolean };
 
 /**
  * CÔNG VIỆC › HỖ TRỢ HỌC VIÊN — LÀM TẠI CHỖ (OV-5a, đặc tả OV mục 4, mockup M1 §1–§2).
@@ -90,7 +94,7 @@ const phang = (ds: readonly WorkItem[]) => ds.flatMap((x) => [x, ...(x.con ?? []
  * đang bật). Dòng phạm vi luôn hiện ("Đang xem: … · n việc · m học viên") + Xoá lọc. Mọi bộ lọc + việc đang mở (`viec`) nằm trên URL.
  *
  * Danh sách trái (560 px) · panel phải xử lý việc đang chọn (`PanelViec`, panel sẵn có đặt tại chỗ qua `KhungTaiCho`); bấm việc khác → panel đổi.
- * Lưu xong: dòng đứng nguyên chỗ, mờ + gạch khi máy chủ không còn trả việc đó (`giu`); panel giữ; chỉ "· việc tiếp ›" chuyển việc. Số đếm chỉ từ
+ * Lưu xong: dải "✓ Đã lưu · Hoàn tác" phủ đúng chỗ dòng vài giây rồi dòng rời danh sách (VIEC-XONG-AN); panel giữ; chỉ "· việc tiếp ›" chuyển việc. Số đếm chỉ từ
  * `/my-work` (cùng badge). Điện thoại (< 1024 px): bấm việc → màn đầy đủ có "‹ Công việc", về đúng chỗ cuộn cũ. Chốt lộ trình / Kết quả đầu ra
  * và việc chưa có panel mở trang như cũ.
  */
@@ -186,19 +190,33 @@ export function HoTroHocVienTab() {
   const khung: KhungLoc = haiKhung ? khungChon : 'tat-ca';
 
   /*
-   * OV-5a: DÒNG ĐÃ LÀM GIỮ CHỖ — panel báo "đã lưu" thì nhớ bản dòng lúc đó; tải lại mà máy chủ không còn trả việc đó → vẫn vẽ ở chỗ cũ, mờ + gạch
-   * (không nhảy vị trí). Chỉ để nhìn: mọi số đếm dưới đây đọc `tatCaViec` (máy chủ).
+   * OV-5a: DÒNG ĐÃ LÀM — panel báo "đã lưu" thì nhớ bản dòng lúc đó (`giu`: panel đứng nguyên, lọc "Xong hôm nay"). VIEC-XONG-AN (chủ SP 21/11): ở danh sách
+   * việc cần làm, dòng máy chủ không còn trả chỉ đứng lại NGẮN dưới dạng dải "✓ Đã lưu · Hoàn tác" (`dai`, hết giờ thì ẩn) — không còn dòng gạch ở lại.
+   * Chỉ để nhìn: mọi số đếm dưới đây đọc `tatCaViec` (máy chủ).
    */
   const [giu, setGiu] = useState<ReadonlyMap<string, WorkItem>>(new Map());
-  useEffect(() => { setGiu(new Map()); }, [url]);   // đổi người xem / chi nhánh = nguồn khác: bỏ giữ chỗ của nguồn cũ
+  const [dai, setDai] = useState<ReadonlyMap<string, DaiXong>>(new Map());
+  useEffect(() => { setGiu(new Map()); setDai(new Map()); }, [url]);   // đổi người xem / chi nhánh = nguồn khác: bỏ giữ chỗ của nguồn cũ
+  /* Dải hết giờ → bỏ (một hẹn cho dải hết sớm nhất). */
+  useEffect(() => {
+    if (!dai.size) return undefined;
+    const som = Math.min(...[...dai.values()].map((v) => v.het));
+    const h = setTimeout(() => setDai((m) => new Map([...m].filter(([, v]) => v.het > Date.now()))), Math.max(0, som - Date.now()) + 30);
+    return () => clearTimeout(h);
+  }, [dai]);
+  const datDai = (k: string, v: Partial<DaiXong>, ms = DAI_XONG_MS) => setDai((m) => new Map(m).set(k, { ...m.get(k), het: Date.now() + ms, ...v }));
+  /* Panel đang mở báo đường đảo (`BaoHoanTac`) — dải của việc đó có Hoàn tác, đứng bằng thời gian Hoàn tác; `null` = đã hoàn tác ở panel. */
+  const ghiHoanTac = (k: string, f: (() => Promise<void>) | null) => (f ? datDai(k, { hoanTac: f }, DAI_HOAN_TAC_MS)
+    : setDai((m) => (m.has(k) ? new Map(m).set(k, { ...m.get(k)!, hoanTac: undefined }) : m)));
   /* RA-LOI-0711d: "còn trên máy chủ" so CẢ danh sách đã nạp (không phải phần đang lọc) — đổi dải chi nhánh / Của tôi ↔ Của GV không biến việc
-     chưa xong thành "đã xong"; dòng giữ chỗ chỉ hiện trong đúng nguồn của nó. */
-  const conTrenMayChu = useMemo(() => new Set(phang(dsGoc).map((x) => x.key)), [dsGoc]);
+     chưa xong thành "đã xong"; dòng giữ chỗ chỉ hiện trong đúng nguồn của nó. VIEC-XONG-AN: dòng gộp "tan" (lưu một phần lưới — em còn lại
+     thành dòng lẻ) KHÔNG phải xong: máy chủ còn trả việc thuộc khoá gộp đó. */
+  const conTrenMayChu = useMemo(() => new Set(phang(dsGoc).flatMap((x) => [x.key, khoaGopCua(x as any) ?? x.key])), [dsGoc]);
   const xong = useMemo(() => new Set([...giu].filter(([k, x]) => !conTrenMayChu.has(k) && trongNguon(x)).map(([k]) => k)),
     [giu, conTrenMayChu, nguoi, cnLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
-  /* OV-11c (CV-7): em vừa xong của một dòng gộp (lớp × loại việc) đứng lại TRONG dòng gộp đó (mờ + gạch), không rơi thành dòng riêng cuối nhóm. */
+  /* OV-11c (CV-7): em vừa xong của một dòng gộp (lớp × loại việc) đứng lại TRONG dòng gộp đó (dải), không rơi thành dòng riêng cuối nhóm. */
   const hienThi = useMemo(() => {
-    const giuXong = [...giu.values()].filter((x) => xong.has(x.key));
+    const giuXong = [...giu.values()].filter((x) => xong.has(x.key) && dai.has(x.key));
     const vaoDong = new Map<string, WorkItem[]>();
     const le: WorkItem[] = [];
     for (const x of giuXong) {
@@ -209,7 +227,7 @@ export function HoTroHocVienTab() {
     const ds = vaoDong.size ? tatCaViec.map((d) => (vaoDong.has(d.key)
       ? { ...d, con: [...d.con!, ...vaoDong.get(d.key)!.map((x) => ({ ...x, conTen: (x as any).conTen ?? x.studentName, conPhu: (x as any).conPhu ?? '' }))] } : d)) : tatCaViec;
     return [...ds, ...le];
-  }, [tatCaViec, giu, xong]);
+  }, [tatCaViec, giu, xong, dai]);
 
   const cuaLopLoc = (it: WorkItem) => !lopLoc || it.classId === lopLoc || !!it.con?.some((c) => c.classId === lopLoc);
   const theoKhung = (ds: WorkItem[]) => ds.filter((it) => (khung === 'tat-ca' || !it.khung || it.khung === khung) && (!loai || it.group === loai) && cuaLopLoc(it));
@@ -235,6 +253,7 @@ export function HoTroHocVienTab() {
   const tenTab = (k: string) => (k === 'duyet' ? t('Chờ bạn duyệt') : k === 'van-hanh' && laQuanLy ? t('Việc quản lý') : nhanTabCv(k, laTvv));
   const tabs = useMemo(() => {
     const conGiu = new Set(theoKhung(hienThi).map(tabCua));
+    if (viec && xong.has(viec)) conGiu.add(tabCua(giu.get(viec)!));   // VIEC-XONG-AN: panel còn mở việc vừa xong (dải đã hết) — tab không biến mất dưới panel
     if (data?.paDangChay?.length) conGiu.add('case-hoc-thuat');   // TU2-4: GV chỉ có PA chưa tới hạn vẫn vào được khối "PA đang chạy"
     /* GD-1 (lời 19): tab "Chấm Speaking" — đủ ngắn, 375 giữ nguyên tên (mockup v21 K8a). */
     /* GD-4a (lời 33): tab Chấm Speaking — badge mờ = số bài (cùng số đầu mục); V22: có bài quá hạn → badge đỏ. */
@@ -251,7 +270,7 @@ export function HoTroHocVienTab() {
     /* AUDIT-UI B3: badge = yêu cầu cần làm ngay (quá hạn) — 0 thì không vẽ (`BadgeTabSo`); tổng ở đầu tab "n yêu cầu". */
     const bd: BadgeTab | null = cho ? { so: q, n: cho, quaHan: q, homNay: 0 } : null;
     return [{ key: 'duyet', nhan: tenTab('duyet'), badge: bd }, ...ds];
-  }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [items, hienThi, homNay, laTvv, coDuyet, demDuyet, coVanHanh, data, khung, loai, lopLoc, viec, xong]);   // eslint-disable-line react-hooks/exhaustive-deps
   /* Mở trang: tab đầu có việc quá hạn, không có thì tab đầu (`tabMacDinh`); panel duyệt đang mở → tab Chờ bạn duyệt. */
   /* RA-LOI-0711d: mở từ link `?viec=` (chuông, Tổng quan, Giao việc) không kèm `nhom` → tab của chính việc đó, danh sách + Quay lại đúng chỗ. */
   const tabViec = !tabUrl && viec ? (() => { const x = phang(dsGoc).find((y) => y.key === viec); return x ? tabCua(x) : null; })() : null;
@@ -278,9 +297,10 @@ export function HoTroHocVienTab() {
   }, [viec, hienThi, giu, dsGoc, data?.paDangChay]);   // eslint-disable-line react-hooks/exhaustive-deps
   const luoiRong = !!chon && chon.group === 'ghi_ket_qua_pa' && moCaDong(chon);
   /*
-   * Danh sách vẽ: cùng bộ lọc, cộng dòng đã làm giữ chỗ. OV-11c (CV-3): đang mở panel thì GIỮ THỨ TỰ lúc mở — dòng xong / làm một phần (hạn đổi) đứng
-   * đúng chỗ cũ, không sắp lại theo hạn mới, không rơi sau "Xem thêm"; việc mới (không có ở lần vẽ trước) xuống cuối nhóm. Đóng panel / đổi lọc thì sắp lại.
-   * Số đầu nhóm (CV-15) chỉ từ máy chủ (`cuoiItems`) — dòng giữ chỗ chỉ để vẽ.
+   * Danh sách vẽ: cùng bộ lọc, cộng dải dòng vừa xong. VIEC-XONG-AN (chủ SP 21/11 "công việc nhảy liên tục vị trí"; thay OV-11c CV-3 "chỉ khi panel mở"):
+   * trong CÙNG bộ lọc (nguồn · khung · hạn · tab · loại) mỗi dòng giữ vị trí lần đầu thấy — lưu xong / làm một phần (hạn đổi) / tải lại / đóng panel
+   * không sắp lại; dòng mới chen ngay sau dòng đứng trước nó theo thứ tự hạn (`chiaMucTab`), em còn lại của dòng gộp vừa tan đứng chỗ dòng gộp.
+   * Đổi bộ lọc / tải lại trang thì sắp lại từ đầu. Số đầu nhóm (CV-15) chỉ từ máy chủ (`cuoiItems`) — dải chỉ để vẽ.
    */
   const thuTuCu = useRef<{ khoa: string; vt: Map<string, number> } | null>(null);
   const khoaLoc = `${url}|${khung}|${loc}|${tab ?? ''}|${loai ?? ''}`;
@@ -289,14 +309,22 @@ export function HoTroHocVienTab() {
     const hien = theoKhung(hienThi).filter((it) => khopLocNhanh(it, loc, homNay));
     const out = new Map(thuTuTab.map((k) => [k, chiaMucTab(dongCuaTab(hien, k), laTvv, homNay)]));
     const cu = thuTuCu.current;
-    if (!chon || !cu || cu.khoa !== khoaLoc) {
+    if (!cu || cu.khoa !== khoaLoc) {
       thuTuCu.current = { khoa: khoaLoc, vt: new Map([...out.values()].flat().flatMap((m) => m.items).map((x, i) => [x.key, i])) };
       return out;
     }
-    /* Plan mục 4: em cuối của dòng gộp vừa xong (dòng tan thành việc lẻ, hoặc biến mất) đứng ở chỗ của dòng gộp cũ, không rơi xuống cuối mục. */
-    const vt = (x: WorkItem) => cu.vt.get(x.key) ?? cu.vt.get(khoaGopCua(x as any) ?? '') ?? Number.MAX_SAFE_INTEGER;
+    /* Dòng chưa thấy: chỗ của dòng gộp nó thuộc (plan mục 4: em cuối của dòng gộp vừa tan), không thì ngay sau dòng đứng trước nó. Ghi lại để lần sau đứng yên. */
+    for (const m of [...out.values()].flat()) {
+      let truoc = -1;
+      for (const x of m.items) {
+        const v = cu.vt.get(x.key) ?? cu.vt.get(khoaGopCua(x as any) ?? '') ?? truoc + 1e-6;
+        cu.vt.set(x.key, v);
+        truoc = v;
+      }
+    }
+    const vt = (x: WorkItem) => cu.vt.get(x.key)!;
     return new Map([...out].map(([k, ds]) => [k, ds.map((m) => ({ ...m, items: [...m.items].sort((a, b) => vt(a) - vt(b)) }))]));
-  }, [hienThi, khung, loai, loc, homNay, chon, khoaLoc, laTvv, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
+  }, [hienThi, khung, loai, loc, homNay, khoaLoc, laTvv, lopLoc]);   // eslint-disable-line react-hooks/exhaustive-deps
   const mucs = (tab && mucTheoTab.get(tab)) || [];
   /* Số đầu mục chỉ từ máy chủ (`locItems`) — dòng giữ chỗ vừa xong chỉ để vẽ. */
   const demMuc = useMemo(() => {
@@ -363,7 +391,7 @@ export function HoTroHocVienTab() {
   const [het, setHet] = useState<{ nhom: string; ke: (WorkItem & { nhom: string }) | null } | null>(null);
   useEffect(() => { setHet(null); }, [viec]);
   /* G1-13 / G4-18: giữ bản dòng lúc lưu LẦN ĐẦU — lưu tiếp (Lưu L rồi Vắng R) không đổi dòng vừa xong thành phần còn lại ("✓ Reading · 1 bài"). */
-  const daLam = (it: WorkItem) => { if (pdcMo.current.has(it.key)) return; setGiu((m) => (m.has(it.key) ? m : new Map(m).set(it.key, it))); };   // TU2-4: việc dựng từ PA chưa tới hạn không phải dòng giữ chỗ
+  const daLam = (it: WorkItem) => { if (pdcMo.current.has(it.key)) return; setGiu((m) => (m.has(it.key) ? m : new Map(m).set(it.key, it))); datDai(it.key, {}); };   // TU2-4: việc dựng từ PA chưa tới hạn không phải dòng giữ chỗ
   /*
    * M6 6b-3 (mockup panel-pilot ②b, ②d): việc vừa lưu bằng "· việc tiếp ›" — dải "✓ … · Hoàn tác" ở đầu việc kế (`den`) hoặc thẻ "Hết việc" (`den` = null);
    * Hoàn tác xong mở lại việc đó để làm lại (`lan` dựng lại panel đang mở, không giữ "✓ Đã lưu" cũ).
@@ -374,11 +402,29 @@ export function HoTroHocVienTab() {
   const noiDai = choDaiVuaLuu(vuaLuu && { tu: vuaLuu.tu.key, den: vuaLuu.den }, chon?.key ?? null, !!het);
   const daiVuaLuu = vuaLuu && noiDai && (
     <DaiVuaLuu key={vuaLuu.lan} x={vuaLuu.x} ai={vuaLuu.tu.studentId !== null ? vuaLuu.tu.studentName : null}
-      onHoanTac={() => { const tu = vuaLuu.tu; setVuaLuu(null); setHet(null); toast.push('ok', t('Đã hoàn tác')); if (tu.key === chon?.key) setLan((n) => n + 1); else boChuRoi(() => mo(tu)); }} />
+      onHoanTac={() => { const tu = vuaLuu.tu; setVuaLuu(null); setHet(null); ghiHoanTac(tu.key, null); toast.push('ok', t('Đã hoàn tác')); if (tu.key === chon?.key) setLan((n) => n + 1); else boChuRoi(() => mo(tu)); }} />
   );
   const viecVuaLuu = {
     ten: keTiep ? [tenBoEm(keTiep), keTiep.studentId !== null ? keTiep.studentName : null].filter(Boolean).join(' · ') : null,
-    bao: (x: DaLuuPanel, oLai?: boolean) => { if (chon) setVuaLuu((v) => ({ x, tu: chon, den: oLai ? chon.key : keTiep?.key ?? null, lan: (v?.lan ?? 0) + 1 })); },
+    bao: (x: DaLuuPanel, oLai?: boolean) => {
+      if (!chon) return;
+      setVuaLuu((v) => ({ x, tu: chon, den: oLai ? chon.key : keTiep?.key ?? null, lan: (v?.lan ?? 0) + 1 }));
+      if (x.hoanTac) ghiHoanTac(chon.key, x.hoanTac);
+    },
+  };
+  /*
+   * VIEC-XONG-AN: Hoàn tác ở dải dòng vừa xong — cùng đường đảo panel đã báo; xong thì dải "↺ Đã hoàn tác" đứng tới khi máy chủ trả lại dòng (không chớp
+   * mất dòng), panel đang mở việc đó về form. Tải lại danh sách chỉ khi đường đảo chưa tự tải (`theHe` không đổi) — không thêm lời gọi.
+   */
+  const daiXong = (x: WorkItem) => {
+    const v = dai.get(x.key);
+    if (!v) return null;
+    const hoanTac = v.hoanTac && (async () => { const g = theHe('/my-work'); await v.hoanTac!(); if (theHe('/my-work') === g) invalidate('/my-work'); });
+    return <DaiXongDong it={x} hoan={v.hoan} hoanTac={hoanTac} onHoanTac={() => {
+      datDai(x.key, { hoan: true, hoanTac: undefined });
+      setVuaLuu((u) => (u?.tu.key === x.key ? null : u));
+      if (chon?.key === x.key) setLan((n) => n + 1);
+    }} />;
   };
   /* V5 (truy vết mục 3 BỎ): không tự mở việc đầu, không tự sang việc kế sau lưu — chỉ "Lưu · việc tiếp ›" / "Việc tiếp ›" trong panel chuyển việc. */
 
@@ -660,7 +706,7 @@ export function HoTroHocVienTab() {
           )}
           {data && !data.scopeEmpty && tab !== 'duyet' && mucs.length > 0 && (
             <DanhSachViec muc={mucs} dem={demMuc} soHien={10} cuoi={tab === 'van-hanh' && coVanHanh ? loiVanHanh : null} luat={laTvv && tab ? luatNhomTvv(tab) : undefined}
-              onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
+              onOpen={(x) => { if (x.key === viec) mo(x); else boChuRoi(() => mo(x)); }} chon={viec} xong={xong} daiXong={daiXong} moTrang={(x) => !lamTaiCho(x)} moCaDong={moCaDong}
               theoDoi={theoDoi} nguoiAn={xemMotGv ? nguoi : null} theCn={dsCn.length > 1 ? (x) => (x.cn != null ? maCn.get(x.cn) ?? null : null) : undefined}
               /* RA-LUONG-4: chỉ "Chọn bước tiếp" có hạn để gia hạn (N6; máy chủ `coTheGiaHanSauThi`) — "Cập nhật KQ thi thật" không hạn, Gia hạn sẽ 400. */
               nutPhu={(x) => (!x.con && x.cycleId && x.group === 'buoc_tiep' && !xong.has(x.key) && !theoDoi(x)
@@ -718,11 +764,11 @@ export function HoTroHocVienTab() {
                   )}
                   {/* Panel vẫn gắn khi thẻ "Hết việc" hiện: "Xem lại việc vừa lưu" mở lại đúng panel đã lưu (sửa / hoàn tác của chính panel). */}
                   <div hidden={!!het}>
-                    <ViecVuaLuu.Provider value={viecVuaLuu}>
+                    <ViecVuaLuu.Provider value={viecVuaLuu}><BaoHoanTac.Provider value={(f) => ghiHoanTac(chon.key, f)}>
                     <PanelViec key={`${chon.key}:${lan}`} xemUrl it={chon} onDong={dong} onDaLam={() => daLam(chon)}
                       onTiep={keTiep ? () => mo(keTiep) : hienTai && !theoDoiChon ? () => setHet({ nhom: hienTai.nhom, ke: keNhomKhac }) : null}
                       tenTiep={keTiep?.studentId !== null ? keTiep?.studentName : null} onMo={(x) => boChuRoi(() => mo(x))} />
-                    </ViecVuaLuu.Provider>
+                    </BaoHoanTac.Provider></ViecVuaLuu.Provider>
                   </div>
                 </DauViecCongViec.Provider>
                 </>}

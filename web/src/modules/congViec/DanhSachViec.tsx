@@ -1,6 +1,6 @@
 import { MuiChev } from '../../ui/HangNhom.tsx';
 import { Children, type ReactNode, useState } from 'react';
-import { LOP_DA_LUU } from '../../ui/KhuonViec.tsx';
+import { LOP_DA_LUU, NutHoanTac } from '../../ui/KhuonViec.tsx';
 import { Link } from 'react-router-dom';
 import { ChipSos } from '../../ui/ChipSos.tsx';
 import { Level } from '../../ui/ui.tsx';
@@ -24,7 +24,34 @@ type ChungDong = {
   nguoiAn?: number | null;
   /** CV-TAB b (mockup `.cn`): mã chi nhánh của dòng — chỉ khi GV có việc ở > 1 chi nhánh. */
   theCn?: (it: WorkItem) => string | null;
+  /** VIEC-XONG-AN: dải "✓ Đã lưu · Hoàn tác" thay dòng vừa xong (`xong`) — danh sách việc cần làm; không có (vd "Xong hôm nay") thì dòng xong vẽ như cũ. */
+  daiXong?: (it: WorkItem) => ReactNode;
 };
+
+/**
+ * VIEC-XONG-AN (chủ SP 21/11 "nhảy vị trí… không ẩn đi khi hoàn thiện"): dải phủ ĐÚNG chỗ dòng vừa xong — dòng vẫn vẽ (ẩn) để giữ chiều cao,
+ * nên các dòng khác không xê dịch tới khi dải hết giờ và dòng rời danh sách.
+ */
+function VeDong({ x, dong, children }: { x: WorkItem; dong: ChungDong; children: ReactNode }) {
+  const dai = dong.xong.has(x.key) ? dong.daiXong?.(x) : null;
+  if (!dai) return <>{children}</>;
+  return <div className="relative" data-dai-xong={x.key}><div className="invisible">{children}</div><div className="absolute inset-0">{dai}</div></div>;
+}
+
+/** Nội dung dải: "✓ Đã lưu · {lớp · việc} · {em}" + Hoàn tác (chỉ khi panel có đường đảo); `hoan` = vừa hoàn tác, chờ dòng trở lại. */
+export function DaiXongDong({ it, hoanTac, hoan, onHoanTac }: { it: WorkItem; hoanTac?: () => Promise<void>; hoan?: boolean; onHoanTac: () => void }) {
+  return (
+    <div role="status" className="flex h-full items-center gap-x-2 overflow-hidden bg-ok-bg pl-[15px] pr-3.5 text-[13px] leading-snug sm:pl-[17px] sm:pr-4"
+      style={{ boxShadow: 'inset 3px 0 0 var(--ok)' }}>
+      <b className="shrink-0 font-bold text-ok">{hoan ? <><span aria-hidden>↺ </span>{t('Đã hoàn tác')}</> : t('✓ Đã lưu')}</b>
+      <span className="min-w-0 text-slate-300 [overflow-wrap:anywhere]">
+        {voiLop(it, tenBoEm(it))}{it.studentId !== null && <> · <span className="ten-hv">{it.studentName}</span></>}
+      </span>
+      <span className="flex-1" />
+      {hoanTac && !hoan && <span className="shrink-0"><NutHoanTac hoanTac={hoanTac} onHoanTac={onHoanTac} /></span>}
+    </div>
+  );
+}
 
 /** Tên việc + thẻ mã chi nhánh nhỏ (mockup v17 `.cn`): thẻ dính chữ cuối của tên (không rơi một mình xuống dòng ở 375). */
 const TenCn = ({ ten, ma }: { ten: string; ma: string | null | undefined }) => {
@@ -141,7 +168,7 @@ export function DanhSachViec({ muc, dem, soHien, cuoi, luat, ...dong }: ChungDon
                   vachMoi && <li key={`v:${vach(x)}`} className={`flex min-h-9 items-center px-4 text-[13px] font-semibold text-dim max-sm:min-h-10 max-sm:px-3.5 ${j ? 'border-t' : ''}`}
                     style={{ borderColor: 'var(--line-strong)' }}>{vach(x)}</li>,
                 <li key={`${x.key}|${x.ownerId ?? ''}`} className={j && !vachMoi ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}>
-                  {LA_GON.has(x.group) ? <DongGon it={x} {...dong} /> : x.con?.length || x.studentId === null ? <DongLop it={x} {...dong} /> : <DongViec it={x} {...dong} />}
+                  <VeDong x={x} dong={dong}>{LA_GON.has(x.group) ? <DongGon it={x} {...dong} /> : x.con?.length || x.studentId === null ? <DongLop it={x} {...dong} /> : <DongViec it={x} {...dong} />}</VeDong>
                 </li>,
                 ];
               })}
@@ -267,7 +294,7 @@ export function NguoiGiu({ ten, vai }: { ten: string; vai?: string | null }) {
 function CotNut({ it, nut, daXong, mo, trieu, nhanNut, onBam, nutPhu }: {
   it: WorkItem; nut: string | null; daXong: boolean; mo?: boolean; trieu?: boolean; nhanNut?: string; onBam: () => void; nutPhu?: ReactNode;
 }) {
-  /* U01 #7: dòng vừa xong đứng nguyên chỗ — "Xem lại" mở lại panel của việc đó. */
+  /* U01 #7: dòng đã xong (lọc "Xong hôm nay") — "Xem lại" mở lại panel của việc đó. Danh sách việc cần làm: dải `DaiXongDong` thay dòng (VIEC-XONG-AN). */
   if (daXong) {
     return (
       <span className={`flex ${O_NUT}`}>
@@ -480,7 +507,7 @@ function DongLop({ it, ...dong }: ChungDong & { it: WorkItem }) {
       </div>
       {con && mo && (
         <ul id={maDs} className="m-0 list-none border-t border-dashed p-0 pb-1.5" style={{ borderColor: 'var(--line-strong)' }} aria-label={dich(it.tieuDe)}>
-          {con.map((x, i) => <li key={x.key} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}><DongCon it={x} {...dong} /></li>)}
+          {con.map((x, i) => <li key={x.key} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}><VeDong x={x} dong={dong}><DongCon it={x} {...dong} /></VeDong></li>)}
         </ul>
       )}
     </div>
@@ -555,7 +582,7 @@ function DongGon({ it, ...dong }: ChungDong & { it: WorkItem }) {
       </div>
       {con && mo && (
         <ul id={maDs} className="m-0 list-none border-t border-dashed p-0 pb-1.5" style={{ borderColor: 'var(--line-strong)' }} aria-label={ten}>
-          {con.map((x, i) => <li key={x.key} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}><DongCon it={x} {...dong} /></li>)}
+          {con.map((x, i) => <li key={x.key} className={i ? 'border-t' : ''} style={{ borderColor: 'var(--line)' }}><VeDong x={x} dong={dong}><DongCon it={x} {...dong} /></VeDong></li>)}
         </ul>
       )}
     </div>
