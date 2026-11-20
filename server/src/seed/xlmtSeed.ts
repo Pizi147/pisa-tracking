@@ -73,7 +73,7 @@ export function buildXlmtDemo(ctx: BuildCtx): { students: number } {
   luotThuong(long.cycleId);
   const longA = luot(long.cycleId, 1);
   nhap(longA, ['l', 'r']);
-  for (const k of ['writing', 'speaking']) setSkillSkip(ql, longA.id, k, true, 'Em nghỉ dài ngày, xếp lại W S sau');   // PR-MTGON: Huỷ kỹ năng
+  for (const k of ['writing', 'speaking']) setSkillSkip(ql, longA.id, k, true, 'Em nghỉ dài ngày');   // PR-MTGON: Huỷ kỹ năng
 
   // ---------------------------------------------------------------- X3 · HS mới, đã thi ngoài web MT1–MT4
   const chi = them(ft101, 'Đoàn Khánh Chi', tuan(-20));                 // MT1 −15 · MT2 −9 · MT3 −5 tuần — MT lịch sử; MT4 (−3) chưa có lượt

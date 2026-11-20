@@ -867,7 +867,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
     const huy = prog === 'cancelled';
     const nhanTT = khongDuThi ? t('Không dự thi')
       : huy && r.huyVang ? t('{progressLabel} · vắng {x} lần', { progressLabel: progressLabel('cancelled'), x: r.absenceMoveCount + 1 })
-      : r.sitStatus === 'absent' && !r.pendingMove && !huy ? t('Vắng lần {x} · chờ xếp lại', { x: r.absenceMoveCount + 1 })
+      : r.sitStatus === 'absent' && !r.pendingMove && !huy ? t('Vắng lần {x} · chưa dời', { x: r.absenceMoveCount + 1 })
       : progressLabel(prog);
     const goc = r.required ? lichGocKn(d, k, homNay) : null;
     const coDiemCells = cells.filter(coDiemO);
@@ -967,7 +967,7 @@ function BangKetQuaLuot({ d, homNay, chiDoc, moKn, onMoKn, moO, onMoO, save, onD
     <section aria-label={t('Kết quả theo kỹ năng')} className="card overflow-hidden p-0">
       {!d.completionWeek.valid && (
         <p className="m-0 px-3 pt-3 text-xs text-amber-200">
-          {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả cho tới khi Head xếp lại.')}
+          {t('Chưa có kế hoạch hợp lệ cho tuần dự kiến hoàn tất:')}{' '}{d.completionWeek.blockingLabels.join(', ')}{' '}{t('chưa có tuần Test hoặc đã bị huỷ. Đợt vẫn chưa đủ kết quả.')}
         </p>
       )}
       {d.cells.length === 0 ? (

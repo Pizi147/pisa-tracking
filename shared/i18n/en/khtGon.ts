@@ -17,5 +17,4 @@ export const EN_KHT_GON = {
   'Đang làm bài tuần này': 'Sitting this week',
   'Qua hạn chấm, còn bài chưa có điểm': 'Past marking deadline, some papers unscored',
   'Ô đặc = có điểm · viền đứt = chưa có điểm · chữ gạch = không thi trong đợt': 'Filled = scored · dashed = not scored · struck = not in this round',
-  'Đã vắng, đã dời — hết ghi khi đủ điểm; chữ vàng "xếp lại" = Head cần xếp lại': 'Was absent, moved — gone once all scored; amber "reschedule" = Head must reschedule',
 } satisfies Record<string, Dich>;

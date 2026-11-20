@@ -16,7 +16,6 @@ export const EN_OV15C = {
   'Chưa hoàn tác được — thử lại.': 'Could not undo — try again.',
   'Lưu hoặc huỷ thay đổi trước': 'Save or discard changes first',
   'Khôi phục → Chưa xếp': 'Restore → Not scheduled',
-  'Xếp lại tuần nào cũng được': 'Reschedule to any week',
   'Giữ huỷ': 'Keep cancelled',
   'Đã giữ huỷ {kn}.': '{kn} stays cancelled.',
   '{kn} về Chưa xếp — chọn tuần mới.': '{kn} is back to Not scheduled — pick a new week.',

@@ -567,7 +567,7 @@ export const HD_QL: HuongDan = {
       dangO: { cau: 'Xếp, dời lịch MT, Progress, Final các lớp; thi lại; S Ex.', sau: { chu: 'Lịch Test tuần', duong: TEST } },
       khongLam: [{ ten: 'Nhập hộ bài quá hạn', den: { chu: 'Tổng quan › Bài quá hạn', duong: '/' } }],
       muc: [
-        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Xoá</b>, rồi <b>Lưu</b>; nút mờ nói lý do ngay tại nút.', '<b>Dời</b> = chọn tuần = xếp lại từ đầu — cả môn vắng, huỷ vắng 2 lần, đã xoá.', '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b>; lịch sử ở khối <b>Lịch sử · n</b> trong hộp.'] },
+        { id: 'ql-kh-ky-nang', ten: 'Một kỹ năng', buoc: ['Bấm ô MT: mỗi môn có <b>Dời</b> · <b>Vắng</b> · <b>Xoá</b>, rồi <b>Lưu</b>; nút mờ nói lý do ngay tại nút.', '<b>Dời</b> = chọn tuần = tính lại từ đầu — cả môn vắng, huỷ vắng 2 lần, đã xoá.', '<b>⋯</b>: <b>Dời hạn chấm</b> · <b>Huỷ điểm</b>; lịch sử ở khối <b>Lịch sử · n</b> trong hộp.'] },
         { id: 'ql-kh-luat', ten: 'Luật xếp lịch, tìm lớp', buoc: ['Link <b>Luật xếp lịch Test</b> trên hàng lọc.', 'Gõ mã lớp, tên (có / không dấu) hoặc email vào <b>Tìm lớp, học viên hoặc email…</b>; chọn em: lớp mở, hàng em được đánh dấu.'] },
         { id: 'ql-kh-xoa', ten: 'Xoá lịch một đợt', buoc: ['Lớp thường: bấm ô, <b>Xoá lịch</b> ở đầu hộp → đợt về <b>Chưa xếp</b>, lịch sử giữ; có <b>Hoàn tác</b>.', 'Đã có điểm / đã làm bài: nút mờ.'] },
         { id: 'ql-kh-ghi-chu', ten: 'Ghi chú lịch Test', buoc: ['Ô <b>Ghi chú lịch Test</b> trong hộp; ghi chú hiện một dòng dưới chip, bấm để sửa (Enter lưu · Esc huỷ).', '<b>+ Ghi chú lớp</b> dưới bảng. Chỉ là ghi chú, không dời lịch.'] },
