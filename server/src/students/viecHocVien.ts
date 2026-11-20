@@ -264,7 +264,7 @@ export function viecCuaHocVien(p: Principal, sid: number, board: { rows: any[] }
     if (hien) { hien.nguoiId = p.userId; continue; }
     if (coKhoa.has(v.key)) continue;
     ds.push({ key: v.key, loai: LOAI_GIAO_HV[v.group] ?? 'phoi-hop-sos', chu: v.phu ?? v.tieuDe.split(' · ')[0], kyNang: null, caseId: null, paId: null, viecId: v.viecId ?? undefined,
-      han: v.due, tone: 'info', nguoiId: p.userId, nut: v.actionLabel,
+      han: v.due, tone: 'info', nguoiId: p.userId, nut: v.actionLabel, tamDung: !!v.choGvSua,   // TL-1 (rà #1927 lần 2): Báo PH đã giao, đang chờ GV sửa
       mo: v.group === 'yt_hoi_tinh_hinh' && v.viecId ? { loai: 'tinh-hinh', viecId: v.viecId, cauHoi: String(v.reason ?? '') }
         : { loai: 'tab', tab: 'y-thuc', ...(v.group === 'bao_ph_yt' || v.group === 'yt_tra_lai' ? {} : { sub: 'phoi-hop' as const }) } });
   }

@@ -353,6 +353,22 @@ export async function runPrTraLaiTests(t: YThucTestKit) {
       assert(b.trang_thai === 'xong' && b.han_chon === hanBaoPh(TODAY) && b.han_chon >= TODAY, `hạn tính lại trước khi xong: ${JSON.stringify(b)}`);
     }));
 
+    await checkAsync('TL-23 · (rà lần 2) Báo PH đã giao cho người khác, đang chờ GV sửa, quá hạn gốc: dải việc hồ sơ HV của người được giao không đỏ; lần xử lý đã thu hồi → trả lại 400', () => thu(async () => {
+      const sid = moiEm(); const { vids, bp } = xuLy(sid);
+      conn.prepare('UPDATE viec_bao_ph SET han = ? WHERE id = ?').run(addDays(TODAY, -3), bp);
+      const gi = await goi(tvv, 'POST', `/giao-viec/bao_ph/${bp}/phu-trach`, { userId: tvv2.userId, phuTrachCu: null });
+      assert(gi.status === 200, `giao: ${gi.status} ${gi.json?.error}`);
+      await tra(tvv, { violationId: vids[0] });
+      const tim = (o: any): any => (o && typeof o === 'object' ? (o.key === `bao-ph:${bp}` && 'tone' in o ? o : Object.values(o).map(tim).find(Boolean)) : undefined);
+      const d = tim((await goi(tvv2, 'GET', `/students/${sid}`)).json);
+      assert(d && d.quaHanNgay === null && d.tone !== 'danger', `hồ sơ HV người được giao: ${JSON.stringify(d)}`);
+      const sid2 = moiEm(); const x2 = xuLy(sid2);
+      conn.prepare(`UPDATE discipline_measures SET status = 'thu_hoi' WHERE id = ?`).run(x2.mid);
+      const r = await tra(tvv, { measureId: x2.mid });
+      assert(r.status === 400 && /Xử lý đã thu hồi — việc Báo PH chỉ xem/.test(r.json?.error ?? ''), `thu hồi: ${r.status} ${r.json?.error}`);
+      assert((await tra(tvv, { violationId: x2.vids[0] })).status === 400, 'vi phạm của lần đã thu hồi → 400');
+    }));
+
     await checkAsync('TL-19 · (rà 7) hai người trả cùng lúc: chỉ mục UNIQUE bắt người sau → 409 câu tiếng Việt (không 500)', () => thu(async () => {
       const sid = moiEm(); const { vids } = xuLy(sid);
       /* Giả lập người kia chèn trước một khắc: trigger chèn dòng mở ngay trước dòng của mình (vượt qua bước đọc kiểm). */

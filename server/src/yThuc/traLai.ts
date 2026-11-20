@@ -21,7 +21,7 @@ import { demoToday } from '../demoConfig.ts';
 import { notify, writeAudit } from '../platform/audit.ts';
 import { khoangTamDung } from '../students/tamDung.ts';
 import { canManageDiscipline, gvcnCuaEm } from './access.ts';
-import { CHI_NHANH_EM } from './baoPhTvv.ts';
+import { CHI_NHANH_EM, LY_DO_HE_THONG, xuLyCon } from './baoPhTvv.ts';
 import { addHistory, editViolation, violationsByIds, type ViolationView } from './violations.ts';
 import { baoTheoDoi, conHieuLuc, docViec, donViec, laNguoiTheoDoi, nguoiNhanTraLai, themTheoDoiDong } from '../worklist/giaoViec.ts';
 
@@ -56,14 +56,15 @@ function load(id: number): any {
 const XU_LY_LIEN_QUAN = `SELECT m.id AS measure_id FROM discipline_measures m WHERE m.id = ?1 UNION SELECT mv.measure_id AS measure_id FROM measure_violations mv WHERE mv.violation_id = ?2`;
 /** Việc Báo PH (vi phạm, không phải "báo lại") của các lần xử lý liên quan. */
 const baoPhLienQuan = (measureId: number | null, violationId: number | null) => db().prepare(
-  `SELECT id, trang_thai FROM viec_bao_ph WHERE measure_id IN (${XU_LY_LIEN_QUAN}) ORDER BY id`,
-).all(measureId, violationId) as { id: number; trang_thai: string }[];
+  `SELECT v.id, v.trang_thai, v.measure_id, v.bao_lai_cua, v.phoi_hop_id, v.tinh_hinh_id, m.status AS xu_ly_status FROM viec_bao_ph v
+     LEFT JOIN discipline_measures m ON m.id = v.measure_id WHERE v.measure_id IN (${XU_LY_LIEN_QUAN}) ORDER BY v.id`,
+).all(measureId, violationId) as { id: number; trang_thai: string; xu_ly_status: string | null }[];
 
 /**
  * TRONG tx: đặt lại "Chờ GV sửa" của các việc Báo PH `ids` theo yêu cầu trả lại ĐANG MỞ của lần xử lý của việc đó (cả lần, hoặc một vi phạm còn trong lần đó).
  * Việc vừa HẾT dừng + `tinhLai` + còn mở → hạn = `hanBaoPh(hôm nay)` (N2) khi muộn hơn hạn hiệu lực đang có (`han_chon` + `viec_han_lan`; PTA chốt: không rút ngắn).
  * Một câu đọc + chỉ ghi khi đổi. Gọi khi: trả lại (việc liên quan) · đóng / rút / Hoàn tác (việc đang trỏ yêu cầu đó — `tra_lai_id`, rà #1927 (2)) ·
- * sinh việc Báo PH (rà #1927 (5)) · sửa vi phạm của lần xử lý.
+ * sửa vi phạm của lần xử lý. (Sinh việc Báo PH: đặt `tra_lai_id` ngay trong câu INSERT của `sinhViecBaoPh` — rà #1927 (5).)
  */
 export function dongBoTamDung(ids: readonly number[], boi: number | null, tinhLai: boolean): void {
   if (!ids.length) return;
@@ -151,8 +152,12 @@ export function traLai(p: Principal, body: { violationId?: unknown; measureId?: 
   if (!coTheTraLai(p, s)) throw forbidden('Chỉ TVV, CX hoặc Head của em trả lại được vi phạm.');
   /* N61 ĐÃ CHỐT: Báo PH đã xong / đã bỏ thì không trả lại. Vi phạm chưa có lần xử lý (chưa sinh Báo PH) → trả được. Cả lần xử lý: Báo PH phải còn mở. */
   const bp = baoPhLienQuan(mid, vid);
-  const moBp = bp.filter((b) => b.trang_thai === 'mo');
-  if ((bp.length || mid) && !moBp.length) throw badRequest('Việc Báo PH của lần xử lý này đã xong hoặc đã bỏ — không trả lại được nữa.');
+  /* rà #1927 lần 2: lần xử lý không còn (thu hồi / Head từ chối) → việc Báo PH chỉ xem — cùng câu với giao diện (`xuLyCon`). */
+  const moBp = bp.filter((b) => b.trang_thai === 'mo' && xuLyCon(b) === 'con');
+  const ngoai = bp.find((b) => b.trang_thai === 'mo' && xuLyCon(b) !== 'con');
+  if ((bp.length || mid) && !moBp.length) {
+    throw badRequest(ngoai ? `${(LY_DO_HE_THONG as Record<string, string>)[`system_${xuLyCon(ngoai)}`]} — việc Báo PH chỉ xem.` : 'Việc Báo PH của lần xử lý này đã xong hoặc đã bỏ — không trả lại được nữa.');
+  }
   const cot = vid ? 'violation_id' : 'measure_id';
   const DANG_CHO = vid ? 'Vi phạm này đang chờ GV sửa — rút yêu cầu cũ nếu muốn trả lại lần nữa.' : 'Lần xử lý này đang chờ GVCN sửa — rút yêu cầu cũ nếu muốn trả lại lần nữa.';
   const dangMo = db().prepare(`SELECT id, nguoi_tra, ly_do FROM vi_pham_tra_lai WHERE ${cot} = ? AND trang_thai = 'mo'`).get(id0) as any;
