@@ -22,7 +22,8 @@ Lời chủ SP gốc + 4 câu trả lời: `plan.md` mục 4, các đoạn "Ch�
 - Chỉ xem: Lịch Test tuần, Học viên & Lớp, Lịch thi thật.
 - Không có: sửa điểm, sửa thông tin HV, Case, Ý thức, Phân tích. Huỷ / khôi phục lượt MT vẫn chỉ Head / Quản trị.
 - Menu: **Test · Học viên & Lớp · Công việc**. Trang đầu = **Kế hoạch Test**.
-- **Dải số lặng** trên đầu Kế hoạch Test (chữ xám, không đỏ, không cộng vào số việc trên menu): Chưa xếp lịch MT · Vắng chờ xếp lại · Bài chưa có điểm · Lượt thi tuần này. Bấm số = lọc danh sách lớp ngay bên dưới (ô số = mở tại chỗ).
+- **Dải số lặng** trên đầu Kế hoạch Test (chữ xám, không đỏ, không cộng vào số việc trên menu): Chưa xếp lịch MT · Vắng tuần này · Bài chưa có điểm · Lượt thi tuần này. Bấm số = lọc danh sách lớp ngay bên dưới (ô số = mở tại chỗ).
+- **[CHỐT — chủ SP 20/11]** "vắng thì không cần xếp lại, đã nói bao nhiều lần rồi" → KHÔNG có số / nhãn / việc "chờ xếp lại" ở bất kỳ đâu (N38: vắng lần 1 máy tự dời tuần kế, lần 2 huỷ). "Vắng tuần này" chỉ là thông tin: em nào vắng, đã dời sang tuần nào / đã huỷ.
 - Chuông, mục "Cập nhật": tin em vắng (đã dời sang tuần … / đã huỷ), gộp theo lớp × tuần, không nhắc lại.
 - Công việc của BPXL: "Xếp lịch họp" (Meeting CX / GĐCN — mục B2) + "Việc được giao" + "Đang theo dõi"; ngoài ra không bị giao việc theo luật.
 
@@ -54,7 +55,7 @@ Lời chủ SP gốc + 4 câu trả lời: `plan.md` mục 4, các đoạn "Ch�
 - Panel việc Meeting hiện cả hai phần cạnh nhau với trạng thái rõ (Chưa xong / ✓ Hoàn thành · ai · lúc); phần của người khác chỉ đọc. Không phần nào chờ phần nào. Hoàn tác được; sửa lại sau khi hoàn thành được, có lịch sử.
 - Khối Phụ trách · Hạn · Theo dõi áp cho từng phần (đổi người được như mọi việc phần B). Theo dõi mặc định: TVV của em, GVCN, Head.
 - Chi nhánh không có BPXL → TVV của em xếp như nay; không có CX → Head. Ngoại lệ của "CX / BPXL không bị giao việc theo luật" (N52).
-- PTA hiểu, chờ chủ SP xác nhận: phần "Báo PH · Meeting" của TVV (báo gia đình về buổi họp) giữ như nay.
+- **[CHỐT — chủ SP 20/11]** "việc báo PH cho việc meeting CX/ GĐCN vẫn cần nhé" → việc "Báo PH · Meeting CX / GĐCN" của TVV GIỮ như nay, đứng cạnh hai phần trên (ba dòng việc: Xếp lịch họp · BPXL, Kết quả meeting · CX, Báo PH · TVV).
 
 ## C. Việc Vận hành
 
